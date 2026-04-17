@@ -1,0 +1,33 @@
+# Gradle files
+.gradle/
+build/
+*.apk
+*.aar
+
+# Android Studio
+.idea/
+*.iml
+*.iws
+*.ipr
+local.properties
+
+# CMake
+cmake-build-debug/
+cmake-build-release/
+
+# Native build
+app/src/main/cpp/.cxx/
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# IDE
+.vscode/
+.clion*
+
+# Temp
+*.tmp
+*.log

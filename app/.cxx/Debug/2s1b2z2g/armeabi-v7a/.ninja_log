@@ -1,0 +1,27 @@
+# ninja log v5
+17	4108	7980145306591996	CMakeFiles/native-lib.dir/native-lib.cpp.o	4ab4c4938113a6aa
+4408	4747	7980147346071978	C:/Users/E1192/Projects/oblivion-android/app/build/intermediates/cxx/Debug/2s1b2z2g/obj/armeabi-v7a/libnative-lib.so	cf29e3089207faf1
+9	4130	7980147339783700	CMakeFiles/native-lib.dir/engine/camera.cpp.o	3c8b34a60c1797fb
+13	545	7980158071702710	build.ninja	863ecdd550541fa6
+32	4336	7980147341708694	CMakeFiles/native-lib.dir/engine/shader.cpp.o	decdff0cf8b158e4
+1	36	0	clean	eb3e106bdcfb3a56
+48	4407	7980147342530451	CMakeFiles/native-lib.dir/engine/renderer.cpp.o	2624292c21ca5d0f
+19	4285	7980147341192617	CMakeFiles/native-lib.dir/jni_bridge.cpp.o	43dfd96732903069
+64	4097	7980147339203127	CMakeFiles/native-lib.dir/geometry/cube.cpp.o	3b49c3ab1cabba6b
+99	5527	7980158134364409	CMakeFiles/native-lib.dir/engine/camera.cpp.o	888f25d85911b834
+135	6219	7980158139984335	CMakeFiles/native-lib.dir/geometry/cube.cpp.o	bd6579c8a69ee613
+17	6366	7980158141263510	CMakeFiles/native-lib.dir/native-lib.cpp.o	ad5a2f7c59c7fedb
+56	6489	7980158141755424	CMakeFiles/native-lib.dir/engine/renderer.cpp.o	5ecc8c8a50776388
+114	6920	7980158141913333	CMakeFiles/native-lib.dir/engine/shader.cpp.o	d4a4befeb4670a1a
+40	7078	7980158147945190	CMakeFiles/native-lib.dir/jni_bridge.cpp.o	8fa1bcd2c378ca66
+6234	9422	7980158172615487	CMakeFiles/native-lib.dir/geometry/mesh.cpp.o	7ccde30dfcffd956
+6374	12781	7980158206854516	CMakeFiles/native-lib.dir/assets/dds_loader.cpp.o	e35968d4215159eb
+6492	13291	7980158210527071	CMakeFiles/native-lib.dir/assets/asset_manager.cpp.o	e75a070f6a1109e4
+5542	13572	7980158213235155	CMakeFiles/native-lib.dir/assets/nif_parser.cpp.o	b8cd82800408f872
+13574	14049	7980158220182552	C:/Users/E1192/Projects/oblivion-android/app/build/intermediates/cxx/Debug/2s1b2z2g/obj/armeabi-v7a/libnative-lib.so	6a4225dd33e0a2de
+263	3594	7980287725751434	CMakeFiles/native-lib.dir/jni_bridge.cpp.o	8fa1bcd2c378ca66
+280	3598	7980287725751434	CMakeFiles/native-lib.dir/jni_bridge.cpp.o	8fa1bcd2c378ca66
+263	4105	7980287730783880	CMakeFiles/native-lib.dir/engine/renderer.cpp.o	5ecc8c8a50776388
+280	4115	7980287730783880	CMakeFiles/native-lib.dir/engine/renderer.cpp.o	5ecc8c8a50776388
+4116	5910	7980287748452998	C:/Users/E1192/Projects/oblivion-android/app/build/intermediates/cxx/Debug/2s1b2z2g/obj/armeabi-v7a/libnative-lib.so	6a4225dd33e0a2de
+4106	5913	7980287748452998	C:/Users/E1192/Projects/oblivion-android/app/build/intermediates/cxx/Debug/2s1b2z2g/obj/armeabi-v7a/libnative-lib.so	6a4225dd33e0a2de

@@ -1,0 +1,175 @@
+#include <jni.h>
+#include <android/log.h>
+#include "engine/renderer.h"
+
+#define LOG_TAG "JNI_Bridge"
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+
+static Renderer* g_renderer = nullptr;
+
+// Initialize engine and return handle to Java
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_example_oblivion_GameRenderer_nativeInitEngine(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    LOGI("nativeInitEngine called");
+
+    if (g_renderer == nullptr) {
+        g_renderer = new Renderer();
+        if (!g_renderer->init(1920, 1080)) {  // Default size, will be updated by onSurfaceChanged
+            LOGE("Failed to initialize Renderer");
+            delete g_renderer;
+            g_renderer = nullptr;
+            return 0;
+        }
+    }
+
+    return reinterpret_cast<jlong>(g_renderer);
+}
+
+// Set viewport with handle parameter
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeSetViewport(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jlong handle,
+        jint width,
+        jint height) {
+    LOGD("nativeSetViewport called: %d x %d", width, height);
+
+    Renderer* renderer = reinterpret_cast<Renderer*>(handle);
+    if (renderer) {
+        renderer->resize(width, height);
+    }
+}
+
+// Render frame with handle parameter
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeRenderFrame(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jlong handle) {
+    Renderer* renderer = reinterpret_cast<Renderer*>(handle);
+    if (renderer) {
+        renderer->render(0.0167f);  // 60 FPS default (1/60 sec)
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeCleanup(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    LOGI("nativeCleanup called");
+
+    if (g_renderer) {
+        g_renderer->cleanup();
+        delete g_renderer;
+        g_renderer = nullptr;
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeSetLanguage(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jint language) {
+    LOGD("nativeSetLanguage called: %d", language);
+
+    if (g_renderer) {
+        auto locMgr = g_renderer->getLocalizationManager();
+        if (locMgr) {
+            locMgr->setLanguage(static_cast<Language>(language));
+        }
+    }
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_example_oblivion_GameRenderer_nativeGetLanguage(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    if (g_renderer) {
+        auto locMgr = g_renderer->getLocalizationManager();
+        if (locMgr) {
+            return static_cast<jint>(locMgr->getLanguage());
+        }
+    }
+    return 0;  // ENGLISH
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_example_oblivion_GameRenderer_nativeGetString(
+        JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jstring key) {
+    if (!g_renderer) {
+        return env->NewStringUTF("");
+    }
+
+    auto locMgr = g_renderer->getLocalizationManager();
+    if (!locMgr) {
+        return env->NewStringUTF("");
+    }
+
+    const char* keyStr = env->GetStringUTFChars(key, nullptr);
+    std::string result = locMgr->getString(keyStr);
+    env->ReleaseStringUTFChars(key, keyStr);
+
+    return env->NewStringUTF(result.c_str());
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeOnTouchEvent(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jlong handle,
+        jfloat dx,
+        jfloat dy) {
+    Renderer* renderer = reinterpret_cast<Renderer*>(handle);
+    if (renderer && renderer->getTitleScreen()) {
+        renderer->getTitleScreen()->onTouchEvent(dx, dy);
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeOnKeyPress(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jint key) {
+    if (g_renderer && g_renderer->getTitleScreen()) {
+        g_renderer->getTitleScreen()->onKeyPress(key);
+    }
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_example_oblivion_GameRenderer_nativeTitleScreenActive(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    if (g_renderer) {
+        return g_renderer->isTitleScreenActive() ? JNI_TRUE : JNI_FALSE;
+    }
+    return JNI_TRUE;
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeSetTargetFPS(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jint fps) {
+    LOGD("nativeSetTargetFPS called: %d", fps);
+
+    if (g_renderer) {
+        g_renderer->setTargetFPS(static_cast<int>(fps));
+    }
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_example_oblivion_GameRenderer_nativeGetTargetFPS(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    if (g_renderer) {
+        return static_cast<jint>(g_renderer->getTargetFPS());
+    }
+    return 60;  // Default
+}

@@ -1,0 +1,24 @@
+# ninja log v5
+8	2328	7980145661400795	CMakeFiles/native-lib.dir/native-lib.cpp.o	7e58f6e4fcf4d3d2
+3314	3596	7980147658508961	C:/Users/E1192/Projects/oblivion-android/app/build/intermediates/cxx/RelWithDebInfo/1xa456i4/obj/x86_64/libnative-lib.so	228e2ebf482022aa
+75	3124	7980147653438270	CMakeFiles/native-lib.dir/geometry/cube.cpp.o	c0ac3cb6a478ec3c
+1	451	7980159049493763	build.ninja	de4882d4cd8e2d0d
+39	3313	7980147654019214	CMakeFiles/native-lib.dir/engine/shader.cpp.o	66038e16bb2857f0
+0	39	0	clean	eb3e106bdcfb3a56
+7	3005	7980147652193249	CMakeFiles/native-lib.dir/jni_bridge.cpp.o	34a66a15a006c22c
+22	3160	7980147653448309	CMakeFiles/native-lib.dir/engine/renderer.cpp.o	e6c97ba813d0d6e7
+58	3020	7980147652272217	CMakeFiles/native-lib.dir/engine/camera.cpp.o	13048c395d6d4da6
+96	4553	7980159101793240	CMakeFiles/native-lib.dir/engine/camera.cpp.o	f805845c15eb8584
+82	4707	7980159102655348	CMakeFiles/native-lib.dir/geometry/cube.cpp.o	51e805c1d189cfcb
+51	5444	7980159110273948	CMakeFiles/native-lib.dir/jni_bridge.cpp.o	6b497e4f165a4317
+13	5713	7980159112094059	CMakeFiles/native-lib.dir/native-lib.cpp.o	7bd60274cdd2142c
+30	5993	7980159112084290	CMakeFiles/native-lib.dir/engine/renderer.cpp.o	a126e9d05f598b3b
+65	7443	7980159129293156	CMakeFiles/native-lib.dir/engine/shader.cpp.o	9f71ecaa7c16303a
+4554	8162	7980159137545467	CMakeFiles/native-lib.dir/geometry/mesh.cpp.o	e31c650a59938525
+5730	11631	7980159172501427	CMakeFiles/native-lib.dir/assets/asset_manager.cpp.o	699e1a7fd1bd7f33
+5444	11676	7980159172966343	CMakeFiles/native-lib.dir/assets/dds_loader.cpp.o	8bf77793a7dd4a37
+4711	12122	7980159177336505	CMakeFiles/native-lib.dir/assets/nif_parser.cpp.o	7ff43fadbdb40a82
+12122	12413	7980159180816700	C:/Users/E1192/Projects/oblivion-android/app/build/intermediates/cxx/RelWithDebInfo/1xa456i4/obj/x86_64/libnative-lib.so	de65c1a66421cca9
+45	2567	7980288200194658	CMakeFiles/native-lib.dir/jni_bridge.cpp.o	6b497e4f165a4317
+37	4147	7980288216235109	CMakeFiles/native-lib.dir/engine/renderer.cpp.o	a126e9d05f598b3b
+4148	5946	7980288233654145	C:/Users/E1192/Projects/oblivion-android/app/build/intermediates/cxx/RelWithDebInfo/1xa456i4/obj/x86_64/libnative-lib.so	de65c1a66421cca9
