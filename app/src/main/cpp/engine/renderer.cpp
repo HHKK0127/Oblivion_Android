@@ -1,8 +1,9 @@
 #include "renderer.h"
+// #include "../jni_audio_bridge.h"  // Deferred - requires Java MainActivity
 #include <thread>
 
 Renderer::Renderer()
-    : showTitleScreen(true), screenWidth(1080), screenHeight(1920),
+    : showTitleScreen(false), screenWidth(1080), screenHeight(1920),
       targetFPS(60), frameTimeThreshold(1000.0f / 60.0f) {
     LOGD("Renderer created with target FPS: %d", targetFPS);
     lastFrameTime = std::chrono::high_resolution_clock::now();
@@ -33,9 +34,19 @@ bool Renderer::init(unsigned int width, unsigned int height) {
 }
 
 void Renderer::resize(unsigned int width, unsigned int height) {
+    LOGI("===== Renderer::resize() called with %ux%u =====", width, height);
     screenWidth = width;
     screenHeight = height;
-    LOGD("Renderer resized to: %ux%u", screenWidth, screenHeight);
+    LOGI("Renderer resized to: %ux%u", screenWidth, screenHeight);
+
+    // Update TextRenderer with new dimensions - CRITICAL for correct projection
+    if (textRenderer) {
+        LOGI("TextRenderer exists, calling setScreenSize(%u, %u)", screenWidth, screenHeight);
+        textRenderer->setScreenSize(screenWidth, screenHeight);
+        LOGI("TextRenderer screen size updated to: %ux%u", screenWidth, screenHeight);
+    } else {
+        LOGW("WARNING: TextRenderer is NULL in resize()! Dimensions not updated!");
+    }
 }
 
 void Renderer::setTargetFPS(int fps) {
@@ -62,12 +73,79 @@ void Renderer::initLocalization() {
 }
 
 void Renderer::initGameSystems() {
+    LOGI("=== initGameSystems() called ===");
+
+    // CRITICAL: Get actual viewport dimensions from OpenGL (not JNI parameters)
+    // This handles timing issues where render thread starts before onSurfaceChanged
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    unsigned int actualWidth = viewport[2];
+    unsigned int actualHeight = viewport[3];
+    LOGI("Actual OpenGL viewport: %ux%u", actualWidth, actualHeight);
+
+    if (actualWidth > 0 && actualHeight > 0) {
+        screenWidth = actualWidth;
+        screenHeight = actualHeight;
+        LOGI("Using actual viewport dimensions: %ux%u (instead of init %ux%u)",
+             screenWidth, screenHeight,
+             ((int)1920), ((int)1080));  // These are hardcoded init values for comparison
+    }
+
+    // Initialize Settings Manager
+    LOGI("Creating SettingsManager...");
+    settingsManager = std::make_unique<SettingsManager>();
+    if (!settingsManager->initialize()) {
+        LOGE("Failed to initialize SettingsManager");
+        return;
+    }
+    LOGI("SettingsManager initialized successfully");
+
+    // Initialize Text Renderer (for debug HUD and settings UI)
+    LOGI("Creating TextRenderer...");
+    textRenderer = std::make_unique<TextRenderer>();
+    if (!textRenderer->initialize()) {
+        LOGE("Failed to initialize TextRenderer");
+        return;
+    }
+    textRenderer->setScreenSize(screenWidth, screenHeight);
+    LOGI("TextRenderer initialized successfully with size %ux%u", screenWidth, screenHeight);
+
+    // Initialize Debug HUD
+    LOGI("Creating DebugHUD...");
+    debugHUD = std::make_unique<DebugHUD>();
+    if (!debugHUD->initialize(textRenderer.get())) {
+        LOGE("Failed to initialize DebugHUD");
+        return;
+    }
+    LOGI("DebugHUD initialized successfully");
+
+    // Initialize Settings UI
+    LOGI("Creating SettingsUI...");
+    settingsUI = std::make_unique<SettingsUI>();
+    if (!settingsUI->initialize(textRenderer.get(), settingsManager.get())) {
+        LOGE("Failed to initialize SettingsUI");
+        return;
+    }
+    LOGI("SettingsUI initialized successfully");
+
     // Initialize World Manager
+    LOGI("Creating WorldManager...");
     worldManager = std::make_unique<WorldManager>();
+    LOGI("Calling WorldManager::initialize()...");
     if (!worldManager->initialize()) {
         LOGE("Failed to initialize WorldManager");
         return;
     }
+    LOGI("WorldManager initialized successfully");
+
+    // Initialize Asset Manager
+    LOGI("Creating AssetManager...");
+    assetManager = std::make_unique<AssetManager>();
+    if (!assetManager->initialize()) {
+        LOGE("Failed to initialize AssetManager");
+        return;
+    }
+    LOGI("AssetManager initialized successfully");
 
     // Initialize Quest Manager
     questManager = std::make_unique<QuestManager>();
@@ -107,6 +185,15 @@ void Renderer::initGameSystems() {
         LOGI("Found %zu save slots", saves.size());
     }
 
+    // Initialize Audio via JNI Bridge (Java MediaPlayer)
+    // Using pragmatic approach: Android's native MediaPlayer instead of OpenAL
+    // NOTE: Audio system deferred - JNI bridge requires Java MainActivity class
+    // which is not available in pure NativeActivity context
+    // LOGI("Initializing audio system via JNI bridge...");
+    // LOGI("Playing Oblivion test BGM: explore.mp3");
+    // jni_audio_play_bgm("explore.mp3");
+    // LOGI("Audio playback initiated via JNI bridge");
+
     // Initialize Title Screen
     titleScreen = std::make_unique<TitleScreen>();
     titleScreen->initialize(localizationManager.get());
@@ -120,15 +207,63 @@ void Renderer::initGameSystems() {
 }
 
 void Renderer::createTestScenario() {
+    LOGI("=== createTestScenario() START ===");
+
+    // Safety checks
+    if (!worldManager) {
+        LOGE("ERROR: worldManager is null in createTestScenario()");
+        return;
+    }
+
+    if (!questManager) {
+        LOGE("ERROR: questManager is null in createTestScenario()");
+        return;
+    }
+
+    if (!combatManager) {
+        LOGE("ERROR: combatManager is null in createTestScenario()");
+        return;
+    }
+
+    if (!spellManager) {
+        LOGE("ERROR: spellManager is null in createTestScenario()");
+        return;
+    }
+
+    // Declare spell variables at function scope so they're available for spell casting
+    uint32_t fireball = 0;
+    uint32_t heal = 0;
+    uint32_t restoreMana = 0;
+
     // Create test NPCs
     NpcManager* npcMgr = worldManager->getNpcManager();
+    if (!npcMgr) {
+        LOGE("ERROR: getNpcManager() returned null");
+        return;
+    }
 
     auto izar = npcMgr->createNPC("Izar", glm::vec3(0.0f, 0.0f, 0.0f));
     auto hellas = npcMgr->createNPC("Hellas", glm::vec3(5.0f, 0.0f, 0.0f));
 
+    if (!izar) {
+        LOGE("ERROR: Failed to create NPC 'Izar'");
+        return;
+    }
+    if (!hellas) {
+        LOGE("ERROR: Failed to create NPC 'Hellas'");
+        return;
+    }
+
     if (izar && hellas) {
         izar->status.initialize(150.0f, 100.0f, 5);
         hellas->status.initialize(120.0f, 80.0f, 4);
+
+        // Set mesh asset paths (from Oblivion ISO extracted meshes)
+        // These are relative paths that will be resolved by AssetManager
+        izar->meshAssetPath = "meshes/creatures/imp.nif";  // Monster model
+        hellas->meshAssetPath = "meshes/characters/imperial_male.nif";  // NPC model
+        LOGI("NPC mesh paths set: Izar=%s, Hellas=%s",
+             izar->meshAssetPath.c_str(), hellas->meshAssetPath.c_str());
 
         // Create test quests
         uint32_t quest1 = questManager->createQuest(izar->npcId, "Kill the Monster",
@@ -160,7 +295,7 @@ void Renderer::createTestScenario() {
         // Create test spells
         if (spellManager) {
             // 破壊の魔法：ファイアボール
-            uint32_t fireball = spellManager->createSpell(
+            fireball = spellManager->createSpell(
                 "Fireball", "ファイアボール",
                 MagicSchool::DESTRUCTION, 50.0f, 30.0f);
             if (fireball != 0) {
@@ -171,7 +306,7 @@ void Renderer::createTestScenario() {
             }
 
             // 回復の魔法：ヒール
-            uint32_t heal = spellManager->createSpell(
+            heal = spellManager->createSpell(
                 "Heal", "ヒール",
                 MagicSchool::RESTORATION, 40.0f, 0.0f);
             if (heal != 0) {
@@ -184,7 +319,7 @@ void Renderer::createTestScenario() {
             }
 
             // 神秘の魔法：マナ回復
-            uint32_t restoreMana = spellManager->createSpell(
+            restoreMana = spellManager->createSpell(
                 "Restore Mana", "マナ回復",
                 MagicSchool::MYSTICISM, 30.0f, 0.0f);
             if (restoreMana != 0) {
@@ -204,13 +339,19 @@ void Renderer::createTestScenario() {
             LOGI("Combat initiated: Izar vs Hellas");
         }
 
-        // Test spell casting
-        if (spellManager) {
-            LOGI("Testing spell casting...");
-            // ファイアボールをキャスト
-            spellManager->castSpell(izar->npcId, 2000, hellas->npcId);
-            // ヒールをキャスト
-            spellManager->castSpell(hellas->npcId, 2001, hellas->npcId);
+        // Test spell casting - FIX: Use correct spell IDs instead of hardcoded values
+        LOGI("Testing spell casting...");
+        if (fireball != 0) {
+            LOGI("Casting Fireball (ID=%u) from Izar to Hellas", fireball);
+            spellManager->castSpell(izar->npcId, fireball, hellas->npcId);
+        }
+        if (heal != 0) {
+            LOGI("Casting Heal (ID=%u) from Hellas to self", heal);
+            spellManager->castSpell(hellas->npcId, heal, hellas->npcId);
+        }
+        if (restoreMana != 0) {
+            LOGI("Casting Restore Mana (ID=%u) from Izar to self", restoreMana);
+            spellManager->castSpell(izar->npcId, restoreMana, izar->npcId);
         }
     }
 
@@ -233,10 +374,20 @@ void Renderer::render(float deltaTime) {
         titleScreen->update(deltaTime);
         titleScreen->render();
 
+        // Check if Settings was requested
+        if (titleScreen->isSettingsRequested()) {
+            titleScreen->resetSettingsRequest();
+            if (settingsUI) {
+                settingsUI->toggle();  // Open settings UI
+                LOGI("Settings UI opened from title screen menu");
+            }
+        }
+
         if (titleScreen->isGameStarted()) {
             showTitleScreen = false;
             LOGI("Title screen closed, starting main game");
         }
+        // Skip frame rate control for quick return
         if (performanceMonitor) {
             performanceMonitor->endFrame();
         }
@@ -260,12 +411,98 @@ void Renderer::render(float deltaTime) {
         spellManager->update(deltaTime);
     }
 
+    // Update Audio Manager (listener position tracking)
+#ifdef AUDIO_SYSTEM_ENABLED
+    if (audioManager && worldManager) {
+        // Get camera position from world manager and set as audio listener position
+        const glm::vec3& cameraPos = worldManager->getCameraPosition();
+        const glm::vec3& cameraForward = worldManager->getCameraForward();
+        const glm::vec3& cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);  // Standard up vector
+
+        audioManager->setListenerPosition(cameraPos);
+        audioManager->setListenerOrientation(cameraForward, cameraUp);
+        audioManager->update(deltaTime);
+    }
+#endif
+
+    // Render World (main game scene) - Clear with game background color
+    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);  // Dark gray for game screen
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Enable depth testing for proper face rendering
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+
+    // Load and bind NPC meshes via AssetManager
+    if (assetManager && worldManager) {
+        NpcManager* npcMgr = worldManager->getNpcManager();
+        if (npcMgr) {
+            auto allNpcs = npcMgr->getAllNPCs();
+            for (const auto& npc : allNpcs) {
+                if (npc) {
+                    // Load mesh if not already loaded and asset path is set
+                    if (!npc->mesh && !npc->meshAssetPath.empty()) {
+                        npc->mesh = assetManager->loadNifMesh(npc->meshAssetPath);
+                        if (npc->mesh) {
+                            LOGD("Loaded mesh for NPC %u: %s", npc->npcId, npc->meshAssetPath.c_str());
+                        } else {
+                            LOGW("Failed to load mesh for NPC %u: %s", npc->npcId, npc->meshAssetPath.c_str());
+                        }
+                    }
+
+                    // Update model matrix every frame
+                    npc->updateModelMatrix();
+                }
+            }
+        }
+    }
+
+    // Render world objects
+    if (worldManager) {
+        LOGD("Calling worldManager->render()");
+        worldManager->render();
+        LOGD("worldManager->render() completed");
+    } else {
+        LOGW("worldManager is null!");
+    }
+
     // Render UI
     if (questUI) {
         questUI->render();
     }
 
-    // End performance monitoring
+    // Update and render Debug HUD (always enabled for text rendering testing)
+    if (debugHUD) {
+        LOGD("About to call debugHUD->update() and render()");
+        // DeltaTime is in milliseconds from the JNI layer
+        debugHUD->update(deltaTime);
+        debugHUD->render();
+        LOGD("debugHUD->render() completed");
+    } else {
+        LOGD("debugHUD is null!");
+    }
+
+    // Render Settings UI if visible
+    if (settingsUI && settingsUI->isVisible()) {
+        settingsUI->render();
+    }
+
+    // Frame rate control - enforce target FPS
+    auto currentFrameTime = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<float, std::milli> frameElapsed = currentFrameTime - lastFrameTime;
+    float elapsedMs = frameElapsed.count();
+
+    if (elapsedMs < frameTimeThreshold) {
+        // Sleep to maintain target FPS (with microsecond precision)
+        float sleepTimeMs = frameTimeThreshold - elapsedMs;
+        auto sleepDuration = std::chrono::microseconds(static_cast<long long>(sleepTimeMs * 1000.0f));
+        std::this_thread::sleep_for(sleepDuration);
+        lastFrameTime = std::chrono::high_resolution_clock::now();
+    } else {
+        lastFrameTime = currentFrameTime;
+    }
+
+    // End performance monitoring (after frame limiting)
     if (performanceMonitor) {
         performanceMonitor->endFrame();
 
@@ -278,21 +515,59 @@ void Renderer::render(float deltaTime) {
         }
     }
 
-    // Frame rate control - enforce target FPS
-    auto currentFrameTime = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<float, std::milli> frameElapsed = currentFrameTime - lastFrameTime;
-    float elapsedMs = frameElapsed.count();
-
-    if (elapsedMs < frameTimeThreshold) {
-        // Sleep to maintain target FPS
-        float sleepTimeMs = frameTimeThreshold - elapsedMs;
-        std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<long>(sleepTimeMs)));
-    }
-
-    lastFrameTime = std::chrono::high_resolution_clock::now();
-
     LOGD("Frame rendered: deltaTime=%.3f, FPS=%.1f, Target FPS=%d",
          deltaTime, performanceMonitor ? performanceMonitor->getFPS() : 0.0f, targetFPS);
+}
+
+void Renderer::onTouchEvent(float x, float y) {
+    LOGI("=== タッチイベント検出 === 座標: (%.1f, %.1f)", x, y);
+
+    // Settings UI has highest priority
+    if (settingsUI && settingsUI->isVisible()) {
+        settingsUI->onTouchEvent(x, y);
+        LOGI("タッチイベント → SettingsUI");
+
+        // Check if should return to menu
+        if (settingsUI->shouldReturnToMenu()) {
+            settingsUI->resetReturnFlag();
+            settingsUI->toggle();  // Close settings
+        }
+        return;
+    }
+
+    // Pass touch event to title screen
+    if (showTitleScreen && titleScreen) {
+        titleScreen->onTouchEvent(x, y);
+        LOGI("タッチイベント → TitleScreen");
+        return;
+    }
+
+    // In-game touch handling - detect NPC/object interactions
+    if (!showTitleScreen && worldManager) {
+        LOGI("ゲーム内タッチ検出 - NPCインタラクション確認中");
+
+        // Log world state
+        if (worldManager) {
+            LOGI("ワールド座標系でのタッチ位置確認: スクリーン(%.1f, %.1f)", x, y);
+        }
+
+        // Pass to quest UI
+        if (questUI) {
+            questUI->onTouchEvent(x, y);
+            LOGI("タッチイベント → QuestUI");
+        }
+
+        // Log combat/NPC state
+        if (combatManager) {
+            LOGI("戦闘マネージャー: アクティブ戦闘確認中");
+        }
+
+        // Log interaction attempt
+        LOGI("NPC相互作用試行: 画面座標 (%.1f, %.1f)", x, y);
+    } else {
+        LOGW("ゲーム状態不明 - タイトル画面状態: %d, WorldManager: %p",
+             showTitleScreen, worldManager.get());
+    }
 }
 
 void Renderer::cleanup() {
@@ -300,6 +575,18 @@ void Renderer::cleanup() {
 
     if (performanceMonitor) {
         performanceMonitor->logDetailedMetrics();
+    }
+
+    if (debugHUD) {
+        debugHUD->cleanup();
+    }
+
+    if (settingsUI) {
+        settingsUI->cleanup();
+    }
+
+    if (textRenderer) {
+        textRenderer->cleanup();
     }
 
     if (questUI) {
@@ -318,6 +605,10 @@ void Renderer::cleanup() {
         spellManager->cleanup();
     }
 
+    if (assetManager) {
+        assetManager->cleanup();
+    }
+
     if (worldManager) {
         worldManager->cleanup();
     }
@@ -325,6 +616,12 @@ void Renderer::cleanup() {
     if (localizationManager) {
         localizationManager->cleanup();
     }
+
+#ifdef AUDIO_SYSTEM_ENABLED
+    if (audioManager) {
+        audioManager->cleanup();
+    }
+#endif
 
     LOGD("Renderer cleaned up");
 }

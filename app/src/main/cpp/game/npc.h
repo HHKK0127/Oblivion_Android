@@ -59,6 +59,11 @@ struct NPC {
     glm::vec3 rotation;
     float moveSpeed;
 
+    // Graphics System (Mesh Binding)
+    std::shared_ptr<class Mesh> mesh;           // 3D mesh for rendering
+    std::string meshAssetPath;                  // Asset path: e.g., "meshes/creatures/imp.nif"
+    glm::mat4 modelMatrix;                      // Model matrix (computed from position/rotation)
+
     // AI & Behavior
     AIState aiState;
     glm::vec3 targetPosition;
@@ -97,4 +102,7 @@ struct NPC {
     float lastSpellCastTime;
     uint32_t selectSpellForCombat();  // 戦闘時のスペル選択AI
     bool canCastSpell(uint32_t spellId) const;
+
+    // Graphics System
+    void updateModelMatrix();  // Update modelMatrix from position/rotation
 };

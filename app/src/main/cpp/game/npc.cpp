@@ -121,6 +121,9 @@ void NPC::update(float deltaTime) {
             status.currentMana = status.maxMana;
         }
     }
+
+    // Update model matrix for graphics
+    updateModelMatrix();
 }
 
 void NPC::takeDamage(float amount) {
@@ -252,4 +255,22 @@ bool NPC::canCastSpell(uint32_t spellId) const {
     auto it = std::find(status.equippedSpells.begin(),
                        status.equippedSpells.end(), spellId);
     return it != status.equippedSpells.end();
+}
+
+void NPC::updateModelMatrix() {
+    // Create identity matrix by translating at origin
+    modelMatrix = glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, 0.0f));
+
+    // Translate to position
+    modelMatrix = glm::translate(modelMatrix, position);
+
+    // Apply rotations (X-Z-Y euler angle convention: pitch, yaw, roll)
+    // Pitch (X-axis rotation)
+    modelMatrix = glm::rotate(modelMatrix, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+
+    // Yaw (Y-axis rotation)
+    modelMatrix = glm::rotate(modelMatrix, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+
+    // Roll (Z-axis rotation)
+    modelMatrix = glm::rotate(modelMatrix, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
 }
