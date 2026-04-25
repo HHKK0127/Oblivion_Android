@@ -174,6 +174,11 @@ void WorldManager::unloadCell(uint32_t cellId) {
     cellsUnloaded++;
 }
 
+void WorldManager::unloadCell(int32_t cellX, int32_t cellY) {
+    uint32_t cellId = getOrCreateCellId(cellX, cellY);
+    unloadCell(cellId);
+}
+
 void WorldManager::updateActiveCells() {
     checkCellDistances();
     unloadDistantCells();

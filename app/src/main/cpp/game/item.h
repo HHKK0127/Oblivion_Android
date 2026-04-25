@@ -41,3 +41,6 @@ struct InventorySlot {
 
     bool isEmpty() const { return quantity == 0; }
 };
+
+// Alias for compatibility
+using InventoryItem = InventorySlot;

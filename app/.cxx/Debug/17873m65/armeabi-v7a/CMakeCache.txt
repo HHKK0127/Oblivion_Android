@@ -121,7 +121,7 @@ CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO:STRING=
 CMAKE_EXPORT_COMPILE_COMMANDS:UNINITIALIZED=ON
 
 //Install path prefix, prepended onto install directories.
-CMAKE_INSTALL_PREFIX:PATH=C:/Program Files (x86)/oblivion-native
+CMAKE_INSTALL_PREFIX:PATH=C:/Program Files (x86)/oblivion_native
 
 //No help, variable specified on the command line.
 CMAKE_LIBRARY_OUTPUT_DIRECTORY:UNINITIALIZED=C:\Users\E1192\Projects\oblivion-android\app\build\intermediates\cxx\Debug\17873m65\obj\armeabi-v7a
@@ -233,8 +233,8 @@ CMAKE_SYSTEM_NAME:UNINITIALIZED=Android
 //No help, variable specified on the command line.
 CMAKE_SYSTEM_VERSION:UNINITIALIZED=24
 
-//No help, variable specified on the command line.
-CMAKE_TOOLCHAIN_FILE:UNINITIALIZED=C:\Android\android-sdk\ndk\26.1.10909125\build\cmake\android.toolchain.cmake
+//The CMake toolchain file
+CMAKE_TOOLCHAIN_FILE:FILEPATH=C:/Android/android-sdk/ndk/26.1.10909125/build/cmake/android.toolchain.cmake
 
 //If this value is on, makefiles will be generated without the
 // .SILENT directive, and all commands will be echoed to the console
@@ -250,27 +250,6 @@ OPENAL_LIBRARY:FILEPATH=OPENAL_LIBRARY-NOTFOUND
 
 //The directory containing a CMake configuration file for OpenAL.
 OpenAL_DIR:PATH=OpenAL_DIR-NOTFOUND
-
-//Path to a library.
-android-lib:FILEPATH=C:/Android/android-sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/arm-linux-androideabi/24/libandroid.so
-
-//Path to a library.
-egl-lib:FILEPATH=C:/Android/android-sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/arm-linux-androideabi/24/libEGL.so
-
-//Path to a library.
-gles3-lib:FILEPATH=C:/Android/android-sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/arm-linux-androideabi/24/libGLESv3.so
-
-//Path to a library.
-log-lib:FILEPATH=C:/Android/android-sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/arm-linux-androideabi/24/liblog.so
-
-//Value Computed by CMake
-oblivion-native_BINARY_DIR:STATIC=C:/Users/E1192/Projects/oblivion-android/app/.cxx/Debug/17873m65/armeabi-v7a
-
-//Value Computed by CMake
-oblivion-native_IS_TOP_LEVEL:STATIC=ON
-
-//Value Computed by CMake
-oblivion-native_SOURCE_DIR:STATIC=C:/Users/E1192/Projects/oblivion-android/app/src/main/cpp
 
 //Value Computed by CMake
 oblivion_native_BINARY_DIR:STATIC=C:/Users/E1192/Projects/oblivion-android/app/.cxx/Debug/17873m65/armeabi-v7a

@@ -1,3 +1,0 @@
-C:/Users/E1192/Projects/oblivion-android/app/.cxx/RelWithDebInfo/3y553d3k/arm64-v8a/CMakeFiles/native-lib.dir
-C:/Users/E1192/Projects/oblivion-android/app/.cxx/RelWithDebInfo/3y553d3k/arm64-v8a/CMakeFiles/edit_cache.dir
-C:/Users/E1192/Projects/oblivion-android/app/.cxx/RelWithDebInfo/3y553d3k/arm64-v8a/CMakeFiles/rebuild_cache.dir

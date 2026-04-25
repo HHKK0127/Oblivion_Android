@@ -113,6 +113,25 @@ struct Cell {
     bool isLoading() const { return loadState == CellLoadState::LOADING; }
     bool isLoaded() const { return loadState == CellLoadState::LOADED; }
     float getMemoryUsageMB() const { return static_cast<float>(memoryUsage) / (1024.0f * 1024.0f); }
+
+    // Get terrain height at local cell coordinates (0-128)
+    float getTerrainHeightAt(float localX, float localY) const {
+        // Clamp to cell bounds (65x65 heightmap for 128x128 cell)
+        int gridX = static_cast<int>(std::min(64.0f, std::max(0.0f, localX / 2.0f)));
+        int gridY = static_cast<int>(std::min(64.0f, std::max(0.0f, localY / 2.0f)));
+
+        if (heightData.empty()) {
+            return 0.0f;  // Default if no height data
+        }
+
+        // Linear interpolation between heightmap samples
+        int index = gridY * 65 + gridX;
+        if (index < 0 || index >= static_cast<int>(heightData.size())) {
+            return 0.0f;
+        }
+
+        return heightData[index];
+    }
 };
 
 // ============================================================================

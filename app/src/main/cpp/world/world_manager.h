@@ -45,6 +45,7 @@ public:
     bool loadCell(uint32_t cellId);
     bool loadCell(int32_t cellX, int32_t cellY);
     void unloadCell(uint32_t cellId);
+    void unloadCell(int32_t cellX, int32_t cellY);
 
     // Automatic load/unload based on player position
     void updateActiveCells();

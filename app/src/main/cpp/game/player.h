@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include "../world/world_data.h"
+#include "item.h"
 
 enum class MovementState {
     IDLE,
@@ -45,7 +46,7 @@ struct Player {
 
     // Inventory
     uint32_t inventorySlots = 60;  // Oblivion standard
-    std::vector<struct InventoryItem> inventory;
+    std::vector<InventoryItem> inventory;
 
     // Current Cell
     int32_t currentCellX = 0;
