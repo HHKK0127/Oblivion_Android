@@ -1,7 +1,7 @@
 # Oblivion Android - Complete Native Port
 
-![Status](https://img.shields.io/badge/status-Phase%206%20RC-brightgreen)
-![Version](https://img.shields.io/badge/version-0.6.0-blue)
+![Status](https://img.shields.io/badge/status-Phase%207.1%20RC-brightgreen)
+![Version](https://img.shields.io/badge/version-0.7.1-blue)
 ![License](https://img.shields.io/badge/license-Proprietary-red)
 ![Android](https://img.shields.io/badge/android-10%2B-green)
 
@@ -19,6 +19,9 @@ A complete native Android port of The Elder Scrolls IV: Oblivion, built entirely
 - ✅ **Character Status** - Health, mana, stamina, attributes, skills
 - ✅ **Localization** - Japanese + English (100+ translations)
 - ✅ **Performance Monitoring** - Frame timing, memory, CPU profiling
+- ✅ **Text Rendering** - On-screen text display with color and positioning
+- ✅ **Debug HUD** - FPS, frame time, memory, and system info overlay
+- ✅ **Settings System** - Persistent debug mode and language preferences
 
 ### Game Features
 - 🎯 Touch-based camera control
@@ -29,6 +32,8 @@ A complete native Android port of The Elder Scrolls IV: Oblivion, built entirely
 - 🎯 Quest log with progress tracking
 - 🎯 Real-time combat between NPCs
 - 🎯 **NEW**: Save/Load game state (Phase 7.1)
+- 🎯 **NEW**: Settings menu with debug mode toggle
+- 🎯 **NEW**: On-screen debug HUD (FPS, frame time, memory info)
 
 ## 📱 Technical Specifications
 
@@ -104,6 +109,34 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 - **Interact**: Tap NPC or object
 - **Menu**: Quest UI displays current quests
 - **Magic**: NPCs auto-cast during combat (future: manual cast)
+- **Settings**: Tap "Settings" on title menu to access
+
+## 🎨 UI & Debug System
+
+### Settings Menu
+Access from title screen:
+1. **Title Screen** → Tap "Settings"
+2. **Settings Panel** appears with three options:
+   - **Debug Mode**: Toggle ON/OFF to show/hide debug HUD
+   - **Language**: Switch between Japanese and English
+   - **Back**: Return to main menu
+
+Settings are automatically saved to persistent storage.
+
+### Debug HUD Display
+When **Debug Mode: ON**, displays in real-time:
+- **FPS**: Current frames per second (e.g., "FPS: 60.0")
+- **Frame Time**: Milliseconds per frame (e.g., "Frame: 16.67 ms")
+- **Average**: Running average frame time (e.g., "Avg: 16.50 ms")
+- **Memory**: Current RAM usage (e.g., "Mem: 45 MB")
+- **Cubes**: Number of active game objects
+- **Status**: Shows "DEBUG: ON/OFF"
+
+### Text Rendering System
+- Uses OpenGL ES 3.0 orthographic projection
+- Supports colored text at any screen coordinate
+- Renders at native resolution with scaling
+- Integrated with all UI systems (Title, Quest, Settings)
 
 ## 📚 Documentation
 
@@ -156,9 +189,11 @@ oblivion-android/
 │   ├── cpp/
 │   │   ├── engine/          (Rendering, Camera, Shaders)
 │   │   ├── game/            (NPC, Combat, Quest, Magic)
-│   │   ├── ui/              (TitleScreen, QuestUI)
+│   │   ├── ui/              (TitleScreen, QuestUI, TextRenderer, DebugHUD, SettingsUI)
+│   │   ├── system/          (SettingsManager - persistent settings)
 │   │   ├── assets/          (Asset Loading, Parsers)
 │   │   ├── profiling/       (Performance Monitoring)
+│   │   ├── localization/    (Language system)
 │   │   ├── jni_bridge.cpp   (Java ↔ C++ Interface)
 │   │   └── CMakeLists.txt   (Build Config)
 │   └── res/                 (Resources, Strings)
@@ -185,16 +220,18 @@ oblivion-android/
 
 ## 📊 Code Metrics
 
-- **C++ Code**: 4,500+ lines
+- **C++ Code**: 5,200+ lines (includes new UI systems)
 - **Java Code**: 600+ lines
-- **Header Files**: 800+ lines
-- **Total Project**: 6,000+ lines
+- **Header Files**: 950+ lines
+- **Total Project**: 6,750+ lines
+- **UI System Code**: 800+ lines (TextRenderer, DebugHUD, SettingsManager, SettingsUI)
 - **Compilation Time**: 6.5 minutes (release)
 - **APK Size**: 8.4 MB
 
 ## 🎯 Current Limitations
 
 ⚠️ **Phase 6 Release Candidate Limitations**:
+- ~~Debug mode always enabled~~ ✅ Now optional (Settings → Debug Mode)
 - No save/load system (Phase 7)
 - Text-based UI only (Phase 7 graphics)
 - Limited NPC dialogue (Phase 7 expansion)
@@ -232,12 +269,12 @@ Found a bug? Please:
 - **Performance Optimizations**: 8+
 
 ### Code Distribution
-- Engine Core: 25%
-- Game Systems: 35%
-- Asset Management: 15%
-- UI: 10%
+- Engine Core: 22%
+- Game Systems: 32%
+- Asset Management: 12%
+- UI & Settings: 18% (expanded with TextRenderer, DebugHUD, SettingsUI)
 - Profiling: 10%
-- JNI/Infrastructure: 5%
+- JNI/Infrastructure: 6%
 
 ## 🎓 Technology Stack
 
@@ -296,7 +333,8 @@ Proprietary - Experimental Port
 
 ---
 
-**Status**: Release Candidate (Phase 6 Complete)  
-**Last Updated**: 2026-04-17  
-**Version**: 0.6.0  
-**Next**: Phase 7 - Play Store Release
+**Status**: Release Candidate (Phase 7.1 In Progress)  
+**Last Updated**: 2026-04-18  
+**Version**: 0.7.1  
+**Features**: Settings UI, Debug HUD, Text Rendering, Persistent Settings  
+**Next**: Phase 7.2 - Save/Load System

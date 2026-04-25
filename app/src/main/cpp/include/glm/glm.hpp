@@ -40,7 +40,7 @@ struct vec4 {
 // Matrix type (4x4)
 struct mat4 {
     std::array<std::array<float, 4>, 4> data;
-    
+
     mat4() {
         // Identity matrix
         for (int i = 0; i < 4; i++) {
@@ -49,9 +49,13 @@ struct mat4 {
             }
         }
     }
-    
+
     float* value_ptr() { return &data[0][0]; }
     const float* value_ptr() const { return &data[0][0]; }
+
+    // Subscript operator for accessing rows
+    std::array<float, 4>& operator[](int index) { return data[index]; }
+    const std::array<float, 4>& operator[](int index) const { return data[index]; }
 };
 
 // Utility functions
@@ -116,6 +120,18 @@ inline mat4 translate(const mat4& m, const vec3& v) {
     result.data[3][0] = v.x;
     result.data[3][1] = v.y;
     result.data[3][2] = v.z;
+    return result;
+}
+
+inline mat4 ortho(float left, float right, float bottom, float top, float near, float far) {
+    mat4 result;
+    result.data[0][0] = 2.0f / (right - left);
+    result.data[1][1] = 2.0f / (top - bottom);
+    result.data[2][2] = -2.0f / (far - near);
+    result.data[3][0] = -(right + left) / (right - left);
+    result.data[3][1] = -(top + bottom) / (top - bottom);
+    result.data[3][2] = -(far + near) / (far - near);
+    result.data[3][3] = 1.0f;
     return result;
 }
 

@@ -128,17 +128,7 @@ void Renderer::initGameSystems() {
     }
     LOGI("SettingsUI initialized successfully");
 
-    // Initialize World Manager
-    LOGI("Creating WorldManager...");
-    worldManager = std::make_unique<WorldManager>();
-    LOGI("Calling WorldManager::initialize()...");
-    if (!worldManager->initialize()) {
-        LOGE("Failed to initialize WorldManager");
-        return;
-    }
-    LOGI("WorldManager initialized successfully");
-
-    // Initialize Asset Manager
+    // Initialize Asset Manager (before WorldManager)
     LOGI("Creating AssetManager...");
     assetManager = std::make_unique<AssetManager>();
     if (!assetManager->initialize()) {
@@ -146,6 +136,25 @@ void Renderer::initGameSystems() {
         return;
     }
     LOGI("AssetManager initialized successfully");
+
+    // Initialize NPC Manager (before WorldManager)
+    LOGI("Creating NpcManager...");
+    npcManager = std::make_unique<NpcManager>();
+    if (!npcManager->initialize()) {
+        LOGE("Failed to initialize NpcManager");
+        return;
+    }
+    LOGI("NpcManager initialized successfully");
+
+    // Initialize World Manager
+    LOGI("Creating WorldManager...");
+    worldManager = std::make_unique<WorldManager>();
+    LOGI("Calling WorldManager::initialize() with managers...");
+    if (!worldManager->initialize(npcManager.get(), assetManager.get())) {
+        LOGE("Failed to initialize WorldManager");
+        return;
+    }
+    LOGI("WorldManager initialized successfully");
 
     // Initialize Quest Manager
     questManager = std::make_unique<QuestManager>();
@@ -168,6 +177,30 @@ void Renderer::initGameSystems() {
         LOGE("Failed to initialize CombatManager");
         return;
     }
+
+    // Initialize PlayerController (Phase 3+)
+    playerController = std::make_unique<PlayerController>();
+    if (!playerController->initialize(worldManager.get())) {
+        LOGE("Failed to initialize PlayerController");
+        return;
+    }
+    LOGI("PlayerController initialized successfully");
+
+    // Initialize InventoryManager (Phase 3+)
+    inventoryManager = std::make_unique<InventoryManager>();
+    if (!inventoryManager->initialize()) {
+        LOGE("Failed to initialize InventoryManager");
+        return;
+    }
+    LOGI("InventoryManager initialized successfully");
+
+    // Initialize InventoryUI (Phase 3+)
+    inventoryUI = std::make_unique<InventoryUI>();
+    if (!inventoryUI->initialize(inventoryManager->getPlayerInventory(), textRenderer.get())) {
+        LOGE("Failed to initialize InventoryUI");
+        return;
+    }
+    LOGI("InventoryUI initialized successfully");
 
     // Initialize Performance Monitor
     performanceMonitor = std::make_unique<PerformanceMonitor>();
@@ -399,6 +432,16 @@ void Renderer::render(float deltaTime) {
         worldManager->update(deltaTime);
     }
 
+    // Update player controller
+    if (playerController) {
+        playerController->update(deltaTime);
+    }
+
+    // Update inventory manager
+    if (inventoryManager) {
+        inventoryManager->update(deltaTime);
+    }
+
     if (questManager) {
         questManager->update(deltaTime);
     }
@@ -471,6 +514,11 @@ void Renderer::render(float deltaTime) {
         questUI->render();
     }
 
+    // Render Inventory UI
+    if (inventoryUI && inventoryUI->isVisible()) {
+        inventoryUI->render();
+    }
+
     // Update and render Debug HUD (always enabled for text rendering testing)
     if (debugHUD) {
         LOGD("About to call debugHUD->update() and render()");
@@ -535,6 +583,13 @@ void Renderer::onTouchEvent(float x, float y) {
         return;
     }
 
+    // Inventory UI has next priority (Phase 3+)
+    if (inventoryUI && inventoryUI->isVisible()) {
+        inventoryUI->onTouchEvent(x, y);
+        LOGI("タッチイベント → InventoryUI");
+        return;
+    }
+
     // Pass touch event to title screen
     if (showTitleScreen && titleScreen) {
         titleScreen->onTouchEvent(x, y);
@@ -542,7 +597,7 @@ void Renderer::onTouchEvent(float x, float y) {
         return;
     }
 
-    // In-game touch handling - detect NPC/object interactions
+    // In-game touch handling - detect NPC/object interactions or camera control
     if (!showTitleScreen && worldManager) {
         LOGI("ゲーム内タッチ検出 - NPCインタラクション確認中");
 
@@ -555,6 +610,12 @@ void Renderer::onTouchEvent(float x, float y) {
         if (questUI) {
             questUI->onTouchEvent(x, y);
             LOGI("タッチイベント → QuestUI");
+        }
+
+        // Pass to player controller for camera rotation (Phase 3+)
+        if (playerController) {
+            playerController->onTouchInput(x, y);
+            LOGI("タッチイベント → PlayerController (カメラ回転)");
         }
 
         // Log combat/NPC state
@@ -585,6 +646,10 @@ void Renderer::cleanup() {
         settingsUI->cleanup();
     }
 
+    if (inventoryUI) {
+        inventoryUI = nullptr;
+    }
+
     if (textRenderer) {
         textRenderer->cleanup();
     }
@@ -603,6 +668,16 @@ void Renderer::cleanup() {
 
     if (spellManager) {
         spellManager->cleanup();
+    }
+
+    if (playerController) {
+        playerController->cleanup();
+        playerController = nullptr;
+    }
+
+    if (inventoryManager) {
+        inventoryManager->cleanup();
+        inventoryManager = nullptr;
     }
 
     if (assetManager) {

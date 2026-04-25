@@ -1,0 +1,176 @@
+#include "debug_hud.h"
+#include <android/log.h>
+#include <sstream>
+#include <iomanip>
+#include <sys/sysinfo.h>
+
+#undef LOG_TAG
+#define LOG_TAG "DebugHUD"
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+
+DebugHUD::DebugHUD()
+    : textRenderer(nullptr), visible(true),
+      fps(0.0f), frameTimeMs(0.0f), avgFrameTimeMs(0.0f),
+      minFrameTimeMs(100.0f), maxFrameTimeMs(0.0f),
+      frameCount(0), timeSinceLastUpdate(0.0f) {
+    LOGD("DebugHUD created");
+}
+
+DebugHUD::~DebugHUD() {
+    cleanup();
+}
+
+bool DebugHUD::initialize(TextRenderer* renderer) {
+    if (!renderer) {
+        LOGD("Error: TextRenderer is null");
+        return false;
+    }
+
+    textRenderer = renderer;
+    LOGD("DebugHUD initialized");
+    return true;
+}
+
+void DebugHUD::update(float deltaTime) {
+    // deltaTime は秒単位で渡される
+    frameTimeMs = deltaTime * 1000.0f;  // 秒 → ミリ秒に変換
+
+    // フレームタイムの統計を更新
+    avgFrameTimeMs = (avgFrameTimeMs * frameCount + frameTimeMs) / (frameCount + 1);
+    minFrameTimeMs = (frameTimeMs < minFrameTimeMs) ? frameTimeMs : minFrameTimeMs;
+    maxFrameTimeMs = (frameTimeMs > maxFrameTimeMs) ? frameTimeMs : maxFrameTimeMs;
+
+    frameCount++;
+    timeSinceLastUpdate += deltaTime;
+
+    // 0.5秒ごとにFPSを更新
+    if (timeSinceLastUpdate >= UPDATE_INTERVAL) {
+        if (frameTimeMs > 0.0f) {
+            fps = 1000.0f / frameTimeMs;
+        }
+        timeSinceLastUpdate = 0.0f;
+        LOGD("FPS: %.1f, Frame Time: %.2f ms", fps, frameTimeMs);
+    }
+}
+
+void DebugHUD::render() {
+    if (!visible || !textRenderer) {
+        __android_log_print(ANDROID_LOG_WARN, "DebugHUD",
+            "render() skipped: visible=%d, textRenderer=%p", visible, textRenderer);
+        return;
+    }
+    __android_log_print(ANDROID_LOG_INFO, "DebugHUD", "render() proceeding...");
+
+    // DEBUG: Test simple quad rendering first
+    textRenderer->renderDebugQuad();
+
+    // DEBUG: Test text rendering with large scale - VERY prominent
+    glm::vec3 testColorGreen(0.0f, 1.0f, 0.0f);  // Green for TEST
+    textRenderer->renderText("TEST", 50.0f, 350.0f, testColorGreen, 20.0f);  // Scale 20x, position higher
+    __android_log_print(ANDROID_LOG_INFO, "DebugHUD", "Rendered TEST text at (50, 350) with scale 20.0");
+
+    // DEBUG: Additional test with red text for contrast
+    glm::vec3 testColorRed(1.0f, 0.0f, 0.0f);  // Red text
+    textRenderer->renderText("OK", 400.0f, 350.0f, testColorRed, 20.0f);  // Scale 20x, different position
+    __android_log_print(ANDROID_LOG_INFO, "DebugHUD", "Rendered OK text (red) at (400, 350) with scale 20.0");
+
+    // 白いテキストで情報を表示
+    glm::vec3 textColor(1.0f, 1.0f, 1.0f);
+    float xPos = 10.0f;
+    float yPos = 10.0f;
+    float lineHeight = 20.0f;
+
+    // FPS表示
+    {
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(1) << "FPS: " << fps;
+        __android_log_print(ANDROID_LOG_INFO, "DebugHUD", "Calling renderText with: %s", ss.str().c_str());
+        textRenderer->renderText(ss.str(), xPos, yPos, textColor, 1.0f);
+        yPos += lineHeight;
+    }
+
+    // フレームタイム表示
+    {
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(2) << "Frame: " << frameTimeMs << " ms";
+        textRenderer->renderText(ss.str(), xPos, yPos, textColor, 1.0f);
+        yPos += lineHeight;
+    }
+
+    // 平均フレームタイム表示
+    {
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(2) << "Avg: " << avgFrameTimeMs << " ms";
+        textRenderer->renderText(ss.str(), xPos, yPos, textColor, 1.0f);
+        yPos += lineHeight;
+    }
+
+    // メモリ情報表示
+    {
+        MemoryInfo memInfo = getMemoryInfo();
+        std::stringstream ss;
+        ss << "Mem: " << formatMemorySize(memInfo.usedMemory);
+        textRenderer->renderText(ss.str(), xPos, yPos, textColor, 1.0f);
+        yPos += lineHeight;
+    }
+
+    // キューブ数表示（固定値）
+    {
+        textRenderer->renderText("Cubes: 5", xPos, yPos, textColor, 1.0f);
+        yPos += lineHeight;
+    }
+
+    // デバッグモード表示
+    {
+        textRenderer->renderText("DEBUG: ON", xPos, yPos,
+                                glm::vec3(1.0f, 1.0f, 0.0f), 1.0f);  // 黄色
+    }
+}
+
+void DebugHUD::toggle() {
+    visible = !visible;
+    LOGD("Debug HUD toggled: %s", visible ? "ON" : "OFF");
+}
+
+void DebugHUD::cleanup() {
+    textRenderer = nullptr;
+    LOGD("DebugHUD cleaned up");
+}
+
+DebugHUD::MemoryInfo DebugHUD::getMemoryInfo() const {
+    MemoryInfo info = {0, 0, 0};
+
+    // /proc/meminfo から メモリ情報を取得
+    FILE* memFile = fopen("/proc/meminfo", "r");
+    if (memFile) {
+        char line[256];
+        while (fgets(line, sizeof(line), memFile)) {
+            if (sscanf(line, "MemTotal: %ld kB", &info.totalMemory) == 1) {
+                info.totalMemory *= 1024;  // KB から Bytes に変換
+            } else if (sscanf(line, "MemAvailable: %ld kB", &info.freeMemory) == 1) {
+                info.freeMemory *= 1024;
+            }
+        }
+        fclose(memFile);
+        info.usedMemory = info.totalMemory - info.freeMemory;
+    }
+
+    return info;
+}
+
+std::string DebugHUD::formatMemorySize(long bytes) const {
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(0);
+
+    if (bytes < 1024) {
+        ss << bytes << " B";
+    } else if (bytes < 1024 * 1024) {
+        ss << bytes / 1024.0f << " KB";
+    } else if (bytes < 1024 * 1024 * 1024) {
+        ss << bytes / (1024.0f * 1024.0f) << " MB";
+    } else {
+        ss << bytes / (1024.0f * 1024.0f * 1024.0f) << " GB";
+    }
+
+    return ss.str();
+}

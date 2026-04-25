@@ -1,6 +1,6 @@
 #include "interaction_manager.h"
-#include "world_manager.h"
-#include "cell.h"
+#include "../world/world_manager.h"
+#include "../world/cell.h"
 #include <algorithm>
 #include <android/log.h>
 #include <cmath>

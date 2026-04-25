@@ -1,225 +1,287 @@
 #include "nif_parser.h"
-#include <fstream>
-#include <cstring>
 #include <android/log.h>
+#include <algorithm>
+#include <cstring>
 
-#define LOG_TAG "NifParser"
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+#undef LOG_TAG
+#undef LOGD
+#undef LOGE
+#define LOG_TAG "NIFParser"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
-NifParser::NifParser() {}
-
-NifParser::~NifParser() {
-    meshes.clear();
+NIFParser::NIFParser() {
+    memset(&header, 0, sizeof(NIFHeader));
 }
 
-bool NifParser::parseFile(const std::string& filePath) {
-    LOGD("Parsing NIF file: %s", filePath.c_str());
+NIFParser::~NIFParser() {
+    if (fileStream.is_open()) {
+        fileStream.close();
+    }
+}
 
-    std::vector<uint8_t> fileData;
-    if (!readFileToMemory(filePath, fileData)) {
-        lastError = "Failed to read file: " + filePath;
-        LOGE("%s", lastError.c_str());
+bool NIFParser::parseFile(const std::string& filepath) {
+    LOGD("=== Starting NIF parse: %s ===", filepath.c_str());
+
+    // Open file
+    fileStream.open(filepath, std::ios::binary);
+    if (!fileStream.is_open()) {
+        LOGE("Failed to open NIF file: %s", filepath.c_str());
         return false;
     }
 
-    LOGD("File size: %zu bytes", fileData.size());
-
-    size_t offset = 0;
-
-    // Parse header
-    NifFileHeader header;
-    if (!parseHeader(fileData, header, offset)) {
-        lastError = "Failed to parse NIF header";
-        LOGE("%s", lastError.c_str());
+    // Read header
+    if (!readHeader()) {
+        LOGE("Failed to read NIF header");
+        fileStream.close();
         return false;
     }
 
-    LOGD("NIF Header Version: 0x%08X, User Version: %u", header.headerVersion, header.userVersion);
+    LOGD("NIF Header: version=%u, userVersion=%u, numObjects=%u",
+         header.version, header.userVersion, header.numObjects);
+
+    // Parse block type strings
+    if (!parseBlockTypeStrings()) {
+        LOGE("Failed to parse block type strings");
+        fileStream.close();
+        return false;
+    }
 
     // Parse object array
-    if (!parseObjectArray(fileData, offset)) {
-        lastError = "Failed to parse NIF objects";
-        LOGE("%s", lastError.c_str());
+    if (!parseObjectArray()) {
+        LOGE("Failed to parse object array");
+        fileStream.close();
         return false;
     }
 
-    LOGD("Successfully parsed NIF file. Extracted %zu meshes", meshes.size());
+    // Build node hierarchy
+    if (!buildNodeHierarchy()) {
+        LOGE("Failed to build node hierarchy");
+        fileStream.close();
+        return false;
+    }
+
+    fileStream.close();
+    LOGD("=== NIF parse complete: %zu nodes found ===", nodes.size());
     return true;
 }
 
-bool NifParser::readFileToMemory(const std::string& filePath, std::vector<uint8_t>& data) {
-    std::ifstream file(filePath, std::ios::binary | std::ios::ate);
-    if (!file.is_open()) {
-        LOGE("Cannot open file: %s", filePath.c_str());
+bool NIFParser::readHeader() {
+    LOGD("Reading NIF header...");
+
+    char magic[256];
+    if (!readBytes(magic, 256)) {
+        LOGE("Failed to read magic number");
         return false;
     }
 
-    std::streamsize size = file.tellg();
-    file.seekg(0, std::ios::beg);
+    strncpy(header.magic, magic, sizeof(header.magic) - 1);
+    header.magic[sizeof(header.magic) - 1] = '\0';
 
-    data.resize(size);
-    if (!file.read(reinterpret_cast<char*>(data.data()), size)) {
-        LOGE("Failed to read file data");
+    // Verify magic
+    if (strstr(header.magic, "Gamebryo File Format") == nullptr) {
+        LOGE("Invalid NIF magic: %s", header.magic);
         return false;
     }
 
-    file.close();
-    return true;
-}
-
-uint32_t NifParser::readUInt32(const std::vector<uint8_t>& data, size_t& offset) {
-    if (offset + 4 > data.size()) {
-        LOGE("Buffer overflow: trying to read uint32 at offset %zu", offset);
-        return 0;
-    }
-
-    uint32_t value = 0;
-    value |= (static_cast<uint32_t>(data[offset + 0]) << 0);
-    value |= (static_cast<uint32_t>(data[offset + 1]) << 8);
-    value |= (static_cast<uint32_t>(data[offset + 2]) << 16);
-    value |= (static_cast<uint32_t>(data[offset + 3]) << 24);
-    offset += 4;
-    return value;
-}
-
-uint16_t NifParser::readUInt16(const std::vector<uint8_t>& data, size_t& offset) {
-    if (offset + 2 > data.size()) {
-        LOGE("Buffer overflow: trying to read uint16 at offset %zu", offset);
-        return 0;
-    }
-
-    uint16_t value = 0;
-    value |= (static_cast<uint16_t>(data[offset + 0]) << 0);
-    value |= (static_cast<uint16_t>(data[offset + 1]) << 8);
-    offset += 2;
-    return value;
-}
-
-uint8_t NifParser::readUInt8(const std::vector<uint8_t>& data, size_t& offset) {
-    if (offset + 1 > data.size()) {
-        LOGE("Buffer overflow: trying to read uint8 at offset %zu", offset);
-        return 0;
-    }
-
-    uint8_t value = data[offset];
-    offset += 1;
-    return value;
-}
-
-float NifParser::readFloat(const std::vector<uint8_t>& data, size_t& offset) {
-    if (offset + 4 > data.size()) {
-        LOGE("Buffer overflow: trying to read float at offset %zu", offset);
-        return 0.0f;
-    }
-
-    uint32_t intValue = 0;
-    intValue |= (static_cast<uint32_t>(data[offset + 0]) << 0);
-    intValue |= (static_cast<uint32_t>(data[offset + 1]) << 8);
-    intValue |= (static_cast<uint32_t>(data[offset + 2]) << 16);
-    intValue |= (static_cast<uint32_t>(data[offset + 3]) << 24);
-    offset += 4;
-
-    float value;
-    std::memcpy(&value, &intValue, sizeof(float));
-    return value;
-}
-
-NifVector3 NifParser::readVector3(const std::vector<uint8_t>& data, size_t& offset) {
-    return NifVector3{
-        readFloat(data, offset),
-        readFloat(data, offset),
-        readFloat(data, offset)
-    };
-}
-
-NifColor4 NifParser::readColor4(const std::vector<uint8_t>& data, size_t& offset) {
-    return NifColor4{
-        readFloat(data, offset),
-        readFloat(data, offset),
-        readFloat(data, offset),
-        readFloat(data, offset)
-    };
-}
-
-NifString NifParser::readString(const std::vector<uint8_t>& data, size_t& offset) {
-    NifString result;
-    result.length = readUInt32(data, offset);
-
-    if (result.length == 0) {
-        return result;
-    }
-
-    if (offset + result.length > data.size()) {
-        LOGE("Buffer overflow: trying to read string of length %u at offset %zu", result.length, offset);
-        result.length = 0;
-        return result;
-    }
-
-    result.value.assign(data.begin() + offset, data.begin() + offset + result.length);
-    offset += result.length;
-    return result;
-}
-
-bool NifParser::parseHeader(const std::vector<uint8_t>& data, NifFileHeader& header, size_t& offset) {
-    if (data.size() < 30) {
-        LOGE("File too small for NIF header");
-        return false;
-    }
-
-    // Read magic string (30 bytes)
-    std::memcpy(header.magic, &data[offset], 30);
-    offset += 30;
-
-    // Verify magic number
-    if (std::strncmp(header.magic, NIF_MAGIC_NUMBER, 30) != 0) {
-        LOGE("Invalid NIF magic number");
-        return false;
-    }
+    LOGD("NIF Magic: %s", header.magic);
 
     // Read version info
-    header.headerVersion = readUInt32(data, offset);
-    header.userVersion = readUInt32(data, offset);
-    header.userVersion2 = readUInt32(data, offset);
+    header.version = readUInt32();
+    header.userVersion = readUInt32();
+    header.userVersion2 = readUInt32();
+    header.numObjects = readUInt32();
+    header.numStrings = readUInt32();
+    header.maxStringLength = readUInt32();
 
-    LOGD("Header parsed successfully. Version: 0x%08X", header.headerVersion);
+    LOGD("Num objects: %u, Num strings: %u", header.numObjects, header.numStrings);
+
     return true;
 }
 
-bool NifParser::parseObjectArray(const std::vector<uint8_t>& data, size_t& offset) {
-    // Read number of objects (in simplified version, we'll create a default mesh)
-    // In a full implementation, this would parse the entire object tree
+bool NIFParser::parseBlockTypeStrings() {
+    LOGD("Parsing block type strings: %u strings", header.numStrings);
 
-    // Create a simple placeholder mesh
-    NifMeshData placeholderMesh;
-    placeholderMesh.name = "NIF_Mesh_0";
+    // String table comes after header
+    // For now, we'll skip detailed parsing of string table
+    // In a full implementation, we'd read all strings into a vector
 
-    // Add simple cube geometry as placeholder
-    placeholderMesh.vertices = {
-        {-1, -1, 1},   // 0
-        {1, -1, 1},    // 1
-        {1, 1, 1},     // 2
-        {-1, 1, 1},    // 3
-        {-1, -1, -1},  // 4
-        {1, -1, -1},   // 5
-        {1, 1, -1},    // 6
-        {-1, 1, -1}    // 7
-    };
-
-    placeholderMesh.indices = {
-        0, 1, 2, 2, 3, 0,  // Front
-        4, 6, 5, 6, 4, 7,  // Back
-        8, 9, 10, 10, 11, 8,  // This is placeholder
-        12, 14, 13, 14, 12, 15,  // More placeholder
-        0, 1, 2, 2, 3, 0,  // Repeat for now
-        4, 5, 6, 6, 7, 4   // Repeat for now
-    };
-
-    placeholderMesh.colors.resize(placeholderMesh.vertices.size(), {1.0f, 1.0f, 1.0f, 1.0f});
-    placeholderMesh.texturePath = "";
-
-    meshes.push_back(placeholderMesh);
-
-    LOGD("Object array parsing completed. Created placeholder mesh");
     return true;
+}
+
+bool NIFParser::parseObjectArray() {
+    LOGD("Parsing object array: %u objects", header.numObjects);
+
+    nodes.resize(header.numObjects);
+
+    for (uint32_t i = 0; i < header.numObjects; i++) {
+        auto node = std::make_shared<NIFNode>();
+        node->nodeIndex = i;
+        node->parentIndex = -1;
+        node->hasGeometry = false;
+
+        // Read block type string
+        readString(node->name);
+
+        LOGD("Object %u: %s", i, node->name.c_str());
+
+        // For now, just store basic node info
+        // Full parsing of each block type would happen here
+        nodes[i] = node;
+    }
+
+    return true;
+}
+
+bool NIFParser::buildNodeHierarchy() {
+    LOGD("Building node hierarchy...");
+
+    // Find root nodes (those without parents)
+    for (const auto& node : nodes) {
+        if (node && node->parentIndex == -1) {
+            rootNodeIndices.push_back(node->nodeIndex);
+            LOGD("Root node found: %s (index %u)", node->name.c_str(), node->nodeIndex);
+        }
+    }
+
+    return true;
+}
+
+// Binary reading helpers
+bool NIFParser::readBytes(char* buffer, size_t count) {
+    fileStream.read(buffer, count);
+    return fileStream.gcount() == (std::streamsize)count;
+}
+
+bool NIFParser::readString(std::string& str) {
+    uint32_t length = readUInt32();
+    if (length > 0 && length < 256) {
+        char buffer[256];
+        if (!readBytes(buffer, length)) {
+            return false;
+        }
+        str = std::string(buffer, length);
+        return true;
+    }
+    return false;
+}
+
+bool NIFParser::readStringRef(std::string& str) {
+    uint32_t index = readUInt32();
+    // In full implementation, would look up from string table
+    // For now, just set a placeholder
+    str = "string_" + std::to_string(index);
+    return true;
+}
+
+uint32_t NIFParser::readUInt32() {
+    uint32_t value;
+    fileStream.read(reinterpret_cast<char*>(&value), sizeof(uint32_t));
+    return value;
+}
+
+uint16_t NIFParser::readUInt16() {
+    uint16_t value;
+    fileStream.read(reinterpret_cast<char*>(&value), sizeof(uint16_t));
+    return value;
+}
+
+float NIFParser::readFloat() {
+    float value;
+    fileStream.read(reinterpret_cast<char*>(&value), sizeof(float));
+    return value;
+}
+
+NIFVector3 NIFParser::readVector3() {
+    float x = readFloat();
+    float y = readFloat();
+    float z = readFloat();
+    return NIFVector3(x, y, z);
+}
+
+NIFVector4 NIFParser::readVector4() {
+    float x = readFloat();
+    float y = readFloat();
+    float z = readFloat();
+    float w = readFloat();
+    return NIFVector4(x, y, z, w);
+}
+
+NIFMatrix3x3 NIFParser::readMatrix3x3() {
+    NIFMatrix3x3 matrix;
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            matrix.m[i][j] = readFloat();
+        }
+    }
+    return matrix;
+}
+
+NIFTransform NIFParser::readTransform() {
+    NIFTransform transform;
+    transform.rotation = readMatrix3x3();
+    transform.translation = readVector3();
+    transform.scale = readFloat();
+    return transform;
+}
+
+NIFBlockType NIFParser::getBlockType(const std::string& blockName) {
+    if (blockName == "NiNode") return NIFBlockType::NiNode;
+    if (blockName == "NiTriShape") return NIFBlockType::NiTriShape;
+    if (blockName == "NiTriStrips") return NIFBlockType::NiTriStrips;
+    if (blockName == "NiTexturingProperty") return NIFBlockType::NiTexturingProperty;
+    if (blockName == "NiMaterialProperty") return NIFBlockType::NiMaterialProperty;
+
+    return NIFBlockType::Unknown;
+}
+
+bool NIFParser::parseNiNode(std::shared_ptr<NIFNode>& node) {
+    LOGD("Parsing NiNode: %s", node->name.c_str());
+    node->transform = readTransform();
+    return true;
+}
+
+bool NIFParser::parseNiTriShape(std::shared_ptr<NIFNode>& node) {
+    LOGD("Parsing NiTriShape: %s", node->name.c_str());
+    node->hasGeometry = true;
+    node->geometry.name = node->name;
+    node->geometry.transform = readTransform();
+    return true;
+}
+
+bool NIFParser::parseNiTriStrips(std::shared_ptr<NIFNode>& node) {
+    LOGD("Parsing NiTriStrips: %s", node->name.c_str());
+    node->hasGeometry = true;
+    node->geometry.name = node->name;
+    node->geometry.transform = readTransform();
+    return true;
+}
+
+bool NIFParser::parseMaterialProperty() {
+    LOGD("Parsing NiMaterialProperty");
+    return true;
+}
+
+bool NIFParser::parseTexturingProperty() {
+    LOGD("Parsing NiTexturingProperty");
+    return true;
+}
+
+std::shared_ptr<NIFNode> NIFParser::getNodeByName(const std::string& name) const {
+    for (const auto& node : nodes) {
+        if (node && node->name == name) {
+            return node;
+        }
+    }
+    return nullptr;
+}
+
+std::vector<NIFGeometry> NIFParser::extractAllGeometry() const {
+    std::vector<NIFGeometry> geometries;
+    for (const auto& node : nodes) {
+        if (node && node->hasGeometry) {
+            geometries.push_back(node->geometry);
+        }
+    }
+    return geometries;
 }

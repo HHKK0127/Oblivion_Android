@@ -3,7 +3,8 @@
 
 TitleScreen::TitleScreen()
     : state(TitleScreenState::LOGO_DISPLAY), displayTimer(0.0f),
-      selectedIndex(0), gameStarted(false), localizationManager(nullptr) {
+      selectedIndex(0), gameStarted(false), settingsRequested(false),
+      localizationManager(nullptr) {
     LOGD("TitleScreen created");
 }
 
@@ -33,10 +34,9 @@ void TitleScreen::update(float deltaTime) {
         case TitleScreenState::LOGO_DISPLAY: {
             displayTimer += deltaTime;
             if (displayTimer >= LOGO_DISPLAY_DURATION) {
-                // Auto-transition to game (skip menu for now)
-                state = TitleScreenState::TRANSITIONING;
-                startGame();
-                LOGI("Logo display complete - starting game automatically");
+                // Transition to menu (show menu options)
+                state = TitleScreenState::MENU;
+                LOGI("Logo display complete - transitioning to menu");
             }
             break;
         }
@@ -93,13 +93,16 @@ void TitleScreen::render() {
 
 void TitleScreen::renderLogoDisplay() {
     // Oblivionロゴ表示フェーズ（3秒間）
-    // 背景：暗い赤/黒（Oblivion風）
-    glClearColor(0.1f, 0.02f, 0.02f, 1.0f);  // Oblivion赤黒
-    glClear(GL_COLOR_BUFFER_BIT);
 
     // アルファフェードイン（0〜1）
     float fadeAlpha = displayTimer / LOGO_DISPLAY_DURATION;
     fadeAlpha = fadeAlpha > 1.0f ? 1.0f : fadeAlpha;
+
+    // 背景色を一度だけ設定（毎フレーム変更を避ける）
+    // 黒（0.0f）からグレー（0.2f）へのフェードイン
+    float bgBrightness = 0.0f + (0.2f * fadeAlpha);
+    glClearColor(bgBrightness, bgBrightness, bgBrightness, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
 
     // Oblivionロゴテキスト（画面中央）
     renderOblivionLogo(fadeAlpha);
@@ -107,7 +110,7 @@ void TitleScreen::renderLogoDisplay() {
     // "Press to Start" メッセージ（下部）
     renderPressToStartMessage(fadeAlpha);
 
-    LOGD("Logo Display: %.1f/%.1f (alpha: %.2f)", displayTimer, LOGO_DISPLAY_DURATION, fadeAlpha);
+    LOGI("Logo Display: %.1f/%.1f (alpha: %.2f, bg: %.2f)", displayTimer, LOGO_DISPLAY_DURATION, fadeAlpha, bgBrightness);
 }
 
 void TitleScreen::renderMenu() {
@@ -144,27 +147,24 @@ void TitleScreen::renderFadeOut() {
 }
 
 void TitleScreen::renderOblivionLogo(float alpha) {
-    // Oblivionロゴを描画
-    // 注：完全な実装にはテクスチャやフォントレンダリングが必要
-    // 暫定版：画面中央に赤い四角形でロゴのプレースホルダーを表示
+    // Oblivionロゴを描画（シンプル版）
+    // 黒い背景 → 白い中央領域へのフェードイン効果
 
-    // 画面中央（1920x1080の場合、960x540）
-    float centerX = 0.5f;
-    float centerY = 0.5f;
-
-    // Oblivion風の赤いロゴプレースホルダー（会炎）
-    // シンプル版：赤い矩形（後で本物テクスチャに置き換え）
     glDisable(GL_DEPTH_TEST);
 
-    // 赤い背景（炎のテーマ）
-    // NOTE: フルOpenGL実装にはVAO/VBOとシェーダーが必要
-    LOGD("  Rendering Oblivion logo (alpha: %.2f)", alpha);
+    // フェードイン効果：alpha値に応じて明るさ調整（黒→白へ）
+    float brightness = alpha * 0.8f;  // 最大80%の明るさ
+    glClearColor(brightness, brightness, brightness, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    LOGD("  Rendering Oblivion logo (alpha: %.2f, brightness: %.2f)", alpha, brightness);
 }
 
 void TitleScreen::renderPressToStartMessage(float alpha) {
     // 画面下部に "Press to Start" メッセージを表示
     // NOTE: テキストレンダリングが必要（FreeType等の実装）
-    LOGD("  Rendering 'Press to Start' message");
+    // 現在はログで確認
+    LOGD("  Rendering 'Press to Start' message (alpha: %.2f)", alpha);
 }
 
 void TitleScreen::renderMenuTitle() {
@@ -262,8 +262,9 @@ void TitleScreen::handleMenuSelection() {
         gameStarted = true;
         LOGI("Menu selection: Start Game");
     } else if (selected == "menu_settings") {
-        transitionToLanguageMenu();
-        LOGD("Menu selection: Settings (Language)");
+        // Request Settings UI to be opened in Renderer
+        settingsRequested = true;
+        LOGD("Menu selection: Settings - requesting settings UI");
     } else if (selected == "menu_quit") {
         LOGD("Menu selection: Quit");
         // Would call Android activity finish() in real implementation

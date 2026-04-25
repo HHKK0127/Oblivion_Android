@@ -1,17 +1,23 @@
 #pragma once
 
-#include <GLES3/gl3.h>
-#include <glm/glm.hpp>
 #include <vector>
+#include <memory>
+#include <glm/glm.hpp>
+
+// Forward declaration
+class ShaderProgram;
+class Material;
 
 struct Vertex {
     glm::vec3 position;
-    glm::vec3 color;
+    glm::vec3 normal;
     glm::vec2 texCoord;
+    glm::vec3 color;
 
-    Vertex() = default;
-    Vertex(const glm::vec3& pos, const glm::vec3& col, const glm::vec2& tex)
-        : position(pos), color(col), texCoord(tex) {}
+    Vertex() : position(0.0f, 0.0f, 0.0f), normal(0.0f, 0.0f, 1.0f), texCoord(0.0f, 0.0f), color(1.0f, 1.0f, 1.0f) {}
+    Vertex(const glm::vec3& pos, const glm::vec3& norm = glm::vec3(0.0f, 0.0f, 1.0f),
+           const glm::vec2& uv = glm::vec2(0.0f, 0.0f), const glm::vec3& col = glm::vec3(1.0f, 1.0f, 1.0f))
+        : position(pos), normal(norm), texCoord(uv), color(col) {}
 };
 
 class Mesh {
@@ -19,33 +25,37 @@ public:
     Mesh();
     ~Mesh();
 
-    // Initialize mesh with vertex and index data
-    bool init(const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices);
+    // Data setup
+    void setVertices(const std::vector<Vertex>& vertices);
+    void setIndices(const std::vector<unsigned int>& indices);
+    void setMaterial(std::shared_ptr<Material> material);
 
-    // Set texture for the mesh
-    void setTexture(GLuint textureId) { this->textureId = textureId; }
-    GLuint getTexture() const { return textureId; }
-    bool hasTexture() const { return textureId != 0; }
-
-    // Render the mesh with transformation matrices
-    void render(const glm::mat4& model, const glm::mat4& view,
-                const glm::mat4& projection, GLuint shaderProgram) const;
-
-    // Clean up GPU resources
+    // GPU resource management
+    void uploadToGPU();
     void cleanup();
 
-    // Get mesh properties
-    size_t getVertexCount() const { return vertexCount; }
-    size_t getIndexCount() const { return indexCount; }
-    GLuint getVAO() const { return VAO; }
+    // Rendering
+    void render(ShaderProgram& shader, const glm::mat4& modelMatrix);
+
+    // Getters
+    unsigned int getVAO() const { return vao; }
+    unsigned int getIndexCount() const { return indexCount; }
+    bool isReady() const { return vao != 0 && indexCount > 0; }
 
 private:
-    GLuint VAO;
-    GLuint VBO;
-    GLuint EBO;
-    GLuint textureId;
-    size_t vertexCount;
-    size_t indexCount;
+    // GPU resources
+    unsigned int vao;
+    unsigned int vbo;
+    unsigned int ebo;
 
+    // Mesh data
+    std::vector<Vertex> vertices;
+    std::vector<unsigned int> indices;
+    unsigned int indexCount;
+
+    // Material
+    std::shared_ptr<Material> material;
+
+    // Helper
     void setupVertexAttributes();
 };

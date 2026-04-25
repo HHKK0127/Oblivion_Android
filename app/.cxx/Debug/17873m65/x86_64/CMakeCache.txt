@@ -242,6 +242,15 @@ CMAKE_TOOLCHAIN_FILE:UNINITIALIZED=C:\Android\android-sdk\ndk\26.1.10909125\buil
 // Studio IDE projects all commands are done without /nologo.
 CMAKE_VERBOSE_MAKEFILE:BOOL=FALSE
 
+//Path to a file.
+OPENAL_INCLUDE_DIR:PATH=OPENAL_INCLUDE_DIR-NOTFOUND
+
+//Path to a library.
+OPENAL_LIBRARY:FILEPATH=OPENAL_LIBRARY-NOTFOUND
+
+//The directory containing a CMake configuration file for OpenAL.
+OpenAL_DIR:PATH=OpenAL_DIR-NOTFOUND
+
 //Path to a library.
 android-lib:FILEPATH=C:/Android/android-sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/x86_64-linux-android/24/libandroid.so
 
@@ -412,4 +421,8 @@ CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 CMAKE_STRIP-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_VERBOSE_MAKEFILE
 CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: OPENAL_INCLUDE_DIR
+OPENAL_INCLUDE_DIR-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: OPENAL_LIBRARY
+OPENAL_LIBRARY-ADVANCED:INTERNAL=1
 

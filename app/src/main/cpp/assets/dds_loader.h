@@ -1,93 +1,130 @@
 #pragma once
 
-#include <GLES3/gl3.h>
+#include <cstdint>
 #include <string>
 #include <vector>
-#include <cstdint>
+#include <memory>
 
-// DDS file format constants
-#define DDS_MAGIC 0x20534444  // "DDS "
+// DDS File Format Constants
+#define DDS_MAGIC 0x20534444  // "DDS " in little-endian
 
 // DDS Pixel Format Flags
-#define DDPF_ALPHAPIXELS 0x00000001
-#define DDPF_ALPHA       0x00000002
-#define DDPF_FOURCC      0x00000004
-#define DDPF_RGB         0x00000040
-#define DDPF_YUV         0x00000200
-#define DDPF_LUMINANCE   0x00020000
+#define DDPF_ALPHAPIXELS  0x00000001
+#define DDPF_ALPHA        0x00000002
+#define DDPF_FOURCC       0x00000004
+#define DDPF_RGB          0x00000040
+#define DDPF_YUV          0x00000200
+#define DDPF_LUMINANCE    0x00020000
 
-// Compression formats (FourCC)
+// DDS Compression Formats (FourCC)
 #define FOURCC_DXT1 0x31545844  // "DXT1"
 #define FOURCC_DXT3 0x33545844  // "DXT3"
 #define FOURCC_DXT5 0x35545844  // "DXT5"
-#define FOURCC_ATI1 0x31495441  // "ATI1"
-#define FOURCC_ATI2 0x32495441  // "ATI2"
+#define FOURCC_RXGB 0x42475852  // "RXGB" (ATI)
 
-// DDS file structures
+// DDS Header Flags
+#define DDSD_CAPS         0x00000001
+#define DDSD_HEIGHT       0x00000002
+#define DDSD_WIDTH        0x00000004
+#define DDSD_PITCH        0x00000008
+#define DDSD_PIXELFORMAT  0x00001000
+#define DDSD_MIPMAPCOUNT  0x00020000
+#define DDSD_LINEARSIZE   0x00080000
+#define DDSD_DEPTH        0x00800000
+
+// Texture Types
+enum class DDSTextureType {
+    UNKNOWN = 0,
+    TEXTURE2D = 1,
+    TEXTURE3D = 2,
+    CUBEMAP = 3
+};
+
+// Compression Format
+enum class DDSCompressionFormat {
+    UNCOMPRESSED = 0,
+    DXT1 = 1,
+    DXT3 = 2,
+    DXT5 = 3,
+    RXGB = 4,
+    UNKNOWN = 5
+};
+
+// DDS Pixel Format
 struct DDSPixelFormat {
-    uint32_t dwSize;
-    uint32_t dwFlags;
-    uint32_t dwFourCC;
-    uint32_t dwRGBBitCount;
-    uint32_t dwRBitMask;
-    uint32_t dwGBitMask;
-    uint32_t dwBBitMask;
-    uint32_t dwABitMask;
+    uint32_t size;
+    uint32_t flags;
+    uint32_t fourCC;
+    uint32_t bitCount;
+    uint32_t redMask;
+    uint32_t greenMask;
+    uint32_t blueMask;
+    uint32_t alphaMask;
 };
 
+// DDS Header
 struct DDSHeader {
-    uint32_t dwSize;
-    uint32_t dwFlags;
-    uint32_t dwHeight;
-    uint32_t dwWidth;
-    uint32_t dwPitchOrLinearSize;
-    uint32_t dwDepth;
-    uint32_t dwMipMapCount;
-    uint32_t dwReserved1[11];
-    DDSPixelFormat ddspf;
-    uint32_t dwCaps;
-    uint32_t dwCaps2;
-    uint32_t dwCaps3;
-    uint32_t dwCaps4;
-    uint32_t dwReserved2;
+    uint32_t size;
+    uint32_t flags;
+    uint32_t height;
+    uint32_t width;
+    uint32_t pitchOrLinearSize;
+    uint32_t depth;
+    uint32_t mipmapCount;
+    uint32_t reserved1[11];
+    DDSPixelFormat pixelFormat;
+    uint32_t caps;
+    uint32_t caps2;
+    uint32_t caps3;
+    uint32_t caps4;
+    uint32_t reserved2;
 };
 
-struct DdsTextureData {
-    GLuint textureId;
+// DDS Texture Data
+struct DDSTexture {
     uint32_t width;
     uint32_t height;
-    uint32_t mipMapCount;
-    GLenum format;           // GL_RGBA, GL_RGB, etc.
-    GLenum internalFormat;   // GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, etc.
-    bool isCompressed;
-    std::vector<std::vector<uint8_t>> mipData;  // Mip level data
-
-    DdsTextureData() : textureId(0), width(0), height(0), mipMapCount(0),
-                      format(GL_RGBA), internalFormat(GL_RGBA), isCompressed(false) {}
+    uint32_t mipmapCount;
+    DDSCompressionFormat compressionFormat;
+    DDSTextureType textureType;
+    
+    std::vector<uint8_t> compressedData;
+    std::vector<uint8_t> decompressedData;
+    
+    // OpenGL texture handle (set after upload)
+    unsigned int textureId;
 };
 
-class DdsLoader {
+// DDS Loader Class
+class DDSLoader {
 public:
-    DdsLoader();
-    ~DdsLoader();
+    DDSLoader();
+    ~DDSLoader();
 
-    // Load DDS file and create OpenGL texture
-    GLuint loadTexture(const std::string& filePath);
+    // Load and parse DDS file
+    bool loadFile(const std::string& filepath);
 
-    // Load DDS file and get texture data (without uploading to GPU)
-    bool loadTextureData(const std::string& filePath, DdsTextureData& outTexture);
+    // Get texture data
+    const DDSTexture& getTexture() const { return texture; }
+    const DDSHeader& getHeader() const { return header; }
 
-    // Get last error message
-    const std::string& getLastError() const { return lastError; }
+    // Decompress DDS data (convert DXT to RGB)
+    bool decompressTexture();
+
+    // Upload to OpenGL
+    unsigned int uploadToGPU();
+
+    // Cleanup
+    void cleanup();
 
 private:
-    std::string lastError;
+    DDSHeader header;
+    DDSTexture texture;
 
-    // Helper functions
-    bool readDdsHeader(const std::string& filePath, uint32_t& magic, DDSHeader& header,
-                      std::vector<uint8_t>& fileData);
-    bool parseDDSFormat(const DDSPixelFormat& ddspf, GLenum& outFormat,
-                       GLenum& outInternalFormat, bool& outIsCompressed);
-    GLuint createGLTexture(const DdsTextureData& texData);
-    size_t calculateMipSize(uint32_t width, uint32_t height, bool isCompressed);
+    // Helper methods
+    bool readHeader(std::ifstream& file);
+    DDSCompressionFormat getCompressionFormat(uint32_t fourCC);
+    bool decompressDXT1();
+    bool decompressDXT3();
+    bool decompressDXT5();
 };

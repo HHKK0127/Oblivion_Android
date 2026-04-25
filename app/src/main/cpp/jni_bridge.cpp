@@ -14,19 +14,44 @@ extern "C" JNIEXPORT jlong JNICALL
 Java_com_example_oblivion_GameRenderer_nativeInitEngine(
         [[maybe_unused]] JNIEnv* env,
         [[maybe_unused]] jobject obj) {
-    LOGI("nativeInitEngine called");
+    LOGI("=== nativeInitEngine called ===");
 
-    if (g_renderer == nullptr) {
+    if (g_renderer != nullptr) {
+        LOGD("Renderer already initialized, returning existing handle: %p", g_renderer);
+        return reinterpret_cast<jlong>(g_renderer);
+    }
+
+    LOGI("Creating new Renderer instance...");
+    try {
         g_renderer = new Renderer();
+        LOGI("Renderer created, calling init(1920, 1080)...");
+
         if (!g_renderer->init(1920, 1080)) {  // Default size, will be updated by onSurfaceChanged
-            LOGE("Failed to initialize Renderer");
+            LOGE("CRITICAL: Renderer::init() returned false - initialization failed");
             delete g_renderer;
             g_renderer = nullptr;
             return 0;
         }
-    }
 
-    return reinterpret_cast<jlong>(g_renderer);
+        LOGI("SUCCESS: Renderer initialized successfully");
+        jlong handle = reinterpret_cast<jlong>(g_renderer);
+        LOGI("Returning handle to Java: %p", g_renderer);
+        return handle;
+    } catch (const std::exception& e) {
+        LOGE("EXCEPTION in nativeInitEngine: %s", e.what());
+        if (g_renderer) {
+            delete g_renderer;
+            g_renderer = nullptr;
+        }
+        return 0;
+    } catch (...) {
+        LOGE("UNKNOWN EXCEPTION in nativeInitEngine");
+        if (g_renderer) {
+            delete g_renderer;
+            g_renderer = nullptr;
+        }
+        return 0;
+    }
 }
 
 // Set viewport with handle parameter
@@ -54,6 +79,8 @@ Java_com_example_oblivion_GameRenderer_nativeRenderFrame(
     Renderer* renderer = reinterpret_cast<Renderer*>(handle);
     if (renderer) {
         renderer->render(0.0167f);  // 60 FPS default (1/60 sec)
+    } else {
+        LOGD("WARNING: nativeRenderFrame called with null renderer handle");
     }
 }
 

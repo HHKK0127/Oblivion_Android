@@ -2,7 +2,7 @@
 
 #include "npc.h"
 #include "npc_manager.h"
-#include "world_manager.h"
+#include "../world/world_manager.h"
 #include <unordered_map>
 #include <memory>
 #include <android/log.h>

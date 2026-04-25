@@ -2,8 +2,10 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 #include <android/log.h>
 #include "../localization/localization_manager.h"
+#include "settings_ui.h"
 
 #define LOG_TAG "TitleScreen"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
@@ -24,9 +26,14 @@ private:
     std::vector<std::string> menuItems;
     int selectedIndex;
     bool gameStarted;
+    bool settingsRequested;
     LocalizationManager* localizationManager;
+    std::unique_ptr<SettingsUI> settingsUI;
 
     static constexpr float LOGO_DISPLAY_DURATION = 3.0f;
+    static constexpr int MENU_START = 0;      // "Start Game"
+    static constexpr int MENU_SETTINGS = 1;   // "Settings"
+    static constexpr int MENU_QUIT = 2;       // "Quit"
 
 public:
     TitleScreen();
@@ -39,6 +46,8 @@ public:
     void onKeyPress(int key);
 
     bool isGameStarted() const { return gameStarted; }
+    bool isSettingsRequested() const { return settingsRequested; }
+    void resetSettingsRequest() { settingsRequested = false; }
     TitleScreenState getState() const { return state; }
 
 private:

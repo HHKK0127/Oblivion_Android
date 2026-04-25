@@ -10,10 +10,14 @@
 #include "../ui/debug_hud.h"
 #include "../ui/settings_ui.h"
 #include "../game/quest_manager.h"
+#include "../game/npc_manager.h"
 #include "../system/settings_manager.h"
 #include "../game/combat_manager.h"
 #include "../game/spell_manager.h"
-#include "../game/world_manager.h"
+#include "../game/player_controller.h"
+#include "../game/inventory_manager.h"
+#include "../ui/inventory_ui.h"
+#include "../world/world_manager.h"
 #include "../localization/localization_manager.h"
 #include "../profiling/performance_monitor.h"
 #include "../save_system/save_manager.h"
@@ -40,6 +44,7 @@ private:
     // UI Systems
     std::unique_ptr<TitleScreen> titleScreen;
     std::unique_ptr<QuestUI> questUI;
+    std::unique_ptr<InventoryUI> inventoryUI;
     std::unique_ptr<TextRenderer> textRenderer;
     std::unique_ptr<DebugHUD> debugHUD;
     std::unique_ptr<SettingsUI> settingsUI;
@@ -52,10 +57,13 @@ private:
 
     // Game Systems
     std::unique_ptr<LocalizationManager> localizationManager;
+    std::unique_ptr<NpcManager> npcManager;
     std::unique_ptr<WorldManager> worldManager;
     std::unique_ptr<QuestManager> questManager;
     std::unique_ptr<CombatManager> combatManager;
     std::unique_ptr<SpellManager> spellManager;
+    std::unique_ptr<PlayerController> playerController;
+    std::unique_ptr<InventoryManager> inventoryManager;
 
     // Profiling
     std::unique_ptr<PerformanceMonitor> performanceMonitor;
@@ -90,6 +98,7 @@ public:
     // Getters
     AssetManager* getAssetManager() { return assetManager.get(); }
     LocalizationManager* getLocalizationManager() { return localizationManager.get(); }
+    NpcManager* getNpcManager() { return npcManager.get(); }
     QuestManager* getQuestManager() { return questManager.get(); }
     CombatManager* getCombatManager() { return combatManager.get(); }
     SpellManager* getSpellManager() { return spellManager.get(); }
@@ -101,6 +110,9 @@ public:
     SettingsUI* getSettingsUI() { return settingsUI.get(); }
     SettingsManager* getSettingsManager() { return settingsManager.get(); }
     PerformanceMonitor* getPerformanceMonitor() { return performanceMonitor.get(); }
+    PlayerController* getPlayerController() { return playerController.get(); }
+    InventoryManager* getInventoryManager() { return inventoryManager.get(); }
+    InventoryUI* getInventoryUI() { return inventoryUI.get(); }
 #ifdef AUDIO_SYSTEM_ENABLED
     AudioManager* getAudioManager() { return audioManager.get(); }
 #endif
