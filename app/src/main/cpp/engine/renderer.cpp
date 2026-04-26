@@ -15,22 +15,51 @@ Renderer::~Renderer() {
 }
 
 bool Renderer::init(unsigned int width, unsigned int height) {
+    LOGI("===== Renderer::init() START with %ux%u =====", width, height);
+    initialized = false;  // Reset initialization flag
+
     screenWidth = width;
     screenHeight = height;
 
     LOGI("Renderer initializing: %ux%u", screenWidth, screenHeight);
 
-    // Initialize localization
-    initLocalization();
+    try {
+        // Initialize localization
+        LOGI("Step 1: Calling initLocalization()");
+        initLocalization();
+        LOGI("Step 1: initLocalization() completed");
 
-    // Initialize game systems
-    initGameSystems();
+        // Initialize game systems
+        LOGI("Step 2: Calling initGameSystems()");
+        initGameSystems();
+        LOGI("Step 2: initGameSystems() completed");
 
-    // Create test scenario (combat, quests, etc.)
-    createTestScenario();
+        // Initialize retro filter (post-processing)
+        LOGI("Step 3: Initializing RetroFilter");
+        retroFilter = std::make_unique<RetroFilter>();
+        if (!retroFilter->initialize(screenWidth, screenHeight)) {
+            LOGE("Failed to initialize RetroFilter");
+            return false;
+        }
+        LOGI("Step 3: RetroFilter initialized");
 
-    LOGI("Renderer initialized successfully");
-    return true;
+        // Create test scenario (combat, quests, etc.)
+        LOGI("Step 4: Calling createTestScenario()");
+        createTestScenario();
+        LOGI("Step 4: createTestScenario() completed");
+
+        initialized = true;  // Mark as successfully initialized
+        LOGI("===== Renderer initialized successfully =====");
+        return true;
+    } catch (const std::exception& e) {
+        LOGE("CRITICAL: Exception during Renderer::init(): %s", e.what());
+        initialized = false;
+        return false;
+    } catch (...) {
+        LOGE("CRITICAL: Unknown exception during Renderer::init()");
+        initialized = false;
+        return false;
+    }
 }
 
 void Renderer::resize(unsigned int width, unsigned int height) {
@@ -46,6 +75,12 @@ void Renderer::resize(unsigned int width, unsigned int height) {
         LOGI("TextRenderer screen size updated to: %ux%u", screenWidth, screenHeight);
     } else {
         LOGW("WARNING: TextRenderer is NULL in resize()! Dimensions not updated!");
+    }
+
+    // Update RetroFilter resolution
+    if (retroFilter) {
+        retroFilter->setNativeResolution(screenWidth, screenHeight);
+        LOGI("RetroFilter resolution updated to: %ux%u", screenWidth, screenHeight);
     }
 }
 
@@ -468,6 +503,11 @@ void Renderer::render(float deltaTime) {
     }
 #endif
 
+    // ===== RETRO FILTER: Bind scene framebuffer for rendering =====
+    if (retroFilter) {
+        retroFilter->bindSceneFramebuffer();
+    }
+
     // Render World (main game scene) - Clear with game background color
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);  // Dark gray for game screen
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -498,6 +538,20 @@ void Renderer::render(float deltaTime) {
                 }
             }
         }
+    }
+
+    // Safety check: if initialization failed, don't try to render
+    if (!initialized) {
+        static int nullRenderCount = 0;
+        if (nullRenderCount % 60 == 0) {  // Log every 60 frames (~1 second at 60 FPS)
+            LOGE("CRITICAL: render() called but Renderer is not initialized! worldManager=%p debugHUD=%p",
+                 worldManager.get(), debugHUD.get());
+        }
+        nullRenderCount++;
+        // Just clear the screen and return to prevent crash
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        return;
     }
 
     // Render world objects
@@ -533,6 +587,12 @@ void Renderer::render(float deltaTime) {
     // Render Settings UI if visible
     if (settingsUI && settingsUI->isVisible()) {
         settingsUI->render();
+    }
+
+    // ===== RETRO FILTER: Apply post-processing effects and render to screen =====
+    if (retroFilter) {
+        retroFilter->apply(retroSettings);
+        retroFilter->renderToScreen();
     }
 
     // Frame rate control - enforce target FPS
@@ -633,6 +693,11 @@ void Renderer::onTouchEvent(float x, float y) {
 
 void Renderer::cleanup() {
     LOGI("Renderer cleaning up");
+
+    if (retroFilter) {
+        retroFilter->cleanup();
+        retroFilter = nullptr;
+    }
 
     if (performanceMonitor) {
         performanceMonitor->logDetailedMetrics();

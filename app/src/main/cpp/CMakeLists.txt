@@ -11,6 +11,7 @@ add_library(native-lib SHARED
     engine/renderer.cpp
     engine/shader.cpp
     engine/camera.cpp
+    engine/graphics/retro_filter.cpp
 
     # Geometry
     geometry/cube.cpp

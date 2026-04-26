@@ -22,6 +22,7 @@
 #include "../profiling/performance_monitor.h"
 #include "../save_system/save_manager.h"
 #include "../assets/asset_manager.h"
+#include "graphics/retro_filter.h"
 
 #ifdef AUDIO_SYSTEM_ENABLED
 #include "../audio/audio_manager.h"
@@ -76,8 +77,13 @@ private:
     std::unique_ptr<AudioManager> audioManager;
 #endif
 
+    // Retro Filter (Post-Processing)
+    std::unique_ptr<RetroFilter> retroFilter;
+    RetroFilter::Settings retroSettings;
+
     // State
     bool showTitleScreen;
+    bool initialized = false;  // Track if initialization succeeded
     unsigned int screenWidth;
     unsigned int screenHeight;
 
@@ -130,6 +136,11 @@ public:
     bool saveGameState(const std::string& slotName);
     bool loadGameState(const std::string& slotName);
     SaveManager* getSaveManager() { return saveManager.get(); }
+
+    // Retro Filter
+    RetroFilter::Settings* getRetroSettings() { return &retroSettings; }
+    RetroFilter::Settings& getRetroSettingsRef() { return retroSettings; }
+    RetroFilter* getRetroFilter() { return retroFilter.get(); }
 
 private:
     void initLocalization();
