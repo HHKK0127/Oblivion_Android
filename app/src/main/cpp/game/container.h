@@ -1,22 +1,11 @@
 #pragma once
 
 #include "interactable.h"
+#include "item.h"
 #include <vector>
 #include <string>
 
-/**
- * InventoryItem - Represents a single item in a container/inventory
- */
-struct InventoryItem {
-    uint32_t itemId;
-    std::string itemName;
-    std::string itemType;  // weapon, armor, potion, ingredient, etc.
-    uint32_t quantity;
-    float weight;
-
-    InventoryItem(uint32_t id = 0, const std::string& name = "", uint32_t qty = 1)
-        : itemId(id), itemName(name), quantity(qty), weight(0.0f) {}
-};
+// Use InventoryItem from item.h (alias for InventorySlot)
 
 /**
  * Container - An interactable container that holds items

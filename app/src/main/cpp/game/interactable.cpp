@@ -6,7 +6,11 @@
 
 #define LOG_TAG "Interactable"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#ifdef ENABLE_DEBUG_LOGS
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#else
+#define LOGD(...) do {} while(0)
+#endif
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 Interactable::Interactable(ObjectType type, std::shared_ptr<WorldObject> worldObj)
@@ -22,30 +26,34 @@ Interactable::Interactable(ObjectType type, std::shared_ptr<WorldObject> worldOb
 bool Interactable::isInRange(const glm::vec3& playerPos, float interactionRadius) {
     if (!worldObject) return false;
 
-    // Calculate distance manually: sqrt(dx^2 + dy^2 + dz^2)
+    // Calculate distance squared to avoid expensive sqrt operation
     glm::vec3 diff = playerPos - worldObject->position;
-    float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
-    return distance <= interactionRadius;
+    float distanceSq = diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
+    float radiusSq = interactionRadius * interactionRadius;
+    return distanceSq <= radiusSq;
 }
 
 void Interactable::onPlayerEnterRange() {
     if (state != InteractionState::HIGHLIGHTED) {
-        LOGD("Player entered range of interactable (refId: %u)", worldObject->refId);
+        uint32_t objId = worldObject ? worldObject->objectId : 0;
+        LOGD("Player entered range of interactable (objectId: %u)", objId);
         setInteractionState(InteractionState::HIGHLIGHTED);
     }
 }
 
 void Interactable::onPlayerExitRange() {
     if (state == InteractionState::HIGHLIGHTED) {
-        LOGD("Player exited range of interactable (refId: %u)", worldObject->refId);
+        uint32_t objId = worldObject ? worldObject->objectId : 0;
+        LOGD("Player exited range of interactable (objectId: %u)", objId);
         setInteractionState(InteractionState::IDLE);
     }
 }
 
-bool Interactable::onInteract(const glm::vec3& playerPos) {
+bool Interactable::onInteract(const glm::vec3& /* playerPos */) {
     if (!enabled) return false;
 
-    LOGD("Interactable interaction triggered (refId: %u)", worldObject->refId);
+    uint32_t objId = worldObject ? worldObject->objectId : 0;
+    LOGD("Interactable interaction triggered (objectId: %u)", objId);
     setInteractionState(InteractionState::INTERACTING);
     return true;
 }

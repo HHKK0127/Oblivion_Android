@@ -3,7 +3,11 @@
 #include <algorithm>
 
 #define LOG_TAG "Inventory"
+#ifdef ENABLE_DEBUG_LOGS
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#else
+#define LOGD(...) do {} while(0)
+#endif
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 

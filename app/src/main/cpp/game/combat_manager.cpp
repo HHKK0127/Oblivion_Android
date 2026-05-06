@@ -1,10 +1,11 @@
 #include "combat_manager.h"
 #include "spell_manager.h"
+#include "../system/cheat_manager.h"
 #include <algorithm>
 #include <cmath>
 
 CombatManager::CombatManager()
-    : worldManager(nullptr), npcManager(nullptr), spellManager(nullptr) {
+    : worldManager(nullptr), npcManager(nullptr), spellManager(nullptr), cheatManager(nullptr) {
     LOGD("CombatManager created");
 }
 
@@ -13,7 +14,7 @@ CombatManager::~CombatManager() {
     LOGD("CombatManager destroyed");
 }
 
-bool CombatManager::initialize(WorldManager* wm, NpcManager* nm, class SpellManager* sm) {
+bool CombatManager::initialize(WorldManager* wm, NpcManager* nm, class SpellManager* sm, class CheatManager* cm) {
     if (!wm || !nm) {
         LOGE("Cannot initialize CombatManager with null pointers");
         return false;
@@ -22,8 +23,10 @@ bool CombatManager::initialize(WorldManager* wm, NpcManager* nm, class SpellMana
     worldManager = wm;
     npcManager = nm;
     spellManager = sm;
-    LOGI("CombatManager initialized (SpellManager: %s)",
-         spellManager ? "available" : "not available");
+    cheatManager = cm;
+    LOGI("CombatManager initialized (SpellManager: %s, CheatManager: %s)",
+         spellManager ? "available" : "not available",
+         cheatManager ? "available" : "not available");
     return true;
 }
 
@@ -31,6 +34,7 @@ void CombatManager::cleanup() {
     activeCombats.clear();
     worldManager = nullptr;
     npcManager = nullptr;
+    cheatManager = nullptr;
     LOGD("CombatManager cleaned up");
 }
 
@@ -138,11 +142,24 @@ float CombatManager::calculateDamage(const CharacterStatus& attacker,
     // Strength bonus
     float strengthBonus = attacker.getAttributeBonus("Strength") * 2.0f;
 
-    // Armor mitigation
-    float armorMitigation = defender.armorRating * 0.5f;
+    // Armor mitigation (apply ENEMY_WEAKNESS cheat here)
+    float armorMitigation = getDefenderDamageMitigation(defender);
 
     // Calculate final damage
     float totalDamage = baseDamage + strengthBonus - armorMitigation;
+
+    // Apply cheat effects
+    if (cheatManager) {
+        // CRITICAL_HIT_100: All attacks do 2x damage (critical hit)
+        if (cheatManager->isCheatActive(CheatManager::CheatType::CRITICAL_HIT_100)) {
+            totalDamage *= 2.0f;
+        }
+
+        // ONE_SHOT_KILL: Make damage extreme for one-shot kills
+        if (cheatManager->isCheatActive(CheatManager::CheatType::ONE_SHOT_KILL)) {
+            totalDamage = 99999.0f;  // One-hit kill
+        }
+    }
 
     // Ensure minimum damage
     if (totalDamage < 1.0f) {
@@ -150,6 +167,17 @@ float CombatManager::calculateDamage(const CharacterStatus& attacker,
     }
 
     return totalDamage;
+}
+
+float CombatManager::getDefenderDamageMitigation(const CharacterStatus& defender) {
+    float mitigation = defender.armorRating * 0.5f;
+
+    // ENEMY_WEAKNESS: Enemies take 4x damage (1/4 mitigation)
+    if (cheatManager && cheatManager->isCheatActive(CheatManager::CheatType::ENEMY_WEAKNESS)) {
+        mitigation *= 0.25f;  // Reduce mitigation to 25%
+    }
+
+    return mitigation;
 }
 
 void CombatManager::applyDamage(std::shared_ptr<NPC> target, float damage) {
@@ -176,15 +204,15 @@ std::shared_ptr<NPC> CombatManager::findNearestEnemy(std::shared_ptr<NPC> npc,
 
     auto allNpcs = npcManager->getAllNPCs();
     std::shared_ptr<NPC> nearestEnemy = nullptr;
-    float minDistance = detectionRadius;
+    float minDistanceSq = detectionRadius * detectionRadius;  // Compare squared distances
 
     for (const auto& other : allNpcs) {
         if (!other || other->npcId == npc->npcId) continue;
 
         glm::vec3 diff = other->position - npc->position;
-        float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
-        if (distance < minDistance && other->status.isAlive()) {
-            minDistance = distance;
+        float distanceSq = diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
+        if (distanceSq < minDistanceSq && other->status.isAlive()) {
+            minDistanceSq = distanceSq;
             nearestEnemy = other;
         }
     }

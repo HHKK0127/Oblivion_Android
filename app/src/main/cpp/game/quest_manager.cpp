@@ -214,6 +214,7 @@ std::vector<std::shared_ptr<Quest>> QuestManager::getQuestsByNpc(uint32_t npcId)
     std::vector<std::shared_ptr<Quest>> result;
     auto it = npcQuests.find(npcId);
     if (it != npcQuests.end()) {
+        result.reserve(it->second.size());  // Pre-allocate space for NPC quests
         for (uint32_t questId : it->second) {
             auto quest = getQuest(questId);
             if (quest) {
@@ -226,6 +227,7 @@ std::vector<std::shared_ptr<Quest>> QuestManager::getQuestsByNpc(uint32_t npcId)
 
 std::vector<std::shared_ptr<Quest>> QuestManager::getActiveQuests() const {
     std::vector<std::shared_ptr<Quest>> result;
+    result.reserve(activeQuests.size());  // Pre-allocate space for active quests
     for (uint32_t questId : activeQuests) {
         auto quest = getQuest(questId);
         if (quest) {
@@ -237,6 +239,7 @@ std::vector<std::shared_ptr<Quest>> QuestManager::getActiveQuests() const {
 
 std::vector<std::shared_ptr<Quest>> QuestManager::getCompletedQuests() const {
     std::vector<std::shared_ptr<Quest>> result;
+    result.reserve(completedQuests.size());  // Pre-allocate space for completed quests
     for (uint32_t questId : completedQuests) {
         auto quest = getQuest(questId);
         if (quest) {

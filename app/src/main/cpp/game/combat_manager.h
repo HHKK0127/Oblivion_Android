@@ -8,7 +8,11 @@
 #include <android/log.h>
 
 #define LOG_TAG "CombatManager"
+#ifdef ENABLE_DEBUG_LOGS
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#else
+#define LOGD(...) do {} while(0)
+#endif
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
@@ -25,6 +29,7 @@ private:
     WorldManager* worldManager;
     NpcManager* npcManager;
     class SpellManager* spellManager;
+    class CheatManager* cheatManager;  // For cheat effects
     std::unordered_map<uint32_t, CombatInstance> activeCombats;
 
     static constexpr float DAMAGE_CALCULATION_COOLDOWN = 1.0f;
@@ -33,7 +38,7 @@ public:
     CombatManager();
     ~CombatManager();
 
-    bool initialize(WorldManager* wm, NpcManager* nm, class SpellManager* sm = nullptr);
+    bool initialize(WorldManager* wm, NpcManager* nm, class SpellManager* sm = nullptr, class CheatManager* cm = nullptr);
     void cleanup();
     void update(float deltaTime);
 
@@ -41,6 +46,7 @@ public:
     void endCombat(uint32_t defenderId);
 
     float calculateDamage(const CharacterStatus& attacker, const CharacterStatus& defender);
+    float getDefenderDamageMitigation(const CharacterStatus& defender);
     void applyDamage(std::shared_ptr<NPC> target, float damage);
     void applyHeal(std::shared_ptr<NPC> target, float amount);
 

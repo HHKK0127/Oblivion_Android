@@ -1,5 +1,6 @@
 #include "interaction_manager.h"
 #include "../world/world_manager.h"
+#include "../world/world_data.h"
 #include "../world/cell.h"
 #include <algorithm>
 #include <android/log.h>
@@ -7,7 +8,11 @@
 
 #define LOG_TAG "InteractionManager"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#ifdef ENABLE_DEBUG_LOGS
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#else
+#define LOGD(...) do {} while(0)
+#endif
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 
@@ -43,7 +48,7 @@ std::shared_ptr<Door> InteractionManager::createDoor(std::shared_ptr<WorldObject
 
     auto door = std::make_shared<Door>(worldObj);
     registerInteractable(door);
-    LOGD("Door created and registered (refId: %u)", worldObj->refId);
+    LOGD("Door created and registered (objectId: %u)", worldObj->objectId);
     return door;
 }
 
@@ -55,7 +60,7 @@ std::shared_ptr<Container> InteractionManager::createContainer(std::shared_ptr<W
 
     auto container = std::make_shared<Container>(worldObj);
     registerInteractable(container);
-    LOGD("Container created and registered (refId: %u)", worldObj->refId);
+    LOGD("Container created and registered (objectId: %u)", worldObj->objectId);
     return container;
 }
 
@@ -65,9 +70,9 @@ void InteractionManager::registerInteractable(std::shared_ptr<Interactable> inte
         return;
     }
 
-    uint32_t refId = interactable->getWorldObject()->refId;
-    interactables[refId] = interactable;
-    LOGD("Interactable registered (refId: %u, total: %zu)", refId, interactables.size());
+    uint32_t objectId = interactable->getWorldObject()->objectId;
+    interactables[objectId] = interactable;
+    LOGD("Interactable registered (objectId: %u, total: %zu)", objectId, interactables.size());
 }
 
 void InteractionManager::unregisterInteractable(uint32_t refId) {
@@ -98,6 +103,7 @@ void InteractionManager::update(const glm::vec3& playerPos, float deltaTime) {
 
 void InteractionManager::updateProximity(const glm::vec3& playerPos) {
     nearbyInteractables.clear();
+    nearbyInteractables.reserve(20);  // Pre-allocate space for typical nearby object count
 
     for (auto& pair : interactables) {
         if (!pair.second || !pair.second->isEnabled()) continue;
@@ -117,7 +123,7 @@ void InteractionManager::updateHighlightedObject(const glm::vec3& playerPos) {
 
 std::shared_ptr<Interactable> InteractionManager::findClosestInteractable(const glm::vec3& playerPos) {
     std::shared_ptr<Interactable> closest = nullptr;
-    float closestDistance = interactionDistance;
+    float closestDistanceSq = interactionDistance * interactionDistance;
 
     for (const auto& interactable : nearbyInteractables) {
         if (!interactable || !interactable->isEnabled()) continue;
@@ -125,11 +131,11 @@ std::shared_ptr<Interactable> InteractionManager::findClosestInteractable(const 
         auto worldObj = interactable->getWorldObject();
         if (!worldObj) continue;
 
-        // Calculate distance manually: sqrt(dx^2 + dy^2 + dz^2)
+        // Calculate squared distance to avoid expensive sqrt operation
         glm::vec3 diff = playerPos - worldObj->position;
-        float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
-        if (distance < closestDistance) {
-            closestDistance = distance;
+        float distanceSq = diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
+        if (distanceSq < closestDistanceSq) {
+            closestDistanceSq = distanceSq;
             closest = interactable;
         }
     }

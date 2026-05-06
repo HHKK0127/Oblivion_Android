@@ -1,12 +1,17 @@
 #include "door.h"
 #include "cell.h"
+#include "../world/world_data.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <android/log.h>
 #include <cmath>
 
 #define LOG_TAG "Door"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#ifdef ENABLE_DEBUG_LOGS
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#else
+#define LOGD(...) do {} while(0)
+#endif
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 Door::Door(std::shared_ptr<WorldObject> worldObj)
@@ -25,7 +30,7 @@ Door::Door(std::shared_ptr<WorldObject> worldObj)
         interactionRadius = 1.5f;
     }
     updateInteractionText();
-    LOGD("Door created (refId: %u)", worldObject ? worldObject->refId : 0);
+    LOGD("Door created (objectId: %u)", worldObject ? worldObject->objectId : 0);
 }
 
 bool Door::onInteract(const glm::vec3& playerPos) {
@@ -39,11 +44,11 @@ bool Door::onInteract(const glm::vec3& playerPos) {
     if (doorState == DoorState::CLOSED || doorState == DoorState::CLOSING) {
         doorState = DoorState::OPENING;
         animationProgress = 0.0f;
-        LOGD("Door opening (refId: %u)", worldObject->refId);
+        LOGD("Door opening (objectId: %u)", worldObject->objectId);
     } else if (doorState == DoorState::OPEN || doorState == DoorState::OPENING) {
         doorState = DoorState::CLOSING;
         animationProgress = 1.0f;
-        LOGD("Door closing (refId: %u)", worldObject->refId);
+        LOGD("Door closing (objectId: %u)", worldObject->objectId);
     }
 
     Interactable::onInteract(playerPos);

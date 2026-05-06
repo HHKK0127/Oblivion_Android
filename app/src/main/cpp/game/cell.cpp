@@ -2,7 +2,11 @@
 #include <android/log.h>
 
 #define LOG_TAG "Cell"
+#ifdef ENABLE_DEBUG_LOGS
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#else
+#define LOGD(...) do {} while(0)
+#endif
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 Cell::Cell(uint32_t cellId, const std::string& cellName, CellType type)

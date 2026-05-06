@@ -58,6 +58,7 @@ void NpcManager::removeNPC(uint32_t npcId) {
 
 std::vector<std::shared_ptr<NPC>> NpcManager::getAllNPCs() const {
     std::vector<std::shared_ptr<NPC>> result;
+    result.reserve(npcs.size());  // Pre-allocate space for all NPCs
     for (const auto& pair : npcs) {
         result.push_back(pair.second);
     }
@@ -66,11 +67,14 @@ std::vector<std::shared_ptr<NPC>> NpcManager::getAllNPCs() const {
 
 std::vector<std::shared_ptr<NPC>> NpcManager::getNPCsInArea(const glm::vec3& center, float radius) const {
     std::vector<std::shared_ptr<NPC>> result;
+    result.reserve(10);  // Pre-allocate space for typical nearby NPC count
+    float radiusSq = radius * radius;  // Avoid sqrt by comparing squared distances
+
     for (const auto& pair : npcs) {
         if (pair.second) {
             glm::vec3 diff = pair.second->position - center;
-            float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
-            if (distance <= radius) {
+            float distanceSq = diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
+            if (distanceSq <= radiusSq) {
                 result.push_back(pair.second);
             }
         }

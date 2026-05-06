@@ -6,7 +6,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 // Forward declarations
-class WorldObject;
+struct WorldObject;
 
 /**
  * Base class for interactable world objects (doors, containers, furniture, etc.)

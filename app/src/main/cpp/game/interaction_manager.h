@@ -9,7 +9,7 @@
 #include "container.h"
 
 // Forward declarations
-class Cell;
+struct Cell;
 class WorldManager;
 
 /**

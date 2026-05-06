@@ -5,10 +5,9 @@
 constexpr float WALK_SPEED = 5.0f;
 constexpr float SPRINT_SPEED = 8.0f;
 constexpr float ROTATION_SENSITIVITY = 0.01f;
-constexpr float MOUSE_DRAG_SCALE = 0.5f;
 
 PlayerController::PlayerController()
-    : player(nullptr), worldManager(nullptr) {
+    : player(nullptr), worldManager(nullptr), inventoryManager(nullptr) {
     LOGD("PlayerController created");
 }
 
@@ -16,19 +15,21 @@ PlayerController::~PlayerController() {
     cleanup();
 }
 
-bool PlayerController::initialize(WorldManager* worldMgr) {
+bool PlayerController::initialize(WorldManager* worldMgr, InventoryManager* invMgr) {
     if (!worldMgr) {
         LOGE("Cannot initialize PlayerController with null WorldManager");
         return false;
     }
 
     worldManager = worldMgr;
+    inventoryManager = invMgr;
 
     // Create player
     player = std::make_shared<Player>();
     player->initialize(glm::vec3(0.0f, 0.0f, 0.0f));
 
-    LOGI("PlayerController initialized");
+    LOGI("PlayerController initialized (InventoryManager: %s)",
+         inventoryManager ? "available" : "not available");
     return true;
 }
 
@@ -38,26 +39,32 @@ void PlayerController::update(float deltaTime) {
     // 1. Calculate movement from input
     glm::vec3 moveVec = calculateMovementVector();
 
-    // 2. Apply sprint modifier
-    float currentSpeed = isSprinting ? SPRINT_SPEED : WALK_SPEED;
+    // 2. Check if sprinting is allowed (must have stamina and be moving)
+    bool canActuallySprint = isSprinting && player->canSprint && (moveVec.x != 0.0f || moveVec.z != 0.0f);
+
+    // 3. Apply sprint modifier
+    float currentSpeed = canActuallySprint ? SPRINT_SPEED : WALK_SPEED;
     moveVec = moveVec * currentSpeed;
 
-    // 3. Apply movement input to player
-    player->applyMovementInput(moveVec, isSprinting);
+    // 4. Apply movement input to player
+    player->applyMovementInput(moveVec, canActuallySprint);
 
-    // 4. Apply gravity
+    // 5. Update stamina
+    player->updateStamina(deltaTime, canActuallySprint);
+
+    // 6. Apply gravity
     applyGravity(deltaTime);
 
-    // 5. Update position with velocity
+    // 7. Update position with velocity
     updatePlayerPosition(deltaTime);
 
-    // 6. Check ground collision
+    // 8. Check ground collision
     checkGroundCollision();
 
-    // 7. Check cell transitions
+    // 9. Check cell transitions
     checkCellTransition();
 
-    // 8. Update player internal state
+    // 10. Update player internal state
     player->update(deltaTime);
 }
 
@@ -66,6 +73,7 @@ void PlayerController::cleanup() {
         player = nullptr;
     }
     worldManager = nullptr;
+    inventoryManager = nullptr;
     LOGD("PlayerController cleaned up");
 }
 
@@ -94,10 +102,32 @@ void PlayerController::onKeyboardInput(int key, bool isPressed) {
             LOGD("Jump triggered");
         }
     }
+    else if (key == 'E' || key == 'e') {  // E = Pickup Item
+        if (isPressed && worldManager && inventoryManager) {
+            // Find nearest pickupable item
+            auto nearbyItem = worldManager->getNearbyPickupItem(player->position, 3.0f);
+            if (nearbyItem) {
+                // Add to inventory
+                // TODO: Create InventoryItem from WorldItem data
+                // For now, just mark as picked up
+                worldManager->pickupWorldItem(nearbyItem->worldItemId);
+                LOGI("Picked up item: %s", nearbyItem->itemName.c_str());
+            }
+        }
+    }
 }
 
 void PlayerController::setSprinting(bool sprint) {
-    isSprinting = sprint;
+    // Only allow sprinting if player has stamina
+    if (sprint && player && player->canSprint) {
+        isSprinting = true;
+        LOGD("Sprint activated (stamina: %.1f)", player->stamina);
+    } else if (sprint && player && !player->canSprint) {
+        isSprinting = false;
+        LOGD("Cannot sprint - stamina depleted");
+    } else {
+        isSprinting = false;
+    }
 }
 
 glm::vec3 PlayerController::calculateMovementVector() {
@@ -131,7 +161,7 @@ void PlayerController::updatePlayerPosition(float deltaTime) {
     player->position.z += player->velocity.z * deltaTime;
 }
 
-void PlayerController::updatePlayerRotation(float deltaTime) {
+void PlayerController::updatePlayerRotation(float /* deltaTime */) {
     // Rotation is handled directly via onTouchInput
 }
 

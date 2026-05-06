@@ -4,7 +4,11 @@
 #include <algorithm>
 
 #define LOG_TAG "NPC"
+#ifdef ENABLE_DEBUG_LOGS
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#else
+#define LOGD(...) do {} while(0)
+#endif
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
@@ -180,9 +184,10 @@ void NPC::moveTo(const glm::vec3& target) {
     aiState = AIState::FOLLOW_PLAYER;  // Use this for movement
 
     glm::vec3 direction = target - position;
-    float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
+    float distanceSq = direction.x * direction.x + direction.y * direction.y + direction.z * direction.z;
 
-    if (distance > 0.1f) {
+    if (distanceSq > 0.01f) {  // 0.1f squared for proximity check (avoid sqrt)
+        float distance = std::sqrt(distanceSq);
         if (distance > 0.0f) {
             direction = direction * (1.0f / distance);  // Manual normalize
         }

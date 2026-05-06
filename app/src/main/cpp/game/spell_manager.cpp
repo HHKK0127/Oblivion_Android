@@ -1,9 +1,10 @@
 #include "spell_manager.h"
+#include "../system/cheat_manager.h"
 #include <algorithm>
 #include <cmath>
 
 SpellManager::SpellManager()
-    : npcManager(nullptr), nextSpellId(2000) {
+    : npcManager(nullptr), cheatManager(nullptr), nextSpellId(2000) {
     LOGD("SpellManager created");
 }
 
@@ -12,20 +13,23 @@ SpellManager::~SpellManager() {
     LOGD("SpellManager destroyed");
 }
 
-bool SpellManager::initialize(NpcManager* nm) {
+bool SpellManager::initialize(NpcManager* nm, class CheatManager* cm) {
     if (!nm) {
         LOGE("Cannot initialize SpellManager with null NpcManager");
         return false;
     }
 
     npcManager = nm;
-    LOGI("SpellManager initialized with NpcManager");
+    cheatManager = cm;
+    LOGI("SpellManager initialized with NpcManager (CheatManager: %s)",
+         cheatManager ? "available" : "not available");
     return true;
 }
 
 void SpellManager::cleanup() {
     spells.clear();
     npcManager = nullptr;
+    cheatManager = nullptr;
     LOGD("SpellManager cleaned up");
 }
 
@@ -180,12 +184,22 @@ bool SpellManager::consumeMana(uint32_t casterId, float amount) {
     auto npc = npcManager->getNPC(casterId);
     if (!npc) return false;
 
+    // Apply REDUCED_SPELL_COST cheat: 50% mana cost
+    if (cheatManager && cheatManager->isCheatActive(CheatManager::CheatType::REDUCED_SPELL_COST)) {
+        amount *= 0.5f;  // Half cost
+    }
+
+    // Apply NO_MAGICKA_DRAIN cheat: free spells
+    if (cheatManager && cheatManager->isCheatActive(CheatManager::CheatType::NO_MAGICKA_DRAIN)) {
+        amount = 0.0f;  // No mana cost
+    }
+
     if (npc->status.currentMana < amount) {
         return false;
     }
 
     npc->status.currentMana -= amount;
-    LOGD("NPC %u consumed %.1f mana (remaining: %.1f/%1f)",
+    LOGD("NPC %u consumed %.1f mana (remaining: %.1f/%.1f)",
          casterId, amount, npc->status.currentMana, npc->status.maxMana);
     return true;
 }
