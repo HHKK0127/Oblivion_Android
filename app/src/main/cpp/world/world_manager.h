@@ -1,9 +1,12 @@
 #pragma once
 
 #include "world_data.h"
+#include "world_item.h"
 #include "cell.h"
 #include <unordered_map>
 #include <queue>
+#include <vector>
+#include <memory>
 #include <cmath>
 #include <android/log.h>
 
@@ -12,6 +15,7 @@ class NpcManager;
 class AssetManager;
 class CellLoader;
 class CellTransitionManager;
+class DoorManager;
 
 #define LOG_TAG_WORLD "WorldManager"
 #define LOGD_WORLD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG_WORLD, __VA_ARGS__)
@@ -110,6 +114,7 @@ public:
 
     NpcManager* getNpcManager() { return npcManager; }
     AssetManager* getAssetManager() { return assetManager; }
+    DoorManager* getDoorManager() { return doorManager.get(); }
 
     // ========================================================================
     // Settings
@@ -120,6 +125,39 @@ public:
 
     float getCellLoadRadius() const { return cellLoadRadius; }
     float getCellUnloadRadius() const { return cellUnloadRadius; }
+
+    // ========================================================================
+    // World Items (Pickupable Objects)
+    // ========================================================================
+
+    /**
+     * @brief ワールドにアイテムをスポーン
+     */
+    uint32_t spawnWorldItem(uint32_t itemId, const std::string& itemName,
+                           const std::string& itemNameJa, const glm::vec3& position);
+
+    /**
+     * @brief プレイヤー周囲の拾えるアイテムを取得
+     */
+    std::shared_ptr<WorldItem> getNearbyPickupItem(const glm::vec3& playerPos,
+                                                    float pickupRange = 3.0f) const;
+
+    /**
+     * @brief 最も近いアイテムを取得
+     */
+    std::shared_ptr<WorldItem> getNearestWorldItem(const glm::vec3& playerPos) const;
+
+    /**
+     * @brief アイテムを拾う（ワールドから削除）
+     */
+    bool pickupWorldItem(uint32_t worldItemId);
+
+    /**
+     * @brief すべてのワールドアイテムを取得
+     */
+    const std::vector<std::shared_ptr<WorldItem>>& getWorldItems() const {
+        return worldItems;
+    }
 
 private:
     // ========================================================================
@@ -143,6 +181,7 @@ private:
     AssetManager* assetManager;
     CellManager cellManager;
     std::unique_ptr<CellTransitionManager> cellTransitionManager;
+    std::unique_ptr<DoorManager> doorManager;  // NEW: Door system (Task 2)
 
     // World state
     WorldState worldState;
@@ -154,8 +193,12 @@ private:
 
     // Counters
     uint32_t nextCellId;
+    uint32_t nextWorldItemId;  // For unique WorldItem IDs
     uint32_t cellsLoaded;
     uint32_t cellsUnloaded;
+
+    // World Items
+    std::vector<std::shared_ptr<WorldItem>> worldItems;
 
     // ========================================================================
     // Private Methods

@@ -23,6 +23,7 @@ add_library(native-lib SHARED
     world/cell.cpp
     world/cell_loader.cpp
     world/cell_transition_manager.cpp
+    world/door.cpp
     world/grid.cpp
     world/terrain.cpp
 
@@ -32,6 +33,11 @@ add_library(native-lib SHARED
     game/combat_manager.cpp
     game/quest_manager.cpp
     game/spell_manager.cpp
+    game/dialogue.cpp
+    game/door.cpp
+    game/interactable.cpp
+    game/container.cpp
+    game/interaction_manager.cpp
 
     # Player & Movement (Phase 3+)
     game/player.cpp
@@ -41,6 +47,7 @@ add_library(native-lib SHARED
     # Inventory System (Phase 3+)
     game/inventory.cpp
     game/inventory_manager.cpp
+    game/book_database.cpp
 
     # UI Systems
     ui/title_screen.cpp
@@ -52,6 +59,7 @@ add_library(native-lib SHARED
 
     # System
     system/settings_manager.cpp
+    system/cheat_manager.cpp
 
     # Localization
     localization/localization_manager.cpp

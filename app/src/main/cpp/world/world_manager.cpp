@@ -1,6 +1,7 @@
 #include "world_manager.h"
 #include "cell_loader.h"
 #include "cell_transition_manager.h"
+#include "door.h"
 #include "../game/npc_manager.h"
 #include "../assets/asset_manager.h"
 #include <cmath>
@@ -45,6 +46,14 @@ bool WorldManager::initialize(NpcManager* npcMgr, AssetManager* assetMgr) {
         return false;
     }
     LOGI_WORLD("CellTransitionManager initialized");
+
+    // Initialize DoorManager (Phase 4 Task 2)
+    doorManager = std::make_unique<DoorManager>();
+    if (!doorManager->initialize(this)) {
+        LOGE_WORLD("Failed to initialize DoorManager");
+        return false;
+    }
+    LOGI_WORLD("DoorManager initialized");
 
     // Create test cells
     initializeTestCells();
@@ -94,6 +103,12 @@ void WorldManager::cleanup() {
     if (cellTransitionManager) {
         cellTransitionManager->cleanup();
         cellTransitionManager = nullptr;
+    }
+
+    // Cleanup DoorManager (Phase 4 Task 2)
+    if (doorManager) {
+        doorManager->cleanup();
+        doorManager = nullptr;
     }
 
     // Unload all cells
@@ -326,6 +341,28 @@ void WorldManager::initializeTestCells() {
 
     if (currentCell) {
         setPlayerPosition(glm::vec3(64.0f, 64.0f, 0.0f));
+    }
+
+    // ========================================================================
+    // Register Test Doors (Task 2)
+    // ========================================================================
+    if (doorManager) {
+        // Door from center cell (0, 0) to right cell (1, 0)
+        doorManager->registerDoor(1000, glm::vec3(128.0f, 64.0f, 0.0f),
+                                 "Door to East", "東への扉",
+                                 2, glm::vec3(0.0f, 64.0f, 0.0f));
+
+        // Door from center cell (0, 0) to top cell (0, 1)
+        doorManager->registerDoor(1001, glm::vec3(64.0f, 128.0f, 0.0f),
+                                 "Door to North", "北への扉",
+                                 5, glm::vec3(64.0f, 0.0f, 0.0f));
+
+        // Door from center cell (0, 0) to bottom cell (0, -1)
+        doorManager->registerDoor(1002, glm::vec3(64.0f, 0.0f, 0.0f),
+                                 "Door to South", "南への扉",
+                                 8, glm::vec3(64.0f, 128.0f, 0.0f));
+
+        LOGI_WORLD("Test doors registered: %zu doors", doorManager->getDoorCount());
     }
 
     LOGI_WORLD("Test cells initialized: %zu cells", cells.size());
