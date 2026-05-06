@@ -18,6 +18,8 @@ bool NpcManager::initialize() {
 
 void NpcManager::cleanup() {
     npcs.clear();
+    cellNpcs.clear();
+    npcToCell.clear();
     LOGD("NpcManager cleaned up");
 }
 
@@ -80,6 +82,79 @@ std::vector<std::shared_ptr<NPC>> NpcManager::getNPCsInArea(const glm::vec3& cen
         }
     }
     return result;
+}
+
+// Cell Integration Methods (NEW)
+std::vector<std::shared_ptr<NPC>> NpcManager::getNpcsForCell(uint32_t cellId) const {
+    std::vector<std::shared_ptr<NPC>> result;
+    auto it = cellNpcs.find(cellId);
+    if (it != cellNpcs.end()) {
+        result.reserve(it->second.size());
+        for (uint32_t npcId : it->second) {
+            auto npc = getNPC(npcId);
+            if (npc) {
+                result.push_back(npc);
+            }
+        }
+    }
+    LOGD("getNpcsForCell: Cell=%u returned %zu NPCs", cellId, result.size());
+    return result;
+}
+
+void NpcManager::registerNpcToCell(uint32_t npcId, uint32_t cellId) {
+    // Check if NPC is already in this cell
+    auto npcCellIt = npcToCell.find(npcId);
+    if (npcCellIt != npcToCell.end() && npcCellIt->second == cellId) {
+        // Already in this cell, nothing to do
+        return;
+    }
+
+    // If NPC is in a different cell, remove from old cell first
+    if (npcCellIt != npcToCell.end()) {
+        uint32_t oldCellId = npcCellIt->second;
+        auto oldCellNpcsIt = cellNpcs.find(oldCellId);
+        if (oldCellNpcsIt != cellNpcs.end()) {
+            auto& npcList = oldCellNpcsIt->second;
+            npcList.erase(std::remove(npcList.begin(), npcList.end(), npcId), npcList.end());
+            LOGD("NPC moved from cell %u to cell %u: ID=%u", oldCellId, cellId, npcId);
+        }
+    }
+
+    // Add NPC to new cell
+    cellNpcs[cellId].push_back(npcId);
+    npcToCell[npcId] = cellId;
+
+    LOGD("NPC registered to cell: NPC=%u, Cell=%u", npcId, cellId);
+}
+
+void NpcManager::unregisterNpcFromCell(uint32_t npcId) {
+    auto cellIt = npcToCell.find(npcId);
+    if (cellIt == npcToCell.end()) {
+        LOGW("NPC not registered in any cell: ID=%u", npcId);
+        return;
+    }
+
+    uint32_t cellId = cellIt->second;
+
+    // Remove NPC from cell's NPC list
+    auto npcsIt = cellNpcs.find(cellId);
+    if (npcsIt != cellNpcs.end()) {
+        auto& npcList = npcsIt->second;
+        npcList.erase(std::remove(npcList.begin(), npcList.end(), npcId), npcList.end());
+    }
+
+    // Remove NPC to cell mapping
+    npcToCell.erase(cellIt);
+
+    LOGD("NPC unregistered from cell: NPC=%u, Cell=%u", npcId, cellId);
+}
+
+uint32_t NpcManager::getNpcCell(uint32_t npcId) const {
+    auto it = npcToCell.find(npcId);
+    if (it == npcToCell.end()) {
+        return UINT32_MAX;  // Invalid cell ID (no cell assigned)
+    }
+    return it->second;
 }
 
 void NpcManager::logNpcStatus() const {

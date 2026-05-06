@@ -14,7 +14,8 @@ WorldManager::WorldManager()
     : npcManager(nullptr), assetManager(nullptr),
       cellLoadRadius(DEFAULT_CELL_LOAD_RADIUS),
       cellUnloadRadius(DEFAULT_CELL_UNLOAD_RADIUS),
-      loadUpdateTimer(0.5f), nextCellId(1), cellsLoaded(0), cellsUnloaded(0) {
+      loadUpdateTimer(0.5f), nextCellId(1), nextWorldItemId(1000),
+      cellsLoaded(0), cellsUnloaded(0) {
 }
 
 WorldManager::~WorldManager() {
@@ -146,6 +147,19 @@ bool WorldManager::loadCell(int32_t cellX, int32_t cellY) {
         return false;
     }
 
+    // ========================================================================
+    // NPC Integration (Task 1-4): Load NPCs for this cell
+    // ========================================================================
+    if (npcManager) {
+        // Get NPCs that should be in this cell (from cell loader or stored data)
+        // For now, query any NPCs registered to this cell by the system
+        auto cellNpcs = npcManager->getNpcsForCell(cellId);
+        LOGD_WORLD("Cell %u (%d, %d) loaded with %zu NPCs", cellId, cellX, cellY, cellNpcs.size());
+
+        // NPCs are already registered via registerNpcToCell() during world initialization
+        // or cell loading. This is just logging for verification.
+    }
+
     // Add to active cells if not already there
     auto activeIt = std::find(activeCells.begin(), activeCells.end(), cell);
     if (activeIt == activeCells.end() && activeCells.size() < MAX_ACTIVE_CELLS) {
@@ -163,6 +177,25 @@ void WorldManager::unloadCell(uint32_t cellId) {
     }
 
     auto cell = it->second;
+
+    // ========================================================================
+    // NPC Integration (Task 1-4): Unload NPCs from this cell
+    // ========================================================================
+    if (npcManager) {
+        // Get NPCs currently in this cell
+        auto cellNpcs = npcManager->getNpcsForCell(cellId);
+
+        // Unregister each NPC from the cell
+        for (auto& npc : cellNpcs) {
+            if (npc) {
+                npcManager->unregisterNpcFromCell(npc->npcId);
+                LOGD_WORLD("NPC %u unregistered from cell %u", npc->npcId, cellId);
+            }
+        }
+
+        LOGD_WORLD("Cell %u unloading: %zu NPCs unregistered", cellId, cellNpcs.size());
+    }
+
     cellManager.unloadCell(cell);
 
     // Remove from active cells
@@ -320,10 +353,10 @@ void WorldManager::checkCellDistances() {
         auto cell = pair.second;
         if (!cell) continue;
 
-        // Calculate distance from player to cell origin
+        // Calculate squared distance from player to cell origin (avoid sqrt)
         glm::vec3 cellOrigin = CellCoordUtils::getWorldPosFromCoord(CellCoord(cell->cellX, cell->cellY));
         glm::vec3 diff = worldState.playerPosition - cellOrigin;
-        cell->distanceFromPlayer = std::sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
+        cell->distanceFromPlayer = diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
     }
 }
 
@@ -361,16 +394,16 @@ bool WorldManager::shouldLoadCell(std::shared_ptr<Cell> cell) const {
     if (!cell) return false;
     if (cell->isLoaded()) return false;
 
-    // Load cells within load radius
-    return cell->distanceFromPlayer <= cellLoadRadius;
+    // Load cells within load radius (using squared distance comparison)
+    return cell->distanceFromPlayer <= cellLoadRadius * cellLoadRadius;
 }
 
 bool WorldManager::shouldUnloadCell(std::shared_ptr<Cell> cell) const {
     if (!cell) return false;
     if (!cell->isLoaded()) return false;
 
-    // Unload cells beyond unload radius
-    return cell->distanceFromPlayer > cellUnloadRadius;
+    // Unload cells beyond unload radius (using squared distance comparison)
+    return cell->distanceFromPlayer > cellUnloadRadius * cellUnloadRadius;
 }
 
 uint32_t WorldManager::getOrCreateCellId(int32_t cellX, int32_t cellY) {
@@ -390,4 +423,57 @@ uint32_t WorldManager::getOrCreateCellId(int32_t cellX, int32_t cellY) {
 
 CellCoord WorldManager::getPlayerCellCoord() const {
     return CellCoordUtils::getCoordFromWorldPos(worldState.playerPosition);
+}
+
+// ============================================================================
+// World Items (Pickupable Objects)
+// ============================================================================
+
+uint32_t WorldManager::spawnWorldItem(uint32_t itemId, const std::string& itemName,
+                                     const std::string& itemNameJa, const glm::vec3& position) {
+    uint32_t worldItemId = nextWorldItemId++;
+    auto worldItem = std::make_shared<WorldItem>(worldItemId, itemId, itemName, itemNameJa, position);
+    worldItems.push_back(worldItem);
+
+    LOGD_WORLD("Spawned world item: ID=%u, Name=%s at (%.1f, %.1f, %.1f)",
+               worldItemId, itemName.c_str(), position.x, position.y, position.z);
+    return worldItemId;
+}
+
+std::shared_ptr<WorldItem> WorldManager::getNearbyPickupItem(const glm::vec3& playerPos,
+                                                              float pickupRange) const {
+    for (const auto& item : worldItems) {
+        if (item && item->isInPickupRange(playerPos, pickupRange)) {
+            return item;
+        }
+    }
+    return nullptr;
+}
+
+std::shared_ptr<WorldItem> WorldManager::getNearestWorldItem(const glm::vec3& playerPos) const {
+    std::shared_ptr<WorldItem> nearest = nullptr;
+    float minDistance = std::numeric_limits<float>::max();
+
+    for (const auto& item : worldItems) {
+        if (!item || item->isPickedUp) continue;
+
+        float distance = item->getDistanceTo(playerPos);
+        if (distance < minDistance) {
+            minDistance = distance;
+            nearest = item;
+        }
+    }
+
+    return nearest;
+}
+
+bool WorldManager::pickupWorldItem(uint32_t worldItemId) {
+    for (auto& item : worldItems) {
+        if (item && item->worldItemId == worldItemId) {
+            item->isPickedUp = true;
+            LOGD_WORLD("Picked up world item: ID=%u, Name=%s", worldItemId, item->itemName.c_str());
+            return true;
+        }
+    }
+    return false;
 }

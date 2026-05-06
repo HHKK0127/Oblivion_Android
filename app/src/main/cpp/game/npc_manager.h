@@ -19,6 +19,8 @@
 class NpcManager {
 private:
     std::unordered_map<uint32_t, std::shared_ptr<NPC>> npcs;
+    std::unordered_map<uint32_t, std::vector<uint32_t>> cellNpcs;  // cellId → NPC IDs
+    std::unordered_map<uint32_t, uint32_t> npcToCell;              // npcId → cellId
     uint32_t nextNpcId;
 
 public:
@@ -37,6 +39,12 @@ public:
     // Query
     std::vector<std::shared_ptr<NPC>> getAllNPCs() const;
     std::vector<std::shared_ptr<NPC>> getNPCsInArea(const glm::vec3& center, float radius) const;
+
+    // Cell Integration (NEW)
+    std::vector<std::shared_ptr<NPC>> getNpcsForCell(uint32_t cellId) const;
+    void registerNpcToCell(uint32_t npcId, uint32_t cellId);
+    void unregisterNpcFromCell(uint32_t npcId);
+    uint32_t getNpcCell(uint32_t npcId) const;
 
     size_t getNPCCount() const { return npcs.size(); }
 
