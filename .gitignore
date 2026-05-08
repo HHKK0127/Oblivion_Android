@@ -1,0 +1,38 @@
+# Temporary directories
+$tempDir/
+.claude/
+
+# Large binary assets
+BSA/
+Image/
+mod/
+Launcher/
+バイナリ/
+
+# Build artifacts
+*.o
+*.obj
+*.so
+*.dll
+*.exe
+*.apk
+build/
+.gradle/
+app/build/
+external/
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Logs
+*.log
