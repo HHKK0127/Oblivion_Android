@@ -9,26 +9,42 @@ mod/
 Launcher/
 バイナリ/
 
+# Gradle files
+.gradle/
+build/
+*.apk
+*.aar
+
 # Build artifacts
 *.o
 *.obj
 *.so
 *.dll
 *.exe
-*.apk
-build/
-.gradle/
 app/build/
 external/
 
-# IDE files
+# Android Studio
 .idea/
 *.iml
+*.iws
+*.ipr
+local.properties
+
+# CMake
+cmake-build-debug/
+cmake-build-release/
+app/src/main/cpp/.cxx/
+
+# IDE files
 .vscode/
+.clion*
 
 # OS files
 .DS_Store
 Thumbs.db
+*.swp
+*.swo
 
 # Python cache
 __pycache__/
@@ -36,3 +52,4 @@ __pycache__/
 
 # Logs
 *.log
+*.tmp
