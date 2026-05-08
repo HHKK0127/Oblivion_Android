@@ -32,6 +32,14 @@ bool Renderer::init(unsigned int width, unsigned int height) {
     // Initialize game systems
     initGameSystems();
 
+    // Initialize retro filter
+    retroFilter = std::make_unique<RetroFilter>();
+    if (!retroFilter->initialize(screenWidth, screenHeight)) {
+        LOGW("Failed to initialize retro filter");
+        retroFilter.reset();
+    }
+    retroTime = 0.0f;
+
     // Create test scenario (combat, quests, etc.)
     createTestScenario(this);
 
@@ -128,7 +136,7 @@ void Renderer::initGameSystems() {
     // Initialize Settings UI
     LOGI("Creating SettingsUI...");
     settingsUI = std::make_unique<SettingsUI>();
-    if (!settingsUI->initialize(textRenderer.get(), settingsManager.get())) {
+    if (!settingsUI->initialize(textRenderer.get(), settingsManager.get(), this)) {
         LOGE("Failed to initialize SettingsUI");
         return;
     }
@@ -297,6 +305,12 @@ void Renderer::render(float deltaTime) {
     }
 #endif
 
+    // Bind retro filter FBO if enabled
+    if (retroFilter && retroSettings.enabled) {
+        retroFilter->bindSceneFramebuffer();
+        retroTime += deltaTime * 0.001f;
+    }
+
     // Render World (main game scene) - Clear with game background color
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);  // Dark gray for game screen
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -385,6 +399,12 @@ void Renderer::render(float deltaTime) {
             performanceMonitor->logPerformanceReport();
             frameCounter = 0;
         }
+    }
+
+    // Apply retro filter and render to screen if enabled
+    if (retroFilter && retroSettings.enabled) {
+        retroFilter->apply(retroSettings, retroTime);
+        retroFilter->renderToScreen();
     }
 
     LOGD("Frame rendered: deltaTime=%.3f, FPS=%.1f, Target FPS=%d",
@@ -487,6 +507,10 @@ void Renderer::cleanup() {
 
     if (gameManager) {
         gameManager->cleanup();
+    }
+
+    if (retroFilter) {
+        retroFilter->cleanup();
     }
 
     if (localizationManager) {

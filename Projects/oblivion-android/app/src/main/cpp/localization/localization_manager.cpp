@@ -378,6 +378,207 @@ void LocalizationManager::initializeTranslationDatabase() {
         "あなたの旅が秘術の光で照らされるように。いつでも戻ってください。"
     };
 
+    // =========================================================================
+    // Books - Titles and Content
+    // =========================================================================
+
+    // Book 1: The Elder Scrolls (3 pages)
+    translations["book_elder_scrolls_title"] = {"The Elder Scrolls", "エルダースクロール"};
+    translations["book_elder_scrolls_page1"] = {
+        "The Elder Scrolls speak of a time when dragons ruled the skies and mortals trembled beneath their shadow. "
+        "Alduin, the World-Eater, whose name alone strikes fear into the hearts of men and mer alike, "
+        "shall return when the wheel turns upon the Last Dragonborn.",
+        "エルダースクロールは、竜が空を支配し、人々がその影の下で震えていた時代を語っている。 "
+        "世界を食らう者アルドゥイン、その名だけで人間もエルフも恐れる彼が、 "
+        "最後の竜裔が現れるとき、帰ってくると書かれている。"
+    };
+    translations["book_elder_scrolls_page2"] = {
+        "But there is a force older than the scrolls themselves, a power that sleeps beneath the mountains "
+        "and dreams in the tongues of forgotten gods. When the scrolls are unrolled, the world shall tremble "
+        "and the stars shall weep fire upon the earth.",
+        "しかし、スクロール自体よりも古い力が存在する。山々の下で眠り、 "
+        "忘れられた神々の言葉で夢を見る力。スクロールが開かれるとき、世界は震え、 "
+        "星々は地上に火の涙を流すだろう。"
+    };
+    translations["book_elder_scrolls_page3"] = {
+        "So it is written, and so it shall be. The Dragonborn comes, and with them, the end of all things "
+        "or the beginning of a new age. Only time, that relentless river, shall tell.",
+        "アルドゥインの予言にそう書かれている。竜裔が来る。彼らと共に、すべての終わりか、 "
+        "新しい時代の始まりか。語るべきは、容赦なく流れる時の川のみ。"
+    };
+
+    // Book 2: Nerevar Moon-and-Star (4 pages)
+    translations["book_nerevar_title"] = {"Nerevar Moon-and-Star", "ネレヴァー月と星"};
+    translations["book_nerevar_page1"] = {
+        "In the First Era, when the Chimer walked the ashlands of Resdayn, there arose a leader "
+        "whose wisdom was matched only by his courage. Indoril Nerevar, called Moon-and-Star, "
+        "united the fractious clans beneath a banner of hope.",
+        "第一紀、キメールがレスデインの灰の大地を歩いていた頃、知恵と勇気を兼ね備えた指導者が現れた。 "
+        "インダリル・ネレヴァー、月と星と呼ばれる彼は、希望の旗の下で分断された氏族を団結させた。"
+    };
+    translations["book_nerevar_page2"] = {
+        "The Dwemer, deep-elves of unnatural science, had delved too deep beneath Red Mountain. "
+        "Their brass machines and steam-forges shook the earth, and Nerevar knew that peace could not last.",
+        "不自然な科学を持つ深きエルフ、ドウェマーは、赤き山の下に深く掘りすぎていた。 "
+        "彼らの真鍮の機械と蒸気の鍛冶場が大地を揺るがし、ネレヴァーは平和が長くは続かないことを知っていた。"
+    };
+    translations["book_nerevar_page3"] = {
+        "At the Battle of Red Mountain, Nerevar faced the Dwarf King Dumac in single combat. "
+        "Their clash shook the heavens, and when the dust settled, both lay fallen.",
+        "赤き山の戦いで、ネレヴァーはドワーフ王デュマックと一騎打ちを行った。 "
+        "彼らの衝突は天を揺るがし、砂埃が収まると、二人とも倒れていた。"
+    };
+    translations["book_nerevar_page4"] = {
+        "Thus ended the life of the greatest Hortator, but his legacy endures. The Nerevarine shall return, "
+        "prophesied by the ashlanders, to set right what was made wrong by gods and mortals alike.",
+        "最も偉大なホルテーターの生涯はこうして終わったが、彼の遺産は残った。 "
+        "アッシュランダーの予言によれば、ネレヴァリンは帰ってくる。神々と人間の両方によって間違えられたことを正すために。"
+    };
+
+    // Book 3: Song of the Tenpenny Towers (2 pages)
+    translations["book_tenpenny_title"] = {"Song of the Tenpenny Towers", "テンペニータワーの歌"};
+    translations["book_tenpenny_page1"] = {
+        "Oh, Tenpenny Towers tall and grand, where lords and ladies dance hand in hand! "
+        "The wine flows sweet, the music plays, and golden light adorns the days.",
+        "ああ、高く壮大なテンペニータワーよ、そこでは貴族たちが手を取り合って踊る！ "
+        "ワインは甘く流れ、音楽は奏でられ、金色の光が日々を飾る。"
+    };
+    translations["book_tenpenny_page2"] = {
+        "But woe to those who climb too high, for pride precedes the fatal nigh. "
+        "The towers fell, as towers do, when those within forget what's true.",
+        "しかし、高く登りすぎた者には災いあれ。高ぶりは破滅の夜の前兆。 "
+        "塔は崩れる、塔がそうするように、中の者が真実を忘れたとき。"
+    };
+
+    // Book 4: A Dance in Fire (3 pages)
+    translations["book_dance_fire_title"] = {"A Dance in Fire", "炎の中の舞踏"};
+    translations["book_dance_fire_page1"] = {
+        "Decumus Scotti had never meant to find himself in Valenwood. The clerk from the Imperial City "
+        "had taken a wrong turn somewhere between Bravil and the border, and now found himself surrounded "
+        "by walking trees and talking apes.",
+        "デクムス・スコッティは、故意にヴァレンウッドに来たわけではなかった。帝国都市の書記官は、 "
+        "ブラヴィルと国境の間のどこかで道を間違え、今や歩く木々と話す猿に囲まれている。"
+    };
+    translations["book_dance_fire_page2"] = {
+        "The Bosmer were hospitable enough, once they stopped laughing at his clothes. "
+        "They fed him roasted boar and some kind of fermented milk that made his head spin "
+        "and his tongue loose.",
+        "ボスマーは、彼の服装の笑いが止まれば、十分に親切だった。 "
+        "彼らは焼いた猪と、頭をくらくらさせ舌を緩ませる何かの発酵乳を彼に与えた。"
+    };
+    translations["book_dance_fire_page3"] = {
+        "When the fire came, dancing across the forest canopy, Scotti understood why the Wood Elves "
+        "smiled even in the face of destruction. For them, fire was not an end, but a beginning. "
+        "A dance that cleared the old to make way for the new.",
+        "炎が来て、森林の天蓋を踊り横切るとき、スコッティはなぜ木のエルフたちが破壊の前でも微笑むのかを理解した。 "
+        "彼らにとって、火は終わりではなく始まりだった。古いものを掃除し、新しいもののために道を開ける舞踏。"
+    };
+
+    // Book 5: Beggar (2 pages)
+    translations["book_beggar_title"] = {"Beggar", "乞食"};
+    translations["book_beggar_page1"] = {
+        "To be poor is to be invisible. The wealthy walk past you as if you were a shadow, "
+        "a trick of the light, something not quite real enough to warrant attention.",
+        "貧しいということは、見えない存在になるということだ。金持ちはあなたのそばを通り過ぎる。 "
+        "あなたが影であり、光の戯れであり、注意に値するほど十分に実在しない何かであるかのように。"
+    };
+    translations["book_beggar_page2"] = {
+        "But I have seen things the nobles never will. I have seen the city wake at dawn, "
+        "watched the sun paint gold upon the cobblestones, heard secrets whispered in alleyways "
+        "where the rich dare not tread.",
+        "しかし、私は貴族たちが決して見ることのないものを見てきた。夜明けに目覚める街を見た。 "
+        "太陽が石畳に金色を塗るのを見た。金持ちが踏み入ることを恐れる路地で囁かれる秘密を聞いた。"
+    };
+
+    // Book 6: The Refugees (2 pages)
+    translations["book_refugees_title"] = {"The Refugees", "難民たち"};
+    translations["book_refugees_page1"] = {
+        "They came across the sea in ships of sorrow, leaving behind lands swallowed by war. "
+        "Men, women, and children huddled together, speaking in tongues that sounded like wind through broken glass.",
+        "彼らは悲しみの船で海を渡って来た。戦争に飲まれた土地を後にして。 "
+        "男、女、子供が身を寄せ合い、割れたガラスを通る風のような言葉で話した。"
+    };
+    translations["book_refugees_page2"] = {
+        "The High Rock lords were not kind to strangers. 'No room,' they said, though their halls stood empty. "
+        "'No food,' they claimed, while their granaries overflowed. But still the refugees came, for hope "
+        "is the last thing to die in the human heart.",
+        "ハイロックの領主たちは、見知らぬ人には親切ではなかった。『場所がない』と言った。 "
+        "彼らの館が空っぽであるのに。『食料がない』と主張した。貯蔵庫があふれているのに。 "
+        "しかし、難民たちはまだ来た。人間の心で最後に死ぬものは希望だから。"
+    };
+
+    // Book 7: Mysticism Spellcraft (3 pages)
+    translations["book_mysticism_title"] = {"Mysticism Spellcraft", "神秘術の呪文作成"};
+    translations["book_mysticism_page1"] = {
+        "Mysticism is the school of magic least understood by the common practitioner. It deals with the manipulation "
+        "of magical energy itself, the raw force that flows through all living things and binds the world together.",
+        "神秘術は、一般の実践者にとって最も理解されていない魔法の学派である。 "
+        "それは魔法エネルギーそのもの、すべての生き物を流れ世界を結びつける原初の力を扱う。"
+    };
+    translations["book_mysticism_page2"] = {
+        "The spell 'Soul Trap' captures the animus of a dying creature, binding it to a gemstone for later use. "
+        "This requires precise timing and a steady hand, for the soul must be caught at the exact moment of death.",
+        "『魂の罠』の呪文は、死にゆく生き物のアニムスを捉え、後で使うために宝石に縛りつける。 "
+        "これには正確なタイミングと落ち着いた手が必要だ。魂は死の正確な瞬間に捕らえられなければならない。"
+    };
+    translations["book_mysticism_page3"] = {
+        "Telekinesis, another mystic art, allows the caster to move objects at a distance. With practice, "
+        "one can lift weapons from enemy hands or retrieve keys from across locked doors.",
+        "テレキネシス、もう一つの神秘術は、術者が遠距離で物体を動かすことを可能にする。 "
+        "修行すれば、敵の手から武器を奪ったり、鍵をかけられたドアの向こうから鍵を取り出したりできる。"
+    };
+
+    // Book 8: Arboretum (2 pages)
+    translations["book_arboretum_title"] = {"Arboretum", "樹木園"};
+    translations["book_arboretum_page1"] = {
+        "Welcome to the Imperial Arboretum, where flora from across Tamriel has been collected and cultivated "
+        "for the education and enjoyment of all citizens. Please do not pick the flowers, no matter how tempting.",
+        "帝国樹木園へようこそ。ここではタムリエル各地から集められた植物が栽培され、 "
+        "すべての市民の教育と楽しみのために公開されている。どんなに誘惑されても、花を摘まないでください。"
+    };
+    translations["book_arboretum_page2"] = {
+        "The Nirnroot, that glowing plant found only near water, has remarkable alchemical properties. "
+        "Its chiming sound can be heard from quite a distance, making it easier to locate in the dark.",
+        "ニルンルート、水辺にしか生えない光る植物は、顕著な錬金術的性質を持っている。 "
+        "そのチャイムのような音はかなりの距離から聞こえ、暗闇での発見を容易にする。"
+    };
+
+    // Book 9: Legend of Pelinal (3 pages)
+    translations["book_pelinal_title"] = {"Legend of Pelinal", "ペリナールの伝説"};
+    translations["book_pelinal_page1"] = {
+        "Pelinal Whitestrake, the Divine Crusader, came to Cyrodiil in the time of the Ayleid tyranny. "
+        "He was not a man, not truly, but a weapon in the shape of one. Sent by the gods to free the slaves.",
+        "ペリナール・ホワイトストレイク、神聖な十字軍戦士は、アイレイドの暴政の時代にシロディールに来た。 "
+        "彼は人間ではなかった。本当に。人間の形をした武器だった。神々によって奴隷を解放するために送られた。"
+    };
+    translations["book_pelinal_page2"] = {
+        "His armor was white as bone, and his hand glowed with righteous fire. The Ayleid sorcerers "
+        "threw their darkest magic at him, but Pelinal walked through it as if it were morning mist.",
+        "彼の鎧は骨のように白く、彼の手は正義の炎で輝いていた。アイレイドの魔術師たちは最も暗い魔法を彼に向けたが、 "
+        "ペリナールはそれを朝霧であるかのように通り抜けた。"
+    };
+    translations["book_pelinal_page3"] = {
+        "In the end, even Pelinal could not stand against the might of Umaril the Unfeathered. "
+        "But his sacrifice was not in vain, for he paved the way for Alessia's rebellion and the freedom of all men.",
+        "最後には、ペリナールも羽なきウマリルの力に立ち向かうことはできなかった。 "
+        "しかし、彼の犠牲は無駄ではなかった。彼はアレッシアの反乱とすべての人間の自由への道を切り開いたのだから。"
+    };
+
+    // Book 10: Immortal Blood (2 pages)
+    translations["book_immortal_blood_title"] = {"Immortal Blood", "不死の血"};
+    translations["book_immortal_blood_page1"] = {
+        "They say the vampires of Skyrim are different from those of High Rock or Valenwood. "
+        "Colder, more ancient, closer to the original curse that started it all in the time before time.",
+        "人々は言う。スカイリムの吸血鬼は、ハイロックやヴァレンウッドのものとは違うと。 "
+        "より冷たく、より古く、時のない時代に始まった最初の呪いにより近い存在だと。"
+    };
+    translations["book_immortal_blood_page2"] = {
+        "To become a vampire is to trade your soul for power. You gain the night, but lose the sun. "
+        "You gain strength beyond mortal measure, but hunger for that which you once loved most.",
+        "吸血鬼になるということは、魂と力を交換することだ。夜を得るが、太陽を失う。 "
+        "人間を超える力を得るが、かつて最も愛していたものへの渇望を抱く。"
+    };
+
     LOGI("Loaded %zu translations into database", translations.size());
 }
 

@@ -25,6 +25,7 @@ add_library(native-lib SHARED
     engine/renderer.cpp
     engine/shader.cpp
     engine/camera.cpp
+    engine/graphics/retro_filter.cpp
 
     # Geometry
     geometry/cube.cpp
@@ -49,6 +50,7 @@ add_library(native-lib SHARED
     game/dialogue_system.cpp
     game/interaction_manager.cpp
     game/test_scenario.cpp
+    game/book_database.cpp
 
     # UI Systems
     ui/title_screen.cpp
@@ -76,6 +78,7 @@ add_library(native-lib SHARED
     assets/nif_parser.cpp
     assets/dds_loader.cpp
     assets/asset_manager.cpp
+    assets/bsa_parser.cpp
 
     # JNI Bridge (Java/C++ communication)
     jni_bridge.cpp

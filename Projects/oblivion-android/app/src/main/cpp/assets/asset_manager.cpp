@@ -1,5 +1,6 @@
 #include "asset_manager.h"
 #include "../geometry/mesh.h"
+#include "bsa_parser.h"
 #include <GLES3/gl3.h>
 
 AssetManager::AssetManager()
@@ -18,6 +19,7 @@ bool AssetManager::initialize() {
 void AssetManager::cleanup() {
     meshCache.clear();
     textureCache.clear();
+    bsaParsers.clear();
     mountedBSAs.clear();
     LOGD("AssetManager cleaned up");
 }
@@ -52,7 +54,16 @@ bool AssetManager::loadDDSTexture(const std::string& path) {
 
 bool AssetManager::mountBSA(const std::string& bsaPath) {
     LOGI("Mounting BSA: %s", bsaPath.c_str());
+
+    auto parser = std::make_unique<BSAParser>();
+    if (!parser->open(bsaPath)) {
+        LOGE("Failed to open BSA: %s", bsaPath.c_str());
+        return false;
+    }
+
     mountedBSAs.push_back(bsaPath);
+    bsaParsers[bsaPath] = std::move(parser);
+    LOGI("BSA mounted successfully: %s", bsaPath.c_str());
     return true;
 }
 
@@ -60,6 +71,8 @@ bool AssetManager::unmountBSA(const std::string& bsaPath) {
     auto it = std::find(mountedBSAs.begin(), mountedBSAs.end(), bsaPath);
     if (it != mountedBSAs.end()) {
         mountedBSAs.erase(it);
+        bsaParsers.erase(bsaPath);
+        LOGI("BSA unmounted: %s", bsaPath.c_str());
         return true;
     }
     return false;

@@ -8,6 +8,7 @@
 #include <android/log.h>
 
 class Mesh;
+class BSAParser;
 
 #define LOG_TAG_ASSET "AssetManager"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG_ASSET, __VA_ARGS__)
@@ -43,5 +44,6 @@ private:
     std::unordered_map<std::string, std::shared_ptr<Mesh>> meshCache;
     std::unordered_map<std::string, uint32_t> textureCache;
     std::vector<std::string> mountedBSAs;
+    std::unordered_map<std::string, std::unique_ptr<BSAParser>> bsaParsers;
     std::string dataPath;
 };

@@ -6,13 +6,14 @@
 
 class TextRenderer;
 class SettingsManager;
+class Renderer;
 
 class SettingsUI {
 public:
     SettingsUI();
     ~SettingsUI();
 
-    bool initialize(TextRenderer* textRenderer, SettingsManager* settingsManager);
+    bool initialize(TextRenderer* textRenderer, SettingsManager* settingsManager, Renderer* renderer = nullptr);
     void cleanup();
 
     void update(float deltaTime);
@@ -32,6 +33,7 @@ public:
 private:
     TextRenderer* textRenderer;
     SettingsManager* settingsManager;
+    Renderer* renderer;
     bool visible;
     bool returnToMenu;
     int selectedIndex;

@@ -21,6 +21,7 @@
 #include "../profiling/performance_monitor.h"
 #include "../save_system/save_manager.h"
 #include "../assets/asset_manager.h"
+#include "graphics/retro_filter.h"
 
 #ifdef AUDIO_SYSTEM_ENABLED
 #include "../audio/audio_manager.h"
@@ -70,6 +71,11 @@ private:
     // Game Manager (orchestrates save/load and system integration)
     std::unique_ptr<GameManager> gameManager;
 
+    // Retro Filter
+    std::unique_ptr<RetroFilter> retroFilter;
+    RetroFilter::Settings retroSettings;
+    float retroTime;
+
     // Audio System
 #ifdef AUDIO_SYSTEM_ENABLED
     std::unique_ptr<AudioManager> audioManager;
@@ -114,6 +120,9 @@ public:
 #endif
 
     bool isTitleScreenActive() const { return showTitleScreen; }
+
+    // Retro Filter
+    RetroFilter::Settings* getRetroSettings() { return &retroSettings; }
 
     // FPS Control
     void setTargetFPS(int fps);
