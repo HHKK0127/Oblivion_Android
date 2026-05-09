@@ -10,7 +10,8 @@ using json = nlohmann::json;
 
 Renderer::Renderer()
     : androidAssetManager(nullptr), showTitleScreen(true), screenWidth(1080), screenHeight(1920),
-      targetFPS(60), frameTimeThreshold(1000.0f / 60.0f) {
+      targetFPS(60), frameTimeThreshold(1000.0f / 60.0f),
+      bgmPlayRequested(false), bgmStopRequested(false) {
     LOGD("Renderer created with target FPS: %d", targetFPS);
     lastFrameTime = std::chrono::high_resolution_clock::now();
 }
@@ -70,6 +71,38 @@ void Renderer::setAssetManager(AAssetManager* mgr) {
     if (textRenderer) {
         textRenderer->initialize(androidAssetManager);
     }
+
+    if (titleScreen) {
+        titleScreen->setAssetManager(androidAssetManager);
+    }
+}
+
+void Renderer::requestPlayBGM(const std::string& path) {
+    bgmPlayRequested = true;
+    bgmStopRequested = false;
+    bgmPath = path;
+}
+
+void Renderer::requestStopBGM() {
+    bgmStopRequested = true;
+    bgmPlayRequested = false;
+}
+
+bool Renderer::shouldPlayBGM(std::string& outPath) {
+    if (bgmPlayRequested) {
+        outPath = bgmPath;
+        bgmPlayRequested = false;
+        return true;
+    }
+    return false;
+}
+
+bool Renderer::shouldStopBGM() {
+    if (bgmStopRequested) {
+        bgmStopRequested = false;
+        return true;
+    }
+    return false;
 }
 
 void Renderer::setTargetFPS(int fps) {
@@ -251,6 +284,7 @@ void Renderer::initGameSystems() {
     titleScreen = std::make_unique<TitleScreen>();
     titleScreen->initialize(localizationManager.get());
     titleScreen->setTextRenderer(textRenderer.get());
+    titleScreen->setAssetManager(androidAssetManager);
 
     // Initialize Quest UI
     questUI = std::make_unique<QuestUI>();
@@ -284,8 +318,18 @@ void Renderer::render(float deltaTime) {
             }
         }
 
+        // Check for BGM requests from title screen
+        std::string bgmPath;
+        if (titleScreen->isBGMPlayRequested(bgmPath)) {
+            requestPlayBGM(bgmPath);
+        }
+        if (titleScreen->isBGMStopRequested()) {
+            requestStopBGM();
+        }
+
         if (titleScreen->isGameStarted()) {
             showTitleScreen = false;
+            requestStopBGM();
             LOGI("Title screen closed, starting main game");
         }
         // Skip frame rate control for quick return

@@ -40,6 +40,24 @@ Java_com_example_oblivion_GameRenderer_nativeRender(
         jfloat deltaTime) {
     if (g_renderer) {
         g_renderer->render(deltaTime);
+
+        // Check for BGM requests from renderer/title screen
+        std::string bgmPath;
+        if (g_renderer->shouldPlayBGM(bgmPath)) {
+            jstring jPath = env->NewStringUTF(bgmPath.c_str());
+            env->CallStaticVoidMethod(
+                env->FindClass("com/example/oblivion/MainActivity"),
+                env->GetStaticMethodID(env->FindClass("com/example/oblivion/MainActivity"), "playBGM", "(Ljava/lang/String;)V"),
+                jPath
+            );
+            env->DeleteLocalRef(jPath);
+        }
+        if (g_renderer->shouldStopBGM()) {
+            env->CallStaticVoidMethod(
+                env->FindClass("com/example/oblivion/MainActivity"),
+                env->GetStaticMethodID(env->FindClass("com/example/oblivion/MainActivity"), "stopBGM", "()V")
+            );
+        }
     }
 }
 
@@ -177,4 +195,58 @@ Java_com_example_oblivion_GameRenderer_nativeGetTargetFPS(
         return static_cast<jint>(g_renderer->getTargetFPS());
     }
     return 60;  // Default
+}
+
+// BGM playback via Java MediaPlayer
+static void callJavaBGMMethod(JNIEnv* env, const char* methodName, const char* param) {
+    jclass activityClass = env->FindClass("com/example/oblivion/MainActivity");
+    if (!activityClass) {
+        LOGE("Failed to find MainActivity class");
+        return;
+    }
+
+    jmethodID methodId;
+    if (param) {
+        methodId = env->GetStaticMethodID(activityClass, methodName, "(Ljava/lang/String;)V");
+        if (methodId) {
+            jstring jParam = env->NewStringUTF(param);
+            env->CallStaticVoidMethod(activityClass, methodId, jParam);
+            env->DeleteLocalRef(jParam);
+        }
+    } else {
+        methodId = env->GetStaticMethodID(activityClass, methodName, "()V");
+        if (methodId) {
+            env->CallStaticVoidMethod(activityClass, methodId);
+        }
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativePlayBGM(
+        JNIEnv* env,
+        jobject obj,
+        jstring path) {
+    const char* pathStr = env->GetStringUTFChars(path, nullptr);
+    LOGI("nativePlayBGM: %s", pathStr);
+    callJavaBGMMethod(env, "playBGM", pathStr);
+    env->ReleaseStringUTFChars(path, pathStr);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeStopBGM(
+        JNIEnv* env,
+        jobject obj) {
+    LOGI("nativeStopBGM called");
+    callJavaBGMMethod(env, "stopBGM", nullptr);
+}
+
+// C++ callable wrappers for internal use
+extern "C" void playBGMNative(const char* path) {
+    // This is called from C++ but needs JNIEnv - we'll use a cached approach
+    // For now, this is a no-op since TitleScreen calls via JNI directly
+    LOGD("playBGMNative called: %s (needs JNI env)", path);
+}
+
+extern "C" void stopBGMNative() {
+    LOGD("stopBGMNative called");
 }

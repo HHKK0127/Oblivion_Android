@@ -96,6 +96,11 @@ private:
     float frameTimeThreshold;  // Milliseconds per frame (1000/fps)
     std::chrono::high_resolution_clock::time_point lastFrameTime;
 
+    // BGM Request
+    bool bgmPlayRequested;
+    bool bgmStopRequested;
+    std::string bgmPath;
+
 public:
     Renderer();
     ~Renderer();
@@ -126,6 +131,12 @@ public:
 #endif
 
     bool isTitleScreenActive() const { return showTitleScreen; }
+
+    // BGM Control
+    void requestPlayBGM(const std::string& path);
+    void requestStopBGM();
+    bool shouldPlayBGM(std::string& outPath);
+    bool shouldStopBGM();
 
     // Retro Filter
     RetroFilter::Settings* getRetroSettings() { return &retroSettings; }

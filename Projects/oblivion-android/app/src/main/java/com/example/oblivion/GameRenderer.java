@@ -22,6 +22,8 @@ public class GameRenderer implements GLSurfaceView.Renderer {
     public static native void nativeSetAssetManager(android.content.res.AssetManager assetManager);
     public static native void nativeSetTargetFPS(int fps);
     public static native int nativeGetTargetFPS();
+    public static native void nativePlayBGM(String path);
+    public static native void nativeStopBGM();
 
     private long lastTime;
 

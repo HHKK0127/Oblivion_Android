@@ -63,6 +63,7 @@ add_library(native-lib SHARED
     ui/title_screen.cpp
     ui/quest_ui.cpp
     ui/text_renderer.cpp
+    ui/image_renderer.cpp
     ui/debug_hud.cpp
     ui/settings_ui.cpp
     ui/save_load_ui.cpp
