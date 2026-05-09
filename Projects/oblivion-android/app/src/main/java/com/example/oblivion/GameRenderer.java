@@ -19,6 +19,7 @@ public class GameRenderer implements GLSurfaceView.Renderer {
     public static native String nativeGetString(String key);
     public static native void nativeOnTouchEvent(float x, float y);
     public static native void nativeOnKeyPress(int key);
+    public static native void nativeSetAssetManager(android.content.res.AssetManager assetManager);
     public static native void nativeSetTargetFPS(int fps);
     public static native int nativeGetTargetFPS();
 

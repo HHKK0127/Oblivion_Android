@@ -1,5 +1,7 @@
 #include <jni.h>
 #include <android/log.h>
+#include <android/asset_manager.h>
+#include <android/asset_manager_jni.h>
 #include "engine/renderer.h"
 
 #define LOG_TAG "JNI_Bridge"
@@ -8,6 +10,7 @@
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 static Renderer* g_renderer = nullptr;
+static AAssetManager* g_pendingAssetManager = nullptr;
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_example_oblivion_GameRenderer_nativeInit(
@@ -23,6 +26,9 @@ Java_com_example_oblivion_GameRenderer_nativeInit(
             LOGE("Failed to initialize Renderer");
             delete g_renderer;
             g_renderer = nullptr;
+        } else if (g_pendingAssetManager) {
+            g_renderer->setAssetManager(g_pendingAssetManager);
+            g_pendingAssetManager = nullptr;
         }
     }
 }
@@ -128,6 +134,27 @@ Java_com_example_oblivion_GameRenderer_nativeTitleScreenActive(
         return g_renderer->isTitleScreenActive() ? JNI_TRUE : JNI_FALSE;
     }
     return JNI_TRUE;
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeSetAssetManager(
+        JNIEnv* env,
+        jobject obj,
+        jobject assetManager) {
+    LOGI("nativeSetAssetManager called");
+
+    AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
+    if (!mgr) {
+        LOGE("Failed to obtain AAssetManager from Java");
+        return;
+    }
+
+    g_pendingAssetManager = mgr;
+    LOGI("AssetManager stored in global pointer");
+    if (g_renderer) {
+        g_renderer->setAssetManager(mgr);
+        g_pendingAssetManager = nullptr;
+    }
 }
 
 extern "C" JNIEXPORT void JNICALL

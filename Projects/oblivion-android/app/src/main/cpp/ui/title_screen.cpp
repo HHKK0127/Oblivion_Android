@@ -3,7 +3,7 @@
 TitleScreen::TitleScreen()
     : state(TitleScreenState::LOGO_DISPLAY), displayTimer(0.0f),
       selectedIndex(0), gameStarted(false), settingsRequested(false),
-      localizationManager(nullptr) {
+      textRenderer(nullptr), localizationManager(nullptr) {
     LOGD("TitleScreen created");
 }
 
@@ -33,10 +33,9 @@ void TitleScreen::update(float deltaTime) {
         case TitleScreenState::LOGO_DISPLAY: {
             displayTimer += deltaTime;
             if (displayTimer >= LOGO_DISPLAY_DURATION) {
-                // Auto-transition to game (menu not visible due to missing text rendering)
-                state = TitleScreenState::TRANSITIONING;
-                startGame();
-                LOGI("Logo display complete - starting game automatically");
+                state = TitleScreenState::MENU;
+                displayTimer = 0.0f;
+                LOGI("Logo display complete - transitioning to menu");
             }
             break;
         }
@@ -61,35 +60,61 @@ void TitleScreen::update(float deltaTime) {
     }
 }
 
-void TitleScreen::render() {
-    // Placeholder for UI rendering
-    // In a real implementation, would use OpenGL text rendering
+void TitleScreen::setTextRenderer(TextRenderer* tr) {
+    textRenderer = tr;
+}
+
+void TitleScreen::render(TextRenderer* textRenderer) {
+    if (!textRenderer) return;
+
     switch (state) {
         case TitleScreenState::LOGO_DISPLAY: {
-            LOGD("Rendering logo (%.1f/%.1f)", displayTimer, LOGO_DISPLAY_DURATION);
+            // Draw "OBLIVION" text as placeholder for logo
+            const float color[4] = {1.0f, 0.85f, 0.5f, 1.0f}; // Gold
+            float tw = textRenderer->getTextWidth("OBLIVION", 2.0f);
+            float tx = (textRenderer->getScreenWidth() - tw) * 0.5f;
+            float ty = textRenderer->getScreenHeight() * 0.35f;
+            textRenderer->renderText("OBLIVION", tx, ty, 2.0f, color);
             break;
         }
 
         case TitleScreenState::MENU: {
-            LOGD("Rendering menu, selected: %d", selectedIndex);
+            // Draw menu items centered on screen
+            float scale = 1.0f;
+            float itemHeight = textRenderer->getTextHeight(scale) * 1.5f;
+            float totalHeight = menuItems.size() * itemHeight;
+            float startY = (textRenderer->getScreenHeight() - totalHeight) * 0.5f + itemHeight;
+
             for (size_t i = 0; i < menuItems.size(); ++i) {
                 bool isSelected = (i == selectedIndex);
-                const char* marker = isSelected ? "> " : "  ";
                 std::string displayText = localizationManager ?
                     localizationManager->getString(menuItems[i]) :
                     menuItems[i];
-                LOGD("%s%s", marker, displayText.c_str());
+
+                if (isSelected) {
+                    displayText = "> " + displayText;
+                    const float selectedColor[4] = {1.0f, 1.0f, 0.3f, 1.0f}; // Yellow
+                    float tw = textRenderer->getTextWidth(displayText, scale);
+                    float tx = (textRenderer->getScreenWidth() - tw) * 0.5f;
+                    textRenderer->renderText(displayText, tx, startY + i * itemHeight, scale, selectedColor);
+                } else {
+                    const float normalColor[4] = {0.9f, 0.9f, 0.9f, 1.0f}; // White-ish
+                    float tw = textRenderer->getTextWidth(displayText, scale);
+                    float tx = (textRenderer->getScreenWidth() - tw) * 0.5f;
+                    textRenderer->renderText(displayText, tx, startY + i * itemHeight, scale, normalColor);
+                }
             }
             break;
         }
 
         case TitleScreenState::LANGUAGE: {
-            LOGD("Rendering language selection");
+            const float color[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+            textRenderer->renderText("Select Language", 400.0f, 400.0f, 1.5f, color);
             break;
         }
 
         case TitleScreenState::TRANSITIONING: {
-            LOGD("Rendering fade-out effect");
+            // Fade out / nothing to render
             break;
         }
 

@@ -4,6 +4,7 @@
 #include <string>
 #include <android/log.h>
 #include "../localization/localization_manager.h"
+#include "text_renderer.h"
 
 #define LOG_TAG "TitleScreen"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
@@ -25,6 +26,7 @@ private:
     int selectedIndex;
     bool gameStarted;
     LocalizationManager* localizationManager;
+    TextRenderer* textRenderer;
 
     static constexpr float LOGO_DISPLAY_DURATION = 3.0f;
 
@@ -34,9 +36,10 @@ public:
 
     void initialize(LocalizationManager* lm);
     void update(float deltaTime);
-    void render();
+    void render(TextRenderer* textRenderer);
     void onTouchEvent(float x, float y);
     void onKeyPress(int key);
+    void setTextRenderer(TextRenderer* tr);
 
     bool isGameStarted() const { return gameStarted; }
     TitleScreenState getState() const { return state; }

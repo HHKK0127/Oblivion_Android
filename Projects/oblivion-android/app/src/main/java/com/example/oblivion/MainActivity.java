@@ -22,6 +22,9 @@ public class MainActivity extends Activity {
             WindowManager.LayoutParams.FLAG_FULLSCREEN
         );
 
+        // Pass AssetManager to native code before GL init
+        GameRenderer.nativeSetAssetManager(getAssets());
+
         // Create GLSurfaceView with OpenGL ES 3.0
         glSurfaceView = new GLSurfaceView(this);
         glSurfaceView.setEGLContextClientVersion(3);

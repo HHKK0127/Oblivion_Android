@@ -3,6 +3,8 @@
 #include <memory>
 #include <chrono>
 #include <android/log.h>
+#include <android/asset_manager.h>
+#include <android/asset_manager_jni.h>
 #include <GLES3/gl3.h>
 #include "../ui/title_screen.h"
 #include "../ui/quest_ui.h"
@@ -81,6 +83,9 @@ private:
     std::unique_ptr<AudioManager> audioManager;
 #endif
 
+    // Android Asset Manager (from Java)
+    AAssetManager* androidAssetManager;
+
     // State
     bool showTitleScreen;
     unsigned int screenWidth;
@@ -99,6 +104,7 @@ public:
     void render(float deltaTime);
     void cleanup();
     void resize(unsigned int width, unsigned int height);
+    void setAssetManager(AAssetManager* mgr);
 
     // Getters
     AssetManager* getAssetManager() { return assetManager.get(); }

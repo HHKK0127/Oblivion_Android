@@ -2,6 +2,7 @@
 
 #include <string>
 #include <cstdint>
+#include <android/asset_manager.h>
 
 class TextRenderer {
 public:
@@ -9,6 +10,7 @@ public:
     ~TextRenderer();
 
     bool initialize();
+    bool initialize(AAssetManager* assetManager);
     void cleanup();
     void setScreenSize(unsigned int width, unsigned int height);
 
@@ -24,7 +26,17 @@ public:
     unsigned int getScreenHeight() const { return screenHeight; }
 
 private:
+    TextRenderer(const TextRenderer&) = delete;
+    TextRenderer& operator=(const TextRenderer&) = delete;
+
     unsigned int screenWidth;
     unsigned int screenHeight;
     bool initialized;
+
+    struct FontData;
+    FontData* fontData;
+
+    unsigned int shaderProgram;
+    unsigned int vao;
+    unsigned int vbo;
 };

@@ -9,7 +9,7 @@
 using json = nlohmann::json;
 
 Renderer::Renderer()
-    : showTitleScreen(true), screenWidth(1080), screenHeight(1920),
+    : androidAssetManager(nullptr), showTitleScreen(true), screenWidth(1080), screenHeight(1920),
       targetFPS(60), frameTimeThreshold(1000.0f / 60.0f) {
     LOGD("Renderer created with target FPS: %d", targetFPS);
     lastFrameTime = std::chrono::high_resolution_clock::now();
@@ -60,6 +60,15 @@ void Renderer::resize(unsigned int width, unsigned int height) {
         LOGI("TextRenderer screen size updated to: %ux%u", screenWidth, screenHeight);
     } else {
         LOGW("WARNING: TextRenderer is NULL in resize()! Dimensions not updated!");
+    }
+}
+
+void Renderer::setAssetManager(AAssetManager* mgr) {
+    androidAssetManager = mgr;
+    LOGI("AssetManager set on Renderer");
+
+    if (textRenderer) {
+        textRenderer->initialize(androidAssetManager);
     }
 }
 
@@ -117,9 +126,16 @@ void Renderer::initGameSystems() {
     // Initialize Text Renderer (for debug HUD and settings UI)
     LOGI("Creating TextRenderer...");
     textRenderer = std::make_unique<TextRenderer>();
-    if (!textRenderer->initialize()) {
-        LOGE("Failed to initialize TextRenderer");
-        return;
+    if (androidAssetManager) {
+        if (!textRenderer->initialize(androidAssetManager)) {
+            LOGE("Failed to initialize TextRenderer with AssetManager");
+            return;
+        }
+    } else {
+        if (!textRenderer->initialize()) {
+            LOGE("Failed to initialize TextRenderer");
+            return;
+        }
     }
     textRenderer->setScreenSize(screenWidth, screenHeight);
     LOGI("TextRenderer initialized successfully with size %ux%u", screenWidth, screenHeight);
@@ -234,6 +250,7 @@ void Renderer::initGameSystems() {
     // Initialize Title Screen
     titleScreen = std::make_unique<TitleScreen>();
     titleScreen->initialize(localizationManager.get());
+    titleScreen->setTextRenderer(textRenderer.get());
 
     // Initialize Quest UI
     questUI = std::make_unique<QuestUI>();
@@ -256,7 +273,7 @@ void Renderer::render(float deltaTime) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         titleScreen->update(deltaTime);
-        titleScreen->render();
+        titleScreen->render(textRenderer.get());
 
         // Check if Settings was requested
         if (titleScreen->isSettingsRequested()) {
