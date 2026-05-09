@@ -33,7 +33,7 @@ void TitleScreen::update(float deltaTime) {
         case TitleScreenState::LOGO_DISPLAY: {
             displayTimer += deltaTime;
             if (displayTimer >= LOGO_DISPLAY_DURATION) {
-                // Auto-transition to game (skip menu for now)
+                // Auto-transition to game (menu not visible due to missing text rendering)
                 state = TitleScreenState::TRANSITIONING;
                 startGame();
                 LOGI("Logo display complete - starting game automatically");

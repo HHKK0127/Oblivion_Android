@@ -9,7 +9,7 @@
 using json = nlohmann::json;
 
 Renderer::Renderer()
-    : showTitleScreen(false), screenWidth(1080), screenHeight(1920),
+    : showTitleScreen(true), screenWidth(1080), screenHeight(1920),
       targetFPS(60), frameTimeThreshold(1000.0f / 60.0f) {
     LOGD("Renderer created with target FPS: %d", targetFPS);
     lastFrameTime = std::chrono::high_resolution_clock::now();
@@ -251,6 +251,10 @@ void Renderer::render(float deltaTime) {
 
     // Update Title Screen
     if (showTitleScreen) {
+        // Clear screen for title screen
+        glClearColor(0.15f, 0.25f, 0.5f, 1.0f);  // Bright navy blue for title
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
         titleScreen->update(deltaTime);
         titleScreen->render();
 
@@ -312,7 +316,7 @@ void Renderer::render(float deltaTime) {
     }
 
     // Render World (main game scene) - Clear with game background color
-    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);  // Dark gray for game screen
+    glClearColor(0.4f, 0.6f, 0.9f, 1.0f);  // Bright sky blue for game screen
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Enable depth testing for proper face rendering
