@@ -424,8 +424,8 @@ std::string SaveManager::getCurrentTimestamp() const {
 }
 
 bool SaveManager::validateSaveFile(const json& gameState) const {
-    SaveValidator::ValidationError err = validator->validate(gameState);
-    if (err != SaveValidator::ValidationError::OK) {
+    SaveSystem::ValidationError err = validator->validate(gameState);
+    if (err != SaveSystem::ValidationError::OK) {
         LOGE("Validation error: %s", validator->getErrorMessage(err).c_str());
         return false;
     }

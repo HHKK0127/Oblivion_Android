@@ -41,8 +41,12 @@ public:
     bool isGameStarted() const { return gameStarted; }
     TitleScreenState getState() const { return state; }
 
+    bool isSettingsRequested() const { return settingsRequested; }
+    void resetSettingsRequest() { settingsRequested = false; }
+
 private:
     void transitionToMenu();
+    bool settingsRequested;
     void transitionToLanguageMenu();
     void updateMenu(float deltaTime);
     void handleMenuSelection();

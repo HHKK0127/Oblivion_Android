@@ -393,7 +393,7 @@ void testStaminaValidation(TestRunner& runner) {
 void testChecksumValidation(TestRunner& runner) {
     LOGI("Starting Checksum Validation Tests");
 
-    SaveValidator validator;
+    SaveSystem::SaveValidator validator;
 
     // Create test game state
     GameState state;

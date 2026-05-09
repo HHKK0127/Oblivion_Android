@@ -93,6 +93,7 @@ public:
     ~PerformanceMonitor();
 
     void initialize();
+    void cleanup();
     void beginFrame();
     void endFrame();
     void recordCpuTime(float time);

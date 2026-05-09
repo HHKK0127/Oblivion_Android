@@ -55,11 +55,16 @@ struct Quest {
 
     uint32_t timeAccepted;
     uint32_t timeCompleted;
+    bool isRepeatable;
+
+    Quest()
+        : questId(0), giverNpcId(0), state(QuestState::PENDING),
+          timeAccepted(0), timeCompleted(0), isRepeatable(false) {}
 
     Quest(uint32_t id, uint32_t npcId, const std::string& t, const std::string& desc)
         : questId(id), giverNpcId(npcId), title(t), description(desc),
           state(QuestState::PENDING),
-          timeAccepted(0), timeCompleted(0) {}
+          timeAccepted(0), timeCompleted(0), isRepeatable(false) {}
 
     void accept();
     void complete();

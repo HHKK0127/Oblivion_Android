@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <random>
 #include <chrono>
-#include <glm/geometric.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #define LOG_TAG "NPC"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)

@@ -43,7 +43,7 @@ std::shared_ptr<Door> InteractionManager::createDoor(std::shared_ptr<WorldObject
 
     auto door = std::make_shared<Door>(worldObj);
     registerInteractable(door);
-    LOGD("Door created and registered (refId: %u)", worldObj->refId);
+    LOGD("Door created and registered (refId: %u)", worldObj->objectId);
     return door;
 }
 
@@ -55,7 +55,7 @@ std::shared_ptr<Container> InteractionManager::createContainer(std::shared_ptr<W
 
     auto container = std::make_shared<Container>(worldObj);
     registerInteractable(container);
-    LOGD("Container created and registered (refId: %u)", worldObj->refId);
+    LOGD("Container created and registered (refId: %u)", worldObj->objectId);
     return container;
 }
 
@@ -65,7 +65,7 @@ void InteractionManager::registerInteractable(std::shared_ptr<Interactable> inte
         return;
     }
 
-    uint32_t refId = interactable->getWorldObject()->refId;
+    uint32_t refId = interactable->getWorldObject()->objectId;
     interactables[refId] = interactable;
     LOGD("Interactable registered (refId: %u, total: %zu)", refId, interactables.size());
 }
@@ -164,4 +164,52 @@ void InteractionManager::clearInteractables() {
     nearbyInteractables.clear();
     highlightedInteractable = nullptr;
     LOGI("InteractionManager cleared (%zu interactables removed)", interactables.size());
+}
+
+// ============================================================================
+// Door Implementation
+// ============================================================================
+
+Door::Door(std::shared_ptr<WorldObject> obj) {
+    worldObject = obj;
+}
+
+bool Door::onInteract(const glm::vec3& playerPos) {
+    LOGI("Door interacted");
+    return true;
+}
+
+void Door::update(float deltaTime) {
+    // No per-frame update needed
+}
+
+bool Door::isInRange(const glm::vec3& playerPos, float range) const {
+    if (!worldObject) return false;
+    glm::vec3 diff = playerPos - worldObject->position;
+    float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
+    return distance <= range;
+}
+
+// ============================================================================
+// Container Implementation
+// ============================================================================
+
+Container::Container(std::shared_ptr<WorldObject> obj) {
+    worldObject = obj;
+}
+
+bool Container::onInteract(const glm::vec3& playerPos) {
+    LOGI("Container interacted");
+    return true;
+}
+
+void Container::update(float deltaTime) {
+    // No per-frame update needed
+}
+
+bool Container::isInRange(const glm::vec3& playerPos, float range) const {
+    if (!worldObject) return false;
+    glm::vec3 diff = playerPos - worldObject->position;
+    float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
+    return distance <= range;
 }

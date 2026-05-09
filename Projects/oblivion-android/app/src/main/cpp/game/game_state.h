@@ -63,12 +63,18 @@ struct WorldState {
     // World Items (dropped items on ground)
     std::vector<std::tuple<uint32_t, glm::vec3>> worldItems;  // <itemId, position>
 
+    // Player Position (for world manager tracking)
+    glm::vec3 playerPosition;
+    glm::vec3 playerRotation;
+
     WorldState()
         : timeOfDay(12.0f),
           dayCount(0),
           currentWeather("clear"),
           weatherIntensity(0.0f),
-          weatherTransitionTime(0.0f) {}
+          weatherTransitionTime(0.0f),
+          playerPosition(0.0f, 0.0f, 0.0f),
+          playerRotation(0.0f, 0.0f, 0.0f) {}
 };
 
 // ============================================================================

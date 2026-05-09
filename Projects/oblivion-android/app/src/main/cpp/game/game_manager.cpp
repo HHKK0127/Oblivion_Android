@@ -12,8 +12,10 @@
 #include <iomanip>
 #include <sstream>
 
+std::string getCurrentTimestamp();
 using json = nlohmann::json;
 using SaveSystem::SaveManager;
+using SaveSystem::SaveSlot;
 
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, "GameManager", __VA_ARGS__)
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN, "GameManager", __VA_ARGS__)

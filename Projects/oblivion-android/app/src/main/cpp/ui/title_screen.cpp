@@ -2,7 +2,8 @@
 
 TitleScreen::TitleScreen()
     : state(TitleScreenState::LOGO_DISPLAY), displayTimer(0.0f),
-      selectedIndex(0), gameStarted(false), localizationManager(nullptr) {
+      selectedIndex(0), gameStarted(false), settingsRequested(false),
+      localizationManager(nullptr) {
     LOGD("TitleScreen created");
 }
 
@@ -164,8 +165,8 @@ void TitleScreen::handleMenuSelection() {
         gameStarted = true;
         LOGI("Menu selection: Start Game");
     } else if (selected == "menu_settings") {
-        transitionToLanguageMenu();
-        LOGD("Menu selection: Settings (Language)");
+        settingsRequested = true;
+        LOGD("Menu selection: Settings (requested)");
     } else if (selected == "menu_quit") {
         LOGD("Menu selection: Quit");
         // Would call Android activity finish() in real implementation

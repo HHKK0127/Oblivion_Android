@@ -312,7 +312,7 @@ void QuestManager::logQuestStatus() const {
         auto quest = getQuest(questId);
         if (quest) {
             LOGD("  Quest: %s (ID=%u, Objectives=%zu/%zu)", quest->title.c_str(),
-                 questId, quest->getCompletedObjectiveCount(), quest->objectives.size());
+                 questId, static_cast<size_t>(quest->getCompletedObjectiveCount()), quest->objectives.size());
         }
     }
 

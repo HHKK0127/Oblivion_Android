@@ -134,22 +134,4 @@ struct CellCoord {
     }
 };
 
-// ============================================================================
-// World State
-// ============================================================================
 
-struct WorldState {
-    glm::vec3 playerPosition;
-    glm::vec3 playerRotation;
-
-    float timeOfDay;                // 0.0 - 24.0
-    float weatherIntensity;         // 0.0 - 1.0
-    std::string currentWeather;
-
-    uint32_t dayCount;
-
-    WorldState()
-        : playerPosition(0.0f, 0.0f, 0.0f), playerRotation(0.0f, 0.0f, 0.0f),
-          timeOfDay(12.0f), weatherIntensity(0.0f),
-          currentWeather("Clear"), dayCount(0) {}
-};

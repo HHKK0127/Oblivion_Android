@@ -10,7 +10,7 @@ BookDatabase::BookDatabase() {}
 BookDatabase::~BookDatabase() {}
 
 void BookDatabase::registerBook(const Book& book) {
-    books[book.bookId] = book;
+    books.insert_or_assign(book.bookId, book);
 }
 
 void BookDatabase::initialize() {

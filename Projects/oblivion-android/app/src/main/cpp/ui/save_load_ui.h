@@ -5,7 +5,10 @@
 #include <memory>
 #include <android/log.h>
 #include "../game/game_manager.h"
+#include "../save_system/save_manager.h"
 #include "../localization/localization_manager.h"
+
+using SaveSystem::SaveSlot;
 
 #define LOG_TAG "SaveLoadUI"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)

@@ -6,17 +6,24 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Add nlohmann/json (header-only library)
-include(FetchContent)
-FetchContent_Declare(json
-    URL https://github.com/nlohmann/json/releases/download/v3.11.2/json.hpp
-    DOWNLOAD_NO_EXTRACT TRUE
-    DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/nlohmann
-)
-FetchContent_MakeAvailable(json)
+# Check if already downloaded to avoid slow network fetch on every build
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/nlohmann/json.hpp")
+    message(STATUS "nlohmann/json found locally")
+else()
+    include(FetchContent)
+    FetchContent_Declare(json
+        URL https://github.com/nlohmann/json/releases/download/v3.11.2/json.hpp
+        DOWNLOAD_NO_EXTRACT TRUE
+        DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/nlohmann
+    )
+    FetchContent_MakeAvailable(json)
+endif()
 
-# Alternative: If FetchContent fails, ensure nlohmann/json is available
-if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/nlohmann/json.hpp")
-    message(WARNING "nlohmann/json not found. Please ensure it's installed or available in external/nlohmann/")
+# Add GLM (header-only math library)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/glm/glm.hpp")
+    message(STATUS "GLM found locally")
+else()
+    message(FATAL_ERROR "GLM not found. Please download glm headers to external/glm/")
 endif()
 
 # Add main library
@@ -102,6 +109,7 @@ target_include_directories(native-lib PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/assets
     ${CMAKE_CURRENT_SOURCE_DIR}/test
     ${CMAKE_CURRENT_SOURCE_DIR}/external
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/glm
 )
 
 # Find OpenAL-Soft (optional for now)

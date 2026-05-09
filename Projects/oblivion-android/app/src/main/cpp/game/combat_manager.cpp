@@ -1,4 +1,5 @@
 #include "combat_manager.h"
+#include "spell_manager.h"
 #include <algorithm>
 #include <glm/geometric.hpp>
 

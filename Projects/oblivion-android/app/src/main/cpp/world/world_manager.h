@@ -2,6 +2,7 @@
 
 #include "world_data.h"
 #include "cell.h"
+#include "../game/game_state.h"
 #include <unordered_map>
 #include <queue>
 #include <functional>
