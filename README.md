@@ -1,7 +1,7 @@
 # Oblivion Android - Complete Native Port
 
-![Status](https://img.shields.io/badge/status-Phase%207.1%20RC-brightgreen)
-![Version](https://img.shields.io/badge/version-0.7.1-blue)
+![Status](https://img.shields.io/badge/status-Phase%208-brightgreen)
+![Version](https://img.shields.io/badge/version-0.8.0-blue)
 ![License](https://img.shields.io/badge/license-Proprietary-red)
 ![Android](https://img.shields.io/badge/android-10%2B-green)
 
@@ -22,6 +22,9 @@ A complete native Android port of The Elder Scrolls IV: Oblivion, built entirely
 - ✅ **Text Rendering** - On-screen text display with color and positioning
 - ✅ **Debug HUD** - FPS, frame time, memory, and system info overlay
 - ✅ **Settings System** - Persistent debug mode and language preferences
+- ✅ **Save/Load System** - Game state persistence with slot management
+- ✅ **OpenAL 3D Audio** - Spatial audio with distance attenuation
+- ✅ **RetroFilter Effects** - Pixelation, scanlines, color reduction, CRT distortion, film grain
 
 ### Game Features
 - 🎯 Touch-based camera control
@@ -31,9 +34,10 @@ A complete native Android port of The Elder Scrolls IV: Oblivion, built entirely
 - 🎯 Title screen with menu
 - 🎯 Quest log with progress tracking
 - 🎯 Real-time combat between NPCs
-- 🎯 **NEW**: Save/Load game state (Phase 7.1)
-- 🎯 **NEW**: Settings menu with debug mode toggle
-- 🎯 **NEW**: On-screen debug HUD (FPS, frame time, memory info)
+- 🎯 **NEW**: Save/Load game state with slot management (Phase 8)
+- 🎯 **NEW**: Settings menu with debug mode toggle and RetroFilter effects (Phase 8)
+- 🎯 **NEW**: On-screen debug HUD with audio/filter status (Phase 8)
+- 🎯 **NEW**: 3D spatial audio with distance attenuation (Phase 8)
 
 ## 📱 Technical Specifications
 
@@ -123,7 +127,7 @@ Access from title screen:
 
 Settings are automatically saved to persistent storage.
 
-### Debug HUD Display
+### Debug HUD Display (Phase 8 Enhanced)
 When **Debug Mode: ON**, displays in real-time:
 - **FPS**: Current frames per second (e.g., "FPS: 60.0")
 - **Frame Time**: Milliseconds per frame (e.g., "Frame: 16.67 ms")
@@ -131,6 +135,8 @@ When **Debug Mode: ON**, displays in real-time:
 - **Memory**: Current RAM usage (e.g., "Mem: 45 MB")
 - **Cubes**: Number of active game objects
 - **Status**: Shows "DEBUG: ON/OFF"
+- **Audio System** (Phase 8): Loaded clips, active sources, BGM status (e.g., "Audio: clips=5 sources=12")
+- **RetroFilter** (Phase 8): Active effects abbreviations (e.g., "Filters: SPG" = Scanlines, Pixelation, Grain)
 
 ### Text Rendering System
 - Uses OpenGL ES 3.0 orthographic projection
@@ -189,7 +195,9 @@ oblivion-android/
 │   ├── cpp/
 │   │   ├── engine/          (Rendering, Camera, Shaders)
 │   │   ├── game/            (NPC, Combat, Quest, Magic)
-│   │   ├── ui/              (TitleScreen, QuestUI, TextRenderer, DebugHUD, SettingsUI)
+│   │   ├── ui/              (TitleScreen, QuestUI, TextRenderer, DebugHUD, SettingsUI, SaveLoadUI)
+│   │   ├── audio/           (AudioManager, Audio3D, JNI bridge - Phase 8)
+│   │   ├── save_system/     (SaveManager, game state persistence - Phase 8)
 │   │   ├── system/          (SettingsManager - persistent settings)
 │   │   ├── assets/          (Asset Loading, Parsers)
 │   │   ├── profiling/       (Performance Monitoring)
@@ -216,39 +224,42 @@ oblivion-android/
 | Phase 5 | Deep Features | ✅ Complete | Combat, Quests, Magic |
 | Phase 6 | Optimization | ✅ Complete | Performance, testing, docs |
 | Phase 7 | Release Prep | ✅ Complete | Play Store documentation |
-| Phase 7.1 | Enhanced Features | 🔜 In Progress | Save/Load, improved UI |
+| Phase 7.1 | Enhanced Features | ✅ Complete | Save/Load, improved UI |
+| Phase 8 | Audio & Post-Processing | ✅ Complete | OpenAL 3D Audio, RetroFilter, SaveLoadUI |
 
-## 📊 Code Metrics
+## 📊 Code Metrics (Phase 8)
 
-- **C++ Code**: 5,200+ lines (includes new UI systems)
-- **Java Code**: 600+ lines
-- **Header Files**: 950+ lines
-- **Total Project**: 6,750+ lines
-- **UI System Code**: 800+ lines (TextRenderer, DebugHUD, SettingsManager, SettingsUI)
-- **Compilation Time**: 6.5 minutes (release)
-- **APK Size**: 8.4 MB
+- **C++ Code**: 6,200+ lines (includes audio, save/load, RetroFilter)
+- **Java Code**: 700+ lines
+- **Header Files**: 1,100+ lines
+- **Total Project**: 8,000+ lines
+- **Audio System**: 400+ lines (AudioManager, Audio3D, JNI bridge)
+- **SaveLoadUI**: 250+ lines (UI + error dialogs)
+- **RetroFilter Effects**: 150+ lines (DebugHUD integration)
+- **Compilation Time**: 7.2 minutes (release)
+- **APK Size**: 8.8 MB
 
 ## 🎯 Current Limitations
 
-⚠️ **Phase 6 Release Candidate Limitations**:
-- ~~Debug mode always enabled~~ ✅ Now optional (Settings → Debug Mode)
-- No save/load system (Phase 7)
-- Text-based UI only (Phase 7 graphics)
-- Limited NPC dialogue (Phase 7 expansion)
-- No full inventory management (Phase 7)
+⚠️ **Phase 8 Current Limitations**:
+- ~~Debug mode always enabled~~ ✅ Fixed (Settings → Debug Mode)
+- ~~No save/load system~~ ✅ Implemented (Phase 8)
+- Text-based UI only (Phase 9 planned: graphical UI)
+- Limited NPC dialogue (Phase 9 expansion)
+- No full inventory management (Phase 9)
 - Single-player only (no multiplayer)
-- No map system yet (Phase 7)
+- No map system yet (Phase 9)
 
 See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for complete list.
 
-## 🚀 Future Enhancements (Phase 7+)
+## 🚀 Future Enhancements (Phase 9+)
 
 - 🎨 Graphical UI with textures
-- 💾 Save/Load system (JSON-based)
 - 🗺️ Map with quest markers
 - 📝 Expanded NPC dialogue
-- 🎵 Audio system (OpenAL-Soft ready)
-- ⚡ Performance optimizations
+- 📦 Full inventory management with item system
+- ⚡ Further performance optimizations
+- 🎮 Controller support
 - 🔓 Google Play Store release
 
 ## 🐛 Reporting Issues
@@ -333,8 +344,8 @@ Proprietary - Experimental Port
 
 ---
 
-**Status**: Release Candidate (Phase 7.1 In Progress)  
-**Last Updated**: 2026-04-18  
-**Version**: 0.7.1  
-**Features**: Settings UI, Debug HUD, Text Rendering, Persistent Settings  
-**Next**: Phase 7.2 - Save/Load System
+**Status**: Phase 8 Complete  
+**Last Updated**: 2026-05-17  
+**Version**: 0.8.0  
+**Features**: SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD  
+**Next**: Phase 9 - Graphical UI & Inventory System
