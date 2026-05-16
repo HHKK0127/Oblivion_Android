@@ -8,8 +8,10 @@
 #include <glm/glm.hpp>
 #include <android/log.h>
 
-// Note: Audio system uses Java MediaPlayer via JNI bridge
-// OpenAL headers not needed for pragmatic approach
+#ifdef AUDIO_SYSTEM_ENABLED
+#include <AL/al.h>
+#include <AL/alc.h>
+#endif
 
 #undef LOG_TAG
 #undef LOGD
@@ -26,6 +28,13 @@
 #include "audio_clip.h"
 #include "audio_source.h"
 #include "audio_3d.h"
+
+// JNI audio bridge extern declarations
+extern "C" {
+void jni_audio_call_play_bgm(const char* path);
+void jni_audio_call_stop_bgm();
+void jni_audio_call_play_se(const char* path);
+}
 
 /**
  * @brief オーディオマネージャー

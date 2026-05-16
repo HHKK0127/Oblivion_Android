@@ -4,6 +4,9 @@
 #include <glm/glm.hpp>
 #include "text_renderer.h"
 
+class AudioManager;
+class Renderer;
+
 /**
  * @brief デバッグHUD（ヘッドアップディスプレイ）
  * FPS、メモリ、フレームタイム、システム情報を表示
@@ -16,8 +19,10 @@ public:
     /**
      * @brief デバッグHUDを初期化
      * @param textRenderer テキストレンダラーへのポインタ
+     * @param audioManager オーディオマネージャーへのポインタ（オプション）
+     * @param renderer レンダラーへのポインタ（オプション）
      */
-    bool initialize(TextRenderer* textRenderer);
+    bool initialize(TextRenderer* textRenderer, AudioManager* audioManager = nullptr, Renderer* renderer = nullptr);
 
     /**
      * @brief フレームを更新（統計情報を計算）
@@ -46,12 +51,19 @@ public:
     void setVisible(bool v) { visible = v; }
 
     /**
+     * @brief オーディオマネージャーを設定
+     */
+    void setAudioManager(AudioManager* audioMgr) { audioManager = audioMgr; }
+
+    /**
      * @brief クリーンアップ
      */
     void cleanup();
 
 private:
     TextRenderer* textRenderer;
+    AudioManager* audioManager;
+    Renderer* renderer;
     bool visible;
 
     // 統計情報
@@ -74,4 +86,6 @@ private:
 
     MemoryInfo getMemoryInfo() const;
     std::string formatMemorySize(long bytes) const;
+    std::string getAudioStatus() const;
+    std::string getRetroFilterStatus() const;
 };

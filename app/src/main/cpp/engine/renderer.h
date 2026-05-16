@@ -9,6 +9,7 @@
 #include "../ui/text_renderer.h"
 #include "../ui/debug_hud.h"
 #include "../ui/settings_ui.h"
+#include "../ui/save_load_ui.h"
 #include "../game/quest_manager.h"
 #include "../game/npc_manager.h"
 #include "../system/settings_manager.h"
@@ -49,6 +50,7 @@ private:
     std::unique_ptr<TextRenderer> textRenderer;
     std::unique_ptr<DebugHUD> debugHUD;
     std::unique_ptr<SettingsUI> settingsUI;
+    std::unique_ptr<SaveLoadUI> saveLoadUI;
 
     // Settings
     std::unique_ptr<SettingsManager> settingsManager;
@@ -114,6 +116,7 @@ public:
     TextRenderer* getTextRenderer() { return textRenderer.get(); }
     DebugHUD* getDebugHUD() { return debugHUD.get(); }
     SettingsUI* getSettingsUI() { return settingsUI.get(); }
+    SaveLoadUI* getSaveLoadUI() { return saveLoadUI.get(); }
     SettingsManager* getSettingsManager() { return settingsManager.get(); }
     PerformanceMonitor* getPerformanceMonitor() { return performanceMonitor.get(); }
     PlayerController* getPlayerController() { return playerController.get(); }

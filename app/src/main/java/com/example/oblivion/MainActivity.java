@@ -56,6 +56,15 @@ public class MainActivity extends Activity {
             // SoundPool for SE (sound effects) - max 5 simultaneous sounds
             soundPool = new SoundPool(5, AudioManager.STREAM_MUSIC, 0);
             Log.i(TAG, "SoundPool initialized for SE (max 5 sounds)");
+
+            // Initialize audio bridge with AssetManager for WAV loading (Phase 8+)
+            try {
+                android.content.res.AssetManager assetManager = getAssets();
+                GameRenderer.nativeInitAudioBridge(assetManager, this);
+                Log.i(TAG, "Audio bridge initialized with AssetManager and MainActivity");
+            } catch (Exception e) {
+                Log.w(TAG, "Failed to initialize audio bridge: " + e.getMessage());
+            }
         } catch (Exception e) {
             Log.e(TAG, "Failed to initialize audio", e);
         }

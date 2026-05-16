@@ -4,7 +4,7 @@
 TitleScreen::TitleScreen()
     : state(TitleScreenState::LOGO_DISPLAY), displayTimer(0.0f),
       selectedIndex(0), gameStarted(false), settingsRequested(false),
-      localizationManager(nullptr) {
+      loadGameRequested(false), localizationManager(nullptr) {
     LOGD("TitleScreen created");
 }
 
@@ -18,6 +18,7 @@ void TitleScreen::initialize(LocalizationManager* lm) {
     // Initialize menu items
     menuItems.clear();
     menuItems.push_back("menu_start");
+    menuItems.push_back("menu_load");
     menuItems.push_back("menu_settings");
     menuItems.push_back("menu_quit");
 
@@ -179,7 +180,7 @@ void TitleScreen::renderMenuItems() {
     // - Quit
 
     for (size_t i = 0; i < menuItems.size(); ++i) {
-        bool isSelected = (i == selectedIndex);
+        bool isSelected = (static_cast<int>(i) == selectedIndex);
         float itemX = 0.2f;  // 画面左20%
         float itemY = 0.3f + (i * 0.15f);  // 30%から各項目15%間隔
 
@@ -205,7 +206,7 @@ void TitleScreen::onTouchEvent(float x, float y) {
         for (size_t i = 0; i < menuItems.size(); ++i) {
             float itemY = menuStartY + (i * menuItemHeight);
             if (y >= itemY && y < itemY + menuItemHeight) {
-                selectedItem = i;
+                selectedItem = static_cast<int>(i);
                 break;
             }
         }
@@ -261,6 +262,10 @@ void TitleScreen::handleMenuSelection() {
         state = TitleScreenState::TRANSITIONING;
         gameStarted = true;
         LOGI("Menu selection: Start Game");
+    } else if (selected == "menu_load") {
+        // Request SaveLoadUI to be opened in Renderer (Phase 5+)
+        loadGameRequested = true;
+        LOGD("Menu selection: Load Game - requesting save/load UI");
     } else if (selected == "menu_settings") {
         // Request Settings UI to be opened in Renderer
         settingsRequested = true;

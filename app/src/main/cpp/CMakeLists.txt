@@ -70,6 +70,11 @@ add_library(native-lib SHARED
     # Save System
     save_system/save_manager.cpp
 
+    # Audio System (Phase 8+)
+    audio/audio_manager.cpp
+    audio/audio_3d.cpp
+    audio/jni_audio_bridge.cpp
+
     # Asset System
     assets/nif_parser.cpp
     assets/dds_loader.cpp
@@ -142,6 +147,9 @@ target_compile_options(native-lib PRIVATE
     -Wextra
     -Werror=format
 )
+
+# Enable audio system
+target_compile_definitions(native-lib PRIVATE AUDIO_SYSTEM_ENABLED)
 
 # Warning suppression for specific headers
 set_source_files_properties(

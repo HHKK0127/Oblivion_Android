@@ -1,5 +1,7 @@
 #include <jni.h>
 #include <android/log.h>
+#include <android/asset_manager.h>
+#include <android/asset_manager_jni.h>
 #include "engine/renderer.h"
 
 #define LOG_TAG "JNI_Bridge"
@@ -8,6 +10,9 @@
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 static Renderer* g_renderer = nullptr;
+extern void jni_audio_set_asset_manager(AAssetManager* mgr);
+extern void jni_audio_set_java_vm(JavaVM* vm);
+extern void jni_audio_set_main_activity(jobject activity);
 
 // Initialize engine and return handle to Java
 extern "C" JNIEXPORT jlong JNICALL
@@ -52,6 +57,49 @@ Java_com_example_oblivion_GameRenderer_nativeInitEngine(
         }
         return 0;
     }
+}
+
+// Initialize audio bridge with asset manager & JavaVM (Phase 8+)
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeInitAudioBridge(
+        JNIEnv* env,
+        jobject mainActivityObj,
+        jobject assetManager) {
+    LOGI("nativeInitAudioBridge called");
+
+    if (!assetManager) {
+        LOGE("AssetManager is null");
+        return;
+    }
+
+    AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
+    if (!mgr) {
+        LOGE("Failed to get AAssetManager from Java");
+        return;
+    }
+
+    jni_audio_set_asset_manager(mgr);
+    LOGD("AAssetManager set");
+
+    // JavaVM を取得して設定
+    JavaVM* vm = nullptr;
+    if (env->GetJavaVM(&vm) != JNI_OK) {
+        LOGE("Failed to get JavaVM");
+        return;
+    }
+    jni_audio_set_java_vm(vm);
+    LOGD("JavaVM set");
+
+    // MainActivity インスタンスを設定
+    if (mainActivityObj) {
+        jni_audio_set_main_activity(mainActivityObj);
+        LOGD("MainActivity reference set");
+    } else {
+        LOGE("MainActivity object is null");
+        return;
+    }
+
+    LOGI("Audio bridge initialization complete");
 }
 
 // Set viewport with handle parameter

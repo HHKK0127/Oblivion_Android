@@ -243,7 +243,7 @@ void AudioManager::playBGMViaJava(const std::string& filename) {
 
     // JNI audio bridge 経由で Java の playBGM メソッドを呼び出す
     // このメソッドは MediaPlayer をセットアップして再生を開始する
-    jni_audio_play_bgm(filename);
+    jni_audio_call_play_bgm(filename.c_str());
 }
 
 void AudioManager::stopBGM(float fadeOut) {
@@ -269,7 +269,7 @@ void AudioManager::stopBGM(float fadeOut) {
         currentBGMClipId = 0;
 
         // Java MediaPlayer 経由で BGM を停止
-        jni_audio_stop_bgm();
+        jni_audio_call_stop_bgm();
 
         LOGD("BGM stopped");
     }
@@ -301,9 +301,28 @@ void AudioManager::setBGMVolume(float volume) {
 
 uint32_t AudioManager::playSE(uint32_t clipId, const glm::vec3& position,
                              float volume) {
+    // MAX_SOURCES 超過時：最も古い SE を削除して新規作成を優先
     if (sources.size() >= MAX_SOURCES) {
-        LOGW("Maximum number of audio sources reached");
-        return 0;
+        uint32_t oldestSourceId = 0;
+        uint32_t oldestValue = UINT32_MAX;
+
+        // BGM 以外で最も古いソース ID を探す（ソース ID は単調増加）
+        for (auto& pair : sources) {
+            if (pair.first != currentBGMSourceId && pair.first < oldestValue) {
+                oldestSourceId = pair.first;
+                oldestValue = pair.first;
+            }
+        }
+
+        if (oldestSourceId != 0) {
+            // 最も古い SE を削除
+            destroySource(oldestSourceId);
+            LOGW("Oldest SE removed to make room: sourceId=%u", oldestSourceId);
+        } else {
+            // BGM のみで MAX_SOURCES に達している場合
+            LOGW("Cannot create new SE: MAX_SOURCES reached (BGM playing)");
+            return 0;
+        }
     }
 
     // クリップを取得
@@ -328,6 +347,9 @@ uint32_t AudioManager::playSE(uint32_t clipId, const glm::vec3& position,
 
     // 再生開始
     alSourcePlay(source->alSource);
+
+    // Java SoundPool 経由でも再生（フォールバック用）
+    jni_audio_call_play_se(clip->filename.c_str());
 
     LOGD("SE playing: sourceId=%u, clipId=%u, pos=(%.1f, %.1f, %.1f)",
          sourceId, clipId, position.x, position.y, position.z);
@@ -398,19 +420,105 @@ void AudioManager::setSEVolume(float volume) {
 
 ALuint AudioManager::loadWavFile(const std::string& filename, ALint& format,
                                 ALsizei& frequency, ALsizei& size) {
-    // TODO: Android assets から WAV ファイルを読み込む
-    // ここでは簡略実装（実装時には以下の処理が必要）
-    // 1. AAssetManager から AAsset を開く
-    // 2. WAV ヘッダーをパース (RIFF, fmt, data チャンク)
-    // 3. alBufferData で OpenAL バッファへアップロード
+    LOGD("Loading WAV file: %s", filename.c_str());
 
-    LOGE("loadWavFile not yet implemented: %s", filename.c_str());
+    extern AAssetManager* jni_audio_get_asset_manager();
+    AAssetManager* mgr = jni_audio_get_asset_manager();
+    if (!mgr) {
+        LOGE("AAssetManager not initialized");
+        return 0;
+    }
 
-    // 仮実装：失敗を返す
-    format = AL_FORMAT_MONO16;
-    frequency = 44100;
-    size = 0;
-    return 0;
+    AAsset* asset = AAssetManager_open(mgr, filename.c_str(), AASSET_MODE_STREAMING);
+    if (!asset) {
+        LOGE("Failed to open asset: %s", filename.c_str());
+        return 0;
+    }
+
+    off_t assetSize = AAsset_getLength(asset);
+    if (assetSize < 44) {
+        LOGE("Asset too small: %ld bytes", assetSize);
+        AAsset_close(asset);
+        return 0;
+    }
+
+    std::vector<uint8_t> wavData(assetSize);
+    if (AAsset_read(asset, wavData.data(), assetSize) != assetSize) {
+        LOGE("Failed to read asset: %s", filename.c_str());
+        AAsset_close(asset);
+        return 0;
+    }
+    AAsset_close(asset);
+
+    if (*(uint32_t*)wavData.data() != 0x46464952) {
+        LOGE("Invalid WAV (no RIFF): %s", filename.c_str());
+        return 0;
+    }
+
+    uint16_t numChannels = 0;
+    uint32_t sampleRate = 0;
+    uint16_t bitsPerSample = 0;
+    uint32_t audioDataOffset = 0;
+    uint32_t audioDataSize = 0;
+
+    uint32_t pos = 12;
+    while (pos + 8 <= wavData.size()) {
+        uint32_t chunkId = *(uint32_t*)&wavData[pos];
+        uint32_t chunkSize = *(uint32_t*)&wavData[pos + 4];
+
+        if (pos + 8 + chunkSize > wavData.size()) break;
+
+        if (chunkId == 0x20746d66) {
+            if (chunkSize < 16) {
+                LOGE("Invalid fmt chunk size: %u", chunkSize);
+                return 0;
+            }
+            numChannels = *(uint16_t*)&wavData[pos + 8];
+            sampleRate = *(uint32_t*)&wavData[pos + 12];
+            bitsPerSample = *(uint16_t*)&wavData[pos + 22];
+            LOGD("WAV: ch=%u sr=%u bits=%u", numChannels, sampleRate, bitsPerSample);
+        } else if (chunkId == 0x61746164) {
+            audioDataOffset = pos + 8;
+            audioDataSize = chunkSize;
+            break;
+        }
+
+        pos += 8 + chunkSize;
+    }
+
+    if (audioDataSize == 0 || numChannels == 0 || sampleRate == 0) {
+        LOGE("Invalid WAV: missing audio data");
+        return 0;
+    }
+
+    if (bitsPerSample == 16) {
+        format = (numChannels == 1) ? AL_FORMAT_MONO16 : AL_FORMAT_STEREO16;
+    } else if (bitsPerSample == 8) {
+        format = (numChannels == 1) ? AL_FORMAT_MONO8 : AL_FORMAT_STEREO8;
+    } else {
+        LOGE("Unsupported bits per sample: %u", bitsPerSample);
+        return 0;
+    }
+
+    frequency = sampleRate;
+    size = audioDataSize;
+
+    ALuint buffer = 0;
+    alGenBuffers(1, &buffer);
+    if (alGetError() != AL_NO_ERROR) {
+        LOGE("alGenBuffers failed");
+        return 0;
+    }
+
+    alBufferData(buffer, format, wavData.data() + audioDataOffset, audioDataSize, sampleRate);
+    if (alGetError() != AL_NO_ERROR) {
+        LOGE("alBufferData failed");
+        alDeleteBuffers(1, &buffer);
+        return 0;
+    }
+
+    LOGD("Loaded WAV: id=%u size=%u", buffer, audioDataSize);
+    return buffer;
 }
 
 void AudioManager::cleanupFinishedSources() {

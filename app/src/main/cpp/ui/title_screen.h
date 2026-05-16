@@ -27,13 +27,15 @@ private:
     int selectedIndex;
     bool gameStarted;
     bool settingsRequested;
+    bool loadGameRequested;
     LocalizationManager* localizationManager;
     std::unique_ptr<SettingsUI> settingsUI;
 
     static constexpr float LOGO_DISPLAY_DURATION = 3.0f;
     static constexpr int MENU_START = 0;      // "Start Game"
-    static constexpr int MENU_SETTINGS = 1;   // "Settings"
-    static constexpr int MENU_QUIT = 2;       // "Quit"
+    static constexpr int MENU_LOAD = 1;       // "Load Game"
+    static constexpr int MENU_SETTINGS = 2;   // "Settings"
+    static constexpr int MENU_QUIT = 3;       // "Quit"
 
 public:
     TitleScreen();
@@ -48,6 +50,8 @@ public:
     bool isGameStarted() const { return gameStarted; }
     bool isSettingsRequested() const { return settingsRequested; }
     void resetSettingsRequest() { settingsRequested = false; }
+    bool isLoadGameRequested() const { return loadGameRequested; }
+    void resetLoadGameRequest() { loadGameRequested = false; }
     TitleScreenState getState() const { return state; }
 
 private:

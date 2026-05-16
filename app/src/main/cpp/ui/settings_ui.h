@@ -14,6 +14,11 @@ public:
     enum class SettingItem {
         DEBUG_MODE,
         LANGUAGE,
+        PIXELATION,
+        SCANLINES,
+        COLOR_REDUCTION,
+        CRT_DISTORTION,
+        FILM_GRAIN,
         BACK
     };
 
@@ -23,7 +28,7 @@ public:
     /**
      * @brief 設定UIを初期化
      */
-    bool initialize(TextRenderer* textRenderer, SettingsManager* settingsManager);
+    bool initialize(TextRenderer* textRenderer, SettingsManager* settingsManager, class Renderer* renderer = nullptr);
 
     /**
      * @brief 表示/非表示を切り替え
@@ -63,6 +68,7 @@ public:
 private:
     TextRenderer* textRenderer;
     SettingsManager* settingsManager;
+    class Renderer* renderer;
 
     bool visible;
     bool returnToMenu;

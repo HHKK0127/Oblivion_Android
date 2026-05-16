@@ -137,4 +137,8 @@ public class GameRenderer implements GLSurfaceView.Renderer {
     private native void nativeSetViewport(long handle, int width, int height);
     private native void nativeRenderFrame(long handle);
     private native void nativeOnTouchEvent(long handle, float dx, float dy);
+
+    // Audio bridge initialization (Phase 8+)
+    // Initializes AssetManager and MainActivity for Java/C++ audio interoperability
+    public static native void nativeInitAudioBridge(android.content.res.AssetManager assetManager, Object mainActivity);
 }

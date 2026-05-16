@@ -97,3 +97,26 @@ void Audio3D::setGain(float gain) {
     alListenerf(AL_GAIN, masterGain);
     LOGD("Master gain set: %.2f", masterGain);
 }
+
+float Audio3D::calculateAttenuation(const glm::vec3& sourcePos, float referenceDistance,
+                                   float maxDistance) const {
+    // リスナーから音源への距離を計算
+    float distance = glm::distance(listenerPosition, sourcePos);
+
+    // 最大距離を超えた場合は無音
+    if (distance >= maxDistance) {
+        return 0.0f;
+    }
+
+    // リファレンス距離より近い場合は最大音量
+    if (distance <= referenceDistance) {
+        return 1.0f;
+    }
+
+    // 逆二乗則（自然な3D音響減衰）
+    // attenuation = referenceDistance / distance
+    float attenuation = referenceDistance / distance;
+
+    // リスナー距離でクランプ（オプション）
+    return glm::clamp(attenuation, 0.0f, 1.0f);
+}

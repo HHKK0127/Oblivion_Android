@@ -89,6 +89,16 @@ public:
     void setGain(float gain);
 
     /**
+     * @brief 距離減衰を計算（逆二乗則）
+     * @param sourcePos 音源位置
+     * @param referenceDistance リファレンス距離（減衰開始距離、デフォルト1.0m）
+     * @param maxDistance 最大距離（これ以上は無音、デフォルト無限）
+     * @return 減衰係数（0.0 - 1.0）
+     */
+    float calculateAttenuation(const glm::vec3& sourcePos, float referenceDistance = 1.0f,
+                              float maxDistance = 1000.0f) const;
+
+    /**
      * @brief 現在のリスナー位置を取得
      */
     const glm::vec3& getListenerPosition() const { return listenerPosition; }

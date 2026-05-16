@@ -1,4 +1,6 @@
 #include "debug_hud.h"
+#include "../audio/audio_manager.h"
+#include "../engine/renderer.h"
 #include <android/log.h>
 #include <sstream>
 #include <iomanip>
@@ -9,7 +11,7 @@
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 
 DebugHUD::DebugHUD()
-    : textRenderer(nullptr), visible(true),
+    : textRenderer(nullptr), audioManager(nullptr), renderer(nullptr), visible(true),
       fps(0.0f), frameTimeMs(0.0f), avgFrameTimeMs(0.0f),
       minFrameTimeMs(100.0f), maxFrameTimeMs(0.0f),
       frameCount(0), timeSinceLastUpdate(0.0f) {
@@ -20,13 +22,15 @@ DebugHUD::~DebugHUD() {
     cleanup();
 }
 
-bool DebugHUD::initialize(TextRenderer* renderer) {
-    if (!renderer) {
+bool DebugHUD::initialize(TextRenderer* textRend, AudioManager* audioMgr, Renderer* rend) {
+    if (!textRend) {
         LOGD("Error: TextRenderer is null");
         return false;
     }
 
-    textRenderer = renderer;
+    textRenderer = textRend;
+    audioManager = audioMgr;
+    renderer = rend;
     LOGD("DebugHUD initialized");
     return true;
 }
@@ -124,6 +128,25 @@ void DebugHUD::render() {
     {
         textRenderer->renderText("DEBUG: ON", xPos, yPos,
                                 glm::vec3(1.0f, 1.0f, 0.0f), 1.0f);  // 黄色
+        yPos += lineHeight;
+    }
+
+    // オーディオシステム表示
+    {
+        std::string audioStatus = getAudioStatus();
+        glm::vec3 audioColor(0.0f, 1.0f, 1.0f);  // シアン
+        textRenderer->renderText(audioStatus, xPos, yPos, audioColor, 1.0f);
+        yPos += lineHeight;
+    }
+
+    // RetroFilterステータス表示
+    {
+        std::string filterStatus = getRetroFilterStatus();
+        if (!filterStatus.empty()) {
+            glm::vec3 filterColor(1.0f, 0.5f, 0.0f);  // オレンジ
+            textRenderer->renderText(filterStatus, xPos, yPos, filterColor, 1.0f);
+            yPos += lineHeight;
+        }
     }
 }
 
@@ -170,6 +193,56 @@ std::string DebugHUD::formatMemorySize(long bytes) const {
         ss << bytes / (1024.0f * 1024.0f) << " MB";
     } else {
         ss << bytes / (1024.0f * 1024.0f * 1024.0f) << " GB";
+    }
+
+    return ss.str();
+}
+
+std::string DebugHUD::getAudioStatus() const {
+    std::stringstream ss;
+
+    if (!audioManager) {
+        ss << "Audio: [disabled]";
+        return ss.str();
+    }
+
+    size_t clipCount = audioManager->getLoadedClipsCount();
+    size_t sourceCount = audioManager->getActiveSourcesesCount();
+    bool bgmPlaying = audioManager->isBGMPlaying();
+
+    ss << "Audio: clips=" << clipCount << " sources=" << sourceCount;
+    if (bgmPlaying) {
+        ss << " [BGM playing]";
+    }
+
+    return ss.str();
+}
+
+std::string DebugHUD::getRetroFilterStatus() const {
+    std::stringstream ss;
+
+    if (!renderer) {
+        return "";
+    }
+
+    auto settings = renderer->getRetroSettings();
+    if (!settings) {
+        return "";
+    }
+
+    // 有効なエフェクトを列挙
+    std::string activeEffects;
+    if (settings->scanlines_enabled) activeEffects += "S";
+    if (settings->pixelation_enabled) activeEffects += "P";
+    if (settings->color_reduction_enabled) activeEffects += "C";
+    if (settings->crt_distortion_enabled) activeEffects += "D";
+    if (settings->grain_enabled) activeEffects += "G";
+
+    if (activeEffects.empty()) {
+        ss << "Filters: [none active]";
+    } else {
+        ss << "Filters: " << activeEffects;
+        ss << " (S=scanlines P=pixelation C=color D=distortion G=grain)";
     }
 
     return ss.str();

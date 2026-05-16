@@ -148,7 +148,7 @@ void Renderer::initGameSystems() {
     // Initialize Debug HUD
     LOGI("Creating DebugHUD...");
     debugHUD = std::make_unique<DebugHUD>();
-    if (!debugHUD->initialize(textRenderer.get())) {
+    if (!debugHUD->initialize(textRenderer.get(), nullptr, this)) {
         LOGE("Failed to initialize DebugHUD");
         return;
     }
@@ -157,11 +157,18 @@ void Renderer::initGameSystems() {
     // Initialize Settings UI
     LOGI("Creating SettingsUI...");
     settingsUI = std::make_unique<SettingsUI>();
-    if (!settingsUI->initialize(textRenderer.get(), settingsManager.get())) {
+    if (!settingsUI->initialize(textRenderer.get(), settingsManager.get(), this)) {
         LOGE("Failed to initialize SettingsUI");
         return;
     }
     LOGI("SettingsUI initialized successfully");
+
+    // Initialize SaveLoadUI (Phase 5+)
+    LOGI("Creating SaveLoadUI...");
+    saveLoadUI = std::make_unique<SaveLoadUI>();
+    // Initialize SaveLoadUI after SaveManager is created
+    // (will be fully initialized after SaveManager setup)
+    LOGI("SaveLoadUI created (full initialization deferred)");
 
     // Initialize Asset Manager (before WorldManager)
     LOGI("Creating AssetManager...");
@@ -253,14 +260,31 @@ void Renderer::initGameSystems() {
         LOGI("Found %zu save slots", saves.size());
     }
 
-    // Initialize Audio via JNI Bridge (Java MediaPlayer)
-    // Using pragmatic approach: Android's native MediaPlayer instead of OpenAL
-    // NOTE: Audio system deferred - JNI bridge requires Java MainActivity class
-    // which is not available in pure NativeActivity context
-    // LOGI("Initializing audio system via JNI bridge...");
-    // LOGI("Playing Oblivion test BGM: explore.mp3");
-    // jni_audio_play_bgm("explore.mp3");
-    // LOGI("Audio playback initiated via JNI bridge");
+    // Complete SaveLoadUI initialization (now that SaveManager is ready)
+    if (saveLoadUI && saveManager) {
+        if (!saveLoadUI->initialize(textRenderer.get(), saveManager.get(), this)) {
+            LOGE("Failed to initialize SaveLoadUI");
+        } else {
+            LOGI("SaveLoadUI initialized successfully");
+        }
+    }
+
+    // Initialize Audio Manager (Phase 8+)
+    LOGI("Initializing AudioManager...");
+    audioManager = std::make_unique<AudioManager>();
+    if (!audioManager->initialize()) {
+        LOGE("Failed to initialize AudioManager");
+    } else {
+        LOGI("AudioManager initialized successfully");
+        // Set default listener position (center of world)
+        audioManager->setListenerPosition(glm::vec3(0.0f, 1.7f, 0.0f));
+        LOGD("Audio listener positioned at world center");
+
+        // Update DebugHUD with audio manager reference
+        if (debugHUD) {
+            debugHUD->setAudioManager(audioManager.get());
+        }
+    }
 
     // Initialize Title Screen
     titleScreen = std::make_unique<TitleScreen>();
@@ -442,6 +466,15 @@ void Renderer::render(float deltaTime) {
         titleScreen->update(deltaTime);
         titleScreen->render();
 
+        // Check if Load Game was requested (Phase 5+)
+        if (titleScreen->isLoadGameRequested()) {
+            titleScreen->resetLoadGameRequest();
+            if (saveLoadUI) {
+                saveLoadUI->open(SaveLoadUI::Mode::LOAD);  // Open load UI
+                LOGI("SaveLoadUI opened in LOAD mode from title screen menu");
+            }
+        }
+
         // Check if Settings was requested
         if (titleScreen->isSettingsRequested()) {
             titleScreen->resetSettingsRequest();
@@ -584,6 +617,11 @@ void Renderer::render(float deltaTime) {
         LOGD("debugHUD is null!");
     }
 
+    // Render SaveLoadUI if visible (higher priority than SettingsUI)
+    if (saveLoadUI && saveLoadUI->isVisible()) {
+        saveLoadUI->render();
+    }
+
     // Render Settings UI if visible
     if (settingsUI && settingsUI->isVisible()) {
         settingsUI->render();
@@ -630,7 +668,20 @@ void Renderer::render(float deltaTime) {
 void Renderer::onTouchEvent(float x, float y) {
     LOGI("=== タッチイベント検出 === 座標: (%.1f, %.1f)", x, y);
 
-    // Settings UI has highest priority
+    // SaveLoadUI has highest priority (Phase 5+)
+    if (saveLoadUI && saveLoadUI->isVisible()) {
+        saveLoadUI->onTouchEvent(x, y);
+        LOGI("タッチイベント → SaveLoadUI");
+
+        // Check if should return to menu
+        if (saveLoadUI->shouldReturnToMenu()) {
+            saveLoadUI->resetReturnFlag();
+            saveLoadUI->close();
+        }
+        return;
+    }
+
+    // Settings UI has next priority
     if (settingsUI && settingsUI->isVisible()) {
         settingsUI->onTouchEvent(x, y);
         LOGI("タッチイベント → SettingsUI");
@@ -709,6 +760,10 @@ void Renderer::cleanup() {
 
     if (settingsUI) {
         settingsUI->cleanup();
+    }
+
+    if (saveLoadUI) {
+        saveLoadUI->cleanup();
     }
 
     if (inventoryUI) {
