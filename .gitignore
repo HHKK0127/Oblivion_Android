@@ -1,0 +1,36 @@
+# Build outputs
+build/
+.gradle/
+app/build/
+app/.cxx/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# gradle
+.classpath
+.project
+.settings/
+
+# Local properties
+local.properties
+
+# CMake
+cmake-build-*/
+
+# Misc
+*.pyc
+*.class
+.DS_Store
+*.log
+.LSOverride
+
+# Gradle
+.gradle
+
+# Lock files
+*.lock

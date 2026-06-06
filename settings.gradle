@@ -1,0 +1,19 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+// For Gradle < 6.8 compatibility
+// dependencyResolutionManagement {
+//     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+//     repositories {
+//         google()
+//         mavenCentral()
+//     }
+// }
+
+rootProject.name = "Oblivion Android"
+include ':app'
