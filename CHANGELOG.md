@@ -4,6 +4,90 @@ All notable changes to the Oblivion Android project are documented here.
 
 ---
 
+## [0.9.0] - 2026-06-06 (Phase 4 - Game Loop & Input System)
+
+### Major Additions
+
+#### Game Loop Architecture
+- **Multithread Game Loop**: Separated rendering from Android lifecycle
+  - Independent std::thread for game loop
+  - Atomic pause/resume control
+  - Exception-safe frame processing
+
+- **Input System**: Thread-safe event queuing
+  - TouchEvent struct with pointer tracking
+  - Double-buffering pattern for minimal lock contention
+  - queueTouchEvent() for JNI integration
+
+#### JNI Integration
+- Complete lifecycle hook implementation
+  - nativeOnSurfaceCreated() → startLoop()
+  - nativeOnSurfaceDestroyed() → stopLoop()
+  - nativePause() / nativeResume() state management
+  - nativeOnTouchEvent() → queueTouchEvent()
+
+#### ANR Prevention
+- Async initialization via Dispatchers.IO
+- Main thread unblocking during Vulkan init
+- Graceful UI thread handling
+
+#### Debugging Infrastructure
+- Detailed Vulkan initialization logging
+  - Checkpoints at each Vulkan function
+  - ">>> STARTING >>>" and ">>> COMPLETED >>>" markers
+  - Memory leak investigation hooks
+
+### Technical Details
+- **Modified Files**:
+  - `app/src/main/cpp/engine/Engine.h/cpp` - Multithread + logging
+  - `app/src/main/cpp/jni/com_example_oblivion_OblivionEngine.cpp` - Lifecycle hooks
+  - `app/src/main/java/com/example/oblivion/GameActivity.kt` - Async init
+  - `app/build.gradle` - Kotlin coroutines, settings.gradle - Gradle compatibility
+
+### Documentation
+- Added README.ja.md (Japanese translation)
+- Moved 17 technical documents to docs/
+- Removed Projects/ directory (consolidated duplicates)
+- Organized documentation structure
+
+### Known Issues (To Investigate)
+- Vulkan initialization hang at createInstance() or pickPhysicalDevice()
+- Memory leak during initialization (10GB+/20 seconds)
+- Build environment: gradle wrapper needs regeneration
+
+### Testing Status
+- ✅ Code compilation successful
+- ✅ JNI binding verified
+- ⚠️ Real device testing pending (build environment issue)
+
+---
+
+## [0.8.0] - 2026-05-17 (Phase 8 - Audio & Post-Processing)
+
+### Major Additions
+
+#### OpenAL 3D Audio System
+- Spatial audio with distance attenuation
+- Background music and sound effects support
+- JNI bridge for audio initialization
+
+#### RetroFilter Effects
+- Pixelation, scanlines, color reduction
+- CRT distortion, film grain
+- Real-time toggle from debug HUD
+
+#### Enhanced Save/Load UI
+- Error dialogs for I/O failures
+- User-friendly slot management
+- Persistent game state
+
+### Code Metrics
+- C++ Code: 6,200+ lines
+- Total Project: 8,000+ lines
+- APK Size: 8.8 MB
+
+---
+
 ## [0.7.1] - 2026-04-18 (Phase 7.1 - Settings & Debug System)
 
 ### Major Additions
