@@ -1,0 +1,3 @@
+C:/Drive/Cargo/oblivion-android/app/.cxx/Release/55496d2y/arm64-v8a/CMakeFiles/oblivion_engine.dir
+C:/Drive/Cargo/oblivion-android/app/.cxx/Release/55496d2y/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/Drive/Cargo/oblivion-android/app/.cxx/Release/55496d2y/arm64-v8a/CMakeFiles/rebuild_cache.dir
