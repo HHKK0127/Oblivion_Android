@@ -13,18 +13,6 @@
 #include <AL/alc.h>
 #endif
 
-#undef LOG_TAG
-#undef LOGD
-#undef LOGI
-#undef LOGW
-#undef LOGE
-
-#define LOG_TAG "AudioManager"
-#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
-#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
-#define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
-
 #include "audio_clip.h"
 #include "audio_source.h"
 #include "audio_3d.h"
@@ -35,6 +23,12 @@ void jni_audio_call_play_bgm(const char* path);
 void jni_audio_call_stop_bgm();
 void jni_audio_call_play_se(const char* path);
 }
+
+// Forward declaration
+class AudioManager;
+
+// Global AudioManager pointer for UI and game systems
+extern AudioManager* g_audioManager;
 
 /**
  * @brief オーディオマネージャー
@@ -143,7 +137,7 @@ public:
      * @param volume ボリューム（デフォルト: 1.0）
      * @return ソースID（失敗時 0）
      */
-    uint32_t playSE(uint32_t clipId, const glm::vec3& position = glm::vec3(0.0f),
+    uint32_t playSE(uint32_t clipId, const glm::vec3& position = glm::vec3(0.0f, 0.0f, 0.0f),
                    float volume = 1.0f);
 
     /**
@@ -208,9 +202,59 @@ public:
      */
     size_t getActiveSourcesesCount() const { return sources.size(); }
 
+    // ========== Sound Definition JSON ==========
+
+    /**
+     * @brief sound_definitions.json を読み込み、サウンド定義を登録
+     * @param jsonPath JSONファイルパス（例: "audio/sound_definitions.json"）
+     * @return 成功時 true
+     */
+    bool loadSoundDefinitions(const std::string& jsonPath);
+
+    /**
+     * @brief 定義キーでSEを再生（JSON登録済みのキー）
+     * @param key JSONで定義されたサウンドキー（例: "ui/click"）
+     * @param position 3D位置（省略時リスナー位置）
+     * @return ソースID（失敗時 0）
+     */
+    uint32_t playSound(const std::string& key,
+                       const glm::vec3& position = glm::vec3(0.0f, 0.0f, 0.0f));
+
+    /**
+     * @brief 定義キーでBGMを再生
+     * @param key JSONで定義されたBGMキー
+     * @param fadeIn フェードイン時間
+     * @return 成功時 true
+     */
+    bool playMusic(const std::string& key, float fadeIn = 0.0f);
+
+    /**
+     * @brief サウンド定義が読み込まれているか
+     */
+    bool hasSoundDefinitions() const { return !soundDefs.empty(); }
+
 private:
+    // ... existing private members ...
+
+    struct SoundDef {
+        std::string file;
+        uint8_t type;      // 0=BGM, 1=SE
+        float volume;
+        bool loop;
+        bool is3D;
+        uint32_t clipId;   // ロード後に設定
+    };
+    std::unordered_map<std::string, SoundDef> soundDefs;
+
+    bool parseSoundDefinitionsJson(const std::string& jsonContent);
+    std::string extractJsonString(const std::string& json, size_t& pos);
+    std::string extractJsonValue(const std::string& json, const std::string& key, size_t startPos);
+
+public:
     static constexpr uint32_t MAX_SOURCES = 32;
     static constexpr float FADE_UPDATE_RATE = 0.016f;  // 60 FPS
+
+    void playBGMViaJava(const std::string& filename);
 
     // OpenAL device & context
     ALCdevice* device;

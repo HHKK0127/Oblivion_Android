@@ -11,6 +11,7 @@ add_library(native-lib SHARED
     engine/renderer.cpp
     engine/shader.cpp
     engine/camera.cpp
+    engine/texture_loader.cpp
     engine/graphics/retro_filter.cpp
 
     # Geometry
@@ -56,10 +57,24 @@ add_library(native-lib SHARED
     ui/text_renderer.cpp
     ui/debug_hud.cpp
     ui/settings_ui.cpp
+    ui/save_load_ui.cpp
+    ui/ui_component.cpp
+    ui/ui_system.cpp
+    ui/ui_panel.cpp
+    ui/ui_button.cpp
+    ui/ui_draw_helper.cpp
+    ui/ui_map_panel.cpp
+    ui/ui_inventory_panel.cpp
+
+    # Map System (Phase 9.1)
+    map/map_system.cpp
+
+    # Inventory System (Phase 9.2)
+    inventory/inventory_grid.cpp
+    inventory/equipment_manager.cpp
 
     # System
     system/settings_manager.cpp
-    system/cheat_manager.cpp
 
     # Localization
     localization/localization_manager.cpp
@@ -99,6 +114,8 @@ target_include_directories(native-lib PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/profiling
     ${CMAKE_CURRENT_SOURCE_DIR}/save_system
     ${CMAKE_CURRENT_SOURCE_DIR}/audio
+    ${CMAKE_CURRENT_SOURCE_DIR}/map
+    ${CMAKE_CURRENT_SOURCE_DIR}/inventory
     ${CMAKE_CURRENT_SOURCE_DIR}/assets
 )
 
@@ -148,7 +165,7 @@ target_compile_options(native-lib PRIVATE
     -Werror=format
 )
 
-# Enable audio system
+# Enable audio system (OpenAL stub headers used)
 target_compile_definitions(native-lib PRIVATE AUDIO_SYSTEM_ENABLED)
 
 # Warning suppression for specific headers

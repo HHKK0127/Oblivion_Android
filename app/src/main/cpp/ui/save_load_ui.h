@@ -4,6 +4,14 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include "text_renderer.h"
+
+#undef LOG_TAG
+#undef LOGD
+#undef LOGW
+#undef LOGE
+#undef LOGI
+
+#include <android/log.h>
 #include "../save_system/save_manager.h"
 
 class Renderer;
@@ -12,8 +20,6 @@ class Renderer;
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
-
-#include <android/log.h>
 
 class SaveLoadUI {
 public:
@@ -59,6 +65,9 @@ private:
     SaveManager* saveManager = nullptr;
     Renderer* renderer = nullptr;
 
+    // Phase 9: Background texture
+    GLuint bgTexture = 0;
+
     bool visible = false;
     bool returnToMenu = false;
 
@@ -101,3 +110,9 @@ private:
 
     void updateLayout();
 };
+
+#undef LOG_TAG
+#undef LOGD
+#undef LOGW
+#undef LOGE
+#undef LOGI

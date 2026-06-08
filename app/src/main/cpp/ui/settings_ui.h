@@ -2,9 +2,12 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 #include <glm/glm.hpp>
 #include "text_renderer.h"
 #include "../system/settings_manager.h"
+#include "ui_panel.h"
+#include "ui_button.h"
 
 /**
  * @brief 設定メニューUI
@@ -39,6 +42,8 @@ public:
      * @brief 表示中かどうか
      */
     bool isVisible() const { return visible; }
+
+    void setScreenSize(int w, int h);
 
     /**
      * @brief 設定UIを描画
@@ -90,4 +95,17 @@ private:
 
     static constexpr const char* LOG_TAG = "SettingsUI";
     #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+
+    // Phase 9: Graphical UI components
+    std::shared_ptr<UIPanel> settingsPanel;
+    std::vector<std::shared_ptr<UIButton>> settingButtons;
+    int screenWidth = 1080;
+    int screenHeight = 1920;
+
+    // Panel background texture
+    GLuint panelTexture = 0;
+
+    void buildGraphicalSettings();
+    void refreshLayout();
+    void updateButtonLabels();
 };

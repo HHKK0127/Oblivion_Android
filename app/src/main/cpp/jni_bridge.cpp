@@ -10,9 +10,13 @@
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 static Renderer* g_renderer = nullptr;
-extern void jni_audio_set_asset_manager(AAssetManager* mgr);
-extern void jni_audio_set_java_vm(JavaVM* vm);
-extern void jni_audio_set_main_activity(jobject activity);
+AAssetManager* g_assetManager = nullptr;
+
+extern "C" {
+    void jni_audio_set_asset_manager(AAssetManager* mgr);
+    void jni_audio_set_java_vm(JavaVM* vm);
+    void jni_audio_set_main_activity(jobject activity);
+}
 
 // Initialize engine and return handle to Java
 extern "C" JNIEXPORT jlong JNICALL
@@ -28,13 +32,23 @@ Java_com_example_oblivion_GameRenderer_nativeInitEngine(
 
     LOGI("Creating new Renderer instance...");
     try {
+        LOGI("STEP 1: Allocating Renderer object...");
         g_renderer = new Renderer();
-        LOGI("Renderer created, calling init(1920, 1080)...");
+        LOGI("STEP 1: SUCCESS - Renderer object allocated");
 
-        if (!g_renderer->init(1920, 1080)) {  // Default size, will be updated by onSurfaceChanged
+        LOGI("STEP 2: Calling Renderer::init(1920, 1080)...");
+        bool initResult = g_renderer->init(1920, 1080);  // Default size, will be updated by onSurfaceChanged
+
+        LOGI("STEP 2: init() returned %d", initResult ? 1 : 0);
+        __android_log_print(ANDROID_LOG_INFO, LOG_TAG, "===== INIT RESULT: %s =====",
+                            initResult ? "SUCCESS" : "FAILED");
+
+        if (!initResult) {
             LOGE("CRITICAL: Renderer::init() returned false - initialization failed");
+            LOGE("Deleting Renderer instance...");
             delete g_renderer;
             g_renderer = nullptr;
+            LOGE("Renderer deleted, returning 0 to Java");
             return 0;
         }
 
@@ -44,6 +58,7 @@ Java_com_example_oblivion_GameRenderer_nativeInitEngine(
         return handle;
     } catch (const std::exception& e) {
         LOGE("EXCEPTION in nativeInitEngine: %s", e.what());
+        LOGE("Exception type details: checking std::exception");
         if (g_renderer) {
             delete g_renderer;
             g_renderer = nullptr;
@@ -72,14 +87,18 @@ Java_com_example_oblivion_GameRenderer_nativeInitAudioBridge(
         return;
     }
 
+    // AAssetManager を取得してグローバル変数に設定（TextRenderer や Audio で使用）
     AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
     if (!mgr) {
         LOGE("Failed to get AAssetManager from Java");
         return;
     }
+    g_assetManager = mgr;
+    LOGI("g_assetManager set successfully: %p", g_assetManager);
 
+#ifdef AUDIO_SYSTEM_ENABLED
     jni_audio_set_asset_manager(mgr);
-    LOGD("AAssetManager set");
+    LOGD("AAssetManager set for audio system");
 
     // JavaVM を取得して設定
     JavaVM* vm = nullptr;
@@ -98,8 +117,11 @@ Java_com_example_oblivion_GameRenderer_nativeInitAudioBridge(
         LOGE("MainActivity object is null");
         return;
     }
+#else
+    LOGD("Audio system disabled, skipping audio bridge setup");
+#endif
 
-    LOGI("Audio bridge initialization complete");
+    LOGI("Asset manager bridge initialized successfully");
 }
 
 // Set viewport with handle parameter

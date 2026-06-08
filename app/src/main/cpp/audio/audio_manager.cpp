@@ -2,8 +2,24 @@
 #include <android/asset_manager.h>
 #include <cstring>
 #include <algorithm>
-#include <glm/common.hpp>
 #include "../jni_audio_bridge.h"
+
+extern "C" AAssetManager* jni_audio_get_asset_manager();
+
+AudioManager* g_audioManager = nullptr;
+
+#define LOG_TAG "AudioManager"
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+
+// GLM clamp helper for minimal GLM
+namespace {
+    float clampf(float v, float minV, float maxV) {
+        return v < minV ? minV : (v > maxV ? maxV : v);
+    }
+}
 
 AudioManager::AudioManager()
     : device(nullptr), context(nullptr),
@@ -22,6 +38,7 @@ AudioManager::~AudioManager() {
 
 bool AudioManager::initialize() {
     LOGI("AudioManager initializing...");
+    g_audioManager = this;
 
     // OpenAL デバイスを開く
     device = alcOpenDevice(nullptr);
@@ -118,6 +135,7 @@ void AudioManager::cleanup() {
     }
 
     LOGI("AudioManager cleanup complete");
+    g_audioManager = nullptr;
 }
 
 uint32_t AudioManager::loadClip(const std::string& filename, uint8_t type,
@@ -208,7 +226,7 @@ bool AudioManager::playBGM(uint32_t clipId, float fadeIn) {
     // BGM ソースの設定
     auto source = sources[sourceId];
     source->setVolume(fadeIn > 0.0f ? 0.0f : bgmVolume);
-    source->setPosition(glm::vec3(0.0f));
+    source->setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
     source->disable3D();
 
     // 再生開始
@@ -289,7 +307,7 @@ bool AudioManager::isBGMPlaying() const {
 }
 
 void AudioManager::setBGMVolume(float volume) {
-    bgmVolume = glm::clamp(volume, 0.0f, 1.0f);
+    bgmVolume = clampf(volume, 0.0f, 1.0f);
 
     if (currentBGMSourceId != 0) {
         auto source = sources[currentBGMSourceId];
@@ -395,7 +413,7 @@ void AudioManager::setListenerOrientation(const glm::vec3& forward,
 }
 
 void AudioManager::setMasterVolume(float volume) {
-    masterVolume = glm::clamp(volume, 0.0f, 1.0f);
+    masterVolume = clampf(volume, 0.0f, 1.0f);
 
     // すべてのソースのボリュームを再計算
     for (auto& pair : sources) {
@@ -414,7 +432,7 @@ void AudioManager::setMasterVolume(float volume) {
 }
 
 void AudioManager::setSEVolume(float volume) {
-    seVolume = glm::clamp(volume, 0.0f, 1.0f);
+    seVolume = clampf(volume, 0.0f, 1.0f);
     LOGD("SE volume set: %.2f", seVolume);
 }
 
@@ -422,7 +440,6 @@ ALuint AudioManager::loadWavFile(const std::string& filename, ALint& format,
                                 ALsizei& frequency, ALsizei& size) {
     LOGD("Loading WAV file: %s", filename.c_str());
 
-    extern AAssetManager* jni_audio_get_asset_manager();
     AAssetManager* mgr = jni_audio_get_asset_manager();
     if (!mgr) {
         LOGE("AAssetManager not initialized");
@@ -562,7 +579,7 @@ void AudioManager::updateBGMFade(float deltaTime) {
 
     // ボリュームを更新
     float newVolume = bgmVolume + (bgmFadeRate * deltaTime);
-    newVolume = glm::clamp(newVolume, 0.0f, bgmFadeTarget);
+    newVolume = clampf(newVolume, 0.0f, bgmFadeTarget);
 
     source->setVolume(newVolume * masterVolume);
 
@@ -630,4 +647,195 @@ void AudioManager::destroySource(uint32_t sourceId) {
 
     sources.erase(it);
     LOGD("Audio source destroyed: sourceId=%u", sourceId);
+}
+
+// ========== Sound Definition JSON ==========
+
+bool AudioManager::loadSoundDefinitions(const std::string& jsonPath) {
+    LOGI("Loading sound definitions: %s", jsonPath.c_str());
+
+    AAssetManager* mgr = jni_audio_get_asset_manager();
+    if (!mgr) {
+        LOGE("AAssetManager not initialized");
+        return false;
+    }
+
+    AAsset* asset = AAssetManager_open(mgr, jsonPath.c_str(), AASSET_MODE_BUFFER);
+    if (!asset) {
+        LOGE("Failed to open sound definitions: %s", jsonPath.c_str());
+        return false;
+    }
+
+    off_t len = AAsset_getLength(asset);
+    std::string jsonContent(len, '\0');
+    AAsset_read(asset, &jsonContent[0], len);
+    AAsset_close(asset);
+
+    bool success = parseSoundDefinitionsJson(jsonContent);
+    if (success) {
+        LOGI("Sound definitions loaded: %zu sounds", soundDefs.size());
+    }
+    return success;
+}
+
+bool AudioManager::parseSoundDefinitionsJson(const std::string& json) {
+    soundDefs.clear();
+
+    // Simple JSON parser for sound_definitions.json structure
+    // Finds pattern: "key": { ... }
+
+    size_t pos = 0;
+    while (pos < json.size()) {
+        // Find next category
+        size_t catPos = json.find("\"sounds\"", pos);
+        if (catPos == std::string::npos) break;
+
+        // Find opening brace after "sounds"
+        size_t braceOpen = json.find('{', catPos);
+        if (braceOpen == std::string::npos) break;
+
+        size_t braceClose = braceOpen + 1;
+        int depth = 1;
+        while (braceClose < json.size() && depth > 0) {
+            if (json[braceClose] == '{') depth++;
+            else if (json[braceClose] == '}') depth--;
+            braceClose++;
+        }
+
+        std::string soundsBlock = json.substr(braceOpen, braceClose - braceOpen);
+
+        // Parse individual sound entries within this block
+        size_t sPos = 0;
+        while (sPos < soundsBlock.size()) {
+            // Find key string
+            size_t keyStart = soundsBlock.find('"', sPos);
+            if (keyStart == std::string::npos) break;
+            size_t keyEnd = soundsBlock.find('"', keyStart + 1);
+            if (keyEnd == std::string::npos) break;
+
+            std::string key = soundsBlock.substr(keyStart + 1, keyEnd - keyStart - 1);
+
+            // Find value object
+            size_t valOpen = soundsBlock.find('{', keyEnd);
+            if (valOpen == std::string::npos) break;
+
+            size_t valClose = valOpen + 1;
+            int valDepth = 1;
+            while (valClose < soundsBlock.size() && valDepth > 0) {
+                if (soundsBlock[valClose] == '{') valDepth++;
+                else if (soundsBlock[valClose] == '}') valDepth--;
+                valClose++;
+            }
+
+            std::string valBlock = soundsBlock.substr(valOpen, valClose - valOpen);
+
+            // Extract fields
+            auto getString = [&](const std::string& field) -> std::string {
+                size_t fPos = valBlock.find("\"" + field + "\"");
+                if (fPos == std::string::npos) return "";
+                size_t colon = valBlock.find(':', fPos);
+                if (colon == std::string::npos) return "";
+                size_t quote1 = valBlock.find('"', colon);
+                if (quote1 == std::string::npos) return "";
+                size_t quote2 = valBlock.find('"', quote1 + 1);
+                if (quote2 == std::string::npos) return "";
+                return valBlock.substr(quote1 + 1, quote2 - quote1 - 1);
+            };
+
+            auto getFloat = [&](const std::string& field, float defaultVal) -> float {
+                size_t fPos = valBlock.find("\"" + field + "\"");
+                if (fPos == std::string::npos) return defaultVal;
+                size_t colon = valBlock.find(':', fPos);
+                if (colon == std::string::npos) return defaultVal;
+                size_t numStart = colon + 1;
+                while (numStart < valBlock.size() && (valBlock[numStart] == ' ' || valBlock[numStart] == '\t' || valBlock[numStart] == '\n' || valBlock[numStart] == '\r'))
+                    numStart++;
+                size_t numEnd = numStart;
+                while (numEnd < valBlock.size() && (valBlock[numEnd] == '.' || (valBlock[numEnd] >= '0' && valBlock[numEnd] <= '9')))
+                    numEnd++;
+                try {
+                    return std::stof(valBlock.substr(numStart, numEnd - numStart));
+                } catch (...) {
+                    return defaultVal;
+                }
+            };
+
+            auto getBool = [&](const std::string& field, bool defaultVal) -> bool {
+                size_t fPos = valBlock.find("\"" + field + "\"");
+                if (fPos == std::string::npos) return defaultVal;
+                size_t colon = valBlock.find(':', fPos);
+                if (colon == std::string::npos) return defaultVal;
+                size_t valPos = colon + 1;
+                while (valPos < valBlock.size() && (valBlock[valPos] == ' ' || valBlock[valPos] == '\t' || valBlock[valPos] == '\n' || valBlock[valPos] == '\r'))
+                    valPos++;
+                if (valPos + 4 <= valBlock.size() && valBlock.substr(valPos, 4) == "true")
+                    return true;
+                if (valPos + 5 <= valBlock.size() && valBlock.substr(valPos, 5) == "false")
+                    return false;
+                return defaultVal;
+            };
+
+            SoundDef def;
+            def.file = getString("file");
+            if (def.file.empty()) {
+                sPos = valClose;
+                continue;
+            }
+
+            std::string typeStr = getString("type");
+            def.type = (typeStr == "bgm" || typeStr == "BGM") ? 0 : 1;
+            def.volume = getFloat("volume", 1.0f);
+            def.loop = getBool("loop", false);
+            def.is3D = getBool("3d", false);
+            def.clipId = 0;
+
+            // Pre-load clip
+            uint32_t clipId = loadClip(def.file, def.type, def.loop);
+            if (clipId != 0) {
+                def.clipId = clipId;
+                soundDefs[key] = def;
+                LOGD("Sound registered: key=%s file=%s clipId=%u", key.c_str(), def.file.c_str(), clipId);
+            } else {
+                LOGW("Failed to load sound: key=%s file=%s", key.c_str(), def.file.c_str());
+            }
+
+            sPos = valClose;
+        }
+
+        pos = braceClose;
+    }
+
+    return !soundDefs.empty();
+}
+
+uint32_t AudioManager::playSound(const std::string& key, const glm::vec3& position) {
+    auto it = soundDefs.find(key);
+    if (it == soundDefs.end()) {
+        LOGW("Sound key not found: %s", key.c_str());
+        return 0;
+    }
+
+    const SoundDef& def = it->second;
+    if (def.clipId == 0) {
+        LOGW("Sound clip not loaded: %s", key.c_str());
+        return 0;
+    }
+
+    return playSE(def.clipId, position, def.volume);
+}
+
+bool AudioManager::playMusic(const std::string& key, float fadeIn) {
+    auto it = soundDefs.find(key);
+    if (it == soundDefs.end()) {
+        LOGW("Music key not found: %s", key.c_str());
+        return false;
+    }
+
+    const SoundDef& def = it->second;
+    if (def.clipId == 0) {
+        LOGW("Music clip not loaded: %s", key.c_str());
+        return false;
+    }
+
+    return playBGM(def.clipId, fadeIn);
 }

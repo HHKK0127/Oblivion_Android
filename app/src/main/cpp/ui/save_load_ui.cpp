@@ -1,4 +1,7 @@
 #include "save_load_ui.h"
+#include "renderer.h"
+#include "ui_draw_helper.h"
+#include "../engine/texture_loader.h"
 #include <sstream>
 #include <iomanip>
 #include <ctime>
@@ -13,6 +16,9 @@ SaveLoadUI::SaveLoadUI()
 }
 
 SaveLoadUI::~SaveLoadUI() {
+    if (bgTexture != 0) {
+        TextureLoader::deleteTexture(bgTexture);
+    }
     cleanup();
 }
 
@@ -25,6 +31,12 @@ bool SaveLoadUI::initialize(TextRenderer* renderer, SaveManager* manager, Render
     textRenderer = renderer;
     saveManager = manager;
     this->renderer = rend;
+
+    // Load background texture
+    if (bgTexture == 0) {
+        bgTexture = TextureLoader::loadTextureFromAsset("textures/ui/main_background.png");
+        LOGI("SaveLoadUI: Background texture loaded: %u", bgTexture);
+    }
 
     refreshSaveSlots();
     updateLayout();
@@ -46,9 +58,24 @@ void SaveLoadUI::render() {
         return;
     }
 
-    // 背景を暗くする
-    glClearColor(0.0f, 0.0f, 0.0f, 0.5f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    // Draw background texture if available
+    if (bgTexture != 0 && renderer) {
+        int sw = static_cast<int>(renderer->getScreenWidth());
+        int sh = static_cast<int>(renderer->getScreenHeight());
+        UIDrawHelper::drawTexturedQuad(
+            0.0f, 0.0f,
+            static_cast<float>(sw),
+            static_cast<float>(sh),
+            bgTexture,
+            glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
+            sw,
+            sh
+        );
+    } else {
+        // Fallback: dark background
+        glClearColor(0.0f, 0.0f, 0.0f, 0.5f);
+        glClear(GL_COLOR_BUFFER_BIT);
+    }
 
     // タイトル
     std::string title = (currentMode == Mode::SAVE) ? "SAVE GAME" : "LOAD GAME";

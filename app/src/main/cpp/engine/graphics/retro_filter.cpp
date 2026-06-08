@@ -180,44 +180,42 @@ void RetroFilter::createShaders() {
     LOGI("Creating retro filter shaders");
 
     // Shared vertex shader source for all effects
-    const char* vertexShaderSource = R"(
-        #version 300 es
-        precision highp float;
+    const char* vertexShaderSource = R"(#version 300 es
+precision highp float;
 
-        in vec2 position;
-        in vec2 texCoord;
+in vec2 position;
+in vec2 texCoord;
 
-        out vec2 vTexCoord;
+out vec2 vTexCoord;
 
-        void main() {
-            gl_Position = vec4(position, 0.0, 1.0);
-            vTexCoord = texCoord;
-        }
-    )";
+void main() {
+    gl_Position = vec4(position, 0.0, 1.0);
+    vTexCoord = texCoord;
+}
+)";
 
     // ===== Scanline Shader =====
-    const char* scanlineFragSource = R"(
-        #version 300 es
-        precision highp float;
+    const char* scanlineFragSource = R"(#version 300 es
+precision highp float;
 
-        in vec2 vTexCoord;
-        out vec4 FragColor;
+in vec2 vTexCoord;
+out vec4 FragColor;
 
-        uniform sampler2D inputTexture;
-        uniform float intensity;
-        uniform vec2 sceneResolution;
+uniform sampler2D inputTexture;
+uniform float intensity;
+uniform vec2 sceneResolution;
 
-        void main() {
-            vec4 color = texture(inputTexture, vTexCoord);
+void main() {
+    vec4 color = texture(inputTexture, vTexCoord);
 
-            // Create horizontal scanlines
-            float scanlineFreq = sceneResolution.y * 2.0;
-            float scanline = sin(vTexCoord.y * scanlineFreq * 3.14159) * 0.5 + 0.5;
-            scanline = mix(1.0, scanline, intensity);
+    // Create horizontal scanlines
+    float scanlineFreq = sceneResolution.y * 2.0;
+    float scanline = sin(vTexCoord.y * scanlineFreq * 3.14159) * 0.5 + 0.5;
+    scanline = mix(1.0, scanline, intensity);
 
-            FragColor = color * scanline;
-        }
-    )";
+    FragColor = color * scanline;
+}
+)";
 
     scanlineShader = new ShaderProgram();
     if (!scanlineShader->compile(vertexShaderSource, scanlineFragSource)) {
@@ -227,26 +225,25 @@ void RetroFilter::createShaders() {
     LOGI("Scanline shader created");
 
     // ===== Pixelation Shader =====
-    const char* pixelationFragSource = R"(
-        #version 300 es
-        precision highp float;
+    const char* pixelationFragSource = R"(#version 300 es
+precision highp float;
 
-        in vec2 vTexCoord;
-        out vec4 FragColor;
+in vec2 vTexCoord;
+out vec4 FragColor;
 
-        uniform sampler2D inputTexture;
-        uniform float pixelScale;
-        uniform vec2 sceneResolution;
+uniform sampler2D inputTexture;
+uniform float pixelScale;
+uniform vec2 sceneResolution;
 
-        void main() {
-            // Block-based downsampling
-            vec2 pixelSize = vec2(pixelScale) / sceneResolution;
-            vec2 pixelCoord = floor(vTexCoord / pixelSize) * pixelSize;
-            pixelCoord = clamp(pixelCoord, 0.0, 1.0);
+void main() {
+    // Block-based downsampling
+    vec2 pixelSize = vec2(pixelScale) / sceneResolution;
+    vec2 pixelCoord = floor(vTexCoord / pixelSize) * pixelSize;
+    pixelCoord = clamp(pixelCoord, 0.0, 1.0);
 
-            FragColor = texture(inputTexture, pixelCoord);
-        }
-    )";
+    FragColor = texture(inputTexture, pixelCoord);
+}
+)";
 
     pixelationShader = new ShaderProgram();
     if (!pixelationShader->compile(vertexShaderSource, pixelationFragSource)) {
@@ -256,26 +253,25 @@ void RetroFilter::createShaders() {
     LOGI("Pixelation shader created");
 
     // ===== Color Reduction Shader =====
-    const char* colorReductionFragSource = R"(
-        #version 300 es
-        precision highp float;
+    const char* colorReductionFragSource = R"(#version 300 es
+precision highp float;
 
-        in vec2 vTexCoord;
-        out vec4 FragColor;
+in vec2 vTexCoord;
+out vec4 FragColor;
 
-        uniform sampler2D inputTexture;
-        uniform float colorLevels;  // OPTIMIZATION: Pre-calculated pow(2.0, colorBits)
+uniform sampler2D inputTexture;
+uniform float colorLevels;  // OPTIMIZATION: Pre-calculated pow(2.0, colorBits)
 
-        void main() {
-            vec4 color = texture(inputTexture, vTexCoord);
+void main() {
+    vec4 color = texture(inputTexture, vTexCoord);
 
-            // Quantize RGB to specified bit depth
-            // colorLevels is pre-calculated on CPU to avoid 921,600 pow() calls per frame
-            color.rgb = floor(color.rgb * colorLevels) / colorLevels;
+    // Quantize RGB to specified bit depth
+    // colorLevels is pre-calculated on CPU to avoid 921,600 pow() calls per frame
+    color.rgb = floor(color.rgb * colorLevels) / colorLevels;
 
-            FragColor = color;
-        }
-    )";
+    FragColor = color;
+}
+)";
 
     colorReductionShader = new ShaderProgram();
     if (!colorReductionShader->compile(vertexShaderSource, colorReductionFragSource)) {
@@ -285,33 +281,32 @@ void RetroFilter::createShaders() {
     LOGI("Color reduction shader created");
 
     // ===== CRT Distortion Shader =====
-    const char* distortionFragSource = R"(
-        #version 300 es
-        precision highp float;
+    const char* distortionFragSource = R"(#version 300 es
+precision highp float;
 
-        in vec2 vTexCoord;
-        out vec4 FragColor;
+in vec2 vTexCoord;
+out vec4 FragColor;
 
-        uniform sampler2D inputTexture;
-        uniform float strength;
-        uniform vec2 sceneResolution;
+uniform sampler2D inputTexture;
+uniform float strength;
+uniform vec2 sceneResolution;
 
-        void main() {
-            // Barrel distortion
-            vec2 center = vec2(0.5);
-            vec2 delta = vTexCoord - center;
-            float r2 = dot(delta, delta);
+void main() {
+    // Barrel distortion
+    vec2 center = vec2(0.5);
+    vec2 delta = vTexCoord - center;
+    float r2 = dot(delta, delta);
 
-            vec2 distorted = center + delta * (1.0 + strength * r2);
+    vec2 distorted = center + delta * (1.0 + strength * r2);
 
-            if (distorted.x < 0.0 || distorted.x > 1.0 ||
-                distorted.y < 0.0 || distorted.y > 1.0) {
-                FragColor = vec4(0.0);  // Black border
-            } else {
-                FragColor = texture(inputTexture, distorted);
-            }
-        }
-    )";
+    if (distorted.x < 0.0 || distorted.x > 1.0 ||
+        distorted.y < 0.0 || distorted.y > 1.0) {
+        FragColor = vec4(0.0);  // Black border
+    } else {
+        FragColor = texture(inputTexture, distorted);
+    }
+}
+)";
 
     distortionShader = new ShaderProgram();
     if (!distortionShader->compile(vertexShaderSource, distortionFragSource)) {
@@ -321,31 +316,30 @@ void RetroFilter::createShaders() {
     LOGI("Distortion shader created");
 
     // ===== Film Grain Shader =====
-    const char* grainFragSource = R"(
-        #version 300 es
-        precision mediump float;  // OPTIMIZATION: Reduced from highp (20-30% faster on Mali/PowerVR)
+    const char* grainFragSource = R"(#version 300 es
+precision mediump float;  // OPTIMIZATION: Reduced from highp (20-30% faster on Mali/PowerVR)
 
-        in vec2 vTexCoord;
-        out vec4 FragColor;
+in vec2 vTexCoord;
+out vec4 FragColor;
 
-        uniform sampler2D inputTexture;
-        uniform float strength;
-        uniform float time;
+uniform sampler2D inputTexture;
+uniform float strength;
+uniform float time;
 
-        float random(vec2 co, float t) {
-            return fract(sin(dot(co + t, vec2(12.9898, 78.233))) * 43758.5453);
-        }
+float random(vec2 co, float t) {
+    return fract(sin(dot(co + t, vec2(12.9898, 78.233))) * 43758.5453);
+}
 
-        void main() {
-            vec4 color = texture(inputTexture, vTexCoord);
+void main() {
+    vec4 color = texture(inputTexture, vTexCoord);
 
-            // Time-varying noise
-            float noise = random(vTexCoord, time) - 0.5;
-            color.rgb += noise * strength;
+    // Time-varying noise
+    float noise = random(vTexCoord, time) - 0.5;
+    color.rgb += noise * strength;
 
-            FragColor = clamp(color, 0.0, 1.0);
-        }
-    )";
+    FragColor = clamp(color, 0.0, 1.0);
+}
+)";
 
     grainShader = new ShaderProgram();
     if (!grainShader->compile(vertexShaderSource, grainFragSource)) {
@@ -355,25 +349,24 @@ void RetroFilter::createShaders() {
     LOGI("Grain shader created");
 
     // ===== Composite Shader (for upscaling) =====
-    const char* compositeFragSource = R"(
-        #version 300 es
-        precision highp float;
+    const char* compositeFragSource = R"(#version 300 es
+precision highp float;
 
-        in vec2 vTexCoord;
-        out vec4 FragColor;
+in vec2 vTexCoord;
+out vec4 FragColor;
 
-        uniform sampler2D inputTexture;
-        uniform vec2 sceneResolution;
-        uniform vec2 screenResolution;
+uniform sampler2D inputTexture;
+uniform vec2 sceneResolution;
+uniform vec2 screenResolution;
 
-        void main() {
-            // Nearest-neighbor upscaling for pixel-perfect look
-            vec2 scaledCoord = vTexCoord * (sceneResolution / screenResolution);
-            scaledCoord = clamp(scaledCoord, 0.0, 1.0);
+void main() {
+    // Nearest-neighbor upscaling for pixel-perfect look
+    vec2 scaledCoord = vTexCoord * (sceneResolution / screenResolution);
+    scaledCoord = clamp(scaledCoord, 0.0, 1.0);
 
-            FragColor = texture(inputTexture, scaledCoord);
-        }
-    )";
+    FragColor = texture(inputTexture, scaledCoord);
+}
+)";
 
     compositeShader = new ShaderProgram();
     if (!compositeShader->compile(vertexShaderSource, compositeFragSource)) {
@@ -419,6 +412,7 @@ void RetroFilter::apply(const Settings& settings) {
     GLuint currentTex = sceneTex;
     GLuint currentFBO = 0;
     int fboToggle = 0;  // 0 = FBO1, 1 = FBO2
+    bool firstPass = true;  // Track first pass to avoid uninitialized texture reads
 
     // Helper to switch between work FBOs
     auto switchFBO = [&]() {
@@ -438,13 +432,19 @@ void RetroFilter::apply(const Settings& settings) {
 
         pixelationShader->use();
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, currentTex == workTex1 ? sceneTex :
-                                     (currentTex == workTex2 ? workTex1 : workTex2));
+        // FIX: On first pass, always read from sceneTex to avoid uninitialized work texture reads
+        GLuint inputTex = firstPass ? sceneTex :
+                          (currentTex == workTex1 ? workTex2 : workTex1);
+        glBindTexture(GL_TEXTURE_2D, inputTex);
         pixelationShader->setUniform("inputTexture", 0);
         pixelationShader->setUniform("pixelScale", settings.pixelation_scale);
         pixelationShader->setUniform("sceneResolution", cachedSceneResolution);
 
-        renderScreenQuad(currentTex);
+        glBindVertexArray(quadVAO);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        glBindVertexArray(0);
+
+        firstPass = false;  // Mark that we've completed the first pass
     }
 
     // 2. Color Reduction
@@ -462,12 +462,18 @@ void RetroFilter::apply(const Settings& settings) {
 
         colorReductionShader->use();
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, currentTex == workTex1 ? workTex2 :
-                                     (currentTex == workTex2 ? workTex1 : sceneTex));
+        // FIX: On first pass, always read from sceneTex to avoid uninitialized work texture reads
+        GLuint inputTex = firstPass ? sceneTex :
+                          (currentTex == workTex1 ? workTex2 : workTex1);
+        glBindTexture(GL_TEXTURE_2D, inputTex);
         colorReductionShader->setUniform("inputTexture", 0);
         colorReductionShader->setUniform("colorLevels", cachedColorLevels);
 
-        renderScreenQuad(currentTex);
+        glBindVertexArray(quadVAO);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        glBindVertexArray(0);
+
+        firstPass = false;  // Mark that we've completed the first pass
     }
 
     // 3. CRT Distortion
@@ -479,13 +485,19 @@ void RetroFilter::apply(const Settings& settings) {
 
         distortionShader->use();
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, currentTex == workTex1 ? workTex2 :
-                                     (currentTex == workTex2 ? workTex1 : sceneTex));
+        // FIX: On first pass, always read from sceneTex to avoid uninitialized work texture reads
+        GLuint inputTex = firstPass ? sceneTex :
+                          (currentTex == workTex1 ? workTex2 : workTex1);
+        glBindTexture(GL_TEXTURE_2D, inputTex);
         distortionShader->setUniform("inputTexture", 0);
         distortionShader->setUniform("strength", settings.distortion_strength);
         distortionShader->setUniform("sceneResolution", cachedSceneResolution);
 
-        renderScreenQuad(currentTex);
+        glBindVertexArray(quadVAO);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        glBindVertexArray(0);
+
+        firstPass = false;  // Mark that we've completed the first pass
     }
 
     // 4. Scanlines
@@ -497,13 +509,19 @@ void RetroFilter::apply(const Settings& settings) {
 
         scanlineShader->use();
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, currentTex == workTex1 ? workTex2 :
-                                     (currentTex == workTex2 ? workTex1 : sceneTex));
+        // FIX: On first pass, always read from sceneTex to avoid uninitialized work texture reads
+        GLuint inputTex = firstPass ? sceneTex :
+                          (currentTex == workTex1 ? workTex2 : workTex1);
+        glBindTexture(GL_TEXTURE_2D, inputTex);
         scanlineShader->setUniform("inputTexture", 0);
         scanlineShader->setUniform("intensity", settings.scanlines_intensity);
         scanlineShader->setUniform("sceneResolution", cachedSceneResolution);
 
-        renderScreenQuad(currentTex);
+        glBindVertexArray(quadVAO);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        glBindVertexArray(0);
+
+        firstPass = false;  // Mark that we've completed the first pass
     }
 
     // 5. Film Grain (always last)
@@ -524,13 +542,19 @@ void RetroFilter::apply(const Settings& settings) {
 
         grainShader->use();
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, currentTex == workTex1 ? workTex2 :
-                                     (currentTex == workTex2 ? workTex1 : sceneTex));
+        // FIX: On first pass, always read from sceneTex to avoid uninitialized work texture reads
+        GLuint inputTex = firstPass ? sceneTex :
+                          (currentTex == workTex1 ? workTex2 : workTex1);
+        glBindTexture(GL_TEXTURE_2D, inputTex);
         grainShader->setUniform("inputTexture", 0);
         grainShader->setUniform("strength", settings.grain_strength);
         grainShader->setUniform("time", cachedGrainTime);
 
-        renderScreenQuad(currentTex);
+        glBindVertexArray(quadVAO);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        glBindVertexArray(0);
+
+        firstPass = false;  // Mark that we've completed the first pass
     }
 
     // Store final result texture
@@ -542,27 +566,52 @@ void RetroFilter::apply(const Settings& settings) {
 // ========== Screen Rendering ==========
 
 void RetroFilter::renderToScreen() {
+    LOGI("renderToScreen() called - screenWidth=%u, screenHeight=%u, finalResultTex=%u, sceneTex=%u, sceneFBO=%u",
+         screenWidth, screenHeight, finalResultTex, sceneTex, sceneFBO);
+
     // Bind default framebuffer (screen)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, screenWidth, screenHeight);
+
+    // DEBUG: Clear screen to bright red to see if glClear is working
+    glClearColor(1.0f, 0.0f, 0.0f, 1.0f);  // Bright RED for testing visibility
+    LOGI("About to glClear() with RED color (1.0, 0.0, 0.0)...");
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    LOGI("glClear() completed");
 
     // If scene was at lower resolution, use composite shader for upscaling
     if (sceneWidth != screenWidth || sceneHeight != screenHeight) {
         LOGD("Upscaling from %ux%u to %ux%u", sceneWidth, sceneHeight, screenWidth, screenHeight);
         compositeShader->use();
+        compositeShader->setUniform("inputTexture", 0);  // CRITICAL: Set texture unit for shader
         compositeShader->setUniform("sceneResolution", glm::vec2(sceneWidth, sceneHeight));
         compositeShader->setUniform("screenResolution", glm::vec2(screenWidth, screenHeight));
     } else {
         // Direct rendering to screen
-        if (scanlineShader) scanlineShader->use();  // Use any shader
+        if (scanlineShader) {
+            scanlineShader->use();
+            scanlineShader->setUniform("inputTexture", 0);  // CRITICAL: Set texture unit for shader
+        }
     }
 
+    LOGI("About to bind texture and render quad - finalResultTex=%u, sceneTex=%u", finalResultTex, sceneTex);
+    LOGI("DEBUG: Rendering sceneTex (ID=%u) directly instead of finalResultTex (ID=%u)", sceneTex, finalResultTex);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, finalResultTex);
+    // TEMPORARY DEBUG: Render sceneTex directly instead of finalResultTex
+    glBindTexture(GL_TEXTURE_2D, sceneTex);  // Use sceneTex directly
+    LOGI("DEBUG: Bound sceneTex successfully, about to render quad");
+    LOGI("Texture bound successfully");
 
+    LOGI("About to bind VAO - quadVAO=%u", quadVAO);
     glBindVertexArray(quadVAO);
+    LOGI("VAO bound successfully");
+
+    LOGI("About to draw arrays...");
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    LOGI("glDrawArrays() completed");
+
     glBindVertexArray(0);
+    LOGI("VAO unbound");
 
     checkGLError("renderToScreen");
 }

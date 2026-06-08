@@ -1,19 +1,29 @@
 #include "title_screen.h"
+#include "text_renderer.h"
+#include "../engine/texture_loader.h"
+#include "ui_draw_helper.h"
 #include <GLES3/gl3.h>
 
 TitleScreen::TitleScreen()
     : state(TitleScreenState::LOGO_DISPLAY), displayTimer(0.0f),
       selectedIndex(0), gameStarted(false), settingsRequested(false),
-      loadGameRequested(false), localizationManager(nullptr) {
+      loadGameRequested(false), localizationManager(nullptr), textRenderer(nullptr) {
     LOGD("TitleScreen created");
 }
 
 TitleScreen::~TitleScreen() {
+    TextureLoader::deleteTexture(bgTexture);
+    TextureLoader::deleteTexture(logoTexture);
+    TextureLoader::deleteTexture(btnNormalTex);
+    TextureLoader::deleteTexture(btnHoverTex);
+    TextureLoader::deleteTexture(btnPressedTex);
+    TextureLoader::deleteTexture(menuPanelTexture);
     LOGD("TitleScreen destroyed");
 }
 
-void TitleScreen::initialize(LocalizationManager* lm) {
+void TitleScreen::initialize(LocalizationManager* lm, TextRenderer* tr) {
     localizationManager = lm;
+    textRenderer = tr;
 
     // Initialize menu items
     menuItems.clear();
@@ -27,7 +37,119 @@ void TitleScreen::initialize(LocalizationManager* lm) {
     selectedIndex = 0;
     gameStarted = false;
 
+    buildGraphicalMenu();
+
+    // Load textures
+    if (!texturesLoaded) {
+        bgTexture = TextureLoader::loadTextureFromAsset("textures/ui/main_background.png");
+        logoTexture = TextureLoader::loadTextureFromAsset("textures/ui/oblivion_logo.png");
+        texturesLoaded = true;
+        LOGI("TitleScreen textures loaded: bg=%u logo=%u", bgTexture, logoTexture);
+    }
+
     LOGI("TitleScreen initialized");
+}
+
+void TitleScreen::setScreenSize(int w, int h) {
+    screenWidth = w;
+    screenHeight = h;
+    rebuildMenuLayout();
+}
+
+void TitleScreen::buildGraphicalMenu() {
+    menuPanel = std::make_shared<UIPanel>("TitleMenuPanel");
+    menuPanel->initialize();
+    menuPanel->setTitle("");
+    menuPanel->setTitleBarHeight(0.0f);
+    menuPanel->setCloseButtonVisible(false);
+    menuPanel->setDraggable(false);
+    menuPanel->setBackgroundColor(glm::vec4(0.05f, 0.02f, 0.02f, 0.88f));
+    menuPanel->setBorderColor(glm::vec4(0.6f, 0.2f, 0.2f, 0.9f));
+    menuPanel->setBorderWidth(2.0f);
+
+    // Load menu panel background texture
+    if (menuPanelTexture == 0) {
+        menuPanelTexture = TextureLoader::loadTextureFromAsset("textures/ui/main_background.png");
+        LOGI("Menu panel texture loaded: %u", menuPanelTexture);
+    }
+    if (menuPanelTexture != 0) {
+        menuPanel->setTexture(menuPanelTexture);
+    }
+
+    struct BtnInfo {
+        int index;
+        std::string labelKey;
+    };
+    BtnInfo infos[] = {
+        {MENU_START,    "menu_start"},
+        {MENU_LOAD,     "menu_load"},
+        {MENU_SETTINGS, "menu_settings"},
+        {MENU_QUIT,     "menu_quit"}
+    };
+
+    // Load button textures
+    if (btnNormalTex == 0) {
+        btnNormalTex = TextureLoader::loadTextureFromAsset("textures/ui/shared_button_long_off.png");
+        btnHoverTex = TextureLoader::loadTextureFromAsset("textures/ui/shared_button_long_on.png");
+        btnPressedTex = TextureLoader::loadTextureFromAsset("textures/ui/shared_button_long_on.png");
+        LOGI("Button textures loaded: normal=%u hover=%u pressed=%u", btnNormalTex, btnHoverTex, btnPressedTex);
+    }
+
+    for (const auto& info : infos) {
+        auto btn = std::make_shared<UIButton>("MenuBtn" + std::to_string(info.index));
+        btn->initialize();
+        std::string label = localizationManager ? localizationManager->getString(info.labelKey) : info.labelKey;
+        btn->setLabel(label);
+        btn->setTextRenderer(textRenderer);
+        btn->setSize(300.0f, 60.0f);
+        btn->setLabelScale(1.2f);
+        btn->setLabelColor(glm::vec3(1.0f, 0.9f, 0.9f));
+        btn->setNormalColor(glm::vec4(0.25f, 0.08f, 0.08f, 0.9f));
+        btn->setHoverColor(glm::vec4(0.45f, 0.15f, 0.15f, 0.95f));
+        btn->setPressedColor(glm::vec4(0.6f, 0.2f, 0.2f, 1.0f));
+
+        // Set button textures
+        if (btnNormalTex != 0) {
+            btn->setNormalTexture(btnNormalTex);
+            btn->setHoverTexture(btnHoverTex);
+            btn->setPressedTexture(btnPressedTex);
+        }
+
+        int idx = info.index;
+        btn->setOnClick([this, idx]() {
+            selectedIndex = idx;
+            handleMenuSelection();
+        });
+
+        menuButtons.push_back(btn);
+        menuPanel->addChild(btn);
+    }
+
+    rebuildMenuLayout();
+}
+
+void TitleScreen::rebuildMenuLayout() {
+    if (!menuPanel) return;
+    menuPanel->setScreenSize(screenWidth, screenHeight);
+
+    float panelW = 360.0f;
+    float panelH = 360.0f;
+    float px = (screenWidth - panelW) * 0.5f;
+    float py = screenHeight * 0.35f;
+    menuPanel->setPosition(px, py);
+    menuPanel->setSize(panelW, panelH);
+
+    float btnW = 300.0f;
+    float btnH = 60.0f;
+    float startY = 30.0f;
+    float gap = 12.0f;
+    for (size_t i = 0; i < menuButtons.size(); ++i) {
+        float bx = (panelW - btnW) * 0.5f;
+        float by = startY + static_cast<float>(i) * (btnH + gap);
+        menuButtons[i]->setPosition(bx, by);
+        menuButtons[i]->setSize(btnW, btnH);
+        menuButtons[i]->setScreenSize(screenWidth, screenHeight);
+    }
 }
 
 void TitleScreen::update(float deltaTime) {
@@ -35,7 +157,6 @@ void TitleScreen::update(float deltaTime) {
         case TitleScreenState::LOGO_DISPLAY: {
             displayTimer += deltaTime;
             if (displayTimer >= LOGO_DISPLAY_DURATION) {
-                // Transition to menu (show menu options)
                 state = TitleScreenState::MENU;
                 LOGI("Logo display complete - transitioning to menu");
             }
@@ -48,12 +169,10 @@ void TitleScreen::update(float deltaTime) {
         }
 
         case TitleScreenState::LANGUAGE: {
-            // Language menu update
             break;
         }
 
         case TitleScreenState::TRANSITIONING: {
-            // Game started - nothing to do
             break;
         }
 
@@ -63,9 +182,6 @@ void TitleScreen::update(float deltaTime) {
 }
 
 void TitleScreen::render() {
-    // Oblivion風 タイトル画面レンダリング
-    // OpenGL ES 3.0でOblivionのカラースキーム（赤/黒）を使用
-
     switch (state) {
         case TitleScreenState::LOGO_DISPLAY: {
             renderLogoDisplay();
@@ -93,115 +209,99 @@ void TitleScreen::render() {
 }
 
 void TitleScreen::renderLogoDisplay() {
-    // Oblivionロゴ表示フェーズ（3秒間）
-
-    // アルファフェードイン（0〜1）
     float fadeAlpha = displayTimer / LOGO_DISPLAY_DURATION;
     fadeAlpha = fadeAlpha > 1.0f ? 1.0f : fadeAlpha;
 
-    // 背景色を一度だけ設定（毎フレーム変更を避ける）
-    // 黒（0.0f）からグレー（0.2f）へのフェードイン
-    float bgBrightness = 0.0f + (0.2f * fadeAlpha);
-    glClearColor(bgBrightness, bgBrightness, bgBrightness, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    // Draw background texture if available
+    if (bgTexture != 0) {
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        UIDrawHelper::drawTexturedQuad(0.0f, 0.0f, static_cast<float>(screenWidth), static_cast<float>(screenHeight),
+                                       bgTexture, glm::vec4(1.0f, 1.0f, 1.0f, fadeAlpha), screenWidth, screenHeight);
+    } else {
+        float bgBrightness = 0.0f + (0.2f * fadeAlpha);
+        glClearColor(bgBrightness, bgBrightness, bgBrightness, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+    }
 
-    // Oblivionロゴテキスト（画面中央）
     renderOblivionLogo(fadeAlpha);
-
-    // "Press to Start" メッセージ（下部）
     renderPressToStartMessage(fadeAlpha);
-
-    LOGI("Logo Display: %.1f/%.1f (alpha: %.2f, bg: %.2f)", displayTimer, LOGO_DISPLAY_DURATION, fadeAlpha, bgBrightness);
 }
 
 void TitleScreen::renderMenu() {
-    // Oblivionメニュー画面
-    glClearColor(0.12f, 0.05f, 0.05f, 1.0f);  // わずかに赤い黒
-    glClear(GL_COLOR_BUFFER_BIT);
+    // Draw background texture if available
+    if (bgTexture != 0) {
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        UIDrawHelper::drawTexturedQuad(0.0f, 0.0f, static_cast<float>(screenWidth), static_cast<float>(screenHeight),
+                                       bgTexture, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), screenWidth, screenHeight);
+    } else {
+        glClearColor(0.12f, 0.05f, 0.05f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+    }
 
-    // メニューのタイトル
-    renderMenuTitle();
-
-    // メニュー項目
-    renderMenuItems();
-
-    LOGD("Menu rendered: selected=%d", selectedIndex);
+    if (menuPanel) {
+        menuPanel->render();
+    } else {
+        renderMenuTitle();
+        renderMenuItems();
+    }
 }
 
 void TitleScreen::renderLanguageSelection() {
-    // 言語選択画面
     glClearColor(0.1f, 0.02f, 0.02f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-
-    // 言語選択メニュー
-    // （未実装 - テキストレンダリングが必要）
-
     LOGD("Language Selection rendered");
 }
 
 void TitleScreen::renderFadeOut() {
-    // フェードアウトエフェクト
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-
     LOGD("Fade-out effect");
 }
 
 void TitleScreen::renderOblivionLogo(float alpha) {
-    // Oblivionロゴを描画（シンプル版）
-    // 黒い背景 → 白い中央領域へのフェードイン効果
-
-    glDisable(GL_DEPTH_TEST);
-
-    // フェードイン効果：alpha値に応じて明るさ調整（黒→白へ）
-    float brightness = alpha * 0.8f;  // 最大80%の明るさ
-    glClearColor(brightness, brightness, brightness, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    LOGD("  Rendering Oblivion logo (alpha: %.2f, brightness: %.2f)", alpha, brightness);
+    if (logoTexture != 0) {
+        float logoW = static_cast<float>(screenWidth) * 0.8f;
+        float logoH = logoW * 0.25f;  // aspect ratio approx
+        float logoX = (static_cast<float>(screenWidth) - logoW) * 0.5f;
+        float logoY = static_cast<float>(screenHeight) * 0.15f;
+        UIDrawHelper::drawTexturedQuad(logoX, logoY, logoW, logoH,
+                                       logoTexture, glm::vec4(1.0f, 1.0f, 1.0f, alpha), screenWidth, screenHeight);
+    } else {
+        glDisable(GL_DEPTH_TEST);
+        float brightness = alpha * 0.8f;
+        glClearColor(brightness, brightness, brightness, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+    }
+    LOGD("  Rendering Oblivion logo (alpha: %.2f)", alpha);
 }
 
 void TitleScreen::renderPressToStartMessage(float alpha) {
-    // 画面下部に "Press to Start" メッセージを表示
-    // NOTE: テキストレンダリングが必要（FreeType等の実装）
-    // 現在はログで確認
     LOGD("  Rendering 'Press to Start' message (alpha: %.2f)", alpha);
 }
 
 void TitleScreen::renderMenuTitle() {
-    // メニュータイトル："Oblivion" または ロゴ
     LOGD("  Rendering menu title");
 }
 
 void TitleScreen::renderMenuItems() {
-    // メニュー項目を描画
-    // - Start Game
-    // - Settings
-    // - Quit
-
     for (size_t i = 0; i < menuItems.size(); ++i) {
         bool isSelected = (static_cast<int>(i) == selectedIndex);
-        float itemX = 0.2f;  // 画面左20%
-        float itemY = 0.3f + (i * 0.15f);  // 30%から各項目15%間隔
-
-        std::string displayText = localizationManager ?
-            localizationManager->getString(menuItems[i]) :
-            menuItems[i];
-
-        // 選択中の項目は明るい赤、非選択は暗い赤
         float colorIntensity = isSelected ? 1.0f : 0.5f;
-
         LOGD("  Menu item[%zu]: %s (selected: %s, color: %.2f)",
-             i, displayText.c_str(), isSelected ? "yes" : "no", colorIntensity);
+             i, menuItems[i].c_str(), isSelected ? "yes" : "no", colorIntensity);
     }
 }
 
 void TitleScreen::onTouchEvent(float x, float y) {
     if (state == TitleScreenState::MENU) {
-        // Simple menu item detection based on Y coordinate
+        if (menuPanel && menuPanel->onTouchDown(x, y, 0)) {
+            return;
+        }
+        // Fallback to legacy Y-based detection if graphical menu not ready
         float menuItemHeight = 100.0f;
         float menuStartY = 100.0f;
-
         int selectedItem = -1;
         for (size_t i = 0; i < menuItems.size(); ++i) {
             float itemY = menuStartY + (i * menuItemHeight);
@@ -210,25 +310,22 @@ void TitleScreen::onTouchEvent(float x, float y) {
                 break;
             }
         }
-
         if (selectedItem >= 0) {
             selectedIndex = selectedItem;
             handleMenuSelection();
         }
     } else if (state == TitleScreenState::LOGO_DISPLAY) {
-        // Skip logo by tapping
         displayTimer = LOGO_DISPLAY_DURATION;
     }
 }
 
 void TitleScreen::onKeyPress(int key) {
     if (state == TitleScreenState::MENU) {
-        // Arrow key navigation (simplified)
-        if (key == 19) {  // Up arrow
+        if (key == 19) {
             selectedIndex = (selectedIndex - 1 + menuItems.size()) % menuItems.size();
-        } else if (key == 20) {  // Down arrow
+        } else if (key == 20) {
             selectedIndex = (selectedIndex + 1) % menuItems.size();
-        } else if (key == 23 || key == 66) {  // Select (ENTER or TAP)
+        } else if (key == 23 || key == 66) {
             handleMenuSelection();
         }
     }
@@ -237,7 +334,7 @@ void TitleScreen::onKeyPress(int key) {
 void TitleScreen::transitionToMenu() {
     state = TitleScreenState::MENU;
     displayTimer = 0.0f;
-    selectedIndex = 0;  // Highlight "Start" by default
+    selectedIndex = 0;
     LOGD("Transitioned to menu state");
 }
 
@@ -248,11 +345,11 @@ void TitleScreen::transitionToLanguageMenu() {
 }
 
 void TitleScreen::updateMenu(float deltaTime) {
-    // Menu update logic (animations, etc.)
+    (void)deltaTime;
 }
 
 void TitleScreen::handleMenuSelection() {
-    if (selectedIndex >= menuItems.size()) {
+    if (selectedIndex >= static_cast<int>(menuItems.size())) {
         return;
     }
 
@@ -263,16 +360,13 @@ void TitleScreen::handleMenuSelection() {
         gameStarted = true;
         LOGI("Menu selection: Start Game");
     } else if (selected == "menu_load") {
-        // Request SaveLoadUI to be opened in Renderer (Phase 5+)
         loadGameRequested = true;
         LOGD("Menu selection: Load Game - requesting save/load UI");
     } else if (selected == "menu_settings") {
-        // Request Settings UI to be opened in Renderer
         settingsRequested = true;
         LOGD("Menu selection: Settings - requesting settings UI");
     } else if (selected == "menu_quit") {
         LOGD("Menu selection: Quit");
-        // Would call Android activity finish() in real implementation
     }
 }
 

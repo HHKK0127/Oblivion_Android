@@ -3,7 +3,7 @@
 #include <thread>
 
 Renderer::Renderer()
-    : showTitleScreen(false), screenWidth(1080), screenHeight(1920),
+    : showTitleScreen(true), screenWidth(1080), screenHeight(1920),
       targetFPS(60), frameTimeThreshold(1000.0f / 60.0f) {
     LOGD("Renderer created with target FPS: %d", targetFPS);
     lastFrameTime = std::chrono::high_resolution_clock::now();
@@ -16,6 +16,7 @@ Renderer::~Renderer() {
 
 bool Renderer::init(unsigned int width, unsigned int height) {
     LOGI("===== Renderer::init() START with %ux%u =====", width, height);
+    __android_log_print(ANDROID_LOG_ERROR, "Renderer", "SYNC_CHECKPOINT_1: init() called");
     initialized = false;  // Reset initialization flag
 
     screenWidth = width;
@@ -28,35 +29,43 @@ bool Renderer::init(unsigned int width, unsigned int height) {
         LOGI("Step 1: Calling initLocalization()");
         initLocalization();
         LOGI("Step 1: initLocalization() completed");
+        __android_log_print(ANDROID_LOG_ERROR, "Renderer", "SYNC_CHECKPOINT_2: localization done");
 
         // Initialize game systems
         LOGI("Step 2: Calling initGameSystems()");
         initGameSystems();
         LOGI("Step 2: initGameSystems() completed");
+        __android_log_print(ANDROID_LOG_ERROR, "Renderer", "SYNC_CHECKPOINT_3: game systems done");
 
         // Initialize retro filter (post-processing)
         LOGI("Step 3: Initializing RetroFilter");
         retroFilter = std::make_unique<RetroFilter>();
         if (!retroFilter->initialize(screenWidth, screenHeight)) {
             LOGE("Failed to initialize RetroFilter");
+            __android_log_print(ANDROID_LOG_ERROR, "Renderer", "ERROR_RETROFILTER: initialization failed");
             return false;
         }
         LOGI("Step 3: RetroFilter initialized");
+        __android_log_print(ANDROID_LOG_ERROR, "Renderer", "SYNC_CHECKPOINT_4: retrofilter done");
 
         // Create test scenario (combat, quests, etc.)
         LOGI("Step 4: Calling createTestScenario()");
         createTestScenario();
         LOGI("Step 4: createTestScenario() completed");
+        __android_log_print(ANDROID_LOG_ERROR, "Renderer", "SYNC_CHECKPOINT_5: test scenario done");
 
         initialized = true;  // Mark as successfully initialized
         LOGI("===== Renderer initialized successfully =====");
+        __android_log_print(ANDROID_LOG_ERROR, "Renderer", "SYNC_CHECKPOINT_FINAL: SUCCESS");
         return true;
     } catch (const std::exception& e) {
         LOGE("CRITICAL: Exception during Renderer::init(): %s", e.what());
+        __android_log_print(ANDROID_LOG_ERROR, "Renderer", "EXCEPTION_CAUGHT: %s", e.what());
         initialized = false;
         return false;
     } catch (...) {
         LOGE("CRITICAL: Unknown exception during Renderer::init()");
+        __android_log_print(ANDROID_LOG_ERROR, "Renderer", "UNKNOWN_EXCEPTION");
         initialized = false;
         return false;
     }
@@ -81,6 +90,24 @@ void Renderer::resize(unsigned int width, unsigned int height) {
     if (retroFilter) {
         retroFilter->setNativeResolution(screenWidth, screenHeight);
         LOGI("RetroFilter resolution updated to: %ux%u", screenWidth, screenHeight);
+    }
+
+    // Update Phase 9 UI Framework screen size
+    if (uiSystem) {
+        uiSystem->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        LOGI("UISystem screen size updated to: %ux%u", screenWidth, screenHeight);
+    }
+
+    // Update TitleScreen layout
+    if (titleScreen) {
+        titleScreen->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        LOGI("TitleScreen screen size updated to: %ux%u", screenWidth, screenHeight);
+    }
+
+    // Update SettingsUI layout
+    if (settingsUI) {
+        settingsUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        LOGI("SettingsUI screen size updated to: %ux%u", screenWidth, screenHeight);
     }
 }
 
@@ -138,12 +165,26 @@ void Renderer::initGameSystems() {
     // Initialize Text Renderer (for debug HUD and settings UI)
     LOGI("Creating TextRenderer...");
     textRenderer = std::make_unique<TextRenderer>();
-    if (!textRenderer->initialize()) {
+    if (!g_assetManager) {
+        LOGE("g_assetManager is null, cannot initialize TextRenderer");
+        return;
+    }
+    if (!textRenderer->initialize(g_assetManager)) {
         LOGE("Failed to initialize TextRenderer");
         return;
     }
     textRenderer->setScreenSize(screenWidth, screenHeight);
     LOGI("TextRenderer initialized successfully with size %ux%u", screenWidth, screenHeight);
+
+    // Initialize Phase 9 UI Framework System
+    LOGI("Creating UISystem...");
+    uiSystem = std::make_unique<UISystem>();
+    if (!uiSystem->initialize(textRenderer.get())) {
+        LOGE("Failed to initialize UISystem");
+    } else {
+        uiSystem->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        LOGI("UISystem initialized successfully (Phase 9 UI Framework ready)");
+    }
 
     // Initialize Debug HUD
     LOGI("Creating DebugHUD...");
@@ -270,25 +311,127 @@ void Renderer::initGameSystems() {
     }
 
     // Initialize Audio Manager (Phase 8+)
+#ifdef AUDIO_SYSTEM_ENABLED
     LOGI("Initializing AudioManager...");
     audioManager = std::make_unique<AudioManager>();
     if (!audioManager->initialize()) {
         LOGE("Failed to initialize AudioManager");
     } else {
         LOGI("AudioManager initialized successfully");
-        // Set default listener position (center of world)
         audioManager->setListenerPosition(glm::vec3(0.0f, 1.7f, 0.0f));
         LOGD("Audio listener positioned at world center");
-
-        // Update DebugHUD with audio manager reference
+        
+        // Load sound definitions from JSON
+        LOGI("Loading sound definitions...");
+        if (audioManager->loadSoundDefinitions("audio/sound_definitions.json")) {
+            LOGI("Sound definitions loaded successfully");
+        } else {
+            LOGW("Failed to load sound definitions - audio will use manual clip loading");
+        }
+        
         if (debugHUD) {
             debugHUD->setAudioManager(audioManager.get());
         }
     }
+#endif
+
+    // Initialize Phase 9.1 Map System
+    LOGI("Creating MapSystem...");
+    mapSystem = std::make_unique<map::MapSystem>();
+    mapSystem->setWorldBounds(-81920.0f, 81920.0f, -81920.0f, 81920.0f);
+    LOGI("MapSystem initialized");
+
+    // Create Map UI (fullscreen map)
+    if (uiSystem) {
+        auto fullMap = std::make_shared<ui::MapUI>("World Map");
+        fullMap->setMapSystem(mapSystem.get());
+        fullMap->setSize(static_cast<float>(screenWidth) * 0.8f, static_cast<float>(screenHeight) * 0.8f);
+        fullMap->setPosition(static_cast<float>(screenWidth) * 0.1f, static_cast<float>(screenHeight) * 0.1f);
+        fullMap->setVisible(false);
+        uiSystem->registerComponent(fullMap, 10);
+        mapUI = fullMap.get();
+        LOGI("MapUI created and registered in UISystem");
+
+        // Create Mini-Map UI
+        auto miniMap = std::make_shared<ui::MapUI>("MiniMap");
+        miniMap->setMapSystem(mapSystem.get());
+        miniMap->setMiniMapMode(true);
+        miniMap->setSize(200.0f, 200.0f);
+        miniMap->setPosition(static_cast<float>(screenWidth) - 220.0f, 20.0f);
+        miniMap->setVisible(true);
+        uiSystem->registerComponent(miniMap, 5);
+        LOGI("MiniMap created and registered in UISystem");
+    }
+
+    // Initialize Phase 9.2 Inventory System
+    LOGI("Creating InventoryGrid...");
+    inventoryGrid = std::make_unique<inventory::InventoryGrid>(150.0f);
+    LOGI("InventoryGrid initialized (max weight 150.0f)");
+
+    equipmentManager = std::make_unique<inventory::EquipmentManager>();
+    LOGI("EquipmentManager initialized");
+
+    // Create test items
+    {
+        inventory::Item sword;
+        sword.id = 1;
+        sword.name = "Iron Sword";
+        sword.description = "A basic iron sword.";
+        sword.category = inventory::ItemCategory::Weapon;
+        sword.rarity = inventory::ItemRarity::Common;
+        sword.equipSlot = inventory::EquipSlot::Weapon;
+        sword.weight = 3.5f;
+        sword.value = 50;
+        sword.stats.damage = 10;
+        inventoryGrid->addItem(sword, 1);
+
+        inventory::Item helm;
+        helm.id = 2;
+        helm.name = "Leather Helm";
+        helm.category = inventory::ItemCategory::Armor;
+        helm.equipSlot = inventory::EquipSlot::Head;
+        helm.weight = 1.2f;
+        helm.value = 30;
+        helm.stats.defense = 5;
+        inventoryGrid->addItem(helm, 1);
+
+        inventory::Item potion;
+        potion.id = 3;
+        potion.name = "Health Potion";
+        potion.category = inventory::ItemCategory::Consumable;
+        potion.weight = 0.3f;
+        potion.value = 15;
+        potion.maxStack = 20;
+        potion.healAmount = 25;
+        inventoryGrid->addItem(potion, 5);
+
+        inventory::Item questItem;
+        questItem.id = 4;
+        questItem.name = "Ancient Key";
+        questItem.category = inventory::ItemCategory::Quest;
+        questItem.weight = 0.1f;
+        questItem.value = 0;
+        inventoryGrid->addItem(questItem, 1);
+
+        LOGI("Test items added to inventory");
+    }
+
+    // Create Inventory UI
+    if (uiSystem) {
+        auto invPanel = std::make_shared<ui::UIInventoryPanel>("Inventory");
+        invPanel->setInventory(inventoryGrid.get());
+        invPanel->setEquipment(equipmentManager.get());
+        invPanel->setSize(static_cast<float>(screenWidth) * 0.85f, static_cast<float>(screenHeight) * 0.75f);
+        invPanel->setPosition(static_cast<float>(screenWidth) * 0.075f, static_cast<float>(screenHeight) * 0.125f);
+        invPanel->setVisible(false);
+        uiSystem->registerComponent(invPanel, 15);
+        uiInventoryPanel = invPanel.get();
+        LOGI("UIInventoryPanel created and registered in UISystem");
+    }
 
     // Initialize Title Screen
     titleScreen = std::make_unique<TitleScreen>();
-    titleScreen->initialize(localizationManager.get());
+    titleScreen->initialize(localizationManager.get(), textRenderer.get());
 
     // Initialize Quest UI
     questUI = std::make_unique<QuestUI>();
@@ -495,6 +638,17 @@ void Renderer::render(float deltaTime) {
         return;  // Skip game rendering while title screen is active
     }
 
+    // Update Phase 9 UI Framework
+    if (uiSystem) {
+        uiSystem->update(deltaTime);
+    }
+
+    // Update map system with player position
+    if (mapSystem && worldManager) {
+        glm::vec3 playerPos3D = worldManager->getPlayerPosition();
+        mapSystem->setPlayerPosition(glm::vec2(playerPos3D.x, playerPos3D.z));
+    }
+
     // Update game systems
     if (worldManager) {
         worldManager->update(deltaTime);
@@ -627,10 +781,20 @@ void Renderer::render(float deltaTime) {
         settingsUI->render();
     }
 
+    // Render Phase 9 UI Framework components (overlays on top of existing UI)
+    if (uiSystem) {
+        uiSystem->render();
+    }
+
     // ===== RETRO FILTER: Apply post-processing effects and render to screen =====
     if (retroFilter) {
+        LOGI("RetroFilter exists, calling apply()...");
         retroFilter->apply(retroSettings);
+        LOGI("RetroFilter apply() completed, calling renderToScreen()...");
         retroFilter->renderToScreen();
+        LOGI("RetroFilter renderToScreen() completed");
+    } else {
+        LOGE("CRITICAL: retroFilter is NULL!");
     }
 
     // Frame rate control - enforce target FPS
@@ -667,6 +831,12 @@ void Renderer::render(float deltaTime) {
 
 void Renderer::onTouchEvent(float x, float y) {
     LOGI("=== タッチイベント検出 === 座標: (%.1f, %.1f)", x, y);
+
+    // Phase 9: UISystem has highest priority for new UI components
+    if (uiSystem && uiSystem->onTouchDown(x, y)) {
+        LOGI("タッチイベント → UISystem (consumed)");
+        return;
+    }
 
     // SaveLoadUI has highest priority (Phase 5+)
     if (saveLoadUI && saveLoadUI->isVisible()) {
@@ -744,6 +914,23 @@ void Renderer::onTouchEvent(float x, float y) {
 
 void Renderer::cleanup() {
     LOGI("Renderer cleaning up");
+
+    if (mapSystem) {
+        mapSystem.reset();
+    }
+
+    if (equipmentManager) {
+        equipmentManager.reset();
+    }
+
+    if (inventoryGrid) {
+        inventoryGrid.reset();
+    }
+
+    if (uiSystem) {
+        uiSystem->cleanup();
+        uiSystem = nullptr;
+    }
 
     if (retroFilter) {
         retroFilter->cleanup();
@@ -867,6 +1054,29 @@ bool Renderer::saveGameState(const std::string& slotName) {
         LOGE("Failed to save game to slot: %s", slotName.c_str());
     }
     return success;
+}
+
+void Renderer::toggleMap() {
+    if (!mapUI) return;
+    bool visible = !mapUI->isVisible();
+    mapUI->setVisible(visible);
+    if (visible) {
+        mapUI->resetView();
+        LOGI("World Map opened");
+    } else {
+        LOGI("World Map closed");
+    }
+}
+
+void Renderer::toggleInventory() {
+    if (!uiInventoryPanel) return;
+    bool visible = !uiInventoryPanel->isVisible();
+    uiInventoryPanel->setVisible(visible);
+    if (visible) {
+        LOGI("Inventory UI opened");
+    } else {
+        LOGI("Inventory UI closed");
+    }
 }
 
 bool Renderer::loadGameState(const std::string& slotName) {

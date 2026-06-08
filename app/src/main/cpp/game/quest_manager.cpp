@@ -1,4 +1,5 @@
 #include "quest_manager.h"
+#include "../audio/audio_manager.h"
 #include <algorithm>
 
 // Quest implementation
@@ -149,6 +150,12 @@ bool QuestManager::acceptQuest(uint32_t questId) {
     activeQuests.push_back(questId);
 
     LOGI("Quest accepted: ID=%u, Title=%s", questId, quest->title.c_str());
+
+    // Play quest accepted sound
+    if (g_audioManager) {
+        g_audioManager->playSound("ui/quest_new");
+    }
+
     return true;
 }
 
@@ -172,9 +179,14 @@ bool QuestManager::completeQuest(uint32_t questId) {
     if (activeIt != activeQuests.end()) {
         activeQuests.erase(activeIt);
     }
-
     LOGI("Quest completed: ID=%u, Title=%s, Reward Gold=%u", questId,
          quest->title.c_str(), quest->reward.goldAmount);
+
+    // Play quest completed sound
+    if (g_audioManager) {
+        g_audioManager->playSound("ui/quest_update");
+    }
+
     return true;
 }
 

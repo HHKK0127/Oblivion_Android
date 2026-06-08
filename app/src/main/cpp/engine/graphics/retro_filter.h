@@ -58,7 +58,7 @@ public:
         float distortion_strength = 0.1f;    // 0.0 (none) - 0.3 (strong)
 
         // Film Grain - 時間ベースノイズ
-        bool grain_enabled = true;
+        bool grain_enabled = false;  // DIAGNOSTIC: disabled to test pipeline
         float grain_strength = 0.3f;         // 0.0 (none) - 1.0 (heavy)
 
         // Resolution scaling

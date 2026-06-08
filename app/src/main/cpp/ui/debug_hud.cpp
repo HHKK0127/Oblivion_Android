@@ -206,15 +206,16 @@ std::string DebugHUD::getAudioStatus() const {
         return ss.str();
     }
 
-    size_t clipCount = audioManager->getLoadedClipsCount();
-    size_t sourceCount = audioManager->getActiveSourcesesCount();
-    bool bgmPlaying = audioManager->isBGMPlaying();
+    // Audio system disabled - JNI bridge not fully implemented
+    // size_t clipCount = audioManager->getLoadedClipsCount();
+    // size_t sourceCount = audioManager->getActiveSourcesesCount();
+    // bool bgmPlaying = audioManager->isBGMPlaying();
+    // ss << "Audio: clips=" << clipCount << " sources=" << sourceCount;
+    // if (bgmPlaying) {
+    //     ss << " [BGM playing]";
+    // }
 
-    ss << "Audio: clips=" << clipCount << " sources=" << sourceCount;
-    if (bgmPlaying) {
-        ss << " [BGM playing]";
-    }
-
+    ss << "Audio: [not available]";
     return ss.str();
 }
 

@@ -125,3 +125,5 @@ private:
     float speedOfSound;              // m/s (default 343.0)
     float masterGain;                // 0.0 - 1.0 (default 1.0)
 };
+
+

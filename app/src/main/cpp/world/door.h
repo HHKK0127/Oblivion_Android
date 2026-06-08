@@ -41,15 +41,15 @@ struct Door {
     float interactionRadius;      // How close player needs to be (default 2.0m)
 
     // Constructor
-    Door() : doorId(0), position(0.0f), rotation(0.0f),
-             destinationCell(0), destinationPos(0.0f), destinationRotation(0.0f),
+    Door() : doorId(0), position(0.0f, 0.0f, 0.0f), rotation(0.0f, 0.0f, 0.0f),
+             destinationCell(0), destinationPos(0.0f, 0.0f, 0.0f), destinationRotation(0.0f, 0.0f, 0.0f),
              interactionRadius(2.0f) {}
 
     Door(uint32_t id, const glm::vec3& pos, const std::string& nameEn,
          const std::string& nameJa_, uint32_t destCell, const glm::vec3& destPos)
-        : doorId(id), position(pos), name(nameEn), nameJa(nameJa_),
-          destinationCell(destCell), destinationPos(destPos),
-          rotation(0.0f), destinationRotation(0.0f), interactionRadius(2.0f) {}
+        : doorId(id), position(pos), modelPath(""), rotation(0.0f, 0.0f, 0.0f),
+          destinationCell(destCell), destinationPos(destPos), destinationRotation(0.0f, 0.0f, 0.0f),
+          name(nameEn), nameJa(nameJa_), interactionRadius(2.0f) {}
 };
 
 // ============================================================================

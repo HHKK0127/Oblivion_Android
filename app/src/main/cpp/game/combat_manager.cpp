@@ -1,6 +1,6 @@
 #include "combat_manager.h"
 #include "spell_manager.h"
-#include "../system/cheat_manager.h"
+#include "../audio/audio_manager.h"
 #include <algorithm>
 #include <cmath>
 
@@ -111,6 +111,11 @@ void CombatManager::initiateCombat(std::shared_ptr<NPC> attacker, std::shared_pt
     defender->enterCombat(attacker);
 
     LOGI("Combat initiated: %s vs %s", attacker->name.c_str(), defender->name.c_str());
+
+    // Play combat start sound
+    if (g_audioManager) {
+        g_audioManager->playSound("combat/blade_equip");
+    }
 }
 
 void CombatManager::endCombat(uint32_t defenderId) {
@@ -149,17 +154,18 @@ float CombatManager::calculateDamage(const CharacterStatus& attacker,
     float totalDamage = baseDamage + strengthBonus - armorMitigation;
 
     // Apply cheat effects
-    if (cheatManager) {
-        // CRITICAL_HIT_100: All attacks do 2x damage (critical hit)
-        if (cheatManager->isCheatActive(CheatManager::CheatType::CRITICAL_HIT_100)) {
-            totalDamage *= 2.0f;
-        }
-
-        // ONE_SHOT_KILL: Make damage extreme for one-shot kills
-        if (cheatManager->isCheatActive(CheatManager::CheatType::ONE_SHOT_KILL)) {
-            totalDamage = 99999.0f;  // One-hit kill
-        }
-    }
+    // Cheat manager not available - disabled
+    // if (cheatManager) {
+    //     // CRITICAL_HIT_100: All attacks do 2x damage (critical hit)
+    //     if (cheatManager->isCheatActive(CheatManager::CheatType::CRITICAL_HIT_100)) {
+    //         totalDamage *= 2.0f;
+    //     }
+    //
+    //     // ONE_SHOT_KILL: Make damage extreme for one-shot kills
+    //     if (cheatManager->isCheatActive(CheatManager::CheatType::ONE_SHOT_KILL)) {
+    //         totalDamage = 99999.0f;  // One-hit kill
+    //     }
+    // }
 
     // Ensure minimum damage
     if (totalDamage < 1.0f) {
@@ -173,9 +179,10 @@ float CombatManager::getDefenderDamageMitigation(const CharacterStatus& defender
     float mitigation = defender.armorRating * 0.5f;
 
     // ENEMY_WEAKNESS: Enemies take 4x damage (1/4 mitigation)
-    if (cheatManager && cheatManager->isCheatActive(CheatManager::CheatType::ENEMY_WEAKNESS)) {
-        mitigation *= 0.25f;  // Reduce mitigation to 25%
-    }
+    // Cheat manager not available - disabled
+    // if (cheatManager && cheatManager->isCheatActive(CheatManager::CheatType::ENEMY_WEAKNESS)) {
+    //     mitigation *= 0.25f;  // Reduce mitigation to 25%
+    // }
 
     return mitigation;
 }
@@ -184,6 +191,11 @@ void CombatManager::applyDamage(std::shared_ptr<NPC> target, float damage) {
     if (!target) return;
 
     target->takeDamage(damage);
+
+    // Play hit sound
+    if (g_audioManager && damage > 0) {
+        g_audioManager->playSound("magic/spell_hit");
+    }
 
     if (!target->status.isAlive()) {
         LOGI("NPC defeated: %s (HP: %.1f -> 0)", target->name.c_str(),

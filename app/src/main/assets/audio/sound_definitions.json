@@ -1,0 +1,601 @@
+{
+  "version": "1.0",
+  "description": "Oblivion Android Sound Definitions - BSA Extracted Assets",
+  "categories": {
+    "ui": {
+      "description": "User Interface sounds",
+      "sounds": {
+        "notification": {
+          "file": "audio/sfx/ui/ui_message.wav",
+          "type": "se",
+          "volume": 0.8,
+          "loop": false
+        },
+        "hover": {
+          "file": "audio/sfx/ui/ui_speechrollover.wav",
+          "type": "se",
+          "volume": 0.5,
+          "loop": false
+        },
+        "menu_open": {
+          "file": "audio/sfx/ui/ui_messagefade.wav",
+          "type": "se",
+          "volume": 0.7,
+          "loop": false
+        },
+        "menu_close": {
+          "file": "audio/sfx/ui/ui_messagefade.wav",
+          "type": "se",
+          "volume": 0.7,
+          "loop": false
+        },
+        "quest_new": {
+          "file": "audio/sfx/ui/ui_questnew.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "quest_update": {
+          "file": "audio/sfx/ui/ui_questupdate.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "skill_up": {
+          "file": "audio/sfx/ui/ui_stats_skillup.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "potion_create": {
+          "file": "audio/sfx/ui/ui_potioncreate.wav",
+          "type": "se",
+          "volume": 0.9,
+          "loop": false
+        },
+        "enchant": {
+          "file": "audio/sfx/ui/ui_itemenchant.wav",
+          "type": "se",
+          "volume": 0.9,
+          "loop": false
+        },
+        "repair": {
+          "file": "audio/sfx/ui/ui_armorweapon_repair.wav",
+          "type": "se",
+          "volume": 0.8,
+          "loop": false
+        },
+        "repair_break": {
+          "file": "audio/sfx/ui/ui_armorweapon_repairbreak.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        }
+      }
+    },
+    "combat": {
+      "description": "Combat weapon sounds",
+      "sounds": {
+        "blade_equip": {
+          "file": "audio/sfx/combat/longbladout.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "blade_unequip": {
+          "file": "audio/sfx/combat/longbladaway.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "blunt_equip": {
+          "file": "audio/sfx/combat/bluntout.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "blunt_unequip": {
+          "file": "audio/sfx/combat/bluntaway.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "axe_equip": {
+          "file": "audio/sfx/combat/axeout.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "axe_unequip": {
+          "file": "audio/sfx/combat/axeaway.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "spear_equip": {
+          "file": "audio/sfx/combat/spearout.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "spear_unequip": {
+          "file": "audio/sfx/combat/spearaway.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "bow_equip": {
+          "file": "audio/sfx/combat/wpn_bow_equip.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "bow_unequip": {
+          "file": "audio/sfx/combat/wpn_bow_unequip.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "bow_draw": {
+          "file": "audio/sfx/combat/wpn_bowdraw.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "bow_shoot": {
+          "file": "audio/sfx/combat/wpn_bowshoot.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "blade2h_equip": {
+          "file": "audio/sfx/combat/wpn_blade2hand_equip.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "blade2h_equip_enchanted": {
+          "file": "audio/sfx/combat/wpn_blade2hand_equip_enchanted.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        }
+      }
+    },
+    "magic": {
+      "description": "Magic spell sounds",
+      "sounds": {
+        "spell_equip": {
+          "file": "audio/sfx/magic/spl_equip.wav",
+          "type": "se",
+          "volume": 0.9,
+          "loop": false
+        },
+        "alteration_cast": {
+          "file": "audio/sfx/magic/spl_alteration_cast.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "conjuration_cast": {
+          "file": "audio/sfx/magic/spl_conjuration_cast.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "destruction_cast": {
+          "file": "audio/sfx/magic/spl_destruction_cast.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "illusion_cast": {
+          "file": "audio/sfx/magic/spl_illusion_cast.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "mysticism_cast": {
+          "file": "audio/sfx/magic/spl_mysticism_cast.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "restoration_cast": {
+          "file": "audio/sfx/magic/spl_restoration_cast.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "fireball_cast": {
+          "file": "audio/sfx/magic/spl_fireball_cast.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "frost_cast": {
+          "file": "audio/sfx/magic/spl_frost_cast.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "shock_cast": {
+          "file": "audio/sfx/magic/spl_shock_cast.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "poison_cast": {
+          "file": "audio/sfx/magic/spl_poison_cast.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "spell_hit": {
+          "file": "audio/sfx/magic/spl_destruction_hit.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "fireball_hit": {
+          "file": "audio/sfx/magic/spl_fireball_hit.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "frost_hit": {
+          "file": "audio/sfx/magic/spl_frost_hit.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "shock_hit": {
+          "file": "audio/sfx/magic/spl_shock_hit.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        }
+      }
+    },
+    "items": {
+      "description": "Item interaction sounds",
+      "sounds": {
+        "pickup_generic": {
+          "file": "audio/sfx/items/itm_generic_up.wav",
+          "type": "se",
+          "volume": 0.8,
+          "loop": false
+        },
+        "drop_generic": {
+          "file": "audio/sfx/items/itm_generic_down.wav",
+          "type": "se",
+          "volume": 0.8,
+          "loop": false
+        },
+        "pickup_gold": {
+          "file": "audio/sfx/items/itm_gold_up.wav",
+          "type": "se",
+          "volume": 0.9,
+          "loop": false
+        },
+        "drop_gold": {
+          "file": "audio/sfx/items/itm_gold_down.wav",
+          "type": "se",
+          "volume": 0.9,
+          "loop": false
+        },
+        "pickup_potion": {
+          "file": "audio/sfx/items/itm_potion_up.wav",
+          "type": "se",
+          "volume": 0.8,
+          "loop": false
+        },
+        "drink_potion": {
+          "file": "audio/sfx/items/itm_potion_down.wav",
+          "type": "se",
+          "volume": 0.9,
+          "loop": false
+        },
+        "pickup_book": {
+          "file": "audio/sfx/items/itm_book_up.wav",
+          "type": "se",
+          "volume": 0.7,
+          "loop": false
+        },
+        "open_book": {
+          "file": "audio/sfx/items/itm_scroll_open.wav",
+          "type": "se",
+          "volume": 0.7,
+          "loop": false
+        },
+        "close_book": {
+          "file": "audio/sfx/items/itm_scroll_close.wav",
+          "type": "se",
+          "volume": 0.7,
+          "loop": false
+        },
+        "pickup_armor_heavy": {
+          "file": "audio/sfx/items/itm_armorheavy_up.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "drop_armor_heavy": {
+          "file": "audio/sfx/items/itm_armorheavy_down.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "pickup_armor_light": {
+          "file": "audio/sfx/items/itm_armorlight_up.wav",
+          "type": "se",
+          "volume": 0.9,
+          "loop": false
+        },
+        "drop_armor_light": {
+          "file": "audio/sfx/items/itm_armorlight_down.wav",
+          "type": "se",
+          "volume": 0.9,
+          "loop": false
+        },
+        "pickup_weapon_blade": {
+          "file": "audio/sfx/items/itm_weaponblade_up.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "drop_weapon_blade": {
+          "file": "audio/sfx/items/itm_weaponblade_down.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "pickup_weapon_blunt": {
+          "file": "audio/sfx/items/itm_weaponblunt_up.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "drop_weapon_blunt": {
+          "file": "audio/sfx/items/itm_weaponblunt_down.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "pickup_key": {
+          "file": "audio/sfx/items/itm_key_up.wav",
+          "type": "se",
+          "volume": 0.8,
+          "loop": false
+        },
+        "pickup_ingredient": {
+          "file": "audio/sfx/items/itm_ingredient_up.wav",
+          "type": "se",
+          "volume": 0.7,
+          "loop": false
+        },
+        "soultrap": {
+          "file": "audio/sfx/items/itm_soultrap.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "pickup_all": {
+          "file": "audio/sfx/items/itm_takeall.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "torch_equip": {
+          "file": "audio/sfx/items/itm_torchheld_equip.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "torch_loop": {
+          "file": "audio/sfx/items/itm_torchheld_lp.wav",
+          "type": "se",
+          "volume": 0.6,
+          "loop": true
+        },
+        "bound_disappear": {
+          "file": "audio/sfx/items/itm_bounddisappear.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        }
+      }
+    },
+    "equip": {
+      "description": "Equipment/Armor equip sounds",
+      "sounds": {
+        "equip_blade1h": {
+          "file": "audio/sfx/equip/tes4-combat-blunt1handready.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "sheath_blade1h": {
+          "file": "audio/sfx/equip/tes4-combat-blunt1handsheath.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "equip_blade2h": {
+          "file": "audio/sfx/equip/tes4-combat-blunt2handready.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "sheath_blade2h": {
+          "file": "audio/sfx/equip/tes4-combat-blunt2handsheath.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "equip_bow": {
+          "file": "audio/sfx/equip/tes4-combat-bow_ready.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "sheath_bow": {
+          "file": "audio/sfx/equip/tes4-combat-bow_sheath.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "equip_staff": {
+          "file": "audio/sfx/equip/tes4-combat-staff_ready.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        },
+        "sheath_staff": {
+          "file": "audio/sfx/equip/tes4-combat-staff_sheath.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false
+        }
+      }
+    },
+    "ambient": {
+      "description": "Ambient environment sounds",
+      "sounds": {
+        "cave_howl": {
+          "file": "audio/sfx/ambient/amb_cavehowl_lp_01_3d.wav",
+          "type": "se",
+          "volume": 0.7,
+          "loop": true,
+          "3d": true
+        },
+        "cave_rumble": {
+          "file": "audio/sfx/ambient/amb_caverumble_lp.wav",
+          "type": "se",
+          "volume": 0.6,
+          "loop": true,
+          "3d": true
+        },
+        "dungeon": {
+          "file": "audio/sfx/ambient/amb_dungeon_lp_01.wav",
+          "type": "se",
+          "volume": 0.5,
+          "loop": true,
+          "3d": true
+        },
+        "dungeon_drip": {
+          "file": "audio/sfx/ambient/amb_dungeondrip_lp_01.wav",
+          "type": "se",
+          "volume": 0.4,
+          "loop": true,
+          "3d": true
+        },
+        "wind_light": {
+          "file": "audio/sfx/ambient/amb_windlight_lp.wav",
+          "type": "se",
+          "volume": 0.5,
+          "loop": true,
+          "3d": false
+        },
+        "wind_medium": {
+          "file": "audio/sfx/ambient/amb_windmedium_lp.wav",
+          "type": "se",
+          "volume": 0.6,
+          "loop": true,
+          "3d": false
+        },
+        "wind_heavy": {
+          "file": "audio/sfx/ambient/amb_windheavy_lp.wav",
+          "type": "se",
+          "volume": 0.7,
+          "loop": true,
+          "3d": false
+        },
+        "rain": {
+          "file": "audio/sfx/ambient/amb_rain_lp.wav",
+          "type": "se",
+          "volume": 0.6,
+          "loop": true,
+          "3d": false
+        },
+        "rain_storm": {
+          "file": "audio/sfx/ambient/amb_rainstorm_lp.wav",
+          "type": "se",
+          "volume": 0.8,
+          "loop": true,
+          "3d": false
+        },
+        "fire_small": {
+          "file": "audio/sfx/ambient/amb_playerfire_lp.wav",
+          "type": "se",
+          "volume": 0.5,
+          "loop": true,
+          "3d": true
+        },
+        "lava": {
+          "file": "audio/sfx/ambient/amb_lava_lp.wav",
+          "type": "se",
+          "volume": 0.6,
+          "loop": true,
+          "3d": true
+        },
+        "steam": {
+          "file": "audio/sfx/ambient/amb_steam_lp.wav",
+          "type": "se",
+          "volume": 0.4,
+          "loop": true,
+          "3d": true
+        },
+        "water_interior": {
+          "file": "audio/sfx/ambient/amb_water_interior_lp.wav",
+          "type": "se",
+          "volume": 0.5,
+          "loop": true,
+          "3d": true
+        },
+        "water_lake": {
+          "file": "audio/sfx/ambient/amb_water_lake_lp.wav",
+          "type": "se",
+          "volume": 0.5,
+          "loop": true,
+          "3d": false
+        },
+        "water_river": {
+          "file": "audio/sfx/ambient/amb_water_river_lp.wav",
+          "type": "se",
+          "volume": 0.5,
+          "loop": true,
+          "3d": false
+        },
+        "underwater": {
+          "file": "audio/sfx/ambient/amb_underwater_lp.wav",
+          "type": "se",
+          "volume": 0.7,
+          "loop": true,
+          "3d": false
+        },
+        "flies": {
+          "file": "audio/sfx/ambient/amb_flies_lp.wav",
+          "type": "se",
+          "volume": 0.3,
+          "loop": true,
+          "3d": true
+        },
+        "oblivion_gate": {
+          "file": "audio/sfx/ambient/amb_obliviongate_lp.wav",
+          "type": "se",
+          "volume": 0.8,
+          "loop": true,
+          "3d": true
+        },
+        "tree_voices": {
+          "file": "audio/sfx/ambient/amb_treevoices_lp.wav",
+          "type": "se",
+          "volume": 0.4,
+          "loop": true,
+          "3d": false
+        }
+      }
+    }
+  }
+}

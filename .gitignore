@@ -35,6 +35,7 @@ local.properties
 cmake-build-debug/
 cmake-build-release/
 app/src/main/cpp/.cxx/
+app/.cxx/
 
 # IDE files
 .vscode/

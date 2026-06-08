@@ -4,6 +4,7 @@
 #include <map>
 #include <glm/glm.hpp>
 #include <GLES3/gl3.h>
+#include <android/asset_manager.h>
 
 /**
  * @brief stb_truetype を使用したテキストレンダリングシステム
@@ -16,9 +17,10 @@ public:
 
     /**
      * @brief テキストレンダリングシステムを初期化
+     * @param assetMgr Android AssetManager（フォント読み込み用）
      * @return 初期化成功時true
      */
-    bool initialize();
+    bool initialize(AAssetManager* assetMgr);
 
     /**
      * @brief テキストを画面に描画
@@ -74,6 +76,9 @@ private:
 
     // フォントデータ
     FontData* fontData;
+
+    // Android AssetManager（フォント読み込み用）
+    AAssetManager* assetManager;
 
     // テクスチャアトラスのサイズ
     static constexpr int ATLAS_WIDTH = 512;

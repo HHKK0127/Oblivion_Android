@@ -32,9 +32,7 @@ struct AudioClip {
      * @brief デストラクタ
      */
     ~AudioClip() {
-        if (alBuffer != 0) {
-            alDeleteBuffers(1, &alBuffer);
-            alBuffer = 0;
-        }
+        // JNI bridge handles resource cleanup via Java MediaPlayer
+        alBuffer = 0;
     }
 };

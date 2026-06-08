@@ -1,6 +1,9 @@
 #include "cell.h"
 #include "../game/npc.h"
 #include "../geometry/mesh.h"
+#include "../engine/shader.h"
+#include "terrain.h"
+#include <GLES3/gl3.h>
 
 // ============================================================================
 // CellManager Implementation
@@ -109,29 +112,15 @@ void CellManager::updateCell(std::shared_ptr<Cell> cell, float deltaTime) {
 }
 
 void CellManager::renderCell(std::shared_ptr<Cell> cell) {
-    if (!cell || !cell->isLoaded() || !cell->terrain) {
+    if (!cell || !cell->isLoaded()) {
         return;
     }
 
-    // Render terrain
-    // (Shader binding handled by Renderer)
-    // cell->terrain->render(...);
-
-    // Render static objects
-    for (auto& obj : cell->staticObjects) {
-        if (obj && obj->mesh) {
-            // Render object mesh
-        }
-    }
-
-    // Render dynamic objects
-    for (auto& obj : cell->dynamicObjects) {
-        if (obj && obj->mesh) {
-            // Render object mesh
-        }
-    }
-
-    // NPCs are rendered by NpcManager
+    // TODO: ジオメトリレンダリングの実装
+    // - 地形メッシュのレンダリング
+    // - 静的オブジェクトのレンダリング
+    // - 動的オブジェクトのレンダリング
+    // - カメラ設定とシェーダーバインディング
 }
 
 bool CellManager::isCellLoaded(uint32_t cellId) const {

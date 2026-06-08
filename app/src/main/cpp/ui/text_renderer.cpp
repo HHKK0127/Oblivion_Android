@@ -50,7 +50,8 @@ void main() {
 
 TextRenderer::TextRenderer()
     : vao(0), vbo(0), shaderProgram(0), projectionLoc(-1), colorLoc(-1),
-      fontTexture(0), screenWidth(1080), screenHeight(1920), fontData(nullptr) {
+      fontTexture(0), screenWidth(1080), screenHeight(1920), fontData(nullptr),
+      assetManager(nullptr) {
     LOGD("TextRenderer created");
 }
 
@@ -58,8 +59,15 @@ TextRenderer::~TextRenderer() {
     cleanup();
 }
 
-bool TextRenderer::initialize() {
+bool TextRenderer::initialize(AAssetManager* assetMgr) {
     LOGI("===== TextRenderer::initialize() START =====");
+
+    if (!assetMgr) {
+        LOGE("AssetManager is null");
+        return false;
+    }
+    assetManager = assetMgr;
+    LOGI("AssetManager set: %p", assetManager);
 
     // シェーダーコンパイル
     compileShaders();
@@ -113,44 +121,45 @@ bool TextRenderer::initialize() {
 }
 
 bool TextRenderer::loadFontFromAssets(const std::string& filename) {
-    LOGI("Loading font: %s", filename.c_str());
+    LOGI("Loading font: %s via AAssetManager", filename.c_str());
 
-    // assets フォルダからフォントファイルを読み込む
-    // 簡略版: /system/fonts または assets から読み込みを試みる
-    FILE* fontFile = nullptr;
-
-    // Android の assets からの読み込みは AAssetManager が必要
-    // ここでは簡易版として、既知のパスから読み込みを試みる
-    std::string assetPath = "/data/data/com.example.oblivion/files/" + filename;
-    fontFile = fopen(assetPath.c_str(), "rb");
-
-    if (!fontFile) {
-        // フォールバック: assets フォルダ内のファイルを探す
-        assetPath = filename;
-        fontFile = fopen(assetPath.c_str(), "rb");
-    }
-
-    if (!fontFile) {
-        LOGE("Could not open font file: %s", filename.c_str());
+    if (!assetManager) {
+        LOGE("AssetManager is null, cannot load font");
         return false;
     }
 
+    // AAssetManager を使用して assets から font ファイルを開く
+    AAsset* asset = AAssetManager_open(assetManager, filename.c_str(), AASSET_MODE_STREAMING);
+    if (!asset) {
+        LOGE("Could not open font asset: %s", filename.c_str());
+        return false;
+    }
+
+    LOGI("Font asset opened successfully");
+
     // ファイルサイズを取得
-    fseek(fontFile, 0, SEEK_END);
-    long fontDataSize = ftell(fontFile);
-    fseek(fontFile, 0, SEEK_SET);
+    off_t fontDataSize = AAsset_getLength(asset);
+    LOGI("Font data size: %ld bytes", fontDataSize);
+
+    if (fontDataSize <= 0) {
+        LOGE("Invalid font file size: %ld", fontDataSize);
+        AAsset_close(asset);
+        return false;
+    }
 
     // フォントデータをメモリに読み込む
     fontData->fontData = new unsigned char[fontDataSize];
-    if (fread(fontData->fontData, 1, fontDataSize, fontFile) != fontDataSize) {
-        LOGE("Failed to read font file");
-        fclose(fontFile);
+    int bytesRead = AAsset_read(asset, fontData->fontData, fontDataSize);
+
+    if (bytesRead != fontDataSize) {
+        LOGE("Failed to read font file: read %d bytes, expected %ld", bytesRead, fontDataSize);
+        AAsset_close(asset);
         delete[] fontData->fontData;
         fontData->fontData = nullptr;
         return false;
     }
 
-    fclose(fontFile);
+    AAsset_close(asset);
 
     LOGI("Font loaded successfully: %ld bytes", fontDataSize);
     return true;
@@ -165,7 +174,23 @@ bool TextRenderer::createFontTextureAtlas() {
 
     // stb_truetype フォント初期化
     stbtt_fontinfo fontInfo;
-    if (!fontData->fontData || !stbtt_InitFont(&fontInfo, fontData->fontData, 0)) {
+    if (!fontData->fontData) {
+        LOGW("Font data not loaded, using placeholder texture");
+        // Create a simple 1x1 white texture as placeholder
+        memset(atlasBuffer, 255, ATLAS_WIDTH * ATLAS_HEIGHT);
+        glGenTextures(1, &fontTexture);
+        glBindTexture(GL_TEXTURE_2D, fontTexture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, ATLAS_WIDTH, ATLAS_HEIGHT, 0, GL_RED, GL_UNSIGNED_BYTE, atlasBuffer);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        delete[] atlasBuffer;
+        LOGI("Placeholder font texture created");
+        return true;
+    }
+
+    if (!stbtt_InitFont(&fontInfo, fontData->fontData, 0)) {
         LOGE("Failed to initialize stb_truetype font");
         delete[] atlasBuffer;
         return false;

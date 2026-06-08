@@ -166,7 +166,7 @@ bool DoorManager::performCellTransition(const Door& door) {
     worldManager->setPlayerPosition(door.destinationPos);
 
     // 4. Set player rotation if specified
-    if (glm::length(door.destinationRotation) > 0.0f) {
+    if (door.destinationRotation.x != 0.0f || door.destinationRotation.y != 0.0f || door.destinationRotation.z != 0.0f) {
         worldManager->setPlayerRotation(door.destinationRotation);
     }
 

@@ -3,6 +3,7 @@
 #include <memory>
 #include <chrono>
 #include <android/log.h>
+#include <android/asset_manager.h>
 #include <GLES3/gl3.h>
 #include "../ui/title_screen.h"
 #include "../ui/quest_ui.h"
@@ -18,12 +19,18 @@
 #include "../game/player_controller.h"
 #include "../game/inventory_manager.h"
 #include "../ui/inventory_ui.h"
+#include "../ui/ui_inventory_panel.h"
 #include "../world/world_manager.h"
 #include "../localization/localization_manager.h"
 #include "../profiling/performance_monitor.h"
 #include "../save_system/save_manager.h"
 #include "../assets/asset_manager.h"
 #include "graphics/retro_filter.h"
+#include "../ui/ui_system.h"
+#include "../ui/ui_map_panel.h"
+#include "../map/map_system.h"
+#include "../inventory/inventory_grid.h"
+#include "../inventory/equipment_manager.h"
 
 #ifdef AUDIO_SYSTEM_ENABLED
 #include "../audio/audio_manager.h"
@@ -40,6 +47,9 @@
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+
+// グローバル AssetManager（jni_bridge.cpp で定義）
+extern AAssetManager* g_assetManager;
 
 class Renderer {
 private:
@@ -73,6 +83,18 @@ private:
 
     // Save System
     std::unique_ptr<SaveManager> saveManager;
+
+    // Phase 9: UI Framework System
+    std::unique_ptr<UISystem> uiSystem;
+
+    // Phase 9.1: Map System
+    std::unique_ptr<map::MapSystem> mapSystem;
+    ui::MapUI* mapUI = nullptr;
+
+    // Phase 9.2: Inventory System
+    std::unique_ptr<inventory::InventoryGrid> inventoryGrid;
+    std::unique_ptr<inventory::EquipmentManager> equipmentManager;
+    ui::UIInventoryPanel* uiInventoryPanel = nullptr;
 
     // Audio System
 #ifdef AUDIO_SYSTEM_ENABLED
@@ -126,7 +148,22 @@ public:
     AudioManager* getAudioManager() { return audioManager.get(); }
 #endif
 
+    unsigned int getScreenWidth() const { return screenWidth; }
+    unsigned int getScreenHeight() const { return screenHeight; }
+
     bool isTitleScreenActive() const { return showTitleScreen; }
+    UISystem* getUISystem() { return uiSystem.get(); }
+
+    // Phase 9.1: Map System
+    map::MapSystem* getMapSystem() { return mapSystem.get(); }
+    void toggleMap();
+    bool isMapVisible() const { return mapUI && mapUI->isVisible(); }
+
+    // Phase 9.2: Inventory System
+    inventory::InventoryGrid* getInventoryGrid() { return inventoryGrid.get(); }
+    inventory::EquipmentManager* getEquipmentManager() { return equipmentManager.get(); }
+    void toggleInventory();
+    bool isInventoryVisible() const { return uiInventoryPanel && uiInventoryPanel->isVisible(); }
 
     // FPS Control
     void setTargetFPS(int fps);

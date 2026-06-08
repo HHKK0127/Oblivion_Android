@@ -1,4 +1,6 @@
 #include "settings_ui.h"
+#include "../engine/renderer.h"
+#include "../engine/texture_loader.h"
 #include <android/log.h>
 #include <sstream>
 
@@ -9,6 +11,9 @@ SettingsUI::SettingsUI()
 }
 
 SettingsUI::~SettingsUI() {
+    if (panelTexture != 0) {
+        TextureLoader::deleteTexture(panelTexture);
+    }
     cleanup();
 }
 
@@ -38,58 +43,116 @@ bool SettingsUI::initialize(TextRenderer* textRend, SettingsManager* settings, R
     menuItems.push_back(SettingItem::BACK);
 
     updateMenuItems();
+    buildGraphicalSettings();
 
     LOGD("SettingsUI initialized");
     return true;
 }
 
-void SettingsUI::toggle() {
-    visible = !visible;
-    selectedIndex = 0;
-    LOGD("SettingsUI toggled: %s", visible ? "ON" : "OFF");
-}
+void SettingsUI::buildGraphicalSettings() {
+    settingsPanel = std::make_shared<UIPanel>("SettingsPanel");
+    settingsPanel->initialize();
+    settingsPanel->setTitle("Settings");
+    settingsPanel->setTitleBarHeight(44.0f);
+    settingsPanel->setTitleBarColor(glm::vec4(0.2f, 0.15f, 0.15f, 0.95f));
+    settingsPanel->setTitleColor(glm::vec4(1.0f, 0.9f, 0.7f, 1.0f));
+    settingsPanel->setCloseButtonVisible(true);
+    settingsPanel->setDraggable(true);
+    settingsPanel->setBackgroundColor(glm::vec4(0.08f, 0.06f, 0.06f, 0.92f));
+    settingsPanel->setBorderColor(glm::vec4(0.5f, 0.3f, 0.3f, 1.0f));
+    settingsPanel->setBorderWidth(2.0f);
 
-void SettingsUI::render() {
-    if (!visible || !textRenderer) {
-        return;
+    // Load panel background texture
+    if (panelTexture == 0) {
+        panelTexture = TextureLoader::loadTextureFromAsset("textures/ui/main_background.png");
+        if (panelTexture != 0) {
+            settingsPanel->setTexture(panelTexture);
+            LOGI("SettingsUI: Panel background texture loaded: %u", panelTexture);
+        } else {
+            LOGW("SettingsUI: Failed to load panel background texture");
+        }
+    } else {
+        settingsPanel->setTexture(panelTexture);
     }
 
-    // 背景を暗くする（半透明効果）
-    glClearColor(0.0f, 0.0f, 0.0f, 0.5f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    settingsPanel->setOnClose([this]() {
+        returnToMenu = true;
+        visible = false;
+    });
 
-    // タイトル
-    glm::vec3 titleColor(1.0f, 1.0f, 0.0f);  // 黄色
-    textRenderer->renderText("SETTINGS", 400.0f, 100.0f, titleColor, 1.5f);
+    for (const auto& item : menuItems) {
+        auto btn = std::make_shared<UIButton>("SettingBtn" + std::to_string(static_cast<int>(item)));
+        btn->initialize();
+        btn->setTextRenderer(textRenderer);
+        btn->setSize(340.0f, 52.0f);
+        btn->setLabelScale(1.0f);
+        btn->setLabelColor(glm::vec3(1.0f, 1.0f, 1.0f));
+        btn->setNormalColor(glm::vec4(0.2f, 0.15f, 0.15f, 0.85f));
+        btn->setHoverColor(glm::vec4(0.35f, 0.25f, 0.25f, 0.95f));
+        btn->setPressedColor(glm::vec4(0.5f, 0.35f, 0.35f, 1.0f));
 
-    // メニューアイテムを描画
-    glm::vec3 normalColor(1.0f, 1.0f, 1.0f);  // 白
-    glm::vec3 selectedColor(1.0f, 0.0f, 0.0f);  // 赤
+        btn->setOnClick([this, item]() {
+            selectItem(item);
+            updateButtonLabels();
+        });
 
-    float yPos = 250.0f;
-    for (size_t i = 0; i < menuItems.size(); i++) {
-        std::string label = getSettingLabel(menuItems[i]);
-        glm::vec3 color = (i == selectedIndex) ? selectedColor : normalColor;
+        settingButtons.push_back(btn);
+        settingsPanel->addChild(btn);
+    }
 
+    refreshLayout();
+    updateButtonLabels();
+}
+
+void SettingsUI::refreshLayout() {
+    if (!settingsPanel) return;
+    settingsPanel->setScreenSize(screenWidth, screenHeight);
+
+    float panelW = 420.0f;
+    float panelH = static_cast<float>(settingButtons.size()) * 64.0f + 120.0f;
+    float px = (screenWidth - panelW) * 0.5f;
+    float py = (screenHeight - panelH) * 0.35f;
+    settingsPanel->setPosition(px, py);
+    settingsPanel->setSize(panelW, panelH);
+
+    glm::vec2 contentPos = settingsPanel->getContentPosition();
+    float btnW = 340.0f;
+    float btnH = 52.0f;
+    float bx = contentPos.x + (settingsPanel->getContentSize().x - btnW) * 0.5f;
+    float startY = contentPos.y + 10.0f;
+
+    for (size_t i = 0; i < settingButtons.size(); ++i) {
+        float by = startY + static_cast<float>(i) * (btnH + 10.0f);
+        settingButtons[i]->setPosition(bx - settingsPanel->getAbsolutePosition().x, by - settingsPanel->getAbsolutePosition().y);
+        settingButtons[i]->setSize(btnW, btnH);
+        settingButtons[i]->setScreenSize(screenWidth, screenHeight);
+    }
+}
+
+void SettingsUI::updateButtonLabels() {
+    if (!settingsPanel) return;
+    for (size_t i = 0; i < menuItems.size() && i < settingButtons.size(); ++i) {
+        SettingItem item = menuItems[i];
+        std::string label = getSettingLabel(item);
         std::string displayText;
-        if (menuItems[i] == SettingItem::DEBUG_MODE) {
+
+        if (item == SettingItem::DEBUG_MODE) {
             bool debugEnabled = settingsManager->isDebugModeEnabled();
             displayText = label + ": " + (debugEnabled ? "ON" : "OFF");
-        } else if (menuItems[i] == SettingItem::LANGUAGE) {
+        } else if (item == SettingItem::LANGUAGE) {
             std::string lang = settingsManager->getLanguage();
             displayText = label + ": " + (lang == "ja" ? "Japanese" : "English");
         } else if (renderer) {
-            // RetroFilter options (Phase 6+)
             auto* retroSettings = renderer->getRetroSettings();
-            if (menuItems[i] == SettingItem::PIXELATION) {
+            if (item == SettingItem::PIXELATION) {
                 displayText = label + ": " + (retroSettings->pixelation_enabled ? "ON" : "OFF");
-            } else if (menuItems[i] == SettingItem::SCANLINES) {
+            } else if (item == SettingItem::SCANLINES) {
                 displayText = label + ": " + (retroSettings->scanlines_enabled ? "ON" : "OFF");
-            } else if (menuItems[i] == SettingItem::COLOR_REDUCTION) {
+            } else if (item == SettingItem::COLOR_REDUCTION) {
                 displayText = label + ": " + (retroSettings->color_reduction_enabled ? "ON" : "OFF");
-            } else if (menuItems[i] == SettingItem::CRT_DISTORTION) {
+            } else if (item == SettingItem::CRT_DISTORTION) {
                 displayText = label + ": " + (retroSettings->crt_distortion_enabled ? "ON" : "OFF");
-            } else if (menuItems[i] == SettingItem::FILM_GRAIN) {
+            } else if (item == SettingItem::FILM_GRAIN) {
                 displayText = label + ": " + (retroSettings->grain_enabled ? "ON" : "OFF");
             } else {
                 displayText = label;
@@ -98,18 +161,41 @@ void SettingsUI::render() {
             displayText = label;
         }
 
-        // 選択されている場合は「> 」を追加
-        if (i == selectedIndex) {
-            displayText = "> " + displayText;
-        }
+        settingButtons[i]->setLabel(displayText);
+    }
+}
 
-        textRenderer->renderText(displayText, 300.0f, yPos, color, 1.2f);
-        yPos += 80.0f;
+void SettingsUI::setScreenSize(int w, int h) {
+    screenWidth = w;
+    screenHeight = h;
+    refreshLayout();
+}
+
+void SettingsUI::toggle() {
+    visible = !visible;
+    selectedIndex = 0;
+    if (visible && settingsPanel) {
+        updateButtonLabels();
+    }
+    LOGD("SettingsUI toggled: %s", visible ? "ON" : "OFF");
+}
+
+void SettingsUI::render() {
+    if (!visible) {
+        return;
     }
 
-    // ヘルプテキスト
-    glm::vec3 helpColor(0.7f, 0.7f, 0.7f);
-    textRenderer->renderText("Tap item to select", 350.0f, 600.0f, helpColor, 0.8f);
+    if (settingsPanel) {
+        updateButtonLabels();
+        settingsPanel->render();
+    } else {
+        // Fallback legacy rendering
+        if (!textRenderer) return;
+        glClearColor(0.0f, 0.0f, 0.0f, 0.5f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        glm::vec3 titleColor(1.0f, 1.0f, 0.0f);
+        textRenderer->renderText("SETTINGS", 400.0f, 100.0f, titleColor, 1.5f);
+    }
 }
 
 void SettingsUI::onTouchEvent(float x, float y) {
@@ -117,6 +203,11 @@ void SettingsUI::onTouchEvent(float x, float y) {
         return;
     }
 
+    if (settingsPanel && settingsPanel->onTouchDown(x, y, 0)) {
+        return;
+    }
+
+    // Fallback legacy touch detection
     float yPos = 250.0f;
     for (size_t i = 0; i < menuItems.size(); i++) {
         if (y >= yPos && y < yPos + 60.0f) {
@@ -131,6 +222,8 @@ void SettingsUI::onTouchEvent(float x, float y) {
 void SettingsUI::cleanup() {
     textRenderer = nullptr;
     settingsManager = nullptr;
+    settingsPanel = nullptr;
+    settingButtons.clear();
     LOGD("SettingsUI cleaned up");
 }
 

@@ -3,6 +3,12 @@
 #include <string>
 #include <android/log.h>
 
+#undef LOG_TAG
+#undef LOGD
+#undef LOGW
+#undef LOGE
+#undef LOGI
+
 /**
  * @brief ゲーム設定管理システム
  * ゲームの各種設定（言語、デバッグモードなど）を管理します

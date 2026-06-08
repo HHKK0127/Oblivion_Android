@@ -34,6 +34,8 @@ public class GameRenderer implements GLSurfaceView.Renderer {
 
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
+        // FORCE LOG: Write to logcat at all levels to ensure this is visible
+        android.util.Log.wtf(TAG, "===== onSurfaceCreated CALLED - THIS SHOULD APPEAR IN LOGS =====");
         Log.i(TAG, "=== onSurfaceCreated called ===");
 
         // Display OpenGL info immediately

@@ -1,5 +1,5 @@
 #include "spell_manager.h"
-#include "../system/cheat_manager.h"
+#include "../audio/audio_manager.h"
 #include <algorithm>
 #include <cmath>
 
@@ -150,6 +150,23 @@ bool SpellManager::castSpell(uint32_t casterId, uint32_t spellId, uint32_t targe
          spell->name.c_str(), spell->nameJa.c_str(),
          target->name.c_str());
 
+    // Play spell cast sound based on school
+    if (g_audioManager) {
+        std::string soundKey;
+        switch (spell->school) {
+            case MagicSchool::DESTRUCTION: soundKey = "magic/destruction_cast"; break;
+            case MagicSchool::RESTORATION: soundKey = "magic/restoration_cast"; break;
+            case MagicSchool::CONJURATION: soundKey = "magic/conjuration_cast"; break;
+            case MagicSchool::ALTERATION:  soundKey = "magic/alteration_cast"; break;
+            case MagicSchool::ILLUSION:    soundKey = "magic/illusion_cast"; break;
+            case MagicSchool::MYSTICISM:   soundKey = "magic/mysticism_cast"; break;
+            default: break;
+        }
+        if (!soundKey.empty()) {
+            g_audioManager->playSound(soundKey);
+        }
+    }
+
     return true;
 }
 
@@ -185,14 +202,16 @@ bool SpellManager::consumeMana(uint32_t casterId, float amount) {
     if (!npc) return false;
 
     // Apply REDUCED_SPELL_COST cheat: 50% mana cost
-    if (cheatManager && cheatManager->isCheatActive(CheatManager::CheatType::REDUCED_SPELL_COST)) {
-        amount *= 0.5f;  // Half cost
-    }
+    // Cheat manager not available - disabled
+    // if (cheatManager && cheatManager->isCheatActive(CheatManager::CheatType::REDUCED_SPELL_COST)) {
+    //     amount *= 0.5f;  // Half cost
+    // }
 
     // Apply NO_MAGICKA_DRAIN cheat: free spells
-    if (cheatManager && cheatManager->isCheatActive(CheatManager::CheatType::NO_MAGICKA_DRAIN)) {
-        amount = 0.0f;  // No mana cost
-    }
+    // Cheat manager not available - disabled
+    // if (cheatManager && cheatManager->isCheatActive(CheatManager::CheatType::NO_MAGICKA_DRAIN)) {
+    //     amount = 0.0f;  // No mana cost
+    // }
 
     if (npc->status.currentMana < amount) {
         return false;

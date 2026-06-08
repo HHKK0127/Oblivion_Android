@@ -10,7 +10,7 @@
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
-AAssetManager* g_assetManager = nullptr;
+extern AAssetManager* g_assetManager;
 JavaVM* g_javaVM = nullptr;
 jobject g_mainActivity = nullptr;
 
