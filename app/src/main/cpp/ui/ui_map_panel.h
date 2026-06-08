@@ -27,6 +27,9 @@ public:
     void zoomOut(float factor = 1.2f);
     void resetView();
 
+    // Callback when mini-map is tapped
+    std::function<void()> onMiniMapTapped;
+
     void setShowGrid(bool show) { showGrid = show; }
     void setShowMarkers(bool show) { showMarkers = show; }
     void setShowPlayer(bool show) { showPlayer = show; }

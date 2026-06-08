@@ -348,6 +348,15 @@ void Renderer::initGameSystems() {
         fullMap->setSize(static_cast<float>(screenWidth) * 0.8f, static_cast<float>(screenHeight) * 0.8f);
         fullMap->setPosition(static_cast<float>(screenWidth) * 0.1f, static_cast<float>(screenHeight) * 0.1f);
         fullMap->setVisible(false);
+        fullMap->setDraggable(false); // Full-screen map doesn't need dragging
+
+        // Apply background texture if available
+        GLuint mapBgTex = TextureLoader::loadTextureFromAsset("textures/ui/main_background.png");
+        if (mapBgTex != 0) {
+            fullMap->setTexture(mapBgTex);
+            fullMap->setTextureScaleMode(TextureScaleMode::STRETCH);
+        }
+
         uiSystem->registerComponent(fullMap, 10);
         mapUI = fullMap.get();
         LOGI("MapUI created and registered in UISystem");
@@ -359,6 +368,10 @@ void Renderer::initGameSystems() {
         miniMap->setSize(200.0f, 200.0f);
         miniMap->setPosition(static_cast<float>(screenWidth) - 220.0f, 20.0f);
         miniMap->setVisible(true);
+        miniMap->onMiniMapTapped = [this]() {
+            LOGI("Mini-map tapped - opening world map");
+            toggleMap();
+        };
         uiSystem->registerComponent(miniMap, 5);
         LOGI("MiniMap created and registered in UISystem");
     }
@@ -643,10 +656,72 @@ void Renderer::render(float deltaTime) {
         uiSystem->update(deltaTime);
     }
 
-    // Update map system with player position
+    // Update map system with player position and cell discovery
     if (mapSystem && worldManager) {
         glm::vec3 playerPos3D = worldManager->getPlayerPosition();
-        mapSystem->setPlayerPosition(glm::vec2(playerPos3D.x, playerPos3D.z));
+        glm::vec2 playerPos2D(playerPos3D.x, playerPos3D.z);
+        mapSystem->setPlayerPosition(playerPos2D);
+
+        // Auto-discover cells around player
+        float cellSize = mapSystem->getCellSize();
+        glm::vec2 cellCoord = map::MapSystem::worldToCell(playerPos2D, cellSize);
+        int pcx = static_cast<int>(cellCoord.x);
+        int pcy = static_cast<int>(cellCoord.y);
+
+        for (int dy = -2; dy <= 2; ++dy) {
+            for (int dx = -2; dx <= 2; ++dx) {
+                int cx = pcx + dx;
+                int cy = pcy + dy;
+                if (!mapSystem->isCellDiscovered(cx, cy)) {
+                    mapSystem->discoverCell(cx, cy);
+
+                    // Set procedural cell info with terrain color
+                    map::CellInfo info;
+                    info.x = cx;
+                    info.y = cy;
+                    info.discovered = true;
+
+                    // Procedural terrain color based on coordinates
+                    uint32_t hash = static_cast<uint32_t>(cx * 374761393u + cy * 668265263u);
+                    int terrainType = hash % 10;
+                    if (terrainType < 5) {
+                        info.terrainColor = 0xFF4A8C4A; // Grass green
+                        info.name = "Wilderness";
+                    } else if (terrainType < 7) {
+                        info.terrainColor = 0xFF8C8C4A; // Hills brown-yellow
+                        info.name = "Hills";
+                    } else if (terrainType < 8) {
+                        info.terrainColor = 0xFF4A6A8C; // Water blue
+                        info.name = "Lake";
+                    } else {
+                        info.terrainColor = 0xFF7A7A7A; // Mountains gray
+                        info.name = "Mountains";
+                    }
+                    mapSystem->setCellInfo(cx, cy, info);
+                }
+            }
+        }
+
+        // Update quest markers from active quests
+        if (questManager && npcManager) {
+            auto activeQuests = questManager->getActiveQuests();
+            // Clear old quest markers
+            mapSystem->clearMarkersByType(map::MarkerType::QuestMain);
+            mapSystem->clearMarkersByType(map::MarkerType::QuestSide);
+            // Add markers for active quests at giver NPC positions
+            for (const auto& quest : activeQuests) {
+                if (!quest) continue;
+                auto npc = npcManager->getNPC(quest->giverNpcId);
+                if (!npc) continue;
+                map::MapMarker marker;
+                marker.type = map::MarkerType::QuestSide;
+                marker.worldPos = glm::vec2(npc->position.x, npc->position.z);
+                marker.label = quest->title;
+                marker.questId = quest->questId;
+                marker.color = 0xFFFFD700; // Gold color ABGR
+                mapSystem->addMarker(marker);
+            }
+        }
     }
 
     // Update game systems

@@ -36,6 +36,13 @@ void MapSystem::removeMarker(uint32_t id) {
         markers.end());
 }
 
+void MapSystem::clearMarkersByType(MarkerType type) {
+    markers.erase(
+        std::remove_if(markers.begin(), markers.end(),
+            [type](const MapMarker& m) { return m.type == type; }),
+        markers.end());
+}
+
 MapMarker* MapSystem::getMarker(uint32_t id) {
     for (auto& m : markers) {
         if (m.id == id) return &m;

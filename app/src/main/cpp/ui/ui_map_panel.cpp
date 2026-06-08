@@ -54,6 +54,20 @@ void MapUI::update(float deltaTime) {
 bool MapUI::onTouchDown(float x, float y, int pointerId) {
     if (!isVisible() || !isEnabled()) return false;
 
+    // Mini-map tap opens full map
+    if (miniMapMode) {
+        glm::vec2 cp = getContentPosition();
+        glm::vec2 cs = getContentSize();
+        if (x >= cp.x && x <= cp.x + cs.x && y >= cp.y && y <= cp.y + cs.y) {
+            // Notify renderer to open full map
+            if (onMiniMapTapped) {
+                onMiniMapTapped();
+            }
+            return true;
+        }
+        return false;
+    }
+
     // Close button
     if (isInsideCloseButton(x, y)) {
         return UIPanel::onTouchDown(x, y, pointerId);

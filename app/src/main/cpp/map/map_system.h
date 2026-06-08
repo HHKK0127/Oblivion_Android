@@ -54,6 +54,7 @@ public:
     // Markers
     uint32_t addMarker(const MapMarker& marker);
     void removeMarker(uint32_t id);
+    void clearMarkersByType(MarkerType type);
     MapMarker* getMarker(uint32_t id);
     const std::vector<MapMarker>& getMarkers() const { return markers; }
     std::vector<MapMarker*> getMarkersByType(MarkerType type);
