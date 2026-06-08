@@ -1,0 +1,6 @@
+# ninja log v5
+6	892	8024416292250271	CMakeFiles/oblivion_engine.dir/jni/com_example_oblivion_OblivionEngine.cpp.o	284eb527a5b4e58c
+16	904	8024416292385385	CMakeFiles/oblivion_engine.dir/input/InputSystem.cpp.o	1359f8c4b2e1e8c5
+1	945	8024416292814731	CMakeFiles/oblivion_engine.dir/engine/Engine.cpp.o	a56231d4c21546de
+11	1001	8024416293297834	CMakeFiles/oblivion_engine.dir/engine/graphics/VulkanRenderer.cpp.o	4318a3bf0d3c213d
+1002	1187	8024416295187635	C:/Drive/Cargo/oblivion-android/app/build/intermediates/cxx/Release/55496d2y/obj/arm64-v8a/liboblivion_engine.so	55640032341ff5bf

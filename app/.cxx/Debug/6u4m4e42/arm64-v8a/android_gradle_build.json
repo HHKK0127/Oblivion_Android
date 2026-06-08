@@ -1,0 +1,38 @@
+{
+  "buildFiles": [
+    "C:\\Drive\\Cargo\\oblivion-android\\app\\src\\main\\cpp\\CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "C:\\Users\\hiroki.kogarumai\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\ninja.exe",
+      "-C",
+      "C:\\Drive\\Cargo\\oblivion-android\\app\\.cxx\\Debug\\6u4m4e42\\arm64-v8a",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "C:\\Users\\hiroki.kogarumai\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\ninja.exe",
+    "-C",
+    "C:\\Drive\\Cargo\\oblivion-android\\app\\.cxx\\Debug\\6u4m4e42\\arm64-v8a",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {
+    "oblivion_engine::@6890427a1f51a3e7e1df": {
+      "toolchain": "toolchain",
+      "abi": "arm64-v8a",
+      "artifactName": "oblivion_engine",
+      "output": "C:\\Drive\\Cargo\\oblivion-android\\app\\build\\intermediates\\cxx\\Debug\\6u4m4e42\\obj\\arm64-v8a\\liboblivion_engine.so",
+      "runtimeFiles": []
+    }
+  },
+  "toolchains": {
+    "toolchain": {
+      "cCompilerExecutable": "C:\\Users\\hiroki.kogarumai\\AppData\\Local\\Android\\Sdk\\ndk\\25.1.8937393\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang.exe",
+      "cppCompilerExecutable": "C:\\Users\\hiroki.kogarumai\\AppData\\Local\\Android\\Sdk\\ndk\\25.1.8937393\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe"
+    }
+  },
+  "cFileExtensions": [],
+  "cppFileExtensions": [
+    "cpp"
+  ]
+}
