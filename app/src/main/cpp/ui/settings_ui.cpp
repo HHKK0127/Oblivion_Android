@@ -251,15 +251,15 @@ std::string SettingsUI::getSettingLabel(SettingItem item) const {
         case SettingItem::LANGUAGE:
             return "Language";
         case SettingItem::PIXELATION:
-            return "Pixelation";
+            return "[Opt] Pixelation";
         case SettingItem::SCANLINES:
-            return "Scanlines";
+            return "[Opt] Scanlines";
         case SettingItem::COLOR_REDUCTION:
-            return "Color Reduction";
+            return "[Opt] Color Reduction";
         case SettingItem::CRT_DISTORTION:
-            return "CRT Distortion";
+            return "[Opt] CRT Distortion";
         case SettingItem::FILM_GRAIN:
-            return "Film Grain";
+            return "[Opt] Film Grain";
         case SettingItem::BACK:
             return "Back to Menu";
         default:

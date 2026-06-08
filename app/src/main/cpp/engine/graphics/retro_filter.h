@@ -41,21 +41,26 @@ public:
      * All effects can be toggled independently
      */
     struct Settings {
-        // Scanlines - CRT走査線効果
-        bool scanlines_enabled = true;
+        // Scanlines - CRT走査線効果 (disabled by default - faithful to original)
+        bool scanlines_enabled = false;
         float scanlines_intensity = 0.5f;    // 0.0 (invisible) - 1.0 (opaque)
 
-        // Pixelation - ピクセルブロック化
-        bool pixelation_enabled = true;
+        // Pixelation - ピクセルブロック化 (disabled by default - faithful to original)
+        bool pixelation_enabled = false;
         float pixelation_scale = 8.0f;       // 2.0 (small) - 16.0 (large blocks)
 
-        // Color Reduction - 発色数制限
-        bool color_reduction_enabled = true;
+        // Color Reduction - 発色数制限 (disabled by default - faithful to original)
+        bool color_reduction_enabled = false;
         int color_bits = 8;                  // 4 (16 colors) - 8 (256 colors)
 
-        // CRT Distortion - 画面の湾曲歪み
-        bool crt_distortion_enabled = true;
+        // CRT Distortion - 画面の湾曲歪み (disabled by default - faithful to original)
+        bool crt_distortion_enabled = false;
         float distortion_strength = 0.1f;    // 0.0 (none) - 0.3 (strong)
+
+        // Film Grain - フィルムノイズ (disabled by default - faithful to original)
+        bool film_grain_enabled = false;
+        float grain_intensity = 0.05f;       // 0.0 (none) - 0.2 (heavy)
+        float grain_speed = 1.0f;            // Animation speed multiplier
 
         // Film Grain - 時間ベースノイズ
         bool grain_enabled = false;  // DIAGNOSTIC: disabled to test pipeline

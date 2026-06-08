@@ -1,4 +1,5 @@
 #include "renderer.h"
+#include "texture_loader.h"
 // #include "../jni_audio_bridge.h"  // Deferred - requires Java MainActivity
 #include <thread>
 
