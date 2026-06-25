@@ -88,7 +88,10 @@ private:
 
     // アニメーション用タイマー
     float pressAnimTimer;
+    float hoverScaleTimer;  // ホバー時スケールアニメーション
     static constexpr float PRESS_ANIM_DURATION = 0.1f;
+    static constexpr float HOVER_SCALE_DURATION = 0.1f;
+    static constexpr float HOVER_SCALE_MAX = 1.05f;
 
     // テクスチャ（各状態）
     GLuint normalTexture = 0;

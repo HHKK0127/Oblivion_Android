@@ -17,7 +17,8 @@ UIButton::UIButton(const std::string& name)
       pressedColor(0.15f, 0.15f, 0.18f, 1.0f),
       hoverColor(0.35f, 0.35f, 0.4f, 0.95f),
       disabledColor(0.15f, 0.15f, 0.15f, 0.5f),
-      pressAnimTimer(0.0f) {
+      pressAnimTimer(0.0f),
+      hoverScaleTimer(0.0f) {
 }
 
 UIButton::~UIButton() {
@@ -41,6 +42,15 @@ void UIButton::update(float deltaTime) {
             pressed = false;
             updateVisualState();
         }
+    }
+
+    // Hover scale animation
+    if (hovered && hoverScaleTimer < HOVER_SCALE_DURATION) {
+        hoverScaleTimer += deltaTime;
+        if (hoverScaleTimer > HOVER_SCALE_DURATION) hoverScaleTimer = HOVER_SCALE_DURATION;
+    } else if (!hovered && hoverScaleTimer > 0.0f) {
+        hoverScaleTimer -= deltaTime;
+        if (hoverScaleTimer < 0.0f) hoverScaleTimer = 0.0f;
     }
 }
 
@@ -69,11 +79,29 @@ void UIButton::render() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    // Apply hover scale: expand around center
+    glm::vec2 origPos = getPosition();
+    glm::vec2 origSize = getSize();
+    if (hoverScaleTimer > 0.0f && !pressed) {
+        float t = hoverScaleTimer / HOVER_SCALE_DURATION;
+        float scale = 1.0f + (HOVER_SCALE_MAX - 1.0f) * t;
+        float dw = origSize.x * (scale - 1.0f) * 0.5f;
+        float dh = origSize.y * (scale - 1.0f) * 0.5f;
+        setPosition(origPos.x - dw, origPos.y - dh);
+        setSize(origSize.x * scale, origSize.y * scale);
+    }
+
     // Render button background using updated visual state (includes children)
     UIComponent::render();
 
     // Render label text
     renderLabel();
+
+    // Restore position/size if scaled
+    if (hoverScaleTimer > 0.0f && !pressed) {
+        setPosition(origPos.x, origPos.y);
+        setSize(origSize.x, origSize.y);
+    }
 
     // Restore state
     if (depthTestEnabled) glEnable(GL_DEPTH_TEST);
