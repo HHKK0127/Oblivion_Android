@@ -16,6 +16,11 @@
 #include <condition_variable>
 #include <chrono>
 
+// Forward declarations (global namespace)
+class UIManager;
+class TextRenderer;
+class QuestManager;
+
 namespace oblivion {
 
 class VulkanRenderer;
@@ -62,6 +67,9 @@ public:
     void onTouchEvent(float x, float y, int32_t action, int32_t pointerId);
     void queueTouchEvent(int pointerId, float x, float y, int action);
 
+    // UI Management
+    UIManager* getUIManager() { return uiManager_.get(); }
+
     // Getter
     VkInstance getInstance() const { return instance_; }
     VkSurfaceKHR getSurface() const { return surface_; }
@@ -105,6 +113,13 @@ private:
 
     // Renderer
     std::unique_ptr<VulkanRenderer> renderer_;
+
+    // UI System
+    std::unique_ptr<UIManager> uiManager_;
+    std::unique_ptr<TextRenderer> textRenderer_;
+
+    // Game Systems
+    std::unique_ptr<QuestManager> questManager_;
 
     // Application state
     jobject androidApp_ = nullptr;

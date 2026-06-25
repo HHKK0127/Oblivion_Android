@@ -1,5 +1,8 @@
 #include "Engine.h"
 #include "graphics/VulkanRenderer.h"
+#include "../ui/ui_manager.h"
+#include "../ui/text_renderer.h"
+#include "../game/quest_manager.h"
 #include <android/log.h>
 #include <android/native_window.h>
 
@@ -36,6 +39,27 @@ bool Engine::init(const InitParams& params) {
         return false;
     }
 
+    // Initialize game systems
+    LOGI(">>> Initializing Game Systems <<<");
+    questManager_ = std::make_unique<QuestManager>();
+
+    // Initialize TextRenderer
+    LOGI(">>> Initializing TextRenderer <<<");
+    textRenderer_ = std::make_unique<TextRenderer>();
+    // TODO: Initialize with proper asset manager from JNI
+    // textRenderer_->initialize(assetManager);
+
+    // Initialize UIManager
+    LOGI(">>> Initializing UIManager <<<");
+    uiManager_ = std::make_unique<UIManager>();
+    if (!uiManager_->initialize(textRenderer_.get(),
+                                questManager_.get(),
+                                nullptr)) {  // Player status will be set later when player is loaded
+        LOGE("Failed to initialize UIManager");
+        return false;
+    }
+    uiManager_->setScreenSize(width_, height_);
+
     isRunning_ = true;
     LOGI(">>> Engine::init() COMPLETED SUCCESSFULLY <<<");
     return true;
@@ -43,6 +67,20 @@ bool Engine::init(const InitParams& params) {
 
 void Engine::shutdown() {
     stopLoop();
+
+    // Clean up UI system
+    if (uiManager_) {
+        uiManager_->cleanup();
+        uiManager_.reset();
+    }
+
+    if (textRenderer_) {
+        textRenderer_->cleanup();
+        textRenderer_.reset();
+    }
+
+    // Clean up game systems
+    questManager_.reset();
 
     if (renderer_) {
         renderer_.reset();
@@ -154,6 +192,14 @@ void Engine::resume() {
 void Engine::update() {
     if (isPaused_) return;
 
+    // Calculate delta time (16ms for 60 FPS)
+    float deltaTime = 0.016f;
+
+    // Update UI systems
+    if (uiManager_) {
+        uiManager_->update(deltaTime);
+    }
+
     // TODO: Update game logic here
 }
 
@@ -166,9 +212,24 @@ void Engine::processInput() {
 
     while (!currentFrame.empty()) {
         const auto& event = currentFrame.front();
-        // TODO: Process touch event (camera movement, player action, etc.)
-        LOGI("Input Event: pointerId=%d, x=%.1f, y=%.1f, action=%d",
-             event.pointerId, event.x, event.y, event.action);
+
+        // Route to UI manager first
+        bool handled = false;
+        if (uiManager_) {
+            if (event.action == 0) {  // ACTION_DOWN
+                handled = uiManager_->onTouchDown(event.x, event.y, event.pointerId);
+            } else if (event.action == 1) {  // ACTION_UP
+                handled = uiManager_->onTouchUp(event.x, event.y, event.pointerId);
+            }
+        }
+
+        // If not handled by UI, process game input
+        if (!handled) {
+            // TODO: Process touch event (camera movement, player action, etc.)
+            LOGI("Game Input: pointerId=%d, x=%.1f, y=%.1f, action=%d",
+                 event.pointerId, event.x, event.y, event.action);
+        }
+
         currentFrame.pop();
     }
 }
@@ -189,6 +250,10 @@ bool Engine::onSurfaceChanged(uint32_t width, uint32_t height) {
 
     if (renderer_) {
         renderer_->onResize(width, height);
+    }
+
+    if (uiManager_) {
+        uiManager_->setScreenSize(width, height);
     }
 
     return true;
