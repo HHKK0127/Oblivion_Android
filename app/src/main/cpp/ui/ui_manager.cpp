@@ -132,6 +132,12 @@ bool UIManager::initialize(TextRenderer* textRenderer,
         return false;
     }
 
+    // UILevelProgress の初期化
+    levelProgress_ = std::make_unique<UILevelProgress>();
+    if (!levelProgress_->initialize(textRenderer, screenWidth_, screenHeight_)) {
+        return false;
+    }
+
     return true;
 }
 
@@ -152,6 +158,7 @@ void UIManager::cleanup() {
     targetInfo_.reset();
     actionPrompt_.reset();
     activeEffects_.reset();
+    levelProgress_.reset();
 }
 
 void UIManager::setPlayerStatus(CharacterStatus* playerStatus) {
@@ -180,6 +187,7 @@ void UIManager::update(float deltaTime) {
     if (targetInfo_) targetInfo_->update(deltaTime);
     if (actionPrompt_) actionPrompt_->update(deltaTime);
     if (activeEffects_) activeEffects_->update(deltaTime);
+    if (levelProgress_) levelProgress_->update(deltaTime);
 }
 
 void UIManager::render() {
@@ -238,6 +246,11 @@ void UIManager::render() {
         activeEffects_->render();
     }
 
+    // Level progress display
+    if (levelProgress_) {
+        levelProgress_->render();
+    }
+
     // Floating text rendered last (on top of everything)
     if (floatingText_) {
         floatingText_->render();
@@ -264,6 +277,7 @@ void UIManager::setScreenSize(int width, int height) {
     if (targetInfo_) targetInfo_->setScreenSize(width, height);
     if (actionPrompt_) actionPrompt_->setScreenSize(width, height);
     if (activeEffects_) activeEffects_->setScreenSize(width, height);
+    if (levelProgress_) levelProgress_->setScreenSize(width, height);
 }
 
 bool UIManager::onTouchDown(float x, float y, int pointerId) {

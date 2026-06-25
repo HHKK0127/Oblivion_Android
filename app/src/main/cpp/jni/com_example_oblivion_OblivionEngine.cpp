@@ -769,4 +769,86 @@ JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeClearAllEf
     }
 }
 
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeSetLevelData(
+    JNIEnv* /* env */,
+    jobject /* obj */,
+    jint currentLevel,
+    jint totalExp,
+    jint expInCurrentLevel,
+    jint expNeededForNext) {
+
+    LOGI("nativeSetLevelData called: level=%d, exp=%d/%d",
+        currentLevel, expInCurrentLevel, expNeededForNext);
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto levelProgress = uiManager->getLevelProgress();
+            if (levelProgress) {
+                UILevelProgress::LevelData data;
+                data.currentLevel = currentLevel;
+                data.totalExperience = totalExp;
+                data.experienceForCurrentLevel = expInCurrentLevel;
+                data.experienceNeededForNextLevel = expNeededForNext;
+                levelProgress->setLevelData(data);
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeUpdateExperience(
+    JNIEnv* /* env */,
+    jobject /* obj */,
+    jint totalExp,
+    jint expInCurrentLevel) {
+
+    LOGI("nativeUpdateExperience called: total=%d, current=%d", totalExp, expInCurrentLevel);
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto levelProgress = uiManager->getLevelProgress();
+            if (levelProgress) {
+                levelProgress->updateExperience(totalExp, expInCurrentLevel);
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeNotifyLevelUp(
+    JNIEnv* /* env */,
+    jobject /* obj */,
+    jint newLevel) {
+
+    LOGI("nativeNotifyLevelUp called: level=%d", newLevel);
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto levelProgress = uiManager->getLevelProgress();
+            if (levelProgress) {
+                levelProgress->notifyLevelUp(newLevel);
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeUpdateSkillIncreases(
+    JNIEnv* /* env */,
+    jobject /* obj */,
+    jint increases) {
+
+    LOGI("nativeUpdateSkillIncreases called: increases=%d", increases);
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto levelProgress = uiManager->getLevelProgress();
+            if (levelProgress) {
+                levelProgress->updateSkillIncreases(increases);
+            }
+        }
+    }
+}
+
 } // extern "C"
