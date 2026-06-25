@@ -543,4 +543,76 @@ JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeClearFloat
     }
 }
 
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeSetTarget(
+    JNIEnv* env,
+    jobject /* obj */,
+    jstring name,
+    jint type,
+    jfloat health,
+    jfloat maxHealth,
+    jint level,
+    jstring faction,
+    jboolean isHostile) {
+
+    LOGI("nativeSetTarget called: type=%d, health=%f/%f, level=%d, hostile=%d",
+        type, health, maxHealth, level, isHostile);
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto targetInfo = uiManager->getTargetInfo();
+            if (targetInfo) {
+                UITargetInfo::TargetData target;
+                target.name = std::string(env->GetStringUTFChars(name, nullptr));
+                target.type = static_cast<UITargetInfo::TargetType>(type);
+                target.health = health;
+                target.maxHealth = maxHealth;
+                target.level = level;
+                target.faction = std::string(env->GetStringUTFChars(faction, nullptr));
+                target.isHostile = isHostile == JNI_TRUE;
+
+                targetInfo->setTarget(target);
+
+                env->ReleaseStringUTFChars(name, target.name.c_str());
+                env->ReleaseStringUTFChars(faction, target.faction.c_str());
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeUpdateTargetHealth(
+    JNIEnv* /* env */,
+    jobject /* obj */,
+    jfloat health) {
+
+    LOGI("nativeUpdateTargetHealth called: health=%f", health);
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto targetInfo = uiManager->getTargetInfo();
+            if (targetInfo) {
+                targetInfo->updateTargetHealth(health);
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeClearTarget(
+    JNIEnv* /* env */,
+    jobject /* obj */) {
+
+    LOGI("nativeClearTarget called");
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto targetInfo = uiManager->getTargetInfo();
+            if (targetInfo) {
+                targetInfo->clearTarget();
+            }
+        }
+    }
+}
+
 } // extern "C"
