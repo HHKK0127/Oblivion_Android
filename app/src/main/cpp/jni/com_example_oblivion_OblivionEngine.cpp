@@ -615,4 +615,70 @@ JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeClearTarge
     }
 }
 
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeAddAction(
+    JNIEnv* env,
+    jobject /* obj */,
+    jint actionType,
+    jstring label,
+    jstring description,
+    jchar keyCode,
+    jfloat distance) {
+
+    LOGI("nativeAddAction called: type=%d, key=%c, distance=%f",
+        actionType, static_cast<char>(keyCode), distance);
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto actionPrompt = uiManager->getActionPrompt();
+            if (actionPrompt) {
+                const char* labelStr = env->GetStringUTFChars(label, nullptr);
+                const char* descStr = env->GetStringUTFChars(description, nullptr);
+
+                actionPrompt->addAction(static_cast<UIActionPrompt::ActionType>(actionType),
+                    std::string(labelStr), std::string(descStr),
+                    static_cast<char>(keyCode), distance);
+
+                env->ReleaseStringUTFChars(label, labelStr);
+                env->ReleaseStringUTFChars(description, descStr);
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeClearActions(
+    JNIEnv* /* env */,
+    jobject /* obj */) {
+
+    LOGI("nativeClearActions called");
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto actionPrompt = uiManager->getActionPrompt();
+            if (actionPrompt) {
+                actionPrompt->clearActions();
+            }
+        }
+    }
+}
+
+JNIEXPORT jint JNICALL Java_com_example_oblivion_OblivionEngine_nativeGetActionCount(
+    JNIEnv* /* env */,
+    jobject /* obj */) {
+
+    LOGI("nativeGetActionCount called");
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto actionPrompt = uiManager->getActionPrompt();
+            if (actionPrompt) {
+                return actionPrompt->getActionCount();
+            }
+        }
+    }
+    return 0;
+}
+
 } // extern "C"
