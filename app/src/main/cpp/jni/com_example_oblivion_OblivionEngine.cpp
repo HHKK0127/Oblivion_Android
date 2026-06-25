@@ -327,4 +327,18 @@ JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeEndCharact
     }
 }
 
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeTogglePauseMenu(
+    JNIEnv* /* env */,
+    jobject /* obj */) {
+
+    LOGI("nativeTogglePauseMenu called");
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            uiManager->togglePauseMenu();
+        }
+    }
+}
+
 } // extern "C"

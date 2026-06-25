@@ -8,6 +8,7 @@
 #include "ui_dialogue.h"
 #include "ui_shop.h"
 #include "ui_character_creation.h"
+#include "ui_pause_menu.h"
 #include "text_renderer.h"
 
 class QuestManager;
@@ -67,6 +68,14 @@ public:
     void endCharacterCreation() { characterCreation_->close(); }
     bool isCharacterCreationOpen() const { return characterCreation_->isVisible(); }
 
+    void openPauseMenu() { pauseMenu_->open(); }
+    void closePauseMenu() { pauseMenu_->close(); }
+    void togglePauseMenu() {
+        if (pauseMenu_->isVisible()) pauseMenu_->close();
+        else pauseMenu_->open();
+    }
+    bool isPauseMenuOpen() const { return pauseMenu_->isVisible(); }
+
     // イベント入力
     bool onTouchDown(float x, float y, int pointerId);
     bool onTouchUp(float x, float y, int pointerId);
@@ -78,6 +87,7 @@ public:
     UIDialogue* getDialogue() { return dialogue_.get(); }
     UIShop* getShop() { return shop_.get(); }
     UICharacterCreation* getCharacterCreation() { return characterCreation_.get(); }
+    UIPauseMenu* getPauseMenu() { return pauseMenu_.get(); }
 
 private:
     std::unique_ptr<UICharacterSheet> characterSheet_;
@@ -86,6 +96,7 @@ private:
     std::unique_ptr<UIDialogue> dialogue_;
     std::unique_ptr<UIShop> shop_;
     std::unique_ptr<UICharacterCreation> characterCreation_;
+    std::unique_ptr<UIPauseMenu> pauseMenu_;
 
     TextRenderer* textRenderer_ = nullptr;
     QuestManager* questManager_ = nullptr;
