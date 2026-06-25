@@ -457,4 +457,90 @@ JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeClearCompa
     }
 }
 
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeShowFloatingText(
+    JNIEnv* env,
+    jobject /* obj */,
+    jstring text,
+    jfloat screenX,
+    jfloat screenY,
+    jint textType,
+    jfloat duration) {
+
+    LOGI("nativeShowFloatingText called: type=%d, duration=%f", textType, duration);
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto floatingText = uiManager->getFloatingText();
+            if (floatingText) {
+                const char* textStr = env->GetStringUTFChars(text, nullptr);
+                floatingText->addText(std::string(textStr), screenX, screenY,
+                    static_cast<UIFloatingText::TextType>(textType), duration);
+                env->ReleaseStringUTFChars(text, textStr);
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeShowDamage(
+    JNIEnv* env,
+    jobject /* obj */,
+    jint damage,
+    jfloat screenX,
+    jfloat screenY) {
+
+    LOGI("nativeShowDamage called: damage=%d", damage);
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto floatingText = uiManager->getFloatingText();
+            if (floatingText) {
+                std::string damageText = std::to_string(damage);
+                floatingText->addText(damageText, screenX, screenY,
+                    UIFloatingText::DAMAGE, 1.5f);
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeShowHeal(
+    JNIEnv* env,
+    jobject /* obj */,
+    jint healAmount,
+    jfloat screenX,
+    jfloat screenY) {
+
+    LOGI("nativeShowHeal called: heal=%d", healAmount);
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto floatingText = uiManager->getFloatingText();
+            if (floatingText) {
+                std::string healText = "+" + std::to_string(healAmount);
+                floatingText->addText(healText, screenX, screenY,
+                    UIFloatingText::HEAL, 1.5f);
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeClearFloatingText(
+    JNIEnv* /* env */,
+    jobject /* obj */) {
+
+    LOGI("nativeClearFloatingText called");
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto floatingText = uiManager->getFloatingText();
+            if (floatingText) {
+                floatingText->clear();
+            }
+        }
+    }
+}
+
 } // extern "C"

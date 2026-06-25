@@ -81,6 +81,7 @@ add_library(native-lib SHARED
     ui/ui_quick_slot_bar.cpp
     ui/ui_hud_status_display.cpp
     ui/ui_hud_compass.cpp
+    ui/ui_floating_text.cpp
     ui/ui_manager.cpp
     ui/placeholder_assets.cpp
     ui/hud_renderer.cpp
