@@ -40,6 +40,7 @@ add_library(native-lib SHARED
     game/interactable.cpp
     game/container.cpp
     game/interaction_manager.cpp
+    game/merchant.cpp
 
     # Player & Movement (Phase 3+)
     game/player.cpp
@@ -72,6 +73,7 @@ add_library(native-lib SHARED
     ui/ui_spellbook.cpp
     ui/ui_quest_log.cpp
     ui/ui_dialogue.cpp
+    ui/ui_shop.cpp
     ui/ui_manager.cpp
     ui/placeholder_assets.cpp
     ui/hud_renderer.cpp
