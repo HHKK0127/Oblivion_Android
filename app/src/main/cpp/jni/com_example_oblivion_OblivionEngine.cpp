@@ -928,4 +928,148 @@ JNIEXPORT jboolean JNICALL Java_com_example_oblivion_OblivionEngine_nativeHasAct
     return JNI_FALSE;
 }
 
+// ---- Minimap ----
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeSetMinimapPlayerPos(
+    JNIEnv* /* env */,
+    jobject /* obj */,
+    jfloat worldX,
+    jfloat worldZ,
+    jfloat yawDegrees) {
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto minimap = uiManager->getMinimap();
+            if (minimap) {
+                minimap->setPlayerPosition(worldX, worldZ);
+                minimap->setPlayerRotation(yawDegrees);
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeRevealMinimapCircle(
+    JNIEnv* /* env */,
+    jobject /* obj */,
+    jfloat worldX,
+    jfloat worldZ,
+    jfloat radius) {
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto minimap = uiManager->getMinimap();
+            if (minimap) {
+                minimap->revealCircle(worldX, worldZ, radius);
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeAddMinimapMarker(
+    JNIEnv* env,
+    jobject /* obj */,
+    jint markerId,
+    jfloat worldX,
+    jfloat worldZ,
+    jint markerType,
+    jstring label) {
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto minimap = uiManager->getMinimap();
+            if (minimap) {
+                const char* labelStr = env->GetStringUTFChars(label, nullptr);
+                minimap->addMarker(markerId, worldX, worldZ,
+                    static_cast<UIMinimap::MarkerType>(markerType),
+                    std::string(labelStr));
+                env->ReleaseStringUTFChars(label, labelStr);
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeUpdateMinimapMarker(
+    JNIEnv* /* env */,
+    jobject /* obj */,
+    jint markerId,
+    jfloat worldX,
+    jfloat worldZ) {
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto minimap = uiManager->getMinimap();
+            if (minimap) {
+                minimap->updateMarker(markerId, worldX, worldZ);
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeRemoveMinimapMarker(
+    JNIEnv* /* env */,
+    jobject /* obj */,
+    jint markerId) {
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto minimap = uiManager->getMinimap();
+            if (minimap) {
+                minimap->removeMarker(markerId);
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeClearMinimapMarkers(
+    JNIEnv* /* env */,
+    jobject /* obj */) {
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto minimap = uiManager->getMinimap();
+            if (minimap) {
+                minimap->clearMarkers();
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeToggleMinimap(
+    JNIEnv* /* env */,
+    jobject /* obj */) {
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto minimap = uiManager->getMinimap();
+            if (minimap) {
+                minimap->toggleVisible();
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeSetMinimapSize(
+    JNIEnv* /* env */,
+    jobject /* obj */,
+    jint mapWidth,
+    jint mapHeight) {
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto minimap = uiManager->getMinimap();
+            if (minimap) {
+                minimap->setMapSize(mapWidth, mapHeight);
+            }
+        }
+    }
+}
+
 } // extern "C"

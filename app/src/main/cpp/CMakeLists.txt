@@ -87,6 +87,7 @@ add_library(native-lib SHARED
     ui/ui_active_effects.cpp
     ui/ui_level_progress.cpp
     ui/ui_alert_notification.cpp
+    ui/ui_minimap.cpp
     ui/ui_manager.cpp
     ui/placeholder_assets.cpp
     ui/hud_renderer.cpp
