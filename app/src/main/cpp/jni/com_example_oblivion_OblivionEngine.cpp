@@ -227,4 +227,62 @@ JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeDestroy(
     }
 }
 
+// UI Control Methods
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeToggleCharacterSheet(
+    JNIEnv* /* env */,
+    jobject /* obj */) {
+
+    LOGI("nativeToggleCharacterSheet called");
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            uiManager->toggleCharacterSheet();
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeToggleSpellbook(
+    JNIEnv* /* env */,
+    jobject /* obj */) {
+
+    LOGI("nativeToggleSpellbook called");
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            uiManager->toggleSpellbook();
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeToggleQuestLog(
+    JNIEnv* /* env */,
+    jobject /* obj */) {
+
+    LOGI("nativeToggleQuestLog called");
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            uiManager->toggleQuestLog();
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeCloseDialogue(
+    JNIEnv* /* env */,
+    jobject /* obj */) {
+
+    LOGI("nativeCloseDialogue called");
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            uiManager->closeDialogue();
+        }
+    }
+}
+
 } // extern "C"
