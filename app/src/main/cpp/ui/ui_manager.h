@@ -21,6 +21,7 @@
 #include "ui_level_progress.h"
 #include "ui_alert_notification.h"
 #include "ui_minimap.h"
+#include "ui_player_stats.h"
 #include "text_renderer.h"
 
 class QuestManager;
@@ -121,6 +122,7 @@ public:
     UILevelProgress* getLevelProgress() { return levelProgress_.get(); }
     UIAlertNotification* getAlertNotification() { return alertNotification_.get(); }
     UIMinimap* getMinimap() { return minimap_.get(); }
+    UIPlayerStats* getPlayerStats() { return playerStats_.get(); }
 
 private:
     std::unique_ptr<UICharacterSheet> characterSheet_;
@@ -142,6 +144,7 @@ private:
     std::unique_ptr<UILevelProgress> levelProgress_;
     std::unique_ptr<UIAlertNotification> alertNotification_;
     std::unique_ptr<UIMinimap> minimap_;
+    std::unique_ptr<UIPlayerStats> playerStats_;
 
     TextRenderer* textRenderer_ = nullptr;
     QuestManager* questManager_ = nullptr;

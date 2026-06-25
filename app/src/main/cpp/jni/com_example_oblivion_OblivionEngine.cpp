@@ -1072,4 +1072,96 @@ JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeSetMinimap
     }
 }
 
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeUpdatePlayerGold(
+    JNIEnv* /* env */,
+    jobject /* obj */,
+    jint amount) {
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto playerStats = uiManager->getPlayerStats();
+            if (playerStats) {
+                playerStats->updateGold(amount);
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeUpdatePlayerWeight(
+    JNIEnv* /* env */,
+    jobject /* obj */,
+    jfloat weight) {
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto playerStats = uiManager->getPlayerStats();
+            if (playerStats) {
+                playerStats->updateInventoryWeight(weight);
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeSetEquipment(
+    JNIEnv* env,
+    jobject /* obj */,
+    jint slot,
+    jstring itemName,
+    jint durability,
+    jint maxDurability) {
+
+    const char* itemNameCStr = env->GetStringUTFChars(itemName, nullptr);
+    std::string itemNameStr(itemNameCStr);
+    env->ReleaseStringUTFChars(itemName, itemNameCStr);
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto playerStats = uiManager->getPlayerStats();
+            if (playerStats) {
+                playerStats->setEquipment(slot, itemNameStr, durability, maxDurability);
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeSetMainWeapon(
+    JNIEnv* env,
+    jobject /* obj */,
+    jstring weaponName,
+    jint durability,
+    jint maxDurability) {
+
+    const char* weaponNameCStr = env->GetStringUTFChars(weaponName, nullptr);
+    std::string weaponNameStr(weaponNameCStr);
+    env->ReleaseStringUTFChars(weaponName, weaponNameCStr);
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto playerStats = uiManager->getPlayerStats();
+            if (playerStats) {
+                playerStats->setMainWeapon(weaponNameStr, durability, maxDurability);
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeTogglePlayerStatsExpand(
+    JNIEnv* /* env */,
+    jobject /* obj */) {
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto playerStats = uiManager->getPlayerStats();
+            if (playerStats) {
+                playerStats->toggleExpanded();
+            }
+        }
+    }
+}
+
 } // extern "C"
