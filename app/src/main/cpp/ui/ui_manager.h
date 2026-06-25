@@ -7,6 +7,7 @@
 #include "ui_quest_log.h"
 #include "ui_dialogue.h"
 #include "ui_shop.h"
+#include "ui_character_creation.h"
 #include "text_renderer.h"
 
 class QuestManager;
@@ -62,6 +63,10 @@ public:
     void closeShop() { shop_->closeShop(); }
     bool isShopOpen() const { return shop_->isVisible(); }
 
+    void startCharacterCreation() { characterCreation_->open(); }
+    void endCharacterCreation() { characterCreation_->close(); }
+    bool isCharacterCreationOpen() const { return characterCreation_->isVisible(); }
+
     // イベント入力
     bool onTouchDown(float x, float y, int pointerId);
     bool onTouchUp(float x, float y, int pointerId);
@@ -72,6 +77,7 @@ public:
     UIQuestLog* getQuestLog() { return questLog_.get(); }
     UIDialogue* getDialogue() { return dialogue_.get(); }
     UIShop* getShop() { return shop_.get(); }
+    UICharacterCreation* getCharacterCreation() { return characterCreation_.get(); }
 
 private:
     std::unique_ptr<UICharacterSheet> characterSheet_;
@@ -79,6 +85,7 @@ private:
     std::unique_ptr<UIQuestLog> questLog_;
     std::unique_ptr<UIDialogue> dialogue_;
     std::unique_ptr<UIShop> shop_;
+    std::unique_ptr<UICharacterCreation> characterCreation_;
 
     TextRenderer* textRenderer_ = nullptr;
     QuestManager* questManager_ = nullptr;
