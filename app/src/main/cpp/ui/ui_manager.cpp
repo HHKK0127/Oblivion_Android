@@ -108,6 +108,12 @@ bool UIManager::initialize(TextRenderer* textRenderer,
         return false;
     }
 
+    // UIFloatingText の初期化
+    floatingText_ = std::make_unique<UIFloatingText>();
+    if (!floatingText_->initialize(textRenderer, screenWidth_, screenHeight_)) {
+        return false;
+    }
+
     return true;
 }
 
@@ -124,6 +130,7 @@ void UIManager::cleanup() {
     quickSlotBar_.reset();
     hudStatusDisplay_.reset();
     hudCompass_.reset();
+    floatingText_.reset();
 }
 
 void UIManager::setPlayerStatus(CharacterStatus* playerStatus) {
@@ -148,6 +155,7 @@ void UIManager::update(float deltaTime) {
     if (quickSlotBar_) quickSlotBar_->update(deltaTime);
     if (hudStatusDisplay_) hudStatusDisplay_->update(deltaTime);
     if (hudCompass_) hudCompass_->update(deltaTime);
+    if (floatingText_) floatingText_->update(deltaTime);
 }
 
 void UIManager::render() {
@@ -190,6 +198,11 @@ void UIManager::render() {
     if (toast_) {
         toast_->render();
     }
+
+    // Floating text rendered last (on top of everything)
+    if (floatingText_) {
+        floatingText_->render();
+    }
 }
 
 void UIManager::setScreenSize(int width, int height) {
@@ -208,6 +221,7 @@ void UIManager::setScreenSize(int width, int height) {
     if (quickSlotBar_) quickSlotBar_->setScreenSize(width, height);
     if (hudStatusDisplay_) hudStatusDisplay_->setScreenSize(width, height);
     if (hudCompass_) hudCompass_->setScreenSize(width, height);
+    if (floatingText_) floatingText_->setScreenSize(width, height);
 }
 
 bool UIManager::onTouchDown(float x, float y, int pointerId) {
