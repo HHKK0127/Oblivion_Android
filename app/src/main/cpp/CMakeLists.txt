@@ -74,6 +74,8 @@ add_library(native-lib SHARED
     # Inventory System (Phase 9.2)
     inventory/inventory_grid.cpp
     inventory/equipment_manager.cpp
+    inventory/item_factory.cpp
+    inventory/inventory_coordinator.cpp
 
     # System
     system/settings_manager.cpp
