@@ -70,6 +70,8 @@ add_library(native-lib SHARED
     ui/ui_inventory_panel.cpp
     ui/ui_character_sheet.cpp
     ui/ui_spellbook.cpp
+    ui/ui_quest_log.cpp
+    ui/ui_dialogue.cpp
     ui/placeholder_assets.cpp
     ui/hud_renderer.cpp
 
