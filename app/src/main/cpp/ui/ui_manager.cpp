@@ -73,6 +73,20 @@ bool UIManager::initialize(TextRenderer* textRenderer,
     pauseMenu_->setScreenSize(screenWidth_, screenHeight_);
     pauseMenu_->setVisible(false);
 
+    // UIMessageBox の初期化
+    messageBox_ = std::make_unique<UIMessageBox>();
+    if (!messageBox_->initialize(textRenderer)) {
+        return false;
+    }
+    messageBox_->setScreenSize(screenWidth_, screenHeight_);
+    messageBox_->setVisible(false);
+
+    // UIToast の初期化
+    toast_ = std::make_unique<UIToast>();
+    if (!toast_->initialize(textRenderer, screenWidth_, screenHeight_)) {
+        return false;
+    }
+
     return true;
 }
 
@@ -84,6 +98,8 @@ void UIManager::cleanup() {
     shop_.reset();
     characterCreation_.reset();
     pauseMenu_.reset();
+    messageBox_.reset();
+    toast_.reset();
 }
 
 void UIManager::setPlayerStatus(CharacterStatus* playerStatus) {
@@ -100,10 +116,12 @@ void UIManager::update(float deltaTime) {
     if (shop_) shop_->update(deltaTime);
     if (characterCreation_) characterCreation_->update(deltaTime);
     if (pauseMenu_) pauseMenu_->update(deltaTime);
+    if (messageBox_) messageBox_->update(deltaTime);
+    if (toast_) toast_->update(deltaTime);
 }
 
 void UIManager::render() {
-    // Render UIs in order (pause menu and character creation are highest priority)
+    // Render UIs in order (notifications are always on top)
     if (characterSheet_ && characterSheet_->isVisible()) {
         characterSheet_->render();
     }
@@ -125,6 +143,12 @@ void UIManager::render() {
     if (characterCreation_ && characterCreation_->isVisible()) {
         characterCreation_->render();
     }
+    if (messageBox_ && messageBox_->isVisible()) {
+        messageBox_->render();
+    }
+    if (toast_) {
+        toast_->render();
+    }
 }
 
 void UIManager::setScreenSize(int width, int height) {
@@ -138,10 +162,18 @@ void UIManager::setScreenSize(int width, int height) {
     if (shop_) shop_->setScreenSize(width, height);
     if (characterCreation_) characterCreation_->setScreenSize(width, height);
     if (pauseMenu_) pauseMenu_->setScreenSize(width, height);
+    if (messageBox_) messageBox_->setScreenSize(width, height);
+    if (toast_) toast_->setScreenSize(width, height);
 }
 
 bool UIManager::onTouchDown(float x, float y, int pointerId) {
-    // Route touch to the topmost visible UI (character creation > pause menu > others)
+    // Route touch to the topmost visible UI (message box > character creation > pause menu > others)
+    if (messageBox_ && messageBox_->isVisible() && messageBox_->isEnabled()) {
+        if (messageBox_->onTouchDown(x, y, pointerId)) {
+            return true;
+        }
+    }
+
     if (characterCreation_ && characterCreation_->isVisible() && characterCreation_->isEnabled()) {
         if (characterCreation_->onTouchDown(x, y, pointerId)) {
             return true;
@@ -189,6 +221,12 @@ bool UIManager::onTouchDown(float x, float y, int pointerId) {
 
 bool UIManager::onTouchUp(float x, float y, int pointerId) {
     // Route touch to the topmost visible UI
+    if (messageBox_ && messageBox_->isVisible() && messageBox_->isEnabled()) {
+        if (messageBox_->onTouchUp(x, y, pointerId)) {
+            return true;
+        }
+    }
+
     if (characterCreation_ && characterCreation_->isVisible() && characterCreation_->isEnabled()) {
         if (characterCreation_->onTouchUp(x, y, pointerId)) {
             return true;
