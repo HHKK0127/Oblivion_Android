@@ -1,6 +1,7 @@
 #include "save_load_ui.h"
-#include "renderer.h"
+#include "../engine/renderer.h"
 #include "ui_draw_helper.h"
+#include "placeholder_assets.h"
 #include "../engine/texture_loader.h"
 #include <sstream>
 #include <iomanip>
@@ -143,19 +144,35 @@ void SaveLoadUI::onTouchEvent(float x, float y) {
 
     // ダイアログ表示中は特別な処理
     if (dialogState != DialogState::NONE) {
+        const float dlgW = 500.0f;
+        const float dlgX = (screenWidth - dlgW) * 0.5f;
+
         // エラーダイアログの場合は OK ボタンのみ
         if (dialogState == DialogState::ERROR_SAVE_FAILED ||
             dialogState == DialogState::ERROR_LOAD_FAILED ||
             dialogState == DialogState::ERROR_DELETE_FAILED) {
-            if (y > 380.0f && y < 460.0f) {
-                // OK ボタン
+            const float dlgH = 280.0f;
+            const float dlgY = (screenHeight - dlgH) * 0.4f;
+            const float btnW = 120.0f;
+            const float btnH = 46.0f;
+            float okX = dlgX + (dlgW - btnW) * 0.5f;
+            float okY = dlgY + dlgH - btnH - 20.0f;
+            if (x >= okX && x < okX + btnW && y >= okY && y < okY + btnH) {
                 dialogState = DialogState::NONE;
             }
             return;
         }
 
-        // 確認ダイアログのボタン処理（簡略版：タップ位置で判定）
-        if (y > 300.0f && y < 380.0f) {
+        // 確認ダイアログのボタン処理
+        const float dlgH = 220.0f;
+        const float dlgY = (screenHeight - dlgH) * 0.4f;
+        const float btnW = 140.0f;
+        const float btnH = 50.0f;
+        const float btnY = dlgY + dlgH - btnH - 20.0f;
+        float yesX = dlgX + dlgW * 0.15f;
+        float noX  = dlgX + dlgW * 0.6f;
+
+        if (x >= yesX && x < yesX + btnW && y >= btnY && y < btnY + btnH) {
             // YES ボタン
             DialogState previousState = dialogState;
             if (dialogState == DialogState::CONFIRM_OVERWRITE) {
@@ -163,11 +180,10 @@ void SaveLoadUI::onTouchEvent(float x, float y) {
             } else if (dialogState == DialogState::CONFIRM_DELETE) {
                 handleConfirmDelete();
             }
-            // ハンドラーがエラー状態を設定していない場合のみ NONE に設定
             if (dialogState == previousState) {
                 dialogState = DialogState::NONE;
             }
-        } else if (y > 420.0f && y < 500.0f) {
+        } else if (x >= noX && x < noX + btnW && y >= btnY && y < btnY + btnH) {
             // NO ボタン
             dialogState = DialogState::NONE;
         }
@@ -184,17 +200,19 @@ void SaveLoadUI::onTouchEvent(float x, float y) {
         }
     }
 
-    // ボタン処理（y > 500 の領域）
-    const float BUTTON_Y = 520.0f;
-    const float BUTTON_WIDTH = 150.0f;
-    const float BUTTON_SPACING = 20.0f;
+    // ボタン処理（画面下部）
+    const float btnW = 200.0f;
+    const float btnH = BUTTON_HEIGHT;
+    const float centerX = screenWidth * 0.5f;
+    const float btnY = screenHeight - 200.0f;
+    const float gap = 30.0f;
 
-    // Execute ボタン（x: 150-300）
-    if (x >= 150.0f && x < 150.0f + BUTTON_WIDTH && y >= BUTTON_Y && y < BUTTON_Y + BUTTON_HEIGHT) {
+    float execX = centerX - btnW - gap * 0.5f;
+    float cancelX = centerX + gap * 0.5f;
+
+    if (x >= execX && x < execX + btnW && y >= btnY && y < btnY + btnH) {
         handleExecuteAction();
-    }
-    // Cancel ボタン（x: 470-620）
-    else if (x >= 470.0f && x < 470.0f + BUTTON_WIDTH && y >= BUTTON_Y && y < BUTTON_Y + BUTTON_HEIGHT) {
+    } else if (x >= cancelX && x < cancelX + btnW && y >= btnY && y < btnY + btnH) {
         handleCancel();
     }
 }
@@ -215,107 +233,221 @@ void SaveLoadUI::refreshSaveSlots() {
 }
 
 void SaveLoadUI::renderSlotList() {
-    glm::vec3 normalColor(1.0f, 1.0f, 1.0f);
-    glm::vec3 selectedColor(1.0f, 0.0f, 0.0f);
-    glm::vec3 hoverColor(0.7f, 0.7f, 1.0f);
+    const float panelX = (screenWidth - 640.0f) * 0.5f;
+    const float panelY = 110.0f;
+    const float panelW = 640.0f;
+    const float slotW = panelW - PADDING * 2.0f;
+    const float maxVisibleSlots = 6;
 
-    float yPos = 150.0f;
-
-    for (size_t i = 0; i < availableSlots.size(); i++) {
-        const std::string& slotName = availableSlots[i];
-
-        glm::vec3 color = normalColor;
-        if (static_cast<int>(i) == selectedSlotIndex) {
-            color = selectedColor;
-        } else if (static_cast<int>(i) == hoveredSlotIndex) {
-            color = hoverColor;
-        }
-
-        std::string displayText = slotName;
-        if (i == selectedSlotIndex) {
-            displayText = "> " + displayText;
-        }
-
-        textRenderer->renderText(displayText, 200.0f, yPos, color, 1.0f);
-        yPos += SLOT_HEIGHT + SLOT_MARGIN;
-    }
+    // スロットパネル外枠
+    PlaceholderAssets::drawPanel(panelX, panelY,
+                                 panelW, maxVisibleSlots * (SLOT_HEIGHT + SLOT_MARGIN) + PADDING,
+                                 PlaceholderAssets::Colors::PARCHMENT_DARK,
+                                 PlaceholderAssets::Colors::BROWN_ACCENT);
 
     // スロットが空の場合
     if (availableSlots.empty()) {
-        glm::vec3 emptyColor(0.7f, 0.7f, 0.7f);
-        std::string emptyText = (currentMode == Mode::SAVE) ? "New Save" : "No saves available";
-        textRenderer->renderText(emptyText, 200.0f, 250.0f, emptyColor, 1.0f);
+        // 空スロットプレースホルダー
+        for (int i = 0; i < 3; i++) {
+            float sx = panelX + PADDING;
+            float sy = panelY + PADDING + i * (SLOT_HEIGHT + SLOT_MARGIN);
+            PlaceholderAssets::drawPanel(sx, sy, slotW, SLOT_HEIGHT,
+                                        PlaceholderAssets::Colors::PARCHMENT_LIGHT,
+                                        PlaceholderAssets::Colors::PARCHMENT_DARK);
+            if (textRenderer) {
+                textRenderer->renderText("EMPTY", sx + 20.0f, sy + SLOT_HEIGHT * 0.3f,
+                                        0.8f, PlaceholderAssets::Colors::BROWN_ACCENT);
+            }
+        }
+        if (textRenderer && currentMode == Mode::LOAD) {
+            textRenderer->renderText("No saves available",
+                                    panelX + panelW * 0.2f, panelY + maxVisibleSlots * (SLOT_HEIGHT + SLOT_MARGIN) * 0.4f,
+                                    0.9f, PlaceholderAssets::Colors::PARCHMENT_DARK);
+        }
+        return;
+    }
+
+    // スロット一覧表示
+    for (size_t i = 0; i < availableSlots.size() && i < static_cast<size_t>(maxVisibleSlots); i++) {
+        float sx = panelX + PADDING;
+        float sy = panelY + PADDING + static_cast<float>(i) * (SLOT_HEIGHT + SLOT_MARGIN);
+        bool isSelected = (static_cast<int>(i) == selectedSlotIndex);
+        bool isHovered = (static_cast<int>(i) == hoveredSlotIndex);
+
+        // スロット背景：選択中は金色枠、ホバーは明るい羊皮紙
+        if (isSelected) {
+            PlaceholderAssets::drawPanel(sx, sy, slotW, SLOT_HEIGHT,
+                                        PlaceholderAssets::Colors::PARCHMENT_LIGHT,
+                                        PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
+        } else if (isHovered) {
+            PlaceholderAssets::drawPanel(sx, sy, slotW, SLOT_HEIGHT,
+                                        PlaceholderAssets::Colors::PARCHMENT_LIGHT,
+                                        PlaceholderAssets::Colors::PARCHMENT_DARK);
+        } else {
+            PlaceholderAssets::drawPanel(sx, sy, slotW, SLOT_HEIGHT,
+                                        PlaceholderAssets::Colors::PARCHMENT_DARK,
+                                        PlaceholderAssets::Colors::BROWN_ACCENT);
+        }
+
+        // スロット名テキスト
+        if (textRenderer) {
+            glm::vec3 textColor = isSelected
+                ? PlaceholderAssets::Colors::GOLD_HIGHLIGHT
+                : PlaceholderAssets::Colors::PARCHMENT_LIGHT;
+            textRenderer->renderText(availableSlots[i],
+                                    sx + 20.0f, sy + SLOT_HEIGHT * 0.28f,
+                                    1.0f, textColor);
+
+            // 選択中インジケーター
+            if (isSelected) {
+                textRenderer->renderText(">", sx + 5.0f, sy + SLOT_HEIGHT * 0.28f,
+                                        1.0f, PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
+            }
+        }
+    }
+
+    // 追加の空スロット枠
+    for (size_t i = availableSlots.size(); i < static_cast<size_t>(maxVisibleSlots); i++) {
+        float sx = panelX + PADDING;
+        float sy = panelY + PADDING + static_cast<float>(i) * (SLOT_HEIGHT + SLOT_MARGIN);
+        PlaceholderAssets::drawPanel(sx, sy, slotW, SLOT_HEIGHT,
+                                    PlaceholderAssets::Colors::PARCHMENT_LIGHT,
+                                    PlaceholderAssets::Colors::PARCHMENT_DARK);
+        if (textRenderer && currentMode == Mode::SAVE) {
+            textRenderer->renderText("EMPTY - New Save",
+                                    sx + 20.0f, sy + SLOT_HEIGHT * 0.28f,
+                                    0.8f, PlaceholderAssets::Colors::BROWN_ACCENT);
+        }
     }
 }
 
 void SaveLoadUI::renderConfirmDialog() {
-    // 半透明背景
-    glClearColor(0.0f, 0.0f, 0.0f, 0.7f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    const float dlgW = 500.0f;
+    const float dlgH = 220.0f;
+    const float dlgX = (screenWidth - dlgW) * 0.5f;
+    const float dlgY = (screenHeight - dlgH) * 0.4f;
 
-    glm::vec3 dialogColor(1.0f, 1.0f, 1.0f);
-    glm::vec3 titleColor(1.0f, 0.5f, 0.0f);
+    // ダイアログパネル
+    PlaceholderAssets::drawPanel(dlgX, dlgY, dlgW, dlgH,
+                                 PlaceholderAssets::Colors::PARCHMENT_LIGHT,
+                                 PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
 
-    std::string message;
-    if (dialogState == DialogState::CONFIRM_OVERWRITE) {
-        message = "Overwrite '" + pendingSlotName + "'?";
-    } else {
-        message = "Delete '" + pendingSlotName + "'?";
+    // メッセージ
+    if (textRenderer) {
+        std::string message;
+        if (dialogState == DialogState::CONFIRM_OVERWRITE) {
+            message = "Overwrite '" + pendingSlotName + "'?";
+        } else {
+            message = "Delete '" + pendingSlotName + "'?";
+        }
+        textRenderer->renderText(message, dlgX + 30.0f, dlgY + 40.0f,
+                                1.0f, PlaceholderAssets::Colors::BROWN_ACCENT);
     }
 
-    textRenderer->renderText(message, 250.0f, 200.0f, titleColor, 1.2f);
+    // YES ボタン
+    const float btnW = 140.0f;
+    const float btnH = 50.0f;
+    const float btnY = dlgY + dlgH - btnH - 20.0f;
+    float yesX = dlgX + dlgW * 0.15f;
+    PlaceholderAssets::drawPanel(yesX, btnY, btnW, btnH,
+                                 PlaceholderAssets::Colors::PARCHMENT_LIGHT,
+                                 PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
+    if (textRenderer) {
+        textRenderer->renderText("YES", yesX + 45.0f, btnY + 14.0f,
+                                1.1f, PlaceholderAssets::Colors::BROWN_ACCENT);
+    }
 
-    // ボタン
-    glm::vec3 buttonColor(0.2f, 0.8f, 0.2f);
-    textRenderer->renderText("YES", 350.0f, 320.0f, buttonColor, 1.0f);
-
-    glm::vec3 cancelColor(0.8f, 0.2f, 0.2f);
-    textRenderer->renderText("NO", 450.0f, 320.0f, cancelColor, 1.0f);
+    // NO ボタン
+    float noX = dlgX + dlgW * 0.6f;
+    PlaceholderAssets::drawPanel(noX, btnY, btnW, btnH,
+                                 PlaceholderAssets::Colors::PARCHMENT_DARK,
+                                 PlaceholderAssets::Colors::BROWN_ACCENT);
+    if (textRenderer) {
+        textRenderer->renderText("NO", noX + 50.0f, btnY + 14.0f,
+                                1.1f, PlaceholderAssets::Colors::PARCHMENT_LIGHT);
+    }
 }
 
 void SaveLoadUI::renderErrorDialog() {
-    // 半透明背景
-    glClearColor(0.0f, 0.0f, 0.0f, 0.7f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    const float dlgW = 500.0f;
+    const float dlgH = 280.0f;
+    const float dlgX = (screenWidth - dlgW) * 0.5f;
+    const float dlgY = (screenHeight - dlgH) * 0.4f;
 
-    // エラータイトル
-    glm::vec3 errorColor(1.0f, 0.0f, 0.0f);
-    textRenderer->renderText("ERROR", 350.0f, 120.0f, errorColor, 1.5f);
+    // エラーダイアログパネル（茶色枠）
+    PlaceholderAssets::drawPanel(dlgX, dlgY, dlgW, dlgH,
+                                 PlaceholderAssets::Colors::PARCHMENT_LIGHT,
+                                 PlaceholderAssets::Colors::BROWN_ACCENT);
 
-    // エラーメッセージ（複数行対応）
-    glm::vec3 messageColor(1.0f, 1.0f, 1.0f);
-    float yPos = 200.0f;
-    size_t lineStart = 0;
-    while (lineStart < errorMessage.size()) {
-        size_t lineEnd = errorMessage.find('\n', lineStart);
-        if (lineEnd == std::string::npos) {
-            lineEnd = errorMessage.size();
+    if (textRenderer) {
+        // エラータイトル
+        textRenderer->renderText("ERROR", dlgX + dlgW * 0.35f, dlgY + 25.0f,
+                                1.3f, glm::vec3(0.8f, 0.1f, 0.1f));
+
+        // エラーメッセージ（複数行対応）
+        float yPos = dlgY + 80.0f;
+        size_t lineStart = 0;
+        while (lineStart < errorMessage.size()) {
+            size_t lineEnd = errorMessage.find('\n', lineStart);
+            if (lineEnd == std::string::npos) lineEnd = errorMessage.size();
+            std::string line = errorMessage.substr(lineStart, lineEnd - lineStart);
+            textRenderer->renderText(line, dlgX + 25.0f, yPos,
+                                    0.9f, PlaceholderAssets::Colors::BROWN_ACCENT);
+            yPos += 38.0f;
+            lineStart = lineEnd + 1;
         }
-        std::string line = errorMessage.substr(lineStart, lineEnd - lineStart);
-        textRenderer->renderText(line, 200.0f, yPos, messageColor, 1.0f);
-        yPos += 40.0f;
-        lineStart = lineEnd + 1;
     }
 
     // OK ボタン
-    glm::vec3 buttonColor(0.2f, 0.8f, 0.2f);
-    textRenderer->renderText("OK", 400.0f, 420.0f, buttonColor, 1.2f);
+    const float btnW = 120.0f;
+    const float btnH = 46.0f;
+    float okX = dlgX + (dlgW - btnW) * 0.5f;
+    float okY = dlgY + dlgH - btnH - 20.0f;
+    PlaceholderAssets::drawPanel(okX, okY, btnW, btnH,
+                                 PlaceholderAssets::Colors::PARCHMENT_LIGHT,
+                                 PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
+    if (textRenderer) {
+        textRenderer->renderText("OK", okX + 42.0f, okY + 12.0f,
+                                1.1f, PlaceholderAssets::Colors::BROWN_ACCENT);
+    }
 }
 
 void SaveLoadUI::renderButtons() {
-    glm::vec3 buttonColor(0.0f, 1.0f, 0.0f);
-    glm::vec3 cancelColor(1.0f, 0.0f, 0.0f);
+    const float btnW = 200.0f;
+    const float btnH = BUTTON_HEIGHT;
+    const float centerX = screenWidth * 0.5f;
+    const float btnY = screenHeight - 200.0f;
+    const float gap = 30.0f;
 
-    // Execute ボタン
-    std::string executeLabel = (currentMode == Mode::SAVE) ? "SAVE" : "LOAD";
-    textRenderer->renderText(executeLabel, 160.0f, 530.0f, buttonColor, 1.0f);
+    // Execute ボタン（左）
+    float execX = centerX - btnW - gap * 0.5f;
+    PlaceholderAssets::drawPanel(execX, btnY, btnW, btnH,
+                                 PlaceholderAssets::Colors::PARCHMENT_LIGHT,
+                                 PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
+    if (textRenderer) {
+        std::string executeLabel = (currentMode == Mode::SAVE) ? "SAVE" : "LOAD";
+        textRenderer->renderText(executeLabel,
+                                execX + btnW * 0.3f, btnY + btnH * 0.25f,
+                                1.1f, PlaceholderAssets::Colors::BROWN_ACCENT);
+    }
 
-    // Cancel ボタン
-    textRenderer->renderText("CANCEL", 480.0f, 530.0f, cancelColor, 1.0f);
+    // Cancel ボタン（右）
+    float cancelX = centerX + gap * 0.5f;
+    PlaceholderAssets::drawPanel(cancelX, btnY, btnW, btnH,
+                                 PlaceholderAssets::Colors::PARCHMENT_DARK,
+                                 PlaceholderAssets::Colors::BROWN_ACCENT);
+    if (textRenderer) {
+        textRenderer->renderText("CANCEL",
+                                cancelX + btnW * 0.2f, btnY + btnH * 0.25f,
+                                1.1f, PlaceholderAssets::Colors::PARCHMENT_LIGHT);
+    }
 
     // ヘルプテキスト
-    glm::vec3 helpColor(0.7f, 0.7f, 0.7f);
-    textRenderer->renderText("Tap slot to select", 250.0f, 620.0f, helpColor, 0.8f);
+    if (textRenderer) {
+        textRenderer->renderText("Tap a slot to select, then SAVE or LOAD",
+                                screenWidth * 0.15f, btnY + btnH + 10.0f,
+                                0.75f, PlaceholderAssets::Colors::PARCHMENT_DARK);
+    }
 }
 
 void SaveLoadUI::handleSlotSelection(int index) {

@@ -60,6 +60,8 @@ public:
 
     std::string getSelectedSlot() const;
 
+    void setScreenSize(int w, int h) { screenWidth = w; screenHeight = h; updateLayout(); }
+
 private:
     TextRenderer* textRenderer = nullptr;
     SaveManager* saveManager = nullptr;
@@ -67,6 +69,10 @@ private:
 
     // Phase 9: Background texture
     GLuint bgTexture = 0;
+
+    // Screen size
+    int screenWidth = 1080;
+    int screenHeight = 1920;
 
     bool visible = false;
     bool returnToMenu = false;
