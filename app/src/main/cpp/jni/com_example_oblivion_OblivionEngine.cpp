@@ -851,4 +851,81 @@ JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeUpdateSkil
     }
 }
 
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeAddAlert(
+    JNIEnv* env,
+    jobject /* obj */,
+    jstring message,
+    jint alertType,
+    jint priority,
+    jfloat duration) {
+
+    LOGI("nativeAddAlert called: type=%d, priority=%d, duration=%f",
+        alertType, priority, duration);
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto alertNotif = uiManager->getAlertNotification();
+            if (alertNotif) {
+                const char* msgStr = env->GetStringUTFChars(message, nullptr);
+                alertNotif->addAlert(std::string(msgStr),
+                    static_cast<UIAlertNotification::AlertType>(alertType),
+                    static_cast<UIAlertNotification::AlertPriority>(priority),
+                    duration);
+                env->ReleaseStringUTFChars(message, msgStr);
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeDismissAlert(
+    JNIEnv* /* env */,
+    jobject /* obj */) {
+
+    LOGI("nativeDismissAlert called");
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto alertNotif = uiManager->getAlertNotification();
+            if (alertNotif) {
+                alertNotif->dismissAlert();
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeClearAllAlerts(
+    JNIEnv* /* env */,
+    jobject /* obj */) {
+
+    LOGI("nativeClearAllAlerts called");
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto alertNotif = uiManager->getAlertNotification();
+            if (alertNotif) {
+                alertNotif->clearAllAlerts();
+            }
+        }
+    }
+}
+
+JNIEXPORT jboolean JNICALL Java_com_example_oblivion_OblivionEngine_nativeHasActiveAlert(
+    JNIEnv* /* env */,
+    jobject /* obj */) {
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto alertNotif = uiManager->getAlertNotification();
+            if (alertNotif) {
+                return alertNotif->hasActiveAlert() ? JNI_TRUE : JNI_FALSE;
+            }
+        }
+    }
+    return JNI_FALSE;
+}
+
 } // extern "C"

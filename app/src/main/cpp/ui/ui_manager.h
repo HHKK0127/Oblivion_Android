@@ -19,6 +19,7 @@
 #include "ui_action_prompt.h"
 #include "ui_active_effects.h"
 #include "ui_level_progress.h"
+#include "ui_alert_notification.h"
 #include "text_renderer.h"
 
 class QuestManager;
@@ -117,6 +118,7 @@ public:
     UIActionPrompt* getActionPrompt() { return actionPrompt_.get(); }
     UIActiveEffects* getActiveEffects() { return activeEffects_.get(); }
     UILevelProgress* getLevelProgress() { return levelProgress_.get(); }
+    UIAlertNotification* getAlertNotification() { return alertNotification_.get(); }
 
 private:
     std::unique_ptr<UICharacterSheet> characterSheet_;
@@ -136,6 +138,7 @@ private:
     std::unique_ptr<UIActionPrompt> actionPrompt_;
     std::unique_ptr<UIActiveEffects> activeEffects_;
     std::unique_ptr<UILevelProgress> levelProgress_;
+    std::unique_ptr<UIAlertNotification> alertNotification_;
 
     TextRenderer* textRenderer_ = nullptr;
     QuestManager* questManager_ = nullptr;

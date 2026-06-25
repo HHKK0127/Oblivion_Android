@@ -138,6 +138,12 @@ bool UIManager::initialize(TextRenderer* textRenderer,
         return false;
     }
 
+    // UIAlertNotification の初期化
+    alertNotification_ = std::make_unique<UIAlertNotification>();
+    if (!alertNotification_->initialize(textRenderer, screenWidth_, screenHeight_)) {
+        return false;
+    }
+
     return true;
 }
 
@@ -159,6 +165,7 @@ void UIManager::cleanup() {
     actionPrompt_.reset();
     activeEffects_.reset();
     levelProgress_.reset();
+    alertNotification_.reset();
 }
 
 void UIManager::setPlayerStatus(CharacterStatus* playerStatus) {
@@ -188,6 +195,7 @@ void UIManager::update(float deltaTime) {
     if (actionPrompt_) actionPrompt_->update(deltaTime);
     if (activeEffects_) activeEffects_->update(deltaTime);
     if (levelProgress_) levelProgress_->update(deltaTime);
+    if (alertNotification_) alertNotification_->update(deltaTime);
 }
 
 void UIManager::render() {
@@ -251,6 +259,11 @@ void UIManager::render() {
         levelProgress_->render();
     }
 
+    // Alert notifications
+    if (alertNotification_) {
+        alertNotification_->render();
+    }
+
     // Floating text rendered last (on top of everything)
     if (floatingText_) {
         floatingText_->render();
@@ -278,6 +291,7 @@ void UIManager::setScreenSize(int width, int height) {
     if (actionPrompt_) actionPrompt_->setScreenSize(width, height);
     if (activeEffects_) activeEffects_->setScreenSize(width, height);
     if (levelProgress_) levelProgress_->setScreenSize(width, height);
+    if (alertNotification_) alertNotification_->setScreenSize(width, height);
 }
 
 bool UIManager::onTouchDown(float x, float y, int pointerId) {
