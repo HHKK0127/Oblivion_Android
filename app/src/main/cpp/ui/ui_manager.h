@@ -6,6 +6,7 @@
 #include "ui_spellbook.h"
 #include "ui_quest_log.h"
 #include "ui_dialogue.h"
+#include "ui_shop.h"
 #include "text_renderer.h"
 
 class QuestManager;
@@ -55,6 +56,12 @@ public:
     void closeDialogue() { dialogue_->closeDialogue(); }
     bool isDialogueOpen() const { return dialogue_->isVisible(); }
 
+    void openShop(std::shared_ptr<Merchant> merchant) {
+        shop_->openShop(merchant);
+    }
+    void closeShop() { shop_->closeShop(); }
+    bool isShopOpen() const { return shop_->isVisible(); }
+
     // イベント入力
     bool onTouchDown(float x, float y, int pointerId);
     bool onTouchUp(float x, float y, int pointerId);
@@ -64,12 +71,14 @@ public:
     UISpellbook* getSpellbook() { return spellbook_.get(); }
     UIQuestLog* getQuestLog() { return questLog_.get(); }
     UIDialogue* getDialogue() { return dialogue_.get(); }
+    UIShop* getShop() { return shop_.get(); }
 
 private:
     std::unique_ptr<UICharacterSheet> characterSheet_;
     std::unique_ptr<UISpellbook> spellbook_;
     std::unique_ptr<UIQuestLog> questLog_;
     std::unique_ptr<UIDialogue> dialogue_;
+    std::unique_ptr<UIShop> shop_;
 
     TextRenderer* textRenderer_ = nullptr;
     QuestManager* questManager_ = nullptr;

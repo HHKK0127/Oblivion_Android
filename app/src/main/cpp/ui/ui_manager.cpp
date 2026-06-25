@@ -49,6 +49,14 @@ bool UIManager::initialize(TextRenderer* textRenderer,
     dialogue_->setScreenSize(screenWidth_, screenHeight_);
     dialogue_->setVisible(false);
 
+    // UIShop の初期化
+    shop_ = std::make_unique<UIShop>();
+    if (!shop_->initialize(textRenderer)) {
+        return false;
+    }
+    shop_->setScreenSize(screenWidth_, screenHeight_);
+    shop_->setVisible(false);
+
     return true;
 }
 
@@ -57,6 +65,7 @@ void UIManager::cleanup() {
     spellbook_.reset();
     questLog_.reset();
     dialogue_.reset();
+    shop_.reset();
 }
 
 void UIManager::setPlayerStatus(CharacterStatus* playerStatus) {
@@ -70,10 +79,11 @@ void UIManager::update(float deltaTime) {
     if (spellbook_) spellbook_->update(deltaTime);
     if (questLog_) questLog_->update(deltaTime);
     if (dialogue_) dialogue_->update(deltaTime);
+    if (shop_) shop_->update(deltaTime);
 }
 
 void UIManager::render() {
-    // Dialogue is rendered last (on top of other UIs)
+    // Render UIs in order (dialogue and shop are last - on top)
     if (characterSheet_ && characterSheet_->isVisible()) {
         characterSheet_->render();
     }
@@ -82,6 +92,9 @@ void UIManager::render() {
     }
     if (questLog_ && questLog_->isVisible()) {
         questLog_->render();
+    }
+    if (shop_ && shop_->isVisible()) {
+        shop_->render();
     }
     if (dialogue_ && dialogue_->isVisible()) {
         dialogue_->render();
@@ -96,12 +109,19 @@ void UIManager::setScreenSize(int width, int height) {
     if (spellbook_) spellbook_->setScreenSize(width, height);
     if (questLog_) questLog_->setScreenSize(width, height);
     if (dialogue_) dialogue_->setScreenSize(width, height);
+    if (shop_) shop_->setScreenSize(width, height);
 }
 
 bool UIManager::onTouchDown(float x, float y, int pointerId) {
-    // Route touch to the topmost visible UI (dialogue first, then others)
+    // Route touch to the topmost visible UI (dialogue and shop are highest priority)
     if (dialogue_ && dialogue_->isVisible() && dialogue_->isEnabled()) {
         if (dialogue_->onTouchDown(x, y, pointerId)) {
+            return true;
+        }
+    }
+
+    if (shop_ && shop_->isVisible() && shop_->isEnabled()) {
+        if (shop_->onTouchDown(x, y, pointerId)) {
             return true;
         }
     }
@@ -131,6 +151,12 @@ bool UIManager::onTouchUp(float x, float y, int pointerId) {
     // Route touch to the topmost visible UI
     if (dialogue_ && dialogue_->isVisible() && dialogue_->isEnabled()) {
         if (dialogue_->onTouchUp(x, y, pointerId)) {
+            return true;
+        }
+    }
+
+    if (shop_ && shop_->isVisible() && shop_->isEnabled()) {
+        if (shop_->onTouchUp(x, y, pointerId)) {
             return true;
         }
     }

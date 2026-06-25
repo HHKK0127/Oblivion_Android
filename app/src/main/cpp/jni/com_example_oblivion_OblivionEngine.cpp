@@ -285,4 +285,18 @@ JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeCloseDialo
     }
 }
 
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeCloseShop(
+    JNIEnv* /* env */,
+    jobject /* obj */) {
+
+    LOGI("nativeCloseShop called");
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            uiManager->closeShop();
+        }
+    }
+}
+
 } // extern "C"
