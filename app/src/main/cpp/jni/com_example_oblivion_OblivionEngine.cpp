@@ -377,4 +377,84 @@ JNIEXPORT jint JNICALL Java_com_example_oblivion_OblivionEngine_nativeGetSelecte
     return -1;
 }
 
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeSetCompassRotation(
+    JNIEnv* /* env */,
+    jobject /* obj */,
+    jfloat yawDegrees) {
+
+    LOGI("nativeSetCompassRotation called: yaw=%f", yawDegrees);
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto compass = uiManager->getHudCompass();
+            if (compass) {
+                compass->setPlayerRotation(yawDegrees);
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeAddCompassMarker(
+    JNIEnv* env,
+    jobject /* obj */,
+    jint markerId,
+    jfloat angle,
+    jstring label,
+    jint markerType) {
+
+    LOGI("nativeAddCompassMarker called: id=%d, angle=%f, type=%d", markerId, angle, markerType);
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto compass = uiManager->getHudCompass();
+            if (compass) {
+                const char* labelStr = env->GetStringUTFChars(label, nullptr);
+                glm::vec3 markerColor(1.0f, 1.0f, 1.0f);
+
+                compass->addMarker(markerId, angle, std::string(labelStr),
+                    static_cast<UIHudCompass::CompassMarker>(markerType), markerColor);
+
+                env->ReleaseStringUTFChars(label, labelStr);
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeRemoveCompassMarker(
+    JNIEnv* /* env */,
+    jobject /* obj */,
+    jint markerId) {
+
+    LOGI("nativeRemoveCompassMarker called: id=%d", markerId);
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto compass = uiManager->getHudCompass();
+            if (compass) {
+                compass->removeMarker(markerId);
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeClearCompassMarkers(
+    JNIEnv* /* env */,
+    jobject /* obj */) {
+
+    LOGI("nativeClearCompassMarkers called");
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto compass = uiManager->getHudCompass();
+            if (compass) {
+                compass->clearMarkers();
+            }
+        }
+    }
+}
+
 } // extern "C"

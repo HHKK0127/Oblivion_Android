@@ -13,6 +13,7 @@
 #include "ui_toast.h"
 #include "ui_quick_slot_bar.h"
 #include "ui_hud_status_display.h"
+#include "ui_hud_compass.h"
 #include "text_renderer.h"
 
 class QuestManager;
@@ -105,6 +106,7 @@ public:
     UIToast* getToast() { return toast_.get(); }
     UIQuickSlotBar* getQuickSlotBar() { return quickSlotBar_.get(); }
     UIHudStatusDisplay* getHudStatusDisplay() { return hudStatusDisplay_.get(); }
+    UIHudCompass* getHudCompass() { return hudCompass_.get(); }
 
 private:
     std::unique_ptr<UICharacterSheet> characterSheet_;
@@ -118,6 +120,7 @@ private:
     std::unique_ptr<UIToast> toast_;
     std::unique_ptr<UIQuickSlotBar> quickSlotBar_;
     std::unique_ptr<UIHudStatusDisplay> hudStatusDisplay_;
+    std::unique_ptr<UIHudCompass> hudCompass_;
 
     TextRenderer* textRenderer_ = nullptr;
     QuestManager* questManager_ = nullptr;
