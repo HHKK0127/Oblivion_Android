@@ -1,5 +1,7 @@
 #include "ui_inventory_panel.h"
 #include "ui_draw_helper.h"
+#include "placeholder_assets.h"
+#include "text_renderer.h"
 #include <GLES3/gl3.h>
 #include <algorithm>
 
@@ -159,38 +161,60 @@ void UIInventoryPanel::renderInventoryGrid() {
             float x = gridStartX + col * (cellSize + CELL_MARGIN);
             float y = gridStartY + row * (cellSize + CELL_MARGIN);
 
-            // Cell background
-            glm::vec4 bgColor(0.15f, 0.15f, 0.18f, 1.0f);
-            if (static_cast<int>(idx) == selectedSlot) {
-                bgColor = glm::vec4(0.3f, 0.3f, 0.5f, 1.0f);
-            }
-            if (isDraggingItem && static_cast<int>(idx) == dragSourceSlot) {
-                bgColor = glm::vec4(0.5f, 0.5f, 0.3f, 1.0f);
-            }
-            UIDrawHelper::drawColoredQuad(x, y, cellSize, cellSize, bgColor, screenWidth, screenHeight);
+            // Cell background panel with border
+            glm::vec3 bgColor = glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT);
+            glm::vec3 borderColor = glm::vec3(PlaceholderAssets::Colors::BROWN_ACCENT);
 
-            // Item icon placeholder (colored square by category)
             const auto& slot = inventory->getSlot(idx);
+            if (static_cast<int>(idx) == selectedSlot) {
+                // Selected: gold highlight
+                borderColor = glm::vec3(PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
+                bgColor = glm::vec3(PlaceholderAssets::Colors::PARCHMENT_DARK);
+            } else if (!slot.isEmpty()) {
+                // Has item: slightly highlighted
+                bgColor = glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT);
+            } else {
+                // Empty: normal
+                bgColor = glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT) * 0.8f;
+            }
+
+            if (isDraggingItem && static_cast<int>(idx) == dragSourceSlot) {
+                borderColor = glm::vec3(PlaceholderAssets::Colors::GOLD_HIGHLIGHT) * 1.2f;
+            }
+
+            PlaceholderAssets::drawPanel(x, y, cellSize, cellSize, bgColor, borderColor);
+
+            // Item icon placeholder (category-based color)
             if (!slot.isEmpty()) {
-                glm::vec4 itemColor = glm::vec4(0.6f, 0.6f, 0.6f, 1.0f);
+                glm::vec3 itemColor(0.6f, 0.6f, 0.6f);
                 switch (slot.item.category) {
-                    case inventory::ItemCategory::Weapon:     itemColor = glm::vec4(0.9f, 0.3f, 0.3f, 1.0f); break;
-                    case inventory::ItemCategory::Armor:      itemColor = glm::vec4(0.3f, 0.5f, 0.9f, 1.0f); break;
-                    case inventory::ItemCategory::Consumable: itemColor = glm::vec4(0.3f, 0.9f, 0.4f, 1.0f); break;
-                    case inventory::ItemCategory::Material:   itemColor = glm::vec4(0.7f, 0.6f, 0.3f, 1.0f); break;
-                    case inventory::ItemCategory::Quest:      itemColor = glm::vec4(0.9f, 0.8f, 0.2f, 1.0f); break;
-                    default: break;
+                    case inventory::ItemCategory::Weapon:
+                        itemColor = glm::vec3(0.9f, 0.3f, 0.3f);
+                        break;
+                    case inventory::ItemCategory::Armor:
+                        itemColor = glm::vec3(0.3f, 0.5f, 0.9f);
+                        break;
+                    case inventory::ItemCategory::Consumable:
+                        itemColor = glm::vec3(0.3f, 0.9f, 0.4f);
+                        break;
+                    case inventory::ItemCategory::Material:
+                        itemColor = glm::vec3(0.7f, 0.6f, 0.3f);
+                        break;
+                    case inventory::ItemCategory::Quest:
+                        itemColor = glm::vec3(0.9f, 0.8f, 0.2f);
+                        break;
+                    default:
+                        break;
                 }
                 float pad = cellSize * 0.15f;
                 UIDrawHelper::drawColoredQuad(x + pad, y + pad, cellSize - pad * 2.0f, cellSize - pad * 2.0f,
-                                              itemColor, screenWidth, screenHeight);
+                                              glm::vec4(itemColor, 1.0f), screenWidth, screenHeight);
 
                 // Stack quantity indicator
                 if (slot.quantity > 1) {
-                    glm::vec4 qtyBg(0.0f, 0.0f, 0.0f, 0.7f);
-                    UIDrawHelper::drawColoredQuad(x + cellSize - 18.0f, y + cellSize - 14.0f, 18.0f, 14.0f,
-                                                  qtyBg, screenWidth, screenHeight);
-                    // Text rendering omitted for now (use color/size later)
+                    PlaceholderAssets::drawPanel(x + cellSize - 18.0f, y + cellSize - 14.0f, 18.0f, 14.0f,
+                                                 PlaceholderAssets::Colors::DARK_GRAY,
+                                                 PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
                 }
             }
         }
@@ -205,12 +229,22 @@ void UIInventoryPanel::renderEquipmentSlots() {
         float x = equipStartX;
         float y = equipStartY + (i - 1) * (EQUIP_SLOT_SIZE + 8.0f);
 
-        glm::vec4 bg(0.2f, 0.2f, 0.25f, 1.0f);
         auto slot = static_cast<inventory::EquipSlot>(i);
+        glm::vec3 bgColor = glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT);
+        glm::vec3 borderColor = glm::vec3(PlaceholderAssets::Colors::BROWN_ACCENT);
+
         if (equipment->isSlotOccupied(slot)) {
-            bg = glm::vec4(0.4f, 0.4f, 0.6f, 1.0f);
+            // Equipped: highlight with gold
+            bgColor = glm::vec3(PlaceholderAssets::Colors::PARCHMENT_DARK);
+            borderColor = glm::vec3(PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
         }
-        UIDrawHelper::drawColoredQuad(x, y, EQUIP_SLOT_SIZE, EQUIP_SLOT_SIZE, bg, screenWidth, screenHeight);
+
+        PlaceholderAssets::drawPanel(x, y, EQUIP_SLOT_SIZE, EQUIP_SLOT_SIZE, bgColor, borderColor);
+
+        // Draw label if text renderer available
+        if (textRenderer && i > 0 && i < 8) {
+            textRenderer->renderText(labels[i], x + 4.0f, y + 4.0f, glm::vec3(0.2f, 0.2f, 0.2f), 0.6f);
+        }
     }
 }
 
@@ -219,17 +253,80 @@ void UIInventoryPanel::renderItemDetail() {
     const auto& slot = inventory->getSlot(static_cast<uint32_t>(selectedSlot));
     if (slot.isEmpty()) return;
 
-    // Simple detail box at bottom of content area
     glm::vec2 cp = getContentPosition();
     glm::vec2 cs = getContentSize();
-    float boxH = 80.0f;
-    float boxY = cp.y + cs.y - boxH;
-    UIDrawHelper::drawColoredQuad(cp.x, boxY, cs.x, boxH,
-                                  glm::vec4(0.1f, 0.1f, 0.15f, 0.95f), screenWidth, screenHeight);
 
-    // Highlight border
-    UIDrawHelper::drawBorder(cp.x, boxY, cs.x, boxH, 2.0f,
-                             glm::vec4(0.6f, 0.6f, 0.8f, 1.0f), screenWidth, screenHeight);
+    // Detail popup panel positioned at bottom
+    float detailW = 280.0f;
+    float detailH = 200.0f;
+    float detailX = cp.x + cs.x - detailW - 10.0f;
+    float detailY = cp.y + cs.y - detailH - 10.0f;
+
+    // Draw detail panel with Oblivion styling
+    PlaceholderAssets::drawPanel(detailX, detailY, detailW, detailH,
+                                 PlaceholderAssets::Colors::PARCHMENT_LIGHT,
+                                 PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
+
+    // Render item information
+    if (textRenderer) {
+        float textX = detailX + 8.0f;
+        float textY = detailY + 8.0f;
+        const auto& item = slot.item;
+
+        // Item name
+        textRenderer->renderText(item.name, textX, textY, glm::vec3(0.1f, 0.1f, 0.1f), 1.0f);
+        textY += 18.0f;
+
+        // Category label
+        const char* catLabel = "Item";
+        switch (item.category) {
+            case inventory::ItemCategory::Weapon:     catLabel = "Weapon"; break;
+            case inventory::ItemCategory::Armor:      catLabel = "Armor"; break;
+            case inventory::ItemCategory::Consumable: catLabel = "Consumable"; break;
+            case inventory::ItemCategory::Material:   catLabel = "Material"; break;
+            case inventory::ItemCategory::Quest:      catLabel = "Quest Item"; break;
+            default: break;
+        }
+        textRenderer->renderText(catLabel, textX, textY, glm::vec3(0.4f, 0.25f, 0.2f), 0.8f);
+        textY += 14.0f;
+
+        // Weight and value
+        char infoStr[128];
+        snprintf(infoStr, sizeof(infoStr), "Weight: %.1f kg", item.weight);
+        textRenderer->renderText(infoStr, textX, textY, glm::vec3(0.2f, 0.2f, 0.2f), 0.7f);
+        textY += 12.0f;
+
+        snprintf(infoStr, sizeof(infoStr), "Value: %u gp", item.value);
+        textRenderer->renderText(infoStr, textX, textY, glm::vec3(0.2f, 0.2f, 0.2f), 0.7f);
+        textY += 14.0f;
+
+        // Stats display (if any)
+        if (item.stats.damage > 0 || item.stats.defense > 0) {
+            if (item.stats.damage > 0) {
+                snprintf(infoStr, sizeof(infoStr), "Damage: +%d", item.stats.damage);
+                textRenderer->renderText(infoStr, textX, textY, glm::vec3(0.8f, 0.2f, 0.2f), 0.7f);
+                textY += 12.0f;
+            }
+            if (item.stats.defense > 0) {
+                snprintf(infoStr, sizeof(infoStr), "Defense: +%d", item.stats.defense);
+                textRenderer->renderText(infoStr, textX, textY, glm::vec3(0.3f, 0.4f, 0.8f), 0.7f);
+                textY += 12.0f;
+            }
+        }
+
+        // Consumable effects
+        if (item.isConsumable()) {
+            if (item.healAmount > 0) {
+                snprintf(infoStr, sizeof(infoStr), "Restores %d HP", item.healAmount);
+                textRenderer->renderText(infoStr, textX, textY, glm::vec3(0.8f, 0.1f, 0.1f), 0.7f);
+                textY += 12.0f;
+            }
+            if (item.manaAmount > 0) {
+                snprintf(infoStr, sizeof(infoStr), "Restores %d MP", item.manaAmount);
+                textRenderer->renderText(infoStr, textX, textY, glm::vec3(0.2f, 0.3f, 0.8f), 0.7f);
+            }
+        }
+    }
 }
 
 void UIInventoryPanel::renderDraggedItem() {
@@ -238,13 +335,34 @@ void UIInventoryPanel::renderDraggedItem() {
     if (slot.isEmpty()) return;
 
     float sz = cellSize * 0.9f;
-    glm::vec4 col(0.8f, 0.8f, 0.8f, 0.8f);
-    UIDrawHelper::drawColoredQuad(dragPos.x - sz * 0.5f, dragPos.y - sz * 0.5f, sz, sz,
-                                  col, screenWidth, screenHeight);
+    glm::vec3 itemColor(0.6f, 0.6f, 0.6f);
+    switch (slot.item.category) {
+        case inventory::ItemCategory::Weapon:
+            itemColor = glm::vec3(0.9f, 0.3f, 0.3f);
+            break;
+        case inventory::ItemCategory::Armor:
+            itemColor = glm::vec3(0.3f, 0.5f, 0.9f);
+            break;
+        case inventory::ItemCategory::Consumable:
+            itemColor = glm::vec3(0.3f, 0.9f, 0.4f);
+            break;
+        case inventory::ItemCategory::Material:
+            itemColor = glm::vec3(0.7f, 0.6f, 0.3f);
+            break;
+        case inventory::ItemCategory::Quest:
+            itemColor = glm::vec3(0.9f, 0.8f, 0.2f);
+            break;
+        default:
+            break;
+    }
+
+    // Draw dragged item as semi-transparent icon
+    PlaceholderAssets::drawPanel(dragPos.x - sz * 0.5f, dragPos.y - sz * 0.5f, sz, sz,
+                                 itemColor * 0.8f, PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
 }
 
 void UIInventoryPanel::renderSortButtons() {
-    // Small color bars at top as sort buttons
+    // Sort buttons with Oblivion styling
     glm::vec2 cp = getContentPosition();
     float btnW = 50.0f;
     float btnH = 22.0f;
@@ -252,16 +370,22 @@ void UIInventoryPanel::renderSortButtons() {
     float startX = cp.x;
     float y = cp.y;
 
-    glm::vec4 colors[] = {
-        glm::vec4(0.5f, 0.5f, 0.5f, 1.0f),
-        glm::vec4(0.5f, 0.3f, 0.3f, 1.0f),
-        glm::vec4(0.3f, 0.3f, 0.5f, 1.0f),
-        glm::vec4(0.3f, 0.5f, 0.3f, 1.0f),
-        glm::vec4(0.5f, 0.5f, 0.3f, 1.0f)
+    const char* labels[] = { "Name", "Type", "Rare", "Weight", "Value" };
+    const glm::vec3 bgColors[] = {
+        PlaceholderAssets::Colors::PARCHMENT_DARK,
+        PlaceholderAssets::Colors::PARCHMENT_DARK,
+        PlaceholderAssets::Colors::PARCHMENT_DARK,
+        PlaceholderAssets::Colors::PARCHMENT_DARK,
+        PlaceholderAssets::Colors::PARCHMENT_DARK
     };
+
     for (int i = 0; i < 5; ++i) {
-        UIDrawHelper::drawColoredQuad(startX + i * (btnW + gap), y, btnW, btnH,
-                                      colors[i], screenWidth, screenHeight);
+        float btnX = startX + i * (btnW + gap);
+        PlaceholderAssets::drawPanel(btnX, y, btnW, btnH,
+                                     bgColors[i], PlaceholderAssets::Colors::BROWN_ACCENT);
+        if (textRenderer) {
+            textRenderer->renderText(labels[i], btnX + 4.0f, y + 2.0f, glm::vec3(0.1f, 0.1f, 0.1f), 0.6f);
+        }
     }
 }
 
