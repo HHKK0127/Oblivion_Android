@@ -144,6 +144,12 @@ bool UIManager::initialize(TextRenderer* textRenderer,
         return false;
     }
 
+    // UIMinimap の初期化
+    minimap_ = std::make_unique<UIMinimap>();
+    if (!minimap_->initialize(textRenderer, screenWidth_, screenHeight_)) {
+        return false;
+    }
+
     return true;
 }
 
@@ -166,6 +172,7 @@ void UIManager::cleanup() {
     activeEffects_.reset();
     levelProgress_.reset();
     alertNotification_.reset();
+    minimap_.reset();
 }
 
 void UIManager::setPlayerStatus(CharacterStatus* playerStatus) {
@@ -196,6 +203,7 @@ void UIManager::update(float deltaTime) {
     if (activeEffects_) activeEffects_->update(deltaTime);
     if (levelProgress_) levelProgress_->update(deltaTime);
     if (alertNotification_) alertNotification_->update(deltaTime);
+    if (minimap_) minimap_->update(deltaTime);
 }
 
 void UIManager::render() {
@@ -205,6 +213,9 @@ void UIManager::render() {
     }
     if (hudStatusDisplay_) {
         hudStatusDisplay_->render();
+    }
+    if (minimap_) {
+        minimap_->render();
     }
     if (quickSlotBar_) {
         quickSlotBar_->render();
@@ -292,6 +303,7 @@ void UIManager::setScreenSize(int width, int height) {
     if (activeEffects_) activeEffects_->setScreenSize(width, height);
     if (levelProgress_) levelProgress_->setScreenSize(width, height);
     if (alertNotification_) alertNotification_->setScreenSize(width, height);
+    if (minimap_) minimap_->setScreenSize(width, height);
 }
 
 bool UIManager::onTouchDown(float x, float y, int pointerId) {

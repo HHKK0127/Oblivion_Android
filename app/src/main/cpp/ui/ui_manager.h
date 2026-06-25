@@ -20,6 +20,7 @@
 #include "ui_active_effects.h"
 #include "ui_level_progress.h"
 #include "ui_alert_notification.h"
+#include "ui_minimap.h"
 #include "text_renderer.h"
 
 class QuestManager;
@@ -119,6 +120,7 @@ public:
     UIActiveEffects* getActiveEffects() { return activeEffects_.get(); }
     UILevelProgress* getLevelProgress() { return levelProgress_.get(); }
     UIAlertNotification* getAlertNotification() { return alertNotification_.get(); }
+    UIMinimap* getMinimap() { return minimap_.get(); }
 
 private:
     std::unique_ptr<UICharacterSheet> characterSheet_;
@@ -139,6 +141,7 @@ private:
     std::unique_ptr<UIActiveEffects> activeEffects_;
     std::unique_ptr<UILevelProgress> levelProgress_;
     std::unique_ptr<UIAlertNotification> alertNotification_;
+    std::unique_ptr<UIMinimap> minimap_;
 
     TextRenderer* textRenderer_ = nullptr;
     QuestManager* questManager_ = nullptr;
