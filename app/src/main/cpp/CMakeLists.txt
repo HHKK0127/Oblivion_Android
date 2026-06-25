@@ -21,6 +21,7 @@ add_library(native-lib SHARED
 
     # World System (Phase 3+)
     world/world_manager.cpp
+    world/world_item_manager.cpp
     world/cell.cpp
     world/cell_loader.cpp
     world/cell_transition_manager.cpp
@@ -48,6 +49,8 @@ add_library(native-lib SHARED
     # Inventory System (Phase 3+)
     game/inventory.cpp
     game/inventory_manager.cpp
+    game/consumable_system.cpp
+    game/equipment_effect_system.cpp
     game/book_database.cpp
 
     # UI Systems
