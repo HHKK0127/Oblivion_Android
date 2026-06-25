@@ -341,4 +341,40 @@ JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeTogglePaus
     }
 }
 
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeSelectQuickSlot(
+    JNIEnv* /* env */,
+    jobject /* obj */,
+    jint slotIndex) {
+
+    LOGI("nativeSelectQuickSlot called: slotIndex=%d", slotIndex);
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto quickSlotBar = uiManager->getQuickSlotBar();
+            if (quickSlotBar) {
+                quickSlotBar->selectSlot(slotIndex);
+            }
+        }
+    }
+}
+
+JNIEXPORT jint JNICALL Java_com_example_oblivion_OblivionEngine_nativeGetSelectedQuickSlot(
+    JNIEnv* /* env */,
+    jobject /* obj */) {
+
+    LOGI("nativeGetSelectedQuickSlot called");
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto quickSlotBar = uiManager->getQuickSlotBar();
+            if (quickSlotBar) {
+                return quickSlotBar->getSelectedSlot();
+            }
+        }
+    }
+    return -1;
+}
+
 } // extern "C"

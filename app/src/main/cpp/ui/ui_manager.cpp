@@ -87,6 +87,21 @@ bool UIManager::initialize(TextRenderer* textRenderer,
         return false;
     }
 
+    // UIQuickSlotBar の初期化
+    quickSlotBar_ = std::make_unique<UIQuickSlotBar>();
+    if (!quickSlotBar_->initialize(textRenderer, screenWidth_, screenHeight_)) {
+        return false;
+    }
+
+    // UIHudStatusDisplay の初期化
+    hudStatusDisplay_ = std::make_unique<UIHudStatusDisplay>();
+    if (!hudStatusDisplay_->initialize(textRenderer, screenWidth_, screenHeight_)) {
+        return false;
+    }
+    if (playerStatus) {
+        hudStatusDisplay_->setCharacter(playerStatus);
+    }
+
     return true;
 }
 
@@ -100,11 +115,16 @@ void UIManager::cleanup() {
     pauseMenu_.reset();
     messageBox_.reset();
     toast_.reset();
+    quickSlotBar_.reset();
+    hudStatusDisplay_.reset();
 }
 
 void UIManager::setPlayerStatus(CharacterStatus* playerStatus) {
     if (characterSheet_) {
         characterSheet_->setCharacter(playerStatus);
+    }
+    if (hudStatusDisplay_) {
+        hudStatusDisplay_->setCharacter(playerStatus);
     }
 }
 
@@ -118,9 +138,19 @@ void UIManager::update(float deltaTime) {
     if (pauseMenu_) pauseMenu_->update(deltaTime);
     if (messageBox_) messageBox_->update(deltaTime);
     if (toast_) toast_->update(deltaTime);
+    if (quickSlotBar_) quickSlotBar_->update(deltaTime);
+    if (hudStatusDisplay_) hudStatusDisplay_->update(deltaTime);
 }
 
 void UIManager::render() {
+    // Render HUD elements first (always visible)
+    if (hudStatusDisplay_) {
+        hudStatusDisplay_->render();
+    }
+    if (quickSlotBar_) {
+        quickSlotBar_->render();
+    }
+
     // Render UIs in order (notifications are always on top)
     if (characterSheet_ && characterSheet_->isVisible()) {
         characterSheet_->render();
@@ -164,6 +194,8 @@ void UIManager::setScreenSize(int width, int height) {
     if (pauseMenu_) pauseMenu_->setScreenSize(width, height);
     if (messageBox_) messageBox_->setScreenSize(width, height);
     if (toast_) toast_->setScreenSize(width, height);
+    if (quickSlotBar_) quickSlotBar_->setScreenSize(width, height);
+    if (hudStatusDisplay_) hudStatusDisplay_->setScreenSize(width, height);
 }
 
 bool UIManager::onTouchDown(float x, float y, int pointerId) {
@@ -212,6 +244,13 @@ bool UIManager::onTouchDown(float x, float y, int pointerId) {
 
     if (questLog_ && questLog_->isVisible() && questLog_->isEnabled()) {
         if (questLog_->onTouchDown(x, y, pointerId)) {
+            return true;
+        }
+    }
+
+    // Quick slot bar is always available for interaction
+    if (quickSlotBar_) {
+        if (quickSlotBar_->onTouchDown(x, y, pointerId)) {
             return true;
         }
     }

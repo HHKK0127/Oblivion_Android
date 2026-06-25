@@ -11,6 +11,8 @@
 #include "ui_pause_menu.h"
 #include "ui_message_box.h"
 #include "ui_toast.h"
+#include "ui_quick_slot_bar.h"
+#include "ui_hud_status_display.h"
 #include "text_renderer.h"
 
 class QuestManager;
@@ -101,6 +103,8 @@ public:
     UIPauseMenu* getPauseMenu() { return pauseMenu_.get(); }
     UIMessageBox* getMessageBox() { return messageBox_.get(); }
     UIToast* getToast() { return toast_.get(); }
+    UIQuickSlotBar* getQuickSlotBar() { return quickSlotBar_.get(); }
+    UIHudStatusDisplay* getHudStatusDisplay() { return hudStatusDisplay_.get(); }
 
 private:
     std::unique_ptr<UICharacterSheet> characterSheet_;
@@ -112,6 +116,8 @@ private:
     std::unique_ptr<UIPauseMenu> pauseMenu_;
     std::unique_ptr<UIMessageBox> messageBox_;
     std::unique_ptr<UIToast> toast_;
+    std::unique_ptr<UIQuickSlotBar> quickSlotBar_;
+    std::unique_ptr<UIHudStatusDisplay> hudStatusDisplay_;
 
     TextRenderer* textRenderer_ = nullptr;
     QuestManager* questManager_ = nullptr;
