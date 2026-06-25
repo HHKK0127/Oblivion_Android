@@ -126,6 +126,12 @@ bool UIManager::initialize(TextRenderer* textRenderer,
         return false;
     }
 
+    // UIActiveEffects の初期化
+    activeEffects_ = std::make_unique<UIActiveEffects>();
+    if (!activeEffects_->initialize(textRenderer, screenWidth_, screenHeight_)) {
+        return false;
+    }
+
     return true;
 }
 
@@ -145,6 +151,7 @@ void UIManager::cleanup() {
     floatingText_.reset();
     targetInfo_.reset();
     actionPrompt_.reset();
+    activeEffects_.reset();
 }
 
 void UIManager::setPlayerStatus(CharacterStatus* playerStatus) {
@@ -172,6 +179,7 @@ void UIManager::update(float deltaTime) {
     if (floatingText_) floatingText_->update(deltaTime);
     if (targetInfo_) targetInfo_->update(deltaTime);
     if (actionPrompt_) actionPrompt_->update(deltaTime);
+    if (activeEffects_) activeEffects_->update(deltaTime);
 }
 
 void UIManager::render() {
@@ -225,6 +233,11 @@ void UIManager::render() {
         actionPrompt_->render();
     }
 
+    // Active effects display
+    if (activeEffects_) {
+        activeEffects_->render();
+    }
+
     // Floating text rendered last (on top of everything)
     if (floatingText_) {
         floatingText_->render();
@@ -250,6 +263,7 @@ void UIManager::setScreenSize(int width, int height) {
     if (floatingText_) floatingText_->setScreenSize(width, height);
     if (targetInfo_) targetInfo_->setScreenSize(width, height);
     if (actionPrompt_) actionPrompt_->setScreenSize(width, height);
+    if (activeEffects_) activeEffects_->setScreenSize(width, height);
 }
 
 bool UIManager::onTouchDown(float x, float y, int pointerId) {

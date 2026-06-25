@@ -681,4 +681,92 @@ JNIEXPORT jint JNICALL Java_com_example_oblivion_OblivionEngine_nativeGetActionC
     return 0;
 }
 
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeAddEffect(
+    JNIEnv* env,
+    jobject /* obj */,
+    jint effectId,
+    jstring name,
+    jint effectType,
+    jfloat duration,
+    jfloat r,
+    jfloat g,
+    jfloat b,
+    jstring iconChar) {
+
+    LOGI("nativeAddEffect called: id=%d, type=%d, duration=%f", effectId, effectType, duration);
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto activeEffects = uiManager->getActiveEffects();
+            if (activeEffects) {
+                const char* nameStr = env->GetStringUTFChars(name, nullptr);
+                const char* iconStr = env->GetStringUTFChars(iconChar, nullptr);
+
+                glm::vec3 color(r, g, b);
+                activeEffects->addEffect(effectId, std::string(nameStr),
+                    static_cast<UIActiveEffects::EffectType>(effectType),
+                    duration, color, std::string(iconStr));
+
+                env->ReleaseStringUTFChars(name, nameStr);
+                env->ReleaseStringUTFChars(iconChar, iconStr);
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeRemoveEffect(
+    JNIEnv* /* env */,
+    jobject /* obj */,
+    jint effectId) {
+
+    LOGI("nativeRemoveEffect called: id=%d", effectId);
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto activeEffects = uiManager->getActiveEffects();
+            if (activeEffects) {
+                activeEffects->removeEffect(effectId);
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeUpdateEffectDuration(
+    JNIEnv* /* env */,
+    jobject /* obj */,
+    jint effectId,
+    jfloat newDuration) {
+
+    LOGI("nativeUpdateEffectDuration called: id=%d, duration=%f", effectId, newDuration);
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto activeEffects = uiManager->getActiveEffects();
+            if (activeEffects) {
+                activeEffects->updateEffectDuration(effectId, newDuration);
+            }
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeClearAllEffects(
+    JNIEnv* /* env */,
+    jobject /* obj */) {
+
+    LOGI("nativeClearAllEffects called");
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            auto activeEffects = uiManager->getActiveEffects();
+            if (activeEffects) {
+                activeEffects->clearAllEffects();
+            }
+        }
+    }
+}
+
 } // extern "C"
