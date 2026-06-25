@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <cstdint>
 #include <glm/glm.hpp>
 #include "../game/npc.h"
 #include "../game/quest.h"
@@ -14,6 +15,34 @@
 
 // Forward declarations
 struct GameState;
+
+/**
+ * @brief インベントリスロットデータ - シリアライザブルなアイテム情報
+ *
+ * Phase 9B Week 4: ゲーム状態保存時のインベントリシリアライズ用
+ */
+struct InventorySlotData {
+    uint32_t itemId = 0;
+    uint32_t quantity = 0;
+    std::string itemName;
+
+    InventorySlotData() = default;
+    InventorySlotData(uint32_t id, uint32_t qty, const std::string& name)
+        : itemId(id), quantity(qty), itemName(name) {}
+};
+
+/**
+ * @brief 装備スロットデータ - シリアライザブルな装備情報
+ */
+struct EquippedItemData {
+    uint32_t slotIndex = 0;  // EquipSlot enum as uint32_t
+    uint32_t itemId = 0;
+    std::string itemName;
+
+    EquippedItemData() = default;
+    EquippedItemData(uint32_t slot, uint32_t id, const std::string& name)
+        : slotIndex(slot), itemId(id), itemName(name) {}
+};
 
 /**
  * SaveManager: ゲーム進行状況の保存・復元を管理
@@ -66,6 +95,11 @@ struct GameState {
 
     // Quest states
     std::map<uint32_t, int> questStates;  // questId -> state enum (0=pending, 1=accepted, etc)
+
+    // Inventory state (Phase 9B Week 4)
+    std::vector<InventorySlotData> inventorySlots;    // Player inventory grid (60 slots)
+    std::vector<EquippedItemData> equippedItems;       // Currently equipped items
+    float playerInventoryWeight = 0.0f;                // Current inventory weight
 
     GameState() {
         // Initialize default player status
