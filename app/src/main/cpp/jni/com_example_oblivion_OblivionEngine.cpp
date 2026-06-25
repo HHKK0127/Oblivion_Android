@@ -299,4 +299,32 @@ JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeCloseShop(
     }
 }
 
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeStartCharacterCreation(
+    JNIEnv* /* env */,
+    jobject /* obj */) {
+
+    LOGI("nativeStartCharacterCreation called");
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            uiManager->startCharacterCreation();
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeEndCharacterCreation(
+    JNIEnv* /* env */,
+    jobject /* obj */) {
+
+    LOGI("nativeEndCharacterCreation called");
+
+    if (OblivionEngineJNI::sEngine) {
+        auto uiManager = OblivionEngineJNI::sEngine->getUIManager();
+        if (uiManager) {
+            uiManager->endCharacterCreation();
+        }
+    }
+}
+
 } // extern "C"
