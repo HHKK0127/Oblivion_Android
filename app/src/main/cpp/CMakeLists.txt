@@ -75,6 +75,7 @@ add_library(native-lib SHARED
     ui/ui_dialogue.cpp
     ui/ui_shop.cpp
     ui/ui_character_creation.cpp
+    ui/ui_pause_menu.cpp
     ui/ui_manager.cpp
     ui/placeholder_assets.cpp
     ui/hud_renderer.cpp

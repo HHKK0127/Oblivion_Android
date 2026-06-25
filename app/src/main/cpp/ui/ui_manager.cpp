@@ -65,6 +65,14 @@ bool UIManager::initialize(TextRenderer* textRenderer,
     characterCreation_->setScreenSize(screenWidth_, screenHeight_);
     characterCreation_->setVisible(false);
 
+    // UIPauseMenu の初期化
+    pauseMenu_ = std::make_unique<UIPauseMenu>();
+    if (!pauseMenu_->initialize(textRenderer)) {
+        return false;
+    }
+    pauseMenu_->setScreenSize(screenWidth_, screenHeight_);
+    pauseMenu_->setVisible(false);
+
     return true;
 }
 
@@ -75,6 +83,7 @@ void UIManager::cleanup() {
     dialogue_.reset();
     shop_.reset();
     characterCreation_.reset();
+    pauseMenu_.reset();
 }
 
 void UIManager::setPlayerStatus(CharacterStatus* playerStatus) {
@@ -90,10 +99,11 @@ void UIManager::update(float deltaTime) {
     if (dialogue_) dialogue_->update(deltaTime);
     if (shop_) shop_->update(deltaTime);
     if (characterCreation_) characterCreation_->update(deltaTime);
+    if (pauseMenu_) pauseMenu_->update(deltaTime);
 }
 
 void UIManager::render() {
-    // Render UIs in order (character creation is always on top - it's modal)
+    // Render UIs in order (pause menu and character creation are highest priority)
     if (characterSheet_ && characterSheet_->isVisible()) {
         characterSheet_->render();
     }
@@ -108,6 +118,9 @@ void UIManager::render() {
     }
     if (dialogue_ && dialogue_->isVisible()) {
         dialogue_->render();
+    }
+    if (pauseMenu_ && pauseMenu_->isVisible()) {
+        pauseMenu_->render();
     }
     if (characterCreation_ && characterCreation_->isVisible()) {
         characterCreation_->render();
@@ -124,12 +137,19 @@ void UIManager::setScreenSize(int width, int height) {
     if (dialogue_) dialogue_->setScreenSize(width, height);
     if (shop_) shop_->setScreenSize(width, height);
     if (characterCreation_) characterCreation_->setScreenSize(width, height);
+    if (pauseMenu_) pauseMenu_->setScreenSize(width, height);
 }
 
 bool UIManager::onTouchDown(float x, float y, int pointerId) {
-    // Route touch to the topmost visible UI (character creation is highest priority - modal)
+    // Route touch to the topmost visible UI (character creation > pause menu > others)
     if (characterCreation_ && characterCreation_->isVisible() && characterCreation_->isEnabled()) {
         if (characterCreation_->onTouchDown(x, y, pointerId)) {
+            return true;
+        }
+    }
+
+    if (pauseMenu_ && pauseMenu_->isVisible() && pauseMenu_->isEnabled()) {
+        if (pauseMenu_->onTouchDown(x, y, pointerId)) {
             return true;
         }
     }
@@ -171,6 +191,12 @@ bool UIManager::onTouchUp(float x, float y, int pointerId) {
     // Route touch to the topmost visible UI
     if (characterCreation_ && characterCreation_->isVisible() && characterCreation_->isEnabled()) {
         if (characterCreation_->onTouchUp(x, y, pointerId)) {
+            return true;
+        }
+    }
+
+    if (pauseMenu_ && pauseMenu_->isVisible() && pauseMenu_->isEnabled()) {
+        if (pauseMenu_->onTouchUp(x, y, pointerId)) {
             return true;
         }
     }
