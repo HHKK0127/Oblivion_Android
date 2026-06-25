@@ -15,6 +15,7 @@
 #include "ui_hud_status_display.h"
 #include "ui_hud_compass.h"
 #include "ui_floating_text.h"
+#include "ui_target_info.h"
 #include "text_renderer.h"
 
 class QuestManager;
@@ -109,6 +110,7 @@ public:
     UIHudStatusDisplay* getHudStatusDisplay() { return hudStatusDisplay_.get(); }
     UIHudCompass* getHudCompass() { return hudCompass_.get(); }
     UIFloatingText* getFloatingText() { return floatingText_.get(); }
+    UITargetInfo* getTargetInfo() { return targetInfo_.get(); }
 
 private:
     std::unique_ptr<UICharacterSheet> characterSheet_;
@@ -124,6 +126,7 @@ private:
     std::unique_ptr<UIHudStatusDisplay> hudStatusDisplay_;
     std::unique_ptr<UIHudCompass> hudCompass_;
     std::unique_ptr<UIFloatingText> floatingText_;
+    std::unique_ptr<UITargetInfo> targetInfo_;
 
     TextRenderer* textRenderer_ = nullptr;
     QuestManager* questManager_ = nullptr;
