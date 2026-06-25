@@ -5,6 +5,9 @@
 #include "../inventory/equipment_manager.h"
 #include <memory>
 
+// Forward declaration
+class TextRenderer;
+
 namespace ui {
 
 class UIInventoryPanel : public UIPanel {
@@ -14,6 +17,7 @@ public:
 
     void setInventory(inventory::InventoryGrid* inv) { inventory = inv; }
     void setEquipment(inventory::EquipmentManager* eq) { equipment = eq; }
+    void setTextRenderer(TextRenderer* tr) { textRenderer = tr; }
 
     void update(float deltaTime) override;
     bool onTouchDown(float x, float y, int pointerId) override;
@@ -24,6 +28,9 @@ public:
     // Convenience
     void show() { setVisible(true); }
     void hide() { setVisible(false); }
+
+    // Screen size for coordinate calculations
+    void setScreenSize(int w, int h) { screenWidth = w; screenHeight = h; }
 
 protected:
     void renderInventoryGrid();
@@ -42,6 +49,7 @@ protected:
 private:
     inventory::InventoryGrid* inventory = nullptr;
     inventory::EquipmentManager* equipment = nullptr;
+    TextRenderer* textRenderer = nullptr;
 
     // Layout metrics (calculated in refreshLayout)
     float cellSize = 48.0f;
@@ -60,6 +68,9 @@ private:
     static constexpr uint32_t GRID_ROWS = inventory::InventoryGrid::ROWS;
     static constexpr float CELL_MARGIN = 4.0f;
     static constexpr float EQUIP_SLOT_SIZE = 48.0f;
+
+    int screenWidth = 1080;
+    int screenHeight = 1920;
 };
 
 } // namespace ui
