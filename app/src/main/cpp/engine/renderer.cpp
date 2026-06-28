@@ -1,5 +1,6 @@
 #include "renderer.h"
 #include "texture_loader.h"
+#include "../ui/ui_draw_helper.h"
 // #include "../jni_audio_bridge.h"  // Deferred - requires Java MainActivity
 #include <thread>
 
@@ -1008,6 +1009,9 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
 }
 void Renderer::cleanup() {
     LOGI("Renderer cleaning up");
+
+    // Clean up static UI drawing programs/buffers to prevent stale GL context handles across EGL context recreations
+    UIDrawHelper::cleanup();
 
     if (mapSystem) {
         mapSystem.reset();
