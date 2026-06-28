@@ -3,6 +3,35 @@
 All notable changes to the Oblivion Android project are documented here.
 
 ---
+## [0.9.5] - 2026-06-28 (Phase 10-24 - Complete UI & HUD Implementation)
+
+### Major Additions
+- **HUD & Status Displays (Phase 15-24)**
+  - Player Stats Panel (Gold, Inventory Weight, Equipment)
+  - Minimap System for Real-Time World Navigation
+  - Alert Notification System (Warnings and Status Alerts)
+  - Level Progress Display (Experience and Level Up Tracking)
+  - Active Effects Display (Buff/Debuff Status Panel)
+  - Action Prompt System (Context-Sensitive Interaction UI)
+  - Target Info Display (Enemy/NPC Status Panel)
+  - Floating Combat Text (Damage and Effect Indicators)
+  - HUD Compass (Cardinal Direction and Marker System)
+  - Quick Slot Bar and Status Display
+
+- **Core UI Menus (Phase 10-14)**
+  - Notification/Message System
+  - Pause Menu System
+  - Character Creation UI
+  - Shop/Merchant UI
+  - Character Sheet & Spellbook UI
+  - Quest Log & NPC Dialogue UI
+  - UIManager integration with Engine
+
+- **Inventory & Items (Phase 9B)**
+  - Consumable items, equipment effects, and world drops
+  - ItemFactory and InventoryCoordinator
+  - Complete UIInventoryPanel with details popup
+
 
 ## [0.9.0] - 2026-06-08 (Phase 9 - Graphical UI & Sound Effects)
 
