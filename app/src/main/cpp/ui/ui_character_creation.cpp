@@ -8,13 +8,13 @@
 UICharacterCreation::UICharacterCreation(const std::string& title)
     : UIPanel(title.empty() ? "Character Creation" : title) {
     setBackgroundColor(glm::vec4(
-        PlaceholderAssets::Colors::PARCHMENT_DARK.r * 0.85f,
-        PlaceholderAssets::Colors::PARCHMENT_DARK.g * 0.8f,
-        PlaceholderAssets::Colors::PARCHMENT_DARK.b * 0.75f, 0.97f));
+        PlaceholderAssets::Colors::PARCHMENT_DARK.x * 0.85f,
+        PlaceholderAssets::Colors::PARCHMENT_DARK.y * 0.8f,
+        PlaceholderAssets::Colors::PARCHMENT_DARK.z * 0.75f, 0.97f));
     setBorderColor(glm::vec4(
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.r,
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.g,
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.b, 1.0f));
+        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.x,
+        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.y,
+        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.z, 1.0f));
     setBorderWidth(3.0f);
     setTitleBarColor(glm::vec4(0.2f, 0.15f, 0.1f, 0.85f));
     setCloseButtonVisible(false);

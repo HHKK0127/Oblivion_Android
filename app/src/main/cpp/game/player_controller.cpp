@@ -130,6 +130,11 @@ void PlayerController::setSprinting(bool sprint) {
     }
 }
 
+void PlayerController::setJoystickInput(float x, float y) {
+    joystickInput.x = x;
+    joystickInput.y = y;
+}
+
 glm::vec3 PlayerController::calculateMovementVector() {
     glm::vec3 movement(0.0f, 0.0f, 0.0f);
 
@@ -142,11 +147,20 @@ glm::vec3 PlayerController::calculateMovementVector() {
     // D/Right
     if (keysPressed['D'] || keysPressed['d']) movement.x += 1.0f;
 
+    // Add joystick input (x is right, y is down/up)
+    // Assuming joystick positive Y is down (backward) and positive X is right
+    movement.x += joystickInput.x;
+    movement.z += joystickInput.y;
+
     // Normalize if moving
     float len = std::sqrt(movement.x * movement.x + movement.z * movement.z);
     if (len > 0.0f) {
-        movement.x /= len;
-        movement.z /= len;
+        // Clamp magnitude to 1.0 (so joystick halfway doesn't get normalized to 1.0 if not necessary, 
+        // but if > 1.0 from keyboard + joystick, we normalize)
+        if (len > 1.0f) {
+            movement.x /= len;
+            movement.z /= len;
+        }
     }
 
     return movement;

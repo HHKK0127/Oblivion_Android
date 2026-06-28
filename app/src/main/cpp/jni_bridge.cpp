@@ -221,11 +221,13 @@ Java_com_example_oblivion_GameRenderer_nativeOnTouchEvent(
         [[maybe_unused]] JNIEnv* env,
         [[maybe_unused]] jobject obj,
         jlong handle,
-        jfloat dx,
-        jfloat dy) {
+        jint pointerId,
+        jfloat x,
+        jfloat y,
+        jint action) {
     Renderer* renderer = reinterpret_cast<Renderer*>(handle);
-    if (renderer && renderer->getTitleScreen()) {
-        renderer->getTitleScreen()->onTouchEvent(dx, dy);
+    if (renderer) {
+        renderer->onTouchEvent(pointerId, x, y, action);
     }
 }
 

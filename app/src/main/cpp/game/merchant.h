@@ -15,12 +15,12 @@ struct MerchantItem {
     float buyPrice;      // プレイヤーが買う価格
     float sellPrice;     // プレイヤーが売る価格
     int quantity;        // 在庫数
-    ItemCategory category;
+    ItemType category;   // Using ItemType instead of ItemCategory
     std::string description;
 
     MerchantItem(const std::string& id, const std::string& name,
                  float buy, float sell, int qty,
-                 ItemCategory cat, const std::string& desc = "")
+                 ItemType cat, const std::string& desc = "")
         : itemId(id), itemName(name), buyPrice(buy), sellPrice(sell),
           quantity(qty), category(cat), description(desc) {}
 };

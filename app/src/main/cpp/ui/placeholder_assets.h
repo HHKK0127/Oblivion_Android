@@ -19,15 +19,15 @@ namespace PlaceholderAssets {
 
     /// Oblivion UI テーマカラー定義
     namespace Colors {
-        constexpr glm::vec3 PARCHMENT_LIGHT(0.77f, 0.66f, 0.50f);   // #C4A97F - 明るい羊皮紙
-        constexpr glm::vec3 PARCHMENT_DARK(0.55f, 0.45f, 0.33f);    // #8B7355 - 暗い羊皮紙
-        constexpr glm::vec3 BROWN_ACCENT(0.36f, 0.25f, 0.20f);      // #5C4033 - 茶色アクセント
-        constexpr glm::vec3 GOLD_HIGHLIGHT(0.85f, 0.65f, 0.13f);    // #DAA520 - 金色ハイライト
-        constexpr glm::vec3 RED_HEALTH(0.80f, 0.10f, 0.10f);        // #CC1919 - HP（赤）
-        constexpr glm::vec3 BLUE_MANA(0.20f, 0.40f, 0.80f);         // #3366CC - MP（青）
-        constexpr glm::vec3 GREEN_STAMINA(0.40f, 0.70f, 0.30f);     // #66B319 - ST（緑）
-        constexpr glm::vec3 DARK_GRAY(0.20f, 0.20f, 0.20f);         // #333333 - 暗いグレー
-        constexpr glm::vec3 LIGHT_GRAY(0.80f, 0.80f, 0.80f);        // #CCCCCC - 明るいグレー
+        const glm::vec3 PARCHMENT_LIGHT(0.77f, 0.66f, 0.50f);   // #C4A97F - 明るい羊皮紙
+        const glm::vec3 PARCHMENT_DARK(0.55f, 0.45f, 0.33f);    // #8B7355 - 暗い羊皮紙
+        const glm::vec3 BROWN_ACCENT(0.36f, 0.25f, 0.20f);      // #5C4033 - 茶色アクセント
+        const glm::vec3 GOLD_HIGHLIGHT(0.85f, 0.65f, 0.13f);    // #DAA520 - 金色ハイライト
+        const glm::vec3 RED_HEALTH(0.80f, 0.10f, 0.10f);        // #CC1919 - HP（赤）
+        const glm::vec3 BLUE_MANA(0.20f, 0.40f, 0.80f);         // #3366CC - MP（青）
+        const glm::vec3 GREEN_STAMINA(0.40f, 0.70f, 0.30f);     // #66B319 - ST（緑）
+        const glm::vec3 DARK_GRAY(0.20f, 0.20f, 0.20f);         // #333333 - 暗いグレー
+        const glm::vec3 LIGHT_GRAY(0.80f, 0.80f, 0.80f);        // #CCCCCC - 明るいグレー
     }
 
     // ========================================

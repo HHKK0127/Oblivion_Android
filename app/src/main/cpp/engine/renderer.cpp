@@ -97,6 +97,18 @@ void Renderer::resize(unsigned int width, unsigned int height) {
     if (uiSystem) {
         uiSystem->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
         LOGI("UISystem screen size updated to: %ux%u", screenWidth, screenHeight);
+        
+        // Setup joystick position based on new screen size
+        if (!joystick) {
+            joystick = std::make_shared<UIJoystick>(250.0f, screenHeight - 250.0f, 150.0f);
+            uiSystem->registerComponent(joystick, 100); // Draw above other components if overlapping
+        } else {
+            // Reposition existing joystick
+            // Note: Since we don't have a direct setter yet, we can recreate it or add a setPosition method
+            uiSystem->unregisterComponent(joystick);
+            joystick = std::make_shared<UIJoystick>(250.0f, screenHeight - 250.0f, 150.0f);
+            uiSystem->registerComponent(joystick, 100);
+        }
     }
 
     // Update TitleScreen layout
@@ -732,6 +744,10 @@ void Renderer::render(float deltaTime) {
 
     // Update player controller
     if (playerController) {
+        if (joystick) {
+            glm::vec2 input = joystick->getInputValue();
+            playerController->setJoystickInput(input.x, input.y);
+        }
         playerController->update(deltaTime);
     }
 
@@ -905,89 +921,89 @@ void Renderer::render(float deltaTime) {
          deltaTime, performanceMonitor ? performanceMonitor->getFPS() : 0.0f, targetFPS);
 }
 
-void Renderer::onTouchEvent(float x, float y) {
-    LOGI("=== タッチイベント検出 === 座標: (%.1f, %.1f)", x, y);
+void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
+    LOGD("=== タッチイベント検出 === ID: %d, Action: %d, 座標: (%.1f, %.1f)", pointerId, action, x, y);
 
-    // Phase 9: UISystem has highest priority for new UI components
-    if (uiSystem && uiSystem->onTouchDown(x, y)) {
-        LOGI("タッチイベント → UISystem (consumed)");
-        return;
-    }
+    float dx = 0.0f;
+    float dy = 0.0f;
 
-    // SaveLoadUI has highest priority (Phase 5+)
-    if (saveLoadUI && saveLoadUI->isVisible()) {
-        saveLoadUI->onTouchEvent(x, y);
-        LOGI("タッチイベント → SaveLoadUI");
-
-        // Check if should return to menu
-        if (saveLoadUI->shouldReturnToMenu()) {
-            saveLoadUI->resetReturnFlag();
-            saveLoadUI->close();
+    if (action == 0 || action == 5) { // DOWN
+        touchStates[pointerId] = {x, y, true};
+    } else if (action == 2) { // MOVE
+        if (touchStates.find(pointerId) != touchStates.end() && touchStates[pointerId].active) {
+            dx = x - touchStates[pointerId].lastX;
+            dy = y - touchStates[pointerId].lastY;
         }
-        return;
-    }
-
-    // Settings UI has next priority
-    if (settingsUI && settingsUI->isVisible()) {
-        settingsUI->onTouchEvent(x, y);
-        LOGI("タッチイベント → SettingsUI");
-
-        // Check if should return to menu
-        if (settingsUI->shouldReturnToMenu()) {
-            settingsUI->resetReturnFlag();
-            settingsUI->toggle();  // Close settings
+        touchStates[pointerId].lastX = x;
+        touchStates[pointerId].lastY = y;
+    } else if (action == 1 || action == 6 || action == 3) { // UP or CANCEL
+        if (touchStates.find(pointerId) != touchStates.end()) {
+            touchStates[pointerId].active = false;
         }
-        return;
     }
 
-    // Inventory UI has next priority (Phase 3+)
-    if (inventoryUI && inventoryUI->isVisible()) {
-        inventoryUI->onTouchEvent(x, y);
-        LOGI("タッチイベント → InventoryUI");
-        return;
+    // Phase 9: UISystem handles all actions
+    if (uiSystem) {
+        bool uiHandled = false;
+        if (action == 0 || action == 5) {
+            uiHandled = uiSystem->onTouchDown(x, y, pointerId);
+        } else if (action == 1 || action == 6) {
+            uiHandled = uiSystem->onTouchUp(x, y, pointerId);
+        } else if (action == 2) {
+            uiHandled = uiSystem->onTouchMove(x, y, dx, dy, pointerId);
+        }
+        
+        if (uiHandled) {
+            return;
+        }
     }
 
-    // Pass touch event to title screen
-    if (showTitleScreen && titleScreen) {
-        titleScreen->onTouchEvent(x, y);
-        LOGI("タッチイベント → TitleScreen");
-        return;
-    }
-
-    // In-game touch handling - detect NPC/object interactions or camera control
-    if (!showTitleScreen && worldManager) {
-        LOGI("ゲーム内タッチ検出 - NPCインタラクション確認中");
-
-        // Log world state
-        if (worldManager) {
-            LOGI("ワールド座標系でのタッチ位置確認: スクリーン(%.1f, %.1f)", x, y);
+    // Only process legacy UI elements on ACTION_DOWN (0 or 5)
+    if (action == 0 || action == 5) {
+        if (saveLoadUI && saveLoadUI->isVisible()) {
+            saveLoadUI->onTouchEvent(x, y);
+            if (saveLoadUI->shouldReturnToMenu()) {
+                saveLoadUI->resetReturnFlag();
+                saveLoadUI->close();
+            }
+            return;
         }
 
-        // Pass to quest UI
-        if (questUI) {
+        if (settingsUI && settingsUI->isVisible()) {
+            settingsUI->onTouchEvent(x, y);
+            if (settingsUI->shouldReturnToMenu()) {
+                settingsUI->resetReturnFlag();
+                settingsUI->toggle();
+            }
+            return;
+        }
+
+        if (inventoryUI && inventoryUI->isVisible()) {
+            inventoryUI->onTouchEvent(x, y);
+            return;
+        }
+
+        if (showTitleScreen && titleScreen) {
+            titleScreen->onTouchEvent(x, y);
+            return;
+        }
+
+        if (!showTitleScreen && worldManager && questUI) {
             questUI->onTouchEvent(x, y);
-            LOGI("タッチイベント → QuestUI");
         }
+    }
 
-        // Pass to player controller for camera rotation (Phase 3+)
-        if (playerController) {
-            playerController->onTouchInput(x, y);
-            LOGI("タッチイベント → PlayerController (カメラ回転)");
+    // In-game camera control - only on MOVE (action 2) and if not clicking a UI
+    if (!showTitleScreen && worldManager) {
+        if (action == 2 && playerController) {
+            // Check if touch is on right side of screen (for camera rotation)
+            // Hardcoding a check assuming half screen width is around 1000px, 
+            // but normally we should check real screen size. Let's just pass dx/dy for now
+            // since Joystick will consume touches on the left side via UISystem.
+            playerController->onTouchInput(dx, dy);
         }
-
-        // Log combat/NPC state
-        if (combatManager) {
-            LOGI("戦闘マネージャー: アクティブ戦闘確認中");
-        }
-
-        // Log interaction attempt
-        LOGI("NPC相互作用試行: 画面座標 (%.1f, %.1f)", x, y);
-    } else {
-        LOGW("ゲーム状態不明 - タイトル画面状態: %d, WorldManager: %p",
-             showTitleScreen, worldManager.get());
     }
 }
-
 void Renderer::cleanup() {
     LOGI("Renderer cleaning up");
 
@@ -1196,3 +1212,4 @@ bool Renderer::loadGameState(const std::string& slotName) {
     LOGI("Game loaded from slot: %s", slotName.c_str());
     return true;
 }
+

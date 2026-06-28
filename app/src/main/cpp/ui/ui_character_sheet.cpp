@@ -10,18 +10,18 @@ UICharacterSheet::UICharacterSheet(const std::string& title)
     : UIPanel(title) {
     // Oblivion parchment styling
     setBackgroundColor(glm::vec4(
-        PlaceholderAssets::Colors::PARCHMENT_LIGHT.r,
-        PlaceholderAssets::Colors::PARCHMENT_LIGHT.g,
-        PlaceholderAssets::Colors::PARCHMENT_LIGHT.b, 0.96f));
+        PlaceholderAssets::Colors::PARCHMENT_LIGHT.x,
+        PlaceholderAssets::Colors::PARCHMENT_LIGHT.y,
+        PlaceholderAssets::Colors::PARCHMENT_LIGHT.z, 0.96f));
     setBorderColor(glm::vec4(
-        PlaceholderAssets::Colors::BROWN_ACCENT.r,
-        PlaceholderAssets::Colors::BROWN_ACCENT.g,
-        PlaceholderAssets::Colors::BROWN_ACCENT.b, 1.0f));
+        PlaceholderAssets::Colors::BROWN_ACCENT.x,
+        PlaceholderAssets::Colors::BROWN_ACCENT.y,
+        PlaceholderAssets::Colors::BROWN_ACCENT.z, 1.0f));
     setBorderWidth(2.0f);
     setTitleBarColor(glm::vec4(
-        PlaceholderAssets::Colors::BROWN_ACCENT.r,
-        PlaceholderAssets::Colors::BROWN_ACCENT.g,
-        PlaceholderAssets::Colors::BROWN_ACCENT.b, 0.95f));
+        PlaceholderAssets::Colors::BROWN_ACCENT.x,
+        PlaceholderAssets::Colors::BROWN_ACCENT.y,
+        PlaceholderAssets::Colors::BROWN_ACCENT.z, 0.95f));
     setTitle(title);
     setCloseButtonVisible(true);
     setDraggable(true);

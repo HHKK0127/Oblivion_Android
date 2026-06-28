@@ -9,13 +9,13 @@ UIDialogue::UIDialogue(const std::string& title)
     : UIPanel(title.empty() ? "Dialogue" : title) {
     // Dark parchment — more dramatic than inventory/quest panels
     setBackgroundColor(glm::vec4(
-        PlaceholderAssets::Colors::PARCHMENT_DARK.r * 0.7f,
-        PlaceholderAssets::Colors::PARCHMENT_DARK.g * 0.6f,
-        PlaceholderAssets::Colors::PARCHMENT_DARK.b * 0.5f, 0.97f));
+        PlaceholderAssets::Colors::PARCHMENT_DARK.x * 0.7f,
+        PlaceholderAssets::Colors::PARCHMENT_DARK.y * 0.6f,
+        PlaceholderAssets::Colors::PARCHMENT_DARK.z * 0.5f, 0.97f));
     setBorderColor(glm::vec4(
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.r,
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.g,
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.b, 1.0f));
+        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.x,
+        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.y,
+        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.z, 1.0f));
     setBorderWidth(3.0f);
     setTitleBarColor(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));  // hidden — portrait takes its place
     setCloseButtonVisible(true);
@@ -163,14 +163,14 @@ void UIDialogue::renderResponse() {
 
     // Response area — slightly different shade
     glm::vec4 bgCol(
-        PlaceholderAssets::Colors::PARCHMENT_LIGHT.r * 0.8f,
-        PlaceholderAssets::Colors::PARCHMENT_LIGHT.g * 0.78f,
-        PlaceholderAssets::Colors::PARCHMENT_LIGHT.b * 0.65f,
+        PlaceholderAssets::Colors::PARCHMENT_LIGHT.x * 0.8f,
+        PlaceholderAssets::Colors::PARCHMENT_LIGHT.y * 0.78f,
+        PlaceholderAssets::Colors::PARCHMENT_LIGHT.z * 0.65f,
         responseAlpha * 0.9f);
     UIDrawHelper::drawColoredQuad(tx, ty - 4.0f, maxW, 70.0f, bgCol,
         screenWidth, screenHeight);
     UIDrawHelper::drawBorder(tx, ty - 4.0f, maxW, 70.0f, 1.5f,
-        glm::vec4(PlaceholderAssets::Colors::BROWN_ACCENT, responseAlpha),
+        glm::vec4(PlaceholderAssets::Colors::BROWN_ACCENT.x, PlaceholderAssets::Colors::BROWN_ACCENT.y, PlaceholderAssets::Colors::BROWN_ACCENT.z, responseAlpha),
         screenWidth, screenHeight);
 
     textRenderer->renderText(topic->responseText, tx + 6.0f, ty,
