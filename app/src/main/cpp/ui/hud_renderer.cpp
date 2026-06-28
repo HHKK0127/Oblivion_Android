@@ -6,6 +6,7 @@
 #include <android/log.h>
 #include <sstream>
 #include <iomanip>
+#include <algorithm>
 
 #define LOG_TAG "HUDRenderer"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
@@ -104,17 +105,17 @@ void HUDRenderer::onScreenResize(int width, int height) {
 // === セッター ===
 
 void HUDRenderer::setPlayerHealth(float current, float max) {
-    healthCurrent = glm::clamp(current, 0.0f, max);
+    healthCurrent = std::clamp(current, 0.0f, max);
     healthMax = max;
 }
 
 void HUDRenderer::setPlayerMana(float current, float max) {
-    manaCurrent = glm::clamp(current, 0.0f, max);
+    manaCurrent = std::clamp(current, 0.0f, max);
     manaMax = max;
 }
 
 void HUDRenderer::setPlayerStamina(float current, float max) {
-    staminaCurrent = glm::clamp(current, 0.0f, max);
+    staminaCurrent = std::clamp(current, 0.0f, max);
     staminaMax = max;
 }
 
@@ -157,8 +158,8 @@ void HUDRenderer::renderStatusBars() {
 
     // HP ラベル
     if (textRenderer) {
-        textRenderer->renderText("HP:", statusBarX, yPos, 1.0f,
-                               glm::vec3(1.0f, 1.0f, 1.0f));
+        textRenderer->renderText("HP:", statusBarX, yPos,
+                               glm::vec3(1.0f, 1.0f, 1.0f), 1.0f);
     }
 
     // HP バー
@@ -173,15 +174,15 @@ void HUDRenderer::renderStatusBars() {
         ss << std::fixed << std::setprecision(0)
            << healthCurrent << "/" << healthMax;
         textRenderer->renderText(ss.str(), statusBarX + labelWidth + barWidth + spacing,
-                               yPos, 0.8f, glm::vec3(1.0f, 1.0f, 1.0f));
+                               yPos, glm::vec3(1.0f, 1.0f, 1.0f), 0.8f);
     }
 
     yPos += barHeight + spacing;
 
     // MP ラベル
     if (textRenderer) {
-        textRenderer->renderText("MP:", statusBarX, yPos, 1.0f,
-                               glm::vec3(1.0f, 1.0f, 1.0f));
+        textRenderer->renderText("MP:", statusBarX, yPos,
+                               glm::vec3(1.0f, 1.0f, 1.0f), 1.0f);
     }
 
     // MP バー
@@ -196,15 +197,15 @@ void HUDRenderer::renderStatusBars() {
         ss << std::fixed << std::setprecision(0)
            << manaCurrent << "/" << manaMax;
         textRenderer->renderText(ss.str(), statusBarX + labelWidth + barWidth + spacing,
-                               yPos, 0.8f, glm::vec3(1.0f, 1.0f, 1.0f));
+                               yPos, glm::vec3(1.0f, 1.0f, 1.0f), 0.8f);
     }
 
     yPos += barHeight + spacing;
 
     // スタミナ ラベル
     if (textRenderer) {
-        textRenderer->renderText("ST:", statusBarX, yPos, 1.0f,
-                               glm::vec3(1.0f, 1.0f, 1.0f));
+        textRenderer->renderText("ST:", statusBarX, yPos,
+                               glm::vec3(1.0f, 1.0f, 1.0f), 1.0f);
     }
 
     // スタミナ バー
@@ -219,7 +220,7 @@ void HUDRenderer::renderStatusBars() {
         ss << std::fixed << std::setprecision(0)
            << staminaCurrent << "/" << staminaMax;
         textRenderer->renderText(ss.str(), statusBarX + labelWidth + barWidth + spacing,
-                               yPos, 0.8f, glm::vec3(1.0f, 1.0f, 1.0f));
+                               yPos, glm::vec3(1.0f, 1.0f, 1.0f), 0.8f);
     }
 }
 
@@ -246,8 +247,8 @@ void HUDRenderer::renderMinimap() {
     // ラベル
     if (textRenderer) {
         textRenderer->renderText("MAP", minimapX - minimapSize / 2.0f - 15.0f,
-                               minimapY - 10.0f, 0.8f,
-                               PlaceholderAssets::Colors::BROWN_ACCENT);
+                               minimapY - 10.0f,
+                               PlaceholderAssets::Colors::BROWN_ACCENT, 0.8f);
     }
 }
 
@@ -274,8 +275,7 @@ void HUDRenderer::renderQuickSlots() {
             textRenderer->renderText(std::to_string(i),
                                    x + slotSize - 15.0f,
                                    y + slotSize - 15.0f,
-                                   0.6f,
-                                   PlaceholderAssets::Colors::BROWN_ACCENT);
+                                   PlaceholderAssets::Colors::BROWN_ACCENT, 0.6f);
         }
     }
 }
@@ -290,9 +290,9 @@ void HUDRenderer::renderPlayerLevel() {
     // テキスト
     if (textRenderer) {
         textRenderer->renderText("LEVEL", levelX + 10.0f, levelY + 10.0f,
-                               0.8f, PlaceholderAssets::Colors::BROWN_ACCENT);
+                               PlaceholderAssets::Colors::BROWN_ACCENT, 0.8f);
         textRenderer->renderText(std::to_string(playerLevel),
                                levelX + 25.0f, levelY + 35.0f,
-                               1.2f, PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
+                               PlaceholderAssets::Colors::GOLD_HIGHLIGHT, 1.2f);
     }
 }

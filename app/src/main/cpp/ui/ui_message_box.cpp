@@ -105,8 +105,9 @@ void UIMessageBox::renderTypeIndicator() {
     float indicatorH = getDialogHeight() - 20.0f;
 
     // Left color bar indicating message type
+    glm::vec3 typeColor = getTypeColor();
     UIDrawHelper::drawColoredQuad(cp.x + 8.0f, cp.y + 10.0f, indicatorW, indicatorH,
-        glm::vec4(getTypeColor(), 1.0f),
+        glm::vec4(typeColor.x, typeColor.y, typeColor.z, 1.0f),
         screenWidth, screenHeight);
 }
 

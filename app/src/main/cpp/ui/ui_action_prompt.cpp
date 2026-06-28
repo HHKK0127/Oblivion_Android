@@ -9,7 +9,7 @@ UIActionPrompt::UIActionPrompt() = default;
 
 bool UIActionPrompt::initialize(TextRenderer* textRenderer, int screenW, int screenH) {
     if (!textRenderer) return false;
-    textRenderer_ = textRenderer;
+    textRenderer = textRenderer;
     screenWidth = screenW;
     screenHeight = screenH;
     return true;
@@ -55,7 +55,7 @@ void UIActionPrompt::update(float deltaTime) {
 }
 
 void UIActionPrompt::render() {
-    if (actions_.empty() || !textRenderer_) return;
+    if (actions_.empty() || !textRenderer) return;
 
     GLboolean depthTestEnabled;
     glGetBooleanv(GL_DEPTH_TEST, &depthTestEnabled);
@@ -89,20 +89,20 @@ void UIActionPrompt::renderActionButtons() {
             bgColor, screenWidth, screenHeight);
 
         // Button border
-        glm::vec4 borderColor(actionColor, 0.9f);
+        glm::vec4 borderColor(actionColor.x, actionColor.y, actionColor.z, 0.9f);
         UIDrawHelper::drawBorder(buttonX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT, 1.5f,
             borderColor, screenWidth, screenHeight);
 
         // Key code
         std::string keyStr(1, action.keyCode);
-        textRenderer_->renderText(keyStr,
+        textRenderer->renderText(keyStr,
             buttonX + BUTTON_WIDTH / 2.0f - 3.0f, buttonY + 6.0f,
             actionColor, 0.8f);
 
         // Action symbol
         std::string symbol = getActionSymbol(action.type);
         if (!symbol.empty()) {
-            textRenderer_->renderText(symbol,
+            textRenderer->renderText(symbol,
                 buttonX + 5.0f, buttonY + 10.0f,
                 actionColor, 0.6f);
         }
@@ -110,20 +110,20 @@ void UIActionPrompt::renderActionButtons() {
 }
 
 void UIActionPrompt::renderActionDescription() {
-    if (actions_.empty() || !textRenderer_) return;
+    if (actions_.empty() || !textRenderer) return;
 
     const ActionButton& primaryAction = actions_[0];
     float descY = START_Y + BUTTON_HEIGHT + 20.0f;
 
     // Primary action label
     glm::vec3 actionColor = getActionColor(primaryAction.type);
-    textRenderer_->renderText(primaryAction.label,
+    textRenderer->renderText(primaryAction.label,
         START_X - 50.0f, descY,
         actionColor, 0.8f);
 
     // Description
     if (!primaryAction.description.empty()) {
-        textRenderer_->renderText(primaryAction.description,
+        textRenderer->renderText(primaryAction.description,
             START_X - 50.0f, descY + 15.0f,
             PlaceholderAssets::Colors::PARCHMENT_LIGHT, 0.6f);
     }
@@ -131,18 +131,18 @@ void UIActionPrompt::renderActionDescription() {
     // Distance indicator
     if (primaryAction.distance > 0.0f) {
         std::string distStr = "Distance: " + std::to_string(static_cast<int>(primaryAction.distance)) + "m";
-        textRenderer_->renderText(distStr,
+        textRenderer->renderText(distStr,
             START_X - 50.0f, descY + 28.0f,
             glm::vec3(0.7f, 0.7f, 0.7f), 0.5f);
     }
 }
 
 void UIActionPrompt::renderKeyGuide() {
-    if (actions_.empty() || !textRenderer_) return;
+    if (actions_.empty() || !textRenderer) return;
 
     float guideY = START_Y - 30.0f;
 
-    textRenderer_->renderText("Available Actions:",
+    textRenderer->renderText("Available Actions:",
         START_X - 60.0f, guideY,
         PlaceholderAssets::Colors::GOLD_HIGHLIGHT, 0.7f);
 }

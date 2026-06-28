@@ -42,7 +42,7 @@ public:
         bool isActive;
 
         Alert() : message(""), type(ALERT_NONE), priority(PRIORITY_LOW),
-                  duration(3.0f), elapsedTime(0.0f), color(1.0f),
+                  duration(3.0f), elapsedTime(0.0f), color(1.0f, 1.0f, 1.0f),
                   isActive(true) {}
     };
 

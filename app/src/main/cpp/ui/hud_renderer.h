@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 #include <GLES3/gl3.h>
 #include <memory>
+#include <string>
 
 class TextRenderer;
 class UISystem;
@@ -140,7 +141,7 @@ private:
     float staminaCurrent = 100.0f;
     float staminaMax = 100.0f;
     int playerLevel = 1;
-    glm::vec3 playerPosition = glm::vec3(0.0f);
+    glm::vec3 playerPosition = glm::vec3(0.0f, 0.0f, 0.0f);
 
     // === クイックスロット ===
 

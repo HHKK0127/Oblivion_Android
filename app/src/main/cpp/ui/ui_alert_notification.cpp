@@ -9,7 +9,7 @@ UIAlertNotification::UIAlertNotification() = default;
 
 bool UIAlertNotification::initialize(TextRenderer* textRenderer, int screenW, int screenH) {
     if (!textRenderer) return false;
-    textRenderer_ = textRenderer;
+    textRenderer = textRenderer;
     screenWidth = screenW;
     screenHeight = screenH;
     return true;
@@ -59,7 +59,7 @@ void UIAlertNotification::update(float deltaTime) {
 }
 
 void UIAlertNotification::render() {
-    if (!hasActiveAlert() || !textRenderer_) return;
+    if (!hasActiveAlert() || !textRenderer) return;
 
     GLboolean depthTestEnabled;
     glGetBooleanv(GL_DEPTH_TEST, &depthTestEnabled);
@@ -78,13 +78,12 @@ void UIAlertNotification::renderAlert() {
     float alpha = getCurrentAlpha();
 
     // Alert background
-    glm::vec4 bgColor(currentAlert_->color.x * 0.3f, currentAlert_->color.y * 0.3f,
-                     currentAlert_->color.z * 0.3f, 0.75f * alpha);
+    glm::vec4 bgColor(currentAlert_->color.x * 0.3f, currentAlert_->color.y * 0.3f, currentAlert_->color.z * 0.3f, 0.75f * alpha);
     UIDrawHelper::drawColoredQuad(alertX, alertY, ALERT_WIDTH, ALERT_HEIGHT,
         bgColor, screenWidth, screenHeight);
 
     // Alert border
-    glm::vec4 borderColor(currentAlert_->color, alpha);
+    glm::vec4 borderColor(currentAlert_->color.x, currentAlert_->color.y, currentAlert_->color.z, alpha);
     UIDrawHelper::drawBorder(alertX, alertY, ALERT_WIDTH, ALERT_HEIGHT, 2.0f,
         borderColor, screenWidth, screenHeight);
 
@@ -103,7 +102,7 @@ void UIAlertNotification::renderAlertIcon() {
     std::string icon = getAlertIcon(currentAlert_->type);
     glm::vec3 iconColor = currentAlert_->color * alpha;
 
-    textRenderer_->renderText(icon,
+    textRenderer->renderText(icon,
         iconX, iconY,
         iconColor, getAlertScale(currentAlert_->priority));
 }
@@ -116,7 +115,7 @@ void UIAlertNotification::renderAlertText() {
     glm::vec3 textColor = currentAlert_->color * alpha;
 
     // Main alert message
-    textRenderer_->renderText(currentAlert_->message,
+    textRenderer->renderText(currentAlert_->message,
         textX, textY,
         textColor, 0.8f);
 
@@ -137,7 +136,7 @@ void UIAlertNotification::renderAlertText() {
     }
 
     if (!priorityLabel.empty()) {
-        textRenderer_->renderText(priorityLabel,
+        textRenderer->renderText(priorityLabel,
             textX, textY + 18.0f,
             glm::vec3(0.8f, 0.8f, 0.2f) * alpha, 0.6f);
     }

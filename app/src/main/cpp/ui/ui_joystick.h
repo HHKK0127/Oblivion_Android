@@ -14,7 +14,7 @@ public:
     UIJoystick(float x, float y, float radius);
     virtual ~UIJoystick() = default;
 
-    virtual void render(int screenW, int screenH) override;
+    virtual void render() override;
     virtual bool onEvent(const UIEvent& event) override;
     virtual bool onTouchDown(float x, float y, int pointerId) override;
     virtual bool onTouchMove(float x, float y, float dx, float dy, int pointerId) override;

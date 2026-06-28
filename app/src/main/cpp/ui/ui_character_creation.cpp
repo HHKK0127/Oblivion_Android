@@ -29,23 +29,23 @@ bool UICharacterCreation::initialize(TextRenderer* tr) {
 }
 
 void UICharacterCreation::initializeDefaultCharacter() {
-    createdCharacter_.name = "Adventurer";
-    createdCharacter_.level = 1;
+    // createdCharacter_.name = "Adventurer";
+    // createdCharacter_.level = 1;
     createdCharacter_.currentHealth = 100;
     createdCharacter_.maxHealth = 100;
     createdCharacter_.currentMana = 50;
     createdCharacter_.maxMana = 50;
-    createdCharacter_.currentStamina = 100;
+    createdCharacter_.stamina = 100;
     createdCharacter_.maxStamina = 100;
 
     // Set default attributes (50 each)
     for (int i = 0; i < 8; ++i) {
-        createdCharacter_.attributes[i] = 50;
+        createdCharacter_.attributes[ATTRIBUTE_NAMES[i]] = 50.0f;
     }
 
     // Set default skills
     for (int i = 0; i < 20; ++i) {
-        createdCharacter_.skills[i] = 15;
+        createdCharacter_.skills[SKILL_NAMES[i]] = 15.0f;
     }
 
     playerName_ = "Adventurer";
@@ -82,7 +82,7 @@ bool UICharacterCreation::onTouchDown(float x, float y, int pointerId) {
 
     // Confirm/Cancel buttons
     if (hitTestConfirmButton(x, y)) {
-        createdCharacter_.name = playerName_;
+        // createdCharacter_.name = playerName_;
         if (onConfirm) {
             onConfirm(createdCharacter_);
         }
@@ -103,13 +103,13 @@ bool UICharacterCreation::onTouchDown(float x, float y, int pointerId) {
     case ATTRIBUTES: {
         if (hitTestIncreaseAttribute(x, y)) {
             if (selectedAttributeIndex_ < 8) {
-                createdCharacter_.attributes[selectedAttributeIndex_]++;
+                createdCharacter_.attributes[ATTRIBUTE_NAMES[selectedAttributeIndex_]]++;
             }
             return true;
         }
         if (hitTestDecreaseAttribute(x, y)) {
-            if (selectedAttributeIndex_ < 8 && createdCharacter_.attributes[selectedAttributeIndex_] > 1) {
-                createdCharacter_.attributes[selectedAttributeIndex_]--;
+            if (selectedAttributeIndex_ < 8 && createdCharacter_.attributes[ATTRIBUTE_NAMES[selectedAttributeIndex_]] > 1) {
+                createdCharacter_.attributes[ATTRIBUTE_NAMES[selectedAttributeIndex_]]--;
             }
             return true;
         }
@@ -128,8 +128,9 @@ bool UICharacterCreation::onTouchDown(float x, float y, int pointerId) {
         }
         if (hitTestToggleSkill(x, y)) {
             if (selectedSkillIndex_ < 20) {
-                createdCharacter_.skills[selectedSkillIndex_] =
-                    (createdCharacter_.skills[selectedSkillIndex_] > 15) ? 15 : 50;
+                std::string skillName = SKILL_NAMES[selectedSkillIndex_];
+                createdCharacter_.skills[skillName] =
+                    (createdCharacter_.skills[skillName] > 15) ? 15 : 50;
             }
             return true;
         }
@@ -249,8 +250,8 @@ void UICharacterCreation::renderAttributesTab() {
                          : PlaceholderAssets::Colors::BROWN_ACCENT));
 
         char attrStr[64];
-        snprintf(attrStr, sizeof(attrStr), "%s: %d",
-                 ATTRIBUTE_NAMES[i], createdCharacter_.attributes[i]);
+        snprintf(attrStr, sizeof(attrStr), "%s: %.0f",
+                 ATTRIBUTE_NAMES[i], createdCharacter_.attributes[ATTRIBUTE_NAMES[i]]);
         textRenderer->renderText(attrStr,
             cp.x + 30.0f, cy + 10.0f,
             sel ? glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT)
@@ -286,8 +287,8 @@ void UICharacterCreation::renderSkillsTab() {
                          : PlaceholderAssets::Colors::BROWN_ACCENT));
 
         char skillStr[64];
-        snprintf(skillStr, sizeof(skillStr), "%s: %d",
-                 SKILL_NAMES[i], createdCharacter_.skills[i]);
+        snprintf(skillStr, sizeof(skillStr), "%s: %.0f",
+                 SKILL_NAMES[i], createdCharacter_.skills[SKILL_NAMES[i]]);
         textRenderer->renderText(skillStr,
             cp.x + 30.0f, cy + 6.0f,
             sel ? glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT)
@@ -435,23 +436,26 @@ float UICharacterCreation::getConfirmButtonY() const {
 
 void UICharacterCreation::addSkillPoints(int skillId, int points) {
     if (skillId >= 0 && skillId < 20) {
-        createdCharacter_.skills[skillId] = std::min(100, createdCharacter_.skills[skillId] + points);
+        std::string skillName = SKILL_NAMES[skillId];
+        createdCharacter_.skills[skillName] = std::min(100.0f, createdCharacter_.skills[skillName] + points);
     }
 }
 
 void UICharacterCreation::ensureValidCharacter() {
     // Ensure attributes are within valid range
     for (int i = 0; i < 8; ++i) {
-        createdCharacter_.attributes[i] = std::clamp(createdCharacter_.attributes[i], 1, 100);
+        std::string attrName = ATTRIBUTE_NAMES[i];
+        createdCharacter_.attributes[attrName] = std::clamp(createdCharacter_.attributes[attrName], 1.0f, 100.0f);
     }
 
     // Ensure skills are within valid range
     for (int i = 0; i < 20; ++i) {
-        createdCharacter_.skills[i] = std::clamp(createdCharacter_.skills[i], 5, 100);
+        std::string skillName = SKILL_NAMES[i];
+        createdCharacter_.skills[skillName] = std::clamp(createdCharacter_.skills[skillName], 5.0f, 100.0f);
     }
 
     if (playerName_.empty()) {
         playerName_ = "Adventurer";
     }
-    createdCharacter_.name = playerName_;
+    // createdCharacter_.name = playerName_;
 }

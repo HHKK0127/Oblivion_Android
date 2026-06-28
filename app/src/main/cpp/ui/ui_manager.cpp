@@ -14,7 +14,7 @@ bool UIManager::initialize(TextRenderer* textRenderer,
                            CharacterStatus* playerStatus) {
     if (!textRenderer) return false;
 
-    textRenderer_ = textRenderer;
+    textRenderer = textRenderer;
     questManager_ = questManager;
 
     // UICharacterSheet の初期化

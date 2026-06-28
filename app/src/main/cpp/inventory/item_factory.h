@@ -16,7 +16,7 @@ namespace inventory {
  */
 class ItemFactory {
 public:
-    ItemFactory() = default;
+    ItemFactory();
     ~ItemFactory() = default;
 
     // Initialize with default items

@@ -27,7 +27,7 @@ public:
         CompassMarker type;
         glm::vec3 color;
 
-        CompassPoint() : angle(0.0f), label(""), type(MARKER_NONE), color(1.0f) {}
+        CompassPoint() : angle(0.0f), label(""), type(MARKER_NONE), color(1.0f, 1.0f, 1.0f) {}
     };
 
     UIHudCompass();

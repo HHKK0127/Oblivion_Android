@@ -11,7 +11,7 @@ UILevelProgress::UILevelProgress() = default;
 
 bool UILevelProgress::initialize(TextRenderer* textRenderer, int screenW, int screenH) {
     if (!textRenderer) return false;
-    textRenderer_ = textRenderer;
+    textRenderer = textRenderer;
     screenWidth = screenW;
     screenHeight = screenH;
     return true;
@@ -42,7 +42,7 @@ void UILevelProgress::update(float deltaTime) {
 }
 
 void UILevelProgress::render() {
-    if (!textRenderer_) return;
+    if (!textRenderer) return;
 
     GLboolean depthTestEnabled;
     glGetBooleanv(GL_DEPTH_TEST, &depthTestEnabled);
@@ -72,7 +72,7 @@ void UILevelProgress::renderProgressPanel() {
         bgColor, screenWidth, screenHeight);
 
     // Panel border
-    glm::vec4 borderColor(0.5f, 0.4f, 0.2f, 0.9f);
+    glm::vec4 borderColor(0.5f, 0.5f, 0.5f, 0.4f);
     UIDrawHelper::drawBorder(panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT, 1.5f,
         borderColor, screenWidth, screenHeight);
 }
@@ -93,12 +93,12 @@ void UILevelProgress::renderExperienceBar() {
     // Experience bar
     float fillWidth = PROGRESS_BAR_WIDTH * expPercent;
     glm::vec3 expColor = getProgressColor();
-    glm::vec4 fillColor(expColor, 0.9f);
+    glm::vec4 fillColor(expColor.x, expColor.y, expColor.z, 0.9f);
     UIDrawHelper::drawColoredQuad(barX, barY, fillWidth, PROGRESS_BAR_HEIGHT,
         fillColor, screenWidth, screenHeight);
 
     // Border
-    glm::vec4 borderColor(expColor, 1.0f);
+    glm::vec4 borderColor(expColor.x, expColor.y, expColor.z, 1.0f);
     UIDrawHelper::drawBorder(barX, barY, PROGRESS_BAR_WIDTH, PROGRESS_BAR_HEIGHT, 1.0f,
         borderColor, screenWidth, screenHeight);
 
@@ -107,7 +107,7 @@ void UILevelProgress::renderExperienceBar() {
     ss << std::fixed << std::setprecision(0) << (expPercent * 100.0f) << "%";
     std::string percentText = ss.str();
 
-    textRenderer_->renderText(percentText,
+    textRenderer->renderText(percentText,
         barX + PROGRESS_BAR_WIDTH - 35.0f, barY + 1.0f,
         PlaceholderAssets::Colors::PARCHMENT_LIGHT, 0.6f);
 }
@@ -120,7 +120,7 @@ void UILevelProgress::renderLevelInfo() {
     levelSs << "Level " << levelData_.currentLevel;
     std::string levelText = levelSs.str();
 
-    textRenderer_->renderText(levelText,
+    textRenderer->renderText(levelText,
         panelX + 15.0f, START_Y + 12.0f,
         PlaceholderAssets::Colors::GOLD_HIGHLIGHT, 0.8f);
 
@@ -130,7 +130,7 @@ void UILevelProgress::renderLevelInfo() {
           << levelData_.experienceNeededForNextLevel;
     std::string expText = expSs.str();
 
-    textRenderer_->renderText(expText,
+    textRenderer->renderText(expText,
         panelX + 15.0f, START_Y + 52.0f,
         PlaceholderAssets::Colors::PARCHMENT_LIGHT, 0.6f);
 }
@@ -145,7 +145,7 @@ void UILevelProgress::renderSkillIncreasesInfo() {
     std::string skillText = ss.str();
 
     glm::vec3 skillColor = glm::vec3(0.9f, 0.7f, 0.2f);  // Gold
-    textRenderer_->renderText(skillText,
+    textRenderer->renderText(skillText,
         panelX + 15.0f, START_Y + 65.0f,
         skillColor, 0.6f);
 }
@@ -166,7 +166,7 @@ void UILevelProgress::renderLevelUpNotification() {
     glm::vec3 levelUpColor = PlaceholderAssets::Colors::GOLD_HIGHLIGHT;
     glm::vec3 fadeColor = levelUpColor * alpha;
 
-    textRenderer_->renderText("LEVEL UP!",
+    textRenderer->renderText("LEVEL UP!",
         START_X - 40.0f, notifY,
         fadeColor, 1.2f);
 
@@ -175,8 +175,8 @@ void UILevelProgress::renderLevelUpNotification() {
     ss << "Lvl " << levelData_.currentLevel;
     std::string levelStr = ss.str();
 
-    glm::vec3 levelNumColor(0.2f, 0.8f, 0.2f) * alpha;
-    textRenderer_->renderText(levelStr,
+    glm::vec3 levelNumColor = glm::vec3(0.2f, 0.8f, 0.2f) * alpha;
+    textRenderer->renderText(levelStr,
         START_X - 20.0f, notifY - 20.0f,
         levelNumColor, 0.9f);
 }

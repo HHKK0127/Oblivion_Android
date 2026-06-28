@@ -1,4 +1,5 @@
 #include "placeholder_assets.h"
+#include <algorithm>
 #include "ui_draw_helper.h"
 #include <android/log.h>
 #include <cmath>
@@ -67,7 +68,7 @@ namespace PlaceholderAssets {
 
     void drawSolidRect(float x, float y, float width, float height,
                       const glm::vec3& color, float alpha) {
-        glm::vec4 colorWithAlpha(color.r, color.g, color.b, alpha);
+        glm::vec4 colorWithAlpha(color.x, color.y, color.z, alpha);
         UIDrawHelper::drawColoredQuad(x, y, width, height, colorWithAlpha,
                                      g_screenWidth, g_screenHeight);
     }
@@ -88,7 +89,7 @@ namespace PlaceholderAssets {
         // 枠線（太さ2ピクセル）
         const float borderWidth = 2.0f;
 
-        glm::vec4 borderColorWithAlpha(borderColor.r, borderColor.g, borderColor.b, 1.0f);
+        glm::vec4 borderColorWithAlpha(borderColor.x, borderColor.y, borderColor.z, 1.0f);
         UIDrawHelper::drawBorder(x, y, width, height, borderWidth,
                                 borderColorWithAlpha, g_screenWidth, g_screenHeight);
     }
@@ -100,7 +101,7 @@ namespace PlaceholderAssets {
     void drawStatusBar(float x, float y, float width, float height,
                       float fillRatio, const glm::vec3& fillColor) {
         // 制約
-        fillRatio = glm::clamp(fillRatio, 0.0f, 1.0f);
+        fillRatio = std::clamp(fillRatio, 0.0f, 1.0f);
 
         // 背景（暗いグレー）
         drawSolidRect(x, y, width, height, Colors::DARK_GRAY, 0.7f);
@@ -113,8 +114,8 @@ namespace PlaceholderAssets {
 
         // 枠線（淡いグレー）
         const float borderWidth = 1.0f;
-        glm::vec4 borderColor(Colors::LIGHT_GRAY.r, Colors::LIGHT_GRAY.g,
-                             Colors::LIGHT_GRAY.b, 0.8f);
+        glm::vec4 borderColor(Colors::LIGHT_GRAY.x, Colors::LIGHT_GRAY.y,
+                             Colors::LIGHT_GRAY.z, 0.8f);
         UIDrawHelper::drawBorder(x, y, width, height, borderWidth,
                                 borderColor, g_screenWidth, g_screenHeight);
     }
@@ -129,8 +130,8 @@ namespace PlaceholderAssets {
 
         // 枠線
         const float borderWidth = 1.0f;
-        glm::vec4 borderColor(Colors::BROWN_ACCENT.r, Colors::BROWN_ACCENT.g,
-                             Colors::BROWN_ACCENT.b, 1.0f);
+        glm::vec4 borderColor(Colors::BROWN_ACCENT.x, Colors::BROWN_ACCENT.y,
+                             Colors::BROWN_ACCENT.z, 1.0f);
         UIDrawHelper::drawBorder(x, y, size, size, borderWidth,
                                 borderColor, g_screenWidth, g_screenHeight);
     }
@@ -145,8 +146,8 @@ namespace PlaceholderAssets {
 
         // 枠線（暗いグレー）
         const float borderWidth = 1.0f;
-        glm::vec4 borderColor(Colors::DARK_GRAY.r, Colors::DARK_GRAY.g,
-                             Colors::DARK_GRAY.b, 1.0f);
+        glm::vec4 borderColor(Colors::DARK_GRAY.x, Colors::DARK_GRAY.y,
+                             Colors::DARK_GRAY.z, 1.0f);
         UIDrawHelper::drawBorder(x, y, size, size, borderWidth,
                                 borderColor, g_screenWidth, g_screenHeight);
     }
@@ -162,8 +163,8 @@ namespace PlaceholderAssets {
 
         // 枠線（暗いグレー）
         const float borderWidth = 1.0f;
-        glm::vec4 borderColor(Colors::DARK_GRAY.r, Colors::DARK_GRAY.g,
-                             Colors::DARK_GRAY.b, 1.0f);
+        glm::vec4 borderColor(Colors::DARK_GRAY.x, Colors::DARK_GRAY.y,
+                             Colors::DARK_GRAY.z, 1.0f);
         UIDrawHelper::drawBorder(x, y, size, size, borderWidth,
                                 borderColor, g_screenWidth, g_screenHeight);
     }

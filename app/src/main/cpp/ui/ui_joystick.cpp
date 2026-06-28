@@ -4,31 +4,33 @@
 #include <algorithm>
 
 UIJoystick::UIJoystick(float x, float y, float radius)
-    : UIComponent(x - radius, y - radius, radius * 2, radius * 2),
+    : UIComponent("Joystick"),
       centerX(x), centerY(y), radius(radius), knobRadius(radius * 0.4f),
       activePointerId(-1), inputValue(0.0f, 0.0f) {
+    setPosition(x - radius, y - radius);
+    setSize(radius * 2.0f, radius * 2.0f);
     knobPos = glm::vec2(x, y);
 }
 
-void UIJoystick::render(int screenW, int screenH) {
-    if (!visible) return;
+void UIJoystick::render() {
+    if (!isVisible()) return;
 
     // Draw base (semi-transparent dark circle/square placeholder)
     UIDrawHelper::drawColoredQuad(
-        centerX - radius, centerY - radius, radius * 2, radius * 2,
-        glm::vec4(0.2f.x, 0.2f.y, 0.2f.z, 0.2f, 0.2f, 0.5f), screenW, screenH
+        centerX - radius, centerY - radius, radius * 2.0f, radius * 2.0f,
+        glm::vec4(0.2f, 0.2f, 0.2f, 0.5f), screenWidth, screenHeight
     );
 
     // Draw knob (semi-transparent white circle/square placeholder)
-    glm::vec4 knobColor = isActive() ? glm::vec4(1.0f.x, 1.0f.y, 1.0f.z, 1.0f, 1.0f, 0.8f) : glm::vec4(0.8f.x, 0.8f.y, 0.8f.z, 0.8f, 0.8f, 0.6f);
+    glm::vec4 knobColor = isActive() ? glm::vec4(1.0f, 1.0f, 1.0f, 0.8f) : glm::vec4(0.8f, 0.8f, 0.8f, 0.6f);
     UIDrawHelper::drawColoredQuad(
-        knobPos.x - knobRadius, knobPos.y - knobRadius, knobRadius * 2, knobRadius * 2,
-        knobColor, screenW, screenH
+        knobPos.x - knobRadius, knobPos.y - knobRadius, knobRadius * 2.0f, knobRadius * 2.0f,
+        knobColor, screenWidth, screenHeight
     );
 }
 
 bool UIJoystick::onEvent(const UIEvent& event) {
-    if (!visible || !enabled) return false;
+    if (!isVisible() || !isEnabled()) return false;
 
     // For TOUCH_MOVE and TOUCH_UP, process if we are tracking this pointer, 
     // EVEN IF the touch is outside the bounding box
@@ -54,7 +56,7 @@ bool UIJoystick::onEvent(const UIEvent& event) {
 }
 
 bool UIJoystick::onTouchDown(float x, float y, int pointerId) {
-    if (!visible) return false;
+    if (!isVisible()) return false;
 
     // Only allow one pointer to control the joystick
     if (activePointerId != -1) return false;
@@ -77,14 +79,14 @@ bool UIJoystick::onTouchDown(float x, float y, int pointerId) {
 }
 
 bool UIJoystick::onTouchMove(float x, float y, float dx, float dy, int pointerId) {
-    if (!visible || activePointerId != pointerId) return false;
+    if (!isVisible() || activePointerId != pointerId) return false;
 
     updateKnobPosition(x, y);
     return true;
 }
 
 bool UIJoystick::onTouchUp(float x, float y, int pointerId) {
-    if (!visible || activePointerId != pointerId) return false;
+    if (!isVisible() || activePointerId != pointerId) return false;
 
     // Reset joystick
     activePointerId = -1;
