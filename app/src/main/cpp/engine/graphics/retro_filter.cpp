@@ -356,15 +356,9 @@ in vec2 vTexCoord;
 out vec4 FragColor;
 
 uniform sampler2D inputTexture;
-uniform vec2 sceneResolution;
-uniform vec2 screenResolution;
 
 void main() {
-    // Nearest-neighbor upscaling for pixel-perfect look
-    vec2 scaledCoord = vTexCoord * (sceneResolution / screenResolution);
-    scaledCoord = clamp(scaledCoord, 0.0, 1.0);
-
-    FragColor = texture(inputTexture, scaledCoord);
+    FragColor = texture(inputTexture, vTexCoord);
 }
 )";
 
@@ -383,6 +377,7 @@ void main() {
 
 void RetroFilter::bindSceneFramebuffer() {
     glBindFramebuffer(GL_FRAMEBUFFER, sceneFBO);
+    glViewport(0, 0, sceneWidth, sceneHeight);
 }
 
 // ========== Effect Pipeline ==========
@@ -566,52 +561,25 @@ void RetroFilter::apply(const Settings& settings) {
 // ========== Screen Rendering ==========
 
 void RetroFilter::renderToScreen() {
-    LOGI("renderToScreen() called - screenWidth=%u, screenHeight=%u, finalResultTex=%u, sceneTex=%u, sceneFBO=%u",
-         screenWidth, screenHeight, finalResultTex, sceneTex, sceneFBO);
-
     // Bind default framebuffer (screen)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, screenWidth, screenHeight);
 
-    // DEBUG: Clear screen to bright red to see if glClear is working
-    glClearColor(1.0f, 0.0f, 0.0f, 1.0f);  // Bright RED for testing visibility
-    LOGI("About to glClear() with RED color (1.0, 0.0, 0.0)...");
+    // Clear screen to background color
+    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    LOGI("glClear() completed");
 
-    // If scene was at lower resolution, use composite shader for upscaling
-    if (sceneWidth != screenWidth || sceneHeight != screenHeight) {
-        LOGD("Upscaling from %ux%u to %ux%u", sceneWidth, sceneHeight, screenWidth, screenHeight);
-        compositeShader->use();
-        compositeShader->setUniform("inputTexture", 0);  // CRITICAL: Set texture unit for shader
-        compositeShader->setUniform("sceneResolution", glm::vec2(sceneWidth, sceneHeight));
-        compositeShader->setUniform("screenResolution", glm::vec2(screenWidth, screenHeight));
-    } else {
-        // Direct rendering to screen
-        if (scanlineShader) {
-            scanlineShader->use();
-            scanlineShader->setUniform("inputTexture", 0);  // CRITICAL: Set texture unit for shader
-        }
-    }
+    // Use composite shader as a robust pass-through
+    compositeShader->use();
+    compositeShader->setUniform("inputTexture", 0);
 
-    LOGI("About to bind texture and render quad - finalResultTex=%u, sceneTex=%u", finalResultTex, sceneTex);
-    LOGI("DEBUG: Rendering sceneTex (ID=%u) directly instead of finalResultTex (ID=%u)", sceneTex, finalResultTex);
+    // Bind finalResultTex which has the processed/rendered game frame
     glActiveTexture(GL_TEXTURE0);
-    // TEMPORARY DEBUG: Render sceneTex directly instead of finalResultTex
-    glBindTexture(GL_TEXTURE_2D, sceneTex);  // Use sceneTex directly
-    LOGI("DEBUG: Bound sceneTex successfully, about to render quad");
-    LOGI("Texture bound successfully");
+    glBindTexture(GL_TEXTURE_2D, finalResultTex);
 
-    LOGI("About to bind VAO - quadVAO=%u", quadVAO);
     glBindVertexArray(quadVAO);
-    LOGI("VAO bound successfully");
-
-    LOGI("About to draw arrays...");
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    LOGI("glDrawArrays() completed");
-
     glBindVertexArray(0);
-    LOGI("VAO unbound");
 
     checkGLError("renderToScreen");
 }
@@ -655,7 +623,42 @@ void RetroFilter::setNativeResolution(unsigned int width, unsigned int height) {
         LOGI("setNativeResolution: %ux%u → %ux%u", screenWidth, screenHeight, width, height);
         screenWidth = width;
         screenHeight = height;
-        // Note: Framebuffers would need to be recreated here in full implementation
+        
+        // Compute new scene resolution
+        computeSceneResolution(lastScale);
+        sceneResolutionChanged = true;
+
+        // Recreate framebuffers
+        LOGI("Recreating framebuffers due to native resolution change...");
+        
+        // Delete old framebuffers and textures
+        if (sceneFBO) {
+            glDeleteFramebuffers(1, &sceneFBO);
+            sceneFBO = 0;
+        }
+        if (workFBO1) {
+            glDeleteFramebuffers(1, &workFBO1);
+            workFBO1 = 0;
+        }
+        if (workFBO2) {
+            glDeleteFramebuffers(1, &workFBO2);
+            workFBO2 = 0;
+        }
+        if (sceneTex) {
+            glDeleteTextures(1, &sceneTex);
+            sceneTex = 0;
+        }
+        if (workTex1) {
+            glDeleteTextures(1, &workTex1);
+            workTex1 = 0;
+        }
+        if (workTex2) {
+            glDeleteTextures(1, &workTex2);
+            workTex2 = 0;
+        }
+        
+        createFramebuffers();
+        LOGI("Framebuffers recreated successfully");
     }
 }
 
