@@ -35,7 +35,7 @@ public:
         int effectId;          // Unique ID for updates
 
         ActiveEffect() : name(""), type(EFFECT_NONE), duration(0.0f),
-                         maxDuration(0.0f), color(1.0f), iconChar("*"),
+                         maxDuration(0.0f), color(1.0f, 1.0f, 1.0f), iconChar("*"),
                          effectId(0) {}
     };
 

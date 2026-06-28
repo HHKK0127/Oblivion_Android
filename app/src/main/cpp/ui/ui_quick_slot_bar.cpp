@@ -9,7 +9,7 @@ UIQuickSlotBar::UIQuickSlotBar() = default;
 
 bool UIQuickSlotBar::initialize(TextRenderer* textRenderer, int screenW, int screenH) {
     if (!textRenderer) return false;
-    textRenderer_ = textRenderer;
+    textRenderer = textRenderer;
     screenWidth = screenW;
     screenHeight = screenH;
     return true;
@@ -58,7 +58,7 @@ bool UIQuickSlotBar::onTouchDown(float x, float y, int pointerId) {
 }
 
 void UIQuickSlotBar::render() {
-    if (!textRenderer_) return;
+    if (!textRenderer) return;
 
     GLboolean depthTestEnabled;
     glGetBooleanv(GL_DEPTH_TEST, &depthTestEnabled);
@@ -105,7 +105,7 @@ void UIQuickSlotBar::renderSlot(int slotIndex, float x, float y) {
 }
 
 void UIQuickSlotBar::renderSlotIcon(const SlotData& slot, float x, float y) {
-    if (!textRenderer_) return;
+    if (!textRenderer) return;
 
     glm::vec3 iconColor = glm::vec3(1.0f, 1.0f, 1.0f);
     switch (slot.type) {
@@ -124,17 +124,17 @@ void UIQuickSlotBar::renderSlotIcon(const SlotData& slot, float x, float y) {
 
     // Display first character of item ID as placeholder
     std::string iconText = slot.itemId.empty() ? "?" : slot.itemId.substr(0, 1);
-    textRenderer_->renderText(iconText,
+    textRenderer->renderText(iconText,
         x + SLOT_SIZE / 2.0f - 4.0f, y + SLOT_SIZE / 2.0f - 6.0f,
         iconColor, 0.8f);
 }
 
 void UIQuickSlotBar::renderSlotQuantity(const SlotData& slot, float x, float y) {
-    if (!textRenderer_ || slot.quantity <= 0) return;
+    if (!textRenderer || slot.quantity <= 0) return;
 
     std::string qtyText = std::to_string(slot.quantity);
     glm::vec3 qtyColor(0.9f, 0.9f, 0.2f);  // Yellow
-    textRenderer_->renderText(qtyText,
+    textRenderer->renderText(qtyText,
         x + SLOT_SIZE - 12.0f, y + SLOT_SIZE - 10.0f,
         qtyColor, 0.6f);
 }

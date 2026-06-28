@@ -11,7 +11,7 @@ UIActiveEffects::UIActiveEffects() = default;
 
 bool UIActiveEffects::initialize(TextRenderer* textRenderer, int screenW, int screenH) {
     if (!textRenderer) return false;
-    textRenderer_ = textRenderer;
+    textRenderer = textRenderer;
     screenWidth = screenW;
     screenHeight = screenH;
     return true;
@@ -85,7 +85,7 @@ void UIActiveEffects::update(float deltaTime) {
 }
 
 void UIActiveEffects::render() {
-    if (effects_.empty() || !textRenderer_) return;
+    if (effects_.empty() || !textRenderer) return;
 
     GLboolean depthTestEnabled;
     glGetBooleanv(GL_DEPTH_TEST, &depthTestEnabled);
@@ -112,18 +112,17 @@ void UIActiveEffects::renderEffectIcons() {
         float iconY = y + (i / 4) * (ICON_SIZE + ICON_GAP);
 
         // Icon background
-        glm::vec4 bgColor(effect->color.x * 0.4f, effect->color.y * 0.4f,
-                         effect->color.z * 0.4f, 0.8f);
+        glm::vec4 bgColor(effect->color.x * 0.4f, effect->color.y * 0.4f, effect->color.z * 0.4f, 0.8f);
         UIDrawHelper::drawColoredQuad(iconX, iconY, ICON_SIZE, ICON_SIZE,
             bgColor, screenWidth, screenHeight);
 
         // Icon border
-        glm::vec4 borderColor(effect->color, 1.0f);
+        glm::vec4 borderColor(effect->color.x, effect->color.y, effect->color.z, 1.0f);
         UIDrawHelper::drawBorder(iconX, iconY, ICON_SIZE, ICON_SIZE, 2.0f,
             borderColor, screenWidth, screenHeight);
 
         // Effect icon character
-        textRenderer_->renderText(effect->iconChar,
+        textRenderer->renderText(effect->iconChar,
             iconX + ICON_SIZE / 2.0f - 4.0f, iconY + 10.0f,
             effect->color, 0.9f);
 
@@ -145,7 +144,7 @@ void UIActiveEffects::renderEffectIcons() {
 
             // Duration bar
             float fillWidth = barWidth * durationPercent;
-            glm::vec4 barFillColor(effect->color, 0.8f);
+            glm::vec4 barFillColor(effect->color.x, effect->color.y, effect->color.z, 0.8f);
             UIDrawHelper::drawColoredQuad(barX, barY, fillWidth, barHeight,
                 barFillColor, screenWidth, screenHeight);
         }
@@ -165,7 +164,7 @@ void UIActiveEffects::renderDurationBars() {
         if (effect->maxDuration <= 0.0f) continue;
 
         // Effect name
-        textRenderer_->renderText(effect->name,
+        textRenderer->renderText(effect->name,
             panelX, barY,
             effect->color, 0.6f);
 
@@ -174,7 +173,7 @@ void UIActiveEffects::renderDurationBars() {
         ss << std::fixed << std::setprecision(1) << effect->duration << "s";
         std::string durationText = ss.str();
 
-        textRenderer_->renderText(durationText,
+        textRenderer->renderText(durationText,
             panelX + 120.0f, barY,
             PlaceholderAssets::Colors::PARCHMENT_LIGHT, 0.5f);
     }
@@ -182,7 +181,7 @@ void UIActiveEffects::renderDurationBars() {
 
 void UIActiveEffects::renderEffectTooltip() {
     // Tooltip for first (primary) effect if available
-    if (effects_.empty() || !textRenderer_) return;
+    if (effects_.empty() || !textRenderer) return;
 
     const auto& primaryEffect = effects_[0];
     float tooltipX = START_X + ICON_SIZE + 20.0f;
@@ -190,12 +189,12 @@ void UIActiveEffects::renderEffectTooltip() {
 
     // Effect type label
     std::string typeLabel = getEffectTypeLabel(primaryEffect->type);
-    textRenderer_->renderText(typeLabel,
+    textRenderer->renderText(typeLabel,
         tooltipX, tooltipY,
         primaryEffect->color, 0.7f);
 
     // Effect name
-    textRenderer_->renderText(primaryEffect->name,
+    textRenderer->renderText(primaryEffect->name,
         tooltipX, tooltipY + 15.0f,
         PlaceholderAssets::Colors::PARCHMENT_LIGHT, 0.6f);
 
@@ -206,7 +205,7 @@ void UIActiveEffects::renderEffectTooltip() {
            << primaryEffect->duration << "s";
         std::string durationStr = ss.str();
 
-        textRenderer_->renderText(durationStr,
+        textRenderer->renderText(durationStr,
             tooltipX, tooltipY + 28.0f,
             glm::vec3(0.8f, 0.8f, 0.8f), 0.5f);
     }

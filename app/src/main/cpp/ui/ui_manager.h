@@ -146,7 +146,7 @@ private:
     std::unique_ptr<UIMinimap> minimap_;
     std::unique_ptr<UIPlayerStats> playerStats_;
 
-    TextRenderer* textRenderer_ = nullptr;
+    TextRenderer* textRenderer = nullptr;
     QuestManager* questManager_ = nullptr;
 
     int screenWidth_ = 1080;

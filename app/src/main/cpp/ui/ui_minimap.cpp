@@ -9,7 +9,7 @@ UIMinimap::UIMinimap() = default;
 
 bool UIMinimap::initialize(TextRenderer* textRenderer, int screenW, int screenH) {
     if (!textRenderer) return false;
-    textRenderer_ = textRenderer;
+    textRenderer = textRenderer;
     screenWidth = screenW;
     screenHeight = screenH;
     computeMapPosition();
@@ -90,7 +90,7 @@ void UIMinimap::update(float /* deltaTime */) {
 }
 
 void UIMinimap::render() {
-    if (!visible_ || !textRenderer_) return;
+    if (!visible_ || !textRenderer) return;
 
     GLboolean depthTestEnabled;
     glGetBooleanv(GL_DEPTH_TEST, &depthTestEnabled);
@@ -115,7 +115,7 @@ void UIMinimap::computeMapPosition() {
 
 void UIMinimap::renderBackground() {
     // Dark background
-    glm::vec4 bgColor(0.08f, 0.06f, 0.04f, 0.85f);
+    glm::vec4 bgColor(0.08f, 0.08f, 0.08f, 0.85f);
     UIDrawHelper::drawColoredQuad(mapX_, mapY_, MAP_SIZE, MAP_SIZE,
         bgColor, screenWidth, screenHeight);
 }
@@ -149,7 +149,7 @@ void UIMinimap::renderExploredCells() {
             if (!isInsideMap(screenPos)) continue;
 
             glm::vec3 c = cell.walkable ? cell.color : glm::vec3(0.4f, 0.35f, 0.25f);
-            glm::vec4 cellColor(c, 0.9f);
+            glm::vec4 cellColor(c.x, c.y, c.z, 0.9f);
             UIDrawHelper::drawColoredQuad(screenPos.x, screenPos.y,
                 2.0f, 2.0f, cellColor, screenWidth, screenHeight);
         }
@@ -165,7 +165,7 @@ void UIMinimap::renderMarkers() {
         glm::vec2 screenPos = worldToMinimap(marker.worldX, marker.worldZ);
         if (!isInsideMap(screenPos)) continue;
 
-        glm::vec4 markerColor(marker.color, 0.95f);
+        glm::vec4 markerColor(marker.color.x, marker.color.y, marker.color.z, 0.95f);
         float half = MARKER_SIZE / 2.0f;
         UIDrawHelper::drawColoredQuad(screenPos.x - half, screenPos.y - half,
             MARKER_SIZE, MARKER_SIZE, markerColor, screenWidth, screenHeight);
@@ -194,7 +194,7 @@ void UIMinimap::renderPlayerMarker() {
 
 void UIMinimap::renderBorderAndCompass() {
     // Outer border
-    glm::vec4 borderColor(0.55f, 0.45f, 0.25f, 1.0f);
+    glm::vec4 borderColor(0.55f, 0.55f, 0.55f, 1.0f);
     UIDrawHelper::drawBorder(mapX_, mapY_, MAP_SIZE, MAP_SIZE, 2.0f,
         borderColor, screenWidth, screenHeight);
 
@@ -202,10 +202,10 @@ void UIMinimap::renderBorderAndCompass() {
     glm::vec3 labelColor = PlaceholderAssets::Colors::PARCHMENT_LIGHT;
     float center = mapX_ + MAP_SIZE / 2.0f;
 
-    textRenderer_->renderText("N", center - 3.0f, mapY_ - 14.0f, labelColor, 0.6f);
-    textRenderer_->renderText("S", center - 3.0f, mapY_ + MAP_SIZE + 4.0f, labelColor, 0.6f);
-    textRenderer_->renderText("W", mapX_ - 12.0f, mapY_ + MAP_SIZE / 2.0f - 5.0f, labelColor, 0.6f);
-    textRenderer_->renderText("E", mapX_ + MAP_SIZE + 4.0f, mapY_ + MAP_SIZE / 2.0f - 5.0f, labelColor, 0.6f);
+    textRenderer->renderText("N", center - 3.0f, mapY_ - 14.0f, labelColor, 0.6f);
+    textRenderer->renderText("S", center - 3.0f, mapY_ + MAP_SIZE + 4.0f, labelColor, 0.6f);
+    textRenderer->renderText("W", mapX_ - 12.0f, mapY_ + MAP_SIZE / 2.0f - 5.0f, labelColor, 0.6f);
+    textRenderer->renderText("E", mapX_ + MAP_SIZE + 4.0f, mapY_ + MAP_SIZE / 2.0f - 5.0f, labelColor, 0.6f);
 }
 
 glm::vec2 UIMinimap::worldToMinimap(float worldX, float worldZ) const {

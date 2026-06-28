@@ -24,6 +24,10 @@ struct CharacterStatus {
     float stamina;
     float maxStamina;
 
+    // Level & Experience
+    uint32_t level = 1;
+    float experience = 0.0f;
+
     // Attributes (Oblivion 8 attributes)
     std::unordered_map<std::string, float> attributes;  // Strength, Intelligence, etc.
 

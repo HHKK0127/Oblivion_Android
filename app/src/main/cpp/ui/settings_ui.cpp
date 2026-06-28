@@ -54,12 +54,10 @@ void SettingsUI::buildGraphicalSettings() {
     settingsPanel->initialize();
     settingsPanel->setTitle("Settings");
     settingsPanel->setTitleBarHeight(44.0f);
-    settingsPanel->setTitleBarColor(glm::vec4(0.2f, 0.15f, 0.15f, 0.95f));
-    settingsPanel->setTitleColor(glm::vec4(1.0f, 0.9f, 0.7f, 1.0f));
+    settingsPanel->setTitleBarColor(glm::vec4(0.2f, 0.15f, 0.15f, 0.9f));
     settingsPanel->setCloseButtonVisible(true);
     settingsPanel->setDraggable(true);
-    settingsPanel->setBackgroundColor(glm::vec4(0.08f, 0.06f, 0.06f, 0.92f));
-    settingsPanel->setBorderColor(glm::vec4(0.5f, 0.3f, 0.3f, 1.0f));
+    settingsPanel->setBackgroundColor(glm::vec4(0.08f, 0.06f, 0.06f, 0.3f));
     settingsPanel->setBorderWidth(2.0f);
 
     // Load panel background texture
@@ -87,10 +85,8 @@ void SettingsUI::buildGraphicalSettings() {
         btn->setSize(340.0f, 52.0f);
         btn->setLabelScale(1.0f);
         btn->setLabelColor(glm::vec3(1.0f, 1.0f, 1.0f));
-        btn->setNormalColor(glm::vec4(0.2f, 0.15f, 0.15f, 0.85f));
-        btn->setHoverColor(glm::vec4(0.35f, 0.25f, 0.25f, 0.95f));
-        btn->setPressedColor(glm::vec4(0.5f, 0.35f, 0.35f, 1.0f));
-
+        btn->setNormalColor(glm::vec4(0.2f, 0.15f, 0.15f, 0.25f));
+        btn->setPressedColor(glm::vec4(0.5f, 0.35f, 0.35f, 0.8f));
         btn->setOnClick([this, item]() {
             selectItem(item);
             updateButtonLabels();

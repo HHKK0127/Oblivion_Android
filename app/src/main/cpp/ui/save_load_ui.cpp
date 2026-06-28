@@ -256,13 +256,13 @@ void SaveLoadUI::renderSlotList() {
                                         PlaceholderAssets::Colors::PARCHMENT_DARK);
             if (textRenderer) {
                 textRenderer->renderText("EMPTY", sx + 20.0f, sy + SLOT_HEIGHT * 0.3f,
-                                        0.8f, PlaceholderAssets::Colors::BROWN_ACCENT);
+                                        PlaceholderAssets::Colors::BROWN_ACCENT, 0.8f);
             }
         }
         if (textRenderer && currentMode == Mode::LOAD) {
             textRenderer->renderText("No saves available",
                                     panelX + panelW * 0.2f, panelY + maxVisibleSlots * (SLOT_HEIGHT + SLOT_MARGIN) * 0.4f,
-                                    0.9f, PlaceholderAssets::Colors::PARCHMENT_DARK);
+                                    PlaceholderAssets::Colors::PARCHMENT_DARK, 0.9f);
         }
         return;
     }
@@ -296,12 +296,12 @@ void SaveLoadUI::renderSlotList() {
                 : PlaceholderAssets::Colors::PARCHMENT_LIGHT;
             textRenderer->renderText(availableSlots[i],
                                     sx + 20.0f, sy + SLOT_HEIGHT * 0.28f,
-                                    1.0f, textColor);
+                                    textColor, 1.0f);
 
             // 選択中インジケーター
             if (isSelected) {
                 textRenderer->renderText(">", sx + 5.0f, sy + SLOT_HEIGHT * 0.28f,
-                                        1.0f, PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
+                                        PlaceholderAssets::Colors::GOLD_HIGHLIGHT, 1.0f);
             }
         }
     }
@@ -316,7 +316,7 @@ void SaveLoadUI::renderSlotList() {
         if (textRenderer && currentMode == Mode::SAVE) {
             textRenderer->renderText("EMPTY - New Save",
                                     sx + 20.0f, sy + SLOT_HEIGHT * 0.28f,
-                                    0.8f, PlaceholderAssets::Colors::BROWN_ACCENT);
+                                    PlaceholderAssets::Colors::BROWN_ACCENT, 0.8f);
         }
     }
 }
@@ -341,7 +341,7 @@ void SaveLoadUI::renderConfirmDialog() {
             message = "Delete '" + pendingSlotName + "'?";
         }
         textRenderer->renderText(message, dlgX + 30.0f, dlgY + 40.0f,
-                                1.0f, PlaceholderAssets::Colors::BROWN_ACCENT);
+                                PlaceholderAssets::Colors::BROWN_ACCENT, 1.0f);
     }
 
     // YES ボタン
@@ -354,7 +354,7 @@ void SaveLoadUI::renderConfirmDialog() {
                                  PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
     if (textRenderer) {
         textRenderer->renderText("YES", yesX + 45.0f, btnY + 14.0f,
-                                1.1f, PlaceholderAssets::Colors::BROWN_ACCENT);
+                                PlaceholderAssets::Colors::BROWN_ACCENT, 1.1f);
     }
 
     // NO ボタン
@@ -364,7 +364,7 @@ void SaveLoadUI::renderConfirmDialog() {
                                  PlaceholderAssets::Colors::BROWN_ACCENT);
     if (textRenderer) {
         textRenderer->renderText("NO", noX + 50.0f, btnY + 14.0f,
-                                1.1f, PlaceholderAssets::Colors::PARCHMENT_LIGHT);
+                                PlaceholderAssets::Colors::PARCHMENT_LIGHT, 1.1f);
     }
 }
 
@@ -382,7 +382,7 @@ void SaveLoadUI::renderErrorDialog() {
     if (textRenderer) {
         // エラータイトル
         textRenderer->renderText("ERROR", dlgX + dlgW * 0.35f, dlgY + 25.0f,
-                                1.3f, glm::vec3(0.8f, 0.1f, 0.1f));
+                                glm::vec3(0.8f, 0.1f, 0.1f), 1.3f);
 
         // エラーメッセージ（複数行対応）
         float yPos = dlgY + 80.0f;
@@ -392,7 +392,7 @@ void SaveLoadUI::renderErrorDialog() {
             if (lineEnd == std::string::npos) lineEnd = errorMessage.size();
             std::string line = errorMessage.substr(lineStart, lineEnd - lineStart);
             textRenderer->renderText(line, dlgX + 25.0f, yPos,
-                                    0.9f, PlaceholderAssets::Colors::BROWN_ACCENT);
+                                    PlaceholderAssets::Colors::BROWN_ACCENT, 0.9f);
             yPos += 38.0f;
             lineStart = lineEnd + 1;
         }
@@ -408,7 +408,7 @@ void SaveLoadUI::renderErrorDialog() {
                                  PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
     if (textRenderer) {
         textRenderer->renderText("OK", okX + 42.0f, okY + 12.0f,
-                                1.1f, PlaceholderAssets::Colors::BROWN_ACCENT);
+                                PlaceholderAssets::Colors::BROWN_ACCENT, 1.1f);
     }
 }
 
@@ -428,7 +428,7 @@ void SaveLoadUI::renderButtons() {
         std::string executeLabel = (currentMode == Mode::SAVE) ? "SAVE" : "LOAD";
         textRenderer->renderText(executeLabel,
                                 execX + btnW * 0.3f, btnY + btnH * 0.25f,
-                                1.1f, PlaceholderAssets::Colors::BROWN_ACCENT);
+                                PlaceholderAssets::Colors::BROWN_ACCENT, 1.1f);
     }
 
     // Cancel ボタン（右）
@@ -439,14 +439,14 @@ void SaveLoadUI::renderButtons() {
     if (textRenderer) {
         textRenderer->renderText("CANCEL",
                                 cancelX + btnW * 0.2f, btnY + btnH * 0.25f,
-                                1.1f, PlaceholderAssets::Colors::PARCHMENT_LIGHT);
+                                PlaceholderAssets::Colors::PARCHMENT_LIGHT, 1.1f);
     }
 
     // ヘルプテキスト
     if (textRenderer) {
         textRenderer->renderText("Tap a slot to select, then SAVE or LOAD",
                                 screenWidth * 0.15f, btnY + btnH + 10.0f,
-                                0.75f, PlaceholderAssets::Colors::PARCHMENT_DARK);
+                                PlaceholderAssets::Colors::PARCHMENT_DARK, 0.75f);
     }
 }
 

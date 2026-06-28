@@ -74,12 +74,12 @@ void UIToast::render() {
     float toastH = 48.0f;
 
     // Toast background with alpha fade
-    glm::vec4 bgColor(getToastBackgroundColor(), 0.85f * fadeAlpha_);
+    glm::vec4 bgColor(getToastBackgroundColor().x, getToastBackgroundColor().y, getToastBackgroundColor().z, 0.85f * fadeAlpha_);
     UIDrawHelper::drawColoredQuad(toastX, toastY, toastW, toastH, bgColor,
         screenWidth, screenHeight);
 
     // Toast border
-    glm::vec4 borderColor(getToastColor(), 1.0f * fadeAlpha_);
+    glm::vec4 borderColor(getToastColor().x, getToastColor().y, getToastColor().z, 1.0f * fadeAlpha_);
     UIDrawHelper::drawBorder(toastX, toastY, toastW, toastH, 2.0f, borderColor,
         screenWidth, screenHeight);
 

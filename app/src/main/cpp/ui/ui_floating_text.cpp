@@ -8,7 +8,7 @@ UIFloatingText::UIFloatingText() = default;
 
 bool UIFloatingText::initialize(TextRenderer* textRenderer, int screenW, int screenH) {
     if (!textRenderer) return false;
-    textRenderer_ = textRenderer;
+    textRenderer = textRenderer;
     screenWidth = screenW;
     screenHeight = screenH;
     return true;
@@ -48,7 +48,7 @@ void UIFloatingText::update(float deltaTime) {
 }
 
 void UIFloatingText::render() {
-    if (!textRenderer_) return;
+    if (!textRenderer) return;
 
     GLboolean depthTestEnabled;
     glGetBooleanv(GL_DEPTH_TEST, &depthTestEnabled);
@@ -66,7 +66,7 @@ void UIFloatingText::render() {
         // Adjust color with alpha
         glm::vec3 fadeColor = color * alpha;
 
-        textRenderer_->renderText(instance->text,
+        textRenderer->renderText(instance->text,
             instance->position.x, instance->position.y,
             fadeColor, scale);
     }

@@ -11,7 +11,7 @@ UITargetInfo::UITargetInfo() = default;
 
 bool UITargetInfo::initialize(TextRenderer* textRenderer, int screenW, int screenH) {
     if (!textRenderer) return false;
-    textRenderer_ = textRenderer;
+    textRenderer = textRenderer;
     screenWidth = screenW;
     screenHeight = screenH;
     return true;
@@ -40,7 +40,7 @@ void UITargetInfo::update(float deltaTime) {
 }
 
 void UITargetInfo::render() {
-    if (!hasTarget() || !textRenderer_) return;
+    if (!hasTarget() || !textRenderer) return;
 
     GLboolean depthTestEnabled;
     glGetBooleanv(GL_DEPTH_TEST, &depthTestEnabled);
@@ -67,35 +67,35 @@ void UITargetInfo::renderTargetPanel() {
         bgColor, screenWidth, screenHeight);
 
     // Panel border
-    glm::vec4 borderColor(0.5f, 0.4f, 0.2f, 0.95f);
+    glm::vec4 borderColor(0.5f, 0.5f, 0.5f, 0.45f);
     if (currentTarget_.isHostile) {
-        borderColor = glm::vec4(1.0f, 0.2f, 0.2f, 0.95f);  // Red for hostile
+        borderColor = glm::vec4(1.0f, 0.2f, 0.2f, 0.95f);
     }
     UIDrawHelper::drawBorder(panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT, 2.0f,
         borderColor, screenWidth, screenHeight);
 }
 
 void UITargetInfo::renderTargetName() {
-    if (!textRenderer_) return;
+    if (!textRenderer) return;
 
     float panelX = PANEL_X;
     float panelY = PANEL_Y;
 
     glm::vec3 nameColor = getNameColor(currentTarget_.type, currentTarget_.isHostile);
-    textRenderer_->renderText(currentTarget_.name,
+    textRenderer->renderText(currentTarget_.name,
         panelX + HEALTH_BAR_PADDING, panelY + 8.0f,
         nameColor, 0.8f);
 
     // Faction name if available
     if (!currentTarget_.faction.empty()) {
-        textRenderer_->renderText(currentTarget_.faction,
+        textRenderer->renderText(currentTarget_.faction,
             panelX + HEALTH_BAR_PADDING, panelY + 20.0f,
             PlaceholderAssets::Colors::PARCHMENT_LIGHT, 0.6f);
     }
 }
 
 void UITargetInfo::renderHealthBar() {
-    if (!textRenderer_) return;
+    if (!textRenderer) return;
 
     float panelX = PANEL_X;
     float panelY = PANEL_Y;
@@ -116,13 +116,13 @@ void UITargetInfo::renderHealthBar() {
     ss << std::fixed << std::setprecision(0) << (healthPercent * 100.0f) << "%";
     std::string healthText = ss.str();
 
-    textRenderer_->renderText(healthText,
+    textRenderer->renderText(healthText,
         healthBarX + HEALTH_BAR_WIDTH - 30.0f, healthBarY + 3.0f,
         PlaceholderAssets::Colors::PARCHMENT_LIGHT, 0.6f);
 }
 
 void UITargetInfo::renderTargetInfo() {
-    if (!textRenderer_) return;
+    if (!textRenderer) return;
 
     float panelX = PANEL_X;
     float panelY = PANEL_Y;
@@ -131,7 +131,7 @@ void UITargetInfo::renderTargetInfo() {
     ss << "Lvl " << currentTarget_.level;
     std::string levelText = ss.str();
 
-    textRenderer_->renderText(levelText,
+    textRenderer->renderText(levelText,
         panelX + HEALTH_BAR_PADDING, panelY + 65.0f,
         PlaceholderAssets::Colors::GOLD_HIGHLIGHT, 0.6f);
 
@@ -157,20 +157,20 @@ void UITargetInfo::renderTargetInfo() {
     }
 
     if (!typeText.empty()) {
-        textRenderer_->renderText(typeText,
+        textRenderer->renderText(typeText,
             panelX + HEALTH_BAR_PADDING + 60.0f, panelY + 65.0f,
             typeColor, 0.5f);
     }
 }
 
 void UITargetInfo::renderHostileIndicator() {
-    if (!currentTarget_.isHostile || !textRenderer_) return;
+    if (!currentTarget_.isHostile || !textRenderer) return;
 
     float panelX = PANEL_X;
     float panelY = PANEL_Y;
 
     // Red "!" indicator for hostile targets
-    textRenderer_->renderText("!",
+    textRenderer->renderText("!",
         panelX + PANEL_WIDTH - 20.0f, panelY + 8.0f,
         glm::vec3(1.0f, 0.2f, 0.2f), 1.0f);
 }
@@ -185,12 +185,12 @@ void UITargetInfo::renderBar(float x, float y, float currentValue, float maxValu
     // Value bar
     float fillWidth = (currentValue / std::max(1.0f, maxValue)) * HEALTH_BAR_WIDTH;
     fillWidth = std::max(0.0f, std::min(fillWidth, HEALTH_BAR_WIDTH));
-    glm::vec4 fillColor(barColor, 0.9f);
+    glm::vec4 fillColor(barColor.x, barColor.y, barColor.z, 0.9f);
     UIDrawHelper::drawColoredQuad(x, y, fillWidth, HEALTH_BAR_HEIGHT,
         fillColor, screenWidth, screenHeight);
 
     // Border
-    glm::vec4 borderColor(barColor, 1.0f);
+    glm::vec4 borderColor(barColor.x, barColor.y, barColor.z, 1.0f);
     UIDrawHelper::drawBorder(x, y, HEALTH_BAR_WIDTH, HEALTH_BAR_HEIGHT, 1.0f,
         borderColor, screenWidth, screenHeight);
 }

@@ -10,7 +10,7 @@ UIHudCompass::UIHudCompass() = default;
 
 bool UIHudCompass::initialize(TextRenderer* textRenderer, int screenW, int screenH) {
     if (!textRenderer) return false;
-    textRenderer_ = textRenderer;
+    textRenderer = textRenderer;
     screenWidth = screenW;
     screenHeight = screenH;
     return true;
@@ -39,7 +39,7 @@ void UIHudCompass::update(float deltaTime) {
 }
 
 void UIHudCompass::render() {
-    if (!textRenderer_) return;
+    if (!textRenderer) return;
 
     GLboolean depthTestEnabled;
     glGetBooleanv(GL_DEPTH_TEST, &depthTestEnabled);
@@ -71,7 +71,7 @@ void UIHudCompass::renderCompassBar() {
 }
 
 void UIHudCompass::renderCardinalDirections() {
-    if (!textRenderer_) return;
+    if (!textRenderer) return;
 
     float compassX = COMPASS_X_CENTER - COMPASS_WIDTH / 2.0f;
     float compassY = COMPASS_Y;
@@ -94,7 +94,7 @@ void UIHudCompass::renderCardinalDirections() {
         float screenPos = getMarkerScreenPosition(dir.angle);
         if (screenPos >= compassX && screenPos <= compassX + COMPASS_WIDTH) {
             glm::vec3 color = PlaceholderAssets::Colors::PARCHMENT_LIGHT;
-            textRenderer_->renderText(dir.label,
+            textRenderer->renderText(dir.label,
                 screenPos - 3.0f, compassY + 12.0f,
                 color, 0.7f);
         }
@@ -102,7 +102,7 @@ void UIHudCompass::renderCardinalDirections() {
 }
 
 void UIHudCompass::renderMarkers() {
-    if (!textRenderer_) return;
+    if (!textRenderer) return;
 
     float compassY = COMPASS_Y;
 
@@ -116,7 +116,7 @@ void UIHudCompass::renderMarkers() {
 
         // Render marker indicator
         float markerSize = 6.0f;
-        glm::vec4 markerQuadColor(markerColor, 0.9f);
+        glm::vec4 markerQuadColor(markerColor.x, markerColor.y, markerColor.z, 0.9f);
         UIDrawHelper::drawColoredQuad(screenPos - markerSize / 2.0f,
             compassY + COMPASS_HEIGHT / 2.0f - markerSize / 2.0f,
             markerSize, markerSize, markerQuadColor,
@@ -124,7 +124,7 @@ void UIHudCompass::renderMarkers() {
 
         // Render marker label if it fits
         if (!marker.label.empty()) {
-            textRenderer_->renderText(marker.label,
+            textRenderer->renderText(marker.label,
                 screenPos - 10.0f, compassY + COMPASS_HEIGHT - 12.0f,
                 markerColor, 0.5f);
         }
@@ -132,7 +132,7 @@ void UIHudCompass::renderMarkers() {
 }
 
 void UIHudCompass::renderPlayerIndicator() {
-    if (!textRenderer_) return;
+    if (!textRenderer) return;
 
     float compassX = COMPASS_X_CENTER - COMPASS_WIDTH / 2.0f;
     float compassY = COMPASS_Y;
@@ -149,7 +149,7 @@ void UIHudCompass::renderPlayerIndicator() {
     if (yawDisplay < 0) yawDisplay += 360;
 
     std::string yawText = std::to_string(yawDisplay) + "°";
-    textRenderer_->renderText(yawText,
+    textRenderer->renderText(yawText,
         COMPASS_X_CENTER - 15.0f, compassY + COMPASS_HEIGHT - 10.0f,
         PlaceholderAssets::Colors::GOLD_HIGHLIGHT, 0.6f);
 }
