@@ -17,26 +17,23 @@ class MainActivity : Activity() {
     companion object {
         private const val TAG = "MainActivity"
         private var instance: MainActivity? = null
+    }
 
-        @JvmStatic
-        fun playBGM(filename: String) {
-            instance?.playBGMInternal(filename) ?: Log.w(TAG, "MainActivity instance not available")
-        }
+    fun playBGM(filename: String) {
+        playBGMInternal(filename)
+    }
 
-        @JvmStatic
-        fun stopBGM() {
-            instance?.mediaPlayer?.let {
-                if (it.isPlaying) {
-                    it.stop()
-                    Log.i(TAG, "BGM stopped")
-                }
+    fun stopBGM() {
+        mediaPlayer?.let {
+            if (it.isPlaying) {
+                it.stop()
+                Log.i(TAG, "BGM stopped")
             }
         }
+    }
 
-        @JvmStatic
-        fun playSE(filename: String) {
-            instance?.playSEInternal(filename) ?: Log.w(TAG, "MainActivity instance not available")
-        }
+    fun playSE(filename: String) {
+        playSEInternal(filename)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

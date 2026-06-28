@@ -78,8 +78,9 @@ Java_com_example_oblivion_GameRenderer_nativeInitEngine(
 extern "C" JNIEXPORT void JNICALL
 Java_com_example_oblivion_GameRenderer_nativeInitAudioBridge(
         JNIEnv* env,
-        jobject mainActivityObj,
-        jobject assetManager) {
+        [[maybe_unused]] jclass clazz,
+        jobject assetManager,
+        jobject mainActivity) {
     LOGI("nativeInitAudioBridge called");
 
     if (!assetManager) {
@@ -110,8 +111,8 @@ Java_com_example_oblivion_GameRenderer_nativeInitAudioBridge(
     LOGD("JavaVM set");
 
     // MainActivity インスタンスを設定
-    if (mainActivityObj) {
-        jni_audio_set_main_activity(mainActivityObj);
+    if (mainActivity) {
+        jni_audio_set_main_activity(mainActivity);
         LOGD("MainActivity reference set");
     } else {
         LOGE("MainActivity object is null");
