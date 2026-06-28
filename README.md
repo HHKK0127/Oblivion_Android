@@ -1,7 +1,7 @@
 # Oblivion Android - Complete Native Port
 
-![Status](https://img.shields.io/badge/status-Phase%209-blue)
-![Version](https://img.shields.io/badge/version-0.9.0-blue)
+![Status](https://img.shields.io/badge/status-Phase%2024-blue)
+![Version](https://img.shields.io/badge/version-0.9.5-blue)
 ![License](https://img.shields.io/badge/license-Proprietary-red)
 ![Android](https://img.shields.io/badge/android-10%2B-green)
 
@@ -29,7 +29,7 @@
 - ✅ **Save/Load System / セーブ/ロード** - Game state persistence with slot management / スロット管理付き状態保存
 - ✅ **OpenAL 3D Audio / OpenAL 3Dオーディオ** - Spatial audio with distance attenuation / 距離減衰付き空間オーディオ
 - ✅ **RetroFilter Effects / レトロフィルター** - Pixelation, scanlines, color reduction, CRT distortion, film grain / ピクセル化・スキャンライン・色数制限・CRT歪み・フィルムグレイン
-- ✅ **Graphical UI / グラフィカルUI (Phase 9)** - Textured panels, buttons with hover/pressed states, background textures / テクスチャ付きパネル・ボタン（ホバー/押下状態）・背景テクスチャ
+- ✅ **Complete UI & HUD System / 完全なUI・HUDシステム (Phase 9-24)** - Inventory, Map, Character Sheet, Quest Log, Dialogue, Pause Menu, Combat HUD, etc. / インベントリ、マップ、ステータス、クエストログ、会話、ポーズ、戦闘HUD等
 
 ### Game Features / ゲーム機能
 - 🎯 Touch-based camera control / タッチ操作によるカメラ操作
@@ -42,7 +42,7 @@
 - 🎯 **NEW / 新機能**: Save/Load game state with slot management (Phase 8) / スロット管理付きセーブ/ロード
 - 🎯 **NEW / 新機能**: Settings menu with debug mode toggle and RetroFilter effects (Phase 8) / デバッグモード・レトロフィルター設定
 - 🎯 **NEW / 新機能**: 3D spatial audio with distance attenuation (Phase 8) / 距離減衰付き3D空間オーディオ
-- 🎯 **NEW / 新機能**: Graphical UI with textures and sound effects (Phase 9) / テクスチャ＋効果音付きグラフィカルUI
+- 🎯 **NEW / 新機能**: Complete Graphical UI and HUD systems (Phase 9-24) / 完全なグラフィカルUIとHUDシステムの実装
 
 ---
 
@@ -287,11 +287,12 @@ oblivion-android/
 | Phase 7 | Release Prep / リリース準備 | ✅ Complete / 完了 | Play Store documentation / Play Storeドキュメント |
 | Phase 7.1 | Enhanced Features / 拡張機能 | ✅ Complete / 完了 | Save/Load, improved UI / セーブ/ロード、改善されたUI |
 | Phase 8 | Audio & Post-Processing / オーディオ＆ポストプロセス | ✅ Complete / 完了 | OpenAL 3D Audio, RetroFilter, SaveLoadUI / OpenAL 3Dオーディオ、レトロフィルター、セーブ/ロードUI |
-| Phase 9 | Graphical UI & Asset Integration / グラフィカルUI＆アセット統合 | 🔄 In Progress / 進行中 | Textured UI, BSA assets, sound effects / テクスチャUI、BSAアセット、効果音 |
+| Phase 9-24 | Complete UI & HUD System / 完全なUI＆HUDシステム | ✅ Complete / 完了 | Inventory, Map, Quests, HUD / インベントリ、マップ、クエスト、HUD |
+| Phase 25 | Next Features / 次の機能 | 🔄 Not Started / 未開始 | TBD / 未定 |
 
 ---
 
-## 📊 Code Metrics (Phase 9) / コード指標
+## 📊 Code Metrics (Phase 24) / コード指標
 
 - **C++ Code / C++コード**: 7,000+ lines (includes audio, save/load, RetroFilter, graphical UI) / オーディオ、セーブ/ロード、レトロフィルター、グラフィカルUI含む
 - **Java Code / Javaコード**: 700+ lines / 700行以上
@@ -300,7 +301,7 @@ oblivion-android/
 - **Audio System / オーディオシステム**: 400+ lines (AudioManager, Audio3D, JNI bridge) / AudioManager、Audio3D、JNIブリッジ
 - **SaveLoadUI / セーブ/ロードUI**: 250+ lines (UI + error dialogs) / UI＋エラーダイアログ
 - **RetroFilter Effects / レトロフィルター効果**: 150+ lines (DebugHUD integration) / DebugHUD連携
-- **Graphical UI (Phase 9) / グラフィカルUI**: 500+ lines (UIPanel, UIButton, TextureLoader, UIDrawHelper) / UIPanel、UIButton、TextureLoader、UIDrawHelper
+- **Graphical UI & HUD (Phase 9-24) / UI・HUD**: 5,000+ lines (UIPanel, UIButton, TextureLoader, UIDrawHelper) / UIPanel、UIButton、TextureLoader、UIDrawHelper
 - **Sound Effects / 効果音**: 93 sound definitions, 307 WAV files / 93サウンド定義、307個のWAVファイル
 - **Compilation Time / コンパイル時間**: 6-7 minutes (release) / 6-7分（リリース）
 - **APK Size / APKサイズ**: 8.8 MB
@@ -309,20 +310,20 @@ oblivion-android/
 
 ## 🎯 Current Limitations / 現在の制限
 
-⚠️ **Phase 9 Current Limitations / 現在の制限**:
+⚠️ **Phase 24 Current Limitations / 現在の制限**:
 - ~~Debug mode always enabled~~ ✅ Fixed (Settings → Debug Mode) / 修正済み
 - ~~No save/load system~~ ✅ Implemented (Phase 8) / Phase 8で実装済み
 - ~~Text-based UI only~~ ✅ Graphical UI implemented (Phase 9) / Phase 9でグラフィカルUI実装済み
-- Limited NPC dialogue (Phase 9 expansion) / NPC会話が限定的（Phase 9で拡張予定）
-- No full inventory management (Phase 9) / 完全なインベントリ管理なし（Phase 9）
+- ~~Limited NPC dialogue~~ ✅ Implemented (Phase 10) / Phase 10で拡張済み
+- ~~No full inventory management~~ ✅ Implemented (Phase 9B) / Phase 9Bで実装済み
 - Single-player only (no multiplayer) / シングルプレイのみ（マルチプレイなし）
-- No map system yet (Phase 9) / マップシステムなし（Phase 9）
+- ~~No map system yet~~ ✅ Implemented (Phase 23) / Phase 23で実装済み
 
 See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for complete list / 完全なリストは KNOWN_ISSUES.md を参照。
 
 ---
 
-## 🚀 Future Enhancements (Phase 9+) / 将来の拡張
+## 🚀 Future Enhancements (Phase 25+) / 将来の拡張
 
 - 🗺️ Map with quest markers / クエストマーカー付きマップ
 - 📝 Expanded NPC dialogue / 拡張NPC会話
@@ -426,8 +427,8 @@ Proprietary - Experimental Port / 独自ライセンス - 実験的移植
 
 ---
 
-**Status / 状態**: Phase 9 In Progress / Phase 9 進行中
+**Status / 状態**: Phase 24 Complete / Phase 24 完了
 **Last Updated / 最終更新**: 2026-06-08
 **Version / バージョン**: 0.9.0
 **Features / 機能**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD / グラフィカルUI、テクスチャパネル＆ボタン、効果音、セーブ/ロードUI、OpenAL 3Dオーディオ、レトロフィルター効果、強化デバッグHUD
-**Next / 次回**: Phase 10 - Map System & Full Inventory / Phase 10 - マップシステム＆完全インベントリ
+**Next / 次回**: Phase 25 - TBD / Phase 25 - 未定
