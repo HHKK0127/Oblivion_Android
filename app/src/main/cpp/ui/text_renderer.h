@@ -35,6 +35,14 @@ public:
                     float scale = 1.0f);
 
     /**
+     * @brief テキストの横幅を計算して返す
+     * @param text 計算するテキスト
+     * @param scale スケール
+     * @return テキストの横幅（ピクセル）
+     */
+    float getTextWidth(const std::string& text, float scale = 1.0f);
+
+    /**
      * @brief 画面サイズを設定（投影行列計算用）
      */
     void setScreenSize(int width, int height);

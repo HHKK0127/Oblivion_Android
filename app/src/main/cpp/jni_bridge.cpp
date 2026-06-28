@@ -26,8 +26,11 @@ Java_com_example_oblivion_GameRenderer_nativeInitEngine(
     LOGI("=== nativeInitEngine called ===");
 
     if (g_renderer != nullptr) {
-        LOGD("Renderer already initialized, returning existing handle: %p", g_renderer);
-        return reinterpret_cast<jlong>(g_renderer);
+        LOGI("Renderer already existed when new OpenGL context was created (app resume).");
+        LOGI("Cleaning up and deleting old Renderer to ensure all OpenGL resources are recreated on the new context...");
+        g_renderer->cleanup();
+        delete g_renderer;
+        g_renderer = nullptr;
     }
 
     LOGI("Creating new Renderer instance...");

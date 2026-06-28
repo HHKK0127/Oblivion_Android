@@ -330,20 +330,26 @@ void TextRenderer::renderText(const std::string& text, float x, float y,
         // グリフ情報を取得
         Glyph glyph = getGlyph(codepoint);
 
-        // 文字の幅と高さ
-        float charWidth = 16.0f * scale;
-        float charHeight = 16.0f * scale;
+        // 文字の実際の幅と高さ（アトラス内のテクスチャ座標から復元）
+        float charWidth = (glyph.x1 - glyph.x0) * ATLAS_WIDTH * scale;
+        float charHeight = (glyph.y1 - glyph.y0) * ATLAS_HEIGHT * scale;
+        
+        // ベアリング（位置調整オフセット）を適用
+        float posX = currentX + glyph.bearingX * scale;
+        // stb_truetype の bearingY はベースラインからのオフセット（通常負の値）
+        // ここでは FONT_SIZE 分下げて、上端基準の描画とベースラインの整合性を取る
+        float posY = currentY + (FONT_SIZE + glyph.bearingY) * scale;
 
         // 頂点データを生成（四角形: 2三角形）
         float vertices[] = {
             // 位置座標              テクスチャ座標
-            currentX,               currentY,               glyph.x0, glyph.y0,  // 左上
-            currentX + charWidth,   currentY,               glyph.x1, glyph.y0,  // 右上
-            currentX,               currentY + charHeight,  glyph.x0, glyph.y1,  // 左下
+            posX,             posY,              glyph.x0, glyph.y0,  // 左上
+            posX + charWidth, posY,              glyph.x1, glyph.y0,  // 右上
+            posX,             posY + charHeight, glyph.x0, glyph.y1,  // 左下
 
-            currentX + charWidth,   currentY,               glyph.x1, glyph.y0,  // 右上
-            currentX + charWidth,   currentY + charHeight,  glyph.x1, glyph.y1,  // 右下
-            currentX,               currentY + charHeight,  glyph.x0, glyph.y1,  // 左下
+            posX + charWidth, posY,              glyph.x1, glyph.y0,  // 右上
+            posX + charWidth, posY + charHeight, glyph.x1, glyph.y1,  // 右下
+            posX,             posY + charHeight, glyph.x0, glyph.y1,  // 左下
         };
 
         glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
@@ -356,6 +362,19 @@ void TextRenderer::renderText(const std::string& text, float x, float y,
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindTexture(GL_TEXTURE_2D, 0);
     glUseProgram(0);
+}
+
+float TextRenderer::getTextWidth(const std::string& text, float scale) {
+    if (text.empty() || fontData == nullptr) {
+        return 0.0f;
+    }
+    float width = 0.0f;
+    for (char ch : text) {
+        unsigned int codepoint = (unsigned char)ch;
+        Glyph glyph = getGlyph(codepoint);
+        width += glyph.advanceX * scale;
+    }
+    return width;
 }
 
 TextRenderer::Glyph TextRenderer::getGlyph(unsigned int codepoint) {

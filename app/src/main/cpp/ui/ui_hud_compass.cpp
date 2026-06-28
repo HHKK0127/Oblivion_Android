@@ -56,8 +56,9 @@ void UIHudCompass::render() {
 }
 
 void UIHudCompass::renderCompassBar() {
+    float compassXCenter = screenWidth / 2.0f;
     // Compass background bar
-    float compassX = COMPASS_X_CENTER - COMPASS_WIDTH / 2.0f;
+    float compassX = compassXCenter - COMPASS_WIDTH / 2.0f;
     float compassY = COMPASS_Y;
 
     glm::vec4 bgColor(0.15f, 0.12f, 0.08f, 0.8f);
@@ -73,9 +74,9 @@ void UIHudCompass::renderCompassBar() {
 void UIHudCompass::renderCardinalDirections() {
     if (!textRenderer) return;
 
-    float compassX = COMPASS_X_CENTER - COMPASS_WIDTH / 2.0f;
+    float compassXCenter = screenWidth / 2.0f;
+    float compassX = compassXCenter - COMPASS_WIDTH / 2.0f;
     float compassY = COMPASS_Y;
-    float centerX = COMPASS_X_CENTER;
 
     // Cardinal directions
     struct CardinalDir {
@@ -134,13 +135,14 @@ void UIHudCompass::renderMarkers() {
 void UIHudCompass::renderPlayerIndicator() {
     if (!textRenderer) return;
 
-    float compassX = COMPASS_X_CENTER - COMPASS_WIDTH / 2.0f;
+    float compassXCenter = screenWidth / 2.0f;
+    float compassX = compassXCenter - COMPASS_WIDTH / 2.0f;
     float compassY = COMPASS_Y;
 
     // Draw player direction arrow at center
     float arrowSize = 8.0f;
     glm::vec4 arrowColor(0.9f, 0.8f, 0.2f, 1.0f);
-    UIDrawHelper::drawColoredQuad(COMPASS_X_CENTER - arrowSize / 2.0f,
+    UIDrawHelper::drawColoredQuad(compassXCenter - arrowSize / 2.0f,
         compassY + 2.0f, arrowSize, arrowSize, arrowColor,
         screenWidth, screenHeight);
 
@@ -150,7 +152,7 @@ void UIHudCompass::renderPlayerIndicator() {
 
     std::string yawText = std::to_string(yawDisplay) + "°";
     textRenderer->renderText(yawText,
-        COMPASS_X_CENTER - 15.0f, compassY + COMPASS_HEIGHT - 10.0f,
+        compassXCenter - 15.0f, compassY + COMPASS_HEIGHT - 10.0f,
         PlaceholderAssets::Colors::GOLD_HIGHLIGHT, 0.6f);
 }
 
@@ -173,8 +175,8 @@ float UIHudCompass::getMarkerScreenPosition(float markerAngle) const {
         relativeAngle = relativeAngle - 360.0f;
     }
 
-    float compassX = COMPASS_X_CENTER - COMPASS_WIDTH / 2.0f;
-    float position = COMPASS_X_CENTER + (relativeAngle / 180.0f) * (COMPASS_WIDTH / 2.0f);
+    float compassXCenter = screenWidth / 2.0f;
+    float position = compassXCenter + (relativeAngle / 180.0f) * (COMPASS_WIDTH / 2.0f);
 
     return position;
 }

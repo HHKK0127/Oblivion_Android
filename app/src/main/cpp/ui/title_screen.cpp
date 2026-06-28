@@ -63,18 +63,11 @@ void TitleScreen::buildGraphicalMenu() {
     menuPanel->setTitleBarHeight(0.0f);
     menuPanel->setCloseButtonVisible(false);
     menuPanel->setDraggable(false);
-    menuPanel->setBackgroundColor(glm::vec4(0.05f, 0.02f, 0.02f, 0.88f));
-    menuPanel->setBorderColor(glm::vec4(0.6f, 0.2f, 0.2f, 0.9f));
-    menuPanel->setBorderWidth(2.0f);
-
-    // Load menu panel background texture
-    if (menuPanelTexture == 0) {
-        menuPanelTexture = TextureLoader::loadTextureFromAsset("textures/ui/main_background.png");
-        LOGI("Menu panel texture loaded: %u", menuPanelTexture);
-    }
-    if (menuPanelTexture != 0) {
-        menuPanel->setTexture(menuPanelTexture);
-    }
+    
+    // オリジナルのOblivionのように、メニューの背景パネルと枠線は完全に透明にする
+    menuPanel->setBackgroundColor(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
+    menuPanel->setBorderColor(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
+    menuPanel->setBorderWidth(0.0f);
 
     struct BtnInfo {
         int index;
@@ -87,33 +80,22 @@ void TitleScreen::buildGraphicalMenu() {
         {MENU_QUIT,     "menu_quit"}
     };
 
-    // Load button textures
-    if (btnNormalTex == 0) {
-        btnNormalTex = TextureLoader::loadTextureFromAsset("textures/ui/shared_button_long_off.png");
-        btnHoverTex = TextureLoader::loadTextureFromAsset("textures/ui/shared_button_long_on.png");
-        btnPressedTex = TextureLoader::loadTextureFromAsset("textures/ui/shared_button_long_on.png");
-        LOGI("Button textures loaded: normal=%u hover=%u pressed=%u", btnNormalTex, btnHoverTex, btnPressedTex);
-    }
-
     for (const auto& info : infos) {
         auto btn = std::make_shared<UIButton>("MenuBtn" + std::to_string(info.index));
         btn->initialize();
         std::string label = localizationManager ? localizationManager->getString(info.labelKey) : info.labelKey;
         btn->setLabel(label);
         btn->setTextRenderer(textRenderer);
-        btn->setSize(300.0f, 60.0f);
-        btn->setLabelScale(1.2f);
-        btn->setLabelColor(glm::vec3(1.0f, 0.9f, 0.9f));
-        btn->setNormalColor(glm::vec4(0.25f, 0.08f, 0.08f, 0.9f));
-        btn->setHoverColor(glm::vec4(0.45f, 0.15f, 0.15f, 0.95f));
-        btn->setPressedColor(glm::vec4(0.6f, 0.2f, 0.2f, 1.0f));
+        btn->setSize(320.0f, 60.0f);
+        btn->setLabelScale(1.3f); // フォントサイズを少し大きくして見やすくする
+        btn->setLabelColor(glm::vec3(0.72f, 0.64f, 0.49f)); // 美しい羊皮紙/ブロンズゴールド色
+        
+        // ボタン自体の背景は完全に透明にする
+        btn->setNormalColor(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
+        btn->setHoverColor(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
+        btn->setPressedColor(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
 
-        // Set button textures
-        if (btnNormalTex != 0) {
-            btn->setNormalTexture(btnNormalTex);
-            btn->setHoverTexture(btnHoverTex);
-            btn->setPressedTexture(btnPressedTex);
-        }
+        // テクスチャは設定しない（透明なテキストのみのボタンにする）
 
         int idx = info.index;
         btn->setOnClick([this, idx]() {
@@ -132,19 +114,20 @@ void TitleScreen::rebuildMenuLayout() {
     if (!menuPanel) return;
     menuPanel->setScreenSize(screenWidth, screenHeight);
 
-    float panelW = 360.0f;
+    // オリジナルのOblivionのように、メニュー全体を画面左側に配置
+    float panelW = 400.0f;
     float panelH = 360.0f;
-    float px = (screenWidth - panelW) * 0.5f;
-    float py = screenHeight * 0.35f;
+    float px = screenWidth * 0.08f; // 画面の左端から少し離す
+    float py = screenHeight * 0.45f; // 下半分寄りに配置
     menuPanel->setPosition(px, py);
     menuPanel->setSize(panelW, panelH);
 
-    float btnW = 300.0f;
+    float btnW = 380.0f;
     float btnH = 60.0f;
-    float startY = 30.0f;
-    float gap = 12.0f;
+    float startY = 10.0f;
+    float gap = 16.0f; // ボタン間の縦の間隔
     for (size_t i = 0; i < menuButtons.size(); ++i) {
-        float bx = (panelW - btnW) * 0.5f;
+        float bx = 0.0f; // 左揃え
         float by = startY + static_cast<float>(i) * (btnH + gap);
         menuButtons[i]->setPosition(bx, by);
         menuButtons[i]->setSize(btnW, btnH);
@@ -240,6 +223,9 @@ void TitleScreen::renderMenu() {
         glClear(GL_COLOR_BUFFER_BIT);
     }
 
+    // オリジナルのOblivionのように、メニュー画面でも中央上部にオブリビオンロゴを表示
+    renderOblivionLogo(1.0f);
+
     if (menuPanel) {
         menuPanel->render();
     } else {
@@ -262,10 +248,12 @@ void TitleScreen::renderFadeOut() {
 
 void TitleScreen::renderOblivionLogo(float alpha) {
     if (logoTexture != 0) {
-        float logoW = static_cast<float>(screenWidth) * 0.8f;
-        float logoH = logoW * 0.25f;  // aspect ratio approx
+        // 横画面(Landscape)と縦画面(Portrait)でロゴの大きさを自動調整する
+        float scaleFactor = (screenWidth > screenHeight) ? 0.45f : 0.8f;
+        float logoW = static_cast<float>(screenWidth) * scaleFactor;
+        float logoH = logoW * 0.25f;  // アスペクト比に合わせる
         float logoX = (static_cast<float>(screenWidth) - logoW) * 0.5f;
-        float logoY = static_cast<float>(screenHeight) * 0.15f;
+        float logoY = static_cast<float>(screenHeight) * 0.12f; // 上部10%近辺の位置に配置
         UIDrawHelper::drawTexturedQuad(logoX, logoY, logoW, logoH,
                                        logoTexture, glm::vec4(1.0f, 1.0f, 1.0f, alpha), screenWidth, screenHeight);
     } else {

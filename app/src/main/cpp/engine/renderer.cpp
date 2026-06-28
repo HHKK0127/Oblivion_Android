@@ -842,6 +842,25 @@ void Renderer::render(float deltaTime) {
         LOGW("worldManager is null!");
     }
 
+    // ===== RETRO FILTER: Apply post-processing effects and render to screen =====
+    if (retroFilter) {
+        LOGI("RetroFilter exists, calling apply()...");
+        retroFilter->apply(retroSettings);
+        LOGI("RetroFilter apply() completed, calling renderToScreen()...");
+        retroFilter->renderToScreen();
+        LOGI("RetroFilter renderToScreen() completed");
+    } else {
+        LOGE("CRITICAL: retroFilter is NULL!");
+    }
+
+    // ===== NATIVE UI & HUD: Render directly on top of the screen at crisp, 100% full native resolution =====
+    // 2D UIやHUDをレトロフィルター適用「後」に描画することで、文字が潰れたりレイアウトが歪むのを完全に防ぎます。
+
+    // Update Debug HUD (DeltaTime is in milliseconds from the JNI layer)
+    if (debugHUD) {
+        debugHUD->update(deltaTime);
+    }
+
     // Render UI
     if (questUI) {
         questUI->render();
@@ -852,15 +871,9 @@ void Renderer::render(float deltaTime) {
         inventoryUI->render();
     }
 
-    // Update and render Debug HUD (always enabled for text rendering testing)
+    // Render Debug HUD
     if (debugHUD) {
-        LOGD("About to call debugHUD->update() and render()");
-        // DeltaTime is in milliseconds from the JNI layer
-        debugHUD->update(deltaTime);
         debugHUD->render();
-        LOGD("debugHUD->render() completed");
-    } else {
-        LOGD("debugHUD is null!");
     }
 
     // Render SaveLoadUI if visible (higher priority than SettingsUI)
@@ -876,17 +889,6 @@ void Renderer::render(float deltaTime) {
     // Render Phase 9 UI Framework components (overlays on top of existing UI)
     if (uiSystem) {
         uiSystem->render();
-    }
-
-    // ===== RETRO FILTER: Apply post-processing effects and render to screen =====
-    if (retroFilter) {
-        LOGI("RetroFilter exists, calling apply()...");
-        retroFilter->apply(retroSettings);
-        LOGI("RetroFilter apply() completed, calling renderToScreen()...");
-        retroFilter->renderToScreen();
-        LOGI("RetroFilter renderToScreen() completed");
-    } else {
-        LOGE("CRITICAL: retroFilter is NULL!");
     }
 
     // Frame rate control - enforce target FPS
