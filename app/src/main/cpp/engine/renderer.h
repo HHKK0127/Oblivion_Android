@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <chrono>
+#include <unordered_map>
 #include <android/log.h>
 #include <android/asset_manager.h>
 #include <GLES3/gl3.h>
@@ -27,6 +28,7 @@
 #include "../assets/asset_manager.h"
 #include "graphics/retro_filter.h"
 #include "../ui/ui_system.h"
+#include "../ui/ui_joystick.h"
 #include "../ui/ui_map_panel.h"
 #include "../map/map_system.h"
 #include "../inventory/inventory_grid.h"
@@ -86,6 +88,7 @@ private:
 
     // Phase 9: UI Framework System
     std::unique_ptr<UISystem> uiSystem;
+    std::shared_ptr<UIJoystick> joystick;
 
     // Phase 9.1: Map System
     std::unique_ptr<map::MapSystem> mapSystem;
@@ -170,7 +173,15 @@ public:
     int getTargetFPS() const { return targetFPS; }
 
     // Input Handling
-    void onTouchEvent(float x, float y);
+    void onTouchEvent(int pointerId, float x, float y, int action);
+
+    // Touch state tracking
+    struct TouchState {
+        float lastX = 0.0f;
+        float lastY = 0.0f;
+        bool active = false;
+    };
+    std::unordered_map<int, TouchState> touchStates;
 
     // Save/Load
     bool saveGameState(const std::string& slotName);

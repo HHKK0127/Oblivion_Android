@@ -9,13 +9,13 @@ UIShop::UIShop(const std::string& title)
     : UIPanel(title.empty() ? "Shop" : title) {
     // 商品棚風の背景色
     setBackgroundColor(glm::vec4(
-        PlaceholderAssets::Colors::PARCHMENT_DARK.r * 0.8f,
-        PlaceholderAssets::Colors::PARCHMENT_DARK.g * 0.75f,
-        PlaceholderAssets::Colors::PARCHMENT_DARK.b * 0.7f, 0.96f));
+        PlaceholderAssets::Colors::PARCHMENT_DARK.x * 0.8f,
+        PlaceholderAssets::Colors::PARCHMENT_DARK.y * 0.75f,
+        PlaceholderAssets::Colors::PARCHMENT_DARK.z * 0.7f, 0.96f));
     setBorderColor(glm::vec4(
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.r,
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.g,
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.b, 1.0f));
+        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.x,
+        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.y,
+        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.z, 1.0f));
     setBorderWidth(3.0f);
     setTitleBarColor(glm::vec4(0.2f, 0.15f, 0.1f, 0.85f));
     setCloseButtonVisible(true);
@@ -282,7 +282,7 @@ void UIShop::renderTransactionPanel() {
 
     // Buy/Sell buttons
     glm::vec4 buyButtonColor = (playerGold_ >= price * merchantQuantity)
-                                ? glm::vec4(PlaceholderAssets::Colors::GOLD_HIGHLIGHT, 1.0f)
+                                ? glm::vec4(PlaceholderAssets::Colors::GOLD_HIGHLIGHT.x, PlaceholderAssets::Colors::GOLD_HIGHLIGHT.y, PlaceholderAssets::Colors::GOLD_HIGHLIGHT.z, 1.0f)
                                 : glm::vec4(0.5f, 0.5f, 0.5f, 0.7f);
     UIDrawHelper::drawColoredQuad(cp.x + panelW - 130.0f, py + 45.0f, 55.0f, 24.0f, buyButtonColor,
         screenWidth, screenHeight);
@@ -291,7 +291,7 @@ void UIShop::renderTransactionPanel() {
         glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT), 0.65f);
 
     UIDrawHelper::drawColoredQuad(cp.x + panelW - 70.0f, py + 45.0f, 55.0f, 24.0f,
-        glm::vec4(PlaceholderAssets::Colors::BROWN_ACCENT, 0.8f),
+        glm::vec4(PlaceholderAssets::Colors::BROWN_ACCENT.x, PlaceholderAssets::Colors::BROWN_ACCENT.y, PlaceholderAssets::Colors::BROWN_ACCENT.z, 0.8f),
         screenWidth, screenHeight);
     textRenderer->renderText("Sell",
         cp.x + panelW - 55.0f, py + 50.0f,

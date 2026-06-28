@@ -27,6 +27,7 @@ public:
 
     // Input Handling
     void onTouchInput(float deltaX, float deltaY);  // Drag movement
+    void setJoystickInput(float x, float y);        // Joystick movement (x, y normalized)
     void onKeyboardInput(int key, bool isPressed);  // WASD + Space
     void setSprinting(bool sprint);
 
@@ -45,6 +46,7 @@ private:
 
     // Input State
     bool keysPressed[256] = {};  // WASD, Space tracking
+    glm::vec2 joystickInput = glm::vec2(0.0f, 0.0f); // Virtual joystick input
     bool isSprinting = false;
 
     // Movement Calculation

@@ -120,14 +120,14 @@ class GameRenderer : GLSurfaceView.Renderer {
         }
     }
 
-    fun onTouchEvent(dx: Float, dy: Float) {
+    fun onTouchEvent(pointerId: Int, x: Float, y: Float, action: Int) {
         if (nativeEngineHandle != 0L) {
-            nativeOnTouchEvent(nativeEngineHandle, dx, dy)
+            nativeOnTouchEvent(nativeEngineHandle, pointerId, x, y, action)
         }
     }
 
     private external fun nativeInitEngine(): Long
     private external fun nativeSetViewport(handle: Long, width: Int, height: Int)
     private external fun nativeRenderFrame(handle: Long)
-    private external fun nativeOnTouchEvent(handle: Long, dx: Float, dy: Float)
+    private external fun nativeOnTouchEvent(handle: Long, pointerId: Int, x: Float, y: Float, action: Int)
 }

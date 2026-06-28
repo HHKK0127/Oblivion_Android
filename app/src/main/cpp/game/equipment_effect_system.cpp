@@ -106,6 +106,6 @@ void EquipmentEffectSystem::applyArmorStats(const inventory::Item& armor) {
 
     if (armor.stats.defense > 0) {
         playerStatus->armorRating += static_cast<float>(armor.stats.defense);
-        LOGD("Equipped armor: %s (def+%.1f)", armor.name.c_str(), armor.stats.defense);
+        LOGD("Equipped armor: %s (def+%.1f)", armor.name.c_str(), static_cast<float>(armor.stats.defense));
     }
 }

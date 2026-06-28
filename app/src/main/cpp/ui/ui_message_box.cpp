@@ -9,13 +9,13 @@ UIMessageBox::UIMessageBox(const std::string& title)
     : UIPanel(title.empty() ? "Message" : title) {
     // Gold/cream parchment style for important messages
     setBackgroundColor(glm::vec4(
-        PlaceholderAssets::Colors::PARCHMENT_LIGHT.r * 0.95f,
-        PlaceholderAssets::Colors::PARCHMENT_LIGHT.g * 0.9f,
-        PlaceholderAssets::Colors::PARCHMENT_LIGHT.b * 0.8f, 0.98f));
+        PlaceholderAssets::Colors::PARCHMENT_LIGHT.x * 0.95f,
+        PlaceholderAssets::Colors::PARCHMENT_LIGHT.y * 0.9f,
+        PlaceholderAssets::Colors::PARCHMENT_LIGHT.z * 0.8f, 0.98f));
     setBorderColor(glm::vec4(
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.r,
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.g,
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.b, 1.0f));
+        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.x,
+        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.y,
+        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.z, 1.0f));
     setBorderWidth(3.0f);
     setTitleBarColor(glm::vec4(0.2f, 0.15f, 0.1f, 0.85f));
     setCloseButtonVisible(false);

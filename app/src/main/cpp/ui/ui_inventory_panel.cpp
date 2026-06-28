@@ -208,7 +208,7 @@ void UIInventoryPanel::renderInventoryGrid() {
                 }
                 float pad = cellSize * 0.15f;
                 UIDrawHelper::drawColoredQuad(x + pad, y + pad, cellSize - pad * 2.0f, cellSize - pad * 2.0f,
-                                              glm::vec4(itemColor, 1.0f), screenWidth, screenHeight);
+                                              glm::vec4(itemColor.x, itemColor.y, itemColor.z, 1.0f), screenWidth, screenHeight);
 
                 // Stack quantity indicator
                 if (slot.quantity > 1) {

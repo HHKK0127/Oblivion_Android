@@ -9,13 +9,13 @@ UIPauseMenu::UIPauseMenu(const std::string& title)
     : UIPanel(title.empty() ? "Pause Menu" : title) {
     // Dark medieval style menu
     setBackgroundColor(glm::vec4(
-        PlaceholderAssets::Colors::PARCHMENT_DARK.r * 0.9f,
-        PlaceholderAssets::Colors::PARCHMENT_DARK.g * 0.85f,
-        PlaceholderAssets::Colors::PARCHMENT_DARK.b * 0.8f, 0.95f));
+        PlaceholderAssets::Colors::PARCHMENT_DARK.x * 0.9f,
+        PlaceholderAssets::Colors::PARCHMENT_DARK.y * 0.85f,
+        PlaceholderAssets::Colors::PARCHMENT_DARK.z * 0.8f, 0.95f));
     setBorderColor(glm::vec4(
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.r,
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.g,
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.b, 1.0f));
+        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.x,
+        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.y,
+        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.z, 1.0f));
     setBorderWidth(4.0f);
     setTitleBarColor(glm::vec4(0.15f, 0.1f, 0.05f, 0.9f));
     setCloseButtonVisible(true);
@@ -105,7 +105,7 @@ void UIPauseMenu::renderMenuItems() {
     cy += 8.0f;
 
     // Render visible menu items
-    int visEnd = std::min(scrollOffset + MAX_VISIBLE_ITEMS, MENU_COUNT);
+    int visEnd = std::min(scrollOffset + MAX_VISIBLE_ITEMS, static_cast<int>(MENU_COUNT));
 
     for (int i = scrollOffset; i < visEnd; ++i) {
         bool selected = (i == selectedItemIndex);
@@ -155,7 +155,7 @@ int UIPauseMenu::hitTestMenuItem(float x, float y) const {
     glm::vec2 cp = getContentPosition();
     float cy = getMenuStartY() + 8.0f;
 
-    int visEnd = std::min(scrollOffset + MAX_VISIBLE_ITEMS, MENU_COUNT);
+    int visEnd = std::min(scrollOffset + MAX_VISIBLE_ITEMS, static_cast<int>(MENU_COUNT));
 
     for (int i = scrollOffset; i < visEnd; ++i) {
         float itemY = cy + (i - scrollOffset) * (MENU_ITEM_H + MENU_ITEM_GAP);
