@@ -183,8 +183,8 @@ void RetroFilter::createShaders() {
     const char* vertexShaderSource = R"(#version 300 es
 precision highp float;
 
-in vec2 position;
-in vec2 texCoord;
+layout(location = 0) in vec2 position;
+layout(location = 1) in vec2 texCoord;
 
 out vec2 vTexCoord;
 

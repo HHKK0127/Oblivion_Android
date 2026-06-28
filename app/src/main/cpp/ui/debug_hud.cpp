@@ -65,19 +65,6 @@ void DebugHUD::render() {
     }
     __android_log_print(ANDROID_LOG_INFO, "DebugHUD", "render() proceeding...");
 
-    // DEBUG: Test simple quad rendering first
-    textRenderer->renderDebugQuad();
-
-    // DEBUG: Test text rendering with large scale - VERY prominent
-    glm::vec3 testColorGreen(0.0f, 1.0f, 0.0f);  // Green for TEST
-    textRenderer->renderText("TEST", 50.0f, 350.0f, testColorGreen, 20.0f);  // Scale 20x, position higher
-    __android_log_print(ANDROID_LOG_INFO, "DebugHUD", "Rendered TEST text at (50, 350) with scale 20.0");
-
-    // DEBUG: Additional test with red text for contrast
-    glm::vec3 testColorRed(1.0f, 0.0f, 0.0f);  // Red text
-    textRenderer->renderText("OK", 400.0f, 350.0f, testColorRed, 20.0f);  // Scale 20x, different position
-    __android_log_print(ANDROID_LOG_INFO, "DebugHUD", "Rendered OK text (red) at (400, 350) with scale 20.0");
-
     // 白いテキストで情報を表示
     glm::vec3 textColor(1.0f, 1.0f, 1.0f);
     float xPos = 10.0f;
