@@ -191,9 +191,8 @@ void UIButton::renderLabel() const {
 
     glm::vec2 absPos = getAbsolutePosition();
 
-    // Estimate text size (rough approximation: ~16px per char at scale 1.0)
-    float approxCharWidth = 16.0f * labelScale;
-    float textWidth = approxCharWidth * static_cast<float>(label.length());
+    // Calculate accurate text dimensions
+    float textWidth = textRenderer->getTextWidth(label, labelScale);
     float textHeight = 32.0f * labelScale;
 
     // Center the text within the button
@@ -205,7 +204,23 @@ void UIButton::renderLabel() const {
     textX = std::round(textX);
     textY = std::round(textY);
 
-    textRenderer->renderText(label, textX, textY, labelColor, labelScale);
+    // If button has transparent background, highlight the label itself on press/hover (classic Oblivion style)
+    glm::vec3 drawColor = labelColor;
+    if (normalColor.w == 0.0f) {
+        if (pressed || hovered) {
+            drawColor = glm::vec3(0.95f, 0.88f, 0.65f); // Bright gold highlight
+        } else {
+            drawColor = glm::vec3(0.65f, 0.58f, 0.44f); // Muted bronze/parchment
+        }
+    } else {
+        if (!enabled) {
+            drawColor = labelColor * 0.5f;
+        } else if (pressed) {
+            drawColor = glm::vec3(1.0f, 1.0f, 1.0f);
+        }
+    }
+
+    textRenderer->renderText(label, textX, textY, drawColor, labelScale);
 }
 
 glm::vec4 UIButton::getCurrentColor() const {
