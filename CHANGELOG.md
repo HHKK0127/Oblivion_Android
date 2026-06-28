@@ -891,6 +891,36 @@ float Damage = max(1.0f, AttackPower - ArmorRating);
 
 ---
 
+## [0.9.1] - 2026-06-09 (Phase 9 - Asset Integration & Touch Fix)
+
+### Asset Integration
+- **Actual Oblivion Meshes**: Copied 2,188 NIF mesh files (264MB) from `bsa_Extraction/meshes/`
+  - Categories: architecture, armor, characters, clothes, clutter, creatures, dungeons, effects, plants, rocks, trees, weapons
+  - Main game + Shivering Isles content included
+  - Updated code references: `meshes/creatures/fleshatronach/fleshatronach.nif`, `meshes/characters/_male/skeleton.nif`
+
+- **Actual Oblivion Fonts**: Copied 10 font files (4.31MB) from `bsa_Extraction/fonts/`
+  - kingthings_regular, kingthings_shadowed, handwritten, daedric_font, tahoma_bold_small
+  - Each includes `.fnt` definition + `.tex` texture
+
+### Bug Fixes
+- **Title Screen Touch Handling**: Fixed Start button not responding to taps
+  - `GameSurfaceView.java`: Added ACTION_DOWN and ACTION_UP event forwarding
+  - `title_screen.cpp`: Enhanced direct hit detection within menuPanel bounds
+  - Added fallback legacy Y-based detection for compatibility
+  - Changed log levels from LOGD to LOGI for better visibility
+
+- **Game Screen Rendering**: Fixed black screen after title transition
+  - `renderer.cpp`: Added `glViewport()` before `glClear()` to ensure proper framebuffer clearing
+  - `cell.cpp`: Added simple colored quad rendering in `CellManager::renderCell()` for visual feedback
+  - `ui_draw_helper.cpp`: Added `#include "../ui/ui_draw_helper.h"` for world rendering access
+
+### Known Issues
+- **Texture Extraction**: `.dds` files not available in `bsa_Extraction/`. BSA file `Oblivion - Textures - Compressed.bsa` (1.2GB) has encrypted/compressed filename table requiring specialized tools (BSAUnpacker)
+- **Device Disconnection**: Wireless debugging connection lost during session. Requires re-pairing for final verification
+
+---
+
 ## Contributors
 
 **Development Team**:
@@ -900,6 +930,6 @@ float Damage = max(1.0f, AttackPower - ArmorRating);
 
 ---
 
-**Last Updated**: 2026-06-08  
+**Last Updated**: 2026-06-09  
 **Current Version**: 0.9.0 (Phase 9 Complete)  
 **Next Milestone**: Phase 10 - Map System & Full Inventory
