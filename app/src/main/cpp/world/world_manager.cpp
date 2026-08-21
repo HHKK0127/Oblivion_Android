@@ -458,6 +458,38 @@ uint32_t WorldManager::getOrCreateCellId(int32_t cellX, int32_t cellY) {
     return cellId;
 }
 
+std::shared_ptr<Cell> WorldManager::getCellByFormID(uint32_t tesFormID) const {
+    if (tesFormID == 0) return nullptr;
+    for (const auto& pair : cells) {
+        if (pair.second && pair.second->tesFormID == tesFormID) {
+            return pair.second;
+        }
+    }
+    return nullptr;
+}
+
+std::shared_ptr<Cell> WorldManager::addCellFromESM(int32_t cellX, int32_t cellY,
+                                                     const std::string& editorID,
+                                                     const std::string& fullName,
+                                                     uint32_t tesFormID) {
+    uint64_t key = (static_cast<uint64_t>(cellX) << 32) | (cellY & 0xFFFFFFFF);
+    auto it = coordToId.find(key);
+    if (it != coordToId.end()) {
+        return cells[it->second];
+    }
+
+    uint32_t cellId = nextCellId++;
+    std::string name = fullName.empty() ? editorID : fullName;
+    if (name.empty()) {
+        name = "Cell_" + std::to_string(cellX) + "_" + std::to_string(cellY);
+    }
+
+    auto cell = createCell(cellId, cellX, cellY, name, CellType::EXTERIOR);
+    cell->editorID = editorID;
+    cell->tesFormID = tesFormID;
+    return cell;
+}
+
 CellCoord WorldManager::getPlayerCellCoord() const {
     return CellCoordUtils::getCoordFromWorldPos(worldState.playerPosition);
 }

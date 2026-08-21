@@ -54,6 +54,12 @@ public:
     // Automatic load/unload based on player position
     void updateActiveCells();
 
+    // ESM-based cell creation
+    std::shared_ptr<Cell> addCellFromESM(int32_t cellX, int32_t cellY, 
+                                          const std::string& editorID,
+                                          const std::string& fullName,
+                                          uint32_t tesFormID = 0);
+
     // ========================================================================
     // Player Position Tracking
     // ========================================================================
@@ -83,6 +89,12 @@ public:
     std::shared_ptr<Cell> getCell(int32_t cellX, int32_t cellY) { return getCellByCoord(cellX, cellY); }
 
     const std::vector<std::shared_ptr<Cell>>& getActiveCells() const { return activeCells; }
+
+    // Get all cells (for ESM-based world building)
+    const std::unordered_map<uint32_t, std::shared_ptr<Cell>>& getAllCellsMap() const { return cells; }
+
+    // Find cell by TES FormID (ESM formID)
+    std::shared_ptr<Cell> getCellByFormID(uint32_t tesFormID) const;
 
     // Get all NPCs in a specific cell
     std::vector<NPC*> getNpcsInCell(uint32_t cellId);

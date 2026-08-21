@@ -33,6 +33,7 @@ void TitleScreen::initialize(LocalizationManager* lm, TextRenderer* tr) {
     menuItems.push_back("menu_quit");
 
     displayTimer = 0.0f;
+    bgAnimTime = 0.0f;
     state = TitleScreenState::LOGO_DISPLAY;
     selectedIndex = 0;
     gameStarted = false;
@@ -136,6 +137,8 @@ void TitleScreen::rebuildMenuLayout() {
 }
 
 void TitleScreen::update(float deltaTime) {
+    bgAnimTime += deltaTime;
+
     switch (state) {
         case TitleScreenState::LOGO_DISPLAY: {
             displayTimer += deltaTime;
@@ -199,8 +202,17 @@ void TitleScreen::renderLogoDisplay() {
     if (bgTexture != 0) {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+        
+        // Calculate slow camera panning/zooming over the parchment map, matching original Oblivion cinematic
+        float t = bgAnimTime * 0.015f; // Extremely slow motion
+        float uMin = 0.05f + 0.02f * sin(t);
+        float vMin = 0.05f + 0.02f * cos(t * 0.8f);
+        float uMax = uMin + 0.90f; // Zoom in slightly to allow panning without showing edges
+        float vMax = vMin + 0.90f;
+        
         UIDrawHelper::drawTexturedQuad(0.0f, 0.0f, static_cast<float>(screenWidth), static_cast<float>(screenHeight),
-                                       bgTexture, glm::vec4(1.0f, 1.0f, 1.0f, fadeAlpha), screenWidth, screenHeight);
+                                       bgTexture, glm::vec4(1.0f, 1.0f, 1.0f, fadeAlpha), screenWidth, screenHeight,
+                                       uMin, vMin, uMax, vMax);
     } else {
         float bgBrightness = 0.0f + (0.2f * fadeAlpha);
         glClearColor(bgBrightness, bgBrightness, bgBrightness, 1.0f);
@@ -216,8 +228,17 @@ void TitleScreen::renderMenu() {
     if (bgTexture != 0) {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+        
+        // Calculate slow camera panning/zooming over the parchment map, matching original Oblivion cinematic
+        float t = bgAnimTime * 0.015f; // Extremely slow motion
+        float uMin = 0.05f + 0.02f * sin(t);
+        float vMin = 0.05f + 0.02f * cos(t * 0.8f);
+        float uMax = uMin + 0.90f; // Zoom in slightly to allow panning without showing edges
+        float vMax = vMin + 0.90f;
+        
         UIDrawHelper::drawTexturedQuad(0.0f, 0.0f, static_cast<float>(screenWidth), static_cast<float>(screenHeight),
-                                       bgTexture, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), screenWidth, screenHeight);
+                                       bgTexture, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), screenWidth, screenHeight,
+                                       uMin, vMin, uMax, vMax);
     } else {
         glClearColor(0.12f, 0.05f, 0.05f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);

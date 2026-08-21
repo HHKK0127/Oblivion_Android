@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 #include <string>
 #include <cstdint>
+#include <vector>
 #include <unordered_map>
 #include <memory>
 #include <android/log.h>

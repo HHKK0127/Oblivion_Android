@@ -235,6 +235,29 @@ Java_com_example_oblivion_GameRenderer_nativeOnTouchEvent(
     }
 }
 
+// Set BSA data path from Java (e.g., external storage path)
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeSetDataPath(
+        JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jstring dataPath) {
+    if (!g_renderer) {
+        LOGE("nativeSetDataPath called but renderer is null");
+        return;
+    }
+
+    AssetManager* am = g_renderer->getAssetManager();
+    if (!am) {
+        LOGE("nativeSetDataPath called but AssetManager is null");
+        return;
+    }
+
+    const char* pathStr = env->GetStringUTFChars(dataPath, nullptr);
+    am->setDataPath(pathStr);
+    LOGI("BSA data path set to: %s", pathStr);
+    env->ReleaseStringUTFChars(dataPath, pathStr);
+}
+
 extern "C" JNIEXPORT void JNICALL
 Java_com_example_oblivion_GameRenderer_nativeOnKeyPress(
         [[maybe_unused]] JNIEnv* env,

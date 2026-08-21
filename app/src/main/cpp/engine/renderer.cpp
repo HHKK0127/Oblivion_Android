@@ -1,6 +1,7 @@
 #include "renderer.h"
 #include "texture_loader.h"
 #include "../ui/ui_draw_helper.h"
+#include "../assets/bsa_reader.h"
 // #include "../jni_audio_bridge.h"  // Deferred - requires Java MainActivity
 #include <thread>
 
@@ -233,6 +234,57 @@ void Renderer::initGameSystems() {
         return;
     }
     LOGI("AssetManager initialized successfully");
+
+    // Load BSA archives (must succeed or game has no data)
+    {
+        LOGI("Loading BSA archives...");
+
+        // Default BSA archive list for Oblivion
+        const char* bsaArchives[] = {
+            "Oblivion - Meshes.bsa",
+            "Oblivion - Textures - Compressed.bsa",
+            "Oblivion - Textures.bsa",
+            "Oblivion - Sounds.bsa",
+            "Oblivion - Voices.bsa",
+            "Oblivion - Misc.bsa",
+            "DLCShiveringIsles - Meshes.bsa",
+            "DLCShiveringIsles - Textures - Compressed.bsa",
+            "DLCShiveringIsles - Sounds.bsa",
+            "DLCShiveringIsles - Voices.bsa",
+            "DLCShiveringIsles - Misc.bsa"
+        };
+
+        int loadedCount = 0;
+        for (const auto& bsa : bsaArchives) {
+            if (assetManager->loadArchive(bsa)) {
+                loadedCount++;
+                LOGI("  [OK] Loaded BSA: %s", bsa);
+            } else {
+                LOGW("  [--] BSA not found (optional): %s", bsa);
+            }
+        }
+
+        LOGI("Loaded %d / %zu BSA archives", loadedCount,
+             sizeof(bsaArchives) / sizeof(bsaArchives[0]));
+    }
+
+    // Load ESM/ESP game data from BSA archives
+    {
+        LOGI("Loading ESM game data...");
+        // Oblivion.esm is inside Oblivion - Misc.bsa
+        if (assetManager->loadEsmFromArchive("Oblivion.esm")) {
+            LOGI("  [OK] Loaded Oblivion.esm");
+            LOGI("Record count: %zu", assetManager->getEsmManager().getRecordCount());
+            LOGI("Plugin count: %zu", assetManager->getEsmManager().getPluginCount());
+
+            // Log a sample of loaded records
+            LOGI("CELL records: %zu", assetManager->getEsmManager().findRecordsByType("CELL"));
+            LOGI("NPC_ records: %zu", assetManager->getEsmManager().findRecordsByType("NPC_"));
+            LOGI("WEAP records: %zu", assetManager->getEsmManager().findRecordsByType("WEAP"));
+        } else {
+            LOGW("  [--] Oblivion.esm not found (will test without ESM data)");
+        }
+    }
 
     // Initialize NPC Manager (before WorldManager)
     LOGI("Creating NpcManager...");
@@ -492,29 +544,113 @@ void Renderer::createTestScenario() {
         return;
     }
 
-    // Declare spell variables at function scope so they're available for spell casting
-    uint32_t fireball = 0;
-    uint32_t heal = 0;
-    uint32_t restoreMana = 0;
-
-    // Create test NPCs
     NpcManager* npcMgr = worldManager->getNpcManager();
     if (!npcMgr) {
         LOGE("ERROR: getNpcManager() returned null");
         return;
     }
 
-    auto izar = npcMgr->createNPC("Izar", glm::vec3(0.0f, 0.0f, 0.0f));
-    auto hellas = npcMgr->createNPC("Hellas", glm::vec3(5.0f, 0.0f, 0.0f));
+    // Check if we have real ESM data loaded
+    const auto& esmMgr = assetManager->getEsmManager();
+    bool hasEsmData = (esmMgr.getPluginCount() > 0);
 
-    if (!izar) {
-        LOGE("ERROR: Failed to create NPC 'Izar'");
-        return;
+    if (hasEsmData) {
+        LOGI("=== Building world from ESM data ===");
+
+        // 1. Load CELL records into WorldManager
+        const auto& esmCells = esmMgr.getAllCells();
+        LOGI("Loading %zu cells from ESM data", esmCells.size());
+        for (const auto& cell : esmCells) {
+            LOGD("  Cell: 0x%08X '%s' (%s) grid=[%d,%d]",
+                 cell.formID, cell.editorID.c_str(),
+                 cell.fullName.c_str(), cell.gridX, cell.gridY);
+            worldManager->addCellFromESM(
+                cell.gridX, cell.gridY,
+                cell.editorID, cell.fullName,
+                cell.formID);
+        }
+
+        // 2. Build lookup: baseFormID → NPCData for reference resolution
+        std::unordered_map<uint32_t, const oblivion::NPCData*> npcLookup;
+        const auto& esmNpcs = esmMgr.getAllNPCs();
+        for (const auto& npc : esmNpcs) {
+            npcLookup[npc.formID] = &npc;
+        }
+
+        // 3. Process REFR references to place NPCs at correct positions
+        const auto& refs = esmMgr.getAllReferences();
+        LOGI("Processing %zu references from ESM data", refs.size());
+        for (const auto& ref : refs) {
+            auto it = npcLookup.find(ref.baseFormID);
+            if (it != npcLookup.end()) {
+                const oblivion::NPCData* npcData = it->second;
+                auto npcPtr = npcMgr->createNPC(
+                    npcData->fullName.empty() ? npcData->editorID : npcData->fullName,
+                    ref.position);
+                if (npcPtr) {
+                    npcPtr->status.initialize(
+                        static_cast<float>(npcData->health),
+                        static_cast<float>(npcData->magicka),
+                        npcData->level);
+                    npcPtr->rotation = ref.rotation;
+                    npcPtr->meshAssetPath = "meshes/characters/imperial_male.nif";
+                    npcPtr->updateModelMatrix();
+                    LOGD("  Placed NPC: 0x%08X '%s' at (%.1f, %.1f, %.1f)",
+                         ref.formID, npcData->fullName.c_str(),
+                         ref.position.x, ref.position.y, ref.position.z);
+                }
+            }
+        }
+
+        // 4. Load LAND terrain data and assign to cells
+        const auto& terrains = esmMgr.getAllTerrains();
+        LOGI("Loading %zu terrain records from ESM data", terrains.size());
+        for (const auto& terrain : terrains) {
+            auto cell = worldManager->getCellByFormID(terrain.formID);
+            if (cell && terrain.hasHeights()) {
+                cell->heightData = terrain.heights;
+                cell->isDirty = true;
+                LOGD("  Assigned terrain to cell 0x%08X (%zu heights)",
+                     terrain.formID, terrain.heights.size());
+            }
+        }
+
+        // 5. Load WEAP records for reference
+        const auto& weapons = esmMgr.getAllWeapons();
+        LOGI("Loaded %zu weapons from ESM data", weapons.size());
+        for (const auto& weapon : weapons) {
+            LOGD("  Weapon: 0x%08X '%s' dmg=%u value=%u weight=%u",
+                 weapon.formID, weapon.fullName.c_str(),
+                 weapon.damage, weapon.value, weapon.weight);
+        }
+
+        // 6. Log worldspace definitions
+        const auto& worlds = esmMgr.getAllWorlds();
+        LOGI("Found %zu worldspaces", worlds.size());
+        for (const auto& w : worlds) {
+            LOGI("  WRLD: 0x%08X '%s' '%s'", w.formID, w.editorID.c_str(), w.fullName.c_str());
+        }
+
+        LOGI("ESM-based world generation complete");
+    } else {
+        LOGI("=== No ESM data available, using hardcoded test scenario ===");
+        // Fall back to hardcoded test (existing code below)
     }
-    if (!hellas) {
-        LOGE("ERROR: Failed to create NPC 'Hellas'");
-        return;
-    }
+
+    // Declare spell variables at function scope so they're available for spell casting
+    uint32_t fireball = 0;
+    uint32_t heal = 0;
+    uint32_t restoreMana = 0;
+
+    // Create test NPCs (always create at least basic test NPCs)
+    NpcManager* npcMgr2 = npcMgr;  // reuse pointer
+    
+    // Create NPCs using available data
+    auto izar = npcMgr2->createNPC("Izar", glm::vec3(0.0f, 0.0f, 0.0f));
+    auto hellas = npcMgr2->createNPC("Hellas", glm::vec3(5.0f, 0.0f, 0.0f));
+
+    if (!izar) { LOGE("ERROR: Failed to create NPC 'Izar'"); return; }
+    if (!hellas) { LOGE("ERROR: Failed to create NPC 'Hellas'"); return; }
 
     if (izar && hellas) {
         izar->status.initialize(150.0f, 100.0f, 5);

@@ -7,6 +7,7 @@ import android.media.SoundPool
 import android.os.Bundle
 import android.util.Log
 import java.io.IOException
+import java.io.File
 
 class MainActivity : Activity() {
 
@@ -57,24 +58,44 @@ class MainActivity : Activity() {
     }
 
     private fun initializeAudio() {
-        try {
-            mediaPlayer = MediaPlayer()
-            volumeControlStream = AudioManager.STREAM_MUSIC
-            Log.i(TAG, "MediaPlayer initialized for BGM")
-
-            soundPool = SoundPool.Builder().setMaxStreams(5).build()
-            Log.i(TAG, "SoundPool initialized for SE (max 5 sounds)")
-
             try {
-                GameRenderer.nativeInitAudioBridge(assets, this)
-                Log.i(TAG, "Audio bridge initialized with AssetManager and MainActivity")
+                mediaPlayer = MediaPlayer()
+                volumeControlStream = AudioManager.STREAM_MUSIC
+                Log.i(TAG, "MediaPlayer initialized for BGM")
+
+                soundPool = SoundPool.Builder().setMaxStreams(5).build()
+                Log.i(TAG, "SoundPool initialized for SE (max 5 sounds)")
+
+                try {
+                    GameRenderer.nativeInitAudioBridge(assets, this)
+                    Log.i(TAG, "Audio bridge initialized with AssetManager and MainActivity")
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to initialize audio bridge: ${e.message}")
+                }
+
+                // データパスを設定（BSA/ESMファイルの検索パス）
+                // nativeInitEngine() よりも前に呼ぶ必要がある。
+                // Renderer.init() は onSurfaceCreated → nativeInitEngine() の中で呼ばれ、
+                // その時点で BSA ロードを行うため、データパスは事前に登録必須。
+                try {
+                    val dataPath = filesDir.absolutePath + File.separator + "data"
+                    val dataDir = java.io.File(dataPath)
+                    if (!dataDir.exists()) {
+                        dataDir.mkdirs()
+                        Log.i(TAG, "Created data directory: $dataPath")
+                    }
+                    // 静的ファイル変数に保持（GameRenderer から参照される）
+                    GameRenderer.dataPath = dataPath
+                    // ネイティブ側にデータパスを登録（Engine 初期化前）
+                    GameRenderer.nativeSetDataPath(dataPath)
+                    Log.i(TAG, "BSA data path registered to native: $dataPath")
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to set BSA data path: ${e.message}")
+                }
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to initialize audio bridge: ${e.message}")
+                Log.e(TAG, "Failed to initialize audio", e)
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to initialize audio", e)
         }
-    }
 
     override fun onPause() {
         super.onPause()

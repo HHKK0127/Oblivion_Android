@@ -27,6 +27,7 @@ class TitleScreen {
 private:
     TitleScreenState state;
     float displayTimer;
+    float bgAnimTime = 0.0f;
     std::vector<std::string> menuItems;
     int selectedIndex;
     bool gameStarted;

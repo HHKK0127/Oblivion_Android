@@ -124,6 +124,8 @@ add_library(native-lib SHARED
     assets/nif_parser.cpp
     assets/dds_loader.cpp
     assets/asset_manager.cpp
+    assets/bsa_reader.cpp
+    assets/esm_reader.cpp
 
     # JNI Bridge (Java/C++ communication)
     jni_bridge.cpp
@@ -170,6 +172,7 @@ target_link_libraries(native-lib
     EGL
     GLESv3
     log
+    z  # Android's built-in libz for BSA ZLib decompression
 )
 
 # Link OpenAL if found

@@ -1,0 +1,380 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2026-08-21T17:33:35.8885119+09:00",
+  "entries": [
+    {
+      "content": "Oblivion.exe (Ghidra decompiled) - Gamebryo engine, compiled with VS2005/VS2008, Direct3D9. Init order: Renderer -> Shader System -> Sky -> TES -> TreeManager -> Menus -> Player -> Scripts -> Sound System -> Actor Locations -> LOD Land",
+      "id": "313850b2-4e88-4dbc-8287-73b9e850eba4",
+      "timestamp": "2026-08-21T04:08:00Z",
+      "priority": "high",
+      "tags": [
+        "oblivion",
+        "exe",
+        "reverse",
+        "startup-sequence",
+        "d3d9"
+      ],
+      "category": "reference"
+    },
+    {
+      "content": "Gamebryo scene graph: 'Oblivion World Scene Graph' and 'Oblivion Interface 3D Object Scene Graph' two-layer structure. NiNode Pool. BSFaceGenNiNodeBiped, BSFaceGenNiNodeSkinned for face gen. NiCollisionSwitch, NiCollisionData for collision.",
+      "id": "618177ff-09d8-439d-b002-aa7d99e83e83",
+      "timestamp": "2026-08-21T04:08:00Z",
+      "priority": "high",
+      "tags": [
+        "oblivion",
+        "gamebryo",
+        "scene-graph",
+        "nif",
+        "facegen"
+      ],
+      "category": "reference"
+    },
+    {
+      "content": "Render: D3D9.DLL -> Direct3DCreate9. Hardware T&L required (not supported fallback). Pixel/Vertex Shader 3.0 required (GeForce4 4400 or Radeon 8500+). Windowed mode check. BackBuffer multisampling handling. D3DXCreateTextureFromFileA, D3DXCreateTexture (256x256), D3DXCreateTextureFromFileInMemory, D3DXSaveTextureToFileA for screenshot.",
+      "id": "0bf7bfdb-c236-4aeb-ae5c-309020d0580f",
+      "timestamp": "2026-08-21T04:08:00Z",
+      "priority": "high",
+      "tags": [
+        "oblivion",
+        "render",
+        "d3d9",
+        "shader",
+        "texture"
+      ],
+      "category": "reference"
+    },
+    {
+      "content": "BSA archives: 'Oblivion - Meshes.bsa' confirmed. Loading: .esp -> replace extension to *.bsa -> open. ESM/ESP load order: Oblivion.esm, OblivionSE.esm.",
+      "id": "6666687a-47eb-4ae8-bc3c-5157a37d5ea8",
+      "timestamp": "2026-08-21T04:08:00Z",
+      "priority": "high",
+      "tags": [
+        "oblivion",
+        "bsa",
+        "archive",
+        "file-system"
+      ],
+      "category": "reference"
+    },
+    {
+      "content": "TES file system: TESFile class with ZLib inflate/deflate for compressed forms. Save header: 'TES4SAVEGAME' (12 bytes). TESSaveLoadGame::LoadForm, TESSaveLoadGame::UnloadForm, TESSaveLoadGame::SaveQueuedHavokData. Save version tracking, buffer overrun/underrun checks.",
+      "id": "ef3a46d9-f933-4498-a445-8e0710b3087b",
+      "timestamp": "2026-08-21T04:08:00Z",
+      "priority": "high",
+      "tags": [
+        "oblivion",
+        "save",
+        "tes4savegame",
+        "zlib",
+        "load"
+      ],
+      "category": "reference"
+    },
+    {
+      "content": "Script system: BSScript compiler, ScriptCompiler::StandardCompile with param validation. Compiles scripts from ESM/ESP with line-level error reporting. Variable ID lookup, references to actors/containers/spells/items/sounds.",
+      "id": "f60cdba6-b595-489a-b706-05aca65a9432",
+      "timestamp": "2026-08-21T04:08:00Z",
+      "priority": "high",
+      "tags": [
+        "oblivion",
+        "script",
+        "bsscript",
+        "compiler"
+      ],
+      "category": "reference"
+    },
+    {
+      "content": "UI menu system (Scaleform GFx/Flash): 48 XML menu files confirmed. Categories: Main HUD (hud_main_menu, hud_reticle, hud_info, safe_zone, inventory, magic, map, stats, quickkeys, subtitle), Options (main, pause, save, load, options, video, audio, controls, gameplay, credits), Chargen (race_sex, class, skills), Dialog (dialog, persuasion, spell_purchase, spellmaking, enchantment, alchemy), Others (book, container, lockpick, levelup, loading, message, quantity, recharge, repair, sleep_wait, training, negotiate, breath_meter).",
+      "id": "03a41bbc-adc2-45ad-84f5-d83230ed4254",
+      "timestamp": "2026-08-21T04:08:00Z",
+      "priority": "high",
+      "tags": [
+        "oblivion",
+        "ui",
+        "scaleform",
+        "flash",
+        "xml",
+        "menus"
+      ],
+      "category": "reference"
+    },
+    {
+      "content": "Havok physics engine integrated: LoadHavokData, SaveQueuedHavokData, collision object management. bhkFixedConstraint. Bone count validation on load. Arrow collision detection with actors/references. NiCollisionSwitch for enabling/disabling collision.",
+      "id": "df9f7afe-fc48-4a3b-8e4f-efdde022b87e",
+      "timestamp": "2026-08-21T04:08:00Z",
+      "priority": "high",
+      "tags": [
+        "oblivion",
+        "havok",
+        "physics",
+        "collision",
+        "bhk"
+      ],
+      "category": "reference"
+    },
+    {
+      "content": "Asset file types: NIF (meshes - Clothes/Armor/Weapons/Clutter/Sky/Markers), DDS (textures - sky/sun/water/effects/menus/icons/shadows), KF (animations - Idle, Death), WAV/MP3 (audio - TES4Title.mp3), BIK (video - OblivionIntro.bik). Shader path: 'data\\shaders\\'. Texture paths: 'Textures\\Menus', 'Textures\\Sky'. Water textures: 'Water\\water00.dds'.",
+      "id": "a2b23dc2-2079-4347-abd5-73bbc704c0a8",
+      "timestamp": "2026-08-21T04:08:00Z",
+      "priority": "high",
+      "tags": [
+        "oblivion",
+        "assets",
+        "nif",
+        "dds",
+        "kf",
+        "bik"
+      ],
+      "category": "reference"
+    },
+    {
+      "content": "Water system: Water Node, LODWaterRoot, Interior Water Node. Parameters configurable: fAlpha, uSurfaceTextureSize (128), water velocity, direction, amplitude, frequency, reflectivity, opacity. Multiple water types tied to worldspace. Water art asset validation against .ini.",
+      "id": "fe86d32d-cda2-4a59-91bc-e2813dc007bc",
+      "timestamp": "2026-08-21T04:08:00Z",
+      "priority": "high",
+      "tags": [
+        "oblivion",
+        "water",
+        "shader",
+        "lod"
+      ],
+      "category": "reference"
+    },
+    {
+      "content": "HDR/Bloom lighting: Current HDR Params with fEyeAdaptSpeed, fEmissiveHDRMult. SunGlareNonHDR.dds for non-HDR fallback. Multiple render paths available (shader-based). RendererInfo.txt output: RenderPath, Shaders 3.0, Water shader, Water reflections, Water displacement, Water high res, Bloom, Shader Package.",
+      "id": "322643e9-3a48-4043-bd4c-a634fe30bbe0",
+      "timestamp": "2026-08-21T04:08:00Z",
+      "priority": "high",
+      "tags": [
+        "oblivion",
+        "hdr",
+        "bloom",
+        "lighting",
+        "renderer-info"
+      ],
+      "category": "reference"
+    },
+    {
+      "content": "Audio: DirectSound8 (DirectSoundCreate8). Bink video sound system (_BinkOpenDirectSound). PlaySoundA for launcher (LauncherMusic.wav). Threading: CreateThread for worker thread, SetThreadPriority (range -2 to 15), WaitForSingleObject, CriticalSection (8+ sections), Sleep(50ms) for main loop. TLS (TlsFree) for thread-local interfaces.",
+      "id": "e2f2f2cb-ff11-497b-9964-852a9fa07085",
+      "timestamp": "2026-08-21T04:08:00Z",
+      "priority": "high",
+      "tags": [
+        "oblivion",
+        "audio",
+        "directsound",
+        "thread",
+        "bink"
+      ],
+      "category": "reference"
+    },
+    {
+      "content": "INI settings: Oblivion.ini, Oblivion_default.ini. Read via GetPrivateProfileIntA/GetPrivateProfileStringA. bUseMyGamesDirectory (General section). bAllowScreenShot (Display section). fQuestDelayTime gameplay setting. BlendSettings.ini also referenced. Launcher writes Plugins.txt and DLCList.txt.",
+      "id": "f130bd33-0d96-434f-87fa-6374179a58c9",
+      "timestamp": "2026-08-21T04:08:00Z",
+      "priority": "high",
+      "tags": [
+        "oblivion",
+        "ini",
+        "settings",
+        "configuration"
+      ],
+      "category": "reference"
+    },
+    {
+      "content": "World/Cell system: Exterior Cell Buffer and Interior Cell Buffer. Default worldspace 'Tamriel'. Starting cell lookup (Could not find starting cell). Cell water type lookup per worldspace. LOD land initialization per worldspace. Block/SubBlock structure for exterior cells.",
+      "id": "6c7a2e71-34a2-450d-9fba-39308992f86e",
+      "timestamp": "2026-08-21T04:08:00Z",
+      "priority": "high",
+      "tags": [
+        "oblivion",
+        "world",
+        "cell",
+        "exterior",
+        "interior"
+      ],
+      "category": "reference"
+    },
+    {
+      "content": "Magic effects use 4-char codes: WBAR (Water Breathing), WAWA (Water Walking), DWSR (Resist Water Damage). FPS display: 'FPS %d (%d)' and 'FPS %d (Type %d)'. Memory debug: 'Game not compiled with MEM_DEBUG.' Memory stats: block/free/used/heap tracking.",
+      "id": "6c10ec83-abc7-483d-9566-4907182d0d08",
+      "timestamp": "2026-08-21T04:08:00Z",
+      "priority": "high",
+      "tags": [
+        "oblivion",
+        "magic",
+        "fps",
+        "memory",
+        "debug"
+      ],
+      "category": "reference"
+    },
+    {
+      "content": "OblivionLauncher.exe: Windowed launcher with 'Oblivion Launcher' title, 'The Elder Scrolls IV: Oblivion' window text. Reads registry 'Software\\Bethesda Softworks\\Oblivion' for install path. Manages Oblivion.ini, Oblivion_default.ini, Plugins.txt, DLCList.txt. Creates Plugins.txt with header comment. Plays LauncherMusic.wav. Launches setup.exe for installer.",
+      "id": "e35d7a2a-c991-458a-9013-727cbfe2d535",
+      "timestamp": "2026-08-21T04:08:00Z",
+      "priority": "high",
+      "tags": [
+        "oblivion",
+        "launcher",
+        "registry",
+        "plugins"
+      ],
+      "category": "reference"
+    },
+    {
+      "content": "BSA Browser.exe (ILSpy decompiled) - .NET (C#) BSA archive viewer, compiled .NET 4.0 AnyCPU, AllowUnsafeBlocks=true. Project: BSA_Browser (L0ki.Controls root namespace), startup object BSA_Browser.Program. GitHub: https://github.com/AlexxEG/BSA_Browser. License: GPLv3.",
+      "id": "b8c4a12e-56f2-4d89-9c4a-8f1e3b7d9c05",
+      "timestamp": "2026-08-21T04:15:00Z",
+      "priority": "high",
+      "tags": [
+        "oblivion",
+        "bsa",
+        "bsa-browser",
+        "dotnet",
+        "source"
+      ],
+      "category": "reference"
+    },
+    {
+      "content": "BSA Browser external dependencies (SharpBSABA2 namespace): package 'Sharp.BSA.BA2' (SharpBSABA2.dll) is core BSA parsing library. Namespaces: SharpBSABA2, SharpBSABA2.BA2Util, SharpBSABA2.BSAUtil, SharpBSABA2.Enums. Other deps: Pfim.dll (DDS/PNG decoder), ICSharpCode.TextEditor.dll, System.Management.Automation.dll. API: Archive base class, ArchiveEntry base class, BSA(file, encoding, retrieveRealSize) constructor, BA2(file, encoding, retrieveRealSize) constructor, Archive.Files (List<ArchiveEntry>), Archive.FullPath, Archive.FileName, Archive.Type (ArchiveTypes enum: BA2_GNMF etc), Archive.HasNameTable, Archive.Close(), Archive.MatchLastWriteTime property, Archive.RetrieveRealSize property, BSA.IsSupportedVersion(file, encoding) static method, ArchiveEntry.Extract(folder, useFolderPath[, filename]) method, ArchiveEntry.GetDataStream() method, ArchiveEntry.FullPath, ArchiveEntry.FileName, ArchiveEntry.Folder, ArchiveEntry.HadHashTranslated, BA2TextureEntry.IsFormatSupported(), BA2GNFEntry (GNF texture format). Encoding parameter configurable via Options dialog.",
+      "id": "c0a3521b-67f3-4d8d-9e5b-2f6c4e8d1a07",
+      "timestamp": "2026-08-21T15:01:55Z",
+      "priority": "high",
+      "tags": [
+        "oblivion",
+        "bsa",
+        "sharpbsaba2",
+        "api",
+        "dll"
+      ],
+      "category": "reference"
+    },
+    {
+      "content": "BSA Browser file support: *.bsa (TES4/Oblivion BSA), *.ba2 (Fallout 4), *.dat (Fallout 2). Multi-select archive opening. All files filter: *.bsa;*.ba2;*.dat. TreeView UI with ArchiveNode (TreeNode subclass). Features: extract files/folders to disk, preview textures (DDS via DDSViewer, PNG/JPG/BMP with external app), preview text (TXT/XML/JSON/PSC/LST/BAT via TextViewer), compare archives via CompareForm, quick extract to predefined paths, extract archives (batch), icon extraction via SHFILEINFO/SHSTOCKICONINFO. Options dialog: Encoding (code page for string decoding), Retrieve real file size (slower but shows uncompressed size), Match last write time, Built-in previewing extensions list.",
+      "id": "d1e5632c-78f4-5e9f-af6c-3f7d5c9e2b18",
+      "timestamp": "2026-08-21T15:01:55Z",
+      "priority": "medium",
+      "tags": [
+        "oblivion",
+        "bsa",
+        "ui",
+        "features"
+      ],
+      "category": "reference"
+    },
+    {
+      "content": "BSA Browser source structure (L0ki.Controls/BSA_Browser namespace): Program.cs (entry), App.cs (WindowsFormsApplicationBase), BSABrowser.cs (main form). Classes/: ArchiveEntryException, ArchiveNode (TreeNode subclass for archive tree), Common (utility/helpers), CommonExtensions, CompletedEventArgs, ErrorEventArgs, ExtractOperation, FileAssociation, LimitedAction, ProgressPercentageUpdateEventArgs, ProgressType, QuickExtractPath, QuickExtractPaths, ShellExecute, StateChangeEventArgs, SystemIcons, WindowState, WindowStates. Dialogs/: ExtractArchivesDialog, NativeMethods, OpenFolderDialog, QuickExtractDialog, UnsupportedTexturesMessageBox. Enums/: ArchiveFileSortOrder, Icons, SystemErrorCodes. Extensions/: ListViewExtensions, TreeViewExtensions, VisualStyleExtensions. Preview/: DDSViewer, TextViewer. Sorting/: ArchiveFileSorter, NaturalFileInfoNameComparer, NaturalStringComparer, SafeNativeMethods, SortingConfig, TreeNodeSorter. Tools/: CompareEntryWindow, CompareForm, CompareItem, CompareType.",
+      "id": "e2f6743d-89f5-6a0f-bg7d-4g8e6d0f3c29",
+      "timestamp": "2026-08-21T15:01:55Z",
+      "priority": "medium",
+      "tags": [
+        "oblivion",
+        "bsa",
+        "source",
+        "structure"
+      ],
+      "category": "reference"
+    },
+    {
+      "content": "Sharp.BSA.BA2 (SharpBSABA2) - Actual BSA parsing library source code, GPLv3, from AlexxEG/BSA_Browser on GitHub. Solution structure: Sharp.BSA.BA2.csproj (.NET 4.0, AllowUnsafeBlocks). Namespace: SharpBSABA2. Dependencies: ICSharpCode.SharpZipLib (ZLib), K4os.Compression.LZ4 (LZ4), lz4.AnyCPU.loader. Enums: ArchiveTypes { BA2_DX10, BA2_GNRL, BA2_GNMF, BSA, BSA_XN, BSA_MW, BSA_SE, DAT_F2 }.",
+      "id": "f3a7854e-90f6-7b1c-af7d-5h9f7e1g4d3a",
+      "timestamp": "2026-08-21T15:22:55Z",
+      "priority": "high",
+      "tags": [
+        "oblivion",
+        "bsa",
+        "sharpbsaba2",
+        "source",
+        "github"
+      ],
+      "category": "reference"
+    },
+    {
+      "content": "Oblivion BSA binary format (from SharpBSABA2 source):\nHEADER (36 bytes): Magic=0x00415342 ('BSA\\0'), Version=0x67 (OB), FolderRecordOffset (uint32), ArchiveFlags (uint32), FolderCount (uint32), FileCount (uint32), FolderNameLength (uint32), FileNameLength (uint32), FileFlags (uint32).\nFOLDER RECORDS (per folder): Hash (uint64), FileCount (uint32), _pad/unk (4 bytes), Offset (uint32) -- Offset points to folder name in string table.\nFOLDER NAME STRING TABLE: each name is length-prefixed (byte length - 1), null-terminated. Length byte is offset 0x10000 into string pool.\nFILE RECORDS (per file in folder): Hash (uint64), Size (uint32), Offset (uint32).\nNAME TABLE (at end): null-terminated strings in format 'folder\\filename' for each file (in order).\nCOMPRESSION: ZLib (deflate) via ICSharpCode.SharpZipLib.Inflater. Bit 30 (0x40000000) of Size field toggles compression per-entry relative to ArchiveFlags.Compressed flag.\nRetrieveRealSize option: reads 4-byte uncompressed size before each compressed data block.\nSupported versions: 0x67 (Oblivion), 0x68 (Fallout 3), 0x69 (Skyrim SE).",
+      "id": "g4b8965f-01a7-8c2d-bg8e-6i0g8f2h5e4b",
+      "timestamp": "2026-08-21T15:22:55Z",
+      "priority": "high",
+      "tags": [
+        "oblivion",
+        "bsa",
+        "format",
+        "binary",
+        "header"
+      ],
+      "category": "reference"
+    },
+    {
+      "content": "Oblivion BSA ArchiveFlags field: bit 0 (0x1) = HasNameTable (folder+file name strings present), bit 1 (0x2) = HasFolderNames, bit 2 (0x4) = Compressed (OB_BSAARCHIVE_COMPRESSFILES). Fallout 3 adds bit 8 (0x100 = F3_BSAARCHIVE_PREFIXFULLFILENAMES) for full path name blobs per-file. SSE adds bit 12 (0x1000) and bit 13 (0x2000). HasNameTable is TRUE when both bit 0 AND bit 1 are set.",
+      "id": "h5c9a76g-12b8-9d3e-ch9f-7j1h9g3i6f5c",
+      "timestamp": "2026-08-21T15:22:55Z",
+      "priority": "high",
+      "tags": [
+        "oblivion",
+        "bsa",
+        "flags",
+        "archive"
+      ],
+      "category": "reference"
+    },
+    {
+      "content": "BSA compression toggle logic (from SharpBSABA2): ArchiveFlags.Compressed flag indicates whether files are compressed by default. Per-entry Size field bit 30 (0x40000000) acts as a per-file toggle: if set, the entry's compression state is INVERTED relative to the archive flag. XOR logic: isCompressed = ArchiveFlags.Compressed ^ ((size & 0x40000000) != 0). Size with bit 30 masked out: size ^= 0x40000000.",
+      "id": "i6d0b87h-23c9-0e4f-di0g-8k2i0h4j7g6d",
+      "timestamp": "2026-08-21T15:22:55Z",
+      "priority": "high",
+      "tags": [
+        "oblivion",
+        "bsa",
+        "compression",
+        "zlib"
+      ],
+      "category": "reference"
+    },
+    {
+      "content": "BSA per-file extraction algorithm (from SharpBSABA2 BSAFileEntry.WriteDataToStream):\n1. Seek to Offset in archive\n2. If ContainsFileNameBlobs (FO3/SSE): read 1 byte (name length), skip that many bytes + 1\n3. If decompress=true AND compressed:\n   a. Read uint32 (4 bytes) -- this is a pre-decompression size marker specific to OB format\n   b. Decompress 'Size - 4' bytes using ZLib Inflater (ICSharpCode.SharpZipLib)\n4. If decompress=false: directly copy 'Size' bytes (or 'Size - nameBlobOverhead' for SSE)\nFor SSE: LZ4 decompression (K4os.Compression.LZ4) instead of ZLib.",
+      "id": "j7e1c98i-34d0-1f5g-ej1h-9l3j1i5k8h7e",
+      "timestamp": "2026-08-21T15:22:55Z",
+      "priority": "high",
+      "tags": [
+        "oblivion",
+        "bsa",
+        "extraction",
+        "algorithm"
+      ],
+      "category": "reference"
+    },
+    {
+      "content": "SharpBSABA2 namespace full API:\n- Archive (abstract): FullPath, FileName, FileSize, LastWriteTime, FileCount, HasNameTable, VersionString, Type (ArchiveTypes), Chunks, Encoding, Inflater (SharpZipLib), Files (List<ArchiveEntry>), BinaryReader. Constructors: Archive(filePath), Archive(filePath, encoding), Archive(filePath, encoding, retrieveRealSize). Methods: Close(), CreateSharedParams(bool reader, bool inflater).\n- ArchiveEntry (abstract): FullPath, FileName, Folder, LowerPath, FullPathOriginal, Extension, Index, Offset, Size, RealSize, DisplaySize, Compressed, HadHashTranslated, nameHash, dirHash, BytesWritten, Archive. Methods: Extract(dest, preserveFolder, newName, extractParams), GetDataStream(extractParams), GetRawDataStream(extractParams), GetSizeInArchive(extractParams).\n- SharedExtractParams: Reader (BinaryReader), Inflater (SharpZipLib). Used for multi-threaded extraction.\n- BSA (BSAUtil): IsSupportedVersion(filePath, encoding) static method. Magic, Header (BSAHeader|BSAHeaderMW), Compressed, ContainsFileNameBlobs, Type (override: BSA, BSA_SE, BSA_MW, BSA_XN, DAT_F2).\n- BSAHeader (struct): Version (uint32), FolderRecordOffset (uint32), ArchiveFlags (uint32), FolderCount, FileCount, FolderNameLength, FileNameLength, FileFlags.\n- BSAHeaderMW (struct): Version, HashOffset, FileCount. Size=12 bytes.\n- BSAFileEntry: Version (BSAFileVersion enum: BSA/Morrowind/Fallout2), mwNameHash (Morrowind 64-bit hash).\n- BSAFolderInfo: Hash (uint64), FileCount, Unk1 (SSE only), Offset (pointer to folder name).\n- BSAFileInfo (struct): Hash (uint64), SizeFlags (uint32), Offset (uint32).\n- DAT2FileEntry (struct): FilenameSize, Filename, Compressed, RealSize, PackedSize, Offset.\n- XNGBSAFileEntry: RecordId, supports LZSS decompression.",
+      "id": "k8f2d09j-45e1-2g6h-fk2i-0m4k2j6l9i8f",
+      "timestamp": "2026-08-21T15:22:55Z",
+      "priority": "high",
+      "tags": [
+        "oblivion",
+        "bsa",
+        "sharpbsaba2",
+        "api",
+        "classes"
+      ],
+      "category": "reference"
+    },
+    {
+      "compressed": false,
+      "priority": "high",
+      "id": "e71b1f84-dfcd-4953-b805-a71b05f0388a",
+      "content": "ESM world generation: Added WorldManager::addCellFromESM() and Cell::editorID field. createTestScenario() now builds world from ESM CELL/NPC_/WEAP records instead of hardcoded data. NDK build passes with zero errors.",
+      "category": "decision",
+      "tags": [
+        "esm",
+        "world-generation",
+        "renderer"
+      ],
+      "timestamp": "2026-08-21T17:33:35.8728768+09:00"
+    }
+  ],
+  "metadata": {
+    "totalEntries": 27,
+    "compressedCount": 0,
+    "sessionCount": 1
+  }
+}

@@ -15,6 +15,7 @@ class GameRenderer : GLSurfaceView.Renderer {
 
     companion object {
         private const val TAG = "GameRenderer"
+        var dataPath: String = ""
 
         init {
             try {
@@ -28,6 +29,9 @@ class GameRenderer : GLSurfaceView.Renderer {
 
         @JvmStatic
         external fun nativeInitAudioBridge(assetManager: AssetManager, mainActivity: Any)
+
+        @JvmStatic
+        external fun nativeSetDataPath(path: String)
     }
 
     constructor()
@@ -59,10 +63,13 @@ class GameRenderer : GLSurfaceView.Renderer {
             Log.i(TAG, "nativeInitEngine returned: handle=$nativeEngineHandle")
 
             if (nativeEngineHandle == 0L) {
-                Log.e(TAG, "CRITICAL ERROR: nativeInitEngine returned 0 (native initialization failed)")
-            } else {
-                Log.i(TAG, "SUCCESS: Native engine initialized with valid handle")
-            }
+                            Log.e(TAG, "CRITICAL ERROR: nativeInitEngine returned 0 (native initialization failed)")
+                        } else {
+                            Log.i(TAG, "SUCCESS: Native engine initialized with valid handle")
+                            // Note: nativeSetDataPath() is called from MainActivity.initializeAudio()
+                            // before setContentView(), so BSA/ESM paths are already registered by the
+                            // time Renderer::initGameSystems() runs BSA loading.
+                        }
 
             gameSurfaceView?.let {
                 it.setRenderThreadInitialized(true)

@@ -1,6 +1,8 @@
 #include "asset_manager.h"
 #include <android/log.h>
 #include <algorithm>
+#include <fstream>
+#include <sstream>
 
 #undef LOG_TAG
 #undef LOGD
@@ -66,12 +68,170 @@ void AssetManager::cleanup() {
     textureCache.clear();
     currentCacheSize = 0;
 
+    closeAllArchives();
+
     if (ddsLoader) {
         ddsLoader->cleanup();
     }
 
     LOGD("AssetManager cleanup complete");
 }
+
+// ============================================================================
+// BSA Archive Management
+// ============================================================================
+
+bool AssetManager::loadArchive(const std::string& bsaPath) {
+    LOGD("Loading BSA archive: %s", bsaPath.c_str());
+
+    auto archive = std::make_unique<BSArchive>();
+    if (!archive->open(bsaPath)) {
+        LOGE("Failed to open BSA archive: %s", bsaPath.c_str());
+        return false;
+    }
+
+    LOGD("BSA archive loaded: %s (%u files, compressed=%s)",
+         bsaPath.c_str(),
+         archive->getFileCount(),
+         archive->isCompressed() ? "yes" : "no");
+
+    m_archives.push_back(std::move(archive));
+    return true;
+}
+
+void AssetManager::closeAllArchives() {
+    LOGD("Closing %zu BSA archives", m_archives.size());
+    m_archives.clear();
+}
+
+// ============================================================================
+// ESM Plugin Loading
+// ============================================================================
+
+bool AssetManager::loadEsm(const std::string& esmPath) {
+    LOGD("Loading ESM/ESP plugin: %s", esmPath.c_str());
+    return m_esmManager.loadPlugin(esmPath);
+}
+
+bool AssetManager::loadEsmFromArchive(const std::string& esmName) {
+    LOGD("Loading ESM from BSA archive: %s", esmName.c_str());
+    
+    // The ESM is stored inside a BSA. Find the ESM file from the archives.
+    std::string searchPath = esmName;
+    std::replace(searchPath.begin(), searchPath.end(), '/', '\\');
+    
+    // Search all loaded BSA archives for the ESM file
+    for (auto it = m_archives.rbegin(); it != m_archives.rend(); ++it) {
+        const BSAFileEntry* entry = (*it)->findFile(searchPath);
+        if (entry) {
+            LOGD("Found ESM in BSA: %s (offset=%u, size=%u)", 
+                 searchPath.c_str(), entry->offset, entry->size);
+            
+            std::vector<uint8_t> data;
+            if ((*it)->extractFileDecompressed(*entry, data)) {
+                LOGD("Extracted ESM data: %zu bytes", data.size());
+                // Parse the ESM data directly
+                return m_esmManager.loadPluginFromMemory(esmName, data.data(), data.size());
+            }
+        }
+    }
+    
+    // Fallback to direct file
+    if (!m_dataPath.empty()) {
+        std::string fullPath = m_dataPath + "\\" + searchPath;
+        return m_esmManager.loadPlugin(fullPath);
+    }
+    
+    LOGE("ESM file not found: %s", esmName.c_str());
+    return false;
+}
+
+// ============================================================================
+// BSA File Lookup
+// ============================================================================
+
+std::vector<uint8_t> AssetManager::loadFileData(const std::string& path) {
+    std::string searchPath = path;
+    std::replace(searchPath.begin(), searchPath.end(), '/', '\\');
+
+    // Search BSA archives in reverse order (last loaded = highest priority)
+    for (auto it = m_archives.rbegin(); it != m_archives.rend(); ++it) {
+        const BSAFileEntry* entry = (*it)->findFile(searchPath);
+        if (entry) {
+            std::vector<uint8_t> data;
+            if ((*it)->extractFileDecompressed(*entry, data)) {
+                LOGD("Loaded file from BSA: %s (%zu bytes)", searchPath.c_str(), data.size());
+                return data;
+            }
+        }
+    }
+
+    // Fallback to direct file access
+    if (!m_dataPath.empty()) {
+        std::string fullPath = m_dataPath + "\\" + searchPath;
+        std::ifstream file(fullPath, std::ios::binary);
+        if (file.is_open()) {
+            file.seekg(0, std::ios::end);
+            size_t size = file.tellg();
+            file.seekg(0, std::ios::beg);
+            std::vector<uint8_t> data(size);
+            file.read(reinterpret_cast<char*>(data.data()), size);
+            LOGD("Loaded file from disk: %s (%zu bytes)", fullPath.c_str(), data.size());
+            return data;
+        }
+    }
+
+    LOGE("File not found: %s", searchPath.c_str());
+    return {};
+}
+
+bool AssetManager::fileExists(const std::string& path) const {
+    std::string searchPath = path;
+    std::replace(searchPath.begin(), searchPath.end(), '/', '\\');
+
+    for (const auto& archive : m_archives) {
+        if (archive->findFile(searchPath)) {
+            return true;
+        }
+    }
+
+    if (!m_dataPath.empty()) {
+        std::string fullPath = m_dataPath + "\\" + searchPath;
+        std::ifstream file(fullPath);
+        return file.good();
+    }
+
+    return false;
+}
+
+std::vector<std::string> AssetManager::findFiles(const std::string& prefix) const {
+    std::vector<std::string> results;
+    std::string searchPrefix = prefix;
+    std::replace(searchPrefix.begin(), searchPrefix.end(), '/', '\\');
+
+    for (const auto& archive : m_archives) {
+        auto entries = archive->findFilesByPrefix(searchPrefix);
+        for (const auto* entry : entries) {
+            results.push_back(entry->fullPath);
+        }
+    }
+    return results;
+}
+
+std::vector<std::string> AssetManager::findFilesByExtension(const std::string& ext) const {
+    std::vector<std::string> results;
+    for (const auto& archive : m_archives) {
+        auto entries = archive->findFilesByExtension(ext);
+        for (const auto* entry : entries) {
+            results.push_back(entry->fullPath);
+        }
+    }
+    return results;
+}
+
+// ============================================================================
+// Asset Loading
+// ============================================================================
 
 std::shared_ptr<Mesh> AssetManager::loadNifMesh(const std::string& nifPath) {
     LOGD("Loading NIF mesh: %s", nifPath.c_str());
@@ -83,7 +243,23 @@ std::shared_ptr<Mesh> AssetManager::loadNifMesh(const std::string& nifPath) {
         return std::static_pointer_cast<Mesh>(meshCache[nifPath].asset);
     }
 
-    // Load NIF file
+    // Try loading from BSA archives first
+    std::vector<uint8_t> fileData = loadFileData(nifPath);
+    if (!fileData.empty()) {
+        auto mesh = loadNifFromData(nifPath, fileData.data(), fileData.size());
+        if (mesh) {
+            CacheEntry entry;
+            entry.asset = mesh;
+            entry.sizeBytes = sizeof(Mesh) + (mesh->getIndexCount() * sizeof(unsigned int));
+            entry.lastAccessTime = 0.0f;
+            meshCache[nifPath] = entry;
+            currentCacheSize += entry.sizeBytes;
+            LOGD("Mesh loaded from BSA: %s", nifPath.c_str());
+            return mesh;
+        }
+    }
+
+    // Fallback: try direct file path (legacy)
     if (!nifParser->parseFile(nifPath)) {
         LOGE("Failed to parse NIF file: %s", nifPath.c_str());
         return nullptr;
@@ -92,35 +268,20 @@ std::shared_ptr<Mesh> AssetManager::loadNifMesh(const std::string& nifPath) {
     // Create mesh from NIF geometry
     auto mesh = std::make_shared<Mesh>();
 
-    // Extract geometry from parsed NIF
     auto geometries = nifParser->extractAllGeometry();
     if (!geometries.empty()) {
-        // Use first geometry for now
-        // TODO: Handle multiple geometries per model
         const auto& geom = geometries[0];
 
-        // Convert NIF vectors to Vertex format
         std::vector<Vertex> vertices;
         for (size_t i = 0; i < geom.vertices.size(); i++) {
             Vertex v;
             v.position = geom.vertices[i].toGLM();
-
-            if (i < geom.normals.size()) {
-                v.normal = geom.normals[i].toGLM();
-            }
-
-            if (i < geom.texCoords.size()) {
-                v.texCoord = geom.texCoords[i];
-            }
-
-            if (i < geom.colors.size()) {
-                v.color = glm::vec3(geom.colors[i].x, geom.colors[i].y, geom.colors[i].z);
-            }
-
+            if (i < geom.normals.size()) v.normal = geom.normals[i].toGLM();
+            if (i < geom.texCoords.size()) v.texCoord = geom.texCoords[i];
+            if (i < geom.colors.size()) v.color = glm::vec3(geom.colors[i].x, geom.colors[i].y, geom.colors[i].z);
             vertices.push_back(v);
         }
 
-        // Convert indices
         std::vector<unsigned int> indices;
         for (const auto& tri : geom.triangles) {
             indices.push_back(tri.v0);
@@ -135,14 +296,63 @@ std::shared_ptr<Mesh> AssetManager::loadNifMesh(const std::string& nifPath) {
         LOGD("Mesh created: %zu vertices, %zu indices", vertices.size(), indices.size());
     }
 
-    // Cache the mesh
     CacheEntry entry;
     entry.asset = mesh;
     entry.sizeBytes = sizeof(Mesh) + (mesh->getIndexCount() * sizeof(unsigned int));
     entry.lastAccessTime = 0.0f;
-
     meshCache[nifPath] = entry;
     currentCacheSize += entry.sizeBytes;
+
+    return mesh;
+}
+
+std::shared_ptr<Mesh> AssetManager::loadNifFromData(const std::string& path,
+                                                     const uint8_t* data, size_t dataSize) {
+    // Generate a unique temp file path for the NIF data
+    // Hash the path to avoid collisions
+    std::string tempFile = "/data/data/com.example.oblivion/cache/bsa_nif_" +
+                           std::to_string(std::hash<std::string>{}(path)) + ".nif";
+
+    std::ofstream outFile(tempFile, std::ios::binary);
+    if (!outFile.is_open()) {
+        LOGE("Failed to create temp file for NIF: %s", path.c_str());
+        return nullptr;
+    }
+    outFile.write(reinterpret_cast<const char*>(data), dataSize);
+    outFile.close();
+
+    // Parse directly from temp file (avoid recursion through loadNifMesh)
+    if (!nifParser->parseFile(tempFile)) {
+        LOGE("Failed to parse NIF from temp file: %s", path.c_str());
+        return nullptr;
+    }
+
+    auto mesh = std::make_shared<Mesh>();
+    auto geometries = nifParser->extractAllGeometry();
+    if (!geometries.empty()) {
+        const auto& geom = geometries[0];
+
+        std::vector<Vertex> vertices;
+        for (size_t i = 0; i < geom.vertices.size(); i++) {
+            Vertex v;
+            v.position = geom.vertices[i].toGLM();
+            if (i < geom.normals.size()) v.normal = geom.normals[i].toGLM();
+            if (i < geom.texCoords.size()) v.texCoord = geom.texCoords[i];
+            if (i < geom.colors.size()) v.color = glm::vec3(geom.colors[i].x, geom.colors[i].y, geom.colors[i].z);
+            vertices.push_back(v);
+        }
+
+        std::vector<unsigned int> indices;
+        for (const auto& tri : geom.triangles) {
+            indices.push_back(tri.v0);
+            indices.push_back(tri.v1);
+            indices.push_back(tri.v2);
+        }
+
+        mesh->setVertices(vertices);
+        mesh->setIndices(indices);
+        mesh->uploadToGPU();
+    }
 
     return mesh;
 }
@@ -150,42 +360,48 @@ std::shared_ptr<Mesh> AssetManager::loadNifMesh(const std::string& nifPath) {
 std::shared_ptr<Material> AssetManager::loadDDSTexture(const std::string& ddsPath) {
     LOGD("Loading DDS texture: %s", ddsPath.c_str());
 
-    // Check cache first
     if (textureCache.find(ddsPath) != textureCache.end()) {
         LOGD("Texture found in cache: %s", ddsPath.c_str());
         textureCache[ddsPath].lastAccessTime = 0.0f;
         return std::static_pointer_cast<Material>(textureCache[ddsPath].asset);
     }
 
-    // Load DDS file
-    if (!ddsLoader->loadFile(ddsPath)) {
+    // Try loading from BSA archives
+    std::string loadPath = ddsPath;
+    std::vector<uint8_t> fileData = loadFileData(ddsPath);
+    if (!fileData.empty()) {
+        std::string tempFile = "/data/data/com.example.oblivion/cache/bsa_dds_" +
+                               std::to_string(std::hash<std::string>{}(ddsPath)) + ".dds";
+        std::ofstream outFile(tempFile, std::ios::binary);
+        if (outFile.is_open()) {
+            outFile.write(reinterpret_cast<const char*>(fileData.data()), fileData.size());
+            outFile.close();
+            loadPath = tempFile;
+        }
+    }
+
+    if (!ddsLoader->loadFile(loadPath)) {
         LOGE("Failed to load DDS file: %s", ddsPath.c_str());
         return nullptr;
     }
 
-    // Decompress texture
     if (!ddsLoader->decompressTexture()) {
         LOGE("Failed to decompress DDS texture: %s", ddsPath.c_str());
         return nullptr;
     }
 
-    // Create material with texture
     auto material = std::make_shared<Material>();
-
-    // Upload to GPU and get texture ID
     unsigned int texId = ddsLoader->uploadToGPU();
     if (texId != 0) {
         material->setTexture(texId);
         LOGD("Texture uploaded: ID=%u", texId);
     }
 
-    // Cache the material
     CacheEntry entry;
     entry.asset = material;
     const auto& ddsTexture = ddsLoader->getTexture();
-    entry.sizeBytes = ddsTexture.width * ddsTexture.height * 4;  // RGBA
+    entry.sizeBytes = ddsTexture.width * ddsTexture.height * 4;
     entry.lastAccessTime = 0.0f;
-
     textureCache[ddsPath] = entry;
     currentCacheSize += entry.sizeBytes;
 
@@ -223,7 +439,6 @@ void AssetManager::setCacheLimit(size_t bytes) {
 }
 
 void AssetManager::pruneCache() {
-    // Remove least recently used entries until under limit
     while (currentCacheSize > maxCacheSize) {
         evictLRU();
     }
@@ -233,7 +448,6 @@ void AssetManager::evictLRU() {
     std::string lruKey;
     float maxTime = -1.0f;
 
-    // Find LRU mesh
     for (auto& entry : meshCache) {
         if (entry.second.lastAccessTime > maxTime) {
             maxTime = entry.second.lastAccessTime;
@@ -241,7 +455,6 @@ void AssetManager::evictLRU() {
         }
     }
 
-    // Find LRU texture
     for (auto& entry : textureCache) {
         if (entry.second.lastAccessTime > maxTime) {
             maxTime = entry.second.lastAccessTime;

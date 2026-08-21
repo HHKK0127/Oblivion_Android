@@ -76,7 +76,9 @@ struct WorldObject {
 struct Cell {
     // Identification
     uint32_t cellId;
+    uint32_t tesFormID;             // TES4 FormID from ESM (for matching LAND/REFR data)
     std::string cellName;
+    std::string editorID;           // EDM editor ID (EDID subrecord)
     CellType cellType;
     int32_t cellX, cellY;           // Grid coordinates (exterior only)
 
