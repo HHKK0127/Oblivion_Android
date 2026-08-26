@@ -35,6 +35,13 @@ add_library(native-lib SHARED
     game/combat_manager.cpp
     game/quest_manager.cpp
     game/spell_manager.cpp
+    game/navmesh_manager.cpp
+    game/loot_generator.cpp
+    game/book_reader.cpp
+    game/clothing_converter.cpp
+    game/alchemy_system.cpp
+    game/misc_item_converter.cpp
+    game/faction_manager.cpp
     game/dialogue.cpp
     game/door.cpp
     game/interactable.cpp

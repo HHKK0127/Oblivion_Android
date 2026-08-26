@@ -1,5 +1,6 @@
 #include "camera.h"
 #include <glm/gtc/matrix_transform.hpp>
+#include <algorithm>
 
 Camera::Camera()
     : position(0.0f, 1.5f, 3.0f),
@@ -25,4 +26,26 @@ void Camera::rotate(float p, float y) {
 
 void Camera::pan(const glm::vec3& direction) {
     position = position + direction;
+    clampToBounds();
+}
+
+void Camera::setWorldBounds(float minX, float minY, float maxX, float maxY) {
+    boundsMinX = minX;
+    boundsMinY = minY;
+    boundsMaxX = maxX;
+    boundsMaxY = maxY;
+    worldBoundsSet = true;
+    clampToBounds();
+}
+
+void Camera::clearWorldBounds() {
+    worldBoundsSet = false;
+}
+
+void Camera::clampToBounds() {
+    if (!worldBoundsSet) return;
+
+    // Clamp X and Z to world bounds (Y is height, not clamped)
+    position.x = std::clamp(position.x, boundsMinX, boundsMaxX);
+    position.z = std::clamp(position.z, boundsMinY, boundsMaxY);
 }

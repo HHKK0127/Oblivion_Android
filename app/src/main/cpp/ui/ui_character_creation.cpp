@@ -56,6 +56,7 @@ void UICharacterCreation::open() {
     setVisible(true);
     currentTab = NAME;
     nameInputActive_ = true;
+    loadRacesFromESM();
 }
 
 void UICharacterCreation::close() {
@@ -98,6 +99,15 @@ bool UICharacterCreation::onTouchDown(float x, float y, int pointerId) {
     switch (currentTab) {
     case NAME: {
         // TODO: Implement text input for name
+        break;
+    }
+    case RACE: {
+        int raceIdx;
+        if (hitTestRaceRow(x, y, raceIdx)) {
+            selectedRaceIndex_ = raceIdx;
+            applyRaceBonuses();
+            return true;
+        }
         break;
     }
     case ATTRIBUTES: {
@@ -162,6 +172,9 @@ void UICharacterCreation::render() {
     case NAME:
         renderNameTab();
         break;
+    case RACE:
+        renderRaceTab();
+        break;
     case ATTRIBUTES:
         renderAttributesTab();
         break;
@@ -181,12 +194,12 @@ void UICharacterCreation::render() {
 void UICharacterCreation::renderTabButtons() {
     if (!textRenderer) return;
     glm::vec2 cp = getContentPosition();
-    float tabW = getContentSize().x / 4.0f;
+    float tabW = getContentSize().x / 5.0f;
     float tabH = 32.0f;
     float ty = getTabY();
 
-    const char* tabs[] = { "Name", "Attributes", "Skills", "Appearance" };
-    for (int i = 0; i < 4; ++i) {
+    const char* tabs[] = { "Name", "Race", "Attributes", "Skills", "Appearance" };
+    for (int i = 0; i < 5; ++i) {
         glm::vec3 bgColor = (currentTab == i)
                              ? glm::vec3(PlaceholderAssets::Colors::GOLD_HIGHLIGHT)
                              : glm::vec3(PlaceholderAssets::Colors::BROWN_ACCENT);
@@ -309,6 +322,57 @@ void UICharacterCreation::renderAppearanceTab() {
         glm::vec3(0.3f, 0.2f, 0.1f), 0.65f);
 }
 
+void UICharacterCreation::renderRaceTab() {
+    if (!textRenderer) return;
+    glm::vec2 cp = getContentPosition();
+    float cy = getContentStartY();
+    float rowH = 40.0f;
+    float rowGap = 2.0f;
+
+    PlaceholderAssets::drawPanel(cp.x + 20.0f, cy, getContentSize().x - 40.0f, 20.0f,
+        PlaceholderAssets::Colors::BROWN_ACCENT,
+        PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
+    textRenderer->renderText("Select Race (Bonuses applied automatically)",
+        cp.x + 30.0f, cy + 2.0f,
+        glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT), 0.6f);
+    cy += 25.0f;
+
+    if (availableRaces_.empty()) {
+        textRenderer->renderText("No races available (ESM data not loaded)",
+            cp.x + 30.0f, cy + 10.0f,
+            glm::vec3(0.5f, 0.3f, 0.2f), 0.6f);
+        return;
+    }
+
+    for (int i = 0; i < static_cast<int>(availableRaces_.size()); ++i) {
+        bool sel = (i == selectedRaceIndex_);
+        glm::vec3 bg = sel
+                       ? glm::vec3(PlaceholderAssets::Colors::PARCHMENT_DARK)
+                       : glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT) * 0.85f;
+        PlaceholderAssets::drawPanel(cp.x + 20.0f, cy, getContentSize().x - 40.0f, rowH, bg,
+            glm::vec3(sel ? PlaceholderAssets::Colors::GOLD_HIGHLIGHT
+                         : PlaceholderAssets::Colors::BROWN_ACCENT));
+
+        // Race name
+        textRenderer->renderText(availableRaces_[i].fullName,
+            cp.x + 30.0f, cy + 4.0f,
+            sel ? glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT)
+                : glm::vec3(0.1f, 0.08f, 0.06f),
+            0.7f);
+
+        // Race bonuses summary
+        char bonusStr[128] = "";
+        if (availableRaces_[i].startingHealth > 0) {
+            snprintf(bonusStr, sizeof(bonusStr), "HP+%u", availableRaces_[i].startingHealth);
+        }
+        textRenderer->renderText(bonusStr,
+            cp.x + 30.0f, cy + 22.0f,
+            glm::vec3(0.4f, 0.3f, 0.2f), 0.5f);
+
+        cy += rowH + rowGap;
+    }
+}
+
 void UICharacterCreation::renderConfirmCancelButtons() {
     if (!textRenderer) return;
     glm::vec2 cp = getContentPosition();
@@ -338,11 +402,11 @@ void UICharacterCreation::renderConfirmCancelButtons() {
 
 int UICharacterCreation::hitTestTabButton(float x, float y) const {
     glm::vec2 cp = getContentPosition();
-    float tabW = getContentSize().x / 4.0f;
+    float tabW = getContentSize().x / 5.0f;
     float tabH = 32.0f;
     float ty = getTabY();
 
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 5; ++i) {
         if (x >= cp.x + i * tabW && x <= cp.x + (i + 1) * tabW &&
             y >= ty && y <= ty + tabH) {
             return i;
@@ -420,6 +484,23 @@ bool UICharacterCreation::hitTestToggleSkill(float x, float y) const {
     return false;
 }
 
+bool UICharacterCreation::hitTestRaceRow(float x, float y, int& outIndex) const {
+    glm::vec2 cp = getContentPosition();
+    float cy = getContentStartY() + 25.0f;
+    float rowH = 40.0f;
+    float rowGap = 2.0f;
+
+    for (int i = 0; i < static_cast<int>(availableRaces_.size()); ++i) {
+        float ry = cy + i * (rowH + rowGap);
+        if (x >= cp.x + 20.0f && x <= cp.x + getContentSize().x - 20.0f &&
+            y >= ry && y <= ry + rowH) {
+            outIndex = i;
+            return true;
+        }
+    }
+    return false;
+}
+
 // ─── layout helpers ───────────────────────────────────────────────────────────
 
 float UICharacterCreation::getTabY() const {
@@ -458,4 +539,55 @@ void UICharacterCreation::ensureValidCharacter() {
         playerName_ = "Adventurer";
     }
     // createdCharacter_.name = playerName_;
+}
+
+void UICharacterCreation::loadRacesFromESM() {
+    availableRaces_.clear();
+    if (!esmManager) return;
+
+    // Get all races from ESM
+    for (const auto& race : esmManager->getAllRaces()) {
+        availableRaces_.push_back(race);
+    }
+
+    if (!availableRaces_.empty()) {
+        selectedRaceIndex_ = 0;
+        applyRaceBonuses();
+    }
+}
+
+void UICharacterCreation::applyRaceBonuses() {
+    if (availableRaces_.empty() || selectedRaceIndex_ < 0 ||
+        selectedRaceIndex_ >= static_cast<int>(availableRaces_.size())) {
+        return;
+    }
+
+    const auto& race = availableRaces_[selectedRaceIndex_];
+
+    // Reset attributes to base values
+    for (int i = 0; i < 8; ++i) {
+        createdCharacter_.attributes[ATTRIBUTE_NAMES[i]] = 50.0f;
+    }
+
+    // Apply race attribute bonuses
+    createdCharacter_.attributes["Strength"] += static_cast<float>(race.attrStrength);
+    createdCharacter_.attributes["Intelligence"] += static_cast<float>(race.attrIntelligence);
+    createdCharacter_.attributes["Willpower"] += static_cast<float>(race.attrWillpower);
+    createdCharacter_.attributes["Agility"] += static_cast<float>(race.attrAgility);
+    createdCharacter_.attributes["Speed"] += static_cast<float>(race.attrSpeed);
+    createdCharacter_.attributes["Endurance"] += static_cast<float>(race.attrEndurance);
+    createdCharacter_.attributes["Personality"] += static_cast<float>(race.attrPersonality);
+
+    // Apply race skill bonuses
+    for (const auto& bonus : race.skillBonuses) {
+        // Skill bonuses use formID, need to look up skill name
+        // For now, skip skill bonuses that use formID
+        (void)bonus;
+    }
+
+    // Apply race HP bonus
+    createdCharacter_.maxHealth += static_cast<float>(race.startingHealth);
+    createdCharacter_.currentHealth = createdCharacter_.maxHealth;
+
+    LOGD("Applied race bonuses for: %s", race.fullName.c_str());
 }

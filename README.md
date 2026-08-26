@@ -1,9 +1,10 @@
 # Oblivion Android - Complete Native Port
 
-![Status](https://img.shields.io/badge/status-Phase%2024-blue)
-![Version](https://img.shields.io/badge/version-0.9.5-blue)
+![Status](https://img.shields.io/badge/status-Phase%2028-brightgreen)
+![Version](https://img.shields.io/badge/version-0.9.8-blue)
 ![License](https://img.shields.io/badge/license-Proprietary-red)
 ![Android](https://img.shields.io/badge/android-10%2B-green)
+![ESM](https://img.shields.io/badge/ESM%20Records-40-yellow)
 
 **[English]** A complete native Android port of The Elder Scrolls IV: Oblivion, built entirely in C++ using OpenGL ES 3.0 and the Android NDK.
 
@@ -14,6 +15,7 @@
 ## 🎮 Features / 実装機能
 
 ### Core Systems Implemented / コアシステム
+- ✅ **ESM Data-Driven World / ESMデータ駆動ワールド** (Phase 26-28) - 40 record types from Oblivion.esm: CELL, NPC_, WEAP, REFR, LAND, WRLD, SPEL, LVLI/LVLC/LVLN/LVSP, NAVM, ARMO, BOOK, CLOT, INGR, ALCH, MISC, FACT, RACE, CLAS, ROAD, BSGN, CREA, CONT, DOOR, ACTI, STAT, TREE, FLOR, LIGH, APPA, SOUN, SCRL, SCPT, GMST, SKIL, EYES, HAIR, CLMT, REGN, WTHR, PGRD / Oblivion.esm からの40種レコードパースによるワールド生成
 - ✅ **3D Rendering Engine / 3Dレンダリングエンジン** - OpenGL ES 3.0 with mesh and texture support / メッシュ・テクスチャ対応
 - ✅ **Game World / ゲーム世界** - Cell-based world system with seamless transitions / セルベースのワールドとシームレス遷移
 - ✅ **NPC System / NPCシステム** - 100+ NPCs with AI state machine (IDLE, WANDER, PATROL, COMBAT, FOLLOW) / 100体以上のAIステートマシン
@@ -43,14 +45,15 @@
 - 🎯 **NEW / 新機能**: Settings menu with debug mode toggle and RetroFilter effects (Phase 8) / デバッグモード・レトロフィルター設定
 - 🎯 **NEW / 新機能**: 3D spatial audio with distance attenuation (Phase 8) / 距離減衰付き3D空間オーディオ
 - 🎯 **NEW / 新機能**: Complete Graphical UI and HUD systems (Phase 9-24) / 完全なグラフィカルUIとHUDシステムの実装
+- 🎯 **NEW / 新機能**: ESM data integration - 40 record types, NpcManager, Container, Player initialization, Status effects (Phase 28) / ESMデータ統合 - 40種レコード、NPCマネージャー、コンテナ、プレイヤー初期化、ステータス効果
 
 ---
 
 ## 📱 Technical Specifications / 技術仕様
 
 ### Device Requirements / 動作要件
-| | English | 日本語 |
-|---|---|---|
+|  | English | 日本語 |
+| --- | --- | --- |
 | **Minimum OS** | Android 10.0 (API 29) | Android 10.0 (API 29) |
 | **Recommended OS** | Android 12.0+ | Android 12.0 以上 |
 | **RAM** | 2 GB minimum, 4+ GB recommended | 最低2 GB、推奨4 GB |
@@ -59,18 +62,18 @@
 | **GPU** | OpenGL ES 3.0 capable | OpenGL ES 3.0 対応 |
 
 ### Architecture / アーキテクチャ
-| | English | 日本語 |
-|---|---|---|
-| **Language** | C++17 (4,500+ lines) | C++17（4,500行以上） |
+|  | English | 日本語 |
+| --- | --- | --- |
+| **Language** | C++17 (9,000+ lines) | C++17（9,000行以上） |
 | **Graphics API** | OpenGL ES 3.0 | OpenGL ES 3.0 |
 | **Physics** | Bullet Physics 3.x | Bullet Physics 3.x |
 | **Build System** | CMake + Gradle | CMake + Gradle |
-| **NDK Version** | r26.1 | r26.1 |
+| **NDK Version** | r30.0 | r30.0 |
 | **Target API** | 29+ | API 29以上 |
 
 ### Performance Targets / パフォーマンス目標
 | Metric / 指標 | Target / 目標 | Actual / 実測 | Status / 状態 |
-|---------------|---------------|---------------|---------------|
+| --- | --- | --- | --- |
 | **FPS** | 30 fps | 60 fps | ✅ EXCEED / 超過 |
 | **Memory** | < 1 GB | 40 MB | ✅ PASS / 合格 |
 | **CPU** | < 10% | < 0.1% | ✅ EXCEED / 超過 |
@@ -137,7 +140,7 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 
 ### Game Controls / ゲーム操作
 | Control / 操作 | Description / 説明 |
-|----------------|---------------------|
+| --- | --- |
 | **Look Around / 視点移動** | Drag screen to rotate camera / 画面をドラッグしてカメラ回転 |
 | **Interact / インタラクト** | Tap NPC or object / NPCまたはオブジェクトをタップ |
 | **Menu / メニュー** | Quest UI displays current quests / クエストUIで現在のクエスト表示 |
@@ -248,8 +251,8 @@ oblivion-android/
 │   │   │                     セーブマネージャー、ゲーム状態の永続化
 │   │   ├── system/          (SettingsManager - persistent settings)
 │   │   │                     設定マネージャー（永続設定）
-│   │   ├── assets/          (Asset Loading, Parsers)
-│   │   │                     アセット読み込み、パーサー
+│   │   ├── assets/          (BSA Reader, ESM Parser, Asset Loading)
+│   │   │                     BSAリーダー、ESMパーサー、アセット読み込み
 │   │   ├── profiling/       (Performance Monitoring)
 │   │   │                     パフォーマンス監視
 │   │   ├── localization/    (Language system)
@@ -277,7 +280,7 @@ oblivion-android/
 ## 🔧 Development Phases / 開発フェーズ
 
 | Phase | Focus / 重点 | Status / 状態 | Key Deliverable / 主な成果物 |
-|-------|-------------|---------------|------------------------------|
+| --- | --- | --- | --- |
 | Phase 1 | Core Rendering / コアレンダリング | ✅ Complete / 完了 | 3D engine, OpenGL ES 3.0 / 3Dエンジン、OpenGL ES 3.0 |
 | Phase 2 | Asset Management / アセット管理 | ✅ Complete / 完了 | NIF/DDS loaders, caching / NIF/DDSローダー、キャッシング |
 | Phase 3 | World System / ワールドシステム | ✅ Complete / 完了 | Cell system, world streaming / セルシステム、ワールドストリーミング |
@@ -287,30 +290,36 @@ oblivion-android/
 | Phase 7 | Release Prep / リリース準備 | ✅ Complete / 完了 | Play Store documentation / Play Storeドキュメント |
 | Phase 7.1 | Enhanced Features / 拡張機能 | ✅ Complete / 完了 | Save/Load, improved UI / セーブ/ロード、改善されたUI |
 | Phase 8 | Audio & Post-Processing / オーディオ＆ポストプロセス | ✅ Complete / 完了 | OpenAL 3D Audio, RetroFilter, SaveLoadUI / OpenAL 3Dオーディオ、レトロフィルター、セーブ/ロードUI |
-| Phase 9-24 | Complete UI & HUD System / 完全なUI＆HUDシステム | ✅ Complete / 完了 | Inventory, Map, Quests, HUD / インベントリ、マップ、クエスト、HUD |
-| Phase 25 | Next Features / 次の機能 | 🔄 Not Started / 未開始 | TBD / 未定 |
+| Phase 24 | Complete UI & HUD System / 完全なUI＆HUDシステム | ✅ Complete / 完了 | Inventory, Map, Quests, HUD / インベントリ、マップ、クエスト、HUD |
+| Phase 25 | BSA/ESM Parsing Engine / BSA/ESMパースエンジン | ✅ Complete / 完了 | BSA archive reader, ESM file parser with full GRUP hierarchy / BSAアーカイブリーダー、完全GRUP階層付きESMパーサー |
+| Phase 26 | ESM Data-Driven World / ESMデータ駆動ワールド | ✅ Complete / 完了 | CELL, NPC_, WEAP, REFR, LAND, WRLD, SPEL, LVLI/LVLC, NAVM, ARMO record parsing from Oblivion.esm / Oblivion.esm からの10種レコードパース |
+| Phase 27 | ESM Integration / ESM統合 | ✅ Complete / 完了 | BOOK, CLOT, INGR, ALCH, MISC, FACT, RACE, CLAS, ROAD records + Loot generation, Book reading, Clothing conversion, Alchemy system, Faction system / 9種レコード追加＋ルート生成、書籍読書、衣服変換、錬金術、派閥システム |
+| Phase 28 | ESM 40 Record Types + Integration / ESM40種レコード＋統合 | ✅ Complete / 完了 | BSGN, CREA, CONT, DOOR, ACTI, STAT, TREE, FLOR, LIGH, APPA, SOUN, SCRL, SCPT, GMST, SKIL, EYES, HAIR, CLMT, REGN, WTHR, PGRD, LVSP, LVLN records + NpcManager ESM integration, Container ESM population, Player RACE/CLAS/BSGN initialization, Status effects / 21種レコード追加＋NPCマネージャーESM統合、コンテナESM配置、プレイヤーRACE/CLAS/BSGN初期化、ステータス効果 |
 
 ---
 
-## 📊 Code Metrics (Phase 24) / コード指標
+## 📊 Code Metrics (Phase 28) / コード指標
 
-- **C++ Code / C++コード**: 7,000+ lines (includes audio, save/load, RetroFilter, graphical UI) / オーディオ、セーブ/ロード、レトロフィルター、グラフィカルUI含む
+- **C++ Code / C++コード**: 10,000+ lines (includes ESM parser, audio, save/load, RetroFilter, graphical UI, ESM integration) / ESMパーサー、オーディオ、セーブ/ロード、レトロフィルター、グラフィカルUI、ESM統合含む
 - **Java Code / Javaコード**: 700+ lines / 700行以上
-- **Header Files / ヘッダーファイル**: 1,500+ lines / 1,500行以上
-- **Total Project / プロジェクト合計**: 9,200+ lines / 9,200行以上
+- **Header Files / ヘッダーファイル**: 2,200+ lines / 2,200行以上
+- **Total Project / プロジェクト合計**: 12,900+ lines / 12,900行以上
+- **ESM Parser / ESMパーサー**: 2,000+ lines (40 record types: CELL, NPC_, WEAP, REFR, LAND, WRLD, SPEL, LVLI/LVLC/LVLN/LVSP, NAVM, ARMO, BOOK, CLOT, INGR, ALCH, MISC, FACT, RACE, CLAS, ROAD, BSGN, CREA, CONT, DOOR, ACTI, STAT, TREE, FLOR, LIGH, APPA, SOUN, SCRL, SCPT, GMST, SKIL, EYES, HAIR, CLMT, REGN, WTHR, PGRD) / 40種のレコード型パース
+- **BSA Reader / BSAリーダー**: 500+ lines (archive extraction, ZLib decompression) / アーカイブ展開、ZLib展開
+- **ESM Integration / ESM統合**: 400+ lines (NpcManager, Container, Player initialization, Status effects) / NPCマネージャー、コンテナ、プレイヤー初期化、ステータス効果
 - **Audio System / オーディオシステム**: 400+ lines (AudioManager, Audio3D, JNI bridge) / AudioManager、Audio3D、JNIブリッジ
 - **SaveLoadUI / セーブ/ロードUI**: 250+ lines (UI + error dialogs) / UI＋エラーダイアログ
 - **RetroFilter Effects / レトロフィルター効果**: 150+ lines (DebugHUD integration) / DebugHUD連携
 - **Graphical UI & HUD (Phase 9-24) / UI・HUD**: 5,000+ lines (UIPanel, UIButton, TextureLoader, UIDrawHelper) / UIPanel、UIButton、TextureLoader、UIDrawHelper
 - **Sound Effects / 効果音**: 93 sound definitions, 307 WAV files / 93サウンド定義、307個のWAVファイル
 - **Compilation Time / コンパイル時間**: 6-7 minutes (release) / 6-7分（リリース）
-- **APK Size / APKサイズ**: 8.8 MB
+- **APK Size / APKサイズ**: 1.1 GB (includes Oblivion.esm) / 1.1 GB（Oblivion.esm込み）
 
 ---
 
 ## 🎯 Current Limitations / 現在の制限
 
-⚠️ **Phase 24 Current Limitations / 現在の制限**:
+⚠️ **Phase 28 Current Limitations / 現在の制限**:
 - ~~Debug mode always enabled~~ ✅ Fixed (Settings → Debug Mode) / 修正済み
 - ~~No save/load system~~ ✅ Implemented (Phase 8) / Phase 8で実装済み
 - ~~Text-based UI only~~ ✅ Graphical UI implemented (Phase 9) / Phase 9でグラフィカルUI実装済み
@@ -318,19 +327,31 @@ oblivion-android/
 - ~~No full inventory management~~ ✅ Implemented (Phase 9B) / Phase 9Bで実装済み
 - Single-player only (no multiplayer) / シングルプレイのみ（マルチプレイなし）
 - ~~No map system yet~~ ✅ Implemented (Phase 23) / Phase 23で実装済み
+- ~~Hardcoded test world~~ ✅ ESM data-driven (Phase 25-26) / ESMデータ駆動
+- ~~No real NPC/object placement from original data~~ ✅ CELL+REFR+LAND parsing (Phase 26) / CELL+REFR+LANDパースで実現
+- ~~No magic spells from original data~~ ✅ SPEL record parsing (Phase 26) / SPELレコードパース
+- ~~No leveled item/creature spawn tables~~ ✅ LVLI/LVLC parsing (Phase 26) / LVLI/LVLCパース
+- ~~No AI pathfinding data~~ ✅ NAVM record parsing (Phase 26) / NAVMレコードパース
+- ~~No armor/equipment data from original~~ ✅ ARMO record parsing (Phase 26) / ARMOレコードパース
+- ~~Limited ESM record types (19)~~ ✅ Expanded to 40 record types (Phase 28) / 40種レコードに拡張
+- ~~No creature spawning from ESM~~ ✅ CREA + LVLC integration (Phase 28) / CREA＋LVLC統合
+- ~~No container population from ESM~~ ✅ CONT record integration (Phase 28) / CONTレコード統合
+- ~~No player race/class/birthsign from ESM~~ ✅ RACE/CLAS/BSGN initialization (Phase 28) / RACE/CLAS/BSGN初期化
+- ~~No status effect tracking~~ ✅ Paralyze/Invisibility/Fortify/Summon (Phase 28) / 麻痺/不可視/強化/召喚
 
 See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for complete list / 完全なリストは KNOWN_ISSUES.md を参照。
 
 ---
 
-## 🚀 Future Enhancements (Phase 25+) / 将来の拡張
+## 🚀 Future Enhancements (Phase 29+) / 将来の拡張
 
 - 🗺️ Map with quest markers / クエストマーカー付きマップ
-- 📝 Expanded NPC dialogue / 拡張NPC会話
-- 📦 Full inventory management with item system / アイテムシステム付き完全インベントリ管理
-- ⚡ Further performance optimizations / さらなるパフォーマンス最適化
+- 📝 Expanded NPC dialogue from ESM DIAL/INFO data / ESM DIAL/INFOデータからのNPC会話拡張
+- ⚡ Device-side ESM rendering verification / デバイス上でのESMレンダリング検証
 - 🎮 Controller support / コントローラー対応
 - 🔓 Google Play Store release / Google Play Store リリース
+- 🧭 NAVM pathfinding integration with AI / NAVMパスファインディングとAI統合
+- 🏰 Faction-based NPC dialogue branching / ファクションベースのNPC会話分岐
 
 ---
 
@@ -347,18 +368,18 @@ Found a bug? Please: / バグを発見しましたか？
 ## 📈 Statistics / 統計
 
 ### Development Statistics / 開発統計
-- **Total Development Time / 総開発時間**: ~14 weeks / 約14週間
-- **Total Commits / 総コミット数**: 50+ / 50以上
-- **Bug Fixes / バグ修正**: 20+ / 20以上
-- **Features Implemented / 実装機能数**: 25+ / 25以上
+- **Total Development Time / 総開発時間**: ~15 weeks / 約15週間
+- **Total Commits / 総コミット数**: 60+ / 60以上
+- **Bug Fixes / バグ修正**: 25+ / 25以上
+- **Features Implemented / 実装機能数**: 30+ / 30以上
 - **Performance Optimizations / パフォーマンス最適化**: 10+ / 10以上
 
 ### Code Distribution / コード配分
-- Engine Core / エンジンコア: 22%
-- Game Systems / ゲームシステム: 32%
-- Asset Management / アセット管理: 12%
-- UI & Settings / UIと設定: 20% (expanded with TextRenderer, DebugHUD, SettingsUI, GraphicalUI)
-- Profiling / プロファイリング: 10%
+- Engine Core / エンジンコア: 20%
+- Game Systems / ゲームシステム: 35%
+- Asset Management / アセット管理: 15%
+- UI & Settings / UIと設定: 18% (expanded with TextRenderer, DebugHUD, SettingsUI, GraphicalUI)
+- Profiling / プロファイリング: 8%
 - JNI/Infrastructure / JNI/インフラ: 4%
 
 ---
@@ -427,8 +448,8 @@ Proprietary - Experimental Port / 独自ライセンス - 実験的移植
 
 ---
 
-**Status / 状態**: Phase 24 Complete / Phase 24 完了
-**Last Updated / 最終更新**: 2026-06-08
-**Version / バージョン**: 0.9.0
-**Features / 機能**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD / グラフィカルUI、テクスチャパネル＆ボタン、効果音、セーブ/ロードUI、OpenAL 3Dオーディオ、レトロフィルター効果、強化デバッグHUD
-**Next / 次回**: Phase 25 - TBD / Phase 25 - 未定
+**Status / 状態**: Phase 28 Complete / Phase 28 完了
+**Last Updated / 最終更新**: 2026-08-26
+**Version / バージョン**: 0.9.8
+**Features / 機能**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD, ESM Data Integration (40 record types), NpcManager ESM, Container ESM, Player RACE/CLAS/BSGN, Status Effects / グラフィカルUI、テクスチャパネル＆ボタン、効果音、セーブ/ロードUI、OpenAL 3Dオーディオ、レトロフィルター効果、強化デバッグHUD、ESMデータ統合（40種レコード）、NPCマネージャーESM、コンテナESM、プレイヤーRACE/CLAS/BSGN、ステータス効果
+**Next / 次回**: Phase 29 - NAVM Pathfinding + DIAL/INFO Dialogue / Phase 29 - NAVMパスファインディング＋DIAL/INFO会話

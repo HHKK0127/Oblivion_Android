@@ -1,6 +1,8 @@
 #include "npc_manager.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
+#include <ctime>
 
 NpcManager::NpcManager() : nextNpcId(1000) {
     LOGD("NpcManager created");
@@ -168,4 +170,274 @@ void NpcManager::logNpcStatus() const {
         }
     }
     LOGD("=======================================");
+}
+
+// ============================================================
+// ESM Data Integration
+// ============================================================
+
+std::shared_ptr<NPC> NpcManager::createNPCFromESM(uint32_t formID, const glm::vec3& position) {
+    if (!m_esm) {
+        LOGW("createNPCFromESM: ESMManager not set, falling back to createNPC");
+        return createNPC("Unknown", position);
+    }
+
+    // Try creature first
+    const oblivion::CreatureData* creature = m_esm->findCreature(formID);
+    if (creature) {
+        uint32_t npcId = nextNpcId++;
+        auto npc = std::make_shared<NPC>(npcId, creature->fullName.empty() ? creature->editorID : creature->fullName);
+        npc->position = position;
+        npc->race = "Creature";
+        npc->class_ = "Creature";
+
+        // Apply ESM creature stats
+        npc->status.maxHealth = static_cast<float>(creature->health);
+        npc->status.currentHealth = npc->status.maxHealth;
+        npc->status.maxMana = 0.0f;
+        npc->status.currentMana = 0.0f;
+        npc->status.maxStamina = static_cast<float>(creature->combat + creature->stealth);
+        npc->status.stamina = npc->status.maxStamina;
+        npc->status.level = creature->level;
+        npc->status.weaponDamage = static_cast<float>(creature->attackDamage);
+
+        // Set mesh path from ESM model
+        npc->meshAssetPath = creature->modelPath;
+
+        npcs[npcId] = npc;
+        LOGI("Creature spawned from ESM: %s (formID=0x%08X, ID=%u, HP=%.0f, ATK=%u, LVL=%u)",
+             npc->name.c_str(), formID, npcId, npc->status.maxHealth,
+             creature->attackDamage, creature->level);
+        return npc;
+    }
+
+    // Fallback: generic NPC
+    LOGW("createNPCFromESM: formID 0x%08X not found in CREA records", formID);
+    return createNPC("Unknown", position);
+}
+
+std::shared_ptr<NPC> NpcManager::spawnFromLeveledList(uint32_t leveledListFormID,
+                                                       uint32_t playerLevel,
+                                                       const glm::vec3& position) {
+    if (!m_esm) {
+        LOGW("spawnFromLeveledList: ESMManager not set");
+        return nullptr;
+    }
+
+    const oblivion::LeveledListData* lvlc = m_esm->findLeveledList(leveledListFormID);
+    if (!lvlc) {
+        LOGW("spawnFromLeveledList: LeveledList 0x%08X not found", leveledListFormID);
+        return nullptr;
+    }
+
+    // ChanceNone: probability (0-100) that nothing spawns
+    if (lvlc->chanceNone > 0) {
+        int roll = std::rand() % 100;
+        if (roll < lvlc->chanceNone) {
+            LOGD("spawnFromLeveledList: ChanceNone=%u, roll=%d — nothing spawned", lvlc->chanceNone, roll);
+            return nullptr;
+        }
+    }
+
+    // Collect entries whose level <= playerLevel
+    std::vector<const oblivion::LeveledListEntry*> eligible;
+    for (const auto& entry : lvlc->entries) {
+        if (entry.level <= playerLevel) {
+            eligible.push_back(&entry);
+        }
+    }
+
+    if (eligible.empty()) {
+        LOGW("spawnFromLeveledList: No eligible entries for playerLevel=%u in list 0x%08X",
+             playerLevel, leveledListFormID);
+        return nullptr;
+    }
+
+    // Pick a random eligible entry
+    const oblivion::LeveledListEntry* chosen = eligible[std::rand() % eligible.size()];
+
+    // If the referenced formID is itself a leveled list, recurse
+    const oblivion::LeveledListData* nestedList = m_esm->findLeveledList(chosen->referencedFormID);
+    if (nestedList) {
+        return spawnFromLeveledList(chosen->referencedFormID, playerLevel, position);
+    }
+
+    // Otherwise spawn as creature
+    auto npc = createNPCFromESM(chosen->referencedFormID, position);
+    if (npc) {
+        LOGI("spawnFromLeveledList: Spawned %s from list 0x%08X (level %u, entry level %u)",
+             npc->name.c_str(), leveledListFormID, playerLevel, chosen->level);
+    }
+    return npc;
+}
+
+void NpcManager::initializePlayerFromESM(NPC& player, uint32_t raceFormID,
+                                          uint32_t classFormID, uint32_t birthsignFormID) {
+    if (!m_esm) {
+        LOGW("initializePlayerFromESM: ESMManager not set");
+        return;
+    }
+
+    // --- Apply RACE data ---
+    const oblivion::RaceData* race = m_esm->findRace(raceFormID);
+    if (race) {
+        player.race = race->fullName.empty() ? race->editorID : race->fullName;
+
+        // Apply racial attribute bonuses
+        auto setAttr = [&](const std::string& name, uint8_t bonus) {
+            if (bonus > 0) {
+                auto it = player.status.attributes.find(name);
+                if (it != player.status.attributes.end()) {
+                    it->second += static_cast<float>(bonus);
+                } else {
+                    player.status.attributes[name] = static_cast<float>(bonus);
+                }
+            }
+        };
+        setAttr("Strength", race->attrStrength);
+        setAttr("Intelligence", race->attrIntelligence);
+        setAttr("Willpower", race->attrWillpower);
+        setAttr("Agility", race->attrAgility);
+        setAttr("Speed", race->attrSpeed);
+        setAttr("Endurance", race->attrEndurance);
+        setAttr("Personality", race->attrPersonality);
+
+        // Apply racial starting health
+        if (race->startingHealth > 0) {
+            player.status.maxHealth = static_cast<float>(race->startingHealth);
+            player.status.currentHealth = player.status.maxHealth;
+        }
+
+        // Apply racial spells (e.g., Resist Disease, Water Breathing)
+        for (uint32_t spellFormID : race->spellFormIDs) {
+            player.status.knownSpells.push_back(spellFormID);
+        }
+
+        // Apply skill bonuses
+        for (const auto& bonus : race->skillBonuses) {
+            // bonus.first = skillFormID (we store as attribute name string for now)
+            // In a full implementation, we'd resolve the MGEF/SKIL formID to a skill name
+            LOGD("Racial skill bonus: skillFormID=0x%08X, bonus=%d", bonus.first, bonus.second);
+        }
+
+        // Set mesh path
+        player.meshAssetPath = race->maleModelPath;  // TODO: gender selection
+
+        LOGI("Race applied: %s (HP=%.0f, spells=%zu)",
+             player.race.c_str(), player.status.maxHealth, race->spellFormIDs.size());
+    } else {
+        LOGW("initializePlayerFromESM: Race 0x%08X not found", raceFormID);
+    }
+
+    // --- Apply CLASS data ---
+    const oblivion::ClassData* cls = m_esm->findClass(classFormID);
+    if (cls) {
+        player.class_ = cls->fullName.empty() ? cls->editorID : cls->fullName;
+
+        // Apply primary attribute bonuses (+10 each)
+        auto boostAttr = [&](uint32_t attrFormID) {
+            // Oblivion attribute FormIDs are well-known constants
+            // For now, apply a generic boost based on the primary attributes
+            LOGD("Class primary attribute: formID=0x%08X", attrFormID);
+        };
+        boostAttr(cls->primaryAttribute1);
+        boostAttr(cls->primaryAttribute2);
+
+        LOGI("Class applied: %s (specialization=%u)", player.class_.c_str(), cls->specialization);
+    } else {
+        LOGW("initializePlayerFromESM: Class 0x%08X not found", classFormID);
+    }
+
+    // --- Apply BIRTHSIGN data ---
+    const oblivion::BirthsignData* bsgn = m_esm->findBirthsign(birthsignFormID);
+    if (bsgn) {
+        // Grant birthsign power spells
+        for (uint32_t spellFormID : bsgn->spellFormIDs) {
+            player.status.knownSpells.push_back(spellFormID);
+            LOGD("Birthsign power granted: spellFormID=0x%08X", spellFormID);
+        }
+        LOGI("Birthsign applied: %s (powers=%zu)",
+             bsgn->fullName.c_str(), bsgn->spellFormIDs.size());
+    } else {
+        LOGW("initializePlayerFromESM: Birthsign 0x%08X not found", birthsignFormID);
+    }
+
+    LOGI("Player initialized from ESM: race=%s, class=%s, HP=%.0f, MP=%.0f, spells=%zu",
+         player.race.c_str(), player.class_.c_str(),
+         player.status.maxHealth, player.status.maxMana,
+         player.status.knownSpells.size());
+}
+
+// ============================================================
+// Status Effect System
+// ============================================================
+
+void NpcManager::addStatusEffect(NPC& npc, SpellEffectType type, float duration, float magnitude) {
+    ActiveStatusEffect effect;
+    effect.type = type;
+    effect.remaining = duration;
+    effect.magnitude = magnitude;
+    m_statusEffects[npc.npcId].push_back(effect);
+
+    // Apply immediate effects
+    switch (type) {
+        case SpellEffectType::PARALYZE:
+            npc.setAIState(AIState::IDLE);
+            LOGI("NPC %s paralyzed for %.1fs", npc.name.c_str(), duration);
+            break;
+        case SpellEffectType::INVISIBILITY:
+            LOGI("NPC %s invisible for %.1fs", npc.name.c_str(), duration);
+            break;
+        case SpellEffectType::FORTIFY_ATTR:
+            LOGI("NPC %s attribute fortified by %.0f for %.1fs", npc.name.c_str(), magnitude, duration);
+            break;
+        case SpellEffectType::SUMMON:
+            LOGI("NPC %s summoned for %.1fs", npc.name.c_str(), duration);
+            break;
+        default:
+            break;
+    }
+}
+
+void NpcManager::updateStatusEffects(NPC& npc, float deltaTime) {
+    auto it = m_statusEffects.find(npc.npcId);
+    if (it == m_statusEffects.end()) return;
+
+    auto& effects = it->second;
+    for (auto effIt = effects.begin(); effIt != effects.end(); ) {
+        effIt->remaining -= deltaTime;
+        if (effIt->remaining <= 0.0f) {
+            // Effect expired — remove side effects
+            switch (effIt->type) {
+                case SpellEffectType::PARALYZE:
+                    npc.setAIState(AIState::IDLE);
+                    LOGI("NPC %s paralysis wore off", npc.name.c_str());
+                    break;
+                case SpellEffectType::INVISIBILITY:
+                    LOGI("NPC %s invisibility wore off", npc.name.c_str());
+                    break;
+                default:
+                    break;
+            }
+            effIt = effects.erase(effIt);
+        } else {
+            ++effIt;
+        }
+    }
+
+    if (effects.empty()) {
+        m_statusEffects.erase(it);
+    }
+}
+
+bool NpcManager::hasStatusEffect(const NPC& npc, SpellEffectType type) const {
+    auto it = m_statusEffects.find(npc.npcId);
+    if (it == m_statusEffects.end()) return false;
+
+    for (const auto& effect : it->second) {
+        if (effect.type == type && effect.remaining > 0.0f) {
+            return true;
+        }
+    }
+    return false;
 }

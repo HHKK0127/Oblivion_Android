@@ -17,6 +17,7 @@
 #include "../system/settings_manager.h"
 #include "../game/combat_manager.h"
 #include "../game/spell_manager.h"
+#include "../game/navmesh_manager.h"
 #include "../game/player_controller.h"
 #include "../game/inventory_manager.h"
 #include "../ui/inventory_ui.h"
@@ -77,6 +78,7 @@ private:
     std::unique_ptr<QuestManager> questManager;
     std::unique_ptr<CombatManager> combatManager;
     std::unique_ptr<SpellManager> spellManager;
+    std::unique_ptr<oblivion::NavMeshManager> navMeshManager;
     std::unique_ptr<PlayerController> playerController;
     std::unique_ptr<InventoryManager> inventoryManager;
 
@@ -135,6 +137,7 @@ public:
     QuestManager* getQuestManager() { return questManager.get(); }
     CombatManager* getCombatManager() { return combatManager.get(); }
     SpellManager* getSpellManager() { return spellManager.get(); }
+    oblivion::NavMeshManager* getNavMeshManager() { return navMeshManager.get(); }
     WorldManager* getWorldManager() { return worldManager.get(); }
     TitleScreen* getTitleScreen() { return titleScreen.get(); }
     QuestUI* getQuestUI() { return questUI.get(); }

@@ -7,6 +7,10 @@
 #include <unordered_map>
 #include <glm/glm.hpp>
 
+namespace oblivion {
+    class NavMeshManager;  // Forward declaration
+}
+
 enum class AIState {
     IDLE,           // Standing/waiting
     WANDER,         // Random movement
@@ -73,6 +77,11 @@ struct NPC {
     glm::vec3 targetPosition;
     float wanderRadius;
 
+    // NavMesh Pathfinding
+    std::vector<glm::vec3> currentPath;  // Current path to follow
+    int currentPathIndex;                 // Current waypoint index
+    float pathReachThreshold;             // Distance to consider waypoint reached
+
     // Combat System
     CharacterStatus status;
     float lastDamageTime;
@@ -96,7 +105,7 @@ struct NPC {
     void enterCombat(std::shared_ptr<NPC> opponent);
     void exitCombat();
     void setAIState(AIState newState);
-    void moveTo(const glm::vec3& target);
+    void moveTo(const glm::vec3& target, const oblivion::NavMeshManager* navMesh = nullptr);
 
     void addQuestToOffer(uint32_t questId);
     std::vector<uint32_t> getOfferedQuests() const;

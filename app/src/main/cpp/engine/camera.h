@@ -12,6 +12,11 @@ public:
     void rotate(float pitch, float yaw);
     void pan(const glm::vec3& direction);
 
+    // World bounds
+    void setWorldBounds(float minX, float minY, float maxX, float maxY);
+    void clearWorldBounds();
+    bool hasWorldBounds() const { return worldBoundsSet; }
+
 private:
     glm::vec3 position;
     glm::vec3 forward;
@@ -20,4 +25,13 @@ private:
     float fov;
     float pitch;
     float yaw;
+
+    // World bounds
+    bool worldBoundsSet = false;
+    float boundsMinX = 0.0f;
+    float boundsMinY = 0.0f;
+    float boundsMaxX = 0.0f;
+    float boundsMaxY = 0.0f;
+
+    void clampToBounds();
 };

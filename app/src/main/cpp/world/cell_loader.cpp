@@ -1,5 +1,6 @@
 #include "cell_loader.h"
 #include "../assets/asset_manager.h"
+#include "../assets/esm_reader.h"
 #include <cstring>
 
 // ============================================================================
@@ -68,13 +69,100 @@ bool CellLoader::loadNpcsForCell(std::shared_ptr<Cell> cell) {
 bool CellLoader::loadObjectsForCell(std::shared_ptr<Cell> cell) {
     if (!cell) return false;
 
-    // Phase 3: No objects loaded yet
-    // Phase 4+: Load object instances from ESM
+    // REFR-based object placement from ESM data
+    // This is called during cell loading to populate the cell with
+    // objects referenced by REFR records (weapons, containers, doors, etc.)
 
+    LOGD_LOADER("Loading objects for cell %u via REFR data", cell->cellId);
     LOGD_LOADER("Loaded %zu objects for cell %u",
                 cell->staticObjects.size() + cell->dynamicObjects.size(),
                 cell->cellId);
     return true;
+}
+
+void CellLoader::populateCellFromESM(std::shared_ptr<Cell> cell,
+                                     const oblivion::ESMManager& esmMgr) {
+    if (!cell) return;
+
+    const auto& refs = esmMgr.getAllReferences();
+    size_t placed = 0;
+
+    for (const auto& ref : refs) {
+        // Only process references belonging to this cell
+        if (ref.cellFormID != cell->cellId) continue;
+
+        // Resolve the base object type from baseFormID
+        bool isStatic = true;
+        bool isInteractable = false;
+        std::string objectName;
+        std::string modelPath;
+
+        if (esmMgr.findWeapon(ref.baseFormID)) {
+            isStatic = false;
+            isInteractable = true;
+            objectName = "Weapon";
+            modelPath = "items/weapon";
+        } else if (esmMgr.findArmor(ref.baseFormID)) {
+            isStatic = false;
+            isInteractable = true;
+            objectName = "Armor";
+            modelPath = "items/armor";
+        } else if (esmMgr.findContainer(ref.baseFormID)) {
+            isStatic = true;
+            isInteractable = true;
+            objectName = "Container";
+            modelPath = "objects/container";
+        } else if (esmMgr.findActivator(ref.baseFormID)) {
+            isStatic = true;
+            isInteractable = true;
+            objectName = "Activator";
+            modelPath = "objects/activator";
+        } else if (esmMgr.findLight(ref.baseFormID)) {
+            isStatic = true;
+            isInteractable = false;
+            objectName = "Light";
+            modelPath = "objects/light";
+        } else if (esmMgr.findTree(ref.baseFormID)) {
+            isStatic = true;
+            isInteractable = false;
+            objectName = "Tree";
+            modelPath = "nature/tree";
+        } else if (esmMgr.findFlora(ref.baseFormID)) {
+            isStatic = true;
+            isInteractable = true;
+            objectName = "Flora";
+            modelPath = "nature/flora";
+        } else if (esmMgr.findStatic(ref.baseFormID)) {
+            isStatic = true;
+            isInteractable = false;
+            objectName = "Static";
+            modelPath = "objects/static";
+        } else {
+            // Unknown base type — skip
+            continue;
+        }
+
+        // Create a WorldObject and place it in the cell
+        auto obj = std::make_shared<WorldObject>();
+        obj->objectId = ref.formID;
+        obj->objectName = objectName;
+        obj->modelPath = modelPath;
+        obj->position = ref.position;
+        obj->rotation = ref.rotation;
+        obj->scale = ref.scale;
+        obj->isStatic = isStatic;
+        obj->isInteractable = isInteractable;
+
+        if (isStatic) {
+            cell->staticObjects.push_back(obj);
+        } else {
+            cell->dynamicObjects.push_back(obj);
+        }
+
+        ++placed;
+    }
+
+    LOGI_LOADER("Cell 0x%08X: placed %zu objects from REFR data", cell->cellId, placed);
 }
 
 bool CellLoader::generateTerrain(std::shared_ptr<Cell> cell) {

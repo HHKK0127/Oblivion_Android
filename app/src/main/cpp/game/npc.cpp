@@ -1,4 +1,5 @@
 #include "npc.h"
+#include "navmesh_manager.h"
 #include <android/log.h>
 #include <cmath>
 #include <algorithm>
@@ -76,6 +77,9 @@ NPC::NPC(uint32_t id, const std::string& n)
       aiState(AIState::IDLE),
       targetPosition(0.0f, 0.0f, 0.0f),
       wanderRadius(10.0f),
+      currentPath(),
+      currentPathIndex(0),
+      pathReachThreshold(0.5f),
       lastDamageTime(0.0f),
       inCombat(false),
       combatEngagementTime(0.0f) {
@@ -105,7 +109,55 @@ void NPC::update(float deltaTime) {
             break;
 
         case AIState::FOLLOW_PLAYER:
-            // TODO: Implement player following
+            // Follow NavMesh path if available
+            if (!currentPath.empty() && currentPathIndex < static_cast<int>(currentPath.size())) {
+                glm::vec3 waypoint = currentPath[currentPathIndex];
+                glm::vec3 direction = waypoint - position;
+                float distanceSq = direction.x * direction.x + direction.y * direction.y + direction.z * direction.z;
+
+                if (distanceSq < pathReachThreshold * pathReachThreshold) {
+                    // Reached waypoint, move to next
+                    currentPathIndex++;
+                    if (currentPathIndex >= static_cast<int>(currentPath.size())) {
+                        // Reached end of path
+                        currentPath.clear();
+                        currentPathIndex = 0;
+                        aiState = AIState::IDLE;
+                    }
+                } else {
+                    // Move toward waypoint
+                    float distance = std::sqrt(distanceSq);
+                    if (distance > 0.0f) {
+                        direction.x /= distance;
+                        direction.y /= distance;
+                        direction.z /= distance;
+                    }
+                    position.x += direction.x * moveSpeed * deltaTime;
+                    position.y += direction.y * moveSpeed * deltaTime;
+                    position.z += direction.z * moveSpeed * deltaTime;
+
+                    // Update rotation to face movement direction
+                    rotation.y = std::atan2(direction.x, direction.z) * (180.0f / 3.14159265f);
+                }
+            } else {
+                // No path, move directly toward target
+                glm::vec3 direction = targetPosition - position;
+                float distanceSq = direction.x * direction.x + direction.y * direction.y + direction.z * direction.z;
+
+                if (distanceSq > 0.01f) {
+                    float distance = std::sqrt(distanceSq);
+                    if (distance > 0.0f) {
+                        direction.x /= distance;
+                        direction.y /= distance;
+                        direction.z /= distance;
+                    }
+                    position.x += direction.x * moveSpeed * deltaTime;
+                    position.y += direction.y * moveSpeed * deltaTime;
+                    position.z += direction.z * moveSpeed * deltaTime;
+                } else {
+                    aiState = AIState::IDLE;
+                }
+            }
             break;
 
         case AIState::COMBAT:
@@ -179,20 +231,25 @@ void NPC::setAIState(AIState newState) {
     }
 }
 
-void NPC::moveTo(const glm::vec3& target) {
+void NPC::moveTo(const glm::vec3& target, const oblivion::NavMeshManager* navMesh) {
     targetPosition = target;
-    aiState = AIState::FOLLOW_PLAYER;  // Use this for movement
+    aiState = AIState::FOLLOW_PLAYER;
 
-    glm::vec3 direction = target - position;
-    float distanceSq = direction.x * direction.x + direction.y * direction.y + direction.z * direction.z;
-
-    if (distanceSq > 0.01f) {  // 0.1f squared for proximity check (avoid sqrt)
-        float distance = std::sqrt(distanceSq);
-        if (distance > 0.0f) {
-            direction = direction * (1.0f / distance);  // Manual normalize
+    // Use NavMesh pathfinding if available
+    if (navMesh) {
+        std::vector<glm::vec3> path;
+        if (navMesh->findPath(position, target, path)) {
+            currentPath = path;
+            currentPathIndex = 0;
+            LOGD("NPC %s: Path found with %zu waypoints", name.c_str(), currentPath.size());
+            return;
         }
-        position = position + direction * moveSpeed * 0.016f;  // Assume 60fps
+        LOGD("NPC %s: No NavMesh path found, using direct movement", name.c_str());
     }
+
+    // Fallback: direct movement (no pathfinding)
+    currentPath.clear();
+    currentPathIndex = 0;
 }
 
 void NPC::addQuestToOffer(uint32_t questId) {

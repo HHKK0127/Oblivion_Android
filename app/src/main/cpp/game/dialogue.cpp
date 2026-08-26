@@ -7,10 +7,11 @@
 #else
 #define LOGD(...) do {} while(0)
 #endif
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 DialogueManager::DialogueManager()
-    : currentDialogue(nullptr) {
+    : currentDialogue(nullptr), m_factionRankProvider(nullptr) {
     LOGD("DialogueManager created");
 }
 
@@ -104,6 +105,73 @@ void DialogueManager::clearDialogues() {
     endCurrentDialogue();
     dialogues.clear();
     LOGD("All dialogues cleared");
+}
+
+void DialogueManager::loadDialoguesFromESM(const oblivion::ESMManager& esmMgr,
+                                          std::function<std::vector<uint32_t>(uint32_t)> npcFactionLookup) {
+    const auto& esmDialogs = esmMgr.getAllDialogs();
+    size_t loaded = 0;
+    size_t topicCount = 0;
+    size_t factionGated = 0;
+
+    for (const auto& dia : esmDialogs) {
+        if (dia.formID == 0) continue;
+
+        // Use DIAL formID as synthetic NPC ID for dialogue lookup
+        uint32_t npcId = dia.formID;
+
+        auto dialogue = createDialogue(npcId, dia.fullName, dia.fullName);
+        dialogue->esmDialFormID = dia.formID;
+
+        // Attach NPC faction memberships (for branching)
+        if (npcFactionLookup) {
+            dialogue->npcFactionFormIDs = npcFactionLookup(dia.formID);
+        }
+
+        // Convert INFO records to DialogueTopics with faction branching
+        for (const auto& info : dia.infos) {
+            std::string topicText = !info.promptText.empty()
+                                    ? info.promptText
+                                    : info.editorID;
+            std::string responseText = info.responseText;
+
+            DialogueTopic topic(info.editorID, topicText, responseText, info.questFormID != 0);
+            topic.factionFormID = info.factionFormID;
+            topic.factionRank = info.factionRank;
+
+            if (info.factionFormID != 0) {
+                ++factionGated;
+            }
+
+            dialogue->addTopic(topic);
+            ++topicCount;
+        }
+
+        ++loaded;
+    }
+
+    LOGI("DialogueManager: Loaded %zu dialogues, %zu topics, %zu faction-gated from ESM",
+         loaded, topicCount, factionGated);
+}
+
+std::vector<int> DialogueManager::getAvailableTopics() const {
+    std::vector<int> result;
+    if (!currentDialogue) return result;
+
+    for (int i = 0; i < static_cast<int>(currentDialogue->topics.size()); ++i) {
+        if (!m_factionRankProvider) {
+            result.push_back(i);
+            continue;
+        }
+
+        if (currentDialogue->isTopicAvailable(i, m_factionRankProvider)) {
+            result.push_back(i);
+        }
+    }
+
+    LOGD("Dialogue: %zu / %zu topics available after faction filtering",
+         result.size(), currentDialogue->topics.size());
+    return result;
 }
 
 void DialogueManager::logDialogueStats() const {

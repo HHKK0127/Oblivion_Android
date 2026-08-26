@@ -4,6 +4,8 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
+#include <functional>
+#include "../assets/esm_reader.h"
 
 /**
  * Dialogue Topic - A single conversation topic
@@ -13,6 +15,10 @@ struct DialogueTopic {
     std::string topicText;         // Display text for topic
     std::string responseText;      // NPC response
     bool isQuest;                  // Is this a quest-related topic?
+
+    // Faction branching (ESM integration)
+    uint32_t factionFormID = 0;    // Required faction to see this topic (0 = no requirement)
+    int32_t factionRank = -1;      // Required faction rank (-1 = no requirement)
 
     DialogueTopic(const std::string& id, const std::string& text,
                   const std::string& response, bool quest = false)
@@ -29,6 +35,10 @@ struct Dialogue {
     std::vector<DialogueTopic> topics;  // Available topics
     bool isActive;                 // Is dialogue currently active?
     int selectedTopicIndex;        // Currently selected topic (-1 = none)
+
+    // ESM data linkage
+    uint32_t esmDialFormID = 0;    // Originating DIAL formID from ESM
+    std::vector<uint32_t> npcFactionFormIDs;  // NPC's faction memberships (for branching)
 
     Dialogue()
         : npcId(0), isActive(false), selectedTopicIndex(-1) {}
@@ -57,6 +67,15 @@ struct Dialogue {
     void end() {
         isActive = false;
         selectedTopicIndex = -1;
+    }
+
+    // Check if topic is available given NPC's faction memberships and ranks
+    bool isTopicAvailable(int topicIndex,
+                          const std::function<bool(uint32_t, int32_t)>& hasFactionRank) const {
+        if (topicIndex < 0 || topicIndex >= (int)topics.size()) return false;
+        const auto& topic = topics[topicIndex];
+        if (topic.factionFormID == 0) return true;  // No faction requirement
+        return hasFactionRank(topic.factionFormID, topic.factionRank);
     }
 };
 
@@ -96,9 +115,24 @@ public:
     // Cleanup
     void clearDialogues();
 
+    // ESM-driven dialogue loading
+    // Loads dialogue trees from ESM DIAL/INFO records and attaches to NPCs
+    // npcFactionLookup: function returning faction memberships for an NPC FormID
+    void loadDialoguesFromESM(const oblivion::ESMManager& esmMgr,
+                              std::function<std::vector<uint32_t>(uint32_t)> npcFactionLookup = nullptr);
+
+    // Faction-based topic filtering for current dialogue
+    // Returns indices of topics available given NPC's factions
+    std::vector<int> getAvailableTopics() const;
+
+    // Set/get faction membership provider (for branching)
+    using FactionRankProvider = std::function<bool(uint32_t, int32_t)>;
+    void setFactionRankProvider(FactionRankProvider provider) { m_factionRankProvider = provider; }
+
 private:
     std::unordered_map<uint32_t, std::shared_ptr<Dialogue>> dialogues;  // NPC ID -> Dialogue
     std::shared_ptr<Dialogue> currentDialogue;  // Currently active dialogue
+    FactionRankProvider m_factionRankProvider;  // Returns true if NPC has faction rank
 
     void logDialogueStats() const;
 };

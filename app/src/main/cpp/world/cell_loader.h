@@ -8,6 +8,10 @@
 // Forward declarations
 class AssetManager;
 
+namespace oblivion {
+    class ESMManager;
+}
+
 #define LOG_TAG_LOADER "CellLoader"
 #define LOGD_LOADER(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG_LOADER, __VA_ARGS__)
 #define LOGI_LOADER(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG_LOADER, __VA_ARGS__)
@@ -43,6 +47,10 @@ public:
 
     // Load objects for a cell
     bool loadObjectsForCell(std::shared_ptr<Cell> cell);
+
+    // Populate cell with objects from ESM REFR records
+    void populateCellFromESM(std::shared_ptr<Cell> cell,
+                             const oblivion::ESMManager& esmMgr);
 
     // Generate terrain mesh
     bool generateTerrain(std::shared_ptr<Cell> cell);

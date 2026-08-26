@@ -2,6 +2,7 @@
 
 #include "npc.h"
 #include "npc_manager.h"
+#include "navmesh_manager.h"
 #include "../world/world_manager.h"
 #include <unordered_map>
 #include <memory>
@@ -30,6 +31,7 @@ private:
     NpcManager* npcManager;
     class SpellManager* spellManager;
     class CheatManager* cheatManager;  // For cheat effects
+    oblivion::NavMeshManager* navMeshManager;  // For pathfinding during combat
     std::unordered_map<uint32_t, CombatInstance> activeCombats;
 
     static constexpr float DAMAGE_CALCULATION_COOLDOWN = 1.0f;
@@ -38,7 +40,8 @@ public:
     CombatManager();
     ~CombatManager();
 
-    bool initialize(WorldManager* wm, NpcManager* nm, class SpellManager* sm = nullptr, class CheatManager* cm = nullptr);
+    bool initialize(WorldManager* wm, NpcManager* nm, class SpellManager* sm = nullptr,
+                   class CheatManager* cm = nullptr, oblivion::NavMeshManager* nvm = nullptr);
     void cleanup();
     void update(float deltaTime);
 

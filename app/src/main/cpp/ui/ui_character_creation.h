@@ -3,9 +3,11 @@
 #include "ui_panel.h"
 #include "text_renderer.h"
 #include "../game/npc.h"
+#include "../assets/esm_reader.h"
 #include <memory>
 #include <array>
 #include <functional>
+#include <vector>
 
 /**
  * @brief キャラクター作成UI
@@ -37,15 +39,20 @@ public:
     // Get created character
     const CharacterStatus& getCreatedCharacter() const { return createdCharacter_; }
 
+    // Set ESM manager for race/class data
+    void setESMManager(const oblivion::ESMManager* esm) { esmManager = esm; }
+
 private:
     TextRenderer* textRenderer = nullptr;
     ConfirmCallback onConfirm;
+    const oblivion::ESMManager* esmManager = nullptr;
 
     enum Tab {
         NAME = 0,
-        ATTRIBUTES = 1,
-        SKILLS = 2,
-        APPEARANCE = 3
+        RACE = 1,
+        ATTRIBUTES = 2,
+        SKILLS = 3,
+        APPEARANCE = 4
     };
 
     Tab currentTab = NAME;
@@ -55,6 +62,11 @@ private:
     std::string playerName_;
     bool nameInputActive_ = false;
     int nameCaretPos_ = 0;
+
+    // For RACE tab
+    int selectedRaceIndex_ = 0;
+    std::vector<oblivion::RaceData> availableRaces_;
+    void loadRacesFromESM();
 
     // For ATTRIBUTES tab
     int selectedAttributeIndex_ = 0;
@@ -77,6 +89,7 @@ private:
     int screenHeight = 1920;
 
     void renderNameTab();
+    void renderRaceTab();
     void renderAttributesTab();
     void renderSkillsTab();
     void renderAppearanceTab();
@@ -91,6 +104,7 @@ private:
     bool hitTestIncreaseAttribute(float x, float y) const;
     bool hitTestDecreaseAttribute(float x, float y) const;
     bool hitTestToggleSkill(float x, float y) const;
+    bool hitTestRaceRow(float x, float y, int& outIndex) const;
 
     // Layout helpers
     float getTabY() const;
@@ -101,4 +115,5 @@ private:
     void initializeDefaultCharacter();
     void addSkillPoints(int skillId, int points);
     void ensureValidCharacter();
+    void applyRaceBonuses();
 };

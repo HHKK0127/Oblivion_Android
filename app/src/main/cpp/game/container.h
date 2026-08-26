@@ -2,6 +2,7 @@
 
 #include "interactable.h"
 #include "item.h"
+#include "../assets/esm_reader.h"
 #include <vector>
 #include <string>
 
@@ -43,6 +44,9 @@ public:
     // Interaction
     bool onInteract(const glm::vec3& playerPos) override;
     void update(float deltaTime) override;
+
+    // ESM Integration
+    void populateFromESM(const oblivion::ESMManager& esm, uint32_t containerFormID);
 
     // Animation properties
     float getOpenScale() const { return openScale; }

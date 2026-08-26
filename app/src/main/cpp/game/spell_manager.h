@@ -2,6 +2,7 @@
 
 #include "spell.h"
 #include "npc_manager.h"
+#include "../assets/esm_reader.h"
 #include <unordered_map>
 #include <vector>
 #include <memory>
@@ -35,6 +36,10 @@ public:
     // スペル作成と管理
     uint32_t createSpell(const std::string& name, const std::string& nameJa,
                         MagicSchool school, float manaCost, float baseDamage);
+
+    // ESMデータからスペルを読み込み
+    void loadSpellsFromESM(const oblivion::ESMManager& esmMgr);
+
     std::shared_ptr<Spell> getSpell(uint32_t spellId) const;
     void addEffectToSpell(uint32_t spellId, const SpellEffect& effect);
 

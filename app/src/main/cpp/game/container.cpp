@@ -162,3 +162,91 @@ void Container::recalculateWeight() {
         totalWeight += item.item.weight * item.quantity;
     }
 }
+
+void Container::populateFromESM(const oblivion::ESMManager& esm, uint32_t containerFormID) {
+    const oblivion::ContainerData* contData = esm.findContainer(containerFormID);
+    if (!contData) {
+        LOGW("populateFromESM: Container 0x%08X not found", containerFormID);
+        return;
+    }
+
+    // Set capacity from ESM data
+    if (contData->weight > 0.0f) {
+        capacity = contData->weight;
+    }
+
+    // Populate items from ESM CNTO entries
+    for (const auto& entry : contData->items) {
+        if (entry.itemFormID == 0) continue;
+
+        // Resolve item name and properties from various ESM record types
+        Item item;
+        item.itemId = entry.itemFormID;
+        item.stackSize = entry.count;
+
+        // Try to resolve from different record types
+        const oblivion::WeaponData* weap = esm.findWeapon(entry.itemFormID);
+        if (weap) {
+            item.name = weap->fullName.empty() ? weap->editorID : weap->fullName;
+            item.type = ItemType::WEAPON;
+            item.weight = static_cast<float>(weap->weight);
+            item.value = weap->value;
+        } else {
+            const oblivion::ArmorData* armo = esm.findArmor(entry.itemFormID);
+            if (armo) {
+                item.name = armo->fullName.empty() ? armo->editorID : armo->fullName;
+                item.type = ItemType::ARMOR;
+                item.weight = static_cast<float>(armo->weight);
+                item.value = armo->value;
+            } else {
+                const oblivion::AlchemyData* alch = esm.findAlchemy(entry.itemFormID);
+                if (alch) {
+                    item.name = alch->fullName.empty() ? alch->editorID : alch->fullName;
+                    item.type = ItemType::POTION;
+                    item.weight = alch->weight;
+                    item.value = alch->value;
+                } else {
+                    const oblivion::IngredientData* ingr = esm.findIngredient(entry.itemFormID);
+                    if (ingr) {
+                        item.name = ingr->fullName.empty() ? ingr->editorID : ingr->fullName;
+                        item.type = ItemType::INGREDIENT;
+                        item.weight = ingr->weight;
+                        item.value = ingr->value;
+                    } else {
+                        const oblivion::MiscItemData* misc = esm.findMiscItem(entry.itemFormID);
+                        if (misc) {
+                            item.name = misc->fullName.empty() ? misc->editorID : misc->fullName;
+                            item.type = ItemType::MISC;
+                            item.weight = misc->weight;
+                            item.value = misc->value;
+                        } else {
+                            const oblivion::BookData* book = esm.findBook(entry.itemFormID);
+                            if (book) {
+                                item.name = book->fullName.empty() ? book->editorID : book->fullName;
+                                item.type = ItemType::BOOK;
+                                item.weight = book->weight;
+                                item.value = book->value;
+                            } else {
+                                // Unknown item — use formID as name
+                                char buf[32];
+                                snprintf(buf, sizeof(buf), "Item_%08X", entry.itemFormID);
+                                item.name = buf;
+                                item.type = ItemType::MISC;
+                                item.weight = 0.1f;
+                                item.value = 1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        InventoryItem invItem;
+        invItem.item = item;
+        invItem.quantity = entry.count;
+        addItem(invItem);
+    }
+
+    LOGI("Container populated from ESM: formID=0x%08X, items=%zu, capacity=%.1f",
+         containerFormID, items.size(), capacity);
+}

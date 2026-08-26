@@ -2,6 +2,7 @@
 #include "texture_loader.h"
 #include "../ui/ui_draw_helper.h"
 #include "../assets/bsa_reader.h"
+#include "../inventory/item_factory.h"
 // #include "../jni_audio_bridge.h"  // Deferred - requires Java MainActivity
 #include <thread>
 
@@ -319,6 +320,9 @@ void Renderer::initGameSystems() {
         return;
     }
 
+    // Initialize NavMesh Manager
+    navMeshManager = std::make_unique<oblivion::NavMeshManager>();
+
     // Initialize Combat Manager (with SpellManager)
     combatManager = std::make_unique<CombatManager>();
     if (!combatManager->initialize(worldManager.get(), worldManager->getNpcManager(),
@@ -624,14 +628,149 @@ void Renderer::createTestScenario() {
                  weapon.damage, weapon.value, weapon.weight);
         }
 
-        // 6. Log worldspace definitions
+        // 6. Log worldspace definitions with bounds
         const auto& worlds = esmMgr.getAllWorlds();
         LOGI("Found %zu worldspaces", worlds.size());
         for (const auto& w : worlds) {
-            LOGI("  WRLD: 0x%08X '%s' '%s'", w.formID, w.editorID.c_str(), w.fullName.c_str());
+            LOGI("  WRLD: 0x%08X '%s' '%s' bounds=[%d,%d] to [%d,%d]",
+                 w.formID, w.editorID.c_str(), w.fullName.c_str(),
+                 w.minX, w.minY, w.maxX, w.maxY);
         }
 
-        LOGI("ESM-based world generation complete");
+                // 7. Import armor records from ESM into ItemFactory
+                inventory::ItemFactory::getInstance().loadArmorsFromESM(esmMgr);
+
+                // 8. Import spell records from ESM into SpellManager
+                if (spellManager) {
+                    spellManager->loadSpellsFromESM(esmMgr);
+                }
+
+                // 9. Process leveled lists (LVLI/LVLC/LVSP)
+                const auto& leveledLists = esmMgr.getAllLeveledLists();
+                LOGI("Found %zu leveled lists", leveledLists.size());
+                size_t lvliCount = 0, lvlcCount = 0, lvspCount = 0;
+                for (const auto& ll : leveledLists) {
+                    // Count by type based on editorID prefix or entries
+                    if (ll.editorID.find("LL") != std::string::npos) lvliCount++;
+                    else if (ll.editorID.find("LC") != std::string::npos) lvlcCount++;
+                    else lvspCount++;
+                    LOGD("  LeveledList: 0x%08X '%s' chanceNone=%u flags=0x%02X entries=%zu",
+                         ll.formID, ll.editorID.c_str(), ll.chanceNone, ll.flags, ll.entries.size());
+                }
+                LOGI("  LVLI=%zu LVLC=%zu LVSP=%zu", lvliCount, lvlcCount, lvspCount);
+
+                // 10. Resolve LVLC lists to spawn creatures at player level 5 (test)
+                uint32_t testPlayerLevel = 5;
+                size_t spawnedFromLists = 0;
+                for (const auto& ll : leveledLists) {
+                    // Only process creature lists (those with NPC_ references)
+                    if (ll.entries.empty()) continue;
+                    auto resolved = esmMgr.resolveLeveledList(ll.formID, testPlayerLevel);
+                    for (const auto& [refFormID, count] : resolved) {
+                        const auto* npcData = esmMgr.findNPC(refFormID);
+                        if (npcData) {
+                            // Spawn creature from leveled list at origin
+                            glm::vec3 spawnPos(spawnedFromLists * 3.0f, 0.0f, -10.0f);
+                            auto npc = npcMgr->createNPC(
+                                npcData->fullName.empty() ? npcData->editorID : npcData->fullName,
+                                spawnPos);
+                            if (npc) {
+                                npc->status.initialize(
+                                    static_cast<float>(npcData->health),
+                                    static_cast<float>(npcData->magicka),
+                                    npcData->level);
+                                npc->meshAssetPath = "meshes/characters/imperial_male.nif";
+                                npc->updateModelMatrix();
+                                spawnedFromLists++;
+                                LOGD("  Spawned from LVLC '%s': NPC '%s' (0x%08X) level=%u",
+                                     ll.editorID.c_str(), npcData->fullName.c_str(),
+                                     refFormID, npcData->level);
+                            }
+                        }
+                    }
+                }
+                LOGI("Spawned %zu NPCs from leveled creature lists", spawnedFromLists);
+
+                // 11. Load NavMesh data for AI pathfinding
+                const auto& navMeshes = esmMgr.getAllNavMeshes();
+                LOGI("Found %zu NavMesh records", navMeshes.size());
+                size_t totalVertices = 0, totalTriangles = 0;
+                for (const auto& nm : navMeshes) {
+                    totalVertices += nm.vertices.size();
+                    totalTriangles += nm.triangles.size();
+                    LOGD("  NavMesh: 0x%08X '%s' verts=%zu tris=%zu",
+                         nm.formID, nm.editorID.c_str(), nm.vertices.size(), nm.triangles.size());
+                }
+                LOGI("  Total: %zu vertices, %zu triangles", totalVertices, totalTriangles);
+
+                // Load NavMesh data into NavMeshManager
+                if (navMeshManager) {
+                    navMeshManager->loadFromESM(esmMgr);
+                }
+
+                // 12. Log race and class data for character creation
+                const auto& races = esmMgr.getAllRaces();
+                LOGI("Found %zu races", races.size());
+                for (const auto& race : races) {
+                    LOGI("  RACE: 0x%08X '%s' '%s' HP=%u spells=%zu",
+                         race.formID, race.editorID.c_str(), race.fullName.c_str(),
+                         race.startingHealth, race.spellFormIDs.size());
+                    LOGD("    STR=%u INT=%u WIL=%u AGI=%u SPD=%u END=%u PER=%u",
+                         race.attrStrength, race.attrIntelligence, race.attrWillpower,
+                         race.attrAgility, race.attrSpeed, race.attrEndurance, race.attrPersonality);
+                }
+
+                const auto& classes = esmMgr.getAllClasses();
+                LOGI("Found %zu classes", classes.size());
+                for (const auto& cls : classes) {
+                    LOGI("  CLAS: 0x%08X '%s' '%s' spec=%u",
+                         cls.formID, cls.editorID.c_str(), cls.fullName.c_str(), cls.specialization);
+                }
+
+                // 13. Log book data (skill books)
+                const auto& books = esmMgr.getAllBooks();
+                LOGI("Found %zu books", books.size());
+                size_t skillBookCount = 0;
+                for (const auto& book : books) {
+                    if (book.teachesSkillID != 0) {
+                        skillBookCount++;
+                        LOGD("  SkillBook: 0x%08X '%s' skill=0x%08X level=%u value=%u",
+                             book.formID, book.fullName.c_str(),
+                             book.teachesSkillID, book.teachesSkillLevel, book.value);
+                    }
+                }
+                LOGI("  Skill books: %zu", skillBookCount);
+
+                // 14. Log remaining item types
+                const auto& clothing = esmMgr.getAllClothing();
+                LOGI("Found %zu clothing items", clothing.size());
+                for (const auto& cl : clothing) {
+                    LOGD("  CLOT: 0x%08X '%s' value=%u weight=%.1f",
+                         cl.formID, cl.fullName.c_str(), cl.value, cl.weight);
+                }
+
+                const auto& ingredients = esmMgr.getAllIngredients();
+                LOGI("Found %zu ingredients", ingredients.size());
+                for (const auto& ing : ingredients) {
+                    LOGD("  INGR: 0x%08X '%s' value=%u weight=%.1f",
+                         ing.formID, ing.fullName.c_str(), ing.value, ing.weight);
+                }
+
+                const auto& alchemy = esmMgr.getAllAlchemy();
+                LOGI("Found %zu alchemy items", alchemy.size());
+                for (const auto& alc : alchemy) {
+                    LOGD("  ALCH: 0x%08X '%s' value=%u weight=%.1f",
+                         alc.formID, alc.fullName.c_str(), alc.value, alc.weight);
+                }
+
+                const auto& miscItems = esmMgr.getAllMiscItems();
+                LOGI("Found %zu misc items", miscItems.size());
+                for (const auto& misc : miscItems) {
+                    LOGD("  MISC: 0x%08X '%s' value=%u weight=%.1f",
+                         misc.formID, misc.fullName.c_str(), misc.value, misc.weight);
+                }
+
+                LOGI("ESM-based world generation complete");
     } else {
         LOGI("=== No ESM data available, using hardcoded test scenario ===");
         // Fall back to hardcoded test (existing code below)
@@ -692,43 +831,85 @@ void Renderer::createTestScenario() {
 
         // Create test spells
         if (spellManager) {
-            // 破壊の魔法：ファイアボール
-            fireball = spellManager->createSpell(
-                "Fireball", "ファイアボール",
-                MagicSchool::DESTRUCTION, 50.0f, 30.0f);
-            if (fireball != 0) {
-                spellManager->addEffectToSpell(fireball,
-                    SpellEffect(SpellEffectType::DAMAGE, 30.0f, 0.0f));
-                spellManager->teachSpellToNpc(izar->npcId, fireball);
-                spellManager->equipSpellToNpc(izar->npcId, fireball);
-            }
+            if (hasEsmData) {
+                // ESM mode: pick the first Destruction and Restoration spells
+                const auto& spells = esmMgr.getAllSpells();
+                for (const auto& s : spells) {
+                    uint32_t spellId = s.formID;
+                    if (spellId == 0) continue;
 
-            // 回復の魔法：ヒール
-            heal = spellManager->createSpell(
-                "Heal", "ヒール",
-                MagicSchool::RESTORATION, 40.0f, 0.0f);
-            if (heal != 0) {
-                spellManager->addEffectToSpell(heal,
-                    SpellEffect(SpellEffectType::HEAL, 50.0f, 0.0f));
-                spellManager->teachSpellToNpc(hellas->npcId, heal);
-                spellManager->teachSpellToNpc(izar->npcId, heal);
-                spellManager->equipSpellToNpc(hellas->npcId, heal);
-                spellManager->equipSpellToNpc(izar->npcId, heal);
-            }
+                    // Assign first Destruction spell to Izar (monster)
+                    if (s.effectType == 2 && fireball == 0) {
+                        fireball = spellId;
+                        spellManager->teachSpellToNpc(izar->npcId, spellId);
+                        spellManager->equipSpellToNpc(izar->npcId, spellId);
+                        LOGI("  ESM Destruction spell for Izar: 0x%08X '%s'", spellId, s.fullName.c_str());
+                    }
 
-            // 神秘の魔法：マナ回復
-            restoreMana = spellManager->createSpell(
-                "Restore Mana", "マナ回復",
-                MagicSchool::MYSTICISM, 30.0f, 0.0f);
-            if (restoreMana != 0) {
-                spellManager->addEffectToSpell(restoreMana,
-                    SpellEffect(SpellEffectType::RESTORE_MANA, 40.0f, 0.0f));
-                spellManager->teachSpellToNpc(izar->npcId, restoreMana);
-                spellManager->equipSpellToNpc(izar->npcId, restoreMana);
-            }
+                    // Assign first Restoration spell to Hellas (healer)
+                    if (s.effectType == 5 && heal == 0) {
+                        heal = spellId;
+                        spellManager->teachSpellToNpc(hellas->npcId, spellId);
+                        spellManager->equipSpellToNpc(hellas->npcId, spellId);
+                        LOGI("  ESM Restoration spell for Hellas: 0x%08X '%s'", spellId, s.fullName.c_str());
+                    }
 
-            LOGI("Test spells created: Fireball=%u, Heal=%u, RestoreMana=%u",
-                 fireball, heal, restoreMana);
+                    // Assign first Mysticism spell to both
+                    if (s.effectType == 4 && restoreMana == 0) {
+                        restoreMana = spellId;
+                        spellManager->teachSpellToNpc(izar->npcId, spellId);
+                        spellManager->equipSpellToNpc(izar->npcId, spellId);
+                        LOGI("  ESM Mysticism spell for both: 0x%08X '%s'", spellId, s.fullName.c_str());
+                    }
+
+                    // Also teach the Restoration spell to Izar so he can heal too
+                    if (heal != 0 && spellId == heal && izar) {
+                        spellManager->teachSpellToNpc(izar->npcId, heal);
+                        spellManager->equipSpellToNpc(izar->npcId, heal);
+                    }
+                }
+                LOGI("ESM spells assigned: fireball=0x%08X, heal=0x%08X, restoreMana=0x%08X",
+                     fireball, heal, restoreMana);
+            } else {
+                // No ESM: use hardcoded spells
+                // 破壊の魔法：ファイアボール
+                fireball = spellManager->createSpell(
+                    "Fireball", "ファイアボール",
+                    MagicSchool::DESTRUCTION, 50.0f, 30.0f);
+                if (fireball != 0) {
+                    spellManager->addEffectToSpell(fireball,
+                        SpellEffect(SpellEffectType::DAMAGE, 30.0f, 0.0f));
+                    spellManager->teachSpellToNpc(izar->npcId, fireball);
+                    spellManager->equipSpellToNpc(izar->npcId, fireball);
+                }
+
+                // 回復の魔法：ヒール
+                heal = spellManager->createSpell(
+                    "Heal", "ヒール",
+                    MagicSchool::RESTORATION, 40.0f, 0.0f);
+                if (heal != 0) {
+                    spellManager->addEffectToSpell(heal,
+                        SpellEffect(SpellEffectType::HEAL, 50.0f, 0.0f));
+                    spellManager->teachSpellToNpc(hellas->npcId, heal);
+                    spellManager->teachSpellToNpc(izar->npcId, heal);
+                    spellManager->equipSpellToNpc(hellas->npcId, heal);
+                    spellManager->equipSpellToNpc(izar->npcId, heal);
+                }
+
+                // 神秘の魔法：マナ回復
+                restoreMana = spellManager->createSpell(
+                    "Restore Mana", "マナ回復",
+                    MagicSchool::MYSTICISM, 30.0f, 0.0f);
+                if (restoreMana != 0) {
+                    spellManager->addEffectToSpell(restoreMana,
+                        SpellEffect(SpellEffectType::RESTORE_MANA, 40.0f, 0.0f));
+                    spellManager->teachSpellToNpc(izar->npcId, restoreMana);
+                    spellManager->equipSpellToNpc(izar->npcId, restoreMana);
+                }
+
+                LOGI("Test spells created: Fireball=%u, Heal=%u, RestoreMana=%u",
+                     fireball, heal, restoreMana);
+            }
         }
 
         // Initiate test combat

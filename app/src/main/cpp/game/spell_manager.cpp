@@ -3,6 +3,50 @@
 #include <algorithm>
 #include <cmath>
 
+// ---------------------------------------------------------------------------
+// Helpers for mapping ESM spell data to runtime types
+// ---------------------------------------------------------------------------
+
+/// Map Oblivion magic school byte (SPIT byte 12) to our MagicSchool enum
+static MagicSchool esmSchoolToEnum(uint32_t schoolByte) {
+    switch (schoolByte) {
+        case 0:  return MagicSchool::ALTERATION;
+        case 1:  return MagicSchool::CONJURATION;
+        case 2:  return MagicSchool::DESTRUCTION;
+        case 3:  return MagicSchool::ILLUSION;
+        case 4:  return MagicSchool::MYSTICISM;
+        case 5:  return MagicSchool::RESTORATION;
+        default: return MagicSchool::DESTRUCTION;
+    }
+}
+
+/// Map a MGEF effect FormID to our SpellEffectType.
+/// Known Oblivion MGEF FormIDs (from Oblivion.esm):
+///   0x0001E825 = FireDamage   (DAMAGE)
+///   0x0001E831 = Heal          (HEAL)
+///   0x0001E84F = RestoreMagicka (RESTORE_MANA)
+///   0x0001E82E = RestoreStamina (RESTORE_STAMINA)
+///   0x00027FAC = Paralyze      (PARALYZE)
+///   0x0001E851 = Invisibility  (INVISIBILITY)
+///   0x0001E843 = FortifyAttribute (FORTIFY_ATTR)
+///   0x0001E848 = Summon       (SUMMON)
+///   0x0001E835 = Shield       (DAMAGE — treated as buff)
+static SpellEffectType mgefToEffectType(uint32_t mgefFormID) {
+    switch (mgefFormID) {
+        case 0x0001E825: return SpellEffectType::DAMAGE;         // FireDamage
+        case 0x0001E826: return SpellEffectType::DAMAGE;         // FrostDamage
+        case 0x0001E827: return SpellEffectType::DAMAGE;         // ShockDamage
+        case 0x0001E831: return SpellEffectType::HEAL;           // Heal
+        case 0x0001E84F: return SpellEffectType::RESTORE_MANA;   // RestoreMagicka
+        case 0x0001E82E: return SpellEffectType::RESTORE_STAMINA; // RestoreStamina
+        case 0x00027FAC: return SpellEffectType::PARALYZE;       // Paralyze
+        case 0x0001E851: return SpellEffectType::INVISIBILITY;   // Invisibility
+        case 0x0001E843: return SpellEffectType::FORTIFY_ATTR;   // FortifyAttribute
+        case 0x0001E848: return SpellEffectType::SUMMON;         // Summon (generic)
+        default:         return SpellEffectType::DAMAGE;         // fallback
+    }
+}
+
 SpellManager::SpellManager()
     : npcManager(nullptr), cheatManager(nullptr), nextSpellId(2000) {
     LOGD("SpellManager created");
@@ -49,6 +93,58 @@ uint32_t SpellManager::createSpell(const std::string& name, const std::string& n
          spellId, name.c_str(), nameJa.c_str(), spell->getSchoolName().c_str(),
          manaCost, baseDamage);
     return spellId;
+}
+
+void SpellManager::loadSpellsFromESM(const oblivion::ESMManager& esmMgr) {
+    const auto& esmSpells = esmMgr.getAllSpells();
+    size_t loaded = 0;
+
+    for (const auto& s : esmSpells) {
+        if (s.formID == 0) continue;
+        if (spells.count(s.formID) != 0) continue;
+
+        // Use ESM FormID directly as spell ID (so NPC spell lists stay valid)
+        auto spell = std::make_shared<Spell>(
+            s.formID,
+            s.fullName.empty() ? s.editorID : s.fullName,
+            s.fullName,
+            esmSchoolToEnum(s.effectType),
+            static_cast<float>(s.cost),
+            0.0f  // baseDamage set from first DAMAGE effect
+        );
+
+        // Convert EFID/EFIT pairs to SpellEffect list
+        size_t effectCount = std::min({
+            s.effectFormIDs.size(),
+            s.effectMagnitudes.size(),
+            s.effectAreas.size(),
+            s.effectDurations.size()
+        });
+        for (size_t ei = 0; ei < effectCount; ++ei) {
+            SpellEffect effect(
+                mgefToEffectType(s.effectFormIDs[ei]),
+                s.effectMagnitudes[ei],
+                static_cast<float>(s.effectDurations[ei])
+            );
+            spell->effects.push_back(effect);
+
+            // Use first DAMAGE effect magnitude as base damage
+            if (effect.type == SpellEffectType::DAMAGE && spell->baseDamage <= 0.0f) {
+                spell->baseDamage = s.effectMagnitudes[ei];
+            }
+        }
+
+        spells[s.formID] = spell;
+        ++loaded;
+
+        if (loaded <= 10) {
+            LOGI("  Spell[%zu]: 0x%08X '%s' school=%u cost=%u effects=%zu",
+                 loaded, s.formID, spell->name.c_str(),
+                 static_cast<unsigned>(s.effectType), s.cost, effectCount);
+        }
+    }
+
+    LOGI("SpellManager: Loaded %zu spells from ESM data", loaded);
 }
 
 std::shared_ptr<Spell> SpellManager::getSpell(uint32_t spellId) const {
@@ -261,26 +357,85 @@ void SpellManager::applySpellEffect(std::shared_ptr<NPC> target, const Spell& sp
             }
 
             case SpellEffectType::PARALYZE: {
-                // TODO: 麻痺状態の実装
-                LOGI("Paralyze effect applied to %s", target->name.c_str());
+                // Paralyze: immobilize target for effect duration
+                // In Oblivion, paralyze prevents all movement and actions
+                float duration = (effect.duration > 0.0f) ? effect.duration : 3.0f;
+                if (npcManager) {
+                    npcManager->addStatusEffect(*target, SpellEffectType::PARALYZE,
+                                                duration, effect.magnitude);
+                }
+                // Force target out of combat movement
+                target->setAIState(AIState::IDLE);
+                LOGI("Paralyze: %s paralyzed for %.1fs (magnitude=%.0f)",
+                     target->name.c_str(), duration, effect.magnitude);
                 break;
             }
 
             case SpellEffectType::INVISIBILITY: {
-                // TODO: 透明化状態の実装
-                LOGI("Invisibility effect applied to %s", target->name.c_str());
+                // Invisibility: target becomes undetectable for duration
+                // In Oblivion, invisibility breaks on attack/spell cast
+                float duration = (effect.duration > 0.0f) ? effect.duration : 15.0f;
+                if (npcManager) {
+                    npcManager->addStatusEffect(*target, SpellEffectType::INVISIBILITY,
+                                                duration, effect.magnitude);
+                }
+                // Exit combat when becoming invisible
+                if (target->inCombat) {
+                    target->exitCombat();
+                }
+                LOGI("Invisibility: %s invisible for %.1fs (magnitude=%.0f)",
+                     target->name.c_str(), duration, effect.magnitude);
                 break;
             }
 
             case SpellEffectType::FORTIFY_ATTR: {
-                // TODO: 属性強化の実装
-                LOGI("Fortify effect applied to %s", target->name.c_str());
+                // Fortify Attribute: temporarily boost a target attribute
+                // In Oblivion, this increases Strength/Intelligence/etc by magnitude
+                float duration = (effect.duration > 0.0f) ? effect.duration : 60.0f;
+                if (npcManager) {
+                    npcManager->addStatusEffect(*target, SpellEffectType::FORTIFY_ATTR,
+                                                duration, effect.magnitude);
+                }
+                // Apply immediate attribute boost
+                // Default to Strength if no specific attribute is set
+                std::string attr = effect.affectedAttribute.empty()
+                                   ? "Strength" : effect.affectedAttribute;
+                auto attrIt = target->status.attributes.find(attr);
+                if (attrIt != target->status.attributes.end()) {
+                    attrIt->second += effect.magnitude;
+                    LOGI("Fortify: %s %s boosted by %.0f (now %.0f) for %.1fs",
+                         target->name.c_str(), attr.c_str(), effect.magnitude,
+                         attrIt->second, duration);
+                } else {
+                    // Attribute not found, apply to Strength as fallback
+                    target->status.attributes["Strength"] += effect.magnitude;
+                    LOGI("Fortify: %s Strength boosted by %.0f for %.1fs (attr '%s' not found)",
+                         target->name.c_str(), effect.magnitude, duration, attr.c_str());
+                }
                 break;
             }
 
             case SpellEffectType::SUMMON: {
-                // TODO: 召喚スペルの実装
-                LOGI("Summon effect triggered");
+                // Summon: create a temporary allied creature
+                // In Oblivion, summons last for the spell duration and fight for the caster
+                float duration = (effect.duration > 0.0f) ? effect.duration : 60.0f;
+                if (npcManager) {
+                    npcManager->addStatusEffect(*target, SpellEffectType::SUMMON,
+                                                duration, effect.magnitude);
+                }
+                // Spawn a summoned creature near the caster's position
+                // Use magnitude as the creature level hint
+                glm::vec3 spawnPos = target->position + glm::vec3(2.0f, 0.0f, 2.0f);
+                auto summoned = npcManager->createNPC("Summoned Creature", spawnPos);
+                if (summoned) {
+                    summoned->status.maxHealth = effect.magnitude * 5.0f;
+                    summoned->status.currentHealth = summoned->status.maxHealth;
+                    summoned->status.weaponDamage = effect.magnitude;
+                    summoned->moveSpeed = 6.0f;
+                    LOGI("Summon: creature spawned at (%.1f, %.1f, %.1f) HP=%.0f DMG=%.0f for %.1fs",
+                         spawnPos.x, spawnPos.y, spawnPos.z,
+                         summoned->status.maxHealth, effect.magnitude, duration);
+                }
                 break;
             }
 

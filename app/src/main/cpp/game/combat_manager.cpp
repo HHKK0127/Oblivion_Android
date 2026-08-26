@@ -5,7 +5,8 @@
 #include <cmath>
 
 CombatManager::CombatManager()
-    : worldManager(nullptr), npcManager(nullptr), spellManager(nullptr), cheatManager(nullptr) {
+    : worldManager(nullptr), npcManager(nullptr), spellManager(nullptr),
+      cheatManager(nullptr), navMeshManager(nullptr) {
     LOGD("CombatManager created");
 }
 
@@ -14,7 +15,8 @@ CombatManager::~CombatManager() {
     LOGD("CombatManager destroyed");
 }
 
-bool CombatManager::initialize(WorldManager* wm, NpcManager* nm, class SpellManager* sm, class CheatManager* cm) {
+bool CombatManager::initialize(WorldManager* wm, NpcManager* nm, class SpellManager* sm,
+                               class CheatManager* cm, oblivion::NavMeshManager* nvm) {
     if (!wm || !nm) {
         LOGE("Cannot initialize CombatManager with null pointers");
         return false;
@@ -24,9 +26,11 @@ bool CombatManager::initialize(WorldManager* wm, NpcManager* nm, class SpellMana
     npcManager = nm;
     spellManager = sm;
     cheatManager = cm;
-    LOGI("CombatManager initialized (SpellManager: %s, CheatManager: %s)",
+    navMeshManager = nvm;
+    LOGI("CombatManager initialized (SpellManager: %s, CheatManager: %s, NavMesh: %s)",
          spellManager ? "available" : "not available",
-         cheatManager ? "available" : "not available");
+         cheatManager ? "available" : "not available",
+         navMeshManager ? "available" : "not available");
     return true;
 }
 
@@ -35,6 +39,7 @@ void CombatManager::cleanup() {
     worldManager = nullptr;
     npcManager = nullptr;
     cheatManager = nullptr;
+    navMeshManager = nullptr;
     LOGD("CombatManager cleaned up");
 }
 
@@ -56,6 +61,14 @@ void CombatManager::update(float deltaTime) {
 
         if (combat.attacker && combat.defender &&
             combat.lastAttackTime >= DAMAGE_CALCULATION_COOLDOWN) {
+
+            // NavMesh-based combat approach: move toward enemy if too far
+            float attackRange = 3.0f;  // Melee range
+            glm::vec3 diff = combat.defender->position - combat.attacker->position;
+            float distSq = diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
+            if (distSq > attackRange * attackRange && navMeshManager) {
+                combat.attacker->moveTo(combat.defender->position, navMeshManager);
+            }
 
             // NPC AI: スペル選択と発動
             if (spellManager && combat.attacker) {

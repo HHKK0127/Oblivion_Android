@@ -1,9 +1,66 @@
 #include "item_factory.h"
+#include <android/log.h>
+
+#define LOG_TAG "ItemFactory"
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 namespace inventory {
 
 ItemFactory::ItemFactory() {
     initializeDefaultItems();
+}
+
+// Map ESM armor type (0=light,1=heavy,2=cloth) to EquipSlot based on BMDT biped flags
+static EquipSlot armorBipedToSlot(uint32_t bipedModelID) {
+    // Biped object flags in Oblivion (partial mapping):
+    // 0x01=head, 0x02=hair, 0x04=amulet, 0x08=body/upper, 0x10=lower,
+    // 0x20=hand, 0x40=foot, 0x80=shield, 0x200=ring, 0x400=knee,
+    // 0x800=finger, 0x1000=tail, 0x2000=weapon
+    switch (bipedModelID) {
+        case 0x01: return EquipSlot::Head;
+        case 0x08: return EquipSlot::Body;
+        case 0x20: return EquipSlot::Hands;
+        case 0x40: return EquipSlot::Feet;
+        default:   return EquipSlot::Body;  // default to body slot
+    }
+}
+
+void ItemFactory::loadArmorsFromESM(const oblivion::ESMManager& esmMgr) {
+    const auto& armors = esmMgr.getAllArmors();
+    size_t loaded = 0;
+
+    for (const auto& a : armors) {
+        if (a.formID == 0) continue;   // skip invalid records
+        if (itemDatabase.count(a.formID) != 0) continue;  // skip duplicates
+
+        Item item;
+        item.id          = a.formID;           // use ESM FormID as item ID
+        item.name        = a.fullName.empty() ? a.editorID : a.fullName;
+        item.description = "Armor Rating: " + std::to_string(a.armorRating);
+        item.category    = ItemCategory::Armor;
+        item.rarity      = (a.armorType == 1) ? ItemRarity::Uncommon : ItemRarity::Common;
+        item.equipSlot   = armorBipedToSlot(a.bipedModelID);
+        item.weight      = a.weight;
+        item.value       = a.value;
+        item.maxStack    = 1;
+        item.stats.defense = static_cast<int>(a.armorRating);
+
+        registerItem(item);
+        ++loaded;
+
+        // Log first 20 armors as sample
+        if (loaded <= 20) {
+            LOGI("  Armor[%zu]: 0x%08X '%s' rating=%u val=%u wt=%.1f slot=%d type=%s",
+                  loaded, a.formID, item.name.c_str(),
+                  a.armorRating, a.value, a.weight,
+                  static_cast<int>(item.equipSlot),
+                  (a.armorType == 0) ? "Light" : (a.armorType == 1) ? "Heavy" : "Cloth");
+        }
+    }
+
+    LOGI("ItemFactory: Loaded %zu armor records from ESM data", loaded);
 }
 
 void ItemFactory::initializeDefaultItems() {

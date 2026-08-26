@@ -1,6 +1,7 @@
 #pragma once
 
 #include "item_base.h"
+#include "../assets/esm_reader.h"  // for ArmorData
 #include <unordered_map>
 #include <vector>
 #include <memory>
@@ -30,6 +31,9 @@ public:
 
     // Register custom item definition
     void registerItem(const Item& itemTemplate);
+
+    // Import armor records from ESM data
+    void loadArmorsFromESM(const oblivion::ESMManager& esmMgr);
 
     // Get all registered items
     std::vector<Item> getAllItems() const;

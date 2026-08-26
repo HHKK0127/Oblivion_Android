@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-08-21T17:33:35.8885119+09:00",
+  "lastUpdated": "2026-08-21T18:47:42.8320287+09:00",
   "entries": [
     {
       "content": "Oblivion.exe (Ghidra decompiled) - Gamebryo engine, compiled with VS2005/VS2008, Direct3D9. Init order: Renderer -> Shader System -> Sky -> TES -> TreeManager -> Menus -> Player -> Scripts -> Sound System -> Actor Locations -> LOD Land",
@@ -370,11 +370,99 @@
         "renderer"
       ],
       "timestamp": "2026-08-21T17:33:35.8728768+09:00"
+    },
+    {
+      "priority": "high",
+      "compressed": false,
+      "content": "SPEL record parsing implemented: SpellData struct with formID, editorID, fullName, spellType, cost, level, flags, effectFormIDs, effectMagnitudes, effectAreas, effectDurations. decodeSpell() reads SPIT (magic data) and iterates EFID+EFIT pairs for effect list. Build: SUCCESS",
+      "id": "776b2452-dbe2-402d-bd63-b9134e8502d1",
+      "category": "reference",
+      "tags": [
+        "esm",
+        "spell",
+        "spells",
+        "record-parsing"
+      ],
+      "timestamp": "2026-08-21T18:12:11.5833691+09:00"
+    },
+    {
+      "tags": [
+        "esm",
+        "navmesh",
+        "navm",
+        "ai",
+        "pathfinding"
+      ],
+      "compressed": false,
+      "category": "reference",
+      "priority": "high",
+      "id": "00a37fcd-d231-4936-8dd6-c4e20773cb71",
+      "content": "NAVM record parsing implemented: NavMeshData struct with vertices (glm::vec3), triangles (vertex indices + adjacency), cellFormID. decodeNavMesh() reads NNAM (location), NVNM (version header + vertices + triangles). Build: SUCCESS",
+      "timestamp": "2026-08-21T18:26:06.1988802+09:00"
+    },
+    {
+      "tags": [
+        "esm",
+        "armor",
+        "armo",
+        "equipment"
+      ],
+      "compressed": false,
+      "category": "reference",
+      "priority": "high",
+      "id": "159a00f3-5bbe-410c-85ec-827d1585e29d",
+      "content": "ARMO record parsing implemented: ArmorData struct with armorRating, value, weight, enchantmentID, armorType (light/heavy/cloth), modelPath. decodeArmor() reads BMDT (body data/type), DATA (rating+value+weight), ENAM (enchantment). Build: SUCCESS",
+      "timestamp": "2026-08-21T18:26:06.1992489+09:00"
+    },
+    {
+      "priority": "high",
+      "id": "d76b7606-8f89-4e68-9734-ab2ac6fe6d8e",
+      "category": "reference",
+      "content": "BOOK/FACT/RACE/CLAS record parsing implemented: BookData (teachesSkillID), FactionData (ranks, relations), RaceData (model paths, spells), ClassData (specialization, attributes, skills). All 4 records parse their core DATA subrecords. Build: SUCCESS",
+      "tags": [
+        "esm",
+        "book",
+        "faction",
+        "race",
+        "class"
+      ],
+      "compressed": false,
+      "timestamp": "2026-08-21T18:47:42.8153259+09:00"
+    },
+    {
+      "priority": "medium",
+      "id": "fa066f3f-6979-4abc-b288-1acfa9cb9a2e",
+      "category": "reference",
+      "content": "CLOT/INGR/ALCH/MISC/ROAD record parsing implemented: ClothingData (value, weight, enchant), IngredientData (4 alchemy effects via IRQD/IRQF), AlchemyData (EFID+EFIT effects), MiscItemData (value, weight), RoadData (PGRP nodes, PGRR edges). Build: SUCCESS",
+      "tags": [
+        "esm",
+        "clot",
+        "ingr",
+        "alch",
+        "misc",
+        "road"
+      ],
+      "compressed": false,
+      "timestamp": "2026-08-21T18:47:42.8316351+09:00"
+    },
+    {
+      "priority": "high",
+      "id": "navm-pathfinding-impl",
+      "category": "reference",
+      "content": "NAVM A* pathfinding implemented: NavMeshManager with findPath(start, end) returning vector<glm::vec3>. Uses triangle centroids as nodes, adjacent edges as connections. findTriangle() for point containment. getTriangleCentroid() uses component-wise division (glm compatibility). Integrated in renderer.cpp. Files: navmesh_manager.h, navmesh_manager.cpp",
+      "tags": [
+        "navm",
+        "pathfinding",
+        "astar",
+        "navmesh"
+      ],
+      "compressed": false,
+      "timestamp": "2026-08-21T19:15:00.0000000+09:00"
     }
   ],
   "metadata": {
-    "totalEntries": 27,
+    "totalEntries": 33,
     "compressedCount": 0,
-    "sessionCount": 1
+    "sessionCount": 2
   }
 }
