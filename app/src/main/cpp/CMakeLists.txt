@@ -21,6 +21,7 @@ add_library(native-lib SHARED
     geometry/material.cpp
     animation/skeleton.cpp
     animation/animation_player.cpp
+    collision/aabb_tree.cpp
 
     # World System (Phase 3+)
     world/world_manager.cpp
