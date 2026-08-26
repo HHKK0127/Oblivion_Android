@@ -2,6 +2,7 @@
 #include <android/log.h>
 #include <algorithm>
 #include <cstring>
+#include <cmath>
 
 #undef LOG_TAG
 #undef LOGD
@@ -566,5 +567,576 @@ bool NIFParser::resolveControllerReferences(NIFControllerManager& manager,
     }
 
     LOGD("Resolved %zu sequences", manager.sequences.size());
+    return true;
+}
+
+// ============================================
+// Phase 30 Step 9: bhkCollisionObject parsing
+// ============================================
+
+bool NIFParser::parseBhkCollisionObject(CollisionObject& obj) {
+    // bhkCollisionObject:
+    //   uint32_t target (parent node index)
+    //   uint32_t flags (short)
+    //   uint32_t body (bhkRigidBody index)
+    //   uint32_t numBodyFilters
+    //   uint32_t[] bodyFilters
+
+    uint32_t targetIndex = 0;
+    if (!readBytes(reinterpret_cast<char*>(&targetIndex), 4)) return false;
+    obj.nodeIndex = targetIndex;
+
+    uint16_t flags = 0;
+    if (!readBytes(reinterpret_cast<char*>(&flags), 2)) return false;
+
+    uint32_t bodyRef = 0;
+    if (!readBytes(reinterpret_cast<char*>(&bodyRef), 4)) return false;
+    obj.rigidBodyIndex = bodyRef;
+
+    uint32_t numBodyFilters = 0;
+    if (!readBytes(reinterpret_cast<char*>(&numBodyFilters), 4)) return false;
+    // Skip body filters
+    for (uint32_t i = 0; i < numBodyFilters; i++) {
+        uint32_t filter = 0;
+        if (!readBytes(reinterpret_cast<char*>(&filter), 4)) return false;
+    }
+
+    LOGD("bhkCollisionObject: target=%u, body=%u, flags=%u",
+         targetIndex, bodyRef, flags);
+    return true;
+}
+
+bool NIFParser::parseBhkRigidBody(RigidBodyInfo& info) {
+    // bhkRigidBody (Oblivion NIF ver 20.x):
+    //   Havok material (uint32_t)
+    //   collisionFilterInfo (uint32_t)
+    //   unknown (uint8_t[5])
+    //   collisionResponse (uint8_t)
+    //   unknown2 (uint8_t)
+    //   processContactCallbackDelay (uint16_t)
+    //   unknown3 (uint16_t)
+    //   collisionFilterCopyInfo (uint32_t)
+    //   unknown4 (uint8_t[4])
+    //   mass (float)
+    //   linearDamping (float)
+    //   angularDamping (float)
+    //   friction (float)
+    //   restitution (float)
+    //   maxLinearVelocity (float)
+    //   maxAngularVelocity (float)
+    //   penetrationDepth (float)
+    //   motionSystem (uint8_t)
+    //   deactivatorType (uint8_t)
+    //   solverDeactivation (uint8_t)
+    //   qualityType (uint8_t)
+    //   autoRemoveLevel (int8_t)
+    //   respondableMask (uint8_t[4])
+    //   unknown5 (uint8_t[8])
+    //   translation (hkVector4: 4 floats)
+    //   rotation (hkQuaternion: 4 floats)
+    //   linearVelocity (hkVector4: 4 floats)
+    //   angularVelocity (hkVector4: 4 floats)
+    //   inertiaMatrix (hkMatrix3: 9 floats)
+    //   center (hkVector4: 4 floats)
+    //   mass2 (float)
+    //   linearDamping2 (float)
+    //   angularDamping2 (float)
+    //   friction2 (float)
+    //   restitution2 (float)
+    //   maxLinearVelocity2 (float)
+    //   maxAngularVelocity2 (float)
+    //   penetrationDepth2 (float)
+    //   motionSystem2 (uint8_t)
+    //   deactivatorType2 (uint8_t)
+    //   solverDeactivation2 (uint8_t)
+    //   qualityType2 (uint8_t)
+    //   autoRemoveLevel2 (int8_t)
+    //   respondableMask2 (uint8_t[4])
+    //   unknown6 (uint8_t[8])
+    //   translation2 (hkVector4)
+    //   rotation2 (hkQuaternion)
+    //   linearVelocity2 (hkVector4)
+    //   angularVelocity2 (hkQuaternion)
+    //   inertiaMatrix2 (hkMatrix3)
+    //   center2 (hkVector4)
+    //   numConstraints (uint32_t)
+    //   constraints[] (uint32_t refs)
+    //   unknown7 (uint8_t[4])
+
+    // Skip Havok material
+    uint32_t havokMaterial = 0;
+    if (!readBytes(reinterpret_cast<char*>(&havokMaterial), 4)) return false;
+
+    uint32_t collisionFilterInfo = 0;
+    if (!readBytes(reinterpret_cast<char*>(&collisionFilterInfo), 4)) return false;
+    info.collisionFilter = collisionFilterInfo;
+
+    // Skip unknown bytes (5 + 1 + 1 + 2 + 2 + 4 + 4 = 19 bytes)
+    char skipBuf[19];
+    if (!readBytes(skipBuf, 19)) return false;
+
+    // Mass
+    if (!readBytes(reinterpret_cast<char*>(&info.mass), 4)) return false;
+
+    // Linear damping
+    float linearDamping = 0;
+    if (!readBytes(reinterpret_cast<char*>(&linearDamping), 4)) return false;
+
+    // Angular damping
+    float angularDamping = 0;
+    if (!readBytes(reinterpret_cast<char*>(&angularDamping), 4)) return false;
+
+    // Friction
+    if (!readBytes(reinterpret_cast<char*>(&info.friction), 4)) return false;
+
+    // Restitution
+    if (!readBytes(reinterpret_cast<char*>(&info.restitution), 4)) return false;
+
+    // Max linear velocity, max angular velocity, penetration depth
+    char skipBuf2[12];
+    if (!readBytes(skipBuf2, 12)) return false;
+
+    // Motion system, deactivator type, solver deactivation, quality type, auto remove level
+    char skipBuf3[5];
+    if (!readBytes(skipBuf3, 5)) return false;
+
+    // Respondable mask (4 bytes)
+    char skipBuf4[4];
+    if (!readBytes(skipBuf4, 4)) return false;
+
+    // Unknown (8 bytes)
+    char skipBuf5[8];
+    if (!readBytes(skipBuf5, 8)) return false;
+
+    // Translation (hkVector4: x, y, z, w)
+    float tx, ty, tz, tw;
+    if (!readBytes(reinterpret_cast<char*>(&tx), 4)) return false;
+    if (!readBytes(reinterpret_cast<char*>(&ty), 4)) return false;
+    if (!readBytes(reinterpret_cast<char*>(&tz), 4)) return false;
+    if (!readBytes(reinterpret_cast<char*>(&tw), 4)) return false;
+    info.transform.translation = {tx, ty, tz};
+
+    // Rotation (hkQuaternion: x, y, z, w)
+    float qx, qy, qz, qw;
+    if (!readBytes(reinterpret_cast<char*>(&qx), 4)) return false;
+    if (!readBytes(reinterpret_cast<char*>(&qy), 4)) return false;
+    if (!readBytes(reinterpret_cast<char*>(&qz), 4)) return false;
+    if (!readBytes(reinterpret_cast<char*>(&qw), 4)) return false;
+
+    // Linear velocity (hkVector4)
+    float lvx, lvy, lvz, lvw;
+    if (!readBytes(reinterpret_cast<char*>(&lvx), 4)) return false;
+    if (!readBytes(reinterpret_cast<char*>(&lvy), 4)) return false;
+    if (!readBytes(reinterpret_cast<char*>(&lvz), 4)) return false;
+    if (!readBytes(reinterpret_cast<char*>(&lvw), 4)) return false;
+    info.linearVelocity = {lvx, lvy, lvz};
+
+    // Angular velocity (hkVector4)
+    float avx, avy, avz, avw;
+    if (!readBytes(reinterpret_cast<char*>(&avx), 4)) return false;
+    if (!readBytes(reinterpret_cast<char*>(&avy), 4)) return false;
+    if (!readBytes(reinterpret_cast<char*>(&avz), 4)) return false;
+    if (!readBytes(reinterpret_cast<char*>(&avw), 4)) return false;
+    info.angularVelocity = {avx, avy, avz};
+
+    // Inertia matrix (9 floats) + center (4 floats) = 52 bytes
+    char skipBuf6[52];
+    if (!readBytes(skipBuf6, 52)) return false;
+
+    // Second copy of properties (mass through center) = same structure
+    // mass, linearDamping, angularDamping, friction, restitution
+    // maxLinearVelocity, maxAngularVelocity, penetrationDepth
+    // motionSystem, deactivatorType, solverDeactivation, qualityType, autoRemoveLevel
+    // respondableMask, unknown
+    // translation, rotation, linearVelocity, angularVelocity
+    // inertiaMatrix, center
+    // Total: 4*7 + 5 + 4 + 8 + 4*16 + 4*9 + 4*4 = 28 + 17 + 64 + 36 + 16 = 161 bytes
+    // Simplified: skip the entire second copy
+    size_t secondCopySize = 4*7 + 5 + 4 + 8 + 4*16 + 4*9 + 4*4;
+    std::vector<char> skipBuf7(secondCopySize);
+    if (!readBytes(skipBuf7.data(), secondCopySize)) return false;
+
+    // Number of constraints
+    uint32_t numConstraints = 0;
+    if (!readBytes(reinterpret_cast<char*>(&numConstraints), 4)) return false;
+
+    // Constraint references
+    for (uint32_t i = 0; i < numConstraints; i++) {
+        uint32_t constraintRef = 0;
+        if (!readBytes(reinterpret_cast<char*>(&constraintRef), 4)) return false;
+    }
+
+    // Unknown (4 bytes)
+    char skipBuf8[4];
+    if (!readBytes(skipBuf8, 4)) return false;
+
+    LOGD("bhkRigidBody: mass=%.2f, friction=%.2f, restitution=%.2f, constraints=%u",
+         info.mass, info.friction, info.restitution, numConstraints);
+    return true;
+}
+
+bool NIFParser::parseBhkShape(CollisionShape& shape) {
+    // bhkShape is abstract - read the block type to determine actual shape
+    // This is called from the main block parser when a bhkShape block is encountered
+    // The actual shape type is determined by the block type string
+    LOGD("parseBhkShape: dispatching based on block type");
+    return true;
+}
+
+bool NIFParser::parseBhkBoxShape(CollisionShape& shape) {
+    // bhkBoxShape:
+    //   material (uint32_t)
+    //   radius (float)
+    //   dimensions (hkVector4: x, y, z, w) - half extents
+    //   unknown (uint8_t[8])
+
+    shape.type = CollisionShapeType::Box;
+
+    uint32_t material = 0;
+    if (!readBytes(reinterpret_cast<char*>(&material), 4)) return false;
+
+    float radius = 0;
+    if (!readBytes(reinterpret_cast<char*>(&radius), 4)) return false;
+    shape.radius = radius;
+
+    float dx, dy, dz, dw;
+    if (!readBytes(reinterpret_cast<char*>(&dx), 4)) return false;
+    if (!readBytes(reinterpret_cast<char*>(&dy), 4)) return false;
+    if (!readBytes(reinterpret_cast<char*>(&dz), 4)) return false;
+    if (!readBytes(reinterpret_cast<char*>(&dw), 4)) return false;
+    shape.halfExtents = {dx, dy, dz};
+
+    char unknown[8];
+    if (!readBytes(unknown, 8)) return false;
+
+    LOGD("bhkBoxShape: halfExtents=(%.2f, %.2f, %.2f), radius=%.2f",
+         dx, dy, dz, radius);
+    return true;
+}
+
+bool NIFParser::parseBhkSphereShape(CollisionShape& shape) {
+    // bhkSphereShape:
+    //   material (uint32_t)
+    //   radius (float)
+
+    shape.type = CollisionShapeType::Sphere;
+
+    uint32_t material = 0;
+    if (!readBytes(reinterpret_cast<char*>(&material), 4)) return false;
+
+    if (!readBytes(reinterpret_cast<char*>(&shape.radius), 4)) return false;
+
+    LOGD("bhkSphereShape: radius=%.2f", shape.radius);
+    return true;
+}
+
+bool NIFParser::parseBhkCapsuleShape(CollisionShape& shape) {
+    // bhkCapsuleShape:
+    //   material (uint32_t)
+    //   radius (float)
+    //   unknown1 (uint8_t[4])
+    //   firstPoint (hkVector4: x, y, z, w)
+    //   unknown2 (uint8_t[4])
+    //   secondPoint (hkVector4: x, y, z, w)
+    //   unknown3 (uint8_t[4])
+
+    shape.type = CollisionShapeType::Capsule;
+
+    uint32_t material = 0;
+    if (!readBytes(reinterpret_cast<char*>(&material), 4)) return false;
+
+    if (!readBytes(reinterpret_cast<char*>(&shape.radius), 4)) return false;
+
+    char unknown1[4];
+    if (!readBytes(unknown1, 4)) return false;
+
+    float p1x, p1y, p1z, p1w;
+    if (!readBytes(reinterpret_cast<char*>(&p1x), 4)) return false;
+    if (!readBytes(reinterpret_cast<char*>(&p1y), 4)) return false;
+    if (!readBytes(reinterpret_cast<char*>(&p1z), 4)) return false;
+    if (!readBytes(reinterpret_cast<char*>(&p1w), 4)) return false;
+
+    char unknown2[4];
+    if (!readBytes(unknown2, 4)) return false;
+
+    float p2x, p2y, p2z, p2w;
+    if (!readBytes(reinterpret_cast<char*>(&p2x), 4)) return false;
+    if (!readBytes(reinterpret_cast<char*>(&p2y), 4)) return false;
+    if (!readBytes(reinterpret_cast<char*>(&p2z), 4)) return false;
+    if (!readBytes(reinterpret_cast<char*>(&p2w), 4)) return false;
+
+    char unknown3[4];
+    if (!readBytes(unknown3, 4)) return false;
+
+    // Height = distance between two points
+    float dx = p2x - p1x, dy = p2y - p1y, dz = p2z - p1z;
+    shape.height = sqrtf(dx*dx + dy*dy + dz*dz);
+    shape.center = {(p1x + p2x) * 0.5f, (p1y + p2y) * 0.5f, (p1z + p2z) * 0.5f};
+
+    LOGD("bhkCapsuleShape: radius=%.2f, height=%.2f", shape.radius, shape.height);
+    return true;
+}
+
+bool NIFParser::parseBhkConvexVerticesShape(CollisionShape& shape) {
+    // bhkConvexVerticesShape:
+    //   material (uint32_t)
+    //   radius (float)
+    //   unknown1 (uint8_t[16]) - hkAabb
+    //   numVertices (uint32_t)
+    //   vertices[] (hkVector4: x, y, z, w per vertex)
+    //   numNormals (uint32_t)
+    //   normals[] (hkVector4: x, y, z, w per normal)
+
+    shape.type = CollisionShapeType::ConvexHull;
+
+    uint32_t material = 0;
+    if (!readBytes(reinterpret_cast<char*>(&material), 4)) return false;
+
+    if (!readBytes(reinterpret_cast<char*>(&shape.radius), 4)) return false;
+
+    // Skip unknown (16 bytes - hkAabb min/max)
+    char unknown1[16];
+    if (!readBytes(unknown1, 16)) return false;
+
+    uint32_t numVertices = 0;
+    if (!readBytes(reinterpret_cast<char*>(&numVertices), 4)) return false;
+
+    shape.vertices.reserve(numVertices);
+    for (uint32_t i = 0; i < numVertices; i++) {
+        float vx, vy, vz, vw;
+        if (!readBytes(reinterpret_cast<char*>(&vx), 4)) return false;
+        if (!readBytes(reinterpret_cast<char*>(&vy), 4)) return false;
+        if (!readBytes(reinterpret_cast<char*>(&vz), 4)) return false;
+        if (!readBytes(reinterpret_cast<char*>(&vw), 4)) return false;
+        shape.vertices.push_back({vx, vy, vz});
+    }
+
+    uint32_t numNormals = 0;
+    if (!readBytes(reinterpret_cast<char*>(&numNormals), 4)) return false;
+    // Skip normals (not needed for collision detection)
+    for (uint32_t i = 0; i < numNormals; i++) {
+        char normalData[16];
+        if (!readBytes(normalData, 16)) return false;
+    }
+
+    LOGD("bhkConvexVerticesShape: %u vertices, %u normals", numVertices, numNormals);
+    return true;
+}
+
+bool NIFParser::parseBhkMeshShape(CollisionShape& shape) {
+    // bhkMeshShape:
+    //   material (uint32_t)
+    //   radius (float)
+    //   unknown1 (uint8_t[8])
+    //   unknown2 (uint8_t[4])
+    //   unknown3 (uint8_t[4])
+    //   numSubShapes (uint32_t)
+    //   subShapes[] (uint32_t refs)
+    //   unknown4 (uint8_t[4])
+    //   unknown5 (uint8_t[4])
+    //   numVertices (uint32_t)
+    //   vertices[] (hkVector4: x, y, z, w per vertex)
+    //   numTriangles (uint32_t)
+    //   triangles[] (3 x uint16_t + uint16_t material per triangle)
+
+    shape.type = CollisionShapeType::TriMesh;
+
+    uint32_t material = 0;
+    if (!readBytes(reinterpret_cast<char*>(&material), 4)) return false;
+
+    if (!readBytes(reinterpret_cast<char*>(&shape.radius), 4)) return false;
+
+    char unknown1[8];
+    if (!readBytes(unknown1, 8)) return false;
+
+    char unknown2[4];
+    if (!readBytes(unknown2, 4)) return false;
+
+    char unknown3[4];
+    if (!readBytes(unknown3, 4)) return false;
+
+    uint32_t numSubShapes = 0;
+    if (!readBytes(reinterpret_cast<char*>(&numSubShapes), 4)) return false;
+
+    for (uint32_t i = 0; i < numSubShapes; i++) {
+        uint32_t subShapeRef = 0;
+        if (!readBytes(reinterpret_cast<char*>(&subShapeRef), 4)) return false;
+    }
+
+    char unknown4[4];
+    if (!readBytes(unknown4, 4)) return false;
+
+    char unknown5[4];
+    if (!readBytes(unknown5, 4)) return false;
+
+    uint32_t numVertices = 0;
+    if (!readBytes(reinterpret_cast<char*>(&numVertices), 4)) return false;
+
+    shape.vertices.reserve(numVertices);
+    for (uint32_t i = 0; i < numVertices; i++) {
+        float vx, vy, vz, vw;
+        if (!readBytes(reinterpret_cast<char*>(&vx), 4)) return false;
+        if (!readBytes(reinterpret_cast<char*>(&vy), 4)) return false;
+        if (!readBytes(reinterpret_cast<char*>(&vz), 4)) return false;
+        if (!readBytes(reinterpret_cast<char*>(&vw), 4)) return false;
+        shape.vertices.push_back({vx, vy, vz});
+    }
+
+    uint32_t numTriangles = 0;
+    if (!readBytes(reinterpret_cast<char*>(&numTriangles), 4)) return false;
+
+    shape.triangles.reserve(numTriangles);
+    for (uint32_t i = 0; i < numTriangles; i++) {
+        uint16_t v0, v1, v2, triMaterial;
+        if (!readBytes(reinterpret_cast<char*>(&v0), 2)) return false;
+        if (!readBytes(reinterpret_cast<char*>(&v1), 2)) return false;
+        if (!readBytes(reinterpret_cast<char*>(&v2), 2)) return false;
+        if (!readBytes(reinterpret_cast<char*>(&triMaterial), 2)) return false;
+        shape.triangles.push_back({v0, v1, v2});
+    }
+
+    LOGD("bhkMeshShape: %u vertices, %u triangles", numVertices, numTriangles);
+    return true;
+}
+
+bool NIFParser::parseBhkPackedNiTriStripsShape(CollisionShape& shape) {
+    // bhkPackedNiTriStripsShape:
+    //   material (uint32_t)
+    //   radius (float)
+    //   unknown1 (uint8_t[8])
+    //   unknown2 (uint8_t[4])
+    //   unknown3 (uint8_t[4])
+    //   numSubShapes (uint32_t)
+    //   subShapes[] (each: numVertices(uint16_t), unknown(uint16_t), material(uint32_t))
+    //   unknown4 (uint8_t[4])
+    //   unknown5 (uint8_t[4])
+    //   numVertices (uint32_t)
+    //   vertices[] (hkVector4: x, y, z, w per vertex)
+    //   numTriangles (uint32_t)
+    //   triangles[] (3 x uint16_t + uint16_t weldingInfo per triangle)
+    //   numUnknown (uint32_t)
+    //   unknown6[] (uint8_t[4] per entry)
+
+    shape.type = CollisionShapeType::TriMesh;
+
+    uint32_t material = 0;
+    if (!readBytes(reinterpret_cast<char*>(&material), 4)) return false;
+
+    if (!readBytes(reinterpret_cast<char*>(&shape.radius), 4)) return false;
+
+    char unknown1[8];
+    if (!readBytes(unknown1, 8)) return false;
+
+    char unknown2[4];
+    if (!readBytes(unknown2, 4)) return false;
+
+    char unknown3[4];
+    if (!readBytes(unknown3, 4)) return false;
+
+    uint32_t numSubShapes = 0;
+    if (!readBytes(reinterpret_cast<char*>(&numSubShapes), 4)) return false;
+
+    for (uint32_t i = 0; i < numSubShapes; i++) {
+        uint16_t numVerts, unknown;
+        uint32_t subMaterial;
+        if (!readBytes(reinterpret_cast<char*>(&numVerts), 2)) return false;
+        if (!readBytes(reinterpret_cast<char*>(&unknown), 2)) return false;
+        if (!readBytes(reinterpret_cast<char*>(&subMaterial), 4)) return false;
+    }
+
+    char unknown4[4];
+    if (!readBytes(unknown4, 4)) return false;
+
+    char unknown5[4];
+    if (!readBytes(unknown5, 4)) return false;
+
+    uint32_t numVertices = 0;
+    if (!readBytes(reinterpret_cast<char*>(&numVertices), 4)) return false;
+
+    shape.vertices.reserve(numVertices);
+    for (uint32_t i = 0; i < numVertices; i++) {
+        float vx, vy, vz, vw;
+        if (!readBytes(reinterpret_cast<char*>(&vx), 4)) return false;
+        if (!readBytes(reinterpret_cast<char*>(&vy), 4)) return false;
+        if (!readBytes(reinterpret_cast<char*>(&vz), 4)) return false;
+        if (!readBytes(reinterpret_cast<char*>(&vw), 4)) return false;
+        shape.vertices.push_back({vx, vy, vz});
+    }
+
+    uint32_t numTriangles = 0;
+    if (!readBytes(reinterpret_cast<char*>(&numTriangles), 4)) return false;
+
+    shape.triangles.reserve(numTriangles);
+    for (uint32_t i = 0; i < numTriangles; i++) {
+        uint16_t v0, v1, v2, weldingInfo;
+        if (!readBytes(reinterpret_cast<char*>(&v0), 2)) return false;
+        if (!readBytes(reinterpret_cast<char*>(&v1), 2)) return false;
+        if (!readBytes(reinterpret_cast<char*>(&v2), 2)) return false;
+        if (!readBytes(reinterpret_cast<char*>(&weldingInfo), 2)) return false;
+        shape.triangles.push_back({v0, v1, v2});
+    }
+
+    uint32_t numUnknown = 0;
+    if (!readBytes(reinterpret_cast<char*>(&numUnknown), 4)) return false;
+    for (uint32_t i = 0; i < numUnknown; i++) {
+        char unknownData[4];
+        if (!readBytes(unknownData, 4)) return false;
+    }
+
+    LOGD("bhkPackedNiTriStripsShape: %u vertices, %u triangles", numVertices, numTriangles);
+    return true;
+}
+
+bool NIFParser::parseBhkMoppBvTreeShape(CollisionShape& shape) {
+    // bhkMoppBvTreeShape:
+    //   material (uint32_t)
+    //   radius (float)
+    //   unknown1 (uint8_t[8])
+    //   child (uint32_t ref - bhkShape)
+    //   unknown2 (uint8_t[4])
+    //   unknown3 (uint8_t[4])
+    //   moppDataSize (uint32_t)
+    //   moppData[] (uint8_t)
+    //   unknown4 (uint8_t[16]) - scale/offset
+
+    shape.type = CollisionShapeType::MoppBvTree;
+
+    uint32_t material = 0;
+    if (!readBytes(reinterpret_cast<char*>(&material), 4)) return false;
+
+    if (!readBytes(reinterpret_cast<char*>(&shape.radius), 4)) return false;
+
+    char unknown1[8];
+    if (!readBytes(unknown1, 8)) return false;
+
+    uint32_t childRef = 0;
+    if (!readBytes(reinterpret_cast<char*>(&childRef), 4)) return false;
+
+    char unknown2[4];
+    if (!readBytes(unknown2, 4)) return false;
+
+    char unknown3[4];
+    if (!readBytes(unknown3, 4)) return false;
+
+    uint32_t moppDataSize = 0;
+    if (!readBytes(reinterpret_cast<char*>(&moppDataSize), 4)) return false;
+    shape.moppDataSize = moppDataSize;
+
+    shape.moppData.resize(moppDataSize);
+    if (!readBytes(reinterpret_cast<char*>(shape.moppData.data()), moppDataSize)) return false;
+
+    char unknown4[16];
+    if (!readBytes(unknown4, 16)) return false;
+
+    LOGD("bhkMoppBvTreeShape: child=%u, moppDataSize=%u", childRef, moppDataSize);
+    return true;
+}
+
+bool NIFParser::parseBhkCollisionFilter(uint32_t& group, uint32_t& filter) {
+    // bhkCollisionFilter is not a separate block in Oblivion NIF
+    // The filter info is embedded in bhkRigidBody
+    // This is a placeholder for future use
+    group = 0;
+    filter = 0;
     return true;
 }
