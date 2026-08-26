@@ -226,13 +226,7 @@ NIFTransform NIFParser::readTransform() {
 }
 
 NIFBlockType NIFParser::getBlockType(const std::string& blockName) {
-    if (blockName == "NiNode") return NIFBlockType::NiNode;
-    if (blockName == "NiTriShape") return NIFBlockType::NiTriShape;
-    if (blockName == "NiTriStrips") return NIFBlockType::NiTriStrips;
-    if (blockName == "NiTexturingProperty") return NIFBlockType::NiTexturingProperty;
-    if (blockName == "NiMaterialProperty") return NIFBlockType::NiMaterialProperty;
-
-    return NIFBlockType::Unknown;
+    return NIFBlockTypeMap::fromString(blockName);
 }
 
 bool NIFParser::parseNiNode(std::shared_ptr<NIFNode>& node) {

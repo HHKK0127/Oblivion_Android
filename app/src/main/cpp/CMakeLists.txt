@@ -17,7 +17,9 @@ add_library(native-lib SHARED
     # Geometry
     geometry/cube.cpp
     geometry/mesh.cpp
+    geometry/skin_partition_packer.cpp
     geometry/material.cpp
+    animation/skeleton.cpp
 
     # World System (Phase 3+)
     world/world_manager.cpp
@@ -129,6 +131,7 @@ add_library(native-lib SHARED
 
     # Asset System
     assets/nif_parser.cpp
+    assets/nif_block_type_map.cpp
     assets/dds_loader.cpp
     assets/asset_manager.cpp
     assets/bsa_reader.cpp

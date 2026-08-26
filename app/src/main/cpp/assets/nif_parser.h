@@ -1,6 +1,7 @@
 #pragma once
 
 #include "nif_types.h"
+#include "nif_block_type_map.h"
 #include <memory>
 #include <map>
 #include <fstream>
@@ -21,6 +22,34 @@ public:
     // Getters for specific data
     std::shared_ptr<NIFNode> getNodeByName(const std::string& name) const;
     std::vector<NIFGeometry> extractAllGeometry() const;
+
+    // --- Phase 30: Skinning ---
+    bool parseNiSkinInstance(NIFSkinInstance& skin);
+    bool parseNiSkinData(NIFSkinData& skinData);
+    bool parseNiSkinPartition(NIFSkinPartition& partition);
+
+    // --- Phase 30: Animation ---
+    bool parseNiControllerManager(NIFControllerManager& manager);
+    bool parseNiControllerSequence(NIFControllerSequence& sequence);
+    bool parseNiKeyframeController(NIFKeyframeController& controller);
+    bool parseNiKeyframeData(NIFAnimationClip& clip);
+    bool parseNiTextKeyExtraData(std::vector<NIFTextKey>& textKeys);
+    bool parseNiTransformController(NIFTransformController& controller);
+    bool resolveControllerReferences(NIFControllerManager& manager,
+                                     const std::vector<NIFKeyframeData>& keyframeDataArray);
+
+    // --- Phase 30: Physics (Havok) ---
+    bool parseBhkCollisionObject(CollisionObject& obj);
+    bool parseBhkRigidBody(RigidBodyInfo& info);
+    bool parseBhkShape(CollisionShape& shape);
+    bool parseBhkBoxShape(CollisionShape& shape);
+    bool parseBhkSphereShape(CollisionShape& shape);
+    bool parseBhkCapsuleShape(CollisionShape& shape);
+    bool parseBhkConvexVerticesShape(CollisionShape& shape);
+    bool parseBhkMeshShape(CollisionShape& shape);
+    bool parseBhkPackedNiTriStripsShape(CollisionShape& shape);
+    bool parseBhkMoppBvTreeShape(CollisionShape& shape);
+    bool parseBhkCollisionFilter(uint32_t& group, uint32_t& filter);
 
 private:
     // File data
@@ -47,7 +76,7 @@ private:
     NIFMatrix3x3 readMatrix3x3();
     NIFTransform readTransform();
     
-    // Block type identification
+    // Block type identification (string-based via NIFBlockTypeMap)
     NIFBlockType getBlockType(const std::string& blockName);
     
     // Node-specific parsers

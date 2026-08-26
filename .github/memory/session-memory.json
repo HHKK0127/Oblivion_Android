@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-08-21T18:47:42.8320287+09:00",
+  "lastUpdated": "2026-08-26T13:29:26.080238",
   "entries": [
     {
       "content": "Oblivion.exe (Ghidra decompiled) - Gamebryo engine, compiled with VS2005/VS2008, Direct3D9. Init order: Renderer -> Shader System -> Sky -> TES -> TreeManager -> Menus -> Player -> Scripts -> Sound System -> Actor Locations -> LOD Land",
@@ -458,11 +458,105 @@
       ],
       "compressed": false,
       "timestamp": "2026-08-21T19:15:00.0000000+09:00"
+    },
+    {
+      "id": "eac00a48-2251-44bd-adcd-9d4733c78d7f",
+      "timestamp": "2026-08-26T04:20:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "ESM integration fully complete: 4 spell effects (PARALYZE, INVISIBILITY, FORTIFY_ATTR, SUMMON), DIAL/INFO dialogue with faction branching, REFR-based world object placement (8 types), NavMesh combat integration. All esm_integration_tasks marked done.",
+      "tags": [
+        "esm",
+        "integration",
+        "spells",
+        "dialogue",
+        "refr",
+        "navmesh",
+        "complete"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "7365aabf-a1c9-4d8b-b76d-ae7abe2c35c9",
+      "timestamp": "2026-08-26T04:20:00Z",
+      "category": "configuration",
+      "priority": "high",
+      "content": "Build environment: JAVA_HOME must be set to JDK 17 (C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot) before running gradlew. Gradle 9.4.1 requires JVM 17+. NDK 30.0.14904198.",
+      "tags": [
+        "build",
+        "jdk17",
+        "gradle",
+        "ndk",
+        "environment"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "0a48c603-c4f5-4872-ba03-8dffbb48eb33",
+      "timestamp": "2026-08-26T04:20:00Z",
+      "category": "decision",
+      "priority": "medium",
+      "content": "Commit messages must be bilingual: English on top, Japanese below, separated by --- line. Example: feat: title (EN) then --- then feat: title (JA).",
+      "tags": [
+        "git",
+        "commit",
+        "bilingual",
+        "format"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "2683d662-88e2-4910-9cef-228f17240844",
+      "timestamp": "2026-08-26T04:20:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "New game systems added in this session: alchemy_system, book_reader, clothing_converter, faction_manager, loot_generator, misc_item_converter, navmesh_manager. All in app/src/main/cpp/game/.",
+      "tags": [
+        "systems",
+        "alchemy",
+        "books",
+        "clothing",
+        "factions",
+        "loot",
+        "navmesh"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "75afbaeb-b07b-478b-88fe-8b8602a857e8",
+      "timestamp": "2026-08-26T04:20:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Next phase tasks (Phase 1 remaining): NIF collision (bhkCollisionObject) priority 5, NIF skeleton/skinning priority 4, NIF animation complete priority 3. Phase 2-3: SpeedTree, FaceGen, Recast/Detour, Ozz-animation, Script VM, Jolt physics, Radiant AI.",
+      "tags": [
+        "roadmap",
+        "nif",
+        "collision",
+        "skeleton",
+        "animation",
+        "phase1",
+        "phase2"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "e5fa6cc2-a66d-4969-b640-03a4dc19644b",
+      "timestamp": "2026-08-26T04:20:00Z",
+      "category": "decision",
+      "priority": "medium",
+      "content": "dialogue.cpp needs LOGI macro defined (not just LOGD/LOGE). Added #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__) to fix build error.",
+      "tags": [
+        "dialogue",
+        "logging",
+        "fix",
+        "macro"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 33,
+    "totalEntries": 39,
     "compressedCount": 0,
-    "sessionCount": 2
+    "sessionCount": 3
   }
 }
