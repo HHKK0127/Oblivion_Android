@@ -282,6 +282,194 @@ std::vector<NIFGeometry> NIFParser::extractAllGeometry() const {
 }
 
 // ============================================
+// Phase 30 Step 2: Skinning Parsing
+// ============================================
+
+bool NIFParser::parseNiSkinInstance(NIFSkinInstance& skin) {
+    LOGD("Parsing NiSkinInstance...");
+
+    // NiSkinInstance layout:
+    // uint32_t skeletonRootIndex
+    // uint32_t numBones
+    // uint32_t[numBones] boneNodeIndices
+    // uint32_t skinPartitionIndex
+    // uint32_t skinDataIndex
+
+    skin.skeletonRootIndex = readUInt32();
+    uint32_t numBones = readUInt32();
+
+    // Read bone node indices (we don't store them directly, but need to skip)
+    for (uint32_t i = 0; i < numBones; i++) {
+        readUInt32();  // bone node index
+    }
+
+    skin.skinPartitionIndex = readUInt32();
+    skin.skinDataIndex = readUInt32();
+
+    LOGD("NiSkinInstance: skeletonRoot=%u, numBones=%u, skinPartition=%u, skinData=%u",
+         skin.skeletonRootIndex, numBones, skin.skinPartitionIndex, skin.skinDataIndex);
+
+    return true;
+}
+
+bool NIFParser::parseNiSkinData(NIFSkinData& skinData) {
+    LOGD("Parsing NiSkinData...");
+
+    // NiSkinData layout:
+    // NiTransform skinTransform (root transform)
+    // uint32_t numBones
+    // BoneData[numBones]:
+    //   NiTransform skinTransform
+    //   NIFVector3 boundingSphereOffset
+    //   float boundingSphereRadius
+    //   uint16_t numWeights
+    //   VertexWeight[numWeights]: { uint16_t index, float weight }
+
+    skinData.rootRotation = readMatrix3x3();
+    skinData.rootTranslation = readVector3();
+    skinData.rootScale = readFloat();
+
+    // Re-read as a transform
+    NIFTransform rootTransform;
+    rootTransform.rotation = skinData.rootRotation;
+    rootTransform.translation = skinData.rootTranslation;
+    rootTransform.scale = skinData.rootScale;
+
+    skinData.numBones = readUInt32();
+    skinData.boneData.resize(skinData.numBones);
+
+    for (uint32_t i = 0; i < skinData.numBones; i++) {
+        NIFBoneData& bd = skinData.boneData[i];
+
+        // Bone transform
+        bd.skinTransform.rotation = readMatrix3x3();
+        bd.skinTransform.translation = readVector3();
+        bd.skinTransform.scale = readFloat();
+
+        // Bounding sphere
+        readVector3();  // offset
+        readFloat();    // radius
+
+        // Vertex weights
+        uint16_t numWeights = readUInt16();
+        bd.vertexWeights.resize(numWeights);
+        for (uint16_t w = 0; w < numWeights; w++) {
+            bd.vertexWeights[w].vertexIndex = readUInt16();
+            bd.vertexWeights[w].weight = readFloat();
+        }
+    }
+
+    LOGD("NiSkinData: numBones=%u", skinData.numBones);
+    return true;
+}
+
+bool NIFParser::parseNiSkinPartition(NIFSkinPartition& partition) {
+    LOGD("Parsing NiSkinPartition...");
+
+    // NiSkinPartition layout:
+    // uint32_t numPartitions
+    // Partition[numPartitions]:
+    //   uint16_t numVertices
+    //   uint16_t numTriangles
+    //   uint16_t numBones
+    //   uint16_t numStrips
+    //   uint16_t numWeightsPerVertex
+    //   uint16_t[numBones] bones
+    //   bool hasVertexMap
+    //   uint16_t[numVertices] vertexMap (if hasVertexMap)
+    //   bool hasVertexWeights
+    //   float[numVertices * numWeightsPerVertex] vertexWeights (if hasVertexWeights)
+    //   uint16_t[numStrips] stripLengths (if numStrips > 0)
+    //   bool hasBoneIndices
+    //   uint8_t[numVertices * numWeightsPerVertex] boneIndices (if hasBoneIndices)
+    //   uint16_t[numTriangles * 3 or sum(stripLengths)] triangles
+
+    uint32_t numPartitions = readUInt32();
+    partition.partitions.resize(numPartitions);
+
+    for (uint32_t p = 0; p < numPartitions; p++) {
+        auto& part = partition.partitions[p];
+
+        uint16_t numVertices = readUInt16();
+        uint16_t numTriangles = readUInt16();
+        uint16_t numBones = readUInt16();
+        uint16_t numStrips = readUInt16();
+        uint16_t numWeightsPerVertex = readUInt16();
+
+        part.numVertices = numVertices;
+        part.numTriangles = numTriangles;
+
+        // Bone palette
+        part.bonePalette.bones.resize(numBones);
+        for (uint16_t b = 0; b < numBones; b++) {
+            part.bonePalette.bones[b] = readUInt16();
+        }
+
+        // Vertex map
+        bool hasVertexMap = (readUInt32() != 0);
+        std::vector<uint16_t> vertexMap;
+        if (hasVertexMap) {
+            vertexMap.resize(numVertices);
+            for (uint16_t v = 0; v < numVertices; v++) {
+                vertexMap[v] = readUInt16();
+            }
+        }
+
+        // Vertex weights
+        bool hasVertexWeights = (readUInt32() != 0);
+        if (hasVertexWeights) {
+            part.packedWeights.resize(numVertices);
+            for (uint16_t v = 0; v < numVertices; v++) {
+                for (uint16_t w = 0; w < numWeightsPerVertex && w < 4; w++) {
+                    part.packedWeights[v].weights[w] = readFloat();
+                }
+            }
+        }
+
+        // Strip lengths
+        std::vector<uint16_t> stripLengths;
+        if (numStrips > 0) {
+            stripLengths.resize(numStrips);
+            for (uint16_t s = 0; s < numStrips; s++) {
+                stripLengths[s] = readUInt16();
+            }
+        }
+
+        // Bone indices per vertex
+        bool hasBoneIndices = (readUInt32() != 0);
+        if (hasBoneIndices) {
+            for (uint16_t v = 0; v < numVertices; v++) {
+                for (uint16_t w = 0; w < numWeightsPerVertex && w < 4; w++) {
+                    uint8_t idx = static_cast<uint8_t>(readUInt16() & 0xFF);
+                    if (v < part.packedWeights.size()) {
+                        part.packedWeights[v].boneIndices[w] = idx;
+                    }
+                }
+            }
+        }
+
+        // Triangles
+        uint32_t totalIndices;
+        if (numStrips > 0) {
+            totalIndices = 0;
+            for (uint16_t s = 0; s < numStrips; s++) {
+                totalIndices += stripLengths[s];
+            }
+        } else {
+            totalIndices = numTriangles * 3;
+        }
+
+        part.indices.resize(totalIndices);
+        for (uint32_t i = 0; i < totalIndices; i++) {
+            part.indices[i] = readUInt16();
+        }
+    }
+
+    LOGD("NiSkinPartition: numPartitions=%u", numPartitions);
+    return true;
+}
+
+// ============================================
 // Phase 30 Step 7: Animation Parsing
 // ============================================
 

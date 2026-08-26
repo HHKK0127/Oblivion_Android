@@ -137,4 +137,7 @@ class GameRenderer : GLSurfaceView.Renderer {
     private external fun nativeSetViewport(handle: Long, width: Int, height: Int)
     private external fun nativeRenderFrame(handle: Long)
     private external fun nativeOnTouchEvent(handle: Long, pointerId: Int, x: Float, y: Float, action: Int)
+
+    // Phase 30 Step 13: Integration test
+    external fun nativeRunPhase30Test(assetPath: String): String
 }

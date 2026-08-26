@@ -299,3 +299,30 @@ Java_com_example_oblivion_GameRenderer_nativeGetTargetFPS(
     }
     return 60;  // Default
 }
+
+// ============================================
+// Phase 30 Step 13: Integration Test Runner
+// ============================================
+#include "tests/phase30_integration_test.h"
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_example_oblivion_GameRenderer_nativeRunPhase30Test(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jstring assetPath) {
+    const char* path = env->GetStringUTFChars(assetPath, nullptr);
+    std::string basePathStr(path);
+    env->ReleaseStringUTFChars(assetPath, path);
+
+    LOGI("=== Phase 30 Integration Test START ===");
+    LOGI("Asset path: %s", basePathStr.c_str());
+
+    Phase30IntegrationTest test;
+    bool allPassed = test.runAllTests(basePathStr);
+
+    std::string summary = test.getSummary();
+    LOGI("=== Phase 30 Integration Test END: %s ===",
+         allPassed ? "ALL PASSED" : "SOME FAILED");
+
+    return env->NewStringUTF(summary.c_str());
+}

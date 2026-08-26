@@ -141,6 +141,9 @@ add_library(native-lib SHARED
     assets/bsa_reader.cpp
     assets/esm_reader.cpp
 
+    # Tests (Phase 30 Step 13)
+    tests/phase30_integration_test.cpp
+
     # JNI Bridge (Java/C++ communication)
     jni_bridge.cpp
 )
@@ -163,6 +166,7 @@ target_include_directories(native-lib PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/map
     ${CMAKE_CURRENT_SOURCE_DIR}/inventory
     ${CMAKE_CURRENT_SOURCE_DIR}/assets
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests
 )
 
 # Find OpenAL-Soft (optional for now)
