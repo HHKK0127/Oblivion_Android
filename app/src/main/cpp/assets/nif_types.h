@@ -321,6 +321,8 @@ struct NIFKeyframeController {
     uint32_t targetNodeIndex = 0;
     uint32_t keyframeDataIndex = 0;
     NIFAnimationClip clip;
+    // Phase 30: resolved bone index for fast lookup
+    int32_t resolvedBoneIndex = -1;
 };
 
 struct NIFControllerSequence {
@@ -342,8 +344,10 @@ struct NIFControllerManager {
     uint32_t controllerSequenceCount = 0;
     std::vector<NIFControllerSequence> sequences;
     uint32_t objectPaletteIndex = 0;
+    float lastTime = 0.0f;
 };
 
 struct NIFTransformController {
     uint32_t targetNodeIndex = 0;
+    uint32_t interpolatorIndex = 0;
 };

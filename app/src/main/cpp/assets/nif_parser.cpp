@@ -279,3 +279,292 @@ std::vector<NIFGeometry> NIFParser::extractAllGeometry() const {
     }
     return geometries;
 }
+
+// ============================================
+// Phase 30 Step 7: Animation Parsing
+// ============================================
+
+bool NIFParser::parseNiControllerManager(NIFControllerManager& manager) {
+    LOGD("Parsing NiControllerManager...");
+
+    // NiTimeController (parent of NiControllerManager)
+    // uint32_t nextControllerIndex (usually UINT32_MAX)
+    uint32_t nextController = readUInt32();
+    // uint16_t flags
+    uint16_t flags = readUInt16();
+    // float frequency
+    manager.lastTime = readFloat();
+    // float phase
+    float phase = readFloat();
+
+    // NiControllerManager specific
+    // uint32_t objectPaletteIndex
+    manager.objectPaletteIndex = readUInt32();
+    // uint32_t controllerSequenceCount
+    manager.controllerSequenceCount = readUInt32();
+
+    LOGD("  ControllerManager: %u sequences, palette=%u",
+         manager.controllerSequenceCount, manager.objectPaletteIndex);
+
+    // Read controller sequence indices (block references)
+    std::vector<uint32_t> sequenceIndices(manager.controllerSequenceCount);
+    for (uint32_t i = 0; i < manager.controllerSequenceCount; i++) {
+        sequenceIndices[i] = readUInt32();
+    }
+
+    // Store indices for later resolution
+    // Actual sequence data will be parsed when we encounter NiControllerSequence blocks
+    manager.sequences.resize(manager.controllerSequenceCount);
+
+    // Store block references for post-parse resolution
+    for (uint32_t i = 0; i < manager.controllerSequenceCount; i++) {
+        // We'll resolve these in resolveControllerReferences
+        // For now, store the block index as metadata
+        LOGD("  Sequence[%u] -> block %u", i, sequenceIndices[i]);
+    }
+
+    return true;
+}
+
+bool NIFParser::parseNiControllerSequence(NIFControllerSequence& sequence) {
+    LOGD("Parsing NiControllerSequence...");
+
+    // NiObject base (skip)
+    // readString for name
+    readStringRef(sequence.name);
+
+    // uint32_t controllerManagerIndex (block ref)
+    sequence.controllerManagerIndex = readUInt32();
+
+    // readString for target name
+    readStringRef(sequence.targetName);
+
+    // float startTime, stopTime
+    sequence.startTime = readFloat();
+    sequence.stopTime = readFloat();
+
+    // float phase
+    sequence.phase = readFloat();
+
+    // float frequency
+    sequence.frequency = readFloat();
+
+    // uint32_t cycleType (0=loop, 1=reverse, 2=clamp)
+    uint32_t cycleType = readUInt32();
+    sequence.loop = (cycleType == 0);
+
+    // uint32_t textKeyCount
+    uint32_t textKeyCount = readUInt32();
+    sequence.textKeys.resize(textKeyCount);
+
+    // Read text keys
+    for (uint32_t i = 0; i < textKeyCount; i++) {
+        sequence.textKeys[i].time = readFloat();
+        readStringRef(sequence.textKeys[i].value);
+    }
+
+    // uint32_t controlledBlockCount
+    uint32_t blockCount = readUInt32();
+    sequence.controlledBlocks.resize(blockCount);
+
+    // Read controlled blocks
+    for (uint32_t i = 0; i < blockCount; i++) {
+        auto& cb = sequence.controlledBlocks[i];
+        // uint32_t nodeNameOffset (string table index)
+        cb.targetNodeIndex = readUInt32();
+        // uint32_t controllerType (string ref)
+        uint32_t controllerTypeStr = readUInt32();
+        // uint32_t controllerIndex (block ref)
+        cb.keyframeDataIndex = readUInt32();
+        // uint32_t nodeName (string ref)
+        uint32_t nodeNameStr = readUInt32();
+        // uint32_t propertyType (string ref)
+        uint32_t propertyTypeStr = readUInt32();
+        // uint32_t controllerType (string ref)
+        uint32_t controllerType2 = readUInt32();
+        // uint32_t controllerId (block ref)
+        uint32_t controllerId = readUInt32();
+        // uint32_t interpolator (block ref)
+        uint32_t interpolator = readUInt32();
+
+        cb.resolvedBoneIndex = -1;  // Will be resolved later
+    }
+
+    LOGD("  Sequence '%s': %.2f-%.2f, %u textKeys, %u blocks",
+         sequence.name.c_str(), sequence.startTime, sequence.stopTime,
+         textKeyCount, blockCount);
+
+    return true;
+}
+
+bool NIFParser::parseNiKeyframeController(NIFKeyframeController& controller) {
+    LOGD("Parsing NiControllerManager...");
+
+    // NiTimeController base
+    // uint32_t nextControllerIndex
+    uint32_t nextController = readUInt32();
+    // uint16_t flags
+    uint16_t flags = readUInt16();
+    // float frequency
+    float frequency = readFloat();
+    // float phase
+    float phase = readFloat();
+
+    // NiKeyframeController specific
+    // uint32_t keyframeDataIndex (block ref)
+    controller.keyframeDataIndex = readUInt32();
+
+    // uint32_t targetNodeIndex (block ref)
+    controller.targetNodeIndex = readUInt32();
+
+    LOGD("  KeyframeController: target=%u, data=%u",
+         controller.targetNodeIndex, controller.keyframeDataIndex);
+
+    return true;
+}
+
+bool NIFParser::parseNiKeyframeData(NIFAnimationClip& clip) {
+    LOGD("Parsing NiKeyframeData...");
+
+    // uint32_t numRotationKeys
+    uint32_t numRotKeys = readUInt32();
+
+    // Rotation keys
+    // uint8_t rotationType (0=xyz, 1=constant, 2=linear, 3=quadratic)
+    uint8_t rotType = readUInt32() & 0xFF;
+
+    for (uint32_t i = 0; i < numRotKeys; i++) {
+        NIFKeyframe kf;
+        kf.time = readFloat();
+        // Quaternion (x, y, z, w)
+        kf.rotation = readVector4();
+        clip.keyframes.push_back(kf);
+    }
+
+    // uint32_t numTranslateKeys
+    uint32_t numTransKeys = readUInt32();
+    // uint8_t translateType
+    uint8_t transType = readUInt32() & 0xFF;
+
+    for (uint32_t i = 0; i < numTransKeys; i++) {
+        float time = readFloat();
+        NIFVector3 pos = readVector3();
+        // Find or create keyframe at this time
+        bool found = false;
+        for (auto& kf : clip.keyframes) {
+            if (std::abs(kf.time - time) < 0.001f) {
+                kf.translation = pos;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            NIFKeyframe kf;
+            kf.time = time;
+            kf.translation = pos;
+            clip.keyframes.push_back(kf);
+        }
+    }
+
+    // uint32_t numScaleKeys
+    uint32_t numScaleKeys = readUInt32();
+    // uint8_t scaleType
+    uint8_t scaleType = readUInt32() & 0xFF;
+
+    for (uint32_t i = 0; i < numScaleKeys; i++) {
+        float time = readFloat();
+        float scale = readFloat();
+        bool found = false;
+        for (auto& kf : clip.keyframes) {
+            if (std::abs(kf.time - time) < 0.001f) {
+                kf.scale = scale;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            NIFKeyframe kf;
+            kf.time = time;
+            kf.scale = scale;
+            clip.keyframes.push_back(kf);
+        }
+    }
+
+    // Sort keyframes by time
+    std::sort(clip.keyframes.begin(), clip.keyframes.end(),
+              [](const NIFKeyframe& a, const NIFKeyframe& b) {
+                  return a.time < b.time;
+              });
+
+    // Set duration
+    if (!clip.keyframes.empty()) {
+        clip.duration = clip.keyframes.back().time;
+    }
+
+    LOGD("  KeyframeData: %u rot, %u trans, %u scale, duration=%.2f",
+         numRotKeys, numTransKeys, numScaleKeys, clip.duration);
+
+    return true;
+}
+
+bool NIFParser::parseNiTextKeyExtraData(std::vector<NIFTextKey>& textKeys) {
+    LOGD("Parsing NiTextKeyExtraData...");
+
+    // NiExtraDataBase
+    // uint32_t name (string ref)
+    uint32_t nameRef = readUInt32();
+
+    // uint32_t numTextKeys
+    uint32_t numKeys = readUInt32();
+    textKeys.resize(numKeys);
+
+    for (uint32_t i = 0; i < numKeys; i++) {
+        textKeys[i].time = readFloat();
+        readStringRef(textKeys[i].value);
+    }
+
+    LOGD("  TextKeyExtraData: %u keys", numKeys);
+    return true;
+}
+
+bool NIFParser::parseNiTransformController(NIFTransformController& controller) {
+    LOGD("Parsing NiTransformController...");
+
+    // NiTimeController base
+    uint32_t nextController = readUInt32();
+    uint16_t flags = readUInt16();
+    float frequency = readFloat();
+    float phase = readFloat();
+
+    // NiTransformController specific
+    controller.interpolatorIndex = readUInt32();
+
+    LOGD("  TransformController: interpolator=%u", controller.interpolatorIndex);
+    return true;
+}
+
+bool NIFParser::resolveControllerReferences(NIFControllerManager& manager,
+                                             const std::vector<NIFKeyframeData>& keyframeDataArray) {
+    LOGD("Resolving controller references...");
+
+    // Resolve controlled block references
+    for (auto& seq : manager.sequences) {
+        for (auto& cb : seq.controlledBlocks) {
+            // Resolve target node name
+            if (cb.targetNodeIndex < nodes.size() && nodes[cb.targetNodeIndex]) {
+                // Store resolved bone index for AnimationPlayer
+                cb.resolvedBoneIndex = static_cast<int32_t>(cb.targetNodeIndex);
+            }
+
+            // Resolve keyframe data reference
+            if (cb.keyframeDataIndex < keyframeDataArray.size()) {
+                // Copy keyframe data into the controlled block's clip
+                const auto& kfd = keyframeDataArray[cb.keyframeDataIndex];
+                cb.clip = kfd.clip;
+            }
+        }
+    }
+
+    LOGD("Resolved %zu sequences", manager.sequences.size());
+    return true;
+}

@@ -194,4 +194,109 @@ inline mat4 inverse(const mat4& m) {
     return inv;
 }
 
+// Free functions for vec3
+inline vec3 cross(const vec3& a, const vec3& b) { return a.cross(b); }
+inline vec3 normalize(const vec3& v) { return v.normalize(); }
+inline float dot(const vec3& a, const vec3& b) { return a.dot(b); }
+inline float length(const vec3& v) { return std::sqrt(v.x*v.x + v.y*v.y + v.z*v.z); }
+
+// Quaternion (Hamilton convention)
+struct quat {
+    float x, y, z, w;
+
+    quat() : x(0), y(0), z(0), w(1) {}
+    quat(float x_, float y_, float z_, float w_) : x(x_), y(y_), z(z_), w(w_) {}
+
+    quat operator*(const quat& q) const {
+        return quat(
+            w*q.x + x*q.w + y*q.z - z*q.y,
+            w*q.y - x*q.z + y*q.w + z*q.x,
+            w*q.z + x*q.y - y*q.x + z*q.w,
+            w*q.w - x*q.x - y*q.y - z*q.z
+        );
+    }
+
+    quat conjugate() const { return quat(-x, -y, -z, w); }
+
+    // Optimized vector rotation: v' = q * (v,0) * q^-1
+    vec3 rotate(const vec3& v) const {
+        vec3 u(x, y, z);
+        vec3 t = cross(u, v) * 2.0f;
+        return v + t * w + cross(u, t);
+    }
+};
+
+inline float dot(const quat& a, const quat& b) {
+    return a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w;
+}
+
+inline quat normalize(const quat& q) {
+    float len = std::sqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w);
+    if (len < 1e-8f) return quat();
+    return quat(q.x/len, q.y/len, q.z/len, q.w/len);
+}
+
+// Spherical Linear Interpolation
+inline quat slerp(const quat& a, const quat& b, float t) {
+    float d = dot(a, b);
+    quat b2 = b;
+    if (d < 0.0f) { b2 = quat(-b.x, -b.y, -b.z, -b.w); d = -d; }
+    if (d > 0.9995f) {
+        // Nearly parallel: linear interpolation
+        quat r(a.x + t*(b2.x - a.x), a.y + t*(b2.y - a.y),
+               a.z + t*(b2.z - a.z), a.w + t*(b2.w - a.w));
+        return normalize(r);
+    }
+    float theta0 = std::acos(d);
+    float theta = theta0 * t;
+    float sinTheta = std::sin(theta);
+    float sinTheta0 = std::sin(theta0);
+    float s0 = std::cos(theta) - d * sinTheta / sinTheta0;
+    float s1 = sinTheta / sinTheta0;
+    return quat(a.x*s0 + b2.x*s1, a.y*s0 + b2.y*s1,
+                a.z*s0 + b2.z*s1, a.w*s0 + b2.w*s1);
+}
+
+// Convert quaternion to mat4 (rotation matrix)
+inline mat4 quatToMat4(const quat& q) {
+    float xx = q.x*q.x, yy = q.y*q.y, zz = q.z*q.z;
+    float xy = q.x*q.y, xz = q.x*q.z, yz = q.y*q.z;
+    float wx = q.w*q.x, wy = q.w*q.y, wz = q.w*q.z;
+
+    mat4 m;
+    m.data[0][0] = 1.0f - 2.0f*(yy + zz);
+    m.data[0][1] = 2.0f*(xy + wz);
+    m.data[0][2] = 2.0f*(xz - wy);
+    m.data[0][3] = 0.0f;
+    m.data[1][0] = 2.0f*(xy - wz);
+    m.data[1][1] = 1.0f - 2.0f*(xx + zz);
+    m.data[1][2] = 2.0f*(yz + wx);
+    m.data[1][3] = 0.0f;
+    m.data[2][0] = 2.0f*(xz + wy);
+    m.data[2][1] = 2.0f*(yz - wx);
+    m.data[2][2] = 1.0f - 2.0f*(xx + yy);
+    m.data[2][3] = 0.0f;
+    m.data[3][0] = 0.0f;
+    m.data[3][1] = 0.0f;
+    m.data[3][2] = 0.0f;
+    m.data[3][3] = 1.0f;
+    return m;
+}
+
+// Build TRS matrix: Translation * Rotation * Scale
+inline mat4 trsMatrix(const vec3& translation, const quat& rotation, float scale) {
+    mat4 r = quatToMat4(rotation);
+    // Apply scale
+    for (int c = 0; c < 3; c++) {
+        for (int row = 0; row < 3; row++) {
+            r.data[c][row] *= scale;
+        }
+    }
+    // Set translation
+    r.data[3][0] = translation.x;
+    r.data[3][1] = translation.y;
+    r.data[3][2] = translation.z;
+    return r;
+}
+
 } // namespace glm
