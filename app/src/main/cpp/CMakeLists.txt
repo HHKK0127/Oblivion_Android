@@ -20,6 +20,7 @@ add_library(native-lib SHARED
     geometry/skin_partition_packer.cpp
     geometry/material.cpp
     animation/skeleton.cpp
+    animation/animation_player.cpp
 
     # World System (Phase 3+)
     world/world_manager.cpp
