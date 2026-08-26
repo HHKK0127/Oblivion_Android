@@ -20,6 +20,11 @@ struct vec3 {
     vec3 operator+(const vec3& v) const { return vec3(x + v.x, y + v.y, z + v.z); }
     vec3 operator-(const vec3& v) const { return vec3(x - v.x, y - v.y, z - v.z); }
     vec3 operator*(float s) const { return vec3(x * s, y * s, z * s); }
+    vec3 operator/(float s) const { return vec3(x / s, y / s, z / s); }
+    vec3& operator+=(const vec3& v) { x += v.x; y += v.y; z += v.z; return *this; }
+    vec3& operator-=(const vec3& v) { x -= v.x; y -= v.y; z -= v.z; return *this; }
+    vec3& operator*=(float s) { x *= s; y *= s; z *= s; return *this; }
+    vec3& operator/=(float s) { x /= s; y /= s; z /= s; return *this; }
 
     float dot(const vec3& v) const { return x * v.x + y * v.y + z * v.z; }
     vec3 cross(const vec3& v) const {
