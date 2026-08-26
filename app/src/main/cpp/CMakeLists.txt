@@ -23,6 +23,7 @@ add_library(native-lib SHARED
     animation/animation_player.cpp
     collision/aabb_tree.cpp
     collision/collision_world.cpp
+    collision/character_controller.cpp
 
     # World System (Phase 3+)
     world/world_manager.cpp
