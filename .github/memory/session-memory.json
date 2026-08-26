@@ -567,10 +567,25 @@
         "complete"
       ],
       "compressed": false
+    },
+    {
+      "id": "readme-structure-preference-2026-08-26",
+      "timestamp": "2026-08-26T17:04:00Z",
+      "category": "decision",
+      "priority": "medium",
+      "content": "README structure preference: English section on top, Japanese section below. No inline bilingual format ('English / 日本語'). Each section is self-contained and independently readable. This applies to all future README updates.",
+      "tags": [
+        "readme",
+        "documentation",
+        "bilingual",
+        "structure",
+        "preference"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 40,
+    "totalEntries": 41,
     "compressedCount": 0,
     "sessionCount": 3
   }
