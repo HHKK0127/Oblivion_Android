@@ -272,7 +272,7 @@ oblivion-android/
 | Phase 27 | ESM Integration | ✅ Complete | BOOK, CLOT, INGR, ALCH, MISC, FACT, RACE, CLAS, ROAD records + Loot generation, Book reading, Clothing conversion, Alchemy system, Faction system |
 | Phase 28 | ESM 40 Record Types + Integration | ✅ Complete | BSGN, CREA, CONT, DOOR, ACTI, STAT, TREE, FLOR, LIGH, APPA, SOUN, SCRL, SCPT, GMST, SKIL, EYES, HAIR, CLMT, REGN, WTHR, PGRD, LVSP, LVLN records + NpcManager ESM integration, Container ESM population, Player RACE/CLAS/BSGN initialization, Status effects |
 | Phase 29 | NAVM Pathfinding + DIAL/INFO Dialogue | ✅ Complete | NAVM runtime integration with CombatManager A* pathfinding, DIAL/INFO record parsing with faction-based dialogue branching, REFR-based world object placement (8 types), 4 spell effects (PARALYZE, INVISIBILITY, FORTIFY_ATTR, SUMMON), new game systems (Alchemy, Book Reader, Clothing Converter, Faction Manager, Loot Generator, NavMesh Manager) |
-| Phase 30 | NIF Skeleton/Skinning + Collision + Animation | ✅ Complete | Steps 1-12 complete: nif_types.h extended (collision/skinning/animation structs), NIFBlockTypeMap (string-based 31 types), NIFParser extended, SkinPartitionPacker (bitmask), Skeleton (iterative BFS), SkinnedMesh + UBO + skinning shaders, NiControllerManager/Sequence parsing, AnimationPlayer (slerp/lerp/text keys), bhkCollisionObject + bhkRigidBody parsing (9 shape types), Dynamic AABB Tree (broad-phase), CollisionWorld (table-driven narrow phase 5x5, ContactBuffer), CharacterController (substep movement, multi-ray ground detection) |
+| Phase 30 | NIF Skeleton/Skinning + Collision + Animation | ✅ Complete | Steps 1-13 complete: nif_types.h extended (collision/skinning/animation structs), NIFBlockTypeMap (string-based 31 types), NIFParser extended, SkinPartitionPacker (bitmask), Skeleton (iterative BFS), SkinnedMesh + UBO + skinning shaders, NiControllerManager/Sequence parsing, AnimationPlayer (slerp/lerp/text keys), bhkCollisionObject + bhkRigidBody parsing (9 shape types), Dynamic AABB Tree (broad-phase), CollisionWorld (table-driven narrow phase 5x5, ContactBuffer), CharacterController (substep movement, multi-ray ground detection), Integration Test (9 test groups, JNI callable) |
 
 ---
 
@@ -440,7 +440,7 @@ Proprietary - Experimental Port
 **Status**: Phase 30 Complete
 **Last Updated**: 2026-08-26
 **Version**: 1.0.0
-**Features**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD, ESM Data Integration (40 record types), NpcManager ESM, Container ESM, Player RACE/CLAS/BSGN, Status Effects, NAVM Pathfinding, DIAL/INFO Dialogue, REFR Placement, Spell Effects (8 types), Alchemy, Book Reader, Faction Manager, Loot Generator, NIF Skeleton/Skinning, Animation System, Collision Detection (Phase 30)
+**Features**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD, ESM Data Integration (40 record types), NpcManager ESM, Container ESM, Player RACE/CLAS/BSGN, Status Effects, NAVM Pathfinding, DIAL/INFO Dialogue, REFR Placement, Spell Effects (8 types), Alchemy, Book Reader, Faction Manager, Loot Generator, NIF Skeleton/Skinning, Animation System, Collision Detection, Integration Tests (Phase 30)
 **Next**: Phase 31 - PlayerController Integration + World Loading
 
 ---
@@ -713,7 +713,7 @@ oblivion-android/
 | Phase 27 | ESM統合 | ✅ 完了 | 9種レコード追加＋ルート生成、書籍読書、衣服変換、錬金術、派閥システム |
 | Phase 28 | ESM40種レコード＋統合 | ✅ 完了 | 21種レコード追加＋NPCマネージャーESM統合、コンテナESM配置、プレイヤーRACE/CLAS/BSGN初期化、ステータス効果 |
 | Phase 29 | NAVMパスファインディング＋DIAL/INFO会話 | ✅ 完了 | NAVMランタイム統合（A*経路探索）、派閥分岐付きDIAL/INFOレコード解析、REFRワールドオブジェクト配置（8種）、4つの呪文エフェクト、新ゲームシステム追加 |
-| Phase 30 | NIFスケルトン/スキニング＋衝突＋アニメーション | ✅ 完了 | Step 1-12完了: nif_types.h拡張、NIFBlockTypeMap（文字列ベース31種）、NIFParser拡張、SkinPartitionPacker（ビットマスク）、Skeleton（反復BFS）、SkinnedMesh＋UBO＋スキニングシェーダー、NiControllerManager/Sequence解析、AnimationPlayer（slerp/lerp/text keys）、bhkCollisionObject＋bhkRigidBody解析（9種形状）、Dynamic AABB Tree（ブロードフェーズ）、CollisionWorld（テーブル駆動ナローフェーズ5x5、ContactBuffer）、CharacterController（サブステップ移動、マルチレイ接地検出） |
+| Phase 30 | NIFスケルトン/スキニング＋衝突＋アニメーション | ✅ 完了 | Step 1-13完了: nif_types.h拡張、NIFBlockTypeMap（文字列ベース31種）、NIFParser拡張、SkinPartitionPacker（ビットマスク）、Skeleton（反復BFS）、SkinnedMesh＋UBO＋スキニングシェーダー、NiControllerManager/Sequence解析、AnimationPlayer（slerp/lerp/text keys）、bhkCollisionObject＋bhkRigidBody解析（9種形状）、Dynamic AABB Tree（ブロードフェーズ）、CollisionWorld（テーブル駆動ナローフェーズ5x5、ContactBuffer）、CharacterController（サブステップ移動、マルチレイ接地検出）、統合テスト（9テストグループ、JNI呼び出し対応） |
 
 ---
 
@@ -881,5 +881,5 @@ oblivion-android/
 **状態**: Phase 30 完了
 **最終更新**: 2026-08-26
 **バージョン**: 1.0.0
-**機能**: グラフィカルUI、テクスチャパネル＆ボタン、効果音、セーブ/ロードUI、OpenAL 3Dオーディオ、レトロフィルター効果、強化デバッグHUD、ESMデータ統合（40種レコード）、NPCマネージャーESM、コンテナESM、プレイヤーRACE/CLAS/BSGN、ステータス効果、NAVMパスファインディング、DIAL/INFO会話、REFR配置、呪文エフェクト（8種）、錬金術、書籍リーダー、派閥マネージャー、ルートジェネレーター、NIFスケルトン/スキニング、アニメーションシステム、衝突判定（Phase 30）
+**機能**: グラフィカルUI、テクスチャパネル＆ボタン、効果音、セーブ/ロードUI、OpenAL 3Dオーディオ、レトロフィルター効果、強化デバッグHUD、ESMデータ統合（40種レコード）、NPCマネージャーESM、コンテナESM、プレイヤーRACE/CLAS/BSGN、ステータス効果、NAVMパスファインディング、DIAL/INFO会話、REFR配置、呪文エフェクト（8種）、錬金術、書籍リーダー、派閥マネージャー、ルートジェネレーター、NIFスケルトン/スキニング、アニメーションシステム、衝突判定、統合テスト（Phase 30）
 **次回**: Phase 31 - PlayerController統合＋ワールドロード
