@@ -33,38 +33,45 @@ bool PlayerController::initialize(WorldManager* worldMgr, InventoryManager* invM
     return true;
 }
 
+// ============================================================================
+// Phase 31: Fixed/Variable timestep separation
+// ============================================================================
+
+void PlayerController::fixedUpdate(float fixedDt) {
+    if (!player) return;
+
+    // Physics & movement at fixed rate (deterministic)
+    glm::vec3 moveVec = calculateMovementVector();
+    bool canActuallySprint = isSprinting && player->canSprint &&
+                             (moveVec.x != 0.0f || moveVec.z != 0.0f);
+    float speed = canActuallySprint ? SPRINT_SPEED : WALK_SPEED;
+    moveVec = moveVec * speed;
+
+    player->applyMovementInput(moveVec, canActuallySprint);
+    player->updateStamina(fixedDt, canActuallySprint);
+    applyGravity(fixedDt);
+    updatePlayerPosition(fixedDt);
+    checkGroundCollision();
+}
+
 void PlayerController::update(float deltaTime) {
     if (!player || !worldManager) return;
 
-    // 1. Calculate movement from input
-    glm::vec3 moveVec = calculateMovementVector();
+    // Phase 31: Fixed timestep accumulator for physics
+    fixedAccumulator += deltaTime;
+    while (fixedAccumulator >= FIXED_DT) {
+        fixedUpdate(FIXED_DT);
+        fixedAccumulator -= FIXED_DT;
+    }
 
-    // 2. Check if sprinting is allowed (must have stamina and be moving)
-    bool canActuallySprint = isSprinting && player->canSprint && (moveVec.x != 0.0f || moveVec.z != 0.0f);
+    // Variable-rate updates (animation, rendering)
+    updateAnimState(deltaTime);
+    applyAnimToSkeleton(deltaTime);
 
-    // 3. Apply sprint modifier
-    float currentSpeed = canActuallySprint ? SPRINT_SPEED : WALK_SPEED;
-    moveVec = moveVec * currentSpeed;
-
-    // 4. Apply movement input to player
-    player->applyMovementInput(moveVec, canActuallySprint);
-
-    // 5. Update stamina
-    player->updateStamina(deltaTime, canActuallySprint);
-
-    // 6. Apply gravity
-    applyGravity(deltaTime);
-
-    // 7. Update position with velocity
-    updatePlayerPosition(deltaTime);
-
-    // 8. Check ground collision
-    checkGroundCollision();
-
-    // 9. Check cell transitions
+    // Cell transition check
     checkCellTransition();
 
-    // 10. Update player internal state
+    // Update player internal state
     player->update(deltaTime);
 }
 
@@ -74,6 +81,9 @@ void PlayerController::cleanup() {
     }
     worldManager = nullptr;
     inventoryManager = nullptr;
+    skeleton = nullptr;
+    animator = nullptr;
+    charController = nullptr;
     LOGD("PlayerController cleaned up");
 }
 
@@ -233,4 +243,167 @@ void PlayerController::checkCellTransition() {
         // WorldManager will handle cell loading
         worldManager->setPlayerPosition(player->position);
     }
+}
+
+// ============================================================================
+// Phase 31: Animation State Machine with Hysteresis
+// ============================================================================
+//
+// Hysteresis prevents state chattering when velocity oscillates around thresholds.
+// Example: without hysteresis, a player at 0.12 m/s could trigger
+// IDLE → WALK → IDLE rapidly. With WALK_ENTER=0.15 and WALK_EXIT=0.05,
+// the state only enters WALK when speed > 0.15 and only returns to IDLE
+// when speed drops below 0.05.
+
+void PlayerController::updateAnimState(float deltaTime) {
+    // Calculate current speed from velocity
+    glm::vec3 v = player->velocity;
+    currentSpeed = std::sqrt(v.x * v.x + v.z * v.z);  // ignore Y (vertical)
+
+    bool isGrounded = charController ? charController->isGrounded() : true;
+
+    // Decrement attack timer
+    if (attackTimer > 0.0f) {
+        attackTimer -= deltaTime;
+        if (attackTimer <= 0.0f) {
+            attackTimer = 0.0f;
+        }
+    }
+
+    // State transitions with hysteresis
+    PlayerAnimState newState = animState;
+
+    // Attack has highest priority (returns to IDLE when timer expires)
+    if (animState == PlayerAnimState::ATTACK && attackTimer <= 0.0f) {
+        newState = PlayerAnimState::IDLE;
+    } else if (animState == PlayerAnimState::ATTACK) {
+        // Stay in ATTACK state until timer expires
+        return;
+    }
+
+    // Jump state
+    if (!isGrounded && animState != PlayerAnimState::JUMP) {
+        newState = PlayerAnimState::JUMP;
+    } else if (isGrounded && animState == PlayerAnimState::JUMP) {
+        // Just landed → go to IDLE
+        newState = PlayerAnimState::IDLE;
+    } else if (isGrounded) {
+        // Grounded movement states (IDLE / WALK / RUN with hysteresis)
+        switch (animState) {
+            case PlayerAnimState::IDLE:
+                if (currentSpeed > WALK_ENTER_THRESHOLD) {
+                    newState = PlayerAnimState::WALK;
+                }
+                break;
+
+            case PlayerAnimState::WALK:
+                if (currentSpeed < WALK_EXIT_THRESHOLD) {
+                    newState = PlayerAnimState::IDLE;
+                } else if (currentSpeed > RUN_ENTER_THRESHOLD) {
+                    newState = PlayerAnimState::RUN;
+                }
+                break;
+
+            case PlayerAnimState::RUN:
+                if (currentSpeed < RUN_EXIT_THRESHOLD) {
+                    newState = PlayerAnimState::WALK;
+                }
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    // Apply state transition to animation player
+    if (newState != animState && animator) {
+        float crossfade = CROSSFADE_IDLE_WALK;
+        uint32_t targetSeq = 0;
+
+        switch (newState) {
+            case PlayerAnimState::IDLE:
+                targetSeq = ANIM_IDLE;
+                crossfade = CROSSFADE_IDLE_WALK;
+                break;
+            case PlayerAnimState::WALK:
+                targetSeq = ANIM_WALK;
+                crossfade = CROSSFADE_IDLE_WALK;
+                break;
+            case PlayerAnimState::RUN:
+                targetSeq = ANIM_RUN;
+                crossfade = CROSSFADE_WALK_RUN;
+                break;
+            case PlayerAnimState::JUMP:
+                targetSeq = ANIM_JUMP;
+                crossfade = CROSSFADE_TO_JUMP;
+                break;
+            case PlayerAnimState::ATTACK:
+                targetSeq = ANIM_ATTACK;
+                crossfade = CROSSFADE_TO_ATTACK;
+                break;
+        }
+
+        // Stop current and play new sequence
+        uint32_t prevSeq = static_cast<uint32_t>(animState);
+        animator->stop(prevSeq);
+        animator->play(targetSeq, newState != PlayerAnimState::ATTACK &&
+                                   newState != PlayerAnimState::JUMP, 1.0f);
+        LOGD("Anim state: %s -> %s (speed=%.2f)",
+             getAnimStateName(), getAnimStateName(), currentSpeed);
+    }
+
+    animState = newState;
+}
+
+const char* PlayerController::getAnimStateName() const {
+    switch (animState) {
+        case PlayerAnimState::IDLE: return "IDLE";
+        case PlayerAnimState::WALK: return "WALK";
+        case PlayerAnimState::RUN: return "RUN";
+        case PlayerAnimState::JUMP: return "JUMP";
+        case PlayerAnimState::ATTACK: return "ATTACK";
+    }
+    return "UNKNOWN";
+}
+
+void PlayerController::toggleCombatStance() {
+    combatStance = !combatStance;
+    LOGD("Combat stance: %s", combatStance ? "ON" : "OFF");
+}
+
+void PlayerController::attack() {
+    if (animState == PlayerAnimState::ATTACK) return;  // Already attacking
+    animState = PlayerAnimState::ATTACK;
+    attackTimer = ATTACK_DURATION;
+    if (animator) {
+        animator->stop(static_cast<uint32_t>(PlayerAnimState::IDLE));
+        animator->stop(static_cast<uint32_t>(PlayerAnimState::WALK));
+        animator->stop(static_cast<uint32_t>(PlayerAnimState::RUN));
+        animator->play(ANIM_ATTACK, false, 1.0f);  // Non-looping
+    }
+    LOGD("Attack triggered");
+}
+
+// ============================================================================
+// Phase 31: Apply animation to skeleton
+// ============================================================================
+
+void PlayerController::applyAnimToSkeleton(float deltaTime) {
+    if (!animator || !skeleton) return;
+
+    // Update animation playback
+    animator->update(deltaTime);
+
+    // Apply animation transforms to skeleton bones
+    // The AnimationPlayer samples tracks and sets bone local transforms
+    // We then update the skeleton to compute world transforms and skinning matrices
+    skeleton->update();
+}
+
+const std::vector<glm::mat4>& PlayerController::getSkinningMatrices() const {
+    if (skeleton) {
+        return skeleton->getSkinningMatrices();
+    }
+    static const std::vector<glm::mat4> empty;
+    return empty;
 }

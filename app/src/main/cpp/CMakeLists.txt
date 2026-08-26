@@ -35,6 +35,9 @@ add_library(native-lib SHARED
     world/grid.cpp
     world/terrain.cpp
 
+    # Phase 31: World Entity & Loader
+    world/world_loader.cpp
+
     # Game Systems
     game/npc.cpp
     game/npc_manager.cpp
@@ -166,6 +169,8 @@ target_include_directories(native-lib PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/map
     ${CMAKE_CURRENT_SOURCE_DIR}/inventory
     ${CMAKE_CURRENT_SOURCE_DIR}/assets
+    ${CMAKE_CURRENT_SOURCE_DIR}/collision
+    ${CMAKE_CURRENT_SOURCE_DIR}/animation
     ${CMAKE_CURRENT_SOURCE_DIR}/tests
 )
 
