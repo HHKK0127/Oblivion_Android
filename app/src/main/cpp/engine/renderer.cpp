@@ -1,4 +1,5 @@
 #include "renderer.h"
+#include "skinning_shader.h"
 #include "texture_loader.h"
 #include "../ui/ui_draw_helper.h"
 #include "../assets/bsa_reader.h"
@@ -338,6 +339,12 @@ void Renderer::initGameSystems() {
         return;
     }
     LOGI("PlayerController initialized successfully");
+
+    // Phase 31: Initialize WorldLoader
+    LOGI("Creating WorldLoader...");
+    worldLoader = std::make_unique<WorldLoader>();
+    worldLoader->init(assetManager.get(), nullptr);  // CollisionWorld will be set later if needed
+    LOGI("WorldLoader initialized successfully");
 
     // Initialize InventoryManager (Phase 3+)
     inventoryManager = std::make_unique<InventoryManager>();
@@ -771,6 +778,55 @@ void Renderer::createTestScenario() {
                 }
 
                 LOGI("ESM-based world generation complete");
+
+                // Phase 31: Load NIF files as WorldEntities
+                if (worldLoader) {
+                    LOGI("=== Phase 31: Loading WorldEntities from NIF files ===");
+
+                    // Test NIF paths (common Oblivion meshes)
+                    const char* testNifs[] = {
+                        "meshes/characters/imperial_male.nif",
+                        "meshes/creatures/imp.nif",
+                        "meshes/architecture/buildings/imperial_house_01.nif",
+                        "meshes/furniture/chair_01.nif",
+                        "meshes/clutter/barrel_01.nif"
+                    };
+
+                    for (size_t i = 0; i < sizeof(testNifs)/sizeof(testNifs[0]); ++i) {
+                        glm::vec3 pos(static_cast<float>(i) * 5.0f, 0.0f, -15.0f);
+                        WorldEntity entity;
+
+                        // Try loading as actor first (has skeleton/animation), then static
+                        entity = worldLoader->loadActor(testNifs[i], pos);
+                        if (entity.mesh || entity.skinnedMesh) {
+                            entity.entityId = worldLoader->getNextEntityId();
+                            worldEntities.push_back(std::move(entity));
+                            LOGI("  [OK] Loaded actor: %s (id=%u)", testNifs[i], worldEntities.back().entityId);
+                        } else {
+                            entity = worldLoader->loadStatic(testNifs[i], pos);
+                            if (entity.mesh || entity.skinnedMesh) {
+                                entity.entityId = worldLoader->getNextEntityId();
+                                worldEntities.push_back(std::move(entity));
+                                LOGI("  [OK] Loaded static: %s (id=%u)", testNifs[i], worldEntities.back().entityId);
+                            } else {
+                                LOGW("  [--] Failed to load: %s", testNifs[i]);
+                            }
+                        }
+                    }
+
+                    // Wire player skeleton/animation if we loaded an actor entity
+                    for (auto& ent : worldEntities) {
+                        if (ent.type == WorldEntityType::ACTOR && ent.skeleton && ent.animator) {
+                            playerController->setSkeleton(ent.skeleton.get());
+                            playerController->setAnimator(ent.animator.get());
+                            LOGI("  PlayerController wired to entity %u skeleton/animation", ent.entityId);
+                            break;  // Use first actor for player
+                        }
+                    }
+
+                    LOGI("Phase 31: Loaded %zu WorldEntities (cache size=%zu)",
+                         worldEntities.size(), worldLoader->getCacheSize());
+                }
     } else {
         LOGI("=== No ESM data available, using hardcoded test scenario ===");
         // Fall back to hardcoded test (existing code below)
@@ -1158,6 +1214,47 @@ void Renderer::render(float deltaTime) {
         LOGD("worldManager->render() completed");
     } else {
         LOGW("worldManager is null!");
+    }
+
+    // Phase 31: Render WorldEntities (skinned meshes with bone matrices)
+    if (!worldEntities.empty()) {
+        // Create skinning shader if not exists (static for reuse)
+        static ShaderProgram skinningShader;
+        static bool shaderInitialized = false;
+        if (!shaderInitialized) {
+            skinningShader.compile(SkinningShader::vertexSource, SkinningShader::fragmentSource);
+            shaderInitialized = true;
+        }
+
+        for (const auto& entity : worldEntities) {
+            if (!entity.isActive || !entity.isVisible) continue;
+
+            // Update skeleton animation if entity has one
+            if (entity.skeleton && entity.animator) {
+                // Animation is already updated by PlayerController for player entity
+                // For other entities, update here
+                if (entity.type != WorldEntityType::ACTOR || !playerController) {
+                    entity.animator->update(deltaTime);
+                    entity.skeleton->update();
+                }
+            }
+
+            // Compute model matrix
+            glm::mat4 modelMatrix = entity.getModelMatrix();
+
+            // Render skinned mesh
+            if (entity.skinnedMesh && entity.skeleton) {
+                const auto& boneMatrices = entity.skeleton->getSkinningMatrices();
+                if (!boneMatrices.empty()) {
+                    entity.skinnedMesh->updateBoneMatrices(boneMatrices);
+                    entity.skinnedMesh->render(skinningShader, modelMatrix);
+                }
+            }
+            // Render static mesh
+            else if (entity.mesh) {
+                entity.mesh->render(skinningShader, modelMatrix);
+            }
+        }
     }
 
     // ===== RETRO FILTER: Apply post-processing effects and render to screen =====

@@ -23,6 +23,7 @@
 #include "../ui/inventory_ui.h"
 #include "../ui/ui_inventory_panel.h"
 #include "../world/world_manager.h"
+#include "../world/world_entity.h"
 #include "../localization/localization_manager.h"
 #include "../profiling/performance_monitor.h"
 #include "../save_system/save_manager.h"
@@ -101,6 +102,10 @@ private:
     std::unique_ptr<inventory::EquipmentManager> equipmentManager;
     ui::UIInventoryPanel* uiInventoryPanel = nullptr;
 
+    // Phase 31: World Entity System
+    std::unique_ptr<WorldLoader> worldLoader;
+    std::vector<WorldEntity> worldEntities;
+
     // Audio System
 #ifdef AUDIO_SYSTEM_ENABLED
     std::unique_ptr<AudioManager> audioManager;
@@ -170,6 +175,10 @@ public:
     inventory::EquipmentManager* getEquipmentManager() { return equipmentManager.get(); }
     void toggleInventory();
     bool isInventoryVisible() const { return uiInventoryPanel && uiInventoryPanel->isVisible(); }
+
+    // Phase 31: World Entity System
+    WorldLoader* getWorldLoader() { return worldLoader.get(); }
+    std::vector<WorldEntity>& getWorldEntities() { return worldEntities; }
 
     // FPS Control
     void setTargetFPS(int fps);
