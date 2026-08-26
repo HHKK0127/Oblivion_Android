@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-08-26T13:29:26.080238",
+  "lastUpdated": "2026-08-26T15:30:00Z",
   "entries": [
     {
       "content": "Oblivion.exe (Ghidra decompiled) - Gamebryo engine, compiled with VS2005/VS2008, Direct3D9. Init order: Renderer -> Shader System -> Sky -> TES -> TreeManager -> Menus -> Player -> Scripts -> Sound System -> Actor Locations -> LOD Land",
@@ -552,10 +552,25 @@
         "macro"
       ],
       "compressed": false
+    },
+    {
+      "id": "phase30-completion-2026-08-26",
+      "timestamp": "2026-08-26T12:00:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "Phase 30 Steps 7-12 completed: NiControllerManager/Sequence parsing, AnimationPlayer (slerp/lerp/text keys), bhkCollisionObject + bhkRigidBody parsing (9 shape types), Dynamic AABB Tree (broad-phase), CollisionWorld (table-driven narrow phase 5x5, ContactBuffer), CharacterController (substep movement, multi-ray ground detection). Custom GLM extended with quat struct and vec3 operators. All 4 architectures build successful.",
+      "tags": [
+        "phase30",
+        "animation",
+        "collision",
+        "nif",
+        "complete"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 39,
+    "totalEntries": 40,
     "compressedCount": 0,
     "sessionCount": 3
   }
