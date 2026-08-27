@@ -419,6 +419,81 @@ void ESMFile::decodeNPC(const ESMRecord& rec) {
     npc.stamina = static_cast<uint32_t>(10 * npc.level + 50);
     npc.magicka = static_cast<uint32_t>(10 * npc.level + 50);
 
+    // Parse AIDT (AI Data) subrecord
+    auto* aidt = rec.findSubRecord("AIDT");
+    if (aidt && aidt->size() >= 8) {
+        npc.aggression = aidt->data[0];      // Aggression (0-100)
+        npc.confidence = aidt->data[1];      // Confidence (0-100)
+        npc.energy = aidt->data[2];          // Energy (0-100)
+        npc.responsibility = aidt->data[3];  // Responsibility (0-100)
+        npc.mood = aidt->data[4];            // Mood (0-8)
+        npc.aiFlags = aidt->data[5];         // AI flags
+    }
+
+    // Parse AI packages (AI_A, AI_E, AI_F, AI_T, AI_W, AI_PK)
+    // Oblivion stores up to 8 AI packages per NPC
+    for (const auto& sub : rec.subRecords) {
+        AIPackageData pkg;
+
+        if (std::memcmp(sub.tag, "AI_A", 4) == 0) {
+            // AI Activate/Find
+            pkg.type = AIPackageType::FIND;
+            if (sub.size() >= 16) {
+                pkg.targetFormID = *reinterpret_cast<const uint32_t*>(sub.data.data());
+                pkg.idleTime = sub.data[4];
+            }
+        } else if (std::memcmp(sub.tag, "AI_E", 4) == 0) {
+            // AI Escort
+            pkg.type = AIPackageType::ESCORT;
+            if (sub.size() >= 16) {
+                pkg.targetFormID = *reinterpret_cast<const uint32_t*>(sub.data.data());
+                pkg.targetX = *reinterpret_cast<const float*>(sub.data.data() + 4);
+                pkg.targetY = *reinterpret_cast<const float*>(sub.data.data() + 8);
+                pkg.targetZ = *reinterpret_cast<const float*>(sub.data.data() + 12);
+            }
+        } else if (std::memcmp(sub.tag, "AI_F", 4) == 0) {
+            // AI Follow
+            pkg.type = AIPackageType::FOLLOW;
+            if (sub.size() >= 16) {
+                pkg.targetFormID = *reinterpret_cast<const uint32_t*>(sub.data.data());
+                pkg.targetX = *reinterpret_cast<const float*>(sub.data.data() + 4);
+                pkg.targetY = *reinterpret_cast<const float*>(sub.data.data() + 8);
+                pkg.targetZ = *reinterpret_cast<const float*>(sub.data.data() + 12);
+            }
+        } else if (std::memcmp(sub.tag, "AI_T", 4) == 0) {
+            // AI Travel
+            pkg.type = AIPackageType::TRAVEL;
+            if (sub.size() >= 12) {
+                pkg.targetX = *reinterpret_cast<const float*>(sub.data.data());
+                pkg.targetY = *reinterpret_cast<const float*>(sub.data.data() + 4);
+                pkg.targetZ = *reinterpret_cast<const float*>(sub.data.data() + 8);
+            }
+        } else if (std::memcmp(sub.tag, "AI_W", 4) == 0) {
+            // AI Wander
+            pkg.type = AIPackageType::WANDER;
+            if (sub.size() >= 8) {
+                pkg.idleTime = sub.data[0];
+                pkg.wanderDistance = sub.data[1];
+            }
+        } else if (std::memcmp(sub.tag, "AI_PK", 4) == 0) {
+            // AI Package (newer format with more data)
+            if (sub.size() >= 20) {
+                pkg.type = static_cast<AIPackageType>(sub.data[0]);
+                pkg.flags = sub.data[1];
+                pkg.scheduleDay = sub.data[2];
+                pkg.scheduleHour = sub.data[3];
+                pkg.scheduleDuration = sub.data[4];
+                pkg.targetFormID = *reinterpret_cast<const uint32_t*>(sub.data.data() + 8);
+                pkg.locationFormID = *reinterpret_cast<const uint32_t*>(sub.data.data() + 12);
+                pkg.targetX = *reinterpret_cast<const float*>(sub.data.data() + 16);
+            }
+        } else {
+            continue;  // Not an AI package subrecord
+        }
+
+        npc.aiPackages.push_back(std::move(pkg));
+    }
+
     m_npcs.push_back(std::move(npc));
 }
 

@@ -90,6 +90,41 @@ struct CellData {
     // Lighting / climate data omitted for simplicity
 };
 
+/// AI Package types from ESM
+enum class AIPackageType : uint8_t {
+    NONE = 0,
+    FIND = 1,       // AI_A: Activate/Find
+    FOLLOW = 2,     // AI_F: Follow
+    ESCORT = 3,     // AI_E: Escort
+    TRAVEL = 4,     // AI_T: Travel
+    WANDER = 5,     // AI_W: Wander
+    SLEEP = 6,      // AI_S: Sleep
+    EAT = 7,        // AI_E: Eat (same subrecord, different context)
+    COMBAT = 8,     // AI_C: Combat
+    FLEE = 9,       // AI_F: Flee (same subrecord, different context)
+    YIELD = 10,     // AI_Y: Yield
+    DIALOGUE = 11,  // AI_D: Dialogue
+    ACCOMPANY = 12, // AI_A: Accompany
+    USE_ITEM = 13,  // AI_U: Use Item
+    WAIT = 14       // AI_W: Wait
+};
+
+/// AI Package data from ESM
+struct AIPackageData {
+    AIPackageType type = AIPackageType::NONE;
+    uint8_t flags = 0;              // Package flags
+    uint8_t scheduleDay = 0;        // Day of week (0=any, 1=sunday, etc.)
+    uint8_t scheduleHour = 0;       // Start hour (0-23)
+    uint8_t scheduleDuration = 0;   // Duration in hours
+    uint32_t targetFormID = 0;      // Target object/NPC FormID
+    float targetX = 0.0f;           // Target location X
+    float targetY = 0.0f;           // Target location Y
+    float targetZ = 0.0f;           // Target location Z
+    uint32_t locationFormID = 0;    // Location reference FormID
+    uint8_t wanderDistance = 0;      // Wander radius
+    uint8_t idleTime = 0;           // Idle time in seconds
+};
+
 struct NPCData {
     uint32_t formID = 0;
     std::string editorID;
@@ -102,6 +137,17 @@ struct NPCData {
     uint32_t health = 50;
     uint32_t stamina = 50;
     uint32_t magicka = 50;
+
+    // AIDT (AI Data) fields
+    uint8_t aggression = 0;         // 0-100: aggression level
+    uint8_t confidence = 50;        // 0-100: confidence level
+    uint8_t energy = 50;            // 0-100: energy level
+    uint8_t responsibility = 50;    // 0-100: responsibility
+    uint8_t mood = 0;               // 0-8: mood (0=neutral, 1=afraid, etc.)
+    uint8_t aiFlags = 0;            // AI flags (auto-calc, etc.)
+
+    // AI Packages (up to 8 packages per NPC in Oblivion)
+    std::vector<AIPackageData> aiPackages;
 };
 
 /// Creature (CREA) record
