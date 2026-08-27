@@ -300,7 +300,9 @@ bool QuestManager::isQuestCompleted(uint32_t questId) const {
 }
 
 void QuestManager::update(float deltaTime) {
-    for (uint32_t questId : activeQuests) {
+    // FIX: Copy activeQuests to avoid iterator invalidation when checkAndCompleteQuest modifies it
+    auto activeQuestsCopy = activeQuests;
+    for (uint32_t questId : activeQuestsCopy) {
         auto quest = getQuest(questId);
         if (quest && quest->allObjectivesCompleted() &&
             quest->state == QuestState::IN_PROGRESS) {

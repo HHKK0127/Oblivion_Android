@@ -321,14 +321,14 @@ uint32_t NPC::selectSpellForCombat() {
         return 0;  // 装備スペルなし
     }
 
-    // HP が低い時 (< 30%) → ヒール系を優先
+    // HP が低い時 (< 30%) → 回復スペルを優先
     if (status.currentHealth < status.maxHealth * 0.3f) {
         for (uint32_t spellId : status.equippedSpells) {
-            // スペルIDが2001の場合（ヒール）
-            if (spellId == 2001 && status.currentMana >= 40.0f) {
-                LOGD("NPC %u selecting Heal (low HP: %.1f/%.1f)",
-                     npcId, status.currentHealth, status.maxHealth);
-                return 2001;  // ヒール
+            // Check if this is a healing spell by ID range (2001-2099 = healing)
+            if (spellId >= 2001 && spellId <= 2099 && status.currentMana >= 40.0f) {
+                LOGD("NPC %u selecting Heal spell %u (low HP: %.1f/%.1f)",
+                     npcId, spellId, status.currentHealth, status.maxHealth);
+                return spellId;
             }
         }
     }
@@ -336,21 +336,29 @@ uint32_t NPC::selectSpellForCombat() {
     // マナが低い時 (< 30%) → マナ回復優先
     if (status.currentMana < status.maxMana * 0.3f) {
         for (uint32_t spellId : status.equippedSpells) {
-            // スペルIDが2002の場合（マナ回復）
-            if (spellId == 2002 && status.currentMana >= 30.0f) {
-                LOGD("NPC %u selecting Restore Mana (low mana: %.1f/%.1f)",
-                     npcId, status.currentMana, status.maxMana);
-                return 2002;  // マナ回復
+            // Check if this is a restore mana spell by ID range (2002-2099 = restoration)
+            if (spellId >= 2002 && spellId <= 2099 && status.currentMana >= 30.0f) {
+                LOGD("NPC %u selecting Restore Mana spell %u (low mana: %.1f/%.1f)",
+                     npcId, spellId, status.currentMana, status.maxMana);
+                return spellId;
             }
         }
     }
 
     // デフォルト: ダメージスペルを選択（マナが余っている場合）
     for (uint32_t spellId : status.equippedSpells) {
-        // スペルIDが2000の場合（ファイアボール）
-        if (spellId == 2000 && status.currentMana >= 50.0f) {
-            LOGD("NPC %u selecting Fireball (offensive)", npcId);
-            return 2000;  // ファイアボール
+        // Check if this is a damage spell by ID range (2000-2099 = offensive)
+        if (spellId >= 2000 && spellId <= 2000 && status.currentMana >= 50.0f) {
+            LOGD("NPC %u selecting Fireball spell %u (offensive)", npcId, spellId);
+            return spellId;
+        }
+    }
+
+    // Fallback: use any equipped spell if we have enough mana
+    for (uint32_t spellId : status.equippedSpells) {
+        if (status.currentMana >= 30.0f) {
+            LOGD("NPC %u selecting fallback spell %u", npcId, spellId);
+            return spellId;
         }
     }
 
@@ -365,8 +373,8 @@ bool NPC::canCastSpell(uint32_t spellId) const {
 }
 
 void NPC::updateModelMatrix() {
-    // Create identity matrix by translating at origin
-    modelMatrix = glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, 0.0f));
+    // Create identity matrix
+    modelMatrix = glm::mat4();
 
     // Translate to position
     modelMatrix = glm::translate(modelMatrix, position);

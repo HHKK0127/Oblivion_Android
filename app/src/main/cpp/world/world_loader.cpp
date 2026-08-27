@@ -302,12 +302,25 @@ WorldEntity WorldLoader::loadActorForNpc(const std::string& nifPath, const glm::
     WorldEntity entity = loadActor(nifPath, pos, rot, scl);
     entity.npcId = npcId;
 
-    // Update mapping
-    npcToEntityMap[npcId] = entity.entityId;
-    entities[entity.entityId] = std::make_unique<WorldEntity>(std::move(entity));
+    // FIX: Save ID before move
+    uint32_t savedEntityId = entity.entityId;
 
-    LOGD_WL("Loaded actor for NPC: npcId=%u, entityId=%u", npcId, entity.entityId);
-    return entity;
+    // Update mapping
+    npcToEntityMap[npcId] = savedEntityId;
+    entities[savedEntityId] = std::make_unique<WorldEntity>(std::move(entity));
+
+    LOGD_WL("Loaded actor for NPC: npcId=%u, entityId=%u", npcId, savedEntityId);
+    // Return a copy of the entity data (without unique_ptr members)
+    WorldEntity result;
+    result.entityId = savedEntityId;
+    result.npcId = npcId;
+    result.position = entities[savedEntityId]->position;
+    result.rotation = entities[savedEntityId]->rotation;
+    result.scale = entities[savedEntityId]->scale;
+    result.isActive = entities[savedEntityId]->isActive;
+    result.isVisible = entities[savedEntityId]->isVisible;
+    result.type = entities[savedEntityId]->type;
+    return result;
 }
 
 // ----------------------------------------------------------------------------

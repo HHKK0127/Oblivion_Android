@@ -46,7 +46,8 @@ public:
     std::shared_ptr<NPC> createNPCFromESM(uint32_t formID, const glm::vec3& position);
     std::shared_ptr<NPC> spawnFromLeveledList(uint32_t leveledListFormID,
                                                uint32_t playerLevel,
-                                               const glm::vec3& position);
+                                               const glm::vec3& position,
+                                               int recursionDepth = 0);
     void setESMManager(const oblivion::ESMManager* esm) { m_esm = esm; }
     std::shared_ptr<NPC> getNPC(uint32_t npcId) const;
     void removeNPC(uint32_t npcId);

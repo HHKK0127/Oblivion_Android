@@ -218,7 +218,16 @@ std::shared_ptr<NPC> NpcManager::createNPCFromESM(uint32_t formID, const glm::ve
 
 std::shared_ptr<NPC> NpcManager::spawnFromLeveledList(uint32_t leveledListFormID,
                                                        uint32_t playerLevel,
-                                                       const glm::vec3& position) {
+                                                       const glm::vec3& position,
+                                                       int recursionDepth) {
+    // FIX: Prevent infinite recursion from circular leveled list references
+    constexpr int MAX_RECURSION = 10;
+    if (recursionDepth > MAX_RECURSION) {
+        LOGW("spawnFromLeveledList: Max recursion depth exceeded for list 0x%08X, possible circular reference",
+             leveledListFormID);
+        return nullptr;
+    }
+
     if (!m_esm) {
         LOGW("spawnFromLeveledList: ESMManager not set");
         return nullptr;
@@ -259,7 +268,7 @@ std::shared_ptr<NPC> NpcManager::spawnFromLeveledList(uint32_t leveledListFormID
     // If the referenced formID is itself a leveled list, recurse
     const oblivion::LeveledListData* nestedList = m_esm->findLeveledList(chosen->referencedFormID);
     if (nestedList) {
-        return spawnFromLeveledList(chosen->referencedFormID, playerLevel, position);
+        return spawnFromLeveledList(chosen->referencedFormID, playerLevel, position, recursionDepth + 1);
     }
 
     // Otherwise spawn as creature

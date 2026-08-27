@@ -688,7 +688,13 @@ void CombatManager::playerAttack(uint32_t playerEntityId, uint32_t targetNpcId, 
                 weapon.baseDamage, playerEntityId);
 
     // Calculate and apply damage
-    CharacterStatus playerStatus; // TODO: Get actual player status
+    // FIX: Get actual player status from NPC manager (player is NPC ID 1)
+    auto playerNpc = npcManager->getNPC(1);
+    CharacterStatus playerStatus;
+    if (playerNpc) {
+        playerStatus = playerNpc->status;
+    }
+    playerStatus.weaponDamage = weapon.baseDamage;
     float damage = calculateDamage(playerStatus, target->status, weapon);
 
     // Critical hit

@@ -8,7 +8,11 @@ constexpr float SPRINT_SPEED = 8.0f;
 constexpr float ROTATION_SENSITIVITY = 0.01f;
 
 PlayerController::PlayerController()
-    : player(nullptr), worldManager(nullptr), inventoryManager(nullptr) {
+    : player(nullptr), worldManager(nullptr), inventoryManager(nullptr),
+      fixedAccumulator(0.0f),
+      isSprinting(false),
+      skeleton(nullptr), animator(nullptr), charController(nullptr),
+      combatStance(false), attackTimer(0.0f), currentSpeed(0.0f) {
     LOGD("PlayerController created");
 }
 
@@ -209,11 +213,11 @@ void PlayerController::applyGravity(float deltaTime) {
 void PlayerController::checkGroundCollision() {
     if (!player || !worldManager) return;
 
-    // Get terrain height at player position
-    uint32_t cellX = static_cast<uint32_t>(player->position.x / 128.0f);
-    uint32_t cellY = static_cast<uint32_t>(player->position.z / 128.0f);
+    // FIX: Use int32_t with floor() for negative coordinate support
+    int32_t cellX = static_cast<int32_t>(std::floor(player->position.x / 128.0f));
+    int32_t cellY = static_cast<int32_t>(std::floor(player->position.z / 128.0f));
 
-    auto cell = worldManager->getCell(cellX, cellY);
+    auto cell = worldManager->getCell(static_cast<uint32_t>(cellX), static_cast<uint32_t>(cellY));
     if (!cell) {
         player->isOnGround = false;
         return;
@@ -351,14 +355,16 @@ void PlayerController::updateAnimState(float deltaTime) {
 
         // Stop current and play new sequence
         uint32_t prevSeq = static_cast<uint32_t>(animState);
+        const char* oldStateName = getAnimStateName();  // Save before update
         animator->stop(prevSeq);
         animator->play(targetSeq, newState != PlayerAnimState::ATTACK &&
                                    newState != PlayerAnimState::JUMP, 1.0f);
+        animState = newState;  // Update state
         LOGD("Anim state: %s -> %s (speed=%.2f)",
-             getAnimStateName(), getAnimStateName(), currentSpeed);
+             oldStateName, getAnimStateName(), currentSpeed);
+    } else {
+        animState = newState;
     }
-
-    animState = newState;
 }
 
 const char* PlayerController::getAnimStateName() const {

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-10T11:00:00Z",
+  "lastUpdated": "2026-09-10T12:00:00Z",
   "entries": [
     {
       "content": "Oblivion.exe (Ghidra decompiled) - Gamebryo engine, compiled with VS2005/VS2008, Direct3D9. Init order: Renderer -> Shader System -> Sky -> TES -> TreeManager -> Menus -> Player -> Scripts -> Sound System -> Actor Locations -> LOD Land",
@@ -629,7 +629,11 @@
       "timestamp": "2026-08-26T22:00:00Z",
       "category": "decision",
       "priority": "high",
-      "tags": ["architecture", "imperial-weave", "update-pipeline"],
+      "tags": [
+        "architecture",
+        "imperial-weave",
+        "update-pipeline"
+      ],
       "content": "Imperial Weave 12-phase update pipeline: PreUpdate → EventProcess → WorldUpdate → AiUpdate → PlayerUpdate → InventoryUpdate → SpellUpdate → AnimationUpdate → PhysicsSync → CombatUpdate → QuestUpdate → AudioUpdate → RenderSubmit. All major managers migrated.",
       "compressed": false
     },
@@ -638,7 +642,12 @@
       "timestamp": "2026-08-26T22:00:00Z",
       "category": "decision",
       "priority": "high",
-      "tags": ["architecture", "imperial-weave", "input", "audio"],
+      "tags": [
+        "architecture",
+        "imperial-weave",
+        "input",
+        "audio"
+      ],
       "content": "Joystick input and audio listener position must be set BEFORE ImperialWeave::update() is called, because playerController->update() and audioManager->update() now run inside the Weave pipeline.",
       "compressed": false
     },
@@ -647,7 +656,11 @@
       "timestamp": "2026-08-26T22:00:00Z",
       "category": "decision",
       "priority": "medium",
-      "tags": ["architecture", "imperial-weave", "ui"],
+      "tags": [
+        "architecture",
+        "imperial-weave",
+        "ui"
+      ],
       "content": "titleScreen and uiSystem remain directly called from Renderer (not migrated to Imperial Weave) because they are UI/rendering overlay systems, not game logic managers.",
       "compressed": false
     },
@@ -656,7 +669,11 @@
       "timestamp": "2026-08-27T08:50:00Z",
       "category": "decision",
       "priority": "high",
-      "tags": ["ui", "combat", "touch-input"],
+      "tags": [
+        "ui",
+        "combat",
+        "touch-input"
+      ],
       "content": "Player combat UI buttons implemented: Attack (ATK, red), Block (BLK, blue), Cast Spell (MAG, purple). Positioned on right side of screen. Attack triggers playerController->attack(), Block toggles combat stance. Buttons hidden on title screen, shown on game start.",
       "compressed": false
     },
@@ -665,7 +682,11 @@
       "timestamp": "2026-08-27T09:30:00Z",
       "category": "decision",
       "priority": "high",
-      "tags": ["animation", "eventbus", "player-controller"],
+      "tags": [
+        "animation",
+        "eventbus",
+        "player-controller"
+      ],
       "content": "PlayerController connected to Imperial Weave EventBus for animation events. subscribeToCombatEvents() registers handlers for COMBAT_ATTACK_HIT, COMBAT_CRITICAL_HIT, COMBAT_BLOCK, COMBAT_PARRY, COMBAT_DODGE, COMBAT_DEATH. Currently logs events; actual animation triggers are TODO.",
       "compressed": false
     },
@@ -674,7 +695,11 @@
       "timestamp": "2026-08-27T09:30:00Z",
       "category": "decision",
       "priority": "high",
-      "tags": ["animation", "npc", "state-machine"],
+      "tags": [
+        "animation",
+        "npc",
+        "state-machine"
+      ],
       "content": "NPC animation state machine implemented: AnimState enum (IDLE, WALK, RUN, ATTACK, HIT_REACTION, BLOCK, DEATH). Timing constants: HIT_REACTION_DURATION=0.5s, ATTACK_DURATION=0.8s. Auto-returns to IDLE after animation completes. CombatManager::applyDamage() now triggers target->triggerHitReaction() and target->triggerDeath().",
       "compressed": false
     },
@@ -683,7 +708,12 @@
       "timestamp": "2026-08-27T10:00:00Z",
       "category": "decision",
       "priority": "high",
-      "tags": ["animation", "eventbus", "npc", "world-entity"],
+      "tags": [
+        "animation",
+        "eventbus",
+        "npc",
+        "world-entity"
+      ],
       "content": "AnimationSubscriber system implemented. Bridges NPC animation states to WorldEntity animation playback via Imperial Weave EventBus. Subscribes to COMBAT_ATTACK_HIT, COMBAT_CRITICAL_HIT, COMBAT_DEATH events. Maps NPC AnimState to animation names (idle, walk, run, attack, hit_reaction, block, death). WorldEntity storage added to WorldLoader with npcToEntityMap for NPC ID → Entity ID lookup. loadActorForNpc() method loads actors with NPC ID association. AnimationPlayer enhanced with findSequenceByName() for semantic animation lookup.",
       "compressed": false
     },
@@ -692,7 +722,11 @@
       "timestamp": "2026-08-27T10:15:00Z",
       "category": "decision",
       "priority": "high",
-      "tags": ["audio", "eventbus", "combat"],
+      "tags": [
+        "audio",
+        "eventbus",
+        "combat"
+      ],
       "content": "AudioSubscriber system implemented. Bridges combat and animation events to AudioManager sound playback via Imperial Weave EventBus. Maps events to existing sound definitions (blade_equip, blunt_equip, bow_shoot) as temporary placeholders. Supports 3D positional audio via player position and optional NPC position callback. Dedicated hit/block/death combat sounds need extraction from original assets.",
       "compressed": false
     },
@@ -701,7 +735,11 @@
       "timestamp": "2026-08-27T10:18:00Z",
       "category": "decision",
       "priority": "high",
-      "tags": ["ui", "spell", "magic"],
+      "tags": [
+        "ui",
+        "spell",
+        "magic"
+      ],
       "content": "SpellSelectionPanel implemented. Draggable panel extending UIPanel that displays player spells as clickable buttons. Japanese name preferred with English fallback. Integrated with castSpellButton: first press opens panel, subsequent presses cast selected spell on nearest enemy. Plays magic/spell_equip sound on successful cast. Player ID hardcoded to 1."
     },
     {
@@ -709,7 +747,12 @@
       "timestamp": "2026-09-10T10:00:00Z",
       "category": "reference",
       "priority": "high",
-      "tags": ["architecture", "imperial-weave", "engine", "diagram"],
+      "tags": [
+        "architecture",
+        "imperial-weave",
+        "engine",
+        "diagram"
+      ],
       "content": "Engine layered architecture: Android JNI → Renderer (render loop) → Imperial Weave (12-phase coordinator: ①EventProcess ②World ③AI ④Player ⑤Inventory ⑥Spell ⑦Animation ⑧Physics ⑨Combat ⑩Quest ⑪Audio ⑫RenderSubmit) + UISystem. Thin EventBus-driven subscriber bridges: AnimationSubscriber (Event→AnimationPlayer) and AudioSubscriber (Event→AudioManager). CombatManager emits events, does NOT call AnimationPlayer/AudioManager directly. Diagram committed to README.md Engine Architecture section.",
       "compressed": false
     },
@@ -718,7 +761,11 @@
       "timestamp": "2026-09-10T10:00:00Z",
       "category": "decision",
       "priority": "medium",
-      "tags": ["readme", "docs", "phase32"],
+      "tags": [
+        "readme",
+        "docs",
+        "phase32"
+      ],
       "content": "README.md updated for Phase 32 (v0.9.8): added Engine Architecture section with ASCII diagram and EventBus attack flow example, updated code metrics to 13,000+ lines, added Phase 32 to development phases table, updated status footer to Phase 32 Complete, next phase listed as Phase 33 - Dedicated Combat Sound Assets + NPC Spatial Audio.",
       "compressed": false
     },
@@ -727,7 +774,12 @@
       "timestamp": "2026-08-27T11:10:00Z",
       "category": "decision",
       "priority": "high",
-      "tags": ["audio", "spatial-audio", "npc", "combat-sounds"],
+      "tags": [
+        "audio",
+        "spatial-audio",
+        "npc",
+        "combat-sounds"
+      ],
       "content": "Phase 33 (v0.9.9) complete. Dedicated combat sounds added to sound_definitions.json (hit_blade/blunt/axe/unarmed, hit_generic, hit_critical, block_generic, parry, dodge, death_generic, attack_swing). NPC spatial audio callback wired: AudioSubscriber.setNpcPositionCallback() connected in Renderer using NpcManager::getNPC(id)->position. All 11 AudioSubscriber event→sound mappings updated from blade_equip placeholder to dedicated keys. BUILD SUCCESSFUL.",
       "compressed": false
     },
@@ -736,7 +788,13 @@
       "timestamp": "2026-08-27T11:15:00Z",
       "category": "decision",
       "priority": "high",
-      "tags": ["audio", "weapon-type", "combat-sounds", "quick-slot", "spell-ui"],
+      "tags": [
+        "audio",
+        "weapon-type",
+        "combat-sounds",
+        "quick-slot",
+        "spell-ui"
+      ],
       "content": "Phase 34 (v0.9.10) complete. (1) Weapon-type hit sound routing: CombatManager emits weaponType in EventBus payload, AudioSubscriber.playSoundForEventWithPayload() parses it and selects hit_blade/blunt/axe/bow etc. (2) SpellSelectionPanel school colors: each school has distinct color + abbreviated prefix [破][回][召][変][幻][神]. (3) Quick-slot spells: Player.quickSlotSpells[4] array, Renderer has 4 F1-F4 buttons bottom-left; empty=open panel in assign mode, assigned=cast spell. pendingAssignSlot tracks assignment. BUILD SUCCESSFUL.",
       "compressed": false
     },
@@ -745,7 +803,13 @@
       "timestamp": "2026-09-10T11:00:00Z",
       "category": "decision",
       "priority": "high",
-      "tags": ["ai", "radiant-ai", "npc", "scheduler", "phase35"],
+      "tags": [
+        "ai",
+        "radiant-ai",
+        "npc",
+        "scheduler",
+        "phase35"
+      ],
       "content": "Phase 35 (v1.0.0) complete. Radiant AI system implemented: (1) AI Package System with 15 package types (Eat, Sleep, Wander, Travel, Patrol, Follow, Escort, Guard, Activate, Combat, Flee, Accompany, UseItem, SandBox, Dialogue). (2) Priority-based PackageStack with conditions (TimeCondition, LocationCondition, StatCondition). (3) AIScheduler with 24h time-based package selection, NavMesh pathfinding, stuck detection (3s timeout). (4) Default daily schedule: Sleep(22:00-06:00,p60), Eat(12:00-13:00,p55), Wander(all day,p30), SandBox(fallback,p20). (5) Combat(p90)/Flee(p95) override normal behavior. (6) Integrated into Renderer update loop after ImperialWeave.update(). (7) All NPCs auto-registered with createDefaultSchedule(). BUILD SUCCESSFUL.",
       "compressed": false
     },
@@ -754,7 +818,13 @@
       "timestamp": "2026-08-27T13:00:00Z",
       "category": "decision",
       "priority": "high",
-      "tags": ["esm", "ai", "aidt", "npc", "packages"],
+      "tags": [
+        "esm",
+        "ai",
+        "aidt",
+        "npc",
+        "packages"
+      ],
       "content": "ESM AI data parsing complete. Added AIDT subrecord parsing for NPC records: (1) AIPackageType enum with 15 types (NONE, FIND, FOLLOW, ESCORT, TRAVEL, WANDER, SLEEP, EAT, COMBAT, FLEE, YIELD, DIALOGUE, ACCOMPANY, USE_ITEM, WAIT). (2) AIPackageData struct with type, flags, schedule (day/hour/duration), targetFormID, targetXYZ, locationFormID, wanderDistance, idleTime. (3) NPCData extended with aggression, confidence, energy, responsibility, mood, aiFlags fields. (4) AI package subrecord parsing: AI_A (Activate/Find), AI_E (Escort), AI_F (Follow), AI_T (Travel), AI_W (Wander), AI_PK (newer format). (5) All NPCs now have authentic AI data from ESM files. BUILD SUCCESSFUL.",
       "compressed": false
     },
@@ -763,7 +833,12 @@
       "timestamp": "2026-08-27T13:57:00Z",
       "category": "decision",
       "priority": "high",
-      "tags": ["audio", "openal", "wav", "bug-fix"],
+      "tags": [
+        "audio",
+        "openal",
+        "wav",
+        "bug-fix"
+      ],
       "content": "Audio system bug fixes complete. (1) AudioSource::setVolume/setPosition/enable3D/disable3D now properly call OpenAL functions when AUDIO_SYSTEM_ENABLED is defined. (2) WAV parsing uses safe little-endian read helpers instead of direct pointer casting (endian-independent). (3) Added boundary checks for WAV chunk parsing to prevent buffer overrun. (4) Added PCM format validation. (5) Added 2-byte alignment padding support for WAV chunks. BUILD SUCCESSFUL.",
       "compressed": false
     },
@@ -772,13 +847,34 @@
       "timestamp": "2026-08-27T14:30:00Z",
       "category": "decision",
       "priority": "high",
-      "tags": ["kotlin", "audio", "soundpool", "mediaplayer", "bug-fix"],
+      "tags": [
+        "kotlin",
+        "audio",
+        "soundpool",
+        "mediaplayer",
+        "bug-fix"
+      ],
       "content": "Kotlin audio system bug fixes complete. (1) SoundPool: Added loadedSounds cache to prevent memory leak from repeated sp.load() calls. (2) SoundPool: Set OnLoadCompleteListener only once to avoid overwriting previous listeners. (3) MediaPlayer: Changed from file:///android_asset/ URI to AssetFileDescriptor for reliable asset loading. (4) Thread safety: Added runOnUiThread wrappers for playBGM/playSE/stopBGM to handle C++ callbacks from non-UI threads. (5) Instance: Added @Volatile annotation and identity check in onDestroy for screen rotation safety. (6) onPause: Simplified redundant null check. BUILD SUCCESSFUL.",
+      "compressed": false
+    },
+    {
+      "id": "mem-026",
+      "timestamp": "2026-09-10T12:00:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "Phase 36 Complete: Jolt Physics engine integrated. PhysicsManager singleton with CharacterVirtual for player/NPC, HeightFieldShape terrain, fixed timestep (1/60s), raycast API. JPH_DISABLE_CUSTOM_ALLOCATOR removed (causes linker errors). HeightFieldShapeSettings requires uint32 for sampleCount. Build successful on ARM64.",
+      "tags": [
+        "phase36",
+        "jolt",
+        "physics",
+        "character-virtual",
+        "terrain"
+      ],
       "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 70,
+    "totalEntries": 62,
     "compressedCount": 0,
     "sessionCount": 4
   }

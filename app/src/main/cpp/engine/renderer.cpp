@@ -272,7 +272,7 @@ void Renderer::resize(unsigned int width, unsigned int height) {
                             if (e && e->npcId != 1) { targetId = e->npcId; break; }
                         }
                         if (spellManager && targetId != 0) {
-                            spellManager->castSpell(1, targetId, spell->spellId);
+                            spellManager->castSpell(1, spell->spellId, targetId);
                         }
                         if (audioManager) {
                             audioManager->playSound("magic/spell_equip");
@@ -1645,7 +1645,7 @@ void Renderer::render(float deltaTime) {
             shaderInitialized = true;
         }
 
-        for (const auto& entity : worldEntities) {
+        for (auto& entity : worldEntities) {
             if (!entity.isActive || !entity.isVisible) continue;
 
             // Update skeleton animation if entity has one

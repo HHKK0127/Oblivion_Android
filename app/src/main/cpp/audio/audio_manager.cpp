@@ -213,26 +213,11 @@ bool AudioManager::playBGM(uint32_t clipId, float fadeIn) {
         return false;
     }
 
-#ifdef AUDIO_SYSTEM_ENABLED
-    // OpenAL を使用（ただし WAV 読み込みが実装されていないため、ここでは Java 経由で再生）
+    // FIX: Use Java MediaPlayer only (avoid double playback with OpenAL)
+    // OpenAL source creation is skipped when Java path is available
+    LOGI("Playing BGM via Java MediaPlayer: %s", clip->filename.c_str());
+    playBGMViaJava(clip->filename);
 
-    // ソースを作成
-    uint32_t sourceId = createSource(clipId);
-    if (sourceId == 0) {
-        LOGE("Failed to create audio source for BGM");
-        return false;
-    }
-
-    // BGM ソースの設定
-    auto source = sources[sourceId];
-    source->setVolume(fadeIn > 0.0f ? 0.0f : bgmVolume);
-    source->setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
-    source->disable3D();
-
-    // 再生開始
-    alSourcePlay(source->alSource);
-
-    currentBGMSourceId = sourceId;
     currentBGMClipId = clipId;
     bgmVolume = 1.0f;
 
@@ -241,11 +226,6 @@ bool AudioManager::playBGM(uint32_t clipId, float fadeIn) {
         bgmFadeRate = 1.0f / fadeIn;
         bgmFading = true;
     }
-#endif
-
-    // Java MediaPlayer 経由で MP3 を再生
-    LOGI("Playing BGM via Java MediaPlayer: %s", clip->filename.c_str());
-    playBGMViaJava(clip->filename);
 
     return true;
 }
