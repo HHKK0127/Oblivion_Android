@@ -47,6 +47,13 @@ public:
 
 private:
     const ESMManager* esmManager = nullptr;
+
+    /**
+     * @brief Resolve a skill formID to a skill name
+     * @param skillFormID The skill formID from the book
+     * @return Skill name string, or empty if not found
+     */
+    std::string resolveSkillName(uint32_t skillFormID) const;
 };
 
 } // namespace oblivion

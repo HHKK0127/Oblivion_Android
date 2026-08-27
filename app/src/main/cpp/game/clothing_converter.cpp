@@ -65,15 +65,14 @@ std::vector<inventory::Item> ClothingConverter::convertAllClothing() const {
     return items;
 }
 
-inventory::Item* ClothingConverter::getClothingByFormID(uint32_t formID) const {
+std::unique_ptr<inventory::Item> ClothingConverter::getClothingByFormID(uint32_t formID) const {
     if (!esmManager) return nullptr;
 
     const ClothingData* clothing = esmManager->findClothing(formID);
     if (!clothing) return nullptr;
 
-    // Create a new Item on the heap
-    // Note: Caller is responsible for deleting this
-    return new inventory::Item(convertToItem(*clothing));
+    // BUG FIX #72: Return unique_ptr instead of raw pointer to prevent memory leak
+    return std::make_unique<inventory::Item>(convertToItem(*clothing));
 }
 
 inventory::EquipSlot ClothingConverter::determineEquipSlot(const ClothingData& clothing) const {
@@ -100,10 +99,18 @@ inventory::EquipSlot ClothingConverter::determineEquipSlot(const ClothingData& c
         return inventory::EquipSlot::Head;
     }
 
-    // Check for hand slot indicators
+    // BUG FIX #73: Check for accessory slot BEFORE hands to prevent ring conflict
+    // Rings should be Accessory, not Hands
+    if (lowerEditorID.find("amulet") != std::string::npos ||
+        lowerEditorID.find("necklace") != std::string::npos ||
+        lowerEditorID.find("pendant") != std::string::npos ||
+        lowerEditorID.find("ring") != std::string::npos) {
+        return inventory::EquipSlot::Accessory;
+    }
+
+    // Check for hand slot indicators (gloves/gauntlets only, NOT rings)
     if (lowerEditorID.find("glove") != std::string::npos ||
         lowerEditorID.find("gauntlet") != std::string::npos ||
-        lowerEditorID.find("ring") != std::string::npos ||
         lowerModelPath.find("glove") != std::string::npos) {
         return inventory::EquipSlot::Hands;
     }
@@ -115,12 +122,14 @@ inventory::EquipSlot ClothingConverter::determineEquipSlot(const ClothingData& c
         return inventory::EquipSlot::Feet;
     }
 
-    // Check for accessory slot indicators
-    if (lowerEditorID.find("amulet") != std::string::npos ||
-        lowerEditorID.find("necklace") != std::string::npos ||
-        lowerEditorID.find("pendant") != std::string::npos ||
-        lowerEditorID.find("ring") != std::string::npos) {
-        return inventory::EquipSlot::Accessory;
+    // BUG FIX #74: Detect pants/greaves/skirts - map to Body since no Legs slot exists
+    // In original Oblivion these have a separate Legs slot, but this implementation
+    // uses Body for all torso/lower body clothing
+    if (lowerEditorID.find("pant") != std::string::npos ||
+        lowerEditorID.find("greave") != std::string::npos ||
+        lowerEditorID.find("skirt") != std::string::npos ||
+        lowerEditorID.find("trouser") != std::string::npos) {
+        return inventory::EquipSlot::Body;
     }
 
     // Default to body slot for robes, shirts, etc.

@@ -45,6 +45,7 @@ private:
     CharacterStatus* playerStatus = nullptr;
 
     // Apply bonuses to character status
+    void resetPlayerStatsToBase();
     void applyStatBonuses(const inventory::ItemStats& stats);
     void applyWeaponStats(const inventory::Item& weapon);
     void applyArmorStats(const inventory::Item& armor);

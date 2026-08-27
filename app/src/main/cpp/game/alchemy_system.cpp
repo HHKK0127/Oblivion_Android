@@ -25,7 +25,7 @@ void AlchemySystem::initialize(const ESMManager* esmMgr) {
     LOGI("AlchemySystem initialized");
 }
 
-inventory::Item* AlchemySystem::craftPotion(uint32_t ingredient1FormID, uint32_t ingredient2FormID) const {
+std::unique_ptr<inventory::Item> AlchemySystem::craftPotion(uint32_t ingredient1FormID, uint32_t ingredient2FormID) const {
     if (!esmManager) {
         LOGW("AlchemySystem not initialized");
         return nullptr;
@@ -49,30 +49,69 @@ inventory::Item* AlchemySystem::craftPotion(uint32_t ingredient1FormID, uint32_t
     }
 
     // Create a new potion
-    // In a full implementation, we'd create a new AlchemyData entry
-    // For now, we'll create a basic potion item with the first shared effect
+    auto potion = std::make_unique<inventory::Item>();
 
-    inventory::Item potion;
-    potion.id = 0x00000000;  // Dynamic formID
-    potion.name = "Crafted Potion";
-    potion.description = "A potion crafted from " + ing1->fullName + " and " + ing2->fullName;
-    potion.category = inventory::ItemCategory::Consumable;
-    potion.rarity = inventory::ItemRarity::Common;
-    potion.equipSlot = inventory::EquipSlot::None;
-    potion.weight = 0.5f;
-    potion.value = 10;  // Base value
-    potion.maxStack = 10;
-    potion.iconId = 0;
+    // Generate dynamic ID from ingredient formIDs (avoid fixed 0x00000000)
+    potion->id = (ingredient1FormID ^ ingredient2FormID) | 0xFF000000;
+    potion->name = "Crafted Potion";
+    potion->description = "A potion crafted from " + ing1->fullName + " and " + ing2->fullName;
+    potion->category = inventory::ItemCategory::Consumable;
+    potion->rarity = inventory::ItemRarity::Common;
+    potion->equipSlot = inventory::EquipSlot::None;
+    potion->weight = 0.5f;
+    potion->value = 10;  // Base value
+    potion->maxStack = 10;
+    potion->iconId = 0;
 
-    // Calculate stats from first shared effect
-    if (!ing1->effectMagnitudes.empty() && !ing2->effectMagnitudes.empty()) {
-        potion.stats.damage = static_cast<int>(calculateMagnitude(
-            ing1->effectMagnitudes[0], ing2->effectMagnitudes[0]));
+    // Process ALL shared effects, not just the first one
+    for (size_t i = 0; i < sharedEffects.size(); ++i) {
+        uint32_t effectFormID = sharedEffects[i];
+
+        // Find the effect indices in both ingredients
+        int idx1 = -1, idx2 = -1;
+        for (size_t j = 0; j < ing1->effectFormIDs.size(); ++j) {
+            if (ing1->effectFormIDs[j] == effectFormID) { idx1 = static_cast<int>(j); break; }
+        }
+        for (size_t j = 0; j < ing2->effectFormIDs.size(); ++j) {
+            if (ing2->effectFormIDs[j] == effectFormID) { idx2 = static_cast<int>(j); break; }
+        }
+
+        if (idx1 < 0 || idx2 < 0) continue;
+
+        float mag1 = (idx1 < static_cast<int>(ing1->effectMagnitudes.size())) ? ing1->effectMagnitudes[idx1] : 0.0f;
+        float mag2 = (idx2 < static_cast<int>(ing2->effectMagnitudes.size())) ? ing2->effectMagnitudes[idx2] : 0.0f;
+        float magnitude = calculateMagnitude(mag1, mag2);
+
+        // Look up the magic effect to determine type
+        const MagicEffectData* mgef = esmManager->findMagicEffect(effectFormID);
+        if (mgef) {
+            // effectType: 0=other, 1=fire, 2=frost, 3=shock, 4=drain, 5=absorb, 6=disintegrate
+            // actorValue determines what attribute is affected
+            // For healing effects (Restoration school), use healAmount
+            // For damage/drain effects, use stats.damage
+            // For fortify effects, use appropriate stat
+            if (mgef->school == 5) {
+                // Restoration - likely healing
+                potion->healAmount += static_cast<int32_t>(magnitude);
+            } else if (mgef->effectType == 4 || mgef->effectType == 1 || mgef->effectType == 2 || mgef->effectType == 3) {
+                // Drain/Fire/Frost/Shock - damage effects
+                potion->stats.damage += static_cast<int>(magnitude);
+            } else {
+                // Other effects (fortify, etc.) - store as healAmount as fallback
+                potion->healAmount += static_cast<int32_t>(magnitude);
+            }
+        } else {
+            // Unknown effect - store as healAmount
+            potion->healAmount += static_cast<int32_t>(magnitude);
+        }
+
+        LOGD("Added effect 0x%08X: magnitude=%.1f", effectFormID, magnitude);
     }
 
-    LOGI("Crafted potion from %s and %s", ing1->fullName.c_str(), ing2->fullName.c_str());
+    LOGI("Crafted potion from %s and %s (%zu effects)",
+         ing1->fullName.c_str(), ing2->fullName.c_str(), sharedEffects.size());
 
-    return new inventory::Item(potion);
+    return potion;
 }
 
 std::vector<inventory::Item> AlchemySystem::getAllIngredients() const {

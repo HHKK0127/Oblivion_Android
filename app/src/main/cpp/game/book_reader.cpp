@@ -1,5 +1,6 @@
 #include "book_reader.h"
 #include <android/log.h>
+#include <unordered_map>
 
 #define LOG_TAG "BookReader"
 #ifdef ENABLE_DEBUG_LOGS
@@ -40,22 +41,32 @@ bool BookReader::readBook(uint32_t bookFormID, CharacterStatus& playerStatus) {
 
     // Check if this is a skill book
     if (book->teachesSkillID != 0 && book->teachesSkillLevel > 0) {
-        // Find the skill name by formID
-        // For now, we'll use a generic skill increase
-        // In a full implementation, we'd map formID to skill name
         LOGD("Skill book: teaches skill 0x%08X level %u",
              book->teachesSkillID, book->teachesSkillLevel);
 
-        // Apply skill increase to a random skill for now
-        // TODO: Map skill formID to skill name
-        for (auto& skill : playerStatus.skills) {
-            if (skill.second < 100.0f) {
-                skill.second += static_cast<float>(book->teachesSkillLevel);
-                if (skill.second > 100.0f) skill.second = 100.0f;
+        // BUG FIX #69: Resolve skill formID to actual skill name using ESM data
+        std::string skillName = resolveSkillName(book->teachesSkillID);
+
+        if (skillName.empty()) {
+            LOGW("Could not resolve skill formID 0x%08X to skill name", book->teachesSkillID);
+            return false;
+        }
+
+        // BUG FIX #70 & #71: Find the specific skill in player's skill map
+        auto it = playerStatus.skills.find(skillName);
+        if (it != playerStatus.skills.end()) {
+            if (it->second < 100.0f) {
+                it->second += static_cast<float>(book->teachesSkillLevel);
+                if (it->second > 100.0f) it->second = 100.0f;
                 LOGD("Increased skill %s by %u (now %.0f)",
-                     skill.first.c_str(), book->teachesSkillLevel, skill.second);
-                break;
+                     skillName.c_str(), book->teachesSkillLevel, it->second);
+            } else {
+                LOGD("Skill %s already at max (100)", skillName.c_str());
             }
+        } else {
+            // BUG FIX #70: If player doesn't have this skill yet, add it
+            playerStatus.skills[skillName] = static_cast<float>(book->teachesSkillLevel);
+            LOGD("Added new skill %s at level %u", skillName.c_str(), book->teachesSkillLevel);
         }
     }
 
@@ -78,6 +89,53 @@ std::string BookReader::getBookDescription(uint32_t bookFormID) const {
     if (!book) return "";
 
     return book->description;
+}
+
+std::string BookReader::resolveSkillName(uint32_t skillFormID) const {
+    if (!esmManager) return "";
+
+    // BUG FIX #69: Look up the skill in ESM data by formID
+    const SkillData* skill = esmManager->findSkill(skillFormID);
+    if (skill) {
+        LOGD("Resolved skill formID 0x%08X to '%s' (skillID=%u)",
+             skillFormID, skill->fullName.c_str(), skill->skillID);
+        return skill->fullName;
+    }
+
+    // Fallback: Oblivion skill formIDs are in range 0x0000044C - 0x00000460
+    // Map them to the skill names used in CharacterStatus
+    static const std::unordered_map<uint32_t, std::string> skillFormIDMap = {
+        {0x0000044C, "Blade"},
+        {0x0000044D, "Blunt"},
+        {0x0000044E, "HandToHand"},
+        {0x0000044F, "Armorer"},
+        {0x00000450, "Block"},
+        {0x00000451, "HeavyArmor"},
+        {0x00000452, "Alchemy"},
+        {0x00000453, "Alteration"},
+        {0x00000454, "Conjuration"},
+        {0x00000455, "Destruction"},
+        {0x00000456, "Illusion"},
+        {0x00000457, "Mysticism"},
+        {0x00000458, "Restoration"},
+        {0x00000459, "Acrobatics"},
+        {0x0000045A, "LightArmor"},
+        {0x0000045B, "Marksman"},
+        {0x0000045C, "Mercantile"},
+        {0x0000045D, "Security"},
+        {0x0000045E, "Sneak"},
+        {0x0000045F, "Speechcraft"},
+        {0x00000460, "Athletics"},
+    };
+
+    auto it = skillFormIDMap.find(skillFormID);
+    if (it != skillFormIDMap.end()) {
+        LOGD("Resolved skill formID 0x%08X to '%s' via fallback map", skillFormID, it->second.c_str());
+        return it->second;
+    }
+
+    LOGW("Could not resolve skill formID 0x%08X", skillFormID);
+    return "";
 }
 
 } // namespace oblivion

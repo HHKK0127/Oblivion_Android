@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <memory>
 #include "../assets/esm_reader.h"
 #include "../inventory/item_base.h"
 
@@ -42,7 +43,7 @@ public:
      * @param formID FormID of the clothing
      * @return Converted Item, or nullptr if not found
      */
-    inventory::Item* getClothingByFormID(uint32_t formID) const;
+    std::unique_ptr<inventory::Item> getClothingByFormID(uint32_t formID) const;
 
 private:
     const ESMManager* esmManager = nullptr;

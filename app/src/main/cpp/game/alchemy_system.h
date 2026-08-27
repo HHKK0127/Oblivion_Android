@@ -4,6 +4,7 @@
 #include "../inventory/item_base.h"
 #include <vector>
 #include <random>
+#include <memory>
 
 namespace oblivion {
 
@@ -17,7 +18,7 @@ public:
 
     /// Craft a potion from two ingredients
     /// Returns the crafted potion as an inventory item, or nullptr if invalid
-    inventory::Item* craftPotion(uint32_t ingredient1FormID, uint32_t ingredient2FormID) const;
+    std::unique_ptr<inventory::Item> craftPotion(uint32_t ingredient1FormID, uint32_t ingredient2FormID) const;
 
     /// Get all available ingredients
     std::vector<inventory::Item> getAllIngredients() const;
