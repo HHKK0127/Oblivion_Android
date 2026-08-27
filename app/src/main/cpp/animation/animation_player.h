@@ -9,6 +9,7 @@
 #include <set>
 #include <glm/glm.hpp>
 #include "../assets/nif_types.h"
+#include "../engine/imperial_weave.h"
 
 class Skeleton;
 
@@ -68,9 +69,19 @@ public:
     // Text key callback
     void setTextKeyCallback(TextKeyCallback cb) { textKeyCallback = cb; }
 
+    // Imperial Weave EventBus integration
+    void setEventBus(weave::EventBus* bus) { eventBus = bus; }
+    void emitTextKeyToEventBus(const std::string& key);
+
     // Query
     bool isPlaying(uint32_t sequenceIndex) const;
     float getCurrentTime(uint32_t sequenceIndex) const;
+
+    // Find sequence index by name (-1 if not found)
+    int32_t findSequenceByName(const std::string& name) const;
+
+    // Get sequence count
+    uint32_t getSequenceCount() const;
 
 private:
     Skeleton* skeleton = nullptr;
@@ -79,6 +90,9 @@ private:
     float globalTime = 0.0f;
 
     TextKeyCallback textKeyCallback;
+
+    // Imperial Weave EventBus
+    weave::EventBus* eventBus = nullptr;
 
     // Build bone tracks for a sequence
     void buildTracks(SequenceState& state);

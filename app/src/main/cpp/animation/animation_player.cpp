@@ -223,6 +223,7 @@ void AnimationPlayer::emitTextKeys(SequenceState& state,
 
         if (inRange && state.firedTextKeys.find(keyTime) == state.firedTextKeys.end()) {
             textKeyCallback(tk.value);
+            emitTextKeyToEventBus(tk.value);  // Also emit to Imperial Weave EventBus
             state.firedTextKeys.insert(keyTime);
         }
     }
@@ -231,6 +232,41 @@ void AnimationPlayer::emitTextKeys(SequenceState& state,
     if (state.firedTextKeys.size() > 100) {
         state.firedTextKeys.clear();
     }
+}
+
+// ============================================================================
+// Imperial Weave EventBus integration
+// ============================================================================
+void AnimationPlayer::emitTextKeyToEventBus(const std::string& key) {
+    if (!eventBus) return;
+
+    // Map text keys to combat events
+    weave::Event event;
+    event.time = globalTime;
+
+    if (key == "attack_start") {
+        event.type = "ANIM_ATTACK_START";
+    } else if (key == "attack_hit" || key == "hit") {
+        event.type = "ANIM_ATTACK_HIT";
+    } else if (key == "attack_end") {
+        event.type = "ANIM_ATTACK_END";
+    } else if (key == "block_start") {
+        event.type = "ANIM_BLOCK_START";
+    } else if (key == "block_end") {
+        event.type = "ANIM_BLOCK_END";
+    } else if (key == "death_start") {
+        event.type = "ANIM_DEATH_START";
+    } else if (key == "equip_start") {
+        event.type = "ANIM_EQUIP_START";
+    } else if (key == "equip_end") {
+        event.type = "ANIM_EQUIP_END";
+    } else {
+        // Generic animation event
+        event.type = "ANIM_EVENT";
+    }
+
+    event.payload = key;
+    eventBus->emit(event);
 }
 
 void AnimationPlayer::update(float deltaTime) {
@@ -314,6 +350,36 @@ float AnimationPlayer::getCurrentTime(uint32_t sequenceIndex) const {
         }
     }
     return 0.0f;
+}
+
+int32_t AnimationPlayer::findSequenceByName(const std::string& name) const {
+    if (!sequences) return -1;
+
+    for (size_t i = 0; i < sequences->size(); i++) {
+        if ((*sequences)[i].name == name) {
+            return static_cast<int32_t>(i);
+        }
+    }
+
+    // Try partial match (e.g., "idle" matches "Idle" or "idle_loop")
+    std::string lowerName = name;
+    std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
+
+    for (size_t i = 0; i < sequences->size(); i++) {
+        std::string seqName = (*sequences)[i].name;
+        std::transform(seqName.begin(), seqName.end(), seqName.begin(), ::tolower);
+
+        if (seqName.find(lowerName) != std::string::npos) {
+            return static_cast<int32_t>(i);
+        }
+    }
+
+    return -1;
+}
+
+uint32_t AnimationPlayer::getSequenceCount() const {
+    if (!sequences) return 0;
+    return static_cast<uint32_t>(sequences->size());
 }
 
 } // namespace animation

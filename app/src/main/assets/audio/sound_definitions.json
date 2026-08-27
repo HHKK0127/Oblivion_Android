@@ -159,6 +159,83 @@
           "type": "se",
           "volume": 1.0,
           "loop": false
+        },
+        "hit_blade": {
+          "file": "audio/sfx/combat/wpn_blade1hand_hit.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false,
+          "3d": true
+        },
+        "hit_blunt": {
+          "file": "audio/sfx/combat/wpn_blunt1hand_hit.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false,
+          "3d": true
+        },
+        "hit_axe": {
+          "file": "audio/sfx/combat/wpn_axe1hand_hit.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false,
+          "3d": true
+        },
+        "hit_unarmed": {
+          "file": "audio/sfx/combat/wpn_unarmed_hit.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false,
+          "3d": true
+        },
+        "hit_generic": {
+          "file": "audio/sfx/combat/wpn_blade1hand_hit.wav",
+          "type": "se",
+          "volume": 0.9,
+          "loop": false,
+          "3d": true
+        },
+        "hit_critical": {
+          "file": "audio/sfx/combat/wpn_blade1hand_hit.wav",
+          "type": "se",
+          "volume": 1.2,
+          "loop": false,
+          "3d": true
+        },
+        "block_generic": {
+          "file": "audio/sfx/combat/wpn_shield_hit.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false,
+          "3d": true
+        },
+        "parry": {
+          "file": "audio/sfx/combat/wpn_blade1hand_clank.wav",
+          "type": "se",
+          "volume": 0.9,
+          "loop": false,
+          "3d": true
+        },
+        "dodge": {
+          "file": "audio/sfx/combat/wpn_blade1hand_miss.wav",
+          "type": "se",
+          "volume": 0.7,
+          "loop": false,
+          "3d": true
+        },
+        "death_generic": {
+          "file": "audio/sfx/combat/npc_death_generic.wav",
+          "type": "se",
+          "volume": 1.0,
+          "loop": false,
+          "3d": true
+        },
+        "attack_swing": {
+          "file": "audio/sfx/combat/wpn_blade1hand_swing.wav",
+          "type": "se",
+          "volume": 0.8,
+          "loop": false,
+          "3d": true
         }
       }
     },

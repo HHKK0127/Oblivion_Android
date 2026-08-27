@@ -280,6 +280,9 @@ WorldEntity WorldLoader::loadActor(const std::string& nifPath, const glm::vec3& 
             cache->collisionObject, pos, rot, scl);
     }
 
+    // Store entity
+    entities[entity.entityId] = std::make_unique<WorldEntity>(std::move(entity));
+
     LOGD_WL("Loaded actor entity #%u: %s (skinned=%d, skel=%d, anim=%d, body=%d)",
             entity.entityId, nifPath.c_str(),
             entity.skinnedMesh ? 1 : 0,
@@ -287,6 +290,23 @@ WorldEntity WorldLoader::loadActor(const std::string& nifPath, const glm::vec3& 
             entity.animator ? 1 : 0,
             entity.collisionBodyId >= 0 ? 1 : 0);
 
+    return entity;
+}
+
+// ============================================================================
+// Load actor for specific NPC (with npcId mapping)
+// ============================================================================
+WorldEntity WorldLoader::loadActorForNpc(const std::string& nifPath, const glm::vec3& pos,
+                                         uint32_t npcId,
+                                         const glm::vec3& rot, const glm::vec3& scl) {
+    WorldEntity entity = loadActor(nifPath, pos, rot, scl);
+    entity.npcId = npcId;
+
+    // Update mapping
+    npcToEntityMap[npcId] = entity.entityId;
+    entities[entity.entityId] = std::make_unique<WorldEntity>(std::move(entity));
+
+    LOGD_WL("Loaded actor for NPC: npcId=%u, entityId=%u", npcId, entity.entityId);
     return entity;
 }
 
@@ -306,16 +326,28 @@ void WorldLoader::unload(WorldEntity& entity) {
         entity.mesh->cleanup();
         entity.mesh.reset();
     }
-    if (entity.skinnedMesh) {
-        entity.skinnedMesh->cleanup();
-        entity.skinnedMesh.reset();
+
+    // Remove from entity storage
+    if (entity.entityId > 0) {
+        entities.erase(entity.entityId);
+        if (entity.npcId > 0) {
+            npcToEntityMap.erase(entity.npcId);
+        }
     }
+}
 
-    entity.skeleton.reset();
-    entity.animator.reset();
-    entity.isActive = false;
-
-    LOGD_WL("Unloaded entity #%u", entity.entityId);
+// ============================================================================
+// Get WorldEntity by NPC ID
+// ============================================================================
+WorldEntity* WorldLoader::getEntityByNpcId(uint32_t npcId) {
+    auto it = npcToEntityMap.find(npcId);
+    if (it != npcToEntityMap.end()) {
+        auto entityIt = entities.find(it->second);
+        if (entityIt != entities.end()) {
+            return entityIt->second.get();
+        }
+    }
+    return nullptr;
 }
 
 // ----------------------------------------------------------------------------
@@ -574,6 +606,11 @@ std::unique_ptr<animation::AnimationPlayer> WorldLoader::buildAnimator(
     auto animator = std::make_unique<animation::AnimationPlayer>();
 
     animator->initialize(skeleton, &cache.controllerManager.sequences);
+
+    // Connect to Imperial Weave EventBus if available
+    if (eventBus) {
+        animator->setEventBus(eventBus);
+    }
 
     // Auto-play first sequence (idle) if available
     if (!cache.controllerManager.sequences.empty()) {

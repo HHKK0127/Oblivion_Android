@@ -385,6 +385,50 @@ void PlayerController::attack() {
 }
 
 // ============================================================================
+// Imperial Weave EventBus integration
+// ============================================================================
+void PlayerController::subscribeToCombatEvents() {
+    if (!eventBus) return;
+
+    // Subscribe to combat events that affect player animation
+    eventBus->subscribe("COMBAT_ATTACK_HIT", [this](const weave::Event& e) {
+        // Player hit an enemy - could trigger hit reaction animation
+        LOGD("Player hit enemy: %s", e.payload.c_str());
+    });
+
+    eventBus->subscribe("COMBAT_CRITICAL_HIT", [this](const weave::Event& e) {
+        // Player landed a critical hit
+        LOGD("Player critical hit: %s", e.payload.c_str());
+    });
+
+    eventBus->subscribe("COMBAT_BLOCK", [this](const weave::Event& e) {
+        // Player blocked an attack
+        LOGD("Player blocked: %s", e.payload.c_str());
+        // TODO: Trigger block animation
+    });
+
+    eventBus->subscribe("COMBAT_PARRY", [this](const weave::Event& e) {
+        // Player parried an attack
+        LOGD("Player parried: %s", e.payload.c_str());
+        // TODO: Trigger parry animation
+    });
+
+    eventBus->subscribe("COMBAT_DODGE", [this](const weave::Event& e) {
+        // Player dodged an attack
+        LOGD("Player dodged: %s", e.payload.c_str());
+        // TODO: Trigger dodge animation
+    });
+
+    eventBus->subscribe("COMBAT_DEATH", [this](const weave::Event& e) {
+        // Player died
+        LOGD("Player died: %s", e.payload.c_str());
+        // TODO: Trigger death animation
+    });
+
+    LOGI("PlayerController subscribed to combat events");
+}
+
+// ============================================================================
 // Phase 31: Apply animation to skeleton
 // ============================================================================
 

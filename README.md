@@ -67,12 +67,43 @@ A complete native Android port of The Elder Scrolls IV: Oblivion, built entirely
 #### Architecture
 | Item | Specification |
 | --- | --- |
-| **Language** | C++17 (9,000+ lines) |
+| **Language** | C++17 (13,000+ lines) |
 | **Graphics API** | OpenGL ES 3.0 |
 | **Physics** | Bullet Physics 3.x |
 | **Build System** | CMake + Gradle |
-| **NDK Version** | r30.0 |
+| **NDK Version** | r26.1 |
 | **Target API** | 29+ |
+
+#### Engine Architecture
+
+The engine uses a layered architecture with **Imperial Weave** as the central coordinator:
+
+```
+Android JNI
+    └── Renderer  (initialization & render loop)
+         ├── Imperial Weave  (12-phase update coordinator)
+         │    ├── EventBus  (loose-coupled messaging)
+         │    └── Phase pipeline:
+         │         ①EventProcess → ②World → ③AI → ④Player → ⑤Inventory
+         │         → ⑥Spell → ⑦Animation → ⑧Physics → ⑨Combat
+         │         → ⑩Quest → ⑪Audio → ⑫RenderSubmit
+         ├── UISystem  (HUD, panels, floating text)
+         └── Subscriber bridges (thin, EventBus-driven):
+              ├── AnimationSubscriber  (Event → AnimationPlayer)
+              └── AudioSubscriber     (Event → AudioManager)
+```
+
+Key design principle: **CombatManager emits events — it does not call AnimationPlayer or AudioManager directly.** Each subscriber reacts independently, keeping systems decoupled.
+
+**EventBus attack flow example:**
+```
+ATK button → PlayerController.attack()
+           → CombatManager.playerAttack()
+           → EventBus emit "COMBAT_ATTACK_HIT"
+                ├── AnimationSubscriber → target plays hit-reaction anim
+                ├── AudioSubscriber     → combat hit SE plays
+                └── UIFloatingText      → "Hit!" appears on screen
+```
 
 #### Performance Targets
 | Metric | Target | Actual | Status |
@@ -274,27 +305,30 @@ oblivion-android/
 | Phase 29 | NAVM Pathfinding + DIAL/INFO Dialogue | ✅ Complete | NAVM runtime integration with CombatManager A* pathfinding, DIAL/INFO record parsing with faction-based dialogue branching, REFR-based world object placement (8 types), 4 spell effects (PARALYZE, INVISIBILITY, FORTIFY_ATTR, SUMMON), new game systems (Alchemy, Book Reader, Clothing Converter, Faction Manager, Loot Generator, NavMesh Manager) |
 | Phase 30 | NIF Skeleton/Skinning + Collision + Animation | ✅ Complete | Steps 1-13 complete: nif_types.h extended (collision/skinning/animation structs), NIFBlockTypeMap (string-based 31 types), NIFParser extended, SkinPartitionPacker (bitmask), Skeleton (iterative BFS), SkinnedMesh + UBO + skinning shaders, NiControllerManager/Sequence parsing, AnimationPlayer (slerp/lerp/text keys), bhkCollisionObject + bhkRigidBody parsing (9 shape types), Dynamic AABB Tree (broad-phase), CollisionWorld (table-driven narrow phase 5x5, ContactBuffer), CharacterController (substep movement, multi-ray ground detection), Integration Test (9 test groups, JNI callable) |
 | Phase 31 | PlayerController Integration + World Loading | ✅ Complete | Steps 1-10: WorldEntity struct with NIFCache, WorldLoader (loadStatic/loadDynamic/loadActor), PlayerController extended (Skeleton+AnimationPlayer+CharacterController integration, hysteresis animation state machine, fixed/variable timestep separation, combat stance+attack), WorldEntity rendering with skinning shader, PlayerController wired to actor skeleton/animation |
+| Phase 32 (v0.9.8) | Animation & Audio Integration | ✅ Complete | AnimationSubscriber (EventBus→AnimationPlayer bridge), AudioSubscriber (EventBus→AudioManager bridge), SpellSelectionPanel UI, AnimationPlayer.findSequenceByName(), WorldLoader entity storage + NPC→Entity mapping, Imperial Weave Event.targetId field |
 
 ---
 
-### 📊 Code Metrics (Phase 29)
+### 📊 Code Metrics (Phase 32 / v0.9.8)
 
-- **C++ Code**: 12,000+ lines (includes ESM parser, audio, save/load, RetroFilter, graphical UI, ESM integration, NAVM pathfinding, DIAL/INFO dialogue, spell effects, new game systems)
+- **C++ Code**: 13,000+ lines (includes ESM parser, audio, save/load, RetroFilter, graphical UI, ESM integration, NAVM pathfinding, DIAL/INFO dialogue, spell effects, new game systems, Imperial Weave, NIF animation, collision, subscriber bridges)
 - **Java Code**: 700+ lines
-- **Header Files**: 2,200+ lines
-- **Total Project**: 12,900+ lines
+- **Header Files**: 2,400+ lines
+- **Total Project**: 13,700+ lines
+- **Imperial Weave**: 600+ lines (EventBus, ServiceLocator, 12-phase coordinator)
+- **Subscriber Bridges**: 400+ lines (AnimationSubscriber, AudioSubscriber)
 - **ESM Parser**: 2,000+ lines (40 record types)
 - **BSA Reader**: 500+ lines (archive extraction, ZLib decompression)
 - **ESM Integration**: 600+ lines (NpcManager, Container, Player initialization, Status effects, DIAL/INFO dialogue, REFR placement)
 - **NAVM Pathfinding**: 300+ lines (A* algorithm, NavMeshManager, CombatManager integration)
 - **Spell Effects**: 200+ lines (8 effect types: Damage, Heal, Restore, Fortify, Paralyze, Invisibility, Summon)
 - **New Game Systems**: 800+ lines (Alchemy, Book Reader, Clothing Converter, Faction Manager, Loot Generator, Misc Item Converter, NavMesh Manager)
-- **Audio System**: 400+ lines (AudioManager, Audio3D, JNI bridge)
+- **Audio System**: 500+ lines (AudioManager, Audio3D, AudioSubscriber, JNI bridge)
 - **SaveLoadUI**: 250+ lines (UI + error dialogs)
 - **RetroFilter Effects**: 150+ lines (DebugHUD integration)
 - **Graphical UI & HUD (Phase 9-24)**: 5,000+ lines (UIPanel, UIButton, TextureLoader, UIDrawHelper)
 - **Sound Effects**: 93 sound definitions, 307 WAV files
-- **Compilation Time**: 6-7 minutes (release)
+- **Compilation Time**: ~40 seconds (debug, incremental)
 - **APK Size**: 1.1 GB (includes Oblivion.esm)
 
 ---
@@ -338,6 +372,11 @@ See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for complete list.
 - 🦴 NIF skeleton & skinning (Phase 30)
 - 💥 NIF collision - bhkCollisionObject (Phase 30)
 - 🎬 NIF animation complete (Phase 30)
+- 🏗️ Imperial Weave integration layer (v3) - EventBus + ServiceLocator + 12-phase update pipeline
+- ⚔️ Combat system enhancement - 9 weapon types, hitbox, critical/block/parry/dodge, bleed DoT
+- 🔗 Combat events integrated with Imperial Weave EventBus
+- 🎮 All major managers migrated to Imperial Weave (Player, Inventory, Spell, Audio, World, AI, Combat, Quest)
+- 🎯 Player combat UI buttons (Attack, Block, Cast Spell) with touch input
 - 🌍 World loading pipeline (Phase 31)
 - 🎮 PlayerController integration (Phase 31)
 - 🌳 SpeedTree alternative rendering
@@ -440,11 +479,11 @@ Proprietary - Experimental Port
 
 ---
 
-**Status**: Phase 31 Complete
-**Last Updated**: 2026-08-26
+**Status**: Phase 32 Complete (v0.9.8)
+**Last Updated**: 2026-09-10
 **Version**: 1.0.0
-**Features**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD, ESM Data Integration (40 record types), NpcManager ESM, Container ESM, Player RACE/CLAS/BSGN, Status Effects, NAVM Pathfinding, DIAL/INFO Dialogue, REFR Placement, Spell Effects (8 types), Alchemy, Book Reader, Faction Manager, Loot Generator, NIF Skeleton/Skinning, Animation System, Collision Detection, Integration Tests (Phase 30), WorldEntity + WorldLoader + PlayerController Integration (Phase 31)
-**Next**: Phase 32 - Async World Loading + LOD System
+**Features**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD, ESM Data Integration (40 record types), NpcManager ESM, Container ESM, Player RACE/CLAS/BSGN, Status Effects, NAVM Pathfinding, DIAL/INFO Dialogue, REFR Placement, Spell Effects (8 types), Alchemy, Book Reader, Faction Manager, Loot Generator, NIF Skeleton/Skinning, Animation System, Collision Detection, Integration Tests (Phase 30), WorldEntity + WorldLoader + PlayerController Integration (Phase 31), Imperial Weave EventBus + 12-phase coordinator, AnimationSubscriber, AudioSubscriber, SpellSelectionPanel (Phase 32)
+**Next**: Phase 33 - Dedicated Combat Sound Assets + NPC Spatial Audio
 
 ---
 

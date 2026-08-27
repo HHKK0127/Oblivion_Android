@@ -89,6 +89,21 @@ struct NPC {
     std::shared_ptr<NPC> combatTarget;  // Current combat opponent
     float combatEngagementTime;
 
+    // Animation State (for Imperial Weave integration)
+    enum class AnimState : uint8_t {
+        IDLE,
+        WALK,
+        RUN,
+        ATTACK,
+        HIT_REACTION,
+        BLOCK,
+        DEATH
+    };
+    AnimState animState = AnimState::IDLE;
+    float animTimer = 0.0f;
+    static constexpr float HIT_REACTION_DURATION = 0.5f;
+    static constexpr float ATTACK_DURATION = 0.8f;
+
     // Quest System
     std::vector<uint32_t> availableQuests;  // Quest IDs this NPC can give
     std::vector<uint32_t> givenQuests;      // Quests already given
@@ -110,6 +125,14 @@ struct NPC {
     void addQuestToOffer(uint32_t questId);
     std::vector<uint32_t> getOfferedQuests() const;
     bool hasCompletedQuest(uint32_t questId) const;
+
+    // Animation State Management
+    void triggerHitReaction();
+    void triggerAttack();
+    void triggerBlock();
+    void triggerDeath();
+    void updateAnimState(float deltaTime);
+    AnimState getAnimState() const { return animState; }
 
     // Magic System
     float lastSpellCastTime;

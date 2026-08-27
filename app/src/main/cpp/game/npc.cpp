@@ -178,6 +178,9 @@ void NPC::update(float deltaTime) {
         }
     }
 
+    // Update animation state
+    updateAnimState(deltaTime);
+
     // Update model matrix for graphics
     updateModelMatrix();
 }
@@ -197,6 +200,48 @@ void NPC::takeDamage(float amount) {
 
 void NPC::heal(float amount) {
     status.heal(amount);
+}
+
+// ============================================================================
+// Animation State Management
+// ============================================================================
+void NPC::triggerHitReaction() {
+    if (animState == AnimState::DEATH) return;  // Can't react if dead
+    animState = AnimState::HIT_REACTION;
+    animTimer = HIT_REACTION_DURATION;
+    LOGD("NPC %s hit reaction triggered", name.c_str());
+}
+
+void NPC::triggerAttack() {
+    if (animState == AnimState::DEATH) return;
+    animState = AnimState::ATTACK;
+    animTimer = ATTACK_DURATION;
+    LOGD("NPC %s attack animation triggered", name.c_str());
+}
+
+void NPC::triggerBlock() {
+    if (animState == AnimState::DEATH) return;
+    animState = AnimState::BLOCK;
+    LOGD("NPC %s block animation triggered", name.c_str());
+}
+
+void NPC::triggerDeath() {
+    animState = AnimState::DEATH;
+    animTimer = 0.0f;
+    LOGD("NPC %s death animation triggered", name.c_str());
+}
+
+void NPC::updateAnimState(float deltaTime) {
+    if (animTimer > 0.0f) {
+        animTimer -= deltaTime;
+        if (animTimer <= 0.0f) {
+            animTimer = 0.0f;
+            // Return to idle after animation completes
+            if (animState == AnimState::HIT_REACTION || animState == AnimState::ATTACK) {
+                animState = AnimState::IDLE;
+            }
+        }
+    }
 }
 
 float NPC::getAttackPower() const {

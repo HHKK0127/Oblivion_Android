@@ -1,6 +1,7 @@
 #include "renderer.h"
 #include "skinning_shader.h"
 #include "texture_loader.h"
+#include "imperial_weave.h"
 #include "../ui/ui_draw_helper.h"
 #include "../assets/bsa_reader.h"
 #include "../inventory/item_factory.h"
@@ -113,6 +114,176 @@ void Renderer::resize(unsigned int width, unsigned int height) {
             joystick = std::make_shared<UIJoystick>(250.0f, screenHeight - 250.0f, 150.0f);
             uiSystem->registerComponent(joystick, 100);
         }
+
+        // Setup combat buttons on right side of screen
+        float btnSize = 120.0f;
+        float btnMargin = 20.0f;
+        float btnX = screenWidth - btnSize - btnMargin;
+
+        // Attack button (bottom-right)
+        if (!attackButton) {
+            attackButton = std::make_shared<UIButton>("AttackButton");
+            attackButton->setPosition(btnX, screenHeight - btnSize - btnMargin);
+            attackButton->setSize(btnSize, btnSize);
+            attackButton->setLabel("ATK");
+            attackButton->setLabelScale(0.8f);
+            attackButton->setNormalColor(glm::vec4(0.8f, 0.2f, 0.2f, 0.7f));
+            attackButton->setPressedColor(glm::vec4(1.0f, 0.1f, 0.1f, 0.9f));
+            attackButton->setTextRenderer(textRenderer.get());
+            attackButton->setOnClick([this]() {
+                if (playerController) {
+                    playerController->attack();
+                }
+                // Find nearest enemy and attack
+                if (combatManager && worldManager) {
+                    glm::vec3 playerPos = worldManager->getPlayerPosition();
+                    auto nearestEnemy = combatManager->findNearestEnemyToPlayer(playerPos, 30.0f);
+                    if (nearestEnemy) {
+                        // Attack the nearest enemy (player ID = 1, weapon ID = 0 for unarmed)
+                        combatManager->playerAttack(1, nearestEnemy->npcId, 0);
+                        LOGD("Attacking nearest enemy: %s", nearestEnemy->name.c_str());
+                    } else {
+                        LOGD("No enemy in range");
+                    }
+                }
+            });
+            attackButton->setVisible(false); // Hidden until game starts
+            uiSystem->registerComponent(attackButton, 100);
+        }
+
+        // Block button (above attack)
+        if (!blockButton) {
+            blockButton = std::make_shared<UIButton>("BlockButton");
+            blockButton->setPosition(btnX, screenHeight - btnSize * 2 - btnMargin * 2);
+            blockButton->setSize(btnSize, btnSize);
+            blockButton->setLabel("BLK");
+            blockButton->setLabelScale(0.8f);
+            blockButton->setNormalColor(glm::vec4(0.2f, 0.4f, 0.8f, 0.7f));
+            blockButton->setPressedColor(glm::vec4(0.3f, 0.5f, 1.0f, 0.9f));
+            blockButton->setTextRenderer(textRenderer.get());
+            blockButton->setOnClick([this]() {
+                if (playerController && combatManager) {
+                    // Toggle combat stance for blocking
+                    playerController->toggleCombatStance();
+                }
+            });
+            blockButton->setVisible(false); // Hidden until game starts
+            uiSystem->registerComponent(blockButton, 100);
+        }
+
+        // Cast spell button (above block)
+        if (!castSpellButton) {
+            castSpellButton = std::make_shared<UIButton>("CastSpellButton");
+            castSpellButton->setPosition(btnX, screenHeight - btnSize * 3 - btnMargin * 3);
+            castSpellButton->setSize(btnSize, btnSize);
+            castSpellButton->setLabel("MAG");
+            castSpellButton->setLabelScale(0.8f);
+            castSpellButton->setNormalColor(glm::vec4(0.6f, 0.2f, 0.8f, 0.7f));
+            castSpellButton->setPressedColor(glm::vec4(0.8f, 0.3f, 1.0f, 0.9f));
+            castSpellButton->setTextRenderer(textRenderer.get());
+            castSpellButton->setOnClick([this]() {
+                // Cast spell using SpellManager
+                if (spellManager && combatManager) {
+                    LOGD("Cast spell button pressed");
+
+                    // If no spell selected, show spell selection panel
+                    if (!selectedSpell) {
+                        // Get player's known spells (player ID = 1)
+                        auto playerSpells = spellManager->getNpcEquippedSpells(1);
+                        if (playerSpells.empty()) {
+                            playerSpells = spellManager->getNpcSpells(1);
+                        }
+
+                        if (playerSpells.empty()) {
+                            LOGD("No spells available for player");
+                            return;
+                        }
+
+                        if (spellSelectionPanel) {
+                            spellSelectionPanel->setSpells(playerSpells);
+                            spellSelectionPanel->setVisible(true);
+                            LOGD("Opened spell selection panel with %zu spells", playerSpells.size());
+                        }
+                        return;
+                    }
+
+                    // Find nearest enemy target
+                    auto enemy = combatManager->findNearestEnemyToPlayer(worldManager->getPlayerPosition());
+                    uint32_t targetId = enemy ? enemy->npcId : 0;
+
+                    // Cast selected spell (player ID = 1)
+                    bool success = spellManager->castSpell(1, selectedSpell->spellId, targetId);
+                    LOGD("Cast spell %s: %s", selectedSpell->name.c_str(), success ? "success" : "failed");
+
+                    // Play magic sound effect
+                    if (audioManager && success) {
+                        audioManager->playSound("magic/spell_equip", worldManager->getPlayerPosition());
+                    }
+                } else {
+                    LOGD("Cast spell button pressed - SpellManager not available");
+                }
+            });
+            castSpellButton->setVisible(false); // Hidden until game starts
+            uiSystem->registerComponent(castSpellButton, 100);
+        }
+
+        // Quick-slot buttons (bottom-left, above joystick)
+        // 4 slots side by side: [F1][F2][F3][F4]
+        float slotSize = 80.0f;
+        float slotMargin = 8.0f;
+        float slotStartX = 30.0f;
+        float slotY = screenHeight - slotSize - 20.0f;
+
+        for (int i = 0; i < QUICK_SLOT_COUNT; i++) {
+            if (!quickSlotButtons[i]) {
+                float slotX = slotStartX + i * (slotSize + slotMargin);
+                std::string slotName = "QuickSlot" + std::to_string(i + 1);
+                auto btn = std::make_shared<UIButton>(slotName);
+                btn->setPosition(slotX, slotY);
+                btn->setSize(slotSize, slotSize);
+                btn->setLabel("F" + std::to_string(i + 1));
+                btn->setLabelScale(0.6f);
+                btn->setNormalColor(glm::vec4(0.2f, 0.2f, 0.3f, 0.6f));
+                btn->setPressedColor(glm::vec4(0.4f, 0.4f, 0.6f, 0.9f));
+                btn->setTextRenderer(textRenderer.get());
+
+                // Capture slot index
+                btn->setOnClick([this, i]() {
+                    if (!playerController || !playerController->getPlayer()) return;
+                    auto& player = *playerController->getPlayer();
+                    auto spell = player.quickSlotSpells[i];
+                    if (!spell) {
+                        // Open spell panel to assign to this slot
+                        pendingAssignSlot = i;
+                        if (spellSelectionPanel && spellManager) {
+                            auto spells = spellManager->getNpcEquippedSpells(1);
+                            if (spells.empty()) spells = spellManager->getNpcSpells(1);
+                            spellSelectionPanel->setSpells(spells);
+                            spellSelectionPanel->setVisible(true);
+                        }
+                    } else {
+                        // Cast spell in this slot
+                        selectedSpell = spell;
+                        auto enemies = npcManager ? npcManager->getNPCsInArea(
+                            playerController->getPlayer()->position, 20.0f) : std::vector<std::shared_ptr<NPC>>{};
+                        uint32_t targetId = 0;
+                        for (auto& e : enemies) {
+                            if (e && e->npcId != 1) { targetId = e->npcId; break; }
+                        }
+                        if (spellManager && targetId != 0) {
+                            spellManager->castSpell(1, targetId, spell->spellId);
+                        }
+                        if (audioManager) {
+                            audioManager->playSound("magic/spell_equip");
+                        }
+                    }
+                });
+
+                btn->setVisible(false);
+                uiSystem->registerComponent(btn, 90);
+                quickSlotButtons[i] = btn;
+            }
+        }
     }
 
     // Update TitleScreen layout
@@ -201,6 +372,71 @@ void Renderer::initGameSystems() {
     } else {
         uiSystem->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
         LOGI("UISystem initialized successfully (Phase 9 UI Framework ready)");
+    }
+
+    // Initialize Floating Combat Text
+    LOGI("Creating UIFloatingText...");
+    floatingText = std::make_unique<UIFloatingText>();
+    if (!floatingText->initialize(textRenderer.get(), static_cast<int>(screenWidth), static_cast<int>(screenHeight))) {
+        LOGE("Failed to initialize UIFloatingText");
+    } else {
+        LOGI("UIFloatingText initialized successfully");
+    }
+
+    // Initialize Animation Subscriber
+    LOGI("Creating AnimationSubscriber...");
+    animSubscriber = std::make_unique<animation::AnimationSubscriber>();
+    LOGI("AnimationSubscriber created successfully");
+
+    // Initialize Audio Subscriber
+    LOGI("Creating AudioSubscriber...");
+    audioSubscriber = std::make_unique<audio::AudioSubscriber>();
+    LOGI("AudioSubscriber created successfully");
+
+    // Initialize Spell Selection Panel
+    LOGI("Creating SpellSelectionPanel...");
+    spellSelectionPanel = std::make_shared<SpellSelectionPanel>();
+    if (!spellSelectionPanel->initialize()) {
+        LOGE("Failed to initialize SpellSelectionPanel");
+    } else {
+        spellSelectionPanel->setPosition(screenWidth * 0.2f, screenHeight * 0.2f);
+        spellSelectionPanel->setSize(screenWidth * 0.6f, screenHeight * 0.6f);
+        spellSelectionPanel->setTextRenderer(textRenderer.get());
+        spellSelectionPanel->setVisible(false);
+        spellSelectionPanel->setOnSpellSelected([this](std::shared_ptr<Spell> spell) {
+            if (pendingAssignSlot >= 0 && pendingAssignSlot < QUICK_SLOT_COUNT) {
+                // Assign to quick slot
+                if (playerController && playerController->getPlayer()) {
+                    playerController->getPlayer()->quickSlotSpells[pendingAssignSlot] = spell;
+                }
+                // Update button label to spell name
+                if (quickSlotButtons[pendingAssignSlot]) {
+                    std::string shortName = spell->nameJa.empty() ? spell->name : spell->nameJa;
+                    if (shortName.size() > 4) shortName = shortName.substr(0, 4);
+                    std::string btnLabel = "F" + std::to_string(pendingAssignSlot + 1) + "\n" + shortName;
+                    quickSlotButtons[pendingAssignSlot]->setLabel(btnLabel);
+                    // Color by school
+                    glm::vec4 col = glm::vec4(0.4f, 0.2f, 0.6f, 0.8f); // default
+                    switch (spell->school) {
+                        case MagicSchool::DESTRUCTION:  col = glm::vec4(0.7f, 0.15f, 0.1f, 0.8f); break;
+                        case MagicSchool::RESTORATION:  col = glm::vec4(0.1f, 0.6f, 0.25f, 0.8f); break;
+                        case MagicSchool::CONJURATION:  col = glm::vec4(0.4f, 0.15f, 0.6f, 0.8f); break;
+                        case MagicSchool::ALTERATION:   col = glm::vec4(0.1f, 0.5f, 0.7f, 0.8f); break;
+                        case MagicSchool::ILLUSION:     col = glm::vec4(0.1f, 0.6f, 0.45f, 0.8f); break;
+                        case MagicSchool::MYSTICISM:    col = glm::vec4(0.6f, 0.5f, 0.1f, 0.8f); break;
+                        default: break;
+                    }
+                    quickSlotButtons[pendingAssignSlot]->setNormalColor(col);
+                }
+                LOGI("Assigned spell '%s' to quick slot %d", spell->name.c_str(), pendingAssignSlot + 1);
+                pendingAssignSlot = -1;
+            } else {
+                selectedSpell = spell;
+                LOGI("Spell selected: %s", spell->name.c_str());
+            }
+        });
+        uiSystem->registerComponent(spellSelectionPanel, 200);
+        LOGI("SpellSelectionPanel initialized successfully");
     }
 
     // Initialize Debug HUD
@@ -529,6 +765,93 @@ void Renderer::initGameSystems() {
                         localizationManager.get());
 
     LOGI("All game systems initialized");
+
+    // Imperial Weave: initialize thin integration layer
+        LOGI("Initializing Imperial Weave...");
+        weave::ImperialWeave::instance().init(
+            this,
+            worldManager.get(),
+            npcManager.get(),
+            combatManager.get(),
+            questManager.get(),
+            nullptr,  // CollisionWorld - will be set when physics is integrated
+            nullptr,  // AnimationPlayer - will be set when animation is integrated
+            playerController.get(),
+            inventoryManager.get(),
+            spellManager.get(),
+            audioManager.get()
+        );
+        imperialWeaveInitialized = true;
+
+        // Connect CombatManager to Imperial Weave EventBus
+        if (combatManager) {
+            combatManager->setEventBus(&weave::ImperialWeave::instance().getEventBus());
+            LOGI("CombatManager connected to Imperial Weave EventBus");
+        }
+
+        // Connect PlayerController to Imperial Weave EventBus for animation events
+        if (playerController) {
+            playerController->setEventBus(&weave::ImperialWeave::instance().getEventBus());
+            playerController->subscribeToCombatEvents();
+            LOGI("PlayerController connected to Imperial Weave EventBus");
+        }
+
+        // Connect WorldLoader to Imperial Weave EventBus for animation events
+        if (worldLoader) {
+            worldLoader->setEventBus(&weave::ImperialWeave::instance().getEventBus());
+            LOGI("WorldLoader connected to Imperial Weave EventBus");
+        }
+
+        // Connect UIFloatingText to Imperial Weave EventBus for combat feedback
+        if (floatingText) {
+            auto& bus = weave::ImperialWeave::instance().getEventBus();
+            bus.subscribe("COMBAT_ATTACK_HIT", [this](const weave::Event& e) {
+                floatingText->addText("Hit!", screenWidth * 0.5f, screenHeight * 0.4f,
+                                     UIFloatingText::DAMAGE, 1.5f);
+            });
+            bus.subscribe("COMBAT_CRITICAL_HIT", [this](const weave::Event& e) {
+                floatingText->addText("CRITICAL!", screenWidth * 0.5f, screenHeight * 0.35f,
+                                     UIFloatingText::CRITICAL, 2.0f);
+            });
+            bus.subscribe("COMBAT_BLOCK", [this](const weave::Event& e) {
+                floatingText->addText("Blocked!", screenWidth * 0.5f, screenHeight * 0.4f,
+                                     UIFloatingText::BLOCK, 1.5f);
+            });
+            bus.subscribe("COMBAT_PARRY", [this](const weave::Event& e) {
+                floatingText->addText("Parry!", screenWidth * 0.5f, screenHeight * 0.4f,
+                                     UIFloatingText::BUFF, 1.5f);
+            });
+            bus.subscribe("COMBAT_DODGE", [this](const weave::Event& e) {
+                floatingText->addText("Dodge!", screenWidth * 0.5f, screenHeight * 0.4f,
+                                     UIFloatingText::MISS, 1.5f);
+            });
+            LOGI("UIFloatingText connected to Imperial Weave EventBus");
+        }
+
+        // Connect AnimationSubscriber to Imperial Weave EventBus
+        if (animSubscriber && worldLoader) {
+            animSubscriber->init(&weave::ImperialWeave::instance().getEventBus(), worldLoader.get());
+            animSubscriber->subscribeToEvents();
+            LOGI("AnimationSubscriber connected to Imperial Weave EventBus");
+        }
+
+        // Connect AudioSubscriber to Imperial Weave EventBus
+        if (audioSubscriber && audioManager) {
+            audioSubscriber->init(&weave::ImperialWeave::instance().getEventBus(), audioManager.get());
+            audioSubscriber->subscribeToEvents();
+
+            // Connect NPC position callback for 3D spatial audio
+            if (npcManager) {
+                audioSubscriber->setNpcPositionCallback([this](uint32_t npcId) -> glm::vec3 {
+                    auto npc = npcManager->getNPC(npcId);
+                    if (npc) return npc->position;
+                    return glm::vec3(0.0f, 0.0f, 0.0f);
+                });
+            }
+            LOGI("AudioSubscriber connected to Imperial Weave EventBus");
+        }
+
+        LOGI("Imperial Weave initialized successfully");
 }
 
 void Renderer::createTestScenario() {
@@ -999,6 +1322,33 @@ void Renderer::createTestScenario() {
 }
 
 void Renderer::render(float deltaTime) {
+    // Set joystick input before Imperial Weave update
+    if (playerController && joystick) {
+        glm::vec2 input = joystick->getInputValue();
+        playerController->setJoystickInput(input.x, input.y);
+    }
+
+    // Update audio listener position before Imperial Weave update
+#ifdef AUDIO_SYSTEM_ENABLED
+    if (audioManager && worldManager) {
+        const glm::vec3& cameraPos = worldManager->getCameraPosition();
+        const glm::vec3& cameraForward = worldManager->getCameraForward();
+        const glm::vec3& cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+        audioManager->setListenerPosition(cameraPos);
+        audioManager->setListenerOrientation(cameraForward, cameraUp);
+
+        // Update AudioSubscriber player position for 3D combat sounds
+        if (audioSubscriber) {
+            audioSubscriber->setPlayerPosition(cameraPos);
+        }
+    }
+#endif
+
+    // Imperial Weave: process game logic updates (events, world, AI, animation, physics)
+    if (imperialWeaveInitialized) {
+        weave::ImperialWeave::instance().update(deltaTime);
+    }
+
     // Begin performance monitoring
     if (performanceMonitor) {
         performanceMonitor->beginFrame();
@@ -1029,6 +1379,13 @@ void Renderer::render(float deltaTime) {
 
         if (titleScreen->isGameStarted()) {
             showTitleScreen = false;
+            // Show combat buttons when game starts
+            if (attackButton) attackButton->setVisible(true);
+            if (blockButton) blockButton->setVisible(true);
+            if (castSpellButton) castSpellButton->setVisible(true);
+            for (auto& btn : quickSlotButtons) {
+                if (btn) btn->setVisible(true);
+            }
             LOGI("Title screen closed, starting main game");
         }
         // Skip frame rate control for quick return
@@ -1041,6 +1398,16 @@ void Renderer::render(float deltaTime) {
     // Update Phase 9 UI Framework
     if (uiSystem) {
         uiSystem->update(deltaTime);
+    }
+
+    // Update Floating Combat Text
+    if (floatingText) {
+        floatingText->update(deltaTime);
+    }
+
+    // Update Animation Subscriber
+    if (animSubscriber) {
+        animSubscriber->updateNpcAnimations(deltaTime);
     }
 
     // Update map system with player position and cell discovery
@@ -1112,49 +1479,54 @@ void Renderer::render(float deltaTime) {
     }
 
     // Update game systems
-    if (worldManager) {
-        worldManager->update(deltaTime);
-    }
+    // NOTE: worldManager->update() is now handled by ImperialWeave (phaseWorldUpdate)
+    // if (worldManager) {
+    //     worldManager->update(deltaTime);
+    // }
 
-    // Update player controller
-    if (playerController) {
-        if (joystick) {
-            glm::vec2 input = joystick->getInputValue();
-            playerController->setJoystickInput(input.x, input.y);
-        }
-        playerController->update(deltaTime);
-    }
+    // NOTE: playerController->update() is now handled by ImperialWeave (phasePlayerUpdate)
+    // Joystick input is set before update - this needs to be moved to playerController's update method
+    // if (playerController) {
+    //     if (joystick) {
+    //         glm::vec2 input = joystick->getInputValue();
+    //         playerController->setJoystickInput(input.x, input.y);
+    //     }
+    //     playerController->update(deltaTime);
+    // }
 
-    // Update inventory manager
-    if (inventoryManager) {
-        inventoryManager->update(deltaTime);
-    }
+    // NOTE: inventoryManager->update() is now handled by ImperialWeave (phaseInventoryUpdate)
+    // if (inventoryManager) {
+    //     inventoryManager->update(deltaTime);
+    // }
 
-    if (questManager) {
-        questManager->update(deltaTime);
-    }
+    // NOTE: questManager->update() is now handled by ImperialWeave (phaseQuestUpdate)
+        // if (questManager) {
+        //     questManager->update(deltaTime);
+        // }
 
-    if (combatManager) {
-        combatManager->update(deltaTime);
-    }
+    // NOTE: combatManager->update() is now handled by ImperialWeave (phaseCombatUpdate)
+        // if (combatManager) {
+        //     combatManager->update(deltaTime);
+        // }
 
-    if (spellManager) {
-        spellManager->update(deltaTime);
-    }
+    // NOTE: spellManager->update() is now handled by ImperialWeave (phaseSpellUpdate)
+    // if (spellManager) {
+    //     spellManager->update(deltaTime);
+    // }
 
-    // Update Audio Manager (listener position tracking)
-#ifdef AUDIO_SYSTEM_ENABLED
-    if (audioManager && worldManager) {
-        // Get camera position from world manager and set as audio listener position
-        const glm::vec3& cameraPos = worldManager->getCameraPosition();
-        const glm::vec3& cameraForward = worldManager->getCameraForward();
-        const glm::vec3& cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);  // Standard up vector
-
-        audioManager->setListenerPosition(cameraPos);
-        audioManager->setListenerOrientation(cameraForward, cameraUp);
-        audioManager->update(deltaTime);
-    }
-#endif
+    // NOTE: audioManager->update() is now handled by ImperialWeave (phaseAudioUpdate)
+    // #ifdef AUDIO_SYSTEM_ENABLED
+    // if (audioManager && worldManager) {
+    //     // Get camera position from world manager and set as audio listener position
+    //     const glm::vec3& cameraPos = worldManager->getCameraPosition();
+    //     const glm::vec3& cameraForward = worldManager->getCameraForward();
+    //     const glm::vec3& cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);  // Standard up vector
+    //
+    //     audioManager->setListenerPosition(cameraPos);
+    //     audioManager->setListenerOrientation(cameraForward, cameraUp);
+    //     audioManager->update(deltaTime);
+    // }
+    // #endif
 
     // ===== RETRO FILTER: Bind scene framebuffer for rendering =====
     if (retroFilter) {
@@ -1306,6 +1678,11 @@ void Renderer::render(float deltaTime) {
         uiSystem->render();
     }
 
+    // Render Floating Combat Text
+    if (floatingText) {
+        floatingText->render();
+    }
+
     // Frame rate control - enforce target FPS
     auto currentFrameTime = std::chrono::high_resolution_clock::now();
     std::chrono::duration<float, std::milli> frameElapsed = currentFrameTime - lastFrameTime;
@@ -1423,6 +1800,13 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
 }
 void Renderer::cleanup() {
     LOGI("Renderer cleaning up");
+
+    // Imperial Weave: shutdown integration layer
+    if (imperialWeaveInitialized) {
+        weave::ImperialWeave::instance().shutdown();
+        imperialWeaveInitialized = false;
+        LOGI("Imperial Weave shut down");
+    }
 
     // Clean up static UI drawing programs/buffers to prevent stale GL context handles across EGL context recreations
     UIDrawHelper::cleanup();

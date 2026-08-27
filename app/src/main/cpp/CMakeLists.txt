@@ -13,6 +13,10 @@ add_library(native-lib SHARED
     engine/camera.cpp
     engine/texture_loader.cpp
     engine/graphics/retro_filter.cpp
+    engine/imperial_weave.cpp
+    ui/spell_selection_panel.cpp
+    audio/audio_subscriber.cpp
+    animation/animation_subscriber.cpp
 
     # Geometry
     geometry/cube.cpp

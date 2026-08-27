@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <array>
 #include <chrono>
 #include <unordered_map>
 #include <android/log.h>
@@ -31,7 +32,12 @@
 #include "graphics/retro_filter.h"
 #include "../ui/ui_system.h"
 #include "../ui/ui_joystick.h"
+#include "../ui/ui_button.h"
 #include "../ui/ui_map_panel.h"
+#include "../ui/ui_floating_text.h"
+#include "../ui/spell_selection_panel.h"
+#include "../animation/animation_subscriber.h"
+#include "../audio/audio_subscriber.h"
 #include "../map/map_system.h"
 #include "../inventory/inventory_grid.h"
 #include "../inventory/equipment_manager.h"
@@ -93,6 +99,29 @@ private:
     std::unique_ptr<UISystem> uiSystem;
     std::shared_ptr<UIJoystick> joystick;
 
+    // Combat UI buttons (right side of screen)
+    std::shared_ptr<UIButton> attackButton;
+    std::shared_ptr<UIButton> blockButton;
+    std::shared_ptr<UIButton> castSpellButton;
+
+    // Floating combat text
+    std::unique_ptr<UIFloatingText> floatingText;
+
+    // Animation subscriber for NPC animations
+    std::unique_ptr<animation::AnimationSubscriber> animSubscriber;
+
+    // Spell selection panel
+    std::shared_ptr<SpellSelectionPanel> spellSelectionPanel;
+    std::shared_ptr<Spell> selectedSpell;
+
+    // Quick-slot spell buttons (4 slots at bottom-left)
+    static constexpr int QUICK_SLOT_COUNT = 4;
+    std::array<std::shared_ptr<UIButton>, QUICK_SLOT_COUNT> quickSlotButtons = {};
+    int pendingAssignSlot = -1; // >=0 when next spell selection assigns to this slot
+
+    // Audio subscriber for combat sound effects
+    std::unique_ptr<audio::AudioSubscriber> audioSubscriber;
+
     // Phase 9.1: Map System
     std::unique_ptr<map::MapSystem> mapSystem;
     ui::MapUI* mapUI = nullptr;
@@ -105,6 +134,9 @@ private:
     // Phase 31: World Entity System
     std::unique_ptr<WorldLoader> worldLoader;
     std::vector<WorldEntity> worldEntities;
+
+    // Imperial Weave: thin integration layer
+    bool imperialWeaveInitialized = false;
 
     // Audio System
 #ifdef AUDIO_SYSTEM_ENABLED

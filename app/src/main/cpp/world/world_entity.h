@@ -11,6 +11,7 @@
 #include "../animation/skeleton.h"
 #include "../animation/animation_player.h"
 #include "../assets/nif_types.h"
+#include "../engine/imperial_weave.h"
 
 // Forward declarations
 class AssetManager;
@@ -49,6 +50,7 @@ enum class WorldEntityType : uint8_t {
 // World entity: a single object in the world
 struct WorldEntity {
     uint32_t entityId = 0;
+    uint32_t npcId = 0;  // Associated NPC ID (0 if not an NPC)
     std::string nifPath;
     WorldEntityType type = WorldEntityType::STATIC;
 
@@ -101,6 +103,12 @@ public:
                           const glm::vec3& rot = glm::vec3(0.0f, 0.0f, 0.0f),
                           const glm::vec3& scl = glm::vec3(1.0f, 1.0f, 1.0f));
 
+    // Load actor for specific NPC (with npcId mapping)
+    WorldEntity loadActorForNpc(const std::string& nifPath, const glm::vec3& pos,
+                                uint32_t npcId,
+                                const glm::vec3& rot = glm::vec3(0.0f, 0.0f, 0.0f),
+                                const glm::vec3& scl = glm::vec3(1.0f, 1.0f, 1.0f));
+
     // Unload
     void unload(WorldEntity& entity);
 
@@ -111,13 +119,26 @@ public:
     // Entity ID counter
     uint32_t getNextEntityId() { return nextEntityId++; }
 
+    // Imperial Weave EventBus integration
+    void setEventBus(weave::EventBus* bus) { eventBus = bus; }
+
+    // Get WorldEntity by NPC ID
+    WorldEntity* getEntityByNpcId(uint32_t npcId);
+
 private:
     AssetManager* assetManager = nullptr;
     CollisionWorld* collisionWorld = nullptr;
+    weave::EventBus* eventBus = nullptr;
     uint32_t nextEntityId = 1;
 
     // NIF parse cache (path → cached data)
     std::unordered_map<std::string, std::shared_ptr<NIFCache>> nifCache;
+
+    // WorldEntity storage (entityId → WorldEntity)
+    std::unordered_map<uint32_t, std::unique_ptr<WorldEntity>> entities;
+
+    // NPC ID to entityId mapping
+    std::unordered_map<uint32_t, uint32_t> npcToEntityMap;
 
     // Get or parse NIF file
     std::shared_ptr<NIFCache> getOrParseNIF(const std::string& nifPath);

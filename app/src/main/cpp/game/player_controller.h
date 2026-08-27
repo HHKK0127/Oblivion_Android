@@ -6,6 +6,7 @@
 #include "../collision/character_controller.h"
 #include "../animation/skeleton.h"
 #include "../animation/animation_player.h"
+#include "../engine/imperial_weave.h"
 #include <memory>
 #include <android/log.h>
 
@@ -68,6 +69,10 @@ public:
     bool isInCombatStance() const { return combatStance; }
     void attack();
 
+    // Imperial Weave EventBus integration
+    void setEventBus(weave::EventBus* bus) { eventBus = bus; }
+    void subscribeToCombatEvents();
+
 private:
     std::shared_ptr<Player> player;
     WorldManager* worldManager;
@@ -92,6 +97,9 @@ private:
     Skeleton* skeleton = nullptr;
     animation::AnimationPlayer* animator = nullptr;
     CharacterController* charController = nullptr;
+
+    // Imperial Weave EventBus
+    weave::EventBus* eventBus = nullptr;
 
     // Phase 31: Animation state machine with hysteresis
     PlayerAnimState animState = PlayerAnimState::IDLE;

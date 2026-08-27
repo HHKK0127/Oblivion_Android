@@ -3,8 +3,10 @@
 #include <glm/glm.hpp>
 #include <memory>
 #include <vector>
+#include <array>
 #include "../world/world_data.h"
 #include "item.h"
+#include "spell.h"
 
 enum class MovementState {
     IDLE,
@@ -89,6 +91,10 @@ struct Player {
     // Current Cell
     int32_t currentCellX = 0;
     int32_t currentCellY = 0;
+
+    // Quick-slot spells (4 slots, nullptr = empty)
+    static constexpr int QUICK_SLOT_COUNT = 4;
+    std::array<std::shared_ptr<Spell>, QUICK_SLOT_COUNT> quickSlotSpells = {};
 
     // Methods
     Player() = default;

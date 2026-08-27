@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-08-26T15:30:00Z",
+  "lastUpdated": "2026-08-27T11:15:00Z",
   "entries": [
     {
       "content": "Oblivion.exe (Ghidra decompiled) - Gamebryo engine, compiled with VS2005/VS2008, Direct3D9. Init order: Renderer -> Shader System -> Sky -> TES -> TreeManager -> Menus -> Player -> Scripts -> Sound System -> Actor Locations -> LOD Land",
@@ -457,7 +457,7 @@
         "navmesh"
       ],
       "compressed": false,
-      "timestamp": "2026-08-21T19:15:00.0000000+09:00"
+      "timestamp": "2026-08-21T19:15:00+09:00"
     },
     {
       "id": "eac00a48-2251-44bd-adcd-9d4733c78d7f",
@@ -582,11 +582,168 @@
         "preference"
       ],
       "compressed": false
+    },
+    {
+      "timestamp": "2026-08-26T21:16:14Z",
+      "compressed": false,
+      "content": "Imperial Weave v3 実装完了。EventBus(type_index + shared_ptr) + ServiceLocator + 8フェーズ更新パイプライン。Rendererから重複Manager呼び出しを段階的に削除中（world, quest, combat完了）。残り: playerController, inventoryManager, spellManager, audioManager",
+      "category": "decision",
+      "priority": "high",
+      "tags": [
+        "imperial-weave",
+        "architecture",
+        "integration"
+      ],
+      "id": "aba04b3f-bace-4f4a-9b67-6b770a86ac76"
+    },
+    {
+      "timestamp": "2026-08-26T21:16:14Z",
+      "compressed": false,
+      "content": "戦闘システム強化完了。9武器タイプ(短剣/長剣/大剣/斧/メイス/大槌/弓/杖/徒手)、ヒットボックス(AABB)、クリティカル/ブロック/パリィ/ドッジ、出血DoT(斧)、戦闘イベントキュー(ImperialWeave連携)、NPC AI戦闘ロジック(攻撃/防御/魔法選択)",
+      "category": "decision",
+      "priority": "high",
+      "tags": [
+        "combat",
+        "weapons",
+        "hitbox",
+        "npc-ai"
+      ],
+      "id": "5fe2822a-afa4-4df5-98ea-7c336a8bfb4a"
+    },
+    {
+      "category": "decision",
+      "timestamp": "2026-08-26T21:37:14Z",
+      "compressed": false,
+      "tags": [
+        "combat",
+        "eventbus",
+        "imperial-weave",
+        "integration"
+      ],
+      "content": "CombatEvent構造体を拡張。timestamp, targetId, weaponName, isCritical, isBlocked フィールドを追加。createCombatEvent()ヘルパー関数で統一的なイベント作成。CombatManagerからImperial Weave EventBusへのイベント送信を実装。renderer.cppでEventBus接続を確立。",
+      "id": "66d6e23f-27d7-43a2-a9fd-c6c79ac9180a",
+      "priority": "high"
+    },
+    {
+      "id": "mem-009",
+      "timestamp": "2026-08-26T22:00:00Z",
+      "category": "decision",
+      "priority": "high",
+      "tags": ["architecture", "imperial-weave", "update-pipeline"],
+      "content": "Imperial Weave 12-phase update pipeline: PreUpdate → EventProcess → WorldUpdate → AiUpdate → PlayerUpdate → InventoryUpdate → SpellUpdate → AnimationUpdate → PhysicsSync → CombatUpdate → QuestUpdate → AudioUpdate → RenderSubmit. All major managers migrated.",
+      "compressed": false
+    },
+    {
+      "id": "mem-010",
+      "timestamp": "2026-08-26T22:00:00Z",
+      "category": "decision",
+      "priority": "high",
+      "tags": ["architecture", "imperial-weave", "input", "audio"],
+      "content": "Joystick input and audio listener position must be set BEFORE ImperialWeave::update() is called, because playerController->update() and audioManager->update() now run inside the Weave pipeline.",
+      "compressed": false
+    },
+    {
+      "id": "mem-011",
+      "timestamp": "2026-08-26T22:00:00Z",
+      "category": "decision",
+      "priority": "medium",
+      "tags": ["architecture", "imperial-weave", "ui"],
+      "content": "titleScreen and uiSystem remain directly called from Renderer (not migrated to Imperial Weave) because they are UI/rendering overlay systems, not game logic managers.",
+      "compressed": false
+    },
+    {
+      "id": "mem-012",
+      "timestamp": "2026-08-27T08:50:00Z",
+      "category": "decision",
+      "priority": "high",
+      "tags": ["ui", "combat", "touch-input"],
+      "content": "Player combat UI buttons implemented: Attack (ATK, red), Block (BLK, blue), Cast Spell (MAG, purple). Positioned on right side of screen. Attack triggers playerController->attack(), Block toggles combat stance. Buttons hidden on title screen, shown on game start.",
+      "compressed": false
+    },
+    {
+      "id": "mem-013",
+      "timestamp": "2026-08-27T09:30:00Z",
+      "category": "decision",
+      "priority": "high",
+      "tags": ["animation", "eventbus", "player-controller"],
+      "content": "PlayerController connected to Imperial Weave EventBus for animation events. subscribeToCombatEvents() registers handlers for COMBAT_ATTACK_HIT, COMBAT_CRITICAL_HIT, COMBAT_BLOCK, COMBAT_PARRY, COMBAT_DODGE, COMBAT_DEATH. Currently logs events; actual animation triggers are TODO.",
+      "compressed": false
+    },
+    {
+      "id": "mem-014",
+      "timestamp": "2026-08-27T09:30:00Z",
+      "category": "decision",
+      "priority": "high",
+      "tags": ["animation", "npc", "state-machine"],
+      "content": "NPC animation state machine implemented: AnimState enum (IDLE, WALK, RUN, ATTACK, HIT_REACTION, BLOCK, DEATH). Timing constants: HIT_REACTION_DURATION=0.5s, ATTACK_DURATION=0.8s. Auto-returns to IDLE after animation completes. CombatManager::applyDamage() now triggers target->triggerHitReaction() and target->triggerDeath().",
+      "compressed": false
+    },
+    {
+      "id": "mem-015",
+      "timestamp": "2026-08-27T10:00:00Z",
+      "category": "decision",
+      "priority": "high",
+      "tags": ["animation", "eventbus", "npc", "world-entity"],
+      "content": "AnimationSubscriber system implemented. Bridges NPC animation states to WorldEntity animation playback via Imperial Weave EventBus. Subscribes to COMBAT_ATTACK_HIT, COMBAT_CRITICAL_HIT, COMBAT_DEATH events. Maps NPC AnimState to animation names (idle, walk, run, attack, hit_reaction, block, death). WorldEntity storage added to WorldLoader with npcToEntityMap for NPC ID → Entity ID lookup. loadActorForNpc() method loads actors with NPC ID association. AnimationPlayer enhanced with findSequenceByName() for semantic animation lookup.",
+      "compressed": false
+    },
+    {
+      "id": "mem-016",
+      "timestamp": "2026-08-27T10:15:00Z",
+      "category": "decision",
+      "priority": "high",
+      "tags": ["audio", "eventbus", "combat"],
+      "content": "AudioSubscriber system implemented. Bridges combat and animation events to AudioManager sound playback via Imperial Weave EventBus. Maps events to existing sound definitions (blade_equip, blunt_equip, bow_shoot) as temporary placeholders. Supports 3D positional audio via player position and optional NPC position callback. Dedicated hit/block/death combat sounds need extraction from original assets.",
+      "compressed": false
+    },
+    {
+      "id": "mem-017",
+      "timestamp": "2026-08-27T10:18:00Z",
+      "category": "decision",
+      "priority": "high",
+      "tags": ["ui", "spell", "magic"],
+      "content": "SpellSelectionPanel implemented. Draggable panel extending UIPanel that displays player spells as clickable buttons. Japanese name preferred with English fallback. Integrated with castSpellButton: first press opens panel, subsequent presses cast selected spell on nearest enemy. Plays magic/spell_equip sound on successful cast. Player ID hardcoded to 1."
+    },
+    {
+      "id": "mem-018",
+      "timestamp": "2026-09-10T10:00:00Z",
+      "category": "reference",
+      "priority": "high",
+      "tags": ["architecture", "imperial-weave", "engine", "diagram"],
+      "content": "Engine layered architecture: Android JNI → Renderer (render loop) → Imperial Weave (12-phase coordinator: ①EventProcess ②World ③AI ④Player ⑤Inventory ⑥Spell ⑦Animation ⑧Physics ⑨Combat ⑩Quest ⑪Audio ⑫RenderSubmit) + UISystem. Thin EventBus-driven subscriber bridges: AnimationSubscriber (Event→AnimationPlayer) and AudioSubscriber (Event→AudioManager). CombatManager emits events, does NOT call AnimationPlayer/AudioManager directly. Diagram committed to README.md Engine Architecture section.",
+      "compressed": false
+    },
+    {
+      "id": "mem-019",
+      "timestamp": "2026-09-10T10:00:00Z",
+      "category": "decision",
+      "priority": "medium",
+      "tags": ["readme", "docs", "phase32"],
+      "content": "README.md updated for Phase 32 (v0.9.8): added Engine Architecture section with ASCII diagram and EventBus attack flow example, updated code metrics to 13,000+ lines, added Phase 32 to development phases table, updated status footer to Phase 32 Complete, next phase listed as Phase 33 - Dedicated Combat Sound Assets + NPC Spatial Audio.",
+      "compressed": false
+    },
+    {
+      "id": "mem-020",
+      "timestamp": "2026-08-27T11:10:00Z",
+      "category": "decision",
+      "priority": "high",
+      "tags": ["audio", "spatial-audio", "npc", "combat-sounds"],
+      "content": "Phase 33 (v0.9.9) complete. Dedicated combat sounds added to sound_definitions.json (hit_blade/blunt/axe/unarmed, hit_generic, hit_critical, block_generic, parry, dodge, death_generic, attack_swing). NPC spatial audio callback wired: AudioSubscriber.setNpcPositionCallback() connected in Renderer using NpcManager::getNPC(id)->position. All 11 AudioSubscriber event→sound mappings updated from blade_equip placeholder to dedicated keys. BUILD SUCCESSFUL.",
+      "compressed": false
+    },
+    {
+      "id": "mem-021",
+      "timestamp": "2026-08-27T11:15:00Z",
+      "category": "decision",
+      "priority": "high",
+      "tags": ["audio", "weapon-type", "combat-sounds", "quick-slot", "spell-ui"],
+      "content": "Phase 34 (v0.9.10) complete. (1) Weapon-type hit sound routing: CombatManager emits weaponType in EventBus payload, AudioSubscriber.playSoundForEventWithPayload() parses it and selects hit_blade/blunt/axe/bow etc. (2) SpellSelectionPanel school colors: each school has distinct color + abbreviated prefix [破][回][召][変][幻][神]. (3) Quick-slot spells: Player.quickSlotSpells[4] array, Renderer has 4 F1-F4 buttons bottom-left; empty=open panel in assign mode, assigned=cast spell. pendingAssignSlot tracks assignment. BUILD SUCCESSFUL.",
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 41,
+    "totalEntries": 66,
     "compressedCount": 0,
-    "sessionCount": 3
+    "sessionCount": 4
   }
 }

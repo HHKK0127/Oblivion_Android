@@ -3,6 +3,224 @@
 All notable changes to the Oblivion Android project are documented here.
 
 ---
+
+## [0.9.10] - 2026-08-27 (Phase 34 - Weapon Sound Routing + Spell UI Enhancement)
+
+### Major Additions
+
+#### Weapon-Type-Specific Hit Sound Routing
+- `CombatManager::emitCombatEvent()` now includes `weaponType` in the EventBus payload JSON
+  - New helper `weaponTypeToAudioKey()` converts WeaponType enum → audio key string
+  - SWORD_ONE_HAND/SWORD_TWO_HAND/DAGGER → "blade"; AXE → "axe"; MACE → "blunt"; BOW → "bow"; STAFF → "staff"
+- `AudioSubscriber::playSoundForEventWithPayload()`: parses `weaponType` from payload
+  - Routes COMBAT_ATTACK_HIT / ANIM_ATTACK_HIT to `combat/hit_blade`, `combat/hit_blunt`, `combat/hit_axe`, `combat/hit_unarmed`, or `combat/bow_shoot`
+  - COMBAT_CRITICAL_HIT always uses `combat/hit_critical`
+  - `extractPayloadField()`: lightweight JSON field extractor (no external lib dependency)
+- EventBus subscribers for COMBAT_ATTACK_HIT and COMBAT_CRITICAL_HIT now call `playSoundForEventWithPayload()`
+
+#### Spell School Color Icons (SpellSelectionPanel)
+- Each spell button in SpellSelectionPanel now shows a school-color background:
+  - Destruction = red, Restoration = green, Conjuration = purple, Alteration = blue, Illusion = teal, Mysticism = gold
+- Spell button label prefixed with school abbreviation: `[破]`, `[回]`, `[召]`, `[変]`, `[幻]`, `[神]`
+- `getSchoolColor()` helper function returns glm::vec4 by MagicSchool
+
+#### Quick-Slot Spell Buttons (4 slots)
+- 4 quick-slot buttons (F1–F4) added to the HUD at bottom-left
+- Hidden on title screen, shown when game starts
+- **Empty slot behavior**: tap → opens SpellSelectionPanel in assignment mode
+- **Assigned slot behavior**: tap → casts spell on nearest enemy + plays spell_equip SE
+- Assignment flow: open panel sets `pendingAssignSlot`, `onSpellSelected` assigns to `player.quickSlotSpells[i]`
+- Assigned button updates: label shows "F{n}\n{4-char spell name}", background color matches spell school
+- `Player::quickSlotSpells[4]` array added to Player struct
+- `pendingAssignSlot` member in Renderer tracks which slot is awaiting assignment
+
+### Files Modified
+- `game/combat_manager.cpp` — Added `weaponTypeToAudioKey()`, added `weaponType` to EventBus payload
+- `audio/audio_subscriber.h` — Added `playSoundForEventWithPayload()`, `extractPayloadField()` declarations
+- `audio/audio_subscriber.cpp` — Implemented weapon-type routing; COMBAT_ATTACK_HIT/CRITICAL now use payload
+- `ui/spell_selection_panel.cpp` — School colors + abbreviated prefix labels via `getSchoolColor()`
+- `game/player.h` — Added `#include <array>`, `#include "spell.h"`, `quickSlotSpells[4]`
+- `engine/renderer.h` — Added `<array>` include, `quickSlotButtons[4]`, `pendingAssignSlot`
+- `engine/renderer.cpp` — Quick-slot button creation, `onSpellSelected` assignment logic, show on game start
+
+---
+
+## [0.9.9] - 2026-08-27 (Dedicated Combat Sound Assets + NPC Spatial Audio)
+
+### Major Additions
+
+#### Dedicated Combat Sound Definitions
+- Added 11 new sound keys in `sound_definitions.json` under `combat/` category:
+  - `hit_blade`, `hit_blunt`, `hit_axe`, `hit_unarmed` — weapon-type-specific hit sounds (3D)
+  - `hit_generic`, `hit_critical` — fallback hit sounds (critical at +20% volume)
+  - `block_generic` — shield block sound (3D)
+  - `parry` — blade parry clank (3D)
+  - `dodge` — dodge miss sound (3D)
+  - `death_generic` — NPC death sound (3D)
+  - `attack_swing` — weapon swing sound (3D)
+
+#### NPC Spatial Audio Callback
+- AudioSubscriber now receives NPC world position for 3D audio playback
+  - `setNpcPositionCallback()` connected in Renderer initialization
+  - Callback uses `NpcManager::getNPC(id)->position` for live NPC positions
+  - Falls back to player position if NPC not found
+  - All combat sounds now correctly positioned in 3D space relative to combat location
+
+#### AudioSubscriber Sound Mapping Updated
+- All event → sound key mappings now use dedicated combat sounds:
+  - `ANIM_ATTACK_START` → `combat/attack_swing`
+  - `ANIM_ATTACK_HIT` / `COMBAT_ATTACK_HIT` → `combat/hit_generic`
+  - `COMBAT_CRITICAL_HIT` → `combat/hit_critical`
+  - `COMBAT_BLOCK` / `ANIM_BLOCK_START` → `combat/block_generic`
+  - `COMBAT_PARRY` → `combat/parry`
+  - `COMBAT_DODGE` → `combat/dodge`
+  - `ANIM_DEATH_START` / `COMBAT_DEATH` → `combat/death_generic`
+  - `ANIM_EQUIP_START` → `combat/blade_equip` (equip sound retained)
+- Weapon-specific attack sounds updated to use swing/hit keys
+
+### Files Modified
+- `app/src/main/assets/audio/sound_definitions.json` — Added 11 dedicated combat sound entries
+- `audio/audio_subscriber.cpp` — Updated soundMap to dedicated keys, updated weaponAttackSounds
+- `engine/renderer.cpp` — Connected NPC position callback to AudioSubscriber
+
+---
+
+## [0.9.8] - 2026-08-27 (Animation Subscriber + NPC Animation Playback)
+
+### Major Additions
+
+#### Animation Subscriber System
+- **AnimationSubscriber**: Bridges NPC animation states to WorldEntity animation playback
+  - Listens for combat events via Imperial Weave EventBus
+  - Maps NPC AnimState to animation names (idle, walk, run, attack, hit_reaction, block, death)
+  - Handles state transitions with timers (HIT_REACTION: 0.5s, ATTACK: 0.8s)
+  - Plays animations on WorldEntity via AnimationPlayer
+
+#### Animation Player Enhancement
+- **findSequenceByName()**: Finds animation sequence index by name
+  - Supports exact match and partial match (case-insensitive)
+  - Fallback to first animation if name not found
+  - Enables animation playback by semantic name (e.g., "idle", "attack")
+
+#### WorldEntity Storage System
+- **WorldLoader Entity Storage**: Added entity management for NPC animation lookup
+  - `std::unordered_map<uint32_t, std::unique_ptr<WorldEntity>> entities` storage
+  - `npcToEntityMap` for NPC ID → Entity ID mapping
+  - `loadActorForNpc()` method loads actors with NPC ID association
+  - `getEntityByNpcId()` returns WorldEntity pointer for animation playback
+
+#### Imperial Weave EventBus Enhancement
+- **Event Targeting**: Added `targetId` field to `weave::Event` struct
+  - Enables combat events to specify target NPC ID
+  - Updated factory methods to use named field initialization
+  - AnimationSubscriber subscribes to COMBAT_ATTACK_HIT, COMBAT_CRITICAL_HIT, COMBAT_DEATH
+
+#### Audio Subscriber System
+- **AudioSubscriber**: Bridges game events to AudioManager sound playback
+  - Listens for combat and animation events via Imperial Weave EventBus
+  - Maps events to sound definitions (blade_equip, blunt_equip, bow_shoot, etc.)
+  - Supports 3D positional audio via player position and optional NPC position callback
+  - Subscribes to ANIM_ATTACK_START, ANIM_ATTACK_HIT, COMBAT_ATTACK_HIT, COMBAT_CRITICAL_HIT, COMBAT_BLOCK, COMBAT_PARRY, COMBAT_DODGE, ANIM_BLOCK_START, ANIM_DEATH_START, COMBAT_DEATH, ANIM_EQUIP_START
+
+#### Spell Selection UI
+- **SpellSelectionPanel**: Draggable panel for selecting spells
+  - Extends UIPanel with title bar and close button
+  - Displays player spells as clickable buttons
+  - Japanese name preferred, English fallback
+  - Calls callback with selected spell and hides panel
+
+#### Cast Spell Button Logic
+- Updated `castSpellButton` onClick callback
+  - First press opens spell selection panel
+  - Subsequent presses cast selected spell on nearest enemy
+  - Plays `magic/spell_equip` sound effect on successful cast
+
+### Architecture Changes
+- AnimationSubscriber is a thin bridge layer that doesn't own any systems
+- AudioSubscriber is a thin bridge layer that doesn't own any systems
+- Uses Imperial Weave EventBus for loose coupling between systems
+- NPC animation state is managed by NPC struct, but actual playback is handled by AnimationSubscriber
+- WorldEntity storage uses unique_ptr to avoid copy issues with non-copyable members
+
+### Files Added
+- `animation/animation_subscriber.h` - AnimationSubscriber class declaration
+- `animation/animation_subscriber.cpp` - AnimationSubscriber implementation
+- `audio/audio_subscriber.h` - AudioSubscriber class declaration
+- `audio/audio_subscriber.cpp` - AudioSubscriber implementation
+- `ui/spell_selection_panel.h` - SpellSelectionPanel class declaration
+- `ui/spell_selection_panel.cpp` - SpellSelectionPanel implementation
+
+### Files Modified
+- `engine/imperial_weave.h` - Added targetId field, updated factory methods
+- `world/world_entity.h` - Added entity storage maps, loadActorForNpc()
+- `world/world_loader.cpp` - Implemented loadActorForNpc(), updated getEntityByNpcId()
+- `animation/animation_player.h` - Added findSequenceByName(), getSequenceCount()
+- `animation/animation_player.cpp` - Implemented findSequenceByName() with partial match
+- `engine/renderer.h` - Added AnimationSubscriber, AudioSubscriber, SpellSelectionPanel members
+- `engine/renderer.cpp` - Integrated all subscribers and spell panel, updated castSpellButton callback
+- `CMakeLists.txt` - Added animation_subscriber.cpp, audio_subscriber.cpp, spell_selection_panel.cpp
+
+### Build Status
+- BUILD SUCCESSFUL in 41s
+- All 4 architectures: arm64-v8a, armeabi-v7a, x86, x86_64
+
+---
+
+## [0.9.7] - 2026-07-07 (Imperial Weave + Combat System Enhancement)
+
+### Major Additions
+- **Imperial Weave Integration Layer**
+  - EventBus with type_index (compiler-independent) and shared_ptr handlers (copy avoidance)
+  - ServiceLocator for runtime service discovery
+  - 12-phase update pipeline (PreUpdate → EventProcess → World → AI → Player → Inventory → Spell → Animation → Physics → Combat → Quest → Audio → RenderSubmit)
+  - Exception-safe update() with try-catch
+  - PhaseProfiler for performance monitoring
+
+- **Combat System Enhancement**
+  - 9 weapon types: Dagger, Sword, Greatsword, Axe, Mace, Greatmace, Bow, Staff, Unarmed
+  - Hitbox system with AABB collision detection
+  - Critical hit system (Luck-based, weapon-specific crit chance)
+  - Block/Parry/Dodge mechanics (Agility-based)
+  - Bleed system for Axe weapons (Damage over Time)
+  - CombatEvent queue for Imperial Weave integration
+  - NPC AI combat logic (attack/defend/magic selection)
+  - CombatEvent struct expanded with timestamp, targetId, weaponName, isCritical, isBlocked
+  - Helper function createCombatEvent() for cleaner event creation
+  - EventBus integration: CombatManager emits events to Imperial Weave EventBus
+
+### Architecture Changes
+- Imperial Weave更新パイプラインを8フェーズから12フェーズに拡張
+- PlayerController、InventoryManager、SpellManager、AudioManagerをImperial Weaveに統合
+- Rendererから重複するManager呼び出しを段階的に削除（コメントアウト）
+- ジョイスティック入力とオーディオリスナー位置の更新をImperialWeave::update()前に移動
+- titleScreenとuiSystemはRendererから直接呼び出し（UI/オーバーレイシステムのためWeave不適切）
+
+### UI Additions
+- プレイヤーコンバットUIボタン追加（攻撃・ブロック・詠唱）
+
+### Animation Integration
+- **PlayerController EventBus Integration**
+  - subscribeToCombatEvents()で6種類のコンバットイベントを購読
+  - COMBAT_ATTACK_HIT, COMBAT_CRITICAL_HIT, COMBAT_BLOCK, COMBAT_PARRY, COMBAT_DODGE, COMBAT_DEATH
+  - 現在はログ出力のみ、今後アニメーション再生を実装
+
+- **NPC Animation State Management**
+  - AnimState列挙型: IDLE, WALK, RUN, ATTACK, HIT_REACTION, BLOCK, DEATH
+  - アニメーションタイミング定数: HIT_REACTION_DURATION=0.5秒, ATTACK_DURATION=0.8秒
+  - 自動状態遷移: アニメーション完了後にIDLE復帰
+  - CombatManager::applyDamage()がNPCアニメーションを自動トリガー
+
+- **Combat Animation Flow**
+  - ダメージ適用時: target->triggerHitReaction()
+  - NPC撃破時: target->triggerDeath()
+  - 攻撃時: playerController->attack()でATTACK状態に遷移
+  - 攻撃ボタン（ATK）: プレイヤーの攻撃アクションをトリガー
+  - ブロックボタン（BLK）: コンバットスタンスの切り替え
+  - 詠唱ボタン（MAG）: 魔法詠唱（TODO: スペルシステム統合後）
+  - タイトル画面では非表示、ゲーム開始時に表示
+
+---
+
 ## [0.9.5] - 2026-06-28 (Phase 10-24 - Complete UI & HUD Implementation)
 
 ### Major Additions
