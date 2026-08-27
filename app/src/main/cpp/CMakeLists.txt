@@ -194,6 +194,14 @@ add_library(native-lib SHARED
     script/script_functions.cpp
     script/script_disasm.cpp
 
+    # Dialogue System (Phase 40 - NPC Dialogue Tree)
+    dialogue/dialogue_record.cpp
+    dialogue/dialogue_tree.cpp
+    dialogue/dialogue_filter_engine.cpp
+    dialogue/dialogue_runner.cpp
+    dialogue/dialogue_history.cpp
+    dialogue/dialogue_integration.cpp
+
     # JNI Bridge (Java/C++ communication)
     jni_bridge.cpp
 )
@@ -221,6 +229,7 @@ target_include_directories(native-lib PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/tests
     ${CMAKE_CURRENT_SOURCE_DIR}/physics
     ${CMAKE_CURRENT_SOURCE_DIR}/script
+    ${CMAKE_CURRENT_SOURCE_DIR}/dialogue
 )
 
 # Find OpenAL-Soft (optional for now)
