@@ -66,6 +66,13 @@ add_library(native-lib SHARED
     # Phase 31: World Entity & Loader
     world/world_loader.cpp
 
+    # Phase 38: Full World Load (ESM -> 3D Space)
+    world/landscape_renderer.cpp
+    world/object_placer.cpp
+    world/texture_manager.cpp
+    world/lod_system.cpp
+    world/world_builder.cpp
+
     # Game Systems
     game/npc.cpp
     game/npc_manager.cpp
