@@ -616,6 +616,12 @@ void Renderer::initGameSystems() {
         // List available saves
         auto saves = saveManager->getSaveSlots();
         LOGI("Found %zu save slots", saves.size());
+        // Register system pointers for binary save
+        if (playerController) saveManager->setPlayerController(playerController.get());
+        if (inventoryManager) saveManager->setInventoryManager(inventoryManager.get());
+        if (spellManager) saveManager->setSpellManager(spellManager.get());
+        if (questManager) saveManager->setQuestManager(questManager.get());
+        if (worldManager) saveManager->setWorldManager(worldManager.get());
     }
 
     // Complete SaveLoadUI initialization (now that SaveManager is ready)
@@ -1999,8 +2005,8 @@ bool Renderer::saveGameState(const std::string& slotName) {
         }
     }
 
-    // Save to file
-    bool success = saveManager->saveGame(slotName, state);
+    // Save to file (legacy JSON format for UI compatibility)
+    bool success = saveManager->saveGameLegacy(slotName, state);
     if (success) {
         LOGI("Game saved to slot: %s", slotName.c_str());
     } else {
@@ -2039,7 +2045,7 @@ bool Renderer::loadGameState(const std::string& slotName) {
     }
 
     GameState state;
-    bool success = saveManager->loadGame(slotName, state);
+    bool success = saveManager->loadGameLegacy(slotName, state);
 
     if (!success) {
         LOGE("Failed to load game from slot: %s", slotName.c_str());
