@@ -73,7 +73,7 @@ A complete native Android port of The Elder Scrolls IV: Oblivion, built entirely
 | --- | --- |
 | **Language** | C++17 (13,000+ lines) |
 | **Graphics API** | OpenGL ES 3.0 |
-| **Physics** | Bullet Physics 3.x |
+| **Physics** | Jolt Physics (Phase 36) |
 | **Build System** | CMake + Gradle |
 | **NDK Version** | r26.1 |
 | **Target API** | 29+ |
@@ -313,6 +313,7 @@ oblivion-android/
 | Phase 33 (v0.9.9) | Combat Sound Assets + NPC Spatial Audio | ✅ Complete | Dedicated combat sounds (hit_blade/blunt/axe/unarmed, block, parry, dodge, death), NPC spatial audio callback, AudioSubscriber event→sound mappings |
 | Phase 34 (v0.9.10) | Weapon-Type Sounds + Quick-Slot Spells | ✅ Complete | Weapon-type hit sound routing (CombatManager→AudioSubscriber), SpellSelectionPanel school colors, Quick-slot spells (F1-F4) |
 | Phase 35 (v1.0.0) | Radiant AI System | ✅ Complete | AI Package System (15 types), Priority-based PackageStack, AIScheduler (24h time-based), NavMesh pathfinding, Stuck detection, Default daily schedule, Combat/Flee override |
+| Phase 36 (v1.1.0) | Jolt Physics Integration | ✅ Complete | PhysicsManager singleton, CharacterVirtual player/NPC, HeightFieldShape terrain, Fixed timestep (1/60s), Raycast API, ImperialWeave phase integration |
 
 ---
 
@@ -493,11 +494,11 @@ Proprietary - Experimental Port
 
 ---
 
-**Status**: Phase 35 Complete (v1.0.0)
+**Status**: Phase 36 Complete (v1.1.0)
 **Last Updated**: 2026-09-10
 **Version**: 1.0.0
-**Features**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD, ESM Data Integration (40 record types), NpcManager ESM, Container ESM, Player RACE/CLAS/BSGN, Status Effects, NAVM Pathfinding, DIAL/INFO Dialogue, REFR Placement, Spell Effects (8 types), Alchemy, Book Reader, Faction Manager, Loot Generator, NIF Skeleton/Skinning, Animation System, Collision Detection, Integration Tests (Phase 30), WorldEntity + WorldLoader + PlayerController Integration (Phase 31), Imperial Weave EventBus + 12-phase coordinator, AnimationSubscriber, AudioSubscriber, SpellSelectionPanel (Phase 32), Dedicated Combat Sounds, NPC Spatial Audio (Phase 33), Weapon-Type Sound Routing, Quick-Slot Spells (Phase 34), Radiant AI System (Phase 35)
-**Next**: Phase 36 - Physics Integration (Jolt Physics NDK build)
+**Features**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD, ESM Data Integration (40 record types), NpcManager ESM, Container ESM, Player RACE/CLAS/BSGN, Status Effects, NAVM Pathfinding, DIAL/INFO Dialogue, REFR Placement, Spell Effects (8 types), Alchemy, Book Reader, Faction Manager, Loot Generator, NIF Skeleton/Skinning, Animation System, Collision Detection, Integration Tests (Phase 30), WorldEntity + WorldLoader + PlayerController Integration (Phase 31), Imperial Weave EventBus + 12-phase coordinator, AnimationSubscriber, AudioSubscriber, SpellSelectionPanel (Phase 32), Dedicated Combat Sounds, NPC Spatial Audio (Phase 33), Weapon-Type Sound Routing, Quick-Slot Spells (Phase 34), Radiant AI System (Phase 35), Jolt Physics Integration (Phase 36)
+**Next**: Phase 37 - Script VM (Oblivion VM bytecode interpreter)
 
 ---
 
@@ -570,7 +571,7 @@ The Elder Scrolls IV: Oblivion の完全ネイティブ Android 移植版です�
 | --- | --- |
 | **言語** | C++17（9,000行以上） |
 | **グラフィックスAPI** | OpenGL ES 3.0 |
-| **物理エンジン** | Bullet Physics 3.x |
+| **物理エンジン** | Jolt Physics (Phase 36) |
 | **ビルドシステム** | CMake + Gradle |
 | **NDKバージョン** | r30.0 |
 | **ターゲットAPI** | API 29以上 |
@@ -779,6 +780,7 @@ oblivion-android/
 | Phase 33 (v0.9.9) | コンバットサウンド＋NPC空間オーディオ | ✅ 完了 | 専用コンバットサウンド（hit_blade/blunt/axe/unarmed、block、parry、dodge、death）、NPC空間オーディオコールバック、AudioSubscriberイベント→サウンドマッピング |
 | Phase 34 (v0.9.10) | 武器タイプサウンド＋クイックスロット呪文 | ✅ 完了 | 武器タイプヒットサウンドルーティング（CombatManager→AudioSubscriber）、SpellSelectionPanel学校カラー、クイックスロット呪文（F1-F4） |
 | Phase 35 (v1.0.0) | Radiant AIシステム | ✅ 完了 | AIパッケージシステム（15種）、優先度ベースPackageStack、AIScheduler（24h時間ベース）、NavMeshパスファインディング、スタック検出、デフォルト日課、コンバット/フリーオーバーライド |
+| Phase 36 (v1.1.0) | Jolt Physics統合 | ✅ 完了 | PhysicsManagerシングルトン、CharacterVirtual player/NPC、HeightFieldShape地形、固定タイムステップ（1/60s）、Raycast API、ImperialWeaveフェーズ統合 |
 
 ---
 
@@ -964,5 +966,5 @@ oblivion-android/
 （Phase 31）、Imperial Weave EventBus＋12フェーズコーディネーター、AnimationSubscriber、AudioSubscriber、SpellSelectionPanel
 （Phase 32）、専用コンバットサウンド、NPC空間オーディオ
 （Phase 33）、武器タイプサウンドルーティング、クイックスロット呪文
-（Phase 34）、Radiant AIシステム（Phase 35）
-**次回**: Phase 36 - 物理エンジン統合 (Jolt Physics NDKビルド)
+（Phase 34）、Radiant AIシステム（Phase 35）、Jolt Physics統合（Phase 36）
+**次回**: Phase 37 - スクリプトVM (Oblivion VMバイトコードインタプリタ)
