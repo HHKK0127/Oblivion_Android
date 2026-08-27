@@ -367,6 +367,8 @@ void ESMFile::decodeRecord(const ESMRecord& rec) {
             decodeMiscItem(rec);
         } else if (std::memcmp(rec.recType, "ROAD", 4) == 0) {
             decodeRoad(rec);
+        } else if (std::memcmp(rec.recType, "SCPT", 4) == 0) {
+            decodeScript(rec);
         }
     // Other types (ARMO, BOOK, CLOT, etc.) are not decoded yet
 }
@@ -1678,6 +1680,119 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
         m_roads.push_back(std::move(road));
     }
 
+    void ESMFile::decodeScript(const ESMRecord& rec) {
+        script::ScriptData script;
+        script.formID = rec.formID;
+
+        // EDID: editor ID (script name)
+        script.editorID = rec.getString("EDID");
+
+        // SCHR: script header (20 bytes)
+        //   uint32_t refCount
+        //   uint32_t compiledLength
+        //   uint32_t lastVarIndex
+        //   uint32_t scriptType (0=Object, 1=Quest, 2=Magic)
+        //   uint32_t varCount
+        auto* schr = rec.findSubRecord("SCHR");
+        if (schr && schr->size() >= 20) {
+            const uint8_t* data = schr->data.data();
+            uint32_t refCount, compiledLength, lastVarIndex, scriptType, varCount;
+            std::memcpy(&refCount, data, 4);
+            std::memcpy(&compiledLength, data + 4, 4);
+            std::memcpy(&lastVarIndex, data + 8, 4);
+            std::memcpy(&scriptType, data + 12, 4);
+            std::memcpy(&varCount, data + 16, 4);
+
+            script.scriptType = static_cast<script::ScriptType>(scriptType);
+            script.varCount = varCount;
+            script.refCount = refCount;
+            script.compiledLength = compiledLength;
+
+            LOGD("  SCPT: 0x%08X '%s' type=%d bytecode=%u vars=%u refs=%u",
+                 script.formID, script.editorID.c_str(), scriptType,
+                 compiledLength, varCount, refCount);
+        }
+
+        // SCDA: compiled bytecode
+        auto* scda = rec.findSubRecord("SCDA");
+        if (scda && !scda->data.empty()) {
+            script.bytecode = scda->data;
+        }
+
+        // SCTX: script source text (optional, for debugging)
+        auto* sctx = rec.findSubRecord("SCTX");
+        if (sctx && !sctx->data.empty()) {
+            script.source = std::string(
+                reinterpret_cast<const char*>(sctx->data.data()),
+                sctx->data.size());
+        }
+
+        // SLSD: variable data (12 bytes per variable)
+        //   uint32_t index
+        //   uint8_t  type (0=int, 1=float, 2=string)
+        //   uint8_t  flags
+        //   uint8_t  padding[2]
+        //   float    floatValue (default)
+        // SCVR: variable name (null-terminated string)
+        // Variables are stored as SLSD/SCVR pairs
+        for (size_t i = 0; i < rec.subRecords.size(); ++i) {
+            const auto& sub = rec.subRecords[i];
+            if (std::memcmp(sub.tag, "SLSD", 4) == 0 && sub.size() >= 12) {
+                script::ScriptVariable var;
+                const uint8_t* data = sub.data.data();
+                uint32_t index;
+                uint8_t type;
+                std::memcpy(&index, data, 4);
+                type = data[4];
+
+                var.index = index;
+
+                // Default value
+                if (type == 0) {
+                    var.type = script::ScriptValue::Type::Integer;
+                    int32_t defVal;
+                    std::memcpy(&defVal, data + 8, 4);
+                    var.defaultValue = script::ScriptValue::makeInt(defVal);
+                } else if (type == 1) {
+                    var.type = script::ScriptValue::Type::Float;
+                    float defVal;
+                    std::memcpy(&defVal, data + 8, 4);
+                    var.defaultValue = script::ScriptValue::makeFloat(defVal);
+                } else if (type == 2) {
+                    var.type = script::ScriptValue::Type::String;
+                    var.defaultValue = script::ScriptValue::makeString("");
+                }
+
+                // Next subrecord should be SCVR with the variable name
+                if (i + 1 < rec.subRecords.size()) {
+                    const auto& next = rec.subRecords[i + 1];
+                    if (std::memcmp(next.tag, "SCVR", 4) == 0 && !next.data.empty()) {
+                        var.name = std::string(
+                            reinterpret_cast<const char*>(next.data.data()),
+                            next.data.size());
+                        // Remove null terminator if present
+                        if (!var.name.empty() && var.name.back() == '\0') {
+                            var.name.pop_back();
+                        }
+                    }
+                }
+
+                script.variables.push_back(std::move(var));
+            }
+        }
+
+        // SCRO: object references (4 bytes each - FormID)
+        for (const auto& sub : rec.subRecords) {
+            if (std::memcmp(sub.tag, "SCRO", 4) == 0 && sub.size() >= 4) {
+                uint32_t refFormID;
+                std::memcpy(&refFormID, sub.data.data(), 4);
+                script.references.push_back(refFormID);
+            }
+        }
+
+        m_scripts.push_back(std::move(script));
+    }
+
 bool ESMFile::readRecordHeaderMem(const uint8_t*& pos, const uint8_t* end, ESMRecord& rec) {
     if (pos + 16 > end) return false;
     
@@ -2052,6 +2167,9 @@ void ESMManager::rebuildIndices() {
         for (size_t i = 0; i < file->getFactions().size(); ++i) {
             m_factionIndex[file->getFactions()[i].formID] = fi;
         }
+        for (size_t i = 0; i < file->getScripts().size(); ++i) {
+            m_scriptIndex[file->getScripts()[i].formID] = fi;
+        }
     }
 }
 
@@ -2414,6 +2532,15 @@ const FactionData* ESMManager::findFaction(uint32_t formID) const {
     return nullptr;
 }
 
+const script::ScriptData* ESMManager::findScript(uint32_t formID) const {
+    auto it = m_scriptIndex.find(formID);
+    if (it == m_scriptIndex.end()) return nullptr;
+    for (const auto& script : m_files[it->second]->getScripts()) {
+        if (script.formID == formID) return &script;
+    }
+    return nullptr;
+}
+
 std::vector<std::pair<uint32_t, uint16_t>> ESMManager::resolveLeveledList(uint32_t listFormID, uint32_t playerLevel) const {
     std::vector<std::pair<uint32_t, uint16_t>> result;
     const LeveledListData* list = findLeveledList(listFormID);
@@ -2760,6 +2887,14 @@ const std::vector<RoadData>& ESMManager::getAllRoads() const {
         return empty;
     }
     return m_files.back()->getRoads();
+}
+
+const std::vector<script::ScriptData>& ESMManager::getAllScripts() const {
+    if (m_files.empty()) {
+        static std::vector<script::ScriptData> empty;
+        return empty;
+    }
+    return m_files.back()->getScripts();
 }
 
 } // namespace oblivion
