@@ -14,27 +14,34 @@ class MainActivity : Activity() {
     private var gameSurfaceView: GameSurfaceView? = null
     private var mediaPlayer: MediaPlayer? = null
     private var soundPool: SoundPool? = null
+    private val loadedSounds = mutableMapOf<String, Int>() // filename → soundId
+    private var spLoadListener: SoundPool.OnLoadCompleteListener? = null
 
     companion object {
         private const val TAG = "MainActivity"
+        @Volatile
         private var instance: MainActivity? = null
+
+        fun getInstance(): MainActivity? = instance
     }
 
     fun playBGM(filename: String) {
-        playBGMInternal(filename)
+        runOnUiThread { playBGMInternal(filename) }
     }
 
     fun stopBGM() {
-        mediaPlayer?.let {
-            if (it.isPlaying) {
-                it.stop()
-                Log.i(TAG, "BGM stopped")
+        runOnUiThread {
+            mediaPlayer?.let {
+                if (it.isPlaying) {
+                    it.stop()
+                    Log.i(TAG, "BGM stopped")
+                }
             }
         }
     }
 
     fun playSE(filename: String) {
-        playSEInternal(filename)
+        runOnUiThread { playSEInternal(filename) }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -101,15 +108,7 @@ class MainActivity : Activity() {
         super.onPause()
         Log.i(TAG, "onPause")
 
-        gameSurfaceView?.let { view ->
-            if (view.getGameRenderer() != null) {
-                Log.i(TAG, "Pausing game surface view")
-                view.onPause()
-            } else {
-                Log.i(TAG, "GameRenderer not yet created, deferring pause")
-            }
-        }
-
+        gameSurfaceView?.onPause()
         mediaPlayer?.let {
             if (it.isPlaying) {
                 it.pause()
@@ -128,7 +127,9 @@ class MainActivity : Activity() {
         super.onDestroy()
         Log.i(TAG, "onDestroy - cleaning up audio")
         cleanupAudio()
-        instance = null
+        if (instance === this) {
+            instance = null
+        }
     }
 
     private fun playBGMInternal(filename: String) {
@@ -144,10 +145,12 @@ class MainActivity : Activity() {
             }
             mp.reset()
 
-            val assetPath = "file:///android_asset/audio/music/$filename"
+            val assetPath = "audio/music/$filename"
             Log.i(TAG, "Loading BGM: $assetPath")
 
-            mp.setDataSource(assetPath)
+            val afd = assets.openFd(assetPath)
+            mp.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+            afd.close()
             mp.prepare()
             mp.isLooping = true
             mp.start()
@@ -166,19 +169,31 @@ class MainActivity : Activity() {
                 return
             }
 
+            // Cache hit → play immediately
+            loadedSounds[filename]?.let { cachedId ->
+                sp.play(cachedId, 1.0f, 1.0f, 0, 0, 1.0f)
+                Log.i(TAG, "SE playing from cache: $filename")
+                return
+            }
+
             val assetPath = "audio/sounds/$filename"
             Log.i(TAG, "Loading SE: $assetPath")
 
-            // For raw loading from assets
             val afd = assets.openFd(assetPath)
             val soundId = sp.load(afd, 1)
-            
-            // To play immediately, we typically need to wait for load completion in SoundPool.
-            // For this port keeping logic similar to original.
-            sp.setOnLoadCompleteListener { pool, sampleId, status ->
-                if (status == 0) {
-                    pool.play(sampleId, 1.0f, 1.0f, 0, 0, 1.0f)
+            afd.close()
+            loadedSounds[filename] = soundId
+
+            // Set listener only once
+            if (spLoadListener == null) {
+                spLoadListener = SoundPool.OnLoadCompleteListener { pool, sampleId, status ->
+                    if (status == 0) {
+                        pool.play(sampleId, 1.0f, 1.0f, 0, 0, 1.0f)
+                    } else {
+                        Log.e(TAG, "Failed to load SE, status=$status")
+                    }
                 }
+                sp.setOnLoadCompleteListener(spLoadListener)
             }
 
             Log.i(TAG, "SE playing queued: $filename")
@@ -202,6 +217,8 @@ class MainActivity : Activity() {
                 it.release()
                 Log.i(TAG, "SoundPool released")
             }
+            loadedSounds.clear()
+            spLoadListener = null
             soundPool = null
         } catch (e: Exception) {
             Log.e(TAG, "Error during audio cleanup", e)

@@ -757,10 +757,19 @@
       "tags": ["esm", "ai", "aidt", "npc", "packages"],
       "content": "ESM AI data parsing complete. Added AIDT subrecord parsing for NPC records: (1) AIPackageType enum with 15 types (NONE, FIND, FOLLOW, ESCORT, TRAVEL, WANDER, SLEEP, EAT, COMBAT, FLEE, YIELD, DIALOGUE, ACCOMPANY, USE_ITEM, WAIT). (2) AIPackageData struct with type, flags, schedule (day/hour/duration), targetFormID, targetXYZ, locationFormID, wanderDistance, idleTime. (3) NPCData extended with aggression, confidence, energy, responsibility, mood, aiFlags fields. (4) AI package subrecord parsing: AI_A (Activate/Find), AI_E (Escort), AI_F (Follow), AI_T (Travel), AI_W (Wander), AI_PK (newer format). (5) All NPCs now have authentic AI data from ESM files. BUILD SUCCESSFUL.",
       "compressed": false
+    },
+    {
+      "id": "mem-024",
+      "timestamp": "2026-08-27T13:57:00Z",
+      "category": "decision",
+      "priority": "high",
+      "tags": ["audio", "openal", "wav", "bug-fix"],
+      "content": "Audio system bug fixes complete. (1) AudioSource::setVolume/setPosition/enable3D/disable3D now properly call OpenAL functions when AUDIO_SYSTEM_ENABLED is defined. (2) WAV parsing uses safe little-endian read helpers instead of direct pointer casting (endian-independent). (3) Added boundary checks for WAV chunk parsing to prevent buffer overrun. (4) Added PCM format validation. (5) Added 2-byte alignment padding support for WAV chunks. BUILD SUCCESSFUL.",
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 68,
+    "totalEntries": 69,
     "compressedCount": 0,
     "sessionCount": 4
   }
