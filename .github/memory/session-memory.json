@@ -904,10 +904,27 @@
         "memory-leak"
       ],
       "compressed": false
+    },
+    {
+      "id": "mem-029",
+      "timestamp": "2026-08-27T16:43:58.760049Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "Batch 3 bug fixes completed (15 bugs #30-47): camera rotate() vector recalculation, aspectRatio/fov validation, far plane 100->1000, shader GL object validation + uniform caching, texture_loader AAsset_read validation + mipmap + thread safety, skeleton mat4 init + m[i][j] fix + getBone bounds, navmesh isPointInTriangle + findTriangle containment check. Build successful, pushed as 3c5f262.",
+      "tags": [
+        "bug-fix",
+        "batch3",
+        "camera",
+        "shader",
+        "texture",
+        "skeleton",
+        "navmesh"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 64,
+    "totalEntries": 65,
     "compressedCount": 0,
     "sessionCount": 4
   }
