@@ -467,8 +467,29 @@ ALuint AudioManager::loadWavFile(const std::string& filename, ALint& format,
     }
     AAsset_close(asset);
 
-    if (*(uint32_t*)wavData.data() != 0x46464952) {
+    // Safe little-endian read helpers (endian-independent)
+    auto readU32 = [&](size_t offset) -> uint32_t {
+        if (offset + 4 > wavData.size()) return 0;
+        return wavData[offset] |
+               (wavData[offset + 1] << 8) |
+               (wavData[offset + 2] << 16) |
+               (wavData[offset + 3] << 24);
+    };
+
+    auto readU16 = [&](size_t offset) -> uint16_t {
+        if (offset + 2 > wavData.size()) return 0;
+        return wavData[offset] | (wavData[offset + 1] << 8);
+    };
+
+    // RIFF header check (endian-independent)
+    if (readU32(0) != 0x46464952) {  // "RIFF" in little-endian
         LOGE("Invalid WAV (no RIFF): %s", filename.c_str());
+        return 0;
+    }
+
+    // WAVE check
+    if (readU32(8) != 0x45564157) {  // "WAVE"
+        LOGE("Invalid WAV (no WAVE): %s", filename.c_str());
         return 0;
     }
 
@@ -478,29 +499,38 @@ ALuint AudioManager::loadWavFile(const std::string& filename, ALint& format,
     uint32_t audioDataOffset = 0;
     uint32_t audioDataSize = 0;
 
-    uint32_t pos = 12;
+    // Chunk parsing with boundary checks
+    size_t pos = 12;
     while (pos + 8 <= wavData.size()) {
-        uint32_t chunkId = *(uint32_t*)&wavData[pos];
-        uint32_t chunkSize = *(uint32_t*)&wavData[pos + 4];
+        uint32_t chunkId = readU32(pos);
+        uint32_t chunkSize = readU32(pos + 4);
 
-        if (pos + 8 + chunkSize > wavData.size()) break;
+        if (pos + 8 + chunkSize > wavData.size()) {
+            LOGE("Invalid chunk size: %u at offset %zu", chunkSize, pos);
+            return 0;
+        }
 
-        if (chunkId == 0x20746d66) {
+        if (chunkId == 0x20746D66) {  // "fmt "
             if (chunkSize < 16) {
                 LOGE("Invalid fmt chunk size: %u", chunkSize);
                 return 0;
             }
-            numChannels = *(uint16_t*)&wavData[pos + 8];
-            sampleRate = *(uint32_t*)&wavData[pos + 12];
-            bitsPerSample = *(uint16_t*)&wavData[pos + 22];
+            uint16_t audioFormat = readU16(pos + 8);
+            if (audioFormat != 1) {  // PCM only
+                LOGE("Unsupported audio format: %u (only PCM=1 supported)", audioFormat);
+                return 0;
+            }
+            numChannels = readU16(pos + 10);
+            sampleRate = readU32(pos + 12);
+            bitsPerSample = readU16(pos + 22);
             LOGD("WAV: ch=%u sr=%u bits=%u", numChannels, sampleRate, bitsPerSample);
-        } else if (chunkId == 0x61746164) {
+        } else if (chunkId == 0x61746164) {  // "data"
             audioDataOffset = pos + 8;
             audioDataSize = chunkSize;
-            break;
         }
 
-        pos += 8 + chunkSize;
+        // Next chunk with 2-byte alignment padding
+        pos += 8 + chunkSize + (chunkSize % 2);
     }
 
     if (audioDataSize == 0 || numChannels == 0 || sampleRate == 0) {

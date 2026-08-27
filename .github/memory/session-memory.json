@@ -748,10 +748,19 @@
       "tags": ["ai", "radiant-ai", "npc", "scheduler", "phase35"],
       "content": "Phase 35 (v1.0.0) complete. Radiant AI system implemented: (1) AI Package System with 15 package types (Eat, Sleep, Wander, Travel, Patrol, Follow, Escort, Guard, Activate, Combat, Flee, Accompany, UseItem, SandBox, Dialogue). (2) Priority-based PackageStack with conditions (TimeCondition, LocationCondition, StatCondition). (3) AIScheduler with 24h time-based package selection, NavMesh pathfinding, stuck detection (3s timeout). (4) Default daily schedule: Sleep(22:00-06:00,p60), Eat(12:00-13:00,p55), Wander(all day,p30), SandBox(fallback,p20). (5) Combat(p90)/Flee(p95) override normal behavior. (6) Integrated into Renderer update loop after ImperialWeave.update(). (7) All NPCs auto-registered with createDefaultSchedule(). BUILD SUCCESSFUL.",
       "compressed": false
+    },
+    {
+      "id": "mem-023",
+      "timestamp": "2026-08-27T13:00:00Z",
+      "category": "decision",
+      "priority": "high",
+      "tags": ["esm", "ai", "aidt", "npc", "packages"],
+      "content": "ESM AI data parsing complete. Added AIDT subrecord parsing for NPC records: (1) AIPackageType enum with 15 types (NONE, FIND, FOLLOW, ESCORT, TRAVEL, WANDER, SLEEP, EAT, COMBAT, FLEE, YIELD, DIALOGUE, ACCOMPANY, USE_ITEM, WAIT). (2) AIPackageData struct with type, flags, schedule (day/hour/duration), targetFormID, targetXYZ, locationFormID, wanderDistance, idleTime. (3) NPCData extended with aggression, confidence, energy, responsibility, mood, aiFlags fields. (4) AI package subrecord parsing: AI_A (Activate/Find), AI_E (Escort), AI_F (Follow), AI_T (Travel), AI_W (Wander), AI_PK (newer format). (5) All NPCs now have authentic AI data from ESM files. BUILD SUCCESSFUL.",
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 67,
+    "totalEntries": 68,
     "compressedCount": 0,
     "sessionCount": 4
   }

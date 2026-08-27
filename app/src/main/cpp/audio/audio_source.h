@@ -3,8 +3,12 @@
 #include <cstdint>
 #include <glm/glm.hpp>
 
+#ifdef AUDIO_SYSTEM_ENABLED
+#include <AL/al.h>
+#else
 // Stub: OpenAL not needed for Java MediaPlayer approach via JNI
 using ALuint = unsigned int;
+#endif
 
 /**
  * @brief オーディオ再生チャンネル（AudioSource）
@@ -51,10 +55,11 @@ struct AudioSource {
      */
     void setVolume(float vol) {
         volume = vol < 0.0f ? 0.0f : (vol > 1.0f ? 1.0f : vol);
-        // OpenAL disabled - JNI bridge approach only
-        // if (alSource != 0) {
-        //     alSourcef(alSource, AL_GAIN, volume);
-        // }
+        #ifdef AUDIO_SYSTEM_ENABLED
+        if (alSource != 0) {
+            alSourcef(alSource, AL_GAIN, volume);
+        }
+        #endif
     }
 
     /**
@@ -63,10 +68,11 @@ struct AudioSource {
      */
     void setPitch(float p) {
         pitch = p < 0.5f ? 0.5f : (p > 2.0f ? 2.0f : p);
-        // OpenAL disabled - JNI bridge approach only
-        // if (alSource != 0) {
-        //     alSourcef(alSource, AL_PITCH, pitch);
-        // }
+        #ifdef AUDIO_SYSTEM_ENABLED
+        if (alSource != 0) {
+            alSourcef(alSource, AL_PITCH, pitch);
+        }
+        #endif
     }
 
     /**
@@ -75,10 +81,11 @@ struct AudioSource {
      */
     void setPosition(const glm::vec3& pos) {
         position = pos;
-        // OpenAL disabled - JNI bridge approach only
-        // if (alSource != 0 && is3D) {
-        //     alSource3f(alSource, AL_POSITION, pos.x, pos.y, pos.z);
-        // }
+        #ifdef AUDIO_SYSTEM_ENABLED
+        if (alSource != 0 && is3D) {
+            alSource3f(alSource, AL_POSITION, pos.x, pos.y, pos.z);
+        }
+        #endif
     }
 
     /**
@@ -87,10 +94,11 @@ struct AudioSource {
      */
     void setVelocity(const glm::vec3& vel) {
         velocity = vel;
-        // OpenAL disabled - JNI bridge approach only
-        // if (alSource != 0 && is3D) {
-        //     alSource3f(alSource, AL_VELOCITY, vel.x, vel.y, vel.z);
-        // }
+        #ifdef AUDIO_SYSTEM_ENABLED
+        if (alSource != 0 && is3D) {
+            alSource3f(alSource, AL_VELOCITY, vel.x, vel.y, vel.z);
+        }
+        #endif
     }
 
     /**
@@ -98,10 +106,11 @@ struct AudioSource {
      */
     void enable3D() {
         is3D = true;
-        // OpenAL disabled - JNI bridge approach only
-        // if (alSource != 0) {
-        //     alSourcei(alSource, AL_SOURCE_RELATIVE, AL_FALSE);
-        // }
+        #ifdef AUDIO_SYSTEM_ENABLED
+        if (alSource != 0) {
+            alSourcei(alSource, AL_SOURCE_RELATIVE, AL_FALSE);
+        }
+        #endif
     }
 
     /**
@@ -109,10 +118,11 @@ struct AudioSource {
      */
     void disable3D() {
         is3D = false;
-        // OpenAL disabled - JNI bridge approach only
-        // if (alSource != 0) {
-        //     alSourcei(alSource, AL_SOURCE_RELATIVE, AL_TRUE);
-        //     position = glm::vec3(0.0f, 0.0f, 0.0f);
-        // }
+        #ifdef AUDIO_SYSTEM_ENABLED
+        if (alSource != 0) {
+            alSourcei(alSource, AL_SOURCE_RELATIVE, AL_TRUE);
+            position = glm::vec3(0.0f, 0.0f, 0.0f);
+        }
+        #endif
     }
 };
