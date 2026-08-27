@@ -766,10 +766,19 @@
       "tags": ["audio", "openal", "wav", "bug-fix"],
       "content": "Audio system bug fixes complete. (1) AudioSource::setVolume/setPosition/enable3D/disable3D now properly call OpenAL functions when AUDIO_SYSTEM_ENABLED is defined. (2) WAV parsing uses safe little-endian read helpers instead of direct pointer casting (endian-independent). (3) Added boundary checks for WAV chunk parsing to prevent buffer overrun. (4) Added PCM format validation. (5) Added 2-byte alignment padding support for WAV chunks. BUILD SUCCESSFUL.",
       "compressed": false
+    },
+    {
+      "id": "mem-025",
+      "timestamp": "2026-08-27T14:30:00Z",
+      "category": "decision",
+      "priority": "high",
+      "tags": ["kotlin", "audio", "soundpool", "mediaplayer", "bug-fix"],
+      "content": "Kotlin audio system bug fixes complete. (1) SoundPool: Added loadedSounds cache to prevent memory leak from repeated sp.load() calls. (2) SoundPool: Set OnLoadCompleteListener only once to avoid overwriting previous listeners. (3) MediaPlayer: Changed from file:///android_asset/ URI to AssetFileDescriptor for reliable asset loading. (4) Thread safety: Added runOnUiThread wrappers for playBGM/playSE/stopBGM to handle C++ callbacks from non-UI threads. (5) Instance: Added @Volatile annotation and identity check in onDestroy for screen rotation safety. (6) onPause: Simplified redundant null check. BUILD SUCCESSFUL.",
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 69,
+    "totalEntries": 70,
     "compressedCount": 0,
     "sessionCount": 4
   }
