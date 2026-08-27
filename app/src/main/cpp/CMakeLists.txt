@@ -147,6 +147,13 @@ add_library(native-lib SHARED
     ui/placeholder_assets.cpp
     ui/hud_renderer.cpp
 
+    # Phase 43: UI/UX Final Adjustments
+    ui/touch_gesture_handler.cpp
+    ui/menu_transition_manager.cpp
+    ui/hud_layout.cpp
+    ui/control_scheme_manager.cpp
+    ui/accessibility_manager.cpp
+
     # Map System (Phase 9.1)
     map/map_system.cpp
 
