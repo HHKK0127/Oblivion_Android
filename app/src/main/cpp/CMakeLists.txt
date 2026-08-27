@@ -194,6 +194,13 @@ add_library(native-lib SHARED
     script/script_functions.cpp
     script/script_disasm.cpp
 
+    # Quest System (Phase 39 - Quest Flow)
+    quest/quest_record.cpp
+    quest/quest_stage_manager.cpp
+    quest/quest_objective_tracker.cpp
+    quest/quest_rewards.cpp
+    quest/quest_flow_controller.cpp
+
     # JNI Bridge (Java/C++ communication)
     jni_bridge.cpp
 )
@@ -221,6 +228,7 @@ target_include_directories(native-lib PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/tests
     ${CMAKE_CURRENT_SOURCE_DIR}/physics
     ${CMAKE_CURRENT_SOURCE_DIR}/script
+    ${CMAKE_CURRENT_SOURCE_DIR}/quest
 )
 
 # Find OpenAL-Soft (optional for now)
