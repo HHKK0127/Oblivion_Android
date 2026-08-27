@@ -11,16 +11,20 @@
 
 glm::mat4 Skeleton::localToMatrix(const NIFTransform& t) const {
     glm::mat4 m;
+    // Initialize to identity first
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+            m[i][j] = (i == j) ? 1.0f : 0.0f;
     // Rotation (3x3 upper-left, scaled)
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
-            m.data[i][j] = t.rotation.m[i][j] * t.scale;
+            m[i][j] = t.rotation.m[i][j] * t.scale;
         }
     }
     // Translation
-    m.data[3][0] = t.translation.x;
-    m.data[3][1] = t.translation.y;
-    m.data[3][2] = t.translation.z;
+    m[3][0] = t.translation.x;
+    m[3][1] = t.translation.y;
+    m[3][2] = t.translation.z;
     return m;
 }
 
@@ -185,9 +189,19 @@ int Skeleton::getBoneIndex(const std::string& name) const {
 }
 
 const Bone& Skeleton::getBone(int index) const {
+    static Bone emptyBone{};
+    if (index < 0 || index >= static_cast<int>(bones.size())) {
+        LOGD("getBone: index %d out of range (0-%zu)", index, bones.size() - 1);
+        return emptyBone;
+    }
     return bones[index];
 }
 
 Bone& Skeleton::getBone(int index) {
+    static Bone emptyBone{};
+    if (index < 0 || index >= static_cast<int>(bones.size())) {
+        LOGD("getBone: index %d out of range (0-%zu)", index, bones.size() - 1);
+        return emptyBone;
+    }
     return bones[index];
 }

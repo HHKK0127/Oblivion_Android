@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 #include <glm/glm.hpp>
 
 class ShaderProgram {
@@ -31,9 +32,11 @@ public:
 
 private:
     unsigned int programId;
+    mutable std::unordered_map<std::string, int> uniformLocationCache;
 
     // Helper methods
     bool compileShader(unsigned int& shader, unsigned int shaderType, const std::string& source);
     std::string getShaderLog(unsigned int shader);
     std::string getProgramLog();
+    int getUniformLocation(const std::string& name) const;
 };

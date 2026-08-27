@@ -48,6 +48,24 @@ float NavMeshManager::distance2D(const glm::vec3& a, const glm::vec3& b) const {
     return std::sqrt(dx * dx + dz * dz);
 }
 
+bool NavMeshManager::isPointInTriangle(const NavMeshData& navMesh, const glm::vec3& p, int triIdx) const {
+    if (triIdx < 0 || triIdx >= static_cast<int>(navMesh.triangles.size())) return false;
+    const auto& tri = navMesh.triangles[triIdx];
+    for (int i = 0; i < 3; i++) {
+        if (tri.vertex[i] >= navMesh.vertices.size()) return false;
+    }
+    const glm::vec3& a = navMesh.vertices[tri.vertex[0]];
+    const glm::vec3& b = navMesh.vertices[tri.vertex[1]];
+    const glm::vec3& c = navMesh.vertices[tri.vertex[2]];
+    // Barycentric coordinate test (2D, XZ plane)
+    float d1 = (p.x - b.x) * (a.z - b.z) - (a.x - b.x) * (p.z - b.z);
+    float d2 = (p.x - c.x) * (b.z - c.z) - (b.x - c.x) * (p.z - c.z);
+    float d3 = (p.x - a.x) * (c.z - a.z) - (c.x - a.x) * (p.z - a.z);
+    bool hasNeg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+    bool hasPos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+    return !(hasNeg && hasPos);
+}
+
 glm::vec3 NavMeshManager::getTriangleCentroid(const NavMeshData& navMesh, int triIdx) const {
     if (triIdx < 0 || triIdx >= static_cast<int>(navMesh.triangles.size())) {
         return glm::vec3(0.0f, 0.0f, 0.0f);
@@ -77,6 +95,11 @@ int NavMeshManager::findTriangle(const NavMeshData& navMesh, const glm::vec3& po
     float bestDist = std::numeric_limits<float>::max();
 
     for (size_t i = 0; i < navMesh.triangles.size(); i++) {
+        // Check if point is inside triangle first
+        if (isPointInTriangle(navMesh, position, static_cast<int>(i))) {
+            return static_cast<int>(i);
+        }
+        // Fall back to closest centroid
         glm::vec3 centroid = getTriangleCentroid(navMesh, static_cast<int>(i));
         float dist = distance2D(centroid, position);
         if (dist < bestDist) {

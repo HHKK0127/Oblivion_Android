@@ -99,6 +99,11 @@ private:
     float distance2D(const glm::vec3& a, const glm::vec3& b) const;
 
     /**
+     * @brief Check if a 2D point (XZ) is inside a triangle
+     */
+    bool isPointInTriangle(const NavMeshData& navMesh, const glm::vec3& p, int triIdx) const;
+
+    /**
      * @brief A* pathfinding on a single NavMesh
      * @param navMesh NavMesh data
      * @param startTri Starting triangle index

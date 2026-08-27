@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <mutex>
 
 /**
  * @brief PNGテクスチャローダー
@@ -35,4 +36,5 @@ public:
 
 private:
     static std::unordered_map<GLuint, std::pair<int, int>> s_textureSizes;
+    static std::mutex s_textureMutex;
 };

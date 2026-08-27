@@ -1,6 +1,7 @@
 #include "shader.h"
 #include <GLES3/gl3.h>
 #include <android/log.h>
+#include <vector>
 
 #undef LOG_TAG
 #undef LOGD
@@ -37,6 +38,12 @@ bool ShaderProgram::compile(const std::string& vertexSource,
 
     // Create program and link
     programId = glCreateProgram();
+    if (programId == 0) {
+        LOGE("glCreateProgram failed");
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
+        return false;
+    }
     LOGD("Created shader program: %u", programId);
 
     glAttachShader(programId, vertexShader);
@@ -71,6 +78,10 @@ bool ShaderProgram::compileShader(unsigned int& shader, unsigned int shaderType,
     const char* shaderSource = source.c_str();
 
     shader = glCreateShader(shaderType);
+    if (shader == 0) {
+        LOGE("glCreateShader failed for type %d", shaderType);
+        return false;
+    }
     glShaderSource(shader, 1, &shaderSource, nullptr);
     glCompileShader(shader);
 
@@ -90,17 +101,21 @@ bool ShaderProgram::compileShader(unsigned int& shader, unsigned int shaderType,
 }
 
 std::string ShaderProgram::getShaderLog(unsigned int shader) {
-    int maxLength = 512;
-    char infoLog[512];
-    glGetShaderInfoLog(shader, maxLength, nullptr, infoLog);
-    return std::string(infoLog);
+    int maxLength = 0;
+    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
+    if (maxLength <= 0) maxLength = 1024;
+    std::vector<char> infoLog(maxLength);
+    glGetShaderInfoLog(shader, maxLength, nullptr, infoLog.data());
+    return std::string(infoLog.data());
 }
 
 std::string ShaderProgram::getProgramLog() {
-    int maxLength = 512;
-    char infoLog[512];
-    glGetProgramInfoLog(programId, maxLength, nullptr, infoLog);
-    return std::string(infoLog);
+    int maxLength = 0;
+    glGetProgramiv(programId, GL_INFO_LOG_LENGTH, &maxLength);
+    if (maxLength <= 0) maxLength = 1024;
+    std::vector<char> infoLog(maxLength);
+    glGetProgramInfoLog(programId, maxLength, nullptr, infoLog.data());
+    return std::string(infoLog.data());
 }
 
 void ShaderProgram::use() const {
@@ -111,7 +126,7 @@ void ShaderProgram::use() const {
 
 void ShaderProgram::setUniform(const std::string& name, float value) {
     if (programId == 0) return;
-    GLint loc = glGetUniformLocation(programId, name.c_str());
+    GLint loc = getUniformLocation(name);
     if (loc != -1) {
         glUniform1f(loc, value);
     }
@@ -119,7 +134,7 @@ void ShaderProgram::setUniform(const std::string& name, float value) {
 
 void ShaderProgram::setUniform(const std::string& name, int value) {
     if (programId == 0) return;
-    GLint loc = glGetUniformLocation(programId, name.c_str());
+    GLint loc = getUniformLocation(name);
     if (loc != -1) {
         glUniform1i(loc, value);
     }
@@ -127,7 +142,7 @@ void ShaderProgram::setUniform(const std::string& name, int value) {
 
 void ShaderProgram::setUniform(const std::string& name, const glm::vec2& value) {
     if (programId == 0) return;
-    GLint loc = glGetUniformLocation(programId, name.c_str());
+    GLint loc = getUniformLocation(name);
     if (loc != -1) {
         glUniform2fv(loc, 1, &value.x);
     }
@@ -135,7 +150,7 @@ void ShaderProgram::setUniform(const std::string& name, const glm::vec2& value) 
 
 void ShaderProgram::setUniform(const std::string& name, const glm::vec3& value) {
     if (programId == 0) return;
-    GLint loc = glGetUniformLocation(programId, name.c_str());
+    GLint loc = getUniformLocation(name);
     if (loc != -1) {
         glUniform3fv(loc, 1, &value.x);
     }
@@ -143,7 +158,7 @@ void ShaderProgram::setUniform(const std::string& name, const glm::vec3& value) 
 
 void ShaderProgram::setUniform(const std::string& name, const glm::vec4& value) {
     if (programId == 0) return;
-    GLint loc = glGetUniformLocation(programId, name.c_str());
+    GLint loc = getUniformLocation(name);
     if (loc != -1) {
         glUniform4fv(loc, 1, &value.x);
     }
@@ -151,11 +166,21 @@ void ShaderProgram::setUniform(const std::string& name, const glm::vec4& value) 
 
 void ShaderProgram::setUniform(const std::string& name, const glm::mat4& value) {
     if (programId == 0) return;
-    GLint loc = glGetUniformLocation(programId, name.c_str());
+    GLint loc = getUniformLocation(name);
     if (loc != -1) {
         // mat4 data is stored as a 4x4 float array in column-major order
         glUniformMatrix4fv(loc, 1, GL_FALSE, reinterpret_cast<const float*>(&value));
     }
+}
+
+int ShaderProgram::getUniformLocation(const std::string& name) const {
+    auto it = uniformLocationCache.find(name);
+    if (it != uniformLocationCache.end()) {
+        return it->second;
+    }
+    GLint loc = glGetUniformLocation(programId, name.c_str());
+    uniformLocationCache[name] = loc;
+    return loc;
 }
 
 void ShaderProgram::cleanup() {
@@ -163,4 +188,5 @@ void ShaderProgram::cleanup() {
         glDeleteProgram(programId);
         programId = 0;
     }
+    uniformLocationCache.clear();
 }

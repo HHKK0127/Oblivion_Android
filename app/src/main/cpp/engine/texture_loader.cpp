@@ -14,6 +14,7 @@ extern "C" AAssetManager* jni_audio_get_asset_manager();
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 std::unordered_map<GLuint, std::pair<int, int>> TextureLoader::s_textureSizes;
+std::mutex TextureLoader::s_textureMutex;
 
 GLuint TextureLoader::loadTextureFromAsset(const std::string& filename) {
     LOGD("Loading texture: %s", filename.c_str());
@@ -32,8 +33,13 @@ GLuint TextureLoader::loadTextureFromAsset(const std::string& filename) {
 
     off_t len = AAsset_getLength(asset);
     std::vector<unsigned char> buffer(len);
-    AAsset_read(asset, buffer.data(), len);
+    size_t bytesRead = AAsset_read(asset, buffer.data(), len);
     AAsset_close(asset);
+
+    if (bytesRead != static_cast<size_t>(len)) {
+        LOGE("AAsset_read incomplete for %s: read %zu / %ld bytes", filename.c_str(), bytesRead, static_cast<long>(len));
+        return 0;
+    }
 
     int width, height, channels;
     unsigned char* pixels = stbi_load_from_memory(buffer.data(), static_cast<int>(len),
@@ -53,7 +59,8 @@ GLuint TextureLoader::loadTextureFromAsset(const std::string& filename) {
 
     glBindTexture(GL_TEXTURE_2D, textureId);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -61,7 +68,10 @@ GLuint TextureLoader::loadTextureFromAsset(const std::string& filename) {
 
     stbi_image_free(pixels);
 
-    s_textureSizes[textureId] = {width, height};
+    {
+        std::lock_guard<std::mutex> lock(s_textureMutex);
+        s_textureSizes[textureId] = {width, height};
+    }
 
     LOGI("Texture loaded: %s (%dx%d, %d channels) -> id=%u",
          filename.c_str(), width, height, channels, textureId);
@@ -71,6 +81,7 @@ GLuint TextureLoader::loadTextureFromAsset(const std::string& filename) {
 void TextureLoader::deleteTexture(GLuint textureId) {
     if (textureId != 0) {
         glDeleteTextures(1, &textureId);
+        std::lock_guard<std::mutex> lock(s_textureMutex);
         s_textureSizes.erase(textureId);
         LOGD("Texture deleted: id=%u", textureId);
     }
@@ -78,6 +89,7 @@ void TextureLoader::deleteTexture(GLuint textureId) {
 
 bool TextureLoader::getTextureSize(GLuint textureId, int& width, int& height) {
     if (textureId == 0) return false;
+    std::lock_guard<std::mutex> lock(s_textureMutex);
     auto it = s_textureSizes.find(textureId);
     if (it != s_textureSizes.end()) {
         width = it->second.first;

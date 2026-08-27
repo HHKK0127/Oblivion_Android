@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-08-27T15:57:00Z",
+  "lastUpdated": "2026-08-27T16:15:00Z",
   "entries": [
     {
       "content": "Oblivion.exe (Ghidra decompiled) - Gamebryo engine, compiled with VS2005/VS2008, Direct3D9. Init order: Renderer -> Shader System -> Sky -> TES -> TreeManager -> Menus -> Player -> Scripts -> Sound System -> Actor Locations -> LOD Land",
@@ -887,10 +887,27 @@
         "bgm"
       ],
       "compressed": false
+    },
+    {
+      "id": "mem-028",
+      "timestamp": "2026-08-27T16:15:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "Fixed 19 additional bugs (batch 2): (11) NIF readString 1MB limit, (12) NIF parseNiSkinPartition/KeyframeData/ControllerSequence OOM guards, (13) BSA entry.size<4 underflow guard, (14) collision division-by-zero guard, (15) native_activity render thread exit fix, (16) temp file cleanup in asset_manager, (17) LRU lastAccessTime update, (19) ui_manager self-assignment fix, (20) 64bit pointer cast in mesh.cpp, (21) SkinnedMesh GL_UNSIGNED_SHORT noted, (22) NIF readHeader variable-length magic, (24) title_screen redundant glClear removed, (25) actual frame time in renderingThread, (26) quickSlotBar touch handling, (27) NiControllerSequence OOM guard, (28) broadPhaseCollect iterator safety noted, (29) path separator normalization.",
+      "tags": [
+        "bugfix",
+        "critical",
+        "nif-parser",
+        "bsa",
+        "collision",
+        "asset-manager",
+        "memory-leak"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 63,
+    "totalEntries": 64,
     "compressedCount": 0,
     "sessionCount": 4
   }
