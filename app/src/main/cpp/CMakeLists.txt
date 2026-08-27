@@ -167,6 +167,7 @@ add_library(native-lib SHARED
 
     # Save System
     save_system/save_manager.cpp
+    save_system/save_slot_manager.cpp
 
     # Audio System (Phase 8+)
     audio/audio_manager.cpp

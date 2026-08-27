@@ -8,6 +8,16 @@
 #include <ctime>
 #include <GLES3/gl3.h>
 
+// Redefine LOG macros after renderer.h may have overridden them
+#undef LOG_TAG
+#undef LOGD
+#undef LOGI
+#undef LOGE
+#define LOG_TAG "SaveLoadUI"
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+
 SaveLoadUI::SaveLoadUI()
     : textRenderer(nullptr), saveManager(nullptr),
       visible(false), returnToMenu(false),
@@ -294,7 +304,11 @@ void SaveLoadUI::renderSlotList() {
             glm::vec3 textColor = isSelected
                 ? PlaceholderAssets::Colors::GOLD_HIGHLIGHT
                 : PlaceholderAssets::Colors::PARCHMENT_LIGHT;
-            textRenderer->renderText(availableSlots[i],
+            std::string displayText = availableSlots[i].displayName;
+            if (!availableSlots[i].isEmpty) {
+                displayText += "  Lv" + std::to_string(availableSlots[i].playerLevel);
+            }
+            textRenderer->renderText(displayText,
                                     sx + 20.0f, sy + SLOT_HEIGHT * 0.28f,
                                     textColor, 1.0f);
 
@@ -453,7 +467,8 @@ void SaveLoadUI::renderButtons() {
 void SaveLoadUI::handleSlotSelection(int index) {
     if (index >= 0 && index < static_cast<int>(availableSlots.size())) {
         selectedSlotIndex = index;
-        LOGD("Slot %d selected: %s", index, availableSlots[index].c_str());
+        LOGD("Slot %d selected: %s (index=%u)", index,
+             availableSlots[index].displayName.c_str(), availableSlots[index].slotIndex);
     }
 }
 
@@ -464,15 +479,15 @@ void SaveLoadUI::handleExecuteAction() {
     }
 
     if (currentMode == Mode::SAVE) {
-        if (selectedSlotIndex < availableSlots.size() && saveManager->hasSave(availableSlots[selectedSlotIndex])) {
+        if (selectedSlotIndex < availableSlots.size() && saveManager->hasSave(availableSlots[selectedSlotIndex].slotIndex)) {
             dialogState = DialogState::CONFIRM_OVERWRITE;
-            pendingSlotName = availableSlots[selectedSlotIndex];
+            pendingSlotName = availableSlots[selectedSlotIndex].displayName;
         } else {
             handleConfirmOverwrite();
         }
     } else {
         if (selectedSlotIndex < availableSlots.size()) {
-            pendingSlotName = availableSlots[selectedSlotIndex];
+            pendingSlotName = availableSlots[selectedSlotIndex].displayName;
             handleConfirmOverwrite();
         } else {
             LOGD("No slot selected for load");
@@ -487,51 +502,25 @@ void SaveLoadUI::handleConfirmOverwrite() {
     }
 
     if (currentMode == Mode::SAVE) {
+        uint32_t slotIndex;
         std::string slotName;
         if (selectedSlotIndex < availableSlots.size()) {
-            slotName = availableSlots[selectedSlotIndex];
+            slotIndex = availableSlots[selectedSlotIndex].slotIndex;
+            slotName = availableSlots[selectedSlotIndex].displayName;
         } else {
-            // 新規スロット名を生成
+            // 新規スロット: 最初の空きスロットを使用
+            slotIndex = static_cast<uint32_t>(availableSlots.size());
             std::time_t now = std::time(nullptr);
             std::stringstream ss;
             ss << "Save_" << std::put_time(std::localtime(&now), "%Y%m%d_%H%M%S");
             slotName = ss.str();
         }
 
-        // GameState を構築してセーブ
-        GameState gameState;
-        gameState.saveName = slotName;
-        gameState.saveTimestamp = std::time(nullptr);
-
-        // プレイヤーステータスを取得（Renderer 経由）
-        if (renderer) {
-            auto playerCtrl = renderer->getPlayerController();
-            if (playerCtrl) {
-                auto player = playerCtrl->getPlayer();
-                if (player) {
-                    // プレイヤー位置を保存
-                    gameState.playerPosition = player->position;
-
-                    // プレイヤーステータスを構築
-                    gameState.playerStatus.currentHealth = player->health;
-                    gameState.playerStatus.maxHealth = player->maxHealth;
-                    gameState.playerStatus.currentMana = 100.0f;  // TODO: Player に mana フィールド追加
-                    gameState.playerStatus.maxMana = 120.0f;
-
-                    LOGD("Player stats saved: HP=%.0f/%.0f, Pos=(%.1f, %.1f, %.1f)",
-                         player->health, player->maxHealth,
-                         player->position.x, player->position.y, player->position.z);
-                }
-            }
+        // バイナリセーブを実行（全システム状態をシリアライズ）
+        if (saveManager->saveGame(slotIndex, slotName)) {
+            LOGI("Game saved to slot %u: %s", slotIndex, slotName.c_str());
         } else {
-            LOGW("Renderer not available, using default player stats");
-        }
-
-        // セーブを実行
-        if (saveManager->saveGame(slotName, gameState)) {
-            LOGI("Game saved to slot: %s", slotName.c_str());
-        } else {
-            LOGE("Failed to save game to slot: %s", slotName.c_str());
+            LOGE("Failed to save game to slot %u: %s", slotIndex, slotName.c_str());
             errorMessage = "Failed to save game.\nCheck storage space or permissions.";
             dialogState = DialogState::ERROR_SAVE_FAILED;
             return;
@@ -539,26 +528,13 @@ void SaveLoadUI::handleConfirmOverwrite() {
     } else {
         // ロード
         if (selectedSlotIndex < availableSlots.size()) {
-            const std::string& slotName = availableSlots[selectedSlotIndex];
+            uint32_t slotIndex = availableSlots[selectedSlotIndex].slotIndex;
 
-            GameState gameState;
-            if (saveManager->loadGame(slotName, gameState)) {
-                LOGI("Game loaded from slot: %s", slotName.c_str());
-
-                // ロード後の処理（Renderer 経由）
-                if (renderer) {
-                    auto playerCtrl = renderer->getPlayerController();
-                    if (playerCtrl && playerCtrl->getPlayer()) {
-                        auto player = playerCtrl->getPlayer();
-                        player->position = gameState.playerPosition;
-                        player->health = gameState.playerStatus.currentHealth;
-
-                        LOGD("Player restored: HP=%.0f, Pos=(%.1f, %.1f, %.1f)",
-                             player->health, player->position.x, player->position.y, player->position.z);
-                    }
-                }
+            // バイナリロードを実行（全システム状態をデシリアライズ）
+            if (saveManager->loadGame(slotIndex)) {
+                LOGI("Game loaded from slot %u", slotIndex);
             } else {
-                LOGE("Failed to load game from slot: %s", slotName.c_str());
+                LOGE("Failed to load game from slot %u", slotIndex);
                 errorMessage = "Failed to load game.\nThe save file may be corrupted.";
                 dialogState = DialogState::ERROR_LOAD_FAILED;
                 return;
@@ -579,11 +555,12 @@ void SaveLoadUI::handleConfirmDelete() {
     }
 
     if (selectedSlotIndex < availableSlots.size()) {
-        if (saveManager->deleteSave(availableSlots[selectedSlotIndex])) {
-            LOGI("Deleted slot: %s", availableSlots[selectedSlotIndex].c_str());
+        uint32_t slotIndex = availableSlots[selectedSlotIndex].slotIndex;
+        if (saveManager->deleteSave(slotIndex)) {
+            LOGI("Deleted slot %u: %s", slotIndex, availableSlots[selectedSlotIndex].displayName.c_str());
             refreshSaveSlots();
         } else {
-            LOGE("Failed to delete slot: %s", availableSlots[selectedSlotIndex].c_str());
+            LOGE("Failed to delete slot %u: %s", slotIndex, availableSlots[selectedSlotIndex].displayName.c_str());
             errorMessage = "Failed to delete save.\nCheck permissions or storage.";
             dialogState = DialogState::ERROR_DELETE_FAILED;
         }
@@ -598,7 +575,7 @@ void SaveLoadUI::handleCancel() {
 
 std::string SaveLoadUI::getSelectedSlot() const {
     if (selectedSlotIndex < availableSlots.size()) {
-        return availableSlots[selectedSlotIndex];
+        return availableSlots[selectedSlotIndex].displayName;
     }
     return "";
 }
@@ -609,7 +586,8 @@ void SaveLoadUI::updateLayout() {
     float yPos = 150.0f;
     for (size_t i = 0; i < availableSlots.size(); i++) {
         SlotEntry entry;
-        entry.name = availableSlots[i];
+        entry.name = availableSlots[i].displayName;
+        entry.slotIndex = availableSlots[i].slotIndex;
         entry.position = glm::vec2(150.0f, yPos);
         entry.size = glm::vec2(500.0f, SLOT_HEIGHT);
         entry.selected = (static_cast<int>(i) == selectedSlotIndex);
