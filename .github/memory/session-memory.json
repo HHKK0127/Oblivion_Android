@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-08-27T11:15:00Z",
+  "lastUpdated": "2026-09-10T11:00:00Z",
   "entries": [
     {
       "content": "Oblivion.exe (Ghidra decompiled) - Gamebryo engine, compiled with VS2005/VS2008, Direct3D9. Init order: Renderer -> Shader System -> Sky -> TES -> TreeManager -> Menus -> Player -> Scripts -> Sound System -> Actor Locations -> LOD Land",
@@ -739,10 +739,19 @@
       "tags": ["audio", "weapon-type", "combat-sounds", "quick-slot", "spell-ui"],
       "content": "Phase 34 (v0.9.10) complete. (1) Weapon-type hit sound routing: CombatManager emits weaponType in EventBus payload, AudioSubscriber.playSoundForEventWithPayload() parses it and selects hit_blade/blunt/axe/bow etc. (2) SpellSelectionPanel school colors: each school has distinct color + abbreviated prefix [破][回][召][変][幻][神]. (3) Quick-slot spells: Player.quickSlotSpells[4] array, Renderer has 4 F1-F4 buttons bottom-left; empty=open panel in assign mode, assigned=cast spell. pendingAssignSlot tracks assignment. BUILD SUCCESSFUL.",
       "compressed": false
+    },
+    {
+      "id": "mem-022",
+      "timestamp": "2026-09-10T11:00:00Z",
+      "category": "decision",
+      "priority": "high",
+      "tags": ["ai", "radiant-ai", "npc", "scheduler", "phase35"],
+      "content": "Phase 35 (v1.0.0) complete. Radiant AI system implemented: (1) AI Package System with 15 package types (Eat, Sleep, Wander, Travel, Patrol, Follow, Escort, Guard, Activate, Combat, Flee, Accompany, UseItem, SandBox, Dialogue). (2) Priority-based PackageStack with conditions (TimeCondition, LocationCondition, StatCondition). (3) AIScheduler with 24h time-based package selection, NavMesh pathfinding, stuck detection (3s timeout). (4) Default daily schedule: Sleep(22:00-06:00,p60), Eat(12:00-13:00,p55), Wander(all day,p30), SandBox(fallback,p20). (5) Combat(p90)/Flee(p95) override normal behavior. (6) Integrated into Renderer update loop after ImperialWeave.update(). (7) All NPCs auto-registered with createDefaultSchedule(). BUILD SUCCESSFUL.",
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 66,
+    "totalEntries": 67,
     "compressedCount": 0,
     "sessionCount": 4
   }

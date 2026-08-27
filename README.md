@@ -49,6 +49,10 @@ A complete native Android port of The Elder Scrolls IV: Oblivion, built entirely
 - 🎯 **NEW**: Complete Graphical UI and HUD systems (Phase 9-24)
 - 🎯 **NEW**: ESM data integration - 40 record types, NpcManager, Container, Player initialization, Status effects (Phase 28)
 - 🎯 **NEW**: NAVM pathfinding runtime integration, DIAL/INFO dialogue with faction branching, REFR world object placement, 4 spell effects (Phase 29)
+- 🎯 **NEW**: Imperial Weave EventBus + 12-phase coordinator, AnimationSubscriber, AudioSubscriber, SpellSelectionPanel (Phase 32)
+- 🎯 **NEW**: Dedicated combat sounds, NPC spatial audio (Phase 33)
+- 🎯 **NEW**: Weapon-type sound routing, quick-slot spells (Phase 34)
+- 🎯 **NEW**: Radiant AI system - AI package system, scheduler, NavMesh pathfinding integration (Phase 35)
 
 ---
 
@@ -306,15 +310,18 @@ oblivion-android/
 | Phase 30 | NIF Skeleton/Skinning + Collision + Animation | ✅ Complete | Steps 1-13 complete: nif_types.h extended (collision/skinning/animation structs), NIFBlockTypeMap (string-based 31 types), NIFParser extended, SkinPartitionPacker (bitmask), Skeleton (iterative BFS), SkinnedMesh + UBO + skinning shaders, NiControllerManager/Sequence parsing, AnimationPlayer (slerp/lerp/text keys), bhkCollisionObject + bhkRigidBody parsing (9 shape types), Dynamic AABB Tree (broad-phase), CollisionWorld (table-driven narrow phase 5x5, ContactBuffer), CharacterController (substep movement, multi-ray ground detection), Integration Test (9 test groups, JNI callable) |
 | Phase 31 | PlayerController Integration + World Loading | ✅ Complete | Steps 1-10: WorldEntity struct with NIFCache, WorldLoader (loadStatic/loadDynamic/loadActor), PlayerController extended (Skeleton+AnimationPlayer+CharacterController integration, hysteresis animation state machine, fixed/variable timestep separation, combat stance+attack), WorldEntity rendering with skinning shader, PlayerController wired to actor skeleton/animation |
 | Phase 32 (v0.9.8) | Animation & Audio Integration | ✅ Complete | AnimationSubscriber (EventBus→AnimationPlayer bridge), AudioSubscriber (EventBus→AudioManager bridge), SpellSelectionPanel UI, AnimationPlayer.findSequenceByName(), WorldLoader entity storage + NPC→Entity mapping, Imperial Weave Event.targetId field |
+| Phase 33 (v0.9.9) | Combat Sound Assets + NPC Spatial Audio | ✅ Complete | Dedicated combat sounds (hit_blade/blunt/axe/unarmed, block, parry, dodge, death), NPC spatial audio callback, AudioSubscriber event→sound mappings |
+| Phase 34 (v0.9.10) | Weapon-Type Sounds + Quick-Slot Spells | ✅ Complete | Weapon-type hit sound routing (CombatManager→AudioSubscriber), SpellSelectionPanel school colors, Quick-slot spells (F1-F4) |
+| Phase 35 (v1.0.0) | Radiant AI System | ✅ Complete | AI Package System (15 types), Priority-based PackageStack, AIScheduler (24h time-based), NavMesh pathfinding, Stuck detection, Default daily schedule, Combat/Flee override |
 
 ---
 
-### 📊 Code Metrics (Phase 32 / v0.9.8)
+### 📊 Code Metrics (Phase 35 / v1.0.0)
 
-- **C++ Code**: 13,000+ lines (includes ESM parser, audio, save/load, RetroFilter, graphical UI, ESM integration, NAVM pathfinding, DIAL/INFO dialogue, spell effects, new game systems, Imperial Weave, NIF animation, collision, subscriber bridges)
+- **C++ Code**: 22,500+ lines (includes ESM parser, audio, save/load, RetroFilter, graphical UI, ESM integration, NAVM pathfinding, DIAL/INFO dialogue, spell effects, new game systems, Imperial Weave, NIF animation, collision, subscriber bridges, Radiant AI)
 - **Java Code**: 700+ lines
 - **Header Files**: 2,400+ lines
-- **Total Project**: 13,700+ lines
+- **Total Project**: 23,200+ lines
 - **Imperial Weave**: 600+ lines (EventBus, ServiceLocator, 12-phase coordinator)
 - **Subscriber Bridges**: 400+ lines (AnimationSubscriber, AudioSubscriber)
 - **ESM Parser**: 2,000+ lines (40 record types)
@@ -335,7 +342,7 @@ oblivion-android/
 
 ### 🎯 Current Limitations
 
-⚠️ **Phase 29 Current Limitations**:
+⚠️ **Phase 35 Current Limitations**:
 - ~~Debug mode always enabled~~ ✅ Fixed (Settings → Debug Mode)
 - ~~No save/load system~~ ✅ Implemented (Phase 8)
 - ~~Text-based UI only~~ ✅ Graphical UI implemented (Phase 9)
@@ -346,6 +353,13 @@ oblivion-android/
 - ~~Hardcoded test world~~ ✅ ESM data-driven (Phase 25-26)
 - ~~No real NPC/object placement from original data~~ ✅ CELL+REFR+LAND parsing (Phase 26)
 - ~~No magic spells from original data~~ ✅ SPEL record parsing (Phase 26)
+- ~~No event bus system~~ ✅ Imperial Weave EventBus implemented (Phase 32)
+- ~~No animation/audio subscribers~~ ✅ AnimationSubscriber/AudioSubscriber implemented (Phase 32)
+- ~~No combat sounds~~ ✅ Dedicated combat sounds implemented (Phase 33)
+- ~~No NPC spatial audio~~ ✅ NPC spatial audio callback implemented (Phase 33)
+- ~~No weapon-type sound routing~~ ✅ Weapon-type hit sound routing implemented (Phase 34)
+- ~~No quick-slot spells~~ ✅ F1-F4 quick-slot spells implemented (Phase 34)
+- ~~No Radiant AI system~~ ✅ AI package system + scheduler implemented (Phase 35)
 - ~~No leveled item/creature spawn tables~~ ✅ LVLI/LVLC parsing (Phase 26)
 - ~~No AI pathfinding data~~ ✅ NAVM record parsing (Phase 26)
 - ~~No armor/equipment data from original~~ ✅ ARMO record parsing (Phase 26)
@@ -479,11 +493,11 @@ Proprietary - Experimental Port
 
 ---
 
-**Status**: Phase 32 Complete (v0.9.8)
+**Status**: Phase 35 Complete (v1.0.0)
 **Last Updated**: 2026-09-10
 **Version**: 1.0.0
-**Features**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD, ESM Data Integration (40 record types), NpcManager ESM, Container ESM, Player RACE/CLAS/BSGN, Status Effects, NAVM Pathfinding, DIAL/INFO Dialogue, REFR Placement, Spell Effects (8 types), Alchemy, Book Reader, Faction Manager, Loot Generator, NIF Skeleton/Skinning, Animation System, Collision Detection, Integration Tests (Phase 30), WorldEntity + WorldLoader + PlayerController Integration (Phase 31), Imperial Weave EventBus + 12-phase coordinator, AnimationSubscriber, AudioSubscriber, SpellSelectionPanel (Phase 32)
-**Next**: Phase 33 - Dedicated Combat Sound Assets + NPC Spatial Audio
+**Features**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD, ESM Data Integration (40 record types), NpcManager ESM, Container ESM, Player RACE/CLAS/BSGN, Status Effects, NAVM Pathfinding, DIAL/INFO Dialogue, REFR Placement, Spell Effects (8 types), Alchemy, Book Reader, Faction Manager, Loot Generator, NIF Skeleton/Skinning, Animation System, Collision Detection, Integration Tests (Phase 30), WorldEntity + WorldLoader + PlayerController Integration (Phase 31), Imperial Weave EventBus + 12-phase coordinator, AnimationSubscriber, AudioSubscriber, SpellSelectionPanel (Phase 32), Dedicated Combat Sounds, NPC Spatial Audio (Phase 33), Weapon-Type Sound Routing, Quick-Slot Spells (Phase 34), Radiant AI System (Phase 35)
+**Next**: Phase 36 - Physics Integration (Jolt Physics NDK build)
 
 ---
 
@@ -532,6 +546,10 @@ The Elder Scrolls IV: Oblivion の完全ネイティブ Android 移植版です�
 - 🎯 **新機能**: 完全なグラフィカルUIとHUDシステムの実装 (Phase 9-24)
 - 🎯 **新機能**: ESMデータ統合 - 40種レコード、NPCマネージャー、コンテナ、プレイヤー初期化、ステータス効果 (Phase 28)
 - 🎯 **新機能**: NAVMパスファインディングランタイム統合、派閥分岐付きDIAL/INFO会話、REFRワールドオブジェクト配置、4つの呪文エフェクト (Phase 29)
+- 🎯 **新機能**: Imperial Weave EventBus＋12フェーズコーディネーター、AnimationSubscriber、AudioSubscriber、SpellSelectionPanel (Phase 32)
+- 🎯 **新機能**: 専用コンバットサウンド、NPC空間オーディオ (Phase 33)
+- 🎯 **新機能**: 武器タイプサウンドルーティング、クイックスロット呪文 (Phase 34)
+- 🎯 **新機能**: Radiant AIシステム - AIパッケージシステム、スケジューラ、NavMeshパスファインディング統合 (Phase 35)
 
 ---
 
@@ -757,20 +775,25 @@ oblivion-android/
 | Phase 29 | NAVMパスファインディング＋DIAL/INFO会話 | ✅ 完了 | NAVMランタイム統合（A*経路探索）、派閥分岐付きDIAL/INFOレコード解析、REFRワールドオブジェクト配置（8種）、4つの呪文エフェクト、新ゲームシステム追加 |
 | Phase 30 | NIFスケルトン/スキニング＋衝突＋アニメーション | ✅ 完了 | Step 1-13完了: nif_types.h拡張、NIFBlockTypeMap（文字列ベース31種）、NIFParser拡張、SkinPartitionPacker（ビットマスク）、Skeleton（反復BFS）、SkinnedMesh＋UBO＋スキニングシェーダー、NiControllerManager/Sequence解析、AnimationPlayer（slerp/lerp/text keys）、bhkCollisionObject＋bhkRigidBody解析（9種形状）、Dynamic AABB Tree（ブロードフェーズ）、CollisionWorld（テーブル駆動ナローフェーズ5x5、ContactBuffer）、CharacterController（サブステップ移動、マルチレイ接地検出）、統合テスト（9テストグループ、JNI呼び出し対応） |
 | Phase 31 | PlayerController統合＋ワールドロード | ✅ 完了 | Step 1-10: WorldEntity構造体（NIFCache付き）、WorldLoader（loadStatic/loadDynamic/loadActor）、PlayerController拡張（Skeleton＋AnimationPlayer＋CharacterController統合、ヒステリシス付きアニメーション状態マシン、固定/可変タイムステップ分離、戦闘構え＋攻撃）、WorldEntityスキニングシェーダー描画、PlayerControllerスケルトン/アニメーション統合 |
+| Phase 32 (v0.9.8) | アニメーション＆オーディオ統合 | ✅ 完了 | AnimationSubscriber（EventBus→AnimationPlayerブリッジ）、AudioSubscriber（EventBus→AudioManagerブリッジ）、SpellSelectionPanel UI、AnimationPlayer.findSequenceByName()、WorldLoaderエンティティストレージ＋NPC→Entityマッピング、Imperial Weave Event.targetIdフィールド |
+| Phase 33 (v0.9.9) | コンバットサウンド＋NPC空間オーディオ | ✅ 完了 | 専用コンバットサウンド（hit_blade/blunt/axe/unarmed、block、parry、dodge、death）、NPC空間オーディオコールバック、AudioSubscriberイベント→サウンドマッピング |
+| Phase 34 (v0.9.10) | 武器タイプサウンド＋クイックスロット呪文 | ✅ 完了 | 武器タイプヒットサウンドルーティング（CombatManager→AudioSubscriber）、SpellSelectionPanel学校カラー、クイックスロット呪文（F1-F4） |
+| Phase 35 (v1.0.0) | Radiant AIシステム | ✅ 完了 | AIパッケージシステム（15種）、優先度ベースPackageStack、AIScheduler（24h時間ベース）、NavMeshパスファインディング、スタック検出、デフォルト日課、コンバット/フリーオーバーライド |
 
 ---
 
-### 📊 コード指標 (Phase 29)
+### 📊 コード指標 (Phase 35 / v1.0.0)
 
-- **C++コード**: 12,000行以上（ESMパーサー、オーディオ、セーブ/ロード、レトロフィルター、グラフィカルUI、ESM統合、NAVMパスファインディング、DIAL/INFO会話、呪文エフェクト、新ゲームシステム含む）
+- **C++コード**: 22,500行以上（ESMパーサー、オーディオ、セーブ/ロード、レトロフィルター、グラフィカルUI、ESM統合、NAVMパスファインディング、DIAL/INFO会話、呪文エフェクト、新ゲームシステム、Imperial Weave、NIFアニメーション、衝突検出、サブスクライバブリッジ、Radiant AI含む）
 - **Javaコード**: 700行以上
-- **ヘッダーファイル**: 2,200行以上
-- **プロジェクト合計**: 12,900行以上
+- **ヘッダーファイル**: 2,400行以上
+- **プロジェクト合計**: 23,200行以上
 - **ESMパーサー**: 2,000行以上（40種のレコード型パース）
 - **BSAリーダー**: 500行以上（アーカイブ展開、ZLib展開）
 - **ESM統合**: 600行以上（NPCマネージャー、コンテナ、プレイヤー初期化、ステータス効果、DIAL/INFO会話、REFR配置）
 - **NAVMパスファインディング**: 300行以上（A*アルゴリズム、NavMeshManager、CombatManager統合）
 - **呪文エフェクト**: 200行以上（8種エフェクト）
+- **Radiant AI**: 500行以上（AIパッケージシステム、スケジューラ、NavMeshパスファインディング統合）
 - **新ゲームシステム**: 800行以上（錬金術、書籍リーダー、衣服変換、派閥マネージャー、ルートジェネレーター、その他アイテム変換、NavMeshマネージャー）
 - **オーディオシステム**: 400行以上（AudioManager、Audio3D、JNIブリッジ）
 - **セーブ/ロードUI**: 250行以上（UI＋エラーダイアログ）
@@ -784,7 +807,7 @@ oblivion-android/
 
 ### 🎯 現在の制限
 
-⚠️ **Phase 29 現在の制限**:
+⚠️ **Phase 35 現在の制限**:
 - ~~デバッグモードが常に有効~~ ✅ 修正済み（設定 → デバッグモード）
 - ~~セーブ/ロードシステムなし~~ ✅ Phase 8で実装済み
 - ~~テキストベースUIのみ~~ ✅ Phase 9でグラフィカルUI実装済み
@@ -796,6 +819,13 @@ oblivion-android/
 - ~~オリジナルデータからのNPC/オブジェクト配置なし~~ ✅ CELL+REFR+LANDパースで実現（Phase 26）
 - ~~オリジナルデータからの魔法呪文なし~~ ✅ SPELレコードパース（Phase 26）
 - ~~レベル付きアイテム/クリエイチャースポーンテーブルなし~~ ✅ LVLI/LVLCパース（Phase 26）
+- ~~イベントバスシステムなし~~ ✅ Imperial Weave EventBus実装（Phase 32）
+- ~~アニメーション/オーディオサブスクライバなし~~ ✅ AnimationSubscriber/AudioSubscriber実装（Phase 32）
+- ~~コンバットサウンドなし~~ ✅ 専用コンバットサウンド実装（Phase 33）
+- ~~NPC空間オーディオなし~~ ✅ NPC空間オーディオコールバック実装（Phase 33）
+- ~~武器タイプサウンドルーティングなし~~ ✅ 武器タイプヒットサウンドルーティング実装（Phase 34）
+- ~~クイックスロット呪文なし~~ ✅ F1-F4クイックスロット呪文実装（Phase 34）
+- ~~Radiant AIシステムなし~~ ✅ AIパッケージシステム＋スケジューラ実装（Phase 35）
 - ~~AIパスファインディングデータなし~~ ✅ NAVMレコードパース（Phase 26）
 - ~~オリジナルからの防具/装備データなし~~ ✅ ARMOレコードパース（Phase 26）
 - ~~限定的なESMレコード型（19種）~~ ✅ 40種レコードに拡張（Phase 28）
@@ -926,5 +956,5 @@ oblivion-android/
 **状態**: Phase 31 完了
 **最終更新**: 2026-08-26
 **バージョン**: 1.0.0
-**機能**: グラフィカルUI、テクスチャパネル＆ボタン、効果音、セーブ/ロードUI、OpenAL 3Dオーディオ、レトロフィルター効果、強化デバッグHUD、ESMデータ統合（40種レコード）、NPCマネージャーESM、コンテナESM、プレイヤーRACE/CLAS/BSGN、ステータス効果、NAVMパスファインディング、DIAL/INFO会話、REFR配置、呪文エフェクト（8種）、錬金術、書籍リーダー、派閥マネージャー、ルートジェネレーター、NIFスケルトン/スキニング、アニメーションシステム、衝突判定、統合テスト（Phase 30）、WorldEntity＋WorldLoader＋PlayerController統合（Phase 31）
-**次回**: Phase 32 - 非同期ワールドロード＋LODシステム
+**機能**: グラフィカルUI、テクスチャパネル＆ボタン、効果音、セーブ/ロードUI、OpenAL 3Dオーディオ、レトロフィルター効果、強化デバッグHUD、ESMデータ統合（40種レコード）、NPCマネージャーESM、コンテナESM、プレイヤーRACE/CLAS/BSGN、ステータス効果、NAVMパスファインディング、DIAL/INFO会話、REFR配置、呪文エフェクト（8種）、錬金術、書籍リーダー、派閥マネージャー、ルートジェネレーター、NIFスケルトン/スキニング、アニメーションシステム、衝突判定、統合テスト（Phase 30）、WorldEntity＋WorldLoader＋PlayerController統合（Phase 31）、Imperial Weave EventBus＋12フェーズコーディネーター、AnimationSubscriber、AudioSubscriber、SpellSelectionPanel（Phase 32）、専用コンバットサウンド、NPC空間オーディオ（Phase 33）、武器タイプサウンドルーティング、クイックスロット呪文（Phase 34）、Radiant AIシステム（Phase 35）
+**次回**: Phase 36 - 物理エンジン統合 (Jolt Physics NDKビルド)

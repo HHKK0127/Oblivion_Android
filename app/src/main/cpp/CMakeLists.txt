@@ -49,6 +49,8 @@ add_library(native-lib SHARED
     game/quest_manager.cpp
     game/spell_manager.cpp
     game/navmesh_manager.cpp
+    game/ai_package.cpp
+    game/ai_scheduler.cpp
     game/loot_generator.cpp
     game/book_reader.cpp
     game/clothing_converter.cpp

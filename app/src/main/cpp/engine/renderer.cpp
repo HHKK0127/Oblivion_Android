@@ -560,6 +560,9 @@ void Renderer::initGameSystems() {
     // Initialize NavMesh Manager
     navMeshManager = std::make_unique<oblivion::NavMeshManager>();
 
+    // Initialize AI Scheduler (Phase 35: Radiant AI)
+    aiScheduler = std::make_unique<ai::AIScheduler>();
+
     // Initialize Combat Manager (with SpellManager)
     combatManager = std::make_unique<CombatManager>();
     if (!combatManager->initialize(worldManager.get(), worldManager->getNpcManager(),
@@ -929,6 +932,12 @@ void Renderer::createTestScenario() {
                     npcPtr->rotation = ref.rotation;
                     npcPtr->meshAssetPath = "meshes/characters/imperial_male.nif";
                     npcPtr->updateModelMatrix();
+
+                    // Register ESM NPC with AI Scheduler (Phase 35: Radiant AI)
+                    if (aiScheduler) {
+                        aiScheduler->registerNPC(npcPtr->npcId);
+                    }
+
                     LOGD("  Placed NPC: 0x%08X '%s' at (%.1f, %.1f, %.1f)",
                          ref.formID, npcData->fullName.c_str(),
                          ref.position.x, ref.position.y, ref.position.z);
@@ -1011,6 +1020,12 @@ void Renderer::createTestScenario() {
                                     npcData->level);
                                 npc->meshAssetPath = "meshes/characters/imperial_male.nif";
                                 npc->updateModelMatrix();
+
+                                // Register spawned creature with AI Scheduler
+                                if (aiScheduler) {
+                                    aiScheduler->registerNPC(npc->npcId);
+                                }
+
                                 spawnedFromLists++;
                                 LOGD("  Spawned from LVLC '%s': NPC '%s' (0x%08X) level=%u",
                                      ll.editorID.c_str(), npcData->fullName.c_str(),
@@ -1036,6 +1051,12 @@ void Renderer::createTestScenario() {
                 // Load NavMesh data into NavMeshManager
                 if (navMeshManager) {
                     navMeshManager->loadFromESM(esmMgr);
+                }
+
+                // Initialize AI Scheduler with game systems
+                if (aiScheduler && npcManager && worldManager) {
+                    aiScheduler->init(npcManager.get(), worldManager.get(), navMeshManager.get());
+                    LOGI("AI Scheduler initialized with %zu registered NPCs", aiScheduler->getRegisteredNPCCount());
                 }
 
                 // 12. Log race and class data for character creation
@@ -1173,6 +1194,14 @@ void Renderer::createTestScenario() {
     if (izar && hellas) {
         izar->status.initialize(150.0f, 100.0f, 5);
         hellas->status.initialize(120.0f, 80.0f, 4);
+
+        // Register NPCs with AI Scheduler (Phase 35: Radiant AI)
+        if (aiScheduler) {
+            aiScheduler->registerNPC(izar->npcId);
+            aiScheduler->registerNPC(hellas->npcId);
+            LOGI("Registered test NPCs with AI Scheduler: Izar=%u, Hellas=%u",
+                 izar->npcId, hellas->npcId);
+        }
 
         // Set mesh asset paths (from Oblivion ISO extracted meshes)
         // These are relative paths that will be resolved by AssetManager
@@ -1347,6 +1376,11 @@ void Renderer::render(float deltaTime) {
     // Imperial Weave: process game logic updates (events, world, AI, animation, physics)
     if (imperialWeaveInitialized) {
         weave::ImperialWeave::instance().update(deltaTime);
+    }
+
+    // Phase 35: Radiant AI — update AI scheduler after ImperialWeave
+    if (aiScheduler) {
+        aiScheduler->update(deltaTime);
     }
 
     // Begin performance monitoring
