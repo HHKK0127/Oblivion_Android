@@ -5,6 +5,30 @@ project(oblivion_native)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# ============================================================================
+# Jolt Physics 統合
+# ============================================================================
+set(JOLT_PHYSICS_DIR "${CMAKE_SOURCE_DIR}/third_party/JoltPhysics")
+
+# Jolt をサブディレクトリとして追加（推奨方式）
+set(TARGET_HELLO_WORLD OFF CACHE BOOL "" FORCE)
+set(TARGET_PERFORMANCE_TEST OFF CACHE BOOL "" FORCE)
+set(TARGET_SAMPLES OFF CACHE BOOL "" FORCE)
+set(TARGET_UNIT_TESTS OFF CACHE BOOL "" FORCE)
+set(TARGET_VIEWER OFF CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(JPH_USE_VK OFF CACHE BOOL "" FORCE)  # Disable Vulkan (not needed for Android OpenGL ES)
+
+add_subdirectory(${JOLT_PHYSICS_DIR}/Build ${CMAKE_BINARY_DIR}/JoltPhysics)
+
+# Jolt 用コンパイルフラグ
+# JPH_DISABLE_CUSTOM_ALLOCATOR は使用しない（Joltライブラリ側でアロケータを提供するため）
+target_compile_definitions(Jolt PRIVATE
+    JPH_ENABLE_ASSERTS
+)
+
+# ============================================================================
+
 # Add main library
 add_library(native-lib SHARED
     # Engine Core
@@ -153,6 +177,9 @@ add_library(native-lib SHARED
     # Tests (Phase 30 Step 13)
     tests/phase30_integration_test.cpp
 
+    # Physics System (Phase 36 - Jolt Physics)
+    physics/physics_manager.cpp
+
     # JNI Bridge (Java/C++ communication)
     jni_bridge.cpp
 )
@@ -178,6 +205,7 @@ target_include_directories(native-lib PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/collision
     ${CMAKE_CURRENT_SOURCE_DIR}/animation
     ${CMAKE_CURRENT_SOURCE_DIR}/tests
+    ${CMAKE_CURRENT_SOURCE_DIR}/physics
 )
 
 # Find OpenAL-Soft (optional for now)
@@ -197,6 +225,7 @@ endif()
 
 # Link Android native libraries
 target_link_libraries(native-lib
+    Jolt
     android
     EGL
     GLESv3

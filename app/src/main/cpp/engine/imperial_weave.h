@@ -31,6 +31,10 @@ class InventoryManager;
 class SpellManager;
 class AudioManager;
 
+namespace oblivion {
+class PhysicsManager;
+}
+
 namespace animation {
 class AnimationPlayer;
 }
@@ -203,7 +207,8 @@ public:
         ::PlayerController* player = nullptr,
         ::InventoryManager* inventory = nullptr,
         ::SpellManager* spell = nullptr,
-        ::AudioManager* audio = nullptr
+        ::AudioManager* audio = nullptr,
+        ::oblivion::PhysicsManager* joltPhysics = nullptr
     );
 
     void shutdown();
@@ -238,6 +243,7 @@ private:
     ::InventoryManager* inventoryManager_ = nullptr;
     ::SpellManager* spellManager_ = nullptr;
     ::AudioManager* audioManager_ = nullptr;
+    ::oblivion::PhysicsManager* joltPhysics_ = nullptr;
 
     bool initialized_ = false;
 
@@ -251,6 +257,7 @@ private:
     void phaseSpellUpdate(float dt);
     void phaseAnimationUpdate(float dt);
     void phasePhysicsSync(float dt);
+    void phaseJoltPhysicsUpdate(float dt);
     void phaseCombatUpdate(float dt);
     void phaseQuestUpdate(float dt);
     void phaseAudioUpdate(float dt);

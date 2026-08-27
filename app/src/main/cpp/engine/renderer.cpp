@@ -5,6 +5,7 @@
 #include "../ui/ui_draw_helper.h"
 #include "../assets/bsa_reader.h"
 #include "../inventory/item_factory.h"
+#include "../physics/physics_manager.h"
 // #include "../jni_audio_bridge.h"  // Deferred - requires Java MainActivity
 #include <thread>
 
@@ -651,6 +652,17 @@ void Renderer::initGameSystems() {
     }
 #endif
 
+    // Initialize Phase 36 Jolt Physics
+    LOGI("Initializing Jolt Physics...");
+    {
+        auto& physics = oblivion::PhysicsManager::getInstance();
+        if (physics.init()) {
+            LOGI("Jolt Physics initialized successfully");
+        } else {
+            LOGE("Failed to initialize Jolt Physics");
+        }
+    }
+
     // Initialize Phase 9.1 Map System
     LOGI("Creating MapSystem...");
     mapSystem = std::make_unique<map::MapSystem>();
@@ -782,7 +794,8 @@ void Renderer::initGameSystems() {
             playerController.get(),
             inventoryManager.get(),
             spellManager.get(),
-            audioManager.get()
+            audioManager.get(),
+            &oblivion::PhysicsManager::getInstance()
         );
         imperialWeaveInitialized = true;
 
@@ -1841,6 +1854,10 @@ void Renderer::cleanup() {
         imperialWeaveInitialized = false;
         LOGI("Imperial Weave shut down");
     }
+
+    // Phase 36: Shutdown Jolt Physics
+    oblivion::PhysicsManager::getInstance().shutdown();
+    LOGI("Jolt Physics shut down");
 
     // Clean up static UI drawing programs/buffers to prevent stale GL context handles across EGL context recreations
     UIDrawHelper::cleanup();

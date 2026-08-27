@@ -11,6 +11,7 @@
 #include "../game/quest_manager.h"
 #include "../collision/collision_world.h"
 #include "../animation/animation_player.h"
+#include "../physics/physics_manager.h"
 
 namespace weave {
 
@@ -166,7 +167,8 @@ void ImperialWeave::init(
     ::PlayerController* player,
     ::InventoryManager* inventory,
     ::SpellManager* spell,
-    ::AudioManager* audio
+    ::AudioManager* audio,
+    ::oblivion::PhysicsManager* joltPhysics
 ) {
     renderer_ = renderer;
     worldManager_ = world;
@@ -179,6 +181,7 @@ void ImperialWeave::init(
     inventoryManager_ = inventory;
     spellManager_ = spell;
     audioManager_ = audio;
+    joltPhysics_ = joltPhysics;
 
     // Register services for cross-module access
     if (renderer) locator_.registerService(renderer);
@@ -192,6 +195,7 @@ void ImperialWeave::init(
     if (inventory) locator_.registerService(inventory);
     if (spell)    locator_.registerService(spell);
     if (audio)    locator_.registerService(audio);
+    if (joltPhysics) locator_.registerService(joltPhysics);
 
     initialized_ = true;
 }
@@ -206,6 +210,7 @@ void ImperialWeave::shutdown() {
     questManager_ = nullptr;
     physics_ = nullptr;
     animPlayer_ = nullptr;
+    joltPhysics_ = nullptr;
     initialized_ = false;
 }
 
@@ -226,6 +231,7 @@ void ImperialWeave::update(float deltaTime) {
         WEAVE_PROFILE_PHASE(InventoryUpdate, phaseInventoryUpdate(deltaTime));
         WEAVE_PROFILE_PHASE(SpellUpdate,     phaseSpellUpdate(deltaTime));
         WEAVE_PROFILE_PHASE(AnimationUpdate, phaseAnimationUpdate(deltaTime));
+        WEAVE_PROFILE_PHASE(JoltPhysics,     phaseJoltPhysicsUpdate(deltaTime));
         WEAVE_PROFILE_PHASE(PhysicsSync,     phasePhysicsSync(deltaTime));
         WEAVE_PROFILE_PHASE(CombatUpdate,    phaseCombatUpdate(deltaTime));
         WEAVE_PROFILE_PHASE(QuestUpdate,     phaseQuestUpdate(deltaTime));
@@ -266,6 +272,10 @@ void ImperialWeave::phaseAnimationUpdate(float dt) {
 
 void ImperialWeave::phasePhysicsSync(float dt) {
     if (physics_) physics_->step(dt);
+}
+
+void ImperialWeave::phaseJoltPhysicsUpdate(float dt) {
+    if (joltPhysics_) joltPhysics_->update(dt);
 }
 
 void ImperialWeave::phaseCombatUpdate(float dt) {

@@ -1,6 +1,7 @@
 #include "player_controller.h"
 #include <glm/glm.hpp>
 #include <cmath>
+#include "../physics/physics_manager.h"
 
 constexpr float WALK_SPEED = 5.0f;
 constexpr float SPRINT_SPEED = 8.0f;
@@ -57,11 +58,16 @@ void PlayerController::fixedUpdate(float fixedDt) {
 void PlayerController::update(float deltaTime) {
     if (!player || !worldManager) return;
 
-    // Phase 31: Fixed timestep accumulator for physics
-    fixedAccumulator += deltaTime;
-    while (fixedAccumulator >= FIXED_DT) {
-        fixedUpdate(FIXED_DT);
-        fixedAccumulator -= FIXED_DT;
+    // Phase 36: Use Jolt Physics if available
+    if (physicsCharacter) {
+        updatePhysics(deltaTime);
+    } else {
+        // Phase 31: Fixed timestep accumulator for physics
+        fixedAccumulator += deltaTime;
+        while (fixedAccumulator >= FIXED_DT) {
+            fixedUpdate(FIXED_DT);
+            fixedAccumulator -= FIXED_DT;
+        }
     }
 
     // Variable-rate updates (animation, rendering)
@@ -450,4 +456,54 @@ const std::vector<glm::mat4>& PlayerController::getSkinningMatrices() const {
     }
     static const std::vector<glm::mat4> empty;
     return empty;
+}
+
+// ============================================================================
+// Phase 36: Jolt Physics Integration
+// ============================================================================
+
+void PlayerController::initPhysics(JPH::CharacterVirtual* character) {
+    physicsCharacter = character;
+    if (physicsCharacter) {
+        auto& physics = oblivion::PhysicsManager::getInstance();
+        player->position = physics.getCharacterPosition(physicsCharacter);
+        LOGI("Physics character initialized at (%.2f, %.2f, %.2f)",
+             player->position.x, player->position.y, player->position.z);
+    }
+}
+
+void PlayerController::updatePhysics(float deltaTime) {
+    if (!physicsCharacter || !player) return;
+
+    auto& physics = oblivion::PhysicsManager::getInstance();
+
+    // 入力を移動ベクトルに変換
+    glm::vec3 input(0.0f, 0.0f, 0.0f);
+    glm::vec3 moveVec = calculateMovementVector();
+    if (moveVec.x != 0.0f || moveVec.z != 0.0f) {
+        input.x = moveVec.x;
+        input.z = moveVec.z;
+    }
+
+    // ジャンプ
+    if (jumpRequested && physics.isCharacterGrounded(physicsCharacter)) {
+        JPH::Vec3 vel = physicsCharacter->GetLinearVelocity();
+        vel.SetY(jumpForce);
+        physicsCharacter->SetLinearVelocity(vel);
+        jumpRequested = false;
+        LOGD("Jump executed");
+    }
+
+    // CharacterVirtual 更新
+    physics.updateCharacter(physicsCharacter, deltaTime, input);
+
+    // 位置同期
+    player->position = physics.getCharacterPosition(physicsCharacter);
+    player->isOnGround = physics.isCharacterGrounded(physicsCharacter);
+}
+
+void PlayerController::setPosition(const glm::vec3& pos) {
+    if (player) {
+        player->position = pos;
+    }
 }

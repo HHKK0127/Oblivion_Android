@@ -7,6 +7,7 @@
 #include "../animation/skeleton.h"
 #include "../animation/animation_player.h"
 #include "../engine/imperial_weave.h"
+#include "../physics/physics_manager.h"
 #include <memory>
 #include <android/log.h>
 
@@ -73,6 +74,13 @@ public:
     void setEventBus(weave::EventBus* bus) { eventBus = bus; }
     void subscribeToCombatEvents();
 
+    // Phase 36: Jolt Physics integration
+    void initPhysics(JPH::CharacterVirtual* character);
+    void updatePhysics(float deltaTime);
+    JPH::CharacterVirtual* getPhysicsCharacter() const { return physicsCharacter; }
+    void setPosition(const glm::vec3& pos);
+    void requestJump() { jumpRequested = true; }
+
 private:
     std::shared_ptr<Player> player;
     WorldManager* worldManager;
@@ -100,6 +108,11 @@ private:
 
     // Imperial Weave EventBus
     weave::EventBus* eventBus = nullptr;
+
+    // Phase 36: Jolt Physics
+    JPH::CharacterVirtual* physicsCharacter = nullptr;
+    bool jumpRequested = false;
+    float jumpForce = 6.0f;
 
     // Phase 31: Animation state machine with hysteresis
     PlayerAnimState animState = PlayerAnimState::IDLE;

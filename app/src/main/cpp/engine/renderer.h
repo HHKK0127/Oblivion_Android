@@ -28,6 +28,7 @@
 #include "../world/world_entity.h"
 #include "../localization/localization_manager.h"
 #include "../profiling/performance_monitor.h"
+#include "../physics/physics_manager.h"
 #include "../save_system/save_manager.h"
 #include "../assets/asset_manager.h"
 #include "graphics/retro_filter.h"
