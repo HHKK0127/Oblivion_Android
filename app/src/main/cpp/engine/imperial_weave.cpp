@@ -12,6 +12,7 @@
 #include "../collision/collision_world.h"
 #include "../animation/animation_player.h"
 #include "../physics/physics_manager.h"
+#include "../script/script_manager.h"
 
 namespace weave {
 
@@ -168,7 +169,8 @@ void ImperialWeave::init(
     ::InventoryManager* inventory,
     ::SpellManager* spell,
     ::AudioManager* audio,
-    ::oblivion::PhysicsManager* joltPhysics
+    ::oblivion::PhysicsManager* joltPhysics,
+    ::oblivion::script::ScriptManager* script
 ) {
     renderer_ = renderer;
     worldManager_ = world;
@@ -182,6 +184,7 @@ void ImperialWeave::init(
     spellManager_ = spell;
     audioManager_ = audio;
     joltPhysics_ = joltPhysics;
+    scriptManager_ = script;
 
     // Register services for cross-module access
     if (renderer) locator_.registerService(renderer);
@@ -196,6 +199,7 @@ void ImperialWeave::init(
     if (spell)    locator_.registerService(spell);
     if (audio)    locator_.registerService(audio);
     if (joltPhysics) locator_.registerService(joltPhysics);
+    if (script)   locator_.registerService(script);
 
     initialized_ = true;
 }
@@ -211,6 +215,7 @@ void ImperialWeave::shutdown() {
     physics_ = nullptr;
     animPlayer_ = nullptr;
     joltPhysics_ = nullptr;
+    scriptManager_ = nullptr;
     initialized_ = false;
 }
 
@@ -235,6 +240,7 @@ void ImperialWeave::update(float deltaTime) {
         WEAVE_PROFILE_PHASE(PhysicsSync,     phasePhysicsSync(deltaTime));
         WEAVE_PROFILE_PHASE(CombatUpdate,    phaseCombatUpdate(deltaTime));
         WEAVE_PROFILE_PHASE(QuestUpdate,     phaseQuestUpdate(deltaTime));
+        WEAVE_PROFILE_PHASE(ScriptUpdate,    phaseScriptUpdate(deltaTime));
         WEAVE_PROFILE_PHASE(AudioUpdate,     phaseAudioUpdate(deltaTime));
         WEAVE_PROFILE_PHASE(RenderSubmit,    phaseRenderSubmit(deltaTime));
     } catch (const std::exception& e) {
@@ -284,6 +290,10 @@ void ImperialWeave::phaseCombatUpdate(float dt) {
 
 void ImperialWeave::phaseQuestUpdate(float dt) {
     if (questManager_) questManager_->update(dt);
+}
+
+void ImperialWeave::phaseScriptUpdate(float dt) {
+    if (scriptManager_) scriptManager_->update(dt);
 }
 
 void ImperialWeave::phasePlayerUpdate(float dt) {

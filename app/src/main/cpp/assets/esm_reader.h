@@ -8,6 +8,9 @@
 #include <functional>
 #include <glm/glm.hpp>
 
+// Script VM data structures (for SCPT record storage)
+#include "../script/script_context.h"
+
 namespace oblivion {
 
 // ============================================================================
@@ -689,6 +692,7 @@ public:
     const std::vector<MiscItemData>& getMiscItems() const { return m_miscItems; }
     const std::vector<RoadData>& getRoads() const { return m_roads; }
     const std::vector<ArmorData>& getArmors() const { return m_armors; }
+    const std::vector<script::ScriptData>& getScripts() const { return m_scripts; }
 
         // Get file metadata
         const std::string& getFileName() const { return m_fileName; }
@@ -736,6 +740,7 @@ private:
     std::vector<AlchemyData> m_alchemy;
     std::vector<MiscItemData> m_miscItems;
     std::vector<RoadData> m_roads;
+    std::vector<script::ScriptData> m_scripts;
 
     // DIAL/INFO tracking — last DIAL formID for child INFO association
     uint32_t m_lastDialFormID = 0;
@@ -791,6 +796,7 @@ private:
                 void decodeAlchemy(const ESMRecord& rec);
                 void decodeMiscItem(const ESMRecord& rec);
                 void decodeRoad(const ESMRecord& rec);
+                void decodeScript(const ESMRecord& rec);
         };
 
 // ============================================================================
@@ -862,6 +868,7 @@ public:
     const AlchemyData* findAlchemy(uint32_t formID) const;
     const MiscItemData* findMiscItem(uint32_t formID) const;
     const FactionData* findFaction(uint32_t formID) const;
+    const script::ScriptData* findScript(uint32_t formID) const;
 
     // Resolve a leveled list: pick entries appropriate for the given player level
     // Returns a list of (referencedFormID, count) pairs
@@ -906,6 +913,7 @@ public:
     const std::vector<AlchemyData>& getAllAlchemy() const;
     const std::vector<MiscItemData>& getAllMiscItems() const;
     const std::vector<RoadData>& getAllRoads() const;
+    const std::vector<script::ScriptData>& getAllScripts() const;
 
     size_t getPluginCount() const { return m_files.size(); }
 
@@ -946,6 +954,7 @@ private:
         std::unordered_map<uint32_t, size_t> m_alchemyIndex;
         std::unordered_map<uint32_t, size_t> m_miscItemIndex;
         std::unordered_map<uint32_t, size_t> m_factionIndex;
+        std::unordered_map<uint32_t, size_t> m_scriptIndex;
 
     void rebuildIndices();
 };

@@ -180,6 +180,13 @@ add_library(native-lib SHARED
     # Physics System (Phase 36 - Jolt Physics)
     physics/physics_manager.cpp
 
+    # Script VM (Phase 37 - Oblivion Script System)
+    script/script_vm.cpp
+    script/script_context.cpp
+    script/script_manager.cpp
+    script/script_functions.cpp
+    script/script_disasm.cpp
+
     # JNI Bridge (Java/C++ communication)
     jni_bridge.cpp
 )
@@ -206,6 +213,7 @@ target_include_directories(native-lib PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/animation
     ${CMAKE_CURRENT_SOURCE_DIR}/tests
     ${CMAKE_CURRENT_SOURCE_DIR}/physics
+    ${CMAKE_CURRENT_SOURCE_DIR}/script
 )
 
 # Find OpenAL-Soft (optional for now)
