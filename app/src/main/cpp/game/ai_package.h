@@ -187,12 +187,14 @@ struct AIPackage {
 
     // State tracking
     bool active = false;
+    bool conditionsMet = false;   // BUG FIX: Track whether conditions are currently met
     float elapsed = 0.0f;         // Time since package started
     uint32_t currentPatrolIndex = 0; // For patrol packages
 
     // Reset state
     void reset() {
         active = false;
+        conditionsMet = false;
         elapsed = 0.0f;
         currentPatrolIndex = 0;
     }

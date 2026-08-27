@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <android/log.h>
 #include <cmath>
+#include <unordered_set>
 
 #define LOG_TAG "InteractionManager"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -102,17 +103,42 @@ void InteractionManager::update(const glm::vec3& playerPos, float deltaTime) {
 }
 
 void InteractionManager::updateProximity(const glm::vec3& playerPos) {
+    // BUG FIX: Track previous nearby set to only call enter/exit on transitions
+    std::vector<std::shared_ptr<Interactable>> previousNearby = std::move(nearbyInteractables);
     nearbyInteractables.clear();
-    nearbyInteractables.reserve(20);  // Pre-allocate space for typical nearby object count
+    nearbyInteractables.reserve(20);
+
+    // Build set of previous nearby IDs for fast lookup
+    std::unordered_set<uint32_t> previousNearbyIds;
+    for (const auto& prev : previousNearby) {
+        if (prev) {
+            auto worldObj = prev->getWorldObject();
+            if (worldObj) {
+                previousNearbyIds.insert(worldObj->objectId);
+            }
+        }
+    }
 
     for (auto& pair : interactables) {
         if (!pair.second || !pair.second->isEnabled()) continue;
 
-        if (pair.second->isInRange(playerPos, interactionDistance)) {
+        auto worldObj = pair.second->getWorldObject();
+        if (!worldObj) continue;
+
+        bool inRange = pair.second->isInRange(playerPos, interactionDistance);
+        bool wasInRange = previousNearbyIds.count(worldObj->objectId) > 0;
+
+        if (inRange) {
             nearbyInteractables.push_back(pair.second);
-            pair.second->onPlayerEnterRange();
+            // Only call onPlayerEnterRange when transitioning into range
+            if (!wasInRange) {
+                pair.second->onPlayerEnterRange();
+            }
         } else {
-            pair.second->onPlayerExitRange();
+            // Only call onPlayerExitRange when transitioning out of range
+            if (wasInRange) {
+                pair.second->onPlayerExitRange();
+            }
         }
     }
 }
@@ -166,8 +192,10 @@ std::shared_ptr<Interactable> InteractionManager::getInteractable(uint32_t refId
 }
 
 void InteractionManager::clearInteractables() {
+    // BUG FIX: Capture size before clearing so log reports actual count
+    size_t count = interactables.size();
     interactables.clear();
     nearbyInteractables.clear();
     highlightedInteractable = nullptr;
-    LOGI("InteractionManager cleared (%zu interactables removed)", interactables.size());
+    LOGI("InteractionManager cleared (%zu interactables removed)", count);
 }

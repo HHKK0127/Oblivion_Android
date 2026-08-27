@@ -33,9 +33,13 @@ void PackageStack::removePackagesByType(PackageType type) {
 AIPackage* PackageStack::getActivePackage() {
     // Return the highest priority package whose conditions are met
     for (auto& pkg : packages) {
-        // For now, return the first (highest priority) package
-        // Conditions are evaluated separately in evaluate()
-        return &pkg;
+        if (pkg.conditionsMet) {
+            return &pkg;
+        }
+    }
+    // Fallback: return first package if none have been evaluated yet
+    if (!packages.empty()) {
+        return &packages[0];
     }
     return nullptr;
 }
@@ -43,9 +47,12 @@ AIPackage* PackageStack::getActivePackage() {
 void PackageStack::evaluate(float hourOfDay, const glm::vec3& npcPos,
                              uint32_t npcCellID,
                              float healthPct, float magickaPct, float staminaPct) {
-    // Evaluate conditions for each package
+    // BUG FIX: Actually evaluate conditions for each package
     // The active package is the highest priority one whose conditions are met
-    // This is implicitly handled by the sorted order + getActivePackage()
+    for (auto& pkg : packages) {
+        pkg.conditionsMet = pkg.conditions.evaluate(hourOfDay, npcPos, npcCellID,
+                                                     healthPct, magickaPct, staminaPct);
+    }
 }
 
 } // namespace ai

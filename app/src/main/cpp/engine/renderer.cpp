@@ -1403,6 +1403,11 @@ void Renderer::render(float deltaTime) {
 
     // Update Title Screen
     if (showTitleScreen) {
+        // BUG FIX: Null check titleScreen before access - it may not be created if init() failed early
+        if (!titleScreen) {
+            LOGE("titleScreen is null but showTitleScreen is true - skipping render");
+            return;
+        }
         titleScreen->update(deltaTime);
         titleScreen->render();
 
@@ -1968,7 +1973,8 @@ bool Renderer::saveGameState(const std::string& slotName) {
 
     // Capture world state
     if (worldManager) {
-        state.playerPosition = glm::vec3(0.0f, 10.0f, 0.0f);  // Default player position
+        // BUG FIX: Use actual player position instead of hardcoded default
+        state.playerPosition = worldManager->getPlayerPosition();
 
         // Capture NPC states
         NpcManager* npcMgr = worldManager->getNpcManager();
@@ -2052,6 +2058,13 @@ bool Renderer::loadGameState(const std::string& slotName) {
                 }
             }
         }
+    }
+
+    // BUG FIX: Restore player position from save state
+    if (worldManager && playerController) {
+        playerController->setPosition(state.playerPosition);
+        LOGI("Player position restored to (%.1f, %.1f, %.1f)",
+             state.playerPosition.x, state.playerPosition.y, state.playerPosition.z);
     }
 
     // Restore quest states
