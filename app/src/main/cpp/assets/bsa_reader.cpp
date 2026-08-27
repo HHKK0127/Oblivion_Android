@@ -374,6 +374,11 @@ bool BSArchive::extractFileDecompressed(const BSAFileEntry& entry, std::vector<u
     }
 
     // Compressed: first 4 bytes are the uncompressed size
+    if (entry.size < 4) {
+        LOGE("Compressed entry size too small: %u", entry.size);
+        return false;
+    }
+
     uint32_t uncompressedSize;
     m_stream.read(reinterpret_cast<char*>(&uncompressedSize), sizeof(uncompressedSize));
     if (!m_stream.good()) {

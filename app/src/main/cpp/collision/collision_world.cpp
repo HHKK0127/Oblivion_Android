@@ -556,11 +556,20 @@ bool npCapsuleCapsule(const CollisionBody& a, const CollisionBody& b, ContactBuf
         s = 0.0f;
     }
 
-    t = (c_dot * s + e_dot) / b_dot;
-    t = std::max(0.0f, std::min(1.0f, t));
+    // Guard against b_dot being zero (d2 is zero vector)
+    if (b_dot > 1e-6f) {
+        t = (c_dot * s + e_dot) / b_dot;
+        t = std::max(0.0f, std::min(1.0f, t));
+    } else {
+        t = 0.0f;
+    }
 
     // Recompute s with clamped t
-    s = std::max(0.0f, std::min(1.0f, (c_dot * t - d_dot) / a_dot));
+    if (a_dot > 1e-6f) {
+        s = std::max(0.0f, std::min(1.0f, (c_dot * t - d_dot) / a_dot));
+    } else {
+        s = 0.0f;
+    }
 
     glm::vec3 closestA = aA + d1 * s;
     glm::vec3 closestB = bA + d2 * t;

@@ -70,11 +70,21 @@ bool NIFParser::parseFile(const std::string& filepath) {
 bool NIFParser::readHeader() {
     LOGD("Reading NIF header...");
 
+    // Read magic string until null terminator or newline (NIF headers are variable length)
     char magic[256];
-    if (!readBytes(magic, 256)) {
-        LOGE("Failed to read magic number");
-        return false;
+    std::memset(magic, 0, sizeof(magic));
+    size_t pos = 0;
+    while (pos < sizeof(magic) - 1) {
+        if (!readBytes(&magic[pos], 1)) {
+            LOGE("Failed to read magic number");
+            return false;
+        }
+        if (magic[pos] == '\n' || magic[pos] == '\0') {
+            break;
+        }
+        pos++;
     }
+    magic[pos] = '\0';
 
     strncpy(header.magic, magic, sizeof(header.magic) - 1);
     header.magic[sizeof(header.magic) - 1] = '\0';
@@ -156,15 +166,20 @@ bool NIFParser::readBytes(char* buffer, size_t count) {
 
 bool NIFParser::readString(std::string& str) {
     uint32_t length = readUInt32();
-    if (length > 0 && length < 256) {
-        char buffer[256];
-        if (!readBytes(buffer, length)) {
-            return false;
-        }
-        str = std::string(buffer, length);
-        return true;
+    if (length == 0) {
+        str.clear();
+        return true;  // Empty string is valid
     }
-    return false;
+    if (length > 1024 * 1024) {  // 1MB upper limit to reject corrupt values
+        LOGE("NIF string length too large: %u", length);
+        return false;
+    }
+    std::vector<char> buffer(length);
+    if (!readBytes(buffer.data(), length)) {
+        return false;
+    }
+    str.assign(buffer.data(), length);
+    return true;
 }
 
 bool NIFParser::readStringRef(std::string& str) {
@@ -385,6 +400,11 @@ bool NIFParser::parseNiSkinPartition(NIFSkinPartition& partition) {
     //   uint16_t[numTriangles * 3 or sum(stripLengths)] triangles
 
     uint32_t numPartitions = readUInt32();
+    constexpr uint32_t MAX_PARTITIONS = 10000;
+    if (numPartitions > MAX_PARTITIONS) {
+        LOGE("NiSkinPartition: numPartitions %u exceeds limit", numPartitions);
+        return false;
+    }
     partition.partitions.resize(numPartitions);
 
     for (uint32_t p = 0; p < numPartitions; p++) {
@@ -544,6 +564,11 @@ bool NIFParser::parseNiControllerSequence(NIFControllerSequence& sequence) {
 
     // uint32_t textKeyCount
     uint32_t textKeyCount = readUInt32();
+    constexpr uint32_t MAX_TEXT_KEYS = 100000;
+    if (textKeyCount > MAX_TEXT_KEYS) {
+        LOGE("NiControllerSequence: textKeyCount %u exceeds limit", textKeyCount);
+        return false;
+    }
     sequence.textKeys.resize(textKeyCount);
 
     // Read text keys
@@ -554,6 +579,11 @@ bool NIFParser::parseNiControllerSequence(NIFControllerSequence& sequence) {
 
     // uint32_t controlledBlockCount
     uint32_t blockCount = readUInt32();
+    constexpr uint32_t MAX_CONTROLLED_BLOCKS = 10000;
+    if (blockCount > MAX_CONTROLLED_BLOCKS) {
+        LOGE("NiControllerSequence: blockCount %u exceeds limit", blockCount);
+        return false;
+    }
     sequence.controlledBlocks.resize(blockCount);
 
     // Read controlled blocks
@@ -617,6 +647,11 @@ bool NIFParser::parseNiKeyframeData(NIFAnimationClip& clip) {
 
     // uint32_t numRotationKeys
     uint32_t numRotKeys = readUInt32();
+    constexpr uint32_t MAX_KEYS = 100000;
+    if (numRotKeys > MAX_KEYS) {
+        LOGE("NiKeyframeData: numRotKeys %u exceeds limit", numRotKeys);
+        return false;
+    }
 
     // Rotation keys
     // uint8_t rotationType (0=xyz, 1=constant, 2=linear, 3=quadratic)

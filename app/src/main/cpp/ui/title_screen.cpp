@@ -277,12 +277,8 @@ void TitleScreen::renderOblivionLogo(float alpha) {
         float logoY = static_cast<float>(screenHeight) * 0.12f; // 上部10%近辺の位置に配置
         UIDrawHelper::drawTexturedQuad(logoX, logoY, logoW, logoH,
                                        logoTexture, glm::vec4(1.0f, 1.0f, 1.0f, alpha), screenWidth, screenHeight);
-    } else {
-        glDisable(GL_DEPTH_TEST);
-        float brightness = alpha * 0.8f;
-        glClearColor(brightness, brightness, brightness, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
     }
+    // Don't call glClear/glClearColor here - parent already cleared the screen
     LOGD("  Rendering Oblivion logo (alpha: %.2f)", alpha);
 }
 

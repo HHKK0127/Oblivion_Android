@@ -14,7 +14,7 @@ bool UIManager::initialize(TextRenderer* textRenderer,
                            CharacterStatus* playerStatus) {
     if (!textRenderer) return false;
 
-    textRenderer = textRenderer;
+    this->textRenderer = textRenderer;
     questManager_ = questManager;
 
     // UICharacterSheet の初期化
@@ -370,7 +370,7 @@ bool UIManager::onTouchDown(float x, float y, int pointerId) {
         }
     }
 
-    // Quick slot bar is always available for interaction
+    // Quick slot bar is always available for interaction (HUD element)
     if (quickSlotBar_) {
         if (quickSlotBar_->onTouchDown(x, y, pointerId)) {
             return true;

@@ -48,6 +48,14 @@ bool AssetManager::initialize() {
 void AssetManager::update(float deltaTime) {
     timeSinceLastCheck += deltaTime;
 
+    // Update lastAccessTime for all cached entries
+    for (auto& entry : meshCache) {
+        entry.second.lastAccessTime += deltaTime;
+    }
+    for (auto& entry : textureCache) {
+        entry.second.lastAccessTime += deltaTime;
+    }
+
     // Periodically check cache size
     if (timeSinceLastCheck >= cacheCheckInterval) {
         timeSinceLastCheck = 0.0f;
@@ -260,7 +268,10 @@ std::shared_ptr<Mesh> AssetManager::loadNifMesh(const std::string& nifPath) {
     }
 
     // Fallback: try direct file path (legacy)
-    if (!nifParser->parseFile(nifPath)) {
+    // Normalize path separators for Android
+    std::string normalizedPath = nifPath;
+    std::replace(normalizedPath.begin(), normalizedPath.end(), '\\', '/');
+    if (!nifParser->parseFile(normalizedPath)) {
         LOGE("Failed to parse NIF file: %s", nifPath.c_str());
         return nullptr;
     }
@@ -324,6 +335,7 @@ std::shared_ptr<Mesh> AssetManager::loadNifFromData(const std::string& path,
     // Parse directly from temp file (avoid recursion through loadNifMesh)
     if (!nifParser->parseFile(tempFile)) {
         LOGE("Failed to parse NIF from temp file: %s", path.c_str());
+        std::remove(tempFile.c_str());
         return nullptr;
     }
 
@@ -354,6 +366,8 @@ std::shared_ptr<Mesh> AssetManager::loadNifFromData(const std::string& path,
         mesh->uploadToGPU();
     }
 
+    // Clean up temp file
+    std::remove(tempFile.c_str());
     return mesh;
 }
 
@@ -368,6 +382,7 @@ std::shared_ptr<Material> AssetManager::loadDDSTexture(const std::string& ddsPat
 
     // Try loading from BSA archives
     std::string loadPath = ddsPath;
+    bool usedTempFile = false;
     std::vector<uint8_t> fileData = loadFileData(ddsPath);
     if (!fileData.empty()) {
         std::string tempFile = "/data/data/com.example.oblivion/cache/bsa_dds_" +
@@ -377,16 +392,19 @@ std::shared_ptr<Material> AssetManager::loadDDSTexture(const std::string& ddsPat
             outFile.write(reinterpret_cast<const char*>(fileData.data()), fileData.size());
             outFile.close();
             loadPath = tempFile;
+            usedTempFile = true;
         }
     }
 
     if (!ddsLoader->loadFile(loadPath)) {
         LOGE("Failed to load DDS file: %s", ddsPath.c_str());
+        if (usedTempFile) std::remove(loadPath.c_str());
         return nullptr;
     }
 
     if (!ddsLoader->decompressTexture()) {
         LOGE("Failed to decompress DDS texture: %s", ddsPath.c_str());
+        if (usedTempFile) std::remove(loadPath.c_str());
         return nullptr;
     }
 
@@ -395,6 +413,11 @@ std::shared_ptr<Material> AssetManager::loadDDSTexture(const std::string& ddsPat
     if (texId != 0) {
         material->setTexture(texId);
         LOGD("Texture uploaded: ID=%u", texId);
+    }
+
+    // Clean up temp file
+    if (usedTempFile) {
+        std::remove(loadPath.c_str());
     }
 
     CacheEntry entry;

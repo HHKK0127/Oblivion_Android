@@ -149,7 +149,9 @@ void SkinnedMesh::buildPartitionRenderInfo() {
     uint32_t offset = 0;
     for (const auto& p : partitions) {
         partitionCounts.push_back(static_cast<GLsizei>(p.numTriangles * 3));
-        partitionOffsets.push_back(reinterpret_cast<const void*>(offset * sizeof(uint16_t)));
+        // FIX: Use uintptr_t for safe 64-bit pointer arithmetic
+        partitionOffsets.push_back(reinterpret_cast<const void*>(
+            static_cast<uintptr_t>(offset) * sizeof(uint16_t)));
         offset += p.numTriangles * 3;
     }
 }

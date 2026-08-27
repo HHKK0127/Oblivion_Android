@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-10T12:00:00Z",
+  "lastUpdated": "2026-08-27T15:57:00Z",
   "entries": [
     {
       "content": "Oblivion.exe (Ghidra decompiled) - Gamebryo engine, compiled with VS2005/VS2008, Direct3D9. Init order: Renderer -> Shader System -> Sky -> TES -> TreeManager -> Menus -> Player -> Scripts -> Sound System -> Actor Locations -> LOD Land",
@@ -871,10 +871,26 @@
         "terrain"
       ],
       "compressed": false
+    },
+    {
+      "id": "mem-027",
+      "timestamp": "2026-08-27T15:57:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "Fixed 10 critical bugs: (1) castSpell argument order, (2) const reference violation in worldEntities loop, (3) Use-after-move in loadActorForNpc, (4) uninitialized fixedAccumulator, (5) negative coordinate uint32_t cast, (6) GLM mat4 initialization, (7) BGM double playback (OpenAL+Java), (8) infinite recursion in spawnFromLeveledList, (9) player status not reflected in combat, (10) iterator invalidation in quest update loop.",
+      "tags": [
+        "bugfix",
+        "critical",
+        "use-after-move",
+        "const-violation",
+        "recursion",
+        "bgm"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 62,
+    "totalEntries": 63,
     "compressedCount": 0,
     "sessionCount": 4
   }

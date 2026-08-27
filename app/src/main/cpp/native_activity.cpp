@@ -10,6 +10,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <queue>
+#include <chrono>
 
 #include "engine/renderer.h"
 #include "jni_audio_bridge.h"
@@ -185,7 +186,16 @@ static void renderingThread(AppState* state) {
 
         // Render frame
         if (state->renderer) {
-            state->renderer->render(0.0167f);  // 60 FPS
+            // Use actual frame time instead of fixed 60fps assumption
+            static auto lastFrameTime = std::chrono::steady_clock::now();
+            auto now = std::chrono::steady_clock::now();
+            float deltaTime = std::chrono::duration<float>(now - lastFrameTime).count();
+            lastFrameTime = now;
+            // Clamp delta to avoid spiral of death
+            if (deltaTime > 0.1f) deltaTime = 0.0167f;
+            if (deltaTime <= 0.0f) deltaTime = 0.0167f;
+
+            state->renderer->render(deltaTime);
             eglSwapBuffers(state->display, state->surface);
         }
     }
@@ -228,6 +238,7 @@ static void onDestroy(ANativeActivity* activity) {
         {
             std::lock_guard<std::mutex> lock(state->mutex);
             state->should_render = false;
+            state->window_changed = true;  // Wake up the thread so it can exit
         }
         state->cond_var.notify_one();
 
