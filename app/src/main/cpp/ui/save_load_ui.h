@@ -4,6 +4,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include "text_renderer.h"
+#include "../save_system/save_slot_manager.h"
 
 #undef LOG_TAG
 #undef LOGD
@@ -83,7 +84,7 @@ private:
     int selectedSlotIndex = 0;
     int hoveredSlotIndex = -1;
 
-    std::vector<std::string> availableSlots;
+    std::vector<SaveSlotInfo> availableSlots;
     std::string pendingSlotName;
     std::string errorMessage;
 
@@ -94,6 +95,7 @@ private:
 
     struct SlotEntry {
         std::string name;
+        uint32_t slotIndex = 0;
         glm::vec2 position;
         glm::vec2 size;
         bool hovered = false;

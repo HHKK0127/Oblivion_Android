@@ -4,22 +4,32 @@
 #include <vector>
 #include <map>
 #include <cstdint>
+#include <memory>
 #include <glm/glm.hpp>
 #include "../game/npc.h"
 #include "../game/quest.h"
+#include "serializable.h"
+#include "save_format_version.h"
+#include "save_slot_manager.h"
+#include "auto_save.h"
 
 #define LOG_TAG "SaveManager"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 // Forward declarations
 struct GameState;
+class PlayerController;
+class InventoryManager;
+class SpellManager;
+class QuestManager;
+class WorldManager;
+namespace oblivion { namespace script { class ScriptManager; } }
 
 /**
  * @brief インベントリスロットデータ - シリアライザブルなアイテム情報
- *
- * Phase 9B Week 4: ゲーム状態保存時のインベントリシリアライズ用
  */
 struct InventorySlotData {
     uint32_t itemId = 0;
@@ -35,7 +45,7 @@ struct InventorySlotData {
  * @brief 装備スロットデータ - シリアライザブルな装備情報
  */
 struct EquippedItemData {
-    uint32_t slotIndex = 0;  // EquipSlot enum as uint32_t
+    uint32_t slotIndex = 0;
     uint32_t itemId = 0;
     std::string itemName;
 
@@ -46,6 +56,7 @@ struct EquippedItemData {
 
 /**
  * SaveManager: ゲーム進行状況の保存・復元を管理
+ * Phase 41: Binary format with full system serialization
  */
 class SaveManager {
 public:
@@ -55,54 +66,96 @@ public:
     // Initialization
     bool initialize();
 
-    // Save/Load operations
-    bool saveGame(const std::string& slotName, const GameState& state);
-    bool loadGame(const std::string& slotName, GameState& outState);
+    // System registration (Phase 41)
+    void setPlayerController(PlayerController* pc) { playerController_ = pc; }
+    void setInventoryManager(InventoryManager* im) { inventoryManager_ = im; }
+    void setSpellManager(SpellManager* sm) { spellManager_ = sm; }
+    void setQuestManager(QuestManager* qm) { questManager_ = qm; }
+    void setWorldManager(WorldManager* wm) { worldManager_ = wm; }
+    void setScriptManager(oblivion::script::ScriptManager* sm) { scriptManager_ = sm; }
+
+    // Save/Load operations (binary format)
+    bool saveGame(uint32_t slotIndex, const std::string& slotName = "");
+    bool loadGame(uint32_t slotIndex);
+
+    // Legacy JSON save/load (backward compatibility)
+    bool saveGameLegacy(const std::string& slotName, const GameState& state);
+    bool loadGameLegacy(const std::string& slotName, GameState& outState);
+
+    // Quick save/load
+    bool quickSave();
+    bool quickLoad();
+
+    // Auto-save integration
+    void update(float deltaTime);
+    AutoSave& getAutoSave() { return autoSave_; }
 
     // Slot management
-    bool deleteSave(const std::string& slotName);
-    std::vector<std::string> getSaveSlots() const;
-    bool hasSave(const std::string& slotName) const;
-    std::string getLatestSave() const;
+    SaveSlotManager& getSlotManager() { return slotManager_; }
+    bool deleteSave(uint32_t slotIndex);
+    std::vector<SaveSlotInfo> getSaveSlots() const;
+    bool hasSave(uint32_t slotIndex) const;
+
+    // Game state snapshot (for legacy compatibility)
+    bool captureGameState(GameState& state);
+    bool restoreGameState(const GameState& state);
 
 private:
-    std::string getSavePath(const std::string& slotName) const;
+    // System pointers (non-owning)
+    PlayerController* playerController_ = nullptr;
+    InventoryManager* inventoryManager_ = nullptr;
+    SpellManager* spellManager_ = nullptr;
+    QuestManager* questManager_ = nullptr;
+    WorldManager* worldManager_ = nullptr;
+    oblivion::script::ScriptManager* scriptManager_ = nullptr;
+
+    // Sub-systems
+    SaveSlotManager slotManager_;
+    AutoSave autoSave_;
+
+    // Base directory
     std::string getBaseDir() const;
 
-    // Serialization helpers
+    // Binary serialization
+    bool writeToFile(uint32_t slotIndex, const std::string& slotName,
+                     const std::vector<uint8_t>& payload);
+    bool readFromFile(uint32_t slotIndex, std::vector<uint8_t>& payload);
+
+    // Legacy helpers
+    std::string getSavePathLegacy(const std::string& slotName) const;
     std::string serializeGameState(const GameState& state) const;
     bool deserializeGameState(const std::string& json, GameState& outState);
 };
 
 /**
- * GameState: ゲーム状態のスナップショット
+ * GameState: ゲーム状態のスナップショット (legacy compatibility)
  */
 struct GameState {
-    // Metadata
     std::string saveName;
     uint64_t saveTimestamp = 0;
-    std::string version = "0.6.0";
+    std::string version = "0.7.0";
 
-    // Player state
     glm::vec3 playerPosition = glm::vec3(0, 0, 0);
+    glm::vec3 playerRotation = glm::vec3(0, 0, 0);
     CharacterStatus playerStatus;
 
-    // World state
     std::vector<uint32_t> loadedCells;
 
-    // NPC states
-    std::map<uint32_t, std::pair<glm::vec3, CharacterStatus>> npcStates;  // npcId -> (pos, status)
+    std::map<uint32_t, std::pair<glm::vec3, CharacterStatus>> npcStates;
+    std::map<uint32_t, int> questStates;
 
-    // Quest states
-    std::map<uint32_t, int> questStates;  // questId -> state enum (0=pending, 1=accepted, etc)
+    std::vector<InventorySlotData> inventorySlots;
+    std::vector<EquippedItemData> equippedItems;
+    float playerInventoryWeight = 0.0f;
 
-    // Inventory state (Phase 9B Week 4)
-    std::vector<InventorySlotData> inventorySlots;    // Player inventory grid (60 slots)
-    std::vector<EquippedItemData> equippedItems;       // Currently equipped items
-    float playerInventoryWeight = 0.0f;                // Current inventory weight
+    // Phase 41 additions
+    uint32_t playerLevel = 1;
+    float playerExperience = 0.0f;
+    float gameTimeHours = 0.0f;
+    float timeOfDay = 12.0f;
+    uint32_t dayCount = 0;
 
     GameState() {
-        // Initialize default player status
         playerStatus.initialize(100.0f, 120.0f, 1);
     }
 };
