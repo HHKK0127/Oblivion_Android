@@ -395,7 +395,6 @@ All notable changes to the Oblivion Android project are documented here.
 - Full inventory management with item system
 - Expanded NPC dialogue trees
 - Controller support
-- Google Play Store release
 
 ---
 
@@ -1100,7 +1099,6 @@ float Damage = max(1.0f, AttackPower - ArmorRating);
 - [ ] Dynamic music mixing (exploration vs combat)
 
 ### Performance & Release
-- [ ] Google Play Store submission preparation
 - [ ] Beta testing channel setup
 - [ ] Privacy policy and legal documentation
 - [ ] Enhanced shader optimization

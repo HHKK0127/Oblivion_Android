@@ -22,12 +22,6 @@
    - Open file manager, locate APK, tap to install
    - Grant permissions when prompted
 
-### Method 2: Google Play Store (Future Release)
-
-- Coming soon to Google Play Store
-- Search for "Oblivion Android"
-- Tap Install
-
 ## Post-Installation Setup
 
 ### First Launch

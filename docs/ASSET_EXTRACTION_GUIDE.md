@@ -244,7 +244,6 @@ bool parseFile(const std::string& filePath) {
 
 ### Issue: File Too Large for APK
 **Solution**:
-- APK size limit on Google Play: 100 MB
 - Use Download-on-First-Run feature (optional)
 - Compress assets further or use asset streaming
 

@@ -298,7 +298,7 @@ oblivion-android/
 | Phase 4 | NPC & AI | ✅ Complete | NPC manager, state machine |
 | Phase 5 | Deep Features | ✅ Complete | Combat, Quests, Magic |
 | Phase 6 | Optimization | ✅ Complete | Performance, testing, docs |
-| Phase 7 | Release Prep | ✅ Complete | Play Store documentation |
+| Phase 7 | Release Prep | ✅ Complete | Documentation |
 | Phase 7.1 | Enhanced Features | ✅ Complete | Save/Load, improved UI |
 | Phase 8 | Audio & Post-Processing | ✅ Complete | OpenAL 3D Audio, RetroFilter, SaveLoadUI |
 | Phase 24 | Complete UI & HUD System | ✅ Complete | Inventory, Map, Quests, HUD |
@@ -383,7 +383,6 @@ See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for complete list.
 - 🗺️ Map with quest markers
 - ⚡ Device-side ESM rendering verification
 - 🎮 Controller support
-- 🔓 Google Play Store release
 - 🦴 NIF skeleton & skinning (Phase 30)
 - 💥 NIF collision - bhkCollisionObject (Phase 30)
 - 🎬 NIF animation complete (Phase 30)
@@ -765,7 +764,7 @@ oblivion-android/
 | Phase 4 | NPCとAI | ✅ 完了 | NPCマネージャー、ステートマシン |
 | Phase 5 | 深層機能 | ✅ 完了 | 戦闘、クエスト、魔法 |
 | Phase 6 | 最適化 | ✅ 完了 | パフォーマンス、テスト、ドキュメント |
-| Phase 7 | リリース準備 | ✅ 完了 | Play Storeドキュメント |
+| Phase 7 | リリース準備 | ✅ 完了 | ドキュメント |
 | Phase 7.1 | 拡張機能 | ✅ 完了 | セーブ/ロード、改善されたUI |
 | Phase 8 | オーディオ＆ポストプロセス | ✅ 完了 | OpenAL 3Dオーディオ、レトロフィルター、セーブ/ロードUI |
 | Phase 24 | 完全なUI＆HUDシステム | ✅ 完了 | インベントリ、マップ、クエスト、HUD |
@@ -849,7 +848,6 @@ oblivion-android/
 - 🗺️ クエストマーカー付きマップ
 - ⚡ デバイス上でのESMレンダリング検証
 - 🎮 コントローラー対応
-- 🔓 Google Play Store リリース
 - 🦴 NIFスケルトン＆スキニング（Phase 30）
 - 💥 NIF衝突判定 - bhkCollisionObject（Phase 30）
 - 🎬 NIFアニメーション完全実装（Phase 30）

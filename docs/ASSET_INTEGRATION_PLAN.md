@@ -388,8 +388,6 @@ blender --background --python convert_nif_to_obj.py
 | **合計（Phase 9）** | **~85 MB** | **~45 MB** | |
 | **合計（Phase 10）** | **~500 MB** | **~260 MB** | |
 
-**注意**: Google PlayのAPKサイズ上限は200MB（拡張ファイル使用で2GBまで可能）。
-
 ---
 
 ## 7. 今すぐ開始できるタスク
