@@ -952,10 +952,69 @@
         "ai-package"
       ],
       "compressed": false
+    },
+    {
+      "id": "mem-032",
+      "timestamp": "2026-08-27T18:00:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "Batch 6 bug fixes completed (8 bugs): faction_manager.cpp (int64_t overflow), merchant.cpp/h (quantity-aware removeItem), world_manager.cpp (uint32_t negative coord key), combat_manager.cpp (function-local static RNG), quest_manager.cpp (state transition ACCEPTED→IN_PROGRESS, duplicate prevention, empty objectives true), save_manager.cpp (playerPosition JSON parsing). Build succeeded, committed as 561b6be, pushed to master. Total bugs fixed: 72 across 6 batches.",
+      "tags": [
+        "bug-fix",
+        "batch-6",
+        "faction-manager",
+        "merchant",
+        "world-manager",
+        "combat-manager",
+        "quest-manager",
+        "save-manager"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "mem-033",
+      "timestamp": "2026-08-27T18:50:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Handbook.md updated (commit 60779c8): Added Current Project Status section with Phase 1-36 completion table, Code Metrics (22,500+ C++ lines, 40 ESM types, 72 bug fixes), Architecture Overview, Key Technical Decisions (namespace arch, Player=NPC ID 1, GLM gotcha, build system), Bug Fix History table, Phase 37 Script VM status. Version bumped to 2.0.",
+      "tags": [
+        "documentation",
+        "handbook",
+        "status-update"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "mem-034",
+      "timestamp": "2026-08-27T19:00:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "README.md engine architecture diagram updated: 7-layer architecture (JNI → Renderer → Imperial Weave → Game Systems → World/Physics → Asset/Data → Animation/Audio → System/Persistence → Third-Party). Namespace table added. Badges updated to Phase 36 + Jolt Physics. C++ line count updated to 22,500+. Weapon-type sound routing in EventBus example.",
+      "tags": [
+        "documentation",
+        "readme",
+        "architecture",
+        "engine-diagram"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "mem-035",
+      "timestamp": "2026-08-27T19:00:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "Next steps: (1) Phase 37 Script VM implementation - design complete, ~2,050 lines estimated, needs SCPT parser + bytecode interpreter + game function API. (2) Remaining unfixed bugs: Bug #5 (combat dangling pointer - likely not actual), Bug #16 (FORTIFY_ATTR tracking), Bug #17 (mana clamping - already handled), Bug #18 (gravity - ExtendedUpdate handles). (3) Future: full game world loading, quest completion, NPC dialogue trees, save/load for all systems.",
+      "tags": [
+        "next-steps",
+        "phase-37",
+        "script-vm",
+        "roadmap"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 65,
+    "totalEntries": 69,
     "compressedCount": 0,
     "sessionCount": 4
   }

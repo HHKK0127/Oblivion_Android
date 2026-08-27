@@ -1,10 +1,11 @@
 # Oblivion Android - Complete Native Port
 
-![Status](https://img.shields.io/badge/status-Phase%2030-brightgreen)
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Status](https://img.shields.io/badge/status-Phase%2036-brightgreen)
+![Version](https://img.shields.io/badge/version-0.9.10-blue)
 ![License](https://img.shields.io/badge/license-Proprietary-red)
 ![Android](https://img.shields.io/badge/android-10%2B-green)
 ![ESM](https://img.shields.io/badge/ESM%20Records-40-yellow)
+![Physics](https://img.shields.io/badge/physics-Jolt-blueviolet)
 
 ---
 
@@ -71,7 +72,7 @@ A complete native Android port of The Elder Scrolls IV: Oblivion, built entirely
 #### Architecture
 | Item | Specification |
 | --- | --- |
-| **Language** | C++17 (13,000+ lines) |
+| **Language** | C++17 (22,500+ lines) |
 | **Graphics API** | OpenGL ES 3.0 |
 | **Physics** | Jolt Physics (Phase 36) |
 | **Build System** | CMake + Gradle |
@@ -83,18 +84,115 @@ A complete native Android port of The Elder Scrolls IV: Oblivion, built entirely
 The engine uses a layered architecture with **Imperial Weave** as the central coordinator:
 
 ```
-Android JNI
-    └── Renderer  (initialization & render loop)
-         ├── Imperial Weave  (12-phase update coordinator)
-         │    ├── EventBus  (loose-coupled messaging)
-         │    └── Phase pipeline:
-         │         ①EventProcess → ②World → ③AI → ④Player → ⑤Inventory
-         │         → ⑥Spell → ⑦Animation → ⑧Physics → ⑨Combat
-         │         → ⑩Quest → ⑪Audio → ⑫RenderSubmit
-         ├── UISystem  (HUD, panels, floating text)
-         └── Subscriber bridges (thin, EventBus-driven):
-              ├── AnimationSubscriber  (Event → AnimationPlayer)
-              └── AudioSubscriber     (Event → AudioManager)
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Android JNI Layer                            │
+│  native-lib.cpp / jni_bridge.cpp / jni_audio_bridge.cpp            │
+└───────────────────────────┬─────────────────────────────────────────┘
+                            │
+┌───────────────────────────▼─────────────────────────────────────────┐
+│                        Renderer (engine/renderer.cpp)               │
+│  OpenGL ES 3.0 render loop, camera, shader, texture management     │
+│  ├── Camera (engine/camera.cpp)                                     │
+│  ├── Shader (engine/shader.cpp)                                     │
+│  ├── TextureLoader (engine/texture_loader.cpp)                      │
+│  ├── RetroFilter (engine/graphics/retro_filter.cpp) [Optional]      │
+│  └── SkinningShader (engine/skinning_shader.h)                      │
+└──────────┬────────────────────────────────────┬─────────────────────┘
+           │                                    │
+┌──────────▼──────────────┐    ┌────────────────▼────────────────────┐
+│   Imperial Weave        │    │         UISystem                    │
+│   (imperial_weave.cpp)  │    │  HUD, panels, floating text         │
+│                         │    │  ├── SpellSelectionPanel             │
+│   12-Phase Pipeline:    │    │  ├── QuickSlotButtons               │
+│   ① EventProcess        │    │  └── Debug HUD                      │
+│   ② World               │    └─────────────────────────────────────┘
+│   ③ AI                  │
+│   ④ Player              │    ┌─────────────────────────────────────┐
+│   ⑤ Inventory           │    │       Subscriber Bridges            │
+│   ⑥ Spell               │    │  (EventBus-driven, decoupled)       │
+│   ⑦ Animation           │    │  ├── AnimationSubscriber            │
+│   ⑧ Physics             │    │  │   Event → AnimationPlayer        │
+│   ⑨ Combat              │    │  └── AudioSubscriber                │
+│   ⑩ Quest               │    │      Event → AudioManager           │
+│   ⑪ Audio               │    └─────────────────────────────────────┘
+│   ⑫ RenderSubmit        │
+└──────────┬──────────────┘
+           │ EventBus (loose-coupled messaging)
+           │
+┌──────────▼──────────────────────────────────────────────────────────┐
+│                        Game Systems Layer                            │
+│                                                                     │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌────────────┐ │
+│  │ NpcManager   │ │ CombatManager│ │ QuestManager │ │SpellManager│ │
+│  │ (npc_mgr.cpp)│ │(combat_mgr)  │ │(quest_mgr)   │ │(spell_mgr) │ │
+│  └──────┬───────┘ └──────┬───────┘ └──────┬───────┘ └─────┬──────┘ │
+│         │                │                │               │        │
+│  ┌──────▼───────┐ ┌──────▼───────┐ ┌──────▼───────┐ ┌─────▼──────┐ │
+│  │ AI Scheduler │ │ FactionMgr   │ │ Dialogue     │ │ Alchemy    │ │
+│  │ (ai_sched)   │ │(faction_mgr) │ │ (dialogue)   │ │(alchemy)   │ │
+│  │ AI Package   │ │ Merchant     │ │ Interaction  │ │ Equipment  │ │
+│  │ (ai_package) │ │ (merchant)   │ │ Manager      │ │ Effects    │ │
+│  └──────────────┘ └──────────────┘ └──────────────┘ └────────────┘ │
+│                                                                     │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌────────────┐ │
+│  │ PlayerCtrl   │ │ InventoryMgr │ │ Consumable   │ │ LootGen    │ │
+│  │(player_ctrl) │ │(inv_mgr)     │ │ System       │ │(loot_gen)  │ │
+│  └──────────────┘ └──────────────┘ └──────────────┘ └────────────┘ │
+└─────────────────────────────────────────────────────────────────────┘
+                            │
+┌───────────────────────────▼─────────────────────────────────────────┐
+│                     World & Physics Layer                            │
+│                                                                     │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌────────────┐ │
+│  │ WorldManager │ │ PhysicsMgr   │ │ CollisionWorld│ │NavMeshMgr  │ │
+│  │(world_mgr)   │ │(physics_mgr) │ │(collision)    │ │(navmesh)   │ │
+│  │ Cell system  │ │ Jolt Physics │ │ AABB Tree     │ │ NAVM path  │ │
+│  └──────────────┘ └──────────────┘ └──────────────┘ └────────────┘ │
+│                                                                     │
+│  ┌──────────────┐ ┌──────────────┐                                  │
+│  │ CharCtrl     │ │ MapSystem    │                                  │
+│  │(char_ctrl)   │ │ (map_sys)    │                                  │
+│  └──────────────┘ └──────────────┘                                  │
+└─────────────────────────────────────────────────────────────────────┘
+                            │
+┌───────────────────────────▼─────────────────────────────────────────┐
+│                      Asset & Data Layer                              │
+│                                                                     │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌────────────┐ │
+│  │ AssetManager │ │ BSA Reader   │ │ ESM Reader   │ │ NIF Parser │ │
+│  │(asset_mgr)   │ │(bsa_reader)  │ │(esm_reader)  │ │(nif_parser)│ │
+│  │              │ │ Archive I/O  │ │ 40 rec types │ │ Mesh/Skin  │ │
+│  └──────────────┘ └──────────────┘ └──────────────┘ └────────────┘ │
+│                                                                     │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐                │
+│  │ DDS Loader   │ │ BookDatabase │ │ Localization │                │
+│  │(dds_loader)  │ │(book_db)     │ │ (localize)   │                │
+│  └──────────────┘ └──────────────┘ └──────────────┘                │
+└─────────────────────────────────────────────────────────────────────┘
+                            │
+┌───────────────────────────▼─────────────────────────────────────────┐
+│                      Animation & Audio Layer                         │
+│                                                                     │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌────────────┐ │
+│  │ Animation    │ │ Skeleton     │ │ AudioManager │ │ Audio3D    │ │
+│  │ Player       │ │ (skeleton)   │ │(audio_mgr)   │ │ (audio_3d) │ │
+│  │(anim_player) │ │ Bone system  │ │ OpenAL       │ │ Spatial    │ │
+│  └──────────────┘ └──────────────┘ └──────────────┘ └────────────┘ │
+└─────────────────────────────────────────────────────────────────────┘
+                            │
+┌───────────────────────────▼─────────────────────────────────────────┐
+│                      System & Persistence Layer                      │
+│                                                                     │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌────────────┐ │
+│  │ SaveManager  │ │ SettingsMgr  │ │ PerfMonitor  │ │ CheatMgr   │ │
+│  │(save_mgr)    │ │(settings)    │ │(perf_mon)    │ │(cheat_mgr) │ │
+│  └──────────────┘ └──────────────┘ └──────────────┘ └────────────┘ │
+└─────────────────────────────────────────────────────────────────────┘
+                            │
+┌───────────────────────────▼─────────────────────────────────────────┐
+│                      Third-Party Libraries                           │
+│  Jolt Physics │ OpenAL │ GLM │ stb_image │ stb_truetype             │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
 Key design principle: **CombatManager emits events — it does not call AnimationPlayer or AudioManager directly.** Each subscriber reacts independently, keeping systems decoupled.
@@ -105,9 +203,17 @@ ATK button → PlayerController.attack()
            → CombatManager.playerAttack()
            → EventBus emit "COMBAT_ATTACK_HIT"
                 ├── AnimationSubscriber → target plays hit-reaction anim
-                ├── AudioSubscriber     → combat hit SE plays
+                ├── AudioSubscriber     → combat hit SE (weapon-type routed)
                 └── UIFloatingText      → "Hit!" appears on screen
 ```
+
+**Namespace Architecture:**
+| Namespace | Classes |
+|-----------|---------|
+| Global | Renderer, WorldManager, NpcManager, CombatManager, QuestManager, CollisionWorld, PlayerController, InventoryManager, SpellManager, AudioManager, EquipmentEffectSystem |
+| `animation::` | AnimationPlayer |
+| `ai::` | AIScheduler |
+| `oblivion::` | NavMeshManager, PhysicsManager, AlchemySystem, BookReader, ClothingConverter |
 
 #### Performance Targets
 | Metric | Target | Actual | Status |
