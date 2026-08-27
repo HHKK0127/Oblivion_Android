@@ -37,7 +37,7 @@ public:
 
     // 商品管理
     void addItem(const MerchantItem& item);
-    void removeItem(const std::string& itemId);
+    void removeItem(const std::string& itemId, int32_t quantity = 1);
     MerchantItem* findItem(const std::string& itemId);
     const std::vector<MerchantItem>& getInventory() const { return inventory_; }
 

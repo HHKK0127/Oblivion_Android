@@ -4,7 +4,7 @@
 
 // Quest implementation
 void Quest::accept() {
-    state = QuestState::ACCEPTED;
+    state = QuestState::IN_PROGRESS;
     for (auto& obj : objectives) {
         obj.state = QuestObjectiveState::ACTIVE;
     }
@@ -37,7 +37,7 @@ void Quest::updateObjective(uint32_t objectiveId, uint32_t progress) {
 }
 
 bool Quest::allObjectivesCompleted() const {
-    if (objectives.empty()) return false;
+    if (objectives.empty()) return true;
     for (const auto& obj : objectives) {
         if (!obj.isCompleted()) return false;
     }
@@ -147,7 +147,11 @@ bool QuestManager::acceptQuest(uint32_t questId) {
     }
 
     quest->accept();
-    activeQuests.push_back(questId);
+
+    // Prevent duplicate entries in activeQuests
+    if (std::find(activeQuests.begin(), activeQuests.end(), questId) == activeQuests.end()) {
+        activeQuests.push_back(questId);
+    }
 
     LOGI("Quest accepted: ID=%u, Title=%s", questId, quest->title.c_str());
 

@@ -71,8 +71,8 @@ uint32_t FactionManager::getNPCPrimaryFaction(uint32_t npcFormID) const {
 }
 
 int32_t FactionManager::calculateDisposition(uint32_t npc1FormID, uint32_t npc2FormID) const {
-    // Base disposition
-    int32_t disposition = 50;
+    // Use int64_t to prevent overflow during accumulation
+    int64_t disposition = 50;
 
     // Get factions for both NPCs
     auto factions1 = getNPCFactions(npc1FormID);
@@ -100,8 +100,9 @@ int32_t FactionManager::calculateDisposition(uint32_t npc1FormID, uint32_t npc2F
         }
     }
 
-    // Clamp to 0-100 range
-    return std::max(0, std::min(100, disposition));
+    // Clamp to 0-100 range after accumulation
+    disposition = std::max<int64_t>(0, std::min<int64_t>(100, disposition));
+    return static_cast<int32_t>(disposition);
 }
 
 std::string FactionManager::getFactionRankName(uint32_t factionFormID, int32_t rank) const {

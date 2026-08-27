@@ -7,10 +7,14 @@
 #include <random>
 
 // ============================================================================
-// Random number generator for combat rolls
+// Random number generator for combat rolls (function-local static to avoid
+// static initialization order issues across translation units)
 // ============================================================================
-static std::random_device g_rd;
-static std::mt19937 g_rng(g_rd());
+static std::mt19937& getRng() {
+    static std::random_device rd;
+    static std::mt19937 rng(rd());
+    return rng;
+}
 
 // ============================================================================
 // Helper: CombatEvent type to string
@@ -614,7 +618,7 @@ bool CombatManager::checkHitboxCollision(const Hitbox& hitbox, std::shared_ptr<N
 
 bool CombatManager::rollCritical(float criticalChance) const {
     std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-    return dist(g_rng) < criticalChance;
+    return dist(getRng()) < criticalChance;
 }
 
 float CombatManager::applyCriticalDamage(float damage, float criticalMultiplier) const {

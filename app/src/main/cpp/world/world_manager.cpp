@@ -444,7 +444,7 @@ bool WorldManager::shouldUnloadCell(std::shared_ptr<Cell> cell) const {
 }
 
 uint32_t WorldManager::getOrCreateCellId(int32_t cellX, int32_t cellY) {
-    uint64_t key = (static_cast<uint64_t>(cellX) << 32) | (cellY & 0xFFFFFFFF);
+    uint64_t key = (static_cast<uint64_t>(static_cast<uint32_t>(cellX)) << 32) | static_cast<uint32_t>(cellY);
     auto it = coordToId.find(key);
     if (it != coordToId.end()) {
         return it->second;
@@ -472,7 +472,7 @@ std::shared_ptr<Cell> WorldManager::addCellFromESM(int32_t cellX, int32_t cellY,
                                                      const std::string& editorID,
                                                      const std::string& fullName,
                                                      uint32_t tesFormID) {
-    uint64_t key = (static_cast<uint64_t>(cellX) << 32) | (cellY & 0xFFFFFFFF);
+    uint64_t key = (static_cast<uint64_t>(static_cast<uint32_t>(cellX)) << 32) | static_cast<uint32_t>(cellY);
     auto it = coordToId.find(key);
     if (it != coordToId.end()) {
         return cells[it->second];

@@ -22,14 +22,18 @@ void Merchant::addItem(const MerchantItem& item) {
     }
 }
 
-void Merchant::removeItem(const std::string& itemId) {
+void Merchant::removeItem(const std::string& itemId, int32_t quantity) {
     auto it = std::find_if(inventory_.begin(), inventory_.end(),
                           [&itemId](const MerchantItem& item) {
                               return item.itemId == itemId;
                           });
 
     if (it != inventory_.end()) {
-        inventory_.erase(it);
+        it->quantity -= quantity;
+        // Only remove entry when quantity reaches zero or below
+        if (it->quantity <= 0) {
+            inventory_.erase(it);
+        }
     }
 }
 

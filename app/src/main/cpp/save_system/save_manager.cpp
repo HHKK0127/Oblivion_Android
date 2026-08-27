@@ -163,8 +163,32 @@ bool SaveManager::deserializeGameState(const std::string& json, GameState& outSt
         // Extract position from JSON (simplified parsing)
         size_t pos = json.find("playerPos");
         if (pos != std::string::npos) {
-            // Very basic extraction - in production use proper JSON parser
-            LOGD("Parsed player position from save");
+            // Parse [x, y, z] array
+            size_t arr_start = json.find("[", pos);
+            size_t arr_end = json.find("]", arr_start);
+            if (arr_start != std::string::npos && arr_end != std::string::npos) {
+                std::string arr_str = json.substr(arr_start + 1, arr_end - arr_start - 1);
+                std::stringstream ss(arr_str);
+                std::string token;
+                int coord_idx = 0;
+                while (std::getline(ss, token, ',') && coord_idx < 3) {
+                    // Trim whitespace
+                    size_t start = token.find_first_not_of(" \t\n\r");
+                    size_t end = token.find_last_not_of(" \t\n\r");
+                    if (start != std::string::npos) {
+                        token = token.substr(start, end - start + 1);
+                    }
+                    float val = std::stof(token);
+                    switch (coord_idx) {
+                        case 0: outState.playerPosition.x = val; break;
+                        case 1: outState.playerPosition.y = val; break;
+                        case 2: outState.playerPosition.z = val; break;
+                    }
+                    coord_idx++;
+                }
+                LOGD("Parsed player position from save: (%.2f, %.2f, %.2f)",
+                     outState.playerPosition.x, outState.playerPosition.y, outState.playerPosition.z);
+            }
         }
 
         // Extract health

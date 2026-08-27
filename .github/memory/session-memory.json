@@ -906,6 +906,22 @@
       "compressed": false
     },
     {
+      "id": "mem-030",
+      "timestamp": "2026-07-12T04:00:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "Batch 4 bug fixes completed (15 bugs #61-75): alchemy_system.cpp (memory leak, fixed ID, single effect, data model), equipment_effect_system.cpp (stat accumulation, double armor, weapon overwrite, maxHP heal), book_reader.cpp (skill formID resolution, empty skills, random selection), clothing_converter.cpp (memory leak, ring slot conflict, slot detection). Build succeeded, committed as 1f5aeb6, pushed to master.",
+      "tags": [
+        "bug-fix",
+        "batch-4",
+        "alchemy",
+        "equipment",
+        "book",
+        "clothing"
+      ],
+      "compressed": false
+    },
+    {
       "id": "mem-029",
       "timestamp": "2026-08-27T16:43:58.760049Z",
       "category": "decision",
@@ -919,6 +935,21 @@
         "texture",
         "skeleton",
         "navmesh"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "mem-031",
+      "timestamp": "2026-08-27T17:00:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "Batch 5 bug fixes completed (5 bugs): renderer.cpp (null check titleScreen, actual player position in save/load), interaction_manager.cpp (transition-only enter/exit callbacks, size capture before clear), ai_package.cpp/h (evaluate() implementation, conditionsMet field). Build succeeded, committed as 3d88d85, pushed to master. Total bugs fixed: 64 across 5 batches.",
+      "tags": [
+        "bug-fix",
+        "batch-5",
+        "renderer",
+        "interaction-manager",
+        "ai-package"
       ],
       "compressed": false
     }
