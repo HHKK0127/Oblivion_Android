@@ -298,9 +298,9 @@ DEBUG: ON
 ### ドキュメント
 
 - README.md (500+行)
-- INSTALLATION.md (300+行)
-- GAMEPLAY.md (400+行)
-- KNOWN_ISSUES.md (350+行)
+- docs/README.md (ドキュメント目次)
+- docs/ARCHITECTURE.md (アーキテクチャ)
+- docs/DEVELOPMENT_HISTORY.md (開発履歴)
 - PERFORMANCE_REPORT.md (400+行)
 - CHANGELOG.md (600+行)
 
