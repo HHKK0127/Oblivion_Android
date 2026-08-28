@@ -38,6 +38,13 @@ add_library(native-lib SHARED
     engine/texture_loader.cpp
     engine/graphics/retro_filter.cpp
     engine/imperial_weave.cpp
+
+    # Phase 44: Performance Optimization
+    engine/memory_pool.cpp
+    engine/render_optimizer.cpp
+    engine/async_task_manager.cpp
+    engine/cache_manager.cpp
+    engine/profiler_dashboard.cpp
     ui/spell_selection_panel.cpp
     audio/audio_subscriber.cpp
     animation/animation_subscriber.cpp
