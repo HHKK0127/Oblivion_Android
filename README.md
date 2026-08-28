@@ -90,12 +90,12 @@ The engine uses a layered architecture with **Imperial Weave** as the central co
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                        Android JNI Layer                            │
-│  native-lib.cpp / jni_bridge.cpp / jni_audio_bridge.cpp            │
+│  native-lib.cpp / jni_bridge.cpp / jni_audio_bridge.cpp             │
 └───────────────────────────┬─────────────────────────────────────────┘
                             │
 ┌───────────────────────────▼─────────────────────────────────────────┐
 │                        Renderer (engine/renderer.cpp)               │
-│  OpenGL ES 3.0 render loop, camera, shader, texture management     │
+│  OpenGL ES 3.0 render loop, camera, shader, texture management      │
 │  ├── Camera (engine/camera.cpp)                                     │
 │  ├── Shader (engine/shader.cpp)                                     │
 │  ├── TextureLoader (engine/texture_loader.cpp)                      │
@@ -106,7 +106,7 @@ The engine uses a layered architecture with **Imperial Weave** as the central co
 ┌──────────▼──────────────┐    ┌────────────────▼────────────────────┐
 │   Imperial Weave        │    │         UISystem                    │
 │   (imperial_weave.cpp)  │    │  HUD, panels, floating text         │
-│                         │    │  ├── SpellSelectionPanel             │
+│                         │    │  ├── SpellSelectionPanel            │
 │   12-Phase Pipeline:    │    │  ├── QuickSlotButtons               │
 │   ① EventProcess        │    │  └── Debug HUD                      │
 │   ② World               │    └─────────────────────────────────────┘
