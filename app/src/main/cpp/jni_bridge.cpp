@@ -3,6 +3,7 @@
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
 #include "engine/renderer.h"
+#include "vegetation/speed_tree_manager.h"
 
 #define LOG_TAG "JNI_Bridge"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -383,4 +384,82 @@ Java_com_example_oblivion_GameRenderer_nativeRunPhase48StressTests(
          allPassed ? "ALL PASSED" : "SOME FAILED");
 
     return env->NewStringUTF(summary.c_str());
+}
+
+// ============================================
+// Phase 51: SpeedTree Vegetation System
+// ============================================
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_example_oblivion_GameRenderer_nativeInitSpeedTree(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jlong handle) {
+    LOGI("=== nativeInitSpeedTree called ===");
+
+    Renderer* renderer = reinterpret_cast<Renderer*>(handle);
+    if (!renderer) {
+        LOGE("nativeInitSpeedTree: null renderer handle");
+        return JNI_FALSE;
+    }
+
+    auto& speedTree = vegetation::SpeedTreeManager::instance();
+    bool result = speedTree.initialize(renderer);
+
+    if (result) {
+        // Register default tree types
+        vegetation::TreeType oakType;
+        oakType.typeId = 1;
+        oakType.meshPath = "meshes/trees/oak01.nif";
+        oakType.texturePath = "textures/trees/oak_bark.dds";
+        oakType.billboardTexturePath = "textures/trees/oak_billboard.dds";
+        oakType.minHeight = 5.0f;
+        oakType.maxHeight = 12.0f;
+        oakType.billboardWidth = 5.0f;
+        oakType.billboardHeight = 10.0f;
+        speedTree.registerTreeType(1, oakType);
+
+        vegetation::TreeType pineType;
+        pineType.typeId = 2;
+        pineType.meshPath = "meshes/trees/pine01.nif";
+        pineType.texturePath = "textures/trees/pine_bark.dds";
+        pineType.billboardTexturePath = "textures/trees/pine_billboard.dds";
+        pineType.minHeight = 8.0f;
+        pineType.maxHeight = 18.0f;
+        pineType.billboardWidth = 4.0f;
+        pineType.billboardHeight = 14.0f;
+        speedTree.registerTreeType(2, pineType);
+
+        vegetation::TreeType mapleType;
+        mapleType.typeId = 3;
+        mapleType.meshPath = "meshes/trees/maple01.nif";
+        mapleType.texturePath = "textures/trees/maple_bark.dds";
+        mapleType.billboardTexturePath = "textures/trees/maple_billboard.dds";
+        mapleType.minHeight = 4.0f;
+        mapleType.maxHeight = 10.0f;
+        mapleType.billboardWidth = 6.0f;
+        mapleType.billboardHeight = 9.0f;
+        speedTree.registerTreeType(3, mapleType);
+
+        LOGI("SpeedTree initialized with %lu tree types",
+             (unsigned long)speedTree.getTypeCount());
+    } else {
+        LOGE("SpeedTree initialization failed");
+    }
+
+    return result ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_example_oblivion_GameRenderer_nativeGetSpeedTreeCount(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    return static_cast<jint>(vegetation::SpeedTreeManager::instance().getTreeCount());
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_example_oblivion_GameRenderer_nativeGetSpeedTreeVisibleCount(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    return static_cast<jint>(vegetation::SpeedTreeManager::instance().getVisibleCount());
 }

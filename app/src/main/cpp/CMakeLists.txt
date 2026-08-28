@@ -257,6 +257,11 @@ add_library(native-lib SHARED
     dialogue/dialogue_history.cpp
     dialogue/dialogue_integration.cpp
 
+    # Phase 51: SpeedTree Vegetation System
+    vegetation/speed_tree_manager.cpp
+    vegetation/tree_wind_field.cpp
+    vegetation/tree_emitter.cpp
+
     # JNI Bridge (Java/C++ communication)
     jni_bridge.cpp
 )
@@ -286,6 +291,7 @@ target_include_directories(native-lib PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/script
     ${CMAKE_CURRENT_SOURCE_DIR}/quest
     ${CMAKE_CURRENT_SOURCE_DIR}/dialogue
+    ${CMAKE_CURRENT_SOURCE_DIR}/vegetation
 )
 
 # Find OpenAL-Soft (optional for now)

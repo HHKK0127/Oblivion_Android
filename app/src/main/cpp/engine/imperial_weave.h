@@ -42,6 +42,10 @@ namespace animation {
 class AnimationPlayer;
 }
 
+namespace vegetation {
+class SpeedTreeManager;
+}
+
 namespace weave {
 
 // ============================================================================
@@ -212,7 +216,8 @@ public:
         ::SpellManager* spell = nullptr,
         ::AudioManager* audio = nullptr,
         ::oblivion::PhysicsManager* joltPhysics = nullptr,
-        ::oblivion::script::ScriptManager* script = nullptr
+        ::oblivion::script::ScriptManager* script = nullptr,
+        ::vegetation::SpeedTreeManager* speedTree = nullptr
     );
 
     void shutdown();
@@ -249,6 +254,7 @@ private:
     ::AudioManager* audioManager_ = nullptr;
     ::oblivion::PhysicsManager* joltPhysics_ = nullptr;
     ::oblivion::script::ScriptManager* scriptManager_ = nullptr;
+    ::vegetation::SpeedTreeManager* speedTreeManager_ = nullptr;
 
     bool initialized_ = false;
 
