@@ -14,9 +14,9 @@
 #include <typeinfo>
 
 // ============================================================================
-// Imperial Weave v3.0
-// 統合レイヤー: EventBus + ServiceLocator + Coordinator
-// v3: type_index化 / shared_ptr EventHandlers / 例外安全
+// Imperial Weave v4.0
+// 統合レイヤー: EventBus + ServiceLocator + Coordinator + FrameBudget
+// v4: Config struct / new engine phases / frame budget / event subscriptions
 // ============================================================================
 
 // Forward declarations (existing systems - global namespace)
@@ -143,6 +143,35 @@ struct Event {
         e.payload = questId;
         return e;
     }
+    // v4: New engine events
+    static Event treeWindChange(uint32_t senderId, const std::string& windData) {
+        Event e;
+        e.type = "TREE_WIND_CHANGE";
+        e.sender = senderId;
+        e.payload = windData;
+        return e;
+    }
+    static Event faceMorphUpdate(uint32_t senderId, const std::string& morphData) {
+        Event e;
+        e.type = "FACE_MORPH_UPDATE";
+        e.sender = senderId;
+        e.payload = morphData;
+        return e;
+    }
+    static Event videoPlaybackEvent(uint32_t senderId, const std::string& videoData) {
+        Event e;
+        e.type = "VIDEO_PLAYBACK_EVENT";
+        e.sender = senderId;
+        e.payload = videoData;
+        return e;
+    }
+    static Event lodDistanceChange(uint32_t senderId, const std::string& lodData) {
+        Event e;
+        e.type = "LOD_DISTANCE_CHANGE";
+        e.sender = senderId;
+        e.payload = lodData;
+        return e;
+    }
 };
 
 class EventBus {
@@ -208,6 +237,33 @@ private:
 };
 
 // ============================================================================
+// ImperialWeaveConfig - v4: Configuration struct for init()
+// ============================================================================
+
+struct ImperialWeaveConfig {
+    ::Renderer* renderer = nullptr;
+    ::WorldManager* world = nullptr;
+    ::NpcManager* npc = nullptr;
+    ::CombatManager* combat = nullptr;
+    ::QuestManager* quest = nullptr;
+    ::CollisionWorld* physics = nullptr;
+    ::animation::AnimationPlayer* anim = nullptr;
+    ::PlayerController* player = nullptr;
+    ::InventoryManager* inventory = nullptr;
+    ::SpellManager* spell = nullptr;
+    ::AudioManager* audio = nullptr;
+    ::oblivion::PhysicsManager* joltPhysics = nullptr;
+    ::oblivion::script::ScriptManager* script = nullptr;
+    ::DistantLodManager* distantLod = nullptr;
+    ::vegetation::SpeedTreeManager* speedTree = nullptr;
+    ::facegen::FaceGenMorpher* faceGen = nullptr;
+    ::oblivion::video::BinkVideoPlayer* binkVideo = nullptr;
+
+    // Frame budget in milliseconds (default: 16.6ms = 60fps)
+    float frameBudgetMs = 16.6f;
+};
+
+// ============================================================================
 // ImperialWeave - integration coordinator
 // ============================================================================
 
@@ -215,6 +271,10 @@ class ImperialWeave {
 public:
     static ImperialWeave& instance();
 
+    // v4: Config-based init (preferred)
+    void init(const ImperialWeaveConfig& config);
+
+    // v3 backward compatibility: positional init (delegates to config)
     void init(
         ::Renderer* renderer,
         ::WorldManager* world,
@@ -243,10 +303,16 @@ public:
 
     ::CollisionWorld* physics() const { return physics_; }
     ::animation::AnimationPlayer* anim() const { return animPlayer_; }
-        ::NpcManager* npc() const { return npcManager_; }
+    ::NpcManager* npc() const { return npcManager_; }
     ::facegen::FaceGenMorpher* faceGen() const { return faceGenMorpher_; }
 
     bool isInitialized() const { return initialized_; }
+
+    // v4: Frame budget accessors
+    float getFrameBudgetMs() const { return frameBudgetMs_; }
+    void setFrameBudgetMs(float budget) { frameBudgetMs_ = budget; }
+    float getLastFrameTimeMs() const { return lastFrameTimeMs_; }
+    bool wasFrameBudgetExceeded() const { return frameBudgetExceeded_; }
 
 private:
     ImperialWeave() = default;
@@ -277,7 +343,15 @@ private:
 
     bool initialized_ = false;
 
-    // 12-phase update pipeline
+    // v4: Frame budget management
+    float frameBudgetMs_ = 16.6f;
+    float lastFrameTimeMs_ = 0.0f;
+    bool frameBudgetExceeded_ = false;
+
+    // v4: Helper to check frame budget
+    bool withinBudget(std::chrono::high_resolution_clock::time_point frameStart) const;
+
+    // 15-phase update pipeline (v4: +3 new engine phases)
     void phasePreUpdate(float dt);
     void phaseEventProcess();
     void phaseWorldUpdate(float dt);
@@ -291,6 +365,9 @@ private:
     void phaseCombatUpdate(float dt);
     void phaseQuestUpdate(float dt);
     void phaseScriptUpdate(float dt);
+    void phaseVegetationUpdate(float dt);   // v4: SpeedTree
+    void phaseFaceGenUpdate(float dt);      // v4: FaceGen
+    void phaseVideoUpdate(float dt);        // v4: BinkVideo
     void phaseAudioUpdate(float dt);
     void phaseRenderSubmit(float dt);
 };
