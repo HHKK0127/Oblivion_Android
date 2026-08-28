@@ -13,6 +13,7 @@
 #include "../animation/animation_player.h"
 #include "../physics/physics_manager.h"
 #include "../script/script_manager.h"
+#include "../vegetation/speed_tree_manager.h"
 
 namespace weave {
 
@@ -170,7 +171,8 @@ void ImperialWeave::init(
     ::SpellManager* spell,
     ::AudioManager* audio,
     ::oblivion::PhysicsManager* joltPhysics,
-    ::oblivion::script::ScriptManager* script
+    ::oblivion::script::ScriptManager* script,
+    ::vegetation::SpeedTreeManager* speedTree
 ) {
     renderer_ = renderer;
     worldManager_ = world;
@@ -185,6 +187,7 @@ void ImperialWeave::init(
     audioManager_ = audio;
     joltPhysics_ = joltPhysics;
     scriptManager_ = script;
+    speedTreeManager_ = speedTree;
 
     // Register services for cross-module access
     if (renderer) locator_.registerService(renderer);
@@ -200,6 +203,7 @@ void ImperialWeave::init(
     if (audio)    locator_.registerService(audio);
     if (joltPhysics) locator_.registerService(joltPhysics);
     if (script)   locator_.registerService(script);
+    if (speedTree) locator_.registerService(speedTree);
 
     initialized_ = true;
 }
@@ -216,6 +220,7 @@ void ImperialWeave::shutdown() {
     animPlayer_ = nullptr;
     joltPhysics_ = nullptr;
     scriptManager_ = nullptr;
+    speedTreeManager_ = nullptr;
     initialized_ = false;
 }
 
