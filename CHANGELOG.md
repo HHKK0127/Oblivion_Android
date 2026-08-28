@@ -4,6 +4,46 @@ All notable changes to the Oblivion Android project are documented here.
 
 ---
 
+## [1.3.0] - 2026-08-29 (Phase 38 - Script VM Testing Complete)
+
+### Testing
+
+#### Script VM Unit Tests (20 tests)
+- **ExecutionContext Tests** (5 tests)
+  - Stack operations (push/pop)
+  - Stack overflow protection (256 max)
+  - Local variables (get/set)
+  - Reference management
+  - Program counter advancement
+
+- **ScriptVM Tests** (3 tests)
+  - STOP opcode execution
+  - PUSH_INT + ADD arithmetic
+  - CMP_LT + JUMP_Z branching
+
+- **Opcode Tests** (4 tests)
+  - PUSH_FLOAT floating-point
+  - NEG negation
+  - AND logical
+  - DUP stack duplication
+
+- **ScriptFunctions Tests** (3 tests)
+  - Function registration
+  - Name lookup
+  - Unknown function handling
+
+- **ScriptManager Tests** (5 tests)
+  - Initialization
+  - Script loading
+  - Global variables (int/float)
+  - Script stop
+
+### Build
+- Fixed `isScriptRunning()` call signature (2 parameters required)
+- Build verification passed (5m 13s)
+
+---
+
 ## [1.2.0] - 2026-08-29 (Phase 37 - Script VM Complete)
 
 ### Major Additions

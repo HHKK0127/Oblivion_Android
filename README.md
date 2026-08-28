@@ -428,6 +428,7 @@ oblivion-android/
 | Phase 55 (v3.1.0) | Engine Polish & Optimization | [x] Complete | FrameBudgetManager, MemoryDefrag, ShaderCache, OcclusionCuller, BatchRenderer, FaceGen brush-up, Jolt Physics extension |
 | Phase 56 (v3.2.0) | Gamebryo Complete | [x] Complete | ParticleSystem (7 presets), PostProcessPipeline (8 effects), WaterRenderer (Gerstner waves, 6 types), SkyWeatherSystem (8 weathers, day/night), SceneGraph (hierarchy, AABB), MaterialSystem (8 texture slots, 8 defaults) |
 | Phase 37 (v1.2.0) | Script VM | [x] Complete | Oblivion VM bytecode interpreter (47 opcodes), 118 game functions (Tier 1+2), ScriptManager, ExecutionContext, disassembler |
+| Phase 38 (v1.3.0) | Script VM Testing | [x] Complete | 20 unit tests (ExecutionContext, ScriptVM, Opcodes, ScriptFunctions, ScriptManager), build verification |
 
 ---
 

@@ -79,6 +79,7 @@ public:
 
     // State
     bool isRunning() const { return running_; }
+    void setRunning(bool running) { running_ = running; }
     void stop() { running_ = false; }
     void reset();
 
