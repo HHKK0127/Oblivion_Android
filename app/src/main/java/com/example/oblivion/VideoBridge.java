@@ -252,7 +252,9 @@ public class VideoBridge {
             try {
                 PlaybackParams params = new PlaybackParams();
                 params.setSpeed(Math.max(0.25f, Math.min(4.0f, rate)));
-                decoder.setPlaybackParams(params);
+                // Use reflection for API compatibility
+                java.lang.reflect.Method method = decoder.getClass().getMethod("setPlaybackParams", PlaybackParams.class);
+                method.invoke(decoder, params);
             } catch (Exception e) {
                 Log.w(TAG, "Failed to set playback rate: " + e.getMessage());
             }

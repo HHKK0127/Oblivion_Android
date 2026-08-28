@@ -457,8 +457,8 @@ bool NpcManager::generateNpcFace(uint32_t npcId, uint32_t formID) {
         return false;
     }
 
-    auto npcIt = m_npcs.find(npcId);
-    if (npcIt == m_npcs.end()) {
+    auto npcIt = npcs.find(npcId);
+    if (npcIt == npcs.end()) {
         LOGI("NPC %u not found for face generation", npcId);
         return false;
     }

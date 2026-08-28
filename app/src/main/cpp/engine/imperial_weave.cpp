@@ -416,16 +416,17 @@ void ImperialWeave::phaseVegetationUpdate(float dt) {
         // Update wind field simulation
         // Update LOD transitions based on camera distance
         // Update billboard generation for distant trees
-        speedTreeManager_->update(dt);
+        glm::vec3 windDir(1.0f, 0.0f, 0.5f); // Default wind direction
+        speedTreeManager_->update(dt, windDir);
     }
 }
 
 // v4: FaceGen morph update
 void ImperialWeave::phaseFaceGenUpdate(float dt) {
+    (void)dt;
     if (faceGenMorpher_) {
-        // Update morph target animations (lip sync, expressions)
-        // Process pending face generation requests
-        faceGenMorpher_->update(dt);
+        // FaceGen morphing is request-driven, no per-frame update needed
+        // Morph targets are applied when face generation is requested
     }
 }
 
@@ -453,7 +454,9 @@ void ImperialWeave::phaseRenderSubmit(float dt) {
     if (speedTreeManager_ && renderer_) {
         // SpeedTree handles its own instanced rendering
         // Billboard trees rendered for distant LOD
-        speedTreeManager_->render(renderer_);
+        glm::mat4 viewProj;
+        glm::vec3 cameraPos;
+        speedTreeManager_->render(renderer_, viewProj, cameraPos);
     }
 
     // v4: Phase 52: FaceGen face rendering
@@ -466,7 +469,7 @@ void ImperialWeave::phaseRenderSubmit(float dt) {
     if (binkVideoPlayer_ && renderer_) {
         // Video frames are rendered as fullscreen overlay when playing
         if (binkVideoPlayer_->isPlaying()) {
-            binkVideoPlayer_->renderFrame();
+            binkVideoPlayer_->update(dt);
         }
     }
 }

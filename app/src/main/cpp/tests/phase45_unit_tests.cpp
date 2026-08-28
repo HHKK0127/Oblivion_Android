@@ -92,7 +92,7 @@ bool Phase45UnitTests::runAllTests() {
     testCacheManager();
 
     TEST_LOGI("========================================");
-    TEST_LOGI("Results: %d passed, %d failed, %lu total",
+    TEST_LOGI("Results: %d passed, %d failed, %zu total",
               getPassCount(), getFailCount(), results.size());
     TEST_LOGI("========================================");
 

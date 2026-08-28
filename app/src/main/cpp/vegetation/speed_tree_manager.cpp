@@ -353,9 +353,10 @@ bool SpeedTreeManager::isInFrustum(const glm::vec3& pos, float radius,
         viewProj[2][3] + viewProj[2][0],
         viewProj[3][3] + viewProj[3][0]
     );
-    float leftLen = glm::length(glm::vec3(leftPlane));
+    float leftLen = glm::length(glm::vec3(leftPlane.x, leftPlane.y, leftPlane.z));
     if (leftLen > 0.001f) {
-        leftPlane /= leftLen;
+        leftPlane = glm::vec4(leftPlane.x / leftLen, leftPlane.y / leftLen,
+                              leftPlane.z / leftLen, leftPlane.w / leftLen);
         float d = leftPlane.x * pos.x + leftPlane.y * pos.y +
                   leftPlane.z * pos.z + leftPlane.w;
         if (d < -radius) return false;
@@ -368,9 +369,10 @@ bool SpeedTreeManager::isInFrustum(const glm::vec3& pos, float radius,
         viewProj[2][3] - viewProj[2][0],
         viewProj[3][3] - viewProj[3][0]
     );
-    float rightLen = glm::length(glm::vec3(rightPlane));
+    float rightLen = glm::length(glm::vec3(rightPlane.x, rightPlane.y, rightPlane.z));
     if (rightLen > 0.001f) {
-        rightPlane /= rightLen;
+        rightPlane = glm::vec4(rightPlane.x / rightLen, rightPlane.y / rightLen,
+                               rightPlane.z / rightLen, rightPlane.w / rightLen);
         float d = rightPlane.x * pos.x + rightPlane.y * pos.y +
                   rightPlane.z * pos.z + rightPlane.w;
         if (d < -radius) return false;
@@ -383,9 +385,10 @@ bool SpeedTreeManager::isInFrustum(const glm::vec3& pos, float radius,
         viewProj[2][3] + viewProj[2][1],
         viewProj[3][3] + viewProj[3][1]
     );
-    float bottomLen = glm::length(glm::vec3(bottomPlane));
+    float bottomLen = glm::length(glm::vec3(bottomPlane.x, bottomPlane.y, bottomPlane.z));
     if (bottomLen > 0.001f) {
-        bottomPlane /= bottomLen;
+        bottomPlane = glm::vec4(bottomPlane.x / bottomLen, bottomPlane.y / bottomLen,
+                                bottomPlane.z / bottomLen, bottomPlane.w / bottomLen);
         float d = bottomPlane.x * pos.x + bottomPlane.y * pos.y +
                   bottomPlane.z * pos.z + bottomPlane.w;
         if (d < -radius) return false;
@@ -398,9 +401,10 @@ bool SpeedTreeManager::isInFrustum(const glm::vec3& pos, float radius,
         viewProj[2][3] - viewProj[2][1],
         viewProj[3][3] - viewProj[3][1]
     );
-    float topLen = glm::length(glm::vec3(topPlane));
+    float topLen = glm::length(glm::vec3(topPlane.x, topPlane.y, topPlane.z));
     if (topLen > 0.001f) {
-        topPlane /= topLen;
+        topPlane = glm::vec4(topPlane.x / topLen, topPlane.y / topLen,
+                             topPlane.z / topLen, topPlane.w / topLen);
         float d = topPlane.x * pos.x + topPlane.y * pos.y +
                   topPlane.z * pos.z + topPlane.w;
         if (d < -radius) return false;
@@ -413,9 +417,10 @@ bool SpeedTreeManager::isInFrustum(const glm::vec3& pos, float radius,
         viewProj[2][3] + viewProj[2][2],
         viewProj[3][3] + viewProj[3][2]
     );
-    float nearLen = glm::length(glm::vec3(nearPlane));
+    float nearLen = glm::length(glm::vec3(nearPlane.x, nearPlane.y, nearPlane.z));
     if (nearLen > 0.001f) {
-        nearPlane /= nearLen;
+        nearPlane = glm::vec4(nearPlane.x / nearLen, nearPlane.y / nearLen,
+                              nearPlane.z / nearLen, nearPlane.w / nearLen);
         float d = nearPlane.x * pos.x + nearPlane.y * pos.y +
                   nearPlane.z * pos.z + nearPlane.w;
         if (d < -radius) return false;
@@ -428,9 +433,10 @@ bool SpeedTreeManager::isInFrustum(const glm::vec3& pos, float radius,
         viewProj[2][3] - viewProj[2][2],
         viewProj[3][3] - viewProj[3][2]
     );
-    float farLen = glm::length(glm::vec3(farPlane));
+    float farLen = glm::length(glm::vec3(farPlane.x, farPlane.y, farPlane.z));
     if (farLen > 0.001f) {
-        farPlane /= farLen;
+        farPlane = glm::vec4(farPlane.x / farLen, farPlane.y / farLen,
+                             farPlane.z / farLen, farPlane.w / farLen);
         float d = farPlane.x * pos.x + farPlane.y * pos.y +
                   farPlane.z * pos.z + farPlane.w;
         if (d < -radius) return false;
