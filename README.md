@@ -123,9 +123,9 @@ The engine uses a layered architecture with **Imperial Weave** as the central co
 └──────────┬──────────────┘
            │ EventBus (loose-coupled messaging)
            │
-┌──────────▼──────────────────────────────────────────────────────────┐
-│                        Game Systems Layer                            │
-│                                                                     │
+┌──────────▼─────────────────────────────────────────────────────────┐
+│                        Game Systems Layer                          │
+│                                                                    │
 │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌────────────┐ │
 │  │ NpcManager   │ │ CombatManager│ │ QuestManager │ │SpellManager│ │
 │  │ (npc_mgr.cpp)│ │(combat_mgr)  │ │(quest_mgr)   │ │(spell_mgr) │ │
@@ -137,21 +137,21 @@ The engine uses a layered architecture with **Imperial Weave** as the central co
 │  │ AI Package   │ │ Merchant     │ │ Interaction  │ │ Equipment  │ │
 │  │ (ai_package) │ │ (merchant)   │ │ Manager      │ │ Effects    │ │
 │  └──────────────┘ └──────────────┘ └──────────────┘ └────────────┘ │
-│                                                                     │
+│                                                                    │
 │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌────────────┐ │
 │  │ PlayerCtrl   │ │ InventoryMgr │ │ Consumable   │ │ LootGen    │ │
 │  │(player_ctrl) │ │(inv_mgr)     │ │ System       │ │(loot_gen)  │ │
 │  └──────────────┘ └──────────────┘ └──────────────┘ └────────────┘ │
-└─────────────────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────────────────┘
                             │
 ┌───────────────────────────▼─────────────────────────────────────────┐
-│                     World & Physics Layer                            │
+│                     World & Physics Layer                           │
 │                                                                     │
-│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌────────────┐ │
-│  │ WorldManager │ │ PhysicsMgr   │ │ CollisionWorld│ │NavMeshMgr  │ │
-│  │(world_mgr)   │ │(physics_mgr) │ │(collision)    │ │(navmesh)   │ │
-│  │ Cell system  │ │ Jolt Physics │ │ AABB Tree     │ │ NAVM path  │ │
-│  └──────────────┘ └──────────────┘ └──────────────┘ └────────────┘ │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌────────────┐  │
+│  │ WorldManager │ │ PhysicsMgr   │ │ CollisionWorld│ │NavMeshMgr │  │
+│  │(world_mgr)   │ │(physics_mgr) │ │(collision)    │ │(navmesh)  │  │
+│  │ Cell system  │ │ Jolt Physics │ │ AABB Tree     │ │ NAVM path │  │
+│  └──────────────┘ └──────────────┘ └──────────────┘ └────────────┘  │
 │                                                                     │
 │  ┌──────────────┐ ┌──────────────┐                                  │
 │  │ CharCtrl     │ │ MapSystem    │                                  │
@@ -160,41 +160,41 @@ The engine uses a layered architecture with **Imperial Weave** as the central co
 └─────────────────────────────────────────────────────────────────────┘
                             │
 ┌───────────────────────────▼─────────────────────────────────────────┐
-│                      Asset & Data Layer                              │
+│                      Asset & Data Layer                             │
 │                                                                     │
-│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌────────────┐ │
-│  │ AssetManager │ │ BSA Reader   │ │ ESM Reader   │ │ NIF Parser │ │
-│  │(asset_mgr)   │ │(bsa_reader)  │ │(esm_reader)  │ │(nif_parser)│ │
-│  │              │ │ Archive I/O  │ │ 40 rec types │ │ Mesh/Skin  │ │
-│  └──────────────┘ └──────────────┘ └──────────────┘ └────────────┘ │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌────────────┐  │
+│  │ AssetManager │ │ BSA Reader   │ │ ESM Reader   │ │ NIF Parser │  │
+│  │(asset_mgr)   │ │(bsa_reader)  │ │(esm_reader)  │ │(nif_parser)│  │
+│  │              │ │ Archive I/O  │ │ 40 rec types │ │ Mesh/Skin  │  │
+│  └──────────────┘ └──────────────┘ └──────────────┘ └────────────┘  │
 │                                                                     │
-│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐                │
-│  │ DDS Loader   │ │ BookDatabase │ │ Localization │                │
-│  │(dds_loader)  │ │(book_db)     │ │ (localize)   │                │
-│  └──────────────┘ └──────────────┘ └──────────────┘                │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐                 │
+│  │ DDS Loader   │ │ BookDatabase │ │ Localization │                 │
+│  │(dds_loader)  │ │(book_db)     │ │ (localize)   │                 │
+│  └──────────────┘ └──────────────┘ └──────────────┘                 │
 └─────────────────────────────────────────────────────────────────────┘
                             │
 ┌───────────────────────────▼─────────────────────────────────────────┐
-│                      Animation & Audio Layer                         │
+│                      Animation & Audio Layer                        │
 │                                                                     │
-│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌────────────┐ │
-│  │ Animation    │ │ Skeleton     │ │ AudioManager │ │ Audio3D    │ │
-│  │ Player       │ │ (skeleton)   │ │(audio_mgr)   │ │ (audio_3d) │ │
-│  │(anim_player) │ │ Bone system  │ │ OpenAL       │ │ Spatial    │ │
-│  └──────────────┘ └──────────────┘ └──────────────┘ └────────────┘ │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌────────────┐  │
+│  │ Animation    │ │ Skeleton     │ │ AudioManager │ │ Audio3D    │  │
+│  │ Player       │ │ (skeleton)   │ │(audio_mgr)   │ │ (audio_3d) │  │
+│  │(anim_player) │ │ Bone system  │ │ OpenAL       │ │ Spatial    │  │
+│  └──────────────┘ └──────────────┘ └──────────────┘ └────────────┘  │
 └─────────────────────────────────────────────────────────────────────┘
                             │
 ┌───────────────────────────▼─────────────────────────────────────────┐
-│                      System & Persistence Layer                      │
+│                      System & Persistence Layer                     │
 │                                                                     │
-│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌────────────┐ │
-│  │ SaveManager  │ │ SettingsMgr  │ │ PerfMonitor  │ │ CheatMgr   │ │
-│  │(save_mgr)    │ │(settings)    │ │(perf_mon)    │ │(cheat_mgr) │ │
-│  └──────────────┘ └──────────────┘ └──────────────┘ └────────────┘ │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌────────────┐  │
+│  │ SaveManager  │ │ SettingsMgr  │ │ PerfMonitor  │ │ CheatMgr   │  │
+│  │(save_mgr)    │ │(settings)    │ │(perf_mon)    │ │(cheat_mgr) │  │
+│  └──────────────┘ └──────────────┘ └──────────────┘ └────────────┘  │
 └─────────────────────────────────────────────────────────────────────┘
                             │
 ┌───────────────────────────▼─────────────────────────────────────────┐
-│                      Third-Party Libraries                           │
+│                      Third-Party Libraries                          │
 │  Jolt Physics │ OpenAL │ GLM │ stb_image │ stb_truetype             │
 └─────────────────────────────────────────────────────────────────────┘
 ```
