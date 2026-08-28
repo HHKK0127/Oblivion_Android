@@ -1182,10 +1182,109 @@
       "content": "Engine completion after Phase 56: Gamebryo 95%, Havok/Jolt 75%, SpeedTree 85%, FaceGen 85%, Bink Video 75%, Radiant AI 70%, Distant LOD 65%. Gamebryo now has all 6 core subsystems (Particle, PostProcess, Water, SkyWeather, SceneGraph, Material).",
       "tags": ["engine-status", "completion", "phase-56", "gamebryo"],
       "compressed": false
+    },
+    {
+      "id": "mem-055",
+      "timestamp": "2026-08-28T19:00:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Engine completion after Phase 57: Gamebryo 100%, Havok/Jolt 75%, SpeedTree 85%, FaceGen 85%, Bink Video 75%, Radiant AI 70%, Distant LOD 65%. Gamebryo now 100% complete with NiBillboardNode, BSXFlags, NiSwitchNode/NiLODNode, NiStencilProperty, NiSpecularProperty. All 7 middleware engines at or above 65%.",
+      "tags": ["engine-status", "completion", "phase-57", "gamebryo", "100-percent"],
+      "compressed": false
+    },
+    {
+      "id": "mem-056",
+      "timestamp": "2026-08-28T20:00:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "Third bug report dispatched: 3 new child sessions created for ~30 new bugs (after dedup with existing 7 sessions). Audio UI input修正 (11 bugs: #74-76, #82-87, #98, #100), Gameplay world terrain修正 (11 bugs: #52, #62-65, #88-92, #99), Engine infra修正 (13 bugs: #47-49, #59, #77-80, #93-97). Total: 10 child sessions across 3 batches.",
+      "tags": ["bug-fix", "dispatch", "batch-3", "child-sessions"],
+      "compressed": false
+    },
+    {
+      "id": "mem-057",
+      "timestamp": "2026-08-28T20:00:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Child session status (10 total): Batch 1: Core Systems修正 DONE (aa076f7), NPC Combat Quest修正 running, Animation Physics Audio Save修正 running, Gameplay World修正 running. Batch 2: Build P0 Critical修正 running, Gameplay P1修正 running, Quality Robustness修正 running. Batch 3: Audio UI input修正 created, Gameplay world terrain修正 created, Engine infra修正 created.",
+      "tags": ["session-status", "child-sessions", "batch-3"],
+      "compressed": false
+    },
+    {
+      "id": "mem-058",
+      "timestamp": "2026-08-28T20:00:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Bug report overlap analysis: nif_fixes.txt (40 bugs), HTML report (46 bugs, 28 new), third text report (100 bugs total, ~30 new after dedup). Key new bugs from third report: AudioManager double-play (#83), UIButton click-on-press (#100), CellCoordUtils Y/Z axis (#90), Terrain interpolation (#91), ESMRecord buffer over-read (#93), ObjectPool foreign pointer (#73), AsyncTaskManager cleanup (#67).",
+      "tags": ["bug-report", "overlap-analysis", "third-report"],
+      "compressed": false
+    },
+    {
+      "id": "mem-059",
+      "timestamp": "2026-08-28T20:33:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Complete child session ID reference: Batch 1: Core Systems修正 (8606759d-eaba-4024-b4e1-8805cbd1c437) DONE, NPC Combat Quest修正 (2dad32b9-3ee5-4fe3-9810-d9285f19e79f), Animation Physics Audio Save修正 (ee171f51-132d-4596-96e1-2cf84d9a2805), Gameplay World修正 (d3b8ad93-69b0-4ea4-a7a5-dc0ad1c82a5c). Batch 2: Build P0 Critical修正 (ac5c4968-afc0-483a-aefa-3afd5a8740bb), Gameplay P1修正 (eb994e31-34df-409b-b34f-78c6a895f70d), Quality Robustness修正 (9c24cd55-6591-4883-ae37-102f3575e25c). Batch 3: Audio UI input修正 (3138a5c0-c6e1-4880-b230-c17752e28ec3), Gameplay world terrain修正 (0a5178dc-f009-4a79-a982-30bb90bac292), Engine infra修正 (47940da0-07af-446c-b67d-1d112cb3ded3).",
+      "tags": ["session-ids", "child-sessions", "reference"],
+      "compressed": false
+    },
+    {
+      "id": "mem-060",
+      "timestamp": "2026-08-28T20:33:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "Merge strategy after all child sessions complete: 1) Merge all worktree branches to master one by one, 2) Resolve merge conflicts (especially in shared files like imperial_weave.cpp, renderer.cpp, npc_manager.cpp), 3) Run build verification with ./gradlew clean build, 4) Update CHANGELOG.md and docs, 5) Commit final merge. Core Systems session already committed as aa076f7.",
+      "tags": ["merge-strategy", "workflow", "post-completion"],
+      "compressed": false
+    },
+    {
+      "id": "mem-061",
+      "timestamp": "2026-08-28T20:33:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Bug report file locations: 1) nif_fixes.txt (root, 40 bugs, fully dispatched), 2) oblivion_bug_report_summary.html (root, 46 bugs, 28 new, fully dispatched), 3) 新規 テキスト ドキュメント (2).txt (attached, 100 bugs total, ~30 new, fully dispatched). All 3 reports now fully dispatched to 10 child sessions.",
+      "tags": ["bug-reports", "file-locations", "dispatch-status"],
+      "compressed": false
+    },
+    {
+      "id": "mem-062",
+      "timestamp": "2026-08-28T20:33:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Critical bug categories from all 3 reports: P0 Critical (crashes/link errors): CMakeLists duplicate, STB header, TextRenderer crash, ESMRecord buffer over-read, ObjectPool foreign pointer, combat_manager missing implementations. P1 High (gameplay/resource): AudioManager double-play, UIButton click-on-press, CellCoordUtils Y/Z axis, Terrain interpolation, PhysicsManager double init, SaveManager hardcoded path. P2 Medium (quality): UISystem blend state, StateManager callbacks, CacheManager mkdir.",
+      "tags": ["bug-categories", "priority", "p0-p1-p2"],
+      "compressed": false
+    },
+    {
+      "id": "mem-063",
+      "timestamp": "2026-08-28T20:33:00Z",
+      "category": "constraint",
+      "priority": "high",
+      "content": "GLM rules for Oblivion Android (CRITICAL): 1) glm::vec3(0.0f) does NOT compile - use glm::vec3(0.0f, 0.0f, 0.0f), 2) glm::mat4(1.0f) does NOT compile - use glm::mat4() (default constructor = identity), 3) Use .x/.y/.z not .r/.g/.b (no rgb accessors in custom glm), 4) Use %lu not %llu for size_t on arm64 Android. Project uses custom glm stub, not full GLM library.",
+      "tags": ["glm", "constraints", "critical", "build-rules"],
+      "compressed": false
+    },
+    {
+      "id": "mem-064",
+      "timestamp": "2026-08-28T20:33:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Oblivion coordinate system: X-Z is horizontal plane, Y is height. Cell size = 4096 units. CellCoordUtils::getCoordFromWorldPos() must use worldPos.z for cell Y coordinate, not worldPos.y. Door positions: glm::vec3(x, 0.0f, z) not glm::vec3(x, y, 0.0f). This is a common source of bugs in the codebase.",
+      "tags": ["coordinate-system", "oblivion", "y-up", "cell-size"],
+      "compressed": false
+    },
+    {
+      "id": "mem-065",
+      "timestamp": "2026-08-28T20:33:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Project architecture patterns: Imperial Weave v4.0 (15-phase pipeline), EventBus (decoupled messaging), Manager Pattern (initialize/update/cleanup lifecycle), Singleton with ServiceLocator. All engine files are header-only with inline implementations. Build: ./gradlew clean build, Install: adb install -r app/build/outputs/apk/debug/app-debug.apk, Log: adb logcat -s OblivionEngine.",
+      "tags": ["architecture", "patterns", "build-commands"],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 89,
+    "totalEntries": 99,
     "compressedCount": 0,
     "sessionCount": 4
   }

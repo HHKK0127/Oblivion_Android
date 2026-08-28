@@ -126,7 +126,7 @@ All notable changes to the Oblivion Android project are documented here.
 #### Spell School Color Icons (SpellSelectionPanel)
 - Each spell button in SpellSelectionPanel now shows a school-color background:
   - Destruction = red, Restoration = green, Conjuration = purple, Alteration = blue, Illusion = teal, Mysticism = gold
-- Spell button label prefixed with school abbreviation: `[破]`, `[回]`, `[召]`, `[変]`, `[幻]`, `[神]`
+- Spell button label prefixed with school abbreviation: `[Destr]`, `[Resto]`, `[Conj]`, `[Alter]`, `[Illus]`, `[Myst]`
 - `getSchoolColor()` helper function returns glm::vec4 by MagicSchool
 
 #### Quick-Slot Spell Buttons (4 slots)
@@ -294,35 +294,35 @@ All notable changes to the Oblivion Android project are documented here.
   - EventBus integration: CombatManager emits events to Imperial Weave EventBus
 
 ### Architecture Changes
-- Imperial Weave更新パイプラインを8フェーズから12フェーズに拡張
-- PlayerController、InventoryManager、SpellManager、AudioManagerをImperial Weaveに統合
-- Rendererから重複するManager呼び出しを段階的に削除（コメントアウト）
-- ジョイスティック入力とオーディオリスナー位置の更新をImperialWeave::update()前に移動
-- titleScreenとuiSystemはRendererから直接呼び出し（UI/オーバーレイシステムのためWeave不適切）
+- Extended Imperial Weave update pipeline from 8 phases to 12 phases
+- Integrated PlayerController, InventoryManager, SpellManager, AudioManager into Imperial Weave
+- Gradually removed duplicate Manager calls from Renderer (commented out)
+- Moved joystick input and audio listener position updates before ImperialWeave::update()
+- titleScreen and uiSystem called directly from Renderer (Weave not suitable for UI/overlay systems)
 
 ### UI Additions
-- プレイヤーコンバットUIボタン追加（攻撃・ブロック・詠唱）
+- Added player combat UI buttons (Attack, Block, Cast)
 
 ### Animation Integration
 - **PlayerController EventBus Integration**
-  - subscribeToCombatEvents()で6種類のコンバットイベントを購読
+  - subscribeToCombatEvents() subscribes to 6 types of combat events
   - COMBAT_ATTACK_HIT, COMBAT_CRITICAL_HIT, COMBAT_BLOCK, COMBAT_PARRY, COMBAT_DODGE, COMBAT_DEATH
-  - 現在はログ出力のみ、今後アニメーション再生を実装
+  - Currently log output only, animation playback to be implemented later
 
 - **NPC Animation State Management**
-  - AnimState列挙型: IDLE, WALK, RUN, ATTACK, HIT_REACTION, BLOCK, DEATH
-  - アニメーションタイミング定数: HIT_REACTION_DURATION=0.5秒, ATTACK_DURATION=0.8秒
-  - 自動状態遷移: アニメーション完了後にIDLE復帰
-  - CombatManager::applyDamage()がNPCアニメーションを自動トリガー
+  - AnimState enum: IDLE, WALK, RUN, ATTACK, HIT_REACTION, BLOCK, DEATH
+  - Animation timing constants: HIT_REACTION_DURATION=0.5s, ATTACK_DURATION=0.8s
+  - Automatic state transition: return to IDLE after animation completes
+  - CombatManager::applyDamage() automatically triggers NPC animation
 
 - **Combat Animation Flow**
-  - ダメージ適用時: target->triggerHitReaction()
-  - NPC撃破時: target->triggerDeath()
-  - 攻撃時: playerController->attack()でATTACK状態に遷移
-  - 攻撃ボタン（ATK）: プレイヤーの攻撃アクションをトリガー
-  - ブロックボタン（BLK）: コンバットスタンスの切り替え
-  - 詠唱ボタン（MAG）: 魔法詠唱（TODO: スペルシステム統合後）
-  - タイトル画面では非表示、ゲーム開始時に表示
+  - On damage applied: target->triggerHitReaction()
+  - On NPC defeat: target->triggerDeath()
+  - On attack: playerController->attack() transitions to ATTACK state
+  - Attack button (ATK): triggers player attack action
+  - Block button (BLK): toggles combat stance
+  - Cast button (MAG): magic casting (TODO: after spell system integration)
+  - Hidden on title screen, shown when game starts
 
 ---
 
