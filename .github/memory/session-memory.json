@@ -1137,10 +1137,19 @@
       "content": "All 7 Oblivion engines now integrated via Imperial Weave v3.0: Gamebryo (75%), Havok/Jolt (50%), SpeedTree (80%), FaceGen (60%), Bink Video (70%), Radiant AI (65%), Distant LOD (60%). ImperialWeave::init() now takes 17 parameters. Version bumped to v2.5.0.",
       "tags": ["imperial-weave", "v3.0", "all-engines", "milestone"],
       "compressed": false
+    },
+    {
+      "id": "mem-050",
+      "timestamp": "2026-08-28T15:35:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "Phase 54 Imperial Weave v4.0 COMPLETE: ImperialWeaveConfig struct (replaces 17-param init), 15-phase pipeline (+VegetationUpdate/FaceGenUpdate/VideoUpdate), frame budget management (16.6ms default with early bailout), new event types (TREE_WIND_CHANGE/FACE_MORPH_UPDATE/VIDEO_PLAYBACK_EVENT/LOD_DISTANCE_CHANGE), phaseRenderSubmit integrates SpeedTree/FaceGen/BinkVideo rendering, fixed shutdown() null all pointers. 2 files changed, 253 insertions, 49 deletions. Commit: 4cbb56c. Version bumped to v3.0.0.",
+      "tags": ["phase-54", "imperial-weave", "v4.0", "complete", "integration"],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 84,
+    "totalEntries": 85,
     "compressedCount": 0,
     "sessionCount": 4
   }
