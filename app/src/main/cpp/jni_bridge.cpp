@@ -420,6 +420,7 @@ Java_com_example_oblivion_GameRenderer_nativeRunPhase48StressTests(
 }
 
 // ============================================
+// ============================================
 // Phase 51: SpeedTree Vegetation System
 // ============================================
 
@@ -495,4 +496,96 @@ Java_com_example_oblivion_GameRenderer_nativeGetSpeedTreeVisibleCount(
         [[maybe_unused]] JNIEnv* env,
         [[maybe_unused]] jobject obj) {
     return static_cast<jint>(vegetation::SpeedTreeManager::instance().getVisibleCount());
+}
+
+// ============================================
+// Phase 52: FaceGen System Initialization
+// ============================================
+#include "character/face_gen_morpher.h"
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_example_oblivion_GameRenderer_nativeInitFaceGen(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    LOGI("=== nativeInitFaceGen called ===");
+
+    auto& faceGen = facegen::FaceGenMorpher::instance();
+    bool result = faceGen.initialize(nullptr, nullptr);
+
+    if (result) {
+        LOGI("FaceGenMorpher initialized successfully");
+        LOGI("Base mesh vertices: %lu", static_cast<unsigned long>(faceGen.getBaseMeshVertexCount()));
+        LOGI("Morph targets: %lu", static_cast<unsigned long>(faceGen.getMorphTargetCount()));
+    } else {
+        LOGE("FaceGenMorpher initialization failed");
+    }
+
+    return result ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_example_oblivion_GameRenderer_nativeGenerateNpcFace(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jint npcId) {
+    LOGD("nativeGenerateNpcFace called for NPC %d", npcId);
+
+    auto& faceGen = facegen::FaceGenMorpher::instance();
+    if (!faceGen.isInitialized()) {
+        LOGE("FaceGenMorpher not initialized");
+        return JNI_FALSE;
+    }
+
+    // Generate face from ESM data if available
+    bool result = faceGen.generateFaceFromESM(static_cast<uint32_t>(npcId));
+    if (!result) {
+        // Generate with default shape if no ESM data
+        facegen::FaceShape defaultShape;
+        result = faceGen.generateMorphedMesh(static_cast<uint32_t>(npcId), defaultShape);
+    }
+
+    return result ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_example_oblivion_GameRenderer_nativeLoadFaceGenData(
+        JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jint npcId,
+        jbyteArray fggsData,
+        jbyteArray fggaData,
+        jbyteArray fgtsData) {
+    LOGD("nativeLoadFaceGenData called for NPC %d", npcId);
+
+    auto& faceGen = facegen::FaceGenMorpher::instance();
+    if (!faceGen.isInitialized()) {
+        LOGE("FaceGenMorpher not initialized");
+        return JNI_FALSE;
+    }
+
+    // Get byte arrays from Java
+    jbyte* fggs = fggsData ? env->GetByteArrayElements(fggsData, nullptr) : nullptr;
+    jbyte* fgga = fggaData ? env->GetByteArrayElements(fggaData, nullptr) : nullptr;
+    jbyte* fgts = fgtsData ? env->GetByteArrayElements(fgtsData, nullptr) : nullptr;
+
+    jsize fggsLen = fggsData ? env->GetArrayLength(fggsData) : 0;
+    jsize fggaLen = fggaData ? env->GetArrayLength(fggaData) : 0;
+    jsize fgtsLen = fgtsData ? env->GetArrayLength(fgtsData) : 0;
+
+    // Parse FaceGen record
+    facegen::FaceGenRecord record = facegen::FaceGenParser::parseFromSubrecords(
+        static_cast<uint32_t>(npcId),
+        reinterpret_cast<const uint8_t*>(fggs), static_cast<size_t>(fggsLen),
+        reinterpret_cast<const uint8_t*>(fgga), static_cast<size_t>(fggaLen),
+        reinterpret_cast<const uint8_t*>(fgts), static_cast<size_t>(fgtsLen)
+    );
+
+    // Release byte arrays
+    if (fggs) env->ReleaseByteArrayElements(fggsData, fggs, JNI_ABORT);
+    if (fgga) env->ReleaseByteArrayElements(fggaData, fgga, JNI_ABORT);
+    if (fgts) env->ReleaseByteArrayElements(fgtsData, fgts, JNI_ABORT);
+
+    // Load into FaceGenMorpher
+    bool result = faceGen.loadFaceGenData(static_cast<uint32_t>(npcId), record);
+    return result ? JNI_TRUE : JNI_FALSE;
 }

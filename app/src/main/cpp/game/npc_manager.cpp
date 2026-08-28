@@ -450,3 +450,49 @@ bool NpcManager::hasStatusEffect(const NPC& npc, SpellEffectType type) const {
     }
     return false;
 }
+
+bool NpcManager::generateNpcFace(uint32_t npcId, uint32_t formID) {
+    if (!m_faceGen) {
+        LOGI("FaceGenMorpher not available for NPC face generation");
+        return false;
+    }
+
+    auto npcIt = m_npcs.find(npcId);
+    if (npcIt == m_npcs.end()) {
+        LOGI("NPC %u not found for face generation", npcId);
+        return false;
+    }
+
+    NPC& npc = *npcIt->second;
+
+    // Build FaceShape from NPC race and gender
+    facegen::FaceShape shape = m_faceGen->buildShapeFromRace(npc.race, npc.isFemale);
+
+    // Apply any stored FaceGen record if available
+    auto faceIt = m_faceGenRecords.find(formID);
+    if (faceIt != m_faceGenRecords.end()) {
+        m_faceGen->loadFaceGenData(formID, faceIt->second);
+    }
+
+    // Generate morphed mesh
+    bool meshOk = m_faceGen->generateMorphedMesh(npcId, shape);
+    if (!meshOk) {
+        LOGI("Failed to generate face mesh for NPC %u (form %u)", npcId, formID);
+        return false;
+    }
+
+    // Generate blended texture
+    facegen::FaceTexture tex;
+    tex.skinTexturePath = npc.texturePath.empty() ? "textures/face/default.dds" : npc.texturePath;
+    tex.ageWeight = npc.age / 100.0f;
+    tex.makeupWeight = 0.0f;
+    tex.detailWeight = 0.5f;
+
+    bool texOk = m_faceGen->generateBlendedTexture(npcId, tex);
+    if (!texOk) {
+        LOGI("Failed to generate face texture for NPC %u", npcId);
+    }
+
+    LOGI("Generated face for NPC %u form %u (%s)", npcId, formID, npc.name.c_str());
+    return meshOk;
+}

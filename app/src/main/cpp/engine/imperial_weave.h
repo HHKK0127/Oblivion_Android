@@ -31,6 +31,10 @@ class InventoryManager;
 class SpellManager;
 class AudioManager;
 
+namespace facegen {
+class FaceGenMorpher;
+}
+
 namespace oblivion {
 class PhysicsManager;
 namespace script {
@@ -219,8 +223,10 @@ public:
         ::AudioManager* audio = nullptr,
         ::oblivion::PhysicsManager* joltPhysics = nullptr,
         ::oblivion::script::ScriptManager* script = nullptr,
+<<<<<<< HEAD
         ::DistantLodManager* distantLod = nullptr,
-        ::vegetation::SpeedTreeManager* speedTree = nullptr
+        ::vegetation::SpeedTreeManager* speedTree = nullptr,
+        ::facegen::FaceGenMorpher* faceGen = nullptr
     );
 
     void shutdown();
@@ -232,6 +238,7 @@ public:
     ::CollisionWorld* physics() const { return physics_; }
     ::animation::AnimationPlayer* anim() const { return animPlayer_; }
         ::NpcManager* npc() const { return npcManager_; }
+    ::facegen::FaceGenMorpher* faceGen() const { return faceGenMorpher_; }
 
     bool isInitialized() const { return initialized_; }
 
@@ -257,8 +264,10 @@ private:
     ::AudioManager* audioManager_ = nullptr;
     ::oblivion::PhysicsManager* joltPhysics_ = nullptr;
     ::oblivion::script::ScriptManager* scriptManager_ = nullptr;
+<<<<<<< HEAD
     ::DistantLodManager* distantLodManager_ = nullptr;
     ::vegetation::SpeedTreeManager* speedTreeManager_ = nullptr;
+    ::facegen::FaceGenMorpher* faceGenMorpher_ = nullptr;
 
     bool initialized_ = false;
 
