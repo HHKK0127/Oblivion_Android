@@ -44,6 +44,90 @@ All notable changes to the Oblivion Android project are documented here.
 
 ---
 
+## [1.4.0] - 2026-08-29 (Phase 39 - Quest Flow System)
+
+### Major Additions
+- **QuestFlowController**: Unified quest lifecycle management
+- **QuestStageManager**: Quest stage transitions, condition evaluation
+- **QuestObjectiveTracker**: Objective progress via EventBus integration
+- **QuestRewards**: Quest completion rewards (XP, gold, items, skills)
+- **QuestRecord**: Complete quest record parsing for ESM data
+
+---
+
+## [1.5.0] - 2026-08-29 (Phase 40 - NPC Dialogue Tree)
+
+### Major Additions
+- **DialogueTree**: Branching dialogue tree structure
+- **DialogueRunner**: Dialogue execution engine
+- **DialogueFilterEngine**: Dialogue filtering by conditions
+- **DialogueHistory**: Dialogue history tracking
+- **DialogueRecord**: DIAL/INFO record parsing
+- **DialogueIntegration**: Integration with NPC system
+
+---
+
+## [1.6.0] - 2026-08-29 (Phase 41 - Binary Save System)
+
+### Major Additions
+- **SaveManager**: Binary format with full system serialization
+- **SaveSlotManager**: Save slot management
+- **AutoSave**: Automatic save system
+- **Serializable**: Interface for serializable objects
+
+---
+
+## [2.0.0] - 2026-08-29 (Phase 42 - Game Loop Integration)
+
+### Major Additions
+- **StateManager**: Game state management
+- **InputRouter**: Input routing system
+- **GameLoopCoordinator**: Full game loop integration
+- **SceneRenderer**: Scene rendering pipeline
+- **DebugConsole**: Debug console system
+- **PerformanceProfiler**: Performance profiling
+
+---
+
+## [2.1.0] - 2026-08-29 (Phase 43 - UI/UX System)
+
+### Major Additions
+- **TouchGestureHandler**: Touch gesture recognition
+- **MenuTransitionManager**: Menu transition animations
+- **HudLayout**: HUD layout system
+- **ControlSchemeManager**: Control scheme management
+- **AccessibilityManager**: Accessibility features
+
+---
+
+## [2.2.0] - 2026-08-29 (Phase 44 - Performance Optimization)
+
+### Major Additions
+- **MemoryPool**: Memory pool allocator
+- **RenderOptimizer**: Render optimization
+- **AsyncTaskManager**: Async task management
+- **CacheManager**: Cache management
+- **ProfilerDashboard**: Profiler dashboard
+
+---
+
+## [2.3.0] - 2026-08-29 (Phase 45 - Unit Testing)
+
+### Testing
+- 37 unit test cases (+1,089 lines)
+
+---
+
+## [2.4.0] - 2026-08-29 (Phase 46-49 - Asset Pipeline, Audio, Integration, Controls)
+
+### Major Additions
+- **Phase 46**: TextureManager, MeshLoader, WorldDataLoader, BSA/ESM/NIF readers (+2,487 lines)
+- **Phase 47**: AudioDecoder, BgmManager, SoundEffectManager (+2,176 lines)
+- **Phase 48**: 12 integration test cases (+1,159 lines)
+- **Phase 49**: GamepadMapper, TouchCalibration, InputVisualizer, HudCustomizer (+1,812 lines)
+
+---
+
 ## [1.2.0] - 2026-08-29 (Phase 37 - Script VM Complete)
 
 ### Major Additions
