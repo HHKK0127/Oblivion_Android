@@ -2,10 +2,7 @@
 
 ![Status](https://img.shields.io/badge/status-Phase%2036-brightgreen)
 ![Version](https://img.shields.io/badge/version-0.9.10-blue)
-![License](https://img.shields.io/badge/license-Proprietary-red)
 ![Android](https://img.shields.io/badge/android-10%2B-green)
-![ESM](https://img.shields.io/badge/ESM%20Records-40-yellow)
-![Physics](https://img.shields.io/badge/physics-Jolt-blueviolet)
 
 ---
 
@@ -15,49 +12,49 @@ A complete native Android port of The Elder Scrolls IV: Oblivion, built entirely
 
 ---
 
-### 🎮 Features
+### [GAME] Features
 
 #### Core Systems Implemented
-- ✅ **ESM Data-Driven World** (Phase 26-28) - 40 record types from Oblivion.esm: CELL, NPC_, WEAP, REFR, LAND, WRLD, SPEL, LVLI/LVLC/LVLN/LVSP, NAVM, ARMO, BOOK, CLOT, INGR, ALCH, MISC, FACT, RACE, CLAS, ROAD, BSGN, CREA, CONT, DOOR, ACTI, STAT, TREE, FLOR, LIGH, APPA, SOUN, SCRL, SCPT, GMST, SKIL, EYES, HAIR, CLMT, REGN, WTHR, PGRD
-- ✅ **3D Rendering Engine** - OpenGL ES 3.0 with mesh and texture support
-- ✅ **Game World** - Cell-based world system with seamless transitions
-- ✅ **NPC System** - 100+ NPCs with AI state machine (IDLE, WANDER, PATROL, COMBAT, FOLLOW)
-- ✅ **Combat System** - Full damage calculation with stats and equipment
-- ✅ **Quest System** - Multi-objective quests with rewards (gold, experience)
-- ✅ **Magic System** - 6 schools with 10+ spells and mana management
-- ✅ **Character Status** - Health, mana, stamina, attributes, skills
-- ✅ **Localization** - Japanese + English (100+ translations)
-- ✅ **Performance Monitoring** - Frame timing, memory, CPU profiling
-- ✅ **Text Rendering** - On-screen text with color and positioning
-- ✅ **Debug HUD** - FPS, frame time, memory, system info overlay
-- ✅ **Settings System** - Persistent debug mode and language preferences
-- ✅ **Save/Load System** - Game state persistence with slot management
-- ✅ **OpenAL 3D Audio** - Spatial audio with distance attenuation
-- ✅ **RetroFilter Effects** - Pixelation, scanlines, color reduction, CRT distortion, film grain
-- ✅ **Complete UI & HUD System** (Phase 9-24) - Inventory, Map, Character Sheet, Quest Log, Dialogue, Pause Menu, Combat HUD, etc.
+- [x] **ESM Data-Driven World** (Phase 26-28) - 40 record types from Oblivion.esm: CELL, NPC_, WEAP, REFR, LAND, WRLD, SPEL, LVLI/LVLC/LVLN/LVSP, NAVM, ARMO, BOOK, CLOT, INGR, ALCH, MISC, FACT, RACE, CLAS, ROAD, BSGN, CREA, CONT, DOOR, ACTI, STAT, TREE, FLOR, LIGH, APPA, SOUN, SCRL, SCPT, GMST, SKIL, EYES, HAIR, CLMT, REGN, WTHR, PGRD
+- [x] **3D Rendering Engine** - OpenGL ES 3.0 with mesh and texture support
+- [x] **Game World** - Cell-based world system with seamless transitions
+- [x] **NPC System** - 100+ NPCs with AI state machine (IDLE, WANDER, PATROL, COMBAT, FOLLOW)
+- [x] **Combat System** - Full damage calculation with stats and equipment
+- [x] **Quest System** - Multi-objective quests with rewards (gold, experience)
+- [x] **Magic System** - 6 schools with 10+ spells and mana management
+- [x] **Character Status** - Health, mana, stamina, attributes, skills
+- [x] **Localization** - Japanese + English (100+ translations)
+- [x] **Performance Monitoring** - Frame timing, memory, CPU profiling
+- [x] **Text Rendering** - On-screen text with color and positioning
+- [x] **Debug HUD** - FPS, frame time, memory, system info overlay
+- [x] **Settings System** - Persistent debug mode and language preferences
+- [x] **Save/Load System** - Game state persistence with slot management
+- [x] **OpenAL 3D Audio** - Spatial audio with distance attenuation
+- [x] **RetroFilter Effects** - Pixelation, scanlines, color reduction, CRT distortion, film grain
+- [x] **Complete UI & HUD System** (Phase 9-24) - Inventory, Map, Character Sheet, Quest Log, Dialogue, Pause Menu, Combat HUD, etc.
 
 #### Game Features
-- 🎯 Touch-based camera control
-- 🎯 Auto-initiation of combat with nearby enemies
-- 🎯 NPC dialogue and quest offering
-- 🎯 Spell casting with mana consumption
-- 🎯 Title screen with graphical menu
-- 🎯 Quest log with progress tracking
-- 🎯 Real-time combat between NPCs
-- 🎯 **NEW**: Save/Load game state with slot management (Phase 8)
-- 🎯 **NEW**: Settings menu with debug mode toggle and RetroFilter effects (Phase 8)
-- 🎯 **NEW**: 3D spatial audio with distance attenuation (Phase 8)
-- 🎯 **NEW**: Complete Graphical UI and HUD systems (Phase 9-24)
-- 🎯 **NEW**: ESM data integration - 40 record types, NpcManager, Container, Player initialization, Status effects (Phase 28)
-- 🎯 **NEW**: NAVM pathfinding runtime integration, DIAL/INFO dialogue with faction branching, REFR world object placement, 4 spell effects (Phase 29)
-- 🎯 **NEW**: Imperial Weave EventBus + 12-phase coordinator, AnimationSubscriber, AudioSubscriber, SpellSelectionPanel (Phase 32)
-- 🎯 **NEW**: Dedicated combat sounds, NPC spatial audio (Phase 33)
-- 🎯 **NEW**: Weapon-type sound routing, quick-slot spells (Phase 34)
-- 🎯 **NEW**: Radiant AI system - AI package system, scheduler, NavMesh pathfinding integration (Phase 35)
+- [FEAT] Touch-based camera control
+- [FEAT] Auto-initiation of combat with nearby enemies
+- [FEAT] NPC dialogue and quest offering
+- [FEAT] Spell casting with mana consumption
+- [FEAT] Title screen with graphical menu
+- [FEAT] Quest log with progress tracking
+- [FEAT] Real-time combat between NPCs
+- [FEAT] **NEW**: Save/Load game state with slot management (Phase 8)
+- [FEAT] **NEW**: Settings menu with debug mode toggle and RetroFilter effects (Phase 8)
+- [FEAT] **NEW**: 3D spatial audio with distance attenuation (Phase 8)
+- [FEAT] **NEW**: Complete Graphical UI and HUD systems (Phase 9-24)
+- [FEAT] **NEW**: ESM data integration - 40 record types, NpcManager, Container, Player initialization, Status effects (Phase 28)
+- [FEAT] **NEW**: NAVM pathfinding runtime integration, DIAL/INFO dialogue with faction branching, REFR world object placement, 4 spell effects (Phase 29)
+- [FEAT] **NEW**: Imperial Weave EventBus + 12-phase coordinator, AnimationSubscriber, AudioSubscriber, SpellSelectionPanel (Phase 32)
+- [FEAT] **NEW**: Dedicated combat sounds, NPC spatial audio (Phase 33)
+- [FEAT] **NEW**: Weapon-type sound routing, quick-slot spells (Phase 34)
+- [FEAT] **NEW**: Radiant AI system - AI package system, scheduler, NavMesh pathfinding integration (Phase 35)
 
 ---
 
-### 📱 Technical Specifications
+### [SPEC] Technical Specifications
 
 #### Device Requirements
 | Item | Specification |
@@ -218,15 +215,15 @@ ATK button → PlayerController.attack()
 #### Performance Targets
 | Metric | Target | Actual | Status |
 | --- | --- | --- | --- |
-| **FPS** | 30 fps | 60 fps | ✅ EXCEED |
-| **Memory** | < 1 GB | 40 MB | ✅ PASS |
-| **CPU** | < 10% | < 0.1% | ✅ EXCEED |
-| **Startup** | < 30 sec | 18-25 sec | ✅ PASS |
-| **Stability** | 5 hours | 30+ sec | ✅ PASS |
+| **FPS** | 30 fps | 60 fps | [x] EXCEED |
+| **Memory** | < 1 GB | 40 MB | [x] PASS |
+| **CPU** | < 10% | < 0.1% | [x] EXCEED |
+| **Startup** | < 30 sec | 18-25 sec | [x] PASS |
+| **Stability** | 5 hours | 30+ sec | [x] PASS |
 
 ---
 
-### 📦 Build & Installation
+### [PKG] Build & Installation
 
 #### Prerequisites
 ```bash
@@ -259,7 +256,7 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 
 ---
 
-### 🚀 Getting Started
+### [START] Getting Started
 
 1. **Launch App**: Tap Oblivion icon on home screen
 2. **Title Screen**: Wait 3 seconds, tap to start
@@ -281,7 +278,7 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 
 ---
 
-### 🎨 UI & Debug System
+### [UI] UI & Debug System
 
 #### Settings Menu
 Access from title screen:
@@ -316,7 +313,7 @@ When **Debug Mode: ON**, real-time display:
 
 ---
 
-### 📚 Documentation
+### [REF] Documentation
 
 - [INSTALLATION.md](INSTALLATION.md) - Detailed install guide with troubleshooting
 - [GAMEPLAY.md](GAMEPLAY.md) - Complete gameplay mechanics and systems guide
@@ -326,29 +323,29 @@ When **Debug Mode: ON**, real-time display:
 
 ---
 
-### 🧪 Testing Results
+### [TEST] Testing Results
 
 #### Multi-Device Verification
 
 **Amazon Fire Tablet (Android 9)**
 ```
-✅ Installation: Success
-✅ Launch: 25 seconds
-✅ FPS: 60 (stable)
-✅ Memory: 42 MB
-✅ Duration: 30+ seconds no crash
-✅ Thermal: 38°C
+[x] Installation: Success
+[x] Launch: 25 seconds
+[x] FPS: 60 (stable)
+[x] Memory: 42 MB
+[x] Duration: 30+ seconds no crash
+[x] Thermal: 38°C
 ```
 
 **Xiaomi 24018RPACG (Android 16)**
 ```
-✅ Installation: Success (WiFi ADB)
-✅ Launch: 18 seconds
-✅ FPS: 60 (stable)
-✅ Memory: 45 MB
-✅ Duration: 30+ seconds no crash
-✅ Thermal: 39°C
-✅ Resolution: 2032×3048 (ultra-HD)
+[x] Installation: Success (WiFi ADB)
+[x] Launch: 18 seconds
+[x] FPS: 60 (stable)
+[x] Memory: 45 MB
+[x] Duration: 30+ seconds no crash
+[x] Thermal: 39°C
+[x] Resolution: 2032×3048 (ultra-HD)
 ```
 
 #### Performance Baselines
@@ -359,7 +356,7 @@ When **Debug Mode: ON**, real-time display:
 
 ---
 
-### 🏗️ Project Structure
+### [ARCH] Project Structure
 
 ```
 oblivion-android/
@@ -394,43 +391,54 @@ oblivion-android/
 
 ---
 
-### 🔧 Development Phases
+### [BUILD] Development Phases
 
 | Phase | Focus | Status | Key Deliverable |
 | --- | --- | --- | --- |
-| Phase 1 | Core Rendering | ✅ Complete | 3D engine, OpenGL ES 3.0 |
-| Phase 2 | Asset Management | ✅ Complete | NIF/DDS loaders, caching |
-| Phase 3 | World System | ✅ Complete | Cell system, world streaming |
-| Phase 4 | NPC & AI | ✅ Complete | NPC manager, state machine |
-| Phase 5 | Deep Features | ✅ Complete | Combat, Quests, Magic |
-| Phase 6 | Optimization | ✅ Complete | Performance, testing, docs |
-| Phase 7 | Release Prep | ✅ Complete | Documentation |
-| Phase 7.1 | Enhanced Features | ✅ Complete | Save/Load, improved UI |
-| Phase 8 | Audio & Post-Processing | ✅ Complete | OpenAL 3D Audio, RetroFilter, SaveLoadUI |
-| Phase 24 | Complete UI & HUD System | ✅ Complete | Inventory, Map, Quests, HUD |
-| Phase 25 | BSA/ESM Parsing Engine | ✅ Complete | BSA archive reader, ESM file parser with full GRUP hierarchy |
-| Phase 26 | ESM Data-Driven World | ✅ Complete | CELL, NPC_, WEAP, REFR, LAND, WRLD, SPEL, LVLI/LVLC, NAVM, ARMO record parsing from Oblivion.esm |
-| Phase 27 | ESM Integration | ✅ Complete | BOOK, CLOT, INGR, ALCH, MISC, FACT, RACE, CLAS, ROAD records + Loot generation, Book reading, Clothing conversion, Alchemy system, Faction system |
-| Phase 28 | ESM 40 Record Types + Integration | ✅ Complete | BSGN, CREA, CONT, DOOR, ACTI, STAT, TREE, FLOR, LIGH, APPA, SOUN, SCRL, SCPT, GMST, SKIL, EYES, HAIR, CLMT, REGN, WTHR, PGRD, LVSP, LVLN records + NpcManager ESM integration, Container ESM population, Player RACE/CLAS/BSGN initialization, Status effects |
-| Phase 29 | NAVM Pathfinding + DIAL/INFO Dialogue | ✅ Complete | NAVM runtime integration with CombatManager A* pathfinding, DIAL/INFO record parsing with faction-based dialogue branching, REFR-based world object placement (8 types), 4 spell effects (PARALYZE, INVISIBILITY, FORTIFY_ATTR, SUMMON), new game systems (Alchemy, Book Reader, Clothing Converter, Faction Manager, Loot Generator, NavMesh Manager) |
-| Phase 30 | NIF Skeleton/Skinning + Collision + Animation | ✅ Complete | Steps 1-13 complete: nif_types.h extended (collision/skinning/animation structs), NIFBlockTypeMap (string-based 31 types), NIFParser extended, SkinPartitionPacker (bitmask), Skeleton (iterative BFS), SkinnedMesh + UBO + skinning shaders, NiControllerManager/Sequence parsing, AnimationPlayer (slerp/lerp/text keys), bhkCollisionObject + bhkRigidBody parsing (9 shape types), Dynamic AABB Tree (broad-phase), CollisionWorld (table-driven narrow phase 5x5, ContactBuffer), CharacterController (substep movement, multi-ray ground detection), Integration Test (9 test groups, JNI callable) |
-| Phase 31 | PlayerController Integration + World Loading | ✅ Complete | Steps 1-10: WorldEntity struct with NIFCache, WorldLoader (loadStatic/loadDynamic/loadActor), PlayerController extended (Skeleton+AnimationPlayer+CharacterController integration, hysteresis animation state machine, fixed/variable timestep separation, combat stance+attack), WorldEntity rendering with skinning shader, PlayerController wired to actor skeleton/animation |
-| Phase 32 (v0.9.8) | Animation & Audio Integration | ✅ Complete | AnimationSubscriber (EventBus→AnimationPlayer bridge), AudioSubscriber (EventBus→AudioManager bridge), SpellSelectionPanel UI, AnimationPlayer.findSequenceByName(), WorldLoader entity storage + NPC→Entity mapping, Imperial Weave Event.targetId field |
-| Phase 33 (v0.9.9) | Combat Sound Assets + NPC Spatial Audio | ✅ Complete | Dedicated combat sounds (hit_blade/blunt/axe/unarmed, block, parry, dodge, death), NPC spatial audio callback, AudioSubscriber event→sound mappings |
-| Phase 34 (v0.9.10) | Weapon-Type Sounds + Quick-Slot Spells | ✅ Complete | Weapon-type hit sound routing (CombatManager→AudioSubscriber), SpellSelectionPanel school colors, Quick-slot spells (F1-F4) |
-| Phase 35 (v1.0.0) | Radiant AI System | ✅ Complete | AI Package System (15 types), Priority-based PackageStack, AIScheduler (24h time-based), NavMesh pathfinding, Stuck detection, Default daily schedule, Combat/Flee override |
-| Phase 36 (v1.1.0) | Jolt Physics Integration | ✅ Complete | PhysicsManager singleton, CharacterVirtual player/NPC, HeightFieldShape terrain, Fixed timestep (1/60s), Raycast API, ImperialWeave phase integration |
+| Phase 1 | Core Rendering | [x] Complete | 3D engine, OpenGL ES 3.0 |
+| Phase 2 | Asset Management | [x] Complete | NIF/DDS loaders, caching |
+| Phase 3 | World System | [x] Complete | Cell system, world streaming |
+| Phase 4 | NPC & AI | [x] Complete | NPC manager, state machine |
+| Phase 5 | Deep Features | [x] Complete | Combat, Quests, Magic |
+| Phase 6 | Optimization | [x] Complete | Performance, testing, docs |
+| Phase 7 | Release Prep | [x] Complete | Documentation |
+| Phase 7.1 | Enhanced Features | [x] Complete | Save/Load, improved UI |
+| Phase 8 | Audio & Post-Processing | [x] Complete | OpenAL 3D Audio, RetroFilter, SaveLoadUI |
+| Phase 24 | Complete UI & HUD System | [x] Complete | Inventory, Map, Quests, HUD |
+| Phase 25 | BSA/ESM Parsing Engine | [x] Complete | BSA archive reader, ESM file parser with full GRUP hierarchy |
+| Phase 26 | ESM Data-Driven World | [x] Complete | CELL, NPC_, WEAP, REFR, LAND, WRLD, SPEL, LVLI/LVLC, NAVM, ARMO record parsing from Oblivion.esm |
+| Phase 27 | ESM Integration | [x] Complete | BOOK, CLOT, INGR, ALCH, MISC, FACT, RACE, CLAS, ROAD records + Loot generation, Book reading, Clothing conversion, Alchemy system, Faction system |
+| Phase 28 | ESM 40 Record Types + Integration | [x] Complete | BSGN, CREA, CONT, DOOR, ACTI, STAT, TREE, FLOR, LIGH, APPA, SOUN, SCRL, SCPT, GMST, SKIL, EYES, HAIR, CLMT, REGN, WTHR, PGRD, LVSP, LVLN records + NpcManager ESM integration, Container ESM population, Player RACE/CLAS/BSGN initialization, Status effects |
+| Phase 29 | NAVM Pathfinding + DIAL/INFO Dialogue | [x] Complete | NAVM runtime integration with CombatManager A* pathfinding, DIAL/INFO record parsing with faction-based dialogue branching, REFR-based world object placement (8 types), 4 spell effects (PARALYZE, INVISIBILITY, FORTIFY_ATTR, SUMMON), new game systems (Alchemy, Book Reader, Clothing Converter, Faction Manager, Loot Generator, NavMesh Manager) |
+| Phase 30 | NIF Skeleton/Skinning + Collision + Animation | [x] Complete | Steps 1-13 complete: nif_types.h extended (collision/skinning/animation structs), NIFBlockTypeMap (string-based 31 types), NIFParser extended, SkinPartitionPacker (bitmask), Skeleton (iterative BFS), SkinnedMesh + UBO + skinning shaders, NiControllerManager/Sequence parsing, AnimationPlayer (slerp/lerp/text keys), bhkCollisionObject + bhkRigidBody parsing (9 shape types), Dynamic AABB Tree (broad-phase), CollisionWorld (table-driven narrow phase 5x5, ContactBuffer), CharacterController (substep movement, multi-ray ground detection), Integration Test (9 test groups, JNI callable) |
+| Phase 31 | PlayerController Integration + World Loading | [x] Complete | Steps 1-10: WorldEntity struct with NIFCache, WorldLoader (loadStatic/loadDynamic/loadActor), PlayerController extended (Skeleton+AnimationPlayer+CharacterController integration, hysteresis animation state machine, fixed/variable timestep separation, combat stance+attack), WorldEntity rendering with skinning shader, PlayerController wired to actor skeleton/animation |
+| Phase 32 (v0.9.8) | Animation & Audio Integration | [x] Complete | AnimationSubscriber (EventBus→AnimationPlayer bridge), AudioSubscriber (EventBus→AudioManager bridge), SpellSelectionPanel UI, AnimationPlayer.findSequenceByName(), WorldLoader entity storage + NPC→Entity mapping, Imperial Weave Event.targetId field |
+| Phase 33 (v0.9.9) | Combat Sound Assets + NPC Spatial Audio | [x] Complete | Dedicated combat sounds (hit_blade/blunt/axe/unarmed, block, parry, dodge, death), NPC spatial audio callback, AudioSubscriber event→sound mappings |
+| Phase 34 (v0.9.10) | Weapon-Type Sounds + Quick-Slot Spells | [x] Complete | Weapon-type hit sound routing (CombatManager→AudioSubscriber), SpellSelectionPanel school colors, Quick-slot spells (F1-F4) |
+| Phase 35 (v1.0.0) | Radiant AI System | [x] Complete | AI Package System (15 types), Priority-based PackageStack, AIScheduler (24h time-based), NavMesh pathfinding, Stuck detection, Default daily schedule, Combat/Flee override |
+| Phase 36 (v1.1.0) | Jolt Physics Integration | [x] Complete | PhysicsManager singleton, CharacterVirtual player/NPC, HeightFieldShape terrain, Fixed timestep (1/60s), Raycast API, ImperialWeave phase integration |
+| Phase 37 (v1.2.0) | Script VM | [x] Complete | Oblivion VM bytecode interpreter, opcode dispatch, script execution |
+| Phase 38 (v1.3.0) | Full World Load | [x] Complete | Complete world data loading from ESM, cell streaming, LOD system |
+| Phase 39 (v1.4.0) | Quest Flow | [x] Complete | Quest state machine, objective tracking, journal system |
+| Phase 40 (v1.5.0) | NPC Dialogue | [x] Complete | Full dialogue tree, NPC conversation system, voice line integration |
+| Phase 41 (v1.6.0) | Full Save/Load | [x] Complete | Complete game state serialization, save file format, auto-save |
+| Phase 42 (v1.7.0) | Game Loop Integration | [x] Complete | 12-phase update pipeline, state FSM, input routing, scene renderer, debug console, performance profiler |
+| Phase 43 (v1.8.0) | UI/UX | [x] Complete | Touch gesture handler, menu transitions, HUD layout, control scheme manager, accessibility |
+| Phase 44 (v1.9.0) | Performance Optimization | [x] Complete | MemoryPool, RenderOptimizer (batch/instancing/frustum), AsyncTaskManager (thread pool), CacheManager (L1/L2), ProfilerDashboard |
 
 ---
 
-### 📊 Code Metrics (Phase 35 / v1.0.0)
+### [METRIC] Code Metrics (Phase 44 / v1.9.0)
 
-- **C++ Code**: 22,500+ lines (includes ESM parser, audio, save/load, RetroFilter, graphical UI, ESM integration, NAVM pathfinding, DIAL/INFO dialogue, spell effects, new game systems, Imperial Weave, NIF animation, collision, subscriber bridges, Radiant AI)
+- **C++ Code**: 38,000+ lines (includes all Phase 1-44 systems)
 - **Java Code**: 700+ lines
-- **Header Files**: 2,400+ lines
-- **Total Project**: 23,200+ lines
+- **Header Files**: 4,000+ lines
+- **Total Project**: 42,000+ lines
 - **Imperial Weave**: 600+ lines (EventBus, ServiceLocator, 12-phase coordinator)
 - **Subscriber Bridges**: 400+ lines (AnimationSubscriber, AudioSubscriber)
+- **Game Loop**: 350+ lines (GameLoopCoordinator, StateManager, InputRouter, SceneRenderer)
+- **Performance**: 800+ lines (MemoryPool, RenderOptimizer, AsyncTaskManager, CacheManager, ProfilerDashboard)
+- **UI/UX**: 1,900+ lines (TouchGestureHandler, MenuTransitionManager, HUDLayout, ControlSchemeManager, AccessibilityManager)
 - **ESM Parser**: 2,000+ lines (40 record types)
 - **BSA Reader**: 500+ lines (archive extraction, ZLib decompression)
 - **ESM Integration**: 600+ lines (NpcManager, Container, Player initialization, Status effects, DIAL/INFO dialogue, REFR placement)
@@ -447,66 +455,66 @@ oblivion-android/
 
 ---
 
-### 🎯 Current Limitations
+### [FEAT] Current Limitations
 
-⚠️ **Phase 35 Current Limitations**:
-- ~~Debug mode always enabled~~ ✅ Fixed (Settings → Debug Mode)
-- ~~No save/load system~~ ✅ Implemented (Phase 8)
-- ~~Text-based UI only~~ ✅ Graphical UI implemented (Phase 9)
-- ~~Limited NPC dialogue~~ ✅ Implemented (Phase 10)
-- ~~No full inventory management~~ ✅ Implemented (Phase 9B)
+[WARN] **Phase 35 Current Limitations**:
+- ~~Debug mode always enabled~~ [x] Fixed (Settings → Debug Mode)
+- ~~No save/load system~~ [x] Implemented (Phase 8)
+- ~~Text-based UI only~~ [x] Graphical UI implemented (Phase 9)
+- ~~Limited NPC dialogue~~ [x] Implemented (Phase 10)
+- ~~No full inventory management~~ [x] Implemented (Phase 9B)
 - Single-player only (no multiplayer)
-- ~~No map system yet~~ ✅ Implemented (Phase 23)
-- ~~Hardcoded test world~~ ✅ ESM data-driven (Phase 25-26)
-- ~~No real NPC/object placement from original data~~ ✅ CELL+REFR+LAND parsing (Phase 26)
-- ~~No magic spells from original data~~ ✅ SPEL record parsing (Phase 26)
-- ~~No event bus system~~ ✅ Imperial Weave EventBus implemented (Phase 32)
-- ~~No animation/audio subscribers~~ ✅ AnimationSubscriber/AudioSubscriber implemented (Phase 32)
-- ~~No combat sounds~~ ✅ Dedicated combat sounds implemented (Phase 33)
-- ~~No NPC spatial audio~~ ✅ NPC spatial audio callback implemented (Phase 33)
-- ~~No weapon-type sound routing~~ ✅ Weapon-type hit sound routing implemented (Phase 34)
-- ~~No quick-slot spells~~ ✅ F1-F4 quick-slot spells implemented (Phase 34)
-- ~~No Radiant AI system~~ ✅ AI package system + scheduler implemented (Phase 35)
-- ~~No leveled item/creature spawn tables~~ ✅ LVLI/LVLC parsing (Phase 26)
-- ~~No AI pathfinding data~~ ✅ NAVM record parsing (Phase 26)
-- ~~No armor/equipment data from original~~ ✅ ARMO record parsing (Phase 26)
-- ~~Limited ESM record types (19)~~ ✅ Expanded to 40 record types (Phase 28)
-- ~~No creature spawning from ESM~~ ✅ CREA + LVLC integration (Phase 28)
-- ~~No container population from ESM~~ ✅ CONT record integration (Phase 28)
-- ~~No player race/class/birthsign from ESM~~ ✅ RACE/CLAS/BSGN initialization (Phase 28)
-- ~~No status effect tracking~~ ✅ Paralyze/Invisibility/Fortify/Summon (Phase 28)
-- ~~No NAVM runtime pathfinding~~ ✅ NavMeshManager + CombatManager A* integration (Phase 29)
-- ~~No DIAL/INFO dialogue from ESM~~ ✅ DIAL/INFO parsing with faction branching (Phase 29)
-- ~~No REFR-based object placement~~ ✅ REFR placement with 8 object types (Phase 29)
-- ~~Limited spell effects (4)~~ ✅ 8 spell effects including Paralyze/Invisibility/Fortify/Summon (Phase 29)
+- ~~No map system yet~~ [x] Implemented (Phase 23)
+- ~~Hardcoded test world~~ [x] ESM data-driven (Phase 25-26)
+- ~~No real NPC/object placement from original data~~ [x] CELL+REFR+LAND parsing (Phase 26)
+- ~~No magic spells from original data~~ [x] SPEL record parsing (Phase 26)
+- ~~No event bus system~~ [x] Imperial Weave EventBus implemented (Phase 32)
+- ~~No animation/audio subscribers~~ [x] AnimationSubscriber/AudioSubscriber implemented (Phase 32)
+- ~~No combat sounds~~ [x] Dedicated combat sounds implemented (Phase 33)
+- ~~No NPC spatial audio~~ [x] NPC spatial audio callback implemented (Phase 33)
+- ~~No weapon-type sound routing~~ [x] Weapon-type hit sound routing implemented (Phase 34)
+- ~~No quick-slot spells~~ [x] F1-F4 quick-slot spells implemented (Phase 34)
+- ~~No Radiant AI system~~ [x] AI package system + scheduler implemented (Phase 35)
+- ~~No leveled item/creature spawn tables~~ [x] LVLI/LVLC parsing (Phase 26)
+- ~~No AI pathfinding data~~ [x] NAVM record parsing (Phase 26)
+- ~~No armor/equipment data from original~~ [x] ARMO record parsing (Phase 26)
+- ~~Limited ESM record types (19)~~ [x] Expanded to 40 record types (Phase 28)
+- ~~No creature spawning from ESM~~ [x] CREA + LVLC integration (Phase 28)
+- ~~No container population from ESM~~ [x] CONT record integration (Phase 28)
+- ~~No player race/class/birthsign from ESM~~ [x] RACE/CLAS/BSGN initialization (Phase 28)
+- ~~No status effect tracking~~ [x] Paralyze/Invisibility/Fortify/Summon (Phase 28)
+- ~~No NAVM runtime pathfinding~~ [x] NavMeshManager + CombatManager A* integration (Phase 29)
+- ~~No DIAL/INFO dialogue from ESM~~ [x] DIAL/INFO parsing with faction branching (Phase 29)
+- ~~No REFR-based object placement~~ [x] REFR placement with 8 object types (Phase 29)
+- ~~Limited spell effects (4)~~ [x] 8 spell effects including Paralyze/Invisibility/Fortify/Summon (Phase 29)
 
 See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for complete list.
 
 ---
 
-### 🚀 Future Enhancements (Phase 31+)
+### [START] Future Enhancements (Phase 31+)
 
-- 🗺️ Map with quest markers
-- ⚡ Device-side ESM rendering verification
-- 🎮 Controller support
-- 🦴 NIF skeleton & skinning (Phase 30)
-- 💥 NIF collision - bhkCollisionObject (Phase 30)
-- 🎬 NIF animation complete (Phase 30)
-- 🏗️ Imperial Weave integration layer (v3) - EventBus + ServiceLocator + 12-phase update pipeline
-- ⚔️ Combat system enhancement - 9 weapon types, hitbox, critical/block/parry/dodge, bleed DoT
-- 🔗 Combat events integrated with Imperial Weave EventBus
-- 🎮 All major managers migrated to Imperial Weave (Player, Inventory, Spell, Audio, World, AI, Combat, Quest)
-- 🎯 Player combat UI buttons (Attack, Block, Cast Spell) with touch input
-- 🌍 World loading pipeline (Phase 31)
-- 🎮 PlayerController integration (Phase 31)
-- 🌳 SpeedTree alternative rendering
-- 🧠 Radiant AI system
-- ⚙️ Script VM (Oblivion script execution)
-- 🔧 Physics engine (Jolt)
+- [MAP] Map with quest markers
+- [PERF] Device-side ESM rendering verification
+- [GAME] Controller support
+- [BONE] NIF skeleton & skinning (Phase 30)
+- [FX] NIF collision - bhkCollisionObject (Phase 30)
+- [ANIM] NIF animation complete (Phase 30)
+- [ARCH] Imperial Weave integration layer (v3) - EventBus + ServiceLocator + 12-phase update pipeline
+- [COMBAT] Combat system enhancement - 9 weapon types, hitbox, critical/block/parry/dodge, bleed DoT
+- [LINK] Combat events integrated with Imperial Weave EventBus
+- [GAME] All major managers migrated to Imperial Weave (Player, Inventory, Spell, Audio, World, AI, Combat, Quest)
+- [FEAT] Player combat UI buttons (Attack, Block, Cast Spell) with touch input
+- [WORLD] World loading pipeline (Phase 31)
+- [GAME] PlayerController integration (Phase 31)
+- [TREE] SpeedTree alternative rendering
+- [AI] Radiant AI system
+- [SYS] Script VM (Oblivion script execution)
+- [BUILD] Physics engine (Jolt)
 
 ---
 
-### 🐛 Reporting Issues
+### [BUG] Reporting Issues
 
 Found a bug? Please:
 1. Check [KNOWN_ISSUES.md](KNOWN_ISSUES.md) first
@@ -516,7 +524,7 @@ Found a bug? Please:
 
 ---
 
-### 📈 Statistics
+### [STAT] Statistics
 
 #### Development Statistics
 - **Total Development Time**: ~15 weeks
@@ -535,7 +543,7 @@ Found a bug? Please:
 
 ---
 
-### 🎓 Technology Stack
+### [TECH] Technology Stack
 
 #### Core Technologies
 - C++17
@@ -558,7 +566,7 @@ Found a bug? Please:
 
 ---
 
-### 📝 Credits
+### [NOTE] Credits
 
 **Oblivion Android Project**
 - Developed as a complete native port
@@ -572,7 +580,7 @@ Found a bug? Please:
 
 ---
 
-### ⚖️ Legal Notice
+### [LEGAL] Legal Notice
 
 **Important**: This is an experimental port for educational and testing purposes.
 
@@ -583,14 +591,14 @@ Found a bug? Please:
 
 ---
 
-### 📄 License
+### [LIC] License
 
 Proprietary - Experimental Port
 *Not licensed for commercial use or redistribution*
 
 ---
 
-### 🤝 Support
+### [HELP] Support
 
 - **Documentation**: See `/docs` directory
 - **Build Issues**: Check [INSTALLATION.md](INSTALLATION.md)
@@ -599,11 +607,11 @@ Proprietary - Experimental Port
 
 ---
 
-**Status**: Phase 36 Complete (v1.1.0)
+**Status**: Phase 44 Complete (v1.9.0) — Performance Optimization
 **Last Updated**: 2026-09-10
-**Version**: 1.0.0
-**Features**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD, ESM Data Integration (40 record types), NpcManager ESM, Container ESM, Player RACE/CLAS/BSGN, Status Effects, NAVM Pathfinding, DIAL/INFO Dialogue, REFR Placement, Spell Effects (8 types), Alchemy, Book Reader, Faction Manager, Loot Generator, NIF Skeleton/Skinning, Animation System, Collision Detection, Integration Tests (Phase 30), WorldEntity + WorldLoader + PlayerController Integration (Phase 31), Imperial Weave EventBus + 12-phase coordinator, AnimationSubscriber, AudioSubscriber, SpellSelectionPanel (Phase 32), Dedicated Combat Sounds, NPC Spatial Audio (Phase 33), Weapon-Type Sound Routing, Quick-Slot Spells (Phase 34), Radiant AI System (Phase 35), Jolt Physics Integration (Phase 36)
-**Next**: Phase 37 - Script VM (Oblivion VM bytecode interpreter)
+**Version**: 1.9.0
+**Features**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD, ESM Data Integration (40 record types), NpcManager ESM, Container ESM, Player RACE/CLAS/BSGN, Status Effects, NAVM Pathfinding, DIAL/INFO Dialogue, REFR Placement, Spell Effects (8 types), Alchemy, Book Reader, Faction Manager, Loot Generator, NIF Skeleton/Skinning, Animation System, Collision Detection, Integration Tests (Phase 30), WorldEntity + WorldLoader + PlayerController Integration (Phase 31), Imperial Weave EventBus + 12-phase coordinator, AnimationSubscriber, AudioSubscriber, SpellSelectionPanel (Phase 32), Dedicated Combat Sounds, NPC Spatial Audio (Phase 33), Weapon-Type Sound Routing, Quick-Slot Spells (Phase 34), Radiant AI System (Phase 35), Jolt Physics Integration (Phase 36), Script VM (Phase 37), Full World Load (Phase 38), Quest Flow (Phase 39), NPC Dialogue (Phase 40), Full Save/Load (Phase 41), Game Loop Integration (Phase 42), UI/UX Touch Controls (Phase 43), Performance Optimization (Phase 44)
+**Next**: Phase 45 - Testing & Debugging (unit tests, integration tests, memory leak detection)
 
 ---
 
@@ -617,49 +625,49 @@ The Elder Scrolls IV: Oblivion の完全ネイティブ Android 移植版です�
 
 ---
 
-### 🎮 実装機能
+### [GAME] 実装機能
 
 #### コアシステム
-- ✅ **ESMデータ駆動ワールド** (Phase 26-28) - Oblivion.esm からの40種レコードパースによるワールド生成: CELL, NPC_, WEAP, REFR, LAND, WRLD, SPEL, LVLI/LVLC/LVLN/LVSP, NAVM, ARMO, BOOK, CLOT, INGR, ALCH, MISC, FACT, RACE, CLAS, ROAD, BSGN, CREA, CONT, DOOR, ACTI, STAT, TREE, FLOR, LIGH, APPA, SOUN, SCRL, SCPT, GMST, SKIL, EYES, HAIR, CLMT, REGN, WTHR, PGRD
-- ✅ **3Dレンダリングエンジン** - メッシュ・テクスチャ対応 OpenGL ES 3.0
-- ✅ **ゲーム世界** - セルベースのワールドとシームレス遷移
-- ✅ **NPCシステム** - 100体以上のAIステートマシン（IDLE, WANDER, PATROL, COMBAT, FOLLOW）
-- ✅ **戦闘システム** - ステータス・装備によるダメージ計算
-- ✅ **クエストシステム** - マルチオブジェクト＋報酬（ゴールド、経験値）
-- ✅ **魔法システム** - 6系統10種以上＋マナ管理
-- ✅ **キャラクターステータス** - HP/MP/スタミナ/属性/スキル
-- ✅ **多言語化** - 日本語＋英語（100以上の翻訳）
-- ✅ **パフォーマンス監視** - フレームタイム・メモリ・CPUプロファイル
-- ✅ **テキストレンダリング** - カラー・位置指定対応のオンスクリーンテキスト
-- ✅ **デバッグHUD** - FPS・フレームタイム・メモリ・システム情報オーバーレイ
-- ✅ **設定システム** - デバッグモード・言語設定の永続化
-- ✅ **セーブ/ロード** - スロット管理付きゲーム状態の永続化
-- ✅ **OpenAL 3Dオーディオ** - 距離減衰付き空間オーディオ
-- ✅ **レトロフィルター** - ピクセル化・スキャンライン・色数制限・CRT歪み・フィルムグレイン
-- ✅ **完全なUI・HUDシステム** (Phase 9-24) - インベントリ、マップ、ステータス、クエストログ、会話、ポーズ、戦闘HUD等
+- [x] **ESMデータ駆動ワールド** (Phase 26-28) - Oblivion.esm からの40種レコードパースによるワールド生成: CELL, NPC_, WEAP, REFR, LAND, WRLD, SPEL, LVLI/LVLC/LVLN/LVSP, NAVM, ARMO, BOOK, CLOT, INGR, ALCH, MISC, FACT, RACE, CLAS, ROAD, BSGN, CREA, CONT, DOOR, ACTI, STAT, TREE, FLOR, LIGH, APPA, SOUN, SCRL, SCPT, GMST, SKIL, EYES, HAIR, CLMT, REGN, WTHR, PGRD
+- [x] **3Dレンダリングエンジン** - メッシュ・テクスチャ対応 OpenGL ES 3.0
+- [x] **ゲーム世界** - セルベースのワールドとシームレス遷移
+- [x] **NPCシステム** - 100体以上のAIステートマシン（IDLE, WANDER, PATROL, COMBAT, FOLLOW）
+- [x] **戦闘システム** - ステータス・装備によるダメージ計算
+- [x] **クエストシステム** - マルチオブジェクト＋報酬（ゴールド、経験値）
+- [x] **魔法システム** - 6系統10種以上＋マナ管理
+- [x] **キャラクターステータス** - HP/MP/スタミナ/属性/スキル
+- [x] **多言語化** - 日本語＋英語（100以上の翻訳）
+- [x] **パフォーマンス監視** - フレームタイム・メモリ・CPUプロファイル
+- [x] **テキストレンダリング** - カラー・位置指定対応のオンスクリーンテキスト
+- [x] **デバッグHUD** - FPS・フレームタイム・メモリ・システム情報オーバーレイ
+- [x] **設定システム** - デバッグモード・言語設定の永続化
+- [x] **セーブ/ロード** - スロット管理付きゲーム状態の永続化
+- [x] **OpenAL 3Dオーディオ** - 距離減衰付き空間オーディオ
+- [x] **レトロフィルター** - ピクセル化・スキャンライン・色数制限・CRT歪み・フィルムグレイン
+- [x] **完全なUI・HUDシステム** (Phase 9-24) - インベントリ、マップ、ステータス、クエストログ、会話、ポーズ、戦闘HUD等
 
 #### ゲーム機能
-- 🎯 タッチ操作によるカメラ操作
-- 🎯 近隣敵との自動戦闘開始
-- 🎯 NPC会話とクエスト受注
-- 🎯 マナ消費による魔法詠唱
-- 🎯 グラフィカルメニュー付きタイトル画面
-- 🎯 進捗追跡付きクエストログ
-- 🎯 NPC間リアルタイム戦闘
-- 🎯 **新機能**: スロット管理付きセーブ/ロード (Phase 8)
-- 🎯 **新機能**: デバッグモード・レトロフィルター設定 (Phase 8)
-- 🎯 **新機能**: 距離減衰付き3D空間オーディオ (Phase 8)
-- 🎯 **新機能**: 完全なグラフィカルUIとHUDシステムの実装 (Phase 9-24)
-- 🎯 **新機能**: ESMデータ統合 - 40種レコード、NPCマネージャー、コンテナ、プレイヤー初期化、ステータス効果 (Phase 28)
-- 🎯 **新機能**: NAVMパスファインディングランタイム統合、派閥分岐付きDIAL/INFO会話、REFRワールドオブジェクト配置、4つの呪文エフェクト (Phase 29)
-- 🎯 **新機能**: Imperial Weave EventBus＋12フェーズコーディネーター、AnimationSubscriber、AudioSubscriber、SpellSelectionPanel (Phase 32)
-- 🎯 **新機能**: 専用コンバットサウンド、NPC空間オーディオ (Phase 33)
-- 🎯 **新機能**: 武器タイプサウンドルーティング、クイックスロット呪文 (Phase 34)
-- 🎯 **新機能**: Radiant AIシステム - AIパッケージシステム、スケジューラ、NavMeshパスファインディング統合 (Phase 35)
+- [FEAT] タッチ操作によるカメラ操作
+- [FEAT] 近隣敵との自動戦闘開始
+- [FEAT] NPC会話とクエスト受注
+- [FEAT] マナ消費による魔法詠唱
+- [FEAT] グラフィカルメニュー付きタイトル画面
+- [FEAT] 進捗追跡付きクエストログ
+- [FEAT] NPC間リアルタイム戦闘
+- [FEAT] **新機能**: スロット管理付きセーブ/ロード (Phase 8)
+- [FEAT] **新機能**: デバッグモード・レトロフィルター設定 (Phase 8)
+- [FEAT] **新機能**: 距離減衰付き3D空間オーディオ (Phase 8)
+- [FEAT] **新機能**: 完全なグラフィカルUIとHUDシステムの実装 (Phase 9-24)
+- [FEAT] **新機能**: ESMデータ統合 - 40種レコード、NPCマネージャー、コンテナ、プレイヤー初期化、ステータス効果 (Phase 28)
+- [FEAT] **新機能**: NAVMパスファインディングランタイム統合、派閥分岐付きDIAL/INFO会話、REFRワールドオブジェクト配置、4つの呪文エフェクト (Phase 29)
+- [FEAT] **新機能**: Imperial Weave EventBus＋12フェーズコーディネーター、AnimationSubscriber、AudioSubscriber、SpellSelectionPanel (Phase 32)
+- [FEAT] **新機能**: 専用コンバットサウンド、NPC空間オーディオ (Phase 33)
+- [FEAT] **新機能**: 武器タイプサウンドルーティング、クイックスロット呪文 (Phase 34)
+- [FEAT] **新機能**: Radiant AIシステム - AIパッケージシステム、スケジューラ、NavMeshパスファインディング統合 (Phase 35)
 
 ---
 
-### 📱 技術仕様
+### [SPEC] 技術仕様
 
 #### 動作要件
 | 項目 | 仕様 |
@@ -684,15 +692,15 @@ The Elder Scrolls IV: Oblivion の完全ネイティブ Android 移植版です�
 #### パフォーマンス目標
 | 指標 | 目標 | 実測 | 状態 |
 | --- | --- | --- | --- |
-| **FPS** | 30 fps | 60 fps | ✅ 超過 |
-| **メモリ** | < 1 GB | 40 MB | ✅ 合格 |
-| **CPU** | < 10% | < 0.1% | ✅ 超過 |
-| **起動時間** | < 30秒 | 18-25秒 | ✅ 合格 |
-| **安定性** | 5時間 | 30秒以上 | ✅ 合格 |
+| **FPS** | 30 fps | 60 fps | [x] 超過 |
+| **メモリ** | < 1 GB | 40 MB | [x] 合格 |
+| **CPU** | < 10% | < 0.1% | [x] 超過 |
+| **起動時間** | < 30秒 | 18-25秒 | [x] 合格 |
+| **安定性** | 5時間 | 30秒以上 | [x] 合格 |
 
 ---
 
-### 📦 ビルドとインストール
+### [PKG] ビルドとインストール
 
 #### 前提条件
 ```bash
@@ -725,7 +733,7 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 
 ---
 
-### 🚀 クイックスタート
+### [START] クイックスタート
 
 1. **アプリ起動**: ホーム画面の Oblivion アイコンをタップ
 2. **タイトル画面**: 3秒待ってタップで開始
@@ -747,7 +755,7 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 
 ---
 
-### 🎨 UIとデバッグシステム
+### [UI] UIとデバッグシステム
 
 #### 設定メニュー
 タイトル画面からアクセス:
@@ -782,7 +790,7 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 
 ---
 
-### 📚 ドキュメント
+### [REF] ドキュメント
 
 - [INSTALLATION.md](INSTALLATION.md) - 詳細インストールガイドとトラブルシューティング
 - [GAMEPLAY.md](GAMEPLAY.md) - ゲームプレイ完全ガイド
@@ -792,29 +800,29 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 
 ---
 
-### 🧪 テスト結果
+### [TEST] テスト結果
 
 #### マルチデバイス検証
 
 **Amazon Fire Tablet (Android 9)**
 ```
-✅ インストール: 成功
-✅ 起動: 25秒
-✅ FPS: 60（安定）
-✅ メモリ: 42 MB
-✅ 継続: 30秒以上クラッシュなし
-✅ 温度: 38°C
+[x] インストール: 成功
+[x] 起動: 25秒
+[x] FPS: 60（安定）
+[x] メモリ: 42 MB
+[x] 継続: 30秒以上クラッシュなし
+[x] 温度: 38°C
 ```
 
 **Xiaomi 24018RPACG (Android 16)**
 ```
-✅ インストール: 成功（WiFi ADB）
-✅ 起動: 18秒
-✅ FPS: 60（安定）
-✅ メモリ: 45 MB
-✅ 継続: 30秒以上クラッシュなし
-✅ 温度: 39°C
-✅ 解像度: 2032×3048（ウルトラHD）
+[x] インストール: 成功（WiFi ADB）
+[x] 起動: 18秒
+[x] FPS: 60（安定）
+[x] メモリ: 45 MB
+[x] 継続: 30秒以上クラッシュなし
+[x] 温度: 39°C
+[x] 解像度: 2032×3048（ウルトラHD）
 ```
 
 #### パフォーマンス基準
@@ -825,7 +833,7 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 
 ---
 
-### 🏗️ プロジェクト構成
+### [ARCH] プロジェクト構成
 
 ```
 oblivion-android/
@@ -860,41 +868,49 @@ oblivion-android/
 
 ---
 
-### 🔧 開発フェーズ
+### [BUILD] 開発フェーズ
 
 | フェーズ | 重点 | 状態 | 主な成果物 |
 | --- | --- | --- | --- |
-| Phase 1 | コアレンダリング | ✅ 完了 | 3Dエンジン、OpenGL ES 3.0 |
-| Phase 2 | アセット管理 | ✅ 完了 | NIF/DDSローダー、キャッシング |
-| Phase 3 | ワールドシステム | ✅ 完了 | セルシステム、ワールドストリーミング |
-| Phase 4 | NPCとAI | ✅ 完了 | NPCマネージャー、ステートマシン |
-| Phase 5 | 深層機能 | ✅ 完了 | 戦闘、クエスト、魔法 |
-| Phase 6 | 最適化 | ✅ 完了 | パフォーマンス、テスト、ドキュメント |
-| Phase 7 | リリース準備 | ✅ 完了 | ドキュメント |
-| Phase 7.1 | 拡張機能 | ✅ 完了 | セーブ/ロード、改善されたUI |
-| Phase 8 | オーディオ＆ポストプロセス | ✅ 完了 | OpenAL 3Dオーディオ、レトロフィルター、セーブ/ロードUI |
-| Phase 24 | 完全なUI＆HUDシステム | ✅ 完了 | インベントリ、マップ、クエスト、HUD |
-| Phase 25 | BSA/ESMパースエンジン | ✅ 完了 | BSAアーカイブリーダー、完全GRUP階層付きESMパーサー |
-| Phase 26 | ESMデータ駆動ワールド | ✅ 完了 | Oblivion.esm からの10種レコードパース |
-| Phase 27 | ESM統合 | ✅ 完了 | 9種レコード追加＋ルート生成、書籍読書、衣服変換、錬金術、派閥システム |
-| Phase 28 | ESM40種レコード＋統合 | ✅ 完了 | 21種レコード追加＋NPCマネージャーESM統合、コンテナESM配置、プレイヤーRACE/CLAS/BSGN初期化、ステータス効果 |
-| Phase 29 | NAVMパスファインディング＋DIAL/INFO会話 | ✅ 完了 | NAVMランタイム統合（A*経路探索）、派閥分岐付きDIAL/INFOレコード解析、REFRワールドオブジェクト配置（8種）、4つの呪文エフェクト、新ゲームシステム追加 |
-| Phase 30 | NIFスケルトン/スキニング＋衝突＋アニメーション | ✅ 完了 | Step 1-13完了: nif_types.h拡張、NIFBlockTypeMap（文字列ベース31種）、NIFParser拡張、SkinPartitionPacker（ビットマスク）、Skeleton（反復BFS）、SkinnedMesh＋UBO＋スキニングシェーダー、NiControllerManager/Sequence解析、AnimationPlayer（slerp/lerp/text keys）、bhkCollisionObject＋bhkRigidBody解析（9種形状）、Dynamic AABB Tree（ブロードフェーズ）、CollisionWorld（テーブル駆動ナローフェーズ5x5、ContactBuffer）、CharacterController（サブステップ移動、マルチレイ接地検出）、統合テスト（9テストグループ、JNI呼び出し対応） |
-| Phase 31 | PlayerController統合＋ワールドロード | ✅ 完了 | Step 1-10: WorldEntity構造体（NIFCache付き）、WorldLoader（loadStatic/loadDynamic/loadActor）、PlayerController拡張（Skeleton＋AnimationPlayer＋CharacterController統合、ヒステリシス付きアニメーション状態マシン、固定/可変タイムステップ分離、戦闘構え＋攻撃）、WorldEntityスキニングシェーダー描画、PlayerControllerスケルトン/アニメーション統合 |
-| Phase 32 (v0.9.8) | アニメーション＆オーディオ統合 | ✅ 完了 | AnimationSubscriber（EventBus→AnimationPlayerブリッジ）、AudioSubscriber（EventBus→AudioManagerブリッジ）、SpellSelectionPanel UI、AnimationPlayer.findSequenceByName()、WorldLoaderエンティティストレージ＋NPC→Entityマッピング、Imperial Weave Event.targetIdフィールド |
-| Phase 33 (v0.9.9) | コンバットサウンド＋NPC空間オーディオ | ✅ 完了 | 専用コンバットサウンド（hit_blade/blunt/axe/unarmed、block、parry、dodge、death）、NPC空間オーディオコールバック、AudioSubscriberイベント→サウンドマッピング |
-| Phase 34 (v0.9.10) | 武器タイプサウンド＋クイックスロット呪文 | ✅ 完了 | 武器タイプヒットサウンドルーティング（CombatManager→AudioSubscriber）、SpellSelectionPanel学校カラー、クイックスロット呪文（F1-F4） |
-| Phase 35 (v1.0.0) | Radiant AIシステム | ✅ 完了 | AIパッケージシステム（15種）、優先度ベースPackageStack、AIScheduler（24h時間ベース）、NavMeshパスファインディング、スタック検出、デフォルト日課、コンバット/フリーオーバーライド |
-| Phase 36 (v1.1.0) | Jolt Physics統合 | ✅ 完了 | PhysicsManagerシングルトン、CharacterVirtual player/NPC、HeightFieldShape地形、固定タイムステップ（1/60s）、Raycast API、ImperialWeaveフェーズ統合 |
+| Phase 1 | コアレンダリング | [x] 完了 | 3Dエンジン、OpenGL ES 3.0 |
+| Phase 2 | アセット管理 | [x] 完了 | NIF/DDSローダー、キャッシング |
+| Phase 3 | ワールドシステム | [x] 完了 | セルシステム、ワールドストリーミング |
+| Phase 4 | NPCとAI | [x] 完了 | NPCマネージャー、ステートマシン |
+| Phase 5 | 深層機能 | [x] 完了 | 戦闘、クエスト、魔法 |
+| Phase 6 | 最適化 | [x] 完了 | パフォーマンス、テスト、ドキュメント |
+| Phase 7 | リリース準備 | [x] 完了 | ドキュメント |
+| Phase 7.1 | 拡張機能 | [x] 完了 | セーブ/ロード、改善されたUI |
+| Phase 8 | オーディオ＆ポストプロセス | [x] 完了 | OpenAL 3Dオーディオ、レトロフィルター、セーブ/ロードUI |
+| Phase 24 | 完全なUI＆HUDシステム | [x] 完了 | インベントリ、マップ、クエスト、HUD |
+| Phase 25 | BSA/ESMパースエンジン | [x] 完了 | BSAアーカイブリーダー、完全GRUP階層付きESMパーサー |
+| Phase 26 | ESMデータ駆動ワールド | [x] 完了 | Oblivion.esm からの10種レコードパース |
+| Phase 27 | ESM統合 | [x] 完了 | 9種レコード追加＋ルート生成、書籍読書、衣服変換、錬金術、派閥システム |
+| Phase 28 | ESM40種レコード＋統合 | [x] 完了 | 21種レコード追加＋NPCマネージャーESM統合、コンテナESM配置、プレイヤーRACE/CLAS/BSGN初期化、ステータス効果 |
+| Phase 29 | NAVMパスファインディング＋DIAL/INFO会話 | [x] 完了 | NAVMランタイム統合（A*経路探索）、派閥分岐付きDIAL/INFOレコード解析、REFRワールドオブジェクト配置（8種）、4つの呪文エフェクト、新ゲームシステム追加 |
+| Phase 30 | NIFスケルトン/スキニング＋衝突＋アニメーション | [x] 完了 | Step 1-13完了: nif_types.h拡張、NIFBlockTypeMap（文字列ベース31種）、NIFParser拡張、SkinPartitionPacker（ビットマスク）、Skeleton（反復BFS）、SkinnedMesh＋UBO＋スキニングシェーダー、NiControllerManager/Sequence解析、AnimationPlayer（slerp/lerp/text keys）、bhkCollisionObject＋bhkRigidBody解析（9種形状）、Dynamic AABB Tree（ブロードフェーズ）、CollisionWorld（テーブル駆動ナローフェーズ5x5、ContactBuffer）、CharacterController（サブステップ移動、マルチレイ接地検出）、統合テスト（9テストグループ、JNI呼び出し対応） |
+| Phase 31 | PlayerController統合＋ワールドロード | [x] 完了 | Step 1-10: WorldEntity構造体（NIFCache付き）、WorldLoader（loadStatic/loadDynamic/loadActor）、PlayerController拡張（Skeleton＋AnimationPlayer＋CharacterController統合、ヒステリシス付きアニメーション状態マシン、固定/可変タイムステップ分離、戦闘構え＋攻撃）、WorldEntityスキニングシェーダー描画、PlayerControllerスケルトン/アニメーション統合 |
+| Phase 32 (v0.9.8) | アニメーション＆オーディオ統合 | [x] 完了 | AnimationSubscriber（EventBus→AnimationPlayerブリッジ）、AudioSubscriber（EventBus→AudioManagerブリッジ）、SpellSelectionPanel UI、AnimationPlayer.findSequenceByName()、WorldLoaderエンティティストレージ＋NPC→Entityマッピング、Imperial Weave Event.targetIdフィールド |
+| Phase 33 (v0.9.9) | コンバットサウンド＋NPC空間オーディオ | [x] 完了 | 専用コンバットサウンド（hit_blade/blunt/axe/unarmed、block、parry、dodge、death）、NPC空間オーディオコールバック、AudioSubscriberイベント→サウンドマッピング |
+| Phase 34 (v0.9.10) | 武器タイプサウンド＋クイックスロット呪文 | [x] 完了 | 武器タイプヒットサウンドルーティング（CombatManager→AudioSubscriber）、SpellSelectionPanel学校カラー、クイックスロット呪文（F1-F4） |
+| Phase 35 (v1.0.0) | Radiant AIシステム | [x] 完了 | AIパッケージシステム（15種）、優先度ベースPackageStack、AIScheduler（24h時間ベース）、NavMeshパスファインディング、スタック検出、デフォルト日課、コンバット/フリーオーバーライド |
+| Phase 36 (v1.1.0) | Jolt Physics統合 | [x] 完了 | PhysicsManagerシングルトン、CharacterVirtual player/NPC、HeightFieldShape地形、固定タイムステップ（1/60s）、Raycast API、ImperialWeaveフェーズ統合 |
+| Phase 37 (v1.2.0) | スクリプトVM | [x] 完了 | Oblivion VMバイトコードインタプリタ、オプコードディスパッチ、スクリプト実行 |
+| Phase 38 (v1.3.0) | フルワールドロード | [x] 完了 | ESMからの完全ワールドデータ読み込み、セルストリーミング、LODシステム |
+| Phase 39 (v1.4.0) | クエストフロー | [x] 完了 | クエストステートマシン、目標追跡、ジャーナルシステム |
+| Phase 40 (v1.5.0) | NPCダイアログ | [x] 完了 | 完全なダイアログツリー、NPC会話システム、ボイスライン統合 |
+| Phase 41 (v1.6.0) | フルセーブ/ロード | [x] 完了 | 完全なゲーム状態シリアライゼーション、セーブファイル形式、オートセーブ |
+| Phase 42 (v1.7.0) | ゲームループ統合 | [x] 完了 | 12フェーズ更新パイプライン、ステートFSM、入力ルーティング、シーンレンダラー、デバッグコンソール、パフォーマンスプロファイラー |
+| Phase 43 (v1.8.0) | UI/UX | [x] 完了 | タッチジェスチャーハンドラー、メニュー遷移、HUDレイアウト、操作スキームマネージャー、アクセシビリティ |
+| Phase 44 (v1.9.0) | パフォーマンス最適化 | [x] 完了 | MemoryPool、RenderOptimizer（バッチ/インスタンシング/フラスタム）、AsyncTaskManager（スレッドプール）、CacheManager（L1/L2）、ProfilerDashboard |
 
 ---
 
-### 📊 コード指標 (Phase 35 / v1.0.0)
+### [METRIC] コード指標 (Phase 44 / v1.9.0)
 
-- **C++コード**: 22,500行以上（ESMパーサー、オーディオ、セーブ/ロード、レトロフィルター、グラフィカルUI、ESM統合、NAVMパスファインディング、DIAL/INFO会話、呪文エフェクト、新ゲームシステム、Imperial Weave、NIFアニメーション、衝突検出、サブスクライバブリッジ、Radiant AI含む）
+- **C++コード**: 38,000行以上（Phase 1-44全システム含む）
 - **Javaコード**: 700行以上
-- **ヘッダーファイル**: 2,400行以上
-- **プロジェクト合計**: 23,200行以上
+- **ヘッダーファイル**: 4,000行以上
+- **プロジェクト合計**: 42,000行以上
 - **ESMパーサー**: 2,000行以上（40種のレコード型パース）
 - **BSAリーダー**: 500行以上（アーカイブ展開、ZLib展開）
 - **ESM統合**: 600行以上（NPCマネージャー、コンテナ、プレイヤー初期化、ステータス効果、DIAL/INFO会話、REFR配置）
@@ -902,6 +918,9 @@ oblivion-android/
 - **呪文エフェクト**: 200行以上（8種エフェクト）
 - **Radiant AI**: 500行以上（AIパッケージシステム、スケジューラ、NavMeshパスファインディング統合）
 - **新ゲームシステム**: 800行以上（錬金術、書籍リーダー、衣服変換、派閥マネージャー、ルートジェネレーター、その他アイテム変換、NavMeshマネージャー）
+- **ゲームループ**: 350行以上（GameLoopCoordinator、StateManager、InputRouter、SceneRenderer）
+- **パフォーマンス**: 800行以上（MemoryPool、RenderOptimizer、AsyncTaskManager、CacheManager、ProfilerDashboard）
+- **UI/UX**: 1,900行以上（TouchGestureHandler、MenuTransitionManager、HUDLayout、ControlSchemeManager、AccessibilityManager）
 - **オーディオシステム**: 400行以上（AudioManager、Audio3D、JNIブリッジ）
 - **セーブ/ロードUI**: 250行以上（UI＋エラーダイアログ）
 - **レトロフィルター効果**: 150行以上（DebugHUD連携）
@@ -912,61 +931,61 @@ oblivion-android/
 
 ---
 
-### 🎯 現在の制限
+### [FEAT] 現在の制限
 
-⚠️ **Phase 35 現在の制限**:
-- ~~デバッグモードが常に有効~~ ✅ 修正済み（設定 → デバッグモード）
-- ~~セーブ/ロードシステムなし~~ ✅ Phase 8で実装済み
-- ~~テキストベースUIのみ~~ ✅ Phase 9でグラフィカルUI実装済み
-- ~~限定的なNPC会話~~ ✅ Phase 10で拡張済み
-- ~~完全なインベントリ管理なし~~ ✅ Phase 9Bで実装済み
+[WARN] **Phase 35 現在の制限**:
+- ~~デバッグモードが常に有効~~ [x] 修正済み（設定 → デバッグモード）
+- ~~セーブ/ロードシステムなし~~ [x] Phase 8で実装済み
+- ~~テキストベースUIのみ~~ [x] Phase 9でグラフィカルUI実装済み
+- ~~限定的なNPC会話~~ [x] Phase 10で拡張済み
+- ~~完全なインベントリ管理なし~~ [x] Phase 9Bで実装済み
 - シングルプレイのみ（マルチプレイなし）
-- ~~マップシステムなし~~ ✅ Phase 23で実装済み
-- ~~ハードコードされたテストワールド~~ ✅ ESMデータ駆動（Phase 25-26）
-- ~~オリジナルデータからのNPC/オブジェクト配置なし~~ ✅ CELL+REFR+LANDパースで実現（Phase 26）
-- ~~オリジナルデータからの魔法呪文なし~~ ✅ SPELレコードパース（Phase 26）
-- ~~レベル付きアイテム/クリエイチャースポーンテーブルなし~~ ✅ LVLI/LVLCパース（Phase 26）
-- ~~イベントバスシステムなし~~ ✅ Imperial Weave EventBus実装（Phase 32）
-- ~~アニメーション/オーディオサブスクライバなし~~ ✅ AnimationSubscriber/AudioSubscriber実装（Phase 32）
-- ~~コンバットサウンドなし~~ ✅ 専用コンバットサウンド実装（Phase 33）
-- ~~NPC空間オーディオなし~~ ✅ NPC空間オーディオコールバック実装（Phase 33）
-- ~~武器タイプサウンドルーティングなし~~ ✅ 武器タイプヒットサウンドルーティング実装（Phase 34）
-- ~~クイックスロット呪文なし~~ ✅ F1-F4クイックスロット呪文実装（Phase 34）
-- ~~Radiant AIシステムなし~~ ✅ AIパッケージシステム＋スケジューラ実装（Phase 35）
-- ~~AIパスファインディングデータなし~~ ✅ NAVMレコードパース（Phase 26）
-- ~~オリジナルからの防具/装備データなし~~ ✅ ARMOレコードパース（Phase 26）
-- ~~限定的なESMレコード型（19種）~~ ✅ 40種レコードに拡張（Phase 28）
-- ~~ESMからのクリエイチャー生成なし~~ ✅ CREA＋LVLC統合（Phase 28）
-- ~~ESMからのコンテナ配置なし~~ ✅ CONTレコード統合（Phase 28）
-- ~~ESMからのプレイヤー種族/クラス/誕生星座なし~~ ✅ RACE/CLAS/BSGN初期化（Phase 28）
-- ~~ステータス効果追跡なし~~ ✅ 麻痺/不可視/強化/召喚（Phase 28）
-- ~~NAVMランタイムパスファインディングなし~~ ✅ NavMeshManager＋CombatManager A*統合（Phase 29）
-- ~~ESMからのDIAL/INFO会話なし~~ ✅ 派閥分岐付きDIAL/INFO解析（Phase 29）
-- ~~REFRベースのオブジェクト配置なし~~ ✅ 8種オブジェクトタイプのREFR配置（Phase 29）
-- ~~限定的な呪文エフェクト（4種）~~ ✅ 麻痺/不可視/強化/召喚含む8種（Phase 29）
+- ~~マップシステムなし~~ [x] Phase 23で実装済み
+- ~~ハードコードされたテストワールド~~ [x] ESMデータ駆動（Phase 25-26）
+- ~~オリジナルデータからのNPC/オブジェクト配置なし~~ [x] CELL+REFR+LANDパースで実現（Phase 26）
+- ~~オリジナルデータからの魔法呪文なし~~ [x] SPELレコードパース（Phase 26）
+- ~~レベル付きアイテム/クリエイチャースポーンテーブルなし~~ [x] LVLI/LVLCパース（Phase 26）
+- ~~イベントバスシステムなし~~ [x] Imperial Weave EventBus実装（Phase 32）
+- ~~アニメーション/オーディオサブスクライバなし~~ [x] AnimationSubscriber/AudioSubscriber実装（Phase 32）
+- ~~コンバットサウンドなし~~ [x] 専用コンバットサウンド実装（Phase 33）
+- ~~NPC空間オーディオなし~~ [x] NPC空間オーディオコールバック実装（Phase 33）
+- ~~武器タイプサウンドルーティングなし~~ [x] 武器タイプヒットサウンドルーティング実装（Phase 34）
+- ~~クイックスロット呪文なし~~ [x] F1-F4クイックスロット呪文実装（Phase 34）
+- ~~Radiant AIシステムなし~~ [x] AIパッケージシステム＋スケジューラ実装（Phase 35）
+- ~~AIパスファインディングデータなし~~ [x] NAVMレコードパース（Phase 26）
+- ~~オリジナルからの防具/装備データなし~~ [x] ARMOレコードパース（Phase 26）
+- ~~限定的なESMレコード型（19種）~~ [x] 40種レコードに拡張（Phase 28）
+- ~~ESMからのクリエイチャー生成なし~~ [x] CREA＋LVLC統合（Phase 28）
+- ~~ESMからのコンテナ配置なし~~ [x] CONTレコード統合（Phase 28）
+- ~~ESMからのプレイヤー種族/クラス/誕生星座なし~~ [x] RACE/CLAS/BSGN初期化（Phase 28）
+- ~~ステータス効果追跡なし~~ [x] 麻痺/不可視/強化/召喚（Phase 28）
+- ~~NAVMランタイムパスファインディングなし~~ [x] NavMeshManager＋CombatManager A*統合（Phase 29）
+- ~~ESMからのDIAL/INFO会話なし~~ [x] 派閥分岐付きDIAL/INFO解析（Phase 29）
+- ~~REFRベースのオブジェクト配置なし~~ [x] 8種オブジェクトタイプのREFR配置（Phase 29）
+- ~~限定的な呪文エフェクト（4種）~~ [x] 麻痺/不可視/強化/召喚含む8種（Phase 29）
 
 完全なリストは [KNOWN_ISSUES.md](KNOWN_ISSUES.md) を参照。
 
 ---
 
-### 🚀 将来の拡張 (Phase 31+)
+### [START] 将来の拡張 (Phase 31+)
 
-- 🗺️ クエストマーカー付きマップ
-- ⚡ デバイス上でのESMレンダリング検証
-- 🎮 コントローラー対応
-- 🦴 NIFスケルトン＆スキニング（Phase 30）
-- 💥 NIF衝突判定 - bhkCollisionObject（Phase 30）
-- 🎬 NIFアニメーション完全実装（Phase 30）
-- 🌍 ワールドロードパイプライン（Phase 31）
-- 🎮 PlayerController統合（Phase 31）
-- 🌳 SpeedTree代替レンダリング
-- 🧠 Radiant AIシステム
-- ⚙️ スクリプトVM（Oblivionスクリプト実行）
-- 🔧 物理エンジン（Jolt）
+- [MAP] クエストマーカー付きマップ
+- [PERF] デバイス上でのESMレンダリング検証
+- [GAME] コントローラー対応
+- [BONE] NIFスケルトン＆スキニング（Phase 30）
+- [FX] NIF衝突判定 - bhkCollisionObject（Phase 30）
+- [ANIM] NIFアニメーション完全実装（Phase 30）
+- [WORLD] ワールドロードパイプライン（Phase 31）
+- [GAME] PlayerController統合（Phase 31）
+- [TREE] SpeedTree代替レンダリング
+- [AI] Radiant AIシステム
+- [SYS] スクリプトVM（Oblivionスクリプト実行）
+- [BUILD] 物理エンジン（Jolt）
 
 ---
 
-### 🐛 問題報告
+### [BUG] 問題報告
 
 バグを発見しましたか？
 1. まず [KNOWN_ISSUES.md](KNOWN_ISSUES.md) を確認
@@ -976,7 +995,7 @@ oblivion-android/
 
 ---
 
-### 📈 統計
+### [STAT] 統計
 
 #### 開発統計
 - **総開発時間**: 約15週間
@@ -995,7 +1014,7 @@ oblivion-android/
 
 ---
 
-### 🎓 技術スタック
+### [TECH] 技術スタック
 
 #### コア技術
 - C++17
@@ -1018,7 +1037,7 @@ oblivion-android/
 
 ---
 
-### 📝 クレジット
+### [NOTE] クレジット
 
 **Oblivion Android プロジェクト**
 - 完全ネイティブ移植として開発
@@ -1032,7 +1051,7 @@ oblivion-android/
 
 ---
 
-### ⚖️ 法的注意事項
+### [LEGAL] 法的注意事項
 
 **重要**: これは教育およびテスト目的の実験的移植です。
 
@@ -1043,14 +1062,14 @@ oblivion-android/
 
 ---
 
-### 📄 ライセンス
+### [LIC] ライセンス
 
 独自ライセンス - 実験的移植
 *商業使用または再配布のライセンスはありません*
 
 ---
 
-### 🤝 サポート
+### [HELP] サポート
 
 - **ドキュメント**: `/docs` ディレクトリを参照
 - **ビルド問題**: [INSTALLATION.md](INSTALLATION.md) を確認
@@ -1070,5 +1089,5 @@ oblivion-android/
 （Phase 31）、Imperial Weave EventBus＋12フェーズコーディネーター、AnimationSubscriber、AudioSubscriber、SpellSelectionPanel
 （Phase 32）、専用コンバットサウンド、NPC空間オーディオ
 （Phase 33）、武器タイプサウンドルーティング、クイックスロット呪文
-（Phase 34）、Radiant AIシステム（Phase 35）、Jolt Physics統合（Phase 36）
-**次回**: Phase 37 - スクリプトVM (Oblivion VMバイトコードインタプリタ)
+（Phase 34）、Radiant AIシステム（Phase 35）、Jolt Physics統合（Phase 36）、スクリプトVM（Phase 37）、フルワールドロード（Phase 38）、クエストフロー（Phase 39）、NPCダイアログ（Phase 40）、フルセーブ/ロード（Phase 41）、ゲームループ統合（Phase 42）、UI/UXタッチ操作（Phase 43）、パフォーマンス最適化（Phase 44）
+**次回**: Phase 45 - テスト＆デバッグ（ユニットテスト、統合テスト、メモリリーク検出）
