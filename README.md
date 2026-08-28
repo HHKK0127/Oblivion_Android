@@ -51,6 +51,13 @@ A complete native Android port of The Elder Scrolls IV: Oblivion, built entirely
 - [FEAT] **NEW**: Dedicated combat sounds, NPC spatial audio (Phase 33)
 - [FEAT] **NEW**: Weapon-type sound routing, quick-slot spells (Phase 34)
 - [FEAT] **NEW**: Radiant AI system - AI package system, scheduler, NavMesh pathfinding integration (Phase 35)
+- [FEAT] **NEW**: Distant LOD system - LOD mesh generation, frustum culling, HorizonRing mountains (Phase 50)
+- [FEAT] **NEW**: SpeedTree vegetation - 4-stage LOD, instanced rendering, Perlin wind field (Phase 51)
+- [FEAT] **NEW**: FaceGen system - race morphs, expression morphs, hair/beard system (Phase 52)
+- [FEAT] **NEW**: Bink video player - MediaCodec JNI bridge, video clip management (Phase 53)
+- [FEAT] **NEW**: Imperial Weave v4.0 - 15-phase pipeline, ServiceLocator (Phase 54)
+- [FEAT] **NEW**: Engine Polish - frame budget, memory defrag, shader cache (Phase 55)
+- [FEAT] **NEW**: Gamebryo Complete - Particle, PostProcess, Water, SkyWeather, SceneGraph, Material (Phase 56)
 
 ---
 
@@ -413,16 +420,23 @@ oblivion-android/
 | Phase 34 (v0.9.10) | Weapon-Type Sounds + Quick-Slot Spells | [x] Complete | Weapon-type hit sound routing (CombatManager→AudioSubscriber), SpellSelectionPanel school colors, Quick-slot spells (F1-F4) |
 | Phase 35 (v1.0.0) | Radiant AI System | [x] Complete | AI Package System (15 types), Priority-based PackageStack, AIScheduler (24h time-based), NavMesh pathfinding, Stuck detection, Default daily schedule, Combat/Flee override |
 | Phase 36 (v1.1.0) | Jolt Physics Integration | [x] Complete | PhysicsManager singleton, CharacterVirtual player/NPC, HeightFieldShape terrain, Fixed timestep (1/60s), Raycast API, ImperialWeave phase integration |
+| Phase 50 (v2.5.0) | Distant LOD System | [x] Complete | DistantLodManager, LOD mesh generation, 6-plane frustum culling, distance fade, HorizonRing mountain presets |
+| Phase 51 (v2.5.0) | SpeedTree Vegetation | [x] Complete | SpeedTreeManager, 4-stage LOD, instanced rendering, billboard fallback, Perlin wind field, ESM LAND-based tree placement |
+| Phase 52 (v2.5.0) | FaceGen System | [x] Complete | FaceGenManager, race morph targets, expression morphs, hair/beard system, LOD levels, texture atlas |
+| Phase 53 (v2.5.0) | Bink Video Player | [x] Complete | BinkVideoPlayer, MediaCodec JNI bridge, video clip manager, OpenGL ES texture renderer |
+| Phase 54 (v3.0.0) | Imperial Weave v4.0 | [x] Complete | 15-phase pipeline, ImperialWeaveConfig, ServiceLocator, 12 event types, frame budget (16.6ms) |
+| Phase 55 (v3.1.0) | Engine Polish & Optimization | [x] Complete | FrameBudgetManager, MemoryDefrag, ShaderCache, OcclusionCuller, BatchRenderer, FaceGen brush-up, Jolt Physics extension |
+| Phase 56 (v3.2.0) | Gamebryo Complete | [x] Complete | ParticleSystem (7 presets), PostProcessPipeline (8 effects), WaterRenderer (Gerstner waves, 6 types), SkyWeatherSystem (8 weathers, day/night), SceneGraph (hierarchy, AABB), MaterialSystem (8 texture slots, 8 defaults) |
 | Phase 37 (v1.2.0) | Script VM | [ ] Planned | Oblivion VM bytecode interpreter, opcode dispatch, script execution |
 
 ---
 
-### [METRIC] Code Metrics (Phase 36 / v1.1.0)
+### [METRIC] Code Metrics (Phase 56 / v3.2.0)
 
-- **C++ Code**: 22,500+ lines
-- **Java Code**: 700+ lines
-- **Header Files**: 5,000+ lines
-- **Total Project**: 28,000+ lines
+- **C++ Code**: 35,000+ lines
+- **Java Code**: 1,100+ lines
+- **Header Files**: 12,000+ lines
+- **Total Project**: 48,000+ lines
 - **Imperial Weave**: 600+ lines (EventBus, ServiceLocator, 12-phase coordinator)
 - **Subscriber Bridges**: 400+ lines (AnimationSubscriber, AudioSubscriber)
 - **ESM Parser**: 2,000+ lines (40 record types)
@@ -581,10 +595,10 @@ Proprietary - Experimental Port
 
 ---
 
-**Status**: Phase 55 Complete (v3.1.0) — Engine Polish & Optimization
+**Status**: Phase 56 Complete (v3.2.0) — Gamebryo Engine Complete
 **Last Updated**: 2026-08-28
-**Version**: 3.0.0
-**Features**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD, ESM Data Integration (40 record types), NpcManager ESM, Container ESM, Player RACE/CLAS/BSGN, Status Effects, NAVM Pathfinding, DIAL/INFO Dialogue, REFR Placement, Spell Effects (8 types), Alchemy, Book Reader, Faction Manager, Loot Generator, NIF Skeleton/Skinning, Animation System, Collision Detection, Integration Tests (Phase 30), WorldEntity + WorldLoader + PlayerController Integration (Phase 31), Imperial Weave EventBus + 12-phase coordinator, AnimationSubscriber, AudioSubscriber, SpellSelectionPanel (Phase 32), Dedicated Combat Sounds, NPC Spatial Audio (Phase 33), Weapon-Type Sound Routing, Quick-Slot Spells (Phase 34), Radiant AI System (Phase 35), Jolt Physics Integration (Phase 36)
+**Version**: 3.2.0
+**Features**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD, ESM Data Integration (40 record types), NpcManager ESM, Container ESM, Player RACE/CLAS/BSGN, Status Effects, NAVM Pathfinding, DIAL/INFO Dialogue, REFR Placement, Spell Effects (8 types), Alchemy, Book Reader, Faction Manager, Loot Generator, NIF Skeleton/Skinning, Animation System, Collision Detection, Integration Tests (Phase 30), WorldEntity + WorldLoader + PlayerController Integration (Phase 31), Imperial Weave EventBus + 12-phase coordinator, AnimationSubscriber, AudioSubscriber, SpellSelectionPanel (Phase 32), Dedicated Combat Sounds, NPC Spatial Audio (Phase 33), Weapon-Type Sound Routing, Quick-Slot Spells (Phase 34), Radiant AI System (Phase 35), Jolt Physics Integration (Phase 36), Distant LOD (Phase 50), SpeedTree Vegetation (Phase 51), FaceGen (Phase 52), Bink Video (Phase 53), Imperial Weave v4.0 (Phase 54), Engine Polish (Phase 55), Gamebryo Complete: Particle/PostProcess/Water/SkyWeather/SceneGraph/Material (Phase 56)
 
 **Next**: Phase 37 - Script VM (Oblivion Script Execution)
 
@@ -639,6 +653,13 @@ The Elder Scrolls IV: Oblivion の完全ネイティブ Android 移植版です�
 - [FEAT] **新機能**: 専用コンバットサウンド、NPC空間オーディオ (Phase 33)
 - [FEAT] **新機能**: 武器タイプサウンドルーティング、クイックスロット呪文 (Phase 34)
 - [FEAT] **新機能**: Radiant AIシステム - AIパッケージシステム、スケジューラ、NavMeshパスファインディング統合 (Phase 35)
+- [FEAT] **新機能**: Distant LODシステム - LODメッシュ生成、視錐台カリング、HorizonRing山岳 (Phase 50)
+- [FEAT] **新機能**: SpeedTree植生 - 4段階LOD、インスタンス描画、パーリン風場 (Phase 51)
+- [FEAT] **新機能**: FaceGenシステム - 種族モーフ、表情モーフ、髪/髭システム (Phase 52)
+- [FEAT] **新機能**: Binkビデオプレイヤー - MediaCodec JNI、ビデオクリップ管理 (Phase 53)
+- [FEAT] **新機能**: Imperial Weave v4.0 - 15フェーズパイプライン、ServiceLocator (Phase 54)
+- [FEAT] **新機能**: エンジンポリッシュ - フレームバジェット、メモリデフラグ、シェーダーキャッシュ (Phase 55)
+- [FEAT] **新機能**: Gamebryo完成 - パーティクル、ポストプロセス、水、天候、シーングラフ、マテリアル (Phase 56)
 
 ---
 
@@ -865,14 +886,23 @@ oblivion-android/
 | Phase 34 (v0.9.10) | 武器タイプサウンド＋クイックスロット呪文 | [x] 完了 | 武器タイプヒットサウンドルーティング（CombatManager→AudioSubscriber）、SpellSelectionPanel学校カラー、クイックスロット呪文（F1-F4） |
 | Phase 35 (v1.0.0) | Radiant AIシステム | [x] 完了 | AIパッケージシステム（15種）、優先度ベースPackageStack、AIScheduler（24h時間ベース）、NavMeshパスファインディング、スタック検出、デフォルト日課、コンバット/フリーオーバーライド |
 | Phase 36 (v1.1.0) | Jolt Physics統合 | [x] 完了 | PhysicsManagerシングルトン、CharacterVirtual player/NPC、HeightFieldShape地形、固定タイムステップ（1/60s）、Raycast API、ImperialWeaveフェーズ統合 |
+| Phase 50 (v2.5.0) | Distant LODシステム | [x] 完了 | DistantLodManager、LODメッシュ生成、6平面視錐台カリング、距離フェード、HorizonRing山岳プリセット |
+| Phase 51 (v2.5.0) | SpeedTree植生 | [x] 完了 | SpeedTreeManager、4段階LOD、インスタンス描画、ビルボードフォールバック、パーリン風場、ESM LANDベース樹木配置 |
+| Phase 52 (v2.5.0) | FaceGenシステム | [x] 完了 | FaceGenManager、種族モーフターゲット、表情モーフ、髪/髭システム、LODレベル、テクスチャアトラス |
+| Phase 53 (v2.5.0) | Binkビデオプレイヤー | [x] 完了 | BinkVideoPlayer、MediaCodec JNIブリッジ、ビデオクリップマネージャー、OpenGL ESテクスチャレンダラー |
+| Phase 54 (v3.0.0) | Imperial Weave v4.0 | [x] 完了 | 15フェーズパイプライン、ImperialWeaveConfig、ServiceLocator、12イベントタイプ、フレームバジェット（16.6ms） |
+| Phase 55 (v3.1.0) | エンジンポリッシュ＆最適化 | [x] 完了 | FrameBudgetManager、MemoryDefrag、ShaderCache、OcclusionCuller、BatchRenderer、FaceGenブラッシュアップ、Jolt Physics拡張 |
+| Phase 56 (v3.2.0) | Gamebryo完成 | [x] 完了 | ParticleSystem（7プリセット）、PostProcessPipeline（8エフェクト）、WaterRenderer（Gerstner波、6種）、SkyWeatherSystem（8天候、昼夜）、SceneGraph（階層、AABB）、MaterialSystem（8テクスチャスロット、8デフォルト） |
 | Phase 37 (v1.2.0) | スクリプトVM | [ ] 計画中 | Oblivion VMバイトコードインタプリタ、オプコードディスパッチ、スクリプト実行 |
 
 ---
 
-### [METRIC] コード指標 (Phase 36 / v1.1.0)
+### [METRIC] コード指標 (Phase 56 / v3.2.0)
 
-- **C++コード**: 22,500行以上
-- **Javaコード**: 700行以上
+- **C++コード**: 35,000行以上
+- **Javaコード**: 1,100行以上
+- **ヘッダファイル**: 12,000行以上
+- **プロジェクト合計**: 48,000行以上
 - **ヘッダーファイル**: 5,000行以上
 - **プロジェクト合計**: 28,000行以上
 - **ESMパーサー**: 2,000行以上（40種のレコード型パース）
@@ -1032,11 +1062,11 @@ oblivion-android/
 
 ---
 
-**状態**: Phase 36 完了 (v1.1.0) - Jolt Physics統合
+**状態**: Phase 56 完了 (v3.2.0) - Gamebryoエンジン完成
 
 **最終更新**: 2026-08-28
-**バージョン**: 1.1.0
+**バージョン**: 3.2.0
 
-**機能**: グラフィカルUI、テクスチャパネル＆ボタン、効果音、セーブ/ロードUI、OpenAL 3Dオーディオ、レトロフィルター効果、強化デバッグHUD、ESMデータ統合（40種レコード）、NPCマネージャーESM、コンテナESM、プレイヤーRACE/CLAS/BSGN、ステータス効果、NAVMパスファインディング、DIAL/INFO会話、REFR配置、呪文エフェクト（8種）、錬金術、書籍リーダー、派閥マネージャー、ルートジェネレーター、NIFスケルトン/スキニング、アニメーションシステム、衝突判定、統合テスト（Phase 30）、WorldEntity＋WorldLoader＋PlayerController統合（Phase 31）、Imperial Weave EventBus＋12フェーズコーディネーター、AnimationSubscriber、AudioSubscriber、SpellSelectionPanel（Phase 32）、専用コンバットサウンド、NPC空間オーディオ（Phase 33）、武器タイプサウンドルーティング、クイックスロット呪文（Phase 34）、Radiant AIシステム（Phase 35）、Jolt Physics統合（Phase 36）
+**機能**: グラフィカルUI、テクスチャパネル＆ボタン、効果音、セーブ/ロードUI、OpenAL 3Dオーディオ、レトロフィルター効果、強化デバッグHUD、ESMデータ統合（40種レコード）、NPCマネージャーESM、コンテナESM、プレイヤーRACE/CLAS/BSGN、ステータス効果、NAVMパスファインディング、DIAL/INFO会話、REFR配置、呪文エフェクト（8種）、錬金術、書籍リーダー、派閥マネージャー、ルートジェネレーター、NIFスケルトン/スキニング、アニメーションシステム、衝突判定、統合テスト（Phase 30）、WorldEntity＋WorldLoader＋PlayerController統合（Phase 31）、Imperial Weave EventBus＋12フェーズコーディネーター、AnimationSubscriber、AudioSubscriber、SpellSelectionPanel（Phase 32）、専用コンバットサウンド、NPC空間オーディオ（Phase 33）、武器タイプサウンドルーティング、クイックスロット呪文（Phase 34）、Radiant AIシステム（Phase 35）、Jolt Physics統合（Phase 36）、Distant LOD（Phase 50）、SpeedTree植生（Phase 51）、FaceGen（Phase 52）、Binkビデオ（Phase 53）、Imperial Weave v4.0（Phase 54）、エンジンポリッシュ（Phase 55）、Gamebryo完成：パーティクル/ポストプロセス/水/天候/シーングラフ/マテリアル（Phase 56）
 
 **次回**: Phase 37 - スクリプトVM（Oblivionスクリプト実行）
