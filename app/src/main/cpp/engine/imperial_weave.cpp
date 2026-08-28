@@ -15,6 +15,7 @@
 #include "../script/script_manager.h"
 #include "../world/distant_lod/distant_lod_manager.h"
 #include "../vegetation/speed_tree_manager.h"
+#include "../character/face_gen_morpher.h"
 
 namespace weave {
 
@@ -174,7 +175,8 @@ void ImperialWeave::init(
     ::oblivion::PhysicsManager* joltPhysics,
     ::oblivion::script::ScriptManager* script,
     ::DistantLodManager* distantLod,
-    ::vegetation::SpeedTreeManager* speedTree
+    ::vegetation::SpeedTreeManager* speedTree,
+    ::facegen::FaceGenMorpher* faceGen
 ) {
     renderer_ = renderer;
     worldManager_ = world;
@@ -191,6 +193,7 @@ void ImperialWeave::init(
     scriptManager_ = script;
     distantLodManager_ = distantLod;
     speedTreeManager_ = speedTree;
+    faceGenMorpher_ = faceGen;
 
     // Register services for cross-module access
     if (renderer) locator_.registerService(renderer);
@@ -208,6 +211,7 @@ void ImperialWeave::init(
     if (script)   locator_.registerService(script);
     if (distantLod) locator_.registerService(distantLod);
     if (speedTree) locator_.registerService(speedTree);
+    if (faceGen)  locator_.registerService(faceGen);
 
     initialized_ = true;
 }
@@ -226,6 +230,7 @@ void ImperialWeave::shutdown() {
     scriptManager_ = nullptr;
     distantLodManager_ = nullptr;
     speedTreeManager_ = nullptr;
+    faceGenMorpher_ = nullptr;
     initialized_ = false;
 }
 

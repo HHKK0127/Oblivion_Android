@@ -104,6 +104,11 @@ struct NPC {
     static constexpr float HIT_REACTION_DURATION = 0.5f;
     static constexpr float ATTACK_DURATION = 0.8f;
 
+    // FaceGen Properties (Phase 52)
+    bool isFemale = false;
+    float age = 30.0f;
+    std::string texturePath;  // Face texture override
+
     // Quest System
     std::vector<uint32_t> availableQuests;  // Quest IDs this NPC can give
     std::vector<uint32_t> givenQuests;      // Quests already given
