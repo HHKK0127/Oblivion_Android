@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-08-27T16:15:00Z",
+  "lastUpdated": "2026-08-27T18:00:00Z",
   "entries": [
     {
       "content": "Oblivion.exe (Ghidra decompiled) - Gamebryo engine, compiled with VS2005/VS2008, Direct3D9. Init order: Renderer -> Shader System -> Sky -> TES -> TreeManager -> Menus -> Player -> Scripts -> Sound System -> Actor Locations -> LOD Land",
@@ -1011,10 +1011,46 @@
         "roadmap"
       ],
       "compressed": false
+    },
+    {
+      "id": "mem-036",
+      "timestamp": "2026-08-27T18:00:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "Phase 42-44 completed and merged to master. Phase 42: Game Loop Integration (state_manager, input_router, game_loop_coordinator, scene_renderer, debug_console, performance_profiler). Phase 43: UI/UX (touch_gesture_handler, menu_transition_manager, hud_layout, control_scheme_manager, accessibility_manager). Phase 44: Performance Optimization (memory_pool, render_optimizer, async_task_manager, cache_manager, profiler_dashboard). Total: ~7,200 lines added across 32 files.",
+      "tags": ["phase-42", "phase-43", "phase-44", "game-loop", "ui-ux", "performance"],
+      "compressed": false
+    },
+    {
+      "id": "mem-037",
+      "timestamp": "2026-08-27T18:00:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "GLM custom implementation fix: Added vec2 operators (+, -, *, /, +=, -=, *=, /=), vec2(float) constructor, vec4 operators, and vec4(float) constructor to app/src/main/cpp/include/glm/glm.hpp. The project uses a minimal custom GLM, not the full library. vec2 previously had no operators defined, causing build failures in Phase 43 UI files. Also fixed: accessibility_manager.cpp .r/.g/.b/.a -> .x/.y/.z/.w, menu_transition_manager.cpp color.a -> color.w.",
+      "tags": ["glm", "bug-fix", "build", "vec2", "vec4"],
+      "compressed": false
+    },
+    {
+      "id": "mem-038",
+      "timestamp": "2026-08-27T18:00:00Z",
+      "category": "decision",
+      "priority": "medium",
+      "content": "Current codebase stats: ~38,000+ lines across 100+ files. Phases 1-44 complete. Architecture: 7-layer (JNI Bridge -> Engine Core -> World Systems -> Game Logic -> UI/Audio/Physics -> Asset Pipeline -> Performance). Build: NDK 26.1, Clang++, Android API 24, C++17. Build time: 30s-2min. All phases build successfully on all 4 architectures (arm64-v8a, armeabi-v7a, x86, x86_64).",
+      "tags": ["stats", "architecture", "build"],
+      "compressed": false
+    },
+    {
+      "id": "mem-039",
+      "timestamp": "2026-08-27T18:00:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Next steps after Phase 44: (1) Phase 45: Testing & Debugging - unit tests, integration tests, device testing. (2) Phase 46: Full game loop integration testing on device. (3) Phase 47: Asset pipeline (BSA extraction, DDS texture loading, NIF mesh loading). (4) Phase 48: Audio system integration (original WAV/MP3 files). (5) Phase 49: Touch control refinement and gamepad support.",
+      "tags": ["next-steps", "roadmap", "phase-45"],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 69,
+    "totalEntries": 73,
     "compressedCount": 0,
     "sessionCount": 4
   }
