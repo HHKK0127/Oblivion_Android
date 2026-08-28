@@ -206,6 +206,10 @@ add_library(native-lib SHARED
     # Tests (Phase 30 Step 13)
     tests/phase30_integration_test.cpp
 
+    # Tests (Phase 48: Game Loop Integration & Stress)
+    tests/phase48_integration_test.cpp
+    tests/phase48_stress_test.cpp
+
     # Physics System (Phase 36 - Jolt Physics)
     physics/physics_manager.cpp
 
