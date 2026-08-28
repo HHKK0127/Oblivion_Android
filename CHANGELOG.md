@@ -4,6 +4,111 @@ All notable changes to the Oblivion Android project are documented here.
 
 ---
 
+## [1.1.0] - 2026-08-28 (Phase 36 - Jolt Physics Integration)
+
+### Major Additions
+
+#### Jolt Physics Engine Integration
+- **PhysicsManager**: Singleton physics world management
+  - Jolt Physics initialization with custom settings
+  - Fixed timestep (1/60s) for deterministic simulation
+  - Integration with Imperial Weave phase pipeline (Physics phase)
+
+#### Character Physics
+- **CharacterVirtual**: Player and NPC character controllers
+  - Capsule-based collision shapes
+  - Movement with gravity and ground detection
+  - Collision response with world geometry
+
+#### Terrain Physics
+- **HeightFieldShape**: Terrain collision from ESM LAND data
+  - Heightmap-based terrain collision
+  - Efficient broad-phase with Jolt's internal BVH
+
+#### Raycast API
+- **Physics Raycasting**: World-space ray queries
+  - Line-of-sight checks for AI
+  - Combat hit detection
+  - Interaction raycasting
+
+### Architecture Changes
+- PhysicsManager runs in Imperial Weave Physics phase (phase 8)
+- CharacterVirtual updates before CombatManager for accurate positioning
+- Raycast API available to all game systems via PhysicsManager singleton
+
+### Files Added
+- `physics/physics_manager.h` - PhysicsManager class declaration
+- `physics/physics_manager.cpp` - Jolt Physics initialization and management
+- `physics/character_virtual.h` - CharacterVirtual wrapper class
+- `physics/character_virtual.cpp` - Character controller implementation
+
+### Files Modified
+- `engine/imperial_weave.cpp` - Added Physics phase integration
+- `game/player_controller.cpp` - Integrated CharacterVirtual for player
+- `game/npc_manager.cpp` - Integrated CharacterVirtual for NPCs
+- `CMakeLists.txt` - Added physics source files, Jolt Physics library
+
+### Build Status
+- BUILD SUCCESSFUL
+- All 4 architectures: arm64-v8a, armeabi-v7a, x86, x86_64
+
+---
+
+## [1.0.0] - 2026-08-28 (Phase 35 - Radiant AI System)
+
+### Major Additions
+
+#### AI Package System
+- **15 AI Package Types**: Explore, Follow, Guard, Patrol, Travel, Eat, Sleep, Combat, Flee, Idle, Wander, Activation, Conversation, Travel, Sandbox
+- **PackageStack**: Priority-based package management
+  - Higher priority packages interrupt lower ones
+  - Combat and Flee override normal AI behavior
+  - Default daily schedule when no packages active
+
+#### AI Scheduler
+- **AIScheduler**: 24-hour time-based AI management
+  - Time-of-day package selection
+  - NPC daily routines (eat, sleep, work, wander)
+  - Integration with NavMesh pathfinding
+
+#### NavMesh Pathfinding
+- **NavMeshManager**: Runtime pathfinding using NAVM records
+  - A* algorithm on NavMesh triangles
+  - Path smoothing for natural movement
+  - Stuck detection and recovery
+
+#### Default Daily Schedule
+- NPCs follow realistic daily routines:
+  - 6:00-18:00: Work/Wander
+  - 18:00-22:00: Socialize/Eat
+  - 22:00-6:00: Sleep
+- Combat/Flee override normal schedule
+
+### Architecture Changes
+- AIScheduler runs in Imperial Weave AI phase (phase 3)
+- PackageStack evaluates before NPC movement
+- NavMeshManager provides pathfinding to all AI systems
+
+### Files Added
+- `ai/ai_scheduler.h` - AIScheduler class declaration
+- `ai/ai_scheduler.cpp` - Time-based AI management
+- `ai/ai_package.h` - AI Package data structures
+- `ai/ai_package.cpp` - Package implementations
+- `ai/package_stack.h` - Priority-based package stack
+- `ai/package_stack.cpp` - Stack management
+
+### Files Modified
+- `game/npc_manager.cpp` - Integrated AIScheduler
+- `game/npc.h` - Added AI package fields
+- `engine/imperial_weave.cpp` - Added AI phase integration
+- `CMakeLists.txt` - Added AI source files
+
+### Build Status
+- BUILD SUCCESSFUL
+- All 4 architectures: arm64-v8a, armeabi-v7a, x86, x86_64
+
+---
+
 ## [0.9.10] - 2026-08-27 (Phase 34 - Weapon Sound Routing + Spell UI Enhancement)
 
 ### Major Additions
@@ -992,6 +1097,12 @@ float Damage = max(1.0f, AttackPower - ArmorRating);
 
 | Version | Phase | Focus | Status |
 |---------|-------|-------|--------|
+| 1.1.0 | Phase 36 | Jolt Physics Integration | ✅ Complete |
+| 1.0.0 | Phase 35 | Radiant AI System | ✅ Complete |
+| 0.9.10 | Phase 34 | Weapon Sound Routing + Quick-Slot Spells | ✅ Complete |
+| 0.9.9 | Phase 33 | Combat Sound Assets + NPC Spatial Audio | ✅ Complete |
+| 0.9.8 | Phase 32 | Animation & Audio Integration | ✅ Complete |
+| 0.9.7 | Phase 31 | Imperial Weave + Combat Enhancement | ✅ Complete |
 | 0.9.0 | Phase 9 | Graphical UI & Sound Effects | ✅ Complete |
 | 0.8.0 | Phase 8 | Audio & Post-Processing | ✅ Complete |
 | 0.7.1 | Phase 7.1 | Settings & Debug System | ✅ Complete |
@@ -1008,19 +1119,22 @@ float Damage = max(1.0f, AttackPower - ArmorRating);
 
 ## Development Statistics
 
-### Code Metrics (Phase 9 Final)
-- **Total C++ Code**: ~7,000 lines (excluding headers)
-- **Total Header Files**: ~1,500 lines
-- **Java Code**: ~700 lines
+### Code Metrics (Phase 36 / v1.1.0)
+- **Total C++ Code**: 22,500+ lines
+- **Total Header Files**: 5,000+ lines
+- **Java Code**: 700+ lines
 - **Build Files**: CMakeLists.txt + gradle configurations
-- **Total Project**: ~9,200+ lines of code
+- **Total Project**: 28,000+ lines of code
 
 ### Files by Category
 
-**Engine/Core** (10 files): renderer, camera, shader, texture_loader, jni_bridge, etc.  
-**Game Systems** (12 files): npc, quest, combat, spell, world, etc.  
-**UI** (8 files): title_screen, quest_ui, settings_ui, save_load_ui, ui_panel, ui_button, etc.  
-**Assets** (5 files): nif_parser, dds_loader, asset_manager, etc.  
+**Engine/Core** (15 files): renderer, camera, shader, texture_loader, jni_bridge, imperial_weave, etc.  
+**Game Systems** (20 files): npc, quest, combat, spell, world, player_controller, etc.  
+**UI** (12 files): title_screen, quest_ui, settings_ui, save_load_ui, ui_panel, ui_button, spell_selection_panel, etc.  
+**Assets** (8 files): nif_parser, dds_loader, asset_manager, esm_reader, bsa_reader, etc.  
+**Audio** (6 files): audio_manager, audio_3d, audio_subscriber, jni_audio_bridge, etc.  
+**Physics** (4 files): physics_manager, character_virtual, etc.  
+**AI** (6 files): ai_scheduler, ai_package, package_stack, etc.  
 **Profiling** (2 files): performance_monitor, etc.
 
 ### Development Timeline
@@ -1033,7 +1147,11 @@ float Damage = max(1.0f, AttackPower - ArmorRating);
 - **Phase 7.1** (1 week): Settings & Debug System
 - **Phase 8** (1 week): Audio & Post-Processing
 - **Phase 9** (1 week): Graphical UI & Sound Effects
-- **Total**: ~16 weeks
+- **Phase 24-31** (4 weeks): ESM Integration, NIF/Skeleton, PlayerController
+- **Phase 32-34** (1 week): Imperial Weave, Animation/Audio Subscribers
+- **Phase 35** (1 week): Radiant AI System
+- **Phase 36** (1 week): Jolt Physics Integration
+- **Total**: ~24 weeks
 
 ---
 
@@ -1045,15 +1163,19 @@ float Damage = max(1.0f, AttackPower - ArmorRating);
 - **GLSL ES 3.0**: Graphics shaders
 
 ### APIs & Libraries
-- **Android NDK r26**: Native development kit
+- **Android NDK r26.1**: Native development kit
 - **OpenGL ES 3.0**: Graphics rendering
 - **JNI**: Java-C++ bridge
+- **Jolt Physics**: Physics engine
+- **OpenAL-Soft**: 3D audio
+- **GLM**: Mathematics library
+- **stb_image**: PNG loading
 - **CMake 3.16+**: Build system
 - **Gradle 9.4**: Android build tool
 
 ### Third-Party Libraries
 - **GLM**: Mathematics library (header-only)
-- **Bullet Physics 3.x**: Physics simulation
+- **Jolt Physics**: Physics engine
 - **OpenAL-Soft**: Audio (framework ready)
 - **stb_image.h**: PNG image loading (single header)
 

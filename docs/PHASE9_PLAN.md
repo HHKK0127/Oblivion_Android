@@ -312,9 +312,9 @@ namespace PlaceholderAssets {
 #### Week 8: リリース準備
 
 **Day 50-52: ドキュメント更新**
-- [ ] `README.ja.md` 更新（Phase 9機能反映）
+- [ ] `docs/README.md` 更新（Phase 9機能反映）
 - [ ] `CHANGELOG.md` 更新
-- [ ] `KNOWN_ISSUES.md` 更新
+- [ ] `docs/DEVELOPMENT_HISTORY.md` 更新
 - [ ] スクリーンショット撮影（5枚）
 
 **Day 53-54: ビルド確認**

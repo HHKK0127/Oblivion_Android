@@ -291,10 +291,10 @@ std::chrono::high_resolution_clock::time_point lastFrameTime;  // 前フレー�
 
 ## まとめ
 
-✅ FPS を 30/60/120 など自由に設定可能  
-✅ JNI を通じて Kotlin/Java から制御可能  
-✅ バッテリー最適化に対応  
-✅ PerformanceMonitor と統合して詳細なログ出力  
+[OK] FPS を 30/60/120 など自由に設定可能  
+[OK] JNI を通じて Kotlin/Java から制御可能  
+[OK] バッテリー最適化に対応  
+[OK] PerformanceMonitor と統合して詳細なログ出力
 
 ---
 
