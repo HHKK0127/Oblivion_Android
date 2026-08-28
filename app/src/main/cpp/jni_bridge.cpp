@@ -327,7 +327,6 @@ Java_com_example_oblivion_GameRenderer_nativeRunPhase30Test(
     return env->NewStringUTF(summary.c_str());
 }
 
-// ============================================
 // Phase 45: Unit Test Runner
 // ============================================
 #include "tests/phase45_unit_tests.h"
@@ -343,6 +342,44 @@ Java_com_example_oblivion_GameRenderer_nativeRunPhase45Test(
 
     std::string summary = test.getSummary();
     LOGI("=== Phase 45 Unit Test END: %s ===",
+         allPassed ? "ALL PASSED" : "SOME FAILED");
+
+    return env->NewStringUTF(summary.c_str());
+}
+
+// ============================================
+// Phase 48: Game Loop Integration Test Runner
+// ============================================
+#include "tests/phase48_integration_test.h"
+#include "tests/phase48_stress_test.h"
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_example_oblivion_GameRenderer_nativeRunPhase48Tests(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    LOGI("=== Phase 48 Integration Test START ===");
+
+    Phase48IntegrationTest test;
+    bool allPassed = test.runAllTests();
+
+    std::string summary = test.getSummary();
+    LOGI("=== Phase 48 Integration Test END: %s ===",
+         allPassed ? "ALL PASSED" : "SOME FAILED");
+
+    return env->NewStringUTF(summary.c_str());
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_example_oblivion_GameRenderer_nativeRunPhase48StressTests(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    LOGI("=== Phase 48 Stress Test START ===");
+
+    Phase48StressTest test;
+    bool allPassed = test.runAllTests();
+
+    std::string summary = test.getSummary();
+    LOGI("=== Phase 48 Stress Test END: %s ===",
          allPassed ? "ALL PASSED" : "SOME FAILED");
 
     return env->NewStringUTF(summary.c_str());
