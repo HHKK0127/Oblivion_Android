@@ -124,8 +124,10 @@ void UISystem::render() {
     // Save OpenGL state
     GLboolean depthTestEnabled;
     glGetBooleanv(GL_DEPTH_TEST, &depthTestEnabled);
-    glDisable(GL_DEPTH_TEST);
+    GLboolean blendEnabled;
+    glGetBooleanv(GL_BLEND, &blendEnabled);
 
+    glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -133,6 +135,7 @@ void UISystem::render() {
 
     // Restore state
     if (depthTestEnabled) glEnable(GL_DEPTH_TEST);
+    if (!blendEnabled) glDisable(GL_BLEND);
 }
 
 void UISystem::renderLayers() {
@@ -168,8 +171,14 @@ bool UISystem::onTouchMove(float x, float y, float dx, float dy, int pointerId) 
 bool UISystem::dispatchEvent(const UIEvent& event) {
     if (!initialized) return false;
 
+    // Bug #74: Copy layers to prevent iterator invalidation if handlers modify layers
+    std::map<int, std::vector<std::shared_ptr<UIComponent>>> layersCopy;
+    for (const auto& [layer, components] : layers) {
+        layersCopy[layer] = components;
+    }
+
     // Dispatch to front-most layers first
-    for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
+    for (auto it = layersCopy.rbegin(); it != layersCopy.rend(); ++it) {
         auto& components = it->second;
         // Iterate in reverse for front-to-back within same layer
         for (auto compIt = components.rbegin(); compIt != components.rend(); ++compIt) {

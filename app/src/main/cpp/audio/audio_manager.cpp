@@ -346,8 +346,8 @@ uint32_t AudioManager::playSE(uint32_t clipId, const glm::vec3& position,
     // 再生開始
     alSourcePlay(source->alSource);
 
-    // Java SoundPool 経由でも再生（フォールバック用）
-    jni_audio_call_play_se(clip->filename.c_str());
+    // Bug #83: Removed Java SoundPool fallback to prevent double playback
+    // OpenAL is the primary audio engine
 
     LOGD("SE playing: sourceId=%u, clipId=%u, pos=(%.1f, %.1f, %.1f)",
          sourceId, clipId, position.x, position.y, position.z);

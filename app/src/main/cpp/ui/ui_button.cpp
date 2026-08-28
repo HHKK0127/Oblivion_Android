@@ -127,19 +127,21 @@ bool UIButton::onEvent(const UIEvent& event) {
             pressed = true;
             pressAnimTimer = PRESS_ANIM_DURATION;
             updateVisualState();
-            if (onClickCallback) {
-                onClickCallback();
-            }
-            // Play notification sound
-            if (g_audioManager) {
-                g_audioManager->playSound("ui/notification");
-            }
+            // Bug #100: Click callback moved to TOUCH_UP for proper behavior
             return true;
 
         case UIEventType::TOUCH_UP:
             if (pressed) {
                 pressed = false;
                 updateVisualState();
+                // Fire click callback on release (standard button behavior)
+                if (onClickCallback) {
+                    onClickCallback();
+                }
+                // Play notification sound
+                if (g_audioManager) {
+                    g_audioManager->playSound("ui/notification");
+                }
             }
             return true;
 
