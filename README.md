@@ -425,14 +425,19 @@ oblivion-android/
 | Phase 42 (v1.7.0) | Game Loop Integration | [x] Complete | 12-phase update pipeline, state FSM, input routing, scene renderer, debug console, performance profiler |
 | Phase 43 (v1.8.0) | UI/UX | [x] Complete | Touch gesture handler, menu transitions, HUD layout, control scheme manager, accessibility |
 | Phase 44 (v1.9.0) | Performance Optimization | [x] Complete | MemoryPool, RenderOptimizer (batch/instancing/frustum), AsyncTaskManager (thread pool), CacheManager (L1/L2), ProfilerDashboard |
+| Phase 45 (v2.0.0) | Testing & Debugging | [x] Complete | Unit tests (37 cases: combat, spell, NPC, quest, save, memory, async, cache) |
+| Phase 46 (v2.1.0) | Asset Pipeline | [x] Complete | TextureManager (BSA/atlas/mipmap/DXT), MeshLoader (NIF/VBO/VAO/LOD), WorldDataLoader (CELL/REFR/LAND/streaming), BSA/ESM/NIF readers |
+| Phase 47 (v2.2.0) | Audio System | [x] Complete | AudioDecoder (WAV/MP3/OGG), BgmManager (crossfade/playlist/ducking), SoundEffectManager (24-voice pool/priority/reverb) |
+| Phase 48 (v2.3.0) | Game Loop Testing | [x] Complete | Integration tests (7 cases: game loop/cell/NPC/combat/quest/save/perf), Stress tests (5 cases: memory/concurrent/entity/texture/event) |
+| Phase 49 (v2.4.0) | Controls & Input | [x] Complete | GamepadMapper (Android gamepad API), TouchCalibration (dead zones/sensitivity), InputVisualizer (debug overlay), HudCustomizer (layout presets) |
 
 ---
 
-### [METRIC] Code Metrics (Phase 44 / v1.9.0)
+### [METRIC] Code Metrics (Phase 49 / v2.4.0)
 
-- **C++ Code**: 38,000+ lines (includes all Phase 1-44 systems)
+- **C++ Code**: 45,000+ lines (includes all Phase 1-49 systems)
 - **Java Code**: 700+ lines
-- **Header Files**: 4,000+ lines
+- **Header Files**: 5,000+ lines
 - **Total Project**: 42,000+ lines
 - **Imperial Weave**: 600+ lines (EventBus, ServiceLocator, 12-phase coordinator)
 - **Subscriber Bridges**: 400+ lines (AnimationSubscriber, AudioSubscriber)
@@ -607,11 +612,11 @@ Proprietary - Experimental Port
 
 ---
 
-**Status**: Phase 44 Complete (v1.9.0) — Performance Optimization
-**Last Updated**: 2026-09-10
-**Version**: 1.9.0
-**Features**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD, ESM Data Integration (40 record types), NpcManager ESM, Container ESM, Player RACE/CLAS/BSGN, Status Effects, NAVM Pathfinding, DIAL/INFO Dialogue, REFR Placement, Spell Effects (8 types), Alchemy, Book Reader, Faction Manager, Loot Generator, NIF Skeleton/Skinning, Animation System, Collision Detection, Integration Tests (Phase 30), WorldEntity + WorldLoader + PlayerController Integration (Phase 31), Imperial Weave EventBus + 12-phase coordinator, AnimationSubscriber, AudioSubscriber, SpellSelectionPanel (Phase 32), Dedicated Combat Sounds, NPC Spatial Audio (Phase 33), Weapon-Type Sound Routing, Quick-Slot Spells (Phase 34), Radiant AI System (Phase 35), Jolt Physics Integration (Phase 36), Script VM (Phase 37), Full World Load (Phase 38), Quest Flow (Phase 39), NPC Dialogue (Phase 40), Full Save/Load (Phase 41), Game Loop Integration (Phase 42), UI/UX Touch Controls (Phase 43), Performance Optimization (Phase 44)
-**Next**: Phase 45 - Testing & Debugging (unit tests, integration tests, memory leak detection)
+**Status**: Phase 49 Complete (v2.4.0) — Controls & Input
+**Last Updated**: 2026-08-28
+**Version**: 2.4.0
+**Features**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD, ESM Data Integration (40 record types), NpcManager ESM, Container ESM, Player RACE/CLAS/BSGN, Status Effects, NAVM Pathfinding, DIAL/INFO Dialogue, REFR Placement, Spell Effects (8 types), Alchemy, Book Reader, Faction Manager, Loot Generator, NIF Skeleton/Skinning, Animation System, Collision Detection, Integration Tests (Phase 30), WorldEntity + WorldLoader + PlayerController Integration (Phase 31), Imperial Weave EventBus + 12-phase coordinator, AnimationSubscriber, AudioSubscriber, SpellSelectionPanel (Phase 32), Dedicated Combat Sounds, NPC Spatial Audio (Phase 33), Weapon-Type Sound Routing, Quick-Slot Spells (Phase 34), Radiant AI System (Phase 35), Jolt Physics Integration (Phase 36), Script VM (Phase 37), Full World Load (Phase 38), Quest Flow (Phase 39), NPC Dialogue (Phase 40), Full Save/Load (Phase 41), Game Loop Integration (Phase 42), UI/UX Touch Controls (Phase 43), Performance Optimization (Phase 44), Unit Tests 37 cases (Phase 45), Asset Pipeline BSA/ESM/NIF (Phase 46), Audio System BGM/SFX (Phase 47), Integration & Stress Tests (Phase 48), Gamepad/Touch/HUD Controls (Phase 49)
+**Next**: Phase 50 - Polish & Optimization
 
 ---
 
@@ -902,14 +907,19 @@ oblivion-android/
 | Phase 42 (v1.7.0) | ゲームループ統合 | [x] 完了 | 12フェーズ更新パイプライン、ステートFSM、入力ルーティング、シーンレンダラー、デバッグコンソール、パフォーマンスプロファイラー |
 | Phase 43 (v1.8.0) | UI/UX | [x] 完了 | タッチジェスチャーハンドラー、メニュー遷移、HUDレイアウト、操作スキームマネージャー、アクセシビリティ |
 | Phase 44 (v1.9.0) | パフォーマンス最適化 | [x] 完了 | MemoryPool、RenderOptimizer（バッチ/インスタンシング/フラスタム）、AsyncTaskManager（スレッドプール）、CacheManager（L1/L2）、ProfilerDashboard |
+| Phase 45 (v2.0.0) | テスト＆デバッグ | [x] 完了 | ユニットテスト（37ケース：戦闘、魔法、NPC、クエスト、セーブ、メモリ、非同期、キャッシュ） |
+| Phase 46 (v2.1.0) | アセットパイプライン | [x] 完了 | TextureManager（BSA/アトラス/ミップマップ/DXT）、MeshLoader（NIF/VBO/VAO/LOD）、WorldDataLoader（CELL/REFR/LAND/ストリーミング）、BSA/ESM/NIFリーダー |
+| Phase 47 (v2.2.0) | オーディオシステム | [x] 完了 | AudioDecoder（WAV/MP3/OGG）、BgmManager（クロスフェード/プレイリスト/ダッキング）、SoundEffectManager（24ボイスプール/優先度/リバーブ） |
+| Phase 48 (v2.3.0) | ゲームループテスト | [x] 完了 | 統合テスト（7ケース：ゲームループ/セル/NPC/戦闘/クエスト/セーブ/性能）、ストレステスト（5ケース：メモリ/並列/エンティティ/テクスチャ/イベント） |
+| Phase 49 (v2.4.0) | コントロール＆入力 | [x] 完了 | GamepadMapper（AndroidゲームパッドAPI）、TouchCalibration（デッドゾーン/感度カーブ）、InputVisualizer（デバッグオーバーレイ）、HudCustomizer（レイアウトプリセット） |
 
 ---
 
-### [METRIC] コード指標 (Phase 44 / v1.9.0)
+### [METRIC] コード指標 (Phase 49 / v2.4.0)
 
-- **C++コード**: 38,000行以上（Phase 1-44全システム含む）
+- **C++コード**: 45,000行以上（Phase 1-49全システム含む）
 - **Javaコード**: 700行以上
-- **ヘッダーファイル**: 4,000行以上
+- **ヘッダーファイル**: 5,000行以上
 - **プロジェクト合計**: 42,000行以上
 - **ESMパーサー**: 2,000行以上（40種のレコード型パース）
 - **BSAリーダー**: 500行以上（アーカイブ展開、ZLib展開）
@@ -1090,4 +1100,4 @@ oblivion-android/
 （Phase 32）、専用コンバットサウンド、NPC空間オーディオ
 （Phase 33）、武器タイプサウンドルーティング、クイックスロット呪文
 （Phase 34）、Radiant AIシステム（Phase 35）、Jolt Physics統合（Phase 36）、スクリプトVM（Phase 37）、フルワールドロード（Phase 38）、クエストフロー（Phase 39）、NPCダイアログ（Phase 40）、フルセーブ/ロード（Phase 41）、ゲームループ統合（Phase 42）、UI/UXタッチ操作（Phase 43）、パフォーマンス最適化（Phase 44）
-**次回**: Phase 45 - テスト＆デバッグ（ユニットテスト、統合テスト、メモリリーク検出）
+**次回**: Phase 50 - ポリッシュ＆最適化
