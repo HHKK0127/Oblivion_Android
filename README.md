@@ -430,10 +430,14 @@ oblivion-android/
 | Phase 47 (v2.2.0) | Audio System | [x] Complete | AudioDecoder (WAV/MP3/OGG), BgmManager (crossfade/playlist/ducking), SoundEffectManager (24-voice pool/priority/reverb) |
 | Phase 48 (v2.3.0) | Game Loop Testing | [x] Complete | Integration tests (7 cases: game loop/cell/NPC/combat/quest/save/perf), Stress tests (5 cases: memory/concurrent/entity/texture/event) |
 | Phase 49 (v2.4.0) | Controls & Input | [x] Complete | GamepadMapper (Android gamepad API), TouchCalibration (dead zones/sensitivity), InputVisualizer (debug overlay), HudCustomizer (layout presets) |
+| Phase 50 (v2.5.0) | Distant LOD | [x] Complete | DistantLodManager (LOD mesh generation, frustum culling, distance fade), HorizonRing (8-direction mountain presets, cylinder mesh), DistantLodShader (GLSL ES 3.00) |
+| Phase 51 (v2.5.0) | SpeedTree Vegetation | [x] Complete | SpeedTreeManager (4-stage LOD, instancing, frustum culling, billboard), TreeWindField (Perlin noise wind, 3-octave fractal), TreeEmitter (ESM LAND-based placement) |
+| Phase 52 (v2.5.0) | FaceGen NPC Faces | [x] Complete | FaceGenMorpher (morph targets, texture blending), FaceGenParser (FGTS/FGGS/FGGA subrecords), FaceGenTextureCompositor (multi-layer blending), FaceGenLODManager (4 LOD levels) |
+| Phase 53 (v2.5.0) | Bink Video | [x] Complete | BinkVideoPlayer (MediaCodec JNI, playback control, loop), VideoClipManager (preload, LRU eviction), VideoRenderer (SurfaceTexture→OpenGL), VideoBridge.java (async decode thread) |
 
 ---
 
-### [METRIC] Code Metrics (Phase 49 / v2.4.0)
+### [METRIC] Code Metrics (Phase 53 / v2.5.0)
 
 - **C++ Code**: 45,000+ lines (includes all Phase 1-49 systems)
 - **Java Code**: 700+ lines
@@ -612,11 +616,11 @@ Proprietary - Experimental Port
 
 ---
 
-**Status**: Phase 49 Complete (v2.4.0) — Controls & Input
+**Status**: Phase 53 Complete (v2.5.0) — Bink Video (All 7 Engines Integrated)
 **Last Updated**: 2026-08-28
-**Version**: 2.4.0
-**Features**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD, ESM Data Integration (40 record types), NpcManager ESM, Container ESM, Player RACE/CLAS/BSGN, Status Effects, NAVM Pathfinding, DIAL/INFO Dialogue, REFR Placement, Spell Effects (8 types), Alchemy, Book Reader, Faction Manager, Loot Generator, NIF Skeleton/Skinning, Animation System, Collision Detection, Integration Tests (Phase 30), WorldEntity + WorldLoader + PlayerController Integration (Phase 31), Imperial Weave EventBus + 12-phase coordinator, AnimationSubscriber, AudioSubscriber, SpellSelectionPanel (Phase 32), Dedicated Combat Sounds, NPC Spatial Audio (Phase 33), Weapon-Type Sound Routing, Quick-Slot Spells (Phase 34), Radiant AI System (Phase 35), Jolt Physics Integration (Phase 36), Script VM (Phase 37), Full World Load (Phase 38), Quest Flow (Phase 39), NPC Dialogue (Phase 40), Full Save/Load (Phase 41), Game Loop Integration (Phase 42), UI/UX Touch Controls (Phase 43), Performance Optimization (Phase 44), Unit Tests 37 cases (Phase 45), Asset Pipeline BSA/ESM/NIF (Phase 46), Audio System BGM/SFX (Phase 47), Integration & Stress Tests (Phase 48), Gamepad/Touch/HUD Controls (Phase 49)
-**Next**: Phase 50 - Polish & Optimization
+**Version**: 2.5.0
+**Features**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD, ESM Data Integration (40 record types), NpcManager ESM, Container ESM, Player RACE/CLAS/BSGN, Status Effects, NAVM Pathfinding, DIAL/INFO Dialogue, REFR Placement, Spell Effects (8 types), Alchemy, Book Reader, Faction Manager, Loot Generator, NIF Skeleton/Skinning, Animation System, Collision Detection, Integration Tests (Phase 30), WorldEntity + WorldLoader + PlayerController Integration (Phase 31), Imperial Weave EventBus + 12-phase coordinator, AnimationSubscriber, AudioSubscriber, SpellSelectionPanel (Phase 32), Dedicated Combat Sounds, NPC Spatial Audio (Phase 33), Weapon-Type Sound Routing, Quick-Slot Spells (Phase 34), Radiant AI System (Phase 35), Jolt Physics Integration (Phase 36), Script VM (Phase 37), Full World Load (Phase 38), Quest Flow (Phase 39), NPC Dialogue (Phase 40), Full Save/Load (Phase 41), Game Loop Integration (Phase 42), UI/UX Touch Controls (Phase 43), Performance Optimization (Phase 44), Unit Tests 37 cases (Phase 45), Asset Pipeline BSA/ESM/NIF (Phase 46), Audio System BGM/SFX (Phase 47), Integration & Stress Tests (Phase 48), Gamepad/Touch/HUD Controls (Phase 49), Distant LOD System (Phase 50), SpeedTree Vegetation (Phase 51), FaceGen NPC Faces (Phase 52), Bink Video Playback (Phase 53)
+**Next**: Phase 54 - Imperial Weave v4.0 Full Integration
 
 ---
 
@@ -912,10 +916,14 @@ oblivion-android/
 | Phase 47 (v2.2.0) | オーディオシステム | [x] 完了 | AudioDecoder（WAV/MP3/OGG）、BgmManager（クロスフェード/プレイリスト/ダッキング）、SoundEffectManager（24ボイスプール/優先度/リバーブ） |
 | Phase 48 (v2.3.0) | ゲームループテスト | [x] 完了 | 統合テスト（7ケース：ゲームループ/セル/NPC/戦闘/クエスト/セーブ/性能）、ストレステスト（5ケース：メモリ/並列/エンティティ/テクスチャ/イベント） |
 | Phase 49 (v2.4.0) | コントロール＆入力 | [x] 完了 | GamepadMapper（AndroidゲームパッドAPI）、TouchCalibration（デッドゾーン/感度カーブ）、InputVisualizer（デバッグオーバーレイ）、HudCustomizer（レイアウトプリセット） |
+| Phase 50 (v2.5.0) | Distant LOD | [x] 完了 | DistantLodManager（LODメッシュ生成、視錐台カリング、距離フェード）、HorizonRing（8方向山岳プリセット、シリンダーメッシュ）、DistantLodShader（GLSL ES 3.00） |
+| Phase 51 (v2.5.0) | SpeedTree 植生 | [x] 完了 | SpeedTreeManager（4段階LOD、インスタンシング、視錐台カリング、ビルボード）、TreeWindField（パーリンノイズ風場、3オクターブフラクタル）、TreeEmitter（ESM LANDベース樹木配置） |
+| Phase 52 (v2.5.0) | FaceGen NPC顔 | [x] 完了 | FaceGenMorpher（モーフターゲット、テクスチャブレンド）、FaceGenParser（FGTS/FGGS/FGGAサブレコード）、FaceGenTextureCompositor（多層ブレンド）、FaceGenLODManager（4段階LOD） |
+| Phase 53 (v2.5.0) | Bink Video | [x] 完了 | BinkVideoPlayer（MediaCodec JNI、再生制御、ループ）、VideoClipManager（プリロード、LRU退避）、VideoRenderer（SurfaceTexture→OpenGL変換）、VideoBridge.java（非同期デコードスレッド） |
 
 ---
 
-### [METRIC] コード指標 (Phase 49 / v2.4.0)
+### [METRIC] コード指標 (Phase 53 / v2.5.0)
 
 - **C++コード**: 45,000行以上（Phase 1-49全システム含む）
 - **Javaコード**: 700行以上
@@ -1100,4 +1108,4 @@ oblivion-android/
 （Phase 32）、専用コンバットサウンド、NPC空間オーディオ
 （Phase 33）、武器タイプサウンドルーティング、クイックスロット呪文
 （Phase 34）、Radiant AIシステム（Phase 35）、Jolt Physics統合（Phase 36）、スクリプトVM（Phase 37）、フルワールドロード（Phase 38）、クエストフロー（Phase 39）、NPCダイアログ（Phase 40）、フルセーブ/ロード（Phase 41）、ゲームループ統合（Phase 42）、UI/UXタッチ操作（Phase 43）、パフォーマンス最適化（Phase 44）
-**次回**: Phase 50 - ポリッシュ＆最適化
+**次回**: Phase 54 - Imperial Weave v4.0 完全統合
