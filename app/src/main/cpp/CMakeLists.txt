@@ -208,6 +208,11 @@ add_library(native-lib SHARED
     assets/bsa_reader.cpp
     assets/esm_reader.cpp
 
+    # Phase 46: Asset Pipeline
+    assets/texture_manager.cpp
+    assets/mesh_loader.cpp
+    assets/world_data_loader.cpp
+
     # Tests (Phase 30 Step 13)
     tests/phase30_integration_test.cpp
 
