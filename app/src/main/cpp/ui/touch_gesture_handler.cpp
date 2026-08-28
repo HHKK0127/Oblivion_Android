@@ -12,7 +12,7 @@ TouchGestureHandler::TouchGestureHandler()
     , currentTime(0.0f)
     , activePointerCount(0)
     , lastTapTime(-1.0f)
-    , lastTapPos(0.0f)
+    , lastTapPos(0.0f, 0.0f)
     , initialPinchDistance(0.0f)
     , currentPinchDistance(0.0f) {
 }
@@ -235,13 +235,13 @@ void TouchGestureHandler::detectPinch() {
 
 void TouchGestureHandler::detectTwoFingerSwipe() {
     // 2本指の平均移動量を計算
-    glm::vec2 avgDelta(0.0f);
+    glm::vec2 avgDelta(0.0f, 0.0f);
     int count = 0;
 
     for (int i = 0; i < MAX_POINTERS; ++i) {
         if (pointers[i].active) {
             glm::vec2 delta = pointers[i].currentPos - pointers[i].startPos;
-            if (getDistance(glm::vec2(0.0f), delta) >= swipeThreshold) {
+            if (getDistance(glm::vec2(0.0f, 0.0f), delta) >= swipeThreshold) {
                 avgDelta += delta;
                 ++count;
             }

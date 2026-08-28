@@ -40,7 +40,7 @@ struct GestureEvent {
     float duration;           // 持続時間（秒）
 
     GestureEvent()
-        : type(GestureType::NONE), position(0.0f), delta(0.0f),
+        : type(GestureType::NONE), position(0.0f, 0.0f), delta(0.0f, 0.0f),
           magnitude(0.0f), pointerCount(0), duration(0.0f) {}
 };
 
@@ -119,7 +119,7 @@ private:
         float startTime;
         bool active;
 
-        TouchPoint() : startPos(0.0f), currentPos(0.0f), startTime(0.0f), active(false) {}
+        TouchPoint() : startPos(0.0f, 0.0f), currentPos(0.0f, 0.0f), startTime(0.0f), active(false) {}
     };
 
     // 設定パラメータ

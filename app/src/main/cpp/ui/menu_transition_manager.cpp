@@ -63,7 +63,7 @@ void MenuTransitionManager::update(float deltaTime) {
         state = TransitionState::IDLE;
         currentType = TransitionType::NONE;
         currentAlpha = 0.0f;
-        slideOffset = glm::vec2(0.0f);
+        slideOffset = glm::vec2(0.0f, 0.0f);
         MTRANS_LOGD("Transition complete");
     }
 }
@@ -72,7 +72,7 @@ void MenuTransitionManager::render() {
     if (state == TransitionState::IDLE) return;
 
     glm::vec4 color = overlayColor;
-    color.a = currentAlpha;
+    color.w = currentAlpha;
 
     if (currentAlpha > 0.01f) {
         UIDrawHelper::drawColoredQuad(
@@ -95,7 +95,7 @@ void MenuTransitionManager::startTransition(TransitionType type, float duration,
     transitionDuration = (duration > 0.0f) ? duration : defaultDuration;
     elapsedTime = 0.0f;
     currentAlpha = 0.0f;
-    slideOffset = glm::vec2(0.0f);
+    slideOffset = glm::vec2(0.0f, 0.0f);
     state = TransitionState::OUTGOING;
     outgoingCallbackFired = false;
 
