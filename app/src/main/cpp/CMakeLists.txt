@@ -195,6 +195,11 @@ add_library(native-lib SHARED
     audio/audio_3d.cpp
     audio/jni_audio_bridge.cpp
 
+    # Phase 47: Audio System Integration
+    audio/audio_decoder.cpp
+    audio/bgm_manager.cpp
+    audio/sound_effect_manager.cpp
+
     # Asset System
     assets/nif_parser.cpp
     assets/nif_block_type_map.cpp
