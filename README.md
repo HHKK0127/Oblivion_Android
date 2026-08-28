@@ -1,7 +1,7 @@
 # Oblivion Android - Complete Native Port
 
-![Status](https://img.shields.io/badge/status-Phase%2036-brightgreen)
-![Version](https://img.shields.io/badge/version-1.1.0-blue)
+![Status](https://img.shields.io/badge/status-Phase%2057-brightgreen)
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![Android](https://img.shields.io/badge/android-10%2B-green)
 
 ---

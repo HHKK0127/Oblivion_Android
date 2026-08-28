@@ -4,6 +4,20 @@ All notable changes to the Oblivion Android project are documented here.
 
 ---
 
+## [1.0.0] - 2026-08-29 (Phase 57 - Final Integration & Release)
+
+### Release Preparation
+- **Version**: 1.0.0 (first stable release)
+- **Build**: Release build with minification enabled
+- **APK**: Optimized with resource shrinking
+
+### Documentation
+- Updated README.md with Phase 39-49 completion entries
+- Updated CHANGELOG.md with Phase 39-49 details
+- Updated version badges and status
+
+---
+
 ## [1.3.0] - 2026-08-29 (Phase 38 - Script VM Testing Complete)
 
 ### Testing

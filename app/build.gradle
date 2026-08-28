@@ -12,13 +12,20 @@ android {
         minSdk 25
         targetSdk 34
         versionCode 1
-        versionName '1.0'
+        versionName '1.0.0'
 
         externalNativeBuild {
             cmake {
                 cppFlags '-std=c++17'
                 arguments '-DANDROID_STL=c++_shared', '-DCMAKE_NINJA_FORCE_RESPONSE_FILE=ON'
             }
+        }
+    }
+
+    packagingOptions {
+        // Reduce APK size by compressing large assets
+        jniLibs {
+            useLegacyPackaging = true
         }
     }
 
@@ -30,7 +37,8 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
