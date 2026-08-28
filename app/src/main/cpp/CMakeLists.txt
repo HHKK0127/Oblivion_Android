@@ -257,6 +257,10 @@ add_library(native-lib SHARED
     dialogue/dialogue_history.cpp
     dialogue/dialogue_integration.cpp
 
+    # Phase 52: FaceGen System
+    character/face_gen_morpher.cpp
+    character/face_gen_cache.cpp
+
     # JNI Bridge (Java/C++ communication)
     jni_bridge.cpp
 )
@@ -286,6 +290,7 @@ target_include_directories(native-lib PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/script
     ${CMAKE_CURRENT_SOURCE_DIR}/quest
     ${CMAKE_CURRENT_SOURCE_DIR}/dialogue
+    ${CMAKE_CURRENT_SOURCE_DIR}/character
 )
 
 # Find OpenAL-Soft (optional for now)

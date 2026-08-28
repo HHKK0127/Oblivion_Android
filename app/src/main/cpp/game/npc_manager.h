@@ -3,6 +3,7 @@
 #include "npc.h"
 #include "spell.h"
 #include "../assets/esm_reader.h"
+#include "../character/face_gen_morpher.h"
 #include <unordered_map>
 #include <vector>
 #include <memory>
@@ -24,6 +25,8 @@ private:
     std::unordered_map<uint32_t, std::vector<uint32_t>> cellNpcs;  // cellId → NPC IDs
     std::unordered_map<uint32_t, uint32_t> npcToCell;              // npcId → cellId
     const oblivion::ESMManager* m_esm = nullptr;
+    facegen::FaceGenMorpher* m_faceGen = nullptr;
+    std::unordered_map<uint32_t, facegen::FaceGenRecord> m_faceGenRecords;
     uint32_t nextNpcId;
 
     struct ActiveStatusEffect {
@@ -55,6 +58,10 @@ public:
     // ESM-driven player initialization
     void initializePlayerFromESM(NPC& player, uint32_t raceFormID,
                                   uint32_t classFormID, uint32_t birthsignFormID);
+
+    // Phase 52: FaceGen integration
+    bool generateNpcFace(uint32_t npcId, uint32_t formID);
+    void setFaceGenMorpher(facegen::FaceGenMorpher* faceGen) { m_faceGen = faceGen; }
 
     // Status effect tracking (BSGN/LVLI/quest-driven)
     void addStatusEffect(NPC& npc, SpellEffectType type, float duration, float magnitude);
