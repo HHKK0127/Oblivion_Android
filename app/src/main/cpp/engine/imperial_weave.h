@@ -42,6 +42,8 @@ namespace animation {
 class AnimationPlayer;
 }
 
+class DistantLodManager;
+
 namespace weave {
 
 // ============================================================================
@@ -212,7 +214,8 @@ public:
         ::SpellManager* spell = nullptr,
         ::AudioManager* audio = nullptr,
         ::oblivion::PhysicsManager* joltPhysics = nullptr,
-        ::oblivion::script::ScriptManager* script = nullptr
+        ::oblivion::script::ScriptManager* script = nullptr,
+        ::DistantLodManager* distantLod = nullptr
     );
 
     void shutdown();
@@ -249,6 +252,7 @@ private:
     ::AudioManager* audioManager_ = nullptr;
     ::oblivion::PhysicsManager* joltPhysics_ = nullptr;
     ::oblivion::script::ScriptManager* scriptManager_ = nullptr;
+    ::DistantLodManager* distantLodManager_ = nullptr;
 
     bool initialized_ = false;
 

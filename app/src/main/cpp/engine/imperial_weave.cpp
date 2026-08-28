@@ -13,6 +13,7 @@
 #include "../animation/animation_player.h"
 #include "../physics/physics_manager.h"
 #include "../script/script_manager.h"
+#include "../world/distant_lod/distant_lod_manager.h"
 
 namespace weave {
 
@@ -170,7 +171,8 @@ void ImperialWeave::init(
     ::SpellManager* spell,
     ::AudioManager* audio,
     ::oblivion::PhysicsManager* joltPhysics,
-    ::oblivion::script::ScriptManager* script
+    ::oblivion::script::ScriptManager* script,
+    ::DistantLodManager* distantLod
 ) {
     renderer_ = renderer;
     worldManager_ = world;
@@ -185,6 +187,7 @@ void ImperialWeave::init(
     audioManager_ = audio;
     joltPhysics_ = joltPhysics;
     scriptManager_ = script;
+    distantLodManager_ = distantLod;
 
     // Register services for cross-module access
     if (renderer) locator_.registerService(renderer);
@@ -200,6 +203,7 @@ void ImperialWeave::init(
     if (audio)    locator_.registerService(audio);
     if (joltPhysics) locator_.registerService(joltPhysics);
     if (script)   locator_.registerService(script);
+    if (distantLod) locator_.registerService(distantLod);
 
     initialized_ = true;
 }
@@ -216,6 +220,7 @@ void ImperialWeave::shutdown() {
     animPlayer_ = nullptr;
     joltPhysics_ = nullptr;
     scriptManager_ = nullptr;
+    distantLodManager_ = nullptr;
     initialized_ = false;
 }
 
@@ -314,8 +319,14 @@ void ImperialWeave::phaseAudioUpdate(float dt) {
 
 void ImperialWeave::phaseRenderSubmit(float dt) {
     (void)dt;
-    // Rendering is handled by Renderer directly.
-    // This phase is reserved for future render command submission.
+    // Phase 50: Distant LOD rendering
+    if (distantLodManager_ && renderer_) {
+        // Build view-projection matrix from renderer state
+        // LOD manager handles its own frustum culling and rendering
+        glm::mat4 viewProj;  // Placeholder - actual VP from renderer
+        distantLodManager_->update(dt);
+        distantLodManager_->render(renderer_, viewProj);
+    }
 }
 
 } // namespace weave
