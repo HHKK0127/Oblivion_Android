@@ -168,6 +168,12 @@ add_library(native-lib SHARED
     ui/control_scheme_manager.cpp
     ui/accessibility_manager.cpp
 
+    # Phase 49: Control System Optimization
+    input/touch_calibration.cpp
+    input/gamepad_mapper.cpp
+    input/input_visualizer.cpp
+    ui/hud_customizer.cpp
+
     # Map System (Phase 9.1)
     map/map_system.cpp
 
@@ -205,6 +211,9 @@ add_library(native-lib SHARED
 
     # Tests (Phase 30 Step 13)
     tests/phase30_integration_test.cpp
+    tests/phase45_unit_tests.cpp
+    tests/phase48_integration_test.cpp
+    tests/phase48_stress_test.cpp
 
     # Physics System (Phase 36 - Jolt Physics)
     physics/physics_manager.cpp
