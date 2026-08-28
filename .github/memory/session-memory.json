@@ -1047,10 +1047,55 @@
       "content": "Next steps after Phase 44: (1) Phase 45: Testing & Debugging - unit tests, integration tests, device testing. (2) Phase 46: Full game loop integration testing on device. (3) Phase 47: Asset pipeline (BSA extraction, DDS texture loading, NIF mesh loading). (4) Phase 48: Audio system integration (original WAV/MP3 files). (5) Phase 49: Touch control refinement and gamepad support.",
       "tags": ["next-steps", "roadmap", "phase-45"],
       "compressed": false
+    },
+    {
+      "id": "mem-040",
+      "timestamp": "2026-08-28T13:36:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Oblivion original engine architecture: 7 middleware engines integrated by Creation Engine (Bethesda). (1) Gamebryo: core rendering, scene graph, node-based pipeline, LOD, texture management. (2) Havok: rigid body physics, character controller, ragdoll, collision detection, cloth simulation. (3) SpeedTree: 3D tree/vegetation rendering, wind animation, LOD, billboard. (4) FaceGen: NPC face 3D generation, metaball deformation, texture blending, age/race parameters. (5) Bink Video: movie playback, compressed video decode, intro/cutscene. (6) Radiant AI: NPC autonomous behavior, schedule, goal-oriented action, conversation AI, package system. (7) Distant LOD: distant location display, distant land mesh, LOD textures, horizon display.",
+      "tags": ["oblivion", "engine", "middleware", "gamebryo", "havok", "speedtree", "facegen", "bink", "radiant-ai", "distant-lod"],
+      "compressed": false
+    },
+    {
+      "id": "mem-041",
+      "timestamp": "2026-08-28T13:36:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "Imperial Weave v3.0 (app/src/main/cpp/engine/imperial_weave.h/cpp) is our Creation Engine equivalent. It provides: EventBus (thread-safe pub/sub with immediate/deferred dispatch), ServiceLocator (type_index-based DI registry), 12-Phase Update Pipeline (PreUpdate->Event->World->AI->Player->Inventory->Spell->Anim->Physics->Combat->Quest->Script->Audio->Render), PhaseProfiler (debug frame timing). Currently registered engines: Renderer, WorldManager, NpcManager, CombatManager, QuestManager, CollisionWorld, AnimationPlayer, PlayerController, InventoryManager, SpellManager, AudioManager, JoltPhysics, ScriptManager. NOT yet registered: DistantLOD, SpeedTree, FaceGen, BinkVideo.",
+      "tags": ["imperial-weave", "creation-engine", "event-bus", "service-locator", "architecture"],
+      "compressed": false
+    },
+    {
+      "id": "mem-042",
+      "timestamp": "2026-08-28T13:36:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Engine completion status (Phase 49 / v2.4.0): Gamebryo equivalent: 75% (OpenGL ES 3.0 reimplementation, scene graph, multi-pass rendering). Havok equivalent: 50% (Jolt Physics, rigid body/collision, missing ragdoll/cloth/character controller). SpeedTree: 0% (not started, need billboard + wind shader). FaceGen: 0% (not started, need metaball deformation + texture overlay). Bink Video: 0% (not started, Android MediaCodec or FFmpeg). Radiant AI: 65% (basic schedule, goal-oriented, conversation AI, missing full package system). Distant LOD: 30% (LAND heightmap read, missing distant land mesh/LOD texture/horizon). Overall: ~70% complete. Code: 79,360 lines own + 152,360 third_party = 232,630 total.",
+      "tags": ["completion-status", "engine", "phase-49", "v2.4.0"],
+      "compressed": false
+    },
+    {
+      "id": "mem-043",
+      "timestamp": "2026-08-28T13:36:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "Phase 45-49 completed and merged to master. Phase 45: Unit tests (37 cases, +1,089 lines). Phase 46: Asset pipeline - TextureManager, MeshLoader, WorldDataLoader, BSA/ESM/NIF readers (+2,487 lines). Phase 47: Audio system - AudioDecoder, BgmManager, SoundEffectManager (+2,176 lines). Phase 48: Integration + stress tests (12 cases, +1,159 lines). Phase 49: Controls - GamepadMapper, TouchCalibration, InputVisualizer, HudCustomizer (+1,812 lines). Total: 34 files, +8,723 lines. Version: v2.4.0. All merged to master and pushed.",
+      "tags": ["phase-45", "phase-46", "phase-47", "phase-48", "phase-49", "v2.4.0", "complete"],
+      "compressed": false
+    },
+    {
+      "id": "mem-044",
+      "timestamp": "2026-08-28T13:36:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Next phases for missing engines: Phase 50: DistantLOD (distant land mesh generation, LOD textures, horizon display). Phase 51: SpeedTree (billboard trees, wind shader, vegetation LOD). Phase 52: FaceGen (metaball face deformation, texture blending, age/race params). Phase 53: Bink Video (Android MediaCodec integration, intro/cutscene playback). Each engine should be registered with ImperialWeave::init() via ServiceLocator.",
+      "tags": ["roadmap", "phase-50", "phase-51", "phase-52", "phase-53", "distant-lod", "speedtree", "facegen", "bink"],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 73,
+    "totalEntries": 79,
     "compressedCount": 0,
     "sessionCount": 4
   }
