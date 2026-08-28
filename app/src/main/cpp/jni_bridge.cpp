@@ -326,3 +326,24 @@ Java_com_example_oblivion_GameRenderer_nativeRunPhase30Test(
 
     return env->NewStringUTF(summary.c_str());
 }
+
+// ============================================
+// Phase 45: Unit Test Runner
+// ============================================
+#include "tests/phase45_unit_tests.h"
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_example_oblivion_GameRenderer_nativeRunPhase45Test(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    LOGI("=== Phase 45 Unit Test START ===");
+
+    Phase45UnitTests test;
+    bool allPassed = test.runAllTests();
+
+    std::string summary = test.getSummary();
+    LOGI("=== Phase 45 Unit Test END: %s ===",
+         allPassed ? "ALL PASSED" : "SOME FAILED");
+
+    return env->NewStringUTF(summary.c_str());
+}
