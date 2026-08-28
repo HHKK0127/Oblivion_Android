@@ -2,9 +2,12 @@
 #include <android/log.h>
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
+#include <android/native_window_jni.h>
 #include "engine/renderer.h"
 #include "engine/imperial_weave.h"
 #include "vegetation/speed_tree_manager.h"
+#include "video/bink_video_player.h"
+#include "video/video_decoder_jni.h"
 
 #define LOG_TAG "JNI_Bridge"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -523,6 +526,47 @@ Java_com_example_oblivion_GameRenderer_nativeInitFaceGen(
     return result ? JNI_TRUE : JNI_FALSE;
 }
 
+// ============================================
+// Phase 53: Bink Video System
+// ============================================
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_example_oblivion_GameRenderer_nativeInitBinkVideo(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jobject surface) {
+    LOGI("=== nativeInitBinkVideo called ===");
+
+    if (!surface) {
+        LOGE("nativeInitBinkVideo: surface is null");
+        return JNI_FALSE;
+    }
+
+    // Get ANativeWindow from Surface
+    ANativeWindow* window = ANativeWindow_fromSurface(env, surface);
+    if (!window) {
+        LOGE("nativeInitBinkVideo: failed to get ANativeWindow");
+        return JNI_FALSE;
+    }
+
+    // Initialize BinkVideoPlayer singleton
+    auto& player = oblivion::video::BinkVideoPlayer::instance();
+    bool result = player.initialize(window);
+
+    if (result) {
+        // Initialize JNI references for VideoDecoderJNI
+        oblivion::video::VideoDecoderJNI::initJNI(env);
+        oblivion::video::registerVideoDecoderNatives(env);
+
+        LOGI("BinkVideoPlayer initialized successfully");
+    } else {
+        LOGE("BinkVideoPlayer initialization failed");
+        ANativeWindow_release(window);
+    }
+
+    return result ? JNI_TRUE : JNI_FALSE;
+}
+
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_example_oblivion_GameRenderer_nativeGenerateNpcFace(
         [[maybe_unused]] JNIEnv* env,
@@ -543,6 +587,27 @@ Java_com_example_oblivion_GameRenderer_nativeGenerateNpcFace(
         facegen::FaceShape defaultShape;
         result = faceGen.generateMorphedMesh(static_cast<uint32_t>(npcId), defaultShape);
     }
+
+    return result ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_example_oblivion_GameRenderer_nativePlayVideo(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jstring clipId,
+        jboolean loop) {
+    if (!clipId) {
+        LOGE("nativePlayVideo: clipId is null");
+        return JNI_FALSE;
+    }
+
+    const char* clipIdStr = env->GetStringUTFChars(clipId, nullptr);
+    std::string clipIdCpp(clipIdStr);
+    env->ReleaseStringUTFChars(clipId, clipIdStr);
+
+    auto& player = oblivion::video::BinkVideoPlayer::instance();
+    bool result = player.play(clipIdCpp, loop == JNI_TRUE);
 
     return result ? JNI_TRUE : JNI_FALSE;
 }
@@ -588,4 +653,54 @@ Java_com_example_oblivion_GameRenderer_nativeLoadFaceGenData(
     // Load into FaceGenMorpher
     bool result = faceGen.loadFaceGenData(static_cast<uint32_t>(npcId), record);
     return result ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeStopVideo(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    auto& player = oblivion::video::BinkVideoPlayer::instance();
+    player.stop();
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativePauseVideo(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    auto& player = oblivion::video::BinkVideoPlayer::instance();
+    player.pause();
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeResumeVideo(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    auto& player = oblivion::video::BinkVideoPlayer::instance();
+    player.resume();
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_example_oblivion_GameRenderer_nativeIsVideoPlaying(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    auto& player = oblivion::video::BinkVideoPlayer::instance();
+    return player.isPlaying() ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeSetVideoVolume(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jfloat volume) {
+    auto& player = oblivion::video::BinkVideoPlayer::instance();
+    player.setVolume(volume);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeShutdownBinkVideo(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    LOGI("nativeShutdownBinkVideo called");
+    auto& player = oblivion::video::BinkVideoPlayer::instance();
+    player.shutdown();
 }

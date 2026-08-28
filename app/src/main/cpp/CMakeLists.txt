@@ -270,6 +270,12 @@ add_library(native-lib SHARED
     character/face_gen_morpher.cpp
     character/face_gen_cache.cpp
 
+    # Phase 53: Bink Video replacement (MediaCodec-based video playback)
+    video/bink_video_player.cpp
+    video/video_decoder_jni.cpp
+    video/video_clip_manager.cpp
+    video/video_renderer.cpp
+
     # JNI Bridge (Java/C++ communication)
     jni_bridge.cpp
 )
@@ -301,6 +307,7 @@ target_include_directories(native-lib PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/dialogue
     ${CMAKE_CURRENT_SOURCE_DIR}/vegetation
     ${CMAKE_CURRENT_SOURCE_DIR}/character
+    ${CMAKE_CURRENT_SOURCE_DIR}/video
 )
 
 # Find OpenAL-Soft (optional for now)

@@ -52,6 +52,12 @@ namespace vegetation {
 class SpeedTreeManager;
 }
 
+namespace oblivion {
+namespace video {
+class BinkVideoPlayer;
+}
+}
+
 namespace weave {
 
 // ============================================================================
@@ -223,10 +229,10 @@ public:
         ::AudioManager* audio = nullptr,
         ::oblivion::PhysicsManager* joltPhysics = nullptr,
         ::oblivion::script::ScriptManager* script = nullptr,
-<<<<<<< HEAD
         ::DistantLodManager* distantLod = nullptr,
         ::vegetation::SpeedTreeManager* speedTree = nullptr,
-        ::facegen::FaceGenMorpher* faceGen = nullptr
+        ::facegen::FaceGenMorpher* faceGen = nullptr,
+        ::oblivion::video::BinkVideoPlayer* binkVideo = nullptr
     );
 
     void shutdown();
@@ -264,10 +270,10 @@ private:
     ::AudioManager* audioManager_ = nullptr;
     ::oblivion::PhysicsManager* joltPhysics_ = nullptr;
     ::oblivion::script::ScriptManager* scriptManager_ = nullptr;
-<<<<<<< HEAD
     ::DistantLodManager* distantLodManager_ = nullptr;
     ::vegetation::SpeedTreeManager* speedTreeManager_ = nullptr;
     ::facegen::FaceGenMorpher* faceGenMorpher_ = nullptr;
+    ::oblivion::video::BinkVideoPlayer* binkVideoPlayer_ = nullptr;
 
     bool initialized_ = false;
 
