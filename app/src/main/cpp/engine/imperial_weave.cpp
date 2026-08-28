@@ -14,6 +14,7 @@
 #include "../physics/physics_manager.h"
 #include "../script/script_manager.h"
 #include "../world/distant_lod/distant_lod_manager.h"
+#include "../vegetation/speed_tree_manager.h"
 
 namespace weave {
 
@@ -172,7 +173,8 @@ void ImperialWeave::init(
     ::AudioManager* audio,
     ::oblivion::PhysicsManager* joltPhysics,
     ::oblivion::script::ScriptManager* script,
-    ::DistantLodManager* distantLod
+    ::DistantLodManager* distantLod,
+    ::vegetation::SpeedTreeManager* speedTree
 ) {
     renderer_ = renderer;
     worldManager_ = world;
@@ -188,6 +190,7 @@ void ImperialWeave::init(
     joltPhysics_ = joltPhysics;
     scriptManager_ = script;
     distantLodManager_ = distantLod;
+    speedTreeManager_ = speedTree;
 
     // Register services for cross-module access
     if (renderer) locator_.registerService(renderer);
@@ -204,6 +207,7 @@ void ImperialWeave::init(
     if (joltPhysics) locator_.registerService(joltPhysics);
     if (script)   locator_.registerService(script);
     if (distantLod) locator_.registerService(distantLod);
+    if (speedTree) locator_.registerService(speedTree);
 
     initialized_ = true;
 }
@@ -221,6 +225,7 @@ void ImperialWeave::shutdown() {
     joltPhysics_ = nullptr;
     scriptManager_ = nullptr;
     distantLodManager_ = nullptr;
+    speedTreeManager_ = nullptr;
     initialized_ = false;
 }
 

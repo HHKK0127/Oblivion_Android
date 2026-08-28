@@ -44,6 +44,10 @@ class AnimationPlayer;
 
 class DistantLodManager;
 
+namespace vegetation {
+class SpeedTreeManager;
+}
+
 namespace weave {
 
 // ============================================================================
@@ -215,7 +219,8 @@ public:
         ::AudioManager* audio = nullptr,
         ::oblivion::PhysicsManager* joltPhysics = nullptr,
         ::oblivion::script::ScriptManager* script = nullptr,
-        ::DistantLodManager* distantLod = nullptr
+        ::DistantLodManager* distantLod = nullptr,
+        ::vegetation::SpeedTreeManager* speedTree = nullptr
     );
 
     void shutdown();
@@ -253,6 +258,7 @@ private:
     ::oblivion::PhysicsManager* joltPhysics_ = nullptr;
     ::oblivion::script::ScriptManager* scriptManager_ = nullptr;
     ::DistantLodManager* distantLodManager_ = nullptr;
+    ::vegetation::SpeedTreeManager* speedTreeManager_ = nullptr;
 
     bool initialized_ = false;
 
