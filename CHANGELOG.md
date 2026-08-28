@@ -4,6 +4,46 @@ All notable changes to the Oblivion Android project are documented here.
 
 ---
 
+## [1.2.0] - 2026-08-29 (Phase 37 - Script VM Complete)
+
+### Major Additions
+
+#### Oblivion Script VM
+- **ScriptVM**: Bytecode interpreter with47 opcodes
+  - Arithmetic: ADD, SUB, MUL, DIV, MOD, NEG
+  - Comparison: CMP_LT, CMP_LE, CMP_GT, CMP_GE, CMP_EQ, CMP_NE
+  - Logical: AND, OR, NOT
+  - Control flow: JUMP, JUMP_Z, STOP
+  - Stack: PUSH_INT, PUSH_FLOAT, PUSH_STRING, PUSH_REF, POP, DUP
+  - Variables: GET_LOCAL, SET_LOCAL, GET_GLOBAL, SET_GLOBAL
+  - String: STR_CAT, STR_LEN, STR_SUB
+  - References: GET_SELF, GET_TARGET
+  - Function calls: CALL with118 game functions
+
+#### Script System Components
+- **ScriptManager**: Script lifecycle management
+  - Per-frame execution with budget control (1000 instructions/frame)
+  - Global variable storage (10,000 variables)
+  - Script activation/deactivation by FormID
+- **ExecutionContext**: Per-script state
+  - RPN stack (256 max depth)
+  - Local variables (64 per script)
+  - Reference table (32 references)
+  - Program counter and instruction budget
+- **ScriptFunctions**:118 Oblivion game functions
+  - Tier 1 (13 functions): SetStage, GetStage, AddItem, RemoveItem, Enable, Disable, Activate, GetDistance, SetPos, GetPos, Message, MessageBox
+  - Tier 2 (105 functions): GetSelf, GetPlayer, Set, Get, Random, Resurrect, PlaceAtMe, MoveTo, Lock, Unlock, combat, spells, factions, time, weather, etc.
+- **ScriptDisasm**: Bytecode disassembler for debugging
+
+#### Bug Fixes (Phase 37Build Verification)
+- Fixed GLM vec4->vec3 conversion in speed_tree_manager.cpp
+- Fixed API mismatches in imperial_weave.cpp (SpeedTree, FaceGen, BinkVideo)
+- Fixed npc_manager.cpp member name (m_npcs -> npcs)
+- Fixed format specifier in phase45_unit_tests.cpp (%lu -> %zu)
+- Fixed VideoBridge.java API compatibility (reflection for setPlaybackParams)
+
+---
+
 ## [1.1.0] - 2026-08-28 (Phase 36 - Jolt Physics Integration)
 
 ### Major Additions

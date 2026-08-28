@@ -427,7 +427,7 @@ oblivion-android/
 | Phase 54 (v3.0.0) | Imperial Weave v4.0 | [x] Complete | 15-phase pipeline, ImperialWeaveConfig, ServiceLocator, 12 event types, frame budget (16.6ms) |
 | Phase 55 (v3.1.0) | Engine Polish & Optimization | [x] Complete | FrameBudgetManager, MemoryDefrag, ShaderCache, OcclusionCuller, BatchRenderer, FaceGen brush-up, Jolt Physics extension |
 | Phase 56 (v3.2.0) | Gamebryo Complete | [x] Complete | ParticleSystem (7 presets), PostProcessPipeline (8 effects), WaterRenderer (Gerstner waves, 6 types), SkyWeatherSystem (8 weathers, day/night), SceneGraph (hierarchy, AABB), MaterialSystem (8 texture slots, 8 defaults) |
-| Phase 37 (v1.2.0) | Script VM | [ ] Planned | Oblivion VM bytecode interpreter, opcode dispatch, script execution |
+| Phase 37 (v1.2.0) | Script VM | [x] Complete | Oblivion VM bytecode interpreter (47 opcodes), 118 game functions (Tier 1+2), ScriptManager, ExecutionContext, disassembler |
 
 ---
 
@@ -494,7 +494,7 @@ See [docs/README.md](docs/README.md) for complete documentation.
 
 ### [START] Future Enhancements (Phase 37+)
 
-- [SYS] Script VM (Oblivion script execution) - Phase 37 (Designed)
+- [SYS] Script VM (Oblivion script execution) - Phase 37 (Complete)
 - [MAP] Map with quest markers
 - [PERF] Device-side ESM rendering verification
 - [GAME] Controller support
@@ -600,7 +600,7 @@ Proprietary - Experimental Port
 **Version**: 3.2.0
 **Features**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD, ESM Data Integration (40 record types), NpcManager ESM, Container ESM, Player RACE/CLAS/BSGN, Status Effects, NAVM Pathfinding, DIAL/INFO Dialogue, REFR Placement, Spell Effects (8 types), Alchemy, Book Reader, Faction Manager, Loot Generator, NIF Skeleton/Skinning, Animation System, Collision Detection, Integration Tests (Phase 30), WorldEntity + WorldLoader + PlayerController Integration (Phase 31), Imperial Weave EventBus + 12-phase coordinator, AnimationSubscriber, AudioSubscriber, SpellSelectionPanel (Phase 32), Dedicated Combat Sounds, NPC Spatial Audio (Phase 33), Weapon-Type Sound Routing, Quick-Slot Spells (Phase 34), Radiant AI System (Phase 35), Jolt Physics Integration (Phase 36), Distant LOD (Phase 50), SpeedTree Vegetation (Phase 51), FaceGen (Phase 52), Bink Video (Phase 53), Imperial Weave v4.0 (Phase 54), Engine Polish (Phase 55), Gamebryo Complete: Particle/PostProcess/Water/SkyWeather/SceneGraph/Material (Phase 56)
 
-**Next**: Phase 37 - Script VM (Oblivion Script Execution)
+**Next**: Phase 38 - Script VM Testing & Integration
 
 ---
 
@@ -893,7 +893,7 @@ oblivion-android/
 | Phase 54 (v3.0.0) | Imperial Weave v4.0 | [x] 完了 | 15フェーズパイプライン、ImperialWeaveConfig、ServiceLocator、12イベントタイプ、フレームバジェット（16.6ms） |
 | Phase 55 (v3.1.0) | エンジンポリッシュ＆最適化 | [x] 完了 | FrameBudgetManager、MemoryDefrag、ShaderCache、OcclusionCuller、BatchRenderer、FaceGenブラッシュアップ、Jolt Physics拡張 |
 | Phase 56 (v3.2.0) | Gamebryo完成 | [x] 完了 | ParticleSystem（7プリセット）、PostProcessPipeline（8エフェクト）、WaterRenderer（Gerstner波、6種）、SkyWeatherSystem（8天候、昼夜）、SceneGraph（階層、AABB）、MaterialSystem（8テクスチャスロット、8デフォルト） |
-| Phase 37 (v1.2.0) | スクリプトVM | [ ] 計画中 | Oblivion VMバイトコードインタプリタ、オプコードディスパッチ、スクリプト実行 |
+| Phase 37 (v1.2.0) | スクリプトVM | [x] 完了 | Oblivion VMバイトコードインタプリタ（47オプコード）、118ゲーム関数（Tier 1+2）、ScriptManager、ExecutionContext、逆アセンブラ |
 
 ---
 
@@ -961,7 +961,7 @@ oblivion-android/
 
 ### [START] 将来の拡張 (Phase 37+)
 
-- [SYS] スクリプトVM（Oblivionスクリプト実行） - Phase 37（設計済み）
+- [SYS] スクリプトVM（Oblivionスクリプト実行） - Phase 37（完了）
 - [MAP] クエストマーカー付きマップ
 - [PERF] デバイス上でのESMレンダリング検証
 - [GAME] コントローラー対応
@@ -1069,4 +1069,4 @@ oblivion-android/
 
 **機能**: グラフィカルUI、テクスチャパネル＆ボタン、効果音、セーブ/ロードUI、OpenAL 3Dオーディオ、レトロフィルター効果、強化デバッグHUD、ESMデータ統合（40種レコード）、NPCマネージャーESM、コンテナESM、プレイヤーRACE/CLAS/BSGN、ステータス効果、NAVMパスファインディング、DIAL/INFO会話、REFR配置、呪文エフェクト（8種）、錬金術、書籍リーダー、派閥マネージャー、ルートジェネレーター、NIFスケルトン/スキニング、アニメーションシステム、衝突判定、統合テスト（Phase 30）、WorldEntity＋WorldLoader＋PlayerController統合（Phase 31）、Imperial Weave EventBus＋12フェーズコーディネーター、AnimationSubscriber、AudioSubscriber、SpellSelectionPanel（Phase 32）、専用コンバットサウンド、NPC空間オーディオ（Phase 33）、武器タイプサウンドルーティング、クイックスロット呪文（Phase 34）、Radiant AIシステム（Phase 35）、Jolt Physics統合（Phase 36）、Distant LOD（Phase 50）、SpeedTree植生（Phase 51）、FaceGen（Phase 52）、Binkビデオ（Phase 53）、Imperial Weave v4.0（Phase 54）、エンジンポリッシュ（Phase 55）、Gamebryo完成：パーティクル/ポストプロセス/水/天候/シーングラフ/マテリアル（Phase 56）
 
-**次回**: Phase 37 - スクリプトVM（Oblivionスクリプト実行）
+**次回**: Phase 38 - スクリプトVMテスト＆統合
