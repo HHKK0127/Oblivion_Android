@@ -3,6 +3,7 @@
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
 #include "engine/renderer.h"
+#include "engine/imperial_weave.h"
 
 #define LOG_TAG "JNI_Bridge"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -330,6 +331,38 @@ Java_com_example_oblivion_GameRenderer_nativeRunPhase30Test(
 // Phase 45: Unit Test Runner
 // ============================================
 #include "tests/phase45_unit_tests.h"
+
+// ============================================
+// Phase 50: Distant LOD System
+// ============================================
+#include "world/distant_lod/distant_lod_manager.h"
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_example_oblivion_GameRenderer_nativeInitDistantLod(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jlong worldManagerHandle) {
+    LOGI("nativeInitDistantLod called");
+
+    WorldManager* worldMgr = reinterpret_cast<WorldManager*>(worldManagerHandle);
+    if (!worldMgr) {
+        LOGE("nativeInitDistantLod: WorldManager handle is null");
+        return JNI_FALSE;
+    }
+
+    DistantLodManager& dlod = DistantLodManager::instance();
+    bool result = dlod.initialize(worldMgr, nullptr);
+
+    if (result) {
+        // Register with ImperialWeave
+        weave::ImperialWeave::instance().getLocator().registerService(&dlod);
+        LOGI("DistantLodManager initialized and registered with ImperialWeave");
+    } else {
+        LOGE("DistantLodManager initialization failed");
+    }
+
+    return result ? JNI_TRUE : JNI_FALSE;
+}
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_example_oblivion_GameRenderer_nativeRunPhase45Test(

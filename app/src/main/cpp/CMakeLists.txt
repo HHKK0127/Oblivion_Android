@@ -87,6 +87,10 @@ add_library(native-lib SHARED
     world/lod_system.cpp
     world/world_builder.cpp
 
+    # Phase 50: Distant LOD System
+    world/distant_lod/distant_lod_manager.cpp
+    world/distant_lod/distant_lod_horizon.cpp
+
     # Game Systems
     game/npc.cpp
     game/npc_manager.cpp
