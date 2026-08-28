@@ -38,6 +38,14 @@ add_library(native-lib SHARED
     engine/texture_loader.cpp
     engine/graphics/retro_filter.cpp
     engine/imperial_weave.cpp
+
+    # Phase 42: Game Loop Integration
+    engine/state_manager.cpp
+    engine/input_router.cpp
+    engine/game_loop_coordinator.cpp
+    engine/scene_renderer.cpp
+    engine/debug_console.cpp
+    engine/performance_profiler.cpp
     ui/spell_selection_panel.cpp
     audio/audio_subscriber.cpp
     animation/animation_subscriber.cpp
