@@ -9,6 +9,7 @@
 #define MENU_TRANS_LOG_TAG "MenuTransitionManager"
 #define MTRANS_LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, MENU_TRANS_LOG_TAG, __VA_ARGS__)
 #define MTRANS_LOGI(...) __android_log_print(ANDROID_LOG_INFO, MENU_TRANS_LOG_TAG, __VA_ARGS__)
+#define MTRANS_LOGW(...) __android_log_print(ANDROID_LOG_WARN, MENU_TRANS_LOG_TAG, __VA_ARGS__)
 
 class TextRenderer;
 

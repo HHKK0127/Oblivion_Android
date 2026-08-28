@@ -10,6 +10,19 @@ struct vec2 {
     float x, y;
     vec2() : x(0), y(0) {}
     vec2(float x, float y) : x(x), y(y) {}
+    vec2(float s) : x(s), y(s) {}
+
+    vec2 operator+(const vec2& v) const { return vec2(x + v.x, y + v.y); }
+    vec2 operator-(const vec2& v) const { return vec2(x - v.x, y - v.y); }
+    vec2 operator*(float s) const { return vec2(x * s, y * s); }
+    vec2 operator/(float s) const { return vec2(x / s, y / s); }
+    vec2& operator+=(const vec2& v) { x += v.x; y += v.y; return *this; }
+    vec2& operator-=(const vec2& v) { x -= v.x; y -= v.y; return *this; }
+    vec2& operator*=(float s) { x *= s; y *= s; return *this; }
+    vec2& operator/=(float s) { x /= s; y /= s; return *this; }
+
+    float length() const { return std::sqrt(x * x + y * y); }
+    vec2 normalize() const { float len = length(); return vec2(x / len, y / len); }
 };
 
 struct vec3 {
@@ -40,6 +53,13 @@ struct vec4 {
     float x, y, z, w;
     vec4() : x(0), y(0), z(0), w(0) {}
     vec4(float x, float y, float z, float w) : x(x), y(y), z(z), w(w) {}
+    vec4(float s) : x(s), y(s), z(s), w(s) {}
+
+    vec4 operator+(const vec4& v) const { return vec4(x + v.x, y + v.y, z + v.z, w + v.w); }
+    vec4 operator-(const vec4& v) const { return vec4(x - v.x, y - v.y, z - v.z, w - v.w); }
+    vec4 operator*(float s) const { return vec4(x * s, y * s, z * s, w * s); }
+    vec4& operator+=(const vec4& v) { x += v.x; y += v.y; z += v.z; w += v.w; return *this; }
+    vec4& operator*=(float s) { x *= s; y *= s; z *= s; w *= s; return *this; }
 };
 
 // Matrix type (4x4)

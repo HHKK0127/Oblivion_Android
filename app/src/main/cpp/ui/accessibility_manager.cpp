@@ -101,24 +101,24 @@ void AccessibilityManager::notifyChange() {
 
 glm::vec4 AccessibilityManager::applyProtanopia(const glm::vec4& color) const {
     // 赤色盲: 赤成分を減衰
-    float r = color.r * 0.567f + color.g * 0.433f + color.b * 0.0f;
-    float g = color.r * 0.558f + color.g * 0.442f + color.b * 0.0f;
-    float b = color.r * 0.0f   + color.g * 0.242f + color.b * 0.758f;
-    return glm::vec4(r, g, b, color.a);
+    float r = color.x * 0.567f + color.y * 0.433f + color.z * 0.0f;
+    float g = color.x * 0.558f + color.y * 0.442f + color.z * 0.0f;
+    float b = color.x * 0.0f   + color.y * 0.242f + color.z * 0.758f;
+    return glm::vec4(r, g, b, color.w);
 }
 
 glm::vec4 AccessibilityManager::applyDeuteranopia(const glm::vec4& color) const {
     // 緑色盲: 緑成分を減衰
-    float r = color.r * 0.625f + color.g * 0.375f + color.b * 0.0f;
-    float g = color.r * 0.7f   + color.g * 0.3f   + color.b * 0.0f;
-    float b = color.r * 0.0f   + color.g * 0.3f   + color.b * 0.7f;
-    return glm::vec4(r, g, b, color.a);
+    float r = color.x * 0.625f + color.y * 0.375f + color.z * 0.0f;
+    float g = color.x * 0.7f   + color.y * 0.3f   + color.z * 0.0f;
+    float b = color.x * 0.0f   + color.y * 0.3f   + color.z * 0.7f;
+    return glm::vec4(r, g, b, color.w);
 }
 
 glm::vec4 AccessibilityManager::applyTritanopia(const glm::vec4& color) const {
     // 青色盲: 青成分を減衰
-    float r = color.r * 0.95f  + color.g * 0.05f  + color.b * 0.0f;
-    float g = color.r * 0.0f   + color.g * 0.433f + color.b * 0.567f;
-    float b = color.r * 0.0f   + color.g * 0.475f + color.b * 0.525f;
-    return glm::vec4(r, g, b, color.a);
+    float r = color.x * 0.95f  + color.y * 0.05f  + color.z * 0.0f;
+    float g = color.x * 0.0f   + color.y * 0.433f + color.z * 0.567f;
+    float b = color.x * 0.0f   + color.y * 0.475f + color.z * 0.525f;
+    return glm::vec4(r, g, b, color.w);
 }

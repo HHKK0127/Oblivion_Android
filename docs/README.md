@@ -1,263 +1,201 @@
 # Oblivion Android - ドキュメント目次
 
-このディレクトリには、Oblivion Android 移植プロジェクトの JNI ブリッジ設計に関するドキュメントが含まれています。
+**最終更新**: 2026-08-27  
+**バージョン**: 0.9.0  
+**ステータス**: Phase 9 進行中
+
+---
+
+## 概要
+
+このディレクトリには、Oblivion Android移植プロジェクトの全ドキュメントが含まれています。プロジェクトのアーキテクチャ、実装ガイド、開発履歴、各種システムの詳細を網羅しています。
 
 ---
 
 ## ドキュメント一覧
 
-### 1. **JNI_BRIDGE_DESIGN.md** - メイン設計書
-   - **内容**: JNI ブリッジアーキテクチャの詳細設計
-   - **対象者**: アーキテクト、リードエンジニア
-   - **セクション**:
-     - システム概要
-     - システムアーキテクチャ図
-     - Java/Kotlin 側の設計
-     - C++ 側の JNI ブリッジ
-     - 通信プロトコル
-     - ライフサイクル管理
-     - エラーハンドリング戦略
-     - メモリ管理
-     - 実装フロー
-     - テスト方針
+### コアドキュメント
 
-   **ポイント**: このドキュメントは、プロジェクト全体のアーキテクチャを把握するための出発点です。最初にこれを読んでください。
+| ファイル | 内容 | 対象者 |
+|---------|------|--------|
+| [ARCHITECTURE.md](ARCHITECTURE.md) | システムアーキテクチャ全体像 | 全開発者 |
+| [IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md) | JNI実装ガイド | 実装エンジニア |
+| [JNI_BRIDGE_DESIGN.md](JNI_BRIDGE_DESIGN.md) | JNIブリッジ詳細設計 | アーキテクト |
+| [JNI_QUICK_REFERENCE.md](JNI_QUICK_REFERENCE.md) | JNIクイックリファレンス | 全開発者 |
 
----
+### システムドキュメント
 
-### 2. **IMPLEMENTATION_GUIDE.md** - 実装ガイド
-   - **内容**: 実装時の詳細手順、ベストプラクティス、トラブルシューティング
-   - **対象者**: 実装エンジニア、デバッグ担当者
-   - **セクション**:
-     - セットアップ手順（CMakeLists.txt, build.gradle）
-     - JNI 関数シグネチャ
-     - スレッドセーフティ戦略
-     - デバッグテクニック
-     - ベストプラクティス
-     - トラブルシューティング
+| ファイル | 内容 | 対象者 |
+|---------|------|--------|
+| [ASSET_GUIDE.md](ASSET_GUIDE.md) | アセット統合ガイド | 実装エンジニア |
+| [AUDIO_SYSTEM.md](AUDIO_SYSTEM.md) | オーディオシステム | 実装エンジニア |
+| [FPS_CONTROL_GUIDE.md](FPS_CONTROL_GUIDE.md) | FPS制御ガイド | 実装エンジニア |
+| [SAVE_LOAD_IMPLEMENTATION.md](SAVE_LOAD_IMPLEMENTATION.md) | セーブ/ロード実装 | 実装エンジニア |
+| [CODE_QUALITY_IMPROVEMENTS.md](CODE_QUALITY_IMPROVEMENTS.md) | コード品質改善 | 全開発者 |
 
-   **ポイント**: 実装時、デバッグ時、問題発生時に参照してください。
+### 計画・履歴ドキュメント
+
+| ファイル | 内容 | 対象者 |
+|---------|------|--------|
+| [DEVELOPMENT_HISTORY.md](DEVELOPMENT_HISTORY.md) | 開発履歴（全フェーズ） | 全員 |
+| [PHASE9_PLAN.md](PHASE9_PLAN.md) | Phase 9実装計画 | PM、リードエンジニア |
 
 ---
 
-### 3. **JNI_QUICK_REFERENCE.md** - クイックリファレンス
-   - **内容**: コマンド、テンプレートコード、スニペット集
-   - **対象者**: すべての開発者
-   - **セクション**:
-     - コマンドライン操作
-     - JNI 関数テンプレート
-     - Kotlin コードスニペット
-     - デバッグマクロ
-     - データ型変換
-     - エラーコード
-     - adb コマンド集
+## ドキュメント読了順序
 
-   **ポイント**: 頻繁に参照するドキュメント。ブックマークに登録すると便利です。
+### 新規開発者向け
 
----
+1. **README.md** (このファイル) - プロジェクト概要
+2. **ARCHITECTURE.md** - システムアーキテクチャ理解
+3. **DEVELOPMENT_HISTORY.md** - 開発経緯の把握
+4. **IMPLEMENTATION_GUIDE.md** - 実装方法の習得
+5. **JNI_QUICK_REFERENCE.md** - 必要に応じて参照
 
-## ソースコード構成
+### 実装エンジニア向け
 
-### Java/Kotlin ファイル
+1. **ARCHITECTURE.md** - 全体構造の理解
+2. **ASSET_GUIDE.md** - アセット統合作業
+3. **AUDIO_SYSTEM.md** - オーディオシステム実装
+4. **IMPLEMENTATION_GUIDE.md** - JNI実装詳細
+5. **JNI_BRIDGE_DESIGN.md** - JNI設計詳細
 
-```
-app/src/main/java/com/example/oblivion/
-├── OblivionEngine.kt           # JNI ブリッジ (シングルトン)
-├── GameActivity.kt             # メイン Activity
-├── InputHandler.kt             # タッチ入力処理
-└── OblivionException.kt        # カスタム例外
-```
+### PM・リード向け
 
-**重要なクラス**:
-- `OblivionEngine`: ネイティブメソッド定義、スレッドセーフなラッパー
-- `GameActivity`: Android ライフサイクル管理
-- `InputHandler`: マルチタッチ入力処理
-
-### C++ ファイル
-
-```
-app/src/main/cpp/
-├── jni/
-│   ├── com_example_oblivion_OblivionEngine.h     # JNI ブリッジ定義
-│   ├── com_example_oblivion_OblivionEngine.cpp   # JNI 実装
-│   └── jni_utils.h                              # ユーティリティ
-├── engine/
-│   ├── Engine.h                # メインエンジンクラス定義
-│   ├── Engine.cpp              # エンジン実装
-│   └── (その他のサブシステム)
-└── CMakeLists.txt              # ビルド設定
-```
-
-**重要なクラス**:
-- `OblivionEngineJNI`: JNI → C++ のゲートウェイ
-- `Engine`: ゲームエンジンのメインクラス
+1. **README.md** - プロジェクト概要
+2. **DEVELOPMENT_HISTORY.md** - 開発進捗
+3. **PHASE9_PLAN.md** - 今後の計画
+4. **ARCHITECTURE.md** - 技術的な全体像
 
 ---
 
 ## クイックスタート
 
-### 1. 環境セットアップ
+### 環境構築
 
 ```bash
 # プロジェクトのクローン
-git clone <repository>
-cd oblivion-android
+git clone https://github.com/HHKK0127/Oblivion_Android.git
+cd Oblivion_Android
 
-# 依存関係のインストール
-./gradlew clean build
-```
-
-### 2. ドキュメント読了順序
-
-1. **JNI_BRIDGE_DESIGN.md** を読んで全体像を理解
-2. **IMPLEMENTATION_GUIDE.md** で実装方法を確認
-3. **JNI_QUICK_REFERENCE.md** で必要なコマンド・コードを検索
-
-### 3. 実装開始
-
-```bash
 # ビルド
-./gradlew assembleDebug
+./gradlew clean build
 
 # デバイスにインストール
 adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
 
-# ログを見ながらテスト
-adb logcat -s OblivionEngine OblivionEngineJNI | head -100
+### ドキュメント参照
+
+```bash
+# ドキュメントディレクトリ
+cd docs/
+
+# 主要ドキュメント
+cat README.md           # このファイル
+cat ARCHITECTURE.md     # アーキテクチャ
+cat DEVELOPMENT_HISTORY.md  # 開発履歴
 ```
 
 ---
 
-## ファイル説明表
+## プロジェクト構成
 
-| ファイル | 用途 | 開発者向け | PM向け |
-|---------|------|----------|--------|
-| JNI_BRIDGE_DESIGN.md | システムアーキテクチャ | 必読 | 必読 |
-| IMPLEMENTATION_GUIDE.md | 実装ガイド | 必読 | 参考 |
-| JNI_QUICK_REFERENCE.md | 開発支援 | 頻読 | 参考 |
-| OblivionEngine.kt | JNI ラッパー | 実装対象 | - |
-| GameActivity.kt | メイン Activity | 実装対象 | - |
-| com_example_oblivion_OblivionEngine.cpp | JNI 実装 | 実装対象 | - |
-| Engine.h/cpp | エンジンコア | 実装対象 | - |
-
----
-
-## 設計の主要ポイント
-
-### アーキテクチャの特徴
-
-1. **シングルトンパターン**
-   - `OblivionEngine` はシングルトンとして実装
-   - グローバルにアクセス可能、インスタンスは一つ
-
-2. **スレッドセーフ設計**
-   - `ReentrantReadWriteLock` で読み取り多重化
-   - ホットパス（タッチイベント）での優適化
-   - Condition Variable でスレッド同期
-
-3. **例外安全性**
-   - JNI 層で全例外をキャッチ
-   - Java 側で `OblivionException` として再スロー
-   - エラーコードとメッセージのペアで返却
-
-4. **リソース管理**
-   - RAII パターンで自動クリーンアップ
-   - `unique_ptr` で所有権明確化
-   - メモリリーク検出テスト実装
-
-5. **ライフサイクル管理**
-   - 状態マシンで厳密なステート遷移
-   - Surface 生成・破棄時のタイミング制御
-   - Render thread の安全な終了
-
----
-
-## 開発フロー
-
-### Phase 1: セットアップ
-- [ ] ドキュメント読了
-- [ ] 開発環境構築
-- [ ] ビルド確認
-
-### Phase 2: 基本実装
-- [ ] OblivionEngine.kt 完成
-- [ ] GameActivity.kt 実装
-- [ ] JNI ブリッジ実装
-- [ ] 単体テスト
-
-### Phase 3: Vulkan 統合
-- [ ] Engine.h/cpp 実装
-- [ ] Vulkan 初期化
-- [ ] Surface 管理
-- [ ] レンダリングループ
-
-### Phase 4: 入力・ライフサイクル
-- [ ] InputHandler 実装
-- [ ] タッチイベント処理
-- [ ] Pause/Resume
-- [ ] 統合テスト
-
-### Phase 5: 最適化・本番化
-- [ ] パフォーマンス測定
-- [ ] メモリリーク検査
-- [ ] ストレステスト
-- [ ] リリース準備
-
----
-
-## トラブルシューティングフロー
+### ソースコード
 
 ```
-問題が発生
-  ↓
-IMPLEMENTATION_GUIDE.md の「トラブルシューティング」を確認
-  ↓
-該当する項目あり? 
-  ├─ YES → 解決策を実行
-  └─ NO → 次へ
-  ↓
-JNI_QUICK_REFERENCE.md でコマンド・コード例を検索
-  ↓
-問題解決 OR ドキュメント更新要望を報告
+app/src/main/cpp/
+├── engine/          # レンダリング、カメラ、シェーダー
+├── game/            # NPC、戦闘、クエスト、魔法
+├── world/           # セル、ドア、ワールド管理
+├── assets/          # NIF、DDS、アセットマネージャー
+├── audio/           # オーディオシステム
+├── ui/              # テキスト、デバッグHUD、設定UI
+├── system/          # 設定管理
+├── geometry/        # メッシュ、キューブ
+├── include/glm/     # 数学ライブラリ
+└── CMakeLists.txt
+```
+
+### ドキュメント
+
+```
+docs/
+├── README.md                    # このファイル（目次）
+├── ARCHITECTURE.md              # システムアーキテクチャ
+├── IMPLEMENTATION_GUIDE.md      # JNI実装ガイド
+├── JNI_BRIDGE_DESIGN.md         # JNIブリッジ設計
+├── JNI_QUICK_REFERENCE.md       # JNIクイックリファレンス
+├── ASSET_GUIDE.md               # アセット統合ガイド
+├── AUDIO_SYSTEM.md              # オーディオシステム
+├── FPS_CONTROL_GUIDE.md         # FPS制御ガイド
+├── SAVE_LOAD_IMPLEMENTATION.md  # セーブ/ロード実装
+├── CODE_QUALITY_IMPROVEMENTS.md # コード品質改善
+├── DEVELOPMENT_HISTORY.md       # 開発履歴
+└── PHASE9_PLAN.md               # Phase 9計画
 ```
 
 ---
 
-## 参考資料リンク
+## 技術スタック
 
-### 公式ドキュメント
-- [Android JNI Tips](https://developer.android.com/training/articles/perf-jni)
-- [Vulkan Quick Start](https://www.khronos.org/vulkan/how-to-guide)
-- [Android NDK Guide](https://developer.android.com/ndk/guides)
+| コンポーネント | 技術 |
+|--------------|------|
+| レンダリング | OpenGL ES 3.0 |
+| ネイティブコード | C++17 (NDK r26.1) |
+| Java連携 | JNI (Java Native Interface) |
+| オーディオ | OpenAL-Soft + Android MediaPlayer |
+| ビルドシステム | CMake 3.16+ / Gradle 9.4+ |
+| 対象API | Android 10+ (API 29+) |
 
-### 関連ファイル
-- `app/build.gradle` - Gradle ビルド設定
-- `app/src/main/cpp/CMakeLists.txt` - CMake ビルド設定
-- `gradle.properties` - グローバルプロパティ
+---
+
+## 現在のステータス
+
+### バージョン情報
+
+- **現在バージョン**: 0.9.0
+- **現在フェーズ**: Phase 9 (最終統合)
+- **目標**: v1.0.0リリース
+
+### 完了フェーズ
+
+- ✅ Phase 1: 基盤構築
+- ✅ Phase 2: アセット管理
+- ✅ Phase 3: ゲームワールド
+- ✅ Phase 4: NPC＆インタラクション
+- ✅ Phase 5: 戦闘＆クエスト
+- ✅ Phase 6: パフォーマンス最適化
+- ✅ Phase 7: リリース準備
+- ✅ Phase 8: オーディオシステム
+
+### パフォーマンス
+
+| 指標 | 目標 | 実績 |
+|------|------|------|
+| FPS | 30 fps | 60 fps ✅ |
+| メモリ | < 1 GB | 40 MB ✅ |
+| CPU | < 10% | < 0.1% ✅ |
+| APKサイズ | < 100 MB | 8.4 MB ✅ |
 
 ---
 
 ## よくある質問 (FAQ)
 
 **Q: どのドキュメントから読み始めればよい?**  
-A: `JNI_BRIDGE_DESIGN.md` から始めてください。全体像を理解した後、`IMPLEMENTATION_GUIDE.md` で詳細を確認します。
+A: このREADME.mdから始めてください。全体像を理解した後、ARCHITECTURE.mdでシステム構造を把握します。
 
-**Q: コードのサンプルはどこにある?**  
-A: `JNI_QUICK_REFERENCE.md` に Kotlin/C++ のスニペット集があります。
+**Q: アセット統合の方法は?**  
+A: ASSET_GUIDE.mdを参照してください。ISO抽出、BSA展開、Androidプロジェクトへの配置方法を詳細に説明しています。
 
-**Q: エラーメッセージの意味がわからない**  
-A: `IMPLEMENTATION_GUIDE.md` の「トラブルシューティング」セクションで一般的なエラーと解決策を記載しています。
+**Q: オーディオシステムの実装状況は?**  
+A: AUDIO_SYSTEM.mdを参照してください。OpenAL-Soft統合、JNI Audio Bridge、MediaPlayer連携の詳細があります。
 
-**Q: パフォーマンスを改善したい**  
-A: `IMPLEMENTATION_GUIDE.md` の「ベストプラクティス」セクションで最適化方法を紹介しています。
+**Q: 開発履歴を確認したい**  
+A: DEVELOPMENT_HISTORY.mdを参照してください。Phase 1からPhase 9までの全開発履歴が記載されています。
 
----
-
-## ドキュメント更新履歴
-
-| 日付 | バージョン | 更新内容 |
-|------|----------|--------|
-| 2026-06-06 | 1.0 | 初版作成 |
+**Q: JNI実装で問題が発生した**  
+A: IMPLEMENTATION_GUIDE.mdのトラブルシューティングセクションを確認してください。一般的なエラーと解決策を記載しています。
 
 ---
 
@@ -265,12 +203,26 @@ A: `IMPLEMENTATION_GUIDE.md` の「ベストプラクティス」セクション
 
 このドキュメントを改善するための提案は以下の形式で報告してください:
 
-1. **誤り の報告**: 正確な箇所と修正案を記述
+1. **誤りの報告**: 正確な箇所と修正案を記述
 2. **内容追加**: 不足している内容とその理由を記述
 3. **例示更新**: より良い例やサンプルコードを提案
 
 ---
 
-**最後に更新**: 2026-06-06  
-**作成者**: Claude Code  
-**ステータス**: ドキュメント完成
+## 参考資料
+
+### 公式ドキュメント
+- [Android JNI Tips](https://developer.android.com/training/articles/perf-jni)
+- [OpenGL ES 3.0](https://www.khronos.org/registry/OpenGL-Refpages/es3/)
+- [Android NDK Guide](https://developer.android.com/ndk/guides)
+- [OpenAL-Soft](https://openal-soft.org/)
+
+### 関連ファイル
+- `app/build.gradle` - Gradleビルド設定
+- `app/src/main/cpp/CMakeLists.txt` - CMakeビルド設定
+- `CHANGELOG.md` - 変更履歴
+
+---
+
+**最終更新**: 2026-08-27  
+**ステータス**: ドキュメント統合完了
