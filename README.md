@@ -1,7 +1,7 @@
 # Oblivion Android - Complete Native Port
 
-![Status](https://img.shields.io/badge/status-Phase%2036-brightgreen)
-![Version](https://img.shields.io/badge/version-0.9.10-blue)
+![Status](https://img.shields.io/badge/status-Phase%2055-brightgreen)
+![Version](https://img.shields.io/badge/version-3.1.0-blue)
 ![Android](https://img.shields.io/badge/android-10%2B-green)
 
 ---
@@ -315,9 +315,9 @@ When **Debug Mode: ON**, real-time display:
 
 ### [REF] Documentation
 
-- [INSTALLATION.md](INSTALLATION.md) - Detailed install guide with troubleshooting
-- [GAMEPLAY.md](GAMEPLAY.md) - Complete gameplay mechanics and systems guide
-- [KNOWN_ISSUES.md](KNOWN_ISSUES.md) - Current limitations and workarounds
+- [docs/README.md](docs/README.md) - ドキュメント目次
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - システムアーキテクチャ
+- [docs/DEVELOPMENT_HISTORY.md](docs/DEVELOPMENT_HISTORY.md) - 開発履歴
 - [PERFORMANCE_REPORT.md](PERFORMANCE_REPORT.md) - Detailed performance metrics
 - [CHANGELOG.md](CHANGELOG.md) - Complete development history
 
@@ -381,11 +381,8 @@ oblivion-android/
 │   │   └── CMakeLists.txt   (Build Config)
 │   └── res/                 (Resources, Strings)
 ├── docs/                    (Phase plans, asset integration plans)
-├── INSTALLATION.md
-├── GAMEPLAY.md
-├── KNOWN_ISSUES.md
-├── PERFORMANCE_REPORT.md
 ├── CHANGELOG.md
+├── Handbook.md
 └── README.md (this file)
 ```
 
@@ -435,6 +432,7 @@ oblivion-android/
 | Phase 52 (v2.5.0) | FaceGen NPC Faces | [x] Complete | FaceGenMorpher (morph targets, texture blending), FaceGenParser (FGTS/FGGS/FGGA subrecords), FaceGenTextureCompositor (multi-layer blending), FaceGenLODManager (4 LOD levels) |
 | Phase 53 (v2.5.0) | Bink Video | [x] Complete | BinkVideoPlayer (MediaCodec JNI, playback control, loop), VideoClipManager (preload, LRU eviction), VideoRenderer (SurfaceTexture→OpenGL), VideoBridge.java (async decode thread) |
 | Phase 54 (v3.0.0) | Imperial Weave v4.0 | [x] Complete | ImperialWeaveConfig struct, 15-phase pipeline, frame budget (16.6ms), new engine events, SpeedTree/FaceGen/BinkVideo render integration |
+| Phase 55 (v3.1.0) | Engine Polish & Optimization | [x] Complete | FrameBudgetManager (quality scaling ULTRA→POTATO), MemoryDefrag (pool allocator, compaction, handle indirection), ShaderCache (LRU, permutations, uniform cache), OcclusionCuller (HZB, sphere test), BatchRenderer (material batching), FaceGen Brush-up (expression/race/LOD/hair), Jolt Physics Extension (ragdoll/material/joint/destruction/vehicle) |
 
 ---
 
@@ -498,7 +496,7 @@ oblivion-android/
 - ~~No REFR-based object placement~~ [x] REFR placement with 8 object types (Phase 29)
 - ~~Limited spell effects (4)~~ [x] 8 spell effects including Paralyze/Invisibility/Fortify/Summon (Phase 29)
 
-See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for complete list.
+See [docs/README.md](docs/README.md) for complete documentation.
 
 ---
 
@@ -527,7 +525,7 @@ See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for complete list.
 ### [BUG] Reporting Issues
 
 Found a bug? Please:
-1. Check [KNOWN_ISSUES.md](KNOWN_ISSUES.md) first
+1. Check [docs/README.md](docs/README.md) first
 2. Collect device info (model, Android version, logcat)
 3. Provide reproduction steps
 4. Include relevant logs
@@ -611,17 +609,17 @@ Proprietary - Experimental Port
 ### [HELP] Support
 
 - **Documentation**: See `/docs` directory
-- **Build Issues**: Check [INSTALLATION.md](INSTALLATION.md)
-- **Gameplay Questions**: See [GAMEPLAY.md](GAMEPLAY.md)
+- **Build Issues**: Check [docs/IMPLEMENTATION_GUIDE.md](docs/IMPLEMENTATION_GUIDE.md)
+- **Gameplay Questions**: See [README.md](README.md) gameplay section
 - **Performance**: See [PERFORMANCE_REPORT.md](PERFORMANCE_REPORT.md)
 
 ---
 
-**Status**: Phase 54 Complete (v3.0.0) — Imperial Weave v4.0 Full Integration
+**Status**: Phase 55 Complete (v3.1.0) — Engine Polish & Optimization
 **Last Updated**: 2026-08-28
 **Version**: 3.0.0
 **Features**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD, ESM Data Integration (40 record types), NpcManager ESM, Container ESM, Player RACE/CLAS/BSGN, Status Effects, NAVM Pathfinding, DIAL/INFO Dialogue, REFR Placement, Spell Effects (8 types), Alchemy, Book Reader, Faction Manager, Loot Generator, NIF Skeleton/Skinning, Animation System, Collision Detection, Integration Tests (Phase 30), WorldEntity + WorldLoader + PlayerController Integration (Phase 31), Imperial Weave EventBus + 12-phase coordinator, AnimationSubscriber, AudioSubscriber, SpellSelectionPanel (Phase 32), Dedicated Combat Sounds, NPC Spatial Audio (Phase 33), Weapon-Type Sound Routing, Quick-Slot Spells (Phase 34), Radiant AI System (Phase 35), Jolt Physics Integration (Phase 36), Script VM (Phase 37), Full World Load (Phase 38), Quest Flow (Phase 39), NPC Dialogue (Phase 40), Full Save/Load (Phase 41), Game Loop Integration (Phase 42), UI/UX Touch Controls (Phase 43), Performance Optimization (Phase 44), Unit Tests 37 cases (Phase 45), Asset Pipeline BSA/ESM/NIF (Phase 46), Audio System BGM/SFX (Phase 47), Integration & Stress Tests (Phase 48), Gamepad/Touch/HUD Controls (Phase 49), Distant LOD System (Phase 50), SpeedTree Vegetation (Phase 51), FaceGen NPC Faces (Phase 52), Bink Video Playback (Phase 53), Imperial Weave v4.0 Full Integration (Phase 54)
-**Next**: Phase 55 - Engine Polish & Optimization
+**Next**: Phase 56 - Content Expansion & Gameplay Polish
 
 ---
 
@@ -802,9 +800,9 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 
 ### [REF] ドキュメント
 
-- [INSTALLATION.md](INSTALLATION.md) - 詳細インストールガイドとトラブルシューティング
-- [GAMEPLAY.md](GAMEPLAY.md) - ゲームプレイ完全ガイド
-- [KNOWN_ISSUES.md](KNOWN_ISSUES.md) - 現在の制限と回避策
+- [docs/README.md](docs/README.md) - ドキュメント目次
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - システムアーキテクチャ
+- [docs/DEVELOPMENT_HISTORY.md](docs/DEVELOPMENT_HISTORY.md) - 開発履歴
 - [PERFORMANCE_REPORT.md](PERFORMANCE_REPORT.md) - 詳細パフォーマンス指標
 - [CHANGELOG.md](CHANGELOG.md) - 開発履歴
 
@@ -868,11 +866,8 @@ oblivion-android/
 │   │   └── CMakeLists.txt   ビルド設定
 │   └── res/                 リソース、文字列
 ├── docs/                    フェーズ計画、アセット統合計画
-├── INSTALLATION.md
-├── GAMEPLAY.md
-├── KNOWN_ISSUES.md
-├── PERFORMANCE_REPORT.md
 ├── CHANGELOG.md
+├── Handbook.md
 └── README.md (このファイル)
 ```
 
@@ -922,6 +917,7 @@ oblivion-android/
 | Phase 52 (v2.5.0) | FaceGen NPC顔 | [x] 完了 | FaceGenMorpher（モーフターゲット、テクスチャブレンド）、FaceGenParser（FGTS/FGGS/FGGAサブレコード）、FaceGenTextureCompositor（多層ブレンド）、FaceGenLODManager（4段階LOD） |
 | Phase 53 (v2.5.0) | Bink Video | [x] 完了 | BinkVideoPlayer（MediaCodec JNI、再生制御、ループ）、VideoClipManager（プリロード、LRU退避）、VideoRenderer（SurfaceTexture→OpenGL変換）、VideoBridge.java（非同期デコードスレッド） |
 | Phase 54 (v3.0.0) | Imperial Weave v4.0 | [x] 完了 | ImperialWeaveConfig構造体、15フェーズパイプライン、フレームバジェット（16.6ms）、新エンジンイベント、SpeedTree/FaceGen/BinkVideoレンダリング統合 |
+| Phase 55 (v3.1.0) | エンジンポリッシュ＆最適化 | [x] 完了 | FrameBudgetManager（品質スケーリングULTRA→POTATO）、MemoryDefrag（プールアロケータ、コンパクション、ハンドル間接参照）、ShaderCache（LRU、パーミュテーション、ユニフォームキャッシュ）、OcclusionCuller（HZB、球テスト）、BatchRenderer（マテリアルバッチング）、FaceGenブラッシュアップ（表情/種族/LOD/髪）、Jolt物理拡張（ラグドール/マテリアル/ジョイント/破壊/乗り物） |
 
 ---
 
@@ -984,7 +980,7 @@ oblivion-android/
 - ~~REFRベースのオブジェクト配置なし~~ [x] 8種オブジェクトタイプのREFR配置（Phase 29）
 - ~~限定的な呪文エフェクト（4種）~~ [x] 麻痺/不可視/強化/召喚含む8種（Phase 29）
 
-完全なリストは [KNOWN_ISSUES.md](KNOWN_ISSUES.md) を参照。
+完全なリストは [docs/README.md](docs/README.md) を参照。
 
 ---
 
@@ -1008,7 +1004,7 @@ oblivion-android/
 ### [BUG] 問題報告
 
 バグを発見しましたか？
-1. まず [KNOWN_ISSUES.md](KNOWN_ISSUES.md) を確認
+1. まず [docs/README.md](docs/README.md) を確認
 2. デバイス情報（モデル、Androidバージョン、logcat）を収集
 3. 再現手順を提供
 4. 関連ログを含める
@@ -1092,8 +1088,8 @@ oblivion-android/
 ### [HELP] サポート
 
 - **ドキュメント**: `/docs` ディレクトリを参照
-- **ビルド問題**: [INSTALLATION.md](INSTALLATION.md) を確認
-- **ゲームプレイの質問**: [GAMEPLAY.md](GAMEPLAY.md) を参照
+- **ビルド問題**: [docs/IMPLEMENTATION_GUIDE.md](docs/IMPLEMENTATION_GUIDE.md) を確認
+- **ゲームプレイの質問**: [README.md](README.md) のゲームプレイセクションを参照
 - **パフォーマンス**: [PERFORMANCE_REPORT.md](PERFORMANCE_REPORT.md) を参照
 
 ---
@@ -1110,4 +1106,4 @@ oblivion-android/
 （Phase 32）、専用コンバットサウンド、NPC空間オーディオ
 （Phase 33）、武器タイプサウンドルーティング、クイックスロット呪文
 （Phase 34）、Radiant AIシステム（Phase 35）、Jolt Physics統合（Phase 36）、スクリプトVM（Phase 37）、フルワールドロード（Phase 38）、クエストフロー（Phase 39）、NPCダイアログ（Phase 40）、フルセーブ/ロード（Phase 41）、ゲームループ統合（Phase 42）、UI/UXタッチ操作（Phase 43）、パフォーマンス最適化（Phase 44）
-**次回**: Phase 55 - エンジンポリッシュ＆最適化
+**次回**: Phase 56 - コンテンツ拡張＆ゲームプレイポリッシュ
