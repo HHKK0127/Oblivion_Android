@@ -16,6 +16,7 @@
 #include "../world/distant_lod/distant_lod_manager.h"
 #include "../vegetation/speed_tree_manager.h"
 #include "../character/face_gen_morpher.h"
+#include "../video/bink_video_player.h"
 
 namespace weave {
 
@@ -176,7 +177,8 @@ void ImperialWeave::init(
     ::oblivion::script::ScriptManager* script,
     ::DistantLodManager* distantLod,
     ::vegetation::SpeedTreeManager* speedTree,
-    ::facegen::FaceGenMorpher* faceGen
+    ::facegen::FaceGenMorpher* faceGen,
+    ::oblivion::video::BinkVideoPlayer* binkVideo
 ) {
     renderer_ = renderer;
     worldManager_ = world;
@@ -194,6 +196,7 @@ void ImperialWeave::init(
     distantLodManager_ = distantLod;
     speedTreeManager_ = speedTree;
     faceGenMorpher_ = faceGen;
+    binkVideoPlayer_ = binkVideo;
 
     // Register services for cross-module access
     if (renderer) locator_.registerService(renderer);
@@ -212,6 +215,7 @@ void ImperialWeave::init(
     if (distantLod) locator_.registerService(distantLod);
     if (speedTree) locator_.registerService(speedTree);
     if (faceGen)  locator_.registerService(faceGen);
+    if (binkVideo) locator_.registerService(binkVideo);
 
     initialized_ = true;
 }
@@ -231,6 +235,7 @@ void ImperialWeave::shutdown() {
     distantLodManager_ = nullptr;
     speedTreeManager_ = nullptr;
     faceGenMorpher_ = nullptr;
+    binkVideoPlayer_ = nullptr;
     initialized_ = false;
 }
 
