@@ -257,6 +257,12 @@ add_library(native-lib SHARED
     dialogue/dialogue_history.cpp
     dialogue/dialogue_integration.cpp
 
+    # Phase 53: Bink Video replacement (MediaCodec-based video playback)
+    video/bink_video_player.cpp
+    video/video_decoder_jni.cpp
+    video/video_clip_manager.cpp
+    video/video_renderer.cpp
+
     # JNI Bridge (Java/C++ communication)
     jni_bridge.cpp
 )
@@ -286,6 +292,7 @@ target_include_directories(native-lib PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/script
     ${CMAKE_CURRENT_SOURCE_DIR}/quest
     ${CMAKE_CURRENT_SOURCE_DIR}/dialogue
+    ${CMAKE_CURRENT_SOURCE_DIR}/video
 )
 
 # Find OpenAL-Soft (optional for now)

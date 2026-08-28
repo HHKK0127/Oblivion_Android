@@ -42,6 +42,12 @@ namespace animation {
 class AnimationPlayer;
 }
 
+namespace oblivion {
+namespace video {
+class BinkVideoPlayer;
+}
+}
+
 namespace weave {
 
 // ============================================================================
@@ -212,7 +218,8 @@ public:
         ::SpellManager* spell = nullptr,
         ::AudioManager* audio = nullptr,
         ::oblivion::PhysicsManager* joltPhysics = nullptr,
-        ::oblivion::script::ScriptManager* script = nullptr
+        ::oblivion::script::ScriptManager* script = nullptr,
+        ::oblivion::video::BinkVideoPlayer* binkVideo = nullptr
     );
 
     void shutdown();
@@ -249,6 +256,7 @@ private:
     ::AudioManager* audioManager_ = nullptr;
     ::oblivion::PhysicsManager* joltPhysics_ = nullptr;
     ::oblivion::script::ScriptManager* scriptManager_ = nullptr;
+    ::oblivion::video::BinkVideoPlayer* binkVideoPlayer_ = nullptr;
 
     bool initialized_ = false;
 
