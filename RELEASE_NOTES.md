@@ -1,23 +1,17 @@
-# Oblivion Android v1.5.0 - Release Notes
+# Oblivion Android - Development Build
 
-## Release Date
-2026-08-29
+## Current Version
+0.9.10 (Phase 63 - Development Build)
 
-## Version
-1.5.0 (Phase 62 - Asset Integration Complete)
+## Status
+App is not yet launchable. Version will remain at 0.x until the app can successfully start and run.
 
-## What's New
+---
 
-### Complete Engine Implementation
-- **62 phases** of development completed
-- **7 middleware engines** at or above 65% completion
-- **Gamebryo equivalent**: 100% complete
-- **Script VM**: 47 opcodes, 118 game functions
-- **Physics**: Jolt Physics integration
-- **Audio**: OpenAL-Soft 3D audio
-- **UI**: Complete graphical UI and HUD system
+## Phase 58-63: Asset Optimization & Compression
 
-### Asset Optimization (Phase 58-62)
+### Asset Optimization Systems
+
 - **AssetExtractor**: External storage asset management
 - **TextureCompressor**: ASTC 4x4/6x6/8x8, ETC2 RGB/RGBA support
 - **AudioCompressor**: WAV to OGG/MP3/AAC conversion
@@ -28,6 +22,9 @@
 - **Language**: C++17
 - **Graphics**: OpenGL ES 3.0
 - **Platform**: Android 10+ (API 25+)
+- **Physics**: Jolt Physics
+- **Audio**: OpenAL-Soft
+- **Architecture**: arm64-v8a, armeabi-v7a, x86, x86_64
 - **Architecture**: arm64-v8a, armeabi-v7a, x86, x86_64
 
 ## Known Issues
@@ -39,13 +36,7 @@ The current APK is approximately 1.1 GB due to bundled game assets:
 - **Audio**: 112 MB (WAV files)
 - **Native libraries**: 50 MB (4 architectures)
 
-### Asset Requirements
-This application requires original Oblivion game assets to function properly. The bundled assets are for development/testing purposes only.
-
-**For production release:**
-1. Remove large assets from APK
-2. Implement asset extraction from external storage
-3. Or use Android's expansion file (OBB) system
+Note: App store distribution is not planned, so APK size optimization is not a priority.
 
 ## Installation
 
