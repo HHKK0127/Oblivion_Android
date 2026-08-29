@@ -51,6 +51,31 @@ class MainActivity : Activity() {
         instance = this
 
         try {
+            // Extract assets to external storage if needed
+            Log.i(TAG, "Checking asset extraction")
+            val assetExtractor = AssetExtractor(this)
+            if (assetExtractor.needsExtraction()) {
+                Log.i(TAG, "Extracting assets to external storage")
+                Thread {
+                    assetExtractor.extractAssets { current, total ->
+                        Log.d(TAG, "Extracting: $current/$total")
+                    }
+                    runOnUiThread {
+                        Log.i(TAG, "Asset extraction complete")
+                        initializeGame()
+                    }
+                }.start()
+            } else {
+                Log.i(TAG, "Assets already extracted")
+                initializeGame()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception in onCreate: ${e.message}", e)
+        }
+    }
+
+    private fun initializeGame() {
+        try {
             Log.i(TAG, "Initializing audio system")
             initializeAudio()
 
@@ -60,7 +85,7 @@ class MainActivity : Activity() {
             setContentView(gameSurfaceView)
             Log.i(TAG, "ContentView set successfully")
         } catch (e: Exception) {
-            Log.e(TAG, "Exception in onCreate: ${e.message}", e)
+            Log.e(TAG, "Exception in initializeGame: ${e.message}", e)
         }
     }
 
