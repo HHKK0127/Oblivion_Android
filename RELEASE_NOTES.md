@@ -1,21 +1,28 @@
-# Oblivion Android v1.0.0 - Release Notes
+# Oblivion Android v1.5.0 - Release Notes
 
 ## Release Date
 2026-08-29
 
 ## Version
-1.0.0 (Phase 57 - Final Integration & Release)
+1.5.0 (Phase 62 - Asset Integration Complete)
 
 ## What's New
 
 ### Complete Engine Implementation
-- **57 phases** of development completed
+- **62 phases** of development completed
 - **7 middleware engines** at or above 65% completion
 - **Gamebryo equivalent**: 100% complete
 - **Script VM**: 47 opcodes, 118 game functions
 - **Physics**: Jolt Physics integration
 - **Audio**: OpenAL-Soft 3D audio
 - **UI**: Complete graphical UI and HUD system
+
+### Asset Optimization (Phase 58-62)
+- **AssetExtractor**: External storage asset management
+- **TextureCompressor**: ASTC 4x4/6x6/8x8, ETC2 RGB/RGBA support
+- **AudioCompressor**: WAV to OGG/MP3/AAC conversion
+- **LODSystem**: Distance-based mesh detail levels
+- **Batch compression scripts**: Offline asset compression tools
 
 ### Technical Specifications
 - **Language**: C++17
@@ -67,17 +74,15 @@ This application requires original Oblivion game assets to function properly. Th
 
 ## Future Work
 
-### Phase 58+: Asset Optimization
-- Implement asset streaming from external storage
-- Add asset compression (ASTC/ETC2 for textures)
-- Implement LOD system for distant objects
-- Add asset caching and preloading
+### Phase 63+: Final Release Preparation
+- Execute asset compression on device
+- Optimize APK size
+- Final testing and validation
 
-### Phase 59+: Performance Optimization
-- Implement occlusion culling
-- Add shader caching
-- Optimize memory allocation
-- Add frame budget management
+### Phase 64+: Production Release
+- Remove development assets from APK
+- Implement asset download system
+- App store preparation
 
 ## Credits
 
