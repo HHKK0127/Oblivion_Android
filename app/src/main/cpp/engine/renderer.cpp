@@ -1819,6 +1819,25 @@ void Renderer::render(float deltaTime) {
             }
         }
 
+        // Check if Credits was requested
+        if (titleScreen->isCreditsRequested()) {
+            titleScreen->resetCreditsRequest();
+            // TODO: Implement credits screen overlay
+            LOGI("Credits requested from title screen (not yet implemented)");
+        }
+
+        // Check if Quit was requested (return to launcher)
+        if (titleScreen->isQuitRequested()) {
+            titleScreen->resetQuitRequest();
+            showTitleScreen = false;
+            showLauncher = true;
+            if (launcherScreen) {
+                launcherScreen->initialize(localizationManager.get(), textRenderer.get());
+                launcherScreen->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+            }
+            LOGI("Title screen Quit - returning to launcher");
+        }
+
         if (titleScreen->isGameStarted()) {
             showTitleScreen = false;
             // Show combat buttons when game starts
@@ -2199,12 +2218,13 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
     if (action == 0 || action == 5) { // DOWN
         touchStates[pointerId] = {x, y, true};
     } else if (action == 2) { // MOVE
-        if (touchStates.find(pointerId) != touchStates.end() && touchStates[pointerId].active) {
-            dx = x - touchStates[pointerId].lastX;
-            dy = y - touchStates[pointerId].lastY;
+        auto it = touchStates.find(pointerId);
+        if (it != touchStates.end() && it->second.active) {
+            dx = x - it->second.lastX;
+            dy = y - it->second.lastY;
+            it->second.lastX = x;
+            it->second.lastY = y;
         }
-        touchStates[pointerId].lastX = x;
-        touchStates[pointerId].lastY = y;
     } else if (action == 1 || action == 6 || action == 3) { // UP or CANCEL
         if (touchStates.find(pointerId) != touchStates.end()) {
             touchStates[pointerId].active = false;

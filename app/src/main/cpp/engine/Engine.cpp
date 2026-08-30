@@ -128,7 +128,7 @@ void Engine::gameLoop() {
     try {
         int frameCount = 0;
         while (gameLoopRunning_) {
-            if (gameLoopPaused_) {
+            if (isPaused_) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(16));
                 continue;
             }
@@ -179,13 +179,11 @@ void Engine::run() {
 
 void Engine::pause() {
     isPaused_ = true;
-    gameLoopPaused_ = true;
     LOGI("Engine paused");
 }
 
 void Engine::resume() {
     isPaused_ = false;
-    gameLoopPaused_ = false;
     LOGI("Engine resumed");
 }
 
@@ -532,6 +530,12 @@ bool Engine::createLogicalDevice() {
     LOGI("createLogicalDevice() starting");
 
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice_);
+
+    if (!indices.isComplete()) {
+        LOGE("Failed to find complete queue families");
+        return false;
+    }
+
     LOGI("Found queue families");
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;

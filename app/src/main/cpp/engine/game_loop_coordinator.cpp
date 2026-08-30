@@ -89,6 +89,12 @@ void GameLoopCoordinator::setInputRouter(InputRouter* i) { inputRouter_ = i; }
 void GameLoopCoordinator::update(float deltaTime) {
     auto frameStart = std::chrono::high_resolution_clock::now();
 
+    // Guard against NaN/Inf delta time
+    if (std::isnan(deltaTime) || std::isinf(deltaTime)) {
+        LOGW("Invalid deltaTime detected (%f), using default 1/60s", deltaTime);
+        deltaTime = 1.0f / 60.0f;
+    }
+
     // Clamp delta time to prevent spiral of death
     if (deltaTime > 0.1f) deltaTime = 0.1f;
     if (deltaTime <= 0.0f) deltaTime = 1.0f / 60.0f;
