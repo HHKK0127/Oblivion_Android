@@ -310,10 +310,13 @@ ScriptVariableCondition DialogueRecordParser::parseSCVR(const SubRecord& sub) {
     // Bytes 0-3: variable FormID
     // Bytes 4-7: variable type + comparison
     std::memcpy(&svc.variableFormID, sub.data.data(), 4);
-    if (sub.data.size() >= 8) {
+        if (sub.data.size() >= 5) {
         svc.variableType = sub.data[4];
-        std::memcpy(&svc.comparisonValue, sub.data.data() + 4, 4);
-    }
+        }
+        // Fix: read comparisonValue from offset +5 (not +4 which overlaps variableType)
+        if (sub.data.size() >= 9) {
+            std::memcpy(&svc.comparisonValue, sub.data.data() + 5, 4);
+        }
 
     return svc;
 }

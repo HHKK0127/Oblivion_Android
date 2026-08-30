@@ -80,7 +80,9 @@ public:
     std::vector<NPCConversationSummary> getAllNPCSummaries() const;
 
     // Get total entry count
-    size_t getTotalEntryCount() const { return globalBuffer.size(); }
+        size_t getTotalEntryCount() const {
+            return globalWrapped ? globalCapacity : globalWriteIndex;
+        }
 
     // Get NPC entry count
     size_t getNPCEntryCount(uint32_t npcFormID) const;

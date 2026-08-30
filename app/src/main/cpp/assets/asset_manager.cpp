@@ -126,7 +126,7 @@ bool AssetManager::loadEsmFromArchive(const std::string& esmName) {
     
     // The ESM is stored inside a BSA. Find the ESM file from the archives.
     std::string searchPath = esmName;
-    std::replace(searchPath.begin(), searchPath.end(), '/', '\\');
+    std::replace(searchPath.begin(), searchPath.end(), '\\', '/');
     
     // Search all loaded BSA archives for the ESM file
     for (auto it = m_archives.rbegin(); it != m_archives.rend(); ++it) {
@@ -146,7 +146,7 @@ bool AssetManager::loadEsmFromArchive(const std::string& esmName) {
     
     // Fallback to direct file
     if (!m_dataPath.empty()) {
-        std::string fullPath = m_dataPath + "\\" + searchPath;
+        std::string fullPath = m_dataPath + "/" + searchPath;
         return m_esmManager.loadPlugin(fullPath);
     }
     
@@ -160,7 +160,7 @@ bool AssetManager::loadEsmFromArchive(const std::string& esmName) {
 
 std::vector<uint8_t> AssetManager::loadFileData(const std::string& path) {
     std::string searchPath = path;
-    std::replace(searchPath.begin(), searchPath.end(), '/', '\\');
+    std::replace(searchPath.begin(), searchPath.end(), '\\', '/');
 
     // Search BSA archives in reverse order (last loaded = highest priority)
     for (auto it = m_archives.rbegin(); it != m_archives.rend(); ++it) {
@@ -176,7 +176,7 @@ std::vector<uint8_t> AssetManager::loadFileData(const std::string& path) {
 
     // Fallback to direct file access
     if (!m_dataPath.empty()) {
-        std::string fullPath = m_dataPath + "\\" + searchPath;
+        std::string fullPath = m_dataPath + "/" + searchPath;
         std::ifstream file(fullPath, std::ios::binary);
         if (file.is_open()) {
             file.seekg(0, std::ios::end);
@@ -195,7 +195,7 @@ std::vector<uint8_t> AssetManager::loadFileData(const std::string& path) {
 
 bool AssetManager::fileExists(const std::string& path) const {
     std::string searchPath = path;
-    std::replace(searchPath.begin(), searchPath.end(), '/', '\\');
+    std::replace(searchPath.begin(), searchPath.end(), '\\', '/');
 
     for (const auto& archive : m_archives) {
         if (archive->findFile(searchPath)) {
@@ -204,7 +204,7 @@ bool AssetManager::fileExists(const std::string& path) const {
     }
 
     if (!m_dataPath.empty()) {
-        std::string fullPath = m_dataPath + "\\" + searchPath;
+        std::string fullPath = m_dataPath + "/" + searchPath;
         std::ifstream file(fullPath);
         return file.good();
     }
@@ -215,7 +215,7 @@ bool AssetManager::fileExists(const std::string& path) const {
 std::vector<std::string> AssetManager::findFiles(const std::string& prefix) const {
     std::vector<std::string> results;
     std::string searchPrefix = prefix;
-    std::replace(searchPrefix.begin(), searchPrefix.end(), '/', '\\');
+    std::replace(searchPrefix.begin(), searchPrefix.end(), '\\', '/');
 
     for (const auto& archive : m_archives) {
         auto entries = archive->findFilesByPrefix(searchPrefix);

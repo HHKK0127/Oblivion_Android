@@ -158,7 +158,7 @@ inline void NiBillboardNode::setConfig(const BillboardConfig& config) {
 
 inline void NiBillboardNode::addBillboard(const BillboardInstance& instance) {
     instances_.push_back(instance);
-    modelMatrices_.push_back(glm::mat4(1.0f));
+    modelMatrices_.push_back(glm::mat4());
 }
 
 inline void NiBillboardNode::removeBillboard(size_t index) {
@@ -229,7 +229,7 @@ inline void NiBillboardNode::updateAlwaysFaceCamera(const glm::vec3& cameraPosit
         
         // Apply rotation around view axis if specified
         if (inst.rotation != 0.0f) {
-            glm::mat4 rotMatrix = glm::rotate(glm::mat4(1.0f), inst.rotation, -cameraForward);
+            glm::mat4 rotMatrix = glm::rotate(glm::mat4(), inst.rotation, -cameraForward);
             rotation = rotation * rotMatrix;
         }
         
@@ -334,7 +334,7 @@ inline glm::mat4 NiBillboardNode::calculateBillboardMatrix(
             rot[2] = glm::vec4(-cameraForward, 0.0f);
             
             if (rotation != 0.0f) {
-                glm::mat4 rotZ = glm::rotate(glm::mat4(1.0f), rotation, -cameraForward);
+                glm::mat4 rotZ = glm::rotate(glm::mat4(), rotation, -cameraForward);
                 rot = rot * rotZ;
             }
             

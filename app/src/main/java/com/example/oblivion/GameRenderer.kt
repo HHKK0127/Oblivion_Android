@@ -66,9 +66,11 @@ class GameRenderer : GLSurfaceView.Renderer {
                             Log.e(TAG, "CRITICAL ERROR: nativeInitEngine returned 0 (native initialization failed)")
                         } else {
                             Log.i(TAG, "SUCCESS: Native engine initialized with valid handle")
-                            // Note: nativeSetDataPath() is called from MainActivity.initializeAudio()
-                            // before setContentView(), so BSA/ESM paths are already registered by the
-                            // time Renderer::initGameSystems() runs BSA loading.
+                            // Set data path AFTER engine is created (g_renderer must exist in native)
+                            if (dataPath.isNotEmpty()) {
+                                nativeSetDataPath(dataPath)
+                                Log.i(TAG, "BSA data path set on native: $dataPath")
+                            }
                         }
 
             gameSurfaceView?.let {
@@ -88,6 +90,9 @@ class GameRenderer : GLSurfaceView.Renderer {
         try {
             gl.glViewport(0, 0, width, height)
             Log.d(TAG, "Viewport set")
+
+            // Notify GameSurfaceView of GL viewport size for touch coordinate scaling
+            gameSurfaceView?.setGLViewportSize(width, height)
 
             if (nativeEngineHandle != 0L) {
                 Log.d(TAG, "Calling nativeSetViewport")
@@ -140,4 +145,12 @@ class GameRenderer : GLSurfaceView.Renderer {
 
     // Phase 30 Step 13: Integration test
     external fun nativeRunPhase30Test(assetPath: String): String
+
+    // Debug System Toggles
+    external fun nativeToggleDebugConsole()
+    external fun nativeToggleNpcDebug()
+    external fun nativeToggleWorldDebug()
+    external fun nativeTogglePerfGraph()
+    external fun nativeToggleAllDebug()
+    external fun nativeToggleDebugMenu()
 }

@@ -257,7 +257,7 @@ std::string constructMeshPath(const std::string& meshName) {
 ### 1. UIメニュー（menus/*.xml）
 
 **難易度**: ★★☆☆☆（中）  
-**優先度**: 🔴 高
+**優先度**: [HIGH] 高
 
 #### 確認済みXMLファイル
 
@@ -293,7 +293,7 @@ Menus\Map\map_border_*.dds                   # マップ枠
 ### 2. フォント（fonts/*）
 
 **難易度**: ★★★☆☆（やや高）  
-**優先度**: 🟡 中
+**優先度**: [MEDIUM] 中
 
 #### フォーマット
 
@@ -318,7 +318,7 @@ Menus\Map\map_border_*.dds                   # マップ枠
 ### 3. 3Dメッシュ（meshes/*.nif）
 
 **難易度**: ★★★★★（非常高）  
-**優先度**: 🟢 低（長期的）
+**優先度**: [LOW] 低（長期的）
 
 #### NIFフォーマット
 
@@ -344,15 +344,15 @@ Menus\Map\map_border_*.dds                   # マップ枠
 ### 4. 音声データ（sound/*）
 
 **難易度**: ★☆☆☆☆（低）  
-**優先度**: 🔴 高
+**優先度**: [HIGH] 高
 
 #### フォーマット
 
 | カテゴリ | 形式 | 統合容易度 |
 |---------|------|----------|
-| `sound/fx/*.wav` | PCM WAV | ✅ OpenAL-Softで直接再生可能 |
-| `sound/fx/ambient/*.wav` | PCM WAV | ✅ 同上 |
-| `sound/voice/*.mp3` | MP3 | ⚠️ デコードが必要 |
+| `sound/fx/*.wav` | PCM WAV | [DONE] OpenAL-Softで直接再生可能 |
+| `sound/fx/ambient/*.wav` | PCM WAV | [DONE] 同上 |
+| `sound/voice/*.mp3` | MP3 | [WARN] デコードが必要 |
 
 #### 統合ステップ
 
@@ -389,11 +389,11 @@ ffmpeg -i input.mp3 -acodec pcm_s16le -ar 44100 -ac 2 output.wav
 
 | 優先度 | ファイルパターン | 用途 |
 |--------|----------------|------|
-| 🔴 高 | `sound/fx/ui/*.wav` | UIクリック音 |
-| 🔴 高 | `sound/fx/ambient/*.wav` | 環境音（ループ） |
-| 🟡 中 | `sound/fx/combat/*.wav` | 戦闘SE |
-| 🟡 中 | `sound/fx/magic/*.wav` | 魔法SE |
-| 🟢 低 | `sound/voice/*.mp3` | NPCボイス（変換後） |
+| [HIGH] 高 | `sound/fx/ui/*.wav` | UIクリック音 |
+| [HIGH] 高 | `sound/fx/ambient/*.wav` | 環境音（ループ） |
+| [MEDIUM] 中 | `sound/fx/combat/*.wav` | 戦闘SE |
+| [MEDIUM] 中 | `sound/fx/magic/*.wav` | 魔法SE |
+| [LOW] 低 | `sound/voice/*.mp3` | NPCボイス（変換後） |
 
 ---
 

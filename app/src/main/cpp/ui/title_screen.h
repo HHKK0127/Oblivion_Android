@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <array>
 #include <android/log.h>
 #include "../localization/localization_manager.h"
 #include "settings_ui.h"
@@ -17,10 +18,21 @@
 class TextRenderer;
 
 enum class TitleScreenState {
-    LOGO_DISPLAY,  // Show logo for 3 seconds
-    MENU,          // Show menu
-    LANGUAGE,      // Language selection
-    TRANSITIONING  // Transition to game
+    INTRO_MOVIE,    // Oblivion logo fade-in
+    LOGO_DISPLAY,   // "Press any key to continue" wait
+    MENU,           // Main menu
+    OPTIONS,        // Options sub-menu (reserved)
+    CREDITS,        // Credits display (reserved)
+    TRANSITIONING   // Game start fade-out
+};
+
+struct TitleParticle {
+    float x, y;
+    float size;
+    float alpha;
+    float driftX;
+    float driftY;
+    float phase;
 };
 
 class TitleScreen {
@@ -33,34 +45,47 @@ private:
     bool gameStarted;
     bool settingsRequested;
     bool loadGameRequested;
+    bool creditsRequested;
+    bool quitRequested = false;
     LocalizationManager* localizationManager;
     std::unique_ptr<SettingsUI> settingsUI;
     TextRenderer* textRenderer = nullptr;
 
-    // Phase 9: Graphical UI components
     std::shared_ptr<UIPanel> menuPanel;
     std::vector<std::shared_ptr<UIButton>> menuButtons;
-    int screenWidth = 1080;
-    int screenHeight = 1920;
+    int screenWidth = 1920;
+    int screenHeight = 1080;
 
-    // Phase 9: Textures
     GLuint bgTexture = 0;
     GLuint logoTexture = 0;
+    GLuint vignetteTexture = 0;
     bool texturesLoaded = false;
 
-    // Button textures
-    GLuint btnNormalTex = 0;
-    GLuint btnHoverTex = 0;
-    GLuint btnPressedTex = 0;
+    std::vector<GLuint> movieFrames;
+    int currentMovieFrame = 0;
+    float movieFrameTime = 0.0f;
+    static constexpr float MOVIE_FPS = 30.0f;
 
-    // Menu panel texture
-    GLuint menuPanelTexture = 0;
+    static constexpr int MAX_PARTICLES = 48;
+    std::array<TitleParticle, MAX_PARTICLES> particles{};
+    bool particlesInitialized = false;
 
-    static constexpr float LOGO_DISPLAY_DURATION = 3.0f;
-    static constexpr int MENU_START = 0;      // "Start Game"
-    static constexpr int MENU_LOAD = 1;       // "Load Game"
-    static constexpr int MENU_SETTINGS = 2;   // "Settings"
-    static constexpr int MENU_QUIT = 3;       // "Quit"
+    float glowPhase = 0.0f;
+    float logoFadeAlpha = 0.0f;
+    float introLogoAlpha = 0.0f;
+
+    static constexpr float INTRO_DURATION = 4.0f;
+    static constexpr float LOGO_FADE_DURATION = 2.0f;
+
+    static constexpr int MENU_NEW     = 0;
+    static constexpr int MENU_LOAD    = 1;
+    static constexpr int MENU_OPTIONS = 2;
+    static constexpr int MENU_CREDITS = 3;
+    static constexpr int MENU_QUIT    = 4;
+
+    const glm::vec3 COLOR_PARCHMENT = glm::vec3(0.72f, 0.64f, 0.49f);
+    const glm::vec3 COLOR_GOLD      = glm::vec3(0.85f, 0.72f, 0.35f);
+    const glm::vec3 COLOR_WHITE     = glm::vec3(1.0f, 1.0f, 1.0f);
 
 public:
     TitleScreen();
@@ -69,7 +94,7 @@ public:
     void initialize(LocalizationManager* lm, TextRenderer* tr);
     void update(float deltaTime);
     void render();
-    void onTouchEvent(float x, float y);
+    void onTouchEvent(float x, float y, int action);
     void onKeyPress(int key);
 
     bool isGameStarted() const { return gameStarted; }
@@ -77,26 +102,35 @@ public:
     void resetSettingsRequest() { settingsRequested = false; }
     bool isLoadGameRequested() const { return loadGameRequested; }
     void resetLoadGameRequest() { loadGameRequested = false; }
+    bool isCreditsRequested() const { return creditsRequested; }
+    void resetCreditsRequest() { creditsRequested = false; }
+    bool isQuitRequested() const { return quitRequested; }
+    void resetQuitRequest() { quitRequested = false; }
     TitleScreenState getState() const { return state; }
 
     void setScreenSize(int w, int h);
 
 private:
+    void transitionToLogo();
     void transitionToMenu();
-    void transitionToLanguageMenu();
     void updateMenu(float deltaTime);
     void handleMenuSelection();
-    void startGame();
     void buildGraphicalMenu();
     void rebuildMenuLayout();
+    void initParticles();
 
-    // Oblivion風レンダリング関数
+    void renderIntroMovie();
     void renderLogoDisplay();
     void renderMenu();
-    void renderLanguageSelection();
     void renderFadeOut();
-    void renderOblivionLogo(float alpha);
-    void renderPressToStartMessage(float alpha);
-    void renderMenuTitle();
-    void renderMenuItems();
+    void renderBackground(float alpha, bool menuMode);
+    void renderSepiaOverlay();
+    void renderVignette();
+    void renderOblivionLogo(float alpha, bool large);
+    void renderPressAnyKey(float alpha);
+    void renderVersionText();
+    void renderParticles();
+
+    static float easeInQuad(float t) { return t * t; }
+    static float easeOutQuad(float t) { return 1.0f - (1.0f - t) * (1.0f - t); }
 };

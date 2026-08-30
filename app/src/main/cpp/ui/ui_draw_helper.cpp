@@ -7,49 +7,45 @@ GLuint UIDrawHelper::s_vao = 0;
 GLuint UIDrawHelper::s_vbo = 0;
 bool UIDrawHelper::s_initialized = false;
 
-static const char* s_uiVertexShader = R"(
-    #version 300 es
-    precision mediump float;
-    layout(location = 0) in vec2 aPos;
-    uniform mat4 uProjection;
-    void main() {
-        gl_Position = uProjection * vec4(aPos, 0.0, 1.0);
-    }
+static const char* s_uiVertexShader = R"(#version 300 es
+precision mediump float;
+layout(location = 0) in vec2 aPos;
+uniform mat4 uProjection;
+void main() {
+    gl_Position = uProjection * vec4(aPos, 0.0, 1.0);
+}
 )";
 
-static const char* s_uiFragmentShader = R"(
-    #version 300 es
-    precision mediump float;
-    uniform vec4 uColor;
-    out vec4 fragColor;
-    void main() {
-        fragColor = uColor;
-    }
+static const char* s_uiFragmentShader = R"(#version 300 es
+precision mediump float;
+uniform vec4 uColor;
+out vec4 fragColor;
+void main() {
+    fragColor = uColor;
+}
 )";
 
-static const char* s_uiTextureVertexShader = R"(
-    #version 300 es
-    precision mediump float;
-    layout(location = 0) in vec2 aPos;
-    layout(location = 1) in vec2 aTexCoord;
-    uniform mat4 uProjection;
-    out vec2 vTexCoord;
-    void main() {
-        gl_Position = uProjection * vec4(aPos, 0.0, 1.0);
-        vTexCoord = aTexCoord;
-    }
+static const char* s_uiTextureVertexShader = R"(#version 300 es
+precision mediump float;
+layout(location = 0) in vec2 aPos;
+layout(location = 1) in vec2 aTexCoord;
+uniform mat4 uProjection;
+out vec2 vTexCoord;
+void main() {
+    gl_Position = uProjection * vec4(aPos, 0.0, 1.0);
+    vTexCoord = aTexCoord;
+}
 )";
 
-static const char* s_uiTextureFragmentShader = R"(
-    #version 300 es
-    precision mediump float;
-    uniform vec4 uColor;
-    uniform sampler2D uTexture;
-    in vec2 vTexCoord;
-    out vec4 fragColor;
-    void main() {
-        fragColor = texture(uTexture, vTexCoord) * uColor;
-    }
+static const char* s_uiTextureFragmentShader = R"(#version 300 es
+precision mediump float;
+uniform vec4 uColor;
+uniform sampler2D uTexture;
+in vec2 vTexCoord;
+out vec4 fragColor;
+void main() {
+    fragColor = texture(uTexture, vTexCoord) * uColor;
+}
 )";
 
 GLuint UIDrawHelper::compileShader(GLenum type, const char* source) {

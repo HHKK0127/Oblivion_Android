@@ -128,13 +128,12 @@ private:
     uint32_t height_ = 0;
 
     bool isRunning_ = false;
-    bool isPaused_ = false;
+    std::atomic<bool> isPaused_{false};
     uint32_t graphicsQueueFamily_ = UINT32_MAX;
 
     // Game loop thread control
     std::thread gameThread_;
     std::atomic<bool> gameLoopRunning_{false};
-    std::atomic<bool> gameLoopPaused_{false};
     std::mutex lifecycleMutex_;
     std::condition_variable lifecycleCv_;
 

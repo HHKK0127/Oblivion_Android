@@ -6,16 +6,22 @@ import android.media.MediaPlayer
 import android.media.SoundPool
 import android.os.Bundle
 import android.util.Log
+import android.view.View
+import android.widget.Button
+import android.widget.LinearLayout
 import java.io.IOException
 import java.io.File
 
 class MainActivity : Activity() {
 
     private var gameSurfaceView: GameSurfaceView? = null
+    private var gameRenderer: GameRenderer? = null
     private var mediaPlayer: MediaPlayer? = null
     private var soundPool: SoundPool? = null
     private val loadedSounds = mutableMapOf<String, Int>() // filename → soundId
     private var spLoadListener: SoundPool.OnLoadCompleteListener? = null
+    private var debugButtonPanel: LinearLayout? = null
+    private var isDebugPanelVisible = false
 
     companion object {
         private const val TAG = "MainActivity"
@@ -48,27 +54,39 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         Log.i(TAG, "=== onCreate called ===")
 
+        // Dismiss keyguard and turn screen on
+        @Suppress("DEPRECATION")
+        window.addFlags(
+            android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+            android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+            android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
+            android.view.WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
+        )
+
         instance = this
 
         try {
-            // Extract assets to external storage if needed
-            Log.i(TAG, "Checking asset extraction")
-            val assetExtractor = AssetExtractor(this)
-            if (assetExtractor.needsExtraction()) {
-                Log.i(TAG, "Extracting assets to external storage")
-                Thread {
-                    assetExtractor.extractAssets { current, total ->
-                        Log.d(TAG, "Extracting: $current/$total")
+            // Initialize game immediately - asset extraction is optional
+            Log.i(TAG, "Initializing game (asset extraction deferred)")
+            initializeGame()
+
+            // Extract assets in background if needed (non-blocking)
+            Thread {
+                try {
+                    val assetExtractor = AssetExtractor(this@MainActivity)
+                    if (assetExtractor.needsExtraction()) {
+                        Log.i(TAG, "Background: Extracting assets to external storage")
+                        assetExtractor.extractAssets { current, total ->
+                            Log.d(TAG, "Extracting: $current/$total")
+                        }
+                        Log.i(TAG, "Background: Asset extraction complete")
+                    } else {
+                        Log.i(TAG, "Background: Assets already extracted")
                     }
-                    runOnUiThread {
-                        Log.i(TAG, "Asset extraction complete")
-                        initializeGame()
-                    }
-                }.start()
-            } else {
-                Log.i(TAG, "Assets already extracted")
-                initializeGame()
-            }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Background asset extraction failed (non-fatal): ${e.message}")
+                }
+            }.start()
         } catch (e: Exception) {
             Log.e(TAG, "Exception in onCreate: ${e.message}", e)
         }
@@ -79,13 +97,103 @@ class MainActivity : Activity() {
             Log.i(TAG, "Initializing audio system")
             initializeAudio()
 
-            Log.i(TAG, "Creating GameSurfaceView")
-            gameSurfaceView = GameSurfaceView(this)
-            Log.i(TAG, "Setting GameSurfaceView as content view")
-            setContentView(gameSurfaceView)
+            Log.i(TAG, "Setting content view with debug overlay")
+            setContentView(R.layout.activity_main)
+
+            // Get the GLSurfaceView from layout and setup renderer
+            val glSurfaceView = findViewById<android.opengl.GLSurfaceView>(R.id.gl_surface_view)
+            if (glSurfaceView != null) {
+                // Create GameRenderer with default constructor
+                gameRenderer = GameRenderer()
+                glSurfaceView.setEGLContextClientVersion(3)
+                glSurfaceView.setRenderer(gameRenderer!!)
+                glSurfaceView.renderMode = android.opengl.GLSurfaceView.RENDERMODE_CONTINUOUSLY
+
+                // Setup touch event forwarding
+                glSurfaceView.setOnTouchListener { _, event ->
+                    val pointerId = event.getPointerId(0)
+                    val x = event.x
+                    val y = event.y
+                    val action = when (event.actionMasked) {
+                        android.view.MotionEvent.ACTION_DOWN -> 0
+                        android.view.MotionEvent.ACTION_UP -> 1
+                        android.view.MotionEvent.ACTION_MOVE -> 2
+                        android.view.MotionEvent.ACTION_POINTER_DOWN -> 5
+                        android.view.MotionEvent.ACTION_POINTER_UP -> 6
+                        else -> 3
+                    }
+                    gameRenderer?.onTouchEvent(pointerId, x, y, action)
+                    true
+                }
+
+                Log.i(TAG, "GLSurfaceView setup complete")
+            } else {
+                Log.e(TAG, "GLSurfaceView not found in layout")
+                // Fallback to creating GameSurfaceView directly
+                gameSurfaceView = GameSurfaceView(this)
+                setContentView(gameSurfaceView)
+            }
+
+            // Setup debug buttons
+            setupDebugButtons()
+
             Log.i(TAG, "ContentView set successfully")
         } catch (e: Exception) {
             Log.e(TAG, "Exception in initializeGame: ${e.message}", e)
+        }
+    }
+
+    private fun setupDebugButtons() {
+        try {
+            debugButtonPanel = findViewById(R.id.debug_button_panel)
+            val debugToggleBtn = findViewById<Button>(R.id.btn_debug_toggle)
+
+            // Toggle debug panel visibility
+            debugToggleBtn.setOnClickListener {
+                isDebugPanelVisible = !isDebugPanelVisible
+                debugButtonPanel?.visibility = if (isDebugPanelVisible) View.VISIBLE else View.GONE
+                Log.d(TAG, "Debug panel ${if (isDebugPanelVisible) "shown" else "hidden"}")
+            }
+
+            // Debug Console toggle
+            findViewById<Button>(R.id.btn_debug_console)?.setOnClickListener {
+                gameRenderer?.nativeToggleDebugConsole()
+                Log.d(TAG, "Toggled debug console")
+            }
+
+            // NPC Debug toggle
+            findViewById<Button>(R.id.btn_debug_npc)?.setOnClickListener {
+                gameRenderer?.nativeToggleNpcDebug()
+                Log.d(TAG, "Toggled NPC debug")
+            }
+
+            // World Debug toggle
+            findViewById<Button>(R.id.btn_debug_world)?.setOnClickListener {
+                gameRenderer?.nativeToggleWorldDebug()
+                Log.d(TAG, "Toggled world debug")
+            }
+
+            // Performance Graph toggle
+            findViewById<Button>(R.id.btn_debug_perf)?.setOnClickListener {
+                gameRenderer?.nativeTogglePerfGraph()
+                Log.d(TAG, "Toggled performance graph")
+            }
+
+            // All Debug toggle
+            findViewById<Button>(R.id.btn_debug_all)?.setOnClickListener {
+                gameRenderer?.nativeToggleAllDebug()
+                Log.d(TAG, "Toggled all debug systems")
+            }
+
+            // Debug Menu toggle
+            findViewById<Button>(R.id.btn_debug_menu)?.setOnClickListener {
+                gameRenderer?.nativeToggleDebugMenu()
+                Log.d(TAG, "Toggled debug menu")
+            }
+
+            Log.i(TAG, "Debug buttons setup complete")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to setup debug buttons: ${e.message}", e)
         }
     }
 
@@ -105,10 +213,9 @@ class MainActivity : Activity() {
                     Log.w(TAG, "Failed to initialize audio bridge: ${e.message}")
                 }
 
-                // データパスを設定（BSA/ESMファイルの検索パス）
-                // nativeInitEngine() よりも前に呼ぶ必要がある。
-                // Renderer.init() は onSurfaceCreated → nativeInitEngine() の中で呼ばれ、
-                // その時点で BSA ロードを行うため、データパスは事前に登録必須。
+                // Set data path for BSA/ESM file lookup
+                // Note: nativeSetDataPath will be called after nativeInitEngine creates the renderer
+                // Store for later use in onSurfaceCreated callback
                 try {
                     val dataPath = filesDir.absolutePath + File.separator + "data"
                     val dataDir = java.io.File(dataPath)
@@ -116,11 +223,9 @@ class MainActivity : Activity() {
                         dataDir.mkdirs()
                         Log.i(TAG, "Created data directory: $dataPath")
                     }
-                    // 静的ファイル変数に保持（GameRenderer から参照される）
+                    // Store path for use after engine initialization
                     GameRenderer.dataPath = dataPath
-                    // ネイティブ側にデータパスを登録（Engine 初期化前）
-                    GameRenderer.nativeSetDataPath(dataPath)
-                    Log.i(TAG, "BSA data path registered to native: $dataPath")
+                    Log.i(TAG, "BSA data path stored: $dataPath (will be set on native after engine init)")
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to set BSA data path: ${e.message}")
                 }
@@ -132,8 +237,8 @@ class MainActivity : Activity() {
     override fun onPause() {
         super.onPause()
         Log.i(TAG, "onPause")
-
-        gameSurfaceView?.onPause()
+        // Do NOT call gameSurfaceView.onPause() - keep GL thread running
+        // GLSurfaceView.onPause() kills the render thread, which prevents onSurfaceCreated
         mediaPlayer?.let {
             if (it.isPlaying) {
                 it.pause()
@@ -146,6 +251,7 @@ class MainActivity : Activity() {
         super.onResume()
         Log.i(TAG, "onResume")
         gameSurfaceView?.onResume()
+        // Note: startRenderer() is called inside GameSurfaceView.onResume() if needed
     }
 
     override fun onDestroy() {

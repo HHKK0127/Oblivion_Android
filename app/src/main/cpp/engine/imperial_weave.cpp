@@ -445,8 +445,8 @@ void ImperialWeave::phaseRenderSubmit(float dt) {
 
     // Phase 50: Distant LOD rendering
     if (distantLodManager_ && renderer_) {
-        glm::mat4 viewProj(1.0f);
-        glm::vec3 cameraPos(0.0f);
+        glm::mat4 viewProj;
+        glm::vec3 cameraPos;
         if (worldManager_) {
             cameraPos = worldManager_->getCameraPosition();
         }
@@ -458,8 +458,8 @@ void ImperialWeave::phaseRenderSubmit(float dt) {
     if (speedTreeManager_ && renderer_) {
         // SpeedTree handles its own instanced rendering
         // Billboard trees rendered for distant LOD
-        glm::mat4 viewProj(1.0f);
-        glm::vec3 cameraPos(0.0f);
+        glm::mat4 viewProj;
+        glm::vec3 cameraPos;
         if (worldManager_) {
             cameraPos = worldManager_->getCameraPosition();
         }

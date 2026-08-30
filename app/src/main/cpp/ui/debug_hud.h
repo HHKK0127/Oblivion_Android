@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string>
+#include <array>
+#include <vector>
 #include <glm/glm.hpp>
 #include "text_renderer.h"
 
@@ -8,65 +10,73 @@ class AudioManager;
 class Renderer;
 
 /**
- * @brief デバッグHUD（ヘッドアップディスプレイ）
- * FPS、メモリ、フレームタイム、システム情報を表示
+ * @brief Extended Debug HUD with graphs, breakdowns, and detailed stats
+ *
+ * Features:
+ * - FPS graph (last 60 frames)
+ * - Frame time breakdown (CPU/GPU/Wait)
+ * - Memory details (Native/Java/Texture/Audio)
+ * - Imperial Weave phase times
+ * - Draw call / vertex / triangle counts
+ * - In-game log display
  */
 class DebugHUD {
 public:
     DebugHUD();
     ~DebugHUD();
 
-    /**
-     * @brief デバッグHUDを初期化
-     * @param textRenderer テキストレンダラーへのポインタ
-     * @param audioManager オーディオマネージャーへのポインタ（オプション）
-     * @param renderer レンダラーへのポインタ（オプション）
-     */
     bool initialize(TextRenderer* textRenderer, AudioManager* audioManager = nullptr, Renderer* renderer = nullptr);
-
-    /**
-     * @brief フレームを更新（統計情報を計算）
-     * @param deltaTime フレームタイム（ミリ秒）
-     */
     void update(float deltaTime);
-
-    /**
-     * @brief デバッグ情報を描画
-     */
     void render();
-
-    /**
-     * @brief 表示/非表示を切り替え
-     */
     void toggle();
-
-    /**
-     * @brief 表示状態を取得
-     */
     bool isVisible() const { return visible; }
-
-    /**
-     * @brief 表示状態を設定
-     */
     void setVisible(bool v) { visible = v; }
-
-    /**
-     * @brief オーディオマネージャーを設定
-     */
     void setAudioManager(AudioManager* audioMgr) { audioManager = audioMgr; }
-
-    /**
-     * @brief クリーンアップ
-     */
     void cleanup();
+
+    // --- Extended stats setters (called from Renderer/ImperialWeave) ---
+
+    // Frame time breakdown (milliseconds)
+    void setFrameTimeBreakdown(float cpuMs, float gpuMs, float waitMs);
+
+    // Imperial Weave phase times (microseconds)
+    static constexpr int PHASE_COUNT = 15;
+    void setPhaseTime(int phaseIndex, float microseconds);
+
+    // Rendering stats
+    void setDrawCallCount(int count);
+    void setVertexCount(int count);
+    void setTriangleCount(int count);
+    void setTextureMemory(long bytes);
+    void setLoadedTextureCount(int count);
+
+    // Memory breakdown
+    void setNativeHeap(long bytes);
+    void setJavaHeap(long bytes);
+
+    // Log display
+    void addLogLine(const std::string& line);
+    void setLogVisible(bool v) { logVisible = v; }
+    bool isLogVisible() const { return logVisible; }
+
+    // Debug page navigation (multiple pages of info)
+    void nextPage();
+    void prevPage();
+    int getCurrentPage() const { return currentPage; }
+    int getTotalPages() const { return totalPages; }
 
 private:
     TextRenderer* textRenderer;
     AudioManager* audioManager;
     Renderer* renderer;
     bool visible;
+    bool logVisible;
 
-    // 統計情報
+    // Page system
+    int currentPage;
+    static constexpr int totalPages = 4;  // 0=Overview, 1=Performance, 2=Memory, 3=Phases
+
+    // Basic stats
     float fps;
     float frameTimeMs;
     float avgFrameTimeMs;
@@ -75,9 +85,37 @@ private:
 
     int frameCount;
     float timeSinceLastUpdate;
-    static constexpr float UPDATE_INTERVAL = 0.5f;  // 0.5秒ごとに更新
+    static constexpr float UPDATE_INTERVAL = 0.5f;
 
-    // メモリ情報
+    // FPS graph (circular buffer)
+    static constexpr int FPS_HISTORY_SIZE = 60;
+    std::array<float, FPS_HISTORY_SIZE> fpsHistory;
+    int fpsHistoryIndex;
+
+    // Frame time breakdown
+    float cpuTimeMs;
+    float gpuTimeMs;
+    float waitTimeMs;
+
+    // Imperial Weave phase times
+    std::array<float, PHASE_COUNT> phaseTimesUs;  // microseconds
+
+    // Rendering stats
+    int drawCallCount;
+    int vertexCount;
+    int triangleCount;
+    long textureMemoryBytes;
+    int loadedTextureCount;
+
+    // Memory breakdown
+    long nativeHeapBytes;
+    long javaHeapBytes;
+
+    // In-game log
+    static constexpr int MAX_LOG_LINES = 20;
+    std::vector<std::string> logLines;
+
+    // Memory info
     struct MemoryInfo {
         long totalMemory;
         long usedMemory;
@@ -88,4 +126,13 @@ private:
     std::string formatMemorySize(long bytes) const;
     std::string getAudioStatus() const;
     std::string getRetroFilterStatus() const;
+
+    // Render helpers for each page
+    void renderOverviewPage(float& xPos, float& yPos, float lineHeight);
+    void renderPerformancePage(float& xPos, float& yPos, float lineHeight);
+    void renderMemoryPage(float& xPos, float& yPos, float lineHeight);
+    void renderPhasePage(float& xPos, float& yPos, float lineHeight);
+    void renderFpsGraph(float x, float y, float width, float height);
+    void renderFrameTimeBar(float x, float y, float width, float height);
+    void renderLogOverlay();
 };

@@ -234,9 +234,14 @@ Java_com_example_oblivion_GameRenderer_nativeOnTouchEvent(
         jfloat x,
         jfloat y,
         jint action) {
+    __android_log_print(ANDROID_LOG_DEBUG, "JNIBridge", "nativeOnTouchEvent called: handle=%ld, pointerId=%d, x=%.1f, y=%.1f, action=%d", (long)handle, pointerId, x, y, action);
     Renderer* renderer = reinterpret_cast<Renderer*>(handle);
     if (renderer) {
+        __android_log_print(ANDROID_LOG_DEBUG, "JNIBridge", "Calling renderer->onTouchEvent...");
         renderer->onTouchEvent(pointerId, x, y, action);
+        __android_log_print(ANDROID_LOG_DEBUG, "JNIBridge", "renderer->onTouchEvent returned");
+    } else {
+        __android_log_print(ANDROID_LOG_ERROR, "JNIBridge", "nativeOnTouchEvent: renderer is NULL!");
     }
 }
 
@@ -703,4 +708,68 @@ Java_com_example_oblivion_GameRenderer_nativeShutdownBinkVideo(
     LOGI("nativeShutdownBinkVideo called");
     auto& player = oblivion::video::BinkVideoPlayer::instance();
     player.shutdown();
+}
+
+// ============================================
+// Debug System Toggle Methods
+// ============================================
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeToggleDebugConsole(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    LOGI("nativeToggleDebugConsole called");
+    if (g_renderer) {
+        g_renderer->toggleGameConsole();
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeToggleNpcDebug(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    LOGI("nativeToggleNpcDebug called");
+    if (g_renderer) {
+        g_renderer->toggleNpcDebugVisualizer();
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeToggleWorldDebug(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    LOGI("nativeToggleWorldDebug called");
+    if (g_renderer) {
+        g_renderer->toggleWorldDebugInfo();
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeTogglePerfGraph(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    LOGI("nativeTogglePerfGraph called");
+    if (g_renderer) {
+        g_renderer->togglePerformanceGraph();
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeToggleAllDebug(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    LOGI("nativeToggleAllDebug called");
+    if (g_renderer) {
+        g_renderer->toggleAllDebugSystems();
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeToggleDebugMenu(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    LOGI("nativeToggleDebugMenu called");
+    if (g_renderer) {
+        g_renderer->toggleDebugMenu();
+    }
 }

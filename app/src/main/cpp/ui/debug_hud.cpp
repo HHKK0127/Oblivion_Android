@@ -5,16 +5,27 @@
 #include <sstream>
 #include <iomanip>
 #include <sys/sysinfo.h>
+#include <algorithm>
+#include <cmath>
 
 #undef LOG_TAG
 #define LOG_TAG "DebugHUD"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 
 DebugHUD::DebugHUD()
-    : textRenderer(nullptr), audioManager(nullptr), renderer(nullptr), visible(true),
+    : textRenderer(nullptr), audioManager(nullptr), renderer(nullptr),
+      visible(true), logVisible(false),
+      currentPage(0),
       fps(0.0f), frameTimeMs(0.0f), avgFrameTimeMs(0.0f),
       minFrameTimeMs(100.0f), maxFrameTimeMs(0.0f),
-      frameCount(0), timeSinceLastUpdate(0.0f) {
+      frameCount(0), timeSinceLastUpdate(0.0f),
+      fpsHistoryIndex(0),
+      cpuTimeMs(0.0f), gpuTimeMs(0.0f), waitTimeMs(0.0f),
+      drawCallCount(0), vertexCount(0), triangleCount(0),
+      textureMemoryBytes(0), loadedTextureCount(0),
+      nativeHeapBytes(0), javaHeapBytes(0) {
+    fpsHistory.fill(0.0f);
+    phaseTimesUs.fill(0.0f);
     LOGD("DebugHUD created");
 }
 
@@ -27,7 +38,6 @@ bool DebugHUD::initialize(TextRenderer* textRend, AudioManager* audioMgr, Render
         LOGD("Error: TextRenderer is null");
         return false;
     }
-
     textRenderer = textRend;
     audioManager = audioMgr;
     renderer = rend;
@@ -36,106 +46,387 @@ bool DebugHUD::initialize(TextRenderer* textRend, AudioManager* audioMgr, Render
 }
 
 void DebugHUD::update(float deltaTime) {
-    // deltaTime は秒単位で渡される
-    frameTimeMs = deltaTime * 1000.0f;  // 秒 → ミリ秒に変換
-
-    // フレームタイムの統計を更新
+    frameTimeMs = deltaTime * 1000.0f;
     avgFrameTimeMs = (avgFrameTimeMs * frameCount + frameTimeMs) / (frameCount + 1);
-    minFrameTimeMs = (frameTimeMs < minFrameTimeMs) ? frameTimeMs : minFrameTimeMs;
-    maxFrameTimeMs = (frameTimeMs > maxFrameTimeMs) ? frameTimeMs : maxFrameTimeMs;
-
+    minFrameTimeMs = std::min(minFrameTimeMs, frameTimeMs);
+    maxFrameTimeMs = std::max(maxFrameTimeMs, frameTimeMs);
     frameCount++;
     timeSinceLastUpdate += deltaTime;
 
-    // 0.5秒ごとにFPSを更新
     if (timeSinceLastUpdate >= UPDATE_INTERVAL) {
         if (frameTimeMs > 0.0f) {
             fps = 1000.0f / frameTimeMs;
         }
+        fpsHistory[fpsHistoryIndex % FPS_HISTORY_SIZE] = fps;
+        fpsHistoryIndex++;
         timeSinceLastUpdate = 0.0f;
-        LOGD("FPS: %.1f, Frame Time: %.2f ms", fps, frameTimeMs);
     }
 }
 
-void DebugHUD::render() {
-    if (!visible || !textRenderer) {
-        __android_log_print(ANDROID_LOG_WARN, "DebugHUD",
-            "render() skipped: visible=%d, textRenderer=%p", visible, textRenderer);
-        return;
-    }
-    __android_log_print(ANDROID_LOG_INFO, "DebugHUD", "render() proceeding...");
+// --- Extended stats setters ---
 
-    // 白いテキストで情報を表示
-    glm::vec3 textColor(1.0f, 1.0f, 1.0f);
+void DebugHUD::setFrameTimeBreakdown(float cpu, float gpu, float wait) {
+    cpuTimeMs = cpu;
+    gpuTimeMs = gpu;
+    waitTimeMs = wait;
+}
+
+void DebugHUD::setPhaseTime(int idx, float us) {
+    if (idx >= 0 && idx < PHASE_COUNT) phaseTimesUs[idx] = us;
+}
+
+void DebugHUD::setDrawCallCount(int count) { drawCallCount = count; }
+void DebugHUD::setVertexCount(int count) { vertexCount = count; }
+void DebugHUD::setTriangleCount(int count) { triangleCount = count; }
+void DebugHUD::setTextureMemory(long bytes) { textureMemoryBytes = bytes; }
+void DebugHUD::setLoadedTextureCount(int count) { loadedTextureCount = count; }
+void DebugHUD::setNativeHeap(long bytes) { nativeHeapBytes = bytes; }
+void DebugHUD::setJavaHeap(long bytes) { javaHeapBytes = bytes; }
+
+void DebugHUD::addLogLine(const std::string& line) {
+    logLines.push_back(line);
+    if (logLines.size() > MAX_LOG_LINES) {
+        logLines.erase(logLines.begin());
+    }
+}
+
+void DebugHUD::nextPage() { currentPage = (currentPage + 1) % totalPages; }
+void DebugHUD::prevPage() { currentPage = (currentPage - 1 + totalPages) % totalPages; }
+
+// --- Render ---
+
+void DebugHUD::render() {
+    if (!visible || !textRenderer) return;
+
     float xPos = 10.0f;
     float yPos = 10.0f;
-    float lineHeight = 20.0f;
+    float lineHeight = 18.0f;
 
-    // FPS表示
+    // Page indicator
+    {
+        std::stringstream ss;
+        ss << "[Page " << (currentPage + 1) << "/" << totalPages << "]";
+        textRenderer->renderText(ss.str(), xPos, yPos, glm::vec3(0.7f, 0.7f, 0.7f), 0.8f);
+        yPos += lineHeight;
+    }
+
+    switch (currentPage) {
+        case 0: renderOverviewPage(xPos, yPos, lineHeight); break;
+        case 1: renderPerformancePage(xPos, yPos, lineHeight); break;
+        case 2: renderMemoryPage(xPos, yPos, lineHeight); break;
+        case 3: renderPhasePage(xPos, yPos, lineHeight); break;
+    }
+
+    if (logVisible) {
+        renderLogOverlay();
+    }
+}
+
+void DebugHUD::renderOverviewPage(float& xPos, float& yPos, float lineHeight) {
+    glm::vec3 white(1.0f, 1.0f, 1.0f);
+    glm::vec3 yellow(1.0f, 1.0f, 0.0f);
+    glm::vec3 cyan(0.0f, 1.0f, 1.0f);
+    glm::vec3 orange(1.0f, 0.5f, 0.0f);
+
+    // FPS
     {
         std::stringstream ss;
         ss << std::fixed << std::setprecision(1) << "FPS: " << fps;
-        __android_log_print(ANDROID_LOG_INFO, "DebugHUD", "Calling renderText with: %s", ss.str().c_str());
-        textRenderer->renderText(ss.str(), xPos, yPos, textColor, 1.0f);
+        glm::vec3 color = (fps >= 55.0f) ? glm::vec3(0.0f, 1.0f, 0.0f) :
+                          (fps >= 30.0f) ? glm::vec3(1.0f, 1.0f, 0.0f) :
+                                           glm::vec3(1.0f, 0.0f, 0.0f);
+        textRenderer->renderText(ss.str(), xPos, yPos, color, 1.0f);
         yPos += lineHeight;
     }
 
-    // フレームタイム表示
+    // Frame time
     {
         std::stringstream ss;
         ss << std::fixed << std::setprecision(2) << "Frame: " << frameTimeMs << " ms";
-        textRenderer->renderText(ss.str(), xPos, yPos, textColor, 1.0f);
+        textRenderer->renderText(ss.str(), xPos, yPos, white, 1.0f);
         yPos += lineHeight;
     }
 
-    // 平均フレームタイム表示
+    // Average
     {
         std::stringstream ss;
         ss << std::fixed << std::setprecision(2) << "Avg: " << avgFrameTimeMs << " ms";
-        textRenderer->renderText(ss.str(), xPos, yPos, textColor, 1.0f);
+        textRenderer->renderText(ss.str(), xPos, yPos, white, 1.0f);
         yPos += lineHeight;
     }
 
-    // メモリ情報表示
+    // Memory
     {
         MemoryInfo memInfo = getMemoryInfo();
         std::stringstream ss;
-        ss << "Mem: " << formatMemorySize(memInfo.usedMemory);
-        textRenderer->renderText(ss.str(), xPos, yPos, textColor, 1.0f);
+        ss << "Mem: " << formatMemorySize(memInfo.usedMemory) << " / " << formatMemorySize(memInfo.totalMemory);
+        textRenderer->renderText(ss.str(), xPos, yPos, white, 1.0f);
         yPos += lineHeight;
     }
 
-    // キューブ数表示（固定値）
+    // Draw calls
     {
-        textRenderer->renderText("Cubes: 5", xPos, yPos, textColor, 1.0f);
+        std::stringstream ss;
+        ss << "DrawCalls: " << drawCallCount << "  Verts: " << vertexCount << "  Tris: " << triangleCount;
+        textRenderer->renderText(ss.str(), xPos, yPos, cyan, 1.0f);
         yPos += lineHeight;
     }
 
-    // デバッグモード表示
-    {
-        textRenderer->renderText("DEBUG: ON", xPos, yPos,
-                                glm::vec3(1.0f, 1.0f, 0.0f), 1.0f);  // 黄色
-        yPos += lineHeight;
-    }
+    // Debug mode
+    textRenderer->renderText("DEBUG: ON", xPos, yPos, yellow, 1.0f);
+    yPos += lineHeight;
 
-    // オーディオシステム表示
+    // Audio
     {
         std::string audioStatus = getAudioStatus();
-        glm::vec3 audioColor(0.0f, 1.0f, 1.0f);  // シアン
-        textRenderer->renderText(audioStatus, xPos, yPos, audioColor, 1.0f);
+        textRenderer->renderText(audioStatus, xPos, yPos, cyan, 1.0f);
         yPos += lineHeight;
     }
 
-    // RetroFilterステータス表示
+    // RetroFilter
     {
         std::string filterStatus = getRetroFilterStatus();
         if (!filterStatus.empty()) {
-            glm::vec3 filterColor(1.0f, 0.5f, 0.0f);  // オレンジ
-            textRenderer->renderText(filterStatus, xPos, yPos, filterColor, 1.0f);
+            textRenderer->renderText(filterStatus, xPos, yPos, orange, 1.0f);
             yPos += lineHeight;
         }
     }
 }
+
+void DebugHUD::renderPerformancePage(float& xPos, float& yPos, float lineHeight) {
+    glm::vec3 white(1.0f, 1.0f, 1.0f);
+    glm::vec3 green(0.0f, 1.0f, 0.0f);
+    glm::vec3 red(1.0f, 0.3f, 0.3f);
+    glm::vec3 blue(0.3f, 0.5f, 1.0f);
+    glm::vec3 gray(0.5f, 0.5f, 0.5f);
+
+    // FPS
+    {
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(1) << "FPS: " << fps;
+        glm::vec3 color = (fps >= 55.0f) ? green : (fps >= 30.0f) ? glm::vec3(1.0f, 1.0f, 0.0f) : red;
+        textRenderer->renderText(ss.str(), xPos, yPos, color, 1.0f);
+        yPos += lineHeight;
+    }
+
+    // Frame time range
+    {
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(2)
+           << "Min: " << minFrameTimeMs << "  Max: " << maxFrameTimeMs << " ms";
+        textRenderer->renderText(ss.str(), xPos, yPos, white, 1.0f);
+        yPos += lineHeight;
+    }
+
+    // Frame time breakdown
+    {
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(2)
+           << "CPU: " << cpuTimeMs << "  GPU: " << gpuTimeMs << "  Wait: " << waitTimeMs << " ms";
+        textRenderer->renderText(ss.str(), xPos, yPos, white, 1.0f);
+        yPos += lineHeight;
+    }
+
+    // Frame time bar
+    {
+        float barX = xPos;
+        float barY = yPos;
+        float barW = 200.0f;
+        float barH = 12.0f;
+        renderFrameTimeBar(barX, barY, barW, barH);
+        yPos += barH + 4.0f;
+        textRenderer->renderText("CPU", xPos, yPos, red, 0.7f);
+        textRenderer->renderText("GPU", xPos + 40.0f, yPos, green, 0.7f);
+        textRenderer->renderText("Wait", xPos + 80.0f, yPos, gray, 0.7f);
+        yPos += lineHeight;
+    }
+
+    // FPS Graph
+    {
+        textRenderer->renderText("FPS History:", xPos, yPos, white, 0.8f);
+        yPos += lineHeight;
+        float graphW = 200.0f;
+        float graphH = 60.0f;
+        renderFpsGraph(xPos, yPos, graphW, graphH);
+        yPos += graphH + 4.0f;
+    }
+
+    // Rendering stats
+    {
+        std::stringstream ss;
+        ss << "Draw Calls: " << drawCallCount;
+        textRenderer->renderText(ss.str(), xPos, yPos, blue, 1.0f);
+        yPos += lineHeight;
+    }
+    {
+        std::stringstream ss;
+        ss << "Vertices: " << vertexCount << "  Tris: " << triangleCount;
+        textRenderer->renderText(ss.str(), xPos, yPos, blue, 1.0f);
+        yPos += lineHeight;
+    }
+    {
+        std::stringstream ss;
+        ss << "Textures: " << loadedTextureCount << " (" << formatMemorySize(textureMemoryBytes) << ")";
+        textRenderer->renderText(ss.str(), xPos, yPos, blue, 1.0f);
+        yPos += lineHeight;
+    }
+}
+
+void DebugHUD::renderMemoryPage(float& xPos, float& yPos, float lineHeight) {
+    glm::vec3 white(1.0f, 1.0f, 1.0f);
+    glm::vec3 green(0.0f, 1.0f, 0.0f);
+    glm::vec3 yellow(1.0f, 1.0f, 0.0f);
+    glm::vec3 cyan(0.0f, 1.0f, 1.0f);
+
+    textRenderer->renderText("=== Memory Details ===", xPos, yPos, yellow, 1.0f);
+    yPos += lineHeight;
+
+    {
+        MemoryInfo memInfo = getMemoryInfo();
+        textRenderer->renderText("System:", xPos, yPos, white, 0.9f);
+        yPos += lineHeight;
+        std::stringstream ss;
+        ss << "  Total: " << formatMemorySize(memInfo.totalMemory);
+        textRenderer->renderText(ss.str(), xPos, yPos, white, 0.8f);
+        yPos += lineHeight;
+        ss.str("");
+        ss << "  Used:  " << formatMemorySize(memInfo.usedMemory);
+        textRenderer->renderText(ss.str(), xPos, yPos, green, 0.8f);
+        yPos += lineHeight;
+        ss.str("");
+        ss << "  Free:  " << formatMemorySize(memInfo.freeMemory);
+        textRenderer->renderText(ss.str(), xPos, yPos, cyan, 0.8f);
+        yPos += lineHeight;
+    }
+
+    {
+        std::stringstream ss;
+        ss << "Native Heap: " << formatMemorySize(nativeHeapBytes);
+        textRenderer->renderText(ss.str(), xPos, yPos, white, 0.9f);
+        yPos += lineHeight;
+    }
+
+    {
+        std::stringstream ss;
+        ss << "Java Heap:   " << formatMemorySize(javaHeapBytes);
+        textRenderer->renderText(ss.str(), xPos, yPos, white, 0.9f);
+        yPos += lineHeight;
+    }
+
+    {
+        std::stringstream ss;
+        ss << "Textures:    " << formatMemorySize(textureMemoryBytes)
+           << " (" << loadedTextureCount << " loaded)";
+        textRenderer->renderText(ss.str(), xPos, yPos, white, 0.9f);
+        yPos += lineHeight;
+    }
+
+    {
+        size_t clipCount = 0;
+        if (audioManager) {
+            clipCount = audioManager->getLoadedClipsCount();
+        }
+        std::stringstream ss;
+        ss << "Audio:       " << clipCount << " clips loaded";
+        textRenderer->renderText(ss.str(), xPos, yPos, white, 0.9f);
+        yPos += lineHeight;
+    }
+}
+
+void DebugHUD::renderPhasePage(float& xPos, float& yPos, float lineHeight) {
+    glm::vec3 white(1.0f, 1.0f, 1.0f);
+    glm::vec3 yellow(1.0f, 1.0f, 0.0f);
+    glm::vec3 green(0.0f, 1.0f, 0.0f);
+    glm::vec3 red(1.0f, 0.3f, 0.3f);
+
+    textRenderer->renderText("=== Imperial Weave Phases ===", xPos, yPos, yellow, 1.0f);
+    yPos += lineHeight;
+
+    static const char* phaseNames[] = {
+        "PreUpdate", "EventProcess", "World", "AI", "Player",
+        "Inventory", "Spell", "Animation", "Physics", "Combat",
+        "Quest", "Audio", "RenderSubmit", "PostRender", "Cleanup"
+    };
+
+    float totalUs = 0.0f;
+    for (int i = 0; i < PHASE_COUNT; i++) {
+        totalUs += phaseTimesUs[i];
+    }
+
+    for (int i = 0; i < PHASE_COUNT; i++) {
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(1);
+        ss << phaseNames[i] << ": " << phaseTimesUs[i] << " us";
+
+        glm::vec3 color = green;
+        if (phaseTimesUs[i] > 5000.0f) color = red;
+        else if (phaseTimesUs[i] > 1000.0f) color = yellow;
+
+        textRenderer->renderText(ss.str(), xPos, yPos, color, 0.8f);
+        yPos += lineHeight * 0.9f;
+    }
+
+    {
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(1) << "Total: " << totalUs << " us ("
+           << (totalUs / 1000.0f) << " ms)";
+        textRenderer->renderText(ss.str(), xPos, yPos, yellow, 0.9f);
+        yPos += lineHeight;
+    }
+}
+
+void DebugHUD::renderFpsGraph(float x, float y, float width, float height) {
+    // Text-based FPS graph (OpenGL ES 3.0 compatible)
+    int count = std::min(fpsHistoryIndex, FPS_HISTORY_SIZE);
+    if (count < 2) return;
+
+    // Build a simple bar graph using text characters
+    std::string graph;
+    for (int i = 0; i < count && i < 30; i++) {
+        int idx = (fpsHistoryIndex - count + i) % FPS_HISTORY_SIZE;
+        float val = fpsHistory[idx];
+        if (val >= 60.0f) graph += "#";
+        else if (val >= 45.0f) graph += "=";
+        else if (val >= 30.0f) graph += "-";
+        else graph += ".";
+    }
+
+    textRenderer->renderText(graph, x, y, glm::vec3(0.0f, 1.0f, 0.0f), 0.8f);
+}
+
+void DebugHUD::renderFrameTimeBar(float x, float y, float width, float height) {
+    // Text-based frame time breakdown (OpenGL ES 3.0 compatible)
+    float total = cpuTimeMs + gpuTimeMs + waitTimeMs;
+    if (total <= 0.0f) return;
+
+    int cpuPct = static_cast<int>((cpuTimeMs / total) * 100.0f);
+    int gpuPct = static_cast<int>((gpuTimeMs / total) * 100.0f);
+    int waitPct = 100 - cpuPct - gpuPct;
+
+    std::stringstream ss;
+    ss << "CPU:" << cpuPct << "% GPU:" << gpuPct << "% Wait:" << waitPct << "%";
+    textRenderer->renderText(ss.str(), x, y, glm::vec3(1.0f, 1.0f, 1.0f), 0.8f);
+}
+
+void DebugHUD::renderLogOverlay() {
+    if (logLines.empty()) return;
+
+    float xPos = 10.0f;
+    float yPos = 200.0f;
+    float lineHeight = 14.0f;
+    glm::vec3 logColor(0.8f, 0.8f, 0.8f);
+
+    // Header
+    textRenderer->renderText("--- Log ---", xPos, yPos, glm::vec3(1.0f, 1.0f, 0.0f), 0.7f);
+    yPos += lineHeight;
+
+    for (const auto& line : logLines) {
+        textRenderer->renderText(line, xPos, yPos, logColor, 0.7f);
+        yPos += lineHeight;
+    }
+}
+
+// --- Utility ---
 
 void DebugHUD::toggle() {
     visible = !visible;
@@ -149,14 +440,12 @@ void DebugHUD::cleanup() {
 
 DebugHUD::MemoryInfo DebugHUD::getMemoryInfo() const {
     MemoryInfo info = {0, 0, 0};
-
-    // /proc/meminfo から メモリ情報を取得
     FILE* memFile = fopen("/proc/meminfo", "r");
     if (memFile) {
         char line[256];
         while (fgets(line, sizeof(line), memFile)) {
             if (sscanf(line, "MemTotal: %ld kB", &info.totalMemory) == 1) {
-                info.totalMemory *= 1024;  // KB から Bytes に変換
+                info.totalMemory *= 1024;
             } else if (sscanf(line, "MemAvailable: %ld kB", &info.freeMemory) == 1) {
                 info.freeMemory *= 1024;
             }
@@ -164,61 +453,40 @@ DebugHUD::MemoryInfo DebugHUD::getMemoryInfo() const {
         fclose(memFile);
         info.usedMemory = info.totalMemory - info.freeMemory;
     }
-
     return info;
 }
 
 std::string DebugHUD::formatMemorySize(long bytes) const {
     std::stringstream ss;
-    ss << std::fixed << std::setprecision(0);
-
+    ss << std::fixed << std::setprecision(1);
     if (bytes < 1024) {
         ss << bytes << " B";
     } else if (bytes < 1024 * 1024) {
         ss << bytes / 1024.0f << " KB";
-    } else if (bytes < 1024 * 1024 * 1024) {
+    } else if (bytes < 1024L * 1024 * 1024) {
         ss << bytes / (1024.0f * 1024.0f) << " MB";
     } else {
         ss << bytes / (1024.0f * 1024.0f * 1024.0f) << " GB";
     }
-
     return ss.str();
 }
 
 std::string DebugHUD::getAudioStatus() const {
     std::stringstream ss;
-
     if (!audioManager) {
         ss << "Audio: [disabled]";
         return ss.str();
     }
-
-    // Audio system disabled - JNI bridge not fully implemented
-    // size_t clipCount = audioManager->getLoadedClipsCount();
-    // size_t sourceCount = audioManager->getActiveSourcesesCount();
-    // bool bgmPlaying = audioManager->isBGMPlaying();
-    // ss << "Audio: clips=" << clipCount << " sources=" << sourceCount;
-    // if (bgmPlaying) {
-    //     ss << " [BGM playing]";
-    // }
-
     ss << "Audio: [not available]";
     return ss.str();
 }
 
 std::string DebugHUD::getRetroFilterStatus() const {
     std::stringstream ss;
-
-    if (!renderer) {
-        return "";
-    }
-
+    if (!renderer) return "";
     auto settings = renderer->getRetroSettings();
-    if (!settings) {
-        return "";
-    }
+    if (!settings) return "";
 
-    // 有効なエフェクトを列挙
     std::string activeEffects;
     if (settings->scanlines_enabled) activeEffects += "S";
     if (settings->pixelation_enabled) activeEffects += "P";
@@ -230,8 +498,6 @@ std::string DebugHUD::getRetroFilterStatus() const {
         ss << "Filters: [none active]";
     } else {
         ss << "Filters: " << activeEffects;
-        ss << " (S=scanlines P=pixelation C=color D=distortion G=grain)";
     }
-
     return ss.str();
 }

@@ -2,7 +2,7 @@
 
 **最終更新**: 2026-08-27  
 **バージョン**: 0.8.0  
-**ステータス**: ✅ アーキテクチャ＆統合完了
+**ステータス**: [DONE] アーキテクチャ＆統合完了
 
 ---
 
@@ -55,7 +55,7 @@ MainActivity.playBGM(String)  [Java - MediaPlayer]
     ↓
 MediaPlayer.start()
     ↓
-🔊 AUDIO PLAYS ON DEVICE
+[AUDIO] AUDIO PLAYS ON DEVICE
 ```
 
 ### Manager Pattern
@@ -306,21 +306,21 @@ adb logcat | grep -E "AudioManager|JNI|MediaPlayer|NativeActivity"
 
 ### 期待される動作
 
-1. ✅ タイトル画面にOblivionロゴが表示
-2. ✅ **Oblivionの「Explore」アンビエント音楽が自動再生開始**
-3. ✅ 音楽がループ再生
-4. ✅ BGM再生中もゲームがプレイ可能
+1. [DONE] タイトル画面にOblivionロゴが表示
+2. [DONE] **Oblivionの「Explore」アンビエント音楽が自動再生開始**
+3. [DONE] 音楽がループ再生
+4. [DONE] BGM再生中もゲームがプレイ可能
 
 ### ログメッセージ
 
 ```
-✅ 正常時:
+[DONE] 正常時:
 I/NativeActivity: JNI_OnLoad called
 I/AudioJNI: JNI audio bridge initialized successfully
 I/AudioManager: Loading test BGM: explore.mp3
 I/MainActivity: BGM playing: explore.mp3
 
-❌ エラー時:
+[FAIL] エラー時:
 E/AudioJNI: Failed to find MainActivity class
 E/AudioJNI: Failed to find playBGM method
 E/MainActivity: Failed to play BGM

@@ -69,10 +69,10 @@ private:
     static constexpr int BTN_EXIT       = 4;
 
     // Original colors (dark stone/metal)
-    static constexpr glm::vec3 COLOR_STONE       = glm::vec3(0.55f, 0.50f, 0.42f);
-    static constexpr glm::vec3 COLOR_GOLD_DIM    = glm::vec3(0.65f, 0.55f, 0.30f);
-    static constexpr glm::vec3 COLOR_GOLD_BRIGHT = glm::vec3(0.90f, 0.78f, 0.45f);
-    static constexpr glm::vec3 COLOR_DARK_BG     = glm::vec3(0.06f, 0.05f, 0.04f);
+    const glm::vec3 COLOR_STONE       = glm::vec3(0.55f, 0.50f, 0.42f);
+    const glm::vec3 COLOR_GOLD_DIM    = glm::vec3(0.65f, 0.55f, 0.30f);
+    const glm::vec3 COLOR_GOLD_BRIGHT = glm::vec3(0.90f, 0.78f, 0.45f);
+    const glm::vec3 COLOR_DARK_BG     = glm::vec3(0.06f, 0.05f, 0.04f);
 
 public:
     LauncherScreen();

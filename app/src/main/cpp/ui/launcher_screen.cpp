@@ -6,8 +6,8 @@
 #include <cmath>
 
 LauncherScreen::LauncherScreen()
-    : state(LauncherState::MAIN), selectedIndex(0),
-      localizationManager(nullptr), textRenderer(nullptr) {
+    : state(LauncherState::MAIN),
+      localizationManager(nullptr), textRenderer(nullptr), selectedIndex(0) {
     LOGD("LauncherScreen created (Oblivion Authentic Launcher)");
 }
 
@@ -151,10 +151,13 @@ void LauncherScreen::update(float deltaTime) {
         bool isSelected = (static_cast<int>(i) == selectedIndex);
         if (isSelected) {
             float glow = 0.5f + 0.5f * sin(glowPhase);
-            glm::vec3 c = glm::mix(COLOR_GOLD_DIM, COLOR_GOLD_BRIGHT, glow);
+            glm::vec3 c(COLOR_GOLD_DIM.x + (COLOR_GOLD_BRIGHT.x - COLOR_GOLD_DIM.x) * glow,
+                        COLOR_GOLD_DIM.y + (COLOR_GOLD_BRIGHT.y - COLOR_GOLD_DIM.y) * glow,
+                        COLOR_GOLD_DIM.z + (COLOR_GOLD_BRIGHT.z - COLOR_GOLD_DIM.z) * glow);
             menuButtons[i]->setLabelColor(c);
         } else {
-            menuButtons[i]->setLabelColor(COLOR_GOLD_DIM * 0.6f);
+            glm::vec3 dimmed(COLOR_GOLD_DIM.x * 0.6f, COLOR_GOLD_DIM.y * 0.6f, COLOR_GOLD_DIM.z * 0.6f);
+            menuButtons[i]->setLabelColor(dimmed);
         }
     }
 }
@@ -183,7 +186,7 @@ void LauncherScreen::render() {
 // Main launcher screen (original: left buttons / right logo)
 // ============================================================================
 void LauncherScreen::renderMain() {
-    glClearColor(COLOR_DARK_BG.r, COLOR_DARK_BG.g, COLOR_DARK_BG.b, 1.0f);
+    glClearColor(COLOR_DARK_BG.x, COLOR_DARK_BG.y, COLOR_DARK_BG.z, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     renderBackground();
@@ -235,7 +238,7 @@ void LauncherScreen::renderBackground() {
     // Border (thin gold)
     UIDrawHelper::drawBorder(
         panelX, panelY, panelW, panelH, 2.0f,
-        glm::vec4(COLOR_GOLD_DIM, 0.3f),
+        glm::vec4(COLOR_GOLD_DIM.x, COLOR_GOLD_DIM.y, COLOR_GOLD_DIM.z, 0.3f),
         screenWidth, screenHeight);
 }
 
@@ -262,7 +265,7 @@ void LauncherScreen::renderLogo() {
 // Options screen (quality settings etc.)
 // ============================================================================
 void LauncherScreen::renderOptions() {
-    glClearColor(COLOR_DARK_BG.r, COLOR_DARK_BG.g, COLOR_DARK_BG.b, 1.0f);
+    glClearColor(COLOR_DARK_BG.x, COLOR_DARK_BG.y, COLOR_DARK_BG.z, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     renderBackground();
@@ -275,7 +278,7 @@ void LauncherScreen::renderOptions() {
         optionsPanel->setPosition(screenWidth * 0.15f, screenHeight * 0.1f);
         optionsPanel->setSize(screenWidth * 0.7f, screenHeight * 0.8f);
         optionsPanel->setBackgroundColor(glm::vec4(0.08f, 0.07f, 0.05f, 0.92f));
-        optionsPanel->setBorderColor(glm::vec4(COLOR_GOLD_DIM, 0.5f));
+        optionsPanel->setBorderColor(glm::vec4(0.65f, 0.55f, 0.30f, 0.5f));
         optionsPanel->setBorderWidth(2.0f);
 
         // Back button
@@ -302,7 +305,7 @@ void LauncherScreen::renderOptions() {
 // Data Files screen (plugin management)
 // ============================================================================
 void LauncherScreen::renderDataFiles() {
-    glClearColor(COLOR_DARK_BG.r, COLOR_DARK_BG.g, COLOR_DARK_BG.b, 1.0f);
+    glClearColor(COLOR_DARK_BG.x, COLOR_DARK_BG.y, COLOR_DARK_BG.z, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     renderBackground();
@@ -315,7 +318,7 @@ void LauncherScreen::renderDataFiles() {
         dataFilesPanel->setPosition(screenWidth * 0.1f, screenHeight * 0.1f);
         dataFilesPanel->setSize(screenWidth * 0.8f, screenHeight * 0.8f);
         dataFilesPanel->setBackgroundColor(glm::vec4(0.08f, 0.07f, 0.05f, 0.92f));
-        dataFilesPanel->setBorderColor(glm::vec4(COLOR_GOLD_DIM, 0.5f));
+        dataFilesPanel->setBorderColor(glm::vec4(0.65f, 0.55f, 0.30f, 0.5f));
         dataFilesPanel->setBorderWidth(2.0f);
 
         // Back button
@@ -342,14 +345,12 @@ void LauncherScreen::renderDataFiles() {
 // Support screen
 // ============================================================================
 void LauncherScreen::renderSupport() {
-    glClearColor(COLOR_DARK_BG.r, COLOR_DARK_BG.g, COLOR_DARK_BG.b, 1.0f);
+    glClearColor(COLOR_DARK_BG.x, COLOR_DARK_BG.y, COLOR_DARK_BG.z, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     renderBackground();
 
     // TODO: Support info rendering (text-based)
-    // Return to main
-    state = LauncherState::MAIN;
 }
 
 // ============================================================================
@@ -371,11 +372,15 @@ void LauncherScreen::onTouchEvent(float x, float y) {
 
         // Fallback
         float menuTop = screenHeight * 0.18f;
+        float menuLeft = screenWidth * 0.06f;
+        float menuWidth = 450.0f;
         float itemH = 90.0f;
-        for (size_t i = 0; i < 5; ++i) {
-            float itemY = menuTop + i * itemH;
-            if (y >= itemY && y < itemY + itemH) {
-                selectedIndex = static_cast<int>(i);
+        int numButtons = static_cast<int>(menuButtons.size());
+        for (int i = 0; i < numButtons; ++i) {
+            float itemY = menuTop + static_cast<float>(i) * itemH;
+            if (x >= menuLeft && x <= menuLeft + menuWidth &&
+                y >= itemY && y < itemY + itemH) {
+                selectedIndex = i;
                 handleSelection();
                 return;
             }
@@ -389,12 +394,15 @@ void LauncherScreen::onTouchEvent(float x, float y) {
 
 void LauncherScreen::onKeyPress(int key) {
     if (state == LauncherState::MAIN) {
+        int numButtons = static_cast<int>(menuButtons.size());
+        if (numButtons == 0) numButtons = 5; // Safety fallback
+
         switch (key) {
             case 19: // UP
-                selectedIndex = (selectedIndex - 1 + 5) % 5;
+                selectedIndex = (selectedIndex - 1 + numButtons) % numButtons;
                 break;
             case 20: // DOWN
-                selectedIndex = (selectedIndex + 1) % 5;
+                selectedIndex = (selectedIndex + 1) % numButtons;
                 break;
             case 23: // ENTER
             case 66: // DPAD_CENTER

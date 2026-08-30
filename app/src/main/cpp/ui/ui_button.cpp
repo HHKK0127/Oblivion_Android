@@ -3,6 +3,13 @@
 #include "ui_system.h"
 #include "../audio/audio_manager.h"
 #include <cmath>
+#include <android/log.h>
+
+#define LOG_TAG "UIButton"
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 UIButton::UIButton(const std::string& name)
     : UIComponent(name),
@@ -112,9 +119,15 @@ void UIButton::cleanup() {
 }
 
 bool UIButton::onEvent(const UIEvent& event) {
-    if (!isVisible() || !enabled) return false;
+    if (!isVisible() || !enabled) {
+        LOGD("UIButton::onEvent: not visible or enabled (visible=%d, enabled=%d)", isVisible() ? 1 : 0, enabled ? 1 : 0);
+        return false;
+    }
 
     if (!contains(event.x, event.y)) {
+        glm::vec2 absPos = getAbsolutePosition();
+        LOGD("UIButton::onEvent: touch (%.1f, %.1f) missed button '%s' at abs(%.1f, %.1f) size(%.1f, %.1f)",
+             event.x, event.y, label.c_str(), absPos.x, absPos.y, size.x, size.y);
         if (event.type == UIEventType::TOUCH_UP) {
             pressed = false;
             updateVisualState();

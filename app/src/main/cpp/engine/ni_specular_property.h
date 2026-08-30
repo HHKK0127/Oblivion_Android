@@ -30,7 +30,7 @@ struct SpecularConfig {
     float specularPower = 32.0f;           // Glossiness (higher = tighter highlight)
     float specularIntensity = 1.0f;        // Overall specular strength
     float specularMultiplier = 1.0f;       // Material multiplier
-    glm::vec3 specularColor = glm::vec3(1.0f);  // Specular tint
+    glm::vec3 specularColor = glm::vec3(1.0f, 1.0f, 1.0f);  // Specular tint
     
     SpecularMode mode = SpecularMode::BLINN_PHONG;
     
@@ -38,7 +38,7 @@ struct SpecularConfig {
     bool useFresnel = false;
     float fresnelPower = 5.0f;
     float fresnelScale = 1.0f;
-    glm::vec3 fresnelColor = glm::vec3(1.0f);
+    glm::vec3 fresnelColor = glm::vec3(1.0f, 1.0f, 1.0f);
     
     // Anisotropy (for Ward model)
     float anisotropy = 0.0f;               // 0 = isotropic, 1 = full anisotropic
@@ -97,7 +97,7 @@ namespace SpecularPresets {
         SpecularConfig config;
         config.specularPower = 64.0f;
         config.specularIntensity = 0.5f;
-        config.specularColor = glm::vec3(1.0f);
+        config.specularColor = glm::vec3(1.0f, 1.0f, 1.0f);
         return config;
     }
     
@@ -182,7 +182,7 @@ namespace SpecularPresets {
         SpecularConfig config;
         config.specularPower = 256.0f;
         config.specularIntensity = 1.5f;
-        config.specularColor = glm::vec3(1.0f);
+        config.specularColor = glm::vec3(1.0f, 1.0f, 1.0f);
         config.useEnvironmentMap = true;
         config.environmentMapScale = 1.5f;
         return config;
@@ -340,7 +340,7 @@ inline void NiSpecularProperty::setSpecularMultiplier(float multiplier) {
 }
 
 inline void NiSpecularProperty::setSpecularColor(const glm::vec3& color) {
-    config_.specularColor = glm::clamp(color, glm::vec3(0.0f), glm::vec3(1.0f));
+    config_.specularColor = glm::clamp(color, glm::vec3(), glm::vec3(1.0f, 1.0f, 1.0f));
 }
 
 inline void NiSpecularProperty::setSpecularMode(SpecularMode mode) {
@@ -354,7 +354,7 @@ inline void NiSpecularProperty::setFresnelEnabled(bool enabled) {
 inline void NiSpecularProperty::setFresnelParams(float power, float scale, const glm::vec3& color) {
     config_.fresnelPower = glm::max(0.1f, power);
     config_.fresnelScale = scale;
-    config_.fresnelColor = glm::clamp(color, glm::vec3(0.0f), glm::vec3(1.0f));
+    config_.fresnelColor = glm::clamp(color, glm::vec3(), glm::vec3(1.0f, 1.0f, 1.0f));
 }
 
 inline void NiSpecularProperty::setAnisotropy(float anisotropy, const glm::vec3& direction) {

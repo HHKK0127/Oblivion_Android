@@ -24,8 +24,7 @@ namespace video {
 // Shader source code
 // ============================================================================
 
-static const char* kVertexShaderSource = R"(
-#version 300 es
+static const char* kVertexShaderSource = R"(#version 300 es
 precision mediump float;
 
 layout(location = 0) in vec4 aPosition;
@@ -42,8 +41,7 @@ void main() {
 }
 )";
 
-static const char* kFragmentShaderSource = R"(
-#version 300 es
+static const char* kFragmentShaderSource = R"(#version 300 es
 #extension GL_OES_EGL_image_external_essl3 : require
 precision mediump float;
 
