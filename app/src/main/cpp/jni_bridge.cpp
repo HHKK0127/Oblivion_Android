@@ -120,8 +120,14 @@ Java_com_example_oblivion_GameRenderer_nativeInitAudioBridge(
 
     // MainActivity インスタンスを設定
     if (mainActivity) {
-        jni_audio_set_main_activity(mainActivity);
-        LOGD("MainActivity reference set");
+        // Create global reference for long-term storage
+        jobject globalMainActivity = env->NewGlobalRef(mainActivity);
+        if (!globalMainActivity) {
+            LOGE("Failed to create global reference for MainActivity");
+            return;
+        }
+        jni_audio_set_main_activity(globalMainActivity);
+        LOGD("MainActivity global reference set");
     } else {
         LOGE("MainActivity object is null");
         return;

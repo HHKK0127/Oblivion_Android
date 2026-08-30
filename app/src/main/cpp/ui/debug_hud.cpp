@@ -17,8 +17,8 @@ DebugHUD::DebugHUD()
       visible(true), logVisible(false),
       currentPage(0),
       fps(0.0f), frameTimeMs(0.0f), avgFrameTimeMs(0.0f),
-      minFrameTimeMs(100.0f), maxFrameTimeMs(0.0f),
-      frameCount(0), timeSinceLastUpdate(0.0f),
+      minFrameTimeMs(std::numeric_limits<float>::max()), maxFrameTimeMs(0.0f),
+      frameCount(0), timeSinceLastUpdate(0.0f), timeSinceLastReset(0.0f),
       fpsHistoryIndex(0),
       cpuTimeMs(0.0f), gpuTimeMs(0.0f), waitTimeMs(0.0f),
       drawCallCount(0), vertexCount(0), triangleCount(0),
@@ -47,19 +47,41 @@ bool DebugHUD::initialize(TextRenderer* textRend, AudioManager* audioMgr, Render
 
 void DebugHUD::update(float deltaTime) {
     frameTimeMs = deltaTime * 1000.0f;
-    avgFrameTimeMs = (avgFrameTimeMs * frameCount + frameTimeMs) / (frameCount + 1);
+
+    // Accurate average: track sum and count for the current window
+    // Using incremental average with frame counter (reset periodically)
+    frameCount++;
+    if (frameCount == 1) {
+        avgFrameTimeMs = frameTimeMs;
+    } else {
+        avgFrameTimeMs = (avgFrameTimeMs * (frameCount - 1) + frameTimeMs) / frameCount;
+    }
+
+    // Track min/max
     minFrameTimeMs = std::min(minFrameTimeMs, frameTimeMs);
     maxFrameTimeMs = std::max(maxFrameTimeMs, frameTimeMs);
-    frameCount++;
-    timeSinceLastUpdate += deltaTime;
 
+    timeSinceLastUpdate += deltaTime;
+    timeSinceLastReset += deltaTime;
+
+    // Periodic update for FPS display (every UPDATE_INTERVAL)
     if (timeSinceLastUpdate >= UPDATE_INTERVAL) {
-        if (frameTimeMs > 0.0f) {
-            fps = 1000.0f / frameTimeMs;
+        if (timeSinceLastUpdate > 0.0f) {
+            // Use actual frame count over the time window for accurate FPS
+            fps = static_cast<float>(frameCount) / timeSinceLastUpdate;
         }
         fpsHistory[fpsHistoryIndex % FPS_HISTORY_SIZE] = fps;
         fpsHistoryIndex++;
         timeSinceLastUpdate = 0.0f;
+    }
+
+    // Periodic reset of min/max/avg (every RESET_INTERVAL)
+    if (timeSinceLastReset >= RESET_INTERVAL) {
+        minFrameTimeMs = std::numeric_limits<float>::max();
+        maxFrameTimeMs = 0.0f;
+        avgFrameTimeMs = 0.0f;
+        frameCount = 0;
+        timeSinceLastReset = 0.0f;
     }
 }
 
@@ -443,14 +465,27 @@ DebugHUD::MemoryInfo DebugHUD::getMemoryInfo() const {
     FILE* memFile = fopen("/proc/meminfo", "r");
     if (memFile) {
         char line[256];
+        long memFree = 0;
+        long buffers = 0;
+        long cached = 0;
         while (fgets(line, sizeof(line), memFile)) {
             if (sscanf(line, "MemTotal: %ld kB", &info.totalMemory) == 1) {
                 info.totalMemory *= 1024;
             } else if (sscanf(line, "MemAvailable: %ld kB", &info.freeMemory) == 1) {
                 info.freeMemory *= 1024;
+            } else if (sscanf(line, "MemFree: %ld kB", &memFree) == 1) {
+                memFree *= 1024;
+            } else if (sscanf(line, "Buffers: %ld kB", &buffers) == 1) {
+                buffers *= 1024;
+            } else if (sscanf(line, "Cached: %ld kB", &cached) == 1) {
+                cached *= 1024;
             }
         }
         fclose(memFile);
+        // Fallback: MemAvailable not available on older kernels (pre-3.14)
+        if (info.freeMemory == 0 && (memFree > 0 || buffers > 0 || cached > 0)) {
+            info.freeMemory = memFree + buffers + cached;
+        }
         info.usedMemory = info.totalMemory - info.freeMemory;
     }
     return info;

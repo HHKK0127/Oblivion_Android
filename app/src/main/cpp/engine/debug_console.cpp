@@ -10,6 +10,7 @@
 #include <glm/glm.hpp>
 #include <algorithm>
 #include <cctype>
+#include <deque>
 
 // ============================================================================
 // DebugConsole implementation
@@ -50,7 +51,7 @@ std::string DebugConsole::executeCommand(const std::string& input) {
     // Add to history
     history_.push_back(input);
     if (history_.size() > MAX_HISTORY) {
-        history_.erase(history_.begin());
+        history_.pop_front();  // O(1) with deque
     }
 
     // Echo command
@@ -79,6 +80,10 @@ std::string DebugConsole::executeCommand(const std::string& input) {
         result = it->second.handler(cmdArgs);
     } catch (const std::exception& e) {
         result = std::string("Error: ") + e.what();
+        addOutput(result, ConsoleLine::Level::ERROR);
+        return result;
+    } catch (...) {
+        result = "Error: Unknown exception";
         addOutput(result, ConsoleLine::Level::ERROR);
         return result;
     }
@@ -141,23 +146,6 @@ void DebugConsole::registerBuiltinCommands() {
 // Built-in command handlers
 // ============================================================================
 
-std::string DebugConsole::cmdTeleport(const std::vector<std::string>& args) {
-    if (args.size() < 3) {
-        return "Usage: tp <x> <y> <z>";
-    }
-
-    float x = parseFloat(args[0]);
-    float y = parseFloat(args[1]);
-    float z = parseFloat(args[2]);
-
-    if (playerController_) {
-        playerController_->setPosition(glm::vec3(x, y, z));
-        return "Teleported to (" + args[0] + ", " + args[1] + ", " + args[2] + ")";
-    }
-
-    return "Error: PlayerController not available";
-}
-
 std::string DebugConsole::cmdAddItem(const std::vector<std::string>& args) {
     if (args.empty()) {
         return "Usage: additem <id> [count]";
@@ -167,8 +155,11 @@ std::string DebugConsole::cmdAddItem(const std::vector<std::string>& args) {
     uint32_t count = args.size() > 1 ? parseUint(args[1], 1) : 1;
 
     if (inventoryManager_) {
-        // InventoryManager integration would go here
-        return "Added item " + std::to_string(itemId) + " x" + std::to_string(count);
+        // Add item to player inventory
+        if (inventoryManager_->addItem(itemId, count)) {
+            return "Added item " + std::to_string(itemId) + " x" + std::to_string(count);
+        }
+        return "Failed to add item " + std::to_string(itemId);
     }
 
     return "Error: InventoryManager not available";
@@ -183,8 +174,11 @@ std::string DebugConsole::cmdSetStage(const std::vector<std::string>& args) {
     uint32_t stage = parseUint(args[1]);
 
     if (questManager_) {
-        // QuestManager stage setting would go here
-        return "Set quest " + std::to_string(questId) + " to stage " + std::to_string(stage);
+        // Set quest stage
+        if (questManager_->setQuestStage(questId, stage)) {
+            return "Set quest " + std::to_string(questId) + " to stage " + std::to_string(stage);
+        }
+        return "Failed to set quest stage";
     }
 
     return "Error: QuestManager not available";
@@ -235,7 +229,15 @@ std::string DebugConsole::cmdLoad(const std::vector<std::string>& args) {
 std::string DebugConsole::cmdHelp(const std::vector<std::string>& args) {
     (void)args;
     std::string help = "Available commands:\n";
+    // Sort commands alphabetically for consistent display
+    std::vector<std::pair<std::string, CommandEntry>> sortedCommands;
+    sortedCommands.reserve(commands_.size());
     for (const auto& pair : commands_) {
+        sortedCommands.emplace_back(pair.first, pair.second);
+    }
+    std::sort(sortedCommands.begin(), sortedCommands.end(),
+        [](const auto& a, const auto& b) { return a.first < b.first; });
+    for (const auto& pair : sortedCommands) {
         help += "  " + pair.second.help + "\n";
     }
     return help;
@@ -254,7 +256,7 @@ std::string DebugConsole::cmdClear(const std::vector<std::string>& args) {
 void DebugConsole::addOutput(const std::string& text, ConsoleLine::Level level) {
     output_.push_back({text, level});
     if (output_.size() > MAX_OUTPUT_LINES) {
-        output_.erase(output_.begin());
+        output_.pop_front();  // O(1) with deque
     }
 }
 
@@ -278,7 +280,12 @@ float DebugConsole::parseFloat(const std::string& s, float defaultVal) {
 
 uint32_t DebugConsole::parseUint(const std::string& s, uint32_t defaultVal) {
     try {
-        return static_cast<uint32_t>(std::stoul(s));
+        unsigned long val = std::stoul(s);
+        if (val > UINT32_MAX) {
+            addOutput("Warning: Value exceeds 32-bit range, truncating", ConsoleLine::Level::WARNING);
+            return UINT32_MAX;
+        }
+        return static_cast<uint32_t>(val);
     } catch (...) {
         return defaultVal;
     }

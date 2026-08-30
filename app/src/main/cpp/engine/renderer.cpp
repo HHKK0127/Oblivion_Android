@@ -40,7 +40,11 @@ bool Renderer::init(unsigned int width, unsigned int height) {
 
         // Initialize game systems
         LOGI("Step 2: Calling initGameSystems()");
-        initGameSystems();
+        if (!initGameSystems()) {
+            LOGE("Failed to initialize game systems");
+            __android_log_print(ANDROID_LOG_ERROR, "Renderer", "ERROR_INIT_GAME_SYSTEMS: failed");
+            return false;
+        }
         LOGI("Step 2: initGameSystems() completed");
         __android_log_print(ANDROID_LOG_ERROR, "Renderer", "SYNC_CHECKPOINT_3: game systems done");
 
@@ -110,12 +114,8 @@ void Renderer::resize(unsigned int width, unsigned int height) {
             joystick->setVisible(false); // Hidden until game starts
             uiSystem->registerComponent(joystick, 100); // Draw above other components if overlapping
         } else {
-            // Reposition existing joystick
-            // Note: Since we don't have a direct setter yet, we can recreate it or add a setPosition method
-            uiSystem->unregisterComponent(joystick);
-            joystick = std::make_shared<UIJoystick>(250.0f, screenHeight - 250.0f, 150.0f);
-            joystick->setVisible(false); // Hidden until game starts
-            uiSystem->registerComponent(joystick, 100);
+            // Update existing joystick position without recreating
+            joystick->setCenter(250.0f, screenHeight - 250.0f);
         }
 
         // Setup combat buttons on right side of screen
@@ -331,7 +331,7 @@ void Renderer::initLocalization() {
     localizationManager->logTranslationStats();
 }
 
-void Renderer::initGameSystems() {
+bool Renderer::initGameSystems() {
     LOGI("=== initGameSystems() called ===");
 
     // CRITICAL: Get actual viewport dimensions from OpenGL (not JNI parameters)
@@ -355,7 +355,7 @@ void Renderer::initGameSystems() {
     settingsManager = std::make_unique<SettingsManager>();
     if (!settingsManager->initialize()) {
         LOGE("Failed to initialize SettingsManager");
-        return;
+        return false;
     }
     LOGI("SettingsManager initialized successfully");
 
@@ -364,11 +364,11 @@ void Renderer::initGameSystems() {
     textRenderer = std::make_unique<TextRenderer>();
     if (!g_assetManager) {
         LOGE("g_assetManager is null, cannot initialize TextRenderer");
-        return;
+        return false;
     }
     if (!textRenderer->initialize(g_assetManager)) {
         LOGE("Failed to initialize TextRenderer");
-        return;
+        return false;
     }
     textRenderer->setScreenSize(screenWidth, screenHeight);
     LOGI("TextRenderer initialized successfully with size %ux%u", screenWidth, screenHeight);
@@ -453,7 +453,7 @@ void Renderer::initGameSystems() {
     debugHUD = std::make_unique<DebugHUD>();
     if (!debugHUD->initialize(textRenderer.get(), nullptr, this)) {
         LOGE("Failed to initialize DebugHUD");
-        return;
+        return false;
     }
     LOGI("DebugHUD initialized successfully");
 
@@ -462,7 +462,7 @@ void Renderer::initGameSystems() {
     gameConsole = std::make_unique<GameConsole>();
     if (!gameConsole->initialize(textRenderer.get())) {
         LOGE("Failed to initialize GameConsole");
-        return;
+        return false;
     }
     LOGI("GameConsole initialized successfully");
 
@@ -470,7 +470,7 @@ void Renderer::initGameSystems() {
     debugMenu = std::make_unique<DebugMenu>();
     if (!debugMenu->initialize(textRenderer.get(), gameConsole.get())) {
         LOGE("Failed to initialize DebugMenu");
-        return;
+        return false;
     }
     debugMenu->setScreenSize(screenWidth, screenHeight);
     LOGI("DebugMenu initialized successfully");
@@ -774,7 +774,7 @@ void Renderer::initGameSystems() {
     npcDebugVisualizer = std::make_unique<NpcDebugVisualizer>();
     if (!npcDebugVisualizer->initialize(textRenderer.get(), npcManager.get())) {
         LOGE("Failed to initialize NpcDebugVisualizer");
-        return;
+        return false;
     }
     LOGI("NpcDebugVisualizer initialized successfully");
 
@@ -783,7 +783,7 @@ void Renderer::initGameSystems() {
     worldDebugInfo = std::make_unique<WorldDebugInfo>();
     if (!worldDebugInfo->initialize(textRenderer.get(), worldManager.get())) {
         LOGE("Failed to initialize WorldDebugInfo");
-        return;
+        return false;
     }
     LOGI("WorldDebugInfo initialized successfully");
 
@@ -792,7 +792,7 @@ void Renderer::initGameSystems() {
     performanceGraph = std::make_unique<PerformanceGraph>();
     if (!performanceGraph->initialize(textRenderer.get())) {
         LOGE("Failed to initialize PerformanceGraph");
-        return;
+        return false;
     }
     LOGI("PerformanceGraph initialized successfully");
 
@@ -801,7 +801,7 @@ void Renderer::initGameSystems() {
     settingsUI = std::make_unique<SettingsUI>();
     if (!settingsUI->initialize(textRenderer.get(), settingsManager.get(), this)) {
         LOGE("Failed to initialize SettingsUI");
-        return;
+        return false;
     }
     LOGI("SettingsUI initialized successfully");
 
@@ -817,7 +817,7 @@ void Renderer::initGameSystems() {
     assetManager = std::make_unique<AssetManager>();
     if (!assetManager->initialize()) {
         LOGE("Failed to initialize AssetManager");
-        return;
+        return false;
     }
     LOGI("AssetManager initialized successfully");
 
@@ -877,7 +877,7 @@ void Renderer::initGameSystems() {
     npcManager = std::make_unique<NpcManager>();
     if (!npcManager->initialize()) {
         LOGE("Failed to initialize NpcManager");
-        return;
+        return false;
     }
     LOGI("NpcManager initialized successfully");
 
@@ -887,7 +887,7 @@ void Renderer::initGameSystems() {
     LOGI("Calling WorldManager::initialize() with managers...");
     if (!worldManager->initialize(npcManager.get(), assetManager.get())) {
         LOGE("Failed to initialize WorldManager");
-        return;
+        return false;
     }
     LOGI("WorldManager initialized successfully");
 
@@ -895,14 +895,14 @@ void Renderer::initGameSystems() {
     questManager = std::make_unique<QuestManager>();
     if (!questManager->initialize(worldManager->getNpcManager())) {
         LOGE("Failed to initialize QuestManager");
-        return;
+        return false;
     }
 
     // Initialize Spell Manager (before CombatManager)
     spellManager = std::make_unique<SpellManager>();
     if (!spellManager->initialize(worldManager->getNpcManager())) {
         LOGE("Failed to initialize SpellManager");
-        return;
+        return false;
     }
 
     // Initialize NavMesh Manager
@@ -916,14 +916,14 @@ void Renderer::initGameSystems() {
     if (!combatManager->initialize(worldManager.get(), worldManager->getNpcManager(),
                                    spellManager.get())) {
         LOGE("Failed to initialize CombatManager");
-        return;
+        return false;
     }
 
     // Initialize PlayerController (Phase 3+)
     playerController = std::make_unique<PlayerController>();
     if (!playerController->initialize(worldManager.get())) {
         LOGE("Failed to initialize PlayerController");
-        return;
+        return false;
     }
     LOGI("PlayerController initialized successfully");
 
@@ -937,7 +937,7 @@ void Renderer::initGameSystems() {
     inventoryManager = std::make_unique<InventoryManager>();
     if (!inventoryManager->initialize()) {
         LOGE("Failed to initialize InventoryManager");
-        return;
+        return false;
     }
     LOGI("InventoryManager initialized successfully");
 
@@ -945,7 +945,7 @@ void Renderer::initGameSystems() {
     inventoryUI = std::make_unique<InventoryUI>();
     if (!inventoryUI->initialize(inventoryManager->getPlayerInventory(), textRenderer.get())) {
         LOGE("Failed to initialize InventoryUI");
-        return;
+        return false;
     }
     LOGI("InventoryUI initialized successfully");
 
@@ -1246,6 +1246,8 @@ void Renderer::initGameSystems() {
         }
 
         LOGI("Imperial Weave initialized successfully");
+
+    return true;
 }
 
 void Renderer::createTestScenario() {
@@ -2093,11 +2095,8 @@ void Renderer::render(float deltaTime) {
 
     // ===== RETRO FILTER: Apply post-processing effects and render to screen =====
     if (retroFilter) {
-        LOGI("RetroFilter exists, calling apply()...");
         retroFilter->apply(retroSettings);
-        LOGI("RetroFilter apply() completed, calling renderToScreen()...");
         retroFilter->renderToScreen();
-        LOGI("RetroFilter renderToScreen() completed");
     } else {
         LOGE("CRITICAL: retroFilter is NULL!");
     }
@@ -2178,6 +2177,7 @@ void Renderer::render(float deltaTime) {
     }
 
     // Frame rate control - enforce target FPS
+    // Note: native_activity.cpp also has frame timing, but this provides more precise control
     auto currentFrameTime = std::chrono::high_resolution_clock::now();
     std::chrono::duration<float, std::milli> frameElapsed = currentFrameTime - lastFrameTime;
     float elapsedMs = frameElapsed.count();

@@ -100,12 +100,12 @@ private:
     bool noClip_ = false;
     bool showFPS_ = false;
 
-    // Output buffer
-    std::vector<ConsoleLine> output_;
+    // Output buffer (deque for O(1) front removal)
+        std::deque<ConsoleLine> output_;
     static constexpr size_t MAX_OUTPUT_LINES = 256;
 
-    // Command history
-    std::vector<std::string> history_;
+    // Command history (deque for O(1) front removal)
+        std::deque<std::string> history_;
     static constexpr size_t MAX_HISTORY = 64;
 
     // Registered commands

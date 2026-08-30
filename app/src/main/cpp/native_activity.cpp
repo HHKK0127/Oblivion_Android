@@ -161,6 +161,10 @@ static void renderingThread(AppState* state) {
 
         if (state->window_changed) {
             state->window_changed = false;
+            // Check if we should exit after processing window change
+            if (!state->should_render) {
+                break;  // Exit thread during shutdown
+            }
             if (state->window) {
                 if (state->surface != EGL_NO_SURFACE) {
                     eglDestroySurface(state->display, state->surface);

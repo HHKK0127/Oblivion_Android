@@ -290,6 +290,6 @@ private:
     bool touchTrail = false;
 
     void initLocalization();
-    void initGameSystems();
+    bool initGameSystems();
     void createTestScenario();
 };

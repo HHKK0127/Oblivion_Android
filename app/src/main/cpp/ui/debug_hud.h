@@ -83,9 +83,11 @@ private:
     float minFrameTimeMs;
     float maxFrameTimeMs;
 
-    int frameCount;
+        uint64_t frameCount;  // Changed from int to prevent overflow (~584 years @ 60fps)
     float timeSinceLastUpdate;
-    static constexpr float UPDATE_INTERVAL = 0.5f;
+        float timeSinceLastReset;  // For periodic min/max/avg reset
+        static constexpr float UPDATE_INTERVAL = 0.5f;
+        static constexpr float RESET_INTERVAL = 5.0f;  // Reset min/max/avg every 5 seconds
 
     // FPS graph (circular buffer)
     static constexpr int FPS_HISTORY_SIZE = 60;

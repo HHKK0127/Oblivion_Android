@@ -17,7 +17,9 @@ static jmethodID g_stop_bgm_method = nullptr;
 static std::mutex g_jni_mutex;
 
 /**
- * Helper to get JNIEnv for current thread
+ * Helper to get JNIEnv for current thread.
+ * NOTE: Caller must call g_jvm->DetachCurrentThread() when done if this
+ * function attached the thread (returns a newly-attached env).
  */
 static JNIEnv* get_jni_env() {
     if (!g_jvm) {
@@ -117,10 +119,19 @@ void jni_audio_play_bgm(const std::string& filename) {
         return;
     }
 
+    // Check if we need to detach after this call
+    bool needsDetach = false;
+    {
+        JNIEnv* checkEnv = nullptr;
+        int status = g_jvm->GetEnv((void**)&checkEnv, JNI_VERSION_1_6);
+        needsDetach = (status == JNI_EDETACHED);
+    }
+
     // Convert C++ string to jstring
     jstring javaFilename = env->NewStringUTF(filename.c_str());
     if (!javaFilename) {
         LOGE("Failed to create jstring for filename: %s", filename.c_str());
+        if (needsDetach) g_jvm->DetachCurrentThread();
         return;
     }
 
@@ -136,6 +147,7 @@ void jni_audio_play_bgm(const std::string& filename) {
 
     // Clean up
     env->DeleteLocalRef(javaFilename);
+    if (needsDetach) g_jvm->DetachCurrentThread();
     LOGD("Called playBGM with filename: %s", filename.c_str());
 }
 
@@ -153,10 +165,19 @@ void jni_audio_play_se(const std::string& filename) {
         return;
     }
 
+    // Check if we need to detach after this call
+    bool needsDetach = false;
+    {
+        JNIEnv* checkEnv = nullptr;
+        int status = g_jvm->GetEnv((void**)&checkEnv, JNI_VERSION_1_6);
+        needsDetach = (status == JNI_EDETACHED);
+    }
+
     // Convert C++ string to jstring
     jstring javaFilename = env->NewStringUTF(filename.c_str());
     if (!javaFilename) {
         LOGE("Failed to create jstring for filename: %s", filename.c_str());
+        if (needsDetach) g_jvm->DetachCurrentThread();
         return;
     }
 
@@ -172,6 +193,7 @@ void jni_audio_play_se(const std::string& filename) {
 
     // Clean up
     env->DeleteLocalRef(javaFilename);
+    if (needsDetach) g_jvm->DetachCurrentThread();
     LOGD("Called playSE with filename: %s", filename.c_str());
 }
 
@@ -189,6 +211,14 @@ void jni_audio_stop_bgm() {
         return;
     }
 
+    // Check if we need to detach after this call
+    bool needsDetach = false;
+    {
+        JNIEnv* checkEnv = nullptr;
+        int status = g_jvm->GetEnv((void**)&checkEnv, JNI_VERSION_1_6);
+        needsDetach = (status == JNI_EDETACHED);
+    }
+
     // Call static method: MainActivity.stopBGM()
     env->CallStaticVoidMethod(g_main_activity_class, g_stop_bgm_method);
 
@@ -199,6 +229,7 @@ void jni_audio_stop_bgm() {
         env->ExceptionClear();
     }
 
+    if (needsDetach) g_jvm->DetachCurrentThread();
     LOGD("Called stopBGM");
 }
 

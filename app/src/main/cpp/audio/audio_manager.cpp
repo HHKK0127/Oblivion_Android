@@ -87,6 +87,11 @@ bool AudioManager::initialize() {
 }
 
 void AudioManager::update(float deltaTime) {
+    // Ensure OpenAL context is current for this thread
+    if (context) {
+        alcMakeContextCurrent(context);
+    }
+
     // BGM フェード処理
     if (bgmFading) {
         updateBGMFade(deltaTime);
@@ -245,6 +250,11 @@ void AudioManager::playBGMViaJava(const std::string& filename) {
 }
 
 void AudioManager::stopBGM(float fadeOut) {
+    // Ensure OpenAL context is current for this thread
+    if (context) {
+        alcMakeContextCurrent(context);
+    }
+
     if (currentBGMSourceId == 0) {
         LOGD("No BGM currently playing");
         return;
@@ -299,6 +309,11 @@ void AudioManager::setBGMVolume(float volume) {
 
 uint32_t AudioManager::playSE(uint32_t clipId, const glm::vec3& position,
                              float volume) {
+    // Ensure OpenAL context is current for this thread
+    if (context) {
+        alcMakeContextCurrent(context);
+    }
+
     // MAX_SOURCES 超過時：最も古い SE を削除して新規作成を優先
     if (sources.size() >= MAX_SOURCES) {
         uint32_t oldestSourceId = 0;
@@ -534,6 +549,14 @@ ALuint AudioManager::loadWavFile(const std::string& filename, ALint& format,
     alGenBuffers(1, &buffer);
     if (alGetError() != AL_NO_ERROR) {
         LOGE("alGenBuffers failed");
+        return 0;
+    }
+
+    // Boundary check: ensure audio data doesn't exceed buffer
+    if (audioDataOffset + audioDataSize > wavData.size()) {
+        LOGE("WAV data exceeds buffer: offset=%d size=%d total=%zu",
+             audioDataOffset, audioDataSize, wavData.size());
+        alDeleteBuffers(1, &buffer);
         return 0;
     }
 

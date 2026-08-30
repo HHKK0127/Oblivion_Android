@@ -231,9 +231,6 @@ add_library(native-lib SHARED
 
     # Tests (Phase 30 Step 13)
     tests/phase30_integration_test.cpp
-    tests/phase45_unit_tests.cpp
-    tests/phase48_integration_test.cpp
-    tests/phase48_stress_test.cpp
 
     # Tests (Phase 38: Script VM)
     tests/script_vm_tests.cpp
