@@ -90,13 +90,25 @@ void LocalizationManager::logTranslationStats() const {
 }
 
 void LocalizationManager::initializeTranslationDatabase() {
-    // UI - Menu Items
+    // UI - Menu Items (Original Oblivion title screen style)
+    translations["menu_continue"] = {"Continue", "続きから"};
+    translations["menu_new"] = {"New", "新規"};
+    translations["menu_load"] = {"Load", "ロード"};
+    translations["menu_options"] = {"Options", "オプション"};
+    translations["menu_quit"] = {"Quit", "終了"};
+    translations["menu_credits"] = {"Credits", "クレジット"};
+    translations["menu_debug"] = {"Debug", "デバッグ"};
     translations["menu_start"] = {"Start", "ゲーム開始"};
     translations["menu_settings"] = {"Settings", "設定"};
-    translations["menu_quit"] = {"Quit", "終了"};
     translations["menu_resume"] = {"Resume", "再開"};
-    translations["menu_load"] = {"Load Game", "ゲームをロード"};
     translations["menu_save"] = {"Save Game", "ゲームを保存"};
+
+    // Launcher menu items (Oblivion PC launcher style)
+    translations["launcher_play"] = {"Play", "プレイ"};
+    translations["launcher_options"] = {"Options", "オプション"};
+    translations["launcher_data_files"] = {"Data Files", "データファイル"};
+    translations["launcher_support"] = {"Support", "サポート"};
+    translations["launcher_exit"] = {"Exit", "終了"};
 
     // UI - Language Menu
     translations["menu_language"] = {"Language", "言語"};

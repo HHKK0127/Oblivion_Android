@@ -8,11 +8,17 @@
 #include <android/asset_manager.h>
 #include <GLES3/gl3.h>
 #include "../ui/title_screen.h"
+#include "../ui/launcher_screen.h"
 #include "../ui/quest_ui.h"
 #include "../ui/text_renderer.h"
 #include "../ui/debug_hud.h"
 #include "../ui/settings_ui.h"
 #include "../ui/save_load_ui.h"
+#include "../ui/game_console.h"
+#include "../ui/debug_menu.h"
+#include "../ui/npc_debug_visualizer.h"
+#include "../ui/world_debug_info.h"
+#include "../ui/performance_graph.h"
 #include "../game/quest_manager.h"
 #include "../game/npc_manager.h"
 #include "../system/settings_manager.h"
@@ -66,6 +72,7 @@ extern AAssetManager* g_assetManager;
 class Renderer {
 private:
     // UI Systems
+    std::unique_ptr<LauncherScreen> launcherScreen;
     std::unique_ptr<TitleScreen> titleScreen;
     std::unique_ptr<QuestUI> questUI;
     std::unique_ptr<InventoryUI> inventoryUI;
@@ -73,6 +80,11 @@ private:
     std::unique_ptr<DebugHUD> debugHUD;
     std::unique_ptr<SettingsUI> settingsUI;
     std::unique_ptr<SaveLoadUI> saveLoadUI;
+    std::unique_ptr<GameConsole> gameConsole;
+    std::unique_ptr<DebugMenu> debugMenu;
+    std::unique_ptr<NpcDebugVisualizer> npcDebugVisualizer;
+    std::unique_ptr<WorldDebugInfo> worldDebugInfo;
+    std::unique_ptr<PerformanceGraph> performanceGraph;
 
     // Settings
     std::unique_ptr<SettingsManager> settingsManager;
@@ -151,6 +163,7 @@ private:
     RetroFilter::Settings retroSettings;
 
     // State
+    bool showLauncher;
     bool showTitleScreen;
     bool initialized = false;  // Track if initialization succeeded
     unsigned int screenWidth;
@@ -180,11 +193,17 @@ public:
     oblivion::NavMeshManager* getNavMeshManager() { return navMeshManager.get(); }
     ai::AIScheduler* getAIScheduler() { return aiScheduler.get(); }
     WorldManager* getWorldManager() { return worldManager.get(); }
+    LauncherScreen* getLauncherScreen() { return launcherScreen.get(); }
     TitleScreen* getTitleScreen() { return titleScreen.get(); }
     QuestUI* getQuestUI() { return questUI.get(); }
     TextRenderer* getTextRenderer() { return textRenderer.get(); }
     DebugHUD* getDebugHUD() { return debugHUD.get(); }
     SettingsUI* getSettingsUI() { return settingsUI.get(); }
+    GameConsole* getGameConsole() { return gameConsole.get(); }
+    DebugMenu* getDebugMenu() { return debugMenu.get(); }
+    NpcDebugVisualizer* getNpcDebugVisualizer() { return npcDebugVisualizer.get(); }
+    WorldDebugInfo* getWorldDebugInfo() { return worldDebugInfo.get(); }
+    PerformanceGraph* getPerformanceGraph() { return performanceGraph.get(); }
     SaveLoadUI* getSaveLoadUI() { return saveLoadUI.get(); }
     SettingsManager* getSettingsManager() { return settingsManager.get(); }
     PerformanceMonitor* getPerformanceMonitor() { return performanceMonitor.get(); }
@@ -198,6 +217,7 @@ public:
     unsigned int getScreenWidth() const { return screenWidth; }
     unsigned int getScreenHeight() const { return screenHeight; }
 
+    bool isLauncherActive() const { return showLauncher; }
     bool isTitleScreenActive() const { return showTitleScreen; }
     UISystem* getUISystem() { return uiSystem.get(); }
 
@@ -211,6 +231,14 @@ public:
     inventory::EquipmentManager* getEquipmentManager() { return equipmentManager.get(); }
     void toggleInventory();
     bool isInventoryVisible() const { return uiInventoryPanel && uiInventoryPanel->isVisible(); }
+
+    // Debug System Toggles
+    void toggleGameConsole();
+    void toggleDebugMenu();
+    void toggleNpcDebugVisualizer();
+    void toggleWorldDebugInfo();
+    void togglePerformanceGraph();
+    void toggleAllDebugSystems();
 
     // Phase 31: World Entity System
     WorldLoader* getWorldLoader() { return worldLoader.get(); }
@@ -241,7 +269,26 @@ public:
     RetroFilter::Settings& getRetroSettingsRef() { return retroSettings; }
     RetroFilter* getRetroFilter() { return retroFilter.get(); }
 
+    // Debug Rendering Modes
+    void setWireframeMode(bool enabled) { wireframeMode = enabled; }
+    bool isWireframeMode() const { return wireframeMode; }
+    void setAabbVisualization(bool enabled) { aabbVisualization = enabled; }
+    bool isAabbVisualization() const { return aabbVisualization; }
+    void setNpcOverlay(bool enabled) { npcOverlay = enabled; }
+    bool isNpcOverlay() const { return npcOverlay; }
+    void setTouchTrail(bool enabled) { touchTrail = enabled; }
+    bool isTouchTrail() const { return touchTrail; }
+
+    // Debug HUD page navigation
+    void debugHudNextPage();
+    void debugHudPrevPage();
+
 private:
+    bool wireframeMode = false;
+    bool aabbVisualization = false;
+    bool npcOverlay = false;
+    bool touchTrail = false;
+
     void initLocalization();
     void initGameSystems();
     void createTestScenario();

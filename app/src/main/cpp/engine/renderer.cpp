@@ -10,7 +10,7 @@
 #include <thread>
 
 Renderer::Renderer()
-    : showTitleScreen(true), screenWidth(1080), screenHeight(1920),
+    : showLauncher(true), showTitleScreen(false), screenWidth(1080), screenHeight(1920),
       targetFPS(60), frameTimeThreshold(1000.0f / 60.0f) {
     LOGD("Renderer created with target FPS: %d", targetFPS);
     lastFrameTime = std::chrono::high_resolution_clock::now();
@@ -107,12 +107,14 @@ void Renderer::resize(unsigned int width, unsigned int height) {
         // Setup joystick position based on new screen size
         if (!joystick) {
             joystick = std::make_shared<UIJoystick>(250.0f, screenHeight - 250.0f, 150.0f);
+            joystick->setVisible(false); // Hidden until game starts
             uiSystem->registerComponent(joystick, 100); // Draw above other components if overlapping
         } else {
             // Reposition existing joystick
             // Note: Since we don't have a direct setter yet, we can recreate it or add a setPosition method
             uiSystem->unregisterComponent(joystick);
             joystick = std::make_shared<UIJoystick>(250.0f, screenHeight - 250.0f, 150.0f);
+            joystick->setVisible(false); // Hidden until game starts
             uiSystem->registerComponent(joystick, 100);
         }
 
@@ -287,6 +289,12 @@ void Renderer::resize(unsigned int width, unsigned int height) {
         }
     }
 
+    // Update LauncherScreen layout
+    if (launcherScreen) {
+        launcherScreen->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        LOGI("LauncherScreen screen size updated to: %ux%u", screenWidth, screenHeight);
+    }
+
     // Update TitleScreen layout
     if (titleScreen) {
         titleScreen->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
@@ -448,6 +456,345 @@ void Renderer::initGameSystems() {
         return;
     }
     LOGI("DebugHUD initialized successfully");
+
+    // Initialize Game Console
+    LOGI("Creating GameConsole...");
+    gameConsole = std::make_unique<GameConsole>();
+    if (!gameConsole->initialize(textRenderer.get())) {
+        LOGE("Failed to initialize GameConsole");
+        return;
+    }
+    LOGI("GameConsole initialized successfully");
+
+    // Initialize DebugMenu
+    debugMenu = std::make_unique<DebugMenu>();
+    if (!debugMenu->initialize(textRenderer.get(), gameConsole.get())) {
+        LOGE("Failed to initialize DebugMenu");
+        return;
+    }
+    debugMenu->setScreenSize(screenWidth, screenHeight);
+    LOGI("DebugMenu initialized successfully");
+
+    // Connect GameConsole to game systems via GameSystemRefs
+    GameConsole::GameSystemRefs refs;
+    refs.getPlayerPos = [this]() -> glm::vec3 {
+        if (playerController && playerController->getPlayer()) return playerController->getPlayer()->position;
+        return glm::vec3(0.0f, 0.0f, 0.0f);
+    };
+    refs.setPlayerPos = [this](float x, float y, float z) {
+        if (playerController) playerController->setPosition(glm::vec3(x, y, z));
+    };
+    refs.setHealth = [this](float h) {
+        if (playerController && playerController->getPlayer()) playerController->getPlayer()->health = h;
+    };
+    refs.setMaxHealth = [this](float h) {
+        if (playerController && playerController->getPlayer()) playerController->getPlayer()->maxHealth = h;
+    };
+    refs.setMana = [this](float m) {
+        // Magicka not implemented in Player struct yet
+    };
+    refs.setStamina = [this](float s) {
+        if (playerController && playerController->getPlayer()) playerController->getPlayer()->stamina = s;
+    };
+    refs.setLevel = [this](int l) {
+        if (playerController && playerController->getPlayer()) playerController->getPlayer()->setLevel(static_cast<uint32_t>(l));
+    };
+    refs.addExperience = [this](float xp) {
+        if (playerController && playerController->getPlayer()) playerController->getPlayer()->addExperience(xp);
+    };
+    refs.setSkill = [this](const std::string& name, int level) {
+        if (playerController && playerController->getPlayer()) {
+            auto& skills = playerController->getPlayer()->skills;
+            if (name == "Blade") skills.Blade = level;
+            else if (name == "Blunt") skills.Blunt = level;
+            else if (name == "Block") skills.Block = level;
+            else if (name == "Restoration") skills.Restoration = level;
+            else if (name == "Destruction") skills.Destruction = level;
+            else if (name == "Alteration") skills.Alteration = level;
+            else if (name == "Conjuration") skills.Conjuration = level;
+            else if (name == "Illusion") skills.Illusion = level;
+            else if (name == "Mysticism") skills.Mysticism = level;
+            else if (name == "Marksman") skills.Marksman = level;
+            else if (name == "Athletics") skills.Athletics = level;
+            else if (name == "Acrobatics") skills.Acrobatics = level;
+        }
+    };
+    refs.setAttribute = [this](const std::string& name, int val) {
+        if (playerController && playerController->getPlayer()) {
+            auto& attrs = playerController->getPlayer()->attributes;
+            if (name == "Strength") attrs.Strength = val;
+            else if (name == "Intelligence") attrs.Intelligence = val;
+            else if (name == "Willpower") attrs.Willpower = val;
+            else if (name == "Agility") attrs.Agility = val;
+            else if (name == "Speed") attrs.Speed = val;
+            else if (name == "Endurance") attrs.Endurance = val;
+            else if (name == "Personality") attrs.Personality = val;
+            else if (name == "Luck") attrs.Luck = val;
+        }
+    };
+    refs.maxAllSkills = [this]() {
+        if (playerController && playerController->getPlayer()) playerController->getPlayer()->maxOutAllSkills();
+    };
+    refs.resetPlayerStats = [this]() {
+        if (playerController && playerController->getPlayer()) playerController->getPlayer()->resetSkills();
+    };
+    refs.getPlayerStats = [this]() -> std::string {
+        if (playerController && playerController->getPlayer()) {
+            auto p = playerController->getPlayer();
+            return "HP:" + std::to_string(static_cast<int>(p->health)) + "/" + std::to_string(static_cast<int>(p->maxHealth))
+                + " STA:" + std::to_string(static_cast<int>(p->stamina))
+                + " LV:" + std::to_string(p->playerLevel);
+        }
+        return "No player";
+    };
+    refs.attackNearest = [this]() {
+        if (combatManager && playerController && playerController->getPlayer()) {
+            auto enemy = combatManager->findNearestEnemyToPlayer(playerController->getPlayer()->position);
+            if (enemy) {
+                combatManager->playerAttack(1, enemy->npcId, 0);
+            }
+        }
+    };
+    refs.blockAction = [this]() {
+        // Block handled by combat system
+    };
+    refs.dodgeAction = [this]() {
+        // Dodge handled by combat system
+    };
+    refs.applyDamageToNpc = [this](uint32_t npcId, float dmg) {
+        if (combatManager) {
+            auto npc = npcManager ? npcManager->getNPC(npcId) : nullptr;
+            if (npc) combatManager->applyDamage(npc, dmg);
+        }
+    };
+    refs.killNpc = [this](uint32_t npcId) {
+        if (combatManager && npcManager) {
+            auto npc = npcManager->getNPC(npcId);
+            if (npc) combatManager->applyDamage(npc, npc->status.currentHealth);
+        }
+    };
+    refs.resurrectNpc = [this](uint32_t npcId) {
+        if (npcManager) {
+            auto npc = npcManager->getNPC(npcId);
+            if (npc) npc->status.currentHealth = npc->status.maxHealth;
+        }
+    };
+    refs.killAllNpcs = [this]() {
+        if (combatManager && playerController && playerController->getPlayer()) {
+            for (int i = 0; i < 100; ++i) {
+                auto enemy = combatManager->findNearestEnemyToPlayer(playerController->getPlayer()->position, 1000.0f);
+                if (enemy) {
+                    combatManager->applyDamage(enemy, enemy->status.currentHealth);
+                } else {
+                    break;
+                }
+            }
+        }
+    };
+    refs.toggleCombatDebug = [this]() {
+        // Combat debug not implemented yet
+    };
+    refs.addItem = [this](uint32_t id, uint32_t qty) {
+        if (inventoryManager) {
+            Item item;
+            item.itemId = id;
+            item.name = "DebugItem_" + std::to_string(id);
+            inventoryManager->playerAddItem(item, qty);
+        }
+    };
+    refs.removeItem = [this](uint32_t id, uint32_t qty) {
+        if (inventoryManager) inventoryManager->playerRemoveItem(id, qty);
+    };
+    refs.equipItem = [this](uint32_t id) {
+        // Equip not implemented in InventoryManager yet
+    };
+    refs.unequipItem = [this](uint32_t id) {
+        // Unequip not implemented in InventoryManager yet
+    };
+    refs.listInventory = [this]() -> std::string {
+        return "Inventory items";
+    };
+    refs.clearInventory = [this]() {
+        // Clear inventory not implemented yet
+    };
+    refs.setCarryWeight = [this](float w) {
+        // Set carry weight not implemented yet
+    };
+    refs.learnSpell = [this](uint32_t id) {
+        // Learn spell not directly available
+    };
+    refs.castSpellOnTarget = [this](uint32_t spellId, uint32_t targetId) {
+        if (spellManager) spellManager->castSpell(1, spellId, targetId);
+    };
+    refs.equipSpell = [this](uint32_t id) {
+        if (spellManager) spellManager->equipSpellToNpc(1, id);
+    };
+    refs.listSpells = [this]() -> std::string {
+        return "Spells available";
+    };
+    refs.createSpell = [this](const std::string& name, float dmg, float cost) {
+        if (spellManager) spellManager->createSpell(name, name, MagicSchool::DESTRUCTION, cost, dmg);
+    };
+    refs.acceptQuest = [this](uint32_t id) {
+        if (questManager) questManager->acceptQuest(id);
+    };
+    refs.completeQuest = [this](uint32_t id) {
+        if (questManager) questManager->completeQuest(id);
+    };
+    refs.failQuest = [this](uint32_t id) {
+        if (questManager) questManager->failQuest(id);
+    };
+    refs.listQuests = [this]() -> std::string {
+        if (questManager) {
+            auto quests = questManager->getActiveQuests();
+            return "Active quests: " + std::to_string(quests.size());
+        }
+        return "No quests";
+    };
+    refs.updateObjective = [this](uint32_t qid, uint32_t obj, uint32_t prog) {
+        if (questManager) questManager->updateObjectiveProgress(qid, obj, prog);
+    };
+    refs.spawnNpcAt = [this](const std::string& name, float x, float y, float z) -> uint32_t {
+        if (npcManager) {
+            auto npc = npcManager->createNPC(name, glm::vec3(x, y, z));
+            if (npc) return npc->npcId;
+        }
+        return 0;
+    };
+    refs.setNpcAiState = [this](uint32_t id, const std::string& state) {
+        // AI state not directly settable
+    };
+    refs.setNpcAggression = [this](uint32_t id, float val) {
+        // Aggression not directly settable
+    };
+    refs.calmNpc = [this](uint32_t id) {
+        // Calm not directly settable
+    };
+    refs.listNpcs = [this]() -> std::string {
+        if (npcManager) return "NPCs: " + std::to_string(npcManager->getNPCCount());
+        return "No NPCs";
+    };
+    refs.listNearbyNpcs = [this]() -> std::string {
+        if (npcManager && playerController && playerController->getPlayer()) {
+            auto npcs = npcManager->getNPCsInArea(playerController->getPlayer()->position, 30.0f);
+            return "Nearby: " + std::to_string(npcs.size());
+        }
+        return "No nearby NPCs";
+    };
+    refs.startDialogueWith = [this](uint32_t id) {
+        // DialogueRunner not connected
+    };
+    refs.selectDialogueTopic = [this](int t) {
+        // DialogueRunner not connected
+    };
+    refs.selectDialogueChoice = [this](int c) {
+        // DialogueRunner not connected
+    };
+    refs.endDialogue = [this]() {
+        // DialogueRunner not connected
+    };
+    refs.setWeather = [this](const std::string& w) {
+        // Weather not implemented yet
+    };
+    refs.setTimeScale = [this](float s) {
+        // Time scale not implemented yet
+    };
+    refs.setTimeOfDay = [this](float h) {
+        // Time of day not implemented yet
+    };
+    refs.loadCell = [this](int32_t x, int32_t y) {
+        if (worldManager) worldManager->loadCell(x, y);
+    };
+    refs.getWorldInfo = [this]() -> std::string {
+        return "World info not available";
+    };
+    refs.saveGameSlot = [this](uint32_t slot) {
+        if (saveManager) saveManager->saveGame(slot);
+    };
+    refs.loadGameSlot = [this](uint32_t slot) {
+        if (saveManager) saveManager->loadGame(slot);
+    };
+    refs.quickSave = [this]() {
+        if (saveManager) saveManager->quickSave();
+    };
+    refs.quickLoad = [this]() {
+        if (saveManager) saveManager->quickLoad();
+    };
+    refs.listSaveSlots = [this]() -> std::string {
+        if (saveManager) {
+            auto slots = saveManager->getSaveSlots();
+            return "Save slots: " + std::to_string(slots.size());
+        }
+        return "No saves";
+    };
+    refs.openMenu = [this](const std::string& menu) {
+        // TODO: Implement menu opening
+    };
+    refs.closeMenu = [this]() {
+        // TODO: Implement menu closing
+    };
+    refs.toggleDebugMenu = [this]() {
+        if (debugMenu) debugMenu->toggle();
+    };
+
+    // Phase 65: Extended Debug callbacks
+    refs.toggleWireframe = [this]() {
+        wireframeMode = !wireframeMode;
+        LOGI("Wireframe mode: %s", wireframeMode ? "ON" : "OFF");
+    };
+    refs.toggleAabb = [this]() {
+        aabbVisualization = !aabbVisualization;
+        LOGI("AABB visualization: %s", aabbVisualization ? "ON" : "OFF");
+    };
+    refs.toggleNpcOverlay = [this]() {
+        npcOverlay = !npcOverlay;
+        LOGI("NPC overlay: %s", npcOverlay ? "ON" : "OFF");
+    };
+    refs.toggleTouchTrail = [this]() {
+        touchTrail = !touchTrail;
+        LOGI("Touch trail: %s", touchTrail ? "ON" : "OFF");
+    };
+    refs.debugHudNextPage = [this]() {
+        if (debugHUD) debugHUD->nextPage();
+    };
+    refs.debugHudPrevPage = [this]() {
+        if (debugHUD) debugHUD->prevPage();
+    };
+    refs.toggleDebugLog = [this]() {
+        if (debugHUD) {
+            debugHUD->setLogVisible(!debugHUD->isLogVisible());
+        }
+    };
+
+    gameConsole->setGameSystemRefs(refs);
+    LOGI("GameSystemRefs connected to game systems");
+
+    // Initialize NPC Debug Visualizer
+    LOGI("Creating NpcDebugVisualizer...");
+    npcDebugVisualizer = std::make_unique<NpcDebugVisualizer>();
+    if (!npcDebugVisualizer->initialize(textRenderer.get(), npcManager.get())) {
+        LOGE("Failed to initialize NpcDebugVisualizer");
+        return;
+    }
+    LOGI("NpcDebugVisualizer initialized successfully");
+
+    // Initialize World Debug Info
+    LOGI("Creating WorldDebugInfo...");
+    worldDebugInfo = std::make_unique<WorldDebugInfo>();
+    if (!worldDebugInfo->initialize(textRenderer.get(), worldManager.get())) {
+        LOGE("Failed to initialize WorldDebugInfo");
+        return;
+    }
+    LOGI("WorldDebugInfo initialized successfully");
+
+    // Initialize Performance Graph
+    LOGI("Creating PerformanceGraph...");
+    performanceGraph = std::make_unique<PerformanceGraph>();
+    if (!performanceGraph->initialize(textRenderer.get())) {
+        LOGE("Failed to initialize PerformanceGraph");
+        return;
+    }
+    LOGI("PerformanceGraph initialized successfully");
 
     // Initialize Settings UI
     LOGI("Creating SettingsUI...");
@@ -775,6 +1122,31 @@ void Renderer::initGameSystems() {
         uiInventoryPanel = invPanel.get();
         LOGI("UIInventoryPanel created and registered in UISystem");
     }
+
+    // Initialize Launcher Screen (displayed before title screen)
+    launcherScreen = std::make_unique<LauncherScreen>();
+    launcherScreen->initialize(localizationManager.get(), textRenderer.get());
+    launcherScreen->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+
+    // Launcher callbacks
+    launcherScreen->setOnPlayCallback([this]() {
+        LOGI("Launcher Play clicked - transitioning to title screen");
+        showLauncher = false;
+        showTitleScreen = true;
+        // Initialize title screen
+        if (titleScreen) {
+            titleScreen->initialize(localizationManager.get(), textRenderer.get());
+            titleScreen->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        }
+    });
+
+    launcherScreen->setOnExitCallback([this]() {
+        LOGI("Launcher Exit clicked");
+        // Android: app exit via JNI
+        // Call Activity.finish() via JNI etc.
+    });
+
+    LOGI("LauncherScreen initialized");
 
     // Initialize Title Screen
     titleScreen = std::make_unique<TitleScreen>();
@@ -1370,6 +1742,18 @@ void Renderer::createTestScenario() {
 }
 
 void Renderer::render(float deltaTime) {
+    // Launcher takes priority - render and return early
+    if (showLauncher && launcherScreen) {
+        launcherScreen->update(deltaTime);
+        launcherScreen->render();
+
+        if (launcherScreen->isTransitioning()) {
+            // Wait for fade completion
+        }
+        if (performanceMonitor) performanceMonitor->endFrame();
+        return;
+    }
+
     // Set joystick input before Imperial Weave update
     if (playerController && joystick) {
         glm::vec2 input = joystick->getInputValue();
@@ -1438,6 +1822,7 @@ void Renderer::render(float deltaTime) {
         if (titleScreen->isGameStarted()) {
             showTitleScreen = false;
             // Show combat buttons when game starts
+            if (joystick) joystick->setVisible(true);
             if (attackButton) attackButton->setVisible(true);
             if (blockButton) blockButton->setVisible(true);
             if (castSpellButton) castSpellButton->setVisible(true);
@@ -1706,6 +2091,21 @@ void Renderer::render(float deltaTime) {
         debugHUD->update(deltaTime);
     }
 
+    // Update new debug systems
+    if (gameConsole) {
+        gameConsole->update(deltaTime);
+    }
+    if (npcDebugVisualizer) {
+        npcDebugVisualizer->setPlayerPosition(worldManager ? worldManager->getPlayerPosition() : glm::vec3(0.0f, 0.0f, 0.0f));
+        npcDebugVisualizer->update(deltaTime);
+    }
+    if (worldDebugInfo) {
+        worldDebugInfo->update(deltaTime);
+    }
+    if (performanceGraph) {
+        performanceGraph->update(deltaTime);
+    }
+
     // Render UI
     if (questUI) {
         questUI->render();
@@ -1719,6 +2119,23 @@ void Renderer::render(float deltaTime) {
     // Render Debug HUD
     if (debugHUD) {
         debugHUD->render();
+    }
+
+    // Render new debug systems
+    if (gameConsole) {
+        gameConsole->render();
+    }
+    if (debugMenu && debugMenu->isVisible()) {
+        debugMenu->render();
+    }
+    if (npcDebugVisualizer) {
+        npcDebugVisualizer->render();
+    }
+    if (worldDebugInfo) {
+        worldDebugInfo->render();
+    }
+    if (performanceGraph) {
+        performanceGraph->render();
     }
 
     // Render SaveLoadUI if visible (higher priority than SettingsUI)
@@ -1806,8 +2223,22 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
         }
         
         if (uiHandled) {
+            LOGD("Touch consumed by UISystem");
             return;
         }
+        LOGD("UISystem did not handle touch");
+    }
+
+    // DebugMenu handles touch when visible
+    if (debugMenu && debugMenu->isVisible()) {
+        debugMenu->onTouchEvent(x, y, action);
+        return;
+    }
+
+    // GameConsole handles touch when visible
+    if (gameConsole && gameConsole->isVisible()) {
+        gameConsole->onTouchEvent(x, y, action);
+        return;
     }
 
     // Only process legacy UI elements on ACTION_DOWN (0 or 5)
@@ -1835,14 +2266,22 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
             return;
         }
 
-        if (showTitleScreen && titleScreen) {
-            titleScreen->onTouchEvent(x, y);
-            return;
-        }
-
         if (!showTitleScreen && worldManager && questUI) {
             questUI->onTouchEvent(x, y);
         }
+    }
+
+    // Launcher handles touch when active
+    if (showLauncher && launcherScreen) {
+        launcherScreen->onTouchEvent(x, y);
+        return;
+    }
+
+    // TitleScreen handles all touch actions (DOWN, UP, MOVE) for button click callbacks
+    if (showTitleScreen && titleScreen) {
+        LOGD("Touch dispatched to TitleScreen at (%.1f, %.1f), action=%d", x, y, action);
+        titleScreen->onTouchEvent(x, y, action);
+        return;
     }
 
     // In-game camera control - only on MOVE (action 2) and if not clicking a UI
@@ -1901,6 +2340,22 @@ void Renderer::cleanup() {
 
     if (debugHUD) {
         debugHUD->cleanup();
+    }
+
+    if (gameConsole) {
+        gameConsole->cleanup();
+    }
+
+    if (npcDebugVisualizer) {
+        npcDebugVisualizer->cleanup();
+    }
+
+    if (worldDebugInfo) {
+        worldDebugInfo->cleanup();
+    }
+
+    if (performanceGraph) {
+        performanceGraph->cleanup();
     }
 
     if (settingsUI) {
@@ -2036,6 +2491,56 @@ void Renderer::toggleInventory() {
     } else {
         LOGI("Inventory UI closed");
     }
+}
+
+void Renderer::toggleGameConsole() {
+    if (gameConsole) {
+        gameConsole->toggle();
+        LOGI("Game Console %s", gameConsole->isVisible() ? "opened" : "closed");
+    }
+}
+
+void Renderer::toggleDebugMenu() {
+    if (debugMenu) {
+        debugMenu->toggle();
+        LOGI("Debug Menu %s", debugMenu->isVisible() ? "opened" : "closed");
+    }
+}
+
+void Renderer::toggleNpcDebugVisualizer() {
+    if (npcDebugVisualizer) {
+        npcDebugVisualizer->toggle();
+        LOGI("NPC Debug Visualizer %s", npcDebugVisualizer->isVisible() ? "enabled" : "disabled");
+    }
+}
+
+void Renderer::toggleWorldDebugInfo() {
+    if (worldDebugInfo) {
+        worldDebugInfo->toggle();
+        LOGI("World Debug Info %s", worldDebugInfo->isVisible() ? "enabled" : "disabled");
+    }
+}
+
+void Renderer::togglePerformanceGraph() {
+    if (performanceGraph) {
+        performanceGraph->toggle();
+        LOGI("Performance Graph %s", performanceGraph->isVisible() ? "enabled" : "disabled");
+    }
+}
+
+void Renderer::toggleAllDebugSystems() {
+    toggleGameConsole();
+    toggleNpcDebugVisualizer();
+    toggleWorldDebugInfo();
+    togglePerformanceGraph();
+}
+
+void Renderer::debugHudNextPage() {
+    if (debugHUD) debugHUD->nextPage();
+}
+
+void Renderer::debugHudPrevPage() {
+    if (debugHUD) debugHUD->prevPage();
 }
 
 bool Renderer::loadGameState(const std::string& slotName) {
