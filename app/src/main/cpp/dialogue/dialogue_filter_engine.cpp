@@ -53,7 +53,7 @@ void DialogueFilterEngine::updatePlayerFromPlayer(const Player& player, uint32_t
     playerCtx.playerFormID = playerFormID;
     playerCtx.playerName = player.name;
     playerCtx.playerLevel = player.playerLevel;
-    playerCtx.playerGender = 0; // Default male
+    playerCtx.playerGender = player.gender;
 
     // Map skills
     playerCtx.skillValues[ActorValue::Blade] = static_cast<float>(player.skills.Blade);
@@ -81,7 +81,7 @@ void DialogueFilterEngine::updatePlayerFromPlayer(const Player& player, uint32_t
 
     // Health/Magicka/Stamina
     playerCtx.attributeValues[ActorValue::Health] = player.health;
-    playerCtx.attributeValues[ActorValue::Magicka] = 100.0f; // Default
+    playerCtx.attributeValues[ActorValue::Magicka] = player.magicka;
     playerCtx.attributeValues[ActorValue::Stamina] = player.stamina;
 }
 

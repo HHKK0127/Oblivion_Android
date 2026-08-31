@@ -40,11 +40,16 @@ struct Player {
     bool isOnGround = false;
     float groundCheckRadius = 0.3f;
 
-    // Health & Stamina
+    // Health, Magicka & Stamina
     float health = 100.0f;
     float maxHealth = 100.0f;
+    float magicka = 100.0f;
+    float maxMagicka = 100.0f;
     float stamina = 100.0f;
     float maxStamina = 100.0f;
+
+    // Identity flags
+    uint8_t gender = 0;  // 0=Male, 1=Female
 
     // Stamina Management
     float staminaDrainRate = 25.0f;      // Stamina drained per second while sprinting

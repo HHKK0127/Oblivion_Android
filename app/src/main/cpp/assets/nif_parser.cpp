@@ -667,6 +667,10 @@ bool NIFParser::parseNiKeyframeData(NIFAnimationClip& clip) {
 
     // uint32_t numTranslateKeys
     uint32_t numTransKeys = readUInt32();
+    if (numTransKeys > MAX_KEYS) {
+        LOGE("NiKeyframeData: numTransKeys %u exceeds limit", numTransKeys);
+        return false;
+    }
     // uint8_t translateType
     uint8_t transType = readUInt32() & 0xFF;
 
@@ -692,6 +696,10 @@ bool NIFParser::parseNiKeyframeData(NIFAnimationClip& clip) {
 
     // uint32_t numScaleKeys
     uint32_t numScaleKeys = readUInt32();
+    if (numScaleKeys > MAX_KEYS) {
+        LOGE("NiKeyframeData: numScaleKeys %u exceeds limit", numScaleKeys);
+        return false;
+    }
     // uint8_t scaleType
     uint8_t scaleType = readUInt32() & 0xFF;
 

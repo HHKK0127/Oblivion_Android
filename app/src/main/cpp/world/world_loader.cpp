@@ -47,26 +47,11 @@ glm::mat4 WorldEntity::getModelMatrix() const {
     S[1][1] = scale.y;
     S[2][2] = scale.z;
 
-    // Multiply T * R * S manually (no glm::operator* for mat4)
-    glm::mat4 TR;
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 4; j++) {
-            TR[i][j] = 0.0f;
-            for (int k = 0; k < 4; k++) {
-                TR[i][j] += T[i][k] * R[k][j];
-            }
-        }
-    }
-    glm::mat4 TRS;
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 4; j++) {
-            TRS[i][j] = 0.0f;
-            for (int k = 0; k < 4; k++) {
-                TRS[i][j] += TR[i][k] * S[k][j];
-            }
-        }
-    }
-    return TRS;
+    // Multiply T * R * S using glm::operator*, which respects this project's
+    // custom mat4 column-major data[col][row] layout. A naive manual
+    // multiply here previously corrupted the translation with rotation
+    // terms because it ignored that layout.
+    return T * R * S;
 }
 
 // ============================================================================

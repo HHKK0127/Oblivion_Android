@@ -177,6 +177,10 @@ bool QuestManager::completeQuest(uint32_t questId) {
     }
 
     quest->complete();
+    // Prevent duplicate completion
+    if (std::find(completedQuests.begin(), completedQuests.end(), questId) != completedQuests.end()) {
+        return false;
+    }
     completedQuests.push_back(questId);
 
     auto activeIt = std::find(activeQuests.begin(), activeQuests.end(), questId);

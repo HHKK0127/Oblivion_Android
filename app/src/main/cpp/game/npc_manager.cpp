@@ -22,6 +22,11 @@ void NpcManager::cleanup() {
     npcs.clear();
     cellNpcs.clear();
     npcToCell.clear();
+    m_statusEffects.clear();
+    m_faceGenRecords.clear();
+    m_esm = nullptr;
+    m_faceGen = nullptr;
+    nextNpcId = 1000;
     LOGD("NpcManager cleaned up");
 }
 

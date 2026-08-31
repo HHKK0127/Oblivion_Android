@@ -69,7 +69,7 @@ void AsyncTaskManager::workerThread() {
                 return;
             }
 
-            task = std::move(const_cast<Task&>(taskQueue_.top()));
+            task = taskQueue_.top();  // Copy (top() returns const ref; const_cast move is UB)
             taskQueue_.pop();
         }
 

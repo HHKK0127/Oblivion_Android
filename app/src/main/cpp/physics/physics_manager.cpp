@@ -8,11 +8,20 @@
 namespace oblivion {
 
 bool PhysicsManager::init() {
+    if (physicsSystem) {
+        LOGI("Jolt Physics already initialized, skipping");
+        return true;
+    }
+
     LOGI("Initializing Jolt Physics...");
 
-    JPH::RegisterDefaultAllocator();
-    JPH::Factory::sInstance = new JPH::Factory();
-    JPH::RegisterTypes();
+    // RegisterDefaultAllocator and RegisterTypes are global one-time operations.
+    // Only call them if Factory::sInstance is not yet set up.
+    if (JPH::Factory::sInstance == nullptr) {
+        JPH::RegisterDefaultAllocator();
+        JPH::Factory::sInstance = new JPH::Factory();
+        JPH::RegisterTypes();
+    }
 
     tempAllocator = new JPH::TempAllocatorImpl(32 * 1024 * 1024); // 32MB
     jobSystem = new JPH::JobSystemThreadPool(

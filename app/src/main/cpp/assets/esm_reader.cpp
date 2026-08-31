@@ -14,6 +14,12 @@
 
 namespace oblivion {
 
+// Safe unaligned read helpers (avoid ARM SIGBUS from reinterpret_cast)
+static inline uint32_t readU32(const uint8_t* p) { uint32_t v; std::memcpy(&v, p, 4); return v; }
+static inline int32_t  readI32(const uint8_t* p) { int32_t  v; std::memcpy(&v, p, 4); return v; }
+static inline float    readF32(const uint8_t* p) { float    v; std::memcpy(&v, p, 4); return v; }
+static inline uint16_t readU16(const uint8_t* p) { uint16_t v; std::memcpy(&v, p, 2); return v; }
+
 // ============================================================================
 // ESMRecord helpers
 // ============================================================================
@@ -37,26 +43,25 @@ std::string ESMRecord::getString(const char* tag) const {
 uint32_t ESMRecord::getUint(const char* tag) const {
     auto* sub = findSubRecord(tag);
     if (!sub || sub->data.size() < 4) return 0;
-    return *reinterpret_cast<const uint32_t*>(sub->data.data());
+    return readU32(sub->data.data());
 }
 
 int32_t ESMRecord::getInt(const char* tag) const {
     auto* sub = findSubRecord(tag);
     if (!sub || sub->data.size() < 4) return 0;
-    return *reinterpret_cast<const int32_t*>(sub->data.data());
+    return readI32(sub->data.data());
 }
 
 float ESMRecord::getFloat(const char* tag) const {
     auto* sub = findSubRecord(tag);
     if (!sub || sub->data.size() < 4) return 0.0f;
-    return *reinterpret_cast<const float*>(sub->data.data());
+    return readF32(sub->data.data());
 }
 
 uint32_t ESMRecord::getFormID(const char* tag) const {
     auto* sub = findSubRecord(tag);
     if (!sub || sub->data.size() < 4) return 0;
-    // FormID in subrecord is 4 bytes (uint32)
-    return *reinterpret_cast<const uint32_t*>(sub->data.data());
+    return readU32(sub->data.data());
 }
 
 // ============================================================================
@@ -385,8 +390,8 @@ void ESMFile::decodeCell(const ESMRecord& rec) {
         bool isInterior = (cellFlags & 0x01) != 0;
         if (!isInterior && dataSub->size() >= 12) {
             // Exterior cell: 8 bytes after flags = gridX, gridY
-            cell.gridX = *reinterpret_cast<const int32_t*>(dataSub->data.data() + 4);
-            cell.gridY = *reinterpret_cast<const int32_t*>(dataSub->data.data() + 8);
+            cell.gridX = readI32(dataSub->data.data() + 4);
+            cell.gridY = readI32(dataSub->data.data() + 8);
         }
     }
 
@@ -396,8 +401,8 @@ void ESMFile::decodeCell(const ESMRecord& rec) {
     // XCLC subrecord for grid coordinates (TES4 specific)
     auto* xclc = rec.findSubRecord("XCLC");
     if (xclc && xclc->size() >= 8) {
-        cell.gridX = *reinterpret_cast<const int32_t*>(xclc->data.data());
-        cell.gridY = *reinterpret_cast<const int32_t*>(xclc->data.data() + 4);
+        cell.gridX = readI32(xclc->data.data());
+        cell.gridY = readI32(xclc->data.data() + 4);
     }
 
     m_cells.push_back(std::move(cell));
@@ -441,34 +446,34 @@ void ESMFile::decodeNPC(const ESMRecord& rec) {
             // AI Activate/Find
             pkg.type = AIPackageType::FIND;
             if (sub.size() >= 16) {
-                pkg.targetFormID = *reinterpret_cast<const uint32_t*>(sub.data.data());
+                pkg.targetFormID = readU32(sub.data.data());
                 pkg.idleTime = sub.data[4];
             }
         } else if (std::memcmp(sub.tag, "AI_E", 4) == 0) {
             // AI Escort
             pkg.type = AIPackageType::ESCORT;
             if (sub.size() >= 16) {
-                pkg.targetFormID = *reinterpret_cast<const uint32_t*>(sub.data.data());
-                pkg.targetX = *reinterpret_cast<const float*>(sub.data.data() + 4);
-                pkg.targetY = *reinterpret_cast<const float*>(sub.data.data() + 8);
-                pkg.targetZ = *reinterpret_cast<const float*>(sub.data.data() + 12);
+                pkg.targetFormID = readU32(sub.data.data());
+                pkg.targetX = readF32(sub.data.data() + 4);
+                pkg.targetY = readF32(sub.data.data() + 8);
+                pkg.targetZ = readF32(sub.data.data() + 12);
             }
         } else if (std::memcmp(sub.tag, "AI_F", 4) == 0) {
             // AI Follow
             pkg.type = AIPackageType::FOLLOW;
             if (sub.size() >= 16) {
-                pkg.targetFormID = *reinterpret_cast<const uint32_t*>(sub.data.data());
-                pkg.targetX = *reinterpret_cast<const float*>(sub.data.data() + 4);
-                pkg.targetY = *reinterpret_cast<const float*>(sub.data.data() + 8);
-                pkg.targetZ = *reinterpret_cast<const float*>(sub.data.data() + 12);
+                pkg.targetFormID = readU32(sub.data.data());
+                pkg.targetX = readF32(sub.data.data() + 4);
+                pkg.targetY = readF32(sub.data.data() + 8);
+                pkg.targetZ = readF32(sub.data.data() + 12);
             }
         } else if (std::memcmp(sub.tag, "AI_T", 4) == 0) {
             // AI Travel
             pkg.type = AIPackageType::TRAVEL;
             if (sub.size() >= 12) {
-                pkg.targetX = *reinterpret_cast<const float*>(sub.data.data());
-                pkg.targetY = *reinterpret_cast<const float*>(sub.data.data() + 4);
-                pkg.targetZ = *reinterpret_cast<const float*>(sub.data.data() + 8);
+                pkg.targetX = readF32(sub.data.data());
+                pkg.targetY = readF32(sub.data.data() + 4);
+                pkg.targetZ = readF32(sub.data.data() + 8);
             }
         } else if (std::memcmp(sub.tag, "AI_W", 4) == 0) {
             // AI Wander
@@ -485,9 +490,9 @@ void ESMFile::decodeNPC(const ESMRecord& rec) {
                 pkg.scheduleDay = sub.data[2];
                 pkg.scheduleHour = sub.data[3];
                 pkg.scheduleDuration = sub.data[4];
-                pkg.targetFormID = *reinterpret_cast<const uint32_t*>(sub.data.data() + 8);
-                pkg.locationFormID = *reinterpret_cast<const uint32_t*>(sub.data.data() + 12);
-                pkg.targetX = *reinterpret_cast<const float*>(sub.data.data() + 16);
+                pkg.targetFormID = readU32(sub.data.data() + 8);
+                pkg.locationFormID = readU32(sub.data.data() + 12);
+                pkg.targetX = readF32(sub.data.data() + 16);
             }
         } else {
             continue;  // Not an AI package subrecord
@@ -518,9 +523,9 @@ void ESMFile::decodeCreature(const ESMRecord& rec) {
     // Get combat/magic/stealth from DATA subrecord if present
     auto* data = rec.findSubRecord("DATA");
     if (data && data->size() >= 12) {
-        creature.combat = *reinterpret_cast<const uint16_t*>(data->data.data());
-        creature.magic = *reinterpret_cast<const uint16_t*>(data->data.data() + 2);
-        creature.stealth = *reinterpret_cast<const uint16_t*>(data->data.data() + 4);
+        creature.combat = readU16(data->data.data());
+        creature.magic = readU16(data->data.data() + 2);
+        creature.stealth = readU16(data->data.data() + 4);
     }
 
     // Soul level from SOUL subrecord
@@ -544,14 +549,14 @@ void ESMFile::decodeWeapon(const ESMRecord& rec) {
     auto* data = rec.findSubRecord("DATA");
     if (data && data->size() >= 16) {
         // Skip 2 bytes (type), read damage at byte 2
-        wpn.damage = *reinterpret_cast<const uint16_t*>(data->data.data() + 2);
+        wpn.damage = readU16(data->data.data() + 2);
         // Read value at byte 12
-        wpn.value = *reinterpret_cast<const uint32_t*>(data->data.data() + 12);
+        wpn.value = readU32(data->data.data() + 12);
     } else {
         auto* data2 = rec.findSubRecord("DNAM");
         if (data2 && data2->size() >= 8) {
-            wpn.damage = *reinterpret_cast<const uint16_t*>(data2->data.data());
-            wpn.value = *reinterpret_cast<const uint32_t*>(data2->data.data() + 4);
+            wpn.damage = readU16(data2->data.data());
+            wpn.value = readU32(data2->data.data() + 4);
         }
     }
 
@@ -661,18 +666,18 @@ void ESMFile::decodeReference(const ESMRecord& rec) {
     // Position + rotation from DATA subrecord (24 bytes: 3 floats pos, 3 floats rot)
     auto* data = rec.findSubRecord("DATA");
     if (data && data->size() >= 24) {
-        ref.position.x = *reinterpret_cast<const float*>(data->data.data());
-        ref.position.y = *reinterpret_cast<const float*>(data->data.data() + 4);
-        ref.position.z = *reinterpret_cast<const float*>(data->data.data() + 8);
-        ref.rotation.x = *reinterpret_cast<const float*>(data->data.data() + 12);
-        ref.rotation.y = *reinterpret_cast<const float*>(data->data.data() + 16);
-        ref.rotation.z = *reinterpret_cast<const float*>(data->data.data() + 20);
+        ref.position.x = readF32(data->data.data());
+        ref.position.y = readF32(data->data.data() + 4);
+        ref.position.z = readF32(data->data.data() + 8);
+        ref.rotation.x = readF32(data->data.data() + 12);
+        ref.rotation.y = readF32(data->data.data() + 16);
+        ref.rotation.z = readF32(data->data.data() + 20);
     }
 
     // Scale
     auto* xsca = rec.findSubRecord("XSCL");
     if (xsca && xsca->size() >= 4) {
-        ref.scale = *reinterpret_cast<const float*>(xsca->data.data());
+        ref.scale = readF32(xsca->data.data());
     }
 
     // Cell formID from XRGD (or infer from surrounding context)
@@ -729,17 +734,17 @@ void ESMFile::decodeWorld(const ESMRecord& rec) {
     // DATA subrecord: 2 floats (offsetX, offsetY) + 4 bytes (minX, minY, maxX, maxY)
     auto* data = rec.findSubRecord("DATA");
     if (data && data->size() >= 16) {
-        world.worldOffset.x = *reinterpret_cast<const float*>(data->data.data());
-        world.worldOffset.y = *reinterpret_cast<const float*>(data->data.data() + 4);
-        world.minX = *reinterpret_cast<const int32_t*>(data->data.data() + 8);
-        world.minY = *reinterpret_cast<const int32_t*>(data->data.data() + 12);
+        world.worldOffset.x = readF32(data->data.data());
+        world.worldOffset.y = readF32(data->data.data() + 4);
+        world.minX = readI32(data->data.data() + 8);
+        world.minY = readI32(data->data.data() + 12);
     }
 
     // NAM0 subrecord: max bounds (maxX, maxY)
     auto* nam0 = rec.findSubRecord("NAM0");
     if (nam0 && nam0->size() >= 8) {
-        world.maxX = *reinterpret_cast<const int32_t*>(nam0->data.data());
-        world.maxY = *reinterpret_cast<const int32_t*>(nam0->data.data() + 4);
+        world.maxX = readI32(nam0->data.data());
+        world.maxY = readI32(nam0->data.data() + 4);
     }
 
     LOGD("  WRLD: 0x%08X '%s' '%s' offset=(%.0f,%.0f) bounds=[(%d,%d)-(%d,%d)]",
@@ -765,12 +770,12 @@ void ESMFile::decodeSpell(const ESMRecord& rec) {
     auto* spit = rec.findSubRecord("SPIT");
     if (spit && spit->size() >= 8) {
         spell.spellType = static_cast<uint8_t>(spit->data[0]);       // 0=spell, 1=disease, ...
-        spell.cost = *reinterpret_cast<const uint32_t*>(spit->data.data() + 4);
+        spell.cost = readU32(spit->data.data() + 4);
         if (spit->size() >= 9) {
             spell.level = spit->data[8];  // 0=novice .. 4=master
         }
         if (spit->size() >= 16) {
-            spell.flags = *reinterpret_cast<const uint32_t*>(spit->data.data() + 12);
+            spell.flags = readU32(spit->data.data() + 12);
         }
     }
 
@@ -816,10 +821,10 @@ void ESMFile::decodeEnchantment(const ESMRecord& rec) {
     // ENIT subrecord: enchantment data
     auto* enit = rec.findSubRecord("ENIT");
     if (enit && enit->size() >= 16) {
-        enchant.enchantType = *reinterpret_cast<const uint32_t*>(enit->data.data());
-        enchant.chargeAmount = *reinterpret_cast<const uint32_t*>(enit->data.data() + 4);
-        enchant.enchantCost = *reinterpret_cast<const uint32_t*>(enit->data.data() + 8);
-        enchant.flags = *reinterpret_cast<const uint32_t*>(enit->data.data() + 12);
+        enchant.enchantType = readU32(enit->data.data());
+        enchant.chargeAmount = readU32(enit->data.data() + 4);
+        enchant.enchantCost = readU32(enit->data.data() + 8);
+        enchant.flags = readU32(enit->data.data() + 12);
     }
 
     // Parse effects: iterate subrecords looking for EFID + EFIT pairs
@@ -869,16 +874,16 @@ void ESMFile::decodeMagicEffect(const ESMRecord& rec) {
     // MEDT subrecord: magic effect data
     auto* medt = rec.findSubRecord("MEDT");
     if (medt && medt->size() >= 20) {
-        effect.school = *reinterpret_cast<const uint32_t*>(medt->data.data());
-        effect.baseCost = *reinterpret_cast<const uint32_t*>(medt->data.data() + 4);
-        effect.flags = *reinterpret_cast<const uint32_t*>(medt->data.data() + 8);
+        effect.school = readU32(medt->data.data());
+        effect.baseCost = readU32(medt->data.data() + 4);
+        effect.flags = readU32(medt->data.data() + 8);
         std::memcpy(&effect.baseMagnitude, medt->data.data() + 12, 4);
         std::memcpy(&effect.baseDuration, medt->data.data() + 16, 4);
         if (medt->size() >= 24) {
             std::memcpy(&effect.range, medt->data.data() + 20, 4);
         }
         if (medt->size() >= 28) {
-            effect.actorValue = *reinterpret_cast<const uint32_t*>(medt->data.data() + 24);
+            effect.actorValue = readU32(medt->data.data() + 24);
         }
     }
 
@@ -896,8 +901,8 @@ void ESMFile::decodeSkill(const ESMRecord& rec) {
     // struct { uint32_t skillID; uint32_t specialization; float useMult; float offsetMult; }
     auto* skdt = rec.findSubRecord("SKDT");
     if (skdt && skdt->size() >= 16) {
-        skill.skillID = *reinterpret_cast<const uint32_t*>(skdt->data.data());
-        skill.specialization = *reinterpret_cast<const uint32_t*>(skdt->data.data() + 4);
+        skill.skillID = readU32(skdt->data.data());
+        skill.specialization = readU32(skdt->data.data() + 4);
         std::memcpy(&skill.useMult, skdt->data.data() + 8, 4);
         std::memcpy(&skill.offsetMult, skdt->data.data() + 12, 4);
     }
@@ -947,7 +952,7 @@ void ESMFile::decodeContainer(const ESMRecord& rec) {
     auto* cnto = rec.findSubRecord("CNTO");
     if (cnto && cnto->size() >= 8) {
         std::memcpy(&container.weight, cnto->data.data(), 4);
-        container.flags = *reinterpret_cast<const uint32_t*>(cnto->data.data() + 4);
+        container.flags = readU32(cnto->data.data() + 4);
     }
 
     // Parse container items: iterate subrecords looking for CNTO + COCT pairs
@@ -956,7 +961,7 @@ void ESMFile::decodeContainer(const ESMRecord& rec) {
         if (std::memcmp(sub.tag, "CNTO", 4) == 0 && sub.size() >= 8) {
             ContainerData::ContainerItem item;
             std::memcpy(&item.itemFormID, sub.data.data(), 4);
-            item.count = *reinterpret_cast<const uint32_t*>(sub.data.data() + 4);
+            item.count = readU32(sub.data.data() + 4);
             container.items.push_back(item);
         }
     }
@@ -1210,9 +1215,9 @@ void ESMFile::decodeLeveledList(const ESMRecord& rec) {
         if (std::memcmp(sub.tag, "LVLO", 4) == 0 && sub.size() >= 8) {
             LeveledListEntry entry;
             std::memcpy(&entry.referencedFormID, sub.data.data(), 4);
-            entry.level = *reinterpret_cast<const uint16_t*>(sub.data.data() + 4);
+            entry.level = readU16(sub.data.data() + 4);
             if (sub.size() >= 10) {
-                entry.count = *reinterpret_cast<const uint16_t*>(sub.data.data() + 8);
+                entry.count = readU16(sub.data.data() + 8);
             } else {
                 entry.count = 1;
             }
@@ -1322,9 +1327,9 @@ void ESMFile::decodeArmor(const ESMRecord& rec) {
     // DATA: armor data (armor rating 4 bytes, value 4 bytes, weight 4 bytes)
     auto* data = rec.findSubRecord("DATA");
     if (data && data->size() >= 8) {
-        armor.armorRating = *reinterpret_cast<const uint32_t*>(data->data.data());
+        armor.armorRating = readU32(data->data.data());
         if (data->size() >= 12) {
-            armor.value = *reinterpret_cast<const uint32_t*>(data->data.data() + 4);
+            armor.value = readU32(data->data.data() + 4);
             std::memcpy(&armor.weight, data->data.data() + 8, 4);
         }
     }
@@ -1332,7 +1337,7 @@ void ESMFile::decodeArmor(const ESMRecord& rec) {
     // ENAM: enchantment FormID
     auto* enam = rec.findSubRecord("ENAM");
     if (enam && enam->size() >= 4) {
-        armor.enchantmentID = *reinterpret_cast<const uint32_t*>(enam->data.data());
+        armor.enchantmentID = readU32(enam->data.data());
     }
 
     LOGD("  ARMO: 0x%08X '%s' rating=%u weight=%.1f value=%u",
@@ -1387,7 +1392,7 @@ void ESMFile::decodeFaction(const ESMRecord& rec) {
     // CRIM: crime gold multiplier
     auto* crim = rec.findSubRecord("CRIM");
     if (crim && crim->size() >= 4) {
-        faction.crimeGoldMultiplier = *reinterpret_cast<const int32_t*>(crim->data.data());
+        faction.crimeGoldMultiplier = readI32(crim->data.data());
     }
 
     // RNAM: rank name; MNAM: male rank data (position, perks)
@@ -1402,7 +1407,7 @@ void ESMFile::decodeFaction(const ESMRecord& rec) {
                 std::memcmp(rec.subRecords[i + 1].tag, "MNAM", 4) == 0) {
                 const auto& mnam = rec.subRecords[i + 1];
                 if (mnam.size() >= 4) {
-                    rank.rankData = *reinterpret_cast<const uint32_t*>(mnam.data.data());
+                    rank.rankData = readU32(mnam.data.data());
                 }
             }
             faction.ranks.push_back(rank);
@@ -1670,8 +1675,8 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
             int numEdges = static_cast<int>(pgrr->size() / 4);
             road.edges.reserve(numEdges);
             for (int i = 0; i < numEdges; i++) {
-                uint16_t a = *reinterpret_cast<const uint16_t*>(pgrr->data.data() + i * 4);
-                uint16_t b = *reinterpret_cast<const uint16_t*>(pgrr->data.data() + i * 4 + 2);
+                uint16_t a = readU16(pgrr->data.data() + i * 4);
+                uint16_t b = readU16(pgrr->data.data() + i * 4 + 2);
                 road.edges.push_back({a, b});
             }
         }

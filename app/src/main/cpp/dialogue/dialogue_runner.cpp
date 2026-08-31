@@ -428,8 +428,9 @@ bool DialogueRunner::matchTopicFromText(const std::string& input) const {
         std::transform(lowerTopic.begin(), lowerTopic.end(), lowerTopic.begin(),
             [](unsigned char c) { return std::tolower(c); });
 
-        if (lowerTopic.find(lowerInput) != std::string::npos ||
-            lowerInput.find(lowerTopic) != std::string::npos) {
+        if (lowerTopic == lowerInput ||
+            lowerTopic.find(lowerInput) == 0) {
+            // Exact match or input is a prefix of the topic name
             // Found a match - select this topic
             const_cast<DialogueRunner*>(this)->selectTopic(static_cast<int>(i));
             return true;

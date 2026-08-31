@@ -314,6 +314,7 @@ static void onNativeWindowDestroyed(ANativeActivity* activity, ANativeWindow* wi
         std::lock_guard<std::mutex> lock(state->mutex);
         state->window = nullptr;
         state->render_ready = false;
+        state->window_changed = true;  // Signal render thread to handle window loss
         state->cond_var.notify_one();
     }
 }
