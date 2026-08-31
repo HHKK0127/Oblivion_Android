@@ -195,6 +195,7 @@ add_library(native-lib SHARED
 
     # System
     system/settings_manager.cpp
+    system/debug_system.cpp
 
     # Localization
     localization/localization_manager.cpp
@@ -314,6 +315,7 @@ target_include_directories(native-lib PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/vegetation
     ${CMAKE_CURRENT_SOURCE_DIR}/character
     ${CMAKE_CURRENT_SOURCE_DIR}/video
+    ${CMAKE_CURRENT_SOURCE_DIR}/system
 )
 
 # Find OpenAL-Soft (optional for now)

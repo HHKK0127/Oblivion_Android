@@ -366,29 +366,53 @@ void LauncherScreen::renderFadeToGame() {
 // ============================================================================
 // Input handling
 // ============================================================================
-void LauncherScreen::onTouchEvent(float x, float y) {
+void LauncherScreen::onTouchEvent(float x, float y, int action) {
     if (state == LauncherState::MAIN) {
-        if (mainPanel && mainPanel->onTouchDown(x, y, 0)) return;
+        if (action == 0 || action == 5) { // TOUCH_DOWN
+            if (mainPanel && mainPanel->onTouchDown(x, y, 0)) return;
 
-        // Fallback
-        float menuTop = screenHeight * 0.18f;
-        float menuLeft = screenWidth * 0.06f;
-        float menuWidth = 450.0f;
-        float itemH = 90.0f;
-        int numButtons = static_cast<int>(menuButtons.size());
-        for (int i = 0; i < numButtons; ++i) {
-            float itemY = menuTop + static_cast<float>(i) * itemH;
-            if (x >= menuLeft && x <= menuLeft + menuWidth &&
-                y >= itemY && y < itemY + itemH) {
-                selectedIndex = i;
-                handleSelection();
-                return;
+            // Fallback: direct hit-test on DOWN for immediate response
+            float menuTop = screenHeight * 0.18f;
+            float menuLeft = screenWidth * 0.06f;
+            float menuWidth = 450.0f;
+            float itemH = 90.0f;
+            int numButtons = static_cast<int>(menuButtons.size());
+            for (int i = 0; i < numButtons; ++i) {
+                float itemY = menuTop + static_cast<float>(i) * itemH;
+                if (x >= menuLeft && x <= menuLeft + menuWidth &&
+                    y >= itemY && y < itemY + itemH) {
+                    selectedIndex = i;
+                    handleSelection();
+                    return;
+                }
             }
+        } else if (action == 1 || action == 6) { // TOUCH_UP
+            if (mainPanel && mainPanel->onTouchUp(x, y, 0)) return;
+        } else if (action == 2) { // TOUCH_MOVE
+            if (mainPanel && mainPanel->onTouchMove(x, y, 0.0f, 0.0f, 0)) return;
+        } else if (action == 3) { // TOUCH_CANCEL
+            if (mainPanel && mainPanel->onTouchUp(x, y, 0)) return;
         }
     } else if (state == LauncherState::OPTIONS) {
-        if (optionsPanel && optionsPanel->onTouchDown(x, y, 0)) return;
+        if (action == 0 || action == 5) {
+            if (optionsPanel && optionsPanel->onTouchDown(x, y, 0)) return;
+        } else if (action == 1 || action == 6) {
+            if (optionsPanel && optionsPanel->onTouchUp(x, y, 0)) return;
+        } else if (action == 2) {
+            if (optionsPanel && optionsPanel->onTouchMove(x, y, 0.0f, 0.0f, 0)) return;
+        } else if (action == 3) { // TOUCH_CANCEL
+            if (optionsPanel && optionsPanel->onTouchUp(x, y, 0)) return;
+        }
     } else if (state == LauncherState::DATA_FILES) {
-        if (dataFilesPanel && dataFilesPanel->onTouchDown(x, y, 0)) return;
+        if (action == 0 || action == 5) {
+            if (dataFilesPanel && dataFilesPanel->onTouchDown(x, y, 0)) return;
+        } else if (action == 1 || action == 6) {
+            if (dataFilesPanel && dataFilesPanel->onTouchUp(x, y, 0)) return;
+        } else if (action == 2) {
+            if (dataFilesPanel && dataFilesPanel->onTouchMove(x, y, 0.0f, 0.0f, 0)) return;
+        } else if (action == 3) { // TOUCH_CANCEL
+            if (dataFilesPanel && dataFilesPanel->onTouchUp(x, y, 0)) return;
+        }
     }
 }
 

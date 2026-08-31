@@ -111,16 +111,50 @@ class MainActivity : Activity() {
 
                 // Setup touch event forwarding
                 glSurfaceView.setOnTouchListener { _, event ->
-                    val pointerId = event.getPointerId(0)
-                    val x = event.x
-                    val y = event.y
-                    val action = when (event.actionMasked) {
-                        android.view.MotionEvent.ACTION_DOWN -> 0
-                        android.view.MotionEvent.ACTION_UP -> 1
-                        android.view.MotionEvent.ACTION_MOVE -> 2
-                        android.view.MotionEvent.ACTION_POINTER_DOWN -> 5
-                        android.view.MotionEvent.ACTION_POINTER_UP -> 6
-                        else -> 3
+                    val actionMasked = event.actionMasked
+                    val actionIndex = event.actionIndex
+                    val pointerId: Int
+                    val x: Float
+                    val y: Float
+                    val action: Int
+
+                    when (actionMasked) {
+                        android.view.MotionEvent.ACTION_DOWN -> {
+                            pointerId = event.getPointerId(0)
+                            x = event.getX(0)
+                            y = event.getY(0)
+                            action = 0
+                        }
+                        android.view.MotionEvent.ACTION_UP -> {
+                            pointerId = event.getPointerId(0)
+                            x = event.getX(0)
+                            y = event.getY(0)
+                            action = 1
+                        }
+                        android.view.MotionEvent.ACTION_MOVE -> {
+                            pointerId = event.getPointerId(0)
+                            x = event.getX(0)
+                            y = event.getY(0)
+                            action = 2
+                        }
+                        android.view.MotionEvent.ACTION_POINTER_DOWN -> {
+                            pointerId = event.getPointerId(actionIndex)
+                            x = event.getX(actionIndex)
+                            y = event.getY(actionIndex)
+                            action = 5
+                        }
+                        android.view.MotionEvent.ACTION_POINTER_UP -> {
+                            pointerId = event.getPointerId(actionIndex)
+                            x = event.getX(actionIndex)
+                            y = event.getY(actionIndex)
+                            action = 6
+                        }
+                        else -> {
+                            pointerId = event.getPointerId(0)
+                            x = event.getX(0)
+                            y = event.getY(0)
+                            action = 3
+                        }
                     }
                     gameRenderer?.onTouchEvent(pointerId, x, y, action)
                     true

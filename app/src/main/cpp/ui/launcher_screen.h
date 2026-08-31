@@ -81,7 +81,7 @@ public:
     void initialize(LocalizationManager* lm, TextRenderer* tr);
     void update(float deltaTime);
     void render();
-    void onTouchEvent(float x, float y);
+    void onTouchEvent(float x, float y, int action);
     void onKeyPress(int key);
 
     void setScreenSize(int w, int h);
@@ -103,5 +103,4 @@ private:
 
     void renderBackground();
     void renderLogo();
-    void renderButtonGlow();
 };

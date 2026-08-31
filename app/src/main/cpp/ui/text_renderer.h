@@ -35,6 +35,17 @@ public:
                     float scale = 1.0f);
 
     /**
+     * @brief テキストを画面に描画（アルファ付き）
+     * @param text 描画するテキスト
+     * @param x 画面左上を原点とした X座標（ピクセル）
+     * @param y 画面左上を原点とした Y座標（ピクセル）
+     * @param color テキストの色 (r, g, b, a)
+     * @param scale スケール（デフォルト 1.0f）
+     */
+    void renderText(const std::string& text, float x, float y,
+                    const glm::vec4& color, float scale = 1.0f);
+
+    /**
      * @brief テキストの横幅を計算して返す
      * @param text 計算するテキスト
      * @param scale スケール

@@ -37,14 +37,14 @@ precision mediump float;
 
 in vec2 fragTexCoord;
 
-uniform vec3 textColor;
+uniform vec4 textColor;
 uniform sampler2D fontTexture;
 
 out vec4 FragColor;
 
 void main() {
     float alpha = texture(fontTexture, fragTexCoord).r;
-    FragColor = vec4(textColor, alpha);
+    FragColor = vec4(textColor.rgb, textColor.a * alpha);
 }
 )";
 
@@ -311,8 +311,8 @@ void TextRenderer::renderText(const std::string& text, float x, float y,
     glm::mat4 projection = glm::ortho(0.0f, (float)screenWidth, (float)screenHeight, 0.0f, -1.0f, 1.0f);
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, &projection[0][0]);
 
-    // テキスト色を設定
-    glUniform3f(colorLoc, color.x, color.y, color.z);
+    // テキスト色を設定（vec4: alpha=1.0で不透明）
+    glUniform4f(colorLoc, color.x, color.y, color.z, 1.0f);
 
     // フォントテクスチャをバインド
     glActiveTexture(GL_TEXTURE0);
@@ -350,6 +350,61 @@ void TextRenderer::renderText(const std::string& text, float x, float y,
             posX + charWidth, posY,              glyph.x1, glyph.y0,  // 右上
             posX + charWidth, posY + charHeight, glyph.x1, glyph.y1,  // 右下
             posX,             posY + charHeight, glyph.x0, glyph.y1,  // 左下
+        };
+
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        currentX += glyph.advanceX * scale;
+    }
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glUseProgram(0);
+}
+
+void TextRenderer::renderText(const std::string& text, float x, float y,
+                              const glm::vec4& color, float scale) {
+    if (text.empty() || shaderProgram == 0 || fontTexture == 0) {
+        return;
+    }
+
+    glUseProgram(shaderProgram);
+
+    glm::mat4 projection = glm::ortho(0.0f, (float)screenWidth, (float)screenHeight, 0.0f, -1.0f, 1.0f);
+    glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, &projection[0][0]);
+
+    // テキスト色を設定（vec4: alphaチャンネル対応）
+    glUniform4f(colorLoc, color.x, color.y, color.z, color.w);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, fontTexture);
+
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+    float currentX = x;
+    float currentY = y;
+
+    for (char ch : text) {
+        unsigned int codepoint = (unsigned char)ch;
+        Glyph glyph = getGlyph(codepoint);
+
+        float charWidth = (glyph.x1 - glyph.x0) * ATLAS_WIDTH * scale;
+        float charHeight = (glyph.y1 - glyph.y0) * ATLAS_HEIGHT * scale;
+
+        float posX = currentX + glyph.bearingX * scale;
+        float posY = currentY + (FONT_SIZE + glyph.bearingY) * scale;
+
+        float vertices[] = {
+            posX,             posY,              glyph.x0, glyph.y0,
+            posX + charWidth, posY,              glyph.x1, glyph.y0,
+            posX,             posY + charHeight, glyph.x0, glyph.y1,
+
+            posX + charWidth, posY,              glyph.x1, glyph.y0,
+            posX + charWidth, posY + charHeight, glyph.x1, glyph.y1,
+            posX,             posY + charHeight, glyph.x0, glyph.y1,
         };
 
         glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
@@ -460,7 +515,7 @@ void TextRenderer::renderDebugQuad() {
 
     glm::mat4 projection = glm::ortho(0.0f, (float)screenWidth, (float)screenHeight, 0.0f, -1.0f, 1.0f);
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, &projection[0][0]);
-    glUniform3f(colorLoc, 1.0f, 1.0f, 1.0f);
+    glUniform4f(colorLoc, 1.0f, 1.0f, 1.0f, 1.0f);
 
     float vertices[] = {
         50.0f, 350.0f,   0.0f, 0.0f,

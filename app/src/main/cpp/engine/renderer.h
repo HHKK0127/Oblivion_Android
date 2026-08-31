@@ -12,6 +12,7 @@
 #include "../ui/quest_ui.h"
 #include "../ui/text_renderer.h"
 #include "../ui/debug_hud.h"
+#include "../system/debug_system.h"
 #include "../ui/settings_ui.h"
 #include "../ui/save_load_ui.h"
 #include "../ui/game_console.h"

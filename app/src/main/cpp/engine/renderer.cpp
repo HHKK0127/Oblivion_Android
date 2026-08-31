@@ -8,6 +8,7 @@
 #include "../physics/physics_manager.h"
 // #include "../jni_audio_bridge.h"  // Deferred - requires Java MainActivity
 #include <thread>
+#include <chrono>
 
 Renderer::Renderer()
     : showLauncher(true), showTitleScreen(false), screenWidth(1080), screenHeight(1920),
@@ -474,6 +475,10 @@ bool Renderer::initGameSystems() {
     }
     debugMenu->setScreenSize(screenWidth, screenHeight);
     LOGI("DebugMenu initialized successfully");
+
+    // Initialize unified DebugSystem (gesture-based toggling)
+    DebugSystem::getInstance().initialize(debugHUD.get(), debugMenu.get(), gameConsole.get());
+    LOGI("DebugSystem initialized successfully");
 
     // Connect GameConsole to game systems via GameSystemRefs
     GameConsole::GameSystemRefs refs;
@@ -1578,8 +1583,9 @@ void Renderer::createTestScenario() {
     NpcManager* npcMgr2 = npcMgr;  // reuse pointer
     
     // Create NPCs using available data
-    auto izar = npcMgr2->createNPC("Izar", glm::vec3(0.0f, 0.0f, 0.0f));
-    auto hellas = npcMgr2->createNPC("Hellas", glm::vec3(5.0f, 0.0f, 0.0f));
+    // Place enemy (Izar) in front of player, ally (Hellas) to the side
+    auto izar = npcMgr2->createNPC("Izar", glm::vec3(10.0f, 0.0f, -5.0f));
+    auto hellas = npcMgr2->createNPC("Hellas", glm::vec3(-5.0f, 0.0f, 0.0f));
 
     if (!izar) { LOGE("ERROR: Failed to create NPC 'Izar'"); return; }
     if (!hellas) { LOGE("ERROR: Failed to create NPC 'Hellas'"); return; }
@@ -1710,6 +1716,24 @@ void Renderer::createTestScenario() {
 
                 LOGI("Test spells created: Fireball=%u, Heal=%u, RestoreMana=%u",
                      fireball, heal, restoreMana);
+            }
+        }
+
+        // Teach spells to the PLAYER (ID = 1) so MAG button works
+        if (spellManager) {
+            if (fireball != 0) {
+                spellManager->teachSpellToNpc(1, fireball);
+                spellManager->equipSpellToNpc(1, fireball);
+                LOGI("Taught Fireball to player");
+            }
+            if (heal != 0) {
+                spellManager->teachSpellToNpc(1, heal);
+                spellManager->equipSpellToNpc(1, heal);
+                LOGI("Taught Heal to player");
+            }
+            if (restoreMana != 0) {
+                spellManager->teachSpellToNpc(1, restoreMana);
+                LOGI("Taught RestoreMana to player");
             }
         }
 
@@ -2215,6 +2239,12 @@ void Renderer::render(float deltaTime) {
 void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
     LOGD("=== タッチイベント検出 === ID: %d, Action: %d, 座標: (%.1f, %.1f)", pointerId, action, x, y);
 
+    // DebugSystem gesture detection (3-finger tap -> menu, 2-finger double-tap -> HUD)
+    int pointerCount = static_cast<int>(touchStates.size()) + 1;
+    DebugSystem::getInstance().onTouch(action, pointerCount, x, y,
+                                       static_cast<int64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
+                                           std::chrono::steady_clock::now().time_since_epoch()).count()));
+
     float dx = 0.0f;
     float dy = 0.0f;
 
@@ -2295,7 +2325,7 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
 
     // Launcher handles touch when active
     if (showLauncher && launcherScreen) {
-        launcherScreen->onTouchEvent(x, y);
+        launcherScreen->onTouchEvent(x, y, action);
         return;
     }
 
@@ -2367,6 +2397,8 @@ void Renderer::cleanup() {
     if (gameConsole) {
         gameConsole->cleanup();
     }
+
+    DebugSystem::getInstance().cleanup();
 
     if (npcDebugVisualizer) {
         npcDebugVisualizer->cleanup();
