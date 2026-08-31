@@ -33,6 +33,8 @@ private:
         SpellEffectType type;
         float remaining;
         float magnitude;
+        std::string affectedAttribute;  // For FORTIFY_ATTR restoration
+        uint32_t summonedNpcId = 0;     // For SUMMON cleanup
     };
     std::unordered_map<uint32_t, std::vector<ActiveStatusEffect>> m_statusEffects;
 
@@ -64,7 +66,8 @@ public:
     void setFaceGenMorpher(facegen::FaceGenMorpher* faceGen) { m_faceGen = faceGen; }
 
     // Status effect tracking (BSGN/LVLI/quest-driven)
-    void addStatusEffect(NPC& npc, SpellEffectType type, float duration, float magnitude);
+    void addStatusEffect(NPC& npc, SpellEffectType type, float duration, float magnitude,
+                         const std::string& affectedAttribute = "", uint32_t summonedNpcId = 0);
     void updateStatusEffects(NPC& npc, float deltaTime);
     bool hasStatusEffect(const NPC& npc, SpellEffectType type) const;
 

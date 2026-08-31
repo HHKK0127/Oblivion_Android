@@ -392,14 +392,13 @@ void SpellManager::applySpellEffect(std::shared_ptr<NPC> target, const Spell& sp
                 // Fortify Attribute: temporarily boost a target attribute
                 // In Oblivion, this increases Strength/Intelligence/etc by magnitude
                 float duration = (effect.duration > 0.0f) ? effect.duration : 60.0f;
-                if (npcManager) {
-                    npcManager->addStatusEffect(*target, SpellEffectType::FORTIFY_ATTR,
-                                                duration, effect.magnitude);
-                }
-                // Apply immediate attribute boost
-                // Default to Strength if no specific attribute is set
                 std::string attr = effect.affectedAttribute.empty()
                                    ? "Strength" : effect.affectedAttribute;
+                if (npcManager) {
+                    npcManager->addStatusEffect(*target, SpellEffectType::FORTIFY_ATTR,
+                                                duration, effect.magnitude, attr);
+                }
+                // Apply immediate attribute boost
                 auto attrIt = target->status.attributes.find(attr);
                 if (attrIt != target->status.attributes.end()) {
                     attrIt->second += effect.magnitude;
@@ -419,22 +418,25 @@ void SpellManager::applySpellEffect(std::shared_ptr<NPC> target, const Spell& sp
                 // Summon: create a temporary allied creature
                 // In Oblivion, summons last for the spell duration and fight for the caster
                 float duration = (effect.duration > 0.0f) ? effect.duration : 60.0f;
-                if (npcManager) {
-                    npcManager->addStatusEffect(*target, SpellEffectType::SUMMON,
-                                                duration, effect.magnitude);
-                }
                 // Spawn a summoned creature near the caster's position
                 // Use magnitude as the creature level hint
                 glm::vec3 spawnPos = target->position + glm::vec3(2.0f, 0.0f, 2.0f);
-                auto summoned = npcManager->createNPC("Summoned Creature", spawnPos);
-                if (summoned) {
-                    summoned->status.maxHealth = effect.magnitude * 5.0f;
-                    summoned->status.currentHealth = summoned->status.maxHealth;
-                    summoned->status.weaponDamage = effect.magnitude;
-                    summoned->moveSpeed = 6.0f;
-                    LOGI("Summon: creature spawned at (%.1f, %.1f, %.1f) HP=%.0f DMG=%.0f for %.1fs",
-                         spawnPos.x, spawnPos.y, spawnPos.z,
-                         summoned->status.maxHealth, effect.magnitude, duration);
+                uint32_t summonedId = 0;
+                if (npcManager) {
+                    auto summoned = npcManager->createNPC("Summoned Creature", spawnPos);
+                    if (summoned) {
+                        summonedId = summoned->npcId;
+                        summoned->status.maxHealth = effect.magnitude * 5.0f;
+                        summoned->status.currentHealth = summoned->status.maxHealth;
+                        summoned->status.weaponDamage = effect.magnitude;
+                        summoned->moveSpeed = 6.0f;
+                        LOGI("Summon: creature spawned at (%.1f, %.1f, %.1f) HP=%.0f DMG=%.0f for %.1fs",
+                             spawnPos.x, spawnPos.y, spawnPos.z,
+                             summoned->status.maxHealth, effect.magnitude, duration);
+                    }
+                    // Track summoned NPC ID for cleanup on expiry
+                    npcManager->addStatusEffect(*target, SpellEffectType::SUMMON,
+                                                duration, effect.magnitude, "", summonedId);
                 }
                 break;
             }

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-08-27T18:00:00Z",
+  "lastUpdated": "2026-08-31T13:55:00Z",
   "entries": [
     {
       "content": "Oblivion.exe (Ghidra decompiled) - Gamebryo engine, compiled with VS2005/VS2008, Direct3D9. Init order: Renderer -> Shader System -> Sky -> TES -> TreeManager -> Menus -> Player -> Scripts -> Sound System -> Actor Locations -> LOD Land",
@@ -1281,11 +1281,56 @@
       "content": "Project architecture patterns: Imperial Weave v4.0 (15-phase pipeline), EventBus (decoupled messaging), Manager Pattern (initialize/update/cleanup lifecycle), Singleton with ServiceLocator. All engine files are header-only with inline implementations. Build: ./gradlew clean build, Install: adb install -r app/build/outputs/apk/debug/app-debug.apk, Log: adb logcat -s OblivionEngine.",
       "tags": ["architecture", "patterns", "build-commands"],
       "compressed": false
+    },
+    {
+      "id": "mem-066",
+      "timestamp": "2026-08-31T13:55:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "AI-generated bug review workflow: NEVER blindly apply patches from external AI reviews (Kimi, ChatGPT, etc.). Always verify each claim against actual source code. Out of 6 Kimi claims, only 2 were valid bugs. The other 4 were incorrect due to: (1) not understanding custom GLM default ctor initializes to identity, (2) not understanding uint32_t cast preserves bit patterns for signed values, (3) not checking existing null guards, (4) cosmetic-only issues.",
+      "tags": ["workflow", "ai-review", "verification", "kimi"],
+      "compressed": false
+    },
+    {
+      "id": "mem-067",
+      "timestamp": "2026-08-31T13:55:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Custom GLM mat4 behavior: The default constructor mat4() initializes to IDENTITY matrix (not uninitialized). There is NO mat4(float) constructor. vec3 also has NO single-scalar constructor. vec2/vec4 DO have single-scalar ctors. Do NOT use mat4(1.0f) - it will fail to compile. Use mat4() for identity initialization.",
+      "tags": ["glm", "mat4", "constructor", "initialization", "gotcha"],
+      "compressed": false
+    },
+    {
+      "id": "mem-068",
+      "timestamp": "2026-08-31T13:55:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Cell coordinate key encoding in world_manager.cpp is CORRECT: uint64_t key = (uint64_t)(uint32_t)cellX << 32 | (uint32_t)cellY. Signed-to-unsigned cast preserves bit patterns via two's complement. (-1,0) produces 0xFFFFFFFF00000000, (0,-1) produces 0x00000000FFFFFFFF - these are DIFFERENT keys. No collision possible for Oblivion's cell range (-64 to +64).",
+      "tags": ["world-manager", "cell-coordinates", "key-encoding", "verified-correct"],
+      "compressed": false
+    },
+    {
+      "id": "mem-069",
+      "timestamp": "2026-08-31T13:55:00Z",
+      "category": "decision",
+      "priority": "medium",
+      "content": "Bug fixes applied this session (commit 63ae5387): (1) renderer.cpp: Added performanceMonitor->endFrame() before early return when titleScreen is null - beginFrame() was already called at line 1792. (2) combat_manager.cpp: Added JSON escaping for weaponName before embedding in payload string to prevent malformed JSON from special characters.",
+      "tags": ["bugfix", "renderer", "combat-manager", "json-escaping", "performance-monitor"],
+      "compressed": false
+    },
+    {
+      "id": "mem-070",
+      "timestamp": "2026-08-31T13:55:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Total bug fixes across all sessions: 13 bugs fixed (11 from prior session commits 7fbfeceb + 2 from this session commit 63ae5387). All pushed to origin/master. Key files modified: esm_reader.cpp (47 ARM alignment fixes), renderer.cpp, combat_manager.cpp, world_loader.cpp, async_task_manager.cpp, nif_parser.cpp, player.h, dialogue_filter_engine.cpp, dialogue_runner.cpp, native_activity.cpp, npc_manager.cpp, quest_manager.cpp, physics_manager.cpp.",
+      "tags": ["bugfix", "summary", "commits", "all-sessions"],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 99,
+    "totalEntries": 104,
     "compressedCount": 0,
-    "sessionCount": 4
+    "sessionCount": 5
   }
 }

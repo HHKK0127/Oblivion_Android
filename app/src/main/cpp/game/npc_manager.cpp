@@ -386,11 +386,14 @@ void NpcManager::initializePlayerFromESM(NPC& player, uint32_t raceFormID,
 // Status Effect System
 // ============================================================
 
-void NpcManager::addStatusEffect(NPC& npc, SpellEffectType type, float duration, float magnitude) {
+void NpcManager::addStatusEffect(NPC& npc, SpellEffectType type, float duration, float magnitude,
+                                  const std::string& affectedAttribute, uint32_t summonedNpcId) {
     ActiveStatusEffect effect;
     effect.type = type;
     effect.remaining = duration;
     effect.magnitude = magnitude;
+    effect.affectedAttribute = affectedAttribute;
+    effect.summonedNpcId = summonedNpcId;
     m_statusEffects[npc.npcId].push_back(effect);
 
     // Apply immediate effects
@@ -427,11 +430,32 @@ void NpcManager::updateStatusEffects(NPC& npc, float deltaTime) {
                     npc.setAIState(AIState::IDLE);
                     LOGI("NPC %s paralysis wore off", npc.name.c_str());
                     break;
-                case SpellEffectType::INVISIBILITY:
-                    LOGI("NPC %s invisibility wore off", npc.name.c_str());
-                    break;
-                default:
-                    break;
+                case SpellEffectType::FORTIFY_ATTR:
+                        // Restore attribute boost on expiry
+                        {
+                            std::string attr = effect.affectedAttribute;
+                            if (attr.empty()) attr = "Strength";
+                            auto attrIt = npc.status.attributes.find(attr);
+                            if (attrIt != npc.status.attributes.end()) {
+                                attrIt->second -= effect.magnitude;
+                                if (attrIt->second < 0.0f) attrIt->second = 0.0f;
+                            }
+                            LOGI("NPC %s fortify %s wore off (magnitude=%.0f)", npc.name.c_str(), attr.c_str(), effect.magnitude);
+                        }
+                        break;
+                    case SpellEffectType::SUMMON:
+                        // Remove summoned creature on expiry
+                        if (effect.summonedNpcId != 0) {
+                            removeNPC(effect.summonedNpcId);
+                            LOGI("Summoned NPC %u dismissed", effect.summonedNpcId);
+                        }
+                        LOGI("NPC %s summon effect wore off", npc.name.c_str());
+                        break;
+                    case SpellEffectType::INVISIBILITY:
+                        LOGI("NPC %s invisibility wore off", npc.name.c_str());
+                        break;
+                    default:
+                        break;
             }
             effIt = effects.erase(effIt);
         } else {

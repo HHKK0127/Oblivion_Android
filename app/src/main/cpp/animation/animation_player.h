@@ -107,6 +107,13 @@ private:
 
     // Binary search for keyframe index
     static int findKeyIndex(const std::vector<NIFKeyframe>& keys, float time);
+
+    // Crossfade state
+    bool crossfading = false;
+    uint32_t crossfadeFromSeq = 0;
+    uint32_t crossfadeToSeq = 0;
+    float crossfadeDuration = 0.0f;
+    float crossfadeElapsed = 0.0f;
 };
 
 } // namespace animation

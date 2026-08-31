@@ -88,15 +88,20 @@ void AnimationPlayer::crossfade(uint32_t fromSeq, uint32_t toSeq, float duration
     for (auto& state : activeSequences) {
         if (state.sequenceIndex == toSeq) {
             state.blendWeight = 0.0f;
-            // Will be ramped up in update()
         }
         if (state.sequenceIndex == fromSeq) {
             state.blendWeight = 1.0f;
-            // Will be ramped down in update()
         }
     }
 
-    LOGD("Crossfade from %u to %u over %.2fs", fromSeq, toSeq, duration);
+    // Store crossfade state for update() to ramp weights
+    crossfading = true;
+    crossfadeFromSeq = fromSeq;
+    crossfadeToSeq = toSeq;
+    crossfadeDuration = (duration > 0.0f) ? duration : 0.3f;
+    crossfadeElapsed = 0.0f;
+
+    LOGD("Crossfade from %u to %u over %.2fs", fromSeq, toSeq, crossfadeDuration);
 }
 
 void AnimationPlayer::buildTracks(SequenceState& state) {
@@ -273,6 +278,25 @@ void AnimationPlayer::update(float deltaTime) {
     if (!skeleton || !sequences) return;
 
     globalTime += deltaTime;
+
+    // Advance crossfade if active — ramp blend weights linearly over duration
+    if (crossfading && crossfadeDuration > 0.0f) {
+        crossfadeElapsed += deltaTime;
+        float t = (crossfadeElapsed >= crossfadeDuration) ? 1.0f
+                                                           : (crossfadeElapsed / crossfadeDuration);
+        for (auto& state : activeSequences) {
+            if (state.sequenceIndex == crossfadeToSeq) {
+                state.blendWeight = t;
+            } else if (state.sequenceIndex == crossfadeFromSeq) {
+                state.blendWeight = 1.0f - t;
+            }
+        }
+        if (t >= 1.0f) {
+            crossfading = false;
+            // Stop the from sequence once transition completes
+            stop(crossfadeFromSeq);
+        }
+    }
 
     // Update each active sequence
     for (auto& state : activeSequences) {
