@@ -1,6 +1,7 @@
 # Temporary directories
 $tempDir/
 .claude/
+.tmp.driveupload/
 
 # Large binary assets
 BSA/
