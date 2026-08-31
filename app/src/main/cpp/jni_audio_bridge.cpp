@@ -16,35 +16,42 @@ static jmethodID g_play_se_method = nullptr;
 static jmethodID g_stop_bgm_method = nullptr;
 static std::mutex g_jni_mutex;
 
-/**
- * Helper to get JNIEnv for current thread.
- * NOTE: Caller must call g_jvm->DetachCurrentThread() when done if this
- * function attached the thread (returns a newly-attached env).
- */
-static JNIEnv* get_jni_env() {
-    if (!g_jvm) {
-        LOGE("JavaVM not initialized");
-        return nullptr;
+class JNIEnvGuard {
+    JavaVM* vm_;
+    bool attached_;
+public:
+    explicit JNIEnvGuard(JavaVM* vm) : vm_(vm), attached_(false) {}
+    ~JNIEnvGuard() {
+        if (attached_ && vm_) {
+            vm_->DetachCurrentThread();
+        }
     }
 
-    JNIEnv* env = nullptr;
-    int status = g_jvm->GetEnv((void**)&env, JNI_VERSION_1_6);
-
-    if (status == JNI_EDETACHED) {
-        // Current thread is not attached to JVM, attach it
-        if (g_jvm->AttachCurrentThread(&env, nullptr) != JNI_OK) {
-            LOGE("Failed to attach current thread to JVM");
+    JNIEnv* getEnv() {
+        if (!vm_) return nullptr;
+        JNIEnv* env = nullptr;
+        int status = vm_->GetEnv((void**)&env, JNI_VERSION_1_6);
+        if (status == JNI_EDETACHED) {
+            if (vm_->AttachCurrentThread(&env, nullptr) == JNI_OK) {
+                attached_ = true;
+            } else {
+                LOGE("Failed to attach current thread to JVM");
+                return nullptr;
+            }
+        } else if (status != JNI_OK) {
+            LOGE("JNI GetEnv failed: %d", status);
             return nullptr;
         }
-        LOGD("Attached thread to JVM");
-    } else if (status == JNI_OK) {
-        // Already attached
-    } else if (status == JNI_EVERSION) {
-        LOGE("JNI version mismatch");
-        return nullptr;
+        return env;
     }
+};
 
-    return env;
+static void clear_pending_exception(JNIEnv* env, const char* operation) {
+    if (env->ExceptionCheck()) {
+        LOGE("JNI exception during %s", operation);
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+    }
 }
 
 void jni_audio_bridge_init(JavaVM* vm) {
@@ -58,7 +65,8 @@ void jni_audio_bridge_init(JavaVM* vm) {
     g_jvm = vm;
 
     // Get JNIEnv for method lookup
-    JNIEnv* env = get_jni_env();
+    JNIEnvGuard envGuard(g_jvm);
+    JNIEnv* env = envGuard.getEnv();
     if (!env) {
         LOGE("Failed to get JNIEnv in jni_audio_bridge_init");
         return;
@@ -67,6 +75,10 @@ void jni_audio_bridge_init(JavaVM* vm) {
     // Find MainActivity class
     jclass localClass = env->FindClass("com/example/oblivion/MainActivity");
     if (!localClass) {
+        // FindClass failed - clear pending exception before returning
+        if (env->ExceptionCheck()) {
+            env->ExceptionClear();
+        }
         LOGE("Failed to find MainActivity class");
         return;
     }
@@ -84,6 +96,7 @@ void jni_audio_bridge_init(JavaVM* vm) {
     // public static void playBGM(String filename)
     g_play_bgm_method = env->GetStaticMethodID(g_main_activity_class, "playBGM", "(Ljava/lang/String;)V");
     if (!g_play_bgm_method) {
+        clear_pending_exception(env, "playBGM method lookup");
         LOGE("Failed to find playBGM method");
         return;
     }
@@ -91,6 +104,7 @@ void jni_audio_bridge_init(JavaVM* vm) {
     // public static void playSE(String filename)
     g_play_se_method = env->GetStaticMethodID(g_main_activity_class, "playSE", "(Ljava/lang/String;)V");
     if (!g_play_se_method) {
+        clear_pending_exception(env, "playSE method lookup");
         LOGE("Failed to find playSE method");
         return;
     }
@@ -98,6 +112,7 @@ void jni_audio_bridge_init(JavaVM* vm) {
     // public static void stopBGM()
     g_stop_bgm_method = env->GetStaticMethodID(g_main_activity_class, "stopBGM", "()V");
     if (!g_stop_bgm_method) {
+        clear_pending_exception(env, "stopBGM method lookup");
         LOGE("Failed to find stopBGM method");
         return;
     }
@@ -113,25 +128,17 @@ void jni_audio_play_bgm(const std::string& filename) {
         return;
     }
 
-    JNIEnv* env = get_jni_env();
+    JNIEnvGuard envGuard(g_jvm);
+    JNIEnv* env = envGuard.getEnv();
     if (!env) {
         LOGE("Failed to get JNIEnv for playBGM");
         return;
-    }
-
-    // Check if we need to detach after this call
-    bool needsDetach = false;
-    {
-        JNIEnv* checkEnv = nullptr;
-        int status = g_jvm->GetEnv((void**)&checkEnv, JNI_VERSION_1_6);
-        needsDetach = (status == JNI_EDETACHED);
     }
 
     // Convert C++ string to jstring
     jstring javaFilename = env->NewStringUTF(filename.c_str());
     if (!javaFilename) {
         LOGE("Failed to create jstring for filename: %s", filename.c_str());
-        if (needsDetach) g_jvm->DetachCurrentThread();
         return;
     }
 
@@ -147,7 +154,6 @@ void jni_audio_play_bgm(const std::string& filename) {
 
     // Clean up
     env->DeleteLocalRef(javaFilename);
-    if (needsDetach) g_jvm->DetachCurrentThread();
     LOGD("Called playBGM with filename: %s", filename.c_str());
 }
 
@@ -159,25 +165,17 @@ void jni_audio_play_se(const std::string& filename) {
         return;
     }
 
-    JNIEnv* env = get_jni_env();
+    JNIEnvGuard envGuard(g_jvm);
+    JNIEnv* env = envGuard.getEnv();
     if (!env) {
         LOGE("Failed to get JNIEnv for playSE");
         return;
-    }
-
-    // Check if we need to detach after this call
-    bool needsDetach = false;
-    {
-        JNIEnv* checkEnv = nullptr;
-        int status = g_jvm->GetEnv((void**)&checkEnv, JNI_VERSION_1_6);
-        needsDetach = (status == JNI_EDETACHED);
     }
 
     // Convert C++ string to jstring
     jstring javaFilename = env->NewStringUTF(filename.c_str());
     if (!javaFilename) {
         LOGE("Failed to create jstring for filename: %s", filename.c_str());
-        if (needsDetach) g_jvm->DetachCurrentThread();
         return;
     }
 
@@ -193,7 +191,6 @@ void jni_audio_play_se(const std::string& filename) {
 
     // Clean up
     env->DeleteLocalRef(javaFilename);
-    if (needsDetach) g_jvm->DetachCurrentThread();
     LOGD("Called playSE with filename: %s", filename.c_str());
 }
 
@@ -205,18 +202,11 @@ void jni_audio_stop_bgm() {
         return;
     }
 
-    JNIEnv* env = get_jni_env();
+    JNIEnvGuard envGuard(g_jvm);
+    JNIEnv* env = envGuard.getEnv();
     if (!env) {
         LOGE("Failed to get JNIEnv for stopBGM");
         return;
-    }
-
-    // Check if we need to detach after this call
-    bool needsDetach = false;
-    {
-        JNIEnv* checkEnv = nullptr;
-        int status = g_jvm->GetEnv((void**)&checkEnv, JNI_VERSION_1_6);
-        needsDetach = (status == JNI_EDETACHED);
     }
 
     // Call static method: MainActivity.stopBGM()
@@ -229,7 +219,6 @@ void jni_audio_stop_bgm() {
         env->ExceptionClear();
     }
 
-    if (needsDetach) g_jvm->DetachCurrentThread();
     LOGD("Called stopBGM");
 }
 
@@ -240,7 +229,8 @@ void jni_audio_bridge_cleanup() {
         return;
     }
 
-    JNIEnv* env = get_jni_env();
+    JNIEnvGuard envGuard(g_jvm);
+    JNIEnv* env = envGuard.getEnv();
     if (env && g_main_activity_class) {
         env->DeleteGlobalRef(g_main_activity_class);
     }

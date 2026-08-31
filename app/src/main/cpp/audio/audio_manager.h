@@ -252,6 +252,7 @@ private:
 
 public:
     static constexpr uint32_t MAX_SOURCES = 32;
+    static constexpr uint32_t JAVA_BGM_SOURCE_ID = 0xFFFFFFFE;  // Sentinel for Java MediaPlayer BGM
     static constexpr float FADE_UPDATE_RATE = 0.016f;  // 60 FPS
 
     void playBGMViaJava(const std::string& filename);

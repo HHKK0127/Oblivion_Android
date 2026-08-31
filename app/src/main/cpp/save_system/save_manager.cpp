@@ -518,7 +518,7 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
 
 bool SaveManager::writeToFile(uint32_t slotIndex, const std::string& slotName,
                                const std::vector<uint8_t>& payload) {
-    save_format::SaveHeader header;
+    save_format::SaveHeader header = {};  // Zero-initialize to avoid uninitialized padding
     header.formatVersion = save_format::CURRENT_VERSION;
     header.gameVersion = 0x000700;  // v0.7.0
     header.timestamp = static_cast<uint64_t>(
@@ -529,6 +529,7 @@ bool SaveManager::writeToFile(uint32_t slotIndex, const std::string& slotName,
 
     size_t copyLen = std::min(slotName.size(), sizeof(header.slotName) - 1);
     std::memcpy(header.slotName, slotName.c_str(), copyLen);
+    header.slotName[copyLen] = '\0';  // Ensure null termination
 
     std::string path = slotManager_.getSlotPath(slotIndex);
     std::ofstream file(path, std::ios::binary | std::ios::trunc);
@@ -539,6 +540,7 @@ bool SaveManager::writeToFile(uint32_t slotIndex, const std::string& slotName,
 
     file.write(reinterpret_cast<const char*>(&header), sizeof(header));
     file.write(reinterpret_cast<const char*>(payload.data()), payload.size());
+    file.flush();  // Ensure data is written before close (crash safety)
     file.close();
 
     return true;
@@ -746,10 +748,29 @@ bool SaveManager::loadGameLegacy(const std::string& slotName, GameState& outStat
 }
 
 std::string SaveManager::serializeGameState(const GameState& state) const {
+    // JSON string escape helper
+    auto escapeJson = [](const std::string& s) -> std::string {
+        std::string out;
+        out.reserve(s.size());
+        for (char c : s) {
+            switch (c) {
+                case '"':  out += "\\\""; break;
+                case '\\': out += "\\\\"; break;
+                case '\b': out += "\\b"; break;
+                case '\f': out += "\\f"; break;
+                case '\n': out += "\\n"; break;
+                case '\r': out += "\\r"; break;
+                case '\t': out += "\\t"; break;
+                default:   out += c; break;
+            }
+        }
+        return out;
+    };
+
     std::stringstream ss;
     ss << "{\n";
-    ss << "  \"version\": \"" << state.version << "\",\n";
-    ss << "  \"saveName\": \"" << state.saveName << "\",\n";
+    ss << "  \"version\": \"" << escapeJson(state.version) << "\",\n";
+    ss << "  \"saveName\": \"" << escapeJson(state.saveName) << "\",\n";
     ss << "  \"timestamp\": " << state.saveTimestamp << ",\n";
     ss << "  \"playerPos\": [" << state.playerPosition.x << ", "
        << state.playerPosition.y << ", " << state.playerPosition.z << "],\n";

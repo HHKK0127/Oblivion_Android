@@ -115,7 +115,7 @@ void Renderer::resize(unsigned int width, unsigned int height) {
             uiSystem->registerComponent(joystick, 100); // Draw above other components if overlapping
         } else {
             // Update existing joystick position without recreating
-            joystick->setCenter(250.0f, screenHeight - 250.0f);
+                        joystick->setPosition(250.0f, screenHeight - 250.0f);
         }
 
         // Setup combat buttons on right side of screen
@@ -2226,9 +2226,8 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
             it->second.lastY = y;
         }
     } else if (action == 1 || action == 6 || action == 3) { // UP or CANCEL
-        if (touchStates.find(pointerId) != touchStates.end()) {
-            touchStates[pointerId].active = false;
-        }
+        // Erase entry to prevent unbounded map growth (memory leak fix)
+        touchStates.erase(pointerId);
     }
 
     // Phase 9: UISystem handles all actions

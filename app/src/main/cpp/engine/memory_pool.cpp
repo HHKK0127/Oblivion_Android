@@ -57,10 +57,18 @@ uint32_t TextureCachePool::get(const std::string& key) {
 void TextureCachePool::put(const std::string& key, uint32_t textureId, size_t sizeBytes) {
     std::lock_guard<std::mutex> lock(mutex_);
 
+    // Guard: single texture larger than max cache cannot be cached
+    if (sizeBytes > maxMemoryBytes_) {
+        LOGE_MP("Texture too large to cache: %zu > %zu", sizeBytes, maxMemoryBytes_);
+        return; // Cannot cache - would cause infinite eviction loop
+    }
+
     // Check if we need to evict
+    size_t evictionAttempts = 0;
+    size_t maxEvictionAttempts = entries_.size() + 1; // Safety limit
     while ((entries_.size() >= maxEntries_ ||
             currentMemoryBytes_ + sizeBytes > maxMemoryBytes_) &&
-           !entries_.empty()) {
+           !entries_.empty() && evictionAttempts < maxEvictionAttempts) {
         std::string lruKey = findLRUKey();
         if (lruKey.empty()) break;
         auto it = entries_.find(lruKey);
@@ -69,6 +77,7 @@ void TextureCachePool::put(const std::string& key, uint32_t textureId, size_t si
             entries_.erase(it);
             LOGD_MP("Evicted texture: %s", lruKey.c_str());
         }
+        evictionAttempts++;
     }
 
     // Remove existing entry if updating
@@ -126,7 +135,7 @@ float TextureCachePool::getHitRate() const {
 
 std::string TextureCachePool::findLRUKey() const {
     std::string lruKey;
-    float oldestTime = std::numeric_limits<float>::max();
+    auto oldestTime = std::chrono::steady_clock::time_point::max();
     uint32_t lowestAccess = std::numeric_limits<uint32_t>::max();
 
     for (const auto& pair : entries_) {
@@ -142,10 +151,8 @@ std::string TextureCachePool::findLRUKey() const {
     return lruKey;
 }
 
-float TextureCachePool::getCurrentTime() const {
-    using namespace std::chrono;
-    auto now = steady_clock::now();
-    return duration<float>(now.time_since_epoch()).count();
+std::chrono::steady_clock::time_point TextureCachePool::getCurrentTime() const {
+    return std::chrono::steady_clock::now();
 }
 
 // ============================================================================

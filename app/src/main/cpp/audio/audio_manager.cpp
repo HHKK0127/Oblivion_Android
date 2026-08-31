@@ -224,6 +224,8 @@ bool AudioManager::playBGM(uint32_t clipId, float fadeIn) {
     playBGMViaJava(clip->filename);
 
     currentBGMClipId = clipId;
+    // Set sentinel ID for Java BGM path so stopBGM/isBGMPlaying work correctly
+    currentBGMSourceId = JAVA_BGM_SOURCE_ID;
     bgmVolume = 1.0f;
 
     if (fadeIn > 0.0f) {
@@ -268,16 +270,19 @@ void AudioManager::stopBGM(float fadeOut) {
         LOGD("BGM fading out: rate=%.3f", bgmFadeRate);
     } else {
         // 即座に停止
-        auto source = sources[currentBGMSourceId];
-        if (source) {
-            alSourceStop(source->alSource);
+        if (currentBGMSourceId == JAVA_BGM_SOURCE_ID) {
+            // Java MediaPlayer path
+            jni_audio_call_stop_bgm();
+        } else {
+            // OpenAL path
+            auto it = sources.find(currentBGMSourceId);
+            if (it != sources.end() && it->second) {
+                alSourceStop(it->second->alSource);
+            }
+            destroySource(currentBGMSourceId);
         }
-        destroySource(currentBGMSourceId);
         currentBGMSourceId = 0;
         currentBGMClipId = 0;
-
-        // Java MediaPlayer 経由で BGM を停止
-        jni_audio_call_stop_bgm();
 
         LOGD("BGM stopped");
     }
@@ -286,6 +291,10 @@ void AudioManager::stopBGM(float fadeOut) {
 bool AudioManager::isBGMPlaying() const {
     if (currentBGMSourceId == 0) {
         return false;
+    }
+
+    if (currentBGMSourceId == JAVA_BGM_SOURCE_ID) {
+        return true;
     }
 
     auto it = sources.find(currentBGMSourceId);
@@ -300,9 +309,9 @@ void AudioManager::setBGMVolume(float volume) {
     bgmVolume = clampf(volume, 0.0f, 1.0f);
 
     if (currentBGMSourceId != 0) {
-        auto source = sources[currentBGMSourceId];
-        if (source) {
-            source->setVolume(bgmVolume * masterVolume);
+        auto it = sources.find(currentBGMSourceId);
+        if (it != sources.end() && it->second) {
+            it->second->setVolume(bgmVolume * masterVolume);
         }
     }
 }
@@ -441,7 +450,7 @@ ALuint AudioManager::loadWavFile(const std::string& filename, ALint& format,
         return 0;
     }
 
-    AAsset* asset = AAssetManager_open(mgr, filename.c_str(), AASSET_MODE_STREAMING);
+    AAsset* asset = AAssetManager_open(mgr, filename.c_str(), AASSET_MODE_BUFFER);
     if (!asset) {
         LOGE("Failed to open asset: %s", filename.c_str());
         return 0;
@@ -604,15 +613,36 @@ void AudioManager::updateBGMFade(float deltaTime) {
         return;
     }
 
-    auto source = sources[currentBGMSourceId];
-    if (!source) {
-        bgmFading = false;
+    // Java BGM path: no OpenAL source, just track volume state
+    if (currentBGMSourceId == JAVA_BGM_SOURCE_ID) {
+        float newVolume = bgmVolume + (bgmFadeRate * deltaTime);
+        newVolume = clampf(newVolume, 0.0f, 1.0f);
+
+        if (newVolume == bgmFadeTarget) {
+            bgmFading = false;
+            if (bgmFadeTarget == 0.0f) {
+                jni_audio_call_stop_bgm();
+                currentBGMSourceId = 0;
+                currentBGMClipId = 0;
+                LOGD("BGM fade out complete (Java path), stopped");
+            } else {
+                LOGD("BGM fade in complete (Java path)");
+            }
+        }
+        bgmVolume = newVolume;
         return;
     }
 
+    auto it = sources.find(currentBGMSourceId);
+    if (it == sources.end() || !it->second) {
+        bgmFading = false;
+        return;
+    }
+    auto source = it->second;
+
     // ボリュームを更新
     float newVolume = bgmVolume + (bgmFadeRate * deltaTime);
-    newVolume = clampf(newVolume, 0.0f, bgmFadeTarget);
+    newVolume = clampf(newVolume, 0.0f, 1.0f);
 
     source->setVolume(newVolume * masterVolume);
 
@@ -653,7 +683,19 @@ uint32_t AudioManager::createSource(uint32_t clipId) {
     alSourcei(alSource, AL_LOOPING, clip->isLooping ? AL_TRUE : AL_FALSE);
 
     auto source = std::make_shared<AudioSource>();
-    source->sourceId = nextSourceId++;
+    uint32_t sourceId = nextSourceId;
+    do {
+        ++nextSourceId;
+        if (nextSourceId == 0 || nextSourceId == JAVA_BGM_SOURCE_ID) {
+            nextSourceId = 1;
+        }
+        if (sourceId != 0 && sourceId != JAVA_BGM_SOURCE_ID &&
+            sources.find(sourceId) == sources.end()) {
+            break;
+        }
+        sourceId = nextSourceId;
+    } while (sourceId != 0 && sourceId != JAVA_BGM_SOURCE_ID);
+    source->sourceId = sourceId;
     source->alSource = alSource;
     source->clipId = clipId;
     source->isLooping = clip->isLooping;

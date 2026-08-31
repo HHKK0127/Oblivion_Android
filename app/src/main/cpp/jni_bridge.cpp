@@ -564,6 +564,9 @@ Java_com_example_oblivion_GameRenderer_nativeInitBinkVideo(
     auto& player = oblivion::video::BinkVideoPlayer::instance();
     bool result = player.initialize(window);
 
+    // Release ANativeWindow ref regardless of result (ANativeWindow_fromSurface increments refcount)
+    ANativeWindow_release(window);
+
     if (result) {
         // Initialize JNI references for VideoDecoderJNI
         oblivion::video::VideoDecoderJNI::initJNI(env);
@@ -572,7 +575,6 @@ Java_com_example_oblivion_GameRenderer_nativeInitBinkVideo(
         LOGI("BinkVideoPlayer initialized successfully");
     } else {
         LOGE("BinkVideoPlayer initialization failed");
-        ANativeWindow_release(window);
     }
 
     return result ? JNI_TRUE : JNI_FALSE;

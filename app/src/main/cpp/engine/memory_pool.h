@@ -128,7 +128,8 @@ public:
     struct CacheEntry {
         uint32_t textureId = 0;
         size_t sizeBytes = 0;
-        float lastAccessTime = 0.0f;
+        // Use steady_clock for accurate time tracking (prevents precision loss in long sessions)
+    std::chrono::steady_clock::time_point lastAccessTime = std::chrono::steady_clock::now();
         uint32_t accessCount = 0;
     };
 
@@ -166,7 +167,7 @@ private:
     mutable std::mutex mutex_;
 
     std::string findLRUKey() const;
-    float getCurrentTime() const;
+    std::chrono::steady_clock::time_point getCurrentTime() const;
 };
 
 // ============================================================================

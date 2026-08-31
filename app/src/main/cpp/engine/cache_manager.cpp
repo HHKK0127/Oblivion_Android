@@ -361,6 +361,7 @@ bool CacheManager::writeToDisk(const std::string& key, const CacheEntry& entry) 
     uint32_t size = static_cast<uint32_t>(entry.sizeBytes);
     file.write(reinterpret_cast<const char*>(&size), sizeof(size));
     file.write(reinterpret_cast<const char*>(entry.data.data()), entry.sizeBytes);
+    file.flush();  // Ensure data is written to disk before returning
     return file.good();
 }
 

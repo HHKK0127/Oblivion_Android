@@ -155,30 +155,80 @@ std::string DebugConsole::cmdAddItem(const std::vector<std::string>& args) {
     uint32_t count = args.size() > 1 ? parseUint(args[1], 1) : 1;
 
     if (inventoryManager_) {
-        // Add item to player inventory
-        if (inventoryManager_->addItem(itemId, count)) {
+        // Get item template and add to player inventory
+        auto itemTemplate = inventoryManager_->getItemTemplate(itemId);
+        if (!itemTemplate) {
+            return "Error: Unknown item ID " + std::to_string(itemId);
+        }
+        if (inventoryManager_->playerAddItem(*itemTemplate, count)) {
             return "Added item " + std::to_string(itemId) + " x" + std::to_string(count);
         }
-        return "Failed to add item " + std::to_string(itemId);
+        return "Failed to add item " + std::to_string(itemId) + " (inventory full?)";
     }
 
     return "Error: InventoryManager not available";
 }
 
+std::string DebugConsole::cmdTeleport(const std::vector<std::string>& args) {
+    if (args.size() < 3) {
+        return "Usage: tp <x> <y> <z>";
+    }
+
+    float x = parseFloat(args[0]);
+    float y = parseFloat(args[1]);
+    float z = parseFloat(args[2]);
+
+    if (playerController_) {
+        playerController_->setPosition(glm::vec3(x, y, z));
+        return "Teleported to " + std::to_string(x) + ", " + std::to_string(y) + ", " + std::to_string(z);
+    }
+
+    return "Error: PlayerController not available";
+}
+
 std::string DebugConsole::cmdSetStage(const std::vector<std::string>& args) {
     if (args.size() < 2) {
-        return "Usage: setstage <questId> <stage>";
+        return "Usage: setstage <questId> <stage>\n"
+               "  Stage 0 = PENDING (available)\n"
+               "  Stage 1 = ACCEPTED\n"
+               "  Stage 2 = IN_PROGRESS\n"
+               "  Stage 3 = COMPLETED\n"
+               "  Stage 4 = FAILED";
     }
 
     uint32_t questId = parseUint(args[0]);
     uint32_t stage = parseUint(args[1]);
 
     if (questManager_) {
-        // Set quest stage
-        if (questManager_->setQuestStage(questId, stage)) {
+        auto quest = questManager_->getQuest(questId);
+        if (!quest) {
+            return "Error: Unknown quest ID " + std::to_string(questId);
+        }
+
+        bool success = false;
+        switch (stage) {
+            case 0: // PENDING - not directly settable, would need to fail/abandon first
+                return "Cannot set stage to PENDING directly. Use failquest or abandon.";
+            case 1: // ACCEPTED
+                success = questManager_->acceptQuest(questId);
+                break;
+            case 2: // IN_PROGRESS - auto when accepted with objectives
+                success = questManager_->acceptQuest(questId);
+                break;
+            case 3: // COMPLETED
+                success = questManager_->completeQuest(questId);
+                break;
+            case 4: // FAILED
+                success = questManager_->failQuest(questId);
+                break;
+            default:
+                return "Error: Invalid stage " + std::to_string(stage) + " (0-4)";
+        }
+
+        if (success) {
             return "Set quest " + std::to_string(questId) + " to stage " + std::to_string(stage);
         }
-        return "Failed to set quest stage";
+        return "Failed to set quest stage (check quest state)";
     }
 
     return "Error: QuestManager not available";

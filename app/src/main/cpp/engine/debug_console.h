@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <deque>
 #include <functional>
 #include <unordered_map>
 #include <sstream>
@@ -66,12 +67,12 @@ public:
     void setInventoryManager(InventoryManager* inventory);
 
     // Console output
-    const std::vector<ConsoleLine>& getOutput() const { return output_; }
+        const std::deque<ConsoleLine>& getOutput() const { return output_; }
     void clearOutput();
     size_t getMaxOutputLines() const { return MAX_OUTPUT_LINES; }
 
     // Command history
-    const std::vector<std::string>& getHistory() const { return history_; }
+        const std::deque<std::string>& getHistory() const { return history_; }
 
     // Console visibility
     void setVisible(bool visible) { visible_ = visible; }

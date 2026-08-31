@@ -40,13 +40,17 @@ struct AppState {
     bool should_render;
     bool render_ready;
     bool window_changed;
+    bool render_thread_exit;
+
+    std::chrono::steady_clock::time_point lastFrameTime;
 
     AppState() : display(EGL_NO_DISPLAY), context(EGL_NO_CONTEXT),
                  surface(EGL_NO_SURFACE), config(nullptr),
                  window(nullptr), renderer(nullptr),
                  width(0), height(0),
                  should_render(false), render_ready(false),
-                 window_changed(false) {}
+                 window_changed(false), render_thread_exit(false),
+                 lastFrameTime(std::chrono::steady_clock::now()) {}
 };
 
 // Initialize EGL
@@ -80,8 +84,8 @@ static bool initEGL(AppState* state) {
     };
 
     EGLint numConfigs;
-    if (!eglChooseConfig(state->display, configAttribs, &state->config, 1, &numConfigs)) {
-        LOGE("eglChooseConfig failed");
+    if (!eglChooseConfig(state->display, configAttribs, &state->config, 1, &numConfigs) || numConfigs == 0) {
+        LOGE("eglChooseConfig failed or returned 0 configs");
         return false;
     }
 
@@ -132,15 +136,20 @@ static bool createSurface(AppState* state) {
 
     LOGI("Surface created: %dx%d", state->width, state->height);
 
-    // Initialize Renderer
-    if (!state->renderer) {
-        state->renderer = new Renderer();
-        if (!state->renderer->init(state->width, state->height)) {
-            LOGE("Failed to initialize Renderer");
-            return false;
-        }
-        LOGI("Renderer initialized");
+    // Initialize Renderer (cleanup old one if exists for window change)
+    if (state->renderer) {
+        state->renderer->cleanup();
+        delete state->renderer;
+        state->renderer = nullptr;
     }
+    state->renderer = new Renderer();
+    if (!state->renderer->init(state->width, state->height)) {
+        LOGE("Failed to initialize Renderer");
+        delete state->renderer;
+        state->renderer = nullptr;
+        return false;
+    }
+    LOGI("Renderer initialized");
 
     return true;
 }
@@ -153,7 +162,13 @@ static void renderingThread(AppState* state) {
         std::unique_lock<std::mutex> lock(state->mutex);
 
         // Wait for signal to render
-        state->cond_var.wait(lock, [state] { return state->should_render || state->window_changed; });
+        state->cond_var.wait(lock, [state] {
+            return state->should_render || state->window_changed || state->render_thread_exit;
+        });
+
+        if (state->render_thread_exit) {
+            break;  // Exit thread
+        }
 
         if (!state->should_render && !state->window_changed) {
             break;  // Exit thread
@@ -191,10 +206,9 @@ static void renderingThread(AppState* state) {
         // Render frame
         if (state->renderer) {
             // Use actual frame time instead of fixed 60fps assumption
-            static auto lastFrameTime = std::chrono::steady_clock::now();
             auto now = std::chrono::steady_clock::now();
-            float deltaTime = std::chrono::duration<float>(now - lastFrameTime).count();
-            lastFrameTime = now;
+            float deltaTime = std::chrono::duration<float>(now - state->lastFrameTime).count();
+            state->lastFrameTime = now;
             // Clamp delta to avoid spiral of death
             if (deltaTime > 0.1f) deltaTime = 0.0167f;
             if (deltaTime <= 0.0f) deltaTime = 0.0167f;
@@ -228,6 +242,7 @@ static void onPause(ANativeActivity* activity) {
     if (state) {
         std::lock_guard<std::mutex> lock(state->mutex);
         state->should_render = false;
+        state->cond_var.notify_one();
     }
 }
 
@@ -242,7 +257,8 @@ static void onDestroy(ANativeActivity* activity) {
         {
             std::lock_guard<std::mutex> lock(state->mutex);
             state->should_render = false;
-            state->window_changed = true;  // Wake up the thread so it can exit
+            state->window_changed = false;
+            state->render_thread_exit = true;
         }
         state->cond_var.notify_one();
 
@@ -251,14 +267,16 @@ static void onDestroy(ANativeActivity* activity) {
             state->render_thread.join();
         }
 
-        // Cleanup EGL
+        // Cleanup EGL (surface before context)
         if (state->display != EGL_NO_DISPLAY) {
             eglMakeCurrent(state->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-            if (state->context != EGL_NO_CONTEXT) {
-                eglDestroyContext(state->display, state->context);
-            }
             if (state->surface != EGL_NO_SURFACE) {
                 eglDestroySurface(state->display, state->surface);
+                state->surface = EGL_NO_SURFACE;
+            }
+            if (state->context != EGL_NO_CONTEXT) {
+                eglDestroyContext(state->display, state->context);
+                state->context = EGL_NO_CONTEXT;
             }
             eglTerminate(state->display);
         }
@@ -296,6 +314,7 @@ static void onNativeWindowDestroyed(ANativeActivity* activity, ANativeWindow* wi
         std::lock_guard<std::mutex> lock(state->mutex);
         state->window = nullptr;
         state->render_ready = false;
+        state->cond_var.notify_one();
     }
 }
 
