@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-08-31T13:55:00Z",
+  "lastUpdated": "2026-08-31T14:30:00Z",
   "entries": [
     {
       "content": "Oblivion.exe (Ghidra decompiled) - Gamebryo engine, compiled with VS2005/VS2008, Direct3D9. Init order: Renderer -> Shader System -> Sky -> TES -> TreeManager -> Menus -> Player -> Scripts -> Sound System -> Actor Locations -> LOD Land",
@@ -1326,10 +1326,37 @@
       "content": "Total bug fixes across all sessions: 13 bugs fixed (11 from prior session commits 7fbfeceb + 2 from this session commit 63ae5387). All pushed to origin/master. Key files modified: esm_reader.cpp (47 ARM alignment fixes), renderer.cpp, combat_manager.cpp, world_loader.cpp, async_task_manager.cpp, nif_parser.cpp, player.h, dialogue_filter_engine.cpp, dialogue_runner.cpp, native_activity.cpp, npc_manager.cpp, quest_manager.cpp, physics_manager.cpp.",
       "tags": ["bugfix", "summary", "commits", "all-sessions"],
       "compressed": false
+    },
+    {
+      "id": "mem-071",
+      "timestamp": "2026-08-31T14:30:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "Kimi AI Round 3 review verification: 6 claims checked, 3 VALID, 3 INVALID. VALID: (1) FORTIFY_ATTR permanent attribute boost - no restoration on expiry in updateStatusEffects(), (2) SUMMON creatures never despawned - createNPC called but no removeNPC on expiry, (3) crossfade() duration parameter ignored - stored but never used in update(). INVALID: skeleton getBone static sharing (const/non-const have separate static locals), jni_bridge NewGlobalRef leak (cleaned up in jni_audio_cleanup), cell_loader O(n^2) (actually O(n) per cell, no nested loop).",
+      "tags": ["bugfix", "kimi-review", "round3", "verification"],
+      "compressed": false
+    },
+    {
+      "id": "mem-072",
+      "timestamp": "2026-08-31T14:30:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Round 3 fixes committed as 07b24914 + 1d0932d3: (1) npc_manager.cpp - FORTIFY_ATTR restoration on expiry (subtract magnitude, clamp to 0), SUMMON cleanup via removeNPC(summonedNpcId). (2) npc_manager.h - ActiveStatusEffect struct extended with affectedAttribute and summonedNpcId fields. (3) spell_manager.cpp - FORTIFY_ATTR passes attr name, SUMMON tracks spawned NPC ID. (4) animation_player.cpp/h - crossfade stores duration/elapsed state, update() ramps blend weights linearly, stops from-sequence on completion.",
+      "tags": ["bugfix", "npc-manager", "spell-manager", "animation-player", "crossfade", "summon", "fortify"],
+      "compressed": false
+    },
+    {
+      "id": "mem-073",
+      "timestamp": "2026-08-31T14:30:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Total bug fixes across all sessions: 16 bugs fixed. Commits: 7fbfeceb (11), 63ae5387 (2), 2c8b0108 (1 save_manager), 07b24914+1d0932d3 (3 Round 3). All pushed to origin/master. Kimi AI review accuracy: 3 rounds, 26 claims total, only 6 were valid bugs (23% accuracy). Always verify against source code.",
+      "tags": ["bugfix", "summary", "commits", "all-sessions", "kimi-accuracy"],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 104,
+    "totalEntries": 107,
     "compressedCount": 0,
     "sessionCount": 5
   }
