@@ -1798,6 +1798,9 @@ void Renderer::render(float deltaTime) {
         // BUG FIX: Null check titleScreen before access - it may not be created if init() failed early
         if (!titleScreen) {
             LOGE("titleScreen is null but showTitleScreen is true - skipping render");
+            if (performanceMonitor) {
+                performanceMonitor->endFrame();
+            }
             return;
         }
         titleScreen->update(deltaTime);

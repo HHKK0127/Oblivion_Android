@@ -760,7 +760,13 @@ void CombatManager::emitCombatEvent(const CombatEvent& event) {
         payload += "\"attacker\":" + std::to_string(event.attackerId) + ",";
         payload += "\"target\":" + std::to_string(event.targetId) + ",";
         payload += "\"damage\":" + std::to_string(event.damage) + ",";
-        payload += "\"weapon\":\"" + event.weaponName + "\",";
+        // Escape special characters in weapon name for JSON safety
+        std::string escapedWeapon;
+        for (char c : event.weaponName) {
+            if (c == '"' || c == '\\') escapedWeapon += '\\';
+            escapedWeapon += c;
+        }
+        payload += "\"weapon\":\"" + escapedWeapon + "\",";
         payload += "\"weaponType\":\"" + weaponTypeToAudioKey(event.weaponType) + "\",";
         payload += "\"isCritical\":" + std::string(event.isCritical ? "true" : "false") + ",";
         payload += "\"isBlocked\":" + std::string(event.isBlocked ? "true" : "false");
