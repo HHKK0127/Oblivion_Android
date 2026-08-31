@@ -271,7 +271,11 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
 
         // Deserialize PlayerController
         uint32_t plyrMarker = reader.readUint32();
-        if (plyrMarker == 0x504C5952 && playerController_) {
+        if (plyrMarker != 0x504C5952) {
+            LOGE("Save file corrupted: expected PLYR marker, got 0x%08X at pos %zu", plyrMarker, reader.getPosition() - 4);
+            return false;
+        }
+        if (playerController_) {
             auto player = playerController_->getPlayer();
             if (player) {
                 player->position = reader.readVec3();
@@ -340,7 +344,11 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
 
         // Deserialize InventoryManager
         uint32_t invtMarker = reader.readUint32();
-        if (invtMarker == 0x494E5654 && inventoryManager_) {
+        if (invtMarker != 0x494E5654) {
+            LOGE("Save file corrupted: expected INVT marker, got 0x%08X at pos %zu", invtMarker, reader.getPosition() - 4);
+            return false;
+        }
+        if (inventoryManager_) {
             auto inv = inventoryManager_->getPlayerInventory();
             if (inv) {
                 inv->clear();
@@ -369,7 +377,12 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
 
         // Deserialize SpellManager
         uint32_t spllMarker = reader.readUint32();
-        if (spllMarker == 0x53504C4C && spellManager_) {
+        if (spllMarker != 0x53504C4C) {
+            LOGE("Save file corrupted: expected SPLL marker, got 0x%08X at pos %zu", spllMarker, reader.getPosition() - 4);
+            return false;
+        }
+        {
+            // Always read section data to maintain reader position
             uint32_t spellCount = reader.readUint32();
             for (uint32_t i = 0; i < spellCount; ++i) {
                 uint32_t spellId = reader.readUint32();
@@ -379,9 +392,11 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
                 float baseDamage = reader.readFloat();
                 uint32_t targetType = reader.readUint32();
 
-                // Create spell in manager
-                uint32_t newId = spellManager_->createSpell(name, name, school, manaCost, baseDamage);
-                (void)spellId;  // Use newId for consistency
+                uint32_t newId = 0;
+                if (spellManager_) {
+                    newId = spellManager_->createSpell(name, name, school, manaCost, baseDamage);
+                }
+                (void)spellId;
 
                 // Effects
                 uint32_t effectCount = reader.readUint32();
@@ -390,20 +405,29 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
                     float magnitude = reader.readFloat();
                     float duration = reader.readFloat();
                     std::string attr = reader.readString();
-                    SpellEffect effect(type, magnitude, duration);
-                    effect.affectedAttribute = attr;
-                    spellManager_->addEffectToSpell(newId, effect);
+                    if (spellManager_) {
+                        SpellEffect effect(type, magnitude, duration);
+                        effect.affectedAttribute = attr;
+                        spellManager_->addEffectToSpell(newId, effect);
+                    }
                 }
 
                 // Teach to player
-                spellManager_->teachSpellToNpc(1, newId);
+                if (spellManager_) {
+                    spellManager_->teachSpellToNpc(1, newId);
+                }
             }
             LOGD("Loaded %u spells", spellCount);
         }
 
         // Deserialize QuestManager
         uint32_t qstsMarker = reader.readUint32();
-        if (qstsMarker == 0x51535453 && questManager_) {
+        if (qstsMarker != 0x51535453) {
+            LOGE("Save file corrupted: expected QSTS marker, got 0x%08X at pos %zu", qstsMarker, reader.getPosition() - 4);
+            return false;
+        }
+        {
+            // Always read section data to maintain reader position
             uint32_t activeCount = reader.readUint32();
             for (uint32_t i = 0; i < activeCount; ++i) {
                 uint32_t questId = reader.readUint32();
@@ -413,8 +437,10 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
                 QuestState state = static_cast<QuestState>(reader.readUint8());
                 uint32_t timeAccepted = reader.readUint32();
 
-                // Create quest
-                uint32_t newQuestId = questManager_->createQuest(giverNpcId, title, description);
+                uint32_t newQuestId = 0;
+                if (questManager_) {
+                    newQuestId = questManager_->createQuest(giverNpcId, title, description);
+                }
                 (void)questId;
 
                 // Objectives
@@ -427,13 +453,14 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
                     uint32_t target = reader.readUint32();
                     (void)objId;
 
-                    questManager_->addObjective(newQuestId, objDesc, target);
-                    if (progress > 0) {
-                        // Update progress after adding
-                        auto quest = questManager_->getQuest(newQuestId);
-                        if (quest && !quest->objectives.empty()) {
-                            quest->objectives.back().currentProgress = progress;
-                            quest->objectives.back().state = objState;
+                    if (questManager_) {
+                        questManager_->addObjective(newQuestId, objDesc, target);
+                        if (progress > 0) {
+                            auto quest = questManager_->getQuest(newQuestId);
+                            if (quest && !quest->objectives.empty()) {
+                                quest->objectives.back().currentProgress = progress;
+                                quest->objectives.back().state = objState;
+                            }
                         }
                     }
                 }
@@ -443,10 +470,12 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
                 reward.goldAmount = reader.readUint32();
                 reward.experiencePoints = reader.readFloat();
                 save_util::readStringVector(reader, reward.itemRewards);
-                questManager_->setQuestReward(newQuestId, reward);
+                if (questManager_) {
+                    questManager_->setQuestReward(newQuestId, reward);
+                }
 
                 // Accept quest if it was active
-                if (state == QuestState::ACCEPTED || state == QuestState::IN_PROGRESS) {
+                if (questManager_ && (state == QuestState::ACCEPTED || state == QuestState::IN_PROGRESS)) {
                     questManager_->acceptQuest(newQuestId);
                 }
 
@@ -461,7 +490,6 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
                 QuestState state = static_cast<QuestState>(reader.readUint8());
                 uint32_t timeCompleted = reader.readUint32();
                 (void)questId; (void)giverNpcId; (void)title; (void)state; (void)timeCompleted;
-                // Completed quests are tracked but not re-created
             }
 
             LOGD("Loaded %u active, %u completed quests", activeCount, completedCount);
@@ -469,7 +497,12 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
 
         // Deserialize WorldManager
         uint32_t wldsMarker = reader.readUint32();
-        if (wldsMarker == 0x574C4453 && worldManager_) {
+        if (wldsMarker != 0x574C4453) {
+            LOGE("Save file corrupted: expected WLDS marker, got 0x%08X at pos %zu", wldsMarker, reader.getPosition() - 4);
+            return false;
+        }
+        {
+            // Always read section data to maintain reader position
             WorldState ws;
             ws.playerPosition = reader.readVec3();
             ws.playerRotation = reader.readVec3();
@@ -477,7 +510,9 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
             ws.weatherIntensity = reader.readFloat();
             ws.currentWeather = reader.readString();
             ws.dayCount = reader.readUint32();
-            worldManager_->setWorldState(ws);
+            if (worldManager_) {
+                worldManager_->setWorldState(ws);
+            }
 
             // Loaded cells
             uint32_t cellCount = reader.readUint32();
@@ -489,8 +524,9 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
                 CellType cellType = static_cast<CellType>(reader.readUint8());
                 (void)cellId; (void)cellName; (void)cellType;
 
-                // Request cell load
-                worldManager_->loadCell(cellX, cellY);
+                if (worldManager_) {
+                    worldManager_->loadCell(cellX, cellY);
+                }
             }
 
             LOGD("Loaded world: time=%.1f day=%u cells=%u", ws.timeOfDay, ws.dayCount, cellCount);
@@ -498,7 +534,12 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
 
         // Deserialize ScriptManager
         uint32_t scrpMarker = reader.readUint32();
-        if (scrpMarker == 0x53435250 && scriptManager_) {
+        if (scrpMarker != 0x53435250) {
+            LOGE("Save file corrupted: expected SCRP marker, got 0x%08X at pos %zu", scrpMarker, reader.getPosition() - 4);
+            return false;
+        }
+        {
+            // Always read section data to maintain reader position
             uint32_t globalCount = reader.readUint32();
             (void)globalCount;
             LOGD("Loaded script state");
