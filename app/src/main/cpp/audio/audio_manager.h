@@ -31,210 +31,210 @@ class AudioManager;
 extern AudioManager* g_audioManager;
 
 /**
- * @brief オーディオマネージャー
- * OpenAL デバイス・コンテキスト管理、
- * BGM/SE ローディング、再生制御を一元管理
+ * @brief Audio manager
+ * OpenAL device/context management,
+ * centralized BGM/SE loading and playback control
  *
- * Manager Pattern に準拠：
- * - initialize(): OpenAL 初期化、デバイス検出
- * - update(deltaTime): 再生終了チェック、3D更新
- * - cleanup(): リソース解放、デバイス破棄
+ * Follows Manager Pattern:
+ * - initialize(): OpenAL initialization, device detection
+ * - update(deltaTime): playback end check, 3D update
+ * - cleanup(): resource release, device destruction
  */
 class AudioManager {
 public:
     /**
-     * @brief コンストラクタ
+     * @brief Constructor
      */
     AudioManager();
 
     /**
-     * @brief デストラクタ
+     * @brief Destructor
      */
     ~AudioManager();
 
     // ========== Lifecycle ==========
 
     /**
-     * @brief 初期化（OpenAL デバイス・コンテキスト）
-     * @return 成功時 true
+     * @brief Initialize (OpenAL device/context)
+     * @return True on success
      */
     bool initialize();
 
     /**
-     * @brief 毎フレーム更新（再生終了チェック、3D更新）
-     * @param deltaTime フレーム時間（秒）
+     * @brief Per-frame update (playback end check, 3D update)
+     * @param deltaTime Frame time (seconds)
      */
     void update(float deltaTime);
 
     /**
-     * @brief クリーンアップ（リソース全解放）
+     * @brief Cleanup (release all resources)
      */
     void cleanup();
 
     // ========== Clip Management ==========
 
     /**
-     * @brief オーディオクリップをロード
-     * @param filename WAV ファイルパス（例："assets/music/oblivion_theme.wav"）
+     * @brief Load audio clip
+     * @param filename WAV file path (e.g. "assets/music/oblivion_theme.wav")
      * @param type 0=BGM, 1=SE, 2=Voice
-     * @param isLooping ループ再生フラグ
-     * @return クリップID（失敗時 0）
+     * @param isLooping Loop playback flag
+     * @return Clip ID (0 on failure)
      */
     uint32_t loadClip(const std::string& filename, uint8_t type = 1,
                      bool isLooping = false);
 
     /**
-     * @brief クリップをリソースから取得
-     * @param clipId クリップID
-     * @return クリップポインタ（見つからない場合 nullptr）
+     * @brief Get clip from resources
+     * @param clipId Clip ID
+     * @return Clip pointer (nullptr if not found)
      */
     AudioClip* getClip(uint32_t clipId);
 
     /**
-     * @brief クリップをアンロード
-     * @param clipId クリップID
+     * @brief Unload clip
+     * @param clipId Clip ID
      */
     void unloadClip(uint32_t clipId);
 
     // ========== BGM Management ==========
 
     /**
-     * @brief BGM を再生
-     * @param clipId ロード済みのクリップID
-     * @param fadeIn フェードイン時間（秒、0 = 即座）
-     * @return 成功時 true
+     * @brief Play BGM
+     * @param clipId Loaded clip ID
+     * @param fadeIn Fade in time (seconds, 0 = immediate)
+     * @return True on success
      */
     bool playBGM(uint32_t clipId, float fadeIn = 0.0f);
 
     /**
-     * @brief BGM を停止
-     * @param fadeOut フェードアウト時間（秒、0 = 即座）
+     * @brief Stop BGM
+     * @param fadeOut Fade out time (seconds, 0 = immediate)
      */
     void stopBGM(float fadeOut = 0.0f);
 
     /**
-     * @brief BGM 再生中かどうか
+     * @brief Is BGM playing
      */
     bool isBGMPlaying() const;
 
     /**
-     * @brief BGM のボリュームを設定
+     * @brief Set BGM volume
      * @param volume 0.0 - 1.0
      */
     void setBGMVolume(float volume);
 
     /**
-     * @brief BGM の現在のボリュームを取得
+     * @brief Get current BGM volume
      */
     float getBGMVolume() const { return bgmVolume; }
 
     // ========== SE Management ==========
 
     /**
-     * @brief SE (効果音) を再生
-     * @param clipId ロード済みのクリップID
-     * @param position 3D 再生位置（デフォルト: リスナー位置）
-     * @param volume ボリューム（デフォルト: 1.0）
-     * @return ソースID（失敗時 0）
+     * @brief Play SE (sound effect)
+     * @param clipId Loaded clip ID
+     * @param position 3D playback position (default: listener position)
+     * @param volume Volume (default: 1.0)
+     * @return Source ID (0 on failure)
      */
     uint32_t playSE(uint32_t clipId, const glm::vec3& position = glm::vec3(0.0f, 0.0f, 0.0f),
                    float volume = 1.0f);
 
     /**
-     * @brief SE を停止
-     * @param sourceId ソースID
+     * @brief Stop SE
+     * @param sourceId Source ID
      */
     void stopSE(uint32_t sourceId);
 
     /**
-     * @brief すべての SE を停止
+     * @brief Stop all SE
      */
     void stopAllSE();
 
     // ========== 3D Audio ==========
 
     /**
-     * @brief リスナー（プレイヤー）位置を設定
-     * @param pos ワールド座標
+     * @brief Set listener (player) position
+     * @param pos World coordinates
      */
     void setListenerPosition(const glm::vec3& pos);
 
     /**
-     * @brief リスナー向きを設定
-     * @param forward 前方向ベクトル
-     * @param up 上向きベクトル
+     * @brief Set listener orientation
+     * @param forward Forward vector
+     * @param up Up vector
      */
     void setListenerOrientation(const glm::vec3& forward, const glm::vec3& up);
 
     // ========== Volume Control ==========
 
     /**
-     * @brief マスターボリュームを設定（全体）
+     * @brief Set master volume (overall)
      * @param volume 0.0 - 1.0
      */
     void setMasterVolume(float volume);
 
     /**
-     * @brief マスターボリュームを取得
+     * @brief Get master volume
      */
     float getMasterVolume() const { return masterVolume; }
 
     /**
-     * @brief SE のマスターボリュームを設定
+     * @brief Set SE master volume
      * @param volume 0.0 - 1.0
      */
     void setSEVolume(float volume);
 
     /**
-     * @brief SE のマスターボリュームを取得
+     * @brief Get SE master volume
      */
     float getSEVolume() const { return seVolume; }
 
     // ========== Status Query ==========
 
     /**
-     * @brief 現在ロード済みのクリップ数
+     * @brief Number of currently loaded clips
      */
     size_t getLoadedClipsCount() const { return clips.size(); }
 
     /**
-     * @brief 現在再生中のソース数
+     * @brief Number of currently playing sources
      */
     size_t getActiveSourcesesCount() const { return sources.size(); }
 
     /**
-     * @brief ロード済みオーディオの一覧を取得
+     * @brief Get list of loaded audio
      */
     std::string getLoadedAudioList() const;
 
     /**
-     * @brief オーディオ統計情報を取得
+     * @brief Get audio statistics
      */
     std::string getAudioStats() const;
 
     // ========== Sound Definition JSON ==========
 
     /**
-     * @brief sound_definitions.json を読み込み、サウンド定義を登録
-     * @param jsonPath JSONファイルパス（例: "audio/sound_definitions.json"）
-     * @return 成功時 true
+     * @brief Load sound_definitions.json and register sound definitions
+     * @param jsonPath JSON file path (e.g. "audio/sound_definitions.json")
+     * @return True on success
      */
     bool loadSoundDefinitions(const std::string& jsonPath);
 
     /**
-     * @brief 定義キーでSEを再生（JSON登録済みのキー）
-     * @param key JSONで定義されたサウンドキー（例: "ui/click"）
-     * @param position 3D位置（省略時リスナー位置）
-     * @return ソースID（失敗時 0）
+     * @brief Play SE by definition key (registered in JSON)
+     * @param key Sound key defined in JSON (e.g. "ui/click")
+     * @param position 3D position (listener position if omitted)
+     * @return Source ID (0 on failure)
      */
     uint32_t playSound(const std::string& key,
                        const glm::vec3& position = glm::vec3(0.0f, 0.0f, 0.0f));
 
     /**
-     * @brief 定義キーでBGMを再生
-     * @param key JSONで定義されたBGMキー
-     * @param fadeIn フェードイン時間
-     * @return 成功時 true
+     * @brief Play BGM by definition key
+     * @param key BGM key defined in JSON
+     * @param fadeIn Fade in time
+     * @return True on success
      */
     bool playMusic(const std::string& key, float fadeIn = 0.0f);
 
@@ -296,34 +296,34 @@ public:
     // ========== Private Methods ==========
 
     /**
-     * @brief WAV ファイルをロード
-     * @param filename ファイルパス
-     * @return OpenAL buffer handle (0 = 失敗)
+     * @brief Load WAV file
+     * @param filename File path
+     * @return OpenAL buffer handle (0 = failure)
      */
     ALuint loadWavFile(const std::string& filename, ALint& format,
                       ALsizei& frequency, ALsizei& size);
 
     /**
-     * @brief 再生完了したソースをクリーンアップ
+     * @brief Clean up completed playback sources
      */
     void cleanupFinishedSources();
 
     /**
-     * @brief BGM フェード処理
-     * @param deltaTime フレーム時間
+     * @brief BGM fade processing
+     * @param deltaTime Frame time
      */
     void updateBGMFade(float deltaTime);
 
     /**
-     * @brief 新しいソースを作成
-     * @param clipId クリップID
-     * @return 作成されたソースID
+     * @brief Create new source
+     * @param clipId Clip ID
+     * @return Created source ID
      */
     uint32_t createSource(uint32_t clipId);
 
     /**
-     * @brief ソースを削除
-     * @param sourceId ソースID
+     * @brief Delete source
+     * @param sourceId Source ID
      */
     void destroySource(uint32_t sourceId);
 };

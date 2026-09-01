@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-01T02:40:00Z",
+  "lastUpdated": "2026-09-01T03:00:00Z",
   "entries": [
     {
       "content": "Oblivion.exe (Ghidra decompiled) - Gamebryo engine, compiled with VS2005/VS2008, Direct3D9. Init order: Renderer -> Shader System -> Sky -> TES -> TreeManager -> Menus -> Player -> Scripts -> Sound System -> Actor Locations -> LOD Land",
@@ -1018,7 +1018,14 @@
       "category": "decision",
       "priority": "high",
       "content": "Phase 42-44 completed and merged to master. Phase 42: Game Loop Integration (state_manager, input_router, game_loop_coordinator, scene_renderer, debug_console, performance_profiler). Phase 43: UI/UX (touch_gesture_handler, menu_transition_manager, hud_layout, control_scheme_manager, accessibility_manager). Phase 44: Performance Optimization (memory_pool, render_optimizer, async_task_manager, cache_manager, profiler_dashboard). Total: ~7,200 lines added across 32 files.",
-      "tags": ["phase-42", "phase-43", "phase-44", "game-loop", "ui-ux", "performance"],
+      "tags": [
+        "phase-42",
+        "phase-43",
+        "phase-44",
+        "game-loop",
+        "ui-ux",
+        "performance"
+      ],
       "compressed": false
     },
     {
@@ -1027,7 +1034,13 @@
       "category": "reference",
       "priority": "high",
       "content": "GLM custom implementation fix: Added vec2 operators (+, -, *, /, +=, -=, *=, /=), vec2(float) constructor, vec4 operators, and vec4(float) constructor to app/src/main/cpp/include/glm/glm.hpp. The project uses a minimal custom GLM, not the full library. vec2 previously had no operators defined, causing build failures in Phase 43 UI files. Also fixed: accessibility_manager.cpp .r/.g/.b/.a -> .x/.y/.z/.w, menu_transition_manager.cpp color.a -> color.w.",
-      "tags": ["glm", "bug-fix", "build", "vec2", "vec4"],
+      "tags": [
+        "glm",
+        "bug-fix",
+        "build",
+        "vec2",
+        "vec4"
+      ],
       "compressed": false
     },
     {
@@ -1036,7 +1049,11 @@
       "category": "decision",
       "priority": "medium",
       "content": "Current codebase stats: ~38,000+ lines across 100+ files. Phases 1-44 complete. Architecture: 7-layer (JNI Bridge -> Engine Core -> World Systems -> Game Logic -> UI/Audio/Physics -> Asset Pipeline -> Performance). Build: NDK 26.1, Clang++, Android API 24, C++17. Build time: 30s-2min. All phases build successfully on all 4 architectures (arm64-v8a, armeabi-v7a, x86, x86_64).",
-      "tags": ["stats", "architecture", "build"],
+      "tags": [
+        "stats",
+        "architecture",
+        "build"
+      ],
       "compressed": false
     },
     {
@@ -1045,7 +1062,11 @@
       "category": "reference",
       "priority": "medium",
       "content": "Next steps after Phase 44: (1) Phase 45: Testing & Debugging - unit tests, integration tests, device testing. (2) Phase 46: Full game loop integration testing on device. (3) Phase 47: Asset pipeline (BSA extraction, DDS texture loading, NIF mesh loading). (4) Phase 48: Audio system integration (original WAV/MP3 files). (5) Phase 49: Touch control refinement and gamepad support.",
-      "tags": ["next-steps", "roadmap", "phase-45"],
+      "tags": [
+        "next-steps",
+        "roadmap",
+        "phase-45"
+      ],
       "compressed": false
     },
     {
@@ -1054,7 +1075,18 @@
       "category": "reference",
       "priority": "high",
       "content": "Oblivion original engine architecture: 7 middleware engines integrated by Creation Engine (Bethesda). (1) Gamebryo: core rendering, scene graph, node-based pipeline, LOD, texture management. (2) Havok: rigid body physics, character controller, ragdoll, collision detection, cloth simulation. (3) SpeedTree: 3D tree/vegetation rendering, wind animation, LOD, billboard. (4) FaceGen: NPC face 3D generation, metaball deformation, texture blending, age/race parameters. (5) Bink Video: movie playback, compressed video decode, intro/cutscene. (6) Radiant AI: NPC autonomous behavior, schedule, goal-oriented action, conversation AI, package system. (7) Distant LOD: distant location display, distant land mesh, LOD textures, horizon display.",
-      "tags": ["oblivion", "engine", "middleware", "gamebryo", "havok", "speedtree", "facegen", "bink", "radiant-ai", "distant-lod"],
+      "tags": [
+        "oblivion",
+        "engine",
+        "middleware",
+        "gamebryo",
+        "havok",
+        "speedtree",
+        "facegen",
+        "bink",
+        "radiant-ai",
+        "distant-lod"
+      ],
       "compressed": false
     },
     {
@@ -1063,7 +1095,13 @@
       "category": "decision",
       "priority": "high",
       "content": "Imperial Weave v3.0 (app/src/main/cpp/engine/imperial_weave.h/cpp) is our Creation Engine equivalent. It provides: EventBus (thread-safe pub/sub with immediate/deferred dispatch), ServiceLocator (type_index-based DI registry), 12-Phase Update Pipeline (PreUpdate->Event->World->AI->Player->Inventory->Spell->Anim->Physics->Combat->Quest->Script->Audio->Render), PhaseProfiler (debug frame timing). Currently registered engines: Renderer, WorldManager, NpcManager, CombatManager, QuestManager, CollisionWorld, AnimationPlayer, PlayerController, InventoryManager, SpellManager, AudioManager, JoltPhysics, ScriptManager. NOT yet registered: DistantLOD, SpeedTree, FaceGen, BinkVideo.",
-      "tags": ["imperial-weave", "creation-engine", "event-bus", "service-locator", "architecture"],
+      "tags": [
+        "imperial-weave",
+        "creation-engine",
+        "event-bus",
+        "service-locator",
+        "architecture"
+      ],
       "compressed": false
     },
     {
@@ -1072,7 +1110,12 @@
       "category": "reference",
       "priority": "high",
       "content": "Engine completion status (Phase 49 / v2.4.0): Gamebryo equivalent: 75% (OpenGL ES 3.0 reimplementation, scene graph, multi-pass rendering). Havok equivalent: 50% (Jolt Physics, rigid body/collision, missing ragdoll/cloth/character controller). SpeedTree: 0% (not started, need billboard + wind shader). FaceGen: 0% (not started, need metaball deformation + texture overlay). Bink Video: 0% (not started, Android MediaCodec or FFmpeg). Radiant AI: 65% (basic schedule, goal-oriented, conversation AI, missing full package system). Distant LOD: 30% (LAND heightmap read, missing distant land mesh/LOD texture/horizon). Overall: ~70% complete. Code: 79,360 lines own + 152,360 third_party = 232,630 total.",
-      "tags": ["completion-status", "engine", "phase-49", "v2.4.0"],
+      "tags": [
+        "completion-status",
+        "engine",
+        "phase-49",
+        "v2.4.0"
+      ],
       "compressed": false
     },
     {
@@ -1081,7 +1124,15 @@
       "category": "decision",
       "priority": "high",
       "content": "Phase 45-49 completed and merged to master. Phase 45: Unit tests (37 cases, +1,089 lines). Phase 46: Asset pipeline - TextureManager, MeshLoader, WorldDataLoader, BSA/ESM/NIF readers (+2,487 lines). Phase 47: Audio system - AudioDecoder, BgmManager, SoundEffectManager (+2,176 lines). Phase 48: Integration + stress tests (12 cases, +1,159 lines). Phase 49: Controls - GamepadMapper, TouchCalibration, InputVisualizer, HudCustomizer (+1,812 lines). Total: 34 files, +8,723 lines. Version: v2.4.0. All merged to master and pushed.",
-      "tags": ["phase-45", "phase-46", "phase-47", "phase-48", "phase-49", "v2.4.0", "complete"],
+      "tags": [
+        "phase-45",
+        "phase-46",
+        "phase-47",
+        "phase-48",
+        "phase-49",
+        "v2.4.0",
+        "complete"
+      ],
       "compressed": false
     },
     {
@@ -1090,7 +1141,17 @@
       "category": "reference",
       "priority": "medium",
       "content": "Next phases for missing engines: Phase 50: DistantLOD (distant land mesh generation, LOD textures, horizon display). Phase 51: SpeedTree (billboard trees, wind shader, vegetation LOD). Phase 52: FaceGen (metaball face deformation, texture blending, age/race params). Phase 53: Bink Video (Android MediaCodec integration, intro/cutscene playback). Each engine should be registered with ImperialWeave::init() via ServiceLocator.",
-      "tags": ["roadmap", "phase-50", "phase-51", "phase-52", "phase-53", "distant-lod", "speedtree", "facegen", "bink"],
+      "tags": [
+        "roadmap",
+        "phase-50",
+        "phase-51",
+        "phase-52",
+        "phase-53",
+        "distant-lod",
+        "speedtree",
+        "facegen",
+        "bink"
+      ],
       "compressed": false
     },
     {
@@ -1099,7 +1160,12 @@
       "category": "decision",
       "priority": "high",
       "content": "Phase 50 Distant LOD COMPLETE: DistantLodManager (LOD mesh generation, 6-plane frustum culling, distance fade, memory pool), HorizonRing (8-direction mountain presets, cylinder mesh, noise terrain), DistantLodShader (GLSL ES 3.00). 5 files, 1903 lines. Branch: hhkk0127-phase-50-distant-lod, commit: ca2bf15.",
-      "tags": ["phase-50", "distant-lod", "complete", "engine"],
+      "tags": [
+        "phase-50",
+        "distant-lod",
+        "complete",
+        "engine"
+      ],
       "compressed": false
     },
     {
@@ -1108,7 +1174,12 @@
       "category": "decision",
       "priority": "high",
       "content": "Phase 51 SpeedTree COMPLETE: SpeedTreeManager (4-stage LOD, instancing, frustum culling, billboard rendering, mesh generation), TreeWindField (Perlin noise wind, 3-octave fractal), TreeEmitter (ESM LAND-based placement, noise distribution). 8 files, 2035 lines. Branch: hhkk0127-phase-51-speedtree, commit: 70d76a4.",
-      "tags": ["phase-51", "speedtree", "complete", "engine"],
+      "tags": [
+        "phase-51",
+        "speedtree",
+        "complete",
+        "engine"
+      ],
       "compressed": false
     },
     {
@@ -1117,7 +1188,12 @@
       "category": "decision",
       "priority": "high",
       "content": "Phase 52 FaceGen COMPLETE: FaceGenMorpher (morph targets, texture blending, ESM data integration), FaceGenParser (FGTS/FGGS/FGGA subrecords), FaceGenTextureCompositor (multi-layer blending), FaceGenLODManager (4 LOD levels). 13 files, 2794 lines. Branch: hhkk0127-phase-52-facegen, commit: c39306b.",
-      "tags": ["phase-52", "facegen", "complete", "engine"],
+      "tags": [
+        "phase-52",
+        "facegen",
+        "complete",
+        "engine"
+      ],
       "compressed": false
     },
     {
@@ -1126,7 +1202,12 @@
       "category": "decision",
       "priority": "high",
       "content": "Phase 53 Bink Video COMPLETE: BinkVideoPlayer (MediaCodec JNI, playback control, loop), VideoClipManager (preload, LRU eviction, memory management), VideoRenderer (SurfaceTexture→OpenGL texture, fullscreen), VideoBridge.java (async decode thread). 9 files, 2720 lines. Branch: hhkk0127-phase-53-bink-video, commit: 884f313.",
-      "tags": ["phase-53", "bink-video", "complete", "engine"],
+      "tags": [
+        "phase-53",
+        "bink-video",
+        "complete",
+        "engine"
+      ],
       "compressed": false
     },
     {
@@ -1135,7 +1216,12 @@
       "category": "decision",
       "priority": "high",
       "content": "All 7 Oblivion engines now integrated via Imperial Weave v3.0: Gamebryo (75%), Havok/Jolt (50%), SpeedTree (80%), FaceGen (60%), Bink Video (70%), Radiant AI (65%), Distant LOD (60%). ImperialWeave::init() now takes 17 parameters. Version bumped to v2.5.0.",
-      "tags": ["imperial-weave", "v3.0", "all-engines", "milestone"],
+      "tags": [
+        "imperial-weave",
+        "v3.0",
+        "all-engines",
+        "milestone"
+      ],
       "compressed": false
     },
     {
@@ -1144,7 +1230,13 @@
       "category": "decision",
       "priority": "high",
       "content": "Phase 54 Imperial Weave v4.0 COMPLETE: ImperialWeaveConfig struct (replaces 17-param init), 15-phase pipeline (+VegetationUpdate/FaceGenUpdate/VideoUpdate), frame budget management (16.6ms default with early bailout), new event types (TREE_WIND_CHANGE/FACE_MORPH_UPDATE/VIDEO_PLAYBACK_EVENT/LOD_DISTANCE_CHANGE), phaseRenderSubmit integrates SpeedTree/FaceGen/BinkVideo rendering, fixed shutdown() null all pointers. 2 files changed, 253 insertions, 49 deletions. Commit: 4cbb56c. Version bumped to v3.0.0.",
-      "tags": ["phase-54", "imperial-weave", "v4.0", "complete", "integration"],
+      "tags": [
+        "phase-54",
+        "imperial-weave",
+        "v4.0",
+        "complete",
+        "integration"
+      ],
       "compressed": false
     },
     {
@@ -1153,7 +1245,14 @@
       "category": "decision",
       "priority": "high",
       "content": "Phase 55 Engine Polish COMPLETE (3 parallel branches merged): Engine Polish (5 files, 1748 lines: FrameBudgetManager/MemoryDefrag/ShaderCache/OcclusionCuller/BatchRenderer), FaceGen Brush-up (4 files, 1665 lines: FaceExpressionSystem/FaceRacePresets/FaceLodManager/FaceHairSystem), Jolt Physics Extension (5 files, 1366 lines: RagdollSystem/PhysicsMaterial/JointSystem/DestructionSystem/VehiclePhysics). Total: 14 new files, 4779 lines. Version bumped to v3.1.0.",
-      "tags": ["phase-55", "engine-polish", "facegen", "jolt-physics", "complete", "parallel"],
+      "tags": [
+        "phase-55",
+        "engine-polish",
+        "facegen",
+        "jolt-physics",
+        "complete",
+        "parallel"
+      ],
       "compressed": false
     },
     {
@@ -1162,7 +1261,11 @@
       "category": "reference",
       "priority": "medium",
       "content": "Engine completion after Phase 55: Gamebryo 80%, Havok/Jolt 75%, SpeedTree 85%, FaceGen 85%, Bink Video 75%, Radiant AI 70%, Distant LOD 65%. All engines now have core systems + optimization layer.",
-      "tags": ["engine-status", "completion", "phase-55"],
+      "tags": [
+        "engine-status",
+        "completion",
+        "phase-55"
+      ],
       "compressed": false
     },
     {
@@ -1171,7 +1274,17 @@
       "category": "decision",
       "priority": "high",
       "content": "Phase 56 Gamebryo COMPLETE: 6 new engine subsystems (2766 lines). particle_system.h (613 lines, 7 presets: fire/smoke/magic/rain/snow/dust/sparks, SoA data, emitter shapes), post_process_pipeline.h (462 lines, 8 effects: bloom/ACES tone mapping/fog/DoF/vignette/color grading/motion blur/FXAA, 5 presets), water_renderer.h (371 lines, Gerstner waves, Fresnel reflections, 6 water types), sky_weather_system.h (451 lines, 24h day/night, 8 weather types, sun/moon arc, star field), scene_graph.h (462 lines, hierarchical transforms, dirty flag propagation, AABB spatial queries), material_system.h (407 lines, 8 texture slots, Blinn-Phong, 8 default materials). Version bumped to v3.2.0.",
-      "tags": ["phase-56", "gamebryo", "complete", "particle", "postprocess", "water", "sky", "scene-graph", "material"],
+      "tags": [
+        "phase-56",
+        "gamebryo",
+        "complete",
+        "particle",
+        "postprocess",
+        "water",
+        "sky",
+        "scene-graph",
+        "material"
+      ],
       "compressed": false
     },
     {
@@ -1180,7 +1293,12 @@
       "category": "reference",
       "priority": "medium",
       "content": "Engine completion after Phase 56: Gamebryo 95%, Havok/Jolt 75%, SpeedTree 85%, FaceGen 85%, Bink Video 75%, Radiant AI 70%, Distant LOD 65%. Gamebryo now has all 6 core subsystems (Particle, PostProcess, Water, SkyWeather, SceneGraph, Material).",
-      "tags": ["engine-status", "completion", "phase-56", "gamebryo"],
+      "tags": [
+        "engine-status",
+        "completion",
+        "phase-56",
+        "gamebryo"
+      ],
       "compressed": false
     },
     {
@@ -1189,7 +1307,13 @@
       "category": "reference",
       "priority": "high",
       "content": "Engine completion after Phase 57: Gamebryo 100%, Havok/Jolt 75%, SpeedTree 85%, FaceGen 85%, Bink Video 75%, Radiant AI 70%, Distant LOD 65%. Gamebryo now 100% complete with NiBillboardNode, BSXFlags, NiSwitchNode/NiLODNode, NiStencilProperty, NiSpecularProperty. All 7 middleware engines at or above 65%.",
-      "tags": ["engine-status", "completion", "phase-57", "gamebryo", "100-percent"],
+      "tags": [
+        "engine-status",
+        "completion",
+        "phase-57",
+        "gamebryo",
+        "100-percent"
+      ],
       "compressed": false
     },
     {
@@ -1198,7 +1322,12 @@
       "category": "decision",
       "priority": "high",
       "content": "Third bug report dispatched: 3 new child sessions created for ~30 new bugs (after dedup with existing 7 sessions). Audio UI input修正 (11 bugs: #74-76, #82-87, #98, #100), Gameplay world terrain修正 (11 bugs: #52, #62-65, #88-92, #99), Engine infra修正 (13 bugs: #47-49, #59, #77-80, #93-97). Total: 10 child sessions across 3 batches.",
-      "tags": ["bug-fix", "dispatch", "batch-3", "child-sessions"],
+      "tags": [
+        "bug-fix",
+        "dispatch",
+        "batch-3",
+        "child-sessions"
+      ],
       "compressed": false
     },
     {
@@ -1207,7 +1336,11 @@
       "category": "reference",
       "priority": "high",
       "content": "Child session status (10 total): Batch 1: Core Systems修正 DONE (aa076f7), NPC Combat Quest修正 running, Animation Physics Audio Save修正 running, Gameplay World修正 running. Batch 2: Build P0 Critical修正 running, Gameplay P1修正 running, Quality Robustness修正 running. Batch 3: Audio UI input修正 created, Gameplay world terrain修正 created, Engine infra修正 created.",
-      "tags": ["session-status", "child-sessions", "batch-3"],
+      "tags": [
+        "session-status",
+        "child-sessions",
+        "batch-3"
+      ],
       "compressed": false
     },
     {
@@ -1216,7 +1349,11 @@
       "category": "reference",
       "priority": "medium",
       "content": "Bug report overlap analysis: nif_fixes.txt (40 bugs), HTML report (46 bugs, 28 new), third text report (100 bugs total, ~30 new after dedup). Key new bugs from third report: AudioManager double-play (#83), UIButton click-on-press (#100), CellCoordUtils Y/Z axis (#90), Terrain interpolation (#91), ESMRecord buffer over-read (#93), ObjectPool foreign pointer (#73), AsyncTaskManager cleanup (#67).",
-      "tags": ["bug-report", "overlap-analysis", "third-report"],
+      "tags": [
+        "bug-report",
+        "overlap-analysis",
+        "third-report"
+      ],
       "compressed": false
     },
     {
@@ -1225,7 +1362,11 @@
       "category": "reference",
       "priority": "high",
       "content": "Complete child session ID reference: Batch 1: Core Systems修正 (8606759d-eaba-4024-b4e1-8805cbd1c437) DONE, NPC Combat Quest修正 (2dad32b9-3ee5-4fe3-9810-d9285f19e79f), Animation Physics Audio Save修正 (ee171f51-132d-4596-96e1-2cf84d9a2805), Gameplay World修正 (d3b8ad93-69b0-4ea4-a7a5-dc0ad1c82a5c). Batch 2: Build P0 Critical修正 (ac5c4968-afc0-483a-aefa-3afd5a8740bb), Gameplay P1修正 (eb994e31-34df-409b-b34f-78c6a895f70d), Quality Robustness修正 (9c24cd55-6591-4883-ae37-102f3575e25c). Batch 3: Audio UI input修正 (3138a5c0-c6e1-4880-b230-c17752e28ec3), Gameplay world terrain修正 (0a5178dc-f009-4a79-a982-30bb90bac292), Engine infra修正 (47940da0-07af-446c-b67d-1d112cb3ded3).",
-      "tags": ["session-ids", "child-sessions", "reference"],
+      "tags": [
+        "session-ids",
+        "child-sessions",
+        "reference"
+      ],
       "compressed": false
     },
     {
@@ -1234,7 +1375,11 @@
       "category": "decision",
       "priority": "high",
       "content": "Merge strategy after all child sessions complete: 1) Merge all worktree branches to master one by one, 2) Resolve merge conflicts (especially in shared files like imperial_weave.cpp, renderer.cpp, npc_manager.cpp), 3) Run build verification with ./gradlew clean build, 4) Update CHANGELOG.md and docs, 5) Commit final merge. Core Systems session already committed as aa076f7.",
-      "tags": ["merge-strategy", "workflow", "post-completion"],
+      "tags": [
+        "merge-strategy",
+        "workflow",
+        "post-completion"
+      ],
       "compressed": false
     },
     {
@@ -1243,7 +1388,11 @@
       "category": "reference",
       "priority": "high",
       "content": "Bug report file locations: 1) nif_fixes.txt (root, 40 bugs, fully dispatched), 2) oblivion_bug_report_summary.html (root, 46 bugs, 28 new, fully dispatched), 3) 新規 テキスト ドキュメント (2).txt (attached, 100 bugs total, ~30 new, fully dispatched). All 3 reports now fully dispatched to 10 child sessions.",
-      "tags": ["bug-reports", "file-locations", "dispatch-status"],
+      "tags": [
+        "bug-reports",
+        "file-locations",
+        "dispatch-status"
+      ],
       "compressed": false
     },
     {
@@ -1252,7 +1401,11 @@
       "category": "reference",
       "priority": "high",
       "content": "Critical bug categories from all 3 reports: P0 Critical (crashes/link errors): CMakeLists duplicate, STB header, TextRenderer crash, ESMRecord buffer over-read, ObjectPool foreign pointer, combat_manager missing implementations. P1 High (gameplay/resource): AudioManager double-play, UIButton click-on-press, CellCoordUtils Y/Z axis, Terrain interpolation, PhysicsManager double init, SaveManager hardcoded path. P2 Medium (quality): UISystem blend state, StateManager callbacks, CacheManager mkdir.",
-      "tags": ["bug-categories", "priority", "p0-p1-p2"],
+      "tags": [
+        "bug-categories",
+        "priority",
+        "p0-p1-p2"
+      ],
       "compressed": false
     },
     {
@@ -1261,7 +1414,12 @@
       "category": "constraint",
       "priority": "high",
       "content": "GLM rules for Oblivion Android (CRITICAL): 1) glm::vec3(0.0f) does NOT compile - use glm::vec3(0.0f, 0.0f, 0.0f), 2) glm::mat4(1.0f) does NOT compile - use glm::mat4() (default constructor = identity), 3) Use .x/.y/.z not .r/.g/.b (no rgb accessors in custom glm), 4) Use %lu not %llu for size_t on arm64 Android. Project uses custom glm stub, not full GLM library.",
-      "tags": ["glm", "constraints", "critical", "build-rules"],
+      "tags": [
+        "glm",
+        "constraints",
+        "critical",
+        "build-rules"
+      ],
       "compressed": false
     },
     {
@@ -1270,7 +1428,12 @@
       "category": "reference",
       "priority": "medium",
       "content": "Oblivion coordinate system: X-Z is horizontal plane, Y is height. Cell size = 4096 units. CellCoordUtils::getCoordFromWorldPos() must use worldPos.z for cell Y coordinate, not worldPos.y. Door positions: glm::vec3(x, 0.0f, z) not glm::vec3(x, y, 0.0f). This is a common source of bugs in the codebase.",
-      "tags": ["coordinate-system", "oblivion", "y-up", "cell-size"],
+      "tags": [
+        "coordinate-system",
+        "oblivion",
+        "y-up",
+        "cell-size"
+      ],
       "compressed": false
     },
     {
@@ -1279,7 +1442,11 @@
       "category": "reference",
       "priority": "medium",
       "content": "Project architecture patterns: Imperial Weave v4.0 (15-phase pipeline), EventBus (decoupled messaging), Manager Pattern (initialize/update/cleanup lifecycle), Singleton with ServiceLocator. All engine files are header-only with inline implementations. Build: ./gradlew clean build, Install: adb install -r app/build/outputs/apk/debug/app-debug.apk, Log: adb logcat -s OblivionEngine.",
-      "tags": ["architecture", "patterns", "build-commands"],
+      "tags": [
+        "architecture",
+        "patterns",
+        "build-commands"
+      ],
       "compressed": false
     },
     {
@@ -1288,7 +1455,12 @@
       "category": "decision",
       "priority": "high",
       "content": "AI-generated bug review workflow: NEVER blindly apply patches from external AI reviews (Kimi, ChatGPT, etc.). Always verify each claim against actual source code. Out of 6 Kimi claims, only 2 were valid bugs. The other 4 were incorrect due to: (1) not understanding custom GLM default ctor initializes to identity, (2) not understanding uint32_t cast preserves bit patterns for signed values, (3) not checking existing null guards, (4) cosmetic-only issues.",
-      "tags": ["workflow", "ai-review", "verification", "kimi"],
+      "tags": [
+        "workflow",
+        "ai-review",
+        "verification",
+        "kimi"
+      ],
       "compressed": false
     },
     {
@@ -1297,7 +1469,13 @@
       "category": "reference",
       "priority": "high",
       "content": "Custom GLM mat4 behavior: The default constructor mat4() initializes to IDENTITY matrix (not uninitialized). There is NO mat4(float) constructor. vec3 also has NO single-scalar constructor. vec2/vec4 DO have single-scalar ctors. Do NOT use mat4(1.0f) - it will fail to compile. Use mat4() for identity initialization.",
-      "tags": ["glm", "mat4", "constructor", "initialization", "gotcha"],
+      "tags": [
+        "glm",
+        "mat4",
+        "constructor",
+        "initialization",
+        "gotcha"
+      ],
       "compressed": false
     },
     {
@@ -1306,7 +1484,12 @@
       "category": "reference",
       "priority": "high",
       "content": "Cell coordinate key encoding in world_manager.cpp is CORRECT: uint64_t key = (uint64_t)(uint32_t)cellX << 32 | (uint32_t)cellY. Signed-to-unsigned cast preserves bit patterns via two's complement. (-1,0) produces 0xFFFFFFFF00000000, (0,-1) produces 0x00000000FFFFFFFF - these are DIFFERENT keys. No collision possible for Oblivion's cell range (-64 to +64).",
-      "tags": ["world-manager", "cell-coordinates", "key-encoding", "verified-correct"],
+      "tags": [
+        "world-manager",
+        "cell-coordinates",
+        "key-encoding",
+        "verified-correct"
+      ],
       "compressed": false
     },
     {
@@ -1315,7 +1498,13 @@
       "category": "decision",
       "priority": "medium",
       "content": "Bug fixes applied this session (commit 63ae5387): (1) renderer.cpp: Added performanceMonitor->endFrame() before early return when titleScreen is null - beginFrame() was already called at line 1792. (2) combat_manager.cpp: Added JSON escaping for weaponName before embedding in payload string to prevent malformed JSON from special characters.",
-      "tags": ["bugfix", "renderer", "combat-manager", "json-escaping", "performance-monitor"],
+      "tags": [
+        "bugfix",
+        "renderer",
+        "combat-manager",
+        "json-escaping",
+        "performance-monitor"
+      ],
       "compressed": false
     },
     {
@@ -1324,7 +1513,12 @@
       "category": "reference",
       "priority": "medium",
       "content": "Total bug fixes across all sessions: 13 bugs fixed (11 from prior session commits 7fbfeceb + 2 from this session commit 63ae5387). All pushed to origin/master. Key files modified: esm_reader.cpp (47 ARM alignment fixes), renderer.cpp, combat_manager.cpp, world_loader.cpp, async_task_manager.cpp, nif_parser.cpp, player.h, dialogue_filter_engine.cpp, dialogue_runner.cpp, native_activity.cpp, npc_manager.cpp, quest_manager.cpp, physics_manager.cpp.",
-      "tags": ["bugfix", "summary", "commits", "all-sessions"],
+      "tags": [
+        "bugfix",
+        "summary",
+        "commits",
+        "all-sessions"
+      ],
       "compressed": false
     },
     {
@@ -1333,7 +1527,12 @@
       "category": "decision",
       "priority": "high",
       "content": "Kimi AI Round 3 review verification: 6 claims checked, 3 VALID, 3 INVALID. VALID: (1) FORTIFY_ATTR permanent attribute boost - no restoration on expiry in updateStatusEffects(), (2) SUMMON creatures never despawned - createNPC called but no removeNPC on expiry, (3) crossfade() duration parameter ignored - stored but never used in update(). INVALID: skeleton getBone static sharing (const/non-const have separate static locals), jni_bridge NewGlobalRef leak (cleaned up in jni_audio_cleanup), cell_loader O(n^2) (actually O(n) per cell, no nested loop).",
-      "tags": ["bugfix", "kimi-review", "round3", "verification"],
+      "tags": [
+        "bugfix",
+        "kimi-review",
+        "round3",
+        "verification"
+      ],
       "compressed": false
     },
     {
@@ -1342,7 +1541,15 @@
       "category": "reference",
       "priority": "high",
       "content": "Round 3 fixes committed as 07b24914 + 1d0932d3: (1) npc_manager.cpp - FORTIFY_ATTR restoration on expiry (subtract magnitude, clamp to 0), SUMMON cleanup via removeNPC(summonedNpcId). (2) npc_manager.h - ActiveStatusEffect struct extended with affectedAttribute and summonedNpcId fields. (3) spell_manager.cpp - FORTIFY_ATTR passes attr name, SUMMON tracks spawned NPC ID. (4) animation_player.cpp/h - crossfade stores duration/elapsed state, update() ramps blend weights linearly, stops from-sequence on completion.",
-      "tags": ["bugfix", "npc-manager", "spell-manager", "animation-player", "crossfade", "summon", "fortify"],
+      "tags": [
+        "bugfix",
+        "npc-manager",
+        "spell-manager",
+        "animation-player",
+        "crossfade",
+        "summon",
+        "fortify"
+      ],
       "compressed": false
     },
     {
@@ -1351,7 +1558,13 @@
       "category": "reference",
       "priority": "medium",
       "content": "Total bug fixes across all sessions: 16 bugs fixed. Commits: 7fbfeceb (11), 63ae5387 (2), 2c8b0108 (1 save_manager), 07b24914+1d0932d3 (3 Round 3). All pushed to origin/master. Kimi AI review accuracy: 3 rounds, 26 claims total, only 6 were valid bugs (23% accuracy). Always verify against source code.",
-      "tags": ["bugfix", "summary", "commits", "all-sessions", "kimi-accuracy"],
+      "tags": [
+        "bugfix",
+        "summary",
+        "commits",
+        "all-sessions",
+        "kimi-accuracy"
+      ],
       "compressed": false
     },
     {
@@ -1360,12 +1573,62 @@
       "category": "reference",
       "priority": "low",
       "content": "Memory maintenance session: Updated session-memory.json metadata. Project status: Oblivion Android v0.9.10 (Phase 36), 107 entries tracked, 5 sessions recorded. All previous bug fixes (16 total) remain committed on origin/master.",
-      "tags": ["memory", "maintenance", "session-update"],
+      "tags": [
+        "memory",
+        "maintenance",
+        "session-update"
+      ],
       "compressed": false
+    },
+    {
+      "priority": "high",
+      "content": "UI bug fixes completed: (1) text_renderer.cpp - Added shader compilation error checking with GL_COMPILE_STATUS/GL_LINK_STATUS. (2) ui_panel.cpp - Added TOUCH_MOVE handling for dragging with screen boundary clamping. (3) ui_component.cpp - Added GL blend state saving/restoring to prevent state leakage. (4) title_screen.cpp - Fixed touch move delta calculation by adding lastTouchX/lastTouchY. (5) GameSurfaceView.kt - Added ACTION_CANCEL handling to release all active pointers.",
+      "compressed": false,
+      "category": "reference",
+      "id": "ui-bugfix-session-001",
+      "tags": [
+        "bugfix",
+        "ui",
+        "text-renderer",
+        "ui-panel",
+        "ui-component",
+        "title-screen",
+        "game-surface-view"
+      ],
+      "timestamp": "2026-09-01T03:00:00Z"
+    },
+    {
+      "priority": "medium",
+      "content": "Layout fixes completed: (1) AndroidManifest.xml - Updated theme from deprecated @android:style/Theme.NoTitleBar.Fullscreen to @style/Theme.MyApplication. (2) activity_main.xml - Repositioned debug buttons from bottom-left to top-left to avoid overlap with native UI (joystick at bottom-left, combat buttons at bottom-right).",
+      "compressed": false,
+      "category": "reference",
+      "id": "layout-fix-session-001",
+      "tags": [
+        "layout",
+        "android",
+        "manifest",
+        "debug-buttons"
+      ],
+      "timestamp": "2026-09-01T03:00:00Z"
+    },
+    {
+      "priority": "high",
+      "content": "Japanese-to-English comment translation completed across ALL C++ source files. Files translated: ui/ (32+ files including ui_system, ui_component, ui_panel, ui_button, ui_joystick, text_renderer, debug_hud, debug_menu, launcher_screen, title_screen, hud_layout, hud_renderer, ui_manager, accessibility_manager, control_scheme_manager, menu_transition_manager, placeholder_assets, touch_gesture_handler, save_load_ui, settings_ui, spell_selection_panel, and all ui_*.h files), audio/ (audio_manager.h/.cpp, jni_audio_bridge.h/.cpp), engine/ (imperial_weave.cpp, retro_filter.h, renderer.cpp, texture_loader.h), jni_bridge.cpp, profiling/performance_monitor.h, physics/physics_manager.h, world/world_manager.h/.cpp, system/settings_manager.h/.cpp, game/player_controller.cpp, CMakeLists.txt. Remaining Japanese text is localization data (localization_manager.cpp, spell.h) and third-party files (JoltPhysics) - intentionally kept as-is.",
+      "compressed": false,
+      "category": "reference",
+      "id": "comment-translation-complete-001",
+      "tags": [
+        "translation",
+        "comments",
+        "english",
+        "localization",
+        "completed"
+      ],
+      "timestamp": "2026-09-01T03:00:00Z"
     }
   ],
   "metadata": {
-    "totalEntries": 108,
+    "totalEntries": 113,
     "compressedCount": 0,
     "sessionCount": 6
   }

@@ -6,11 +6,11 @@
 #include <functional>
 
 /**
- * @brief ゲーム一時停止メニューUI
+ * @brief Game pause menu UI
  *
- * Phase 13: ゲーム中に一時停止して、各機能にアクセスするメニュー
- * キャラクター表示、スペルブック、クエスト、
- * セーブ/ロード、設定、ゲーム再開などのオプション
+ * Phase 13: Menu for pausing the game and accessing various functions
+ * Options for character display, spellbook, quest,
+ * save/load, settings, and game resume
  */
 class UIPauseMenu : public UIPanel {
 public:

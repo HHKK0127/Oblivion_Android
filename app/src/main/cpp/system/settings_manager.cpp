@@ -97,7 +97,7 @@ void SettingsManager::loadSettings() {
 }
 
 void SettingsManager::resetToDefaults() {
-    debugModeEnabled = true;  // デバッグモードはデフォルトON
+    debugModeEnabled = true;  // Debug mode is ON by default
     currentLanguage = "ja";   // Language defaults to Japanese
     LOGD("Settings reset to defaults");
 }
@@ -108,7 +108,7 @@ void SettingsManager::cleanup() {
 
 std::string SettingsManager::getSettingsFilePath() const {
     // Save to /data/data/com.example.oblivion/files/settings.txt
-    // または /sdcard/Android/data/com.example.oblivion/files/settings.txt
+    // Or /sdcard/Android/data/com.example.oblivion/files/settings.txt
     std::string path = "/data/data/com.example.oblivion/settings.txt";
     return path;
 }

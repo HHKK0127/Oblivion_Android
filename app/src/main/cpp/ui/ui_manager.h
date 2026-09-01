@@ -28,10 +28,10 @@ class QuestManager;
 struct CharacterStatus;
 
 /**
- * @brief UIシステム統合マネージャー
+ * @brief UI system integration manager
  *
- * Phase 10 Integration: すべてのUIパネルのLifecycle管理、
- * イベントルーティング、更新・描画の中央制御。
+ * Phase 10 Integration: Lifecycle management of all UI panels,
+ * event routing, and centralized update/render control.
  */
 class UIManager {
 public:
@@ -52,7 +52,7 @@ public:
     void render();
     void setScreenSize(int width, int height);
 
-    // UI表示制御
+    // UI display control
     void showCharacterSheet() { characterSheet_->setVisible(true); }
     void hideCharacterSheet() { characterSheet_->setVisible(false); }
     void toggleCharacterSheet() { characterSheet_->setVisible(!characterSheet_->isVisible()); }

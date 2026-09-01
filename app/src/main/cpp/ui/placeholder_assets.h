@@ -45,19 +45,19 @@ namespace PlaceholderAssets {
     void drawSolidRect(float x, float y, float width, float height, const glm::vec3& color);
 
     /**
-     * @brief Single color rectangle drawing（透明度付き）
+     * @brief Single color rectangle drawing (with alpha)
      * @param x Left X coordinate
      * @param y Top Y coordinate
      * @param width Width
      * @param height Height
      * @param color Drawing color（RGB）
-     * @param alpha 透明度（0.0-1.0）
+     * @param alpha Alpha (0.0-1.0)
      */
     void drawSolidRect(float x, float y, float width, float height,
                       const glm::vec3& color, float alpha);
 
     /**
-     * @brief 縁取り付きパネル描画（羊皮紙風）
+     * @brief Panel drawing with border (parchment style)
      * @param x Left X coordinate
      * @param y Top Y coordinate
      * @param width Width
@@ -66,67 +66,67 @@ namespace PlaceholderAssets {
     void drawPanel(float x, float y, float width, float height);
 
     /**
-     * @brief パネル描画（カスタムカラー）
+     * @brief Panel drawing (custom color)
      * @param x Left X coordinate
      * @param y Top Y coordinate
      * @param width Width
      * @param height Height
-     * @param bgColor 背景Colors
-     * @param borderColor 枠Colors
+     * @param bgColor Background color
+     * @param borderColor Border color
      */
     void drawPanel(float x, float y, float width, float height,
                   const glm::vec3& bgColor, const glm::vec3& borderColor);
 
     /**
-     * @brief ステータスバー描画（背景+フィル）
+     * @brief Status bar drawing (background + fill)
      * @param x Left X coordinate
      * @param y Top Y coordinate
      * @param width Width
      * @param height Height
-     * @param fillRatio 充填比率（0.0-1.0）
-     * @param fillColor フィルColors
+     * @param fillRatio Fill ratio (0.0-1.0)
+     * @param fillColor Fill color
      */
     void drawStatusBar(float x, float y, float width, float height,
                       float fillRatio, const glm::vec3& fillColor);
 
     /**
-     * @brief HP バー描画（赤Colors）
+     * @brief HP bar drawing (red color)
      * @param x Left X coordinate
      * @param y Top Y coordinate
      * @param width Width
      * @param height Height
-     * @param fillRatio 充填比率（0.0-1.0）
+     * @param fillRatio Fill ratio (0.0-1.0)
      */
     inline void drawHPBar(float x, float y, float width, float height, float fillRatio) {
         drawStatusBar(x, y, width, height, fillRatio, Colors::RED_HEALTH);
     }
 
     /**
-     * @brief MP バー描画（青Colors）
+     * @brief MP bar drawing (blue color)
      * @param x Left X coordinate
      * @param y Top Y coordinate
      * @param width Width
      * @param height Height
-     * @param fillRatio 充填比率（0.0-1.0）
+     * @param fillRatio Fill ratio (0.0-1.0)
      */
     inline void drawMPBar(float x, float y, float width, float height, float fillRatio) {
         drawStatusBar(x, y, width, height, fillRatio, Colors::BLUE_MANA);
     }
 
     /**
-     * @brief スタミナバー描画（緑Colors）
+     * @brief Stamina bar drawing (green color)
      * @param x Left X coordinate
      * @param y Top Y coordinate
      * @param width Width
      * @param height Height
-     * @param fillRatio 充填比率（0.0-1.0）
+     * @param fillRatio Fill ratio (0.0-1.0)
      */
     inline void drawStaminaBar(float x, float y, float width, float height, float fillRatio) {
         drawStatusBar(x, y, width, height, fillRatio, Colors::GREEN_STAMINA);
     }
 
     /**
-     * @brief アイコン枠描画
+     * @brief Icon frame drawing
      * @param x Left X coordinate
      * @param y Top Y coordinate
      * @param size Size (square)

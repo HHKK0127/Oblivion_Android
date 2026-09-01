@@ -7,11 +7,11 @@
 #include <memory>
 
 /**
- * @brief トースト通知UI
+ * @brief Toast notification UI
  *
- * Phase 14: 画面上部に一時的に表示される短いメッセージ
- * アイテム入手、クエスト更新、ステータス変更などの
- * 軽い通知に使用
+ * Phase 14: Short message temporarily displayed at top of screen
+ * Used for light notifications such as item acquisition, quest updates, status changes
+ * 
  */
 class UIToast {
 public:

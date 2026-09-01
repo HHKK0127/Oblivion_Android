@@ -88,12 +88,12 @@ void SaveLoadUI::render() {
         glClear(GL_COLOR_BUFFER_BIT);
     }
 
-    // タイトル
+    // Title
     std::string title = (currentMode == Mode::SAVE) ? "SAVE GAME" : "LOAD GAME";
     glm::vec3 titleColor(1.0f, 1.0f, 0.0f);
     textRenderer->renderText(title, 350.0f, 50.0f, titleColor, 1.5f);
 
-    // ダイアログ状態によって表示を切り替え
+    // Switch display based on dialog state
     if (dialogState == DialogState::CONFIRM_OVERWRITE) {
         renderConfirmDialog();
     } else if (dialogState == DialogState::CONFIRM_DELETE) {
@@ -113,7 +113,7 @@ void SaveLoadUI::update(float deltaTime) {
         return;
     }
 
-    // ホバー状態を更新
+    // Update hover state
     updateLayout();
 }
 
@@ -152,12 +152,12 @@ void SaveLoadUI::onTouchEvent(float x, float y) {
         return;
     }
 
-    // ダイアログ表示中は特別な処理
+    // Special handling while dialog is displayed
     if (dialogState != DialogState::NONE) {
         const float dlgW = 500.0f;
         const float dlgX = (screenWidth - dlgW) * 0.5f;
 
-        // エラーダイアログの場合は OK ボタンのみ
+        // Only OK button for error dialog
         if (dialogState == DialogState::ERROR_SAVE_FAILED ||
             dialogState == DialogState::ERROR_LOAD_FAILED ||
             dialogState == DialogState::ERROR_DELETE_FAILED) {
@@ -173,7 +173,7 @@ void SaveLoadUI::onTouchEvent(float x, float y) {
             return;
         }
 
-        // 確認ダイアログのボタン処理
+        // Confirm dialog button handling
         const float dlgH = 220.0f;
         const float dlgY = (screenHeight - dlgH) * 0.4f;
         const float btnW = 140.0f;
@@ -183,7 +183,7 @@ void SaveLoadUI::onTouchEvent(float x, float y) {
         float noX  = dlgX + dlgW * 0.6f;
 
         if (x >= yesX && x < yesX + btnW && y >= btnY && y < btnY + btnH) {
-            // YES ボタン
+            // YES button
             DialogState previousState = dialogState;
             if (dialogState == DialogState::CONFIRM_OVERWRITE) {
                 handleConfirmOverwrite();
@@ -194,13 +194,13 @@ void SaveLoadUI::onTouchEvent(float x, float y) {
                 dialogState = DialogState::NONE;
             }
         } else if (x >= noX && x < noX + btnW && y >= btnY && y < btnY + btnH) {
-            // NO ボタン
+            // NO button
             dialogState = DialogState::NONE;
         }
         return;
     }
 
-    // スロット選択
+    // Slot selection
     for (size_t i = 0; i < slotEntries.size(); i++) {
         const auto& slot = slotEntries[i];
         if (x >= slot.position.x && x < slot.position.x + slot.size.x &&
@@ -210,7 +210,7 @@ void SaveLoadUI::onTouchEvent(float x, float y) {
         }
     }
 
-    // ボタン処理（画面下部）
+    // Button handling (bottom of screen)
     const float btnW = 200.0f;
     const float btnH = BUTTON_HEIGHT;
     const float centerX = screenWidth * 0.5f;
@@ -249,15 +249,15 @@ void SaveLoadUI::renderSlotList() {
     const float slotW = panelW - PADDING * 2.0f;
     const float maxVisibleSlots = 6;
 
-    // スロットパネル外枠
+    // Slot panel outer frame
     PlaceholderAssets::drawPanel(panelX, panelY,
                                  panelW, maxVisibleSlots * (SLOT_HEIGHT + SLOT_MARGIN) + PADDING,
                                  PlaceholderAssets::Colors::PARCHMENT_DARK,
                                  PlaceholderAssets::Colors::BROWN_ACCENT);
 
-    // スロットが空の場合
+    // When slot is empty
     if (availableSlots.empty()) {
-        // 空スロットプレースホルダー
+        // Empty slot placeholder
         for (int i = 0; i < 3; i++) {
             float sx = panelX + PADDING;
             float sy = panelY + PADDING + i * (SLOT_HEIGHT + SLOT_MARGIN);
@@ -277,14 +277,14 @@ void SaveLoadUI::renderSlotList() {
         return;
     }
 
-    // スロット一覧表示
+    // Slot list display
     for (size_t i = 0; i < availableSlots.size() && i < static_cast<size_t>(maxVisibleSlots); i++) {
         float sx = panelX + PADDING;
         float sy = panelY + PADDING + static_cast<float>(i) * (SLOT_HEIGHT + SLOT_MARGIN);
         bool isSelected = (static_cast<int>(i) == selectedSlotIndex);
         bool isHovered = (static_cast<int>(i) == hoveredSlotIndex);
 
-        // スロット背景：選択中は金色枠、ホバーは明るい羊皮紙
+        // Slot background: gold frame when selected, light parchment on hover
         if (isSelected) {
             PlaceholderAssets::drawPanel(sx, sy, slotW, SLOT_HEIGHT,
                                         PlaceholderAssets::Colors::PARCHMENT_LIGHT,
@@ -299,7 +299,7 @@ void SaveLoadUI::renderSlotList() {
                                         PlaceholderAssets::Colors::BROWN_ACCENT);
         }
 
-        // スロット名テキスト
+        // Slot name text
         if (textRenderer) {
             glm::vec3 textColor = isSelected
                 ? PlaceholderAssets::Colors::GOLD_HIGHLIGHT
@@ -312,7 +312,7 @@ void SaveLoadUI::renderSlotList() {
                                     sx + 20.0f, sy + SLOT_HEIGHT * 0.28f,
                                     textColor, 1.0f);
 
-            // 選択中インジケーター
+            // Selection indicator
             if (isSelected) {
                 textRenderer->renderText(">", sx + 5.0f, sy + SLOT_HEIGHT * 0.28f,
                                         PlaceholderAssets::Colors::GOLD_HIGHLIGHT, 1.0f);
@@ -320,7 +320,7 @@ void SaveLoadUI::renderSlotList() {
         }
     }
 
-    // 追加の空スロット枠
+    // Additional empty slot frame
     for (size_t i = availableSlots.size(); i < static_cast<size_t>(maxVisibleSlots); i++) {
         float sx = panelX + PADDING;
         float sy = panelY + PADDING + static_cast<float>(i) * (SLOT_HEIGHT + SLOT_MARGIN);
@@ -341,12 +341,12 @@ void SaveLoadUI::renderConfirmDialog() {
     const float dlgX = (screenWidth - dlgW) * 0.5f;
     const float dlgY = (screenHeight - dlgH) * 0.4f;
 
-    // ダイアログパネル
+    // Dialog panel
     PlaceholderAssets::drawPanel(dlgX, dlgY, dlgW, dlgH,
                                  PlaceholderAssets::Colors::PARCHMENT_LIGHT,
                                  PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
 
-    // メッセージ
+    // Message
     if (textRenderer) {
         std::string message;
         if (dialogState == DialogState::CONFIRM_OVERWRITE) {
@@ -358,7 +358,7 @@ void SaveLoadUI::renderConfirmDialog() {
                                 PlaceholderAssets::Colors::BROWN_ACCENT, 1.0f);
     }
 
-    // YES ボタン
+    // YES button
     const float btnW = 140.0f;
     const float btnH = 50.0f;
     const float btnY = dlgY + dlgH - btnH - 20.0f;
@@ -371,7 +371,7 @@ void SaveLoadUI::renderConfirmDialog() {
                                 PlaceholderAssets::Colors::BROWN_ACCENT, 1.1f);
     }
 
-    // NO ボタン
+    // NO button
     float noX = dlgX + dlgW * 0.6f;
     PlaceholderAssets::drawPanel(noX, btnY, btnW, btnH,
                                  PlaceholderAssets::Colors::PARCHMENT_DARK,
@@ -388,17 +388,17 @@ void SaveLoadUI::renderErrorDialog() {
     const float dlgX = (screenWidth - dlgW) * 0.5f;
     const float dlgY = (screenHeight - dlgH) * 0.4f;
 
-    // エラーダイアログパネル（茶色枠）
+    // Error dialog panel (brown frame)
     PlaceholderAssets::drawPanel(dlgX, dlgY, dlgW, dlgH,
                                  PlaceholderAssets::Colors::PARCHMENT_LIGHT,
                                  PlaceholderAssets::Colors::BROWN_ACCENT);
 
     if (textRenderer) {
-        // エラータイトル
+        // Error title
         textRenderer->renderText("ERROR", dlgX + dlgW * 0.35f, dlgY + 25.0f,
                                 glm::vec3(0.8f, 0.1f, 0.1f), 1.3f);
 
-        // エラーメッセージ（複数行対応）
+        // Error message (multi-line)
         float yPos = dlgY + 80.0f;
         size_t lineStart = 0;
         while (lineStart < errorMessage.size()) {
@@ -412,7 +412,7 @@ void SaveLoadUI::renderErrorDialog() {
         }
     }
 
-    // OK ボタン
+    // OK button
     const float btnW = 120.0f;
     const float btnH = 46.0f;
     float okX = dlgX + (dlgW - btnW) * 0.5f;
@@ -433,7 +433,7 @@ void SaveLoadUI::renderButtons() {
     const float btnY = screenHeight - 200.0f;
     const float gap = 30.0f;
 
-    // Execute ボタン（左）
+    // Execute button (left)
     float execX = centerX - btnW - gap * 0.5f;
     PlaceholderAssets::drawPanel(execX, btnY, btnW, btnH,
                                  PlaceholderAssets::Colors::PARCHMENT_LIGHT,
@@ -445,7 +445,7 @@ void SaveLoadUI::renderButtons() {
                                 PlaceholderAssets::Colors::BROWN_ACCENT, 1.1f);
     }
 
-    // Cancel ボタン（右）
+    // Cancel button (right)
     float cancelX = centerX + gap * 0.5f;
     PlaceholderAssets::drawPanel(cancelX, btnY, btnW, btnH,
                                  PlaceholderAssets::Colors::PARCHMENT_DARK,
@@ -456,7 +456,7 @@ void SaveLoadUI::renderButtons() {
                                 PlaceholderAssets::Colors::PARCHMENT_LIGHT, 1.1f);
     }
 
-    // ヘルプテキスト
+    // Help text
     if (textRenderer) {
         textRenderer->renderText("Tap a slot to select, then SAVE or LOAD",
                                 screenWidth * 0.15f, btnY + btnH + 10.0f,
@@ -508,7 +508,7 @@ void SaveLoadUI::handleConfirmOverwrite() {
             slotIndex = availableSlots[selectedSlotIndex].slotIndex;
             slotName = availableSlots[selectedSlotIndex].displayName;
         } else {
-            // 新規スロット: 最初の空きスロットを使用
+            // New slot: use first available slot
             slotIndex = static_cast<uint32_t>(availableSlots.size());
             std::time_t now = std::time(nullptr);
             std::stringstream ss;
@@ -516,7 +516,7 @@ void SaveLoadUI::handleConfirmOverwrite() {
             slotName = ss.str();
         }
 
-        // バイナリセーブを実行（全システム状態をシリアライズ）
+        // Execute binary save (serialize all system state)
         if (saveManager->saveGame(slotIndex, slotName)) {
             LOGI("Game saved to slot %u: %s", slotIndex, slotName.c_str());
         } else {
@@ -526,11 +526,11 @@ void SaveLoadUI::handleConfirmOverwrite() {
             return;
         }
     } else {
-        // ロード
+        // Load
         if (selectedSlotIndex < availableSlots.size()) {
             uint32_t slotIndex = availableSlots[selectedSlotIndex].slotIndex;
 
-            // バイナリロードを実行（全システム状態をデシリアライズ）
+            // Execute binary load (deserialize all system state)
             if (saveManager->loadGame(slotIndex)) {
                 LOGI("Game loaded from slot %u", slotIndex);
             } else {

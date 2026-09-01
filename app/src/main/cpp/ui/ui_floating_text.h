@@ -7,10 +7,10 @@
 #include <memory>
 
 /**
- * @brief フローティングテキストシステム
+ * @brief Floating text system
  *
- * Phase 17: ゲーム内HUD - 浮遊テキスト表示
- * ダメージ、ヒール、ステータス効果などを画面上に浮かぶテキストで表示
+ * Phase 17: In-game HUD - floating text display
+ * Displays damage, heals, status effects, etc. as floating text on screen
  */
 class UIFloatingText {
 public:

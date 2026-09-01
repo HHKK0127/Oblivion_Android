@@ -18,15 +18,15 @@
 class TextRenderer;
 
 /**
- * @brief UIシステム管理クラス
+ * @brief UI system management class
  *
- * Phase 9: 全UIコンポーネントの親となる管理クラス。
- * - UIコンポーネントの登録・削除
- * - タッチイベントの配信（z-order考慮）
- * - 毎フレームの更新・描画呼び出し
- * - スクリーン解像度変更の通知
+ * Phase 9: Management class that is the parent of all UI components.
+ * - Register/delete UI components
+ * - Touch event dispatch (considering z-order)
+ * - Per-frame update/render calls
+ * - Screen resolution change notification
  *
- * 既存のRendererから呼び出され、全てのUIを統合管理する。
+ * Called from existing Renderer to manage all UI integrally.
  */
 class UISystem {
 public:
@@ -34,86 +34,86 @@ public:
     ~UISystem();
 
     /**
-     * @brief UIシステムを初期化
-     * @param textRenderer 既存のText renderer（ラベル描画用）
-     * @return 初期化成功時true
+     * @brief Initialize UI system
+     * @param textRenderer Existing text renderer (for label drawing)
+     * @return True on successful initialization
      */
     bool initialize(TextRenderer* textRenderer);
 
     /**
-     * @brief クリーンアップ
+     * @brief Cleanup
      */
     void cleanup();
 
-    // === コンポーネント管理 ===
+    // === Component Management ===
 
     /**
-     * @brief コンポーネントを登録
-     * @param component 登録するコンポーネント
-     * @param layer 描画レイヤー（大きいほど前面）
+     * @brief Register component
+     * @param component Component to register
+     * @param layer Drawing layer (larger = more front)
      */
     void registerComponent(std::shared_ptr<UIComponent> component, int layer = 0);
 
     /**
-     * @brief コンポーネントを登録解除
+     * @brief Unregister component
      */
     void unregisterComponent(std::shared_ptr<UIComponent> component);
 
     /**
-     * @brief 名前でコンポーネントを検索
+     * @brief Search component by name
      */
     std::shared_ptr<UIComponent> findComponent(const std::string& name) const;
 
     /**
-     * @brief 全コンポーネントをクリア
+     * @brief Clear all components
      */
     void clearComponents();
 
-    // === レイヤー管理 ===
+    // === Layer Management ===
 
     /**
-     * @brief コンポーネントのレイヤーを変更
+     * @brief Change component layer
      */
     void setLayer(std::shared_ptr<UIComponent> component, int newLayer);
 
-    // === 更新・描画 ===
+    // === Update/Render ===
 
     /**
-     * @brief 全UIコンポーネントを更新
-     * @param deltaTime 前フレームからの経過時間（秒）
+     * @brief Update all UI components
+     * @param deltaTime Elapsed time from previous frame (seconds)
      */
     void update(float deltaTime);
 
     /**
-     * @brief 全UIコンポーネントを描画（レイヤー順）
+     * @brief Render all UI components (by layer order)
      */
     void render();
 
-    // === イベント配信 ===
+    // === Event Dispatch ===
 
     /**
-     * @brief タッチダウンイベントを配信
-     * @param x スクリーンX座標
-     * @param y スクリーンY座標
-     * @param pointerId ポインタID
-     * @return イベントを消費したコンポーネントがある場合true
+     * @brief Dispatch touch down event
+     * @param x Screen X coordinate
+     * @param y Screen Y coordinate
+     * @param pointerId Pointer ID
+     * @return True if any component consumed the event
      */
     bool onTouchDown(float x, float y, int pointerId = 0);
 
     /**
-     * @brief タッチアップイベントを配信
+     * @brief Dispatch touch up event
      */
     bool onTouchUp(float x, float y, int pointerId = 0);
 
     /**
-     * @brief タッチ移動イベントを配信
+     * @brief Dispatch touch move event
      */
     bool onTouchMove(float x, float y, float dx, float dy, int pointerId = 0);
 
-    // === スクリーン解像度 ===
+    // === Screen Resolution ===
 
     /**
-     * @brief スクリーン解像度変更時に呼び出す
+     * @brief Call when screen resolution changes
      */
     void setScreenSize(int width, int height);
     glm::vec2 getScreenSize() const { return glm::vec2(static_cast<float>(screenWidth), static_cast<float>(screenHeight)); }
@@ -125,25 +125,25 @@ public:
     // === Focus management ===
 
     /**
-     * @brief フォーカスを持つコンポーネントを設定
+     * @brief Set component that has focus
      */
     void setFocusedComponent(std::shared_ptr<UIComponent> component);
     std::shared_ptr<UIComponent> getFocusedComponent() const { return focusedComponent.lock(); }
 
-    // === 便利メソッド ===
+    // === Convenience Methods ===
 
     /**
-     * @brief 全コンポーネントの可視性を一括設定
+     * @brief Set visibility of all components at once
      */
     void setAllVisible(bool visible);
 
     /**
-     * @brief 特定レイヤーのコンポーネントのみ可視にする
+     * @brief Make only components in specific layer visible
      */
     void showOnlyLayer(int layer);
 
     /**
-     * @brief 登録済みコンポーネント数を取得
+     * @brief Get number of registered components
      */
     size_t getComponentCount() const;
 
@@ -154,7 +154,7 @@ private:
     // For fast lookup by name
     std::map<std::string, std::weak_ptr<UIComponent>> nameMap;
 
-    // Text renderer（既存資産を利用）
+    // Text renderer (uses existing assets)
     TextRenderer* textRenderer;
 
     // Focus management

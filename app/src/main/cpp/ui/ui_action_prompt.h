@@ -7,10 +7,10 @@
 #include <memory>
 
 /**
- * @brief アクションプロンプト表示
+ * @brief Action prompt display
  *
- * Phase 19: ゲーム内HUD - インタラクション表示
- * 話しかける、開ける、盗む、攻撃するなどのアクション可能を表示
+ * Phase 19: In-game HUD - interaction display
+ * Displays available actions such as talk, open, steal, attack
  */
 class UIActionPrompt {
 public:

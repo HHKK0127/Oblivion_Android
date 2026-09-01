@@ -6,10 +6,10 @@
 class UIJoystick : public UIComponent {
 public:
     /**
-     * @brief ジョイスティックコンポーネントを作成
-     * @param x 中心のX座標
-     * @param y 中心のY座標
-     * @param radius ジョイスティックの最大半径
+     * @brief Create joystick component
+     * @param x Center X coordinate
+     * @param y Center Y coordinate
+     * @param radius Maximum joystick radius
      */
     UIJoystick(float x, float y, float radius);
     virtual ~UIJoystick() = default;
@@ -21,12 +21,12 @@ public:
     virtual bool onTouchUp(float x, float y, int pointerId) override;
 
     /**
-     * @brief ジョイスティックの現在の入力値を取得 (-1.0 ~ 1.0)
+     * @brief Get current joystick input value (-1.0 to 1.0)
      */
     glm::vec2 getInputValue() const { return inputValue; }
     
     /**
-     * @brief アクティブ（操作中）かどうかを取得
+     * @brief Get whether active (in use)
      */
     bool isActive() const { return activePointerId != -1; }
 

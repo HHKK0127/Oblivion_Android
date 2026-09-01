@@ -18,7 +18,7 @@
 class TextRenderer;
 
 /**
- * @brief UIイベントタイプ
+ * @brief UI event type
  */
 enum class UIEventType {
     TOUCH_DOWN,
@@ -31,7 +31,7 @@ enum class UIEventType {
 };
 
 /**
- * @brief UIイベント構造体
+ * @brief UI event structure
  */
 struct UIEvent {
     UIEventType type;
@@ -47,7 +47,7 @@ struct UIEvent {
 };
 
 /**
- * @brief UIアンカー（配置基準点）
+ * @brief UI anchor (placement reference point)
  */
 enum class UIAnchor {
     TOP_LEFT,      // (0,0) from top-left
@@ -62,7 +62,7 @@ enum class UIAnchor {
 };
 
 /**
- * @brief テクスチャスケーリングモード
+ * @brief Texture scaling mode
  */
 enum class TextureScaleMode {
     STRETCH,              // Default: stretch to fit quad
@@ -71,11 +71,11 @@ enum class TextureScaleMode {
 };
 
 /**
- * @brief UIコンポーネント基底クラス
+ * @brief UI component base class
  *
- * Phase 9: Graphical UI Frameworkの基盤。
- * 全てのUI要素（パネル、ボタン、テキスト、HUD等）は
- * このクラスを継承して実装する。
+ * Phase 9: Foundation of the graphical UI framework.
+ * All UI elements (panels, buttons, text, HUD, etc.)
+ * inherit from this class.
  */
 class UIComponent : public std::enable_shared_from_this<UIComponent> {
 public:
@@ -85,52 +85,52 @@ public:
     // === Lifecycle ===
 
     /**
-     * @brief コンポーネントを初期化
-     * @return 初期化成功時true
+     * @brief Initialize component
+     * @return True on successful initialization
      */
     virtual bool initialize();
 
     /**
-     * @brief 毎フレームの更新
-     * @param deltaTime 前フレームからの経過時間（秒）
+     * @brief Update every frame
+     * @param deltaTime Elapsed time from previous frame (seconds)
      */
     virtual void update(float deltaTime);
 
     /**
-     * @brief コンポーネントを描画
+     * @brief Render component
      */
     virtual void render();
 
     /**
-     * @brief リソース解放
+     * @brief Release resources
      */
     virtual void cleanup();
 
-    // === イベント処理 ===
+    // === Event Processing ===
 
     /**
-     * @brief UIイベントを処理
-     * @param event UIイベント
-     * @return イベントを消費した場合true
+     * @brief Handle UI event
+     * @param event UI event
+     * @return True if event was consumed
      */
     virtual bool onEvent(const UIEvent& event);
 
     /**
-     * @brief タッチダウンイベント（簡易API）
+     * @brief Touch down event (simple API)
      */
     virtual bool onTouchDown(float x, float y, int pointerId = 0);
 
     /**
-     * @brief タッチアップイベント（簡易API）
+     * @brief Touch up event (simple API)
      */
     virtual bool onTouchUp(float x, float y, int pointerId = 0);
 
     /**
-     * @brief タッチ移動イベント（簡易API）
+     * @brief Touch move event (simple API)
      */
     virtual bool onTouchMove(float x, float y, float dx, float dy, int pointerId = 0);
 
-    // === 表示・非表示 ===
+    // === Show/Hide ===
 
     void setVisible(bool visible) { this->visible = visible; }
     bool isVisible() const { return visible; }
@@ -138,7 +138,7 @@ public:
     void hide() { setVisible(false); }
     void toggle() { setVisible(!visible); }
 
-    // === 位置・サイズ ===
+    // === Position/Size ===
 
     void setPosition(float x, float y);
     void setSize(float width, float height);
@@ -149,17 +149,17 @@ public:
     glm::vec2 getAbsolutePosition() const;  // Absolute position after anchor adjustment
 
     /**
-     * @brief 点がコンポーネント内にあるか
+     * @brief Is point inside component
      */
     bool contains(float x, float y) const;
 
     /**
-     * @brief スクリーン解像度変更時のCallbacks
+     * @brief Screen resolution change callback
      */
     virtual void onScreenResize(int width, int height);
 
     /**
-     * @brief スクリーン解像度を設定
+     * @brief Set screen resolution
      */
     void setScreenSize(int width, int height) { onScreenResize(width, height); }
 
@@ -172,7 +172,7 @@ public:
     void removeChild(std::shared_ptr<UIComponent> child);
     const std::vector<std::shared_ptr<UIComponent>>& getChildren() const { return children; }
 
-    // === 識別 ===
+    // === Identification ===
 
     const std::string& getName() const { return name; }
     void setName(const std::string& n) { name = n; }
@@ -208,7 +208,7 @@ protected:
     glm::vec2 position;  // Local coordinates (pixels)
     glm::vec2 size;      // Width and height (pixels)
 
-    // Screen size（キャッシュ）
+    // Screen size (cached)
     int screenWidth;
     int screenHeight;
 

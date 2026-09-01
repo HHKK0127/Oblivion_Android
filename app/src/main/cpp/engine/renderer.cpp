@@ -1314,6 +1314,8 @@ bool Renderer::initGameSystems() {
     questUI = std::make_unique<QuestUI>();
     questUI->initialize(questManager.get(), worldManager->getNpcManager(),
                         localizationManager.get());
+    questUI->setTextRenderer(textRenderer.get());
+    questUI->setScreenSize(screenWidth, screenHeight);
 
     LOGI("All game systems initialized");
 
@@ -1834,7 +1836,7 @@ void Renderer::createTestScenario() {
                 // No ESM: use hardcoded spells
                 // Destruction magic: Fireball
                 fireball = spellManager->createSpell(
-                    "Fireball", "ファイアボール",
+                    "Fireball", "Fireball",
                     MagicSchool::DESTRUCTION, 50.0f, 30.0f);
                 if (fireball != 0) {
                     spellManager->addEffectToSpell(fireball,
@@ -1845,7 +1847,7 @@ void Renderer::createTestScenario() {
 
                 // Restoration magic: Heal
                 heal = spellManager->createSpell(
-                    "Heal", "ヒール",
+                    "Heal", "Heal",
                     MagicSchool::RESTORATION, 40.0f, 0.0f);
                 if (heal != 0) {
                     spellManager->addEffectToSpell(heal,
@@ -2397,7 +2399,7 @@ void Renderer::render(float deltaTime) {
 }
 
 void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
-    LOGD("=== タッチイベント検出 === ID: %d, Action: %d, 座標: (%.1f, %.1f)", pointerId, action, x, y);
+    LOGD("=== Touch event detected === ID: %d, Action: %d, Coords: (%.1f, %.1f)", pointerId, action, x, y);
 
     // DebugSystem gesture detection (3-finger tap -> menu, 2-finger double-tap -> HUD)
     int pointerCount = static_cast<int>(touchStates.size()) + 1;

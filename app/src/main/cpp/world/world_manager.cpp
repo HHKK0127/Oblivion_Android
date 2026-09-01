@@ -349,17 +349,17 @@ void WorldManager::initializeTestCells() {
     if (doorManager) {
         // Door from center cell (0, 0) to right cell (1, 0)
         doorManager->registerDoor(1000, glm::vec3(128.0f, 64.0f, 0.0f),
-                                 "Door to East", "東への扉",
+                                 "Door to East", "Door to East",
                                  2, glm::vec3(0.0f, 64.0f, 0.0f));
 
         // Door from center cell (0, 0) to top cell (0, 1)
         doorManager->registerDoor(1001, glm::vec3(64.0f, 128.0f, 0.0f),
-                                 "Door to North", "北への扉",
+                                 "Door to North", "Door to North",
                                  5, glm::vec3(64.0f, 0.0f, 0.0f));
 
         // Door from center cell (0, 0) to bottom cell (0, -1)
         doorManager->registerDoor(1002, glm::vec3(64.0f, 0.0f, 0.0f),
-                                 "Door to South", "南への扉",
+                                 "Door to South", "Door to South",
                                  8, glm::vec3(64.0f, 128.0f, 0.0f));
 
         LOGI_WORLD("Test doors registered: %zu doors", doorManager->getDoorCount());

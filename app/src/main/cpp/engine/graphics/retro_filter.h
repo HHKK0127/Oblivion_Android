@@ -57,7 +57,7 @@ public:
         bool crt_distortion_enabled = false;
         float distortion_strength = 0.1f;    // 0.0 (none) - 0.3 (strong)
 
-        // Film Grain - フィルムノイズ (disabled by default - faithful to original)
+        // Film Grain - Film noise (disabled by default - faithful to original)
         bool film_grain_enabled = false;
         float grain_intensity = 0.05f;       // 0.0 (none) - 0.2 (heavy)
         float grain_speed = 1.0f;            // Animation speed multiplier

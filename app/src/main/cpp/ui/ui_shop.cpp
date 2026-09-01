@@ -7,7 +7,7 @@
 
 UIShop::UIShop(const std::string& title)
     : UIPanel(title.empty() ? "Shop" : title) {
-    // 商品棚風のBackground色
+    // Shelf-style background color
     setBackgroundColor(glm::vec4(
         PlaceholderAssets::Colors::PARCHMENT_DARK.x * 0.8f,
         PlaceholderAssets::Colors::PARCHMENT_DARK.y * 0.75f,
@@ -56,7 +56,7 @@ bool UIShop::onTouchDown(float x, float y, int pointerId) {
 
     if (!currentMerchant) return false;
 
-    // Tab 切り替え
+    // Tab switching
     int tabIdx = hitTestTabButton(x, y);
     if (tabIdx >= 0) {
         currentTab = static_cast<Tab>(tabIdx);
@@ -299,7 +299,7 @@ void UIShop::renderTransactionPanel() {
 }
 
 void UIShop::renderScrollButtons() {
-    // Scroll buttons (簡略版)
+    // Scroll buttons (simplified)
 }
 
 // ─── hit testing ──────────────────────────────────────────────────────────────

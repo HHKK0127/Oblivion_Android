@@ -71,7 +71,7 @@ void UICharacterCreation::update(float deltaTime) {
 bool UICharacterCreation::onTouchDown(float x, float y, int pointerId) {
     if (!isVisible() || !isEnabled()) return false;
 
-    // Tab切り替え
+    // Tab switching
     int tabIdx = hitTestTabButton(x, y);
     if (tabIdx >= 0) {
         currentTab = static_cast<Tab>(tabIdx);

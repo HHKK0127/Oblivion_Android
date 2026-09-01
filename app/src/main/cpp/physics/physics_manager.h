@@ -105,7 +105,7 @@ public:
     glm::vec3 getBodyPosition(JPH::BodyID bodyId) const;
     void removeBody(JPH::BodyID bodyId);
 
-    // レイキャスト
+    // Raycast
     bool raycast(const Ray& ray, RaycastHit& hit);
 
     JPH::PhysicsSystem* getSystem() { return physicsSystem; }

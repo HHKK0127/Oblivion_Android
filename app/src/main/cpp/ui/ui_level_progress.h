@@ -5,10 +5,10 @@
 #include <string>
 
 /**
- * @brief レベルアップ進捗表示
+ * @brief Level up progress display
  *
- * Phase 21: ゲーム内HUD - 経験値進捗表示
- * プレイヤーの現在レベル、経験値、次のレベルまでの進捗を表示
+ * Phase 21: In-game HUD - experience progress display
+ * Displays player current level, experience, and progress to next level
  */
 class UILevelProgress {
 public:

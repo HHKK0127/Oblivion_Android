@@ -52,17 +52,17 @@ void jni_audio_set_main_activity(jobject activity) {
         return;
     }
 
-    // Previous activity reference の削除（参照カウント管理）
+    // Delete previous activity reference (reference count management)
     if (g_mainActivity) {
         env->DeleteGlobalRef(g_mainActivity);
     }
 
-    // 新しい activity への global reference を作成
+    // Create global reference to new activity
     g_mainActivity = env->NewGlobalRef(activity);
     if (g_mainActivity) {
         LOGI("MainActivity reference set for audio");
 
-        // Method IDs をキャッシュ
+        // Cache method IDs
         jclass activityClass = env->GetObjectClass(g_mainActivity);
         if (activityClass) {
             g_playBGMMethodId = env->GetMethodID(activityClass, "playBGM", "(Ljava/lang/String;)V");
@@ -92,7 +92,7 @@ void jni_audio_call_play_bgm(const char* path) {
     JNIEnv* env = nullptr;
     bool needsDetach = false;
 
-    // JNIEnv を取得（スレッドアタッチが必要な場合がある）
+    // Get JNIEnv (thread attach may be required)
     int attachStatus = g_javaVM->GetEnv((void**)&env, JNI_VERSION_1_6);
     if (attachStatus == JNI_EDETACHED) {
         g_javaVM->AttachCurrentThread(&env, nullptr);
@@ -104,20 +104,20 @@ void jni_audio_call_play_bgm(const char* path) {
         return;
     }
 
-    // Java String を作成
+    // Create Java String
     jstring javaPath = env->NewStringUTF(path ? path : "");
 
-    // playBGM(path) を呼び出し
+    // Call playBGM(path)
     env->CallVoidMethod(g_mainActivity, g_playBGMMethodId, javaPath);
 
-    // 例外チェック
+    // Exception check
     if (env->ExceptionCheck()) {
         LOGE("JNI exception in playBGM");
         env->ExceptionDescribe();
         env->ExceptionClear();
     }
 
-    // クリーンアップ
+    // Cleanup
     env->DeleteLocalRef(javaPath);
 
     if (needsDetach) {

@@ -7,10 +7,10 @@
 #include <vector>
 
 /**
- * @brief クエストログUI (グラフィカル版)
+ * @brief Quest log UI (graphical version)
  *
- * Phase 10: Oblivion風クエストログ。アクティブ/完了クエスト一覧と
- * クエスト詳細（目標・報酬）を羊皮紙パネルで表示。
+ * Phase 10: Oblivion-style quest log. Displays active/completed quest list and
+ * quest details (objectives/rewards) on parchment panel.
  */
 class UIQuestLog : public UIPanel {
 public:

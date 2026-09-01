@@ -7,10 +7,10 @@
 #include <memory>
 
 /**
- * @brief アクティブエフェクト表示
+ * @brief Active effects display
  *
- * Phase 20: ゲーム内HUD - バフ・デバフディスプレイ
- * 現在適用されているバフやデバフを画面に表示
+ * Phase 20: In-game HUD - buff/debuff display
+ * Displays currently applied buffs and debuffs on screen
  */
 class UIActiveEffects {
 public:

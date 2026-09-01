@@ -35,7 +35,7 @@ public:
                     float scale = 1.0f);
 
     /**
-     * @brief Draw text on screen（アルファ付き）
+     * @brief Draw text on screen (with alpha)
      * @param text Text to draw
      * @param x X coordinate from top-left origin (pixels)
      * @param y Y coordinate from top-left origin (pixels)
@@ -48,7 +48,7 @@ public:
     /**
      * @brief Calculate and return text width
      * @param text Text to measure
-     * @param scale スケール
+     * @param scale Scale
      * @return Text width (pixels)
      */
     float getTextWidth(const std::string& text, float scale = 1.0f);

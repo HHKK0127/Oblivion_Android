@@ -7,11 +7,11 @@
 #include <functional>
 
 /**
- * @brief ショップUI
+ * @brief Shop UI
  *
- * Phase 11: Oblivion風のマーチャント取引画面
- * マーチャント商品一覧、プレイヤーインベントリ、
- * 取引ボタン（購入/売却）を羊皮紙パネルで表示
+ * Phase 11: Oblivion-style merchant trading screen
+ * Displays merchant item list, player inventory,
+ * and trade buttons (buy/sell) on parchment panel
  */
 class UIShop : public UIPanel {
 public:
@@ -22,7 +22,7 @@ public:
 
     bool initialize(TextRenderer* textRenderer);
 
-    // Shop を開く
+    // Open shop
     void openShop(std::shared_ptr<Merchant> merchant);
     void closeShop();
 

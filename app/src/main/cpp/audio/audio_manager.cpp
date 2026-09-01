@@ -40,7 +40,7 @@ bool AudioManager::initialize() {
     LOGI("AudioManager initializing...");
     g_audioManager = this;
 
-    // OpenAL デバイスを開く
+    // Open OpenAL device
     device = alcOpenDevice(nullptr);
     if (!device) {
         LOGE("Failed to open OpenAL device");
@@ -48,7 +48,7 @@ bool AudioManager::initialize() {
     }
     LOGD("OpenAL device opened");
 
-    // コンテキストを作成
+    // Create context
     context = alcCreateContext(device, nullptr);
     if (!context) {
         LOGE("Failed to create OpenAL context");
@@ -58,7 +58,7 @@ bool AudioManager::initialize() {
     }
     LOGD("OpenAL context created");
 
-    // コンテキストを有効化
+    // Activate context
     if (!alcMakeContextCurrent(context)) {
         LOGE("Failed to make OpenAL context current");
         alcDestroyContext(context);
@@ -69,7 +69,7 @@ bool AudioManager::initialize() {
     }
     LOGD("OpenAL context made current");
 
-    // デバイス情報をログ出力
+    // Log device info
     const char* deviceName = alcGetString(device, ALC_DEVICE_SPECIFIER);
     LOGI("OpenAL Device: %s", deviceName ? deviceName : "Unknown");
 
@@ -78,7 +78,7 @@ bool AudioManager::initialize() {
     LOGI("OpenAL Vendor: %s", vendorStr ? vendorStr : "Unknown");
     LOGI("OpenAL Version: %s", versionStr ? versionStr : "Unknown");
 
-    // 3D オーディオシステムを初期化
+    // Initialize 3D audio system
     audio3D = std::make_unique<Audio3D>();
     LOGD("Audio3D system initialized");
 
@@ -92,21 +92,21 @@ void AudioManager::update(float deltaTime) {
         alcMakeContextCurrent(context);
     }
 
-    // BGM フェード処理
+    // BGM fade processing
     if (bgmFading) {
         updateBGMFade(deltaTime);
     }
 
-    // 再生終了したソースをクリーンアップ
+    // Clean up completed playback sources
     cleanupFinishedSources();
 
-    // リスナー位置・向きは Renderer 経由で setListenerPosition/Orientation で設定される
+    // Listener position/orientation is set via Renderer through setListenerPosition/Orientation
 }
 
 void AudioManager::cleanup() {
     LOGI("AudioManager cleanup starting...");
 
-    // すべてのソースを停止・削除
+    // Stop and delete all sources
     for (auto& pair : sources) {
         if (pair.second && pair.second->alSource != 0) {
             alSourceStop(pair.second->alSource);
@@ -116,7 +116,7 @@ void AudioManager::cleanup() {
     sources.clear();
     LOGD("All audio sources deleted");
 
-    // すべてのクリップ（バッファ）を削除
+    // Delete all clips (buffers)
     for (auto& pair : clips) {
         if (pair.second && pair.second->alBuffer != 0) {
             alDeleteBuffers(1, &pair.second->alBuffer);
@@ -125,10 +125,10 @@ void AudioManager::cleanup() {
     clips.clear();
     LOGD("All audio clips unloaded");
 
-    // 3D オーディオシステムをクリア
+    // Clear 3D audio system
     audio3D.reset();
 
-    // OpenAL コンテキスト・デバイスをクリーンアップ
+    // Clean up OpenAL context and device
     if (context) {
         alcMakeContextCurrent(nullptr);
         alcDestroyContext(context);
@@ -152,7 +152,7 @@ uint32_t AudioManager::loadClip(const std::string& filename, uint8_t type,
         return 0;
     }
 
-    // WAV ファイルをロード
+    // Load WAV file
     ALint format;
     ALsizei frequency, size;
     ALuint buffer = loadWavFile(filename, format, frequency, size);
@@ -162,7 +162,7 @@ uint32_t AudioManager::loadClip(const std::string& filename, uint8_t type,
         return 0;
     }
 
-    // AudioClip を作成
+    // Create AudioClip
     auto clip = std::make_shared<AudioClip>();
     clip->clipId = nextClipId++;
     clip->filename = filename;
@@ -172,9 +172,9 @@ uint32_t AudioManager::loadClip(const std::string& filename, uint8_t type,
     clip->volume = 1.0f;
     clip->isStreamed = false;
 
-    // 再生時間を計算 (バイト数 / (サンプルレート * チャンネル数 * サンプルサイズ))
-    // ここでは簡略化して未実装（実装時には正確に計算）
-    clip->duration = 0.0f;  // TODO: 正確に計算
+    // Calculate playback time (bytes / (sample rate * channels * sample size))
+    // Simplified here as unimplemented (calculate accurately when implemented)
+    clip->duration = 0.0f;  // TODO: calculate accurately
 
     clips[clip->clipId] = clip;
 
@@ -206,12 +206,12 @@ void AudioManager::unloadClip(uint32_t clipId) {
 bool AudioManager::playBGM(uint32_t clipId, float fadeIn) {
     LOGD("Playing BGM: clipId=%u, fadeIn=%.2f", clipId, fadeIn);
 
-    // 前の BGM を停止
+    // Stop previous BGM
     if (currentBGMSourceId != 0) {
         stopBGM(0.0f);
     }
 
-    // クリップを取得
+    // Get clip
     AudioClip* clip = getClip(clipId);
     if (!clip) {
         LOGE("BGM clip not found: id=%u", clipId);
@@ -238,16 +238,16 @@ bool AudioManager::playBGM(uint32_t clipId, float fadeIn) {
 }
 
 /**
- * @brief Java の MediaPlayer を使用して BGM を再生
+ * @brief Play BGM using Java MediaPlayer
  *
- * Java の MainActivity.playBGM(String) メソッドを JNI 経由で呼び出す。
- * ファイル名は assets/audio/music/ 相対パスで指定される。
+ * Calls Java MainActivity.playBGM(String) method via JNI.
+ * Filename is specified as relative path from assets/audio/music/.
  */
 void AudioManager::playBGMViaJava(const std::string& filename) {
     LOGD("playBGMViaJava: %s", filename.c_str());
 
-    // JNI audio bridge 経由で Java の playBGM メソッドを呼び出す
-    // このメソッドは MediaPlayer をセットアップして再生を開始する
+    // Call Java playBGM method via JNI audio bridge
+    // This method sets up MediaPlayer and starts playback
     jni_audio_call_play_bgm(filename.c_str());
 }
 
@@ -263,13 +263,13 @@ void AudioManager::stopBGM(float fadeOut) {
     }
 
     if (fadeOut > 0.0f) {
-        // フェードアウト開始
+        // Start fade out
         bgmFadeTarget = 0.0f;
         bgmFadeRate = -(1.0f / fadeOut);
         bgmFading = true;
         LOGD("BGM fading out: rate=%.3f", bgmFadeRate);
     } else {
-        // 即座に停止
+        // Stop immediately
         if (currentBGMSourceId == JAVA_BGM_SOURCE_ID) {
             // Java MediaPlayer path
             jni_audio_call_stop_bgm();
@@ -323,12 +323,12 @@ uint32_t AudioManager::playSE(uint32_t clipId, const glm::vec3& position,
         alcMakeContextCurrent(context);
     }
 
-    // MAX_SOURCES 超過時：最も古い SE を削除して新規作成を優先
+    // When MAX_SOURCES exceeded: delete oldest SE and prioritize new creation
     if (sources.size() >= MAX_SOURCES) {
         uint32_t oldestSourceId = 0;
         uint32_t oldestValue = UINT32_MAX;
 
-        // BGM 以外で最も古いソース ID を探す（ソース ID は単調増加）
+        // Find oldest source ID excluding BGM (source IDs are monotonically increasing)
         for (auto& pair : sources) {
             if (pair.first != currentBGMSourceId && pair.first < oldestValue) {
                 oldestSourceId = pair.first;
@@ -337,37 +337,37 @@ uint32_t AudioManager::playSE(uint32_t clipId, const glm::vec3& position,
         }
 
         if (oldestSourceId != 0) {
-            // 最も古い SE を削除
+            // Delete oldest SE
             destroySource(oldestSourceId);
             LOGW("Oldest SE removed to make room: sourceId=%u", oldestSourceId);
         } else {
-            // BGM のみで MAX_SOURCES に達している場合
+            // When only BGM reaches MAX_SOURCES
             LOGW("Cannot create new SE: MAX_SOURCES reached (BGM playing)");
             return 0;
         }
     }
 
-    // クリップを取得
+    // Get clip
     AudioClip* clip = getClip(clipId);
     if (!clip) {
         LOGW("SE clip not found: id=%u", clipId);
         return 0;
     }
 
-    // ソースを作成
+    // Create source
     uint32_t sourceId = createSource(clipId);
     if (sourceId == 0) {
         LOGE("Failed to create audio source for SE");
         return 0;
     }
 
-    // SE ソースの設定
+    // SE source settings
     auto source = sources[sourceId];
     source->setVolume(volume * seVolume * masterVolume);
     source->setPosition(position);
     source->enable3D();
 
-    // 再生開始
+    // Start playback
     alSourcePlay(source->alSource);
 
     // Bug #83: Removed Java SoundPool fallback to prevent double playback
@@ -419,14 +419,14 @@ void AudioManager::setListenerOrientation(const glm::vec3& forward,
 void AudioManager::setMasterVolume(float volume) {
     masterVolume = clampf(volume, 0.0f, 1.0f);
 
-    // すべてのソースのボリュームを再計算
+    // Recalculate volume for all sources
     for (auto& pair : sources) {
         if (pair.second) {
             if (pair.first == currentBGMSourceId) {
                 pair.second->setVolume(bgmVolume * masterVolume);
             } else {
-                // SE のボリューム（元のボリューム * マスター）
-                // TODO: SE の元のボリュームを保持する必要あり
+                // SE volume (original volume * master)
+                // TODO: need to preserve original SE volume
                 pair.second->setVolume(seVolume * masterVolume);
             }
         }
@@ -591,7 +591,7 @@ void AudioManager::cleanupFinishedSources() {
             continue;
         }
 
-        // 再生状態を確認
+        // Check playback state
         ALint state;
         alGetSourcei(source->alSource, AL_SOURCE_STATE, &state);
 
@@ -600,7 +600,7 @@ void AudioManager::cleanupFinishedSources() {
         }
     }
 
-    // 終了したソースを削除
+    // Delete completed sources
     for (uint32_t sourceId : finishedSourceIds) {
         destroySource(sourceId);
         LOGD("Finished source cleaned up: sourceId=%u", sourceId);
@@ -640,18 +640,18 @@ void AudioManager::updateBGMFade(float deltaTime) {
     }
     auto source = it->second;
 
-    // ボリュームを更新
+    // Update volume
     float newVolume = bgmVolume + (bgmFadeRate * deltaTime);
     newVolume = clampf(newVolume, 0.0f, 1.0f);
 
     source->setVolume(newVolume * masterVolume);
 
-    // フェード完了をチェック
+    // Check fade completion
     if (newVolume == bgmFadeTarget) {
         bgmFading = false;
 
         if (bgmFadeTarget == 0.0f) {
-            // フェードアウト完了 → 停止
+            // Fade out complete -> stop
             alSourceStop(source->alSource);
             destroySource(currentBGMSourceId);
             currentBGMSourceId = 0;
@@ -678,7 +678,7 @@ uint32_t AudioManager::createSource(uint32_t clipId) {
         return 0;
     }
 
-    // ソースに バッファを割り当て
+    // Assign buffer to source
     alSourcei(alSource, AL_BUFFER, clip->alBuffer);
     alSourcei(alSource, AL_LOOPING, clip->isLooping ? AL_TRUE : AL_FALSE);
 

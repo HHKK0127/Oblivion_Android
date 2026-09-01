@@ -5,10 +5,10 @@
 #include <string>
 
 /**
- * @brief プレイヤー統計情報パネル
+ * @brief Player statistics panel
  *
- * Phase 24: ゲーム内HUD - 統計情報表示
- * 所持金、インベントリ重量、装備情報などを表示
+ * Phase 24: In-game HUD - statistics display
+ * Displays gold, inventory weight, equipment info, etc.
  */
 class UIPlayerStats {
 public:

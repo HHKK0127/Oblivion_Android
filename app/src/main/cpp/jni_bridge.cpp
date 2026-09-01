@@ -96,7 +96,7 @@ Java_com_example_oblivion_GameRenderer_nativeInitAudioBridge(
         return;
     }
 
-    // AAssetManager を取得してグローバル変数に設定（TextRenderer や Audio で使用）
+    // Get AAssetManager and set to global variable (used by TextRenderer and Audio)
     AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
     if (!mgr) {
         LOGE("Failed to get AAssetManager from Java");
@@ -109,7 +109,7 @@ Java_com_example_oblivion_GameRenderer_nativeInitAudioBridge(
     jni_audio_set_asset_manager(mgr);
     LOGD("AAssetManager set for audio system");
 
-    // JavaVM を取得して設定
+    // Get and set JavaVM
     JavaVM* vm = nullptr;
     if (env->GetJavaVM(&vm) != JNI_OK) {
         LOGE("Failed to get JavaVM");
@@ -118,7 +118,7 @@ Java_com_example_oblivion_GameRenderer_nativeInitAudioBridge(
     jni_audio_set_java_vm(vm);
     LOGD("JavaVM set");
 
-    // MainActivity インスタンスを設定
+    // Set MainActivity instance
     if (mainActivity) {
         // Create global reference for long-term storage
         jobject globalMainActivity = env->NewGlobalRef(mainActivity);

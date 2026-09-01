@@ -5,10 +5,10 @@
 #include <functional>
 
 /**
- * @brief UIパネル（ウィンドウ/ダイアログの基盤）
+ * @brief UI panel (window/dialog foundation)
  *
- * Phase 9: 背景、タイトルバー、ボーダーを持つコンテナパネル。
- * ドラッグ移動、Close button、タイトルテキスト表示に対応。
+ * Phase 9: Container panel with background, title bar, and border.
+ * Supports drag movement, close button, and title text display.
  */
 class UIPanel : public UIComponent {
 public:
@@ -25,12 +25,12 @@ public:
     bool onTouchUp(float x, float y, int pointerId) override;
     bool onTouchMove(float x, float y, float dx, float dy, int pointerId) override;
 
-    // === タイトル ===
+    // === Title ===
     void setTitle(const std::string& title);
     const std::string& getTitle() const { return titleText; }
     void setTitleColor(const glm::vec4& color) { titleColor = color; }
 
-    // === スタイル ===
+    // === Style ===
     void setTitleBarHeight(float height) { titleBarHeight = height; }
     void setTitleBarColor(const glm::vec4& color) { titleBarColor = color; }
     void setCloseButtonVisible(bool visible) { closeButtonVisible = visible; }
@@ -40,7 +40,7 @@ public:
     using CloseCallback = std::function<void()>;
     void setOnClose(CloseCallback cb) { onCloseCallback = cb; }
 
-    // === 内容物のマージン ===
+    // === Content Margins ===
     void setContentMargin(float margin) { contentMargin = margin; }
     glm::vec2 getContentPosition() const;
     glm::vec2 getContentSize() const;
@@ -51,7 +51,7 @@ protected:
     bool isInsideTitleBar(float x, float y) const;
     bool isInsideCloseButton(float x, float y) const;
 
-    // ドラッグState（派生クラスでタイトルバードラッグと区別するために公開）
+    // Drag state (public to distinguish from title bar drag in derived classes)
     bool isDragging;
     glm::vec2 dragOffset;
 

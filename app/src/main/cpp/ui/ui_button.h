@@ -10,11 +10,11 @@ class TextRenderer;
 class UISystem;
 
 /**
- * @brief UIボタン
+ * @brief UI button
  *
- * Phase 9: クリック/タップ可能なボタンコンポーネント。
- * テキストラベル、テクスチャ背景、ホバー/押下/無効Stateの
- * ビジュアルフィードバックに対応。
+ * Phase 9: Clickable/tappable button component.
+ * Supports text labels, texture backgrounds, hover/press/disabled state
+ * visual feedback.
  */
 class UIButton : public UIComponent {
 public:
@@ -30,7 +30,7 @@ public:
     bool onTouchDown(float x, float y, int pointerId) override;
     bool onTouchUp(float x, float y, int pointerId) override;
 
-    // === ラベル ===
+    // === Label ===
     void setLabel(const std::string& text);
     const std::string& getLabel() const { return label; }
     void setLabelColor(const glm::vec3& color) { labelColor = color; }
@@ -42,7 +42,7 @@ public:
     bool isPressed() const { return pressed; }
     bool isHovered() const { return hovered; }
 
-    // === Colors設定 ===
+    // === Color Settings ===
     void setNormalColor(const glm::vec4& color) { normalColor = color; }
     void setPressedColor(const glm::vec4& color) { pressedColor = color; }
     void setHoverColor(const glm::vec4& color) { hoverColor = color; }
@@ -55,7 +55,7 @@ public:
     // === Text renderer ===
     void setTextRenderer(TextRenderer* renderer) { textRenderer = renderer; }
 
-    // === テクスチャ ===
+    // === Texture ===
     void setNormalTexture(GLuint texId) { normalTexture = texId; }
     void setHoverTexture(GLuint texId) { hoverTexture = texId; }
     void setPressedTexture(GLuint texId) { pressedTexture = texId; }
@@ -93,7 +93,7 @@ private:
     static constexpr float HOVER_SCALE_DURATION = 0.1f;
     static constexpr float HOVER_SCALE_MAX = 1.05f;
 
-    // テクスチャ（各State）
+    // Texture (per state)
     GLuint normalTexture = 0;
     GLuint hoverTexture = 0;
     GLuint pressedTexture = 0;

@@ -16,7 +16,7 @@ struct FrameMetrics {
     float cpuTime;          // Milliseconds
     float renderTime;       // Milliseconds
     float updateTime;       // Milliseconds
-    float fps;              // フレームレート
+    float fps;              // Frame rate
     int droppedFrames;      // Dropped frame count
 };
 
@@ -25,7 +25,7 @@ struct MemoryMetrics {
     size_t heapUsed;        // Used memory
     size_t heapFree;        // Free memory
     float heapPercentage;   // Usage percentage (%)
-    size_t peakMemory;      // ピークメモリ
+    size_t peakMemory;      // Peak memory
     size_t allocationCount; // Allocation count
 };
 

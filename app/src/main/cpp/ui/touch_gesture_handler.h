@@ -76,7 +76,7 @@ public:
 
     /**
      * @brief Register gesture callback
-     * @param type 登録するGesture type
+     * @param type Gesture type to register
      * @param callback Callback function
      */
     void registerCallback(GestureType type, GestureCallback callback);

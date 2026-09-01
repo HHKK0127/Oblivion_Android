@@ -4,41 +4,41 @@
 #include <glm/glm.hpp>
 
 /**
- * @brief UI描画用ヘルパー関数群
+ * @brief UI drawing helper functions
  *
- * Phase 9: UIコンポーネント間で共有するOpenGL ES 3.0描画ヘルパー。
- * シェーダープログラム、VAO/VBO、単色/テクスチャ付きquad描画を提供。
+ * Phase 9: OpenGL ES 3.0 drawing helpers shared among UI components.
+ * Provides shader programs, VAO/VBO, and solid/textured quad drawing.
  */
 class UIDrawHelper {
 public:
     /**
-     * @brief シェーダーとVAO/VBOを初期化（初回呼び出し時のみ実行）
+     * @brief Initialize shader and VAO/VBO (only on first call)
      */
     static void initialize();
 
     /**
-     * @brief リソース解放
+     * @brief Release resources
      */
     static void cleanup();
 
     /**
-     * @brief 単色quadを描画
-     * @param x 左上X座標
-     * @param y 左上Y座標
-     * @param w 幅
-     * @param h 高さ
-     * @param color RGBA色
-     * @param screenW スクリーン幅
-     * @param screenH スクリーン高さ
+     * @brief Draw solid color quad
+     * @param x Top-left X coordinate
+     * @param y Top-left Y coordinate
+     * @param w Width
+     * @param h Height
+     * @param color RGBA color
+     * @param screenW Screen width
+     * @param screenH Screen height
      */
     static void drawColoredQuad(float x, float y, float w, float h,
                                 const glm::vec4& color,
                                 int screenW, int screenH);
 
     /**
-     * @brief テクスチャ付きquadを描画
-     * @param textureId テクスチャID
-     * @param color 乗算色（通常は白）
+     * @brief Draw textured quad
+     * @param textureId Texture ID
+     * @param color Multiply color (usually white)
      */
     static void drawTexturedQuad(float x, float y, float w, float h,
                                  GLuint textureId,
@@ -46,8 +46,8 @@ public:
                                  int screenW, int screenH);
 
     /**
-     * @brief テクスチャ付きquadを描画（カスタムUV指定）
-     * @param uMin,vMin,uMax,vMax UV座標範囲
+     * @brief Draw textured quad (custom UV)
+     * @param uMin,vMin,uMax,vMax UV coordinate range
      */
     static void drawTexturedQuad(float x, float y, float w, float h,
                                  GLuint textureId,
@@ -56,14 +56,14 @@ public:
                                  float uMin, float vMin, float uMax, float vMax);
 
     /**
-     * @brief 枠線を描画（4辺のquad）
+     * @brief Draw border (4-edge quad)
      */
     static void drawBorder(float x, float y, float w, float h,
                            float borderWidth, const glm::vec4& color,
                            int screenW, int screenH);
 
     /**
-     * @brief 初期化済みか
+     * @brief Is initialized
      */
     static bool isInitialized();
 

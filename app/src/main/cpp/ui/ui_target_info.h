@@ -6,10 +6,10 @@
 #include <memory>
 
 /**
- * @brief ターゲット情報表示UI
+ * @brief Target info display UI
  *
- * Phase 18: ゲーム内HUD - ターゲット情報表示
- * ターゲットした敵やNPCの名前、体力、レベルなどを表示
+ * Phase 18: In-game HUD - target info display
+ * Displays targeted enemy or NPC name, health, level, etc.
  */
 class UITargetInfo {
 public:

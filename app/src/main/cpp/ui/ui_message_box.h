@@ -7,11 +7,11 @@
 #include <queue>
 
 /**
- * @brief メッセージボックスUI
+ * @brief Message box UI
  *
- * Phase 14: ゲーム内メッセージ表示とユーザー選択機能
- * アイテム入手、レベルアップ、クエスト完了などの
- * 重要な通知を羊皮紙スタイルのダイアログで表示
+ * Phase 14: In-game message display and user selection
+ * Displays important notifications such as item acquisition, level up, quest completion
+ * in parchment-style dialog
  */
 class UIMessageBox : public UIPanel {
 public:

@@ -7,11 +7,11 @@
 #include <functional>
 
 /**
- * @brief NPCダイアログUI
+ * @brief NPC dialogue UI
  *
- * Phase 10: Oblivion風のNPCとの会話画面。
- * NPCポートレート領域、挨拶テキスト、会話トピックリスト、
- * NPCの返答テキストを羊皮紙パネルで表示。
+ * Phase 10: Oblivion-style NPC conversation screen.
+ * Displays NPC portrait area, greeting text, conversation topic list,
+ * and NPC response text on parchment panel.
  */
 class UIDialogue : public UIPanel {
 public:

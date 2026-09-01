@@ -7,10 +7,10 @@
 #include <array>
 
 /**
- * @brief キャラクターシートUI
+ * @brief Character sheet UI
  *
- * Phase 10: プレイヤー属性・スキル・能力値の表示と管理UI
- * Oblivion風デザインで、属性値、スキル、一時的な効果を表示
+ * Phase 10: Player attributes, skills, and abilities display and management UI
+ * Oblivion-style design displaying attributes, skills, and temporary effects
  */
 class UICharacterSheet : public UIPanel {
 public:

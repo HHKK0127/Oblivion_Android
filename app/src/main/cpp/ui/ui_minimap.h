@@ -7,10 +7,10 @@
 #include <unordered_map>
 
 /**
- * @brief ミニマップ表示
+ * @brief Minimap display
  *
- * Phase 23: ゲーム内HUD - ミニマップ
- * プレイヤー周辺のマップを右上に表示、マーカーと方角を含む
+ * Phase 23: In-game HUD - minimap
+ * Displays map around player at top-right, including markers and directions
  */
 class UIMinimap {
 public:

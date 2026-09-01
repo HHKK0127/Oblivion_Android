@@ -7,10 +7,10 @@
 #include <memory>
 
 /**
- * @brief 警告状態通知表示
+ * @brief Alert state notification display
  *
- * Phase 22: ゲーム内HUD - 警告通知システム
- * 敵検知、警報、重要な状態変化を画面に表示
+ * Phase 22: In-game HUD - alert notification system
+ * Displays enemy detection, alerts, and important state changes on screen
  */
 class UIAlertNotification {
 public:

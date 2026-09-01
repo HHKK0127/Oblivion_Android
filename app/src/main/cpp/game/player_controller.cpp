@@ -491,7 +491,7 @@ void PlayerController::updatePhysics(float deltaTime) {
         input.z = moveVec.z;
     }
 
-    // ジャンプ
+    // Jump
     if (jumpRequested && physics.isCharacterGrounded(physicsCharacter)) {
         JPH::Vec3 vel = physicsCharacter->GetLinearVelocity();
         vel.SetY(jumpForce);

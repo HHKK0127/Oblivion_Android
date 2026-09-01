@@ -28,7 +28,7 @@ class GameActivity : Activity(), SurfaceHolder.Callback {
         if (isInitializing) return
         isInitializing = true
 
-        // バックグラウンドスレッドで初期化（ANR 防止）
+        // Initialize on background thread (prevent ANR)
         scope.launch(Dispatchers.IO) {
             try {
                 Log.i("GameActivity", "Starting engine initialization on background thread")

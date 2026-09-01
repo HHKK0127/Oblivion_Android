@@ -7,10 +7,10 @@
 struct CharacterStatus;
 
 /**
- * @brief HUDステータス表示
+ * @brief HUD status display
  *
- * Phase 15: ゲーム内HUD - 画面左上のプレイヤーステータス表示
- * HP、MP、スタミナバー及びレベル・経験値情報を画面上に常時表示
+ * Phase 15: In-game HUD - player status display at top-left
+ * Always displays HP, MP, stamina bars and level/experience info on screen
  */
 class UIHudStatusDisplay {
 public:

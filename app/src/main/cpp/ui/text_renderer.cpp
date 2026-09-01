@@ -168,11 +168,11 @@ bool TextRenderer::loadFontFromAssets(const std::string& filename) {
 bool TextRenderer::createFontTextureAtlas() {
     LOGI("Creating font texture atlas (%d x %d)", ATLAS_WIDTH, ATLAS_HEIGHT);
 
-    // テクスチャアトラスのビットマップを作成
+    // Create texture atlas bitmap
     unsigned char* atlasBuffer = new unsigned char[ATLAS_WIDTH * ATLAS_HEIGHT];
     memset(atlasBuffer, 0, ATLAS_WIDTH * ATLAS_HEIGHT);
 
-    // stb_truetype フォント初期化
+    // Initialize stb_truetype font
     stbtt_fontinfo fontInfo;
     if (!fontData->fontData) {
         LOGW("Font data not loaded, using placeholder texture");
@@ -198,27 +198,27 @@ bool TextRenderer::createFontTextureAtlas() {
 
     LOGI("stb_truetype font initialized successfully");
 
-    // フォントスケール計算
+    // Calculate font scale
     float scale = stbtt_ScaleForPixelHeight(&fontInfo, FONT_SIZE);
     fontData->fontScale = scale;
 
-    // グリフを配置
+    // Place glyphs
     int currentAtlasX = 0;
     int currentAtlasY = 0;
     int rowHeight = 0;
 
-    // ASCII 文字 (32-126) をレンダリング
+    // Render ASCII characters (32-126)
     for (int codepoint = 32; codepoint < 127; codepoint++) {
         int glyph_index = stbtt_FindGlyphIndex(&fontInfo, codepoint);
 
-        // グリフビットマップを取得
+        // Get glyph bitmap
         int width, height, xoff, yoff;
         unsigned char* bitmap = stbtt_GetGlyphBitmap(&fontInfo, scale, scale,
                                                       glyph_index, &width, &height,
                                                       &xoff, &yoff);
 
         if (!bitmap) {
-            // グリフがない場合、スペースを使用
+            // Use space if glyph not found
             if (codepoint == 32) {
                 width = 8;
                 height = FONT_SIZE;
@@ -227,10 +227,10 @@ bool TextRenderer::createFontTextureAtlas() {
             }
         }
 
-        // アトラスに収まるか確認
+        // Check if it fits in atlas
         if (currentAtlasX + width > ATLAS_WIDTH) {
             currentAtlasX = 0;
-            currentAtlasY += rowHeight + 2;  // 2ピクセルの余白
+            currentAtlasY += rowHeight + 2;  // 2 pixel padding
             rowHeight = 0;
         }
 
@@ -242,7 +242,7 @@ bool TextRenderer::createFontTextureAtlas() {
             break;
         }
 
-        // ビットマップをアトラスにコピー
+        // Copy bitmap to atlas
         if (bitmap) {
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
@@ -254,14 +254,14 @@ bool TextRenderer::createFontTextureAtlas() {
             free(bitmap);
         }
 
-        // グリフ情報をキャッシュに登録
+        // Register glyph info to cache
         Glyph g;
         g.x0 = (float)currentAtlasX / ATLAS_WIDTH;
         g.y0 = (float)currentAtlasY / ATLAS_HEIGHT;
         g.x1 = (float)(currentAtlasX + width) / ATLAS_WIDTH;
         g.y1 = (float)(currentAtlasY + height) / ATLAS_HEIGHT;
 
-        // アドバンス幅を取得
+        // Get advance width
         int advance_width;
         stbtt_GetCodepointHMetrics(&fontInfo, codepoint, &advance_width, nullptr);
         g.advanceX = (float)advance_width * scale;
@@ -274,11 +274,11 @@ bool TextRenderer::createFontTextureAtlas() {
         LOGD("Glyph %c (%d): atlas pos=(%d,%d) size=(%d,%d) advance=%f",
              (char)codepoint, codepoint, currentAtlasX, currentAtlasY, width, height, g.advanceX);
 
-        currentAtlasX += width + 1;  // 1ピクセルの余白
+        currentAtlasX += width + 1;  // 1 pixel padding
         rowHeight = (height > rowHeight) ? height : rowHeight;
     }
 
-    // OpenGL テクスチャとして作成
+    // Create as OpenGL texture
     glGenTextures(1, &fontTexture);
     glBindTexture(GL_TEXTURE_2D, fontTexture);
 
@@ -307,14 +307,14 @@ void TextRenderer::renderText(const std::string& text, float x, float y,
 
     glUseProgram(shaderProgram);
 
-    // 投影行列を設定
+    // Set projection matrix
     glm::mat4 projection = glm::ortho(0.0f, (float)screenWidth, (float)screenHeight, 0.0f, -1.0f, 1.0f);
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, &projection[0][0]);
 
-    // Text色を設定（vec4: alpha=1.0で不透明）
+    // Set text color (vec4: alpha=1.0 for opaque)
     glUniform4f(colorLoc, color.x, color.y, color.z, 1.0f);
 
-    // フォントテクスチャをバインド
+    // Bind font texture
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, fontTexture);
 
@@ -327,16 +327,16 @@ void TextRenderer::renderText(const std::string& text, float x, float y,
     for (char ch : text) {
         unsigned int codepoint = (unsigned char)ch;
 
-        // グリフ情報を取得
+        // Get glyph info
         Glyph glyph = getGlyph(codepoint);
 
-        // 文字の実際の幅と高さ（アトラス内のテクスチャ座標から復元）
+        // Actual character width and height (restored from texture coordinates in atlas)
         float charWidth = (glyph.x1 - glyph.x0) * ATLAS_WIDTH * scale;
         float charHeight = (glyph.y1 - glyph.y0) * ATLAS_HEIGHT * scale;
         
-        // ベアリング（位置調整オフセット）を適用
+        // Apply bearing (position adjustment offset)
         float posX = currentX + glyph.bearingX * scale;
-        // stb_truetype の bearingY はベースラインからのオフセット（通常負の値）
+        // stb_truetype bearingY is offset from baseline (usually negative)
         // Offset by FONT_SIZE here to align top-based drawing with baseline
         float posY = currentY + (FONT_SIZE + glyph.bearingY) * scale;
 

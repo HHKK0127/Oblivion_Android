@@ -8,47 +8,47 @@ extern "C" {
 #endif
 
 /**
- * @brief AssetManager をネイティブコードに設定
- * @param mgr Android AssetManager ポインタ
+ * @brief Set AssetManager to native code
+ * @param mgr Android AssetManager pointer
  */
 void jni_audio_set_asset_manager(AAssetManager* mgr);
 
 /**
- * @brief AssetManager を取得
- * @return AAssetManager ポインタ
+ * @brief Get AssetManager
+ * @return AAssetManager pointer
  */
 AAssetManager* jni_audio_get_asset_manager();
 
 /**
- * @brief JavaVM をオーディオシステムに設定
- * @param vm JavaVM ポインタ
+ * @brief Set JavaVM to audio system
+ * @param vm JavaVM pointer
  */
 void jni_audio_set_java_vm(JavaVM* vm);
 
 /**
- * @brief MainActivity インスタンスをオーディオシステムに設定
- * JNI メソッド呼び出しの対象となるオブジェクト
- * @param activity MainActivity インスタンスの jobject
+ * @brief Set MainActivity instance to audio system
+ * Object for JNI method calls
+ * @param activity jobject of MainActivity instance
  */
 void jni_audio_set_main_activity(jobject activity);
 
 /**
- * @brief BGM 再生を Java 側から実行
- * MainActivity.playBGM(path) を JNI 経由で呼び出す
- * @param path オーディオファイルパス（assets/ 相対）
+ * @brief Execute BGM playback from Java side
+ * Calls MainActivity.playBGM(path) via JNI
+ * @param path Audio file path (relative to assets/)
  */
 void jni_audio_call_play_bgm(const char* path);
 
 /**
- * @brief BGM 停止を Java 側から実行
- * MainActivity.stopBGM() を JNI 経由で呼び出す
+ * @brief Execute BGM stop from Java side
+ * Calls MainActivity.stopBGM() via JNI
  */
 void jni_audio_call_stop_bgm();
 
 /**
- * @brief SE 再生を Java 側から実行
- * MainActivity.playSE(path) を JNI 経由で呼び出す
- * @param path オーディオファイルパス（assets/ 相対）
+ * @brief Execute SE playback from Java side
+ * Calls MainActivity.playSE(path) via JNI
+ * @param path Audio file path (relative to assets/)
  */
 void jni_audio_call_play_se(const char* path);
 

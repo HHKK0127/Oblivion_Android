@@ -10,10 +10,10 @@
 #include <vector>
 
 /**
- * @brief キャラクター作成UI
+ * @brief Character creation UI
  *
- * Phase 12: ゲーム開始時のキャラクターメイク画面
- * プレイヤー名、属性値、スキル選択を羊皮紙パネルで表示
+ * Phase 12: Character creation screen at game start
+ * Displays player name, attribute values, and skill selection on parchment panel
  */
 class UICharacterCreation : public UIPanel {
 public:

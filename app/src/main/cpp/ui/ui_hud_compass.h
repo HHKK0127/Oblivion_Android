@@ -6,10 +6,10 @@
 #include <unordered_map>
 
 /**
- * @brief HUDコンパス方向表示
+ * @brief HUD compass direction display
  *
- * Phase 16: ゲーム内HUD - 画面上部のコンパス
- * プレイヤーの向き、周囲のランドマークや目標方向を表示
+ * Phase 16: In-game HUD - compass at top of screen
+ * Displays player orientation, nearby landmarks, and objective directions
  */
 class UIHudCompass {
 public:

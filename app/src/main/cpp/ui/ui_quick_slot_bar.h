@@ -7,10 +7,10 @@
 #include <functional>
 
 /**
- * @brief クイックスロットバー
+ * @brief Quick slot bar
  *
- * Phase 15: ゲーム内HUD - 画面下部のクイックアクセスバー
- * よく使うスペルやアイテムを割り当て、素早くアクセス可能
+ * Phase 15: In-game HUD - quick access bar at bottom of screen
+ * Assign frequently used spells and items for quick access
  */
 class UIQuickSlotBar {
 public:

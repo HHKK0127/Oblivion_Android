@@ -143,7 +143,7 @@ public:
     // ========================================================================
 
     /**
-     * @brief ワールドにアイテムをスポーン
+     * @brief Spawn item in world
      */
     uint32_t spawnWorldItem(uint32_t itemId, const std::string& itemName,
                            const std::string& itemNameJa, const glm::vec3& position);

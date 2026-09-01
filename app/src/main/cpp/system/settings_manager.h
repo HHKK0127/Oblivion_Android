@@ -59,7 +59,7 @@ public:
     void resetToDefaults();
 
     /**
-     * @brief クリーンアップ
+     * @brief Cleanup
      */
     void cleanup();
 
@@ -67,7 +67,7 @@ private:
     bool debugModeEnabled;
     std::string currentLanguage;
 
-    // ファイルパス
+    // File path
     std::string getSettingsFilePath() const;
 
     static constexpr const char* LOG_TAG = "SettingsManager";

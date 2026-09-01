@@ -7,7 +7,7 @@
 #include <mutex>
 
 /**
- * @brief PNGテクスチャローダー
+ * @brief PNG texture loader
  * Load PNG files as OpenGL textures using stb_image.h
  */
 class TextureLoader {
@@ -27,7 +27,7 @@ public:
 
     /**
      * @brief Get texture size
-     * @param textureId テクスチャID
+     * @param textureId Texture ID
      * @param width Output width
      * @param height Output height
      * @return true on success

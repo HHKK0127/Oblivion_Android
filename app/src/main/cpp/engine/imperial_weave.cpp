@@ -113,7 +113,7 @@ void EventBus::processQueue() {
     }
 
     for (const auto& event : localQueue) {
-        // v3: shared_ptr のコピーのみ
+        // v3: shared_ptr copy only
         std::shared_ptr<std::vector<Handler>> localHandlers;
         {
             std::lock_guard<std::mutex> lock(handlersMutex_);

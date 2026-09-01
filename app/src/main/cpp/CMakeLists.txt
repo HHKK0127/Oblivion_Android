@@ -6,11 +6,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # ============================================================================
-# Jolt Physics 統合
+# Jolt Physics integration
 # ============================================================================
 set(JOLT_PHYSICS_DIR "${CMAKE_SOURCE_DIR}/third_party/JoltPhysics")
 
-# Jolt をサブディレクトリとして追加（推奨方式）
+# Add Jolt as subdirectory (recommended)
 set(TARGET_HELLO_WORLD OFF CACHE BOOL "" FORCE)
 set(TARGET_PERFORMANCE_TEST OFF CACHE BOOL "" FORCE)
 set(TARGET_SAMPLES OFF CACHE BOOL "" FORCE)
@@ -21,8 +21,8 @@ set(JPH_USE_VK OFF CACHE BOOL "" FORCE)  # Disable Vulkan (not needed for Androi
 
 add_subdirectory(${JOLT_PHYSICS_DIR}/Build ${CMAKE_BINARY_DIR}/JoltPhysics)
 
-# Jolt 用コンパイルフラグ
-# JPH_DISABLE_CUSTOM_ALLOCATOR は使用しない（Joltライブラリ側でアロケータを提供するため）
+# Compile flags for Jolt
+# JPH_DISABLE_CUSTOM_ALLOCATOR is not used (Jolt library provides its own allocator)
 target_compile_definitions(Jolt PRIVATE
     JPH_ENABLE_ASSERTS
 )

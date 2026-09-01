@@ -86,12 +86,12 @@ void SpellSelectionPanel::createSpellButtons() {
         // Label: school abbreviation prefix + spell name
         std::string schoolPrefix;
         switch (spell->school) {
-            case MagicSchool::ALTERATION:  schoolPrefix = "[変] "; break;
-            case MagicSchool::CONJURATION: schoolPrefix = "[召] "; break;
-            case MagicSchool::DESTRUCTION: schoolPrefix = "[破] "; break;
-            case MagicSchool::ILLUSION:    schoolPrefix = "[幻] "; break;
-            case MagicSchool::MYSTICISM:   schoolPrefix = "[神] "; break;
-            case MagicSchool::RESTORATION: schoolPrefix = "[回] "; break;
+            case MagicSchool::ALTERATION:  schoolPrefix = "[ALT] "; break;
+            case MagicSchool::CONJURATION: schoolPrefix = "[CON] "; break;
+            case MagicSchool::DESTRUCTION: schoolPrefix = "[DES] "; break;
+            case MagicSchool::ILLUSION:    schoolPrefix = "[ILL] "; break;
+            case MagicSchool::MYSTICISM:   schoolPrefix = "[MYS] "; break;
+            case MagicSchool::RESTORATION: schoolPrefix = "[RES] "; break;
             default: schoolPrefix = ""; break;
         }
         std::string spellLabel = schoolPrefix + (spell->nameJa.empty() ? spell->name : spell->nameJa);

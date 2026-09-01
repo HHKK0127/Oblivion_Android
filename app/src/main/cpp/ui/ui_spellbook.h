@@ -8,10 +8,10 @@
 #include <memory>
 
 /**
- * @brief スペルブックUI
+ * @brief Spellbook UI
  *
- * Phase 10: プレイヤーが習得したスペルの一覧と装備管理UI
- * Oblivion魔法学校別のカテゴリ表示、マナコスト、効果を表示
+ * Phase 10: Spell list and equipment management UI for learned spells
+ * Displays by Oblivion magic school category, mana cost, and effects
  */
 class UISpellbook : public UIPanel {
 public:
