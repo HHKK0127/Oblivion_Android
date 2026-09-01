@@ -64,16 +64,19 @@ static glm::vec4 getSchoolColor(MagicSchool school, float alpha = 0.8f) {
 void SpellSelectionPanel::createSpellButtons() {
     if (!textRenderer) return;
 
-    glm::vec2 contentPos = getContentPosition();
     glm::vec2 contentSize = getContentSize();
-    float y = contentPos.y + buttonMargin;
+    // Child positions are relative to the panel; getAbsolutePosition() adds the parent offset.
+    glm::vec2 absPos = getAbsolutePosition();
+    glm::vec2 contentPos = getContentPosition();
+    float y = (contentPos.y - absPos.y) + buttonMargin;
 
     for (size_t i = 0; i < spells.size(); i++) {
         const auto& spell = spells[i];
         if (!spell) continue;
 
         auto button = std::make_shared<UIButton>("SpellButton_" + std::to_string(spell->spellId));
-        button->setPosition(contentPos.x + buttonMargin, y);
+        float localContentX = contentPos.x - absPos.x;
+        button->setPosition(localContentX + buttonMargin, y);
         button->setSize(contentSize.x - buttonMargin * 2.0f, buttonHeight);
         button->setLabelScale(0.7f);
         button->setTextRenderer(textRenderer);
@@ -116,7 +119,7 @@ void SpellSelectionPanel::createSpellButtons() {
 
     // Adjust panel height to fit spells if needed
     float minHeight = 150.0f;
-    float desiredHeight = y - getPosition().y + buttonMargin;
+    float desiredHeight = y + buttonMargin;
     if (desiredHeight > minHeight) {
         setSize(getSize().x, desiredHeight);
     }

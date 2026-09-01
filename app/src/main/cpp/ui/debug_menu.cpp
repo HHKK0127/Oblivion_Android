@@ -121,7 +121,16 @@ void DebugMenu::onTouchUp(float x, float y) {
     // Only execute command if it was a tap (not a scroll)
     if (!touchState.isScrolling && dist < TouchState::TAP_THRESHOLD) {
         if (touchState.pressedButton) {
-            executeButtonCommand(*touchState.pressedButton);
+            // Check if this is a tab button
+            int tabIdx = findTabIndex(touchState.pressedButton);
+            if (tabIdx >= 0) {
+                // Switch to the selected tab
+                currentTab = static_cast<Tab>(tabIdx);
+                LOGI_DEBUG("Switched to tab: %s", getTabName(currentTab).c_str());
+            } else {
+                // Execute content button command
+                executeButtonCommand(*touchState.pressedButton);
+            }
         }
     }
 
@@ -146,6 +155,15 @@ void DebugMenu::executeButtonCommand(Button& btn) {
     console->executeCommand(btn.command);
     btn.pressTimer = 0.2f; // Visual feedback
     LOGI_DEBUG("Executed: %s", btn.command.c_str());
+}
+
+int DebugMenu::findTabIndex(const Button* btn) const {
+    for (size_t i = 0; i < tabButtons.size(); ++i) {
+        if (&tabButtons[i] == btn) {
+            return static_cast<int>(i);
+        }
+    }
+    return -1;
 }
 
 // ==================== Hit Testing ====================
@@ -284,7 +302,7 @@ void DebugMenu::renderTabBar() {
         float labelScale = 0.35f * s; // Smaller to fit 13 tabs
         textRenderer->renderText(label.c_str(),
                                   btn.x + 3.0f * s,
-                                  btn.y + btn.h * 0.3f,
+                                  btn.y + btn.h * 0.5f,
                                   textColor, labelScale);
     }
 }
@@ -324,7 +342,7 @@ void DebugMenu::renderButton(Button& btn, float s) {
 
     textRenderer->renderText(btn.label.c_str(),
                               btn.x + 10.0f * s,
-                              btn.y + btn.h * 0.3f,
+                              btn.y + btn.h * 0.5f,
                               glm::vec3(1.0f, 1.0f, 1.0f), 0.4f * s);
 }
 

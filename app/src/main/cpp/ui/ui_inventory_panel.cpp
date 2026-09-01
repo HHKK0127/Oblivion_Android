@@ -43,14 +43,23 @@ bool UIInventoryPanel::onTouchDown(float x, float y, int pointerId) {
         return true;
     }
 
-    // Inventory grid click
+    // Inventory grid click - start drag if item exists
     int gridIdx = hitTestGrid(x, y);
     if (gridIdx >= 0) {
         selectedSlot = gridIdx;
-        dragSourceSlot = -1;
-        isDraggingItem = false;
-        // Drag-and-drop requires TOUCH_MOVE/TOUCH_UP events from JNI layer
-        // For now, just select the slot to show item details
+        if (inventory) {
+            const auto& slot = inventory->getSlot(static_cast<uint32_t>(gridIdx));
+            if (!slot.isEmpty()) {
+                // Start drag operation
+                dragSourceSlot = gridIdx;
+                isDraggingItem = true;
+                dragPos = glm::vec2(x, y);
+                LOGD("Drag started from slot %d", gridIdx);
+            } else {
+                dragSourceSlot = -1;
+                isDraggingItem = false;
+            }
+        }
         return true;
     }
 

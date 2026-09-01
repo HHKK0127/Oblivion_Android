@@ -197,7 +197,7 @@ void QuestUI::renderQuestLog() {
 
     // Border
     UIDrawHelper::drawBorder(panelX, panelY, panelW, panelH,
-        glm::vec4(0.6f, 0.5f, 0.3f, 1.0f), 2.0f, screenWidth, screenHeight);
+        2.0f, glm::vec4(0.6f, 0.5f, 0.3f, 1.0f), (int)screenWidth, (int)screenHeight);
 
     // Title bar
     UIDrawHelper::drawColoredQuad(panelX, panelY, panelW, TITLE_HEIGHT,
@@ -241,9 +241,13 @@ void QuestUI::renderQuestLog() {
                 glm::vec3 stateColor;
                 std::string stateStr;
                 switch (quest->state) {
-                    case QuestState::ACTIVE:
+                    case QuestState::IN_PROGRESS:
                         stateColor = glm::vec3(0.4f, 0.8f, 0.4f);
                         stateStr = "[ACTIVE]";
+                        break;
+                    case QuestState::ACCEPTED:
+                        stateColor = glm::vec3(0.4f, 0.6f, 0.9f);
+                        stateStr = "[ACCEPT]";
                         break;
                     case QuestState::COMPLETED:
                         stateColor = glm::vec3(0.8f, 0.8f, 0.2f);
@@ -255,7 +259,7 @@ void QuestUI::renderQuestLog() {
                         break;
                     default:
                         stateColor = glm::vec3(0.5f, 0.5f, 0.5f);
-                        stateStr = "[???]";
+                        stateStr = "[PEND]";
                         break;
                 }
                 textRenderer->renderText(stateStr.c_str(), contentX + 5.0f, itemY + 28.0f,
@@ -296,7 +300,7 @@ void QuestUI::renderQuestDetail() {
 
     // Border
     UIDrawHelper::drawBorder(panelX, panelY, panelW, panelH,
-        glm::vec4(0.6f, 0.5f, 0.3f, 1.0f), 2.0f, screenWidth, screenHeight);
+        2.0f, glm::vec4(0.6f, 0.5f, 0.3f, 1.0f), (int)screenWidth, (int)screenHeight);
 
     // Title bar
     UIDrawHelper::drawColoredQuad(panelX, panelY, panelW, TITLE_HEIGHT,
@@ -336,9 +340,13 @@ void QuestUI::renderQuestDetail() {
     glm::vec3 stateColor;
     std::string stateStr;
     switch (selectedQuest->state) {
-        case QuestState::ACTIVE:
+        case QuestState::IN_PROGRESS:
             stateColor = glm::vec3(0.4f, 0.8f, 0.4f);
-            stateStr = "Status: Active";
+            stateStr = "Status: In Progress";
+            break;
+        case QuestState::ACCEPTED:
+            stateColor = glm::vec3(0.4f, 0.6f, 0.9f);
+            stateStr = "Status: Accepted";
             break;
         case QuestState::COMPLETED:
             stateColor = glm::vec3(0.8f, 0.8f, 0.2f);
@@ -350,7 +358,7 @@ void QuestUI::renderQuestDetail() {
             break;
         default:
             stateColor = glm::vec3(0.5f, 0.5f, 0.5f);
-            stateStr = "Status: Unknown";
+            stateStr = "Status: Pending";
             break;
     }
     textRenderer->renderText(stateStr.c_str(), contentX, contentY + lineH,
@@ -407,7 +415,7 @@ void QuestUI::renderNpcInteraction() {
 
     // Border
     UIDrawHelper::drawBorder(panelX, panelY, panelW, panelH,
-        glm::vec4(0.6f, 0.5f, 0.3f, 1.0f), 2.0f, screenWidth, screenHeight);
+        2.0f, glm::vec4(0.6f, 0.5f, 0.3f, 1.0f), (int)screenWidth, (int)screenHeight);
 
     // Title bar
     UIDrawHelper::drawColoredQuad(panelX, panelY, panelW, TITLE_HEIGHT,

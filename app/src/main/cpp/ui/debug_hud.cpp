@@ -139,8 +139,8 @@ void DebugHUD::render() {
 
     float xPos = 10.0f;
     float yPos = 10.0f;
-    float lineHeight = 28.0f; // Increased from 18.0f for better readability on mobile
-    float textScale = 1.4f;   // Increased from 1.0f for better readability on mobile
+    float lineHeight = 42.0f; // Must exceed text height (32 * 1.2 = 38.4) to prevent overlap
+    float textScale = 1.2f;   // Reduced from 1.4f for better readability on mobile
 
     // Limit rendering area to prevent overflow (use reasonable default)
     float maxY = 1800.0f; // Will be updated when screen size is available

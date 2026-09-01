@@ -169,6 +169,8 @@ void Renderer::resize(unsigned int width, unsigned int height) {
             attackButton->setPressedColor(glm::vec4(1.0f, 0.1f, 0.1f, 0.9f));
             attackButton->setTextRenderer(textRenderer.get());
             attackButton->setOnClick([this]() {
+                LOGD("ATK button callback fired! playerController=%p combatManager=%p worldManager=%p",
+                     playerController.get(), combatManager.get(), worldManager.get());
                 if (playerController) {
                     playerController->attack();
                 }
@@ -200,6 +202,8 @@ void Renderer::resize(unsigned int width, unsigned int height) {
             blockButton->setPressedColor(glm::vec4(0.3f, 0.5f, 1.0f, 0.9f));
             blockButton->setTextRenderer(textRenderer.get());
             blockButton->setOnClick([this]() {
+                LOGD("BLK button callback fired! playerController=%p combatManager=%p",
+                     playerController.get(), combatManager.get());
                 if (playerController && combatManager) {
                     // Toggle combat stance for blocking
                     playerController->toggleCombatStance();
@@ -355,6 +359,11 @@ void Renderer::resize(unsigned int width, unsigned int height) {
     if (titleScreen) {
         titleScreen->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
         LOGI("TitleScreen screen size updated to: %ux%u", screenWidth, screenHeight);
+    }
+
+    // Update QuestUI layout
+    if (questUI) {
+        questUI->setScreenSize(screenWidth, screenHeight);
     }
 
     // Update SettingsUI layout
@@ -1284,7 +1293,8 @@ bool Renderer::initGameSystems() {
 
     // Initialize Launcher Screen (displayed before title screen)
     launcherScreen = std::make_unique<LauncherScreen>();
-    launcherScreen->initialize(localizationManager.get(), textRenderer.get());
+    launcherScreen->initialize(localizationManager.get(), textRenderer.get(),
+                               settingsManager.get(), this);
     launcherScreen->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
 
     // Launcher callbacks
@@ -2031,9 +2041,9 @@ void Renderer::render(float deltaTime) {
             showTitleScreen = false;
             // Show combat buttons when game starts
             if (joystick) joystick->setVisible(true);
-            if (attackButton) attackButton->setVisible(true);
-            if (blockButton) blockButton->setVisible(true);
-            if (castSpellButton) castSpellButton->setVisible(true);
+            if (attackButton) { attackButton->setVisible(true); LOGD("ATK button set visible"); }
+            if (blockButton) { blockButton->setVisible(true); LOGD("BLK button set visible"); }
+            if (castSpellButton) { castSpellButton->setVisible(true); LOGD("MAG button set visible"); }
             for (auto& btn : quickSlotButtons) {
                 if (btn) btn->setVisible(true);
             }

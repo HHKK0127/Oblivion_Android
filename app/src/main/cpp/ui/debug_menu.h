@@ -122,6 +122,7 @@ private:
     Button* hitTestTab(float x, float y);
     Button* hitTestContent(float x, float y);
     void executeButtonCommand(Button& btn);
+    int findTabIndex(const Button* btn) const;
 
     void renderBackground();
     void renderTabBar();

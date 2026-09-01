@@ -1,6 +1,8 @@
 #include "launcher_screen.h"
 #include "text_renderer.h"
 #include "../engine/texture_loader.h"
+#include "../system/settings_manager.h"
+#include "../engine/renderer.h"
 #include "ui_draw_helper.h"
 #include <GLES3/gl3.h>
 #include <cmath>
@@ -19,9 +21,12 @@ LauncherScreen::~LauncherScreen() {
     LOGD("LauncherScreen destroyed");
 }
 
-void LauncherScreen::initialize(LocalizationManager* lm, TextRenderer* tr) {
+void LauncherScreen::initialize(LocalizationManager* lm, TextRenderer* tr,
+                                SettingsManager* sm, Renderer* rend) {
     localizationManager = lm;
     textRenderer = tr;
+    settingsManager = sm;
+    renderer = rend;
 
     selectedIndex = 0;
     fadeInAlpha = 0.0f;
@@ -312,7 +317,51 @@ void LauncherScreen::renderOptions() {
             std::string key = options[i].key;
             optBtn->setOnClick([this, key]() {
                 LOGI("Option selected: %s", key.c_str());
-                // TODO: Open specific option sub-menu
+
+                if (key == "graphics") {
+                    // Toggle graphics quality: Low -> Medium -> High
+                    if (renderer) {
+                        auto& retro = renderer->getRetroSettingsRef();
+                        if (!retro.pixelation_enabled && !retro.scanlines_enabled) {
+                            // Low -> Medium: enable pixelation
+                            retro.pixelation_enabled = true;
+                            LOGI("Graphics: Medium (pixelation ON)");
+                        } else if (retro.pixelation_enabled && !retro.scanlines_enabled) {
+                            // Medium -> High: enable scanlines too
+                            retro.scanlines_enabled = true;
+                            LOGI("Graphics: High (pixelation+scanlines ON)");
+                        } else {
+                            // High -> Low: disable all
+                            retro.pixelation_enabled = false;
+                            retro.scanlines_enabled = false;
+                            retro.color_reduction_enabled = false;
+                            retro.crt_distortion_enabled = false;
+                            retro.grain_enabled = false;
+                            LOGI("Graphics: Low (all filters OFF)");
+                        }
+                    }
+                } else if (key == "resolution") {
+                    // Show current resolution info
+                    LOGI("Resolution: %dx%d", screenWidth, screenHeight);
+                } else if (key == "audio") {
+                    // Toggle audio on/off
+                    if (renderer) {
+                        // Audio toggle not directly available, log info
+                        LOGI("Audio settings: Use in-game settings for volume control");
+                    }
+                } else if (key == "language") {
+                    // Toggle language
+                    if (settingsManager) {
+                        std::string current = settingsManager->getLanguage();
+                        std::string newLang = (current == "ja") ? "en" : "ja";
+                        settingsManager->setLanguage(newLang);
+                        LOGI("Language changed to: %s", newLang.c_str());
+                        // Rebuild menu to update labels
+                        optionsPanel.reset();
+                    }
+                } else if (key == "controls") {
+                    LOGI("Controls: Joystick=Move, ATK=Attack, BLK=Block, MAG=Magic, F1-F4=QuickSlots");
+                }
             });
 
             optionsPanel->addChild(optBtn);
@@ -348,6 +397,19 @@ void LauncherScreen::renderDataFiles() {
 
     renderBackground();
 
+    // Initialize plugin list once
+    if (!pluginsInitialized) {
+        plugins = {
+            {"Oblivion.esm", true},
+            {"Oblivion - Meshes.bsa", true},
+            {"Oblivion - Textures.bsa", true},
+            {"Oblivion - Sounds.bsa", true},
+            {"Oblivion - Voices.bsa", true},
+            {"Oblivion - Misc.bsa", true},
+        };
+        pluginsInitialized = true;
+    }
+
     if (!dataFilesPanel) {
         dataFilesPanel = std::make_shared<UIPanel>("DataFilesPanel");
         dataFilesPanel->initialize();
@@ -364,17 +426,6 @@ void LauncherScreen::renderDataFiles() {
 
         // Title: "Loaded Archives"
         float titleY = 50.0f;
-
-        // List of BSA archives (simulated plugin list)
-        struct PluginInfo { std::string name; bool enabled; };
-        std::vector<PluginInfo> plugins = {
-            {"Oblivion.esm", true},
-            {"Oblivion - Meshes.bsa", true},
-            {"Oblivion - Textures.bsa", true},
-            {"Oblivion - Sounds.bsa", true},
-            {"Oblivion - Voices.bsa", true},
-            {"Oblivion - Misc.bsa", true},
-        };
 
         float listY = titleY + 40.0f;
         float itemH = 45.0f;
@@ -396,14 +447,16 @@ void LauncherScreen::renderDataFiles() {
             pluginBtn->setPressedColor(glm::vec4(0.08f, 0.07f, 0.05f, 0.95f));
             pluginBtn->setPosition(20.0f, listY);
 
-            // Toggle plugin enabled state
-            bool* enabledPtr = &plugins[i].enabled;
-            std::string pluginName = plugins[i].name;
-            pluginBtn->setOnClick([this, enabledPtr, pluginName]() {
-                *enabledPtr = !(*enabledPtr);
-                LOGI("Plugin %s: %s", pluginName.c_str(), *enabledPtr ? "enabled" : "disabled");
-                // Rebuild panel to update labels
-                dataFilesPanel.reset();
+            // Toggle plugin enabled state using member variable
+            size_t idx = i;
+            pluginBtn->setOnClick([this, idx]() {
+                if (idx < plugins.size()) {
+                    plugins[idx].enabled = !plugins[idx].enabled;
+                    LOGI("Plugin %s: %s", plugins[idx].name.c_str(),
+                         plugins[idx].enabled ? "enabled" : "disabled");
+                    // Rebuild panel to update labels
+                    dataFilesPanel.reset();
+                }
             });
 
             dataFilesPanel->addChild(pluginBtn);

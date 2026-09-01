@@ -208,11 +208,13 @@ void UIButton::renderLabel() const {
 
     // Calculate accurate text dimensions
     float textWidth = textRenderer->getTextWidth(label, labelScale);
+    // TextRenderer uses Y as top of text area; FONT_SIZE=32 is the base height
     float textHeight = 32.0f * labelScale;
 
-    // Center the text within the button
+    // Center the glyph bounds within the button
     glm::vec2 btnSize = getSize();
     float textX = absPos.x + (btnSize.x - textWidth) * 0.5f;
+    // Y: button top + (button height - text height) / 2
     float textY = absPos.y + (btnSize.y - textHeight) * 0.5f;
 
     // Clamp to integer positions for sharper text

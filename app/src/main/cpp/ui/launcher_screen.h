@@ -15,6 +15,8 @@
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 
 class TextRenderer;
+class SettingsManager;
+class Renderer;
 
 enum class LauncherState {
     MAIN,           // Main launcher
@@ -35,6 +37,8 @@ private:
     int screenHeight = 1080;
     LocalizationManager* localizationManager = nullptr;
     TextRenderer* textRenderer = nullptr;
+    SettingsManager* settingsManager = nullptr;
+    Renderer* renderer = nullptr;
 
     // UI
     std::shared_ptr<UIPanel> mainPanel;
@@ -49,6 +53,14 @@ private:
     GLuint buttonBgTex = 0;
     GLuint buttonHoverTex = 0;
     bool texturesLoaded = false;
+
+    // Plugin data for DataFiles screen
+    struct PluginInfo {
+        std::string name;
+        bool enabled;
+    };
+    std::vector<PluginInfo> plugins;
+    bool pluginsInitialized = false;
 
     // Callbacks
     OnPlayCallback onPlayCallback;
@@ -79,7 +91,8 @@ public:
     LauncherScreen();
     ~LauncherScreen();
 
-    void initialize(LocalizationManager* lm, TextRenderer* tr);
+    void initialize(LocalizationManager* lm, TextRenderer* tr,
+                    SettingsManager* sm = nullptr, Renderer* rend = nullptr);
     void update(float deltaTime);
     void render();
     void onTouchEvent(float x, float y, int action);
