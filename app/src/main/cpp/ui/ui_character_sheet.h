@@ -15,9 +15,9 @@
 class UICharacterSheet : public UIPanel {
 public:
     enum class CharacterTab {
-        ATTRIBUTES = 0,  // 属性値（力、知力など）
-        SKILLS = 1,      // スキル（刀剣、魔法など）
-        EFFECTS = 2      // 一時的な効果とボーナス
+        ATTRIBUTES = 0,  // Attributes (Strength, Intelligence, etc.)
+        SKILLS = 1,      // Skills (Blade, Magic, etc.)
+        EFFECTS = 2      // Temporary effects and bonuses
     };
 
     explicit UICharacterSheet(const std::string& title = "Character");

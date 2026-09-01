@@ -157,6 +157,36 @@ public:
         std::function<void()> debugHudNextPage;
         std::function<void()> debugHudPrevPage;
         std::function<void()> toggleDebugLog;
+
+        // Sound
+        std::function<void()> playBgm;
+        std::function<void()> stopBgm;
+        std::function<void()> playSe;
+        std::function<void()> stopAllSe;
+        std::function<void(float)> setMasterVolume;
+        std::function<void()> muteAll;
+        std::function<void()> unmuteAll;
+        std::function<std::string()> listAudio;
+        std::function<std::string()> getAudioStats;
+
+        // Assets
+        std::function<std::string()> listTextures;
+        std::function<std::string()> listModels;
+        std::function<std::string()> getTextureInfo;
+        std::function<std::string()> getModelInfo;
+        std::function<std::string()> getCacheStats;
+        std::function<void()> clearCache;
+        std::function<void()> reloadAssets;
+        std::function<std::string()> getMemoryUsage;
+        std::function<std::string()> getAssetStats;
+
+        // Logs
+        std::function<void(const std::string&)> setLogLevel;
+        std::function<void()> clearLogs;
+        std::function<void()> exportLogs;
+        std::function<std::string()> getLogStats;
+        std::function<void(const std::string&)> searchLogs;
+        std::function<void()> toggleLogAutoScroll;
     };
 
     void setGameSystemRefs(const GameSystemRefs& refs) { gameRefs = refs; }
@@ -307,4 +337,34 @@ private:
     void cmdOpenMenu(const std::vector<std::string>& args);
     void cmdCloseMenu(const std::vector<std::string>& args);
     void cmdDebugMenu(const std::vector<std::string>& args);
+
+    // Sound commands
+    void cmdPlayBgm(const std::vector<std::string>& args);
+    void cmdStopBgm(const std::vector<std::string>& args);
+    void cmdPlaySe(const std::vector<std::string>& args);
+    void cmdStopAllSe(const std::vector<std::string>& args);
+    void cmdSetVolume(const std::vector<std::string>& args);
+    void cmdMute(const std::vector<std::string>& args);
+    void cmdUnmute(const std::vector<std::string>& args);
+    void cmdListAudio(const std::vector<std::string>& args);
+    void cmdAudioStats(const std::vector<std::string>& args);
+
+    // Asset commands
+    void cmdListTextures(const std::vector<std::string>& args);
+    void cmdListModels(const std::vector<std::string>& args);
+    void cmdTextureInfo(const std::vector<std::string>& args);
+    void cmdModelInfo(const std::vector<std::string>& args);
+    void cmdCacheStats(const std::vector<std::string>& args);
+    void cmdClearCache(const std::vector<std::string>& args);
+    void cmdReloadAssets(const std::vector<std::string>& args);
+    void cmdMemoryUsage(const std::vector<std::string>& args);
+    void cmdAssetStats(const std::vector<std::string>& args);
+
+    // Log commands
+    void cmdLogLevel(const std::vector<std::string>& args);
+    void cmdClearLogs(const std::vector<std::string>& args);
+    void cmdExportLogs(const std::vector<std::string>& args);
+    void cmdLogStats(const std::vector<std::string>& args);
+    void cmdSearchLog(const std::vector<std::string>& args);
+    void cmdLogAutoScroll(const std::vector<std::string>& args);
 };

@@ -16,10 +16,10 @@
 class UIMessageBox : public UIPanel {
 public:
     enum MessageType {
-        INFO = 0,      // 情報（青）
-        SUCCESS = 1,   // 成功（緑）
-        WARNING = 2,   // 警告（黄）
-        ERROR = 3      // エラー（赤）
+        INFO = 0,      // Info (blue)
+        SUCCESS = 1,   // Success (green)
+        WARNING = 2,   // Warning (yellow)
+        ERROR = 3      // Error (red)
     };
 
     enum ButtonType {

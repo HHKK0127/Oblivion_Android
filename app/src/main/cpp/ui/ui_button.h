@@ -13,7 +13,7 @@ class UISystem;
  * @brief UIボタン
  *
  * Phase 9: クリック/タップ可能なボタンコンポーネント。
- * テキストラベル、テクスチャ背景、ホバー/押下/無効状態の
+ * テキストラベル、テクスチャ背景、ホバー/押下/無効Stateの
  * ビジュアルフィードバックに対応。
  */
 class UIButton : public UIComponent {
@@ -36,23 +36,23 @@ public:
     void setLabelColor(const glm::vec3& color) { labelColor = color; }
     void setLabelScale(float scale) { labelScale = scale; }
 
-    // === 状態 ===
+    // === State ===
     void setEnabled(bool enabled);
     bool isEnabled() const { return enabled; }
     bool isPressed() const { return pressed; }
     bool isHovered() const { return hovered; }
 
-    // === 色設定 ===
+    // === Colors設定 ===
     void setNormalColor(const glm::vec4& color) { normalColor = color; }
     void setPressedColor(const glm::vec4& color) { pressedColor = color; }
     void setHoverColor(const glm::vec4& color) { hoverColor = color; }
     void setDisabledColor(const glm::vec4& color) { disabledColor = color; }
 
-    // === コールバック ===
+    // === Callbacks ===
     using ClickCallback = std::function<void()>;
     void setOnClick(ClickCallback cb) { onClickCallback = cb; }
 
-    // === テキストレンダラー ===
+    // === Text renderer ===
     void setTextRenderer(TextRenderer* renderer) { textRenderer = renderer; }
 
     // === テクスチャ ===
@@ -72,28 +72,28 @@ private:
     float labelScale;
     TextRenderer* textRenderer;
 
-    // 状態
+    // State
     bool enabled;
     bool pressed;
     bool hovered;
 
-    // 色
+    // Colors
     glm::vec4 normalColor;
     glm::vec4 pressedColor;
     glm::vec4 hoverColor;
     glm::vec4 disabledColor;
 
-    // コールバック
+    // Callbacks
     ClickCallback onClickCallback;
 
-    // アニメーション用タイマー
+    // Animation timer
     float pressAnimTimer;
-    float hoverScaleTimer;  // ホバー時スケールアニメーション
+    float hoverScaleTimer;  // Hover scale animation
     static constexpr float PRESS_ANIM_DURATION = 0.1f;
     static constexpr float HOVER_SCALE_DURATION = 0.1f;
     static constexpr float HOVER_SCALE_MAX = 1.05f;
 
-    // テクスチャ（各状態）
+    // テクスチャ（各State）
     GLuint normalTexture = 0;
     GLuint hoverTexture = 0;
     GLuint pressedTexture = 0;

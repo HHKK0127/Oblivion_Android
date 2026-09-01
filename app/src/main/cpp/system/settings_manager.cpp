@@ -15,10 +15,10 @@ SettingsManager::~SettingsManager() {
 bool SettingsManager::initialize() {
     LOGD("SettingsManager::initialize() called");
 
-    // デフォルト設定をリセット
+    // Reset to default settings
     resetToDefaults();
 
-    // 保存された設定を読み込み
+    // Load saved settings
     loadSettings();
 
     LOGD("SettingsManager initialized - Debug: %s, Lang: %s",
@@ -52,7 +52,7 @@ void SettingsManager::saveSettings() {
         return;
     }
 
-    // シンプルなテキスト形式で設定を保存
+    // Save settings in simple text format
     file << "DEBUG_MODE=" << (debugModeEnabled ? "1" : "0") << "\n";
     file << "LANGUAGE=" << currentLanguage << "\n";
 
@@ -98,7 +98,7 @@ void SettingsManager::loadSettings() {
 
 void SettingsManager::resetToDefaults() {
     debugModeEnabled = true;  // デバッグモードはデフォルトON
-    currentLanguage = "ja";   // 言語はデフォルト日本語
+    currentLanguage = "ja";   // Language defaults to Japanese
     LOGD("Settings reset to defaults");
 }
 
@@ -107,7 +107,7 @@ void SettingsManager::cleanup() {
 }
 
 std::string SettingsManager::getSettingsFilePath() const {
-    // /data/data/com.example.oblivion/files/settings.txt に保存
+    // Save to /data/data/com.example.oblivion/files/settings.txt
     // または /sdcard/Android/data/com.example.oblivion/files/settings.txt
     std::string path = "/data/data/com.example.oblivion/settings.txt";
     return path;

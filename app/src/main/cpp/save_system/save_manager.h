@@ -29,7 +29,7 @@ class WorldManager;
 namespace oblivion { namespace script { class ScriptManager; } }
 
 /**
- * @brief インベントリスロットデータ - シリアライザブルなアイテム情報
+ * @brief Inventory slot data - Serializable item information
  */
 struct InventorySlotData {
     uint32_t itemId = 0;
@@ -42,7 +42,7 @@ struct InventorySlotData {
 };
 
 /**
- * @brief 装備スロットデータ - シリアライザブルな装備情報
+ * @brief Equipment slot data - Serializable equipment information
  */
 struct EquippedItemData {
     uint32_t slotIndex = 0;
@@ -55,7 +55,7 @@ struct EquippedItemData {
 };
 
 /**
- * SaveManager: ゲーム進行状況の保存・復元を管理
+ * SaveManager: Manage saving and restoring game progress
  * Phase 41: Binary format with full system serialization
  */
 class SaveManager {
@@ -128,7 +128,7 @@ private:
 };
 
 /**
- * GameState: ゲーム状態のスナップショット (legacy compatibility)
+ * GameState: Game state snapshot (legacy compatibility)
  */
 struct GameState {
     std::string saveName;

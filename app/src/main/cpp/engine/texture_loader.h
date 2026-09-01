@@ -8,29 +8,29 @@
 
 /**
  * @brief PNGテクスチャローダー
- * stb_image.h を使用してPNGファイルをOpenGLテクスチャに読み込む
+ * Load PNG files as OpenGL textures using stb_image.h
  */
 class TextureLoader {
 public:
     /**
-     * @brief PNGファイルを読み込んでOpenGLテクスチャを生成
-     * @param filename assets内のファイルパス（例: "textures/ui/main_background.png"）
-     * @return テクスチャID（0 = 失敗）
+     * @brief Load PNG file and generate OpenGL texture
+     * @param filename File path within assets (e.g. "textures/ui/main_background.png")
+     * @return Texture ID (0 = failure)
      */
     static GLuint loadTextureFromAsset(const std::string& filename);
 
     /**
-     * @brief テクスチャを削除
-     * @param textureId 削除するテクスチャID
+     * @brief Delete texture
+     * @param textureId Texture ID to delete
      */
     static void deleteTexture(GLuint textureId);
 
     /**
-     * @brief テクスチャサイズを取得
+     * @brief Get texture size
      * @param textureId テクスチャID
-     * @param width 出力幅
-     * @param height 出力高さ
-     * @return 成功時true
+     * @param width Output width
+     * @param height Output height
+     * @return true on success
      */
     static bool getTextureSize(GLuint textureId, int& width, int& height);
 

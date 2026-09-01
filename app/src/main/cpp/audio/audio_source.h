@@ -11,20 +11,20 @@ using ALuint = unsigned int;
 #endif
 
 /**
- * @brief オーディオ再生チャンネル（AudioSource）
- * OpenAL source を管理し、個々の音声再生を制御
+ * @brief Audio playback channel (AudioSource)
+ * Manages OpenAL source and controls individual audio playback
  *
- * BGM、SE、音声などの個別の再生チャンネルを表現
- * 3D位置、ボリューム、ピッチ、再生状態を管理
+ * Represents individual playback channels for BGM, SE, voice, etc.
+ * Manages 3D position, volume, pitch, and playback state
  */
 struct AudioSource {
-    uint32_t sourceId;              // ユニークID（Renderer が割り当て）
+    uint32_t sourceId;              // Unique ID (assigned by Renderer)
     ALuint alSource;                // OpenAL source handle
-    uint32_t clipId;                // 再生中のクリップ ID
+    uint32_t clipId;                // Currently playing clip ID
 
     // 3D Audio
-    glm::vec3 position;             // ワールド座標
-    glm::vec3 velocity;             // ドップラー効果用
+    glm::vec3 position;             // World coordinates
+    glm::vec3 velocity;             // For Doppler effect
 
     // Volume & Pitch
     float volume;                   // 0.0 - 1.0
@@ -32,14 +32,14 @@ struct AudioSource {
 
     // Playback state
     bool isPlaying;
-    float playbackTime;             // 再生経過時間（秒）
+    float playbackTime;             // Playback elapsed time (seconds)
 
     // Flags
-    bool isLooping;                 // ループ再生フラグ
-    bool is3D;                      // 3D音声フラグ
+    bool isLooping;                 // Loop playback flag
+    bool is3D;                      // 3D audio flag
 
     /**
-     * @brief デフォルトコンストラクタ
+     * @brief Default constructor
      */
     AudioSource()
         : sourceId(0), alSource(0), clipId(0),
@@ -50,7 +50,7 @@ struct AudioSource {
     }
 
     /**
-     * @brief ボリュームを設定
+     * @brief Set volume
      * @param vol 0.0 - 1.0
      */
     void setVolume(float vol) {
@@ -63,7 +63,7 @@ struct AudioSource {
     }
 
     /**
-     * @brief ピッチを設定
+     * @brief Set pitch
      * @param p 0.5 - 2.0
      */
     void setPitch(float p) {
@@ -76,8 +76,8 @@ struct AudioSource {
     }
 
     /**
-     * @brief 3D位置を設定
-     * @param pos ワールド座標
+     * @brief Set 3D position
+     * @param pos World coordinates
      */
     void setPosition(const glm::vec3& pos) {
         position = pos;
@@ -89,8 +89,8 @@ struct AudioSource {
     }
 
     /**
-     * @brief 速度を設定（ドップラー効果用）
-     * @param vel 速度ベクトル
+     * @brief Set velocity (for Doppler effect)
+     * @param vel Velocity vector
      */
     void setVelocity(const glm::vec3& vel) {
         velocity = vel;
@@ -102,7 +102,7 @@ struct AudioSource {
     }
 
     /**
-     * @brief 3D音声の有効化
+     * @brief Enable 3D audio
      */
     void enable3D() {
         is3D = true;
@@ -114,7 +114,7 @@ struct AudioSource {
     }
 
     /**
-     * @brief 3D音声の無効化（モノラル再生）
+     * @brief Disable 3D audio (monaural playback)
      */
     void disable3D() {
         is3D = false;

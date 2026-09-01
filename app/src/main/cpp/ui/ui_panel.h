@@ -8,7 +8,7 @@
  * @brief UIパネル（ウィンドウ/ダイアログの基盤）
  *
  * Phase 9: 背景、タイトルバー、ボーダーを持つコンテナパネル。
- * ドラッグ移動、閉じるボタン、タイトルテキスト表示に対応。
+ * ドラッグ移動、Close button、タイトルテキスト表示に対応。
  */
 class UIPanel : public UIComponent {
 public:
@@ -36,7 +36,7 @@ public:
     void setCloseButtonVisible(bool visible) { closeButtonVisible = visible; }
     void setDraggable(bool draggable) { isDraggable = draggable; }
 
-    // === コールバック ===
+    // === Callbacks ===
     using CloseCallback = std::function<void()>;
     void setOnClose(CloseCallback cb) { onCloseCallback = cb; }
 
@@ -51,7 +51,7 @@ protected:
     bool isInsideTitleBar(float x, float y) const;
     bool isInsideCloseButton(float x, float y) const;
 
-    // ドラッグ状態（派生クラスでタイトルバードラッグと区別するために公開）
+    // ドラッグState（派生クラスでタイトルバードラッグと区別するために公開）
     bool isDragging;
     glm::vec2 dragOffset;
 
@@ -64,7 +64,7 @@ private:
     bool isDraggable;
     float contentMargin;
 
-    // 閉じるボタン
+    // Close button
     float closeButtonSize;
     glm::vec4 closeButtonColor;
     CloseCallback onCloseCallback;

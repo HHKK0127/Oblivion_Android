@@ -4,7 +4,7 @@
 #include <GLES3/gl3.h>
 #include <algorithm>
 
-// 静的メンバ初期化
+// Static member initialization
 uint32_t UIComponent::nextId = 1;
 
 // === UIComponent Implementation ===
@@ -37,9 +37,10 @@ void UIComponent::render() {
     // Save OpenGL state
     GLboolean depthTestEnabled;
     glGetBooleanv(GL_DEPTH_TEST, &depthTestEnabled);
-    glDisable(GL_DEPTH_TEST);
+    GLboolean blendEnabled;
+    glGetBooleanv(GL_BLEND, &blendEnabled);
 
-    // Enable blending for transparent UI
+    glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -50,6 +51,7 @@ void UIComponent::render() {
 
     // Restore state
     if (depthTestEnabled) glEnable(GL_DEPTH_TEST);
+    if (!blendEnabled) glDisable(GL_BLEND);
 }
 
 void UIComponent::cleanup() {

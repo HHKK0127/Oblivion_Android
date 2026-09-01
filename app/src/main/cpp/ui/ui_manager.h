@@ -30,7 +30,7 @@ struct CharacterStatus;
 /**
  * @brief UIシステム統合マネージャー
  *
- * Phase 10 Integration: すべてのUIパネルのライフサイクル管理、
+ * Phase 10 Integration: すべてのUIパネルのLifecycle管理、
  * イベントルーティング、更新・描画の中央制御。
  */
 class UIManager {
@@ -38,7 +38,7 @@ public:
     UIManager();
     ~UIManager();
 
-    // 初期化・クリーンアップ
+    // Initialization and cleanup
     bool initialize(TextRenderer* textRenderer,
                     QuestManager* questManager,
                     CharacterStatus* playerStatus = nullptr);
@@ -47,7 +47,7 @@ public:
     // Player status setter (for when character is loaded)
     void setPlayerStatus(CharacterStatus* playerStatus);
 
-    // ライフサイクル
+    // Lifecycle
     void update(float deltaTime);
     void render();
     void setScreenSize(int width, int height);
@@ -98,7 +98,7 @@ public:
         toast_->showToast(toast);
     }
 
-    // イベント入力
+    // Event input
     bool onTouchDown(float x, float y, int pointerId);
     bool onTouchUp(float x, float y, int pointerId);
 

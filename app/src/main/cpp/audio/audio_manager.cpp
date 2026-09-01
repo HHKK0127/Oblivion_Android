@@ -914,3 +914,20 @@ bool AudioManager::playMusic(const std::string& key, float fadeIn) {
 
     return playBGM(def.clipId, fadeIn);
 }
+
+std::string AudioManager::getLoadedAudioList() const {
+    std::string result = "Loaded clips: " + std::to_string(clips.size()) + "\n";
+    for (const auto& pair : clips) {
+        result += "  ID:" + std::to_string(pair.first) + " - " + pair.second->filename + "\n";
+    }
+    return result;
+}
+
+std::string AudioManager::getAudioStats() const {
+    return "Audio Stats:\n"
+           "  Clips: " + std::to_string(clips.size()) + "\n" +
+           "  Sources: " + std::to_string(sources.size()) + "/" + std::to_string(MAX_SOURCES) + "\n" +
+           "  Master Vol: " + std::to_string(masterVolume) + "\n" +
+           "  BGM Vol: " + std::to_string(bgmVolume) + "\n" +
+           "  SE Vol: " + std::to_string(seVolume);
+}

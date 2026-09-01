@@ -54,7 +54,7 @@ private:
     Tab currentTab = MERCHANT_INVENTORY;
     int selectedItemIndex = -1;
     int scrollOffset = 0;
-    int merchantQuantity = 1;     // 購入数量
+    int merchantQuantity = 1;     // Purchase quantity
 
     int screenWidth  = 1080;
     int screenHeight = 1920;

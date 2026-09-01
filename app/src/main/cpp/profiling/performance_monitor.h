@@ -12,21 +12,21 @@
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 struct FrameMetrics {
-    float frameTime;        // ミリ秒
-    float cpuTime;          // ミリ秒
-    float renderTime;       // ミリ秒
-    float updateTime;       // ミリ秒
+    float frameTime;        // Milliseconds
+    float cpuTime;          // Milliseconds
+    float renderTime;       // Milliseconds
+    float updateTime;       // Milliseconds
     float fps;              // フレームレート
-    int droppedFrames;      // フレームドロップ数
+    int droppedFrames;      // Dropped frame count
 };
 
 struct MemoryMetrics {
-    size_t heapSize;        // 総メモリ
-    size_t heapUsed;        // 使用メモリ
-    size_t heapFree;        // 空きメモリ
-    float heapPercentage;   // 使用率（%）
+    size_t heapSize;        // Total memory
+    size_t heapUsed;        // Used memory
+    size_t heapFree;        // Free memory
+    float heapPercentage;   // Usage percentage (%)
     size_t peakMemory;      // ピークメモリ
-    size_t allocationCount; // 割り当て回数
+    size_t allocationCount; // Allocation count
 };
 
 struct PerformanceMetrics {
@@ -112,7 +112,7 @@ private:
     std::unique_ptr<MemoryProfiler> memoryProfiler;
 
     std::vector<float> frameTimes;
-    static constexpr int MAX_SAMPLES = 300;  // 5秒分（60 fps）
+    static constexpr int MAX_SAMPLES = 300;  // 5 seconds (60 fps)
     int frameCount;
     bool isEnabled;
 

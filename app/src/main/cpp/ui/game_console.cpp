@@ -298,6 +298,151 @@ void GameConsole::registerBuiltinCommands() {
         print("=== Performance Stats ===");
         print("Use 'debugpage 2' for detailed view");
     });
+
+    // === Sound commands ===
+    registerCommand("playbgm", "Play background music", [this](const std::vector<std::string>&) {
+        if (gameRefs.playBgm) gameRefs.playBgm();
+        print("Playing BGM");
+    });
+    registerCommand("stopbgm", "Stop background music", [this](const std::vector<std::string>&) {
+        if (gameRefs.stopBgm) gameRefs.stopBgm();
+        print("BGM stopped");
+    });
+    registerCommand("playse", "Play sound effect", [this](const std::vector<std::string>&) {
+        if (gameRefs.playSe) gameRefs.playSe();
+        print("Playing SE");
+    });
+    registerCommand("stopallse", "Stop all sound effects", [this](const std::vector<std::string>&) {
+        if (gameRefs.stopAllSe) gameRefs.stopAllSe();
+        print("All SE stopped");
+    });
+    registerCommand("setvolume", "Set master volume: setvolume <0.0-1.0>", [this](const std::vector<std::string>& args) {
+        if (args.empty()) {
+            print("Usage: setvolume <0.0-1.0>");
+            return;
+        }
+        float vol = std::stof(args[0]);
+        if (gameRefs.setMasterVolume) gameRefs.setMasterVolume(vol);
+        print("Volume set to " + std::to_string(vol));
+    });
+    registerCommand("mute", "Mute all audio", [this](const std::vector<std::string>&) {
+        if (gameRefs.muteAll) gameRefs.muteAll();
+        print("Audio muted");
+    });
+    registerCommand("unmute", "Unmute all audio", [this](const std::vector<std::string>&) {
+        if (gameRefs.unmuteAll) gameRefs.unmuteAll();
+        print("Audio unmuted");
+    });
+    registerCommand("listaudio", "List all audio files", [this](const std::vector<std::string>&) {
+        if (gameRefs.listAudio) {
+            print(gameRefs.listAudio());
+        } else {
+            print("Audio listing not available");
+        }
+    });
+    registerCommand("audiostats", "Show audio statistics", [this](const std::vector<std::string>&) {
+        if (gameRefs.getAudioStats) {
+            print(gameRefs.getAudioStats());
+        } else {
+            print("Audio stats not available");
+        }
+    });
+
+    // === Asset commands ===
+    registerCommand("listtextures", "List all loaded textures", [this](const std::vector<std::string>&) {
+        if (gameRefs.listTextures) {
+            print(gameRefs.listTextures());
+        } else {
+            print("Texture listing not available");
+        }
+    });
+    registerCommand("listmodels", "List all loaded models", [this](const std::vector<std::string>&) {
+        if (gameRefs.listModels) {
+            print(gameRefs.listModels());
+        } else {
+            print("Model listing not available");
+        }
+    });
+    registerCommand("textureinfo", "Show texture info", [this](const std::vector<std::string>&) {
+        if (gameRefs.getTextureInfo) {
+            print(gameRefs.getTextureInfo());
+        } else {
+            print("Texture info not available");
+        }
+    });
+    registerCommand("modelinfo", "Show model info", [this](const std::vector<std::string>&) {
+        if (gameRefs.getModelInfo) {
+            print(gameRefs.getModelInfo());
+        } else {
+            print("Model info not available");
+        }
+    });
+    registerCommand("cachestats", "Show cache statistics", [this](const std::vector<std::string>&) {
+        if (gameRefs.getCacheStats) {
+            print(gameRefs.getCacheStats());
+        } else {
+            print("Cache stats not available");
+        }
+    });
+    registerCommand("clearcache", "Clear asset cache", [this](const std::vector<std::string>&) {
+        if (gameRefs.clearCache) gameRefs.clearCache();
+        print("Cache cleared");
+    });
+    registerCommand("reloadassets", "Reload all assets", [this](const std::vector<std::string>&) {
+        if (gameRefs.reloadAssets) gameRefs.reloadAssets();
+        print("Assets reloaded");
+    });
+    registerCommand("memoryusage", "Show memory usage", [this](const std::vector<std::string>&) {
+        if (gameRefs.getMemoryUsage) {
+            print(gameRefs.getMemoryUsage());
+        } else {
+            print("Memory usage not available");
+        }
+    });
+    registerCommand("assetstats", "Show asset statistics", [this](const std::vector<std::string>&) {
+        if (gameRefs.getAssetStats) {
+            print(gameRefs.getAssetStats());
+        } else {
+            print("Asset stats not available");
+        }
+    });
+
+    // === Log commands ===
+    registerCommand("loglevel", "Set log level: loglevel <all|debug|info|warn|error>", [this](const std::vector<std::string>& args) {
+        if (args.empty()) {
+            print("Usage: loglevel <all|debug|info|warn|error>");
+            return;
+        }
+        if (gameRefs.setLogLevel) gameRefs.setLogLevel(args[0]);
+        print("Log level set to " + args[0]);
+    });
+    registerCommand("clearlogs", "Clear log buffer", [this](const std::vector<std::string>&) {
+        if (gameRefs.clearLogs) gameRefs.clearLogs();
+        print("Logs cleared");
+    });
+    registerCommand("exportlogs", "Export logs to file", [this](const std::vector<std::string>&) {
+        if (gameRefs.exportLogs) gameRefs.exportLogs();
+        print("Logs exported");
+    });
+    registerCommand("logstats", "Show log statistics", [this](const std::vector<std::string>&) {
+        if (gameRefs.getLogStats) {
+            print(gameRefs.getLogStats());
+        } else {
+            print("Log stats not available");
+        }
+    });
+    registerCommand("searchlog", "Search logs: searchlog <pattern>", [this](const std::vector<std::string>& args) {
+        if (args.empty()) {
+            print("Usage: searchlog <pattern>");
+            return;
+        }
+        if (gameRefs.searchLogs) gameRefs.searchLogs(args[0]);
+        print("Searching logs for: " + args[0]);
+    });
+    registerCommand("logautoscroll", "Toggle log auto-scroll", [this](const std::vector<std::string>&) {
+        if (gameRefs.toggleLogAutoScroll) gameRefs.toggleLogAutoScroll();
+        print("Log auto-scroll toggled");
+    });
 }
 
 void GameConsole::handleConsoleTouch(float x, float y, int action) {

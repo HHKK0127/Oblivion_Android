@@ -13,16 +13,16 @@
 #define CTRL_LOGW(...) __android_log_print(ANDROID_LOG_WARN, CTRL_LOG_TAG, __VA_ARGS__)
 
 /**
- * @brief 操作スキームタイプ
+ * @brief Control scheme type
  */
 enum class ControlSchemeType {
-    TOUCH,           // タッチ操作（デフォルト）
-    VIRTUAL_JOYSTICK, // 仮想ジョイスティック
-    GAMEPAD          // ゲームパッド対応
+    TOUCH,           // Touch input (default)
+    VIRTUAL_JOYSTICK, // Virtual joystick
+    GAMEPAD          // Gamepad support
 };
 
 /**
- * @brief 入力アクション
+ * @brief Input action
  */
 enum class InputAction {
     MOVE_FORWARD,
@@ -49,12 +49,12 @@ enum class InputAction {
 };
 
 /**
- * @brief ボタン配置情報
+ * @brief Button layout information
  */
 struct ButtonBinding {
     InputAction action;
-    glm::vec2 position;   // ピクセル座標
-    glm::vec2 size;       // ピクセルサイズ
+    glm::vec2 position;   // Pixel coordinates
+    glm::vec2 size;       // Pixel size
     std::string label;
     bool visible;
     float opacity;
@@ -65,15 +65,15 @@ struct ButtonBinding {
 };
 
 /**
- * @brief 操作スキーム切替コールバック
+ * @brief Control scheme switch callbacks
  */
 using SchemeChangeCallback = std::function<void(ControlSchemeType)>;
 
 /**
- * @brief 操作スキーム管理
+ * @brief Control scheme management
  *
- * Phase 43: 複数の操作スキームを管理し、スキーム切替と
- * カスタマイズ可能なボタン配置を提供する。
+ * Phase 43: Manages multiple control schemes and provides scheme switching and
+ * customizable button layouts.
  */
 class ControlSchemeManager {
 public:
@@ -81,88 +81,88 @@ public:
     ~ControlSchemeManager() = default;
 
     /**
-     * @brief 初期化
-     * @param screenWidth スクリーン幅
-     * @param screenHeight スクリーン高さ
+     * @brief Initialize
+     * @param screenWidth Screen width
+     * @param screenHeight Screen height
      */
     void initialize(int screenWidth, int screenHeight);
 
     /**
-     * @brief 操作スキームを切替
+     * @brief Switch control scheme
      */
     void setScheme(ControlSchemeType type);
 
     /**
-     * @brief 現在のスキームを取得
+     * @brief Get current scheme
      */
     ControlSchemeType getCurrentScheme() const { return currentScheme; }
 
     /**
-     * @brief スキーム名を取得
+     * @brief Get scheme name
      */
     std::string getSchemeName(ControlSchemeType type) const;
 
     /**
-     * @brief スキーム変更コールバックを登録
+     * @brief Register scheme change callback
      */
     void registerSchemeChangeCallback(SchemeChangeCallback callback);
 
-    // === ボタン配置 ===
+    // === Button Layout ===
 
     /**
-     * @brief 現在のスキームのボタン配置を取得
+     * @brief Get current scheme button layout
      */
     const std::vector<ButtonBinding>& getButtonBindings() const;
 
     /**
-     * @brief ボタン配置をカスタマイズ
+     * @brief Customize button layout
      */
     void setButtonPosition(InputAction action, const glm::vec2& position);
 
     /**
-     * @brief ボタンサイズを変更
+     * @brief Change button size
      */
     void setButtonSize(InputAction action, const glm::vec2& size);
 
     /**
-     * @brief ボタンの可視性を設定
+     * @brief Set button visibility
      */
     void setButtonVisible(InputAction action, bool visible);
 
     /**
-     * @brief ボタンの透明度を設定
+     * @brief Set button transparency
      */
     void setButtonOpacity(InputAction action, float opacity);
 
     /**
-     * @brief ボタン配置をデフォルトにリセット
+     * @brief Reset button layout to default
      */
     void resetBindings();
 
-    // === 入力処理 ===
+    // === Input Processing ===
 
     /**
-     * @brief タッチ位置からアクションを検出
-     * @return 該当アクション（なければ COUNT）
+     * @brief Detect action from touch position
+     * @return Matching action (COUNT if none)
      */
     InputAction hitTest(float x, float y) const;
 
     /**
-     * @brief スクリーンサイズ変更
+     * @brief Screen size change
      */
     void setScreenSize(int width, int height);
 
     /**
-     * @brief ゲームパッド入力を処理
-     * @param buttonId ボタンID
-     * @param pressed 押下状態
+     * @brief Process gamepad input
+     * @param buttonId Button ID
+     * @param pressed Pressed state
      */
     void onGamepadButton(int buttonId, bool pressed);
 
     /**
-     * @brief ゲームパッド軸入力を処理
-     * @param axisId 軸ID
-     * @param value 軸値 (-1.0 ~ 1.0)
+     * @brief Process gamepad axis input
+     * @param axisId Axis ID
+     * @param value Axis value (-1.0 to 1.0)
      */
     void onGamepadAxis(int axisId, float value);
 
@@ -172,18 +172,18 @@ private:
     int screenHeight;
     float uiScale;
 
-    // スキーム別ボタン配置
+    // Button layout per scheme
     std::map<ControlSchemeType, std::vector<ButtonBinding>> schemeBindings;
 
-    // コールバック
+    // Callbacks
     std::vector<SchemeChangeCallback> changeCallbacks;
 
-    // デフォルト配置を生成
+    // Generate default layout
     void setupTouchScheme();
     void setupVirtualJoystickScheme();
     void setupGamepadScheme();
 
-    // ボタン配置ヘルパー
+    // Button layout helper
     ButtonBinding createBinding(InputAction action, const glm::vec2& pos,
                                 const glm::vec2& size, const std::string& label);
 };

@@ -27,7 +27,7 @@ bool SettingsUI::initialize(TextRenderer* textRend, SettingsManager* settings, R
     settingsManager = settings;
     renderer = rend;
 
-    // メニューアイテムを設定
+    // Set menu items
     menuItems.push_back(SettingItem::DEBUG_MODE);
     menuItems.push_back(SettingItem::LANGUAGE);
 
@@ -268,14 +268,14 @@ void SettingsUI::selectItem(SettingItem item) {
 
     switch (item) {
         case SettingItem::DEBUG_MODE: {
-            // デバッグモードをトグル
+            // Toggle debug mode
             bool current = settingsManager->isDebugModeEnabled();
             settingsManager->setDebugMode(!current);
             LOGD("Debug mode toggled to: %s", !current ? "ON" : "OFF");
             break;
         }
         case SettingItem::LANGUAGE: {
-            // 言語をトグル
+            // Toggle language
             std::string current = settingsManager->getLanguage();
             std::string newLang = (current == "ja") ? "en" : "ja";
             settingsManager->setLanguage(newLang);

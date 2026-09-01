@@ -489,3 +489,67 @@ void AssetManager::evictLRU() {
         cacheEvict(lruKey);
     }
 }
+
+void AssetManager::clearCache() {
+    meshCache.clear();
+    textureCache.clear();
+    currentCacheSize = 0;
+}
+
+std::string AssetManager::getLoadedTextureList() const {
+    std::string result = "Textures: " + std::to_string(textureCache.size()) + "\n";
+    for (const auto& pair : textureCache) {
+        result += "  " + pair.first + " (" + std::to_string(pair.second.sizeBytes) + " bytes)\n";
+    }
+    return result;
+}
+
+std::string AssetManager::getLoadedModelList() const {
+    std::string result = "Models: " + std::to_string(meshCache.size()) + "\n";
+    for (const auto& pair : meshCache) {
+        result += "  " + pair.first + " (" + std::to_string(pair.second.sizeBytes) + " bytes)\n";
+    }
+    return result;
+}
+
+std::string AssetManager::getTextureCacheStats() const {
+    size_t totalSize = 0;
+    for (const auto& pair : textureCache) {
+        totalSize += pair.second.sizeBytes;
+    }
+    return "Texture Cache: " + std::to_string(textureCache.size()) + " items, " +
+           std::to_string(totalSize) + " bytes";
+}
+
+std::string AssetManager::getModelCacheStats() const {
+    size_t totalSize = 0;
+    for (const auto& pair : meshCache) {
+        totalSize += pair.second.sizeBytes;
+    }
+    return "Model Cache: " + std::to_string(meshCache.size()) + " items, " +
+           std::to_string(totalSize) + " bytes";
+}
+
+std::string AssetManager::getCacheStats() const {
+    return "Cache: " + std::to_string(currentCacheSize) + "/" + std::to_string(maxCacheSize) + " bytes\n" +
+           "  Textures: " + std::to_string(textureCache.size()) + "\n" +
+           "  Models: " + std::to_string(meshCache.size());
+}
+
+std::string AssetManager::getMemoryUsage() const {
+    return "Memory: " + std::to_string(currentCacheSize) + " bytes cached\n" +
+           "  Limit: " + std::to_string(maxCacheSize) + " bytes";
+}
+
+std::string AssetManager::getAssetStats() const {
+    return std::string("Assets:\n") +
+           "  Archives: " + std::to_string(m_archives.size()) + "\n" +
+           "  Textures: " + std::to_string(textureCache.size()) + "\n" +
+           "  Models: " + std::to_string(meshCache.size());
+}
+
+void AssetManager::reloadAllAssets() {
+    // In a real implementation, this would reload all cached assets
+    // For now, just clear the cache
+    clearCache();
+}

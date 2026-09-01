@@ -41,6 +41,7 @@ private:
     std::vector<std::shared_ptr<UIButton>> menuButtons;
     std::shared_ptr<UIPanel> optionsPanel;
     std::shared_ptr<UIPanel> dataFilesPanel;
+    std::shared_ptr<UIButton> supportBackBtn;
 
     // Textures
     GLuint bgTexture = 0;

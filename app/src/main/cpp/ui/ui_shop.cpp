@@ -7,7 +7,7 @@
 
 UIShop::UIShop(const std::string& title)
     : UIPanel(title.empty() ? "Shop" : title) {
-    // 商品棚風の背景色
+    // 商品棚風のBackground色
     setBackgroundColor(glm::vec4(
         PlaceholderAssets::Colors::PARCHMENT_DARK.x * 0.8f,
         PlaceholderAssets::Colors::PARCHMENT_DARK.y * 0.75f,
@@ -65,7 +65,7 @@ bool UIShop::onTouchDown(float x, float y, int pointerId) {
         return true;
     }
 
-    // スクロール
+    // Scroll
     if (hitTestScrollUp(x, y)) {
         scrollOffset = std::max(0, scrollOffset - 1);
         return true;
@@ -79,14 +79,14 @@ bool UIShop::onTouchDown(float x, float y, int pointerId) {
         return true;
     }
 
-    // アイテム選択
+    // Item selection
     int row = hitTestItemRow(x, y);
     if (row >= 0) {
         selectedItemIndex = scrollOffset + row;
         return true;
     }
 
-    // 購入/売却ボタン
+    // Buy/Sell button
     if (currentTab == MERCHANT_INVENTORY && hitTestBuyButton(x, y)) {
         if (selectedItemIndex >= 0) {
             const auto& items = currentMerchant->getInventory();
@@ -110,7 +110,7 @@ bool UIShop::onTouchDown(float x, float y, int pointerId) {
         return true;
     }
 
-    // 数量増減ボタン
+    // Quantity increase/decrease button
     if (hitTestIncreaseQty(x, y)) {
         merchantQuantity = std::min(merchantQuantity + 1, 99);
         return true;

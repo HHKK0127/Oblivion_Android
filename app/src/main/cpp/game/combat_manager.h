@@ -29,29 +29,29 @@ namespace weave {
 
 enum class WeaponType : uint8_t {
     NONE = 0,
-    SWORD_ONE_HAND,    // 片手剣: 速攻、バランス型
-    SWORD_TWO_HAND,    // 両手剣: 高火力、遅い
-    AXE_ONE_HAND,      // 片手斧: 中火力、出血効果
-    AXE_TWO_HAND,      // 両手斧: 最高火力、最も遅い
-    MACE_ONE_HAND,     // 片手メイス: 防御無視
-    MACE_TWO_HAND,     // 両手メイス: 防御無視、遅い
-    DAGGER,            // ダガー: 最速、クリティカル率高い
-    BOW,               // 弓: 遠距離
-    STAFF,             // 杖: 魔法增幅
+    SWORD_ONE_HAND,    // One-handed sword: fast attack, balanced
+    SWORD_TWO_HAND,    // Two-handed sword: high damage, slow
+    AXE_ONE_HAND,      // One-handed axe: medium damage, bleed effect
+    AXE_TWO_HAND,      // Two-handed axe: highest damage, slowest
+    MACE_ONE_HAND,     // One-handed mace: armor penetration
+    MACE_TWO_HAND,     // Two-handed mace: armor penetration, slow
+    DAGGER,            // Dagger: fastest, high critical rate
+    BOW,               // Bow: ranged
+    STAFF,             // Staff: magic amplification
     COUNT
 };
 
 struct WeaponProperties {
     WeaponType type = WeaponType::NONE;
     float baseDamage = 0.0f;
-    float attackSpeed = 1.0f;       // 攻撃速度倍率（1.0が基準）
-    float range = 3.0f;             // 攻撃範囲（メートル）
-    float criticalChance = 0.05f;   // クリティカル確率（5%）
-    float criticalMultiplier = 2.0f; // クリティカル倍率
-    float staminaCost = 10.0f;      // スタミナ消費
-    bool isRanged = false;          // 遠距離武器か
-    bool ignoresArmor = false;      // 防御無視（メイス系）
-    float bleedChance = 0.0f;       // 出血確率（斧系）
+    float attackSpeed = 1.0f;       // Attack speed multiplier (1.0 is base)
+    float range = 3.0f;             // Attack range (meters)
+    float criticalChance = 0.05f;   // Critical hit chance (5%)
+    float criticalMultiplier = 2.0f; // Critical hit multiplier
+    float staminaCost = 10.0f;      // Stamina cost
+    bool isRanged = false;          // Is ranged weapon
+    bool ignoresArmor = false;      // Ignores armor (mace type)
+    float bleedChance = 0.0f;       // Bleed chance (axe type)
 };
 
 // ============================================================================
@@ -59,11 +59,11 @@ struct WeaponProperties {
 // ============================================================================
 
 struct Hitbox {
-    glm::vec3 center;       // ワールド座標での中心
-    glm::vec3 halfExtents;  // 半径（x, y, z）
+    glm::vec3 center;       // Center in world coordinates
+    glm::vec3 halfExtents;  // Half extents (x, y, z)
     float damage = 0.0f;
     uint32_t ownerEntityId = 0;
-    float lifetime = 0.1f;  // 存続時間（秒）
+    float lifetime = 0.1f;  // Lifetime (seconds)
     float elapsed = 0.0f;
     bool isActive = false;
 };
@@ -138,7 +138,7 @@ private:
 
     static constexpr float DAMAGE_CALCULATION_COOLDOWN = 1.0f;
     static constexpr float HITBOX_LIFETIME = 0.15f;
-    static constexpr float PARRY_WINDOW = 0.3f;    // パリィ受付時間
+    static constexpr float PARRY_WINDOW = 0.3f;    // Parry window time
     static constexpr float DODGE_COOLDOWN = 1.0f;
     static constexpr float BLEED_DURATION = 5.0f;
     static constexpr float BLEED_DAMAGE_PER_SEC = 3.0f;

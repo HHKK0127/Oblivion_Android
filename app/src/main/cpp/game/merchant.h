@@ -6,15 +6,15 @@
 #include "inventory.h"
 
 /**
- * @brief マーチャント商品エントリ
- * NPCが売買する商品情報
+ * @brief Merchant item entry
+ * Merchant item information for NPC buying/selling
  */
 struct MerchantItem {
     std::string itemId;
     std::string itemName;
-    float buyPrice;      // プレイヤーが買う価格
-    float sellPrice;     // プレイヤーが売る価格
-    int quantity;        // 在庫数
+    float buyPrice;      // Price for player to buy
+    float sellPrice;     // Price for player to sell
+    int quantity;        // Stock quantity
     ItemType category;   // Using ItemType instead of ItemCategory
     std::string description;
 
@@ -26,8 +26,8 @@ struct MerchantItem {
 };
 
 /**
- * @brief マーチャント情報
- * NPC店主の商品リストと取引ルール
+ * @brief Merchant information
+ * NPC shopkeeper's product list and trading rules
  */
 class Merchant {
 public:
@@ -35,13 +35,13 @@ public:
              const std::string& shopType = "General Goods");
     ~Merchant() = default;
 
-    // 商品管理
+    // Product management
     void addItem(const MerchantItem& item);
     void removeItem(const std::string& itemId, int32_t quantity = 1);
     MerchantItem* findItem(const std::string& itemId);
     const std::vector<MerchantItem>& getInventory() const { return inventory_; }
 
-    // 取引価格計算（マーチャント/プレイヤーの説得度などを考慮）
+    // Trade price calculation (considering merchant/player charisma, etc.)
     float calculateBuyPrice(const std::string& itemId, float playerCharisma = 0.0f) const;
     float calculateSellPrice(const std::string& itemId, float playerCharisma = 0.0f) const;
 
@@ -58,5 +58,5 @@ private:
     std::string shopName_;
     std::string shopType_;        // "General Goods", "Weapons", "Magic", etc.
     std::vector<MerchantItem> inventory_;
-    float shopGold_;              // マーチャントの現金
+    float shopGold_;              // Merchant's cash
 };

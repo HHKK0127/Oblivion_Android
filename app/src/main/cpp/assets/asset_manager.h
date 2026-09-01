@@ -42,6 +42,17 @@ public:
     void cacheEvict(const std::string& key);
     size_t getCacheSize() const;
     void setCacheLimit(size_t bytes);
+    void clearCache();
+
+    // Asset listing (for debug menu)
+    std::string getLoadedTextureList() const;
+    std::string getLoadedModelList() const;
+    std::string getTextureCacheStats() const;
+    std::string getModelCacheStats() const;
+    std::string getCacheStats() const;
+    std::string getMemoryUsage() const;
+    std::string getAssetStats() const;
+    void reloadAllAssets();
 
     // ESM game data
     oblivion::ESMManager& getEsmManager() { return m_esmManager; }

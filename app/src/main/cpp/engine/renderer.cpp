@@ -11,7 +11,8 @@
 #include <chrono>
 
 Renderer::Renderer()
-    : showLauncher(true), showTitleScreen(false), screenWidth(1080), screenHeight(1920),
+    : showLauncher(true), showTitleScreen(false), shouldExit(false),
+      screenWidth(1080), screenHeight(1920),
       targetFPS(60), frameTimeThreshold(1000.0f / 60.0f) {
     LOGD("Renderer created with target FPS: %d", targetFPS);
     lastFrameTime = std::chrono::high_resolution_clock::now();
@@ -89,6 +90,23 @@ void Renderer::resize(unsigned int width, unsigned int height) {
     screenHeight = height;
     LOGI("Renderer resized to: %ux%u", screenWidth, screenHeight);
 
+    // Update responsive UI manager
+    if (responsiveUIManager) {
+        SafeAreaManager::SafeAreaInsets defaultInsets = {0.0f, 0.0f, 0.0f, 0.0f};
+        responsiveUIManager->UpdateForScreenChange(
+            glm::vec2(static_cast<float>(width), static_cast<float>(height)),
+            defaultInsets
+        );
+        uiScale = responsiveUIManager->GetFontScaler().GetCurrentScale();
+        LOGI("ResponsiveUIManager updated, UI Scale: %.2f", uiScale);
+    } else {
+        // Fallback calculation
+        float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
+        float referenceRatio = 16.0f / 9.0f;
+        uiScale = std::max(0.5f, std::min(1.5f, referenceRatio / aspectRatio));
+    }
+    LOGI("UI Scale factor: %.2f", uiScale);
+
     // Update TextRenderer with new dimensions - CRITICAL for correct projection
     if (textRenderer) {
         LOGI("TextRenderer exists, calling setScreenSize(%u, %u)", screenWidth, screenHeight);
@@ -109,20 +127,36 @@ void Renderer::resize(unsigned int width, unsigned int height) {
         uiSystem->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
         LOGI("UISystem screen size updated to: %ux%u", screenWidth, screenHeight);
         
-        // Setup joystick position based on new screen size
+        // Get safe area adjusted positions
+        float joystickRadius = 150.0f * uiScale;
+        float joystickX = 200.0f * uiScale;
+        float joystickY = screenHeight - 200.0f * uiScale;
+        
+        // Apply safe area adjustments if available
+        if (responsiveUIManager) {
+            auto safeInsets = responsiveUIManager->GetSafeAreaInsets();
+            joystickX += safeInsets.left;
+            joystickY -= safeInsets.bottom;
+        }
+        
         if (!joystick) {
-            joystick = std::make_shared<UIJoystick>(250.0f, screenHeight - 250.0f, 150.0f);
-            joystick->setVisible(false); // Hidden until game starts
-            uiSystem->registerComponent(joystick, 100); // Draw above other components if overlapping
+            joystick = std::make_shared<UIJoystick>(joystickX, joystickY, joystickRadius);
+            joystick->setVisible(false);
+            uiSystem->registerComponent(joystick, 100);
         } else {
-            // Update existing joystick position without recreating
-                        joystick->setPosition(250.0f, screenHeight - 250.0f);
+            joystick->setPosition(joystickX, joystickY);
         }
 
-        // Setup combat buttons on right side of screen
-        float btnSize = 120.0f;
-        float btnMargin = 20.0f;
+        // Setup combat buttons on right side of screen (bottom-right)
+        float btnSize = 120.0f * uiScale;
+        float btnMargin = 20.0f * uiScale;
         float btnX = screenWidth - btnSize - btnMargin;
+        
+        // Apply safe area adjustments
+        if (responsiveUIManager) {
+            auto safeInsets = responsiveUIManager->GetSafeAreaInsets();
+            btnX -= safeInsets.right;
+        }
 
         // Attack button (bottom-right)
         if (!attackButton) {
@@ -130,7 +164,7 @@ void Renderer::resize(unsigned int width, unsigned int height) {
             attackButton->setPosition(btnX, screenHeight - btnSize - btnMargin);
             attackButton->setSize(btnSize, btnSize);
             attackButton->setLabel("ATK");
-            attackButton->setLabelScale(0.8f);
+            attackButton->setLabelScale(0.8f * uiScale);
             attackButton->setNormalColor(glm::vec4(0.8f, 0.2f, 0.2f, 0.7f));
             attackButton->setPressedColor(glm::vec4(1.0f, 0.1f, 0.1f, 0.9f));
             attackButton->setTextRenderer(textRenderer.get());
@@ -161,7 +195,7 @@ void Renderer::resize(unsigned int width, unsigned int height) {
             blockButton->setPosition(btnX, screenHeight - btnSize * 2 - btnMargin * 2);
             blockButton->setSize(btnSize, btnSize);
             blockButton->setLabel("BLK");
-            blockButton->setLabelScale(0.8f);
+            blockButton->setLabelScale(0.8f * uiScale);
             blockButton->setNormalColor(glm::vec4(0.2f, 0.4f, 0.8f, 0.7f));
             blockButton->setPressedColor(glm::vec4(0.3f, 0.5f, 1.0f, 0.9f));
             blockButton->setTextRenderer(textRenderer.get());
@@ -181,21 +215,33 @@ void Renderer::resize(unsigned int width, unsigned int height) {
             castSpellButton->setPosition(btnX, screenHeight - btnSize * 3 - btnMargin * 3);
             castSpellButton->setSize(btnSize, btnSize);
             castSpellButton->setLabel("MAG");
-            castSpellButton->setLabelScale(0.8f);
+            castSpellButton->setLabelScale(0.8f * uiScale);
             castSpellButton->setNormalColor(glm::vec4(0.6f, 0.2f, 0.8f, 0.7f));
             castSpellButton->setPressedColor(glm::vec4(0.8f, 0.3f, 1.0f, 0.9f));
             castSpellButton->setTextRenderer(textRenderer.get());
             castSpellButton->setOnClick([this]() {
                 // Cast spell using SpellManager
-                if (spellManager && combatManager) {
+                if (spellManager && combatManager && playerController && playerController->getPlayer()) {
                     LOGD("Cast spell button pressed");
+                    auto& player = *playerController->getPlayer();
 
                     // If no spell selected, show spell selection panel
                     if (!selectedSpell) {
-                        // Get player's known spells (player ID = 1)
-                        auto playerSpells = spellManager->getNpcEquippedSpells(1);
+                        // Get player's known spells from Player struct
+                        std::vector<std::shared_ptr<Spell>> playerSpells;
+                        LOGD("Player equippedSpells count: %zu, knownSpells count: %zu",
+                             player.equippedSpells.size(), player.knownSpells.size());
+                        for (uint32_t sid : player.equippedSpells) {
+                            auto sp = spellManager->getSpell(sid);
+                            LOGD("  equippedSpell ID=%u -> %s", sid, sp ? sp->name.c_str() : "NOT FOUND");
+                            if (sp) playerSpells.push_back(sp);
+                        }
                         if (playerSpells.empty()) {
-                            playerSpells = spellManager->getNpcSpells(1);
+                            for (uint32_t sid : player.knownSpells) {
+                                auto sp = spellManager->getSpell(sid);
+                                LOGD("  knownSpell ID=%u -> %s", sid, sp ? sp->name.c_str() : "NOT FOUND");
+                                if (sp) playerSpells.push_back(sp);
+                            }
                         }
 
                         if (playerSpells.empty()) {
@@ -215,8 +261,8 @@ void Renderer::resize(unsigned int width, unsigned int height) {
                     auto enemy = combatManager->findNearestEnemyToPlayer(worldManager->getPlayerPosition());
                     uint32_t targetId = enemy ? enemy->npcId : 0;
 
-                    // Cast selected spell (player ID = 1)
-                    bool success = spellManager->castSpell(1, selectedSpell->spellId, targetId);
+                    // Cast selected spell using player-direct path
+                    bool success = spellManager->castPlayerSpell(&player, selectedSpell->spellId, targetId);
                     LOGD("Cast spell %s: %s", selectedSpell->name.c_str(), success ? "success" : "failed");
 
                     // Play magic sound effect
@@ -231,12 +277,12 @@ void Renderer::resize(unsigned int width, unsigned int height) {
             uiSystem->registerComponent(castSpellButton, 100);
         }
 
-        // Quick-slot buttons (bottom-left, above joystick)
-        // 4 slots side by side: [F1][F2][F3][F4]
-        float slotSize = 80.0f;
-        float slotMargin = 8.0f;
-        float slotStartX = 30.0f;
-        float slotY = screenHeight - slotSize - 20.0f;
+        // Quick-slot buttons (top-right area, above combat buttons)
+        // Place in top-right corner to avoid joystick and DebugHUD overlap
+        float slotSize = 70.0f * uiScale;
+        float slotMargin = 6.0f * uiScale;
+        float slotStartX = screenWidth - (slotSize * 4 + slotMargin * 3) - 20.0f * uiScale;
+        float slotY = 20.0f * uiScale; // Top-right, away from DebugHUD (top-left)
 
         for (int i = 0; i < QUICK_SLOT_COUNT; i++) {
             if (!quickSlotButtons[i]) {
@@ -246,7 +292,7 @@ void Renderer::resize(unsigned int width, unsigned int height) {
                 btn->setPosition(slotX, slotY);
                 btn->setSize(slotSize, slotSize);
                 btn->setLabel("F" + std::to_string(i + 1));
-                btn->setLabelScale(0.6f);
+                btn->setLabelScale(0.6f * uiScale);
                 btn->setNormalColor(glm::vec4(0.2f, 0.2f, 0.3f, 0.6f));
                 btn->setPressedColor(glm::vec4(0.4f, 0.4f, 0.6f, 0.9f));
                 btn->setTextRenderer(textRenderer.get());
@@ -260,9 +306,18 @@ void Renderer::resize(unsigned int width, unsigned int height) {
                         // Open spell panel to assign to this slot
                         pendingAssignSlot = i;
                         if (spellSelectionPanel && spellManager) {
-                            auto spells = spellManager->getNpcEquippedSpells(1);
-                            if (spells.empty()) spells = spellManager->getNpcSpells(1);
-                            spellSelectionPanel->setSpells(spells);
+                            std::vector<std::shared_ptr<Spell>> playerSpells;
+                            for (uint32_t sid : player.equippedSpells) {
+                                auto sp = spellManager->getSpell(sid);
+                                if (sp) playerSpells.push_back(sp);
+                            }
+                            if (playerSpells.empty()) {
+                                for (uint32_t sid : player.knownSpells) {
+                                    auto sp = spellManager->getSpell(sid);
+                                    if (sp) playerSpells.push_back(sp);
+                                }
+                            }
+                            spellSelectionPanel->setSpells(playerSpells);
                             spellSelectionPanel->setVisible(true);
                         }
                     } else {
@@ -274,8 +329,8 @@ void Renderer::resize(unsigned int width, unsigned int height) {
                         for (auto& e : enemies) {
                             if (e && e->npcId != 1) { targetId = e->npcId; break; }
                         }
-                        if (spellManager && targetId != 0) {
-                            spellManager->castSpell(1, spell->spellId, targetId);
+                        if (spellManager) {
+                            spellManager->castPlayerSpell(&player, spell->spellId, targetId);
                         }
                         if (audioManager) {
                             audioManager->playSound("magic/spell_equip");
@@ -383,6 +438,17 @@ bool Renderer::initGameSystems() {
         uiSystem->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
         LOGI("UISystem initialized successfully (Phase 9 UI Framework ready)");
     }
+
+    // Initialize Responsive UI Manager
+    LOGI("Creating ResponsiveUIManager...");
+    responsiveUIManager = std::make_unique<ResponsiveUIManager>();
+    responsiveUIManager->Initialize();
+    SafeAreaManager::SafeAreaInsets defaultInsets = {0.0f, 0.0f, 0.0f, 0.0f};
+    responsiveUIManager->UpdateForScreenChange(
+        glm::vec2(static_cast<float>(screenWidth), static_cast<float>(screenHeight)),
+        defaultInsets
+    );
+    LOGI("ResponsiveUIManager initialized successfully");
 
     // Initialize Floating Combat Text
     LOGI("Creating UIFloatingText...");
@@ -771,6 +837,94 @@ bool Renderer::initGameSystems() {
         }
     };
 
+    // Sound callbacks
+    refs.playBgm = [this]() {
+        if (audioManager) audioManager->playMusic("default");
+    };
+    refs.stopBgm = [this]() {
+        if (audioManager) audioManager->stopBGM();
+    };
+    refs.playSe = [this]() {
+        if (audioManager) audioManager->playSound("ui/click");
+    };
+    refs.stopAllSe = [this]() {
+        if (audioManager) audioManager->stopAllSE();
+    };
+    refs.setMasterVolume = [this](float vol) {
+        if (audioManager) audioManager->setMasterVolume(vol);
+    };
+    refs.muteAll = [this]() {
+        if (audioManager) audioManager->setMasterVolume(0.0f);
+    };
+    refs.unmuteAll = [this]() {
+        if (audioManager) audioManager->setMasterVolume(1.0f);
+    };
+    refs.listAudio = [this]() -> std::string {
+        if (audioManager) return audioManager->getLoadedAudioList();
+        return "Audio manager not available";
+    };
+    refs.getAudioStats = [this]() -> std::string {
+        if (audioManager) return audioManager->getAudioStats();
+        return "Audio stats not available";
+    };
+
+    // Asset callbacks
+    refs.listTextures = [this]() -> std::string {
+        if (assetManager) return assetManager->getLoadedTextureList();
+        return "Asset manager not available";
+    };
+    refs.listModels = [this]() -> std::string {
+        if (assetManager) return assetManager->getLoadedModelList();
+        return "Asset manager not available";
+    };
+    refs.getTextureInfo = [this]() -> std::string {
+        if (assetManager) return assetManager->getTextureCacheStats();
+        return "Texture info not available";
+    };
+    refs.getModelInfo = [this]() -> std::string {
+        if (assetManager) return assetManager->getModelCacheStats();
+        return "Model info not available";
+    };
+    refs.getCacheStats = [this]() -> std::string {
+        if (assetManager) return assetManager->getCacheStats();
+        return "Cache stats not available";
+    };
+    refs.clearCache = [this]() {
+        if (assetManager) assetManager->clearCache();
+    };
+    refs.reloadAssets = [this]() {
+        if (assetManager) assetManager->reloadAllAssets();
+    };
+    refs.getMemoryUsage = [this]() -> std::string {
+        if (assetManager) return assetManager->getMemoryUsage();
+        return "Memory usage not available";
+    };
+    refs.getAssetStats = [this]() -> std::string {
+        if (assetManager) return assetManager->getAssetStats();
+        return "Asset stats not available";
+    };
+
+    // Log callbacks
+    refs.setLogLevel = [this](const std::string& level) {
+        if (debugHUD) debugHUD->setLogLevel(level);
+    };
+    refs.clearLogs = [this]() {
+        if (debugHUD) debugHUD->clearLogs();
+    };
+    refs.exportLogs = [this]() {
+        if (debugHUD) debugHUD->exportLogs();
+    };
+    refs.getLogStats = [this]() -> std::string {
+        if (debugHUD) return debugHUD->getLogStats();
+        return "Log stats not available";
+    };
+    refs.searchLogs = [this](const std::string& pattern) {
+        if (debugHUD) debugHUD->searchLogs(pattern);
+    };
+    refs.toggleLogAutoScroll = [this]() {
+        if (debugHUD) debugHUD->toggleLogAutoScroll();
+    };
+
     gameConsole->setGameSystemRefs(refs);
     LOGI("GameSystemRefs connected to game systems");
 
@@ -1146,9 +1300,8 @@ bool Renderer::initGameSystems() {
     });
 
     launcherScreen->setOnExitCallback([this]() {
-        LOGI("Launcher Exit clicked");
-        // Android: app exit via JNI
-        // Call Activity.finish() via JNI etc.
+        LOGI("Launcher Exit clicked - requesting app exit");
+        shouldExit = true;
     });
 
     LOGI("LauncherScreen initialized");
@@ -1679,7 +1832,7 @@ void Renderer::createTestScenario() {
                      fireball, heal, restoreMana);
             } else {
                 // No ESM: use hardcoded spells
-                // 破壊の魔法：ファイアボール
+                // Destruction magic: Fireball
                 fireball = spellManager->createSpell(
                     "Fireball", "ファイアボール",
                     MagicSchool::DESTRUCTION, 50.0f, 30.0f);
@@ -1690,7 +1843,7 @@ void Renderer::createTestScenario() {
                     spellManager->equipSpellToNpc(izar->npcId, fireball);
                 }
 
-                // 回復の魔法：ヒール
+                // Restoration magic: Heal
                 heal = spellManager->createSpell(
                     "Heal", "ヒール",
                     MagicSchool::RESTORATION, 40.0f, 0.0f);
@@ -1703,9 +1856,9 @@ void Renderer::createTestScenario() {
                     spellManager->equipSpellToNpc(izar->npcId, heal);
                 }
 
-                // 神秘の魔法：マナ回復
+                // Mysticism magic: Restore Mana
                 restoreMana = spellManager->createSpell(
-                    "Restore Mana", "マナ回復",
+                    "Restore Mana", "Restore Mana",
                     MagicSchool::MYSTICISM, 30.0f, 0.0f);
                 if (restoreMana != 0) {
                     spellManager->addEffectToSpell(restoreMana,
@@ -1719,22 +1872,27 @@ void Renderer::createTestScenario() {
             }
         }
 
-        // Teach spells to the PLAYER (ID = 1) so MAG button works
-        if (spellManager) {
+        // Teach spells to the PLAYER directly (Player is not in NpcManager)
+        if (playerController && playerController->getPlayer()) {
+            auto& player = *playerController->getPlayer();
+            LOGI("Player ID=%u, knownSpells.size()=%zu, equippedSpells.size()=%zu BEFORE teaching",
+                 player.playerId, player.knownSpells.size(), player.equippedSpells.size());
             if (fireball != 0) {
-                spellManager->teachSpellToNpc(1, fireball);
-                spellManager->equipSpellToNpc(1, fireball);
-                LOGI("Taught Fireball to player");
+                player.knownSpells.push_back(fireball);
+                player.equippedSpells.push_back(fireball);
+                LOGI("Taught Fireball to player (direct), spellId=%u", fireball);
             }
             if (heal != 0) {
-                spellManager->teachSpellToNpc(1, heal);
-                spellManager->equipSpellToNpc(1, heal);
-                LOGI("Taught Heal to player");
+                player.knownSpells.push_back(heal);
+                player.equippedSpells.push_back(heal);
+                LOGI("Taught Heal to player (direct), spellId=%u", heal);
             }
             if (restoreMana != 0) {
-                spellManager->teachSpellToNpc(1, restoreMana);
-                LOGI("Taught RestoreMana to player");
+                player.knownSpells.push_back(restoreMana);
+                LOGI("Taught RestoreMana to player (direct), spellId=%u", restoreMana);
             }
+            LOGI("Player knownSpells.size()=%zu, equippedSpells.size()=%zu AFTER teaching",
+                 player.knownSpells.size(), player.equippedSpells.size());
         }
 
         // Initiate test combat
@@ -2129,7 +2287,7 @@ void Renderer::render(float deltaTime) {
     }
 
     // ===== NATIVE UI & HUD: Render directly on top of the screen at crisp, 100% full native resolution =====
-    // 2D UIやHUDをレトロフィルター適用「後」に描画することで、文字が潰れたりレイアウトが歪むのを完全に防ぎます。
+    // Render 2D UI and HUD AFTER applying retro filter to completely prevent text corruption and layout distortion.
 
     // Update Debug HUD (DeltaTime is in milliseconds from the JNI layer)
     if (debugHUD) {
@@ -2170,9 +2328,6 @@ void Renderer::render(float deltaTime) {
     if (gameConsole) {
         gameConsole->render();
     }
-    if (debugMenu && debugMenu->isVisible()) {
-        debugMenu->render();
-    }
     if (npcDebugVisualizer) {
         npcDebugVisualizer->render();
     }
@@ -2196,6 +2351,11 @@ void Renderer::render(float deltaTime) {
     // Render Phase 9 UI Framework components (overlays on top of existing UI)
     if (uiSystem) {
         uiSystem->render();
+    }
+
+    // Render DebugMenu on top of UISystem when visible
+    if (debugMenu && debugMenu->isVisible()) {
+        debugMenu->render();
     }
 
     // Render Floating Combat Text
@@ -2283,7 +2443,15 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
 
     // DebugMenu handles touch when visible
     if (debugMenu && debugMenu->isVisible()) {
-        debugMenu->onTouchEvent(x, y, action);
+        if (action == 0 || action == 5) { // DOWN
+            debugMenu->onTouchDown(x, y);
+        } else if (action == 1 || action == 6) { // UP
+            debugMenu->onTouchUp(x, y);
+        } else if (action == 2) { // MOVE
+            debugMenu->onTouchMove(x, y);
+        } else if (action == 3) { // CANCEL
+            debugMenu->onTouchCancel();
+        }
         return;
     }
 
@@ -2557,7 +2725,17 @@ void Renderer::toggleGameConsole() {
 void Renderer::toggleDebugMenu() {
     if (debugMenu) {
         debugMenu->toggle();
-        LOGI("Debug Menu %s", debugMenu->isVisible() ? "opened" : "closed");
+        bool menuVisible = debugMenu->isVisible();
+        LOGI("Debug Menu %s", menuVisible ? "opened" : "closed");
+
+        // Hide game UI buttons when debug menu is open
+        if (attackButton) attackButton->setVisible(!menuVisible);
+        if (blockButton) blockButton->setVisible(!menuVisible);
+        if (castSpellButton) castSpellButton->setVisible(!menuVisible);
+        for (int i = 0; i < QUICK_SLOT_COUNT; i++) {
+            if (quickSlotButtons[i]) quickSlotButtons[i]->setVisible(!menuVisible);
+        }
+        if (joystick) joystick->setVisible(!menuVisible);
     }
 }
 

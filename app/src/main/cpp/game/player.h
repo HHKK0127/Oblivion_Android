@@ -97,6 +97,10 @@ struct Player {
     int32_t currentCellX = 0;
     int32_t currentCellY = 0;
 
+    // Known spells (player's spell book)
+    std::vector<uint32_t> knownSpells;
+    std::vector<uint32_t> equippedSpells;
+
     // Quick-slot spells (4 slots, nullptr = empty)
     static constexpr int QUICK_SLOT_COUNT = 4;
     std::array<std::shared_ptr<Spell>, QUICK_SLOT_COUNT> quickSlotSpells = {};

@@ -10,8 +10,8 @@
 #undef LOGI
 
 /**
- * @brief ゲーム設定管理システム
- * ゲームの各種設定（言語、デバッグモードなど）を管理します
+ * @brief Game settings management system
+ * Manages various game settings (language, debug mode, etc.)
  */
 class SettingsManager {
 public:
@@ -19,42 +19,42 @@ public:
     ~SettingsManager();
 
     /**
-     * @brief 設定を初期化
+     * @brief Initialize settings
      */
     bool initialize();
 
     /**
-     * @brief デバッグモードを有効/無効にする
+     * @brief Enable/disable debug mode
      */
     void setDebugMode(bool enabled);
 
     /**
-     * @brief デバッグモードが有効かどうかを取得
+     * @brief Check if debug mode is enabled
      */
     bool isDebugModeEnabled() const { return debugModeEnabled; }
 
     /**
-     * @brief 言語を設定（"ja" = 日本語, "en" = 英語）
+     * @brief Set language ("ja" = Japanese, "en" = English)
      */
     void setLanguage(const std::string& lang);
 
     /**
-     * @brief 現在の言語を取得
+     * @brief Get current language
      */
     std::string getLanguage() const { return currentLanguage; }
 
     /**
-     * @brief 設定を保存
+     * @brief Save settings
      */
     void saveSettings();
 
     /**
-     * @brief 設定を読み込み
+     * @brief Load settings
      */
     void loadSettings();
 
     /**
-     * @brief 設定をリセット
+     * @brief Reset settings
      */
     void resetToDefaults();
 

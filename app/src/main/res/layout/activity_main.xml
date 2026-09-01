@@ -10,15 +10,16 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- Debug Button Overlay -->
+    <!-- Debug Button Overlay - Top-left, below status bar -->
     <LinearLayout
         android:id="@+id/debug_button_panel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="top|end"
-        android:layout_marginTop="60dp"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="50dp"
         android:orientation="vertical"
-        android:padding="8dp"
+        android:padding="4dp"
         android:visibility="gone">
 
         <Button
@@ -71,17 +72,18 @@
 
     </LinearLayout>
 
-    <!-- Debug Toggle Button (always visible) -->
+    <!-- Debug Toggle Button - Top-left corner -->
     <Button
         android:id="@+id/btn_debug_toggle"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_gravity="top|end"
-        android:layout_margin="16dp"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="10dp"
         android:text="D"
-        android:textSize="16sp"
+        android:textSize="12sp"
         android:background="#333333"
         android:textColor="#FFFFFF"
-        android:alpha="0.7" />
+        android:alpha="0.5" />
 
 </FrameLayout>

@@ -47,7 +47,7 @@ void MenuTransitionManager::update(float deltaTime) {
             break;
     }
 
-    // 50% 遷移完了で outgoing コールバック発火
+    // Fire outgoing callback at 50% transition completion
     if (!outgoingCallbackFired && progress >= 0.5f && onOutgoingComplete) {
         onOutgoingComplete();
         outgoingCallbackFired = true;
@@ -55,7 +55,7 @@ void MenuTransitionManager::update(float deltaTime) {
         MTRANS_LOGD("Transition: outgoing complete, switching to incoming");
     }
 
-    // 100% 完了
+    // 100% complete
     if (progress >= 1.0f) {
         if (onIncomingComplete) {
             onIncomingComplete();
@@ -111,7 +111,7 @@ void MenuTransitionManager::setScreenSize(int w, int h) {
     screenHeight = h;
 }
 
-// === イージング関数 ===
+// === Easing Functions ===
 
 float MenuTransitionManager::easeInOut(float t) const {
     return t < 0.5f ? 2.0f * t * t : 1.0f - std::pow(-2.0f * t + 2.0f, 2.0f) / 2.0f;
@@ -121,20 +121,20 @@ float MenuTransitionManager::easeOutCubic(float t) const {
     return 1.0f - std::pow(1.0f - t, 3.0f);
 }
 
-// === 遷移タイプ別更新 ===
+// === Per-Type Transition Update ===
 
 void MenuTransitionManager::updateFade(float progress) {
     float eased = easeInOut(progress);
 
     if (currentType == TransitionType::FADE_IN) {
-        // フェードイン: 透明 → 不透明 → 透明
+        // Fade in: transparent -> opaque -> transparent
         if (progress < 0.5f) {
             currentAlpha = eased * 2.0f;
         } else {
             currentAlpha = 2.0f - eased * 2.0f;
         }
     } else {
-        // フェードアウト: 不透明 → 透明
+        // Fade out: opaque -> transparent
         currentAlpha = 1.0f - eased;
     }
 }
@@ -144,7 +144,7 @@ void MenuTransitionManager::updateSlide(float progress) {
     float sw = static_cast<float>(screenWidth);
     float sh = static_cast<float>(screenHeight);
 
-    // スライドのオフセット計算
+    // Calculate slide offset
     float offset;
     if (progress < 0.5f) {
         offset = (1.0f - eased * 2.0f);
@@ -169,6 +169,6 @@ void MenuTransitionManager::updateSlide(float progress) {
             break;
     }
 
-    // スライド中もフェードを適用
+    // Apply fade during slide
     currentAlpha = std::abs(offset) * 0.5f;
 }

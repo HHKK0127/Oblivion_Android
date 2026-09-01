@@ -10,7 +10,7 @@
         android:label="@string/app_name"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+        android:theme="@style/Theme.MyApplication">
 
         <!-- Java MainActivity + GLSurfaceView で OpenGL ES 3.0 レンダリング -->
         <activity

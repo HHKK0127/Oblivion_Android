@@ -12,10 +12,10 @@
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 /**
- * @brief 消費アイテムシステム - ポーション使用とアイテム効果
+ * @brief Consumable item system - Potion usage and item effects
  *
- * Phase 9B Week 4: アイテムの使用による効果適用
- * ポーション（HP/MP回復）やスクロール（スペル発動）等の処理
+ * Phase 9B Week 4: Apply effects from item usage
+ * Processing potions (HP/MP recovery) and scrolls (spell activation) etc.
  */
 class ConsumableSystem {
 public:

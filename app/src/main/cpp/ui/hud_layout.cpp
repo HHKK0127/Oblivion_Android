@@ -13,7 +13,7 @@ HUDLayout::HUDLayout()
     , minimapSize(180.0f)
     , compassHeight(32.0f) {
 
-    // 全要素を初期化
+    // Initialize all elements
     elements.resize(static_cast<int>(HUDElementType::ACTION_PROMPT) + 1);
     for (int i = 0; i <= static_cast<int>(HUDElementType::ACTION_PROMPT); ++i) {
         elements[i].type = static_cast<HUDElementType>(i);
@@ -26,12 +26,12 @@ void HUDLayout::initialize(int w, int h) {
     screenWidth = w;
     screenHeight = h;
 
-    // UIスケール計算（基準: 1080x1920）
+    // Calculate UI scale (reference: 1080x1920)
     float baseWidth = 1080.0f;
     uiScale = static_cast<float>(screenWidth) / baseWidth;
     uiScale = std::max(0.5f, std::min(uiScale, 2.0f));
 
-    // スケール適用
+    // Apply scale
     edgeMargin = 20.0f * uiScale;
     barHeight = 24.0f * uiScale;
     barWidth = 250.0f * uiScale;
@@ -52,7 +52,7 @@ const HUDElementLayout& HUDLayout::getElementLayout(HUDElementType type) const {
     const auto* elem = findElement(type);
     if (elem) return *elem;
 
-    // フォールバック: 空のレイアウトを返す
+    // Fallback: return empty layout
     static HUDElementLayout fallback;
     return fallback;
 }
@@ -76,7 +76,7 @@ void HUDLayout::setElementScale(HUDElementType type, float scale) {
     auto* elem = findElement(type);
     if (elem) {
         elem->scale = scale;
-        // スケール変更時にデフォルトレイアウトを再計算
+        // Recalculate default layout on scale change
         calculateDefaultLayout();
     }
 }
@@ -91,7 +91,7 @@ void HUDLayout::debugLogLayout() const {
     }
 }
 
-// === 内部ヘルパー ===
+// === Internal Helpers ===
 
 HUDElementLayout* HUDLayout::findElement(HUDElementType type) {
     int idx = static_cast<int>(type);
@@ -114,21 +114,21 @@ void HUDLayout::calculateDefaultLayout() {
     float sh = static_cast<float>(screenHeight);
     float m = edgeMargin;
 
-    // ヘルスバー（左上）
+    // Health bar (top left)
     auto* health = findElement(HUDElementType::HEALTH_BAR);
     if (health) {
         health->position = glm::vec2(m, m);
         health->size = glm::vec2(barWidth * health->scale, barHeight * health->scale);
     }
 
-    // マナバー（右上）
+    // Mana bar (top right)
     auto* mana = findElement(HUDElementType::MANA_BAR);
     if (mana) {
         mana->position = glm::vec2(sw - barWidth * mana->scale - m, m);
         mana->size = glm::vec2(barWidth * mana->scale, barHeight * mana->scale);
     }
 
-    // スタミナバー（中央下）
+    // Stamina bar (bottom center)
     auto* stamina = findElement(HUDElementType::STAMINA_BAR);
     if (stamina) {
         float stW = barWidth * stamina->scale;
@@ -136,16 +136,16 @@ void HUDLayout::calculateDefaultLayout() {
         stamina->size = glm::vec2(stW, barHeight * stamina->scale);
     }
 
-    // クイックスロット（右下）
+    // Quick slots (bottom right)
     auto* quickSlots = findElement(HUDElementType::QUICK_SLOTS);
     if (quickSlots) {
         float qsSize = quickSlotSize * quickSlots->scale;
-        float qsTotalW = qsSize * 5.0f; // 5スロット分
+        float qsTotalW = qsSize * 5.0f; // 5 slots
         quickSlots->position = glm::vec2(sw - qsTotalW - m, sh - qsSize - m);
         quickSlots->size = glm::vec2(qsTotalW, qsSize);
     }
 
-    // コンパス（上部中央）
+    // Compass (top center)
     auto* compass = findElement(HUDElementType::COMPASS);
     if (compass) {
         float cW = 300.0f * uiScale * compass->scale;
@@ -154,7 +154,7 @@ void HUDLayout::calculateDefaultLayout() {
         compass->size = glm::vec2(cW, cH);
     }
 
-    // ミニマップ（左上、ヘルスバーの下）
+    // Minimap (top left, below health bar)
     auto* minimap = findElement(HUDElementType::MINIMAP);
     if (minimap) {
         float mmSize = minimapSize * minimap->scale;
@@ -162,7 +162,7 @@ void HUDLayout::calculateDefaultLayout() {
         minimap->size = glm::vec2(mmSize, mmSize);
     }
 
-    // ターゲット情報（中央上部、コンパスの下）
+    // Target info (top center, below compass)
     auto* targetInfo = findElement(HUDElementType::TARGET_INFO);
     if (targetInfo) {
         float tiW = 300.0f * uiScale * targetInfo->scale;
@@ -171,7 +171,7 @@ void HUDLayout::calculateDefaultLayout() {
         targetInfo->size = glm::vec2(tiW, tiH);
     }
 
-    // プレイヤーレベル（左上、ミニマップの下）
+    // Player level (top left, below minimap)
     auto* playerLevel = findElement(HUDElementType::PLAYER_LEVEL);
     if (playerLevel) {
         float mmSize = minimapSize * uiScale;
@@ -179,14 +179,14 @@ void HUDLayout::calculateDefaultLayout() {
         playerLevel->size = glm::vec2(120.0f * uiScale * playerLevel->scale, 30.0f * uiScale * playerLevel->scale);
     }
 
-    // アクティブエフェクト（右上、マナバーの下）
+    // Active effects (top right, below mana bar)
     auto* activeEffects = findElement(HUDElementType::ACTIVE_EFFECTS);
     if (activeEffects) {
         activeEffects->position = glm::vec2(sw - barWidth * uiScale - m, m + barHeight * uiScale + m);
         activeEffects->size = glm::vec2(barWidth * uiScale * activeEffects->scale, 100.0f * uiScale * activeEffects->scale);
     }
 
-    // アクションプロンプト（中央下部、スタミナバーの上）
+    // Action prompt (bottom center, above stamina bar)
     auto* actionPrompt = findElement(HUDElementType::ACTION_PROMPT);
     if (actionPrompt) {
         float apW = 200.0f * uiScale * actionPrompt->scale;

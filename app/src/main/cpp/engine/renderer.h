@@ -45,6 +45,7 @@
 #include "../ui/ui_map_panel.h"
 #include "../ui/ui_floating_text.h"
 #include "../ui/spell_selection_panel.h"
+#include "../ui/responsive_ui_manager.h"
 #include "../animation/animation_subscriber.h"
 #include "../audio/audio_subscriber.h"
 #include "../map/map_system.h"
@@ -67,7 +68,7 @@
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
-// グローバル AssetManager（jni_bridge.cpp で定義）
+// Global AssetManager (defined in jni_bridge.cpp)
 extern AAssetManager* g_assetManager;
 
 class Renderer {
@@ -114,6 +115,9 @@ private:
     // Phase 9: UI Framework System
     std::unique_ptr<UISystem> uiSystem;
     std::shared_ptr<UIJoystick> joystick;
+    
+    // Responsive UI Manager
+    std::unique_ptr<ResponsiveUIManager> responsiveUIManager;
 
     // Combat UI buttons (right side of screen)
     std::shared_ptr<UIButton> attackButton;
@@ -166,9 +170,11 @@ private:
     // State
     bool showLauncher;
     bool showTitleScreen;
+    bool shouldExit;
     bool initialized = false;  // Track if initialization succeeded
     unsigned int screenWidth;
     unsigned int screenHeight;
+    float uiScale = 1.0f;  // UI scale factor based on aspect ratio
 
     // Frame Rate Control
     int targetFPS;
@@ -220,6 +226,7 @@ public:
 
     bool isLauncherActive() const { return showLauncher; }
     bool isTitleScreenActive() const { return showTitleScreen; }
+    bool isExitRequested() const { return shouldExit; }
     UISystem* getUISystem() { return uiSystem.get(); }
 
     // Phase 9.1: Map System

@@ -112,6 +112,23 @@ void DebugHUD::addLogLine(const std::string& line) {
     }
 }
 
+void DebugHUD::exportLogs() {
+    // In a real implementation, this would write to a file
+    // For now, just log that export was requested
+    addLogLine("Logs exported (simulated)");
+}
+
+std::string DebugHUD::getLogStats() const {
+    return "Log lines: " + std::to_string(logLines.size()) + "/" + std::to_string(MAX_LOG_LINES)
+           + " Level: " + logLevel
+           + " Auto-scroll: " + (logAutoScroll ? "ON" : "OFF");
+}
+
+void DebugHUD::searchLogs(const std::string& pattern) {
+    // In a real implementation, this would filter logs
+    addLogLine("Searching for: " + pattern);
+}
+
 void DebugHUD::nextPage() { currentPage = (currentPage + 1) % totalPages; }
 void DebugHUD::prevPage() { currentPage = (currentPage - 1 + totalPages) % totalPages; }
 
@@ -122,7 +139,11 @@ void DebugHUD::render() {
 
     float xPos = 10.0f;
     float yPos = 10.0f;
-    float lineHeight = 18.0f;
+    float lineHeight = 28.0f; // Increased from 18.0f for better readability on mobile
+    float textScale = 1.4f;   // Increased from 1.0f for better readability on mobile
+
+    // Limit rendering area to prevent overflow (use reasonable default)
+    float maxY = 1800.0f; // Will be updated when screen size is available
 
     // Page indicator
     {
@@ -132,11 +153,14 @@ void DebugHUD::render() {
         yPos += lineHeight;
     }
 
-    switch (currentPage) {
-        case 0: renderOverviewPage(xPos, yPos, lineHeight); break;
-        case 1: renderPerformancePage(xPos, yPos, lineHeight); break;
-        case 2: renderMemoryPage(xPos, yPos, lineHeight); break;
-        case 3: renderPhasePage(xPos, yPos, lineHeight); break;
+    // Only render if within bounds
+    if (yPos < maxY) {
+        switch (currentPage) {
+            case 0: renderOverviewPage(xPos, yPos, lineHeight, textScale); break;
+            case 1: renderPerformancePage(xPos, yPos, lineHeight, textScale); break;
+            case 2: renderMemoryPage(xPos, yPos, lineHeight, textScale); break;
+            case 3: renderPhasePage(xPos, yPos, lineHeight, textScale); break;
+        }
     }
 
     if (logVisible) {
@@ -144,7 +168,7 @@ void DebugHUD::render() {
     }
 }
 
-void DebugHUD::renderOverviewPage(float& xPos, float& yPos, float lineHeight) {
+void DebugHUD::renderOverviewPage(float& xPos, float& yPos, float lineHeight, float textScale) {
     glm::vec3 white(1.0f, 1.0f, 1.0f);
     glm::vec3 yellow(1.0f, 1.0f, 0.0f);
     glm::vec3 cyan(0.0f, 1.0f, 1.0f);
@@ -157,7 +181,7 @@ void DebugHUD::renderOverviewPage(float& xPos, float& yPos, float lineHeight) {
         glm::vec3 color = (fps >= 55.0f) ? glm::vec3(0.0f, 1.0f, 0.0f) :
                           (fps >= 30.0f) ? glm::vec3(1.0f, 1.0f, 0.0f) :
                                            glm::vec3(1.0f, 0.0f, 0.0f);
-        textRenderer->renderText(ss.str(), xPos, yPos, color, 1.0f);
+        textRenderer->renderText(ss.str(), xPos, yPos, color, textScale);
         yPos += lineHeight;
     }
 
@@ -165,7 +189,7 @@ void DebugHUD::renderOverviewPage(float& xPos, float& yPos, float lineHeight) {
     {
         std::stringstream ss;
         ss << std::fixed << std::setprecision(2) << "Frame: " << frameTimeMs << " ms";
-        textRenderer->renderText(ss.str(), xPos, yPos, white, 1.0f);
+        textRenderer->renderText(ss.str(), xPos, yPos, white, textScale);
         yPos += lineHeight;
     }
 
@@ -173,7 +197,7 @@ void DebugHUD::renderOverviewPage(float& xPos, float& yPos, float lineHeight) {
     {
         std::stringstream ss;
         ss << std::fixed << std::setprecision(2) << "Avg: " << avgFrameTimeMs << " ms";
-        textRenderer->renderText(ss.str(), xPos, yPos, white, 1.0f);
+        textRenderer->renderText(ss.str(), xPos, yPos, white, textScale);
         yPos += lineHeight;
     }
 
@@ -182,7 +206,7 @@ void DebugHUD::renderOverviewPage(float& xPos, float& yPos, float lineHeight) {
         MemoryInfo memInfo = getMemoryInfo();
         std::stringstream ss;
         ss << "Mem: " << formatMemorySize(memInfo.usedMemory) << " / " << formatMemorySize(memInfo.totalMemory);
-        textRenderer->renderText(ss.str(), xPos, yPos, white, 1.0f);
+        textRenderer->renderText(ss.str(), xPos, yPos, white, textScale);
         yPos += lineHeight;
     }
 
@@ -190,18 +214,18 @@ void DebugHUD::renderOverviewPage(float& xPos, float& yPos, float lineHeight) {
     {
         std::stringstream ss;
         ss << "DrawCalls: " << drawCallCount << "  Verts: " << vertexCount << "  Tris: " << triangleCount;
-        textRenderer->renderText(ss.str(), xPos, yPos, cyan, 1.0f);
+        textRenderer->renderText(ss.str(), xPos, yPos, cyan, textScale);
         yPos += lineHeight;
     }
 
     // Debug mode
-    textRenderer->renderText("DEBUG: ON", xPos, yPos, yellow, 1.0f);
+    textRenderer->renderText("DEBUG: ON", xPos, yPos, yellow, textScale);
     yPos += lineHeight;
 
     // Audio
     {
         std::string audioStatus = getAudioStatus();
-        textRenderer->renderText(audioStatus, xPos, yPos, cyan, 1.0f);
+        textRenderer->renderText(audioStatus, xPos, yPos, cyan, textScale);
         yPos += lineHeight;
     }
 
@@ -209,13 +233,13 @@ void DebugHUD::renderOverviewPage(float& xPos, float& yPos, float lineHeight) {
     {
         std::string filterStatus = getRetroFilterStatus();
         if (!filterStatus.empty()) {
-            textRenderer->renderText(filterStatus, xPos, yPos, orange, 1.0f);
+            textRenderer->renderText(filterStatus, xPos, yPos, orange, textScale);
             yPos += lineHeight;
         }
     }
 }
 
-void DebugHUD::renderPerformancePage(float& xPos, float& yPos, float lineHeight) {
+void DebugHUD::renderPerformancePage(float& xPos, float& yPos, float lineHeight, float textScale) {
     glm::vec3 white(1.0f, 1.0f, 1.0f);
     glm::vec3 green(0.0f, 1.0f, 0.0f);
     glm::vec3 red(1.0f, 0.3f, 0.3f);
@@ -227,7 +251,7 @@ void DebugHUD::renderPerformancePage(float& xPos, float& yPos, float lineHeight)
         std::stringstream ss;
         ss << std::fixed << std::setprecision(1) << "FPS: " << fps;
         glm::vec3 color = (fps >= 55.0f) ? green : (fps >= 30.0f) ? glm::vec3(1.0f, 1.0f, 0.0f) : red;
-        textRenderer->renderText(ss.str(), xPos, yPos, color, 1.0f);
+        textRenderer->renderText(ss.str(), xPos, yPos, color, textScale);
         yPos += lineHeight;
     }
 
@@ -236,7 +260,7 @@ void DebugHUD::renderPerformancePage(float& xPos, float& yPos, float lineHeight)
         std::stringstream ss;
         ss << std::fixed << std::setprecision(2)
            << "Min: " << minFrameTimeMs << "  Max: " << maxFrameTimeMs << " ms";
-        textRenderer->renderText(ss.str(), xPos, yPos, white, 1.0f);
+        textRenderer->renderText(ss.str(), xPos, yPos, white, textScale);
         yPos += lineHeight;
     }
 
@@ -245,7 +269,7 @@ void DebugHUD::renderPerformancePage(float& xPos, float& yPos, float lineHeight)
         std::stringstream ss;
         ss << std::fixed << std::setprecision(2)
            << "CPU: " << cpuTimeMs << "  GPU: " << gpuTimeMs << "  Wait: " << waitTimeMs << " ms";
-        textRenderer->renderText(ss.str(), xPos, yPos, white, 1.0f);
+        textRenderer->renderText(ss.str(), xPos, yPos, white, textScale);
         yPos += lineHeight;
     }
 
@@ -257,15 +281,15 @@ void DebugHUD::renderPerformancePage(float& xPos, float& yPos, float lineHeight)
         float barH = 12.0f;
         renderFrameTimeBar(barX, barY, barW, barH);
         yPos += barH + 4.0f;
-        textRenderer->renderText("CPU", xPos, yPos, red, 0.7f);
-        textRenderer->renderText("GPU", xPos + 40.0f, yPos, green, 0.7f);
-        textRenderer->renderText("Wait", xPos + 80.0f, yPos, gray, 0.7f);
+        textRenderer->renderText("CPU", xPos, yPos, red, textScale * 0.7f);
+        textRenderer->renderText("GPU", xPos + 40.0f, yPos, green, textScale * 0.7f);
+        textRenderer->renderText("Wait", xPos + 80.0f, yPos, gray, textScale * 0.7f);
         yPos += lineHeight;
     }
 
     // FPS Graph
     {
-        textRenderer->renderText("FPS History:", xPos, yPos, white, 0.8f);
+        textRenderer->renderText("FPS History:", xPos, yPos, white, textScale * 0.8f);
         yPos += lineHeight;
         float graphW = 200.0f;
         float graphH = 60.0f;
@@ -277,61 +301,61 @@ void DebugHUD::renderPerformancePage(float& xPos, float& yPos, float lineHeight)
     {
         std::stringstream ss;
         ss << "Draw Calls: " << drawCallCount;
-        textRenderer->renderText(ss.str(), xPos, yPos, blue, 1.0f);
+        textRenderer->renderText(ss.str(), xPos, yPos, blue, textScale);
         yPos += lineHeight;
     }
     {
         std::stringstream ss;
         ss << "Vertices: " << vertexCount << "  Tris: " << triangleCount;
-        textRenderer->renderText(ss.str(), xPos, yPos, blue, 1.0f);
+        textRenderer->renderText(ss.str(), xPos, yPos, blue, textScale);
         yPos += lineHeight;
     }
     {
         std::stringstream ss;
         ss << "Textures: " << loadedTextureCount << " (" << formatMemorySize(textureMemoryBytes) << ")";
-        textRenderer->renderText(ss.str(), xPos, yPos, blue, 1.0f);
+        textRenderer->renderText(ss.str(), xPos, yPos, blue, textScale);
         yPos += lineHeight;
     }
 }
 
-void DebugHUD::renderMemoryPage(float& xPos, float& yPos, float lineHeight) {
+void DebugHUD::renderMemoryPage(float& xPos, float& yPos, float lineHeight, float textScale) {
     glm::vec3 white(1.0f, 1.0f, 1.0f);
     glm::vec3 green(0.0f, 1.0f, 0.0f);
     glm::vec3 yellow(1.0f, 1.0f, 0.0f);
     glm::vec3 cyan(0.0f, 1.0f, 1.0f);
 
-    textRenderer->renderText("=== Memory Details ===", xPos, yPos, yellow, 1.0f);
+    textRenderer->renderText("=== Memory Details ===", xPos, yPos, yellow, textScale);
     yPos += lineHeight;
 
     {
         MemoryInfo memInfo = getMemoryInfo();
-        textRenderer->renderText("System:", xPos, yPos, white, 0.9f);
+        textRenderer->renderText("System:", xPos, yPos, white, textScale * 0.9f);
         yPos += lineHeight;
         std::stringstream ss;
         ss << "  Total: " << formatMemorySize(memInfo.totalMemory);
-        textRenderer->renderText(ss.str(), xPos, yPos, white, 0.8f);
+        textRenderer->renderText(ss.str(), xPos, yPos, white, textScale * 0.8f);
         yPos += lineHeight;
         ss.str("");
         ss << "  Used:  " << formatMemorySize(memInfo.usedMemory);
-        textRenderer->renderText(ss.str(), xPos, yPos, green, 0.8f);
+        textRenderer->renderText(ss.str(), xPos, yPos, green, textScale * 0.8f);
         yPos += lineHeight;
         ss.str("");
         ss << "  Free:  " << formatMemorySize(memInfo.freeMemory);
-        textRenderer->renderText(ss.str(), xPos, yPos, cyan, 0.8f);
+        textRenderer->renderText(ss.str(), xPos, yPos, cyan, textScale * 0.8f);
         yPos += lineHeight;
     }
 
     {
         std::stringstream ss;
         ss << "Native Heap: " << formatMemorySize(nativeHeapBytes);
-        textRenderer->renderText(ss.str(), xPos, yPos, white, 0.9f);
+        textRenderer->renderText(ss.str(), xPos, yPos, white, textScale * 0.9f);
         yPos += lineHeight;
     }
 
     {
         std::stringstream ss;
         ss << "Java Heap:   " << formatMemorySize(javaHeapBytes);
-        textRenderer->renderText(ss.str(), xPos, yPos, white, 0.9f);
+        textRenderer->renderText(ss.str(), xPos, yPos, white, textScale * 0.9f);
         yPos += lineHeight;
     }
 
@@ -339,7 +363,7 @@ void DebugHUD::renderMemoryPage(float& xPos, float& yPos, float lineHeight) {
         std::stringstream ss;
         ss << "Textures:    " << formatMemorySize(textureMemoryBytes)
            << " (" << loadedTextureCount << " loaded)";
-        textRenderer->renderText(ss.str(), xPos, yPos, white, 0.9f);
+        textRenderer->renderText(ss.str(), xPos, yPos, white, textScale * 0.9f);
         yPos += lineHeight;
     }
 
@@ -350,18 +374,18 @@ void DebugHUD::renderMemoryPage(float& xPos, float& yPos, float lineHeight) {
         }
         std::stringstream ss;
         ss << "Audio:       " << clipCount << " clips loaded";
-        textRenderer->renderText(ss.str(), xPos, yPos, white, 0.9f);
+        textRenderer->renderText(ss.str(), xPos, yPos, white, textScale * 0.9f);
         yPos += lineHeight;
     }
 }
 
-void DebugHUD::renderPhasePage(float& xPos, float& yPos, float lineHeight) {
+void DebugHUD::renderPhasePage(float& xPos, float& yPos, float lineHeight, float textScale) {
     glm::vec3 white(1.0f, 1.0f, 1.0f);
     glm::vec3 yellow(1.0f, 1.0f, 0.0f);
     glm::vec3 green(0.0f, 1.0f, 0.0f);
     glm::vec3 red(1.0f, 0.3f, 0.3f);
 
-    textRenderer->renderText("=== Imperial Weave Phases ===", xPos, yPos, yellow, 1.0f);
+    textRenderer->renderText("=== Imperial Weave Phases ===", xPos, yPos, yellow, textScale);
     yPos += lineHeight;
 
     static const char* phaseNames[] = {
@@ -384,7 +408,7 @@ void DebugHUD::renderPhasePage(float& xPos, float& yPos, float lineHeight) {
         if (phaseTimesUs[i] > 5000.0f) color = red;
         else if (phaseTimesUs[i] > 1000.0f) color = yellow;
 
-        textRenderer->renderText(ss.str(), xPos, yPos, color, 0.8f);
+        textRenderer->renderText(ss.str(), xPos, yPos, color, textScale * 0.8f);
         yPos += lineHeight * 0.9f;
     }
 
@@ -392,7 +416,7 @@ void DebugHUD::renderPhasePage(float& xPos, float& yPos, float lineHeight) {
         std::stringstream ss;
         ss << std::fixed << std::setprecision(1) << "Total: " << totalUs << " us ("
            << (totalUs / 1000.0f) << " ms)";
-        textRenderer->renderText(ss.str(), xPos, yPos, yellow, 0.9f);
+        textRenderer->renderText(ss.str(), xPos, yPos, yellow, textScale * 0.9f);
         yPos += lineHeight;
     }
 }

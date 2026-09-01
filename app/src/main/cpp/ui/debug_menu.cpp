@@ -1,41 +1,30 @@
 #include "debug_menu.h"
 #include "game_console.h"
 #include "text_renderer.h"
-#include <GLES3/gl3.h>
+#include "ui_draw_helper.h"
 #include <algorithm>
+#include <cmath>
 #include <android/log.h>
 
 #define LOG_TAG_DEBUG "DebugMenu"
 #define LOGI_DEBUG(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG_DEBUG, __VA_ARGS__)
-#define LOGE_DEBUG(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG_DEBUG, __VA_ARGS__)
 
 DebugMenu::DebugMenu()
     : textRenderer(nullptr), console(nullptr),
       visible(false), initialized(false),
       screenWidth(1080), screenHeight(1920),
-      currentTab(Tab::PLAYER), tabScrollOffset(0.0f) {
-}
+      safeLeft(0), safeTop(0), safeRight(160), safeBottom(220),
+      currentTab(Tab::PLAYER) {}
 
-DebugMenu::~DebugMenu() {
-    cleanup();
-}
+DebugMenu::~DebugMenu() { cleanup(); }
 
 bool DebugMenu::initialize(TextRenderer* tr, GameConsole* c) {
     if (initialized) return true;
+    if (!tr || !c) return false;
     textRenderer = tr;
     console = c;
-
     createTabButtons();
-    createPlayerButtons();
-    createCombatButtons();
-    createInventoryButtons();
-    createMagicButtons();
-    createQuestButtons();
-    createNpcButtons();
-    createDialogueButtons();
-    createWorldButtons();
-    createSaveButtons();
-
+    createAllTabContents();
     initialized = true;
     LOGI_DEBUG("DebugMenu initialized");
     return true;
@@ -49,136 +38,302 @@ void DebugMenu::cleanup() {
 
 void DebugMenu::toggle() {
     visible = !visible;
+    touchState = {};
     LOGI_DEBUG("DebugMenu %s", visible ? "opened" : "closed");
 }
 
-void DebugMenu::onTouchEvent(float x, float y, int action) {
-    if (!visible) return;
-    if (action == 0) { // DOWN
-        handleTabTap(x, y);
-        handleContentTap(x, y);
-    }
+void DebugMenu::setScreenSize(int w, int h) {
+    screenWidth = w;
+    screenHeight = h;
+    safeRight = std::max(160.0f, w * 0.15f);
+    safeBottom = std::max(220.0f, h * 0.18f);
 }
+
+// ==================== Touch Event Handling ====================
+
+void DebugMenu::onTouchDown(float x, float y) {
+    if (!visible) return;
+    touchState.isActive = true;
+    touchState.startX = touchState.lastX = x;
+    touchState.startY = touchState.lastY = y;
+    touchState.pressedButton = nullptr;
+    touchState.isScrolling = false;
+
+    // Check tab buttons first
+    Button* tabBtn = hitTestTab(x, y);
+    if (tabBtn) {
+        touchState.pressedButton = tabBtn;
+        tabBtn->isPressed = true;
+        tabBtn->pressTimer = 0.15f;
+        return;
+    }
+
+    // Check content buttons
+    Button* contentBtn = hitTestContent(x, y);
+    if (contentBtn) {
+        touchState.pressedButton = contentBtn;
+        contentBtn->isPressed = true;
+        contentBtn->pressTimer = 0.15f;
+        return;
+    }
+
+    // No button hit - start scrolling
+    touchState.isScrolling = true;
+}
+
+void DebugMenu::onTouchMove(float x, float y) {
+    if (!touchState.isActive) return;
+
+    float dx = x - touchState.startX;
+    float dy = y - touchState.startY;
+    float dist = std::hypot(dx, dy);
+
+    // If moved beyond threshold, switch to scrolling mode
+    if (!touchState.isScrolling && dist > TouchState::SCROLL_THRESHOLD) {
+        touchState.isScrolling = true;
+        if (touchState.pressedButton) {
+            touchState.pressedButton->isPressed = false;
+            touchState.pressedButton = nullptr;
+        }
+    }
+
+    // Handle scrolling
+    if (touchState.isScrolling) {
+        float moveY = y - touchState.lastY;
+        size_t idx = static_cast<size_t>(currentTab);
+        if (idx < tabContents.size()) {
+            tabContents[idx].scrollOffset -= moveY;
+            clampScrollOffsets();
+        }
+    }
+
+    touchState.lastX = x;
+    touchState.lastY = y;
+}
+
+void DebugMenu::onTouchUp(float x, float y) {
+    if (!touchState.isActive) return;
+
+    float dx = x - touchState.startX;
+    float dy = y - touchState.startY;
+    float dist = std::hypot(dx, dy);
+
+    // Only execute command if it was a tap (not a scroll)
+    if (!touchState.isScrolling && dist < TouchState::TAP_THRESHOLD) {
+        if (touchState.pressedButton) {
+            executeButtonCommand(*touchState.pressedButton);
+        }
+    }
+
+    // Reset pressed state
+    if (touchState.pressedButton) {
+        touchState.pressedButton->isPressed = false;
+    }
+    touchState = {};
+}
+
+void DebugMenu::onTouchCancel() {
+    if (touchState.pressedButton) {
+        touchState.pressedButton->isPressed = false;
+    }
+    touchState = {};
+}
+
+// ==================== Command Execution ====================
+
+void DebugMenu::executeButtonCommand(Button& btn) {
+    if (btn.command.empty() || !console) return;
+    console->executeCommand(btn.command);
+    btn.pressTimer = 0.2f; // Visual feedback
+    LOGI_DEBUG("Executed: %s", btn.command.c_str());
+}
+
+// ==================== Hit Testing ====================
+
+DebugMenu::Button* DebugMenu::hitTestTab(float x, float y) {
+    float s = getScale();
+    float tabBarY = safeTop + 8.0f * s;
+    float tabH = TAB_HEIGHT * s;
+
+    if (y < tabBarY || y > tabBarY + tabH) return nullptr;
+
+    for (auto& btn : tabButtons) {
+        if (x >= btn.x && x <= btn.x + btn.w) {
+            return &btn;
+        }
+    }
+    return nullptr;
+}
+
+DebugMenu::Button* DebugMenu::hitTestContent(float x, float y) {
+    float s = getScale();
+    float tabBarY = safeTop + 8.0f * s;
+    float tabH = TAB_HEIGHT * s;
+    float contentY = tabBarY + tabH + 20.0f * s;
+    float contentH = screenHeight - safeBottom - contentY;
+    if (y < contentY || y > contentY + contentH) return nullptr;
+
+    size_t idx = static_cast<size_t>(currentTab);
+    if (idx >= tabContents.size()) return nullptr;
+
+    for (auto& btn : tabContents[idx].buttons) {
+        if (btn.y + btn.h < contentY || btn.y > contentY + contentH) continue;
+        if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
+            return &btn;
+        }
+    }
+    return nullptr;
+}
+
+// ==================== Update and Render ====================
 
 void DebugMenu::update(float deltaTime) {
     if (!visible) return;
+
+    // Update press timers for visual feedback
+    for (auto& btn : tabButtons) {
+        if (btn.pressTimer > 0) {
+            btn.pressTimer -= deltaTime;
+            if (btn.pressTimer <= 0) btn.isPressed = false;
+        }
+    }
+    for (auto& content : tabContents) {
+        for (auto& btn : content.buttons) {
+            if (btn.pressTimer > 0) {
+                btn.pressTimer -= deltaTime;
+                if (btn.pressTimer <= 0) btn.isPressed = false;
+            }
+        }
+    }
+
+    calculateButtonPositions();
+}
+
+void DebugMenu::calculateButtonPositions() {
+    float s = getScale();
+    float margin = BUTTON_MARGIN * s;
+    float x = safeLeft + margin;
+
+    // Tab buttons - use smaller width to fit 13 tabs
+    float tabY = safeTop + 8.0f * s;
+    float tabH = TAB_HEIGHT * s;
+    float tabW = std::min(80.0f * s, (screenWidth - safeLeft - safeRight - margin * (tabButtons.size() + 1)) / tabButtons.size());
+    for (auto& btn : tabButtons) {
+        btn.x = x;
+        btn.y = tabY;
+        btn.w = tabW;
+        btn.h = tabH;
+        x += btn.w + margin;
+    }
+
+    // Content buttons
+    size_t idx = static_cast<size_t>(currentTab);
+    if (idx >= tabContents.size()) return;
+
+    auto& content = tabContents[idx];
+    float contentY = tabY + tabH + 20.0f * s;
+    float btnH = BUTTON_HEIGHT * s;
+    float btnW = (screenWidth - safeLeft - safeRight - margin * 3.0f) * 0.5f;
+
+    for (size_t i = 0; i < content.buttons.size(); ++i) {
+        int col = i % 2;
+        int row = i / 2;
+        content.buttons[i].x = safeLeft + margin + (btnW + margin) * col;
+        content.buttons[i].y = contentY + (btnH + margin) * row - content.scrollOffset;
+        content.buttons[i].w = btnW;
+        content.buttons[i].h = btnH;
+    }
 }
 
 void DebugMenu::render() {
     if (!visible || !textRenderer) return;
-
-    float scale = getScale();
-
-    // Background overlay
-    glClearColor(0.0f, 0.0f, 0.0f, 0.75f);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    // Tab bar at top
+    renderBackground();
     renderTabBar();
-
-    // Content area below tabs
     renderContent();
 }
 
+void DebugMenu::renderBackground() {
+    // Semi-transparent dark overlay (full screen)
+    UIDrawHelper::drawColoredQuad(0, 0, screenWidth, screenHeight,
+                                   glm::vec4(0.0f, 0.0f, 0.0f, 0.75f),
+                                   screenWidth, screenHeight);
+}
+
 void DebugMenu::renderTabBar() {
-    float scale = getScale();
-    float tabH = TAB_HEIGHT * scale;
-    float margin = BUTTON_MARGIN * scale;
-    float tabW = (static_cast<float>(screenWidth) - margin * (static_cast<float>(tabButtons.size()) + 1)) / static_cast<float>(tabButtons.size());
+    float s = getScale();
 
-    // Reposition tab buttons
     for (size_t i = 0; i < tabButtons.size(); ++i) {
-        tabButtons[i].x = margin + (tabW + margin) * static_cast<float>(i);
-        tabButtons[i].y = margin;
-        tabButtons[i].w = tabW;
-        tabButtons[i].h = tabH;
+        auto& btn = tabButtons[i];
+        bool isActive = (i == static_cast<size_t>(currentTab));
 
-        // Background color (active tab brighter)
-        glm::vec3 color = (i == static_cast<size_t>(currentTab)) ?
-            glm::vec3(0.4f, 0.7f, 0.4f) : glm::vec3(0.2f, 0.2f, 0.3f);
+        // Tab background color
+        glm::vec4 bgColor = isActive ?
+            glm::vec4(0.4f, 0.7f, 0.4f, 0.9f) :
+            glm::vec4(0.2f, 0.2f, 0.3f, 0.8f);
 
-        // Draw button background as text highlight
-        std::string label = (i == static_cast<size_t>(currentTab)) ? "[" + tabButtons[i].label + "]" : tabButtons[i].label;
+        if (btn.isPressed) {
+            bgColor = glm::vec4(0.5f, 0.8f, 0.5f, 1.0f);
+        }
+
+        UIDrawHelper::drawColoredQuad(btn.x, btn.y, btn.w, btn.h, bgColor,
+                                       screenWidth, screenHeight);
+
+        // Tab label - use smaller scale for many tabs
+        std::string label = isActive ? "[" + btn.label + "]" : btn.label;
+        glm::vec3 textColor = isActive ? glm::vec3(1.0f, 1.0f, 1.0f) : glm::vec3(0.7f, 0.7f, 0.7f);
+        float labelScale = 0.35f * s; // Smaller to fit 13 tabs
         textRenderer->renderText(label.c_str(),
-                                  tabButtons[i].x + 5.0f * scale,
-                                  tabButtons[i].y + tabH * 0.3f,
-                                  color, 0.4f * scale);
+                                  btn.x + 3.0f * s,
+                                  btn.y + btn.h * 0.3f,
+                                  textColor, labelScale);
     }
 }
 
 void DebugMenu::renderContent() {
-    float scale = getScale();
-    float tabH = TAB_HEIGHT * scale;
-    float margin = BUTTON_MARGIN * scale;
-    float contentY = tabH + margin * 2.0f;
-    float contentH = static_cast<float>(screenHeight) - contentY - margin;
+    float s = getScale();
+    float tabY = safeTop + 8.0f * s;
+    float tabH = TAB_HEIGHT * s;
+    float contentY = tabY + tabH + 20.0f * s;
+    float contentH = screenHeight - safeBottom - contentY;
 
     size_t tabIdx = static_cast<size_t>(currentTab);
     if (tabIdx >= tabContents.size()) return;
     TabContent& content = tabContents[tabIdx];
 
-    float btnH = BUTTON_HEIGHT * scale;
-    float btnW = (static_cast<float>(screenWidth) - margin * 3.0f) * 0.5f;
+    // Clip content area (draw background)
+    UIDrawHelper::drawColoredQuad(safeLeft, contentY,
+                                   screenWidth - safeLeft - safeRight, contentH,
+                                   glm::vec4(0.1f, 0.1f, 0.15f, 0.6f),
+                                   screenWidth, screenHeight);
 
-    // Two-column layout
-    for (size_t i = 0; i < content.buttons.size(); ++i) {
-        int col = static_cast<int>(i % 2);
-        int row = static_cast<int>(i / 2);
-        float bx = margin + (btnW + margin) * static_cast<float>(col);
-        float by = contentY + (btnH + margin) * static_cast<float>(row) - content.scrollOffset;
-
+    for (auto& btn : content.buttons) {
         // Skip if outside visible area
-        if (by + btnH < contentY || by > static_cast<float>(screenHeight)) continue;
+        if (btn.y + btn.h < contentY || btn.y > contentY + contentH) continue;
 
-        content.buttons[i].x = bx;
-        content.buttons[i].y = by;
-        content.buttons[i].w = btnW;
-        content.buttons[i].h = btnH;
-
-        glm::vec3 color = content.buttons[i].pressed ?
-            glm::vec3(0.3f, 0.6f, 0.3f) : glm::vec3(0.4f, 0.5f, 0.6f);
-        textRenderer->renderText(content.buttons[i].label.c_str(),
-                                  bx + 8.0f * scale,
-                                  by + btnH * 0.3f,
-                                  color, 0.45f * scale);
+        renderButton(btn, s);
     }
 }
 
-bool DebugMenu::hitTest(const Button& btn, float x, float y) const {
-    return x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h;
+void DebugMenu::renderButton(Button& btn, float s) {
+    glm::vec4 bgColor = btn.isPressed ?
+        glm::vec4(0.5f, 0.7f, 1.0f, 0.9f) :
+        glm::vec4(0.3f, 0.3f, 0.35f, 0.8f);
+
+    UIDrawHelper::drawColoredQuad(btn.x, btn.y, btn.w, btn.h, bgColor,
+                                   screenWidth, screenHeight);
+
+    textRenderer->renderText(btn.label.c_str(),
+                              btn.x + 10.0f * s,
+                              btn.y + btn.h * 0.3f,
+                              glm::vec3(1.0f, 1.0f, 1.0f), 0.4f * s);
 }
 
-void DebugMenu::handleTabTap(float x, float y) {
-    for (size_t i = 0; i < tabButtons.size(); ++i) {
-        if (hitTest(tabButtons[i], x, y)) {
-            currentTab = static_cast<Tab>(i);
-            LOGI_DEBUG("Tab changed to %zu", i);
-            return;
-        }
-    }
-}
-
-void DebugMenu::handleContentTap(float x, float y) {
-    size_t tabIdx = static_cast<size_t>(currentTab);
-    if (tabIdx >= tabContents.size()) return;
-
-    for (auto& btn : tabContents[tabIdx].buttons) {
-        if (hitTest(btn, x, y)) {
-            if (console && !btn.command.empty()) {
-                LOGI_DEBUG("Executing: %s", btn.command.c_str());
-                console->executeCommand(btn.command);
-            }
-            return;
-        }
-    }
-}
+// ==================== Utility ====================
 
 float DebugMenu::getScale() const {
     float minDim = static_cast<float>(std::min(screenWidth, screenHeight));
     float scale = minDim / 1080.0f;
-    if (scale < 0.5f) scale = 0.5f;
-    if (scale > 2.0f) scale = 2.0f;
-    return scale;
+    return std::clamp(scale, 0.5f, 2.0f);
 }
 
 std::string DebugMenu::getTabName(Tab tab) const {
@@ -192,238 +347,348 @@ std::string DebugMenu::getTabName(Tab tab) const {
         case Tab::DIALOGUE: return "Talk";
         case Tab::WORLD: return "World";
         case Tab::SAVE: return "Save";
+        case Tab::SYSTEM: return "System";
+        case Tab::SOUND: return "Sound";
+        case Tab::ASSETS: return "Assets";
+        case Tab::LOGS: return "Logs";
         default: return "?";
     }
 }
 
-// ============= Tab creation =============
+void DebugMenu::clampScrollOffsets() {
+    size_t idx = static_cast<size_t>(currentTab);
+    if (idx < tabContents.size()) {
+        auto& content = tabContents[idx];
+        float maxScroll = std::max(0.0f, content.buttons.size() * 30.0f - 500.0f);
+        content.scrollOffset = std::clamp(content.scrollOffset, 0.0f, maxScroll);
+    }
+}
+
+// ==================== Tab Content Creation ====================
 
 void DebugMenu::createTabButtons() {
     for (int i = 0; i < static_cast<int>(Tab::COUNT); ++i) {
         Button btn;
         btn.label = getTabName(static_cast<Tab>(i));
-        btn.command = "";
-        btn.color = glm::vec3(0.4f, 0.7f, 0.4f);
-        btn.pressed = false;
+        btn.baseColor = glm::vec3(0.4f, 0.5f, 0.6f);
         tabButtons.push_back(btn);
     }
 }
 
-void DebugMenu::createPlayerButtons() {
-    TabContent content;
-    std::vector<std::pair<std::string, std::string>> items = {
-        {"Heal", "heal"},
-        {"God Mode", "god"},
-        {"Set HP 100", "sethealth 100"},
-        {"Set MP 100", "setmana 100"},
-        {"Set Stamina 100", "setstamina 100"},
-        {"Set Level 50", "setlevel 50"},
-        {"Add XP 1000", "addxp 1000"},
-        {"Max Skills", "maxskills"},
-        {"Reset Stats", "resetstats"},
-        {"Set Blade 100", "setskill Blade 100"},
-        {"Set Dest 100", "setskill Destruction 100"},
-        {"Set Speed 100", "setattr Speed 100"},
-        {"Show Stats", "stats"},
-    };
-    for (const auto& item : items) {
-        Button btn;
-        btn.label = item.first;
-        btn.command = item.second;
-        btn.color = glm::vec3(0.3f, 0.5f, 0.7f);
-        btn.pressed = false;
-        content.buttons.push_back(btn);
+void DebugMenu::createAllTabContents() {
+    // Player tab
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Heal", "heal"},
+            {"God Mode", "god"},
+            {"Set HP 100", "sethealth 100"},
+            {"Set MP 100", "setmana 100"},
+            {"Set Stamina 100", "setstamina 100"},
+            {"Set Level 50", "setlevel 50"},
+            {"Add XP 1000", "addxp 1000"},
+            {"Max Skills", "maxskills"},
+            {"Reset Stats", "resetstats"},
+            {"Set Blade 100", "setskill Blade 100"},
+            {"Set Dest 100", "setskill Destruction 100"},
+            {"Set Speed 100", "setattr Speed 100"},
+            {"Show Stats", "stats"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.3f, 0.5f, 0.7f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
     }
-    tabContents.push_back(content);
-}
 
-void DebugMenu::createCombatButtons() {
-    TabContent content;
-    std::vector<std::pair<std::string, std::string>> items = {
-        {"Attack", "attack"},
-        {"Block", "block"},
-        {"Dodge", "dodge"},
-        {"Kill Nearest", "kill"},
-        {"Kill All", "killall"},
-        {"Resurrect", "resurrect"},
-        {"Damage 10", "damage 0 10"},
-        {"Damage 100", "damage 0 100"},
-        {"Combat Debug", "combatdebug"},
-    };
-    for (const auto& item : items) {
-        Button btn;
-        btn.label = item.first;
-        btn.command = item.second;
-        btn.color = glm::vec3(0.7f, 0.3f, 0.3f);
-        btn.pressed = false;
-        content.buttons.push_back(btn);
+    // Combat tab
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Attack", "attack"},
+            {"Block", "block"},
+            {"Dodge", "dodge"},
+            {"Kill Nearest", "kill"},
+            {"Kill All", "killall"},
+            {"Resurrect", "resurrect"},
+            {"Damage 10", "damage 0 10"},
+            {"Damage 100", "damage 0 100"},
+            {"Combat Debug", "combatdebug"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.7f, 0.3f, 0.3f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
     }
-    tabContents.push_back(content);
-}
 
-void DebugMenu::createInventoryButtons() {
-    TabContent content;
-    std::vector<std::pair<std::string, std::string>> items = {
-        {"Add Gold x100", "additem 0 100"},
-        {"Add Apple x5", "additem 1 5"},
-        {"Add Health Pot", "additem 10 5"},
-        {"Add Magicka Pot", "additem 11 5"},
-        {"Remove Apple", "removeitem 1 1"},
-        {"Clear Inv", "clearinv"},
-        {"List Items", "listitems"},
-        {"Max Weight", "setweight 9999"},
-    };
-    for (const auto& item : items) {
-        Button btn;
-        btn.label = item.first;
-        btn.command = item.second;
-        btn.color = glm::vec3(0.6f, 0.5f, 0.2f);
-        btn.pressed = false;
-        content.buttons.push_back(btn);
+    // Inventory tab
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Add Gold x100", "additem 0 100"},
+            {"Add Apple x5", "additem 1 5"},
+            {"Add Health Pot", "additem 10 5"},
+            {"Add Magicka Pot", "additem 11 5"},
+            {"Remove Apple", "removeitem 1 1"},
+            {"Clear Inv", "clearinv"},
+            {"List Items", "listitems"},
+            {"Max Weight", "setweight 9999"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.6f, 0.5f, 0.2f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
     }
-    tabContents.push_back(content);
-}
 
-void DebugMenu::createMagicButtons() {
-    TabContent content;
-    std::vector<std::pair<std::string, std::string>> items = {
-        {"Learn Fire", "learnspell 1"},
-        {"Learn Heal", "learnspell 2"},
-        {"Learn Light", "learnspell 3"},
-        {"Equip Fire", "equipspell 1"},
-        {"Cast Fire", "castspell 1 0"},
-        {"Cast Heal", "castspell 2 0"},
-        {"List Spells", "listspells"},
-        {"Set MP 100", "setmana 100"},
-    };
-    for (const auto& item : items) {
-        Button btn;
-        btn.label = item.first;
-        btn.command = item.second;
-        btn.color = glm::vec3(0.5f, 0.2f, 0.7f);
-        btn.pressed = false;
-        content.buttons.push_back(btn);
+    // Magic tab
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Learn Fire", "learnspell 1"},
+            {"Learn Heal", "learnspell 2"},
+            {"Learn Light", "learnspell 3"},
+            {"Equip Fire", "equipspell 1"},
+            {"Cast Fire", "castspell 1 0"},
+            {"Cast Heal", "castspell 2 0"},
+            {"List Spells", "listspells"},
+            {"Set MP 100", "setmana 100"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.5f, 0.2f, 0.7f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
     }
-    tabContents.push_back(content);
-}
 
-void DebugMenu::createQuestButtons() {
-    TabContent content;
-    std::vector<std::pair<std::string, std::string>> items = {
-        {"List Quests", "listquests"},
-        {"Accept Main", "acceptquest 1"},
-        {"Accept Side", "acceptquest 2"},
-        {"Complete Q1", "completequest 1"},
-        {"Fail Q1", "failquest 1"},
-        {"Update Obj", "updateobj 1 1 5"},
-    };
-    for (const auto& item : items) {
-        Button btn;
-        btn.label = item.first;
-        btn.command = item.second;
-        btn.color = glm::vec3(0.7f, 0.5f, 0.2f);
-        btn.pressed = false;
-        content.buttons.push_back(btn);
+    // Quest tab
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"List Quests", "listquests"},
+            {"Accept Main", "acceptquest 1"},
+            {"Accept Side", "acceptquest 2"},
+            {"Complete Q1", "completequest 1"},
+            {"Fail Q1", "failquest 1"},
+            {"Update Obj", "updateobj 1 1 5"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.7f, 0.5f, 0.2f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
     }
-    tabContents.push_back(content);
-}
 
-void DebugMenu::createNpcButtons() {
-    TabContent content;
-    std::vector<std::pair<std::string, std::string>> items = {
-        {"List NPCs", "listnpcs"},
-        {"Nearby", "nearby"},
-        {"Spawn Guard", "spawnat Guard 0 0 0"},
-        {"Spawn Mage", "spawnat Mage 5 0 5"},
-        {"Spawn Bandit", "spawnat Bandit -5 0 5"},
-        {"Aggro NPC", "aggro 0"},
-        {"Calm NPC", "calm 0"},
-        {"Set AI Combat", "setai 0 combat"},
-        {"Set AI Idle", "setai 0 idle"},
-        {"Resurrect", "resurrectnpc 0"},
-    };
-    for (const auto& item : items) {
-        Button btn;
-        btn.label = item.first;
-        btn.command = item.second;
-        btn.color = glm::vec3(0.4f, 0.5f, 0.3f);
-        btn.pressed = false;
-        content.buttons.push_back(btn);
+    // NPC tab
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"List NPCs", "listnpcs"},
+            {"Nearby", "nearby"},
+            {"Spawn Guard", "spawnat Guard 0 0 0"},
+            {"Spawn Mage", "spawnat Mage 5 0 5"},
+            {"Spawn Bandit", "spawnat Bandit -5 0 5"},
+            {"Aggro NPC", "aggro 0"},
+            {"Calm NPC", "calm 0"},
+            {"Set AI Combat", "setai 0 combat"},
+            {"Set AI Idle", "setai 0 idle"},
+            {"Resurrect", "resurrectnpc 0"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.4f, 0.5f, 0.3f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
     }
-    tabContents.push_back(content);
-}
 
-void DebugMenu::createDialogueButtons() {
-    TabContent content;
-    std::vector<std::pair<std::string, std::string>> items = {
-        {"Talk NPC", "talk 0"},
-        {"Topic 0", "selecttopic 0"},
-        {"Topic 1", "selecttopic 1"},
-        {"Topic 2", "selecttopic 2"},
-        {"Choice 0", "selectchoice 0"},
-        {"Choice 1", "selectchoice 1"},
-        {"End Talk", "endtalk"},
-    };
-    for (const auto& item : items) {
-        Button btn;
-        btn.label = item.first;
-        btn.command = item.second;
-        btn.color = glm::vec3(0.6f, 0.4f, 0.6f);
-        btn.pressed = false;
-        content.buttons.push_back(btn);
+    // Dialogue tab
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Talk NPC", "talk 0"},
+            {"Topic 0", "selecttopic 0"},
+            {"Topic 1", "selecttopic 1"},
+            {"Topic 2", "selecttopic 2"},
+            {"Choice 0", "selectchoice 0"},
+            {"Choice 1", "selectchoice 1"},
+            {"End Talk", "endtalk"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.6f, 0.4f, 0.6f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
     }
-    tabContents.push_back(content);
-}
 
-void DebugMenu::createWorldButtons() {
-    TabContent content;
-    std::vector<std::pair<std::string, std::string>> items = {
-        {"Weather Clear", "setweather clear"},
-        {"Weather Rain", "setweather rain"},
-        {"Weather Snow", "setweather snow"},
-        {"Weather Fog", "setweather fog"},
-        {"Weather Storm", "setweather storm"},
-        {"Time Dawn (6)", "settime 6"},
-        {"Time Noon (12)", "settime 12"},
-        {"Time Dusk (18)", "settime 18"},
-        {"Time Midnight", "settime 0"},
-        {"Time x30", "settimescale 30"},
-        {"Time x1", "settimescale 1"},
-        {"Time x0 (Pause)", "settimescale 0"},
-        {"Load Cell 0,0", "loadcell 0 0"},
-        {"World Info", "worldinfo"},
-    };
-    for (const auto& item : items) {
-        Button btn;
-        btn.label = item.first;
-        btn.command = item.second;
-        btn.color = glm::vec3(0.3f, 0.6f, 0.6f);
-        btn.pressed = false;
-        content.buttons.push_back(btn);
+    // World tab
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Weather Clear", "setweather clear"},
+            {"Weather Rain", "setweather rain"},
+            {"Weather Snow", "setweather snow"},
+            {"Weather Fog", "setweather fog"},
+            {"Weather Storm", "setweather storm"},
+            {"Time Dawn (6)", "settime 6"},
+            {"Time Noon (12)", "settime 12"},
+            {"Time Dusk (18)", "settime 18"},
+            {"Time Midnight", "settime 0"},
+            {"Time x30", "settimescale 30"},
+            {"Time x1", "settimescale 1"},
+            {"Time x0 (Pause)", "settimescale 0"},
+            {"Load Cell 0,0", "loadcell 0 0"},
+            {"World Info", "worldinfo"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.3f, 0.6f, 0.6f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
     }
-    tabContents.push_back(content);
-}
 
-void DebugMenu::createSaveButtons() {
-    TabContent content;
-    std::vector<std::pair<std::string, std::string>> items = {
-        {"Quick Save", "quicksave"},
-        {"Quick Load", "quickload"},
-        {"Save Slot 0", "save 0"},
-        {"Save Slot 1", "save 1"},
-        {"Save Slot 2", "save 2"},
-        {"Load Slot 0", "load 0"},
-        {"Load Slot 1", "load 1"},
-        {"Load Slot 2", "load 2"},
-        {"List Saves", "listsaves"},
-    };
-    for (const auto& item : items) {
-        Button btn;
-        btn.label = item.first;
-        btn.command = item.second;
-        btn.color = glm::vec3(0.5f, 0.5f, 0.3f);
-        btn.pressed = false;
-        content.buttons.push_back(btn);
+    // Save tab
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Quick Save", "quicksave"},
+            {"Quick Load", "quickload"},
+            {"Save Slot 0", "save 0"},
+            {"Save Slot 1", "save 1"},
+            {"Save Slot 2", "save 2"},
+            {"Load Slot 0", "load 0"},
+            {"Load Slot 1", "load 1"},
+            {"Load Slot 2", "load 2"},
+            {"List Saves", "listsaves"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.5f, 0.5f, 0.3f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
     }
-    tabContents.push_back(content);
+
+    // System tab
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Toggle Wireframe", "wireframe"},
+            {"Toggle AABB", "aabb"},
+            {"NPC Overlay", "npcoverlay"},
+            {"Touch Trail", "touchtrail"},
+            {"Debug HUD+", "debughudnext"},
+            {"Debug HUD-", "debughudprev"},
+            {"Debug Log", "debuglog"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.4f, 0.4f, 0.5f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
+    }
+
+    // Sound tab
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Play BGM", "playbgm"},
+            {"Stop BGM", "stopbgm"},
+            {"Play SE", "playse"},
+            {"Stop All SE", "stopallse"},
+            {"Set Volume 50%", "setvolume 0.5"},
+            {"Set Volume 100%", "setvolume 1.0"},
+            {"Mute All", "mute"},
+            {"Unmute All", "unmute"},
+            {"List Audio", "listaudio"},
+            {"Audio Stats", "audiostats"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.6f, 0.3f, 0.6f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
+    }
+
+    // Assets tab
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"List Textures", "listtextures"},
+            {"List Models", "listmodels"},
+            {"List Audio", "listaudio"},
+            {"Texture Info", "textureinfo"},
+            {"Model Info", "modelinfo"},
+            {"Cache Stats", "cachestats"},
+            {"Clear Cache", "clearcache"},
+            {"Reload Assets", "reloadassets"},
+            {"Memory Usage", "memoryusage"},
+            {"Asset Stats", "assetstats"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.3f, 0.6f, 0.5f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
+    }
+
+    // Logs tab
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Show All Logs", "loglevel all"},
+            {"Show Debug", "loglevel debug"},
+            {"Show Info", "loglevel info"},
+            {"Show Warning", "loglevel warn"},
+            {"Show Error", "loglevel error"},
+            {"Clear Logs", "clearlogs"},
+            {"Export Logs", "exportlogs"},
+            {"Log Stats", "logstats"},
+            {"Search Logs", "searchlog"},
+            {"Toggle Auto-scroll", "logautoscroll"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.5f, 0.4f, 0.3f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
+    }
 }

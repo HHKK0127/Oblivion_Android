@@ -141,7 +141,7 @@ struct NPC {
 
     // Magic System
     float lastSpellCastTime;
-    uint32_t selectSpellForCombat();  // 戦闘時のスペル選択AI
+    uint32_t selectSpellForCombat();  // Spell selection AI for combat
     bool canCastSpell(uint32_t spellId) const;
 
     // Graphics System

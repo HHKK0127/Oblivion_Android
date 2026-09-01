@@ -78,8 +78,8 @@ void SpellManager::cleanup() {
 }
 
 void SpellManager::update(float deltaTime) {
-    // スペルの定期的な処理はここに追加可能
-    // 例：継続的な効果の管理など
+    // Periodic spell processing can be added here
+    // Example: management of continuous effects
 }
 
 uint32_t SpellManager::createSpell(const std::string& name, const std::string& nameJa,
@@ -192,7 +192,7 @@ void SpellManager::equipSpellToNpc(uint32_t npcId, uint32_t spellId) {
         return;
     }
 
-    // スペルが既知かどうか確認
+    // Check if spell is known
     auto it = std::find(npc->status.knownSpells.begin(),
                        npc->status.knownSpells.end(), spellId);
     if (it == npc->status.knownSpells.end()) {
@@ -200,7 +200,7 @@ void SpellManager::equipSpellToNpc(uint32_t npcId, uint32_t spellId) {
         return;
     }
 
-    // 装備スペルに追加
+    // Add to equipped spells
     auto equipIt = std::find(npc->status.equippedSpells.begin(),
                             npc->status.equippedSpells.end(), spellId);
     if (equipIt == npc->status.equippedSpells.end()) {
@@ -226,19 +226,19 @@ bool SpellManager::castSpell(uint32_t casterId, uint32_t spellId, uint32_t targe
         return false;
     }
 
-    // マナチェック
+    // Mana check
     if (!spell->isAvailable(caster->status.currentMana)) {
         LOGW("NPC %u lacks mana to cast spell %u", casterId, spellId);
         return false;
     }
 
-    // マナ消費
+    // Mana consumption
     if (!consumeMana(casterId, spell->manaCost)) {
         LOGW("Failed to consume mana for spell %u", spellId);
         return false;
     }
 
-    // スペル効果適用
+    // Apply spell effects
     applySpellEffect(target, *spell, caster->status);
 
     LOGI("Spell cast: %s (%s) cast %s(%s) on %s",
@@ -266,22 +266,118 @@ bool SpellManager::castSpell(uint32_t casterId, uint32_t spellId, uint32_t targe
     return true;
 }
 
+bool SpellManager::castPlayerSpell(Player* player, uint32_t spellId, uint32_t targetId) {
+    if (!player) return false;
+
+    auto spell = getSpell(spellId);
+    if (!spell) {
+        LOGW("Spell ID %u not found", spellId);
+        return false;
+    }
+
+    // Mana check
+    if (player->magicka < spell->manaCost) {
+        LOGW("Player lacks mana to cast spell %u (has %.1f, needs %.1f)",
+             spellId, player->magicka, spell->manaCost);
+        return false;
+    }
+
+    // Consume mana
+    player->magicka -= spell->manaCost;
+    LOGI("Player consumed %.1f mana for spell %s (remaining: %.1f)",
+         spell->manaCost, spell->name.c_str(), player->magicka);
+
+    // Build a temporary CharacterStatus from Player for damage calculation
+    CharacterStatus playerStatus;
+    playerStatus.currentHealth = player->health;
+    playerStatus.maxHealth = player->maxHealth;
+    playerStatus.currentMana = player->magicka;
+    playerStatus.maxMana = player->maxMagicka;
+    playerStatus.stamina = player->stamina;
+    playerStatus.maxStamina = player->maxStamina;
+    playerStatus.level = player->playerLevel;
+
+    // Determine target: self-cast if targetId is 0 or player's own ID
+    bool isSelfCast = (targetId == 0 || targetId == player->playerId);
+
+    if (isSelfCast) {
+        // Apply self-targeting effects directly to player
+        for (const auto& effect : spell->effects) {
+            switch (effect.type) {
+                case SpellEffectType::HEAL:
+                    player->health += effect.magnitude;
+                    if (player->health > player->maxHealth) player->health = player->maxHealth;
+                    LOGI("Player healed: +%.1f HP (now: %.1f)", effect.magnitude, player->health);
+                    break;
+                case SpellEffectType::RESTORE_MANA:
+                    player->magicka += effect.magnitude;
+                    if (player->magicka > player->maxMagicka) player->magicka = player->maxMagicka;
+                    LOGI("Player mana restored: +%.1f (now: %.1f)", effect.magnitude, player->magicka);
+                    break;
+                case SpellEffectType::RESTORE_STAMINA:
+                    player->stamina += effect.magnitude;
+                    if (player->stamina > player->maxStamina) player->stamina = player->maxStamina;
+                    LOGI("Player stamina restored: +%.1f (now: %.1f)", effect.magnitude, player->stamina);
+                    break;
+                default:
+                    LOGW("Cannot self-cast effect type %d", static_cast<int>(effect.type));
+                    break;
+            }
+        }
+    } else {
+        // Offensive spell: get target NPC from NpcManager
+        if (!npcManager) {
+            LOGW("NpcManager not available for player spell target");
+            return false;
+        }
+        auto target = npcManager->getNPC(targetId);
+        if (!target) {
+            LOGW("Target NPC %u not found", targetId);
+            return false;
+        }
+        applySpellEffect(target, *spell, playerStatus);
+    }
+
+    LOGI("Player cast spell: %s (%s) on %s",
+         spell->name.c_str(), spell->nameJa.c_str(),
+         isSelfCast ? "self" : "enemy");
+
+    // Play spell cast sound
+    if (g_audioManager) {
+        std::string soundKey;
+        switch (spell->school) {
+            case MagicSchool::DESTRUCTION: soundKey = "magic/destruction_cast"; break;
+            case MagicSchool::RESTORATION: soundKey = "magic/restoration_cast"; break;
+            case MagicSchool::CONJURATION: soundKey = "magic/conjuration_cast"; break;
+            case MagicSchool::ALTERATION:  soundKey = "magic/alteration_cast"; break;
+            case MagicSchool::ILLUSION:    soundKey = "magic/illusion_cast"; break;
+            case MagicSchool::MYSTICISM:   soundKey = "magic/mysticism_cast"; break;
+            default: break;
+        }
+        if (!soundKey.empty()) {
+            g_audioManager->playSound(soundKey);
+        }
+    }
+
+    return true;
+}
+
 float SpellManager::calculateSpellDamage(const Spell& spell,
                                          const CharacterStatus& caster,
                                          const CharacterStatus& defender) {
-    // ベースダメージ
+    // Base damage
     float baseDamage = spell.baseDamage;
 
-    // 知性ボーナス（魔法系統の力）
+    // Intelligence bonus (magic school power)
     float intelligenceBonus = caster.getAttributeBonus("Intelligence") * 1.5f;
 
-    // 意志力ボーナス（マナコントロール）
+    // Willpower bonus (mana control)
     float willpowerBonus = caster.getAttributeBonus("Willpower") * 0.5f;
 
-    // 防御側の耐性計算
+    // Defender resistance calculation
     float defenseReduction = defender.armorRating * 0.3f;
 
-    // 最終ダメージ計算
+    // Final damage calculation
     float totalDamage = baseDamage + intelligenceBonus + willpowerBonus - defenseReduction;
 
     if (totalDamage < 1.0f) {

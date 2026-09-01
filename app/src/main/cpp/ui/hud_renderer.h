@@ -9,10 +9,10 @@ class TextRenderer;
 class UISystem;
 
 /**
- * @brief ゲーム内HUD レンダラー
+ * @brief In-game HUD renderer
  *
- * Phase 9: ゲーム画面上のプレイヤーステータス、ミニマップ、クイックスロットなどを描画する
- * オーバーレイHUDシステム。PlaceholderAssets を使用してプレースホルダー表示を行う。
+ * Phase 9: Renders player status, minimap, quick slots, etc. on the game screen
+ * Overlay HUD system. Uses PlaceholderAssets for placeholder display.
  */
 class HUDRenderer {
 public:
@@ -20,119 +20,119 @@ public:
     ~HUDRenderer();
 
     /**
-     * @brief HUDレンダラーを初期化
-     * @param textRenderer テキストレンダラーへのポインタ
-     * @param uiSystem UI システムへのポインタ（オプション）
-     * @param screenWidth スクリーン幅
-     * @param screenHeight スクリーン高さ
+     * @brief Initialize HUD renderer
+     * @param textRenderer Pointer to text renderer
+     * @param uiSystem Pointer to UI system (optional)
+     * @param screenWidth Screen width
+     * @param screenHeight Screen height
      */
     bool initialize(TextRenderer* textRenderer, UISystem* uiSystem = nullptr,
                    int screenWidth = 1080, int screenHeight = 1920);
 
     /**
-     * @brief HUDを更新
-     * @param deltaTime フレーム経過時間（秒）
+     * @brief Update HUD
+     * @param deltaTime Frame elapsed time (seconds)
      */
     void update(float deltaTime);
 
     /**
-     * @brief HUDを描画
+     * @brief Render HUD
      */
     void render();
 
     /**
-     * @brief クリーンアップ
+     * @brief Cleanup
      */
     void cleanup();
 
     /**
-     * @brief スクリーン解像度変更時に呼び出す
+     * @brief Call when screen resolution changes
      */
     void onScreenResize(int width, int height);
 
-    // === 表示/非表示 ===
+    // === Show/Hide ===
 
     void setVisible(bool visible) { this->visible = visible; }
     bool isVisible() const { return visible; }
 
-    // === プレイヤーステータス設定 ===
+    // === Player Status Settings ===
 
     /**
-     * @brief プレイヤー HP を設定
-     * @param current 現在 HP
-     * @param max 最大 HP
+     * @brief Set player HP
+     * @param current Current HP
+     * @param max Max HP
      */
     void setPlayerHealth(float current, float max);
 
     /**
-     * @brief プレイヤー MP を設定
-     * @param current 現在 MP
-     * @param max 最大 MP
+     * @brief Set player MP
+     * @param current Current MP
+     * @param max Max MP
      */
     void setPlayerMana(float current, float max);
 
     /**
-     * @brief プレイヤースタミナを設定
-     * @param current 現在スタミナ
-     * @param max 最大スタミナ
+     * @brief Set player stamina
+     * @param current Current stamina
+     * @param max Max stamina
      */
     void setPlayerStamina(float current, float max);
 
     /**
-     * @brief プレイヤーレベルを設定
+     * @brief Set player level
      */
     void setPlayerLevel(int level) { playerLevel = level; }
 
     /**
-     * @brief プレイヤー位置を設定（ミニマップ用）
+     * @brief Set player position (for minimap)
      */
     void setPlayerPosition(const glm::vec3& pos) { playerPosition = pos; }
 
-    // === クイックスロット設定 ===
+    // === Quick Slot Settings ===
 
     /**
-     * @brief クイックスロットアイテムを設定
-     * @param slotIndex スロット番号（0-9）
-     * @param itemName アイテム名
+     * @brief Set quick slot item
+     * @param slotIndex Slot index (0-9)
+     * @param itemName Item name
      */
     void setQuickSlotItem(int slotIndex, const std::string& itemName);
 
     /**
-     * @brief クイックスロットクリア
+     * @brief Clear quick slots
      */
     void clearQuickSlots();
 
-    // === レイアウト設定 ===
+    // === Layout Settings ===
 
     /**
-     * @brief ステータスバーの位置を設定（デフォルト：画面左下）
+     * @brief Set status bar position (default: bottom-left)
      */
     void setStatusBarPosition(float x, float y);
 
     /**
-     * @brief ミニマップの位置を設定（デフォルト：画面右上）
+     * @brief Set minimap position (default: top-right)
      */
     void setMinimapPosition(float x, float y);
 
     /**
-     * @brief クイックスロットの位置を設定（デフォルト：画面下中央）
+     * @brief Set quick slot position (default: bottom-center)
      */
     void setQuickSlotPosition(float x, float y);
 
 private:
-    // 初期化状態
+    // Initialization state
     bool initialized = false;
     bool visible = true;
 
-    // テキストレンダラー
+    // Text renderer
     TextRenderer* textRenderer = nullptr;
     UISystem* uiSystem = nullptr;
 
-    // スクリーンサイズ
+    // Screen size
     int screenWidth = 1080;
     int screenHeight = 1920;
 
-    // === プレイヤーステータス ===
+    // === Player Status ===
 
     float healthCurrent = 100.0f;
     float healthMax = 100.0f;
@@ -143,21 +143,21 @@ private:
     int playerLevel = 1;
     glm::vec3 playerPosition = glm::vec3(0.0f, 0.0f, 0.0f);
 
-    // === クイックスロット ===
+    // === Quick Slots ===
 
     static constexpr int NUM_QUICK_SLOTS = 10;
     std::string quickSlotItems[NUM_QUICK_SLOTS];
 
-    // === レイアウト ===
+    // === Layout ===
 
     float statusBarX = 20.0f;
-    float statusBarY = 0.0f;  // 計算時に更新
-    float minimapX = 0.0f;    // 計算時に更新
+    float statusBarY = 0.0f;  // Updated during calculation
+    float minimapX = 0.0f;    // Updated during calculation
     float minimapY = 20.0f;
-    float quickSlotX = 0.0f;  // 計算時に更新
-    float quickSlotY = 0.0f;  // 計算時に更新
+    float quickSlotX = 0.0f;  // Updated during calculation
+    float quickSlotY = 0.0f;  // Updated during calculation
 
-    // === ヘルパー描画関数 ===
+    // === Helper Drawing Functions ===
 
     void renderStatusBars();
     void renderMinimap();

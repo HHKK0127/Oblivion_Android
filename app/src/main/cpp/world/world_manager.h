@@ -149,23 +149,23 @@ public:
                            const std::string& itemNameJa, const glm::vec3& position);
 
     /**
-     * @brief プレイヤー周囲の拾えるアイテムを取得
+     * @brief Get pickupable items around player
      */
     std::shared_ptr<WorldItem> getNearbyPickupItem(const glm::vec3& playerPos,
                                                     float pickupRange = 3.0f) const;
 
     /**
-     * @brief 最も近いアイテムを取得
+     * @brief Get nearest item
      */
     std::shared_ptr<WorldItem> getNearestWorldItem(const glm::vec3& playerPos) const;
 
     /**
-     * @brief アイテムを拾う（ワールドから削除）
+     * @brief Pick up item (remove from world)
      */
     bool pickupWorldItem(uint32_t worldItemId);
 
     /**
-     * @brief すべてのワールドアイテムを取得
+     * @brief Get all world items
      */
     const std::vector<std::shared_ptr<WorldItem>>& getWorldItems() const {
         return worldItems;

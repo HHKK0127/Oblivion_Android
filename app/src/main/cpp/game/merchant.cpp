@@ -7,17 +7,17 @@ Merchant::Merchant(uint32_t npcId, const std::string& shopName,
     : npcId_(npcId), shopName_(shopName), shopType_(shopType), shopGold_(5000.0f) {}
 
 void Merchant::addItem(const MerchantItem& item) {
-    // 同じitemIdが既に存在するかチェック
+    // Check if same itemId already exists
     auto it = std::find_if(inventory_.begin(), inventory_.end(),
                           [&item](const MerchantItem& existing) {
                               return existing.itemId == item.itemId;
                           });
 
     if (it != inventory_.end()) {
-        // 既存アイテムの数量を増やす
+        // Increase quantity of existing item
         it->quantity += item.quantity;
     } else {
-        // 新規アイテムを追加
+        // Add new item
         inventory_.push_back(item);
     }
 }
@@ -56,7 +56,7 @@ float Merchant::calculateBuyPrice(const std::string& itemId, float playerCharism
         return 0.0f;
     }
 
-    // Charisma ボーナス（最大 20% 割引）
+    // Charisma bonus (max 20% discount)
     float charismaBonus = std::clamp(playerCharisma / 100.0f, 0.0f, 0.2f);
     float priceMultiplier = 1.0f - charismaBonus;
 
@@ -73,7 +73,7 @@ float Merchant::calculateSellPrice(const std::string& itemId, float playerCharis
         return 0.0f;
     }
 
-    // Charisma ボーナス（最大 20% 増加）
+    // Charisma bonus (max 20% increase)
     float charismaBonus = std::clamp(playerCharisma / 100.0f, 0.0f, 0.2f);
     float priceMultiplier = 1.0f + charismaBonus;
 

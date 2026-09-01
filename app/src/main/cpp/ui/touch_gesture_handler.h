@@ -33,11 +33,11 @@ enum class GestureType {
  */
 struct GestureEvent {
     GestureType type;
-    glm::vec2 position;       // 開始位置
-    glm::vec2 delta;          // 移動量（スワイプ方向）
-    float magnitude;          // 強さ（ピンチ比率、スワイプ距離）
-    int pointerCount;         // タッチ数
-    float duration;           // 持続時間（秒）
+    glm::vec2 position;       // Start position
+    glm::vec2 delta;          // Movement amount (swipe direction)
+    float magnitude;          // Magnitude (pinch ratio, swipe distance)
+    int pointerCount;         // Touch count
+    float duration;           // Duration (seconds)
 
     GestureEvent()
         : type(GestureType::NONE), position(0.0f, 0.0f), delta(0.0f, 0.0f),
@@ -45,14 +45,14 @@ struct GestureEvent {
 };
 
 /**
- * @brief ジェスチャーコールバック型
+ * @brief ジェスチャーCallbacks型
  */
 using GestureCallback = std::function<void(const GestureEvent&)>;
 
 /**
  * @brief タッチジェスチャー認識器
  *
- * Phase 43: マルチタッチジェスチャーを認識し、コールバックで通知する。
+ * Phase 43: マルチタッチジェスチャーを認識し、Callbacksで通知する。
  * - シングルタップ: 選択/インタラクト
  * - ダブルタップ: 走り/ダッシュ
  * - ロングプレス: コンテキストメニュー
@@ -75,14 +75,14 @@ public:
     void setPinchThreshold(float ratio) { pinchThreshold = ratio; }
 
     /**
-     * @brief ジェスチャーコールバックを登録
+     * @brief ジェスチャーCallbacksを登録
      * @param type 登録するジェスチャータイプ
-     * @param callback コールバック関数
+     * @param callback Callbacks関数
      */
     void registerCallback(GestureType type, GestureCallback callback);
 
     /**
-     * @brief 全ジェスチャー共通コールバックを登録
+     * @brief 全ジェスチャー共通Callbacksを登録
      */
     void registerAllCallback(GestureCallback callback);
 
@@ -99,7 +99,7 @@ public:
     void update(float deltaTime);
 
     /**
-     * @brief 状態リセット
+     * @brief Stateリセット
      */
     void reset();
 
@@ -122,35 +122,35 @@ private:
         TouchPoint() : startPos(0.0f, 0.0f), currentPos(0.0f, 0.0f), startTime(0.0f), active(false) {}
     };
 
-    // 設定パラメータ
-    float tapTimeout;         // シングルタップ判定時間（秒）
-    float doubleTapTimeout;   // ダブルタップ間隔（秒）
-    float longPressTimeout;   // ロングプレス判定時間（秒）
-    float swipeThreshold;     // スワイプ最小距離（ピクセル）
-    float pinchThreshold;     // ピンチ判定比率変化
+    // Configuration parameters
+    float tapTimeout;         // Single tap detection time (seconds)
+    float doubleTapTimeout;   // Double tap interval (seconds)
+    float longPressTimeout;   // Long press detection time (seconds)
+    float swipeThreshold;     // Minimum swipe distance (pixels)
+    float pinchThreshold;     // Pinch detection ratio change
 
-    // 状態
+    // State
     bool enabled;
     float currentTime;
 
-    // マルチタッチ管理（最大10本）
+    // Multi-touch management (max 10 fingers)
     static constexpr int MAX_POINTERS = 10;
     std::array<TouchPoint, MAX_POINTERS> pointers;
     int activePointerCount;
 
-    // ダブルタップ検出用
+    // For double tap detection
     float lastTapTime;
     glm::vec2 lastTapPos;
 
-    // ピンチ検出用
+    // For pinch detection
     float initialPinchDistance;
     float currentPinchDistance;
 
-    // コールバック
+    // Callbacks
     std::vector<std::pair<GestureType, GestureCallback>> callbacks;
     GestureCallback allCallback;
 
-    // 内部ヘルパー
+    // Internal helper
     void detectTap(int pointerId);
     void detectLongPress(int pointerId);
     void detectSwipe(int pointerId);

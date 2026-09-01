@@ -22,10 +22,10 @@ public:
     InputSystem();
     ~InputSystem() = default;
 
-    // UIスレッドから呼ばれる（Java/Kotlin → JNI）
+    // Called from UI thread (Java/Kotlin -> JNI)
     void onTouchEvent(int pointerId, float x, float y, int action);
 
-    // ゲームループスレッドから呼ばれる
+    // Called from game loop thread
     void processEvents();
     bool isTouching(int pointerId) const;
     void getTouchPosition(int pointerId, float& x, float& y) const;

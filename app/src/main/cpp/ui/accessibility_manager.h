@@ -9,28 +9,28 @@
 #define ACCESS_LOGI(...) __android_log_print(ANDROID_LOG_INFO, ACCESS_LOG_TAG, __VA_ARGS__)
 
 /**
- * @brief 色覚タイプ
+ * @brief Color vision type
  */
 enum class ColorBlindMode {
     NONE,
-    PROTANOPIA,    // 赤色盲
-    DEUTERANOPIA,  // 緑色盲
-    TRITANOPIA     // 青色盲
+    PROTANOPIA,    // Protanopia (red-blind)
+    DEUTERANOPIA,  // Deuteranopia (green-blind)
+    TRITANOPIA     // Tritanopia (blue-blind)
 };
 
 /**
- * @brief アクセシビリティ設定変更コールバック
+ * @brief Accessibility settings change callbacks
  */
 using AccessibilityChangeCallback = std::function<void()>;
 
 /**
- * @brief アクセシビリティ管理
+ * @brief Accessibility management
  *
- * Phase 43: ゲームのアクセシビリティ設定を管理する。
- * - テキストサイズ調整
- * - コントラスト調整
- * - 操作感度調整
- * - 色覚サポート
+ * Phase 43: Manages game accessibility settings.
+ * - Text size adjustment
+ * - Contrast adjustment
+ * - Input sensitivity adjustment
+ * - Color vision support
  */
 class AccessibilityManager {
 public:
@@ -38,96 +38,96 @@ public:
     ~AccessibilityManager() = default;
 
     /**
-     * @brief 初期化
+     * @brief Initialize
      */
     void initialize();
 
-    // === テキストサイズ ===
+    // === Text Size ===
 
     /**
-     * @brief テキストスケールファクターを設定（0.5〜2.0）
+     * @brief Set text scale factor (0.5 to 2.0)
      */
     void setTextScale(float scale);
 
     /**
-     * @brief テキストスケールファクターを取得
+     * @brief Get text scale factor
      */
     float getTextScale() const { return textScale; }
 
-    // === コントラスト ===
+    // === Contrast ===
 
     /**
-     * @brief コントラスト倍率を設定（0.5〜2.0、1.0が標準）
+     * @brief Set contrast multiplier (0.5 to 2.0, 1.0 is default)
      */
     void setContrastMultiplier(float multiplier);
 
     /**
-     * @brief コントラスト倍率を取得
+     * @brief Get contrast multiplier
      */
     float getContrastMultiplier() const { return contrastMultiplier; }
 
     /**
-     * @brief 高コントラストモードを切替
+     * @brief Toggle high contrast mode
      */
     void setHighContrastMode(bool enabled);
 
     /**
-     * @brief 高コントラストモードか
+     * @brief Is high contrast mode
      */
     bool isHighContrastMode() const { return highContrastMode; }
 
-    // === 操作感度 ===
+    // === Input Sensitivity ===
 
     /**
-     * @brief タッチ感度を設定（0.5〜2.0、1.0が標準）
+     * @brief Set touch sensitivity (0.5 to 2.0, 1.0 is default)
      */
     void setTouchSensitivity(float sensitivity);
 
     /**
-     * @brief タッチ感度を取得
+     * @brief Get touch sensitivity
      */
     float getTouchSensitivity() const { return touchSensitivity; }
 
     /**
-     * @brief カメラ感度を設定（0.5〜2.0）
+     * @brief Set camera sensitivity (0.5 to 2.0)
      */
     void setCameraSensitivity(float sensitivity);
 
     /**
-     * @brief カメラ感度を取得
+     * @brief Get camera sensitivity
      */
     float getCameraSensitivity() const { return cameraSensitivity; }
 
-    // === 色覚サポート ===
+    // === Color vision support ===
 
     /**
-     * @brief 色覚モードを設定
+     * @brief Set color vision mode
      */
     void setColorBlindMode(ColorBlindMode mode);
 
     /**
-     * @brief 色覚モードを取得
+     * @brief Get color vision mode
      */
     ColorBlindMode getColorBlindMode() const { return colorBlindMode; }
 
     /**
-     * @brief 色を色覚モードに応じて変換
-     * @param color 元の色
-     * @return 変換後の色
+     * @brief Transform color according to color vision mode
+     * @param color Original color
+     * @return Transformed color
      */
     glm::vec4 applyColorBlindFilter(const glm::vec4& color) const;
 
-    // === コールバック ===
+    // === Callbacks ===
 
     /**
-     * @brief 設定変更コールバックを登録
+     * @brief Register settings change callback
      */
     void registerChangeCallback(AccessibilityChangeCallback callback);
 
-    // === リセット ===
+    // === Reset ===
 
     /**
-     * @brief 全設定をデフォルトに戻す
+     * @brief Reset all settings to default
      */
     void resetToDefaults();
 
@@ -143,7 +143,7 @@ private:
 
     void notifyChange();
 
-    // 色覚変換行列
+    // Color vision conversion matrix
     glm::vec4 applyProtanopia(const glm::vec4& color) const;
     glm::vec4 applyDeuteranopia(const glm::vec4& color) const;
     glm::vec4 applyTritanopia(const glm::vec4& color) const;

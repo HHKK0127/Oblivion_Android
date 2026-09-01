@@ -8,12 +8,12 @@
 namespace inventory {
 
 /**
- * @brief インベントリコーディネーター - インベントリシステムの統合管理
+ * @brief Inventory coordinator - Integrated inventory system management
  *
- * Phase 9B: InventoryGrid + EquipmentManager + ItemFactory を統合して
- * プレイヤーのアイテム管理を一括処理
+ * Phase 9B: Integrate InventoryGrid + EquipmentManager + ItemFactory to
+ * Batch process player item management
  *
- * (game/InventoryManager と区別するため InventoryCoordinator と命名)
+ * (Named InventoryCoordinator to distinguish from game/InventoryManager)
  */
 class InventoryCoordinator {
 public:

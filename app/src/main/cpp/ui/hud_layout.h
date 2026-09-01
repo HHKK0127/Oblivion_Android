@@ -12,7 +12,7 @@
 class TextRenderer;
 
 /**
- * @brief HUD要素タイプ
+ * @brief HUD element types
  */
 enum class HUDElementType {
     HEALTH_BAR,
@@ -28,14 +28,14 @@ enum class HUDElementType {
 };
 
 /**
- * @brief HUD要素配置情報
+ * @brief HUD element layout information
  */
 struct HUDElementLayout {
     HUDElementType type;
-    glm::vec2 position;   // ピクセル座標
-    glm::vec2 size;       // ピクセルサイズ
+    glm::vec2 position;   // Pixel coordinates
+    glm::vec2 size;       // Pixel size
     bool visible;
-    float scale;          // スケーリング倍率
+    float scale;          // Scaling factor
 
     HUDElementLayout()
         : type(HUDElementType::HEALTH_BAR), position(0.0f), size(0.0f),
@@ -43,16 +43,16 @@ struct HUDElementLayout {
 };
 
 /**
- * @brief HUDレイアウト管理
+ * @brief HUD layout management
  *
- * Phase 43: HUD要素の配置と画面サイズへの自動適応を管理する。
- * - ヘルスバー（左上）
- * - マナバー（右上）
- * - スタミナバー（中央下）
- * - クイックスロット（右下）
- * - コンパス（上部中央）
- * - ミニマップ（左上、ヘルスバー下）
- * - ターゲット情報（中央）
+ * Phase 43: Manages HUD element placement and automatic adaptation to screen size.
+ * - Health bar (top left)
+ * - Mana bar (top right)
+ * - Stamina bar (bottom center)
+ * - Quick slots (bottom right)
+ * - Compass (top center)
+ * - Minimap (top left, below health bar)
+ * - Target info (center)
  */
 class HUDLayout {
 public:
@@ -60,66 +60,66 @@ public:
     ~HUDLayout() = default;
 
     /**
-     * @brief 初期化
-     * @param screenWidth スクリーン幅
-     * @param screenHeight スクリーン高さ
+     * @brief Initialize
+     * @param screenWidth Screen width
+     * @param screenHeight Screen height
      */
     void initialize(int screenWidth, int screenHeight);
 
     /**
-     * @brief スクリーンサイズ変更時にレイアウトを再計算
+     * @brief Recalculate layout when screen size changes
      */
     void recalculate(int screenWidth, int screenHeight);
 
     /**
-     * @brief HUD要素のレイアウト情報を取得
-     * @param type 要素タイプ
-     * @return レイアウト情報
+     * @brief Get HUD element layout information
+     * @param type Element type
+     * @return Layout information
      */
     const HUDElementLayout& getElementLayout(HUDElementType type) const;
 
     /**
-     * @brief HUD要素の位置をオーバーライド
+     * @brief Override HUD element position
      */
     void setElementPosition(HUDElementType type, const glm::vec2& position);
 
     /**
-     * @brief HUD要素のサイズをオーバーライド
+     * @brief Override HUD element size
      */
     void setElementSize(HUDElementType type, const glm::vec2& size);
 
     /**
-     * @brief HUD要素の可視性を設定
+     * @brief Set HUD element visibility
      */
     void setElementVisible(HUDElementType type, bool visible);
 
     /**
-     * @brief HUD要素のスケールを設定
+     * @brief Set HUD element scale
      */
     void setElementScale(HUDElementType type, float scale);
 
     /**
-     * @brief 全HUD要素のリストを取得
+     * @brief Get list of all HUD elements
      */
     const std::vector<HUDElementLayout>& getAllElements() const { return elements; }
 
     /**
-     * @brief UIスケールファクターを取得（DPI対応）
+     * @brief Get UI scale factor (DPI-aware)
      */
     float getUIScale() const { return uiScale; }
 
     /**
-     * @brief マージンを設定
+     * @brief Set margin
      */
     void setMargin(float margin) { edgeMargin = margin; recalculate(screenWidth, screenHeight); }
 
     /**
-     * @brief バーの高さを設定
+     * @brief Set bar height
      */
     void setBarHeight(float height) { barHeight = height; recalculate(screenWidth, screenHeight); }
 
     /**
-     * @brief デバッグ用: 全要素の位置をログ出力
+     * @brief Debug: log positions of all elements
      */
     void debugLogLayout() const;
 
@@ -134,13 +134,13 @@ private:
     float minimapSize;
     float compassHeight;
 
-    // 全要素のレイアウト
+    // Layout of all elements
     std::vector<HUDElementLayout> elements;
 
-    // 要素検索ヘルパー
+    // Element search helper
     HUDElementLayout* findElement(HUDElementType type);
     const HUDElementLayout* findElement(HUDElementType type) const;
 
-    // デフォルトレイアウト計算
+    // Default layout calculation
     void calculateDefaultLayout();
 };

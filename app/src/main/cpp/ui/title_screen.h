@@ -73,6 +73,8 @@ private:
     float glowPhase = 0.0f;
     float logoFadeAlpha = 0.0f;
     float introLogoAlpha = 0.0f;
+    float lastTouchX = 0.0f;
+    float lastTouchY = 0.0f;
 
     static constexpr float INTRO_DURATION = 4.0f;
     static constexpr float LOGO_FADE_DURATION = 2.0f;

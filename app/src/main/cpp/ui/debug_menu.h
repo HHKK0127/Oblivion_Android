@@ -34,11 +34,16 @@ public:
     bool isVisible() const { return visible; }
     void setVisible(bool v) { visible = v; }
 
-    void onTouchEvent(float x, float y, int action);
+    // Touch event handling (separate DOWN/MOVE/UP for proper tap vs scroll detection)
+    void onTouchDown(float x, float y);
+    void onTouchMove(float x, float y);
+    void onTouchUp(float x, float y);
+    void onTouchCancel();
+
     void update(float deltaTime);
     void render();
 
-    void setScreenSize(int w, int h) { screenWidth = w; screenHeight = h; }
+    void setScreenSize(int w, int h);
 
 private:
     TextRenderer* textRenderer;
@@ -48,6 +53,9 @@ private:
 
     int screenWidth;
     int screenHeight;
+
+    // Safe area insets
+    float safeLeft, safeTop, safeRight, safeBottom;
 
     // Tab system
     enum class Tab {
@@ -60,19 +68,24 @@ private:
         DIALOGUE,
         WORLD,
         SAVE,
+        SYSTEM,
+        SOUND,
+        ASSETS,
+        LOGS,
         COUNT
     };
 
     Tab currentTab;
-    float tabScrollOffset;
 
     // Button definition
     struct Button {
         float x, y, w, h;
         std::string label;
         std::string command;  // Console command to execute
-        glm::vec3 color;
-        bool pressed;
+        glm::vec3 baseColor;
+        bool isPressed;
+        float pressTimer;
+        Button() : x(0), y(0), w(0), h(0), isPressed(false), pressTimer(0.0f) {}
     };
 
     // Tab buttons
@@ -81,36 +94,41 @@ private:
     // Content buttons per tab
     struct TabContent {
         std::vector<Button> buttons;
-        float scrollOffset;
+        float scrollOffset = 0.0f;
     };
     std::vector<TabContent> tabContents;
 
+    // Touch state for proper tap vs scroll detection
+    struct TouchState {
+        bool isActive = false;
+        float startX = 0.0f, startY = 0.0f;
+        float lastX = 0.0f, lastY = 0.0f;
+        bool isScrolling = false;
+        static constexpr float TAP_THRESHOLD = 15.0f;
+        static constexpr float SCROLL_THRESHOLD = 10.0f;
+        Button* pressedButton = nullptr;
+    } touchState;
+
     // UI constants
     static constexpr float TAB_HEIGHT = 50.0f;
-    static constexpr float BUTTON_HEIGHT = 45.0f;
-    static constexpr float BUTTON_MARGIN = 5.0f;
-    static constexpr float CONTENT_PADDING = 10.0f;
+    static constexpr float BUTTON_HEIGHT = 48.0f;
+    static constexpr float BUTTON_MARGIN = 8.0f;
 
     // Helper methods
     void createTabButtons();
-    void createPlayerButtons();
-    void createCombatButtons();
-    void createInventoryButtons();
-    void createMagicButtons();
-    void createQuestButtons();
-    void createNpcButtons();
-    void createDialogueButtons();
-    void createWorldButtons();
-    void createSaveButtons();
+    void createAllTabContents();
 
+    void calculateButtonPositions();
+    Button* hitTestTab(float x, float y);
+    Button* hitTestContent(float x, float y);
+    void executeButtonCommand(Button& btn);
+
+    void renderBackground();
     void renderTabBar();
     void renderContent();
-    void renderButton(const Button& btn, float y);
-
-    bool hitTest(const Button& btn, float x, float y) const;
-    void handleTabTap(float x, float y);
-    void handleContentTap(float x, float y);
+    void renderButton(Button& btn, float scale);
 
     float getScale() const;
     std::string getTabName(Tab tab) const;
+    void clampScrollOffsets();
 };

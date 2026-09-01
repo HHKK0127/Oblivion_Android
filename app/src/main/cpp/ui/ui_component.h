@@ -65,9 +65,9 @@ enum class UIAnchor {
  * @brief テクスチャスケーリングモード
  */
 enum class TextureScaleMode {
-    STRETCH,              // デフォルト：quadに合わせて引き伸ばし
-    PRESERVE_ASPECT_FIT,  // アスペクト比維持、全体表示（レターボックス/ピラーボックス）
-    PRESERVE_ASPECT_CROP  // アスペクト比維持、quadを埋める（はみ出し許可）
+    STRETCH,              // Default: stretch to fit quad
+    PRESERVE_ASPECT_FIT,  // Preserve aspect ratio, fit all (letterbox/pillarbox)
+    PRESERVE_ASPECT_CROP  // Preserve aspect ratio, fill quad (allow overflow)
 };
 
 /**
@@ -82,7 +82,7 @@ public:
     UIComponent(const std::string& name = "UIComponent");
     virtual ~UIComponent();
 
-    // === ライフサイクル ===
+    // === Lifecycle ===
 
     /**
      * @brief コンポーネントを初期化
@@ -146,7 +146,7 @@ public:
 
     glm::vec2 getPosition() const { return position; }
     glm::vec2 getSize() const { return size; }
-    glm::vec2 getAbsolutePosition() const;  // アンカー考慮後の絶対座標
+    glm::vec2 getAbsolutePosition() const;  // Absolute position after anchor adjustment
 
     /**
      * @brief 点がコンポーネント内にあるか
@@ -154,7 +154,7 @@ public:
     bool contains(float x, float y) const;
 
     /**
-     * @brief スクリーン解像度変更時のコールバック
+     * @brief スクリーン解像度変更時のCallbacks
      */
     virtual void onScreenResize(int width, int height);
 
@@ -163,7 +163,7 @@ public:
      */
     void setScreenSize(int width, int height) { onScreenResize(width, height); }
 
-    // === 親子関係 ===
+    // === Parent-child relationship ===
 
     void setParent(std::shared_ptr<UIComponent> parent);
     std::shared_ptr<UIComponent> getParent() const { return parent.lock(); }
@@ -179,7 +179,7 @@ public:
 
     uint32_t getId() const { return id; }
 
-    // === 描画設定 ===
+    // === Drawing settings ===
 
     void setBackgroundColor(const glm::vec4& color) { backgroundColor = color; }
     void setBorderColor(const glm::vec4& color) { borderColor = color; }
@@ -194,25 +194,25 @@ public:
     bool isInitialized() const { return initialized; }
 
 protected:
-    // 共通描画ヘルパー
+    // Common drawing helper
     void renderBackground() const;
     void renderBorder() const;
     void renderTexture() const;
 
-    // 子要素の描画（可視性チェック付き）
+    // Draw child elements (with visibility check)
     void renderChildren();
     void updateChildren(float deltaTime);
     bool dispatchEventToChildren(const UIEvent& event);
 
-    // 変換
-    glm::vec2 position;  // ローカル座標（ピクセル）
-    glm::vec2 size;      // 幅・高さ（ピクセル）
+    // Transform
+    glm::vec2 position;  // Local coordinates (pixels)
+    glm::vec2 size;      // Width and height (pixels)
 
-    // スクリーンサイズ（キャッシュ）
+    // Screen size（キャッシュ）
     int screenWidth;
     int screenHeight;
 
-    // 描画設定
+    // Drawing settings
     glm::vec4 backgroundColor;
     glm::vec4 borderColor;
     float borderWidth;
@@ -225,15 +225,15 @@ private:
 
     UIAnchor anchor;
 
-    // 状態
+    // State
     bool visible;
     bool initialized;
     bool enabled;
 
-    // 親子関係
+    // Parent-child relationship
     std::weak_ptr<UIComponent> parent;
     std::vector<std::shared_ptr<UIComponent>> children;
 
-    // 一意ID生成用
+    // For unique ID generation
     static uint32_t nextId;
 };

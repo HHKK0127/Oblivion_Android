@@ -410,9 +410,19 @@ void TitleScreen::onTouchEvent(float x, float y, int action) {
         }
     } else if (state == TitleScreenState::MENU) {
         if (menuPanel) {
-            if (action == 0) menuPanel->onTouchDown(x, y, 0);
-            else if (action == 1) menuPanel->onTouchUp(x, y, 0);
-            else if (action == 2) menuPanel->onTouchMove(x, y, 0.0f, 0.0f, 0);
+            if (action == 0) {
+                lastTouchX = x;
+                lastTouchY = y;
+                menuPanel->onTouchDown(x, y, 0);
+            } else if (action == 1) {
+                menuPanel->onTouchUp(x, y, 0);
+            } else if (action == 2) {
+                float dx = x - lastTouchX;
+                float dy = y - lastTouchY;
+                lastTouchX = x;
+                lastTouchY = y;
+                menuPanel->onTouchMove(x, y, dx, dy, 0);
+            }
         }
     }
 }

@@ -116,11 +116,11 @@ void CellManager::renderCell(std::shared_ptr<Cell> cell) {
         return;
     }
 
-    // TODO: ジオメトリレンダリングの実装
-    // - 地形メッシュのレンダリング
-    // - 静的オブジェクトのレンダリング
-    // - 動的オブジェクトのレンダリング
-    // - カメラ設定とシェーダーバインディング
+    // TODO: Implement geometry rendering
+    // - Terrain mesh rendering
+    // - Static object rendering
+    // - Dynamic object rendering
+    // - Camera setup and shader binding
 }
 
 bool CellManager::isCellLoaded(uint32_t cellId) const {

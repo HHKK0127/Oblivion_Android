@@ -12,10 +12,10 @@
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 /**
- * @brief 装備効果システム - 装備による能力値反映
+ * @brief Equipment effect system - Apply equipment stats
  *
- * Phase 9B Week 4: 装備の変更をプレイヤーの能力値に反映
- * 武器ダメージ、防御力、ボーナス能力値などを管理
+ * Phase 9B Week 4: Reflect equipment changes to player stats
+ * Manage weapon damage, defense, bonus stats, etc.
  */
 class EquipmentEffectSystem {
 public:

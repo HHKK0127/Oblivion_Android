@@ -2,6 +2,7 @@
 
 #include "spell.h"
 #include "npc_manager.h"
+#include "player.h"
 #include "../assets/esm_reader.h"
 #include <unordered_map>
 #include <vector>
@@ -33,39 +34,42 @@ public:
     void cleanup();
     void update(float deltaTime);
 
-    // スペル作成と管理
+    // Spell creation and management
     uint32_t createSpell(const std::string& name, const std::string& nameJa,
                         MagicSchool school, float manaCost, float baseDamage);
 
-    // ESMデータからスペルを読み込み
+    // Load spells from ESM data
     void loadSpellsFromESM(const oblivion::ESMManager& esmMgr);
 
     std::shared_ptr<Spell> getSpell(uint32_t spellId) const;
     void addEffectToSpell(uint32_t spellId, const SpellEffect& effect);
 
-    // NPCへのスペル割り当て
+    // Assign spells to NPCs
     void teachSpellToNpc(uint32_t npcId, uint32_t spellId);
     void equipSpellToNpc(uint32_t npcId, uint32_t spellId);
 
-    // スペルキャスト
+    // Spell casting
     bool castSpell(uint32_t casterId, uint32_t spellId, uint32_t targetId);
 
-    // ダメージ計算
+    // Direct player cast (without NpcManager)
+    bool castPlayerSpell(Player* player, uint32_t spellId, uint32_t targetId);
+
+    // Damage calculation
     float calculateSpellDamage(const Spell& spell, const CharacterStatus& caster,
                               const CharacterStatus& defender);
 
-    // マナ消費
+    // Mana consumption
     bool consumeMana(uint32_t casterId, float amount);
 
-    // スペル効果適用
+    // Spell effect application
     void applySpellEffect(std::shared_ptr<NPC> target, const Spell& spell,
                          const CharacterStatus& caster);
 
-    // クエリ
+    // Queries
     std::vector<std::shared_ptr<Spell>> getNpcSpells(uint32_t npcId) const;
     std::vector<std::shared_ptr<Spell>> getNpcEquippedSpells(uint32_t npcId) const;
     bool hasSpell(uint32_t npcId, uint32_t spellId) const;
 
-    // ロギング
+    // Logging
     void logSpellStatus() const;
 };

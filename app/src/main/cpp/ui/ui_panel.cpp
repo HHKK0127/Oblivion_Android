@@ -66,6 +66,21 @@ void UIPanel::cleanup() {
 bool UIPanel::onEvent(const UIEvent& event) {
     if (!isVisible() || !isEnabled()) return false;
 
+    // Handle TOUCH_MOVE for active drag (before bounds check since drag may go outside)
+    if (event.type == UIEventType::TOUCH_MOVE && isDragging && isDraggable) {
+        glm::vec2 newPos(event.x - dragOffset.x, event.y - dragOffset.y);
+        newPos.x = std::max(0.0f, std::min(newPos.x, static_cast<float>(screenWidth) - size.x));
+        newPos.y = std::max(0.0f, std::min(newPos.y, static_cast<float>(screenHeight) - size.y));
+        setPosition(newPos.x, newPos.y);
+        return true;
+    }
+
+    // Handle TOUCH_UP to stop drag
+    if (event.type == UIEventType::TOUCH_UP && isDragging) {
+        isDragging = false;
+        return true;
+    }
+
     // Check close button first
     if (closeButtonVisible && event.type == UIEventType::TOUCH_DOWN) {
         if (isInsideCloseButton(event.x, event.y)) {
@@ -80,7 +95,7 @@ bool UIPanel::onEvent(const UIEvent& event) {
     // Then try children
     if (dispatchEventToChildren(event)) return true;
 
-    // Handle drag on title bar
+    // Handle drag start on title bar
     if (event.type == UIEventType::TOUCH_DOWN && isInsideTitleBar(event.x, event.y)) {
         if (isDraggable) {
             isDragging = true;

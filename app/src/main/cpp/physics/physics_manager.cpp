@@ -55,7 +55,7 @@ bool PhysicsManager::init() {
 void PhysicsManager::update(float deltaTime) {
     if (!physicsSystem) return;
 
-    // 固定タイムステップで安定したシミュレーション
+    // Stable simulation with fixed timestep
     accumulator += deltaTime;
     while (accumulator >= FIXED_TIMESTEP) {
         physicsSystem->Update(FIXED_TIMESTEP, 1, tempAllocator, jobSystem);
@@ -85,7 +85,7 @@ void PhysicsManager::createTerrainFromLand(const float* heightData, int size, fl
         return;
     }
 
-    // 高度データをfloat配列に変換
+    // Convert height data to float array
     uint32_t sampleCount = static_cast<uint32_t>(size);
     std::vector<float> heights(sampleCount * sampleCount);
     for (uint32_t i = 0; i < sampleCount * sampleCount; ++i) {
@@ -123,7 +123,7 @@ void PhysicsManager::createTerrainFromLand(const float* heightData, int size, fl
 JPH::CharacterVirtual* PhysicsManager::createCharacter(const glm::vec3& position, float height, float radius) {
     if (!physicsSystem) return nullptr;
 
-    // Capsule形状（CharacterVirtual推奨）
+    // Capsule shape (CharacterVirtual recommended)
     JPH::RefConst<JPH::Shape> shape = new JPH::CapsuleShape(height * 0.5f, radius);
 
     JPH::CharacterVirtualSettings settings;
@@ -131,7 +131,7 @@ JPH::CharacterVirtual* PhysicsManager::createCharacter(const glm::vec3& position
     settings.mMaxSlopeAngle = JPH::DegreesToRadians(50.0f);
     settings.mMaxStrength = 100.0f;
     settings.mShape = shape;
-    settings.mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisY(), -radius); // 足元からの接地判定
+    settings.mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisY(), -radius); // Ground detection from feet
 
     auto* character = new JPH::CharacterVirtual(
         &settings,
@@ -147,16 +147,16 @@ JPH::CharacterVirtual* PhysicsManager::createCharacter(const glm::vec3& position
 void PhysicsManager::updateCharacter(JPH::CharacterVirtual* character, float deltaTime, const glm::vec3& input) {
     if (!character || !physicsSystem) return;
 
-    // 入力を移動速度に変換（Oblivionの歩行速度に近い値）
+    // Convert input to movement velocity (close to Oblivion walk speed)
     const float moveSpeed = 4.0f;
     JPH::Vec3 currentVel = character->GetLinearVelocity();
     currentVel.SetX(input.x * moveSpeed);
     currentVel.SetZ(input.z * moveSpeed);
 
-    // 重力はCharacterVirtual内部で処理されるが、Y速度は維持
+    // Gravity is processed inside CharacterVirtual, but Y velocity is maintained
     character->SetLinearVelocity(currentVel);
 
-    // 拡張更新（地面検出、スロープ、階段、壁貫通防止）
+    // Extended update (ground detection, slope, stairs, wall penetration prevention)
     JPH::CharacterVirtual::ExtendedUpdateSettings updateSettings;
     character->ExtendedUpdate(
         deltaTime,
@@ -256,7 +256,7 @@ bool PhysicsManager::raycast(const Ray& ray, RaycastHit& hit) {
         JPH::Vec3 hitPoint = rayCast.GetPointOnRay(result.mFraction);
         hit.point = glm::vec3(hitPoint.GetX(), hitPoint.GetY(), hitPoint.GetZ());
 
-        // 法線取得（BodyLockで安全に）
+        // Get normal (safely with BodyLock)
         JPH::BodyLockRead lock(physicsSystem->GetBodyLockInterface(), result.mBodyID);
         if (lock.Succeeded()) {
             const JPH::Body& body = lock.GetBody();

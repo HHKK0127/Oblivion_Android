@@ -13,7 +13,7 @@
 namespace PlaceholderAssets {
 
     // ========================================
-    // グローバル状態
+    // Global state
     // ========================================
 
     static bool g_initialized = false;
@@ -21,7 +21,7 @@ namespace PlaceholderAssets {
     static int g_screenHeight = 1920;
 
     // ========================================
-    // 初期化・クリーンアップ
+    // Initialization and cleanup
     // ========================================
 
     bool initialize() {
@@ -49,7 +49,7 @@ namespace PlaceholderAssets {
     }
 
     // ========================================
-    // ヘルパー関数
+    // Helper functions
     // ========================================
 
     static void updateScreenSize(int width, int height) {
@@ -58,7 +58,7 @@ namespace PlaceholderAssets {
     }
 
     // ========================================
-    // 基本描画関数
+    // Basic drawing functions
     // ========================================
 
     void drawSolidRect(float x, float y, float width, float height,
@@ -74,7 +74,7 @@ namespace PlaceholderAssets {
     }
 
     // ========================================
-    // パネル描画
+    // Panel drawing
     // ========================================
 
     void drawPanel(float x, float y, float width, float height) {
@@ -83,10 +83,10 @@ namespace PlaceholderAssets {
 
     void drawPanel(float x, float y, float width, float height,
                   const glm::vec3& bgColor, const glm::vec3& borderColor) {
-        // 背景
+        // Background
         drawSolidRect(x, y, width, height, bgColor, 0.95f);
 
-        // 枠線（太さ2ピクセル）
+        // Border (2 pixels thick)
         const float borderWidth = 2.0f;
 
         glm::vec4 borderColorWithAlpha(borderColor.x, borderColor.y, borderColor.z, 1.0f);
@@ -95,24 +95,24 @@ namespace PlaceholderAssets {
     }
 
     // ========================================
-    // ステータスバー描画
+    // Status bar drawing
     // ========================================
 
     void drawStatusBar(float x, float y, float width, float height,
                       float fillRatio, const glm::vec3& fillColor) {
-        // 制約
+        // Constraints
         fillRatio = std::clamp(fillRatio, 0.0f, 1.0f);
 
-        // 背景（暗いグレー）
+        // Background (dark gray)
         drawSolidRect(x, y, width, height, Colors::DARK_GRAY, 0.7f);
 
-        // フィル（カラー）
+        // Fill (color)
         float fillWidth = width * fillRatio;
         if (fillWidth > 0.0f) {
             drawSolidRect(x, y, fillWidth, height, fillColor, 0.9f);
         }
 
-        // 枠線（淡いグレー）
+        // Border (light gray)
         const float borderWidth = 1.0f;
         glm::vec4 borderColor(Colors::LIGHT_GRAY.x, Colors::LIGHT_GRAY.y,
                              Colors::LIGHT_GRAY.z, 0.8f);
@@ -121,14 +121,14 @@ namespace PlaceholderAssets {
     }
 
     // ========================================
-    // アイコン・マーカー描画
+    // Icon/marker drawing
     // ========================================
 
     void drawIconFrame(float x, float y, float size) {
-        // 背景
+        // Background
         drawSolidRect(x, y, size, size, Colors::PARCHMENT_LIGHT, 0.7f);
 
-        // 枠線
+        // Border
         const float borderWidth = 1.0f;
         glm::vec4 borderColor(Colors::BROWN_ACCENT.x, Colors::BROWN_ACCENT.y,
                              Colors::BROWN_ACCENT.z, 1.0f);
@@ -137,14 +137,14 @@ namespace PlaceholderAssets {
     }
 
     // ========================================
-    // チェックボックス
+    // Checkbox
     // ========================================
 
     void drawCheckboxOff(float x, float y, float size) {
-        // 背景（白）
+        // Background (white)
         drawSolidRect(x, y, size, size, Colors::LIGHT_GRAY, 1.0f);
 
-        // 枠線（暗いグレー）
+        // Border (dark gray)
         const float borderWidth = 1.0f;
         glm::vec4 borderColor(Colors::DARK_GRAY.x, Colors::DARK_GRAY.y,
                              Colors::DARK_GRAY.z, 1.0f);
@@ -153,15 +153,15 @@ namespace PlaceholderAssets {
     }
 
     void drawCheckboxOn(float x, float y, float size) {
-        // 背景（白）
+        // Background (white)
         drawSolidRect(x, y, size, size, Colors::LIGHT_GRAY, 1.0f);
 
-        // チェックマーク内側（金色）
+        // Checkmark inner (gold)
         const float inset = size * 0.2f;
         drawSolidRect(x + inset, y + inset, size - 2 * inset, size - 2 * inset,
                      Colors::GOLD_HIGHLIGHT, 0.9f);
 
-        // 枠線（暗いグレー）
+        // Border (dark gray)
         const float borderWidth = 1.0f;
         glm::vec4 borderColor(Colors::DARK_GRAY.x, Colors::DARK_GRAY.y,
                              Colors::DARK_GRAY.z, 1.0f);
@@ -170,45 +170,45 @@ namespace PlaceholderAssets {
     }
 
     // ========================================
-    // マーカー描画
+    // Marker drawing
     // ========================================
 
     void drawCircleMarker(float x, float y, float radius, const glm::vec3& color) {
-        // 単純な円：複数の四角形で近似
-        // または、三角形ファンで描画（簡略版）
+        // Simple circle: approximated with multiple rectangles
+        // Or draw with triangle fan (simplified)
 
-        // 簡略版：正方形を描画（円に見立てる）
+        // Simplified: draw a square (pretend as circle)
         drawSolidRect(x - radius, y - radius, radius * 2.0f, radius * 2.0f,
                      color, 0.8f);
 
-        // より正確な円を描画する場合は、
-        // 複数の小さな四角形または三角形ファンを使用する必要があります
-        // ここでは簡略化のため正方形を使用
+        // For more accurate circle rendering,
+        // use multiple small rectangles or triangle fan
+        // Using square here for simplicity
     }
 
     void drawTriangleMarker(float x, float y, float size, const glm::vec3& color) {
-        // 三角形は複雑なため、簡略版として上向きのダイアモンド型を描画
-        // 本来は三角形ファンまたはGL_TRIANGLESで実装
+        // Triangles are complex, so draw upward diamond shape as simplified version
+        // Originally should be implemented with triangle fan or GL_TRIANGLES
 
-        // 上向きのピーク
+        // Upward peak
         float halfSize = size * 0.5f;
 
-        // ダイアモンド型で近似：4つの三角形領域で表現
-        // 簡略版：単純に菱形を描画
+        // Approximate with diamond: represented by 4 triangle regions
+        // Simplified: simply draw a rhombus
 
-        // 中央上部
+        // Center top
         drawSolidRect(x - size * 0.1f, y - halfSize, size * 0.2f, halfSize,
                      color, 0.8f);
 
-        // 左側
+        // Left side
         drawSolidRect(x - size * 0.4f, y, size * 0.3f, halfSize * 0.5f,
                      color, 0.6f);
 
-        // 右側
+        // Right side
         drawSolidRect(x + size * 0.1f, y, size * 0.3f, halfSize * 0.5f,
                      color, 0.6f);
 
-        // 下部
+        // Bottom
         drawSolidRect(x - size * 0.1f, y + halfSize * 0.5f, size * 0.2f,
                      halfSize * 0.5f, color, 0.8f);
     }

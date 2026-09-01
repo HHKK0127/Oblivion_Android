@@ -35,7 +35,7 @@ public:
 
     /**
      * @brief UIシステムを初期化
-     * @param textRenderer 既存のテキストレンダラー（ラベル描画用）
+     * @param textRenderer 既存のText renderer（ラベル描画用）
      * @return 初期化成功時true
      */
     bool initialize(TextRenderer* textRenderer);
@@ -118,11 +118,11 @@ public:
     void setScreenSize(int width, int height);
     glm::vec2 getScreenSize() const { return glm::vec2(static_cast<float>(screenWidth), static_cast<float>(screenHeight)); }
 
-    // === テキストレンダラー ===
+    // === Text renderer ===
 
     TextRenderer* getTextRenderer() const { return textRenderer; }
 
-    // === フォーカス管理 ===
+    // === Focus management ===
 
     /**
      * @brief フォーカスを持つコンポーネントを設定
@@ -148,30 +148,30 @@ public:
     size_t getComponentCount() const;
 
 private:
-    // レイヤー別コンポーネント管理（key: layer, value: components）
+    // Component management by layer (key: layer, value: components)
     std::map<int, std::vector<std::shared_ptr<UIComponent>>> layers;
 
-    // 名前からの高速検索用
+    // For fast lookup by name
     std::map<std::string, std::weak_ptr<UIComponent>> nameMap;
 
-    // テキストレンダラー（既存資産を利用）
+    // Text renderer（既存資産を利用）
     TextRenderer* textRenderer;
 
-    // フォーカス管理
+    // Focus management
     std::weak_ptr<UIComponent> focusedComponent;
 
-    // スクリーンサイズ
+    // Screen size
     int screenWidth;
     int screenHeight;
 
     bool initialized;
 
-    // イベント配信ヘルパー（前面レイヤー優先）
+    // Event delivery helper (front layer priority)
     bool dispatchEvent(const UIEvent& event);
 
-    // レイヤーをソートして描画
+    // Sort layers and draw
     void renderLayers();
 
-    // レイヤーからコンポーネントを削除
+    // Remove component from layer
     void removeFromLayer(std::shared_ptr<UIComponent> component, int layer);
 };

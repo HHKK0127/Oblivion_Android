@@ -5,7 +5,7 @@
 #include <cmath>
 
 /**
- * @brief ワールドに配置される拾えるアイテム
+ * @brief Pickupable items placed in the world
  */
 class WorldItem {
 public:

@@ -5,9 +5,9 @@
 namespace oblivion {
 
 enum class PhysicsLayer : uint8_t {
-    NON_MOVING = 0,  // 地形、建物
-    MOVING = 1,      // プレイヤー、NPC、動的オブジェクト
-    TRIGGER = 2,     // ドア、チェスト（将来拡張用）
+    NON_MOVING = 0,  // Terrain, buildings
+    MOVING = 1,      // Player, NPC, dynamic objects
+    TRIGGER = 2,     // Door, chest (for future expansion)
     NUM_LAYERS
 };
 

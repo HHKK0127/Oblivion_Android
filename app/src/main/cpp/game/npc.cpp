@@ -311,17 +311,17 @@ bool NPC::hasCompletedQuest(uint32_t questId) const {
 }
 
 uint32_t NPC::selectSpellForCombat() {
-    // スペルキャスト間隔（1.5秒）をチェック
+    // Check spell cast interval (1.5 seconds)
     if (lastSpellCastTime < 1.5f) {
-        return 0;  // スペルキャスト不可
+        return 0;  // Cannot cast spell
     }
 
-    // 装備されたスペルから選択
+    // Select from equipped spells
     if (status.equippedSpells.empty()) {
-        return 0;  // 装備スペルなし
+        return 0;  // No equipped spells
     }
 
-    // HP が低い時 (< 30%) → 回復スペルを優先
+    // When HP is low (< 30%) -> prioritize healing spells
     if (status.currentHealth < status.maxHealth * 0.3f) {
         for (uint32_t spellId : status.equippedSpells) {
             // Check if this is a healing spell by ID range (2001-2099 = healing)
@@ -333,7 +333,7 @@ uint32_t NPC::selectSpellForCombat() {
         }
     }
 
-    // マナが低い時 (< 30%) → マナ回復優先
+    // When mana is low (< 30%) -> prioritize mana recovery
     if (status.currentMana < status.maxMana * 0.3f) {
         for (uint32_t spellId : status.equippedSpells) {
             // Check if this is a restore mana spell by ID range (2002-2099 = restoration)
@@ -345,7 +345,7 @@ uint32_t NPC::selectSpellForCombat() {
         }
     }
 
-    // デフォルト: ダメージスペルを選択（マナが余っている場合）
+    // Default: select damage spell (when mana is sufficient)
     for (uint32_t spellId : status.equippedSpells) {
         // Check if this is a damage spell by ID range (2000-2099 = offensive)
         if (spellId >= 2000 && spellId <= 2000 && status.currentMana >= 50.0f) {
@@ -362,11 +362,11 @@ uint32_t NPC::selectSpellForCombat() {
         }
     }
 
-    return 0;  // キャストできるスペルなし
+    return 0;  // No castable spells
 }
 
 bool NPC::canCastSpell(uint32_t spellId) const {
-    // スペルIDが装備スペルに含まれているか確認
+    // Check if spell ID is included in equipped spells
     auto it = std::find(status.equippedSpells.begin(),
                        status.equippedSpells.end(), spellId);
     return it != status.equippedSpells.end();

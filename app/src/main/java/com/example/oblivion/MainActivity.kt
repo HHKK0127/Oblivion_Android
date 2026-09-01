@@ -105,6 +105,10 @@ class MainActivity : Activity() {
             if (glSurfaceView != null) {
                 // Create GameRenderer with default constructor
                 gameRenderer = GameRenderer()
+                gameRenderer!!.setOnExitRequestedListener {
+                    Log.i(TAG, "Exit requested - finishing activity")
+                    runOnUiThread { finish() }
+                }
                 glSurfaceView.setEGLContextClientVersion(3)
                 glSurfaceView.setRenderer(gameRenderer!!)
                 glSurfaceView.renderMode = android.opengl.GLSurfaceView.RENDERMODE_CONTINUOUSLY

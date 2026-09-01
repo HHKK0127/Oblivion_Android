@@ -15,7 +15,7 @@
 
 // ============================================================================
 // Imperial Weave v4.0
-// 統合レイヤー: EventBus + ServiceLocator + Coordinator + FrameBudget
+// Integration layer: EventBus + ServiceLocator + Coordinator + FrameBudget
 // v4: Config struct / new engine phases / frame budget / event subscriptions
 // ============================================================================
 
@@ -196,7 +196,7 @@ public:
 private:
     mutable std::mutex handlersMutex_;
     mutable std::mutex queueMutex_;
-    // v3: shared_ptr でコピー回避（emitImmediate での vector コピーを防止）
+    // v3: Avoid copy with shared_ptr (prevent vector copy in emitImmediate)
     std::unordered_map<std::string, std::shared_ptr<std::vector<Handler>>> handlers_;
     std::vector<Event> queue_;
 };
@@ -221,7 +221,7 @@ public:
             return static_cast<T*>(it->second);
         }
 #ifdef WEAVE_DEBUG
-        // v3: デバッグ時にサービス未登録を警告
+        // v3: Warn unregistered service during debug
         // LOGD("ServiceLocator: service not found for type");
 #endif
         return nullptr;
@@ -232,7 +232,7 @@ public:
 
 private:
     mutable std::mutex mutex_;
-    // v3: typeid(T).name() はコンパイラ依存 → type_index で統一
+    // v3: typeid(T).name() is compiler-dependent -> unified with type_index
     std::unordered_map<std::type_index, void*> services_;
 };
 

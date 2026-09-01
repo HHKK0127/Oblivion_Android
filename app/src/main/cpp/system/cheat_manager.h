@@ -3,10 +3,10 @@
 #include <cstdint>
 
 /**
- * @brief チートマネージャー（ダミー実装）
+ * @brief Cheat manager (dummy implementation)
  *
- * 既存コードとの互換性のためのスタブ。
- * 実際のチート機能は現在未使用。
+ * Stub for compatibility with existing code.
+ * Actual cheat functionality is currently unused.
  */
 class CheatManager {
 public:

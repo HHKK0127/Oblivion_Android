@@ -50,7 +50,7 @@ const std::vector<ButtonBinding>& ControlSchemeManager::getButtonBindings() cons
     if (it != schemeBindings.end()) {
         return it->second;
     }
-    // フォールバック
+    // Fallback
     static std::vector<ButtonBinding> empty;
     return empty;
 }
@@ -114,7 +114,7 @@ void ControlSchemeManager::resetBindings() {
 InputAction ControlSchemeManager::hitTest(float x, float y) const {
     const auto& bindings = getButtonBindings();
 
-    // 後方から検索（前面のボタンを優先）
+    // Search from back (prioritize front buttons)
     for (int i = static_cast<int>(bindings.size()) - 1; i >= 0; --i) {
         const auto& b = bindings[i];
         if (!b.visible) continue;
@@ -138,7 +138,7 @@ void ControlSchemeManager::setScreenSize(int w, int h) {
     uiScale = static_cast<float>(screenWidth) / 1080.0f;
     uiScale = std::max(0.5f, std::min(uiScale, 2.0f));
 
-    // 全スキームの配置を再計算
+    // Recalculate layout for all schemes
     schemeBindings.clear();
     setupTouchScheme();
     setupVirtualJoystickScheme();
@@ -148,7 +148,7 @@ void ControlSchemeManager::setScreenSize(int w, int h) {
 void ControlSchemeManager::onGamepadButton(int buttonId, bool pressed) {
     if (currentScheme != ControlSchemeType::GAMEPAD) return;
 
-    // 標準的なゲームパッドボタンマッピング
+    // Standard gamepad button mapping
     InputAction action = InputAction::COUNT;
     switch (buttonId) {
         case 0: action = InputAction::ATTACK; break;       // A
@@ -170,14 +170,14 @@ void ControlSchemeManager::onGamepadButton(int buttonId, bool pressed) {
 void ControlSchemeManager::onGamepadAxis(int axisId, float value) {
     if (currentScheme != ControlSchemeType::GAMEPAD) return;
 
-    // axis 0,1: 左スティック（移動）
-    // axis 2,3: 右スティック（カメラ）
+    // axis 0,1: left stick (movement)
+    // axis 2,3: right stick (camera)
     if (axisId >= 0 && axisId <= 3) {
         CTRL_LOGD("Gamepad axis %d: %.2f", axisId, value);
     }
 }
 
-// === スキーム別デフォルト配置 ===
+// === Default Layout Per Scheme ===
 
 ButtonBinding ControlSchemeManager::createBinding(InputAction action, const glm::vec2& pos,
                                                     const glm::vec2& size, const std::string& label) {
@@ -198,32 +198,32 @@ void ControlSchemeManager::setupTouchScheme() {
     float m = 20.0f * uiScale;
     float btnSize = 80.0f * uiScale;
 
-    // 攻撃ボタン（右下）
+    // Attack button (bottom right)
     bindings.push_back(createBinding(InputAction::ATTACK,
         glm::vec2(sw - btnSize * 2 - m, sh - btnSize * 3 - m),
         glm::vec2(btnSize, btnSize), "ATK"));
 
-    // ブロックボタン（攻撃ボタンの左）
+    // Block button (left of attack button)
     bindings.push_back(createBinding(InputAction::BLOCK,
         glm::vec2(sw - btnSize * 3 - m, sh - btnSize * 2 - m),
         glm::vec2(btnSize, btnSize), "BLK"));
 
-    // インタラクトボタン（右上寄り）
+    // Interact button (upper right)
     bindings.push_back(createBinding(InputAction::INTERACT,
         glm::vec2(sw - btnSize - m, sh - btnSize * 4 - m),
         glm::vec2(btnSize, btnSize), "ACT"));
 
-    // ジャンプボタン
+    // Jump button
     bindings.push_back(createBinding(InputAction::JUMP,
         glm::vec2(sw - btnSize - m, sh - btnSize * 2 - m),
         glm::vec2(btnSize, btnSize), "JMP"));
 
-    // スプリントボタン
+    // Sprint button
     bindings.push_back(createBinding(InputAction::SPRINT,
         glm::vec2(sw - btnSize * 2 - m, sh - btnSize * 4 - m),
         glm::vec2(btnSize, btnSize), "RUN"));
 
-    // クイックスロット（下部中央）
+    // Quick slot (bottom center)
     float qsSize = 60.0f * uiScale;
     float qsStartX = (sw - qsSize * 5) * 0.5f;
     for (int i = 0; i < 5; ++i) {
@@ -244,8 +244,8 @@ void ControlSchemeManager::setupVirtualJoystickScheme() {
     float m = 20.0f * uiScale;
     float btnSize = 80.0f * uiScale;
 
-    // ジョイスティックは左側に配置（UIJoystick コンポーネントで処理）
-    // 右側にアクションボタン
+    // Joystick placed on left side (handled by UIJoystick component)
+    // Action buttons on right side
     bindings.push_back(createBinding(InputAction::ATTACK,
         glm::vec2(sw - btnSize - m, sh - btnSize * 2 - m),
         glm::vec2(btnSize, btnSize), "ATK"));
@@ -266,7 +266,7 @@ void ControlSchemeManager::setupVirtualJoystickScheme() {
         glm::vec2(sw - btnSize * 3 - m, sh - btnSize - m),
         glm::vec2(btnSize, btnSize), "ACT"));
 
-    // クイックスロット
+    // Quick slot
     float qsSize = 60.0f * uiScale;
     float qsStartX = (sw - qsSize * 5) * 0.5f;
     for (int i = 0; i < 5; ++i) {
@@ -281,10 +281,10 @@ void ControlSchemeManager::setupVirtualJoystickScheme() {
 }
 
 void ControlSchemeManager::setupGamepadScheme() {
-    // ゲームパッドスキームでは画面上のボタンは最小限
+    // Minimal on-screen buttons for gamepad scheme
     std::vector<ButtonBinding> bindings;
 
-    // クイックスロットのみ表示
+    // Show quick slots only
     float sw = static_cast<float>(screenWidth);
     float sh = static_cast<float>(screenHeight);
     float m = 20.0f * uiScale;

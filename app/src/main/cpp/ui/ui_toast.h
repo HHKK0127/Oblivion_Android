@@ -16,10 +16,10 @@
 class UIToast {
 public:
     enum ToastType {
-        ITEM_ACQUIRED = 0,     // アイテム入手（金）
-        QUEST_UPDATED = 1,     // クエスト更新（青）
-        LEVEL_UP = 2,          // レベルアップ（緑）
-        NOTIFICATION = 3       // 通知（白）
+        ITEM_ACQUIRED = 0,     // Item acquired (gold)
+        QUEST_UPDATED = 1,     // Quest updated (blue)
+        LEVEL_UP = 2,          // Level up (green)
+        NOTIFICATION = 3       // Notification (white)
     };
 
     struct Toast {

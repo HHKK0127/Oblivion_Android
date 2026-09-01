@@ -14,7 +14,7 @@
 class TextRenderer;
 
 /**
- * @brief メニュー遷移タイプ
+ * @brief Menu transition type
  */
 enum class TransitionType {
     FADE_IN,
@@ -27,22 +27,22 @@ enum class TransitionType {
 };
 
 /**
- * @brief 遷移状態
+ * @brief Transition state
  */
 enum class TransitionState {
     IDLE,
-    OUTGOING,   // 遷移元が退出中
-    INCOMING    // 遷移先が登場中
+    OUTGOING,   // Outgoing transition
+    INCOMING    // Incoming transition
 };
 
 /**
- * @brief メニュー遷移アニメーション管理
+ * @brief Menu transition animation management
  *
- * Phase 43: メニュー間のスムーズな遷移アニメーションを提供。
- * - フェードイン/アウト
- * - スライド遷移（左/右/上/下）
- * - 遷移中の入力ブロック
- * - イージング関数対応
+ * Phase 43: Provides smooth transition animations between menus.
+ * - Fade in/out
+ * - Slide transition (left/right/up/down)
+ * - Input blocking during transition
+ * - Easing function support
  */
 class MenuTransitionManager {
 public:
@@ -50,62 +50,62 @@ public:
     ~MenuTransitionManager() = default;
 
     /**
-     * @brief 初期化
-     * @param textRenderer テキストレンダラー
-     * @param screenWidth スクリーン幅
-     * @param screenHeight スクリーン高さ
+     * @brief Initialize
+     * @param textRenderer Text renderer
+     * @param screenWidth Screen width
+     * @param screenHeight Screen height
      */
     void initialize(TextRenderer* textRenderer, int screenWidth, int screenHeight);
 
     /**
-     * @brief 毎フレーム更新
-     * @param deltaTime 前フレームからの経過時間（秒）
+     * @brief Update every frame
+     * @param deltaTime Elapsed time from previous frame (seconds)
      */
     void update(float deltaTime);
 
     /**
-     * @brief 遷移オーバーレイを描画
+     * @brief Render transition overlay
      */
     void render();
 
     /**
-     * @brief 遷移を開始
-     * @param type 遷移タイプ
-     * @param duration 遷移時間（秒）
-     * @param onOutgoingComplete 遷移元退出完了コールバック
-     * @param onIncomingComplete 遷移先登場完了コールバック
+     * @brief Start transition
+     * @param type Transition type
+     * @param duration Transition duration (seconds)
+     * @param onOutgoingComplete Source exit complete callback
+     * @param onIncomingComplete Destination enter complete callback
      */
     void startTransition(TransitionType type, float duration,
                          std::function<void()> onOutgoingComplete = nullptr,
                          std::function<void()> onIncomingComplete = nullptr);
 
     /**
-     * @brief 遷移中かどうか
+     * @brief Is transitioning
      */
     bool isTransitioning() const { return state != TransitionState::IDLE; }
 
     /**
-     * @brief 入力ブロック中かどうか
+     * @brief Is input blocked
      */
     bool isInputBlocked() const { return state != TransitionState::IDLE; }
 
     /**
-     * @brief 現在の遷移アルファ値を取得（0.0〜1.0）
+     * @brief Get current transition alpha (0.0 to 1.0)
      */
     float getCurrentAlpha() const { return currentAlpha; }
 
     /**
-     * @brief スクリーンサイズ変更
+     * @brief Screen size change
      */
     void setScreenSize(int width, int height);
 
     /**
-     * @brief 遷移速度を設定（デフォルト: 0.3秒）
+     * @brief Set transition speed (default: 0.3 seconds)
      */
     void setDefaultDuration(float seconds) { defaultDuration = seconds; }
 
     /**
-     * @brief オーバーレイ色を設定
+     * @brief Set overlay color
      */
     void setOverlayColor(const glm::vec4& color) { overlayColor = color; }
 
@@ -114,30 +114,30 @@ private:
     int screenWidth;
     int screenHeight;
 
-    // 遷移状態
+    // Transition state
     TransitionState state;
     TransitionType currentType;
     float transitionDuration;
     float elapsedTime;
     float currentAlpha;
 
-    // デフォルト設定
+    // Default settings
     float defaultDuration;
     glm::vec4 overlayColor;
 
-    // スライド用オフセット
+    // Slide offset
     glm::vec2 slideOffset;
 
-    // コールバック
+    // Callbacks
     std::function<void()> onOutgoingComplete;
     std::function<void()> onIncomingComplete;
     bool outgoingCallbackFired;
 
-    // イージング関数
+    // Easing function
     float easeInOut(float t) const;
     float easeOutCubic(float t) const;
 
-    // 遷移タイプ別更新
+    // Update by transition type
     void updateFade(float progress);
     void updateSlide(float progress);
 };

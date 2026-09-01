@@ -7,21 +7,21 @@
 using ALuint = unsigned int;
 
 /**
- * @brief 音声リソース（クリップ）
- * WAV/OGG等のオーディオデータを表現
+ * @brief Audio resource (clip)
+ * Represents audio data such as WAV/OGG
  */
 struct AudioClip {
-    uint32_t clipId;                // ユニークID
-    std::string filename;            // ファイルパス
+    uint32_t clipId;                // Unique ID
+    std::string filename;            // File path
     ALuint alBuffer;                 // OpenAL buffer handle
-    float duration;                  // 再生時間（秒）
-    bool isLooping;                  // ループ再生フラグ
-    bool isStreamed;                 // ストリーミング再生（true）vs 完全ロード（false）
-    float volume;                    // 基本ボリューム (0.0 - 1.0)
-    uint8_t type;                    // 音声タイプ: 0=BGM, 1=SE, 2=Voice
+    float duration;                  // Playback duration (seconds)
+    bool isLooping;                  // Loop playback flag
+    bool isStreamed;                 // Streaming playback (true) vs full load (false)
+    float volume;                    // Base volume (0.0 - 1.0)
+    uint8_t type;                    // Audio type: 0=BGM, 1=SE, 2=Voice
 
     /**
-     * @brief コンストラクタ
+     * @brief Constructor
      */
     AudioClip()
         : clipId(0), alBuffer(0), duration(0.0f), isLooping(false),
@@ -29,7 +29,7 @@ struct AudioClip {
     }
 
     /**
-     * @brief デストラクタ
+     * @brief Destructor
      */
     ~AudioClip() {
         // JNI bridge handles resource cleanup via Java MediaPlayer

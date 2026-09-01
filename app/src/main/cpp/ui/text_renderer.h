@@ -7,8 +7,8 @@
 #include <android/asset_manager.h>
 
 /**
- * @brief stb_truetype を使用したテキストレンダリングシステム
- * TTFフォントをビットマップに変換してテクスチャアトラスを作成
+ * @brief Text rendering system using stb_truetype
+ * Transforms TTF fonts into bitmaps to create texture atlas
  */
 class TextRenderer {
 public:
@@ -16,66 +16,66 @@ public:
     ~TextRenderer();
 
     /**
-     * @brief テキストレンダリングシステムを初期化
-     * @param assetMgr Android AssetManager（フォント読み込み用）
-     * @return 初期化成功時true
+     * @brief Initialize text rendering system
+     * @param assetMgr Android AssetManager (for font loading)
+     * @return True on successful initialization
      */
     bool initialize(AAssetManager* assetMgr);
 
     /**
-     * @brief テキストを画面に描画
-     * @param text 描画するテキスト
-     * @param x 画面左上を原点とした X座標（ピクセル）
-     * @param y 画面左上を原点とした Y座標（ピクセル）
-     * @param color テキストの色 (r, g, b)
-     * @param scale スケール（デフォルト 1.0f）
+     * @brief Draw text on screen
+     * @param text Text to draw
+     * @param x X coordinate from top-left origin (pixels)
+     * @param y Y coordinate from top-left origin (pixels)
+     * @param color Text color (r, g, b)
+     * @param scale Scale (default 1.0f)
      */
     void renderText(const std::string& text, float x, float y,
                     const glm::vec3& color = glm::vec3(1.0f, 1.0f, 1.0f),
                     float scale = 1.0f);
 
     /**
-     * @brief テキストを画面に描画（アルファ付き）
-     * @param text 描画するテキスト
-     * @param x 画面左上を原点とした X座標（ピクセル）
-     * @param y 画面左上を原点とした Y座標（ピクセル）
-     * @param color テキストの色 (r, g, b, a)
-     * @param scale スケール（デフォルト 1.0f）
+     * @brief Draw text on screen（アルファ付き）
+     * @param text Text to draw
+     * @param x X coordinate from top-left origin (pixels)
+     * @param y Y coordinate from top-left origin (pixels)
+     * @param color Text color (r, g, b, a)
+     * @param scale Scale (default 1.0f)
      */
     void renderText(const std::string& text, float x, float y,
                     const glm::vec4& color, float scale = 1.0f);
 
     /**
-     * @brief テキストの横幅を計算して返す
-     * @param text 計算するテキスト
+     * @brief Calculate and return text width
+     * @param text Text to measure
      * @param scale スケール
-     * @return テキストの横幅（ピクセル）
+     * @return Text width (pixels)
      */
     float getTextWidth(const std::string& text, float scale = 1.0f);
 
     /**
-     * @brief 画面サイズを設定（投影行列計算用）
+     * @brief Set screen size (for projection matrix)
      */
     void setScreenSize(int width, int height);
 
     /**
-     * @brief クリーンアップ
+     * @brief Cleanup
      */
     void cleanup();
 
     /**
-     * @brief デバッグ用: 単純な四角形を描画（テスト用）
+     * @brief Debug: draw simple rectangle (for testing)
      */
     void renderDebugQuad();
 
 private:
     struct Glyph {
-        float x0, y0, x1, y1;  // テクスチャ座標
+        float x0, y0, x1, y1;  // Texture coordinates
         float advanceX;
         float bearingX, bearingY;
     };
 
-    // フォントレンダリング用
+    // For font rendering
     struct FontData {
         unsigned char* fontData;
         float fontScale;
@@ -88,18 +88,18 @@ private:
     GLuint shaderProgram;
     GLint projectionLoc;
     GLint colorLoc;
-    GLuint fontTexture;  // フォントテクスチャ
+    GLuint fontTexture;  // Font texture
 
     int screenWidth;
     int screenHeight;
 
-    // フォントデータ
+    // Font data
     FontData* fontData;
 
-    // Android AssetManager（フォント読み込み用）
+    // Android AssetManager (for font loading)
     AAssetManager* assetManager;
 
-    // テクスチャアトラスのサイズ
+    // Texture atlas size
     static constexpr int ATLAS_WIDTH = 512;
     static constexpr int ATLAS_HEIGHT = 512;
     static constexpr int FONT_SIZE = 32;

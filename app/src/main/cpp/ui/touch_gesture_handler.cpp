@@ -82,19 +82,19 @@ void TouchGestureHandler::onTouchUp(float x, float y, int pointerId) {
 
     pt.currentPos = glm::vec2(x, y);
 
-    // シングルタッチの判定
+    // Single touch detection
     if (activePointerCount == 1) {
         float dist = getDistance(pt.startPos, pt.currentPos);
         float duration = currentTime - pt.startTime;
 
         if (dist < swipeThreshold) {
-            // スワイプでない → タップ系
+            // Not a swipe -> tap type
             if (duration < tapTimeout) {
-                // ダブルタップ判定
+                // Double tap detection
                 if (lastTapTime >= 0.0f &&
                     (currentTime - lastTapTime) < doubleTapTimeout &&
                     getDistance(pt.currentPos, lastTapPos) < swipeThreshold) {
-                    // ダブルタップ
+                    // Double tap
                     GestureEvent event;
                     event.type = GestureType::DOUBLE_TAP;
                     event.position = pt.currentPos;
@@ -103,7 +103,7 @@ void TouchGestureHandler::onTouchUp(float x, float y, int pointerId) {
                     fireGesture(event);
                     lastTapTime = -1.0f;
                 } else {
-                    // シングルタップ（次フレームでダブルタップの可能性あり）
+                    // シングルタップ（次フレームでDouble tapの可能性あり）
                     lastTapTime = currentTime;
                     lastTapPos = pt.currentPos;
 
@@ -116,7 +116,7 @@ void TouchGestureHandler::onTouchUp(float x, float y, int pointerId) {
                 }
             }
         } else {
-            // スワイプ判定
+            // Swipe detection
             detectSwipe(pointerId);
         }
     }
@@ -130,14 +130,14 @@ void TouchGestureHandler::update(float deltaTime) {
 
     currentTime += deltaTime;
 
-    // ロングプレス判定
+    // Long press detection
     for (int i = 0; i < MAX_POINTERS; ++i) {
         if (pointers[i].active) {
             detectLongPress(i);
         }
     }
 
-    // ピンチ判定（2本指操作中）
+    // Pinch detection (two-finger operation)
     if (activePointerCount >= 2) {
         detectPinch();
         detectTwoFingerSwipe();
@@ -175,7 +175,7 @@ void TouchGestureHandler::detectLongPress(int pointerId) {
         event.pointerCount = 1;
         fireGesture(event);
 
-        // 一度発火したら無効化（連続発火防止）
+        // Disable after firing once (prevent continuous firing)
         pt.startTime = currentTime + 999.0f;
     }
 }
@@ -194,7 +194,7 @@ void TouchGestureHandler::detectSwipe(int pointerId) {
     event.pointerCount = 1;
     event.duration = currentTime - pt.startTime;
 
-    // 方向判定（最も大きな軸成分で判定）
+    // Direction detection (determined by largest axis component)
     if (std::abs(delta.x) > std::abs(delta.y)) {
         event.type = (delta.x > 0) ? GestureType::SWIPE_RIGHT : GestureType::SWIPE_LEFT;
     } else {
@@ -217,7 +217,7 @@ void TouchGestureHandler::detectPinch() {
     event.magnitude = ratio;
     event.pointerCount = 2;
 
-    // 中心位置を計算
+    // Calculate center position
     for (int i = 0; i < MAX_POINTERS; ++i) {
         for (int j = i + 1; j < MAX_POINTERS; ++j) {
             if (pointers[i].active && pointers[j].active) {
@@ -229,7 +229,7 @@ void TouchGestureHandler::detectPinch() {
 
     fireGesture(event);
 
-    // 発火後に基準をリセット（連続検出用）
+    // Reset reference after firing (for continuous detection)
     initialPinchDistance = currentPinchDistance;
 }
 
@@ -261,7 +261,7 @@ void TouchGestureHandler::detectTwoFingerSwipe() {
     event.magnitude = dist;
     event.pointerCount = 2;
 
-    // 中心位置
+    // Center position
     glm::vec2 center(0.0f);
     int centerCount = 0;
     for (int i = 0; i < MAX_POINTERS; ++i) {
@@ -276,7 +276,7 @@ void TouchGestureHandler::detectTwoFingerSwipe() {
 
     fireGesture(event);
 
-    // 連続発火防止: 開始位置をリセット
+    // Prevent continuous firing: reset start position
     for (int i = 0; i < MAX_POINTERS; ++i) {
         if (pointers[i].active) {
             pointers[i].startPos = pointers[i].currentPos;
@@ -296,14 +296,14 @@ void TouchGestureHandler::fireGesture(const GestureEvent& event) {
                  static_cast<int>(event.type), event.position.x, event.position.y,
                  event.delta.x, event.delta.y, event.magnitude);
 
-    // 個別コールバック
+    // Individual callbacks
     for (const auto& cb : callbacks) {
         if (cb.first == event.type) {
             cb.second(event);
         }
     }
 
-    // 共通コールバック
+    // Common callbacks
     if (allCallback) {
         allCallback(event);
     }

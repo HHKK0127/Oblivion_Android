@@ -101,6 +101,16 @@ class GameSurfaceView : GLSurfaceView {
                     renderer?.onTouchEvent(pointerId, x, y, 2) // 2 = MOVE
                 }
             }
+            MotionEvent.ACTION_CANCEL -> {
+                // Release all active pointers on cancel
+                for (i in 0 until event.pointerCount) {
+                    val pointerId = event.getPointerId(i)
+                    val x = event.getX(i)
+                    val y = event.getY(i)
+                    renderer?.onTouchEvent(pointerId, x, y, 1) // 1 = UP
+                }
+                Log.d(TAG, "Touch CANCEL: released all pointers")
+            }
         }
         return true
     }

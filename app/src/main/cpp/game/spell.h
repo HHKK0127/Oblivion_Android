@@ -6,30 +6,30 @@
 #include <unordered_map>
 
 enum class MagicSchool {
-    ALTERATION,      // 変化の魔法
-    CONJURATION,     // 召喚の魔法
-    DESTRUCTION,     // 破壊の魔法
-    ILLUSION,        // 幻覚の魔法
-    MYSTICISM,       // 神秘の魔法
-    RESTORATION      // 回復の魔法
+    ALTERATION,      // Alteration magic
+    CONJURATION,     // Conjuration magic
+    DESTRUCTION,     // Destruction magic
+    ILLUSION,        // Illusion magic
+    MYSTICISM,       // Mysticism magic
+    RESTORATION      // Restoration magic
 };
 
 enum class SpellEffectType {
-    DAMAGE,          // ダメージを与える
-    HEAL,            // HP回復
-    RESTORE_MANA,    // マナ回復
-    RESTORE_STAMINA, // スタミナ回復
-    FORTIFY_ATTR,    // 属性強化
-    PARALYZE,        // 麻痺
-    INVISIBILITY,    // 姿を隠す
-    SUMMON           // 召喚
+    DAMAGE,          // Deal damage
+    HEAL,            // Restore HP
+    RESTORE_MANA,    // Restore mana
+    RESTORE_STAMINA, // Restore stamina
+    FORTIFY_ATTR,    // Fortify attribute
+    PARALYZE,        // Paralyze
+    INVISIBILITY,    // Invisibility
+    SUMMON           // Summon
 };
 
 struct SpellEffect {
     SpellEffectType type;
-    float magnitude;      // ダメージ量、回復量など
-    float duration;       // 効果時間（秒）
-    std::string affectedAttribute;  // 影響する属性（Restoration用）
+    float magnitude;      // Damage amount, recovery amount, etc.
+    float duration;       // Effect duration (seconds)
+    std::string affectedAttribute;  // Affected attribute (for Restoration)
 
     SpellEffect(SpellEffectType t, float mag, float dur = 0.0f)
         : type(t), magnitude(mag), duration(dur) {}
@@ -38,23 +38,23 @@ struct SpellEffect {
 struct Spell {
     uint32_t spellId;
     std::string name;
-    std::string nameJa;          // 日本語名
+    std::string nameJa;          // Japanese name
     MagicSchool school;
     float manaCost;
     float baseDamage;
-    uint32_t targetType;         // 0=自分、1=敵、2=味方
+    uint32_t targetType;         // 0=self, 1=enemy, 2=ally
 
     std::vector<SpellEffect> effects;
     std::string description;
-    std::string descriptionJa;   // 日本語説明
+    std::string descriptionJa;   // Japanese description
 
-    // コンストラクタ
+    // Constructor
     Spell(uint32_t id, const std::string& n, const std::string& nJa,
           MagicSchool s, float cost, float damage)
         : spellId(id), name(n), nameJa(nJa), school(s),
           manaCost(cost), baseDamage(damage), targetType(1) {}
 
-    // メソッド
+    // Methods
     bool isAvailable(float currentMana) const {
         return currentMana >= manaCost;
     }

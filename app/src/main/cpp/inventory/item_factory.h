@@ -9,11 +9,11 @@
 namespace inventory {
 
 /**
- * @brief アイテムデータベース - アイテム定義の一元管理
+ * @brief Item database - Centralized item definition management
  *
- * Phase 9B: インベントリシステムでの標準アイテム定義を提供
- * ゲーム内で使用されるすべてのアイテムの定義を管理し、
- * インベントリシステムとの一貫性を保証
+ * Phase 9B: Provide standard item definitions for inventory system
+ * Manage definitions of all items used in the game, and
+ * Ensure consistency with inventory system
  */
 class ItemFactory {
 public:

@@ -59,6 +59,14 @@ public:
     void setLogVisible(bool v) { logVisible = v; }
     bool isLogVisible() const { return logVisible; }
 
+    // Log management (for debug menu)
+    void setLogLevel(const std::string& level) { logLevel = level; }
+    void clearLogs() { logLines.clear(); }
+    void exportLogs();
+    std::string getLogStats() const;
+    void searchLogs(const std::string& pattern);
+    void toggleLogAutoScroll() { logAutoScroll = !logAutoScroll; }
+
     // Debug page navigation (multiple pages of info)
     void nextPage();
     void prevPage();
@@ -116,6 +124,8 @@ private:
     // In-game log
     static constexpr int MAX_LOG_LINES = 20;
     std::vector<std::string> logLines;
+    std::string logLevel = "all";
+    bool logAutoScroll = true;
 
     // Memory info
     struct MemoryInfo {
@@ -130,10 +140,10 @@ private:
     std::string getRetroFilterStatus() const;
 
     // Render helpers for each page
-    void renderOverviewPage(float& xPos, float& yPos, float lineHeight);
-    void renderPerformancePage(float& xPos, float& yPos, float lineHeight);
-    void renderMemoryPage(float& xPos, float& yPos, float lineHeight);
-    void renderPhasePage(float& xPos, float& yPos, float lineHeight);
+    void renderOverviewPage(float& xPos, float& yPos, float lineHeight, float textScale);
+    void renderPerformancePage(float& xPos, float& yPos, float lineHeight, float textScale);
+    void renderMemoryPage(float& xPos, float& yPos, float lineHeight, float textScale);
+    void renderPhasePage(float& xPos, float& yPos, float lineHeight, float textScale);
     void renderFpsGraph(float x, float y, float width, float height);
     void renderFrameTimeBar(float x, float y, float width, float height);
     void renderLogOverlay();

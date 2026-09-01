@@ -17,7 +17,7 @@ bool UIManager::initialize(TextRenderer* textRenderer,
     this->textRenderer = textRenderer;
     questManager_ = questManager;
 
-    // UICharacterSheet の初期化
+    // Initialize UICharacterSheet
     characterSheet_ = std::make_unique<UICharacterSheet>();
     if (!characterSheet_->initialize(playerStatus, textRenderer)) {
         return false;
@@ -25,7 +25,7 @@ bool UIManager::initialize(TextRenderer* textRenderer,
     characterSheet_->setScreenSize(screenWidth_, screenHeight_);
     characterSheet_->setVisible(false);
 
-    // UISpellbook の初期化
+    // Initialize UISpellbook
     spellbook_ = std::make_unique<UISpellbook>();
     if (!spellbook_->initialize(playerStatus, textRenderer)) {
         return false;
@@ -33,7 +33,7 @@ bool UIManager::initialize(TextRenderer* textRenderer,
     spellbook_->setScreenSize(screenWidth_, screenHeight_);
     spellbook_->setVisible(false);
 
-    // UIQuestLog の初期化
+    // Initialize UIQuestLog
     questLog_ = std::make_unique<UIQuestLog>();
     if (!questLog_->initialize(questManager, textRenderer)) {
         return false;
@@ -41,7 +41,7 @@ bool UIManager::initialize(TextRenderer* textRenderer,
     questLog_->setScreenSize(screenWidth_, screenHeight_);
     questLog_->setVisible(false);
 
-    // UIDialogue の初期化
+    // Initialize UIDialogue
     dialogue_ = std::make_unique<UIDialogue>();
     if (!dialogue_->initialize(textRenderer)) {
         return false;
@@ -49,7 +49,7 @@ bool UIManager::initialize(TextRenderer* textRenderer,
     dialogue_->setScreenSize(screenWidth_, screenHeight_);
     dialogue_->setVisible(false);
 
-    // UIShop の初期化
+    // Initialize UIShop
     shop_ = std::make_unique<UIShop>();
     if (!shop_->initialize(textRenderer)) {
         return false;
@@ -57,7 +57,7 @@ bool UIManager::initialize(TextRenderer* textRenderer,
     shop_->setScreenSize(screenWidth_, screenHeight_);
     shop_->setVisible(false);
 
-    // UICharacterCreation の初期化
+    // Initialize UICharacterCreation
     characterCreation_ = std::make_unique<UICharacterCreation>();
     if (!characterCreation_->initialize(textRenderer)) {
         return false;
@@ -65,7 +65,7 @@ bool UIManager::initialize(TextRenderer* textRenderer,
     characterCreation_->setScreenSize(screenWidth_, screenHeight_);
     characterCreation_->setVisible(false);
 
-    // UIPauseMenu の初期化
+    // Initialize UIPauseMenu
     pauseMenu_ = std::make_unique<UIPauseMenu>();
     if (!pauseMenu_->initialize(textRenderer)) {
         return false;
@@ -73,7 +73,7 @@ bool UIManager::initialize(TextRenderer* textRenderer,
     pauseMenu_->setScreenSize(screenWidth_, screenHeight_);
     pauseMenu_->setVisible(false);
 
-    // UIMessageBox の初期化
+    // Initialize UIMessageBox
     messageBox_ = std::make_unique<UIMessageBox>();
     if (!messageBox_->initialize(textRenderer)) {
         return false;
@@ -81,19 +81,19 @@ bool UIManager::initialize(TextRenderer* textRenderer,
     messageBox_->setScreenSize(screenWidth_, screenHeight_);
     messageBox_->setVisible(false);
 
-    // UIToast の初期化
+    // Initialize UIToast
     toast_ = std::make_unique<UIToast>();
     if (!toast_->initialize(textRenderer, screenWidth_, screenHeight_)) {
         return false;
     }
 
-    // UIQuickSlotBar の初期化
+    // Initialize UIQuickSlotBar
     quickSlotBar_ = std::make_unique<UIQuickSlotBar>();
     if (!quickSlotBar_->initialize(textRenderer, screenWidth_, screenHeight_)) {
         return false;
     }
 
-    // UIHudStatusDisplay の初期化
+    // Initialize UIHudStatusDisplay
     hudStatusDisplay_ = std::make_unique<UIHudStatusDisplay>();
     if (!hudStatusDisplay_->initialize(textRenderer, screenWidth_, screenHeight_)) {
         return false;
@@ -102,55 +102,55 @@ bool UIManager::initialize(TextRenderer* textRenderer,
         hudStatusDisplay_->setCharacter(playerStatus);
     }
 
-    // UIHudCompass の初期化
+    // Initialize UIHudCompass
     hudCompass_ = std::make_unique<UIHudCompass>();
     if (!hudCompass_->initialize(textRenderer, screenWidth_, screenHeight_)) {
         return false;
     }
 
-    // UIFloatingText の初期化
+    // Initialize UIFloatingText
     floatingText_ = std::make_unique<UIFloatingText>();
     if (!floatingText_->initialize(textRenderer, screenWidth_, screenHeight_)) {
         return false;
     }
 
-    // UITargetInfo の初期化
+    // Initialize UITargetInfo
     targetInfo_ = std::make_unique<UITargetInfo>();
     if (!targetInfo_->initialize(textRenderer, screenWidth_, screenHeight_)) {
         return false;
     }
 
-    // UIActionPrompt の初期化
+    // Initialize UIActionPrompt
     actionPrompt_ = std::make_unique<UIActionPrompt>();
     if (!actionPrompt_->initialize(textRenderer, screenWidth_, screenHeight_)) {
         return false;
     }
 
-    // UIActiveEffects の初期化
+    // Initialize UIActiveEffects
     activeEffects_ = std::make_unique<UIActiveEffects>();
     if (!activeEffects_->initialize(textRenderer, screenWidth_, screenHeight_)) {
         return false;
     }
 
-    // UILevelProgress の初期化
+    // Initialize UILevelProgress
     levelProgress_ = std::make_unique<UILevelProgress>();
     if (!levelProgress_->initialize(textRenderer, screenWidth_, screenHeight_)) {
         return false;
     }
 
-    // UIAlertNotification の初期化
+    // Initialize UIAlertNotification
     alertNotification_ = std::make_unique<UIAlertNotification>();
     if (!alertNotification_->initialize(textRenderer, screenWidth_, screenHeight_)) {
         return false;
     }
 
-    // UIMinimap の初期化
+    // Initialize UIMinimap
     minimap_ = std::make_unique<UIMinimap>();
     if (!minimap_->initialize(textRenderer, screenWidth_, screenHeight_)) {
         return false;
     }
 
-    // UIPlayerStats の初期化
+    // Initialize UIPlayerStats
     playerStats_ = std::make_unique<UIPlayerStats>();
     if (!playerStats_->initialize(textRenderer, screenWidth_, screenHeight_)) {
         return false;

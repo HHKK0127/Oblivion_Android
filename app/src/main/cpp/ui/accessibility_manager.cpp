@@ -16,7 +16,7 @@ void AccessibilityManager::initialize() {
     ACCESS_LOGI("AccessibilityManager initialized");
 }
 
-// === テキストサイズ ===
+// === Text Size ===
 
 void AccessibilityManager::setTextScale(float scale) {
     textScale = std::max(0.5f, std::min(scale, 2.0f));
@@ -24,7 +24,7 @@ void AccessibilityManager::setTextScale(float scale) {
     notifyChange();
 }
 
-// === コントラスト ===
+// === Contrast ===
 
 void AccessibilityManager::setContrastMultiplier(float multiplier) {
     contrastMultiplier = std::max(0.5f, std::min(multiplier, 2.0f));
@@ -38,7 +38,7 @@ void AccessibilityManager::setHighContrastMode(bool enabled) {
     notifyChange();
 }
 
-// === 操作感度 ===
+// === Input Sensitivity ===
 
 void AccessibilityManager::setTouchSensitivity(float sensitivity) {
     touchSensitivity = std::max(0.5f, std::min(sensitivity, 2.0f));
@@ -52,7 +52,7 @@ void AccessibilityManager::setCameraSensitivity(float sensitivity) {
     notifyChange();
 }
 
-// === 色覚サポート ===
+// === Color Vision Support ===
 
 void AccessibilityManager::setColorBlindMode(ColorBlindMode mode) {
     colorBlindMode = mode;
@@ -69,13 +69,13 @@ glm::vec4 AccessibilityManager::applyColorBlindFilter(const glm::vec4& color) co
     }
 }
 
-// === コールバック ===
+// === Callbacks ===
 
 void AccessibilityManager::registerChangeCallback(AccessibilityChangeCallback callback) {
     changeCallbacks.push_back(std::move(callback));
 }
 
-// === リセット ===
+// === Reset ===
 
 void AccessibilityManager::resetToDefaults() {
     textScale = 1.0f;
@@ -88,7 +88,7 @@ void AccessibilityManager::resetToDefaults() {
     notifyChange();
 }
 
-// === 内部ヘルパー ===
+// === Internal Helpers ===
 
 void AccessibilityManager::notifyChange() {
     for (const auto& cb : changeCallbacks) {
@@ -96,11 +96,11 @@ void AccessibilityManager::notifyChange() {
     }
 }
 
-// 色覚変換: 各タイプのシミュレーション行列を適用
-// 参考: Brettel, Viénot, Mollon (1997)
+// Color vision conversion: apply simulation matrix for each type
+// Reference: Brettel, Vienot, Mollon (1997)
 
 glm::vec4 AccessibilityManager::applyProtanopia(const glm::vec4& color) const {
-    // 赤色盲: 赤成分を減衰
+    // Protanopia: attenuate red component
     float r = color.x * 0.567f + color.y * 0.433f + color.z * 0.0f;
     float g = color.x * 0.558f + color.y * 0.442f + color.z * 0.0f;
     float b = color.x * 0.0f   + color.y * 0.242f + color.z * 0.758f;
@@ -108,7 +108,7 @@ glm::vec4 AccessibilityManager::applyProtanopia(const glm::vec4& color) const {
 }
 
 glm::vec4 AccessibilityManager::applyDeuteranopia(const glm::vec4& color) const {
-    // 緑色盲: 緑成分を減衰
+    // Deuteranopia: attenuate green component
     float r = color.x * 0.625f + color.y * 0.375f + color.z * 0.0f;
     float g = color.x * 0.7f   + color.y * 0.3f   + color.z * 0.0f;
     float b = color.x * 0.0f   + color.y * 0.3f   + color.z * 0.7f;
@@ -116,7 +116,7 @@ glm::vec4 AccessibilityManager::applyDeuteranopia(const glm::vec4& color) const 
 }
 
 glm::vec4 AccessibilityManager::applyTritanopia(const glm::vec4& color) const {
-    // 青色盲: 青成分を減衰
+    // Tritanopia: attenuate blue component
     float r = color.x * 0.95f  + color.y * 0.05f  + color.z * 0.0f;
     float g = color.x * 0.0f   + color.y * 0.433f + color.z * 0.567f;
     float b = color.x * 0.0f   + color.y * 0.475f + color.z * 0.525f;

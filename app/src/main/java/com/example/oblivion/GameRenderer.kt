@@ -12,6 +12,7 @@ class GameRenderer : GLSurfaceView.Renderer {
     private var gameSurfaceView: GameSurfaceView? = null
     private var frameCount = 0
     private var lastLogTime: Long = 0
+    private var onExitRequested: (() -> Unit)? = null
 
     companion object {
         private const val TAG = "GameRenderer"
@@ -39,6 +40,10 @@ class GameRenderer : GLSurfaceView.Renderer {
     constructor(surfaceView: GameSurfaceView) {
         this.gameSurfaceView = surfaceView
         Log.i(TAG, "GameRenderer created with GameSurfaceView reference")
+    }
+
+    fun setOnExitRequestedListener(listener: () -> Unit) {
+        onExitRequested = listener
     }
 
     override fun onSurfaceCreated(gl: GL10, config: EGLConfig) {
@@ -109,6 +114,13 @@ class GameRenderer : GLSurfaceView.Renderer {
     override fun onDrawFrame(gl: GL10) {
         try {
             if (nativeEngineHandle != 0L) {
+                // Check for exit request before rendering
+                if (nativeIsExitRequested()) {
+                    Log.i(TAG, "Exit requested by native engine")
+                    onExitRequested?.invoke()
+                    return
+                }
+
                 nativeRenderFrame(nativeEngineHandle)
                 frameCount++
 
@@ -153,4 +165,7 @@ class GameRenderer : GLSurfaceView.Renderer {
     external fun nativeTogglePerfGraph()
     external fun nativeToggleAllDebug()
     external fun nativeToggleDebugMenu()
+
+    // Exit request check
+    external fun nativeIsExitRequested(): Boolean
 }

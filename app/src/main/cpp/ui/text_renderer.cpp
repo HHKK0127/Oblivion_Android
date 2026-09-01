@@ -14,7 +14,7 @@
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 
-// 頂点シェーダー: 2D テキスト用
+// Vertex shader: for 2D text
 const char* textVertexShader = R"(#version 300 es
 precision highp float;
 
@@ -31,7 +31,7 @@ void main() {
 }
 )";
 
-// フラグメントシェーダー: テクスチャベースのテキスト表示
+// Fragment shader: texture-based text display
 const char* textFragmentShader = R"(#version 300 es
 precision mediump float;
 
@@ -69,7 +69,7 @@ bool TextRenderer::initialize(AAssetManager* assetMgr) {
     assetManager = assetMgr;
     LOGI("AssetManager set: %p", assetManager);
 
-    // シェーダーコンパイル
+    // Shader compilation
     compileShaders();
 
     if (shaderProgram == 0) {
@@ -77,18 +77,18 @@ bool TextRenderer::initialize(AAssetManager* assetMgr) {
         return false;
     }
 
-    // ユニフォーム位置を取得
+    // Get uniform locations
     projectionLoc = glGetUniformLocation(shaderProgram, "projection");
     colorLoc = glGetUniformLocation(shaderProgram, "textColor");
 
-    // VAO/VBO を生成
+    // Generate VAO/VBO
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vbo);
 
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
-    // 頂点属性: 位置（2D）と テクスチャ座標
+    // Vertex attributes: position (2D) and texture coordinates
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
@@ -99,14 +99,14 @@ bool TextRenderer::initialize(AAssetManager* assetMgr) {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    // フォントデータを初期化
+    // Initialize font data
     fontData = new FontData();
     fontData->fontData = nullptr;
     fontData->fontScale = 0.0f;
     fontData->fontHeight = FONT_SIZE;
 
-    // フォントを読み込んでテクスチャアトラスを作成
-    // 失敗時はクラッシュを避けてテクスチャアトラスを作成
+    // Load font and create texture atlas
+    // On failure, create texture atlas to avoid crash
     if (!loadFontFromAssets("arial.ttf")) {
         LOGW("Font loading failed, using fallback");
     }
@@ -128,7 +128,7 @@ bool TextRenderer::loadFontFromAssets(const std::string& filename) {
         return false;
     }
 
-    // AAssetManager を使用して assets から font ファイルを開く
+    // Open font file from assets using AAssetManager
     AAsset* asset = AAssetManager_open(assetManager, filename.c_str(), AASSET_MODE_STREAMING);
     if (!asset) {
         LOGE("Could not open font asset: %s", filename.c_str());
@@ -137,7 +137,7 @@ bool TextRenderer::loadFontFromAssets(const std::string& filename) {
 
     LOGI("Font asset opened successfully");
 
-    // ファイルサイズを取得
+    // Get file size
     off_t fontDataSize = AAsset_getLength(asset);
     LOGI("Font data size: %ld bytes", fontDataSize);
 
@@ -147,7 +147,7 @@ bool TextRenderer::loadFontFromAssets(const std::string& filename) {
         return false;
     }
 
-    // フォントデータをメモリに読み込む
+    // Load font data into memory
     fontData->fontData = new unsigned char[fontDataSize];
     int bytesRead = AAsset_read(asset, fontData->fontData, fontDataSize);
 
@@ -311,7 +311,7 @@ void TextRenderer::renderText(const std::string& text, float x, float y,
     glm::mat4 projection = glm::ortho(0.0f, (float)screenWidth, (float)screenHeight, 0.0f, -1.0f, 1.0f);
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, &projection[0][0]);
 
-    // テキスト色を設定（vec4: alpha=1.0で不透明）
+    // Text色を設定（vec4: alpha=1.0で不透明）
     glUniform4f(colorLoc, color.x, color.y, color.z, 1.0f);
 
     // フォントテクスチャをバインド
@@ -337,19 +337,19 @@ void TextRenderer::renderText(const std::string& text, float x, float y,
         // ベアリング（位置調整オフセット）を適用
         float posX = currentX + glyph.bearingX * scale;
         // stb_truetype の bearingY はベースラインからのオフセット（通常負の値）
-        // ここでは FONT_SIZE 分下げて、上端基準の描画とベースラインの整合性を取る
+        // Offset by FONT_SIZE here to align top-based drawing with baseline
         float posY = currentY + (FONT_SIZE + glyph.bearingY) * scale;
 
-        // 頂点データを生成（四角形: 2三角形）
+        // Generate vertex data (quad: 2 triangles)
         float vertices[] = {
-            // 位置座標              テクスチャ座標
-            posX,             posY,              glyph.x0, glyph.y0,  // 左上
-            posX + charWidth, posY,              glyph.x1, glyph.y0,  // 右上
-            posX,             posY + charHeight, glyph.x0, glyph.y1,  // 左下
+            // Position coords        Texture coords
+            posX,             posY,              glyph.x0, glyph.y0,  // Top-left
+            posX + charWidth, posY,              glyph.x1, glyph.y0,  // Top-right
+            posX,             posY + charHeight, glyph.x0, glyph.y1,  // Bottom-left
 
-            posX + charWidth, posY,              glyph.x1, glyph.y0,  // 右上
-            posX + charWidth, posY + charHeight, glyph.x1, glyph.y1,  // 右下
-            posX,             posY + charHeight, glyph.x0, glyph.y1,  // 左下
+            posX + charWidth, posY,              glyph.x1, glyph.y0,  // Top-right
+            posX + charWidth, posY + charHeight, glyph.x1, glyph.y1,  // Bottom-right
+            posX,             posY + charHeight, glyph.x0, glyph.y1,  // Bottom-left
         };
 
         glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
@@ -375,7 +375,7 @@ void TextRenderer::renderText(const std::string& text, float x, float y,
     glm::mat4 projection = glm::ortho(0.0f, (float)screenWidth, (float)screenHeight, 0.0f, -1.0f, 1.0f);
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, &projection[0][0]);
 
-    // テキスト色を設定（vec4: alphaチャンネル対応）
+    // Set text color (vec4: with alpha channel)
     glUniform4f(colorLoc, color.x, color.y, color.z, color.w);
 
     glActiveTexture(GL_TEXTURE0);
@@ -433,13 +433,13 @@ float TextRenderer::getTextWidth(const std::string& text, float scale) {
 }
 
 TextRenderer::Glyph TextRenderer::getGlyph(unsigned int codepoint) {
-    // キャッシュから検索
+    // Search from cache
     auto it = fontData->glyphCache.find(codepoint);
     if (it != fontData->glyphCache.end()) {
         return it->second;
     }
 
-    // 見つからない場合はスペースを返す
+    // Return space if not found
     return fontData->glyphCache[32];  // ASCII 32 = space
 }
 
@@ -452,26 +452,58 @@ void TextRenderer::setScreenSize(int width, int height) {
 void TextRenderer::compileShaders() {
     LOGD("Compiling text shaders");
 
-    // 頂点シェーダーをコンパイル
+    // Compile vertex shader
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &textVertexShader, nullptr);
     glCompileShader(vertexShader);
 
-    // フラグメントシェーダーをコンパイル
+    // Check vertex shader compilation
+    GLint success;
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetShaderInfoLog(vertexShader, sizeof(infoLog), nullptr, infoLog);
+        LOGE("Vertex shader compilation failed: %s", infoLog);
+        glDeleteShader(vertexShader);
+        return;
+    }
+
+    // Compile fragment shader
     GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragmentShader, 1, &textFragmentShader, nullptr);
     glCompileShader(fragmentShader);
 
-    // プログラムをリンク
+    // Check fragment shader compilation
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetShaderInfoLog(fragmentShader, sizeof(infoLog), nullptr, infoLog);
+        LOGE("Fragment shader compilation failed: %s", infoLog);
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
+        return;
+    }
+
+    // Link program
     shaderProgram = glCreateProgram();
     glAttachShader(shaderProgram, vertexShader);
     glAttachShader(shaderProgram, fragmentShader);
     glLinkProgram(shaderProgram);
 
+    // Check link status
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetProgramInfoLog(shaderProgram, sizeof(infoLog), nullptr, infoLog);
+        LOGE("Shader program linking failed: %s", infoLog);
+        glDeleteProgram(shaderProgram);
+        shaderProgram = 0;
+    }
+
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    LOGD("Shaders compiled and linked");
+    LOGD("Shaders compiled and linked (program=%u)", shaderProgram);
 }
 
 void TextRenderer::cleanup() {

@@ -113,7 +113,7 @@ void Engine::stopLoop() {
             gameThread_.join();
         }
 
-        // GPU 処理完了まで待機（メモリリーク防止）
+        // Wait for GPU processing to complete (prevent memory leak)
         if (device_ != VK_NULL_HANDLE) {
             vkDeviceWaitIdle(device_);
         }

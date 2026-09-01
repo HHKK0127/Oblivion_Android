@@ -781,3 +781,13 @@ Java_com_example_oblivion_GameRenderer_nativeToggleDebugMenu(
         g_renderer->toggleDebugMenu();
     }
 }
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_example_oblivion_GameRenderer_nativeIsExitRequested(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    if (g_renderer) {
+        return g_renderer->isExitRequested() ? JNI_TRUE : JNI_FALSE;
+    }
+    return JNI_FALSE;
+}

@@ -86,7 +86,7 @@ void EventBus::unsubscribe(const std::string& type) {
 }
 
 void EventBus::emitImmediate(const Event& event) {
-    // v3: shared_ptr のコピーのみ（vector コピーを回避）
+    // v3: Copy shared_ptr only (avoid vector copy)
     std::shared_ptr<std::vector<Handler>> localHandlers;
     {
         std::lock_guard<std::mutex> lock(handlersMutex_);
@@ -147,7 +147,7 @@ void ServiceLocator::clear() {
 }
 
 bool ServiceLocator::has(const std::string& typeName) const {
-    // v3: type_index ベースでは文字列検索不可。デバッグ用に残すが常に false
+    // v3: String search not possible with type_index. Kept for debug but always false
     (void)typeName;
     return false;
 }

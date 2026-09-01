@@ -88,17 +88,17 @@ public:
     void update(float deltaTime);
     void shutdown();
 
-    // 地形：LANDRecordからHeightFieldを生成
+    // Terrain: Generate HeightField from LANDRecord
     void createTerrainFromLand(const float* heightData, int size, float cellX, float cellY, float cellWorldSize);
 
-    // キャラクター（CharacterVirtual = Jolt推奨）
+    // Character (CharacterVirtual = Jolt recommended)
     JPH::CharacterVirtual* createCharacter(const glm::vec3& position, float height, float radius);
     void updateCharacter(JPH::CharacterVirtual* character, float deltaTime, const glm::vec3& input);
     glm::vec3 getCharacterPosition(JPH::CharacterVirtual* character) const;
     bool isCharacterGrounded(JPH::CharacterVirtual* character) const;
     void destroyCharacter(JPH::CharacterVirtual* character);
 
-    // 動的オブジェクト
+    // Dynamic objects
     JPH::BodyID createBox(const glm::vec3& pos, const glm::vec3& halfExtents, float mass);
     JPH::BodyID createSphere(const glm::vec3& pos, float radius, float mass);
     void setBodyPosition(JPH::BodyID bodyId, const glm::vec3& pos);

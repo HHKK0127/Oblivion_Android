@@ -202,6 +202,16 @@ public:
      */
     size_t getActiveSourcesesCount() const { return sources.size(); }
 
+    /**
+     * @brief ロード済みオーディオの一覧を取得
+     */
+    std::string getLoadedAudioList() const;
+
+    /**
+     * @brief オーディオ統計情報を取得
+     */
+    std::string getAudioStats() const;
+
     // ========== Sound Definition JSON ==========
 
     /**
@@ -229,7 +239,7 @@ public:
     bool playMusic(const std::string& key, float fadeIn = 0.0f);
 
     /**
-     * @brief サウンド定義が読み込まれているか
+     * @brief Check if sound definitions are loaded
      */
     bool hasSoundDefinitions() const { return !soundDefs.empty(); }
 
@@ -242,7 +252,7 @@ private:
         float volume;
         bool loop;
         bool is3D;
-        uint32_t clipId;   // ロード後に設定
+        uint32_t clipId;   // Set after loading
     };
     std::unordered_map<std::string, SoundDef> soundDefs;
 

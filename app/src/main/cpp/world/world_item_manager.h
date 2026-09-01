@@ -14,10 +14,10 @@
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 /**
- * @brief ワールドアイテムマネージャー - ワールドのアイテム管理
+ * @brief World item manager - World item management
  *
- * Phase 9B Week 4: ワールドに配置されたアイテムのドロップ・拾得管理
- * プレイヤーが近づいたら拾得可能になり、インベントリに追加
+ * Phase 9B Week 4: Manage item drop and pickup in the world
+ * Items become pickupable when player approaches and are added to inventory
  */
 class WorldItemManager {
 public:

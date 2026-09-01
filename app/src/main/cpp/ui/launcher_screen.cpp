@@ -281,6 +281,44 @@ void LauncherScreen::renderOptions() {
         optionsPanel->setBorderColor(glm::vec4(0.65f, 0.55f, 0.30f, 0.5f));
         optionsPanel->setBorderWidth(2.0f);
 
+        // Option items
+        struct OptionItem { std::string label; std::string key; };
+        std::vector<OptionItem> options = {
+            {"Graphics Quality", "graphics"},
+            {"Resolution", "resolution"},
+            {"Audio Volume", "audio"},
+            {"Language", "language"},
+            {"Controls", "controls"},
+        };
+
+        float btnY = 60.0f;
+        float btnH = 50.0f;
+        float btnGap = 10.0f;
+        float panelW = optionsPanel->getSize().x;
+
+        for (size_t i = 0; i < options.size(); i++) {
+            auto optBtn = std::make_shared<UIButton>("OptBtn_" + options[i].key);
+            optBtn->initialize();
+            optBtn->setLabel(options[i].label);
+            optBtn->setTextRenderer(textRenderer);
+            optBtn->setSize(panelW - 40.0f, btnH);
+            optBtn->setLabelScale(1.0f);
+            optBtn->setLabelColor(COLOR_GOLD_DIM);
+            optBtn->setNormalColor(glm::vec4(0.15f, 0.13f, 0.10f, 0.9f));
+            optBtn->setHoverColor(glm::vec4(0.25f, 0.22f, 0.15f, 0.95f));
+            optBtn->setPressedColor(glm::vec4(0.08f, 0.07f, 0.05f, 0.95f));
+            optBtn->setPosition(20.0f, btnY);
+
+            std::string key = options[i].key;
+            optBtn->setOnClick([this, key]() {
+                LOGI("Option selected: %s", key.c_str());
+                // TODO: Open specific option sub-menu
+            });
+
+            optionsPanel->addChild(optBtn);
+            btnY += btnH + btnGap;
+        }
+
         // Back button
         auto backBtn = std::make_shared<UIButton>("OptionsBackBtn");
         backBtn->initialize();
@@ -321,6 +359,72 @@ void LauncherScreen::renderDataFiles() {
         dataFilesPanel->setBorderColor(glm::vec4(0.65f, 0.55f, 0.30f, 0.5f));
         dataFilesPanel->setBorderWidth(2.0f);
 
+        float panelW = dataFilesPanel->getSize().x;
+        float panelH = dataFilesPanel->getSize().y;
+
+        // Title: "Loaded Archives"
+        float titleY = 50.0f;
+
+        // List of BSA archives (simulated plugin list)
+        struct PluginInfo { std::string name; bool enabled; };
+        std::vector<PluginInfo> plugins = {
+            {"Oblivion.esm", true},
+            {"Oblivion - Meshes.bsa", true},
+            {"Oblivion - Textures.bsa", true},
+            {"Oblivion - Sounds.bsa", true},
+            {"Oblivion - Voices.bsa", true},
+            {"Oblivion - Misc.bsa", true},
+        };
+
+        float listY = titleY + 40.0f;
+        float itemH = 45.0f;
+        float itemGap = 5.0f;
+
+        for (size_t i = 0; i < plugins.size(); i++) {
+            auto pluginBtn = std::make_shared<UIButton>("PluginBtn_" + std::to_string(i));
+            pluginBtn->initialize();
+
+            // Checkbox style: [X] or [ ] prefix
+            std::string prefix = plugins[i].enabled ? "[X] " : "[ ] ";
+            pluginBtn->setLabel(prefix + plugins[i].name);
+            pluginBtn->setTextRenderer(textRenderer);
+            pluginBtn->setSize(panelW - 40.0f, itemH);
+            pluginBtn->setLabelScale(0.9f);
+            pluginBtn->setLabelColor(plugins[i].enabled ? COLOR_GOLD_BRIGHT : COLOR_GOLD_DIM);
+            pluginBtn->setNormalColor(glm::vec4(0.12f, 0.10f, 0.08f, 0.85f));
+            pluginBtn->setHoverColor(glm::vec4(0.20f, 0.17f, 0.12f, 0.90f));
+            pluginBtn->setPressedColor(glm::vec4(0.08f, 0.07f, 0.05f, 0.95f));
+            pluginBtn->setPosition(20.0f, listY);
+
+            // Toggle plugin enabled state
+            bool* enabledPtr = &plugins[i].enabled;
+            std::string pluginName = plugins[i].name;
+            pluginBtn->setOnClick([this, enabledPtr, pluginName]() {
+                *enabledPtr = !(*enabledPtr);
+                LOGI("Plugin %s: %s", pluginName.c_str(), *enabledPtr ? "enabled" : "disabled");
+                // Rebuild panel to update labels
+                dataFilesPanel.reset();
+            });
+
+            dataFilesPanel->addChild(pluginBtn);
+            listY += itemH + itemGap;
+        }
+
+        // Info text at bottom
+        // (Using button as text container since we don't have standalone text in panels)
+        auto infoBtn = std::make_shared<UIButton>("DataFilesInfo");
+        infoBtn->initialize();
+        infoBtn->setLabel("Toggle plugins to enable/disable. Changes apply on next launch.");
+        infoBtn->setTextRenderer(textRenderer);
+        infoBtn->setSize(panelW - 40.0f, 35.0f);
+        infoBtn->setLabelScale(0.7f);
+        infoBtn->setLabelColor(glm::vec3(0.5f, 0.5f, 0.5f));
+        infoBtn->setNormalColor(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f)); // Transparent
+        infoBtn->setHoverColor(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
+        infoBtn->setPressedColor(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
+        infoBtn->setPosition(20.0f, panelH - 120.0f);
+        dataFilesPanel->addChild(infoBtn);
+
         // Back button
         auto backBtn = std::make_shared<UIButton>("DataFilesBackBtn");
         backBtn->initialize();
@@ -331,7 +435,7 @@ void LauncherScreen::renderDataFiles() {
         backBtn->setLabelColor(COLOR_GOLD_DIM);
         backBtn->setNormalColor(glm::vec4(0.15f, 0.13f, 0.10f, 0.9f));
         backBtn->setHoverColor(glm::vec4(0.25f, 0.22f, 0.15f, 0.95f));
-        backBtn->setPosition(dataFilesPanel->getSize().x - 180.0f, dataFilesPanel->getSize().y - 70.0f);
+        backBtn->setPosition(panelW - 180.0f, panelH - 70.0f);
         backBtn->setOnClick([this]() {
             state = LauncherState::MAIN;
         });
@@ -350,7 +454,91 @@ void LauncherScreen::renderSupport() {
 
     renderBackground();
 
-    // TODO: Support info rendering (text-based)
+    // Support info panel
+    float panelX = screenWidth * 0.15f;
+    float panelY = screenHeight * 0.1f;
+    float panelW = screenWidth * 0.7f;
+    float panelH = screenHeight * 0.8f;
+
+    // Panel background
+    UIDrawHelper::drawColoredQuad(
+        panelX, panelY, panelW, panelH,
+        glm::vec4(0.08f, 0.07f, 0.05f, 0.92f),
+        screenWidth, screenHeight);
+
+    // Border
+    UIDrawHelper::drawBorder(
+        panelX, panelY, panelW, panelH, 2.0f,
+        glm::vec4(0.65f, 0.55f, 0.30f, 0.5f),
+        screenWidth, screenHeight);
+
+    // Title
+    float textX = panelX + 30.0f;
+    float textY = panelY + 50.0f;
+    float lineH = 35.0f;
+
+    if (textRenderer) {
+        textRenderer->renderText("Oblivion Android", textX, textY, COLOR_GOLD_BRIGHT, 1.5f);
+        textY += lineH * 1.5f;
+
+        textRenderer->renderText("Version 0.9.10 (Phase 36)", textX, textY, COLOR_GOLD_DIM, 1.0f);
+        textY += lineH;
+
+        textRenderer->renderText("The Elder Scrolls IV: Oblivion", textX, textY, COLOR_GOLD_DIM, 1.0f);
+        textY += lineH;
+
+        textRenderer->renderText("Native Android Port", textX, textY, COLOR_GOLD_DIM, 1.0f);
+        textY += lineH * 2.0f;
+
+        textRenderer->renderText("Technical Details:", textX, textY, COLOR_GOLD_BRIGHT, 1.2f);
+        textY += lineH;
+
+        textRenderer->renderText("- C++17 / OpenGL ES 3.0", textX, textY, COLOR_GOLD_DIM, 0.9f);
+        textY += lineH;
+
+        textRenderer->renderText("- Android NDK r26.1", textX, textY, COLOR_GOLD_DIM, 0.9f);
+        textY += lineH;
+
+        textRenderer->renderText("- JNI Bridge Architecture", textX, textY, COLOR_GOLD_DIM, 0.9f);
+        textY += lineH;
+
+        textRenderer->renderText("- OpenAL-Soft Audio", textX, textY, COLOR_GOLD_DIM, 0.9f);
+        textY += lineH * 2.0f;
+
+        textRenderer->renderText("Controls:", textX, textY, COLOR_GOLD_BRIGHT, 1.2f);
+        textY += lineH;
+
+        textRenderer->renderText("- Joystick: Move character", textX, textY, COLOR_GOLD_DIM, 0.9f);
+        textY += lineH;
+
+        textRenderer->renderText("- ATK/BLK/MAG: Combat actions", textX, textY, COLOR_GOLD_DIM, 0.9f);
+        textY += lineH;
+
+        textRenderer->renderText("- F1-F4: Quick spell slots", textX, textY, COLOR_GOLD_DIM, 0.9f);
+        textY += lineH;
+
+        textRenderer->renderText("- Debug Menu: Toggle with FAB", textX, textY, COLOR_GOLD_DIM, 0.9f);
+    }
+
+    // Back button (using UIButton)
+    if (!supportBackBtn) {
+        supportBackBtn = std::make_shared<UIButton>("SupportBackBtn");
+        supportBackBtn->initialize();
+        supportBackBtn->setLabel("Back");
+        supportBackBtn->setTextRenderer(textRenderer);
+        supportBackBtn->setSize(160.0f, 50.0f);
+        supportBackBtn->setLabelScale(1.2f);
+        supportBackBtn->setLabelColor(COLOR_GOLD_DIM);
+        supportBackBtn->setNormalColor(glm::vec4(0.15f, 0.13f, 0.10f, 0.9f));
+        supportBackBtn->setHoverColor(glm::vec4(0.25f, 0.22f, 0.15f, 0.95f));
+        supportBackBtn->setPressedColor(glm::vec4(0.08f, 0.07f, 0.05f, 0.95f));
+        supportBackBtn->setOnClick([this]() {
+            state = LauncherState::MAIN;
+        });
+    }
+    supportBackBtn->setPosition(panelX + panelW - 180.0f, panelY + panelH - 70.0f);
+    supportBackBtn->setScreenSize(screenWidth, screenHeight);
+    supportBackBtn->render();
 }
 
 // ============================================================================

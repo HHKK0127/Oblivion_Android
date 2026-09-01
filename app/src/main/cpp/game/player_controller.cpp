@@ -483,7 +483,7 @@ void PlayerController::updatePhysics(float deltaTime) {
 
     auto& physics = oblivion::PhysicsManager::getInstance();
 
-    // 入力を移動ベクトルに変換
+    // Convert input to movement vector
     glm::vec3 input(0.0f, 0.0f, 0.0f);
     glm::vec3 moveVec = calculateMovementVector();
     if (moveVec.x != 0.0f || moveVec.z != 0.0f) {
@@ -500,10 +500,10 @@ void PlayerController::updatePhysics(float deltaTime) {
         LOGD("Jump executed");
     }
 
-    // CharacterVirtual 更新
+    // CharacterVirtual update
     physics.updateCharacter(physicsCharacter, deltaTime, input);
 
-    // 位置同期
+    // Position sync
     player->position = physics.getCharacterPosition(physicsCharacter);
     player->isOnGround = physics.isCharacterGrounded(physicsCharacter);
 }

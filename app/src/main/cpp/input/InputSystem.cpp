@@ -27,7 +27,7 @@ void InputSystem::processEvents() {
         std::lock_guard<std::mutex> lock(touchMutex_);
 
         if (event.action == TouchAction::DOWN) {
-            // 既存を削除して追加
+            // Remove existing and add new
             activeTouches_.erase(
                 std::remove_if(activeTouches_.begin(), activeTouches_.end(),
                     [&](const TouchEvent& e) { return e.pointerId == event.pointerId; }),
