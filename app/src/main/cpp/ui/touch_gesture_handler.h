@@ -12,7 +12,7 @@
 #define GESTURE_LOGW(...) __android_log_print(ANDROID_LOG_WARN, GESTURE_LOG_TAG, __VA_ARGS__)
 
 /**
- * @brief ジェスチャータイプ
+ * @brief Gesture type
  */
 enum class GestureType {
     NONE,
@@ -29,7 +29,7 @@ enum class GestureType {
 };
 
 /**
- * @brief ジェスチャーイベント構造体
+ * @brief Gesture event structure
  */
 struct GestureEvent {
     GestureType type;
@@ -45,20 +45,20 @@ struct GestureEvent {
 };
 
 /**
- * @brief ジェスチャーCallbacks型
+ * @brief Gesture callback type
  */
 using GestureCallback = std::function<void(const GestureEvent&)>;
 
 /**
- * @brief タッチジェスチャー認識器
+ * @brief Touch gesture recognizer
  *
- * Phase 43: マルチタッチジェスチャーを認識し、Callbacksで通知する。
- * - シングルタップ: 選択/インタラクト
- * - ダブルタップ: 走り/ダッシュ
- * - ロングプレス: コンテキストメニュー
- * - スワイプ: カメラ回転
- * - ピンチ: ズーム（マップ画面）
- * - 2本指スワイプ: カメラ移動
+ * Phase 43: Recognizes multi-touch gestures and notifies via callbacks.
+ * - Single tap: select/interact
+ * - Double tap: run/dash
+ * - Long press: context menu
+ * - Swipe: camera rotation
+ * - Pinch: zoom (map screen)
+ * - Two-finger swipe: camera movement
  */
 class TouchGestureHandler {
 public:
@@ -66,7 +66,7 @@ public:
     ~TouchGestureHandler() = default;
 
     /**
-     * @brief ジェスチャー認識パラメータを設定
+     * @brief Set gesture recognition parameters
      */
     void setTapTimeout(float seconds) { tapTimeout = seconds; }
     void setDoubleTapTimeout(float seconds) { doubleTapTimeout = seconds; }
@@ -75,43 +75,43 @@ public:
     void setPinchThreshold(float ratio) { pinchThreshold = ratio; }
 
     /**
-     * @brief ジェスチャーCallbacksを登録
-     * @param type 登録するジェスチャータイプ
-     * @param callback Callbacks関数
+     * @brief Register gesture callback
+     * @param type 登録するGesture type
+     * @param callback Callback function
      */
     void registerCallback(GestureType type, GestureCallback callback);
 
     /**
-     * @brief 全ジェスチャー共通Callbacksを登録
+     * @brief Register common callback for all gestures
      */
     void registerAllCallback(GestureCallback callback);
 
-    // === タッチ入力（UISystem から呼び出し） ===
+    // === Touch Input (called from UISystem) ===
 
     void onTouchDown(float x, float y, int pointerId);
     void onTouchMove(float x, float y, int pointerId);
     void onTouchUp(float x, float y, int pointerId);
 
     /**
-     * @brief 毎フレーム更新（ジェスチャー判定のタイミング管理）
-     * @param deltaTime 前フレームからの経過時間（秒）
+     * @brief Update every frame (gesture timing management)
+     * @param deltaTime Elapsed time from previous frame (seconds)
      */
     void update(float deltaTime);
 
     /**
-     * @brief Stateリセット
+     * @brief Reset state
      */
     void reset();
 
     /**
-     * @brief 有効/無効切替
+     * @brief Enable/disable toggle
      */
     void setEnabled(bool enabled) { this->enabled = enabled; }
     bool isEnabled() const { return enabled; }
 
 private:
     /**
-     * @brief タッチポイント情報
+     * @brief Touch point information
      */
     struct TouchPoint {
         glm::vec2 startPos;

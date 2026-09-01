@@ -36,7 +36,7 @@ void TouchGestureHandler::onTouchDown(float x, float y, int pointerId) {
 
     activePointerCount = findActivePointerCount();
 
-    // 2本指の初期距離を記録
+    // Record initial distance of two fingers
     if (activePointerCount == 2) {
         for (int i = 0; i < MAX_POINTERS; ++i) {
             for (int j = i + 1; j < MAX_POINTERS; ++j) {
@@ -61,7 +61,7 @@ void TouchGestureHandler::onTouchMove(float x, float y, int pointerId) {
 
     pt.currentPos = glm::vec2(x, y);
 
-    // 2本指操作の更新
+    // Update two-finger operation
     if (activePointerCount >= 2) {
         for (int i = 0; i < MAX_POINTERS; ++i) {
             for (int j = i + 1; j < MAX_POINTERS; ++j) {
@@ -103,7 +103,7 @@ void TouchGestureHandler::onTouchUp(float x, float y, int pointerId) {
                     fireGesture(event);
                     lastTapTime = -1.0f;
                 } else {
-                    // シングルタップ（次フレームでDouble tapの可能性あり）
+                    // Single tap (may be double tap on next frame)
                     lastTapTime = currentTime;
                     lastTapPos = pt.currentPos;
 
@@ -154,10 +154,10 @@ void TouchGestureHandler::reset() {
     currentPinchDistance = 0.0f;
 }
 
-// === 内部ジェスチャー検出 ===
+// === Internal Gesture Detection ===
 
 void TouchGestureHandler::detectTap(int pointerId) {
-    // onTouchUp で処理済み
+    // Processed in onTouchUp
 }
 
 void TouchGestureHandler::detectLongPress(int pointerId) {
@@ -234,7 +234,7 @@ void TouchGestureHandler::detectPinch() {
 }
 
 void TouchGestureHandler::detectTwoFingerSwipe() {
-    // 2本指の平均移動量を計算
+    // Calculate average movement of two fingers
     glm::vec2 avgDelta(0.0f, 0.0f);
     int count = 0;
 
@@ -284,7 +284,7 @@ void TouchGestureHandler::detectTwoFingerSwipe() {
     }
 }
 
-// === ユーティリティ ===
+// === Utilities ===
 
 float TouchGestureHandler::getDistance(const glm::vec2& a, const glm::vec2& b) const {
     glm::vec2 diff = a - b;

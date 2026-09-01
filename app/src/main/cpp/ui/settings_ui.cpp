@@ -324,7 +324,7 @@ void SettingsUI::selectItem(SettingItem item) {
             break;
         }
         case SettingItem::BACK: {
-            // メニューに戻る
+            // Return to menu
             returnToMenu = true;
             visible = false;
             LOGD("Returning to main menu");

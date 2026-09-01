@@ -10,7 +10,7 @@
 #include "ui_button.h"
 
 /**
- * @brief 設定メニューUI
+ * @brief Settings menu UI
  */
 class SettingsUI {
 public:
@@ -29,44 +29,44 @@ public:
     ~SettingsUI();
 
     /**
-     * @brief 設定UIを初期化
+     * @brief Initialize settings UI
      */
     bool initialize(TextRenderer* textRenderer, SettingsManager* settingsManager, class Renderer* renderer = nullptr);
 
     /**
-     * @brief 表示/非表示を切り替え
+     * @brief Toggle show/hide
      */
     void toggle();
 
     /**
-     * @brief 表示中かどうか
+     * @brief Is visible
      */
     bool isVisible() const { return visible; }
 
     void setScreenSize(int w, int h);
 
     /**
-     * @brief 設定UIを描画
+     * @brief Render settings UI
      */
     void render();
 
     /**
-     * @brief タッチイベントを処理
+     * @brief Handle touch event
      */
     void onTouchEvent(float x, float y);
 
     /**
-     * @brief 前のメニューに戻るかどうか
+     * @brief Whether to return to previous menu
      */
     bool shouldReturnToMenu() const { return returnToMenu; }
 
     /**
-     * @brief 戻るフラグをリセット
+     * @brief Reset return flag
      */
     void resetReturnFlag() { returnToMenu = false; }
 
     /**
-     * @brief クリーンアップ
+     * @brief Cleanup
      */
     void cleanup();
 
