@@ -168,6 +168,11 @@ public:
         std::function<void()> unmuteAll;
         std::function<std::string()> listAudio;
         std::function<std::string()> getAudioStats;
+        // Phase 66: BGM browsing
+        std::function<std::string()> listBgmTracks;
+        std::function<void(const std::string&)> playBgmTrack;
+        std::function<void(float)> setBgmVolume;
+        std::function<std::string()> getCurrentBgmInfo;
 
         // Assets
         std::function<std::string()> listTextures;
@@ -179,6 +184,78 @@ public:
         std::function<void()> reloadAssets;
         std::function<std::string()> getMemoryUsage;
         std::function<std::string()> getAssetStats;
+        // Phase 66: Texture browsing
+        std::function<std::string()> listTexturesDetailed;
+        std::function<std::string(const std::string&)> getTextureDetail;
+
+        // Phase 66: Map debug
+        std::function<void(float, float, float)> teleportTo;
+        std::function<std::string()> getPlayerPosition;
+        std::function<void(float, float)> movePlayerRelative;
+        std::function<std::string()> listNearbyCells;
+        std::function<void(int32_t, int32_t)> teleportToCell;
+
+        // Phase 67: Performance monitoring
+        std::function<std::string()> getPerformanceStats;
+        std::function<std::string()> getDetailedPerformance;
+        std::function<void()> resetPerformanceStats;
+        std::function<std::string()> getMemoryStats;
+        std::function<std::string()> getDrawCallStats;
+
+        // Phase 68: NPC debug
+        std::function<std::string()> listAllNpcs;
+        std::function<std::string(uint32_t)> getNpcInfo;
+        std::function<void(const std::string&, float, float, float)> spawnNpc;
+        std::function<void(bool)> toggleNpcAi;
+        std::function<std::string()> getNpcCount;
+        std::function<void(float)> setNpcSpeed;
+
+        // Phase 69: Combat debug
+        std::function<std::string()> getCombatStats;
+        std::function<std::string()> getActiveCombats;
+        std::function<void()> attackNearestEnemy;
+        std::function<void(bool)> toggleCombatOverlay;
+        std::function<void(float)> setDamageMultiplier;
+        std::function<void(bool)> toggleInvincibility;
+        std::function<void(float, float)> setPlayerDamage;
+
+        // Phase 70: Magic debug
+        std::function<std::string()> listAllSpells;
+        std::function<std::string(uint32_t)> getSpellInfo;
+        std::function<void(uint32_t)> castSpellAtNearest;
+        std::function<void(float)> setSpellDamageMultiplier;
+        std::function<void(bool)> toggleInfiniteMana;
+        std::function<std::string()> getPlayerSpells;
+        std::function<void(uint32_t)> teachSpellToPlayer;
+
+        // Phase 71: Inventory debug
+        std::function<std::string()> listPlayerInventory;
+        std::function<std::string(uint32_t)> getItemInfo;
+        std::function<void(uint32_t, uint32_t)> addItemToPlayer;
+        std::function<void(uint32_t, uint32_t)> removeItemFromPlayer;
+        std::function<std::string()> getInventoryWeight;
+        std::function<void(float)> setCarryCapacity;
+
+        // Phase 72: Quest debug enhanced
+        std::function<std::string()> getActiveQuestList;
+        std::function<std::string(uint32_t)> getQuestDetails;
+        std::function<void(uint32_t)> resetQuest;
+        std::function<std::string(uint32_t)> getQuestRewardInfo;
+        std::function<void(uint32_t)> completeAllObjectives;
+
+        // Phase 73: Dialogue debug enhanced
+        std::function<std::string()> getDialogueState;
+        std::function<std::string()> getDialogueTopics;
+        std::function<std::string()> getDialogueChoices;
+        std::function<std::string()> getDialogueHistory;
+        std::function<void()> resetDialogue;
+
+        // Phase 74: World debug enhanced
+        std::function<std::string()> getWorldInfoDetailed;
+        std::function<std::string(int32_t, int32_t)> getCellDetails;
+        std::function<std::string()> getActiveCellsList;
+        std::function<std::string()> getWorldItemsList;
+        std::function<std::string()> getDoorInfo;
 
         // Logs
         std::function<void(const std::string&)> setLogLevel;

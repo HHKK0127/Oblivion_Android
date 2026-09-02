@@ -243,9 +243,9 @@ public:
      */
     bool hasSoundDefinitions() const { return !soundDefs.empty(); }
 
-private:
-    // ... existing private members ...
-
+    /**
+     * @brief Sound definition structure
+     */
     struct SoundDef {
         std::string file;
         uint8_t type;      // 0=BGM, 1=SE
@@ -254,6 +254,15 @@ private:
         bool is3D;
         uint32_t clipId;   // Set after loading
     };
+
+    /**
+     * @brief Get sound definitions map (read-only)
+     */
+    const std::unordered_map<std::string, SoundDef>& getSoundDefs() const { return soundDefs; }
+
+private:
+    // ... existing private members ...
+
     std::unordered_map<std::string, SoundDef> soundDefs;
 
     bool parseSoundDefinitionsJson(const std::string& jsonContent);

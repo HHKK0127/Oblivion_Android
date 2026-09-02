@@ -788,6 +788,467 @@ bool Renderer::initGameSystems() {
     refs.getWorldInfo = [this]() -> std::string {
         return "World info not available";
     };
+    // Phase 66: Map debug callbacks
+    refs.teleportTo = [this](float x, float y, float z) {
+        if (playerController) {
+            playerController->setPosition(glm::vec3(x, y, z));
+            LOGI("Teleported to (%.1f, %.1f, %.1f)", x, y, z);
+        }
+    };
+    refs.getPlayerPosition = [this]() -> std::string {
+        if (!playerController) return "Player controller not available";
+        glm::vec3 pos = playerController->getPlayerPosition();
+        return "Player Pos: X=" + std::to_string((int)pos.x) +
+               " Y=" + std::to_string((int)pos.y) +
+               " Z=" + std::to_string((int)pos.z);
+    };
+    refs.movePlayerRelative = [this](float dx, float dz) {
+        if (playerController) {
+            glm::vec3 pos = playerController->getPlayerPosition();
+            playerController->setPosition(glm::vec3(pos.x + dx, pos.y, pos.z + dz));
+        }
+    };
+    refs.listNearbyCells = [this]() -> std::string {
+        if (!playerController) return "Player controller not available";
+        glm::vec3 pos = playerController->getPlayerPosition();
+        int cx = (int)(pos.x / 4096.0f);
+        int cz = (int)(pos.z / 4096.0f);
+        std::string result = "=== Nearby Cells ===\n";
+        result += "Current: (" + std::to_string(cx) + ", " + std::to_string(cz) + ")\n";
+        for (int dy = -1; dy <= 1; dy++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                result += "  (" + std::to_string(cx+dx) + ", " + std::to_string(cz+dy) + ")";
+                if (dx == 0 && dy == 0) result += " [CURRENT]";
+                result += "\n";
+            }
+        }
+        return result;
+    };
+    refs.teleportToCell = [this](int32_t cx, int32_t cz) {
+        float x = cx * 4096.0f + 2048.0f;
+        float z = cz * 4096.0f + 2048.0f;
+        if (playerController) {
+            playerController->setPosition(glm::vec3(x, 0.0f, z));
+            LOGI("Teleported to cell (%d, %d)", cx, cz);
+        }
+        if (worldManager) worldManager->loadCell(cx, cz);
+    };
+
+    // Phase 67: Performance monitoring callbacks
+    refs.getPerformanceStats = [this]() -> std::string {
+        if (!performanceMonitor) return "Performance monitor not available";
+        auto metrics = performanceMonitor->getMetrics();
+        std::string result = "=== Performance Stats ===\n";
+        result += "FPS: " + std::to_string((int)metrics.frameMetrics.fps) + "\n";
+        result += "Frame Time: " + std::to_string(metrics.frameMetrics.frameTime) + " ms\n";
+        result += "CPU Time: " + std::to_string(metrics.frameMetrics.cpuTime) + " ms\n";
+        result += "Render Time: " + std::to_string(metrics.frameMetrics.renderTime) + " ms\n";
+        result += "Update Time: " + std::to_string(metrics.frameMetrics.updateTime) + " ms\n";
+        result += "Dropped Frames: " + std::to_string(metrics.frameMetrics.droppedFrames) + "\n";
+        result += "Total Frames: " + std::to_string(metrics.totalFrames) + "\n";
+        return result;
+    };
+    refs.getDetailedPerformance = [this]() -> std::string {
+        if (!performanceMonitor) return "Performance monitor not available";
+        auto metrics = performanceMonitor->getMetrics();
+        std::string result = "=== Detailed Performance ===\n";
+        result += "Current FPS: " + std::to_string((int)metrics.frameMetrics.fps) + "\n";
+        result += "Avg Frame Time: " + std::to_string(metrics.avgFrameTime) + " ms\n";
+        result += "Min Frame Time: " + std::to_string(metrics.minFrameTime) + " ms\n";
+        result += "Max Frame Time: " + std::to_string(metrics.maxFrameTime) + " ms\n";
+        result += "CPU Usage: " + std::to_string(metrics.cpuUsagePercent) + "%\n";
+        result += "\n--- Memory ---\n";
+        result += "Heap Size: " + std::to_string(metrics.memoryMetrics.heapSize / 1024 / 1024) + " MB\n";
+        result += "Heap Used: " + std::to_string(metrics.memoryMetrics.heapUsed / 1024 / 1024) + " MB\n";
+        result += "Heap Free: " + std::to_string(metrics.memoryMetrics.heapFree / 1024 / 1024) + " MB\n";
+        result += "Usage: " + std::to_string(metrics.memoryMetrics.heapPercentage) + "%\n";
+        result += "Peak Memory: " + std::to_string(metrics.memoryMetrics.peakMemory / 1024 / 1024) + " MB\n";
+        return result;
+    };
+    refs.resetPerformanceStats = [this]() {
+        // Performance stats reset not implemented yet
+        LOGI("Performance stats reset requested");
+    };
+    refs.getMemoryStats = [this]() -> std::string {
+        if (!performanceMonitor) return "Performance monitor not available";
+        auto metrics = performanceMonitor->getMetrics();
+        std::string result = "=== Memory Stats ===\n";
+        result += "Heap Size: " + std::to_string(metrics.memoryMetrics.heapSize / 1024 / 1024) + " MB\n";
+        result += "Heap Used: " + std::to_string(metrics.memoryMetrics.heapUsed / 1024 / 1024) + " MB\n";
+        result += "Heap Free: " + std::to_string(metrics.memoryMetrics.heapFree / 1024 / 1024) + " MB\n";
+        result += "Usage: " + std::to_string(metrics.memoryMetrics.heapPercentage) + "%\n";
+        result += "Peak Memory: " + std::to_string(metrics.memoryMetrics.peakMemory / 1024 / 1024) + " MB\n";
+        result += "Allocations: " + std::to_string(metrics.memoryMetrics.allocationCount) + "\n";
+        return result;
+    };
+    refs.getDrawCallStats = [this]() -> std::string {
+        // Draw call stats would need renderer integration
+        return "Draw Call Stats:\n  (Not implemented yet)";
+    };
+
+    // Phase 68: NPC debug callbacks
+    refs.listAllNpcs = [this]() -> std::string {
+        if (!npcManager) return "NPC Manager not available";
+        auto npcs = npcManager->getAllNPCs();
+        std::string result = "=== NPCs (" + std::to_string(npcs.size()) + ") ===\n";
+        for (const auto& npc : npcs) {
+            result += "[" + std::to_string(npc->npcId) + "] " + npc->name;
+            result += " HP:" + std::to_string((int)npc->status.currentHealth);
+            result += " Pos:(" + std::to_string((int)npc->position.x) + "," + std::to_string((int)npc->position.y) + "," + std::to_string((int)npc->position.z) + ")";
+            result += " AI:" + std::to_string((int)npc->aiState) + "\n";
+        }
+        return result;
+    };
+    refs.getNpcInfo = [this](uint32_t npcId) -> std::string {
+        if (!npcManager) return "NPC Manager not available";
+        auto npc = npcManager->getNPC(npcId);
+        if (!npc) return "NPC not found: " + std::to_string(npcId);
+        std::string result = "=== NPC Info ===\n";
+        result += "ID: " + std::to_string(npc->npcId) + "\n";
+        result += "Name: " + npc->name + "\n";
+        result += "Race: " + npc->race + "\n";
+        result += "Class: " + npc->class_ + "\n";
+        result += "HP: " + std::to_string((int)npc->status.currentHealth) + "/" + std::to_string((int)npc->status.maxHealth) + "\n";
+        result += "Mana: " + std::to_string((int)npc->status.currentMana) + "/" + std::to_string((int)npc->status.maxMana) + "\n";
+        result += "Stamina: " + std::to_string((int)npc->status.stamina) + "/" + std::to_string((int)npc->status.maxStamina) + "\n";
+        result += "Position: (" + std::to_string(npc->position.x) + ", " + std::to_string(npc->position.y) + ", " + std::to_string(npc->position.z) + ")\n";
+        result += "AI State: " + std::to_string((int)npc->aiState) + "\n";
+        result += "In Combat: " + std::string(npc->inCombat ? "Yes" : "No") + "\n";
+        result += "Move Speed: " + std::to_string(npc->moveSpeed) + "\n";
+        return result;
+    };
+    refs.spawnNpc = [this](const std::string& name, float x, float y, float z) {
+        if (!npcManager) return;
+        auto npc = npcManager->createNPC(name, glm::vec3(x, y, z));
+        if (npc) {
+            LOGI("Spawned NPC '%s' at (%f, %f, %f)", name.c_str(), x, y, z);
+        }
+    };
+    refs.killAllNpcs = [this]() {
+        if (!npcManager) return;
+        auto npcs = npcManager->getAllNPCs();
+        for (auto& npc : npcs) {
+            npc->status.currentHealth = 0;
+        }
+        LOGI("Killed all NPCs");
+    };
+    refs.toggleNpcAi = [this](bool enabled) {
+        // Toggle NPC AI updates
+        LOGI("NPC AI %s", enabled ? "enabled" : "disabled");
+    };
+    refs.getNpcCount = [this]() -> std::string {
+        if (!npcManager) return "NPC Manager not available";
+        return "NPC Count: " + std::to_string(npcManager->getNPCCount());
+    };
+    refs.setNpcSpeed = [this](float speed) {
+        if (!npcManager) return;
+        auto npcs = npcManager->getAllNPCs();
+        for (auto& npc : npcs) {
+            npc->moveSpeed = speed;
+        }
+        LOGI("Set all NPC speed to %f", speed);
+    };
+
+    // Phase 69: Combat debug callbacks
+    refs.getCombatStats = [this]() -> std::string {
+        if (!combatManager) return "Combat Manager not available";
+        std::string result = "=== Combat Stats ===\n";
+        result += "Active Combats: " + std::to_string(combatManager->getActiveCombatCount()) + "\n";
+        return result;
+    };
+    refs.getActiveCombats = [this]() -> std::string {
+        if (!combatManager) return "Combat Manager not available";
+        auto combats = combatManager->getActiveCombatsList();
+        std::string result = "=== Active Combats ===\n";
+        for (const auto& combat : combats) {
+            result += combat + "\n";
+        }
+        if (combats.empty()) result += "No active combats\n";
+        return result;
+    };
+    refs.attackNearestEnemy = [this]() {
+        if (!combatManager || !npcManager || !playerController) return;
+        auto enemy = combatManager->findNearestEnemyToPlayer(playerController->getPlayerPosition());
+        if (enemy) {
+            combatManager->playerAttack(0, enemy->npcId, 0);
+            LOGI("Attacking nearest enemy: %s", enemy->name.c_str());
+        }
+    };
+    refs.toggleCombatOverlay = [this](bool enabled) {
+        LOGI("Combat overlay %s", enabled ? "enabled" : "disabled");
+    };
+    refs.setDamageMultiplier = [this](float multiplier) {
+        LOGI("Damage multiplier set to %f", multiplier);
+    };
+    refs.toggleInvincibility = [this](bool enabled) {
+        LOGI("Invincibility %s", enabled ? "enabled" : "disabled");
+    };
+    refs.setPlayerDamage = [this](float minDmg, float maxDmg) {
+        LOGI("Player damage range set to %f - %f", minDmg, maxDmg);
+    };
+
+    // Phase 70: Magic debug callbacks
+    refs.listAllSpells = [this]() -> std::string {
+        if (!spellManager) return "Spell Manager not available";
+        // SpellManager doesn't have a getAllSpells method, so we'll return a placeholder
+        return "=== Spells ===\n  (Use spell IDs to query specific spells)";
+    };
+    refs.getSpellInfo = [this](uint32_t spellId) -> std::string {
+        if (!spellManager) return "Spell Manager not available";
+        auto spell = spellManager->getSpell(spellId);
+        if (!spell) return "Spell not found: " + std::to_string(spellId);
+        std::string result = "=== Spell Info ===\n";
+        result += "ID: " + std::to_string(spell->spellId) + "\n";
+        result += "Name: " + spell->name + "\n";
+        result += "Name (JP): " + spell->nameJa + "\n";
+        result += "School: " + std::to_string((int)spell->school) + "\n";
+        result += "Mana Cost: " + std::to_string(spell->manaCost) + "\n";
+        result += "Base Damage: " + std::to_string(spell->baseDamage) + "\n";
+        result += "Effects: " + std::to_string(spell->effects.size()) + "\n";
+        return result;
+    };
+    refs.castSpellAtNearest = [this](uint32_t spellId) {
+        if (!spellManager || !combatManager) return;
+        auto enemy = combatManager->findNearestEnemyToPlayer(playerController->getPlayerPosition());
+        if (enemy) {
+            spellManager->castPlayerSpell(nullptr, spellId, enemy->npcId);
+            LOGI("Cast spell %d at %s", spellId, enemy->name.c_str());
+        }
+    };
+    refs.setSpellDamageMultiplier = [this](float multiplier) {
+        LOGI("Spell damage multiplier set to %f", multiplier);
+    };
+    refs.toggleInfiniteMana = [this](bool enabled) {
+        LOGI("Infinite mana %s", enabled ? "enabled" : "disabled");
+    };
+    refs.getPlayerSpells = [this]() -> std::string {
+        if (!spellManager || !playerController) return "Spell Manager not available";
+        auto player = playerController->getPlayer();
+        if (!player) return "Player not available";
+        auto spells = spellManager->getNpcSpells(player->playerId);
+        std::string result = "=== Player Spells (" + std::to_string(spells.size()) + ") ===\n";
+        for (const auto& spell : spells) {
+            result += "[" + std::to_string(spell->spellId) + "] " + spell->name;
+            result += " Cost:" + std::to_string((int)spell->manaCost);
+            result += " Dmg:" + std::to_string((int)spell->baseDamage) + "\n";
+        }
+        return result;
+    };
+    refs.teachSpellToPlayer = [this](uint32_t spellId) {
+        if (!spellManager || !playerController) return;
+        auto player = playerController->getPlayer();
+        if (!player) return;
+        spellManager->teachSpellToNpc(player->playerId, spellId);
+        LOGI("Taught spell %d to player", spellId);
+    };
+
+    // Phase 71: Inventory debug callbacks
+    refs.listPlayerInventory = [this]() -> std::string {
+        if (!inventoryManager) return "Inventory Manager not available";
+        auto inventory = inventoryManager->getPlayerInventory();
+        if (!inventory) return "Player inventory not available";
+        std::string result = "=== Player Inventory ===\n";
+        result += "Weight: " + std::to_string((int)inventory->getTotalWeight()) + "/" + std::to_string((int)inventory->MAX_WEIGHT) + " kg\n";
+        uint32_t usedSlots = 0;
+        for (uint32_t i = 0; i < inventory->MAX_SLOTS; ++i) {
+            const auto& slot = inventory->getSlot(i);
+            if (!slot.isEmpty()) usedSlots++;
+        }
+        result += "Slots: " + std::to_string(usedSlots) + "/" + std::to_string(inventory->MAX_SLOTS) + "\n\n";
+        for (uint32_t i = 0; i < inventory->MAX_SLOTS; ++i) {
+            const auto& slot = inventory->getSlot(i);
+            if (!slot.isEmpty()) {
+                result += "[" + std::to_string(i) + "] " + slot.item.name;
+                result += " x" + std::to_string(slot.quantity);
+                result += " (" + std::to_string(slot.item.weight) + " kg)\n";
+            }
+        }
+        return result;
+    };
+    refs.getItemInfo = [this](uint32_t itemId) -> std::string {
+        if (!inventoryManager) return "Inventory Manager not available";
+        auto item = inventoryManager->getItemTemplate(itemId);
+        if (!item) return "Item not found: " + std::to_string(itemId);
+        std::string result = "=== Item Info ===\n";
+        result += "ID: " + std::to_string(item->itemId) + "\n";
+        result += "Name: " + item->name + "\n";
+        result += "Type: " + std::to_string((int)item->type) + "\n";
+        result += "Weight: " + std::to_string(item->weight) + " kg\n";
+        result += "Value: " + std::to_string(item->value) + " gold\n";
+        return result;
+    };
+    refs.addItemToPlayer = [this](uint32_t itemId, uint32_t quantity) {
+        if (!inventoryManager) return;
+        auto item = inventoryManager->getItemTemplate(itemId);
+        if (!item) return;
+        for (uint32_t i = 0; i < quantity; ++i) {
+            inventoryManager->playerAddItem(*item, 1);
+        }
+        LOGI("Added %d of item %d to player", quantity, itemId);
+    };
+    refs.removeItemFromPlayer = [this](uint32_t itemId, uint32_t quantity) {
+        if (!inventoryManager) return;
+        inventoryManager->playerRemoveItem(itemId, quantity);
+        LOGI("Removed %d of item %d from player", quantity, itemId);
+    };
+    refs.clearInventory = [this]() {
+        if (!inventoryManager) return;
+        auto inventory = inventoryManager->getPlayerInventory();
+        if (inventory) {
+            inventory->clear();
+            LOGI("Inventory cleared");
+        }
+    };
+    refs.getInventoryWeight = [this]() -> std::string {
+        if (!inventoryManager) return "Inventory Manager not available";
+        auto inventory = inventoryManager->getPlayerInventory();
+        if (!inventory) return "Player inventory not available";
+        return "Weight: " + std::to_string((int)inventory->getTotalWeight()) + "/" + std::to_string((int)inventory->MAX_WEIGHT) + " kg";
+    };
+    refs.setCarryCapacity = [this](float capacity) {
+        LOGI("Carry capacity set to %f kg", capacity);
+    };
+
+    // Phase 72: Quest debug enhanced callbacks
+    refs.getActiveQuestList = [this]() -> std::string {
+        if (!questManager) return "Quest Manager not available";
+        auto activeQuests = questManager->getActiveQuests();
+        if (activeQuests.empty()) return "No active quests";
+        std::string result = "=== Active Quests (" + std::to_string(activeQuests.size()) + ") ===\n";
+        for (const auto& quest : activeQuests) {
+            result += "[" + std::to_string(quest->questId) + "] " + quest->title + "\n";
+            result += "  State: " + std::to_string((int)quest->state) + "\n";
+            result += "  Objectives: " + std::to_string(quest->getCompletedObjectiveCount()) + "/" + std::to_string(quest->objectives.size()) + "\n";
+        }
+        return result;
+    };
+    refs.getQuestDetails = [this](uint32_t questId) -> std::string {
+        if (!questManager) return "Quest Manager not available";
+        auto quest = questManager->getQuest(questId);
+        if (!quest) return "Quest not found: " + std::to_string(questId);
+        std::string result = "=== Quest Details ===\n";
+        result += "ID: " + std::to_string(quest->questId) + "\n";
+        result += "Title: " + quest->title + "\n";
+        result += "Description: " + quest->description + "\n";
+        result += "State: " + std::to_string((int)quest->state) + "\n";
+        result += "Giver NPC: " + std::to_string(quest->giverNpcId) + "\n";
+        result += "\nObjectives:\n";
+        for (const auto& obj : quest->objectives) {
+            result += "  [" + std::to_string(obj.objectiveId) + "] " + obj.description;
+            result += " (" + std::to_string(obj.currentProgress) + "/" + std::to_string(obj.targetProgress) + ")";
+            if (obj.isCompleted()) result += " [DONE]";
+            result += "\n";
+        }
+        return result;
+    };
+    refs.resetQuest = [this](uint32_t questId) {
+        if (!questManager) return;
+        auto quest = questManager->getQuest(questId);
+        if (!quest) return;
+        quest->state = QuestState::PENDING;
+        for (auto& obj : quest->objectives) {
+            obj.currentProgress = 0;
+            obj.state = QuestObjectiveState::PENDING;
+        }
+        LOGI("Quest %d reset to PENDING", questId);
+    };
+    refs.getQuestRewardInfo = [this](uint32_t questId) -> std::string {
+        if (!questManager) return "Quest Manager not available";
+        auto quest = questManager->getQuest(questId);
+        if (!quest) return "Quest not found: " + std::to_string(questId);
+        std::string result = "=== Quest Reward ===\n";
+        result += "Gold: " + std::to_string(quest->reward.goldAmount) + "\n";
+        result += "XP: " + std::to_string(quest->reward.experiencePoints) + "\n";
+        if (!quest->reward.itemRewards.empty()) {
+            result += "Items:\n";
+            for (const auto& item : quest->reward.itemRewards) {
+                result += "  - " + item + "\n";
+            }
+        }
+        return result;
+    };
+    refs.completeAllObjectives = [this](uint32_t questId) {
+        if (!questManager) return;
+        auto quest = questManager->getQuest(questId);
+        if (!quest) return;
+        for (auto& obj : quest->objectives) {
+            obj.currentProgress = obj.targetProgress;
+            obj.state = QuestObjectiveState::COMPLETED;
+        }
+        LOGI("All objectives completed for quest %d", questId);
+    };
+
+    // Phase 73: Dialogue debug enhanced callbacks
+    refs.getDialogueState = [this]() -> std::string {
+        return "=== Dialogue State ===\nDialogue system: Available\nUse 'talk <npcId>' to start dialogue";
+    };
+    refs.getDialogueTopics = [this]() -> std::string {
+        return "=== Available Topics ===\nUse 'dialoguetopics' after starting dialogue";
+    };
+    refs.getDialogueChoices = [this]() -> std::string {
+        return "=== Current Choices ===\nUse 'dialoguechoices' after starting dialogue";
+    };
+    refs.getDialogueHistory = [this]() -> std::string {
+        return "=== Dialogue History ===\nNo dialogue history available";
+    };
+    refs.resetDialogue = [this]() {
+        // DialogueRunner not connected - placeholder
+        LOGI("Dialogue reset requested");
+    };
+
+    // Phase 74: World debug enhanced callbacks
+    refs.getWorldInfoDetailed = [this]() -> std::string {
+        if (!worldManager) return "World Manager not available";
+        std::string result = "=== World Info (Detailed) ===\n";
+        auto& state = worldManager->getWorldState();
+        result += "Time: " + std::to_string(state.timeOfDay) + "h\n";
+        result += "Day: " + std::to_string(state.dayCount) + "\n";
+        result += "Player Pos: (" + std::to_string(state.playerPosition.x) + ", " + std::to_string(state.playerPosition.y) + ", " + std::to_string(state.playerPosition.z) + ")\n";
+        result += "Active Cells: " + std::to_string(worldManager->getActiveCells().size()) + "\n";
+        result += "Total Cells: " + std::to_string(worldManager->getAllCellsMap().size()) + "\n";
+        result += "World Items: " + std::to_string(worldManager->getWorldItems().size()) + "\n";
+        result += "Load Radius: " + std::to_string(worldManager->getCellLoadRadius()) + "\n";
+        result += "Unload Radius: " + std::to_string(worldManager->getCellUnloadRadius()) + "\n";
+        return result;
+    };
+    refs.getCellDetails = [this](int32_t cellX, int32_t cellY) -> std::string {
+        if (!worldManager) return "World Manager not available";
+        auto cell = worldManager->getCellByCoord(cellX, cellY);
+        if (!cell) return "Cell not found: " + std::to_string(cellX) + "," + std::to_string(cellY);
+        std::string result = "=== Cell Details ===\n";
+        result += "ID: " + std::to_string(cell->cellId) + "\n";
+        result += "Coord: (" + std::to_string(cellX) + ", " + std::to_string(cellY) + ")\n";
+        result += "Name: " + cell->cellName + "\n";
+        result += "Type: " + std::to_string((int)cell->cellType) + "\n";
+        return result;
+    };
+    refs.getActiveCellsList = [this]() -> std::string {
+        if (!worldManager) return "World Manager not available";
+        auto& activeCells = worldManager->getActiveCells();
+        if (activeCells.empty()) return "No active cells";
+        std::string result = "=== Active Cells (" + std::to_string(activeCells.size()) + ") ===\n";
+        for (const auto& cell : activeCells) {
+            result += "[" + std::to_string(cell->cellId) + "] " + cell->cellName + "\n";
+        }
+        return result;
+    };
+    refs.getWorldItemsList = [this]() -> std::string {
+        if (!worldManager) return "World Manager not available";
+        auto& items = worldManager->getWorldItems();
+        if (items.empty()) return "No world items";
+        std::string result = "=== World Items (" + std::to_string(items.size()) + ") ===\n";
+        for (const auto& item : items) {
+            result += "[" + std::to_string(item->itemId) + "] " + item->itemName + "\n";
+        }
+        return result;
+    };
+    refs.getDoorInfo = [this]() -> std::string {
+        if (!worldManager) return "World Manager not available";
+        auto* doorMgr = worldManager->getDoorManager();
+        if (!doorMgr) return "Door Manager not available";
+        return "Door Manager: Active";
+    };
+
     refs.saveGameSlot = [this](uint32_t slot) {
         if (saveManager) saveManager->saveGame(slot);
     };
@@ -876,6 +1337,37 @@ bool Renderer::initGameSystems() {
         if (audioManager) return audioManager->getAudioStats();
         return "Audio stats not available";
     };
+    // Phase 66: BGM browsing callbacks
+    refs.listBgmTracks = [this]() -> std::string {
+        if (!audioManager) return "Audio manager not available";
+        std::string result = "=== BGM Tracks ===\n";
+        const auto& defs = audioManager->getSoundDefs();
+        int count = 0;
+        for (const auto& pair : defs) {
+            if (pair.second.type == 0) { // 0=BGM
+                result += "  [" + std::to_string(count) + "] " + pair.first + "\n";
+                result += "       File: " + pair.second.file + "\n";
+                result += "       Vol: " + std::to_string(pair.second.volume) + "\n";
+                count++;
+            }
+        }
+        if (count == 0) {
+            result += "  (No BGM tracks in sound definitions)\n";
+            result += "  Use 'playbgm' to play default BGM\n";
+        }
+        result += "Total: " + std::to_string(count) + " tracks\n";
+        return result;
+    };
+    refs.playBgmTrack = [this](const std::string& key) {
+        if (audioManager) audioManager->playMusic(key);
+    };
+    refs.setBgmVolume = [this](float vol) {
+        if (audioManager) audioManager->setBGMVolume(vol);
+    };
+    refs.getCurrentBgmInfo = [this]() -> std::string {
+        if (!audioManager) return "Audio manager not available";
+        return "Current BGM: playing\nVolume: " + std::to_string(audioManager->getBGMVolume());
+    };
 
     // Asset callbacks
     refs.listTextures = [this]() -> std::string {
@@ -911,6 +1403,15 @@ bool Renderer::initGameSystems() {
     refs.getAssetStats = [this]() -> std::string {
         if (assetManager) return assetManager->getAssetStats();
         return "Asset stats not available";
+    };
+    // Phase 66: Texture browsing callbacks
+    refs.listTexturesDetailed = [this]() -> std::string {
+        if (!assetManager) return "Asset manager not available";
+        return assetManager->getLoadedTextureList();
+    };
+    refs.getTextureDetail = [this](const std::string& name) -> std::string {
+        if (!assetManager) return "Asset manager not available";
+        return assetManager->getTextureCacheStats();
     };
 
     // Log callbacks

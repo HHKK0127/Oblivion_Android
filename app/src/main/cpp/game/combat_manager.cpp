@@ -865,3 +865,17 @@ void CombatManager::logCombatStatus() const {
     }
     LOGD("==========================================");
 }
+
+std::vector<std::string> CombatManager::getActiveCombatsList() const {
+    std::vector<std::string> result;
+    for (const auto& pair : activeCombats) {
+        const CombatInstance& combat = pair.second;
+        if (combat.attacker && combat.defender) {
+            std::string entry = combat.attacker->name + " (HP:" + std::to_string((int)combat.attacker->status.currentHealth) + ")";
+            entry += " vs " + combat.defender->name + " (HP:" + std::to_string((int)combat.defender->status.currentHealth) + ")";
+            entry += " [Dist:" + std::to_string((int)combat.distanceToTarget) + "]";
+            result.push_back(entry);
+        }
+    }
+    return result;
+}

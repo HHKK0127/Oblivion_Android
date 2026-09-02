@@ -204,6 +204,54 @@ void GameConsole::registerBuiltinCommands() {
     registerCommand("killall", "Kill all NPCs in range", [this](const std::vector<std::string>& args) { cmdKillAll(args); });
     registerCommand("resurrect", "Resurrect nearest NPC", [this](const std::vector<std::string>& args) { cmdResurrect(args); });
     registerCommand("combatdebug", "Toggle combat debug info", [this](const std::vector<std::string>& args) { cmdCombatDebug(args); });
+    registerCommand("combatstats", "Show combat statistics", [this](const std::vector<std::string>&) {
+        if (gameRefs.getCombatStats) {
+            print(gameRefs.getCombatStats());
+        } else {
+            print("Combat Manager not available");
+        }
+    });
+    registerCommand("activecombats", "Show active combats", [this](const std::vector<std::string>&) {
+        if (gameRefs.getActiveCombats) {
+            print(gameRefs.getActiveCombats());
+        } else {
+            print("Combat Manager not available");
+        }
+    });
+    registerCommand("attacknearest", "Attack nearest enemy", [this](const std::vector<std::string>&) {
+        if (gameRefs.attackNearestEnemy) {
+            gameRefs.attackNearestEnemy();
+            print("Attacking nearest enemy");
+        } else {
+            print("Combat not available");
+        }
+    });
+    registerCommand("setdamagemultiplier", "Set damage multiplier: setdamagemultiplier <multiplier>", [this](const std::vector<std::string>& args) {
+        if (args.empty()) {
+            print("Usage: setdamagemultiplier <multiplier>");
+            return;
+        }
+        float mult = std::stof(args[0]);
+        if (gameRefs.setDamageMultiplier) {
+            gameRefs.setDamageMultiplier(mult);
+            print("Damage multiplier set to " + std::to_string(mult));
+        } else {
+            print("Combat not available");
+        }
+    });
+    registerCommand("invincible", "Toggle invincibility: invincible <on/off>", [this](const std::vector<std::string>& args) {
+        if (args.empty()) {
+            print("Usage: invincible <on/off>");
+            return;
+        }
+        bool enabled = (args[0] == "on" || args[0] == "true" || args[0] == "1");
+        if (gameRefs.toggleInvincibility) {
+            gameRefs.toggleInvincibility(enabled);
+            print("Invincibility " + std::string(enabled ? "enabled" : "disabled"));
+        } else {
+            print("Combat not available");
+        }
+    });
 
     // === Inventory commands ===
     registerCommand("additem", "Add item: additem <itemId> [quantity]", [this](const std::vector<std::string>& args) { cmdAddItem(args); });
@@ -213,6 +261,172 @@ void GameConsole::registerBuiltinCommands() {
     registerCommand("listitems", "List all inventory items", [this](const std::vector<std::string>& args) { cmdListItems(args); });
     registerCommand("clearinv", "Clear inventory", [this](const std::vector<std::string>& args) { cmdClearInv(args); });
     registerCommand("setweight", "Set carry weight: setweight <value>", [this](const std::vector<std::string>& args) { cmdSetWeight(args); });
+    registerCommand("inventoryinfo", "Show inventory info", [this](const std::vector<std::string>&) {
+        if (gameRefs.listPlayerInventory) {
+            print(gameRefs.listPlayerInventory());
+        } else {
+            print("Inventory Manager not available");
+        }
+    });
+    registerCommand("iteminfo", "Get item info: iteminfo <itemId>", [this](const std::vector<std::string>& args) {
+        if (args.empty()) {
+            print("Usage: iteminfo <itemId>");
+            return;
+        }
+        uint32_t itemId = std::stoul(args[0]);
+        if (gameRefs.getItemInfo) {
+            print(gameRefs.getItemInfo(itemId));
+        } else {
+            print("Inventory Manager not available");
+        }
+    });
+    registerCommand("carryweight", "Show carry weight", [this](const std::vector<std::string>&) {
+        if (gameRefs.getInventoryWeight) {
+            print(gameRefs.getInventoryWeight());
+        } else {
+            print("Inventory Manager not available");
+        }
+    });
+
+    // === Phase 72: Quest debug enhanced commands ===
+    registerCommand("activequests", "List active quests with details", [this](const std::vector<std::string>&) {
+        if (gameRefs.getActiveQuestList) {
+            print(gameRefs.getActiveQuestList());
+        } else {
+            print("Quest Manager not available");
+        }
+    });
+    registerCommand("questdetails", "Get quest details: questdetails <questId>", [this](const std::vector<std::string>& args) {
+        if (args.empty()) {
+            print("Usage: questdetails <questId>");
+            return;
+        }
+        uint32_t questId = std::stoul(args[0]);
+        if (gameRefs.getQuestDetails) {
+            print(gameRefs.getQuestDetails(questId));
+        } else {
+            print("Quest Manager not available");
+        }
+    });
+    registerCommand("resetquest", "Reset quest: resetquest <questId>", [this](const std::vector<std::string>& args) {
+        if (args.empty()) {
+            print("Usage: resetquest <questId>");
+            return;
+        }
+        uint32_t questId = std::stoul(args[0]);
+        if (gameRefs.resetQuest) {
+            gameRefs.resetQuest(questId);
+            print("Quest " + std::to_string(questId) + " reset");
+        } else {
+            print("Quest Manager not available");
+        }
+    });
+    registerCommand("questreward", "Get quest reward: questreward <questId>", [this](const std::vector<std::string>& args) {
+        if (args.empty()) {
+            print("Usage: questreward <questId>");
+            return;
+        }
+        uint32_t questId = std::stoul(args[0]);
+        if (gameRefs.getQuestRewardInfo) {
+            print(gameRefs.getQuestRewardInfo(questId));
+        } else {
+            print("Quest Manager not available");
+        }
+    });
+    registerCommand("completeobjectives", "Complete all objectives: completeobjectives <questId>", [this](const std::vector<std::string>& args) {
+        if (args.empty()) {
+            print("Usage: completeobjectives <questId>");
+            return;
+        }
+        uint32_t questId = std::stoul(args[0]);
+        if (gameRefs.completeAllObjectives) {
+            gameRefs.completeAllObjectives(questId);
+            print("All objectives completed for quest " + std::to_string(questId));
+        } else {
+            print("Quest Manager not available");
+        }
+    });
+
+    // === Phase 73: Dialogue debug enhanced commands ===
+    registerCommand("dialoguestate", "Show dialogue state", [this](const std::vector<std::string>&) {
+        if (gameRefs.getDialogueState) {
+            print(gameRefs.getDialogueState());
+        } else {
+            print("Dialogue Runner not available");
+        }
+    });
+    registerCommand("dialoguetopics", "Show available dialogue topics", [this](const std::vector<std::string>&) {
+        if (gameRefs.getDialogueTopics) {
+            print(gameRefs.getDialogueTopics());
+        } else {
+            print("Dialogue Runner not available");
+        }
+    });
+    registerCommand("dialoguechoices", "Show current dialogue choices", [this](const std::vector<std::string>&) {
+        if (gameRefs.getDialogueChoices) {
+            print(gameRefs.getDialogueChoices());
+        } else {
+            print("Dialogue Runner not available");
+        }
+    });
+    registerCommand("dialoguehistory", "Show dialogue history", [this](const std::vector<std::string>&) {
+        if (gameRefs.getDialogueHistory) {
+            print(gameRefs.getDialogueHistory());
+        } else {
+            print("Dialogue Runner not available");
+        }
+    });
+    registerCommand("resetdialogue", "Reset dialogue state", [this](const std::vector<std::string>&) {
+        if (gameRefs.resetDialogue) {
+            gameRefs.resetDialogue();
+            print("Dialogue reset");
+        } else {
+            print("Dialogue Runner not available");
+        }
+    });
+
+    // === Phase 74: World debug enhanced commands ===
+    registerCommand("worldinfodetail", "Show detailed world info", [this](const std::vector<std::string>&) {
+        if (gameRefs.getWorldInfoDetailed) {
+            print(gameRefs.getWorldInfoDetailed());
+        } else {
+            print("World Manager not available");
+        }
+    });
+    registerCommand("celldetails", "Get cell details: celldetails <x> <y>", [this](const std::vector<std::string>& args) {
+        if (args.size() < 2) {
+            print("Usage: celldetails <x> <y>");
+            return;
+        }
+        int32_t cellX = std::stoi(args[0]);
+        int32_t cellY = std::stoi(args[1]);
+        if (gameRefs.getCellDetails) {
+            print(gameRefs.getCellDetails(cellX, cellY));
+        } else {
+            print("World Manager not available");
+        }
+    });
+    registerCommand("activecells", "List active cells", [this](const std::vector<std::string>&) {
+        if (gameRefs.getActiveCellsList) {
+            print(gameRefs.getActiveCellsList());
+        } else {
+            print("World Manager not available");
+        }
+    });
+    registerCommand("worlditems", "List world items", [this](const std::vector<std::string>&) {
+        if (gameRefs.getWorldItemsList) {
+            print(gameRefs.getWorldItemsList());
+        } else {
+            print("World Manager not available");
+        }
+    });
+    registerCommand("doorinfo", "Show door info", [this](const std::vector<std::string>&) {
+        if (gameRefs.getDoorInfo) {
+            print(gameRefs.getDoorInfo());
+        } else {
+            print("World Manager not available");
+        }
+    });
 
     // === Magic commands ===
     registerCommand("learnspell", "Learn spell: learnspell <spellId>", [this](const std::vector<std::string>& args) { cmdLearnSpell(args); });
@@ -220,6 +434,64 @@ void GameConsole::registerBuiltinCommands() {
     registerCommand("equipspell", "Equip spell: equipspell <spellId>", [this](const std::vector<std::string>& args) { cmdEquipSpell(args); });
     registerCommand("listspells", "List known spells", [this](const std::vector<std::string>& args) { cmdListSpells(args); });
     registerCommand("createspell", "Create spell: createspell <name> <damage> <manaCost>", [this](const std::vector<std::string>& args) { cmdCreateSpell(args); });
+    registerCommand("spellinfo", "Get spell info: spellinfo <spellId>", [this](const std::vector<std::string>& args) {
+        if (args.empty()) {
+            print("Usage: spellinfo <spellId>");
+            return;
+        }
+        uint32_t spellId = std::stoul(args[0]);
+        if (gameRefs.getSpellInfo) {
+            print(gameRefs.getSpellInfo(spellId));
+        } else {
+            print("Spell Manager not available");
+        }
+    });
+    registerCommand("playerspells", "List player spells", [this](const std::vector<std::string>&) {
+        if (gameRefs.getPlayerSpells) {
+            print(gameRefs.getPlayerSpells());
+        } else {
+            print("Spell Manager not available");
+        }
+    });
+    registerCommand("castspellatenemy", "Cast spell at nearest enemy: castspellatenemy <spellId>", [this](const std::vector<std::string>& args) {
+        if (args.empty()) {
+            print("Usage: castspellatenemy <spellId>");
+            return;
+        }
+        uint32_t spellId = std::stoul(args[0]);
+        if (gameRefs.castSpellAtNearest) {
+            gameRefs.castSpellAtNearest(spellId);
+            print("Casting spell " + std::to_string(spellId) + " at nearest enemy");
+        } else {
+            print("Spell Manager not available");
+        }
+    });
+    registerCommand("infinitmana", "Toggle infinite mana: infinitmana <on/off>", [this](const std::vector<std::string>& args) {
+        if (args.empty()) {
+            print("Usage: infinitmana <on/off>");
+            return;
+        }
+        bool enabled = (args[0] == "on" || args[0] == "true" || args[0] == "1");
+        if (gameRefs.toggleInfiniteMana) {
+            gameRefs.toggleInfiniteMana(enabled);
+            print("Infinite mana " + std::string(enabled ? "enabled" : "disabled"));
+        } else {
+            print("Spell Manager not available");
+        }
+    });
+    registerCommand("setspelldamage", "Set spell damage multiplier: setspelldamage <multiplier>", [this](const std::vector<std::string>& args) {
+        if (args.empty()) {
+            print("Usage: setspelldamage <multiplier>");
+            return;
+        }
+        float mult = std::stof(args[0]);
+        if (gameRefs.setSpellDamageMultiplier) {
+            gameRefs.setSpellDamageMultiplier(mult);
+            print("Spell damage multiplier set to " + std::to_string(mult));
+        } else {
+            print("Spell Manager not available");
+        }
+    });
 
     // === Quest commands ===
     registerCommand("acceptquest", "Accept quest: acceptquest <questId>", [this](const std::vector<std::string>& args) { cmdAcceptQuest(args); });
@@ -236,6 +508,62 @@ void GameConsole::registerBuiltinCommands() {
     registerCommand("listnpcs", "List all NPCs", [this](const std::vector<std::string>& args) { cmdListNpcs(args); });
     registerCommand("nearby", "List nearby NPCs: nearby [radius]", [this](const std::vector<std::string>& args) { cmdNearby(args); });
     registerCommand("resurrectnpc", "Resurrect NPC: resurrectnpc <npcId>", [this](const std::vector<std::string>& args) { cmdResurrectNpc(args); });
+    registerCommand("npccount", "Get NPC count", [this](const std::vector<std::string>&) {
+        if (gameRefs.getNpcCount) {
+            print(gameRefs.getNpcCount());
+        } else {
+            print("NPC Manager not available");
+        }
+    });
+    registerCommand("npcinfo", "Get NPC info: npcinfo <npcId>", [this](const std::vector<std::string>& args) {
+        if (args.empty()) {
+            print("Usage: npcinfo <npcId>");
+            return;
+        }
+        uint32_t npcId = std::stoul(args[0]);
+        if (gameRefs.getNpcInfo) {
+            print(gameRefs.getNpcInfo(npcId));
+        } else {
+            print("NPC Manager not available");
+        }
+    });
+    registerCommand("spawnplayer", "Spawn NPC at player: spawnplayer <name>", [this](const std::vector<std::string>& args) {
+        if (args.empty()) {
+            print("Usage: spawnplayer <name>");
+            return;
+        }
+        if (gameRefs.getPlayerPosition && gameRefs.spawnNpc) {
+            std::string posStr = gameRefs.getPlayerPosition();
+            // Parse position from "Player: (x, y, z)" format
+            float x = 0, y = 0, z = 0;
+            sscanf(posStr.c_str(), "Player: (%f, %f, %f)", &x, &y, &z);
+            gameRefs.spawnNpc(args[0], x + 100.0f, y, z + 100.0f);
+            print("Spawned " + args[0] + " at player position");
+        } else {
+            print("Spawn not available");
+        }
+    });
+    registerCommand("killallnpcs", "Kill all NPCs", [this](const std::vector<std::string>&) {
+        if (gameRefs.killAllNpcs) {
+            gameRefs.killAllNpcs();
+            print("All NPCs killed");
+        } else {
+            print("NPC Manager not available");
+        }
+    });
+    registerCommand("setnpcspeed", "Set NPC speed: setnpcspeed <speed>", [this](const std::vector<std::string>& args) {
+        if (args.empty()) {
+            print("Usage: setnpcspeed <speed>");
+            return;
+        }
+        float speed = std::stof(args[0]);
+        if (gameRefs.setNpcSpeed) {
+            gameRefs.setNpcSpeed(speed);
+            print("NPC speed set to " + std::to_string(speed));
+        } else {
+            print("NPC Manager not available");
+        }
+    });
 
     // === Dialogue commands ===
     registerCommand("talk", "Start dialogue with NPC: talk <npcId>", [this](const std::vector<std::string>& args) { cmdTalk(args); });
@@ -249,6 +577,52 @@ void GameConsole::registerBuiltinCommands() {
     registerCommand("settime", "Set time of day: settime <hour 0-24>", [this](const std::vector<std::string>& args) { cmdSetTime(args); });
     registerCommand("loadcell", "Load cell: loadcell <x> <y>", [this](const std::vector<std::string>& args) { cmdLoadCell(args); });
     registerCommand("worldinfo", "Show world info", [this](const std::vector<std::string>& args) { cmdWorldInfo(args); });
+    // Phase 66: Map debug commands
+    registerCommand("playerpos", "Show player position", [this](const std::vector<std::string>&) {
+        if (gameRefs.getPlayerPosition) {
+            print(gameRefs.getPlayerPosition());
+        } else {
+            print("Player position not available");
+        }
+    });
+    registerCommand("teleport", "Teleport: teleport <x> <y> <z>", [this](const std::vector<std::string>& args) {
+        if (args.size() < 3) {
+            print("Usage: teleport <x> <y> <z>");
+            return;
+        }
+        float x = std::stof(args[0]);
+        float y = std::stof(args[1]);
+        float z = std::stof(args[2]);
+        if (gameRefs.teleportTo) gameRefs.teleportTo(x, y, z);
+        print("Teleported to (" + args[0] + ", " + args[1] + ", " + args[2] + ")");
+    });
+    registerCommand("teleportcell", "Teleport to cell: teleportcell <x> <y>", [this](const std::vector<std::string>& args) {
+        if (args.size() < 2) {
+            print("Usage: teleportcell <x> <y>");
+            return;
+        }
+        int32_t cx = std::stoi(args[0]);
+        int32_t cz = std::stoi(args[1]);
+        if (gameRefs.teleportToCell) gameRefs.teleportToCell(cx, cz);
+        print("Teleported to cell (" + args[0] + ", " + args[1] + ")");
+    });
+    registerCommand("moverel", "Move relative: moverel <dx> <dz>", [this](const std::vector<std::string>& args) {
+        if (args.size() < 2) {
+            print("Usage: moverel <dx> <dz>");
+            return;
+        }
+        float dx = std::stof(args[0]);
+        float dz = std::stof(args[1]);
+        if (gameRefs.movePlayerRelative) gameRefs.movePlayerRelative(dx, dz);
+        print("Moved by (" + args[0] + ", " + args[1] + ")");
+    });
+    registerCommand("nearbycells", "List nearby cells", [this](const std::vector<std::string>&) {
+        if (gameRefs.listNearbyCells) {
+            print(gameRefs.listNearbyCells());
+        } else {
+            print("Nearby cells not available");
+        }
+    });
 
     // === Save/Load commands ===
     registerCommand("save", "Save game: save <slotIndex>", [this](const std::vector<std::string>& args) { cmdSave(args); });
@@ -298,6 +672,35 @@ void GameConsole::registerBuiltinCommands() {
         print("=== Performance Stats ===");
         print("Use 'debugpage 2' for detailed view");
     });
+    registerCommand("fpsstats", "Show FPS statistics", [this](const std::vector<std::string>&) {
+        if (gameRefs.getPerformanceStats) {
+            print(gameRefs.getPerformanceStats());
+        } else {
+            print("Performance monitor not available");
+        }
+    });
+    registerCommand("memorystats", "Show memory statistics", [this](const std::vector<std::string>&) {
+        if (gameRefs.getMemoryStats) {
+            print(gameRefs.getMemoryStats());
+        } else {
+            print("Memory stats not available");
+        }
+    });
+    registerCommand("performance", "Show detailed performance metrics", [this](const std::vector<std::string>&) {
+        if (gameRefs.getDetailedPerformance) {
+            print(gameRefs.getDetailedPerformance());
+        } else {
+            print("Performance monitor not available");
+        }
+    });
+    registerCommand("resetstats", "Reset performance statistics", [this](const std::vector<std::string>&) {
+        if (gameRefs.resetPerformanceStats) {
+            gameRefs.resetPerformanceStats();
+            print("Performance stats reset");
+        } else {
+            print("Reset not available");
+        }
+    });
 
     // === Sound commands ===
     registerCommand("playbgm", "Play background music", [this](const std::vector<std::string>&) {
@@ -345,6 +748,38 @@ void GameConsole::registerBuiltinCommands() {
             print(gameRefs.getAudioStats());
         } else {
             print("Audio stats not available");
+        }
+    });
+    // Phase 66: BGM browsing commands
+    registerCommand("listbgm", "List all BGM tracks", [this](const std::vector<std::string>&) {
+        if (gameRefs.listBgmTracks) {
+            print(gameRefs.listBgmTracks());
+        } else {
+            print("BGM listing not available");
+        }
+    });
+    registerCommand("playbgmtrack", "Play specific BGM: playbgmtrack <key>", [this](const std::vector<std::string>& args) {
+        if (args.empty()) {
+            print("Usage: playbgmtrack <key>");
+            return;
+        }
+        if (gameRefs.playBgmTrack) gameRefs.playBgmTrack(args[0]);
+        print("Playing BGM: " + args[0]);
+    });
+    registerCommand("bgmvolume", "Set BGM volume: bgmvolume <0.0-1.0>", [this](const std::vector<std::string>& args) {
+        if (args.empty()) {
+            print("Usage: bgmvolume <0.0-1.0>");
+            return;
+        }
+        float vol = std::stof(args[0]);
+        if (gameRefs.setBgmVolume) gameRefs.setBgmVolume(vol);
+        print("BGM volume set to " + std::to_string(vol));
+    });
+    registerCommand("bgminfo", "Show current BGM info", [this](const std::vector<std::string>&) {
+        if (gameRefs.getCurrentBgmInfo) {
+            print(gameRefs.getCurrentBgmInfo());
+        } else {
+            print("BGM info not available");
         }
     });
 
@@ -404,6 +839,14 @@ void GameConsole::registerBuiltinCommands() {
             print(gameRefs.getAssetStats());
         } else {
             print("Asset stats not available");
+        }
+    });
+    // Phase 66: Texture browsing commands
+    registerCommand("texturesdetail", "List textures with details", [this](const std::vector<std::string>&) {
+        if (gameRefs.listTexturesDetailed) {
+            print(gameRefs.listTexturesDetailed());
+        } else {
+            print("Texture detail listing not available");
         }
     });
 

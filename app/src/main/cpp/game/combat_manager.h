@@ -205,4 +205,8 @@ public:
     const CombatInstance* getCombat(uint32_t defenderId) const;
     void clearCombats();
     void logCombatStatus() const;
+
+    // Debug methods
+    size_t getActiveCombatCount() const { return activeCombats.size(); }
+    std::vector<std::string> getActiveCombatsList() const;
 };

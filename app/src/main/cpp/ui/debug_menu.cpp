@@ -435,6 +435,13 @@ void DebugMenu::createAllTabContents() {
             {"Damage 10", "damage 0 10"},
             {"Damage 100", "damage 0 100"},
             {"Combat Debug", "combatdebug"},
+            {"Combat Stats", "combatstats"},
+            {"Active Combats", "activecombats"},
+            {"Attack Nearest", "attacknearest"},
+            {"Set Damage x2", "setdamagemultiplier 2.0"},
+            {"Set Damage x5", "setdamagemultiplier 5.0"},
+            {"Invincible On", "invincible on"},
+            {"Invincible Off", "invincible off"},
         };
         for (const auto& item : items) {
             Button btn;
@@ -458,6 +465,12 @@ void DebugMenu::createAllTabContents() {
             {"Clear Inv", "clearinv"},
             {"List Items", "listitems"},
             {"Max Weight", "setweight 9999"},
+            {"Inventory Info", "inventoryinfo"},
+            {"Item Info", "iteminfo 0"},
+            {"Add Sword", "additem 100 1"},
+            {"Add Shield", "additem 200 1"},
+            {"Add Armor", "additem 300 1"},
+            {"Carry Weight", "carryweight"},
         };
         for (const auto& item : items) {
             Button btn;
@@ -481,6 +494,12 @@ void DebugMenu::createAllTabContents() {
             {"Cast Heal", "castspell 2 0"},
             {"List Spells", "listspells"},
             {"Set MP 100", "setmana 100"},
+            {"Spell Info", "spellinfo 1"},
+            {"Player Spells", "playerspells"},
+            {"Cast at Enemy", "castspellatenemy 1"},
+            {"Infinite Mana On", "infinitmana on"},
+            {"Infinite Mana Off", "infinitmana off"},
+            {"Spell Damage x2", "setspelldamage 2.0"},
         };
         for (const auto& item : items) {
             Button btn;
@@ -497,11 +516,16 @@ void DebugMenu::createAllTabContents() {
         TabContent content;
         std::vector<std::pair<std::string, std::string>> items = {
             {"List Quests", "listquests"},
+            {"Active Quests", "activequests"},
+            {"Quest Details", "questdetails 1"},
             {"Accept Main", "acceptquest 1"},
             {"Accept Side", "acceptquest 2"},
             {"Complete Q1", "completequest 1"},
             {"Fail Q1", "failquest 1"},
             {"Update Obj", "updateobj 1 1 5"},
+            {"Reset Quest", "resetquest 1"},
+            {"Quest Reward", "questreward 1"},
+            {"Complete Obj", "completeobjectives 1"},
         };
         for (const auto& item : items) {
             Button btn;
@@ -518,15 +542,20 @@ void DebugMenu::createAllTabContents() {
         TabContent content;
         std::vector<std::pair<std::string, std::string>> items = {
             {"List NPCs", "listnpcs"},
+            {"NPC Count", "npccount"},
+            {"NPC Info", "npcinfo 0"},
             {"Nearby", "nearby"},
             {"Spawn Guard", "spawnat Guard 0 0 0"},
             {"Spawn Mage", "spawnat Mage 5 0 5"},
             {"Spawn Bandit", "spawnat Bandit -5 0 5"},
+            {"Spawn at Player", "spawnplayer Guard"},
+            {"Kill All NPCs", "killallnpcs"},
             {"Aggro NPC", "aggro 0"},
             {"Calm NPC", "calm 0"},
             {"Set AI Combat", "setai 0 combat"},
             {"Set AI Idle", "setai 0 idle"},
             {"Resurrect", "resurrectnpc 0"},
+            {"Set Speed", "setnpcspeed 100"},
         };
         for (const auto& item : items) {
             Button btn;
@@ -543,12 +572,17 @@ void DebugMenu::createAllTabContents() {
         TabContent content;
         std::vector<std::pair<std::string, std::string>> items = {
             {"Talk NPC", "talk 0"},
+            {"Dialogue State", "dialoguestate"},
+            {"Topics", "dialoguetopics"},
+            {"Choices", "dialoguechoices"},
+            {"History", "dialoguehistory"},
             {"Topic 0", "selecttopic 0"},
             {"Topic 1", "selecttopic 1"},
             {"Topic 2", "selecttopic 2"},
             {"Choice 0", "selectchoice 0"},
             {"Choice 1", "selectchoice 1"},
             {"End Talk", "endtalk"},
+            {"Reset Dialogue", "resetdialogue"},
         };
         for (const auto& item : items) {
             Button btn;
@@ -578,6 +612,22 @@ void DebugMenu::createAllTabContents() {
             {"Time x0 (Pause)", "settimescale 0"},
             {"Load Cell 0,0", "loadcell 0 0"},
             {"World Info", "worldinfo"},
+            {"World Detail", "worldinfodetail"},
+            // Phase 66: Map debug
+            {"Player Position", "playerpos"},
+            {"Nearby Cells", "nearbycells"},
+            {"Active Cells", "activecells"},
+            {"Cell Details", "celldetails 0 0"},
+            {"World Items", "worlditems"},
+            {"Door Info", "doorinfo"},
+            {"Teleport 0,0", "teleportcell 0 0"},
+            {"Teleport 1,0", "teleportcell 1 0"},
+            {"Teleport 0,1", "teleportcell 0 1"},
+            {"Teleport 1,1", "teleportcell 1 1"},
+            {"Move North +512", "moverel 0 -512"},
+            {"Move South +512", "moverel 0 512"},
+            {"Move East +512", "moverel 512 0"},
+            {"Move West +512", "moverel -512 0"},
         };
         for (const auto& item : items) {
             Button btn;
@@ -624,6 +674,10 @@ void DebugMenu::createAllTabContents() {
             {"Debug HUD+", "debughudnext"},
             {"Debug HUD-", "debughudprev"},
             {"Debug Log", "debuglog"},
+            {"FPS Stats", "fpsstats"},
+            {"Memory Stats", "memorystats"},
+            {"Performance", "performance"},
+            {"Reset Stats", "resetstats"},
         };
         for (const auto& item : items) {
             Button btn;
@@ -649,6 +703,13 @@ void DebugMenu::createAllTabContents() {
             {"Unmute All", "unmute"},
             {"List Audio", "listaudio"},
             {"Audio Stats", "audiostats"},
+            // Phase 66: BGM browsing
+            {"List BGM Tracks", "listbgm"},
+            {"BGM Info", "bgminfo"},
+            {"BGM Vol 25%", "bgmvolume 0.25"},
+            {"BGM Vol 50%", "bgmvolume 0.5"},
+            {"BGM Vol 75%", "bgmvolume 0.75"},
+            {"BGM Vol 100%", "bgmvolume 1.0"},
         };
         for (const auto& item : items) {
             Button btn;
@@ -674,6 +735,8 @@ void DebugMenu::createAllTabContents() {
             {"Reload Assets", "reloadassets"},
             {"Memory Usage", "memoryusage"},
             {"Asset Stats", "assetstats"},
+            // Phase 66: Texture browsing
+            {"Textures Detail", "texturesdetail"},
         };
         for (const auto& item : items) {
             Button btn;
