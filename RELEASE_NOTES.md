@@ -1,94 +1,149 @@
-# Oblivion Android - Development Build
+# Oblivion Android - Release Notes
 
-## Current Version
-0.9.10 (Phase 63 - Development Build)
-
-## Status
-App is not yet launchable. Version will remain at 0.x until the app can successfully start and run.
+A concise summary of each release. Full details are in [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
-## Phase 58-63: Asset Optimization & Compression
+## v3.2.0 (Phase 56) - Gamebryo Complete
 
-### Asset Optimization Systems
+- ParticleSystem (7 presets), PostProcessPipeline (8 effects)
+- WaterRenderer (Gerstner waves, 6 types)
+- SkyWeatherSystem (8 weather types, day/night cycle)
+- SceneGraph with hierarchy and AABB culling
+- MaterialSystem (8 texture slots, 8 default materials)
 
-- **AssetExtractor**: External storage asset management
-- **TextureCompressor**: ASTC 4x4/6x6/8x8, ETC2 RGB/RGBA support
-- **AudioCompressor**: WAV to OGG/MP3/AAC conversion
-- **LODSystem**: Distance-based mesh detail levels
-- **Batch compression scripts**: Offline asset compression tools
+## v3.1.0 (Phase 55) - Engine Polish
 
-### Technical Specifications
-- **Language**: C++17
-- **Graphics**: OpenGL ES 3.0
-- **Platform**: Android 10+ (API 25+)
-- **Physics**: Jolt Physics
-- **Audio**: OpenAL-Soft
-- **Architecture**: arm64-v8a, armeabi-v7a, x86, x86_64
-- **Architecture**: arm64-v8a, armeabi-v7a, x86, x86_64
+- FrameBudgetManager (16.6ms per-frame budget)
+- MemoryDefrag for runtime memory management
+- ShaderCache with LRU eviction
+- OcclusionCuller and BatchRenderer
+- FaceGen brush-up and Jolt Physics extension
 
-## Known Issues
+## v3.0.0 (Phase 54) - Imperial Weave v4.0
 
-### APK Size
-The current APK is approximately 1.1 GB due to bundled game assets:
-- **Textures**: 854 MB (PNG files)
-- **Models**: 234 MB (NIF files)
-- **Audio**: 112 MB (WAV files)
-- **Native libraries**: 50 MB (4 architectures)
+- 15-phase pipeline with ImperialWeaveConfig
+- ServiceLocator for runtime service discovery
+- 12 event types, frame budget enforcement
 
-Note: App store distribution is not planned, so APK size optimization is not a priority.
+## v2.5.0 (Phase 50-53) - Visual Systems
 
-## Installation
+- **Phase 50**: Distant LOD with frustum culling and HorizonRing mountains
+- **Phase 51**: SpeedTree vegetation (4-stage LOD, instanced rendering, Perlin wind)
+- **Phase 52**: FaceGen system (race morphs, expressions, hair/beard)
+- **Phase 53**: Bink video player via MediaCodec JNI bridge
 
-### Prerequisites
-- Android 10 or higher
-- 2 GB RAM minimum
-- 2 GB storage space
+## v2.4.0 (Phase 46-49) - Asset Pipeline, Audio, Controls
 
-### Steps
-1. Download the APK
-2. Enable "Install from unknown sources" if needed
-3. Install the APK
-4. Launch the application
+- TextureManager, MeshLoader, WorldDataLoader, BSA/ESM/NIF readers
+- AudioDecoder, BgmManager, SoundEffectManager
+- 12 integration test cases
+- GamepadMapper, TouchCalibration, InputVisualizer, HudCustomizer
 
-## Development Notes
+## v2.3.0 (Phase 45) - Unit Testing
 
-### Build Configuration
-- **Minification**: Enabled for release builds
-- **Resource shrinking**: Enabled
-- **JNI libs**: Legacy packaging enabled
+- 37 unit test cases
 
-### Code Metrics
-- **C++ Code**: 35,000+ lines
-- **Java/Kotlin Code**: 1,100+ lines
-- **Total Project**: 48,000+ lines
+## v2.2.0 (Phase 44) - Performance Optimization
 
-## Future Work
+- MemoryPool, RenderOptimizer, AsyncTaskManager, CacheManager
+- ProfilerDashboard
 
-### Phase 63+: Final Release Preparation
-- Execute asset compression on device
-- Optimize APK size
-- Final testing and validation
+## v2.1.0 (Phase 43) - UI/UX System
 
-### Phase 64+: Production Release
-- Remove development assets from APK
-- Implement asset download system
-- App store preparation
+- TouchGestureHandler, MenuTransitionManager
+- HudLayout, ControlSchemeManager, AccessibilityManager
 
-## Credits
+## v2.0.0 (Phase 42) - Game Loop Integration
 
-### Original Game
-- **The Elder Scrolls IV: Oblivion** by Bethesda Game Studios
-- **Gamebryo** engine by Gamebase Co., Ltd.
-- **Havok** physics by Havok
+- StateManager, InputRouter, GameLoopCoordinator
+- SceneRenderer, DebugConsole, PerformanceProfiler
 
-### Android Port
-- **Oblivion Android** project
-- **Jolt Physics** for physics simulation
-- **OpenAL-Soft** for audio
-- **Android NDK** for native development
+## v1.6.0 (Phase 41) - Binary Save System
 
-## License
+- SaveManager with binary format, SaveSlotManager, AutoSave
+- Serializable interface
 
-This project is for educational and research purposes only.
-The Elder Scrolls IV: Oblivion is a trademark of Bethesda Softworks LLC.
+## v1.5.0 (Phase 40) - NPC Dialogue Tree
+
+- DialogueTree, DialogueRunner, DialogueFilterEngine
+- DialogueHistory, DialogueRecord, NPC integration
+
+## v1.4.0 (Phase 39) - Quest Flow System
+
+- QuestFlowController, QuestStageManager, QuestObjectiveTracker
+- QuestRewards (XP, gold, items, skills), QuestRecord parsing
+
+## v1.3.0 (Phase 38) - Script VM Testing
+
+- 20 unit tests for ScriptVM: ExecutionContext, Opcodes, ScriptFunctions, ScriptManager
+
+## v1.2.0 (Phase 37) - Script VM
+
+- Oblivion bytecode interpreter with 47 opcodes
+- 118 game functions (Tier 1: 13 core, Tier 2: 105 extended)
+- ScriptManager, ExecutionContext, ScriptDisasm
+
+## v1.1.0 (Phase 36) - Jolt Physics
+
+- PhysicsManager singleton with Jolt Physics
+- CharacterVirtual player/NPC controllers (capsule-based)
+- HeightFieldShape terrain collision from LAND data
+- Raycast API for AI, combat, and interaction
+- Fixed timestep (1/60s) for deterministic simulation
+
+## v1.0.0 (Phase 35) - Radiant AI System
+
+- 15 AI package types (Explore, Follow, Guard, Patrol, Combat, Flee, etc.)
+- Priority-based PackageStack with combat/flee override
+- AIScheduler with 24-hour time-based NPC routines
+- NavMesh pathfinding (A* with path smoothing and stuck recovery)
+
+## v0.9.10 (Phase 34) - Weapon Sound Routing + Quick-Slots
+
+- Weapon-type-specific hit sound routing (blade, blunt, axe, bow, staff, unarmed)
+- SpellSelectionPanel school-color icons
+- Quick-slot spell buttons (F1-F4)
+
+## v0.9.9 (Phase 33) - Combat Sounds + NPC Spatial Audio
+
+- 11 dedicated combat sound definitions (hit, block, parry, dodge, death)
+- NPC spatial audio callback for 3D positioning
+
+## v0.9.8 (Phase 32) - Animation & Audio Integration
+
+- AnimationSubscriber (EventBus to AnimationPlayer bridge)
+- AudioSubscriber (EventBus to AudioManager bridge)
+- SpellSelectionPanel UI, findSequenceByName()
+- Imperial Weave Event.targetId field
+
+## v0.9.7 (Phase 10-24) - Imperial Weave + Combat Enhancement
+
+- Imperial Weave EventBus with 12-phase pipeline
+- 9 weapon types with hitbox system
+- Critical hit, block/parry/dodge mechanics
+- NPC animation state management
+
+## v0.9.5 (Phase 10-24) - Complete UI & HUD
+
+- HUD components: minimap, compass, floating text, quick-slot bar, etc.
+- Core menus: pause, character sheet, shop, quest log, dialogue
+- Inventory & items: consumables, equipment effects, world drops
+
+## v0.9.0 (Phase 9) - Graphical UI & Sound Effects
+
+- TextureLoader, UIPanel, UIButton with multi-state textures
+- UIDrawHelper for OpenGL ES 3.0 rendering
+- 93 sound definitions, 307 WAV files
+- TitleScreen graphical overhaul
+
+## v0.8.0 (Phase 8) - Audio & Post-Processing
+
+- OpenAL 3D audio with spatial positioning
+- RetroFilter effects (pixelation, scanlines, CRT distortion)
+- SaveLoadUI system with multiple slots
+- Settings UI with debug mode and language toggle
+
+---
+
+*For the full change history including file-level details, see [CHANGELOG.md](CHANGELOG.md).*

@@ -54,101 +54,97 @@ Any modern improvements or quality-of-life features (e.g., RetroFilter effects, 
 ## Development Guidelines
 
 ### Code Style
+
 - C++17 standard
 - Follow existing naming conventions in the codebase
 - Comment in English, user-facing strings bilingual (EN/JA)
 
+### Naming Conventions
+
+- **C++**: snake_case (variables, functions), PascalCase (classes), UPPER_SNAKE_CASE (constants)
+- **Kotlin/Java**: camelCase (methods, variables), PascalCase (classes)
+- **File names**: snake_case (C++), PascalCase (Kotlin)
+
 ### Testing Requirements
+
 - All original features must work without optional enhancements enabled
 - Optional features must have independent test coverage
 - Device testing on Android 9+ required before merge
 
 ### Documentation
+
 - Update CHANGELOG.md for every feature
 - Update README.md for user-facing changes
 - Document optional features separately from core features
 
 ---
 
-## Current Project Status
+## Key Technical Decisions
 
-### Phase Completion (as of 2026-08-28)
+### Namespace Architecture
 
-| Phase | Name | Status |
-|-------|------|--------|
-| 1-28 | Core Engine + ESM Integration | ✅ COMPLETE |
-| 29 | NAVM Pathfinding + DIAL/INFO + REFR | ✅ COMPLETE |
-| 30 | NIF/Skeleton/Skinning/Animation/Collision | ✅ COMPLETE |
-| 31 | PlayerController + World Loading | ✅ COMPLETE |
-| 32 | Imperial Weave EventBus + 12-phase Coordinator | ✅ COMPLETE |
-| 33 | Dedicated Combat Sounds + NPC Spatial Audio | ✅ COMPLETE |
-| 34 | Weapon Sound Routing + Quick-Slot Spells | ✅ COMPLETE |
-| 35 | Radiant AI System | ✅ COMPLETE |
-| 36 | Jolt Physics Integration | ✅ COMPLETE |
-| 37 | Script VM (Oblivion Script Execution) | 📋 DESIGNED |
+| Namespace | Classes |
+|-----------|---------|
+| Global | Renderer, WorldManager, NpcManager, CombatManager, QuestManager, CollisionWorld, PlayerController, InventoryManager, SpellManager, AudioManager, EquipmentEffectSystem |
+| `animation::` | AnimationPlayer |
+| `ai::` | AIScheduler |
+| `oblivion::` | NavMeshManager, PhysicsManager, AlchemySystem, BookReader, ClothingConverter |
 
-### Code Metrics
-- **C++**: 22,500+ lines
-- **Java/Kotlin**: 700+ lines
-- **ESM Record Types**: 40
-- **Bug Fixes Completed**: 72 (across 6 batches)
+### Player is NPC ID 1
 
-### Architecture Overview
+`npcManager->getNPC(1)` returns the player's NPC object. The player is treated as the first NPC in the system.
+
+### GLM on Android NDK
+
+`glm::mat4(1.0f)` does NOT compile on Android NDK. Use `glm::mat4()` instead.
+
+### Build System
+
+- NDK 26.1.10909125
+- Clang++
+- Android API 29+ target
+- C++17
+
+### EventBus Pattern
+
+CombatManager and other systems emit events to the Imperial Weave EventBus. Subscribers (AnimationSubscriber, AudioSubscriber) react independently. Systems never call each other directly.
 
 ```
-Android JNI
-    └── Renderer  (initialization & render loop)
-         ├── Imperial Weave  (12-phase update coordinator)
-         │    ├── EventBus  (loose-coupled messaging)
-         │    └── Phase pipeline:
-         │         ①EventProcess → ②World → ③AI → ④Player → ⑤Inventory
-         │         → ⑥Spell → ⑦Animation → ⑧Physics → ⑨Combat
-         │         → ⑩Quest → ⑪Audio → ⑫RenderSubmit
-         ├── UISystem  (HUD, panels, floating text)
-         └── Subscriber bridges (thin, EventBus-driven):
-              ├── AnimationSubscriber  (Event → AnimationPlayer)
-              └── AudioSubscriber     (Event → AudioManager)
+ATK button -> PlayerController.attack()
+           -> CombatManager.playerAttack()
+           -> EventBus emit "COMBAT_ATTACK_HIT"
+                +-- AnimationSubscriber -> target plays hit-reaction anim
+                +-- AudioSubscriber     -> combat hit SE (weapon-type routed)
+                +-- UIFloatingText      -> "Hit!" appears on screen
 ```
 
-### Key Technical Decisions
+### Manager Pattern
 
-1. **Namespace Architecture**:
-   - Global: Renderer, WorldManager, NpcManager, CombatManager, QuestManager, CollisionWorld, PlayerController, InventoryManager, SpellManager, AudioManager
-   - `animation::` namespace: AnimationPlayer
-   - `ai::` namespace: AIScheduler
-   - `oblivion::` namespace: NavMeshManager, PhysicsManager, AlchemySystem, BookReader, ClothingConverter
-
-2. **Player is NPC ID 1**: `npcManager->getNPC(1)` returns the player's NPC object
-
-3. **GLM on Android NDK**: `glm::mat4(1.0f)` does NOT compile - must use `glm::mat4()`
-
-4. **Build System**: NDK 26.1.10909125, Clang++, Android API 24 target, C++17
-
-### Bug Fix History
-
-| Batch | Bugs Fixed | Key Issues |
-|-------|------------|------------|
-| 1 | 12 | Uninitialized variables, missing bounds checks |
-| 2 | 11 | Division by zero, temp file leaks |
-| 3 | 12 | Self-assignment bugs, raw pointer leaks |
-| 4 | 11 | Stat accumulation, null pointer access |
-| 5 | 10 | Transition-only callbacks, empty function bodies |
-| 6 | 8 | Integer overflow, RNG initialization, state transitions |
-| **Total** | **64** | |
-
-### Phase 37: Script VM (Designed)
-
-**Status**: Design complete, implementation pending
-
-**Key Components**:
-- SCPT record parser (EDID, SCHR, SCDA, SCTX, SLSD/SCVR, SCRO)
-- Bytecode interpreter (opcode + arg length + args format)
-- Game function API (SetStage, AddItem, Enable, Disable, etc.)
-- Imperial Weave integration (SCRIPT phase)
-
-**Estimated**: ~2,050 lines of new code
+All managers follow the lifecycle: `initialize()` -> `update(dt)` -> `cleanup()`.
 
 ---
 
-*Last Updated: 2026-08-28*
-*Version: 2.0*
+## Contribution Guide
+
+### Before Starting
+
+1. Read this Handbook thoroughly
+2. Check CHANGELOG.md for current project status
+3. Review existing code style in nearby files
+
+### Making Changes
+
+1. Create a feature branch from master
+2. Make focused, atomic commits
+3. Update CHANGELOG.md with each meaningful change
+4. Test on a physical Android device (API 29+)
+5. Submit a pull request
+
+### Commit Messages
+
+- Use clear, descriptive commit messages
+- Prefix with component name when relevant (e.g., "audio:", "combat:", "ui:")
+
+---
+
+*Last Updated: 2026-09-04*
