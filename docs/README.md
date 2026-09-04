@@ -1,8 +1,8 @@
 # Oblivion Android - ドキュメント目次
 
-**最終更新**: 2026-08-27  
-**バージョン**: 0.9.0  
-**ステータス**: Phase 9 進行中
+**最終更新**: 2026-09-04
+**バージョン**: 1.6.0
+**ステータス**: Phase 63 完了
 
 ---
 
@@ -33,12 +33,11 @@
 | [SAVE_LOAD_IMPLEMENTATION.md](SAVE_LOAD_IMPLEMENTATION.md) | セーブ/ロード実装 | 実装エンジニア |
 | [CODE_QUALITY_IMPROVEMENTS.md](CODE_QUALITY_IMPROVEMENTS.md) | コード品質改善 | 全開発者 |
 
-### 計画・履歴ドキュメント
+### 履歴ドキュメント
 
 | ファイル | 内容 | 対象者 |
 |---------|------|--------|
 | [DEVELOPMENT_HISTORY.md](DEVELOPMENT_HISTORY.md) | 開発履歴（全フェーズ） | 全員 |
-| [PHASE9_PLAN.md](PHASE9_PLAN.md) | Phase 9実装計画 | PM、リードエンジニア |
 
 ---
 
@@ -46,7 +45,7 @@
 
 ### 新規開発者向け
 
-1. **README.md** (このファイル) - プロジェクト概要
+1. **[README.md](../README.md)** (ルート) - プロジェクト概要
 2. **ARCHITECTURE.md** - システムアーキテクチャ理解
 3. **DEVELOPMENT_HISTORY.md** - 開発経緯の把握
 4. **IMPLEMENTATION_GUIDE.md** - 実装方法の習得
@@ -62,9 +61,9 @@
 
 ### PM・リード向け
 
-1. **README.md** - プロジェクト概要
+1. **[README.md](../README.md)** - プロジェクト概要
 2. **DEVELOPMENT_HISTORY.md** - 開発進捗
-3. **PHASE9_PLAN.md** - 今後の計画
+3. **[RELEASE_NOTES.md](../RELEASE_NOTES.md)** - リリース変更点
 4. **ARCHITECTURE.md** - 技術的な全体像
 
 ---
@@ -85,18 +84,6 @@ cd Oblivion_Android
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-### ドキュメント参照
-
-```bash
-# ドキュメントディレクトリ
-cd docs/
-
-# 主要ドキュメント
-cat README.md           # このファイル
-cat ARCHITECTURE.md     # アーキテクチャ
-cat DEVELOPMENT_HISTORY.md  # 開発履歴
-```
-
 ---
 
 ## プロジェクト構成
@@ -105,15 +92,21 @@ cat DEVELOPMENT_HISTORY.md  # 開発履歴
 
 ```
 app/src/main/cpp/
-├── engine/          # レンダリング、カメラ、シェーダー
+├── engine/          # レンダリング、カメラ、シェーダー、Imperial Weave
 ├── game/            # NPC、戦闘、クエスト、魔法
 ├── world/           # セル、ドア、ワールド管理
 ├── assets/          # NIF、DDS、アセットマネージャー
-├── audio/           # オーディオシステム
-├── ui/              # テキスト、デバッグHUD、設定UI
+├── audio/           # オーディオシステム（OpenAL-Soft）
+├── ui/              # テキスト、デバッグHUD、設定UI、UIパネル
+├── jni/             # JNIブリッジ
+├── physics/         # Jolt Physics統合
+├── ai/              # Radiant AI（スケジューラ、パッケージ）
+├── animation/       # アニメーションプレーヤー、サブスクライバー
+├── save_system/     # セーブマネージャー
 ├── system/          # 設定管理
-├── geometry/        # メッシュ、キューブ
-├── include/glm/     # 数学ライブラリ
+├── localization/    # 多言語対応
+├── profiling/       # パフォーマンス監視
+├── include/         # GLM、stb_image等
 └── CMakeLists.txt
 ```
 
@@ -131,22 +124,8 @@ docs/
 ├── FPS_CONTROL_GUIDE.md         # FPS制御ガイド
 ├── SAVE_LOAD_IMPLEMENTATION.md  # セーブ/ロード実装
 ├── CODE_QUALITY_IMPROVEMENTS.md # コード品質改善
-├── DEVELOPMENT_HISTORY.md       # 開発履歴
-└── PHASE9_PLAN.md               # Phase 9計画
+└── DEVELOPMENT_HISTORY.md       # 開発履歴
 ```
-
----
-
-## 技術スタック
-
-| コンポーネント | 技術 |
-|--------------|------|
-| レンダリング | OpenGL ES 3.0 |
-| ネイティブコード | C++17 (NDK r26.1) |
-| Java連携 | JNI (Java Native Interface) |
-| オーディオ | OpenAL-Soft + Android MediaPlayer |
-| ビルドシステム | CMake 3.16+ / Gradle 9.4+ |
-| 対象API | Android 10+ (API 29+) |
 
 ---
 
@@ -154,58 +133,36 @@ docs/
 
 ### バージョン情報
 
-- **現在バージョン**: 0.9.0
-- **現在フェーズ**: Phase 9 (最終統合)
-- **目標**: v1.0.0リリース
+- **現在バージョン**: 1.6.0
+- **現在フェーズ**: Phase 63 (最終統合完了)
+- **目標**: リリースビルド
 
 ### 完了フェーズ
 
-- [DONE] Phase 1: 基盤構築
-- [DONE] Phase 2: アセット管理
-- [DONE] Phase 3: ゲームワールド
-- [DONE] Phase 4: NPC＆インタラクション
-- [DONE] Phase 5: 戦闘＆クエスト
-- [DONE] Phase 6: パフォーマンス最適化
-- [DONE] Phase 7: リリース準備
-- [DONE] Phase 8: オーディオシステム
-
-### パフォーマンス
-
-| 指標 | 目標 | 実績 |
-|------|------|------|
-| FPS | 30 fps | 60 fps [DONE] |
-| メモリ | < 1 GB | 40 MB [DONE] |
-| CPU | < 10% | < 0.1% [DONE] |
-| APKサイズ | < 100 MB | 8.4 MB [DONE] |
+| フェーズ | バージョン | 主要成果 |
+|---------|----------|---------|
+| 1-28 | 0.1.0-0.9.10 | コアエンジン、ESM統合 |
+| 29-36 | 0.9.10-1.1.0 | NAVM、Jolt Physics、Radiant AI |
+| 37-41 | 1.2.0-1.6.0 | Script VM、クエスト、ダイアログ、バイナリセーブ |
+| 42-49 | 2.0.0-2.4.0 | ゲームループ、UI/UX、最適化、テスト |
+| 50-57 | 2.5.0-3.2.0 | LOD、SpeedTree、FaceGen、Bink、Gamebryo |
+| 58-63 | 1.1.0-1.6.0 | アセット最適化、圧縮、リリース準備 |
 
 ---
 
 ## よくある質問 (FAQ)
 
-**Q: どのドキュメントから読み始めればよい?**  
-A: このREADME.mdから始めてください。全体像を理解した後、ARCHITECTURE.mdでシステム構造を把握します。
+**Q: どのドキュメントから読み始めればよい?**
+A: ルートのREADME.mdから始めてください。全体像を理解した後、ARCHITECTURE.mdでシステム構造を把握します。
 
-**Q: アセット統合の方法は?**  
-A: ASSET_GUIDE.mdを参照してください。ISO抽出、BSA展開、Androidプロジェクトへの配置方法を詳細に説明しています。
+**Q: アセット統合の方法は?**
+A: ASSET_GUIDE.mdを参照してください。BSA展開、Androidプロジェクトへの配置方法を詳細に説明しています。
 
-**Q: オーディオシステムの実装状況は?**  
-A: AUDIO_SYSTEM.mdを参照してください。OpenAL-Soft統合、JNI Audio Bridge、MediaPlayer連携の詳細があります。
+**Q: オーディオシステムの実装状況は?**
+A: AUDIO_SYSTEM.mdを参照してください。OpenAL-Soft統合、JNI Audio Bridge、EventBus連携の詳細があります。
 
-**Q: 開発履歴を確認したい**  
-A: DEVELOPMENT_HISTORY.mdを参照してください。Phase 1からPhase 9までの全開発履歴が記載されています。
-
-**Q: JNI実装で問題が発生した**  
-A: IMPLEMENTATION_GUIDE.mdのトラブルシューティングセクションを確認してください。一般的なエラーと解決策を記載しています。
-
----
-
-## コントリビューション
-
-このドキュメントを改善するための提案は以下の形式で報告してください:
-
-1. **誤りの報告**: 正確な箇所と修正案を記述
-2. **内容追加**: 不足している内容とその理由を記述
-3. **例示更新**: より良い例やサンプルコードを提案
+**Q: 開発履歴を確認したい**
+A: DEVELOPMENT_HISTORY.mdを参照してください。Phase 1からPhase 63までの全開発履歴が記載されています。
 
 ---
 
@@ -218,11 +175,12 @@ A: IMPLEMENTATION_GUIDE.mdのトラブルシューティングセクションを
 - [OpenAL-Soft](https://openal-soft.org/)
 
 ### 関連ファイル
-- `app/build.gradle` - Gradleビルド設定
-- `app/src/main/cpp/CMakeLists.txt` - CMakeビルド設定
-- `CHANGELOG.md` - 変更履歴
+- [../README.md](../README.md) - メインドキュメント
+- [../Handbook.md](../Handbook.md) - 開発ガイドライン
+- [../CHANGELOG.md](../CHANGELOG.md) - 完全な変更履歴
+- [../RELEASE_NOTES.md](../RELEASE_NOTES.md) - リリース変更点要約
 
 ---
 
-**最終更新**: 2026-08-27  
+**最終更新**: 2026-09-04
 **ステータス**: ドキュメント統合完了

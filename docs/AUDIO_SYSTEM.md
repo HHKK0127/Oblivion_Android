@@ -474,3 +474,4 @@ adb logcat | grep "MainActivity"
 ---
 
 **最終更新**: 2026-08-27
+

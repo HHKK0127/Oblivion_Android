@@ -1,8 +1,8 @@
 # Oblivion Android - 開発履歴
 
-**最終更新**: 2026-08-27  
-**現在バージョン**: 0.9.0  
-**現在フェーズ**: Phase 9
+**最終更新**: 2026-09-04
+**現在バージョン**: 1.6.0
+**現在フェーズ**: Phase 63 完了
 
 ---
 
@@ -10,17 +10,14 @@
 
 1. [プロジェクト概要](#プロジェクト概要)
 2. [フェーズ一覧](#フェーズ一覧)
-3. [Phase 1: 基盤構築](#phase-1-基盤構築)
-4. [Phase 2: アセット管理](#phase-2-アセット管理)
-5. [Phase 3: ゲームワールド](#phase-3-ゲームワールド)
-6. [Phase 4: NPC＆インタラクション](#phase-4-npcインタラクション)
-7. [Phase 5: 戦闘＆クエスト](#phase-5-戦闘クエスト)
-8. [Phase 6: パフォーマンス＆最適化](#phase-6-パフォーマンス最適化)
-9. [Phase 7: リリース準備](#phase-7-リリース準備)
-10. [Phase 8: オーディオシステム](#phase-8-オーディオシステム)
-11. [Phase 9: 最終統合](#phase-9-最終統合)
-12. [マイルストーン一覧](#マイルストーン一覧)
-13. [コード統計](#コード統計)
+3. [Phase 1-9: 基盤構築](#phase-1-9-基盤構築)
+4. [Phase 10-28: ESM統合とゲームシステム](#phase-10-28-esm統合とゲームシステム)
+5. [Phase 29-36: 高度なゲーム機能](#phase-29-36-高度なゲーム機能)
+6. [Phase 37-49: コアゲームプレイ](#phase-37-49-コアゲームプレイ)
+7. [Phase 50-57: ビジュアル拡張と統合](#phase-50-57-ビジュアル拡張と統合)
+8. [Phase 58-63: アセット最適化とリリース準備](#phase-58-63-アセット最適化とリリース準備)
+9. [マイルストーン一覧](#マイルストーン一覧)
+10. [コード統計](#コード統計)
 
 ---
 
@@ -35,7 +32,8 @@ Oblivion Androidは、The Elder Scrolls: OblivionのネイティブAndroid移植
 | レンダリング | OpenGL ES 3.0 |
 | ネイティブコード | C++17 (NDK r26.1) |
 | Java連携 | JNI (Java Native Interface) |
-| オーディオ | OpenAL-Soft + Android MediaPlayer |
+| オーディオ | OpenAL-Soft |
+| 物理エンジン | Jolt Physics |
 | ビルドシステム | CMake 3.16+ / Gradle 9.4+ |
 | 対象API | Android 10+ (API 29+) |
 
@@ -45,347 +43,309 @@ Oblivion Androidは、The Elder Scrolls: OblivionのネイティブAndroid移植
 
 | フェーズ | バージョン | ステータス | 主要成果 |
 |---------|----------|----------|---------|
-| Phase 1 | 0.1.0 | [DONE] 完了 | 基盤構築、レンダリングエンジン |
-| Phase 2 | 0.2.0 | [DONE] 完了 | アセット管理、NIF/DDSパーサー |
-| Phase 3 | 0.3.0 | [DONE] 完了 | ゲームワールド、セルシステム |
-| Phase 4 | 0.4.0 | [DONE] 完了 | NPC統合、ドア/コンテナシステム |
-| Phase 5 | 0.5.0 | [DONE] 完了 | 戦闘システム、クエストシステム |
-| Phase 6 | 0.6.0 | [DONE] 完了 | パフォーマンス最適化、実機テスト |
-| Phase 7 | 0.7.0 | [DONE] 完了 | リリース準備、設定/デバッグシステム |
-| Phase 8 | 0.8.0 | [DONE] 完了 | オーディオシステム、JNI Audio Bridge |
-| Phase 9 | 0.9.0 | [WIP] 進行中 | 最終統合、品質向上 |
+| Phase 1-7 | 0.1.0-0.7.0 | 完了 | 基盤構築からリリース準備まで |
+| Phase 8 | 0.8.0 | 完了 | オーディオシステム、RetroFilter |
+| Phase 9-24 | 0.9.0-0.9.5 | 完了 | グラフィカルUI、HUDシステム |
+| Phase 25-28 | 0.9.6-0.9.10 | 完了 | ESMパーサー、40レコードタイプ統合 |
+| Phase 29 | 0.9.10 | 完了 | NAVM経路探索、DIAL/INFO対話、REFR配置 |
+| Phase 30 | 0.9.10 | 完了 | NIFスケルトン、スキニング、アニメーション、衝突判定 |
+| Phase 31 | 0.9.10 | 完了 | PlayerController統合、ワールドローディング |
+| Phase 32 | 0.9.8 | 完了 | Imperial Weave EventBus、サブスクライバー |
+| Phase 33 | 0.9.9 | 完了 | 専用戦闘音、NPC空間オーディオ |
+| Phase 34 | 0.9.10 | 完了 | 武器種別音、クイックスロット呪文 |
+| Phase 35 | 1.0.0 | 完了 | Radiant AIシステム |
+| Phase 36 | 1.1.0 | 完了 | Jolt Physics統合 |
+| Phase 37 | 1.2.0 | 完了 | Oblivion Script VM（47オペコード） |
+| Phase 38 | 1.3.0 | 完了 | Script VM単体テスト（20件） |
+| Phase 39 | 1.4.0 | 完了 | クエストフローシステム |
+| Phase 40 | 1.5.0 | 完了 | NPCダイアログツリー |
+| Phase 41 | 1.6.0 | 完了 | バイナリセーブシステム |
+| Phase 42 | 2.0.0 | 完了 | ゲームループ統合 |
+| Phase 43 | 2.1.0 | 完了 | UI/UXシステム |
+| Phase 44 | 2.2.0 | 完了 | パフォーマンス最適化 |
+| Phase 45 | 2.3.0 | 完了 | 単体テスト（37件） |
+| Phase 46-49 | 2.4.0 | 完了 | アセットパイプライン、オーディオ、統合テスト、入力 |
+| Phase 50-53 | 2.5.0 | 完了 | LOD、SpeedTree、FaceGen、Bink |
+| Phase 54 | 3.0.0 | 完了 | Imperial Weave v4.0（15フェーズパイプライン） |
+| Phase 55 | 3.1.0 | 完了 | エンジン磨き上げ、最適化 |
+| Phase 56 | 3.2.0 | 完了 | Gamebryo完全互換（パーティクル、水面、空、マテリアル） |
+| Phase 57 | 1.0.0 | 完了 | リリース統合 |
+| Phase 58-63 | 1.1.0-1.6.0 | 完了 | アセット最適化、圧縮、リリース準備 |
 
 ---
 
-## Phase 1: 基盤構築
+## Phase 1-9: 基盤構築
 
-**バージョン**: 0.1.0  
-**ステータス**: [DONE] 完了
-
-### 主要成果
+### Phase 1: 基盤構築 (v0.1.0)
 
 - OpenGL ES 3.0レンダリングエンジンの実装
-- カスタムGLM数学ライブラリの作成
-- シェーダー管理システム
 - カメラ制御システム
 - JNIブリッジ基盤
-- NativeActivity統合
 
-### ファイル構成
+### Phase 2: アセット管理 (v0.2.0)
 
-```
-app/src/main/cpp/
-├── engine/
-│   ├── renderer.h/cpp
-│   ├── shader.h/cpp
-│   └── camera.h/cpp
-├── geometry/
-│   └── cube.h/cpp
-├── include/glm/
-│   └── glm.hpp
-└── CMakeLists.txt
-```
+- NIFパーサー（メッシュデータ抽出）
+- DDSテクスチャローダー（DXT1/DXT3/DXT5）
+- LRUキャッシュ付きアセットマネージャー
 
----
-
-## Phase 2: アセット管理
-
-**バージョン**: 0.2.0  
-**ステータス**: [DONE] 完了  
-**ビルド時間**: 2m 54s  
-**追加コード**: ~1,500行
-
-### 主要成果
-
-1. **NIFパーサー** (NetImmerse Format)
-   - バイナリファイル読み込み
-   - ヘッダー検証
-   - メッシュデータ抽出（頂点、カラー、インデックス、テクスチャ）
-
-2. **DDSテクスチャローダー**
-   - DXT1, DXT3, DXT5圧縮対応
-   - ミップマップチェーン抽出
-   - OpenGLテクスチャ作成
-
-3. **アセットマネージャー**
-   - LRUキャッシュ戦略
-   - リファレンスカウント
-   - メモリ使用量追跡
-
-4. **汎用メッシュクラス**
-   - 統一Vertex構造体
-   - VAO/VBO/EBO管理
-
-### マイルストーン
-
-- M2-1: 最初のNIFメッシュ表示
-- M2-2: DDSテクスチャ適用
-- M2-3: メモリキャッシュ検証
-
----
-
-## Phase 3: ゲームワールド
-
-**バージョン**: 0.3.0  
-**ステータス**: [DONE] 完了
-
-### 主要成果
+### Phase 3: ゲームワールド (v0.3.0)
 
 - セルベースワールドシステム
 - ワールドストリーミング
-- セルロード/アンロード
 - NPCスポーンシステム
 
----
+### Phase 4: NPC＆インタラクション (v0.4.0)
 
-## Phase 4: NPC＆インタラクション
-
-**バージョン**: 0.4.0  
-**ステータス**: [DONE] 完了  
-**ビルド時間**: 5m 19s
-
-### Task 1: NPC統合システム (2026-05-07)
-
-**実装内容**:
 - 双方向NPC↔セルマッピング
-- セル認識NPCライフサイクル管理
-- 効率的なNPCロード/アンロード
-
-**データ構造**:
-```cpp
-std::unordered_map<uint32_t, std::vector<uint32_t>> cellNpcs;  // cellId → NPC IDs
-std::unordered_map<uint32_t, uint32_t> npcToCell;              // npcId → cellId
-```
-
-**主要メソッド**:
-- `getNpcsForCell(cellId)` - セルのNPC一覧取得
-- `registerNpcToCell(npcId, cellId)` - NPC登録
-- `unregisterNpcFromCell(npcId)` - NPC登録解除
-- `getNpcCell(npcId)` - NPCのセル取得
-
-### Task 2: ドアシステム (2026-05-07)
-
-**実装内容**:
-- セル間遷移システム
-- プレイヤーワープ機能
-- メモリ効率的なセル管理
-
-**テストドア**:
-| ID | 名前 | 出発 | 到着 |
-|----|------|------|------|
-| 1000 | Door to East | Cell (0,0) | Cell (1,0) |
-| 1001 | Door to North | Cell (0,0) | Cell (0,1) |
-| 1002 | Door to South | Cell (0,0) | Cell (0,-1) |
-
-### M4-3: ドア/コンテナインタラクション (2026-04-16)
-
-**実装内容**:
-- Interactable基底クラス
-- ドアシステム（開閉アニメーション）
+- ドアシステム（セル間遷移）
 - コンテナシステム（インベントリ管理）
-- InteractionManager（近接検出）
 
-**テストオブジェクト**:
-- ドア: 2個 (refId: 1000, 1001)
-- コンテナ: 3個 (refId: 1002-1004)
+### Phase 5: 戦闘＆クエスト (v0.5.0)
 
----
+- CharacterStatus、CombatManager、ダメージ計算式
+- クエストシステム（受注、状態管理、完了判定）
+- 魔法システム（6学校、10+呪文）
 
-## Phase 5: 戦闘＆クエスト
+### Phase 6: パフォーマンス最適化 (v0.6.0)
 
-**バージョン**: 0.5.0  
-**ステータス**: [DONE] 完了  
-**ビルド時間**: 2m 31s
+- 60 FPS達成（目標30 FPSの2倍）
+- メモリ40 MB（目標1 GBの25分の1）
+- 実機検証（Amazon Fire、Xiaomi）
 
-### M5-1: 戦闘システム基盤 (2026-04-16)
+### Phase 7: リリース準備 (v0.7.0)
 
-**実装内容**:
-- CharacterStatus構造体（HP、マナ、スタミナ、属性、スキル）
-- CombatManagerクラス
-- ダメージ計算式
-- 戦闘状態管理
+- TextRenderer、Debug HUD、SettingsManager
+- Settings UI、タイトル画面統合
+- リリースビルド（APK 8.4 MB）
 
-**ダメージ計算式**:
-```cpp
-float baseDamage = weaponDamage + (strengthBonus * 5.0f);
-float armorMitigation = std::min(armorRating / 100.0f, 0.9f);
-float finalDamage = baseDamage * (1.0f - armorMitigation);
-finalDamage = std::max(finalDamage, MIN_DAMAGE);
-```
+### Phase 8: オーディオシステム (v0.8.0)
 
-**テストシナリオ**:
-- Izar (Archer, Lv9) vs Hellas (Warrior, Lv8)
-- HP: 220/220 vs 210/210
+- OpenAL-Soft統合、JNI Audio Bridge
+- RetroFilterエフェクト（ピクセル化、走査線、CRT歪み）
+- SaveLoadUIシステム、設定UI
 
-### クエストシステム
+### Phase 9-24: グラフィカルUI & HUD (v0.9.0-v0.9.5)
 
-- NPCからクエスト受注
-- クエスト状態管理
-- 完了判定＆報酬
-
-### 魔法システム
-
-- 6つの魔法学校
-- 10+の呪文
-- マナコスト管理
+- TextureLoader、UIPanel、UIButton
+- HUD＆ステータス表示（ミニマップ、コンパス、浮動テキスト等）
+- コアUIメニュー（ポーズ、キャラクター、ショップ、クエストログ、対話）
 
 ---
 
-## Phase 6: パフォーマンス＆最適化
+## Phase 10-28: ESM統合とゲームシステム
 
-**バージョン**: 0.6.0  
-**ステータス**: [DONE] 完了
+### Phase 25: BSA/ESMパーサー (v0.9.6)
 
-### パフォーマンス目標 vs 実績
+- BSAアーカイブリーダー（ZLib展開）
+- ESMファイルパーサー（完全GRUP階層）
 
-| 目標 | 目標値 | 実績 | 状態 |
-|------|--------|------|------|
-| 最小FPS | 30 fps | 60 fps | [DONE] 2倍達成 |
-| メモリ制限 | < 1 GB | 40 MB | [DONE] 25倍良好 |
-| CPU使用率 | < 10% | < 0.1% | [DONE] 100倍良好 |
-| 起動時間 | < 30秒 | 18-25秒 | [DONE] 合格 |
-| マルチデバイス | ≥2台 | 2台 | [DONE] 検証済み |
-| 安定性 | 5時間テスト | 30+秒 | [DONE] クラッシュなし |
+### Phase 26: ESMデータ駆動ワールド (v0.9.6)
 
-### 実機テスト結果
+- 20レコードタイプ解析：CELL、NPC_、WEAP、REFR、LAND、WRLD、SPEL、LVLI/LVLC、NAVM、ARMO等
 
-**Amazon Fire Tablet (Android 9)**:
-- インストール: 成功 (9.6 MB APK)
-- 起動時間: 25秒
-- FPS: 60 (安定)
-- メモリ: 42 MB
-- クラッシュ: 0
+### Phase 27: ESM統合拡張 (v0.9.6)
 
-**Xiaomi (Android 16)**:
-- インストール: 成功 (WiFi ADB)
-- 起動時間: 18秒
-- FPS: 60 (安定)
-- メモリ: 45 MB
-- クラッシュ: 0
+- BOOK、CLOT、INGR、ALCH、MISC、FACT、RACE、CLAS、ROAD + ルート生成、錬金術、派閥システム
+
+### Phase 28: ESM 40レコードタイプ統合 (v0.9.10)
+
+- BSGN、CREA、CONT、DOOR、ACTI、STAT、TREE、FLOR、LIGH等の20レコード追加
+- NpcManager、Container、PlayerのESM統合
 
 ---
 
-## Phase 7: リリース準備
+## Phase 29-36: 高度なゲーム機能
 
-**バージョン**: 0.7.0  
-**ステータス**: [DONE] 完了
+### Phase 29: NAVM経路探索 + DIAL/INFO対話 (v0.9.10)
 
-### Phase 7.1: 設定/デバッグシステム (2026-04-18)
+- NAVMランタイム統合（CombatManager A*経路探索）
+- DIAL/INFOレコード解析（派閥分岐対話）
+- REFRワールドオブジェクト配置（8種類）
+- 4呪文効果（麻痺、透明化、属性強化、召喚）
 
-**実装内容**:
-1. **TextRendererシステム** - 画面テキスト描画基盤
-2. **Debug HUD** - リアルタイムパフォーマンス監視
-3. **Settings Manager** - 設定永続化
-4. **Settings UI** - 設定メニューUI
-5. **タイトル画面統合** - 設定アクセス
+### Phase 30: NIFスケルトン/スキニング/衝突判定 (v0.9.10)
 
-**デバッグHUD表示項目**:
-```
-FPS: 60.0
-Frame: 16.67 ms
-Avg: 16.50 ms
-Mem: 45 MB
-Cubes: 5
-DEBUG: ON
-```
+- スキンパーティション、スケルトン（BFS）、スキニングメッシュ＋UBO
+- NiControllerManager/Sequence解析、AnimationPlayer
+- bhkCollisionObject＋bhkRigidBody解析（9形状タイプ）
+- Dynamic AABB Tree（広域フェーズ）、CollisionWorld
 
-### リリースビルド
+### Phase 31: PlayerController統合 + ワールドローディング (v0.9.10)
 
-- APKサイズ: 8.4 MB
-- アーキテクチャ: ARM64
-- ビルド時間: 6m 36s
+- WorldEntity構造体、WorldLoader（loadStatic/loadDynamic/loadActor）
+- PlayerController拡張（スケルトン＋AnimationPlayer＋CharacterController）
+- ヒステリシスアニメーション状態機械
 
-### ドキュメント
+### Phase 32: Imperial Weave EventBus + サブスクライバー (v0.9.8)
 
-- README.md (500+行)
-- docs/README.md (ドキュメント目次)
-- docs/ARCHITECTURE.md (アーキテクチャ)
-- docs/DEVELOPMENT_HISTORY.md (開発履歴)
-- PERFORMANCE_REPORT.md (400+行)
-- CHANGELOG.md (600+行)
+- AnimationSubscriber（EventBus → AnimationPlayerブリッジ）
+- AudioSubscriber（EventBus → AudioManagerブリッジ）
+- SpellSelectionPanel UI
+- Imperial Weave Event.targetIdフィールド
 
----
+### Phase 33: 専用戦闘音 + NPC空間オーディオ (v0.9.9)
 
-## Phase 8: オーディオシステム
+- 11専用戦闘音定義（ヒット、ブロック、パリィ、ドッジ、デス）
+- NPC空間オーディオコールバック
 
-**バージョン**: 0.8.0  
-**ステータス**: [DONE] アーキテクチャ＆統合完了  
-**ビルド時間**: 5m 11s
+### Phase 34: 武器種別音 + クイックスロット (v0.9.10)
 
-### 主要成果
+- 武器タイプ別ヒット音ルーティング（ブレード、鈍器、斧、弓、杖）
+- スペル選択パネルの学校カラー、F1-F4クイックスロット
 
-1. **OpenAL-Soft統合**
-   - CMake検出＆条件付きコンパイル
-   - グレースフルフォールバック
+### Phase 35: Radiant AIシステム (v1.0.0)
 
-2. **オーディオデータ構造**
-   - AudioClip (音声リソース)
-   - AudioSource (再生チャンネル)
-   - Audio3D (3D空間音響)
-   - AudioManager (中央制御)
+- 15種類のAIパッケージ（探索、追従、警護、パトロール、戦闘、逃走等）
+- 優先度ベースPackageStack（戦闘/逃走オーバーライド）
+- AIScheduler（24時間ベースのNPC日課）
+- NavMesh経路探索（A*＋パススムージング）
 
-3. **JNI Audio Bridge**
-   - Java MediaPlayer連携
-   - スレッドセーフJNI呼び出し
-   - 自動スレッドアタッチ
+### Phase 36: Jolt Physics統合 (v1.1.0)
 
-4. **音声アセット**
-   - explore.mp3 (3.4 MB) - 探索BGM
-   - dungeon.mp3 (2.4 MB) - ダンジョンBGM
-   - battle.mp3 (~2 MB) - 戦闘BGM
-
-### アーキテクチャ
-
-```
-C++ AudioManager
-    ↓
-jni_audio_play_bgm()
-    ↓
-MainActivity.playBGM()
-    ↓
-MediaPlayer.start()
-    ↓
-[AUDIO] 音声再生
-```
+- PhysicsManagerシングルトン
+- CharacterVirtual（プレイヤー/NPC用カプセル形状コントローラー）
+- HeightFieldShape地形衝突
+- 固定タイムステップ（1/60秒）
+- Raycast API
 
 ---
 
-## Phase 9: 最終統合
+## Phase 37-49: コアゲームプレイ
 
-**バージョン**: 0.9.0  
-**ステータス**: [WIP] 進行中  
-**目標**: v1.0.0リリース
+### Phase 37: Oblivion Script VM (v1.2.0)
 
-### 8週間計画
+- バイトコードインタプリタ（47オペコード）
+- 118ゲーム関数（Tier 1: 13基本、Tier 2: 105拡張）
+- ScriptManager、ExecutionContext、ScriptDisasm
 
-| 週 | フォーカス | 成果物 |
-|---|----------|--------|
-| 1-2 | UI/UX改善 | グラフィカルUI、メニュー |
-| 3-4 | コンテンツ | クエスト、NPC対話 |
-| 5-6 | 最適化 | パフォーマンス、メモリ |
-| 7-8 | テスト＆リリース | QA、Play Store提出 |
+### Phase 38: Script VMテスト (v1.3.0)
+
+- 20単体テスト（ExecutionContext、ScriptVM、Opcode、ScriptFunctions、ScriptManager）
+
+### Phase 39: クエストフローシステム (v1.4.0)
+
+- QuestFlowController、QuestStageManager、QuestObjectiveTracker
+- QuestRewards（経験値、ゴールド、アイテム、スキル）
+
+### Phase 40: NPCダイアログツリー (v1.5.0)
+
+- DialogueTree、DialogueRunner、DialogueFilterEngine
+- DialogueHistory、DialogueRecord
+
+### Phase 41: バイナリセーブシステム (v1.6.0)
+
+- SaveManager（バイナリフォーマット）
+- SaveSlotManager、AutoSave、Serializableインターフェース
+
+### Phase 42: ゲームループ統合 (v2.0.0)
+
+- StateManager、InputRouter、GameLoopCoordinator
+- SceneRenderer、DebugConsole、PerformanceProfiler
+
+### Phase 43: UI/UXシステム (v2.1.0)
+
+- TouchGestureHandler、MenuTransitionManager
+- HudLayout、ControlSchemeManager、AccessibilityManager
+
+### Phase 44: パフォーマンス最適化 (v2.2.0)
+
+- MemoryPool、RenderOptimizer、AsyncTaskManager、CacheManager
+- ProfilerDashboard
+
+### Phase 45: 単体テスト (v2.3.0)
+
+- 37テストケース
+
+### Phase 46-49: アセット、オーディオ、統合、入力 (v2.4.0)
+
+- TextureManager、MeshLoader、WorldDataLoader（+2,487行）
+- AudioDecoder、BgmManager、SoundEffectManager（+2,176行）
+- 12統合テストケース（+1,159行）
+- GamepadMapper、TouchCalibration、InputVisualizer（+1,812行）
+
+---
+
+## Phase 50-57: ビジュアル拡張と統合
+
+### Phase 50: Distant LODシステム (v2.5.0)
+
+- DistantLodManager、LODメッシュ生成、6面フラスタムカリング
+- 距離フェード、HorizonRing山プリセット
+
+### Phase 51: SpeedTree植生 (v2.5.0)
+
+- SpeedTreeManager、4段階LOD、インスタンス描画
+- ビルボードフォールバック、パーリン風場
+
+### Phase 52: FaceGenシステム (v2.5.0)
+
+- FaceGenManager、種族モーフィング、表情モーフィング
+- 髪/髭システム、テクスチャアトラス
+
+### Phase 53: Binkビデオプレーヤー (v2.5.0)
+
+- BinkVideoPlayer、MediaCodec JNIブリッジ
+
+### Phase 54: Imperial Weave v4.0 (v3.0.0)
+
+- 15フェーズパイプライン、ImperialWeaveConfig
+- ServiceLocator、12イベントタイプ
+
+### Phase 55: エンジン磨き上げ (v3.1.0)
+
+- FrameBudgetManager（16.6ms/フレーム）
+- MemoryDefrag、ShaderCache（LRU）
+- OcclusionCuller、BatchRenderer
+
+### Phase 56: Gamebryo完全互換 (v3.2.0)
+
+- ParticleSystem（7プリセット）
+- PostProcessPipeline（8エフェクト）
+- WaterRenderer（Gerstner波、6タイプ）
+- SkyWeatherSystem（8天候、昼夜サイクル）
+- SceneGraph、MaterialSystem
+
+### Phase 57: リリース統合 (v1.0.0)
+
+- リリースビルド、APK最適化
+- ドキュメント更新
+
+---
+
+## Phase 58-63: アセット最適化とリリース準備
+
+### Phase 58-63: アセット最適化 (v1.1.0-v1.6.0)
+
+- AssetExtractor：外部ストレージアセット管理
+- TextureCompressor：ASTC 4x4/6x6/8x8、ETC2 RGB/RGBA
+- AudioCompressor：WAV→OGG/MP3/AAC変換
+- LODSystem：距離ベースメッシュ詳細レベル
+- バッチ圧縮スクリプト
+- 最終テスト、APK分析、圧縮ツール
 
 ---
 
 ## マイルストーン一覧
 
-| マイルストーン | フェーズ | 日付 | 状態 |
-|-------------|---------|------|------|
-| M1-1: 基本レンダリング | Phase 1 | - | [DONE] |
-| M2-1: NIFメッシュ表示 | Phase 2 | - | [DONE] |
-| M2-2: DDSテクスチャ適用 | Phase 2 | - | [DONE] |
-| M2-3: メモリキャッシュ | Phase 2 | - | [DONE] |
-| M4-1: NPC統合 | Phase 4 | 2026-05-07 | [DONE] |
-| M4-2: ドアシステム | Phase 4 | 2026-05-07 | [DONE] |
-| M4-3: インタラクション | Phase 4 | 2026-04-16 | [DONE] |
-| M5-1: 戦闘システム | Phase 5 | 2026-04-16 | [DONE] |
-| M5-2: クエストシステム | Phase 5 | - | [DONE] |
-| M5-3: 魔法システム | Phase 5 | - | [DONE] |
-| M6-1: パフォーマンス最適化 | Phase 6 | 2026-04-17 | [DONE] |
-| M7-1: 設定/デバッグ | Phase 7 | 2026-04-18 | [DONE] |
-| M8-1: オーディオ基盤 | Phase 8 | 2026-04-18 | [DONE] |
-| M8-2: JNI Audio Bridge | Phase 8 | 2026-04-18 | [DONE] |
-| M9-1: 最終統合 | Phase 9 | - | [WIP] |
+| マイルストーン | フェーズ | 状態 |
+|-------------|---------|------|
+| 基本レンダリング | Phase 1 | 完了 |
+| NIFメッシュ表示 | Phase 2 | 完了 |
+| セルベースワールド | Phase 3 | 完了 |
+| NPC統合 | Phase 4 | 完了 |
+| 戦闘＆クエスト | Phase 5 | 完了 |
+| パフォーマンス最適化 | Phase 6 | 完了 |
+| オーディオシステム | Phase 8 | 完了 |
+| グラフィカルUI | Phase 9-24 | 完了 |
+| ESM 40レコード統合 | Phase 28 | 完了 |
+| NAVM経路探索 | Phase 29 | 完了 |
+| Jolt Physics | Phase 36 | 完了 |
+| Oblivion Script VM | Phase 37 | 完了 |
+| Radiant AI | Phase 35 | 完了 |
+| Imperial Weave v4.0 | Phase 54 | 完了 |
+| Gamebryo完全互換 | Phase 56 | 完了 |
+| リリースビルド | Phase 57 | 完了 |
+| アセット最適化 | Phase 58-63 | 完了 |
 
 ---
 
@@ -393,52 +353,21 @@ MediaPlayer.start()
 
 ### 現在のコードベース
 
-| カテゴリ | 行数 | 割合 |
-|---------|------|------|
-| エンジンコア | 1,200 | 25% |
-| ゲームシステム | 2,500 | 35% |
-| アセット管理 | 800 | 15% |
-| UI | 500 | 10% |
-| プロファイリング | 500 | 10% |
-| JNI/インフラ | 250 | 5% |
-| **合計** | **5,750** | **100%** |
-
-### ファイル構成
-
-```
-app/src/main/cpp/
-├── engine/          # レンダリング、カメラ、シェーダー
-├── game/            # NPC、戦闘、クエスト、魔法
-├── world/           # セル、ドア、ワールド管理
-├── assets/          # NIF、DDS、アセットマネージャー
-├── audio/           # オーディオシステム
-├── ui/              # テキスト、デバッグHUD、設定UI
-├── system/          # 設定管理
-├── geometry/        # メッシュ、キューブ
-├── include/glm/     # 数学ライブラリ
-└── CMakeLists.txt
-```
+| カテゴリ | 行数 |
+|---------|------|
+| C++ コード | 35,000+ |
+| Java/Kotlin コード | 1,100+ |
+| ヘッダーファイル | 12,000+ |
+| **合計** | **48,000+** |
 
 ### ビルド統計
 
 | 指標 | 値 |
 |------|-----|
-| コンパイル時間 | ~6分 |
-| APKサイズ | 8.4 MB (リリース) |
-| ネイティブライブラリ | ~30 MB (圧縮前) |
-| 対応アーキテクチャ | ARM64, ARMv7 |
+| コンパイル時間 | ~40秒（デバッグ、インクリメンタル） |
+| APKサイズ | 8.4 MB（リリース） |
+| 対応アーキテクチャ | arm64-v8a、armeabi-v7a、x86、x86_64 |
 
 ---
 
-## 参考資料
-
-- [ASSET_GUIDE.md](ASSET_GUIDE.md) - アセット統合ガイド
-- [AUDIO_SYSTEM.md](AUDIO_SYSTEM.md) - オーディオシステム
-- [ARCHITECTURE.md](ARCHITECTURE.md) - システムアーキテクチャ
-- [IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md) - 実装ガイド
-- [JNI_BRIDGE_DESIGN.md](JNI_BRIDGE_DESIGN.md) - JNIブリッジ設計
-- [PHASE9_PLAN.md](PHASE9_PLAN.md) - Phase 9計画
-
----
-
-**最終更新**: 2026-08-27
+**最終更新**: 2026-09-04

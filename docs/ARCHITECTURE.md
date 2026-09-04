@@ -11,12 +11,9 @@ This document describes the architecture and design patterns used in the Oblivio
 
 ```
 MainActivity
-    ↓
-GameSurfaceView (GLSurfaceView)
-    ↓
-GameRenderer (Renderer callback)
-    ↓
-JNI Bridge (native-lib.cpp)
+    -> GameSurfaceView (GLSurfaceView)
+    -> GameRenderer (Renderer callback)
+    -> JNI Bridge (native-lib.cpp)
 ```
 
 **Key Classes**:
@@ -25,7 +22,7 @@ JNI Bridge (native-lib.cpp)
 - `GameRenderer.java` - Implements GLSurfaceView.Renderer
 
 ### 2. JNI Bridge Layer (C++)
-**Responsibility**: Java ↔ C++ communication, lifecycle callbacks
+**Responsibility**: Java <-> C++ communication, lifecycle callbacks
 
 **Key Function**:
 ```cpp
@@ -42,11 +39,13 @@ Calls into Renderer::render() for each frame.
 
 ```
 Renderer
-├── OpenGL ES 3.0 Context
-├── ShaderProgram (Vertex + Fragment)
-├── Camera (View Matrix)
-├── Viewport Management
-└── Frame Rendering Pipeline
+|-- OpenGL ES 3.0 Context
+|-- ShaderProgram (Vertex + Fragment)
+|-- Camera (View Matrix)
+|-- Viewport Management
+|-- Frame Rendering Pipeline
+|-- SkinShader (skinned mesh rendering)
+`-- RetroFilter (optional pixelation, scanlines, CRT)
 ```
 
 **Key Methods**:
@@ -54,71 +53,157 @@ Renderer
 - `Renderer::render()` - Main game loop
 - `Renderer::cleanup()` - Resource cleanup
 
-#### 3.2 UI System
-**Files**: `ui/text_renderer.h/cpp`, `ui/title_screen.h/cpp`, `ui/quest_ui.h/cpp`, `ui/debug_hud.h/cpp`, `ui/settings_ui.h/cpp`
+#### 3.2 Imperial Weave (Update Coordinator)
+**Files**: `engine/imperial_weave.h/cpp`
+
+The central update coordinator using a **15-phase pipeline** with loose-coupled EventBus messaging.
+
+```
+ImperialWeave::update(dt)
+    Phase 1:  EventProcess
+    Phase 2:  World
+    Phase 3:  AI
+    Phase 4:  Player
+    Phase 5:  Inventory
+    Phase 6:  Spell
+    Phase 7:  Animation
+    Phase 8:  Physics
+    Phase 9:  Combat
+    Phase 10: Quest
+    Phase 11: Audio
+    Phase 12: RenderSubmit
+```
+
+**EventBus** (`engine/event_bus.h`):
+- Loose-coupled messaging between systems
+- Systems emit events without knowing subscribers
+- Type-safe via `type_index` (compiler-independent)
+- Shared_ptr handlers (copy avoidance)
+
+**Example attack flow**:
+```
+ATK button -> PlayerController.attack()
+           -> CombatManager.playerAttack()
+           -> EventBus emit "COMBAT_ATTACK_HIT"
+                +-- AnimationSubscriber -> target plays hit-reaction anim
+                +-- AudioSubscriber     -> combat hit SE (weapon-type routed)
+                +-- UIFloatingText      -> "Hit!" appears on screen
+```
+
+**Key principle**: Systems emit events. They do not call other systems directly.
+
+#### 3.3 Subscriber Bridges
+**Files**: `animation/animation_subscriber.h/cpp`, `audio/audio_subscriber.h/cpp`
+
+Thin, EventBus-driven bridges that do not own any systems:
+
+- **AnimationSubscriber**: Listens for combat events -> maps AnimState to animation names -> plays via AnimationPlayer
+- **AudioSubscriber**: Listens for combat/animation events -> maps events to sound definitions -> plays via AudioManager with 3D positioning
+
+#### 3.4 UI System
+**Files**: `ui/*.h/cpp`
 
 ```
 TextRenderer (Text Rendering Foundation)
-    ↓
-├── TitleScreen (3-second logo + menu)
-├── QuestUI (Quest log display)
-├── DebugHUD (FPS, memory, frame time)
-└── SettingsUI (Settings menu overlay)
+    |-- TitleScreen (3-second logo + menu)
+    |-- QuestUI (Quest log display)
+    |-- DebugHUD (FPS, memory, frame time)
+    |-- SettingsUI (Settings menu overlay)
+    |-- UIPanel (draggable container with background texture)
+    |-- UIButton (multi-state textured button)
+    |-- SpellSelectionPanel (draggable spell picker)
+    |-- FloatingText (damage/effect indicators)
+`-- InventoryPanel (item management)
 ```
-
-**Architecture Pattern**: State Machine (TitleScreenState enum)
 
 **State Flow**:
 ```
-LOGO_DISPLAY (3 sec)
-    ↓
-MENU (show options)
-    ↓
-[Settings Selected]
-    ↓
-SettingsUI Toggle
-    ↓
-[Back]
-    ↓
-MENU
+LOGO_DISPLAY (3 sec) -> MENU -> [Settings] -> SettingsUI -> [Back] -> MENU
+                                                    -> [Start Game] -> GAME
 ```
 
-#### 3.3 System Layer
-**Files**: `system/settings_manager.h/cpp`
-
-```
-SettingsManager
-├── debugModeEnabled (bool)
-├── currentLanguage (string: "ja"/"en")
-├── Persistent File: /data/data/com.example.oblivion/settings.txt
-└── Methods: save(), load(), reset()
-```
-
-**Persistence Format**:
-```
-DEBUG_MODE=1
-LANGUAGE=ja
-```
-
-#### 3.4 Game Systems Layer
+#### 3.5 Game Systems Layer
 **Files**: `game/*.h/cpp`
 
 ```
-WorldManager (Cell/Object Management)
-NpcManager (100+ NPCs, AI state machine)
-CombatManager (Damage calculation, AI combat)
-QuestManager (Quest state, progression)
-SpellManager (6 schools, 10+ spells)
-LocalizationManager (Japanese/English)
-SaveManager (Game state serialization)
+WorldManager       (Cell/Object streaming, NIF/DDS loading)
+NpcManager         (100+ NPCs, AI state machine, AI packages)
+CombatManager      (9 weapon types, hitbox, critical, block/parry/dodge)
+QuestManager       (Multi-objective quests, rewards)
+SpellManager       (6 schools, 10+ spells)
+PlayerController   (Movement, combat, input handling)
+InventoryManager   (Item management, equipment effects)
+SpellManager       (Spell casting, mana management)
 ```
 
 Each manager follows the standard pattern:
 ```cpp
-bool initialize();  // One-time setup
-void update(float deltaTime);  // Per-frame logic
-void cleanup();  // Resource deallocation
+bool initialize();            // One-time setup
+void update(float deltaTime); // Per-frame logic
+void cleanup();               // Resource deallocation
 ```
+
+#### 3.6 AI System
+**Files**: `ai/*.h/cpp`
+
+- **AIScheduler**: 24-hour time-based NPC management
+- **15 AI Package Types**: Explore, Follow, Guard, Patrol, Travel, Eat, Sleep, Combat, Flee, Idle, Wander, Activation, Conversation, Sandbox
+- **PackageStack**: Priority-based package management (combat/flee override)
+- **NavMeshManager**: A* pathfinding on NAVM data, path smoothing, stuck detection
+
+#### 3.7 Physics System
+**Files**: `physics/*.h/cpp`
+
+- **PhysicsManager**: Jolt Physics singleton with custom settings
+- **CharacterVirtual**: Capsule-based player/NPC character controllers
+- **HeightFieldShape**: Terrain collision from ESM LAND data
+- **Raycast API**: World-space ray queries (line-of-sight, combat, interaction)
+- Fixed timestep (1/60s) for deterministic simulation
+- Runs in Imperial Weave Physics phase (phase 8)
+
+#### 3.8 Script VM
+**Files**: `script/*.h/cpp`
+
+- **ScriptVM**: Bytecode interpreter with 47 opcodes
+- **ScriptManager**: Per-frame execution with budget control (1000 instructions/frame)
+- **ScriptFunctions**: 118 Oblivion game functions
+- **ExecutionContext**: Per-script state (RPN stack, local variables, references)
+
+#### 3.9 World & Asset Layer
+**Files**: `world/*.h/cpp`, `assets/*.h/cpp`
+
+```
+WorldManager       (Cell loading/unloading, seamless transitions)
+WorldLoader        (Static/dynamic/actor loading, entity storage)
+BSA Reader         (Archive extraction, ZLib decompression)
+ESM Reader         (40 record types from Oblivion.esm)
+NIF Parser         (Mesh, skeleton, skinning, collision)
+DDS Loader         (DXT1/DXT3/DXT5 texture loading)
+AssetManager       (LRU cache, reference counting)
+```
+
+#### 3.10 Animation & Audio Layer
+**Files**: `animation/*.h/cpp`, `audio/*.h/cpp`
+
+```
+AnimationPlayer    (Sequence playback, slerp/lerp, text keys)
+Skeleton           (Bone hierarchy, BFS traversal)
+AudioManager       (OpenAL-Soft, BGM, SFX, definition loading)
+Audio3D            (3D spatial audio, distance attenuation)
+AudioSubscriber    (EventBus -> AudioManager bridge)
+```
+
+#### 3.11 System & Persistence Layer
+**Files**: `save_system/*.h/cpp`, `system/*.h/cpp`, `profiling/*.h/cpp`
+
+```
+SaveManager        (Binary format, full system serialization)
+SettingsManager    (Persistent debug mode and language preferences)
+PerformanceMonitor (Frame timing, memory, CPU profiling)
+LocalizationManager (Japanese/English, 100+ translations)
+```
+
+---
 
 ## Component Integration
 
@@ -128,23 +213,30 @@ The `Renderer` class orchestrates all systems:
 
 ```cpp
 class Renderer {
+    // Imperial Weave (Update Coordinator)
+    std::unique_ptr<ImperialWeave> imperialWeave;
+
+    // Subscribers (thin bridges)
+    std::unique_ptr<AnimationSubscriber> animSubscriber;
+    std::unique_ptr<AudioSubscriber> audioSubscriber;
+
     // UI Systems
     std::unique_ptr<TitleScreen> titleScreen;
-    std::unique_ptr<QuestUI> questUI;
-    std::unique_ptr<TextRenderer> textRenderer;
+    std::unique_ptr<SpellSelectionPanel> spellPanel;
     std::unique_ptr<DebugHUD> debugHUD;
     std::unique_ptr<SettingsUI> settingsUI;
-    
+
     // Game Systems
     std::unique_ptr<WorldManager> worldManager;
     std::unique_ptr<NpcManager> npcManager;
     std::unique_ptr<CombatManager> combatManager;
     std::unique_ptr<QuestManager> questManager;
     std::unique_ptr<SpellManager> spellManager;
-    
+    std::unique_ptr<PlayerController> playerController;
+    std::unique_ptr<PhysicsManager> physicsManager;
+
     // System Layer
     std::unique_ptr<SettingsManager> settingsManager;
-    std::unique_ptr<LocalizationManager> localizationManager;
     std::unique_ptr<SaveManager> saveManager;
     std::unique_ptr<PerformanceMonitor> performanceMonitor;
 };
@@ -154,63 +246,56 @@ class Renderer {
 
 ```
 Renderer::init()
-    │
-    ├─→ SettingsManager::initialize()    [Load persistent settings]
-    ├─→ LocalizationManager::initialize() [Load language strings]
-    ├─→ WorldManager::initialize()        [Create world/cells]
-    ├─→ NpcManager::initialize()          [Spawn NPCs]
-    ├─→ CombatManager::initialize()       [Link with WorldManager]
-    ├─→ QuestManager::initialize()        [Link with NpcManager]
-    ├─→ SpellManager::initialize()        [Load spell database]
-    ├─→ TextRenderer::initialize()        [Prepare font rendering]
-    ├─→ DebugHUD::initialize()            [Link with PerformanceMonitor]
-    ├─→ SettingsUI::initialize()          [Link with SettingsManager]
-    ├─→ TitleScreen::initialize()         [Link with LocalizationManager]
-    └─→ QuestUI::initialize()             [Link with QuestManager]
+    |
+    +-> SettingsManager::initialize()    [Load persistent settings]
+    +-> LocalizationManager::initialize() [Load language strings]
+    +-> PhysicsManager::initialize()     [Jolt Physics world]
+    +-> WorldManager::initialize()       [Create world/cells]
+    +-> NpcManager::initialize()         [Spawn NPCs]
+    +-> PlayerController::initialize()   [Character controller]
+    +-> CombatManager::initialize()      [Link with WorldManager]
+    +-> QuestManager::initialize()       [Link with NpcManager]
+    +-> SpellManager::initialize()       [Load spell database]
+    +-> AnimationSubscriber::initialize() [Connect EventBus]
+    +-> AudioSubscriber::initialize()    [Connect EventBus]
+    +-> ImperialWeave::initialize()      [Wire all phases]
+    +-> TextRenderer::initialize()       [Prepare font rendering]
+    +-> DebugHUD::initialize()           [Link with PerfMonitor]
+    +-> SettingsUI::initialize()         [Link with SettingsManager]
+    +-> TitleScreen::initialize()        [Link with LocalizationManager]
 ```
 
 ### Main Game Loop
 
-```cpp
+```
 Renderer::render(float deltaTime)
-    │
-    ├─→ if (showTitleScreen) {
-    │       titleScreen->update(deltaTime)
-    │       titleScreen->render()
-    │       [Check if Settings requested → toggle SettingsUI]
-    │   } else {
-    │       [Normal Game Rendering]
-    │       worldManager->update(deltaTime)
-    │       npcManager->update(deltaTime)
-    │       combatManager->update(deltaTime)
-    │       questManager->update(deltaTime)
-    │       [Render game world]
-    │       debugHUD->update(deltaTime)
-    │       debugHUD->render() [if debugModeEnabled]
-    │       questUI->render()
-    │   }
-    │
-    └─→ return
+    |
+    +-> if (showTitleScreen) {
+    |       titleScreen->update(deltaTime)
+    |       titleScreen->render()
+    |   } else {
+    |       imperialWeave->update(deltaTime)
+    |       [Imperial Weave orchestrates all systems via 15-phase pipeline]
+    |       [EventBus distributes events to subscribers]
+    |       debugHUD->update(deltaTime)
+    |       debugHUD->render() [if debugModeEnabled]
+    |   }
 ```
 
-### Touch Event Priority
+---
 
-```cpp
-Renderer::onTouchEvent(x, y)
-    │
-    ├─→ SettingsUI (highest priority)
-    │   [If visible, handle and return]
-    │
-    ├─→ TitleScreen (if active)
-    │   [If showing, handle menu/logo and return]
-    │
-    └─→ QuestUI (lowest priority)
-        [If visible, handle and return]
-```
+## Namespace Architecture
+
+| Namespace | Classes |
+|-----------|---------|
+| Global | Renderer, WorldManager, NpcManager, CombatManager, QuestManager, CollisionWorld, PlayerController, InventoryManager, SpellManager, AudioManager, EquipmentEffectSystem |
+| `animation::` | AnimationPlayer |
+| `ai::` | AIScheduler |
+| `oblivion::` | NavMeshManager, PhysicsManager, AlchemySystem, BookReader, ClothingConverter |
+
+---
 
 ## Text Rendering System
-
-### TextRenderer: Foundation
 
 **Purpose**: Render colored text at screen coordinates
 
@@ -218,7 +303,6 @@ Renderer::onTouchEvent(x, y)
 - Uses OpenGL ES 3.0 orthographic projection
 - Origin at top-left (0,0)
 - Supports color and scale parameters
-- Handles projection matrices internally
 
 **Key Method**:
 ```cpp
@@ -230,46 +314,13 @@ void TextRenderer::renderText(
 );
 ```
 
-**Vertex Shader** (Orthographic):
-```glsl
-#version 300 es
-layout(location = 0) in vec3 aPosition;
-uniform mat4 uProjection;
-uniform mat4 uView;
-uniform mat4 uModel;
-void main() {
-    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1.0);
-}
-```
-
-### UI Text Rendering Pipeline
-
-```
-TextRenderer::renderText()
-    │
-    ├─→ 1. Bind VAO/VBO (character geometry)
-    ├─→ 2. Set projection matrix (screen coordinates)
-    ├─→ 3. Set text color (RGB)
-    ├─→ 4. Set position (x, y screen pixels)
-    ├─→ 5. Bind texture (character atlas)
-    ├─→ 6. glDrawArrays() (render character)
-    └─→ 7. Unbind shader program
-```
+---
 
 ## Settings System Architecture
 
 ### SettingsManager: Persistent Storage
 
-**Responsibility**: 
-- Maintain application settings in memory
-- Load settings from disk on startup
-- Save settings on change
-- Provide getter/setter interface
-
-**File Location**:
-```
-/data/data/com.example.oblivion/settings.txt
-```
+**File Location**: `/data/data/com.example.oblivion/settings.txt`
 
 **File Format** (KEY=VALUE):
 ```
@@ -277,192 +328,48 @@ DEBUG_MODE=1
 LANGUAGE=ja
 ```
 
-**Settings Structure**:
-```cpp
-struct Settings {
-    bool debugModeEnabled = false;      // Default: OFF
-    std::string currentLanguage = "ja"; // Default: Japanese
-};
-```
-
-### SettingsUI: User Interface
-
-**Responsibility**:
-- Display settings menu as overlay
-- Handle touch events to change settings
-- Update SettingsManager when changes occur
-- Show current values
-
-**Menu Items**:
-1. **Debug Mode** - Toggle ON/OFF
-   - ON: Shows FPS, frame time, memory info
-   - OFF: Hides debug information
-
-2. **Language** - Switch language
-   - Japanese (日本語)
-   - English
-
-3. **Back** - Return to main menu
-
-**Visual Design**:
-- Black semi-transparent background
-- Yellow title: "SETTINGS"
-- White text for items
-- Red highlight for selected item
-- Touch-to-select interaction
-
-## Debug HUD System
-
-### DebugHUD: Performance Monitoring
-
-**Responsibility**:
-- Measure frame time in milliseconds
-- Track FPS (frames per second)
-- Read system memory from /proc/meminfo
-- Display real-time statistics
-
-**Displayed Metrics**:
-```
-FPS: 60.0              [Current frames per second]
-Frame: 16.67 ms        [Time for current frame]
-Avg: 16.50 ms          [Average frame time (0.5s window)]
-Mem: 45 MB             [Current memory usage]
-Cubes: 5               [Number of active game objects]
-DEBUG: ON              [Debug mode status]
-```
-
-**Update Frequency**:
-- Frame time: Every frame
-- Average: Every 0.5 seconds
-- Memory: Every 0.5 seconds
-
-**Memory Reading**:
-```cpp
-// Read from /proc/meminfo
-// File format:
-// MemTotal:        4046676 kB
-// MemFree:         2145632 kB
-// MemAvailable:    3145632 kB
-```
-
-## Game Systems Integration
-
-### Manager Pattern (Standard for all systems)
-
-Each game system follows this lifecycle:
-
-```cpp
-class SystemManager {
-public:
-    bool initialize(...);   // One-time setup
-    void update(float dt);  // Per-frame update
-    void cleanup();         // Resource cleanup
-};
-```
-
-**Examples**:
-- `WorldManager` - Cell/object streaming
-- `NpcManager` - NPC AI update
-- `CombatManager` - Combat state, damage application
-- `QuestManager` - Quest progression
-- `SpellManager` - Spell effects
-
-### NPC AI State Machine
-
-```
-IDLE
-    ↓
-WANDER (patrol randomly)
-    ↓
-[Detects player → distance < 30m]
-    ↓
-FOLLOW_PLAYER
-    ↓
-[Distance < 5m] OR [Player attacks]
-    ↓
-COMBAT
-    ├─→ Attack roll (1s cooldown)
-    ├─→ Spell casting (if low HP)
-    └─→ [NPC defeated]
-        ↓
-    IDLE (death, removed from world)
-```
-
-### Quest System Integration
-
-```
-NPC offers quest
-    ↓
-Player accepts (QuestManager::acceptQuest)
-    ↓
-Quest objectives tracked
-    ↓
-[Objective conditions met]
-    ↓
-QuestManager::updateObjective()
-    ↓
-[All objectives complete]
-    ↓
-QuestManager::completeQuest()
-    ↓
-Reward applied (gold + experience)
-```
-
-## Localization System
-
-### LocalizationManager
-
-**Responsibility**:
-- Load string translations for UI elements
-- Provide getString(key) interface
-- Support multiple languages
-
-**Supported Languages**:
-- Japanese (ja)
-- English (en)
-
-**String Keys** (menu_start, menu_settings, etc.):
-```cpp
-localizationManager->getString("menu_start")  // Returns "ゲーム開始" or "Start Game"
-```
-
-## Memory Management
-
-### Smart Pointers (std::unique_ptr)
-
-All major systems use `std::unique_ptr` for automatic memory management:
-
-```cpp
-std::unique_ptr<Renderer> renderer;
-std::unique_ptr<WorldManager> worldManager;
-std::unique_ptr<NpcManager> npcManager;
-// Automatic cleanup when unique_ptr goes out of scope
-```
-
-### Object Pooling
-
-For frequent allocation/deallocation:
-- NPC entities
-- Spell effects
-- Combat instances
+---
 
 ## Performance Considerations
 
 ### Frame Rate Control
-- **Target**: 60 FPS
-- **Frame Time**: 16.67 ms per frame
-- **Margin**: 0.33 ms for system overhead
+- **Target**: 60 FPS (exceeds original 30 FPS target)
+- **Frame Budget**: 16.67 ms per frame
+- **FrameBudgetManager** enforces per-phase budget allocation
 
 ### Memory Budget
-- **Heap**: 40-50 MB target
-- **NPC Instances**: ~500 KB each
-- **Texture Cache**: 100-200 MB
-- **Total Limit**: < 500 MB
+- **Heap**: 40-50 MB runtime
+- **Texture Cache**: managed by AssetManager with LRU eviction
+- **MemoryDefrag**: runtime defragmentation
 
 ### CPU Budget
 - **Game Logic**: 80% of frame budget
 - **Rendering**: 15%
 - **System**: 5%
+
+---
+
+## Thread Safety
+
+### Current Architecture
+- **Single-threaded rendering** via GLSurfaceView
+- **JNI calls** only from render thread
+- **Physics**: Jolt Physics runs in Imperial Weave Physics phase
+
+---
+
+## Error Handling
+
+### Logging Strategy
+
+Three levels of logging:
+```cpp
+LOGD(...)  // Debug: verbose system info (conditional compilation)
+LOGI(...)  // Info: important events
+LOGE(...)  // Error: failures requiring attention
+```
+
+---
 
 ## Build System
 
@@ -472,60 +379,27 @@ For frequent allocation/deallocation:
 cmake_minimum_required(VERSION 3.18.1)
 project(oblivion_native)
 
+# C++17 standard
+set(CMAKE_CXX_STANDARD 17)
+
 # Source files organized by directory
 set(SOURCES
     engine/renderer.cpp
+    engine/imperial_weave.cpp
     engine/shader.cpp
+    game/npc_manager.cpp
+    game/combat_manager.cpp
     # ... more files ...
-    ui/text_renderer.cpp
-    ui/debug_hud.cpp
-    ui/settings_ui.cpp
-    system/settings_manager.cpp
+    animation/animation_subscriber.cpp
+    audio/audio_subscriber.cpp
+    ui/spell_selection_panel.cpp
 )
-
-# Include directories
-target_include_directories(native-lib PRIVATE ...)
 
 # Link libraries
 target_link_libraries(native-lib android EGL GLESv3 log)
-
-# Compiler flags per architecture
-if (ANDROID_ABI STREQUAL arm64-v8a)
-    target_compile_options(native-lib PRIVATE -O3 -march=armv8-a)
-endif()
 ```
 
-## Thread Safety
-
-### Current Architecture
-- **Single-threaded rendering** via GLSurfaceView
-- **JNI calls** only from render thread
-- **Android LifecycleEvents** marshaled via onSurfaceCreated/onSurfaceDestroyed
-
-### Future Considerations
-- Async asset loading
-- Background NPC AI calculation
-- Parallel spell effect processing
-
-## Error Handling
-
-### Logging Strategy
-
-Three levels of logging:
-```cpp
-LOGD(...)  // Debug: verbose system info
-LOGI(...)  // Info: important events
-LOGE(...)  // Error: failures requiring attention
-```
-
-### Null Checks
-
-All manager methods check for nullptr:
-```cpp
-if (worldManager != nullptr) {
-    worldManager->update(deltaTime);
-}
-```
+---
 
 ## Testing Strategy
 
@@ -539,30 +413,8 @@ if (worldManager != nullptr) {
 - **Amazon Fire 7 (Android 9)**: 60 FPS, 42 MB
 - **Xiaomi (Android 16)**: 60 FPS, 45 MB
 
-### Performance Profiling
-- Android Studio Profiler (CPU, Memory, GPU)
-- Perfetto for systrace analysis
-- Logcat for custom timing logs
-
-## Future Extensions
-
-### Phase 7.2: Save/Load System
-- JSON serialization of game state
-- NPC positions, quest progress, inventory
-- Binary checkpoint format for efficiency
-
-### Phase 7.3: Graphical UI
-- Texture-based menu backgrounds
-- Icon buttons with visual feedback
-- Fade-in/out transitions
-
-### Phase 8: Audio System
-- OpenAL-Soft integration
-- 3D sound positioning
-- Music and ambient effects
-
 ---
 
-**Last Updated**: 2026-04-18  
-**Version**: 0.7.1  
-**Phase**: 7.1 (Settings & Debug HUD Complete)
+**Last Updated**: 2026-09-04
+**Version**: 1.6.0
+**Phase**: 63 (Complete)
