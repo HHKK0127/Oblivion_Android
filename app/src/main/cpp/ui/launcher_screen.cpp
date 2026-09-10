@@ -86,21 +86,22 @@ void LauncherScreen::buildMainMenu() {
         btn->setLabel(label);
         btn->setTextRenderer(textRenderer);
 
-        // Original: large buttons (TV/console friendly)
-        btn->setSize(380.0f, 72.0f);
-        btn->setLabelScale(1.6f);
+        // Larger buttons for premium feel
+        btn->setSize(400.0f, 78.0f);
+        btn->setLabelScale(1.7f);
 
-        // Label color: dark gold (unselected)
+        // Gold label color
         btn->setLabelColor(COLOR_GOLD_DIM);
 
-        // Button background: stone texture or dark semi-transparent
+        // Premium stone/glass button background with gold tint
         if (buttonBgTex != 0) {
             btn->setNormalTexture(buttonBgTex);
             btn->setHoverTexture(buttonHoverTex);
         } else {
-            btn->setNormalColor(glm::vec4(0.12f, 0.10f, 0.08f, 0.85f));
-            btn->setHoverColor(glm::vec4(0.20f, 0.17f, 0.12f, 0.90f));
-            btn->setPressedColor(glm::vec4(0.08f, 0.07f, 0.05f, 0.95f));
+            // Sophisticated gradient: dark stone top, deep amber bottom
+            btn->setNormalColor(glm::vec4(0.16f, 0.12f, 0.08f, 0.92f));
+            btn->setHoverColor(glm::vec4(0.28f, 0.20f, 0.12f, 0.95f));
+            btn->setPressedColor(glm::vec4(0.10f, 0.08f, 0.05f, 0.95f));
         }
 
         int idx = info.index;
@@ -120,21 +121,22 @@ void LauncherScreen::rebuildLayout() {
     if (!mainPanel) return;
     mainPanel->setScreenSize(screenWidth, screenHeight);
 
-    // Original: panel on left, logo on right
-    float panelW = 450.0f;
-    float panelH = 520.0f;
-    float px = screenWidth * 0.06f;   // Left-aligned
-    float py = screenHeight * 0.18f;  // Slightly upper
+    // Larger panel for premium feel
+    float panelW = 480.0f;
+    float panelH = 600.0f;
+    float px = screenWidth * 0.04f;   // Left-aligned
+    float py = screenHeight * 0.12f;  // Slightly upper
     mainPanel->setPosition(px, py);
     mainPanel->setSize(panelW, panelH);
 
-    float btnW = 400.0f;
-    float btnH = 72.0f;
-    float startY = 20.0f;
-    float gap = 18.0f;
+    // Push buttons down a bit so they sit below the logo's bottom
+    float btnW = 420.0f;
+    float btnH = 78.0f;
+    float startY = 30.0f;
+    float gap = 22.0f;
 
     for (size_t i = 0; i < menuButtons.size(); ++i) {
-        float bx = 25.0f;
+        float bx = (panelW - btnW) * 0.5f;
         float by = startY + static_cast<float>(i) * (btnH + gap);
         menuButtons[i]->setPosition(bx, by);
         menuButtons[i]->setSize(btnW, btnH);
@@ -213,23 +215,33 @@ void LauncherScreen::renderMain() {
 }
 
 // ============================================================================
-// Background (dark stone/metal)
+// Background (dark stone/metal) - Enhanced with gradient + portal effect
 // ============================================================================
 void LauncherScreen::renderBackground() {
+    // Full-screen deep gradient (top dark -> bottom slightly red-tinged)
+    UIDrawHelper::drawVerticalGradient(
+        0.0f, 0.0f,
+        static_cast<float>(screenWidth), static_cast<float>(screenHeight),
+        glm::vec4(0.06f, 0.05f, 0.10f, 1.0f),
+        glm::vec4(0.02f, 0.01f, 0.04f, 1.0f),
+        screenWidth, screenHeight);
+
+    // Texture overlay if available
     if (bgTexture != 0) {
         UIDrawHelper::drawTexturedQuad(
             0.0f, 0.0f,
             static_cast<float>(screenWidth), static_cast<float>(screenHeight),
-            bgTexture, glm::vec4(1.0f, 1.0f, 1.0f, 0.4f),
-            screenWidth, screenHeight);
-    } else {
-        // Fallback: dark gradient
-        UIDrawHelper::drawColoredQuad(
-            0.0f, 0.0f,
-            static_cast<float>(screenWidth), static_cast<float>(screenHeight),
-            glm::vec4(0.06f, 0.05f, 0.04f, 1.0f),
+            bgTexture, glm::vec4(1.0f, 1.0f, 1.0f, 0.35f),
             screenWidth, screenHeight);
     }
+
+    // Vignette: radial dark fade to focus attention on the menu
+    UIDrawHelper::drawRadialGlow(
+        screenWidth * 0.5f, screenHeight * 0.5f,
+        static_cast<float>(screenWidth) * 0.7f,
+        glm::vec4(0.0f, 0.0f, 0.0f, 0.0f),
+        glm::vec4(0.0f, 0.0f, 0.0f, 0.7f),
+        screenWidth, screenHeight);
 
     // The left menu backing is only part of the main launcher. Drawing it on
     // options/data screens created a stray frame behind those panels.
@@ -237,36 +249,65 @@ void LauncherScreen::renderBackground() {
         return;
     }
 
-    // Original: thin panel background on left side (button area)
+    // Oblivion portal swirl: subtle pulsing purple radial glow at center-right
+    float portalAlpha = 0.18f + 0.05f * sin(glowPhase * 0.7f);
+    UIDrawHelper::drawRadialGlow(
+        screenWidth * 0.7f, screenHeight * 0.45f,
+        static_cast<float>(screenWidth) * 0.4f,
+        glm::vec4(0.45f, 0.20f, 0.85f, portalAlpha),
+        glm::vec4(0.05f, 0.02f, 0.15f, 0.0f),
+        screenWidth, screenHeight);
+
+    // Original: thin panel background on left side (button area) - enhanced gradient
     float panelX = screenWidth * 0.04f;
     float panelY = screenHeight * 0.12f;
     float panelW = 480.0f;
     float panelH = 560.0f;
-    UIDrawHelper::drawColoredQuad(
+    UIDrawHelper::drawVerticalGradient(
         panelX, panelY, panelW, panelH,
-        glm::vec4(0.04f, 0.03f, 0.02f, 0.65f),
+        glm::vec4(0.10f, 0.08f, 0.06f, 0.85f),
+        glm::vec4(0.03f, 0.02f, 0.02f, 0.85f),
         screenWidth, screenHeight);
 
-    // Border (thin gold)
-    UIDrawHelper::drawBorder(
-        panelX, panelY, panelW, panelH, 2.0f,
-        glm::vec4(COLOR_GOLD_DIM.x, COLOR_GOLD_DIM.y, COLOR_GOLD_DIM.z, 0.3f),
+    // Ornate frame: gold border with inner shadow
+    UIDrawHelper::drawOrnateFrame(
+        panelX, panelY, panelW, panelH, 2.5f,
+        glm::vec4(COLOR_GOLD_DIM.x, COLOR_GOLD_DIM.y, COLOR_GOLD_DIM.z, 0.7f),
+        glm::vec4(0.0f, 0.0f, 0.0f, 0.5f),
         screenWidth, screenHeight);
 }
 
 // ============================================================================
-// Right side logo (large)
+// Right side logo (large) - Enhanced with glow and shadow
 // ============================================================================
 void LauncherScreen::renderLogo() {
     if (logoTexture == 0) return;
 
-    // Right side center placement
-    float scaleFactor = (screenWidth > screenHeight) ? 0.45f : 0.75f;
+    // Larger scale for prominence
+    float scaleFactor = (screenWidth > screenHeight) ? 0.65f : 0.85f;
     float logoW = static_cast<float>(screenWidth) * scaleFactor;
     float logoH = logoW * 0.22f;
-    float logoX = static_cast<float>(screenWidth) * 0.58f;
-    float logoY = (static_cast<float>(screenHeight) - logoH) * 0.45f;
+    float logoX = (static_cast<float>(screenWidth) - logoW) * 0.5f;
+    float logoY = static_cast<float>(screenHeight) * 0.18f;
 
+    // Gold halo behind the logo for elegance
+    float glowAlpha = 0.25f + 0.10f * sin(glowPhase);
+    UIDrawHelper::drawRadialGlow(
+        logoX + logoW * 0.5f, logoY + logoH * 0.5f,
+        logoW * 0.6f,
+        glm::vec4(COLOR_GOLD_BRIGHT.x, COLOR_GOLD_BRIGHT.y, COLOR_GOLD_BRIGHT.z, glowAlpha),
+        glm::vec4(COLOR_GOLD_BRIGHT.x, COLOR_GOLD_BRIGHT.y, COLOR_GOLD_BRIGHT.z, 0.0f),
+        screenWidth, screenHeight);
+
+    // Outer glow border (gold)
+    UIDrawHelper::drawOrnateFrame(
+        logoX - 12.0f, logoY - 12.0f,
+        logoW + 24.0f, logoH + 24.0f, 1.5f,
+        glm::vec4(COLOR_GOLD_DIM.x, COLOR_GOLD_DIM.y, COLOR_GOLD_DIM.z, 0.4f * fadeInAlpha),
+        glm::vec4(0.0f, 0.0f, 0.0f, 0.4f * fadeInAlpha),
+        screenWidth, screenHeight);
+
+    // Logo texture itself
     UIDrawHelper::drawTexturedQuad(
         logoX, logoY, logoW, logoH,
         logoTexture, glm::vec4(1.0f, 1.0f, 1.0f, fadeInAlpha),
