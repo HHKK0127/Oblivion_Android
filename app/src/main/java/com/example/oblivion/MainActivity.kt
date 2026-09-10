@@ -297,14 +297,33 @@ class MainActivity : Activity() {
             menuBtn?.setOnClickListener {
                 gameRenderer?.nativeToggleDebugMenu()
                 isDebugMenuOpen = gameRenderer?.nativeIsDebugMenuVisible() ?: false
-                // Hide Android debug panel when native DebugMenu is open
                 if (isDebugMenuOpen) {
                     debugOverlayContainer?.visibility = View.GONE
                     isDebugPanelVisible = false
                 }
                 Log.d(TAG, "Toggled debug menu, isMenuOpen=$isDebugMenuOpen")
             }
-            Log.d(TAG, "Menu button found: ${menuBtn != null}, position: ${menuBtn?.left}, ${menuBtn?.top}, size: ${menuBtn?.width}x${menuBtn?.height}")
+
+            // Quick Actions
+            findViewById<Button>(R.id.btn_debug_heal)?.setOnClickListener {
+                gameRenderer?.nativeExecuteConsoleCommand("heal")
+                Log.d(TAG, "Executed: heal")
+            }
+
+            findViewById<Button>(R.id.btn_debug_killall)?.setOnClickListener {
+                gameRenderer?.nativeExecuteConsoleCommand("killall")
+                Log.d(TAG, "Executed: killall")
+            }
+
+            findViewById<Button>(R.id.btn_debug_fly)?.setOnClickListener {
+                gameRenderer?.nativeExecuteConsoleCommand("tgm")
+                Log.d(TAG, "Executed: tgm (god mode)")
+            }
+
+            findViewById<Button>(R.id.btn_debug_noclip)?.setOnClickListener {
+                gameRenderer?.nativeExecuteConsoleCommand("noclip")
+                Log.d(TAG, "Executed: noclip")
+            }
 
             Log.i(TAG, "Debug buttons setup complete")
         } catch (e: Exception) {

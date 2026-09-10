@@ -107,7 +107,8 @@ bool TextRenderer::initialize(AAssetManager* assetMgr) {
 
     // Load font and create texture atlas
     // On failure, create texture atlas to avoid crash
-    if (!loadFontFromAssets("arial.ttf")) {
+    // Keep the font in app assets so text is available on clean installs.
+    if (!loadFontFromAssets("Roboto-Regular.ttf")) {
         LOGW("Font loading failed, using fallback");
     }
 
