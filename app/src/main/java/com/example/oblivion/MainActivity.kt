@@ -372,6 +372,10 @@ class MainActivity : Activity() {
     override fun onPause() {
         super.onPause()
         Log.i(TAG, "onPause")
+        // Unregister predictive back gesture callback (Android 13+)
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            backCallback?.let { onBackInvokedDispatcher.unregisterOnBackInvokedCallback(it) }
+        }
         // Do NOT call gameSurfaceView.onPause() - keep GL thread running
         // GLSurfaceView.onPause() kills the render thread, which prevents onSurfaceCreated
         mediaPlayer?.let {
@@ -386,6 +390,15 @@ class MainActivity : Activity() {
         super.onResume()
         Log.i(TAG, "onResume")
         gameSurfaceView?.onResume()
+        // Register predictive back gesture callback (Android 13+)
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            backCallback?.let {
+                onBackInvokedDispatcher.registerOnBackInvokedCallback(
+                    android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                    it
+                )
+            }
+        }
         // Note: startRenderer() is called inside GameSurfaceView.onResume() if needed
     }
 
@@ -401,6 +414,34 @@ class MainActivity : Activity() {
     @Suppress("MissingSuperCall", "DEPRECATION")
     override fun onBackPressed() {
         Log.i(TAG, "onBackPressed - forwarding to native engine")
+        val consumed = gameRenderer?.nativeOnBackKey() ?: false
+        if (consumed) {
+            Log.d(TAG, "Back key consumed by native")
+        } else {
+            // Title/Launcher screen: confirm exit
+            Log.i(TAG, "On Title/Launcher - showing exit confirmation")
+            AlertDialog.Builder(this)
+                .setTitle("Exit Oblivion?")
+                .setMessage("終了しますか？")
+                .setPositiveButton("Exit") { _, _ -> finish() }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
+    }
+
+    // Android 13+ predictive back gesture support via OnBackInvokedDispatcher
+    private val backCallback = if (android.os.Build.VERSION.SDK_INT >= 33) {
+        object : android.window.OnBackInvokedCallback {
+            override fun onBackInvoked() {
+                Log.i(TAG, "onBackInvoked - predictive back gesture")
+                handleBack()
+            }
+        }
+    } else null
+
+    // Unified back handler (Android 11+ OnBackInvokedDispatcher + legacy onBackPressed)
+    private fun handleBack() {
+        Log.i(TAG, "handleBack - forwarding to native engine")
         val consumed = gameRenderer?.nativeOnBackKey() ?: false
         if (consumed) {
             Log.d(TAG, "Back key consumed by native")

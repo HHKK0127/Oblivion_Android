@@ -3651,9 +3651,16 @@ void Renderer::startGame() {
             return false;
         }
 
-        // 5. Launcher screen back: don't consume - let Activity show exit dialog
-        if (showLauncher) {
-            LOGI("handleBackKey: On Launcher - not consuming, Activity will handle");
+        // 5. Launcher screen: handle sub-screens, then main goes to exit
+        if (showLauncher && launcherScreen) {
+            int launcherState = static_cast<int>(launcherScreen->getState());
+            if (launcherState != 0) { // 0 = LauncherState::MAIN
+                launcherScreen->onKeyPress(4); // BACK key
+                LOGI("handleBackKey: Launcher sub-screen (state=%d), returning to main", launcherState);
+                return true;
+            }
+            // On main launcher: don't consume - let Activity show exit dialog
+            LOGI("handleBackKey: On Launcher main - not consuming, Activity will handle");
             return false;
         }
 
