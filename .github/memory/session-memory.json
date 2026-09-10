@@ -1,7 +1,22 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-05T22:45:00Z",
+  "lastUpdated": "2026-09-09T17:37:07Z",
   "entries": [
+    {
+      "id": "64e6171f-08fa-41f7-bd30-0da14e3cb190",
+      "timestamp": "2026-09-09T17:37:07Z",
+      "category": "configuration",
+      "priority": "high",
+      "content": "Game data paths: (1) Steam version Oblivion: D:\\Cargo\\Other\\Oblivion\\Oblivion_Steam版, (2) BSA internal data: D:\\Cargo\\Other\\Oblivion\\BSA. These contain the original game assets (meshes, textures, sounds, voices, ESM) needed for the Android port.",
+      "tags": [
+        "oblivion",
+        "game-data",
+        "bsa",
+        "paths",
+        "steam"
+      ],
+      "compressed": false
+    },
     {
       "content": "Oblivion.exe (Ghidra decompiled) - Gamebryo engine, compiled with VS2005/VS2008, Direct3D9. Init order: Renderer -> Shader System -> Sky -> TES -> TreeManager -> Menus -> Player -> Scripts -> Sound System -> Actor Locations -> LOD Land",
       "id": "313850b2-4e88-4dbc-8287-73b9e850eba4",
@@ -1643,7 +1658,7 @@
     }
   ],
   "metadata": {
-    "totalEntries": 114,
+    "totalEntries": 115,
     "compressedCount": 0,
     "sessionCount": 6
   }

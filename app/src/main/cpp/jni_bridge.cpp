@@ -807,6 +807,30 @@ Java_com_example_oblivion_GameRenderer_nativeIsDebugMenuVisible(
     return JNI_FALSE;
 }
 
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeExecuteConsoleCommand(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jstring command) {
+    if (!g_renderer) {
+        LOGE("nativeExecuteConsoleCommand called but renderer is null");
+        return;
+    }
+    GameConsole* console = g_renderer->getGameConsole();
+    if (!console) {
+        LOGE("nativeExecuteConsoleCommand called but GameConsole is null");
+        return;
+    }
+    const char* cmdStr = env->GetStringUTFChars(command, nullptr);
+    if (cmdStr == nullptr) {
+        return;
+    }
+    std::string cmd(cmdStr);
+    env->ReleaseStringUTFChars(command, cmdStr);
+    LOGI("nativeExecuteConsoleCommand: %s", cmd.c_str());
+    console->executeCommand(cmd);
+}
+
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_example_oblivion_GameRenderer_nativeIsExitRequested(
         [[maybe_unused]] JNIEnv* env,
