@@ -1,6 +1,7 @@
 package com.example.oblivion
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.media.SoundPool
@@ -394,6 +395,24 @@ class MainActivity : Activity() {
         cleanupAudio()
         if (instance === this) {
             instance = null
+        }
+    }
+
+    @Suppress("MissingSuperCall", "DEPRECATION")
+    override fun onBackPressed() {
+        Log.i(TAG, "onBackPressed - forwarding to native engine")
+        val consumed = gameRenderer?.nativeOnBackKey() ?: false
+        if (consumed) {
+            Log.d(TAG, "Back key consumed by native")
+        } else {
+            // Title/Launcher screen: confirm exit
+            Log.i(TAG, "On Title/Launcher - showing exit confirmation")
+            AlertDialog.Builder(this)
+                .setTitle("Exit Oblivion?")
+                .setMessage("終了しますか？")
+                .setPositiveButton("Exit") { _, _ -> finish() }
+                .setNegativeButton("Cancel", null)
+                .show()
         }
     }
 

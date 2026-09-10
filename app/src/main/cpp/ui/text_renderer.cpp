@@ -433,7 +433,12 @@ float TextRenderer::getTextWidth(const std::string& text, float scale) {
     return width;
 }
 
-TextRenderer::Glyph TextRenderer::getGlyph(unsigned int codepoint) {
+    float TextRenderer::getTextHeight(float scale) const {
+        if (!fontData) return 0.0f;
+        return FONT_SIZE * scale;
+    }
+
+    TextRenderer::Glyph TextRenderer::getGlyph(unsigned int codepoint) {
     // Search from cache
     auto it = fontData->glyphCache.find(codepoint);
     if (it != fontData->glyphCache.end()) {

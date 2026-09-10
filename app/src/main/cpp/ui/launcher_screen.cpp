@@ -5,6 +5,7 @@
 #include "../engine/renderer.h"
 #include "ui_draw_helper.h"
 #include <GLES3/gl3.h>
+#include <algorithm>
 #include <cmath>
 
 LauncherScreen::LauncherScreen()
@@ -230,6 +231,12 @@ void LauncherScreen::renderBackground() {
             screenWidth, screenHeight);
     }
 
+    // The left menu backing is only part of the main launcher. Drawing it on
+    // options/data screens created a stray frame behind those panels.
+    if (state != LauncherState::MAIN) {
+        return;
+    }
+
     // Original: thin panel background on left side (button area)
     float panelX = screenWidth * 0.04f;
     float panelY = screenHeight * 0.12f;
@@ -415,21 +422,22 @@ void LauncherScreen::renderDataFiles() {
         dataFilesPanel->initialize();
         dataFilesPanel->setTitle(localizationManager ? localizationManager->getString("launcher_data_files") : "Data Files");
         dataFilesPanel->setScreenSize(screenWidth, screenHeight);
-        dataFilesPanel->setPosition(screenWidth * 0.1f, screenHeight * 0.1f);
-        dataFilesPanel->setSize(screenWidth * 0.8f, screenHeight * 0.8f);
+        const float panelW = screenWidth * 0.84f;
+        const float panelH = screenHeight * 0.84f;
+        dataFilesPanel->setPosition((screenWidth - panelW) * 0.5f,
+                                    (screenHeight - panelH) * 0.5f);
+        dataFilesPanel->setSize(panelW, panelH);
         dataFilesPanel->setBackgroundColor(glm::vec4(0.08f, 0.07f, 0.05f, 0.92f));
         dataFilesPanel->setBorderColor(glm::vec4(0.65f, 0.55f, 0.30f, 0.5f));
         dataFilesPanel->setBorderWidth(2.0f);
 
-        float panelW = dataFilesPanel->getSize().x;
-        float panelH = dataFilesPanel->getSize().y;
-
-        // Title: "Loaded Archives"
-        float titleY = 50.0f;
-
-        float listY = titleY + 40.0f;
-        float itemH = 45.0f;
-        float itemGap = 5.0f;
+        // Title and list spacing scale down on short displays so every row
+        // remains inside the panel instead of overlapping the footer.
+        float titleY = std::max(34.0f, panelH * 0.08f);
+        float itemGap = std::max(3.0f, panelH * 0.006f);
+        float itemH = std::clamp((panelH - 190.0f - itemGap * 5.0f) / 6.0f,
+                                 32.0f, 45.0f);
+        float listY = titleY + itemH + 8.0f;
 
         for (size_t i = 0; i < plugins.size(); i++) {
             auto pluginBtn = std::make_shared<UIButton>("PluginBtn_" + std::to_string(i));
@@ -440,7 +448,7 @@ void LauncherScreen::renderDataFiles() {
             pluginBtn->setLabel(prefix + plugins[i].name);
             pluginBtn->setTextRenderer(textRenderer);
             pluginBtn->setSize(panelW - 40.0f, itemH);
-            pluginBtn->setLabelScale(0.9f);
+            pluginBtn->setLabelScale(std::clamp(itemH / 45.0f * 0.9f, 0.65f, 0.9f));
             pluginBtn->setLabelColor(plugins[i].enabled ? COLOR_GOLD_BRIGHT : COLOR_GOLD_DIM);
             pluginBtn->setNormalColor(glm::vec4(0.12f, 0.10f, 0.08f, 0.85f));
             pluginBtn->setHoverColor(glm::vec4(0.20f, 0.17f, 0.12f, 0.90f));
@@ -656,10 +664,36 @@ void LauncherScreen::onTouchEvent(float x, float y, int action) {
         } else if (action == 3) { // TOUCH_CANCEL
             if (dataFilesPanel && dataFilesPanel->onTouchUp(x, y, 0)) return;
         }
+    } else if (state == LauncherState::SUPPORT) {
+        // Support uses a standalone button rather than a UIPanel. Forwarding
+        // touch events here is required for the visible Back button to work.
+        if (!supportBackBtn) return;
+        if (action == 0 || action == 5) {
+            supportBackBtn->onTouchDown(x, y, 0);
+        } else if (action == 1 || action == 6) {
+            supportBackBtn->onTouchUp(x, y, 0);
+        } else if (action == 3) {
+            supportBackBtn->onTouchUp(x, y, 0);
+        }
     }
 }
 
 void LauncherScreen::onKeyPress(int key) {
+    if (key == 4) { // BACK
+        if (state == LauncherState::MAIN) {
+            // At main launcher, request app exit
+                    if (onExitCallback) {
+                LOGI("LauncherScreen: BACK on main, requesting exit");
+                        onExitCallback();
+            }
+        } else {
+            // Sub-screens (Options, Data Files, Support): go back to main
+            LOGI("LauncherScreen: BACK, returning to main from state=%d", (int)state);
+            state = LauncherState::MAIN;
+        }
+        return;
+    }
+
     if (state == LauncherState::MAIN) {
         int numButtons = static_cast<int>(menuButtons.size());
         if (numButtons == 0) numButtons = 5; // Safety fallback

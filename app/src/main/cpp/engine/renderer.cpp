@@ -561,6 +561,7 @@ bool Renderer::initGameSystems() {
         return false;
     }
     debugMenu->setScreenSize(screenWidth, screenHeight);
+    debugMenu->setOnStartGame([this]() { startGame(); });
     LOGI("DebugMenu initialized successfully");
 
     // Initialize unified DebugSystem (gesture-based toggling)
@@ -1571,6 +1572,11 @@ bool Renderer::initGameSystems() {
         return false;
     }
     LOGI("WorldManager initialized successfully");
+
+    // Connect WorldManager to DebugMenu's WorldViewer (deferred injection)
+    if (debugMenu) {
+        debugMenu->setWorldManager(worldManager.get());
+    }
 
     // Initialize Quest Manager
     questManager = std::make_unique<QuestManager>();
@@ -3605,7 +3611,67 @@ bool Renderer::isDebugMenuVisible() const {
     return debugMenu && debugMenu->isVisible();
 }
 
-void Renderer::toggleNpcDebugVisualizer() {
+void Renderer::startGame() {
+    LOGI("startGame() called - skipping launcher and title screen");
+    showLauncher = false;
+    showTitleScreen = false;
+    // Show combat buttons
+    if (joystick) { joystick->setVisible(true); }
+    if (attackButton) { attackButton->setVisible(true); }
+    if (blockButton) { blockButton->setVisible(true); }
+    if (castSpellButton) { castSpellButton->setVisible(true); }
+    for (auto& btn : quickSlotButtons) {
+        if (btn) btn->setVisible(true);
+    }
+    LOGI("startGame: Game world should now be visible");
+}
+
+    bool Renderer::handleBackKey() {
+        // Priority: DebugMenu > DebugConsole > GameConsole > Title > Launcher > Exit dialog
+
+        // 1. Close DebugMenu if open
+        if (debugMenu && debugMenu->isVisible()) {
+            debugMenu->toggle();
+            LOGI("handleBackKey: Closed DebugMenu");
+            return true;
+        }
+
+        // 2. Close DebugConsole if open
+        if (gameConsole && gameConsole->isVisible()) {
+            gameConsole->toggle();
+            LOGI("handleBackKey: Closed GameConsole");
+            return true;
+        }
+
+        // 3. Close GameConsole if open (already handled above - no separate debugConsole)
+
+        // 4. Title screen back: don't consume - let Activity show exit dialog
+        if (showTitleScreen) {
+            LOGI("handleBackKey: On TitleScreen - not consuming, Activity will handle");
+            return false;
+        }
+
+        // 5. Launcher screen back: don't consume - let Activity show exit dialog
+        if (showLauncher) {
+            LOGI("handleBackKey: On Launcher - not consuming, Activity will handle");
+            return false;
+        }
+
+        // 6. In game: return to launcher/title
+        LOGI("handleBackKey: In game - returning to launcher");
+        showLauncher = true;
+        // Hide combat buttons
+        if (joystick) { joystick->setVisible(false); }
+        if (attackButton) { attackButton->setVisible(false); }
+        if (blockButton) { blockButton->setVisible(false); }
+        if (castSpellButton) { castSpellButton->setVisible(false); }
+        for (auto& btn : quickSlotButtons) {
+            if (btn) btn->setVisible(false);
+        }
+        return true;
+    }
+
+    void Renderer::toggleNpcDebugVisualizer() {
     if (npcDebugVisualizer) {
         npcDebugVisualizer->toggle();
         LOGI("NPC Debug Visualizer %s", npcDebugVisualizer->isVisible() ? "enabled" : "disabled");

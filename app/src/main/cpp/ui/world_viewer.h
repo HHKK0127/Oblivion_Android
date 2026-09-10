@@ -23,6 +23,11 @@ public:
     bool initialize(TextRenderer* textRenderer, WorldManager* worldMgr);
     void cleanup();
 
+    /** Set WorldManager after initialization (for deferred connection) */
+    void setWorldManager(WorldManager* wm) { worldManager = wm; }
+    /** Check if WorldManager is connected */
+    bool hasWorldManager() const { return worldManager != nullptr; }
+
     void toggle();
     bool isVisible() const { return visible; }
     void setVisible(bool v) { visible = v; }

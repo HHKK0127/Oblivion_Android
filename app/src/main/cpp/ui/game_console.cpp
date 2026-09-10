@@ -664,6 +664,22 @@ void GameConsole::registerBuiltinCommands() {
             }
         }
     });
+    registerCommand("debughudnext", "Switch to next debug HUD page", [this](const std::vector<std::string>&) {
+        if (gameRefs.debugHudNextPage) {
+            gameRefs.debugHudNextPage();
+            print("Debug HUD: next page");
+        } else {
+            print("Debug HUD not available");
+        }
+    });
+    registerCommand("debughudprev", "Switch to previous debug HUD page", [this](const std::vector<std::string>&) {
+        if (gameRefs.debugHudPrevPage) {
+            gameRefs.debugHudPrevPage();
+            print("Debug HUD: previous page");
+        } else {
+            print("Debug HUD not available");
+        }
+    });
     registerCommand("debuglog", "Toggle in-game log overlay", [this](const std::vector<std::string>&) {
         if (gameRefs.toggleDebugLog) gameRefs.toggleDebugLog();
         print("Debug log overlay toggled");

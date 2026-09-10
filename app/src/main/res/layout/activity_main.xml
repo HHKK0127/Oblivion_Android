@@ -32,9 +32,9 @@
             android:layout_marginStart="10dp"
             android:layout_marginTop="50dp"
             android:layout_marginBottom="10dp"
-            android:background="#CC222222"
+            android:background="@drawable/debug_panel_background"
             android:orientation="vertical"
-            android:padding="6dp">
+            android:padding="0dp">
 
             <!-- Header -->
             <TextView
@@ -79,8 +79,8 @@
                         android:text="Debug Console"
                         android:textSize="11sp"
                         android:layout_marginTop="2dp"
-                        android:background="#33444444"
-                        android:textColor="#CCCCCC" />
+                        android:background="@drawable/debug_button_background"
+                        android:textColor="#CCCCCC"  android:fontFamily="sans-serif-medium" android:textAllCaps="false" android:minHeight="0dp" android:stateListAnimator="@null"/>
 
                     <Button
                         android:id="@+id/btn_debug_npc"
@@ -89,8 +89,8 @@
                         android:text="NPC Debug"
                         android:textSize="11sp"
                         android:layout_marginTop="2dp"
-                        android:background="#33444444"
-                        android:textColor="#CCCCCC" />
+                        android:background="@drawable/debug_button_background"
+                        android:textColor="#CCCCCC"  android:fontFamily="sans-serif-medium" android:textAllCaps="false" android:minHeight="0dp" android:stateListAnimator="@null"/>
 
                     <Button
                         android:id="@+id/btn_debug_world"
@@ -99,8 +99,8 @@
                         android:text="World Debug"
                         android:textSize="11sp"
                         android:layout_marginTop="2dp"
-                        android:background="#33444444"
-                        android:textColor="#CCCCCC" />
+                        android:background="@drawable/debug_button_background"
+                        android:textColor="#CCCCCC"  android:fontFamily="sans-serif-medium" android:textAllCaps="false" android:minHeight="0dp" android:stateListAnimator="@null"/>
 
                     <Button
                         android:id="@+id/btn_debug_perf"
@@ -109,8 +109,8 @@
                         android:text="Performance Graph"
                         android:textSize="11sp"
                         android:layout_marginTop="2dp"
-                        android:background="#33444444"
-                        android:textColor="#CCCCCC" />
+                        android:background="@drawable/debug_button_background"
+                        android:textColor="#CCCCCC"  android:fontFamily="sans-serif-medium" android:textAllCaps="false" android:minHeight="0dp" android:stateListAnimator="@null"/>
 
                     <Button
                         android:id="@+id/btn_debug_all"
@@ -119,8 +119,8 @@
                         android:text="Toggle All Systems"
                         android:textSize="11sp"
                         android:layout_marginTop="2dp"
-                        android:background="#33444444"
-                        android:textColor="#CCCCCC" />
+                        android:background="@drawable/debug_button_background"
+                        android:textColor="#CCCCCC"  android:fontFamily="sans-serif-medium" android:textAllCaps="false" android:minHeight="0dp" android:stateListAnimator="@null"/>
 
                     <!-- Divider -->
                     <View
@@ -147,8 +147,8 @@
                         android:text="Open Debug Menu"
                         android:textSize="11sp"
                         android:layout_marginTop="2dp"
-                        android:background="#332266"
-                        android:textColor="#00BFFF" />
+                        android:background="@drawable/debug_button_cyan"
+                        android:textColor="#00BFFF"  android:fontFamily="sans-serif-medium" android:textAllCaps="false" android:minHeight="0dp" android:stateListAnimator="@null"/>
 
                     <!-- Divider -->
                     <View
@@ -175,8 +175,8 @@
                         android:text="Heal Player"
                         android:textSize="11sp"
                         android:layout_marginTop="2dp"
-                        android:background="#334433"
-                        android:textColor="#66FF66" />
+                        android:background="@drawable/debug_button_action"
+                        android:textColor="#66FF66"  android:fontFamily="sans-serif-medium" android:textAllCaps="false" android:minHeight="0dp" android:stateListAnimator="@null"/>
 
                     <Button
                         android:id="@+id/btn_debug_killall"
@@ -185,8 +185,8 @@
                         android:text="Kill All NPCs"
                         android:textSize="11sp"
                         android:layout_marginTop="2dp"
-                        android:background="#443333"
-                        android:textColor="#FF6666" />
+                        android:background="@drawable/debug_button_danger"
+                        android:textColor="#FF6666"  android:fontFamily="sans-serif-medium" android:textAllCaps="false" android:minHeight="0dp" android:stateListAnimator="@null"/>
 
                     <Button
                         android:id="@+id/btn_debug_fly"
@@ -195,8 +195,8 @@
                         android:text="Toggle God Mode"
                         android:textSize="11sp"
                         android:layout_marginTop="2dp"
-                        android:background="#334433"
-                        android:textColor="#66FF66" />
+                        android:background="@drawable/debug_button_action"
+                        android:textColor="#66FF66"  android:fontFamily="sans-serif-medium" android:textAllCaps="false" android:minHeight="0dp" android:stateListAnimator="@null"/>
 
                     <Button
                         android:id="@+id/btn_debug_noclip"
@@ -205,8 +205,8 @@
                         android:text="Toggle No Clip"
                         android:textSize="11sp"
                         android:layout_marginTop="2dp"
-                        android:background="#334444"
-                        android:textColor="#66FFFF" />
+                        android:background="@drawable/debug_button_cyan"
+                        android:textColor="#66FFFF"  android:fontFamily="sans-serif-medium" android:textAllCaps="false" android:minHeight="0dp" android:stateListAnimator="@null"/>
 
                 </LinearLayout>
             </ScrollView>
@@ -222,10 +222,11 @@
             android:layout_marginEnd="10dp"
             android:layout_marginTop="10dp"
             android:text="X"
+            android:contentDescription="Close debug controls"
             android:textSize="14sp"
-            android:background="#FF5555"
+            android:background="@drawable/debug_button_close"
             android:textColor="#FFFFFF"
-            android:elevation="10dp" />
+            android:elevation="8dp"  android:fontFamily="sans-serif-medium" android:textAllCaps="false" android:minHeight="0dp" android:stateListAnimator="@null"/>
 
     </FrameLayout>
 
@@ -238,10 +239,11 @@
         android:layout_marginStart="10dp"
         android:layout_marginTop="10dp"
         android:text="D"
+        android:contentDescription="Open debug controls"
         android:textSize="12sp"
-        android:background="#333333"
+        android:background="@drawable/debug_toggle_background"
         android:textColor="#FFFFFF"
         android:alpha="0.7"
-        android:elevation="10dp" />
+        android:elevation="8dp"  android:fontFamily="sans-serif-medium" android:textAllCaps="false" android:minHeight="0dp" android:stateListAnimator="@null"/>
 
 </FrameLayout>

@@ -28,11 +28,11 @@ WorldViewer::~WorldViewer() {
 
 bool WorldViewer::initialize(TextRenderer* textRend, WorldManager* wm) {
     if (initialized) return true;
-    if (!textRend || !wm) return false;
+    if (!textRend) return false;
     textRenderer = textRend;
-    worldManager = wm;
+    worldManager = wm;  // Can be nullptr, connected later via setWorldManager()
     initialized = true;
-    LOGD("WorldViewer initialized");
+    LOGD("WorldViewer initialized (worldManager=%p)", wm);
     return true;
 }
 
@@ -61,8 +61,18 @@ void WorldViewer::update(float deltaTime) {
 }
 
 void WorldViewer::updateCachedInfo() {
-    if (!worldManager) return;
-
+    if (!worldManager) {
+        // No world manager connected - show placeholder data
+        cachedInfo.playerPos = glm::vec3(0.0f, 0.0f, 0.0f);
+        cachedInfo.currentCellX = 0;
+        cachedInfo.currentCellY = 0;
+        cachedInfo.loadedCells = 0;
+        cachedInfo.activeCells = 0;
+        cachedInfo.timeOfDay = 0.0f;
+        cachedInfo.currentWeather = "N/A";
+        cachedInfo.dayCount = 0;
+        return;
+    }
     cachedInfo.playerPos = worldManager->getPlayerPosition();
     cachedInfo.currentCellX = static_cast<int32_t>(floor(cachedInfo.playerPos.x / 4096.0f));
     cachedInfo.currentCellY = static_cast<int32_t>(floor(cachedInfo.playerPos.z / 4096.0f));

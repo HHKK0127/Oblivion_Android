@@ -52,7 +52,8 @@ public:
      * @return Text width (pixels)
      */
     float getTextWidth(const std::string& text, float scale = 1.0f);
-    float getGlyphBearingX(char ch) const;
+        float getTextHeight(float scale = 1.0f) const;
+        float getGlyphBearingX(char ch) const;
     float getGlyphHeight(char ch, float scale = 1.0f) const;
     float getGlyphOffsetY(char ch, float scale = 1.0f) const;
 

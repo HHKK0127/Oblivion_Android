@@ -808,6 +808,58 @@ Java_com_example_oblivion_GameRenderer_nativeIsDebugMenuVisible(
 }
 
 extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeStartGame(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    LOGI("nativeStartGame called");
+    if (g_renderer) {
+        g_renderer->startGame();
+    }
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_example_oblivion_GameRenderer_nativeOnBackKey(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    LOGI("nativeOnBackKey called");
+    if (g_renderer) {
+        return g_renderer->handleBackKey() ? JNI_TRUE : JNI_FALSE;
+    }
+    return JNI_FALSE;
+}
+
+// OblivionEngine helpers (used by GameActivity which talks directly to OblivionEngine)
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_OblivionEngine_nativeSetEngineHandle(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jlong handle) {
+    LOGI("nativeSetEngineHandle: handle=%lld", (long long)handle);
+    g_renderer = reinterpret_cast<Renderer*>(handle);
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_example_oblivion_OblivionEngine_nativeOnBackKey(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    LOGI("OblivionEngine.nativeOnBackKey called");
+    if (g_renderer) {
+        return g_renderer->handleBackKey() ? JNI_TRUE : JNI_FALSE;
+    }
+    return JNI_FALSE;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_example_oblivion_OblivionEngine_nativeIsExitRequested(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    if (g_renderer) {
+        return g_renderer->isExitRequested() ? JNI_TRUE : JNI_FALSE;
+    }
+    return JNI_FALSE;
+}
+
+extern "C" JNIEXPORT void JNICALL
 Java_com_example_oblivion_GameRenderer_nativeExecuteConsoleCommand(
         [[maybe_unused]] JNIEnv* env,
         [[maybe_unused]] jobject obj,

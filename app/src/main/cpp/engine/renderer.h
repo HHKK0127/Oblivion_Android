@@ -255,7 +255,9 @@ public:
     void toggleGameConsole();
     void toggleDebugMenu();
     bool isDebugMenuVisible() const;
-    void toggleNpcDebugVisualizer();
+    void startGame();  // Skip launcher/title and start game world directly
+        bool handleBackKey();  // Handle Android back button, returns true if consumed
+        void toggleNpcDebugVisualizer();
     void toggleWorldDebugInfo();
     void togglePerformanceGraph();
     void toggleAllDebugSystems();

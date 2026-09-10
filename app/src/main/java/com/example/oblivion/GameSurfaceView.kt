@@ -4,6 +4,7 @@ import android.content.Context
 import android.opengl.GLSurfaceView
 import android.util.AttributeSet
 import android.util.Log
+import android.view.KeyEvent
 import android.view.MotionEvent
 
 class GameSurfaceView : GLSurfaceView {
@@ -113,6 +114,20 @@ class GameSurfaceView : GLSurfaceView {
             }
         }
         return true
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
+            Log.i(TAG, "BACK key pressed, forwarding to native")
+            val consumed = renderer?.nativeOnBackKey() ?: false
+            if (consumed) {
+                Log.i(TAG, "BACK key consumed by native engine")
+                return true
+            }
+            // Not consumed by native - let system handle it (will finish activity)
+            Log.i(TAG, "BACK key not consumed by native, letting system handle")
+        }
+        return super.dispatchKeyEvent(event)
     }
 
     override fun onResume() {

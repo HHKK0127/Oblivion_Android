@@ -52,10 +52,15 @@ public:
     void render();
 
     void setScreenSize(int w, int h);
+    void setOnStartGame(std::function<void()> callback) { onStartGame = std::move(callback); }
+
+    /** Connect a WorldManager to the WorldViewer (deferred injection) */
+    void setWorldManager(class WorldManager* worldManager);
 
 private:
     TextRenderer* textRenderer;
     GameConsole* console;
+    std::function<void()> onStartGame;
     bool visible;
     bool initialized;
 

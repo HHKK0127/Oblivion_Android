@@ -207,42 +207,30 @@ void UIButton::renderLabel() const {
     if (!textRenderer || label.empty()) return;
 
     glm::vec2 absPos = getAbsolutePosition();
+    glm::vec2 btnSize = getSize();
 
-    // Calculate accurate text dimensions
-    // getTextWidth returns sum of advanceX; renderText adds bearingX to the first glyph,
-    // so factor that in to keep the glyph bounds visually centered inside the button.
     float textWidth = textRenderer->getTextWidth(label, labelScale);
     float firstBearingX = textRenderer->getGlyphBearingX(label[0]) * labelScale;
     float visibleWidth = textWidth + firstBearingX;
 
-    // Calculate vertical metrics from first character's glyph data.
-    // renderText places the glyph bitmap at y + (FONT_SIZE + bearingY) * scale.
-    // The glyph bitmap height is (y1 - y0) * ATLAS_HEIGHT * scale.
-    // So the glyph top relative to the y coordinate is: offsetY
-    // And the glyph bottom is: offsetY + height
-    // The center of the glyph vertically is: offsetY + height/2
-    // To center the glyph in the button, we want:
-    //   y + offsetY + height/2 = absPos.y + btnSize.y/2
-    // => y = absPos.y + btnSize.y/2 - offsetY - height/2
-    float glyphHeight = textRenderer->getGlyphHeight(label[0], labelScale);
+    // renderText places glyph at y + (FONT_SIZE + bearingY) * scale
+    // Center vertically: place y so glyph center sits at button center
+    // y = btnCenter - glyphOffset - glyphHeight/2
     float glyphOffsetY = textRenderer->getGlyphOffsetY(label[0], labelScale);
+    float glyphHeight = textRenderer->getGlyphHeight(label[0], labelScale);
 
-    // Center the glyph bounds within the button
-    glm::vec2 btnSize = getSize();
     float textX = absPos.x + (btnSize.x - visibleWidth) * 0.5f;
-    float textY = absPos.y + (btnSize.y * 0.5f) - glyphOffsetY - (glyphHeight * 0.5f);
+    float textY = absPos.y + btnSize.y * 0.5f - glyphOffsetY - glyphHeight * 0.5f;
 
-    // Clamp to integer positions for sharper text
     textX = std::round(textX);
     textY = std::round(textY);
 
-    // If button has transparent background, highlight the label itself on press/hover (classic Oblivion style)
     glm::vec3 drawColor = labelColor;
     if (normalColor.w == 0.0f) {
         if (pressed || hovered) {
-            drawColor = glm::vec3(0.95f, 0.88f, 0.65f); // Bright gold highlight
+            drawColor = glm::vec3(0.95f, 0.88f, 0.65f);
         } else {
-            drawColor = glm::vec3(0.65f, 0.58f, 0.44f); // Muted bronze/parchment
+            drawColor = glm::vec3(0.65f, 0.58f, 0.44f);
         }
     } else {
         if (!enabled) {

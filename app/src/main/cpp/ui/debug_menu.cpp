@@ -81,15 +81,30 @@ void DebugMenu::toggle() {
 }
 
 void DebugMenu::setScreenSize(int w, int h) {
-    screenWidth = w;
-    screenHeight = h;
-    safeRight = std::max(160.0f, w * 0.15f);
-    safeBottom = std::max(220.0f, h * 0.18f);
+    screenWidth = std::max(1, w);
+    screenHeight = std::max(1, h);
+
+    // Keep the debug surface inside the display safe area. The old fixed
+    // right/bottom insets left too little room on narrow devices and caused
+    // tabs and labels to render outside their panel.
+    const float minDim = static_cast<float>(std::min(screenWidth, screenHeight));
+    const float s = std::clamp(minDim / 1080.0f, 0.5f, 2.0f);
+    safeLeft = std::max(140.0f * s, screenWidth * 0.025f);
+    safeTop = std::max(8.0f * s, screenHeight * 0.012f);
+    safeRight = std::max(24.0f * s, screenWidth * 0.025f);
+    safeBottom = std::max(64.0f * s, screenHeight * 0.08f);
 
     // Propagate to viewers
     if (textureViewer) textureViewer->setScreenSize(w, h);
     if (modelViewer) modelViewer->setScreenSize(w, h);
     if (worldViewer) worldViewer->setScreenSize(w, h);
+}
+
+void DebugMenu::setWorldManager(class WorldManager* worldManager) {
+    if (worldViewer) {
+        worldViewer->setWorldManager(worldManager);
+        LOGI_DEBUG("WorldManager connected to WorldViewer");
+    }
 }
 
 // ==================== Touch Event Handling ====================
@@ -244,6 +259,17 @@ void DebugMenu::executeButtonCommand(Button& btn) {
         }
         return;
     }
+    if (btn.command == "startgame") {
+        LOGI_DEBUG("Start Game command - closing debug menu and entering game world");
+        feedbackText = "Starting Game...";
+        feedbackTimer = 1.0f;
+        feedbackColor = glm::vec3(0.2f, 0.9f, 0.4f);
+        visible = false;  // Close debug menu
+        if (onStartGame) {
+            onStartGame();
+        }
+        return;
+    }
 
     if (!console) {
         LOGI_DEBUG("Console not available");
@@ -360,7 +386,11 @@ void DebugMenu::calculateButtonPositions() {
     // Tab buttons - use smaller width to fit 13 tabs
     float tabY = safeTop + 8.0f * s;
     float tabH = TAB_HEIGHT * s;
-    float tabW = std::min(80.0f * s, (screenWidth - safeLeft - safeRight - margin * (tabButtons.size() + 1)) / tabButtons.size());
+    const float availableWidth = std::max(1.0f, static_cast<float>(screenWidth) - safeLeft - safeRight - margin * (tabButtons.size() + 1));
+    const float naturalTabW = availableWidth / std::max<size_t>(1, tabButtons.size());
+    const float tabW = naturalTabW >= 48.0f * s
+        ? std::min(96.0f * s, naturalTabW)
+        : std::max(1.0f, naturalTabW);
     for (auto& btn : tabButtons) {
         btn.x = x;
         btn.y = tabY;
@@ -432,14 +462,23 @@ void DebugMenu::renderTabBar() {
         UIDrawHelper::drawColoredQuad(btn.x, btn.y, btn.w, btn.h, bgColor,
                                        screenWidth, screenHeight);
 
-        // Tab label - use smaller scale for many tabs
-        std::string label = isActive ? "[" + btn.label + "]" : btn.label;
-        glm::vec3 textColor = isActive ? glm::vec3(1.0f, 1.0f, 1.0f) : glm::vec3(0.7f, 0.7f, 0.7f);
-        float labelScale = 0.35f * s; // Smaller to fit 13 tabs
-        textRenderer->renderText(label.c_str(),
-                                  btn.x + 3.0f * s,
-                                  btn.y + btn.h * 0.5f,
-                                  textColor, labelScale);
+        // Keep labels inside the tab even when the device is narrow.
+                const float labelScale = std::max(0.55f, 0.72f * s);
+        const float maxTextWidth = std::max(1.0f, btn.w - 8.0f * s);
+        std::string label = btn.label;
+        while (label.size() > 1 && textRenderer->getTextWidth(label, labelScale) > maxTextWidth) {
+            label.pop_back();
+        }
+        if (label != btn.label && label.size() > 1) {
+            label.back() = '.';
+        }
+        glm::vec3 textColor = isActive ? glm::vec3(1.0f, 1.0f, 1.0f) : glm::vec3(0.82f, 0.82f, 0.86f);
+        const float textWidth = textRenderer->getTextWidth(label, labelScale);
+                const float textHeight = textRenderer->getTextHeight(labelScale);
+                textRenderer->renderText(label.c_str(),
+                                          btn.x + std::max(4.0f * s, (btn.w - textWidth) * 0.5f),
+                                          btn.y + (btn.h - textHeight) * 0.5f,
+                                          textColor, labelScale);
     }
 }
 
@@ -470,7 +509,7 @@ void DebugMenu::renderContent() {
     // Render command feedback at bottom of content area
     if (feedbackTimer > 0.0f && textRenderer) {
         float feedbackY = contentY + contentH - 30.0f * s;
-        float feedbackFontSize = 0.4f * s;
+            float feedbackFontSize = 0.55f * s;
         float textW = textRenderer->getTextWidth(feedbackText.c_str(), feedbackFontSize);
         float feedbackX = (screenWidth - textW) * 0.5f;
 
@@ -482,8 +521,9 @@ void DebugMenu::renderContent() {
 
         // Feedback text
         float alpha = std::min(1.0f, feedbackTimer);
-        textRenderer->renderText(feedbackText.c_str(), feedbackX, feedbackY + 12.0f * s,
-                                  glm::vec4(feedbackColor.x, feedbackColor.y, feedbackColor.z, alpha), feedbackFontSize);
+            float textH = textRenderer->getTextHeight(feedbackFontSize);
+            textRenderer->renderText(feedbackText.c_str(), feedbackX, feedbackY + (25.0f * s - textH) * 0.5f,
+                                      glm::vec4(feedbackColor.x, feedbackColor.y, feedbackColor.z, alpha), feedbackFontSize);
     }
 }
 
@@ -495,11 +535,22 @@ void DebugMenu::renderButton(Button& btn, float s) {
     UIDrawHelper::drawColoredQuad(btn.x, btn.y, btn.w, btn.h, bgColor,
                                    screenWidth, screenHeight);
 
-    textRenderer->renderText(btn.label.c_str(),
-                              btn.x + 10.0f * s,
-                              btn.y + btn.h * 0.5f,
-                              glm::vec3(1.0f, 1.0f, 1.0f), 0.4f * s);
-}
+        const float labelScale = std::max(0.55f, 0.70f * s);
+    const float maxTextWidth = std::max(1.0f, btn.w - 20.0f * s);
+    std::string label = btn.label;
+    while (label.size() > 1 && textRenderer->getTextWidth(label, labelScale) > maxTextWidth) {
+        label.pop_back();
+    }
+    if (label != btn.label && label.size() > 1) {
+        label.back() = '.';
+    }
+        const float textW = textRenderer->getTextWidth(label, labelScale);
+        const float textH = textRenderer->getTextHeight(labelScale);
+        textRenderer->renderText(label.c_str(),
+                                  btn.x + 10.0f * s,
+                                  btn.y + (btn.h - textH) * 0.5f,
+                                  glm::vec3(1.0f, 1.0f, 1.0f), labelScale);
+    }
 
 // ==================== Utility ====================
 
@@ -565,6 +616,7 @@ void DebugMenu::createAllTabContents() {
     {
         TabContent content;
         std::vector<std::pair<std::string, std::string>> items = {
+            {"Start Game", "startgame"},
             {"Heal", "heal"},
             {"God Mode", "god"},
             {"Set HP 100", "sethealth 100"},
