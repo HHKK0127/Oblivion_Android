@@ -177,6 +177,6 @@ private:
     } metrics_;
     
     // Estimation
+    int monitorIntervalMs_ = 100;
     uint64_t lastFrameTime_ = 0;
-    float cpuTime_ = 0;
 };

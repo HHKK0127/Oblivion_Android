@@ -295,6 +295,13 @@ ThemeColor ThemeManager::getColor(const std::string& colorName) const {
     auto it = overrides_.find(colorName);
     if (it != overrides_.end()) return it->second;
     
+    // During transition, interpolate between source and target
+    if (transitioning_) {
+        ThemeColor src = const_cast<ThemeManager*>(this)->getColorFromTheme(transitionSource_, colorName);
+        ThemeColor tgt = const_cast<ThemeManager*>(this)->getColorFromTheme(transitionTarget_, colorName);
+        return ThemeColor::lerp(src, tgt, transitionProgress_);
+    }
+    
     return const_cast<ThemeManager*>(this)->getColorFromTheme(*currentTheme_, colorName);
 }
 

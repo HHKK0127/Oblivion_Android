@@ -145,6 +145,7 @@ bool GPUMonitor::initGeneric() {
 void GPUMonitor::startMonitoring(int intervalMs) {
     if (monitoring_) return;
     
+    monitorIntervalMs_ = intervalMs;
     monitoring_ = true;
     monitorThread_ = std::thread(&GPUMonitor::monitoringThread, this);
     
@@ -214,7 +215,7 @@ void GPUMonitor::monitoringThread() {
             }
         }
         
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(monitorIntervalMs_));
     }
 }
 
@@ -272,8 +273,9 @@ GPUStats GPUMonitor::readMaliStats() {
         stats.clockFrequency = (float)clk / 1000000.0f; // Hz -> MHz
     }
     
-    // Estimation based
-    stats = estimateFromTiming();
+    // Get usage estimation
+    GPUStats estimated = estimateFromTiming();
+    stats.usagePercent = estimated.usagePercent;
     
     // Temperature
     int64_t temp = 0;
