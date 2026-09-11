@@ -8,6 +8,7 @@
 #include "viewer_3d.h"
 #include "theme_manager.h"
 #include "../engine/gpu_monitor.h"
+#include "../engine/shader_debug.h"
 #include <algorithm>
 #include <cmath>
 #include <sstream>
@@ -329,6 +330,80 @@ void DebugMenu::executeButtonCommand(Button& btn) {
             feedbackColor = glm::vec3(0.9f, 0.7f, 0.3f);
         } else {
             feedbackText = "Theme not found: " + themeName;
+            feedbackTimer = 2.0f;
+            feedbackColor = glm::vec3(0.9f, 0.3f, 0.3f);
+        }
+        return;
+    }
+
+    // Shader debug commands
+    if (btn.command == "shaderinfo") {
+        uint32_t currentShader = ShaderDebug::getCurrentProgram();
+        if (currentShader > 0) {
+            feedbackText = "Shader ID: " + std::to_string(currentShader);
+            feedbackTimer = 3.0f;
+            feedbackColor = glm::vec3(0.3f, 0.9f, 0.9f);
+            ShaderDebug::dumpShaderSource(currentShader);
+        } else {
+            feedbackText = "No active shader";
+            feedbackTimer = 2.0f;
+            feedbackColor = glm::vec3(0.9f, 0.3f, 0.3f);
+        }
+        return;
+    }
+    if (btn.command == "shaderuniforms") {
+        uint32_t currentShader = ShaderDebug::getCurrentProgram();
+        if (currentShader > 0) {
+            std::string info = ShaderDebug::formatUniforms(currentShader);
+            feedbackText = "Uniforms logged";
+            feedbackTimer = 3.0f;
+            feedbackColor = glm::vec3(0.3f, 0.9f, 0.9f);
+            LOGI_DEBUG("Shader Uniforms:\n%s", info.c_str());
+        } else {
+            feedbackText = "No active shader";
+            feedbackTimer = 2.0f;
+            feedbackColor = glm::vec3(0.9f, 0.3f, 0.3f);
+        }
+        return;
+    }
+    if (btn.command == "shaderattribs") {
+        uint32_t currentShader = ShaderDebug::getCurrentProgram();
+        if (currentShader > 0) {
+            std::string info = ShaderDebug::formatAttributes(currentShader);
+            feedbackText = "Attributes logged";
+            feedbackTimer = 3.0f;
+            feedbackColor = glm::vec3(0.3f, 0.9f, 0.9f);
+            LOGI_DEBUG("Shader Attributes:\n%s", info.c_str());
+        } else {
+            feedbackText = "No active shader";
+            feedbackTimer = 2.0f;
+            feedbackColor = glm::vec3(0.9f, 0.3f, 0.3f);
+        }
+        return;
+    }
+    if (btn.command == "shadervalidate") {
+        uint32_t currentShader = ShaderDebug::getCurrentProgram();
+        if (currentShader > 0) {
+            bool valid = ShaderDebug::validateProgram(currentShader);
+            feedbackText = valid ? "Shader valid" : "Shader invalid";
+            feedbackTimer = 3.0f;
+            feedbackColor = valid ? glm::vec3(0.3f, 0.9f, 0.3f) : glm::vec3(0.9f, 0.3f, 0.3f);
+        } else {
+            feedbackText = "No active shader";
+            feedbackTimer = 2.0f;
+            feedbackColor = glm::vec3(0.9f, 0.3f, 0.3f);
+        }
+        return;
+    }
+    if (btn.command == "shaderdump") {
+        uint32_t currentShader = ShaderDebug::getCurrentProgram();
+        if (currentShader > 0) {
+            ShaderDebug::dumpShaderSource(currentShader);
+            feedbackText = "Shader source dumped to log";
+            feedbackTimer = 3.0f;
+            feedbackColor = glm::vec3(0.3f, 0.9f, 0.9f);
+        } else {
+            feedbackText = "No active shader";
             feedbackTimer = 2.0f;
             feedbackColor = glm::vec3(0.9f, 0.3f, 0.3f);
         }
@@ -942,6 +1017,12 @@ void DebugMenu::createAllTabContents() {
             {"GPU Monitor On", "gpumonitor on"},
             {"GPU Monitor Off", "gpumonitor off"},
             {"GPU Stats", "gpustats"},
+            // Shader Debug
+            {"Current Shader", "shaderinfo"},
+            {"Shader Uniforms", "shaderuniforms"},
+            {"Shader Attribs", "shaderattribs"},
+            {"Validate Shader", "shadervalidate"},
+            {"Dump Shaders", "shaderdump"},
             // Theme
             {"Theme Dark", "theme Dark Modern"},
             {"Theme Oblivion", "theme Oblivion Classic"},

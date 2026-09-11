@@ -46,6 +46,7 @@ add_library(native-lib SHARED
     engine/cache_manager.cpp
     engine/profiler_dashboard.cpp
     engine/gpu_monitor.cpp
+    engine/shader_debug.cpp
     # Phase 42: Game Loop Integration
     engine/state_manager.cpp
     engine/input_router.cpp
