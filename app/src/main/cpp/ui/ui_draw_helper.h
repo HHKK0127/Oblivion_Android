@@ -115,6 +115,7 @@ private:
     static GLuint s_vao;
     static GLuint s_vbo;
     static GLuint s_3dVbo;
+    static GLuint s_ebo;
     static GLint  s_savedViewport[4];
     static bool   s_viewportSaved;
     static bool s_initialized;

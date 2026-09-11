@@ -10,6 +10,7 @@ GLuint UIDrawHelper::s_3dTextureProgram = 0;
 GLuint UIDrawHelper::s_vao = 0;
 GLuint UIDrawHelper::s_vbo = 0;
 GLuint UIDrawHelper::s_3dVbo = 0;
+GLuint UIDrawHelper::s_ebo = 0;
 GLint  UIDrawHelper::s_savedViewport[4] = {0, 0, 0, 0};
 bool   UIDrawHelper::s_viewportSaved = false;
 bool UIDrawHelper::s_initialized = false;
@@ -190,6 +191,7 @@ void UIDrawHelper::initialize() {
     glGenVertexArrays(1, &s_vao);
     glGenBuffers(1, &s_vbo);
     glGenBuffers(1, &s_3dVbo);
+    glGenBuffers(1, &s_ebo);
 
     s_initialized = true;
 }
@@ -201,6 +203,7 @@ void UIDrawHelper::cleanup() {
     glDeleteProgram(s_3dTextureProgram);
     glDeleteBuffers(1, &s_vbo);
     glDeleteBuffers(1, &s_3dVbo);
+    glDeleteBuffers(1, &s_ebo);
     glDeleteVertexArrays(1, &s_vao);
     s_colorProgram = 0;
     s_textureProgram = 0;
@@ -208,6 +211,7 @@ void UIDrawHelper::cleanup() {
     s_vao = 0;
     s_vbo = 0;
     s_3dVbo = 0;
+    s_ebo = 0;
     s_initialized = false;
 }
 
