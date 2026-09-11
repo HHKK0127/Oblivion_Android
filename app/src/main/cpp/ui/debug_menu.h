@@ -82,6 +82,7 @@ private:
         SOUND,
         ASSETS,
         LOGS,
+        MATERIAL,
         COUNT
     };
 

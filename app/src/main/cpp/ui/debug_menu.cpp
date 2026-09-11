@@ -564,6 +564,7 @@ std::string DebugMenu::getTabName(Tab tab) const {
         case Tab::SOUND: return "Sound";
         case Tab::ASSETS: return "Assets";
         case Tab::LOGS: return "Logs";
+        case Tab::MATERIAL: return "Material";
         default: return "?";
     }
 }
@@ -980,6 +981,34 @@ void DebugMenu::createAllTabContents() {
             btn.label = item.first;
             btn.command = item.second;
             btn.baseColor = glm::vec3(0.5f, 0.4f, 0.3f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
+    }
+
+    // Material tab
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Open 3D Viewer", "viewer3d"},
+            {"Material Preview", "materialpreview"},
+            {"Iron Preset", "material iron"},
+            {"Gold Preset", "material gold"},
+            {"Steel Preset", "material steel"},
+            {"Marble Preset", "material marble"},
+            {"Oak Preset", "material oak"},
+            {"Leather Preset", "material leather"},
+            {"Glass Preset", "material glass"},
+            {"Enchanted Preset", "material enchanted"},
+            {"Daedric Preset", "material daedric"},
+            {"Cycle Materials", "materialcycle"},
+            {"Material Info", "materialinfo"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.4f, 0.3f, 0.5f);
             content.buttons.push_back(btn);
         }
         tabContents.push_back(content);
