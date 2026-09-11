@@ -266,6 +266,34 @@ Java_com_example_oblivion_GameRenderer_nativeOnTouchEvent(
     }
 }
 
+// ============================================================================
+// Gamepad / Controller input JNI bridge
+// ============================================================================
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeOnGamepadKeyEvent(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jint deviceId,
+        jint keyCode,
+        jboolean pressed) {
+    if (g_renderer) {
+        g_renderer->onGamepadKeyEvent(deviceId, keyCode, pressed == JNI_TRUE);
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeOnGamepadAxisEvent(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jint deviceId,
+        jint axisId,
+        jfloat value) {
+    if (g_renderer) {
+        g_renderer->onGamepadAxisEvent(deviceId, axisId, value);
+    }
+}
+
 // Set BSA data path from Java (e.g., external storage path)
 extern "C" JNIEXPORT void JNICALL
 Java_com_example_oblivion_GameRenderer_nativeSetDataPath(

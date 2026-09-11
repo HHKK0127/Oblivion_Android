@@ -92,6 +92,18 @@ class OblivionEngine {
         }
     }
 
+    fun onGamepadKeyEvent(deviceId: Int, keyCode: Int, pressed: Boolean) {
+        if (isInitialized) {
+            nativeOnGamepadKeyEvent(deviceId, keyCode, pressed)
+        }
+    }
+
+    fun onGamepadAxisEvent(deviceId: Int, axisId: Int, value: Float) {
+        if (isInitialized) {
+            nativeOnGamepadAxisEvent(deviceId, axisId, value)
+        }
+    }
+
     private external fun nativeInitialize(surface: Surface, enableValidation: Boolean): Long
     private external fun nativeOnSurfaceCreated(handle: Long)
     private external fun nativeOnSurfaceChanged(handle: Long, width: Int, height: Int)
@@ -100,4 +112,6 @@ class OblivionEngine {
     private external fun nativeResume(handle: Long)
     private external fun nativeDestroy(handle: Long)
     private external fun nativeOnTouchEvent(handle: Long, pointerId: Int, x: Float, y: Float, action: Int)
+    private external fun nativeOnGamepadKeyEvent(deviceId: Int, keyCode: Int, pressed: Boolean)
+    private external fun nativeOnGamepadAxisEvent(deviceId: Int, axisId: Int, value: Float)
 }

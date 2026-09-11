@@ -45,6 +45,13 @@ public:
     void onKeyboardInput(int key, bool isPressed);  // WASD + Space
     void setSprinting(bool sprint);
 
+    // Gamepad input
+    void onGamepadMove(float stickX, float stickY);    // Left stick movement
+    void onGamepadCamera(float stickX, float stickY);  // Right stick camera
+    void onInteract();                                   // A button - Interact
+    void onJump();                                       // X button - Jump
+    void onCastSpell();                                  // Y button - Cast spell
+
     // Player Access
     std::shared_ptr<Player> getPlayer() { return player; }
     const glm::vec3& getPlayerPosition() const { return player->position; }

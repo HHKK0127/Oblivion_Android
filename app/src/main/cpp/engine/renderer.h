@@ -52,6 +52,7 @@
 #include "../map/map_system.h"
 #include "../inventory/inventory_grid.h"
 #include "../inventory/equipment_manager.h"
+#include "../input/gamepad_mapper.h"
 
 #ifdef AUDIO_SYSTEM_ENABLED
 #include "../audio/audio_manager.h"
@@ -271,6 +272,11 @@ public:
     // Input Handling
     void onTouchEvent(int pointerId, float x, float y, int action);
 
+    // Gamepad / Controller input
+    void onGamepadKeyEvent(int deviceId, int keyCode, bool pressed);
+    void onGamepadAxisEvent(int deviceId, int axisId, float value);
+    GamepadMapper& getGamepadMapper() { return gamepadMapper; }
+
     // Touch state tracking
     struct TouchState {
         float lastX = 0.0f;
@@ -278,6 +284,9 @@ public:
         bool active = false;
     };
     std::unordered_map<int, TouchState> touchStates;
+
+    // Gamepad mapper for controller input
+    GamepadMapper gamepadMapper;
 
     // Save/Load
     bool saveGameState(const std::string& slotName);

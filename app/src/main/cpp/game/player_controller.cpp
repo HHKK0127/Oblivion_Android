@@ -155,6 +155,45 @@ void PlayerController::setJoystickInput(float x, float y) {
     joystickInput.y = y;
 }
 
+// ============================================================================
+// Gamepad input handling
+// ============================================================================
+
+void PlayerController::onGamepadMove(float stickX, float stickY) {
+    // Use the same joystick input system
+    joystickInput.x = stickX;
+    joystickInput.y = stickY;
+}
+
+void PlayerController::onGamepadCamera(float stickX, float stickY) {
+    // Apply camera rotation based on right stick
+    // Convert stick input to camera delta (sensitivity can be adjusted)
+    const float cameraSensitivity = 2.0f;
+    float deltaX = stickX * cameraSensitivity;
+    float deltaY = stickY * cameraSensitivity;
+
+    // Forward to touch input handler for camera rotation
+    onTouchInput(deltaX, deltaY);
+}
+
+void PlayerController::onInteract() {
+    LOGI("Gamepad: Interact (A button)");
+    // TODO: Implement interaction system (talk to NPC, pick up item, open door)
+    // For now, just log the action
+}
+
+void PlayerController::onJump() {
+    LOGI("Gamepad: Jump (X button)");
+    // TODO: Implement jump when physics system supports it
+    // For now, just log the action
+}
+
+void PlayerController::onCastSpell() {
+    LOGI("Gamepad: Cast Spell (Y button)");
+    // TODO: Implement spell casting
+    // For now, just log the action
+}
+
 glm::vec3 PlayerController::calculateMovementVector() {
     glm::vec3 movement(0.0f, 0.0f, 0.0f);
 

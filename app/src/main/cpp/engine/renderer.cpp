@@ -3400,6 +3400,109 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
         }
     }
 }
+
+// ============================================================================
+// Gamepad / Controller input handling
+// ============================================================================
+
+void Renderer::onGamepadKeyEvent(int deviceId, int keyCode, bool pressed) {
+    // Forward to gamepad mapper
+    bool handled = gamepadMapper.onKeyEvent(deviceId, keyCode, pressed);
+    if (handled) {
+        LOGD("Gamepad key event: device=%d keyCode=%d pressed=%d", deviceId, keyCode, pressed);
+
+        // Map gamepad buttons to game actions
+        GamepadButton button = static_cast<GamepadButton>(keyCode);
+        if (pressed) {
+            switch (button) {
+                case GamepadButton::BUTTON_A:
+                    // Confirm / Interact
+                    if (playerController) {
+                        playerController->onInteract();
+                    }
+                    break;
+                case GamepadButton::BUTTON_B:
+                    // Cancel / Back
+                    if (debugMenu && debugMenu->isVisible()) {
+                        debugMenu->setVisible(false);
+                    }
+                    break;
+                case GamepadButton::BUTTON_X:
+                    // Jump / Secondary action
+                    if (playerController) {
+                        playerController->onJump();
+                    }
+                    break;
+                case GamepadButton::BUTTON_Y:
+                    // Magic / Cast
+                    if (playerController) {
+                        playerController->onCastSpell();
+                    }
+                    break;
+                case GamepadButton::BUMPER_LEFT:
+                    // Previous spell/item
+                    break;
+                case GamepadButton::BUMPER_RIGHT:
+                    // Next spell/item
+                    break;
+                case GamepadButton::START:
+                    // Pause menu
+                    break;
+                case GamepadButton::SELECT:
+                    // Map / Journal
+                    break;
+                case GamepadButton::DPAD_UP:
+                    // Menu navigation up
+                    break;
+                case GamepadButton::DPAD_DOWN:
+                    // Menu navigation down
+                    break;
+                case GamepadButton::DPAD_LEFT:
+                    // Menu navigation left
+                    break;
+                case GamepadButton::DPAD_RIGHT:
+                    // Menu navigation right
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+}
+
+void Renderer::onGamepadAxisEvent(int deviceId, int axisId, float value) {
+    // Forward to gamepad mapper
+    bool handled = gamepadMapper.onMotionEvent(deviceId, axisId, value);
+    if (handled) {
+        LOGD("Gamepad axis event: device=%d axis=%d value=%.3f", deviceId, axisId, value);
+    }
+
+    // Handle left stick as movement
+    if (axisId == 0 || axisId == 1) { // LEFT_X or LEFT_Y
+        if (playerController) {
+            float stickX = gamepadMapper.getLeftStickX(deviceId);
+            float stickY = gamepadMapper.getLeftStickY(deviceId);
+            // Apply dead zone and forward to player controller
+            if (std::abs(stickX) > 0.1f || std::abs(stickY) > 0.1f) {
+                playerController->onGamepadMove(stickX, stickY);
+            } else {
+                playerController->onGamepadMove(0.0f, 0.0f);
+            }
+        }
+    }
+
+    // Handle right stick as camera
+    if (axisId == 11 || axisId == 14) { // RIGHT_X or RIGHT_Y
+        if (playerController) {
+            float stickX = gamepadMapper.getRightStickX(deviceId);
+            float stickY = gamepadMapper.getRightStickY(deviceId);
+            // Apply dead zone and forward for camera rotation
+            if (std::abs(stickX) > 0.1f || std::abs(stickY) > 0.1f) {
+                playerController->onGamepadCamera(stickX, stickY);
+            }
+        }
+    }
+}
 void Renderer::cleanup() {
     LOGI("Renderer cleaning up");
 
