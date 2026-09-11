@@ -96,6 +96,7 @@ add_library(native-lib SHARED
     game/npc_manager.cpp
     game/combat_manager.cpp
     game/quest_manager.cpp
+    game/debug_game_bridge.cpp
     game/spell_manager.cpp
     game/navmesh_manager.cpp
     game/ai_package.cpp
@@ -139,6 +140,7 @@ add_library(native-lib SHARED
     ui/world_viewer.cpp
     ui/mesh_3d.cpp
     ui/viewer_3d.cpp
+    ui/material_manager.cpp
     ui/npc_debug_visualizer.cpp
     ui/world_debug_info.cpp
     ui/performance_graph.cpp
