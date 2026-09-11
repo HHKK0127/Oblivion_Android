@@ -20,6 +20,18 @@ public:
     void setTexture(unsigned int textureId);
     void setTextureFromFile(const std::string& filepath);
 
+    // Normal Map
+    void setNormalMap(unsigned int textureId);
+    void setNormalMapFromFile(const std::string& filepath);
+    unsigned int getNormalMapId() const { return normalMapId; }
+    bool hasNormalMap() const { return normalMapId != 0; }
+
+    // Specular Map
+    void setSpecularMap(unsigned int textureId);
+    void setSpecularMapFromFile(const std::string& filepath);
+    unsigned int getSpecularMapId() const { return specularMapId; }
+    bool hasSpecularMap() const { return specularMapId != 0; }
+
     // Getters
     glm::vec3 getColor() const { return color; }
     glm::vec3 getAmbient() const { return ambient; }
@@ -39,4 +51,6 @@ private:
     glm::vec3 specular;
     float shininess;
     unsigned int textureId;
+    unsigned int normalMapId;
+    unsigned int specularMapId;
 };

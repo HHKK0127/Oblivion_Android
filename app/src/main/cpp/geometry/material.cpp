@@ -15,7 +15,9 @@ Material::Material()
       diffuse(0.8f, 0.8f, 0.8f),
       specular(1.0f, 1.0f, 1.0f),
       shininess(32.0f),
-      textureId(0) {
+      textureId(0),
+      normalMapId(0),
+      specularMapId(0) {
     LOGD("Material created with default properties");
 }
 
@@ -54,9 +56,39 @@ void Material::setTextureFromFile(const std::string& filepath) {
     LOGD("Texture loading from file: %s (not yet implemented)", filepath.c_str());
 }
 
+// Normal Map
+void Material::setNormalMap(unsigned int texId) {
+    normalMapId = texId;
+    LOGD("Normal map set: %u", normalMapId);
+}
+
+void Material::setNormalMapFromFile(const std::string& filepath) {
+    // TODO: Implement normal map loading from file
+    LOGD("Normal map loading from file: %s (not yet implemented)", filepath.c_str());
+}
+
+// Specular Map
+void Material::setSpecularMap(unsigned int texId) {
+    specularMapId = texId;
+    LOGD("Specular map set: %u", specularMapId);
+}
+
+void Material::setSpecularMapFromFile(const std::string& filepath) {
+    // TODO: Implement specular map loading from file
+    LOGD("Specular map loading from file: %s (not yet implemented)", filepath.c_str());
+}
+
 void Material::cleanup() {
     if (textureId != 0) {
         glDeleteTextures(1, &textureId);
         textureId = 0;
+    }
+    if (normalMapId != 0) {
+        glDeleteTextures(1, &normalMapId);
+        normalMapId = 0;
+    }
+    if (specularMapId != 0) {
+        glDeleteTextures(1, &specularMapId);
+        specularMapId = 0;
     }
 }
