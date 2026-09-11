@@ -2,6 +2,7 @@
 #include "mesh_3d.h"
 #include "text_renderer.h"
 #include "ui_draw_helper.h"
+#include "material_manager.h"
 #include <android/log.h>
 #include <sstream>
 #include <algorithm>
@@ -22,6 +23,9 @@ Viewer3D::Viewer3D()
       distance(3.0f),
       minDistance(1.2f), maxDistance(8.0f),
       autoRotate(true), showWireframe(false),
+      previewMode(PreviewMode::TEXTURE),
+      currentMaterialPreset("Iron"),
+      currentMaterialIndex(0),
       ebo(0), meshesGenerated(false) {}
 
 Viewer3D::~Viewer3D() { cleanup(); }
@@ -67,6 +71,29 @@ void Viewer3D::cycleDisplayMode() {
     int m = static_cast<int>(displayMode);
     m = (m + 1) % 3;
     displayMode = static_cast<DisplayMode>(m);
+}
+
+void Viewer3D::togglePreviewMode() {
+    previewMode = (previewMode == PreviewMode::TEXTURE) ?
+                  PreviewMode::MATERIAL : PreviewMode::TEXTURE;
+}
+
+void Viewer3D::setMaterialPreset(const std::string& presetName) {
+    currentMaterialPreset = presetName;
+    const auto& presets = UI::MaterialManager::instance().getPresets();
+    for (size_t i = 0; i < presets.size(); ++i) {
+        if (presets[i].name == presetName) {
+            currentMaterialIndex = static_cast<int>(i);
+            break;
+        }
+    }
+}
+
+void Viewer3D::cycleMaterialPreset() {
+    const auto& presets = UI::MaterialManager::instance().getPresets();
+    if (presets.empty()) return;
+    currentMaterialIndex = (currentMaterialIndex + 1) % static_cast<int>(presets.size());
+    currentMaterialPreset = presets[currentMaterialIndex].name;
 }
 
 void Viewer3D::setRotation(float y, float p) {
@@ -220,6 +247,18 @@ void Viewer3D::renderToolbar() {
     rightX -= (btnW + btnGap);
     drawToolbarButton("PLANE", displayMode == DisplayMode::PLANE,
                        ToolbarAction::MODE_PLANE, rightX);
+    rightX -= (btnW + btnGap);
+
+    // Material preview buttons
+    drawToolbarButton("MAT", previewMode == PreviewMode::MATERIAL,
+                       ToolbarAction::TOGGLE_PREVIEW_MODE, rightX);
+    rightX -= (btnW + btnGap);
+
+    if (previewMode == PreviewMode::MATERIAL) {
+        drawToolbarButton(currentMaterialPreset.c_str(), false,
+                           ToolbarAction::CYCLE_MATERIAL, rightX);
+        rightX -= (btnW + btnGap);
+    }
 }
 
 Viewer3D::ToolbarAction Viewer3D::hitTestToolbar(float x, float y) const {
@@ -254,6 +293,17 @@ Viewer3D::ToolbarAction Viewer3D::hitTestToolbar(float x, float y) const {
     if (inButton(rightX))                                       return ToolbarAction::MODE_CUBE;
     rightX -= (btnW + btnGap);
     if (inButton(rightX))                                       return ToolbarAction::MODE_PLANE;
+    rightX -= (btnW + btnGap);
+
+    // Material preview buttons
+    if (inButton(rightX))                                       return ToolbarAction::TOGGLE_PREVIEW_MODE;
+    rightX -= (btnW + btnGap);
+
+    if (previewMode == PreviewMode::MATERIAL) {
+        if (inButton(rightX))                                   return ToolbarAction::CYCLE_MATERIAL;
+        rightX -= (btnW + btnGap);
+    }
+
     return ToolbarAction::NONE;
 }
 
@@ -267,6 +317,8 @@ void Viewer3D::triggerAction(ToolbarAction action) {
         case ToolbarAction::ZOOM_IN:      addDistance(-0.4f); break;
         case ToolbarAction::ZOOM_OUT:     addDistance(0.4f); break;
         case ToolbarAction::CLOSE:        toggle(); break;
+        case ToolbarAction::TOGGLE_PREVIEW_MODE: togglePreviewMode(); break;
+        case ToolbarAction::CYCLE_MATERIAL: cycleMaterialPreset(); break;
         default: break;
     }
 }
@@ -316,7 +368,8 @@ void Viewer3D::renderViewport() {
 }
 
 void Viewer3D::drawCurrentMesh() {
-    if (currentTexture == 0) return;
+    // In material mode, we don't need a texture
+    if (previewMode == PreviewMode::TEXTURE && currentTexture == 0) return;
 
     float s = screenWidth / 1920.0f;
     s = std::clamp(s, 0.5f, 2.0f);
@@ -356,8 +409,19 @@ void Viewer3D::drawCurrentMesh() {
         texCoords[i * 2 + 1] = (*verts)[i * 8 + 7];
     }
 
-    UIDrawHelper::drawTexturedQuad3D(currentTexture, model, view, proj,
-                                      glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
+    glm::vec4 color(1.0f, 1.0f, 1.0f, 1.0f);
+    GLuint texId = currentTexture;
+
+    if (previewMode == PreviewMode::MATERIAL) {
+        const auto* preset = UI::MaterialManager::instance().getPreset(currentMaterialPreset);
+        if (preset) {
+            glm::vec3 diff = preset->material.getDiffuse();
+            color = glm::vec4(diff.x, diff.y, diff.z, 1.0f);
+        }
+        texId = 0; // No texture for material mode
+    }
+
+    UIDrawHelper::drawTexturedQuad3D(texId, model, view, proj, color,
                                       uniqueVerts,
                                       positions.data(),
                                       normals.data(),
@@ -447,7 +511,16 @@ void Viewer3D::renderInfo() {
 
     // Texture info
     std::string texInfo;
-    if (currentTexture != 0) {
+    if (previewMode == PreviewMode::MATERIAL) {
+        const auto* preset = UI::MaterialManager::instance().getPreset(currentMaterialPreset);
+        if (preset) {
+            std::stringstream ts;
+            ts << "Material: " << preset->name << " (" << preset->category << ") - " << preset->description;
+            texInfo = ts.str();
+        } else {
+            texInfo = "Material: " + currentMaterialPreset;
+        }
+    } else if (currentTexture != 0) {
         std::stringstream ts;
         ts << "Texture: " << textureWidth << "x" << textureHeight
            << " (id=" << currentTexture << ")";

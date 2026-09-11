@@ -9,6 +9,11 @@
 class TextRenderer;
 class TextureViewer;
 
+namespace UI {
+class MaterialManager;
+struct MaterialPreset;
+}
+
 /**
  * @brief 3D Viewer - Interactive 3D preview of textures and meshes.
  *
@@ -18,6 +23,7 @@ class TextureViewer;
  * - Pinch zoom (handled by host via setDistance)
  * - Auto-rotation when not interacting
  * - Wireframe overlay toggle
+ * - Material preview with presets
  */
 class Viewer3D {
 public:
@@ -25,6 +31,11 @@ public:
         PLANE = 0,
         CUBE  = 1,
         SPHERE = 2
+    };
+
+    enum class PreviewMode {
+        TEXTURE = 0,
+        MATERIAL = 1
     };
 
     Viewer3D();
@@ -67,6 +78,16 @@ public:
     bool isAutoRotate() const { return autoRotate; }
     void toggleAutoRotate() { autoRotate = !autoRotate; }
 
+    // Preview mode
+    void setPreviewMode(PreviewMode mode) { previewMode = mode; }
+    PreviewMode getPreviewMode() const { return previewMode; }
+    void togglePreviewMode();
+
+    // Material selection
+    void setMaterialPreset(const std::string& presetName);
+    const std::string& getMaterialPreset() const { return currentMaterialPreset; }
+    void cycleMaterialPreset();
+
     // Drag state for touch input
     void onTouchDown(float x, float y);
     void onTouchMove(float x, float y);
@@ -83,7 +104,9 @@ public:
         TOGGLE_WIRE,
         CLOSE,
         ZOOM_IN,
-        ZOOM_OUT
+        ZOOM_OUT,
+        TOGGLE_PREVIEW_MODE,
+        CYCLE_MATERIAL
     };
 
     ToolbarAction hitTestToolbar(float x, float y) const;
@@ -110,6 +133,11 @@ private:
 
     bool autoRotate;
     bool showWireframe;
+
+    // Preview mode
+    PreviewMode previewMode;
+    std::string currentMaterialPreset;
+    int currentMaterialIndex;
 
     // Touch tracking
     struct TouchState {
