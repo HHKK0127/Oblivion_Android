@@ -6,8 +6,12 @@
 #include "model_viewer.h"
 #include "world_viewer.h"
 #include "viewer_3d.h"
+#include "theme_manager.h"
+#include "../engine/gpu_monitor.h"
 #include <algorithm>
 #include <cmath>
+#include <sstream>
+#include <iomanip>
 #include <android/log.h>
 
 #define LOG_TAG_DEBUG "DebugMenu"
@@ -281,6 +285,52 @@ void DebugMenu::executeButtonCommand(Button& btn) {
             feedbackTimer = 2.0f;
             feedbackColor = glm::vec3(0.3f, 0.7f, 0.9f);
             LOGI_DEBUG("Viewer3D toggled");
+        }
+        return;
+    }
+
+    // GPU Monitor commands
+    if (btn.command == "gpumonitor on") {
+        GPUMonitor::getInstance().initialize();
+        GPUMonitor::getInstance().startMonitoring();
+        feedbackText = "GPU Monitor: ON";
+        feedbackTimer = 2.0f;
+        feedbackColor = glm::vec3(0.3f, 0.9f, 0.3f);
+        return;
+    }
+    if (btn.command == "gpumonitor off") {
+        GPUMonitor::getInstance().stopMonitoring();
+        feedbackText = "GPU Monitor: OFF";
+        feedbackTimer = 2.0f;
+        feedbackColor = glm::vec3(0.9f, 0.3f, 0.3f);
+        return;
+    }
+    if (btn.command == "gpustats") {
+        GPUStats stats = GPUMonitor::getInstance().getCurrentStats();
+        if (stats.valid) {
+            std::stringstream ss;
+            ss << std::fixed << std::setprecision(1);
+            ss << "GPU: " << stats.usagePercent << "% | " << stats.temperature << "C";
+            feedbackText = ss.str();
+        } else {
+            feedbackText = "GPU: No data (start monitor first)";
+        }
+        feedbackTimer = 3.0f;
+        feedbackColor = glm::vec3(0.3f, 0.9f, 0.9f);
+        return;
+    }
+
+    // Theme commands
+    if (btn.command.substr(0, 6) == "theme ") {
+        std::string themeName = btn.command.substr(6);
+        if (ThemeManager::getInstance().setActiveTheme(themeName)) {
+            feedbackText = "Theme: " + themeName;
+            feedbackTimer = 2.0f;
+            feedbackColor = glm::vec3(0.9f, 0.7f, 0.3f);
+        } else {
+            feedbackText = "Theme not found: " + themeName;
+            feedbackTimer = 2.0f;
+            feedbackColor = glm::vec3(0.9f, 0.3f, 0.3f);
         }
         return;
     }
@@ -888,6 +938,16 @@ void DebugMenu::createAllTabContents() {
             {"Memory Stats", "memorystats"},
             {"Performance", "performance"},
             {"Reset Stats", "resetstats"},
+            // GPU Monitor
+            {"GPU Monitor On", "gpumonitor on"},
+            {"GPU Monitor Off", "gpumonitor off"},
+            {"GPU Stats", "gpustats"},
+            // Theme
+            {"Theme Dark", "theme Dark Modern"},
+            {"Theme Oblivion", "theme Oblivion Classic"},
+            {"Theme Light", "theme Light Clean"},
+            {"Theme Contrast", "theme High Contrast"},
+            {"Theme Cyberpunk", "theme Cyberpunk Neon"},
         };
         for (const auto& item : items) {
             Button btn;

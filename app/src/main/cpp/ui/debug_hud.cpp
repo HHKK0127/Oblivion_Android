@@ -1,6 +1,7 @@
 #include "debug_hud.h"
 #include "../audio/audio_manager.h"
 #include "../engine/renderer.h"
+#include "../engine/gpu_monitor.h"
 #include <android/log.h>
 #include <sstream>
 #include <iomanip>
@@ -160,6 +161,7 @@ void DebugHUD::render() {
             case 1: renderPerformancePage(xPos, yPos, lineHeight, textScale); break;
             case 2: renderMemoryPage(xPos, yPos, lineHeight, textScale); break;
             case 3: renderPhasePage(xPos, yPos, lineHeight, textScale); break;
+            case 4: renderGpuPage(xPos, yPos, lineHeight, textScale); break;
         }
     }
 
@@ -417,6 +419,155 @@ void DebugHUD::renderPhasePage(float& xPos, float& yPos, float lineHeight, float
         ss << std::fixed << std::setprecision(1) << "Total: " << totalUs << " us ("
            << (totalUs / 1000.0f) << " ms)";
         textRenderer->renderText(ss.str(), xPos, yPos, yellow, textScale * 0.9f);
+        yPos += lineHeight;
+    }
+}
+
+void DebugHUD::renderGpuPage(float& xPos, float& yPos, float lineHeight, float textScale) {
+    glm::vec3 white(1.0f, 1.0f, 1.0f);
+    glm::vec3 yellow(1.0f, 1.0f, 0.0f);
+    glm::vec3 cyan(0.0f, 1.0f, 1.0f);
+    glm::vec3 green(0.0f, 1.0f, 0.0f);
+    glm::vec3 red(1.0f, 0.3f, 0.3f);
+    glm::vec3 orange(1.0f, 0.5f, 0.0f);
+
+    // Get GPU Monitor instance
+    GPUMonitor& gpu = GPUMonitor::getInstance();
+
+    textRenderer->renderText("=== GPU Monitor ===", xPos, yPos, cyan, textScale);
+    yPos += lineHeight;
+
+    // GPU Info
+    {
+        std::stringstream ss;
+        ss << "Vendor: " << gpu.getVendorString();
+        textRenderer->renderText(ss.str(), xPos, yPos, white, textScale * 0.9f);
+        yPos += lineHeight * 0.9f;
+    }
+
+    {
+        std::stringstream ss;
+        ss << "Model: " << gpu.getGPUModel();
+        textRenderer->renderText(ss.str(), xPos, yPos, white, textScale * 0.8f);
+        yPos += lineHeight * 0.9f;
+    }
+
+    // Feature support
+    {
+        std::stringstream ss;
+        ss << "Temp: " << (gpu.supportsTemperature() ? "YES" : "NO")
+           << "  Clock: " << (gpu.supportsClockFrequency() ? "YES" : "NO")
+           << "  Mem: " << (gpu.supportsMemoryStats() ? "YES" : "NO");
+        textRenderer->renderText(ss.str(), xPos, yPos, yellow, textScale * 0.7f);
+        yPos += lineHeight * 0.9f;
+    }
+
+    yPos += lineHeight * 0.5f;
+
+    // Current stats
+    GPUStats stats = gpu.getCurrentStats();
+
+    if (stats.valid) {
+        // Usage
+        {
+            glm::vec3 usageColor = green;
+            if (stats.usagePercent > 80.0f) usageColor = red;
+            else if (stats.usagePercent > 50.0f) usageColor = orange;
+
+            std::stringstream ss;
+            ss << std::fixed << std::setprecision(1);
+            ss << "Usage: " << stats.usagePercent << "%";
+            textRenderer->renderText(ss.str(), xPos, yPos, usageColor, textScale * 1.1f);
+            yPos += lineHeight;
+        }
+
+        // Temperature
+        if (gpu.supportsTemperature() && stats.temperature > 0) {
+            glm::vec3 tempColor = green;
+            if (stats.temperature > 80.0f) tempColor = red;
+            else if (stats.temperature > 60.0f) tempColor = orange;
+
+            std::stringstream ss;
+            ss << std::fixed << std::setprecision(1);
+            ss << "Temp: " << stats.temperature << " C";
+            textRenderer->renderText(ss.str(), xPos, yPos, tempColor, textScale * 0.9f);
+            yPos += lineHeight * 0.9f;
+        }
+
+        // Clock
+        if (gpu.supportsClockFrequency() && stats.clockFrequency > 0) {
+            std::stringstream ss;
+            ss << std::fixed << std::setprecision(0);
+            ss << "Clock: " << stats.clockFrequency << " MHz";
+            textRenderer->renderText(ss.str(), xPos, yPos, white, textScale * 0.9f);
+            yPos += lineHeight * 0.9f;
+        }
+
+        // Memory
+        if (gpu.supportsMemoryStats() && stats.memoryUsed > 0) {
+            std::stringstream ss;
+            ss << "Memory: " << stats.memoryUsed << " / " << stats.memoryTotal << " MB";
+            textRenderer->renderText(ss.str(), xPos, yPos, white, textScale * 0.9f);
+            yPos += lineHeight * 0.9f;
+        }
+
+        yPos += lineHeight * 0.5f;
+
+        // Frame metrics
+        textRenderer->renderText("--- Frame Metrics ---", xPos, yPos, yellow, textScale * 0.8f);
+        yPos += lineHeight * 0.9f;
+
+        {
+            std::stringstream ss;
+            ss << "Draw Calls: " << stats.drawCalls;
+            textRenderer->renderText(ss.str(), xPos, yPos, cyan, textScale * 0.8f);
+            yPos += lineHeight * 0.8f;
+        }
+
+        {
+            std::stringstream ss;
+            ss << "Vertices: " << stats.verticesSubmitted;
+            textRenderer->renderText(ss.str(), xPos, yPos, cyan, textScale * 0.8f);
+            yPos += lineHeight * 0.8f;
+        }
+
+        {
+            std::stringstream ss;
+            ss << "Textures: " << stats.textureBinds;
+            textRenderer->renderText(ss.str(), xPos, yPos, cyan, textScale * 0.8f);
+            yPos += lineHeight * 0.8f;
+        }
+
+        {
+            std::stringstream ss;
+            ss << "Shaders: " << stats.shaderSwitches;
+            textRenderer->renderText(ss.str(), xPos, yPos, cyan, textScale * 0.8f);
+            yPos += lineHeight * 0.8f;
+        }
+
+        yPos += lineHeight * 0.5f;
+
+        // Average/Peak usage
+        {
+            std::stringstream ss;
+            ss << std::fixed << std::setprecision(1);
+            ss << "Avg(60): " << gpu.getAverageUsage(60) << "%  Peak: " << gpu.getPeakUsage(60) << "%";
+            textRenderer->renderText(ss.str(), xPos, yPos, white, textScale * 0.8f);
+            yPos += lineHeight * 0.9f;
+        }
+
+        // Warning status
+        if (gpu.isCritical()) {
+            textRenderer->renderText("!! CRITICAL GPU LOAD !!", xPos, yPos, red, textScale);
+            yPos += lineHeight;
+        } else if (gpu.isWarning()) {
+            textRenderer->renderText("! HIGH GPU LOAD !", xPos, yPos, orange, textScale * 0.9f);
+            yPos += lineHeight;
+        }
+    } else {
+        textRenderer->renderText("GPU stats not available", xPos, yPos, red, textScale);
+        yPos += lineHeight;
+        textRenderer->renderText("Start monitoring first", xPos, yPos, yellow, textScale * 0.8f);
         yPos += lineHeight;
     }
 }

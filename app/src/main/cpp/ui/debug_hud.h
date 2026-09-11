@@ -8,6 +8,7 @@
 
 class AudioManager;
 class Renderer;
+class GPUMonitor;
 
 /**
  * @brief Extended Debug HUD with graphs, breakdowns, and detailed stats
@@ -82,7 +83,7 @@ private:
 
     // Page system
     int currentPage;
-    static constexpr int totalPages = 4;  // 0=Overview, 1=Performance, 2=Memory, 3=Phases
+    static constexpr int totalPages = 5;  // 0=Overview, 1=Performance, 2=Memory, 3=Phases, 4=GPU
 
     // Basic stats
     float fps;
@@ -144,6 +145,7 @@ private:
     void renderPerformancePage(float& xPos, float& yPos, float lineHeight, float textScale);
     void renderMemoryPage(float& xPos, float& yPos, float lineHeight, float textScale);
     void renderPhasePage(float& xPos, float& yPos, float lineHeight, float textScale);
+    void renderGpuPage(float& xPos, float& yPos, float lineHeight, float textScale);
     void renderFpsGraph(float x, float y, float width, float height);
     void renderFrameTimeBar(float x, float y, float width, float height);
     void renderLogOverlay();
