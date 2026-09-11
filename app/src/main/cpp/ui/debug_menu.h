@@ -10,6 +10,7 @@ class GameConsole;
 class TextureViewer;
 class ModelViewer;
 class WorldViewer;
+class Viewer3D;
 
 /**
  * @brief Debug Menu - Touch-based GUI for game system testing
@@ -37,6 +38,7 @@ public:
     TextureViewer* getTextureViewer() { return textureViewer; }
     ModelViewer* getModelViewer() { return modelViewer; }
     WorldViewer* getWorldViewer() { return worldViewer; }
+    Viewer3D* getViewer3D() { return viewer3D; }
 
     void toggle();
     bool isVisible() const { return visible; }
@@ -126,6 +128,7 @@ private:
     TextureViewer* textureViewer;
     ModelViewer* modelViewer;
     WorldViewer* worldViewer;
+    Viewer3D* viewer3D;
 
     // UI constants
     static constexpr float TAB_HEIGHT = 50.0f;

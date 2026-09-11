@@ -5,6 +5,7 @@
 #include "texture_viewer.h"
 #include "model_viewer.h"
 #include "world_viewer.h"
+#include "viewer_3d.h"
 #include <algorithm>
 #include <cmath>
 #include <android/log.h>
@@ -20,7 +21,7 @@ DebugMenu::DebugMenu()
       currentTab(Tab::PLAYER),
       feedbackTimer(0.0f),
       feedbackColor(0.4f, 0.9f, 0.4f),
-      textureViewer(nullptr), modelViewer(nullptr), worldViewer(nullptr) {}
+      textureViewer(nullptr), modelViewer(nullptr), worldViewer(nullptr), viewer3D(nullptr) {}
 
 DebugMenu::~DebugMenu() { cleanup(); }
 
@@ -44,6 +45,10 @@ bool DebugMenu::initialize(TextRenderer* tr, GameConsole* c) {
     worldViewer = new WorldViewer();
     worldViewer->initialize(textRenderer, nullptr);
     worldViewer->setScreenSize(screenWidth, screenHeight);
+
+    viewer3D = new Viewer3D();
+    viewer3D->initialize(textRenderer);
+    viewer3D->setScreenSize(screenWidth, screenHeight);
 
     initialized = true;
     LOGI_DEBUG("DebugMenu initialized");
@@ -70,6 +75,11 @@ void DebugMenu::cleanup() {
         delete worldViewer;
         worldViewer = nullptr;
     }
+    if (viewer3D) {
+        viewer3D->cleanup();
+        delete viewer3D;
+        viewer3D = nullptr;
+    }
 
     initialized = false;
 }
@@ -90,12 +100,20 @@ void DebugMenu::setScreenSize(int w, int h) {
     if (textureViewer) textureViewer->setScreenSize(w, h);
     if (modelViewer) modelViewer->setScreenSize(w, h);
     if (worldViewer) worldViewer->setScreenSize(w, h);
+    if (viewer3D) viewer3D->setScreenSize(w, h);
 }
 
 // ==================== Touch Event Handling ====================
 
 void DebugMenu::onTouchDown(float x, float y) {
     if (!visible) return;
+
+    // Route to Viewer3D first when it is visible (modal overlay)
+    if (viewer3D && viewer3D->isVisible()) {
+        viewer3D->onTouchDown(x, y);
+        return;
+    }
+
     touchState.isActive = true;
     touchState.startX = touchState.lastX = x;
     touchState.startY = touchState.lastY = y;
@@ -134,6 +152,12 @@ void DebugMenu::onTouchDown(float x, float y) {
 }
 
 void DebugMenu::onTouchMove(float x, float y) {
+    // Route to Viewer3D first when it is visible
+    if (viewer3D && viewer3D->isVisible()) {
+        viewer3D->onTouchMove(x, y);
+        return;
+    }
+
     if (!touchState.isActive) return;
 
     float dx = x - touchState.startX;
@@ -164,6 +188,12 @@ void DebugMenu::onTouchMove(float x, float y) {
 }
 
 void DebugMenu::onTouchUp(float x, float y) {
+    // Route to Viewer3D first when it is visible
+    if (viewer3D && viewer3D->isVisible()) {
+        viewer3D->onTouchUp();
+        return;
+    }
+
     LOGI_DEBUG("onTouchUp: touch=(%.1f, %.1f) isActive=%d pressedBtn=%p isScrolling=%d",
                x, y, touchState.isActive ? 1 : 0, (void*)touchState.pressedButton,
                touchState.isScrolling ? 1 : 0);
@@ -241,6 +271,16 @@ void DebugMenu::executeButtonCommand(Button& btn) {
             feedbackTimer = 2.0f;
             feedbackColor = glm::vec3(0.3f, 0.7f, 0.9f);
             LOGI_DEBUG("WorldViewer toggled");
+        }
+        return;
+    }
+    if (btn.command == "viewer3d") {
+        if (viewer3D) {
+            viewer3D->toggle();
+            feedbackText = "3D Viewer: " + std::string(viewer3D->isVisible() ? "ON" : "OFF");
+            feedbackTimer = 2.0f;
+            feedbackColor = glm::vec3(0.3f, 0.7f, 0.9f);
+            LOGI_DEBUG("Viewer3D toggled");
         }
         return;
     }
