@@ -150,6 +150,16 @@
                         android:background="@drawable/debug_button_cyan"
                         android:textColor="#00BFFF"  android:fontFamily="sans-serif-medium" android:textAllCaps="false" android:minHeight="0dp" android:stateListAnimator="@null"/>
 
+                    <Button
+                        android:id="@+id/btn_debug_assets"
+                        android:layout_width="match_parent"
+                        android:layout_height="36dp"
+                        android:text="Open Assets Tab"
+                        android:textSize="11sp"
+                        android:layout_marginTop="2dp"
+                        android:background="@drawable/debug_button_cyan"
+                        android:textColor="#FFAA00"  android:fontFamily="sans-serif-medium" android:textAllCaps="false" android:minHeight="0dp" android:stateListAnimator="@null"/>
+
                     <!-- Divider -->
                     <View
                         android:layout_width="match_parent"

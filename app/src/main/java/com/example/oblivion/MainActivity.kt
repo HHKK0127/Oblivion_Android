@@ -128,13 +128,18 @@ class MainActivity : Activity() {
                     }
 
                     // When native DebugMenu is visible, forward all touches to native
+                    // so the in-game DebugMenu UI (tabs, buttons) can react.
                     val isNativeMenuVisible = gameRenderer?.nativeIsDebugMenuVisible() ?: false
                     if (actionMasked == android.view.MotionEvent.ACTION_DOWN) {
                         Log.d(TAG, "isNativeMenuVisible=$isNativeMenuVisible")
                     }
-                    
-                    if (!isNativeMenuVisible && !isDebugPanelVisible) {
-                        // Debug UI is not visible, forward touch to game
+
+                    val shouldForwardToNative = !isDebugPanelVisible || isNativeMenuVisible
+                    if (actionMasked == android.view.MotionEvent.ACTION_DOWN) {
+                        Log.d(TAG, "shouldForwardToNative=$shouldForwardToNative isDebugPanelVisible=$isDebugPanelVisible isNativeMenuVisible=$isNativeMenuVisible")
+                    }
+                    if (shouldForwardToNative) {
+                        // Forward touch to native (game or DebugMenu)
                         val actionIndex = event.actionIndex
                         val pointerId: Int
                         val x: Float
@@ -179,7 +184,11 @@ class MainActivity : Activity() {
                                 action = 3
                             }
                         }
-                        gameRenderer?.onTouchEvent(pointerId, x, y, action)
+                        try {
+                            gameRenderer?.onTouchEvent(pointerId, x, y, action)
+                        } catch (e: Exception) {
+                            Log.e(TAG, "onTouchEvent JNI exception: ${e.message}")
+                        }
                         if (actionMasked == android.view.MotionEvent.ACTION_DOWN) {
                             Log.d(TAG, "Forwarded touch to native: ($x, $y) action=$action")
                         }
@@ -293,16 +302,37 @@ class MainActivity : Activity() {
                 Log.d(TAG, "Toggled all debug systems")
             }
 
-            // Debug Menu toggle
+            // Debug Menu toggle - opens Assets tab and3D Viewer directly
             val menuBtn = findViewById<Button>(R.id.btn_debug_menu)
             menuBtn?.setOnClickListener {
-                gameRenderer?.nativeToggleDebugMenu()
-                isDebugMenuOpen = gameRenderer?.nativeIsDebugMenuVisible() ?: false
-                if (isDebugMenuOpen) {
-                    debugOverlayContainer?.visibility = View.GONE
-                    isDebugPanelVisible = false
+                // Open native DebugMenu if not already open
+                if (!(gameRenderer?.nativeIsDebugMenuVisible() ?: false)) {
+                    gameRenderer?.nativeToggleDebugMenu()
                 }
-                Log.d(TAG, "Toggled debug menu, isMenuOpen=$isDebugMenuOpen")
+                // Select Assets tab (index 11) and toggle 3D Viewer
+                gameRenderer?.nativeDebugMenuSelectTab(11)
+                gameRenderer?.nativeToggle3DViewer()
+                // Hide Android debug panel
+                debugOverlayContainer?.visibility = View.GONE
+                isDebugPanelVisible = false
+                isDebugMenuOpen = true
+                Log.d(TAG, "Opened3D Viewer via Assets tab")
+            }
+
+            // Open Assets Tab directly
+            val assetsBtn = findViewById<Button>(R.id.btn_debug_assets)
+            assetsBtn?.setOnClickListener {
+                // Ensure native DebugMenu is visible
+                if (!(gameRenderer?.nativeIsDebugMenuVisible() ?: false)) {
+                    gameRenderer?.nativeToggleDebugMenu()
+                }
+                // Switch to Assets tab (index 11)
+                gameRenderer?.nativeDebugMenuSelectTab(11)
+                // Hide Android debug panel
+                debugOverlayContainer?.visibility = View.GONE
+                isDebugPanelVisible = false
+                isDebugMenuOpen = true
+                Log.d(TAG, "Opened Assets tab via JNI")
             }
 
             // Quick Actions

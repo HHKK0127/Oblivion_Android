@@ -137,6 +137,8 @@ add_library(native-lib SHARED
     ui/texture_viewer.cpp
     ui/model_viewer.cpp
     ui/world_viewer.cpp
+    ui/mesh_3d.cpp
+    ui/viewer_3d.cpp
     ui/npc_debug_visualizer.cpp
     ui/world_debug_info.cpp
     ui/performance_graph.cpp

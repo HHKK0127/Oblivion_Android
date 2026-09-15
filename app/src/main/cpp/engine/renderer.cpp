@@ -2474,6 +2474,19 @@ void Renderer::render(float deltaTime) {
                     showTitleScreen = true;
                 }
             }
+        // BUG FIX: Render DebugMenu/GameConsole overlays on top of Launcher too
+        // Previously these were only rendered after the early-return, so the
+        // DebugMenu was invisible while the launcher was on screen. This meant
+        // tapping the "Menu" button on the launcher did nothing visible.
+        if (debugMenu) {
+            debugMenu->update(deltaTime);
+            if (debugMenu->isVisible()) {
+                debugMenu->render();
+            }
+        }
+        if (gameConsole && gameConsole->isVisible()) {
+            gameConsole->render();
+        }
         if (performanceMonitor) performanceMonitor->endFrame();
         return;
     }
@@ -2584,6 +2597,16 @@ void Renderer::render(float deltaTime) {
                 if (btn) btn->setVisible(true);
             }
             LOGI("Title screen closed, starting main game");
+        }
+        // Render DebugMenu/GameConsole overlays on top of title screen too
+        if (debugMenu) {
+            debugMenu->update(deltaTime);
+            if (debugMenu->isVisible()) {
+                debugMenu->render();
+            }
+        }
+        if (gameConsole && gameConsole->isVisible()) {
+            gameConsole->render();
         }
         // Skip frame rate control for quick return
         if (performanceMonitor) {

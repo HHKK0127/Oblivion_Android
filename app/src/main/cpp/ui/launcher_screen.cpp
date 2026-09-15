@@ -661,7 +661,9 @@ void LauncherScreen::onTouchEvent(float x, float y, int action) {
          action, x, y, static_cast<int>(state));
     if (state == LauncherState::MAIN) {
         if (action == 0 || action == 5) { // TOUCH_DOWN
-            if (mainPanel && mainPanel->onTouchDown(x, y, 0)) return;
+            // Try panel first, but don't return early - panel buttons may
+            // not align with touch coordinates due to layout changes
+            if (mainPanel) mainPanel->onTouchDown(x, y, 0);
 
             // Fallback: direct hit-test on DOWN for immediate response
             float menuTop = screenHeight * 0.18f;

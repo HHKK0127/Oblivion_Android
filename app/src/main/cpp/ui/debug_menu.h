@@ -10,6 +10,7 @@ class GameConsole;
 class TextureViewer;
 class ModelViewer;
 class WorldViewer;
+class Viewer3D;
 
 /**
  * @brief Debug Menu - Touch-based GUI for game system testing
@@ -37,10 +38,12 @@ public:
     TextureViewer* getTextureViewer() { return textureViewer; }
     ModelViewer* getModelViewer() { return modelViewer; }
     WorldViewer* getWorldViewer() { return worldViewer; }
+    Viewer3D* getViewer3D() { return viewer3D; }
 
     void toggle();
     bool isVisible() const { return visible; }
     void setVisible(bool v) { visible = v; }
+    void selectTab(int tabIndex);
 
     // Touch event handling (separate DOWN/MOVE/UP for proper tap vs scroll detection)
     void onTouchDown(float x, float y);
@@ -131,10 +134,11 @@ private:
     TextureViewer* textureViewer;
     ModelViewer* modelViewer;
     WorldViewer* worldViewer;
+    Viewer3D* viewer3D;
 
     // UI constants
-    static constexpr float TAB_HEIGHT = 50.0f;
-    static constexpr float BUTTON_HEIGHT = 48.0f;
+    static constexpr float TAB_HEIGHT = 56.0f;
+    static constexpr float BUTTON_HEIGHT = 52.0f;
     static constexpr float BUTTON_MARGIN = 8.0f;
 
     // Helper methods

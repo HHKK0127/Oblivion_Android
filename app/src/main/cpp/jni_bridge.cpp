@@ -5,6 +5,7 @@
 #include <android/native_window_jni.h>
 #include "engine/renderer.h"
 #include "engine/imperial_weave.h"
+#include "ui/viewer_3d.h"
 #include "vegetation/speed_tree_manager.h"
 #include "video/bink_video_player.h"
 #include "video/video_decoder_jni.h"
@@ -805,6 +806,37 @@ Java_com_example_oblivion_GameRenderer_nativeIsDebugMenuVisible(
         return g_renderer->isDebugMenuVisible();
     }
     return JNI_FALSE;
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeDebugMenuSelectTab(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jint tabIndex) {
+    LOGI("nativeDebugMenuSelectTab(%d) called", tabIndex);
+    if (g_renderer) {
+        auto* dm = g_renderer->getDebugMenu();
+        if (dm) {
+            dm->selectTab(static_cast<int>(tabIndex));
+        }
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeToggle3DViewer(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    LOGI("nativeToggle3DViewer called");
+    if (g_renderer) {
+        auto* dm = g_renderer->getDebugMenu();
+        if (dm) {
+            auto* v3d = dm->getViewer3D();
+            if (v3d) {
+                v3d->toggle();
+                LOGI("3D Viewer %s", v3d->isVisible() ? "ON" : "OFF");
+            }
+        }
+    }
 }
 
 extern "C" JNIEXPORT void JNICALL
