@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-09T17:37:07Z",
+  "lastUpdated": "2026-09-16T09:02:15Z",
   "entries": [
     {
       "id": "64e6171f-08fa-41f7-bd30-0da14e3cb190",
@@ -1655,10 +1655,98 @@
       "id": "8580dbca-4dde-4ca8-839e-15fda8c79335",
       "content": "AndroidアプリのUI開発にはKotlinを使用。C++はUIに不適切。理由: Android UIフレームワーク（Jetpack Compose、XML）はKotlin/Java前提、C++はJNI経由で複雑化。推奨構成: UI=Kotlin、ゲームロジック=C++(NDK)。Oblivion_Androidの既存パターンもこの構成。",
       "priority": "high"
+    },
+    {
+      "tags": [
+        "bsa",
+        "texture",
+        "extraction",
+        "dds",
+        "png",
+        "v103"
+      ],
+      "id": "f75037d4-a046-4d86-8698-a977d98d678f",
+      "priority": "high",
+      "timestamp": "2026-09-16T08:37:40Z",
+      "compressed": false,
+      "category": "decision",
+      "content": "BSA v103 texture extraction: Manually parsed BSA v103 format (header 36 bytes, directory records 16 bytes, file records 16 bytes, PascalString VarInt, zlib compressed). Extracted 5 DDS textures from Oblivion - Textures.bsa: loading_background.dds, tes_oblivion_logo_final.dds, load_in_game_default.dds, menu_prev_idle.dds, menu_next_idle.dds. Converted DDS to PNG using Pillow."
+    },
+    {
+      "tags": [
+        "title-screen",
+        "texture",
+        "integration",
+        "rendering"
+      ],
+      "id": "ae5e308c-ebbd-4aa1-83d2-0c2a4ad871d3",
+      "priority": "high",
+      "timestamp": "2026-09-16T08:37:40Z",
+      "compressed": false,
+      "category": "decision",
+      "content": "Title screen texture integration: Updated title_screen.cpp to use extracted textures. Paths: textures/ui/loading_background.png (background), textures/ui/tes_oblivion_logo_final.png (logo), textures/ui/load_in_game_default.png (vignette). Added texture rendering with fallback to procedural rendering."
+    },
+    {
+      "tags": [
+        "bug-fix",
+        "title-screen",
+        "menu",
+        "debug",
+        "renderer"
+      ],
+      "id": "c7d5bd30-5f80-4d6a-8ddd-500aa4ce70b1",
+      "priority": "high",
+      "timestamp": "2026-09-16T08:37:40Z",
+      "compressed": false,
+      "category": "decision",
+      "content": "Critical bug fix: Title screen menu buttons were invisible because renderer.cpp had debug fallback code (lines 3390-3394) that called titleScreen->debugStartNewGame() on every touch down, forcing game start before menu could display. Removed this debug fallback to allow proper menu interaction."
+    },
+    {
+      "tags": [
+        "texture",
+        "assets",
+        "location",
+        "oblivion"
+      ],
+      "id": "a5d816c7-4ae9-4b1f-b15a-d75d28c6a174",
+      "priority": "medium",
+      "timestamp": "2026-09-16T08:37:40Z",
+      "compressed": false,
+      "category": "reference",
+      "content": "Extracted texture files location: app/src/main/assets/textures/ui/ contains loading_background.png, tes_oblivion_logo_final.png, load_in_game_default.png, menu_prev_idle.png, menu_next_idle.png. These are original Oblivion textures extracted from BSA archives."
+    },
+    {
+      "tags": [
+        "bsa",
+        "script",
+        "extraction",
+        "python"
+      ],
+      "id": "44026244-26b2-4922-bbb4-026377b26825",
+      "priority": "medium",
+      "timestamp": "2026-09-16T08:37:40Z",
+      "compressed": false,
+      "category": "reference",
+      "content": "BSA extraction scripts: scripts/extract_oblivion_dds.py (BSA v103 parser), scripts/convert_dds_to_png.py (DDS to PNG converter using Pillow). These scripts can be used to extract additional textures from Oblivion BSA archives."
+    },
+    {
+      "compressed": false,
+      "priority": "medium",
+      "timestamp": "2026-09-16T09:02:15Z",
+      "category": "decision",
+      "id": "0c0e86da-d4b9-4075-9509-86e69cbe79c7",
+      "tags": [
+        "title-screen",
+        "menu",
+        "quality",
+        "ui",
+        "buttons"
+      ],
+      "content": "Title screen menu quality improvements: (1) Button text scale reduced from 1.4 to 1.1 for better readability, (2) Button height reduced from 48 to 42 for more compact layout, (3) Added golden border (0.45,0.32,0.16,0.60) with 1.5px width to buttons, (4) Darker button background (0.08,0.05,0.02,0.70), (5) Panel position moved to 55% screen height to avoid logo overlap, (6) Start Y increased to 30 for better spacing."
     }
   ],
   "metadata": {
-    "totalEntries": 115,
+    "totalEntries": 121,
     "compressedCount": 0,
     "sessionCount": 6
   }

@@ -3387,11 +3387,6 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
         LOGD("Touch dispatched to TitleScreen at (%.1f, %.1f), action=%d, showTitleScreen=%d",
              x, y, action, showTitleScreen);
         titleScreen->onTouchEvent(x, y, action);
-        // Debug fallback: if title screen is still active after tap, force-start the game
-                if (action == 0 && !titleScreen->isGameStarted()) {
-            LOGI("Title screen still active after tap - forcing debug start new game");
-            titleScreen->debugStartNewGame();
-        }
         return;
     }
 

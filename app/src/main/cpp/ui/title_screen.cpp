@@ -47,20 +47,13 @@ void TitleScreen::initialize(LocalizationManager* lm, TextRenderer* tr) {
     initParticles();
 
     if (!texturesLoaded) {
-        bgTexture = TextureLoader::loadTextureFromAsset("textures/ui/map_loop_01.png");
-        logoTexture = TextureLoader::loadTextureFromAsset("textures/ui/oblivion_logo.png");
-        vignetteTexture = TextureLoader::loadTextureFromAsset("textures/ui/vignette.png");
-
-        for (int i = 0; i < 30; ++i) {
-            char path[128];
-            snprintf(path, sizeof(path), "textures/ui/map_loop_%02d.png", i + 1);
-            GLuint tex = TextureLoader::loadTextureFromAsset(path);
-            if (tex != 0) movieFrames.push_back(tex);
-        }
+        bgTexture = TextureLoader::loadTextureFromAsset("textures/ui/loading_background.png");
+        logoTexture = TextureLoader::loadTextureFromAsset("textures/ui/tes_oblivion_logo_final.png");
+        vignetteTexture = TextureLoader::loadTextureFromAsset("textures/ui/load_in_game_default.png");
 
         texturesLoaded = true;
-        LOGI("TitleScreen textures: bg=%u logo=%u frames=%zu",
-             bgTexture, logoTexture, movieFrames.size());
+        LOGI("TitleScreen textures: bg=%u logo=%u vignette=%u",
+             bgTexture, logoTexture, vignetteTexture);
     }
 
     LOGI("TitleScreen initialized (Oblivion Authentic)");
@@ -113,12 +106,14 @@ void TitleScreen::buildGraphicalMenu() {
         std::string label = localizationManager ? localizationManager->getString(info.labelKey) : info.labelKey;
         btn->setLabel(label);
         btn->setTextRenderer(textRenderer);
-        btn->setSize(340.0f, 48.0f);
-        btn->setLabelScale(1.4f);
+        btn->setSize(340.0f, 42.0f);
+        btn->setLabelScale(1.1f);
         btn->setLabelColor(COLOR_PARCHMENT);
-        btn->setNormalColor(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
-        btn->setHoverColor(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
-        btn->setPressedColor(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
+        btn->setNormalColor(glm::vec4(0.08f, 0.05f, 0.02f, 0.70f));
+        btn->setHoverColor(glm::vec4(0.18f, 0.12f, 0.06f, 0.80f));
+        btn->setPressedColor(glm::vec4(0.28f, 0.20f, 0.10f, 0.90f));
+        btn->setBorderColor(glm::vec4(0.45f, 0.32f, 0.16f, 0.60f));
+        btn->setBorderWidth(1.5f);
 
         int idx = info.index;
         btn->setOnClick([this, idx]() {
@@ -140,14 +135,14 @@ void TitleScreen::rebuildMenuLayout() {
     float panelW = 420.0f;
     float panelH = 400.0f;
     float px = screenWidth * 0.04f;
-    float py = screenHeight * 0.38f;
+    float py = screenHeight * 0.55f;
     menuPanel->setPosition(px, py);
     menuPanel->setSize(panelW, panelH);
 
     float btnW = 400.0f;
-    float btnH = 48.0f;
-    float startY = 20.0f;
-    float gap = 12.0f;
+    float btnH = 42.0f;
+    float startY = 30.0f;
+    float gap = 10.0f;
     for (size_t i = 0; i < menuButtons.size(); ++i) {
         float bx = 15.0f;
         float by = startY + static_cast<float>(i) * (btnH + gap);
@@ -253,46 +248,81 @@ void TitleScreen::renderMenu() {
     renderParticles();
     renderOblivionLogo(1.0f, false);
 
+    // Dark overlay behind the menu area for button readability.
+    float overlayX = 0.0f;
+    float overlayY = static_cast<float>(screenHeight) * 0.25f;
+    float overlayW = static_cast<float>(screenWidth) * 0.35f;
+    float overlayH = static_cast<float>(screenHeight) * 0.65f;
+    UIDrawHelper::drawColoredQuad(
+        overlayX, overlayY, overlayW, overlayH,
+        glm::vec4(0.0f, 0.0f, 0.0f, 0.35f),
+        screenWidth, screenHeight);
+
     for (size_t i = 0; i < menuButtons.size(); ++i) {
         bool isSelected = (static_cast<int>(i) == selectedIndex);
         if (isSelected) {
             float glow = 0.6f + 0.4f * sin(glowPhase);
-            glm::vec3 c(COLOR_PARCHMENT.x + (COLOR_WHITE.x - COLOR_PARCHMENT.x) * glow * 0.6f,
-                        COLOR_PARCHMENT.y + (COLOR_WHITE.y - COLOR_PARCHMENT.y) * glow * 0.6f,
-                        COLOR_PARCHMENT.z + (COLOR_WHITE.z - COLOR_PARCHMENT.z) * glow * 0.6f);
+            glm::vec3 c(COLOR_GOLD.x + (COLOR_WHITE.x - COLOR_GOLD.x) * glow * 0.6f,
+                        COLOR_GOLD.y + (COLOR_WHITE.y - COLOR_GOLD.y) * glow * 0.6f,
+                        COLOR_GOLD.z + (COLOR_WHITE.z - COLOR_GOLD.z) * glow * 0.6f);
             menuButtons[i]->setLabelColor(c);
         } else {
-            glm::vec3 dimmed(COLOR_PARCHMENT.x * 0.65f, COLOR_PARCHMENT.y * 0.65f, COLOR_PARCHMENT.z * 0.65f);
+            glm::vec3 dimmed(COLOR_PARCHMENT.x * 0.85f, COLOR_PARCHMENT.y * 0.85f, COLOR_PARCHMENT.z * 0.85f);
             menuButtons[i]->setLabelColor(dimmed);
         }
     }
 
-    if (menuPanel) menuPanel->render();
+    if (menuPanel) {
+        menuPanel->render();
+    }
     renderVersionText();
 }
 
 void TitleScreen::renderBackground(float alpha, bool menuMode) {
-    glClearColor(0.02f, 0.01f, 0.005f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    // Original Oblivion PC: warm parchment background.
+    // We use the extracted loading_background.png when available;
+    // otherwise fall back to a procedural sepia color block.
+    float w = static_cast<float>(screenWidth);
+    float h = static_cast<float>(screenHeight);
 
-    GLuint tex = bgTexture;
-    if (!movieFrames.empty() && currentMovieFrame < movieFrames.size()) {
-        tex = movieFrames[currentMovieFrame];
+    if (bgTexture != 0) {
+        UIDrawHelper::drawTexturedQuad(
+            0.0f, 0.0f, w, h,
+            bgTexture, glm::vec4(1.0f, 1.0f, 1.0f, alpha),
+            screenWidth, screenHeight);
+    } else {
+        // Procedural sepia parchment base.
+        glm::vec4 baseCol(0.32f, 0.20f, 0.09f, alpha);
+        UIDrawHelper::drawColoredQuad(
+            0.0f, 0.0f, w, h,
+            baseCol, screenWidth, screenHeight);
+
+        // Subtle inner radial highlight.
+        float t = bgAnimTime * 0.6f;
+        float hlW = w * 0.7f;
+        float hlH = h * 0.55f;
+        float hlX = (w - hlW) * 0.5f + std::sin(t * 0.07f) * w * 0.01f;
+        float hlY = (h - hlH) * 0.5f + std::cos(t * 0.05f) * h * 0.01f;
+        glm::vec4 hlCol(0.55f, 0.36f, 0.18f, alpha * 0.35f * (menuMode ? 1.0f : 0.85f));
+        UIDrawHelper::drawColoredQuad(
+            hlX, hlY, hlW, hlH,
+            hlCol, screenWidth, screenHeight);
     }
 
-    if (tex != 0) {
-        float t = bgAnimTime * 0.008f;
-        float uMin = 0.03f + 0.02f * sin(t);
-        float vMin = 0.03f + 0.02f * cos(t * 0.6f);
-        float uMax = uMin + 0.94f;
-        float vMax = vMin + 0.94f;
-
-        float bgAlpha = menuMode ? 0.75f : 0.6f;
+    // Vignette darkening at edges.
+    float vignetteStrength = alpha * (menuMode ? 0.55f : 0.70f);
+    if (vignetteTexture != 0) {
         UIDrawHelper::drawTexturedQuad(
-            0.0f, 0.0f, static_cast<float>(screenWidth), static_cast<float>(screenHeight),
-            tex, glm::vec4(1.0f, 1.0f, 1.0f, alpha * bgAlpha),
-            screenWidth, screenHeight,
-            uMin, vMin, uMax, vMax);
+            0.0f, 0.0f, w, h,
+            vignetteTexture, glm::vec4(1.0f, 1.0f, 1.0f, vignetteStrength * 0.5f),
+            screenWidth, screenHeight);
+    } else {
+        float edge = std::min(w, h) * 0.18f;
+        glm::vec4 dark(0.05f, 0.03f, 0.01f, vignetteStrength);
+        UIDrawHelper::drawColoredQuad(0.0f, 0.0f, edge, h, dark, screenWidth, screenHeight);
+        UIDrawHelper::drawColoredQuad(w - edge, 0.0f, edge, h, dark, screenWidth, screenHeight);
+        UIDrawHelper::drawColoredQuad(0.0f, 0.0f, w, edge, dark, screenWidth, screenHeight);
+        UIDrawHelper::drawColoredQuad(0.0f, h - edge, w, edge, dark, screenWidth, screenHeight);
     }
 }
 
@@ -315,23 +345,41 @@ void TitleScreen::renderVignette() {
 }
 
 void TitleScreen::renderOblivionLogo(float alpha, bool large) {
-    if (logoTexture == 0) return;
+    // Prefer the extracted original Oblivion logo texture (tes_oblivion_logo_final.png);
+    // fall back to text rendering if the texture is unavailable.
+    float minDim = static_cast<float>(std::min(screenWidth, screenHeight));
+    float scale = minDim / 1080.0f;
+    if (scale < 0.5f) scale = 0.5f;
+    if (scale > 2.0f) scale = 2.0f;
 
-    float scaleFactor = large
-        ? ((screenWidth > screenHeight) ? 0.55f : 0.9f)
-        : ((screenWidth > screenHeight) ? 0.42f : 0.7f);
+    float cx = static_cast<float>(screenWidth) * 0.5f;
 
-    float logoW = static_cast<float>(screenWidth) * scaleFactor;
-    float logoH = logoW * 0.20f;
-    float logoX = (static_cast<float>(screenWidth) - logoW) * 0.5f;
-    float logoY = large
-        ? static_cast<float>(screenHeight) * 0.15f
-        : static_cast<float>(screenHeight) * 0.08f;
-
-    UIDrawHelper::drawTexturedQuad(
-        logoX, logoY, logoW, logoH,
-        logoTexture, glm::vec4(1.0f, 1.0f, 1.0f, alpha),
-        screenWidth, screenHeight);
+    if (logoTexture != 0) {
+        // Logo aspect is 1024:256 = 4:1
+        float logoW = static_cast<float>(screenWidth) * (large ? 0.55f : 0.42f);
+        float logoH = logoW * 0.25f;
+        float logoX = cx - logoW * 0.5f;
+        float logoY = static_cast<float>(screenHeight) * (large ? 0.30f : 0.18f);
+        UIDrawHelper::drawTexturedQuad(
+            logoX, logoY, logoW, logoH,
+            logoTexture, glm::vec4(1.0f, 1.0f, 1.0f, alpha),
+            screenWidth, screenHeight);
+    } else if (textRenderer) {
+        // Text fallback for "The Elder Scrolls IV: OBLIVION"
+        float titleScale = (large ? 1.15f : 0.85f) * scale;
+        float mainScale = (large ? 1.7f : 1.25f) * scale;
+        const char* line1 = "THE ELDER SCROLLS IV";
+        const char* line2 = "OBLIVION";
+        float y1 = static_cast<float>(screenHeight) * (large ? 0.20f : 0.10f);
+        float y2 = y1 + titleScale * 36.0f;
+        glm::vec3 gold(COLOR_GOLD.x, COLOR_GOLD.y, COLOR_GOLD.z);
+        glm::vec3 titleColor = gold * (0.9f + 0.1f * std::sin(glowPhase));
+        glm::vec3 mainColor = gold;
+        float w1 = textRenderer->getTextWidth(line1, titleScale);
+        textRenderer->renderText(line1, cx - w1 * 0.5f, y1, titleColor, titleScale);
+        float w2 = textRenderer->getTextWidth(line2, mainScale);
+        textRenderer->renderText(line2, cx - w2 * 0.5f, y2, mainColor, mainScale);
+    }
 }
 
 void TitleScreen::renderPressAnyKey(float alpha) {
