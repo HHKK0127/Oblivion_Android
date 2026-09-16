@@ -24,7 +24,7 @@ enum class TitleScreenState {
     LOGO_DISPLAY,   // "Press any key to continue" wait
     MENU,           // Main menu
     OPTIONS,        // Options sub-menu (reserved)
-    CREDITS,        // Credits display (reserved)
+    CREDITS,        // Credits display
     TRANSITIONING   // Game start fade-out
 };
 
@@ -121,6 +121,13 @@ private:
     std::array<TouchRipple, MAX_RIPPLES> ripples{};
     int nextRippleIndex = 0;
 
+    // Credits
+    float creditsScrollY = 0.0f;
+    float creditsAlpha = 0.0f;
+    static constexpr float CREDITS_FADE_DURATION = 0.5f;
+    float creditsFadeTimer = 0.0f;
+    bool creditsActive = false;
+
     // Sound
     AudioManager* audioManager = nullptr;
 
@@ -174,6 +181,7 @@ private:
     void renderIntroMovie();
     void renderLogoDisplay();
     void renderMenu();
+    void renderCredits();
     void renderFadeOut();
     void renderBackground(float alpha, bool menuMode);
     void renderSepiaOverlay();

@@ -196,6 +196,18 @@ void TitleScreen::update(float deltaTime) {
             updateMenu(deltaTime);
             break;
         }
+        case TitleScreenState::CREDITS: {
+            // Fade in credits
+            if (creditsFadeTimer < CREDITS_FADE_DURATION) {
+                creditsFadeTimer += deltaTime;
+                float t = creditsFadeTimer / CREDITS_FADE_DURATION;
+                if (t > 1.0f) t = 1.0f;
+                creditsAlpha = easeOutQuad(t);
+            }
+            // Auto-scroll credits
+            creditsScrollY += deltaTime * 60.0f;
+            break;
+        }
         default:
             break;
     }
@@ -211,6 +223,9 @@ void TitleScreen::render() {
             break;
         case TitleScreenState::MENU:
             renderMenu();
+            break;
+        case TitleScreenState::CREDITS:
+            renderCredits();
             break;
         case TitleScreenState::TRANSITIONING:
             renderFadeOut();
@@ -539,6 +554,13 @@ void TitleScreen::onTouchEvent(float x, float y, int action) {
                 menuPanel->onTouchMove(x, y, dx, dy, 0);
             }
         }
+    } else if (state == TitleScreenState::CREDITS) {
+        if (action == 0) {
+            // Tap to return to menu
+            state = TitleScreenState::MENU;
+            creditsActive = false;
+            LOGI("Credits dismissed");
+        }
     }
 }
 
@@ -564,6 +586,13 @@ void TitleScreen::onKeyPress(int key) {
             playUINavigateSound();
         } else if (key == 23 || key == 66) {
             handleMenuSelection();
+        }
+    } else if (state == TitleScreenState::CREDITS) {
+        if (key == 4 || key == 23 || key == 66) {
+            // Back or Enter to return to menu
+            state = TitleScreenState::MENU;
+            creditsActive = false;
+            LOGI("Credits dismissed");
         }
     }
 }
@@ -651,7 +680,11 @@ void TitleScreen::handleMenuSelection() {
         settingsRequested = true;
         LOGI("Menu selection: Options");
     } else if (selected == "menu_credits") {
-        creditsRequested = true;
+        state = TitleScreenState::CREDITS;
+        creditsActive = true;
+        creditsFadeTimer = 0.0f;
+        creditsAlpha = 0.0f;
+        creditsScrollY = 0.0f;
         LOGI("Menu selection: Credits");
     } else if (selected == "menu_quit") {
         quitRequested = true;
@@ -705,5 +738,103 @@ void TitleScreen::playUINavigateSound() {
 void TitleScreen::playUISelectSound() {
     if (audioManager && audioManager->hasSoundDefinitions()) {
         audioManager->playSound("ui/select");
+    }
+}
+
+void TitleScreen::renderCredits() {
+    renderBackground(1.0f, true);
+    renderSepiaOverlay();
+    renderVignette();
+
+    if (!textRenderer) return;
+
+    float minDim = static_cast<float>(std::min(screenWidth, screenHeight));
+    float scale = minDim / 1080.0f;
+    if (scale < 0.5f) scale = 0.5f;
+    if (scale > 2.0f) scale = 2.0f;
+
+    // Dark overlay
+    UIDrawHelper::drawColoredQuad(
+        0.0f, 0.0f,
+        static_cast<float>(screenWidth), static_cast<float>(screenHeight),
+        glm::vec4(0.0f, 0.0f, 0.0f, 0.85f * creditsAlpha),
+        screenWidth, screenHeight);
+
+    // Title
+    float titleScale = 1.2f * scale;
+    const char* title = "CREDITS";
+    float titleW = textRenderer->getTextWidth(title, titleScale);
+    float titleX = (static_cast<float>(screenWidth) - titleW) * 0.5f;
+    float titleY = 80.0f * scale;
+    glm::vec3 gold(COLOR_GOLD.x, COLOR_GOLD.y, COLOR_GOLD.z);
+    textRenderer->renderText(title, titleX, titleY, gold * creditsAlpha, titleScale);
+
+    // Credits content
+    struct CreditLine {
+        const char* text;
+        float scaleMul;
+        bool isHeader;
+    };
+
+    CreditLine credits[] = {
+        {"OBLIVION ANDROID", 1.0f, true},
+        {"", 0.5f, false},
+        {"The Elder Scrolls IV: Oblivion", 0.7f, false},
+        {"Originally developed by Bethesda Game Studios", 0.55f, false},
+        {"", 0.5f, false},
+        {"ANDROID PORT", 0.9f, true},
+        {"", 0.5f, false},
+        {"Engine Architecture", 0.65f, false},
+        {"C++17 / OpenGL ES 3.0 / Android NDK", 0.55f, false},
+        {"", 0.4f, false},
+        {"Audio System", 0.65f, false},
+        {"OpenAL-Soft / JNI Audio Bridge", 0.55f, false},
+        {"", 0.4f, false},
+        {"Physics", 0.65f, false},
+        {"Jolt Physics Engine", 0.55f, false},
+        {"", 0.4f, false},
+        {"Asset Pipeline", 0.65f, false},
+        {"NIF / DDS / BSA Loader", 0.55f, false},
+        {"", 0.6f, false},
+        {"SPECIAL THANKS", 0.9f, true},
+        {"", 0.5f, false},
+        {"Bethesda Game Studios", 0.65f, false},
+        {"OpenMW Project", 0.65f, false},
+        {"Android NDK Community", 0.65f, false},
+        {"", 0.6f, false},
+        {"", 0.6f, false},
+        {"Tap anywhere to return", 0.6f, false},
+    };
+
+    int numLines = sizeof(credits) / sizeof(credits[0]);
+    float baseY = screenHeight * 0.25f - creditsScrollY;
+    float lineSpacing = 32.0f * scale;
+
+    for (int i = 0; i < numLines; ++i) {
+        float y = baseY + static_cast<float>(i) * lineSpacing;
+        if (y < -50.0f || y > screenHeight + 50.0f) continue;
+
+        float lineScale = credits[i].scaleMul * scale;
+        float textW = textRenderer->getTextWidth(credits[i].text, lineScale);
+        float textX = (static_cast<float>(screenWidth) - textW) * 0.5f;
+
+        glm::vec3 color;
+        if (credits[i].isHeader) {
+            color = gold;
+        } else {
+            color = glm::vec3(COLOR_PARCHMENT.x, COLOR_PARCHMENT.y, COLOR_PARCHMENT.z);
+        }
+
+        float lineAlpha = creditsAlpha;
+        // Fade out at edges
+        if (y < screenHeight * 0.15f) {
+            lineAlpha *= (y - screenHeight * 0.05f) / (screenHeight * 0.10f);
+        } else if (y > screenHeight * 0.85f) {
+            lineAlpha *= (screenHeight * 0.95f - y) / (screenHeight * 0.10f);
+        }
+        if (lineAlpha < 0.0f) lineAlpha = 0.0f;
+        if (lineAlpha > 1.0f) lineAlpha = 1.0f;
+
+        textRenderer->renderText(credits[i].text, textX, y, color * lineAlpha, lineScale);
     }
 }
