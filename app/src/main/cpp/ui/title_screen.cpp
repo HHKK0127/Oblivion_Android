@@ -1,6 +1,7 @@
 #include "title_screen.h"
 #include "text_renderer.h"
 #include "../engine/texture_loader.h"
+#include "../audio/audio_manager.h"
 #include "ui_draw_helper.h"
 #include <GLES3/gl3.h>
 #include <cmath>
@@ -162,6 +163,17 @@ void TitleScreen::update(float deltaTime) {
         movieFrameTime = 0.0f;
     }
 
+    // Update ripples
+    for (int i = 0; i < MAX_RIPPLES; ++i) {
+        auto& r = ripples[i];
+        if (!r.active) continue;
+        r.radius += r.speed * deltaTime;
+        r.alpha -= deltaTime * 1.5f;
+        if (r.alpha <= 0.0f || r.radius >= r.maxRadius) {
+            r.active = false;
+        }
+    }
+
     switch (state) {
         case TitleScreenState::INTRO_MOVIE: {
             displayTimer += deltaTime;
@@ -206,6 +218,9 @@ void TitleScreen::render() {
         default:
             break;
     }
+
+    // Render ripples on top of everything
+    renderRipples();
 }
 
 void TitleScreen::renderIntroMovie() {
@@ -499,10 +514,12 @@ void TitleScreen::renderFadeOut() {
 void TitleScreen::onTouchEvent(float x, float y, int action) {
     if (state == TitleScreenState::INTRO_MOVIE) {
         if (action == 0) {
+            spawnRipple(x, y);
             transitionToLogo();
         }
     } else if (state == TitleScreenState::LOGO_DISPLAY) {
         if (action == 0) {
+            spawnRipple(x, y);
             transitionToMenu();
         }
     } else if (state == TitleScreenState::MENU) {
@@ -510,6 +527,7 @@ void TitleScreen::onTouchEvent(float x, float y, int action) {
             if (action == 0) {
                 lastTouchX = x;
                 lastTouchY = y;
+                spawnRipple(x, y);
                 menuPanel->onTouchDown(x, y, 0);
             } else if (action == 1) {
                 menuPanel->onTouchUp(x, y, 0);
@@ -540,8 +558,10 @@ void TitleScreen::onKeyPress(int key) {
     } else if (state == TitleScreenState::MENU) {
         if (key == 19) {
             selectedIndex = (selectedIndex - 1 + static_cast<int>(menuButtons.size())) % static_cast<int>(menuButtons.size());
+            playUINavigateSound();
         } else if (key == 20) {
             selectedIndex = (selectedIndex + 1) % static_cast<int>(menuButtons.size());
+            playUINavigateSound();
         } else if (key == 23 || key == 66) {
             handleMenuSelection();
         }
@@ -617,6 +637,7 @@ void TitleScreen::handleMenuSelection() {
     if (selectedIndex >= static_cast<int>(menuItems.size())) return;
 
     const std::string& selected = menuItems[selectedIndex];
+    playUISelectSound();
 
     if (selected == "menu_new") {
         state = TitleScreenState::TRANSITIONING;
@@ -635,5 +656,54 @@ void TitleScreen::handleMenuSelection() {
     } else if (selected == "menu_quit") {
         quitRequested = true;
         LOGI("Menu selection: Quit");
+    }
+}
+
+void TitleScreen::spawnRipple(float x, float y) {
+    auto& r = ripples[nextRippleIndex];
+    r.x = x;
+    r.y = y;
+    r.radius = 0.0f;
+    r.maxRadius = 80.0f;
+    r.alpha = 0.6f;
+    r.speed = 300.0f;
+    r.active = true;
+    nextRippleIndex = (nextRippleIndex + 1) % MAX_RIPPLES;
+}
+
+void TitleScreen::renderRipples() {
+    for (int i = 0; i < MAX_RIPPLES; ++i) {
+        auto& r = ripples[i];
+        if (!r.active) continue;
+
+        float thickness = 3.0f;
+        float innerR = r.radius - thickness;
+        if (innerR < 0.0f) innerR = 0.0f;
+
+        // Outer circle approximation using colored quad ring
+        glm::vec4 rippleColor(COLOR_GOLD.x, COLOR_GOLD.y, COLOR_GOLD.z, r.alpha * 0.5f);
+        UIDrawHelper::drawColoredQuad(
+            r.x - r.radius, r.y - r.radius,
+            r.radius * 2.0f, r.radius * 2.0f,
+            rippleColor, screenWidth, screenHeight);
+
+        // Inner clear circle
+        glm::vec4 clearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        UIDrawHelper::drawColoredQuad(
+            r.x - innerR, r.y - innerR,
+            innerR * 2.0f, innerR * 2.0f,
+            clearColor, screenWidth, screenHeight);
+    }
+}
+
+void TitleScreen::playUINavigateSound() {
+    if (audioManager && audioManager->hasSoundDefinitions()) {
+        audioManager->playSound("ui/navigate");
+    }
+}
+
+void TitleScreen::playUISelectSound() {
+    if (audioManager && audioManager->hasSoundDefinitions()) {
+        audioManager->playSound("ui/select");
     }
 }

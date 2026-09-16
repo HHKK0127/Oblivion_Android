@@ -10,6 +10,8 @@
 #include "ui_panel.h"
 #include "ui_button.h"
 
+class AudioManager;
+
 #define LOG_TAG "TitleScreen"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -33,6 +35,15 @@ struct TitleParticle {
     float driftX;
     float driftY;
     float phase;
+};
+
+struct TouchRipple {
+    float x, y;
+    float radius;
+    float maxRadius;
+    float alpha;
+    float speed;
+    bool active;
 };
 
 class TitleScreen {
@@ -105,6 +116,14 @@ private:
     float transitionAlpha = 0.0f;
     static constexpr float TRANSITION_FADE_DURATION = 1.5f;
 
+    // Touch ripple effect
+    static constexpr int MAX_RIPPLES = 4;
+    std::array<TouchRipple, MAX_RIPPLES> ripples{};
+    int nextRippleIndex = 0;
+
+    // Sound
+    AudioManager* audioManager = nullptr;
+
     static constexpr float INTRO_DURATION = 4.0f;
     static constexpr float LOGO_FADE_DURATION = 2.0f;
 
@@ -128,6 +147,7 @@ public:
     void onTouchEvent(float x, float y, int action);
     void debugStartNewGame();
     void onKeyPress(int key);
+    void setAudioManager(AudioManager* am) { audioManager = am; }
 
     bool isGameStarted() const { return gameStarted; }
     bool isSettingsRequested() const { return settingsRequested; }
@@ -162,6 +182,10 @@ private:
     void renderPressAnyKey(float alpha);
     void renderVersionText();
     void renderParticles();
+    void renderRipples();
+    void spawnRipple(float x, float y);
+    void playUINavigateSound();
+    void playUISelectSound();
 
     static float easeInQuad(float t) { return t * t; }
     static float easeOutQuad(float t) { return 1.0f - (1.0f - t) * (1.0f - t); }

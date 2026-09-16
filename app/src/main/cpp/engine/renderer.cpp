@@ -1829,6 +1829,11 @@ bool Renderer::initGameSystems() {
         if (titleScreen) {
             titleScreen->initialize(localizationManager.get(), textRenderer.get());
             titleScreen->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+#ifdef AUDIO_SYSTEM_ENABLED
+            if (audioManager) {
+                titleScreen->setAudioManager(audioManager.get());
+            }
+#endif
         }
     });
 
@@ -1842,6 +1847,11 @@ bool Renderer::initGameSystems() {
     // Initialize Title Screen
     titleScreen = std::make_unique<TitleScreen>();
     titleScreen->initialize(localizationManager.get(), textRenderer.get());
+#ifdef AUDIO_SYSTEM_ENABLED
+    if (audioManager) {
+        titleScreen->setAudioManager(audioManager.get());
+    }
+#endif
 
     // Initialize Quest UI
     questUI = std::make_unique<QuestUI>();
