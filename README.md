@@ -521,6 +521,25 @@ See [docs/README.md](docs/README.md) for complete documentation.
 
 ---
 
+### [FIX] Recent Improvements (2026-09)
+
+#### UI Bug Fixes
+- **TextRenderer** - Added shader compilation error checking (GL_COMPILE_STATUS, GL_LINK_STATUS)
+- **UIPanel** - Added TOUCH_MOVE handling for drag operations with screen boundary clamping
+- **UIComponent** - Added OpenGL blend state save/restore to prevent state leakage
+- **TitleScreen** - Fixed touch move delta calculation (dx/dy from previous position)
+- **GameSurfaceView** - Added ACTION_CANCEL handling to release active pointers
+
+#### Layout Fixes
+- **AndroidManifest** - Updated theme from deprecated to custom Theme.MyApplication
+- **activity_main.xml** - Repositioned debug buttons from bottom-left to top-left (avoids native UI overlap)
+
+#### Code Quality
+- **Comment Translation** - All Japanese comments in C++ source files translated to English (40+ files in ui/, audio/, engine/, physics/, world/, system/, game/)
+- **Project Rule Compliance** - Full compliance with project language rules (English comments, bilingual UI strings)
+
+---
+
 ### [BUG] Reporting Issues
 
 Found a bug? Please:
@@ -536,7 +555,7 @@ Found a bug? Please:
 #### Development Statistics
 - **Total Development Time**: ~15 weeks
 - **Total Commits**: 60+
-- **Bug Fixes**: 25+
+- **Bug Fixes**: 30+
 - **Features Implemented**: 30+
 - **Performance Optimizations**: 10+
 
@@ -614,10 +633,10 @@ Proprietary - Experimental Port
 
 ---
 
-**Status**: Phase 63 Complete (v0.9.10) — Development Build
-**Last Updated**: 2026-08-28
-**Version**: 3.2.0
-**Features**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD, ESM Data Integration (40 record types), NpcManager ESM, Container ESM, Player RACE/CLAS/BSGN, Status Effects, NAVM Pathfinding, DIAL/INFO Dialogue, REFR Placement, Spell Effects (8 types), Alchemy, Book Reader, Faction Manager, Loot Generator, NIF Skeleton/Skinning, Animation System, Collision Detection, Integration Tests (Phase 30), WorldEntity + WorldLoader + PlayerController Integration (Phase 31), Imperial Weave EventBus + 12-phase coordinator, AnimationSubscriber, AudioSubscriber, SpellSelectionPanel (Phase 32), Dedicated Combat Sounds, NPC Spatial Audio (Phase 33), Weapon-Type Sound Routing, Quick-Slot Spells (Phase 34), Radiant AI System (Phase 35), Jolt Physics Integration (Phase 36), Distant LOD (Phase 50), SpeedTree Vegetation (Phase 51), FaceGen (Phase 52), Bink Video (Phase 53), Imperial Weave v4.0 (Phase 54), Engine Polish (Phase 55), Gamebryo Complete: Particle/PostProcess/Water/SkyWeather/SceneGraph/Material (Phase 56)
+**Status**: Phase 63 Complete (v1.0.0) — Release Build
+**Last Updated**: 2026-09-16
+**Version**: 1.0.0
+**Features**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD, ESM Data Integration (40 record types), NpcManager ESM, Container ESM, Player RACE/CLAS/BSGN, Status Effects, NAVM Pathfinding, DIAL/INFO Dialogue, REFR Placement, Spell Effects (8 types), Alchemy, Book Reader, Faction Manager, Loot Generator, NIF Skeleton/Skinning, Animation System, Collision Detection, Integration Tests (Phase 30), WorldEntity + WorldLoader + PlayerController Integration (Phase 31), Imperial Weave EventBus + 12-phase coordinator, AnimationSubscriber, AudioSubscriber, SpellSelectionPanel (Phase 32), Dedicated Combat Sounds, NPC Spatial Audio (Phase 33), Weapon-Type Sound Routing, Quick-Slot Spells (Phase 34), Radiant AI System (Phase 35), Jolt Physics Integration (Phase 36), Distant LOD (Phase 50), SpeedTree Vegetation (Phase 51), FaceGen (Phase 52), Bink Video (Phase 53), Imperial Weave v4.0 (Phase 54), Engine Polish (Phase 55), Gamebryo Complete: Particle/PostProcess/Water/SkyWeather/SceneGraph/Material (Phase 56), UI Bug Fixes & Comment Translation (Phase 57)
 
 **Next**: Phase 64 - Production Release (Pending)
 
@@ -988,6 +1007,25 @@ oblivion-android/
 
 ---
 
+### [FIX] 最近の改善 (2026-09)
+
+#### UIバグ修正
+- **TextRenderer** - シェーダーコンパイルエラー検出を追加（GL_COMPILE_STATUS、GL_LINK_STATUS）
+- **UIPanel** - ドラッグ操作時のTOUCH_MOVE処理を追加（画面境界クランプ付き）
+- **UIComponent** - OpenGLブレンド状態の保存/復元を追加（状態漏洩防止）
+- **TitleScreen** - タッチ移動デルタ計算を修正（前回位置からのdx/dy）
+- **GameSurfaceView** - ACTION_CANCEL処理を追加（アクティブポインタ解放）
+
+#### レイアウト修正
+- **AndroidManifest** - 非推奨テーマからカスタムTheme.MyApplicationに更新
+- **activity_main.xml** - デバッグボタンを左下から左上に再配置（ネイティブUIとの重複回避）
+
+#### コード品質
+- **コメント翻訳** - C++ソースファイルの全日本語コメントを英語に翻訳（ui/、audio/、engine/、physics/、world/、system/、game/の40+ファイル）
+- **プロジェクトルール準拠** - プロジェクト言語ルールに完全準拠（英語コメント、バイリンガルUI文字列）
+
+---
+
 ### [BUG] 問題報告
 
 バグを発見しましたか？
@@ -1003,7 +1041,7 @@ oblivion-android/
 #### 開発統計
 - **総開発時間**: 約15週間
 - **総コミット数**: 60以上
-- **バグ修正**: 25以上
+- **バグ修正**: 30以上
 - **実装機能数**: 30以上
 - **パフォーマンス最適化**: 10以上
 
@@ -1081,11 +1119,11 @@ oblivion-android/
 
 ---
 
-**状態**: Phase 56 完了 (v3.2.0) - Gamebryoエンジン完成
+**状態**: Phase 57 完了 (v1.0.0) - 最終統合＆リリース
 
-**最終更新**: 2026-08-28
-**バージョン**: 3.2.0
+**最終更新**: 2026-09-16
+**バージョン**: 1.0.0
 
-**機能**: グラフィカルUI、テクスチャパネル＆ボタン、効果音、セーブ/ロードUI、OpenAL 3Dオーディオ、レトロフィルター効果、強化デバッグHUD、ESMデータ統合（40種レコード）、NPCマネージャーESM、コンテナESM、プレイヤーRACE/CLAS/BSGN、ステータス効果、NAVMパスファインディング、DIAL/INFO会話、REFR配置、呪文エフェクト（8種）、錬金術、書籍リーダー、派閥マネージャー、ルートジェネレーター、NIFスケルトン/スキニング、アニメーションシステム、衝突判定、統合テスト（Phase 30）、WorldEntity＋WorldLoader＋PlayerController統合（Phase 31）、Imperial Weave EventBus＋12フェーズコーディネーター、AnimationSubscriber、AudioSubscriber、SpellSelectionPanel（Phase 32）、専用コンバットサウンド、NPC空間オーディオ（Phase 33）、武器タイプサウンドルーティング、クイックスロット呪文（Phase 34）、Radiant AIシステム（Phase 35）、Jolt Physics統合（Phase 36）、Distant LOD（Phase 50）、SpeedTree植生（Phase 51）、FaceGen（Phase 52）、Binkビデオ（Phase 53）、Imperial Weave v4.0（Phase 54）、エンジンポリッシュ（Phase 55）、Gamebryo完成：パーティクル/ポストプロセス/水/天候/シーングラフ/マテリアル（Phase 56）
+**機能**: グラフィカルUI、テクスチャパネル＆ボタン、効果音、セーブ/ロードUI、OpenAL 3Dオーディオ、レトロフィルター効果、強化デバッグHUD、ESMデータ統合（40種レコード）、NPCマネージャーESM、コンテナESM、プレイヤーRACE/CLAS/BSGN、ステータス効果、NAVMパスファインディング、DIAL/INFO会話、REFR配置、呪文エフェクト（8種）、錬金術、書籍リーダー、派閥マネージャー、ルートジェネレーター、NIFスケルトン/スキニング、アニメーションシステム、衝突判定、統合テスト（Phase 30）、WorldEntity＋WorldLoader＋PlayerController統合（Phase 31）、Imperial Weave EventBus＋12フェーズコーディネーター、AnimationSubscriber、AudioSubscriber、SpellSelectionPanel（Phase 32）、専用コンバットサウンド、NPC空間オーディオ（Phase 33）、武器タイプサウンドルーティング、クイックスロット呪文（Phase 34）、Radiant AIシステム（Phase 35）、Jolt Physics統合（Phase 36）、Distant LOD（Phase 50）、SpeedTree植生（Phase 51）、FaceGen（Phase 52）、Binkビデオ（Phase 53）、Imperial Weave v4.0（Phase 54）、エンジンポリッシュ（Phase 55）、Gamebryo完成：パーティクル/ポストプロセス/水/天候/シーングラフ/マテリアル（Phase 56）、UIバグ修正＆コメント翻訳（Phase 57）
 
-**次回**: Phase 57 - 最終統合＆リリース
+**次回**: Phase 58 - 次期開発フェーズ

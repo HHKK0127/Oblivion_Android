@@ -76,6 +76,35 @@ private:
     float lastTouchX = 0.0f;
     float lastTouchY = 0.0f;
 
+    // Menu animation
+    float menuFadeAlpha = 0.0f;
+    float menuSlideOffset = 0.0f;
+    static constexpr float MENU_FADE_DURATION = 0.8f;
+    static constexpr float MENU_SLIDE_DURATION = 0.6f;
+    float menuAnimTimer = 0.0f;
+
+    // Per-button staggered animation
+    static constexpr int MAX_MENU_BUTTONS = 5;
+    float buttonAnimTimers[MAX_MENU_BUTTONS] = {0.0f};
+    float buttonAlphas[MAX_MENU_BUTTONS] = {0.0f};
+    float buttonSlideOffsets[MAX_MENU_BUTTONS] = {0.0f};
+    static constexpr float BUTTON_STAGGER_DELAY = 0.12f;
+    static constexpr float BUTTON_ANIM_DURATION = 0.5f;
+
+    // Selection indicator
+    float selectionBarAlpha = 0.0f;
+    float selectionBarY = 0.0f;
+    float selectionBarTargetY = 0.0f;
+    static constexpr float SELECTION_BAR_SPEED = 10.0f;
+
+    // Logo glow effect
+    float logoGlowIntensity = 0.0f;
+    static constexpr float LOGO_GLOW_SPEED = 1.5f;
+
+    // Transition fade
+    float transitionAlpha = 0.0f;
+    static constexpr float TRANSITION_FADE_DURATION = 1.5f;
+
     static constexpr float INTRO_DURATION = 4.0f;
     static constexpr float LOGO_FADE_DURATION = 2.0f;
 

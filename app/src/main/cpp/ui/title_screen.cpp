@@ -248,18 +248,52 @@ void TitleScreen::renderMenu() {
     renderParticles();
     renderOblivionLogo(1.0f, false);
 
-    // Dark overlay behind the menu area for button readability.
+    // Dark overlay behind the menu area for button readability (with animation).
     float overlayX = 0.0f;
     float overlayY = static_cast<float>(screenHeight) * 0.25f;
     float overlayW = static_cast<float>(screenWidth) * 0.35f;
     float overlayH = static_cast<float>(screenHeight) * 0.65f;
     UIDrawHelper::drawColoredQuad(
         overlayX, overlayY, overlayW, overlayH,
-        glm::vec4(0.0f, 0.0f, 0.0f, 0.35f),
+        glm::vec4(0.0f, 0.0f, 0.0f, 0.35f * menuFadeAlpha),
         screenWidth, screenHeight);
+
+    // Apply slide offset to menu panel position
+    if (menuPanel) {
+        float baseX = screenWidth * 0.04f;
+        menuPanel->setPosition(baseX - menuSlideOffset, screenHeight * 0.55f);
+    }
+
+    // Draw selection indicator bar
+    if (menuPanel) {
+        float panelX = screenWidth * 0.04f - menuSlideOffset;
+        float panelY = screenHeight * 0.55f;
+        float barX = panelX + 5.0f;
+        float barW = 6.0f;
+        float barH = 36.0f;
+        float barYPos = panelY + 30.0f + selectionBarY;
+
+        // Golden selection bar with glow
+        glm::vec4 barColor(COLOR_GOLD.x, COLOR_GOLD.y, COLOR_GOLD.z, selectionBarAlpha * menuFadeAlpha);
+        UIDrawHelper::drawColoredQuad(
+            barX, barYPos, barW, barH,
+            barColor, screenWidth, screenHeight);
+
+        // Glow effect behind bar
+        glm::vec4 glowColor(COLOR_GOLD.x, COLOR_GOLD.y, COLOR_GOLD.z, 0.2f * menuFadeAlpha);
+        UIDrawHelper::drawColoredQuad(
+            barX - 4.0f, barYPos - 2.0f, barW + 8.0f, barH + 4.0f,
+            glowColor, screenWidth, screenHeight);
+    }
 
     for (size_t i = 0; i < menuButtons.size(); ++i) {
         bool isSelected = (static_cast<int>(i) == selectedIndex);
+        int idx = static_cast<int>(i);
+
+        // Apply per-button animation
+        float buttonAlpha = buttonAlphas[idx];
+        float buttonSlide = buttonSlideOffsets[idx];
+
         if (isSelected) {
             float glow = 0.6f + 0.4f * sin(glowPhase);
             glm::vec3 c(COLOR_GOLD.x + (COLOR_WHITE.x - COLOR_GOLD.x) * glow * 0.6f,
@@ -443,8 +477,23 @@ void TitleScreen::renderParticles() {
 }
 
 void TitleScreen::renderFadeOut() {
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    // Smooth fade to black transition
+    transitionAlpha += 0.016f / TRANSITION_FADE_DURATION; // Assuming ~60fps
+    if (transitionAlpha > 1.0f) transitionAlpha = 1.0f;
+
+    // Render the menu underneath fading out
+    renderBackground(1.0f - transitionAlpha, true);
+    renderSepiaOverlay();
+    renderVignette();
+    renderParticles();
+    renderOblivionLogo(1.0f - transitionAlpha, false);
+
+    // Black overlay with increasing opacity
+    UIDrawHelper::drawColoredQuad(
+        0.0f, 0.0f,
+        static_cast<float>(screenWidth), static_cast<float>(screenHeight),
+        glm::vec4(0.0f, 0.0f, 0.0f, transitionAlpha),
+        screenWidth, screenHeight);
 }
 
 void TitleScreen::onTouchEvent(float x, float y, int action) {
@@ -510,11 +559,58 @@ void TitleScreen::transitionToMenu() {
     state = TitleScreenState::MENU;
     displayTimer = 0.0f;
     selectedIndex = 0;
+    menuAnimTimer = 0.0f;
+    menuFadeAlpha = 0.0f;
+    menuSlideOffset = 50.0f;
+
+    // Initialize per-button staggered animation
+    for (int i = 0; i < MAX_MENU_BUTTONS; ++i) {
+        buttonAnimTimers[i] = -BUTTON_STAGGER_DELAY * i;
+        buttonAlphas[i] = 0.0f;
+        buttonSlideOffsets[i] = 80.0f;
+    }
+
+    // Initialize selection bar
+    selectionBarAlpha = 0.0f;
+    selectionBarY = 0.0f;
+    selectionBarTargetY = 0.0f;
+
+    // Initialize logo glow
+    logoGlowIntensity = 0.5f;
+
     LOGI("Transitioned to menu");
 }
 
 void TitleScreen::updateMenu(float deltaTime) {
-    (void)deltaTime;
+    // Menu fade-in and slide animation
+    if (menuAnimTimer < MENU_FADE_DURATION) {
+        menuAnimTimer += deltaTime;
+        float t = menuAnimTimer / MENU_FADE_DURATION;
+        if (t > 1.0f) t = 1.0f;
+        menuFadeAlpha = easeOutQuad(t);
+        menuSlideOffset = 50.0f * (1.0f - easeOutQuad(t));
+    }
+
+    // Per-button staggered animation
+    for (int i = 0; i < MAX_MENU_BUTTONS; ++i) {
+        if (buttonAnimTimers[i] < BUTTON_ANIM_DURATION) {
+            buttonAnimTimers[i] += deltaTime;
+            float t = buttonAnimTimers[i] / BUTTON_ANIM_DURATION;
+            if (t < 0.0f) t = 0.0f;
+        }
+        float t = buttonAnimTimers[i] / BUTTON_ANIM_DURATION;
+        if (t > 1.0f) t = 1.0f;
+        buttonAlphas[i] = easeOutQuad(t);
+        buttonSlideOffsets[i] = 80.0f * (1.0f - easeOutQuad(t));
+    }
+
+    // Selection bar smooth movement
+    float barTargetY = static_cast<float>(selectedIndex) * 52.0f;
+    selectionBarY += (barTargetY - selectionBarY) * SELECTION_BAR_SPEED * deltaTime;
+    selectionBarAlpha = 0.8f + 0.2f * sin(glowPhase * 2.0f);
+
+    // Logo glow animation
+    logoGlowIntensity = 0.5f + 0.5f * sin(glowPhase * LOGO_GLOW_SPEED);
 }
 
 void TitleScreen::handleMenuSelection() {
@@ -524,6 +620,7 @@ void TitleScreen::handleMenuSelection() {
 
     if (selected == "menu_new") {
         state = TitleScreenState::TRANSITIONING;
+        transitionAlpha = 0.0f;
         gameStarted = true;
         LOGI("Menu selection: New Game");
     } else if (selected == "menu_load") {
