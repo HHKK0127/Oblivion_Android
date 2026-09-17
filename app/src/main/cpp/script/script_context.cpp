@@ -1,6 +1,10 @@
 #include "script_context.h"
 #include <algorithm>
 #include <cstring>
+#include <android/log.h>
+
+#define SCRIPT_LOG_TAG "ScriptVM"
+#define SCRIPT_LOGE(...) __android_log_print(ANDROID_LOG_ERROR, SCRIPT_LOG_TAG, __VA_ARGS__)
 
 // ============================================================================
 // Oblivion Script VM - Execution Context Implementation
@@ -67,7 +71,10 @@ void ExecutionContext::reset() {
 
 bool ExecutionContext::pushStack(const ScriptValue& value) {
     if (stack_.size() >= limits::MAX_STACK_SIZE) {
-        return false;  // Stack overflow
+        SCRIPT_LOGE("Stack overflow at PC=%u, stack depth=%zu (max=%d)",
+                     pc_, stack_.size(), limits::MAX_STACK_SIZE);
+        running_ = false;
+        return false;
     }
     stack_.push_back(value);
     return true;
@@ -75,7 +82,9 @@ bool ExecutionContext::pushStack(const ScriptValue& value) {
 
 ScriptValue ExecutionContext::popStack() {
     if (stack_.empty()) {
-        return ScriptValue::makeInt(0);  // Return zero on underflow
+        SCRIPT_LOGE("Stack underflow at PC=%u, stack is empty", pc_);
+        running_ = false;
+        return ScriptValue::makeInt(0);
     }
     ScriptValue val = stack_.back();
     stack_.pop_back();

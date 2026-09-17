@@ -82,6 +82,13 @@ public:
     // Frame counter
     uint64_t getFrameCount() const { return frameCount_; }
 
+    // FPS limiter (Phase 64)
+    float fps_cap = 0.f; // 0=unlimited, >0=target FPS
+    int   pick_swap(float cap) const {
+        if (cap <= 60.f && cap > 0.f) return 1; // vsync ON
+        return 0;                                // vsync OFF (manual throttle)
+    }
+
     // Phase timing (last frame)
     const PhaseTiming* getPhaseTimings() const { return phaseTimings_; }
     int getPhaseTimingCount() const { return PHASE_COUNT; }

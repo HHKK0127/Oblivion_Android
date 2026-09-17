@@ -218,6 +218,7 @@ public:
 
     // Get the currently active (highest priority eligible) package
     AIPackage* getActivePackage();
+    const AIPackage* getActivePackage() const;
 
     // Evaluate conditions and update active package
     void evaluate(float hourOfDay, const glm::vec3& npcPos,

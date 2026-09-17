@@ -1,5 +1,6 @@
 #include "game_loop_coordinator.h"
 #include "renderer.h"
+#include <thread> // FPS limiter sleep
 #include "../world/world_manager.h"
 #include "../game/npc_manager.h"
 #include "../game/combat_manager.h"
@@ -182,6 +183,17 @@ void GameLoopCoordinator::update(float deltaTime) {
     }
 
     frameCount_++;
+
+    // FPS limiter (Phase 64)
+    if (fps_cap > 0.f) {
+        auto now = std::chrono::high_resolution_clock::now();
+        float elapsed = std::chrono::duration<float>(now - frameStart).count();
+        float target = 1.0f / fps_cap;
+        if (elapsed < target) {
+            std::this_thread::sleep_for(
+                std::chrono::duration<float>(target - elapsed));
+        }
+    }
 
     // Log frame timing every 300 frames (~5 seconds at 60fps)
     if (frameCount_ % 300 == 0) {

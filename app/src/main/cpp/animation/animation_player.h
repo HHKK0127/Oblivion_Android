@@ -83,6 +83,25 @@ public:
     // Get sequence count
     uint32_t getSequenceCount() const;
 
+    // Debug: animation state access for debug tools
+    const std::vector<SequenceState>& getActiveSequences() const { return activeSequences; }
+    void seekTo(uint32_t sequenceIndex, float t) {
+        for (auto& s : activeSequences) {
+            if (s.sequenceIndex == sequenceIndex) {
+                s.currentTime = t;
+                break;
+            }
+        }
+    }
+    void stepFrame(uint32_t sequenceIndex, int dir) {
+        for (auto& s : activeSequences) {
+            if (s.sequenceIndex == sequenceIndex) {
+                s.currentTime += dir * 0.033f; // ~30fps frame
+                break;
+            }
+        }
+    }
+
 private:
     Skeleton* skeleton = nullptr;
     const std::vector<NIFControllerSequence>* sequences = nullptr;

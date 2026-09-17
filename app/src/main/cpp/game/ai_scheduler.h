@@ -96,6 +96,14 @@ public:
     // Statistics
     size_t getRegisteredNPCCount() const { return npcPackages.size(); }
 
+    // Debug: AI state access for debug tools
+    const std::unordered_map<uint32_t, PackageStack>& getPackageStacks() const { return npcPackages; }
+    const AIPackage* getActivePackageForNpc(uint32_t npcId) const {
+        auto it = npcPackages.find(npcId);
+        return (it != npcPackages.end()) ? it->second.getActivePackage() : nullptr;
+    }
+    void stepNpc(uint32_t npcId) { /* force re-evaluate */ }
+
 private:
     NpcManager* npcManager = nullptr;
     WorldManager* worldManager = nullptr;

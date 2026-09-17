@@ -125,6 +125,9 @@ public:
     // Get WorldEntity by NPC ID
     WorldEntity* getEntityByNpcId(uint32_t npcId);
 
+    // Debug: get all entities for debug tools
+    const std::unordered_map<uint32_t, std::unique_ptr<WorldEntity>>& getEntities() const { return entities; }
+
 private:
     AssetManager* assetManager = nullptr;
     CollisionWorld* collisionWorld = nullptr;

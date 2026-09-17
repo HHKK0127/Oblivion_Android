@@ -1925,10 +1925,18 @@
       "priority": "medium",
       "tags": ["git", "commits"],
       "content": "Git commits made: (1) bdd8bad5 - feat: Phase 46-55 implementation and repository cleanup (19 files, 2114 insertions). (2) 03ae409e - chore: remove debug screenshots, XML dumps, and keystore from git tracking (49 files deleted). (3) 001505eb - chore: remove legacy Groovy DSL gradle files from tracking (3 files deleted). Total: 3 commits, 71 files changed."
+    },
+    {
+      "id": "gl-debug-instrumentation",
+      "timestamp": "2026-09-17T06:00:00Z",
+      "category": "decision",
+      "priority": "medium",
+      "tags": ["gl", "debug", "renderer", "opengl"],
+      "content": "GL debug assertions added to renderer.cpp: #include gl_check.h, GLCHECK_MSG after glClear (game-clear, clear), glUseProgram (phShader-use), glDrawElements (ph-draw). All major render paths now covered by debug GL error checking."
     }
   ],
   "metadata": {
-    "totalEntries": 138,
+    "totalEntries": 139,
     "compressedCount": 0,
     "sessionCount": 7
   }

@@ -5,8 +5,7 @@
 #include <cmath>
 #include <cstring>
 
-// STB Image for loading
-#define STB_IMAGE_IMPLEMENTATION
+// STB Image for loading - implementation in texture_loader.cpp
 #include "stb_image.h"
 
 namespace fs = std::filesystem;

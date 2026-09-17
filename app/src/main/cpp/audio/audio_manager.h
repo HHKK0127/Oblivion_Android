@@ -203,6 +203,15 @@ public:
     size_t getActiveSourcesesCount() const { return sources.size(); }
 
     /**
+     * @brief Check if a specific SE source is currently playing
+     * @param sourceId Source ID to check
+     * @return True if the source is active
+     */
+    bool isSEPlaying(uint32_t sourceId) const {
+        return sources.find(sourceId) != sources.end();
+    }
+
+    /**
      * @brief Get list of loaded audio
      */
     std::string getLoadedAudioList() const;

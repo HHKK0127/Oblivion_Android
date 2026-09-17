@@ -118,6 +118,9 @@ public:
     // Contact access
     const ContactBuffer& getContacts() const { return contacts; }
 
+    // Debug: bodyId to npcId mapping for debug tools
+    std::unordered_map<int32_t, uint32_t> bodyToNpc; // bodyId → npcId
+
     // Gravity
     void setGravity(const glm::vec3& gravity) { this->gravity = gravity; }
     glm::vec3 getGravity() const { return gravity; }

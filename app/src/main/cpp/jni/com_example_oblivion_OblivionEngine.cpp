@@ -1164,4 +1164,36 @@ JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeTogglePlay
     }
 }
 
+// ============================================================================
+// onTrimMemory - Android memory pressure handler
+// ============================================================================
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeOnTrimMemory(
+    JNIEnv* /* env */,
+    jobject /* obj */,
+    jint level) {
+
+    LOGI("onTrimMemory called, level=%d", level);
+
+    if (!OblivionEngineJNI::sEngine) return;
+
+    // TRIM_MEMORY_RUNNING_LOW = 10, TRIM_MEMORY_RUNNING_CRITICAL = 15
+    // TRIM_MEMORY_UI_HIDDEN = 20
+    if (level >= 15) {
+        // Critical: flush all non-essential caches
+        LOGI("Trim memory CRITICAL: flushing caches");
+        auto renderer = OblivionEngineJNI::sEngine->getRenderer();
+        if (renderer) {
+            renderer->onTrimMemory(level);
+        }
+    } else if (level >= 10) {
+        // Low: reduce memory usage
+        LOGI("Trim memory LOW: reducing memory");
+        auto renderer = OblivionEngineJNI::sEngine->getRenderer();
+        if (renderer) {
+            renderer->onTrimMemory(level);
+        }
+    }
+}
+
 } // extern "C"

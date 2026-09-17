@@ -122,6 +122,25 @@ private:
         SOUND,
         ASSETS,
         LOGS,
+        // Phase 64: Debug Tool tabs
+        DBG_PICKER,
+        DBG_AI,
+        DBG_ANIM,
+        DBG_SCRIPT,
+        DBG_QUEST,
+        DBG_ITEM,
+        DBG_HOTRELOAD,
+        DBG_LIGHT,
+        DBG_MEM,
+        DBG_DIALOG,
+        DBG_INPUT,
+        DBG_AUDIO,
+        DBG_PHYS,
+        DBG_SLOT,
+        DBG_NAV,
+        DBG_TIME,
+        DBG_AGGRO,
+        DBG_STATS,
         COUNT
     };
 

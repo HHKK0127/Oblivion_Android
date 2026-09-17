@@ -1,7 +1,9 @@
 #include "renderer.h"
+#include "profiler_dashboard.h"
 #include "skinning_shader.h"
 #include "texture_loader.h"
 #include "imperial_weave.h"
+#include "gl_check.h"
 #include "../ui/ui_draw_helper.h"
 #include "../assets/bsa_reader.h"
 #include "../inventory/item_factory.h"
@@ -2909,6 +2911,7 @@ void Renderer::render(float deltaTime) {
         // Render World (main game scene) - Clear with game background color
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);  // Dark gray for game screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        GLCHECK_MSG("game-clear");
 
     // Enable depth testing for proper face rendering
     glEnable(GL_DEPTH_TEST);
@@ -2949,6 +2952,7 @@ void Renderer::render(float deltaTime) {
         // Just clear the screen and return to prevent crash
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        GLCHECK_MSG("clear");
         return;
     }
 
@@ -3434,6 +3438,7 @@ void Renderer::renderPlaceholderEntities() {
 
     // Render all placeholders
     glUseProgram(phShader);
+    GLCHECK_MSG("phShader-use");
     glUniform3f(glGetUniformLocation(phShader, "uLightDir"), 0.5f, 1.0f, 0.3f);
 
     glBindVertexArray(phVAO);
@@ -3463,6 +3468,7 @@ void Renderer::renderPlaceholderEntities() {
                         1, colorArr);
 
             glDrawElements(GL_TRIANGLES, phIndexCount, GL_UNSIGNED_SHORT, nullptr);
+            GLCHECK_MSG("ph-draw");
 
             LOGD("Rendered placeholder for NPC %u '%s' at (%.1f, %.1f, %.1f) r=%.1f",
                  ph.npcId, ph.name.c_str(), ph.position.x, ph.position.y, ph.position.z, ph.radius);
@@ -3661,6 +3667,19 @@ void Renderer::cleanup() {
         skyWeatherSystem = nullptr;
         LOGI("SkyWeatherSystem shut down");
     }
+
+// ... existing code ...
+}
+
+void Renderer::onTrimMemory(int level) {
+    LOGI("Renderer::onTrimMemory level=%d", level);
+
+    if (level >= 15) {
+        // TRIM_MEMORY_RUNNING_CRITICAL: flush non-essential caches
+    if (profilerDashboard) {
+        profilerDashboard->onTrimMemory(level);
+    }
+}
 
     // Phase 50: Shutdown Crime & Reputation System
     game::CrimeReputationSystem::getInstance().shutdown();

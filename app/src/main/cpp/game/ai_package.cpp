@@ -44,6 +44,18 @@ AIPackage* PackageStack::getActivePackage() {
     return nullptr;
 }
 
+const AIPackage* PackageStack::getActivePackage() const {
+    for (const auto& pkg : packages) {
+        if (pkg.conditionsMet) {
+            return &pkg;
+        }
+    }
+    if (!packages.empty()) {
+        return &packages[0];
+    }
+    return nullptr;
+}
+
 void PackageStack::evaluate(float hourOfDay, const glm::vec3& npcPos,
                              uint32_t npcCellID,
                              float healthPct, float magickaPct, float staminaPct) {

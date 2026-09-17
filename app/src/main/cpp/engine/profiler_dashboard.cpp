@@ -1,4 +1,5 @@
 #include "profiler_dashboard.h"
+#include "cache_manager.h"
 #include "memory_pool.h"
 #include "render_optimizer.h"
 #include "async_task_manager.h"
@@ -361,4 +362,11 @@ void ProfilerDashboard::renderBar(int x, int y, int width, int height,
     std::string bar(fillWidth, '#');
     std::string empty(width - fillWidth, '-');
     renderText(x, y, "[" + bar + empty + "]");
+}
+
+void ProfilerDashboard::onTrimMemory(int level) {
+    if (cacheMgr_) {
+        if (level >= 5)  cacheMgr_->cleanupExpired();
+        if (level >= 10) cacheMgr_->cleanup();
+    }
 }

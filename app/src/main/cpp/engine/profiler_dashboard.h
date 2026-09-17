@@ -112,6 +112,7 @@ public:
     void setRenderOptimizer(RenderOptimizer* optimizer) { renderOptimizer_ = optimizer; }
     void setAsyncTaskManager(AsyncTaskManager* taskMgr) { asyncTaskMgr_ = taskMgr; }
     void setCacheManager(CacheManager* cacheMgr) { cacheMgr_ = cacheMgr; }
+    void onTrimMemory(int level);
 
     // ========================================================================
     // Data input

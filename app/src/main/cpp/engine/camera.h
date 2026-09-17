@@ -12,6 +12,11 @@ public:
     void rotate(float pitch, float yaw);
     void pan(const glm::vec3& direction);
 
+    // Debug: position/direction getters for debug tools
+    const glm::vec3& getPosition() const { return position; }
+    const glm::vec3& getForward() const { return forward; }
+    void setPosition(const glm::vec3& p) { position = p; }
+
     // World bounds
     void setWorldBounds(float minX, float minY, float maxX, float maxY);
     void clearWorldBounds();

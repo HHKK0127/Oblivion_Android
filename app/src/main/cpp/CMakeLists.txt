@@ -33,6 +33,7 @@ target_compile_definitions(Jolt PRIVATE
 add_library(native-lib SHARED
     # Engine Core
     engine/renderer.cpp
+    engine/crash_handler.cpp
     engine/shader.cpp
     engine/camera.cpp
     engine/texture_loader.cpp
@@ -140,6 +141,19 @@ add_library(native-lib SHARED
     ui/texture_viewer.cpp
     ui/model_viewer.cpp
     ui/world_viewer.cpp
+
+    # Phase 64: Debug Tools
+    debug/picker.cpp
+    debug/teleport.cpp
+    debug/ai_view.cpp
+    debug/anim_scrub.cpp
+    debug/audio_browse.cpp
+    debug/phys_tool.cpp
+    debug/slot_view.cpp
+    debug/nav_view.cpp
+    debug/time_ctl.cpp
+    debug/aggro_hud.cpp
+    debug/player_stats.cpp
     ui/mesh_3d.cpp
     ui/viewer_3d.cpp
     ui/npc_debug_visualizer.cpp
@@ -317,6 +331,7 @@ target_include_directories(native-lib PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/assets
     ${CMAKE_CURRENT_SOURCE_DIR}/collision
     ${CMAKE_CURRENT_SOURCE_DIR}/animation
+    ${CMAKE_CURRENT_SOURCE_DIR}/debug
     ${CMAKE_CURRENT_SOURCE_DIR}/tests
     ${CMAKE_CURRENT_SOURCE_DIR}/physics
     ${CMAKE_CURRENT_SOURCE_DIR}/script

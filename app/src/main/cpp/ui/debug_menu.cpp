@@ -1007,6 +1007,24 @@ std::string DebugMenu::getTabName(Tab tab) const {
         case Tab::SOUND: return "Sound";
         case Tab::ASSETS: return "Assets";
         case Tab::LOGS: return "Logs";
+        case Tab::DBG_PICKER: return "Picker";
+        case Tab::DBG_AI: return "AI";
+        case Tab::DBG_ANIM: return "Anim";
+        case Tab::DBG_SCRIPT: return "Script";
+        case Tab::DBG_QUEST: return "Qst";
+        case Tab::DBG_ITEM: return "Item";
+        case Tab::DBG_HOTRELOAD: return "Reload";
+        case Tab::DBG_LIGHT: return "Light";
+        case Tab::DBG_MEM: return "Mem";
+        case Tab::DBG_DIALOG: return "Dlg";
+        case Tab::DBG_INPUT: return "Input";
+        case Tab::DBG_AUDIO: return "Audio";
+        case Tab::DBG_PHYS: return "Phys";
+        case Tab::DBG_SLOT: return "Slot";
+        case Tab::DBG_NAV: return "Nav";
+        case Tab::DBG_TIME: return "Time";
+        case Tab::DBG_AGGRO: return "Aggro";
+        case Tab::DBG_STATS: return "Stats";
         default: return "?";
     }
 }
@@ -1337,6 +1355,11 @@ void DebugMenu::createAllTabContents() {
             {"Performance", "performance"},
             {"Reset Stats", "resetstats"},
             {"Dump State", "dumpstate"},
+            {"Font: Roboto", "font_roboto"},
+            {"Font: Daedric", "font_daedric"},
+            {"Font: Kingthings", "font_kingthings"},
+            {"Font: Handwritten", "font_handwritten"},
+            {"Font: Tahoma", "font_tahoma"},
         };
         for (const auto& item : items) {
             Button btn;
@@ -1529,6 +1552,354 @@ void DebugMenu::createAllTabContents() {
             btn.label = item.first;
             btn.command = item.second;
             btn.baseColor = glm::vec3(0.5f, 0.4f, 0.3f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
+    }
+
+    // ==================== Phase 64: Debug Tool Tabs ====================
+
+    // DBG_PICKER: Picker + Teleport
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Pick Mode", "pick"},
+            {"Teleport", "teleport"},
+            {"Follow NPC", "pickfollow"},
+            {"Info", "pickinfo"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.2f, 0.8f, 0.9f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
+    }
+
+    // DBG_AI: AI State Viewer
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Show AI", "aishow"},
+            {"Step NPC", "aistep"},
+            {"List States", "ailist"},
+            {"Reset AI", "aireset"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.9f, 0.6f, 0.2f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
+    }
+
+    // DBG_ANIM: Animation Scrubber
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Show Anim", "animshow"},
+            {"Play/Pause", "animplay"},
+            {"Step +1", "animstep 1"},
+            {"Step -1", "animstep -1"},
+            {"Reset", "animreset"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.9f, 0.3f, 0.5f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
+    }
+
+    // DBG_SCRIPT: Script Debugger
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Show Script", "scriptshow"},
+            {"Step VM", "scriptstep"},
+            {"Break", "scriptbreak"},
+            {"Resume", "scriptresume"},
+            {"Run File", "scriptrun"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.6f, 0.4f, 0.9f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
+    }
+
+    // DBG_QUEST: Quest Debugger
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Show Quests", "questshow"},
+            {"Complete", "questcomplete"},
+            {"Fail", "questfail"},
+            {"Set Stage", "queststage"},
+            {"Flags", "questflags"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.9f, 0.8f, 0.2f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
+    }
+
+    // DBG_ITEM: Item Editor
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Show Items", "itemshow"},
+            {"Edit Item", "itemedit"},
+            {"Add Item", "itemadd"},
+            {"Remove", "itemremove"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.8f, 0.5f, 0.2f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
+    }
+
+    // DBG_HOTRELOAD: Hot Reload
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Reload Assets", "hotreload"},
+            {"Watch On", "hotwatchon"},
+            {"Watch Off", "hotwatchoff"},
+            {"Reload Log", "hotreloadlog"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.3f, 0.9f, 0.3f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
+    }
+
+    // DBG_LIGHT: Lighting Control
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Show Light", "lightshow"},
+            {"Reset", "lightreset"},
+            {"Ambient", "lightambient"},
+            {"Shadow", "lightshadow"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(1.f, 0.9f, 0.4f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
+    }
+
+    // DBG_MEM: Memory Trace
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Show Mem", "memshow"},
+            {"Dump", "memdump"},
+            {"Diff", "memdiff"},
+            {"Reset", "memreset"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.5f, 0.2f, 0.5f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
+    }
+
+    // DBG_DIALOG: Dialogue Debugger
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Show Dialog", "dialogshow"},
+            {"Topics", "dialogtopics"},
+            {"Choices", "dialogchoices"},
+            {"History", "dialoghistory"},
+            {"Reset", "dialogreset"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.7f, 0.3f, 0.7f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
+    }
+
+    // DBG_INPUT: Input Visualizer
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Show Input", "inputshow"},
+            {"Touch Trail", "inputtrail"},
+            {"Pad Map", "inputpad"},
+            {"Clear", "inputclear"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.3f, 0.6f, 0.9f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
+    }
+
+    // DBG_AUDIO: Audio Browser
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Browse", "audiobrowse"},
+            {"Play", "audioplay"},
+            {"Stop", "audiostop"},
+            {"Waveform", "audiowave"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.6f, 0.3f, 0.8f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
+    }
+
+    // DBG_PHYS: Physics Tool
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Show Phys", "physshow"},
+            {"Apply Force", "physforce"},
+            {"Impulse", "physimpulse"},
+            {"Reset", "physreset"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.2f, 0.7f, 0.5f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
+    }
+
+    // DBG_SLOT: Save Slot Viewer
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Show Slots", "slotshow"},
+            {"Compare", "slotcompare"},
+            {"Delete Slot", "slotdelete"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.5f, 0.5f, 0.4f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
+    }
+
+    // DBG_NAV: Navmesh Viewer
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Show Nav", "navshow"},
+            {"Path", "navpath"},
+            {"Zones", "navzones"},
+            {"Portals", "navportals"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.3f, 0.8f, 0.4f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
+    }
+
+    // DBG_TIME: Time & Weather Control
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Show Time", "timeshow"},
+            {"Dawn", "timeset 6"},
+            {"Noon", "timeset 12"},
+            {"Dusk", "timeset 18"},
+            {"Midnight", "timeset 0"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.9f, 0.7f, 0.2f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
+    }
+
+    // DBG_AGGRO: Aggro HUD
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Show Aggro", "aggroshow"},
+            {"Set Target", "aggrotarget"},
+            {"Clear", "aggroclear"},
+            {"Enemy List", "aggroenemies"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.9f, 0.2f, 0.2f);
+            content.buttons.push_back(btn);
+        }
+        tabContents.push_back(content);
+    }
+
+    // DBG_STATS: Player Stats Panel
+    {
+        TabContent content;
+        std::vector<std::pair<std::string, std::string>> items = {
+            {"Show Stats", "statsshow"},
+            {"Attributes", "statsattr"},
+            {"Skills", "statsskills"},
+            {"Modifiers", "statsmods"},
+        };
+        for (const auto& item : items) {
+            Button btn;
+            btn.label = item.first;
+            btn.command = item.second;
+            btn.baseColor = glm::vec3(0.4f, 0.6f, 0.8f);
             content.buttons.push_back(btn);
         }
         tabContents.push_back(content);

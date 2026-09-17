@@ -1,0 +1,37 @@
+{
+  "daedric_font": {
+    "font_size": 55.0,
+    "tex_name": "daedric_font_0_Lod_A",
+    "glyph_count": 259,
+    "valid_glyphs": 0,
+    "glyphs": []
+  },
+  "handwritten": {
+    "font_size": 57.0,
+    "tex_name": "Handwritten_0_Lod_A",
+    "glyph_count": 259,
+    "valid_glyphs": 0,
+    "glyphs": []
+  },
+  "kingthings_regular": {
+    "font_size": 28.0,
+    "tex_name": "Kingthings_Regular_0_Lod_A",
+    "glyph_count": 259,
+    "valid_glyphs": 0,
+    "glyphs": []
+  },
+  "kingthings_shadowed": {
+    "font_size": 35.0,
+    "tex_name": "Kingthings_Shadowed_0_Lod_A",
+    "glyph_count": 259,
+    "valid_glyphs": 0,
+    "glyphs": []
+  },
+  "tahoma_bold_small": {
+    "font_size": 22.0,
+    "tex_name": "Tahoma_Bold_Small_0_Lod_A",
+    "glyph_count": 259,
+    "valid_glyphs": 0,
+    "glyphs": []
+  }
+}

@@ -85,6 +85,9 @@
 // Global AssetManager (defined in jni_bridge.cpp)
 extern AAssetManager* g_assetManager;
 
+// Forward declarations
+class ProfilerDashboard;
+
 class Renderer {
 private:
     // UI Systems
@@ -101,6 +104,7 @@ private:
     std::unique_ptr<NpcDebugVisualizer> npcDebugVisualizer;
     std::unique_ptr<WorldDebugInfo> worldDebugInfo;
     std::unique_ptr<PerformanceGraph> performanceGraph;
+    std::unique_ptr<ProfilerDashboard> profilerDashboard;
 
     // Settings
     std::unique_ptr<SettingsManager> settingsManager;
@@ -227,6 +231,7 @@ public:
     bool init(unsigned int width, unsigned int height);
     void render(float deltaTime);
     void cleanup();
+    void onTrimMemory(int level);
     void resize(unsigned int width, unsigned int height);
 
     // Getters
