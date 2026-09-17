@@ -51,6 +51,7 @@
 #include "../ui/hud_renderer.h"
 #include "../ui/ui_hud_compass.h"
 #include "../ui/ui_hud_status_display.h"
+#include "../ui/crosshair.h"
 #include "../animation/animation_subscriber.h"
 #include "../audio/audio_subscriber.h"
 #include "../map/map_system.h"
@@ -129,6 +130,7 @@ private:
     std::unique_ptr<HUDRenderer> hudRenderer;
     std::unique_ptr<UIHudCompass> hudCompass;
     std::unique_ptr<UIHudStatusDisplay> hudStatusDisplay;
+    std::unique_ptr<Crosshair> crosshair;
     bool hudVisible = true;
     
     // Responsive UI Manager
@@ -274,6 +276,7 @@ public:
     HUDRenderer* getHUDRenderer() { return hudRenderer.get(); }
     UIHudCompass* getHUDCompass() { return hudCompass.get(); }
     UIHudStatusDisplay* getHUDStatusDisplay() { return hudStatusDisplay.get(); }
+    Crosshair* getCrosshair() { return crosshair.get(); }
     void toggleHUD();
     bool isHUDVisible() const { return hudVisible; }
 

@@ -145,6 +145,10 @@ void Renderer::resize(unsigned int width, unsigned int height) {
         hudStatusDisplay->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
         LOGI("UIHudStatusDisplay screen size updated to: %ux%u", screenWidth, screenHeight);
     }
+    if (crosshair) {
+        crosshair->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        LOGI("Crosshair screen size updated to: %ux%u", screenWidth, screenHeight);
+    }
 
     // Update RetroFilter resolution
     if (retroFilter) {
@@ -590,6 +594,14 @@ bool Renderer::initGameSystems() {
         LOGE("Failed to initialize UIHudStatusDisplay");
     } else {
         LOGI("UIHudStatusDisplay initialized successfully");
+    }
+
+    crosshair = std::make_unique<Crosshair>();
+    crosshair->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    if (!crosshair->initialize()) {
+        LOGE("Failed to initialize Crosshair");
+    } else {
+        LOGI("Crosshair initialized successfully");
     }
 
     // Initialize Debug HUD
@@ -3035,6 +3047,9 @@ void Renderer::render(float deltaTime) {
         if (hudRenderer) {
             hudRenderer->update(deltaTime);
             hudRenderer->render();
+        }
+        if (crosshair) {
+            crosshair->render();
         }
     }
 
