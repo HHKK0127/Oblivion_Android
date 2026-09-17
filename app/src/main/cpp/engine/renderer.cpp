@@ -149,6 +149,14 @@ void Renderer::resize(unsigned int width, unsigned int height) {
         crosshair->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
         LOGI("Crosshair screen size updated to: %ux%u", screenWidth, screenHeight);
     }
+    if (targetInfo) {
+        targetInfo->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        LOGI("UITargetInfo screen size updated to: %ux%u", screenWidth, screenHeight);
+    }
+    if (activeEffects) {
+        activeEffects->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        LOGI("UIActiveEffects screen size updated to: %ux%u", screenWidth, screenHeight);
+    }
 
     // Update RetroFilter resolution
     if (retroFilter) {
@@ -602,6 +610,22 @@ bool Renderer::initGameSystems() {
         LOGE("Failed to initialize Crosshair");
     } else {
         LOGI("Crosshair initialized successfully");
+    }
+
+    targetInfo = std::make_unique<UITargetInfo>();
+    if (!targetInfo->initialize(textRenderer.get(),
+                                static_cast<int>(screenWidth), static_cast<int>(screenHeight))) {
+        LOGE("Failed to initialize UITargetInfo");
+    } else {
+        LOGI("UITargetInfo initialized successfully");
+    }
+
+    activeEffects = std::make_unique<UIActiveEffects>();
+    if (!activeEffects->initialize(textRenderer.get(),
+                                   static_cast<int>(screenWidth), static_cast<int>(screenHeight))) {
+        LOGE("Failed to initialize UIActiveEffects");
+    } else {
+        LOGI("UIActiveEffects initialized successfully");
     }
 
     // Initialize Debug HUD
@@ -3050,6 +3074,14 @@ void Renderer::render(float deltaTime) {
         }
         if (crosshair) {
             crosshair->render();
+        }
+        if (targetInfo) {
+            targetInfo->update(deltaTime);
+            targetInfo->render();
+        }
+        if (activeEffects) {
+            activeEffects->update(deltaTime);
+            activeEffects->render();
         }
     }
 
