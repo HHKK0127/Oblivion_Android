@@ -29,6 +29,7 @@
 #include "../game/navmesh_manager.h"
 #include "../game/ai_scheduler.h"
 #include "../game/player_controller.h"
+#include "../game/dialogue.h"
 #include "../game/inventory_manager.h"
 #include "../ui/inventory_ui.h"
 #include "../ui/ui_inventory_panel.h"
@@ -113,6 +114,7 @@ private:
     std::unique_ptr<ai::AIScheduler> aiScheduler;
     std::unique_ptr<PlayerController> playerController;
     std::unique_ptr<InventoryManager> inventoryManager;
+    std::unique_ptr<DialogueManager> dialogueManager;
 
     // Profiling
     std::unique_ptr<PerformanceMonitor> performanceMonitor;
@@ -242,6 +244,7 @@ public:
     PerformanceMonitor* getPerformanceMonitor() { return performanceMonitor.get(); }
     PlayerController* getPlayerController() { return playerController.get(); }
     InventoryManager* getInventoryManager() { return inventoryManager.get(); }
+    DialogueManager* getDialogueManager() { return dialogueManager.get(); }
     InventoryUI* getInventoryUI() { return inventoryUI.get(); }
 #ifdef AUDIO_SYSTEM_ENABLED
     AudioManager* getAudioManager() { return audioManager.get(); }

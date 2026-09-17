@@ -1724,6 +1724,10 @@ bool Renderer::initGameSystems() {
     }
     LOGI("InventoryManager initialized successfully");
 
+    // Initialize DialogueManager
+    dialogueManager = std::make_unique<DialogueManager>();
+    LOGI("DialogueManager initialized successfully");
+
     // Initialize InventoryUI (Phase 3+)
     inventoryUI = std::make_unique<InventoryUI>();
     if (!inventoryUI->initialize(inventoryManager->getPlayerInventory(), textRenderer.get())) {
