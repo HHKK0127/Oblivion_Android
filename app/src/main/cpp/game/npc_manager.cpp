@@ -19,6 +19,15 @@ bool NpcManager::initialize() {
 }
 
 void NpcManager::cleanup() {
+    // Clean up physics characters
+    auto& physics = oblivion::PhysicsManager::getInstance();
+    for (auto& pair : physicsCharacters) {
+        if (pair.second) {
+            physics.destroyCharacter(pair.second);
+        }
+    }
+    physicsCharacters.clear();
+
     npcs.clear();
     cellNpcs.clear();
     npcToCell.clear();
@@ -31,6 +40,10 @@ void NpcManager::cleanup() {
 }
 
 void NpcManager::update(float deltaTime) {
+    // Update physics characters
+    updatePhysics(deltaTime);
+
+    // Update NPC logic
     for (auto& pair : npcs) {
         if (pair.second) {
             pair.second->update(deltaTime);
@@ -524,4 +537,67 @@ bool NpcManager::generateNpcFace(uint32_t npcId, uint32_t formID) {
 
     LOGI("Generated face for NPC %u form %u (%s)", npcId, formID, npc.name.c_str());
     return meshOk;
+}
+
+// ============================================================
+// Phase 46: Physics Integration
+// ============================================================
+
+void NpcManager::createPhysicsCharacter(uint32_t npcId, float height, float radius) {
+    auto npc = getNPC(npcId);
+    if (!npc) {
+        LOGE("createPhysicsCharacter: NPC %u not found", npcId);
+        return;
+    }
+
+    // Remove existing physics character if any
+    removePhysicsCharacter(npcId);
+
+    auto& physics = oblivion::PhysicsManager::getInstance();
+    auto* character = physics.createCharacter(npc->position, height, radius);
+    if (character) {
+        physicsCharacters[npcId] = character;
+        LOGI("Physics character created for NPC %u (%s) at (%.2f, %.2f, %.2f)",
+             npcId, npc->name.c_str(), npc->position.x, npc->position.y, npc->position.z);
+    } else {
+        LOGE("Failed to create physics character for NPC %u", npcId);
+    }
+}
+
+void NpcManager::removePhysicsCharacter(uint32_t npcId) {
+    auto it = physicsCharacters.find(npcId);
+    if (it != physicsCharacters.end()) {
+        auto& physics = oblivion::PhysicsManager::getInstance();
+        physics.destroyCharacter(it->second);
+        physicsCharacters.erase(it);
+        LOGD("Physics character removed for NPC %u", npcId);
+    }
+}
+
+void NpcManager::updatePhysics(float deltaTime) {
+    auto& physics = oblivion::PhysicsManager::getInstance();
+
+    for (auto& pair : physicsCharacters) {
+        uint32_t npcId = pair.first;
+        JPH::CharacterVirtual* character = pair.second;
+
+        auto npc = getNPC(npcId);
+        if (!npc || !character) continue;
+
+        // Update physics character with zero input (gravity only)
+        // NPC movement is handled by AI scheduler, physics provides collision
+        glm::vec3 input(0.0f, 0.0f, 0.0f);
+        physics.updateCharacter(character, deltaTime, input);
+
+        // Sync physics position back to NPC
+        npc->position = physics.getCharacterPosition(character);
+    }
+}
+
+JPH::CharacterVirtual* NpcManager::getPhysicsCharacter(uint32_t npcId) const {
+    auto it = physicsCharacters.find(npcId);
+    if (it != physicsCharacters.end()) {
+        return it->second;
+    }
+    return nullptr;
 }

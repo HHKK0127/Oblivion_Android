@@ -1726,8 +1726,18 @@ bool Renderer::initGameSystems() {
 
     // Initialize DialogueManager
     dialogueManager = std::make_unique<DialogueManager>();
+    alchemySystem = std::make_unique<oblivion::AlchemySystem>();
+    enchantingSystem = std::make_unique<game::EnchantingSystem>();
     LOGI("DialogueManager initialized successfully");
-
+    
+    // Initialize AlchemySystem
+    alchemySystem->initialize(nullptr);  // ESMManager will be set later
+    LOGI("AlchemySystem initialized successfully");
+    
+    // Initialize EnchantingSystem
+    enchantingSystem->initialize();
+    LOGI("EnchantingSystem initialized successfully");
+    
     // Initialize InventoryUI (Phase 3+)
     inventoryUI = std::make_unique<InventoryUI>();
     if (!inventoryUI->initialize(inventoryManager->getPlayerInventory(), textRenderer.get())) {
@@ -1798,10 +1808,29 @@ bool Renderer::initGameSystems() {
         auto& physics = oblivion::PhysicsManager::getInstance();
         if (physics.init()) {
             LOGI("Jolt Physics initialized successfully");
+            
+            // Create player physics character
+            if (playerController && playerController->getPlayer()) {
+                glm::vec3 playerPos = playerController->getPlayerPosition();
+                auto* physicsChar = physics.createCharacter(playerPos, 1.8f, 0.3f);
+                if (physicsChar) {
+                    playerController->initPhysics(physicsChar);
+                    LOGI("Player physics character created at (%.2f, %.2f, %.2f)",
+                         playerPos.x, playerPos.y, playerPos.z);
+                } else {
+                    LOGE("Failed to create player physics character");
+                }
+            }
         } else {
             LOGE("Failed to initialize Jolt Physics");
         }
     }
+
+    // Phase 47: Sky & Weather System
+    LOGI("Creating SkyWeatherSystem...");
+    skyWeatherSystem = &engine::SkyWeatherSystem::instance();
+    skyWeatherSystem->init();
+    LOGI("SkyWeatherSystem initialized");
 
     // Initialize Phase 9.1 Map System
     LOGI("Creating MapSystem...");
@@ -1851,6 +1880,16 @@ bool Renderer::initGameSystems() {
 
     equipmentManager = std::make_unique<inventory::EquipmentManager>();
     LOGI("EquipmentManager initialized");
+
+    // Phase 48: Equipment Effect System
+    equipmentEffectSystem = std::make_unique<EquipmentEffectSystem>();
+    // Note: Player doesn't have CharacterStatus yet, so we initialize without it
+    // equipmentEffectSystem->initialize(equipmentManager, playerStatus);
+    LOGI("EquipmentEffectSystem created (pending Player CharacterStatus integration)");
+
+    // Phase 50: Crime & Reputation System
+    game::CrimeReputationSystem::getInstance().initialize();
+    LOGI("CrimeReputationSystem initialized");
 
     // Create test items
     {
@@ -2629,6 +2668,11 @@ void Renderer::render(float deltaTime) {
         aiScheduler->update(deltaTime);
     }
 
+    // Phase 47: Update weather system
+    if (skyWeatherSystem) {
+        skyWeatherSystem->update(deltaTime);
+    }
+
     // Begin performance monitoring
     if (performanceMonitor) {
         performanceMonitor->beginFrame();
@@ -2906,6 +2950,11 @@ void Renderer::render(float deltaTime) {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         return;
+    }
+
+    // Phase 47: Sky & Weather rendering
+    if (skyWeatherSystem) {
+        skyWeatherSystem->update(deltaTime);
     }
 
     // Render world objects
@@ -3605,6 +3654,17 @@ void Renderer::cleanup() {
     // Phase 36: Shutdown Jolt Physics
     oblivion::PhysicsManager::getInstance().shutdown();
     LOGI("Jolt Physics shut down");
+
+    // Phase 47: Shutdown Sky & Weather System
+    if (skyWeatherSystem) {
+        skyWeatherSystem->shutdown();
+        skyWeatherSystem = nullptr;
+        LOGI("SkyWeatherSystem shut down");
+    }
+
+    // Phase 50: Shutdown Crime & Reputation System
+    game::CrimeReputationSystem::getInstance().shutdown();
+    LOGI("CrimeReputationSystem shut down");
 
     // Clean up static UI drawing programs/buffers to prevent stale GL context handles across EGL context recreations
     UIDrawHelper::cleanup();

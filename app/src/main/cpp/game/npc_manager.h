@@ -4,6 +4,7 @@
 #include "spell.h"
 #include "../assets/esm_reader.h"
 #include "../character/face_gen_morpher.h"
+#include "../physics/physics_manager.h"
 #include <unordered_map>
 #include <vector>
 #include <memory>
@@ -84,5 +85,15 @@ public:
 
     size_t getNPCCount() const { return npcs.size(); }
 
+    // Phase 46: Physics integration
+    void createPhysicsCharacter(uint32_t npcId, float height = 1.8f, float radius = 0.3f);
+    void removePhysicsCharacter(uint32_t npcId);
+    void updatePhysics(float deltaTime);
+    JPH::CharacterVirtual* getPhysicsCharacter(uint32_t npcId) const;
+
     void logNpcStatus() const;
+
+private:
+    // Phase 46: Physics characters for NPCs
+    std::unordered_map<uint32_t, JPH::CharacterVirtual*> physicsCharacters;
 };

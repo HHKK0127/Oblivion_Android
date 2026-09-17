@@ -123,6 +123,9 @@ add_library(native-lib SHARED
     game/inventory_manager.cpp
     game/consumable_system.cpp
     game/equipment_effect_system.cpp
+    game/crime_reputation_system.cpp
+    game/lockpick_system.cpp
+    game/enchanting_system.cpp
     game/book_database.cpp
 
     # UI Systems

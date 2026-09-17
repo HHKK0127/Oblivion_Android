@@ -10,6 +10,18 @@ mod/
 Launcher/
 バイナリ/
 
+# Debug screenshots and XML dumps (root directory)
+/*.png
+/*.xml
+
+# Keystore (sensitive)
+*.keystore
+
+# Legacy Groovy DSL gradle files (use Kotlin DSL instead)
+build.gradle
+settings.gradle
+app/build.gradle
+
 # Gradle files
 .gradle/
 build/

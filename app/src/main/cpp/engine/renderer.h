@@ -31,6 +31,8 @@
 #include "../game/player_controller.h"
 #include "../game/dialogue.h"
 #include "../game/inventory_manager.h"
+#include "../game/alchemy_system.h"
+#include "../game/enchanting_system.h"
 #include "../ui/inventory_ui.h"
 #include "../ui/ui_inventory_panel.h"
 #include "../world/world_manager.h"
@@ -60,6 +62,9 @@
 #include "../map/map_system.h"
 #include "../inventory/inventory_grid.h"
 #include "../inventory/equipment_manager.h"
+#include "../game/equipment_effect_system.h"
+#include "../game/crime_reputation_system.h"
+#include "sky_weather_system.h"
 
 #ifdef AUDIO_SYSTEM_ENABLED
 #include "../audio/audio_manager.h"
@@ -115,6 +120,8 @@ private:
     std::unique_ptr<PlayerController> playerController;
     std::unique_ptr<InventoryManager> inventoryManager;
     std::unique_ptr<DialogueManager> dialogueManager;
+    std::unique_ptr<oblivion::AlchemySystem> alchemySystem;
+    std::unique_ptr<game::EnchantingSystem> enchantingSystem;
 
     // Profiling
     std::unique_ptr<PerformanceMonitor> performanceMonitor;
@@ -172,6 +179,7 @@ private:
     // Phase 9.2: Inventory System
     std::unique_ptr<inventory::InventoryGrid> inventoryGrid;
     std::unique_ptr<inventory::EquipmentManager> equipmentManager;
+    std::unique_ptr<EquipmentEffectSystem> equipmentEffectSystem;
     ui::UIInventoryPanel* uiInventoryPanel = nullptr;
 
     // Phase 31: World Entity System
@@ -192,6 +200,9 @@ private:
     // Retro Filter (Post-Processing)
     std::unique_ptr<RetroFilter> retroFilter;
     RetroFilter::Settings retroSettings;
+
+    // Phase 47: Sky & Weather System
+    engine::SkyWeatherSystem* skyWeatherSystem = nullptr;
 
     // State
     bool showLauncher;
@@ -250,6 +261,15 @@ public:
     AudioManager* getAudioManager() { return audioManager.get(); }
 #endif
 
+    // Phase 47: Weather control
+    engine::SkyWeatherSystem* getSkyWeatherSystem() { return skyWeatherSystem; }
+    void setWeather(int type, float duration = 30.0f) {
+        if (skyWeatherSystem) {
+            skyWeatherSystem->setWeather(
+                static_cast<engine::WeatherType>(type), duration);
+        }
+    }
+
     unsigned int getScreenWidth() const { return screenWidth; }
     unsigned int getScreenHeight() const { return screenHeight; }
 
@@ -271,6 +291,7 @@ public:
     // Phase 9.2: Inventory System
     inventory::InventoryGrid* getInventoryGrid() { return inventoryGrid.get(); }
     inventory::EquipmentManager* getEquipmentManager() { return equipmentManager.get(); }
+    EquipmentEffectSystem* getEquipmentEffectSystem() { return equipmentEffectSystem.get(); }
     void toggleInventory();
     bool isInventoryVisible() const { return uiInventoryPanel && uiInventoryPanel->isVisible(); }
 

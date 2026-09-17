@@ -17,15 +17,34 @@ bool PhysicsManager::init() {
 
     // RegisterDefaultAllocator and RegisterTypes are global one-time operations.
     // Only call them if Factory::sInstance is not yet set up.
-    // NOTE: JPH::RegisterTypes() can SIGTRAP on certain Android emulators.
-    // Skip full initialization; physicsSystem remains null and update() is a no-op.
     if (JPH::Factory::sInstance == nullptr) {
         JPH::RegisterDefaultAllocator();
         JPH::Factory::sInstance = new JPH::Factory();
-        // Skip JPH::RegisterTypes() to avoid SIGTRAP on emulators
+        JPH::RegisterTypes();
     }
 
-    LOGI("Jolt Physics skipped (emulator workaround)");
+    // Create temp allocator (10 MB)
+    tempAllocator = new JPH::TempAllocatorImpl(10 * 1024 * 1024);
+
+    // Create job system with thread pool
+    jobSystem = new JPH::JobSystemThreadPool(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, 
+                                              std::thread::hardware_concurrency() - 1);
+
+    // Physics system constants
+    const uint32_t cMaxBodies = 1024;
+    const uint32_t cMaxBodyPairs = 1024;
+    const uint32_t cMaxContactConstraints = 1024;
+
+    // Create physics system
+    physicsSystem = new JPH::PhysicsSystem();
+    physicsSystem->Init(cMaxBodies, 0, cMaxBodyPairs, cMaxContactConstraints,
+                        broadPhaseLayerInterface, objectVsBroadPhaseLayerFilter, objectLayerPairFilter);
+
+    // Set gravity (Oblivion-like)
+    physicsSystem->SetGravity(JPH::Vec3(0.0f, -9.81f, 0.0f));
+
+    LOGI("Jolt Physics initialized successfully (bodies: %u, pairs: %u, constraints: %u)",
+         cMaxBodies, cMaxBodyPairs, cMaxContactConstraints);
     return true;
 }
 

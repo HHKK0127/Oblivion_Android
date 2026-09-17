@@ -64,7 +64,17 @@ struct Item {
 
     // Quest reference (if quest item)
     uint32_t questId = 0;
-
+    
+    // Enchantment fields
+    uint32_t enchantmentID = 0;
+    std::string enchantmentName;
+    uint8_t enchantmentEffect = 0;
+    float enchantmentMagnitude = 0.0f;
+    uint32_t enchantmentDuration = 0;
+    uint32_t maxCharges = 0;
+    uint32_t currentCharges = 0;
+    uint8_t enchantmentType = 0;
+    
     bool isStackable() const { return maxStack > 1; }
     bool isEquippable() const { return equipSlot != EquipSlot::None; }
     bool isConsumable() const { return category == ItemCategory::Consumable; }

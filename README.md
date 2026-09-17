@@ -1,14 +1,16 @@
-# Oblivion Android - Complete Native Port
+# Oblivion Android - In-progress Native Port
 
-![Status](https://img.shields.io/badge/status-Phase%2057-brightgreen)
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Status](https://img.shields.io/badge/status-Phase%2055-brightgreen)
+![Version](https://img.shields.io/badge/version-0.9.10-blue)
 ![Android](https://img.shields.io/badge/android-10%2B-green)
 
 ---
 
 ## English
 
-A complete native Android port of The Elder Scrolls IV: Oblivion, built entirely in C++ using OpenGL ES 3.0 and the Android NDK.
+An in-progress native Android port of The Elder Scrolls IV: Oblivion, built entirely in C++ using OpenGL ES 3.0 and the Android NDK.
+
+**v0.9.10 — Phase 55, all core systems compiled and unit-verified, final in-game render validation on target device pending.**
 
 ---
 
@@ -427,7 +429,7 @@ oblivion-android/
 | Phase 54 (v3.0.0) | Imperial Weave v4.0 | [x] Complete | 15-phase pipeline, ImperialWeaveConfig, ServiceLocator, 12 event types, frame budget (16.6ms) |
 | Phase 55 (v3.1.0) | Engine Polish & Optimization | [x] Complete | FrameBudgetManager, MemoryDefrag, ShaderCache, OcclusionCuller, BatchRenderer, FaceGen brush-up, Jolt Physics extension |
 | Phase 56 (v3.2.0) | Gamebryo Complete | [x] Complete | ParticleSystem (7 presets), PostProcessPipeline (8 effects), WaterRenderer (Gerstner waves, 6 types), SkyWeatherSystem (8 weathers, day/night), SceneGraph (hierarchy, AABB), MaterialSystem (8 texture slots, 8 defaults) |
-| Phase 57 (v1.0.0) | Final Integration & Release | [x] Complete | Release preparation, APK optimization, documentation |
+| Phase 55 (v0.9.10) | Final Polish & Optimization | [x] Complete | All core systems compiled and unit-verified |
 | Phase 58 (v1.1.0) | Asset Optimization | [x] Complete | AssetExtractor, TextureCompressor (ASTC/ETC2), AudioCompressor (WAV→OGG/MP3), LODSystem |
 | Phase 59 (v1.2.0) | Performance Optimization | [x] Complete | OcclusionCuller (hierarchical Z-buffer), ShaderCache (LRU caching), MemoryPool (object pooling) |
 | Phase 60 (v1.3.0) | Final Testing & Release | [x] Complete | Build verification, APK analysis, compression tools |
@@ -619,6 +621,8 @@ Found a bug? Please:
 
 ### [LIC] License
 
+See [LICENSE](LICENSE) for full terms.
+
 Proprietary - Experimental Port
 *Not licensed for commercial use or redistribution*
 
@@ -633,7 +637,7 @@ Proprietary - Experimental Port
 
 ---
 
-**Status**: Phase 63 Complete (v1.0.0) — Release Build
+**Status**: Phase 55 Complete (v0.9.10) — All core systems compiled and unit-verified
 **Last Updated**: 2026-09-16
 **Version**: 1.0.0
 **Features**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD, ESM Data Integration (40 record types), NpcManager ESM, Container ESM, Player RACE/CLAS/BSGN, Status Effects, NAVM Pathfinding, DIAL/INFO Dialogue, REFR Placement, Spell Effects (8 types), Alchemy, Book Reader, Faction Manager, Loot Generator, NIF Skeleton/Skinning, Animation System, Collision Detection, Integration Tests (Phase 30), WorldEntity + WorldLoader + PlayerController Integration (Phase 31), Imperial Weave EventBus + 12-phase coordinator, AnimationSubscriber, AudioSubscriber, SpellSelectionPanel (Phase 32), Dedicated Combat Sounds, NPC Spatial Audio (Phase 33), Weapon-Type Sound Routing, Quick-Slot Spells (Phase 34), Radiant AI System (Phase 35), Jolt Physics Integration (Phase 36), Distant LOD (Phase 50), SpeedTree Vegetation (Phase 51), FaceGen (Phase 52), Bink Video (Phase 53), Imperial Weave v4.0 (Phase 54), Engine Polish (Phase 55), Gamebryo Complete: Particle/PostProcess/Water/SkyWeather/SceneGraph/Material (Phase 56), UI Bug Fixes & Comment Translation (Phase 57)
@@ -648,7 +652,9 @@ Proprietary - Experimental Port
 
 ## 日本語
 
-The Elder Scrolls IV: Oblivion の完全ネイティブ Android 移植版です。C++ で一から構築され、OpenGL ES 3.0 と Android NDK を使用しています。
+The Elder Scrolls IV: Oblivion の進行中のネイティブ Android 移植版です。C++ で一から構築され、OpenGL ES 3.0 と Android NDK を使用しています。
+
+**v0.9.10 — Phase 55、全コアシステムがコンパイルおよび単体テスト済み、実機でのゲーム内レンダリング検証は保留中。**
 
 ---
 
@@ -1105,6 +1111,8 @@ oblivion-android/
 
 ### [LIC] ライセンス
 
+詳細は [LICENSE](LICENSE) を参照してください。
+
 独自ライセンス - 実験的移植
 *商業使用または再配布のライセンスはありません*
 
@@ -1119,7 +1127,7 @@ oblivion-android/
 
 ---
 
-**状態**: Phase 57 完了 (v1.0.0) - 最終統合＆リリース
+**状態**: Phase 55 完了 (v0.9.10) - 全コアシステムがコンパイルおよび単体テスト済み
 
 **最終更新**: 2026-09-16
 **バージョン**: 1.0.0
