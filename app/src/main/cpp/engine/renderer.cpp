@@ -126,6 +126,12 @@ void Renderer::resize(unsigned int width, unsigned int height) {
         LOGI("DebugMenu screen size updated to: %ux%u", screenWidth, screenHeight);
     }
 
+    // Update Virtual Controller screen size
+    if (virtualController) {
+        virtualController->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        LOGI("Virtual Controller screen size updated to: %ux%u", screenWidth, screenHeight);
+    }
+
     // Update RetroFilter resolution
     if (retroFilter) {
         retroFilter->setNativeResolution(screenWidth, screenHeight);
@@ -534,6 +540,16 @@ bool Renderer::initGameSystems() {
         });
         uiSystem->registerComponent(spellSelectionPanel, 200);
         LOGI("SpellSelectionPanel initialized successfully");
+    }
+
+    // Initialize Virtual Controller
+    LOGI("Creating VirtualController...");
+    virtualController = std::make_shared<VirtualController>();
+    virtualController->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    if (!virtualController->initialize()) {
+        LOGE("Failed to initialize VirtualController");
+    } else {
+        LOGI("VirtualController initialized successfully");
     }
 
     // Initialize Debug HUD
@@ -2941,6 +2957,12 @@ void Renderer::render(float deltaTime) {
         uiSystem->render();
     }
 
+    // Render Virtual Controller (game overlay)
+    if (virtualController && virtualControllerEnabled && !showLauncher && !showTitleScreen) {
+        virtualController->update(deltaTime);
+        virtualController->render();
+    }
+
     // Render Floating Combat Text
     if (floatingText) {
         floatingText->render();
@@ -3317,6 +3339,39 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
         touchStates.erase(pointerId);
     }
 
+    // Virtual Controller handles touch when enabled and game is active
+    if (virtualController && virtualControllerEnabled && !showLauncher && !showTitleScreen) {
+        bool vcHandled = false;
+        if (action == 0 || action == 5) { // DOWN
+            vcHandled = virtualController->onTouchDown(x, y, pointerId);
+        } else if (action == 1 || action == 6) { // UP
+            vcHandled = virtualController->onTouchUp(x, y, pointerId);
+        } else if (action == 2) { // MOVE
+            vcHandled = virtualController->onTouchMove(x, y, dx, dy, pointerId);
+        }
+        if (vcHandled) {
+            // Virtual Controller consumed the touch - update player input
+            if (playerController) {
+                VirtualControllerState vcState = virtualController->getState();
+                playerController->setJoystickInput(vcState.left_stick.x, vcState.left_stick.y);
+
+                // Handle button presses
+                if (vcState.is_button_pressed(VirtualControllerButton::A)) {
+                    // A button - Jump
+                    playerController->requestJump();
+                }
+                if (vcState.is_button_pressed(VirtualControllerButton::B)) {
+                    // B button - Attack
+                    playerController->attack();
+                }
+                if (vcState.is_button_pressed(VirtualControllerButton::Y)) {
+                    // Y button - Toggle combat stance
+                    playerController->toggleCombatStance();
+                }
+            }
+        }
+    }
+
     // DebugMenu handles touch when visible (highest priority - must be before UISystem)
     if (debugMenu && debugMenu->isVisible()) {
         if (action == 0 || action == 5) { // DOWN
@@ -3616,6 +3671,11 @@ void Renderer::toggleGameConsole() {
         gameConsole->toggle();
         LOGI("Game Console %s", gameConsole->isVisible() ? "opened" : "closed");
     }
+}
+
+void Renderer::toggleVirtualController() {
+    virtualControllerEnabled = !virtualControllerEnabled;
+    LOGI("Virtual Controller %s", virtualControllerEnabled ? "enabled" : "disabled");
 }
 
 void Renderer::toggleDebugMenu() {

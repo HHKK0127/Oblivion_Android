@@ -47,6 +47,7 @@
 #include "../ui/ui_floating_text.h"
 #include "../ui/spell_selection_panel.h"
 #include "../ui/responsive_ui_manager.h"
+#include "../ui/virtual_controller.h"
 #include "../animation/animation_subscriber.h"
 #include "../audio/audio_subscriber.h"
 #include "../map/map_system.h"
@@ -116,6 +117,10 @@ private:
     // Phase 9: UI Framework System
     std::unique_ptr<UISystem> uiSystem;
     std::shared_ptr<UIJoystick> joystick;
+
+    // Virtual Controller (multi-touch gamepad overlay)
+    std::shared_ptr<VirtualController> virtualController;
+    bool virtualControllerEnabled = true;
     
     // Responsive UI Manager
     std::unique_ptr<ResponsiveUIManager> responsiveUIManager;
@@ -250,6 +255,11 @@ public:
     inventory::EquipmentManager* getEquipmentManager() { return equipmentManager.get(); }
     void toggleInventory();
     bool isInventoryVisible() const { return uiInventoryPanel && uiInventoryPanel->isVisible(); }
+
+    // Virtual Controller
+    VirtualController* getVirtualController() { return virtualController.get(); }
+    void toggleVirtualController();
+    bool isVirtualControllerEnabled() const { return virtualControllerEnabled; }
 
     // Debug System Toggles
     void toggleGameConsole();
