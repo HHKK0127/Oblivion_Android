@@ -1909,10 +1909,26 @@
       "priority": "high",
       "tags": ["polish", "optimization", "phase55"],
       "content": "Phase 55 Final Polish & Optimization - All core systems implemented and integrated. Phase 46-55 plan complete. Systems: Physics (Jolt), Weather/Sky, Equipment, Crime/Reputation, Lockpicking, Alchemy, Enchanting, Dialogue/Persuasion, World Map/Fast Travel. Total 136 memory entries. Ready for final testing and deployment."
+    },
+    {
+      "id": "repo-cleanup-gitignore",
+      "timestamp": "2026-09-17T05:30:00Z",
+      "category": "decision",
+      "priority": "high",
+      "tags": ["gitignore", "cleanup", "security"],
+      "content": "Repository cleanup completed. (1) .gitignore updated: /*.png (debug screenshots), /*.xml (XML dumps), *.keystore (sensitive), build.gradle/settings.gradle/app/build.gradle (legacy Groovy DSL). (2) LICENSE file created (proprietary, personal non-commercial use). (3) README.md updated: 'Complete Native Port' -> 'In-progress Native Port', version v1.0.0 -> v0.9.10, Phase 57 -> Phase 55. (4) git rm --cached removed 45 PNG, 3 XML, 1 keystore, 3 gradle files from tracking. All files remain on disk. Build verified successful after cleanup."
+    },
+    {
+      "id": "git-commits-cleanup",
+      "timestamp": "2026-09-17T05:35:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "tags": ["git", "commits"],
+      "content": "Git commits made: (1) bdd8bad5 - feat: Phase 46-55 implementation and repository cleanup (19 files, 2114 insertions). (2) 03ae409e - chore: remove debug screenshots, XML dumps, and keystore from git tracking (49 files deleted). (3) 001505eb - chore: remove legacy Groovy DSL gradle files from tracking (3 files deleted). Total: 3 commits, 71 files changed."
     }
   ],
   "metadata": {
-    "totalEntries": 136,
+    "totalEntries": 138,
     "compressedCount": 0,
     "sessionCount": 7
   }
