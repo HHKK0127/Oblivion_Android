@@ -8,6 +8,7 @@
 #include "viewer_3d.h"
 #include <algorithm>
 #include <cmath>
+#include <ctime>
 #include <android/log.h>
 
 #define LOG_TAG_DEBUG "DebugMenu"
@@ -143,6 +144,7 @@ void DebugMenu::onTouchDown(float x, float y) {
     touchState.startX = touchState.lastX = x;
     touchState.startY = touchState.lastY = y;
     touchState.pressedButton = nullptr;
+    touchState.pressedSlider = nullptr;
     touchState.isScrolling = false;
 
     LOGI_DEBUG("onTouchDown: touch=(%.1f, %.1f) screen=%dx%d scale=%.2f",
@@ -156,6 +158,25 @@ void DebugMenu::onTouchDown(float x, float y) {
         tabBtn->pressTimer = 0.15f;
         LOGI_DEBUG("Hit tab button: %s at (%.0f, %.0f) size (%.0f x %.0f)",
                    tabBtn->label.c_str(), tabBtn->x, tabBtn->y, tabBtn->w, tabBtn->h);
+        return;
+    }
+
+    // Check sliders (before content buttons, as sliders are more precise)
+    Slider* slider = hitTestSlider(x, y);
+    if (slider) {
+        touchState.pressedSlider = slider;
+        slider->dragging = true;
+        // Update value immediately based on touch position
+        float t = (x - slider->x) / slider->w;
+        t = std::clamp(t, 0.0f, 1.0f);
+        float raw = slider->min + (slider->max - slider->min) * t;
+        float snapped = std::round(raw / slider->step) * slider->step;
+        snapped = std::clamp(snapped, slider->min, slider->max);
+        if (snapped != slider->value) {
+            slider->value = snapped;
+            if (slider->onChange) slider->onChange(snapped);
+        }
+        LOGI_DEBUG("Hit slider: '%s' value=%.2f", slider->label.c_str(), slider->value);
         return;
     }
 
@@ -184,6 +205,23 @@ void DebugMenu::onTouchMove(float x, float y) {
     }
 
     if (!touchState.isActive) return;
+
+    // Handle slider dragging
+    if (touchState.pressedSlider) {
+        Slider* slider = touchState.pressedSlider;
+        float t = (x - slider->x) / slider->w;
+        t = std::clamp(t, 0.0f, 1.0f);
+        float raw = slider->min + (slider->max - slider->min) * t;
+        float snapped = std::round(raw / slider->step) * slider->step;
+        snapped = std::clamp(snapped, slider->min, slider->max);
+        if (snapped != slider->value) {
+            slider->value = snapped;
+            if (slider->onChange) slider->onChange(snapped);
+        }
+        touchState.lastX = x;
+        touchState.lastY = y;
+        return;
+    }
 
     float dx = x - touchState.startX;
     float dy = y - touchState.startY;
@@ -219,10 +257,18 @@ void DebugMenu::onTouchUp(float x, float y) {
         return;
     }
 
-    LOGI_DEBUG("onTouchUp: touch=(%.1f, %.1f) isActive=%d pressedBtn=%p isScrolling=%d",
+    LOGI_DEBUG("onTouchUp: touch=(%.1f, %.1f) isActive=%d pressedBtn=%p pressedSlider=%p isScrolling=%d",
                x, y, touchState.isActive ? 1 : 0, (void*)touchState.pressedButton,
-               touchState.isScrolling ? 1 : 0);
+               (void*)touchState.pressedSlider, touchState.isScrolling ? 1 : 0);
     if (!touchState.isActive) return;
+
+    // Release slider
+    if (touchState.pressedSlider) {
+        touchState.pressedSlider->dragging = false;
+        touchState.pressedSlider = nullptr;
+        touchState = {};
+        return;
+    }
 
     float dx = x - touchState.startX;
     float dy = y - touchState.startY;
@@ -256,6 +302,9 @@ void DebugMenu::onTouchUp(float x, float y) {
 void DebugMenu::onTouchCancel() {
     if (touchState.pressedButton) {
         touchState.pressedButton->isPressed = false;
+    }
+    if (touchState.pressedSlider) {
+        touchState.pressedSlider->dragging = false;
     }
     touchState = {};
 }
@@ -307,6 +356,10 @@ void DebugMenu::executeButtonCommand(Button& btn) {
             feedbackColor = glm::vec3(0.9f, 0.5f, 0.3f);
             LOGI_DEBUG("Viewer3D toggled");
         }
+        return;
+    }
+    if (btn.command == "dumpstate") {
+        dumpState();
         return;
     }
     if (btn.command == "startgame") {
@@ -447,6 +500,7 @@ void DebugMenu::calculateButtonPositions() {
         btn.y = tabY;
         btn.w = tabW;
         btn.h = tabH;
+        ensureMinTouchSize(btn);
         x += btn.w + margin;
     }
 
@@ -466,6 +520,21 @@ void DebugMenu::calculateButtonPositions() {
         content.buttons[i].y = contentY + (btnH + margin) * row - content.scrollOffset;
         content.buttons[i].w = btnW;
         content.buttons[i].h = btnH;
+        ensureMinTouchSize(content.buttons[i]);
+    }
+
+    // Position sliders after buttons (full width)
+    int buttonRows = (static_cast<int>(content.buttons.size()) + 1) / 2;
+    float sliderY = contentY + (btnH + margin) * buttonRows;
+    float sliderW = screenWidth - safeLeft - safeRight - margin * 2.0f;
+    float sliderH = SLIDER_HEIGHT * s;
+
+    for (size_t i = 0; i < content.sliders.size(); ++i) {
+        content.sliders[i].x = safeLeft + margin;
+        content.sliders[i].y = sliderY + (sliderH + margin) * i - content.scrollOffset;
+        content.sliders[i].w = sliderW;
+        content.sliders[i].h = sliderH;
+        ensureMinTouchSize(content.sliders[i]);
     }
 }
 
@@ -560,6 +629,12 @@ void DebugMenu::renderContent() {
         renderButton(btn, s);
     }
 
+    // Render sliders
+    for (auto& slider : content.sliders) {
+        if (slider.y + slider.h < contentY || slider.y > contentY + contentH) continue;
+        renderSlider(slider, s);
+    }
+
     // Render command feedback at bottom of content area
     if (feedbackTimer > 0.0f && textRenderer) {
         float feedbackY = contentY + contentH - 30.0f * s;
@@ -606,6 +681,309 @@ void DebugMenu::renderButton(Button& btn, float s) {
                                   glm::vec3(1.0f, 1.0f, 1.0f), labelScale);
     }
 
+void DebugMenu::renderSlider(Slider& slider, float s) {
+    // Slider track background
+    float trackY = slider.y + slider.h * 0.4f;
+    float trackH = slider.h * 0.2f;
+    UIDrawHelper::drawColoredQuad(slider.x, trackY, slider.w, trackH,
+                                   glm::vec4(0.2f, 0.2f, 0.25f, 0.8f),
+                                   screenWidth, screenHeight);
+
+    // Slider fill (from min to current value)
+    float t = (slider.value - slider.min) / (slider.max - slider.min);
+    t = std::clamp(t, 0.0f, 1.0f);
+    float fillW = slider.w * t;
+    UIDrawHelper::drawColoredQuad(slider.x, trackY, fillW, trackH,
+                                   glm::vec4(0.3f, 0.6f, 1.0f, 0.9f),
+                                   screenWidth, screenHeight);
+
+    // Slider handle
+    float handleW = slider.h * 0.6f;
+    float handleH = slider.h * 0.8f;
+    float handleX = slider.x + fillW - handleW * 0.5f;
+    float handleY = slider.y + (slider.h - handleH) * 0.5f;
+    glm::vec4 handleColor = slider.dragging ?
+        glm::vec4(0.6f, 0.8f, 1.0f, 1.0f) :
+        glm::vec4(0.8f, 0.8f, 0.85f, 1.0f);
+    UIDrawHelper::drawColoredQuad(handleX, handleY, handleW, handleH,
+                                   handleColor, screenWidth, screenHeight);
+
+    // Label and value text
+    if (textRenderer) {
+        const float labelScale = std::max(0.50f, 0.65f * s);
+        char valueStr[64];
+        snprintf(valueStr, sizeof(valueStr), slider.format.c_str(), slider.value);
+        std::string displayText = slider.label + ": " + valueStr;
+
+        const float maxTextWidth = slider.w - 10.0f * s;
+        std::string label = displayText;
+        while (label.size() > 1 && textRenderer->getTextWidth(label, labelScale) > maxTextWidth) {
+            label.pop_back();
+        }
+        if (label != displayText && label.size() > 1) {
+            label.back() = '.';
+        }
+
+        float textH = textRenderer->getTextHeight(labelScale);
+        textRenderer->renderText(label.c_str(),
+                                  slider.x + 5.0f * s,
+                                  slider.y + (slider.h - textH) * 0.5f,
+                                  glm::vec3(1.0f, 1.0f, 1.0f), labelScale);
+    }
+}
+
+DebugMenu::Slider* DebugMenu::hitTestSlider(float x, float y) {
+    size_t tabIdx = static_cast<size_t>(currentTab);
+    if (tabIdx >= tabContents.size()) return nullptr;
+    auto& content = tabContents[tabIdx];
+
+    for (auto& slider : content.sliders) {
+        if (x >= slider.x && x <= slider.x + slider.w &&
+            y >= slider.y && y <= slider.y + slider.h) {
+            return &slider;
+        }
+    }
+    return nullptr;
+}
+
+// ==================== Slider Management ====================
+
+void DebugMenu::addSlider(const std::string& label, float min, float max, float value,
+                           float step, std::function<void(float)> onChange,
+                           const std::string& format) {
+    size_t tabIdx = static_cast<size_t>(currentTab);
+    if (tabIdx >= tabContents.size()) return;
+
+    Slider slider;
+    slider.label = label;
+    slider.min = min;
+    slider.max = max;
+    slider.value = value;
+    slider.step = step;
+    slider.onChange = std::move(onChange);
+    slider.format = format;
+    ensureMinTouchSize(slider);
+    tabContents[tabIdx].sliders.push_back(slider);
+}
+
+void DebugMenu::updateSliderValue(const std::string& label, float value) {
+    for (auto& tab : tabContents) {
+        for (auto& slider : tab.sliders) {
+            if (slider.label == label) {
+                slider.value = value;
+                return;
+            }
+        }
+    }
+}
+
+// ==================== Keyboard Handling ====================
+
+void DebugMenu::onKeyDown(int32_t keyCode) {
+    if (!visible) return;
+
+    // AKEYCODE_F1 = 131, AKEYCODE_ESCAPE = 111
+    switch (keyCode) {
+        case 131:  // F1
+            toggle();
+            return;
+        case 111:  // Escape
+            visible = false;
+            return;
+    }
+
+    if (!visible) return;
+
+    // Tab key: switch tab
+    if (keyCode == 61) {  // AKEYCODE_TAB
+        switchTab(1);
+        return;
+    }
+
+    // Arrow keys
+    switch (keyCode) {
+        case 19:  // AKEYCODE_DPAD_UP
+            moveSelection(-1);
+            break;
+        case 20:  // AKEYCODE_DPAD_DOWN
+            moveSelection(1);
+            break;
+        case 21:  // AKEYCODE_DPAD_LEFT
+            if (isOnSlider()) {
+                nudgeSlider(-1);
+            } else {
+                switchTab(-1);
+            }
+            break;
+        case 22:  // AKEYCODE_DPAD_RIGHT
+            if (isOnSlider()) {
+                nudgeSlider(1);
+            } else {
+                switchTab(1);
+            }
+            break;
+        case 66:  // AKEYCODE_ENTER
+            activateSelected();
+            break;
+        case 112:  // AKEYCODE_FORWARD_DEL (Delete)
+            // Reset selected slider to midpoint
+            {
+                size_t tabIdx = static_cast<size_t>(currentTab);
+                if (tabIdx < tabContents.size() && keyState.onSlider &&
+                    keyState.selectedItemIndex >= 0 &&
+                    keyState.selectedItemIndex < static_cast<int>(tabContents[tabIdx].sliders.size())) {
+                    auto& slider = tabContents[tabIdx].sliders[keyState.selectedItemIndex];
+                    slider.value = (slider.min + slider.max) * 0.5f;
+                    if (slider.onChange) slider.onChange(slider.value);
+                }
+            }
+            break;
+    }
+}
+
+void DebugMenu::onKeyUp(int32_t keyCode) {
+    // Not used currently
+}
+
+void DebugMenu::moveSelection(int delta) {
+    size_t tabIdx = static_cast<size_t>(currentTab);
+    if (tabIdx >= tabContents.size()) return;
+    auto& content = tabContents[tabIdx];
+
+    int totalItems = static_cast<int>(content.buttons.size()) +
+                     static_cast<int>(content.sliders.size());
+
+    if (totalItems == 0) return;
+
+    if (keyState.selectedItemIndex < 0) {
+        // Was on tab bar, move to content
+        keyState.selectedItemIndex = (delta > 0) ? 0 : totalItems - 1;
+    } else {
+        keyState.selectedItemIndex += delta;
+        if (keyState.selectedItemIndex < 0) {
+            keyState.selectedItemIndex = -1;  // Back to tab bar
+        } else if (keyState.selectedItemIndex >= totalItems) {
+            keyState.selectedItemIndex = totalItems - 1;
+        }
+    }
+
+    // Determine if we're on a slider
+    keyState.onSlider = keyState.selectedItemIndex >= static_cast<int>(content.buttons.size());
+}
+
+void DebugMenu::activateSelected() {
+    size_t tabIdx = static_cast<size_t>(currentTab);
+    if (tabIdx >= tabContents.size()) return;
+    auto& content = tabContents[tabIdx];
+
+    if (keyState.selectedItemIndex < 0) {
+        // On tab bar, do nothing (tabs are switched with left/right)
+        return;
+    }
+
+    int btnCount = static_cast<int>(content.buttons.size());
+    if (keyState.selectedItemIndex < btnCount) {
+        executeButtonCommand(content.buttons[keyState.selectedItemIndex]);
+    }
+    // Sliders are adjusted with left/right, not enter
+}
+
+void DebugMenu::nudgeSlider(int direction) {
+    size_t tabIdx = static_cast<size_t>(currentTab);
+    if (tabIdx >= tabContents.size()) return;
+    auto& content = tabContents[tabIdx];
+
+    int btnCount = static_cast<int>(content.buttons.size());
+    int sliderIdx = keyState.selectedItemIndex - btnCount;
+
+    if (sliderIdx >= 0 && sliderIdx < static_cast<int>(content.sliders.size())) {
+        auto& slider = content.sliders[sliderIdx];
+        slider.value += slider.step * direction;
+        slider.value = std::clamp(slider.value, slider.min, slider.max);
+        if (slider.onChange) slider.onChange(slider.value);
+    }
+}
+
+void DebugMenu::switchTab(int direction) {
+    int tabCount = static_cast<int>(Tab::COUNT);
+    keyState.selectedTabIndex += direction;
+    if (keyState.selectedTabIndex < 0) keyState.selectedTabIndex = tabCount - 1;
+    if (keyState.selectedTabIndex >= tabCount) keyState.selectedTabIndex = 0;
+    currentTab = static_cast<Tab>(keyState.selectedTabIndex);
+    keyState.selectedItemIndex = -1;
+    keyState.onSlider = false;
+}
+
+bool DebugMenu::isOnSlider() const {
+    return keyState.onSlider;
+}
+
+// ==================== Touch Size Enforcement ====================
+
+float DebugMenu::getMinTouchPx() const {
+    return MIN_TOUCH_DP * screenDensity;
+}
+
+void DebugMenu::ensureMinTouchSize(Button& btn) {
+    float minPx = getMinTouchPx();
+    if (btn.w < minPx) btn.w = minPx;
+    if (btn.h < minPx) btn.h = minPx;
+}
+
+void DebugMenu::ensureMinTouchSize(Slider& slider) {
+    float minPx = getMinTouchPx();
+    if (slider.w < minPx) slider.w = minPx;
+    if (slider.h < minPx) slider.h = minPx;
+}
+
+// ==================== State Dump ====================
+
+void DebugMenu::dumpState() {
+    // Use app-specific files directory
+    char path[256];
+    snprintf(path, sizeof(path), "/data/data/com.hhkk.oblivion/files/dump_%lld.log",
+             static_cast<long long>(std::time(nullptr)));
+
+    FILE* f = fopen(path, "w");
+    if (!f) {
+        LOGI_DEBUG("Failed to create dump file: %s", path);
+        return;
+    }
+
+    fprintf(f, "# Oblivion Android Debug Dump\n");
+    fprintf(f, "# timestamp: %lld\n", static_cast<long long>(std::time(nullptr)));
+    fprintf(f, "# screen: %dx%d density=%.2f\n", screenWidth, screenHeight, screenDensity);
+    fprintf(f, "\n");
+
+    // Dump all tab contents
+    for (int t = 0; t < static_cast<int>(Tab::COUNT); ++t) {
+        fprintf(f, "## Tab: %s\n", getTabName(static_cast<Tab>(t)).c_str());
+        if (t < static_cast<int>(tabContents.size())) {
+            const auto& content = tabContents[t];
+            for (const auto& btn : content.buttons) {
+                fprintf(f, "  Button: %s -> %s\n", btn.label.c_str(), btn.command.c_str());
+            }
+            for (const auto& slider : content.sliders) {
+                fprintf(f, "  Slider: %s = ", slider.label.c_str());
+                char valStr[32];
+                snprintf(valStr, sizeof(valStr), slider.format.c_str(), slider.value);
+                fprintf(f, "%s [%.2f..%.2f step=%.2f]\n",
+                        valStr, slider.min, slider.max, slider.step);
+            }
+        }
+        fprintf(f, "\n");
+    }
+
+    fclose(f);
+    LOGI_DEBUG("State dump written to: %s", path);
+
+    // Show feedback
+    feedbackText = "Dump saved: ";
+    feedbackText += path;
+    feedbackTimer = 3.0f;
+    feedbackColor = glm::vec3(0.4f, 0.9f, 0.4f);
+}
+
 // ==================== Utility ====================
 
 float DebugMenu::getScale() const {
@@ -644,11 +1022,16 @@ void DebugMenu::clampScrollOffsets() {
     float contentY = tabY + tabH + 20.0f * s;
     float contentH = screenHeight - safeBottom - contentY;
     float btnH = BUTTON_HEIGHT * s;
+    float sliderH = SLIDER_HEIGHT * s;
     float margin = BUTTON_MARGIN * s;
 
-    // 2-column layout: calculate row count
-    int rows = (static_cast<int>(content.buttons.size()) + 1) / 2;
-    float totalHeight = rows * (btnH + margin);
+    // 2-column layout: calculate row count for buttons
+    int buttonRows = (static_cast<int>(content.buttons.size()) + 1) / 2;
+    float buttonHeight = buttonRows * (btnH + margin);
+
+    // Add slider height
+    float sliderHeight = static_cast<float>(content.sliders.size()) * (sliderH + margin);
+    float totalHeight = buttonHeight + sliderHeight;
 
     float maxScroll = std::max(0.0f, totalHeight - contentH);
     content.scrollOffset = std::clamp(content.scrollOffset, 0.0f, maxScroll);
@@ -953,6 +1336,7 @@ void DebugMenu::createAllTabContents() {
             {"Memory Stats", "memorystats"},
             {"Performance", "performance"},
             {"Reset Stats", "resetstats"},
+            {"Dump State", "dumpstate"},
         };
         for (const auto& item : items) {
             Button btn;
@@ -961,6 +1345,58 @@ void DebugMenu::createAllTabContents() {
             btn.baseColor = glm::vec3(0.4f, 0.4f, 0.5f);
             content.buttons.push_back(btn);
         }
+
+        // FOV slider
+        Slider fovSlider;
+        fovSlider.label = "FOV";
+        fovSlider.min = 45.0f;
+        fovSlider.max = 120.0f;
+        fovSlider.value = 75.0f;
+        fovSlider.step = 1.0f;
+        fovSlider.format = "%.0f";
+        fovSlider.onChange = [this](float v) {
+            if (console) {
+                char cmd[64];
+                snprintf(cmd, sizeof(cmd), "setfov %.0f", v);
+                console->executeCommand(cmd);
+            }
+        };
+        content.sliders.push_back(fovSlider);
+
+        // FPS cap slider
+        Slider fpsSlider;
+        fpsSlider.label = "FPS Cap";
+        fpsSlider.min = 15.0f;
+        fpsSlider.max = 120.0f;
+        fpsSlider.value = 60.0f;
+        fpsSlider.step = 5.0f;
+        fpsSlider.format = "%.0f";
+        fpsSlider.onChange = [this](float v) {
+            if (console) {
+                char cmd[64];
+                snprintf(cmd, sizeof(cmd), "setfpscap %.0f", v);
+                console->executeCommand(cmd);
+            }
+        };
+        content.sliders.push_back(fpsSlider);
+
+        // Render distance slider
+        Slider renderDistSlider;
+        renderDistSlider.label = "Render Dist";
+        renderDistSlider.min = 100.0f;
+        renderDistSlider.max = 5000.0f;
+        renderDistSlider.value = 1000.0f;
+        renderDistSlider.step = 100.0f;
+        renderDistSlider.format = "%.0f";
+        renderDistSlider.onChange = [this](float v) {
+            if (console) {
+                char cmd[64];
+                snprintf(cmd, sizeof(cmd), "setrenderdist %.0f", v);
+                console->executeCommand(cmd);
+            }
+        };
+        content.sliders.push_back(renderDistSlider);
+
         tabContents.push_back(content);
     }
 
@@ -972,8 +1408,6 @@ void DebugMenu::createAllTabContents() {
             {"Stop BGM", "stopbgm"},
             {"Play SE", "playse"},
             {"Stop All SE", "stopallse"},
-            {"Set Volume 50%", "setvolume 0.5"},
-            {"Set Volume 100%", "setvolume 1.0"},
             {"Mute All", "mute"},
             {"Unmute All", "unmute"},
             {"List Audio", "listaudio"},
@@ -981,10 +1415,6 @@ void DebugMenu::createAllTabContents() {
             // Phase 66: BGM browsing
             {"List BGM Tracks", "listbgm"},
             {"BGM Info", "bgminfo"},
-            {"BGM Vol 25%", "bgmvolume 0.25"},
-            {"BGM Vol 50%", "bgmvolume 0.5"},
-            {"BGM Vol 75%", "bgmvolume 0.75"},
-            {"BGM Vol 100%", "bgmvolume 1.0"},
         };
         for (const auto& item : items) {
             Button btn;
@@ -993,6 +1423,58 @@ void DebugMenu::createAllTabContents() {
             btn.baseColor = glm::vec3(0.6f, 0.3f, 0.6f);
             content.buttons.push_back(btn);
         }
+
+        // Master volume slider
+        Slider masterVol;
+        masterVol.label = "Master Vol";
+        masterVol.min = 0.0f;
+        masterVol.max = 1.0f;
+        masterVol.value = 0.8f;
+        masterVol.step = 0.05f;
+        masterVol.format = "%.0f%%";
+        masterVol.onChange = [this](float v) {
+            if (console) {
+                char cmd[64];
+                snprintf(cmd, sizeof(cmd), "setvolume %.2f", v);
+                console->executeCommand(cmd);
+            }
+        };
+        content.sliders.push_back(masterVol);
+
+        // BGM volume slider
+        Slider bgmVol;
+        bgmVol.label = "BGM Vol";
+        bgmVol.min = 0.0f;
+        bgmVol.max = 1.0f;
+        bgmVol.value = 0.7f;
+        bgmVol.step = 0.05f;
+        bgmVol.format = "%.0f%%";
+        bgmVol.onChange = [this](float v) {
+            if (console) {
+                char cmd[64];
+                snprintf(cmd, sizeof(cmd), "bgmvolume %.2f", v);
+                console->executeCommand(cmd);
+            }
+        };
+        content.sliders.push_back(bgmVol);
+
+        // SFX volume slider
+        Slider sfxVol;
+        sfxVol.label = "SFX Vol";
+        sfxVol.min = 0.0f;
+        sfxVol.max = 1.0f;
+        sfxVol.value = 1.0f;
+        sfxVol.step = 0.05f;
+        sfxVol.format = "%.0f%%";
+        sfxVol.onChange = [this](float v) {
+            if (console) {
+                char cmd[64];
+                snprintf(cmd, sizeof(cmd), "sfxvolume %.2f", v);
+                console->executeCommand(cmd);
+            }
+        };
+        content.sliders.push_back(sfxVol);
+
         tabContents.push_back(content);
     }
 

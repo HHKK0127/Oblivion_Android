@@ -25,6 +25,12 @@ class Viewer3D;
  * - Dialogue: start, select topics
  * - World: weather, time, cells
  * - Save/Load: save, load, quicksave
+ *
+ * Enhancements:
+ * - Slider UI for continuous value parameters
+ * - Keyboard shortcuts (F1, arrow keys, Tab, Enter)
+ * - State dump to file for debugging
+ * - Minimum 48dp touch target size
  */
 class DebugMenu {
 public:
@@ -51,14 +57,41 @@ public:
     void onTouchUp(float x, float y);
     void onTouchCancel();
 
+    // Keyboard event handling
+    void onKeyDown(int32_t keyCode);
+    void onKeyUp(int32_t keyCode);
+
+    // Slider support
+    struct Slider {
+        float x, y, w, h;
+        float value;
+        float min, max;
+        float step;
+        bool dragging;
+        std::string label;
+        std::function<void(float)> onChange;
+        std::string format;  // printf format for display (e.g., "%.1f")
+        Slider() : x(0), y(0), w(0), h(0), value(0), min(0), max(1), step(0.1f),
+                   dragging(false), format("%.1f") {}
+    };
+
+    void addSlider(const std::string& label, float min, float max, float value,
+                   float step, std::function<void(float)> onChange,
+                   const std::string& format = "%.1f");
+    void updateSliderValue(const std::string& label, float value);
+
     void update(float deltaTime);
     void render();
 
     void setScreenSize(int w, int h);
     void setOnStartGame(std::function<void()> callback) { onStartGame = std::move(callback); }
+    void setDensity(float density) { screenDensity = density; }
 
     /** Connect a WorldManager to the WorldViewer (deferred injection) */
     void setWorldManager(class WorldManager* worldManager);
+
+    // State dump
+    void dumpState();
 
 private:
     TextRenderer* textRenderer;
@@ -69,6 +102,7 @@ private:
 
     int screenWidth;
     int screenHeight;
+    float screenDensity = 2.0f;  // Default xxhdpi
 
     // Safe area insets
     float safeLeft, safeTop, safeRight, safeBottom;
@@ -110,6 +144,7 @@ private:
     // Content buttons per tab
     struct TabContent {
         std::vector<Button> buttons;
+        std::vector<Slider> sliders;
         float scrollOffset = 0.0f;
     };
     std::vector<TabContent> tabContents;
@@ -123,7 +158,15 @@ private:
         static constexpr float TAP_THRESHOLD = 15.0f;
         static constexpr float SCROLL_THRESHOLD = 10.0f;
         Button* pressedButton = nullptr;
+        Slider* pressedSlider = nullptr;
     } touchState;
+
+    // Keyboard selection state
+    struct KeyState {
+        int selectedTabIndex = 0;
+        int selectedItemIndex = -1;  // -1 = tab bar, 0+ = content items
+        bool onSlider = false;
+    } keyState;
 
     // Command feedback
     std::string feedbackText;
@@ -139,7 +182,9 @@ private:
     // UI constants
     static constexpr float TAB_HEIGHT = 56.0f;
     static constexpr float BUTTON_HEIGHT = 52.0f;
+    static constexpr float SLIDER_HEIGHT = 48.0f;
     static constexpr float BUTTON_MARGIN = 8.0f;
+    static constexpr float MIN_TOUCH_DP = 48.0f;
 
     // Helper methods
     void createTabButtons();
@@ -148,6 +193,7 @@ private:
     void calculateButtonPositions();
     Button* hitTestTab(float x, float y);
     Button* hitTestContent(float x, float y);
+    Slider* hitTestSlider(float x, float y);
     void executeButtonCommand(Button& btn);
     int findTabIndex(const Button* btn) const;
 
@@ -155,6 +201,19 @@ private:
     void renderTabBar();
     void renderContent();
     void renderButton(Button& btn, float scale);
+    void renderSlider(Slider& slider, float scale);
+
+    // Keyboard helpers
+    void moveSelection(int delta);
+    void activateSelected();
+    void nudgeSlider(int direction);
+    void switchTab(int direction);
+    bool isOnSlider() const;
+
+    // Touch size enforcement
+    void ensureMinTouchSize(Button& btn);
+    void ensureMinTouchSize(Slider& slider);
+    float getMinTouchPx() const;
 
     float getScale() const;
     std::string getTabName(Tab tab) const;
