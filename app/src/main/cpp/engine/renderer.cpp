@@ -132,6 +132,20 @@ void Renderer::resize(unsigned int width, unsigned int height) {
         LOGI("Virtual Controller screen size updated to: %ux%u", screenWidth, screenHeight);
     }
 
+    // Update HUD System screen size
+    if (hudRenderer) {
+        hudRenderer->onScreenResize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        LOGI("HUDRenderer screen size updated to: %ux%u", screenWidth, screenHeight);
+    }
+    if (hudCompass) {
+        hudCompass->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        LOGI("UIHudCompass screen size updated to: %ux%u", screenWidth, screenHeight);
+    }
+    if (hudStatusDisplay) {
+        hudStatusDisplay->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        LOGI("UIHudStatusDisplay screen size updated to: %ux%u", screenWidth, screenHeight);
+    }
+
     // Update RetroFilter resolution
     if (retroFilter) {
         retroFilter->setNativeResolution(screenWidth, screenHeight);
@@ -550,6 +564,32 @@ bool Renderer::initGameSystems() {
         LOGE("Failed to initialize VirtualController");
     } else {
         LOGI("VirtualController initialized successfully");
+    }
+
+    // Initialize HUD System
+    LOGI("Creating HUD System...");
+    hudRenderer = std::make_unique<HUDRenderer>();
+    if (!hudRenderer->initialize(textRenderer.get(), uiSystem.get(),
+                                  static_cast<int>(screenWidth), static_cast<int>(screenHeight))) {
+        LOGE("Failed to initialize HUDRenderer");
+    } else {
+        LOGI("HUDRenderer initialized successfully");
+    }
+
+    hudCompass = std::make_unique<UIHudCompass>();
+    if (!hudCompass->initialize(textRenderer.get(),
+                                static_cast<int>(screenWidth), static_cast<int>(screenHeight))) {
+        LOGE("Failed to initialize UIHudCompass");
+    } else {
+        LOGI("UIHudCompass initialized successfully");
+    }
+
+    hudStatusDisplay = std::make_unique<UIHudStatusDisplay>();
+    if (!hudStatusDisplay->initialize(textRenderer.get(),
+                                      static_cast<int>(screenWidth), static_cast<int>(screenHeight))) {
+        LOGE("Failed to initialize UIHudStatusDisplay");
+    } else {
+        LOGI("UIHudStatusDisplay initialized successfully");
     }
 
     // Initialize Debug HUD
@@ -2963,6 +3003,41 @@ void Renderer::render(float deltaTime) {
         virtualController->render();
     }
 
+    // Render HUD System (health/mana/stamina bars, compass, status)
+    if (hudVisible && !showLauncher && !showTitleScreen) {
+        // Update HUD with player status
+        if (playerController && hudRenderer) {
+            auto player = playerController->getPlayer();
+            if (player) {
+                hudRenderer->setPlayerHealth(player->health, player->maxHealth);
+                hudRenderer->setPlayerMana(player->magicka, player->maxMagicka);
+                hudRenderer->setPlayerStamina(player->stamina, player->maxStamina);
+                hudRenderer->setPlayerLevel(static_cast<int>(player->playerLevel));
+                hudRenderer->setPlayerPosition(player->position);
+            }
+        }
+
+        // Update compass with player rotation (yaw is the second component of rotation)
+        if (playerController && hudCompass) {
+            const glm::vec3& rotation = playerController->getPlayerRotation();
+            hudCompass->setPlayerRotation(rotation.y);  // yaw component
+        }
+
+        // Render HUD components
+        if (hudStatusDisplay) {
+            hudStatusDisplay->update(deltaTime);
+            hudStatusDisplay->render();
+        }
+        if (hudCompass) {
+            hudCompass->update(deltaTime);
+            hudCompass->render();
+        }
+        if (hudRenderer) {
+            hudRenderer->update(deltaTime);
+            hudRenderer->render();
+        }
+    }
+
     // Render Floating Combat Text
     if (floatingText) {
         floatingText->render();
@@ -3676,6 +3751,18 @@ void Renderer::toggleGameConsole() {
 void Renderer::toggleVirtualController() {
     virtualControllerEnabled = !virtualControllerEnabled;
     LOGI("Virtual Controller %s", virtualControllerEnabled ? "enabled" : "disabled");
+}
+
+void Renderer::toggleHUD() {
+    hudVisible = !hudVisible;
+    if (hudRenderer) hudRenderer->setVisible(hudVisible);
+    if (hudCompass) {
+        // UIHudCompass doesn't have setVisible, so we'll skip it
+    }
+    if (hudStatusDisplay) {
+        // UIHudStatusDisplay doesn't have setVisible, so we'll skip it
+    }
+    LOGI("HUD %s", hudVisible ? "enabled" : "disabled");
 }
 
 void Renderer::toggleDebugMenu() {

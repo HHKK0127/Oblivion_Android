@@ -48,6 +48,9 @@
 #include "../ui/spell_selection_panel.h"
 #include "../ui/responsive_ui_manager.h"
 #include "../ui/virtual_controller.h"
+#include "../ui/hud_renderer.h"
+#include "../ui/ui_hud_compass.h"
+#include "../ui/ui_hud_status_display.h"
 #include "../animation/animation_subscriber.h"
 #include "../audio/audio_subscriber.h"
 #include "../map/map_system.h"
@@ -121,6 +124,12 @@ private:
     // Virtual Controller (multi-touch gamepad overlay)
     std::shared_ptr<VirtualController> virtualController;
     bool virtualControllerEnabled = true;
+
+    // HUD System
+    std::unique_ptr<HUDRenderer> hudRenderer;
+    std::unique_ptr<UIHudCompass> hudCompass;
+    std::unique_ptr<UIHudStatusDisplay> hudStatusDisplay;
+    bool hudVisible = true;
     
     // Responsive UI Manager
     std::unique_ptr<ResponsiveUIManager> responsiveUIManager;
@@ -260,6 +269,13 @@ public:
     VirtualController* getVirtualController() { return virtualController.get(); }
     void toggleVirtualController();
     bool isVirtualControllerEnabled() const { return virtualControllerEnabled; }
+
+    // HUD System
+    HUDRenderer* getHUDRenderer() { return hudRenderer.get(); }
+    UIHudCompass* getHUDCompass() { return hudCompass.get(); }
+    UIHudStatusDisplay* getHUDStatusDisplay() { return hudStatusDisplay.get(); }
+    void toggleHUD();
+    bool isHUDVisible() const { return hudVisible; }
 
     // Debug System Toggles
     void toggleGameConsole();
