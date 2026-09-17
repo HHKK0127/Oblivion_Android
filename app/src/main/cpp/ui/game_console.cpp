@@ -627,6 +627,47 @@ void GameConsole::registerBuiltinCommands() {
     // === Save/Load commands ===
     registerCommand("save", "Save game: save <slotIndex>", [this](const std::vector<std::string>& args) { cmdSave(args); });
     registerCommand("load", "Load game: load <slotIndex>", [this](const std::vector<std::string>& args) { cmdLoad(args); });
+
+    // === Font switching commands ===
+    registerCommand("font", "Switch font: font <roboto|daedric|kingthings|handwritten|tahoma>", [this](const std::vector<std::string>& args) {
+        if (!textRenderer) { print("TextRenderer not available"); return; }
+        if (args.size() < 2) {
+            print("Current font: " + std::string(textRenderer->getFontTypeName(textRenderer->getActiveFont())));
+            print("Usage: font <roboto|daedric|kingthings|handwritten|tahoma>");
+            return;
+        }
+        std::string name = args[1];
+        FontType type = FontType::Roboto;
+        if (name == "daedric") type = FontType::Daedric;
+        else if (name == "kingthings") type = FontType::KingthingsRegular;
+        else if (name == "handwritten") type = FontType::Handwritten;
+        else if (name == "tahoma") type = FontType::TahomaBoldSmall;
+        else if (name != "roboto") { print("Unknown font: " + name); return; }
+
+        if (type != FontType::Roboto) {
+            if (!textRenderer->loadOblivionFont(type)) {
+                print("Failed to load font: " + name);
+                return;
+            }
+        }
+        textRenderer->setActiveFont(type);
+        print("Font switched to: " + std::string(textRenderer->getFontTypeName(type)));
+    });
+    registerCommand("font_roboto", "Switch to Roboto", [this](const std::vector<std::string>&) {
+        if (textRenderer) { textRenderer->setActiveFont(FontType::Roboto); print("Font: Roboto"); }
+    });
+    registerCommand("font_daedric", "Switch to Daedric", [this](const std::vector<std::string>&) {
+        if (textRenderer) { textRenderer->loadOblivionFont(FontType::Daedric); textRenderer->setActiveFont(FontType::Daedric); print("Font: Daedric"); }
+    });
+    registerCommand("font_kingthings", "Switch to Kingthings", [this](const std::vector<std::string>&) {
+        if (textRenderer) { textRenderer->loadOblivionFont(FontType::KingthingsRegular); textRenderer->setActiveFont(FontType::KingthingsRegular); print("Font: Kingthings"); }
+    });
+    registerCommand("font_handwritten", "Switch to Handwritten", [this](const std::vector<std::string>&) {
+        if (textRenderer) { textRenderer->loadOblivionFont(FontType::Handwritten); textRenderer->setActiveFont(FontType::Handwritten); print("Font: Handwritten"); }
+    });
+    registerCommand("font_tahoma", "Switch to Tahoma", [this](const std::vector<std::string>&) {
+        if (textRenderer) { textRenderer->loadOblivionFont(FontType::TahomaBoldSmall); textRenderer->setActiveFont(FontType::TahomaBoldSmall); print("Font: Tahoma"); }
+    });
     registerCommand("quicksave", "Quick save", [this](const std::vector<std::string>& args) { cmdQuickSave(args); });
     registerCommand("quickload", "Quick load", [this](const std::vector<std::string>& args) { cmdQuickLoad(args); });
     registerCommand("listsaves", "List save slots", [this](const std::vector<std::string>& args) { cmdListSaves(args); });
