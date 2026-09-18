@@ -1,4 +1,14 @@
 #include "audio_decoder.h"
+
+// minimp3: header-only MP3 decoder (public domain)
+#define MINIMP3_IMPLEMENTATION
+#include "../third_party/minimp3/minimp3.h"
+
+// stb_vorbis: header-only OGG Vorbis decoder (public domain)
+#define STB_VORBIS_IMPLEMENTATION
+#define STB_VORBIS_NO_STDIO
+#include "../third_party/stb/stb_vorbis.c"
+
 #include <cstring>
 #include <cmath>
 #include <algorithm>
@@ -226,6 +236,72 @@ AudioData AudioDecoder::decodeWav(const uint8_t* fileData, size_t fileSize) {
 // AudioDecoder - MP3 header parser (stub)
 // ============================================================================
 
+// ============================================================================
+// AudioDecoder - Full MP3 decode (minimp3)
+// ============================================================================
+
+AudioData AudioDecoder::decodeMp3(const uint8_t* fileData, size_t fileSize) {
+    AudioData result;
+    result.format = AudioFormat::MP3;
+
+    mp3dec_t dec;
+    mp3dec_init(&dec);
+
+    // Decode all frames into PCM buffer
+    std::vector<int16_t> allSamples;
+    int totalSamples = 0;
+    int channels = 0;
+    int sampleRate = 0;
+
+    size_t offset = 0;
+    while (offset < fileSize) {
+        mp3dec_frame_info_t info;
+        int16_t pcm[MINIMP3_MAX_SAMPLES_PER_FRAME];
+
+        int samples = mp3dec_decode_frame(&dec, fileData + offset,
+                                           static_cast<int>(fileSize - offset), pcm, &info);
+        if (samples == 0 && info.frame_bytes == 0) {
+            break;  // No more data
+        }
+
+        if (samples > 0) {
+            if (channels == 0) {
+                channels = info.channels;
+                sampleRate = info.hz;
+            }
+            // Append PCM samples
+            allSamples.insert(allSamples.end(), pcm, pcm + samples * info.channels);
+            totalSamples += samples;
+        }
+
+        if (info.frame_bytes > 0) {
+            offset += info.frame_bytes;
+        } else {
+            offset++;  // Skip one byte if frame not found
+        }
+    }
+
+    if (allSamples.empty() || channels == 0 || sampleRate == 0) {
+        LOGE("MP3 decode failed: no samples decoded");
+        return result;
+    }
+
+    result.pcmData.resize(allSamples.size() * sizeof(int16_t));
+    memcpy(result.pcmData.data(), allSamples.data(), result.pcmData.size());
+    result.sampleRate = static_cast<uint32_t>(sampleRate);
+    result.bitsPerSample = 16;
+    result.numChannels = static_cast<uint16_t>(channels);
+    result.totalSamples = static_cast<uint32_t>(totalSamples);
+    result.duration = static_cast<float>(totalSamples) / static_cast<float>(sampleRate);
+    result.format = AudioFormat::MP3;
+
+    LOGI("MP3 decoded: %uch %uHz, %.2fs, %lu bytes PCM",
+         channels, sampleRate, result.duration,
+         static_cast<unsigned long>(result.pcmData.size()));
+
+    return result;
+}
+
 AudioData AudioDecoder::parseMp3Header(const uint8_t* fileData, size_t fileSize) {
     AudioData result;
     result.format = AudioFormat::MP3;
@@ -300,6 +376,64 @@ AudioData AudioDecoder::parseMp3Header(const uint8_t* fileData, size_t fileSize)
 // AudioDecoder - OGG Vorbis header parser (stub)
 // ============================================================================
 
+// ============================================================================
+// AudioDecoder - Full OGG Vorbis decode (stb_vorbis)
+// ============================================================================
+
+AudioData AudioDecoder::decodeOgg(const uint8_t* fileData, size_t fileSize) {
+    AudioData result;
+    result.format = AudioFormat::OGG_VORBIS;
+
+    int error = 0;
+    stb_vorbis* vorbis = stb_vorbis_open_memory(fileData, static_cast<int>(fileSize), &error, nullptr);
+    if (!vorbis || error != 0) {
+        LOGE("OGG Vorbis open failed: error=%d", error);
+        return result;
+    }
+
+    stb_vorbis_info info = stb_vorbis_get_info(vorbis);
+    int channels = info.channels;
+    int sampleRate = info.sample_rate;
+
+    // Decode all samples
+    const int BUFFER_FRAMES = 4096;
+    std::vector<int16_t> allSamples;
+
+    while (true) {
+        std::vector<int16_t> buffer(BUFFER_FRAMES * channels);
+        int samples = stb_vorbis_get_samples_short_interleaved(vorbis, channels,
+                                                                buffer.data(), BUFFER_FRAMES);
+        if (samples == 0) break;
+        allSamples.insert(allSamples.end(), buffer.begin(), buffer.begin() + samples * channels);
+    }
+
+    stb_vorbis_close(vorbis);
+
+    if (allSamples.empty()) {
+        LOGE("OGG Vorbis decode failed: no samples");
+        return result;
+    }
+
+    result.pcmData.resize(allSamples.size() * sizeof(int16_t));
+    memcpy(result.pcmData.data(), allSamples.data(), result.pcmData.size());
+    result.sampleRate = static_cast<uint32_t>(sampleRate);
+    result.bitsPerSample = 16;
+    result.numChannels = static_cast<uint16_t>(channels);
+    result.totalSamples = static_cast<uint32_t>(allSamples.size() / channels);
+    result.duration = static_cast<float>(result.totalSamples) / static_cast<float>(sampleRate);
+    result.format = AudioFormat::OGG_VORBIS;
+
+    LOGI("OGG Vorbis decoded: %uch %uHz, %.2fs, %lu bytes PCM",
+         channels, sampleRate, result.duration,
+         static_cast<unsigned long>(result.pcmData.size()));
+
+    return result;
+}
+
+// ============================================================================
+// AudioDecoder - OGG Vorbis header parser (stub)
+// ============================================================================
+
 AudioData AudioDecoder::parseOggHeader(const uint8_t* fileData, size_t fileSize) {
     AudioData result;
     result.format = AudioFormat::OGG_VORBIS;
@@ -355,11 +489,9 @@ AudioData AudioDecoder::decode(const uint8_t* fileData, size_t fileSize) {
         case AudioFormat::WAV_PCM:
             return decodeWav(fileData, fileSize);
         case AudioFormat::MP3:
-            LOGW("MP3 decode not implemented, returning header info only");
-            return parseMp3Header(fileData, fileSize);
+            return decodeMp3(fileData, fileSize);
         case AudioFormat::OGG_VORBIS:
-            LOGW("OGG Vorbis decode not implemented, returning header info only");
-            return parseOggHeader(fileData, fileSize);
+            return decodeOgg(fileData, fileSize);
         default:
             LOGE("Unknown audio format");
             return AudioData();

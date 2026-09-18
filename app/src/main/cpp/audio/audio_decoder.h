@@ -156,6 +156,22 @@ public:
     AudioData decodeWav(const uint8_t* fileData, size_t fileSize);
 
     /**
+     * @brief Decode MP3 audio using minimp3
+     * @param fileData Complete file contents
+     * @param fileSize Size in bytes
+     * @return Decoded audio data (16-bit PCM)
+     */
+    AudioData decodeMp3(const uint8_t* fileData, size_t fileSize);
+
+    /**
+     * @brief Decode OGG Vorbis audio using stb_vorbis
+     * @param fileData Complete file contents
+     * @param fileSize Size in bytes
+     * @return Decoded audio data (16-bit PCM)
+     */
+    AudioData decodeOgg(const uint8_t* fileData, size_t fileSize);
+
+    /**
      * @brief Parse MP3 header for format info (stub)
      * @param fileData File contents
      * @param fileSize Size in bytes
