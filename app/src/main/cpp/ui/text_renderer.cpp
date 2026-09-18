@@ -594,23 +594,53 @@ bool TextRenderer::loadOblivionFnt(const char* fntPath, const char* pngPath, Fon
     oblivionFonts[idx].fontSize = fontSize;
     LOGI("  fontSize=%.1f texName='%s'", fontSize, texName);
 
-    // Parse glyph records (56 bytes each, starting at offset 76)
-    const uint8_t* glyphData = fntBuf + 76;
-    int glyphDataSize = (int)fntSize - 76;
-    int glyphCount = glyphDataSize / 56;
-    LOGI("  glyphDataSize=%d glyphCount=%d", glyphDataSize, glyphCount);
+    // Parse glyph records (56 bytes each, 255 records starting at offset 344)
+    // Record layout (14 floats):
+    //   [0]  bearing_x (float)
+    //   [1]  advance   (float)
+    //   [2]  padding   (float, always 0)
+    //   [3]  u0        (float, texture U left)
+    //   [4]  v0        (float, texture V top)
+    //   [5]  u1        (float, texture U right, same row as v0)
+    //   [6]  v0_dup    (float, duplicate of v0)
+    //   [7]  u0_dup    (float, duplicate of u0)
+    //   [8]  v1        (float, texture V bottom)
+    //   [9]  u1_dup    (float, duplicate of u1)
+    //   [10] v1_dup    (float, duplicate of v1)
+    //   [11] width     (float, pixel width)
+    //   [12] height    (float, pixel height)
+    //   [13] padding   (float, always 0)
+    // Record index = ASCII code (32..254)
+    static const int GLYPH_START_OFFSET = 344;
+    static const int GLYPH_STRIDE = 56;
+    static const int GLYPH_COUNT = 255;
 
     oblivionFonts[idx].glyphs.clear();
-    for (int i = 0; i < glyphCount && i < 256; i++) {
-        const float* f = (const float*)(glyphData + i * 56);
+    int parsedCount = 0;
+    for (int i = 0; i < GLYPH_COUNT; i++) {
+        int off = GLYPH_START_OFFSET + i * GLYPH_STRIDE;
+        if (off + GLYPH_STRIDE > (int)fntSize) break;
+
+        const float* f = (const float*)(fntBuf + off);
+
+        // Skip empty records (bearing_x == 2.0 and advance == 0 and no UV)
+        if (f[3] == 0.0f && f[4] == 0.0f && f[5] == 0.0f && f[11] == 0.0f)
+            continue;
+
         OblivionGlyph g;
-        g.u0 = f[0]; g.v0 = f[1]; g.u1 = f[2]; g.v1 = f[3];
-        g.u0b = f[4]; g.v0b = f[5]; g.u1b = f[6]; g.v1b = f[7];
-        g.width = f[8]; g.height = f[9];
-        g.bearing_x = f[10]; g.bearing_y = f[11];
-        g.advance = f[12];
+        g.bearing_x = f[0];
+        g.advance   = f[1];
+        g.u0        = f[3];   // texture U left
+        g.v0        = f[4];   // texture V top
+        g.u1        = f[5];   // texture U right
+        g.v1        = f[8];   // texture V bottom (f[8] is the second row's v)
+        g.width     = f[11];  // pixel width
+        g.height    = f[12];  // pixel height
         oblivionFonts[idx].glyphs[i] = g;
+        parsedCount++;
     }
+    LOGI("  Parsed %d glyph records (offset %d, stride %d)",
+         parsedCount, GLYPH_START_OFFSET, GLYPH_STRIDE);
     AAsset_close(fntAsset);
     LOGI("  Loaded %zu glyphs", oblivionFonts[idx].glyphs.size());
 
@@ -701,7 +731,7 @@ void TextRenderer::renderTextOblivion(const std::string& text, float x, float y,
     glm::mat4 projection = glm::ortho(0.0f, (float)screenWidth, (float)screenHeight, 0.0f, -1.0f, 1.0f);
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, &projection[0][0]);
     glUniform4f(colorLoc, color.x, color.y, color.z, color.w);
-    glUniform1i(alphaChannelLoc, 1);  // Use alpha channel for Oblivion fonts
+    glUniform1i(alphaChannelLoc, 0);  // Sample .r (monochrome in R channel of RGBA8)
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, atlas.textureId);
@@ -719,18 +749,21 @@ void TextRenderer::renderTextOblivion(const std::string& text, float x, float y,
         unsigned int codepoint = (unsigned char)ch;
         auto it = atlas.glyphs.find(codepoint);
         if (it == atlas.glyphs.end()) {
-            // Skip missing glyphs
-            currentX += atlas.fontSize * fontScale * 0.5f;
+            // Skip missing glyphs — use space advance if available
+            auto spaceIt = atlas.glyphs.find(32);
+            float spaceAdvance = (spaceIt != atlas.glyphs.end()) ? spaceIt->second.advance : atlas.fontSize * 0.5f;
+            currentX += spaceAdvance * fontScale;
             continue;
         }
         const OblivionGlyph& g = it->second;
 
-        // Convert UV to pixel coords
+        // Convert pixel dimensions to screen coords
         float gw = g.width * fontScale;
         float gh = g.height * fontScale;
         float posX = currentX + g.bearing_x * fontScale;
-        float posY = currentY + g.bearing_y * fontScale;
+        float posY = currentY;
 
+        // UV coordinates are already in 0..1 range from .fnt
         float vertices[] = {
             posX,        posY,        g.u0, g.v0,
             posX + gw,   posY,        g.u1, g.v0,

@@ -60,13 +60,13 @@ private:
         float bearingX, bearingY;
     };
 
-    // Oblivion .fnt glyph record (parsed from binary)
+    // Oblivion .fnt glyph record (parsed from binary at offset 344, stride 56)
     struct OblivionGlyph {
-        float u0, v0, u1, v1;       // Primary UV rect
-        float u0b, v0b, u1b, v1b;   // Shadow UV rect
-        float width, height;         // Pixel dimensions
-        float bearing_x, bearing_y;  // Bearing offsets
-        float advance;               // Horizontal advance
+        float bearing_x;           // Bearing X offset (f[0])
+        float advance;             // Horizontal advance (f[1])
+        float u0, v0;              // UV top-left (f[3], f[4])
+        float u1, v1;              // UV bottom-right (f[5], f[8])
+        float width, height;       // Pixel dimensions (f[11], f[12])
     };
 
     // Oblivion font atlas (loaded from .fnt + .png)
