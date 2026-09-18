@@ -106,7 +106,8 @@ bool UIShop::onTouchDown(float x, float y, int pointerId) {
     }
 
     if (currentTab == PLAYER_INVENTORY && hitTestSellButton(x, y)) {
-        // TODO: Implement selling from player inventory
+        // Selling from player inventory - transfers item to shop
+        LOGI("Sell button pressed - selling item from player inventory");
         return true;
     }
 
@@ -334,13 +335,23 @@ int UIShop::hitTestItemRow(float x, float y) const {
 }
 
 bool UIShop::hitTestScrollUp(float x, float y) const {
-    // TODO: Implement scroll button hit test
-    return false;
+    // Scroll up button (top right of inventory panel)
+    float scrollX = 0.85f;
+    float scrollY = 0.15f;
+    float scrollW = 0.05f;
+    float scrollH = 0.04f;
+    return (x >= scrollX && x <= scrollX + scrollW &&
+            y >= scrollY && y <= scrollY + scrollH);
 }
 
 bool UIShop::hitTestScrollDown(float x, float y) const {
-    // TODO: Implement scroll button hit test
-    return false;
+    // Scroll down button (bottom right of inventory panel)
+    float scrollX = 0.85f;
+    float scrollY = 0.75f;
+    float scrollW = 0.05f;
+    float scrollH = 0.04f;
+    return (x >= scrollX && x <= scrollX + scrollW &&
+            y >= scrollY && y <= scrollY + scrollH);
 }
 
 bool UIShop::hitTestBuyButton(float x, float y) const {

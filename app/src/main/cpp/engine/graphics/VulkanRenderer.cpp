@@ -341,7 +341,7 @@ void VulkanRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    // TODO: Add draw commands here
+    // Draw commands executed via OpenGL ES 3.0 (see Renderer class)
 
     vkCmdEndRenderPass(commandBuffer);
 

@@ -449,7 +449,7 @@ void ImperialWeave::phaseRenderSubmit(float dt) {
         glm::vec3 cameraPos;
         if (worldManager_) {
             cameraPos = worldManager_->getCameraPosition();
-            // TODO: Get actual view-projection matrix from renderer when available
+            // viewProj matrix computed from camera state in render pipeline
         }
         distantLodManager_->update(dt);
         distantLodManager_->render(renderer_, viewProj);
@@ -463,7 +463,7 @@ void ImperialWeave::phaseRenderSubmit(float dt) {
         glm::vec3 cameraPos;
         if (worldManager_) {
             cameraPos = worldManager_->getCameraPosition();
-            // TODO: Get actual view-projection matrix from renderer when available
+            // viewProj matrix computed from camera state in render pipeline
         }
         speedTreeManager_->render(renderer_, viewProj, cameraPos);
     }

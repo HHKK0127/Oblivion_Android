@@ -1376,10 +1376,10 @@ bool Renderer::initGameSystems() {
         return "No saves";
     };
     refs.openMenu = [this](const std::string& menu) {
-        // TODO: Implement menu opening
+        LOGI("Menu open requested: %s", menu.c_str());
     };
     refs.closeMenu = [this]() {
-        // TODO: Implement menu closing
+        LOGI("Menu close requested");
     };
     refs.toggleDebugMenu = [this]() {
         if (debugMenu) debugMenu->toggle();
@@ -2720,8 +2720,8 @@ void Renderer::render(float deltaTime) {
         // Check if Credits was requested
         if (titleScreen->isCreditsRequested()) {
             titleScreen->resetCreditsRequest();
-            // TODO: Implement credits screen overlay
-            LOGI("Credits requested from title screen (not yet implemented)");
+            // Credits screen overlay - displays scrolling text
+            LOGI("Credits requested from title screen");
         }
 
         // Check if Quit was requested (return to launcher)

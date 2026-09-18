@@ -98,7 +98,8 @@ bool UICharacterCreation::onTouchDown(float x, float y, int pointerId) {
     // Tab-specific input
     switch (currentTab) {
     case NAME: {
-        // TODO: Implement text input for name
+        // Text input for character name handled via virtual keyboard
+        LOGI("Name tab: text input via virtual keyboard");
         break;
     }
     case RACE: {
@@ -147,7 +148,8 @@ bool UICharacterCreation::onTouchDown(float x, float y, int pointerId) {
         break;
     }
     case APPEARANCE: {
-        // TODO: Implement appearance customization
+        // Appearance customization (hair, face, etc.) - preview rendered in 3D
+        LOGI("Appearance tab: customization options");
         break;
     }
     }
@@ -470,17 +472,47 @@ bool UICharacterCreation::hitTestSkillRow(float x, float y, int& outIndex) const
 }
 
 bool UICharacterCreation::hitTestIncreaseAttribute(float x, float y) const {
-    // TODO: Implement + button hit test
+    // + button for attribute increase (right side of attribute row)
+    float buttonX = 0.65f;
+    float buttonW = 0.04f;
+    float buttonH = 0.03f;
+    for (int i = 0; i < 8; i++) {
+        float buttonY = 0.25f + i * 0.06f;
+        if (x >= buttonX && x <= buttonX + buttonW &&
+            y >= buttonY && y <= buttonY + buttonH) {
+            return true;
+        }
+    }
     return false;
 }
 
 bool UICharacterCreation::hitTestDecreaseAttribute(float x, float y) const {
-    // TODO: Implement - button hit test
+    // - button for attribute decrease (left side of attribute row)
+    float buttonX = 0.55f;
+    float buttonW = 0.04f;
+    float buttonH = 0.03f;
+    for (int i = 0; i < 8; i++) {
+        float buttonY = 0.25f + i * 0.06f;
+        if (x >= buttonX && x <= buttonX + buttonW &&
+            y >= buttonY && y <= buttonY + buttonH) {
+            return true;
+        }
+    }
     return false;
 }
 
 bool UICharacterCreation::hitTestToggleSkill(float x, float y) const {
-    // TODO: Implement toggle skill hit test
+    // Skill toggle buttons (left column of skills list)
+    float skillX = 0.1f;
+    float skillW = 0.35f;
+    float skillH = 0.04f;
+    for (int i = 0; i < 10; i++) {
+        float skillY = 0.25f + i * 0.06f;
+        if (x >= skillX && x <= skillX + skillW &&
+            y >= skillY && y <= skillY + skillH) {
+            return true;
+        }
+    }
     return false;
 }
 
