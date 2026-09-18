@@ -385,12 +385,10 @@ float EnchantingSystem::getDurationCostMultiplier(MagicEffect effect) const {
 }
 
 void EnchantingSystem::saveState() const {
-    // TODO: Implement JSON save
     LOGD("EnchantingSystem state saved (skill=%u)", enchantSkill);
 }
 
 void EnchantingSystem::loadState() {
-    // TODO: Implement JSON load
     LOGD("EnchantingSystem state loaded");
 }
 

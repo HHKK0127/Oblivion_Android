@@ -3,6 +3,7 @@
 #include <android/log.h>
 #include <cmath>
 #include <algorithm>
+#include <random>
 
 #define LOG_TAG "NPC"
 #ifdef ENABLE_DEBUG_LOGS
@@ -101,11 +102,29 @@ void NPC::update(float deltaTime) {
             break;
 
         case AIState::WANDER:
-            // TODO: Implement random wandering
+            // Random wandering - move in random direction
+            {
+                int dx = (rand() % 3) - 1;  // -1, 0, or 1
+                int dz = (rand() % 3) - 1;
+                position.x += dx * 0.01f;
+                position.z += dz * 0.01f;
+            }
             break;
 
         case AIState::PATROL:
-            // TODO: Implement patrol waypoint following
+            // Patrol waypoint following using currentPath
+            if (!currentPath.empty()) {
+                glm::vec3 target = currentPath[currentPathIndex];
+                glm::vec3 dir = target - position;
+                float distSq = dir.x * dir.x + dir.z * dir.z;
+                if (distSq < pathReachThreshold * pathReachThreshold) {
+                    currentPathIndex = (currentPathIndex + 1) % currentPath.size();
+                } else {
+                    float len = std::sqrt(distSq);
+                    position.x += (dir.x / len) * 0.02f;
+                    position.z += (dir.z / len) * 0.02f;
+                }
+            }
             break;
 
         case AIState::FOLLOW_PLAYER:

@@ -347,8 +347,8 @@ void NpcManager::initializePlayerFromESM(NPC& player, uint32_t raceFormID,
             LOGD("Racial skill bonus: skillFormID=0x%08X, bonus=%d", bonus.first, bonus.second);
         }
 
-        // Set mesh path
-        player.meshAssetPath = race->maleModelPath;  // TODO: gender selection
+        // Set mesh path (gender selection not yet implemented)
+        player.meshAssetPath = race->maleModelPath;
 
         LOGI("Race applied: %s (HP=%.0f, spells=%zu)",
              player.race.c_str(), player.status.maxHealth, race->spellFormIDs.size());

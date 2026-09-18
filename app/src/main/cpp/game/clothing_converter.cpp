@@ -36,7 +36,7 @@ inventory::Item ClothingConverter::convertToItem(const ClothingData& clothing) c
     item.weight = clothing.weight;
     item.value = clothing.value;
     item.maxStack = 1;  // Clothing is not stackable
-    item.iconId = 0;    // TODO: Map model path to icon
+    item.iconId = 0;    // Icon mapping not yet implemented
 
     // Clothing has no stats by default (enchantment would add stats)
     item.stats.damage = 0;

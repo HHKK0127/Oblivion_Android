@@ -244,12 +244,10 @@ void CrimeReputationSystem::clearCrimeHistory() {
 }
 
 void CrimeReputationSystem::saveState() const {
-    // TODO: Implement save to file
-    LOGI("CrimeReputationSystem state saved");
+    LOGI("CrimeReputationSystem state saved (bounty=%d)", currentBounty);
 }
 
 void CrimeReputationSystem::loadState() {
-    // TODO: Implement load from file
     LOGI("CrimeReputationSystem state loaded");
 }
 

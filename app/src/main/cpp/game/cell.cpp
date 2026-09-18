@@ -71,7 +71,7 @@ void Cell::unloadObjects() {
     // Release mesh references
     for (auto& obj : objects) {
         obj->mesh = nullptr;
-        // TODO: Unload from asset manager when reference counting is complete
+        // Asset manager reference counting not yet implemented
     }
 
     loaded = false;

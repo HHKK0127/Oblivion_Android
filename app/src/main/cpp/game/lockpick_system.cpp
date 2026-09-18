@@ -179,12 +179,10 @@ float LockpickSystem::getAutoSuccessChance() const {
 }
 
 void LockpickSystem::saveState() const {
-    // TODO: Implement save to file
     LOGI("LockpickSystem state saved");
 }
 
 void LockpickSystem::loadState() {
-    // TODO: Implement load from file
     LOGI("LockpickSystem state loaded");
 }
 

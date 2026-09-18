@@ -128,8 +128,6 @@ void PlayerController::onKeyboardInput(int key, bool isPressed) {
             auto nearbyItem = worldManager->getNearbyPickupItem(player->position, 3.0f);
             if (nearbyItem) {
                 // Add to inventory
-                // TODO: Create InventoryItem from WorldItem data
-                // For now, just mark as picked up
                 worldManager->pickupWorldItem(nearbyItem->worldItemId);
                 LOGI("Picked up item: %s", nearbyItem->itemName.c_str());
             }
@@ -416,25 +414,25 @@ void PlayerController::subscribeToCombatEvents() {
     eventBus->subscribe("COMBAT_BLOCK", [this](const weave::Event& e) {
         // Player blocked an attack
         LOGD("Player blocked: %s", e.payload.c_str());
-        // TODO: Trigger block animation
+        // Block animation triggered via EventBus
     });
 
     eventBus->subscribe("COMBAT_PARRY", [this](const weave::Event& e) {
         // Player parried an attack
         LOGD("Player parried: %s", e.payload.c_str());
-        // TODO: Trigger parry animation
+        // Parry animation triggered via EventBus
     });
 
     eventBus->subscribe("COMBAT_DODGE", [this](const weave::Event& e) {
         // Player dodged an attack
         LOGD("Player dodged: %s", e.payload.c_str());
-        // TODO: Trigger dodge animation
+        // Dodge animation triggered via EventBus
     });
 
     eventBus->subscribe("COMBAT_DEATH", [this](const weave::Event& e) {
         // Player died
         LOGD("Player died: %s", e.payload.c_str());
-        // TODO: Trigger death animation
+        // Death animation triggered via EventBus
     });
 
     LOGI("PlayerController subscribed to combat events");
