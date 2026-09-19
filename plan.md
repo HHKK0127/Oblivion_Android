@@ -77,10 +77,10 @@ All phases 37-45 have been completed:
 
 | Phase | Feature | Priority | Estimate | Dependencies | Status |
 |-------|---------|----------|----------|--------------|--------|
-| **Phase 56** | Quest Map with Markers | High | 3-4 days | Phase 47 | Pending |
-| **Phase 57** | ESM Render Verification | High | 2-3 days | Phase 38 | Pending |
-| **Phase 58** | Controller Support | Medium | 3-4 days | Phase 36 | Pending |
-| **Phase 59** | SpeedTree Vegetation | Low | 4-5 days | Phase 38 | Pending |
+| **Phase 56** | Quest Map with Markers | High | 3-4 days | Phase 47 | Complete |
+| **Phase 57** | ESM Render Verification | High | 2-3 days | Phase 38 | Complete |
+| **Phase 58** | Controller Support | Medium | 3-4 days | Phase 36 | Complete |
+| **Phase 59** | SpeedTree Vegetation | Low | 4-5 days | Phase 38 | Complete |
 
 ### Milestones
 
