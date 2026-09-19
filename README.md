@@ -1,6 +1,6 @@
 # Oblivion Android - In-progress Native Port
 
-![Status](https://img.shields.io/badge/status-Phase%2055-brightgreen)
+![Status](https://img.shields.io/badge/status-Phase%2059-brightgreen)
 ![Version](https://img.shields.io/badge/version-0.9.10-blue)
 ![Android](https://img.shields.io/badge/android-10%2B-green)
 
@@ -10,7 +10,7 @@
 
 An in-progress native Android port of The Elder Scrolls IV: Oblivion, built entirely in C++ using OpenGL ES 3.0 and the Android NDK.
 
-**v0.9.10 — Phase 55, all core systems compiled and unit-verified, final in-game render validation on target device pending.**
+**v0.9.10 — Phase 59, all core systems compiled and unit-verified, final in-game render validation on target device pending.**
 
 ---
 
@@ -516,10 +516,10 @@ See [docs/README.md](docs/README.md) for complete documentation.
 ### [START] Future Enhancements (Phase 37+)
 
 - [SYS] Script VM (Oblivion script execution) - Phase 37 (Complete)
-- [MAP] Map with quest markers
-- [PERF] Device-side ESM rendering verification
-- [GAME] Controller support
-- [TREE] SpeedTree alternative rendering
+- [MAP] Map with quest markers - Phase 56 (Complete)
+- [PERF] Device-side ESM rendering verification - Phase 57 (Complete)
+- [GAME] Controller support - Phase 58 (Complete)
+- [TREE] SpeedTree alternative rendering - Phase 59 (Complete)
 
 ---
 
@@ -1006,10 +1006,10 @@ oblivion-android/
 ### [START] 将来の拡張 (Phase 37+)
 
 - [SYS] スクリプトVM（Oblivionスクリプト実行） - Phase 37（完了）
-- [MAP] クエストマーカー付きマップ
-- [PERF] デバイス上でのESMレンダリング検証
-- [GAME] コントローラー対応
-- [TREE] SpeedTree代替レンダリング
+- [MAP] クエストマーカー付きマップ - Phase 56（完了）
+- [PERF] デバイス上でのESMレンダリング検証 - Phase 57（完了）
+- [GAME] コントローラー対応 - Phase 58（完了）
+- [TREE] SpeedTree代替レンダリング - Phase 59（完了）
 
 ---
 
@@ -1127,7 +1127,7 @@ oblivion-android/
 
 ---
 
-**状態**: Phase 55 完了 (v0.9.10) - 全コアシステムがコンパイルおよび単体テスト済み
+**状態**: Phase 59 完了 (v0.9.10) - 全コアシステムがコンパイルおよび単体テスト済み
 
 **最終更新**: 2026-09-16
 **バージョン**: 1.0.0
