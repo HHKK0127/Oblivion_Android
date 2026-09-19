@@ -56,6 +56,16 @@ struct SubRecord {
     size_t size() const { return data.size(); }
 };
 
+struct RecordIndex {
+    char recType[4] = {0,0,0,0};
+    uint32_t formID = 0;
+    uint32_t flags = 0;
+    uint32_t dataSize = 0;
+    uint64_t fileOffset = 0;  // Offset in file (after header, before compressed data)
+    bool compressed = false;
+    uint32_t decompSize = 0;  // Decompressed size (if compressed)
+};
+
 // A record (CELL, NPC_, WEAP, etc.)
 struct ESMRecord {
     char recType[4] = {0,0,0,0};
@@ -77,9 +87,10 @@ struct ESMRecord {
 struct GroupHeader {
     char recType[4];        // "GRUP"
     uint32_t groupSize;     // Total group size (including this header)
-    int32_t groupLabel;     // World/cell ID or just label
+    uint32_t groupLabel;    // World/cell ID or just label
     uint32_t groupType;     // GroupType enum
-    int16_t stamp;          // Block index (used for compressed data)
+    uint32_t stamp;         // Block index (used for compressed data)
+    uint32_t unknown;       // Unknown/padding
 };
 
 // High-level record data (decoded from a parsed record)
@@ -714,8 +725,15 @@ public:
 
 private:
     std::string m_fileName;
+    std::string m_filePath;  // Full path for lazy loading
     bool m_isMaster = false;
 
+    // Index of all records (offset-based, for lazy loading)
+    std::vector<RecordIndex> m_recordIndex;
+    // FormID -> index into m_recordIndex
+    std::unordered_map<uint32_t, size_t> m_formIDIndex;
+
+    // Minimal cached data (only what's needed for lookups)
     std::vector<CellData> m_cells;
     std::vector<NPCData> m_npcs;
     std::vector<CreatureData> m_creatures;
@@ -742,7 +760,7 @@ private:
     std::vector<HairData> m_hairs;
     std::vector<ClimateData> m_climates;
     std::vector<RegionData> m_regions;
-        std::vector<LeveledListData> m_leveledLists;
+    std::vector<LeveledListData> m_leveledLists;
     std::vector<NavMeshData> m_navMeshes;
     std::vector<ArmorData> m_armors;
     std::vector<BookData> m_books;

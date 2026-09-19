@@ -57,6 +57,9 @@ void TitleScreen::initialize(LocalizationManager* lm, TextRenderer* tr) {
              bgTexture, logoTexture, vignetteTexture);
     }
 
+    // Register intro video clip if BinkVideoPlayer is available
+    setupIntroVideo();
+
     LOGI("TitleScreen initialized (Oblivion Authentic)");
 }
 
@@ -177,11 +180,26 @@ void TitleScreen::update(float deltaTime) {
     switch (state) {
         case TitleScreenState::INTRO_MOVIE: {
             displayTimer += deltaTime;
-            float t = displayTimer / INTRO_DURATION;
-            if (t > 1.0f) t = 1.0f;
-            introLogoAlpha = easeOutQuad(t);
-            if (displayTimer >= INTRO_DURATION) {
-                transitionToLogo();
+
+            // Update BinkVideoPlayer if video is playing
+            if (videoPlaybackActive && videoPlayer) {
+                videoPlayer->update(deltaTime);
+
+                if (videoCompleted) {
+                    videoPlaybackActive = false;
+                    transitionToLogo();
+                    break;
+                }
+            }
+
+            // Fallback: procedural logo fade if no video
+            if (!videoPlaybackActive) {
+                float t = displayTimer / INTRO_DURATION;
+                if (t > 1.0f) t = 1.0f;
+                introLogoAlpha = easeOutQuad(t);
+                if (displayTimer >= INTRO_DURATION) {
+                    transitionToLogo();
+                }
             }
             break;
         }
@@ -242,6 +260,29 @@ void TitleScreen::renderIntroMovie() {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
+    // If video is playing, the VideoRenderer handles frame display
+    // (frames are rendered to the SurfaceTexture which is composited by the system).
+    // We only draw a fallback logo when video is NOT active.
+    if (videoPlaybackActive) {
+        // Video frames are rendered via VideoRenderer to the native window.
+        // Draw a subtle logo overlay with fade-in after a short delay.
+        if (displayTimer > 1.0f && logoTexture != 0) {
+            float overlayAlpha = std::min((displayTimer - 1.0f) * 0.5f, 0.15f);
+            float scale = (screenWidth > screenHeight) ? 0.35f : 0.6f;
+            float logoW = screenWidth * scale;
+            float logoH = logoW * 0.22f;
+            float logoX = (screenWidth - logoW) * 0.5f;
+            float logoY = screenHeight * 0.80f;
+
+            UIDrawHelper::drawTexturedQuad(
+                logoX, logoY, logoW, logoH,
+                logoTexture, glm::vec4(1.0f, 1.0f, 1.0f, overlayAlpha),
+                screenWidth, screenHeight);
+        }
+        return;
+    }
+
+    // Fallback: static logo fade-in (original behavior)
     if (logoTexture != 0) {
         float scale = (screenWidth > screenHeight) ? 0.55f : 0.9f;
         float logoW = screenWidth * scale;
@@ -530,6 +571,11 @@ void TitleScreen::onTouchEvent(float x, float y, int action) {
     if (state == TitleScreenState::INTRO_MOVIE) {
         if (action == 0) {
             spawnRipple(x, y);
+            // Skip video if playing, otherwise skip fallback
+            if (videoPlaybackActive && videoPlayer) {
+                videoPlayer->stop();
+                videoPlaybackActive = false;
+            }
             transitionToLogo();
         }
     } else if (state == TitleScreenState::LOGO_DISPLAY) {
@@ -597,7 +643,63 @@ void TitleScreen::onKeyPress(int key) {
     }
 }
 
+void TitleScreen::setupIntroVideo() {
+    if (videoInitAttempted) return;
+    videoInitAttempted = true;
+
+    auto& player = oblivion::video::BinkVideoPlayer::instance();
+    if (!player.isInitialized()) {
+        LOGI("BinkVideoPlayer not initialized, using fallback intro");
+        return;
+    }
+
+    videoPlayer = &player;
+
+    // Register the intro video clip
+    oblivion::video::VideoClip introClip;
+    introClip.clipId = "oblivion_intro";
+    introClip.filePath = "videos/oblivion_intro.mp4";
+    introClip.width = 1280;
+    introClip.height = 720;
+    introClip.frameRate = 30.0f;
+    introClip.durationSeconds = 30.0f;
+    introClip.hasAudio = true;
+
+    if (!player.loadClip(introClip.clipId, introClip)) {
+        LOGW("Failed to load intro video clip");
+        videoPlayer = nullptr;
+        return;
+    }
+
+    // Set up completion callback
+    videoCallbacks.onComplete = [this](const std::string& clipId) {
+        LOGI("Intro video completed: %s", clipId.c_str());
+        videoCompleted = true;
+    };
+    videoCallbacks.onError = [this](const std::string& clipId, int errCode, const std::string& errMsg) {
+        LOGW("Intro video error [%d]: %s - %s", errCode, clipId.c_str(), errMsg.c_str());
+        videoCompleted = true;  // Treat error as completion to proceed
+    };
+    player.setCallbacks(videoCallbacks);
+
+    // Try to start intro video playback
+    if (player.playIntroVideo("oblivion_intro")) {
+        videoPlaybackActive = true;
+        videoCompleted = false;
+        LOGI("Intro video playback started");
+    } else {
+        LOGI("Intro video not available, using fallback logo");
+        videoPlayer = nullptr;
+    }
+}
+
 void TitleScreen::transitionToLogo() {
+    // Stop video if still playing
+    if (videoPlaybackActive && videoPlayer) {
+        videoPlayer->stop();
+        videoPlaybackActive = false;
+    }
+
     state = TitleScreenState::LOGO_DISPLAY;
     displayTimer = 0.0f;
     logoFadeAlpha = 0.0f;

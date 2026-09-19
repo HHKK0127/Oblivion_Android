@@ -57,6 +57,60 @@
       "compressed": false
     },
     {
+      "id": "oblivion-data-sources-20260919",
+      "timestamp": "2026-09-19T17:54:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Oblivion データソース一覧 (4種類)",
+      "data": {
+        "steam_version": {
+          "path": "D:\\Cargo\\Other\\Oblivion\\Oblivion_Steam版\\Data\\",
+          "contents": "Oblivion.esm, Oblivion-Meshes/Textures/Sounds/Misc/Voices1/Voices2.bsa, DLC ShiveringIsles (Meshes/Sounds/Textures/Voices.bsa), Knights.bsa, DLC BattlehornCastle/Frostcrag/HorseArmor/MehrunesRazor/Orrery/SpellTomes/ThievesDen/VileLair",
+          "has_dlc": true,
+          "notes": "GOTY版。全DLC同梱。Voicesは1+2に分割。"
+        },
+        "disc_version": {
+          "path": "D:\\Cargo\\Other\\Oblivion\\Oblivion_DISC版\\Oblivion\\Data\\",
+          "contents": "Oblivion.esm, Oblivion-Meshes/Textures/Sounds/Misc/Voices1/Voices2.bsa, DLC ShiveringIsles (Meshes/Sounds/Textures/Voices.bsa), Knights.bsa",
+          "has_dlc": true,
+          "notes": "ShiveringIsles + Knights同梱。個別DLC (Battlehorn等) なし。"
+        },
+        "goty_disc1": {
+          "path": "D:\\Cargo\\Other\\Oblivion\\Oblivion GOTY 1\\",
+          "contents": "data1-8.cab (インストーラーキャビネットファイル), setup.exe, DXREDIST/",
+          "notes": "GOTY DISC 1。インストーラーファイル。展開が必要。約3.5GB。"
+        },
+        "goty_disc2": {
+          "path": "D:\\Cargo\\Other\\Oblivion\\Oblivion GOTY 2\\",
+          "contents": "data1-3.cab (インストーラーキャビネットファイル), setup.exe",
+          "notes": "GOTY DISC 2。インストーラーファイル。展開が必要。約1.2GB。"
+        },
+        "bsa_extraction": {
+          "path": "D:\\Cargo\\Other\\Oblivion\\BSA\\bsa_Extraction\\",
+          "contents": "distantlod(922), facegen(1), fonts(10), menus(104), meshes(2188), sound(35572) = 39797 files",
+          "notes": "BSAから抽出済みのデータ。ディレクトリ構造: distantlod/facegen/fonts/menus/meshes/sound"
+        }
+      }
+    },
+    {
+      "id": "bsa-file-locations-20260919",
+      "timestamp": "2026-09-19T17:30:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "BSA/ESM file locations and emulator deployment status. PC sources: Steam version at D:\\Cargo\\Other\\Oblivion\\Oblivion_Steam版\\Data\\, DISC version at D:\\Cargo\\Other\\Oblivion\\Oblivion_DISC版\\Oblivion\\Data\\. Extracted data at D:\\Cargo\\Other\\Oblivion\\BSA\\bsa_Extraction\\ (distantlod 922, facegen 1, fonts 10, menus 104, meshes 2188, sound 35572 = 39797 files). Emulator path: /data/data/com.example.oblivion/data/. Deployed (4GB total): Oblivion-Meshes.bsa(640MB), Textures-Compressed.bsa(1.1GB), Sounds.bsa(315MB), Misc.bsa(6.8MB), Voices1.bsa(751MB), Voices2.bsa(958MB), Oblivion.esm(265MB). Steam version splits voices into Voices1.bsa+Voices2.bsa (not single Voices.bsa). ESM placed directly in dataPath, not inside BSA.",
+      "tags": ["bsa", "esm", "emulator", "data-files", "steam", "deployment"],
+      "compressed": false
+    },
+    {
+      "id": "bsa-extraction-structure-20260919",
+      "timestamp": "2026-09-19T17:30:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "BSA extraction data structure (D:\\Cargo\\Other\\Oblivion\\BSA\\bsa_Extraction\\): distantlod=LOD meshes, facegen=face generation, fonts=font files, menus=UI menus (XML: chargen/dialog/generic/main/message/options/prefabs), meshes=3D models (NIF: architecture/armor/characters/clothes/clutter/creatures/dungeons/effects/landscape/plants/rocks/sky/trees/weapons), sound=audio files (WAV).",
+      "tags": ["bsa", "extraction", "meshes", "sound", "menus"],
+      "compressed": false
+    },
+    {
       "id": "build-status-20260918",
       "timestamp": "2026-09-18T10:30:00Z",
       "category": "reference",
@@ -67,7 +121,7 @@
     }
   ],
   "metadata": {
-    "totalEntries": 6,
+    "totalEntries": 9,
     "compressedCount": 0,
     "sessionCount": 9
   }

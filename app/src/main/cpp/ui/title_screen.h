@@ -6,6 +6,7 @@
 #include <array>
 #include <android/log.h>
 #include "../localization/localization_manager.h"
+#include "../video/bink_video_player.h"
 #include "settings_ui.h"
 #include "ui_panel.h"
 #include "ui_button.h"
@@ -131,6 +132,13 @@ private:
     // Sound
     AudioManager* audioManager = nullptr;
 
+    // Bink video integration
+    oblivion::video::BinkVideoPlayer* videoPlayer = nullptr;
+    bool videoPlaybackActive = false;
+    bool videoCompleted = false;
+    bool videoInitAttempted = false;
+    oblivion::video::VideoCallbacks videoCallbacks;
+
     static constexpr float INTRO_DURATION = 4.0f;
     static constexpr float LOGO_FADE_DURATION = 2.0f;
 
@@ -177,6 +185,7 @@ private:
     void buildGraphicalMenu();
     void rebuildMenuLayout();
     void initParticles();
+    void setupIntroVideo();
 
     void renderIntroMovie();
     void renderLogoDisplay();
