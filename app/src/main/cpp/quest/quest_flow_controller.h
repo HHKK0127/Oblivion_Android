@@ -28,6 +28,9 @@
 // ============================================================================
 
 // Forward declarations
+namespace engine {
+    class SkyWeatherSystem;
+}
 class PlayerController;
 class InventoryManager;
 class NpcManager;
@@ -90,7 +93,8 @@ public:
                     PlayerController* playerCtrl,
                     InventoryManager* invMgr,
                     NpcManager* npcMgr,
-                    WorldManager* worldMgr);
+                    WorldManager* worldMgr,
+                    engine::SkyWeatherSystem* skyWeather = nullptr);
 
     void cleanup();
     void update(float deltaTime);
@@ -156,6 +160,7 @@ private:
     InventoryManager* inventoryManager_ = nullptr;
     NpcManager* npcManager_ = nullptr;
     WorldManager* worldManager_ = nullptr;
+    engine::SkyWeatherSystem* skyWeatherSystem_ = nullptr;
 
     // Callback
     QuestFlowCallback flowCallback_;

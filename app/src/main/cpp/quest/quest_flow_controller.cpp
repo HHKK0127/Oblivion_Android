@@ -4,6 +4,7 @@
 #include "../game/npc_manager.h"
 #include "../world/world_manager.h"
 #include "../script/script_manager.h"
+#include "../engine/sky_weather_system.h"
 #include <cstring>
 
 // ============================================================================
@@ -26,7 +27,8 @@ bool QuestFlowController::initialize(QuestManager* questMgr,
                                        PlayerController* playerCtrl,
                                        InventoryManager* invMgr,
                                        NpcManager* npcMgr,
-                                       WorldManager* worldMgr) {
+                                       WorldManager* worldMgr,
+                                       engine::SkyWeatherSystem* skyWeather) {
     if (!questMgr) {
         LOGE("Cannot initialize QuestFlowController with null QuestManager");
         return false;
@@ -40,9 +42,10 @@ bool QuestFlowController::initialize(QuestManager* questMgr,
     inventoryManager_ = invMgr;
     npcManager_ = npcMgr;
     worldManager_ = worldMgr;
+    skyWeatherSystem_ = skyWeather;
 
     // Initialize sub-systems
-    if (!stageManager_.initialize(questMgr, scriptMgr, npcMgr, worldMgr)) {
+    if (!stageManager_.initialize(questMgr, scriptMgr, npcMgr, worldMgr, invMgr)) {
         LOGE("Failed to initialize QuestStageManager");
         return false;
     }
@@ -183,7 +186,8 @@ bool QuestFlowController::activateQuest(uint32_t questFormID) {
     }
 
     changeState(questFormID, QuestFlowState::ACTIVE);
-    entry.activationTime = 0; // TODO: Get current game time
+    // Get current game time from SkyWeatherSystem
+    entry.activationTime = skyWeatherSystem_ ? skyWeatherSystem_->getGameTime() : 0.0f;
 
     // Activate initial objectives
     for (const auto& obj : entry.record.objectives) {
@@ -223,7 +227,8 @@ bool QuestFlowController::completeQuest(uint32_t questFormID) {
     }
 
     changeState(questFormID, QuestFlowState::COMPLETED);
-    entry.completionTime = 0; // TODO: Get current game time
+    // Get current game time from SkyWeatherSystem
+    entry.completionTime = skyWeatherSystem_ ? skyWeatherSystem_->getGameTime() : 0.0f;
 
     // Check for quest chain
     checkQuestChain(questFormID);

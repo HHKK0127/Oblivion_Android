@@ -1,5 +1,6 @@
 #include "quest_stage_manager.h"
 #include "../game/npc_manager.h"
+#include "../game/inventory_manager.h"
 #include "../world/world_manager.h"
 #include <algorithm>
 
@@ -12,7 +13,8 @@ bool StageConditionEvaluator::evaluate(const QuestCondition& cond,
                                         int32_t currentStage,
                                         QuestManager* questMgr,
                                         NpcManager* npcMgr,
-                                        WorldManager* worldMgr) {
+                                        WorldManager* worldMgr,
+                                        InventoryManager* invMgr) {
     switch (cond.functionIndex) {
         case 29: // GetQuestRunning
             return evalGetQuestRunning(cond, questMgr);
@@ -23,7 +25,7 @@ bool StageConditionEvaluator::evaluate(const QuestCondition& cond,
         case 23: // GetDead
             return evalGetDead(cond, npcMgr);
         case 24: // GetItemCount
-            return evalGetItemCount(cond);
+            return evalGetItemCount(cond, invMgr);
         case 39: // GetInCell
             return evalGetInCell(cond, worldMgr);
         case 0:  // GetDistance
@@ -42,14 +44,15 @@ bool StageConditionEvaluator::evaluateAll(const std::vector<QuestCondition>& con
                                             int32_t currentStage,
                                             QuestManager* questMgr,
                                             NpcManager* npcMgr,
-                                            WorldManager* worldMgr) {
+                                            WorldManager* worldMgr,
+                                            InventoryManager* invMgr) {
     if (conditions.empty()) return true;
 
     bool hasOrFlag = false;
     bool anyTrue = false;
 
     for (const auto& cond : conditions) {
-        bool result = evaluate(cond, questFormID, currentStage, questMgr, npcMgr, worldMgr);
+        bool result = evaluate(cond, questFormID, currentStage, questMgr, npcMgr, worldMgr, invMgr);
 
         if (cond.flags & 0x01) {
             // OR condition
@@ -117,10 +120,23 @@ bool StageConditionEvaluator::evalGetDead(const QuestCondition& cond,
     return npc->status.currentHealth <= 0;
 }
 
-bool StageConditionEvaluator::evalGetItemCount(const QuestCondition& cond) {
-    // TODO: Check player inventory for item count
-    // Requires InventoryManager integration
-    return false;
+bool StageConditionEvaluator::evalGetItemCount(const QuestCondition& cond,
+                                                InventoryManager* invMgr) {
+    // Check player inventory for item count
+    if (!invMgr || !invMgr->getPlayerInventory()) return false;
+    uint32_t count = invMgr->getPlayerInventory()->getItemQuantity(cond.param1);
+    uint32_t required = static_cast<uint32_t>(cond.comparisonValue);
+    
+    // Compare based on comparisonOp
+    switch (cond.comparisonOp) {
+        case 0: return count == required;  // Equal
+        case 1: return count != required;  // Not equal
+        case 2: return count > required;   // Greater than
+        case 3: return count >= required;  // Greater or equal
+        case 4: return count < required;   // Less than
+        case 5: return count <= required;  // Less or equal
+        default: return count >= required; // Default: >=
+    }
 }
 
 bool StageConditionEvaluator::evalGetInCell(const QuestCondition& cond,
@@ -155,7 +171,8 @@ QuestStageManager::~QuestStageManager() {
 bool QuestStageManager::initialize(QuestManager* questMgr,
                                     oblivion::script::ScriptManager* scriptMgr,
                                     NpcManager* npcMgr,
-                                    WorldManager* worldMgr) {
+                                    WorldManager* worldMgr,
+                                    InventoryManager* invMgr) {
     if (!questMgr) {
         LOGE("Cannot initialize QuestStageManager with null QuestManager");
         return false;
@@ -165,6 +182,7 @@ bool QuestStageManager::initialize(QuestManager* questMgr,
     scriptManager_ = scriptMgr;
     npcManager_ = npcMgr;
     worldManager_ = worldMgr;
+    inventoryManager_ = invMgr;
 
     LOGI("QuestStageManager initialized");
     return true;
@@ -269,7 +287,7 @@ bool QuestStageManager::evaluateStageConditions(uint32_t questFormID) {
         // Evaluate conditions for this stage
         if (StageConditionEvaluator::evaluateAll(
                 stage.conditions, questFormID, currentStage,
-                questManager_, npcManager_, worldManager_)) {
+                questManager_, npcManager_, worldManager_, inventoryManager_)) {
             // Conditions met - advance to this stage
             LOGD("Quest 0x%08X: Stage %d conditions met, advancing",
                  questFormID, stage.stageIndex);
@@ -295,7 +313,7 @@ bool QuestStageManager::tryAdvanceToStage(uint32_t questFormID, int32_t targetSt
     // Evaluate conditions for the target stage
     if (StageConditionEvaluator::evaluateAll(
             stageEntry->conditions, questFormID, currentStages_[questFormID],
-            questManager_, npcManager_, worldManager_)) {
+            questManager_, npcManager_, worldManager_, inventoryManager_)) {
         return setStage(questFormID, targetStage);
     }
 

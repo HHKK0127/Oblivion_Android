@@ -52,7 +52,8 @@ public:
                          int32_t currentStage,
                          class QuestManager* questMgr,
                          class NpcManager* npcMgr,
-                         class WorldManager* worldMgr);
+                         class WorldManager* worldMgr,
+                         class InventoryManager* invMgr = nullptr);
 
     // Evaluate all conditions for a stage (AND logic, unless OR flag set)
     static bool evaluateAll(const std::vector<QuestCondition>& conditions,
@@ -60,7 +61,8 @@ public:
                             int32_t currentStage,
                             class QuestManager* questMgr,
                             class NpcManager* npcMgr,
-                            class WorldManager* worldMgr);
+                            class WorldManager* worldMgr,
+                            class InventoryManager* invMgr = nullptr);
 
 private:
     // Individual condition evaluators
@@ -73,7 +75,8 @@ private:
     static bool evalGetQuestCompleted(const QuestCondition& cond,
                                       class QuestManager* questMgr);
     static bool evalGetDead(const QuestCondition& cond, class NpcManager* npcMgr);
-    static bool evalGetItemCount(const QuestCondition& cond);
+    static bool evalGetItemCount(const QuestCondition& cond,
+                                 class InventoryManager* invMgr);
     static bool evalGetInCell(const QuestCondition& cond, class WorldManager* worldMgr);
     static bool evalGetDistance(const QuestCondition& cond, class WorldManager* worldMgr);
 };
@@ -92,7 +95,8 @@ public:
     bool initialize(QuestManager* questMgr,
                     oblivion::script::ScriptManager* scriptMgr,
                     NpcManager* npcMgr,
-                    WorldManager* worldMgr);
+                    WorldManager* worldMgr,
+                    InventoryManager* invMgr = nullptr);
 
     void cleanup();
     void update(float deltaTime);
@@ -137,6 +141,7 @@ private:
     oblivion::script::ScriptManager* scriptManager_ = nullptr;
     NpcManager* npcManager_ = nullptr;
     WorldManager* worldManager_ = nullptr;
+    InventoryManager* inventoryManager_ = nullptr;
 
     // Callback
     StageTransitionCallback transitionCallback_;
