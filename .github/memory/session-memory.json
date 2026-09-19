@@ -12,12 +12,12 @@
       "compressed": false
     },
     {
-      "id": "phase60-61-complete-20260319",
-      "timestamp": "2026-09-19T16:13:24Z",
+      "id": "runtime-init-fix-20260319",
+      "timestamp": "2026-09-19T16:56:03Z",
       "category": "decision",
       "priority": "high",
-      "content": "Phase 60-61 runtime integration complete. Phase 60: ScriptVM Runtime Integration - ScriptManager added to Renderer class, initialized in renderer.cpp, passed to ImperialWeave::init() for runtime script execution. Phase 61: SpeedTree Renderer Integration - SpeedTreeManager uses singleton pattern, passed &SpeedTreeManager::instance() to ImperialWeave::init() for update/render. Both phases build successful, committed 078f6812 and 035cc7e7.",
-      "tags": ["phase60", "phase61", "runtime", "integration", "complete"],
+      "content": "Runtime initialization fixes: ScriptManager::init() called with QuestManager/WorldManager/NpcManager/InventoryManager. SpeedTreeManager::initialize(this) called to set up shaders/meshes. Both properly initialized before ImperialWeave integration. All project TODOs resolved (only third_party/include remain). d05e0210 pushed.",
+      "tags": ["runtime", "initialization", "scriptmanager", "speedtreemanager", "complete"],
       "compressed": false
     },
     {

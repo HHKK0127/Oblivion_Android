@@ -452,7 +452,8 @@ void LauncherScreen::renderDataFiles() {
             {"Oblivion - Meshes.bsa", true},
             {"Oblivion - Textures.bsa", true},
             {"Oblivion - Sounds.bsa", true},
-            {"Oblivion - Voices.bsa", true},
+            {"Oblivion - Voices1.bsa", true},
+            {"Oblivion - Voices2.bsa", true},
             {"Oblivion - Misc.bsa", true},
         };
         pluginsInitialized = true;
