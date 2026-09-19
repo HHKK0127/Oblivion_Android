@@ -28,6 +28,7 @@ struct AudioSource {
 
     // Volume & Pitch
     float volume;                   // 0.0 - 1.0
+    float baseVolume;               // Original SE volume (before master volume scaling)
     float pitch;                    // 0.5 - 2.0
 
     // Playback state
@@ -44,7 +45,7 @@ struct AudioSource {
     AudioSource()
         : sourceId(0), alSource(0), clipId(0),
           position(0.0f, 0.0f, 0.0f), velocity(0.0f, 0.0f, 0.0f),
-          volume(1.0f), pitch(1.0f),
+          volume(1.0f), baseVolume(1.0f), pitch(1.0f),
           isPlaying(false), playbackTime(0.0f),
           isLooping(false), is3D(false) {
     }

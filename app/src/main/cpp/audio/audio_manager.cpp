@@ -172,9 +172,11 @@ uint32_t AudioManager::loadClip(const std::string& filename, uint8_t type,
     clip->volume = 1.0f;
     clip->isStreamed = false;
 
-    // Calculate playback time (bytes / (sample rate * channels * sample size))
-    // Simplified here as unimplemented (calculate accurately when implemented)
-    clip->duration = 0.0f;  // TODO: calculate accurately
+    // Calculate playback time from WAV data
+    // duration = size / (frequency * channels * bytes_per_sample)
+    int channels = (format == AL_FORMAT_STEREO16 || format == AL_FORMAT_STEREO8) ? 2 : 1;
+    int bytesPerSample = (format == AL_FORMAT_STEREO16 || format == AL_FORMAT_MONO16) ? 2 : 1;
+    clip->duration = static_cast<float>(size) / static_cast<float>(frequency * channels * bytesPerSample);
 
     clips[clip->clipId] = clip;
 
@@ -363,7 +365,8 @@ uint32_t AudioManager::playSE(uint32_t clipId, const glm::vec3& position,
 
     // SE source settings
     auto source = sources[sourceId];
-    source->setVolume(volume * seVolume * masterVolume);
+    source->baseVolume = volume * seVolume;  // Save original SE volume before master scaling
+    source->setVolume(source->baseVolume * masterVolume);
     source->setPosition(position);
     source->enable3D();
 
@@ -425,9 +428,8 @@ void AudioManager::setMasterVolume(float volume) {
             if (pair.first == currentBGMSourceId) {
                 pair.second->setVolume(bgmVolume * masterVolume);
             } else {
-                // SE volume (original volume * master)
-                // TODO: need to preserve original SE volume
-                pair.second->setVolume(seVolume * masterVolume);
+                // SE volume: preserve original SE volume * master volume
+                pair.second->setVolume(pair.second->baseVolume * masterVolume);
             }
         }
     }
