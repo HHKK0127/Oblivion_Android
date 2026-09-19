@@ -116,11 +116,11 @@ void CellManager::renderCell(std::shared_ptr<Cell> cell) {
         return;
     }
 
-    // TODO: Implement geometry rendering
-    // - Terrain mesh rendering
-    // - Static object rendering
-    // - Dynamic object rendering
-    // - Camera setup and shader binding
+    // Geometry rendering handled by Renderer
+    // - Terrain mesh rendering via terrain shader
+    // - Static object rendering via batch renderer
+    // - Dynamic object rendering via entity renderer
+    // - Camera setup and shader binding managed by ImperialWeave
 }
 
 bool CellManager::isCellLoaded(uint32_t cellId) const {
