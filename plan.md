@@ -82,6 +82,13 @@ All phases 37-45 have been completed:
 | **Phase 58** | Controller Support | Medium | 3-4 days | Phase 36 | Complete |
 | **Phase 59** | SpeedTree Vegetation | Low | 4-5 days | Phase 38 | Complete |
 
+### Phase 60-61: Runtime Integration
+
+| Phase | Feature | Priority | Estimate | Dependencies | Status |
+|-------|---------|----------|----------|--------------|--------|
+| **Phase 60** | ScriptVM Runtime Integration | High | 2-3 days | Phase 37 | Complete |
+| **Phase 61** | SpeedTree Renderer Verification | Medium | 1-2 days | Phase 59 | Pending |
+
 ### Milestones
 
 | Milestone | Phase | Goal | Success Criteria |

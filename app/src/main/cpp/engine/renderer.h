@@ -68,6 +68,7 @@
 
 #ifdef AUDIO_SYSTEM_ENABLED
 #include "../audio/audio_manager.h"
+#include "../script/script_manager.h"
 #endif
 
 #undef LOG_TAG
@@ -199,6 +200,7 @@ private:
     // Audio System
 #ifdef AUDIO_SYSTEM_ENABLED
     std::unique_ptr<AudioManager> audioManager;
+    std::unique_ptr<oblivion::script::ScriptManager> scriptManager;
 #endif
 
     // Retro Filter (Post-Processing)

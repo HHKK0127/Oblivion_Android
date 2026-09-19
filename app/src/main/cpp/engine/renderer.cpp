@@ -1804,6 +1804,11 @@ bool Renderer::initGameSystems() {
     }
 #endif
 
+    // Initialize ScriptManager
+    LOGI("Initializing ScriptManager...");
+    scriptManager = std::make_unique<oblivion::script::ScriptManager>();
+    LOGI("ScriptManager initialized successfully");
+
     // Initialize Phase 36 Jolt Physics
     LOGI("Initializing Jolt Physics...");
     {
@@ -2013,7 +2018,8 @@ bool Renderer::initGameSystems() {
             inventoryManager.get(),
             spellManager.get(),
             audioManager.get(),
-            &oblivion::PhysicsManager::getInstance()
+            &oblivion::PhysicsManager::getInstance(),
+            scriptManager.get()  // ScriptManager integration
         );
         imperialWeaveInitialized = true;
 
