@@ -327,6 +327,54 @@ bool QuestManager::checkAndCompleteQuest(uint32_t questId) {
     return false;
 }
 
+void QuestManager::setQuestLocation(uint32_t questId, float x, float y, float z,
+                                    const std::string& name) {
+    auto it = quests.find(questId);
+    if (it == quests.end()) {
+        LOGW("Quest ID %u not found for location update", questId);
+        return;
+    }
+
+    auto quest = it->second;
+    quest->locationX = x;
+    quest->locationY = y;
+    quest->locationZ = z;
+    quest->hasLocation = true;
+    quest->locationName = name;
+
+    LOGD("Quest location set: ID=%u, Pos=(%.1f, %.1f, %.1f), Name=%s",
+         questId, x, y, z, name.c_str());
+}
+
+std::vector<QuestManager::QuestMarker> QuestManager::getQuestMarkers() const {
+    std::vector<QuestMarker> markers;
+    markers.reserve(quests.size());
+
+    for (const auto& pair : quests) {
+        const auto& quest = pair.second;
+        if (!quest->hasLocation) continue;
+
+        // Only show markers for active/in-progress quests
+        if (quest->state != QuestState::ACCEPTED &&
+            quest->state != QuestState::IN_PROGRESS) {
+            continue;
+        }
+
+        QuestMarker marker;
+        marker.questId = quest->questId;
+        marker.questTitle = quest->title;
+        marker.worldX = quest->locationX;
+        marker.worldY = quest->locationY;
+        marker.worldZ = quest->locationZ;
+        marker.locationName = quest->locationName;
+        marker.state = quest->state;
+
+        markers.push_back(marker);
+    }
+
+    return markers;
+}
+
 void QuestManager::logQuestStatus() const {
     LOGD("========== Quest Manager Status ==========");
     LOGD("Total quests: %zu", quests.size());

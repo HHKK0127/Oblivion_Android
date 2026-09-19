@@ -53,12 +53,21 @@ struct Quest {
     std::vector<QuestObjective> objectives;
     QuestReward reward;
 
+    // Quest location for map markers
+    float locationX;
+    float locationY;
+    float locationZ;
+    bool hasLocation;
+    std::string locationName;
+
     uint32_t timeAccepted;
     uint32_t timeCompleted;
 
     Quest(uint32_t id, uint32_t npcId, const std::string& t, const std::string& desc)
         : questId(id), giverNpcId(npcId), title(t), description(desc),
           state(QuestState::PENDING),
+          locationX(0.0f), locationY(0.0f), locationZ(0.0f),
+          hasLocation(false),
           timeAccepted(0), timeCompleted(0) {}
 
     void accept();

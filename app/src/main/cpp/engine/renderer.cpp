@@ -2834,17 +2834,27 @@ void Renderer::render(float deltaTime) {
             // Clear old quest markers
             mapSystem->clearMarkersByType(map::MarkerType::QuestMain);
             mapSystem->clearMarkersByType(map::MarkerType::QuestSide);
-            // Add markers for active quests at giver NPC positions
+            // Add markers for active quests
             for (const auto& quest : activeQuests) {
                 if (!quest) continue;
-                auto npc = npcManager->getNPC(quest->giverNpcId);
-                if (!npc) continue;
+
                 map::MapMarker marker;
-                marker.type = map::MarkerType::QuestSide;
-                marker.worldPos = glm::vec2(npc->position.x, npc->position.z);
-                marker.label = quest->title;
                 marker.questId = quest->questId;
-                marker.color = 0xFFFFD700; // Gold color ABGR
+                marker.label = quest->title;
+
+                // Use quest location if set, otherwise use giver NPC position
+                if (quest->hasLocation) {
+                    marker.type = map::MarkerType::QuestMain;
+                    marker.worldPos = glm::vec2(quest->locationX, quest->locationZ);
+                    marker.color = 0xFFFF0000; // Red for quest destination
+                } else {
+                    auto npc = npcManager->getNPC(quest->giverNpcId);
+                    if (!npc) continue;
+                    marker.type = map::MarkerType::QuestSide;
+                    marker.worldPos = glm::vec2(npc->position.x, npc->position.z);
+                    marker.color = 0xFFFFD700; // Gold for quest giver
+                }
+
                 mapSystem->addMarker(marker);
             }
         }

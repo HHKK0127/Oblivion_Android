@@ -73,6 +73,15 @@ All phases 37-45 have been completed:
 
 **Total Estimate**: 31-44 days
 
+### Phase 56-59: Future Expansion
+
+| Phase | Feature | Priority | Estimate | Dependencies | Status |
+|-------|---------|----------|----------|--------------|--------|
+| **Phase 56** | Quest Map with Markers | High | 3-4 days | Phase 47 | Pending |
+| **Phase 57** | ESM Render Verification | High | 2-3 days | Phase 38 | Pending |
+| **Phase 58** | Controller Support | Medium | 3-4 days | Phase 36 | Pending |
+| **Phase 59** | SpeedTree Vegetation | Low | 4-5 days | Phase 38 | Pending |
+
 ### Milestones
 
 | Milestone | Phase | Goal | Success Criteria |

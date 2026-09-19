@@ -54,6 +54,21 @@ public:
     bool isQuestCompleted(uint32_t questId) const;
     size_t getActiveQuestCount() const { return activeQuests.size(); }
 
+    // Quest location management
+    void setQuestLocation(uint32_t questId, float x, float y, float z, const std::string& name);
+
+    // Get quest markers for map display
+    struct QuestMarker {
+        uint32_t questId;
+        std::string questTitle;
+        float worldX;
+        float worldY;
+        float worldZ;
+        std::string locationName;
+        QuestState state;
+    };
+    std::vector<QuestMarker> getQuestMarkers() const;
+
     void logQuestStatus() const;
 
 private:
