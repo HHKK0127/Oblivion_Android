@@ -1597,57 +1597,7 @@ bool Renderer::initGameSystems() {
     }
     LOGI("AssetManager initialized successfully");
 
-    // Load BSA archives (must succeed or game has no data)
-    {
-        LOGI("Loading BSA archives...");
-
-        // Default BSA archive list for Oblivion
-        const char* bsaArchives[] = {
-            "Oblivion - Meshes.bsa",
-            "Oblivion - Textures - Compressed.bsa",
-            "Oblivion - Textures.bsa",
-            "Oblivion - Sounds.bsa",
-            "Oblivion - Voices1.bsa",
-            "Oblivion - Voices2.bsa",
-            "Oblivion - Misc.bsa",
-            "DLCShiveringIsles - Meshes.bsa",
-            "DLCShiveringIsles - Textures - Compressed.bsa",
-            "DLCShiveringIsles - Sounds.bsa",
-            "DLCShiveringIsles - Voices.bsa",
-            "DLCShiveringIsles - Misc.bsa"
-        };
-
-        int loadedCount = 0;
-        for (const auto& bsa : bsaArchives) {
-            if (assetManager->loadArchive(bsa)) {
-                loadedCount++;
-                LOGI("  [OK] Loaded BSA: %s", bsa);
-            } else {
-                LOGW("  [--] BSA not found (optional): %s", bsa);
-            }
-        }
-
-        LOGI("Loaded %d / %zu BSA archives", loadedCount,
-             sizeof(bsaArchives) / sizeof(bsaArchives[0]));
-    }
-
-    // Load ESM/ESP game data from BSA archives
-    {
-        LOGI("Loading ESM game data...");
-        // Oblivion.esm is inside Oblivion - Misc.bsa
-        if (assetManager->loadEsmFromArchive("Oblivion.esm")) {
-            LOGI("  [OK] Loaded Oblivion.esm");
-            LOGI("Record count: %zu", assetManager->getEsmManager().getRecordCount());
-            LOGI("Plugin count: %zu", assetManager->getEsmManager().getPluginCount());
-
-            // Log a sample of loaded records
-            LOGI("CELL records: %zu", assetManager->getEsmManager().findRecordsByType("CELL"));
-            LOGI("NPC_ records: %zu", assetManager->getEsmManager().findRecordsByType("NPC_"));
-            LOGI("WEAP records: %zu", assetManager->getEsmManager().findRecordsByType("WEAP"));
-        } else {
-            LOGW("  [--] Oblivion.esm not found (will test without ESM data)");
-        }
-    }
+    // BSA archives will be loaded after dataPath is set (via loadBSAArchives())
 
     // Initialize NPC Manager (before WorldManager)
     LOGI("Creating NpcManager...");
@@ -2106,6 +2056,56 @@ bool Renderer::initGameSystems() {
         LOGI("Imperial Weave initialized successfully");
 
     return true;
+}
+
+void Renderer::loadBSAArchives() {
+    if (!assetManager) {
+        LOGE("loadBSAArchives: AssetManager not initialized");
+        return;
+    }
+
+    LOGI("Loading BSA archives (dataPath: %s)...", assetManager->getDataPath().c_str());
+
+    const char* bsaArchives[] = {
+        "Oblivion - Meshes.bsa",
+        "Oblivion - Textures - Compressed.bsa",
+        "Oblivion - Textures.bsa",
+        "Oblivion - Sounds.bsa",
+        "Oblivion - Voices1.bsa",
+        "Oblivion - Voices2.bsa",
+        "Oblivion - Misc.bsa",
+        "DLCShiveringIsles - Meshes.bsa",
+        "DLCShiveringIsles - Textures - Compressed.bsa",
+        "DLCShiveringIsles - Sounds.bsa",
+        "DLCShiveringIsles - Voices.bsa",
+        "DLCShiveringIsles - Misc.bsa"
+    };
+
+    int loadedCount = 0;
+    for (const auto& bsa : bsaArchives) {
+        if (assetManager->loadArchive(bsa)) {
+            loadedCount++;
+            LOGI("  [OK] Loaded BSA: %s", bsa);
+        } else {
+            LOGW("  [--] BSA not found (optional): %s", bsa);
+        }
+    }
+
+    LOGI("Loaded %d / %zu BSA archives", loadedCount,
+         sizeof(bsaArchives) / sizeof(bsaArchives[0]));
+
+    // Load ESM game data
+    LOGI("Loading ESM game data...");
+    if (assetManager->loadEsmFromArchive("Oblivion.esm")) {
+        LOGI("  [OK] Loaded Oblivion.esm");
+        LOGI("Record count: %zu", assetManager->getEsmManager().getRecordCount());
+        LOGI("Plugin count: %zu", assetManager->getEsmManager().getPluginCount());
+        LOGI("CELL records: %zu", assetManager->getEsmManager().findRecordsByType("CELL"));
+        LOGI("NPC_ records: %zu", assetManager->getEsmManager().findRecordsByType("NPC_"));
+        LOGI("WEAP records: %zu", assetManager->getEsmManager().findRecordsByType("WEAP"));
+    } else {
+        LOGW("  [--] Oblivion.esm not found (will test without ESM data)");
+    }
 }
 
 void Renderer::createTestScenario() {

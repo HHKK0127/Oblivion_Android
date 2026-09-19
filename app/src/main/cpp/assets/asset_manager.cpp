@@ -90,11 +90,16 @@ void AssetManager::cleanup() {
 // ============================================================================
 
 bool AssetManager::loadArchive(const std::string& bsaPath) {
-    LOGD("Loading BSA archive: %s", bsaPath.c_str());
+    // Try with dataPath prefix first, then raw path
+    std::string fullPath = bsaPath;
+    if (!m_dataPath.empty() && bsaPath.find('/') == std::string::npos && bsaPath.find('\\') == std::string::npos) {
+        fullPath = m_dataPath + "/" + bsaPath;
+    }
+    LOGD("Loading BSA archive: %s (full: %s)", bsaPath.c_str(), fullPath.c_str());
 
     auto archive = std::make_unique<BSArchive>();
-    if (!archive->open(bsaPath)) {
-        LOGE("Failed to open BSA archive: %s", bsaPath.c_str());
+    if (!archive->open(fullPath)) {
+        LOGE("Failed to open BSA archive: %s", fullPath.c_str());
         return false;
     }
 

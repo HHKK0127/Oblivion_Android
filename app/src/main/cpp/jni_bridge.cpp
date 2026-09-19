@@ -287,6 +287,10 @@ Java_com_example_oblivion_GameRenderer_nativeSetDataPath(
     const char* pathStr = env->GetStringUTFChars(dataPath, nullptr);
     am->setDataPath(pathStr);
     LOGI("BSA data path set to: %s", pathStr);
+
+    // Now that data path is set, load BSA archives and ESM
+    g_renderer->loadBSAArchives();
+
     env->ReleaseStringUTFChars(dataPath, pathStr);
 }
 

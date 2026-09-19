@@ -379,6 +379,9 @@ private:
     bool touchTrail = false;
 
     void initLocalization();
+public:
+    void loadBSAArchives();
+private:
     bool initGameSystems();
     void createTestScenario();
 
