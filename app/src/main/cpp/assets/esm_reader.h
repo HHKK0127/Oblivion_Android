@@ -698,6 +698,20 @@ public:
         const std::string& getFileName() const { return m_fileName; }
         bool isMaster() const { return m_isMaster; }
 
+        // Data integrity verification
+        struct VerificationResult {
+            bool valid = true;
+            int recordCount = 0;
+            int npcCount = 0;
+            int cellCount = 0;
+            int weaponCount = 0;
+            int questCount = 0;
+            int referenceCount = 0;
+            std::vector<std::string> errors;
+            std::vector<std::string> warnings;
+        };
+        VerificationResult verify() const;
+
 private:
     std::string m_fileName;
     bool m_isMaster = false;

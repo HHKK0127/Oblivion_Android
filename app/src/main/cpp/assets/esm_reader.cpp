@@ -8,8 +8,10 @@
 #undef LOG_TAG
 #undef LOGD
 #undef LOGE
+#undef LOGI
 #define LOG_TAG "ESMReader"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 namespace oblivion {
@@ -1976,6 +1978,71 @@ bool ESMFile::parseFromMemory(const std::string& name, const uint8_t* data, size
          m_cells.size(), m_npcs.size(), m_weapons.size(), m_quests.size(), m_dialogs.size());
     
     return true;
+}
+
+ESMFile::VerificationResult ESMFile::verify() const {
+    VerificationResult result;
+
+    // Count records
+    result.npcCount = static_cast<int>(m_npcs.size());
+    result.cellCount = static_cast<int>(m_cells.size());
+    result.weaponCount = static_cast<int>(m_weapons.size());
+    result.questCount = static_cast<int>(m_quests.size());
+    result.referenceCount = static_cast<int>(m_references.size());
+    result.recordCount = result.npcCount + result.cellCount + result.weaponCount +
+                         result.questCount + result.referenceCount +
+                         static_cast<int>(m_creatures.size()) +
+                         static_cast<int>(m_spells.size()) +
+                         static_cast<int>(m_dialogs.size());
+
+    // Validate NPCs
+    for (const auto& npc : m_npcs) {
+        if (npc.formID == 0) {
+            result.errors.push_back("NPC with formID=0: " + npc.editorID);
+            result.valid = false;
+        }
+        if (npc.editorID.empty()) {
+            result.warnings.push_back("NPC with empty editorID, formID=0x" +
+                                      std::to_string(npc.formID));
+        }
+    }
+
+    // Validate cells
+    for (const auto& cell : m_cells) {
+        if (cell.formID == 0) {
+            result.errors.push_back("Cell with formID=0");
+            result.valid = false;
+        }
+    }
+
+    // Validate weapons
+    for (const auto& weap : m_weapons) {
+        if (weap.formID == 0) {
+            result.errors.push_back("Weapon with formID=0: " + weap.editorID);
+            result.valid = false;
+        }
+    }
+
+    // Validate references (REFR)
+    for (const auto& ref : m_references) {
+        if (ref.formID == 0) {
+            result.warnings.push_back("Reference with formID=0");
+        }
+    }
+
+    // Validate quests
+    for (const auto& quest : m_quests) {
+        if (quest.formID == 0) {
+            result.errors.push_back("Quest with formID=0: " + quest.editorID);
+            result.valid = false;
+        }
+    }
+
+    LOGI("ESM verification: records=%d, npcs=%d, cells=%d, weapons=%d, quests=%d, refs=%d, errors=%zu, warnings=%zu",
+         result.recordCount, result.npcCount, result.cellCount, result.weaponCount,
+         result.questCount, result.referenceCount, result.errors.size(), result.warnings.size());
+
+    return result;
 }
 
 // ============================================================================
