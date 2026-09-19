@@ -12,12 +12,12 @@
       "compressed": false
     },
     {
-      "id": "phase56-59-complete-20260307",
-      "timestamp": "2026-03-07T00:00:00Z",
+      "id": "phase60-61-complete-20260319",
+      "timestamp": "2026-09-19T16:13:24Z",
       "category": "decision",
       "priority": "high",
-      "content": "Phase 56-59 implementation complete. Phase 56: Quest Map Markers (quest.h location fields, quest_manager.cpp setQuestLocation/getQuestMarkers, renderer.cpp map marker rendering). Phase 57: ESM Data Verification (esm_reader.h/cpp verify() method with VerificationResult struct). Phase 58: Controller Support (GamepadMapper already fully implemented). Phase 59: SpeedTree Vegetation (SpeedTreeManager already fully implemented). All phases marked complete in plan.md and README. 9940cf2c pushed.",
-      "tags": ["phase56", "phase57", "phase58", "phase59", "complete"],
+      "content": "Phase 60-61 runtime integration complete. Phase 60: ScriptVM Runtime Integration - ScriptManager added to Renderer class, initialized in renderer.cpp, passed to ImperialWeave::init() for runtime script execution. Phase 61: SpeedTree Renderer Integration - SpeedTreeManager uses singleton pattern, passed &SpeedTreeManager::instance() to ImperialWeave::init() for update/render. Both phases build successful, committed 078f6812 and 035cc7e7.",
+      "tags": ["phase60", "phase61", "runtime", "integration", "complete"],
       "compressed": false
     },
     {

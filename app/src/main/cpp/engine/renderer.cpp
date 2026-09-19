@@ -1807,10 +1807,16 @@ bool Renderer::initGameSystems() {
     // Initialize ScriptManager
     LOGI("Initializing ScriptManager...");
     scriptManager = std::make_unique<oblivion::script::ScriptManager>();
+    scriptManager->init(questManager.get(), worldManager.get(), npcManager.get(), inventoryManager.get());
     LOGI("ScriptManager initialized successfully");
 
-    // SpeedTreeManager uses singleton pattern - no direct instantiation needed
-    // It will be initialized via SpeedTreeManager::instance() when needed
+    // Initialize SpeedTreeManager (singleton)
+    LOGI("Initializing SpeedTreeManager...");
+    if (vegetation::SpeedTreeManager::instance().initialize(this)) {
+        LOGI("SpeedTreeManager initialized successfully");
+    } else {
+        LOGE("Failed to initialize SpeedTreeManager");
+    }
 
     // Initialize Phase 36 Jolt Physics
     LOGI("Initializing Jolt Physics...");
