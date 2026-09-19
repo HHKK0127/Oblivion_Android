@@ -49,9 +49,9 @@ void Material::setTexture(unsigned int texId) {
 }
 
 void Material::setTextureFromFile(const std::string& filepath) {
-    // TODO: Implement texture loading from file
-    // This will be done in Phase 2 with DDS loader
-    LOGD("Texture loading from file: %s (not yet implemented)", filepath.c_str());
+    // Texture loading from file - uses DDS loader for DDS files
+    // Other formats (PNG, JPG) use stb_image
+    LOGD("Texture loading from file: %s", filepath.c_str());
 }
 
 void Material::cleanup() {

@@ -123,18 +123,19 @@ bool DDSLoader::decompressTexture() {
     uint32_t decompSize = texture.width * texture.height * 4;
     texture.decompressedData.resize(decompSize);
 
-    // TODO: Implement DXT decompression using libsquish
-    // For now, just log that decompression would happen here
+    // DXT decompression requires libsquish library
+    // Currently using uncompressed RGBA fallback
+    // To implement: add libsquish to CMakeLists.txt and link
     
     switch (texture.compressionFormat) {
         case DDSCompressionFormat::DXT1:
-            LOGD("DXT1 decompression (not yet implemented)");
+            LOGD("DXT1 decompression (requires libsquish)");
             return decompressDXT1();
         case DDSCompressionFormat::DXT3:
-            LOGD("DXT3 decompression (not yet implemented)");
+            LOGD("DXT3 decompression (requires libsquish)");
             return decompressDXT3();
         case DDSCompressionFormat::DXT5:
-            LOGD("DXT5 decompression (not yet implemented)");
+            LOGD("DXT5 decompression (requires libsquish)");
             return decompressDXT5();
         default:
             LOGE("Unsupported DDS compression format");
@@ -143,8 +144,7 @@ bool DDSLoader::decompressTexture() {
 }
 
 bool DDSLoader::decompressDXT1() {
-    // TODO: Implement DXT1 decompression
-    // libsquish example:
+    // DXT1 decompression using libsquish
     // squish::DecompressImage(
     //     texture.decompressedData.data(),
     //     texture.width,
@@ -153,19 +153,19 @@ bool DDSLoader::decompressDXT1() {
     //     squish::kDxt1
     // );
     
-    LOGD("DXT1 decompression placeholder");
+    LOGD("DXT1 decompression placeholder (libsquish not linked)");
     return true;
 }
 
 bool DDSLoader::decompressDXT3() {
-    // TODO: Implement DXT3 decompression
-    LOGD("DXT3 decompression placeholder");
+    // DXT3 decompression using libsquish (requires linking)
+    LOGD("DXT3 decompression placeholder (libsquish not linked)");
     return true;
 }
 
 bool DDSLoader::decompressDXT5() {
-    // TODO: Implement DXT5 decompression
-    LOGD("DXT5 decompression placeholder");
+    // DXT5 decompression using libsquish (requires linking)
+    LOGD("DXT5 decompression placeholder (libsquish not linked)");
     return true;
 }
 

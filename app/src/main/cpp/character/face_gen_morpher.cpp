@@ -567,7 +567,7 @@ size_t FaceGenMorpher::getBaseMeshVertexCount() const {
 // ============================================================================
 
 bool FaceGenMorpher::loadMorphTargets(const std::string& path) {
-    // TODO: Implement loading from binary file
+    // Loading from binary file - requires FaceGen file format parser
     LOGW_FG("Morph target loading from file not yet implemented");
     return false;
 }

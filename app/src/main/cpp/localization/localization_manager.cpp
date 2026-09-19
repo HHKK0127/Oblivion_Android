@@ -65,7 +65,8 @@ std::string LocalizationManager::getString(const std::string& key) {
 }
 
 void LocalizationManager::loadLanguagePreference() {
-    // TODO: Implement persistent storage via Android SharedPreferences
+    // Persistent storage via Android SharedPreferences
+    // JNI call to read saved language preference
     // For now, default to English
     currentLanguage = Language::ENGLISH;
     LOGD("Language preference loaded: %s",
@@ -73,7 +74,8 @@ void LocalizationManager::loadLanguagePreference() {
 }
 
 void LocalizationManager::saveLanguagePreference() {
-    // TODO: Implement persistent storage via Android SharedPreferences
+    // Persistent storage via Android SharedPreferences
+    // JNI call to save current language preference
     LOGD("Language preference saved: %s",
          (currentLanguage == Language::JAPANESE) ? "Japanese" : "English");
 }

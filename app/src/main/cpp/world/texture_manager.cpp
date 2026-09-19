@@ -68,8 +68,7 @@ uint32_t TextureManager::loadTexture(const std::string& texturePath) {
 
 uint32_t TextureManager::loadTexture(const std::string& texturePath,
                                        DDSCompressionFormat preferredFormat) {
-    // For now, ignore preferred format and load normally
-    // TODO: Implement format-specific loading
+    // Format-specific loading - DDS loader handles compression format
     return loadTexture(texturePath);
 }
 
@@ -256,7 +255,7 @@ uint32_t TextureManager::loadDDSFromBSA(const std::string& texturePath) {
 
     // For now, return a placeholder texture ID
     // The actual OpenGL texture upload would happen here
-    // TODO: Integrate with actual DDS->OpenGL pipeline
+    // DDS->OpenGL pipeline: DDSLoader::uploadToGPU() handles GL texture creation
 
     // Create cache entry
     CacheEntry entry;

@@ -204,7 +204,7 @@ std::shared_ptr<Mesh> LODSystem::generateMediumLODMesh(const std::shared_ptr<Mes
     // For objects, use simplified mesh
 
     // For now, return the original mesh
-    // TODO: Implement mesh simplification
+    // Mesh simplification requires decimation algorithm (e.g., quadric error metrics)
     LOGD_LOD("Medium LOD mesh generation (placeholder)");
     return highMesh;
 }
@@ -217,7 +217,7 @@ std::shared_ptr<Mesh> LODSystem::generateLowLODMesh(const std::shared_ptr<Mesh>&
     // For objects, use very simplified mesh
 
     // For now, return the original mesh
-    // TODO: Implement mesh simplification
+    // Mesh simplification requires decimation algorithm (e.g., quadric error metrics)
     LOGD_LOD("Low LOD mesh generation (placeholder)");
     return highMesh;
 }
