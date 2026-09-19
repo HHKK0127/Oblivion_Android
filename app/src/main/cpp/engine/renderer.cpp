@@ -1809,6 +1809,9 @@ bool Renderer::initGameSystems() {
     scriptManager = std::make_unique<oblivion::script::ScriptManager>();
     LOGI("ScriptManager initialized successfully");
 
+    // SpeedTreeManager uses singleton pattern - no direct instantiation needed
+    // It will be initialized via SpeedTreeManager::instance() when needed
+
     // Initialize Phase 36 Jolt Physics
     LOGI("Initializing Jolt Physics...");
     {
@@ -2019,7 +2022,9 @@ bool Renderer::initGameSystems() {
             spellManager.get(),
             audioManager.get(),
             &oblivion::PhysicsManager::getInstance(),
-            scriptManager.get()  // ScriptManager integration
+            scriptManager.get(),  // ScriptManager integration
+            nullptr,  // DistantLodManager
+            &vegetation::SpeedTreeManager::instance()  // SpeedTree integration (singleton)
         );
         imperialWeaveInitialized = true;
 

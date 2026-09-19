@@ -69,6 +69,7 @@
 #ifdef AUDIO_SYSTEM_ENABLED
 #include "../audio/audio_manager.h"
 #include "../script/script_manager.h"
+#include "../vegetation/speed_tree_manager.h"
 #endif
 
 #undef LOG_TAG
