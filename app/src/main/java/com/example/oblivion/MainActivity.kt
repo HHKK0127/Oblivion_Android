@@ -109,6 +109,7 @@ class MainActivity : Activity() {
             if (glSurfaceView != null) {
                 // Create GameRenderer with default constructor
                 gameRenderer = GameRenderer()
+                gameRenderer!!.setContext(this)
                 gameRenderer!!.setOnExitRequestedListener {
                     Log.i(TAG, "Exit requested - finishing activity")
                     runOnUiThread { finish() }

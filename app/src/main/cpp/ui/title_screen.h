@@ -139,6 +139,11 @@ private:
     bool videoInitAttempted = false;
     oblivion::video::VideoCallbacks videoCallbacks;
 
+    // Title screen video background (OES external texture from MediaPlayer)
+    GLuint videoBackgroundTexture = 0;
+    bool videoBackgroundActive = false;
+    bool videoReadyOverride = false;
+
     static constexpr float INTRO_DURATION = 4.0f;
     static constexpr float LOGO_FADE_DURATION = 2.0f;
 
@@ -164,6 +169,14 @@ public:
     void onKeyPress(int key);
     void setAudioManager(AudioManager* am) { audioManager = am; }
 
+    // Video background from MediaPlayer (OES texture)
+    void setVideoBackgroundTexture(GLuint tex) {
+        videoBackgroundTexture = tex;
+        videoBackgroundActive = (tex != 0);
+        LOGI("Video background texture set: %u, active: %d", tex, videoBackgroundActive);
+    }
+    void updateVideoBackground() { /* Frame update handled by SurfaceTexture */ }
+
     bool isGameStarted() const { return gameStarted; }
     bool isSettingsRequested() const { return settingsRequested; }
     void resetSettingsRequest() { settingsRequested = false; }
@@ -173,6 +186,8 @@ public:
     void resetCreditsRequest() { creditsRequested = false; }
     bool isQuitRequested() const { return quitRequested; }
     void resetQuitRequest() { quitRequested = false; }
+    bool isVideoReady() const { return videoBackgroundActive || videoReadyOverride; }
+    void setVideoReadyOverride() { videoReadyOverride = true; }
     TitleScreenState getState() const { return state; }
 
     void setScreenSize(int w, int h);
@@ -193,6 +208,7 @@ private:
     void renderCredits();
     void renderFadeOut();
     void renderBackground(float alpha, bool menuMode);
+    void renderVideoBackground(float alpha);
     void renderSepiaOverlay();
     void renderVignette();
     void renderOblivionLogo(float alpha, bool large);

@@ -14,7 +14,8 @@ class AssetExtractor(private val context: Context) {
         private const val TAG = "AssetExtractor"
         private const val ASSET_DIR = "oblivion_assets"
         private const val VERSION_FILE = "version.txt"
-        private const val CURRENT_VERSION = 1
+        private const val CURRENT_VERSION = 3  // Incremented for map_loop.mp4 video background
+        private const val EXTRACTION_MARKER = ".extraction_complete"
     }
     
     private val externalDir: File
@@ -27,6 +28,9 @@ class AssetExtractor(private val context: Context) {
      * Check if assets need extraction.
      */
     fun needsExtraction(): Boolean {
+        val marker = File(externalDir, EXTRACTION_MARKER)
+        if (!marker.exists()) return true
+        
         val versionFile = File(externalDir, VERSION_FILE)
         if (!versionFile.exists()) return true
         
@@ -47,11 +51,14 @@ class AssetExtractor(private val context: Context) {
             // Create directory
             externalDir.mkdirs()
             
-            // Get list of assets to extract
-            val assets = listAssets("")
+            // Extract videos first (large files, separate step)
+            extractVideos(progressCallback)
+            
+            // Get list of other assets to extract
+            val assets = listAssets("").filter { !it.startsWith("videos/") }
             val total = assets.size
             
-            Log.i(TAG, "Extracting $total assets to ${externalDir.absolutePath}")
+            Log.i(TAG, "Extracting $total non-video assets to ${externalDir.absolutePath}")
             
             // Extract each asset
             assets.forEachIndexed { index, assetPath ->
@@ -59,14 +66,89 @@ class AssetExtractor(private val context: Context) {
                 progressCallback(index + 1, total)
             }
             
-            // Write version file
-            File(externalDir, VERSION_FILE).writeText(CURRENT_VERSION.toString())
+            // Write version file and marker atomically
+            val versionDir = externalDir
+            val marker = File(versionDir, EXTRACTION_MARKER)
+            val tempMarker = File(versionDir, ".extraction_in_progress")
+            tempMarker.writeText(CURRENT_VERSION.toString())
+            
+            File(versionDir, VERSION_FILE).writeText(CURRENT_VERSION.toString())
+            tempMarker.renameTo(marker)
             
             Log.i(TAG, "Asset extraction complete")
             true
         } catch (e: Exception) {
             Log.e(TAG, "Asset extraction failed", e)
             false
+        }
+    }
+    
+    /**
+     * Extract video files from assets to external storage.
+     * Uses atomic extraction: writes to temp directory first, then renames on success.
+     */
+    private fun extractVideos(progressCallback: (Int, Int) -> Unit) {
+        // List video assets
+        val videoAssets = try {
+            context.assets.list("videos") ?: emptyArray()
+        } catch (e: Exception) {
+            Log.w(TAG, "No videos directory in assets")
+            emptyArray()
+        }
+        
+        if (videoAssets.isEmpty()) {
+            Log.i(TAG, "No video assets to extract")
+            return
+        }
+        
+        // Check if videos already extracted
+        val videoDir = File(externalDir, "videos")
+        val allExist = videoAssets.all { fileName ->
+            val f = File(videoDir, fileName)
+            f.exists() && f.length() > 0
+        }
+        if (allExist) {
+            Log.i(TAG, "Videos already extracted")
+            return
+        }
+        
+        Log.i(TAG, "Extracting ${videoAssets.size} video files...")
+        
+        // Use temp directory for atomic extraction
+        val tempDir = File(externalDir, ".videos_temp")
+        tempDir.mkdirs()
+        
+        try {
+            videoAssets.forEachIndexed { index, fileName ->
+                val outputFile = File(tempDir, fileName)
+                if (outputFile.exists() && outputFile.length() > 0) {
+                    Log.d(TAG, "Video already in temp: $fileName")
+                    progressCallback(index + 1, videoAssets.size)
+                    return@forEachIndexed
+                }
+                
+                context.assets.open("videos/$fileName").use { input ->
+                    FileOutputStream(outputFile).use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                Log.i(TAG, "Extracted video to temp: $fileName (${outputFile.length()} bytes)")
+                progressCallback(index + 1, videoAssets.size)
+            }
+            
+            // All videos extracted successfully, move to final location
+            videoDir.mkdirs()
+            tempDir.listFiles()?.forEach { file ->
+                val target = File(videoDir, file.name)
+                file.renameTo(target)
+            }
+            tempDir.delete()
+            
+            Log.i(TAG, "Video extraction complete")
+        } catch (e: Exception) {
+            Log.e(TAG, "Video extraction failed, cleaning up temp", e)
+            tempDir.deleteRecursively()
+            throw e
         }
     }
     

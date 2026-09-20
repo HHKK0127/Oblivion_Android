@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-03-07T00:00:00Z",
+  "lastUpdated": "2026-09-16T14:58:00Z",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -8,7 +8,11 @@
       "category": "decision",
       "priority": "high",
       "content": "All 70 project TODOs resolved (third_party excluded). 6 commits: 235275c2 (script_functions 20), 20134bba (game/ 16), 27a95ae7 (engine/ui 16), eda49661 (audio 2), dec02785 (quest 3), 1d3ef3d5 (remaining 12), 077f56df (cell.cpp last TODO). Phase 49 complete.",
-      "tags": ["todos", "complete", "phase49"],
+      "tags": [
+        "todos",
+        "complete",
+        "phase49"
+      ],
       "compressed": false
     },
     {
@@ -17,7 +21,13 @@
       "category": "decision",
       "priority": "high",
       "content": "Runtime initialization fixes: ScriptManager::init() called with QuestManager/WorldManager/NpcManager/InventoryManager. SpeedTreeManager::initialize(this) called to set up shaders/meshes. Both properly initialized before ImperialWeave integration. All project TODOs resolved (only third_party/include remain). d05e0210 pushed.",
-      "tags": ["runtime", "initialization", "scriptmanager", "speedtreemanager", "complete"],
+      "tags": [
+        "runtime",
+        "initialization",
+        "scriptmanager",
+        "speedtreemanager",
+        "complete"
+      ],
       "compressed": false
     },
     {
@@ -26,7 +36,14 @@
       "category": "decision",
       "priority": "high",
       "content": "MP3/OGG Vorbis decoder fully implemented. Added minimp3.h and stb_vorbis.c to third_party/. decodeMp3() uses minimp3 for frame-by-frame decoding, decodeOgg() uses stb_vorbis. All audio formats (WAV/MP3/OGG) now fully decodable. Phase 49 complete.",
-      "tags": ["audio", "mp3", "ogg", "vorbis", "decoder", "phase49"],
+      "tags": [
+        "audio",
+        "mp3",
+        "ogg",
+        "vorbis",
+        "decoder",
+        "phase49"
+      ],
       "compressed": false
     },
     {
@@ -35,7 +52,12 @@
       "category": "decision",
       "priority": "high",
       "content": "Phase 64 debug tools implementation complete. 19 debug files created (Picker, AIView, AnimScrub, etc.). DebugMenu.cpp integrated 18 new tabs. STB_IMAGE_IMPLEMENTATION duplicate resolved. FPS limiter added to game_loop_coordinator.",
-      "tags": ["debug", "tools", "phase64", "fps-limiter"],
+      "tags": [
+        "debug",
+        "tools",
+        "phase64",
+        "fps-limiter"
+      ],
       "compressed": false
     },
     {
@@ -44,7 +66,12 @@
       "category": "configuration",
       "priority": "medium",
       "content": "Third-party libraries location: app/src/main/cpp/third_party/. minimp3/ (MP3 decoder), stb/ (OGG Vorbis decoder), JoltPhysics/ (physics engine). minimp3.h and stb_vorbis.c are header-only with IMPLEMENTATION macros.",
-      "tags": ["third-party", "libraries", "minimp3", "stb-vorbis"],
+      "tags": [
+        "third-party",
+        "libraries",
+        "minimp3",
+        "stb-vorbis"
+      ],
       "compressed": false
     },
     {
@@ -53,7 +80,12 @@
       "category": "reference",
       "priority": "medium",
       "content": "Audio system status: WAV/MP3/OGG decoding complete. AudioManager uses OpenSL ES for playback. Audio data stored as 16-bit PCM. Files located in app/src/main/cpp/audio/. audio_decoder.h/.cpp, audio_manager.h/.cpp, audio_stream.h/.cpp.",
-      "tags": ["audio", "system", "status", "pcm"],
+      "tags": [
+        "audio",
+        "system",
+        "status",
+        "pcm"
+      ],
       "compressed": false
     },
     {
@@ -98,7 +130,14 @@
       "category": "reference",
       "priority": "high",
       "content": "BSA/ESM file locations and emulator deployment status. PC sources: Steam version at D:\\Cargo\\Other\\Oblivion\\Oblivion_Steam版\\Data\\, DISC version at D:\\Cargo\\Other\\Oblivion\\Oblivion_DISC版\\Oblivion\\Data\\. Extracted data at D:\\Cargo\\Other\\Oblivion\\BSA\\bsa_Extraction\\ (distantlod 922, facegen 1, fonts 10, menus 104, meshes 2188, sound 35572 = 39797 files). Emulator path: /data/data/com.example.oblivion/data/. Deployed (4GB total): Oblivion-Meshes.bsa(640MB), Textures-Compressed.bsa(1.1GB), Sounds.bsa(315MB), Misc.bsa(6.8MB), Voices1.bsa(751MB), Voices2.bsa(958MB), Oblivion.esm(265MB). Steam version splits voices into Voices1.bsa+Voices2.bsa (not single Voices.bsa). ESM placed directly in dataPath, not inside BSA.",
-      "tags": ["bsa", "esm", "emulator", "data-files", "steam", "deployment"],
+      "tags": [
+        "bsa",
+        "esm",
+        "emulator",
+        "data-files",
+        "steam",
+        "deployment"
+      ],
       "compressed": false
     },
     {
@@ -107,7 +146,13 @@
       "category": "reference",
       "priority": "medium",
       "content": "BSA extraction data structure (D:\\Cargo\\Other\\Oblivion\\BSA\\bsa_Extraction\\): distantlod=LOD meshes, facegen=face generation, fonts=font files, menus=UI menus (XML: chargen/dialog/generic/main/message/options/prefabs), meshes=3D models (NIF: architecture/armor/characters/clothes/clutter/creatures/dungeons/effects/landscape/plants/rocks/sky/trees/weapons), sound=audio files (WAV).",
-      "tags": ["bsa", "extraction", "meshes", "sound", "menus"],
+      "tags": [
+        "bsa",
+        "extraction",
+        "meshes",
+        "sound",
+        "menus"
+      ],
       "compressed": false
     },
     {
@@ -116,12 +161,32 @@
       "category": "reference",
       "priority": "low",
       "content": "Build successful as of 2026-09-18. 4 architectures (arm64-v8a, armeabi-v7a, x86, x86_64). Latest commit: 077f56df on master. Working tree clean. All project TODOs resolved.",
-      "tags": ["build", "status", "commit"],
+      "tags": [
+        "build",
+        "status",
+        "commit"
+      ],
       "compressed": false
+    },
+    {
+      "timestamp": "2026-09-16T14:58:00Z",
+      "tags": [
+        "readme",
+        "documentation",
+        "update",
+        "phase-57",
+        "ui-bugfix",
+        "comment-translation"
+      ],
+      "id": "readme-update-20260916",
+      "compressed": false,
+      "priority": "medium",
+      "category": "reference",
+      "content": "README.md updated to reflect current project status (2026-09-16). Changes: (1) Bug fix count 25+ -> 30+. (2) English status updated to Phase 63 / v1.0.0 / Release Build. (3) Japanese status updated to Phase 57 / v1.0.0. (4) Last updated date -> 2026-09-16. (5) Added [FIX] Recent Improvements section (English+Japanese) covering UI bug fixes (TextRenderer shader error checking, UIPanel TOUCH_MOVE drag, UIComponent blend state save/restore, TitleScreen touch delta fix, GameSurfaceView ACTION_CANCEL), layout fixes (AndroidManifest theme, debug button repositioning), and code quality (Japanese comment translation 40+ files). (6) Feature list extended with Phase 57 entry. (7) Next phase updated to Phase 58."
     }
   ],
   "metadata": {
-    "totalEntries": 9,
+    "totalEntries": 11,
     "compressedCount": 0,
     "sessionCount": 9
   }

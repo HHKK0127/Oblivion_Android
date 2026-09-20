@@ -2627,7 +2627,25 @@ void Renderer::createTestScenario() {
 
 void Renderer::render(float deltaTime) {
     // Launcher takes priority - render and return early
+    // When launched from IntroVideoActivity, skip launcher and go directly to title screen
     if (showLauncher && launcherScreen) {
+        // Auto-skip launcher since IntroVideoActivity already played the intro
+        static bool launcherAutoSkipped = false;
+        if (!launcherAutoSkipped) {
+            LOGI("Auto-skipping launcher (IntroVideoActivity already played)");
+            showLauncher = false;
+            showTitleScreen = true;
+            if (titleScreen) {
+                titleScreen->initialize(localizationManager.get(), textRenderer.get());
+                titleScreen->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+#ifdef AUDIO_SYSTEM_ENABLED
+                if (audioManager) {
+                    titleScreen->setAudioManager(audioManager.get());
+                }
+#endif
+            }
+            launcherAutoSkipped = true;
+        }
         launcherScreen->update(deltaTime);
         launcherScreen->render();
 
@@ -2714,6 +2732,10 @@ void Renderer::render(float deltaTime) {
             }
             return;
         }
+
+        // Video background is optional - no wait needed
+        // If video is not ready, title screen will show static background
+
         titleScreen->update(deltaTime);
         titleScreen->render();
 
@@ -3658,8 +3680,6 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
 
     // TitleScreen handles all touch actions (DOWN, UP, MOVE) for button click callbacks
     if (showTitleScreen && titleScreen) {
-        LOGD("Touch dispatched to TitleScreen at (%.1f, %.1f), action=%d, showTitleScreen=%d",
-             x, y, action, showTitleScreen);
         titleScreen->onTouchEvent(x, y, action);
         return;
     }

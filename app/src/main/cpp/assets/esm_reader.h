@@ -83,14 +83,13 @@ struct ESMRecord {
     uint32_t getFormID(const char* tag) const;
 };
 
-// GRUP header (24 bytes)
+// GRUP header (20 bytes: tag(4) + groupSize(4) + groupLabel(4) + groupType(4) + skip(4))
 struct GroupHeader {
     char recType[4];        // "GRUP"
     uint32_t groupSize;     // Total group size (including this header)
     uint32_t groupLabel;    // World/cell ID or just label
     uint32_t groupType;     // GroupType enum
-    uint32_t stamp;         // Block index (used for compressed data)
-    uint32_t unknown;       // Unknown/padding
+    // stamp(2) + unknown(2) skipped during parsing
 };
 
 // High-level record data (decoded from a parsed record)

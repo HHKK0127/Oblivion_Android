@@ -85,6 +85,10 @@ public:
     void shutdown();
     bool isInitialized() const { return initialized_.load(); }
 
+    // Set base path for resolving video file paths
+    void setVideoBasePath(const std::string& basePath);
+    std::string getVideoBasePath() const { return videoBasePath_; }
+
     // Clip management
     bool loadClip(const std::string& clipId, const VideoClip& clip);
     bool unloadClip(const std::string& clipId);
@@ -159,6 +163,7 @@ private:
 
     std::string currentClipId_;
     void* nativeWindow_ = nullptr;
+    std::string videoBasePath_;
 
     mutable std::mutex clipsMutex_;
     std::unordered_map<std::string, VideoClip> loadedClips_;

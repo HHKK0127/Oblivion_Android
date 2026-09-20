@@ -112,7 +112,11 @@ bool ESMFile::open(const std::string& filePath) {
     headerIdx.compressed = (header.flags & REC_FLAG_COMPRESSED) != 0;
     m_recordIndex.push_back(headerIdx);
 
-    LOGD("TES4 header parsed, building index...");
+    // Seek to end of TES4 record data
+    // TES4 record: 20-byte header + dataSize bytes of sub-records
+    file.seekg(20 + header.dataSize, std::ios::beg);
+    LOGD("TES4 header parsed. RecSize=%u, seekTo=%llu, actualPos=%llu",
+         header.dataSize, (unsigned long long)(20 + header.dataSize), (unsigned long long)file.tellg());
 
     // Build index of all records in the file
     // Use a stack to track GRUP nesting and boundaries
@@ -132,53 +136,71 @@ bool ESMFile::open(const std::string& filePath) {
             groupEndStack.pop_back();
         }
         
-        char peekTag[4];
-        file.read(peekTag, 4);
+        // Read 4-byte tag WITHOUT seekback to avoid position drift
+        char tag[4];
+        file.read(tag, 4);
         if (file.gcount() < 4) break;
-        file.seekg(-4, std::ios::cur);
+        currentPos = currentPos;  // tag starts at original currentPos
 
-        if (peekTag[0] == 'G' && peekTag[1] == 'R' && peekTag[2] == 'U' && peekTag[3] == 'P') {
-            // GRUP header — 24 bytes
-            GroupHeader gh;
-            file.read(reinterpret_cast<char*>(&gh), sizeof(gh));
-            if (std::memcmp(gh.recType, "GRUP", 4) != 0) break;
+        if (recordCount < 5 || grupCount < 5) {
+            LOGD("  tag at offset %llu: '%c%c%c%c' hex=0x%02X%02X%02X%02X",
+                 (unsigned long long)currentPos,
+                 tag[0], tag[1], tag[2], tag[3],
+                 (uint8_t)tag[0], (uint8_t)tag[1], (uint8_t)tag[2], (uint8_t)tag[3]);
+        }
+
+        if (tag[0] == 'G' && tag[1] == 'R' && tag[2] == 'U' && tag[3] == 'P') {
+            // GRUP: already read recType(4). Read remaining 12 bytes: groupSize+groupLabel+groupType
+            uint32_t groupSize, groupLabel, groupType;
+            file.read(reinterpret_cast<char*>(&groupSize), 4);
+            file.read(reinterpret_cast<char*>(&groupLabel), 4);
+            file.read(reinterpret_cast<char*>(&groupType), 4);
+            // Skip stamp(2) + unknown(2) = 4 bytes
+            file.seekg(4, std::ios::cur);
+            // Now at currentPos + 20 ✓
             
-            // Push the end offset of this GRUP onto the stack
             uint64_t grupStart = currentPos;
-            uint64_t grupEnd = grupStart + gh.groupSize;
+            uint64_t grupEnd = grupStart + groupSize;
             groupEndStack.push_back(grupEnd);
             grupCount++;
-            if (grupCount <= 5) {
-                LOGD("  GRUP[%d] start=%llu end=%llu size=%u type=%u label=0x%08X stack=%zu",
+            if (grupCount <= 8) {
+                LOGD("  GRUP[%d] start=%llu end=%llu size=%u type=%u label=0x%08X stack=%zu pos=%llu",
                      grupCount, (unsigned long long)grupStart, (unsigned long long)grupEnd,
-                     gh.groupSize, gh.groupType, gh.groupLabel, groupEndStack.size());
+                     groupSize, groupType, groupLabel, groupEndStack.size(), (unsigned long long)file.tellg());
             }
         } else {
-            // Record header: 16 bytes (type[4] + size[4] + flags[4] + formID[4])
-            char recType[4];
+            // Record: already read tag(4). Read remaining 16 bytes: rawSize+flags+formID+version+unknown
+            // Oblivion ESM record header is 20 bytes total (tag+size+flags+formID+version+unknown)
             uint32_t rawSize, flags, formID;
-            file.read(recType, 4);
+            uint16_t version, unknown16;
             file.read(reinterpret_cast<char*>(&rawSize), 4);
             file.read(reinterpret_cast<char*>(&flags), 4);
             file.read(reinterpret_cast<char*>(&formID), 4);
-            if (file.gcount() < 4) break;
+            file.read(reinterpret_cast<char*>(&version), 2);
+            file.read(reinterpret_cast<char*>(&unknown16), 2);
+            if (file.gcount() < 2) break;
 
-            uint32_t dataSize = rawSize & 0x00FFFFFF;
+            uint32_t dataSize = rawSize;
             bool compressed = (flags & REC_FLAG_COMPRESSED) != 0;
             uint64_t dataOffset = file.tellg();
             uint32_t decompSize = 0;
 
             if (compressed && dataSize >= 4) {
+                // Read decompressed size (first 4 bytes of record data)
                 file.read(reinterpret_cast<char*>(&decompSize), 4);
-                // Skip to end of this record's data
-                file.seekg(dataSize - 4, std::ios::cur);
+                // Skip to end of this record's data using absolute seek
+                uint64_t nextRecord = dataOffset + dataSize;
+                file.seekg(nextRecord, std::ios::beg);
             } else {
-                // Skip non-compressed record data
-                file.seekg(dataSize, std::ios::cur);
+                // Skip non-compressed record data using absolute seek
+                uint64_t nextRecord = dataOffset + dataSize;
+                file.seekg(nextRecord, std::ios::beg);
             }
 
+            uint64_t afterData = file.tellg();
+            
             RecordIndex idx;
-            std::memcpy(idx.recType, recType, 4);
+            std::memcpy(idx.recType, tag, 4);
             idx.formID = formID;
             idx.flags = flags;
             idx.dataSize = dataSize;
@@ -193,6 +215,18 @@ bool ESMFile::open(const std::string& filePath) {
 
             recordCount++;
             if (compressed) compressedCount++;
+            
+            if (recordCount <= 10) {
+                LOGD("  REC[%d]: %.4s formID=0x%08X size=%u comp=%d dataOff=%llu afterData=%llu",
+                     recordCount, tag, formID, dataSize, compressed ? 1 : 0,
+                     (unsigned long long)dataOffset, (unsigned long long)afterData);
+                // Hex dump first 16 bytes of record header for debugging
+                char hexDump[49];
+                for (int h = 0; h < 4; h++) sprintf(hexDump + h*3, "%02X ", (uint8_t)tag[h]);
+                hexDump[12] = 0;
+                LOGD("    header hex: %s rawSize=0x%08X flags=0x%08X formID=0x%08X",
+                     hexDump, rawSize, flags, formID);
+            }
         }
     }
 
@@ -341,9 +375,12 @@ bool ESMFile::readRecordHeader(std::ifstream& file, ESMRecord& rec) {
     if (file.gcount() < 4) return false;
 
     uint32_t rawSize;
+    uint16_t version, unknown16;
     file.read(reinterpret_cast<char*>(&rawSize), 4);  // dataSize
     file.read(reinterpret_cast<char*>(&rec.flags), 4);
     file.read(reinterpret_cast<char*>(&rec.formID), 4);
+    file.read(reinterpret_cast<char*>(&version), 2);
+    file.read(reinterpret_cast<char*>(&unknown16), 2);
 
     if (std::memcmp(rec.recType, "GRUP", 4) == 0) {
         // GRUP has a different structure — this shouldn't be called for GRUPs
@@ -352,7 +389,7 @@ bool ESMFile::readRecordHeader(std::ifstream& file, ESMRecord& rec) {
     }
 
     bool compressed = (rec.flags & REC_FLAG_COMPRESSED) != 0;
-    rec.dataSize = rawSize & 0x00FFFFFF;  // Upper byte is unused
+    rec.dataSize = rawSize;
 
     LOGD("  RECORD: %.4s size=%u flags=0x%08X formID=0x%08X %s",
          rec.recType, rec.dataSize, rec.flags, rec.formID,

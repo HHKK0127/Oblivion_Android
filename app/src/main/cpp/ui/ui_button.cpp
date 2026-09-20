@@ -119,7 +119,6 @@ void UIButton::cleanup() {
 
 bool UIButton::onEvent(const UIEvent& event) {
     if (!isVisible() || !enabled) {
-        LOGD("UIButton::onEvent: not visible or enabled (visible=%d, enabled=%d)", isVisible() ? 1 : 0, enabled ? 1 : 0);
         return false;
     }
 
@@ -137,7 +136,6 @@ bool UIButton::onEvent(const UIEvent& event) {
             pressed = true;
             pressAnimTimer = PRESS_ANIM_DURATION;
             updateVisualState();
-            // Bug #100: Click callback moved to TOUCH_UP for proper behavior
             return true;
 
         case UIEventType::TOUCH_UP:

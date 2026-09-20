@@ -314,6 +314,28 @@ Java_com_example_oblivion_GameRenderer_nativeTitleScreenActive(
     return JNI_TRUE;
 }
 
+// Title screen video texture bridge
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeSetTitleVideoTexture(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jint textureId) {
+    LOGI("nativeSetTitleVideoTexture called: textureId=%d", textureId);
+    if (g_renderer && g_renderer->getTitleScreen()) {
+        g_renderer->getTitleScreen()->setVideoBackgroundTexture(static_cast<GLuint>(textureId));
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeUpdateTitleVideoTexture(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    if (g_renderer && g_renderer->getTitleScreen()) {
+        g_renderer->getTitleScreen()->updateVideoBackground();
+    }
+}
+// End title screen video texture bridge
+
 extern "C" JNIEXPORT void JNICALL
 Java_com_example_oblivion_GameRenderer_nativeSetTargetFPS(
         [[maybe_unused]] JNIEnv* env,
@@ -563,9 +585,10 @@ Java_com_example_oblivion_GameRenderer_nativeInitFaceGen(
 
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_example_oblivion_GameRenderer_nativeInitBinkVideo(
-        [[maybe_unused]] JNIEnv* env,
+        JNIEnv* env,
         [[maybe_unused]] jobject obj,
-        jobject surface) {
+        jobject surface,
+        jstring videoBasePath) {
     LOGI("=== nativeInitBinkVideo called ===");
 
     if (!surface) {
@@ -584,10 +607,19 @@ Java_com_example_oblivion_GameRenderer_nativeInitBinkVideo(
     auto& player = oblivion::video::BinkVideoPlayer::instance();
     bool result = player.initialize(window);
 
-    // Release ANativeWindow ref regardless of result (ANativeWindow_fromSurface increments refcount)
+    // Release ANativeWindow ref regardless of result
     ANativeWindow_release(window);
 
     if (result) {
+        // Set video base path for resolving relative file paths
+        if (videoBasePath) {
+            const char* basePathStr = env->GetStringUTFChars(videoBasePath, nullptr);
+            if (basePathStr) {
+                player.setVideoBasePath(std::string(basePathStr));
+                env->ReleaseStringUTFChars(videoBasePath, basePathStr);
+            }
+        }
+
         // Initialize JNI references for VideoDecoderJNI
         oblivion::video::VideoDecoderJNI::initJNI(env);
         oblivion::video::registerVideoDecoderNatives(env);

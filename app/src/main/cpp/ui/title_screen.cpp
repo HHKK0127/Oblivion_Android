@@ -4,7 +4,70 @@
 #include "../audio/audio_manager.h"
 #include "ui_draw_helper.h"
 #include <GLES3/gl3.h>
+#include <GLES2/gl2ext.h>
 #include <cmath>
+
+// Re-define LOG_TAG after includes to override audio LOG_TAG
+#undef LOG_TAG
+#undef LOGD
+#undef LOGI
+#undef LOGW
+#define LOG_TAG "TitleScreen"
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
+
+// OES texture shader for video background (MediaPlayer SurfaceTexture)
+static const char* s_oesVertexShader = R"(#version 300 es
+layout(location = 0) in vec2 aPosition;
+layout(location = 1) in vec2 aTexCoord;
+uniform mat4 uProjection;
+out vec2 vTexCoord;
+void main() {
+    gl_Position = uProjection * vec4(aPosition, 0.0, 1.0);
+    vTexCoord = aTexCoord;
+}
+)";
+
+static const char* s_oesFragmentShader = R"(#version 300 es
+#extension GL_OES_EGL_image_external_essl3 : require
+precision mediump float;
+in vec2 vTexCoord;
+out vec4 fragColor;
+uniform samplerExternalOES uTexture;
+uniform vec4 uColor;
+void main() {
+    fragColor = texture(uTexture, vTexCoord) * uColor;
+}
+)";
+
+static GLuint s_oesProgram = 0;
+static GLuint s_oesVAO = 0;
+static GLuint s_oesVBO = 0;
+
+static void ensureOESShader() {
+    if (s_oesProgram != 0) return;
+
+    GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vs, 1, &s_oesVertexShader, nullptr);
+    glCompileShader(vs);
+
+    GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fs, 1, &s_oesFragmentShader, nullptr);
+    glCompileShader(fs);
+
+    s_oesProgram = glCreateProgram();
+    glAttachShader(s_oesProgram, vs);
+    glAttachShader(s_oesProgram, fs);
+    glLinkProgram(s_oesProgram);
+
+    glDeleteShader(vs);
+    glDeleteShader(fs);
+
+    glGenVertexArrays(1, &s_oesVAO);
+    glGenBuffers(1, &s_oesVBO);
+    LOGI("OES texture shader compiled and linked: program=%u", s_oesProgram);
+}
 
 TitleScreen::TitleScreen()
     : state(TitleScreenState::INTRO_MOVIE), displayTimer(0.0f),
@@ -20,6 +83,19 @@ TitleScreen::~TitleScreen() {
     TextureLoader::deleteTexture(vignetteTexture);
     for (auto& tex : movieFrames) {
         TextureLoader::deleteTexture(tex);
+    }
+    // Clean up OES shader resources
+    if (s_oesProgram != 0) {
+        glDeleteProgram(s_oesProgram);
+        s_oesProgram = 0;
+    }
+    if (s_oesVAO != 0) {
+        glDeleteVertexArrays(1, &s_oesVAO);
+        s_oesVAO = 0;
+    }
+    if (s_oesVBO != 0) {
+        glDeleteBuffers(1, &s_oesVBO);
+        s_oesVBO = 0;
     }
     LOGD("TitleScreen destroyed");
 }
@@ -60,7 +136,28 @@ void TitleScreen::initialize(LocalizationManager* lm, TextRenderer* tr) {
     // Register intro video clip if BinkVideoPlayer is available
     setupIntroVideo();
 
-    LOGI("TitleScreen initialized (Oblivion Authentic)");
+    // Skip intro movie if no video player available
+    if (!videoPlaybackActive && !videoPlayer) {
+        state = TitleScreenState::MENU;
+        displayTimer = 0.0f;
+        selectedIndex = 0;
+        menuAnimTimer = 0.0f;
+        menuFadeAlpha = 0.0f;
+        menuSlideOffset = 50.0f;
+        // Initialize per-button staggered animation
+        for (int i = 0; i < MAX_MENU_BUTTONS; ++i) {
+            buttonAnimTimers[i] = -BUTTON_STAGGER_DELAY * i;
+            buttonAlphas[i] = 0.0f;
+            buttonSlideOffsets[i] = 80.0f;
+        }
+        selectionBarAlpha = 0.0f;
+        selectionBarY = 0.0f;
+        selectionBarTargetY = 0.0f;
+        logoGlowIntensity = 0.5f;
+        LOGI("TitleScreen initialized (Oblivion Authentic) - skipping to MENU");
+    } else {
+        LOGI("TitleScreen initialized (Oblivion Authentic)");
+    }
 }
 
 void TitleScreen::setScreenSize(int w, int h) {
@@ -136,10 +233,13 @@ void TitleScreen::rebuildMenuLayout() {
     if (!menuPanel) return;
     menuPanel->setScreenSize(screenWidth, screenHeight);
 
+    // Original Oblivion layout: buttons centered horizontally, upper third
+    // Original: 1280x1024, buttons at X=640, Y=340-500 (40px spacing)
+    // Scale to current resolution
     float panelW = 420.0f;
     float panelH = 400.0f;
-    float px = screenWidth * 0.04f;
-    float py = screenHeight * 0.55f;
+    float px = (screenWidth - panelW) / 2.0f;  // Center horizontally
+    float py = screenHeight * 0.33f;            // Upper third (like original)
     menuPanel->setPosition(px, py);
     menuPanel->setSize(panelW, panelH);
 
@@ -185,10 +285,29 @@ void TitleScreen::update(float deltaTime) {
             if (videoPlaybackActive && videoPlayer) {
                 videoPlayer->update(deltaTime);
 
+                // Monitor video player state
+                if (!videoPlayer->isPlaying() && videoPlayer->getState() != oblivion::video::VideoState::FINISHED) {
+                    // Video stopped unexpectedly
+                    LOGW("Video player stopped unexpectedly, treating as completed");
+                    videoPlaybackActive = false;
+                    videoCompleted = true;
+                }
+
                 if (videoCompleted) {
                     videoPlaybackActive = false;
                     transitionToLogo();
                     break;
+                }
+            }
+
+            // Reset videoInitAttempted after timeout to allow retry
+            if (!videoPlaybackActive && videoInitAttempted) {
+                static float retryTimer = 0.0f;
+                retryTimer += deltaTime;
+                if (retryTimer > 5.0f) {
+                    LOGI("Resetting videoInitAttempted for retry");
+                    videoInitAttempted = false;
+                    retryTimer = 0.0f;
                 }
             }
 
@@ -198,6 +317,7 @@ void TitleScreen::update(float deltaTime) {
                 if (t > 1.0f) t = 1.0f;
                 introLogoAlpha = easeOutQuad(t);
                 if (displayTimer >= INTRO_DURATION) {
+                    LOGI("INTRO_MOVIE timer reached %.1f, transitioning to logo", displayTimer);
                     transitionToLogo();
                 }
             }
@@ -208,6 +328,10 @@ void TitleScreen::update(float deltaTime) {
             float t = displayTimer / LOGO_FADE_DURATION;
             if (t > 1.0f) t = 1.0f;
             logoFadeAlpha = easeInQuad(t);
+            // Auto-transition to menu after logo fade completes
+            if (displayTimer >= LOGO_FADE_DURATION + 1.0f) {
+                transitionToMenu();
+            }
             break;
         }
         case TitleScreenState::MENU: {
@@ -331,14 +455,14 @@ void TitleScreen::renderMenu() {
 
     // Apply slide offset to menu panel position
     if (menuPanel) {
-        float baseX = screenWidth * 0.04f;
-        menuPanel->setPosition(baseX - menuSlideOffset, screenHeight * 0.55f);
+        float baseX = (screenWidth - 420.0f) / 2.0f;
+        menuPanel->setPosition(baseX - menuSlideOffset, screenHeight * 0.33f);
     }
 
     // Draw selection indicator bar
     if (menuPanel) {
-        float panelX = screenWidth * 0.04f - menuSlideOffset;
-        float panelY = screenHeight * 0.55f;
+        float panelX = (screenWidth - 420.0f) / 2.0f - menuSlideOffset;
+        float panelY = screenHeight * 0.33f;
         float barX = panelX + 5.0f;
         float barW = 6.0f;
         float barH = 36.0f;
@@ -384,6 +508,22 @@ void TitleScreen::renderMenu() {
 }
 
 void TitleScreen::renderBackground(float alpha, bool menuMode) {
+    // If video background is active, render it instead of static background
+    if (videoBackgroundActive && videoBackgroundTexture != 0) {
+        renderVideoBackground(alpha);
+
+        // Add a dark overlay for readability when in menu mode
+        if (menuMode) {
+            float w = static_cast<float>(screenWidth);
+            float h = static_cast<float>(screenHeight);
+            UIDrawHelper::drawColoredQuad(
+                0.0f, 0.0f, w, h,
+                glm::vec4(0.0f, 0.0f, 0.0f, 0.35f * alpha),
+                screenWidth, screenHeight);
+        }
+        return;
+    }
+
     // Original Oblivion PC: warm parchment background.
     // We use the extracted loading_background.png when available;
     // otherwise fall back to a procedural sepia color block.
@@ -429,6 +569,75 @@ void TitleScreen::renderBackground(float alpha, bool menuMode) {
         UIDrawHelper::drawColoredQuad(0.0f, 0.0f, w, edge, dark, screenWidth, screenHeight);
         UIDrawHelper::drawColoredQuad(0.0f, h - edge, w, edge, dark, screenWidth, screenHeight);
     }
+}
+
+void TitleScreen::renderVideoBackground(float alpha) {
+    if (!videoBackgroundActive || videoBackgroundTexture == 0) return;
+
+    ensureOESShader();
+    if (s_oesProgram == 0) return;
+
+    float w = static_cast<float>(screenWidth);
+    float h = static_cast<float>(screenHeight);
+
+    // Compute aspect-correct UV for 16:9 video on screen
+    // Map loop.mp4 is 1280x720 (16:9), screen may be different aspect
+    float screenAspect = w / h;
+    float videoAspect = 16.0f / 9.0f;
+    float uMin = 0.0f, vMin = 0.0f, uMax = 1.0f, vMax = 1.0f;
+
+    if (screenAspect > videoAspect) {
+        // Screen is wider than video - crop top/bottom
+        float scale = videoAspect / screenAspect;
+        vMin = (1.0f - scale) * 0.5f;
+        vMax = 1.0f - vMin;
+    } else if (screenAspect < videoAspect) {
+        // Screen is taller than video - crop left/right
+        float scale = screenAspect / videoAspect;
+        uMin = (1.0f - scale) * 0.5f;
+        uMax = 1.0f - uMin;
+    }
+
+    glUseProgram(s_oesProgram);
+
+    float left = 0.0f, right = w, top = 0.0f, bottom = h;
+    float projection[16] = {
+        2.0f / (right - left), 0.0f, 0.0f, 0.0f,
+        0.0f, -2.0f / (bottom - top), 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        -(right + left) / (right - left), (bottom + top) / (bottom - top), 0.0f, 1.0f
+    };
+
+    GLint projLoc = glGetUniformLocation(s_oesProgram, "uProjection");
+    glUniformMatrix4fv(projLoc, 1, GL_FALSE, projection);
+
+    GLint colorLoc = glGetUniformLocation(s_oesProgram, "uColor");
+    glUniform4f(colorLoc, 1.0f, 1.0f, 1.0f, alpha);
+
+    GLint texLoc = glGetUniformLocation(s_oesProgram, "uTexture");
+    glUniform1i(texLoc, 0);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_EXTERNAL_OES, videoBackgroundTexture);
+
+    float vertices[16] = {
+        0.0f, 0.0f, uMin, vMin,
+        w,    0.0f, uMax, vMin,
+        0.0f, h,    uMin, vMax,
+        w,    h,    uMax, vMax
+    };
+
+    glBindVertexArray(s_oesVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, s_oesVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_EXTERNAL_OES, 0);
 }
 
 void TitleScreen::renderSepiaOverlay() {
@@ -589,6 +798,9 @@ void TitleScreen::onTouchEvent(float x, float y, int action) {
                 lastTouchX = x;
                 lastTouchY = y;
                 spawnRipple(x, y);
+                LOGI("Menu touch DOWN at (%.1f, %.1f), panel pos=(%.1f, %.1f), panel size=(%.1f, %.1f)",
+                     x, y, menuPanel->getPosition().x, menuPanel->getPosition().y,
+                     menuPanel->getSize().x, menuPanel->getSize().y);
                 menuPanel->onTouchDown(x, y, 0);
             } else if (action == 1) {
                 menuPanel->onTouchUp(x, y, 0);
@@ -649,7 +861,7 @@ void TitleScreen::setupIntroVideo() {
 
     auto& player = oblivion::video::BinkVideoPlayer::instance();
     if (!player.isInitialized()) {
-        LOGI("BinkVideoPlayer not initialized, using fallback intro");
+        LOGI("BinkVideoPlayer not initialized, skipping intro video");
         return;
     }
 
@@ -662,7 +874,7 @@ void TitleScreen::setupIntroVideo() {
     introClip.width = 1280;
     introClip.height = 720;
     introClip.frameRate = 30.0f;
-    introClip.durationSeconds = 30.0f;
+    introClip.durationSeconds = 115.5f;  // 1:55.48 actual duration
     introClip.hasAudio = true;
 
     if (!player.loadClip(introClip.clipId, introClip)) {

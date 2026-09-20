@@ -71,6 +71,11 @@ bool BinkVideoPlayer::initialize(void* nativeWindow) {
     return true;
 }
 
+void BinkVideoPlayer::setVideoBasePath(const std::string& basePath) {
+    videoBasePath_ = basePath;
+    LOGI("Video base path set: %s", basePath.c_str());
+}
+
 void BinkVideoPlayer::shutdown() {
     LOGI("BinkVideoPlayer shutting down");
 
@@ -204,6 +209,22 @@ bool BinkVideoPlayer::play(const std::string& clipId, bool loop) {
             return false;
         }
         clip = it->second;
+    }
+
+    // Resolve file path: prepend videoBasePath_ for relative paths
+    if (!videoBasePath_.empty() &&
+        clip.filePath.find('/') == std::string::npos &&
+        clip.filePath.find('\\') == std::string::npos) {
+        std::string resolvedPath = videoBasePath_ + "/" + clip.filePath;
+        FILE* f = fopen(resolvedPath.c_str(), "rb");
+        if (f) {
+            fclose(f);
+            clip.filePath = resolvedPath;
+            LOGI("Resolved clip path to: %s", clip.filePath.c_str());
+        } else {
+            LOGI("File not found at %s, using original path: %s",
+                 resolvedPath.c_str(), clip.filePath.c_str());
+        }
     }
 
     currentClipId_ = clipId;

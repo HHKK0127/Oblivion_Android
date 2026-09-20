@@ -12,17 +12,27 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:theme="@style/Theme.MyApplication">
 
+        <!-- Intro video activity - plays Oblivion intro before game -->
+        <activity
+            android:name=".IntroVideoActivity"
+            android:label="@string/app_name"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:screenOrientation="landscape"
+            android:theme="@style/Theme.AppCompat.NoActionBar"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
         <!-- Java MainActivity + GLSurfaceView で OpenGL ES 3.0 レンダリング -->
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name"
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:screenOrientation="landscape"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+            android:exported="false">
         </activity>
     </application>
 
