@@ -28,7 +28,9 @@ class IntroVideoActivity : Activity(), SurfaceHolder.Callback {
     private var videoPrepared = false
     private var videoCompleted = false
     private var videoStarted = false
+    private var videoStartTime = 0L
     private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val VIDEO_TIMEOUT_MS = 5000L  // 5 second timeout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

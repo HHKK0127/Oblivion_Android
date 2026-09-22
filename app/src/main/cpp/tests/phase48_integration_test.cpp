@@ -183,18 +183,17 @@ void Phase48IntegrationTest::testCellTransition() {
     NpcManager npcMgr;
     npcMgr.initialize();
 
-    // Test cell coordinate calculation
-    // Cell size is 128.0f, so position (200, 0, 200) should be cell (1, 1)
-    glm::vec3 posA(200.0f, 0.0f, 200.0f);
-    glm::vec3 posB(500.0f, 0.0f, 500.0f);
+    // Test cell coordinate calculation against the engine's cell size
+    glm::vec3 posA(CELL_SIZE * 1.5f, 0.0f, CELL_SIZE * 1.5f);
+    glm::vec3 posB(CELL_SIZE * 3.5f, 0.0f, CELL_SIZE * 3.5f);
 
     // CellTransitionManager tests
     CellTransitionManager cellTrans;
     // Note: initialize requires WorldManager, but we test coordinate math
-    int32_t cellXA = static_cast<int32_t>(std::floor(posA.x / 128.0f));
-    int32_t cellYA = static_cast<int32_t>(std::floor(posA.z / 128.0f));
-    int32_t cellXB = static_cast<int32_t>(std::floor(posB.x / 128.0f));
-    int32_t cellYB = static_cast<int32_t>(std::floor(posB.z / 128.0f));
+    int32_t cellXA = static_cast<int32_t>(std::floor(posA.x / static_cast<float>(CELL_SIZE)));
+    int32_t cellYA = static_cast<int32_t>(std::floor(posA.z / static_cast<float>(CELL_SIZE)));
+    int32_t cellXB = static_cast<int32_t>(std::floor(posB.x / static_cast<float>(CELL_SIZE)));
+    int32_t cellYB = static_cast<int32_t>(std::floor(posB.z / static_cast<float>(CELL_SIZE)));
 
     bool cellAOk = (cellXA == 1 && cellYA == 1);
     bool cellBOk = (cellXB == 3 && cellYB == 3);
@@ -407,13 +406,20 @@ void Phase48IntegrationTest::testQuestFlow() {
     bool acceptOk = questMgr.acceptQuest(questId);
     bool isActive = questMgr.isQuestActive(questId);
 
-    // Update objective progress
+    // Update objective progress. Reaching the target on the final objective
+    // auto-completes the quest (QuestManager::updateObjectiveProgress).
     bool prog1 = questMgr.updateObjectiveProgress(questId, 1, 3);  // Kill 3
     bool prog2 = questMgr.updateObjectiveProgress(questId, 2, 5);  // Collect 5
+    bool autoCompleted = questMgr.isQuestCompleted(questId);
 
-    // Complete quest
-    bool completeOk = questMgr.completeQuest(questId);
-    bool isCompleted = questMgr.isQuestCompleted(questId);
+    // Explicit completion path: a quest that still has unmet objectives is
+    // completed directly through completeQuest().
+    uint32_t directQuestId = questMgr.createQuest(
+        questGiver->npcId, "Direct Completion Quest", "Explicit completion path");
+    bool directCompleteOk = (directQuestId > 0) && questMgr.completeQuest(directQuestId);
+    bool directIsCompleted = questMgr.isQuestCompleted(directQuestId);
+
+    bool completeOk = autoCompleted && directCompleteOk && directIsCompleted;
 
     // Verify quest giver has the quest
     auto questsFromNpc = questMgr.getQuestsByNpc(questGiver->npcId);
@@ -421,7 +427,7 @@ void Phase48IntegrationTest::testQuestFlow() {
 
     float elapsed = getTimeMs() - t0;
     bool allOk = questCreated && objectivesOk && rewardOk && acceptOk &&
-                 isActive && prog1 && prog2 && completeOk && isCompleted && npcQuestOk;
+                 isActive && prog1 && prog2 && completeOk && npcQuestOk;
     record("QuestFlow", allOk,
            allOk ? "Quest lifecycle OK" : "Quest lifecycle failure",
            elapsed);
@@ -557,11 +563,18 @@ void Phase48IntegrationTest::testPerformanceBenchmark() {
 
     // Performance criteria: average frame time should be under 16ms (60fps target)
     bool avgOk = (avgFrameTime < 16.0f);
-    bool maxOk = (maxFrameTime < 100.0f);  // No frame should take over 100ms
+
+    // A single frame can be delayed by host scheduling while running on an
+    // emulator, so assert on the 99th percentile rather than the absolute
+    // maximum. Systematic slowness still fails this check.
+    std::sort(frameTimes, frameTimes + FRAME_COUNT);
+    float p99FrameTime = frameTimes[(FRAME_COUNT * 99) / 100];
+    bool maxOk = (p99FrameTime < 16.0f);
 
     std::ostringstream msg;
-    msg << "avg=" << avgFrameTime << "ms, max=" << maxFrameTime
-        << "ms, min=" << minFrameTime << "ms (" << FRAME_COUNT << " frames)";
+    msg << "avg=" << avgFrameTime << "ms, p99=" << p99FrameTime
+        << "ms, max=" << maxFrameTime << "ms, min=" << minFrameTime
+        << "ms (" << FRAME_COUNT << " frames)";
 
     float elapsed = getTimeMs() - t0;
     bool allOk = avgOk && maxOk;

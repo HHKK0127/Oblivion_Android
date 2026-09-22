@@ -182,6 +182,7 @@ void TitleScreen::initParticles() {
 }
 
 void TitleScreen::buildGraphicalMenu() {
+    menuButtons.clear();
     menuPanel = std::make_shared<UIPanel>("TitleMenuPanel");
     menuPanel->initialize();
     menuPanel->setTitle("");
@@ -208,7 +209,7 @@ void TitleScreen::buildGraphicalMenu() {
         btn->setLabel(label);
         btn->setTextRenderer(textRenderer);
         btn->setSize(340.0f, 42.0f);
-        btn->setLabelScale(1.1f);
+        btn->setLabelScale(1.3f);
         btn->setLabelColor(COLOR_PARCHMENT);
         btn->setNormalColor(glm::vec4(0.08f, 0.05f, 0.02f, 0.70f));
         btn->setHoverColor(glm::vec4(0.18f, 0.12f, 0.06f, 0.80f));
@@ -230,29 +231,37 @@ void TitleScreen::buildGraphicalMenu() {
 }
 
 void TitleScreen::rebuildMenuLayout() {
+    LOGD("=== rebuildMenuLayout called, buttons=%zu, screen=%dx%d ===",
+          menuButtons.size(), screenWidth, screenHeight);
     if (!menuPanel) return;
     menuPanel->setScreenSize(screenWidth, screenHeight);
 
-    // Original Oblivion layout: buttons centered horizontally, upper third
-    // Original: 1280x1024, buttons at X=640, Y=340-500 (40px spacing)
-    // Scale to current resolution
-    float panelW = 420.0f;
-    float panelH = 400.0f;
-    float px = (screenWidth - panelW) / 2.0f;  // Center horizontally
-    float py = screenHeight * 0.33f;            // Upper third (like original)
+    // Original Oblivion: buttons centered horizontally, lower-center area
+    // Original 1280x1024: buttons at Y~620, each ~150px wide, 8px gap
+    float btnW = 150.0f;
+    float btnH = 38.0f;
+    float gap = 8.0f;
+    float totalW = static_cast<float>(menuButtons.size()) * btnW
+                 + static_cast<float>(menuButtons.size() - 1) * gap;
+    float panelW = totalW + 30.0f;
+    float panelH = btnH + 20.0f;
+
+    // Position: center-lower (original Oblivion ~60% from top)
+    float px = (screenWidth - panelW) / 2.0f;
+    float py = screenHeight * 0.60f;
     menuPanel->setPosition(px, py);
     menuPanel->setSize(panelW, panelH);
+    LOGD("Panel: pos=(%.1f, %.1f), size=(%.1f, %.1f)", px, py, panelW, panelH);
 
-    float btnW = 400.0f;
-    float btnH = 42.0f;
-    float startY = 30.0f;
-    float gap = 10.0f;
+    // Horizontal layout: buttons positioned relative to panel
+    float startX = 15.0f;
+    float startY = 10.0f;
     for (size_t i = 0; i < menuButtons.size(); ++i) {
-        float bx = 15.0f;
-        float by = startY + static_cast<float>(i) * (btnH + gap);
-        menuButtons[i]->setPosition(bx, by);
+        float bx = startX + static_cast<float>(i) * (btnW + gap);
+        menuButtons[i]->setPosition(bx, startY);
         menuButtons[i]->setSize(btnW, btnH);
         menuButtons[i]->setScreenSize(screenWidth, screenHeight);
+        LOGD("Button %zu: pos=(%.1f, %.1f), size=(%.1f, %.1f)", i, bx, startY, btnW, btnH);
     }
 }
 
@@ -328,10 +337,7 @@ void TitleScreen::update(float deltaTime) {
             float t = displayTimer / LOGO_FADE_DURATION;
             if (t > 1.0f) t = 1.0f;
             logoFadeAlpha = easeInQuad(t);
-            // Auto-transition to menu after logo fade completes
-            if (displayTimer >= LOGO_FADE_DURATION + 1.0f) {
-                transitionToMenu();
-            }
+            // Stay in LOGO_DISPLAY until user taps (handled in onTouchEvent)
             break;
         }
         case TitleScreenState::MENU: {
@@ -428,9 +434,11 @@ void TitleScreen::renderLogoDisplay() {
     renderParticles();
     renderOblivionLogo(logoFadeAlpha, true);
 
-    if (displayTimer > LOGO_FADE_DURATION + 0.3f) {
-        float msgT = displayTimer - (LOGO_FADE_DURATION + 0.3f);
-        float msgAlpha = std::min(msgT * 2.0f, 1.0f);
+    // Show "PRESS ANY KEY" once logo fade is complete
+    if (logoFadeAlpha >= 0.9f) {
+        float msgT = displayTimer - LOGO_FADE_DURATION;
+        if (msgT < 0.0f) msgT = 0.0f;
+        float msgAlpha = std::min(msgT * 3.0f, 1.0f);
         msgAlpha *= 0.5f + 0.5f * sin(displayTimer * 2.5f);
         renderPressAnyKey(msgAlpha);
     }
@@ -441,32 +449,33 @@ void TitleScreen::renderMenu() {
     renderSepiaOverlay();
     renderVignette();
     renderParticles();
-    renderOblivionLogo(1.0f, false);
-
-    // Dark overlay behind the menu area for button readability (with animation).
-    float overlayX = 0.0f;
-    float overlayY = static_cast<float>(screenHeight) * 0.25f;
-    float overlayW = static_cast<float>(screenWidth) * 0.35f;
-    float overlayH = static_cast<float>(screenHeight) * 0.65f;
-    UIDrawHelper::drawColoredQuad(
-        overlayX, overlayY, overlayW, overlayH,
-        glm::vec4(0.0f, 0.0f, 0.0f, 0.35f * menuFadeAlpha),
-        screenWidth, screenHeight);
+    renderOblivionLogo(1.0f, true);  // Keep logo at same position as LOGO_DISPLAY
 
     // Apply slide offset to menu panel position
     if (menuPanel) {
-        float baseX = (screenWidth - 420.0f) / 2.0f;
-        menuPanel->setPosition(baseX - menuSlideOffset, screenHeight * 0.33f);
+        float btnW = 150.0f;
+        float gap = 8.0f;
+        float totalW = static_cast<float>(menuButtons.size()) * btnW
+                     + static_cast<float>(menuButtons.size() - 1) * gap;
+        float panelW = totalW + 30.0f;
+        float baseX = (screenWidth - panelW) / 2.0f;
+        menuPanel->setPosition(baseX - menuSlideOffset, screenHeight * 0.60f);
     }
 
     // Draw selection indicator bar
     if (menuPanel) {
-        float panelX = (screenWidth - 420.0f) / 2.0f - menuSlideOffset;
-        float panelY = screenHeight * 0.33f;
-        float barX = panelX + 5.0f;
+        float btnW = 150.0f;
+        float gap = 8.0f;
+        float totalW = static_cast<float>(menuButtons.size()) * btnW
+                     + static_cast<float>(menuButtons.size() - 1) * gap;
+        float panelW = totalW + 30.0f;
+        float panelX = (screenWidth - panelW) / 2.0f - menuSlideOffset;
+        float panelY = screenHeight * 0.60f;
+        float btnStartX = panelX + 15.0f;
+        float barX = btnStartX + selectionBarY + 5.0f; // selectionBarY holds animated X offset
         float barW = 6.0f;
         float barH = 36.0f;
-        float barYPos = panelY + 30.0f + selectionBarY;
+        float barYPos = panelY + 10.0f + 3.0f;
 
         // Golden selection bar with glow
         glm::vec4 barColor(COLOR_GOLD.x, COLOR_GOLD.y, COLOR_GOLD.z, selectionBarAlpha * menuFadeAlpha);
@@ -491,18 +500,68 @@ void TitleScreen::renderMenu() {
 
         if (isSelected) {
             float glow = 0.6f + 0.4f * sin(glowPhase);
-            glm::vec3 c(COLOR_GOLD.x + (COLOR_WHITE.x - COLOR_GOLD.x) * glow * 0.6f,
-                        COLOR_GOLD.y + (COLOR_WHITE.y - COLOR_GOLD.y) * glow * 0.6f,
-                        COLOR_GOLD.z + (COLOR_WHITE.z - COLOR_GOLD.z) * glow * 0.6f);
+            glm::vec3 c(COLOR_MENU_TEXT_SELECTED.x + (COLOR_GOLD.x - COLOR_MENU_TEXT_SELECTED.x) * glow * 0.5f,
+                        COLOR_MENU_TEXT_SELECTED.y + (COLOR_GOLD.y - COLOR_MENU_TEXT_SELECTED.y) * glow * 0.5f,
+                        COLOR_MENU_TEXT_SELECTED.z + (COLOR_GOLD.z - COLOR_MENU_TEXT_SELECTED.z) * glow * 0.5f);
             menuButtons[i]->setLabelColor(c);
         } else {
-            glm::vec3 dimmed(COLOR_PARCHMENT.x * 0.85f, COLOR_PARCHMENT.y * 0.85f, COLOR_PARCHMENT.z * 0.85f);
-            menuButtons[i]->setLabelColor(dimmed);
+            menuButtons[i]->setLabelColor(COLOR_MENU_TEXT);
         }
     }
 
+    // Render buttons directly at absolute positions (no panel dependency)
+    // Temporarily set panel to origin so child absolute positions match screen coords
     if (menuPanel) {
-        menuPanel->render();
+        menuPanel->setPosition(0.0f, 0.0f);
+        menuPanel->setSize(static_cast<float>(screenWidth), static_cast<float>(screenHeight));
+    }
+    {
+        float btnW = 150.0f;
+        float btnH = 38.0f;
+        float gap = 8.0f;
+        float totalW = static_cast<float>(menuButtons.size()) * btnW
+                     + static_cast<float>(menuButtons.size() - 1) * gap;
+        float startX = (screenWidth - totalW) / 2.0f - menuSlideOffset;
+        float startY = screenHeight * 0.60f + 10.0f;
+
+        // Draw selection bar before buttons
+        if (selectionBarAlpha > 0.0f) {
+            float barX = startX + selectionBarY + 5.0f;
+            float barYPos = startY + 1.0f;
+            glm::vec4 barColor(COLOR_GOLD.x, COLOR_GOLD.y, COLOR_GOLD.z, selectionBarAlpha * menuFadeAlpha);
+            UIDrawHelper::drawColoredQuad(barX, barYPos, 6.0f, btnH - 2.0f,
+                                          barColor, screenWidth, screenHeight);
+            // Glow
+            glm::vec4 glowColor(COLOR_GOLD.x, COLOR_GOLD.y, COLOR_GOLD.z, 0.2f * menuFadeAlpha);
+            UIDrawHelper::drawColoredQuad(barX - 4.0f, barYPos - 2.0f, 14.0f, btnH + 2.0f,
+                                          glowColor, screenWidth, screenHeight);
+        }
+
+        for (size_t i = 0; i < menuButtons.size(); ++i) {
+            float bx = startX + static_cast<float>(i) * (btnW + gap);
+            menuButtons[i]->setPosition(bx, startY);
+            menuButtons[i]->setSize(btnW, btnH);
+            // Use Oblivion font for menu labels
+            bool isSelected = (static_cast<int>(i) == selectedIndex);
+            int idx = static_cast<int>(i);
+            float buttonAlpha = buttonAlphas[idx];
+            glm::vec3 labelColor = menuButtons[i]->getLabelColor();
+            float labelScale = 1.3f;
+            float textW = textRenderer->getTextWidth(menuButtons[i]->getLabel(), labelScale);
+            float textX = bx + (btnW - textW) * 0.5f;
+            float textY = startY + btnH * 0.65f;
+            float textAlpha = buttonAlpha * menuFadeAlpha;
+            if (textAlpha < 0.0f) textAlpha = 0.0f;
+            if (textAlpha > 1.0f) textAlpha = 1.0f;
+
+            // Reset GL state before text rendering
+            glDisable(GL_DEPTH_TEST);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+            textRenderer->renderText(menuButtons[i]->getLabel(), textX, textY,
+                glm::vec4(labelColor.x, labelColor.y, labelColor.z, textAlpha), labelScale);
+        }
     }
     renderVersionText();
 }
@@ -708,10 +767,12 @@ void TitleScreen::renderPressAnyKey(float alpha) {
     float fontScale = 0.7f * scale;
     float textWidth = textRenderer->getTextWidth(hint, fontScale);
     float textX = (static_cast<float>(screenWidth) - textWidth) * 0.5f;
-    float textY = static_cast<float>(screenHeight) * 0.32f;
+    // Position below the logo (logo is at screenHeight * 0.30, height ~ screenWidth * 0.55 * 0.25)
+    float logoBottom = screenHeight * 0.30f + screenWidth * 0.55f * 0.25f + 20.0f;
+    float textY = logoBottom;
 
     glm::vec3 hintColor(COLOR_PARCHMENT.x, COLOR_PARCHMENT.y, COLOR_PARCHMENT.z);
-    textRenderer->renderText(hint, textX, textY, hintColor, fontScale);
+    textRenderer->renderText(hint, textX, textY, glm::vec3(hintColor.x, hintColor.y, hintColor.z), fontScale);
 }
 
 void TitleScreen::renderVersionText() {
@@ -967,9 +1028,9 @@ void TitleScreen::updateMenu(float deltaTime) {
         buttonSlideOffsets[i] = 80.0f * (1.0f - easeOutQuad(t));
     }
 
-    // Selection bar smooth movement
-    float barTargetY = static_cast<float>(selectedIndex) * 52.0f;
-    selectionBarY += (barTargetY - selectionBarY) * SELECTION_BAR_SPEED * deltaTime;
+    // Selection bar smooth movement (horizontal)
+    float barTargetX = static_cast<float>(selectedIndex) * 158.0f; // btnW(150) + gap(8)
+    selectionBarY += (barTargetX - selectionBarY) * SELECTION_BAR_SPEED * deltaTime;
     selectionBarAlpha = 0.8f + 0.2f * sin(glowPhase * 2.0f);
 
     // Logo glow animation

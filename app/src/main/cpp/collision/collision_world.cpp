@@ -97,11 +97,14 @@ int32_t CollisionWorld::addBody(const CollisionBody& body) {
     AABB aabb = computeBodyAABB(bodies[id]);
     bodies[id].treeNodeIndex = broadPhase.insert(aabb, id);
 
+    ++liveBodyCount_;
+
     return id;
 }
 
 void CollisionWorld::removeBody(int32_t bodyId) {
     if (bodyId < 0 || bodyId >= static_cast<int32_t>(bodies.size())) return;
+    if (bodies[bodyId].id == NULL_BODY) return;  // already removed
 
     if (bodies[bodyId].treeNodeIndex >= 0) {
         broadPhase.remove(bodies[bodyId].treeNodeIndex);
@@ -110,6 +113,8 @@ void CollisionWorld::removeBody(int32_t bodyId) {
     bodies[bodyId].id = -1;
     bodies[bodyId].isActive = false;
     freeSlots.push_back(bodyId);
+
+    --liveBodyCount_;
 }
 
 CollisionBody* CollisionWorld::getBody(int32_t bodyId) {

@@ -64,7 +64,7 @@ public:
     // Constants
     // ========================================================================
 
-    static constexpr int TERRAIN_GRID_SIZE = 65;  // 65x65
+    static constexpr int TERRAIN_GRID_SIZE = 33;  // 33x33 (TES4 LAND)
 
 private:
     // ========================================================================

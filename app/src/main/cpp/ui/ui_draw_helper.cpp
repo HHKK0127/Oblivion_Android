@@ -1,8 +1,38 @@
 #include "ui_draw_helper.h"
 #include <android/log.h>
+#include <string>
+#include <unordered_map>
 #include <vector>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+namespace {
+
+// glGetUniformLocation is a synchronous round-trip to the GL server. Resolving the same
+// names on every UI draw call dominated the frame time, so each program's locations are
+// memoized here. A location is stable for the lifetime of a linked program, and the
+// program id is part of the key so a recreated program simply misses the cache.
+std::unordered_map<GLuint, std::unordered_map<std::string, GLint>>& uniformLocationCache() {
+    static std::unordered_map<GLuint, std::unordered_map<std::string, GLint>> cache;
+    return cache;
+}
+
+GLint uniformLocation(GLuint program, const char* name) {
+    auto& programCache = uniformLocationCache()[program];
+    auto it = programCache.find(name);
+    if (it != programCache.end()) {
+        return it->second;
+    }
+    const GLint location = glGetUniformLocation(program, name);
+    programCache.emplace(name, location);
+    return location;
+}
+
+void clearUniformLocationCache() {
+    uniformLocationCache().clear();
+}
+
+}  // namespace
 
 GLuint UIDrawHelper::s_colorProgram = 0;
 GLuint UIDrawHelper::s_textureProgram = 0;
@@ -302,6 +332,8 @@ void UIDrawHelper::cleanup() {
     s_ebo = 0;
     s_3dVbo = 0;
     s_initialized = false;
+
+    clearUniformLocationCache();
 }
 
 void UIDrawHelper::ensureInit() {
@@ -328,11 +360,8 @@ void UIDrawHelper::drawColoredQuad(float x, float y, float w, float h,
         -(right + left) / (right - left), (bottom + top) / (bottom - top), 0.0f, 1.0f
     };
 
-    GLint projLoc = glGetUniformLocation(s_colorProgram, "uProjection");
-    glUniformMatrix4fv(projLoc, 1, GL_FALSE, projection);
-
-    GLint colorLoc = glGetUniformLocation(s_colorProgram, "uColor");
-    glUniform4f(colorLoc, color.x, color.y, color.z, color.w);
+    glUniformMatrix4fv(uniformLocation(s_colorProgram, "uProjection"), 1, GL_FALSE, projection);
+    glUniform4f(uniformLocation(s_colorProgram, "uColor"), color.x, color.y, color.z, color.w);
 
     float vertices[8] = {
         x,     y,
@@ -379,14 +408,9 @@ void UIDrawHelper::drawTexturedQuad(float x, float y, float w, float h,
         -(right + left) / (right - left), (bottom + top) / (bottom - top), 0.0f, 1.0f
     };
 
-    GLint projLoc = glGetUniformLocation(s_textureProgram, "uProjection");
-    glUniformMatrix4fv(projLoc, 1, GL_FALSE, projection);
-
-    GLint colorLoc = glGetUniformLocation(s_textureProgram, "uColor");
-    glUniform4f(colorLoc, color.x, color.y, color.z, color.w);
-
-    GLint texLoc = glGetUniformLocation(s_textureProgram, "uTexture");
-    glUniform1i(texLoc, 0);
+    glUniformMatrix4fv(uniformLocation(s_textureProgram, "uProjection"), 1, GL_FALSE, projection);
+    glUniform4f(uniformLocation(s_textureProgram, "uColor"), color.x, color.y, color.z, color.w);
+    glUniform1i(uniformLocation(s_textureProgram, "uTexture"), 0);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, textureId);
@@ -457,14 +481,13 @@ void UIDrawHelper::drawHorizontalGradient(float x, float y, float w, float h,
         -(right + left) / (right - left), (bottom + top) / (bottom - top), 0.0f, 1.0f
     };
 
-    GLint projLoc = glGetUniformLocation(s_gradientProgram, "uProjection");
-    glUniformMatrix4fv(projLoc, 1, GL_FALSE, projection);
+    glUniformMatrix4fv(uniformLocation(s_gradientProgram, "uProjection"), 1, GL_FALSE, projection);
 
     // For vertical gradient, top color = TL/TR, bottom color = BL/BR
-    glUniform4f(glGetUniformLocation(s_gradientProgram, "uColorTL"), leftColor.x, leftColor.y, leftColor.z, leftColor.w);
-    glUniform4f(glGetUniformLocation(s_gradientProgram, "uColorTR"), leftColor.x, leftColor.y, leftColor.z, leftColor.w);
-    glUniform4f(glGetUniformLocation(s_gradientProgram, "uColorBL"), rightColor.x, rightColor.y, rightColor.z, rightColor.w);
-    glUniform4f(glGetUniformLocation(s_gradientProgram, "uColorBR"), rightColor.x, rightColor.y, rightColor.z, rightColor.w);
+    glUniform4f(uniformLocation(s_gradientProgram, "uColorTL"), leftColor.x, leftColor.y, leftColor.z, leftColor.w);
+    glUniform4f(uniformLocation(s_gradientProgram, "uColorTR"), leftColor.x, leftColor.y, leftColor.z, leftColor.w);
+    glUniform4f(uniformLocation(s_gradientProgram, "uColorBL"), rightColor.x, rightColor.y, rightColor.z, rightColor.w);
+    glUniform4f(uniformLocation(s_gradientProgram, "uColorBR"), rightColor.x, rightColor.y, rightColor.z, rightColor.w);
 
     // 4 vertices with UV (0,0)-(1,1)
     float vertices[16] = {
@@ -505,21 +528,20 @@ void UIDrawHelper::drawRadialGlow(float cx, float cy, float radius,
         -(right + left) / (right - left), (bottom + top) / (bottom - top), 0.0f, 1.0f
     };
 
-    GLint projLoc = glGetUniformLocation(s_radialProgram, "uProjection");
-    glUniformMatrix4fv(projLoc, 1, GL_FALSE, projection);
+    glUniformMatrix4fv(uniformLocation(s_radialProgram, "uProjection"), 1, GL_FALSE, projection);
 
     // Note: gl_FragCoord origin is bottom-left in OpenGL ES.
     // The shader expects screen coords with origin at bottom-left, so pass as-is.
     // Our quad y is in top-left space; convert to bottom-left for shader.
     float cxShader = cx;
     float cyShader = static_cast<float>(screenH) - cy;
-    glUniform2f(glGetUniformLocation(s_radialProgram, "uCenter"), cxShader, cyShader);
-    glUniform2f(glGetUniformLocation(s_radialProgram, "uRadius"), radius, radius);
-    glUniform2f(glGetUniformLocation(s_radialProgram, "uScreenSize"),
+    glUniform2f(uniformLocation(s_radialProgram, "uCenter"), cxShader, cyShader);
+    glUniform2f(uniformLocation(s_radialProgram, "uRadius"), radius, radius);
+    glUniform2f(uniformLocation(s_radialProgram, "uScreenSize"),
                 static_cast<float>(screenW), static_cast<float>(screenH));
-    glUniform4f(glGetUniformLocation(s_radialProgram, "uInnerColor"),
+    glUniform4f(uniformLocation(s_radialProgram, "uInnerColor"),
                 innerColor.x, innerColor.y, innerColor.z, innerColor.w);
-    glUniform4f(glGetUniformLocation(s_radialProgram, "uOuterColor"),
+    glUniform4f(uniformLocation(s_radialProgram, "uOuterColor"),
                 outerColor.x, outerColor.y, outerColor.z, outerColor.w);
 
     // Use a square that covers the glow area (2x radius)
@@ -638,22 +660,22 @@ void UIDrawHelper::drawTexturedQuad3D(GLuint textureId,
 
     glUseProgram(s_3dTextureProgram);
 
-    GLint modelLoc = glGetUniformLocation(s_3dTextureProgram, "uModel");
-    GLint viewLoc = glGetUniformLocation(s_3dTextureProgram, "uView");
-    GLint projLoc = glGetUniformLocation(s_3dTextureProgram, "uProjection");
-    GLint lightDirLoc = glGetUniformLocation(s_3dTextureProgram, "uLightDir");
-    GLint ambientLoc = glGetUniformLocation(s_3dTextureProgram, "uAmbientColor");
-    GLint lightColorLoc = glGetUniformLocation(s_3dTextureProgram, "uLightColor");
-    GLint tintLoc = glGetUniformLocation(s_3dTextureProgram, "uTintColor");
-    GLint normalMatLoc = glGetUniformLocation(s_3dTextureProgram, "uNormalMatrix");
-    GLint texLoc = glGetUniformLocation(s_3dTextureProgram, "uTexture");
-    GLint cameraLoc = glGetUniformLocation(s_3dTextureProgram, "uCameraPos");
-    GLint specularColorLoc = glGetUniformLocation(s_3dTextureProgram, "uSpecularColor");
-    GLint specularPowerLoc = glGetUniformLocation(s_3dTextureProgram, "uSpecularPower");
-    GLint rimStrengthLoc = glGetUniformLocation(s_3dTextureProgram, "uRimStrength");
-    GLint fogColorLoc = glGetUniformLocation(s_3dTextureProgram, "uFogColor");
-    GLint fogNearLoc = glGetUniformLocation(s_3dTextureProgram, "uFogNear");
-    GLint fogFarLoc = glGetUniformLocation(s_3dTextureProgram, "uFogFar");
+    const GLint modelLoc = uniformLocation(s_3dTextureProgram, "uModel");
+    const GLint viewLoc = uniformLocation(s_3dTextureProgram, "uView");
+    const GLint projLoc = uniformLocation(s_3dTextureProgram, "uProjection");
+    const GLint lightDirLoc = uniformLocation(s_3dTextureProgram, "uLightDir");
+    const GLint ambientLoc = uniformLocation(s_3dTextureProgram, "uAmbientColor");
+    const GLint lightColorLoc = uniformLocation(s_3dTextureProgram, "uLightColor");
+    const GLint tintLoc = uniformLocation(s_3dTextureProgram, "uTintColor");
+    const GLint normalMatLoc = uniformLocation(s_3dTextureProgram, "uNormalMatrix");
+    const GLint texLoc = uniformLocation(s_3dTextureProgram, "uTexture");
+    const GLint cameraLoc = uniformLocation(s_3dTextureProgram, "uCameraPos");
+    const GLint specularColorLoc = uniformLocation(s_3dTextureProgram, "uSpecularColor");
+    const GLint specularPowerLoc = uniformLocation(s_3dTextureProgram, "uSpecularPower");
+    const GLint rimStrengthLoc = uniformLocation(s_3dTextureProgram, "uRimStrength");
+    const GLint fogColorLoc = uniformLocation(s_3dTextureProgram, "uFogColor");
+    const GLint fogNearLoc = uniformLocation(s_3dTextureProgram, "uFogNear");
+    const GLint fogFarLoc = uniformLocation(s_3dTextureProgram, "uFogFar");
 
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &model[0][0]);
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &view[0][0]);

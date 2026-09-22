@@ -76,16 +76,16 @@ Any modern improvements or quality-of-life features (e.g., RetroFilter effects, 
 
 | Phase | Name | Status |
 |-------|------|--------|
-| 1-28 | Core Engine + ESM Integration | ✅ COMPLETE |
-| 29 | NAVM Pathfinding + DIAL/INFO + REFR | ✅ COMPLETE |
-| 30 | NIF/Skeleton/Skinning/Animation/Collision | ✅ COMPLETE |
-| 31 | PlayerController + World Loading | ✅ COMPLETE |
-| 32 | Imperial Weave EventBus + 12-phase Coordinator | ✅ COMPLETE |
-| 33 | Dedicated Combat Sounds + NPC Spatial Audio | ✅ COMPLETE |
-| 34 | Weapon Sound Routing + Quick-Slot Spells | ✅ COMPLETE |
-| 35 | Radiant AI System | ✅ COMPLETE |
-| 36 | Jolt Physics Integration | ✅ COMPLETE |
-| 37 | Script VM (Oblivion Script Execution) | 📋 DESIGNED |
+| 1-28 | Core Engine + ESM Integration | COMPLETE |
+| 29 | NAVM Pathfinding + DIAL/INFO + REFR | COMPLETE |
+| 30 | NIF/Skeleton/Skinning/Animation/Collision | COMPLETE |
+| 31 | PlayerController + World Loading | COMPLETE |
+| 32 | Imperial Weave EventBus + 12-phase Coordinator | COMPLETE |
+| 33 | Dedicated Combat Sounds + NPC Spatial Audio | COMPLETE |
+| 34 | Weapon Sound Routing + Quick-Slot Spells | COMPLETE |
+| 35 | Radiant AI System | COMPLETE |
+| 36 | Jolt Physics Integration | COMPLETE |
+| 37 | Script VM (Oblivion Script Execution) | DESIGNED |
 
 ### Code Metrics
 - **C++**: 22,500+ lines

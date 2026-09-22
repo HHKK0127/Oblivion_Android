@@ -135,7 +135,9 @@ bool StateManager::isValidTransition(GamePlayState from, GamePlayState to) const
                    to == GamePlayState::TITLE_SCREEN;
 
         case GamePlayState::CHARACTER_CREATION:
-            return to == GamePlayState::LOADING || to == GamePlayState::MAIN_MENU;
+            return to == GamePlayState::GAMEPLAY ||
+                   to == GamePlayState::LOADING ||
+                   to == GamePlayState::MAIN_MENU;
 
         case GamePlayState::GAMEPLAY:
             return to == GamePlayState::PAUSED ||

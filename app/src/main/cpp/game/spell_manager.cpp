@@ -7,9 +7,11 @@
 // Helpers for mapping ESM spell data to runtime types
 // ---------------------------------------------------------------------------
 
-/// Map Oblivion magic school byte (SPIT byte 12) to our MagicSchool enum
-static MagicSchool esmSchoolToEnum(uint32_t schoolByte) {
-    switch (schoolByte) {
+/// Map Oblivion magic school index (MGEF DATA offset 12) to our MagicSchool enum.
+/// Oblivion does not store a school on SPEL; it is derived from the spell's
+/// magic effects (see ESMFile::resolveMagicReferences).
+static MagicSchool esmSchoolToEnum(uint32_t schoolIndex) {
+    switch (schoolIndex) {
         case 0:  return MagicSchool::ALTERATION;
         case 1:  return MagicSchool::CONJURATION;
         case 2:  return MagicSchool::DESTRUCTION;
@@ -20,31 +22,49 @@ static MagicSchool esmSchoolToEnum(uint32_t schoolByte) {
     }
 }
 
-/// Map a MGEF effect FormID to our SpellEffectType.
-/// Known Oblivion MGEF FormIDs (from Oblivion.esm):
-///   0x0001E825 = FireDamage   (DAMAGE)
-///   0x0001E831 = Heal          (HEAL)
-///   0x0001E84F = RestoreMagicka (RESTORE_MANA)
-///   0x0001E82E = RestoreStamina (RESTORE_STAMINA)
-///   0x00027FAC = Paralyze      (PARALYZE)
-///   0x0001E851 = Invisibility  (INVISIBILITY)
-///   0x0001E843 = FortifyAttribute (FORTIFY_ATTR)
-///   0x0001E848 = Summon       (SUMMON)
-///   0x0001E835 = Shield       (DAMAGE — treated as buff)
-static SpellEffectType mgefToEffectType(uint32_t mgefFormID) {
-    switch (mgefFormID) {
-        case 0x0001E825: return SpellEffectType::DAMAGE;         // FireDamage
-        case 0x0001E826: return SpellEffectType::DAMAGE;         // FrostDamage
-        case 0x0001E827: return SpellEffectType::DAMAGE;         // ShockDamage
-        case 0x0001E831: return SpellEffectType::HEAL;           // Heal
-        case 0x0001E84F: return SpellEffectType::RESTORE_MANA;   // RestoreMagicka
-        case 0x0001E82E: return SpellEffectType::RESTORE_STAMINA; // RestoreStamina
-        case 0x00027FAC: return SpellEffectType::PARALYZE;       // Paralyze
-        case 0x0001E851: return SpellEffectType::INVISIBILITY;   // Invisibility
-        case 0x0001E843: return SpellEffectType::FORTIFY_ATTR;   // FortifyAttribute
-        case 0x0001E848: return SpellEffectType::SUMMON;         // Summon (generic)
-        default:         return SpellEffectType::DAMAGE;         // fallback
+/// Map a MGEF to our simplified SpellEffectType.
+/// Oblivion identifies magic effects by a 4-character editorID code (e.g. FIDG
+/// = Fire Damage) rather than by a formID, so the mapping keys off that code.
+static SpellEffectType mgefToEffectType(const oblivion::MagicEffectData* mgef) {
+    if (!mgef) return SpellEffectType::DAMAGE;
+
+    const std::string& id = mgef->editorID;
+    if (id.size() == 4) {
+        // Damage / drain / absorb / weakness -> DAMAGE
+        static const char* kDamageCodes[] = {
+            "FIDG", "FRDG", "SHDG", "DGHE", "DGFA", "DGSP", "DGAT",
+            "DRHE", "DRFA", "DRSP", "DRAT", "DRSK", "DIAR", "DIWE",
+            "SUDG", "POSN", "VAMP", "STMA",
+            "WKDI", "WKFI", "WKFR", "WKMA", "WKNW", "WKPO", "WKSH",
+            "ABHE", "ABFA", "ABSP", "ABAT", "ABSK"
+        };
+        for (const char* code : kDamageCodes) {
+            if (id == code) return SpellEffectType::DAMAGE;
+        }
+
+        if (id == "REHE" || id == "FOHE" || id == "CUDI" || id == "CUPO" ||
+            id == "CUPA") {
+            return SpellEffectType::HEAL;
+        }
+        if (id == "RESP" || id == "FOSP" || id == "FOMM") {
+            return SpellEffectType::RESTORE_MANA;
+        }
+        if (id == "REFA" || id == "FOFA") {
+            return SpellEffectType::RESTORE_STAMINA;
+        }
+        if (id == "PARA") return SpellEffectType::PARALYZE;
+        if (id == "INVI") return SpellEffectType::INVISIBILITY;
+
+        // Conjuration summons/bound items carry a linked formID instead of an
+        // actor value; treat every such effect as a summon.
+        if (mgef->school == 1 && mgef->linkedFormID != 0) {
+            return SpellEffectType::SUMMON;
+        }
     }
+
+    // Fallback by school: Destruction hurts, everything else buffs.
+    return (mgef->school == 2) ? SpellEffectType::DAMAGE
+                               : SpellEffectType::FORTIFY_ATTR;
 }
 
 SpellManager::SpellManager()
@@ -108,7 +128,7 @@ void SpellManager::loadSpellsFromESM(const oblivion::ESMManager& esmMgr) {
             s.formID,
             s.fullName.empty() ? s.editorID : s.fullName,
             s.fullName,
-            esmSchoolToEnum(s.effectType),
+            esmSchoolToEnum(s.school),
             static_cast<float>(s.cost),
             0.0f  // baseDamage set from first DAMAGE effect
         );
@@ -121,8 +141,9 @@ void SpellManager::loadSpellsFromESM(const oblivion::ESMManager& esmMgr) {
             s.effectDurations.size()
         });
         for (size_t ei = 0; ei < effectCount; ++ei) {
+            const oblivion::MagicEffectData* mgef = esmMgr.findMagicEffect(s.effectFormIDs[ei]);
             SpellEffect effect(
-                mgefToEffectType(s.effectFormIDs[ei]),
+                mgefToEffectType(mgef),
                 s.effectMagnitudes[ei],
                 static_cast<float>(s.effectDurations[ei])
             );
@@ -140,7 +161,7 @@ void SpellManager::loadSpellsFromESM(const oblivion::ESMManager& esmMgr) {
         if (loaded <= 10) {
             LOGI("  Spell[%zu]: 0x%08X '%s' school=%u cost=%u effects=%zu",
                  loaded, s.formID, spell->name.c_str(),
-                 static_cast<unsigned>(s.effectType), s.cost, effectCount);
+                 static_cast<unsigned>(s.school), s.cost, effectCount);
         }
     }
 

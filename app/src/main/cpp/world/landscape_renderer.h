@@ -50,9 +50,6 @@ public:
     // Heightmap Processing
     // ========================================================================
 
-    // Parse raw heightmap data from LAND record (VERT subrecord)
-    std::vector<float> parseHeightmap(const std::vector<uint8_t>& rawData);
-
     // Calculate normals for terrain vertices
     std::vector<glm::vec3> calculateNormals(const std::vector<float>& heights,
                                              int32_t gridSize);
@@ -128,9 +125,10 @@ private:
     // Constants
     // ========================================================================
 
-    static constexpr int32_t GRID_SIZE = 65;        // 65x65 vertices per cell
-    static constexpr float CELL_WORLD_SIZE = 128.0f; // World units per cell
-    static constexpr float HEIGHT_SCALE = 8.0f;     // Height multiplier for visualization
+    static constexpr int32_t GRID_SIZE = 33;         // 33x33 vertices per cell (TES4 LAND)
+    static constexpr float CELL_WORLD_SIZE = 4096.0f; // World units per cell
+    // LAND heights are already converted to game units by the ESM decoder.
+    static constexpr float HEIGHT_SCALE = 1.0f;
 
     // ========================================================================
     // Private Methods

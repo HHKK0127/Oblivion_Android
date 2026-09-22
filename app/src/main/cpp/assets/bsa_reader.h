@@ -15,13 +15,16 @@
 // Oblivion Version: 0x67
 // ============================================================================
 
-// Archive flags bit masks
-constexpr uint32_t BSA_FLAG_HAS_NAMETABLE      = 0x00000001;
-constexpr uint32_t BSA_FLAG_HAS_FOLDERNAMES     = 0x00000002;
-constexpr uint32_t BSA_FLAG_COMPRESSED          = 0x00000004;
+// Archive flags bit masks (see UESP "Oblivion Mod:BSA File Format")
+constexpr uint32_t BSA_FLAG_HAS_FOLDERNAMES     = 0x00000001;  // directory names are stored
+constexpr uint32_t BSA_FLAG_HAS_FILENAMES       = 0x00000002;  // file names are stored
+constexpr uint32_t BSA_FLAG_COMPRESSED          = 0x00000004;  // files compressed by default
 
-// Bit 30 of file size field toggles per-entry compression
+// The top two bits of the file size field are flags, not part of the size.
+// Bit 30 inverts the archive's default compression state for that entry;
+// bit 31 is reserved by the game.
 constexpr uint32_t BSA_SIZE_COMPRESS_TOGGLE     = 0x40000000;
+constexpr uint32_t BSA_SIZE_MASK                = 0x3FFFFFFF;
 
 struct BSAHeader {
     uint32_t magic;                 // 0x00415342 ("BSA\0")
@@ -49,6 +52,7 @@ struct BSAFileRecord {
 
 struct BSAFileEntry {
     std::string fullPath;           // Full path like "meshes\\architecture\\something.nif"
+    std::string lookupPath;         // fullPath normalized for lookup (lowercase, '/' separators)
     std::string fileName;           // Just the file name
     std::string extension;          // File extension (lowercase)
     std::string folderPath;         // Folder path
@@ -129,8 +133,11 @@ private:
     std::vector<BSAFolderRecord> m_folders;
     std::vector<BSAFileEntry> m_files;
 
-    // Folder name strings (indexed by folder record offset)
-    std::unordered_map<uint32_t, std::string> m_folderNames;
+    // Folder name strings, indexed by folder record index
+    std::vector<std::string> m_folderNames;
+
+    // Absolute offset of the file name block (which follows all folder blocks)
+    uint32_t m_nameBlockOffset;
 
     // Name table strings (for building full paths)
     std::vector<std::string> m_nameTable;

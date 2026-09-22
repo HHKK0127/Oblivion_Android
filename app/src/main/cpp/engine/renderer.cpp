@@ -11,10 +11,18 @@
 // #include "../jni_audio_bridge.h"  // Deferred - requires Java MainActivity
 
 #include <glm/glm.hpp>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include <thread>
 #include <chrono>
+
+// Maximum distance (game units) from the player at which NPC meshes are
+// streamed in and placeholder entities are drawn. One exterior cell spans
+// 4096 units, so this keeps roughly the 3x3 neighbourhood plus margin.
+static const float NPC_MESH_STREAM_RADIUS = 6000.0f;
 
 Renderer::Renderer()
     : showLauncher(true), showTitleScreen(false), shouldExit(false),
@@ -67,10 +75,19 @@ bool Renderer::init(unsigned int width, unsigned int height) {
         LOGI("Step 3: RetroFilter initialized");
         __android_log_print(ANDROID_LOG_ERROR, "Renderer", "SYNC_CHECKPOINT_4: retrofilter done");
 
-        // Create test scenario (combat, quests, etc.)
-        LOGI("Step 4: Calling createTestScenario()");
-        createTestScenario();
-        LOGI("Step 4: createTestScenario() completed");
+        // Load game data registered by the Java side before the world is built,
+        // so the world reflects the real ESM data when it is available.
+        if (assetManager && !g_pendingDataPath.empty()) {
+            LOGI("Applying registered game data path: %s", g_pendingDataPath.c_str());
+            assetManager->setDataPath(g_pendingDataPath);
+            loadBSAArchives();
+        }
+
+        // Create the world scenario. Game data is loaded after init() (from
+        // nativeSetDataPath), so this defers until that load has been attempted.
+        LOGI("Step 4: Calling ensureScenarioBuilt()");
+        ensureScenarioBuilt();
+        LOGI("Step 4: ensureScenarioBuilt() completed");
         __android_log_print(ANDROID_LOG_ERROR, "Renderer", "SYNC_CHECKPOINT_5: test scenario done");
 
         initialized = true;  // Mark as successfully initialized
@@ -1949,6 +1966,13 @@ bool Renderer::initGameSystems() {
     // Initialize Title Screen
     titleScreen = std::make_unique<TitleScreen>();
     titleScreen->initialize(localizationManager.get(), textRenderer.get());
+    // Auto-load Oblivion fonts for title screen
+    if (textRenderer) {
+        textRenderer->loadOblivionFont(FontType::KingthingsRegular);
+        textRenderer->loadOblivionFont(FontType::KingthingsShadowed);
+        textRenderer->setActiveFont(FontType::KingthingsRegular);
+        LOGI("Oblivion fonts loaded for title screen");
+    }
 #ifdef AUDIO_SYSTEM_ENABLED
     if (audioManager) {
         titleScreen->setAudioManager(audioManager.get());
@@ -2064,6 +2088,12 @@ void Renderer::loadBSAArchives() {
         return;
     }
 
+    if (archivesLoaded) {
+        LOGI("loadBSAArchives: game data already loaded, skipping");
+        return;
+    }
+    archivesLoaded = true;
+
     LOGI("Loading BSA archives (dataPath: %s)...", assetManager->getDataPath().c_str());
 
     const char* bsaArchives[] = {
@@ -2075,10 +2105,20 @@ void Renderer::loadBSAArchives() {
         "Oblivion - Voices2.bsa",
         "Oblivion - Misc.bsa",
         "DLCShiveringIsles - Meshes.bsa",
+        "DLCShiveringIsles - Textures.bsa",
         "DLCShiveringIsles - Textures - Compressed.bsa",
         "DLCShiveringIsles - Sounds.bsa",
         "DLCShiveringIsles - Voices.bsa",
-        "DLCShiveringIsles - Misc.bsa"
+        "DLCShiveringIsles - Misc.bsa",
+        "Knights.bsa",
+        "DLCBattlehornCastle.bsa",
+        "DLCFrostcrag.bsa",
+        "DLCHorseArmor.bsa",
+        "DLCMehrunesRazor.bsa",
+        "DLCOrrery.bsa",
+        "DLCSpellTomes.bsa",
+        "DLCThievesDen.bsa",
+        "DLCVileLair.bsa"
     };
 
     int loadedCount = 0;
@@ -2106,6 +2146,29 @@ void Renderer::loadBSAArchives() {
     } else {
         LOGW("  [--] Oblivion.esm not found (will test without ESM data)");
     }
+
+    // Game data load is complete: build the world from it (or fall back to the
+    // hardcoded scenario) if that has not happened yet.
+    gameDataLoadAttempted = true;
+    ensureScenarioBuilt();
+}
+
+void Renderer::ensureScenarioBuilt() {
+    if (scenarioBuilt) {
+        return;
+    }
+
+    // The Java side registers the data path before init(). While that load is
+    // still pending, wait so the world is built from real game data instead of
+    // the hardcoded fallback scenario.
+    const bool dataExpected = !g_pendingDataPath.empty() || gameDataLoadAttempted;
+    if (dataExpected && !gameDataLoadAttempted) {
+        LOGI("Scenario build deferred until game data load completes");
+        return;
+    }
+
+    scenarioBuilt = true;
+    createTestScenario();
 }
 
 void Renderer::createTestScenario() {
@@ -2145,18 +2208,95 @@ void Renderer::createTestScenario() {
     if (hasEsmData) {
         LOGI("=== Building world from ESM data ===");
 
-        // 1. Load CELL records into WorldManager
+        // Wire the ESM manager into the NPC manager so actors can be created
+        // from ACHR/ACRE records (NPC_ and CREA base records).
+        npcMgr->setESMManager(&esmMgr);
+
+        // 1. Load CELL records into WorldManager. Start from a clean world so
+        // the procedural test cells cannot collide with real ESM coordinates.
+        worldManager->clearAllCells();
+
         const auto& esmCells = esmMgr.getAllCells();
-        LOGI("Loading %zu cells from ESM data", esmCells.size());
+
+        // Pick the worldspace that owns the most cells. That is the main
+        // continent (Tamriel); the remainder are test/utility worldspaces whose
+        // coordinates would overlap the continent grid.
+        std::unordered_map<uint32_t, size_t> worldspaceCellCounts;
         for (const auto& cell : esmCells) {
-            LOGD("  Cell: 0x%08X '%s' (%s) grid=[%d,%d]",
-                 cell.formID, cell.editorID.c_str(),
-                 cell.fullName.c_str(), cell.gridX, cell.gridY);
-            worldManager->addCellFromESM(
-                cell.gridX, cell.gridY,
-                cell.editorID, cell.fullName,
-                cell.formID);
+            if (cell.isExterior) {
+                worldspaceCellCounts[cell.worldspaceID]++;
+            }
         }
+        uint32_t mainWorldspace = 0;
+        size_t mainWorldspaceCells = 0;
+        for (const auto& entry : worldspaceCellCounts) {
+            if (entry.second > mainWorldspaceCells) {
+                mainWorldspaceCells = entry.second;
+                mainWorldspace = entry.first;
+            }
+        }
+        worldManager->setCurrentWorldspace(mainWorldspace);
+        LOGI("Loading %zu cells from ESM data (%zu worldspaces, main=0x%08X with %zu cells)",
+             esmCells.size(), worldspaceCellCounts.size(), mainWorldspace, mainWorldspaceCells);
+
+        size_t interiorCells = 0;
+        size_t otherWorldspaceCells = 0;
+        size_t registeredCells = 0;
+
+        // LAND data is keyed by its owning cell. Build the lookup before the cell
+        // pass so that when two cells claim the same grid square we can keep the
+        // one that actually carries terrain. Oblivion contains such a pseudo-cell
+        // at (0,0) (0x00023777, no LAND) next to the real Wilderness02 (0x0000808B).
+        std::unordered_map<uint32_t, const oblivion::TerrainData*> terrainByCell;
+        for (const auto& terrain : esmMgr.getAllTerrains()) {
+            if (terrain.hasHeights()) {
+                terrainByCell[terrain.formID] = &terrain;
+            }
+        }
+
+        size_t duplicateCoords = 0;
+        std::unordered_map<uint64_t, const oblivion::CellData*> cellByCoord;
+        for (const auto& cell : esmCells) {
+            if (!cell.isExterior) {
+                ++interiorCells;
+                continue;
+            }
+            if (mainWorldspace != 0 && cell.worldspaceID != mainWorldspace) {
+                ++otherWorldspaceCells;
+                continue;
+            }
+
+            uint64_t key = (static_cast<uint64_t>(static_cast<uint32_t>(cell.gridX)) << 32) |
+                           static_cast<uint32_t>(cell.gridY);
+            auto it = cellByCoord.find(key);
+            if (it == cellByCoord.end()) {
+                cellByCoord[key] = &cell;
+                continue;
+            }
+            ++duplicateCoords;
+            const bool newHasTerrain = terrainByCell.count(cell.formID) != 0;
+            const bool currentHasTerrain = terrainByCell.count(it->second->formID) != 0;
+            if (newHasTerrain && !currentHasTerrain) {
+                it->second = &cell;
+            }
+        }
+
+        for (const auto& entry : cellByCoord) {
+            const oblivion::CellData* cell = entry.second;
+            if (registeredCells < 8) {
+                LOGI("  Cell: 0x%08X '%s' (%s) grid=[%d,%d]",
+                     cell->formID, cell->editorID.c_str(),
+                     cell->fullName.c_str(), cell->gridX, cell->gridY);
+            }
+            if (worldManager->addCellFromESM(
+                    cell->gridX, cell->gridY,
+                    cell->editorID, cell->fullName,
+                    cell->formID, cell->isExterior, cell->worldspaceID)) {
+                ++registeredCells;
+            }
+        }
+        LOGI("Registered %zu exterior cells (%zu interior skipped, %zu other worldspaces skipped, %zu duplicate grid squares)",
+             registeredCells, interiorCells, otherWorldspaceCells, duplicateCoords);
 
         // 2. Build lookup: baseFormID → NPCData for reference resolution
         std::unordered_map<uint32_t, const oblivion::NPCData*> npcLookup;
@@ -2165,22 +2305,65 @@ void Renderer::createTestScenario() {
             npcLookup[npc.formID] = &npc;
         }
 
-        // 3. Process REFR references to place NPCs at correct positions
+        // 3. Process REFR/ACHR/ACRE references to place actors and objects
         const auto& refs = esmMgr.getAllReferences();
-        LOGI("Processing %zu references from ESM data", refs.size());
+        LOGI("Processing %zu references from ESM data (ACHR=%zu, ACRE=%zu, REFR=%zu)",
+             refs.size(), esmMgr.getNpcReferenceCount(), esmMgr.getCreatureReferenceCount(),
+             refs.size() - esmMgr.getNpcReferenceCount() - esmMgr.getCreatureReferenceCount());
+        size_t placedActors = 0;
+        size_t placedObjects = 0;
+        size_t skippedInteriorRefs = 0;
+        size_t skippedForeignRefs = 0;
         for (const auto& ref : refs) {
+            // Exterior references are the only ones we can place: their DATA
+            // position is absolute world space, whereas interior references are
+            // relative to their cell origin. A reference is exterior exactly when
+            // its owning cell is one of the registered (main worldspace) cells.
+            if (!worldManager->getCellByFormID(ref.cellFormID)) {
+                // Interior cells are never registered; other worldspaces were
+                // filtered out during cell registration.
+                if (ref.cellFormID != 0) { ++skippedInteriorRefs; }
+                else { ++skippedForeignRefs; }
+                continue;
+            }
+
+            // The ESM stores positions Z-up (X = east, Y = north, Z = height);
+            // the engine renders Y-up, so the height axis is swapped here.
+            const glm::vec3 worldPos(ref.position.x, ref.position.z, ref.position.y);
+            const glm::vec3 worldRot(ref.rotation.x, ref.rotation.z, ref.rotation.y);
+
+            if (ref.refType != 0) {
+                // ACHR (NPC) / ACRE (creature) placed actor
+                auto npcPtr = npcMgr->createNPCFromESM(ref.baseFormID, worldPos);
+                if (npcPtr) {
+                    npcPtr->rotation = worldRot;
+                    npcPtr->updateModelMatrix();
+                    if (aiScheduler) {
+                        aiScheduler->registerNPC(npcPtr->npcId);
+                    }
+                    placedActors++;
+                    if (placedActors <= 8) {
+                        LOGI("  Placed %s: 0x%08X '%s' at (%.1f, %.1f, %.1f)",
+                             ref.refType == 1 ? "NPC" : "Creature",
+                             ref.formID, npcPtr->name.c_str(),
+                             worldPos.x, worldPos.y, worldPos.z);
+                    }
+                }
+                continue;
+            }
+
             auto it = npcLookup.find(ref.baseFormID);
             if (it != npcLookup.end()) {
                 const oblivion::NPCData* npcData = it->second;
                 auto npcPtr = npcMgr->createNPC(
                     npcData->fullName.empty() ? npcData->editorID : npcData->fullName,
-                    ref.position);
+                    worldPos);
                 if (npcPtr) {
                     npcPtr->status.initialize(
                         static_cast<float>(npcData->health),
                         static_cast<float>(npcData->magicka),
                         npcData->level);
-                    npcPtr->rotation = ref.rotation;
+                    npcPtr->rotation = worldRot;
                     npcPtr->meshAssetPath = "meshes/characters/imperial_male.nif";
                     npcPtr->updateModelMatrix();
 
@@ -2188,24 +2371,50 @@ void Renderer::createTestScenario() {
                     if (aiScheduler) {
                         aiScheduler->registerNPC(npcPtr->npcId);
                     }
-
-                    LOGD("  Placed NPC: 0x%08X '%s' at (%.1f, %.1f, %.1f)",
-                         ref.formID, npcData->fullName.c_str(),
-                         ref.position.x, ref.position.y, ref.position.z);
+                    placedActors++;
+                    if (placedActors <= 8) {
+                        LOGI("  Placed NPC: 0x%08X '%s' at (%.1f, %.1f, %.1f)",
+                             ref.formID, npcData->fullName.c_str(),
+                             worldPos.x, worldPos.y, worldPos.z);
+                    }
                 }
+            } else {
+                placedObjects++;
             }
         }
+        LOGI("Placed %zu actors and indexed %zu object references (%zu interior refs skipped, %zu unowned refs skipped)",
+             placedActors, placedObjects, skippedInteriorRefs, skippedForeignRefs);
 
         // 4. Load LAND terrain data and assign to cells
         const auto& terrains = esmMgr.getAllTerrains();
         LOGI("Loading %zu terrain records from ESM data", terrains.size());
+        size_t assignedTerrains = 0;
+        size_t orphanTerrains = 0;
         for (const auto& terrain : terrains) {
+            if (!terrain.hasHeights()) continue;
+
             auto cell = worldManager->getCellByFormID(terrain.formID);
-            if (cell && terrain.hasHeights()) {
-                cell->heightData = terrain.heights;
+            if (cell) {
+                cell->heightData = terrain.expandHeights();
+                for (int quadrant = 0; quadrant < 4; ++quadrant) {
+                    cell->landscapeTextures[quadrant] = terrain.baseTextures[quadrant];
+                }
                 cell->isDirty = true;
-                LOGD("  Assigned terrain to cell 0x%08X (%zu heights)",
-                     terrain.formID, terrain.heights.size());
+                ++assignedTerrains;
+            } else {
+                ++orphanTerrains;
+            }
+        }
+        LOGI("Terrain assigned to %zu cells (%zu records had no matching cell)",
+             assignedTerrains, orphanTerrains);
+
+        // 4b. Place the player on real terrain so the first frame renders the
+        // world instead of empty space above it.
+        const size_t terrainCells = worldManager->countExteriorCellsWithTerrain();
+        LOGI("Exterior cells with terrain: %zu", terrainCells);
+        if (worldManager->spawnPlayerAtNearestTerrainCell()) {
+            if (playerController) {
+                playerController->setPosition(worldManager->getPlayerPosition());
             }
         }
 
@@ -2492,14 +2701,16 @@ void Renderer::createTestScenario() {
         // Create test spells
         if (spellManager) {
             if (hasEsmData) {
-                // ESM mode: pick the first Destruction and Restoration spells
+                // ESM mode: pick the first Destruction, Restoration and Mysticism spell
                 const auto& spells = esmMgr.getAllSpells();
                 for (const auto& s : spells) {
                     uint32_t spellId = s.formID;
-                    if (spellId == 0) continue;
+                    if (spellId == 0 || s.effectFormIDs.empty()) continue;
 
+                    // school: 0=Alteration, 1=Conjuration, 2=Destruction,
+                    //         3=Illusion, 4=Mysticism, 5=Restoration
                     // Assign first Destruction spell to Izar (monster)
-                    if (s.effectType == 2 && fireball == 0) {
+                    if (s.school == 2 && fireball == 0) {
                         fireball = spellId;
                         spellManager->teachSpellToNpc(izar->npcId, spellId);
                         spellManager->equipSpellToNpc(izar->npcId, spellId);
@@ -2507,7 +2718,7 @@ void Renderer::createTestScenario() {
                     }
 
                     // Assign first Restoration spell to Hellas (healer)
-                    if (s.effectType == 5 && heal == 0) {
+                    if (s.school == 5 && heal == 0) {
                         heal = spellId;
                         spellManager->teachSpellToNpc(hellas->npcId, spellId);
                         spellManager->equipSpellToNpc(hellas->npcId, spellId);
@@ -2515,7 +2726,7 @@ void Renderer::createTestScenario() {
                     }
 
                     // Assign first Mysticism spell to both
-                    if (s.effectType == 4 && restoreMana == 0) {
+                    if (s.school == 4 && restoreMana == 0) {
                         restoreMana = spellId;
                         spellManager->teachSpellToNpc(izar->npcId, spellId);
                         spellManager->equipSpellToNpc(izar->npcId, spellId);
@@ -2626,6 +2837,10 @@ void Renderer::createTestScenario() {
 }
 
 void Renderer::render(float deltaTime) {
+    // Safety net: the world must exist before anything is drawn. Normally the
+    // scenario is built from game data at the end of loadBSAArchives().
+    ensureScenarioBuilt();
+
     // Launcher takes priority - render and return early
     // When launched from IntroVideoActivity, skip launcher and go directly to title screen
     if (showLauncher && launcherScreen) {
@@ -2638,6 +2853,13 @@ void Renderer::render(float deltaTime) {
             if (titleScreen) {
                 titleScreen->initialize(localizationManager.get(), textRenderer.get());
                 titleScreen->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+                // Auto-load Oblivion fonts for title screen
+                if (textRenderer) {
+                    textRenderer->loadOblivionFont(FontType::KingthingsRegular);
+                    textRenderer->loadOblivionFont(FontType::KingthingsShadowed);
+                    textRenderer->setActiveFont(FontType::KingthingsRegular);
+                    LOGI("Oblivion fonts loaded for title screen (auto-skip)");
+                }
 #ifdef AUDIO_SYSTEM_ENABLED
                 if (audioManager) {
                     titleScreen->setAudioManager(audioManager.get());
@@ -2972,21 +3194,43 @@ void Renderer::render(float deltaTime) {
         NpcManager* npcMgr = worldManager->getNpcManager();
         if (npcMgr) {
             auto allNpcs = npcMgr->getAllNPCs();
+            glm::vec3 playerPos(0.0f, 0.0f, 0.0f);
+            if (playerController) {
+                playerPos = playerController->getPlayerPosition();
+            }
+            size_t loadedCount = 0;
+            size_t failedCount = 0;
             for (const auto& npc : allNpcs) {
-                if (npc) {
-                    // Load mesh if not already loaded and asset path is set
-                    if (!npc->mesh && !npc->meshAssetPath.empty()) {
-                        npc->mesh = assetManager->loadNifMesh(npc->meshAssetPath);
-                        if (npc->mesh) {
-                            LOGD("Loaded mesh for NPC %u: %s", npc->npcId, npc->meshAssetPath.c_str());
-                        } else {
-                            LOGW("Failed to load mesh for NPC %u: %s", npc->npcId, npc->meshAssetPath.c_str());
-                        }
-                    }
+                if (!npc) continue;
 
-                    // Update model matrix every frame
-                    npc->updateModelMatrix();
+                // Only stream meshes for NPCs near the player. Iterating the whole
+                // world every frame is prohibitively expensive with thousands of NPCs.
+                const glm::vec3 npcDelta = npc->position - playerPos;
+                if (glm::length(npcDelta) > NPC_MESH_STREAM_RADIUS) {
+                    continue;
                 }
+
+                // Load mesh if not already loaded and asset path is set.
+                // A failed NIF lookup re-scans the BSA archives, so remember paths that
+                // already failed instead of retrying them on every frame.
+                static std::unordered_set<std::string> unresolvedNpcMeshes;
+                if (!npc->mesh && !npc->meshAssetPath.empty() &&
+                    unresolvedNpcMeshes.find(npc->meshAssetPath) == unresolvedNpcMeshes.end()) {
+                    npc->mesh = assetManager->loadNifMesh(npc->meshAssetPath);
+                    if (npc->mesh) {
+                        loadedCount++;
+                    } else {
+                        unresolvedNpcMeshes.insert(npc->meshAssetPath);
+                        failedCount++;
+                    }
+                }
+
+                // Update model matrix every frame
+                npc->updateModelMatrix();
+            }
+            if (loadedCount > 0 || failedCount > 0) {
+                LOGD("NPC mesh streaming: %zu loaded, %zu unresolved (radius %.0f)",
+                     loadedCount, failedCount, NPC_MESH_STREAM_RADIUS);
             }
         }
     }
@@ -3013,12 +3257,13 @@ void Renderer::render(float deltaTime) {
 
     // Render world objects
     if (worldManager) {
-        LOGD("Calling worldManager->render()");
         worldManager->render();
-        LOGD("worldManager->render() completed");
     } else {
         LOGW("worldManager is null!");
     }
+
+    // Phase 65: Render exterior terrain from LAND heightmaps
+    renderTerrainMeshes();
 
     // Phase XX: Render placeholder primitives for entities with missing meshes
     // (e.g., imperial_male.nif or imp.nif not present in APK assets)
@@ -3237,8 +3482,11 @@ void Renderer::render(float deltaTime) {
         gameConsole->render();
     }
 
-    LOGD("Frame rendered: deltaTime=%.3f, FPS=%.1f, Target FPS=%d",
-         deltaTime, performanceMonitor ? performanceMonitor->getFPS() : 0.0f, targetFPS);
+    static int frameLogCounter = 0;
+    if (++frameLogCounter % 120 == 1) {
+        LOGD("Frame rendered: deltaTime=%.3f, FPS=%.1f, Target FPS=%d",
+             deltaTime, performanceMonitor ? performanceMonitor->getFPS() : 0.0f, targetFPS);
+    }
 }
 
 // ============================================================
@@ -3306,16 +3554,414 @@ static const char* placeholderFragmentSrc =
 "    fragColor = vec4(uColor.rgb * (ambient + diff), uColor.a);\n"
 "}\n";
 
+// ============================================================
+// Phase 65: Terrain rendering from TES4 LAND heightmaps
+// ============================================================
+//
+// Every exterior cell carries a 33x33 heightmap in game units (filled by
+// ESMFile::decodeTerrain and assigned in loadBSAArchives). The grid's local
+// X maps to world X and its local Y maps to world Z because the engine is
+// Y-up; this matches Cell::getTerrainHeightAt() and DistantLodManager.
+static const int TERRAIN_MESH_GRID = 33;
+static const float TERRAIN_MESH_CELL_SIZE = 4096.0f;
+// Landscape textures are authored to tile across the world, so UVs come from world
+// position divided by this scale rather than from 0..1 across the cell.
+static const float TERRAIN_TEXTURE_SCALE = 512.0f;
+// Bound on distinct LTEX textures kept in GPU memory. The emulator is memory
+// constrained (720 MB total PSS measured), so this is deliberately modest.
+static const size_t MAX_LANDSCAPE_TEXTURES = 48;
+// pos(3) + normal(3) + uv(2) + quadrant blend weights(4)
+static const int TERRAIN_VERTEX_FLOATS = 12;
+
+// Terrain shader. Blends the four LAND BTXT quadrant textures by per-vertex weights
+// computed on the CPU, and falls back to a flat colour when no texture resolved.
+static const char* terrainVertexSrc =
+"#version 300 es\n"
+"uniform mat4 uMVP;\n"
+"in vec3 aPosition;\n"
+"in vec3 aNormal;\n"
+"in vec2 aUv;\n"
+"in vec4 aBlend;\n"
+"out vec3 vNormal;\n"
+"out vec2 vUv;\n"
+"out vec4 vBlend;\n"
+"void main() {\n"
+"    gl_Position = uMVP * vec4(aPosition, 1.0);\n"
+"    vNormal = aNormal;\n"
+"    vUv = aUv;\n"
+"    vBlend = aBlend;\n"
+"}\n";
+
+static const char* terrainFragmentSrc =
+"#version 300 es\n"
+"precision mediump float;\n"
+"uniform sampler2D uTex0;\n"
+"uniform sampler2D uTex1;\n"
+"uniform sampler2D uTex2;\n"
+"uniform sampler2D uTex3;\n"
+"uniform vec4 uHasTex;\n"
+"uniform vec4 uColor;\n"
+"uniform vec3 uLightDir;\n"
+"in vec3 vNormal;\n"
+"in vec2 vUv;\n"
+"in vec4 vBlend;\n"
+"out vec4 fragColor;\n"
+"void main() {\n"
+"    vec3 accum = vec3(0.0);\n"
+"    float weightSum = 0.0;\n"
+"    if (uHasTex.x > 0.5) { accum += texture(uTex0, vUv).rgb * vBlend.x; weightSum += vBlend.x; }\n"
+"    if (uHasTex.y > 0.5) { accum += texture(uTex1, vUv).rgb * vBlend.y; weightSum += vBlend.y; }\n"
+"    if (uHasTex.z > 0.5) { accum += texture(uTex2, vUv).rgb * vBlend.z; weightSum += vBlend.z; }\n"
+"    if (uHasTex.w > 0.5) { accum += texture(uTex3, vUv).rgb * vBlend.w; weightSum += vBlend.w; }\n"
+"    vec3 base = (weightSum > 0.001) ? (accum / weightSum) : uColor.rgb;\n"
+"    vec3 n = normalize(vNormal);\n"
+"    float NdotL = max(dot(n, normalize(uLightDir)), 0.0);\n"
+"    fragColor = vec4(base * (0.3 + 0.7 * NdotL), 1.0);\n"
+"}\n";
+
+void Renderer::releaseTerrainMeshes() {
+    for (auto& entry : terrainMeshes) {
+        if (entry.second.vao) glDeleteVertexArrays(1, &entry.second.vao);
+        if (entry.second.vbo) glDeleteBuffers(1, &entry.second.vbo);
+        if (entry.second.ibo) glDeleteBuffers(1, &entry.second.ibo);
+    }
+    terrainMeshes.clear();
+}
+
+void Renderer::renderTerrainMeshes() {
+    if (!worldManager) return;
+
+    const auto& cells = worldManager->getActiveCells();
+    if (cells.empty()) return;
+
+    // Compile the terrain shader once. Unlike the placeholder shader it samples the
+    // cell's LAND BTXT quadrant textures instead of drawing a flat colour.
+    static GLuint terrainShader = 0;
+    static bool terrainShaderInit = false;
+    if (!terrainShaderInit) {
+        terrainShaderInit = true;
+
+        GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+        glShaderSource(vs, 1, &terrainVertexSrc, nullptr);
+        glCompileShader(vs);
+        GLint ok = 0;
+        glGetShaderiv(vs, GL_COMPILE_STATUS, &ok);
+        if (!ok) {
+            char buf[512];
+            glGetShaderInfoLog(vs, sizeof(buf), nullptr, buf);
+            LOGE("Terrain vertex shader error: %s", buf);
+            glDeleteShader(vs);
+            return;
+        }
+
+        GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+        glShaderSource(fs, 1, &terrainFragmentSrc, nullptr);
+        glCompileShader(fs);
+        glGetShaderiv(fs, GL_COMPILE_STATUS, &ok);
+        if (!ok) {
+            char buf[512];
+            glGetShaderInfoLog(fs, sizeof(buf), nullptr, buf);
+            LOGE("Terrain fragment shader error: %s", buf);
+            glDeleteShader(vs);
+            glDeleteShader(fs);
+            return;
+        }
+
+        terrainShader = glCreateProgram();
+        glAttachShader(terrainShader, vs);
+        glAttachShader(terrainShader, fs);
+        glLinkProgram(terrainShader);
+        glGetProgramiv(terrainShader, GL_LINK_STATUS, &ok);
+        glDeleteShader(vs);
+        glDeleteShader(fs);
+        if (!ok) {
+            char buf[512];
+            glGetProgramInfoLog(terrainShader, sizeof(buf), nullptr, buf);
+            LOGE("Terrain shader link error: %s", buf);
+            glDeleteProgram(terrainShader);
+            terrainShader = 0;
+            return;
+        }
+        LOGI("Terrain shader compiled (program=%u)", terrainShader);
+    }
+    if (!terrainShader) return;
+
+    // LTEX formID -> GL texture id (0 when the record or its .dds could not be
+    // resolved). Resolved lazily so a cell pays for its quadrant textures once.
+    static std::unordered_map<uint32_t, GLuint> landscapeTextureCache;
+    static size_t landscapeTexturesLoaded = 0;
+
+    const size_t expectedHeights = static_cast<size_t>(TERRAIN_MESH_GRID * TERRAIN_MESH_GRID);
+    std::vector<std::shared_ptr<Cell>> renderable;
+    renderable.reserve(cells.size());
+
+    size_t skippedNonExterior = 0;
+    size_t skippedNoHeights = 0;
+
+    for (const auto& cell : cells) {
+        if (!cell) continue;
+        if (cell->cellType != CellType::EXTERIOR) {
+            skippedNonExterior++;
+            continue;
+        }
+        if (cell->heightData.size() != expectedHeights) {
+            skippedNoHeights++;
+            continue;
+        }
+        renderable.push_back(cell);
+
+        if (terrainMeshes.find(cell->cellId) != terrainMeshes.end()) continue;
+
+        const float step = TERRAIN_MESH_CELL_SIZE / static_cast<float>(TERRAIN_MESH_GRID - 1);
+        const float baseX = static_cast<float>(cell->cellX) * TERRAIN_MESH_CELL_SIZE;
+        const float baseZ = static_cast<float>(cell->cellY) * TERRAIN_MESH_CELL_SIZE;
+
+        std::vector<float> vertices;
+        vertices.reserve(expectedHeights * TERRAIN_VERTEX_FLOATS);
+        float minHeight = cell->heightData[0];
+        float maxHeight = cell->heightData[0];
+
+        // BTXT quadrant centres in cell-local UV space, indexed 0=SW, 1=SE, 2=NW, 3=NE.
+        // Per-vertex weights fade each quadrant out over its own quarter so the four
+        // base textures cross-fade instead of meeting at a hard seam.
+        static const float quadrantCenters[4][2] = {
+            {0.25f, 0.25f}, {0.75f, 0.25f}, {0.25f, 0.75f}, {0.75f, 0.75f}
+        };
+
+        for (int y = 0; y < TERRAIN_MESH_GRID; ++y) {
+            for (int x = 0; x < TERRAIN_MESH_GRID; ++x) {
+                const size_t idx = static_cast<size_t>(y * TERRAIN_MESH_GRID + x);
+                const float height = cell->heightData[idx];
+                if (height < minHeight) minHeight = height;
+                if (height > maxHeight) maxHeight = height;
+
+                const float worldX = baseX + static_cast<float>(x) * step;
+                const float worldZ = baseZ + static_cast<float>(y) * step;
+
+                const float localU = static_cast<float>(x) / static_cast<float>(TERRAIN_MESH_GRID - 1);
+                const float localV = static_cast<float>(y) / static_cast<float>(TERRAIN_MESH_GRID - 1);
+
+                float weights[4];
+                float weightSum = 0.0f;
+                for (int quadrant = 0; quadrant < 4; ++quadrant) {
+                    const float du = localU - quadrantCenters[quadrant][0];
+                    const float dv = localV - quadrantCenters[quadrant][1];
+                    const float distanceSq = du * du + dv * dv;
+                    weights[quadrant] = std::max(0.0f, 1.0f - distanceSq / (0.75f * 0.75f));
+                    weightSum += weights[quadrant];
+                }
+                if (weightSum <= 0.0001f) {
+                    weights[0] = weights[1] = weights[2] = weights[3] = 0.25f;
+                } else {
+                    for (int quadrant = 0; quadrant < 4; ++quadrant) weights[quadrant] /= weightSum;
+                }
+
+                vertices.push_back(worldX);
+                vertices.push_back(height);
+                vertices.push_back(worldZ);
+                vertices.push_back(0.0f);
+                vertices.push_back(1.0f);
+                vertices.push_back(0.0f);
+                vertices.push_back(worldX / TERRAIN_TEXTURE_SCALE);
+                vertices.push_back(worldZ / TERRAIN_TEXTURE_SCALE);
+                vertices.push_back(weights[0]);
+                vertices.push_back(weights[1]);
+                vertices.push_back(weights[2]);
+                vertices.push_back(weights[3]);
+            }
+        }
+
+        // Smooth normals from central differences on the heightmap.
+        for (int y = 0; y < TERRAIN_MESH_GRID; ++y) {
+            for (int x = 0; x < TERRAIN_MESH_GRID; ++x) {
+                const size_t idx = static_cast<size_t>(y * TERRAIN_MESH_GRID + x);
+                const int xm = (x > 0) ? x - 1 : x;
+                const int xp = (x < TERRAIN_MESH_GRID - 1) ? x + 1 : x;
+                const int ym = (y > 0) ? y - 1 : y;
+                const int yp = (y < TERRAIN_MESH_GRID - 1) ? y + 1 : y;
+
+                const float hL = cell->heightData[static_cast<size_t>(y * TERRAIN_MESH_GRID + xm)];
+                const float hR = cell->heightData[static_cast<size_t>(y * TERRAIN_MESH_GRID + xp)];
+                const float hD = cell->heightData[static_cast<size_t>(ym * TERRAIN_MESH_GRID + x)];
+                const float hU = cell->heightData[static_cast<size_t>(yp * TERRAIN_MESH_GRID + x)];
+
+                glm::vec3 normal((hL - hR) / (2.0f * step), 1.0f, (hD - hU) / (2.0f * step));
+                const float len = glm::length(normal);
+                if (len > 0.0001f) normal /= len;
+
+                vertices[idx * TERRAIN_VERTEX_FLOATS + 3] = normal.x;
+                vertices[idx * TERRAIN_VERTEX_FLOATS + 4] = normal.y;
+                vertices[idx * TERRAIN_VERTEX_FLOATS + 5] = normal.z;
+            }
+        }
+
+        std::vector<uint16_t> indices;
+        indices.reserve(static_cast<size_t>((TERRAIN_MESH_GRID - 1) * (TERRAIN_MESH_GRID - 1) * 6));
+        for (int y = 0; y < TERRAIN_MESH_GRID - 1; ++y) {
+            for (int x = 0; x < TERRAIN_MESH_GRID - 1; ++x) {
+                const uint16_t i0 = static_cast<uint16_t>(y * TERRAIN_MESH_GRID + x);
+                const uint16_t i1 = static_cast<uint16_t>(i0 + 1);
+                const uint16_t i2 = static_cast<uint16_t>((y + 1) * TERRAIN_MESH_GRID + x);
+                const uint16_t i3 = static_cast<uint16_t>(i2 + 1);
+                // Counter-clockwise when seen from above, so the face normal is +Y.
+                indices.push_back(i0);
+                indices.push_back(i2);
+                indices.push_back(i1);
+                indices.push_back(i1);
+                indices.push_back(i2);
+                indices.push_back(i3);
+            }
+        }
+
+        TerrainGpuMesh mesh;
+        glGenVertexArrays(1, &mesh.vao);
+        glGenBuffers(1, &mesh.vbo);
+        glGenBuffers(1, &mesh.ibo);
+        glBindVertexArray(mesh.vao);
+        glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
+        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float),
+                     vertices.data(), GL_STATIC_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.ibo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint16_t),
+                     indices.data(), GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, TERRAIN_VERTEX_FLOATS * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, TERRAIN_VERTEX_FLOATS * sizeof(float),
+                             (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, TERRAIN_VERTEX_FLOATS * sizeof(float),
+                             (void*)(6 * sizeof(float)));
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, TERRAIN_VERTEX_FLOATS * sizeof(float),
+                             (void*)(8 * sizeof(float)));
+        glEnableVertexAttribArray(3);
+        glBindVertexArray(0);
+        mesh.indexCount = static_cast<GLuint>(indices.size());
+
+        terrainMeshes.emplace(cell->cellId, mesh);
+        LOGI("Terrain mesh built for cell %u grid=(%d,%d) heights %.1f..%.1f",
+             cell->cellId, cell->cellX, cell->cellY, minHeight, maxHeight);
+    }
+
+    if (renderable.empty()) {
+        static int terrainSkipLogFrame = 0;
+        if (++terrainSkipLogFrame % 300 == 1) {
+            LOGI("Terrain: no renderable cells (active=%zu, nonExterior=%zu, noHeights=%zu)",
+                 cells.size(), skippedNonExterior, skippedNoHeights);
+        }
+        return;
+    }
+
+    glm::mat4 viewMatrix;
+    glm::mat4 projMatrix;
+    const float aspect = static_cast<float>(screenWidth) / static_cast<float>(screenHeight);
+    if (playerController) {
+        // Same framing as the placeholder pass so terrain and entities agree.
+        const glm::vec3 target = playerController->getPlayerPosition();
+        const glm::vec3 eye = target + glm::vec3(0.0f, PH_CAMERA_HEIGHT, PH_CAMERA_DIST);
+        viewMatrix = glm::lookAt(eye, target, glm::vec3(0.0f, 1.0f, 0.0f));
+        projMatrix = glm::perspective(glm::radians(60.0f), aspect, 10.0f, 20000.0f);
+    } else if (camera) {
+        viewMatrix = camera->getViewMatrix();
+        projMatrix = camera->getProjectionMatrix(aspect);
+    } else {
+        return;
+    }
+
+    const glm::mat4 viewProj = projMatrix * viewMatrix;
+
+    const auto& esmMgr = assetManager->getEsmManager();
+
+    glUseProgram(terrainShader);
+    glUniform3f(glGetUniformLocation(terrainShader, "uLightDir"), 0.5f, 1.0f, 0.3f);
+    glUniformMatrix4fv(glGetUniformLocation(terrainShader, "uMVP"),
+                       1, GL_FALSE, viewProj.value_ptr());
+    const float terrainColor[4] = {0.32f, 0.42f, 0.22f, 1.0f};
+    glUniform4fv(glGetUniformLocation(terrainShader, "uColor"), 1, terrainColor);
+
+    const GLint texUniforms[4] = {
+        glGetUniformLocation(terrainShader, "uTex0"),
+        glGetUniformLocation(terrainShader, "uTex1"),
+        glGetUniformLocation(terrainShader, "uTex2"),
+        glGetUniformLocation(terrainShader, "uTex3")
+    };
+    for (int slot = 0; slot < 4; ++slot) glUniform1i(texUniforms[slot], slot);
+    const GLint hasTexUniform = glGetUniformLocation(terrainShader, "uHasTex");
+
+    size_t drawn = 0;
+    size_t texturedCells = 0;
+    size_t boundTextures = 0;
+    for (const auto& cell : renderable) {
+        auto it = terrainMeshes.find(cell->cellId);
+        if (it == terrainMeshes.end() || it->second.vao == 0) continue;
+
+        float hasTex[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+        int cellTextures = 0;
+        for (int quadrant = 0; quadrant < 4; ++quadrant) {
+            const uint32_t ltexFormID = cell->landscapeTextures[quadrant];
+            if (ltexFormID == 0) continue;
+
+            auto cached = landscapeTextureCache.find(ltexFormID);
+            if (cached == landscapeTextureCache.end()) {
+                GLuint textureId = 0;
+                const oblivion::LandscapeTextureData* ltex = esmMgr.findLandscapeTexture(ltexFormID);
+                if (landscapeTexturesLoaded < MAX_LANDSCAPE_TEXTURES) {
+                    if (ltex && !ltex->iconPath.empty()) {
+                        auto material = assetManager->loadDDSTexture(ltex->iconPath);
+                        if (material && material->hasTexture()) {
+                            textureId = material->getTextureId();
+                        }
+                    }
+                    if (textureId != 0) {
+                        landscapeTexturesLoaded++;
+                    } else {
+                        LOGW("Landscape texture unresolved for LTEX %08X (%s)",
+                             ltexFormID, ltex ? ltex->iconPath.c_str() : "no LTEX record");
+                    }
+                }
+                cached = landscapeTextureCache.emplace(ltexFormID, textureId).first;
+            }
+            if (cached->second == 0) continue;
+
+            glActiveTexture(GL_TEXTURE0 + quadrant);
+            glBindTexture(GL_TEXTURE_2D, cached->second);
+            hasTex[quadrant] = 1.0f;
+            cellTextures++;
+        }
+        glUniform4fv(hasTexUniform, 1, hasTex);
+        if (cellTextures > 0) {
+            texturedCells++;
+            boundTextures += static_cast<size_t>(cellTextures);
+        }
+
+        glBindVertexArray(it->second.vao);
+        glDrawElements(GL_TRIANGLES, it->second.indexCount, GL_UNSIGNED_SHORT, nullptr);
+        drawn++;
+    }
+    glBindVertexArray(0);
+    for (int slot = 0; slot < 4; ++slot) {
+        glActiveTexture(GL_TEXTURE0 + slot);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+    glActiveTexture(GL_TEXTURE0);
+    glUseProgram(0);
+
+    static int terrainLogFrame = 0;
+    if (++terrainLogFrame % 120 == 1) {
+        LOGI("Terrain textured: %zu of %zu drawn cells, %zu texture bindings, %zu LTEX loaded",
+             texturedCells, drawn, boundTextures, landscapeTexturesLoaded);
+        LOGI("Terrain rendered: %zu exterior cells with heightmap, %zu drawn, cache=%zu",
+             renderable.size(), drawn, terrainMeshes.size());
+    }
+}
+
 void Renderer::renderPlaceholderEntities() {
-    LOGI("renderPlaceholderEntities called: worldManager=%p", worldManager.get());
     if (!worldManager) return;
 
     NpcManager* npcMgr = worldManager->getNpcManager();
-    LOGI("  npcManager=%p", npcMgr);
     if (!npcMgr) return;
 
     auto allNpcs = npcMgr->getAllNPCs();
-    LOGI("  getAllNPCs returned %zu NPCs", allNpcs.size());
 
     // Collect NPCs with no mesh loaded
     struct PlaceholderInfo {
@@ -3327,13 +3973,17 @@ void Renderer::renderPlaceholderEntities() {
     };
     std::vector<PlaceholderInfo> placeholders;
 
-    LOGI("renderPlaceholderEntities: checking %zu NPCs", allNpcs.size());
+    glm::vec3 playerPos(0.0f, 0.0f, 0.0f);
+    if (playerController) {
+        playerPos = playerController->getPlayerPosition();
+    }
+
     for (const auto& npc : allNpcs) {
         if (!npc) continue;
-        LOGI("  NPC %u '%s': mesh=%s, path='%s'", npc->npcId, npc->name.c_str(),
-             npc->mesh ? "YES" : "NO", npc->meshAssetPath.c_str());
         if (npc->mesh) continue;  // has real mesh, skip
         if (npc->meshAssetPath.empty()) continue;  // no path assigned, skip
+        const glm::vec3 npcDelta = npc->position - playerPos;
+        if (glm::length(npcDelta) > NPC_MESH_STREAM_RADIUS) continue;
 
         float radius = 40.0f;
         glm::vec4 color(0.3f, 0.8f, 0.3f, 1.0f);  // Green for NPCs
@@ -3408,8 +4058,12 @@ void Renderer::renderPlaceholderEntities() {
 
     if (!phShader) return;
 
+    // Diagnostic logging is throttled: this function runs every frame.
+    static int phLogCounter = 0;
+    const bool phVerbose = (phLogCounter++ % 300) == 0;
+
             // Log player and camera state for diagnostics
-            if (playerController) {
+            if (phVerbose && playerController) {
                 auto& pp = playerController->getPlayerPosition();
                 LOGI("renderPlaceholderEntities: playerPos=(%.1f, %.1f, %.1f), phCamEye=(%.1f, %.1f, %.1f), phCamTarget=(%.1f, %.1f, %.1f)",
                      pp.x, pp.y, pp.z,
@@ -3471,7 +4125,7 @@ void Renderer::renderPlaceholderEntities() {
             viewMatrix = glm::lookAt(eye, target, glm::vec3(0.0f, 1.0f, 0.0f));
             projMatrix = glm::perspective(glm::radians(60.0f),
                 static_cast<float>(screenWidth) / static_cast<float>(screenHeight),
-                10.0f, 5000.0f);
+                10.0f, 20000.0f);
         } else if (camera) {
             viewMatrix = camera->getViewMatrix();
             projMatrix = camera->getProjectionMatrix(
@@ -3483,7 +4137,7 @@ void Renderer::renderPlaceholderEntities() {
             viewMatrix = glm::lookAt(eye, target, glm::vec3(0.0f, 1.0f, 0.0f));
             projMatrix = glm::perspective(glm::radians(60.0f),
                 static_cast<float>(screenWidth) / static_cast<float>(screenHeight),
-                10.0f, 5000.0f);
+                10.0f, 20000.0f);
         }
 
     // Render all placeholders
@@ -3497,8 +4151,10 @@ void Renderer::renderPlaceholderEntities() {
         if (err != GL_NO_ERROR) {
             LOGE("renderPlaceholderEntities pre-draw GL error: 0x%x", err);
         }
-        LOGI("renderPlaceholderEntities: drawing %zu placeholders, shader=%u vao=%u idx=%u",
-             placeholders.size(), phShader, phVAO, phIndexCount);
+        if (phVerbose) {
+            LOGI("renderPlaceholderEntities: drawing %zu placeholders, shader=%u vao=%u idx=%u",
+                 placeholders.size(), phShader, phVAO, phIndexCount);
+        }
 
     for (const auto& ph : placeholders) {
             // Build model matrix manually: translate + scale (uniform)
@@ -3519,9 +4175,6 @@ void Renderer::renderPlaceholderEntities() {
 
             glDrawElements(GL_TRIANGLES, phIndexCount, GL_UNSIGNED_SHORT, nullptr);
             GLCHECK_MSG("ph-draw");
-
-            LOGD("Rendered placeholder for NPC %u '%s' at (%.1f, %.1f, %.1f) r=%.1f",
-                 ph.npcId, ph.name.c_str(), ph.position.x, ph.position.y, ph.position.z, ph.radius);
         }
 
         glBindVertexArray(0);
@@ -3697,6 +4350,8 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
 }
 void Renderer::cleanup() {
     LOGI("Renderer cleaning up");
+
+    releaseTerrainMeshes();
 
     // Imperial Weave: shutdown integration layer
     if (imperialWeaveInitialized) {

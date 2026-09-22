@@ -28,6 +28,9 @@ public:
     int getPassCount() const;
     int getFailCount() const;
 
+    // Human-readable summary, matching the other test suites
+    std::string getSummary() const;
+
 private:
     std::vector<ScriptVMTestResult> results;
 

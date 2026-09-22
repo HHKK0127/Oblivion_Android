@@ -1,5 +1,6 @@
 #include "cell_transition_manager.h"
 #include "world_manager.h"
+#include <algorithm>
 #include <cmath>
 
 CellTransitionManager::CellTransitionManager()
@@ -28,18 +29,13 @@ void CellTransitionManager::cleanup() {
     LOGD("CellTransitionManager cleaned up");
 }
 
-void CellTransitionManager::update(const glm::vec3& playerPos, float deltaTime) {
+void CellTransitionManager::update(float deltaTime) {
     if (!worldManager) return;
 
-    // Get current cell
-    int32_t cellX, cellY;
-    getCurrentCell(playerPos, cellX, cellY);
-
-    // Load adjacent cells
-    loadAdjacentCells(cellX, cellY);
-
-    // Unload distant cells
-    unloadDistantCells(cellX, cellY);
+    // WorldManager owns cell streaming (radius based, capped at MAX_ACTIVE_CELLS).
+    // Mirror its active-cell set instead of loading/unloading cells here, so the two
+    // systems cannot fight over the active-cell budget.
+    syncFromActiveCells();
 
     // Update timeSinceLoaded for tracking
     for (auto& state : cellLoadStates) {
@@ -92,71 +88,39 @@ bool CellTransitionManager::shouldUnloadCell(int32_t cellX, int32_t cellY) const
     return false;  // Cell doesn't exist, nothing to unload
 }
 
-void CellTransitionManager::loadAdjacentCells(int32_t centerCellX, int32_t centerCellY) {
+void CellTransitionManager::syncFromActiveCells() {
     if (!worldManager) return;
 
-    // Load 5x5 grid around player
-    for (int32_t dx = -LOAD_DISTANCE; dx <= LOAD_DISTANCE; ++dx) {
-        for (int32_t dy = -LOAD_DISTANCE; dy <= LOAD_DISTANCE; ++dy) {
-            int32_t cellX = centerCellX + dx;
-            int32_t cellY = centerCellY + dy;
-
-            // Check if cell already exists in load states
-            bool cellExists = false;
-            for (auto& state : cellLoadStates) {
-                if (state.cellX == cellX && state.cellY == cellY) {
-                    cellExists = true;
-                    if (!state.isLoaded) {
-                        // Load the cell
-                        if (worldManager->loadCell(cellX, cellY)) {
-                            state.isLoaded = true;
-                            state.timeSinceLoaded = 0.0f;
-                            LOGD("Cell (%d, %d) loaded", cellX, cellY);
-                        }
-                    }
-                    break;
-                }
-            }
-
-            // If cell doesn't exist, create new load state and load it
-            if (!cellExists) {
-                if (worldManager->loadCell(cellX, cellY)) {
-                    CellLoadState newState;
-                    newState.cellX = cellX;
-                    newState.cellY = cellY;
-                    newState.isLoaded = true;
-                    newState.timeSinceLoaded = 0.0f;
-                    cellLoadStates.push_back(newState);
-                    LOGI("New cell (%d, %d) loaded", cellX, cellY);
-                }
-            }
-        }
-    }
-}
-
-void CellTransitionManager::unloadDistantCells(int32_t centerCellX, int32_t centerCellY) {
-    if (!worldManager) return;
-
-    // Unload cells beyond UNLOAD_DISTANCE
-    for (auto it = cellLoadStates.begin(); it != cellLoadStates.end(); ++it) {
-        if (!it->isLoaded) continue;
-
-        int32_t dx = std::abs(it->cellX - centerCellX);
-        int32_t dy = std::abs(it->cellY - centerCellY);
-
-        if (dx > UNLOAD_DISTANCE || dy > UNLOAD_DISTANCE) {
-            // Unload the cell
-            worldManager->unloadCell(it->cellX, it->cellY);
-            it->isLoaded = false;
-            it->timeSinceLoaded = 0.0f;
-            LOGD("Cell (%d, %d) unloaded (distance exceeded)", it->cellX, it->cellY);
-        }
+    for (auto& state : cellLoadStates) {
+        state.isLoaded = false;
     }
 
-    // Remove unloaded cells from tracking (optional - keeps memory clean)
+    for (const auto& cell : worldManager->getActiveCells()) {
+        if (!cell) continue;
+
+        auto it = std::find_if(
+            cellLoadStates.begin(), cellLoadStates.end(),
+            [&cell](const CellLoadState& state) {
+                return state.cellX == cell->cellX && state.cellY == cell->cellY;
+            });
+
+        if (it != cellLoadStates.end()) {
+            it->isLoaded = true;
+            continue;
+        }
+
+        CellLoadState newState;
+        newState.cellX = cell->cellX;
+        newState.cellY = cell->cellY;
+        newState.isLoaded = true;
+        newState.timeSinceLoaded = 0.0f;
+        cellLoadStates.push_back(newState);
+    }
+
+    // Drop cells that are no longer active so the tracked set stays in sync.
     cellLoadStates.erase(
         std::remove_if(cellLoadStates.begin(), cellLoadStates.end(),
-                      [](const CellLoadState& state) { return !state.isLoaded; }),
+                       [](const CellLoadState& state) { return !state.isLoaded; }),
         cellLoadStates.end()
     );
 }

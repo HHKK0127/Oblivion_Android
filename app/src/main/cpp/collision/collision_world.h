@@ -126,7 +126,9 @@ public:
     glm::vec3 getGravity() const { return gravity; }
 
     // Statistics
-    int32_t getBodyCount() const { return static_cast<int32_t>(bodies.size()); }
+    // Live bodies only: the slot array keeps freed entries for reuse, so its size
+    // is capacity rather than the number of bodies currently in the world.
+    int32_t getBodyCount() const { return liveBodyCount_; }
     int32_t getActiveContacts() const { return static_cast<int32_t>(contacts.size()); }
 
 private:
@@ -134,6 +136,7 @@ private:
 
     std::vector<CollisionBody> bodies;
     std::vector<int32_t> freeSlots;
+    int32_t liveBodyCount_ = 0;
     DynamicAABBTree broadPhase;
     ContactBuffer contacts;
     glm::vec3 gravity = glm::vec3(0.0f, -9.81f, 0.0f);

@@ -87,6 +87,11 @@
 // Global AssetManager (defined in jni_bridge.cpp)
 extern AAssetManager* g_assetManager;
 
+// Game data path registered by the Java side (defined in jni_bridge.cpp).
+// The Java side registers this before Renderer::init() so that BSA archives and
+// ESM data are loaded before the world is built from them.
+extern std::string g_pendingDataPath;
+
 // Forward declarations
 class ProfilerDashboard;
 
@@ -216,6 +221,9 @@ private:
     bool showTitleScreen;
     bool shouldExit;
     bool initialized = false;  // Track if initialization succeeded
+    bool scenarioBuilt = false;  // True once the world scenario has been built (ESM or fallback)
+    bool gameDataLoadAttempted = false;  // True once BSA/ESM loading has been attempted
+    bool archivesLoaded = false;  // True once loadBSAArchives() has run
     unsigned int screenWidth;
     unsigned int screenHeight;
     float viewWidth = 0.0f;
@@ -384,8 +392,20 @@ public:
 private:
     bool initGameSystems();
     void createTestScenario();
+    void ensureScenarioBuilt();
 
     // Placeholder rendering for entities without meshes
     void renderPlaceholderEntities();
     void renderSphere(glm::vec3 position, float radius, glm::vec4 color);
+
+    // Terrain rendering from cell heightmaps (TES4 LAND)
+    struct TerrainGpuMesh {
+        GLuint vao = 0;
+        GLuint vbo = 0;
+        GLuint ibo = 0;
+        GLuint indexCount = 0;
+    };
+    void renderTerrainMeshes();
+    void releaseTerrainMeshes();
+    std::unordered_map<uint32_t, TerrainGpuMesh> terrainMeshes;
 };

@@ -58,7 +58,24 @@ public:
     std::shared_ptr<Cell> addCellFromESM(int32_t cellX, int32_t cellY, 
                                           const std::string& editorID,
                                           const std::string& fullName,
-                                          uint32_t tesFormID = 0);
+                                          uint32_t tesFormID = 0,
+                                          bool isExterior = false,
+                                          uint32_t worldspaceFormID = 0);
+
+    // Drop every cell so ESM data can be loaded into a clean world.
+    // Only safe while nothing is loaded yet (called during world build).
+    void clearAllCells();
+
+    // FormID of the worldspace the player currently inhabits (0 = none).
+    void setCurrentWorldspace(uint32_t worldspaceFormID) { currentWorldspaceFormID = worldspaceFormID; }
+    uint32_t getCurrentWorldspace() const { return currentWorldspaceFormID; }
+
+    // Place the player in the exterior cell closest to the worldspace origin
+    // that actually owns a heightmap, so terrain is visible on first frame.
+    bool spawnPlayerAtNearestTerrainCell();
+
+    // Number of exterior cells that own real height data.
+    size_t countExteriorCellsWithTerrain() const;
 
     // ========================================================================
     // Player Position Tracking
@@ -179,6 +196,7 @@ private:
     // Cell storage
     std::unordered_map<uint32_t, std::shared_ptr<Cell>> cells;  // cellId → Cell
     std::unordered_map<uint64_t, uint32_t> coordToId;          // (x,y) → cellId
+    std::unordered_map<uint32_t, uint32_t> formIdToCellId;     // TES FormID → cellId
 
     // Active cells
     std::shared_ptr<Cell> currentCell;
@@ -209,6 +227,9 @@ private:
     uint32_t cellsLoaded;
     uint32_t cellsUnloaded;
 
+    // Worldspace the player is currently in (0 = interior / unset)
+    uint32_t currentWorldspaceFormID;
+
     // World Items
     std::vector<std::shared_ptr<WorldItem>> worldItems;
 
@@ -229,6 +250,7 @@ private:
 
     // Helper methods
     CellCoord getPlayerCellCoord() const;
+    void updateCellDistance(const std::shared_ptr<Cell>& cell, float halfCell);
     bool shouldLoadCell(std::shared_ptr<Cell> cell) const;
     bool shouldUnloadCell(std::shared_ptr<Cell> cell) const;
     uint32_t getOrCreateCellId(int32_t cellX, int32_t cellY);

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-16T14:58:00Z",
+  "lastUpdated": "2026-09-22T00:00:00Z",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -183,11 +183,686 @@
       "priority": "medium",
       "category": "reference",
       "content": "README.md updated to reflect current project status (2026-09-16). Changes: (1) Bug fix count 25+ -> 30+. (2) English status updated to Phase 63 / v1.0.0 / Release Build. (3) Japanese status updated to Phase 57 / v1.0.0. (4) Last updated date -> 2026-09-16. (5) Added [FIX] Recent Improvements section (English+Japanese) covering UI bug fixes (TextRenderer shader error checking, UIPanel TOUCH_MOVE drag, UIComponent blend state save/restore, TitleScreen touch delta fix, GameSurfaceView ACTION_CANCEL), layout fixes (AndroidManifest theme, debug button repositioning), and code quality (Japanese comment translation 40+ files). (6) Feature list extended with Phase 57 entry. (7) Next phase updated to Phase 58."
+    },
+    {
+      "id": "video-path-fix-20260920",
+      "timestamp": "2026-09-20T18:00:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "Video background fix: initTitleVideo() looks for map_loop.mp4 in oblivion_assets/videos/ (AssetExtractor extracts to oblivion_assets/videos/). Primary path: oblivion_assets/videos/map_loop.mp4, fallback: videos/map_loop.mp4. OES external texture pipeline: MediaPlayer -> SurfaceTexture -> GL_TEXTURE_EXTERNAL_OES -> OES shader with samplerExternalOES.",
+      "tags": [
+        "video",
+        "title-screen",
+        "oes-texture",
+        "asset-extractor"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "title-screen-horizontal-menu-20260921",
+      "timestamp": "2026-09-21T09:00:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "Title screen horizontal menu implementation. Problem: menuPanel->render() did not properly propagate child positions. Solution: render buttons directly with absolute positions in renderMenu(), bypassing UIPanel's render pipeline. Buttons: 5 (NEW/LOAD/OPTIONS/CREDITS/QUIT), btnW=150, btnH=38, gap=8, panelY=60%, labelScale=1.3f. Selection bar animates horizontally using selectionBarY variable.",
+      "tags": [
+        "title-screen",
+        "menu",
+        "horizontal",
+        "ui-panel-fix"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "video-file-location-20260920",
+      "timestamp": "2026-09-20T17:00:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Video file source: D:\\Cargo\\Other\\Oblivion\\Oblivion_Steam版\\Data\\Video\\map_loop.mp4. AssetExtractor extracts to oblivion_assets/videos/ on device. LOG_TAG conflict: audio_manager.h defines LOG_TAG 'Audio3D' which overwrites title_screen.h's LOG_TAG - needs #undef/#define ordering.",
+      "tags": [
+        "video",
+        "file-location",
+        "log-tag"
+      ],
+      "compressed": false
+    },
+    {
+      "compressed": false,
+      "category": "decision",
+      "content": "Title screen menu horizontal layout fix. Key finding: UIPanel->render() for child UIButton positioning was broken. Solution: bypassed menuPanel->render() entirely, rendered buttons directly at absolute positions after setting panel to (0,0). Also: removed overlay, fixed double-initialization (menuButtons.clear()), unified btnW=150/btnH=38/gap=8/panelY=60% between rebuildMenuLayout() and renderMenu(), labelScale 1.3f, video readiness wait, logo persistence, LOGO_DISPLAY auto-transition removed.",
+      "id": "title-screen-menu-layout-20260921",
+      "timestamp": "2026-09-21T09:19:00Z",
+      "tags": [
+        "title-screen",
+        "menu",
+        "ui",
+        "layout",
+        "horizontal"
+      ],
+      "priority": "high"
+    },
+    {
+      "id": "e88421af-34e3-4758-aeaa-593e3f1be758",
+      "timestamp": "2026-09-21T13:09:07.494877",
+      "category": "decision",
+      "priority": "high",
+      "content": "Oblivionフォント(.fnt)のグリフレコード対応は record = ASCII - 1。レコード0-31は空、レコード32=! (ASCII 33)。text_renderer.cppのloadOblivionFont()で glyphs[i+1] に格納。スペース(ASCII 32)は合成グリフ(advance=fontSize*0.35)。",
+      "tags": [
+        "font",
+        "oblivion",
+        "text_renderer"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "f9afd1c1-5cd2-4325-b48d-3956ab73c1f3",
+      "timestamp": "2026-09-21T13:09:07.494877",
+      "category": "decision",
+      "priority": "high",
+      "content": "OblivionフォントテクスチャはRGBA8でグリフデータはアルファチャンネル。フラグメントシェーダーの useAlphaChannel=1 で .a をサンプリング。RobotoはGL_R8で useAlphaChannel=0 (.r)。",
+      "tags": [
+        "font",
+        "shader",
+        "text_renderer"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "f4e47b6f-214d-4d83-a9b6-89b1546d4ef0",
+      "timestamp": "2026-09-21T13:09:07.494877",
+      "category": "decision",
+      "priority": "high",
+      "content": "タイトル画面メニューテキストはパーチメント背景に同化しないよう暗色 COLOR_MENU_TEXT=(0.16,0.10,0.05)、選択時 COLOR_MENU_TEXT_SELECTED=(0.30,0.16,0.04)。title_screen.hで定義。",
+      "tags": [
+        "title_screen",
+        "ui",
+        "color"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "597191e1-a769-48b3-9de2-13e046c830f5",
+      "timestamp": "2026-09-21T13:09:07.494877",
+      "category": "reference",
+      "priority": "high",
+      "content": "TextRenderer::setScreenSize()はrenderer.cppのresize()とinit()で必ず呼ぶ。未呼び出しだとortho行列がデフォルト1080x1920のままになり描画がずれる。",
+      "tags": [
+        "text_renderer",
+        "renderer"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "oblivion-esm-binary-format-20260921",
+      "timestamp": "2026-09-21T14:09:46.509199",
+      "category": "decision",
+      "priority": "high",
+      "content": "Oblivion ESM/ESP binary format confirmed: 20-byte record header (NOT the 16-byte header used by Skyrim/Fallout). Record = tag(4) + dataSize(4) + flags(4) + formID(4) + version(2) + unknown(2) = 20 bytes. GRUP = 'GRUP'(4) + size(4) + label(4) + groupType(4) + skip(4) = 20 bytes. Subrecord = tag(4) + size(2) = 6 bytes, with size masked by (size & 0xFFFF). TES4 header record sits at offset 0 with dataSize=744, flags=1, formID=0, so the first GRUP is at offset 764 (20 + 744). app/src/main/cpp/assets/esm_reader.cpp already implements this format correctly (L116 'TES4 record: 20-byte header', L183 'remaining 16 bytes', L86 'GRUP header (20 bytes)', L471 size & 0xFFFF + offset += 6). CRITICAL: records with size 0 are LEGAL and are NOT terminators; treating them as errors truncates the scan.",
+      "tags": [
+        "oblivion",
+        "esm",
+        "binary-format",
+        "esm-reader"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "esm-record-inventory-20260921",
+      "timestamp": "2026-09-21T14:09:46.509199",
+      "category": "reference",
+      "priority": "high",
+      "content": "Oblivion.esm measured inventory (file 277,504,985 bytes): 1,167,017 records, 85,079 GRUPs, max nesting depth 5, 64 distinct record types, 0 parse errors, 100% byte coverage. Scan takes ~0.6s in Python. Top types: REFR 1,025,617 / CELL 35,494 / LAND 31,823 / INFO 19,278 / PGRD 8,228 / PACK 7,209 / STAT 6,014 / DIAL 3,817 / NPC_ 2,482 / SCPT 2,393 / ACHR 2,190 / LIGH 1,625 / ENCH 1,542 / ACRE 1,473 / LVLI 1,398 / WEAP 1,319 / ACTI 1,252 / SOUN 1,140 / SPEL 1,137 / ARMO 996 / CREA 914 / BOOK 887 / CONT 873 / LVLC 682 / IDLE 650 / CLOT 604 / DOOR 501 / FACT 476 / KEYM 464 / MISC 407 / QUST 390 / GMST 382 / LSCR 337 / LVSP 306 / ALCH 253 / LTEX 229 / REGN 211 / FURN 186 / INGR 173 / FLOR 155 / SGST 150 / MGEF 145 / TREE 142 / AMMO 128 / CSTY 126 / CLAS 111 / GRAS 108 / EFSH 102 / GLOB 94 / WRLD 84 / HAIR 57 / SLGM 29 / APPA 23 / WATR 23 / SKIL 21 / CLMT 19 / RACE 15 / EYES 13 / BSGN 13 / ROAD 2. Earlier figures (e.g. STAT 70) were wrong because the scan aborted early on size-0 records.",
+      "tags": [
+        "oblivion",
+        "esm",
+        "inventory",
+        "records"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "shivering-isles-integrated-20260921",
+      "timestamp": "2026-09-21T14:09:46.509199",
+      "category": "decision",
+      "priority": "high",
+      "content": "DLCShiveringIsles.esp is an 85-byte STUB: only TES4 header + HEDR + CNAM ('nmcdyer') + MAST ('Oblivion.esm') + DATA. Identical 85 bytes in both the Steam version (D:\\Cargo\\Other\\Oblivion\\Oblivion_Steam版\\Data) and the DISC version (D:\\Cargo\\Other\\Oblivion\\Oblivion_DISC版\\Oblivion\\Data). Shivering Isles content is already merged into Oblivion.esm in the GOTY build: string search finds SEDementia=118, Bliss=177, Crucible=194, ShiveringIsles=15 (SEWorldspace=0, SplitDementia=11, Maniasylum=0). Conclusion: no separate plugin handling is needed for Shivering Isles; the ESM alone covers it.",
+      "tags": [
+        "oblivion",
+        "dlc",
+        "shivering-isles",
+        "esm"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "dlc-esp-inventory-20260921",
+      "timestamp": "2026-09-21T14:09:46.509199",
+      "category": "reference",
+      "priority": "high",
+      "content": "DLC ESP measured inventory: 9 plugins, 23,835 records total, 0 errors. Knights.esp 2.11MiB recs=9,563 QUST=17 SCPT=194 NPC_=76 CELL=132 REFR=6,934 INFO=868; DLCMehrunesRazor.esp 5,503 recs; DLCBattlehornCastle.esp 3,074; DLCThievesDen.esp 2,151; DLCFrostcrag.esp 1,317; DLCVileLair.esp 1,182; DLCSpellTomes.esp 761; DLCOrrery.esp 144; DLCHorseArmor.esp 139. DLC totals: QUST 26 / SCPT 653 / NPC_ 182 / CELL 293 / REFR 18,492 / INFO 1,055 / CREA 87 / WRLD 19 / LAND 104 / SPEL 177 / DIAL 309 / WEAP 84 / ARMO 117 / ACTI 168 / CONT 83 / DOOR 36 / FACT 20 / BOOK 362 / SOUN 51 / LIGH 86 / LVLI 98 / CLOT 32 / KEYM 9 / MISC 20 / STAT 66 / FLOR 4 / INGR 3 / ALCH 16 / ENCH 152 / PACK 508 / ACHR 157 / ACRE 115. ESM + DLC grand total to support: REFR 1,044,109 / CELL 35,787 / QUST 416 / SCPT 3,046 / NPC_ 2,664 / INFO 20,333 / CREA 1,001 / WRLD 103 / LAND 31,927 / PACK 7,717 / DIAL 4,126 / SPEL 1,314 / ACTI 1,420 / BOOK 1,249 / ENCH 1,694 / STAT 6,080.",
+      "tags": [
+        "oblivion",
+        "dlc",
+        "esp",
+        "inventory"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "bsa-content-inventory-20260921",
+      "timestamp": "2026-09-21T14:09:46.509199",
+      "category": "reference",
+      "priority": "high",
+      "content": "BSA measured content inventory: 17 archives, 5.47GB total. Extension counts: nif 9,645 / dds 21,856 / kf 2,687 / mp3 50,943 / wav 2,093 / lip 50,916 / lod 10,810 / xml 759 / egm 155 / fnt 7 / tex 38 / scc 8. Largest: Oblivion - Textures - Compressed.bsa 1161.4MB (dds 17,972) / Voices2.bsa 958.4MB (mp3 22,295) / Voices1.bsa 750.9MB (mp3 16,603) / Oblivion - Meshes.bsa 640.3MB (nif 8,033, lod 9,889) / ShiveringIsles Voices 432.0MB / Oblivion - Sounds.bsa 315.1MB (wav 1,533) / ShiveringIsles Textures 298.3MB. BSA v103 header quirk: the folder-name table does not contain asset paths and the file-name table contains full paths, so folderRecord fileCount sums are unrealistic. Extension counts were therefore obtained by byte scanning, not by header parsing.",
+      "tags": [
+        "oblivion",
+        "bsa",
+        "inventory",
+        "assets"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "implementation-coverage-20260921",
+      "timestamp": "2026-09-21T14:09:46.509199",
+      "category": "reference",
+      "priority": "high",
+      "content": "Measured implementation coverage against the real game data. Decoded ESM record types: 45 of 64. Supported: ACTI ALCH APPA ARMO BOOK BSGN CELL CLAS CLMT CLOT CONT CREA DIAL ENCH EYES FACT FLOR HAIR INFO INGR LAND LIGH LVLC LVLI LVLN LVSP MGEF MISC NAVM NPC_ QUST RACE REFR REGN ROAD SCPT SKIL SOUN SPEL STAT TREE WEAP WRLD (+TES4, GRUP). Unsupported 19 types: ACHR ACRE PGRD GMST LTEX WATR IDLE LSCR SGST EFSH SLGM CSTY AMMO GLOB FURN and others. ACHR/ACRE (3,663 placed actors) are undecoded, which is the structural reason renderer.cpp:2447-2448 still uses hardcoded demo NPCs (Izar, Hellas). Script functions: only 118 implemented versus roughly 1,200 in Oblivion, so about 1,080 functions are missing (script_functions.cpp registerTier1Functions L196 / registerTier2Functions L227). This is the single largest work item. Mod / load order support is COMPLETELY ABSENT: no plugins.txt, no record override resolution, no BSA priority, no FormID remapping (esm_reader.h:654 parses a single file only).",
+      "tags": [
+        "oblivion",
+        "coverage",
+        "record-types",
+        "script-vm",
+        "mod-support"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "performance-bottleneck-20260921",
+      "timestamp": "2026-09-22T00:00:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "CORRECTED 2026-09-22 (this entry previously blamed text_renderer.cpp). The 1-2 FPS reading was a degraded-emulator symptom, not an app bug: the emulator had run out of RAM and was swapping (TOTAL SWAP PSS 223 MB). With NO app change, restarting the emulator (adb emu kill -> emulator.exe -avd Pixel_API34 -no-snapshot-load) gives 30-33 FPS in gameplay and 60 FPS at the title screen (EGL app_time_stats avg=31.11/32.32/33.69/34.11 ms), and ESM parse time fell from 222 s to 13 s. The real binding constraint is the app's native heap (626 MB, TOTAL PSS 670 MB, TOTAL SWAP PSS 461 KB when fresh), which pushes the 2 GB AVD into swap. Reducing native heap is the Phase 65/66 item; text_renderer batching is not the cause.",
+      "tags": [
+        "oblivion",
+        "performance",
+        "emulator",
+        "swap",
+        "fps",
+        "correction"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "test-suites-not-wired-20260921",
+      "timestamp": "2026-09-21T14:09:46.509199",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Five test suites exist under app/src/main/cpp/tests/ (phase30_integration_test.cpp 37KB, script_vm_tests.cpp 20KB, phase45_unit_tests.cpp 37KB, phase48_integration_test.cpp 20KB, phase48_stress_test.cpp 15KB), but nothing calls their runAllTests() entry points, so no test ever runs. Wiring them into CI is part of Phase 62.",
+      "tags": [
+        "oblivion",
+        "tests",
+        "ci"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "build-config-conflict-20260921",
+      "timestamp": "2026-09-21T14:09:46.509199",
+      "category": "reference",
+      "priority": "high",
+      "content": "Build configuration is defined twice with conflicting values: app/build.gradle (versionName '0.9.10', minSdk 25, targetSdk 34, compileSdk 34, abiFilters arm64-v8a/armeabi-v7a) versus app/build.gradle.kts (versionName '1.0', versionCode 1, minSdk 24, targetSdk 36). Consolidating to a single source of truth is a Phase 62 task.",
+      "tags": [
+        "oblivion",
+        "build",
+        "gradle",
+        "conflict"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "legal-risk-decompiled-sources-20260921",
+      "timestamp": "2026-09-21T14:09:46.509199",
+      "category": "constraint",
+      "priority": "high",
+      "content": "Legal risk: D:\\Cargo\\Other\\Oblivion contains what appear to be decompiled-derived code bases - OpenTES4Oblivion_02-master, xOBSE-master, and Common-Oblivion-Engine-Framework-master. A repository contamination audit is mandatory in Phase 62. For product release, redistributing Bethesda assets or code is not permitted, so a strict BYO-data (bring your own game data) model must be enforced.",
+      "tags": [
+        "oblivion",
+        "legal",
+        "license",
+        "byo-data"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "roadmap-phase62-72-20260921",
+      "timestamp": "2026-09-21T14:09:46.509199",
+      "category": "decision",
+      "priority": "high",
+      "content": "Product-completion roadmap defined as Phases 62-72 (65-94 weeks, milestones M11-M19) and written into the repository plan.md (+105 lines, 225 lines total). Scope was explicitly confirmed by the user as FULL GAME REPRODUCTION: all quests, all DLC, full Script VM compatibility, and mod support. Acceptance criteria A1-A8 were defined. The plan.md change is NOT committed. Phase 62 (foundation: gradle consolidation, version unification, CI, wiring the 5 existing test suites, legal audit) is the entry point.",
+      "tags": [
+        "oblivion",
+        "roadmap",
+        "plan",
+        "phase62"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "emulator-data-not-deployed-20260921",
+      "timestamp": "2026-09-21T14:09:46.509199",
+      "category": "reference",
+      "priority": "high",
+      "content": "SUPERSEDED by emulator-game-data-layout-20260921 (entry 45) and re-confirmed 2026-09-22: real game data IS deployed and loaded. CORRECTION of bsa-file-locations-20260919. Verified on the emulator (emulator-5554): 'run-as com.example.oblivion ls files/data/' returns EMPTY, so no real game data is deployed. The app sets dataPath to /data/user/0/com.example.oblivion/files/data (GameRenderer.kt L386) but that directory is empty. The asset bundle oblivion_assets does exist at 59MB (fonts/textures/videos/images) and map_loop.mp4 is present, so title video initialization succeeds. The earlier memory entry claiming 4GB deployed under /data/data/com.example.oblivion/data/ is incorrect or that data has been removed. Because no real data is loaded, in-game content is limited to the hardcoded demo NPCs.",
+      "tags": [
+        "oblivion",
+        "emulator",
+        "data-deployment",
+        "correction"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "content-inventory-artifact-20260921",
+      "timestamp": "2026-09-21T14:09:46.509199",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Raw measured inventory data is stored in the session artifact C:\\Users\\hiroki.kogarumai\\.copilot\\session-state\\964d16fb-9332-48d3-9141-5f6986a9561d\\files\\content_inventory_final.txt (4,720 characters), covering ESM/DLC/BSA measurements, confirmed binary format, and implementation coverage. Measurement scripts (measure_oblivion_content.py, measure_esm.py, measure_esm2.py) live outside the repository, and the repository working tree is otherwise untouched apart from plan.md.",
+      "tags": [
+        "oblivion",
+        "artifact",
+        "inventory",
+        "session"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "native-tests-remediated-20260921",
+      "timestamp": "2026-09-21T15:10:49",
+      "category": "decision",
+      "priority": "high",
+      "content": "Native test suite remediation complete and verified on emulator-5554: 91/100 pass (was 78/100). Per suite: Phase30 17/26, Phase45 40/40, Phase48 7/7, Phase48Stress 5/5, ScriptVM 22/22. The only 9 remaining failures are Phase30 tests that read real NIF/KF files from /data/user/0/com.example.oblivion/files/data and therefore cannot pass until game data is deployed (Step 3 / Phase64). Production fixes: collision_world liveBodyCount_; character_controller BOX branch in resolveCollision + AABB slab raycast in raycast_static_body + checkGround ray origin from body->position; npc.cpp CharacterStatus::initialize no longer level-scales and now stores level; state_manager CHARACTER_CREATION->GAMEPLAY edge. Test fixes: 4-byte instruction headers, ExecutionContext init(), Frame budget POP removal, QuestFlow auto-complete expectation, PerformanceBenchmark p99 instead of absolute max.",
+      "tags": [
+        "oblivion",
+        "tests",
+        "phase62",
+        "verification"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "script-vm-instruction-format-20260921",
+      "timestamp": "2026-09-21T15:10:49",
+      "category": "reference",
+      "priority": "high",
+      "content": "Oblivion Script VM instruction format (confirmed from script_vm.cpp and script_disasm.cpp): each instruction is opcode(uint16 LE) + argLength(uint16 LE) + argData(argLength), i.e. a 4-byte header. argLength==0 instructions (ADD/POP/NEG/CMP) still consume 4 bytes. STOP must be 0x00,0x00,0x00,0x00. Opcode values: STOP=0x0000, ADD=0x0001, NEG=0x0006, JUMP=0x0010, JUMP_Z=0x0011, PUSH_INT=0x0012, PUSH_FLOAT=0x0013, PUSH_REF=0x0015, POP=0x0016, DUP=0x0017, GET_LOCAL=0x0020, GET_GLOBAL=0x0022, CALL=0x1000. JUMP/JUMP_Z targets are ABSOLUTE program counters (ctx.setPC(target)), not relative offsets. execute(ctx, maxInstructions) returns VMResult::FrameBudget when the budget is exhausted.",
+      "tags": [
+        "oblivion",
+        "script-vm",
+        "bytecode",
+        "format"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "bundled-glm-is-a-stub-20260921",
+      "timestamp": "2026-09-21T15:10:49",
+      "category": "constraint",
+      "priority": "high",
+      "content": "app/src/main/cpp/include/glm/glm.hpp is a hand-written minimal GLM stub, NOT real GLM. vec3 exposes only vec3(), vec3(x,y,z), public x/y/z, operator+ - * /, dot, cross, length, normalize. There is NO operator[] and NO single-float constructor, so 'v[i]' and 'glm::vec3(0.0f)' fail to compile. Use explicit component math or copy into a float array, and always pass three floats to the constructor. Free functions glm::dot / glm::cross / glm::length / glm::normalize do exist.",
+      "tags": [
+        "oblivion",
+        "glm",
+        "build",
+        "constraint"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "quest-manager-completion-semantics-20260921",
+      "timestamp": "2026-09-21T15:10:49",
+      "category": "decision",
+      "priority": "high",
+      "content": "QuestManager semantics (deliberate, do not 'fix'): updateObjectiveProgress() auto-completes a quest as soon as allObjectivesCompleted() is true, by calling checkAndCompleteQuest() -> completeQuest(). completeQuest() is NOT idempotent - it returns false and logs a warning if the quest is already COMPLETED (failQuest() is symmetric). Auto-completion is called from both updateObjectiveProgress() and update(). QuestStageManager::checkCompletionStage() forwards completeQuest()'s bool, but its only call site (quest_stage_manager.cpp:350) discards it, so the non-idempotent result causes no production harm.",
+      "tags": [
+        "oblivion",
+        "quest",
+        "gameplay",
+        "semantics"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "character-status-no-level-scaling-20260921",
+      "timestamp": "2026-09-21T15:10:49",
+      "category": "decision",
+      "priority": "high",
+      "content": "CharacterStatus::initialize(baseHealth, baseMana, level) no longer applies level scaling; it sets maxHealth = baseHealth, maxMana = baseMana, and now also stores this->level = level. Rationale: every other assignment site (npc_manager.cpp:213,334, ui_character_creation.cpp:35,37, both Phase45 tests) set raw values, and the only production caller passes level=1, so the old formula (base * (1 + level*0.1)) was a constant 1.1x inflation rather than scaling. Effect: GameState player 110/132 -> 100/120; NPC 110/55 -> 100/50. attributes/skills still receive level-based additions; revisit in Phase64.",
+      "tags": [
+        "oblivion",
+        "npc",
+        "stats",
+        "semantics"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "collision-live-body-count-20260921",
+      "timestamp": "2026-09-21T15:10:49",
+      "category": "reference",
+      "priority": "medium",
+      "content": "CollisionWorld::getBodyCount() now returns the new liveBodyCount_ member instead of bodies.size(). bodies is a slot array: addBody() reuses freeSlots or push_backs, and removeBody() only sets id=-1, isActive=false and push_backs the slot, so the vector never shrinks. removeBody() also gained a double-free guard (if bodies[bodyId].id == NULL_BODY return;). getBodyCount() has no production consumers - only Phase30 tests - so the capacity->live-count change is behaviour-neutral outside tests.",
+      "tags": [
+        "oblivion",
+        "collision",
+        "phase30"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "known-bug-save-manager-maxmana-20260921",
+      "timestamp": "2026-09-21T15:10:49",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "Save-system design gap (not a one-line bug): the save system proxies mana with stamina because Player (game/player.h) has maxHealth/maxMagicka/maxStamina but NO current-magicka field. save_system/save_manager.cpp binary path writes player->stamina / player->maxStamina (L60-61) and reads them back (L286-287); the GameState path maps playerStatus.currentMana = player->stamina and maxMana = player->maxStamina (L685-686). Consequently maxMagicka is NEVER persisted. Changing only L686 to maxMagicka would mix two attributes into one stat, so decide first whether Player gets a real magicka pool. Deferred to Phase69 (persistence).",
+      "tags": [
+        "oblivion",
+        "save-system",
+        "known-issue",
+        "phase69",
+        "design-gap"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "5a80b0dd-64ab-4df3-bc8e-0225cc42322c",
+      "timestamp": "2026-09-21T17:53:17.038494",
+      "category": "reference",
+      "priority": "high",
+      "content": "Oblivion MGEF/SPEL/ENCH/INGR/ALCH binary layout (empirically confirmed with Python probes mgef_probe7..12 against the real Oblivion.esm). MGEF subrecord is DATA (36 or 64 bytes; NOT MEDT): off4=baseCost(float), off8=actorValue(uint32), off12=school(0-5), off16=flags. SPEL subrecord SPIT is 16 bytes: off0=spellType, off4=cost, off8=level, off12=uninitialized (0xCDCDCD00; NOT flags). EFID (4 bytes) is the MGEF editorID ASCII code (e.g. FIDG, RESP, INVI), NOT a formID. EFIT is 24 bytes: off0-3 = EFID echo, off4=magnitude, off8=area, off12=duration, off16=unused, off20=actorValue. The old code read magnitude/area/duration from off0/off4/off8, i.e. 4 bytes off; that was the direct cause of 0 spells being assigned. INGR/ALCH: DATA is only 4 bytes (float weight) and ENIT is 8 bytes (off0=value, off4=flags).",
+      "tags": [
+        "esm",
+        "magic",
+        "binary-format",
+        "confirmed"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "16ee0363-f299-4f13-bbb5-7287024321d9",
+      "timestamp": "2026-09-21T17:53:17.038494",
+      "category": "reference",
+      "priority": "high",
+      "content": "Oblivion EFIT magnitude is stored as EITHER int32 OR float depending on the record (proven by mgef_probe11: int values appear as denormal floats such as 1.4e-45). Read it with the helper readFloatOrInt() in assets/esm_reader.cpp: if the float is 0, non-finite, |f|<1e-6, or |f|>1e9, reinterpret the 4 bytes as int32. Distribution of raw off4 values across 1137 SPEL EFITs: 0(334), 100(226), 10(214), 20(169), 5(136), 50(119), 30(87), 15(84), 25(82), 1(41).",
+      "tags": [
+        "esm",
+        "magic",
+        "binary-format",
+        "confirmed"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "3c4ce418-b6c2-4354-b40d-e9bc7a19d23c",
+      "timestamp": "2026-09-21T17:53:17.038494",
+      "category": "reference",
+      "priority": "high",
+      "content": "Oblivion MGEF actorValue (DATA off8) full semantics, confirmed for all 145 MGEFs (mgef_probe12). 0 = special/generic effect (LOCK, OPEN, DISPL, TELE, REAN, TURN, VAMP, DIAR, DIWE, DRSK, SUDG, POSN, COCR, COHU, LGHT, ABAT, ABSK, CUxx, FOAT, FOSK, REAT, STRP, SEFF). 8 = Health (ABHE, DGHE, DRHE, FIDG, FOHE, FRDG, REHE, SHDG). 9 = Magicka (ABSP, DGSP, DRSP, FOSP, RESP; 'SP' = spell points = Magicka, so Restore Magicka is RESP, not RSPA). 10 = Fatigue (ABFA, DGFA, DRFA, FOFA, REFA). 11 = Speed (BRDN, FTHR). 33-70 = skills/attributes (CALM=33, DEMO=34, FOMM=40, NEYE=41, SHLD=43, CHML=46, INVI=47, PARA=48, SLNC=49, SABS=52, RFLC=53, WABR=55, WAWA=56, STMA=57, DTCT=58, REDG=59, TELE=60, FISH/RSFI/WKFI=61, FRSH/RSFR/WKFR=62, RSDI/WKDI=63, RSMA/WKMA=64, RSNW/WKNW=65, RSPA=66, RSPO/WKPO=67, LISH/RSSH/WKSH=68, DARK=70). >100 = formID link; ALL 62 Conjuration MGEFs are formID links (Bound Weapons BW01-BW08, Summons Z001-Z019, Bound Armor BABO-BASH, MYTH/MYHL). Use a threshold of 200 to split actorValue from linkedFormID.",
+      "tags": [
+        "esm",
+        "magic",
+        "confirmed"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "8b07cd11-596a-4fc8-9aeb-1432b6ae47d9",
+      "timestamp": "2026-09-21T17:53:17.038494",
+      "category": "decision",
+      "priority": "high",
+      "content": "Oblivion SPEL records do NOT store a magic school; it must be derived from the spell's magic effects. Because EFID holds an editorID code rather than a formID, references cannot be resolved during the single decode pass. Implemented a two-phase scheme: ESMFile::resolveMagicReferences() runs after all records are decoded and maps effectCodes -> effectFormIDs and derives spell.school from the first effect's MGEF school. ESMManager::rebuildIndices() runs a SECOND pass that builds a global editorID->MGEF map across all loaded files and re-resolves each file, so DLC plugin spells link to master (Oblivion.esm) MGEFs. MagicEffectData pointers in ESMManager::m_magicEffectByEditorID are only valid after rebuildIndices() (it clears them on every rebuild).",
+      "tags": [
+        "esm",
+        "magic",
+        "architecture"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "74e98303-a621-4e5e-af97-42e97a983676",
+      "timestamp": "2026-09-21T17:53:17.038494",
+      "category": "decision",
+      "priority": "high",
+      "content": "game/spell_manager.cpp mgefToEffectType() now takes const oblivion::MagicEffectData* instead of a formID. The old hardcoded formID switch (0x0001E825 etc.) was entirely wrong: real MGEF formIDs are 0x00001881-style, so every effect fell back to DAMAGE. Classification now keys off the MGEF editorID code plus school/linkedFormID: FIDG/FRDG/SHDG/DG*/DR*/WK*/AB* -> DAMAGE, REHE/FOHE/CU* -> HEAL, RESP/FOSP/FOMM -> RESTORE_MANA, REFA/FOFA -> RESTORE_STAMINA, PARA -> PARALYZE, INVI -> INVISIBILITY, school==1 && linkedFormID!=0 -> SUMMON, fallback = DAMAGE when school==2 else FORTIFY_ATTR.",
+      "tags": [
+        "spell-manager",
+        "magic",
+        "decision"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "7a231d52-6318-4066-be18-7da71a2c5b21",
+      "timestamp": "2026-09-21T17:53:17.038494",
+      "category": "reference",
+      "priority": "high",
+      "content": "SELinux MLS pitfall on the Android emulator: files placed with adb push get u:object_r:app_data_file:s0:c192,... while the app itself runs as s0:c193,... and SELinux denies the read. After every adb push of game data you MUST run: adb shell chcon -R u:object_r:app_data_file:s0:c193,c256,c512,c768 /data/data/com.example.oblivion/files/data",
+      "tags": [
+        "android",
+        "selinux",
+        "emulator",
+        "pitfall"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "4ccf3b06-9225-4533-bb84-44d2c9a9ff62",
+      "timestamp": "2026-09-21T17:53:17.038494",
+      "category": "configuration",
+      "priority": "high",
+      "content": "Emulator game data layout: the app reads its data from /data/data/com.example.oblivion/files/data (set in MainActivity.kt around line 416). 25 files / 3109.5 MB of real Oblivion data are transferred (Voices 1/2 and DLCShiveringIsles - Voices, 2.14 GB total, are excluded). The native side expects 22 BSAs in the list in engine/renderer.cpp; 14 are actually present. Not yet transferred: Oblivion - Textures.bsa, Voices1/2, DLCShiveringIsles BSAs, DLCMehrunesRazor, DLCSpellTomes.",
+      "tags": [
+        "emulator",
+        "game-data",
+        "configuration"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "449c853c-8981-4e3f-9878-635a6217a092",
+      "timestamp": "2026-09-21T17:53:17.038494",
+      "category": "reference",
+      "priority": "high",
+      "content": "Verified end-to-end result with real game data on the emulator (post-fix): 'ESM spells assigned: fireball=0x0008556C, heal=0x00095266, restoreMana=0x0005DD89' and 'Total spells: 1137'. Spell schools resolve correctly across all values 0-5, effect counts are 1-6, and the Japanese school names render (Absorb spells [神秘の魔法], Mesmerizing Grasp [幻覚の魔法]). Also confirmed: BSA 14/22 parsed, 14771 cells built, 3663 NPCs placed, 45/64 record types decoded, 91/100 automated tests passing (the remaining 9 need real NIF/KF files).",
+      "tags": [
+        "verification",
+        "emulator",
+        "magic",
+        "status"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "phase64-secondary-types-20260921",
+      "timestamp": "2026-09-21T18:25:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "Phase 64 second half complete: all 20 remaining ESM record types are decoded and verified against the real Oblivion.esm on the emulator. Measured counts (logcat 'ESM secondary types'): GMST=382 GLOB=94 DOOR=501 PACK=7209 PGRD=8228 IDLE=650 KEYM=464 AMMO=128 SGST=150 SLGM=29 FURN=186 LTEX=229 GRAS=108 WATR=23 WTHR=37 CSTY=126 LSCR=337 EFSH=102 ANIO=34 SBSP=33. All 64 ESM record types are now decoded. Regression check passed: no crash, 14771 cells, 3663 NPCs, 1137 spells, player knownSpells=3/equipped=2, terrain mesh for all 9 active cells.",
+      "tags": [
+        "phase64",
+        "esm",
+        "decoders",
+        "verification",
+        "status"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "esm-secondary-structures-20260921",
+      "timestamp": "2026-09-21T18:26:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Confirmed ESM subrecord layouts for the secondary record types. PGRD: PGRP is a 16-byte stride (x,y,z float + unused uint32), PGAG is 1 bit per point (bytes = ceil(N/8)), PGRR is 4-byte stride, PGRL is 12 raw bytes; PGRD has no own cell formID, it must use the GRUP parent cell formID. PGRD is always a compressed record (flags bit18) and the reader decompresses it before decoding. GMST: EDID + DATA whose type is derived from the first EDID character (s=string, f=float, i=int, b=bool). GLOB: EDID + FNAM(1, type char) + FLTV(4, float). LTEX: EDID + ICON + HNAM(3, rgb) + SNAM(1). DOOR: EDID + FULL + MODL + MODB(4) + SCRI(4) + SNAM(4) + ANAM(4) + FNAM(1 flags). GRAS: EDID + MODL + MODB(4) + DATA(32) where DATA offset 2 is maxSlope. FURN: EDID + FULL + MODL + MODB(4) + MNAM(4). AMMO: EDID + FULL + MODL + MODB(4) + ICON + ENAM(4) + DATA(18). SLGM: EDID + FULL + MODL + MODB(4) + ICON + SCRI(4) + DATA(8) + SOUL(1, current soul) + SLCP(1, capacity). KEYM: EDID + FULL + MODL + MODB(4) + ICON + DATA(8). SBSP: EDID + DNAM(12, 3 floats). SGST: EDID + FULL + MODL + MODB(4) + MODT(96) + ICON + repeated EFID(4)+EFIT(24) + DATA(9). WTHR: EDID + CNAM + DNAM + NAM0(160) + FNAM(16) + HNAM(56) + DATA(15) + SNAM(8)*N. IDLE: EDID + MODL + MODB(4) + CTDA(24)*N + ANAM(1) + DATA(8). CSTY: EDID + CSTD(124) whose first 2 bytes are a uint16 (weaponFlags) followed by floats. LSCR: EDID + ICON + DESC + LNAM(12) whose first 4 bytes are a formID. ANIO: EDID + MODL + MODB(4) + DATA(4, formID). WATR: EDID + TNAM + ANAM(1) + FNAM(1) + MNAM(1) + SNAM(4) + DATA(102, floats) + GNAM(12). EFSH: EDID + ICON(1) + ICO2 + DATA(224) whose first int32s are flag groups.",
+      "tags": [
+        "esm",
+        "format",
+        "reference",
+        "records"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "esm-grup-parent-cell-20260921",
+      "timestamp": "2026-09-21T18:27:00Z",
+      "category": "pitfall",
+      "priority": "high",
+      "content": "ESM pitfall: LAND, PGRD, REFR, ACHR and ACRE records do not carry their own cell formID. The owning cell must be recovered by tracking the label of the enclosing GRUP with groupType == 6 (CellChildren). Two code paths need this: the file parse path uses a groupInfoStack and the memory parse path uses m_currentCellFormID. Oblivion GRUP types: 0=TopLevel, 1=WorldChildren, 2=InteriorCellBlock, 3=InteriorCellSubBlock, 4=ExteriorCellBlock, 5=ExteriorCellSubBlock, 6=CellChildren, 7=TopicChildren, 8=CellPersistentChildren, 9=CellTemporaryChildren. Also note SubRecord has no empty() member; use size() > 0.",
+      "tags": [
+        "esm",
+        "pitfall",
+        "grup",
+        "cell"
+      ],
+      "compressed": false
+    },
+    {
+      "compressed": false,
+      "category": "reference",
+      "priority": "low",
+      "tags": [
+        "memory",
+        "maintenance",
+        "session-update",
+        "phase-64"
+      ],
+      "content": "Memory maintenance session (2026-09-21 20:35 JST). Project status: Phase 64 in progress - ESM secondary record type decoders complete (20 types verified against real Oblivion.esm). Previous session work: README updated (2026-09-16), UI bug fixes and comment translation completed. Memory contains 50 entries covering ESM formats, pitfall notes, and phase 64 progress.",
+      "timestamp": "2026-09-21T20:35:00Z",
+      "id": "session-maintenance-20260921"
+    },
+    {
+      "id": "emulator-measurement-rules-20260922",
+      "timestamp": "2026-09-22T00:00:00Z",
+      "category": "pitfall",
+      "priority": "high",
+      "content": "Mandatory rules before trusting any emulator FPS or timing number (established 2026-09-22 after the 1-2 FPS misdiagnosis): (1) Always restart the emulator first - adb emu kill, wait for qemu-system-x86_64.exe to disappear, then emulator.exe -avd Pixel_API34 -no-snapshot-load. (2) Check TOTAL SWAP PSS before measuring: adb shell dumpsys meminfo com.example.oblivion | Select-String \"TOTAL PSS|SwapPss\"; a value like 223 MB makes the measurement worthless. (3) Re-issue adb root - it is lost on emulator restart, and without it am start fails with \"java.lang.SecurityException: Permission Denial: starting Intent ... from null (uid=2000) not exported from uid 10193\" because MainActivity is exported=false; NO app log appears at all, which is easily mistaken for the app failing to start. (4) Run adb logcat -c before polling - logcat -d returns the whole buffer, so stale lines get re-matched and produce bogus elapsed times (e.g. \"PARSED at 556s\" when the parse actually took 13 s).",
+      "tags": [
+        "emulator",
+        "performance",
+        "pitfall",
+        "adb",
+        "swap"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "gltransport-address-space-unavailable-20260922",
+      "timestamp": "2026-09-22T00:00:00Z",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "The emulator's GL transport cannot be switched from pipe to address_space on this host (verified 2026-09-22). \"-prop ro.boot.qemu.gltransport.name=address_space\" is silently ignored (getprop still reports pipe; ro.boot.* is populated from the kernel command line, not by -prop), and \"-feature GLDirectMem\" has no effect either. The guest does expose /dev/goldfish_address_space plus the goldfish_address_space module, so only the host side is disabled. advancedFeatures.ini in Sdk\\emulator\\lib has GLDirectMem = off, GLAsyncSwap = on, GLESDynamicVersion = off, Vulkan = off, GLDMA/GLDMA2 = on. Not a practical problem: a fresh emulator reaches 30-33 FPS over the pipe transport.",
+      "tags": [
+        "emulator",
+        "opengl",
+        "transport",
+        "constraint",
+        "goldfish"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "native-heap-binding-constraint-20260922",
+      "timestamp": "2026-09-22T00:00:00Z",
+      "category": "constraint",
+      "priority": "high",
+      "content": "Native heap is the binding performance constraint on the emulator (measured 2026-09-22): Native Heap 641,065 KB (626 MB) and TOTAL PSS 685,640 KB (670 MB) with 25 files / 3,109.5 MB of real game data loaded (35,494 cells, 1,029,280 refs, 31,823 terrains, 2,482 NPCs). The 2 GB AVD has no headroom, which is what causes the swapping. The ESM reader does NOT keep a whole-file buffer - assets/esm_reader.cpp streams with std::ifstream + seekg - so the cost is the retained record model: ESMRecord holds std::vector<SubRecord> subRecords and every SubRecord holds std::vector<uint8_t> data, i.e. the raw subrecord payloads of all ~1.17 M records stay resident. Reducing this (decode into typed structs and drop raw payloads, or release subrecords for record types that are fully decoded) is the highest-value Phase 65/66 work item.",
+      "tags": [
+        "oblivion",
+        "memory",
+        "native-heap",
+        "esm",
+        "performance",
+        "constraint"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "verified-working-state-20260922",
+      "timestamp": "2026-09-22T00:00:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Verified working state on the emulator (fresh restart, x86_64 native ABI, 1920x1080/420dpi, 2026-09-22): title screen 60 FPS; gameplay 30-33 FPS with 9 exterior cells textured (log: \"Terrain textured: 9 of 9 drawn cells, 36 texture bindings, 9 LTEX loaded\") appearing within 0.1 s of game start; MiniMap clipped correctly to its content rect (dominant green (74,140,74) 23,886 px in a 180x180 bbox at x1710-1889 y30-209); touch confirmed through all 4 layers (MainActivity \"GLSurfaceView touch DOWN\" -> Renderer \"=== Touch event detected ===\" -> TitleScreen \"Menu touch DOWN ... panel size=(1920.0, 1017.0)\" -> \"Forwarded touch to native\"); and ATK/BLK/MAG/Joystick all consume their events (\"ATK button callback fired!\", \"BLK button callback fired!\", \"event consumed by 'Joystick'\"). The black band at the bottom of screenshots is the Android navigation bar, not an app bug - the viewport is 1920x1017. The UISystem component dump line format \"- '<name>' at (x, y) size (WxH) vis=N en=N hit=N\" is the fastest way to locate a widget's real rect.",
+      "tags": [
+        "oblivion",
+        "emulator",
+        "verification",
+        "status",
+        "ui",
+        "touch"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "build-install-pitfalls-20260922",
+      "timestamp": "2026-09-22T00:00:00Z",
+      "category": "pitfall",
+      "priority": "high",
+      "content": "Build/install pitfalls confirmed on this project: piping gradlew output directly into Select-String corrupts the produced APK (install then fails with INSTALL_PARSE_FAILED_NOT_APK) - always redirect with Out-File and Select-String the file afterwards. Never use \"am kill-all\": it takes down system_server and reboots Android. app/build.gradle must keep abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64' so the emulator runs native x86_64 instead of under ARM-to-x86 binary translation (which caused input-dispatch ANRs); verify with dumpsys package com.example.oblivion | Select-String primaryCpuAbi. A clean assembleDebug for all 3 ABIs takes about 6 min 12 s and produces an 85.5 MB APK.",
+      "tags": [
+        "build",
+        "gradle",
+        "apk",
+        "pitfall",
+        "abi"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "gl-uniform-location-frame-cost-20260922",
+      "timestamp": "2026-09-22T00:00:00Z",
+      "category": "performance",
+      "priority": "high",
+      "content": "ROOT CAUSE of the gameplay frame-rate ceiling, confirmed by measurement: ui/ui_draw_helper.cpp called glGetUniformLocation on EVERY draw call (2 per drawColoredQuad, 3 per drawTexturedQuad, 5 per drawGradientQuad, 7 per drawRadialGlow, 16 per draw3DTextureQuad). Each call is a synchronous round-trip to the GL server, so the in-game HUD issued hundreds per frame. Evidence chain: PerformanceMonitor reported a Min Frame Time floor of 37.19 ms (27 fps best case); pointing the camera at empty sky did not change the frame rate (so it was not fragment load); the title screen ran at 60 fps because it draws no HUD; simpleperf attributed 83.22% of samples to goldfish_pipe.ko:goldfish_pipe_read_write with under 0.1% in app code; top -H showed the GL thread at 96.5% and every other thread at 0.0%. FIX: memoize locations per (program, name) in an unordered_map keyed by program id, cleared in UIDrawHelper::cleanup(). RESULT: in-game 19.3 -> 42.7 fps, Average Frame Time 57.78 -> 22.06 ms, Min Frame Time 37.19 -> 15.63 ms, title unchanged at 60. engine/shader.cpp and ui/text_renderer.cpp already cached their locations, which is why the 3D mesh paths were never the bottleneck. LESSON: on this emulator any GL call that needs a server round-trip inside a per-frame loop is a frame-rate cliff - cache every location and never query GL state per draw.",
+      "tags": [
+        "performance",
+        "opengl",
+        "emulator",
+        "ui",
+        "root-cause"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "terraindata-vhgt-rework-20260922",
+      "timestamp": "2026-09-22T00:00:00Z",
+      "category": "architecture",
+      "priority": "high",
+      "content": "TerrainData reworked to cut native heap and to fix a silent terrain bug. New layout: std::vector<int8_t> heightDeltas (1089 raw VHGT bytes) + float heightOffset + baseTextures[4] + textureFormIDs, with expandHeights()/heightAt() helpers and GRID = 33. Consumers updated: engine/renderer.cpp, world/landscape_renderer.cpp (expands once locally and reuses for 4 quadrants), assets/world_data_loader.cpp. Measured: native heap allocation 704,684 KB -> 430,916 KB; Native Heap SwapPss 629,158 -> 33,981 KB (-95%); TOTAL SWAP PSS 648,001 -> 49,735 KB (-92%). THE BUG THIS FIXED: the old decoder required the Morrowind 65x65 int16 VHGT (size() >= 8451) while TES4's VHGT is 1096 bytes, so hasHeights() was ALWAYS false and every terrain silently rendered as a flat plane. Expansion formula validated independently in Python against Oblivion.esm: (heightOffset + columnOffset + rowOffset) * 8.0f, 14,052/14,613 east-edge and 14,066/14,608 north-edge heights agree (96%; the rest are cells from different worldspaces sharing grid coords). VNML/VCLR parsing was deleted - calculateNormals() derives normals from heights and VCLR was unused.",
+      "tags": [
+        "terrain",
+        "memory",
+        "esm",
+        "vhgt",
+        "bug-fix"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "heightdata-64mb-retention-20260922",
+      "timestamp": "2026-09-22T00:00:00Z",
+      "category": "issue",
+      "priority": "medium",
+      "content": "Known remaining memory item, NOT yet fixed. engine/renderer.cpp assigns cell->heightData = terrain.expandHeights() inside the loop over all 31,823 terrain records, so all 14,686 matched exterior cells each hold 1089 floats (4356 B) = about 64 MB, although only the 9 active cells are ever rendered. Deliberately left alone because Cell::getTerrainHeightAt() reads heightData from other systems and returning 0 for an unloaded cell would change object placement and player grounding. Fixing it needs a compact or lazily expanded representation plus an audit of those callers. Note the current behaviour is MORE correct than before: the flat-terrain fallback meant only the 9 loaded cells had heights at all. plan.md previously claimed '9 active cells only, about 39 KB', which never matched the implementation and has been corrected.",
+      "tags": [
+        "memory",
+        "terrain",
+        "renderer",
+        "follow-up"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 11,
+    "totalEntries": 59,
     "compressedCount": 0,
-    "sessionCount": 9
+    "sessionCount": 15
   }
 }

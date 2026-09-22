@@ -105,7 +105,7 @@ LodMeshData DistantLodManager::generateLodFromLand(const std::vector<float>& hei
     mesh.textureId = textureId;
 
     // Determine downsampled resolution
-    int originalSize = 65;  // TERRAIN_RESOLUTION
+    int originalSize = TERRAIN_RESOLUTION;  // 33x33 (TES4 LAND)
     int targetSize = std::max(4, originalSize / (config.downsampleFactor * (lodLevel + 1)));
 
     // Downsample heightmap
@@ -120,9 +120,9 @@ LodMeshData DistantLodManager::generateLodFromLand(const std::vector<float>& hei
     }
 
     // Cell world position
-    float cellWorldX = static_cast<float>(cellX) * 128.0f;  // CELL_SIZE
-    float cellWorldZ = static_cast<float>(cellY) * 128.0f;
-    float cellSize = 128.0f;
+    float cellWorldX = static_cast<float>(cellX) * static_cast<float>(CELL_SIZE);
+    float cellWorldZ = static_cast<float>(cellY) * static_cast<float>(CELL_SIZE);
+    float cellSize = static_cast<float>(CELL_SIZE);
     float step = cellSize / static_cast<float>(targetSize - 1);
 
     // Generate vertices: position (x,y,z), texcoord (u,v), color (r,g,b,a)

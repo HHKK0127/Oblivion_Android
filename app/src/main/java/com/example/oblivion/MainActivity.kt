@@ -29,10 +29,34 @@ class MainActivity : Activity() {
 
     companion object {
         private const val TAG = "MainActivity"
+
+        /** Intent extra that makes the activity run the native test suites and exit. */
+        const val EXTRA_RUN_NATIVE_TESTS = "run_native_tests"
+
         @Volatile
         private var instance: MainActivity? = null
 
         fun getInstance(): MainActivity? = instance
+    }
+
+    private fun runNativeTestsAndFinish() {
+        Thread {
+            var allPassed = false
+            try {
+                val dataDir = File(filesDir, "data")
+                val summary = GameRenderer().runAllNativeTests(dataDir.absolutePath)
+                allPassed = !summary.contains("[FAIL]")
+                Log.i(TAG, "=== NATIVE TEST RESULTS START ===\n$summary\n=== NATIVE TEST RESULTS END ===")
+            } catch (t: Throwable) {
+                Log.e(TAG, "Native test run failed", t)
+            } finally {
+                Log.i(
+                    TAG,
+                    if (allPassed) "NATIVE TESTS: ALL PASSED" else "NATIVE TESTS: SOME FAILED"
+                )
+                runOnUiThread { finish() }
+            }
+        }.start()
     }
 
     fun playBGM(filename: String) {
@@ -68,6 +92,12 @@ class MainActivity : Activity() {
         )
 
         instance = this
+
+        if (intent?.getBooleanExtra(EXTRA_RUN_NATIVE_TESTS, false) == true) {
+            Log.i(TAG, "=== Native test mode requested ===")
+            runNativeTestsAndFinish()
+            return
+        }
 
         try {
             // Initialize game immediately - asset extraction is optional

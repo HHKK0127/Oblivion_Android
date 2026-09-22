@@ -8,6 +8,7 @@
 #include "../geometry/material.h"
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 #include <string>
 #include <vector>
 
@@ -43,6 +44,13 @@ public:
     size_t getCacheSize() const;
     void setCacheLimit(size_t bytes);
     void clearCache();
+
+    // Negative cache for mesh paths that could not be resolved. Without this,
+    // every frame re-attempts a full BSA lookup + file open for each missing
+    // mesh, which is catastrophic with thousands of NPCs.
+    bool isMeshKnownMissing(const std::string& nifPath) const;
+    void markMeshMissing(const std::string& nifPath);
+    void clearMissingMeshCache();
 
     // Asset listing (for debug menu)
     std::string getLoadedTextureList() const;
@@ -97,6 +105,8 @@ private:
 
     std::unordered_map<std::string, CacheEntry> meshCache;
     std::unordered_map<std::string, CacheEntry> textureCache;
+    std::unordered_set<std::string> missingMeshPaths;
+    static constexpr size_t MAX_MISSING_MESH_ENTRIES = 65536;
 
     // Cache management
     size_t maxCacheSize;

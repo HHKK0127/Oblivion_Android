@@ -4,13 +4,16 @@
 #include <cstring>
 #include <algorithm>
 #include <sstream>
+#include <sys/stat.h>
 #include <zlib.h>
 
 #undef LOG_TAG
 #undef LOGD
+#undef LOGW
 #undef LOGE
 #define LOG_TAG "BSAReader"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 // ============================================================================
@@ -25,7 +28,8 @@ static constexpr uint32_t OB_HEADER_VERSION = 0x67;
 
 BSArchive::BSArchive()
     : m_isOpen(false)
-    , m_parsed(false) {
+    , m_parsed(false)
+    , m_nameBlockOffset(0) {
     std::memset(&m_header, 0, sizeof(m_header));
 }
 
@@ -45,7 +49,12 @@ bool BSArchive::open(const std::string& filePath) {
     // Open file
     m_stream.open(filePath, std::ios::binary);
     if (!m_stream.is_open()) {
-        LOGE("Failed to open BSA file: %s", filePath.c_str());
+        struct stat st;
+        if (stat(filePath.c_str(), &st) != 0) {
+            LOGW("BSA file not found: %s", filePath.c_str());
+        } else {
+            LOGE("Failed to open BSA file (exists but unreadable): %s", filePath.c_str());
+        }
         return false;
     }
 
@@ -98,6 +107,7 @@ void BSArchive::close() {
     m_files.clear();
     m_folderNames.clear();
     m_nameTable.clear();
+    m_nameBlockOffset = 0;
     std::memset(&m_header, 0, sizeof(m_header));
     m_filePath.clear();
 }
@@ -155,53 +165,50 @@ bool BSArchive::parseFolderRecords() {
 
     LOGD("Read %zu folder records", m_folders.size());
 
-    // Read folder name strings (each name is length-prefixed with byte len - 1, null-terminated)
-    // The offset field of each folder record points into this string pool
-    // The string pool starts right after the folder records
-    // We read all folder names sequentially
+    // In the Oblivion layout each folder's name and file records form a single
+    // contiguous block, and the blocks appear in folder-record order. The
+    // offset stored in a folder record is biased by the total file name length,
+    // so the real file position is (offset - fileNameLength).
+    m_folderNames.assign(m_header.folderCount, std::string());
+    m_files.reserve(m_header.fileCount);
+
+    uint32_t blockEnd = m_header.folderRecordOffset + m_header.folderCount * 16;
+
     for (uint32_t i = 0; i < m_header.folderCount; i++) {
-        uint8_t nameLenByte;
-        m_stream.read(reinterpret_cast<char*>(&nameLenByte), sizeof(nameLenByte));
+        const auto& folder = m_folders[i];
+
+        uint32_t blockOffset = folder.offset;
+        if (blockOffset >= m_header.fileNameLength) {
+            blockOffset -= m_header.fileNameLength;
+        }
+
+        m_stream.seekg(blockOffset, std::ios::beg);
         if (!m_stream.good()) {
-            LOGE("Failed to read folder name length for folder %u", i);
+            LOGE("Failed to seek to folder block %u at offset %u", i, blockOffset);
             return false;
         }
 
-        // The length byte stores (actualLength - 1), or offset into 0x10000 pool
-        // For Oblivion BSA, it's typically (length - 1)
-        uint8_t actualLen = nameLenByte + 1;
-
-        std::string folderName;
-        if (actualLen > 0) {
-            std::vector<char> nameBuf(actualLen + 1, 0);
-            m_stream.read(nameBuf.data(), actualLen);
+        // Folder name is a bzstring: the length byte includes the trailing null.
+        std::string folderPath;
+        if (m_header.archiveFlags & BSA_FLAG_HAS_FOLDERNAMES) {
+            uint8_t lenByte = 0;
+            m_stream.read(reinterpret_cast<char*>(&lenByte), 1);
             if (!m_stream.good()) {
-                LOGE("Failed to read folder name for folder %u", i);
+                LOGE("Failed to read folder name length for folder %u", i);
                 return false;
             }
-            folderName = std::string(nameBuf.data(), actualLen);
+
+            if (lenByte > 1) {
+                std::vector<char> nameBuf(lenByte, 0);
+                m_stream.read(nameBuf.data(), lenByte);
+                if (!m_stream.good()) {
+                    LOGE("Failed to read folder name for folder %u", i);
+                    return false;
+                }
+                folderPath.assign(nameBuf.data());
+            }
         }
-
-        // Skip null terminator
-        char nullTerm;
-        m_stream.read(&nullTerm, 1);
-
-        m_folderNames[m_folders[i].offset] = folderName;
-    }
-
-    LOGD("Read %zu folder names", m_folderNames.size());
-
-    // Pre-allocate file entries
-    m_files.reserve(m_header.fileCount);
-
-    // Read file records for each folder
-    // After folder names, we have the file records.
-    // Each folder has a list of file records (hash + size + offset).
-    // The file records immediately follow the folder name strings.
-    for (uint32_t i = 0; i < m_header.folderCount; i++) {
-        const auto& folder = m_folders[i];
-        auto folderIt = m_folderNames.find(folder.offset);
-        std::string folderPath = (folderIt != m_folderNames.end()) ? folderIt->second : "";
+        m_folderNames[i] = folderPath;
 
         for (uint32_t j = 0; j < folder.fileCount; j++) {
             BSAFileRecord fileRec;
@@ -219,99 +226,106 @@ bool BSArchive::parseFolderRecords() {
             if (fileRec.size & BSA_SIZE_COMPRESS_TOGGLE) {
                 compressed = !compressed;
             }
-            uint32_t actualSize = fileRec.size & ~BSA_SIZE_COMPRESS_TOGGLE;
+            uint32_t actualSize = fileRec.size & BSA_SIZE_MASK;
 
             BSAFileEntry entry;
             entry.hash = fileRec.hash;
             entry.offset = fileRec.offset;
             entry.size = actualSize;
+            entry.realSize = actualSize;
             entry.compressed = compressed;
             entry.folderPath = folderPath;
-            // FullPath will be set from name table
-            // Temporary path using folder
-            if (!folderPath.empty()) {
-                entry.fullPath = folderPath + "\\";
-            }
-            // We'll store the raw name when we read the name table
-            // For now, store index so name table can fill it in
 
             m_files.push_back(entry);
         }
+
+        blockEnd = std::max(blockEnd, blockOffset + 1 +
+                            (folderPath.empty() ? 0 : static_cast<uint32_t>(folderPath.size()) + 1) +
+                            folder.fileCount * 16);
     }
 
-    LOGD("Read %zu file records", m_files.size());
+    // The file name block starts right after the last folder block.
+    m_nameBlockOffset = blockEnd;
+
+    LOGD("Read %zu file records, name block at %u", m_files.size(), m_nameBlockOffset);
     return true;
 }
 
+// Normalize a path for archive lookup: separators are unified and case is
+// ignored, because callers pass '/' while BSA folder names are stored with '\'.
+static std::string normalizeLookupPath(const std::string& path) {
+    std::string result = path;
+    for (char& ch : result) {
+        if (ch == '\\') {
+            ch = '/';
+        } else if (ch >= 'A' && ch <= 'Z') {
+            ch = static_cast<char>(ch - 'A' + 'a');
+        }
+    }
+    return result;
+}
+
 bool BSArchive::readNameTable() {
-    // The name table contains null-terminated strings in the format:
-    // "folder\filename.ext" for each file entry, in the same order as file records.
-    // It's located at the current stream position (after all file records).
-
-    // If the archive has no name table flag, we can't get full paths
-    bool hasNameTable = (m_header.archiveFlags & BSA_FLAG_HAS_NAMETABLE) != 0 &&
-                        (m_header.archiveFlags & BSA_FLAG_HAS_FOLDERNAMES) != 0;
-
-    if (!hasNameTable) {
-        LOGD("Archive has no name table, using folder-based paths");
-        // Build paths from folder + hash-based names
-        uint32_t fileIdx = 0;
-        for (uint32_t i = 0; i < m_header.folderCount && fileIdx < m_files.size(); i++) {
-            for (uint32_t j = 0; j < m_folders[i].fileCount && fileIdx < m_files.size(); j++) {
-                auto& entry = m_files[fileIdx];
-                // Use folder path + hash as name
-                std::string path = entry.folderPath;
-                if (!path.empty()) {
-                    path += "\\";
-                }
-                path += std::to_string(m_folders[i].hash ^ entry.hash) + ".dat";
-
-                entry.fullPath = path;
-                entry.fileName = entry.fullPath.substr(entry.fullPath.find_last_of("\\/") + 1);
-                size_t dotPos = entry.fileName.find_last_of('.');
-                entry.extension = (dotPos != std::string::npos)
-                    ? entry.fileName.substr(dotPos + 1) : "";
-
-                // Convert extension to lowercase
-                std::transform(entry.extension.begin(), entry.extension.end(),
-                               entry.extension.begin(), ::tolower);
-
-                fileIdx++;
+    // The name block holds one null-terminated file name per file, in the same
+    // order as the file records. It is exactly fileNameLength bytes long.
+    if (!(m_header.archiveFlags & BSA_FLAG_HAS_FILENAMES) || m_header.fileNameLength == 0) {
+        LOGD("Archive has no file name block, using folder-based paths");
+        for (auto& entry : m_files) {
+            entry.fullPath = entry.folderPath;
+            if (!entry.fullPath.empty()) {
+                entry.fullPath += "\\";
             }
+            entry.fullPath += std::to_string(entry.hash) + ".dat";
+            entry.lookupPath = normalizeLookupPath(entry.fullPath);
+            entry.fileName = entry.fullPath.substr(entry.fullPath.find_last_of("\\/") + 1);
+            size_t dotPos = entry.fileName.find_last_of('.');
+            entry.extension = (dotPos != std::string::npos)
+                ? entry.fileName.substr(dotPos + 1) : "";
+            std::transform(entry.extension.begin(), entry.extension.end(),
+                           entry.extension.begin(), ::tolower);
         }
         return true;
     }
 
-    // Read name table - one null-terminated string per file
-    m_nameTable.reserve(m_header.fileCount);
-    for (uint32_t i = 0; i < m_header.fileCount && i < m_files.size(); i++) {
-        std::string name;
-        char c;
-        while (m_stream.get(c)) {
-            if (c == '\0') break;
-            name += c;
-        }
+    m_stream.seekg(m_nameBlockOffset, std::ios::beg);
+    if (!m_stream.good()) {
+        LOGE("Failed to seek to name block at offset %u", m_nameBlockOffset);
+        return false;
+    }
 
-        if (!m_stream.good() && name.empty()) {
-            LOGE("Failed to read name table entry %u", i);
+    std::vector<char> nameBlock(m_header.fileNameLength, 0);
+    m_stream.read(nameBlock.data(), m_header.fileNameLength);
+    if (!m_stream.good()) {
+        LOGE("Failed to read name block (%u bytes)", m_header.fileNameLength);
+        return false;
+    }
+
+    m_nameTable.reserve(m_header.fileCount);
+
+    const char* cursor = nameBlock.data();
+    const char* end = nameBlock.data() + nameBlock.size();
+
+    for (uint32_t i = 0; i < m_header.fileCount && i < m_files.size(); i++) {
+        if (cursor >= end) {
+            LOGE("Name block exhausted at entry %u", i);
             return false;
         }
 
+        std::string name(cursor);
+        cursor += name.size() + 1;
+
         m_nameTable.push_back(name);
 
-        // Assign to file entry
         auto& entry = m_files[i];
-        entry.fullPath = name;
-
-        // Extract file name (last component after \ or /)
-        size_t lastSep = entry.fullPath.find_last_of("\\/");
-        if (lastSep != std::string::npos) {
-            entry.fileName = entry.fullPath.substr(lastSep + 1);
+        if (entry.folderPath.empty()) {
+            entry.fullPath = name;
         } else {
-            entry.fileName = entry.fullPath;
+            entry.fullPath = entry.folderPath + "\\" + name;
         }
+        entry.lookupPath = normalizeLookupPath(entry.fullPath);
 
-        // Extract extension
+        entry.fileName = name;
+
         size_t dotPos = entry.fileName.find_last_of('.');
         if (dotPos != std::string::npos) {
             entry.extension = entry.fileName.substr(dotPos + 1);
@@ -402,20 +416,12 @@ bool BSArchive::extractFileDecompressed(const BSAFileEntry& entry, std::vector<u
 
 bool BSArchive::decompressZLib(const uint8_t* input, size_t inputSize,
                                 std::vector<uint8_t>& output, size_t uncompressedSize) const {
-    z_stream strm;
-    std::memset(&strm, 0, sizeof(strm));
+    // Oblivion stores compressed entries as zlib streams. Some third-party
+    // archives use headerless deflate, so try zlib first and fall back to raw.
+    const int windowBits[2] = { 15 + 32, -MAX_WBITS };
 
-    strm.zalloc = Z_NULL;
-    strm.zfree = Z_NULL;
-    strm.opaque = Z_NULL;
-    strm.avail_in = static_cast<uInt>(inputSize);
-    strm.next_in = const_cast<uint8_t*>(input);
-
-    // Try raw inflate first (no zlib header), fall back to window-bits + auto header
-    int windowBits = -MAX_WBITS;  // Raw inflate
-    int ret = inflateInit2(&strm, windowBits);
-    if (ret != Z_OK) {
-        inflateEnd(&strm);
+    for (int attempt = 0; attempt < 2; attempt++) {
+        z_stream strm;
         std::memset(&strm, 0, sizeof(strm));
         strm.zalloc = Z_NULL;
         strm.zfree = Z_NULL;
@@ -423,37 +429,49 @@ bool BSArchive::decompressZLib(const uint8_t* input, size_t inputSize,
         strm.avail_in = static_cast<uInt>(inputSize);
         strm.next_in = const_cast<uint8_t*>(input);
 
-        // Retry with auto-detect zlib/gzip header
-        ret = inflateInit2(&strm, 15 + 32);
-        if (ret != Z_OK) {
-            LOGE("inflateInit2 failed: %d", ret);
-            return false;
+        if (inflateInit2(&strm, windowBits[attempt]) != Z_OK) {
+            continue;
         }
+
+        output.clear();
+        output.reserve(uncompressedSize > 0 ? uncompressedSize : ZLIB_CHUNK_SIZE);
+
+        std::vector<uint8_t> buffer(ZLIB_CHUNK_SIZE);
+        int ret = Z_OK;
+        bool ok = false;
+
+        for (;;) {
+            strm.avail_out = static_cast<uInt>(buffer.size());
+            strm.next_out = buffer.data();
+
+            ret = inflate(&strm, Z_NO_FLUSH);
+
+            if (ret == Z_STREAM_ERROR || ret == Z_DATA_ERROR ||
+                ret == Z_MEM_ERROR || ret == Z_BUF_ERROR) {
+                break;
+            }
+
+            size_t bytesProduced = buffer.size() - strm.avail_out;
+            output.insert(output.end(), buffer.data(), buffer.data() + bytesProduced);
+
+            if (ret == Z_STREAM_END) {
+                ok = true;
+                break;
+            }
+        }
+
+        inflateEnd(&strm);
+
+        if (ok) {
+            return true;
+        }
+
+        LOGD("inflate attempt %d failed (windowBits %d, ret %d)",
+             attempt, windowBits[attempt], ret);
     }
 
-    output.clear();
-    output.reserve(uncompressedSize > 0 ? uncompressedSize : ZLIB_CHUNK_SIZE);
-
-    std::vector<uint8_t> buffer(ZLIB_CHUNK_SIZE);
-
-    do {
-        strm.avail_out = static_cast<uInt>(buffer.size());
-        strm.next_out = buffer.data();
-
-        ret = inflate(&strm, Z_NO_FLUSH);
-
-        if (ret == Z_STREAM_ERROR || ret == Z_DATA_ERROR || ret == Z_MEM_ERROR) {
-            LOGE("inflate error: %d", ret);
-            inflateEnd(&strm);
-            return false;
-        }
-
-        size_t bytesProduced = buffer.size() - strm.avail_out;
-        output.insert(output.end(), buffer.data(), buffer.data() + bytesProduced);
-    } while (ret != Z_STREAM_END);
-
-    inflateEnd(&strm);
-    return true;
+    LOGE("Failed to decompress entry");
+    return false;
 }
 
 // ============================================================================
@@ -462,30 +480,20 @@ bool BSArchive::decompressZLib(const uint8_t* input, size_t inputSize,
 
 std::vector<const BSAFileEntry*> BSArchive::findFilesByPrefix(const std::string& prefix) const {
     std::vector<const BSAFileEntry*> results;
+    const std::string normalizedPrefix = normalizeLookupPath(prefix);
     for (const auto& entry : m_files) {
-        // Case-insensitive prefix comparison
-        if (entry.fullPath.size() >= prefix.size()) {
-            std::string entryPrefix = entry.fullPath.substr(0, prefix.size());
-            std::string lowerPrefix = prefix;
-            std::transform(entryPrefix.begin(), entryPrefix.end(), entryPrefix.begin(), ::tolower);
-            std::transform(lowerPrefix.begin(), lowerPrefix.end(), lowerPrefix.begin(), ::tolower);
-            if (entryPrefix == lowerPrefix) {
-                results.push_back(&entry);
-            }
+        if (entry.lookupPath.size() >= normalizedPrefix.size() &&
+            entry.lookupPath.compare(0, normalizedPrefix.size(), normalizedPrefix) == 0) {
+            results.push_back(&entry);
         }
     }
     return results;
 }
 
 const BSAFileEntry* BSArchive::findFile(const std::string& path) const {
-    // Case-insensitive search
-    std::string lowerPath = path;
-    std::transform(lowerPath.begin(), lowerPath.end(), lowerPath.begin(), ::tolower);
-
+    const std::string normalizedPath = normalizeLookupPath(path);
     for (const auto& entry : m_files) {
-        std::string lowerEntry = entry.fullPath;
-        std::transform(lowerEntry.begin(), lowerEntry.end(), lowerEntry.begin(), ::tolower);
-        if (lowerEntry == lowerPath) {
+        if (entry.lookupPath == normalizedPath) {
             return &entry;
         }
     }

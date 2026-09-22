@@ -16,7 +16,7 @@ WorldManager::WorldManager()
       cellLoadRadius(DEFAULT_CELL_LOAD_RADIUS),
       cellUnloadRadius(DEFAULT_CELL_UNLOAD_RADIUS),
       loadUpdateTimer(0.5f), nextCellId(1), nextWorldItemId(1000),
-      cellsLoaded(0), cellsUnloaded(0) {
+      cellsLoaded(0), cellsUnloaded(0), currentWorldspaceFormID(0) {
 }
 
 WorldManager::~WorldManager() {
@@ -74,7 +74,7 @@ void WorldManager::update(float deltaTime) {
 
     // Update cell transitions (Phase 3+)
     if (cellTransitionManager) {
-        cellTransitionManager->update(worldState.playerPosition, deltaTime);
+        cellTransitionManager->update(deltaTime);
     }
 
     // Batch cell loading/unloading every 0.5 seconds
@@ -272,8 +272,14 @@ std::shared_ptr<Cell> WorldManager::getCellById(uint32_t cellId) {
 }
 
 std::shared_ptr<Cell> WorldManager::getCellByCoord(int32_t cellX, int32_t cellY) {
-    uint32_t cellId = getOrCreateCellId(cellX, cellY);
-    return getCellById(cellId);
+    // Lookup only: cells are created by createCell() / addCellFromESM(). Creating
+    // them on demand would fabricate empty flat cells for any queried coordinate.
+    uint64_t key = (static_cast<uint64_t>(static_cast<uint32_t>(cellX)) << 32) | static_cast<uint32_t>(cellY);
+    auto it = coordToId.find(key);
+    if (it == coordToId.end()) {
+        return nullptr;
+    }
+    return getCellById(it->second);
 }
 
 std::vector<NPC*> WorldManager::getNpcsInCell(uint32_t cellId) {
@@ -381,20 +387,44 @@ std::shared_ptr<Cell> WorldManager::createCell(uint32_t cellId, int32_t cellX, i
     cells[cellId] = cell;
     coordToId[(static_cast<uint64_t>(cellX) << 32) | (cellY & 0xFFFFFFFF)] = cellId;
 
-    LOGD_WORLD("Created cell: %s (ID: %u, Coord: %d,%d)", name.c_str(), cellId, cellX, cellY);
+    // Cell creation is reported in aggregate by the world builder; logging each
+    // one here produces ~14k lines per start-up.
+    (void)name;
     return cell;
 }
 
 void WorldManager::checkCellDistances() {
-    for (auto& pair : cells) {
-        auto cell = pair.second;
-        if (!cell) continue;
+    // distanceFromPlayer is only consumed by shouldLoadCell() and shouldUnloadCell(),
+    // which are evaluated for the currently active cells and for the 3x3 block around
+    // the player. Refreshing all ~14k registered cells every frame was pure overhead.
+    const CellCoord center = currentCell
+        ? CellCoord(currentCell->cellX, currentCell->cellY)
+        : CellCoordUtils::getCoordFromWorldPos(worldState.playerPosition);
 
-        // Calculate squared distance from player to cell origin (avoid sqrt)
-        glm::vec3 cellOrigin = CellCoordUtils::getWorldPosFromCoord(CellCoord(cell->cellX, cell->cellY));
-        glm::vec3 diff = worldState.playerPosition - cellOrigin;
-        cell->distanceFromPlayer = diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
+    const float halfCell = CELL_SIZE * 0.5f;
+
+    for (const auto& cell : activeCells) {
+        updateCellDistance(cell, halfCell);
     }
+
+    for (const auto& coord : CellCoordUtils::getAdjacentCoords(center)) {
+        updateCellDistance(getCellByCoord(coord.x, coord.y), halfCell);
+    }
+}
+
+void WorldManager::updateCellDistance(const std::shared_ptr<Cell>& cell, float halfCell) {
+    if (!cell) return;
+
+    // The world is Y-up: the distance that decides cell streaming is horizontal, from
+    // the player to the cell CENTRE. Measuring to the cell corner and including the
+    // height component made every neighbouring cell look out of range, so only the
+    // spawn cell was ever loaded.
+    const float cellCenterX = static_cast<float>(cell->cellX) * CELL_SIZE + halfCell;
+    const float cellCenterZ = static_cast<float>(cell->cellY) * CELL_SIZE + halfCell;
+
+    const float dx = worldState.playerPosition.x - cellCenterX;
+    const float dz = worldState.playerPosition.z - cellCenterZ;
+    cell->distanceFromPlayer = dx * dx + dz * dz;
 }
 
 void WorldManager::unloadDistantCells() {
@@ -419,11 +449,24 @@ void WorldManager::loadNearbyCells() {
         CellCoord(currentCell->cellX, currentCell->cellY)
     );
 
+    const float loadRadiusSq = cellLoadRadius * cellLoadRadius;
+
     for (const auto& coord : toLoad) {
         auto cell = getCellByCoord(coord.x, coord.y);
-        if (cell && !cell->isLoaded() && shouldLoadCell(cell)) {
-            loadCell(coord.x, coord.y);
+        if (!cell) continue;
+        if (cell->distanceFromPlayer > loadRadiusSq) continue;
+
+        if (cell->isLoaded()) {
+            // A cell can be loaded without being in activeCells (door transitions, saves).
+            // Re-activate it so it is updated and rendered again.
+            if (activeCells.size() < MAX_ACTIVE_CELLS &&
+                std::find(activeCells.begin(), activeCells.end(), cell) == activeCells.end()) {
+                activeCells.push_back(cell);
+            }
+            continue;
         }
+
+        loadCell(coord.x, coord.y);
     }
 }
 
@@ -449,20 +492,17 @@ uint32_t WorldManager::getOrCreateCellId(int32_t cellX, int32_t cellY) {
     if (it != coordToId.end()) {
         return it->second;
     }
-
-    // Create new cell if it doesn't exist
-    uint32_t cellId = nextCellId++;
-    std::string name = "Cell_" + std::to_string(cellX) + "_" + std::to_string(cellY);
-    createCell(cellId, cellX, cellY, name, CellType::EXTERIOR);
-
-    return cellId;
+    return 0;
 }
 
 std::shared_ptr<Cell> WorldManager::getCellByFormID(uint32_t tesFormID) const {
     if (tesFormID == 0) return nullptr;
-    for (const auto& pair : cells) {
-        if (pair.second && pair.second->tesFormID == tesFormID) {
-            return pair.second;
+
+    auto lookup = formIdToCellId.find(tesFormID);
+    if (lookup != formIdToCellId.end()) {
+        auto it = cells.find(lookup->second);
+        if (it != cells.end()) {
+            return it->second;
         }
     }
     return nullptr;
@@ -471,7 +511,16 @@ std::shared_ptr<Cell> WorldManager::getCellByFormID(uint32_t tesFormID) const {
 std::shared_ptr<Cell> WorldManager::addCellFromESM(int32_t cellX, int32_t cellY,
                                                      const std::string& editorID,
                                                      const std::string& fullName,
-                                                     uint32_t tesFormID) {
+                                                     uint32_t tesFormID,
+                                                     bool isExterior,
+                                                     uint32_t worldspaceFormID) {
+    // Interior cells have no grid position. Giving them one would make them
+    // collide with the real exterior cell that owns that coordinate, so they
+    // are skipped entirely.
+    if (!isExterior) {
+        return nullptr;
+    }
+
     uint64_t key = (static_cast<uint64_t>(static_cast<uint32_t>(cellX)) << 32) | static_cast<uint32_t>(cellY);
     auto it = coordToId.find(key);
     if (it != coordToId.end()) {
@@ -487,7 +536,81 @@ std::shared_ptr<Cell> WorldManager::addCellFromESM(int32_t cellX, int32_t cellY,
     auto cell = createCell(cellId, cellX, cellY, name, CellType::EXTERIOR);
     cell->editorID = editorID;
     cell->tesFormID = tesFormID;
+    cell->worldspaceFormID = worldspaceFormID;
+    if (tesFormID != 0) {
+        formIdToCellId[tesFormID] = cellId;
+    }
     return cell;
+}
+
+void WorldManager::clearAllCells() {
+    activeCells.clear();
+    currentCell.reset();
+    cells.clear();
+    coordToId.clear();
+    formIdToCellId.clear();
+    nextCellId = 1;
+    cellsLoaded = 0;
+    cellsUnloaded = 0;
+}
+
+size_t WorldManager::countExteriorCellsWithTerrain() const {
+    const size_t expected =
+        static_cast<size_t>(TERRAIN_RESOLUTION) * static_cast<size_t>(TERRAIN_RESOLUTION);
+
+    size_t count = 0;
+    for (const auto& pair : cells) {
+        const auto& cell = pair.second;
+        if (cell && cell->cellType == CellType::EXTERIOR && cell->heightData.size() == expected) {
+            ++count;
+        }
+    }
+    return count;
+}
+
+bool WorldManager::spawnPlayerAtNearestTerrainCell() {
+    const size_t expected =
+        static_cast<size_t>(TERRAIN_RESOLUTION) * static_cast<size_t>(TERRAIN_RESOLUTION);
+
+    std::shared_ptr<Cell> best;
+    int64_t bestRank = 0;
+
+    for (const auto& pair : cells) {
+        const auto& cell = pair.second;
+        if (!cell || cell->cellType != CellType::EXTERIOR) continue;
+        if (cell->heightData.size() != expected) continue;
+        // Only consider cells of the worldspace the player belongs to.
+        if (currentWorldspaceFormID != 0 && cell->worldspaceFormID != currentWorldspaceFormID) continue;
+
+        const int64_t rank = static_cast<int64_t>(std::llabs(static_cast<long long>(cell->cellX))) +
+                             static_cast<int64_t>(std::llabs(static_cast<long long>(cell->cellY)));
+        if (!best || rank < bestRank) {
+            best = cell;
+            bestRank = rank;
+        }
+    }
+
+    if (!best) {
+        LOGW_WORLD("No exterior cell with terrain available for spawn");
+        return false;
+    }
+
+    const float half = CELL_SIZE * 0.5f;
+    const float ground = best->getTerrainHeightAt(half, half);
+
+    loadCell(best->cellId);
+    currentCell = best;
+
+    // The heightmap is already expressed in world units, so the player only
+    // needs a small clearance above the sampled surface.
+    setPlayerPosition(glm::vec3(
+        static_cast<float>(best->cellX) * CELL_SIZE + half,
+        ground + 64.0f,
+        static_cast<float>(best->cellY) * CELL_SIZE + half));
+
+    LOGI_WORLD("Player spawned in cell %u (0x%08X) grid=(%d,%d) ground=%.1f",
+               best->cellId, best->tesFormID, best->cellX, best->cellY, ground);
+    return true;
 }
 
 CellCoord WorldManager::getPlayerCellCoord() const {

@@ -46,14 +46,15 @@ out vec4 FragColor;
 
 void main() {
     vec4 texColor = texture(fontTexture, fragTexCoord);
-    float alpha = useAlphaChannel == 1 ? texColor.a : texColor.r;
-    FragColor = vec4(textColor.rgb, textColor.a * alpha);
+    float a = (useAlphaChannel == 0) ? texColor.r : texColor.a;
+    FragColor = vec4(textColor.rgb, textColor.a * a);
 }
 )";
 
 TextRenderer::TextRenderer()
     : vao(0), vbo(0), shaderProgram(0), projectionLoc(-1), colorLoc(-1),
-      fontTexture(0), screenWidth(1080), screenHeight(1920), fontData(nullptr),
+      alphaChannelLoc(-1), fontTexture(0), fontTextureLoc(-1),
+      screenWidth(1080), screenHeight(1920), fontData(nullptr),
       assetManager(nullptr), activeFont(FontType::Roboto) {
     memset(oblivionFonts, 0, sizeof(oblivionFonts));
     LOGD("TextRenderer created");
@@ -85,6 +86,11 @@ bool TextRenderer::initialize(AAssetManager* assetMgr) {
     projectionLoc = glGetUniformLocation(shaderProgram, "projection");
     colorLoc = glGetUniformLocation(shaderProgram, "textColor");
     alphaChannelLoc = glGetUniformLocation(shaderProgram, "useAlphaChannel");
+    fontTextureLoc = glGetUniformLocation(shaderProgram, "fontTexture");
+
+    LOGI("Shader program=%u, projectionLoc=%d, colorLoc=%d, alphaChannelLoc=%d",
+         shaderProgram, projectionLoc, colorLoc, alphaChannelLoc);
+    LOGI("Fragment shader source:\n%s", textFragmentShader);
 
     // Generate VAO/VBO
     glGenVertexArrays(1, &vao);
@@ -309,7 +315,80 @@ void TextRenderer::renderText(const std::string& text, float x, float y,
                               const glm::vec3& color, float scale) {
     // Route to Oblivion font renderer if active font is not Roboto
     if (activeFont != FontType::Roboto) {
-        renderTextOblivion(text, x, y, glm::vec4(color.x, color.y, color.z, 1.0f), scale);
+        // Use the SAME rendering path as Roboto but with Oblivion font texture
+        int idx = static_cast<int>(activeFont);
+        const OblivionFontAtlas& atlas = oblivionFonts[idx];
+        if (atlas.textureId == 0) {
+            LOGW("Oblivion font %d not loaded", idx);
+            return;
+        }
+
+        if (text.empty() || shaderProgram == 0) {
+            return;
+        }
+
+        glUseProgram(shaderProgram);
+
+        glm::mat4 projection = glm::ortho(0.0f, (float)screenWidth, (float)screenHeight, 0.0f, -1.0f, 1.0f);
+        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, &projection[0][0]);
+        glUniform4f(colorLoc, color.x, color.y, color.z, 1.0f);
+        glUniform1i(alphaChannelLoc, 1);  // Oblivion fonts use RGBA8, sample alpha channel
+        glUniform1i(fontTextureLoc, 0);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, atlas.textureId);
+
+        glBindVertexArray(vao);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+        float currentX = x;
+        float currentY = y;
+        float fontScale = scale * (atlas.fontSize / 22.0f);
+
+        // Batch every glyph into one buffer so a string costs a single upload and draw
+        batchScratch_.clear();
+        batchScratch_.reserve(text.size() * 24);
+
+        for (char ch : text) {
+            unsigned int codepoint = (unsigned char)ch;
+            auto it = atlas.glyphs.find(codepoint);
+            if (it == atlas.glyphs.end()) {
+                auto spaceIt = atlas.glyphs.find(32);
+                float spaceAdvance = (spaceIt != atlas.glyphs.end()) ? spaceIt->second.advance : atlas.fontSize * 0.5f;
+                currentX += spaceAdvance * fontScale;
+                continue;
+            }
+            const OblivionGlyph& g = it->second;
+
+            float gw = g.width * fontScale;
+            float gh = g.height * fontScale;
+            float posX = currentX + g.bearing_x * fontScale;
+            float posY = currentY;
+
+            const float vertices[24] = {
+                posX,        posY,        g.u0, g.v0,
+                posX + gw,   posY,        g.u1, g.v0,
+                posX,        posY + gh,   g.u0, g.v1,
+                posX + gw,   posY,        g.u1, g.v0,
+                posX + gw,   posY + gh,   g.u1, g.v1,
+                posX,        posY + gh,   g.u0, g.v1,
+            };
+            batchScratch_.insert(batchScratch_.end(), vertices, vertices + 24);
+
+            currentX += g.advance * fontScale;
+        }
+
+        if (!batchScratch_.empty()) {
+            glBufferData(GL_ARRAY_BUFFER,
+                         static_cast<GLsizeiptr>(batchScratch_.size() * sizeof(float)),
+                         batchScratch_.data(), GL_DYNAMIC_DRAW);
+            glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(batchScratch_.size() / 4));
+        }
+
+        glBindVertexArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glUseProgram(0);
         return;
     }
 
@@ -337,6 +416,9 @@ void TextRenderer::renderText(const std::string& text, float x, float y,
     float currentX = x;
     float currentY = y;
 
+    batchScratch_.clear();
+    batchScratch_.reserve(text.size() * 24);
+
     for (char ch : text) {
         unsigned int codepoint = (unsigned char)ch;
 
@@ -346,7 +428,7 @@ void TextRenderer::renderText(const std::string& text, float x, float y,
         // Actual character width and height (restored from texture coordinates in atlas)
         float charWidth = (glyph.x1 - glyph.x0) * ATLAS_WIDTH * scale;
         float charHeight = (glyph.y1 - glyph.y0) * ATLAS_HEIGHT * scale;
-        
+
         // Apply bearing (position adjustment offset)
         float posX = currentX + glyph.bearingX * scale;
         // stb_truetype bearingY is offset from baseline (usually negative)
@@ -354,7 +436,7 @@ void TextRenderer::renderText(const std::string& text, float x, float y,
         float posY = currentY + (FONT_SIZE + glyph.bearingY) * scale;
 
         // Generate vertex data (quad: 2 triangles)
-        float vertices[] = {
+        const float vertices[24] = {
             // Position coords        Texture coords
             posX,             posY,              glyph.x0, glyph.y0,  // Top-left
             posX + charWidth, posY,              glyph.x1, glyph.y0,  // Top-right
@@ -364,11 +446,16 @@ void TextRenderer::renderText(const std::string& text, float x, float y,
             posX + charWidth, posY + charHeight, glyph.x1, glyph.y1,  // Bottom-right
             posX,             posY + charHeight, glyph.x0, glyph.y1,  // Bottom-left
         };
-
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        batchScratch_.insert(batchScratch_.end(), vertices, vertices + 24);
 
         currentX += glyph.advanceX * scale;
+    }
+
+    if (!batchScratch_.empty()) {
+        glBufferData(GL_ARRAY_BUFFER,
+                     static_cast<GLsizeiptr>(batchScratch_.size() * sizeof(float)),
+                     batchScratch_.data(), GL_DYNAMIC_DRAW);
+        glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(batchScratch_.size() / 4));
     }
 
     glBindVertexArray(0);
@@ -381,7 +468,78 @@ void TextRenderer::renderText(const std::string& text, float x, float y,
                               const glm::vec4& color, float scale) {
     // Route to Oblivion font renderer if active font is not Roboto
     if (activeFont != FontType::Roboto) {
-        renderTextOblivion(text, x, y, color, scale);
+        int idx = static_cast<int>(activeFont);
+        const OblivionFontAtlas& atlas = oblivionFonts[idx];
+        if (atlas.textureId == 0) {
+            LOGW("Oblivion font %d not loaded", idx);
+            return;
+        }
+
+        if (text.empty() || shaderProgram == 0) {
+            return;
+        }
+
+        glUseProgram(shaderProgram);
+
+        glm::mat4 projection = glm::ortho(0.0f, (float)screenWidth, (float)screenHeight, 0.0f, -1.0f, 1.0f);
+        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, &projection[0][0]);
+        glUniform4f(colorLoc, color.x, color.y, color.z, color.w);
+        glUniform1i(alphaChannelLoc, 1);  // Oblivion fonts use RGBA8, sample alpha channel
+        glUniform1i(fontTextureLoc, 0);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, atlas.textureId);
+
+        glBindVertexArray(vao);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+        float currentX = x;
+        float currentY = y;
+        float fontScale = scale * (atlas.fontSize / 22.0f);
+
+        batchScratch_.clear();
+        batchScratch_.reserve(text.size() * 24);
+
+        for (char ch : text) {
+            unsigned int codepoint = (unsigned char)ch;
+            auto it = atlas.glyphs.find(codepoint);
+            if (it == atlas.glyphs.end()) {
+                auto spaceIt = atlas.glyphs.find(32);
+                float spaceAdvance = (spaceIt != atlas.glyphs.end()) ? spaceIt->second.advance : atlas.fontSize * 0.5f;
+                currentX += spaceAdvance * fontScale;
+                continue;
+            }
+            const OblivionGlyph& g = it->second;
+
+            float gw = g.width * fontScale;
+            float gh = g.height * fontScale;
+            float posX = currentX + g.bearing_x * fontScale;
+            float posY = currentY;
+
+            const float vertices[24] = {
+                posX,        posY,        g.u0, g.v0,
+                posX + gw,   posY,        g.u1, g.v0,
+                posX,        posY + gh,   g.u0, g.v1,
+                posX + gw,   posY,        g.u1, g.v0,
+                posX + gw,   posY + gh,   g.u1, g.v1,
+                posX,        posY + gh,   g.u0, g.v1,
+            };
+            batchScratch_.insert(batchScratch_.end(), vertices, vertices + 24);
+
+            currentX += g.advance * fontScale;
+        }
+
+        if (!batchScratch_.empty()) {
+            glBufferData(GL_ARRAY_BUFFER,
+                         static_cast<GLsizeiptr>(batchScratch_.size() * sizeof(float)),
+                         batchScratch_.data(), GL_DYNAMIC_DRAW);
+            glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(batchScratch_.size() / 4));
+        }
+
+        glBindVertexArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glUseProgram(0);
         return;
     }
 
@@ -407,6 +565,9 @@ void TextRenderer::renderText(const std::string& text, float x, float y,
     float currentX = x;
     float currentY = y;
 
+    batchScratch_.clear();
+    batchScratch_.reserve(text.size() * 24);
+
     for (char ch : text) {
         unsigned int codepoint = (unsigned char)ch;
         Glyph glyph = getGlyph(codepoint);
@@ -417,7 +578,7 @@ void TextRenderer::renderText(const std::string& text, float x, float y,
         float posX = currentX + glyph.bearingX * scale;
         float posY = currentY + (FONT_SIZE + glyph.bearingY) * scale;
 
-        float vertices[] = {
+        const float vertices[24] = {
             posX,             posY,              glyph.x0, glyph.y0,
             posX + charWidth, posY,              glyph.x1, glyph.y0,
             posX,             posY + charHeight, glyph.x0, glyph.y1,
@@ -426,11 +587,16 @@ void TextRenderer::renderText(const std::string& text, float x, float y,
             posX + charWidth, posY + charHeight, glyph.x1, glyph.y1,
             posX,             posY + charHeight, glyph.x0, glyph.y1,
         };
-
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        batchScratch_.insert(batchScratch_.end(), vertices, vertices + 24);
 
         currentX += glyph.advanceX * scale;
+    }
+
+    if (!batchScratch_.empty()) {
+        glBufferData(GL_ARRAY_BUFFER,
+                     static_cast<GLsizeiptr>(batchScratch_.size() * sizeof(float)),
+                     batchScratch_.data(), GL_DYNAMIC_DRAW);
+        glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(batchScratch_.size() / 4));
     }
 
     glBindVertexArray(0);
@@ -440,7 +606,32 @@ void TextRenderer::renderText(const std::string& text, float x, float y,
 }
 
 float TextRenderer::getTextWidth(const std::string& text, float scale) {
-    if (text.empty() || fontData == nullptr) {
+    if (text.empty()) return 0.0f;
+
+    // Use Oblivion font metrics when active font is not Roboto
+    if (activeFont != FontType::Roboto) {
+        int idx = static_cast<int>(activeFont);
+        const OblivionFontAtlas& atlas = oblivionFonts[idx];
+        if (atlas.textureId == 0 || atlas.glyphs.empty()) {
+            return 0.0f;
+        }
+        float fontScale = scale * (atlas.fontSize / 22.0f);
+        float width = 0.0f;
+        for (char ch : text) {
+            unsigned int codepoint = (unsigned char)ch;
+            auto it = atlas.glyphs.find(codepoint);
+            if (it != atlas.glyphs.end()) {
+                width += it->second.advance * fontScale;
+            } else {
+                auto spaceIt = atlas.glyphs.find(32);
+                float spaceAdvance = (spaceIt != atlas.glyphs.end()) ? spaceIt->second.advance : atlas.fontSize * 0.5f;
+                width += spaceAdvance * fontScale;
+            }
+        }
+        return width;
+    }
+
+    if (fontData == nullptr) {
         return 0.0f;
     }
     float width = 0.0f;
@@ -636,8 +827,21 @@ bool TextRenderer::loadOblivionFnt(const char* fntPath, const char* pngPath, Fon
         g.v1        = f[8];   // texture V bottom (f[8] is the second row's v)
         g.width     = f[11];  // pixel width
         g.height    = f[12];  // pixel height
-        oblivionFonts[idx].glyphs[i] = g;
+        // Record index maps to codepoint as (record + 1): record 0 -> ASCII 1,
+        // record 32 -> ASCII 33 ('!'), record 65 -> ASCII 66 ('B'), etc.
+        // Verified by template-matching each glyph against reference renderings.
+        oblivionFonts[idx].glyphs[i + 1] = g;
         parsedCount++;
+    }
+
+    // Space (ASCII 32) has no glyph record; synthesize one so word spacing works.
+    if (oblivionFonts[idx].glyphs.find(32) == oblivionFonts[idx].glyphs.end()) {
+        OblivionGlyph space;
+        space.bearing_x = 0.0f;
+        space.advance   = fontSize * 0.35f;
+        space.u0 = space.v0 = space.u1 = space.v1 = 0.0f;
+        space.width = space.height = 0.0f;
+        oblivionFonts[idx].glyphs[32] = space;
     }
     LOGI("  Parsed %d glyph records (offset %d, stride %d)",
          parsedCount, GLYPH_START_OFFSET, GLYPH_STRIDE);
@@ -678,7 +882,7 @@ bool TextRenderer::loadOblivionFnt(const char* fntPath, const char* pngPath, Fon
     glBindTexture(GL_TEXTURE_2D, 0);
 
     stbi_image_free(pixels);
-    LOGI("Oblivion font loaded: type=%d texId=%u", idx, oblivionFonts[idx].textureId);
+    LOGI("Oblivion font loaded: type=%d texId=%u glyphs=%zu", idx, oblivionFonts[idx].textureId, oblivionFonts[idx].glyphs.size());
     return true;
 }
 
@@ -719,70 +923,9 @@ const char* TextRenderer::getFontTypeName(FontType type) const {
 
 void TextRenderer::renderTextOblivion(const std::string& text, float x, float y,
                                        const glm::vec4& color, float scale) {
-    int idx = static_cast<int>(activeFont);
-    const OblivionFontAtlas& atlas = oblivionFonts[idx];
-    if (atlas.textureId == 0) {
-        LOGW("Oblivion font %d not loaded", idx);
-        return;
-    }
-
-    glUseProgram(shaderProgram);
-
-    glm::mat4 projection = glm::ortho(0.0f, (float)screenWidth, (float)screenHeight, 0.0f, -1.0f, 1.0f);
-    glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, &projection[0][0]);
-    glUniform4f(colorLoc, color.x, color.y, color.z, color.w);
-    glUniform1i(alphaChannelLoc, 0);  // Sample .r (monochrome in R channel of RGBA8)
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, atlas.textureId);
-
-    glBindVertexArray(vao);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
-    float currentX = x;
-    float currentY = y;
-    float texW = (float)atlas.texWidth;
-    float texH = (float)atlas.texHeight;
-    float fontScale = scale * (atlas.fontSize / 22.0f);  // Normalize to ~22pt base
-
-    for (char ch : text) {
-        unsigned int codepoint = (unsigned char)ch;
-        auto it = atlas.glyphs.find(codepoint);
-        if (it == atlas.glyphs.end()) {
-            // Skip missing glyphs — use space advance if available
-            auto spaceIt = atlas.glyphs.find(32);
-            float spaceAdvance = (spaceIt != atlas.glyphs.end()) ? spaceIt->second.advance : atlas.fontSize * 0.5f;
-            currentX += spaceAdvance * fontScale;
-            continue;
-        }
-        const OblivionGlyph& g = it->second;
-
-        // Convert pixel dimensions to screen coords
-        float gw = g.width * fontScale;
-        float gh = g.height * fontScale;
-        float posX = currentX + g.bearing_x * fontScale;
-        float posY = currentY;
-
-        // UV coordinates are already in 0..1 range from .fnt
-        float vertices[] = {
-            posX,        posY,        g.u0, g.v0,
-            posX + gw,   posY,        g.u1, g.v0,
-            posX,        posY + gh,   g.u0, g.v1,
-            posX + gw,   posY,        g.u1, g.v0,
-            posX + gw,   posY + gh,   g.u1, g.v1,
-            posX,        posY + gh,   g.u0, g.v1,
-        };
-
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-
-        currentX += g.advance * fontScale;
-    }
-
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glUseProgram(0);
+    // Superseded by the batched Oblivion path inside renderText(). Forwarding
+    // here keeps the two entry points from drifting apart.
+    renderText(text, x, y, color, scale);
 }
 
 void TextRenderer::cleanup() {

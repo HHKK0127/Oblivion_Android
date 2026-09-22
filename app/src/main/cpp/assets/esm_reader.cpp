@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <cstring>
+#include <cmath>
 #include <zlib.h>
 #include <android/log.h>
 
@@ -22,6 +23,44 @@ static inline int32_t  readI32(const uint8_t* p) { int32_t  v; std::memcpy(&v, p
 static inline float    readF32(const uint8_t* p) { float    v; std::memcpy(&v, p, 4); return v; }
 static inline uint16_t readU16(const uint8_t* p) { uint16_t v; std::memcpy(&v, p, 2); return v; }
 
+// Case-insensitive prefix test (BSA and ESM store paths with differing case).
+static inline bool startsWithNoCase(const std::string& value, const char* prefix) {
+    size_t i = 0;
+    for (; prefix[i] != '\0'; ++i) {
+        if (i >= value.size()) return false;
+        char a = value[i];
+        char b = prefix[i];
+        if (a >= 'A' && a <= 'Z') a = static_cast<char>(a - 'A' + 'a');
+        if (b >= 'A' && b <= 'Z') b = static_cast<char>(b - 'A' + 'a');
+        if (a != b) return false;
+    }
+    return true;
+}
+
+// Oblivion encodes EFID (magic effect reference) as the 4-character MGEF
+// editorID code rather than a formID. Decode it to a printable ASCII string.
+static inline std::string efidCode(const uint8_t* p) {
+    std::string code(reinterpret_cast<const char*>(p), 4);
+    for (char& c : code) {
+        if (c == '\0' || static_cast<unsigned char>(c) < 0x20 ||
+            static_cast<unsigned char>(c) > 0x7E) {
+            return std::string();
+        }
+    }
+    return code;
+}
+
+// Oblivion encodes "magnitude"-style fields as either a float or a raw integer.
+// Integer magnitudes serialize as denormal floats (e.g. 1 -> 1.4e-45), so fall
+// back to the integer interpretation whenever the float value is not sane.
+static inline float readFloatOrInt(const uint8_t* p) {
+    float f = readF32(p);
+    if (f == 0.0f || !std::isfinite(f) || std::fabs(f) < 1e-6f || std::fabs(f) > 1e9f) {
+        return static_cast<float>(readI32(p));
+    }
+    return f;
+}
+
 // ============================================================================
 // ESMRecord helpers
 // ============================================================================
@@ -38,8 +77,11 @@ const SubRecord* ESMRecord::findSubRecord(const char* tag) const {
 std::string ESMRecord::getString(const char* tag) const {
     auto* sub = findSubRecord(tag);
     if (!sub || sub->data.empty()) return "";
-    // Null-terminated string inside data
-    return std::string(reinterpret_cast<const char*>(sub->data.data()));
+    // Null-terminated string inside data; bound the read to the subrecord size
+    // so malformed or unterminated data cannot read past the buffer.
+    size_t length = 0;
+    while (length < sub->data.size() && sub->data[length] != 0) length++;
+    return std::string(reinterpret_cast<const char*>(sub->data.data()), length);
 }
 
 uint32_t ESMRecord::getUint(const char* tag) const {
@@ -126,6 +168,9 @@ bool ESMFile::open(const std::string& filePath) {
     
     // Stack of GRUP end offsets (absolute file positions)
     std::vector<uint64_t> groupEndStack;
+    // Parallel stack of (groupLabel, groupType) so records can be attributed to
+    // their owning cell. LAND/PGRD/REFR records carry no cell FormID.
+    std::vector<std::pair<uint32_t, uint32_t>> groupInfoStack;
     
     while (file && file.peek() != EOF) {
         uint64_t currentPos = file.tellg();
@@ -134,6 +179,7 @@ bool ESMFile::open(const std::string& filePath) {
         while (!groupEndStack.empty() && currentPos >= groupEndStack.back()) {
             LOGD("  GRUP ended at offset %llu (stack size %zu)", (unsigned long long)currentPos, groupEndStack.size());
             groupEndStack.pop_back();
+            if (!groupInfoStack.empty()) groupInfoStack.pop_back();
         }
         
         // Read 4-byte tag WITHOUT seekback to avoid position drift
@@ -162,6 +208,7 @@ bool ESMFile::open(const std::string& filePath) {
             uint64_t grupStart = currentPos;
             uint64_t grupEnd = grupStart + groupSize;
             groupEndStack.push_back(grupEnd);
+            groupInfoStack.push_back({groupLabel, groupType});
             grupCount++;
             if (grupCount <= 8) {
                 LOGD("  GRUP[%d] start=%llu end=%llu size=%u type=%u label=0x%08X stack=%zu pos=%llu",
@@ -207,6 +254,23 @@ bool ESMFile::open(const std::string& filePath) {
             idx.fileOffset = dataOffset;
             idx.compressed = compressed;
             idx.decompSize = decompSize;
+            // Attribute the record to its owning cell when it sits inside a
+            // cell-children GRUP (type 6). The GRUP label is the cell FormID.
+            for (size_t g = groupInfoStack.size(); g-- > 0;) {
+                if (groupInfoStack[g].second == 6) {
+                    idx.parentFormID = groupInfoStack[g].first;
+                    break;
+                }
+            }
+            // Track the owning worldspace from the nearest WorldChildren GRUP
+            // (type 1); its label is the WRLD FormID. CELL records carry no WRLD
+            // subrecord, so this is the only way to group cells per worldspace.
+            for (size_t g = groupInfoStack.size(); g-- > 0;) {
+                if (groupInfoStack[g].second == 1) {
+                    idx.worldspaceFormID = groupInfoStack[g].first;
+                    break;
+                }
+            }
             m_recordIndex.push_back(idx);
 
             if (formID != 0) {
@@ -251,6 +315,8 @@ bool ESMFile::open(const std::string& filePath) {
             std::memcmp(idx.recType, "DIAL", 4) == 0 ||
             std::memcmp(idx.recType, "INFO", 4) == 0 ||
             std::memcmp(idx.recType, "REFR", 4) == 0 ||
+            std::memcmp(idx.recType, "ACHR", 4) == 0 ||
+            std::memcmp(idx.recType, "ACRE", 4) == 0 ||
             std::memcmp(idx.recType, "LAND", 4) == 0 ||
             std::memcmp(idx.recType, "WRLD", 4) == 0 ||
             std::memcmp(idx.recType, "SPEL", 4) == 0 ||
@@ -285,7 +351,27 @@ bool ESMFile::open(const std::string& filePath) {
             std::memcmp(idx.recType, "ALCH", 4) == 0 ||
             std::memcmp(idx.recType, "MISC", 4) == 0 ||
             std::memcmp(idx.recType, "ROAD", 4) == 0 ||
-            std::memcmp(idx.recType, "SCPT", 4) == 0) {
+            std::memcmp(idx.recType, "SCPT", 4) == 0 ||
+            std::memcmp(idx.recType, "GMST", 4) == 0 ||
+            std::memcmp(idx.recType, "GLOB", 4) == 0 ||
+            std::memcmp(idx.recType, "DOOR", 4) == 0 ||
+            std::memcmp(idx.recType, "PACK", 4) == 0 ||
+            std::memcmp(idx.recType, "PGRD", 4) == 0 ||
+            std::memcmp(idx.recType, "IDLE", 4) == 0 ||
+            std::memcmp(idx.recType, "KEYM", 4) == 0 ||
+            std::memcmp(idx.recType, "AMMO", 4) == 0 ||
+            std::memcmp(idx.recType, "SGST", 4) == 0 ||
+            std::memcmp(idx.recType, "SLGM", 4) == 0 ||
+            std::memcmp(idx.recType, "FURN", 4) == 0 ||
+            std::memcmp(idx.recType, "LTEX", 4) == 0 ||
+            std::memcmp(idx.recType, "GRAS", 4) == 0 ||
+            std::memcmp(idx.recType, "WATR", 4) == 0 ||
+            std::memcmp(idx.recType, "WTHR", 4) == 0 ||
+            std::memcmp(idx.recType, "CSTY", 4) == 0 ||
+            std::memcmp(idx.recType, "LSCR", 4) == 0 ||
+            std::memcmp(idx.recType, "EFSH", 4) == 0 ||
+            std::memcmp(idx.recType, "ANIO", 4) == 0 ||
+            std::memcmp(idx.recType, "SBSP", 4) == 0) {
             shouldDecode = true;
         }
 
@@ -297,6 +383,8 @@ bool ESMFile::open(const std::string& filePath) {
         rec.dataSize = idx.dataSize;
         rec.flags = idx.flags;
         rec.formID = idx.formID;
+        rec.parentFormID = idx.parentFormID;
+        rec.worldspaceFormID = idx.worldspaceFormID;
 
         file.seekg(idx.fileOffset);
         if (idx.compressed) {
@@ -309,7 +397,8 @@ bool ESMFile::open(const std::string& filePath) {
             // Decompress
             std::vector<uint8_t> decompressed(idx.decompSize);
             z_stream strm = {};
-            inflateInit2(&strm, -MAX_WBITS);
+            // Oblivion stores record payloads as zlib streams (78 9C header).
+            inflateInit2(&strm, 15 + 32);
             strm.next_in = compressedData.data();
             strm.avail_in = compSize;
             strm.next_out = decompressed.data();
@@ -366,6 +455,41 @@ bool ESMFile::open(const std::string& filePath) {
          "%zu refs, %zu terrains",
          m_cells.size(), m_npcs.size(), m_weapons.size(), m_quests.size(), m_dialogs.size(),
          m_references.size(), m_terrains.size());
+    LOGD("ESM secondary types: GMST=%zu GLOB=%zu DOOR=%zu PACK=%zu PGRD=%zu IDLE=%zu "
+         "KEYM=%zu AMMO=%zu SGST=%zu SLGM=%zu FURN=%zu LTEX=%zu GRAS=%zu WATR=%zu "
+         "WTHR=%zu CSTY=%zu LSCR=%zu EFSH=%zu ANIO=%zu SBSP=%zu",
+         m_gameSettings.size(), m_globalVariables.size(), m_doors.size(), m_packages.size(),
+         m_pathGrids.size(), m_idleAnimations.size(), m_keys.size(), m_ammo.size(),
+         m_sigilStones.size(), m_soulGems.size(), m_furniture.size(),
+         m_landscapeTextures.size(), m_grass.size(), m_waters.size(), m_weathers.size(),
+         m_combatStyles.size(), m_loadScreens.size(), m_effectShaders.size(),
+         m_animationObjects.size(), m_subspaces.size());
+
+    // Terrain sanity check: how many LAND records produced a usable 33x33 grid,
+    // plus the height range of the first one.
+    {
+        size_t validTerrains = 0;
+        float minHeight = 0.0f;
+        float maxHeight = 0.0f;
+        bool haveSample = false;
+        for (const auto& terrain : m_terrains) {
+            if (!terrain.hasHeights()) continue;
+            validTerrains++;
+            if (!haveSample) {
+                haveSample = true;
+                const std::vector<float> sample = terrain.expandHeights();
+                minHeight = maxHeight = sample[0];
+                for (float h : sample) {
+                    if (h < minHeight) minHeight = h;
+                    if (h > maxHeight) maxHeight = h;
+                }
+            }
+        }
+        LOGD("ESM terrain: %zu LAND records, %zu with 33x33 heights, sample range %.1f .. %.1f",
+             m_terrains.size(), validTerrains, minHeight, maxHeight);
+    }
+
+    resolveMagicReferences();
 
     return true;
 }
@@ -410,7 +534,8 @@ bool ESMFile::readRecordHeader(std::ifstream& file, ESMRecord& rec) {
         // Decompress
         std::vector<uint8_t> decompressed(decompSize);
         z_stream strm = {};
-        inflateInit2(&strm, -MAX_WBITS);  // raw deflate, no zlib header
+        // Oblivion stores record payloads as zlib streams (78 9C header).
+        inflateInit2(&strm, 15 + 32);
         strm.next_in = compressedData.data();
         strm.avail_in = compSize;
         strm.next_out = decompressed.data();
@@ -533,6 +658,10 @@ void ESMFile::decodeRecord(const ESMRecord& rec) {
         decodeInfo(rec);
     } else if (std::memcmp(rec.recType, "REFR", 4) == 0) {
         decodeReference(rec);
+    } else if (std::memcmp(rec.recType, "ACHR", 4) == 0) {
+        decodeActorReference(rec, 1);
+    } else if (std::memcmp(rec.recType, "ACRE", 4) == 0) {
+        decodeActorReference(rec, 2);
     } else if (std::memcmp(rec.recType, "LAND", 4) == 0) {
         decodeTerrain(rec);
     } else if (std::memcmp(rec.recType, "WRLD", 4) == 0) {
@@ -600,8 +729,48 @@ void ESMFile::decodeRecord(const ESMRecord& rec) {
             decodeRoad(rec);
         } else if (std::memcmp(rec.recType, "SCPT", 4) == 0) {
             decodeScript(rec);
+        } else if (std::memcmp(rec.recType, "GMST", 4) == 0) {
+            decodeGameSetting(rec);
+        } else if (std::memcmp(rec.recType, "GLOB", 4) == 0) {
+            decodeGlobalVariable(rec);
+        } else if (std::memcmp(rec.recType, "DOOR", 4) == 0) {
+            decodeDoor(rec);
+        } else if (std::memcmp(rec.recType, "PACK", 4) == 0) {
+            decodePackage(rec);
+        } else if (std::memcmp(rec.recType, "PGRD", 4) == 0) {
+            decodePathGrid(rec);
+        } else if (std::memcmp(rec.recType, "IDLE", 4) == 0) {
+            decodeIdleAnimation(rec);
+        } else if (std::memcmp(rec.recType, "KEYM", 4) == 0) {
+            decodeKey(rec);
+        } else if (std::memcmp(rec.recType, "AMMO", 4) == 0) {
+            decodeAmmo(rec);
+        } else if (std::memcmp(rec.recType, "SGST", 4) == 0) {
+            decodeSigilStone(rec);
+        } else if (std::memcmp(rec.recType, "SLGM", 4) == 0) {
+            decodeSoulGem(rec);
+        } else if (std::memcmp(rec.recType, "FURN", 4) == 0) {
+            decodeFurniture(rec);
+        } else if (std::memcmp(rec.recType, "LTEX", 4) == 0) {
+            decodeLandscapeTexture(rec);
+        } else if (std::memcmp(rec.recType, "GRAS", 4) == 0) {
+            decodeGrass(rec);
+        } else if (std::memcmp(rec.recType, "WATR", 4) == 0) {
+            decodeWater(rec);
+        } else if (std::memcmp(rec.recType, "WTHR", 4) == 0) {
+            decodeWeather(rec);
+        } else if (std::memcmp(rec.recType, "CSTY", 4) == 0) {
+            decodeCombatStyle(rec);
+        } else if (std::memcmp(rec.recType, "LSCR", 4) == 0) {
+            decodeLoadScreen(rec);
+        } else if (std::memcmp(rec.recType, "EFSH", 4) == 0) {
+            decodeEffectShader(rec);
+        } else if (std::memcmp(rec.recType, "ANIO", 4) == 0) {
+            decodeAnimationObject(rec);
+        } else if (std::memcmp(rec.recType, "SBSP", 4) == 0) {
+            decodeSubspace(rec);
         }
-    // Other types (ARMO, BOOK, CLOT, etc.) are not decoded yet
+    // Other types are not decoded yet
 }
 
 void ESMFile::decodeCell(const ESMRecord& rec) {
@@ -611,18 +780,23 @@ void ESMFile::decodeCell(const ESMRecord& rec) {
 
     // Determine if interior or exterior
     auto* dataSub = rec.findSubRecord("DATA");
-    if (dataSub && dataSub->size() >= 4) {
-        uint8_t cellFlags = dataSub->data[0];
-        bool isInterior = (cellFlags & 0x01) != 0;
-        if (!isInterior && dataSub->size() >= 12) {
-            // Exterior cell: 8 bytes after flags = gridX, gridY
-            cell.gridX = readI32(dataSub->data.data() + 4);
-            cell.gridY = readI32(dataSub->data.data() + 8);
+    if (dataSub && dataSub->size() >= 1) {
+        // Oblivion CELL DATA is 1 byte of flags; bit 0 set means interior.
+        // There are no grid coordinates here, so this is only used as a
+        // cross-check against the GRUP-derived classification below.
+        const bool dataSaysInterior = (dataSub->data[0] & 0x01) != 0;
+        if (dataSaysInterior && rec.worldspaceFormID != 0) {
+            LOGD("decodeCell: 0x%08X flagged interior but inside worldspace 0x%08X",
+                 rec.formID, rec.worldspaceFormID);
         }
     }
 
     cell.fullName = rec.getString("FULL");
-    cell.worldspaceID = rec.getFormID("WRLD");
+    // Exterior cells live inside a WorldChildren GRUP whose label is the
+    // worldspace FormID. Interior cells are never inside one, so a non-zero
+    // worldspace FormID is what distinguishes the two.
+    cell.worldspaceID = rec.worldspaceFormID;
+    cell.isExterior = (rec.worldspaceFormID != 0);
 
     // XCLC subrecord for grid coordinates (TES4 specific)
     auto* xclc = rec.findSubRecord("XCLC");
@@ -910,36 +1084,121 @@ void ESMFile::decodeReference(const ESMRecord& rec) {
     auto* xrgd = rec.findSubRecord("XRGD");
     // Also XRGB, XRDS etc. — not critical for basic placement
 
+    // Owning cell formID from the enclosing cell-children GRUP label. Needed to
+    // tell exterior references (absolute world position) from interior ones
+    // (position relative to the cell origin).
+    ref.cellFormID = rec.parentFormID;
+
     m_references.push_back(std::move(ref));
 }
 
 // ============================================================================
-// Terrain (LAND) decoding — 65x65 heightmap per cell
+// Actor reference (ACHR/ACRE) decoding — placed actors in cells.
+// Layout matches REFR: NAME = base actor formID, DATA = pos/rot (24 bytes).
 // ============================================================================
+void ESMFile::decodeActorReference(const ESMRecord& rec, uint8_t refType) {
+    ReferenceData ref;
+    ref.formID = rec.formID;
+    ref.baseFormID = rec.getFormID("NAME");
+    ref.refType = refType;
+
+    auto* data = rec.findSubRecord("DATA");
+    if (data && data->size() >= 24) {
+        ref.position.x = readF32(data->data.data());
+        ref.position.y = readF32(data->data.data() + 4);
+        ref.position.z = readF32(data->data.data() + 8);
+        ref.rotation.x = readF32(data->data.data() + 12);
+        ref.rotation.y = readF32(data->data.data() + 16);
+        ref.rotation.z = readF32(data->data.data() + 20);
+    }
+
+    auto* xsca = rec.findSubRecord("XSCL");
+    if (xsca && xsca->size() >= 4) {
+        ref.scale = readF32(xsca->data.data());
+    }
+
+    if (refType == 1) {
+        m_npcReferenceCount++;
+    } else {
+        m_creatureReferenceCount++;
+    }
+
+    // Owning cell formID (see decodeReference): distinguishes exterior references
+    // from interior ones.
+    ref.cellFormID = rec.parentFormID;
+
+    m_references.push_back(std::move(ref));
+}
+
+// ============================================================================
+// Terrain (LAND) decoding — 33x33 heightmap per cell
+//
+// VHGT layout (1096 bytes total):
+//   offset   0 : float   base height of the cell's south-west corner
+//   offset   4 : int8    gradient data, 33x33 = 1089 signed bytes
+//   offset 1093 : 3 bytes unknown
+// Each gradient step equals 8 game units. The leftmost column (x = 0) carries a
+// per-row offset that accumulates northward; the remaining 32 columns accumulate
+// eastward within their row. Both accumulations start from the cell offset.
+// ============================================================================
+std::vector<float> TerrainData::expandHeights() const {
+    std::vector<float> heights;
+    if (!hasHeights()) return heights;
+
+    heights.resize(GRID * GRID);
+    float columnOffset = 0.0f;
+    for (int y = 0; y < GRID; ++y) {
+        columnOffset += static_cast<float>(heightDeltas[y * GRID]);
+        float rowOffset = 0.0f;
+        for (int x = 0; x < GRID; ++x) {
+            if (x > 0) rowOffset += static_cast<float>(heightDeltas[y * GRID + x]);
+            heights[y * GRID + x] = (heightOffset + columnOffset + rowOffset) * 8.0f;
+        }
+    }
+    return heights;
+}
+
+float TerrainData::heightAt(int x, int y) const {
+    if (x < 0 || y < 0 || x >= GRID || y >= GRID) return 0.0f;
+    if (!hasHeights()) return 0.0f;
+
+    float columnOffset = 0.0f;
+    for (int row = 0; row <= y; ++row) {
+        columnOffset += static_cast<float>(heightDeltas[row * GRID]);
+    }
+    float rowOffset = 0.0f;
+    for (int col = 1; col <= x; ++col) {
+        rowOffset += static_cast<float>(heightDeltas[y * GRID + col]);
+    }
+    return (heightOffset + columnOffset + rowOffset) * 8.0f;
+}
 
 void ESMFile::decodeTerrain(const ESMRecord& rec) {
     TerrainData terrain;
-    terrain.formID = rec.formID;
+    // LAND records are keyed by their own FormID; the owning cell is only
+    // reachable through the enclosing cell-children GRUP label.
+    terrain.formID = rec.parentFormID != 0 ? rec.parentFormID : rec.formID;
 
-    // VHGT subrecord: 1 byte quad size + 65x65 height deltas
-    auto* vhgt = rec.findSubRecord("VHGT");
-    if (vhgt && vhgt->size() >= 3) {
-        // First byte: quad size (unused here, typically ignored)
-        // Followed by 65x65 = 4225 delta values, 2 bytes each (int16)
-        size_t expected = 1 + 65 * 65 * 2;  // 1 bytes header + 4225 * 2 bytes
-        if (vhgt->size() >= expected) {
-            terrain.heights.resize(65 * 65);
-            
-            // Reconstruct absolute heights from deltas
-            // The height field is an unsigned 16-bit integer with fixed-point
-            // Units: 1 unit = 1/32 of a game unit, but we convert to game units
-            const uint8_t* dataPtr = vhgt->data.data() + 1;  // Skip quad size
-            float currentHeight = 0.0f;
-            for (int i = 0; i < 65 * 65; i++) {
-                int16_t delta;
-                std::memcpy(&delta, dataPtr + i * 2, 2);
-                currentHeight += static_cast<float>(delta) / 16.0f;  // Convert to game units
-                terrain.heights[i] = currentHeight;
+    const auto* vhgt = rec.findSubRecord("VHGT");
+    if (vhgt && vhgt->size() >= 4 + 1089) {
+        const uint8_t* ptr = vhgt->data.data();
+        terrain.heightOffset = readF32(ptr);
+        const int8_t* deltas = reinterpret_cast<const int8_t*>(ptr + 4);
+        terrain.heightDeltas.assign(deltas,
+                                    deltas + TerrainData::GRID * TerrainData::GRID);
+    }
+
+    for (const auto& sub : rec.subRecords) {
+        if (std::memcmp(sub.tag, "BTXT", 4) == 0 && sub.size() >= 5) {
+            const uint32_t textureFormID = readU32(sub.data.data());
+            const uint8_t quadrant = sub.data[4];
+            if (quadrant < 4 && textureFormID != 0) {
+                terrain.baseTextures[quadrant] = textureFormID;
+            }
+        } else if (std::memcmp(sub.tag, "VTEX", 4) == 0) {
+            for (size_t o = 0; o + 4 <= sub.size(); o += 4) {
+                const uint32_t textureFormID = readU32(sub.data.data() + o);
+                if (textureFormID != 0) terrain.textureFormIDs.push_back(textureFormID);
             }
         }
     }
@@ -991,8 +1250,8 @@ void ESMFile::decodeSpell(const ESMRecord& rec) {
     spell.editorID = rec.getString("EDID");
     spell.fullName = rec.getString("FULL");
 
-    // SPIT subrecord: magic data (24 bytes)
-    // struct { uint32_t type; uint32_t cost; uint8_t level; uint32_t flags; ... }
+    // SPIT subrecord: magic data (16 bytes)
+    // struct { uint32_t type; uint32_t cost; uint32_t level; uint32_t unused; }
     auto* spit = rec.findSubRecord("SPIT");
     if (spit && spit->size() >= 8) {
         spell.spellType = static_cast<uint8_t>(spit->data[0]);       // 0=spell, 1=disease, ...
@@ -1000,32 +1259,28 @@ void ESMFile::decodeSpell(const ESMRecord& rec) {
         if (spit->size() >= 9) {
             spell.level = spit->data[8];  // 0=novice .. 4=master
         }
-        if (spit->size() >= 16) {
-            spell.flags = readU32(spit->data.data() + 12);
-        }
+        // SPIT+12 is not initialized by the Construction Set; leave flags at 0.
     }
 
-    // Parse effects: iterate subrecords looking for EFID + EFIT pairs
+    // Parse effects: iterate subrecords looking for EFID + EFIT pairs.
+    // Oblivion's EFID holds the 4-character MGEF editorID code, not a formID.
     for (size_t i = 0; i < rec.subRecords.size(); i++) {
         const auto& sub = rec.subRecords[i];
         if (std::memcmp(sub.tag, "EFID", 4) == 0 && sub.size() >= 4) {
-            uint32_t mgefFormID;
-            std::memcpy(&mgefFormID, sub.data.data(), 4);
-            spell.effectFormIDs.push_back(mgefFormID);
+            spell.effectCodes.push_back(efidCode(sub.data.data()));
+            spell.effectFormIDs.push_back(0);  // resolved later by resolveMagicReferences()
 
-            // EFIT should be the next sub-record
+            // EFIT is the next sub-record: code(4) mag(4) area(4) duration(4) unused(4) actorValue(4)
             if (i + 1 < rec.subRecords.size() &&
                 std::memcmp(rec.subRecords[i + 1].tag, "EFIT", 4) == 0 &&
-                rec.subRecords[i + 1].size() >= 12) {
+                rec.subRecords[i + 1].size() >= 24) {
                 const auto& efit = rec.subRecords[i + 1];
-                float magnitude;
-                uint32_t area, duration;
-                std::memcpy(&magnitude, efit.data.data(), 4);
-                std::memcpy(&area, efit.data.data() + 4, 4);
-                std::memcpy(&duration, efit.data.data() + 8, 4);
-                spell.effectMagnitudes.push_back(magnitude);
-                spell.effectAreas.push_back(area);
-                spell.effectDurations.push_back(duration);
+                spell.effectMagnitudes.push_back(readFloatOrInt(efit.data.data() + 4));
+                spell.effectAreas.push_back(readU32(efit.data.data() + 8));
+                spell.effectDurations.push_back(readU32(efit.data.data() + 12));
+                if (spell.actorValue == 0) {
+                    spell.actorValue = readU32(efit.data.data() + 20);
+                }
             }
         }
     }
@@ -1053,27 +1308,22 @@ void ESMFile::decodeEnchantment(const ESMRecord& rec) {
         enchant.flags = readU32(enit->data.data() + 12);
     }
 
-    // Parse effects: iterate subrecords looking for EFID + EFIT pairs
+    // Parse effects: iterate subrecords looking for EFID + EFIT pairs.
+    // Oblivion's EFID holds the 4-character MGEF editorID code, not a formID.
     for (size_t i = 0; i < rec.subRecords.size(); i++) {
         const auto& sub = rec.subRecords[i];
         if (std::memcmp(sub.tag, "EFID", 4) == 0 && sub.size() >= 4) {
-            uint32_t mgefFormID;
-            std::memcpy(&mgefFormID, sub.data.data(), 4);
-            enchant.effectFormIDs.push_back(mgefFormID);
+            enchant.effectCodes.push_back(efidCode(sub.data.data()));
+            enchant.effectFormIDs.push_back(0);  // resolved later
 
-            // EFIT should be the next sub-record
+            // EFIT is the next sub-record: code(4) mag(4) area(4) duration(4) unused(4) actorValue(4)
             if (i + 1 < rec.subRecords.size() &&
                 std::memcmp(rec.subRecords[i + 1].tag, "EFIT", 4) == 0 &&
-                rec.subRecords[i + 1].size() >= 12) {
+                rec.subRecords[i + 1].size() >= 24) {
                 const auto& efit = rec.subRecords[i + 1];
-                float magnitude;
-                uint32_t area, duration;
-                std::memcpy(&magnitude, efit.data.data(), 4);
-                std::memcpy(&area, efit.data.data() + 4, 4);
-                std::memcpy(&duration, efit.data.data() + 8, 4);
-                enchant.effectMagnitudes.push_back(magnitude);
-                enchant.effectAreas.push_back(area);
-                enchant.effectDurations.push_back(duration);
+                enchant.effectMagnitudes.push_back(readFloatOrInt(efit.data.data() + 4));
+                enchant.effectAreas.push_back(readU32(efit.data.data() + 8));
+                enchant.effectDurations.push_back(readU32(efit.data.data() + 12));
             }
         }
     }
@@ -1097,20 +1347,23 @@ void ESMFile::decodeMagicEffect(const ESMRecord& rec) {
     effect.fullName = rec.getString("FULL");
     effect.description = rec.getString("DESC");
 
-    // MEDT subrecord: magic effect data
+    // DATA subrecord: magic effect data (36 or 64 bytes)
+    // struct { uint32_t unknown0; float baseCost; uint32_t actorValue/link;
+    //          uint32_t school; uint32_t flags; ... }
     auto* medt = rec.findSubRecord("MEDT");
+    if (!medt) medt = rec.findSubRecord("DATA");
     if (medt && medt->size() >= 20) {
-        effect.school = readU32(medt->data.data());
-        effect.baseCost = readU32(medt->data.data() + 4);
-        effect.flags = readU32(medt->data.data() + 8);
-        std::memcpy(&effect.baseMagnitude, medt->data.data() + 12, 4);
-        std::memcpy(&effect.baseDuration, medt->data.data() + 16, 4);
-        if (medt->size() >= 24) {
-            std::memcpy(&effect.range, medt->data.data() + 20, 4);
+        effect.baseCost = readFloatOrInt(medt->data.data() + 4);
+        uint32_t av = readU32(medt->data.data() + 8);
+        // Conjuration/restoration effects store a formID (summoned creature,
+        // bound item) in this slot instead of an actor value.
+        if (av <= 200) {
+            effect.actorValue = av;
+        } else {
+            effect.linkedFormID = av;
         }
-        if (medt->size() >= 28) {
-            effect.actorValue = readU32(medt->data.data() + 24);
-        }
+        effect.school = readU32(medt->data.data() + 12);
+        effect.flags = readU32(medt->data.data() + 16);
     }
 
     m_magicEffects.push_back(std::move(effect));
@@ -1771,26 +2024,41 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
         ingr.fullName = rec.getString("FULL");
         ingr.modelPath = rec.getString("MODL");
 
-        // DATA: value + weight
+        // DATA: weight only (4 bytes float). Value lives in ENIT.
         auto* data = rec.findSubRecord("DATA");
-        if (data && data->size() >= 8) {
-            std::memcpy(&ingr.value, data->data.data(), 4);
-            std::memcpy(&ingr.weight, data->data.data() + 4, 4);
+        if (data && data->size() >= 4) {
+            std::memcpy(&ingr.weight, data->data.data(), 4);
+        }
+        auto* enit = rec.findSubRecord("ENIT");
+        if (enit && enit->size() >= 4) {
+            ingr.value = readU32(enit->data.data());
         }
 
-        // Effects: IRQD (formID), IRQF (magnitude float), IRQA (area), IRQT (duration)
-        // All 4 subrecords repeat per effect slot
+        // Effects: EFID (4-char MGEF editorID code) + EFIT pairs.
+        // IRQD/IRQF are kept as a fallback for plugin variants.
         for (size_t i = 0; i < rec.subRecords.size(); i++) {
             const auto& sub = rec.subRecords[i];
-            if (std::memcmp(sub.tag, "IRQD", 4) == 0 && sub.size() >= 4) {
-                uint32_t efid;
-                std::memcpy(&efid, sub.data.data(), 4);
-                ingr.effectFormIDs.push_back(efid);
-
-                // Try to parse companion subrecords
+            if (std::memcmp(sub.tag, "EFID", 4) == 0 && sub.size() >= 4) {
+                ingr.effectCodes.push_back(efidCode(sub.data.data()));
+                ingr.effectFormIDs.push_back(0);  // resolved later
+                float mag = 0;
+                uint32_t area = 0, dur = 0;
+                if (i + 1 < rec.subRecords.size() &&
+                    std::memcmp(rec.subRecords[i + 1].tag, "EFIT", 4) == 0 &&
+                    rec.subRecords[i + 1].size() >= 24) {
+                    mag = readFloatOrInt(rec.subRecords[i + 1].data.data() + 4);
+                    area = readU32(rec.subRecords[i + 1].data.data() + 8);
+                    dur = readU32(rec.subRecords[i + 1].data.data() + 12);
+                }
+                ingr.effectMagnitudes.push_back(mag);
+                ingr.effectAreas.push_back(area);
+                ingr.effectDurations.push_back(dur);
+            } else if (std::memcmp(sub.tag, "IRQD", 4) == 0 && sub.size() >= 4) {
+                ingr.effectFormIDs.push_back(readU32(sub.data.data()));
+                ingr.effectCodes.push_back(std::string());
                 float mag = 0;
                 if (i + 1 < rec.subRecords.size() && std::memcmp(rec.subRecords[i + 1].tag, "IRQF", 4) == 0 && rec.subRecords[i + 1].size() >= 4) {
-                    std::memcpy(&mag, rec.subRecords[i + 1].data.data(), 4);
+                    mag = readFloatOrInt(rec.subRecords[i + 1].data.data());
                 }
                 ingr.effectMagnitudes.push_back(mag);
                 ingr.effectAreas.push_back(0);
@@ -1813,36 +2081,30 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
         alch.fullName = rec.getString("FULL");
         alch.modelPath = rec.getString("MODL");
 
-        // DATA: value + weight
+        // DATA: weight only (4 bytes float). Value lives in ENIT.
         auto* data = rec.findSubRecord("DATA");
-        if (data && data->size() >= 8) {
-            std::memcpy(&alch.value, data->data.data(), 4);
-            std::memcpy(&alch.weight, data->data.data() + 4, 4);
+        if (data && data->size() >= 4) {
+            std::memcpy(&alch.weight, data->data.data(), 4);
+        }
+        auto* enit = rec.findSubRecord("ENIT");
+        if (enit && enit->size() >= 4) {
+            alch.value = readU32(enit->data.data());
         }
 
-        // ENIT: header (12 bytes) - contains flags, etc.
-        // Effects use EFID + EFIT pairs (same as SPEL)
-        float currentMag = 0;
-        uint32_t currentArea = 0, currentDur = 0;
-        bool collecting = false;
-
+        // Effects use EFID + EFIT pairs (same as SPEL). EFID holds the
+        // 4-character MGEF editorID code rather than a formID.
         for (size_t i = 0; i < rec.subRecords.size(); i++) {
             const auto& sub = rec.subRecords[i];
             if (std::memcmp(sub.tag, "EFID", 4) == 0 && sub.size() >= 4) {
-                uint32_t efid;
-                std::memcpy(&efid, sub.data.data(), 4);
-                alch.effectFormIDs.push_back(efid);
+                alch.effectCodes.push_back(efidCode(sub.data.data()));
+                alch.effectFormIDs.push_back(0);  // resolved later
 
-                // EFIT follows EFID
-                if (i + 1 < rec.subRecords.size() && std::memcmp(rec.subRecords[i + 1].tag, "EFIT", 4) == 0 && rec.subRecords[i + 1].size() >= 12) {
-                    float mag;
-                    uint32_t area, dur;
-                    std::memcpy(&mag, rec.subRecords[i + 1].data.data(), 4);
-                    std::memcpy(&area, rec.subRecords[i + 1].data.data() + 4, 4);
-                    std::memcpy(&dur, rec.subRecords[i + 1].data.data() + 8, 4);
-                    alch.effectMagnitudes.push_back(mag);
-                    alch.effectAreas.push_back(area);
-                    alch.effectDurations.push_back(dur);
+                // EFIT is the next sub-record: code(4) mag(4) area(4) duration(4) unused(4) actorValue(4)
+                if (i + 1 < rec.subRecords.size() && std::memcmp(rec.subRecords[i + 1].tag, "EFIT", 4) == 0 && rec.subRecords[i + 1].size() >= 24) {
+                    const auto& efit = rec.subRecords[i + 1];
+                    alch.effectMagnitudes.push_back(readFloatOrInt(efit.data.data() + 4));
+                    alch.effectAreas.push_back(readU32(efit.data.data() + 8));
+                    alch.effectDurations.push_back(readU32(efit.data.data() + 12));
                 }
             }
         }
@@ -1880,17 +2142,18 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
     void ESMFile::decodeRoad(const ESMRecord& rec) {
         RoadData road;
         road.formID = rec.formID;
-        road.cellFormID = rec.getFormID("XLCN");  // Linked cell
+        // LAND/PGRD/ROAD records carry no cell FormID of their own; the owning
+        // cell comes from the enclosing cell-children GRUP.
+        road.cellFormID = rec.parentFormID != 0 ? rec.parentFormID : rec.getFormID("XLCN");
 
-        // PGRD/PGRI: path grid data
-        // PGRP: PGRP (PathGrid Points) - array of 3D vertices
+        // PGRP: 16 bytes per point (x, y, z floats followed by a uint32)
         auto* pgrp = rec.findSubRecord("PGRP");
-        if (pgrp && pgrp->size() >= 12) {
-            int numNodes = static_cast<int>(pgrp->size() / 12);
+        if (pgrp && pgrp->size() >= 16) {
+            int numNodes = static_cast<int>(pgrp->size() / 16);
             road.nodes.reserve(numNodes);
-            for (int i = 0; i < numNodes && (i + 1) * 12 <= pgrp->size(); i++) {
+            for (int i = 0; i < numNodes && (i + 1) * 16 <= pgrp->size(); i++) {
                 glm::vec3 node;
-                std::memcpy(&node, pgrp->data.data() + i * 12, 12);
+                std::memcpy(&node, pgrp->data.data() + i * 16, 12);
                 road.nodes.push_back(node);
             }
         }
@@ -2024,6 +2287,490 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
         m_scripts.push_back(std::move(script));
     }
 
+    // ============================================================================
+    // Phase 64 — decoders for the remaining Oblivion record types
+    // ============================================================================
+
+    void ESMFile::decodeGameSetting(const ESMRecord& rec) {
+        GameSettingData gmst;
+        gmst.formID = rec.formID;
+        gmst.editorID = rec.getString("EDID");
+        gmst.valueType = gmst.editorID.empty() ? 's' : gmst.editorID[0];
+
+        auto* data = rec.findSubRecord("DATA");
+        if (data && data->size() > 0) {
+            if (gmst.valueType == 's') {
+                gmst.stringValue = rec.getString("DATA");
+            } else if (data->size() >= 4) {
+                gmst.numericValue = readF32(data->data.data());
+            }
+        }
+
+        m_gameSettings.push_back(std::move(gmst));
+    }
+
+    void ESMFile::decodeGlobalVariable(const ESMRecord& rec) {
+        GlobalVariableData glob;
+        glob.formID = rec.formID;
+        glob.editorID = rec.getString("EDID");
+
+        auto* fnam = rec.findSubRecord("FNAM");
+        if (fnam && fnam->size() >= 1) {
+            glob.valueType = static_cast<char>(fnam->data[0]);
+        }
+
+        auto* fltv = rec.findSubRecord("FLTV");
+        if (fltv && fltv->size() >= 4) {
+            glob.value = readF32(fltv->data.data());
+        }
+
+        m_globalVariables.push_back(std::move(glob));
+    }
+
+    void ESMFile::decodeDoor(const ESMRecord& rec) {
+        DoorData door;
+        door.formID = rec.formID;
+        door.editorID = rec.getString("EDID");
+        door.fullName = rec.getString("FULL");
+        door.modelPath = rec.getString("MODL");
+        door.scriptFormID = rec.getFormID("SCRI");
+        door.openSoundFormID = rec.getFormID("SNAM");
+        door.closeSoundFormID = rec.getFormID("ANAM");
+
+        auto* fnam = rec.findSubRecord("FNAM");
+        if (fnam && fnam->size() >= 1) door.flags = fnam->data[0];
+
+        m_doors.push_back(std::move(door));
+    }
+
+    void ESMFile::decodePackage(const ESMRecord& rec) {
+        AIPackageData pack;
+        pack.formID = rec.formID;
+        pack.editorID = rec.getString("EDID");
+
+        auto* pkdt = rec.findSubRecord("PKDT");
+        if (pkdt && pkdt->size() >= 8) {
+            pack.packageFlags = readI32(pkdt->data.data());
+            pack.packageType = pkdt->data[4];
+        }
+
+        for (const auto& sub : rec.subRecords) {
+            if (std::memcmp(sub.tag, "PLDT", 4) == 0 && sub.size() >= 12) {
+                pack.locationType = readI32(sub.data.data());
+                pack.locationFormID = readI32(sub.data.data() + 4);
+                pack.locationRadius = readI32(sub.data.data() + 8);
+            } else if (std::memcmp(sub.tag, "PTDT", 4) == 0 && sub.size() >= 12) {
+                pack.targetKind = readI32(sub.data.data());
+                pack.targetFormID = readI32(sub.data.data() + 4);
+                pack.targetCount = readI32(sub.data.data() + 8);
+            } else if (std::memcmp(sub.tag, "PSDT", 4) == 0 && sub.size() >= 8) {
+                pack.targetKind = readI32(sub.data.data());
+            } else if (std::memcmp(sub.tag, "CTDA", 4) == 0) {
+                pack.conditionCount++;
+            }
+        }
+
+        m_packages.push_back(std::move(pack));
+    }
+
+    void ESMFile::decodePathGrid(const ESMRecord& rec) {
+        PathGridData grid;
+        grid.formID = rec.formID;
+        grid.cellFormID = rec.parentFormID;
+
+        auto* data = rec.findSubRecord("DATA");
+        if (data && data->size() >= 2) {
+            grid.gridX = static_cast<int8_t>(data->data[0]);
+            grid.gridY = static_cast<int8_t>(data->data[1]);
+        }
+
+        // PGRP: 16 bytes per point (x, y, z floats followed by a uint32)
+        auto* pgrp = rec.findSubRecord("PGRP");
+        if (pgrp) {
+            const size_t count = pgrp->size() / 16;
+            grid.points.reserve(count);
+            for (size_t i = 0; i < count; i++) {
+                glm::vec3 point;
+                std::memcpy(&point, pgrp->data.data() + i * 16, 12);
+                grid.points.push_back(point);
+            }
+        }
+
+        // PGAG: one bit per point, packed into ceil(N/8) bytes
+        auto* pgag = rec.findSubRecord("PGAG");
+        if (pgag) {
+            grid.pointFlags = pgag->data;
+        }
+
+        // PGRR: 4 bytes per edge (two uint16 point indices)
+        auto* pgrr = rec.findSubRecord("PGRR");
+        if (pgrr) {
+            const size_t count = pgrr->size() / 4;
+            grid.edges.reserve(count);
+            for (size_t i = 0; i < count; i++) {
+                uint16_t a = readU16(pgrr->data.data() + i * 4);
+                uint16_t b = readU16(pgrr->data.data() + i * 4 + 2);
+                grid.edges.push_back({a, b});
+            }
+        }
+
+        auto* pgrl = rec.findSubRecord("PGRL");
+        if (pgrl) {
+            grid.roadData = pgrl->data;
+        }
+
+        m_pathGrids.push_back(std::move(grid));
+    }
+
+    void ESMFile::decodeIdleAnimation(const ESMRecord& rec) {
+        IdleAnimationData idle;
+        idle.formID = rec.formID;
+        idle.editorID = rec.getString("EDID");
+        idle.modelPath = rec.getString("MODL");
+
+        auto* anam = rec.findSubRecord("ANAM");
+        if (anam && anam->size() >= 1) idle.animationGroup = anam->data[0];
+
+        auto* data = rec.findSubRecord("DATA");
+        if (data && data->size() >= 8) {
+            idle.parentFormID = readI32(data->data.data() + 4);
+        }
+
+        for (const auto& sub : rec.subRecords) {
+            if (std::memcmp(sub.tag, "CTDA", 4) == 0) idle.conditionCount++;
+        }
+
+        m_idleAnimations.push_back(std::move(idle));
+    }
+
+    void ESMFile::decodeKey(const ESMRecord& rec) {
+        KeyData key;
+        key.formID = rec.formID;
+        key.editorID = rec.getString("EDID");
+        key.fullName = rec.getString("FULL");
+        key.modelPath = rec.getString("MODL");
+        key.iconPath = rec.getString("ICON");
+
+        auto* data = rec.findSubRecord("DATA");
+        if (data && data->size() >= 8) {
+            key.value = readI32(data->data.data());
+            key.weight = readF32(data->data.data() + 4);
+        }
+
+        m_keys.push_back(std::move(key));
+    }
+
+    void ESMFile::decodeAmmo(const ESMRecord& rec) {
+        AmmoData ammo;
+        ammo.formID = rec.formID;
+        ammo.editorID = rec.getString("EDID");
+        ammo.fullName = rec.getString("FULL");
+        ammo.modelPath = rec.getString("MODL");
+        ammo.iconPath = rec.getString("ICON");
+        ammo.enchantmentFormID = rec.getFormID("ENAM");
+
+        auto* data = rec.findSubRecord("DATA");
+        if (data && data->size() >= 18) {
+            ammo.speed = readF32(data->data.data());
+            ammo.flags = readI32(data->data.data() + 4);
+            ammo.value = readI32(data->data.data() + 8);
+            ammo.weight = readF32(data->data.data() + 12);
+            ammo.damage = readU16(data->data.data() + 16);
+        }
+
+        m_ammo.push_back(std::move(ammo));
+    }
+
+    void ESMFile::decodeSigilStone(const ESMRecord& rec) {
+        SigilStoneData stone;
+        stone.formID = rec.formID;
+        stone.editorID = rec.getString("EDID");
+        stone.fullName = rec.getString("FULL");
+        stone.modelPath = rec.getString("MODL");
+        stone.iconPath = rec.getString("ICON");
+        stone.scriptFormID = rec.getFormID("SCRI");
+
+        for (const auto& sub : rec.subRecords) {
+            if (std::memcmp(sub.tag, "EFID", 4) == 0 && sub.size() >= 4) {
+                stone.effectCodes.push_back(efidCode(sub.data.data()));
+                stone.effectFormIDs.push_back(0);
+            } else if (std::memcmp(sub.tag, "EFIT", 4) == 0 && sub.size() >= 24) {
+                stone.effectMagnitudes.push_back(readFloatOrInt(sub.data.data() + 4));
+                stone.effectAreas.push_back(readFloatOrInt(sub.data.data() + 8));
+                stone.effectDurations.push_back(readFloatOrInt(sub.data.data() + 12));
+                stone.effectActorValues.push_back(readI32(sub.data.data() + 20));
+            }
+        }
+
+        // DATA is 9 bytes: value (int32), 1 unused byte, weight (float)
+        auto* data = rec.findSubRecord("DATA");
+        if (data && data->size() >= 9) {
+            stone.value = readI32(data->data.data());
+            stone.weight = readF32(data->data.data() + 5);
+        }
+
+        m_sigilStones.push_back(std::move(stone));
+    }
+
+    void ESMFile::decodeSoulGem(const ESMRecord& rec) {
+        SoulGemData gem;
+        gem.formID = rec.formID;
+        gem.editorID = rec.getString("EDID");
+        gem.fullName = rec.getString("FULL");
+        gem.modelPath = rec.getString("MODL");
+        gem.iconPath = rec.getString("ICON");
+        gem.scriptFormID = rec.getFormID("SCRI");
+
+        auto* data = rec.findSubRecord("DATA");
+        if (data && data->size() >= 8) {
+            gem.value = readI32(data->data.data());
+            gem.weight = readF32(data->data.data() + 4);
+        }
+
+        auto* soul = rec.findSubRecord("SOUL");
+        if (soul && soul->size() >= 1) gem.currentSoul = soul->data[0];
+
+        auto* slcp = rec.findSubRecord("SLCP");
+        if (slcp && slcp->size() >= 1) gem.soulCapacity = slcp->data[0];
+
+        m_soulGems.push_back(std::move(gem));
+    }
+
+    void ESMFile::decodeFurniture(const ESMRecord& rec) {
+        FurnitureData furn;
+        furn.formID = rec.formID;
+        furn.editorID = rec.getString("EDID");
+        furn.fullName = rec.getString("FULL");
+        furn.modelPath = rec.getString("MODL");
+
+        auto* mnam = rec.findSubRecord("MNAM");
+        if (mnam && mnam->size() >= 4) {
+            furn.rawMnam = readI32(mnam->data.data());
+            furn.furnitureType = mnam->data[0];
+        }
+
+        m_furniture.push_back(std::move(furn));
+    }
+
+    void ESMFile::decodeLandscapeTexture(const ESMRecord& rec) {
+        LandscapeTextureData ltex;
+        ltex.formID = rec.formID;
+        ltex.editorID = rec.getString("EDID");
+
+        // LTEX ICON stores a path relative to "textures\landscape\" and omits that
+        // root (e.g. "TerrainHDGrass01SU.dds", "Dementia\DementiaMoss01.dds").
+        // BSA lookups need the full stored path, so normalize it here.
+        std::string icon = rec.getString("ICON");
+        for (char& ch : icon) {
+            if (ch == '/') ch = '\\';
+        }
+        if (!icon.empty() && !startsWithNoCase(icon, "textures\\")) {
+            icon = "textures\\landscape\\" + icon;
+        }
+        ltex.iconPath = icon;
+
+        auto* hnam = rec.findSubRecord("HNAM");
+        if (hnam && hnam->size() >= 3) {
+            ltex.hnam[0] = hnam->data[0];
+            ltex.hnam[1] = hnam->data[1];
+            ltex.hnam[2] = hnam->data[2];
+        }
+
+        auto* snam = rec.findSubRecord("SNAM");
+        if (snam && snam->size() >= 1) ltex.materialType = snam->data[0];
+
+        m_landscapeTextures.push_back(std::move(ltex));
+    }
+
+    void ESMFile::decodeGrass(const ESMRecord& rec) {
+        GrassData grass;
+        grass.formID = rec.formID;
+        grass.editorID = rec.getString("EDID");
+        grass.modelPath = rec.getString("MODL");
+
+        auto* data = rec.findSubRecord("DATA");
+        if (data && data->size() >= 32) {
+            grass.density = data->data[0];
+            grass.minSlope = data->data[1];
+            grass.maxSlope = data->data[2];
+            grass.positionRange = readF32(data->data.data() + 12);
+            grass.heightRange = readF32(data->data.data() + 16);
+            grass.colorRange = readF32(data->data.data() + 20);
+            grass.wavePeriod = readF32(data->data.data() + 24);
+            grass.flags = readI32(data->data.data() + 28);
+        }
+
+        m_grass.push_back(std::move(grass));
+    }
+
+    void ESMFile::decodeWater(const ESMRecord& rec) {
+        WaterData water;
+        water.formID = rec.formID;
+        water.editorID = rec.getString("EDID");
+        water.texturePath = rec.getString("TNAM");
+
+        auto* anam = rec.findSubRecord("ANAM");
+        if (anam && anam->size() >= 1) water.opacity = anam->data[0];
+
+        auto* fnam = rec.findSubRecord("FNAM");
+        if (fnam && fnam->size() >= 1) water.flags = fnam->data[0];
+
+        auto* mnam = rec.findSubRecord("MNAM");
+        if (mnam && mnam->size() >= 1) water.materialType = mnam->data[0];
+
+        water.soundFormID = rec.getFormID("SNAM");
+
+        auto* data = rec.findSubRecord("DATA");
+        if (data) {
+            water.shaderData = data->data;
+            const size_t floatCount = data->size() / 4;
+            water.shaderFloats.reserve(floatCount);
+            for (size_t i = 0; i < floatCount; i++) {
+                water.shaderFloats.push_back(readF32(data->data.data() + i * 4));
+            }
+        }
+
+        auto* gnam = rec.findSubRecord("GNAM");
+        if (gnam && gnam->size() >= 12) {
+            water.damage[0] = readF32(gnam->data.data());
+            water.damage[1] = readF32(gnam->data.data() + 4);
+            water.damage[2] = readF32(gnam->data.data() + 8);
+        }
+
+        m_waters.push_back(std::move(water));
+    }
+
+    void ESMFile::decodeWeather(const ESMRecord& rec) {
+        WeatherData weather;
+        weather.formID = rec.formID;
+        weather.editorID = rec.getString("EDID");
+        weather.cloudTextureUpper = rec.getString("CNAM");
+        weather.cloudTextureLower = rec.getString("DNAM");
+
+        // NAM0: 4 time-of-day blocks of 40 bytes (10 uint32 each)
+        auto* nam0 = rec.findSubRecord("NAM0");
+        if (nam0 && nam0->size() >= 160) {
+            for (int block = 0; block < 4; block++) {
+                const uint8_t* base = nam0->data.data() + block * 40;
+                WeatherSkyColors& colors = weather.sky[block];
+                colors.upperSky = static_cast<uint32_t>(readI32(base));
+                colors.fog = static_cast<uint32_t>(readI32(base + 4));
+                colors.unknown = static_cast<uint32_t>(readI32(base + 8));
+                colors.clouds = static_cast<uint32_t>(readI32(base + 12));
+                for (int d = 0; d < 6; d++) {
+                    colors.detail[d] = static_cast<uint32_t>(readI32(base + 16 + d * 4));
+                }
+            }
+        }
+
+        auto* fnam = rec.findSubRecord("FNAM");
+        if (fnam && fnam->size() >= 16) {
+            weather.fogDayNear = readF32(fnam->data.data());
+            weather.fogDayFar = readF32(fnam->data.data() + 4);
+            weather.fogNightNear = readF32(fnam->data.data() + 8);
+            weather.fogNightFar = readF32(fnam->data.data() + 12);
+        }
+
+        auto* hnam = rec.findSubRecord("HNAM");
+        if (hnam) {
+            const size_t floatCount = hnam->size() / 4;
+            weather.hnamFloats.reserve(floatCount);
+            for (size_t i = 0; i < floatCount; i++) {
+                weather.hnamFloats.push_back(readF32(hnam->data.data() + i * 4));
+            }
+        }
+
+        auto* data = rec.findSubRecord("DATA");
+        if (data) {
+            weather.rawData = data->data;
+            if (data->size() >= 1) weather.windSpeed = data->data[0];
+            if (data->size() >= 13) weather.weatherClassification = data->data[12];
+        }
+
+        for (const auto& sub : rec.subRecords) {
+            if (std::memcmp(sub.tag, "SNAM", 4) == 0 && sub.size() >= 8) {
+                WeatherSound sound;
+                sound.formID = static_cast<uint32_t>(readI32(sub.data.data()));
+                sound.type = static_cast<uint32_t>(readI32(sub.data.data() + 4));
+                weather.sounds.push_back(sound);
+            }
+        }
+
+        m_weathers.push_back(std::move(weather));
+    }
+
+    void ESMFile::decodeCombatStyle(const ESMRecord& rec) {
+        CombatStyleData style;
+        style.formID = rec.formID;
+        style.editorID = rec.getString("EDID");
+
+        auto* cstd = rec.findSubRecord("CSTD");
+        if (cstd) {
+            style.data = cstd->data;
+            if (cstd->size() >= 2) style.weaponFlags = readU16(cstd->data.data());
+        }
+
+        m_combatStyles.push_back(std::move(style));
+    }
+
+    void ESMFile::decodeLoadScreen(const ESMRecord& rec) {
+        LoadScreenData screen;
+        screen.formID = rec.formID;
+        screen.editorID = rec.getString("EDID");
+        screen.iconPath = rec.getString("ICON");
+        screen.description = rec.getString("DESC");
+
+        auto* lnam = rec.findSubRecord("LNAM");
+        if (lnam) {
+            screen.lnam = lnam->data;
+            if (lnam->size() >= 4) screen.lnamFormID = static_cast<uint32_t>(readI32(lnam->data.data()));
+        }
+
+        m_loadScreens.push_back(std::move(screen));
+    }
+
+    void ESMFile::decodeEffectShader(const ESMRecord& rec) {
+        EffectShaderData shader;
+        shader.formID = rec.formID;
+        shader.editorID = rec.getString("EDID");
+        shader.fillTexture = rec.getString("ICON");
+        shader.particleTexture = rec.getString("ICO2");
+
+        auto* data = rec.findSubRecord("DATA");
+        if (data) shader.data = data->data;
+
+        m_effectShaders.push_back(std::move(shader));
+    }
+
+    void ESMFile::decodeAnimationObject(const ESMRecord& rec) {
+        AnimationObjectData anio;
+        anio.formID = rec.formID;
+        anio.editorID = rec.getString("EDID");
+        anio.modelPath = rec.getString("MODL");
+
+        auto* data = rec.findSubRecord("DATA");
+        if (data && data->size() >= 4) {
+            anio.animationGroupFormID = static_cast<uint32_t>(readI32(data->data.data()));
+        }
+
+        m_animationObjects.push_back(std::move(anio));
+    }
+
+    void ESMFile::decodeSubspace(const ESMRecord& rec) {
+        SubspaceData sbsp;
+        sbsp.formID = rec.formID;
+        sbsp.editorID = rec.getString("EDID");
+
+        auto* dnam = rec.findSubRecord("DNAM");
+        if (dnam && dnam->size() >= 12) {
+            sbsp.x = readF32(dnam->data.data());
+            sbsp.y = readF32(dnam->data.data() + 4);
+            sbsp.z = readF32(dnam->data.data() + 8);
+        }
+
+        m_subspaces.push_back(std::move(sbsp));
+    }
+
 bool ESMFile::readRecordHeaderMem(const uint8_t*& pos, const uint8_t* end, ESMRecord& rec) {
     if (pos + 16 > end) return false;
     
@@ -2139,11 +2886,19 @@ bool ESMFile::readGroupMem(const uint8_t*& pos, const uint8_t* end, GroupType gr
             std::memcpy(&gh, pos, sizeof(gh)); pos += sizeof(gh);
             
             uint32_t childSize = gh.groupSize - sizeof(gh);
+            uint32_t savedCell = m_currentCellFormID;
+            uint32_t savedWorld = m_currentWorldspaceFormID;
+            if (gh.groupType == 6) m_currentCellFormID = gh.groupLabel;
+            if (gh.groupType == 1) m_currentWorldspaceFormID = gh.groupLabel;
             readGroupMem(pos, groupEnd, static_cast<GroupType>(gh.groupType), childSize);
+            m_currentCellFormID = savedCell;
+            m_currentWorldspaceFormID = savedWorld;
         } else {
             // Regular record
             ESMRecord rec;
             if (!readRecordHeaderMem(pos, groupEnd, rec)) break;
+            rec.parentFormID = m_currentCellFormID;
+            rec.worldspaceFormID = m_currentWorldspaceFormID;
             decodeRecord(rec);
         }
     }
@@ -2190,17 +2945,32 @@ bool ESMFile::parseFromMemory(const std::string& name, const uint8_t* data, size
             std::memcpy(&gh, pos, sizeof(gh)); pos += sizeof(gh);
             
             uint32_t childSize = gh.groupSize - sizeof(gh);
+            uint32_t savedCell = m_currentCellFormID;
+            if (gh.groupType == 6) m_currentCellFormID = gh.groupLabel;
             readGroupMem(pos, end, static_cast<GroupType>(gh.groupType), childSize);
+            m_currentCellFormID = savedCell;
         } else {
             ESMRecord rec;
             if (!readRecordHeaderMem(pos, end, rec)) break;
+            rec.parentFormID = m_currentCellFormID;
             decodeRecord(rec);
         }
     }
     
     LOGD("ESM parsed from memory: %zu cells, %zu NPCs, %zu weapons, %zu quests, %zu dialogs",
          m_cells.size(), m_npcs.size(), m_weapons.size(), m_quests.size(), m_dialogs.size());
-    
+    LOGD("ESM secondary types: GMST=%zu GLOB=%zu DOOR=%zu PACK=%zu PGRD=%zu IDLE=%zu "
+         "KEYM=%zu AMMO=%zu SGST=%zu SLGM=%zu FURN=%zu LTEX=%zu GRAS=%zu WATR=%zu "
+         "WTHR=%zu CSTY=%zu LSCR=%zu EFSH=%zu ANIO=%zu SBSP=%zu",
+         m_gameSettings.size(), m_globalVariables.size(), m_doors.size(), m_packages.size(),
+         m_pathGrids.size(), m_idleAnimations.size(), m_keys.size(), m_ammo.size(),
+         m_sigilStones.size(), m_soulGems.size(), m_furniture.size(),
+         m_landscapeTextures.size(), m_grass.size(), m_waters.size(), m_weathers.size(),
+         m_combatStyles.size(), m_loadScreens.size(), m_effectShaders.size(),
+         m_animationObjects.size(), m_subspaces.size());
+
+    resolveMagicReferences();
+
     return true;
 }
 
@@ -2269,10 +3039,82 @@ ESMFile::VerificationResult ESMFile::verify() const {
     return result;
 }
 
+void ESMFile::resolveMagicReferences(
+    const std::unordered_map<std::string, uint32_t>* externalFormIDs,
+    const std::unordered_map<uint32_t, uint32_t>* externalSchools) {
+    std::unordered_map<std::string, uint32_t> formIDByCode;
+    std::unordered_map<uint32_t, uint32_t> schoolByFormID;
+    formIDByCode.reserve(m_magicEffects.size() * 2);
+    schoolByFormID.reserve(m_magicEffects.size() * 2);
+    for (const auto& mgef : m_magicEffects) {
+        if (!mgef.editorID.empty()) {
+            formIDByCode.emplace(mgef.editorID, mgef.formID);
+        }
+        schoolByFormID.emplace(mgef.formID, mgef.school);
+    }
+
+    size_t resolved = 0;
+    size_t unresolved = 0;
+    auto lookupFormID = [&](const std::string& code) -> uint32_t {
+        auto it = formIDByCode.find(code);
+        if (it != formIDByCode.end()) return it->second;
+        if (externalFormIDs) {
+            auto ext = externalFormIDs->find(code);
+            if (ext != externalFormIDs->end()) return ext->second;
+        }
+        return 0;
+    };
+    auto lookupSchool = [&](uint32_t formID) -> int32_t {
+        auto it = schoolByFormID.find(formID);
+        if (it != schoolByFormID.end()) return static_cast<int32_t>(it->second);
+        if (externalSchools) {
+            auto ext = externalSchools->find(formID);
+            if (ext != externalSchools->end()) return static_cast<int32_t>(ext->second);
+        }
+        return -1;
+    };
+
+    auto resolveEffects = [&](auto& records) {
+        for (auto& rec : records) {
+            for (size_t i = 0; i < rec.effectCodes.size() && i < rec.effectFormIDs.size(); ++i) {
+                if (rec.effectCodes[i].empty()) continue;
+                uint32_t formID = lookupFormID(rec.effectCodes[i]);
+                if (formID == 0) {
+                    ++unresolved;
+                    continue;
+                }
+                rec.effectFormIDs[i] = formID;
+                ++resolved;
+            }
+        }
+    };
+    resolveEffects(m_spells);
+    resolveEffects(m_enchantments);
+    resolveEffects(m_ingredients);
+    resolveEffects(m_alchemy);
+    resolveEffects(m_sigilStones);
+
+    // A spell's school is not stored in SPEL; it comes from its magic effects.
+    size_t schooled = 0;
+    for (auto& spell : m_spells) {
+        for (uint32_t effectFormID : spell.effectFormIDs) {
+            int32_t school = (effectFormID == 0) ? -1 : lookupSchool(effectFormID);
+            if (school >= 0 && school <= 5) {
+                spell.school = static_cast<uint32_t>(school);
+                ++schooled;
+                break;
+            }
+        }
+    }
+
+    LOGI("Magic references resolved for %s: %zu effect links (%zu unresolved), "
+         "%zu/%zu spells have a school",
+         m_fileName.c_str(), resolved, unresolved, schooled, m_spells.size());
+}
+
 // ============================================================================
 // ESMManager implementation
 // ============================================================================
-
 bool ESMManager::loadPlugin(const std::string& esmPath) {
     auto file = std::make_unique<ESMFile>();
     if (!file->open(esmPath)) {
@@ -2317,6 +3159,28 @@ void ESMManager::cleanup() {
     m_ingredientIndex.clear();
     m_alchemyIndex.clear();
     m_miscItemIndex.clear();
+    m_factionIndex.clear();
+    m_scriptIndex.clear();
+    m_gameSettingIndex.clear();
+    m_globalVariableIndex.clear();
+    m_doorIndex.clear();
+    m_packageIndex.clear();
+    m_pathGridIndex.clear();
+    m_idleAnimationIndex.clear();
+    m_keyIndex.clear();
+    m_ammoIndex.clear();
+    m_sigilStoneIndex.clear();
+    m_soulGemIndex.clear();
+    m_furnitureIndex.clear();
+    m_landscapeTextureIndex.clear();
+    m_grassIndex.clear();
+    m_waterIndex.clear();
+    m_weatherIndex.clear();
+    m_combatStyleIndex.clear();
+    m_loadScreenIndex.clear();
+    m_effectShaderIndex.clear();
+    m_animationObjectIndex.clear();
+    m_subspaceIndex.clear();
 }
 
 void ESMManager::rebuildIndices() {
@@ -2328,6 +3192,7 @@ void ESMManager::rebuildIndices() {
     m_spellIndex.clear();
     m_enchantmentIndex.clear();
     m_magicEffectIndex.clear();
+    m_magicEffectByEditorID.clear();
     m_skillIndex.clear();
     m_birthsignIndex.clear();
     m_containerIndex.clear();
@@ -2355,6 +3220,26 @@ void ESMManager::rebuildIndices() {
     m_alchemyIndex.clear();
     m_miscItemIndex.clear();
     m_factionIndex.clear();
+    m_gameSettingIndex.clear();
+    m_globalVariableIndex.clear();
+    m_doorIndex.clear();
+    m_packageIndex.clear();
+    m_pathGridIndex.clear();
+    m_idleAnimationIndex.clear();
+    m_keyIndex.clear();
+    m_ammoIndex.clear();
+    m_sigilStoneIndex.clear();
+    m_soulGemIndex.clear();
+    m_furnitureIndex.clear();
+    m_landscapeTextureIndex.clear();
+    m_grassIndex.clear();
+    m_waterIndex.clear();
+    m_weatherIndex.clear();
+    m_combatStyleIndex.clear();
+    m_loadScreenIndex.clear();
+    m_effectShaderIndex.clear();
+    m_animationObjectIndex.clear();
+    m_subspaceIndex.clear();
 
     for (size_t fi = 0; fi < m_files.size(); ++fi) {
         const auto& file = m_files[fi];
@@ -2381,6 +3266,10 @@ void ESMManager::rebuildIndices() {
         }
         for (size_t i = 0; i < file->getMagicEffects().size(); ++i) {
             m_magicEffectIndex[file->getMagicEffects()[i].formID] = fi;
+            if (!file->getMagicEffects()[i].editorID.empty()) {
+                m_magicEffectByEditorID[file->getMagicEffects()[i].editorID] =
+                    &file->getMagicEffects()[i];
+            }
         }
         for (size_t i = 0; i < file->getSkills().size(); ++i) {
             m_skillIndex[file->getSkills()[i].formID] = fi;
@@ -2465,6 +3354,83 @@ void ESMManager::rebuildIndices() {
         }
         for (size_t i = 0; i < file->getScripts().size(); ++i) {
             m_scriptIndex[file->getScripts()[i].formID] = fi;
+        }
+        for (size_t i = 0; i < file->getGameSettings().size(); ++i) {
+            m_gameSettingIndex[file->getGameSettings()[i].editorID] = fi;
+        }
+        for (size_t i = 0; i < file->getGlobalVariables().size(); ++i) {
+            m_globalVariableIndex[file->getGlobalVariables()[i].editorID] = fi;
+        }
+        for (size_t i = 0; i < file->getDoors().size(); ++i) {
+            m_doorIndex[file->getDoors()[i].formID] = fi;
+        }
+        for (size_t i = 0; i < file->getPackages().size(); ++i) {
+            m_packageIndex[file->getPackages()[i].formID] = fi;
+        }
+        for (size_t i = 0; i < file->getPathGrids().size(); ++i) {
+            const auto& grid = file->getPathGrids()[i];
+            if (grid.cellFormID != 0) m_pathGridIndex[grid.cellFormID] = fi;
+        }
+        for (size_t i = 0; i < file->getIdleAnimations().size(); ++i) {
+            m_idleAnimationIndex[file->getIdleAnimations()[i].formID] = fi;
+        }
+        for (size_t i = 0; i < file->getKeys().size(); ++i) {
+            m_keyIndex[file->getKeys()[i].formID] = fi;
+        }
+        for (size_t i = 0; i < file->getAmmo().size(); ++i) {
+            m_ammoIndex[file->getAmmo()[i].formID] = fi;
+        }
+        for (size_t i = 0; i < file->getSigilStones().size(); ++i) {
+            m_sigilStoneIndex[file->getSigilStones()[i].formID] = fi;
+        }
+        for (size_t i = 0; i < file->getSoulGems().size(); ++i) {
+            m_soulGemIndex[file->getSoulGems()[i].formID] = fi;
+        }
+        for (size_t i = 0; i < file->getFurniture().size(); ++i) {
+            m_furnitureIndex[file->getFurniture()[i].formID] = fi;
+        }
+        for (size_t i = 0; i < file->getLandscapeTextures().size(); ++i) {
+            m_landscapeTextureIndex[file->getLandscapeTextures()[i].formID] = fi;
+        }
+        for (size_t i = 0; i < file->getGrass().size(); ++i) {
+            m_grassIndex[file->getGrass()[i].formID] = fi;
+        }
+        for (size_t i = 0; i < file->getWaters().size(); ++i) {
+            m_waterIndex[file->getWaters()[i].formID] = fi;
+        }
+        for (size_t i = 0; i < file->getWeathers().size(); ++i) {
+            m_weatherIndex[file->getWeathers()[i].formID] = fi;
+        }
+        for (size_t i = 0; i < file->getCombatStyles().size(); ++i) {
+            m_combatStyleIndex[file->getCombatStyles()[i].formID] = fi;
+        }
+        for (size_t i = 0; i < file->getLoadScreens().size(); ++i) {
+            m_loadScreenIndex[file->getLoadScreens()[i].formID] = fi;
+        }
+        for (size_t i = 0; i < file->getEffectShaders().size(); ++i) {
+            m_effectShaderIndex[file->getEffectShaders()[i].formID] = fi;
+        }
+        for (size_t i = 0; i < file->getAnimationObjects().size(); ++i) {
+            m_animationObjectIndex[file->getAnimationObjects()[i].formID] = fi;
+        }
+        for (size_t i = 0; i < file->getSubspaces().size(); ++i) {
+            m_subspaceIndex[file->getSubspaces()[i].formID] = fi;
+        }
+    }
+
+    // Second pass: link EFID codes that point at MGEFs in other plugins
+    // (e.g. DLC spells referencing Oblivion.esm magic effects).
+    if (!m_magicEffectByEditorID.empty()) {
+        std::unordered_map<std::string, uint32_t> formIDByCode;
+        std::unordered_map<uint32_t, uint32_t> schoolByFormID;
+        formIDByCode.reserve(m_magicEffectByEditorID.size());
+        schoolByFormID.reserve(m_magicEffectByEditorID.size());
+        for (const auto& entry : m_magicEffectByEditorID) {
+            formIDByCode.emplace(entry.first, entry.second->formID);
+            schoolByFormID.emplace(entry.second->formID, entry.second->school);
+        }
+        for (auto& file : m_files) {
+            file->resolveMagicReferences(&formIDByCode, &schoolByFormID);
         }
     }
 }
@@ -2583,6 +3549,11 @@ const MagicEffectData* ESMManager::findMagicEffect(uint32_t formID) const {
         if (mgef.formID == formID) return &mgef;
     }
     return nullptr;
+}
+
+const MagicEffectData* ESMManager::findMagicEffectByEditorID(const std::string& editorID) const {
+    auto it = m_magicEffectByEditorID.find(editorID);
+    return (it == m_magicEffectByEditorID.end()) ? nullptr : it->second;
 }
 
 const SkillData* ESMManager::findSkill(uint32_t formID) const {
@@ -2837,6 +3808,217 @@ const script::ScriptData* ESMManager::findScript(uint32_t formID) const {
     return nullptr;
 }
 
+// ============================================================================
+// Phase 64 record lookups
+// ============================================================================
+
+const GameSettingData* ESMManager::findGameSetting(const std::string& editorID) const {
+    auto it = m_gameSettingIndex.find(editorID);
+    if (it == m_gameSettingIndex.end()) return nullptr;
+    for (const auto& gmst : m_files[it->second]->getGameSettings()) {
+        if (gmst.editorID == editorID) return &gmst;
+    }
+    return nullptr;
+}
+
+const GlobalVariableData* ESMManager::findGlobalVariable(const std::string& editorID) const {
+    auto it = m_globalVariableIndex.find(editorID);
+    if (it == m_globalVariableIndex.end()) return nullptr;
+    for (const auto& glob : m_files[it->second]->getGlobalVariables()) {
+        if (glob.editorID == editorID) return &glob;
+    }
+    return nullptr;
+}
+
+const DoorData* ESMManager::findDoor(uint32_t formID) const {
+    auto it = m_doorIndex.find(formID);
+    if (it == m_doorIndex.end()) return nullptr;
+    for (const auto& door : m_files[it->second]->getDoors()) {
+        if (door.formID == formID) return &door;
+    }
+    return nullptr;
+}
+
+const AIPackageData* ESMManager::findPackage(uint32_t formID) const {
+    auto it = m_packageIndex.find(formID);
+    if (it == m_packageIndex.end()) return nullptr;
+    for (const auto& pack : m_files[it->second]->getPackages()) {
+        if (pack.formID == formID) return &pack;
+    }
+    return nullptr;
+}
+
+const PathGridData* ESMManager::findPathGridForCell(uint32_t cellFormID) const {
+    auto it = m_pathGridIndex.find(cellFormID);
+    if (it == m_pathGridIndex.end()) return nullptr;
+    for (const auto& grid : m_files[it->second]->getPathGrids()) {
+        if (grid.cellFormID == cellFormID) return &grid;
+    }
+    return nullptr;
+}
+
+const IdleAnimationData* ESMManager::findIdleAnimation(uint32_t formID) const {
+    auto it = m_idleAnimationIndex.find(formID);
+    if (it == m_idleAnimationIndex.end()) return nullptr;
+    for (const auto& idle : m_files[it->second]->getIdleAnimations()) {
+        if (idle.formID == formID) return &idle;
+    }
+    return nullptr;
+}
+
+const KeyData* ESMManager::findKey(uint32_t formID) const {
+    auto it = m_keyIndex.find(formID);
+    if (it == m_keyIndex.end()) return nullptr;
+    for (const auto& key : m_files[it->second]->getKeys()) {
+        if (key.formID == formID) return &key;
+    }
+    return nullptr;
+}
+
+const AmmoData* ESMManager::findAmmo(uint32_t formID) const {
+    auto it = m_ammoIndex.find(formID);
+    if (it == m_ammoIndex.end()) return nullptr;
+    for (const auto& ammo : m_files[it->second]->getAmmo()) {
+        if (ammo.formID == formID) return &ammo;
+    }
+    return nullptr;
+}
+
+const SigilStoneData* ESMManager::findSigilStone(uint32_t formID) const {
+    auto it = m_sigilStoneIndex.find(formID);
+    if (it == m_sigilStoneIndex.end()) return nullptr;
+    for (const auto& stone : m_files[it->second]->getSigilStones()) {
+        if (stone.formID == formID) return &stone;
+    }
+    return nullptr;
+}
+
+const SoulGemData* ESMManager::findSoulGem(uint32_t formID) const {
+    auto it = m_soulGemIndex.find(formID);
+    if (it == m_soulGemIndex.end()) return nullptr;
+    for (const auto& gem : m_files[it->second]->getSoulGems()) {
+        if (gem.formID == formID) return &gem;
+    }
+    return nullptr;
+}
+
+const FurnitureData* ESMManager::findFurniture(uint32_t formID) const {
+    auto it = m_furnitureIndex.find(formID);
+    if (it == m_furnitureIndex.end()) return nullptr;
+    for (const auto& furn : m_files[it->second]->getFurniture()) {
+        if (furn.formID == formID) return &furn;
+    }
+    return nullptr;
+}
+
+const LandscapeTextureData* ESMManager::findLandscapeTexture(uint32_t formID) const {
+    auto it = m_landscapeTextureIndex.find(formID);
+    if (it == m_landscapeTextureIndex.end()) return nullptr;
+    for (const auto& ltex : m_files[it->second]->getLandscapeTextures()) {
+        if (ltex.formID == formID) return &ltex;
+    }
+    return nullptr;
+}
+
+const GrassData* ESMManager::findGrass(uint32_t formID) const {
+    auto it = m_grassIndex.find(formID);
+    if (it == m_grassIndex.end()) return nullptr;
+    for (const auto& grass : m_files[it->second]->getGrass()) {
+        if (grass.formID == formID) return &grass;
+    }
+    return nullptr;
+}
+
+const WaterData* ESMManager::findWater(uint32_t formID) const {
+    auto it = m_waterIndex.find(formID);
+    if (it == m_waterIndex.end()) return nullptr;
+    for (const auto& water : m_files[it->second]->getWaters()) {
+        if (water.formID == formID) return &water;
+    }
+    return nullptr;
+}
+
+const WeatherData* ESMManager::findWeather(uint32_t formID) const {
+    auto it = m_weatherIndex.find(formID);
+    if (it == m_weatherIndex.end()) return nullptr;
+    for (const auto& weather : m_files[it->second]->getWeathers()) {
+        if (weather.formID == formID) return &weather;
+    }
+    return nullptr;
+}
+
+const CombatStyleData* ESMManager::findCombatStyle(uint32_t formID) const {
+    auto it = m_combatStyleIndex.find(formID);
+    if (it == m_combatStyleIndex.end()) return nullptr;
+    for (const auto& style : m_files[it->second]->getCombatStyles()) {
+        if (style.formID == formID) return &style;
+    }
+    return nullptr;
+}
+
+const LoadScreenData* ESMManager::findLoadScreen(uint32_t formID) const {
+    auto it = m_loadScreenIndex.find(formID);
+    if (it == m_loadScreenIndex.end()) return nullptr;
+    for (const auto& screen : m_files[it->second]->getLoadScreens()) {
+        if (screen.formID == formID) return &screen;
+    }
+    return nullptr;
+}
+
+const EffectShaderData* ESMManager::findEffectShader(uint32_t formID) const {
+    auto it = m_effectShaderIndex.find(formID);
+    if (it == m_effectShaderIndex.end()) return nullptr;
+    for (const auto& shader : m_files[it->second]->getEffectShaders()) {
+        if (shader.formID == formID) return &shader;
+    }
+    return nullptr;
+}
+
+const AnimationObjectData* ESMManager::findAnimationObject(uint32_t formID) const {
+    auto it = m_animationObjectIndex.find(formID);
+    if (it == m_animationObjectIndex.end()) return nullptr;
+    for (const auto& anio : m_files[it->second]->getAnimationObjects()) {
+        if (anio.formID == formID) return &anio;
+    }
+    return nullptr;
+}
+
+const SubspaceData* ESMManager::findSubspace(uint32_t formID) const {
+    auto it = m_subspaceIndex.find(formID);
+    if (it == m_subspaceIndex.end()) return nullptr;
+    for (const auto& sbsp : m_files[it->second]->getSubspaces()) {
+        if (sbsp.formID == formID) return &sbsp;
+    }
+    return nullptr;
+}
+
+ESMManager::DecodeStatistics ESMManager::getDecodeStatistics() const {
+    DecodeStatistics stats;
+    for (const auto& file : m_files) {
+        stats.gameSettings += file->getGameSettings().size();
+        stats.globalVariables += file->getGlobalVariables().size();
+        stats.doors += file->getDoors().size();
+        stats.packages += file->getPackages().size();
+        stats.pathGrids += file->getPathGrids().size();
+        stats.idleAnimations += file->getIdleAnimations().size();
+        stats.keys += file->getKeys().size();
+        stats.ammo += file->getAmmo().size();
+        stats.sigilStones += file->getSigilStones().size();
+        stats.soulGems += file->getSoulGems().size();
+        stats.furniture += file->getFurniture().size();
+        stats.landscapeTextures += file->getLandscapeTextures().size();
+        stats.grass += file->getGrass().size();
+        stats.waters += file->getWaters().size();
+        stats.weathers += file->getWeathers().size();
+        stats.combatStyles += file->getCombatStyles().size();
+        stats.loadScreens += file->getLoadScreens().size();
+        stats.effectShaders += file->getEffectShaders().size();
+        stats.animationObjects += file->getAnimationObjects().size();
+        stats.subspaces += file->getSubspaces().size();
+    }
+    return stats;
+}
+
 std::vector<std::pair<uint32_t, uint16_t>> ESMManager::resolveLeveledList(uint32_t listFormID, uint32_t playerLevel) const {
     std::vector<std::pair<uint32_t, uint16_t>> result;
     const LeveledListData* list = findLeveledList(listFormID);
@@ -2935,6 +4117,16 @@ const std::vector<ReferenceData>& ESMManager::getAllReferences() const {
         return empty;
     }
     return m_files.back()->getReferences();
+}
+
+size_t ESMManager::getNpcReferenceCount() const {
+    if (m_files.empty()) return 0;
+    return m_files.back()->getNpcReferenceCount();
+}
+
+size_t ESMManager::getCreatureReferenceCount() const {
+    if (m_files.empty()) return 0;
+    return m_files.back()->getCreatureReferenceCount();
 }
 
 const std::vector<TerrainData>& ESMManager::getAllTerrains() const {

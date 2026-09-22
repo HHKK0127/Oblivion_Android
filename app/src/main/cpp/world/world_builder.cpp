@@ -82,7 +82,7 @@ bool WorldBuilder::buildWorld(const oblivion::ESMManager& esmMgr) {
         auto cell = worldManager->addCellFromESM(
             cellData.gridX, cellData.gridY,
             cellData.editorID, cellData.fullName,
-            cellData.formID
+            cellData.formID, cellData.isExterior, cellData.worldspaceID
         );
 
         if (cell && buildCell(cell, esmMgr)) {

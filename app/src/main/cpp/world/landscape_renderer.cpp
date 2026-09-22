@@ -52,10 +52,11 @@ bool LandscapeRenderer::generateTerrainFromLAND(std::shared_ptr<Cell> cell,
               cell->cellId, cell->cellX, cell->cellY);
 
     // Store height data in cell
-    cell->heightData = landData.heights;
+    const std::vector<float> heights = landData.expandHeights();
+    cell->heightData = heights;
 
     // Generate mesh
-    auto mesh = generateMesh(landData.heights, cell->cellX, cell->cellY);
+    auto mesh = generateMesh(heights, cell->cellX, cell->cellY);
     if (!mesh) {
         LOGE_LAND("Failed to generate terrain mesh for cell %u", cell->cellId);
         return false;
@@ -65,11 +66,11 @@ bool LandscapeRenderer::generateTerrainFromLAND(std::shared_ptr<Cell> cell,
     terrainCache[cell->cellId] = mesh;
 
     // Calculate and cache normals
-    auto normals = calculateNormals(landData.heights, GRID_SIZE);
+    auto normals = calculateNormals(heights, GRID_SIZE);
     normalCache[cell->cellId] = normals;
 
     LOGI_LAND("Terrain generated for cell %u: %zu vertices, %zu normals",
-              cell->cellId, landData.heights.size(), normals.size());
+              cell->cellId, heights.size(), normals.size());
 
     return true;
 }
@@ -111,29 +112,6 @@ bool LandscapeRenderer::generateCellTerrain(std::shared_ptr<Cell> cell,
 // ============================================================================
 // Heightmap Processing
 // ============================================================================
-
-std::vector<float> LandscapeRenderer::parseHeightmap(const std::vector<uint8_t>& rawData) {
-    std::vector<float> heights;
-
-    if (rawData.size() < GRID_SIZE * GRID_SIZE * sizeof(int16_t)) {
-        LOGE_LAND("Raw heightmap data too small: %zu bytes", rawData.size());
-        return heights;
-    }
-
-    heights.reserve(GRID_SIZE * GRID_SIZE);
-
-    // LAND records store heights as int16_t values
-    const int16_t* rawHeights = reinterpret_cast<const int16_t*>(rawData.data());
-
-    for (int32_t i = 0; i < GRID_SIZE * GRID_SIZE; ++i) {
-        // Convert int16 to float and apply scale
-        float height = static_cast<float>(rawHeights[i]) * (1.0f / 64.0f);
-        heights.push_back(height);
-    }
-
-    LOGD_LAND("Parsed heightmap: %zu vertices", heights.size());
-    return heights;
-}
 
 std::vector<glm::vec3> LandscapeRenderer::calculateNormals(const std::vector<float>& heights,
                                                             int32_t gridSize) {

@@ -6,6 +6,79 @@
 // Phase 30 Step 12: CharacterController
 // ============================================
 
+namespace {
+
+// Ray vs a single static body. Boxes use a slab test on their half extents;
+// every other shape is treated as a sphere of `radius`.
+bool raycast_static_body(const glm::vec3& origin, const glm::vec3& dir, float maxDist,
+                         const CollisionBody& body, float& t, glm::vec3& normal) {
+    if (body.shapeType == ShapeType::BOX) {
+        glm::vec3 minB = body.position - body.halfExtents;
+        glm::vec3 maxB = body.position + body.halfExtents;
+
+        // The bundled GLM stub has no vec3 operator[], so work on raw floats.
+        const float o[3] = { origin.x, origin.y, origin.z };
+        const float d[3] = { dir.x, dir.y, dir.z };
+        const float lo[3] = { minB.x, minB.y, minB.z };
+        const float hi[3] = { maxB.x, maxB.y, maxB.z };
+
+        float tmin = 0.0f;
+        float tmax = maxDist;
+        int axis = -1;
+        float sign = 0.0f;
+
+        for (int i = 0; i < 3; i++) {
+            if (std::fabs(d[i]) < 1e-6f) {
+                if (o[i] < lo[i] || o[i] > hi[i]) return false;
+                continue;
+            }
+
+            float inv = 1.0f / d[i];
+            float t1 = (lo[i] - o[i]) * inv;
+            float t2 = (hi[i] - o[i]) * inv;
+            float tNear = std::min(t1, t2);
+            float tFar = std::max(t1, t2);
+
+            if (tNear > tmin) {
+                tmin = tNear;
+                axis = i;
+                sign = (t1 < t2) ? -1.0f : 1.0f;
+            }
+            if (tFar < tmax) tmax = tFar;
+            if (tmin > tmax) return false;
+        }
+
+        // axis < 0 means the origin already started inside the box.
+        if (axis < 0) return false;
+
+        t = tmin;
+        if (axis == 0)      normal = glm::vec3(sign, 0.0f, 0.0f);
+        else if (axis == 1) normal = glm::vec3(0.0f, sign, 0.0f);
+        else                normal = glm::vec3(0.0f, 0.0f, sign);
+        return true;
+    }
+
+    float r = body.radius;
+    glm::vec3 oc = origin - body.position;
+    float b = glm::dot(oc, dir);
+    float c = glm::dot(oc, oc) - r * r;
+    float discriminant = b * b - c;
+    if (discriminant < 0.0f) return false;
+
+    float sq = std::sqrt(discriminant);
+    float hitT = -b - sq;
+    if (hitT < 0.0f) hitT = -b + sq;  // origin started inside the sphere
+    if (hitT < 0.0f || hitT > maxDist) return false;
+
+    t = hitT;
+    glm::vec3 n = origin + dir * t - body.position;
+    float len = glm::length(n);
+    normal = (len > 1e-6f) ? n / len : glm::vec3(0.0f, 1.0f, 0.0f);
+    return true;
+}
+
+}  // namespace
+
 CharacterController::CharacterController() {
 }
 
@@ -94,11 +167,37 @@ bool CharacterController::resolveCollision(const glm::vec3& pos, float radius, f
 
     correction = glm::vec3(0.0f, 0.0f, 0.0f);
 
-    // Simple sphere-sphere collision for the capsule endpoints
-    glm::vec3 topPos = pos + glm::vec3(0.0f, height * 0.5f, 0.0f);
-    glm::vec3 bottomPos = pos - glm::vec3(0.0f, height * 0.5f, 0.0f);
+    // The capsule is approximated by an axis-aligned box: half the capsule height
+    // plus the cap radius vertically, and the capsule radius horizontally.
+    float halfY = height * 0.5f + radius;
 
-    // Simplified: use bounding sphere check
+    if (other->shapeType == ShapeType::BOX) {
+        // A box has no radius, so the separation has to come from its half extents.
+        glm::vec3 otherHalf = other->halfExtents;
+        glm::vec3 delta = pos - other->position;
+
+        glm::vec3 overlap(radius + otherHalf.x - std::fabs(delta.x),
+                          halfY + otherHalf.y - std::fabs(delta.y),
+                          radius + otherHalf.z - std::fabs(delta.z));
+
+        if (overlap.x <= 0.0f || overlap.y <= 0.0f || overlap.z <= 0.0f) return false;
+
+        // Push out along the axis of least penetration.
+        const float ov[3] = { overlap.x, overlap.y, overlap.z };
+        const float dl[3] = { delta.x, delta.y, delta.z };
+
+        int axis = 0;
+        if (ov[1] < ov[axis]) axis = 1;
+        if (ov[2] < ov[axis]) axis = 2;
+
+        float push = (dl[axis] >= 0.0f) ? ov[axis] : -ov[axis];
+        if (axis == 0)      correction = glm::vec3(push, 0.0f, 0.0f);
+        else if (axis == 1) correction = glm::vec3(0.0f, push, 0.0f);
+        else                correction = glm::vec3(0.0f, 0.0f, push);
+        return true;
+    }
+
+    // Sphere-like shapes (SPHERE / CAPSULE / CONVEX): use the bounding sphere.
     float totalRadius = radius + other->radius + SKIN_WIDTH;
     glm::vec3 delta = other->position - pos;
     float distSq = glm::dot(delta, delta);
@@ -120,9 +219,12 @@ bool CharacterController::resolveCollision(const glm::vec3& pos, float radius, f
 GroundInfo CharacterController::checkGround(const glm::vec3& pos) {
     GroundInfo info;
 
-    // Cast multiple rays downward from the character's base
-    float baseY = pos.y - capsuleHeight * 0.5f;
-    float rayLength = GROUND_CHECK_DIST + capsuleRadius;
+    if (!collisionWorld) return info;
+
+    // Cast rays downward from just above the character's feet.
+    float halfY = capsuleHeight * 0.5f + capsuleRadius;
+    float footY = pos.y - halfY + SKIN_WIDTH;
+    float rayLength = GROUND_CHECK_DIST + SKIN_WIDTH;
 
     // Ray positions: center + 4 corners
     glm::vec3 rayOffsets[GROUND_RAYS] = {
@@ -136,11 +238,10 @@ GroundInfo CharacterController::checkGround(const glm::vec3& pos) {
     glm::vec3 downDir = glm::vec3(0.0f, -1.0f, 0.0f);
 
     int hitCount = 0;
+    bool haveHeight = false;
 
     for (int i = 0; i < GROUND_RAYS; i++) {
-        glm::vec3 rayStart = glm::vec3(pos.x + rayOffsets[i].x, baseY + capsuleRadius, pos.z + rayOffsets[i].z);
-
-        if (!collisionWorld) break;
+        glm::vec3 rayStart = glm::vec3(pos.x + rayOffsets[i].x, footY, pos.z + rayOffsets[i].z);
 
         std::vector<int32_t> candidates;
         AABB rayAABB(rayStart, rayStart + downDir * rayLength);
@@ -148,6 +249,7 @@ GroundInfo CharacterController::checkGround(const glm::vec3& pos) {
 
         float closestDist = rayLength;
         glm::vec3 closestNormal = glm::vec3(0.0f, 1.0f, 0.0f);
+        bool hit = false;
 
         for (int32_t otherId : candidates) {
             if (otherId == bodyId) continue;
@@ -155,28 +257,21 @@ GroundInfo CharacterController::checkGround(const glm::vec3& pos) {
             const CollisionBody* other = collisionWorld->getBody(otherId);
             if (!other || !other->isStatic) continue;
 
-            // Simplified: check sphere-ground collision
-            glm::vec3 spherePos = glm::vec3(rayStart.x, baseY, rayStart.z);
-            float sphereRadius = capsuleRadius;
-            float totalRadius = sphereRadius + other->radius;
-
-            // Ray-sphere intersection
-            glm::vec3 oc = spherePos - rayStart;
-            float b = glm::dot(oc, downDir);
-            float c = glm::dot(oc, oc) - totalRadius * totalRadius;
-            float discriminant = b * b - c;
-
-            if (discriminant < 0.0f) continue;
-
-            float t = -b - sqrtf(discriminant);
-            if (t < 0.0f || t >= closestDist) continue;
-
-            closestDist = t;
-            closestNormal = glm::vec3(0.0f, 1.0f, 0.0f);  // Simplified ground normal
+            float t;
+            glm::vec3 normal;
+            if (raycast_static_body(rayStart, downDir, rayLength, *other, t, normal) && t < closestDist) {
+                closestDist = t;
+                closestNormal = normal;
+                hit = true;
+            }
         }
 
-        if (closestDist < rayLength) {
-            info.groundHeight = std::max(info.groundHeight, baseY - closestDist);
+        if (hit) {
+            // Height of the surface below this probe.
+            float surfaceY = rayStart.y - closestDist;
+            info.groundHeight = haveHeight ? std::max(info.groundHeight, surfaceY) : surfaceY;
+            haveHeight = true;
+
             info.groundNormal += closestNormal;
             hitCount++;
         }

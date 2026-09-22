@@ -34,6 +34,7 @@ public:
     void setLabel(const std::string& text);
     const std::string& getLabel() const { return label; }
     void setLabelColor(const glm::vec3& color) { labelColor = color; }
+    const glm::vec3& getLabelColor() const { return labelColor; }
     void setLabelScale(float scale) { labelScale = scale; }
 
     // === State ===

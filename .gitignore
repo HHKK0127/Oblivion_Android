@@ -10,6 +10,34 @@ mod/
 Launcher/
 バイナリ/
 
+# Game data and extracted assets (property of Bethesda Game Studios / ZENiMax Media).
+# This project follows a BYO-data model: game data is never redistributed.
+*.bsa
+*.esm
+*.esp
+*.nif
+*.kf
+*.dds
+*.lip
+*.egm
+*.scc
+*.lod
+textures_extracted/
+meshes_extracted/
+sounds_extracted/
+tools/BSAFileExtractor/
+
+# Bethesda assets kept locally for testing only; never redistribute.
+# Local builds still package these from disk. A fresh clone will render the
+# title screen without them (all texture uses are guarded by != 0).
+app/src/main/assets/videos/oblivion_intro.mp4
+app/src/main/assets/videos/map_loop.mp4
+app/src/main/assets/textures/ui/loading_background.png
+app/src/main/assets/textures/ui/load_in_game_default.png
+app/src/main/assets/textures/ui/loading_symbol.png
+app/src/main/assets/textures/ui/tes_oblivion_logo_bink.png
+app/src/main/assets/textures/ui/tes_oblivion_logo_final.png
+
 # Debug screenshots and XML dumps (root directory)
 /*.png
 /*.xml
@@ -17,10 +45,8 @@ Launcher/
 # Keystore (sensitive)
 *.keystore
 
-# Legacy Groovy DSL gradle files (use Kotlin DSL instead)
-build.gradle
-settings.gradle
-app/build.gradle
+# Legacy Kotlin DSL gradle files (Groovy DSL is the single source of truth)
+*.gradle.kts
 
 # Gradle files
 .gradle/

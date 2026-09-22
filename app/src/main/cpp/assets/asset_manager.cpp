@@ -247,7 +247,10 @@ std::vector<std::string> AssetManager::findFilesByExtension(const std::string& e
 // ============================================================================
 
 std::shared_ptr<Mesh> AssetManager::loadNifMesh(const std::string& nifPath) {
-    LOGD("Loading NIF mesh: %s", nifPath.c_str());
+    // Negative cache: never retry a path that already failed to resolve.
+    if (missingMeshPaths.find(nifPath) != missingMeshPaths.end()) {
+        return nullptr;
+    }
 
     // Check cache first
     if (meshCache.find(nifPath) != meshCache.end()) {
@@ -255,6 +258,8 @@ std::shared_ptr<Mesh> AssetManager::loadNifMesh(const std::string& nifPath) {
         meshCache[nifPath].lastAccessTime = 0.0f;
         return std::static_pointer_cast<Mesh>(meshCache[nifPath].asset);
     }
+
+    LOGD("Loading NIF mesh: %s", nifPath.c_str());
 
     // Try loading from BSA archives first
     std::vector<uint8_t> fileData = loadFileData(nifPath);
@@ -278,6 +283,7 @@ std::shared_ptr<Mesh> AssetManager::loadNifMesh(const std::string& nifPath) {
     std::replace(normalizedPath.begin(), normalizedPath.end(), '\\', '/');
     if (!nifParser->parseFile(normalizedPath)) {
         LOGE("Failed to parse NIF file: %s", nifPath.c_str());
+        markMeshMissing(nifPath);
         return nullptr;
     }
 
@@ -498,7 +504,21 @@ void AssetManager::evictLRU() {
 void AssetManager::clearCache() {
     meshCache.clear();
     textureCache.clear();
+    missingMeshPaths.clear();
     currentCacheSize = 0;
+}
+
+bool AssetManager::isMeshKnownMissing(const std::string& nifPath) const {
+    return missingMeshPaths.find(nifPath) != missingMeshPaths.end();
+}
+
+void AssetManager::markMeshMissing(const std::string& nifPath) {
+    if (missingMeshPaths.size() >= MAX_MISSING_MESH_ENTRIES) return;
+    missingMeshPaths.insert(nifPath);
+}
+
+void AssetManager::clearMissingMeshCache() {
+    missingMeshPaths.clear();
 }
 
 std::string AssetManager::getLoadedTextureList() const {

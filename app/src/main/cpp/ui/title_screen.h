@@ -156,6 +156,9 @@ private:
     const glm::vec3 COLOR_PARCHMENT = glm::vec3(0.72f, 0.64f, 0.49f);
     const glm::vec3 COLOR_GOLD      = glm::vec3(0.85f, 0.72f, 0.35f);
     const glm::vec3 COLOR_WHITE     = glm::vec3(1.0f, 1.0f, 1.0f);
+    // Original Oblivion main menu uses dark brown text on the parchment background.
+    const glm::vec3 COLOR_MENU_TEXT = glm::vec3(0.16f, 0.10f, 0.05f);
+    const glm::vec3 COLOR_MENU_TEXT_SELECTED = glm::vec3(0.30f, 0.16f, 0.04f);
 
 public:
     TitleScreen();

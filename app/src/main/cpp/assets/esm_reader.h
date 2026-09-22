@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cstring>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -64,6 +65,14 @@ struct RecordIndex {
     uint64_t fileOffset = 0;  // Offset in file (after header, before compressed data)
     bool compressed = false;
     uint32_t decompSize = 0;  // Decompressed size (if compressed)
+    // Label of the nearest enclosing cell-children GRUP (type 6).
+    // LAND/PGRD/REFR records carry no cell FormID of their own, so this is the
+    // only way to associate them with the cell that owns them.
+    uint32_t parentFormID = 0;
+    // Label of the nearest enclosing WorldChildren GRUP (type 1). Its label is
+    // the WRLD FormID, which is the only reliable way to tell which worldspace
+    // an exterior CELL belongs to: the CELL record itself carries no WRLD link.
+    uint32_t worldspaceFormID = 0;
 };
 
 // A record (CELL, NPC_, WEAP, etc.)
@@ -72,6 +81,12 @@ struct ESMRecord {
     uint32_t dataSize = 0;
     uint32_t flags = 0;
     uint32_t formID = 0;
+    // FormID of the cell that owns this record, taken from the enclosing
+    // cell-children GRUP. Only meaningful for LAND/PGRD/REFR/ACHR/ACRE.
+    uint32_t parentFormID = 0;
+    // FormID of the worldspace this record lives in (0 for interior content),
+    // taken from the enclosing WorldChildren GRUP label.
+    uint32_t worldspaceFormID = 0;
     std::vector<SubRecord> subRecords;
 
     // Helpers
@@ -100,6 +115,10 @@ struct CellData {
     uint32_t worldspaceID = 0;  // 0 = interior
     int32_t gridX = 0;
     int32_t gridY = 0;
+    // True when the cell sits inside a WorldChildren GRUP, i.e. it is an
+    // exterior cell that owns a grid coordinate. Interior cells have no grid
+    // position and must never claim one.
+    bool isExterior = false;
     // Lighting / climate data omitted for simplicity
 };
 
@@ -136,6 +155,20 @@ struct AIPackageData {
     uint32_t locationFormID = 0;    // Location reference FormID
     uint8_t wanderDistance = 0;      // Wander radius
     uint8_t idleTime = 0;           // Idle time in seconds
+
+    // --- Raw ESM PACK fields ---
+    // Oblivion AI packages are far richer than the trimmed runtime struct above.
+    // These carry the untouched values straight from the PKDT/PLDT/PTDT/PSDT
+    // subrecords so AI code can interpret them without re-parsing the record.
+    uint32_t formID = 0;
+    std::string editorID;
+    uint32_t packageFlags = 0;       // PKDT offset 0
+    uint8_t packageType = 0;         // PKDT offset 4 (0=Find..11=CastMagic)
+    int32_t locationType = 0;        // PLDT offset 0
+    int32_t locationRadius = 0;      // PLDT offset 8
+    int32_t targetKind = 0;          // PTDT/PSDT offset 0
+    int32_t targetCount = 0;         // PTDT offset 8
+    uint32_t conditionCount = 0;     // Number of CTDA subrecords
 };
 
 struct NPCData {
@@ -250,7 +283,12 @@ struct SpellData {
     std::vector<float> effectMagnitudes;
     std::vector<uint32_t> effectAreas;
     std::vector<uint32_t> effectDurations;
-    uint32_t effectType = 0;  // from SPIT: fire/frost/shock etc.
+    uint32_t effectType = 0;  // legacy: derived effect category (see SpellEffectType)
+    // Oblivion stores EFID as the 4-character MGEF editorID code, not a formID.
+    std::vector<std::string> effectCodes;
+    // Resolved from the first MGEF referenced by this spell (6 = unknown/unresolved).
+    uint32_t school = 6;
+    uint32_t actorValue = 0;
 };
 
 /// Enchantment (ENCH) record
@@ -267,6 +305,8 @@ struct EnchantmentData {
     std::vector<float> effectMagnitudes;
     std::vector<uint32_t> effectAreas;
     std::vector<uint32_t> effectDurations;
+    // Oblivion stores EFID as the 4-character MGEF editorID code, not a formID.
+    std::vector<std::string> effectCodes;
 };
 
 /// Magic Effect (MGEF) record
@@ -276,13 +316,14 @@ struct MagicEffectData {
     std::string fullName;
     std::string description;
     uint32_t school = 0;         // 0=alteration, 1=conjuration, 2=destruction, 3=illusion, 4=mysticism, 5=restoration
-    uint32_t baseCost = 0;
+    float baseCost = 0.0f;
     uint32_t flags = 0;
     float baseMagnitude = 0.0f;
     float baseDuration = 0.0f;
     float range = 0.0f;
     uint32_t effectType = 0;     // 0=other, 1=fire, 2=frost, 3=shock, 4=drain, 5=absorb, 6=disintegrate
     uint32_t actorValue = 0;     // Which attribute/skill is affected
+    uint32_t linkedFormID = 0;   // Summoned creature / bound item formID (0 when actorValue is used)
 };
 
 /// Skill (SKIL) record
@@ -577,18 +618,52 @@ struct ReferenceData {
         uint32_t formID = 0;           // This reference's formID
         uint32_t baseFormID = 0;       // FormID of the base object (NPC_, WEAP, etc.)
         uint32_t cellFormID = 0;       // Parent cell formID
+        // Raw ESM position, which is Z-up: X = east, Y = north, Z = height.
+        // Exterior references store absolute world coordinates; interior
+        // references store coordinates relative to the cell origin. Consumers
+        // rendering in the engine's Y-up world must swap Y and Z.
         glm::vec3 position{0.0f, 0.0f, 0.0f};
         glm::vec3 rotation{0.0f, 0.0f, 0.0f};
         float scale = 1.0f;
         uint16_t flags = 0;
+        // Reference kind: 0 = object (REFR), 1 = actor NPC (ACHR), 2 = actor creature (ACRE)
+        uint8_t refType = 0;
 };
 
-/// Terrain data from LAND record (65x65 heightmap)
+/// Terrain data from a LAND record. Oblivion (TES4) LAND is a 33x33 grid, not
+/// the 65x65 grid used by Morrowind (TES3).
 struct TerrainData {
-        uint32_t formID = 0;           // Cell formID this terrain belongs to
-        std::vector<float> heights;    // 65x65 = 4225 float heights
-    
-        bool hasHeights() const { return !heights.empty(); }
+        // FormID of the cell that owns this LAND record. LAND records are keyed
+        // by their own FormID, so this comes from the enclosing cell-children
+        // GRUP label.
+        uint32_t formID = 0;
+        // VHGT is retained in its raw form: 33x33 signed byte gradients plus the
+        // cell's float base height. An absolute height is the cumulative sum of
+        // the gradients, so the raw payload is lossless and four times smaller
+        // than a materialised float grid. Across the 31,823 LAND records in
+        // Oblivion.esm that is ~35 MB instead of ~140 MB, and only the handful of
+        // cells that are actually rendered ever need expanding.
+        std::vector<int8_t> heightDeltas;  // GRID*GRID, row-major, south to north
+        float heightOffset = 0.0f;
+        // Base texture FormID per quadrant (BTXT), indexed 0=SW, 1=SE, 2=NW, 3=NE
+        uint32_t baseTextures[4] = {0, 0, 0, 0};
+        std::vector<uint32_t> textureFormIDs;   // VTEX: landscape texture FormIDs
+        // VNML (vertex normals) and VCLR (vertex colours) are deliberately not
+        // retained: nothing consumes them and a 3,267-byte copy of each per LAND
+        // record would cost ~208 MB. Normals are derived from the height grid at
+        // mesh-build time, which is what the renderer and physics already do.
+
+        static constexpr int GRID = 33;
+
+        bool hasHeights() const { return heightDeltas.size() == GRID * GRID; }
+
+        /// Materialise the raw gradients into absolute heights, in game units.
+        /// Returns an empty vector when the record carries no usable VHGT.
+        std::vector<float> expandHeights() const;
+
+        /// Single absolute height, in game units. O(y + x), so prefer
+        /// expandHeights() when more than a couple of samples are needed.
+        float heightAt(int x, int y) const;
 };
 
 /// Clothing (CLOT) record
@@ -615,6 +690,8 @@ struct IngredientData {
         std::vector<float> effectMagnitudes;    // IRQF
         std::vector<uint32_t> effectAreas;      // IRQA
         std::vector<uint32_t> effectDurations;  // IRQT
+        // Oblivion stores EFID as the 4-character MGEF editorID code, not a formID.
+        std::vector<std::string> effectCodes;
 };
 
 /// Potion/Alchemy (ALCH) record
@@ -630,6 +707,8 @@ struct AlchemyData {
         std::vector<float> effectMagnitudes;
         std::vector<uint32_t> effectAreas;
         std::vector<uint32_t> effectDurations;
+        // Oblivion stores EFID as the 4-character MGEF editorID code, not a formID.
+        std::vector<std::string> effectCodes;
 };
 
 /// Miscellaneous item (MISC) record
@@ -648,6 +727,259 @@ struct RoadData {
         uint32_t cellFormID = 0;
         std::vector<glm::vec3> nodes;         // Path grid nodes
         std::vector<std::pair<uint16_t, uint16_t>> edges;  // Node index pairs
+};
+
+/// Game setting (GMST) record.
+/// The value type is encoded in the first character of the editor ID:
+/// 's' = string, 'f' = float, 'i' = integer, 'b' = boolean.
+struct GameSettingData {
+    uint32_t formID = 0;
+    std::string editorID;
+    char valueType = 's';
+    std::string stringValue;
+    float numericValue = 0.0f;
+};
+
+/// Global variable (GLOB) record. FNAM holds the type character
+/// ('s' = short, 'l' = long, 'f' = float) and FLTV the value.
+struct GlobalVariableData {
+    uint32_t formID = 0;
+    std::string editorID;
+    char valueType = 'f';
+    float value = 0.0f;
+};
+
+/// Door (DOOR) record. Teleport destinations live on the referencing REFR's
+/// XTEL subrecord, so only the shared properties are stored here.
+struct DoorData {
+    uint32_t formID = 0;
+    std::string editorID;
+    std::string fullName;
+    std::string modelPath;
+    uint32_t scriptFormID = 0;
+    uint32_t openSoundFormID = 0;   // SNAM
+    uint32_t closeSoundFormID = 0;  // ANAM
+    uint8_t flags = 0;              // FNAM
+};
+
+/// Path grid (PGRD) record — terrain navigation graph plus road nodes.
+/// PGRD records are always compressed; the reader inflates them before decode.
+struct PathGridData {
+    uint32_t formID = 0;
+    uint32_t cellFormID = 0;
+    int8_t gridX = 0;
+    int8_t gridY = 0;
+    std::vector<glm::vec3> points;                          // PGRP (16 bytes each: xyz + uint32 unused)
+    std::vector<uint8_t> pointFlags;                        // PGAG (1 bit per point, ceil(N/8) bytes)
+    std::vector<std::pair<uint16_t, uint16_t>> edges;       // PGRR (4 bytes each)
+    std::vector<uint8_t> roadData;                          // PGRL (raw)
+
+    bool hasPointFlag(size_t index) const {
+        const size_t byte = index / 8;
+        if (byte >= pointFlags.size()) return false;
+        return (pointFlags[byte] & (1u << (index % 8))) != 0;
+    }
+};
+
+/// Idle animation (IDLE) record.
+struct IdleAnimationData {
+    uint32_t formID = 0;
+    std::string editorID;
+    std::string modelPath;
+    uint8_t animationGroup = 0;   // ANAM
+    uint32_t parentFormID = 0;    // DATA offset 4
+    uint32_t conditionCount = 0;
+};
+
+/// Key (KEYM) record.
+struct KeyData {
+    uint32_t formID = 0;
+    std::string editorID;
+    std::string fullName;
+    std::string modelPath;
+    std::string iconPath;
+    uint32_t value = 0;
+    float weight = 0.0f;
+};
+
+/// Ammunition (AMMO) record.
+struct AmmoData {
+    uint32_t formID = 0;
+    std::string editorID;
+    std::string fullName;
+    std::string modelPath;
+    std::string iconPath;
+    uint32_t enchantmentFormID = 0;  // ENAM
+    float speed = 0.0f;              // DATA offset 0
+    uint32_t flags = 0;              // DATA offset 4
+    uint32_t value = 0;              // DATA offset 8
+    float weight = 0.0f;             // DATA offset 12
+    uint16_t damage = 0;             // DATA offset 16
+};
+
+/// Sigil stone (SGST) record — an enchanted stone carrying magic effects.
+struct SigilStoneData {
+    uint32_t formID = 0;
+    std::string editorID;
+    std::string fullName;
+    std::string modelPath;
+    std::string iconPath;
+    uint32_t scriptFormID = 0;
+    uint32_t value = 0;      // DATA offset 0
+    float weight = 0.0f;     // DATA offset 5
+    std::vector<uint32_t> effectFormIDs;    // Resolved from EFID codes
+    std::vector<std::string> effectCodes;
+    std::vector<float> effectMagnitudes;
+    std::vector<float> effectAreas;
+    std::vector<float> effectDurations;
+    std::vector<int32_t> effectActorValues;
+};
+
+/// Soul gem (SLGM) record.
+struct SoulGemData {
+    uint32_t formID = 0;
+    std::string editorID;
+    std::string fullName;
+    std::string modelPath;
+    std::string iconPath;
+    uint32_t scriptFormID = 0;
+    uint32_t value = 0;        // DATA offset 0
+    float weight = 0.0f;       // DATA offset 4
+    uint8_t currentSoul = 0;   // SOUL: 0 = none .. 5 = grand
+    uint8_t soulCapacity = 0;  // SLCP: maximum soul level the gem can hold
+};
+
+/// Furniture (FURN) record.
+struct FurnitureData {
+    uint32_t formID = 0;
+    std::string editorID;
+    std::string fullName;
+    std::string modelPath;
+    uint32_t rawMnam = 0;
+    uint8_t furnitureType = 0;  // MNAM offset 0
+};
+
+/// Landscape texture (LTEX) record.
+struct LandscapeTextureData {
+    uint32_t formID = 0;
+    std::string editorID;
+    std::string iconPath;
+    uint8_t hnam[3] = {0, 0, 0};  // HNAM raw (specular / hardness bytes)
+    uint8_t materialType = 0;     // SNAM
+};
+
+/// Grass (GRAS) record.
+struct GrassData {
+    uint32_t formID = 0;
+    std::string editorID;
+    std::string modelPath;
+    uint8_t density = 0;             // DATA offset 0
+    uint8_t minSlope = 0;            // DATA offset 1
+    uint8_t maxSlope = 0;            // DATA offset 2
+    float positionRange = 0.0f;      // DATA offset 12
+    float heightRange = 0.0f;        // DATA offset 16
+    float colorRange = 0.0f;         // DATA offset 20
+    float wavePeriod = 0.0f;         // DATA offset 24
+    uint32_t flags = 0;              // DATA offset 28
+};
+
+/// Water (WATR) record.
+struct WaterData {
+    uint32_t formID = 0;
+    std::string editorID;
+    std::string texturePath;   // TNAM
+    uint8_t opacity = 0;       // ANAM
+    uint8_t flags = 0;         // FNAM
+    uint8_t materialType = 0;  // MNAM
+    uint32_t soundFormID = 0;  // SNAM
+    std::vector<float> shaderFloats;  // DATA (102 bytes) interpreted as floats
+    std::vector<uint8_t> shaderData;  // DATA raw
+    float damage[3] = {0.0f, 0.0f, 0.0f};  // GNAM (3 floats)
+};
+
+/// One time-of-day sky colour set from a WTHR NAM0 subrecord.
+struct WeatherSkyColors {
+    uint32_t upperSky = 0;     // BGRA
+    uint32_t fog = 0;
+    uint32_t unknown = 0;
+    uint32_t clouds = 0;
+    uint32_t detail[6] = {0, 0, 0, 0, 0, 0};
+};
+
+/// Weather sound entry from a WTHR SNAM subrecord (8 bytes).
+struct WeatherSound {
+    uint32_t formID = 0;
+    uint32_t type = 0;
+};
+
+/// Weather (WTHR) record.
+struct WeatherData {
+    uint32_t formID = 0;
+    std::string editorID;
+    std::string cloudTextureUpper;  // CNAM
+    std::string cloudTextureLower;  // DNAM
+    // NAM0: Sunrise, Day, Sunset, Night (40 bytes each)
+    WeatherSkyColors sky[4];
+    float fogDayNear = 0.0f;        // FNAM offset 0
+    float fogDayFar = 0.0f;         // FNAM offset 4
+    float fogNightNear = 0.0f;      // FNAM offset 8
+    float fogNightFar = 0.0f;       // FNAM offset 12
+    std::vector<float> hnamFloats;  // HNAM (14 floats)
+    std::vector<uint8_t> rawData;   // DATA (15 bytes)
+    uint8_t windSpeed = 0;          // DATA offset 0
+    uint8_t weatherClassification = 0;  // DATA offset 12
+    std::vector<WeatherSound> sounds;   // SNAM
+};
+
+/// Combat style (CSTY) record — 124 bytes of AI combat tuning.
+struct CombatStyleData {
+    uint32_t formID = 0;
+    std::string editorID;
+    uint16_t weaponFlags = 0;  // CSTD offset 0
+    std::vector<uint8_t> data;  // CSTD raw (124 bytes)
+    float rawFloat(size_t index) const {
+        const size_t off = 4 + index * 4;
+        if (off + 4 > data.size()) return 0.0f;
+        float v;
+        std::memcpy(&v, data.data() + off, 4);
+        return v;
+    }
+};
+
+/// Loading screen (LSCR) record.
+struct LoadScreenData {
+    uint32_t formID = 0;
+    std::string editorID;
+    std::string iconPath;
+    std::string description;
+    uint32_t lnamFormID = 0;      // LNAM offset 0
+    std::vector<uint8_t> lnam;    // LNAM raw (12 bytes)
+};
+
+/// Effect shader (EFSH) record.
+struct EffectShaderData {
+    uint32_t formID = 0;
+    std::string editorID;
+    std::string fillTexture;      // ICON
+    std::string particleTexture;  // ICO2
+    std::vector<uint8_t> data;    // DATA (224 bytes)
+};
+
+/// Animated object (ANIO) record.
+struct AnimationObjectData {
+    uint32_t formID = 0;
+    std::string editorID;
+    std::string modelPath;
+    uint32_t animationGroupFormID = 0;  // DATA
+};
+
+/// Subspace (SBSP) record — a box used to partition water/animation regions.
+struct SubspaceData {
+    uint32_t formID = 0;
+    std::string editorID;
+    float x = 0.0f;  // DNAM offset 0
+    float y = 0.0f;  // DNAM offset 4
+    float z = 0.0f;  // DNAM offset 8
 };
 
 // ============================================================================
@@ -671,6 +1003,8 @@ public:
         const std::vector<QuestData>& getQuests() const { return m_quests; }
         const std::vector<DialogData>& getDialogs() const { return m_dialogs; }
         const std::vector<ReferenceData>& getReferences() const { return m_references; }
+        size_t getNpcReferenceCount() const { return m_npcReferenceCount; }
+        size_t getCreatureReferenceCount() const { return m_creatureReferenceCount; }
         const std::vector<TerrainData>& getTerrains() const { return m_terrains; }
         const std::vector<WorldData>& getWorlds() const { return m_worlds; }
         const std::vector<SpellData>& getSpells() const { return m_spells; }
@@ -703,6 +1037,26 @@ public:
     const std::vector<RoadData>& getRoads() const { return m_roads; }
     const std::vector<ArmorData>& getArmors() const { return m_armors; }
     const std::vector<script::ScriptData>& getScripts() const { return m_scripts; }
+    const std::vector<GameSettingData>& getGameSettings() const { return m_gameSettings; }
+    const std::vector<GlobalVariableData>& getGlobalVariables() const { return m_globalVariables; }
+    const std::vector<DoorData>& getDoors() const { return m_doors; }
+    const std::vector<AIPackageData>& getPackages() const { return m_packages; }
+    const std::vector<PathGridData>& getPathGrids() const { return m_pathGrids; }
+    const std::vector<IdleAnimationData>& getIdleAnimations() const { return m_idleAnimations; }
+    const std::vector<KeyData>& getKeys() const { return m_keys; }
+    const std::vector<AmmoData>& getAmmo() const { return m_ammo; }
+    const std::vector<SigilStoneData>& getSigilStones() const { return m_sigilStones; }
+    const std::vector<SoulGemData>& getSoulGems() const { return m_soulGems; }
+    const std::vector<FurnitureData>& getFurniture() const { return m_furniture; }
+    const std::vector<LandscapeTextureData>& getLandscapeTextures() const { return m_landscapeTextures; }
+    const std::vector<GrassData>& getGrass() const { return m_grass; }
+    const std::vector<WaterData>& getWaters() const { return m_waters; }
+    const std::vector<WeatherData>& getWeathers() const { return m_weathers; }
+    const std::vector<CombatStyleData>& getCombatStyles() const { return m_combatStyles; }
+    const std::vector<LoadScreenData>& getLoadScreens() const { return m_loadScreens; }
+    const std::vector<EffectShaderData>& getEffectShaders() const { return m_effectShaders; }
+    const std::vector<AnimationObjectData>& getAnimationObjects() const { return m_animationObjects; }
+    const std::vector<SubspaceData>& getSubspaces() const { return m_subspaces; }
 
         // Get file metadata
         const std::string& getFileName() const { return m_fileName; }
@@ -722,6 +1076,16 @@ public:
         };
         VerificationResult verify() const;
 
+        // Resolve Oblivion's 4-character MGEF editorID codes stored in EFID
+        // subrecords into real MGEF formIDs, and derive each spell's magic
+        // school from its first magic effect. Must run after all records are
+        // decoded because EFID carries no formID information.
+        // The optional maps supply editorID/formID lookups owned by other files
+        // so that plugin records can link against their master files.
+        void resolveMagicReferences(
+            const std::unordered_map<std::string, uint32_t>* externalFormIDs = nullptr,
+            const std::unordered_map<uint32_t, uint32_t>* externalSchools = nullptr);
+
 private:
     std::string m_fileName;
     std::string m_filePath;  // Full path for lazy loading
@@ -740,6 +1104,8 @@ private:
     std::vector<QuestData> m_quests;
     std::vector<DialogData> m_dialogs;
     std::vector<ReferenceData> m_references;
+    size_t m_npcReferenceCount = 0;       // ACHR records seen
+    size_t m_creatureReferenceCount = 0;  // ACRE records seen
     std::vector<TerrainData> m_terrains;
     std::vector<WorldData> m_worlds;
     std::vector<SpellData> m_spells;
@@ -772,9 +1138,33 @@ private:
     std::vector<MiscItemData> m_miscItems;
     std::vector<RoadData> m_roads;
     std::vector<script::ScriptData> m_scripts;
+    std::vector<GameSettingData> m_gameSettings;
+    std::vector<GlobalVariableData> m_globalVariables;
+    std::vector<DoorData> m_doors;
+    std::vector<AIPackageData> m_packages;
+    std::vector<PathGridData> m_pathGrids;
+    std::vector<IdleAnimationData> m_idleAnimations;
+    std::vector<KeyData> m_keys;
+    std::vector<AmmoData> m_ammo;
+    std::vector<SigilStoneData> m_sigilStones;
+    std::vector<SoulGemData> m_soulGems;
+    std::vector<FurnitureData> m_furniture;
+    std::vector<LandscapeTextureData> m_landscapeTextures;
+    std::vector<GrassData> m_grass;
+    std::vector<WaterData> m_waters;
+    std::vector<WeatherData> m_weathers;
+    std::vector<CombatStyleData> m_combatStyles;
+    std::vector<LoadScreenData> m_loadScreens;
+    std::vector<EffectShaderData> m_effectShaders;
+    std::vector<AnimationObjectData> m_animationObjects;
+    std::vector<SubspaceData> m_subspaces;
 
     // DIAL/INFO tracking — last DIAL formID for child INFO association
     uint32_t m_lastDialFormID = 0;
+    // Cell FormID of the enclosing cell-children GRUP (memory parsing path)
+    uint32_t m_currentCellFormID = 0;
+    // Worldspace FormID taken from the enclosing WorldChildren GRUP (type 1).
+    uint32_t m_currentWorldspaceFormID = 0;
 
     // Parsing helpers
         bool readRecordHeader(std::ifstream& file, ESMRecord& rec);
@@ -796,6 +1186,7 @@ private:
         void decodeDialog(const ESMRecord& rec);
         void decodeInfo(const ESMRecord& rec);
         void decodeReference(const ESMRecord& rec);
+        void decodeActorReference(const ESMRecord& rec, uint8_t refType);
         void decodeTerrain(const ESMRecord& rec);
         void decodeWorld(const ESMRecord& rec);
                 void decodeSpell(const ESMRecord& rec);
@@ -828,6 +1219,26 @@ private:
                 void decodeMiscItem(const ESMRecord& rec);
                 void decodeRoad(const ESMRecord& rec);
                 void decodeScript(const ESMRecord& rec);
+                void decodeGameSetting(const ESMRecord& rec);
+                void decodeGlobalVariable(const ESMRecord& rec);
+                void decodeDoor(const ESMRecord& rec);
+                void decodePackage(const ESMRecord& rec);
+                void decodePathGrid(const ESMRecord& rec);
+                void decodeIdleAnimation(const ESMRecord& rec);
+                void decodeKey(const ESMRecord& rec);
+                void decodeAmmo(const ESMRecord& rec);
+                void decodeSigilStone(const ESMRecord& rec);
+                void decodeSoulGem(const ESMRecord& rec);
+                void decodeFurniture(const ESMRecord& rec);
+                void decodeLandscapeTexture(const ESMRecord& rec);
+                void decodeGrass(const ESMRecord& rec);
+                void decodeWater(const ESMRecord& rec);
+                void decodeWeather(const ESMRecord& rec);
+                void decodeCombatStyle(const ESMRecord& rec);
+                void decodeLoadScreen(const ESMRecord& rec);
+                void decodeEffectShader(const ESMRecord& rec);
+                void decodeAnimationObject(const ESMRecord& rec);
+                void decodeSubspace(const ESMRecord& rec);
         };
 
 // ============================================================================
@@ -872,6 +1283,8 @@ public:
     const SpellData* findSpell(uint32_t formID) const;
     const EnchantmentData* findEnchantment(uint32_t formID) const;
     const MagicEffectData* findMagicEffect(uint32_t formID) const;
+    /// Look up a MGEF by its 4-character editorID code (Oblivion EFID encoding).
+    const MagicEffectData* findMagicEffectByEditorID(const std::string& editorID) const;
     const SkillData* findSkill(uint32_t formID) const;
     const BirthsignData* findBirthsign(uint32_t formID) const;
     const ContainerData* findContainer(uint32_t formID) const;
@@ -901,6 +1314,53 @@ public:
     const FactionData* findFaction(uint32_t formID) const;
     const script::ScriptData* findScript(uint32_t formID) const;
 
+    // Phase 64: finders for the remaining record types
+    const GameSettingData* findGameSetting(const std::string& editorID) const;
+    const GlobalVariableData* findGlobalVariable(const std::string& editorID) const;
+    const DoorData* findDoor(uint32_t formID) const;
+    const AIPackageData* findPackage(uint32_t formID) const;
+    const PathGridData* findPathGridForCell(uint32_t cellFormID) const;
+    const IdleAnimationData* findIdleAnimation(uint32_t formID) const;
+    const KeyData* findKey(uint32_t formID) const;
+    const AmmoData* findAmmo(uint32_t formID) const;
+    const SigilStoneData* findSigilStone(uint32_t formID) const;
+    const SoulGemData* findSoulGem(uint32_t formID) const;
+    const FurnitureData* findFurniture(uint32_t formID) const;
+    const LandscapeTextureData* findLandscapeTexture(uint32_t formID) const;
+    const GrassData* findGrass(uint32_t formID) const;
+    const WaterData* findWater(uint32_t formID) const;
+    const WeatherData* findWeather(uint32_t formID) const;
+    const CombatStyleData* findCombatStyle(uint32_t formID) const;
+    const LoadScreenData* findLoadScreen(uint32_t formID) const;
+    const EffectShaderData* findEffectShader(uint32_t formID) const;
+    const AnimationObjectData* findAnimationObject(uint32_t formID) const;
+    const SubspaceData* findSubspace(uint32_t formID) const;
+
+    // Aggregate counts across all loaded files (for diagnostics/verification)
+    struct DecodeStatistics {
+        size_t gameSettings = 0;
+        size_t globalVariables = 0;
+        size_t doors = 0;
+        size_t packages = 0;
+        size_t pathGrids = 0;
+        size_t idleAnimations = 0;
+        size_t keys = 0;
+        size_t ammo = 0;
+        size_t sigilStones = 0;
+        size_t soulGems = 0;
+        size_t furniture = 0;
+        size_t landscapeTextures = 0;
+        size_t grass = 0;
+        size_t waters = 0;
+        size_t weathers = 0;
+        size_t combatStyles = 0;
+        size_t loadScreens = 0;
+        size_t effectShaders = 0;
+        size_t animationObjects = 0;
+        size_t subspaces = 0;
+    };
+    DecodeStatistics getDecodeStatistics() const;
+
     // Resolve a leveled list: pick entries appropriate for the given player level
     // Returns a list of (referencedFormID, count) pairs
     std::vector<std::pair<uint32_t, uint16_t>> resolveLeveledList(uint32_t listFormID, uint32_t playerLevel) const;
@@ -913,6 +1373,8 @@ public:
     const std::vector<QuestData>& getAllQuests() const;
     const std::vector<DialogData>& getAllDialogs() const;
     const std::vector<ReferenceData>& getAllReferences() const;
+    size_t getNpcReferenceCount() const;
+    size_t getCreatureReferenceCount() const;
     const std::vector<TerrainData>& getAllTerrains() const;
     const std::vector<WorldData>& getAllWorlds() const;
     const std::vector<SpellData>& getAllSpells() const;
@@ -958,6 +1420,7 @@ private:
         std::unordered_map<uint32_t, size_t> m_spellIndex;
         std::unordered_map<uint32_t, size_t> m_enchantmentIndex;
         std::unordered_map<uint32_t, size_t> m_magicEffectIndex;
+        std::unordered_map<std::string, const MagicEffectData*> m_magicEffectByEditorID;
         std::unordered_map<uint32_t, size_t> m_skillIndex;
         std::unordered_map<uint32_t, size_t> m_birthsignIndex;
         std::unordered_map<uint32_t, size_t> m_containerIndex;
@@ -986,6 +1449,28 @@ private:
         std::unordered_map<uint32_t, size_t> m_miscItemIndex;
         std::unordered_map<uint32_t, size_t> m_factionIndex;
         std::unordered_map<uint32_t, size_t> m_scriptIndex;
+
+        // Phase 64 record type indices
+        std::unordered_map<std::string, size_t> m_gameSettingIndex;      // editorID -> file
+        std::unordered_map<std::string, size_t> m_globalVariableIndex;   // editorID -> file
+        std::unordered_map<uint32_t, size_t> m_doorIndex;
+        std::unordered_map<uint32_t, size_t> m_packageIndex;
+        std::unordered_map<uint32_t, size_t> m_pathGridIndex;            // cell formID -> file
+        std::unordered_map<uint32_t, size_t> m_idleAnimationIndex;
+        std::unordered_map<uint32_t, size_t> m_keyIndex;
+        std::unordered_map<uint32_t, size_t> m_ammoIndex;
+        std::unordered_map<uint32_t, size_t> m_sigilStoneIndex;
+        std::unordered_map<uint32_t, size_t> m_soulGemIndex;
+        std::unordered_map<uint32_t, size_t> m_furnitureIndex;
+        std::unordered_map<uint32_t, size_t> m_landscapeTextureIndex;
+        std::unordered_map<uint32_t, size_t> m_grassIndex;
+        std::unordered_map<uint32_t, size_t> m_waterIndex;
+        std::unordered_map<uint32_t, size_t> m_weatherIndex;
+        std::unordered_map<uint32_t, size_t> m_combatStyleIndex;
+        std::unordered_map<uint32_t, size_t> m_loadScreenIndex;
+        std::unordered_map<uint32_t, size_t> m_effectShaderIndex;
+        std::unordered_map<uint32_t, size_t> m_animationObjectIndex;
+        std::unordered_map<uint32_t, size_t> m_subspaceIndex;
 
     void rebuildIndices();
 };

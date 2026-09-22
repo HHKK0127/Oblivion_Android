@@ -99,6 +99,13 @@ class GameRenderer : GLSurfaceView.Renderer {
         }
 
         try {
+            // Register the data path before engine creation so the native side
+            // loads BSA archives and ESM data before building the world.
+            if (dataPath.isNotEmpty()) {
+                nativeSetDataPath(dataPath)
+                Log.i(TAG, "BSA data path registered on native (pre-init): $dataPath")
+            }
+
             Log.i(TAG, "Calling nativeInitEngine()")
             nativeEngineHandle = nativeInitEngine()
             Log.i(TAG, "nativeInitEngine returned: handle=$nativeEngineHandle")
@@ -107,11 +114,6 @@ class GameRenderer : GLSurfaceView.Renderer {
                             Log.e(TAG, "CRITICAL ERROR: nativeInitEngine returned 0 (native initialization failed)")
                         } else {
                             Log.i(TAG, "SUCCESS: Native engine initialized with valid handle")
-                            // Set data path AFTER engine is created (g_renderer must exist in native)
-                            if (dataPath.isNotEmpty()) {
-                                nativeSetDataPath(dataPath)
-                                Log.i(TAG, "BSA data path set on native: $dataPath")
-                            }
                         }
 
             gameSurfaceView?.let {
@@ -157,9 +159,12 @@ class GameRenderer : GLSurfaceView.Renderer {
             // Note: gameSurfaceView may be null when using XML GLSurfaceView,
             // so we use appContext set via setContext()
             val context = appContext
+            Log.i(TAG, "Title video check: appContext=${context != null}, titleVideoInitAttempted=$titleVideoInitAttempted")
             if (context != null && !titleVideoInitAttempted) {
                 titleVideoInitAttempted = true
                 initTitleVideo(context)
+            } else {
+                Log.w(TAG, "Title video skipped: context=${context != null}, attempted=$titleVideoInitAttempted")
             }
 
         } catch (e: Exception) {
@@ -172,12 +177,21 @@ class GameRenderer : GLSurfaceView.Renderer {
 
     // Title screen video background
     private fun initTitleVideo(context: android.content.Context) {
+        Log.i(TAG, "initTitleVideo called")
         try {
-            // Find map_loop.mp4
+            // Find map_loop.mp4 - check both oblivion_assets/videos/ and videos/ paths
             val extDir = context.getExternalFilesDir(null)
-            val videoFile = java.io.File(extDir, "videos/map_loop.mp4")
+            Log.d(TAG, "External files dir: ${extDir?.absolutePath}")
+
+            // Primary path: oblivion_assets/videos/ (where AssetExtractor puts it)
+            var videoFile = java.io.File(extDir, "oblivion_assets/videos/map_loop.mp4")
             if (!videoFile.exists()) {
-                Log.w(TAG, "map_loop.mp4 not found at ${videoFile.absolutePath}")
+                // Fallback: direct videos/ path
+                videoFile = java.io.File(extDir, "videos/map_loop.mp4")
+            }
+            Log.d(TAG, "Video file exists: ${videoFile.exists()}, path: ${videoFile.absolutePath}")
+            if (!videoFile.exists()) {
+                Log.w(TAG, "map_loop.mp4 not found at either oblivion_assets/videos/ or videos/ in ${extDir?.absolutePath}")
                 return
             }
 
@@ -366,6 +380,41 @@ class GameRenderer : GLSurfaceView.Renderer {
 
     // Phase 30 Step 13: Integration test
     external fun nativeRunPhase30Test(assetPath: String): String
+
+    // Phase 45: Unit tests
+    external fun nativeRunPhase45Test(): String
+
+    // Phase 48: Integration tests and stress tests
+    external fun nativeRunPhase48Tests(): String
+    external fun nativeRunPhase48StressTests(): String
+
+    // Phase 38: Script VM unit tests
+    external fun nativeRunScriptVmTests(): String
+
+    /**
+     * Runs every native test suite and returns a combined summary.
+     *
+     * Trigger with:
+     *   adb shell am start -n com.example.oblivion/.MainActivity --ez run_native_tests true
+     */
+    fun runAllNativeTests(assetPath: String): String {
+        val sb = StringBuilder()
+        val suites: List<Pair<String, () -> String>> = listOf(
+            "Phase 30 Integration" to { nativeRunPhase30Test(assetPath) },
+            "Phase 45 Unit" to { nativeRunPhase45Test() },
+            "Phase 48 Integration" to { nativeRunPhase48Tests() },
+            "Phase 48 Stress" to { nativeRunPhase48StressTests() },
+            "Phase 38 Script VM" to { nativeRunScriptVmTests() }
+        )
+        for ((name, run) in suites) {
+            try {
+                sb.append(run())
+            } catch (t: Throwable) {
+                sb.append("=== ").append(name).append(" ===\n[FAIL] threw ").append(t).append("\n\n")
+            }
+        }
+        return sb.toString()
+    }
 
     // Debug System Toggles
     external fun nativeToggleDebugConsole()

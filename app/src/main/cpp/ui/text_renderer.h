@@ -53,6 +53,10 @@ public:
     FontType getActiveFont() const { return activeFont; }
     const char* getFontTypeName(FontType type) const;
 
+    // Oblivion font rendering
+    void renderTextOblivion(const std::string& text, float x, float y,
+                            const glm::vec4& color, float scale = 1.0f);
+
 private:
     struct Glyph {
         float x0, y0, x1, y1;  // Texture coordinates
@@ -92,6 +96,11 @@ private:
     GLint colorLoc;
     GLint alphaChannelLoc;
     GLuint fontTexture;  // Font texture
+    GLint fontTextureLoc;  // Cached "fontTexture" sampler uniform location
+
+    // Scratch buffer reused across text draws so a whole string is uploaded and
+    // drawn in a single GL call instead of one call per glyph
+    std::vector<float> batchScratch_;
 
     int screenWidth;
     int screenHeight;
@@ -116,6 +125,4 @@ private:
     bool loadFontFromAssets(const std::string& filename);
     bool createFontTextureAtlas();
     bool loadOblivionFnt(const char* fntPath, const char* pngPath, FontType type);
-    void renderTextOblivion(const std::string& text, float x, float y,
-                            const glm::vec4& color, float scale);
 };

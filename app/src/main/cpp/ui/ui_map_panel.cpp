@@ -223,6 +223,17 @@ void MapUI::renderMapContent() {
             float ry = tl.y;
             float rw = br.x - tl.x;
             float rh = br.y - tl.y;
+            // Clip to the panel's content rect. At minimap zoom a single cell is
+            // several hundred pixels across and UIDrawHelper does not scissor, so
+            // unclipped cells would paint over the rest of the screen.
+            if (rw > 0.0f && rh > 0.0f) {
+                const float clipRight = std::min(rx + rw, cp.x + cs.x);
+                const float clipBottom = std::min(ry + rh, cp.y + cs.y);
+                rx = std::max(rx, cp.x);
+                ry = std::max(ry, cp.y);
+                rw = clipRight - rx;
+                rh = clipBottom - ry;
+            }
             if (rw > 0.0f && rh > 0.0f) {
                 UIDrawHelper::drawColoredQuad(rx, ry, rw, rh, col, screenWidth, screenHeight);
             }

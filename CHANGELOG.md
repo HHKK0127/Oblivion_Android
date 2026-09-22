@@ -2,6 +2,30 @@
 
 All notable changes to the Oblivion Android project are documented here.
 
+## Version numbering
+
+The app version is defined in exactly one place: `app/build.gradle` (`versionName` / `versionCode`).
+The current version is **0.9.10 (versionCode 910)**.
+
+> Note: the `[1.0.0]` and `[1.3.0]` sections below were written during development and do not
+> correspond to any shipped build. Their version numbers were never applied to `app/build.gradle`.
+> They are retained as historical notes only.
+
+---
+
+## [0.9.10] - 2026-09-21 (Phase 62 - Foundation)
+
+### Fixed
+- **Gradle definitions unified**: removed `build.gradle.kts`, `settings.gradle.kts`, and
+  `app/build.gradle.kts`. These were unused Kotlin DSL scaffolds that declared a different
+  application (`com.example.myapplication`, `minSdk 24`, `targetSdk 36`, `versionName "1.0"`).
+  Only the Groovy definitions were ever applied.
+- **Version consistency**: `versionCode` is now derived from `versionName` (major * 10000 +
+  minor * 100 + patch = 910). README.md no longer reports `1.0.0` or a stale phase number.
+- **README.md**: removed the contradictory per-phase version labels and the duplicate Phase 55
+  row; corrected the APK size claim (8.4 MB -> 79.0 MiB measured) and the Phase 62/63 status
+  (marked Complete -> Planned, matching `plan.md`).
+
 ---
 
 ## [1.0.0] - 2026-08-29 (Phase 57 - Final Integration & Release)
@@ -648,14 +672,14 @@ All notable changes to the Oblivion Android project are documented here.
 - **FPS**: No impact - conditional rendering
 
 ### Testing
-- ✅ TextureLoader: PNG decoding, OpenGL texture creation
-- ✅ UIPanel: Background texture rendering, drag, close
-- ✅ UIButton: State transitions, texture switching, click events
-- ✅ TextureScaleMode: Stretch, fit, crop all work correctly
-- ✅ AudioManager: JSON loading, sound playback by key
-- ✅ TitleScreen: All textures load and display correctly
-- ✅ SettingsUI/SaveLoadUI: Background textures render
-- ✅ Build: `./gradlew assembleDebug` succeeds
+- [x] TextureLoader: PNG decoding, OpenGL texture creation
+- [x] UIPanel: Background texture rendering, drag, close
+- [x] UIButton: State transitions, texture switching, click events
+- [x] TextureScaleMode: Stretch, fit, crop all work correctly
+- [x] AudioManager: JSON loading, sound playback by key
+- [x] TitleScreen: All textures load and display correctly
+- [x] SettingsUI/SaveLoadUI: Background textures render
+- [x] Build: `./gradlew assembleDebug` succeeds
 
 ### Bug Fixes
 - Fixed `AudioManager` forward declaration in `audio_manager.h`
@@ -801,13 +825,13 @@ All notable changes to the Oblivion Android project are documented here.
 - **FPS**: No impact - effects render conditionally, audio runs on dedicated thread
 
 ### Testing
-- ✅ SaveLoadUI: Slot selection, save/load execution, error handling
-- ✅ Audio System: WAV file loading, 3D positional audio, source management
-- ✅ RetroFilter Effects: Real-time effect toggling, visual verification
-- ✅ DebugHUD: Audio and filter status display accuracy
-- ✅ Integration: All systems coordinate without conflicts
-- ✅ Thread Safety: JNI calls from multiple threads without crashes
-- ✅ Persistence: Settings and save slots persist across app restarts
+- [x] SaveLoadUI: Slot selection, save/load execution, error handling
+- [x] Audio System: WAV file loading, 3D positional audio, source management
+- [x] RetroFilter Effects: Real-time effect toggling, visual verification
+- [x] DebugHUD: Audio and filter status display accuracy
+- [x] Integration: All systems coordinate without conflicts
+- [x] Thread Safety: JNI calls from multiple threads without crashes
+- [x] Persistence: Settings and save slots persist across app restarts
 
 ### Known Issues
 - Mana field not present in Player struct: SaveLoadUI hardcodes (100/120) for compatibility
@@ -885,12 +909,12 @@ All notable changes to the Oblivion Android project are documented here.
 - None (all features implemented correctly)
 
 ### Features Completed
-- ✅ TextRenderer with OpenGL ES 3.0 orthographic projection
-- ✅ DebugHUD with 6 real-time metrics
-- ✅ SettingsManager with file persistence
-- ✅ SettingsUI with touch interaction
-- ✅ Integration into title screen menu flow
-- ✅ Touch event priority system (SettingsUI > TitleScreen > QuestUI)
+- [x] TextRenderer with OpenGL ES 3.0 orthographic projection
+- [x] DebugHUD with 6 real-time metrics
+- [x] SettingsManager with file persistence
+- [x] SettingsUI with touch interaction
+- [x] Integration into title screen menu flow
+- [x] Touch event priority system (SettingsUI > TitleScreen > QuestUI)
 
 ### Documentation Updates
 - Updated README.md with new features and system architecture
@@ -930,12 +954,12 @@ All notable changes to the Oblivion Android project are documented here.
 - **FPS**: No impact - debug HUD renders conditionally
 
 ### Testing
-- ✅ TextRenderer: Text displays at correct coordinates with colors
-- ✅ DebugHUD: All metrics update correctly, format properly
-- ✅ SettingsManager: Settings persist across app restarts
-- ✅ SettingsUI: Menu displays, touch selection works, changes save
-- ✅ Integration: Touch event priority system works correctly
-- ✅ Settings + DebugHUD: Debug mode toggle hides/shows HUD
+- [x] TextRenderer: Text displays at correct coordinates with colors
+- [x] DebugHUD: All metrics update correctly, format properly
+- [x] SettingsManager: Settings persist across app restarts
+- [x] SettingsUI: Menu displays, touch selection works, changes save
+- [x] Integration: Touch event priority system works correctly
+- [x] Settings + DebugHUD: Debug mode toggle hides/shows HUD
 
 ### Known Issues
 - None identified
@@ -982,20 +1006,20 @@ All notable changes to the Oblivion Android project are documented here.
 ### Performance Results
 
 #### Frame Rate
-- Amazon Fire (Android 9): **60 FPS stable** (target: 30 FPS) ✅
-- Xiaomi (Android 16): **60 FPS stable** (target: 30 FPS) ✅
+- Amazon Fire (Android 9): **60 FPS stable** (target: 30 FPS)
+- Xiaomi (Android 16): **60 FPS stable** (target: 30 FPS)
 - No frame drops during 30+ second continuous test
 
 #### Memory
 - **App Footprint**: 40.4 MB (Pss) - excellent efficiency
 - **Native Heap**: 11.3 MB (5x below limit)
 - **GPU Memory**: 1.884 MB (highly optimized)
-- **Headroom**: 1.06 GB available (87% unused) ✅
+- **Headroom**: 1.06 GB available (87% unused)
 
 #### CPU
 - **App CPU**: < 0.1% (below top 38 processes)
 - **Thermal**: 38-40°C during test (safe zone)
-- **Threads**: 29 active (mostly idle) ✅
+- **Threads**: 29 active (mostly idle)
 
 #### Battery
 - **Drain Rate**: ~1-2%/hour at 50% brightness
@@ -1003,10 +1027,10 @@ All notable changes to the Oblivion Android project are documented here.
 - **Idle Drain**: 0.3%/hour when app open but idle
 
 ### Testing
-- ✅ Compatibility: Android 9 and Android 16 both pass all tests
-- ✅ Stability: 0 crashes during extended testing
-- ✅ Resolution Support: 1200x1920 and 2032x3048 both working
-- ✅ Multi-device: Dual-manufacturer compatibility confirmed (Amazon + Xiaomi)
+- [x] Compatibility: Android 9 and Android 16 both pass all tests
+- [x] Stability: 0 crashes during extended testing
+- [x] Resolution Support: 1200x1920 and 2032x3048 both working
+- [x] Multi-device: Dual-manufacturer compatibility confirmed (Amazon + Xiaomi)
 
 ### Known Issues
 - Compiler warnings: 34 in jni_bridge.cpp (expected for JNI code)
@@ -1036,7 +1060,7 @@ All notable changes to the Oblivion Android project are documented here.
 
 #### Features
 - **6 Magic Schools**: Destruction, Restoration, Conjuration, Alteration, Illusion, Mysticism
-- **Spell System**: 
+- **Spell System**:
   - Fireball: 50 mana, 30 damage (Destruction)
   - Heal: 40 mana, 50 healing (Restoration)
   - Restore Mana: 30 mana, 40 mana recovery (Mysticism)
@@ -1055,10 +1079,10 @@ All notable changes to the Oblivion Android project are documented here.
 - CharacterStatus extended with mana and magic schools
 
 #### Testing
-- ✅ Spells cast successfully in combat
-- ✅ Mana consumption working correctly
-- ✅ Damage calculation based on magic school
-- ✅ Multiple NPCs casting different spells simultaneously
+- [x] Spells cast successfully in combat
+- [x] Mana consumption working correctly
+- [x] Damage calculation based on magic school
+- [x] Multiple NPCs casting different spells simultaneously
 
 ---
 
@@ -1091,10 +1115,10 @@ All notable changes to the Oblivion Android project are documented here.
 - Game loop flow: Title Screen -> Main Game -> Quest Log access
 
 #### Testing
-- ✅ Title screen displays correctly
-- ✅ Game starts on user action
-- ✅ Quests can be created and accepted
-- ✅ Quest progress tracks properly
+- [x] Title screen displays correctly
+- [x] Game starts on user action
+- [x] Quests can be created and accepted
+- [x] Quest progress tracks properly
 
 ---
 
@@ -1104,7 +1128,7 @@ All notable changes to the Oblivion Android project are documented here.
 
 #### Combat Features
 - **Character Status**: Health, Mana, Stamina, Attributes, Skills
-- **Damage Calculation**: 
+- **Damage Calculation**:
   - Attacker: Strength + Weapon Damage
   - Defender: Armor Rating
   - Result: Damage = Attack Power - Defense Rating
@@ -1127,11 +1151,11 @@ float Damage = max(1.0f, AttackPower - ArmorRating);
 ```
 
 #### Testing
-- ✅ NPCs engage in combat automatically
-- ✅ Damage calculation works correctly
-- ✅ NPC health decreases with attacks
-- ✅ Dead NPCs are removed from game
-- ✅ Multiple combats run simultaneously
+- [x] NPCs engage in combat automatically
+- [x] Damage calculation works correctly
+- [x] NPC health decreases with attacks
+- [x] Dead NPCs are removed from game
+- [x] Multiple combats run simultaneously
 
 #### Localization
 - Added Japanese translations for combat messages
@@ -1160,10 +1184,10 @@ float Damage = max(1.0f, AttackPower - ArmorRating);
 - `game/npc.h` - NPC data structures and AI state machine
 
 #### Testing
-- ✅ NPCs spawn at correct positions
-- ✅ NPCs move in WANDER mode
-- ✅ AI states transition properly
-- ✅ Multiple NPCs managed efficiently
+- [x] NPCs spawn at correct positions
+- [x] NPCs move in WANDER mode
+- [x] AI states transition properly
+- [x] Multiple NPCs managed efficiently
 
 ---
 
@@ -1189,10 +1213,10 @@ float Damage = max(1.0f, AttackPower - ArmorRating);
 - `ui/ui_manager.h/cpp` - UI framework
 
 #### Testing
-- ✅ Multiple cells load without issues
-- ✅ World objects persist across frames
-- ✅ Player position tracking works
-- ✅ Smooth transitions between areas
+- [x] Multiple cells load without issues
+- [x] World objects persist across frames
+- [x] Player position tracking works
+- [x] Smooth transitions between areas
 
 ---
 
@@ -1219,10 +1243,10 @@ float Damage = max(1.0f, AttackPower - ArmorRating);
 - `assets/asset_manager.h/cpp` - Asset management (400+ lines)
 
 #### Testing
-- ✅ Real Oblivion meshes load successfully
-- ✅ Textures display correctly
-- ✅ Caching improves performance
-- ✅ No memory leaks in asset system
+- [x] Real Oblivion meshes load successfully
+- [x] Textures display correctly
+- [x] Caching improves performance
+- [x] No memory leaks in asset system
 
 ---
 
@@ -1253,15 +1277,15 @@ float Damage = max(1.0f, AttackPower - ArmorRating);
 - `CMakeLists.txt` - Build configuration
 
 #### Milestones
-- **M1-1**: ✅ Black screen (native code executing)
-- **M1-2**: ✅ Rotating cube displayed (3D rendering working)
-- **M1-3**: ✅ Camera movement (input handling working)
+- **M1-1**: [x] Black screen (native code executing)
+- **M1-2**: [x] Rotating cube displayed (3D rendering working)
+- **M1-3**: [x] Camera movement (input handling working)
 
 #### Testing
-- ✅ App launches on Android device
-- ✅ 60 FPS stable on test hardware
-- ✅ Touch input responsive
-- ✅ No crashes during basic interaction
+- [x] App launches on Android device
+- [x] 60 FPS stable on test hardware
+- [x] Touch input responsive
+- [x] No crashes during basic interaction
 
 #### First Run
 - Application size: 5 MB APK
@@ -1275,23 +1299,23 @@ float Damage = max(1.0f, AttackPower - ArmorRating);
 
 | Version | Phase | Focus | Status |
 |---------|-------|-------|--------|
-| 1.1.0 | Phase 36 | Jolt Physics Integration | ✅ Complete |
-| 1.0.0 | Phase 35 | Radiant AI System | ✅ Complete |
-| 0.9.10 | Phase 34 | Weapon Sound Routing + Quick-Slot Spells | ✅ Complete |
-| 0.9.9 | Phase 33 | Combat Sound Assets + NPC Spatial Audio | ✅ Complete |
-| 0.9.8 | Phase 32 | Animation & Audio Integration | ✅ Complete |
-| 0.9.7 | Phase 31 | Imperial Weave + Combat Enhancement | ✅ Complete |
-| 0.9.0 | Phase 9 | Graphical UI & Sound Effects | ✅ Complete |
-| 0.8.0 | Phase 8 | Audio & Post-Processing | ✅ Complete |
-| 0.7.1 | Phase 7.1 | Settings & Debug System | ✅ Complete |
-| 0.6.0 | Phase 6 | Performance & Release | ✅ RC (Release Candidate) |
-| 0.5.3 | Phase 5 | Magic System | ✅ Complete |
-| 0.5.2 | Phase 5 | Quests & Title Screen | ✅ Complete |
-| 0.5.1 | Phase 5 | Combat System | ✅ Complete |
-| 0.4.0 | Phase 4 | NPC & Interaction | ✅ Complete |
-| 0.3.0 | Phase 3 | World System | ✅ Complete |
-| 0.2.0 | Phase 2 | Asset Management | ✅ Complete |
-| 0.1.0 | Phase 1 | Core Rendering | ✅ Complete |
+| 1.1.0 | Phase 36 | Jolt Physics Integration | [x] Complete |
+| 1.0.0 | Phase 35 | Radiant AI System | [x] Complete |
+| 0.9.10 | Phase 34 | Weapon Sound Routing + Quick-Slot Spells | [x] Complete |
+| 0.9.9 | Phase 33 | Combat Sound Assets + NPC Spatial Audio | [x] Complete |
+| 0.9.8 | Phase 32 | Animation & Audio Integration | [x] Complete |
+| 0.9.7 | Phase 31 | Imperial Weave + Combat Enhancement | [x] Complete |
+| 0.9.0 | Phase 9 | Graphical UI & Sound Effects | [x] Complete |
+| 0.8.0 | Phase 8 | Audio & Post-Processing | [x] Complete |
+| 0.7.1 | Phase 7.1 | Settings & Debug System | [x] Complete |
+| 0.6.0 | Phase 6 | Performance & Release | [x] RC (Release Candidate) |
+| 0.5.3 | Phase 5 | Magic System | [x] Complete |
+| 0.5.2 | Phase 5 | Quests & Title Screen | [x] Complete |
+| 0.5.1 | Phase 5 | Combat System | [x] Complete |
+| 0.4.0 | Phase 4 | NPC & Interaction | [x] Complete |
+| 0.3.0 | Phase 3 | World System | [x] Complete |
+| 0.2.0 | Phase 2 | Asset Management | [x] Complete |
+| 0.1.0 | Phase 1 | Core Rendering | [x] Complete |
 
 ---
 
@@ -1306,13 +1330,13 @@ float Damage = max(1.0f, AttackPower - ArmorRating);
 
 ### Files by Category
 
-**Engine/Core** (15 files): renderer, camera, shader, texture_loader, jni_bridge, imperial_weave, etc.  
-**Game Systems** (20 files): npc, quest, combat, spell, world, player_controller, etc.  
-**UI** (12 files): title_screen, quest_ui, settings_ui, save_load_ui, ui_panel, ui_button, spell_selection_panel, etc.  
-**Assets** (8 files): nif_parser, dds_loader, asset_manager, esm_reader, bsa_reader, etc.  
-**Audio** (6 files): audio_manager, audio_3d, audio_subscriber, jni_audio_bridge, etc.  
-**Physics** (4 files): physics_manager, character_virtual, etc.  
-**AI** (6 files): ai_scheduler, ai_package, package_stack, etc.  
+**Engine/Core** (15 files): renderer, camera, shader, texture_loader, jni_bridge, imperial_weave, etc.
+**Game Systems** (20 files): npc, quest, combat, spell, world, player_controller, etc.
+**UI** (12 files): title_screen, quest_ui, settings_ui, save_load_ui, ui_panel, ui_button, spell_selection_panel, etc.
+**Assets** (8 files): nif_parser, dds_loader, asset_manager, esm_reader, bsa_reader, etc.
+**Audio** (6 files): audio_manager, audio_3d, audio_subscriber, jni_audio_bridge, etc.
+**Physics** (4 files): physics_manager, character_virtual, etc.
+**AI** (6 files): ai_scheduler, ai_package, package_stack, etc.
 **Profiling** (2 files): performance_monitor, etc.
 
 ### Development Timeline
@@ -1361,22 +1385,22 @@ float Damage = max(1.0f, AttackPower - ArmorRating);
 
 ## Notable Achievements
 
-✅ **First Android Port of Oblivion Engine**
+[x] **First Android Port of Oblivion Engine**
 - Complete game loop implementation
 - Full JNI bridge system
 - Multi-system integration (combat, quests, magic)
 
-✅ **Cross-Device Compatibility**
+[x] **Cross-Device Compatibility**
 - Android 9 to Android 16 support
 - ARM64 and ARMv7 architectures
 - Resolution independence (1200x1920 to 2032x3048)
 
-✅ **Performance Excellence**
+[x] **Performance Excellence**
 - 60 FPS target achieved and exceeded
 - Memory footprint < 50 MB
 - Thermal management optimized
 
-✅ **Localization**
+[x] **Localization**
 - 100+ translations (Japanese + English)
 - Dynamic language switching
 - Unicode support
@@ -1446,6 +1470,6 @@ float Damage = max(1.0f, AttackPower - ArmorRating);
 
 ---
 
-**Last Updated**: 2026-06-09  
-**Current Version**: 0.9.0 (Phase 9 Complete)  
+**Last Updated**: 2026-06-09
+**Current Version**: 0.9.0 (Phase 9 Complete)
 **Next Milestone**: Phase 10 - Map System & Full Inventory

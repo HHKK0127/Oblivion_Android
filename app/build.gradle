@@ -1,0 +1,77 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace = 'com.example.oblivion'
+    compileSdk 34
+
+    // Pinned so local builds and CI resolve the exact same NDK. Without this, AGP falls back to
+    // whatever default matches its own version, so upgrading AGP silently changes the toolchain
+    // and CI fails with "NDK not configured" against the version the workflow installs.
+    ndkVersion '26.1.10909125'
+
+    defaultConfig {
+        applicationId = 'com.example.oblivion'
+        minSdk 25
+        targetSdk 34
+        // Single source of truth for the app version.
+        // versionCode is derived from versionName: major * 10000 + minor * 100 + patch.
+        // 0.9.10 -> 0 * 10000 + 9 * 100 + 10 = 910
+        versionCode 910
+        versionName '0.9.10'
+
+        externalNativeBuild {
+            cmake {
+                cppFlags '-std=c++17'
+                arguments '-DANDROID_STL=c++_shared', '-DCMAKE_NINJA_FORCE_RESPONSE_FILE=ON'
+                // arm64-v8a / armeabi-v7a are the physical-device targets. x86_64 is included so
+                // the app runs natively on an x86_64 Android emulator instead of under ARM-to-x86
+                // binary translation, which is 10-20x slower and starves the main thread badly
+                // enough to raise input-dispatch ANRs (the emulator never answers FocusEvent).
+                abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64'
+            }
+        }
+    }
+
+    packagingOptions {
+        // Reduce APK size by compressing large assets
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path file('src/main/cpp/CMakeLists.txt')
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.recyclerview:recyclerview:1.3.2'
+    implementation 'androidx.viewpager2:viewpager2:1.0.0'
+    implementation 'androidx.fragment:fragment-ktx:1.6.2'
+    implementation 'com.google.android.material:material:1.10.0'
+}

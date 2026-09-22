@@ -294,12 +294,13 @@ std::unique_ptr<TerrainChunk> WorldDataLoader::generateTerrain(
     }
 
     // Copy heightmap data
-    size_t heightCount = terrainData->heights.size();
+    const std::vector<float> heights = terrainData->expandHeights();
+    size_t heightCount = heights.size();
     for (int y = 0; y < TERRAIN_GRID_SIZE; y++) {
         for (int x = 0; x < TERRAIN_GRID_SIZE; x++) {
             size_t idx = static_cast<size_t>(y * TERRAIN_GRID_SIZE + x);
             if (idx < heightCount) {
-                chunk->heights[y][x] = terrainData->heights[idx];
+                chunk->heights[y][x] = heights[idx];
             } else {
                 chunk->heights[y][x] = 0.0f;
             }

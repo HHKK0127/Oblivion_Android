@@ -21,7 +21,7 @@ public:
     void cleanup();
 
     // Update cell transitions based on player position
-    void update(const glm::vec3& playerPos, float deltaTime);
+    void update(float deltaTime);
 
     // Query current cells
     void getCurrentCell(const glm::vec3& pos, int32_t& outCellX, int32_t& outCellY) const;
@@ -48,11 +48,11 @@ private:
 
     // Grid management
     static constexpr int32_t LOAD_DISTANCE = 2;      // 5x5 grid (±2 from player)
-    static constexpr int32_t UNLOAD_DISTANCE = 4;    // Unload cells beyond ±4
-    static constexpr float CELL_SIZE = 128.0f;
+    static constexpr float CELL_SIZE = 4096.0f;
 
-    void loadAdjacentCells(int32_t centerCellX, int32_t centerCellY);
-    void unloadDistantCells(int32_t centerCellX, int32_t centerCellY);
+    // WorldManager owns cell streaming. This manager mirrors the resulting active-cell
+    // set for queries and must never load or unload cells itself.
+    void syncFromActiveCells();
     void transferNPCsBetweenCells(int32_t oldCellX, int32_t oldCellY,
                                    int32_t newCellX, int32_t newCellY);
 };

@@ -127,4 +127,6 @@ private:
     bool decompressDXT1();
     bool decompressDXT3();
     bool decompressDXT5();
+    bool decompressRXGB();
+    bool decompressUncompressed();
 };

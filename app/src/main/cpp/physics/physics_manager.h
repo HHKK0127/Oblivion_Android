@@ -95,6 +95,13 @@ public:
     JPH::CharacterVirtual* createCharacter(const glm::vec3& position, float height, float radius);
     void updateCharacter(JPH::CharacterVirtual* character, float deltaTime, const glm::vec3& input);
     glm::vec3 getCharacterPosition(JPH::CharacterVirtual* character) const;
+    // Teleport a character. The next updateCharacter() would otherwise snap the
+    // tracked position back to the character's own (stale) transform.
+    void setCharacterPosition(JPH::CharacterVirtual* character, const glm::vec3& position);
+    // Pin a character to an externally computed ground height. Keeps the horizontal
+    // position and any upward velocity (jump) but cancels the downward fall that
+    // accumulates while the character is unsupported.
+    void snapCharacterToGround(JPH::CharacterVirtual* character, float groundY);
     bool isCharacterGrounded(JPH::CharacterVirtual* character) const;
     void destroyCharacter(JPH::CharacterVirtual* character);
 

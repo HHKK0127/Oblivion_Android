@@ -24,10 +24,15 @@ CharacterStatus::CharacterStatus()
 }
 
 void CharacterStatus::initialize(float baseHealth, float baseMana, uint32_t level) {
-    maxHealth = baseHealth * (1.0f + level * 0.1f);
+    this->level = level;
+
+    // The caller passes the final maximum values. Every other assignment site
+    // (npc_manager.cpp from CREA/RACE records, ui_character_creation.cpp) also
+    // assigns directly, so no level scaling is applied here.
+    maxHealth = baseHealth;
     currentHealth = maxHealth;
 
-    maxMana = baseMana * (1.0f + level * 0.1f);
+    maxMana = baseMana;
     currentMana = maxMana;
 
     maxStamina = 100.0f;

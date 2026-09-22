@@ -17,6 +17,7 @@
 
 static Renderer* g_renderer = nullptr;
 AAssetManager* g_assetManager = nullptr;
+std::string g_pendingDataPath;
 
 extern "C" {
     void jni_audio_set_asset_manager(AAssetManager* mgr);
@@ -273,8 +274,16 @@ Java_com_example_oblivion_GameRenderer_nativeSetDataPath(
         JNIEnv* env,
         [[maybe_unused]] jobject obj,
         jstring dataPath) {
+    const char* pathStr = env->GetStringUTFChars(dataPath, nullptr);
+    std::string path(pathStr ? pathStr : "");
+    env->ReleaseStringUTFChars(dataPath, pathStr);
+
+    // The Java side registers the path before creating the renderer so that
+    // Renderer::init() can load game data before building the world.
+    g_pendingDataPath = path;
+
     if (!g_renderer) {
-        LOGE("nativeSetDataPath called but renderer is null");
+        LOGI("nativeSetDataPath: renderer not ready, path stored for init(): %s", path.c_str());
         return;
     }
 
@@ -284,14 +293,11 @@ Java_com_example_oblivion_GameRenderer_nativeSetDataPath(
         return;
     }
 
-    const char* pathStr = env->GetStringUTFChars(dataPath, nullptr);
-    am->setDataPath(pathStr);
-    LOGI("BSA data path set to: %s", pathStr);
+    am->setDataPath(path.c_str());
+    LOGI("BSA data path set to: %s", path.c_str());
 
     // Now that data path is set, load BSA archives and ESM
     g_renderer->loadBSAArchives();
-
-    env->ReleaseStringUTFChars(dataPath, pathStr);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -470,6 +476,27 @@ Java_com_example_oblivion_GameRenderer_nativeRunPhase48StressTests(
 
     std::string summary = test.getSummary();
     LOGI("=== Phase 48 Stress Test END: %s ===",
+         allPassed ? "ALL PASSED" : "SOME FAILED");
+
+    return env->NewStringUTF(summary.c_str());
+}
+
+// ============================================
+// Phase 38: Script VM Unit Test Runner
+// ============================================
+#include "tests/script_vm_tests.h"
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_example_oblivion_GameRenderer_nativeRunScriptVmTests(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    LOGI("=== Phase 38 Script VM Test START ===");
+
+    ScriptVMTests test;
+    bool allPassed = test.runAllTests();
+
+    std::string summary = test.getSummary();
+    LOGI("=== Phase 38 Script VM Test END: %s ===",
          allPassed ? "ALL PASSED" : "SOME FAILED");
 
     return env->NewStringUTF(summary.c_str());

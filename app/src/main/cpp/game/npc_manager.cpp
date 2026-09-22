@@ -200,7 +200,32 @@ std::shared_ptr<NPC> NpcManager::createNPCFromESM(uint32_t formID, const glm::ve
         return createNPC("Unknown", position);
     }
 
-    // Try creature first
+    // Try NPC_ record first (placed actors from ACHR records)
+    const oblivion::NPCData* npcData = m_esm->findNPC(formID);
+    if (npcData) {
+        uint32_t npcId = nextNpcId++;
+        auto npc = std::make_shared<NPC>(
+            npcId, npcData->fullName.empty() ? npcData->editorID : npcData->fullName);
+        npc->position = position;
+        npc->class_ = npcData->className.empty() ? npcData->editorID : npcData->className;
+        npc->race = npcData->race.empty() ? "Imperial" : npcData->race;
+
+        npc->status.initialize(
+            static_cast<float>(npcData->health),
+            static_cast<float>(npcData->magicka),
+            npcData->level);
+        npc->status.maxStamina = static_cast<float>(npcData->stamina);
+        npc->status.stamina = npc->status.maxStamina;
+
+        npc->meshAssetPath = "meshes/characters/imperial_male.nif";
+
+        npcs[npcId] = npc;
+        LOGD("NPC spawned from ESM: %s (formID=0x%08X, ID=%u, HP=%u, LVL=%u)",
+             npc->name.c_str(), formID, npcId, npcData->health, npcData->level);
+        return npc;
+    }
+
+    // Try creature (ACRE records)
     const oblivion::CreatureData* creature = m_esm->findCreature(formID);
     if (creature) {
         uint32_t npcId = nextNpcId++;
@@ -223,14 +248,14 @@ std::shared_ptr<NPC> NpcManager::createNPCFromESM(uint32_t formID, const glm::ve
         npc->meshAssetPath = creature->modelPath;
 
         npcs[npcId] = npc;
-        LOGI("Creature spawned from ESM: %s (formID=0x%08X, ID=%u, HP=%.0f, ATK=%u, LVL=%u)",
+        LOGD("Creature spawned from ESM: %s (formID=0x%08X, ID=%u, HP=%.0f, ATK=%u, LVL=%u)",
              npc->name.c_str(), formID, npcId, npc->status.maxHealth,
              creature->attackDamage, creature->level);
         return npc;
     }
 
     // Fallback: generic NPC
-    LOGW("createNPCFromESM: formID 0x%08X not found in CREA records", formID);
+    LOGW("createNPCFromESM: formID 0x%08X not found in NPC_ or CREA records", formID);
     return createNPC("Unknown", position);
 }
 

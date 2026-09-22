@@ -16,13 +16,15 @@ class Terrain;
 // World Constants
 // ============================================================================
 
-// Cell dimensions
-constexpr int32_t CELL_SIZE = 128;              // Units per cell
-constexpr int32_t TERRAIN_RESOLUTION = 65;     // Terrain grid resolution per cell (65x65)
+// Cell dimensions. Oblivion exterior cells are 4096 game units across, which is
+// also the unit used by ESM reference positions and by the renderer's cell math.
+constexpr int32_t CELL_SIZE = 4096;             // Units per cell
+constexpr int32_t TERRAIN_RESOLUTION = 33;      // Terrain grid resolution per cell (33x33)
 
-// Load/Unload radius
-constexpr float DEFAULT_CELL_LOAD_RADIUS = 256.0f;      // 2 cells away
-constexpr float DEFAULT_CELL_UNLOAD_RADIUS = 512.0f;    // 4 cells away
+// Load/Unload radius. These are compared against the horizontal distance from
+// the player to the cell CENTRE, so one cell of separation is exactly CELL_SIZE.
+constexpr float DEFAULT_CELL_LOAD_RADIUS = 6144.0f;     // 1.5 cells: covers the whole 3x3 block (diagonal = 5793)
+constexpr float DEFAULT_CELL_UNLOAD_RADIUS = 8192.0f;   // 2 cells away (hysteresis against the load radius)
 
 // Maximum concurrent loaded cells
 constexpr int32_t MAX_ACTIVE_CELLS = 9;        // 3x3 grid of cells
@@ -77,6 +79,7 @@ struct Cell {
     // Identification
     uint32_t cellId;
     uint32_t tesFormID;             // TES4 FormID from ESM (for matching LAND/REFR data)
+    uint32_t worldspaceFormID;      // Owning WRLD FormID (0 = interior / not from ESM)
     std::string cellName;
     std::string editorID;           // EDM editor ID (EDID subrecord)
     CellType cellType;
@@ -93,7 +96,9 @@ struct Cell {
 
     // Terrain
     std::shared_ptr<Terrain> terrain;
-    std::vector<float> heightData;          // 65x65 height values
+    std::vector<float> heightData;          // 33x33 height values in game units
+    // LTEX formIDs for the four LAND quadrants, indexed 0=SW, 1=SE, 2=NW, 3=NE.
+    uint32_t landscapeTextures[4] = {0, 0, 0, 0};
 
     // Resource management
     size_t memoryUsage;
@@ -105,7 +110,8 @@ struct Cell {
 
     // Constructor
     Cell()
-        : cellId(0), cellType(CellType::EXTERIOR), cellX(0), cellY(0),
+        : cellId(0), tesFormID(0), worldspaceFormID(0), cellType(CellType::EXTERIOR),
+          cellX(0), cellY(0),
           loadState(CellLoadState::UNLOADED), distanceFromPlayer(FLT_MAX),
           memoryUsage(0), isDirty(true), weatherType("Clear"),
           ambientColor(0xFFFFFFFF) {}
@@ -116,23 +122,19 @@ struct Cell {
     bool isLoaded() const { return loadState == CellLoadState::LOADED; }
     float getMemoryUsageMB() const { return static_cast<float>(memoryUsage) / (1024.0f * 1024.0f); }
 
-    // Get terrain height at local cell coordinates (0-128)
+    // Get terrain height at local cell coordinates (0 .. CELL_SIZE)
     float getTerrainHeightAt(float localX, float localY) const {
-        // Clamp to cell bounds (65x65 heightmap for 128x128 cell)
-        int gridX = static_cast<int>(std::min(64.0f, std::max(0.0f, localX / 2.0f)));
-        int gridY = static_cast<int>(std::min(64.0f, std::max(0.0f, localY / 2.0f)));
-
-        if (heightData.empty()) {
+        if (heightData.size() != static_cast<size_t>(TERRAIN_RESOLUTION * TERRAIN_RESOLUTION)) {
             return 0.0f;  // Default if no height data
         }
 
-        // Linear interpolation between heightmap samples
-        int index = gridY * 65 + gridX;
-        if (index < 0 || index >= static_cast<int>(heightData.size())) {
-            return 0.0f;
-        }
+        const float step = static_cast<float>(CELL_SIZE) / (TERRAIN_RESOLUTION - 1);
+        int gridX = static_cast<int>(std::min(static_cast<float>(TERRAIN_RESOLUTION - 1),
+                                             std::max(0.0f, localX / step)));
+        int gridY = static_cast<int>(std::min(static_cast<float>(TERRAIN_RESOLUTION - 1),
+                                             std::max(0.0f, localY / step)));
 
-        return heightData[index];
+        return heightData[gridY * TERRAIN_RESOLUTION + gridX];
     }
 };
 

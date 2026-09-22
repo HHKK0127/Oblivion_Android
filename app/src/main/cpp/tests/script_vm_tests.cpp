@@ -13,6 +13,7 @@
 #include <chrono>
 #include <cstring>
 #include <cmath>
+#include <sstream>
 
 #ifdef __ANDROID__
 #include <android/log.h>
@@ -132,6 +133,17 @@ void ScriptVMTests::testExecutionContext() {
         ExecutionContext ctx;
         bool ok = true;
 
+        // Locals are sized from the script's variable table by init()
+        ScriptData script;
+        for (uint32_t i = 0; i < 3; ++i) {
+            ScriptVariable var;
+            var.index = i;
+            var.type = ScriptValue::Type::Integer;
+            var.defaultValue = ScriptValue::makeInt(0);
+            script.variables.push_back(var);
+        }
+        ctx.init(&script);
+
         ctx.setLocal(0, ScriptValue::makeInt(100));
         ctx.setLocal(1, ScriptValue::makeFloat(2.5f));
         ctx.setLocal(2, ScriptValue::makeString("hello"));
@@ -205,7 +217,8 @@ void ScriptVMTests::testScriptVM() {
 
         // Create minimal bytecode: just STOP
         ScriptData script;
-        script.bytecode = {0x00, 0x00}; // STOP opcode (little-endian)
+        // Every instruction is opcode (2 bytes) + argument length (2 bytes)
+        script.bytecode = {0x00, 0x00, 0x00, 0x00}; // STOP
         ctx.init(&script);
         ctx.setRunning(true);
 
@@ -229,7 +242,7 @@ void ScriptVMTests::testScriptVM() {
             0x12, 0x00, // PUSH_INT opcode
             0x04, 0x00, // arg length = 4
             0x2A, 0x00, 0x00, 0x00, // 42 in little-endian
-            0x00, 0x00  // STOP
+            0x00, 0x00, 0x00, 0x00  // STOP
         };
         ctx.init(&script);
         ctx.setRunning(true);
@@ -314,7 +327,9 @@ void ScriptVMTests::testScriptVM() {
         bool ok = true;
 
         // Create a loop that exceeds frame budget
-        // PUSH_INT 0, PUSH_INT 1, ADD, POP, JUMP back to start
+        // PUSH_INT 0, PUSH_INT 1, ADD, JUMP back to start
+        // The counter must stay on the stack across iterations, so the loop
+        // body must not pop it (ADD consumes two values and pushes one).
         ScriptData script;
         script.bytecode = {
             0x12, 0x00, 0x04, 0x00, // PUSH_INT 0 (counter)
@@ -322,12 +337,11 @@ void ScriptVMTests::testScriptVM() {
             // Loop start (PC = 8):
             0x12, 0x00, 0x04, 0x00, // PUSH_INT 1
             0x01, 0x00, 0x00, 0x00,
-            0x01, 0x00, // ADD
-            0x16, 0x00, // POP
-            0x10, 0x00, // JUMP
-            0x04, 0x00, // arg length = 4
+            0x01, 0x00, 0x00, 0x00, // ADD
+            0x10, 0x00,             // JUMP
+            0x04, 0x00,             // arg length = 4
             0x08, 0x00, 0x00, 0x00, // jump to PC = 8
-            0x00, 0x00  // STOP (never reached)
+            0x00, 0x00, 0x00, 0x00  // STOP (never reached)
         };
         ctx.init(&script);
         ctx.setRunning(true);
@@ -360,7 +374,7 @@ void ScriptVMTests::testOpcodes() {
             0x13, 0x00, // PUSH_FLOAT
             0x04, 0x00, // arg length = 4
             0xC3, 0xF5, 0x48, 0x40, // 3.14f
-            0x00, 0x00  // STOP
+            0x00, 0x00, 0x00, 0x00  // STOP
         };
         ctx.init(&script);
         ctx.setRunning(true);
@@ -477,12 +491,12 @@ void ScriptVMTests::testOpcodes() {
         script.bytecode = {
             0x12, 0x00, 0x04, 0x00, // PUSH_INT 0
             0x00, 0x00, 0x00, 0x00,
-            0x11, 0x00, // JUMP_Z
-            0x04, 0x00, // arg length = 4
-            0x12, 0x00, 0x00, 0x00, // jump to PC 18 (STOP)
+            0x11, 0x00,             // JUMP_Z
+            0x04, 0x00,             // arg length = 4
+            0x18, 0x00, 0x00, 0x00, // jump to PC 24 (STOP)
             0x12, 0x00, 0x04, 0x00, // PUSH_INT 99 (skipped)
             0x63, 0x00, 0x00, 0x00,
-            0x00, 0x00  // STOP
+            0x00, 0x00, 0x00, 0x00  // STOP
         };
         ctx.init(&script);
         ctx.setRunning(true);
@@ -660,4 +674,25 @@ bool ScriptVMTests::runAllTests() {
     TEST_LOGI("========================================");
 
     return getFailCount() == 0;
+}
+
+std::string ScriptVMTests::getSummary() const {
+    std::ostringstream ss;
+    ss << "=== Phase 38 Script VM Test Results ===\n";
+    ss << "Total: " << results.size()
+       << " | Pass: " << getPassCount()
+       << " | Fail: " << getFailCount() << "\n\n";
+
+    for (const auto& r : results) {
+        ss << (r.passed ? "[PASS]" : "[FAIL]") << " " << r.testName;
+        if (r.durationMs > 0.0f) {
+            ss << " (" << r.durationMs << " ms)";
+        }
+        if (!r.message.empty()) {
+            ss << " - " << r.message;
+        }
+        ss << "\n";
+    }
+
+    return ss.str();
 }

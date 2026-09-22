@@ -28,8 +28,8 @@
 // Oblivion cell size in world units (4096 units per cell)
 constexpr float CELL_SIZE = 4096.0f;
 
-// Terrain heightmap grid size (65x65 per cell)
-constexpr int TERRAIN_GRID_SIZE = 65;
+// Terrain heightmap grid size (33x33 per cell, TES4 LAND layout)
+constexpr int TERRAIN_GRID_SIZE = 33;
 
 // Streaming: load cells within this radius (in cells)
 constexpr int STREAM_LOAD_RADIUS = 3;

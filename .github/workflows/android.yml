@@ -1,0 +1,78 @@
+name: Android CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # gradle/gradle-daemon-jvm.properties pins toolchainVersion=21, so the daemon JVM
+      # criteria cannot be satisfied by JDK 17.
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      # Versions must stay in sync with ndkVersion in app/build.gradle and with the CMake
+      # version AGP expects; AGP 8.5 will not fall back to a different one.
+      - name: Install NDK and CMake
+        run: |
+          yes | sdkmanager --licenses > /dev/null
+          sdkmanager --install "ndk;26.1.10909125" "cmake;3.22.1"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Verify version consistency
+        run: |
+          set -euo pipefail
+          VERSION_NAME=$(grep -oP "versionName\s+'\K[^']+" app/build.gradle)
+          VERSION_CODE=$(grep -oP "versionCode\s+\K[0-9]+" app/build.gradle)
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION_NAME"
+          EXPECTED=$(( MAJOR * 10000 + MINOR * 100 + PATCH ))
+          echo "versionName=$VERSION_NAME versionCode=$VERSION_CODE expected=$EXPECTED"
+          if [ "$VERSION_CODE" != "$EXPECTED" ]; then
+            echo "::error::versionCode $VERSION_CODE does not match versionName $VERSION_NAME (expected $EXPECTED)"
+            exit 1
+          fi
+
+      - name: Run JVM unit tests
+        run: ./gradlew testDebugUnitTest --no-daemon
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Report APK size
+        run: |
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          ls -l "$APK"
+          echo "APK size: $(( $(stat -c%s "$APK") / 1024 / 1024 )) MiB"
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14

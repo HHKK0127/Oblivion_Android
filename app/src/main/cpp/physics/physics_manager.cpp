@@ -171,6 +171,26 @@ glm::vec3 PhysicsManager::getCharacterPosition(JPH::CharacterVirtual* character)
     return glm::vec3(pos.GetX(), pos.GetY(), pos.GetZ());
 }
 
+void PhysicsManager::setCharacterPosition(JPH::CharacterVirtual* character,
+                                          const glm::vec3& position) {
+    if (!character) return;
+    character->SetPosition(JPH::RVec3(position.x, position.y, position.z));
+    character->SetLinearVelocity(JPH::Vec3::sZero());
+}
+
+void PhysicsManager::snapCharacterToGround(JPH::CharacterVirtual* character, float groundY) {
+    if (!character) return;
+    const JPH::RVec3 pos = character->GetPosition();
+    character->SetPosition(JPH::RVec3(pos.GetX(), groundY, pos.GetZ()));
+
+    // Cancel only the downward component so jumps still work.
+    JPH::Vec3 vel = character->GetLinearVelocity();
+    if (vel.GetY() < 0.0f) {
+        vel.SetY(0.0f);
+        character->SetLinearVelocity(vel);
+    }
+}
+
 bool PhysicsManager::isCharacterGrounded(JPH::CharacterVirtual* character) const {
     if (!character) return false;
     return character->GetGroundState() == JPH::CharacterVirtual::EGroundState::OnGround;

@@ -205,14 +205,22 @@ void CellManager::compactCellMemory(std::shared_ptr<Cell> cell) {
 bool CellManager::createTerrainMesh(std::shared_ptr<Cell> cell) {
     if (!cell) return false;
 
-    // For now, create flat terrain
-    cell->heightData = std::vector<float>(TERRAIN_RESOLUTION * TERRAIN_RESOLUTION, 0.0f);
+    const size_t expectedHeights =
+        static_cast<size_t>(TERRAIN_RESOLUTION) * static_cast<size_t>(TERRAIN_RESOLUTION);
 
-    // Terrain mesh will be created by Terrain class
-    // cell->terrain = std::make_shared<Terrain>();
-    // return cell->terrain->createFlatTerrain(cell->cellX, cell->cellY);
+    if (cell->heightData.size() == expectedHeights) {
+        // Real LAND heights were already assigned from the ESM data; keep them
+        // instead of flattening the cell.
+        LOGD_CELL("Terrain heightmap preserved for cell %u (%zu samples)",
+                  cell->cellId, cell->heightData.size());
+        return true;
+    }
 
-    LOGD_CELL("Terrain mesh created for cell %u", cell->cellId);
+    // No heightmap available yet: fall back to flat terrain so the cell still
+    // has a valid, consistently sized surface.
+    cell->heightData.assign(expectedHeights, 0.0f);
+
+    LOGD_CELL("Flat terrain heightmap created for cell %u", cell->cellId);
     return true;
 }
 
@@ -232,7 +240,9 @@ void CellManager::destroyTerrainMesh(std::shared_ptr<Cell> cell) {
     if (!cell) return;
 
     cell->terrain = nullptr;
-    cell->heightData.clear();
+    // The LAND heightmap is source data owned by the cell, not a GPU resource. Keep it
+    // so that a cell unloaded and later re-entered still renders its real terrain
+    // instead of the flat fallback.
 }
 
 // ============================================================================
@@ -241,25 +251,18 @@ void CellManager::destroyTerrainMesh(std::shared_ptr<Cell> cell) {
 
 namespace CellCoordUtils {
     CellCoord getCoordFromWorldPos(const glm::vec3& worldPos) {
-        int32_t cellX = static_cast<int32_t>(worldPos.x / CELL_SIZE);
-        int32_t cellY = static_cast<int32_t>(worldPos.y / CELL_SIZE);
-
-        // Handle negative coordinates
-        if (worldPos.x < 0.0f && std::fmod(worldPos.x, CELL_SIZE) != 0.0f) {
-            cellX--;
-        }
-        if (worldPos.y < 0.0f && std::fmod(worldPos.y, CELL_SIZE) != 0.0f) {
-            cellY--;
-        }
-
-        return CellCoord(cellX, cellY);
+        // The world is Y-up: X and Z are the horizontal plane, Y is height.
+        // Cell grid axes therefore map to X and Z, never to Y.
+        int32_t cellX = static_cast<int32_t>(std::floor(worldPos.x / CELL_SIZE));
+        int32_t cellZ = static_cast<int32_t>(std::floor(worldPos.z / CELL_SIZE));
+        return CellCoord(cellX, cellZ);
     }
 
     glm::vec3 getWorldPosFromCoord(const CellCoord& coord) {
         return glm::vec3(
             coord.x * CELL_SIZE,
-            coord.y * CELL_SIZE,
-            0.0f
+            0.0f,
+            coord.y * CELL_SIZE
         );
     }
 
@@ -285,6 +288,6 @@ namespace CellCoordUtils {
     bool isPosWithinCell(const glm::vec3& pos, const CellCoord& cellCoord) {
         glm::vec3 cellOrigin = getWorldPosFromCoord(cellCoord);
         return pos.x >= cellOrigin.x && pos.x < cellOrigin.x + CELL_SIZE &&
-               pos.y >= cellOrigin.y && pos.y < cellOrigin.y + CELL_SIZE;
+               pos.z >= cellOrigin.z && pos.z < cellOrigin.z + CELL_SIZE;
     }
 }

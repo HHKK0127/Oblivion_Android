@@ -65,6 +65,14 @@ void PlayerController::update(float deltaTime) {
     // Phase 36: Use Jolt Physics if available
     if (physicsCharacter) {
         updatePhysics(deltaTime);
+        // Jolt has no collider for the LAND heightmap, so the heightmap is the
+        // authoritative ground surface. Without this clamp the character free-falls
+        // through the terrain.
+        checkGroundCollision();
+        if (player->isOnGround) {
+            oblivion::PhysicsManager::getInstance().snapCharacterToGround(physicsCharacter,
+                                                                          player->position.y);
+        }
     } else {
         // Phase 31: Fixed timestep accumulator for physics
         fixedAccumulator += deltaTime;
@@ -212,18 +220,18 @@ void PlayerController::checkGroundCollision() {
     if (!player || !worldManager) return;
 
     // FIX: Use int32_t with floor() for negative coordinate support
-    int32_t cellX = static_cast<int32_t>(std::floor(player->position.x / 128.0f));
-    int32_t cellY = static_cast<int32_t>(std::floor(player->position.z / 128.0f));
+    int32_t cellX = static_cast<int32_t>(std::floor(player->position.x / static_cast<float>(CELL_SIZE)));
+    int32_t cellY = static_cast<int32_t>(std::floor(player->position.z / static_cast<float>(CELL_SIZE)));
 
-    auto cell = worldManager->getCell(static_cast<uint32_t>(cellX), static_cast<uint32_t>(cellY));
+    auto cell = worldManager->getCell(cellX, cellY);
     if (!cell) {
         player->isOnGround = false;
         return;
     }
 
     float terrainHeight = cell->getTerrainHeightAt(
-        player->position.x - cellX * 128.0f,
-        player->position.z - cellY * 128.0f
+        player->position.x - cellX * static_cast<float>(CELL_SIZE),
+        player->position.z - cellY * static_cast<float>(CELL_SIZE)
     );
 
     // Check if player is at or below terrain
@@ -238,8 +246,8 @@ void PlayerController::checkGroundCollision() {
 void PlayerController::checkCellTransition() {
     if (!player || !worldManager) return;
 
-    int32_t newCellX = static_cast<int32_t>(player->position.x / 128.0f);
-    int32_t newCellY = static_cast<int32_t>(player->position.z / 128.0f);
+    int32_t newCellX = static_cast<int32_t>(std::floor(player->position.x / static_cast<float>(CELL_SIZE)));
+    int32_t newCellY = static_cast<int32_t>(std::floor(player->position.z / static_cast<float>(CELL_SIZE)));
 
     if (newCellX != player->currentCellX || newCellY != player->currentCellY) {
         LOGD("Player transitioning cell: (%d,%d) -> (%d,%d)",
@@ -509,5 +517,11 @@ void PlayerController::updatePhysics(float deltaTime) {
 void PlayerController::setPosition(const glm::vec3& pos) {
     if (player) {
         player->position = pos;
+    }
+    // Keep the physics character in sync: updatePhysics() copies the character
+    // transform back into the player every frame, so without this the teleport
+    // would be reverted on the next update.
+    if (physicsCharacter) {
+        oblivion::PhysicsManager::getInstance().setCharacterPosition(physicsCharacter, pos);
     }
 }

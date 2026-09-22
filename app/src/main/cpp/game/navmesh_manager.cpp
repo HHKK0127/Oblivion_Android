@@ -208,7 +208,12 @@ bool NavMeshManager::findPath(const glm::vec3& start, const glm::vec3& end,
     outPath.clear();
 
     if (m_navMeshes.empty()) {
-        LOGW("No NavMesh data loaded");
+        // Called every frame while AI pathing runs, so only report once.
+        static bool warnedOnce = false;
+        if (!warnedOnce) {
+            warnedOnce = true;
+            LOGW("No NavMesh data loaded");
+        }
         return false;
     }
 
