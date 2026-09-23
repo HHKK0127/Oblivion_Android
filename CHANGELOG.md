@@ -15,6 +15,22 @@ The current version is **0.9.10 (versionCode 910)**.
 
 ## [Unreleased]
 
+### Added
+- **Native C++ host test runner for CI**: new `tools/host_tests/` directory with
+  desktop stubs for the NDK headers (`<android/log.h>`, `<android/asset_manager.h>`,
+  `<jni.h>`, GLES), stub implementations for `AAsset*` and `jni_audio_*` symbols, and
+  `run_host_tests.sh`. The Phase 38 Script VM suite now builds and runs on
+  `ubuntu-latest` via a separate `host-tests` job in `.github/workflows/android.yml`,
+  so the script VM / function-registry logic is covered without a device or emulator.
+  The host link also exposed a real Windows portability gap in `engine/cache_manager.cpp`
+  (`mkdir` is 1-arg on `_WIN32`), now guarded with `_mkdir`.
+
+### Fixed
+- **ScriptFunctions name lookup test**: `tests/script_vm_tests.cpp` compared the
+  `const char*` from `getFunctionName()` against string literals with `==`, which is
+  pointer comparison and always failed across translation units. Switched to
+  `std::strcmp`. The function implementation itself was correct.
+
 ### Changed
 - **Title menu stroke weight (thinner)**: the ink outline is now `MENU_OUTLINE_WIDTH = 0.45f`
   (was 0.6f) and the renderer's ring clamp lower bound is 0.25 px (was 0.6 px), so widths below

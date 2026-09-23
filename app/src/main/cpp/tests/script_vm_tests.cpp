@@ -541,11 +541,10 @@ void ScriptVMTests::testScriptFunctions() {
         ScriptFunctions funcs;
         bool ok = true;
 
-        ok = ok && (funcs.getFunctionName(FunctionID::SetStage) == "SetStage");
-        ok = ok && (funcs.getFunctionName(FunctionID::GetPlayer) == "GetPlayer");
-        ok = ok && (funcs.getFunctionName(FunctionID::AddItem) == "AddItem");
-        ok = ok && (funcs.getFunctionName(FunctionID::IsDead) == "IsDead");
-
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::SetStage), "SetStage") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::GetPlayer), "GetPlayer") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::AddItem), "AddItem") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::IsDead), "IsDead") == 0);
         record("ScriptFunctions: Name lookup", ok,
                "FunctionID to name conversion", getTimeMs38() - start);
     }

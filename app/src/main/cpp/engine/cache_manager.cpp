@@ -3,6 +3,9 @@
 #include <sstream>
 #include <algorithm>
 #include <sys/stat.h>
+#if defined(_WIN32)
+#include <direct.h>
+#endif
 
 // ============================================================================
 // CacheManager Implementation
@@ -28,7 +31,11 @@ bool CacheManager::initialize(const Config& config) {
 
     // Create disk cache directory if needed
     if (!config_.diskCachePath.empty()) {
+#ifdef _WIN32
+        _mkdir(config_.diskCachePath.c_str());
+#else
         mkdir(config_.diskCachePath.c_str(), 0755);
+#endif
     }
 
     initialized_ = true;
