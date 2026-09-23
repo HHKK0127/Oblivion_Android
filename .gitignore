@@ -30,13 +30,14 @@ tools/BSAFileExtractor/
 # Bethesda assets kept locally for testing only; never redistribute.
 # Local builds still package these from disk. A fresh clone will render the
 # title screen without them (all texture uses are guarded by != 0).
-app/src/main/assets/videos/oblivion_intro.mp4
-app/src/main/assets/videos/map_loop.mp4
+app/src/main/assets/videos/
 app/src/main/assets/textures/ui/loading_background.png
 app/src/main/assets/textures/ui/load_in_game_default.png
 app/src/main/assets/textures/ui/loading_symbol.png
 app/src/main/assets/textures/ui/tes_oblivion_logo_bink.png
 app/src/main/assets/textures/ui/tes_oblivion_logo_final.png
+app/src/main/assets/textures/ui/dialog_selection_cut.png
+app/src/main/assets/textures/ui/dialog_selection_full.png
 
 # Debug screenshots and XML dumps (root directory)
 /*.png

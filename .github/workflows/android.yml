@@ -22,25 +22,53 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+
+      # The launcher icons are generated from the in-game loading symbol texture rather
+      # than committed by hand. Android Studio's new-project template has silently
+      # replaced them with the default green robot before, so fail early when the
+      # committed PNGs drift from what scripts/generate_launcher_icons.py produces.
+      # That texture is a gitignored Bethesda asset, so this runner has no copy of it
+      # and the check falls back to the committed sha256 manifest in
+      # scripts/launcher_icon_manifest.json.
+      - name: Verify launcher icons
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet --disable-pip-version-check pillow numpy
+          python3 scripts/generate_launcher_icons.py --check
 
       # gradle/gradle-daemon-jvm.properties pins toolchainVersion=21, so the daemon JVM
       # criteria cannot be satisfied by JDK 17.
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      # Versions must stay in sync with ndkVersion in app/build.gradle and with the CMake
-      # version AGP expects; AGP 8.5 will not fall back to a different one.
-      - name: Install NDK and CMake
+      # The runner image ships the Android SDK, but android-actions/setup-android@v3 is
+      # unusable: it runs "sdkmanager tools" and the "tools" package no longer exists in
+      # the SDK repository, which fails the step. Locate the preinstalled cmdline-tools
+      # instead and put sdkmanager on PATH.
+      - name: Locate Android SDK
         run: |
-          yes | sdkmanager --licenses > /dev/null
-          sdkmanager --install "ndk;26.1.10909125" "cmake;3.22.1"
+          set -euo pipefail
+          SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER=$(find "$SDK/cmdline-tools" -maxdepth 3 -name sdkmanager -type f -print -quit || true)
+          if [ -z "$SDKMANAGER" ]; then
+            echo "::error::sdkmanager not found under $SDK/cmdline-tools"
+            exit 1
+          fi
+          echo "sdkmanager=$SDKMANAGER"
+          echo "$(dirname "$SDKMANAGER")" >> "$GITHUB_PATH"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+
+      # Versions must stay in sync with compileSdk/ndkVersion in app/build.gradle and with
+      # the CMake version AGP expects; AGP 8.5 will not fall back to a different one.
+      - name: Install SDK packages, NDK and CMake
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager --install "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;26.1.10909125" "cmake;3.22.1"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
