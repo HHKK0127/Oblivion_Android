@@ -64,6 +64,11 @@ build/
 app/build/
 external/
 
+# Jolt Physics vendored build scripts must stay tracked for CI (Build/ is NOT
+# an output directory; the generic build/ rule above would ignore it).
+!app/src/main/cpp/third_party/JoltPhysics/Build/
+!app/src/main/cpp/third_party/JoltPhysics/Build/**
+
 # Android Studio
 .idea/
 *.iml
