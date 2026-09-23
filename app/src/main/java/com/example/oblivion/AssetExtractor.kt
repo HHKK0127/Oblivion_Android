@@ -14,7 +14,7 @@ class AssetExtractor(private val context: Context) {
         private const val TAG = "AssetExtractor"
         private const val ASSET_DIR = "oblivion_assets"
         private const val VERSION_FILE = "version.txt"
-        private const val CURRENT_VERSION = 3  // Incremented for map_loop.mp4 video background
+        private const val CURRENT_VERSION = 6  // v4: intro OP clips; v5: added oblivion_iv_logo; v6: added credits_menu (1% title easter egg)
         private const val EXTRACTION_MARKER = ".extraction_complete"
     }
     

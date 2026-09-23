@@ -1,6 +1,6 @@
 # Oblivion Android - アセット統合ガイド
 
-**最終更新**: 2026-08-27  
+**最終更新**: 2026-09-23  
 **対象**: BSA抽出素材、ISO抽出素材のAndroidプロジェクト統合
 
 ---
@@ -8,13 +8,14 @@
 ## 目次
 
 1. [アセット概要](#アセット概要)
-2. [ISOからの抽出方法](#isoからの抽出方法)
-3. [BSAからの抽出方法](#bsaからの抽出方法)
-4. [Androidプロジェクトへの配置](#androidプロジェクトへの配置)
-5. [C++からのアクセス方法](#cからのアクセス方法)
-6. [カテゴリ別統合方法](#カテゴリ別統合方法)
-7. [APKサイズ影響](#apkサイズ影響)
-8. [トラブルシューティング](#トラブルシューティング)
+2. [原本アセットの使用方針](#原本アセットの使用方針)
+3. [ISOからの抽出方法](#isoからの抽出方法)
+4. [BSAからの抽出方法](#bsaからの抽出方法)
+5. [Androidプロジェクトへの配置](#androidプロジェクトへの配置)
+6. [C++からのアクセス方法](#cからのアクセス方法)
+7. [カテゴリ別統合方法](#カテゴリ別統合方法)
+8. [APKサイズ影響](#apkサイズ影響)
+9. [トラブルシューティング](#トラブルシューティング)
 
 ---
 
@@ -66,6 +67,102 @@ bsa_Extraction/
     │   └── ambient/    # 環境音
     └── voice/      # ボイス（.mp3 / .wav）
 ```
+
+---
+
+## 原本アセットの使用方針
+
+### 方針
+
+本プロジェクトは **Oblivion 原本から抽出したアセットをそのまま使用する**。代替素材への差し替えや、プロシージャル生成物での置換は行わない。
+
+著作権上の取り扱い（git 履歴からの purge、リリースビルドでのアセット除外）は **判断保留** であり、実装側では扱わない。法的ブロッカーの検討はユーザー指示により後日とする。
+
+原本アセットが欠けている場合、コードは描画をスキップするかプロシージャル代替へ静かにフォールバックする。したがって「原本を使用している」状態は **ファイルが配置されていること** を前提とする。新規クローンでは `.gitignore` 対象の 7 ファイルが存在しないため、下記の復元手順が必要になる。
+
+### 来歴一覧
+
+2026-09-23 時点、`app/src/main/assets/` = 21 ファイル / 58.8 MB。
+
+| 区分 | ファイル | 来歴 | git 管理 |
+|------|---------|------|---------|
+| 原本 | `fonts/*.fnt`（5） | BSA 抽出（フォント定義） | tracked |
+| 原本 | `fonts/*_0_lod_a.png`（5） | BSA 抽出（フォントアトラス） | tracked |
+| 原本 | `textures/ui/loading_background.png` | BSA 抽出 | ignored |
+| 原本 | `textures/ui/load_in_game_default.png` | BSA 抽出 | ignored |
+| 原本 | `textures/ui/tes_oblivion_logo_final.png` | BSA 抽出 | ignored |
+| 原本 | `textures/ui/loading_symbol.png` | BSA 抽出（コード未参照） | ignored |
+| 原本 | `textures/ui/tes_oblivion_logo_bink.png` | BSA 抽出（コード未参照） | ignored |
+| 原本 | `textures/ui/dialog_selection_full.png` | BSA 抽出（メニュー選択バー） | untracked |
+| 原本 | `textures/ui/dialog_selection_cut.png` | BSA 抽出（メニュー選択バー） | untracked |
+| 変換物 | `videos/oblivion_intro.mp4` | 原本 Bink（`.bik`）→ MP4 | ignored |
+| 変換物 | `videos/map_loop.mp4` | 原本 Bink（`.bik`）→ MP4 | ignored |
+| 非原本 | `Roboto-Regular.ttf` | AOSP（Apache-2.0） | tracked |
+| 未使用 | `fonts/font_atlas.json` | 自前生成（`valid_glyphs: 0`） | tracked |
+
+`*.fnt` は 5 本すべて 14,632 B でサイズが一致するが MD5 はすべて異なり、ヘッダに `Kingthings_Regular_0_Lod_A` 等のテクスチャ名を保持している。サイズ一致はグリフ数（259）と構造が同一であることによる偶然である。
+
+`fonts/font_atlas.json` は 5 フォントすべて `valid_glyphs: 0` / `glyphs: []` であり、読み込みは `.fnt` 経由のため実際には使用されていない。
+
+### 原本アセットの参照箇所
+
+| アセット | 参照元 |
+|---------|--------|
+| `loading_background.png` | `title_screen.cpp`（背景）、`renderer.cpp`（マップ背景）、`settings_ui.cpp`（パネル）、`save_load_ui.cpp`（背景） |
+| `tes_oblivion_logo_final.png` | `title_screen.cpp` `renderOblivionLogo()` |
+| `load_in_game_default.png` | `title_screen.cpp`（読み込みのみ。不透明なローディング画像のためビネット用途には不使用） |
+| `dialog_selection_full.png` / `_cut.png` | `title_screen.cpp`（メニュー選択バー） |
+| `fonts/*.fnt` + `*_0_lod_a.png` | `text_renderer.cpp` `loadOblivionFont()`（L969-974 の対応表） |
+| `oblivion_iv_logo.mp4` | `GameRenderer.kt` `initTitleVideo()`（タイトル開始時に 1 回再生 → 背景へ） |
+| `oblivion_intro.mp4` | `title_screen.cpp` `setupIntroVideo()`（New Game オープニング） |
+| `map_loop.mp4` | `GameRenderer.kt` `initTitleVideo()`（タイトル背景、既定） |
+| `credits_menu.mp4` | `GameRenderer.kt` `initTitleVideo()`（タイトル背景、1% の確率で使用） |
+
+起動時 OP は `IntroVideoActivity.kt` の `CLIP_SEQUENCE` によりオリジナルと同一順序で再生される:
+Bethesda Softworks HD720p（`bethesda_logo.mp4`）→ 2K Games（`2k_games_logo.mp4`）→ Game Studios（`game_studios_logo.mp4`）→ Oblivion Legal（`oblivion_legal.mp4`）。その後、タイトル画面へ遷移し、`GameRenderer.kt` が『OBLIVION』タイトルロゴ（`oblivion_iv_logo.mp4`、1 回だけ再生）→ 背景ループ（`map_loop.mp4`、1% の確率で `credits_menu.mp4`）の流れで再生する。`oblivion_intro.mp4` は New Game 時の導入シネマティックであり、このシーケンスには含まれない。未配置のクリップは自動スキップされるため、動画ファイルは個別に追加可能。
+
+UI 既定フォントは `renderer.cpp` が `KingthingsRegular` をロードして `setActiveFont()` するため、Oblivion 原本フォントになる。`Roboto` スロットは `loadOblivionFont()` 内で Daedric にフォールバックする（`// Roboto placeholder`）。
+
+### 復元手順（`.gitignore` 対象の動画・テクスチャ）
+
+`.gitignore` により以下がリポジトリに含まれない。新規クローンや別環境では手動配置が必要。
+
+| 配置先 | 入手元 |
+|-------|-------|
+| `app/src/main/assets/videos/bethesda_logo.mp4` | 原本 `video/*.bik` を MP4 へ変換（起動OP 1/4） |
+| `app/src/main/assets/videos/2k_games_logo.mp4` | 原本 `video/*.bik` を MP4 へ変換（起動OP 2/4） |
+| `app/src/main/assets/videos/game_studios_logo.mp4` | 原本 `video/*.bik` を MP4 へ変換（起動OP 3/4） |
+| `app/src/main/assets/videos/oblivion_iv_logo.mp4` | 原本 `video/*.bik` を MP4 へ変換（タイトル開始時のロゴ） |
+| `app/src/main/assets/videos/oblivion_intro.mp4` | 原本 `video/*.bik` を MP4 へ変換（New Game オープニング） |
+| `app/src/main/assets/videos/oblivion_legal.mp4` | 原本 `video/*.bik` を MP4 へ変換（起動OP 4/4） |
+| `app/src/main/assets/videos/map_loop.mp4` | 原本 `video/*.bik` を MP4 へ変換 |
+| `app/src/main/assets/videos/credits_menu.mp4` | 原本 `CreditsMenu.bik` を MP4 へ変換（タイトル背景・1% ギミック） |
+| `app/src/main/assets/textures/ui/loading_background.png` | BSA 抽出 → PNG |
+| `app/src/main/assets/textures/ui/load_in_game_default.png` | BSA 抽出 → PNG |
+| `app/src/main/assets/textures/ui/tes_oblivion_logo_final.png` | BSA 抽出 → PNG |
+| `app/src/main/assets/textures/ui/loading_symbol.png` | BSA 抽出 → PNG（任意） |
+| `app/src/main/assets/textures/ui/tes_oblivion_logo_bink.png` | BSA 抽出 → PNG（任意） |
+
+`AssetExtractor.kt` の `CURRENT_VERSION` は同梱アセットの追加時に更新する（`map_loop.mp4` 追加時に 3）。起動 OP 用クリップ（`bethesda_logo.mp4` 等）を `assets/videos/` に追加した場合は `CURRENT_VERSION` をインクリメントし、古い抽出を無効化する必要がある。`credits_menu.mp4` 追加時は v6 に更新済み。
+
+### 未配置のアセット（プロシージャル代替）
+
+`launcher_screen.cpp` は以下の 4 テクスチャを要求するが `assets` に存在しない。
+
+```
+textures/ui/launcher_bg.png
+textures/ui/oblivion_logo_large.png
+textures/ui/btn_stone.png
+textures/ui/btn_stone_hover.png
+```
+
+`logoTexture == 0` の場合は描画を早期 return するため、ランチャーはプロシージャル描画になっている。ゲーム内 UI（インベントリ、ショップ、魔法書、クエストログ、セーブ/ロード、HUD）も同様に `placeholder_assets.cpp` の色定数と図形描画で構成されており、原本の UI 素材（`menus/*.xml` + `.dds`）は未使用である。原本 UI 素材の統合は Phase 68（GUI）で扱う。
+
+### 保留事項
+
+- git 履歴に残る Bethesda アセットの purge（`git filter-repo` + force push）: 判断保留
+- リリースビルドでのアセット除外: 判断保留
+- tracked な 11 フォントファイルの扱い: 判断保留
 
 ---
 

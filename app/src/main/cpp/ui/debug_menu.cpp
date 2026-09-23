@@ -88,6 +88,13 @@ void DebugMenu::cleanup() {
 void DebugMenu::toggle() {
     visible = !visible;
     touchState = {};
+    // Recompute layout before anything reads button geometry (hit tests or
+    // state dumps right after opening otherwise see stale/zero positions).
+    if (visible) {
+        calculateButtonPositions();
+        clampScrollOffsets();
+        clampTabScroll();
+    }
     LOGI_DEBUG("DebugMenu %s", visible ? "opened" : "closed");
 }
 
@@ -95,6 +102,9 @@ void DebugMenu::selectTab(int tabIndex) {
     if (tabIndex >= 0 && tabIndex < static_cast<int>(Tab::COUNT)) {
         currentTab = static_cast<Tab>(tabIndex);
         touchState = {};
+        calculateButtonPositions();
+        scrollTabIntoView(tabIndex);
+        calculateButtonPositions();
         LOGI_DEBUG("DebugMenu::selectTab(%d) -> %s", tabIndex, getTabName(currentTab).c_str());
     } else {
         LOGI_DEBUG("DebugMenu::selectTab(%d) - invalid index", tabIndex);
@@ -120,6 +130,9 @@ void DebugMenu::setScreenSize(int w, int h) {
     if (modelViewer) modelViewer->setScreenSize(w, h);
     if (worldViewer) worldViewer->setScreenSize(w, h);
     if (viewer3D) viewer3D->setScreenSize(w, h);
+
+    LOGI_DEBUG("setScreenSize(%d,%d) s=%.3f safe=(%.1f,%.1f,%.1f,%.1f) density=%.2f minTouch=%.1f",
+               w, h, s, safeLeft, safeTop, safeRight, safeBottom, screenDensity, getMinTouchPx());
 }
 
 void DebugMenu::setWorldManager(class WorldManager* worldManager) {
@@ -132,6 +145,8 @@ void DebugMenu::setWorldManager(class WorldManager* worldManager) {
 // ==================== Touch Event Handling ====================
 
 void DebugMenu::onTouchDown(float x, float y) {
+    LOGI_DEBUG("onTouchDown entered: visible=%d viewer3D=%d touch=(%.1f,%.1f)",
+               static_cast<int>(visible), viewer3D ? static_cast<int>(viewer3D->isVisible()) : -1, x, y);
     if (!visible) return;
 
     // Route to Viewer3D first when it is visible (modal overlay)
@@ -146,6 +161,12 @@ void DebugMenu::onTouchDown(float x, float y) {
     touchState.pressedButton = nullptr;
     touchState.pressedSlider = nullptr;
     touchState.isScrolling = false;
+    tabDragActive = false;
+    {
+        const float tabBarY = safeTop + 8.0f * getScale();
+        const float tabBarH = TAB_HEIGHT * getScale();
+        tabDragActive = (y >= tabBarY && y <= tabBarY + tabBarH);
+    }
 
     LOGI_DEBUG("onTouchDown: touch=(%.1f, %.1f) screen=%dx%d scale=%.2f",
                x, y, screenWidth, screenHeight, getScale());
@@ -238,11 +259,16 @@ void DebugMenu::onTouchMove(float x, float y) {
 
     // Handle scrolling
     if (touchState.isScrolling) {
-        float moveY = y - touchState.lastY;
-        size_t idx = static_cast<size_t>(currentTab);
-        if (idx < tabContents.size()) {
-            tabContents[idx].scrollOffset -= moveY;
-            clampScrollOffsets();
+        if (tabDragActive) {
+            tabScrollOffset -= (x - touchState.lastX);
+            clampTabScroll();
+        } else {
+            float moveY = y - touchState.lastY;
+            size_t idx = static_cast<size_t>(currentTab);
+            if (idx < tabContents.size()) {
+                tabContents[idx].scrollOffset -= moveY;
+                clampScrollOffsets();
+            }
         }
     }
 
@@ -284,6 +310,7 @@ void DebugMenu::onTouchUp(float x, float y) {
             if (tabIdx >= 0) {
                 // Switch to the selected tab
                 currentTab = static_cast<Tab>(tabIdx);
+                scrollTabIntoView(tabIdx);
                 LOGI_DEBUG("Switched to tab: %s", getTabName(currentTab).c_str());
             } else {
                 // Execute content button command
@@ -296,6 +323,7 @@ void DebugMenu::onTouchUp(float x, float y) {
     if (touchState.pressedButton) {
         touchState.pressedButton->isPressed = false;
     }
+    tabDragActive = false;
     touchState = {};
 }
 
@@ -306,6 +334,7 @@ void DebugMenu::onTouchCancel() {
     if (touchState.pressedSlider) {
         touchState.pressedSlider->dragging = false;
     }
+    tabDragActive = false;
     touchState = {};
 }
 
@@ -487,20 +516,22 @@ void DebugMenu::calculateButtonPositions() {
     float margin = BUTTON_MARGIN * s;
     float x = safeLeft + margin;
 
-    // Tab buttons - use smaller width to fit 13 tabs
+    // Tab buttons - the strip is wider than the screen on phones, so it is
+    // laid out at the minimum readable/touchable width and scrolled by dragging.
     float tabY = safeTop + 8.0f * s;
     float tabH = TAB_HEIGHT * s;
-    const float availableWidth = std::max(1.0f, static_cast<float>(screenWidth) - safeLeft - safeRight - margin * (tabButtons.size() + 1));
-    const float naturalTabW = availableWidth / std::max<size_t>(1, tabButtons.size());
-    const float tabW = naturalTabW >= 48.0f * s
-        ? std::min(96.0f * s, naturalTabW)
-        : std::max(1.0f, naturalTabW);
+    const float stripMax = std::max(1.0f, static_cast<float>(screenWidth) - safeLeft - safeRight);
+    const float naturalTabW = (stripMax - margin * (tabButtons.size() + 1)) /
+                              std::max<size_t>(1, tabButtons.size());
+    const float tabW = std::max(getMinTouchPx(), std::min(160.0f * s, naturalTabW));
+    tabStripWidth = static_cast<float>(tabButtons.size()) * (tabW + margin) + margin;
+    clampTabScroll();
+    x = safeLeft + margin - tabScrollOffset;
     for (auto& btn : tabButtons) {
         btn.x = x;
         btn.y = tabY;
         btn.w = tabW;
         btn.h = tabH;
-        ensureMinTouchSize(btn);
         x += btn.w + margin;
     }
 
@@ -513,11 +544,16 @@ void DebugMenu::calculateButtonPositions() {
     float btnH = BUTTON_HEIGHT * s;
     float btnW = (screenWidth - safeLeft - safeRight - margin * 3.0f) * 0.5f;
 
+    // The minimum touch target is larger than the natural row height, so the
+    // row pitch must follow the enlarged target. Otherwise expanded hit boxes
+    // of neighbouring rows overlap and the upper row steals the touch.
+    const float rowPitch = std::max(btnH, getMinTouchPx()) + margin;
+
     for (size_t i = 0; i < content.buttons.size(); ++i) {
         int col = i % 2;
         int row = i / 2;
         content.buttons[i].x = safeLeft + margin + (btnW + margin) * col;
-        content.buttons[i].y = contentY + (btnH + margin) * row - content.scrollOffset;
+        content.buttons[i].y = contentY + rowPitch * row - content.scrollOffset;
         content.buttons[i].w = btnW;
         content.buttons[i].h = btnH;
         ensureMinTouchSize(content.buttons[i]);
@@ -525,13 +561,14 @@ void DebugMenu::calculateButtonPositions() {
 
     // Position sliders after buttons (full width)
     int buttonRows = (static_cast<int>(content.buttons.size()) + 1) / 2;
-    float sliderY = contentY + (btnH + margin) * buttonRows;
+    float sliderY = contentY + rowPitch * buttonRows;
     float sliderW = screenWidth - safeLeft - safeRight - margin * 2.0f;
     float sliderH = SLIDER_HEIGHT * s;
+    const float sliderPitch = std::max(sliderH, getMinTouchPx()) + margin;
 
     for (size_t i = 0; i < content.sliders.size(); ++i) {
         content.sliders[i].x = safeLeft + margin;
-        content.sliders[i].y = sliderY + (sliderH + margin) * i - content.scrollOffset;
+        content.sliders[i].y = sliderY + sliderPitch * i - content.scrollOffset;
         content.sliders[i].w = sliderW;
         content.sliders[i].h = sliderH;
         ensureMinTouchSize(content.sliders[i]);
@@ -910,6 +947,7 @@ void DebugMenu::switchTab(int direction) {
     if (keyState.selectedTabIndex < 0) keyState.selectedTabIndex = tabCount - 1;
     if (keyState.selectedTabIndex >= tabCount) keyState.selectedTabIndex = 0;
     currentTab = static_cast<Tab>(keyState.selectedTabIndex);
+    scrollTabIntoView(keyState.selectedTabIndex);
     keyState.selectedItemIndex = -1;
     keyState.onSlider = false;
 }
@@ -941,7 +979,7 @@ void DebugMenu::ensureMinTouchSize(Slider& slider) {
 void DebugMenu::dumpState() {
     // Use app-specific files directory
     char path[256];
-    snprintf(path, sizeof(path), "/data/data/com.hhkk.oblivion/files/dump_%lld.log",
+    snprintf(path, sizeof(path), "/data/data/com.example.oblivion/files/dump_%lld.log",
              static_cast<long long>(std::time(nullptr)));
 
     FILE* f = fopen(path, "w");
@@ -953,6 +991,15 @@ void DebugMenu::dumpState() {
     fprintf(f, "# Oblivion Android Debug Dump\n");
     fprintf(f, "# timestamp: %lld\n", static_cast<long long>(std::time(nullptr)));
     fprintf(f, "# screen: %dx%d density=%.2f\n", screenWidth, screenHeight, screenDensity);
+    fprintf(f, "# scale=%.3f safe=(%.1f,%.1f,%.1f,%.1f) currentTab=%d tabCount=%zu\n",
+            getScale(), safeLeft, safeTop, safeRight, safeBottom,
+            static_cast<int>(currentTab), tabButtons.size());
+    fprintf(f, "# tabStripWidth=%.1f tabScrollOffset=%.1f\n", tabStripWidth, tabScrollOffset);
+    for (size_t i = 0; i < tabButtons.size(); ++i) {
+        const auto& tb = tabButtons[i];
+        fprintf(f, "  Tab[%zu] %s x=%.1f y=%.1f w=%.1f h=%.1f\n",
+                i, tb.label.c_str(), tb.x, tb.y, tb.w, tb.h);
+    }
     fprintf(f, "\n");
 
     // Dump all tab contents
@@ -961,7 +1008,8 @@ void DebugMenu::dumpState() {
         if (t < static_cast<int>(tabContents.size())) {
             const auto& content = tabContents[t];
             for (const auto& btn : content.buttons) {
-                fprintf(f, "  Button: %s -> %s\n", btn.label.c_str(), btn.command.c_str());
+                fprintf(f, "  Button: %s -> %s [x=%.1f y=%.1f w=%.1f h=%.1f]\n",
+                        btn.label.c_str(), btn.command.c_str(), btn.x, btn.y, btn.w, btn.h);
             }
             for (const auto& slider : content.sliders) {
                 fprintf(f, "  Slider: %s = ", slider.label.c_str());
@@ -1045,14 +1093,39 @@ void DebugMenu::clampScrollOffsets() {
 
     // 2-column layout: calculate row count for buttons
     int buttonRows = (static_cast<int>(content.buttons.size()) + 1) / 2;
-    float buttonHeight = buttonRows * (btnH + margin);
+    const float rowPitch = std::max(btnH, getMinTouchPx()) + margin;
+    float buttonHeight = buttonRows * rowPitch;
 
     // Add slider height
-    float sliderHeight = static_cast<float>(content.sliders.size()) * (sliderH + margin);
+    const float sliderPitch = std::max(sliderH, getMinTouchPx()) + margin;
+    float sliderHeight = static_cast<float>(content.sliders.size()) * sliderPitch;
     float totalHeight = buttonHeight + sliderHeight;
 
     float maxScroll = std::max(0.0f, totalHeight - contentH);
     content.scrollOffset = std::clamp(content.scrollOffset, 0.0f, maxScroll);
+}
+
+void DebugMenu::clampTabScroll() {
+    const float viewWidth = std::max(1.0f, static_cast<float>(screenWidth) - safeLeft - safeRight);
+    const float maxScroll = std::max(0.0f, tabStripWidth - viewWidth);
+    tabScrollOffset = std::clamp(tabScrollOffset, 0.0f, maxScroll);
+}
+
+void DebugMenu::scrollTabIntoView(int tabIndex) {
+    if (tabIndex < 0 || tabIndex >= static_cast<int>(tabButtons.size())) return;
+
+    const float viewLeft = safeLeft;
+    const float viewRight = static_cast<float>(screenWidth) - safeRight;
+    // Button positions already bake in the current scroll offset, so convert the
+    // requested tab into "unscrolled" coordinates before computing the delta.
+    const float naturalX = tabButtons[tabIndex].x + tabScrollOffset;
+
+    if (naturalX < viewLeft + BUTTON_MARGIN) {
+        tabScrollOffset = naturalX - viewLeft - BUTTON_MARGIN;
+    } else if (naturalX + tabButtons[tabIndex].w > viewRight - BUTTON_MARGIN) {
+        tabScrollOffset = naturalX + tabButtons[tabIndex].w - viewRight + BUTTON_MARGIN;
+    }
+    clampTabScroll();
 }
 
 // ==================== Tab Content Creation ====================
@@ -1343,6 +1416,24 @@ void DebugMenu::createAllTabContents() {
     {
         TabContent content;
         std::vector<std::pair<std::string, std::string>> items = {
+            // Font readability controls are kept first so they stay reachable
+            {"Font Outline ON", "fontoutline on"},
+            {"Font Outline OFF", "fontoutline off"},
+            {"Font Outline 2.0px", "fontoutline width 2.0"},
+            {"Font Outline 0.5px", "fontoutline width 0.5"},
+            {"Font Contrast ON", "fontcontrast on"},
+            {"Font Contrast OFF", "fontcontrast off"},
+            {"Font Size 1.15x", "fontsize 1.15"},
+            {"Font Size 1.30x", "fontsize 1.3"},
+            {"Font Size 1.00x", "fontsize 1.0"},
+            {"Font: Roboto", "font_roboto"},
+            {"Font: Daedric", "font_daedric"},
+            {"Font: Kingthings", "font_kingthings"},
+            {"Font: Handwritten", "font_handwritten"},
+            {"Font: Tahoma", "font_tahoma"},
+            {"Font: Shadowed", "font_shadowed"},
+            {"Title Style: plain", "titlestyle on"},
+            {"Title Style: shared", "titlestyle off"},
             {"Toggle Wireframe", "wireframe"},
             {"Toggle AABB", "aabb"},
             {"NPC Overlay", "npcoverlay"},
@@ -1355,11 +1446,6 @@ void DebugMenu::createAllTabContents() {
             {"Performance", "performance"},
             {"Reset Stats", "resetstats"},
             {"Dump State", "dumpstate"},
-            {"Font: Roboto", "font_roboto"},
-            {"Font: Daedric", "font_daedric"},
-            {"Font: Kingthings", "font_kingthings"},
-            {"Font: Handwritten", "font_handwritten"},
-            {"Font: Tahoma", "font_tahoma"},
         };
         for (const auto& item : items) {
             Button btn;

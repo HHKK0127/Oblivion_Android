@@ -32,6 +32,8 @@ void LauncherScreen::initialize(LocalizationManager* lm, TextRenderer* tr,
     selectedIndex = 0;
     fadeInAlpha = 0.0f;
     displayTimer = 0.0f;
+    introProgress = 0.0f;
+    hoveredIndex = -1;
     state = LauncherState::MAIN;
 
     buildMainMenu();
@@ -60,6 +62,12 @@ void LauncherScreen::setScreenSize(int w, int h) {
 }
 
 void LauncherScreen::buildMainMenu() {
+    // Re-initialization (returning from the title screen or the game) rebuilds
+    // the panel, so stale buttons from the previous panel must be dropped.
+    // Keeping them would shift the layout indices and place the live buttons
+    // outside the panel, leaving the menu unclickable.
+    menuButtons.clear();
+
     mainPanel = std::make_shared<UIPanel>("LauncherMainPanel");
     mainPanel->initialize();
     mainPanel->setTitle("");
@@ -126,6 +134,8 @@ void LauncherScreen::rebuildLayout() {
     float panelH = 600.0f;
     float px = screenWidth * 0.04f;   // Left-aligned
     float py = screenHeight * 0.12f;  // Slightly upper
+    // Intro slide: offset the whole panel (and its buttons) until it settles.
+    px -= (1.0f - introEase()) * PANEL_SLIDE_DISTANCE;
     mainPanel->setPosition(px, py);
     mainPanel->setSize(panelW, panelH);
 
@@ -144,6 +154,31 @@ void LauncherScreen::rebuildLayout() {
     }
 }
 
+float LauncherScreen::introEase() const {
+    const float remaining = 1.0f - introProgress;
+    return 1.0f - remaining * remaining * remaining;  // ease-out cubic
+}
+
+int LauncherScreen::hitTestMenuButton(float x, float y) const {
+    // Mirrors rebuildLayout() exactly (intro slide included) so the item that
+    // lights up under the finger is the item a tap at that point would click.
+    const float panelW = 480.0f;
+    const float btnW = 420.0f;
+    const float btnH = 78.0f;
+    const float startY = 30.0f;
+    const float gap = 22.0f;
+    const float panelX = screenWidth * 0.04f - (1.0f - introEase()) * PANEL_SLIDE_DISTANCE;
+    const float panelY = screenHeight * 0.12f;
+    const float btnX = panelX + (panelW - btnW) * 0.5f;
+
+    if (x < btnX || x > btnX + btnW) return -1;
+    for (size_t i = 0; i < menuButtons.size(); ++i) {
+        const float top = panelY + startY + static_cast<float>(i) * (btnH + gap);
+        if (y >= top && y <= top + btnH) return static_cast<int>(i);
+    }
+    return -1;
+}
+
 void LauncherScreen::update(float deltaTime) {
     displayTimer += deltaTime;
     glowPhase += deltaTime * 2.2f;
@@ -154,8 +189,19 @@ void LauncherScreen::update(float deltaTime) {
         if (fadeInAlpha > 1.0f) fadeInAlpha = 1.0f;
     }
 
-    // Selection highlight animation
+    // Intro slide: re-lay out while the panel/logo are still settling.
+    if (introProgress < 1.0f) {
+        introProgress += deltaTime * INTRO_SLIDE_SPEED;
+        if (introProgress > 1.0f) introProgress = 1.0f;
+        rebuildLayout();
+    }
+
+    // Selection highlight animation + hover scale ramp. UIButton owns the hover
+    // ramp but nothing ticks it, so the scale would stay at 0 forever.
     for (size_t i = 0; i < menuButtons.size(); ++i) {
+        menuButtons[i]->setHovered(static_cast<int>(i) == hoveredIndex);
+        menuButtons[i]->update(deltaTime);
+
         bool isSelected = (static_cast<int>(i) == selectedIndex);
         if (isSelected) {
             float glow = 0.5f + 0.5f * sin(glowPhase);
@@ -259,7 +305,9 @@ void LauncherScreen::renderBackground() {
         screenWidth, screenHeight);
 
     // Original: thin panel background on left side (button area) - enhanced gradient
-    float panelX = screenWidth * 0.04f;
+    // Carries the same intro slide as rebuildLayout() so the frame and the
+    // buttons travel together; at rest the offset is zero.
+    float panelX = screenWidth * 0.04f - (1.0f - introEase()) * PANEL_SLIDE_DISTANCE;
     float panelY = screenHeight * 0.12f;
     float panelW = 480.0f;
     float panelH = 560.0f;
@@ -288,6 +336,8 @@ void LauncherScreen::renderLogo() {
     float logoW = static_cast<float>(screenWidth) * scaleFactor;
     float logoH = logoW * 0.22f;
     float logoX = (static_cast<float>(screenWidth) - logoW) * 0.5f;
+    // Intro slide: the logo settles in from the right.
+    logoX += (1.0f - introEase()) * LOGO_SLIDE_DISTANCE;
     float logoY = static_cast<float>(screenHeight) * 0.18f;
 
     // Gold halo behind the logo for elegance
@@ -662,30 +712,28 @@ void LauncherScreen::onTouchEvent(float x, float y, int action) {
          action, x, y, static_cast<int>(state));
     if (state == LauncherState::MAIN) {
         if (action == 0 || action == 5) { // TOUCH_DOWN
-            // Try panel first, but don't return early - panel buttons may
-            // not align with touch coordinates due to layout changes
+            // Panel first so the button under the finger takes the press and
+            // shows its pressed/hover state; its click fires on release.
             if (mainPanel) mainPanel->onTouchDown(x, y, 0);
-
-            // Fallback: direct hit-test on DOWN for immediate response
-            float menuTop = screenHeight * 0.18f;
-            float menuLeft = screenWidth * 0.06f;
-            float menuWidth = 450.0f;
-            float itemH = 90.0f;
-            int numButtons = static_cast<int>(menuButtons.size());
-            for (int i = 0; i < numButtons; ++i) {
-                float itemY = menuTop + static_cast<float>(i) * itemH;
-                if (x >= menuLeft && x <= menuLeft + menuWidth &&
-                    y >= itemY && y < itemY + itemH) {
-                    selectedIndex = i;
-                    handleSelection();
-                    return;
-                }
-            }
+            hoveredIndex = hitTestMenuButton(x, y);
         } else if (action == 1 || action == 6) { // TOUCH_UP
+            const int released = hoveredIndex;
+            hoveredIndex = -1;
             if (mainPanel && mainPanel->onTouchUp(x, y, 0)) return;
+
+            // Fallback for touches the panel body did not consume, so a tap that
+            // lands outside the visible buttons still selects as it used to.
+            if (released >= 0 && released == hitTestMenuButton(x, y)) {
+                selectedIndex = released;
+                handleSelection();
+                return;
+            }
         } else if (action == 2) { // TOUCH_MOVE
+            // Track the item under the finger so its hover scale can ramp.
+            hoveredIndex = hitTestMenuButton(x, y);
             if (mainPanel && mainPanel->onTouchMove(x, y, 0.0f, 0.0f, 0)) return;
         } else if (action == 3) { // TOUCH_CANCEL
+            hoveredIndex = -1;
             if (mainPanel && mainPanel->onTouchUp(x, y, 0)) return;
         }
     } else if (state == LauncherState::OPTIONS) {

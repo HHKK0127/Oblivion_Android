@@ -85,10 +85,14 @@ void UIButton::render() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // Apply hover scale: expand around center
+    // Apply hover scale: expand around center. `hovered` is driven by the owner
+    // from the item currently under the finger (see setHovered), and the rest of
+    // this class treats pressed and hovered as the same state, so the scale must
+    // not be suppressed while pressed or it would never show on touch input.
+    const bool scaleActive = hoverScaleTimer > 0.0f;
     glm::vec2 origPos = getPosition();
     glm::vec2 origSize = getSize();
-    if (hoverScaleTimer > 0.0f && !pressed) {
+    if (scaleActive) {
         float t = hoverScaleTimer / HOVER_SCALE_DURATION;
         float scale = 1.0f + (HOVER_SCALE_MAX - 1.0f) * t;
         float dw = origSize.x * (scale - 1.0f) * 0.5f;
@@ -104,7 +108,7 @@ void UIButton::render() {
     renderLabel();
 
     // Restore position/size if scaled
-    if (hoverScaleTimer > 0.0f && !pressed) {
+    if (scaleActive) {
         setPosition(origPos.x, origPos.y);
         setSize(origSize.x, origSize.y);
     }

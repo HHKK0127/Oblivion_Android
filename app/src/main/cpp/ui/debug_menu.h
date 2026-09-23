@@ -160,6 +160,12 @@ private:
     // Tab buttons
     std::vector<Button> tabButtons;
 
+    // Horizontal scroll state for the tab bar. With 31 tabs the strip is wider
+    // than any phone screen, so the bar is scrolled by dragging it.
+    float tabScrollOffset = 0.0f;
+    float tabStripWidth = 0.0f;
+    bool tabDragActive = false;
+
     // Content buttons per tab
     struct TabContent {
         std::vector<Button> buttons;
@@ -237,4 +243,6 @@ private:
     float getScale() const;
     std::string getTabName(Tab tab) const;
     void clampScrollOffsets();
+    void clampTabScroll();
+    void scrollTabIntoView(int tabIndex);
 };

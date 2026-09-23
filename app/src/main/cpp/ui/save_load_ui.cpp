@@ -45,7 +45,7 @@ bool SaveLoadUI::initialize(TextRenderer* renderer, SaveManager* manager, Render
 
     // Load background texture
     if (bgTexture == 0) {
-        bgTexture = TextureLoader::loadTextureFromAsset("textures/ui/main_background.png");
+        bgTexture = TextureLoader::loadTextureFromAsset("textures/ui/loading_background.png");
         LOGI("SaveLoadUI: Background texture loaded: %u", bgTexture);
     }
 
@@ -91,7 +91,10 @@ void SaveLoadUI::render() {
     // Title
     std::string title = (currentMode == Mode::SAVE) ? "SAVE GAME" : "LOAD GAME";
     glm::vec3 titleColor(1.0f, 1.0f, 0.0f);
-    textRenderer->renderText(title, 350.0f, 50.0f, titleColor, 1.5f);
+    const float titleScale = 1.5f;
+    const float titleX = (static_cast<float>(screenWidth) -
+                          textRenderer->getTextWidth(title, titleScale)) * 0.5f;
+    textRenderer->renderText(title, titleX, 40.0f, titleColor, titleScale);
 
     // Switch display based on dialog state
     if (dialogState == DialogState::CONFIRM_OVERWRITE) {
@@ -243,11 +246,11 @@ void SaveLoadUI::refreshSaveSlots() {
 }
 
 void SaveLoadUI::renderSlotList() {
-    const float panelX = (screenWidth - 640.0f) * 0.5f;
-    const float panelY = 110.0f;
-    const float panelW = 640.0f;
+    const float panelX = (static_cast<float>(screenWidth) - SLOT_PANEL_WIDTH) * 0.5f;
+    const float panelY = SLOT_PANEL_Y;
+    const float panelW = SLOT_PANEL_WIDTH;
     const float slotW = panelW - PADDING * 2.0f;
-    const float maxVisibleSlots = 6;
+    const float maxVisibleSlots = static_cast<float>(MAX_VISIBLE_SLOTS);
 
     // Slot panel outer frame
     PlaceholderAssets::drawPanel(panelX, panelY,
@@ -583,17 +586,22 @@ std::string SaveLoadUI::getSelectedSlot() const {
 void SaveLoadUI::updateLayout() {
     slotEntries.clear();
 
-    float yPos = 150.0f;
-    for (size_t i = 0; i < availableSlots.size(); i++) {
+    const float panelX = (static_cast<float>(screenWidth) - SLOT_PANEL_WIDTH) * 0.5f;
+    const float slotX = panelX + PADDING;
+    const float slotW = SLOT_PANEL_WIDTH - PADDING * 2.0f;
+
+    // Only the slots that renderSlotList() draws get hit rectangles, and they
+    // must use the same geometry so the drawn list and the hit list agree.
+    for (size_t i = 0; i < availableSlots.size() && i < static_cast<size_t>(MAX_VISIBLE_SLOTS); i++) {
         SlotEntry entry;
         entry.name = availableSlots[i].displayName;
         entry.slotIndex = availableSlots[i].slotIndex;
-        entry.position = glm::vec2(150.0f, yPos);
-        entry.size = glm::vec2(500.0f, SLOT_HEIGHT);
+        entry.position = glm::vec2(slotX, SLOT_PANEL_Y + PADDING +
+                                             static_cast<float>(i) * (SLOT_HEIGHT + SLOT_MARGIN));
+        entry.size = glm::vec2(slotW, SLOT_HEIGHT);
         entry.selected = (static_cast<int>(i) == selectedSlotIndex);
         entry.hovered = (static_cast<int>(i) == hoveredSlotIndex);
 
         slotEntries.push_back(entry);
-        yPos += SLOT_HEIGHT + SLOT_MARGIN;
     }
 }

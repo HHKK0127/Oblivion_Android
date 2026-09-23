@@ -13,6 +13,87 @@ The current version is **0.9.10 (versionCode 910)**.
 
 ---
 
+## [Unreleased]
+
+### Changed
+- **Title menu stroke weight (thinner)**: the ink outline is now `MENU_OUTLINE_WIDTH = 0.45f`
+  (was 0.6f) and the renderer's ring clamp lower bound is 0.25 px (was 0.6 px), so widths below
+  0.6 px are no longer silently ignored. The title's font scale is about 0.92, so the effective
+  ring is `0.92 * 0.45 = 0.41 px` where it used to be pinned at the 0.60 px floor; the nine-stamp
+  stroke gain drops from 1.20 px to 0.83 px (-31%). Other screens use the default
+  `fontOutlineWidth_ = 1.0f`, which never reached the old floor, so their text is unchanged.
+
+### Removed
+- **"SPECIAL EDITION" line on the title screen**: the code-drawn subtitle below the OBLIVION logo
+  was removed (`renderSubtitle()`, its two call sites, its declaration and the
+  `SUBTITLE_WIDTH_RATIO` / `SUBTITLE_CENTER_Y_RATIO` constants). The logo texture never contained
+  the subtitle, so no asset change was needed. "Press any key to continue" keeps its previous
+  position through the new fixed `PRESS_KEY_TOP_RATIO = 0.513f`, which stores the effective
+  521.7 px / 1017 px anchor the subtitle used to define.
+
+### Fixed
+- **Title menu legibility (Oblivion face)**: the six title-menu labels are now stamped with an
+  outline drawn in the ink colour (RGB 117,59,33) instead of the renderer's black default, so the
+  decorative face gains stroke weight without the near-black rim the original art does not have.
+  Measured on the emulator inside the menu band: ink pixels 5184 -> 8042 (**+54%**), ink fill
+  0.207 -> 0.287, median horizontal stroke 5.0 -> 6.0-7.0 px, while near-black (< 60) pixels stay
+  at 0.46% of the band (28% with the black outline). `MENU_OUTLINE_ALPHA = 0.85f`; the row's
+  geometry (width, centre, capitals) is unchanged. The width has since been reduced to 0.45f
+  (see Changed above).
+- **Font atlas texture leak**: `TextRenderer::loadOblivionFnt()` leaked the previous GL texture
+  every time a font was loaded, because the new name overwrote `textureId` without the old one
+  being deleted. The old texture is now deleted before `glGenTextures`, matching `shutdown()`.
+
+### Added
+- **Original title-menu selection highlight**: `renderMenu()` now draws the original Oblivion hover
+  art instead of changing the label colour. `app/src/main/assets/textures/ui/dialog_selection_full.png`
+  (2048x64) and `dialog_selection_cut.png` (128x64) were extracted from
+  `Oblivion - Textures - Compressed.bsa` and are placed exactly as
+  `menus/prefabs/button_floating.xml` specifies: bar = parent width - 10, height 64, x = -10,
+  y = 3 (`MENU_SELECT_BAR_DROP`), cap at x = text width + 48. The full bar's opaque run is
+  51.42% of its width (`MENU_SELECT_BAR_OPAQUE = 0.5142f`), matching the asset; the labels keep
+  the authoritative ink colour RGB(117,59,33) (contrast 7.62:1 on the cream bar).
+
+### Fixed
+- **Title background video stopped after about seven seconds**: `GameRenderer.kt` gated
+  `updateTexImage()` behind a frame-available callback flag, and `setOnFrameAvailableListener`
+  was called without a `Handler`, which throws on the Looper-less GL thread; the surrounding
+  catch released the whole player, so the title showed a static frame. The listener now runs on
+  the main looper and `onDrawFrame` calls `updateTexImage()` every frame while the surface texture
+  exists, so the buffer queue no longer backs up and blocks `dequeueBuffer`. Verified on the
+  emulator: `updateTexImage` 13-46/s (matching FPS), callbacks still firing after 22 minutes,
+  `errors(total)=0`, 36-45% of pixels change between frames 3 s apart (was 0.000 mean / 8 px).
+- **Continue / Load / Options opened invisible screens that swallowed every tap**: on the title
+  screen `renderer.cpp` returned before the game-frame overlay pass, so `SaveLoadUI` and
+  `SettingsUI` were set visible but never drawn while still consuming touches, which made the menu
+  look frozen. Both are now rendered inside the title-screen branch, next to the existing debug
+  overlay draw. Verified on the emulator: the load screen draws its "LOAD GAME" heading and 12-slot
+  panel, the settings screen draws its panel, and BACK returns to a menu that accepts input again.
+  Two earlier readings of this bug were wrong and are retracted: the black strip at y1017-1079 is
+  outside the GL surface (the title screen shows the same 52 rows), and the load screen being
+  static between screenshots is by design (`save_load_bg.png` is drawn full-screen).
+
+### Notes
+- The outlined row is **not** a match for the reference art's stroke weight (about 2.1x it at
+  equal capital height). It is a deliberate deviation in favour of readability, as requested; the
+  row still matches the art's width, centre and capital height.
+- The debug panel's System tab exposes `Font Outline` on/off plus `0.5 px` / `2.0 px` widths. The
+  ring's lower clamp was 0.6 px, so `0.5 px` used to draw identically to the default and only
+  `2.0 px` widened the strokes; with the clamp now at 0.25 px, `0.5 px` is effective too.
+- **Dropping "SPECIAL EDITION" moves away from the reference art.** The line is absent from
+  `menus/options/main_menu.xml` (the original game has no subtitle), but it is present in the
+  reference screenshot, measured at 17.3% of the width / 47.8% of the height, and the code-drawn
+  subtitle sat at 17.1% / 47.6% - a match within 0.2 pp. The removal is therefore authoritative to
+  the original game and a deviation from the reference art at the same time; both readings are
+  recorded so the choice can be reversed by restoring `renderSubtitle()` and the two ratio
+  constants.
+- The row's capital height was confirmed against the frame by measuring glyph edges directly, not
+  only from the layout log: ink tops sit at y787 with the log's `baselineY=812.1`, so the capitals
+  are 25.1 px = 2.47% of the 1017 px view (about 24.5-25.1 px once the ~0.6 px outline dilation is
+  removed), matching the log's `cap=25.4` and the reference art's 2.50%.
+
+---
+
 ## [0.9.10] - 2026-09-21 (Phase 62 - Foundation)
 
 ### Fixed

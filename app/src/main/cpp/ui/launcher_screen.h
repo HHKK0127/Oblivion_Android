@@ -73,6 +73,8 @@ private:
     // Animation
     float fadeInAlpha = 0.0f;
     float displayTimer = 0.0f;
+    float introProgress = 0.0f;   // 0 -> 1 slide-in progress
+    int hoveredIndex = -1;        // menu item under the finger, -1 when none
 
     // Menu items (authentic original)
     static constexpr int BTN_PLAY       = 0;
@@ -80,6 +82,11 @@ private:
     static constexpr int BTN_DATA_FILES = 2;
     static constexpr int BTN_SUPPORT    = 3;
     static constexpr int BTN_EXIT       = 4;
+
+    // Intro slide: the menu panel enters from the left, the logo from the right.
+    static constexpr float INTRO_SLIDE_SPEED = 2.2f;       // 1 / seconds
+    static constexpr float PANEL_SLIDE_DISTANCE = 90.0f;   // pixels
+    static constexpr float LOGO_SLIDE_DISTANCE = 130.0f;   // pixels
 
     // Original colors (dark stone/metal)
     const glm::vec3 COLOR_STONE       = glm::vec3(0.55f, 0.50f, 0.42f);
@@ -110,6 +117,12 @@ private:
     void buildMainMenu();
     void rebuildLayout();
     void handleSelection();
+
+    // Ease-out cubic for the intro slide.
+    float introEase() const;
+    // Menu item at the given screen point, or -1. Shared by the touch fallback
+    // and the hover tracking so both always agree on which item is active.
+    int hitTestMenuButton(float x, float y) const;
 
     void renderMain();
     void renderOptions();

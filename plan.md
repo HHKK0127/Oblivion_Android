@@ -171,7 +171,7 @@ Note: ACHR/ACRE are decoded and 105 exterior actors are placed from real data (4
 
 | Phase | Feature | Estimate | Dependencies | Status |
 |-------|---------|----------|--------------|--------|
-| **Phase 62** | Foundation: unify `build.gradle` / `build.gradle.kts` (versionName, minSdk, targetSdk conflicts), version consistency across README/CHANGELOG/plan.md, CI wiring, connect the 5 test suites, legal audit of decompiled-derived sources (OpenTES4Oblivion, xOBSE, Common-Oblivion-Engine-Framework) | 2 weeks | None | Pending |
+| **Phase 62** | Foundation: unify `build.gradle` / `build.gradle.kts` (versionName, minSdk, targetSdk conflicts), version consistency across README/CHANGELOG/plan.md, CI wiring, connect the 5 test suites, legal audit of decompiled-derived sources (OpenTES4Oblivion, xOBSE, Common-Oblivion-Engine-Framework) | 2 weeks | None | In progress: build-config unification and CI wiring done (`012a5bb4`); CI has not run yet |
 | **Phase 63** | Performance foundation: batch TextRenderer (glyph atlas + instancing), remove per-frame LOGI (text_renderer.cpp L386, L524), cache `glGetProgramiv` (L331), merge draw calls | 2-3 weeks | None | Done (glyph loop batched, build green) |
 | **Phase 64** | Real data pipeline: decode the 19 missing record types (ACHR, ACRE, PGRD, GMST, LTEX, WATR, AMMO, GLOB, FURN, IDLE, LSCR, SGST, EFSH, SLGM, CSTY, ...), fix BSA v103 folder table interpretation, asset resolution for nif 9,645 / dds 21,856, memory budget design | 4-6 weeks | 62 | Done (all 20 types decoded, verified on emulator with real Oblivion.esm) |
 | **Phase 65** | Full world rendering: CELL 35,787, LAND 31,927 (terrain mesh + LTEX blending), WRLD 103, LOD 10,810, weather/time of day, water, cell streaming, door transitions | 8-12 weeks | 64 | In progress (terrain mesh + per-quadrant LTEX texturing landed and verified - `Terrain textured: 9 of 9 drawn cells, 36 texture bindings, 9 LTEX loaded`; measured 30-33 fps in gameplay. Remaining: VTXT multi-layer opacity blending, native-heap reduction, water, weather, doors, LOD) |
@@ -228,21 +228,21 @@ workstreams that can run at the same time without fighting each other.
   build-and-install at a time. Workstreams that do not need a device must not touch it.
 - Local `assembleDebug` takes ~1 minute and needs ~4 GB of RAM alongside the emulator; two
   concurrent Gradle builds on this machine degrade both.
-- There is a large body of **uncommitted local work** (96 changed paths: the Gradle Kotlin-DSL to
-  Groovy migration, removal of Bethesda loading-screen and intro-video assets, `.github/workflows/android.yml`,
-  and 40 modified native sources). Until that is committed, CI has never run and none of the
-  verified-on-emulator fixes are persisted. This is the highest-risk item in the whole plan.
+- The whole body of local work is now **committed** (98 paths in `012a5bb4`, 2026-09-22): the Gradle
+  Kotlin-DSL to Groovy migration, removal of Bethesda loading-screen and intro-video assets,
+  `.github/workflows/android.yml`, `plan.md` and the modified native sources. `master` is 3 commits
+  ahead of `origin/master`, so `Android CI` has still never run; pushing is the remaining step and it
+  is a user decision.
 - **`.github/workflows/android.yml` has been pre-validated against the real project so the first CI run is not a debugging session.** Three mismatches were found and fixed: the workflow set up JDK 17 while `gradle/gradle-daemon-jvm.properties` pins `toolchainVersion=21`, so the daemon JVM criteria could not be satisfied; `ndkVersion` was not pinned anywhere, leaving AGP free to resolve a different NDK than the one the workflow installs (it is now `26.1.10909125` in `app/build.gradle`, matching AGP 8.5's default and the local SDK, verified with a successful `assembleDebug`); and `cmake;3.22.1` — which AGP 8.5 requires and will not substitute — is now installed explicitly alongside the NDK, after `sdkmanager --licenses`. The workflow's version-consistency gate was also run locally and passes: `versionName=0.9.10` derives `versionCode=910`. The remaining unverified parts are the GitHub-hosted runner itself and the native build time for 3 ABIs, which the 60-minute timeout covers
-- **Consequence for orchestration: WS-A and WS-B cannot start as separate worktree sessions yet.**
-  A worktree session branches off committed `master`, and committed `master` is materially older
-  than the working tree: `HEAD` still carries `app/build.gradle.kts` with `versionName "1.0"` /
-  `versionCode 1`, has no `app/build.gradle`, and has no `.github/workflows/android.yml`. A child
-  session started now would build a different project than the one verified on the emulator, so
-  the pending work must be committed first. Committing is a user decision, not an autonomous one.
+- **Orchestration is unblocked: WS-A and WS-B can start as separate worktree sessions.** A worktree
+  session branches off committed `master`, and committed `master` now carries the verified project
+  (`app/build.gradle` with `ndkVersion '26.1.10909125'`, no Kotlin-DSL build files,
+  `.github/workflows/android.yml`), so a child session builds exactly what was verified on the
+  emulator. What still needs the user is the push, because that is what starts the first `Android CI` run.
 
 | WS | Scope | Phase | Depends on | Needs emulator | Owner |
 |----|-------|-------|------------|----------------|-------|
-| **WS-A** | Foundation: commit the pending local work, get `Android CI` green on GitHub, wire the 5 native C++ test suites (`phase30_integration_test`, `phase45_unit_tests`, `phase48_integration_test`, `phase48_stress_test`, `script_vm_tests`) into CI via a host-side runner, enforce version consistency | 62 | None | No | Child session |
+| **WS-A** | Foundation: push the committed work and get `Android CI` green on GitHub, wire the 5 native C++ test suites (`phase30_integration_test`, `phase45_unit_tests`, `phase48_integration_test`, `phase48_stress_test`, `script_vm_tests`) into CI via a host-side runner, enforce version consistency | 62 | None | No | Child session |
 | **WS-B** | Script VM coverage: grow the 118 implemented functions toward ~1,200, ordered by the main-quest critical path, each function covered by `script_vm_tests` | 67 (start) | None | No | Child session |
 | **WS-C** | World rendering: LTEX terrain texture blending, static-object NIF rendering, water, weather, door transitions, LOD | 65 | 64 | **Yes** | This session |
 | **WS-D** | Characters: load NPC_/CREA meshes from `nif`, skeleton and animation from `kf`, PACK execution, PGRD pathfinding | 66 | 64, 65 | **Yes** | Later, after WS-C |
@@ -250,8 +250,8 @@ workstreams that can run at the same time without fighting each other.
 **Why this split**
 - WS-A and WS-B are pure code/config work with no device dependency, so they can run fully in
   parallel with WS-C, which owns the emulator.
-- WS-A is deliberately first: without it, every other workstream's output stays uncommitted and
-  unverified by CI. It is also the cheapest workstream and unblocks regression safety for all
+- WS-A is deliberately first: until CI runs, every other workstream's output is unverified by a
+  regression gate. It is also the cheapest workstream and unblocks regression safety for all
   the rest.
 - WS-B is the single largest work item in the project (about 1,080 missing functions) and the
   critical path runs through Phase 67, so it should start as early as possible rather than
@@ -260,7 +260,8 @@ workstreams that can run at the same time without fighting each other.
   same NIF loader that WS-C builds for static objects.
 
 **Sequencing**
-1. WS-A and WS-B start once the pending local work is committed (see the orchestration constraint above).
+1. WS-A and WS-B can start now that the local work is committed (`012a5bb4`); WS-A's first job is
+   the push that starts the first `Android CI` run.
 2. WS-C continues in this session: terrain streaming is done and verified (9 active cells);
    next is LTEX blending so terrain stops being a flat green colour.
 3. When WS-A lands, WS-B's and WS-C's work gains CI coverage.

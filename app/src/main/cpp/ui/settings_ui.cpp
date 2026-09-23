@@ -62,7 +62,7 @@ void SettingsUI::buildGraphicalSettings() {
 
     // Load panel background texture
     if (panelTexture == 0) {
-        panelTexture = TextureLoader::loadTextureFromAsset("textures/ui/main_background.png");
+        panelTexture = TextureLoader::loadTextureFromAsset("textures/ui/loading_background.png");
         if (panelTexture != 0) {
             settingsPanel->setTexture(panelTexture);
             LOGI("SettingsUI: Panel background texture loaded: %u", panelTexture);

@@ -49,6 +49,25 @@ enum class CellLoadState : uint8_t {
 };
 
 // ============================================================================
+// Terrain additive layers (LAND ATXT/VTXT)
+// ============================================================================
+
+// One ATXT texture group: a landscape texture (LTEX FormID) painted over one
+// quadrant of the BTXT base textures, with per-vertex opacities from the
+// following VTXT subrecords. The renderer keeps a dense 33x33 cell-local grid
+// so terrain-mesh vertex lookups are O(1); the loader keeps only the sparse
+// packed positions until the cell is actually assigned.
+struct TerrainAdditiveLayer {
+    uint32_t textureFormID = 0;       // LTEX FormID
+    uint8_t quadrant = 0;             // 0=SW, 1=SE, 2=NW, 3=NE
+    uint8_t layer = 0;                // 0-7 (BTXT is the lowest layer)
+    // Dense 33x33 cell-local opacity grid, row-major (gridY*33+gridX), ready to
+    // be sampled directly by the terrain mesh builder. Values 0.0-1.0. Empty
+    // when the layer carries no painted weights.
+    std::vector<float> opacityGrid;
+};
+
+// ============================================================================
 // World Objects - Base class for objects placed in cells
 // ============================================================================
 
@@ -96,9 +115,22 @@ struct Cell {
 
     // Terrain
     std::shared_ptr<Terrain> terrain;
-    std::vector<float> heightData;          // 33x33 height values in game units
+    // Dense 33x33 height values in game units. This is a render/query CACHE, not
+    // the source of truth: the LAND record in the ESM keeps the compact form
+    // (1089 gradient bytes plus sparse layer weights), and only cells that are
+    // actually rendered materialise the dense grids. Expanding every cell up
+    // front cost ~64 MB of heights plus ~1.3 GB of layer opacity grids for the
+    // 14,686 cells of Tamriel while only a handful are ever drawn.
+    std::vector<float> heightData;
+    // A LAND record exists for this cell (set from the ESM, survives eviction).
+    bool hasTerrain = false;
+    // heightData/additiveLayers currently hold the expanded dense form.
+    bool terrainExpanded = false;
     // LTEX formIDs for the four LAND quadrants, indexed 0=SW, 1=SE, 2=NW, 3=NE.
     uint32_t landscapeTextures[4] = {0, 0, 0, 0};
+        // ATXT/VTXT additive texture layers painted on top of the base quadrants.
+        // Only populated for cells that actually carry VTXT data.
+        std::vector<TerrainAdditiveLayer> additiveLayers;
 
     // Resource management
     size_t memoryUsage;
@@ -117,6 +149,19 @@ struct Cell {
           ambientColor(0xFFFFFFFF) {}
 
     // Methods
+    bool hasDenseTerrain() const {
+        return heightData.size() ==
+               static_cast<size_t>(TERRAIN_RESOLUTION) * static_cast<size_t>(TERRAIN_RESOLUTION);
+    }
+
+    // Drop the dense terrain cache. hasTerrain stays set, so the renderer can
+    // rebuild it from the ESM record the next time the cell becomes visible.
+    void releaseTerrainExpansion() {
+        std::vector<float>().swap(heightData);
+        std::vector<TerrainAdditiveLayer>().swap(additiveLayers);
+        terrainExpanded = false;
+    }
+
     bool isActive() const { return loadState == CellLoadState::LOADED; }
     bool isLoading() const { return loadState == CellLoadState::LOADING; }
     bool isLoaded() const { return loadState == CellLoadState::LOADED; }

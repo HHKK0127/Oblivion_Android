@@ -6,8 +6,11 @@ import android.media.MediaPlayer
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.Surface
+import kotlin.random.Random
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
@@ -24,8 +27,14 @@ class GameRenderer : GLSurfaceView.Renderer {
     private var titleVideoPlayer: MediaPlayer? = null
     private var titleVideoSurfaceTexture: SurfaceTexture? = null
     private var titleVideoTextureId: Int = 0
-    private var titleVideoReady: Boolean = false
+    // Written by the frame-available callback (main looper), read from the GL thread.
+    // The callback is informational only: onDrawFrame must not gate updateTexImage on it.
+    @Volatile
+    private var titleVideoCallbackCount: Int = 0
     private var titleVideoInitAttempted: Boolean = false
+    // Diagnostics: frames pulled from the SurfaceTexture per second.
+    private var titleVideoFrameCount: Int = 0
+    private var titleVideoErrorCount: Int = 0
 
     companion object {
         private const val TAG = "GameRenderer"
@@ -179,62 +188,103 @@ class GameRenderer : GLSurfaceView.Renderer {
     private fun initTitleVideo(context: android.content.Context) {
         Log.i(TAG, "initTitleVideo called")
         try {
-            // Find map_loop.mp4 - check both oblivion_assets/videos/ and videos/ paths
-            val extDir = context.getExternalFilesDir(null)
-            Log.d(TAG, "External files dir: ${extDir?.absolutePath}")
+                val extDir = context.getExternalFilesDir(null)
+                Log.d(TAG, "External files dir: ${extDir?.absolutePath}")
 
-            // Primary path: oblivion_assets/videos/ (where AssetExtractor puts it)
-            var videoFile = java.io.File(extDir, "oblivion_assets/videos/map_loop.mp4")
-            if (!videoFile.exists()) {
-                // Fallback: direct videos/ path
-                videoFile = java.io.File(extDir, "videos/map_loop.mp4")
+                // Title flow: Oblivion IV logo (played once), then a looping background
+                // (map_loop.mp4 by default; 1% chance of credits_menu.mp4 easter egg).
+                val backgroundName = if (Random.nextInt(100) == 0) "credits_menu.mp4" else "map_loop.mp4"
+                Log.i(TAG, "Title background selected: $backgroundName (1% credits_menu easter egg)")
+                val ivLogoFile = findTitleVideoFile(extDir, "oblivion_iv_logo.mp4")
+                val backgroundFile = findTitleVideoFile(extDir, backgroundName)
+                if (backgroundFile == null) {
+                    Log.w(TAG, "$backgroundName not found at either oblivion_assets/videos/ or videos/ in ${extDir?.absolutePath}")
+                    return
+                }
+
+                // Create OES texture
+                val textures = IntArray(1)
+                GLES20.glGenTextures(1, textures, 0)
+                titleVideoTextureId = textures[0]
+                GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, titleVideoTextureId)
+                GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR)
+                GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
+                GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
+                GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
+                GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, 0)
+
+                // Create SurfaceTexture from OES texture
+                titleVideoSurfaceTexture = SurfaceTexture(titleVideoTextureId)
+                // The GL thread has no Looper, so the listener must be given a Handler explicitly.
+                // Without one this call throws (and the catch below tore the whole video down,
+                // leaving the title on its static background).
+                titleVideoSurfaceTexture!!.setOnFrameAvailableListener(
+                    { titleVideoCallbackCount++ },
+                    Handler(Looper.getMainLooper()))
+
+                // Create MediaPlayer. Play the IV logo once (if present), then switch to
+                // the looping background on completion. Without the IV logo, play the
+                // background directly.
+                titleVideoPlayer = MediaPlayer().apply {
+                    setSurface(Surface(titleVideoSurfaceTexture))
+                    val firstFile = ivLogoFile ?: backgroundFile
+                    setDataSource(firstFile.absolutePath)
+                    isLooping = ivLogoFile == null
+                    if (ivLogoFile != null) {
+                        setOnCompletionListener {
+                            Log.i(TAG, "Title IV logo completed, switching to background: $backgroundName")
+                            switchToBackgroundVideo(titleVideoPlayer, backgroundFile)
+                        }
+                    }
+                    setVolume(0f, 0f) // Muted - game has its own music
+                    prepare()
+                    start()
+                }
+
+                val startedFile = if (ivLogoFile != null) "oblivion_iv_logo.mp4 -> $backgroundName" else backgroundName
+                Log.i(TAG, "Title video initialized: textureId=$titleVideoTextureId, file=$startedFile")
+
+                // Notify native of texture ID
+                nativeSetTitleVideoTexture(titleVideoTextureId)
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to init title video: ${e.message}", e)
+                titleVideoPlayer?.release()
+                titleVideoPlayer = null
+                titleVideoSurfaceTexture?.release()
+                titleVideoSurfaceTexture = null
             }
-            Log.d(TAG, "Video file exists: ${videoFile.exists()}, path: ${videoFile.absolutePath}")
-            if (!videoFile.exists()) {
-                Log.w(TAG, "map_loop.mp4 not found at either oblivion_assets/videos/ or videos/ in ${extDir?.absolutePath}")
-                return
-            }
-
-            // Create OES texture
-            val textures = IntArray(1)
-            GLES20.glGenTextures(1, textures, 0)
-            titleVideoTextureId = textures[0]
-            GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, titleVideoTextureId)
-            GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR)
-            GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
-            GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
-            GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
-            GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, 0)
-
-            // Create SurfaceTexture from OES texture
-            titleVideoSurfaceTexture = SurfaceTexture(titleVideoTextureId)
-            titleVideoSurfaceTexture!!.setOnFrameAvailableListener {
-                titleVideoReady = true
-            }
-
-            // Create MediaPlayer
-            titleVideoPlayer = MediaPlayer().apply {
-                setSurface(Surface(titleVideoSurfaceTexture))
-                setDataSource(videoFile.absolutePath)
-                isLooping = true
-                setVolume(0f, 0f) // Muted - game has its own music
-                prepare()
-                start()
-            }
-
-            Log.i(TAG, "Title video initialized: textureId=$titleVideoTextureId, file=${videoFile.absolutePath}")
-
-            // Notify native of texture ID
-            nativeSetTitleVideoTexture(titleVideoTextureId)
-
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to init title video: ${e.message}", e)
-            titleVideoPlayer?.release()
-            titleVideoPlayer = null
-            titleVideoSurfaceTexture?.release()
-            titleVideoSurfaceTexture = null
         }
-    }
+
+        // Helper: locate a title video under oblivion_assets/videos/ or videos/.
+        private fun findTitleVideoFile(extDir: java.io.File?, name: String): java.io.File? {
+            if (extDir == null) return null
+            // Primary path: oblivion_assets/videos/ (where AssetExtractor puts it)
+            val primary = java.io.File(extDir, "oblivion_assets/videos/$name")
+            if (primary.exists()) return primary
+            // Fallback: direct videos/ path
+            val fallback = java.io.File(extDir, "videos/$name")
+            if (fallback.exists()) return fallback
+            return null
+        }
+
+        // Switch the title MediaPlayer to the looping background video.
+        // Runs on the main thread (MediaPlayer completion callback).
+        private fun switchToBackgroundVideo(player: MediaPlayer?, backgroundFile: java.io.File?) {
+            if (player == null || backgroundFile == null) return
+            try {
+                player.reset()
+                player.setDataSource(backgroundFile.absolutePath)
+                player.isLooping = true
+                player.setOnCompletionListener(null)
+                player.setVolume(0f, 0f) // Muted - game has its own music
+                player.prepare()
+                player.start()
+                Log.i(TAG, "Title background playing: ${backgroundFile.absolutePath}")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to switch title background: ${e.message}", e)
+            }
+        }
 
     private fun releaseTitleVideo() {
         try {
@@ -248,7 +298,6 @@ class GameRenderer : GLSurfaceView.Renderer {
                 GLES20.glDeleteTextures(1, textures, 0)
                 titleVideoTextureId = 0
             }
-            titleVideoReady = false
         } catch (e: Exception) {
             Log.e(TAG, "Error releasing title video: ${e.message}")
         }
@@ -327,14 +376,22 @@ class GameRenderer : GLSurfaceView.Renderer {
                     return
                 }
 
-                // Update title video texture if new frame available
-                if (titleVideoReady && titleVideoSurfaceTexture != null) {
+                // Pull the newest video frame every frame while the title video is alive.
+                // Gating this on the frame-available callback froze the video: once the
+                // callback stopped firing (measured: image stuck at ~7 s of a 25 s clip with
+                // updateTexImage called 0 times in 5 s) the BufferQueue filled up, MediaPlayer
+                // blocked in dequeueBuffer and the picture never advanced again. The callback
+                // is only used as a hint now; it must not gate the update.
+                val titleSurfaceTexture = titleVideoSurfaceTexture
+                if (titleSurfaceTexture != null) {
                     try {
-                        titleVideoSurfaceTexture!!.updateTexImage()
+                        titleSurfaceTexture.updateTexImage()
                         nativeUpdateTitleVideoTexture()
-                        titleVideoReady = false
+                        titleVideoFrameCount++
                     } catch (e: Exception) {
-                        Log.w(TAG, "Error updating title video texture: ${e.message}")
+                        if (titleVideoErrorCount++ < 3) {
+                            Log.w(TAG, "Error updating title video texture: ${e.message}")
+                        }
                     }
                 }
 
@@ -349,6 +406,16 @@ class GameRenderer : GLSurfaceView.Renderer {
                 val currentTime = System.currentTimeMillis()
                 if (currentTime - lastLogTime >= 1000) {
                     Log.d(TAG, "FPS: $frameCount")
+                    if (titleVideoSurfaceTexture != null) {
+                        Log.d(
+                            TAG,
+                            "Title video: updateTexImage=$titleVideoFrameCount/s" +
+                                " callbacks=$titleVideoCallbackCount/s" +
+                                " errors(total)=$titleVideoErrorCount"
+                        )
+                        titleVideoFrameCount = 0
+                        titleVideoCallbackCount = 0
+                    }
                     frameCount = 0
                     lastLogTime = currentTime
                 }

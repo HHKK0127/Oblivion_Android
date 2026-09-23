@@ -11,6 +11,7 @@
 // #include "../jni_audio_bridge.h"  // Deferred - requires Java MainActivity
 
 #include <glm/glm.hpp>
+#include <algorithm>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -431,6 +432,12 @@ void Renderer::resize(unsigned int width, unsigned int height) {
     if (settingsUI) {
         settingsUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
         LOGI("SettingsUI screen size updated to: %ux%u", screenWidth, screenHeight);
+    }
+
+    // Update SaveLoadUI layout
+    if (saveLoadUI) {
+        saveLoadUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        LOGI("SaveLoadUI screen size updated to: %ux%u", screenWidth, screenHeight);
     }
 }
 
@@ -1401,6 +1408,12 @@ bool Renderer::initGameSystems() {
     refs.toggleDebugMenu = [this]() {
         if (debugMenu) debugMenu->toggle();
     };
+    refs.setTitlePlainStyle = [this](bool plain) {
+        if (titleScreen) titleScreen->setPlainStyleDisabled(plain);
+    };
+    refs.getTitlePlainStyle = [this]() -> bool {
+        return titleScreen ? titleScreen->isPlainStyleDisabled() : false;
+    };
 
     // Phase 65: Extended Debug callbacks
     refs.toggleWireframe = [this]() {
@@ -1743,7 +1756,8 @@ bool Renderer::initGameSystems() {
         if (!saveLoadUI->initialize(textRenderer.get(), saveManager.get(), this)) {
             LOGE("Failed to initialize SaveLoadUI");
         } else {
-            LOGI("SaveLoadUI initialized successfully");
+            saveLoadUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+            LOGI("SaveLoadUI initialized successfully (screen %ux%u)", screenWidth, screenHeight);
         }
     }
 
@@ -1832,7 +1846,7 @@ bool Renderer::initGameSystems() {
         fullMap->setDraggable(false); // Full-screen map doesn't need dragging
 
         // Apply background texture if available
-        GLuint mapBgTex = TextureLoader::loadTextureFromAsset("textures/ui/main_background.png");
+        GLuint mapBgTex = TextureLoader::loadTextureFromAsset("textures/ui/loading_background.png");
         if (mapBgTex != 0) {
             fullMap->setTexture(mapBgTex);
             fullMap->setTextureScaleMode(TextureScaleMode::STRETCH);
@@ -2082,6 +2096,115 @@ bool Renderer::initGameSystems() {
     return true;
 }
 
+        // ============================================================
+        // Phase 65: Terrain rendering from TES4 LAND heightmaps
+        // ============================================================
+        //
+        // Every exterior cell carries a 33x33 heightmap in game units (filled by
+        // ESMFile::decodeTerrain and assigned in loadBSAArchives). The grid's local
+        // X maps to world X and its local Y maps to world Z because the engine is
+        // Y-up; this matches Cell::getTerrainHeightAt() and DistantLodManager.
+        //
+        // The constants live here (before loadBSAArchives) so the terrain-assign loop
+        // that runs during scenario build can reference them; renderTerrainMeshes()
+        // uses the same values when it builds the actual meshes.
+        static const int TERRAIN_MESH_GRID = 33;
+        static const float TERRAIN_MESH_CELL_SIZE = 4096.0f;
+        // Landscape textures are authored to tile across the world, so UVs come from world
+        // position divided by this scale rather than from 0..1 across the cell.
+        static const float TERRAIN_TEXTURE_SCALE = 512.0f;
+        // Bound on distinct LTEX textures kept in GPU memory. The emulator is memory
+        // constrained (720 MB total PSS measured), so this is deliberately modest.
+        static const size_t MAX_LANDSCAPE_TEXTURES = 48;
+        // Landscape texture cache capacity. It must stay above the working set of a
+        // 3x3 cell neighbourhood (9 cells x 4 base + 4 overlay bindings = 72) so
+        // ordinary roaming does not evict and re-acquire every frame.
+        static const size_t LANDSCAPE_TEXTURE_CACHE_LIMIT = MAX_LANDSCAPE_TEXTURES * 4;
+        // pos(3) + normal(3) + uv(2) + quadrant blend weights(4) + additive layer weights(4)
+        static const int TERRAIN_VERTEX_FLOATS = 16;
+        // ATXT/VTXT additive layers are blended texture-by-texture; at most this many
+        // distinct LTEX layers are carried per vertex. 4 keeps the vertex at 64 bytes
+        // and matches the shader's uTex4..uTex7 blend slots.
+        static const int TERRAIN_MAX_ADD_LAYERS = 4;
+
+        // ATXT/VTXT paint positions are packed per quadrant as a 17x17 row-major grid
+        // (position 0..288). Expand them into the dense 33x33 cell-local heightmap
+        // index used by the terrain mesh vertex builder: the quadrant's 16-unit offset
+        // lands the sub-grid inside the cell at the corresponding corner.
+        static int quadrantPositionToCellIndex(uint16_t position, uint8_t quadrant) {
+            const int quadX = static_cast<int>(position) % 17;
+            const int quadY = static_cast<int>(position) / 17;
+            const int cellX = quadX + ((quadrant == 1 || quadrant == 3) ? 16 : 0);
+            const int cellY = quadY + ((quadrant == 2 || quadrant == 3) ? 16 : 0);
+            return cellX + cellY * TERRAIN_MESH_GRID;
+        }
+
+        // Dense terrain is a cache, not the source of truth: the compact LAND
+        // record stays in the ESM and the 33x33 grids are rebuilt on demand. The
+        // LRU keeps residency proportional to the drawn neighbourhood instead of
+        // holding every visited cell for the rest of the session.
+        static std::vector<std::shared_ptr<Cell>> g_denseTerrainLru;  // front = least recently drawn
+        static const size_t DENSE_TERRAIN_BUDGET = MAX_ACTIVE_CELLS + 8;
+
+        static void touchDenseTerrain(const std::shared_ptr<Cell>& cell) {
+            auto it = std::find(g_denseTerrainLru.begin(), g_denseTerrainLru.end(), cell);
+            if (it != g_denseTerrainLru.end()) g_denseTerrainLru.erase(it);
+            g_denseTerrainLru.push_back(cell);
+        }
+
+        // Materialise a cell's dense terrain from its compact LAND record.
+        static bool expandCellTerrain(Cell& cell, const oblivion::ESMManager& esmMgr) {
+            if (cell.hasDenseTerrain()) {
+                cell.terrainExpanded = true;
+                return true;
+            }
+            if (!cell.hasTerrain || cell.tesFormID == 0) return false;
+
+            const oblivion::TerrainData* terrain = nullptr;
+            for (const auto& candidate : esmMgr.getAllTerrains()) {
+                if (candidate.formID == cell.tesFormID) {
+                    if (!candidate.hasHeights()) return false;
+                    terrain = &candidate;
+                    break;
+                }
+            }
+            if (!terrain) return false;
+
+            cell.heightData = terrain->expandHeights();
+            cell.additiveLayers.clear();
+            cell.additiveLayers.reserve(terrain->addedLayers.size());
+            for (const auto& layer : terrain->addedLayers) {
+                TerrainAdditiveLayer dense;
+                dense.textureFormID = layer.textureFormID;
+                dense.quadrant = layer.quadrant;
+                dense.layer = layer.layer;
+                dense.opacityGrid.assign(
+                    static_cast<size_t>(TERRAIN_MESH_GRID) * TERRAIN_MESH_GRID, 0.0f);
+                for (size_t i = 0; i < layer.positions.size() && i < layer.opacities.size(); ++i) {
+                    const size_t idx = static_cast<size_t>(
+                        quadrantPositionToCellIndex(layer.positions[i], layer.quadrant));
+                    dense.opacityGrid[idx] = std::max(dense.opacityGrid[idx], layer.opacities[i]);
+                }
+                cell.additiveLayers.push_back(std::move(dense));
+            }
+            cell.terrainExpanded = true;
+            return true;
+        }
+
+// Shared by the synchronous and asynchronous ESM load paths so both report the
+// same summary in logcat.
+static void logEsmRecordCounts(AssetManager* am) {
+    if (!am) {
+        return;
+    }
+    auto& esm = am->getEsmManager();
+    LOGI("Record count: %zu", esm.getRecordCount());
+    LOGI("Plugin count: %zu", esm.getPluginCount());
+    LOGI("CELL records: %zu", esm.findRecordsByType("CELL"));
+    LOGI("NPC_ records: %zu", esm.findRecordsByType("NPC_"));
+    LOGI("WEAP records: %zu", esm.findRecordsByType("WEAP"));
+}
+
 void Renderer::loadBSAArchives() {
     if (!assetManager) {
         LOGE("loadBSAArchives: AssetManager not initialized");
@@ -2134,22 +2257,58 @@ void Renderer::loadBSAArchives() {
     LOGI("Loaded %d / %zu BSA archives", loadedCount,
          sizeof(bsaArchives) / sizeof(bsaArchives[0]));
 
-    // Load ESM game data
+    // Load ESM game data. Extracting the plugin bytes stays on this thread because
+    // BSArchive owns a single stream and is not thread safe, but the parse itself is
+    // CPU bound (several seconds for Oblivion.esm), so it runs on a worker thread
+    // while the launcher/title screen is already drawing. render() re-checks
+    // ensureScenarioBuilt() every frame, so the world is built from real game data as
+    // soon as the worker flips gameDataLoadAttempted.
     LOGI("Loading ESM game data...");
-    if (assetManager->loadEsmFromArchive("Oblivion.esm")) {
-        LOGI("  [OK] Loaded Oblivion.esm");
-        LOGI("Record count: %zu", assetManager->getEsmManager().getRecordCount());
-        LOGI("Plugin count: %zu", assetManager->getEsmManager().getPluginCount());
-        LOGI("CELL records: %zu", assetManager->getEsmManager().findRecordsByType("CELL"));
-        LOGI("NPC_ records: %zu", assetManager->getEsmManager().findRecordsByType("NPC_"));
-        LOGI("WEAP records: %zu", assetManager->getEsmManager().findRecordsByType("WEAP"));
-    } else {
+    std::vector<uint8_t> esmBytes;
+    if (!assetManager->extractEsmFromArchive("Oblivion.esm", esmBytes)) {
         LOGW("  [--] Oblivion.esm not found (will test without ESM data)");
+        gameDataLoadAttempted.store(true, std::memory_order_release);
+        ensureScenarioBuilt();
+        return;
     }
 
-    // Game data load is complete: build the world from it (or fall back to the
-    // hardcoded scenario) if that has not happened yet.
-    gameDataLoadAttempted = true;
+    LOGI("  [OK] Extracted Oblivion.esm (%zu bytes)", esmBytes.size());
+
+    // initialize() is idempotent, and calling it here also covers
+    // nativeSetDataPath() arriving before init(), so the pool is always live by the
+    // time a parse is submitted.
+    if (!asyncTaskMgr_.initialize(2)) {
+        LOGW("  [--] Async worker pool unavailable, parsing on the render thread");
+        if (assetManager->parseEsmFromMemory("Oblivion.esm", esmBytes)) {
+            LOGI("  [OK] Loaded Oblivion.esm");
+            logEsmRecordCounts(assetManager.get());
+        }
+        gameDataLoadAttempted.store(true, std::memory_order_release);
+        ensureScenarioBuilt();
+        return;
+    }
+    asyncTasksReady = true;
+
+    LOGI("Parsing Oblivion.esm on a worker thread...");
+    auto esmBuffer = std::make_shared<std::vector<uint8_t>>(std::move(esmBytes));
+    asyncTaskMgr_.submitESMParse([this, esmBuffer]() {
+        const bool ok = assetManager->parseEsmFromMemory("Oblivion.esm", *esmBuffer);
+        // Release the plugin buffer as soon as the parse is done: the world build
+        // only reads the parsed records.
+        esmBuffer->clear();
+        esmBuffer->shrink_to_fit();
+
+        if (ok) {
+            LOGI("  [OK] Loaded Oblivion.esm (async)");
+            logEsmRecordCounts(assetManager.get());
+        } else {
+            LOGW("  [--] Oblivion.esm parse failed (will test without ESM data)");
+        }
+        // Release: the render thread sees the records and builds the world next frame.
+        gameDataLoadAttempted.store(true, std::memory_order_release);
+    });
+
+    // Game data load is still in flight, so this only records the intent to build.
     ensureScenarioBuilt();
 }
 
@@ -2160,12 +2319,18 @@ void Renderer::ensureScenarioBuilt() {
 
     // The Java side registers the data path before init(). While that load is
     // still pending, wait so the world is built from real game data instead of
-    // the hardcoded fallback scenario.
+    // the hardcoded fallback scenario. The async ESM parse also lands here.
     const bool dataExpected = !g_pendingDataPath.empty() || gameDataLoadAttempted;
     if (dataExpected && !gameDataLoadAttempted) {
-        LOGI("Scenario build deferred until game data load completes");
+        // render() re-runs this every frame while the parse is in flight, so only
+        // report the deferral once.
+        if (!scenarioBuildDeferred) {
+            scenarioBuildDeferred = true;
+            LOGI("Scenario build deferred until game data load completes");
+        }
         return;
     }
+    scenarioBuildDeferred = false;
 
     scenarioBuilt = true;
     createTestScenario();
@@ -2383,30 +2548,42 @@ void Renderer::createTestScenario() {
             }
         }
         LOGI("Placed %zu actors and indexed %zu object references (%zu interior refs skipped, %zu unowned refs skipped)",
-             placedActors, placedObjects, skippedInteriorRefs, skippedForeignRefs);
+                     placedActors, placedObjects, skippedInteriorRefs, skippedForeignRefs);
 
-        // 4. Load LAND terrain data and assign to cells
-        const auto& terrains = esmMgr.getAllTerrains();
+                // 4. Load LAND terrain data and assign to cells
+                const auto& terrains = esmMgr.getAllTerrains();
         LOGI("Loading %zu terrain records from ESM data", terrains.size());
         size_t assignedTerrains = 0;
         size_t orphanTerrains = 0;
+        size_t compactAdditiveLayers = 0;
         for (const auto& terrain : terrains) {
             if (!terrain.hasHeights()) continue;
 
             auto cell = worldManager->getCellByFormID(terrain.formID);
             if (cell) {
-                cell->heightData = terrain.expandHeights();
+                // Only the compact facts are recorded here. Expanding all 14,686
+                // Tamriel cells up front cost ~64 MB of heights plus ~1.3 GB of
+                // ATXT/VTXT opacity grids while a handful are ever drawn, so
+                // renderTerrainMeshes() materialises the dense form on demand.
+                cell->hasTerrain = true;
+                cell->terrainExpanded = false;
                 for (int quadrant = 0; quadrant < 4; ++quadrant) {
                     cell->landscapeTextures[quadrant] = terrain.baseTextures[quadrant];
                 }
-                cell->isDirty = true;
-                ++assignedTerrains;
+                                // The sparse ATXT/VTXT weights stay in the ESM record;
+                                // the dense per-vertex opacity grids are built on demand
+                                // by expandCellTerrain(). Layers without painted weights
+                                // were already dropped by the loader.
+                                cell->additiveLayers.clear();
+                                compactAdditiveLayers += terrain.addedLayers.size();
+                                cell->isDirty = true;
+                                ++assignedTerrains;
             } else {
                 ++orphanTerrains;
             }
         }
-        LOGI("Terrain assigned to %zu cells (%zu records had no matching cell)",
-             assignedTerrains, orphanTerrains);
+        LOGI("Terrain assigned to %zu cells (%zu records had no matching cell, %zu ATXT/VTXT layers kept compact)",
+             assignedTerrains, orphanTerrains, compactAdditiveLayers);
 
         // 4b. Place the player on real terrain so the first frame renders the
         // world instead of empty space above it.
@@ -2841,6 +3018,12 @@ void Renderer::render(float deltaTime) {
     // scenario is built from game data at the end of loadBSAArchives().
     ensureScenarioBuilt();
 
+    // Font switches arrive from the input thread, which has no GL context; the atlas
+    // upload happens here, where the context is current.
+    if (textRenderer) {
+        textRenderer->processPendingFontRequest();
+    }
+
     // Launcher takes priority - render and return early
     // When launched from IntroVideoActivity, skip launcher and go directly to title screen
     if (showLauncher && launcherScreen) {
@@ -2852,14 +3035,16 @@ void Renderer::render(float deltaTime) {
             showTitleScreen = true;
             if (titleScreen) {
                 titleScreen->initialize(localizationManager.get(), textRenderer.get());
-                titleScreen->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
-                // Auto-load Oblivion fonts for title screen
+                // Auto-load Oblivion fonts for title screen. Menu layout is measured from
+                // the active face, so the screen size has to be applied after the font is
+                // in place; doing it earlier measures Roboto and misplaces every hit box.
                 if (textRenderer) {
                     textRenderer->loadOblivionFont(FontType::KingthingsRegular);
                     textRenderer->loadOblivionFont(FontType::KingthingsShadowed);
                     textRenderer->setActiveFont(FontType::KingthingsRegular);
                     LOGI("Oblivion fonts loaded for title screen (auto-skip)");
                 }
+                titleScreen->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
 #ifdef AUDIO_SYSTEM_ENABLED
                 if (audioManager) {
                     titleScreen->setAudioManager(audioManager.get());
@@ -3021,6 +3206,16 @@ void Renderer::render(float deltaTime) {
         }
         if (gameConsole && gameConsole->isVisible()) {
             gameConsole->render();
+        }
+        // Continue / Load / Options open these screens on top of the still-active
+        // title screen. They must be drawn here as well: the early return below
+        // skips the game-frame overlay pass, which used to leave them invisible
+        // while they still consumed every touch (menu looked frozen).
+        if (saveLoadUI && saveLoadUI->isVisible()) {
+            saveLoadUI->render();
+        }
+        if (settingsUI && settingsUI->isVisible()) {
+            settingsUI->render();
         }
         // Skip frame rate control for quick return
         if (performanceMonitor) {
@@ -3557,22 +3752,6 @@ static const char* placeholderFragmentSrc =
 // ============================================================
 // Phase 65: Terrain rendering from TES4 LAND heightmaps
 // ============================================================
-//
-// Every exterior cell carries a 33x33 heightmap in game units (filled by
-// ESMFile::decodeTerrain and assigned in loadBSAArchives). The grid's local
-// X maps to world X and its local Y maps to world Z because the engine is
-// Y-up; this matches Cell::getTerrainHeightAt() and DistantLodManager.
-static const int TERRAIN_MESH_GRID = 33;
-static const float TERRAIN_MESH_CELL_SIZE = 4096.0f;
-// Landscape textures are authored to tile across the world, so UVs come from world
-// position divided by this scale rather than from 0..1 across the cell.
-static const float TERRAIN_TEXTURE_SCALE = 512.0f;
-// Bound on distinct LTEX textures kept in GPU memory. The emulator is memory
-// constrained (720 MB total PSS measured), so this is deliberately modest.
-static const size_t MAX_LANDSCAPE_TEXTURES = 48;
-// pos(3) + normal(3) + uv(2) + quadrant blend weights(4)
-static const int TERRAIN_VERTEX_FLOATS = 12;
-
 // Terrain shader. Blends the four LAND BTXT quadrant textures by per-vertex weights
 // computed on the CPU, and falls back to a flat colour when no texture resolved.
 static const char* terrainVertexSrc =
@@ -3582,14 +3761,17 @@ static const char* terrainVertexSrc =
 "in vec3 aNormal;\n"
 "in vec2 aUv;\n"
 "in vec4 aBlend;\n"
+"in vec4 aAddBlend;\n"
 "out vec3 vNormal;\n"
 "out vec2 vUv;\n"
 "out vec4 vBlend;\n"
+"out vec4 vAddBlend;\n"
 "void main() {\n"
 "    gl_Position = uMVP * vec4(aPosition, 1.0);\n"
 "    vNormal = aNormal;\n"
 "    vUv = aUv;\n"
 "    vBlend = aBlend;\n"
+"    vAddBlend = aAddBlend;\n"
 "}\n";
 
 static const char* terrainFragmentSrc =
@@ -3599,12 +3781,18 @@ static const char* terrainFragmentSrc =
 "uniform sampler2D uTex1;\n"
 "uniform sampler2D uTex2;\n"
 "uniform sampler2D uTex3;\n"
+"uniform sampler2D uTex4;\n"
+"uniform sampler2D uTex5;\n"
+"uniform sampler2D uTex6;\n"
+"uniform sampler2D uTex7;\n"
 "uniform vec4 uHasTex;\n"
+"uniform vec4 uHasAddTex;\n"
 "uniform vec4 uColor;\n"
 "uniform vec3 uLightDir;\n"
 "in vec3 vNormal;\n"
 "in vec2 vUv;\n"
 "in vec4 vBlend;\n"
+"in vec4 vAddBlend;\n"
 "out vec4 fragColor;\n"
 "void main() {\n"
 "    vec3 accum = vec3(0.0);\n"
@@ -3614,9 +3802,23 @@ static const char* terrainFragmentSrc =
 "    if (uHasTex.z > 0.5) { accum += texture(uTex2, vUv).rgb * vBlend.z; weightSum += vBlend.z; }\n"
 "    if (uHasTex.w > 0.5) { accum += texture(uTex3, vUv).rgb * vBlend.w; weightSum += vBlend.w; }\n"
 "    vec3 base = (weightSum > 0.001) ? (accum / weightSum) : uColor.rgb;\n"
+"    // ATXT/VTXT layers are painted on top of the BTXT base. Each slot holds the\n"
+"    // weight of one distinct LTEX drawn over a quadrant; the largest weight wins\n"
+"    // so multiple slots do not accumulate a sun-bleached blend.\n"
+"    float addWeight = 0.0;\n"
+"    vec3 addAccum = vec3(0.0);\n"
+"    if (uHasAddTex.x > 0.5) { addAccum += texture(uTex4, vUv).rgb * vAddBlend.x; addWeight += vAddBlend.x; }\n"
+"    if (uHasAddTex.y > 0.5) { addAccum += texture(uTex5, vUv).rgb * vAddBlend.y; addWeight += vAddBlend.y; }\n"
+"    if (uHasAddTex.z > 0.5) { addAccum += texture(uTex6, vUv).rgb * vAddBlend.z; addWeight += vAddBlend.z; }\n"
+"    if (uHasAddTex.w > 0.5) { addAccum += texture(uTex7, vUv).rgb * vAddBlend.w; addWeight += vAddBlend.w; }\n"
+"    vec3 color = base;\n"
+"    if (addWeight > 0.001) {\n"
+"        // Bilinear fade between the base ground and the painted layer.\n"
+"        color = mix(base, addAccum / addWeight, min(addWeight, 1.0));\n"
+"    }\n"
 "    vec3 n = normalize(vNormal);\n"
 "    float NdotL = max(dot(n, normalize(uLightDir)), 0.0);\n"
-"    fragColor = vec4(base * (0.3 + 0.7 * NdotL), 1.0);\n"
+"    fragColor = vec4(color * (0.3 + 0.7 * NdotL), 1.0);\n"
 "}\n";
 
 void Renderer::releaseTerrainMeshes() {
@@ -3686,10 +3888,60 @@ void Renderer::renderTerrainMeshes() {
     }
     if (!terrainShader) return;
 
+    const oblivion::ESMManager* esmMgrPtr = assetManager ? &assetManager->getEsmManager() : nullptr;
+
     // LTEX formID -> GL texture id (0 when the record or its .dds could not be
     // resolved). Resolved lazily so a cell pays for its quadrant textures once.
+    // The map is LRU-bounded: the earlier fixed "first 48 loads win" gate left
+    // every cell visited afterwards permanently untextured. Eviction only drops
+    // the map entry because the GL texture is owned by AssetManager's texture
+    // cache, so deleting it here would leave AssetManager handing out a stale
+    // texture name on the next loadDDSTexture() of the same path.
     static std::unordered_map<uint32_t, GLuint> landscapeTextureCache;
+    static std::unordered_map<uint32_t, uint64_t> landscapeTextureUse;
+    static std::unordered_set<uint32_t> landscapeTextureFailures;
+    static uint64_t landscapeTextureFrame = 0;
     static size_t landscapeTexturesLoaded = 0;
+    ++landscapeTextureFrame;
+
+    auto acquireLandscapeTexture = [&](uint32_t ltexFormID) -> GLuint {
+        auto cached = landscapeTextureCache.find(ltexFormID);
+        if (cached != landscapeTextureCache.end()) {
+            landscapeTextureUse[ltexFormID] = landscapeTextureFrame;
+            return cached->second;
+        }
+        // A record that failed once is retried only after it is evicted from the
+        // failure set, so the warning below is logged once instead of every frame.
+        if (!esmMgrPtr || landscapeTextureFailures.count(ltexFormID)) return 0;
+
+        const oblivion::LandscapeTextureData* ltex = esmMgrPtr->findLandscapeTexture(ltexFormID);
+        GLuint textureId = 0;
+        if (ltex && !ltex->iconPath.empty()) {
+            auto material = assetManager->loadDDSTexture(ltex->iconPath);
+            if (material && material->hasTexture()) {
+                textureId = material->getTextureId();
+            }
+        }
+        if (textureId == 0) {
+            landscapeTextureFailures.insert(ltexFormID);
+            LOGW("Landscape texture unresolved for LTEX %08X (%s)",
+                 ltexFormID, ltex ? ltex->iconPath.c_str() : "no LTEX record");
+            return 0;
+        }
+
+        if (landscapeTextureCache.size() >= LANDSCAPE_TEXTURE_CACHE_LIMIT) {
+            auto victim = landscapeTextureUse.begin();
+            for (auto it = landscapeTextureUse.begin(); it != landscapeTextureUse.end(); ++it) {
+                if (it->second < victim->second) victim = it;
+            }
+            landscapeTextureCache.erase(victim->first);
+            landscapeTextureUse.erase(victim);
+        }
+        landscapeTextureCache.emplace(ltexFormID, textureId);
+        landscapeTextureUse[ltexFormID] = landscapeTextureFrame;
+        ++landscapeTexturesLoaded;
+        return textureId;
+    };
 
     const size_t expectedHeights = static_cast<size_t>(TERRAIN_MESH_GRID * TERRAIN_MESH_GRID);
     std::vector<std::shared_ptr<Cell>> renderable;
@@ -3698,16 +3950,27 @@ void Renderer::renderTerrainMeshes() {
     size_t skippedNonExterior = 0;
     size_t skippedNoHeights = 0;
 
+    // The player's own cell needs dense heights for ground collision even when it
+    // is not part of the drawn set.
+    if (auto playerCell = worldManager->getCellAt(worldManager->getPlayerPosition())) {
+        if (playerCell->cellType == CellType::EXTERIOR && playerCell->hasTerrain &&
+            (playerCell->hasDenseTerrain() ||
+             (esmMgrPtr && expandCellTerrain(*playerCell, *esmMgrPtr)))) {
+            touchDenseTerrain(playerCell);
+        }
+    }
+
     for (const auto& cell : cells) {
         if (!cell) continue;
         if (cell->cellType != CellType::EXTERIOR) {
             skippedNonExterior++;
             continue;
         }
-        if (cell->heightData.size() != expectedHeights) {
+        if (!cell->hasDenseTerrain() && (!esmMgrPtr || !expandCellTerrain(*cell, *esmMgrPtr))) {
             skippedNoHeights++;
             continue;
         }
+        touchDenseTerrain(cell);
         renderable.push_back(cell);
 
         if (terrainMeshes.find(cell->cellId) != terrainMeshes.end()) continue;
@@ -3765,11 +4028,26 @@ void Renderer::renderTerrainMeshes() {
                 vertices.push_back(worldX / TERRAIN_TEXTURE_SCALE);
                 vertices.push_back(worldZ / TERRAIN_TEXTURE_SCALE);
                 vertices.push_back(weights[0]);
-                vertices.push_back(weights[1]);
-                vertices.push_back(weights[2]);
-                vertices.push_back(weights[3]);
-            }
-        }
+                                vertices.push_back(weights[1]);
+                                vertices.push_back(weights[2]);
+                                vertices.push_back(weights[3]);
+
+                                // ATXT/VTXT additive weights. Slot i always belongs to
+                                // cell->additiveLayers[i] so the draw pass can bind the matching
+                                // LTEX to uTex(4+i); a zero weight simply paints nothing. Zero
+                                // when the cell carries no painted layers.
+                                float addWeights[TERRAIN_MAX_ADD_LAYERS] = {};
+                                for (int slot = 0; slot < TERRAIN_MAX_ADD_LAYERS &&
+                                                     slot < static_cast<int>(cell->additiveLayers.size());
+                                     ++slot) {
+                                    addWeights[slot] = cell->additiveLayers[slot].opacityGrid[idx];
+                                }
+                                vertices.push_back(addWeights[0]);
+                                vertices.push_back(addWeights[1]);
+                                vertices.push_back(addWeights[2]);
+                                vertices.push_back(addWeights[3]);
+                            }
+                        }
 
         // Smooth normals from central differences on the heightmap.
         for (int y = 0; y < TERRAIN_MESH_GRID; ++y) {
@@ -3835,12 +4113,45 @@ void Renderer::renderTerrainMeshes() {
         glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, TERRAIN_VERTEX_FLOATS * sizeof(float),
                              (void*)(8 * sizeof(float)));
         glEnableVertexAttribArray(3);
+                glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, TERRAIN_VERTEX_FLOATS * sizeof(float),
+                                             (void*)(12 * sizeof(float)));
+                        glEnableVertexAttribArray(4);
         glBindVertexArray(0);
         mesh.indexCount = static_cast<GLuint>(indices.size());
 
         terrainMeshes.emplace(cell->cellId, mesh);
         LOGI("Terrain mesh built for cell %u grid=(%d,%d) heights %.1f..%.1f",
              cell->cellId, cell->cellX, cell->cellY, minHeight, maxHeight);
+    }
+
+    // Drop dense terrain for cells that have left the drawn set. The player's cell
+    // and every drawn cell were just touched to the back of the list, so evicting
+    // from the front can only hit something off screen.
+    while (g_denseTerrainLru.size() > DENSE_TERRAIN_BUDGET) {
+        const std::shared_ptr<Cell> victim = g_denseTerrainLru.front();
+        if (!victim) {
+            g_denseTerrainLru.erase(g_denseTerrainLru.begin());
+            continue;
+        }
+        bool stillDrawn = false;
+        for (const auto& drawn : cells) {
+            if (drawn == victim) {
+                stillDrawn = true;
+                break;
+            }
+        }
+        if (stillDrawn) break;
+        g_denseTerrainLru.erase(g_denseTerrainLru.begin());
+        victim->releaseTerrainExpansion();
+        // The cell left the active set, so its GPU mesh would otherwise linger for
+        // the rest of the session. It is rebuilt from the LAND record on re-entry.
+        auto meshIt = terrainMeshes.find(victim->cellId);
+        if (meshIt != terrainMeshes.end()) {
+            if (meshIt->second.vao) glDeleteVertexArrays(1, &meshIt->second.vao);
+            if (meshIt->second.vbo) glDeleteBuffers(1, &meshIt->second.vbo);
+            if (meshIt->second.ibo) glDeleteBuffers(1, &meshIt->second.ibo);
+            terrainMeshes.erase(meshIt);
+        }
     }
 
     if (renderable.empty()) {
@@ -3870,8 +4181,6 @@ void Renderer::renderTerrainMeshes() {
 
     const glm::mat4 viewProj = projMatrix * viewMatrix;
 
-    const auto& esmMgr = assetManager->getEsmManager();
-
     glUseProgram(terrainShader);
     glUniform3f(glGetUniformLocation(terrainShader, "uLightDir"), 0.5f, 1.0f, 0.3f);
     glUniformMatrix4fv(glGetUniformLocation(terrainShader, "uMVP"),
@@ -3886,11 +4195,21 @@ void Renderer::renderTerrainMeshes() {
         glGetUniformLocation(terrainShader, "uTex3")
     };
     for (int slot = 0; slot < 4; ++slot) glUniform1i(texUniforms[slot], slot);
-    const GLint hasTexUniform = glGetUniformLocation(terrainShader, "uHasTex");
+        const GLint addTexUniforms[4] = {
+                glGetUniformLocation(terrainShader, "uTex4"),
+                glGetUniformLocation(terrainShader, "uTex5"),
+                glGetUniformLocation(terrainShader, "uTex6"),
+                glGetUniformLocation(terrainShader, "uTex7")
+            };
+            for (int slot = 0; slot < 4; ++slot) glUniform1i(addTexUniforms[slot], slot + 4);
+            const GLint hasTexUniform = glGetUniformLocation(terrainShader, "uHasTex");
+            const GLint hasAddTexUniform = glGetUniformLocation(terrainShader, "uHasAddTex");
 
     size_t drawn = 0;
     size_t texturedCells = 0;
     size_t boundTextures = 0;
+    size_t overlayCells = 0;
+    size_t boundOverlayTextures = 0;
     for (const auto& cell : renderable) {
         auto it = terrainMeshes.find(cell->cellId);
         if (it == terrainMeshes.end() || it->second.vao == 0) continue;
@@ -3901,38 +4220,48 @@ void Renderer::renderTerrainMeshes() {
             const uint32_t ltexFormID = cell->landscapeTextures[quadrant];
             if (ltexFormID == 0) continue;
 
-            auto cached = landscapeTextureCache.find(ltexFormID);
-            if (cached == landscapeTextureCache.end()) {
-                GLuint textureId = 0;
-                const oblivion::LandscapeTextureData* ltex = esmMgr.findLandscapeTexture(ltexFormID);
-                if (landscapeTexturesLoaded < MAX_LANDSCAPE_TEXTURES) {
-                    if (ltex && !ltex->iconPath.empty()) {
-                        auto material = assetManager->loadDDSTexture(ltex->iconPath);
-                        if (material && material->hasTexture()) {
-                            textureId = material->getTextureId();
-                        }
-                    }
-                    if (textureId != 0) {
-                        landscapeTexturesLoaded++;
-                    } else {
-                        LOGW("Landscape texture unresolved for LTEX %08X (%s)",
-                             ltexFormID, ltex ? ltex->iconPath.c_str() : "no LTEX record");
-                    }
-                }
-                cached = landscapeTextureCache.emplace(ltexFormID, textureId).first;
-            }
-            if (cached->second == 0) continue;
+            const GLuint textureId = acquireLandscapeTexture(ltexFormID);
+            if (textureId == 0) continue;
 
             glActiveTexture(GL_TEXTURE0 + quadrant);
-            glBindTexture(GL_TEXTURE_2D, cached->second);
+            glBindTexture(GL_TEXTURE_2D, textureId);
             hasTex[quadrant] = 1.0f;
             cellTextures++;
         }
         glUniform4fv(hasTexUniform, 1, hasTex);
-        if (cellTextures > 0) {
-            texturedCells++;
-            boundTextures += static_cast<size_t>(cellTextures);
-        }
+
+                // Bind the cell's ATXT/VTXT overlay textures to slots 4..7. Slot i
+                // matches vertex attribute 4 component i (additiveLayers[i]).
+                float hasAddTex[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+                for (int addSlot = 0;
+                     addSlot < TERRAIN_MAX_ADD_LAYERS &&
+                     addSlot < static_cast<int>(cell->additiveLayers.size());
+                     ++addSlot) {
+                    const uint32_t ltexFormID = cell->additiveLayers[addSlot].textureFormID;
+                    if (ltexFormID == 0) continue;
+
+                    const GLuint textureId = acquireLandscapeTexture(ltexFormID);
+                    if (textureId == 0) continue;
+
+                    glActiveTexture(GL_TEXTURE4 + addSlot);
+                    glBindTexture(GL_TEXTURE_2D, textureId);
+                    hasAddTex[addSlot] = 1.0f;
+                }
+                glUniform4fv(hasAddTexUniform, 1, hasAddTex);
+
+                for (int addSlot = 0; addSlot < 4; ++addSlot) {
+                    if (hasAddTex[addSlot] > 0.0f) {
+                        ++boundOverlayTextures;
+                    }
+                }
+
+                if (cellTextures > 0) {
+                    texturedCells++;
+                    boundTextures += static_cast<size_t>(cellTextures);
+                }
+                if (cell->additiveLayers.size() > 0) {
+                    overlayCells++;
+                }
 
         glBindVertexArray(it->second.vao);
         glDrawElements(GL_TRIANGLES, it->second.indexCount, GL_UNSIGNED_SHORT, nullptr);
@@ -3950,6 +4279,8 @@ void Renderer::renderTerrainMeshes() {
     if (++terrainLogFrame % 120 == 1) {
         LOGI("Terrain textured: %zu of %zu drawn cells, %zu texture bindings, %zu LTEX loaded",
              texturedCells, drawn, boundTextures, landscapeTexturesLoaded);
+        LOGI("Terrain overlay: %zu cells with ATXT/VTXT layers, %zu overlay texture bindings",
+             overlayCells, boundOverlayTextures);
         LOGI("Terrain rendered: %zu exterior cells with heightmap, %zu drawn, cache=%zu",
              renderable.size(), drawn, terrainMeshes.size());
     }
@@ -4351,6 +4682,13 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
 void Renderer::cleanup() {
     LOGI("Renderer cleaning up");
 
+    // Join any worker still running (e.g. an async ESM parse) before tearing down
+    // the systems it writes into.
+    if (asyncTasksReady) {
+        asyncTaskMgr_.cleanup();
+        asyncTasksReady = false;
+    }
+
     releaseTerrainMeshes();
 
     // Imperial Weave: shutdown integration layer
@@ -4603,6 +4941,9 @@ void Renderer::toggleDebugMenu() {
         debugMenu->toggle();
         bool menuVisible = debugMenu->isVisible();
         LOGI("Debug Menu %s", menuVisible ? "opened" : "closed");
+        if (menuVisible) {
+            debugMenu->dumpState();
+        }
 
         // Hide game UI buttons when debug menu is open
         if (attackButton) attackButton->setVisible(!menuVisible);
@@ -4651,7 +4992,18 @@ void Renderer::startGame() {
             return true;
         }
 
-        // 3. Close GameConsole if open (already handled above - no separate debugConsole)
+        // 3. Close full-screen overlays before falling through to title/launcher
+        if (saveLoadUI && saveLoadUI->isVisible()) {
+            saveLoadUI->close();
+            saveLoadUI->resetReturnFlag();
+            LOGI("handleBackKey: Closed SaveLoadUI");
+            return true;
+        }
+        if (settingsUI && settingsUI->isVisible()) {
+            settingsUI->toggle();
+            LOGI("handleBackKey: Closed SettingsUI");
+            return true;
+        }
 
         // 4. Title screen back: don't consume - let Activity show exit dialog
         if (showTitleScreen) {

@@ -1188,7 +1188,50 @@ void ESMFile::decodeTerrain(const ESMRecord& rec) {
                                     deltas + TerrainData::GRID * TerrainData::GRID);
     }
 
+    // LAND additive layers are stored as ATXT headers each followed by one or
+    // more VTXT subrecords. The VTXT weights belong to the most recent ATXT, so
+    // the pair is decoded together and finished at the next non-VTXT record.
+    TerrainData::AddedLayer pending;
+    auto finishLayer = [&terrain](TerrainData::AddedLayer& layer) {
+        if (!layer.positions.empty()) {
+            terrain.addedLayers.push_back(std::move(layer));
+        }
+    };
+
     for (const auto& sub : rec.subRecords) {
+        if (std::memcmp(sub.tag, "ATXT", 4) == 0 && sub.size() >= 8) {
+            // ATXT: LTEX FormID(u32) + Quadrant(u8, 0=SW 1=SE 2=NW 3=NE)
+            //       + Unknown(u8) + Layer(u16, 0-7).
+            finishLayer(pending);
+            pending = TerrainData::AddedLayer{};
+            pending.textureFormID = readU32(sub.data.data());
+            pending.quadrant = sub.data[4];
+            pending.layer = readU16(sub.data.data() + 6);
+            continue;
+        }
+
+            if (std::memcmp(sub.tag, "VTXT", 4) == 0 && sub.size() >= 8) {
+                // VTXT: packed quadrant position(u16, 0-288) + Unknown(2B) + Opacity(f32).
+                // Positions run 0..288 inside the layer's quadrant (17x17 grid), so the
+                // renderer can translate them to cell-local 33x33 coordinates at expand
+                // time. Only a layer with a valid ATXT header can absorb weights.
+                if (pending.textureFormID != 0) {
+                for (size_t o = 0; o + 8 <= sub.size(); o += 8) {
+                    const uint8_t* p = sub.data.data() + o;
+                    const uint16_t pos = readU16(p);
+                    const float opacity = readF32(p + 4);
+                    if (opacity <= 0.0f) continue;  // keep it compact
+                    pending.positions.push_back(pos);
+                    pending.opacities.push_back(opacity);
+                }
+            }
+            continue;
+        }
+
+        // Every other subrecord ends the current ATXT/VTXT group.
+        finishLayer(pending);
+        pending = TerrainData::AddedLayer{};
+
         if (std::memcmp(sub.tag, "BTXT", 4) == 0 && sub.size() >= 5) {
             const uint32_t textureFormID = readU32(sub.data.data());
             const uint8_t quadrant = sub.data[4];
@@ -1202,8 +1245,9 @@ void ESMFile::decodeTerrain(const ESMRecord& rec) {
             }
         }
     }
+    finishLayer(pending);
 
-    m_terrains.push_back(std::move(terrain));
+        m_terrains.push_back(std::move(terrain));
 }
 
 // ============================================================================
@@ -2772,7 +2816,7 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
     }
 
 bool ESMFile::readRecordHeaderMem(const uint8_t*& pos, const uint8_t* end, ESMRecord& rec) {
-    if (pos + 16 > end) return false;
+    if (pos + 20 > end) return false;
     
     std::memcpy(rec.recType, pos, 4); pos += 4;
     
@@ -2780,6 +2824,10 @@ bool ESMFile::readRecordHeaderMem(const uint8_t*& pos, const uint8_t* end, ESMRe
     std::memcpy(&rawSize, pos, 4); pos += 4;
     std::memcpy(&rec.flags, pos, 4); pos += 4;
     std::memcpy(&rec.formID, pos, 4); pos += 4;
+    // Records carry a 2 byte version and a 2 byte unknown field after the form ID,
+    // so the header is 20 bytes. Skipping only 16 desynchronises every following
+    // read and the whole file decodes to nothing.
+    pos += 4;
     
     if (std::memcmp(rec.recType, "GRUP", 4) == 0) {
         LOGE("readRecordHeaderMem called on GRUP");
@@ -2864,6 +2912,10 @@ bool ESMFile::readSubRecordMem(const uint8_t*& pos, const uint8_t* end, SubRecor
     return true;
 }
 
+// GRUP header on disk is tag(4) + groupSize(4) + label(4) + groupType(4) + stamp(2) + unknown(2).
+// GroupHeader models only the first 16 bytes, so the trailing 4 must be skipped explicitly.
+static constexpr uint32_t GRUP_HEADER_SIZE = 20;
+
 bool ESMFile::readGroupMem(const uint8_t*& pos, const uint8_t* end, GroupType groupType, uint32_t groupSize) {
     if (pos + groupSize > end) {
         LOGE("readGroupMem: group size exceeds buffer");
@@ -2883,9 +2935,10 @@ bool ESMFile::readGroupMem(const uint8_t*& pos, const uint8_t* end, GroupType gr
         if (peekTag[0] == 'G' && peekTag[1] == 'R' && peekTag[2] == 'U' && peekTag[3] == 'P') {
             // Nested GRUP
             GroupHeader gh;
-            std::memcpy(&gh, pos, sizeof(gh)); pos += sizeof(gh);
+            std::memcpy(&gh, pos, sizeof(gh)); pos += GRUP_HEADER_SIZE;
+            if (gh.groupSize < GRUP_HEADER_SIZE) break;
             
-            uint32_t childSize = gh.groupSize - sizeof(gh);
+            uint32_t childSize = gh.groupSize - GRUP_HEADER_SIZE;
             uint32_t savedCell = m_currentCellFormID;
             uint32_t savedWorld = m_currentWorldspaceFormID;
             if (gh.groupType == 6) m_currentCellFormID = gh.groupLabel;
@@ -2942,9 +2995,10 @@ bool ESMFile::parseFromMemory(const std::string& name, const uint8_t* data, size
         
         if (peekTag[0] == 'G' && peekTag[1] == 'R' && peekTag[2] == 'U' && peekTag[3] == 'P') {
             GroupHeader gh;
-            std::memcpy(&gh, pos, sizeof(gh)); pos += sizeof(gh);
+            std::memcpy(&gh, pos, sizeof(gh)); pos += GRUP_HEADER_SIZE;
+            if (gh.groupSize < GRUP_HEADER_SIZE) break;
             
-            uint32_t childSize = gh.groupSize - sizeof(gh);
+            uint32_t childSize = gh.groupSize - GRUP_HEADER_SIZE;
             uint32_t savedCell = m_currentCellFormID;
             if (gh.groupType == 6) m_currentCellFormID = gh.groupLabel;
             readGroupMem(pos, end, static_cast<GroupType>(gh.groupType), childSize);

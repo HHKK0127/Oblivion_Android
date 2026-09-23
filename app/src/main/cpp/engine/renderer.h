@@ -3,11 +3,13 @@
 #include <memory>
 #include <array>
 #include <chrono>
+#include <atomic>
 #include <unordered_map>
 #include <android/log.h>
 #include <android/asset_manager.h>
 #include <GLES3/gl3.h>
 #include "camera.h"
+#include "async_task_manager.h"
 #include "../ui/title_screen.h"
 #include "../ui/launcher_screen.h"
 #include "../ui/quest_ui.h"
@@ -222,8 +224,14 @@ private:
     bool shouldExit;
     bool initialized = false;  // Track if initialization succeeded
     bool scenarioBuilt = false;  // True once the world scenario has been built (ESM or fallback)
-    bool gameDataLoadAttempted = false;  // True once BSA/ESM loading has been attempted
+    // Written by the async ESM parse worker, read by the render thread each frame.
+    std::atomic<bool> gameDataLoadAttempted{false};  // True once BSA/ESM loading has been attempted
     bool archivesLoaded = false;  // True once loadBSAArchives() has run
+    bool asyncTasksReady = false;  // True once asyncTaskMgr_ has live worker threads
+    bool scenarioBuildDeferred = false;  // True while the world build waits on game data
+    // Declared after assetManager so that its destructor (which joins the workers)
+    // runs before the AssetManager the ESM parse writes into.
+    AsyncTaskManager asyncTaskMgr_;
     unsigned int screenWidth;
     unsigned int screenHeight;
     float viewWidth = 0.0f;

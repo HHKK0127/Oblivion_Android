@@ -555,13 +555,13 @@ void WorldManager::clearAllCells() {
 }
 
 size_t WorldManager::countExteriorCellsWithTerrain() const {
-    const size_t expected =
-        static_cast<size_t>(TERRAIN_RESOLUTION) * static_cast<size_t>(TERRAIN_RESOLUTION);
-
     size_t count = 0;
     for (const auto& pair : cells) {
         const auto& cell = pair.second;
-        if (cell && cell->cellType == CellType::EXTERIOR && cell->heightData.size() == expected) {
+        // A cell counts as having terrain when the LAND record was linked to it;
+        // the dense grids are materialised on demand and must not gate this count.
+        if (cell && cell->cellType == CellType::EXTERIOR &&
+            (cell->hasTerrain || cell->hasDenseTerrain())) {
             ++count;
         }
     }
@@ -569,16 +569,13 @@ size_t WorldManager::countExteriorCellsWithTerrain() const {
 }
 
 bool WorldManager::spawnPlayerAtNearestTerrainCell() {
-    const size_t expected =
-        static_cast<size_t>(TERRAIN_RESOLUTION) * static_cast<size_t>(TERRAIN_RESOLUTION);
-
     std::shared_ptr<Cell> best;
     int64_t bestRank = 0;
 
     for (const auto& pair : cells) {
         const auto& cell = pair.second;
         if (!cell || cell->cellType != CellType::EXTERIOR) continue;
-        if (cell->heightData.size() != expected) continue;
+        if (!cell->hasTerrain && !cell->hasDenseTerrain()) continue;
         // Only consider cells of the worldspace the player belongs to.
         if (currentWorldspaceFormID != 0 && cell->worldspaceFormID != currentWorldspaceFormID) continue;
 
@@ -596,7 +593,19 @@ bool WorldManager::spawnPlayerAtNearestTerrainCell() {
     }
 
     const float half = CELL_SIZE * 0.5f;
-    const float ground = best->getTerrainHeightAt(half, half);
+    float ground = 0.0f;
+    if (best->hasDenseTerrain()) {
+        ground = best->getTerrainHeightAt(half, half);
+    } else if (assetManager) {
+        // Dense grids are materialised on demand, so sample the compact LAND
+        // record directly rather than expanding a whole cell just to spawn.
+        for (const auto& terrain : assetManager->getEsmManager().getAllTerrains()) {
+            if (terrain.formID == best->tesFormID && terrain.hasHeights()) {
+                ground = terrain.heightAt(TERRAIN_RESOLUTION / 2, TERRAIN_RESOLUTION / 2);
+                break;
+            }
+        }
+    }
 
     loadCell(best->cellId);
     currentCell = best;

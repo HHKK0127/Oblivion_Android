@@ -216,6 +216,14 @@ bool CellManager::createTerrainMesh(std::shared_ptr<Cell> cell) {
         return true;
     }
 
+    if (cell->hasTerrain) {
+        // A LAND record exists for this cell. The dense grids are materialised on
+        // demand by the renderer, and a flat grid here would both waste memory
+        // and hide the real heights from that lazy expansion.
+        LOGD_CELL("Terrain heightmap deferred for cell %u (LAND record available)", cell->cellId);
+        return true;
+    }
+
     // No heightmap available yet: fall back to flat terrain so the cell still
     // has a valid, consistently sized surface.
     cell->heightData.assign(expectedHeights, 0.0f);

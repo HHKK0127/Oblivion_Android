@@ -67,6 +67,12 @@ public:
     const oblivion::ESMManager& getEsmManager() const { return m_esmManager; }
     bool loadEsm(const std::string& esmPath);
     bool loadEsmFromArchive(const std::string& esmName);
+    // Split form of loadEsmFromArchive(). extractEsmFromArchive() reads the plugin
+    // bytes on the calling thread, because BSArchive owns a single stream and is not
+    // thread safe. parseEsmFromMemory() parses those bytes; that is the CPU bound
+    // part, so it may run on a worker thread while the caller keeps rendering.
+    bool extractEsmFromArchive(const std::string& esmName, std::vector<uint8_t>& out) const;
+    bool parseEsmFromMemory(const std::string& esmName, const std::vector<uint8_t>& data);
 
     // Getters
     std::shared_ptr<NIFParser> getNifParser() { return nifParser; }

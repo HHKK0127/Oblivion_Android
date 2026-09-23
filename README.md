@@ -83,7 +83,7 @@ development tags, not release versions.
 #### Architecture
 | Item | Specification |
 | --- | --- |
-| **Language** | C++17 (22,500+ lines) |
+| **Language** | C++17 (120,000+ lines) |
 | **Graphics API** | OpenGL ES 3.0 |
 | **Physics** | Jolt Physics (Phase 36) |
 | **Build System** | CMake + Gradle |
@@ -459,10 +459,11 @@ oblivion-android/
 
 ### [METRIC] Code Metrics (Phase 56 / v3.2.0)
 
-- **C++ Code**: 35,000+ lines
-- **Java Code**: 1,100+ lines
-- **Header Files**: 12,000+ lines
-- **Total Project**: 48,000+ lines
+- **C++ Source (.cpp)**: 70,000+ lines (219 files)
+- **C++ Headers (.h)**: 46,000+ lines (280 files)
+- **Tests**: 3,000+ lines (10 files)
+- **Total C++ Project**: 120,000+ lines (incl. tests)
+- **Kotlin**: 2,400+ lines (9 files)
 - **Imperial Weave**: 600+ lines (EventBus, ServiceLocator, 12-phase coordinator)
 - **Subscriber Bridges**: 400+ lines (AnimationSubscriber, AudioSubscriber)
 - **ESM Parser**: 2,000+ lines (40 record types)
@@ -734,11 +735,11 @@ The Elder Scrolls IV: Oblivion の進行中のネイティブ Android 移植版�
 #### アーキテクチャ
 | 項目 | 仕様 |
 | --- | --- |
-| **言語** | C++17（9,000行以上） |
+| **言語** | C++17（120,000行以上） |
 | **グラフィックスAPI** | OpenGL ES 3.0 |
 | **物理エンジン** | Jolt Physics (Phase 36) |
 | **ビルドシステム** | CMake + Gradle |
-| **NDKバージョン** | r30.0 |
+| **NDKバージョン** | r26.1 |
 | **ターゲットAPI** | API 29以上 |
 
 #### パフォーマンス目標
@@ -958,12 +959,11 @@ oblivion-android/
 
 ### [METRIC] コード指標 (Phase 56 / v3.2.0)
 
-- **C++コード**: 35,000行以上
-- **Javaコード**: 1,100行以上
-- **ヘッダファイル**: 12,000行以上
-- **プロジェクト合計**: 48,000行以上
-- **ヘッダーファイル**: 5,000行以上
-- **プロジェクト合計**: 28,000行以上
+- **C++ソース (.cpp)**: 70,000行以上（219ファイル）
+- **C++ヘッダ (.h)**: 46,000行以上（280ファイル）
+- **テスト**: 3,000行以上（10ファイル）
+- **C++プロジェクト合計**: 120,000行以上（テスト含む）
+- **Kotlin**: 2,400行以上（9ファイル）
 - **ESMパーサー**: 2,000行以上（40種のレコード型パース）
 - **BSAリーダー**: 500行以上（アーカイブ展開、ZLib展開）
 - **ESM統合**: 600行以上（NPCマネージャー、コンテナ、プレイヤー初期化、ステータス効果、DIAL/INFO会話、REFR配置）
