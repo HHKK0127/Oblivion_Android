@@ -136,9 +136,10 @@ void ScriptVMTests::testExecutionContext() {
         ExecutionContext ctx;
         bool ok = true;
 
-        // Locals are sized from the script's variable table by init()
+        // Locals use their serialized SLSD indices, not variable-table positions.
         ScriptData script;
-        for (uint32_t i = 0; i < 3; ++i) {
+        script.lastVarIndex = 5;
+        for (uint32_t i : {0u, 2u, 5u}) {
             ScriptVariable var;
             var.index = i;
             var.type = ScriptValue::Type::Integer;
@@ -148,16 +149,16 @@ void ScriptVMTests::testExecutionContext() {
         ctx.init(&script);
 
         ctx.setLocal(0, ScriptValue::makeInt(100));
-        ctx.setLocal(1, ScriptValue::makeFloat(2.5f));
-        ctx.setLocal(2, ScriptValue::makeString("hello"));
+        ctx.setLocal(2, ScriptValue::makeFloat(2.5f));
+        ctx.setLocal(5, ScriptValue::makeString("hello"));
 
         ScriptValue v0 = ctx.getLocal(0);
-        ScriptValue v1 = ctx.getLocal(1);
         ScriptValue v2 = ctx.getLocal(2);
+        ScriptValue v5 = ctx.getLocal(5);
 
         ok = ok && (v0.intVal == 100);
-        ok = ok && (std::abs(v1.floatVal - 2.5f) < 0.001f);
-        ok = ok && (v2.strVal == "hello");
+        ok = ok && (std::abs(v2.floatVal - 2.5f) < 0.001f);
+        ok = ok && (v5.strVal == "hello");
 
         record("ExecutionContext: Local variables", ok,
                "Set/get int, float, string locals", getTimeMs38() - start);

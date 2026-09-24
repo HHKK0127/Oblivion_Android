@@ -2226,19 +2226,20 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
         script.editorID = rec.getString("EDID");
 
         // SCHR: script header (20 bytes)
-        //   uint32_t unused
         //   uint32_t refCount
         //   uint32_t compiledLength
+        //   uint32_t lastVarIndex
+        //   uint32_t scriptType (0=Object, 1=Quest, 2=Magic)
         //   uint32_t varCount
-        //   uint32_t scriptType
         auto* schr = rec.findSubRecord("SCHR");
         if (schr && schr->size() >= 20) {
             const uint8_t* data = schr->data.data();
-            uint32_t refCount, compiledLength, scriptType, varCount;
-            std::memcpy(&refCount, data + 4, 4);
-            std::memcpy(&compiledLength, data + 8, 4);
-            std::memcpy(&varCount, data + 12, 4);
-            std::memcpy(&scriptType, data + 16, 4);
+            uint32_t refCount, compiledLength, lastVarIndex, scriptType, varCount;
+            std::memcpy(&refCount, data, 4);
+            std::memcpy(&compiledLength, data + 4, 4);
+            std::memcpy(&lastVarIndex, data + 8, 4);
+            std::memcpy(&scriptType, data + 12, 4);
+            std::memcpy(&varCount, data + 16, 4);
 
             script.scriptType = static_cast<script::ScriptType>(scriptType);
             script.varCount = varCount;

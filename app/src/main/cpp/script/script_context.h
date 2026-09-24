@@ -34,8 +34,8 @@ struct ScriptData {
     ScriptType scriptType = ScriptType::Object;
     uint32_t refCount = 0;          // Number of references
     uint32_t compiledLength = 0;    // Bytecode length
-    uint32_t lastVarIndex = 0;
-    uint32_t varCount = 0;
+    uint32_t lastVarIndex = 0;  // SCHR high-water mark for local variable slots
+    uint32_t varCount = 0;      // Number of serialized SLSD variable records
     std::vector<uint8_t> bytecode;  // SCDA - compiled bytecode
     std::string source;             // SCTX - source text (debug)
     std::vector<ScriptVariable> variables;  // SLSD/SCVR pairs
