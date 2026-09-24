@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-24T19:00:00.103411",
+  "lastUpdated": "2026-09-24T19:10:00Z",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -3528,10 +3528,25 @@
         "bytecode"
       ],
       "compressed": false
+    },
+    {
+      "id": "8af7bdaf-49b9-480e-88a0-43912d16017e",
+      "timestamp": "2026-09-24T19:10:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Phase 66: Weather-driven sky dome implemented (commit 13d9f905, pushed). renderer.cpp: background clear color now uses SkyWeatherSystem::getFogColor() with dark-gray fallback; renderSkyDome() draws an upper-hemisphere mesh (16 stacks x 24 slices) using kSkyVertexSrc vertex shader + generateSkyShader() fragment shader, positions zenith/horizon colors, sun direction/color/intensity, game time as uniforms, draws with glDepthMask(GL_FALSE) as far background. Note: glm::mat3 constructor and viewRot[3]=vec4 overloads unavailable in this GLM build; use value_ptr() raw-array access ([12..14] zero, [15]=1) to strip translation.",
+      "tags": [
+        "weather",
+        "sky",
+        "renderer",
+        "phase66",
+        "glm"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 247,
+    "totalEntries": 248,
     "compressedCount": 2,
     "sessionCount": 25
   }
