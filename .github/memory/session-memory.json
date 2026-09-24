@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-24T19:16:15.627655",
+  "lastUpdated": "2026-09-24T19:39:50.204171",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -3611,10 +3611,29 @@
         "measured"
       ],
       "compressed": false
+    },
+    {
+      "id": "9a699b6f-9fb4-40c6-b6f1-0db06e805138",
+      "timestamp": "2026-09-24T19:39:50.204171",
+      "category": "constraint",
+      "priority": "high",
+      "content": "tools/host_tests/run_host_tests.sh is the permanent host harness and the ONLY valid verdict for a native suite; provisional or stub-backed runners are gates at most. Measured 2026-09-25 on master and inside WS-B's worktree (hhkk0127-didactic-garbanzo, branch hhkk0127-script-vm-expansion): both finish exit 0 with all 5 suites passed and no duplicate-symbol or undefined-reference diagnostic. master compiles 53 translation units and reports 109 PASS / 0 FAIL (ScriptVMTests 22, Phase45UnitTests 5, Phase48StressTest 5, Phase48IntegrationTest 7); WS-B's branch compiles 54 (its only change to the runner is one added SOURCES entry, script/native_scda_decoder.cpp) and reports 151 PASS / 0 FAIL (ScriptVMTests 57/57, Phase45UnitTests 41/41, Phase48StressTest 5/5, Phase48IntegrationTest 7/7, Phase30IntegrationTest self-skipping). Its SOURCES already carry engine/event_bus.cpp (weave::EventBus::subscribe/unsubscribe/emit), game/npc_manager.cpp (NpcManager::getNPC(uint32_t) const at L65) and game/player.cpp (Player::addExperience(float) at L87) as real implementations, plus the five quest/*.cpp files that were added for the script-VM expansion workstream, so none of them needs a stub. The Dependency policy in tools/host_tests/README.md (L140-172) forbids stubbing a mid-layer class a suite exercises - it names weave::EventBus, NpcManager, ESMManager, WorldManager, SaveManager, CellManager, DoorManager and CellTransitionManager explicitly - and states that those three symbols come from real sources; only leaf dependencies may be stubbed (AAsset*/jni_audio_* in host_stub_syms.cpp, GLES3 entry points in host_gl_stubs.cpp, PhysicsManager in host_physics_stubs.cpp). Stubs and real sources for the same symbol must never both be listed in SOURCES or MinGW/PE fails with duplicate symbols. Run it from the repository root as `bash tools/host_tests/run_host_tests.sh` under Git Bash (C:\\Program Files\\Git\\bin\\bash.exe); it takes 3-5 minutes and writes its binary to $TMPDIR/host_tests/, so it never modifies the repository. MinGW g++ 16.2.0 (Windows, scoop) and Ubuntu 24.04 g++ 13.3.0 (CI) are both verified green; the runner needs its 34 `-include` lines because Ubuntu's libstdc++ does not hand out transitive includes, and MinGW/PE resolves every symbol of every compiled translation unit, so `--gc-sections` cannot drop an unreachable undefined reference the way it can on Linux. Corollary: when a workstream reports 'the harness is not wired', check which copy it ran - WS-B's repeated unresolved-symbol reports came from %TEMP%\\run_host_tests_wsb.sh, written at 11:33 before the wiring landed, which lacks both the SOURCES additions and the -include block, and from a hand-written %TEMP%\\wsb_host_stubs.cpp that redefines EventBus, Player::addExperience and PhysicsManager.",
+      "tags": [
+        "oblivion",
+        "host-tests",
+        "harness",
+        "stub",
+        "mingw",
+        "ubuntu",
+        "ci",
+        "measured",
+        "constraint"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 252,
+    "totalEntries": 253,
     "compressedCount": 2,
     "sessionCount": 25
   }
