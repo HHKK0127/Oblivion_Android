@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-24T19:09:23.955188",
+  "lastUpdated": "2026-09-24T19:12:52.882298",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -3577,10 +3577,26 @@
         "two-pass"
       ],
       "compressed": false
+    },
+    {
+      "id": "cfae9369-6cf6-485d-9cc3-779eee0111ff",
+      "timestamp": "2026-09-24T19:12:52.882298",
+      "category": "reference",
+      "priority": "medium",
+      "content": "plan.md Measured Content Inventory: the 'Total content to support' row MIXES two populations and must not be read as one. QUST 390 / SCPT 2,393 / INFO 19,278 / DIAL 3,817 are ESM-only record-boundary counts, while REFR 1,044,109 / CELL 35,787 / NPC_ 2,664 / CREA 1,001 / WRLD 103 / LAND 31,927 / PACK 7,717 / SPEL 1,314 are still ESM + DLC grand totals. The DIAL 4,126 that stood in the row was exactly 3,817 (ESM) + 309 (the nine DLC plugins) - a grand total left behind when QUST/SCPT/INFO were corrected to ESM-only - and is now 3,817. Measured 2026-09-25: Oblivion3.esm holds 3,817 DIAL records, ALL at depth 1 inside the single top-level DIAL group (GRUP type 0 whose label is the ASCII tag 'DIAL'), all 3,817 FormIDs distinct, and 3,821 b'DIAL' tag substrings in both the raw file and the fully decompressed stream (the 4 extra hits are the top-level group label plus 3 payload hits). This also settles the older substring-scan era: that scan measured the DECOMPRESSED stream, which is why its SCDA 9,646 and SCTX 9,992 were exactly right (they equal the decompressed substring counts) while its SCPT / QUST / INFO were inflated. Decompressed stream size is 444,868,558 bytes from a 277,504,985-byte file.",
+      "tags": [
+        "oblivion",
+        "dial",
+        "esm",
+        "plan",
+        "measured",
+        "census"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 250,
+    "totalEntries": 251,
     "compressedCount": 2,
     "sessionCount": 25
   }
