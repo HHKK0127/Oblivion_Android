@@ -33,7 +33,7 @@ The current version is **0.9.10 (versionCode 910)**.
   "physics disabled" path - no suite can pass on fabricated simulation. `phase30_integration_test`
   records `SKIP_Assets_Unavailable` and succeeds when the Oblivion assets are absent, which is the
   normal CI case because they are not redistributable. Result: ScriptVMTests 22/22,
-  Phase45UnitTests 40/40, Phase48StressTest 5/5, Phase48IntegrationTest 7/7,
+  Phase45UnitTests 41/41, Phase48StressTest 5/5, Phase48IntegrationTest 7/7,
   Phase30IntegrationTest 1/1 (self-skipped). The CI job itself was hardened at the same time:
   `zlib1g-dev` is installed explicitly, because the harness links `-lz` and
   `assets/esm_reader.cpp` / `assets/bsa_reader.cpp` include `<zlib.h>`, and the job timeout went
@@ -59,6 +59,15 @@ The current version is **0.9.10 (versionCode 910)**.
   own exception, counts the failure and then forwards it to the promise, so `future::get()` rethrows
   to the caller and `getStats().totalFailed` reflects reality. `avgExecutionTimeMs` is now divided by
   every executed task rather than by successful ones only, so the average keeps its meaning.
+  `Phase45UnitTests/Async_FailureAccounting` covers the path end to end: it submits a throwing value
+  task, a throwing void task and a succeeding task, asserts that `future::get()` rethrows
+  `std::runtime_error` for both failures, and checks the counters settle at `submitted=3`,
+  `completed=1`, `failed=2`.
+- **`totalSubmitted_` could lag behind its own completion counters**: `submit()` pushed the task onto
+  the queue before incrementing `totalSubmitted_`, so a worker could finish and record a task before
+  the submitting thread counted it, leaving `submitted` momentarily below `completed + failed`. The
+  increment now happens before the push, which is what lets the accounting test assert the identity
+  rather than a bound.
 - **ScriptFunctions name lookup test**: `tests/script_vm_tests.cpp` compared the
   `const char*` from `getFunctionName()` against string literals with `==`, which is
   pointer comparison and always failed across translation units. Switched to
