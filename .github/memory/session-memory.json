@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-24T10:00:00Z",
+  "lastUpdated": "2026-09-24T18:47:08",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -3444,10 +3444,45 @@
         "weather"
       ],
       "compressed": false
+    },
+    {
+      "id": "e98b4feb-db02-40fb-b1ed-116465e05202",
+      "timestamp": "2026-09-24T18:47:08",
+      "category": "decision",
+      "priority": "high",
+      "content": "Oblivion QUST: QSDT bit 0 is a run-once flag, not a Complete-Quest flag. Independent proof by cross-tab of 1870 source-bearing stage blocks split by flag AND by whether the block sits on the record's numerically highest stage: StopQuest appears in 67% (83/123) of QSDT=1 blocks BELOW the highest stage vs 1% (29/1485) of QSDT=0 blocks in the same position, while QSDT=0 blocks ON the highest stage reach only 31% (14/45). Flag beats position as a predictor. Supporting: 236/249 flagged quests put their topmost QSDT=1 block on their highest stage; 249 of 378 flagged entries are at the numeric maximum vs exactly 1 at the minimum; 42 sit exactly 100 below it. The only counter-case is 13 quests whose highest flagged stage is not their last stage, and 8 of those 13 have stages above it carrying SCDA with no journal text (trailing cleanup). No QSDT value 2 or 3 exists anywhere in Oblivion3.esm, so StageFlag::FAIL_QUEST = 0x02 is unreachable on real data. quest_record.h L39-43 names 0x01 COMPLETE_QUEST, which conflicts; WS-B must pick one meaning, not both.",
+      "tags": [
+        "oblivion",
+        "esm",
+        "qust",
+        "qsdt",
+        "quest-stage",
+        "ws-b",
+        "script-vm",
+        "measured"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "3099a7ba-ef00-4a90-b861-169f727f9ae6",
+      "timestamp": "2026-09-24T18:47:08",
+      "category": "reference",
+      "priority": "high",
+      "content": "Oblivion QUST DATA subrecord is TWO independent bytes, not a single u16 bitfield: byte 0 = flags (only 7 distinct values {0,1,4,5,8,9,13}, a sparse bitfield over bits 0/2/3) and byte 1 = quest priority (31 distinct values in 0..100, dominated by 60 x140 / 50 x63 / 40 x38). All 390 QUST DATA subrecords are exactly 2 bytes. A reader that does uint16_t flags folds priority into the flag word and corrupts it. Also re-confirmed: CNAM is per stage block (all 2338 immediately preceded by a QSDT, zero unattributed), so a single per-stage logText cannot represent real data; SCHR is 1:1 with QSDT (2978 each) while SCDA is not, so any block index must be the QSDT ordinal, never the SCDA ordinal.",
+      "tags": [
+        "oblivion",
+        "esm",
+        "qust",
+        "data-subrecord",
+        "quest-priority",
+        "ws-b",
+        "measured"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 242,
+    "totalEntries": 244,
     "compressedCount": 2,
     "sessionCount": 25
   }
