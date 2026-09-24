@@ -119,7 +119,14 @@ struct CellData {
     // exterior cell that owns a grid coordinate. Interior cells have no grid
     // position and must never claim one.
     bool isExterior = false;
-    // Lighting / climate data omitted for simplicity
+    // Water level for this cell from the XCLW subrecord. Oblivion stores a
+    // large negative sentinel (e.g. -2000/-4000) when the cell carries an
+    // explicit "no water here" marker, and a positive world-unit height for
+    // actual water surfaces. decodeCell flips the sentinel to NaN so callers
+    // can treat hasWaterLevel + a valid height as "water present".
+    float waterLevel = 0.0f;
+    bool hasWaterLevel = false;
+        // Lighting / climate data omitted for simplicity
 };
 
 /// AI Package types from ESM
@@ -267,6 +274,13 @@ struct WorldData {
     glm::vec2 worldOffset{0.0f, 0.0f};   // Cell grid offset (from DATA)
     int32_t minX = 0, minY = 0;           // Bounds
     int32_t maxX = 0, maxY = 0;
+    // Parent worldspace FormID (classic Oblivion uses WNAM as the parent
+    // worldspace reference, e.g. Bruma -> WNAM=0x3C Tamriel). It is NOT a
+    // WATR water color reference and carries no water height, so the engine
+    // does not derive default-water surfaces from it.
+    uint32_t parentWorldspaceFormID = 0;
+    // Reserved: Oblivion WRLD records carry no WHGT/water height subrecord,
+    // so no default-water plane is derived. Kept at zero intentionally.
 };
 
 /// Spell definition (SPEL record)
@@ -1070,6 +1084,13 @@ public:
     const std::vector<AnimationObjectData>& getAnimationObjects() const { return m_animationObjects; }
     const std::vector<SubspaceData>& getSubspaces() const { return m_subspaces; }
 
+    // Water/XCLW census over exterior cells, for diagnosing how many cells
+    // actually get a drawable water surface. (i) XCLW present + non-negative,
+    // (ii) negative sentinel (no water), (iii) no XCLW subrecord.
+    uint32_t getExteriorCellsWithWater() const { return m_exteriorCellsWithWater; }
+    uint32_t getExteriorCellsNoWaterSentinel() const { return m_exteriorCellsNoWaterSentinel; }
+    uint32_t getExteriorCellsNoXclw() const { return m_exteriorCellsNoXclw; }
+
         // Get file metadata
         const std::string& getFileName() const { return m_fileName; }
         bool isMaster() const { return m_isMaster; }
@@ -1107,6 +1128,11 @@ private:
     std::vector<RecordIndex> m_recordIndex;
     // FormID -> index into m_recordIndex
     std::unordered_map<uint32_t, size_t> m_formIDIndex;
+
+    // Water/XCLW census across exterior cells (decodeCell tallies these).
+    uint32_t m_exteriorCellsWithWater = 0;   // (i) XCLW present and non-negative
+    uint32_t m_exteriorCellsNoWaterSentinel = 0;  // (ii) XCLW present with negative sentinel
+    uint32_t m_exteriorCellsNoXclw = 0;      // (iii) XCLW subrecord absent
 
     // Minimal cached data (only what's needed for lookups)
     std::vector<CellData> m_cells;

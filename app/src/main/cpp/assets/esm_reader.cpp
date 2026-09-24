@@ -5,6 +5,7 @@
 #include <sstream>
 #include <cstring>
 #include <cmath>
+#include <limits>
 #include <zlib.h>
 #include <android/log.h>
 
@@ -136,6 +137,19 @@ static void logScriptTypeCensus(const std::vector<script::ScriptData>& scripts) 
     }
     LOGI("SCPT variable types: scripts=%zu vars=%u int=%u float=%u ref=%u",
          scripts.size(), totalVars, intVars, floatVars, refVars);
+}
+
+// Water/XCLW census for exterior cells. Classification:
+//   (i)   XCLW present with a non-negative level -> drawable water surface
+//   (ii)  XCLW present with a negative sentinel -> explicit "no water"
+//   (iii) XCLW subrecord absent entirely
+// decodeCell tallies these; this just logs the totals the APK run reports.
+static void logWaterCensus(uint32_t withWater, uint32_t noWaterSentinel,
+                           uint32_t noXclw) {
+    LOGI("WaterCensus exterior cells: water=%u no_water_sentinel=%u no_xclw=%u "
+         "total=%u",
+         withWater, noWaterSentinel, noXclw,
+         withWater + noWaterSentinel + noXclw);
 }
 
 bool ESMFile::open(const std::string& filePath) {
@@ -517,6 +531,9 @@ bool ESMFile::open(const std::string& filePath) {
 
     logScriptTypeCensus(m_scripts);
 
+    logWaterCensus(m_exteriorCellsWithWater, m_exteriorCellsNoWaterSentinel,
+                   m_exteriorCellsNoXclw);
+
     resolveMagicReferences();
 
     return true;
@@ -831,6 +848,26 @@ void ESMFile::decodeCell(const ESMRecord& rec) {
     if (xclc && xclc->size() >= 8) {
         cell.gridX = readI32(xclc->data.data());
         cell.gridY = readI32(xclc->data.data() + 4);
+    }
+
+    // XCLW subrecord: water level height in world units (TES4 specific).
+    // Classic Oblivion encodes "no water" as a large negative sentinel
+    // (e.g. -2000 / -4000 for most of Tamriel) and real water surfaces as
+    // positive heights (roughly 100..7000). Map the sentinel to NaN so
+    // hasWaterLevel alone no longer implies a drawable surface; only a
+    // positive height does.
+    auto* xclw = rec.findSubRecord("XCLW");
+    if (xclw && xclw->size() >= 4) {
+        cell.waterLevel = readF32(xclw->data.data());
+        cell.hasWaterLevel = true;
+        if (cell.waterLevel < 0.0f) {
+            cell.waterLevel = std::numeric_limits<float>::quiet_NaN();
+            if (cell.isExterior) ++m_exteriorCellsNoWaterSentinel;
+        } else if (cell.isExterior) {
+            ++m_exteriorCellsWithWater;
+        }
+    } else if (cell.isExterior) {
+        ++m_exteriorCellsNoXclw;
     }
 
     m_cells.push_back(std::move(cell));
@@ -1304,10 +1341,21 @@ void ESMFile::decodeWorld(const ESMRecord& rec) {
         world.maxY = readI32(nam0->data.data() + 4);
     }
 
-    LOGD("  WRLD: 0x%08X '%s' '%s' offset=(%.0f,%.0f) bounds=[(%d,%d)-(%d,%d)]",
+    // WNAM subrecord: parent worldspace FormID, NOT a WATR water reference.
+    // ESM analysis confirmed WRLD 0x3C (Tamriel, the root worldspace) carries
+    // no WNAM and no WHGT at all; child worldspaces (e.g. Bruma 0x1C318) use
+    // WNAM=0x3C to point back at their parent. No water surface is derived
+    // from it.
+    auto* wnam = rec.findSubRecord("WNAM");
+    if (wnam && wnam->size() >= 4) {
+        world.parentWorldspaceFormID = readU32(wnam->data.data());
+    }
+
+    LOGD("  WRLD: 0x%08X '%s' '%s' offset=(%.0f,%.0f) bounds=[(%d,%d)-(%d,%d)] parentWorldspace=0x%08X",
          world.formID, world.editorID.c_str(), world.fullName.c_str(),
          world.worldOffset.x, world.worldOffset.y,
-         world.minX, world.minY, world.maxX, world.maxY);
+         world.minX, world.minY, world.maxX, world.maxY,
+         world.parentWorldspaceFormID);
 
     m_worlds.push_back(std::move(world));
 }
@@ -3122,6 +3170,9 @@ bool ESMFile::parseFromMemory(const std::string& name, const uint8_t* data, size
          m_animationObjects.size(), m_subspaces.size());
 
     logScriptTypeCensus(m_scripts);
+
+    logWaterCensus(m_exteriorCellsWithWater, m_exteriorCellsNoWaterSentinel,
+                   m_exteriorCellsNoXclw);
 
     resolveMagicReferences();
 

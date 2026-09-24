@@ -128,9 +128,19 @@ struct Cell {
     bool terrainExpanded = false;
     // LTEX formIDs for the four LAND quadrants, indexed 0=SW, 1=SE, 2=NW, 3=NE.
     uint32_t landscapeTextures[4] = {0, 0, 0, 0};
-        // ATXT/VTXT additive texture layers painted on top of the base quadrants.
-        // Only populated for cells that actually carry VTXT data.
-        std::vector<TerrainAdditiveLayer> additiveLayers;
+    // ATXT/VTXT additive texture layers painted on top of the base quadrants.
+    // Only populated for cells that actually carry VTXT data.
+    std::vector<TerrainAdditiveLayer> additiveLayers;
+
+    // Water
+    // Explicit water surface height from the CELL XCLW subrecord (game units).
+    // Negative XCLW values decode to NaN and hasWater=false: the cell is
+    // treated as having no drawable water surface. No default water level is
+    // derived from the parent worldspace (WRLD has no water-height field).
+    // Interior cells never carry XCLW, so they default to 0 + hasWater=false.
+    float waterLevel = 0.0f;
+    bool hasWater = false;
+    uint32_t waterTypeFormID = 0;   // WATR FormID resolved for this cell
 
     // Resource management
     size_t memoryUsage;
