@@ -426,4 +426,7 @@ private:
     };
     void renderWater();
     std::unordered_map<uint32_t, WaterGpuMesh> waterMeshes_;
+
+    // Sky dome rendering driven by SkyWeatherSystem (Phase 56 / 66)
+    void renderSkyDome();
 };

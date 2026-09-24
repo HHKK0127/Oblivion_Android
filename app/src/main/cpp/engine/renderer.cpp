@@ -3394,8 +3394,14 @@ void Renderer::render(float deltaTime) {
         // Ensure viewport is set for the full screen (Retro filter framebuffer may have changed it)
         glViewport(0, 0, static_cast<GLsizei>(screenWidth), static_cast<GLsizei>(screenHeight));
 
-        // Render World (main game scene) - Clear with game background color
-        glClearColor(0.2f, 0.2f, 0.2f, 1.0f);  // Dark gray for game screen
+        // Render World (main game scene) - Clear with weather-based horizon color
+        if (skyWeatherSystem) {
+            float skyR, skyG, skyB;
+            skyWeatherSystem->getFogColor(skyR, skyG, skyB);
+            glClearColor(skyR, skyG, skyB, 1.0f);
+        } else {
+            glClearColor(0.2f, 0.2f, 0.2f, 1.0f);  // Fallback dark gray
+        }
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         GLCHECK_MSG("game-clear");
 
@@ -3481,6 +3487,9 @@ void Renderer::render(float deltaTime) {
 
     // Phase 65: Render water surfaces from CELL XCLW levels on top of terrain
     renderWater();
+
+    // Phase 66: Render the weather-driven sky dome as the far background.
+    renderSkyDome();
 
     // Phase XX: Render placeholder primitives for entities with missing meshes
     // (e.g., imperial_male.nif or imp.nif not present in APK assets)
@@ -4105,6 +4114,170 @@ void Renderer::renderWater() {
              minLevel <= maxLevel ? maxLevel : 0.0f);
     }
 }
+
+// Sky dome vertex shader: transforms a unit hemisphere centred on the camera.
+static const char* kSkyVertexSrc = R"(#version 300 es
+precision highp float;
+layout(location = 0) in vec3 aPosition;
+uniform mat4 uVP;
+out vec3 vDirection;
+void main() {
+    vec4 p = uVP * vec4(aPosition, 1.0);
+    gl_Position = p.xyww; // push depth to the far plane so the dome stays as backdrop
+    vDirection = aPosition;
+}
+)";
+
+// Phase 66: Render the weather-driven sky dome. The shader source comes from
+// SkyWeatherSystem::generateSkyShader(), and every uniform (zenith/horizon
+// colour, sun direction/colour/intensity, time) is fed from the live weather
+// state so the sky reflects the current time of day and weather conditions.
+void Renderer::renderSkyDome() {
+    if (!skyWeatherSystem) return;
+
+    static GLuint skyProgram = 0;
+    static GLuint skyVao = 0, skyVbo = 0, skyIbo = 0;
+    static GLsizei skyIndexCount = 0;
+    static bool skyInit = false;
+    if (!skyInit) {
+        skyInit = true;
+
+        const std::string fragSrc = skyWeatherSystem->generateSkyShader();
+        const char* vsSrc = kSkyVertexSrc;
+        const char* fsSrc = fragSrc.c_str();
+
+        GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+        glShaderSource(vs, 1, &vsSrc, nullptr);
+        glCompileShader(vs);
+        GLint ok = 0;
+        glGetShaderiv(vs, GL_COMPILE_STATUS, &ok);
+        if (!ok) {
+            char buf[512];
+            glGetShaderInfoLog(vs, sizeof(buf), nullptr, buf);
+            LOGE("Sky vertex shader error: %s", buf);
+            glDeleteShader(vs);
+            return;
+        }
+
+        GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+        glShaderSource(fs, 1, &fsSrc, nullptr);
+        glCompileShader(fs);
+        glGetShaderiv(fs, GL_COMPILE_STATUS, &ok);
+        if (!ok) {
+            char buf[512];
+            glGetShaderInfoLog(fs, sizeof(buf), nullptr, buf);
+            LOGE("Sky fragment shader error: %s", buf);
+            glDeleteShader(vs);
+            glDeleteShader(fs);
+            return;
+        }
+
+        skyProgram = glCreateProgram();
+        glAttachShader(skyProgram, vs);
+        glAttachShader(skyProgram, fs);
+        glLinkProgram(skyProgram);
+        glGetProgramiv(skyProgram, GL_LINK_STATUS, &ok);
+        glDeleteShader(vs);
+        glDeleteShader(fs);
+        if (!ok) {
+            char buf[512];
+            glGetProgramInfoLog(skyProgram, sizeof(buf), nullptr, buf);
+            LOGE("Sky shader link error: %s", buf);
+            glDeleteProgram(skyProgram);
+            skyProgram = 0;
+            return;
+        }
+
+        // Build an upper-hemisphere UV sphere (unit radius) as the dome.
+        const int stacks = 16;
+        const int slices = 24;
+        std::vector<float> verts;
+        verts.reserve(static_cast<size_t>((stacks + 1) * (slices + 1) * 3));
+        for (int i = 0; i <= stacks; ++i) {
+            float phi = static_cast<float>(i) / static_cast<float>(stacks) * 1.5707963f; // 0..90 deg
+            float cp = std::cos(phi), sp = std::sin(phi);
+            for (int j = 0; j <= slices; ++j) {
+                float theta = static_cast<float>(j) / static_cast<float>(slices) * 6.2831853f;
+                verts.push_back(std::cos(theta) * cp);
+                verts.push_back(sp);
+                verts.push_back(std::sin(theta) * cp);
+            }
+        }
+        std::vector<uint16_t> idx;
+        idx.reserve(static_cast<size_t>(stacks) * slices * 6);
+        for (int i = 0; i < stacks; ++i) {
+            for (int j = 0; j < slices; ++j) {
+                uint16_t a = static_cast<uint16_t>(i * (slices + 1) + j);
+                uint16_t b = static_cast<uint16_t>(a + slices + 1);
+                idx.push_back(a); idx.push_back(b); idx.push_back(a + 1);
+                idx.push_back(a + 1); idx.push_back(b); idx.push_back(b + 1);
+            }
+        }
+        skyIndexCount = static_cast<GLsizei>(idx.size());
+
+        glGenVertexArrays(1, &skyVao);
+        glGenBuffers(1, &skyVbo);
+        glGenBuffers(1, &skyIbo);
+        glBindVertexArray(skyVao);
+        glBindBuffer(GL_ARRAY_BUFFER, skyVbo);
+        glBufferData(GL_ARRAY_BUFFER, verts.size() * sizeof(float), verts.data(), GL_STATIC_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skyIbo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, idx.size() * sizeof(uint16_t), idx.data(), GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+        glBindVertexArray(0);
+        LOGI("Sky dome shader compiled (program=%u), indices=%d", skyProgram, skyIndexCount);
+    }
+    if (!skyProgram || !skyVao || skyIndexCount == 0) return;
+
+    // Camera matrices; strip translation so the dome stays centred on the viewer.
+    glm::mat4 viewMatrix;
+    glm::mat4 projMatrix;
+    const float aspect = static_cast<float>(screenWidth) / static_cast<float>(screenHeight);
+    if (playerController) {
+        const glm::vec3 target = playerController->getPlayerPosition();
+        const glm::vec3 eye = target + glm::vec3(0.0f, PH_CAMERA_HEIGHT, PH_CAMERA_DIST);
+        viewMatrix = glm::lookAt(eye, target, glm::vec3(0.0f, 1.0f, 0.0f));
+        projMatrix = glm::perspective(glm::radians(60.0f), aspect, 10.0f, 20000.0f);
+    } else if (camera) {
+        viewMatrix = camera->getViewMatrix();
+        projMatrix = camera->getProjectionMatrix(aspect);
+    } else {
+        return;
+    }
+    // Strip translation so the dome stays centred on the viewer.
+    glm::mat4 viewRot = viewMatrix;
+    float* vp = viewRot.value_ptr();
+    vp[12] = 0.0f; vp[13] = 0.0f; vp[14] = 0.0f; vp[15] = 1.0f;
+    const glm::mat4 viewProj = projMatrix * viewRot;
+
+    const auto& weather = skyWeatherSystem->getCurrentWeather();
+    float fogR, fogG, fogB;
+    skyWeatherSystem->getFogColor(fogR, fogG, fogB);
+    float sunX, sunY, sunZ;
+    skyWeatherSystem->getSunDirection(sunX, sunY, sunZ);
+
+    glUseProgram(skyProgram);
+    glUniformMatrix4fv(glGetUniformLocation(skyProgram, "uVP"), 1, GL_FALSE, viewProj.value_ptr());
+    glUniform3f(glGetUniformLocation(skyProgram, "uZenithColor"),
+                weather.sky.zenith[0], weather.sky.zenith[1], weather.sky.zenith[2]);
+    glUniform3f(glGetUniformLocation(skyProgram, "uHorizonColor"), fogR, fogG, fogB);
+    glUniform3f(glGetUniformLocation(skyProgram, "uSunDir"), sunX, sunY, sunZ);
+    glUniform3f(glGetUniformLocation(skyProgram, "uSunColor"),
+                weather.sun.color[0], weather.sun.color[1], weather.sun.color[2]);
+    glUniform1f(glGetUniformLocation(skyProgram, "uSunIntensity"), weather.sun.intensity);
+    glUniform1f(glGetUniformLocation(skyProgram, "uTime"), skyWeatherSystem->getGameTime());
+
+    // Draw with depth writes disabled so the dome remains the far backdrop and
+    // does not occlude any subsequent geometry.
+    glDepthMask(GL_FALSE);
+    glBindVertexArray(skyVao);
+    glDrawElements(GL_TRIANGLES, skyIndexCount, GL_UNSIGNED_SHORT, nullptr);
+    glBindVertexArray(0);
+    glDepthMask(GL_TRUE);
+    glUseProgram(0);
+}
+
 void Renderer::renderTerrainMeshes() {
     if (!worldManager) return;
 
