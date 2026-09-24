@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-24T19:39:50.204171",
+  "lastUpdated": "2026-09-24T20:17:54.272627",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -3630,10 +3630,83 @@
         "constraint"
       ],
       "compressed": false
+    },
+    {
+      "id": "07846225-be6d-492c-9dd9-f2762b33bef6",
+      "timestamp": "2026-09-24T20:17:54.272627",
+      "category": "reference",
+      "priority": "high",
+      "content": "Oblivion INFO subrecords measured over the whole corpus (TRDT 23,877 / DATA 19,278 / INFO 19,278). TRDT is a FIXED 16-byte subrecord whose decoded fields are single bytes, not 4-byte words: [0] u8 emotion type 0..6 (7 distinct), [1:4] always zero, [4] u8 emotion magnitude 0..100 (20 distinct), [5:12] always zero, [12] u8 1-based response ordinal that runs strictly 1..N inside its own INFO in 18,714 of 19,278 records (the 546 exceptions are permutations of 1..N such as [1,4,5,2,3]), [13:16] leftover bytes with no meaning (255/253/133 distinct, 4,504 of them the CD CD CD MSVC uninitialised fill; not a FormID, not a NAM2 fragment, correlated with nothing). Reading TRDT as u32 words yields 0xCDCDCD01 in the last word. NAM1 is the line the NPC speaks (non-empty in all 23,877 responses). NAM2 is a voice-actor direction the player never sees (19,316 empty; the 4,561 non-empty hold REC, 'Lucien Lachance -- sinister', 'compulsive lying', 'typo', 'cheery and slightly creepy'). DATA is 3 bytes: byte 0 restates the owning topic's category (GREETING 0 in 3,743/3,743; HELLO/INFOGENERAL/GOODBYE/Question 1; Attack/Hit 2; Idle 6), byte 1 is non-zero in only 182 records (always 1 or 2, all on a byte 0 of 1), byte 2 is a per-INFO flag that no topic fixes (value 10 accompanies TCLT+TCLF in 2,186/2,211; value 1 accompanies no transition in 1,573/1,603; bit 7 never set, bit 6 set 9 times). TCLF is the same kind of DIAL reference as TCLT - all 4,141 resolve to a DIAL record - not a flag. INFO has no BNAM, no ANAM, no CNAM and no EDID: its subrecords are only CTDA/TRDT/NAM1/NAM2/DATA/QSTI/SCHR/TCLT/SCRO/SCTX/SCDA/TCLF/NAME/CTDT/SCHD.",
+      "tags": [
+        "oblivion",
+        "info",
+        "trdt",
+        "data",
+        "nam1",
+        "nam2",
+        "tclf",
+        "dial",
+        "esm",
+        "measured",
+        "reference"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "2986e281-1f35-4dfe-962c-0e9069217636",
+      "timestamp": "2026-09-24T20:17:54.272627",
+      "category": "constraint",
+      "priority": "high",
+      "content": "Two INFO reader defects follow directly from the measured layouts and must be fixed before the dialogue subsystem is wired up. (1) assets/esm_reader.cpp:1087 guards its DATA block with 'if (data && data->size() >= 4)', but DATA is 3 bytes in 19,276 of 19,278 records, so the block never executes and info.responseType / info.flags are 0 for every INFO. The same file at :1096 does 'memcpy(&info.speakerFormID, trdt->data.data() + 8, 4)', but TRDT[8:12] is always zero, so speakerFormID is always 0 - TRDT carries no speaker FormID. Its :1082 comment calls NAM2 'prompt text (player says this, optional)', which is wrong. info.editorID = rec.getString(\"EDID\") at :1076 is always empty for the same reason. (2) dialogue/dialogue_record.cpp parseTRDT() documented a 20-byte layout and read emotionType from [4:8] (actually the magnitude), emotionValue from [8:12] (actually zero), speakerFormID from [12:16] (actually the ordinal plus junk), soundFormID from [16:20] and useEmotionAnimation from [20] (both unreachable because size >= 20 and size >= 21 are false for a 16-byte subrecord). That file was corrected in master commit cf15d7e5. Its ResponseData::promptText was renamed actingNotes.",
+      "tags": [
+        "oblivion",
+        "info",
+        "esm-reader",
+        "dialogue-record",
+        "bug",
+        "constraint",
+        "measured"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "b9831a0e-8cfd-418b-bac6-c19e8d7924a0",
+      "timestamp": "2026-09-24T20:17:54.272627",
+      "category": "reference",
+      "priority": "medium",
+      "content": "The whole dialogue/ subsystem (12 files, registered in CMakeLists.txt:288-294, include path at :340) is compiled but never driven: GameLoopCoordinator::setDialogueRunner() has no caller, DialogueIntegration is constructed nowhere outside its own translation unit, DialogueManager::loadDialoguesFromESM() has no caller, and renderer.cpp carries five 'DialogueRunner not connected' placeholders (lines 898, 901, 904, 907, 1328). game/dialogue.cpp:133-134 feeds InfoData::promptText (NAM2, a voice-actor direction) into the player-visible DialogueTopic text, falling back to InfoData::editorID which is always empty. Because nothing drives the subsystem, all of these are latent rather than player-visible. dialogue/ is also absent from the host harness SOURCES, so changes there cannot affect tools/host_tests results.",
+      "tags": [
+        "oblivion",
+        "dialogue",
+        "unwired",
+        "reference",
+        "constraint",
+        "esm"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "c88c43f9-28b0-42a5-8b3e-774375b30df0",
+      "timestamp": "2026-09-24T20:17:54.272627",
+      "category": "reference",
+      "priority": "high",
+      "content": "Merging the WS-B branch hhkk0127-script-vm-expansion into master was pre-verified in three stages, all green. (1) 'git merge-tree --write-tree master hhkk0127-script-vm-expansion' exits 0 with no conflict, yielding tree b386be5a; no hand re-apply step is needed. (2) Exporting that tree with 'git archive' and running the permanent harness gives exit 0, five suites ALL GREEN, ScriptVMTests 57/57 (master is 22/22). (3) 'gradlew.bat assembleDebug' in that tree gives BUILD SUCCESSFUL in 20m 58s, 43 tasks executed, 0 errors, producing a 24.2 MB app-debug.apk. WARNING: 'git archive' and 'git merge-tree' only carry tracked files, so the verified tree holds 12 asset files / 559,915 bytes where the working repo holds 28 / 90,662,731 bytes - 16 untracked UI textures and intro videos (87.4 MB of video, oblivion_intro.mp4 alone is 47.9 MB) are absent. APK size must therefore never be compared against the repository's 115.4 MB APK as an acceptance criterion. git lfs is not in use. The full harness takes 3-5 minutes and assembleDebug about 21 minutes.",
+      "tags": [
+        "oblivion",
+        "merge-tree",
+        "host-tests",
+        "gradle",
+        "apk",
+        "verification",
+        "measured",
+        "reference",
+        "constraint"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 253,
+    "totalEntries": 257,
     "compressedCount": 2,
     "sessionCount": 25
   }
