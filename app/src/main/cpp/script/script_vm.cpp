@@ -61,8 +61,10 @@ VMResult ScriptVM::step(ExecutionContext& ctx) {
         return VMResult::Error;
     }
 
-    // Advance PC past instruction header (4 bytes: opcode + argLength)
-    uint32_t instSize = 4 + inst.argLength;
+    // Opcode 0x001C stores a marker value in the arg-length field, not payload bytes.
+    uint32_t instSize = static_cast<uint16_t>(inst.opcode) == 0x001C
+        ? 4u
+        : 4u + inst.argLength;
 
     // Execute based on opcode category
     Opcode op = inst.opcode;
@@ -124,12 +126,14 @@ bool ScriptVM::decodeInstruction(const ExecutionContext& ctx, Instruction& inst)
     // Read argument length (2 bytes, little-endian)
     std::memcpy(&inst.argLength, pc + 2, 2);
 
-    // Validate argument data is within bounds
-    if (remaining < 4 + inst.argLength) {
+    const bool is_marker = rawOpcode == 0x001C;
+
+    // Opcode 0x001C has no payload; its apparent arg-length field is a marker value.
+    if (!is_marker && remaining < 4 + inst.argLength) {
         return false;
     }
 
-    inst.argData = (inst.argLength > 0) ? pc + 4 : nullptr;
+    inst.argData = (!is_marker && inst.argLength > 0) ? pc + 4 : nullptr;
 
     return true;
 }

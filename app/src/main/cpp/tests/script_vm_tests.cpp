@@ -6,6 +6,7 @@
 // Script system
 #include "../script/script_vm.h"
 #include "../script/script_context.h"
+#include "../script/script_disasm.h"
 #include "../script/script_functions.h"
 #include "../script/script_manager.h"
 #include "../script/script_opcodes.h"
@@ -509,6 +510,24 @@ void ScriptVMTests::testOpcodes() {
 
         record("Opcode: JUMP_Z", ok,
                "Jump when zero", getTimeMs38() - start);
+    }
+
+    // Test 6: Raw SCDA marker instruction
+    {
+        float start = getTimeMs38();
+        ScriptData script;
+        script.bytecode = {
+            0x1C, 0x00, 0xFF, 0xFF,
+            0x11, 0x00, 0x00, 0x00
+        };
+
+        const std::string disassembly = ScriptDisasm::disassemble(script);
+        const bool ok = disassembly.find("0000:") != std::string::npos &&
+                        disassembly.find("0004:") != std::string::npos &&
+                        disassembly.find("suspicious arg length") == std::string::npos;
+
+        record("Opcode: SCDA marker length", ok,
+               "Opcode 0x001C advances by its four-byte header", getTimeMs38() - start);
     }
 }
 

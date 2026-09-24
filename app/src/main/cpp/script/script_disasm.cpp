@@ -47,12 +47,15 @@ std::string ScriptDisasm::disassemble(const ScriptData& script) {
 
         // Advance to next instruction
         if (offset + 4 > script.bytecode.size()) break;
+        uint16_t rawOp;
         uint16_t argLen;
+        std::memcpy(&rawOp, script.bytecode.data() + offset, 2);
         std::memcpy(&argLen, script.bytecode.data() + offset + 2, 2);
-        offset += 4 + argLen;
+        const uint32_t instruction_size = rawOp == 0x001C ? 4u : 4u + argLen;
+        offset += instruction_size;
 
         // Safety check
-        if (argLen > 1024) {
+        if (rawOp != 0x001C && argLen > 1024) {
             oss << "; ERROR: suspicious arg length, stopping disassembly\n";
             break;
         }
@@ -79,6 +82,11 @@ std::string ScriptDisasm::disassembleInstruction(const uint8_t* bytecode, size_t
 
     // Format arguments based on opcode
     const uint8_t* argData = bytecode + offset + 4;
+
+    if (rawOp == 0x001C) {
+        oss << " SCDA_MARKER";
+        return oss.str();
+    }
 
     switch (op) {
         case Opcode::PUSH_INT:
