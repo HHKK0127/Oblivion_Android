@@ -24,7 +24,20 @@ void initialize_locals(const ScriptData* script, std::vector<ScriptValue>& local
     locals.resize(static_cast<size_t>(script->lastVarIndex) + 1);
     for (const ScriptVariable& variable : script->variables) {
         if (variable.index < locals.size()) {
-            locals[variable.index] = variable.defaultValue;
+            switch (variable.type) {
+                case ScriptValue::Type::Integer:
+                    locals[variable.index] = ScriptValue::makeInt(variable.defaultValue.toInt());
+                    break;
+                case ScriptValue::Type::Float:
+                    locals[variable.index] = ScriptValue::makeFloat(variable.defaultValue.toFloat());
+                    break;
+                case ScriptValue::Type::String:
+                    locals[variable.index] = ScriptValue::makeString(variable.defaultValue.strVal);
+                    break;
+                case ScriptValue::Type::Ref:
+                    locals[variable.index] = ScriptValue::makeRef(variable.defaultValue.refVal);
+                    break;
+            }
         }
     }
 }
