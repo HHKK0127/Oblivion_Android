@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-23T20:03:15+09:00",
+  "lastUpdated": "2026-09-24T06:33:14.867024Z",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -1755,7 +1755,7 @@
       "timestamp": "2026-09-22T19:20:11",
       "category": "reference",
       "priority": "high",
-      "content": "Title menu row device measurement (session 964d16fb, emulator-5554 1920x1080, GL surface 1920x1017, debug APK 2026-09-22 19:18 93,512,080 B). cap = 30.5 px = 3.00%H (art 2.50%H, +20% deliberate); row ink 436.8..1483.2 = 1046.4 px = 54.5%W = MENU_ROW_SPAN exactly; gap 46.6 px = 2.43%; ink centre y 799.5 = 78.6%H (art 78.75%H). Per-item ink extent matches computeMenuLayout()'s boxes within the advance side bearings (Exit ink 1389..1480 vs box 1387.9..1483.2; Credits 1185..1339 vs 1182.4..1341.3; Options 973..1133 vs 970.6..1135.8), so the draw multiplier and the layout multiplier agree. Legibility gain 0.025f -> 0.030f measured as solid-ink core pixel density per unit drawn width (mask |RGB-ink| <= 12): Continue 5.39->8.13, New 5.48->9.28, Load 6.72->9.04, Options 6.95->9.10, Credits 6.39->8.44, Exit 5.24->8.94; total 4478 -> 7111 px (x1.48).",
+      "content": "Title menu row device measurement (session 964d16fb, emulator-5554 1920x1080, GL surface 1920x1017, debug APK 2026-09-22 19:18 93,512,080 B). cap = 30.5 px = 3.00%H (art 2.50%H, +20% deliberate); row ink 436.8..1483.2 = 1046.4 px = 54.5%W = MENU_ROW_SPAN exactly; gap 46.6 px = 2.43%; ink centre y 799.5 = 78.6%H (art 78.75%H). Per-item ink extent matches computeMenuLayout()'s boxes within the advance side bearings (Exit ink 1389..1480 vs box 1387.9..1483.2; Credits 1185..1339 vs 1182.4..1341.3; Options 973..1133 vs 970.6..1135.8), so the draw multiplier and the layout multiplier agree. Legibility gain 0.025f -> 0.030f measured as solid-ink core pixel density per unit drawn width (mask |RGB-ink| <= 12): Continue 5.39->8.13, New 5.48->9.28, Load 6.72->9.04, Options 6.95->9.10, Credits 6.39->8.44, Exit 5.24->8.94; total 4478 -> 7111 px (x1.48). [APK サイズは計測時点の値。2026-09-23 21:09:27 以降の現行 APK は 115,289,641 B（起動OP動画 8 本同梱）。]",
       "tags": [
         "title-screen",
         "measurement",
@@ -1996,7 +1996,7 @@
       "timestamp": "2026-09-22T20:04:26.761113",
       "category": "reference",
       "priority": "high",
-      "content": "AUTHORITATIVE title menu row state (2026-09-22) - SUPERSEDES the MENU_CAP_HEIGHT_RATIO 0.028f and 0.030f claims in earlier entries. ui/title_screen.h: MENU_ROW_SPAN 0.545f, MENU_ROW_GAP 0.0422f, MENU_ROW_CENTER_Y 0.786f, MENU_CAP_HEIGHT_RATIO 0.025f (cap 8 px at 640x360 = the art's own value), MENU_ROW_MAX_SPAN 0.88f, MENU_GAP_MIN_RATIO 0.010f, MENU_OUTLINE_WIDTH 0.6f, MENU_OUTLINE_ALPHA 0.85f, MENU_SHADOW_OFFSET_RATIO 0.075f, MENU_SHADOW_ALPHA 0.40f, MENU_INK_CURVE_LO/HI 0.26f/0.70f. Verified in the shipped debug APK (2026-09-22 20:00:50, 93,513,324 B): logcat 'Menu row: startX=436.8 baselineY=812.1 scale=0.7238 gap=73.7 cap=25.4' plus 'TitleScreen legibility pass: ink curve 0.26/0.70 on, ink-coloured outline 0.60 px at alpha 0.85, shadow 0.075 of cap'; measured ink band x437-1481 (width 1044, reference A 1047) and cap top y787 (reference A 788) at the same 640x360 normalisation. BOTH sessions agreed to stop touching the RATIO; the 'MenuLayout:' and 'Menu row:' LOGD lines stay in the file as shared measurement evidence.",
+      "content": "AUTHORITATIVE title menu row state (2026-09-22) - SUPERSEDES the MENU_CAP_HEIGHT_RATIO 0.028f and 0.030f claims in earlier entries. ui/title_screen.h: MENU_ROW_SPAN 0.545f, MENU_ROW_GAP 0.0422f, MENU_ROW_CENTER_Y 0.786f, MENU_CAP_HEIGHT_RATIO 0.025f (cap 8 px at 640x360 = the art's own value), MENU_ROW_MAX_SPAN 0.88f, MENU_GAP_MIN_RATIO 0.010f, MENU_OUTLINE_WIDTH 0.6f, MENU_OUTLINE_ALPHA 0.85f, MENU_SHADOW_OFFSET_RATIO 0.075f, MENU_SHADOW_ALPHA 0.40f, MENU_INK_CURVE_LO/HI 0.26f/0.70f. Verified in the shipped debug APK (2026-09-22 20:00:50, 93,513,324 B): logcat 'Menu row: startX=436.8 baselineY=812.1 scale=0.7238 gap=73.7 cap=25.4' plus 'TitleScreen legibility pass: ink curve 0.26/0.70 on, ink-coloured outline 0.60 px at alpha 0.85, shadow 0.075 of cap'; measured ink band x437-1481 (width 1044, reference A 1047) and cap top y787 (reference A 788) at the same 640x360 normalisation. BOTH sessions agreed to stop touching the RATIO; the 'MenuLayout:' and 'Menu row:' LOGD lines stay in the file as shared measurement evidence. [APK サイズは計測時点の値。2026-09-23 21:09:27 以降の現行 APK は 115,289,641 B（起動OP動画 8 本同梱）。]",
       "tags": [
         "title-screen",
         "layout",
@@ -2427,7 +2427,7 @@
       "timestamp": "2026-09-22T21:40:00Z",
       "category": "reference",
       "priority": "medium",
-      "content": "gradle を回さずに『あるソース変更が APK に入ったか』を判定する最も安い方法: `app/.cxx/Debug/<hash>/<abi>/CMakeFiles/native-lib.dir/**/<file>.cpp.o` の mtime とソースの mtime を比較する。.o がソースより新しければコンパイル成功 = APK に収録されている。実例: renderer.cpp mtime 20:41:39 / renderer.cpp.o 20:57:22 / app-debug.apk 20:58:29 -> WS-C の地形変更は APK に収録済みと確定し、同時に他セッションの『renderer.cpp がコンパイルエラーで落ちる』という主張も否定できた。",
+      "content": "gradle を回さずに『あるソース変更が APK に入ったか』を判定する最も安い方法: `app/.cxx/Debug/<hash>/<abi>/CMakeFiles/native-lib.dir/**/<file>.cpp.o` の mtime とソースの mtime を比較する。.o がソースより新しければコンパイル成功 = APK に収録されている。実例: renderer.cpp mtime 20:41:39 / renderer.cpp.o 20:57:22 / app-debug.apk 20:58:29 -> WS-C の地形変更は APK に収録済みと確定し、同時に他セッションの『renderer.cpp がコンパイルエラーで落ちる』という主張も否定できた。 [APK サイズは計測時点の値。2026-09-23 21:09:27 以降の現行 APK は 115,289,641 B（起動OP動画 8 本同梱）。]",
       "tags": [
         "build",
         "gradle",
@@ -2704,7 +2704,7 @@
       "timestamp": "2026-09-23T04:41:48",
       "category": "reference",
       "priority": "medium",
-      "content": "統合 APK（2026-09-22 22:47:14 / 93,522,910 B、30cbb1e4 の renderer.cpp 修正込み）の実機計測確定値: SE 帯 tol20/tol40 = 0/0 px、メニューインク tol20 = 7551/7557、平均ストローク tol20 = 6.410/6.448 px、インク芯 RGB(117,59,33)±3 画素 = 6705/6701、メニュー行 x = 438-1481 (1043 px)、Menu row ログ = scale=0.7238 cap=25.4 baselineY=812.1 gap=73.7。旧出荷 APK（20:58）の 0/0、7548/7554、6.397/6.413、6700/6699、437-1481 と一致し回帰なし。",
+      "content": "統合 APK（2026-09-22 22:47:14 / 93,522,910 B、30cbb1e4 の renderer.cpp 修正込み）の実機計測確定値: SE 帯 tol20/tol40 = 0/0 px、メニューインク tol20 = 7551/7557、平均ストローク tol20 = 6.410/6.448 px、インク芯 RGB(117,59,33)±3 画素 = 6705/6701、メニュー行 x = 438-1481 (1043 px)、Menu row ログ = scale=0.7238 cap=25.4 baselineY=812.1 gap=73.7。旧出荷 APK（20:58）の 0/0、7548/7554、6.397/6.413、6700/6699、437-1481 と一致し回帰なし。 [APK サイズは計測時点の値。2026-09-23 21:09:27 以降の現行 APK は 115,289,641 B（起動OP動画 8 本同梱）。]",
       "tags": [
         "title-screen",
         "measurement",
@@ -2958,7 +2958,7 @@
       "timestamp": "2026-09-23T14:33:19",
       "category": "decision",
       "priority": "high",
-      "content": "【完了】A.今すぐ着手できる 5 件すべて実測合格・done 化: heap-native-2gb (PSS 2,020,948 -> 430,378 kB) / heap-heightdata-14686 / terrain-lru (cache=17 で BUDGET 頭打ち、移動 24 回で PSS +0.2%) / launcher-animations (fade-in + slide + hover スケールの 3 要素をピクセル実証) / esm-parse-async (readRecordHeaderMem の 16B/20B 不一致を 4 箇所修正)。APK 2026/09/23 14:29:12 / 93,544,177 B で fatal=0 ANR=0 LMK=0",
+      "content": "【完了】A.今すぐ着手できる 5 件すべて実測合格・done 化: heap-native-2gb (PSS 2,020,948 -> 430,378 kB) / heap-heightdata-14686 / terrain-lru (cache=17 で BUDGET 頭打ち、移動 24 回で PSS +0.2%) / launcher-animations (fade-in + slide + hover スケールの 3 要素をピクセル実証) / esm-parse-async (readRecordHeaderMem の 16B/20B 不一致を 4 箇所修正)。APK 2026/09/23 14:29:12 / 93,544,177 B で fatal=0 ANR=0 LMK=0 [APK サイズは計測時点の値。2026-09-23 21:09:27 以降の現行 APK は 115,289,641 B（起動OP動画 8 本同梱）。]",
       "tags": [
         "todo",
         "completed",
@@ -3029,11 +3029,262 @@
       ],
       "compressed": false,
       "session": "964d16fb"
+    },
+    {
+      "id": "f0dc33a7-5cdc-470d-80ab-b1d456866ad3",
+      "timestamp": "2026-09-24T07:18:45+09:00",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "【環境】AVD Pixel_API34 は他用途と共有されている。2026-09-23 20:0x に 964d16fb が起動していた 4GB エミュレータ (qemu pid 40688) が 外部から `adb emu kill` で停止された（同一ログ内にユーザー自身の APK インストール試行 D:/Cargo/Other/Apk/ の Google_Play_ストア_base.apk / アプリストア_base.apk / ツムツム 12.4.1.apk が 3 件、いずれも INSTALL_FAILED_UPDATE_INCOMPATIBLE / NO_MATCHING_ABIS / PARSE_FAILED_UNEXPECTED_EXCEPTION で失敗）。→ エミュレータが落ちていてもクラッシュとは限らない。判断は Get-Process qemu-system-x86_64,emulator と `adb devices` の 2 点で行い、勝手に再起動しない（ユーザーの明示指示があるまで待つ）。停止時は snapshot 'default_boot' が保存されるが、こちらは常に -no-snapshot-load 起動なので影響なし。AVD の config.ini は hw.ramSize=4096 / vm.heapSize=228M で無傷を確認済み",
+      "tags": [
+        "emulator",
+        "avd",
+        "environment",
+        "shared-usage"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "61eda992-d7b9-45c4-94ea-0e8dcddf9baa",
+      "timestamp": "2026-09-24T09:07:21+09:00",
+      "category": "reference",
+      "priority": "high",
+      "content": "CURRENT debug APK (2026-09-23 21:09:27, 115,289,641 B) - SUPERSEDES every 93.5MB APK size cited in earlier entries. +21.8MB vs the 93,522,973 B / 14:29:12 build: app/src/main/assets/videos/*.mp4 (gitignored) now ships 8 clips (oblivion_intro 47.93MB, credits_menu 21.74MB, map_loop 10.01MB, oblivion_iv_logo 4.30MB, game_studios_logo 2.06MB, bethesda_logo 0.40MB, oblivion_legal 0.28MB, 2k_games_logo 0.12MB); 947 zip entries / 145.6MB unpacked. Produced by session 37a8a121 'Oblivion opening sequence'; it was already installed on emulator-5554 at 2026-09-23 21:09:45 (dumpsys lastUpdateTime 12:09:45 UTC) so no install was needed. VERIFIED 2026-09-24 09:0x on 4GB guest (hw.ramSize 4096, AVD Pixel_API34): (1) full playback - IntroVideoActivity CLIP_SEQUENCE is 4 clips (bethesda_logo -> 2k_games_logo -> game_studios_logo -> oblivion_legal; oblivion_intro is the New Game cinematic and is NOT in this sequence): 4/4 'Video playback completed' at 00:01:40/00:01:47/00:01:57/00:02:01, 'Launching MainActivity' 00:02:01.754, no 'Video error' and no safety timeout. (2) tap-to-skip - each tap calls advanceToNextClip() (log 'User tapped to skip video, advancing'), 4 taps reached MainActivity in 18.4s. (3) title video gimmick works: 'Title background selected: map_loop.mp4' -> 'Title video initialized: oblivion_iv_logo.mp4 -> map_loop.mp4' -> 'Title IV logo completed' after 14s -> 'Title background playing: map_loop.mp4'; title video decodes 60 updateTexImage/s with errors(total)=0 at 60 FPS. (4) PSS 421,185 KB then 424,964 KB, SWAP 0, MemAvailable 1.85GB, LMK 0 kills, FATAL/ANR/SIGABRT 0. (5) title screenshot tol20 = 7548/7556 px, content p50 = 175.6/174.1, black<60 = 3.18% (no debug-overlay contamination); correlation vs the pre-swap pss_2gb_title.png: full content +0.917, left third +0.947, right third +0.911, menu band +0.839 -> same title structure. 'Failed to open OpenAL device' in the log is PRE-EXISTING on this emulator (present in v3/v4/pss_2gb logs), not a regression.",
+      "tags": [
+        "apk",
+        "opening-sequence",
+        "intro-video",
+        "verification",
+        "authoritative",
+        "measurement"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "0e0aae4b-82e5-4831-8492-e724af36d6e5",
+      "timestamp": "2026-09-24T10:16:28+09:00",
+      "category": "reference",
+      "priority": "medium",
+      "content": "plan.md REFRESHED against measured state on 2026-09-24 (964d16fb): 32,521 B / 331 lines -> 41,254 B / 360 lines, 12 markdown tables / 101 rows verified for column consistency. Sections changed: header (Current Version = features through Phase 64 complete / Phase 65 in progress, Last updated 2026-09-24, 3 'Unimplemented Features' items closed with evidence), footer Next-update line, Implementation Coverage Performance/Memory/Tests rows, Phase 62 status (Done, Android CI run 35884733212 green in 6m23s on d94317bc), Phase 65 status (VTXT blending landed), Risk Factors (memory risk marked 'Resolved as measured', +gitlink BSAFileExtractor, +4 of 5 suites unwired), Environment constraints (master level with origin/master, CI green), WS table WS-A Done / WS-B Not started / WS-C In progress / WS-D Not started, 'Why this split' + 'Sequencing' rewritten, WS-C first-increment steps 1-4 marked Done, and a NEW section '### Verified build and status (2026-09-24)' at the end (referenced by the header). Uncommitted at the time of writing; the plan is the shared roadmap other sessions read.",
+      "tags": [
+        "plan",
+        "documentation",
+        "status",
+        "ci"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "00101c90-e2e9-4b95-ab2d-4b394161b163",
+      "timestamp": "2026-09-24T10:16:28+09:00",
+      "category": "constraint",
+      "priority": "high",
+      "content": "plan.md wording rules learned while refreshing it: (1) do not claim 'all N LAND records carry ATXT/VTXT' - the ESM holds 31,823 terrain records while the VTXT verification sampled 20,191, so write 'the 20,191 sampled'; (2) the host test wiring is 1 of 5 suites (only script_vm_tests is in tools/host_tests/run_host_tests.sh) - phase30/45/48_integration/48_stress are unwired, so never state '5 suites wired'; (3) renderer.cpp has 0 TODO markers and audio_decoder.cpp is fully implemented (minimp3 decodeMp3 / stb_vorbis decodeOgg), so the old '11 TODOs' and 'header parsing only' lines are closed, not open; (4) app/src/main/assets/videos/ is gitignored (.gitignore:33) and 0 videos are tracked, so the 115MB APK size is a local-build artifact, not a repo fact.",
+      "tags": [
+        "plan",
+        "documentation",
+        "accuracy",
+        "constraint"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "6d7abfd3-d854-4f04-9157-3cf4ae85e1d7",
+      "timestamp": "2026-09-24T10:48:48+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "Workstream delegation for plan.md execution (2026-09-24, coordinator session 964d16fb): WS-B (Script VM expansion / Phase 67) was delegated to the EXISTING session 0c8d192d on worktree branch hhkk0127-script-vm-expansion instead of creating a new child session, because that worktree held 11 uncommitted files / +340 -23 lines (2 days of work) that would otherwise have been lost. WS-C (Phase 65 remainder) was delegated to the existing session 30cbb1e4. WS-A's remainder (wiring the 4 unwired native test suites) stayed with 964d16fb.",
+      "tags": [
+        "delegation",
+        "workstreams",
+        "ws-b",
+        "ws-c"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "8f5f0b85-00dc-4c12-8c92-229c2fde50ec",
+      "timestamp": "2026-09-24T10:48:48+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "WS-B first batch landed as commit 4d52272a (Expand Script VM quest functions) and origin/master was merged into hhkk0127-script-vm-expansion as cb2c96e1. Only script_vm_tests.cpp conflicted; it was resolved by keeping master's std::strcmp-based comparison and adding the StartQuest/GetQuestStarted name checks in the same form. Registered handlers went 118 -> 125.",
+      "tags": [
+        "ws-b",
+        "script-vm",
+        "merge",
+        "cb2c96e1"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "deba5287-060e-4b02-851f-d0bc96b34e4b",
+      "timestamp": "2026-09-24T10:48:48+09:00",
+      "category": "architecture",
+      "priority": "high",
+      "content": "engine/renderer.cpp and renderer.h are the one file contended by two workstreams, so the merge policy is explicit: master's rendering changes (terrain VTXT statistics log, texture LRU, cleanup() join, owned by WS-C/session 30cbb1e4) win, and WS-B's QuestFlowController injection is re-applied by hand on top. The injection is legitimate: Renderer already owns QuestManager/WorldManager/NpcManager/CombatManager/SaveManager, and on master QuestFlowController was never instantiated anywhere, so the Renderer's ScriptManager initialization is the only existing point that connects SetStage/GetStage to a runtime QuestFlowController. Final integration into master is performed by session 964d16fb, not by either workstream.",
+      "tags": [
+        "renderer",
+        "quest-flow-controller",
+        "merge-policy",
+        "contention"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "0f297f65-8dde-44d2-89ce-af3582235ce7",
+      "timestamp": "2026-09-24T10:48:48+09:00",
+      "category": "constraint",
+      "priority": "high",
+      "content": "tools/host_tests/** is owned by session 964d16fb. The host harness must link the quest sub-systems (app/src/main/cpp/quest/quest_flow_controller.cpp, quest_stage_manager.cpp, quest_objective_tracker.cpp, quest_rewards.cpp, quest_record.cpp) or script_vm_tests fails with undefined references to QuestFlowController::{ctor,dtor,registerQuest,getCurrentStage,getQuestState,setStage,activateQuest,completeQuest,completeObjective} and QuestObjectiveTracker::getObjectiveProgress. WS-B must not edit tools/host_tests and must not push until the wiring lands, otherwise its branch CI goes red.",
+      "tags": [
+        "host-tests",
+        "harness",
+        "quest",
+        "ownership"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "04b36aa7-e725-4013-89b5-f6b5585edbbe",
+      "timestamp": "2026-09-24T10:53:20+09:00",
+      "category": "reference",
+      "priority": "high",
+      "content": "Host-test link dependencies pulled in by the quest path (measured 2026-09-24): weave::EventBus::{subscribe,emit,unsubscribe} is declared in app/src/main/cpp/engine/imperial_weave.h (namespace weave, class EventBus at line 177) and defined in app/src/main/cpp/engine/imperial_weave.cpp (16,972 B) - there is no weave/ directory. NpcManager::getNPC(uint32_t) const lives in app/src/main/cpp/game/npc_manager.cpp (23,340 B). Player::addExperience(float) lives in app/src/main/cpp/game/player.cpp (4,126 B). These are needed by quest_flow_controller.cpp, quest_objective_tracker.cpp, quest_stage_manager.cpp and quest_rewards.cpp, and ImperialWeave/NpcManager are also required by the phase48 suites.",
+      "tags": [
+        "host-tests",
+        "link-errors",
+        "quest",
+        "imperial-weave",
+        "npc-manager"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "45d4c8d8-1856-4eba-ba86-b592fa229b34",
+      "timestamp": "2026-09-24T11:04:30+09:00",
+      "category": "architecture",
+      "priority": "high",
+      "content": "Player reachability for script functions without touching engine/renderer.cpp: QuestFlowController (app/src/main/cpp/quest/quest_flow_controller.h) already stores Player* player_ and PlayerController* playerController_, populated by initialize(...) which Renderer::initGameSystems() calls with playerController->getPlayer().get() and playerController.get(). So ScriptFunctions can resolve Player FormID 0x14 through the QuestFlowController pointer it already receives as the 5th argument of ScriptManager::init(...). Adding read-only accessors getPlayer()/getPlayerController() to quest_flow_controller.h is a behaviour-neutral change; do NOT extend initialize()'s signature or add further edits to renderer.cpp/.h, which are the single file contended with WS-C.",
+      "tags": [
+        "script-vm",
+        "quest-flow-controller",
+        "player",
+        "renderer",
+        "contention"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "f5b268c9-80ed-452c-a0da-e55bf971b2bc",
+      "timestamp": "2026-09-24T11:28:02+09:00",
+      "category": "constraint",
+      "priority": "high",
+      "content": "Stub hygiene for the host test harness: C++ mangled names do NOT include the return type, so a stub whose return type differs from the real implementation links silently and is undefined behaviour rather than a link error. Exact real signatures that matter: std::shared_ptr<NPC> NpcManager::getNPC(uint32_t) const (npc_manager.h L58, returns nullptr for unknown ids), std::shared_ptr<Player> PlayerController::getPlayer() (player_controller.h L49, NON-const), NPC members are currentHealth/maxHealth/inCombat plus bool isAlive() const (npc.h L24-25/L53/L88). Stubbing a constructor (NPC::NPC, CharacterStatus::CharacterStatus) makes any test that reads member state validate the stub's defaults instead of the real defaults, so implementations must be linked and only the cascading dependencies stubbed. Provisional stub-backed runs are a gate, never the verdict: script_vm_tests reported 24 passed (batch 4d52272a) then 26 passed (batch d3b07051) under %TEMP% stubs.",
+      "tags": [
+        "host-tests",
+        "stubs",
+        "abi",
+        "script-vm",
+        "verification"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "f6a387a1-b925-43c3-b2b5-244d9c856970",
+      "timestamp": "2026-09-24T11:54:11+09:00",
+      "category": "architecture",
+      "priority": "high",
+      "content": "Script VM arity and priority can be measured from real game data instead of guessed. script::ScriptData (script/script_context.h L31-40) retains both bytecode (SCDA compiled) and source (SCTX text) for every SCPT record; esm_reader.cpp L2283-2295 fills both and ESMManager::getAllScripts() exposes all 3,046 scripts. The VM reads each call's argument count from the bytecode (script_vm.cpp L607: argCount = readArg<uint16_t>(inst.argData + 2)), so arity is script-driven and a handler cannot break an existing call by accepting more arguments. Consequence: census over SCDA/SCTX gives (a) each FunctionID's true arity/type contract and (b) call-site frequency, so the remaining ~1,075 functions can be ordered by measured usage instead of estimated quest importance. MoveTo decision rule: append optional trailing params (MoveTo(ref, offX, offY, offZ)); never insert a parameter in the middle, because a real MoveTo ref offX offY offZ call would then silently read offX as a cell FormID and teleport to the wrong place with no error. Cell-targeted teleport is a separate function name (PositionCell).",
+      "tags": [
+        "script-vm",
+        "phase67",
+        "arity",
+        "scda",
+        "sctx",
+        "census",
+        "moveto"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "b0665a9a-56f8-4f8a-aad0-41be886c42e7",
+      "timestamp": "2026-09-24T12:02:09+09:00",
+      "category": "reference",
+      "priority": "high",
+      "content": "Oblivion game data on this host, verified 2026-09-24. USABLE: C:\\Users\\hiroki.kogarumai\\Oblivion_Android\\oblivion_esm_pull\\Oblivion3.esm (277,504,985 B, magic TES4, version 1, real ESM; raw substring counts SCPT 2395 / SCDA 9646 / SCTX 9992 / QUST 394 / INFO 19280). TRAPS - files with the canonical name are 0-byte placeholders and must not be used: oblivion_esm_pull\\Oblivion.esm and device /sdcard/Oblivion.esm. Device /sdcard/Android/data/com.example.oblivion/files/oblivion_assets/ contains no ESM at all (only Roboto-Regular.ttf, fonts, geoid_height_map, images, textures, videos, webkit, version.txt), so the runtime ESM the app parses at startup is not on external storage. .gitignore line 16 has *.esm so the 277 MB ESM is ignored and safe to reference in place; never copy it into a worktree. Other data: tools/BSAFileExtractor/Oblivion - Misc.bsa (7,229,551 B) and OneDrive Cargo\\Oblivion\\BSA\\bsa_Extraction\\{meshes,sound,fonts,menus,facegen,distantlod}. Census tooling rule: do NOT route a script census through ESMManager::getAllScripts(), because assets/esm_reader.cpp is another workstream's in-flight file and drags in the BSA/zlib/link cascade; write a self-contained TES4 record walker in a scratch dir outside the repo instead (record header type/size/flags/formID/timestamp/version 4-byte aligned, GRUP containers, SCPT subrecords SCDA and SCTX, and note Oblivion SCTX is zlib-compressed when flag 0x00040000 is set so link -lz). Mandatory gate: the SCDA-derived and SCTX-derived arity/frequency distributions must agree on the top functions, otherwise the SCDA instruction-length table is wrong and the census must be discarded.",
+      "tags": [
+        "game-data",
+        "esm",
+        "census",
+        "scda",
+        "sctx",
+        "paths",
+        "gitignore",
+        "verification-gate"
+      ],
+      "compressed": false
+    },
+    {
+      "category": "architecture",
+      "priority": "high",
+      "content": "AsyncTaskManager had a real completion-ordering race, fixed on master as 47e691f4 (2026-09-25, session 964d16fb). Root cause: submit() wrapped each callable in a std::packaged_task, and packaged_task satisfies the caller's future from INSIDE the callable, so a caller woken by the future could read getStats() before workerThread() had run recordCompletion() and observe totalCompleted one short. That is what made Phase45UnitTests/Async_Statistics intermittently fail (39/40) and what the wiring agent reported as an app-side flake. Measured with a standalone probe before the fix: 27 of 500 iterations failed polling with wait_for(0ms), 2 of 4000 failed with wait() (the path the unit test uses). Fix: submit() now hands the task a std::function + std::promise and the task records completion BEFORE it publishes its result, so a ready future implies a counted completion. Secondary defect fixed by the same change: packaged_task stores a throwing task's exception in its shared state instead of rethrowing it, so workerThread()'s catch blocks never observed task failures and totalFailed_ stayed at 0 forever. The task now catches its own exception, counts the failure and forwards it to the promise (future::get() rethrows, getStats().totalFailed is real). avgExecutionTimeMs is now divided by every executed task, not only successful ones. After the fix: 20000 iterations of each probe mode fail zero times, a 200-iteration outcome probe (value, void, std and non-std exceptions) fails zero times.",
+      "tags": [
+        "async_task_manager",
+        "race",
+        "host_tests",
+        "phase45"
+      ],
+      "compressed": false,
+      "id": "73aaa2be-99a8-4743-86e4-6464e483b733",
+      "timestamp": "2026-09-24T05:18:33Z"
+    },
+    {
+      "category": "reference",
+      "priority": "high",
+      "content": "MoveTo payload ABI is NOT determinable from the real game data, and the guess was correctly rejected (2026-09-25). WS-B measured opcode 0x109E argLength as 5 (447 cases), 14 (7), 20 (1), 32 (8) - not the 4/16/20-byte FormID+3 floats shape any candidate signature assumed. Decision: the existing MoveTo(ref) stays the ONLY implemented form; the offset variant and the cell-argument variant stay unimplemented rather than guessed. Same measurement separates the synthetic call contract from native raw payloads for SetStage 0x1039 (8/10), SetAV 0x100F (7/9), Activate 0x100D (2/5/10), PlayGroup 0x1013 (9) and Cast 0x101E (8), so none of them was wired to the existing handlers. WS-B committed 8e63f592 (Document observed native SCDA opcodes), which adds a separate NativeScdaOpcode enum instead of remapping the synthetic FunctionID values. Rule to keep: FunctionID is a synthetic ID and must NEVER be remapped to measured native numbers.",
+      "tags": [
+        "script_vm",
+        "opcodes",
+        "moveTo",
+        "ws-b",
+        "phase67"
+      ],
+      "compressed": false,
+      "id": "c26780d3-540a-4eb2-a9e7-0837a8decf95",
+      "timestamp": "2026-09-24T05:18:33Z"
+    },
+    {
+      "category": "reference",
+      "priority": "medium",
+      "content": "Host test harness (tools/host_tests/run_host_tests.sh) is verified green on Linux, which is what CI runs (2026-09-25, session 964d16fb). Measured on WSL Ubuntu-24.04 with g++ 13.3.0: exit 0 in 8m05s, ScriptVMTests 22/22, Phase45UnitTests 40/40, Phase48StressTest 5/5, Phase48IntegrationTest 7/7, Phase30IntegrationTest 1/1 (self-skipped, no assets). Windows/MinGW measured 9m42s and 12m15s for the same tree, so the 30 minute CI ceiling has real headroom. CI-readiness check performed: all 53 SOURCES entries exist on disk, are tracked by git, and are present in the HEAD tree, so a fresh checkout can build the harness. .gitignore covers host_saves/; the harness leaves no other untracked output.",
+      "tags": [
+        "host_tests",
+        "ci",
+        "verification",
+        "wsl"
+      ],
+      "compressed": false,
+      "id": "fc14610c-c80d-49f2-9e91-588d78cad38d",
+      "timestamp": "2026-09-24T05:18:33Z"
+    },
+    {
+      "id": "original-assets-policy-20260924",
+      "timestamp": "2026-09-24T06:33:14.867024Z",
+      "category": "constraint",
+      "priority": "high",
+      "content": "本ゲーム作成では、可能な限りオリジナルの素材を使用する。公式ゲーム素材はBYO-data方式に従い、権利上の制約を守って扱う。",
+      "tags": [
+        "assets",
+        "original-materials",
+        "byo-data",
+        "copyright"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 212,
+    "totalEntries": 229,
     "compressedCount": 2,
-    "sessionCount": 23
+    "sessionCount": 24
   }
 }

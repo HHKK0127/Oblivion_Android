@@ -135,6 +135,30 @@ Note that MinGW/PE links resolve every symbol of every compiled translation
 unit, so a suite only links when the whole transitive closure is satisfiable;
 `--gc-sections` does not remove unreachable undefined references there.
 
+### Dependency policy for `SOURCES`
+
+List a source only when a wired suite's assertions actually reach it, so every
+entry is justifiable as "suite X calls Y". The graph is derivable per object
+with `nm -P --defined-only` / `nm -P -u`; 47 of the current 53 entries are
+reachable from the five suites. The six unreachable entries are kept on
+purpose: the five `quest/*.cpp` files were requested by the script-VM expansion
+workstream (whose test file calls `QuestFlowController` and the quest
+sub-systems) and `script/script_disasm.cpp` is used by that same file
+(`ScriptDisasm::disassemble`). Nothing in the current master test set
+references either, so dropping them would only save a few seconds of compile
+time - and would break the expansion branch's link.
+
+Stubs are only acceptable for *leaf* dependencies, i.e. things with no host
+implementation at all: the NDK/JNI APIs (`stubs/`, `host_stub_syms.cpp`), GLES
+(needs a GL context) and Jolt (`host_physics_stubs.cpp`). Never stub a
+mid-layer class a suite exercises (`CellManager`, `DoorManager`,
+`CellTransitionManager`, `WorldManager`, `ESMManager`, `NpcManager`,
+`SaveManager`, `weave::EventBus`, ...) - a suite that passes only because its
+subject was stubbed verifies nothing but the stub's defaults. All of those are
+real sources here. If a suite cannot link without stubbing what it tests, leave
+it unwired and report the blocker rather than wiring a hollow suite; and keep
+any skip explicit in code, because the runner runs under `set -euo pipefail`.
+
 Keep stubs and real sources mutually exclusive: a stub and the real `.cpp`
 for the same symbol must never both be listed in `SOURCES`, because MinGW/PE
 links then fail with a duplicate-symbol error. Every symbol the wired suites
