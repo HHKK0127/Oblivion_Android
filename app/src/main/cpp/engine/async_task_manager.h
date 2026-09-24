@@ -8,6 +8,7 @@
 #include <atomic>
 #include <functional>
 #include <future>
+#include <type_traits>
 #include <string>
 #include <chrono>
 #include <android/log.h>
@@ -214,10 +215,18 @@ auto AsyncTaskManager::submit(Priority priority, Category category,
 {
     using ReturnType = typename std::invoke_result<Func, Args...>::type;
 
-    auto taskPtr = std::make_shared<std::packaged_task<ReturnType()>>(
+    // The task publishes its own result instead of using a std::packaged_task:
+    // a packaged_task satisfies the caller's future from inside the callable, so
+    // a caller that waits on the future can return before the worker thread has
+    // recorded the completion, leaving getStats() and isTaskDone() one task
+    // behind. Publishing by hand also keeps the failure path here, because a
+    // packaged_task stores a task's exception in the shared state instead of
+    // rethrowing it, so workerThread()'s catch never sees a task failure.
+    auto callable = std::make_shared<std::function<ReturnType()>>(
         std::bind(std::forward<Func>(func), std::forward<Args>(args)...));
+    auto promise = std::make_shared<std::promise<ReturnType>>();
 
-    std::future<ReturnType> result = taskPtr->get_future();
+    std::future<ReturnType> result = promise->get_future();
 
     uint64_t taskId = nextTaskId_.fetch_add(1);
 
@@ -234,7 +243,29 @@ auto AsyncTaskManager::submit(Priority priority, Category category,
         task.name = name;
         task.priority = priority;
         task.category = category;
-        task.func = [taskPtr]() { (*taskPtr)(); };
+        // The bookkeeping happens inside the callable, before the result is
+        // published, so observing a ready future implies the completion was
+        // already counted.
+        task.func = [this, callable, promise, taskId, name]() {
+            try {
+                if constexpr (std::is_void_v<ReturnType>) {
+                    (*callable)();
+                    recordCompletion(taskId, true);
+                    promise->set_value();
+                } else {
+                    ReturnType value = (*callable)();
+                    recordCompletion(taskId, true);
+                    promise->set_value(std::move(value));
+                }
+            } catch (...) {
+                LOGE_AT("Task '%s' (id=%llu) failed",
+                        name.c_str(),
+                        static_cast<unsigned long long>(taskId));
+                totalFailed_.fetch_add(1);
+                recordCompletion(taskId, false);
+                promise->set_exception(std::current_exception());
+            }
+        };
         task.submitTime = std::chrono::steady_clock::now();
 
         // Record in history

@@ -87,7 +87,8 @@ void AsyncTaskManager::workerThread() {
 
         auto startTime = std::chrono::steady_clock::now();
 
-        bool success = true;
+        // The task records its own outcome and failure count inside task.func(),
+        // before it publishes its result, so nothing is counted twice here.
         try {
             task.func();
         } catch (const std::exception& e) {
@@ -95,14 +96,10 @@ void AsyncTaskManager::workerThread() {
                     task.name.c_str(),
                     static_cast<unsigned long long>(task.id),
                     e.what());
-            success = false;
-            totalFailed_.fetch_add(1);
         } catch (...) {
             LOGE_AT("Task '%s' (id=%llu) failed with unknown error",
                     task.name.c_str(),
                     static_cast<unsigned long long>(task.id));
-            success = false;
-            totalFailed_.fetch_add(1);
         }
 
         auto endTime = std::chrono::steady_clock::now();
@@ -111,7 +108,6 @@ void AsyncTaskManager::workerThread() {
         totalExecutionTimeUs_.fetch_add(duration.count());
 
         activeTaskCount_.fetch_sub(1);
-        recordCompletion(task.id, success);
 
         // Notify completion waiters
         completionCondition_.notify_all();
@@ -186,11 +182,13 @@ AsyncTaskManager::TaskStats AsyncTaskManager::getStats() const {
         stats.pendingTasks = static_cast<uint32_t>(taskQueue_.size());
     }
 
-    uint64_t completed = totalCompleted_.load();
-    if (completed > 0) {
+    // Failed tasks do execute and contribute time, so the average covers every
+    // executed task.
+    uint64_t executed = stats.totalCompleted + stats.totalFailed;
+    if (executed > 0) {
         stats.avgExecutionTimeMs =
             static_cast<float>(totalExecutionTimeUs_.load()) /
-            static_cast<float>(completed) / 1000.0f;
+            static_cast<float>(executed) / 1000.0f;
     }
 
     return stats;

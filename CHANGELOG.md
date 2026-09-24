@@ -43,6 +43,22 @@ The current version is **0.9.10 (versionCode 910)**.
   the longer ceiling costs no wall clock time.
 
 ### Fixed
+- **`AsyncTaskManager` completion-ordering race**: `submit()` wrapped the callable in a
+  `std::packaged_task`, which fulfils the task's shared state from *inside* the callable, so
+  `workerThread()`'s `recordCompletion()` (the call that bumps `totalCompleted_`) could still be
+  pending when a caller woken by the future read `getStats()`. That made
+  `Phase45UnitTests/Async_Statistics` intermittently report one completion too few. `submit()` now
+  hands the task a `std::function` plus a `std::promise`, and the task records completion before it
+  publishes its result, so a ready future always implies the statistics already include that task.
+  A standalone probe reproduced the old behaviour (27/500 iterations failing under a `wait_for(0ms)`
+  poll, 2/4000 under `wait()`, the path the unit test uses); after the fix 20000 iterations of each
+  mode pass with zero failures.
+- **`AsyncTaskManager` never counted task failures**: the same `std::packaged_task` stores a throwing
+  task's exception in its shared state instead of rethrowing it, so `workerThread()`'s `catch` blocks
+  could not observe a task failure and `totalFailed_` stayed at 0 forever. The task now catches its
+  own exception, counts the failure and then forwards it to the promise, so `future::get()` rethrows
+  to the caller and `getStats().totalFailed` reflects reality. `avgExecutionTimeMs` is now divided by
+  every executed task rather than by successful ones only, so the average keeps its meaning.
 - **ScriptFunctions name lookup test**: `tests/script_vm_tests.cpp` compared the
   `const char*` from `getFunctionName()` against string literals with `==`, which is
   pointer comparison and always failed across translation units. Switched to
