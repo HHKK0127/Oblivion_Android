@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-24T16:58:13.245263",
+  "lastUpdated": "2026-09-24T17:01:18.551096",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -3283,10 +3283,10 @@
     },
     {
       "id": "8d206c67-bc91-4607-966e-9a3889f4d948",
-      "timestamp": "2026-09-24T16:58:13.245263",
+      "timestamp": "2026-09-24T17:01:18.551096",
       "category": "decision",
       "priority": "high",
-      "content": "SCDA 0x001C is a reference selector, not a source-line marker: [u16 0x001C][u16 refIndex], 4 bytes fixed, no payload. refIndex is a 1-based index into the reference list the compiler emitted for the command that follows. Proven over 1,373 of 1,373 records carrying the marker: max value never exceeds the record's distinct source reference count (median ratio 0.92, maximum 16, 795 records at 1 or below). The MQ13/MQ14 record settles it: the same actors get the same indices in two groups written in different orders (Burd 3, Ulrich 4, Viera 5, Martin 6, Jauffre 7, Baurus 8, Steffan 9; second group order 7,6,8,9,5,4,3). A VM must consume the 4 bytes and assign the calling reference; discarding the value breaks every bare Ref.command. Open question: the list is not record-wide (values restart at 1 inside long records), so which SCRO list an index resolves against is still unsettled.",
+      "content": "SCDA 0x001C is a reference selector, not a source-line marker: [u16 0x001C][u16 refIndex], 4 bytes fixed, no payload. refIndex is a 1-based index into the reference list the compiler emitted for the command that follows. Proven over 1,373 of 1,373 records carrying the marker: max value never exceeds the record's distinct source reference count (median ratio 0.92, maximum 16, 795 records at 1 or below). The MQ13/MQ14 record settles it: the same actors get the same indices in two groups written in different orders (Burd 3, Ulrich 4, Viera 5, Martin 6, Jauffre 7, Baurus 8, Steffan 9; second group order 7,6,8,9,5,4,3). A VM must consume the 4 bytes and assign the calling reference; discarding the value breaks every bare Ref.command. The marker shares its numbering with the 0x72 reference operand, so the two ways of naming a reference agree inside one record: in corpus record 2395 the refs SE45zBossREF and SE45mBossREF alternate enable and disable as markers 1 and 2, and the three SetQuestObject calls that follow carry r 01 00, r 02 00 and r 01 00 in their payloads for those same two actors. Open question: a handful of long records appear to hand one actor two different indices, and every one of them is a record whose SCTX statements run together on merged lines; a decoder that holds the real record can settle it by comparing the index against the record's own reference list.",
       "tags": [
         "scda",
         "script-vm",
