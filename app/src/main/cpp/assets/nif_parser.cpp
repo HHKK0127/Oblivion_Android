@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstring>
 #include <cmath>
+#include <fstream>
 
 #undef LOG_TAG
 #undef LOGD
@@ -12,57 +13,73 @@
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 NIFParser::NIFParser() {
-    memset(&header, 0, sizeof(NIFHeader));
+    std::memset(header.magic, 0, sizeof(header.magic));
 }
 
 NIFParser::~NIFParser() {
-    if (fileStream.is_open()) {
-        fileStream.close();
-    }
 }
 
 bool NIFParser::parseFile(const std::string& filepath) {
     LOGD("=== Starting NIF parse: %s ===", filepath.c_str());
 
-    // Open file
-    fileStream.open(filepath, std::ios::binary);
-    if (!fileStream.is_open()) {
+    nodes.clear();
+    rootNodeIndices.clear();
+    fileBuffer.clear();
+    cursor = 0;
+    readError = false;
+    header = NIFHeader();
+
+    // Read the whole file up front. Block bodies have no size table, so block
+    // parsing continues after parseFile() returns and needs random access.
+    std::ifstream in(filepath, std::ios::binary | std::ios::ate);
+    if (!in.is_open()) {
         LOGE("Failed to open NIF file: %s", filepath.c_str());
+        return false;
+    }
+
+    const std::streamoff fileSize = in.tellg();
+    if (fileSize <= 0) {
+        LOGE("Empty or unreadable NIF file: %s", filepath.c_str());
+        in.close();
+        return false;
+    }
+
+    fileBuffer.resize(static_cast<size_t>(fileSize));
+    in.seekg(0, std::ios::beg);
+    in.read(reinterpret_cast<char*>(fileBuffer.data()), fileSize);
+    const bool shortRead = (in.gcount() != fileSize);
+    in.close();
+    if (shortRead) {
+        LOGE("Short read on NIF file: %s", filepath.c_str());
+        fileBuffer.clear();
         return false;
     }
 
     // Read header
     if (!readHeader()) {
         LOGE("Failed to read NIF header");
-        fileStream.close();
+        fileBuffer.clear();
         return false;
     }
 
-    LOGD("NIF Header: version=%u, userVersion=%u, numObjects=%u",
-         header.version, header.userVersion, header.numObjects);
-
-    // Parse block type strings
-    if (!parseBlockTypeStrings()) {
-        LOGE("Failed to parse block type strings");
-        fileStream.close();
-        return false;
-    }
+    LOGD("NIF Header: version=0x%08X, userVersion=%u, numBlocks=%u, blockTypes=%zu, blockDataOffset=%zu",
+         header.version, header.userVersion, header.numObjects,
+         header.blockTypeNames.size(), header.blockDataOffset);
 
     // Parse object array
     if (!parseObjectArray()) {
         LOGE("Failed to parse object array");
-        fileStream.close();
+        fileBuffer.clear();
         return false;
     }
 
     // Build node hierarchy
     if (!buildNodeHierarchy()) {
         LOGE("Failed to build node hierarchy");
-        fileStream.close();
+        fileBuffer.clear();
         return false;
     }
 
-    fileStream.close();
     LOGD("=== NIF parse complete: %zu nodes found ===", nodes.size());
     return true;
 }
@@ -89,39 +106,99 @@ bool NIFParser::readHeader() {
     strncpy(header.magic, magic, sizeof(header.magic) - 1);
     header.magic[sizeof(header.magic) - 1] = '\0';
 
-    // Verify magic
-    if (strstr(header.magic, "Gamebryo File Format") == nullptr) {
+    // Verify magic. Retail Oblivion ships two families: the Gamebryo header used
+    // by almost every mesh, and a compact NetImmerse header on legacy meshes.
+    const bool legacyNetImmerse = (strstr(header.magic, "NetImmerse File Format") != nullptr);
+    if (!legacyNetImmerse && strstr(header.magic, "Gamebryo File Format") == nullptr) {
         LOGE("Invalid NIF magic: %s", header.magic);
         return false;
     }
+    header.legacyNetImmerse = legacyNetImmerse;
 
     LOGD("NIF Magic: %s", header.magic);
 
-    // Read version info
+    // Version info
     header.version = readUInt32();
-    header.userVersion = readUInt32();
-    header.userVersion2 = readUInt32();
-    header.numObjects = readUInt32();
+
+    if (legacyNetImmerse) {
+        // NetImmerse 10.0.1.0 meshes have no endian byte, no user version, no
+        // unknown field and no creator strings: the block count follows the version.
+        header.numObjects = readUInt32();
+    } else {
+        // The 20.0.0.x family and later insert an endian byte after the version.
+        if (header.version >= 0x14000000) {
+            header.endian = readUInt8();
+            header.hasEndianByte = true;
+        }
+
+        header.userVersion = readUInt32();
+        header.numObjects = readUInt32();
+        header.unknownField = readUInt32();
+
+        if (!readByteString(header.creator) ||
+            !readByteString(header.processScript) ||
+            !readByteString(header.exportScript)) {
+            LOGE("Failed to read header byte strings");
+            return false;
+        }
+    }
+
+    const uint16_t numBlockTypes = readUInt16();
+    if (numBlockTypes == 0 || numBlockTypes > 4096) {
+        LOGE("Invalid block type count: %u", numBlockTypes);
+        return false;
+    }
+
+    header.blockTypeNames.reserve(numBlockTypes);
+    for (uint16_t i = 0; i < numBlockTypes; i++) {
+        std::string typeName;
+        if (!readString(typeName)) {
+            LOGE("Failed to read block type name %u", i);
+            return false;
+        }
+        header.blockTypeNames.push_back(typeName);
+    }
+
+    if (header.numObjects == 0 || header.numObjects > 0x100000) {
+        LOGE("Invalid block count: %u", header.numObjects);
+        return false;
+    }
+
+    header.blockTypeIndices.resize(header.numObjects);
+    for (uint32_t i = 0; i < header.numObjects; i++) {
+        const uint16_t typeIndex = readUInt16();
+        if (typeIndex >= numBlockTypes) {
+            LOGE("Block %u has out-of-range type index %u (numBlockTypes=%u)",
+                 i, typeIndex, numBlockTypes);
+            return false;
+        }
+        header.blockTypeIndices[i] = typeIndex;
+    }
+
+    // Header string table. numStrings is 0 in every retail Oblivion mesh, so
+    // this loop normally does nothing. maxStringLength is the width of the
+    // fixed-width inline block names and is 0 when the file uses SizedStrings.
     header.numStrings = readUInt32();
     header.maxStringLength = readUInt32();
+    if (header.numStrings > 0x10000) {
+        LOGE("Invalid header string count: %u", header.numStrings);
+        return false;
+    }
+    for (uint32_t i = 0; i < header.numStrings; i++) {
+        std::string ignored;
+        if (!readString(ignored)) {
+            LOGE("Failed to read header string %u", i);
+            return false;
+        }
+    }
 
-    LOGD("Num objects: %u, Num strings: %u", header.numObjects, header.numStrings);
-
-    return true;
-}
-
-bool NIFParser::parseBlockTypeStrings() {
-    LOGD("Parsing block type strings: %u strings", header.numStrings);
-
-    // String table comes after header
-    // For now, we'll skip detailed parsing of string table
-    // In a full implementation, we'd read all strings into a vector
-
-    return true;
+    header.blockDataOffset = cursor;
+    return !readError;
 }
 
 bool NIFParser::parseObjectArray() {
-    LOGD("Parsing object array: %u objects", header.numObjects);
+    LOGD("Parsing object array: %u blocks, %zu block types",
+         header.numObjects, header.blockTypeNames.size());
 
     nodes.resize(header.numObjects);
 
@@ -130,18 +207,77 @@ bool NIFParser::parseObjectArray() {
         node->nodeIndex = i;
         node->parentIndex = -1;
         node->hasGeometry = false;
-
-        // Read block type string
-        readString(node->name);
-
-        LOGD("Object %u: %s", i, node->name.c_str());
-
-        // For now, just store basic node info
-        // Full parsing of each block type would happen here
+        node->blockTypeIndex = header.blockTypeIndices[i];
+        node->blockTypeName = header.blockTypeNames[node->blockTypeIndex];
         nodes[i] = node;
     }
 
+    // Block 0 is the scene root. Like every NiObjectNET-derived block it starts
+    // with its inline object name, which is the only block name that can be read
+    // without walking the variable-length block bodies.
+    if (nodes.empty() || !isNamedBlockType(nodes[0]->blockTypeName)) {
+        LOGD("Block 0 carries no inline object name");
+        return true;
+    }
+
+    setCursor(header.blockDataOffset);
+    if (header.maxStringLength > 0) {
+        // Fixed-width form: exactly maxStringLength raw bytes.
+        if (header.maxStringLength > 1024) {
+            LOGE("Root object name too long: %u", header.maxStringLength);
+            return false;
+        }
+        std::vector<char> nameBuffer(header.maxStringLength);
+        if (!readBytes(nameBuffer.data(), header.maxStringLength)) {
+            LOGE("Failed to read root object name at offset %zu", header.blockDataOffset);
+            return false;
+        }
+        nodes[0]->name.assign(nameBuffer.data(), header.maxStringLength);
+    } else if (!readString(nodes[0]->name)) {
+        // Length-prefixed form used by the 10.x and legacy NetImmerse headers.
+        LOGE("Failed to read root object name at offset %zu", header.blockDataOffset);
+        return false;
+    }
+
+    LOGD("Block 0: %s (%s)", nodes[0]->name.c_str(), nodes[0]->blockTypeName.c_str());
     return true;
+}
+
+std::string NIFParser::getBlockTypeName(uint32_t index) const {
+    if (index >= header.blockTypeIndices.size()) {
+        return std::string();
+    }
+    const uint16_t typeIndex = header.blockTypeIndices[index];
+    if (typeIndex >= header.blockTypeNames.size()) {
+        return std::string();
+    }
+    return header.blockTypeNames[typeIndex];
+}
+
+bool NIFParser::hasBlockType(const std::string& typeName) const {
+    for (uint32_t i = 0; i < header.blockTypeIndices.size(); i++) {
+        if (getBlockTypeName(i) == typeName) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Types that derive from NiObjectNET and therefore start their block body with
+// an inline object name. Only the scene-graph types are listed, which covers
+// block 0 of every retail Oblivion mesh.
+bool NIFParser::isNamedBlockType(const std::string& typeName) {
+    static const char* kNamedTypes[] = {
+        "NiNode", "NiTriShape", "NiTriStrips", "NiBSAnimationNode",
+        "BSFadeNode", "NiBillboardNode", "NiLODNode", "NiSwitchNode",
+        "NiSortAdjustNode", "NiBSBoneLODController"
+    };
+    for (const char* named : kNamedTypes) {
+        if (typeName == named) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool NIFParser::buildNodeHierarchy() {
@@ -160,12 +296,30 @@ bool NIFParser::buildNodeHierarchy() {
 
 // Binary reading helpers
 bool NIFParser::readBytes(char* buffer, size_t count) {
-    fileStream.read(buffer, count);
-    return fileStream.gcount() == (std::streamsize)count;
+    if (cursor + count > fileBuffer.size()) {
+        readError = true;
+        return false;
+    }
+    if (count > 0) {
+        std::memcpy(buffer, fileBuffer.data() + cursor, count);
+    }
+    cursor += count;
+    return true;
+}
+
+uint8_t NIFParser::readUInt8() {
+    uint8_t value = 0;
+    if (!readBytes(reinterpret_cast<char*>(&value), sizeof(uint8_t))) {
+        return 0;
+    }
+    return value;
 }
 
 bool NIFParser::readString(std::string& str) {
     uint32_t length = readUInt32();
+    if (readError) {
+        return false;
+    }
     if (length == 0) {
         str.clear();
         return true;  // Empty string is valid
@@ -182,8 +336,33 @@ bool NIFParser::readString(std::string& str) {
     return true;
 }
 
+// bzstring: a u8 length that includes the terminating NUL, followed by the body.
+bool NIFParser::readByteString(std::string& str) {
+    const uint8_t length = readUInt8();
+    if (readError) {
+        return false;
+    }
+    if (length == 0) {
+        str.clear();
+        return true;
+    }
+    std::vector<char> buffer(length);
+    if (!readBytes(buffer.data(), length)) {
+        return false;
+    }
+    size_t textLength = length;
+    while (textLength > 0 && buffer[textLength - 1] == '\0') {
+        textLength--;
+    }
+    str.assign(buffer.data(), textLength);
+    return true;
+}
+
 bool NIFParser::readStringRef(std::string& str) {
     uint32_t index = readUInt32();
+    if (readError) {
+        return false;
+    }
     // In full implementation, would look up from string table
     // For now, just set a placeholder
     str = "string_" + std::to_string(index);
@@ -191,20 +370,26 @@ bool NIFParser::readStringRef(std::string& str) {
 }
 
 uint32_t NIFParser::readUInt32() {
-    uint32_t value;
-    fileStream.read(reinterpret_cast<char*>(&value), sizeof(uint32_t));
+    uint32_t value = 0;
+    if (!readBytes(reinterpret_cast<char*>(&value), sizeof(uint32_t))) {
+        return 0;
+    }
     return value;
 }
 
 uint16_t NIFParser::readUInt16() {
-    uint16_t value;
-    fileStream.read(reinterpret_cast<char*>(&value), sizeof(uint16_t));
+    uint16_t value = 0;
+    if (!readBytes(reinterpret_cast<char*>(&value), sizeof(uint16_t))) {
+        return 0;
+    }
     return value;
 }
 
 float NIFParser::readFloat() {
-    float value;
-    fileStream.read(reinterpret_cast<char*>(&value), sizeof(float));
+    float value = 0.0f;
+    if (!readBytes(reinterpret_cast<char*>(&value), sizeof(float))) {
+        return 0.0f;
+    }
     return value;
 }
 

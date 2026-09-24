@@ -35,15 +35,15 @@
 
 // Humanoid skeleton (most common, has NiSkinInstance + NiControllerManager)
 static const char* TEST_NIF_HUMAN = "meshes/characters/_1stperson/skeleton.nif";
-static const char* TEST_NIF_HUMAN_MESH = "meshes/characters/_1stperson/male/malebody.nif";
+static const char* TEST_NIF_HUMAN_MESH = "meshes/characters/imperial/headhuman.nif";
 
 // Architecture (has collision objects)
-static const char* TEST_NIF_DOOR = "meshes/architecture/buildingparts/impdoor01.nif";
-static const char* TEST_NIF_FURNITURE = "meshes/architecture/furniture/chair01.nif";
+static const char* TEST_NIF_DOOR = "meshes/architecture/farmhouse/farmhousedoor01.nif";
+static const char* TEST_NIF_FURNITURE = "meshes/furniture/middleclass/middlechair01.nif";
 
 // Weapons (small meshes, often have collision)
-static const char* TEST_NIF_SWORD = "meshes/weapons/iron/ironsword.nif";
-static const char* TEST_NIF_SHIELD = "meshes/weapons/iron/ironshield.nif";
+static const char* TEST_NIF_SWORD = "meshes/weapons/iron/longsword.nif";
+static const char* TEST_NIF_SHIELD = "meshes/armor/spellbreaker/shield.nif";
 
 // Creatures (skeleton + animation)
 static const char* TEST_NIF_CREATURE = "meshes/creatures/horse/horse.nif";
