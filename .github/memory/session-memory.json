@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-24T06:33:14.867024Z",
+  "lastUpdated": "2026-09-24T16:58:13.245263",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -3280,10 +3280,38 @@
         "copyright"
       ],
       "compressed": false
+    },
+    {
+      "id": "8d206c67-bc91-4607-966e-9a3889f4d948",
+      "timestamp": "2026-09-24T16:58:13.245263",
+      "category": "decision",
+      "priority": "high",
+      "content": "SCDA 0x001C is a reference selector, not a source-line marker: [u16 0x001C][u16 refIndex], 4 bytes fixed, no payload. refIndex is a 1-based index into the reference list the compiler emitted for the command that follows. Proven over 1,373 of 1,373 records carrying the marker: max value never exceeds the record's distinct source reference count (median ratio 0.92, maximum 16, 795 records at 1 or below). The MQ13/MQ14 record settles it: the same actors get the same indices in two groups written in different orders (Burd 3, Ulrich 4, Viera 5, Martin 6, Jauffre 7, Baurus 8, Steffan 9; second group order 7,6,8,9,5,4,3). A VM must consume the 4 bytes and assign the calling reference; discarding the value breaks every bare Ref.command. Open question: the list is not record-wide (values restart at 1 inside long records), so which SCRO list an index resolves against is still unsettled.",
+      "tags": [
+        "scda",
+        "script-vm",
+        "esm",
+        "opcode-0x001c"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "107d967b-5648-4720-97b5-1dc5aea96c77",
+      "timestamp": "2026-09-24T16:58:13.245263",
+      "category": "decision",
+      "priority": "high",
+      "content": "SCDA opcode naming is complete: all 140 distinct ordinary opcodes are named. The last three were fixed by matching occurrence counts against line-leading source keywords: 0x10BF ModAmountSoldStolen (10/10, [1][n <int>]), 0x10DE CloseOblivionGate (3/3, payload 00 00, distinct from 0x10C0 CloseCurrentOblivionGate at 16 occurrences), 0x1133 SetLevel (2/2, [1][n 0] and [2][n 1][n 1]). Older figures of 117 unnamed opcodes, 78.61% coverage, and the opcodes 0x0A10 / 0x0510 are invalid: they came from a walker that read 0x001C as off += 4 + length instead of a fixed 4 bytes. The correct walk is 0x001C -> off += 4, 0x001D -> off += 4 + length, everything else -> off += 4 + length.",
+      "tags": [
+        "scda",
+        "script-vm",
+        "opcode-naming",
+        "census"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 229,
+    "totalEntries": 231,
     "compressedCount": 2,
     "sessionCount": 24
   }
