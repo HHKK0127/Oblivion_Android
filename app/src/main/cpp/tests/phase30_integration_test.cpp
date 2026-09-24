@@ -12,8 +12,10 @@
 #include "../collision/character_controller.h"
 #include <chrono>
 #include <cstring>
+#include <cstdlib>
 #include <algorithm>
 #include <cmath>
+#include <sys/stat.h>
 
 #ifdef __ANDROID__
 #include <android/log.h>
@@ -90,6 +92,17 @@ bool Phase30IntegrationTest::fileExists(const std::string& path) const {
 }
 
 // ============================================
+// Helper: Check if a directory exists
+// ============================================
+static bool directoryExists(const std::string& path) {
+    struct stat st;
+    if (path.empty() || stat(path.c_str(), &st) != 0) {
+        return false;
+    }
+    return S_ISDIR(st.st_mode) != 0;
+}
+
+// ============================================
 // Constructor / Destructor
 // ============================================
 Phase30IntegrationTest::Phase30IntegrationTest() {}
@@ -118,13 +131,26 @@ void Phase30IntegrationTest::record(const std::string& name, bool passed,
 // Run all tests
 // ============================================
 bool Phase30IntegrationTest::runAllTests(const std::string& assetBasePath) {
-    basePath = assetBasePath;
     results.clear();
+
+    // Oblivion assets are not redistributable, so host/CI runs usually have none.
+    // Resolve the asset root from OBLIVION_ASSET_BASE (falling back to the path the
+    // caller passed in) and skip the whole suite when it is not available.
+    const char* envBase = std::getenv("OBLIVION_ASSET_BASE");
+    basePath = (envBase != nullptr && envBase[0] != '\0') ? envBase : assetBasePath;
 
     TEST_LOGI("========================================");
     TEST_LOGI("Phase 30 Integration Test Suite");
     TEST_LOGI("Asset base: %s", basePath.c_str());
     TEST_LOGI("========================================");
+
+    const std::string firstNif = basePath + "/" + TEST_NIF_HUMAN;
+    if (!directoryExists(basePath) || !fileExists(firstNif)) {
+        TEST_LOGI("SKIPPED: assets not available (asset base '%s', missing '%s')",
+                  basePath.c_str(), firstNif.c_str());
+        record("SKIP_Assets_Unavailable", true, "SKIPPED: assets not available", 0.0f);
+        return true;
+    }
 
     testNIFParsing();
     testSkeletonBuilding();
