@@ -1192,7 +1192,104 @@ void ScriptVMTests::testNativeScdaDecoder() {
                getTimeMs38() - start);
     }
 
-    // Test 10: an unframed payload is preserved instead of guessed
+    // Test 10: MessageBox splits into text, format arguments and buttons
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> payload;
+        appendU16(payload, 1);   // one argument
+        appendU16(payload, 4);   // "Yes" plus NUL
+        payload.push_back('Y');
+        payload.push_back('e');
+        payload.push_back('s');
+        payload.push_back(0x00);
+        appendU16(payload, 0);   // no format arguments
+        appendU16(payload, 2);   // two buttons
+        appendU16(payload, 4);
+        payload.push_back('Y');
+        payload.push_back('e');
+        payload.push_back('s');
+        payload.push_back(0x00);
+        appendU16(payload, 3);
+        payload.push_back('N');
+        payload.push_back('o');
+        payload.push_back(0x00);
+
+        std::vector<uint8_t> code;
+        appendInstruction(code, 0x1000, payload);
+
+        const NativeDecodeResult result = decodeNativeScda(code);
+        const bool ok = result.success && result.instructions.size() == 1 &&
+                        !result.instructions[0].framingFailed &&
+                        result.instructions[0].text == "Yes" &&
+                        result.instructions[0].formatArgumentCount == 0 &&
+                        result.instructions[0].buttonCount == 2 &&
+                        result.instructions[0].buttonTexts.size() == 2 &&
+                        result.instructions[0].buttonTexts[0] == "Yes" &&
+                        result.instructions[0].buttonTexts[1] == "No";
+        record("NativeScda: MessageBox framing", ok,
+               "MessageBox splits into text, format arguments and button labels",
+               getTimeMs38() - start);
+    }
+
+    // Test 10b: Message ends with a zero word
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> payload;
+        appendU16(payload, 1);
+        appendU16(payload, 5);
+        payload.push_back('H');
+        payload.push_back('e');
+        payload.push_back('l');
+        payload.push_back('l');
+        payload.push_back('o');
+        appendU16(payload, 0);
+        appendU32(payload, 0);
+
+        std::vector<uint8_t> code;
+        appendInstruction(code, 0x1059, payload);
+
+        const NativeDecodeResult result = decodeNativeScda(code);
+        const bool ok = result.success && result.instructions.size() == 1 &&
+                        !result.instructions[0].framingFailed &&
+                        result.instructions[0].text == "Hello" &&
+                        result.instructions[0].formatArgumentCount == 0;
+        record("NativeScda: Message framing", ok,
+               "Message splits into text, format arguments and a zero word",
+               getTimeMs38() - start);
+    }
+
+    // Test 10c: a rename command carries an explicit reference before the text
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> payload;
+        appendU16(payload, 2);
+        payload.push_back('r');
+        appendU16(payload, 1);
+        appendU16(payload, 7);
+        payload.push_back('M');
+        payload.push_back('y');
+        payload.push_back(' ');
+        payload.push_back('H');
+        payload.push_back('o');
+        payload.push_back('m');
+        payload.push_back('e');
+
+        std::vector<uint8_t> code;
+        appendInstruction(code, 0x111B, payload);
+
+        const NativeDecodeResult result = decodeNativeScda(code);
+        const bool ok = result.success && result.instructions.size() == 1 &&
+                        !result.instructions[0].framingFailed &&
+                        result.instructions[0].text == "My Home" &&
+                        result.instructions[0].hasImplicitSelf &&
+                        result.instructions[0].tokens.size() == 1 &&
+                        result.instructions[0].tokens[0].kind == NativeTokenKind::Variable;
+        record("NativeScda: rename with reference", ok,
+               "A rename command reads its reference before the new name",
+               getTimeMs38() - start);
+    }
+
+    // Test 10d: a string payload that does not frame keeps its raw bytes
     {
         const float start = getTimeMs38();
         std::vector<uint8_t> payload;
@@ -1202,16 +1299,25 @@ void ScriptVMTests::testNativeScdaDecoder() {
         payload.push_back('e');
         payload.push_back('s');
         payload.push_back(0x00);
+        appendU16(payload, 0);
+        appendU16(payload, 1);
+        appendU16(payload, 4);
+        payload.push_back('Y');
+        payload.push_back('e');
+        payload.push_back('s');
+        payload.push_back(0x00);
+        payload.push_back(0x00);  // one byte too many
 
         std::vector<uint8_t> code;
         appendInstruction(code, 0x1000, payload);
 
         const NativeDecodeResult result = decodeNativeScda(code);
         const bool ok = result.success && result.instructions.size() == 1 &&
-                        result.instructions[0].tokens.empty() &&
+                        result.instructions[0].framingFailed &&
+                        result.instructions[0].text.empty() &&
                         result.instructions[0].payload.size() == payload.size();
-        record("NativeScda: unframed payload kept", ok,
-               "MessageBox keeps its raw payload rather than guessing tokens",
+        record("NativeScda: unframed string payload kept", ok,
+               "A string payload that does not frame keeps its raw bytes",
                getTimeMs38() - start);
     }
 
@@ -1358,6 +1464,172 @@ void ScriptVMTests::testNativeScdaDecoder() {
                         getNativeOpcodeName(0x1037) == "StopQuest";
         record("NativeScda: naming batch", ok,
                "CompleteQuest and the later command names resolve, StopQuest stays distinct",
+               getTimeMs38() - start);
+    }
+
+    // Test 18: Set with a two token target, taken from MQ04.convtimer
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> payload;
+        payload.push_back('r');
+        appendU16(payload, 1);   // MQ04
+        payload.push_back('f');
+        appendU16(payload, 8);   // convtimer
+        appendU16(payload, 2);   // expression length
+        payload.push_back(0x20);
+        payload.push_back('1');
+
+        std::vector<uint8_t> code;
+        appendInstruction(code, 0x0015, payload);
+
+        const NativeDecodeResult result = decodeNativeScda(code);
+        const bool ok = result.success && result.instructions.size() == 1 &&
+                        !result.instructions[0].framingFailed &&
+                        result.instructions[0].tokens.size() == 2 &&
+                        result.instructions[0].tokens[0].kind == NativeTokenKind::Variable &&
+                        result.instructions[0].tokens[0].typeChar == 'r' &&
+                        result.instructions[0].tokens[0].index == 1 &&
+                        result.instructions[0].tokens[1].typeChar == 'f' &&
+                        result.instructions[0].tokens[1].index == 8 &&
+                        result.instructions[0].expressionDecoded &&
+                        result.instructions[0].expressionTokens.size() == 1 &&
+                        result.instructions[0].expressionTokens[0].kind ==
+                            NativeTokenKind::Text &&
+                        result.instructions[0].expressionTokens[0].text == "1";
+        record("NativeScda: Set two token target", ok,
+               "Set resolves a reference member target and its expression",
+               getTimeMs38() - start);
+    }
+
+    // Test 19: the reference literal is a 1-based SCRO index
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> payload;
+        payload.push_back('r');
+        appendU16(payload, 1);   // MQ04
+        payload.push_back('f');
+        appendU16(payload, 7);   // speaker
+        appendU16(payload, 4);   // expression length
+        payload.push_back(0x20);
+        payload.push_back(NATIVE_SCDA_REFERENCE_LITERAL_CHAR);
+        appendU16(payload, 2);   // SCRO[1]
+
+        std::vector<uint8_t> code;
+        appendInstruction(code, 0x0015, payload);
+
+        const NativeDecodeResult result = decodeNativeScda(code);
+        const bool ok = result.success && result.instructions.size() == 1 &&
+                        !result.instructions[0].framingFailed &&
+                        result.instructions[0].expressionDecoded &&
+                        result.instructions[0].expressionTokens.size() == 1 &&
+                        result.instructions[0].expressionTokens[0].kind ==
+                            NativeTokenKind::Variable &&
+                        result.instructions[0].expressionTokens[0].typeChar ==
+                            static_cast<char>(NATIVE_SCDA_REFERENCE_LITERAL_CHAR) &&
+                        result.instructions[0].expressionTokens[0].index == 2;
+        record("NativeScda: reference literal", ok,
+               "The reference literal decodes as a 1-based SCRO index",
+               getTimeMs38() - start);
+    }
+
+    // Test 20: expressions keep their postfix ASCII operators and function calls
+    {
+        const float start = getTimeMs38();
+        // Real bytes from SE09RootGateMania02SCRIPT:
+        //   " 5869 1005 0001 0072 0300 20 31 20 3d 3d"
+        //   X 1069 argc=5 [u16 1][r3] " 1" " =="
+        std::vector<uint8_t> expression;
+        expression.push_back(0x20);
+        expression.push_back('X');
+        appendU16(expression, 0x1069);  // IsActionRef
+        appendU16(expression, 5);
+        appendU16(expression, 1);
+        expression.push_back('r');
+        appendU16(expression, 3);
+        expression.push_back(0x20);
+        expression.push_back('1');
+        expression.push_back(0x20);
+        expression.push_back('=');
+        expression.push_back('=');
+
+        std::vector<NativeToken> tokens;
+        std::string error;
+        const bool ok = decodeNativeExpression(expression.data(), expression.size(),
+                                               tokens, error) &&
+                        tokens.size() == 3 &&
+                        tokens[0].kind == NativeTokenKind::Function &&
+                        tokens[0].index == 0x1069 &&
+                        tokens[0].arguments.size() == 1 &&
+                        tokens[0].arguments[0].kind == NativeTokenKind::Variable &&
+                        tokens[0].arguments[0].index == 3 &&
+                        tokens[1].kind == NativeTokenKind::Text &&
+                        tokens[1].text == "1" &&
+                        tokens[2].kind == NativeTokenKind::Text &&
+                        tokens[2].text == "==";
+        record("NativeScda: expression tokenizer", ok,
+               "Expressions keep postfix ASCII operators and nested call arguments",
+               getTimeMs38() - start);
+    }
+
+    // Test 21: an axis selector is one byte and wins over a bare u16 reading
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> payload;
+        appendU16(payload, 2);
+        payload.push_back('Z');
+        payload.push_back('z');
+        const uint8_t doubleBytes[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x69, 0x40};
+        payload.insert(payload.end(), doubleBytes, doubleBytes + 8);
+
+        std::vector<uint8_t> code;
+        appendInstruction(code, 0x1009, payload);
+
+        const NativeDecodeResult result = decodeNativeScda(code);
+        const bool ok = result.success && result.instructions.size() == 1 &&
+                        !result.instructions[0].framingFailed &&
+                        result.instructions[0].tokens.size() == 2 &&
+                        result.instructions[0].tokens[0].kind == NativeTokenKind::Axis &&
+                        result.instructions[0].tokens[0].typeChar == 'Z' &&
+                        result.instructions[0].tokens[1].kind == NativeTokenKind::Double &&
+                        result.instructions[0].tokens[1].doubleValue == 200.0;
+        record("NativeScda: axis selector", ok,
+               "A one byte axis selector is preferred over a bare u16 reading",
+               getTimeMs38() - start);
+    }
+
+    // Test 22: a Set payload that cannot be framed keeps its raw bytes
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> payload;
+        payload.push_back('r');
+        appendU16(payload, 1);
+        appendU16(payload, 9);   // expression length does not match the payload
+        payload.push_back(0x20);
+        payload.push_back('1');
+
+        std::vector<uint8_t> code;
+        appendInstruction(code, 0x0015, payload);
+
+        const NativeDecodeResult result = decodeNativeScda(code);
+        const bool ok = result.success && result.instructions.size() == 1 &&
+                        result.instructions[0].framingFailed &&
+                        result.instructions[0].tokens.empty() &&
+                        result.instructions[0].payload.size() == payload.size();
+        record("NativeScda: unframed Set kept", ok,
+               "A Set payload that does not frame keeps its raw bytes",
+               getTimeMs38() - start);
+    }
+
+    // Test 23: the angle and reload names resolve
+    {
+        const float start = getTimeMs38();
+        const bool ok = getNativeOpcodeName(0x1008) == "GetAngle" &&
+                        getNativeOpcodeName(0x1009) == "SetAngle" &&
+                        getNativeOpcodeName(0x114D) == "EssentialDeathReload" &&
+                        getNativeOpcodeAliases(0x1009).size() == 1 &&
+                        getNativeOpcodeAliases(0x1009)[0] == "setangle";
+        record("NativeScda: angle and reload names", ok,
+               "GetAngle, SetAngle and EssentialDeathReload resolve",
                getTimeMs38() - start);
     }
 }

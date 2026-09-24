@@ -29,12 +29,31 @@ inline double readF64(const uint8_t* p) {
 }
 
 bool isVariableTypeChar(uint8_t c) {
-    return c == 'f' || c == 's' || c == 'r' || c == 'l';
+    return c == 'f' || c == 's' || c == 'r' || c == 'l' || c == 'G';
 }
 
+// Axis selectors are single bytes and only appear inside argument lists, never
+// inside expressions, where 'X' is always a function call. 'X' itself is only an
+// axis when too few bytes remain for a function token.
+bool isAxisChar(uint8_t c, size_t remaining) {
+    if (c == 'Y' || c == 'Z') {
+        return true;
+    }
+    return c == 'X' && remaining < 5;
+}
+
+bool decodeArgumentList(const uint8_t* data, size_t size, uint32_t offset,
+                        std::vector<NativeToken>& tokens, uint16_t& declaredCount,
+                        bool& implicitSelf, std::string& error);
+
+bool readNativeString(const uint8_t* payload, uint32_t size, uint32_t& cursor,
+                      std::string& out);
+
 // Decodes one typed token. Returns false when the token cannot be framed.
+// allowAxis enables the one byte axis selectors of argument lists; expressions
+// and Set targets pass false so that 'X' is always a function call.
 bool decodeToken(const uint8_t* data, size_t size, uint32_t offset,
-                 NativeToken& out) {
+                 bool allowAxis, NativeToken& out) {
     if (offset >= size) {
         return false;
     }
@@ -49,6 +68,26 @@ bool decodeToken(const uint8_t* data, size_t size, uint32_t offset,
         }
         out.kind = NativeTokenKind::Variable;
         out.typeChar = static_cast<char>(lead);
+        out.index = readU16(data + offset + 1);
+        out.length = 3;
+        return true;
+    }
+
+    if (allowAxis && isAxisChar(lead, size - offset)) {
+        out.kind = NativeTokenKind::Axis;
+        out.typeChar = static_cast<char>(lead);
+        out.length = 1;
+        return true;
+    }
+
+    // Outside an argument list 'Z' is the reference literal: a 1-based index
+    // into the owning record's SCRO list.
+    if (lead == NATIVE_SCDA_REFERENCE_LITERAL_CHAR) {
+        if (offset + 3 > size) {
+            return false;
+        }
+        out.kind = NativeTokenKind::Variable;
+        out.typeChar = static_cast<char>(NATIVE_SCDA_REFERENCE_LITERAL_CHAR);
         out.index = readU16(data + offset + 1);
         out.length = 3;
         return true;
@@ -81,7 +120,19 @@ bool decodeToken(const uint8_t* data, size_t size, uint32_t offset,
         out.kind = NativeTokenKind::Function;
         out.index = readU16(data + offset + 1);
         out.argumentBytes = readU16(data + offset + 3);
-        out.length = 5;
+        out.length = 5 + out.argumentBytes;
+        if (offset + out.length > size) {
+            return false;
+        }
+        if (out.argumentBytes > 0) {
+            const uint32_t argsOffset = offset + 5;
+            std::string error;
+            if (!decodeArgumentList(data, argsOffset + out.argumentBytes, argsOffset,
+                                    out.arguments, out.declaredArgumentCount,
+                                    out.hasImplicitSelf, error)) {
+                return false;
+            }
+        }
         return true;
     }
 
@@ -95,23 +146,28 @@ bool decodeToken(const uint8_t* data, size_t size, uint32_t offset,
     return true;
 }
 
-// Decodes [u16 argc][typed tokens]. A token count of argc + 1 means the first
-// token is the call reference, which the compiler emits for dotted calls.
-bool decodeArgumentList(const uint8_t* data, size_t size, uint32_t offset,
-                        NativeInstruction& out, std::string& error) {
+// Walks [u16 argc][typed tokens] to the end of the given range and checks the
+// resulting token count. A count of argc + 1 means the first token is the call
+// reference, which the compiler emits for dotted calls.
+bool walkArgumentList(const uint8_t* data, size_t size, uint32_t offset,
+                      bool allowAxis, std::vector<NativeToken>& tokens,
+                      uint16_t& declaredCount, bool& implicitSelf,
+                      std::string& error) {
+    tokens.clear();
+    implicitSelf = false;
+    declaredCount = 0;
+
     if (offset + 2 > size) {
         error = "truncated argument count";
         return false;
     }
 
-    const uint16_t argc = readU16(data + offset);
-    out.declaredArgumentCount = argc;
+    declaredCount = readU16(data + offset);
     uint32_t cursor = offset + 2;
 
-    std::vector<NativeToken> tokens;
     while (cursor < size) {
         NativeToken token;
-        if (!decodeToken(data, size, cursor, token)) {
+        if (!decodeToken(data, size, cursor, allowAxis, token)) {
             error = "truncated argument token";
             return false;
         }
@@ -119,21 +175,260 @@ bool decodeArgumentList(const uint8_t* data, size_t size, uint32_t offset,
         cursor += token.length;
     }
 
-    if (tokens.size() != argc && tokens.size() != static_cast<size_t>(argc) + 1) {
-        error = "argument count " + std::to_string(argc) +
+    if (tokens.size() != declaredCount &&
+        tokens.size() != static_cast<size_t>(declaredCount) + 1) {
+        error = "argument count " + std::to_string(declaredCount) +
                 " does not match " + std::to_string(tokens.size()) + " tokens";
         return false;
     }
 
-    if (tokens.size() == static_cast<size_t>(argc) + 1) {
-        out.hasImplicitSelf = true;
+    if (tokens.size() == static_cast<size_t>(declaredCount) + 1) {
+        implicitSelf = true;
+    }
+    return true;
+}
+
+// Decodes [u16 argc][typed tokens] from offset to size.
+//
+// Axis selectors are one byte and therefore change how many tokens a payload
+// yields, while a bare u16 whose value happens to be 0x005A needs the plain
+// reading. Both readings exist in the corpus, so prefer the one that satisfies
+// the declared count: axis first, because that is what the vanilla argument
+// lists use, then plain.
+bool decodeArgumentList(const uint8_t* data, size_t size, uint32_t offset,
+                        std::vector<NativeToken>& tokens, uint16_t& declaredCount,
+                        bool& implicitSelf, std::string& error) {
+    std::string axisError;
+    if (walkArgumentList(data, size, offset, true, tokens, declaredCount,
+                         implicitSelf, axisError)) {
+        return true;
     }
 
-    out.tokens = std::move(tokens);
+    std::string plainError;
+    if (walkArgumentList(data, size, offset, false, tokens, declaredCount,
+                         implicitSelf, plainError)) {
+        return true;
+    }
+
+    tokens.clear();
+    implicitSelf = false;
+    error = axisError;
+    return false;
+}
+
+// Decodes [u16 argc][string] where argc is 1, or 2 when the command also carries
+// an explicit reference before the string, as the rename commands do.
+bool decodeStringArgument(const uint8_t* payload, uint32_t size, uint32_t& cursor,
+                          NativeInstruction& out, std::string& error) {
+    if (cursor + 2 > size) {
+        error = "truncated string argument count";
+        return false;
+    }
+
+    const uint16_t argc = readU16(payload + cursor);
+    cursor += 2;
+    out.declaredArgumentCount = argc;
+
+    if (argc == 2) {
+        NativeToken token;
+        if (!decodeToken(payload, size, cursor, false, token)) {
+            error = "truncated string command reference";
+            return false;
+        }
+        cursor += token.length;
+        out.tokens.push_back(token);
+        out.hasImplicitSelf = true;
+    } else if (argc != 1) {
+        error = "unexpected string argument count " + std::to_string(argc);
+        return false;
+    }
+
+    if (!readNativeString(payload, size, cursor, out.text)) {
+        error = "truncated string literal";
+        return false;
+    }
+    return true;
+}
+
+// Decodes [u16 count][count tokens], the format argument block of the message
+// commands.
+bool readTokenBlock(const uint8_t* payload, uint32_t size, uint32_t& cursor,
+                    std::vector<NativeToken>& tokens, uint16_t& count,
+                    std::string& error) {
+    tokens.clear();
+    count = 0;
+    if (cursor + 2 > size) {
+        error = "truncated token block count";
+        return false;
+    }
+
+    count = readU16(payload + cursor);
+    cursor += 2;
+    for (uint16_t i = 0; i < count; ++i) {
+        NativeToken token;
+        if (!decodeToken(payload, size, cursor, false, token)) {
+            error = "truncated token block token";
+            return false;
+        }
+        cursor += token.length;
+        tokens.push_back(token);
+    }
+    return true;
+}
+
+// Decodes [u16 byteLength][bytes]. The stored length counts the bytes that
+// follow, and the text keeps only the part before the terminating NUL.
+bool readNativeString(const uint8_t* payload, uint32_t size, uint32_t& cursor,
+                      std::string& out) {
+    if (cursor + 2 > size) {
+        return false;
+    }
+
+    const uint16_t length = readU16(payload + cursor);
+    if (cursor + 2 + length > size) {
+        return false;
+    }
+
+    const char* text = reinterpret_cast<const char*>(payload + cursor + 2);
+    size_t textLength = length;
+    while (textLength > 0 && text[textLength - 1] == '\0') {
+        --textLength;
+    }
+    out.assign(text, textLength);
+    cursor += 2 + length;
+    return true;
+}
+
+// Decodes the payload of the message and rename commands.
+bool decodeStringCommand(uint16_t opcode, const uint8_t* payload, uint32_t size,
+                         NativeInstruction& out, std::string& error) {
+    uint32_t cursor = 0;
+    if (!decodeStringArgument(payload, size, cursor, out, error)) {
+        return false;
+    }
+
+    switch (opcode) {
+        case 0x1000: {  // MessageBox: text, format arguments, buttons
+            if (!readTokenBlock(payload, size, cursor, out.formatTokens,
+                                out.formatArgumentCount, error)) {
+                return false;
+            }
+            if (cursor + 2 > size) {
+                error = "truncated button count";
+                return false;
+            }
+            out.buttonCount = readU16(payload + cursor);
+            cursor += 2;
+            for (uint16_t i = 0; i < out.buttonCount; ++i) {
+                std::string button;
+                if (!readNativeString(payload, size, cursor, button)) {
+                    error = "truncated button text";
+                    return false;
+                }
+                out.buttonTexts.push_back(button);
+            }
+            break;
+        }
+        case 0x1059: {  // Message: text, format arguments, u32 0
+            if (!readTokenBlock(payload, size, cursor, out.formatTokens,
+                                out.formatArgumentCount, error)) {
+                return false;
+            }
+            if (cursor + 4 != size || readU32(payload + cursor) != 0) {
+                error = "message payload is not terminated by a zero word";
+                return false;
+            }
+            cursor += 4;
+            break;
+        }
+        case 0x114D: {  // text followed by four zero bytes
+            if (cursor + 4 != size || readU32(payload + cursor) != 0) {
+                error = "string payload is not terminated by a zero word";
+                return false;
+            }
+            cursor += 4;
+            break;
+        }
+        case 0x1114:  // PlayBinkFile
+        case 0x111B:  // explicit reference rename
+        case 0x111C:  // implicit self rename
+            break;
+        default:
+            break;
+    }
+
+    if (cursor != size) {
+        error = "string payload has " + std::to_string(size - cursor) +
+                " trailing bytes";
+        return false;
+    }
+    return true;
+}
+
+// Tokenizes a reverse Polish expression. Dispatch is by leading byte: a type
+// char always introduces a binary operand, 0x20 is a separator, and anything
+// else is ASCII operator text running to the next separator or the end. There
+// are no bare u16 operands inside expressions, so an operand that does not fit
+// is an error rather than text.
+bool decodeExpressionTokens(const uint8_t* data, size_t size,
+                            std::vector<NativeToken>& out, std::string& error) {
+    out.clear();
+    uint32_t cursor = 0;
+    while (cursor < size) {
+        const uint8_t lead = data[cursor];
+        if (lead == 0x20) {
+            ++cursor;
+            continue;
+        }
+
+        if (lead == 'X') {
+            if (cursor + 5 > size) {
+                error = "truncated function call in expression";
+                return false;
+            }
+            NativeToken token;
+            if (!decodeToken(data, size, cursor, false, token)) {
+                error = "truncated function arguments in expression";
+                return false;
+            }
+            out.push_back(token);
+            cursor += token.length;
+            continue;
+        }
+
+        if (isVariableTypeChar(lead) || lead == 'n' || lead == 'z' ||
+            lead == NATIVE_SCDA_REFERENCE_LITERAL_CHAR) {
+            NativeToken token;
+            if (!decodeToken(data, size, cursor, false, token)) {
+                error = "truncated operand in expression";
+                return false;
+            }
+            out.push_back(token);
+            cursor += token.length;
+            continue;
+        }
+
+        uint32_t end = cursor;
+        while (end < size && data[end] != 0x20) {
+            ++end;
+        }
+        NativeToken token;
+        token.kind = NativeTokenKind::Text;
+        token.offset = cursor;
+        token.length = end - cursor;
+        token.text.assign(reinterpret_cast<const char*>(data + cursor), token.length);
+        out.push_back(token);
+        cursor = end;
+    }
     return true;
 }
 
 } // namespace
+
+bool decodeNativeExpression(const uint8_t* data, size_t size,
+                            std::vector<NativeToken>& out, std::string& error) {
+    return decodeExpressionTokens(data, size, out, error);
+}
 
 std::string getNativeOpcodeName(uint16_t opcode) {
     switch (opcode) {
@@ -152,6 +447,8 @@ std::string getNativeOpcodeName(uint16_t opcode) {
         case 0x1003: return "SetEssential";
         case 0x1004: return "Rotate";
         case 0x1007: return "SetPos";
+        case 0x1008: return "GetAngle";
+        case 0x1009: return "SetAngle";
         case 0x100D: return "Activate";
         case 0x100F: return "SetActorValue";
         case 0x1010: return "ModActorValue";
@@ -255,6 +552,7 @@ std::string getNativeOpcodeName(uint16_t opcode) {
         case 0x1145: return "RefreshTopicList";
         case 0x1146: return "Reset3DState";
         case 0x114A: return "AddAchievement";
+        case 0x114D: return "EssentialDeathReload";
         case 0x114E: return "SetShowQuestItems";
         case 0x1150: return "ResetHealth";
         case 0x1151: return "SetIgnoreFriendlyHits";
@@ -280,6 +578,8 @@ std::vector<std::string> getNativeOpcodeAliases(uint16_t opcode) {
     switch (opcode) {
         case 0x100F: return {"setav", "setactorvalue"};
         case 0x1010: return {"modav", "modactorvalue"};
+        case 0x1008: return {"getangle"};
+        case 0x1009: return {"setangle"};
         case 0x105E: return {"evp", "evaluatepackage"};
         case 0x109E: return {"moveto", "movetomarker"};
         case 0x1104: return {"setweather", "sw"};
@@ -415,12 +715,81 @@ bool decodeNativeInstruction(const uint8_t* data, size_t size, uint32_t offset,
                 return false;
             }
             out.expression.assign(payload + 4, payload + lengthWord);
+            std::string expressionError;
+            out.expressionDecoded =
+                decodeExpressionTokens(payload + 4, expressionLength,
+                                       out.expressionTokens, expressionError);
             break;
         }
         case static_cast<uint16_t>(NativeStructuralOpcode::Set): {
             out.isStructural = true;
-            if (!decodeArgumentList(payload, lengthWord, 0, out, error)) {
-                return false;
+            // Set stores no target count. The target is one token, or two when
+            // the statement writes a member of a reference, and the length
+            // equation resolves it: exactly one reading makes
+            // targetBytes + 2 + expressionLength equal the payload length.
+            // Targets are always variables, which rejects the reading that
+            // would swallow the first expression operand as a second target.
+            bool framed = false;
+            for (uint16_t targetCount = 2; targetCount >= 1 && !framed; --targetCount) {
+                uint32_t cursor = 0;
+                std::vector<NativeToken> targets;
+                bool targetsOk = true;
+                for (uint16_t i = 0; i < targetCount; ++i) {
+                    NativeToken token;
+                    if (!decodeToken(payload, lengthWord, cursor, false, token) ||
+                        token.kind != NativeTokenKind::Variable) {
+                        targetsOk = false;
+                        break;
+                    }
+                    cursor += token.length;
+                    targets.push_back(token);
+                }
+                if (!targetsOk || cursor + 2 > lengthWord) {
+                    continue;
+                }
+
+                const uint16_t expressionLength = readU16(payload + cursor);
+                if (expressionLength == 0 ||
+                    cursor + 2 + expressionLength != lengthWord) {
+                    continue;
+                }
+
+                out.tokens = std::move(targets);
+                out.declaredArgumentCount = targetCount;
+                out.expression.assign(payload + cursor + 2, payload + lengthWord);
+                std::string expressionError;
+                out.expressionDecoded = decodeExpressionTokens(
+                    payload + cursor + 2, expressionLength, out.expressionTokens,
+                    expressionError);
+                framed = true;
+            }
+            if (!framed) {
+                out.tokens.clear();
+                out.declaredArgumentCount = 0;
+                out.framingFailed = true;
+                out.payload.assign(payload, payload + lengthWord);
+            }
+            break;
+        }
+        case 0x1000:  // MessageBox
+        case 0x1059:  // Message
+        case 0x1114:  // PlayBinkFile
+        case 0x111B:  // Rename with an explicit reference
+        case 0x111C:  // Rename with an implicit self
+        case 0x114D: { // Text with a zero terminator
+            std::string stringError;
+            if (!decodeStringCommand(out.opcode, payload, lengthWord, out,
+                                     stringError)) {
+                out.tokens.clear();
+                out.text.clear();
+                out.formatTokens.clear();
+                out.formatArgumentCount = 0;
+                out.buttonCount = 0;
+                out.buttonTexts.clear();
+                out.declaredArgumentCount = 0;
+                out.hasImplicitSelf = false;
+                out.framingFailed = true;
+                out.payload.assign(payload, payload + lengthWord);
             }
             break;
         }
@@ -431,9 +800,13 @@ bool decodeNativeInstruction(const uint8_t* data, size_t size, uint32_t offset,
             std::string framingError;
             if (lengthWord == 0) {
                 out.isBare = true;
-            } else if (!decodeArgumentList(payload, lengthWord, 0, out, framingError)) {
+            } else if (!decodeArgumentList(payload, lengthWord, 0, out.tokens,
+                                           out.declaredArgumentCount,
+                                           out.hasImplicitSelf, framingError)) {
                 out.tokens.clear();
+                out.declaredArgumentCount = 0;
                 out.hasImplicitSelf = false;
+                out.framingFailed = true;
                 out.payload.assign(payload, payload + lengthWord);
             }
             break;
