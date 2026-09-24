@@ -48,13 +48,14 @@ All phases 37-45 have been completed:
 ## Phase 46-55: Completion Plan
 
 **Project**: HHKK0127/Oblivion_Android
-**Current Version**: 0.9.10 (Phase 45 Complete)
+**Current Version**: 0.9.10 (`versionName`, deriving `versionCode` 910) - features through Phase 64 are complete, Phase 65 is in progress
 **Goal**: Complete Oblivion gameplay experience on Android
+**Last updated**: 2026-09-24 - the measured state is in "Verified build and status (2026-09-24)" near the end of this file
 
-### Unimplemented Features Identified
-- renderer.cpp: Weather, Time, Equip/Unequip, Magicka, Combat debug (11 TODOs)
-- audio_decoder.cpp: MP3/OGG decode (header parsing only)
-- Other: Icon mapping, Gender selection, Texture loading
+### Unimplemented Features Identified (all closed as of 2026-09-24)
+- renderer.cpp: Weather, Time, Equip/Unequip, Magicka, Combat debug (11 TODOs) - **closed**: `renderer.cpp` now contains 0 TODO markers (Phase 47 weather, Phase 48 equipment)
+- audio_decoder.cpp: MP3/OGG decode (header parsing only) - **closed**: `decodeMp3()` uses minimp3 and `decodeOgg()` uses stb_vorbis (`third_party/minimp3`, `third_party/stb`)
+- Other: Icon mapping, Gender selection, Texture loading - **closed** in Phases 41 and 44
 
 ### Phase Schedule
 
@@ -117,7 +118,8 @@ All phases 37-45 have been completed:
 ---
 
 *Plan created: 2026-09-17*
-*Next update: After Phase 46 completion*
+*Last updated: 2026-09-25*
+*Next update: WS-B re-derives `script_opcodes.h` from measured values, or the remaining 4 host test suites are wired into CI*
 
 ---
 
@@ -135,7 +137,13 @@ All phases 37-45 have been completed:
 | DLCShiveringIsles.esp | 85-byte stub (header record only) |
 | Shivering Isles content | Merged into Oblivion.esm (Steam GOTY build) - confirmed via SEDementia 118 / Bliss 177 / Crucible 194 inside the ESM |
 | BSA archives | 17 files / 5.47 GB / nif 9,645 - dds 21,856 - kf 2,687 - mp3 50,943 - lip 50,916 - lod 10,810 - wav 2,093 - xml 759 - egm 155 - fnt 7 - tex 38 - scc 8 |
-| Total content to support | REFR 1,044,109 / CELL 35,787 / QUST 416 / SCPT 3,046 / NPC_ 2,664 / INFO 20,333 / CREA 1,001 / WRLD 103 / LAND 31,927 / PACK 7,717 / DIAL 4,126 / SPEL 1,314 |
+| Total content to support | REFR 1,044,109 / CELL 35,787 / QUST 390 / SCPT 2,393 / NPC_ 2,664 / INFO 19,278 / CREA 1,001 / WRLD 103 / LAND 31,927 / PACK 7,717 / DIAL 4,126 / SPEL 1,314 |
+| Script bytecode (SCDA) | 2,393 blocks / 807,893 B total (min 4 / median 188 / max 7,371) / exactly 1 block per SCPT record / 63,235 decoded instructions / 141 distinct opcodes / 0 compressed / 0 inflate failures |
+| Script source (SCTX) | 2,393 records / 0 compressed |
+| SCPT subrecords | EDID 2,393 / SCHR 2,393 / SCDA 2,393 / SCTX 2,393 / SCRO 10,848 / SLSD 7,266 / SCVR 7,266 / SCRV 996 - the subrecord walk completes for all 2,393 records with no truncation |
+| SCPT script variables | SLSD 7,266 / SCVR 7,266 / SCRV 996, paired positionally (SLSD[i] <-> SCVR[i], counts identical) - **SLSD +0** is a 1-based u32 index (contiguous 1,230 / sparse 422 / no variables 741, smallest index per script 1..12), **+16** is a coarse type marker (1 = integer family, 0 = float/ref), +4..+7 carry stale ASCII fragments in 277 records and +8..+23 are otherwise unused; **SCVR** is the variable name; **SCRV** lists the index of every `ref` variable (all 996 of them). The exact type is not in the record at all - it is resolved from the SCTX declaration, which names the SCVR variable in **7,266 / 7,266** cases (Integer 5,100 = `short` 5,088 + `long` 1 + `int` 11 / Float 1,170 / Ref 996) |
+
+**Census correction (2026-09-24)**: an earlier byte-substring scan over the raw ESM reported inflated counts (SCPT 3,046 / QUST 416 / INFO 20,333 / SCDA 9,646 / SCTX 9,992) because a four-character substring match also hits the same tag inside other records' payloads. A record-boundary walk over all 1,167,017 records gives the values above (SCPT 2,393 / QUST 390 / INFO 19,278 / SCDA 2,393 / SCTX 2,393), independently reproduced by a second reader written from scratch. The "SCPT/QUST record counts disagree between tools" risk row is closed by this correction; the reader is byte-complete, not truncated.
 
 **Binary format (confirmed)**: Oblivion (TES4) uses a 20-byte record header, a 20-byte GRUP header, and 6-byte subrecord headers.
 `esm_reader.cpp` already implements this correctly (L116 "TES4 record: 20-byte header", L183, L471 `size & 0xFFFF` with `offset += 6`).
@@ -148,9 +156,9 @@ All phases 37-45 have been completed:
 | Decoded record types | 65 | 64 | None (all 20 secondary types decoded and verified against real data) |
 | Script functions | 118 | ~1,200 | ~1,080 functions |
 | Mod / load order | None (single file parse only) | plugins.txt, override resolution, BSA priority | Design from scratch |
-| Tests | 5 suites exist, `runAllTests()` never called | CI green | Not wired |
-| Performance | 30-33 fps gameplay / 60 fps title (measured on the emulator, hardware GL, x86_64) | 30 fps stable | Met on the emulator; A4 needs a real-device run |
-| Memory | 626 MB native heap / 670 MB PSS (measured) | A3/A4 budget 1 GB | Thin margin - see below |
+| Tests | 5 suites exist; 1 (`script_vm_tests`, 18 cases) is wired into CI through `tools/host_tests/run_host_tests.sh`, the other 4 are not, and `runAllTests()` is still never called | CI green | 1 of 5 wired |
+| Performance | 42-49 fps gameplay / 60 fps title (measured on the emulator, hardware GL, x86_64); 60 fps title reconfirmed on the 115 MB APK (2026-09-24) | 30 fps stable | Met on the emulator; A4 needs a real-device run |
+| Memory | 362 MB native heap / 408 MB PSS (measured, 93 MB APK) and 421-425 MB total PSS with SWAP 0 on both a 2 GB and a 4 GB guest (measured 2026-09-24, 115 MB APK) | A3/A4 budget 1 GB | Met with margin - see below |
 
 Note: ACHR/ACRE are decoded and 105 exterior actors are placed from real data (449,824 interior references are deliberately skipped); the renderer still also spawns hardcoded demo NPCs (Izar/Hellas, renderer.cpp L2447-2448) as a fallback.
 
@@ -162,7 +170,7 @@ Note: ACHR/ACRE are decoded and 105 exterior actors are placed from real data (4
 | A2 | Stable 30 fps (title / interior / exterior / combat) |
 | A3 | Crash-free rate >= 99.5% over 1,000 sessions |
 | A4 | 2-hour continuous play with no memory growth (no leaks) |
-| A5 | Script VM implements ~1,200 functions and all 416 QUST records progress |
+| A5 | Script VM implements ~1,200 functions and all 390 QUST records progress |
 | A6 | CI green (5 existing suites wired plus real-data regression tests) |
 | A7 | Legal compliance: BYO-data model enforced, zero decompiled-derived code |
 | A8 | First-run UX: data install to gameplay in under 5 minutes |
@@ -171,12 +179,12 @@ Note: ACHR/ACRE are decoded and 105 exterior actors are placed from real data (4
 
 | Phase | Feature | Estimate | Dependencies | Status |
 |-------|---------|----------|--------------|--------|
-| **Phase 62** | Foundation: unify `build.gradle` / `build.gradle.kts` (versionName, minSdk, targetSdk conflicts), version consistency across README/CHANGELOG/plan.md, CI wiring, connect the 5 test suites, legal audit of decompiled-derived sources (OpenTES4Oblivion, xOBSE, Common-Oblivion-Engine-Framework) | 2 weeks | None | In progress: build-config unification and CI wiring done (`012a5bb4`); CI has not run yet |
+| **Phase 62** | Foundation: unify `build.gradle` / `build.gradle.kts` (versionName, minSdk, targetSdk conflicts), version consistency across README/CHANGELOG/plan.md, CI wiring, connect the 5 test suites, legal audit of decompiled-derived sources (OpenTES4Oblivion, xOBSE, Common-Oblivion-Engine-Framework) | 2 weeks | None | Done: build config unified and pushed (`012a5bb4`, `55542f87`, `d4b27570`, `d94317bc`); `Android CI` is green - run 35884733212, 6m23s, 2026-09-24 (launcher icon check, version-consistency gate, JVM unit tests, 3-ABI APK build, artifact upload). Native C++ host tests run in CI through `tools/host_tests/run_host_tests.sh`, but only `script_vm_tests` of the 5 suites is in it. **One part of this phase is explicitly deferred, not done**: the legal audit of decompiled-derived sources (OpenTES4Oblivion, xOBSE, Common-Oblivion-Engine-Framework). The user decision on 2026-09-24 was "handle the asset legal blocker later, keep using the original assets for now", so the BYO-data model stays in place (no Bethesda asset is redistributed, no video or BSA is tracked) while the audit itself remains outstanding and is a release blocker for A7 |
 | **Phase 63** | Performance foundation: batch TextRenderer (glyph atlas + instancing), remove per-frame LOGI (text_renderer.cpp L386, L524), cache `glGetProgramiv` (L331), merge draw calls | 2-3 weeks | None | Done (glyph loop batched, build green) |
 | **Phase 64** | Real data pipeline: decode the 19 missing record types (ACHR, ACRE, PGRD, GMST, LTEX, WATR, AMMO, GLOB, FURN, IDLE, LSCR, SGST, EFSH, SLGM, CSTY, ...), fix BSA v103 folder table interpretation, asset resolution for nif 9,645 / dds 21,856, memory budget design | 4-6 weeks | 62 | Done (all 20 types decoded, verified on emulator with real Oblivion.esm) |
-| **Phase 65** | Full world rendering: CELL 35,787, LAND 31,927 (terrain mesh + LTEX blending), WRLD 103, LOD 10,810, weather/time of day, water, cell streaming, door transitions | 8-12 weeks | 64 | In progress (terrain mesh + per-quadrant LTEX texturing landed and verified - `Terrain textured: 9 of 9 drawn cells, 36 texture bindings, 9 LTEX loaded`; measured 30-33 fps in gameplay. Remaining: VTXT multi-layer opacity blending, native-heap reduction, water, weather, doors, LOD) |
+| **Phase 65** | Full world rendering: CELL 35,787, LAND 31,927 (terrain mesh + LTEX blending), WRLD 103, LOD 10,810, weather/time of day, water, cell streaming, door transitions | 8-12 weeks | 64 | In progress: terrain mesh, per-quadrant BTXT/LTEX texturing and **VTXT multi-layer opacity blending** are landed and verified - `Terrain overlay: 9 cells with ATXT/VTXT layers, 36 overlay texture bindings`, all 20,191 LAND records sampled carry ATXT/VTXT layers (13-31 layers per cell, ~700-1,400 weights), terrain colour diversity ~100 -> 10,671 distinct colours. Native-heap reduction is done (see Current Status). Remaining: water, weather/time of day, door transitions, LOD, static-object NIF rendering |
 | **Phase 66** | Characters and AI: place ACHR/ACRE 3,663, full decode of NPC_ 2,664 / CREA 1,001, skeleton and animation (kf 2,687), execute PACK 7,717, PGRD 8,228 pathfinding, face generation (egm 155), lip sync (lip 50,916) | 10-14 weeks | 64, 65 | Pending |
-| **Phase 67** | Full Script VM compatibility: implement ~1,080 additional functions, QUST 416, INFO 20,333 dialogue, condition evaluation, reference resolution | 16-24 weeks | 66 | Pending |
+| **Phase 67** | Full Script VM compatibility: implement ~1,080 additional functions, QUST 390, INFO 19,278 dialogue, condition evaluation, reference resolution | 16-24 weeks | 66 | **Unblocked (2026-09-24). The real SCDA instruction format is now fully determined and byte-verified.** Confirmed format: `[u16 opcode][u16 argLength][argLength bytes]`, i.e. `advance = 4 + argLength`, with exactly one exception - **opcode `0x001C` is always 4 bytes and its argLength field is ignored** (it carries a u16 line/label marker, not a payload length). Every script begins with the 4-byte prologue `1d 00 00 00` (`opcode 0x001D`, argLength 0) and ends with the 4-byte STOP `11 00 00 00` (`opcode 0x0011`, argLength 0); 72 of the 2,393 blocks are the prologue alone (4 bytes). Measured completion on the real ESM, counting only scripts that walk to an exact end: base rule alone **1,226 / 2,393**; with `0x001C` treated as `delta -1` **1,950 / 2,393**; with `0x001C` fixed at 4 bytes **2,393 / 2,393 (100%)**. The earlier `delta -1` result was an approximation that happens to coincide with the true rule whenever `argLength == 1`, which is only 2,702 of the 5,647 `0x001C` occurrences (the measured argLength histogram runs 1..37). The fix is one condition in the instruction-length calculation of `script_vm.cpp` and `script_disasm.cpp`; `script_opcodes.h` must then be re-derived from the measured table (141 distinct opcodes, 63,235 instructions, band `0x00xx` 50,573 / `0x10xx` 11,413 / `0x11xx` 1,249 - the `0x10xx` and `0x11xx` bands are the function-call opcodes). Note that the existing table's `JUMP_Z = 0x0011` is wrong: real `0x0011` is the argLength-0 STOP terminator. This was a **live correctness bug, not a census problem**: `dialogue_runner.cpp` L380 calls `ScriptManager::startScript()` and `imperial_weave.cpp` L324 / `game_loop_coordinator.cpp` L228 run `vm_.execute()` every frame against real SCDA (`script_context.cpp` L19), so the VM has been executing misaligned bytecode. Remaining Phase 67 critical path: apply the length fix, re-derive the opcode table from measured values, then expand handlers ordered by measured call-site frequency. **The script header side is settled as well (2026-09-25)**: `decodeScript` now reads SCHR as `+4 refCount / +8 compiledLength / +12 lastVarIndex / +16 scriptType` and derives `varCount` from the SLSD records, with `scriptType` mapped 0 / 1 / 256 to Object / Quest / Magic because the on-disk values are not contiguous. The decoder fix is verified by running the production code against the real ESM: `compiledLength == SCDA size` for 2,393 / 2,393 records, and the scriptType histogram (Object 2,031 / Quest 265 / Magic 97) matches the independent census. **The script variable side is settled as well (2026-09-25)**: SLSD carries only a 1-based index at +0 and a coarse type marker at +16, SCVR carries the variable name in a strict positional pair with SLSD, and SCRV is the list of `ref` variable indices (996 records, all of them `ref`). The real type comes from the SCTX declaration, which names the variable in 7,266 / 7,266 cases (Integer 5,100 / Float 1,170 / Ref 996), so `ScriptVariable::type` is now populated instead of defaulting to `Integer 0`. **The on-device proof has since landed**: `decodeScript` emits one aggregate line per plugin and the APK run printed `SCPT variable types: scripts=2393 vars=7266 int=5100 float=1170 ref=996`, which is the measured distribution exactly, so the decoder is confirmed on the device and not only offline |
 | **Phase 68** | Game systems and GUI: combat, magic/enchanting/alchemy (SPEL 1,314 - ENCH 1,694 - ALCH 253), skills/leveling, crime/theft, inventory, magic, map, journal, trade, persuasion screens | 10-14 weeks | 67 | Pending |
 | **Phase 69** | Persistence: save/load, REF change state, containers, quest state (PC save compatibility explicitly out of scope) | 3-4 weeks | 68 | Pending |
 | **Phase 70** | Mods and load order: plugins.txt, record override resolution, BSA priority, FormID index remapping | 4-6 weeks | 64 | Pending |
@@ -205,12 +213,19 @@ With parallelization (rendering and Script VM split between developers), 45-60 w
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Legal: decompiled-derived code in the repo | Blocking for release | Mandatory audit in Phase 62; BYO-data model; no Bethesda asset redistribution |
-| Script VM scale (~1,080 functions) | Schedule (largest item) | Prioritize by quest critical path; measure coverage per milestone |
-| Mobile performance (1,044,109 REFR, 31,927 LAND) | Playability | **Native heap is the binding constraint, not draw calls**: 626 MB native heap drives the 2 GB emulator into swap and costs 15-30x frame rate. The dominant cost is `m_terrains` (see the measured breakdown in Current Status), not raw subrecord payloads - `esm_reader.cpp:446` already calls `rec.subRecords.clear()` after `decodeRecord()`, so the raw bytes are freed per record. Shrink the retained typed model first (`m_terrains`, then `m_recordIndex`, then `m_references`), then the landscape texture cache, then batching/instancing/LOD/culling |
-| No wired tests | Regression blindness | Phase 62 CI before any content work |
+| Legal: decompiled-derived code in the repo | Blocking for release | Mandatory audit in Phase 62; BYO-data model; no Bethesda asset redistribution. **Status 2026-09-24: deferred by user decision** ("handle the asset legal blocker later, keep using the original assets for now") - the audit has not been performed, so A7 is not satisfied yet |
+| ~~**Real SCDA does not match the VM's instruction format**~~ | ~~Blocking for A5~~ **CLOSED 2026-09-24** | **Resolved by measurement.** The real format is `[u16 opcode][u16 argLength][argLength bytes]` with the single exception that opcode `0x001C` is a fixed 4-byte instruction whose argLength field is ignored, anchored by the prologue `1d 00 00 00` at offset 0 and the STOP `11 00 00 00` at the tail of every block. Falsification criteria set for a candidate model were all met by this one: (1) all 2,393 blocks walk to an exact end - measured **2,393 / 2,393**, up from 1,226 for the base rule and 1,950 for the `0x001C delta -1` approximation; (2) the opcode alphabet is sparse - **141 distinct values** across 63,235 instructions; (3) the final instruction is the constant STOP opcode `0x0011`. The remaining work is mechanical: apply the length rule and re-derive the opcode table from measured data rather than from assumed FunctionID values |
+| **Real SCDA does not match the VM's instruction format (residual)** | A5 correctness | Even with the length rule fixed, the VM's *opcode semantics* are still the project's own guesses (`Opcode::JUMP_Z = 0x0011` is in fact the STOP terminator; `Opcode::CALL = 0x1000` is a real opcode but the `0x10xx`/`0x11xx` bands are the call space, not a single value). Re-derive every opcode meaning from the measured 141-entry table plus the SCTX source text before expanding handlers, and do not carry forward any assumed FunctionID value |
+| Script VM scale (~1,080 functions) | Schedule (largest item) | Prioritize by measured call-site frequency over the real scripts, not by estimated quest importance. **The SCDA half of this premise is now available**: the bytecode format is settled (see the closed row above), so frequency can be derived from decoded instructions as well as from SCTX source text, and the two can be cross-checked. Measure coverage per milestone |
+| ~~SCPT/QUST record counts disagree between tools (2,393 vs 3,046 SCPT, 394 vs 416 QUST)~~ | ~~Census completeness, A5 scope~~ **CLOSED 2026-09-24** | **Resolved: the reader was never truncated - the higher numbers were an artifact of byte-substring counting.** A record-boundary walk over all 1,167,017 records gives SCPT 2,393 / QUST 390 / INFO 19,278 / SCDA 2,393 / SCTX 2,393, reproduced independently by a second from-scratch reader (identical totals, identical `{1: 2393}` fragment-per-record histogram, 0 compressed SCPT, 0 inflate failures, max record 35,159 B so the `size & 0xFFFF` mask never truncates). The inflated values came from matching four-character tags inside other records' payloads |
+| Mobile performance (1,044,109 REFR, 31,927 LAND) | Playability | **Native heap is the binding constraint, not draw calls** (state before the fix): 626 MB native heap drove the 2 GB emulator into swap and cost 15-30x frame rate. The dominant cost is `m_terrains` (see the measured breakdown in Current Status), not raw subrecord payloads - `esm_reader.cpp:446` already calls `rec.subRecords.clear()` after `decodeRecord()`, so the raw bytes are freed per record. Shrink the retained typed model first (`m_terrains`, then `m_recordIndex`, then `m_references`), then the landscape texture cache, then batching/instancing/LOD/culling. **Resolved as measured (2026-09-24)**: peak native heap was 2,020,948 KB before the fixes and is 430,378 KB now, with 421-425 MB total PSS, SWAP 0 and 0 LMK kills on a 2 GB guest; the remaining frame-rate lever was GL server round-trips in the HUD, not memory. The next scale step (all 1,044,109 REFR / 31,927 LAND resident) still runs into the retained typed model, so keep shrinking it before adding content |
+| SCPT script header (SCHR) fields read at the wrong offset | A5 correctness, script startup | **Fixed in `assets/esm_reader.cpp` 2026-09-25, verified against the real ESM.** The confirmed on-disk layout is `+0 unused (always 0) / +4 refCount / +8 compiledLength / +12 lastVarIndex / +16 scriptType`, and `decodeScript` now reads exactly that. `compiledLength` equals the SCDA block size for **2,393 / 2,393** records when read at +8 (the old +4 / +12 reading was 4 bytes off and matched only 4). Two of these fields are **compiler high-water marks, not record counts**: `+12` equals the largest SLSD index in **2,250 / 2,393** scripts and is never below it (`lt = 0`), while it equals the SLSD record count in only 1,855 (537 above, 1 below - `Dark05AssassinatedScript` at 26 vs 28); `+4` behaves the same way against the SCRO count (equal 1,839 / above 554 / **below 0**), so it must not be used to pre-size a reference array either. **There is no `varCount` field in SCHR** - the count has to be derived from the SLSD records, which is what the decoder now does. `scriptType` is a raw u32 that is *not* contiguous (`{0: 2,031, 1: 265, 256: 97}`), so `static_cast<ScriptType>` is unsafe; the reader maps 0 / 1 / 256 to Object / Quest / Magic (histogram matches the raw census) |
+| SLSD variable type and default value read from bytes that are always zero | A5 correctness, script startup | **Fixed in `assets/esm_reader.cpp` 2026-09-25.** The old code took `type` from `data[4]` (0 in 7,002 of 7,266 records) and the default value from `data + 8` (**0 in all 7,266**), so every script variable in the game was decoded as `Integer 0` regardless of its real declaration. The type is now resolved from the SCTX declaration, which names the variable in **7,266 / 7,266** cases - `short` / `long` / `int` -> Integer, `float` -> Float, `ref` -> Ref (measured Integer 5,100 / Float 1,170 / Ref 996) - with `SCRV` membership and the SLSD `+16` marker retained only as a fallback for records whose source is unusable. Verified by running the production decoder against the real ESM: an independently recomputed expected type matches the decoded `ScriptVariable::type` for **7,266 / 7,266** variables with 0 mismatches and 0 unresolved, and the APK prints the same totals on the device (`SCPT variable types: scripts=2393 vars=7266 int=5100 float=1170 ref=996`). The per-script `SCPT vars:` lines are not a usable check on their own - only 1,472 of the 2,393 survive the logcat ring buffer - which is why the totals are logged as a single aggregate line after the load. Note that the type is *not* recoverable from SCVR names alone - a name matches the SCTX text for only 4,457 / 7,266 variables - and that `int` (11 declarations, all in `SE06SCRIPT`) is a real keyword that a `short` / `long` / `float` / `ref` parser silently drops. **The index is not an array position**: because 422 scripts have sparse indices (and one, `Dark05AssassinatedScript`, has duplicate indices), `ScriptData::variables` must be addressed by `var.index`, not by vector position, and a safe slot allocation upper bound is `lastVarIndex + 1` |
+| No wired tests | Regression blindness | Phase 62 CI landed before any content work (`d94317bc`, green); the remaining gap is the 4 native suites that are still unwired |
 | Build config duplication | Release correctness | Phase 62 single source of truth |
 | BSA v103 folder table mismatch | Asset loading | Phase 64; extension counting already works via byte scan |
+| Broken gitlink `tools/BSAFileExtractor` | Repo hygiene, CI | It is committed as mode 160000 (a gitlink) with no `.gitmodules` entry, so it shows as a permanently modified path and `git status` is never clean. Either remove the gitlink or add a real submodule mapping |
+| 4 of the 5 native test suites are unwired | Regression blindness | Extend `tools/host_tests/run_host_tests.sh`; it already compiles the script and audio graph, so `phase45_unit_tests` and the rest are close to buildable |
 
 ### Quality Assurance
 - Unit tests wired into CI at Phase 62, extended per phase
@@ -228,30 +243,47 @@ workstreams that can run at the same time without fighting each other.
   build-and-install at a time. Workstreams that do not need a device must not touch it.
 - Local `assembleDebug` takes ~1 minute and needs ~4 GB of RAM alongside the emulator; two
   concurrent Gradle builds on this machine degrade both.
-- The whole body of local work is now **committed** (98 paths in `012a5bb4`, 2026-09-22): the Gradle
-  Kotlin-DSL to Groovy migration, removal of Bethesda loading-screen and intro-video assets,
-  `.github/workflows/android.yml`, `plan.md` and the modified native sources. `master` is 3 commits
-  ahead of `origin/master`, so `Android CI` has still never run; pushing is the remaining step and it
-  is a user decision.
-- **`.github/workflows/android.yml` has been pre-validated against the real project so the first CI run is not a debugging session.** Three mismatches were found and fixed: the workflow set up JDK 17 while `gradle/gradle-daemon-jvm.properties` pins `toolchainVersion=21`, so the daemon JVM criteria could not be satisfied; `ndkVersion` was not pinned anywhere, leaving AGP free to resolve a different NDK than the one the workflow installs (it is now `26.1.10909125` in `app/build.gradle`, matching AGP 8.5's default and the local SDK, verified with a successful `assembleDebug`); and `cmake;3.22.1` — which AGP 8.5 requires and will not substitute — is now installed explicitly alongside the NDK, after `sdkmanager --licenses`. The workflow's version-consistency gate was also run locally and passes: `versionName=0.9.10` derives `versionCode=910`. The remaining unverified parts are the GitHub-hosted runner itself and the native build time for 3 ABIs, which the 60-minute timeout covers
-- **Orchestration is unblocked: WS-A and WS-B can start as separate worktree sessions.** A worktree
-  session branches off committed `master`, and committed `master` now carries the verified project
+- The whole body of local work is **committed and pushed** (`012a5bb4`, `55542f87`, `d4b27570`,
+  `d94317bc`) and `master` is level with `origin/master`. `Android CI` has run: run 35884733212 on
+  `d94317bc` is green in 6m23s. The only uncommitted paths left are
+  `.github/memory/session-memory.json` and the stale `tools/BSAFileExtractor` gitlink.
+- **`.github/workflows/android.yml` has been pre-validated against the real project so the first CI run is not a debugging session.** Three mismatches were found and fixed: the workflow set up JDK 17 while `gradle/gradle-daemon-jvm.properties` pins `toolchainVersion=21`, so the daemon JVM criteria could not be satisfied; `ndkVersion` was not pinned anywhere, leaving AGP free to resolve a different NDK than the one the workflow installs (it is now `26.1.10909125` in `app/build.gradle`, matching AGP 8.5's default and the local SDK, verified with a successful `assembleDebug`); and `cmake;3.22.1` — which AGP 8.5 requires and will not substitute — is now installed explicitly alongside the NDK, after `sdkmanager --licenses`. The workflow's version-consistency gate was also run locally and passes: `versionName=0.9.10` derives `versionCode=910`. The remaining unverified parts are the GitHub-hosted runner itself and the native build time for 3 ABIs, which the 60-minute timeout covers. The first run has since happened (`d94317bc`, run 35884733212, 6m23s, green), which confirms the pre-validation: the JDK 21, NDK and CMake pins were all correct and the first green run needed no workflow fix
+- **WS-B can start as a separate worktree session.** A worktree
+  session branches off committed `master`, and `master` now carries the verified project
   (`app/build.gradle` with `ndkVersion '26.1.10909125'`, no Kotlin-DSL build files,
   `.github/workflows/android.yml`), so a child session builds exactly what was verified on the
-  emulator. What still needs the user is the push, because that is what starts the first `Android CI` run.
+  emulator. The push that was waiting on the user has happened, so every push to `master` now gets a
+  green-or-red `Android CI` verdict. A WS-B worktree already exists
+  (`hhkk0127-script-vm-expansion`, branch 0 commits ahead / 4 behind `master`, checked out at
+  `012a5bb4`), so it must be brought up to `d94317bc` before the first commit to inherit CI and the
+  host test runner. Two older worktrees are also stale (`hhkk0127-oblivion-android-completion-plan`
+  31 behind, `hhkk0127-virtual-controller` 40 behind and prunable).
 
 | WS | Scope | Phase | Depends on | Needs emulator | Owner |
 |----|-------|-------|------------|----------------|-------|
-| **WS-A** | Foundation: push the committed work and get `Android CI` green on GitHub, wire the 5 native C++ test suites (`phase30_integration_test`, `phase45_unit_tests`, `phase48_integration_test`, `phase48_stress_test`, `script_vm_tests`) into CI via a host-side runner, enforce version consistency | 62 | None | No | Child session |
-| **WS-B** | Script VM coverage: grow the 118 implemented functions toward ~1,200, ordered by the main-quest critical path, each function covered by `script_vm_tests` | 67 (start) | None | No | Child session |
-| **WS-C** | World rendering: LTEX terrain texture blending, static-object NIF rendering, water, weather, door transitions, LOD | 65 | 64 | **Yes** | This session |
-| **WS-D** | Characters: load NPC_/CREA meshes from `nif`, skeleton and animation from `kf`, PACK execution, PGRD pathfinding | 66 | 64, 65 | **Yes** | Later, after WS-C |
+| **WS-A** | Foundation: push the committed work and get `Android CI` green on GitHub, wire all 5 native C++ test suites (`phase30_integration_test`, `phase45_unit_tests`, `phase48_integration_test`, `phase48_stress_test`, `script_vm_tests`) into CI via a host-side runner, enforce version consistency | 62 | None | No | **Done** (`55542f87`, `d4b27570`, `d94317bc`): CI green, version gate + JVM unit tests + 3-ABI APK + host runner live. **Finishing increment in progress (2026-09-24, owner `964d16fb`): the other 4 suites are being wired into `tools/host_tests/run_host_tests.sh` and `host_runner_main.cpp`, and the harness must also link the quest sub-systems (`quest_flow_controller.cpp`, `quest_stage_manager.cpp`, `quest_objective_tracker.cpp`, `quest_rewards.cpp`, `quest_record.cpp`) because WS-B's script functions now call `QuestFlowController`**. Also observed 2026-09-24 11:50: the harness needed `weave::EventBus` to be linkable without the renderer/video/Jolt subsystems that `engine/imperial_weave.cpp` pulls in, so its 7 out-of-line definitions were moved into a new `engine/event_bus.cpp` and added to `app/src/main/cpp/CMakeLists.txt`. The relocation is exact (the same 7 methods, no duplicate definitions anywhere in the tree) but it is a **production change**, so it is only proven by rebuilding the APK once WS-C's in-flight increments land |
+| **WS-B** | Script VM coverage: grow the 118 implemented functions toward ~1,200, ordered by the main-quest critical path, each function covered by `script_vm_tests` | 67 (start) | None | No | **In progress** (session `0c8d192d`, branch `hhkk0127-script-vm-expansion`): batches committed as `4d52272a` (Quest functions) and `d3b07051` (inventory + actor functions) on top of a preserved 11-file / +340 -23 working tree, `origin/master` merged as `cb2c96e1`; handler count 118 -> 125; provisional runner 26 passed / 0 failed, still stub-backed so the permanent harness must re-confirm. Player `FormID 0x14` is resolved through `QuestFlowController::getPlayer()`, which keeps `engine/renderer.cpp` untouched beyond the already-approved injection. `c193afa6` then connected `GetDistance` / `SetPos` / `GetPos` / `MoveTo(ref)` to a shared Player/NPC resolver with axis validation (0..2); the count stays at 26 passed because the new position assertions were added inside the existing `testScriptFunctions()` group rather than as a new test function. **The SCDA census is now complete and it settled the format** (see Phase 67 and the closed risk row): the real instruction encoding is `[u16 opcode][u16 argLength][argLength bytes]` with opcode `0x001C` as a fixed 4-byte exception, which walks all **2,393 / 2,393** blocks to an exact end. The finding has been handed to WS-B with the full measured 141-opcode table, the prologue/STOP anchors, and the SCHR `compiledLength` +8 offset. WS-B then committed `45cabd5a` (`Parse SCDA marker instructions correctly`), which applies the `0x001C` rule in `script_vm.cpp` / `script_disasm.cpp` and fixes an out-of-range read in `script_disasm.cpp` that was segfaulting the host test; the census re-ran clean at 2,393 / 2,393. **A correction was sent back to WS-B afterwards**: the `varCount = +12` reading in that commit is wrong - `+12` is the compiler's last-variable-index high-water mark (equal to the largest SLSD index in 2,250 / 2,393 scripts and never below it), SCHR carries no count field at all, so `varCount` must come from the SLSD record count and variable lookup must go through `var.index` rather than vector position (422 scripts have sparse indices). Next for WS-B: re-derive `script_opcodes.h` from measured values, then expand handlers. WS-B then committed `b896eafd` (`Initialize script locals with declared types`), which is the first consumer of the decoder fix: `ExecutionContext` normalizes each sparse index slot to a zero value of the declared `ScriptVariable::type` instead of leaving it `Integer 0`, with no change to `ScriptData`; the provisional runner is at 27 passed / 0 failed |
+| **WS-C** | World rendering: LTEX terrain texture blending, static-object NIF rendering, water, weather, door transitions, LOD | 65 | 64 | **Yes** | **In progress** (session `30cbb1e4`): terrain mesh + BTXT/LTEX + VTXT multi-layer blending verified on the emulator; next increment is water (WATR), then weather, doors and LOD |
+| **WS-D** | Characters: load NPC_/CREA meshes from `nif`, skeleton and animation from `kf`, PACK execution, PGRD pathfinding | 66 | 64, 65 | **Yes** | **Not started**: held back until WS-C's static-object NIF loader is usable and until the emulator is free |
+
+**Cross-workstream file contention**
+
+`engine/renderer.cpp` / `renderer.h` are edited by both WS-B and WS-C, so they are the one
+contended file in the split. WS-B's pending diff adds 21 lines plus one member: `Renderer` owns a
+`std::unique_ptr<QuestFlowController>` and passes it to `ScriptManager::init(...)` immediately
+after the `ScriptManager` is created, which is the only existing initialization point that can
+connect `SetStage` / `GetStage` to the runtime `QuestFlowController` (on `master` that class is
+currently never instantiated). WS-C's diff adds the terrain VTXT statistics log, the texture LRU
+and the `cleanup()` join. Both are wanted: `master`'s rendering changes win and WS-B's injection is
+re-applied by hand on top. The merge into `master` is performed by session `964d16fb` once WS-C's
+current increment has landed, so neither workstream resolves the other's rendering code.
 
 **Why this split**
 - WS-A and WS-B are pure code/config work with no device dependency, so they can run fully in
-  parallel with WS-C, which owns the emulator.
-- WS-A is deliberately first: until CI runs, every other workstream's output is unverified by a
-  regression gate. It is also the cheapest workstream and unblocks regression safety for all
+  parallel with WS-C, which owns the emulator. WS-A has landed, so the split is now proven rather
+  than proposed.
+- WS-A went first: until CI ran, every other workstream's output was unverified by a
+  regression gate. It was also the cheapest workstream and it unblocked regression safety for all
   the rest.
 - WS-B is the single largest work item in the project (about 1,080 missing functions) and the
   critical path runs through Phase 67, so it should start as early as possible rather than
@@ -260,12 +292,24 @@ workstreams that can run at the same time without fighting each other.
   same NIF loader that WS-C builds for static objects.
 
 **Sequencing**
-1. WS-A and WS-B can start now that the local work is committed (`012a5bb4`); WS-A's first job is
-   the push that starts the first `Android CI` run.
-2. WS-C continues in this session: terrain streaming is done and verified (9 active cells);
-   next is LTEX blending so terrain stops being a flat green colour.
-3. When WS-A lands, WS-B's and WS-C's work gains CI coverage.
-4. When WS-C's NIF loader is usable, WS-D starts.
+1. WS-A is done: the work is pushed and `Android CI` is green (`d94317bc`, run 35884733212). The
+   remaining WS-A job is wiring the other 4 native suites into `tools/host_tests/run_host_tests.sh`.
+2. WS-C has closed its first increment: terrain streaming, BTXT/LTEX texturing and VTXT multi-layer
+   opacity blending are done and verified (9 active cells, 36 overlay texture bindings).
+3. WS-B has started: its first two batches are committed (`4d52272a`, `d3b07051`, with
+   `origin/master` merged as `cb2c96e1`) and locally verified against a stub-backed runner, and its
+   `script_vm_tests` vehicle runs in CI, so each further batch lands with a regression gate. Its push
+   is deliberately held until the harness wiring below lands, because the script VM now reaches
+   `QuestFlowController` and the current harness cannot link it. Stub-backed verification is weaker
+   than implementation-backed verification, so the provisional runner is only a gate, never the
+   verdict: return types are absent from C++ mangled names, so a stub whose return type differs from
+   the real one links silently instead of failing.
+4. WS-C's next increments are water, weather/time of day, door transitions and LOD; WS-D starts once
+   WS-C's NIF loader is usable for static objects.
+5. The harness wiring in WS-A's finishing increment is therefore on the critical path for WS-B's
+   CI verdict as well: `tools/host_tests/run_host_tests.sh` must link the quest sub-systems (and
+   `engine/imperial_weave.cpp` / `game/npc_manager.cpp` / `game/player.cpp`, which the quest code
+   references) before WS-B can push again.
 
 **WS-C first increment: landscape texturing (LTEX/BTXT/VTXT)**
 
@@ -277,8 +321,8 @@ The measured gap and the exact code path to close it:
   sampler, which is why every cell is flat green regardless of biome.
 - `LAND` decoding already gives the raw material: `TerrainData::baseTextures[4]` (from `BTXT`,
   indexed 0=SW, 1=SE, 2=NW, 3=NE) and `TerrainData::textureFormIDs` (from `VTEX`).
-- `VTXT` (per-vertex opacity for each `VTEX` layer) is **not parsed yet** — this is the missing
-  piece for smooth multi-layer blending.
+- `VTXT` (per-vertex opacity for each `VTEX` layer) is **parsed now** — it was the missing
+  piece for smooth multi-layer blending, and step 3 below records the verification.
 - `LTEX` records are already decoded (`ESMFile::getLandscapeTexture(formID)` returns the record,
   whose `iconPath` is the `.dds` path).
 - `AssetManager::loadDDSTexture(path)` loads a `.dds` out of the BSA archives and returns a
@@ -287,13 +331,20 @@ The measured gap and the exact code path to close it:
 Steps, each independently verifiable on the emulator:
 1. Parse `VTXT` in the `LAND` decoder into per-layer 33x33 opacity arrays, kept **only for active
    cells** (14,686 stored LAND records x 4 layers x 1089 x 2 bytes would be ~128 MB, which the
-   2 GB emulator cannot afford).
+   2 GB emulator cannot afford). **Done**: the 20,191 LAND records sampled all carry ATXT/VTXT
+   layers, 13-31 layers per cell and roughly 700-1,400 weights per cell.
 2. Replace the terrain shader with one that has a `texcoord` attribute and samples the cell's
    base textures, selected by quadrant. Expected log: `Terrain textured: 9 cells, 36 textures`.
+   **Done**: `Terrain textured: 9 of 9 drawn cells, 36 texture bindings, 9 LTEX loaded`.
 3. Add per-layer blending from the parsed `VTXT` opacities (up to 4 layers) with `uTex0..uTex3`
-   and a `uBlend0..uBlend3` weight set.
+   and a `uBlend0..uBlend3` weight set. **Done**: 4 BTXT base slots plus 4 VTXT overlay slots are
+   bound per cell (`Terrain overlay: 9 cells with ATXT/VTXT layers, 36 overlay texture bindings`),
+   and terrain colour diversity rose from about 100 to 10,671 distinct colours, with grass and rock
+   patches visible in the same cell.
 4. Cap GPU texture memory with an LRU on the landscape-texture cache, and re-measure
-   `World Status: ... Memory: X MB` against the current 9.04 MB baseline.
+   `World Status: ... Memory: X MB` against the current 9.04 MB baseline. **Done** for the terrain
+   mesh cache (`engine/cache_manager.cpp`, observed `cache=17` at the budget cap; 24 cell moves
+   changed total PSS by +0.2 %). The landscape-texture LRU is still open.
 
 ### Current Status (measured on emulator)
 - App launches, reaches the title screen, taps through to gameplay, and runs stably with no crash (verified via logcat: no FATAL / SIGSEGV / ANR)
@@ -328,4 +379,19 @@ Steps, each independently verifiable on the emulator:
 - The emulator's guest/host GL transport is pinned to `pipe` (`ro.boot.hardware.gltransport=pipe`, `ro.boot.qemu.gltransport.name=pipe`, `ro.boot.qemu.gltransport.drawFlushInterval=800`). The guest kernel does expose `/dev/goldfish_address_space`, but the transport cannot be moved to the zero-copy `address_space` path from this host: `-prop ro.boot.qemu.gltransport.name=address_space` is ignored (the `ro.boot.*` namespace is populated from the kernel command line) and `-feature GLDirectMem` does not change it either. This is a curiosity rather than a blocker, because the `pipe` transport already reaches 42-49 fps once the HUD stops issuing synchronous uniform queries, and it hits 60 fps on the title screen
 - Parsing runs inside `GameRenderer.onSurfaceCreated()` -> `nativeInitEngine()`, so it blocks the GL thread and the app shows nothing until it finishes. Even the good case (13 s) is a black screen on launch, so moving the parse off the GL thread stays a Phase 62/65 work item: it is the first thing a user experiences
 - **Emulator operating rule learned the hard way: restart the AVD (`adb emu kill` then `emulator -avd Pixel_API34 -no-snapshot-load`) before any performance measurement, and check `TOTAL SWAP PSS` first.** A long-running emulator silently degrades by 15-30x and will produce completely misleading profiles. `adb root` must also be re-issued after every emulator restart or `am start` fails with `SecurityException: ... not exported from uid`, because `MainActivity` is not exported
-- Not at product level. Next: Phase 65 (full world rendering - terrain mesh + LTEX blending, cell streaming, doors, water, weather)
+- Not at product level. Next: Phase 65 (full world rendering - terrain mesh, BTXT/LTEX texturing and VTXT blending are done; water, weather, doors, LOD and static-object NIF rendering remain)
+
+### Verified build and status (2026-09-24)
+
+Everything in this section was measured on the current APK, on the emulator, unless stated otherwise.
+
+- **Current build: 115,289,641 B (2026-09-23 21:09:27), containing arm64-v8a, armeabi-v7a and x86_64.** It grew from 93,522,973 B because the 8 opening-sequence videos are now bundled in `app/src/main/assets/videos/` (`oblivion_intro` 47.93 MB, `credits_menu` 21.74 MB, `map_loop` 10.01 MB, `oblivion_iv_logo` 4.30 MB, `game_studios_logo` 2.06 MB, `bethesda_logo` 0.40 MB, `oblivion_legal` 0.28 MB, `2k_games_logo` 0.12 MB). That directory is gitignored (`.gitignore:33`) and no video is tracked, so a fresh clone still builds without them.
+- **The opening sequence plays end to end and is skippable.** `IntroVideoActivity` plays `bethesda_logo -> 2k_games_logo -> game_studios_logo -> oblivion_legal` and then launches the game: the unattended run reached `Launching MainActivity` at 00:02:01 with 0 `Video error` and 0 safety-timeout events, and 4 taps advanced through the 4 clips in 18.4 s (`User tapped to skip video, advancing`). The skip predicate used to be `mediaPlayer.isPlaying`, which cannot be satisfied when playback never starts, leaving the user on a frozen frame; it is now `videoStarted && !videoCompleted`, plus a safety-net timer of `duration + 5 s` (30 s fixed when the duration is unknown) that force-launches the game. Both paths verified on the emulator.
+- **The title screen has a two-stage video background.** `oblivion_iv_logo.mp4` plays first (14 s, `Title IV logo completed, switching to background: map_loop.mp4`) and `map_loop.mp4` then loops behind the menu; `credits_menu.mp4` is a 1 % easter egg. Measured: 60 fps title screen, `Title video: updateTexImage=60/s callbacks=30/s errors(total)=0`.
+- **Memory on the 115 MB APK: 421,185 KB -> 424,964 KB total PSS with SWAP 0, 0 LMK kills and 0 FATAL/ANR/SIGABRT** over a full launch on a 4 GB guest, and **~425 MB startup PSS with 0 LMK kills on a 2 GB guest**, which puts a 2 GB device inside the practical range. This closes the 2 GB problem recorded above: the LMK kills were triggered by the zram swap watermark (`min watermark is breached and swap is low`), not by a raw RAM shortage, and every victim was an `oom_score_adj 999` cached background process. Read the numbers with the phase split in mind: 42 MB during the intro video, ~425 MB once the title screen is reached (+383 MB for the ESM/BSA parse and the title resources), then flat at +0.06 % over 55 s (no leak).
+- **The title screen renders the same as before the APK swap.** Menu ink (tol20 over y765-841 / x420-1521) = 7,548 / 7,556 px, inside the 7,500-8,100 normal band; content p50 luminance 175.6 / 174.1; correlation with the pre-swap screenshot +0.917 overall (+0.947 left third, +0.911 right third, +0.839 menu band).
+- **Screenshot contamination has a detector.** The debug toggle is a 36 dp button at `top|start` with `alpha 0.7` (x26..121 / y26..121 at 420 dpi) and it opens a full-screen 50 % black scrim plus a 260 dp panel, so `tap 74 74` lands inside it and must never be used as a neutral tap. A contaminated frame reads menu ink tol20 = 0, content p50 about 60 and max luminance 255; a clean frame reads 7,500-8,100, 160-175 and about 243. Combine this with an MD5 comparison of two consecutive `screencap`s (identical MD5 means the same frame was returned) to catch both kinds of contamination.
+- **The debug console no longer aborts on Teleport/Move.** 24 inline command lambdas indexed `args[0]` (the command name) as their first parameter, shifting every argument by one, so `Teleport` and `Move` passed the command name into `std::stoi` and raised SIGABRT. Fixed with an N+1 shift plus a range guard, and `executeCommand()` now wraps dispatch in `try/catch (const std::exception&)`. Verified: 0 FATAL / 0 SIGABRT and every debug-menu button acts.
+- **The terrain mesh cache is bounded.** `engine/cache_manager.cpp` (LRU against a budget cap; observed `cache=17`) keeps the heightmap and mesh working set flat: 24 cell moves changed total PSS by +0.2 %. The `Terrain overlay:` statistics log is kept (every 120 frames).
+- **The launcher screen responds and animates.** The Play button used to stop responding because the launcher rebuilt its buttons on re-entry, after the touch targets had been created; the buttons are now re-initialised correctly, hover scaling works, and the launcher fades and slides in. Verified by pixel comparison and by the touch-path logs.
+- **The SCPT variable-type decoder is proven on the device.** A clean launch of the current APK (120,955,832 B, 2026-09-24 13:15:37) prints `SCPT variable types: scripts=2393 vars=7266 int=5100 float=1170 ref=996`, which is the offline measurement exactly (`int` 5,100 = `short` 5,088 + `long` 1 + `int` 11), with 0 FATAL / SIGABRT / SIGSEGV and the title screen reached while the process stays alive. This is why the decoder logs one aggregate line per plugin instead of relying on the per-script lines: only **1,472 of the 2,393** `SCPT vars:` lines survive the logcat ring buffer (1,502 even after `adb logcat -G 32M`), because the terrain, overlay and FPS output pushes them out before the ESM load finishes. A record-by-record check of that size cannot be done from per-record logs on this device; the totals have to come from the production code itself.
