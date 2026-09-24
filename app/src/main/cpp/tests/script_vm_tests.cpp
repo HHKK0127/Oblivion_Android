@@ -893,6 +893,28 @@ void ScriptVMTests::testScriptManager() {
         record("ScriptManager: Script stop", ok,
                "Stop script by FormID", getTimeMs38() - start);
     }
+
+    // Test 5: Inline script ownership and duplicate rejection
+    {
+        float start = getTimeMs38();
+        ScriptManager mgr;
+        mgr.init(nullptr, nullptr, nullptr, nullptr);
+
+        ScriptData script;
+        script.bytecode = {0x00, 0x00, 0x00, 0x00};
+        const InlineScriptKey key{0x0100ABCD, 20, 0};
+
+        const int firstStart = mgr.startInlineScript(script, key, 0x0100ABCD);
+        const int duplicateStart = mgr.startInlineScript(script, key, 0x0100ABCD);
+        const bool started = firstStart >= 0 && duplicateStart == -1 &&
+                             mgr.getActiveScriptCount() == 1;
+
+        mgr.update(0.0f);
+        const bool ok = started && mgr.getActiveScriptCount() == 0;
+
+        record("ScriptManager: Inline script", ok,
+               "Own inline data and reject duplicate stage scripts", getTimeMs38() - start);
+    }
 }
 
 // ============================================
