@@ -648,7 +648,19 @@ struct TerrainData {
         // Base texture FormID per quadrant (BTXT), indexed 0=SW, 1=SE, 2=NW, 3=NE
         uint32_t baseTextures[4] = {0, 0, 0, 0};
         std::vector<uint32_t> textureFormIDs;   // VTEX: landscape texture FormIDs
-        // VNML (vertex normals) and VCLR (vertex colours) are deliberately not
+                // ATXT/VTXT additive layers: landscape textures painted over the base
+                // quadrants with per-vertex opacities. Kept compact - a layer holds one
+                        // ATXT entry and the sparse positions from its following VTXT records,
+                        // then expands to a dense 33x33 grid only for cells that get rendered.
+                        struct AddedLayer {
+                    uint32_t textureFormID = 0;        // LTEX FormID (from ATXT)
+                    uint8_t quadrant = 0;              // 0=SW, 1=SE, 2=NW, 3=NE
+                    uint8_t layer = 0;                 // 0-7 (BTXT is the lowest layer)
+                    std::vector<uint16_t> positions;   // packed quadrant indices 0..288 (see decodeTerrain)
+                    std::vector<float> opacities;      // parallel to positions, 0.0-1.0 (sparse, > 0 only)
+                        };
+                        std::vector<AddedLayer> addedLayers;
+                        // VNML (vertex normals) and VCLR (vertex colours) are deliberately not
         // retained: nothing consumes them and a 3,267-byte copy of each per LAND
         // record would cost ~208 MB. Normals are derived from the height grid at
         // mesh-build time, which is what the renderer and physics already do.

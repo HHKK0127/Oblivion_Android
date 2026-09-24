@@ -126,37 +126,69 @@ bool AssetManager::loadEsm(const std::string& esmPath) {
     return m_esmManager.loadPlugin(esmPath);
 }
 
-bool AssetManager::loadEsmFromArchive(const std::string& esmName) {
-    LOGD("Loading ESM from BSA archive: %s", esmName.c_str());
-    
+bool AssetManager::extractEsmFromArchive(const std::string& esmName,
+                                         std::vector<uint8_t>& out) const {
+    out.clear();
+
     // The ESM is stored inside a BSA. Find the ESM file from the archives.
     std::string searchPath = esmName;
     std::replace(searchPath.begin(), searchPath.end(), '\\', '/');
-    
+
     // Search all loaded BSA archives for the ESM file
     for (auto it = m_archives.rbegin(); it != m_archives.rend(); ++it) {
         const BSAFileEntry* entry = (*it)->findFile(searchPath);
-        if (entry) {
-            LOGD("Found ESM in BSA: %s (offset=%u, size=%u)", 
-                 searchPath.c_str(), entry->offset, entry->size);
-            
-            std::vector<uint8_t> data;
-            if ((*it)->extractFileDecompressed(*entry, data)) {
-                LOGD("Extracted ESM data: %zu bytes", data.size());
-                // Parse the ESM data directly
-                return m_esmManager.loadPluginFromMemory(esmName, data.data(), data.size());
+        if (!entry) {
+            continue;
+        }
+
+        LOGD("Found ESM in BSA: %s (offset=%u, size=%u)",
+             searchPath.c_str(), entry->offset, entry->size);
+
+        if ((*it)->extractFileDecompressed(*entry, out)) {
+            LOGD("Extracted ESM data: %zu bytes", out.size());
+            return true;
+        }
+    }
+
+    // Fallback to a plain file on disk (loose plugin next to the BSAs)
+    if (!m_dataPath.empty()) {
+        const std::string fullPath = m_dataPath + "/" + searchPath;
+        std::ifstream file(fullPath, std::ios::binary | std::ios::ate);
+        if (file.is_open()) {
+            const std::streamsize size = file.tellg();
+            file.seekg(0, std::ios::beg);
+            if (size > 0) {
+                out.resize(static_cast<size_t>(size));
+                if (file.read(reinterpret_cast<char*>(out.data()), size)) {
+                    LOGD("Loaded ESM from file: %s (%zu bytes)", fullPath.c_str(), out.size());
+                    return true;
+                }
+                out.clear();
             }
         }
     }
-    
-    // Fallback to direct file
-    if (!m_dataPath.empty()) {
-        std::string fullPath = m_dataPath + "/" + searchPath;
-        return m_esmManager.loadPlugin(fullPath);
-    }
-    
+
     LOGE("ESM file not found: %s", esmName.c_str());
     return false;
+}
+
+bool AssetManager::parseEsmFromMemory(const std::string& esmName,
+                                      const std::vector<uint8_t>& data) {
+    if (data.empty()) {
+        return false;
+    }
+    return m_esmManager.loadPluginFromMemory(esmName, data.data(), data.size());
+}
+
+bool AssetManager::loadEsmFromArchive(const std::string& esmName) {
+    LOGD("Loading ESM from BSA archive: %s", esmName.c_str());
+
+    // extractEsmFromArchive() also covers the loose-file fallback.
+    std::vector<uint8_t> data;
+    if (!extractEsmFromArchive(esmName, data)) {
+        return false;
+    }
+    return parseEsmFromMemory(esmName, data);
 }
 
 // ============================================================================

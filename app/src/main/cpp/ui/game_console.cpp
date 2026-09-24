@@ -3,6 +3,7 @@
 #include <GLES3/gl3.h>
 #include <sstream>
 #include <algorithm>
+#include <stdexcept>
 #include <android/log.h>
 
 #define LOG_TAG_CONSOLE "GameConsole"
@@ -146,7 +147,12 @@ void GameConsole::executeCommand(const std::string& command) {
     for (const auto& cmd : commands) {
         if (cmd.name == cmdName) {
             if (cmd.handler) {
-                cmd.handler(args);
+                try {
+                    cmd.handler(args);
+                } catch (const std::exception& e) {
+                    LOGI_CONSOLE("Command '%s' failed: %s", cmdName.c_str(), e.what());
+                    appendOutput("Command error: " + std::string(e.what()));
+                }
             }
             return;
         }
@@ -227,11 +233,11 @@ void GameConsole::registerBuiltinCommands() {
         }
     });
     registerCommand("setdamagemultiplier", "Set damage multiplier: setdamagemultiplier <multiplier>", [this](const std::vector<std::string>& args) {
-        if (args.empty()) {
+        if (args.size() < 2) {
             print("Usage: setdamagemultiplier <multiplier>");
             return;
         }
-        float mult = std::stof(args[0]);
+        float mult = std::stof(args[1]);
         if (gameRefs.setDamageMultiplier) {
             gameRefs.setDamageMultiplier(mult);
             print("Damage multiplier set to " + std::to_string(mult));
@@ -240,11 +246,11 @@ void GameConsole::registerBuiltinCommands() {
         }
     });
     registerCommand("invincible", "Toggle invincibility: invincible <on/off>", [this](const std::vector<std::string>& args) {
-        if (args.empty()) {
+        if (args.size() < 2) {
             print("Usage: invincible <on/off>");
             return;
         }
-        bool enabled = (args[0] == "on" || args[0] == "true" || args[0] == "1");
+        bool enabled = (args[1] == "on" || args[1] == "true" || args[1] == "1");
         if (gameRefs.toggleInvincibility) {
             gameRefs.toggleInvincibility(enabled);
             print("Invincibility " + std::string(enabled ? "enabled" : "disabled"));
@@ -269,11 +275,11 @@ void GameConsole::registerBuiltinCommands() {
         }
     });
     registerCommand("iteminfo", "Get item info: iteminfo <itemId>", [this](const std::vector<std::string>& args) {
-        if (args.empty()) {
+        if (args.size() < 2) {
             print("Usage: iteminfo <itemId>");
             return;
         }
-        uint32_t itemId = std::stoul(args[0]);
+        uint32_t itemId = std::stoul(args[1]);
         if (gameRefs.getItemInfo) {
             print(gameRefs.getItemInfo(itemId));
         } else {
@@ -297,11 +303,11 @@ void GameConsole::registerBuiltinCommands() {
         }
     });
     registerCommand("questdetails", "Get quest details: questdetails <questId>", [this](const std::vector<std::string>& args) {
-        if (args.empty()) {
+        if (args.size() < 2) {
             print("Usage: questdetails <questId>");
             return;
         }
-        uint32_t questId = std::stoul(args[0]);
+        uint32_t questId = std::stoul(args[1]);
         if (gameRefs.getQuestDetails) {
             print(gameRefs.getQuestDetails(questId));
         } else {
@@ -309,11 +315,11 @@ void GameConsole::registerBuiltinCommands() {
         }
     });
     registerCommand("resetquest", "Reset quest: resetquest <questId>", [this](const std::vector<std::string>& args) {
-        if (args.empty()) {
+        if (args.size() < 2) {
             print("Usage: resetquest <questId>");
             return;
         }
-        uint32_t questId = std::stoul(args[0]);
+        uint32_t questId = std::stoul(args[1]);
         if (gameRefs.resetQuest) {
             gameRefs.resetQuest(questId);
             print("Quest " + std::to_string(questId) + " reset");
@@ -322,11 +328,11 @@ void GameConsole::registerBuiltinCommands() {
         }
     });
     registerCommand("questreward", "Get quest reward: questreward <questId>", [this](const std::vector<std::string>& args) {
-        if (args.empty()) {
+        if (args.size() < 2) {
             print("Usage: questreward <questId>");
             return;
         }
-        uint32_t questId = std::stoul(args[0]);
+        uint32_t questId = std::stoul(args[1]);
         if (gameRefs.getQuestRewardInfo) {
             print(gameRefs.getQuestRewardInfo(questId));
         } else {
@@ -334,11 +340,11 @@ void GameConsole::registerBuiltinCommands() {
         }
     });
     registerCommand("completeobjectives", "Complete all objectives: completeobjectives <questId>", [this](const std::vector<std::string>& args) {
-        if (args.empty()) {
+        if (args.size() < 2) {
             print("Usage: completeobjectives <questId>");
             return;
         }
-        uint32_t questId = std::stoul(args[0]);
+        uint32_t questId = std::stoul(args[1]);
         if (gameRefs.completeAllObjectives) {
             gameRefs.completeAllObjectives(questId);
             print("All objectives completed for quest " + std::to_string(questId));
@@ -394,12 +400,12 @@ void GameConsole::registerBuiltinCommands() {
         }
     });
     registerCommand("celldetails", "Get cell details: celldetails <x> <y>", [this](const std::vector<std::string>& args) {
-        if (args.size() < 2) {
+        if (args.size() < 3) {
             print("Usage: celldetails <x> <y>");
             return;
         }
-        int32_t cellX = std::stoi(args[0]);
-        int32_t cellY = std::stoi(args[1]);
+        int32_t cellX = std::stoi(args[1]);
+        int32_t cellY = std::stoi(args[2]);
         if (gameRefs.getCellDetails) {
             print(gameRefs.getCellDetails(cellX, cellY));
         } else {
@@ -435,11 +441,11 @@ void GameConsole::registerBuiltinCommands() {
     registerCommand("listspells", "List known spells", [this](const std::vector<std::string>& args) { cmdListSpells(args); });
     registerCommand("createspell", "Create spell: createspell <name> <damage> <manaCost>", [this](const std::vector<std::string>& args) { cmdCreateSpell(args); });
     registerCommand("spellinfo", "Get spell info: spellinfo <spellId>", [this](const std::vector<std::string>& args) {
-        if (args.empty()) {
+        if (args.size() < 2) {
             print("Usage: spellinfo <spellId>");
             return;
         }
-        uint32_t spellId = std::stoul(args[0]);
+        uint32_t spellId = std::stoul(args[1]);
         if (gameRefs.getSpellInfo) {
             print(gameRefs.getSpellInfo(spellId));
         } else {
@@ -454,11 +460,11 @@ void GameConsole::registerBuiltinCommands() {
         }
     });
     registerCommand("castspellatenemy", "Cast spell at nearest enemy: castspellatenemy <spellId>", [this](const std::vector<std::string>& args) {
-        if (args.empty()) {
+        if (args.size() < 2) {
             print("Usage: castspellatenemy <spellId>");
             return;
         }
-        uint32_t spellId = std::stoul(args[0]);
+        uint32_t spellId = std::stoul(args[1]);
         if (gameRefs.castSpellAtNearest) {
             gameRefs.castSpellAtNearest(spellId);
             print("Casting spell " + std::to_string(spellId) + " at nearest enemy");
@@ -467,11 +473,11 @@ void GameConsole::registerBuiltinCommands() {
         }
     });
     registerCommand("infinitmana", "Toggle infinite mana: infinitmana <on/off>", [this](const std::vector<std::string>& args) {
-        if (args.empty()) {
+        if (args.size() < 2) {
             print("Usage: infinitmana <on/off>");
             return;
         }
-        bool enabled = (args[0] == "on" || args[0] == "true" || args[0] == "1");
+        bool enabled = (args[1] == "on" || args[1] == "true" || args[1] == "1");
         if (gameRefs.toggleInfiniteMana) {
             gameRefs.toggleInfiniteMana(enabled);
             print("Infinite mana " + std::string(enabled ? "enabled" : "disabled"));
@@ -480,11 +486,11 @@ void GameConsole::registerBuiltinCommands() {
         }
     });
     registerCommand("setspelldamage", "Set spell damage multiplier: setspelldamage <multiplier>", [this](const std::vector<std::string>& args) {
-        if (args.empty()) {
+        if (args.size() < 2) {
             print("Usage: setspelldamage <multiplier>");
             return;
         }
-        float mult = std::stof(args[0]);
+        float mult = std::stof(args[1]);
         if (gameRefs.setSpellDamageMultiplier) {
             gameRefs.setSpellDamageMultiplier(mult);
             print("Spell damage multiplier set to " + std::to_string(mult));
@@ -516,11 +522,11 @@ void GameConsole::registerBuiltinCommands() {
         }
     });
     registerCommand("npcinfo", "Get NPC info: npcinfo <npcId>", [this](const std::vector<std::string>& args) {
-        if (args.empty()) {
+        if (args.size() < 2) {
             print("Usage: npcinfo <npcId>");
             return;
         }
-        uint32_t npcId = std::stoul(args[0]);
+        uint32_t npcId = std::stoul(args[1]);
         if (gameRefs.getNpcInfo) {
             print(gameRefs.getNpcInfo(npcId));
         } else {
@@ -528,7 +534,7 @@ void GameConsole::registerBuiltinCommands() {
         }
     });
     registerCommand("spawnplayer", "Spawn NPC at player: spawnplayer <name>", [this](const std::vector<std::string>& args) {
-        if (args.empty()) {
+        if (args.size() < 2) {
             print("Usage: spawnplayer <name>");
             return;
         }
@@ -537,8 +543,8 @@ void GameConsole::registerBuiltinCommands() {
             // Parse position from "Player: (x, y, z)" format
             float x = 0, y = 0, z = 0;
             sscanf(posStr.c_str(), "Player: (%f, %f, %f)", &x, &y, &z);
-            gameRefs.spawnNpc(args[0], x + 100.0f, y, z + 100.0f);
-            print("Spawned " + args[0] + " at player position");
+            gameRefs.spawnNpc(args[1], x + 100.0f, y, z + 100.0f);
+            print("Spawned " + args[1] + " at player position");
         } else {
             print("Spawn not available");
         }
@@ -552,11 +558,11 @@ void GameConsole::registerBuiltinCommands() {
         }
     });
     registerCommand("setnpcspeed", "Set NPC speed: setnpcspeed <speed>", [this](const std::vector<std::string>& args) {
-        if (args.empty()) {
+        if (args.size() < 2) {
             print("Usage: setnpcspeed <speed>");
             return;
         }
-        float speed = std::stof(args[0]);
+        float speed = std::stof(args[1]);
         if (gameRefs.setNpcSpeed) {
             gameRefs.setNpcSpeed(speed);
             print("NPC speed set to " + std::to_string(speed));
@@ -586,35 +592,35 @@ void GameConsole::registerBuiltinCommands() {
         }
     });
     registerCommand("teleport", "Teleport: teleport <x> <y> <z>", [this](const std::vector<std::string>& args) {
-        if (args.size() < 3) {
+        if (args.size() < 4) {
             print("Usage: teleport <x> <y> <z>");
             return;
         }
-        float x = std::stof(args[0]);
-        float y = std::stof(args[1]);
-        float z = std::stof(args[2]);
+        float x = std::stof(args[1]);
+        float y = std::stof(args[2]);
+        float z = std::stof(args[3]);
         if (gameRefs.teleportTo) gameRefs.teleportTo(x, y, z);
-        print("Teleported to (" + args[0] + ", " + args[1] + ", " + args[2] + ")");
+        print("Teleported to (" + args[1] + ", " + args[2] + ", " + args[3] + ")");
     });
     registerCommand("teleportcell", "Teleport to cell: teleportcell <x> <y>", [this](const std::vector<std::string>& args) {
-        if (args.size() < 2) {
+        if (args.size() < 3) {
             print("Usage: teleportcell <x> <y>");
             return;
         }
-        int32_t cx = std::stoi(args[0]);
-        int32_t cz = std::stoi(args[1]);
+        int32_t cx = std::stoi(args[1]);
+        int32_t cz = std::stoi(args[2]);
         if (gameRefs.teleportToCell) gameRefs.teleportToCell(cx, cz);
-        print("Teleported to cell (" + args[0] + ", " + args[1] + ")");
+        print("Teleported to cell (" + args[1] + ", " + args[2] + ")");
     });
     registerCommand("moverel", "Move relative: moverel <dx> <dz>", [this](const std::vector<std::string>& args) {
-        if (args.size() < 2) {
+        if (args.size() < 3) {
             print("Usage: moverel <dx> <dz>");
             return;
         }
-        float dx = std::stof(args[0]);
-        float dz = std::stof(args[1]);
+        float dx = std::stof(args[1]);
+        float dz = std::stof(args[2]);
         if (gameRefs.movePlayerRelative) gameRefs.movePlayerRelative(dx, dz);
-        print("Moved by (" + args[0] + ", " + args[1] + ")");
+        print("Moved by (" + args[1] + ", " + args[2] + ")");
     });
     registerCommand("nearbycells", "List nearby cells", [this](const std::vector<std::string>&) {
         if (gameRefs.listNearbyCells) {
@@ -629,44 +635,139 @@ void GameConsole::registerBuiltinCommands() {
     registerCommand("load", "Load game: load <slotIndex>", [this](const std::vector<std::string>& args) { cmdLoad(args); });
 
     // === Font switching commands ===
-    registerCommand("font", "Switch font: font <roboto|daedric|kingthings|handwritten|tahoma>", [this](const std::vector<std::string>& args) {
+    registerCommand("font", "Switch font: font <roboto|daedric|kingthings|shadowed|handwritten|tahoma>", [this](const std::vector<std::string>& args) {
         if (!textRenderer) { print("TextRenderer not available"); return; }
         if (args.size() < 2) {
             print("Current font: " + std::string(textRenderer->getFontTypeName(textRenderer->getActiveFont())));
-            print("Usage: font <roboto|daedric|kingthings|handwritten|tahoma>");
+            print("Usage: font <roboto|daedric|kingthings|shadowed|handwritten|tahoma>");
             return;
         }
         std::string name = args[1];
         FontType type = FontType::Roboto;
         if (name == "daedric") type = FontType::Daedric;
         else if (name == "kingthings") type = FontType::KingthingsRegular;
+        else if (name == "shadowed") type = FontType::KingthingsShadowed;
         else if (name == "handwritten") type = FontType::Handwritten;
         else if (name == "tahoma") type = FontType::TahomaBoldSmall;
         else if (name != "roboto") { print("Unknown font: " + name); return; }
 
-        if (type != FontType::Roboto) {
-            if (!textRenderer->loadOblivionFont(type)) {
-                print("Failed to load font: " + name);
-                return;
-            }
-        }
-        textRenderer->setActiveFont(type);
-        print("Font switched to: " + std::string(textRenderer->getFontTypeName(type)));
+        textRenderer->requestFont(type);
+        print("Font switching to: " + std::string(textRenderer->getFontTypeName(type)));
     });
     registerCommand("font_roboto", "Switch to Roboto", [this](const std::vector<std::string>&) {
-        if (textRenderer) { textRenderer->setActiveFont(FontType::Roboto); print("Font: Roboto"); }
+        if (textRenderer) { textRenderer->requestFont(FontType::Roboto); print("Font: Roboto"); }
     });
     registerCommand("font_daedric", "Switch to Daedric", [this](const std::vector<std::string>&) {
-        if (textRenderer) { textRenderer->loadOblivionFont(FontType::Daedric); textRenderer->setActiveFont(FontType::Daedric); print("Font: Daedric"); }
+        if (textRenderer) { textRenderer->requestFont(FontType::Daedric); print("Font: Daedric"); }
     });
     registerCommand("font_kingthings", "Switch to Kingthings", [this](const std::vector<std::string>&) {
-        if (textRenderer) { textRenderer->loadOblivionFont(FontType::KingthingsRegular); textRenderer->setActiveFont(FontType::KingthingsRegular); print("Font: Kingthings"); }
+        if (textRenderer) { textRenderer->requestFont(FontType::KingthingsRegular); print("Font: Kingthings"); }
+    });
+    registerCommand("font_shadowed", "Switch to Kingthings Shadowed", [this](const std::vector<std::string>&) {
+        if (textRenderer) { textRenderer->requestFont(FontType::KingthingsShadowed); print("Font: Kingthings Shadowed"); }
     });
     registerCommand("font_handwritten", "Switch to Handwritten", [this](const std::vector<std::string>&) {
-        if (textRenderer) { textRenderer->loadOblivionFont(FontType::Handwritten); textRenderer->setActiveFont(FontType::Handwritten); print("Font: Handwritten"); }
+        if (textRenderer) { textRenderer->requestFont(FontType::Handwritten); print("Font: Handwritten"); }
     });
     registerCommand("font_tahoma", "Switch to Tahoma", [this](const std::vector<std::string>&) {
-        if (textRenderer) { textRenderer->loadOblivionFont(FontType::TahomaBoldSmall); textRenderer->setActiveFont(FontType::TahomaBoldSmall); print("Font: Tahoma"); }
+        if (textRenderer) { textRenderer->requestFont(FontType::TahomaBoldSmall); print("Font: Tahoma"); }
+    });
+    registerCommand("fontcontrast", "Font contrast curve: fontcontrast <lo> <hi> | on | off",
+                    [this](const std::vector<std::string>& args) {
+        if (!textRenderer) { print("TextRenderer not available"); return; }
+        if (args.size() < 2) {
+            print("Contrast curve: " + std::string(textRenderer->isFontAlphaCurveEnabled() ? "on" : "off") +
+                  " lo=" + std::to_string(textRenderer->getFontAlphaCurveLo()) +
+                  " hi=" + std::to_string(textRenderer->getFontAlphaCurveHi()));
+            print("Usage: fontcontrast <lo> <hi> | on | off   (default 0.30 0.72)");
+            return;
+        }
+        if (args[1] == "off") { textRenderer->setFontAlphaCurveEnabled(false); print("Font contrast curve off"); return; }
+        if (args[1] == "on")  { textRenderer->setFontAlphaCurveEnabled(true);  print("Font contrast curve on");  return; }
+        if (args.size() < 3) { print("Usage: fontcontrast <lo> <hi>"); return; }
+        float lo = 0.0f, hi = 0.0f;
+        try { lo = std::stof(args[1]); hi = std::stof(args[2]); }
+        catch (...) { print("Invalid numbers"); return; }
+        textRenderer->setFontAlphaCurve(lo, hi);
+        textRenderer->setFontAlphaCurveEnabled(true);
+        print("Font contrast curve lo=" + std::to_string(textRenderer->getFontAlphaCurveLo()) +
+              " hi=" + std::to_string(textRenderer->getFontAlphaCurveHi()));
+    });
+    registerCommand("fontsize", "Font size multiplier: fontsize <mult>  (1.0 = native)", [this](const std::vector<std::string>& args) {
+        if (!textRenderer) { print("TextRenderer not available"); return; }
+        if (args.size() < 2) {
+            print("Font size multiplier: " + std::to_string(textRenderer->getFontSizeMultiplier()));
+            print("Usage: fontsize <mult>   (1.0 = native, clamped 0.5 - 2.0)");
+            return;
+        }
+        float mult = 1.0f;
+        try { mult = std::stof(args[1]); }
+        catch (...) { print("Invalid number"); return; }
+        textRenderer->setFontSizeMultiplier(mult);
+        print("Font size multiplier: " + std::to_string(textRenderer->getFontSizeMultiplier()));
+    });
+    registerCommand("fontoutline", "Font outline: fontoutline on | off | width <px> | color <r> <g> <b> [a]",
+                    [this](const std::vector<std::string>& args) {
+        if (!textRenderer) { print("TextRenderer not available"); return; }
+        if (args.size() < 2) {
+            glm::vec4 c = textRenderer->getFontOutlineColor();
+            print("Outline: " + std::string(textRenderer->isFontOutlineEnabled() ? "on" : "off") +
+                  " width=" + std::to_string(textRenderer->getFontOutlineWidth()) +
+                  " color=" + std::to_string(c.x) + " " + std::to_string(c.y) + " " +
+                  std::to_string(c.z) + " " + std::to_string(c.w));
+            print("Usage: fontoutline on | off | width <px> | color <r> <g> <b> [a]");
+            return;
+        }
+        if (args[1] == "off") { textRenderer->setFontOutlineEnabled(false); print("Font outline off"); return; }
+        if (args[1] == "on")  { textRenderer->setFontOutlineEnabled(true);  print("Font outline on");  return; }
+        if (args[1] == "width") {
+            if (args.size() < 3) { print("Usage: fontoutline width <px>"); return; }
+            float px = 1.0f;
+            try { px = std::stof(args[2]); } catch (...) { print("Invalid number"); return; }
+            textRenderer->setFontOutlineWidth(px);
+            print("Font outline width: " + std::to_string(textRenderer->getFontOutlineWidth()));
+            if (!textRenderer->isFontOutlineEnabled()) {
+                print("Outline is off - use 'fontoutline on' to see the change");
+            }
+            return;
+        }
+        if (args[1] == "color") {
+            if (args.size() < 5) { print("Usage: fontoutline color <r> <g> <b> [a]"); return; }
+            glm::vec4 c = textRenderer->getFontOutlineColor();
+            try {
+                c.x = std::stof(args[2]);
+                c.y = std::stof(args[3]);
+                c.z = std::stof(args[4]);
+                if (args.size() >= 6) c.w = std::stof(args[5]);
+            } catch (...) { print("Invalid numbers"); return; }
+            textRenderer->setFontOutlineColor(c);
+            print("Font outline color");
+            return;
+        }
+        print("Usage: fontoutline on | off | width <px> | color <r> <g> <b> [a]");
+    });
+    registerCommand("titlestyle", "Title screen font style: titlestyle on | off   (on = plain: no alpha binarisation, outline kept)",
+                    [this](const std::vector<std::string>& args) {
+        if (!gameRefs.setTitlePlainStyle || !gameRefs.getTitlePlainStyle) {
+            print("Title screen not available");
+            return;
+        }
+        if (args.size() < 2) {
+            print("Title plain style: " + std::string(gameRefs.getTitlePlainStyle() ? "on" : "off"));
+            print("Usage: titlestyle on | off   (on = plain, off = shared font styling)");
+            return;
+        }
+        if (args[1] == "on" || args[1] == "plain") {
+            gameRefs.setTitlePlainStyle(true);
+            print("Title plain style on");
+            return;
+        }
+        if (args[1] == "off" || args[1] == "global") {
+            gameRefs.setTitlePlainStyle(false);
+            print("Title plain style off (shared font styling)");
+            return;
+        }
+        print("Usage: titlestyle on | off");
     });
     registerCommand("quicksave", "Quick save", [this](const std::vector<std::string>& args) { cmdQuickSave(args); });
     registerCommand("quickload", "Quick load", [this](const std::vector<std::string>& args) { cmdQuickLoad(args); });
@@ -695,11 +796,11 @@ void GameConsole::registerBuiltinCommands() {
         print("Touch trail toggled");
     });
     registerCommand("debugpage", "Switch debug HUD page: debugpage <1-4>", [this](const std::vector<std::string>& args) {
-        if (args.empty()) {
+        if (args.size() < 2) {
             if (gameRefs.debugHudNextPage) gameRefs.debugHudNextPage();
             print("Debug HUD: next page");
         } else {
-            int page = std::atoi(args[0].c_str());
+            int page = std::atoi(args[1].c_str());
             if (page >= 1 && page <= 4) {
                 print("Debug HUD: page " + std::to_string(page));
             }
@@ -777,11 +878,11 @@ void GameConsole::registerBuiltinCommands() {
         print("All SE stopped");
     });
     registerCommand("setvolume", "Set master volume: setvolume <0.0-1.0>", [this](const std::vector<std::string>& args) {
-        if (args.empty()) {
+        if (args.size() < 2) {
             print("Usage: setvolume <0.0-1.0>");
             return;
         }
-        float vol = std::stof(args[0]);
+        float vol = std::stof(args[1]);
         if (gameRefs.setMasterVolume) gameRefs.setMasterVolume(vol);
         print("Volume set to " + std::to_string(vol));
     });
@@ -816,19 +917,19 @@ void GameConsole::registerBuiltinCommands() {
         }
     });
     registerCommand("playbgmtrack", "Play specific BGM: playbgmtrack <key>", [this](const std::vector<std::string>& args) {
-        if (args.empty()) {
+        if (args.size() < 2) {
             print("Usage: playbgmtrack <key>");
             return;
         }
-        if (gameRefs.playBgmTrack) gameRefs.playBgmTrack(args[0]);
-        print("Playing BGM: " + args[0]);
+        if (gameRefs.playBgmTrack) gameRefs.playBgmTrack(args[1]);
+        print("Playing BGM: " + args[1]);
     });
     registerCommand("bgmvolume", "Set BGM volume: bgmvolume <0.0-1.0>", [this](const std::vector<std::string>& args) {
-        if (args.empty()) {
+        if (args.size() < 2) {
             print("Usage: bgmvolume <0.0-1.0>");
             return;
         }
-        float vol = std::stof(args[0]);
+        float vol = std::stof(args[1]);
         if (gameRefs.setBgmVolume) gameRefs.setBgmVolume(vol);
         print("BGM volume set to " + std::to_string(vol));
     });
@@ -909,12 +1010,12 @@ void GameConsole::registerBuiltinCommands() {
 
     // === Log commands ===
     registerCommand("loglevel", "Set log level: loglevel <all|debug|info|warn|error>", [this](const std::vector<std::string>& args) {
-        if (args.empty()) {
+        if (args.size() < 2) {
             print("Usage: loglevel <all|debug|info|warn|error>");
             return;
         }
-        if (gameRefs.setLogLevel) gameRefs.setLogLevel(args[0]);
-        print("Log level set to " + args[0]);
+        if (gameRefs.setLogLevel) gameRefs.setLogLevel(args[1]);
+        print("Log level set to " + args[1]);
     });
     registerCommand("clearlogs", "Clear log buffer", [this](const std::vector<std::string>&) {
         if (gameRefs.clearLogs) gameRefs.clearLogs();
@@ -932,12 +1033,12 @@ void GameConsole::registerBuiltinCommands() {
         }
     });
     registerCommand("searchlog", "Search logs: searchlog <pattern>", [this](const std::vector<std::string>& args) {
-        if (args.empty()) {
+        if (args.size() < 2) {
             print("Usage: searchlog <pattern>");
             return;
         }
-        if (gameRefs.searchLogs) gameRefs.searchLogs(args[0]);
-        print("Searching logs for: " + args[0]);
+        if (gameRefs.searchLogs) gameRefs.searchLogs(args[1]);
+        print("Searching logs for: " + args[1]);
     });
     registerCommand("logautoscroll", "Toggle log auto-scroll", [this](const std::vector<std::string>&) {
         if (gameRefs.toggleLogAutoScroll) gameRefs.toggleLogAutoScroll();

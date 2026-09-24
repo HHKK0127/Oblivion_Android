@@ -97,8 +97,9 @@ void LocalizationManager::initializeTranslationDatabase() {
     translations["menu_new"] = {"New", "新規"};
     translations["menu_load"] = {"Load", "ロード"};
     translations["menu_options"] = {"Options", "オプション"};
-    translations["menu_quit"] = {"Quit", "終了"};
     translations["menu_credits"] = {"Credits", "クレジット"};
+    translations["menu_exit"] = {"Exit", "終了"};
+    translations["menu_quit"] = {"Quit", "終了"};
     translations["menu_debug"] = {"Debug", "デバッグ"};
     translations["menu_start"] = {"Start", "ゲーム開始"};
     translations["menu_settings"] = {"Settings", "設定"};

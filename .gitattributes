@@ -10,3 +10,6 @@
 # Binary files should be left untouched
 *.jar           binary
 
+
+# Shell scripts need LF for bash/CI
+*.sh           text eol=lf

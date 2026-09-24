@@ -71,9 +71,9 @@ private:
     // Phase 9: Background texture
     GLuint bgTexture = 0;
 
-    // Screen size
-    int screenWidth = 1080;
-    int screenHeight = 1920;
+    // Screen size (Renderer::setScreenSize must be called; landscape default)
+    int screenWidth = 1920;
+    int screenHeight = 1080;
 
     bool visible = false;
     bool returnToMenu = false;
@@ -92,6 +92,9 @@ private:
     static constexpr float SLOT_MARGIN = 10.0f;
     static constexpr float BUTTON_HEIGHT = 50.0f;
     static constexpr float PADDING = 20.0f;
+    static constexpr float SLOT_PANEL_WIDTH = 640.0f;
+    static constexpr float SLOT_PANEL_Y = 110.0f;
+    static constexpr int MAX_VISIBLE_SLOTS = 6;
 
     struct SlotEntry {
         std::string name;

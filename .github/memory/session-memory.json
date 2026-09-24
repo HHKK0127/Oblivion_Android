@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-22T00:00:00Z",
+  "lastUpdated": "2026-09-23T20:03:15+09:00",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -122,7 +122,14 @@
           "contents": "distantlod(922), facegen(1), fonts(10), menus(104), meshes(2188), sound(35572) = 39797 files",
           "notes": "BSAから抽出済みのデータ。ディレクトリ構造: distantlod/facegen/fonts/menus/meshes/sound"
         }
-      }
+      },
+      "tags": [
+        "oblivion",
+        "game-data",
+        "paths",
+        "inventory"
+      ],
+      "compressed": false
     },
     {
       "id": "bsa-file-locations-20260919",
@@ -397,11 +404,12 @@
       "timestamp": "2026-09-21T14:09:46.509199",
       "category": "reference",
       "priority": "medium",
-      "content": "Five test suites exist under app/src/main/cpp/tests/ (phase30_integration_test.cpp 37KB, script_vm_tests.cpp 20KB, phase45_unit_tests.cpp 37KB, phase48_integration_test.cpp 20KB, phase48_stress_test.cpp 15KB), but nothing calls their runAllTests() entry points, so no test ever runs. Wiring them into CI is part of Phase 62.",
+      "content": "Five test suites exist under app/src/main/cpp/tests/ (phase30_integration_test.cpp 37 KB, script_vm_tests.cpp 20 KB, phase45_unit_tests.cpp 37 KB, phase48_integration_test.cpp 20 KB, phase48_stress_test.cpp 15 KB), but nothing calls their runAllTests() entry points, so no test ever runs. Re-confirmed still unwired on 2026-09-22 (the only references to runAllTests are the definitions and declarations inside the test files themselves). Wiring them into CI is part of Phase 62 and belongs to workstream WS-A.",
       "tags": [
         "oblivion",
         "tests",
-        "ci"
+        "ci",
+        "phase62"
       ],
       "compressed": false
     },
@@ -410,12 +418,13 @@
       "timestamp": "2026-09-21T14:09:46.509199",
       "category": "reference",
       "priority": "high",
-      "content": "Build configuration is defined twice with conflicting values: app/build.gradle (versionName '0.9.10', minSdk 25, targetSdk 34, compileSdk 34, abiFilters arm64-v8a/armeabi-v7a) versus app/build.gradle.kts (versionName '1.0', versionCode 1, minSdk 24, targetSdk 36). Consolidating to a single source of truth is a Phase 62 task.",
+      "content": "RESOLVED 2026-09-22 (commit 012a5bb4). The conflict was app/build.gradle (versionName '0.9.10', minSdk 25, targetSdk 34, compileSdk 34, abiFilters arm64-v8a/armeabi-v7a) versus app/build.gradle.kts (versionName '1.0', versionCode 1, minSdk 24, targetSdk 36). app/build.gradle.kts, build.gradle.kts and settings.gradle.kts were deleted, so the Groovy files are the single source of truth. Re-verify with: git ls-tree -r --name-only HEAD | Select-String 'build.gradle' - only app/build.gradle and build.gradle must appear.",
       "tags": [
         "oblivion",
         "build",
         "gradle",
-        "conflict"
+        "conflict",
+        "resolved"
       ],
       "compressed": false
     },
@@ -438,12 +447,13 @@
       "timestamp": "2026-09-21T14:09:46.509199",
       "category": "decision",
       "priority": "high",
-      "content": "Product-completion roadmap defined as Phases 62-72 (65-94 weeks, milestones M11-M19) and written into the repository plan.md (+105 lines, 225 lines total). Scope was explicitly confirmed by the user as FULL GAME REPRODUCTION: all quests, all DLC, full Script VM compatibility, and mod support. Acceptance criteria A1-A8 were defined. The plan.md change is NOT committed. Phase 62 (foundation: gradle consolidation, version unification, CI, wiring the 5 existing test suites, legal audit) is the entry point.",
+      "content": "Product-completion roadmap defined as Phases 62-72 (65-94 weeks, milestones M11-M19) and written into the repository plan.md. Scope was explicitly confirmed by the user as FULL GAME REPRODUCTION: all quests, all DLC, full Script VM compatibility, and mod support. Acceptance criteria A1-A8 were defined. plan.md is now 271 lines and IS committed (012a5bb4, 2026-09-22), together with the rest of the pending work; it also carries the WS-A/WS-B/WS-C/WS-D workstream split, the CI pre-validation notes and the corrected performance findings. Phase 62 (foundation: gradle consolidation, version unification, CI, wiring the 5 existing test suites, legal audit) is the entry point and its build-config and CI parts are already done.",
       "tags": [
         "oblivion",
         "roadmap",
         "plan",
-        "phase62"
+        "phase62",
+        "committed"
       ],
       "compressed": false
     },
@@ -729,12 +739,12 @@
       "category": "reference",
       "priority": "low",
       "tags": [
+        "oblivion",
         "memory",
         "maintenance",
-        "session-update",
-        "phase-64"
+        "status"
       ],
-      "content": "Memory maintenance session (2026-09-21 20:35 JST). Project status: Phase 64 in progress - ESM secondary record type decoders complete (20 types verified against real Oblivion.esm). Previous session work: README updated (2026-09-16), UI bug fixes and comment translation completed. Memory contains 50 entries covering ESM formats, pitfall notes, and phase 64 progress.",
+      "content": "Memory maintenance (2026-09-22 10:10 JST). Project status: Phase 64 in progress; the Phase 62 foundation work was started ahead of the roadmap because it is the entry point - build-config duplication resolved, CI workflow pre-validated against the real project, and the glGetUniformLocation frame-rate root cause fixed and verified at 42-49 FPS in gameplay (46.83 average). The whole body of work is committed as 012a5bb4 but master is 3 commits ahead of origin/master, so CI has never run. Memory covers the ESM binary formats, emulator measurement rules, performance findings, legal constraints and the Phase 62-72 roadmap.",
       "timestamp": "2026-09-21T20:35:00Z",
       "id": "session-maintenance-20260921"
     },
@@ -758,13 +768,12 @@
       "timestamp": "2026-09-22T00:00:00Z",
       "category": "constraint",
       "priority": "medium",
-      "content": "The emulator's GL transport cannot be switched from pipe to address_space on this host (verified 2026-09-22). \"-prop ro.boot.qemu.gltransport.name=address_space\" is silently ignored (getprop still reports pipe; ro.boot.* is populated from the kernel command line, not by -prop), and \"-feature GLDirectMem\" has no effect either. The guest does expose /dev/goldfish_address_space plus the goldfish_address_space module, so only the host side is disabled. advancedFeatures.ini in Sdk\\emulator\\lib has GLDirectMem = off, GLAsyncSwap = on, GLESDynamicVersion = off, Vulkan = off, GLDMA/GLDMA2 = on. Not a practical problem: a fresh emulator reaches 30-33 FPS over the pipe transport.",
+      "content": "The emulator's GL transport cannot be switched from pipe to address_space on this host (verified 2026-09-22). '-prop ro.boot.qemu.gltransport.name=address_space' is silently ignored (getprop still reports pipe; ro.boot.* is populated from the kernel command line, not by -prop), and '-feature GLDirectMem' has no effect either. The guest does expose /dev/goldfish_address_space plus the goldfish_address_space module, so only the host side is disabled. advancedFeatures.ini in Sdk\\emulator\\lib has GLDirectMem = off, GLAsyncSwap = on, GLESDynamicVersion = off, Vulkan = off, GLDMA/GLDMA2 = on. Not a practical problem: over the pipe transport a fresh emulator reaches 42-49 FPS in gameplay once the per-frame glGetUniformLocation calls are cached.",
       "tags": [
+        "oblivion",
         "emulator",
-        "opengl",
-        "transport",
-        "constraint",
-        "goldfish"
+        "gpu",
+        "gltransport"
       ],
       "compressed": false
     },
@@ -773,14 +782,13 @@
       "timestamp": "2026-09-22T00:00:00Z",
       "category": "constraint",
       "priority": "high",
-      "content": "Native heap is the binding performance constraint on the emulator (measured 2026-09-22): Native Heap 641,065 KB (626 MB) and TOTAL PSS 685,640 KB (670 MB) with 25 files / 3,109.5 MB of real game data loaded (35,494 cells, 1,029,280 refs, 31,823 terrains, 2,482 NPCs). The 2 GB AVD has no headroom, which is what causes the swapping. The ESM reader does NOT keep a whole-file buffer - assets/esm_reader.cpp streams with std::ifstream + seekg - so the cost is the retained record model: ESMRecord holds std::vector<SubRecord> subRecords and every SubRecord holds std::vector<uint8_t> data, i.e. the raw subrecord payloads of all ~1.17 M records stay resident. Reducing this (decode into typed structs and drop raw payloads, or release subrecords for record types that are fully decoded) is the highest-value Phase 65/66 work item.",
+      "content": "Native heap was originally read as the binding performance constraint (measured 2026-09-22: Native Heap 641,065 KB / 626 MB, TOTAL PSS 685,640 KB with 25 files / 3,109.5 MB of real game data loaded - 35,494 cells, 1,029,280 refs, 31,823 terrains, 2,482 NPCs), because the 2 GB AVD had no headroom and swapped. THAT CONCLUSION IS NOW CORRECTED: native heap controls startup time and swap avoidance, NOT the frame rate. Evidence: after the TerrainData rework the heap was down to 421 MB with Native Heap SwapPss 34 MB and gameplay was still 19.3 FPS, and force-stopping the resident Google Play apps to free 157 MB left it at 18.4 FPS; the frame rate only moved when the per-frame glGetUniformLocation calls were cached (19.3 -> 46.8 FPS). The ESM reader does NOT keep a whole-file buffer - assets/esm_reader.cpp streams with std::ifstream + seekg - so the retained cost is the record model: ESMRecord holds std::vector<SubRecord> and every SubRecord holds std::vector<uint8_t>, i.e. the raw subrecord payloads of roughly 1.17 M records stay resident. Reducing that (decode into typed structs and drop raw payloads, or release subrecords for fully decoded record types) remains the highest-value Phase 65/66 memory work item.",
       "tags": [
         "oblivion",
-        "memory",
-        "native-heap",
-        "esm",
         "performance",
-        "constraint"
+        "memory",
+        "esm",
+        "corrected"
       ],
       "compressed": false
     },
@@ -789,14 +797,13 @@
       "timestamp": "2026-09-22T00:00:00Z",
       "category": "reference",
       "priority": "high",
-      "content": "Verified working state on the emulator (fresh restart, x86_64 native ABI, 1920x1080/420dpi, 2026-09-22): title screen 60 FPS; gameplay 30-33 FPS with 9 exterior cells textured (log: \"Terrain textured: 9 of 9 drawn cells, 36 texture bindings, 9 LTEX loaded\") appearing within 0.1 s of game start; MiniMap clipped correctly to its content rect (dominant green (74,140,74) 23,886 px in a 180x180 bbox at x1710-1889 y30-209); touch confirmed through all 4 layers (MainActivity \"GLSurfaceView touch DOWN\" -> Renderer \"=== Touch event detected ===\" -> TitleScreen \"Menu touch DOWN ... panel size=(1920.0, 1017.0)\" -> \"Forwarded touch to native\"); and ATK/BLK/MAG/Joystick all consume their events (\"ATK button callback fired!\", \"BLK button callback fired!\", \"event consumed by 'Joystick'\"). The black band at the bottom of screenshots is the Android navigation bar, not an app bug - the viewport is 1920x1017. The UISystem component dump line format \"- '<name>' at (x, y) size (WxH) vis=N en=N hit=N\" is the fastest way to locate a widget's real rect.",
+      "content": "Verified working state on the emulator (fresh restart, x86_64 native ABI, 1920x1080/420dpi), re-measured 2026-09-22 after the glGetUniformLocation fix and the ndkVersion pin: title screen 60-61 FPS; gameplay 42-49 FPS (45-second window: count 45, average 42.49, max 50.00, min 19.00 where the single 19 is a screen-transition frame; repeat run: count 40, average 46.83, max 49.00, min 42.00, with PerformanceMonitor reporting Current FPS 46.1, Average Frame Time 19.48 ms, Min Frame Time 15.14 ms, Max Frame Time 27.20 ms). 9 exterior cells textured (log: 'Terrain textured: 9 of 9 drawn cells, 36 texture bindings, 9 LTEX loaded') appearing within 0.1 s of game start; MiniMap clipped correctly to its content rect (dominant green (74,140,74) 23,886 px in a 180x180 bbox at x1710-1889 y30-209); touch confirmed through all 4 layers (MainActivity 'GLSurfaceView touch DOWN' -> Renderer '=== Touch event detected ===' -> TitleScreen 'Menu touch DOWN ... panel size=(1920.0, 1017.0)' -> 'Forwarded touch to native'); and ATK/BLK/MAG/Joystick all consume their events ('ATK button callback fired!', 'BLK button callback fired!', 'event consumed by Joystick'). Footprint: Native Heap 370,226 KB, TOTAL PSS 424,134 KB, TOTAL SWAP PSS 249 KB; no crash, FATAL, ANR or GL error. The black band at the bottom of screenshots is the Android navigation bar, not an app bug - the viewport is 1920x1017. The UISystem component dump line format \"- '<name>' at (x, y) size (WxH) vis=N en=N hit=N\" is the fastest way to locate a widget's real rect.",
       "tags": [
         "oblivion",
-        "emulator",
         "verification",
-        "status",
-        "ui",
-        "touch"
+        "emulator",
+        "fps",
+        "state"
       ],
       "compressed": false
     },
@@ -805,13 +812,13 @@
       "timestamp": "2026-09-22T00:00:00Z",
       "category": "pitfall",
       "priority": "high",
-      "content": "Build/install pitfalls confirmed on this project: piping gradlew output directly into Select-String corrupts the produced APK (install then fails with INSTALL_PARSE_FAILED_NOT_APK) - always redirect with Out-File and Select-String the file afterwards. Never use \"am kill-all\": it takes down system_server and reboots Android. app/build.gradle must keep abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64' so the emulator runs native x86_64 instead of under ARM-to-x86 binary translation (which caused input-dispatch ANRs); verify with dumpsys package com.example.oblivion | Select-String primaryCpuAbi. A clean assembleDebug for all 3 ABIs takes about 6 min 12 s and produces an 85.5 MB APK.",
+      "content": "Build/install pitfalls confirmed on this project: piping gradlew output directly into Select-String corrupts the produced APK (install then fails with INSTALL_PARSE_FAILED_NOT_APK) - always redirect with Out-File and Select-String the file afterwards. Never use 'am kill-all': it takes down system_server and reboots Android. app/build.gradle must keep abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64' so the emulator runs native x86_64 instead of under ARM-to-x86 binary translation (which caused input-dispatch ANRs); verify with dumpsys package com.example.oblivion | Select-String primaryCpuAbi. A clean assembleDebug for all 3 ABIs takes about 6 min 12 s; with ndkVersion pinned the debug APK is 94,472,193 bytes (94.5 MB). Incremental builds finish in about 33 s. Delete the temporary build log afterwards.",
       "tags": [
+        "oblivion",
         "build",
-        "gradle",
-        "apk",
+        "install",
         "pitfall",
-        "abi"
+        "gradle"
       ],
       "compressed": false
     },
@@ -820,13 +827,13 @@
       "timestamp": "2026-09-22T00:00:00Z",
       "category": "performance",
       "priority": "high",
-      "content": "ROOT CAUSE of the gameplay frame-rate ceiling, confirmed by measurement: ui/ui_draw_helper.cpp called glGetUniformLocation on EVERY draw call (2 per drawColoredQuad, 3 per drawTexturedQuad, 5 per drawGradientQuad, 7 per drawRadialGlow, 16 per draw3DTextureQuad). Each call is a synchronous round-trip to the GL server, so the in-game HUD issued hundreds per frame. Evidence chain: PerformanceMonitor reported a Min Frame Time floor of 37.19 ms (27 fps best case); pointing the camera at empty sky did not change the frame rate (so it was not fragment load); the title screen ran at 60 fps because it draws no HUD; simpleperf attributed 83.22% of samples to goldfish_pipe.ko:goldfish_pipe_read_write with under 0.1% in app code; top -H showed the GL thread at 96.5% and every other thread at 0.0%. FIX: memoize locations per (program, name) in an unordered_map keyed by program id, cleared in UIDrawHelper::cleanup(). RESULT: in-game 19.3 -> 42.7 fps, Average Frame Time 57.78 -> 22.06 ms, Min Frame Time 37.19 -> 15.63 ms, title unchanged at 60. engine/shader.cpp and ui/text_renderer.cpp already cached their locations, which is why the 3D mesh paths were never the bottleneck. LESSON: on this emulator any GL call that needs a server round-trip inside a per-frame loop is a frame-rate cliff - cache every location and never query GL state per draw.",
+      "content": "ROOT CAUSE of the gameplay frame-rate ceiling, confirmed by measurement: ui/ui_draw_helper.cpp called glGetUniformLocation on EVERY draw call (2 per drawColoredQuad, 3 per drawTexturedQuad, 5 per drawGradientQuad, 7 per drawRadialGlow, 16 per draw3DTextureQuad). Each call is a synchronous round-trip to the GL server, so the in-game HUD issued hundreds per frame. Evidence chain: PerformanceMonitor reported a Min Frame Time floor of 37.19 ms (27 fps best case); pointing the camera at empty sky did not change the frame rate (so it was not fragment load); the title screen ran at 60 fps because it draws no HUD; simpleperf attributed 83.22% of samples to goldfish_pipe.ko:goldfish_pipe_read_write with under 0.1% in app code; top -H showed the GL thread at 96.5% and every other thread at 0.0%. FIX: memoize locations per (program, name) in an unordered_map keyed by program id, cleared in UIDrawHelper::cleanup(). RESULT: in-game 19.3 -> 42.7 fps, Average Frame Time 57.78 -> 22.06 ms, Min Frame Time 37.19 -> 15.63 ms, title unchanged at 60. Re-verified after the ndkVersion pin on a freshly restarted emulator: gameplay average 46.83 fps (window average 42.49, max 50.00), Current FPS 46.1, Min Frame Time 15.14 ms, Max Frame Time 27.20 ms, title 60-61 fps. engine/shader.cpp and ui/text_renderer.cpp already cached their locations, which is why the 3D mesh paths were never the bottleneck. LESSON: on this emulator any GL call that needs a server round-trip inside a per-frame loop is a frame-rate cliff - cache every location and never query GL state per draw. Remaining uncached call sites are low priority: ui/title_screen.cpp (3 per frame, but the title screen is already at 60 fps), renderer.cpp renderPlaceholderEntities() (debug path), geometry/cube.cpp, world/distant_lod/distant_lod_horizon.cpp.",
       "tags": [
+        "oblivion",
         "performance",
         "opengl",
-        "emulator",
-        "ui",
-        "root-cause"
+        "rootcause",
+        "fps"
       ],
       "compressed": false
     },
@@ -858,11 +865,2175 @@
         "follow-up"
       ],
       "compressed": false
+    },
+    {
+      "id": "ci-workflow-hardened-20260922",
+      "timestamp": "2026-09-22T01:10:00Z",
+      "category": "configuration",
+      "priority": "high",
+      "content": ".github/workflows/android.yml was pre-validated against the real project before its first run, and three mismatches that would have failed that run were fixed (2026-09-22). (1) The workflow set up JDK 17 while gradle/gradle-daemon-jvm.properties pins toolchainVersion=21, so the daemon JVM criteria could never be satisfied - it now uses actions/setup-java@v4 with distribution temurin and java-version '21'. (2) ndkVersion was pinned nowhere, leaving AGP free to resolve a different NDK than the one the workflow installs; app/build.gradle now declares ndkVersion '26.1.10909125', which matches AGP 8.5's default and the local SDK, and assembleDebug was re-run with it (BUILD SUCCESSFUL, APK 94,472,193 bytes). (3) AGP 8.5 requires CMake 3.22.1 and will not substitute another version, and the runner has none, so the workflow now runs 'yes | sdkmanager --licenses' and installs 'ndk;26.1.10909125' plus 'cmake;3.22.1' explicitly. The version-consistency gate was simulated locally and passes (versionName 0.9.10 -> versionCode 910); the YAML was parsed with PyYAML to confirm all 10 steps. Still unverified: the GitHub-hosted runner itself and the 3-ABI native build time, which the 60-minute timeout covers.",
+      "tags": [
+        "oblivion",
+        "ci",
+        "github-actions",
+        "gradle",
+        "ndk",
+        "phase62"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "build-config-single-source-20260922",
+      "timestamp": "2026-09-22T01:10:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "Build-configuration duplication is resolved (commit 012a5bb4, 2026-09-22): app/build.gradle.kts, build.gradle.kts and settings.gradle.kts were deleted, so the Groovy app/build.gradle + build.gradle + settings.gradle are the single source of truth. Values: namespace/applicationId com.example.oblivion, compileSdk 34, minSdk 25, targetSdk 34, versionCode 910, versionName '0.9.10', ndkVersion '26.1.10909125', abiFilters arm64-v8a/armeabi-v7a/x86_64, CMake cppFlags -std=c++17, ANDROID_STL=c++_shared. Root build.gradle: AGP 8.5.0 and Kotlin 1.9.22. Gradle wrapper 9.4.1. settings.gradle: rootProject.name 'oblivion-android', include ':app', RepositoriesMode.FAIL_ON_PROJECT_REPOS. This closes the 'Build config duplication' risk row in plan.md; version consistency across README/CHANGELOG/plan.md is still open Phase 62 work.",
+      "tags": [
+        "oblivion",
+        "build",
+        "gradle",
+        "phase62",
+        "resolved"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "bethesda-asset-git-policy-20260922",
+      "timestamp": "2026-09-22T01:10:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "Bethesda asset handling in git, verified 2026-09-22: the loading-screen and intro-video assets were removed from the index but deliberately kept on disk. .gitignore covers them - line 13 'Game data and extracted assets (property of Bethesda Game Studios / ZENiMax Media)', plus *.dds, textures_extracted/ and per-file entries - with the comment 'Bethesda assets kept locally for testing only; never redistribute'. Removing them from git is safe because engine/texture_loader.cpp loadTextureFromAsset() only returns 0 when AAssetManager_open() fails, and every call site guards with != 0 (title_screen.cpp, launcher_screen.cpp, save_load_ui.cpp, settings_ui.cpp, renderer.cpp). This is the correct legal posture for the BYO-data model and must stay this way.",
+      "tags": [
+        "oblivion",
+        "legal",
+        "assets",
+        "gitignore",
+        "byo-data"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "committed-012a5bb4-state-20260922",
+      "timestamp": "2026-09-22T01:10:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Repository state after the 2026-09-22 work: commit 012a5bb4 'Save uncommitted changes' (2026-09-22 09:57:51 JST, 98 files changed) captured the whole body of work - the Gradle Kotlin-DSL to Groovy migration, .github/workflows/android.yml, plan.md, .github/memory/session-memory.json and the modified native sources. The working tree is clean except for the nested tools/BSAFileExtractor repo, which is tracked as a dirty gitlink. master is 3 commits ahead of origin/master and nothing has been pushed, so Android CI has STILL never run. Pushing is a user decision; it is what would unblock the WS-A/WS-B child sessions, because worktree sessions branch off committed master.",
+      "tags": [
+        "oblivion",
+        "git",
+        "ci",
+        "status",
+        "unpushed"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "debugmenu-audit-20260922",
+      "timestamp": "2026-09-22T01:35:00Z",
+      "category": "constraint",
+      "priority": "high",
+      "content": "DebugMenu 全31タブの実機監査結果(2026-09-22、Pixel_API34 1920x1017で検証)。(1) タブバー自体は正常動作する(前回の『壊れている』は誤診。原因は KEYCODE_BACK でメニューが閉じていたこと)。(2) タブは全て w=h=96px(ensureMinTouchSize の下限)でピッチ103.53px、開始x=139.36、y=20 → 31タブで3209px必要だが画面幅1920px → idx18〜30の13タブ(Item/Reload/Light/Mem/Dlg/Input/Audio/Phys/Slot/Nav/Time/Aggro/Stats)は完全に画面外でタップ不能。idx17(Qst)はx=1899〜1995で21pxのみ可視(x=1905でタップ可)。(3) タブのヒット帯は y=19.7〜72.5 (TAB_HEIGHT*s=56.5) だが矩形は96pxで描画 → 各タブ下端43.5pxは無反応。(4) コンテンツボタンは y=91.2+56.5*row、h=96 → 隣接行が39.5px重なる。ラベルは row_y+48 に描画され重複帯の外なのでラベル狙いは正しく当たる。(5) コンテンツ1行目(y=91)は描画されたタブバー(y=116まで)と重なる。(6) renderContent にコンテンツ領域クリップが無い。",
+      "tags": [
+        "debug-menu",
+        "ui",
+        "audit",
+        "layout",
+        "verified"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "debugmenu-broken-commands-20260922",
+      "timestamp": "2026-09-22T01:35:00Z",
+      "category": "constraint",
+      "priority": "high",
+      "content": "DebugMenu のコマンドカバレッジ実測(引数を除去して比較、2026-09-22)。元の13タブ(PLAYER/COMBAT/INVENTORY/MAGIC/QUEST/NPC/DIALOGUE/WORLD/SAVE/SYSTEM/SOUND/ASSETS/LOGS)の186ボタンは全て game_console.cpp に登録済みで正常。Phase 64 の18タブ(DBG_PICKER〜DBG_STATS)は76ボタン中 teleport の1つだけが登録済みで、残り75ボタンは未登録コマンドを実行 → コンソールに 'Unknown command' が出るだけ。しかも executeButtonCommand は登録の有無に関わらず 'Executed: <cmd>' をログ/フィードバック表示するためUIが嘘をつく(実例: ailist)。cpp/debug/ の19ツールはゼロ参照のデッドコードで、CMakeLists.txt L145-156 には11個のみ記載(未コンパイル8個: hot_reload/light_ctl/mem_trace/dialog_dbg/input_vis/item_edit/quest_dbg/script_dbg)。登録コマンド総数は156。",
+      "tags": [
+        "debug-menu",
+        "game-console",
+        "phase64",
+        "dead-code",
+        "audit"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "debugmenu-dumpstate-fixed-20260922",
+      "timestamp": "2026-09-22T01:35:00Z",
+      "category": "configuration",
+      "priority": "medium",
+      "content": "DebugMenu::dumpState() の出力パスを /data/data/com.hhkk.oblivion/files/ → /data/data/com.example.oblivion/files/ に修正(debug_menu.cpp:944)。コードベース中で唯一のパッケージ名誤りだった(他は asset_manager.cpp:335,399 / crash_handler.cpp:20 / save_manager.cpp:39 / settings_manager.cpp:112 すべて com.example.oblivion)。修正前は fopen 失敗で常に 'Failed to create dump file'。修正後は実機で dump_<epoch>.log (10,233 bytes、31タブ全ボタン/スライダー一覧) の生成を確認済み。",
+      "tags": [
+        "debug-menu",
+        "bugfix",
+        "dump",
+        "verified"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "emulator-debugmenu-operations-20260922",
+      "timestamp": "2026-09-22T01:35:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "エミュレータ(Pixel_API34 1920x1017)でネイティブDebugMenuを操作する確定手順。Androidデバッグパネルの座標: btn_debug_toggle(D)=(73,73) 常時表示 / btn_debug_menu(Open Debug Menu)=(367,868) / btn_debug_assets=(367,956) / btn_close_debug(X)=(1846,73)。ネイティブメニュー表示中はパネル領域のタッチもネイティブへ転送される(shouldForwardToNative=true)ため、パネルは無視してよい。タブiのタップは y=45, x=139.36+103.53*i+48 (例 Player=187, System=1119, AI=1637, Logs=1430)。コンテンツボタンは x が btn.x 以上でなければならない(例: 列1の btn.x=1005.8 に対し x=1005 は0.8px外でミス)。行のタップは y=row_y+45 が安全(row_y=91.2+56.5*row)。検証ログは adb logcat -d | Select-String 'DebugMenu' で 'Hit tab button' / 'HIT button' / 'Executed' / 'State dump written to' を確認する。",
+      "tags": [
+        "debug-menu",
+        "emulator",
+        "adb",
+        "reference",
+        "coordinates"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "font-device-ab-20260922",
+      "timestamp": "2026-09-22T13:46:08.488659",
+      "category": "reference",
+      "priority": "high",
+      "content": "FONT READABILITY - DEVICE A/B MEASUREMENT (title screen menu labels, em=46px, Kingthings Regular). Tap sequence: tap 74 74 (Kotlin debug panel) -> tap 367 965 (btn_debug_menu) -> tap 1119 45 (native System tab) -> tap 1050 610 ('Font Contrast ON') / tap 500 670 ('Font Contrast OFF') -> keyevent 4 -> screencap. Metrics over glyph footprint (local bg via MedianFilter 15, ink threshold 0.20): A curve OFF size 1.00x: ink=6362 medianStrokeRun=4.0px bboxCoverage=19.1% p50=0.039 p90=0.396 core>.35=12.7% vis>.15=29.5% invis<.05=53.7%. B curve ON size 1.00x: ink=7186 (+13%) medianRun=4.0px coverage=22.0% p50=0.031 p90=0.443 core>.35=15.5% vis>.15=30.4% invis<.05=54.9% midtoneFuzz 22.4->19.7%. C curve ON size 1.15x: ink=11795 (+85%) medianRun=7.0px coverage=30.8% p50=0.063 p90=0.522 core>.35=20.3% vis>.15=37.1% invis<.05=46.9%. CONCLUSION: the contrast curve is a real but modest gain (+13% ink, +2.8pt core, crisper edges); the SIZE multiplier is the dominant lever (6x the gain: +85% ink, +11.7pt coverage, p50 1.6x). IMPORTANT: the curve alone does NOT reproduce the offline prediction (offline said invis 8.4%->0.7%); the on-device footprint is dilated, so invis<.05 stays ~50% - compare ink/coverage/stroke-run instead.",
+      "tags": [
+        "font",
+        "readability",
+        "ab-test",
+        "device-verified",
+        "kingthings"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "debugmenu-native-coords-20260922",
+      "timestamp": "2026-09-22T13:46:08.488659",
+      "category": "reference",
+      "priority": "high",
+      "content": "DEBUG MENU NATIVE COORDINATES ON DEVICE (1920x1017 viewport, scale=0.94). Kotlin debug panel toggle (the 'D' FAB): tap 74 74. btn_debug_menu: tap 367 965 (opens DebugMenu + Assets tab idx 11 + 3D viewer). Taps with y>1000 still reach native even while the Kotlin panel is visible. Native tab bar at y=45: tab i x = 139.36 + 103.53*i + 48 -> Player=187 Combat=291 Items=394 Magic=498 Quest=602 NPC=705 Talk=809 World=912 Save=1016 System=1119 Sound=1223 Assets=1326 Logs=1430 Picker=1533 AI=1637 Anim=1740 Script=1844 Qst=1947. Tabs idx 18-30 are off-screen and cannot be tapped. System tab buttons are a 2-column grid: col=i%2, row=i/2; col0 x=139, col1 x=1006, w=859.3; stride y = 91.16 + 56.4*row, h=96 (ensureMinTouchSize inflates 48.9 -> 96 so rows OVERLAP by 40px). Because of the overlap a tap lands on the LAST button whose top is above the touch y - so use y = 91.16 + 56.4*row + 72 for the deepest row. System tab indices: 16='Font: Tahoma'(row8 col0 y542) 17='Font Contrast ON'(row8 col1) 18='Font Contrast OFF'(row9 col0) 19='Font Size 1.15x'(row9 col1) 20='Font Size 1.30x'(row10 col1) 21='Font Size 1.00x'(row10 col0). Verified hits: 'Font Contrast ON' at tap 1050 610; 'Font Contrast OFF' at tap 500 670; 'Font Size 1.15x' at tap 1050 670.",
+      "tags": [
+        "debug-menu",
+        "coordinates",
+        "device-verified",
+        "font",
+        "touch"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "debugmenu-scroll-clamp-bug-20260922",
+      "timestamp": "2026-09-22T13:46:08.488659",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "DEBUG MENU BUG - clampScrollOffsets() computes maxScroll from the PRE-inflation button height. debug_menu.cpp calculateButtonPositions() uses btnH = BUTTON_HEIGHT * scale (48.9 px) as the row stride, then ensureMinTouchSize() inflates each button h to 96 px. clampScrollOffsets() (debug_menu.cpp ~L1029-1055) computes totalHeight from the un-inflated btnH, so for the System tab buttonRows=11 -> buttonHeight=11*56.4=620 < contentH=844.7 -> maxScroll = 0 -> rows 8+ are unreachable by scrolling. They are still tappable only because of the 40 px row overlap. Fix: compute totalHeight from the inflated height (or make the stride match the inflated height). NOT YET FIXED - carried over as a known defect.",
+      "tags": [
+        "debug-menu",
+        "bug",
+        "scrolling",
+        "known-defect"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "font-readability-decision-20260922",
+      "timestamp": "2026-09-22T13:46:08.488659",
+      "category": "decision",
+      "priority": "high",
+      "content": "FONT READABILITY DECISION (2026-09-22): keep the original Oblivion face (Kingthings Regular) as the default active font - do NOT switch the UI to Roboto/Tahoma - and instead fix how it is rendered. Three fixes, in order of measured impact: (1) fontSizeMultiplier_ default raised 1.0 -> 1.15 in text_renderer.h - this is the dominant lever (+85% ink, +11.7pt glyph coverage, p50 contrast 1.6x, median stroke 4->7 px). (2) alpha contrast curve lo=0.30 hi=0.72 kept ON by default (+13% ink, crisper edges, midtone fuzz 22.4->19.7%). (3) loadOblivionFnt auto-detects RGB-vs-alpha ink (alphaInk > rgbInk*3/2 -> sample RGB) so kingthings_shadowed draws letters instead of only its shadow silhouette. fontSizeMultiplier_ is applied ONLY in the two Oblivion render paths and getTextWidth (lines 366/520/640 of text_renderer.cpp), never in the Roboto path - so it affects only the original fonts. Because getTextWidth includes the multiplier, all callers (title_screen/ui_button centering, debug_menu auto-shrink, game_console cursor) stay consistent, so the bump is layout-safe. Runtime controls exist: console 'fontsize <mult>' (clamped 0.5-2.0) and 'fontcontrast on|off|<lo> <hi>', plus DebugMenu System-tab buttons Font Contrast ON/OFF, Font Size 1.15x/1.30x/1.00x.",
+      "tags": [
+        "font",
+        "decision",
+        "readability",
+        "kingthings",
+        "default"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "b655cc32-a0bc-405b-9402-2ce5803b9950",
+      "timestamp": "2026-09-22T15:14:52",
+      "category": "decision",
+      "priority": "high",
+      "content": "Title screen layout now matches the reference art in normalized screen units (W x H): logo lockup box 0.431W x 0.161H with top edge at 0.275H (its 3 alpha bands land at 0.275-0.314H small caps, 0.318-0.326H rule, 0.331-0.436H OBLIVION); \"Special Edition\" subtitle 0.173W wide, cap-band centre 0.476H; menu row = 6 items in ONE horizontal line, span 0.545W, ink gaps 0.0422W, cap band centre 0.786H. Constants live in title_screen.h (MENU_ROW_SPAN/MENU_ROW_GAP/MENU_ROW_CENTER_Y/LOGO_*/SUBTITLE_*). Verified on emulator 1920x1017: logo ink 0.2844-0.7156W / 0.2753-0.4356H, subtitle cap centre 0.4759H, menu ink 0.2276-0.7708W with baseline 0.7979H - all within ~1% of the reference.",
+      "tags": [
+        "title-screen",
+        "layout",
+        "reference",
+        "verified"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "62e2a5b9-d543-4341-92d6-615de8befc65",
+      "timestamp": "2026-09-22T15:14:52",
+      "category": "decision",
+      "priority": "medium",
+      "content": "The reference title screen has NO selection highlight: the six menu labels have almost identical ink density (76.2/69.6/70.3/71.9/74.1/72.3). The port still needs an input affordance, so the selected item is shown by interpolating COLOR_MENU_TEXT -> COLOR_MENU_TEXT_SELECTED plus a thin underline under the baseline.",
+      "tags": [
+        "title-screen",
+        "menu",
+        "reference"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "5025ae26-8167-498d-9cf0-2c420a6ab370",
+      "timestamp": "2026-09-22T15:14:52",
+      "category": "decision",
+      "priority": "high",
+      "content": "The reference menu row is BASELINE aligned, not top aligned: every glyph's ink bottom sits on the same row (y=287/360 = 0.7972H) while the ink top varies per glyph (C=8, o=11, p=15 row offsets). So the layout must place glyphs by baseline. TextRenderer exposes getTextCapHeight() for this.",
+      "tags": [
+        "title-screen",
+        "fonts",
+        "baseline"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "2f36dba8-7c05-44b5-94e1-fa72c89bc42b",
+      "timestamp": "2026-09-22T15:14:52",
+      "category": "decision",
+      "priority": "high",
+      "content": "Oblivion .fnt files carry NO vertical metrics (header bytes 76..344 are all zero), and f[1] is NOT an advance. Glyph boxes are tight ink bboxes plus ~1px padding, so advance = width and bearing_x = 0. Vertical metrics are measured at runtime from the atlas: capBaseline = mode of the ink-bottom row of ASCII 'A'-'Z', and per glyph baseline_rel = min(inkBottom, capBaseline). For kingthings_regular (fontSize 28, 512x512 atlas) capBaseline = 24. Glyph records are indexed by ASCII - 1.",
+      "tags": [
+        "fonts",
+        "text-renderer",
+        "metrics"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "037471b3-43c7-44eb-8364-1f0094721863",
+      "timestamp": "2026-09-22T15:14:52",
+      "category": "constraint",
+      "priority": "high",
+      "content": "text_renderer.cpp: when scanning a glyph box for its ink bottom you must walk EVERY row and keep the last row that has ink. Writing the loop as 'for (y = 0; y < h && last < 0; y++)' stops at the FIRST inked row and records the ink TOP, which made capBaseline collapse to 1 and pushed the whole menu row ~63px too high.",
+      "tags": [
+        "fonts",
+        "text-renderer",
+        "bug"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "c1916d44-4347-472f-b9b4-56cdb792be12",
+      "timestamp": "2026-09-22T15:14:52",
+      "category": "constraint",
+      "priority": "high",
+      "content": "TitleScreen must apply its plain font style ONCE (applyPlainFontStyle in render(), guarded by fontStyleApplied) and restore it when leaving the title (releasePlainFontStyle on gameStarted/quitRequested). Saving/restoring setFontAlphaCurveEnabled/setFontOutlineEnabled/setFontSizeMultiplier every frame emitted 6 INFO lines per frame and made computeMenuLayout see a different fontSizeMultiplier_ than the draw call.",
+      "tags": [
+        "title-screen",
+        "text-renderer",
+        "bug",
+        "logging"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "fc72cd06-81a7-4879-ab01-d11382ad0096",
+      "timestamp": "2026-09-22T15:14:52",
+      "category": "constraint",
+      "priority": "high",
+      "content": "TextRenderer::getTextWidth()/getTextCapHeight() fold fontSizeMultiplier_ into their result, so a layout computed at one moment and drawn at another disagree. TitleScreen::computeMenuLayout() and rebuildMenuLayout() therefore divide the measured width/cap height by the current getFontSizeMultiplier() to normalise to multiplier 1.0, which is what the title screen draws with.",
+      "tags": [
+        "text-renderer",
+        "layout",
+        "bug"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "83bec0de-247e-4e33-b92e-16e211d02e55",
+      "timestamp": "2026-09-22T15:14:52",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Title screen background is the map_loop.mp4 video frame (1280x720): its first frame already contains the decorative top/bottom borders (top 0..12.2%, bottom 82.5..100%), so no separate border drawing is needed. Measured on emulator: parchment renders around BGR (121,151,176) vs the reference (136,176,202) - about 15-20% darker but the same hue, so the menuMode overlay/sepia/vignette stack is close enough.",
+      "tags": [
+        "title-screen",
+        "background",
+        "video"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "c05c19ee-76e0-4cb5-bd99-b26cbca16039",
+      "timestamp": "2026-09-22T15:26:07.996537",
+      "category": "constraint",
+      "priority": "high",
+      "content": "title_screen.cpp の renderVignette() は textures/ui/load_in_game_default.png（512x1024 RGBA、アルファ全域1.0=完全不透明）を全画面 alpha=0.6 で重ねていた。これはビネットマスクではなくローディング画面の絵なので、地図動画の上に重ねると画面全体が暗く青くなる。参照画像との明度比が 0.69〜0.80 になっていた主因。修正: videoBackgroundActive のとき renderVignette() / renderSepiaOverlay() は early return、renderBackground() の動画パスから menuMode の黒0.35オーバーレイを削除。",
+      "tags": [
+        "title-screen",
+        "vignette",
+        "background",
+        "bug",
+        "overlay"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "30f7fb92-ab66-4159-9a68-8293aff65f4c",
+      "timestamp": "2026-09-22T15:26:07.996537",
+      "category": "decision",
+      "priority": "high",
+      "content": "タイトル画面の背景は map_loop.mp4 を素のまま描画するのが正解。動画の 30フレーム平均を参照画像と 3x3 セルで比較すると比 0.921〜1.022（ほぼ1.0）で、動画自体が参照と一致している。追加のオーバーレイ（黒・セピア・ビネット）はすべて不要。",
+      "tags": [
+        "title-screen",
+        "background",
+        "map_loop",
+        "reference"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "202c6274-abae-4e55-8b07-de18fc0bdb89",
+      "timestamp": "2026-09-22T15:26:07.996537",
+      "category": "reference",
+      "priority": "high",
+      "content": "参照画像（640x360 webp）の文字インク色を「対象バンドの暗部 0.1% 平均」で実測: メニュー行 RGB(86,50,18) / サブタイトル RGB(8,0,0)（ほぼ黒）/ ロゴ OBLIVION RGB(0,0,0)（テクスチャなので変更不要）。背景パーチメントは RGB(213,189,154)。title_screen.h の COLOR_MENU_TEXT=(0.34,0.20,0.07) / COLOR_MENU_TEXT_SELECTED=(0.54,0.33,0.13)、renderSubtitle() の色=(0.04,0.025,0.02) はこの実測に基づく。",
+      "tags": [
+        "title-screen",
+        "color",
+        "reference",
+        "ink"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "f693f0b6-4f2e-4930-8165-c84b5a044a29",
+      "timestamp": "2026-09-22T15:26:07.996537",
+      "category": "reference",
+      "priority": "medium",
+      "content": "map_loop.mp4 のメニュー帯（y276-292, x140-495 @640x360）のフレーム間ばらつきは小さく、最暗フレームでも輝度 p2=126（最明 198）。よってオーバーレイを除去してもメニュー文字（RGB 86,50,18）のコントラストは十分。",
+      "tags": [
+        "title-screen",
+        "readability",
+        "map_loop"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "f5edfe18-0d10-4823-956d-cce16479bbca",
+      "timestamp": "2026-09-22T15:26:07.996537",
+      "category": "constraint",
+      "priority": "high",
+      "content": "共有チェックアウト運用: 別セッション 964d16fb と同じワークツリーを共有しているため、gradle ビルドは同時に走らせない。ビルド前後に Get-Process -Name java,ninja,clang++ で確認する。エミュレータも1台共有なので adb install / screencap も譲り合う。964d16fb も title_screen.cpp/.h を編集している（computeMenuLayout の可読サイズ化、applyPlainFontStyle のトグル）ので、ファイル全体を書き戻さずピンポイント edit のみ行う。",
+      "tags": [
+        "workflow",
+        "build",
+        "shared-checkout",
+        "emulator"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "7f816aac-80fa-4b23-8f27-3c0db174c3d4",
+      "timestamp": "2026-09-22T16:54:49.283917",
+      "category": "reference",
+      "priority": "high",
+      "content": "Title screen t134 verification (source of truth). Device 1920x1080, draw surface 1920x1017. Logo geometry now matches the reference art within 1pt on all 5 elements: small-caps row 21.1%W (ref 21.4), horizontal rule 41.6%W (ref 41.4), OBLIVION 42.2%W (ref 43.0), subtitle 17.1%W (ref 17.3), menu row 54.3%W (ref 54.5). Vertical centers: small-caps 29.3%H, rule 32.2%H, OBLIVION 38.2%H, subtitle 47.6%H, menu ink 78.6%H (ref 78.6 exact). Logo/subtitle constants (LOGO_WIDTH_RATIO 0.431, LOGO_TOP_RATIO 0.275, SUBTITLE_WIDTH_RATIO 0.173, SUBTITLE_CENTER_Y_RATIO 0.476) need no change. Step 4 of the plan is closed as unnecessary.",
+      "tags": [
+        "title-screen",
+        "oblivion",
+        "verification",
+        "t134",
+        "logo-geometry"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "8b23233e-c644-4e57-9a1e-16a3ea756948",
+      "timestamp": "2026-09-22T16:54:49.283917",
+      "category": "decision",
+      "priority": "high",
+      "content": "MENU_CAP_HEIGHT_RATIO = 0.023f is the correct value. computeMenuLayout() takes scale = max(referenceScale, readableScale). referenceScale = (0.545*1920 - 81.0*5)/814.5 = 0.7873; readableScale = screenHeight*RATIO/capAtScaleOne. The readability floor only stops binding when RATIO < 0.02365. With 0.023f readableScale = 0.7656 so referenceScale wins and rowW = 54.5%W. logcat confirms scale == ref == 0.7873, cap = 24.0px = 2.36%H. art value 0.0250f would give cap 2.50%H but rowW 56.6%W.",
+      "tags": [
+        "title-screen",
+        "menu-layout",
+        "MENU_CAP_HEIGHT_RATIO",
+        "decision",
+        "superseded"
+      ],
+      "compressed": true
+    },
+    {
+      "id": "bc7ce624-f920-45bb-9bc8-03f84ec8e00f",
+      "timestamp": "2026-09-22T16:54:49.283917",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "Title screen measurement gotcha: a plain gs<120 mask picks up dark scene pixels (sky/clouds) and corrupts the logo width. Restrict x to the logo neighbourhood (device x540-1500) and use threshold 100-120, merging groups separated by <=6px. The high-contrast region at x>1650 / y111-165 is background cloud, NOT a debug overlay - no overlay exists. The reference image is the Remastered edition, so its geometry does not match main_menu.xml coordinates (y = screen/4 + 22.5 etc.); always compare against the reference image.",
+      "tags": [
+        "title-screen",
+        "measurement",
+        "gotcha",
+        "reference-image"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "505c4301-6daf-40eb-9818-85a649284a4b",
+      "timestamp": "2026-09-22T16:54:49.283917",
+      "category": "decision",
+      "priority": "medium",
+      "content": "Title screen remaining work after t134: (1) decide whether to keep the Remastered-only 'Special Edition' subtitle, (2) decide whether to show the 'Version' text present in main_menu.xml but absent from the reference art, (3) decide the selection style - original uses dialog_selection_full.dds + dialog_selection_cut.dds (104x64) image highlight with unchanged ink colour, while the current build uses dark RGB(71,31,12) + drop shadow + underline pulse (892px near-black) which the reference does not have, (4) decide the backdrop (XML lists loading_background.dds but marks it invisible; current build uses video + sepia), (5) decide intro logo video / in-game map_loop playback. Plan file: session files/TITLE_PLAN.md.",
+      "tags": [
+        "title-screen",
+        "open-decisions",
+        "selection-highlight",
+        "backdrop"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "a0839ccb-bf1a-45f1-88d5-408cf7e58cec",
+      "timestamp": "2026-09-22T17:05:15.751578",
+      "category": "reference",
+      "priority": "high",
+      "content": "Title screen assets are authentic: PNGs in app/src/main/assets/textures/ui/ were pixel-compared against the DDS extracted straight out of Oblivion - Textures - Compressed.bsa. tes_oblivion_logo_final.png (1024x256 DXT3), tes_oblivion_logo_bink.png (1024x256 DXT3) and loading_background.png (1024x1024 DXT3, 11 mips) all gave maxdiff=1 / meandiff 0.12-0.32. So \"the image is wrong\" is NOT an asset problem - it comes from the reference being the Remastered edition plus the rendering side (scale/position/selection style).",
+      "tags": [
+        "title-screen",
+        "assets",
+        "bsa",
+        "verification",
+        "oblivion"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "1c1ceb49-5499-4d67-86a1-1c75d13d70b8",
+      "timestamp": "2026-09-22T17:05:15.751578",
+      "category": "reference",
+      "priority": "high",
+      "content": "tes_oblivion_logo_final.dds (1024x256) internal alpha bands: y0-62 (x256-760) = THE ELDER SCROLLS decoration; y68-83 (x0-1016) = horizontal rule; y88-255 (x5-1023) = OBLIVION wordmark. LOGO_WIDTH_RATIO=0.431 multiplied by each band ratio reproduces the reference measurements (21.3/42.8/42.9 %W vs ref 21.4/41.4/43.0). Conclusion: the three logo elements are bands of ONE texture, not separately positioned images. Do not move LOGO_WIDTH_RATIO / LOGO_TOP_RATIO / LOGO_HEIGHT_RATIO individually. Only the subtitle lives outside the texture.",
+      "tags": [
+        "title-screen",
+        "logo",
+        "texture",
+        "geometry",
+        "oblivion"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "b93b7574-25f9-41fb-966f-5127d2081fec",
+      "timestamp": "2026-09-22T17:05:15.751578",
+      "category": "reference",
+      "priority": "high",
+      "content": "Selection highlight textures extracted from Oblivion - Textures - Compressed.bsa (textures\\menus\\dialog, highest-quality set) and placed as app/src/main/assets/textures/ui/dialog_selection_full.png (2048x64 RGBA) and dialog_selection_cut.png (128x64 RGBA). Measured: full has opaque content only in x0-1052 (1053px = 51.4% of the texture), interior alpha 255, fades at top/bottom edges (y0 alpha=51, y63 alpha=5), cream RGB(246,237,220) with a dark brown left edge line RGB(92,51,6). cut has content x0-103 (104px, matching the XML width) with an alpha ramp x0-26 and a dark RGB(36,1,1) right cap. XML placement: bar x=-10,y=3,w=buttonW-10,h=64; cap x=buttonW+8-104,y=3,w=104,h=64; buttonW = textWidth+40, buttonH=64. Because the bar is only 51.4% opaque it is normal that the right half of the stretched texture is transparent - the cut piece covers that side.",
+      "tags": [
+        "title-screen",
+        "selection-highlight",
+        "assets",
+        "bsa",
+        "dialog_selection"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "ecedcfb0-84dc-451b-9490-894d0e88e106",
+      "timestamp": "2026-09-22T17:05:15.751578",
+      "category": "constraint",
+      "priority": "high",
+      "content": "renderer.cpp bug found by session 964d16fb and fixed at 17:04:07: the title-screen block early-returns at renderer.cpp:3053 (\"Skip game rendering while title screen is active\") BEFORE the overlay pass that renders saveLoadUI / settingsUI. Selecting Continue / Load / Options opened SaveLoadUI (log said \"SaveLoadUI opened in LOAD mode with 12 slots\", visible=true) but nothing was drawn, and the invisible SaveLoadUI swallowed every later tap - the menu looked frozen. Fix: renderer.cpp:3041-3050 now draws saveLoadUI / settingsUI with a visibility check just before the return. Verify on device.",
+      "tags": [
+        "title-screen",
+        "renderer",
+        "bug",
+        "overlay",
+        "saveloadui"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "cbf5ac73-45d6-40d9-9e4f-75d95a28d2f5",
+      "timestamp": "2026-09-22T17:05:15.751578",
+      "category": "decision",
+      "priority": "high",
+      "content": "MENU_CAP_HEIGHT_RATIO final options (session 964d16fb keeps 0.028f as a deliberate readability deviation). Verified arithmetic: reference 2.50%H cap and 54.5%W row are mathematically incompatible. 0.023f -> scale 0.7656 (reference wins), row 54.3%W, cap 2.36%H, exact reference match. 0.0255f -> readableScale 0.8489, row 57.1%W (within 54.5+/-3), cap 2.55%H (within 2.50+/-0.30) - passes BOTH criteria with cap still above the reference. 0.028f -> readableScale 0.9320, row 60.6%W (+3.1pp over), cap 2.80%H. Recommended set to offer the user: (a) 0.028f readability-first, (b) 0.0255f both criteria met (recommended), (c) 0.023f exact reference.",
+      "tags": [
+        "title-screen",
+        "MENU_CAP_HEIGHT_RATIO",
+        "decision",
+        "layout",
+        "superseded"
+      ],
+      "compressed": true
+    },
+    {
+      "id": "3fca05d6-5a65-4d49-84ea-a3c98d3858a2",
+      "timestamp": "2026-09-22T17:38:04.704898",
+      "category": "decision",
+      "priority": "high",
+      "content": "Title-screen font legibility pass (session 964d16fb) implemented in ui/title_screen.h/.cpp and VERIFIED on device at 1920x1080 (log 'TitleScreen: TitleScreen legibility pass: ink curve 0.22/0.78 on, outline off, shadow 0.075 of cap'). Changes: COLOR_MENU_TEXT_SELECTED (0.80,0.55,0.28)->(0.278,0.121,0.047); new COLOR_MENU_SHADOW=(0.075,0.042,0.016)/MENU_SHADOW_OFFSET_RATIO=0.075f/MENU_SHADOW_ALPHA=0.40f; MENU_INK_CURVE_LO/HI=0.22f/0.78f enabled in applyPlainFontStyle() with save+restore of the old window (savedFontAlphaCurveLo/Hi, restoreSavedFontStyle()); renderMenu() now draws shadow pass then body pass; the selection pulse moved to the underline so the ink colour no longer pulses. Non-selected ink stays the declared RGB(117,59,33). Measured ink: selected RGB(71,31,12), non-selected RGB(117,59,33).",
+      "tags": [
+        "title-screen",
+        "font",
+        "legibility",
+        "contrast",
+        "legibility-pass-964d16fb"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "91a3e0cb-420b-4e6b-b3a9-2c66f73fba2f",
+      "timestamp": "2026-09-22T17:38:04.704898",
+      "category": "reference",
+      "priority": "high",
+      "content": "Title-screen menu contrast, final measured values (WCAG, 1920x1080 device): selected RGB(71,31,12) = 8.76:1 on bright video frame RGB(223,199,168), 6.23:1 on mid frame RGB(195,166,140), 4.64:1 on dark frame RGB(170,142,112). Non-selected RGB(117,59,33) = 5.35:1 / 3.81:1 / 2.83:1 on the same three. The old selected colour RGB(186,127,69) was 2.13:1 (lighter than the parchment), which is what the user perceived as 'hard to read'. The video background luminance varies over the loop, so non-selected can dip below 4.5:1 on the darkest frames - this matches the original game (medium brown ink on parchment is ~3.9:1 by design), so the ink colour was deliberately left untouched. If a higher floor is ever required the fix belongs in the background (a scrim behind the menu band), not in the declared text colour.",
+      "tags": [
+        "title-screen",
+        "font",
+        "contrast",
+        "wcag",
+        "contrast-final-964d16fb"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "60960960-ba62-47a9-85af-1d8037f8c1ad",
+      "timestamp": "2026-09-22T17:38:04.704898",
+      "category": "reference",
+      "priority": "high",
+      "content": "Device verification of the renderer.cpp overlay fix (session 964d16fb, 17:29 APK): tapping the 2nd menu row with 'adb shell input tap 900 806' logged 'Menu selection: Load Game' + 'SaveLoadUI opened in LOAD mode with 12 slots' and the screen changed from meanL 148.7 to 17.2 (stdL 43.6) - the load screen really renders now (gold 'LOAD GAME' title x427-489/y52-80 RGB(217,166,33), parchment slot block x640-990, gold button near y935). Before the fix the screenshot was byte-identical to the title screen. Menu tap targets are y=806+81k for row k; the menu row gap is 81px at this resolution.",
+      "tags": [
+        "title-screen",
+        "renderer",
+        "bug",
+        "verification",
+        "tap",
+        "overlay-fix-verified-964d16fb"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "f215327c-3344-4678-b624-9379d0bdcf6c",
+      "timestamp": "2026-09-22T17:38:04.704898",
+      "category": "constraint",
+      "priority": "high",
+      "content": "Oblivion_Android device test recipe (all confirmed this session): (1) 'adb shell am start -n com.example.oblivion/.MainActivity' FAILS with SecurityException 'not exported from uid' - use 'adb shell monkey -p com.example.oblivion -c android.intent.category.LAUNCHER 1' instead. (2) The title screen takes 55-90 s to appear (video decode + Kingthings .fnt load); wait for the 'MenuLayout: font=Kingthings Regular' log. (3) Emulator AVD is Pixel_API34, 1920x1080 / density 420; start with 'emulator -avd Pixel_API34 -no-snapshot-load -no-boot-anim' and always pass '-s emulator-5554'. (4) KEYCODE_BACK returns from the load screen to the title screen. (5) Always close the load screen before other tests - an open SaveLoadUI swallows every touch. (6) A concurrent gradle build from another session can kill the emulator (happened at 17:2x) - check 'Get-Process -Name ninja,clang' before building.",
+      "tags": [
+        "environment",
+        "adb",
+        "emulator",
+        "app-launch",
+        "device-test",
+        "device-recipe-964d16fb"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "38e9b2c2-57d3-4fd2-9101-3587317caacc",
+      "timestamp": "2026-09-22T17:38:04.704898",
+      "category": "decision",
+      "priority": "medium",
+      "content": "Non-selected menu ink stays the declared RGB(117,59,33) even though the darkest video frames drop it to 2.83:1. Rationale: the original Oblivion parchment menu is medium brown on parchment (~3.9:1) by design, the user asked for the original look, and the concurrent geometry session uses the XML colour as reference truth. Future legibility work should therefore target the background (scrim behind the menu band) or an outlined/haloed glyph pass, not the text constant.",
+      "tags": [
+        "title-screen",
+        "font",
+        "contrast",
+        "decision",
+        "ink-decision-964d16fb"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "4985896b-53d8-4696-afc8-5e85ba13bd23",
+      "timestamp": "2026-09-22T17:38:04.704898",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Title-screen background doubt (unresolved, 18:3x): after KEYCODE_BACK closed the load screen, six screenshots taken 4 s apart were byte-identical (38,163 B each) showing meanL 65.3 with one bright 16:9-ish block (x350-1440, y67-675) and no gold - while logcat kept printing 'Title screen active (frame NNN)' with the frame counter advancing. A byte-identical capture set means the composited title screen is not visibly animating in that state, so the video background may have stopped or finished looping. Not investigated further because the geometry session owns title background rendering in this shared worktree.",
+      "tags": [
+        "title-screen",
+        "video",
+        "background",
+        "unresolved",
+        "bg-doubt-964d16fb"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "4e940ec2-5a04-4bdd-a3ac-5dfa7cb807ca",
+      "timestamp": "2026-09-22T18:10:21.411919",
+      "category": "decision",
+      "priority": "high",
+      "content": "TitleScreen MENU_CAP_HEIGHT_RATIO set to 0.025f (was 0.028f) to match the Remastered title art measured ink height 9px/360 = 2.50%H. Formula: capAtScaleOne = getTextCapHeight(1.0f) = 30.55; readableScale = 1017 * RATIO / 30.55; final scale = max(readableScale, referenceScale=0.7873). RATIO=0.025 -> scale=0.8324, cap=25.4px (2.50%H), rowW=1083px (56.4%W). RATIO=0.028 -> cap 28.5px (2.80%H), rowW 1164 (60.6%W) too wide vs art 54.5%W. RATIO=0.023 -> the floor stops binding and max() picks referenceScale 0.7873 -> cap 24.0 (2.36%H), rowW 1046 (54.5%W) exactly the art but glyphs 6% smaller. 0.025 is the compromise: art-exact ink height, width inside the +-3pt acceptance band.",
+      "tags": [
+        "title-screen",
+        "font",
+        "layout",
+        "menu"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "2fd9866f-b364-47d8-93b6-b38a425f5e3d",
+      "timestamp": "2026-09-22T18:10:21.411919",
+      "category": "decision",
+      "priority": "high",
+      "content": "Menu-row geometry is owned by the parallel session f5aa54cb (Game title source): MENU_ROW_SPAN / MENU_ROW_GAP / MENU_ROW_CENTER_Y and computeMenuLayout() must not be edited from the readability side. Only the selection rendering (title_screen.h colors and bar constants) and MENU_CAP_HEIGHT_RATIO were changed here.",
+      "tags": [
+        "title-screen",
+        "coordination",
+        "layout"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "f3eb242a-1978-4ede-a6b8-37df4d5e168e",
+      "timestamp": "2026-09-22T18:10:21.411919",
+      "category": "constraint",
+      "priority": "high",
+      "content": "DPAD/keyboard navigation is effectively dead on the title screen: nativeOnKeyPress is defined in jni_bridge.cpp (Java_com_example_oblivion_GameRenderer_nativeOnKeyPress -> title_screen.cpp onKeyPress) but has no Kotlin/Java caller - GameSurfaceView.dispatchKeyEvent handles only KEYCODE_BACK. Menu selection in practice happens through onTouchEvent -> menuPanel (tap). adb shell input keyevent 20 does not move the selection.",
+      "tags": [
+        "title-screen",
+        "input",
+        "deadcode",
+        "test"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "08f33edf-820f-4247-8304-cd1838e9b06b",
+      "timestamp": "2026-09-22T18:10:21.411919",
+      "category": "reference",
+      "priority": "medium",
+      "content": "TitleScreen menu selection bar verified working end-to-end on device (cap=25.4 build): tap at (1299,801) logs \"TitleScreen: Menu selection: Credits\"; after returning to MENU the dark bar band (sum<90) sat at x1325..1396 (Credits) instead of x513..581 (Continue), i.e. the selection bar does follow the pointer. The earlier \"bar does not follow\" observation was a screenshot taken too early after the tap, not a bug.",
+      "tags": [
+        "title-screen",
+        "selection",
+        "verification"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "ff6709c8-ce36-495a-aa2d-88ecbfce7ad0",
+      "timestamp": "2026-09-22T18:10:21.411919",
+      "category": "reference",
+      "priority": "medium",
+      "content": "TitleScreen menu-row ink measurement recipe that matches the MenuLayout log exactly: mask (abs(R-117)<=28) & (abs(G-59)<=24) & (abs(B-33)<=20) over the band y786..816 (or y700..900), screen 1920x1080. cap=25.4 -> ink x420..1500 w=1089 vs log rowW=1083.1 (match); cap=28.5 -> w=1160 vs 1164.5 (match). Cluster gap threshold 22px splits the 6 items at x420, 661, 821, 992, 1210, 1423.",
+      "tags": [
+        "title-screen",
+        "measurement",
+        "tooling"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "c392606b-86a2-416b-b4a4-93386c323ac8",
+      "timestamp": "2026-09-22T18:10:21.411919",
+      "category": "reference",
+      "priority": "medium",
+      "content": "TitleScreen per-item local contrast at cap=25.4 (t2.png, unselected items): New 5.00:1, Load 4.39:1, Options 4.76:1, Credits 4.72:1, Exit 3.20:1 (darker video patch on the right side). Ink resolves to RGB(115-119,61-62,36) which is the declared COLOR_MENU_TEXT (117,59,33); the selected item measures 11.06:1 over the selection-bar cream. The residual variance comes from the moving video background, not from the font.",
+      "tags": [
+        "title-screen",
+        "contrast",
+        "font"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "90f812a2-1a8d-44e5-b9f4-bba40cfdff40",
+      "timestamp": "2026-09-22T18:16:47",
+      "category": "decision",
+      "priority": "high",
+      "content": "TitleScreen reference image is A (the user-attached webp, 640x360, meanL=142.3, 'used the remastered files on the original game'), NOT B (session 964d16fb's transcript png 350dbaa3, meanL=117.0). Whole-frame correlation 0.464 / title-band 0.116 -> different images. A's menu row is y280-287 with cap 8px/360; B's y215-231 (cap 17px = 4.72%H) is a different frame and must not be applied to A.",
+      "tags": [
+        "title-screen",
+        "reference-image",
+        "verification"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "64067760-a9bc-4ae2-91ca-e22ec301acec",
+      "timestamp": "2026-09-22T18:16:47",
+      "category": "decision",
+      "priority": "high",
+      "content": "MENU_CAP_HEIGHT_RATIO = 0.025f is CONFIRMED as the final value. Verified against reference image A at identical 640x360 normalisation: menu 'New' ink y280-287 (h=8, centre 78.75%H) in BOTH images - exact match. Logo band REF y20-177 vs NOW y20-176. Row width REF 54.4%W vs NOW 56.2%W (+1.8pp, within the +/-3pp tolerance). 0.023f would give cap 7.7px@640, smaller than the reference's 8px.",
+      "tags": [
+        "title-screen",
+        "menu-layout",
+        "accepted"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "d54b7cdd-2a78-4551-b1ec-9ce5df024914",
+      "timestamp": "2026-09-22T18:16:47",
+      "category": "constraint",
+      "priority": "high",
+      "content": "TitleScreen comparison normalisation trap: the app's coordinate space uses screenHeight=1017 (content area); screenshots are 1920x1080 and y1017+ is the Android navigation bar (mean RGB(0,0,0)). Always compare full[0:1017] resized to 640x360. Dividing by 1080 shifts vertical positions by 63*360/1080 = 21px and produced the false 'menu is 49px too high' claim from session 964d16fb.",
+      "tags": [
+        "title-screen",
+        "measurement",
+        "gotcha"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "96a1dc30-128b-4998-ae9f-a1eada13461c",
+      "timestamp": "2026-09-22T18:16:47",
+      "category": "reference",
+      "priority": "high",
+      "content": "TitleScreen menu vertical position is CORRECT and matches the reference. baselineY = 1017*0.786 + cap*0.5 = 812.1, textTop = 786.7; measured ink centre 799.5px on the 1920 screenshot vs 1017*0.786 = 799.4 (0.1px difference). Reference A's centre 78.75%H = 1017*0.7875 = 800.9. menuSlideOffset converges to 0; no position bug exists.",
+      "tags": [
+        "title-screen",
+        "menu-layout",
+        "verified"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "91a3a3a0-c609-45d0-9eee-b69f3add4a54",
+      "timestamp": "2026-09-22T18:16:47",
+      "category": "reference",
+      "priority": "medium",
+      "content": "TitleScreen reference A vs current build ink colour (both downscaled to 640x360): p50 REF RGB(114,76,46) vs NOW RGB(116,65,41); darkest REF min(82,45,13) vs NOW min(37,11,1) - the current build is slightly darker due to the shadow pass, i.e. more contrast, not less.",
+      "tags": [
+        "title-screen",
+        "ink-colour",
+        "verified"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "91e381e5-4389-4972-9c33-1b6af15b3f3c",
+      "timestamp": "2026-09-22T18:47:18.22039",
+      "category": "constraint",
+      "priority": "high",
+      "content": "SaveLoadUI root cause: Renderer::initialize() never called saveLoadUI->setScreenSize(), so save_load_ui.h defaults screenWidth=1080/screenHeight=1920 (portrait) were used. SAVE/LOAD/CANCEL buttons landed at btnY=screenHeight-200=1720 -> completely off-screen (view height 1017) and unhittable, so the Save/Load overlay opened from the title menu could never be closed. Only the background quad used renderer->getScreenWidth/Height (1920x1017), which is why the screen looked covered but nothing was clickable.",
+      "tags": [
+        "title-screen",
+        "save-load-ui",
+        "bug",
+        "coordinate-space"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "5c44b7b1-832f-4774-8860-7e64dd3e3075",
+      "timestamp": "2026-09-22T18:47:18.22039",
+      "category": "constraint",
+      "priority": "high",
+      "content": "SaveLoadUI drawn vs hit geometry mismatch (before fix): updateLayout() built hit rects at absolute x150..650 / y=150+i*70 with size 500x60, while renderSlotList() drew them at panelX=(screenWidth-640)/2 + PADDING with size 640-2*PADDING=600 wide -> a 90px horizontal offset at screenWidth=1080. Measured proof: adb tap(300,800) logged 'SaveLoadUI: Slot 9 selected (index=9)' (=y150+9*70=780..840) and tap(400,300) logged 'Slot 2 selected' (=y150+2*70=290..350).",
+      "tags": [
+        "title-screen",
+        "save-load-ui",
+        "hit-test",
+        "measurement"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "9f25c89a-fc6b-4b9d-bbc5-98c40ea55a6e",
+      "timestamp": "2026-09-22T18:47:18.22039",
+      "category": "decision",
+      "priority": "high",
+      "content": "SaveLoadUI fix applied (uncommitted): (1) save_load_ui.h defaults -> 1920x1080 and new constants SLOT_PANEL_WIDTH=640, SLOT_PANEL_Y=110, MAX_VISIBLE_SLOTS=6; (2) save_load_ui.cpp updateLayout() now uses the same geometry as renderSlotList() and only creates hit rects for the 6 slots that are actually drawn, renderSlotList() uses the shared constants, render() centres the title on screenWidth instead of the fixed x=350; (3) renderer.cpp calls saveLoadUI->setScreenSize() after SaveLoadUI initialization and in the resize path (after SettingsUI), and handleBackKey() now closes a visible SaveLoadUI/SettingsUI before the title-screen branch.",
+      "tags": [
+        "title-screen",
+        "save-load-ui",
+        "fix"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "7bd7394a-cbaf-47d0-8d9a-2950da36b145",
+      "timestamp": "2026-09-22T18:47:18.22039",
+      "category": "constraint",
+      "priority": "high",
+      "content": "Renderer::handleBackKey() priority order (renderer.cpp ~4671): DebugMenu > GameConsole > (now) SaveLoadUI > SettingsUI > TitleScreen(returns false so MainActivity shows the exit dialog) > Launcher > in-game. Before the fix a visible SaveLoadUI was not closed by BACK at all, so the title menu was unreachable by both touch and BACK.",
+      "tags": [
+        "title-screen",
+        "back-key",
+        "ux"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "f2ca7be6-bea7-45f2-bb20-4ee5f134f7c5",
+      "timestamp": "2026-09-22T18:55:30.169774",
+      "category": "reference",
+      "priority": "high",
+      "content": "SaveLoadUI coordinate fix VERIFIED on emulator (1920x1017 view). Evidence: logcat 'SaveLoadUI initialized successfully (screen 1920x1017)'; Continue tap -> 'Menu selection: Continue' -> 'SaveLoadUI opened in LOAD mode with 12 slots'; screenshot mean title(173.8,144.0,112.9) -> saveload(208.2,187.5,153.5); CANCEL tap(1060,840) -> 'SaveLoadUI cancelled' -> 'SaveLoadUI closed' and screen returns to title (diff 1229px = animation noise); BACK keyevent 4 -> 'handleBackKey: Closed SaveLoadUI' (diff 1957px); after closing, tapping Continue again works = menu no longer stuck. Slot hit test now matches rendering: tap(900,160)->Slot 0, tap(900,510)->Slot 5 (previously Slot 9 / Slot 2). Button pixels confirmed visible: SAVE/LOAD rect(730..930,817..867) mean=[207.8,189.1,162.6], CANCEL rect(975..1175,817..867) mean=[211.9,189.6,154.2], control(1300..1500,817..867) mean=[221.0,202.8,172.5].",
+      "tags": [
+        "title-screen",
+        "save-load-ui",
+        "verified",
+        "emulator"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "a14f68b0-39ae-4813-bf62-a1e5d7a15af4",
+      "timestamp": "2026-09-22T18:55:30.169774",
+      "category": "configuration",
+      "priority": "medium",
+      "content": "SaveLoadUI geometry after fix (view 1920x1017): slots panelX=(1920-640)/2=640, sx=660..1260, sy=130+i*70 for i=0..5 (only 6 slots hit-testable, matching renderSlotList); SAVE/LOAD execX=745..945; CANCEL cancelX=975..1175; buttons btnY=1017-200=817..867. Shared constants SLOT_PANEL_WIDTH=640 / SLOT_PANEL_Y=110 / MAX_VISIBLE_SLOTS=6 live in save_load_ui.h.",
+      "tags": [
+        "save-load-ui",
+        "geometry",
+        "constants"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "launcher-icon-source-20260922",
+      "timestamp": "2026-09-22T19:07:09.253553",
+      "category": "decision",
+      "priority": "high",
+      "content": "Launcher icon source of truth (2026): every icon under app/src/main/res/mipmap-* is a generated asset, produced by scripts/generate_launcher_icons.py from app/src/main/assets/textures/ui/loading_symbol.png (the in-game Oblivion loading symbol, 310x432 opaque pixels). The earlier source - a 32x32 desktop bitmap (3232.png) - was the cause of the reported blur, because a 32x32 bitmap has to be upscaled 13.5x to reach the 432px xxxhdpi foreground. Regenerate with 'python scripts/generate_launcher_icons.py' and verify with 'python scripts/generate_launcher_icons.py --check'. Never hand-edit the PNGs and never reintroduce a small bitmap source.",
+      "tags": [
+        "oblivion",
+        "launcher",
+        "icon",
+        "assets",
+        "build",
+        "android"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "launcher-icon-revert-20260922",
+      "timestamp": "2026-09-22T19:07:09.253553",
+      "category": "constraint",
+      "priority": "high",
+      "content": "Root cause of the launcher icon reverting to the default green Android robot after pushes, confirmed from git history: it was NOT CI. Android Studio's new-project template overwrote the working-tree icon resources, and the automated 'Save uncommitted changes' commits (9b0d11f8 on 2026-09-21, 012a5bb4 on 2026-09-22) then recorded and pushed those template files. The guard is the CI step 'Verify launcher icons' in .github/workflows/android.yml, which runs generate_launcher_icons.py --check and fails the build when the committed icons drift from the generator output. Keep that step in place.",
+      "tags": [
+        "oblivion",
+        "launcher",
+        "icon",
+        "ci",
+        "regression",
+        "git"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "launcher-icon-adaptive-spec-20260922",
+      "timestamp": "2026-09-22T19:07:09.253553",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Adaptive launcher icon layout rules applied to Oblivion (2026). The 108dp adaptive canvas only guarantees the inner 66dp DIAMETER circle stays visible, i.e. a radius of 33/108 = 30.56% of the canvas - not 61.1% of the canvas, which is the diameter and is easy to confuse with the radius. scripts/generate_launcher_icons.py therefore fits the foreground and monochrome layers by their minimum enclosing circle at 61% of the canvas diameter, giving a measured maximum radius of 29.9-30.0%, and check_safe_zone() fails the build if any masked layer exceeds 30.56%. The background layer cannot be transparent by spec; Oblivion uses #1A1A1A via drawable/ic_launcher_background.xml with the natural bronze symbol as the foreground, plus ic_launcher_monochrome.png (white silhouette) for themed icons. Legacy API<26 icons bake the background in because no mask is applied there. Do not apply colour-key thresholding to the symbol alpha - the source alpha is already exact and thresholding destroys the dark parts of the artwork.",
+      "tags": [
+        "oblivion",
+        "launcher",
+        "icon",
+        "adaptive-icon",
+        "android",
+        "design"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "launcher-icon-generator-20260922",
+      "timestamp": "2026-09-22T20:40:00",
+      "category": "reference",
+      "priority": "high",
+      "content": "scripts/generate_launcher_icons.py is the single source of truth for all 24 launcher icon PNGs (mipmap-{ldpi..xxxhdpi}/ic_launcher{,_round,_foreground,_monochrome}.png). It renders them from app/src/main/assets/textures/ui/loading_symbol.png (512x512, opaque bounds 310x432) with 4x supersampling, and writes scripts/launcher_icon_manifest.json holding the sha256 of every generated PNG. That texture is a gitignored Bethesda asset, so a fresh clone and CI do not have it: --check therefore always verifies the committed manifest, and additionally compares decoded pixels only when the texture is present. The minimum enclosing circle is computed with a pure-numpy convex hull plus Welzl's algorithm so the only CI dependencies are pillow and numpy. .github/workflows/android.yml runs 'python3 scripts/generate_launcher_icons.py --check' right after Checkout, which is what stops Android Studio's template from silently replacing the icons with the default green robot again.",
+      "tags": [
+        "oblivion",
+        "launcher",
+        "icon",
+        "generator",
+        "ci",
+        "gitignore"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "6b450ee8-9eaf-4df9-b5aa-0704188c8caa",
+      "timestamp": "2026-09-22T19:20:11",
+      "category": "decision",
+      "priority": "high",
+      "content": "AUTHORITATIVE title menu row values (session 964d16fb, supersedes every earlier MENU_CAP_HEIGHT_RATIO entry: 0.023f, 0.025f, 0.028f and their 'confirmed/final' claims are all obsolete). ui/title_screen.h now holds: MENU_ROW_SPAN=0.545f, MENU_ROW_GAP=0.0422f, MENU_ROW_CENTER_Y=0.786f, MENU_CAP_HEIGHT_RATIO=0.030f, MENU_ROW_MAX_SPAN=0.88f, MENU_GAP_MIN_RATIO=0.010f, MENU_SHADOW_OFFSET_RATIO=0.075f, MENU_SHADOW_ALPHA=0.40f, MENU_INK_CURVE_LO=0.26f, MENU_INK_CURVE_HI=0.70f. Reason for the departure from the art's own 0.025f: the user judged the art's 2.50%H capitals unreadable on a phone and asked for more. The row's HORIZONTAL axis stays art-faithful at any RATIO because the layout consumes MENU_ROW_SPAN first and pays for the size out of the gap.",
+      "tags": [
+        "title-screen",
+        "font",
+        "legibility",
+        "authoritative"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "1f59e15c-d386-45d9-a95f-e82180ef3775",
+      "timestamp": "2026-09-22T19:20:11",
+      "category": "reference",
+      "priority": "high",
+      "content": "Title menu row device measurement (session 964d16fb, emulator-5554 1920x1080, GL surface 1920x1017, debug APK 2026-09-22 19:18 93,512,080 B). cap = 30.5 px = 3.00%H (art 2.50%H, +20% deliberate); row ink 436.8..1483.2 = 1046.4 px = 54.5%W = MENU_ROW_SPAN exactly; gap 46.6 px = 2.43%; ink centre y 799.5 = 78.6%H (art 78.75%H). Per-item ink extent matches computeMenuLayout()'s boxes within the advance side bearings (Exit ink 1389..1480 vs box 1387.9..1483.2; Credits 1185..1339 vs 1182.4..1341.3; Options 973..1133 vs 970.6..1135.8), so the draw multiplier and the layout multiplier agree. Legibility gain 0.025f -> 0.030f measured as solid-ink core pixel density per unit drawn width (mask |RGB-ink| <= 12): Continue 5.39->8.13, New 5.48->9.28, Load 6.72->9.04, Options 6.95->9.10, Credits 6.39->8.44, Exit 5.24->8.94; total 4478 -> 7111 px (x1.48).",
+      "tags": [
+        "title-screen",
+        "measurement",
+        "legibility"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "d2567d30-20f4-48aa-aa3e-46a3d7553d26",
+      "timestamp": "2026-09-22T19:20:11",
+      "category": "constraint",
+      "priority": "high",
+      "content": "Title menu row size ceiling: MENU_CAP_HEIGHT_RATIO above ~0.031f is impossible without breaking art fidelity. Worked numbers at 0.035f: capAtScaleOne=30.55, askedScale=35.6/30.55=1.165, row = 688.5*1.165 + 5*19.2 (MENU_GAP_MIN_RATIO) = 898 px = 46.8%W, i.e. 7.7pp below the art's 54.5%W. 0.030f (cap 30.5 px) is the largest value that still holds the row on MENU_ROW_SPAN.",
+      "tags": [
+        "title-screen",
+        "constraint"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "589991ec-67b8-4f60-b91c-8238697601d0",
+      "timestamp": "2026-09-22T19:20:11",
+      "category": "reference",
+      "priority": "high",
+      "content": "Title background video is FROZEN and the title screen runs at ~15 FPS: two screenshots 3 s apart differ by mean 0.000 (mask 8 px), logcat carries 'AudioDecoder: Failed to init', 'setOutputSurface -- failed to set consumer usage (6/BAD_INDEX)' and 'MediaPlayer error (1, -2147483648)'. Parallel session f5aa54cb measured EGL_emulation app_time_stats avg 110-170 ms/frame (14.6 FPS) on the title screen while the pre-title ESM load screen reached 60 FPS, so the OES video-texture path is the suspect. Owner: f5aa54cb (Game title source); session 964d16fb must not edit the video path.",
+      "tags": [
+        "title-screen",
+        "video",
+        "performance",
+        "f5aa54cb"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "c20b777a-d40f-4c79-8d2b-f5b247a2d2e3",
+      "timestamp": "2026-09-22T19:20:11",
+      "category": "decision",
+      "priority": "medium",
+      "content": "Title screen temp instrumentation (session 964d16fb) was REMOVED in the 19:18 APK: the per-item 'Menu item N: label/advW/drawnW/x' loop and the 'mult=' field are gone. What remains is one 'Menu row: startX/baselineY/scale/gap/cap' LOGD line in rebuildMenuLayout(). The 'MenuLayout:' log line belongs to parallel session f5aa54cb and must not be removed from the readability side.",
+      "tags": [
+        "title-screen",
+        "logging",
+        "f5aa54cb"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "c8fd2ee9-29d9-44ef-9d9c-6410d99f8166",
+      "timestamp": "2026-09-22T19:20:11",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "Title screen font-multiplier ordering is NOT a real bug (verified by measurement, session 964d16fb). rebuildMenuLayout() can run while TextRenderer::fontSizeMultiplier_ is still its 1.15 default, before applyPlainFontStyle() sets 1.0 (logcat proves both happen: 'Font size multiplier: 1.000' then 'legibility pass' at startup). Measured consequence: negligible. The spanGap layout consumes MENU_ROW_SPAN first, so the row width is 1046.4 px and startX 436.8 either way (total*scale = 687.7 at mult 1.15 vs 687.6 at 1.0, spanGap 71.7 both), and cap is 30.49 vs 30.51 px. Screenshot ink extents match the boxes, so draw and layout do use the same multiplier.",
+      "tags": [
+        "title-screen",
+        "font",
+        "text_renderer"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "13699da1-bf70-4186-88b1-bda0e7999539",
+      "timestamp": "2026-09-22T19:26:41+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "Title menu ink curve changed 0.22/0.78 -> 0.26/0.70 (MENU_INK_CURVE_LO/HI in title_screen.h) and validated OFFLINE by coverage inversion (session 964d16fb, 2026-09-22). Method: from a device screenshot solve per-pixel composited alpha from the R channel against a per-row cubic background fit taken from the 5 inter-item gaps + 2 side margins (alpha = (bg-R)/(bg-117)), then recover raw glyph coverage by inverting the OLD curve (raw = 0.22 + 0.56*ssinv(alpha), ssinv(x) = 0.5 - sin(asin(1-2x)/3)) and re-apply the NEW curve. Predicted effect: total ink mass +1.6% (n2.png) / +2.5% (b1.png) / +3.0% (probe0.png) = unchanged, no thinning; solid-core pixels (alpha>=0.90) +14.5% / +12.4% / +21.1%. Analytical cross-check: mass integral over the window = 0.50 (0.22/0.78) vs 0.52 (0.26/0.70) and mid-slope 1.5/span rises 2.68 -> 3.41 (+27%). Per-item core gains were positive for all 6 labels. The change only remaps coverage in the shader (text_renderer.cpp 45-62), so glyph geometry, advance widths, row span and colour are untouched by construction.",
+      "tags": [
+        "title-screen",
+        "font",
+        "readability",
+        "text_renderer"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "1a73985c-b4ae-4b5b-8269-17f05712804a",
+      "timestamp": "2026-09-22T19:26:41+09:00",
+      "category": "reference",
+      "priority": "high",
+      "content": "Title-screen measurement instrument notes (session 964d16fb, 2026-09-22). (1) Cross-build pixel diffs are IMPOSSIBLE: the stalled background video differs per launch (probe0 vs n2 meanAbs 16.9 over y100-700, 49% of pixels >12) while two shots inside one launch are identical (b1 vs b2 meanAbs 0.00) - use time-series diffs only within a launch. (2) The colour-proximity metric (pixels within +-12 of ink RGB(117,59,33)) is stable across launches (n2 7053 vs b1 7082 core px, 0.4% spread) so it is the right A/B metric; the alpha-mass solver carries ~20% cross-launch variance (n2 17810 vs b1 19952) because the per-frame background brightness differs. (3) Reusable helper: C:\\Users\\hiroki.kogarumai\\.copilot\\session-state\\964d16fb-9332-48d3-9141-5f6986a9561d\\files\\measure_title.py plus the staged screenshots probe0.png / n1.png / n2.png / b1.png / b2.png.",
+      "tags": [
+        "title-screen",
+        "measurement",
+        "methodology",
+        "title-menu"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "24e1196b-9483-44fa-aef8-aee7504b3837",
+      "timestamp": "2026-09-22T19:26:41+09:00",
+      "category": "configuration",
+      "priority": "high",
+      "content": "The title screen can be font-tuned on-device WITHOUT a rebuild (verified in source, session 964d16fb). Debug menu (debug_menu.cpp ~1418-1437) exposes 'titlestyle on|off' -> 'Title Style: plain|shared' which calls renderer refs.setTitlePlainStyle -> TitleScreen::setPlainStyleDisabled(); when disabled the title screen stops forcing its plain style (it restores the saved renderer values) and the renderer GLOBAL font settings apply, so fontcontrast on|off, fontoutline on|off|width N and fontsize N in the same tab take effect on title text. The game console additionally accepts the exact endpoints: 'fontcontrast lo hi' (game_console.cpp 679-686). This makes any future title legibility experiment an install-free, rebuild-free A/B.",
+      "tags": [
+        "title-screen",
+        "debug-menu",
+        "font",
+        "configuration"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "f2622f5e-7ac2-470e-ab0f-ce059a16d9cc",
+      "timestamp": "2026-09-22T19:48:31.993591",
+      "category": "decision",
+      "priority": "high",
+      "content": "FIXED: the title background video (map_loop.mp4) froze permanently at about t=7s. Root cause was GameRenderer.kt onDrawFrame() gating updateTexImage() on a boolean set by the SurfaceTexture onFrameAvailable listener ('titleVideoReady'). Once the listener stopped firing, updateTexImage() was never called, the SurfaceTexture BufferQueue filled up, and MediaPlayer blocked forever in dequeueBuffer (unrecoverable). Fix (session f5aa54cb, 2026-09-22): delete titleVideoReady and call updateTexImage() + nativeUpdateTitleVideoTexture() EVERY frame while titleVideoSurfaceTexture != null; the listener now only increments a diagnostic counter (titleVideoCallbackCount). Also added titleVideoFrameCount / titleVideoErrorCount and a once-per-second log 'Title video: updateTexImage=N/s callbacks=N/s errors=N'. Per the Android SDK javadoc, updateTexImage() must be called from the thread that owns the GL context, so calling it once per rendered frame is the correct design.",
+      "tags": [
+        "title-screen",
+        "video",
+        "GameRenderer",
+        "bugfix",
+        "MediaPlayer"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "7cb793b9-7609-4894-b647-8e695d2dcd03",
+      "timestamp": "2026-09-22T19:48:31.993591",
+      "category": "reference",
+      "priority": "high",
+      "content": "Title-video fix verification method that produced decisive numbers (session f5aa54cb, 2026-09-22). (1) Log: 'Title video: updateTexImage=23..52/s callbacks=16..31/s errors=0' and updateTexImage == the FPS value => called every frame. (2) `adb shell screenrecord --time-limit 12 --bit-rate 8000000 --size 960x540 /sdcard/tv.mp4` then `adb pull`, extract at fps=10, compare consecutive frames: 115 pairs, only 4 pairs with diff 0 (all 0.1s encoder duplicates), median 5.78, ZERO stalls >=0.2s. (3) Match the recorded frames against map_loop.mp4 frames (ffmpeg fps=10, 250 frames) by cropping the recorded video area (960x540 recording of a 1920x1080 screen -> rows 70..508) and the source crop (rows 21..699 of 1280x720), resize both to 64x36 grayscale, nearest by mean abs diff. Result: screen 0.0s -> source 12.90s, screen 11.5s -> source 24.60s = 11.70s of video in 11.5s wall = 1.017x REAL TIME, monotonic, no jumps. It passes the old t=7s freeze point and reaches 24.6s (clip is 25.025s), so looping also works.",
+      "tags": [
+        "title-screen",
+        "video",
+        "verification",
+        "screenrecord",
+        "measurement"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "27b1813c-bc9b-480e-967c-d8f156e31892",
+      "timestamp": "2026-09-22T19:48:31.993591",
+      "category": "reference",
+      "priority": "medium",
+      "content": "FALSE POSITIVE to avoid: a 12s video 'stall' measured with 4 screenshots (19:43:30/45/57, 19:44:07) where s2 and s3 were pixel identical (mean 0.000) was NOT a bug - it happened while session 964d16fb was running gradle, and screencap took 10-13s per shot instead of the normal 1-2s, i.e. host CPU saturation starved the emulator. Rule: judge screencap cost first; if one screencap takes >5s the host is saturated and video timing measurements are invalid. Use screenrecord + frame-to-frame diffs instead, and re-measure on a quiet host.",
+      "tags": [
+        "title-screen",
+        "video",
+        "measurement",
+        "pitfall",
+        "emulator"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "a869d8ff-bfe5-480a-9511-10b873e8e4a5",
+      "timestamp": "2026-09-22T19:54:53.650011",
+      "category": "reference",
+      "priority": "high",
+      "content": "Title-video LOOP + long-run verification (session f5aa54cb, 2026-09-22 19:51). 39.4s screenrecord of the title screen (960x540, 6Mbps) -> ffmpeg fps=2 gives 79 frames; map_loop.mp4 -> fps=10 gives 250 frames. Result: adjacent diffs (78 pairs, 0.5s apart) min 3.267 / median 10.540 / max 11.484 with ZERO pairs below 0.5 -> no freeze anywhere; 2s-apart diffs (75 pairs) min 9.429 -> the picture keeps moving for the whole 39s. Matching recorded frames to source frames (64x36 grayscale, mean-abs-diff argmin) gives residual 9.34-9.97 for every frame and shows TWO wraps (wall 7.5->9.0s: src 24.8->1.1s; wall 33.0->34.5s: src 24.9->1.3s, 25.5s apart = clip length 25.025s) => looping works. Wall 39.00s vs 38.55s of content = 0.988x, i.e. real time within 1.2%. Combined with the earlier 11.6s test (1.017x) the playback rate is stable at 0.99-1.02x of real time. MediaPlayer also has isLooping=true (GameRenderer.kt:230).",
+      "tags": [
+        "title-screen",
+        "video",
+        "verification",
+        "map_loop",
+        "looping"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "5fb35f7f-4074-4606-92a0-d13b77b12619",
+      "timestamp": "2026-09-22T19:54:53.650011",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Frame-matching crop correction for title-video verification (session f5aa54cb). Earlier runs cropped the 960x540 screenrecord to rows 70..508 before comparing with map_loop.mp4; on a 2026-09-22 re-measurement that crop gave a residual of ~31 (matching failure) for EVERY frame. Using the raw rows 0..520 of the recording instead gives residual 9.4-10.0, i.e. the video is drawn full-width/full-height and needs no crop. RULE: if the best-match residual is ~30 (roughly the mean brightness of the source), the mapping is wrong - do not trust the time/rate numbers, re-search the crop window first.",
+      "tags": [
+        "title-screen",
+        "video",
+        "verification",
+        "pitfall"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "5316550a-f03d-4a37-b021-d4aa0bcc53c1",
+      "timestamp": "2026-09-22T19:58:30.507875",
+      "category": "reference",
+      "priority": "high",
+      "content": "The title screen DOES hit 60fps; perceived stutter on the emulator is HOST CPU CONTENTION, not an app bug (session f5aa54cb, 2026-09-22 19:56-19:58, measured from GameRenderer FPS logs on Pixel_API34 / emulator-5554). Idle host: 54/59/59/59/54/59/61/60/58/56 fps (= the 60fps target). While I ran ffmpeg to extract 329 PNG frames: 9/8/11/22/14/19/21/23/26/31/41/45/44 fps. While my own measurement commands ran (host CPU 66%): 37 -> 18 fps. updateTexImage/s always equals FPS and callbacks/s tracks FPS, so the video pipeline is never the limiter (at most one frame is pulled per rendered frame). The emulator reports ro.hardware.egl=emulation (GLES emulated on the host CPU), so full-screen passes are directly host-bound. RULE: never measure FPS while ffmpeg/screencap/gradle is running - it drops to under a fifth. Real-device (Adreno/Mali) confirmation is still needed.",
+      "tags": [
+        "title-screen",
+        "performance",
+        "fps",
+        "emulator",
+        "video"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "c1bb4003-5091-4b74-85cd-d73e321f95d2",
+      "timestamp": "2026-09-22T20:04:26.761113",
+      "category": "decision",
+      "priority": "high",
+      "content": "FINAL legibility fix for the original Oblivion font on the title screen: the outline is stamped in the INK COLOUR instead of the renderer's black (session 964d16fb, 2026-09-22). ui/title_screen.h adds MENU_OUTLINE_WIDTH = 0.6f and MENU_OUTLINE_ALPHA = 0.85f; applyPlainFontStyle() now calls setFontOutlineEnabled(true) + setFontOutlineColor(COLOR_MENU_TEXT = RGB(117,59,33), 0.85) + setFontOutlineWidth(0.6f) instead of setFontOutlineEnabled(false); restoreSavedFontStyle() restores width + colour. Why the same colour: reference art A has ZERO near-black pixels in the menu row, so a black rim/halo is simply wrong. Device A/B on the menu band (y765-840, x420-1520, mask |px-RGB(117,59,33)|max <= 20): 5184-5237 OFF -> 8002-8085 ON = +54% ink; horizontal run median 5 -> 6-7 px; near-black (<60) pixels = 295 (0.46%) versus 28% with the black outline. Verified ON BY DEFAULT after a fresh adb install -r (fin_default.png: ink 8105, fill 0.2875, stroke median 6.0, tight bbox width 1044).",
+      "tags": [
+        "title-screen",
+        "font",
+        "legibility",
+        "outline",
+        "verification"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "7df623e8-d0ce-4c50-b3bd-3635f1bff153",
+      "timestamp": "2026-09-22T20:04:26.761113",
+      "category": "decision",
+      "priority": "high",
+      "content": "The ink-coloured outline is an INTENTIONAL departure from the reference art, not a reference match (session 964d16fb, 2026-09-22, cap-normalised same-method density of the menu row). reference A (ref_remastered.webp 640x360) upscaled x3 so its cap 8 px -> 23 px, comparable to the device: fill 0.133, stroke median 4.0 px (0.174 cap). Device with the outline OFF: fill 0.207-0.210, stroke 5.0 px (0.208 cap). Device ON: fill 0.285, stroke 6.0-7.0 px (0.222 cap). So the device was ALREADY 1.56x the reference before the outline and is 2.14x after it. Justification: the request was legibility, the shipped title draws on a bright MOVING video while the reference art is light parchment. RULE: if strict reference fidelity is ever required again, revisit the outline (and the shadow) - NEVER the layout, which the geometry session owns. Upscale stability for this method: x2/x3/x4 give fill 0.127-0.133 and cap-normalised strokes 0.125/0.174/0.161, so x3 is the only scale whose cap lands in the device range.",
+      "tags": [
+        "title-screen",
+        "font",
+        "legibility",
+        "reference",
+        "measurement"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "0cadf56d-a4be-429f-ba03-e6f7af2f1d85",
+      "timestamp": "2026-09-22T20:04:26.761113",
+      "category": "reference",
+      "priority": "high",
+      "content": "TextRenderer cap derivation RESOLVED - the four previously 'inconsistent' numbers are all consistent (2026-09-22). getTextCapHeight(scale) = atlas.capBaseline * scale * (atlas.fontSize / 22.0f) * fontSizeMultiplier_. For Kingthings Regular capBaseline = 24 (mode of the ink-bottom row of ASCII 'A'-'Z' measured inside loadOblivionFnt) and fontSize = 28.0 (from the .fnt), so getTextCapHeight(1.0) = 24 * 28/22 = 30.545 = the logged 30.55 exactly; the atlas capital cell height 26 px and capBaseline 24 are the same measurement at different padding. The LAYOUT's nominal cap is independent: title_screen.h MENU_CAP_HEIGHT_RATIO * screenHeight = 0.025 * 1017 = 25.4 px is what the 'Menu row:' log prints, and the draw multiplier is fontScale = scale * fontSize/22. RULE: do not try to reconcile the layout cap with getTextCapHeight - the old 'cap/scale 35.09 vs 30.55' scare was exactly that mistake.",
+      "tags": [
+        "text-renderer",
+        "font",
+        "cap",
+        "title-screen",
+        "architecture"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "5644d845-56d8-4f26-ac41-76215a59773f",
+      "timestamp": "2026-09-22T20:04:26.761113",
+      "category": "reference",
+      "priority": "high",
+      "content": "AUTHORITATIVE title menu row state (2026-09-22) - SUPERSEDES the MENU_CAP_HEIGHT_RATIO 0.028f and 0.030f claims in earlier entries. ui/title_screen.h: MENU_ROW_SPAN 0.545f, MENU_ROW_GAP 0.0422f, MENU_ROW_CENTER_Y 0.786f, MENU_CAP_HEIGHT_RATIO 0.025f (cap 8 px at 640x360 = the art's own value), MENU_ROW_MAX_SPAN 0.88f, MENU_GAP_MIN_RATIO 0.010f, MENU_OUTLINE_WIDTH 0.6f, MENU_OUTLINE_ALPHA 0.85f, MENU_SHADOW_OFFSET_RATIO 0.075f, MENU_SHADOW_ALPHA 0.40f, MENU_INK_CURVE_LO/HI 0.26f/0.70f. Verified in the shipped debug APK (2026-09-22 20:00:50, 93,513,324 B): logcat 'Menu row: startX=436.8 baselineY=812.1 scale=0.7238 gap=73.7 cap=25.4' plus 'TitleScreen legibility pass: ink curve 0.26/0.70 on, ink-coloured outline 0.60 px at alpha 0.85, shadow 0.075 of cap'; measured ink band x437-1481 (width 1044, reference A 1047) and cap top y787 (reference A 788) at the same 640x360 normalisation. BOTH sessions agreed to stop touching the RATIO; the 'MenuLayout:' and 'Menu row:' LOGD lines stay in the file as shared measurement evidence.",
+      "tags": [
+        "title-screen",
+        "layout",
+        "authoritative",
+        "measurement"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "73857891-b346-4f5a-898c-8d507ba1a9f9",
+      "timestamp": "2026-09-22T20:04:26.761113",
+      "category": "reference",
+      "priority": "medium",
+      "content": "GL texture leak fixed in text_renderer.cpp loadOblivionFnt() (2026-09-22). processPendingFontRequest() re-uploads the atlas on every font switch, so the previous textureId was overwritten in place and its GL texture name leaked once per switch. Fix: glDeleteTextures(&textureId) immediately before glGenTextures, guarded by textureId != 0, mirroring the existing guard in shutdown(). Apply the same pattern to any GL object that has a re-upload path.",
+      "tags": [
+        "text-renderer",
+        "leak",
+        "opengl",
+        "fix"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "50846618-7d98-4dfd-9750-a3343366324d",
+      "timestamp": "2026-09-22T20:04:26.761113",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Correction: the ink alpha curve is NOT a meaningful legibility lever. With the ink-colour mask method (|px-RGB(117,59,33)| <= 20 over the title menu band) the curve 0.26/0.70 changes ink mass by +0.97% and core density by +2.1%, i.e. measurement noise; the earlier footprint-based +13% came from the local-background/0.20-threshold method and is not comparable with the reference-art numbers. RULE: rank title-font levers by measured ink change - ink-coloured outline (dilation) +54% >> glyph size (+85% ink but 1.19x the art's row width, rejected) > alpha curve +1-2% (effectively a no-op) = outline width <= 0.65 px (no-op, see next entry).",
+      "tags": [
+        "title-screen",
+        "font",
+        "legibility",
+        "measurement",
+        "correction"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "5de2049a-7085-4bbc-a9ee-e58862c058b7",
+      "timestamp": "2026-09-22T20:04:26.761113",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Outline width is CLAMPED, so most values are no-ops at title scale: drawOblivionText() uses ring = clamp(fontScale * fontOutlineWidth_, 0.6f, 3.0f). The title draws at fontScale = scale * 28/22 = 0.7238 * 1.2727 = 0.921, so ANY declared width <= 0.65 yields exactly the 0.6 px floor ring and the shipped 0.6f sits AT that floor. Consequences: (1) the DebugMenu 'Font Outline 0.5px' button is identical to 0.6px on the title - only 'Font Outline 2.0px' (ring 1.84) actually thickens it; (2) to thicken further, raise MENU_OUTLINE_WIDTH above ~0.65 or lower the clamp floor in text_renderer.cpp. Do not expect small width changes to do anything.",
+      "tags": [
+        "title-screen",
+        "font",
+        "outline",
+        "pitfall"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "cf111881-383d-406b-a0e8-66563e0c8f10",
+      "timestamp": "2026-09-22T20:04:26.761113",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "Structural consequence of the title-video work (session f5aa54cb, 2026-09-22): the 0.35 black menu overlay in the video-background path was REMOVED and renderSepiaOverlay()/renderVignette() early-return while the video is active, so the menu row now sits on the raw, undimmed video. The ink colour stays RGB(117,59,33) because that is the original XML colour, so on the video's bright scenes contrast is the binding constraint and no glyph-side tweak can raise it. If legibility is still judged insufficient on a real device, the next lever is a scrim/plate behind the menu band (dark or parchment) or a slight re-dim of the video path - a BACKGROUND change, not a font change - and it needs the user's call because it departs from the art.",
+      "tags": [
+        "title-screen",
+        "legibility",
+        "video",
+        "constraint"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "b2f7c4d1-9a35-4e8b-b0d6-1c5f7a2e8d43",
+      "timestamp": "2026-09-22T20:35:00",
+      "category": "reference",
+      "priority": "high",
+      "content": "TITLE MENU LAYOUT INVARIANT (session f5aa54cb, 2026-09-22) - settles the MENU_CAP_HEIGHT_RATIO debate: with the current spanGap logic in title_screen.cpp computeMenuLayout(), for MENU_CAP_HEIGHT_RATIO <= 0.03505 the layout is EXACTLY: cap = 1017 * RATIO, rowWidth = span = 0.545*1920 = 1046.4 px = 54.5%W, startX = (1920-1046.4)/2 = 436.8 (strictly screen centre), gap = (1046.4 - 27114*RATIO)/5 (never above referenceGap 81.02). Derivation: spanGap = (span - total*scale)/(n-1) and gap = min(referenceGap, max(spanGap, minGap)) make rowWidth == span whenever spanGap >= minGap (19.2). Because askedScale = 1017*RATIO/capAtScaleOne and scale = max(referenceScale, askedScale), cap reduces to 1017*RATIO exactly. Boundary: total*askedScale = 26.66*1017*RATIO <= 950.4 -> RATIO <= 0.03505. Consequences: (1) raising MENU_CAP_HEIGHT_RATIO is NOT paid for with row width - only the item gap shrinks, so the earlier 'cap vs row-width trade-off' framing was wrong; (2) the largest reference-compliant cap is 0.035f (3.50%H, gap 19.5px), above which rowWidth drops below 54.5%W (0.045f -> 68.6%W). Verified against the shipped APK (2026-09-22 20:00:50) log 'Menu row: startX=436.8 baselineY=812.1 scale=0.7238 gap=73.7 cap=25.4' - all five values match the RATIO=0.025f row of the table. Two scale bases coexist in the logs and are interchangeable: the t134 log (07:49:01) prints 'MenuLayout: ... total=814.5 scale=0.7873 cap1=30.55' AND 'Menu row: ... scale=0.6846'; 0.7873/0.6846 = 1.1500 exactly (mult 1.0 vs mult 1.15). Since total/capAtScaleOne = 814.5/30.55 = 936.6/35.13 = 26.66 is invariant, every observable (startX, rowWidth, gap, cap, baselineY) is basis-independent - do not re-open the mult question. Correction: the older log 'total=814.5 scale=0.8324 gap=81.0 rowW=1083.1 startX=418.4' predates spanGap (gap was pinned to referenceGap), and TITLE_PLAN 9.3's 'row width 56.2%W' was measured on that revision. The shipped APK's ink mask gives x437-1481 (width 1044) against the advance box 436.8-1483.2 (width 1046.4): ink sits on the advance box within 2.4px, so there is no overshoot.",
+      "tags": [
+        "title-screen",
+        "menu-layout",
+        "MENU_CAP_HEIGHT_RATIO",
+        "spanGap",
+        "invariant"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "d6a1b8e3-4f72-4c09-9e5a-7b3c8d1f2a64",
+      "timestamp": "2026-09-22T20:37:00",
+      "category": "reference",
+      "priority": "high",
+      "content": "REFERENCE ART A - re-measured acceptance baseline (session f5aa54cb, 2026-09-22). File: C:/Users/hiroki.kogarumai/.copilot/workspaces/f5aa54cb-a819-451f-bb4d-49fe658156d0/attachments/cce0f21c-07ca-4884-9949-9efe82850655-used-the-remastered-files-on-the-original-game-v0-95hknh378gwe1.webp (640x360, Remastered title). LOGO bands (threshold L<100, x150-499, y95-199): 'THE ELDER SCROLLS' ornament y100-110 x252-388 = 21.4%W, centre 50.0%W; horizontal rule y115-117 x187-451 = 41.4%W, centre 49.8%W; 'OBLIVION' y120-157 x183-457 = 43.0%W, centre 50.0%W; 'Special Edition' y166-178 x264-374 = 17.3%W, centre 49.8%W. MENU ROW (threshold L<120, column clusters gap>10): full row x142-490 = 349 px = 54.5%W, centre 49.3%W; ink band y279-287 = 9 px = 2.50%H; ink centre y283 = 78.6%H; inter-item gaps 26-28 px = 4.06-4.31%W (MENU_ROW_GAP 0.0422f = 27 px matches); darkest-2% ink RGB(101.3, 61.9, 31.9) -> consistent with the authoritative XML colour RGB(117,59,33). Item x-ranges: Continue 142-193, New 221-245, Load 272-299, Options 326-371, Credits 397-439, Exit 465-490. Luminance: parchment y190-250 x100-540 mean L 187.2; menu-row background y279-288 x20-130 mean L 172.5; top band y0-10 mean L 43.6. TWO TRAPS: (1) y296-359 is a full-width dark band (mean L 63.5) that is NOT the menu row - the menu ink is only the 9 px band at y279-287; reading the dark band as ink yields an inflated cap such as 4.72%H, which is exactly how the 'reference art B' claim went wrong. (2) the reference art's own menu contrast is only about 2.8:1 (ink core L~72 vs background L~172.5), i.e. the original design is deliberately low-contrast, so any legibility improvement is an intentional deviation from the art and must be reported to the user as such. Reference art B (files/transcript-images/350dbaa3e278b0d6d029329319cd1956dd92be48e066767e8c328b5ca96d8091.png) does NOT exist anywhere on disk (100+ PNG/webp candidates checked), so its 4.72%H claim cannot be reproduced and should be treated as a misread of the y296-359 dark band.",
+      "tags": [
+        "title-screen",
+        "reference-art",
+        "acceptance-baseline",
+        "logo",
+        "menu-row"
+      ],
+      "compressed": false
+    },
+    {
+      "category": "decision",
+      "priority": "high",
+      "content": "TITLE MENU LEGIBILITY - shipped default (session 964d16fb, 2026-09-22). The title item row is stamped with an outline in the INK colour, not the renderer's black default: TitleScreen::applyPlainFontStyle() calls setFontOutlineColor(COLOR_MENU_TEXT rgb(117,59,33), 0.85) and setFontOutlineWidth(MENU_OUTLINE_WIDTH=0.6). Measured on the emulator inside the menu band (y765-845, x420-1520 of the 1920x1017 content area): ink pixels 8090-8105 with the outline ON against 5184-5237 OFF (+55%), median horizontal stroke 6.0 px against 5.0, near-black (<60) pixels 295 (0.34%) - a black outline put 28% of the row's ink at near-black, which the reference art does not have. Confirmed default-ON in the APK built 2026-09-22 20:16:30 (source tree identical, comment-only header edit) via logcat 'TitleScreen legibility pass: ink curve 0.26/0.70 on, ink-coloured outline 0.60 px at alpha 0.85, shadow 0.075 of cap' and screenshot v2_default_on.png. Row geometry is untouched: Menu row startX=436.8 baselineY=812.1 scale=0.7238 gap=73.7 cap=25.4; band width 1044-1054 px against the reference art's 1047.",
+      "tags": [
+        "title-screen",
+        "legibility",
+        "font",
+        "outline",
+        "verified",
+        "default-on"
+      ],
+      "id": "8928aa2b-2131-4940-9048-63fcb557090c",
+      "timestamp": "2026-09-22T20:18:11",
+      "compressed": false
+    },
+    {
+      "category": "constraint",
+      "priority": "high",
+      "content": "OUTLINE WIDTH FLOOR - TextRenderer::drawOblivionText() computes ring = clamp(fontScale * fontOutlineWidth_, 0.6f, 3.0f). At the title's fontScale (28.0/22.0 * 0.7238 = 0.921) the ring is 0.6 px, so MENU_OUTLINE_WIDTH values up to about 0.65 all land on the same floor and are visually identical. The debug panel's 'Font Outline 0.5px' button is therefore a no-op and only '2.0px' (ring 1.84) actually widens the strokes. To make the row's strokes permanently heavier, set MENU_OUTLINE_WIDTH > 0.65 (0.7 -> ring 0.64, 1.0 -> 0.92) and rebuild; the geometry constants must not be used for this.",
+      "tags": [
+        "text-renderer",
+        "outline",
+        "clamp",
+        "debug-menu",
+        "constraint"
+      ],
+      "id": "d7ce3de2-c9ad-4889-b1bc-3014ff2cc62b",
+      "timestamp": "2026-09-22T20:18:11",
+      "compressed": false
+    },
+    {
+      "priority": "high",
+      "category": "decision",
+      "content": "TITLE BACKGROUND VIDEO - device-verified WORKING (session f5aa54cb, 2026-09-22 20:39-20:47, APK installed 20:16, PID 16044). The GameRenderer.kt fix (Handler(Looper.getMainLooper()) on setOnFrameAvailableListener + unconditional updateTexImage per frame + removal of the titleVideoReady gate) is ALREADY BUILT AND INSTALLED - do not re-apply it. Evidence: logcat 'Title video: updateTexImage=13-46/s callbacks=9-30/s errors(total)=0' matching FPS exactly; three screenshots 3 s apart differ by 36-45% of pixels (mean 15.3-16.7), background band y300-700 mean 23-25; callbacks still firing 22 minutes after launch. The pre-fix symptom (mean 0.000 / 8 px changed over 3 s) does NOT reproduce.",
+      "compressed": false,
+      "timestamp": "2026-09-22T11:48:02Z",
+      "tags": [
+        "title-screen",
+        "video",
+        "game-renderer",
+        "verified"
+      ],
+      "id": "b41c7a90-5d2e-4c8b-9f13-6a7e0c2d8f41"
+    },
+    {
+      "priority": "high",
+      "category": "decision",
+      "content": "TITLE OVERLAY SCREENS - device-verified RENDERING (session f5aa54cb, 2026-09-22 20:39-20:47). renderer.cpp:3087-3092 draws saveLoadUI->render() / settingsUI->render() inside the title-screen block before the early return, so Continue/Load/Options overlays are visible. Evidence: SaveLoadUI shows yellow (R>180,G>180,B<110) 6378 px in bbox y42-87 x762-1156 = centred 'LOAD GAME' heading, plus edge rows every ~36 px = 12 slot panels; SettingsUI shows white (>230) 33452 px in a panel band y120-960 (SaveLoadUI has only 2528 white px). BACK returns to the title and the next tap fires 'Menu selection: Continue' - the menu is no longer frozen by an invisible overlay.",
+      "compressed": false,
+      "timestamp": "2026-09-22T11:48:02Z",
+      "tags": [
+        "title-screen",
+        "save-load-ui",
+        "settings-ui",
+        "overlay",
+        "verified"
+      ],
+      "id": "c52d8b01-6e3f-4d9c-a8e4-7b1f2d3c9a52"
+    },
+    {
+      "priority": "high",
+      "category": "constraint",
+      "content": "SCREENSHOT FALSE POSITIVES - retracted (session f5aa54cb, 2026-09-22 20:47). (1) The 'black band at y1017-1079' is NOT a SaveLoadUI bug: fully-black rows 1017-1079 (52 rows) appear identically in the title screenshot ver1.png. It is the area outside the GL surface (device height 1080 vs render view height 1017). (2) 'SaveLoadUI is frozen, 1 pixel changed in 3 s' is NOT a bug: save_load_ui.cpp:73 draws save_load_bg.png full-screen when bgTexture != 0, so the background video is hidden by design; two consecutive screenshots are byte-identical (2267368 B) because the screen is static. ALWAYS check for a fully-black row range before blaming an overlay, and compare against the title screenshot.",
+      "compressed": false,
+      "timestamp": "2026-09-22T11:48:02Z",
+      "tags": [
+        "measurement",
+        "false-positive",
+        "screenshot",
+        "gl-viewport"
+      ],
+      "id": "d63e9c12-7f40-4ead-b9f5-8c2a3e4d0b63"
+    },
+    {
+      "priority": "medium",
+      "category": "constraint",
+      "content": "OUTLINE WIDTH - effective value on the title screen (session f5aa54cb, 2026-09-22 20:45). title_screen.h:249 MENU_OUTLINE_WIDTH is 0.45f (NOT 0.6f as session 964d16fb reported). drawOblivionText() clamps ring = clamp(fontScale * fontOutlineWidth_, 0.6f, 3.0f); with fontScale = 0.7238 * 28/22 = 0.921 the title computes 0.45 * 0.921 = 0.414 -> clamped to 0.6, so 0.45f and 0.6f are pixel-identical on the title. Measured effect of the ink-coloured outline: 5184 px -> 8090 px (+56%) of near-ink pixels in band y765-840. 964d16fb is lowering the text_renderer.cpp floor 0.6 -> 0.25, which drops the effective ring to 0.414 px (-31%) and ink to ~7000 (-13%); to preserve the measured legibility gain MENU_OUTLINE_WIDTH must be >= 0.65f.",
+      "compressed": false,
+      "timestamp": "2026-09-22T11:48:02Z",
+      "tags": [
+        "outline",
+        "text-renderer",
+        "legibility",
+        "title-screen"
+      ],
+      "id": "e74fad23-8a51-4fbe-ca06-9d3b4f5e1c74"
+    },
+    {
+      "id": "351f41a5-763a-429a-b1e0-37939b3453f1",
+      "timestamp": "2026-09-22T11:53:58Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "タイトルの cap 高は実測で参照一致を確認。グリフ上下端の直接計測で Exit/Load/Options/Credits のインク上端 y787、logcat baselineY=812.1 -> cap 25.1px = 2.47%H（アウトライン膨張 ~0.6px を引くと純グリフ約 24.5-25.1px）。log の cap=25.4 = 2.50%H と一致し、参照アートの 2.50%H と一致する。TITLE_PLAN の §8/§9 が使っていた capAtScaleOne=30.55 は mult 1.0 の古い値で、現行は 35.09（mult 1.15 の 35.13 と一致）。964d16fb の逆算が正しい。",
+      "tags": [
+        "title",
+        "cap",
+        "measurement",
+        "title_screen"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "d988c751-b510-4796-a65f-4a0ca80861c5",
+      "timestamp": "2026-09-22T11:53:58Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "title_screen.cpp の computeMenuLayout() は scale=max(referenceScale, askedScale) のあと spanGap でギャップを詰めて行幅（span）を先に消費する。よって MENU_CAP_HEIGHT_RATIO <= 0.035f の範囲では行幅は常に 54.5%W ちょうど・中心も startX も不変で、代金は項目間ギャップが払う。0.030f でも行幅 1046.4px 不変（cap 30.5px / gap 46.6px）。964d16fb とこの点で合意し、既定は可読性の切り分けを優先して 0.025f を維持。",
+      "tags": [
+        "title",
+        "layout",
+        "menu",
+        "title_screen"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "9d05aa3e-eaff-4c19-815e-3ea2219bf36b",
+      "timestamp": "2026-09-22T11:53:58Z",
+      "category": "configuration",
+      "priority": "high",
+      "content": "GameRenderer.kt のタイトル動画修正（Handler(Looper.getMainLooper()) を setOnFrameAvailableListener に渡す + onDrawFrame の毎フレーム updateTexImage）は本セッションの担当として確定。964d16fb は以降ノータッチ。追加編集は不要（実機で正常進行を確認済み）。",
+      "tags": [
+        "video",
+        "GameRenderer",
+        "ownership"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "fa53897c-dd2e-4788-b626-7d7eda6b3606",
+      "timestamp": "2026-09-22T11:53:58Z",
+      "category": "decision",
+      "priority": "medium",
+      "content": "CHANGELOG.md [Unreleased] は 964d16fb が墨色アウトライン・GL テクスチャリーク・Special Edition 削除を記載、本セッションが Added(選択ハイライト原本 PNG と配置仕様) / Fixed(動画 7 秒停止、Continue/Load/Options の不可視オーバーレイがタップを吸う問題) / Notes(Special Edition 削除は参照アートからは逸脱する旨、cap 実測の裏付け) を追記。",
+      "tags": [
+        "changelog",
+        "documentation"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "a9080d1b-7dca-4f2b-aa8e-ba49898dbebf",
+      "timestamp": "2026-09-22T11:53:58Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "964d16fb が SPECIAL EDITION 行を削除（renderSubtitle() と SUBTITLE_WIDTH_RATIO / SUBTITLE_CENTER_Y_RATIO を撤去、Press any key は PRESS_KEY_TOP_RATIO=0.513f = 521.7px/1017px に固定）。オリジナル main_menu.xml に無いため権威仕様には準拠するが、参照アートには 17.3%W / 47.8%H で実在し現行実装は 17.1% / 47.6% で ±0.2pp 一致していた。復元する場合は renderSubtitle() と 2 定数を戻せばよい。",
+      "tags": [
+        "title",
+        "special-edition",
+        "reference-art",
+        "decision"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "c6d3470b-73e4-4aa6-9155-4e02fc8a2d3e",
+      "timestamp": "2026-09-22T20:59:29.314627",
+      "category": "constraint",
+      "priority": "high",
+      "content": "共有ワークツリーでは他セッションの状態記述を鵜呑みにせず、ファイル mtime / 生成物 mtime / プロセス数で裏を取る。2026-09-22 20:58 の実例: 964d16fb は「ビルド予定なし」「MENU_OUTLINE_WIDTH = 0.6f」「renderer.cpp がコンパイルエラー」と連絡したが、実際は 20:47 起動の gradlew が実行中・ツリーは 0.45f・renderer.cpp のエラーは 20:41 に解消済みで APK は 20:58:29 に成功していた",
+      "tags": [
+        "workflow",
+        "multi-session",
+        "verification"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "1d93d92d-68b0-43dc-97ae-69deda29c6e6",
+      "timestamp": "2026-09-22T20:59:29.314627",
+      "category": "reference",
+      "priority": "high",
+      "content": "タイトル画面アウトラインの実効値: text_renderer.cpp L569 の clamp 下限が 0.6 -> 0.25 に変更されたため、MENU_OUTLINE_WIDTH=0.45f では実効 ring = clamp(0.921*0.45, 0.25, 3.0) = 0.414px、線幅ゲイン 1.20 -> 0.83px (-31%)。インク画素は 8042 -> 約 7156 (+38%) と予測 (線形モデルは OFF 5.0px / ON 6.0-7.0px のストローク実測で裏付け)。旧水準に戻すには MENU_OUTLINE_WIDTH >= 0.65f",
+      "tags": [
+        "title-screen",
+        "readability",
+        "outline",
+        "measurement"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "cc5d095b-f820-4a42-a575-cd23720e8730",
+      "timestamp": "2026-09-22T20:59:29.314627",
+      "category": "configuration",
+      "priority": "medium",
+      "content": "renderer.cpp の地形定数は 2110: TERRAIN_MESH_GRID=33 / 2119: TERRAIN_VERTEX_FLOATS=16 / 2129: quadrantPositionToCellIndex() に定義。使用箇所は 2465, 3792, 3813, 3829-3951 でいずれも定義より後。ビルド成果物は app/.cxx/Debug/5t54535x/x86_64/CMakeFiles/native-lib.dir/ 配下",
+      "tags": [
+        "renderer",
+        "terrain",
+        "build"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "6bfaf336-b77b-4626-b729-ef2124e9f3bb",
+      "timestamp": "2026-09-22T21:10:01",
+      "category": "configuration",
+      "priority": "high",
+      "content": "Oblivion Android: the launcher entry point is IntroVideoActivity (AndroidManifest.xml L16-27, exported=true + MAIN/LAUNCHER). MainActivity (L30-36) is exported=false with no LAUNCHER filter, so `monkey -c android.intent.category.LAUNCHER` fails with 'Permission Denial: not exported from uid' and returns to the launcher while the process PID still exists. Always launch with `adb shell am start -n com.example.oblivion/.IntroVideoActivity`, then tap (960,540) twice 2-3 s apart to skip the intro video, then wait 35-45 s for ESM load. A ~13,967 B (nearly all-black) screenshot means this failure mode.",
+      "tags": [
+        "oblivion-android",
+        "adb",
+        "launch",
+        "manifest",
+        "gotcha"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "9e0bde4d-60fe-4a1d-9795-bb7b7dd04b7e",
+      "timestamp": "2026-09-22T21:10:01",
+      "category": "constraint",
+      "priority": "high",
+      "content": "Oblivion Android / this Windows host: adb is unreliable for capture. `adb exec-out screencap -p` hangs (use `screencap -p /sdcard/x.png` then `adb pull`). `adb logcat -d -t 40` with no filter also hung for 30+ s in a direct PowerShell call. `adb logcat -d -s TAG -t N` returned 0 bytes both directly and via cmd redirect, though a tag with no matching entries also yields 0, so that alone is inconclusive. Practical rule: while another session holds the single emulator, do not probe adb; have that session hand over log/screenshot files and analyse them offline.",
+      "tags": [
+        "oblivion-android",
+        "adb",
+        "logcat",
+        "screencap",
+        "windows",
+        "gotcha"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "a2c9996d-780d-4862-8b5c-6ff7fa10adba",
+      "timestamp": "2026-09-22T21:10:01",
+      "category": "reference",
+      "priority": "high",
+      "content": "Oblivion Android title-screen ink measurement baseline (old APK, MENU_OUTLINE_WIDTH=0.6f, screenshot ui_title_back.png, script files/measure_ink.py, band y765-840 x420-1520): tol20 ink = 8126, tol40 ink = 10475 (AA delta 2349), near-black(<60) = 293 (0.36%), per-item clusters 438-621 / 672-749 / 824-911 / 988-1123 / 1199-1329 / 1404-1481 (matches known values exactly). Clusters at x1817-1831 and x1872-1919 lie right of the layout edge startX+rowW=1483.2 and are background video, not menu items. Subtitle band y460-520 holds 1048 ink px in cluster (795,1123) which is the 'Special Edition' text, so its disappearance is a machine-checkable test. New APK (0.45f, clamp 0.25, effective ring 0.414 px) predicts tol20 ink 7156-7600.",
+      "tags": [
+        "oblivion-android",
+        "title-screen",
+        "measurement",
+        "ink",
+        "baseline"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "title-ink-baseline-new-apk-20260922",
+      "timestamp": "2026-09-22T21:32:57",
+      "category": "reference",
+      "priority": "high",
+      "content": "Oblivion Android title-screen ink baseline, NEW APK (MENU_OUTLINE_WIDTH=0.45f, clamp floor 0.25f, built 20:58:29, screenshot files/new_apk_01.png 1920x1080). Script: files/measure_ink.py. menu band ink tol20 (y765-840 / x420-1520) = 7543 (old 0.6f APK = 8126, ratio 0.928). tol40 = 10001 (old 10475). glyph-only tol20 (y785-818, excludes selection-bar edge rows) = 7518 (old 8103). near-black(<60) = 298 (old 293) so the drop shadow is harmless. per-item clusters = 428-621 / 672-749 / 824-911 / 988-1123 / 1199-1329 / 1404-1481; the extra 10 px on item0 (x428 vs old x438) is NOT geometry: it is 2 AA pixels of the selection bar's left edge (x428 y820 and x430 y823 only). The glyph left edge is x438 in BOTH APKs, so geometry is unchanged. subtitle band (y460-520) = 0 px (old 1048 px, cluster 795-1123) which confirms the Special Edition removal. logo dark bbox = x551-1373 / y281-441 (old x551-1919 / y270-455 was cloud-contaminated). logcat: Menu row: startX=436.8 baselineY=812.1 scale=0.7238 gap=73.7 cap=25.4 (identical to the old APK).",
+      "tags": [
+        "oblivion-android",
+        "title-screen",
+        "measurement",
+        "ink",
+        "baseline",
+        "new-apk"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "menu-outline-width-lever-exhausted-20260922",
+      "timestamp": "2026-09-22T21:32:57",
+      "category": "constraint",
+      "priority": "high",
+      "content": "Oblivion Android title menu: MENU_OUTLINE_WIDTH is nearly exhausted as a thinning lever. text_renderer.cpp drawOblivionText stamps the outline 9 times; the 4 diagonal stamps reach ring*sqrt(2), so added ink scales with (0.5 + ring*sqrt(2)), not with ring. The title screen forces setFontSizeMultiplier(1.0f) in applyPlainFontStyle(), so fontScale = 0.7238*(28/22)*1.0 = 0.9213 and ring = clamp(0.9213*MENU_OUTLINE_WIDTH, 0.25, 3.0). Closed form fitted to 3 measured points (OFF 5184 / ring 0.6000 -> 8126 / ring 0.4146 -> 7543): added_ink(ring) = 2181*(0.5 + ring*sqrt(2)), accurate to 0.4%. Predictions: width 0.20f (ring 0.25, the clamp floor) -> 7046, only -6.6% from the current 7543; width 0.60f -> 8126; width 1.00f -> 9117. Any width <= 0.2714f gives ring = 0.25 and the same result. The ONLY strong lever is MENU_OUTLINE_ALPHA (0.85): the 9-stamp accumulated alpha is 1 - prod(1 - 0.85*c_i) which saturates, so lowering alpha directly removes fringe pixels from the tol20 set (theoretical floor 5184, -31%). Alternatives: drop the 4 diagonal stamps, or lower the ring clamp floor. Note the reference art A is fill 0.133 / stroke 4.0 px while the device is 0.208 even with the outline OFF, so the art is simply not authored for a video background - this is a structural difference, not a tuning error.",
+      "tags": [
+        "oblivion-android",
+        "title-screen",
+        "outline",
+        "text-renderer",
+        "readability",
+        "model"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "emulator-adbd-hang-recovery-20260922",
+      "timestamp": "2026-09-22T21:32:57",
+      "category": "configuration",
+      "priority": "high",
+      "content": "Oblivion Android dev host: when `adb devices -l` sticks at `emulator-5554 offline`, the guest adbd is hung - the host emulator is fine. Diagnosis: emulator.exe / qemu-system-x86_64.exe are alive (check CPU time growth), the emulator console at 127.0.0.1:5554 still answers (`auth <token>` then `avd name` -> Pixel_API34 / OK), but `adb shell pidof` and `adb shell dumpsys window` time out (15 s / 25 s). `adb reconnect offline` and `adb kill-server` + `start-server` only flap (briefly `device`, then offline again). Fix: TCP-connect to 127.0.0.1:5554, send `auth <token>` then `restart`; reply is 'OK: restarting emulator, bye bye'. qemu gets a new PID and sys.boot_completed=1 within ~20 s. Token file: C:\\Users\\hiroki.kogarumai\\.emulator_console_auth_token. Console `help` lists: ping automation event geo gsm cdma crash crash-on-exit kill restart network grpc power quit redir sms avd qemu sensor physics finger debug rotate screenrecord fold unfold posture multidisplay icebox nodraw resize-display virtualscene-image proxy phonenumber. The installed APK survives the restart (verify with `dumpsys package <pkg>` lastUpdateTime). Stop hung adb clients with Stop-Process -Id <literal number> -Force (Stop-Process -Id $_.Id is rejected by the host guard); if that PID was the adb server it restarts automatically. Prevention: before touching adb, confirm `adb devices` says device AND `adb shell echo ok` returns within 3 s.",
+      "tags": [
+        "oblivion-android",
+        "emulator",
+        "adb",
+        "recovery",
+        "pitfall"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "avd-effective-config-hardware-qemu-ini-20260922",
+      "timestamp": "2026-09-22T21:40:00Z",
+      "category": "configuration",
+      "priority": "high",
+      "content": "AVD Pixel_API34 の実効設定は `%USERPROFILE%\\.android\\avd\\Pixel_API34.avd\\hardware-qemu.ini` を読むこと。`config.ini` は手で編集されており実態と食い違う（config.ini は hw.gpu.enabled=no / hw.gpu.mode=auto だが、実効値は hw.gpu.enabled=true / hw.gpu.mode=host）。実効スペック: GPU ホストパススルー、hw.cpu.ncore=4、hw.ramSize=2048、hw.lcd 1920x1080 depth 16。config.ini の `hw.gpu.enabled=no` を根拠に『ソフトウェア描画だから CPU が高い』と結論するのは誤り（実際は SwiftShader ではない）。",
+      "tags": [
+        "emulator",
+        "avd",
+        "configuration",
+        "gpu"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "emulator-host-vs-guest-triage-20260922",
+      "timestamp": "2026-09-22T21:40:00Z",
+      "category": "pitfall",
+      "priority": "high",
+      "content": "adb が offline/device をフラップする時の決定的切り分けは emulator コンソール (TCP 127.0.0.1:5554) の応答。`auth <token>` -> `avd name` が `Pixel_API34` / `OK` を返せばホストは健全で、原因はゲストの adbd ハング。adb を触らずに診断できるので、相手セッションが adb を占有していても有効。注意: コンソールのバナーは `OK` まで含めて 2〜3 行あるので、`OK` を読み切る前に `auth` を送ると応答が食われ『コンソール無応答』と誤判定する。認証トークンは `C:\\Users\\hiroki.kogarumai\\.emulator_console_auth_token`。",
+      "tags": [
+        "emulator",
+        "adb",
+        "triage",
+        "console"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "host-qemu-cpu-not-a-busyloop-proxy-20260922",
+      "timestamp": "2026-09-22T21:40:00Z",
+      "category": "pitfall",
+      "priority": "medium",
+      "content": "ホストの qemu-system-x86_64.exe の CPU はアプリのビジーループの指標にならない。GPU ホストパススルー環境では GL 描画量に支配され、タイトル画面表示中でも 1.6〜2.8 コアを消費する（正常）。『起動直後のアイドル CPU とアプリ起動後の CPU を比較する』テストは、アプリが正常でも大きな差が出るため無効。判定はゲスト内で行う: `adb shell top -n 1 -b | Select-String oblivion` または `/proc/<pid>/stat` の utime+stime を 2 回差分。また他セッションが報告する PID は必ず `Get-Process -Id <n>` で存在確認し、CreationDate で『いつ生成されたか』を確認する（エミュレータ再生成で PID は変わるので、死んだプロセスの飽和値を引用しがち）。実例: PID 9380 は console restart で死亡済み、現行は 28656。",
+      "tags": [
+        "emulator",
+        "performance",
+        "diagnosis",
+        "qemu"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "build-inclusion-check-via-object-mtime-20260922",
+      "timestamp": "2026-09-22T21:40:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "gradle を回さずに『あるソース変更が APK に入ったか』を判定する最も安い方法: `app/.cxx/Debug/<hash>/<abi>/CMakeFiles/native-lib.dir/**/<file>.cpp.o` の mtime とソースの mtime を比較する。.o がソースより新しければコンパイル成功 = APK に収録されている。実例: renderer.cpp mtime 20:41:39 / renderer.cpp.o 20:57:22 / app-debug.apk 20:58:29 -> WS-C の地形変更は APK に収録済みと確定し、同時に他セッションの『renderer.cpp がコンパイルエラーで落ちる』という主張も否定できた。",
+      "tags": [
+        "build",
+        "gradle",
+        "cmake",
+        "verification"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "2e1c93d3-6966-4485-9f6f-32634658d1dd",
+      "timestamp": "2026-09-22T21:41:35+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "タイトル画面の Special Edition 表記を削除した。`title_screen.cpp` の `renderSubtitle()` 本体・宣言・呼び出し2箇所と `SUBTITLE_*` 定数を削除。ロゴテクスチャ自体に SE 行は含まれない（y0-63/y68-84/y88-252 の3帯）ためアトラス加工は不要。削除した式が決めていた \"Press any key\" の位置は `PRESS_KEY_TOP_RATIO = 0.513f`（旧 subBaseline + screenHeight*0.045 - hintCap = 521.7px / 1017px）として保存した。",
+      "tags": [
+        "title-screen",
+        "special-edition",
+        "ui"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "9863cfcd-fa4b-4135-8bc0-160f6ba1969d",
+      "timestamp": "2026-09-22T21:41:35+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "タイトルメニュー文字の細化は2点セットで行う: (1) `title_screen.h` の `MENU_OUTLINE_WIDTH` 0.6f -> 0.45f、(2) `text_renderer.cpp` `drawOblivionText()` のリング下限クランプ 0.6f -> 0.25f。タイトルは fontScale = 0.7238*28/22 = 0.921 なので 0.921*0.45 = 0.414 が旧下限 0.6 に丸められ、0.45 宣言は no-op だった。下限そのものを下げるのが唯一の実効手段。実効リング 0.60 -> 0.414px、ストローク増分 1.20 -> 0.83px。`MENU_OUTLINE_ALPHA` 0.85f は据え置き（これ以上の細化は alpha が次のレバー、可読性とのトレードオフ）。",
+      "tags": [
+        "title-screen",
+        "text-renderer",
+        "font",
+        "legibility"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "eb7b48ad-bea1-47cb-9188-721a30fe2926",
+      "timestamp": "2026-09-22T21:41:35+09:00",
+      "category": "reference",
+      "priority": "high",
+      "content": "Special Edition 削除と文字細化の実機定量（旧APK v2_default_on.png vs 新APK t1/t2.png、新APKはエミュレータ再生成後の別インスタンスでも再確認済み）: SPECIAL EDITION 帯 tol20 922->0 / tol40 1247->0（完全消滅）、メニューインク tol20 8090->7548、平均ストローク幅 tol20 6.844->6.40px (-6.5%)、tol40 8.945->8.49px、インク芯 p50 は RGB(117,59,33) 不変、x クラスタ境界は全6項目で 1px 以内の一致（幾何不変）。新APK の pre-restart 計測 7565 と fresh 計測 7548/7554 が一致することも確認。",
+      "tags": [
+        "title-screen",
+        "measurement",
+        "verification"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "d9f4d6f5-5942-4d59-a192-4afcde926aad",
+      "timestamp": "2026-09-22T21:53:01+09:00",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "タイトル画面のスクショ計測手順: `adb shell screencap -p /sdcard/x.png` -> `adb pull` を使う（`adb exec-out screencap` はハングする）。**計測前に必ず 2 枚撮って MD5 を比較する**（エミュレータ再起動直後は同一フレームが返ることがあり、アプリを monkey 起動し直すと解消する）。比較は `full[0:1017]`（アプリのコンテンツ領域。y1017以降はナビゲーションバー）。背景動画が毎フレーム変わるため絶対輝度は使えず、`|pixel - RGB(117,59,33)|max <= 20` のインクマスクを y760-850 / x400-1600 で数えるのが主指標。**警告: `adb shell input tap 74 74` は画面左上のデバッグトグルボタン `btn_debug_toggle`（36dp, x26..121/y26..121, alpha 0.7 で常時表示）を押し、全面 50% 黒スクリム + 左 260dp パネルのデバッグオーバーレイを開く**（旧記述の「背景の明暗トグル」は誤り。機序の詳細は別エントリ）。撮った画像が汚染されていないかは (1) menu ink tol20 が 0、(2) content p50 輝度が約 60（正常 160-167）、(3) 最大輝度 255（正常 243）の 3 点で即断できる。",
+      "tags": [
+        "measurement",
+        "screenshot",
+        "title-screen",
+        "pitfall"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "b43e4167-bd45-42ac-86dd-f348672a88cc",
+      "timestamp": "2026-09-22T21:41:35+09:00",
+      "category": "reference",
+      "priority": "medium",
+      "content": "エミュレータを再起動した直後は `screencap` が同一フレームを返し続けることがある（20秒間に3枚撮って MD5 が完全一致、logcat では動画 updateTexImage=60/s が継続）。アプリを再起動（`adb shell monkey -p com.example.oblivion -c android.intent.category.LAUNCHER 1`）すると解消し、以後は正常にキャプチャできる（v1/v2 の MD5 が異なることで確認）。計測前に必ず2枚撮って差分を確認する。",
+      "tags": [
+        "emulator",
+        "screenshot",
+        "pitfall"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "27716840-6059-4b8d-9bc0-ee7377d6dc2d",
+      "timestamp": "2026-09-22T21:41:35+09:00",
+      "category": "reference",
+      "priority": "medium",
+      "content": "ゲスト内 CPU 実測（タイトル画面）: アプリは utime+stime が 379 ticks/10s = 0.38 コア（動画デコード60fps込み）でビジーループは無い。ゲストは Mem 110MB free / swap 1515816K を全使用でメモリ逼迫、guest top は sys 65% / idle 300%（4コア）。ホストの qemu 1.6 コアは GL/動画パスとスワップ逼迫で説明でき、アプリのビジーループを疑う根拠にはならない。判定はゲスト内 `/proc/<pid>/stat` の utime+stime 2回差分で行う。",
+      "tags": [
+        "performance",
+        "emulator",
+        "cpu",
+        "diagnosis"
+      ],
+      "compressed": false
+    },
+    {
+      "category": "decision",
+      "priority": "high",
+      "content": "【訂正・確定】タイトル画面で `adb shell input tap 74 74` を撃つと暗くなるのは「デバッグHUD OFF」ではなく、**画面左上のデバッグトグルボタン `btn_debug_toggle` を押してデバッグオーバーレイが開いた**ため。根拠: logcat に `D MainActivity: Debug panel shown`（MainActivity.kt:296）。ボタンは 36dp / layout_gravity=top|start / marginStart/Top 10dp → 密度 420dpi（倍率 2.625）で x26..121 / y26..121、(74,74) はこの矩形内。オーバーレイは activity_main.xml:15-25 の `debug_overlay_container`（全画面・初期 gone）で、中身は `#80000000` の全面 50% 黒スクリム + 左寄せ 260dp（=682.5px）の LinearLayout パネル。合成は out = in * (1 - 0x80/255) = in * 0.498。実測 p50 比 0.491 / グリフ芯 (117,59,33)→(58,29,16)（0.498 倍と一致）。可逆（再タップで復帰）。",
+      "tags": [
+        "title-screen",
+        "debug-overlay",
+        "root-cause",
+        "screenshot",
+        "corrected"
+      ],
+      "id": "516310cc-4137-47a2-a913-5cc6b43ae5f6",
+      "timestamp": "2026-09-22T21:51:50+09:00",
+      "compressed": false
+    },
+    {
+      "category": "reference",
+      "priority": "high",
+      "content": "タイトル画面スクショの汚染検出法（デバッグオーバーレイが開いていないかの判定）。メニュー帯インク tol20（y765-840 / x420-1520）: 正常 約7,500〜8,100 に対し **汚染時は 0**。content p50 輝度: 正常 約160〜167 に対し **汚染時 約60**。最大輝度: 正常 約243 に対し **汚染時 255**（パネルの白文字）。`tol20=0 かつ p50≈60` なら汚染確定。デバッグトグルは alpha=0.7 で常時表示のため左上付近を誤タップすると開く。スクショ手順から `taps 74 74` は恒久的に外すこと。",
+      "tags": [
+        "title-screen",
+        "screenshot",
+        "pitfall",
+        "debug-overlay"
+      ],
+      "id": "bf10904d-529e-4d90-b48e-53d1b30a1a6c",
+      "timestamp": "2026-09-22T21:51:50+09:00",
+      "compressed": false
+    },
+    {
+      "category": "constraint",
+      "priority": "high",
+      "content": "計測指標 tol40（インク RGB(117,59,33) に許容 40）は**背景が変わると無効**。デバッグオーバーレイ表示中の t7.png では tol40=22,744px（正常な ta.png は 10,154px の 2.2 倍）。暗色背景 RGB(104,88,72) は |104-117|=13 / |88-59|=29 / |72-33|=39 で全チャンネルが許容 40 以内に入り、背景を文字として計上する。「AA の増分を分離する」という tol40 の前提は背景が同一のときだけ成立する。",
+      "tags": [
+        "measurement",
+        "pitfall",
+        "tol40",
+        "title-screen"
+      ],
+      "id": "440e2cd5-0bf0-49ef-8c0c-004e76c554c7",
+      "timestamp": "2026-09-22T21:51:50+09:00",
+      "compressed": false
+    },
+    {
+      "category": "reference",
+      "priority": "medium",
+      "content": "暗色化の正体を相関で特定した手法（再利用可）。同一セッションでタップのみを変えた制御実験 3 枚（rp_before / rp_after / rp_after2）を撮り、領域別に corr(after, before) を取ると 左 x0-640 = +0.145（無相関）/ 右 x1280-1920 = +0.833（構造が残る）に分離。この左右非対称が「左 682.5px のパネル」の決め手になった。平均値の比（0.491）だけでは一様減光と誤認する。corr(rp_after, 964d16fb の t7) = +0.915、corr(rp_after2, rp_before) = +0.905。",
+      "tags": [
+        "diagnosis",
+        "method",
+        "correlation",
+        "title-screen"
+      ],
+      "id": "b9ffc865-0f9b-4819-920c-bd49ea7d1fc4",
+      "timestamp": "2026-09-22T21:51:50+09:00",
+      "compressed": false
+    },
+    {
+      "category": "constraint",
+      "priority": "medium",
+      "content": "near-black 率の閾値定義が 2 セッションで異なる。964d16fb は `max(R,G,B) < 60`、本セッションは `mean(R,G,B) < 60`。絶対値が約 4 倍違う（3.36% vs 13.04%）が、変化量は一致（-0.16pp / -0.17pp）。跨セッションで絶対値を比較するときは定義を揃えること。",
+      "tags": [
+        "measurement",
+        "pitfall",
+        "title-screen"
+      ],
+      "id": "72e9f400-5496-48a3-afe0-a5ac858790d6",
+      "timestamp": "2026-09-22T21:51:50+09:00",
+      "compressed": false
+    },
+    {
+      "id": "fabbf39c-4962-4718-9f07-b92833cf6873",
+      "timestamp": "2026-09-22T21:53:01+09:00",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "スクショ汚染の検出法（デバッグオーバーレイ）。トグルボタンは alpha 0.7 で常時表示されるため左上付近を誤タップすると開く。正常: menu ink tol20 約7500-8100 / content p50 輝度 約160-167 / 最大輝度 約243。汚染時: menu ink tol20 = 0 / p50 約60 / 最大輝度 255（パネルの白文字）。`tol20=0 かつ p50≈60` で汚染確定。MD5 一致チェック（screencap が同一フレームを返す症状）とは別種の汚染を捕まえるので併用する。",
+      "tags": [
+        "measurement",
+        "screenshot",
+        "pitfall",
+        "debug-overlay"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "fcc0974c-1433-49c3-9297-a54215889f6f",
+      "timestamp": "2026-09-22T21:53:01+09:00",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "tol40 インクマスクは背景が変わると無効。暗色背景 RGB(104,88,72) は |104-117|=13 / |88-59|=29 / |72-33|=39 で全チャンネルが許容40以内に入り、背景そのものを文字として計上する（実例: デバッグオーバーレイで暗くなった t7 の tol40 = 22744 は ta の 10154 の 2.2倍）。tol40 は同一背景位相内の比較にのみ使い、主指標は tol20 にする。",
+      "tags": [
+        "measurement",
+        "screenshot",
+        "pitfall",
+        "threshold"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "cb0e1eb6-25bf-43bc-9795-8700f0d808db",
+      "timestamp": "2026-09-22T21:53:01+09:00",
+      "category": "reference",
+      "priority": "medium",
+      "content": "near-black 率の閾値定義がセッション間で違う点に注意。当方 964d16fb は `max(R,G,B) < 60`（3.36%）、f5aa54cb は `mean(R,G,B) < 60`（13.04%）。絶対値が約4倍違うが変化量は一致（-0.16pp / -0.17pp）。跨セッションで絶対値を突き合わせるときは定義を明記する。",
+      "tags": [
+        "measurement",
+        "threshold",
+        "convention"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "de26e40d-3f79-4c04-a6e9-d98abf79b5d8",
+      "timestamp": "2026-09-22T21:53:01+09:00",
+      "category": "reference",
+      "priority": "medium",
+      "content": "文字細化の独立検証（f5aa54cb 側、別スクショ・別スクリプト）: menu ink tol20 8126 -> 7543 = -7.2%、平均ストローク幅 6.903 -> 6.396px = -0.507px。当方の計測（-6.7% / -0.45px、t1/t2 で -6.5%）と一致した。",
+      "tags": [
+        "title-screen",
+        "measurement",
+        "verification"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "db4efa39-5749-488c-875f-ef19f4dc9368",
+      "timestamp": "2026-09-22T21:53:01+09:00",
+      "category": "decision",
+      "priority": "low",
+      "content": "`title_screen.cpp` の `Menu row:` LOGD 1行は残置する。レイアウト再構築時のみ 1 回出るだけでノイズにならず、f5aa54cb が実測値の照合（startX/baselineY/scale/gap/cap）に使用しているため。",
+      "tags": [
+        "title-screen",
+        "logging",
+        "coordination"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "bf41b0d2-0337-44b6-98ee-8ea58f8834c2",
+      "timestamp": "2026-09-23T04:41:48",
+      "category": "configuration",
+      "priority": "high",
+      "content": "AVD の RAM 増設は config.ini の hw.ramSize に単位なし MB 数値を書くこと。hw.ramSize=4G のような単位付き表記はエミュレータが解析に失敗し既定 2048MB に暗黙フォールバックする（起動バナー 'INFO | Increasing RAM size to 2048MB' が証拠）。正しくは hw.ramSize=4096。反映確認は adb shell で /proc/meminfo の MemTotal を見る（config.ini 単体では確証にならない）。config.ini は C:/Users/hiroki.kogarumai/.android/avd/Pixel_API34.avd/config.ini。",
+      "tags": [
+        "emulator",
+        "avd",
+        "ram",
+        "configuration",
+        "pitfall"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "d40a2382-3c87-45fa-b56b-362c199526ba",
+      "timestamp": "2026-09-23T04:41:48",
+      "category": "constraint",
+      "priority": "high",
+      "content": "Oblivion Android のメモリ所要量: ESM 全読み込み完了後、ネイティブヒープ Pss 約 2,020,948 kB (1.93 GB) / TOTAL PSS 約 2,070,905 kB (1.97 GB) / RSS 2,145,424 kB。2 GB のゲスト RAM では OS の取り分が残らず、起動 11 秒（ESM ロード中、PSS 273 MB 進行中）に LMK がキルする。4 GB (hw.ramSize=4096) にすると LMK キル 0 件・連続稼働安定（MemAvailable 705 MB）。README のメモリ目標値とは乖離が大きい。",
+      "tags": [
+        "performance",
+        "memory",
+        "lmk",
+        "emulator",
+        "constraint"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "6ee0ed52-1a1c-4040-a4a2-cde28a932595",
+      "timestamp": "2026-09-23T04:41:48",
+      "category": "decision",
+      "priority": "high",
+      "content": "TitleScreen の 'Menu row: startX=436.8 baselineY=871.6 scale=1.4174 gap=81.0 cap=45.4' は欠陥ではなく正常な一時値。TitleScreen のコンストラクタ既定は 1920x1080 なので init 中は必ずこの値が出る。nativeInitEngine 完了後に onSurfaceChanged: 1920x1017 -> Renderer::resize() が走り、'scale=0.7238 baselineY=812.1 gap=73.7 cap=25.4' に上書きされる。probe.log (09:51:52.319 -> 09:53:26.507) でも同一。したがって Renderer::init() に titleScreen->setScreenSize(1920,1017) を追加する必要はない（1017 はサーフェスサイズで init 時点では不明、ハードコードは別解像度で壊れる）。起動 11 秒の LMK キルでシーケンスが切れたため誤診していた。",
+      "tags": [
+        "title-screen",
+        "renderer",
+        "initialization",
+        "correction",
+        "menu-row"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "6e41463f-61dd-4e39-aefb-dcad3b04f574",
+      "timestamp": "2026-09-23T04:41:48",
+      "category": "reference",
+      "priority": "medium",
+      "content": "統合 APK（2026-09-22 22:47:14 / 93,522,910 B、30cbb1e4 の renderer.cpp 修正込み）の実機計測確定値: SE 帯 tol20/tol40 = 0/0 px、メニューインク tol20 = 7551/7557、平均ストローク tol20 = 6.410/6.448 px、インク芯 RGB(117,59,33)±3 画素 = 6705/6701、メニュー行 x = 438-1481 (1043 px)、Menu row ログ = scale=0.7238 cap=25.4 baselineY=812.1 gap=73.7。旧出荷 APK（20:58）の 0/0、7548/7554、6.397/6.413、6700/6699、437-1481 と一致し回帰なし。",
+      "tags": [
+        "title-screen",
+        "measurement",
+        "verification",
+        "apk",
+        "reference"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "0baa1649-c968-4861-a4fc-db5d90b74c31",
+      "timestamp": "2026-09-23T04:41:48",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "スクリーンショットの真贋判定: 輝度だけではタイトル画面とランチャーホームを区別できない。既知の正常スクショとの輝度相関 np.corrcoef を必ず併用する。実例: タイトル画面は t1.png と corr +0.9144、ランチャーホーム（nexuslauncher）は home1.png と corr +0.9984 かつタイトルとは -0.157。汚染（デバッグオーバーレイ）は menu ink tol20 = 0 かつ content p50 輝度約 60 かつ最大輝度 255 の 3 指標で判定する。",
+      "tags": [
+        "measurement",
+        "screenshot",
+        "verification",
+        "pitfall"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "190a5de9-6eb5-4f67-a74f-8634a553e2d9",
+      "timestamp": "2026-09-23T04:44:18",
+      "category": "reference",
+      "priority": "medium",
+      "content": "タイトル画面の変更（Special Edition 削除 + メニュー文字細化）は 3 つの APK すべてで同一結果を実機確認済み。旧出荷 20:58 / 統合 22:47:14 / 最新 04:41:03 の順に、SE 帯 tol20/tol40 = 0/0（全 3 版）、メニューインク tol20 = 7548-7561、平均ストローク tol20 = 6.381-6.448 px、インク芯 RGB(117,59,33)±3 画素 = 6699-6705、メニュー行 x = 437-1481。ソース定数は MENU_CAP_HEIGHT_RATIO=0.025f / MENU_OUTLINE_WIDTH=0.45f / MENU_OUTLINE_ALPHA=0.85f / PRESS_KEY_TOP_RATIO=0.513f、renderSubtitle は削除済み。",
+      "tags": [
+        "title-screen",
+        "measurement",
+        "verification",
+        "regression"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "65fc5e6a-0631-4d32-a641-367e7928ab9c",
+      "timestamp": "2026-09-23T04:44:18",
+      "category": "constraint",
+      "priority": "high",
+      "content": "エミュレータとホストの時計対応: ゲストの date は GMT 表示、ホストは JST (GMT+9) なので、ゲスト logcat 時刻 + 9 時間 = ホスト JST。実例: ゲスト 19:41:28（APK install） = ホスト 04:41:28、APK mtime 04:41:03 の 25 秒後。以前「3.5 時間差」と記録したのは、22:47 にビルドした APK を翌 04:23 にインストールした時間差を時計差と誤解釈したもの。",
+      "tags": [
+        "emulator",
+        "logcat",
+        "timezone",
+        "pitfall"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "ab22ac38-91df-47c5-8732-111000ea8430",
+      "timestamp": "2026-09-23T04:44:18",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "同一ワークツリーを複数セッションで共有しているため、他セッションが APK を再インストールすると稼働中のアプリが強制終了される。実例: 19:41:26 'Force stopping com.example.oblivion ... from pid 4592' -> 19:41:28 installPackageLI -> pkg removed -> 19:41:34 新プロセス起動。これは LMK ではない（OomAdjuster: Not killing cached processes が継続）。長期計測の前に dumpsys package の lastUpdateTime と app/build/outputs/apk/debug/app-debug.apk の mtime を突き合わせて APK が差し替わっていないか確認すること。",
+      "tags": [
+        "measurement",
+        "apk",
+        "multi-session",
+        "pitfall"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "9888e63a-b2c5-4a05-a88b-b9fc64467991",
+      "timestamp": "2026-09-23T12:08:26.776163+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "アセット方針（ユーザー指示 2026-09-23）: 法的ブロッカーは後回しにし、とりあえずオリジナル（Oblivion 原本抽出物）を使用する。コードは既にこの方針どおりで、原本テクスチャ/フォント/動画を直接参照し、欠けている場合のみプロシージャル代替へフォールバックする。git 履歴 purge・リリース時の除外は着手しない。",
+      "tags": [
+        "assets",
+        "policy",
+        "legal"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "a0b309d8-0c7f-49c8-a511-315024c9c728",
+      "timestamp": "2026-09-23T12:08:26.776163+09:00",
+      "category": "reference",
+      "priority": "high",
+      "content": "アセット来歴監査（2026-09-23、app/src/main/assets 21 ファイル 58.8MB）: git tracked 12 = Bethesda フォント 11（fonts/*.fnt x5 + fonts/*_0_lod_a.png x5 + font_atlas.json）+ 非 Bethesda の Roboto-Regular.ttf。gitignored 7 = videos/oblivion_intro.mp4, videos/map_loop.mp4, textures/ui の loading_background / load_in_game_default / loading_symbol / tes_oblivion_logo_bink / tes_oblivion_logo_final。untracked 2 = textures/ui/dialog_selection_full.png, dialog_selection_cut.png（f5aa54cb が追加）。",
+      "tags": [
+        "assets",
+        "inventory",
+        "git"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "b3cf72d3-144b-4bff-b111-1db27f486b20",
+      "timestamp": "2026-09-23T12:08:26.776163+09:00",
+      "category": "reference",
+      "priority": "high",
+      "content": "todo audit-asset-removal の記録は不正確だった: 「Bethesda アセット 12 ファイルを git rm --cached で untrack した」とあるが、実際に HEAD から外れているのは .gitignore 33-39 行の 7 ファイルのみで、Bethesda フォント 11 ファイルは今も tracked（git ls-files で確認）。法的ブロッカーを再開する際はここが起点。",
+      "tags": [
+        "assets",
+        "git",
+        "correction"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "149b3570-3062-45ca-a328-c80457e73df2",
+      "timestamp": "2026-09-23T12:08:26.776163+09:00",
+      "category": "reference",
+      "priority": "medium",
+      "content": "原本テクスチャの参照箇所: loading_background.png は title_screen.cpp:131 / renderer.cpp:1848 / settings_ui.cpp:65 / save_load_ui.cpp:48 の 4 箇所。tes_oblivion_logo_final.png は title_screen.cpp:132。load_in_game_default.png は title_screen.cpp:133 で読み込むが、不透明なローディング画像のためビネット用途には使わない（L824 コメント）。dialog_selection_full/cut.png はメニュー選択バー。",
+      "tags": [
+        "assets",
+        "references"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "e23ff479-9fcf-4378-94a2-057024cbf9f6",
+      "timestamp": "2026-09-23T12:08:26.776163+09:00",
+      "category": "reference",
+      "priority": "medium",
+      "content": "未配置アセット: launcher_screen.cpp:41-47 が要求する launcher_bg.png / oblivion_logo_large.png / btn_stone.png / btn_stone_hover.png は assets に存在せず、logoTexture==0 で早期 return するためランチャーはプロシージャル描画。ゲーム内 UI（インベントリ/ショップ/魔法書/クエストログ/セーブロード/HUD）も placeholder_assets.cpp の色定数と図形描画で構成され、原本 menus/*.xml + .dds は未使用。原本 UI 素材の統合は Phase 68（step7-phase68）。",
+      "tags": [
+        "assets",
+        "ui",
+        "roadmap"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "849224ef-6139-4e78-99b1-7e4d919f5c39",
+      "timestamp": "2026-09-23T14:33:19",
+      "category": "reference",
+      "priority": "high",
+      "content": "【バグ】ランチャー復帰後に Play が無反応: LauncherScreen::buildMainMenu() が menuButtons.clear() を呼ばず、initialize() 2 回目でボタンが 10 個になる。インデックス 5-9 の孤児ボタンが y530-930 に配置され、UIComponent::dispatchEventToChildren() (rbegin 逆順走査) が先にヒットしてパネルがイベントを consume し hoveredIndex が更新されない。修正: buildMainMenu() 先頭に menuButtons.clear()。検証: Launcher: Play selected が出るようになった",
+      "tags": [
+        "launcher",
+        "ui_button",
+        "bug-fix",
+        "dispatch"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "bb375275-9746-4078-9a63-38b0de2723e2",
+      "timestamp": "2026-09-23T14:33:19",
+      "category": "reference",
+      "priority": "high",
+      "content": "【UIButton ホバースケールの到達不能バグ】ui_button.cpp render() が hoverScaleTimer>0 でも !pressed でスケールを抑止していたため、タッチ端末では決して見えなかった。ui_button.h の setHovered コメントが『Touch input has no OS hover event, so the owner drives this explicitly (the item currently under the finger)』と明記し、updateVisualState()/renderLabel() も pressed||hovered を同一視しているので、!pressed ガードは逸脱。修正: const bool scaleActive = hoverScaleTimer>0.0f を使い適用/復元の両方に適用",
+      "tags": [
+        "ui_button",
+        "hover-scale",
+        "bug-fix"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "655c1a05-5f27-4f17-9788-0fdf95d9d85c",
+      "timestamp": "2026-09-23T14:33:19",
+      "category": "reference",
+      "priority": "high",
+      "content": "【実測】ホバースケールのピクセル証明: 修正前は拡張帯が左右上下すべて 0。修正後は左右 x96-106 / x527-536 に diff=4-5 が 10-11px、上下 y150-151 / y230-231 に diff=3-5 が 2px。設計値 dw=420*0.05*0.5=10.5px / dh=78*0.05*0.5=1.95px と一致。ボタン内部 (y152-230,x107-527) の max diff は 150→161。ラベルインク (n=4280, x120-298, y6-66) は不変 = 伸縮するのは選択バーでテキストは動かない（オリジナル Oblivion の dialog_selection と同じ）",
+      "tags": [
+        "hover-scale",
+        "pixel-verification",
+        "launcher"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "00412ccb-7489-4e17-ac88-2644ebedc285",
+      "timestamp": "2026-09-23T14:33:19",
+      "category": "reference",
+      "priority": "high",
+      "content": "【測定手法】拡張帯は diff>25 では見えない。スケール由来の変化は diff 4-5 しかないため、diff>25 の bbox は名目矩形 (x107-526/y152-229) に張り付いたままで『スケール無効』と誤判定する。エッジプロファイルを diff>2 で直接読むこと。なお diff>8 はポータルグローの輝度でパネル全域が変化するため閾値として使えない",
+      "tags": [
+        "measurement",
+        "pitfall",
+        "hover-scale"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "722916ab-a2dd-44a4-88e3-a8efe6248ab5",
+      "timestamp": "2026-09-23T14:33:19",
+      "category": "reference",
+      "priority": "high",
+      "content": "【バグ】タイトル画面 Exit が無反応: title_screen.cpp handleMenuSelection() の比較が \"menu_quit\" だがメニュー項目のラベルキーは \"menu_exit\"。quitRequested のセッターがこの 1 行のみで完全なデッドコードだった。修正後: Menu selection: Exit -> Title screen Quit - returning to launcher -> LauncherScreen initialized",
+      "tags": [
+        "title_screen",
+        "bug-fix",
+        "exit"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "2b15ecc7-1dc1-47f6-a145-eca688a9e6b0",
+      "timestamp": "2026-09-23T20:03:15+09:00",
+      "category": "reference",
+      "priority": "medium",
+      "content": "【バグ】ランチャーのパネル枠がスライド中に静止していた: rebuildLayout() は px = screenWidth*0.04 - (1-introEase())*PANEL_SLIDE_DISTANCE でパネルとボタンを一体で動かすが、renderMain() のパネル背景グラデーションと装飾枠は静止値 screenWidth*0.04 で描画されていた。両者に同じスライド項を追加して修正。panelH は renderMain()=560 / rebuildLayout()=600 で不一致だが 2026-09-23 に視覚的影響なしと確定: メニューは 5 件（Play/Options/Data Files/Support/Exit）で最終ボタンは局所 y430-508、枠の 560 内に収まる。また mainPanel の背景色は alpha 0（透明）で renderer は枠 560 のみを描くため、600 の差は描画に現れない。触ると検証済みランチャー画像が無効になるため現状維持でよい",
+      "tags": [
+        "launcher",
+        "animation",
+        "bug-fix"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "2b5f8fb3-eab2-4798-9735-91f9e283a44b",
+      "timestamp": "2026-09-23T14:33:19",
+      "category": "reference",
+      "priority": "high",
+      "content": "【測定手法】ランチャーのスライド量は必ず cv2.phaseCorrelate で測ること。輝度重心 (しきい値超え画素の cx) はフェードイン中の背景輝度勾配に汚染され、frame 332 cx=146.84 -> 収束後 156.17 と逆方向にずれる。位相相関では frame330 dt=0.196 で -18.34px(960) / -36.67px(1920) -> frame347 dt=0.674 で 0.00 の ease-out cubic 収束が得られる",
+      "tags": [
+        "measurement",
+        "pitfall",
+        "animation",
+        "launcher"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "cb71b854-240f-4855-887a-957fc949531d",
+      "timestamp": "2026-09-23T14:33:19",
+      "category": "reference",
+      "priority": "high",
+      "content": "【検証手順】ホバー状態のスクショは input tap では捕捉できない（DOWN/UP が同一フレーム内で完結する）。input motionevent DOWN <x> <y> -> 待機 -> screencap -> input motionevent UP を使う。実測の保持時間は DOWN(41.750) から UP(44.627) の 2.877 秒。UP は同時に通常のタップとして Play を発火させるので、UP 後のスクショはランチャーのベースラインとして使えない",
+      "tags": [
+        "measurement",
+        "procedure",
+        "hover"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "83d359e9-f6d2-4f3a-b33f-34b5b6395fc8",
+      "timestamp": "2026-09-23T14:33:19",
+      "category": "reference",
+      "priority": "medium",
+      "content": "【測定手法】タイトル画面は全画面動画背景のためフレーム間で MD5 が一致せず、menu ink tol20 も 0-20022 まで変動する。タイトル/ランチャーの識別は mean（ランチャー約 16 / タイトル約 143）を主指標にすること。ランチャー画面は 5 ボタンすべてで帯輝度 52-67 > ギャップ 9-18 が成立する",
+      "tags": [
+        "measurement",
+        "title_screen",
+        "launcher"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "55b14bd8-6d3e-4836-b37f-a2b52756567f",
+      "timestamp": "2026-09-23T14:33:19",
+      "category": "decision",
+      "priority": "high",
+      "content": "【完了】A.今すぐ着手できる 5 件すべて実測合格・done 化: heap-native-2gb (PSS 2,020,948 -> 430,378 kB) / heap-heightdata-14686 / terrain-lru (cache=17 で BUDGET 頭打ち、移動 24 回で PSS +0.2%) / launcher-animations (fade-in + slide + hover スケールの 3 要素をピクセル実証) / esm-parse-async (readRecordHeaderMem の 16B/20B 不一致を 4 箇所修正)。APK 2026/09/23 14:29:12 / 93,544,177 B で fatal=0 ANR=0 LMK=0",
+      "tags": [
+        "todo",
+        "completed",
+        "milestone"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "a1caef4f-610c-48e1-9310-03e0253c8c35",
+      "timestamp": "2026-09-23T19:15:47+09:00",
+      "category": "reference",
+      "priority": "high",
+      "content": "2GB guest startup PSS verified (2026-09-23). Protocol: AVD Pixel_API34 hw.ramSize 4096 -> 2048, restart, force-stop -> am kill-all -> logcat -c -> monkey launch -> 45s -> input tap 960 540 (IntroVideo skip) -> title. Guest MemTotal 2,021,100 kB, data 3,184,304 kB / 25 files. Measured PSS/RSS/SWAP-PSS kB: t=15s 35,529/89,372/21,762; t=30s 42,294/95,404/22,006; t=45s 42,026/94,300/21,962; t=65s 425,035/472,324/20,378; t=90s 425,227/472,592/20,370; t=120s 425,283/472,732/20,370. PID 3566 identical from first to last sample. 4GB baseline for comparison: 440,020/520,076/477. Delta: PSS -3.4%, RSS -9.1%, SWAP +20 MB pushed to zram. Conclusion: 2GB guest is in the practical range; cost is ~20 MB zram swap only.",
+      "tags": [
+        "measurement",
+        "memory",
+        "pss",
+        "2gb",
+        "verified"
+      ],
+      "compressed": false,
+      "session": "964d16fb"
+    },
+    {
+      "id": "7304962c-1feb-4a6b-aeb7-d58c3356000b",
+      "timestamp": "2026-09-23T19:15:47+09:00",
+      "category": "constraint",
+      "priority": "high",
+      "content": "LMK on a 2GB guest fires but never targets the app. At 09-23 10:11:54 lowmemorykiller killed exactly 3 processes, all oom_score_adj 999 cached background: com.android.externalstorage (2991), com.android.shell (3320), com.android.dynsystem:dynsystem (3216). Reason strings: 'min watermark is breached and swap is low (140552kB < 151580kB)' / 'low watermark is breached and swap is low (127948kB < 151580kB)' - the real trigger is the zram swap watermark, not RAM shortage itself. App (foreground) = 0 kills; FATAL / ANR in / SIGABRT / Abort message = 0. When judging LMK logs, do not ask 'was anything killed' but 'was the uid / oom_score_adj the app'. Side effect: com.android.shell being killed makes adb screencap+pull unstable in 2GB mode (one capture succeeded, consecutive captures are more failure-prone than at 4GB).",
+      "tags": [
+        "measurement",
+        "lmk",
+        "lowmemorykiller",
+        "2gb",
+        "adb"
+      ],
+      "compressed": false,
+      "session": "964d16fb"
+    },
+    {
+      "id": "77b3da83-e4b3-4fd9-b1c6-e70f4f215797",
+      "timestamp": "2026-09-23T19:15:47+09:00",
+      "category": "constraint",
+      "priority": "high",
+      "content": "PSS must be sampled separately for the IntroVideo phase and the post-title phase. Measured on both guests: t=15-45s is only ~42 MB because IntroVideoActivity runs with no native engine; the IntroVideo skip is immediately followed by a +383 MB jump to ~425 MB at t=65s. That +383 MB is the real cost of ESM/BSA parsing plus title-screen resources. Mixing the two phases makes any before/after comparison meaningless (10x difference).",
+      "tags": [
+        "measurement",
+        "procedure",
+        "pss",
+        "esm",
+        "pitfall"
+      ],
+      "compressed": false,
+      "session": "964d16fb"
+    },
+    {
+      "id": "8cc708ed-ccf1-4601-a894-c0a5baeb455e",
+      "timestamp": "2026-09-23T19:15:47+09:00",
+      "category": "configuration",
+      "priority": "medium",
+      "content": "AVD Pixel_API34 RAM was temporarily reduced to 2048 for the 2GB-guest verification and has been restored to hw.ramSize=4096 (C:\\Users\\hiroki.kogarumai\\.android\\avd\\Pixel_API34.avd\\config.ini). The 2GB emulator was stopped with 'adb emu kill' (graceful; it saved a default_boot snapshot, harmless because launches use -no-snapshot-load) and the 4GB emulator was relaunched and verified: boot_completed=1, MemTotal 4,016,096 kB, app lastUpdateTime 2026-09-23 05:29:19 (= host 14:29 current APK), data 3,184,304 kB / 25 files intact. Stop-Process needs a literal numeric -Id; a pipeline variable ($_.Id) makes the PowerShell tool guard reject the entire command, so never combine kill and config edits in one script.",
+      "tags": [
+        "configuration",
+        "emulator",
+        "avd",
+        "restore",
+        "powershell-guard"
+      ],
+      "compressed": false,
+      "session": "964d16fb"
     }
   ],
   "metadata": {
-    "totalEntries": 59,
-    "compressedCount": 0,
-    "sessionCount": 15
+    "totalEntries": 212,
+    "compressedCount": 2,
+    "sessionCount": 23
   }
 }

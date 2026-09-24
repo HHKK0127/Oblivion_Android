@@ -42,6 +42,14 @@ public:
     bool isEnabled() const { return enabled; }
     bool isPressed() const { return pressed; }
     bool isHovered() const { return hovered; }
+    // Touch input has no OS hover event, so the owner drives this explicitly
+    // (e.g. the item currently under the finger). Ticking update() afterwards
+    // ramps the hover scale in/out.
+    void setHovered(bool hoveredState) {
+        if (hovered == hoveredState) return;
+        hovered = hoveredState;
+        updateVisualState();
+    }
 
     // === Color Settings ===
     void setNormalColor(const glm::vec4& color) { normalColor = color; }

@@ -12,14 +12,31 @@ import android.widget.FrameLayout
 import java.io.File
 
 /**
- * IntroVideoActivity - Plays the Oblivion intro video before launching the game.
+ * IntroVideoActivity - Plays the Oblivion intro video sequence before launching the game.
+ * Replicates the original intro order (logo screens only):
+ *   Bethesda Softworks HD720p -> 2K Games -> Game Studios -> Oblivion Legal
+ * The 'OBLIVION' title logo (oblivion_iv_logo.mp4) is played by GameRenderer as the
+ * start of the title screen (iv logo -> Map loop background), so it is not part of
+ * the intro sequence here.
+ * (OblivionIntro is the New Game opening cinematic and is not part of this sequence.)
  * Uses a simple SurfaceView + MediaPlayer approach for reliable playback.
- * After video completes or user taps to skip, launches MainActivity.
+ * Each clip in CLIP_SEQUENCE is played in order; missing clips are skipped.
+ * After the sequence completes or user taps to skip, launches MainActivity.
  */
 class IntroVideoActivity : Activity(), SurfaceHolder.Callback {
 
     companion object {
         private const val TAG = "IntroVideoActivity"
+
+        // Intro clips in the original Oblivion playback order (logo screens only).
+        // Add the actual .mp4 files under app/src/main/assets/videos/ when available;
+        // missing files are skipped automatically.
+        private val CLIP_SEQUENCE = listOf(
+                    "bethesda_logo.mp4",       // Bethesda Softworks HD720p
+                    "2k_games_logo.mp4",       // 2K Games
+                    "game_studios_logo.mp4",   // Game Studios
+                    "oblivion_legal.mp4"       // Oblivion Legal screen
+        )
     }
 
     private var mediaPlayer: MediaPlayer? = null
@@ -28,9 +45,9 @@ class IntroVideoActivity : Activity(), SurfaceHolder.Callback {
     private var videoPrepared = false
     private var videoCompleted = false
     private var videoStarted = false
-    private var videoStartTime = 0L
     private val handler = android.os.Handler(android.os.Looper.getMainLooper())
     private val VIDEO_TIMEOUT_MS = 5000L  // 5 second timeout
+    private var currentClipIndex = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -89,48 +106,76 @@ class IntroVideoActivity : Activity(), SurfaceHolder.Callback {
     }
 
     private fun tryStartPlayback() {
+        // Only used for the first clip (from surfaceCreated).
         if (videoCompleted || videoStarted) return
-        
+        playCurrentClip()
+    }
+
+    private fun playCurrentClip() {
+        if (currentClipIndex >= CLIP_SEQUENCE.size) {
+            launchGame()
+            return
+        }
+        val clipName = CLIP_SEQUENCE[currentClipIndex]
+
         // Take local copy to avoid race condition
         val s = surfaceView?.holder?.surface
         val sv = surfaceView
         if (s == null || !surfaceReady || sv == null) return
 
         // Find the video file: try external storage first, then assets
-        val videoFile = findVideoFile()
+        val videoFile = findVideoFile(clipName)
         if (videoFile == null) {
-            Log.w(TAG, "Video file not found, skipping to game")
-            launchGame()
+            Log.w(TAG, "Video file not found for clip '$clipName', skipping")
+            advanceToNextClip()
             return
         }
 
         try {
-            Log.i(TAG, "Starting video playback: $videoFile")
+            Log.i(TAG, "Starting video playback ($currentClipIndex/${CLIP_SEQUENCE.size}): $clipName -> $videoFile")
             videoStarted = true
+            videoPrepared = false
             mediaPlayer = MediaPlayer().apply {
                 setDataSource(videoFile)
                 setDisplay(sv.holder)
                 setOnPreparedListener {
-                    Log.i(TAG, "Video prepared: ${videoWidth}x${videoHeight}")
+                    Log.i(TAG, "Video prepared [$clipName]: ${videoWidth}x${videoHeight}")
                     videoPrepared = true
                     // Scale surface to fit video aspect ratio
                     adjustSurfaceSize(videoWidth, videoHeight)
                     start()
+                    // Safety net: force-advance even if completion/error
+                    // listeners never fire (e.g. player released by the system
+                    // with "went away with unhandled events"). Use the real
+                    // duration plus a margin, or a fixed cap as fallback.
+                    val duration = try {
+                        if (this.duration > 0) this.duration.toLong() else -1L
+                    } catch (e: Exception) {
+                        -1L
+                    }
+                    val timeoutMs = if (duration > 0) duration + 5000L else 30000L
+                                        val clipIndexAtStart = currentClipIndex
+                                        handler.postDelayed({
+                                            // Ignore stale timeouts from a previously skipped clip.
+                                            if (!videoCompleted && !isFinishing && clipIndexAtStart == currentClipIndex) {
+                                                Log.w(TAG, "Video safety timeout for '$clipName' (${timeoutMs}ms), advancing")
+                                                releasePlayer()
+                                                advanceToNextClip()
+                                            }
+                                        }, timeoutMs)
                 }
                 setOnCompletionListener {
-                    Log.i(TAG, "Video playback completed")
-                    videoCompleted = true
+                    Log.i(TAG, "Video playback completed [$clipName]")
                     releasePlayer()
-                    launchGame()
+                    advanceToNextClip()
                 }
                 setOnErrorListener { _, what, extra ->
-                    Log.e(TAG, "Video error: what=$what, extra=$extra")
-                    videoCompleted = true
+                    Log.e(TAG, "Video error [$clipName]: what=$what, extra=$extra")
                     releasePlayer()
-                    launchGame()
+                    advanceToNextClip()
                     true
                 }
-                setOnVideoSizeChangedListener { mp, width, height ->
+                setOnVideoSizeChangedListener { _, width, height ->
                     try {
                         adjustSurfaceSize(width, height)
                     } catch (e: Exception) {
@@ -140,48 +185,60 @@ class IntroVideoActivity : Activity(), SurfaceHolder.Callback {
                 prepareAsync()
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to start video: ${e.message}")
-            videoStarted = false
-            launchGame()
+            Log.e(TAG, "Failed to start video [$clipName]: ${e.message}")
+            releasePlayer()
+            advanceToNextClip()
         }
     }
 
-    private fun findVideoFile(): String? {
+    private fun advanceToNextClip() {
+        // videoStarted stays true once the sequence started so the initial
+        // surface timeout in surfaceCreated is not retriggered.
+        videoCompleted = false
+        currentClipIndex++
+        if (currentClipIndex >= CLIP_SEQUENCE.size) {
+            launchGame()
+            return
+        }
+        playCurrentClip()
+    }
+
+    private fun findVideoFile(clipName: String): String? {
         // 1. Try external storage (extracted from assets)
         val extDir = getExternalFilesDir(null)
         if (extDir != null) {
-            val extVideo = File(extDir, "oblivion_assets/videos/oblivion_intro.mp4")
+            val extVideo = File(extDir, "oblivion_assets/videos/$clipName")
             if (extVideo.exists() && extVideo.length() > 0) {
-                Log.i(TAG, "Found video at external: ${extVideo.absolutePath}")
+                Log.i(TAG, "Found video [$clipName] at external: ${extVideo.absolutePath}")
                 return extVideo.absolutePath
             }
         }
 
         // 2. Try filesDir
-        val filesVideo = File(filesDir, "oblivion_assets/videos/oblivion_intro.mp4")
+        val filesVideo = File(filesDir, "oblivion_assets/videos/$clipName")
         if (filesVideo.exists() && filesVideo.length() > 0) {
-            Log.i(TAG, "Found video at filesDir: ${filesVideo.absolutePath}")
+            Log.i(TAG, "Found video [$clipName] at filesDir: ${filesVideo.absolutePath}")
             return filesVideo.absolutePath
         }
 
         // 3. Copy from assets to cache and use that
         try {
-            val cacheVideo = File(cacheDir, "oblivion_intro.mp4")
+            val cacheVideo = File(cacheDir, clipName)
             if (cacheVideo.exists() && cacheVideo.length() > 0) {
-                Log.i(TAG, "Found video at cache: ${cacheVideo.absolutePath}")
+                Log.i(TAG, "Found video [$clipName] at cache: ${cacheVideo.absolutePath}")
                 return cacheVideo.absolutePath
             }
-            assets.open("videos/oblivion_intro.mp4").use { input ->
+            assets.open("videos/$clipName").use { input ->
                 cacheVideo.outputStream().use { output ->
                     input.copyTo(output)
                 }
             }
             if (cacheVideo.exists() && cacheVideo.length() > 0) {
-                Log.i(TAG, "Copied video to cache: ${cacheVideo.absolutePath}")
+                Log.i(TAG, "Copied video [$clipName] to cache: ${cacheVideo.absolutePath}")
                 return cacheVideo.absolutePath
             }
         } catch (e: Exception) {
-            Log.w(TAG, "Could not copy video from assets: ${e.message}")
+            Log.w(TAG, "Could not copy video [$clipName] from assets: ${e.message}")
         }
 
         return null
@@ -243,11 +300,13 @@ class IntroVideoActivity : Activity(), SurfaceHolder.Callback {
 
     override fun onTouchEvent(event: android.view.MotionEvent): Boolean {
         if (event.action == android.view.MotionEvent.ACTION_DOWN) {
-            if (mediaPlayer?.isPlaying == true) {
-                Log.i(TAG, "User tapped to skip video")
+            // Skip regardless of isPlaying so a player that stopped abnormally
+            // (isPlaying == false) can still be dismissed with a tap.
+            if (videoStarted && !videoCompleted) {
+                Log.i(TAG, "User tapped to skip video, advancing")
                 videoCompleted = true
                 releasePlayer()
-                launchGame()
+                advanceToNextClip()
                 return true
             }
         }

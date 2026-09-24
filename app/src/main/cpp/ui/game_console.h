@@ -148,6 +148,8 @@ public:
         std::function<void(const std::string&)> openMenu;
         std::function<void()> closeMenu;
         std::function<void()> toggleDebugMenu;
+        std::function<void(bool)> setTitlePlainStyle;
+        std::function<bool()> getTitlePlainStyle;
 
         // Phase 65: Extended Debug
         std::function<void()> toggleWireframe;

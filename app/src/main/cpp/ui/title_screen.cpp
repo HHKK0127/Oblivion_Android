@@ -5,6 +5,7 @@
 #include "ui_draw_helper.h"
 #include <GLES3/gl3.h>
 #include <GLES2/gl2ext.h>
+#include <algorithm>
 #include <cmath>
 
 // Re-define LOG_TAG after includes to override audio LOG_TAG
@@ -81,6 +82,8 @@ TitleScreen::~TitleScreen() {
     TextureLoader::deleteTexture(bgTexture);
     TextureLoader::deleteTexture(logoTexture);
     TextureLoader::deleteTexture(vignetteTexture);
+    TextureLoader::deleteTexture(selectBarTexture);
+    TextureLoader::deleteTexture(selectCutTexture);
     for (auto& tex : movieFrames) {
         TextureLoader::deleteTexture(tex);
     }
@@ -105,11 +108,12 @@ void TitleScreen::initialize(LocalizationManager* lm, TextRenderer* tr) {
     textRenderer = tr;
 
     menuItems.clear();
+    menuItems.push_back("menu_continue");
     menuItems.push_back("menu_new");
     menuItems.push_back("menu_load");
     menuItems.push_back("menu_options");
     menuItems.push_back("menu_credits");
-    menuItems.push_back("menu_quit");
+    menuItems.push_back("menu_exit");
 
     displayTimer = 0.0f;
     bgAnimTime = 0.0f;
@@ -127,10 +131,12 @@ void TitleScreen::initialize(LocalizationManager* lm, TextRenderer* tr) {
         bgTexture = TextureLoader::loadTextureFromAsset("textures/ui/loading_background.png");
         logoTexture = TextureLoader::loadTextureFromAsset("textures/ui/tes_oblivion_logo_final.png");
         vignetteTexture = TextureLoader::loadTextureFromAsset("textures/ui/load_in_game_default.png");
+        selectBarTexture = TextureLoader::loadTextureFromAsset("textures/ui/dialog_selection_full.png");
+        selectCutTexture = TextureLoader::loadTextureFromAsset("textures/ui/dialog_selection_cut.png");
 
         texturesLoaded = true;
-        LOGI("TitleScreen textures: bg=%u logo=%u vignette=%u",
-             bgTexture, logoTexture, vignetteTexture);
+        LOGI("TitleScreen textures: bg=%u logo=%u vignette=%u selectBar=%u selectCut=%u",
+             bgTexture, logoTexture, vignetteTexture, selectBarTexture, selectCutTexture);
     }
 
     // Register intro video clip if BinkVideoPlayer is available
@@ -148,11 +154,8 @@ void TitleScreen::initialize(LocalizationManager* lm, TextRenderer* tr) {
         for (int i = 0; i < MAX_MENU_BUTTONS; ++i) {
             buttonAnimTimers[i] = -BUTTON_STAGGER_DELAY * i;
             buttonAlphas[i] = 0.0f;
-            buttonSlideOffsets[i] = 80.0f;
+            buttonSlideOffsets[i] = 60.0f;
         }
-        selectionBarAlpha = 0.0f;
-        selectionBarY = 0.0f;
-        selectionBarTargetY = 0.0f;
         logoGlowIntensity = 0.5f;
         LOGI("TitleScreen initialized (Oblivion Authentic) - skipping to MENU");
     } else {
@@ -195,11 +198,12 @@ void TitleScreen::buildGraphicalMenu() {
 
     struct BtnInfo { int index; std::string labelKey; };
     BtnInfo infos[] = {
-        {MENU_NEW,     "menu_new"},
-        {MENU_LOAD,    "menu_load"},
-        {MENU_OPTIONS, "menu_options"},
-        {MENU_CREDITS, "menu_credits"},
-        {MENU_QUIT,    "menu_quit"}
+        {MENU_CONTINUE, "menu_continue"},
+        {MENU_NEW,      "menu_new"},
+        {MENU_LOAD,     "menu_load"},
+        {MENU_OPTIONS,  "menu_options"},
+        {MENU_CREDITS,  "menu_credits"},
+        {MENU_EXIT,     "menu_exit"}
     };
 
     for (const auto& info : infos) {
@@ -234,34 +238,96 @@ void TitleScreen::rebuildMenuLayout() {
     LOGD("=== rebuildMenuLayout called, buttons=%zu, screen=%dx%d ===",
           menuButtons.size(), screenWidth, screenHeight);
     if (!menuPanel) return;
+
     menuPanel->setScreenSize(screenWidth, screenHeight);
+    // The panel is only a hit-test host: the row is drawn directly in renderMenu, so
+    // the panel sits at the origin and the buttons carry absolute screen coordinates.
+    menuPanel->setPosition(0.0f, 0.0f);
+    menuPanel->setSize(static_cast<float>(screenWidth), static_cast<float>(screenHeight));
 
-    // Original Oblivion: buttons centered horizontally, lower-center area
-    // Original 1280x1024: buttons at Y~620, each ~150px wide, 8px gap
-    float btnW = 150.0f;
-    float btnH = 38.0f;
-    float gap = 8.0f;
-    float totalW = static_cast<float>(menuButtons.size()) * btnW
-                 + static_cast<float>(menuButtons.size() - 1) * gap;
-    float panelW = totalW + 30.0f;
-    float panelH = btnH + 20.0f;
+    computeMenuLayout();
 
-    // Position: center-lower (original Oblivion ~60% from top)
-    float px = (screenWidth - panelW) / 2.0f;
-    float py = screenHeight * 0.60f;
-    menuPanel->setPosition(px, py);
-    menuPanel->setSize(panelW, panelH);
-    LOGD("Panel: pos=(%.1f, %.1f), size=(%.1f, %.1f)", px, py, panelW, panelH);
+    LOGD("Menu row: startX=%.1f baselineY=%.1f scale=%.4f gap=%.1f cap=%.1f",
+         menuLayout.startX, menuLayout.baselineY, menuLayout.scale, menuLayout.gap,
+         menuLayout.capHeight);
+}
 
-    // Horizontal layout: buttons positioned relative to panel
-    float startX = 15.0f;
-    float startY = 10.0f;
+// Single horizontal row of items near the bottom of the screen, aligned on a shared
+// baseline. Proportions come from the original main menu art (16:9 reference).
+void TitleScreen::computeMenuLayout() {
+    const int n = static_cast<int>(menuButtons.size());
+    menuLayout = MenuRowLayout{};
+    if (n <= 0 || n > MAX_MENU_BUTTONS || !textRenderer) return;
+
+    // Measure every label at scale 1. renderText applies the same size multiplier that
+    // getTextWidth folds in, so width[i] * scale is the exact drawn width.
+    float total = 0.0f;
+    for (int i = 0; i < n; ++i) {
+        menuLayout.width[i] = textRenderer->getTextWidth(menuButtons[i]->getLabel(), 1.0f);
+        total += menuLayout.width[i];
+    }
+    if (total <= 0.0f) return;
+
+    // Reference fit: one row spanning MENU_ROW_SPAN of the frame, with reference sized
+    // gaps between the items. The original art scales the whole row with the frame, so
+    // this single rule is what reproduces it.
+    const float referenceGap = static_cast<float>(screenWidth) * MENU_ROW_GAP;
+    const float span = static_cast<float>(screenWidth) * MENU_ROW_SPAN;
+    const float referenceBudget = span - referenceGap * static_cast<float>(n - 1);
+    const float referenceScale = (referenceBudget > 0.0f) ? referenceBudget / total : 1.0f;
+
+    // Asked-for size. The row is laid out at this size first; what gives way is the gap
+    // between the items, not the width or the centre of the row.
+    const float capAtScaleOne = textRenderer->getTextCapHeight(1.0f);
+    const float askedCap = static_cast<float>(screenHeight) * MENU_CAP_HEIGHT_RATIO;
+    const float askedScale = (capAtScaleOne > 0.0f) ? askedCap / capAtScaleOne
+                                                    : referenceScale;
+    float scale = std::max(referenceScale, askedScale);
+
+    const float maxRowWidth = static_cast<float>(screenWidth) * MENU_ROW_MAX_SPAN;
+    const float minGap = static_cast<float>(screenWidth) * MENU_GAP_MIN_RATIO;
+    float gap = referenceGap;
+    if (n > 1) {
+        // The gap that lands the row exactly on the reference span: equal to the art's gap
+        // when the row is drawn at the art's size, and smaller than it whenever the row is
+        // grown for legibility. The art's gap is never exceeded.
+        const float spanGap = (span - total * scale) / static_cast<float>(n - 1);
+        gap = std::min(referenceGap, std::max(spanGap, minGap));
+
+        // On a narrow frame even the tightest gap can leave the row too wide.
+        // Trade capitals down rather than let the row overhang the frame edges.
+        const float maxTotal = maxRowWidth - gap * static_cast<float>(n - 1);
+        if (maxTotal > 0.0f && total * scale > maxTotal) {
+            scale = maxTotal / total;
+        }
+    }
+    float rowWidth = total * scale + gap * static_cast<float>(n - 1);
+
+    menuLayout.scale = scale;
+    menuLayout.gap = gap;
+    menuLayout.capHeight = capAtScaleOne * scale;
+    menuLayout.startX = (static_cast<float>(screenWidth) - rowWidth) * 0.5f;
+
+    // The reference row is baseline aligned; centre the capitals on the reference line.
+    menuLayout.baselineY = static_cast<float>(screenHeight) * MENU_ROW_CENTER_Y +
+                           menuLayout.capHeight * 0.5f;
+    // This function draws the row, but the touches go through the menu panel, so the
+    // button rectangles have to follow every recomputed layout.
+    applyMenuLayoutToButtons();
+}
+
+void TitleScreen::applyMenuLayoutToButtons() {
+    if (menuButtons.empty()) return;
+
+    float hitH = std::max(menuLayout.capHeight, 24.0f) * 1.8f;
+    float hitY = menuLayout.baselineY - hitH * 0.78f;
+    float x = menuLayout.startX;
     for (size_t i = 0; i < menuButtons.size(); ++i) {
-        float bx = startX + static_cast<float>(i) * (btnW + gap);
-        menuButtons[i]->setPosition(bx, startY);
-        menuButtons[i]->setSize(btnW, btnH);
+        float w = menuLayout.width[i] * menuLayout.scale;
+        menuButtons[i]->setPosition(x, hitY);
+        menuButtons[i]->setSize(w, hitH);
         menuButtons[i]->setScreenSize(screenWidth, screenHeight);
-        LOGD("Button %zu: pos=(%.1f, %.1f), size=(%.1f, %.1f)", i, bx, startY, btnW, btnH);
+        x += w + menuLayout.gap;
     }
 }
 
@@ -362,6 +428,15 @@ void TitleScreen::update(float deltaTime) {
 }
 
 void TitleScreen::render() {
+    // The debug menu can hand styling back to the renderer while this screen is up, so
+    // drop the plain style as soon as that happens.
+    if (plainStyleDisabled && fontStyleApplied) {
+        restoreSavedFontStyle();
+    }
+    if (!fontStyleReleased) {
+        applyPlainFontStyle();
+    }
+
     switch (state) {
         case TitleScreenState::INTRO_MOVIE:
             renderIntroMovie();
@@ -384,6 +459,72 @@ void TitleScreen::render() {
 
     // Render ripples on top of everything
     renderRipples();
+
+    // The menu has committed to leaving the title screen, so give the renderer its
+    // styling back. The remaining fade-out frames keep the plain style.
+    if (!fontStyleReleased && (gameStarted || quitRequested)) {
+        releasePlainFontStyle();
+    }
+}
+
+// The title screen draws warm brown text over bright parchment, so the console's blunt
+// alpha handling is skipped here. The renderer's coverage curve used to be forced off as
+// well, but this face has an unusually soft coverage ramp: at the row's small capitals
+// roughly half of every stroke is edge, and with the curve off the row read as a pale
+// halo around a thin core (measured: glyph cores at RGB(117,59,33), a 4.5:1 average
+// against the parchment, but only 2.8:1 for the cores themselves). The curve is left on
+// with a gentler window than the UI default (0.30/0.72) so it clips the halo and fills
+// the cores without the extra stroke width the harder window adds at this size; replayed
+// over the atlas it is worth about +1% of ink mass on its own, so it is a finish rather
+// than the cure.
+//
+// Weight comes from the renderer's outline instead, stamped in the ink colour rather than
+// the renderer's black default. The row is drawn at the art's own capitals, where only
+// about a third of the glyph cores reach full coverage; a sub-pixel ring in the same warm
+// brown lifts that to about two thirds, and because the ring is the ink's own colour it
+// cannot leave the near-black rim a black ring leaves (that ring put 28% of the row's ink
+// at near-black, against none in the art, and fattened every glyph by several pixels a
+// side at the sizes the row used to be drawn at). renderMenu keeps its own smaller dark
+// shadow under the row. `fontcontrast` / `fontoutline on|off|width` still tune the
+// renderer globally for every other screen.
+void TitleScreen::applyPlainFontStyle() {
+    if (!textRenderer || fontStyleApplied || plainStyleDisabled) return;
+    savedFontAlphaCurve = textRenderer->isFontAlphaCurveEnabled();
+    savedFontSizeMultiplier = textRenderer->getFontSizeMultiplier();
+    savedFontAlphaCurveLo = textRenderer->getFontAlphaCurveLo();
+    savedFontAlphaCurveHi = textRenderer->getFontAlphaCurveHi();
+    savedFontOutline = textRenderer->isFontOutlineEnabled();
+    savedFontOutlineWidth = textRenderer->getFontOutlineWidth();
+    savedFontOutlineColor = textRenderer->getFontOutlineColor();
+    textRenderer->setFontSizeMultiplier(1.0f);
+    textRenderer->setFontAlphaCurve(MENU_INK_CURVE_LO, MENU_INK_CURVE_HI);
+    textRenderer->setFontAlphaCurveEnabled(true);
+    textRenderer->setFontOutlineColor(glm::vec4(COLOR_MENU_TEXT.x, COLOR_MENU_TEXT.y,
+                                                COLOR_MENU_TEXT.z, MENU_OUTLINE_ALPHA));
+    textRenderer->setFontOutlineWidth(MENU_OUTLINE_WIDTH);
+    textRenderer->setFontOutlineEnabled(true);
+    fontStyleApplied = true;
+    LOGI("TitleScreen legibility pass: ink curve %.2f/%.2f on, ink-coloured outline %.2f px "
+         "at alpha %.2f, shadow %.3f of cap",
+         MENU_INK_CURVE_LO, MENU_INK_CURVE_HI, MENU_OUTLINE_WIDTH, MENU_OUTLINE_ALPHA,
+         MENU_SHADOW_OFFSET_RATIO);
+}
+
+void TitleScreen::restoreSavedFontStyle() {
+    if (!textRenderer) return;
+    textRenderer->setFontAlphaCurveEnabled(savedFontAlphaCurve);
+    textRenderer->setFontAlphaCurve(savedFontAlphaCurveLo, savedFontAlphaCurveHi);
+    textRenderer->setFontSizeMultiplier(savedFontSizeMultiplier);
+    textRenderer->setFontOutlineEnabled(savedFontOutline);
+    textRenderer->setFontOutlineWidth(savedFontOutlineWidth);
+    textRenderer->setFontOutlineColor(savedFontOutlineColor);
+    fontStyleApplied = false;
+}
+
+void TitleScreen::releasePlainFontStyle() {
+    if (!textRenderer || fontStyleReleased) return;
+    if (fontStyleApplied) restoreSavedFontStyle();
+    fontStyleReleased = true;
 }
 
 void TitleScreen::renderIntroMovie() {
@@ -451,135 +592,104 @@ void TitleScreen::renderMenu() {
     renderParticles();
     renderOblivionLogo(1.0f, true);  // Keep logo at same position as LOGO_DISPLAY
 
-    // Apply slide offset to menu panel position
-    if (menuPanel) {
-        float btnW = 150.0f;
-        float gap = 8.0f;
-        float totalW = static_cast<float>(menuButtons.size()) * btnW
-                     + static_cast<float>(menuButtons.size() - 1) * gap;
-        float panelW = totalW + 30.0f;
-        float baseX = (screenWidth - panelW) / 2.0f;
-        menuPanel->setPosition(baseX - menuSlideOffset, screenHeight * 0.60f);
-    }
+    computeMenuLayout();
+    const int n = static_cast<int>(menuButtons.size());
+    const float capHeight = menuLayout.capHeight;
+    float textTop = menuLayout.baselineY - capHeight;
 
-    // Draw selection indicator bar
-    if (menuPanel) {
-        float btnW = 150.0f;
-        float gap = 8.0f;
-        float totalW = static_cast<float>(menuButtons.size()) * btnW
-                     + static_cast<float>(menuButtons.size() - 1) * gap;
-        float panelW = totalW + 30.0f;
-        float panelX = (screenWidth - panelW) / 2.0f - menuSlideOffset;
-        float panelY = screenHeight * 0.60f;
-        float btnStartX = panelX + 15.0f;
-        float barX = btnStartX + selectionBarY + 5.0f; // selectionBarY holds animated X offset
-        float barW = 6.0f;
-        float barH = 36.0f;
-        float barYPos = panelY + 10.0f + 3.0f;
+    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        // Golden selection bar with glow
-        glm::vec4 barColor(COLOR_GOLD.x, COLOR_GOLD.y, COLOR_GOLD.z, selectionBarAlpha * menuFadeAlpha);
-        UIDrawHelper::drawColoredQuad(
-            barX, barYPos, barW, barH,
-            barColor, screenWidth, screenHeight);
+    // The parchment behind the row is bright and the background movie keeps moving under
+    // it, while this face's strokes are thin; each label is therefore stamped twice, a
+    // soft warm-black shadow offset down-right by a fraction of the capitals, then the ink
+    // on top. The shadow is what holds the row legible when the frame behind it darkens.
+    const float shadowOffset = std::max(1.5f, capHeight * MENU_SHADOW_OFFSET_RATIO);
 
-        // Glow effect behind bar
-        glm::vec4 glowColor(COLOR_GOLD.x, COLOR_GOLD.y, COLOR_GOLD.z, 0.2f * menuFadeAlpha);
-        UIDrawHelper::drawColoredQuad(
-            barX - 4.0f, barYPos - 2.0f, barW + 8.0f, barH + 4.0f,
-            glowColor, screenWidth, screenHeight);
-    }
-
-    for (size_t i = 0; i < menuButtons.size(); ++i) {
-        bool isSelected = (static_cast<int>(i) == selectedIndex);
-        int idx = static_cast<int>(i);
-
-        // Apply per-button animation
-        float buttonAlpha = buttonAlphas[idx];
-        float buttonSlide = buttonSlideOffsets[idx];
-
-        if (isSelected) {
-            float glow = 0.6f + 0.4f * sin(glowPhase);
-            glm::vec3 c(COLOR_MENU_TEXT_SELECTED.x + (COLOR_GOLD.x - COLOR_MENU_TEXT_SELECTED.x) * glow * 0.5f,
-                        COLOR_MENU_TEXT_SELECTED.y + (COLOR_GOLD.y - COLOR_MENU_TEXT_SELECTED.y) * glow * 0.5f,
-                        COLOR_MENU_TEXT_SELECTED.z + (COLOR_GOLD.z - COLOR_MENU_TEXT_SELECTED.z) * glow * 0.5f);
-            menuButtons[i]->setLabelColor(c);
-        } else {
-            menuButtons[i]->setLabelColor(COLOR_MENU_TEXT);
+    // The original marks the hovered item with a parchment highlight texture behind the
+    // label instead of changing the ink (menus/prefabs/button_floating.xml), and that bar is
+    // also what carries the row's contrast: its cream RGB(246,237,220) holds the declared
+    // brown ink at 7.62:1 whatever the movie frame behind it happens to be doing. Drawn
+    // first, so the ink and its shadow land on top of it.
+    const bool useSelectBar = (selectBarTexture != 0);
+    if (useSelectBar && selectedIndex >= 0 && selectedIndex < n) {
+        const float unit = capHeight / MENU_SELECT_UNIT;
+        float barItemX = menuLayout.startX;
+        for (int i = 0; i < selectedIndex; ++i) {
+            barItemX += menuLayout.width[i] * menuLayout.scale + menuLayout.gap;
+        }
+        const float barTextW = menuLayout.width[selectedIndex] * menuLayout.scale;
+        const float barAlpha = std::clamp(buttonAlphas[selectedIndex] * menuFadeAlpha, 0.0f, 1.0f);
+        if (barAlpha > 0.0f) {
+            const float barH = MENU_SELECT_BAR_HEIGHT * unit;
+            const float barY = textTop + menuSlideOffset + buttonSlideOffsets[selectedIndex]
+                             + (capHeight - barH) * 0.5f + MENU_SELECT_BAR_DROP * unit;
+            const float barVisible =
+                barTextW + (MENU_SELECT_LEFT_PAD + MENU_SELECT_RIGHT_PAD) * unit;
+            const float barX = barItemX - MENU_SELECT_LEFT_PAD * unit;
+            const glm::vec4 barTint(1.0f, 1.0f, 1.0f, barAlpha);
+            UIDrawHelper::drawTexturedQuad(barX, barY,
+                barVisible / MENU_SELECT_BAR_OPAQUE, barH,
+                selectBarTexture, barTint, screenWidth, screenHeight);
+            if (selectCutTexture != 0) {
+                const float capW = MENU_SELECT_CAP_WIDTH * unit;
+                UIDrawHelper::drawTexturedQuad(
+                    barItemX + barTextW + MENU_SELECT_CAP_RIGHT * unit - capW, barY, capW, barH,
+                    selectCutTexture, barTint, screenWidth, screenHeight);
+            }
         }
     }
 
-    // Render buttons directly at absolute positions (no panel dependency)
-    // Temporarily set panel to origin so child absolute positions match screen coords
-    if (menuPanel) {
-        menuPanel->setPosition(0.0f, 0.0f);
-        menuPanel->setSize(static_cast<float>(screenWidth), static_cast<float>(screenHeight));
-    }
-    {
-        float btnW = 150.0f;
-        float btnH = 38.0f;
-        float gap = 8.0f;
-        float totalW = static_cast<float>(menuButtons.size()) * btnW
-                     + static_cast<float>(menuButtons.size() - 1) * gap;
-        float startX = (screenWidth - totalW) / 2.0f - menuSlideOffset;
-        float startY = screenHeight * 0.60f + 10.0f;
+    float selX = 0.0f, selY = 0.0f, selW = 0.0f, selAlpha = 0.0f;
+    float x = menuLayout.startX;
+    for (int i = 0; i < n; ++i) {
+        const std::string& label = menuButtons[i]->getLabel();
+        float w = menuLayout.width[i] * menuLayout.scale;
+        float alpha = std::clamp(buttonAlphas[i] * menuFadeAlpha, 0.0f, 1.0f);
+        float y = textTop + menuSlideOffset + buttonSlideOffsets[i];
 
-        // Draw selection bar before buttons
-        if (selectionBarAlpha > 0.0f) {
-            float barX = startX + selectionBarY + 5.0f;
-            float barYPos = startY + 1.0f;
-            glm::vec4 barColor(COLOR_GOLD.x, COLOR_GOLD.y, COLOR_GOLD.z, selectionBarAlpha * menuFadeAlpha);
-            UIDrawHelper::drawColoredQuad(barX, barYPos, 6.0f, btnH - 2.0f,
-                                          barColor, screenWidth, screenHeight);
-            // Glow
-            glm::vec4 glowColor(COLOR_GOLD.x, COLOR_GOLD.y, COLOR_GOLD.z, 0.2f * menuFadeAlpha);
-            UIDrawHelper::drawColoredQuad(barX - 4.0f, barYPos - 2.0f, 14.0f, btnH + 2.0f,
-                                          glowColor, screenWidth, screenHeight);
+        // All six labels keep the ink the menu declares, exactly as the art does - the bar
+        // above is what marks the current item. Only when the bar's texture is missing does
+        // the current item fall back to the heavier ink, with the underline below.
+        glm::vec3 color = COLOR_MENU_TEXT;
+        if (i == selectedIndex) {
+            if (!useSelectBar) {
+                color = COLOR_MENU_TEXT_SELECTED;
+            }
+            selX = x;
+            selY = y;
+            selW = w;
+            selAlpha = alpha;
         }
 
-        for (size_t i = 0; i < menuButtons.size(); ++i) {
-            float bx = startX + static_cast<float>(i) * (btnW + gap);
-            menuButtons[i]->setPosition(bx, startY);
-            menuButtons[i]->setSize(btnW, btnH);
-            // Use Oblivion font for menu labels
-            bool isSelected = (static_cast<int>(i) == selectedIndex);
-            int idx = static_cast<int>(i);
-            float buttonAlpha = buttonAlphas[idx];
-            glm::vec3 labelColor = menuButtons[i]->getLabelColor();
-            float labelScale = 1.3f;
-            float textW = textRenderer->getTextWidth(menuButtons[i]->getLabel(), labelScale);
-            float textX = bx + (btnW - textW) * 0.5f;
-            float textY = startY + btnH * 0.65f;
-            float textAlpha = buttonAlpha * menuFadeAlpha;
-            if (textAlpha < 0.0f) textAlpha = 0.0f;
-            if (textAlpha > 1.0f) textAlpha = 1.0f;
-
-            // Reset GL state before text rendering
-            glDisable(GL_DEPTH_TEST);
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-            textRenderer->renderText(menuButtons[i]->getLabel(), textX, textY,
-                glm::vec4(labelColor.x, labelColor.y, labelColor.z, textAlpha), labelScale);
-        }
+        textRenderer->renderText(label, x + shadowOffset, y + shadowOffset,
+            glm::vec4(COLOR_MENU_SHADOW.x, COLOR_MENU_SHADOW.y, COLOR_MENU_SHADOW.z,
+                      alpha * MENU_SHADOW_ALPHA), menuLayout.scale);
+        textRenderer->renderText(label, x, y,
+            glm::vec4(color.x, color.y, color.z, alpha), menuLayout.scale);
+        x += w + menuLayout.gap;
     }
-    renderVersionText();
+
+    // Fallback selection marker: only used when the highlight bar's texture could not be
+    // loaded, so that the current item is never indistinguishable from the rest.
+    if (!useSelectBar && selW > 0.0f && selAlpha > 0.0f) {
+        float pulse = 0.5f + 0.5f * sin(glowPhase);
+        float h = std::max(2.0f, capHeight * 0.10f);
+        glm::vec4 c(COLOR_MENU_TEXT_SELECTED.x, COLOR_MENU_TEXT_SELECTED.y,
+                    COLOR_MENU_TEXT_SELECTED.z, (0.55f + 0.25f * pulse) * selAlpha);
+        UIDrawHelper::drawColoredQuad(selX, selY + capHeight * 1.34f, selW, h,
+                                      c, screenWidth, screenHeight);
+    }
 }
 
 void TitleScreen::renderBackground(float alpha, bool menuMode) {
     // If video background is active, render it instead of static background
     if (videoBackgroundActive && videoBackgroundTexture != 0) {
+        // The map video already carries the parchment tone, the dark top/bottom borders and
+        // its own edge falloff, so it is drawn as-is. Measured against the reference art the
+        // raw frame matches within 3%, while a dark overlay pushed the whole screen to ~0.65x.
         renderVideoBackground(alpha);
-
-        // Add a dark overlay for readability when in menu mode
-        if (menuMode) {
-            float w = static_cast<float>(screenWidth);
-            float h = static_cast<float>(screenHeight);
-            UIDrawHelper::drawColoredQuad(
-                0.0f, 0.0f, w, h,
-                glm::vec4(0.0f, 0.0f, 0.0f, 0.35f * alpha),
-                screenWidth, screenHeight);
-        }
         return;
     }
 
@@ -700,6 +810,9 @@ void TitleScreen::renderVideoBackground(float alpha) {
 }
 
 void TitleScreen::renderSepiaOverlay() {
+    // The map video is already sepia parchment, so tinting it again only darkens the frame.
+    if (videoBackgroundActive && videoBackgroundTexture != 0) return;
+
     glm::vec4 sepia(0.44f, 0.26f, 0.08f, 0.15f);
     UIDrawHelper::drawColoredQuad(
         0.0f, 0.0f,
@@ -708,6 +821,10 @@ void TitleScreen::renderSepiaOverlay() {
 }
 
 void TitleScreen::renderVignette() {
+    // load_in_game_default.png is an opaque loading-screen artwork, not a vignette mask:
+    // stretching it over the screen washed the video out and darkened the middle of it.
+    if (videoBackgroundActive && videoBackgroundTexture != 0) return;
+
     if (vignetteTexture != 0) {
         UIDrawHelper::drawTexturedQuad(
             0.0f, 0.0f,
@@ -728,11 +845,17 @@ void TitleScreen::renderOblivionLogo(float alpha, bool large) {
     float cx = static_cast<float>(screenWidth) * 0.5f;
 
     if (logoTexture != 0) {
-        // Logo aspect is 1024:256 = 4:1
-        float logoW = static_cast<float>(screenWidth) * (large ? 0.55f : 0.42f);
-        float logoH = logoW * 0.25f;
+        // Reference lockup box: 0.431W x 0.161H with its top edge at 0.275H.
+        float logoW = static_cast<float>(screenWidth) * LOGO_WIDTH_RATIO;
+        float logoH = static_cast<float>(screenHeight) * LOGO_HEIGHT_RATIO;
+        float logoY = static_cast<float>(screenHeight) * LOGO_TOP_RATIO;
+        if (!large) {
+            // Intro overlay: same lockup, a little smaller and higher up.
+            logoW *= 0.8f;
+            logoH *= 0.8f;
+            logoY *= 0.75f;
+        }
         float logoX = cx - logoW * 0.5f;
-        float logoY = static_cast<float>(screenHeight) * (large ? 0.30f : 0.18f);
         UIDrawHelper::drawTexturedQuad(
             logoX, logoY, logoW, logoH,
             logoTexture, glm::vec4(1.0f, 1.0f, 1.0f, alpha),
@@ -767,12 +890,15 @@ void TitleScreen::renderPressAnyKey(float alpha) {
     float fontScale = 0.7f * scale;
     float textWidth = textRenderer->getTextWidth(hint, fontScale);
     float textX = (static_cast<float>(screenWidth) - textWidth) * 0.5f;
-    // Position below the logo (logo is at screenHeight * 0.30, height ~ screenWidth * 0.55 * 0.25)
-    float logoBottom = screenHeight * 0.30f + screenWidth * 0.55f * 0.25f + 20.0f;
-    float textY = logoBottom;
 
-    glm::vec3 hintColor(COLOR_PARCHMENT.x, COLOR_PARCHMENT.y, COLOR_PARCHMENT.z);
-    textRenderer->renderText(hint, textX, textY, glm::vec3(hintColor.x, hintColor.y, hintColor.z), fontScale);
+    // Hang the prompt below the logo box. It used to be measured down from the lockup's own
+    // "Special Edition" line; that line is gone, so the height it left for the prompt is kept
+    // as a fixed ratio and the lockup itself does not move.
+    float textY = static_cast<float>(screenHeight) * PRESS_KEY_TOP_RATIO;
+
+    glm::vec3 hintColor(0.165f, 0.118f, 0.086f);
+    textRenderer->renderText(hint, textX, textY,
+                             glm::vec4(hintColor.x, hintColor.y, hintColor.z, alpha), fontScale);
 }
 
 void TitleScreen::renderVersionText() {
@@ -991,13 +1117,8 @@ void TitleScreen::transitionToMenu() {
     for (int i = 0; i < MAX_MENU_BUTTONS; ++i) {
         buttonAnimTimers[i] = -BUTTON_STAGGER_DELAY * i;
         buttonAlphas[i] = 0.0f;
-        buttonSlideOffsets[i] = 80.0f;
+        buttonSlideOffsets[i] = 60.0f;
     }
-
-    // Initialize selection bar
-    selectionBarAlpha = 0.0f;
-    selectionBarY = 0.0f;
-    selectionBarTargetY = 0.0f;
 
     // Initialize logo glow
     logoGlowIntensity = 0.5f;
@@ -1025,13 +1146,9 @@ void TitleScreen::updateMenu(float deltaTime) {
         float t = buttonAnimTimers[i] / BUTTON_ANIM_DURATION;
         if (t > 1.0f) t = 1.0f;
         buttonAlphas[i] = easeOutQuad(t);
-        buttonSlideOffsets[i] = 80.0f * (1.0f - easeOutQuad(t));
+        // The row rises into place from below, one item after another.
+        buttonSlideOffsets[i] = 60.0f * (1.0f - easeOutQuad(t));
     }
-
-    // Selection bar smooth movement (horizontal)
-    float barTargetX = static_cast<float>(selectedIndex) * 158.0f; // btnW(150) + gap(8)
-    selectionBarY += (barTargetX - selectionBarY) * SELECTION_BAR_SPEED * deltaTime;
-    selectionBarAlpha = 0.8f + 0.2f * sin(glowPhase * 2.0f);
 
     // Logo glow animation
     logoGlowIntensity = 0.5f + 0.5f * sin(glowPhase * LOGO_GLOW_SPEED);
@@ -1043,7 +1160,11 @@ void TitleScreen::handleMenuSelection() {
     const std::string& selected = menuItems[selectedIndex];
     playUISelectSound();
 
-    if (selected == "menu_new") {
+    if (selected == "menu_continue") {
+        // Continue resumes the most recent save, which the load screen opens by default.
+        loadGameRequested = true;
+        LOGI("Menu selection: Continue");
+    } else if (selected == "menu_new") {
         state = TitleScreenState::TRANSITIONING;
         transitionAlpha = 0.0f;
         gameStarted = true;
@@ -1061,9 +1182,11 @@ void TitleScreen::handleMenuSelection() {
         creditsAlpha = 0.0f;
         creditsScrollY = 0.0f;
         LOGI("Menu selection: Credits");
-    } else if (selected == "menu_quit") {
+    } else if (selected == "menu_exit") {
+        // The sixth item's label key is menu_exit; the renderer turns this flag into
+        // "return to launcher", which re-initializes the launcher intro animation.
         quitRequested = true;
-        LOGI("Menu selection: Quit");
+        LOGI("Menu selection: Exit");
     }
 }
 
