@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-24T17:40:05+09:00",
+  "lastUpdated": "2026-09-25T00:00:00+09:00",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -94,35 +94,6 @@
       "category": "reference",
       "priority": "high",
       "content": "Oblivion データソース一覧 (4種類)",
-      "data": {
-        "steam_version": {
-          "path": "D:\\Cargo\\Other\\Oblivion\\Oblivion_Steam版\\Data\\",
-          "contents": "Oblivion.esm, Oblivion-Meshes/Textures/Sounds/Misc/Voices1/Voices2.bsa, DLC ShiveringIsles (Meshes/Sounds/Textures/Voices.bsa), Knights.bsa, DLC BattlehornCastle/Frostcrag/HorseArmor/MehrunesRazor/Orrery/SpellTomes/ThievesDen/VileLair",
-          "has_dlc": true,
-          "notes": "GOTY版。全DLC同梱。Voicesは1+2に分割。"
-        },
-        "disc_version": {
-          "path": "D:\\Cargo\\Other\\Oblivion\\Oblivion_DISC版\\Oblivion\\Data\\",
-          "contents": "Oblivion.esm, Oblivion-Meshes/Textures/Sounds/Misc/Voices1/Voices2.bsa, DLC ShiveringIsles (Meshes/Sounds/Textures/Voices.bsa), Knights.bsa",
-          "has_dlc": true,
-          "notes": "ShiveringIsles + Knights同梱。個別DLC (Battlehorn等) なし。"
-        },
-        "goty_disc1": {
-          "path": "D:\\Cargo\\Other\\Oblivion\\Oblivion GOTY 1\\",
-          "contents": "data1-8.cab (インストーラーキャビネットファイル), setup.exe, DXREDIST/",
-          "notes": "GOTY DISC 1。インストーラーファイル。展開が必要。約3.5GB。"
-        },
-        "goty_disc2": {
-          "path": "D:\\Cargo\\Other\\Oblivion\\Oblivion GOTY 2\\",
-          "contents": "data1-3.cab (インストーラーキャビネットファイル), setup.exe",
-          "notes": "GOTY DISC 2。インストーラーファイル。展開が必要。約1.2GB。"
-        },
-        "bsa_extraction": {
-          "path": "D:\\Cargo\\Other\\Oblivion\\BSA\\bsa_Extraction\\",
-          "contents": "distantlod(922), facegen(1), fonts(10), menus(104), meshes(2188), sound(35572) = 39797 files",
-          "notes": "BSAから抽出済みのデータ。ディレクトリ構造: distantlod/facegen/fonts/menus/meshes/sound"
-        }
-      },
       "tags": [
         "oblivion",
         "game-data",
@@ -723,7 +694,7 @@
     {
       "id": "esm-grup-parent-cell-20260921",
       "timestamp": "2026-09-21T18:27:00Z",
-      "category": "pitfall",
+      "category": "constraint",
       "priority": "high",
       "content": "ESM pitfall: LAND, PGRD, REFR, ACHR and ACRE records do not carry their own cell formID. The owning cell must be recovered by tracking the label of the enclosing GRUP with groupType == 6 (CellChildren). Two code paths need this: the file parse path uses a groupInfoStack and the memory parse path uses m_currentCellFormID. Oblivion GRUP types: 0=TopLevel, 1=WorldChildren, 2=InteriorCellBlock, 3=InteriorCellSubBlock, 4=ExteriorCellBlock, 5=ExteriorCellSubBlock, 6=CellChildren, 7=TopicChildren, 8=CellPersistentChildren, 9=CellTemporaryChildren. Also note SubRecord has no empty() member; use size() > 0.",
       "tags": [
@@ -751,7 +722,7 @@
     {
       "id": "emulator-measurement-rules-20260922",
       "timestamp": "2026-09-22T00:00:00Z",
-      "category": "pitfall",
+      "category": "constraint",
       "priority": "high",
       "content": "Mandatory rules before trusting any emulator FPS or timing number (established 2026-09-22 after the 1-2 FPS misdiagnosis): (1) Always restart the emulator first - adb emu kill, wait for qemu-system-x86_64.exe to disappear, then emulator.exe -avd Pixel_API34 -no-snapshot-load. (2) Check TOTAL SWAP PSS before measuring: adb shell dumpsys meminfo com.example.oblivion | Select-String \"TOTAL PSS|SwapPss\"; a value like 223 MB makes the measurement worthless. (3) Re-issue adb root - it is lost on emulator restart, and without it am start fails with \"java.lang.SecurityException: Permission Denial: starting Intent ... from null (uid=2000) not exported from uid 10193\" because MainActivity is exported=false; NO app log appears at all, which is easily mistaken for the app failing to start. (4) Run adb logcat -c before polling - logcat -d returns the whole buffer, so stale lines get re-matched and produce bogus elapsed times (e.g. \"PARSED at 556s\" when the parse actually took 13 s).",
       "tags": [
@@ -810,7 +781,7 @@
     {
       "id": "build-install-pitfalls-20260922",
       "timestamp": "2026-09-22T00:00:00Z",
-      "category": "pitfall",
+      "category": "constraint",
       "priority": "high",
       "content": "Build/install pitfalls confirmed on this project: piping gradlew output directly into Select-String corrupts the produced APK (install then fails with INSTALL_PARSE_FAILED_NOT_APK) - always redirect with Out-File and Select-String the file afterwards. Never use 'am kill-all': it takes down system_server and reboots Android. app/build.gradle must keep abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64' so the emulator runs native x86_64 instead of under ARM-to-x86 binary translation (which caused input-dispatch ANRs); verify with dumpsys package com.example.oblivion | Select-String primaryCpuAbi. A clean assembleDebug for all 3 ABIs takes about 6 min 12 s; with ndkVersion pinned the debug APK is 94,472,193 bytes (94.5 MB). Incremental builds finish in about 33 s. Delete the temporary build log afterwards.",
       "tags": [
@@ -825,7 +796,7 @@
     {
       "id": "gl-uniform-location-frame-cost-20260922",
       "timestamp": "2026-09-22T00:00:00Z",
-      "category": "performance",
+      "category": "constraint",
       "priority": "high",
       "content": "ROOT CAUSE of the gameplay frame-rate ceiling, confirmed by measurement: ui/ui_draw_helper.cpp called glGetUniformLocation on EVERY draw call (2 per drawColoredQuad, 3 per drawTexturedQuad, 5 per drawGradientQuad, 7 per drawRadialGlow, 16 per draw3DTextureQuad). Each call is a synchronous round-trip to the GL server, so the in-game HUD issued hundreds per frame. Evidence chain: PerformanceMonitor reported a Min Frame Time floor of 37.19 ms (27 fps best case); pointing the camera at empty sky did not change the frame rate (so it was not fragment load); the title screen ran at 60 fps because it draws no HUD; simpleperf attributed 83.22% of samples to goldfish_pipe.ko:goldfish_pipe_read_write with under 0.1% in app code; top -H showed the GL thread at 96.5% and every other thread at 0.0%. FIX: memoize locations per (program, name) in an unordered_map keyed by program id, cleared in UIDrawHelper::cleanup(). RESULT: in-game 19.3 -> 42.7 fps, Average Frame Time 57.78 -> 22.06 ms, Min Frame Time 37.19 -> 15.63 ms, title unchanged at 60. Re-verified after the ndkVersion pin on a freshly restarted emulator: gameplay average 46.83 fps (window average 42.49, max 50.00), Current FPS 46.1, Min Frame Time 15.14 ms, Max Frame Time 27.20 ms, title 60-61 fps. engine/shader.cpp and ui/text_renderer.cpp already cached their locations, which is why the 3D mesh paths were never the bottleneck. LESSON: on this emulator any GL call that needs a server round-trip inside a per-frame loop is a frame-rate cliff - cache every location and never query GL state per draw. Remaining uncached call sites are low priority: ui/title_screen.cpp (3 per frame, but the title screen is already at 60 fps), renderer.cpp renderPlaceholderEntities() (debug path), geometry/cube.cpp, world/distant_lod/distant_lod_horizon.cpp.",
       "tags": [
@@ -840,7 +811,7 @@
     {
       "id": "terraindata-vhgt-rework-20260922",
       "timestamp": "2026-09-22T00:00:00Z",
-      "category": "architecture",
+      "category": "decision",
       "priority": "high",
       "content": "TerrainData reworked to cut native heap and to fix a silent terrain bug. New layout: std::vector<int8_t> heightDeltas (1089 raw VHGT bytes) + float heightOffset + baseTextures[4] + textureFormIDs, with expandHeights()/heightAt() helpers and GRID = 33. Consumers updated: engine/renderer.cpp, world/landscape_renderer.cpp (expands once locally and reuses for 4 quadrants), assets/world_data_loader.cpp. Measured: native heap allocation 704,684 KB -> 430,916 KB; Native Heap SwapPss 629,158 -> 33,981 KB (-95%); TOTAL SWAP PSS 648,001 -> 49,735 KB (-92%). THE BUG THIS FIXED: the old decoder required the Morrowind 65x65 int16 VHGT (size() >= 8451) while TES4's VHGT is 1096 bytes, so hasHeights() was ALWAYS false and every terrain silently rendered as a flat plane. Expansion formula validated independently in Python against Oblivion.esm: (heightOffset + columnOffset + rowOffset) * 8.0f, 14,052/14,613 east-edge and 14,066/14,608 north-edge heights agree (96%; the rest are cells from different worldspaces sharing grid coords). VNML/VCLR parsing was deleted - calculateNormals() derives normals from heights and VCLR was unused.",
       "tags": [
@@ -855,7 +826,7 @@
     {
       "id": "heightdata-64mb-retention-20260922",
       "timestamp": "2026-09-22T00:00:00Z",
-      "category": "issue",
+      "category": "constraint",
       "priority": "medium",
       "content": "Known remaining memory item, NOT yet fixed. engine/renderer.cpp assigns cell->heightData = terrain.expandHeights() inside the loop over all 31,823 terrain records, so all 14,686 matched exterior cells each hold 1089 floats (4356 B) = about 64 MB, although only the 9 active cells are ever rendered. Deliberately left alone because Cell::getTerrainHeightAt() reads heightData from other systems and returning 0 for an unloaded cell would change object placement and player grounding. Fixing it needs a compact or lazily expanded representation plus an audit of those callers. Note the current behaviour is MORE correct than before: the flat-terrain fallback meant only the 9 loaded cells had heights at all. plan.md previously claimed '9 active cells only, about 39 KB', which never matched the implementation and has been corrected.",
       "tags": [
@@ -2397,7 +2368,7 @@
     {
       "id": "emulator-host-vs-guest-triage-20260922",
       "timestamp": "2026-09-22T21:40:00Z",
-      "category": "pitfall",
+      "category": "constraint",
       "priority": "high",
       "content": "adb が offline/device をフラップする時の決定的切り分けは emulator コンソール (TCP 127.0.0.1:5554) の応答。`auth <token>` -> `avd name` が `Pixel_API34` / `OK` を返せばホストは健全で、原因はゲストの adbd ハング。adb を触らずに診断できるので、相手セッションが adb を占有していても有効。注意: コンソールのバナーは `OK` まで含めて 2〜3 行あるので、`OK` を読み切る前に `auth` を送ると応答が食われ『コンソール無応答』と誤判定する。認証トークンは `C:\\Users\\hiroki.kogarumai\\.emulator_console_auth_token`。",
       "tags": [
@@ -2411,7 +2382,7 @@
     {
       "id": "host-qemu-cpu-not-a-busyloop-proxy-20260922",
       "timestamp": "2026-09-22T21:40:00Z",
-      "category": "pitfall",
+      "category": "constraint",
       "priority": "medium",
       "content": "ホストの qemu-system-x86_64.exe の CPU はアプリのビジーループの指標にならない。GPU ホストパススルー環境では GL 描画量に支配され、タイトル画面表示中でも 1.6〜2.8 コアを消費する（正常）。『起動直後のアイドル CPU とアプリ起動後の CPU を比較する』テストは、アプリが正常でも大きな差が出るため無効。判定はゲスト内で行う: `adb shell top -n 1 -b | Select-String oblivion` または `/proc/<pid>/stat` の utime+stime を 2 回差分。また他セッションが報告する PID は必ず `Get-Process -Id <n>` で存在確認し、CreationDate で『いつ生成されたか』を確認する（エミュレータ再生成で PID は変わるので、死んだプロセスの飽和値を引用しがち）。実例: PID 9380 は console restart で死亡済み、現行は 28656。",
       "tags": [
@@ -2977,10 +2948,10 @@
         "memory",
         "pss",
         "2gb",
-        "verified"
+        "verified",
+        "964d16fb"
       ],
-      "compressed": false,
-      "session": "964d16fb"
+      "compressed": false
     },
     {
       "id": "7304962c-1feb-4a6b-aeb7-d58c3356000b",
@@ -2993,10 +2964,10 @@
         "lmk",
         "lowmemorykiller",
         "2gb",
-        "adb"
+        "adb",
+        "964d16fb"
       ],
-      "compressed": false,
-      "session": "964d16fb"
+      "compressed": false
     },
     {
       "id": "77b3da83-e4b3-4fd9-b1c6-e70f4f215797",
@@ -3009,10 +2980,10 @@
         "procedure",
         "pss",
         "esm",
-        "pitfall"
+        "pitfall",
+        "964d16fb"
       ],
-      "compressed": false,
-      "session": "964d16fb"
+      "compressed": false
     },
     {
       "id": "8cc708ed-ccf1-4601-a894-c0a5baeb455e",
@@ -3025,10 +2996,10 @@
         "emulator",
         "avd",
         "restore",
-        "powershell-guard"
+        "powershell-guard",
+        "964d16fb"
       ],
-      "compressed": false,
-      "session": "964d16fb"
+      "compressed": false
     },
     {
       "id": "f0dc33a7-5cdc-470d-80ab-b1d456866ad3",
@@ -3119,7 +3090,7 @@
     {
       "id": "deba5287-060e-4b02-851f-d0bc96b34e4b",
       "timestamp": "2026-09-24T10:48:48+09:00",
-      "category": "architecture",
+      "category": "decision",
       "priority": "high",
       "content": "engine/renderer.cpp and renderer.h are the one file contended by two workstreams, so the merge policy is explicit: master's rendering changes (terrain VTXT statistics log, texture LRU, cleanup() join, owned by WS-C/session 30cbb1e4) win, and WS-B's QuestFlowController injection is re-applied by hand on top. The injection is legitimate: Renderer already owns QuestManager/WorldManager/NpcManager/CombatManager/SaveManager, and on master QuestFlowController was never instantiated anywhere, so the Renderer's ScriptManager initialization is the only existing point that connects SetStage/GetStage to a runtime QuestFlowController. Final integration into master is performed by session 964d16fb, not by either workstream.",
       "tags": [
@@ -3162,7 +3133,7 @@
     {
       "id": "45d4c8d8-1856-4eba-ba86-b592fa229b34",
       "timestamp": "2026-09-24T11:04:30+09:00",
-      "category": "architecture",
+      "category": "decision",
       "priority": "high",
       "content": "Player reachability for script functions without touching engine/renderer.cpp: QuestFlowController (app/src/main/cpp/quest/quest_flow_controller.h) already stores Player* player_ and PlayerController* playerController_, populated by initialize(...) which Renderer::initGameSystems() calls with playerController->getPlayer().get() and playerController.get(). So ScriptFunctions can resolve Player FormID 0x14 through the QuestFlowController pointer it already receives as the 5th argument of ScriptManager::init(...). Adding read-only accessors getPlayer()/getPlayerController() to quest_flow_controller.h is a behaviour-neutral change; do NOT extend initialize()'s signature or add further edits to renderer.cpp/.h, which are the single file contended with WS-C.",
       "tags": [
@@ -3192,7 +3163,7 @@
     {
       "id": "f6a387a1-b925-43c3-b2b5-244d9c856970",
       "timestamp": "2026-09-24T11:54:11+09:00",
-      "category": "architecture",
+      "category": "decision",
       "priority": "high",
       "content": "Script VM arity and priority can be measured from real game data instead of guessed. script::ScriptData (script/script_context.h L31-40) retains both bytecode (SCDA compiled) and source (SCTX text) for every SCPT record; esm_reader.cpp L2283-2295 fills both and ESMManager::getAllScripts() exposes all 3,046 scripts. The VM reads each call's argument count from the bytecode (script_vm.cpp L607: argCount = readArg<uint16_t>(inst.argData + 2)), so arity is script-driven and a handler cannot break an existing call by accepting more arguments. Consequence: census over SCDA/SCTX gives (a) each FunctionID's true arity/type contract and (b) call-site frequency, so the remaining ~1,075 functions can be ordered by measured usage instead of estimated quest importance. MoveTo decision rule: append optional trailing params (MoveTo(ref, offX, offY, offZ)); never insert a parameter in the middle, because a real MoveTo ref offX offY offZ call would then silently read offX as a cell FormID and teleport to the wrong place with no error. Cell-targeted teleport is a separate function name (PositionCell).",
       "tags": [
@@ -3225,7 +3196,7 @@
       "compressed": false
     },
     {
-      "category": "architecture",
+      "category": "decision",
       "priority": "high",
       "content": "AsyncTaskManager had a real completion-ordering race, fixed on master as 47e691f4 (2026-09-25, session 964d16fb). Root cause: submit() wrapped each callable in a std::packaged_task, and packaged_task satisfies the caller's future from INSIDE the callable, so a caller woken by the future could read getStats() before workerThread() had run recordCompletion() and observe totalCompleted one short. That is what made Phase45UnitTests/Async_Statistics intermittently fail (39/40) and what the wiring agent reported as an app-side flake. Measured with a standalone probe before the fix: 27 of 500 iterations failed polling with wait_for(0ms), 2 of 4000 failed with wait() (the path the unit test uses). Fix: submit() now hands the task a std::function + std::promise and the task records completion BEFORE it publishes its result, so a ready future implies a counted completion. Secondary defect fixed by the same change: packaged_task stores a throwing task's exception in its shared state instead of rethrowing it, so workerThread()'s catch blocks never observed task failures and totalFailed_ stayed at 0 forever. The task now catches its own exception, counts the failure and forwards it to the promise (future::get() rethrows, getStats().totalFailed is real). avgExecutionTimeMs is now divided by every executed task, not only successful ones. After the fix: 20000 iterations of each probe mode fail zero times, a 200-iteration outcome probe (value, void, std and non-std exceptions) fails zero times.",
       "tags": [
@@ -3354,20 +3325,6 @@
       "compressed": false
     },
     {
-      "category": "reference",
-      "priority": "high",
-      "content": "タイトル画面スクショの汚染検出法（デバッグオーバーレイが開いていないかの判定）。メニュー帯インク tol20（y765-840 / x420-1520）: 正常 約7,500〜8,100 に対し **汚染時は 0**。content p50 輝度: 正常 約160〜167 に対し **汚染時 約60**。最大輝度: 正常 約243 に対し **汚染時 255**（パネルの白文字）。`tol20=0 かつ p50≈60` なら汚染確定。デバッグトグルは alpha=0.7 で常時表示のため左上付近を誤タップすると開く。スクショ手順から `taps 74 74` は恒久的に外すこと。",
-      "tags": [
-        "title-screen",
-        "screenshot",
-        "pitfall",
-        "debug-overlay"
-      ],
-      "id": "3258397a-d419-4590-8f09-64737fbd9c02",
-      "timestamp": "2026-09-24T17:40:05+09:00",
-      "compressed": false
-    },
-    {
       "category": "constraint",
       "priority": "high",
       "content": "計測指標 tol40（インク RGB(117,59,33) に許容 40）は**背景が変わると無効**。デバッグオーバーレイ表示中の t7.png では tol40=22,744px（正常な ta.png は 10,154px の 2.2 倍）で、tol20 は 0。暗色背景 RGB(104,88,72) は |104-117|=13 / |88-59|=29 / |72-33|=39 で全チャンネルが許容 40 以内に入り、背景を文字として計上する。「AA の増分を分離する」という tol40 の前提は背景が同一のときだけ成立する。主指標は tol20 を使うこと。",
@@ -3378,33 +3335,6 @@
         "title-screen"
       ],
       "id": "aab6834f-11da-44aa-b90f-78a4a727422f",
-      "timestamp": "2026-09-24T17:40:05+09:00",
-      "compressed": false
-    },
-    {
-      "category": "reference",
-      "priority": "medium",
-      "content": "暗色化の正体を相関で特定した手法（再利用可）。同一セッションでタップのみを変えた制御実験 3 枚（rp_before / rp_after / rp_after2）を撮り、領域別に corr(after, before) を取ると 左 x0-640 = +0.145（無相関）/ 右 x1280-1920 = +0.833（構造が残る）に分離。この左右非対称が「左 682.5px のパネル」の決め手になった。平均値の比（0.491）だけでは一様減光と誤認する。corr(rp_after, 964d16fb の t7) = +0.915、corr(rp_after2, rp_before) = +0.905。",
-      "tags": [
-        "diagnosis",
-        "method",
-        "correlation",
-        "title-screen"
-      ],
-      "id": "2472948e-b278-4e76-96fe-b380cedf15b3",
-      "timestamp": "2026-09-24T17:40:05+09:00",
-      "compressed": false
-    },
-    {
-      "category": "constraint",
-      "priority": "medium",
-      "content": "near-black 率の閾値定義が 2 セッションで異なる。964d16fb は `max(R,G,B) < 60`、本セッションは `mean(R,G,B) < 60`。絶対値が約 4 倍違う（3.36% vs 13.04%）が、変化量は一致（-0.16pp / -0.17pp）。跨セッションで絶対値を比較するときは定義を揃えること。",
-      "tags": [
-        "measurement",
-        "pitfall",
-        "title-screen"
-      ],
-      "id": "976076c8-dd21-4ee4-aeb4-d109a7e5346c",
       "timestamp": "2026-09-24T17:40:05+09:00",
       "compressed": false
     },
@@ -3423,7 +3353,7 @@
     }
   ],
   "metadata": {
-    "totalEntries": 239,
+    "totalEntries": 236,
     "compressedCount": 2,
     "sessionCount": 24
   }
