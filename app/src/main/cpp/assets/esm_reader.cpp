@@ -1154,50 +1154,62 @@ void ESMFile::decodeDialog(const ESMRecord& rec) {
     m_lastDialFormID = rec.formID;  // Track for child INFO records
 }
 
-void ESMFile::decodeInfo(const ESMRecord& rec) {
-    InfoData info;
+void decodeInfoRecord(const ESMRecord& rec, InfoData& info) {
     info.formID = rec.formID;
     info.editorID = rec.getString("EDID");
-    info.dialFormID = m_lastDialFormID;
     info.resultScript.formID = rec.formID;
     info.resultScript.editorID = info.editorID;
 
     // NAM1 = response text (NPC says this)
     info.responseText = rec.getString("NAM1");
 
-    // NAM2 = prompt text (player says this, optional)
-    info.promptText = rec.getString("NAM2");
+    // NAM2 = acting direction for the performer, not player-facing text.
+    info.actingNotes = rec.getString("NAM2");
 
-    // DATA = info response data
+    // DATA is 3 bytes on 19,276 of 19,278 records, so the old >= 4 guard never
+    // ran and left responseType and flags at zero for every INFO.
     auto* data = rec.findSubRecord("DATA");
-    if (data && data->size() >= 4) {
+    if (data && data->size() >= 1) {
         info.responseType = data->data[0];
-        // flags at bytes 1-3
-        std::memcpy(&info.flags, data->data.data() + 1, 3);
+        if (data->size() >= 2) {
+            info.infoFlags = data->data[1];
+        }
     }
 
-    // TRDT = speaker/trigger data (12 bytes: emotion type, emotion value, response number, speaker)
+    // TRDT is 16 bytes: emotion type, emotion value and a 1-based response
+    // ordinal. Bytes 8..11 are always zero, so there is no speaker FormID here.
     auto* trdt = rec.findSubRecord("TRDT");
-    if (trdt && trdt->size() >= 12) {
-        std::memcpy(&info.speakerFormID, trdt->data.data() + 8, 4);
-    }
-
-    // ANAM = faction FormID condition
-    info.factionFormID = rec.getFormID("ANAM");
-
-    // CNAM = faction rank condition
-    auto* cnam = rec.findSubRecord("CNAM");
-    if (cnam && cnam->size() >= 4) {
-        std::memcpy(&info.factionRank, cnam->data.data(), 4);
+    if (trdt && trdt->size() >= 13) {
+        info.emotionType = trdt->data[0];
+        info.emotionValue = trdt->data[4];
+        info.responseNumber = trdt->data[12];
     }
 
     // QSTI = linked quest FormID
     info.questFormID = rec.getFormID("QSTI");
 
-    // QSTN = required quest stage
-    auto* qstn = rec.findSubRecord("QSTN");
-    if (qstn && qstn->size() >= 4) {
-        std::memcpy(&info.questStage, qstn->data.data(), 4);
+    // ANAM, CNAM and QSTN do not occur in INFO records. Faction and quest
+    // requirements live in CTDA conditions, so read them from there.
+    for (const auto& sub : rec.subRecords) {
+        if (std::memcmp(sub.tag, "CTDA", 4) == 0) {
+            QuestCondition condition;
+            if (QuestRecordParser::parseCondition(
+                    sub.data.data(), sub.size(), condition)) {
+                const char* functionName =
+                    QuestCondition::getFunctionName(condition.functionIndex);
+                if (functionName) {
+                    const std::string name(functionName);
+                    if (name == "GetFactionRank" || name == "GetInFaction") {
+                        info.factionFormID = condition.param1;
+                        info.factionRank =
+                            static_cast<int32_t>(condition.comparisonValue);
+                    } else if (name == "GetStage" || name == "GetStageDone") {
+                        info.questStage =
+                            static_cast<int32_t>(condition.comparisonValue);
+                    }
+                }
+            }
+        }
     }
 
     for (const auto& sub : rec.subRecords) {
@@ -1214,6 +1226,12 @@ void ESMFile::decodeInfo(const ESMRecord& rec) {
             info.resultScript.references.push_back(readU32(sub.data.data()));
         }
     }
+}
+
+void ESMFile::decodeInfo(const ESMRecord& rec) {
+    InfoData info;
+    info.dialFormID = m_lastDialFormID;
+    decodeInfoRecord(rec, info);
 
     // Attach to parent DIAL
     for (auto& dia : m_dialogs) {

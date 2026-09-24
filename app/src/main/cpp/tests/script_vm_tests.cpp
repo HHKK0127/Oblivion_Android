@@ -13,6 +13,7 @@
 #include "../script/native_scda_decoder.h"
 #include "../quest/quest_flow_controller.h"
 #include "../game/inventory_manager.h"
+#include "../assets/esm_reader.h"
 
 #include <chrono>
 #include <cstring>
@@ -31,6 +32,7 @@
 #endif
 
 using namespace oblivion::script;
+using namespace oblivion;
 
 // ============================================
 // Helper: High-resolution timer
@@ -1029,6 +1031,89 @@ void ScriptVMTests::testScriptManager() {
 
         record("ScriptManager: Quest record layout", ok,
                "Parse INDX/QSDT/CNAM/CTDA owners from the on-disk QUST shape",
+               getTimeMs38() - start);
+    }
+
+    // Test 9: INFO subrecords follow the measured layout. DATA is 3 bytes
+    // (byte 0 = topic category, byte 1 = per-INFO flags), TRDT is 16 bytes
+    // (byte 0 = emotion type, byte 4 = emotion value, byte 12 = 1-based
+    // response ordinal) and carries no speaker FormID, NAM2 is an acting
+    // direction rather than player-facing text, and faction/quest requirements
+    // come from CTDA because ANAM/CNAM/QSTN never occur in INFO.
+    {
+        float start = getTimeMs38();
+
+        auto appendSub = [](std::vector<uint8_t>& out, const char* type,
+                            const std::vector<uint8_t>& body) {
+            out.insert(out.end(), type, type + 4);
+            const uint16_t size = static_cast<uint16_t>(body.size());
+            out.push_back(static_cast<uint8_t>(size & 0xFF));
+            out.push_back(static_cast<uint8_t>((size >> 8) & 0xFF));
+            out.insert(out.end(), body.begin(), body.end());
+        };
+        auto ascii = [](const char* text) {
+            return std::vector<uint8_t>(text, text + std::strlen(text));
+        };
+        auto u32le = [](uint32_t value) {
+            return std::vector<uint8_t>{
+                static_cast<uint8_t>(value & 0xFF),
+                static_cast<uint8_t>((value >> 8) & 0xFF),
+                static_cast<uint8_t>((value >> 16) & 0xFF),
+                static_cast<uint8_t>((value >> 24) & 0xFF)};
+        };
+
+        ESMRecord infoRec;
+        infoRec.recType[0] = 'I';
+        infoRec.recType[1] = 'N';
+        infoRec.recType[2] = 'F';
+        infoRec.recType[3] = 'O';
+        infoRec.formID = 0x00012345;
+
+        auto addSub = [&](const char* type, const std::vector<uint8_t>& body) {
+            SubRecord sub;
+            std::memcpy(sub.tag, type, 4);
+            sub.data = body;
+            infoRec.subRecords.push_back(std::move(sub));
+        };
+
+        addSub("NAM1", ascii("Greetings, traveler."));
+        addSub("NAM2", ascii("Lucien Lachance -- sinister"));
+        addSub("DATA", {0x01, 0x0A, 0x00});
+        // TRDT: emotion type 3, emotion value 50, ordinal 2, filler 0xCD.
+        std::vector<uint8_t> trdt(16, 0x00);
+        trdt[0] = 0x03;
+        trdt[4] = 0x32;
+        trdt[12] = 0x02;
+        trdt[13] = 0xCD;
+        trdt[14] = 0xCD;
+        trdt[15] = 0xCD;
+        addSub("TRDT", trdt);
+        addSub("QSTI", u32le(0x0000ABCD));
+        // CTDA: GetFactionRank (45) >= 3 against faction 0x0000BEEF.
+        std::vector<uint8_t> ctda(24, 0x00);
+        ctda[0] = 45;
+        ctda[2] = 0x00;
+        const float rank = 3.0f;
+        std::memcpy(ctda.data() + 4, &rank, 4);
+        const uint32_t factionFormID = 0x0000BEEF;
+        std::memcpy(ctda.data() + 8, &factionFormID, 4);
+        addSub("CTDA", ctda);
+
+        InfoData info;
+        decodeInfoRecord(infoRec, info);
+
+        const bool ok = info.formID == 0x00012345 &&
+                        info.responseText == "Greetings, traveler." &&
+                        info.actingNotes == "Lucien Lachance -- sinister" &&
+                        info.responseType == 0x01 && info.infoFlags == 0x0A &&
+                        info.emotionType == 3 && info.emotionValue == 50 &&
+                        info.responseNumber == 2 &&
+                        info.questFormID == 0x0000ABCD &&
+                        info.factionFormID == 0x0000BEEF &&
+                        info.factionRank == 3;
+
+        record("ScriptManager: INFO record layout", ok,
+               "Read DATA/TRDT/CTDA from the on-disk INFO shape and keep NAM2 out of player text",
                getTimeMs38() - start);
     }
 }

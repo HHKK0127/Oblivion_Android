@@ -69,9 +69,9 @@ void DialogueIntegration::loadFromESM(const oblivion::ESMManager& esmMgr) {
             info.editorID = esmInfo.editorID;
             info.dialFormID = esmInfo.dialFormID;
             info.responseText = esmInfo.responseText;
-            info.promptText = esmInfo.promptText;
+            info.actingNotes = esmInfo.actingNotes;
             info.dialogType = esmInfo.responseType;
-            info.flags = esmInfo.flags;
+            info.flags = esmInfo.infoFlags;
             info.factionFormID = esmInfo.factionFormID;
             info.factionRank = esmInfo.factionRank;
             info.questFormID = esmInfo.questFormID;
@@ -81,7 +81,6 @@ void DialogueIntegration::loadFromESM(const oblivion::ESMManager& esmMgr) {
             ResponseData resp;
             resp.type = static_cast<ResponseType>(esmInfo.responseType);
             resp.responseText = esmInfo.responseText;
-            resp.promptText = esmInfo.promptText;
             info.responses.push_back(resp);
 
             // Set priority based on specificity
