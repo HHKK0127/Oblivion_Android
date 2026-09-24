@@ -222,7 +222,8 @@ enum class CollisionShapeType : uint32_t {
     Capsule,
     ConvexHull,
     TriMesh,
-    MoppBvTree
+    MoppBvTree,
+    List
 };
 
 struct CollisionShape {
@@ -235,6 +236,9 @@ struct CollisionShape {
     std::vector<NIFTriangle> triangles;
     std::vector<uint8_t> moppData;
     uint32_t moppDataSize = 0;
+    uint32_t childShapeRef = 0;                     // bhkMoppBvTreeShape
+    std::vector<uint32_t> stripsDataRefs;           // bhkNiTriStripsShape
+    std::vector<uint32_t> subShapeRefs;             // bhkListShape
 };
 
 struct RigidBodyInfo {
@@ -308,6 +312,7 @@ struct NIFSkinInstance {
     uint32_t skinDataIndex = 0;
     uint32_t skinPartitionIndex = 0;
     uint32_t skeletonRootIndex = 0;
+    std::vector<uint32_t> boneNodeIndices;
     std::string name;
 };
 
@@ -370,6 +375,19 @@ struct NIFKeyframeController {
     NIFAnimationClip clip;
     // Phase 30: resolved bone index for fast lookup
     int32_t resolvedBoneIndex = -1;
+
+    // Raw NiControllerSequence::ControlledBlock fields (version 20.0.0.4).
+    // Node and controller names are not stored inline; they live in the
+    // sequence's NiStringPalette and are addressed by these offsets.
+    uint32_t interpolatorIndex = 0;
+    uint32_t controllerIndex = 0;
+    uint32_t stringPaletteIndex = 0;
+    uint8_t priority = 0;
+    uint32_t nodeNameOffset = 0;
+    uint32_t propertyTypeOffset = 0;
+    uint32_t controllerTypeOffset = 0;
+    uint32_t controllerIdOffset = 0;
+    uint32_t interpolatorIdOffset = 0;
 };
 
 struct NIFControllerSequence {

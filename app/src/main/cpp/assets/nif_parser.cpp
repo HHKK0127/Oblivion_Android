@@ -7,10 +7,28 @@
 
 #undef LOG_TAG
 #undef LOGD
+#undef LOGW
 #undef LOGE
 #define LOG_TAG "NIFParser"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+
+namespace {
+// Upper bounds that keep a corrupt block header from turning into a huge
+// allocation. Oblivion's largest shipped skeletons stay well below these.
+constexpr uint32_t MAX_SKIN_BONES = 4096;
+constexpr uint32_t MAX_SKIN_PARTITIONS = 4096;
+constexpr uint32_t MAX_WEIGHTS_PER_VERTEX = 4;
+constexpr uint32_t MAX_CONTROLLER_SEQUENCES = 4096;
+constexpr uint32_t MAX_CONTROLLED_BLOCKS = 4096;
+constexpr uint32_t MAX_RIGID_BODY_CONSTRAINTS = 4096;
+constexpr uint32_t MAX_CONVEX_VERTICES = 65536;
+constexpr uint32_t MAX_STRIPS_DATA = 4096;
+constexpr uint32_t MAX_SHAPE_FILTERS = 4096;
+constexpr uint32_t MAX_LIST_SUB_SHAPES = 4096;
+constexpr uint32_t MAX_MOPP_DATA_SIZE = 1u << 20;
+}
 
 NIFParser::NIFParser() {
     std::memset(header.magic, 0, sizeof(header.magic));
@@ -86,6 +104,17 @@ bool NIFParser::parseFile(const std::string& filepath) {
         LOGE("Failed to build node hierarchy");
         fileBuffer.clear();
         return false;
+    }
+
+    // Record the byte range of every block body. This is best effort: a walk
+    // failure only disables the block-anchored readers below, it does not make
+    // the file unusable.
+    if (walkAllBlocks()) {
+        LOGD("NIF block walk: %zu blocks, prefix=%u",
+             blockBodyOffsets.size(), blockPrefix);
+    } else {
+        LOGW("NIF block walk failed (%s); block-anchored readers unavailable",
+             walkError.c_str());
     }
 
     LOGD("=== NIF parse complete: %zu nodes found ===", nodes.size());
@@ -396,6 +425,15 @@ NIFVector4 NIFParser::readVector4() {
     float z = readFloat();
     float w = readFloat();
     return NIFVector4(x, y, z, w);
+}
+
+// Havok stores 3-component values padded to 16 bytes; the padding is dropped.
+NIFVector3 NIFParser::readHKVector3() {
+    float x = readFloat();
+    float y = readFloat();
+    float z = readFloat();
+    readFloat();                                // w padding
+    return NIFVector3(x, y, z);
 }
 
 NIFMatrix3x3 NIFParser::readMatrix3x3() {
@@ -1540,26 +1578,82 @@ std::vector<NIFGeometry> NIFParser::extractAllGeometry() const {
 // Phase 30 Step 2: Skinning Parsing
 // ============================================
 
+// Positions the cursor on the first field of the first block of a given type.
+// Returns false when the file was not walked or holds no such block.
+bool NIFParser::seekToBlockOfType(const std::string& typeName, uint32_t& blockIndex) {
+    std::vector<uint32_t> blocks;
+    if (!findBlocksOfType(typeName, blocks)) {
+        LOGD("%s: no block of this type in file", typeName.c_str());
+        return false;
+    }
+    blockIndex = blocks.front();
+
+    size_t offset = 0;
+    if (!locateBlockBody(blockIndex, offset)) {
+        LOGE("%s: cannot locate block %u", typeName.c_str(), blockIndex);
+        return false;
+    }
+    cursor = offset;
+    return true;
+}
+
+bool NIFParser::seekToAnyBlockOfType(const std::vector<std::string>& typeNames,
+                                     uint32_t& blockIndex) {
+    bool found = false;
+    for (const std::string& typeName : typeNames) {
+        std::vector<uint32_t> blocks;
+        if (!findBlocksOfType(typeName, blocks)) {
+            continue;
+        }
+        if (!found || blocks.front() < blockIndex) {
+            blockIndex = blocks.front();
+            found = true;
+        }
+    }
+    if (!found) {
+        LOGD("no block of the requested types in file");
+        return false;
+    }
+
+    size_t offset = 0;
+    if (!locateBlockBody(blockIndex, offset)) {
+        LOGE("cannot locate block %u", blockIndex);
+        return false;
+    }
+    cursor = offset;
+    return true;
+}
+
 bool NIFParser::parseNiSkinInstance(NIFSkinInstance& skin) {
     LOGD("Parsing NiSkinInstance...");
 
-    // NiSkinInstance layout:
-    // uint32_t skeletonRootIndex
-    // uint32_t numBones
-    // uint32_t[numBones] boneNodeIndices
-    // uint32_t skinPartitionIndex
-    // uint32_t skinDataIndex
-
-    skin.skeletonRootIndex = readUInt32();
-    uint32_t numBones = readUInt32();
-
-    // Read bone node indices (we don't store them directly, but need to skip)
-    for (uint32_t i = 0; i < numBones; i++) {
-        readUInt32();  // bone node index
+    // NiSkinInstance layout (nif.xml):
+    // Data:Ref(4) | Skin Partition:Ref(4) | Skeleton Root:Ptr(4)
+    // | Num Bones:uint(4) | Bones:Ptr[Num Bones](4 each)
+    uint32_t blockIndex = 0;
+    if (!seekToBlockOfType("NiSkinInstance", blockIndex)) {
+        return false;
     }
 
-    skin.skinPartitionIndex = readUInt32();
     skin.skinDataIndex = readUInt32();
+    skin.skinPartitionIndex = readUInt32();
+    skin.skeletonRootIndex = readUInt32();
+    const uint32_t numBones = readUInt32();
+    if (readError) {
+        return false;
+    }
+    if (numBones > MAX_SKIN_BONES) {
+        LOGE("NiSkinInstance: numBones %u exceeds limit", numBones);
+        return false;
+    }
+
+    skin.boneNodeIndices.resize(numBones);
+    for (uint32_t i = 0; i < numBones; i++) {
+        skin.boneNodeIndices[i] = readUInt32();
+    }
+    if (readError) {
+        return false;
+    }
 
     LOGD("NiSkinInstance: skeletonRoot=%u, numBones=%u, skinPartition=%u, skinData=%u",
          skin.skeletonRootIndex, numBones, skin.skinPartitionIndex, skin.skinDataIndex);
@@ -1570,162 +1664,246 @@ bool NIFParser::parseNiSkinInstance(NIFSkinInstance& skin) {
 bool NIFParser::parseNiSkinData(NIFSkinData& skinData) {
     LOGD("Parsing NiSkinData...");
 
-    // NiSkinData layout:
-    // NiTransform skinTransform (root transform)
-    // uint32_t numBones
-    // BoneData[numBones]:
-    //   NiTransform skinTransform
-    //   NIFVector3 boundingSphereOffset
-    //   float boundingSphereRadius
-    //   uint16_t numWeights
-    //   VertexWeight[numWeights]: { uint16_t index, float weight }
+    uint32_t blockIndex = 0;
+    if (!seekToBlockOfType("NiSkinData", blockIndex)) {
+        return false;
+    }
+    return parseNiSkinDataAt(blockIndex, skinData);
+}
 
+bool NIFParser::parseNiSkinDataAt(uint32_t blockIndex, NIFSkinData& skinData) {
+    size_t offset = 0;
+    if (!locateBlockBody(blockIndex, offset)) {
+        return false;
+    }
+    cursor = offset;
+
+    // NiSkinData layout (nif.xml):
+    // Skin Transform:NiTransform(52) | Num Bones:uint(4)
+    // | Has Vertex Weights:bool(1) | Bone List:BoneData[Num Bones]
+    // BoneData: NiTransform(52) | Bounding Sphere:NiBound(16) | Num Vertices:ushort(2)
+    //           | Vertex Weights:BoneVertData[Num Vertices] (only when Has Vertex Weights)
+    // BoneVertData: Index:ushort(2) | Weight:float(4)
     skinData.rootRotation = readMatrix3x3();
     skinData.rootTranslation = readVector3();
     skinData.rootScale = readFloat();
 
-    // Re-read as a transform
-    NIFTransform rootTransform;
-    rootTransform.rotation = skinData.rootRotation;
-    rootTransform.translation = skinData.rootTranslation;
-    rootTransform.scale = skinData.rootScale;
-
     skinData.numBones = readUInt32();
+    if (readError) {
+        return false;
+    }
+    if (skinData.numBones == 0 || skinData.numBones > MAX_SKIN_BONES) {
+        LOGE("NiSkinData: numBones %u out of range", skinData.numBones);
+        return false;
+    }
+
+    // Without this flag the bone list holds transforms only and every Num
+    // Vertices field is followed directly by the next bone.
+    const bool hasVertexWeights = (readUInt8() != 0);
+    if (readError) {
+        return false;
+    }
+
+    const size_t blockEnd = getBlockBodyEnd(blockIndex);
+    skinData.boneData.clear();
     skinData.boneData.resize(skinData.numBones);
 
     for (uint32_t i = 0; i < skinData.numBones; i++) {
-        NIFBoneData& bd = skinData.boneData[i];
+        NIFBoneData& bone = skinData.boneData[i];
 
-        // Bone transform
-        bd.skinTransform.rotation = readMatrix3x3();
-        bd.skinTransform.translation = readVector3();
-        bd.skinTransform.scale = readFloat();
+        bone.skinTransform.rotation = readMatrix3x3();
+        bone.skinTransform.translation = readVector3();
+        bone.skinTransform.scale = readFloat();
 
-        // Bounding sphere
-        readVector3();  // offset
-        readFloat();    // radius
+        skipBytes(16);                          // Bounding Sphere: Center + Radius
 
-        // Vertex weights
-        uint16_t numWeights = readUInt16();
-        bd.vertexWeights.resize(numWeights);
-        for (uint16_t w = 0; w < numWeights; w++) {
-            bd.vertexWeights[w].vertexIndex = readUInt16();
-            bd.vertexWeights[w].weight = readFloat();
+        const uint16_t numVertices = readUInt16();
+        if (readError) {
+            return false;
+        }
+
+        if (!hasVertexWeights) {
+            continue;
+        }
+        if (cursor + static_cast<size_t>(numVertices) * 6 > blockEnd) {
+            LOGE("NiSkinData: bone %u claims %u vertices past block end", i, numVertices);
+            return false;
+        }
+
+        bone.vertexWeights.resize(numVertices);
+        for (uint16_t v = 0; v < numVertices; v++) {
+            bone.vertexWeights[v].vertexIndex = readUInt16();
+            bone.vertexWeights[v].weight = readFloat();
+        }
+        if (readError) {
+            return false;
         }
     }
 
-    LOGD("NiSkinData: numBones=%u", skinData.numBones);
+    LOGD("NiSkinData: numBones=%u, vertexWeights=%s, %zu/%zu bytes consumed",
+         skinData.numBones, hasVertexWeights ? "yes" : "no",
+         cursor - offset, blockEnd - offset);
     return true;
 }
 
 bool NIFParser::parseNiSkinPartition(NIFSkinPartition& partition) {
     LOGD("Parsing NiSkinPartition...");
 
-    // NiSkinPartition layout:
-    // uint32_t numPartitions
-    // Partition[numPartitions]:
-    //   uint16_t numVertices
-    //   uint16_t numTriangles
-    //   uint16_t numBones
-    //   uint16_t numStrips
-    //   uint16_t numWeightsPerVertex
-    //   uint16_t[numBones] bones
-    //   bool hasVertexMap
-    //   uint16_t[numVertices] vertexMap (if hasVertexMap)
-    //   bool hasVertexWeights
-    //   float[numVertices * numWeightsPerVertex] vertexWeights (if hasVertexWeights)
-    //   uint16_t[numStrips] stripLengths (if numStrips > 0)
-    //   bool hasBoneIndices
-    //   uint8_t[numVertices * numWeightsPerVertex] boneIndices (if hasBoneIndices)
-    //   uint16_t[numTriangles * 3 or sum(stripLengths)] triangles
+    uint32_t blockIndex = 0;
+    if (!seekToBlockOfType("NiSkinPartition", blockIndex)) {
+        return false;
+    }
+    return parseNiSkinPartitionAt(blockIndex, partition);
+}
 
-    uint32_t numPartitions = readUInt32();
-    constexpr uint32_t MAX_PARTITIONS = 10000;
-    if (numPartitions > MAX_PARTITIONS) {
+bool NIFParser::parseNiSkinPartitionAt(uint32_t blockIndex, NIFSkinPartition& partition) {
+    size_t offset = 0;
+    if (!locateBlockBody(blockIndex, offset)) {
+        return false;
+    }
+    cursor = offset;
+
+    // NiSkinPartition: Num Partitions:uint(4) | Partitions:SkinPartition[N]
+    // SkinPartition (nif.xml):
+    //   Num Vertices:ushort | Num Triangles:ushort | Num Bones:ushort
+    //   | Num Strips:ushort | Num Weights Per Vertex:ushort
+    //   | Bones:ushort[Num Bones]
+    //   | Has Vertex Map:bool(1) | Vertex Map:ushort[Num Vertices] (cond)
+    //   | Has Vertex Weights:bool(1) | Vertex Weights:float[NV][NWPV] (cond)
+    //   | Strip Lengths:ushort[Num Strips]                <- unconditional
+    //   | Has Faces:bool(1)
+    //   | Strips:ushort[Num Strips][Strip Lengths] (cond: Has Faces && Num Strips != 0)
+    //   | Triangles:Triangle[Num Triangles]        (cond: Has Faces && Num Strips == 0)
+    //   | Has Bone Indices:bool(1) | Bone Indices:byte[NV][NWPV] (cond)
+    const uint32_t numPartitions = readUInt32();
+    if (readError) {
+        return false;
+    }
+    if (numPartitions > MAX_SKIN_PARTITIONS) {
         LOGE("NiSkinPartition: numPartitions %u exceeds limit", numPartitions);
         return false;
     }
+
+    const size_t blockEnd = getBlockBodyEnd(blockIndex);
+    partition.partitions.clear();
     partition.partitions.resize(numPartitions);
+
+    uint32_t maxBones = 0;
+    uint32_t maxWeights = 0;
 
     for (uint32_t p = 0; p < numPartitions; p++) {
         auto& part = partition.partitions[p];
 
-        uint16_t numVertices = readUInt16();
-        uint16_t numTriangles = readUInt16();
-        uint16_t numBones = readUInt16();
-        uint16_t numStrips = readUInt16();
-        uint16_t numWeightsPerVertex = readUInt16();
+        const uint16_t numVertices = readUInt16();
+        const uint16_t numTriangles = readUInt16();
+        const uint16_t numBones = readUInt16();
+        const uint16_t numStrips = readUInt16();
+        const uint16_t numWeightsPerVertex = readUInt16();
+        if (readError) {
+            return false;
+        }
+        if (numBones > MAX_SKIN_BONES || numWeightsPerVertex > MAX_WEIGHTS_PER_VERTEX) {
+            LOGE("NiSkinPartition[%u]: %u bones / %u weights per vertex out of range",
+                 p, numBones, numWeightsPerVertex);
+            return false;
+        }
 
         part.numVertices = numVertices;
         part.numTriangles = numTriangles;
+        maxBones = std::max<uint32_t>(maxBones, numBones);
+        maxWeights = std::max<uint32_t>(maxWeights, numWeightsPerVertex);
 
-        // Bone palette
         part.bonePalette.bones.resize(numBones);
         for (uint16_t b = 0; b < numBones; b++) {
             part.bonePalette.bones[b] = readUInt16();
         }
 
-        // Vertex map
-        bool hasVertexMap = (readUInt32() != 0);
-        std::vector<uint16_t> vertexMap;
-        if (hasVertexMap) {
-            vertexMap.resize(numVertices);
-            for (uint16_t v = 0; v < numVertices; v++) {
-                vertexMap[v] = readUInt16();
+        // Vertex map is dropped: the packed weights already cover every vertex.
+        if (readUInt8() != 0) {
+            if (cursor + static_cast<size_t>(numVertices) * 2 > blockEnd) {
+                LOGE("NiSkinPartition[%u]: vertex map runs past block end", p);
+                return false;
             }
+            skipU16Array(numVertices);
         }
 
-        // Vertex weights
-        bool hasVertexWeights = (readUInt32() != 0);
-        if (hasVertexWeights) {
+        if (readUInt8() != 0) {
+            if (cursor + static_cast<size_t>(numVertices) * numWeightsPerVertex * 4 > blockEnd) {
+                LOGE("NiSkinPartition[%u]: vertex weights run past block end", p);
+                return false;
+            }
             part.packedWeights.resize(numVertices);
             for (uint16_t v = 0; v < numVertices; v++) {
-                for (uint16_t w = 0; w < numWeightsPerVertex && w < 4; w++) {
-                    part.packedWeights[v].weights[w] = readFloat();
-                }
-            }
-        }
-
-        // Strip lengths
-        std::vector<uint16_t> stripLengths;
-        if (numStrips > 0) {
-            stripLengths.resize(numStrips);
-            for (uint16_t s = 0; s < numStrips; s++) {
-                stripLengths[s] = readUInt16();
-            }
-        }
-
-        // Bone indices per vertex
-        bool hasBoneIndices = (readUInt32() != 0);
-        if (hasBoneIndices) {
-            for (uint16_t v = 0; v < numVertices; v++) {
-                for (uint16_t w = 0; w < numWeightsPerVertex && w < 4; w++) {
-                    uint8_t idx = static_cast<uint8_t>(readUInt16() & 0xFF);
-                    if (v < part.packedWeights.size()) {
-                        part.packedWeights[v].boneIndices[w] = idx;
+                for (uint16_t w = 0; w < numWeightsPerVertex; w++) {
+                    const float weight = readFloat();
+                    if (w < MAX_WEIGHTS_PER_VERTEX) {
+                        part.packedWeights[v].weights[w] = weight;
                     }
                 }
             }
         }
 
-        // Triangles
-        uint32_t totalIndices;
-        if (numStrips > 0) {
-            totalIndices = 0;
-            for (uint16_t s = 0; s < numStrips; s++) {
-                totalIndices += stripLengths[s];
-            }
-        } else {
-            totalIndices = numTriangles * 3;
+        // Strip Lengths is present for every partition, even when Num Strips is 0.
+        std::vector<uint16_t> stripLengths(numStrips);
+        for (uint16_t s = 0; s < numStrips; s++) {
+            stripLengths[s] = readUInt16();
+        }
+        if (readError) {
+            return false;
         }
 
+        const bool hasFaces = (readUInt8() != 0);
+        if (readError) {
+            return false;
+        }
+
+        uint32_t totalIndices = 0;
+        if (hasFaces) {
+            if (numStrips != 0) {
+                for (uint16_t s = 0; s < numStrips; s++) {
+                    totalIndices += stripLengths[s];
+                }
+            } else {
+                totalIndices = static_cast<uint32_t>(numTriangles) * 3;
+            }
+        }
+
+        if (cursor + static_cast<size_t>(totalIndices) * 2 > blockEnd) {
+            LOGE("NiSkinPartition[%u]: %u indices run past block end", p, totalIndices);
+            return false;
+        }
         part.indices.resize(totalIndices);
         for (uint32_t i = 0; i < totalIndices; i++) {
             part.indices[i] = readUInt16();
         }
+
+        if (readUInt8() != 0) {
+            if (cursor + static_cast<size_t>(numVertices) * numWeightsPerVertex > blockEnd) {
+                LOGE("NiSkinPartition[%u]: bone indices run past block end", p);
+                return false;
+            }
+            if (part.packedWeights.size() < numVertices) {
+                part.packedWeights.resize(numVertices);
+            }
+            for (uint16_t v = 0; v < numVertices; v++) {
+                for (uint16_t w = 0; w < numWeightsPerVertex; w++) {
+                    const uint8_t boneIndex = readUInt8();
+                    if (w < MAX_WEIGHTS_PER_VERTEX) {
+                        part.packedWeights[v].boneIndices[w] = boneIndex;
+                    }
+                }
+            }
+        }
+        if (readError) {
+            return false;
+        }
     }
 
-    LOGD("NiSkinPartition: numPartitions=%u", numPartitions);
+    partition.maxBonesPerPartition = maxBones;
+    partition.maxBonesPerVertex = maxWeights;
+
+    LOGD("NiSkinPartition: numPartitions=%u, maxBones=%u, maxWeightsPerVertex=%u, %zu/%zu bytes consumed",
+         numPartitions, maxBones, maxWeights, cursor - offset, blockEnd - offset);
     return true;
 }
 
@@ -1736,123 +1914,182 @@ bool NIFParser::parseNiSkinPartition(NIFSkinPartition& partition) {
 bool NIFParser::parseNiControllerManager(NIFControllerManager& manager) {
     LOGD("Parsing NiControllerManager...");
 
-    // NiTimeController (parent of NiControllerManager)
-    // uint32_t nextControllerIndex (usually UINT32_MAX)
-    uint32_t nextController = readUInt32();
-    // uint16_t flags
-    uint16_t flags = readUInt16();
-    // float frequency
-    manager.lastTime = readFloat();
-    // float phase
-    float phase = readFloat();
+    // NiControllerManager layout (version 20.0.0.4):
+    //   NiTimeController: Next Controller:Ref(4) | Flags:ushort(2) | Frequency:float(4)
+    //                     | Phase:float(4) | Start Time:float(4) | Stop Time:float(4)
+    //                     | Target:Ptr(4)
+    //   Cumulative:bool(1)
+    //   Num Controller Sequences:uint(4)
+    //   Controller Sequences:Ref[N](4 each)
+    //   Object Palette:Ref(4)              <- last field
+    uint32_t blockIndex = 0;
+    if (!seekToBlockOfType("NiControllerManager", blockIndex)) {
+        return false;
+    }
 
-    // NiControllerManager specific
-    // uint32_t objectPaletteIndex
-    manager.objectPaletteIndex = readUInt32();
-    // uint32_t controllerSequenceCount
+    const uint32_t nextController = readUInt32();
+    const uint16_t flags = readUInt16();
+    const float frequency = readFloat();
+    const float phase = readFloat();
+    const float startTime = readFloat();
+    const float stopTime = readFloat();
+    const uint32_t target = readUInt32();
+    const bool cumulative = (readUInt8() != 0);
     manager.controllerSequenceCount = readUInt32();
-
-    LOGD("  ControllerManager: %u sequences, palette=%u",
-         manager.controllerSequenceCount, manager.objectPaletteIndex);
-
-    // Read controller sequence indices (block references)
-    std::vector<uint32_t> sequenceIndices(manager.controllerSequenceCount);
-    for (uint32_t i = 0; i < manager.controllerSequenceCount; i++) {
-        sequenceIndices[i] = readUInt32();
+    if (readError) {
+        return false;
+    }
+    if (manager.controllerSequenceCount > MAX_CONTROLLER_SEQUENCES) {
+        LOGE("NiControllerManager: %u sequences exceeds limit",
+             manager.controllerSequenceCount);
+        return false;
     }
 
-    // Store indices for later resolution
-    // Actual sequence data will be parsed when we encounter NiControllerSequence blocks
-    manager.sequences.resize(manager.controllerSequenceCount);
-
-    // Store block references for post-parse resolution
+    std::vector<uint32_t> sequenceRefs(manager.controllerSequenceCount);
     for (uint32_t i = 0; i < manager.controllerSequenceCount; i++) {
-        // We'll resolve these in resolveControllerReferences
-        // For now, store the block index as metadata
-        LOGD("  Sequence[%u] -> block %u", i, sequenceIndices[i]);
+        sequenceRefs[i] = readUInt32();
+    }
+    manager.objectPaletteIndex = readUInt32();
+    if (readError) {
+        return false;
     }
 
+    LOGD("  ControllerManager: next=%u flags=0x%04X freq=%.2f phase=%.2f start=%.2f stop=%.2f"
+         " target=%u cumulative=%d sequences=%u palette=%u",
+         nextController, flags, frequency, phase, startTime, stopTime,
+         target, cumulative ? 1 : 0, manager.controllerSequenceCount,
+         manager.objectPaletteIndex);
+
+    // lastTime has no counterpart in this block; keep it as the sequence clock
+    // origin so consumers do not read a stale value.
+    manager.lastTime = 0.0f;
+
+    // Each sequence is its own block, so resolve every reference by index.
+    manager.sequences.clear();
+    manager.sequences.reserve(manager.controllerSequenceCount);
+    for (uint32_t i = 0; i < manager.controllerSequenceCount; i++) {
+        NIFControllerSequence sequence;
+        if (parseNiControllerSequenceAt(sequenceRefs[i], sequence)) {
+            manager.sequences.push_back(std::move(sequence));
+        } else {
+            LOGW("NiControllerManager: sequence %u (block %u) failed to parse",
+                 i, sequenceRefs[i]);
+        }
+    }
+
+    LOGD("  ControllerManager: %zu/%u sequences parsed",
+         manager.sequences.size(), manager.controllerSequenceCount);
     return true;
 }
 
 bool NIFParser::parseNiControllerSequence(NIFControllerSequence& sequence) {
     LOGD("Parsing NiControllerSequence...");
 
-    // NiObject base (skip)
-    // readString for name
-    readStringRef(sequence.name);
+    uint32_t blockIndex = 0;
+    if (!seekToBlockOfType("NiControllerSequence", blockIndex)) {
+        return false;
+    }
+    return parseNiControllerSequenceAt(blockIndex, sequence);
+}
 
-    // uint32_t controllerManagerIndex (block ref)
-    sequence.controllerManagerIndex = readUInt32();
+bool NIFParser::parseNiControllerSequenceAt(uint32_t blockIndex, NIFControllerSequence& sequence) {
+    size_t offset = 0;
+    if (!locateBlockBody(blockIndex, offset)) {
+        return false;
+    }
+    cursor = offset;
+    const size_t blockEnd = getBlockBodyEnd(blockIndex);
 
-    // readString for target name
-    readStringRef(sequence.targetName);
+    // NiControllerSequence layout (version 20.0.0.4):
+    //   Name:SizedString(u32 length + bytes)
+    //   Num Controlled Blocks:uint(4) | Array Grow By:uint(4)
+    //   Controlled Blocks:ControlledBlock[N]
+    //   Weight:float(4) | Text Keys:Ref(4) | Cycle Type:CycleType(4)
+    //   Frequency:float(4) | Start Time:float(4) | Stop Time:float(4)
+    //   Manager:Ptr(4) | Accum Root Name:string
+    //   String Palette:Ref(4)
+    // ControlledBlock:
+    //   Interpolator:Ref(4) | Controller:Ref(4) | Priority:byte(1) | String Palette:Ref(4)
+    //   | Node Name Offset(4) | Property Type Offset(4) | Controller Type Offset(4)
+    //   | Controller ID Offset(4) | Interpolator ID Offset(4)
+    // Play Backwards:bool only exists in version 10.1.0.106 and Phase only up to
+    // 10.4.0.1, so neither is present here.
+    if (!readString(sequence.name)) {
+        return false;
+    }
+    const uint32_t numControlledBlocks = readUInt32();
+    skipBytes(4);                               // Array Grow By
+    if (readError) {
+        return false;
+    }
+    if (numControlledBlocks > MAX_CONTROLLED_BLOCKS) {
+        LOGE("NiControllerSequence: %u controlled blocks exceeds limit",
+             numControlledBlocks);
+        return false;
+    }
 
-    // float startTime, stopTime
+    sequence.controlledBlocks.clear();
+    sequence.controlledBlocks.resize(numControlledBlocks);
+    for (uint32_t i = 0; i < numControlledBlocks; i++) {
+        auto& cb = sequence.controlledBlocks[i];
+        cb.interpolatorIndex = readUInt32();
+        cb.controllerIndex = readUInt32();
+        cb.priority = readUInt8();
+        cb.stringPaletteIndex = readUInt32();
+        cb.nodeNameOffset = readUInt32();
+        cb.propertyTypeOffset = readUInt32();
+        cb.controllerTypeOffset = readUInt32();
+        cb.controllerIdOffset = readUInt32();
+        cb.interpolatorIdOffset = readUInt32();
+
+        // AnimationPlayer consumes keyframeDataIndex as an index into the
+        // keyframe data array, which resolveControllerReferences() fills in.
+        cb.keyframeDataIndex = cb.controllerIndex;
+        cb.resolvedBoneIndex = -1;
+    }
+
+    skipBytes(4);                               // Weight
+    const uint32_t textKeyBlock = readUInt32();
+    const uint32_t cycleType = readUInt32();
+    sequence.frequency = readFloat();
     sequence.startTime = readFloat();
     sequence.stopTime = readFloat();
+    sequence.controllerManagerIndex = readUInt32();
+    if (!readString(sequence.targetName)) {
+        return false;
+    }
+    const uint32_t stringPalette = readUInt32();
+    if (readError) {
+        return false;
+    }
 
-    // float phase
-    sequence.phase = readFloat();
-
-    // float frequency
-    sequence.frequency = readFloat();
-
-    // uint32_t cycleType (0=loop, 1=reverse, 2=clamp)
-    uint32_t cycleType = readUInt32();
     sequence.loop = (cycleType == 0);
+    sequence.duration = sequence.stopTime - sequence.startTime;
+    sequence.phase = 0.0f;                      // Phase is absent in 20.0.0.4
 
-    // uint32_t textKeyCount
-    uint32_t textKeyCount = readUInt32();
-    constexpr uint32_t MAX_TEXT_KEYS = 100000;
-    if (textKeyCount > MAX_TEXT_KEYS) {
-        LOGE("NiControllerSequence: textKeyCount %u exceeds limit", textKeyCount);
-        return false;
-    }
-    sequence.textKeys.resize(textKeyCount);
-
-    // Read text keys
-    for (uint32_t i = 0; i < textKeyCount; i++) {
-        sequence.textKeys[i].time = readFloat();
-        readStringRef(sequence.textKeys[i].value);
-    }
-
-    // uint32_t controlledBlockCount
-    uint32_t blockCount = readUInt32();
-    constexpr uint32_t MAX_CONTROLLED_BLOCKS = 10000;
-    if (blockCount > MAX_CONTROLLED_BLOCKS) {
-        LOGE("NiControllerSequence: blockCount %u exceeds limit", blockCount);
-        return false;
-    }
-    sequence.controlledBlocks.resize(blockCount);
-
-    // Read controlled blocks
-    for (uint32_t i = 0; i < blockCount; i++) {
-        auto& cb = sequence.controlledBlocks[i];
-        // uint32_t nodeNameOffset (string table index)
-        cb.targetNodeIndex = readUInt32();
-        // uint32_t controllerType (string ref)
-        uint32_t controllerTypeStr = readUInt32();
-        // uint32_t controllerIndex (block ref)
-        cb.keyframeDataIndex = readUInt32();
-        // uint32_t nodeName (string ref)
-        uint32_t nodeNameStr = readUInt32();
-        // uint32_t propertyType (string ref)
-        uint32_t propertyTypeStr = readUInt32();
-        // uint32_t controllerType (string ref)
-        uint32_t controllerType2 = readUInt32();
-        // uint32_t controllerId (block ref)
-        uint32_t controllerId = readUInt32();
-        // uint32_t interpolator (block ref)
-        uint32_t interpolator = readUInt32();
-
-        cb.resolvedBoneIndex = -1;  // Will be resolved later
+    // Text Keys is a reference to a NiTextKeyExtraData block, not inline data.
+    // Reading it moves the cursor, so the sequence position is restored after.
+    sequence.textKeys.clear();
+    if (textKeyBlock != 0xFFFFFFFF && textKeyBlock != 0) {
+        size_t textKeyOffset = 0;
+        if (locateBlockBody(textKeyBlock, textKeyOffset)) {
+            const size_t savedCursor = cursor;
+            cursor = textKeyOffset;
+            if (!parseNiTextKeyExtraData(sequence.textKeys)) {
+                LOGW("NiControllerSequence '%s': text keys (block %u) failed to parse",
+                     sequence.name.c_str(), textKeyBlock);
+                sequence.textKeys.clear();
+            }
+            cursor = savedCursor;
+        }
     }
 
-    LOGD("  Sequence '%s': %.2f-%.2f, %u textKeys, %u blocks",
-         sequence.name.c_str(), sequence.startTime, sequence.stopTime,
-         textKeyCount, blockCount);
-
+    LOGD("  Sequence '%s': %.3f-%.3f (%.3f), cycle=%u, %u blocks, %zu textKeys,"
+         " manager=%u, accumRoot='%s', palette=%u, %zu/%zu bytes",
+         sequence.name.c_str(), sequence.startTime, sequence.stopTime, sequence.duration,
+         cycleType, numControlledBlocks, sequence.textKeys.size(),
+         sequence.controllerManagerIndex, sequence.targetName.c_str(), stringPalette,
+         cursor - offset, blockEnd - offset);
     return true;
 }
 
@@ -2046,351 +2283,341 @@ bool NIFParser::resolveControllerReferences(NIFControllerManager& manager,
 // ============================================
 
 bool NIFParser::parseBhkCollisionObject(CollisionObject& obj) {
-    // bhkCollisionObject:
-    //   uint32_t target (parent node index)
-    //   uint32_t flags (short)
-    //   uint32_t body (bhkRigidBody index)
-    //   uint32_t numBodyFilters
-    //   uint32_t[] bodyFilters
+    LOGD("Parsing bhkCollisionObject...");
 
-    uint32_t targetIndex = 0;
-    if (!readBytes(reinterpret_cast<char*>(&targetIndex), 4)) return false;
-    obj.nodeIndex = targetIndex;
+    // bhkCollisionObject layout (version 20.0.0.4):
+    //   Target:Ptr(4) | Flags:bhkCOFlags(2) | Body:Ref(4)
+    // bhkBlendCollisionObject derives from it and appends:
+    //   Heir Gain:float(4) | Vel Gain:float(4)
+    // There is no body-filter array on this block; reading one used to consume
+    // the first four bytes of the next block.
+    uint32_t blockIndex = 0;
+    if (!seekToAnyBlockOfType({"bhkCollisionObject", "bhkBlendCollisionObject"}, blockIndex)) {
+        return false;
+    }
+    const bool isBlend = getBlockTypeName(blockIndex) == "bhkBlendCollisionObject";
 
-    uint16_t flags = 0;
-    if (!readBytes(reinterpret_cast<char*>(&flags), 2)) return false;
-
-    uint32_t bodyRef = 0;
-    if (!readBytes(reinterpret_cast<char*>(&bodyRef), 4)) return false;
-    obj.rigidBodyIndex = bodyRef;
-
-    uint32_t numBodyFilters = 0;
-    if (!readBytes(reinterpret_cast<char*>(&numBodyFilters), 4)) return false;
-    // Skip body filters
-    for (uint32_t i = 0; i < numBodyFilters; i++) {
-        uint32_t filter = 0;
-        if (!readBytes(reinterpret_cast<char*>(&filter), 4)) return false;
+    obj.nodeIndex = readUInt32();
+    const uint16_t flags = readUInt16();
+    obj.rigidBodyIndex = readUInt32();
+    if (readError) {
+        return false;
+    }
+    if (isBlend) {
+        skipBytes(8);                           // Heir Gain + Vel Gain
+        if (readError) {
+            return false;
+        }
     }
 
-    LOGD("bhkCollisionObject: target=%u, body=%u, flags=%u",
-         targetIndex, bodyRef, flags);
+    // Resolve the referenced rigid body and shape so callers get usable
+    // collision geometry without having to walk the block table themselves.
+    uint32_t shapeIndex = 0;
+    if (!parseBhkRigidBodyAt(obj.rigidBodyIndex, obj.bodyInfo, shapeIndex)) {
+        LOGW("bhkCollisionObject: body block %u could not be read", obj.rigidBodyIndex);
+    } else if (shapeIndex != 0xFFFFFFFF && !parseBhkShapeAt(shapeIndex, obj.shape)) {
+        LOGW("bhkCollisionObject: shape block %u could not be read", shapeIndex);
+    }
+
+    // The Target is a block index; surface the node name when it is in range.
+    const std::vector<std::shared_ptr<NIFNode>>& nodes = getNodes();
+    if (obj.nodeIndex < nodes.size() && nodes[obj.nodeIndex]) {
+        obj.targetName = nodes[obj.nodeIndex]->name;
+    }
+
+    LOGD("%s: target=%u (%s), flags=0x%04X, body=%u, shape=%u, shapeType=%d",
+         isBlend ? "bhkBlendCollisionObject" : "bhkCollisionObject",
+         obj.nodeIndex, obj.targetName.c_str(), flags, obj.rigidBodyIndex, shapeIndex,
+         static_cast<int>(obj.shape.type));
     return true;
 }
 
 bool NIFParser::parseBhkRigidBody(RigidBodyInfo& info) {
-    // bhkRigidBody (Oblivion NIF ver 20.x):
-    //   Havok material (uint32_t)
-    //   collisionFilterInfo (uint32_t)
-    //   unknown (uint8_t[5])
-    //   collisionResponse (uint8_t)
-    //   unknown2 (uint8_t)
-    //   processContactCallbackDelay (uint16_t)
-    //   unknown3 (uint16_t)
-    //   collisionFilterCopyInfo (uint32_t)
-    //   unknown4 (uint8_t[4])
-    //   mass (float)
-    //   linearDamping (float)
-    //   angularDamping (float)
-    //   friction (float)
-    //   restitution (float)
-    //   maxLinearVelocity (float)
-    //   maxAngularVelocity (float)
-    //   penetrationDepth (float)
-    //   motionSystem (uint8_t)
-    //   deactivatorType (uint8_t)
-    //   solverDeactivation (uint8_t)
-    //   qualityType (uint8_t)
-    //   autoRemoveLevel (int8_t)
-    //   respondableMask (uint8_t[4])
-    //   unknown5 (uint8_t[8])
-    //   translation (hkVector4: 4 floats)
-    //   rotation (hkQuaternion: 4 floats)
-    //   linearVelocity (hkVector4: 4 floats)
-    //   angularVelocity (hkVector4: 4 floats)
-    //   inertiaMatrix (hkMatrix3: 9 floats)
-    //   center (hkVector4: 4 floats)
-    //   mass2 (float)
-    //   linearDamping2 (float)
-    //   angularDamping2 (float)
-    //   friction2 (float)
-    //   restitution2 (float)
-    //   maxLinearVelocity2 (float)
-    //   maxAngularVelocity2 (float)
-    //   penetrationDepth2 (float)
-    //   motionSystem2 (uint8_t)
-    //   deactivatorType2 (uint8_t)
-    //   solverDeactivation2 (uint8_t)
-    //   qualityType2 (uint8_t)
-    //   autoRemoveLevel2 (int8_t)
-    //   respondableMask2 (uint8_t[4])
-    //   unknown6 (uint8_t[8])
-    //   translation2 (hkVector4)
-    //   rotation2 (hkQuaternion)
-    //   linearVelocity2 (hkVector4)
-    //   angularVelocity2 (hkQuaternion)
-    //   inertiaMatrix2 (hkMatrix3)
-    //   center2 (hkVector4)
-    //   numConstraints (uint32_t)
-    //   constraints[] (uint32_t refs)
-    //   unknown7 (uint8_t[4])
+    LOGD("Parsing bhkRigidBody...");
 
-    // Skip Havok material
-    uint32_t havokMaterial = 0;
-    if (!readBytes(reinterpret_cast<char*>(&havokMaterial), 4)) return false;
-
-    uint32_t collisionFilterInfo = 0;
-    if (!readBytes(reinterpret_cast<char*>(&collisionFilterInfo), 4)) return false;
-    info.collisionFilter = collisionFilterInfo;
-
-    // Skip unknown bytes (5 + 1 + 1 + 2 + 2 + 4 + 4 = 19 bytes)
-    char skipBuf[19];
-    if (!readBytes(skipBuf, 19)) return false;
-
-    // Mass
-    if (!readBytes(reinterpret_cast<char*>(&info.mass), 4)) return false;
-
-    // Linear damping
-    float linearDamping = 0;
-    if (!readBytes(reinterpret_cast<char*>(&linearDamping), 4)) return false;
-
-    // Angular damping
-    float angularDamping = 0;
-    if (!readBytes(reinterpret_cast<char*>(&angularDamping), 4)) return false;
-
-    // Friction
-    if (!readBytes(reinterpret_cast<char*>(&info.friction), 4)) return false;
-
-    // Restitution
-    if (!readBytes(reinterpret_cast<char*>(&info.restitution), 4)) return false;
-
-    // Max linear velocity, max angular velocity, penetration depth
-    char skipBuf2[12];
-    if (!readBytes(skipBuf2, 12)) return false;
-
-    // Motion system, deactivator type, solver deactivation, quality type, auto remove level
-    char skipBuf3[5];
-    if (!readBytes(skipBuf3, 5)) return false;
-
-    // Respondable mask (4 bytes)
-    char skipBuf4[4];
-    if (!readBytes(skipBuf4, 4)) return false;
-
-    // Unknown (8 bytes)
-    char skipBuf5[8];
-    if (!readBytes(skipBuf5, 8)) return false;
-
-    // Translation (hkVector4: x, y, z, w)
-    float tx, ty, tz, tw;
-    if (!readBytes(reinterpret_cast<char*>(&tx), 4)) return false;
-    if (!readBytes(reinterpret_cast<char*>(&ty), 4)) return false;
-    if (!readBytes(reinterpret_cast<char*>(&tz), 4)) return false;
-    if (!readBytes(reinterpret_cast<char*>(&tw), 4)) return false;
-    info.transform.translation = {tx, ty, tz};
-
-    // Rotation (hkQuaternion: x, y, z, w)
-    float qx, qy, qz, qw;
-    if (!readBytes(reinterpret_cast<char*>(&qx), 4)) return false;
-    if (!readBytes(reinterpret_cast<char*>(&qy), 4)) return false;
-    if (!readBytes(reinterpret_cast<char*>(&qz), 4)) return false;
-    if (!readBytes(reinterpret_cast<char*>(&qw), 4)) return false;
-
-    // Linear velocity (hkVector4)
-    float lvx, lvy, lvz, lvw;
-    if (!readBytes(reinterpret_cast<char*>(&lvx), 4)) return false;
-    if (!readBytes(reinterpret_cast<char*>(&lvy), 4)) return false;
-    if (!readBytes(reinterpret_cast<char*>(&lvz), 4)) return false;
-    if (!readBytes(reinterpret_cast<char*>(&lvw), 4)) return false;
-    info.linearVelocity = {lvx, lvy, lvz};
-
-    // Angular velocity (hkVector4)
-    float avx, avy, avz, avw;
-    if (!readBytes(reinterpret_cast<char*>(&avx), 4)) return false;
-    if (!readBytes(reinterpret_cast<char*>(&avy), 4)) return false;
-    if (!readBytes(reinterpret_cast<char*>(&avz), 4)) return false;
-    if (!readBytes(reinterpret_cast<char*>(&avw), 4)) return false;
-    info.angularVelocity = {avx, avy, avz};
-
-    // Inertia matrix (9 floats) + center (4 floats) = 52 bytes
-    char skipBuf6[52];
-    if (!readBytes(skipBuf6, 52)) return false;
-
-    // Second copy of properties (mass through center) = same structure
-    // mass, linearDamping, angularDamping, friction, restitution
-    // maxLinearVelocity, maxAngularVelocity, penetrationDepth
-    // motionSystem, deactivatorType, solverDeactivation, qualityType, autoRemoveLevel
-    // respondableMask, unknown
-    // translation, rotation, linearVelocity, angularVelocity
-    // inertiaMatrix, center
-    // Total: 4*7 + 5 + 4 + 8 + 4*16 + 4*9 + 4*4 = 28 + 17 + 64 + 36 + 16 = 161 bytes
-    // Simplified: skip the entire second copy
-    size_t secondCopySize = 4*7 + 5 + 4 + 8 + 4*16 + 4*9 + 4*4;
-    std::vector<char> skipBuf7(secondCopySize);
-    if (!readBytes(skipBuf7.data(), secondCopySize)) return false;
-
-    // Number of constraints
-    uint32_t numConstraints = 0;
-    if (!readBytes(reinterpret_cast<char*>(&numConstraints), 4)) return false;
-
-    // Constraint references
-    for (uint32_t i = 0; i < numConstraints; i++) {
-        uint32_t constraintRef = 0;
-        if (!readBytes(reinterpret_cast<char*>(&constraintRef), 4)) return false;
+    // bhkRigidBodyT derives from bhkRigidBody without adding a single field.
+    uint32_t blockIndex = 0;
+    if (!seekToAnyBlockOfType({"bhkRigidBody", "bhkRigidBodyT"}, blockIndex)) {
+        return false;
     }
 
-    // Unknown (4 bytes)
-    char skipBuf8[4];
-    if (!readBytes(skipBuf8, 4)) return false;
+    uint32_t shapeIndex = 0;
+    return parseBhkRigidBodyAt(blockIndex, info, shapeIndex);
+}
 
-    LOGD("bhkRigidBody: mass=%.2f, friction=%.2f, restitution=%.2f, constraints=%u",
-         info.mass, info.friction, info.restitution, numConstraints);
+bool NIFParser::parseBhkRigidBodyAt(uint32_t blockIndex, RigidBodyInfo& info,
+                                    uint32_t& shapeIndex) {
+    size_t offset = 0;
+    if (!locateBlockBody(blockIndex, offset)) {
+        return false;
+    }
+    cursor = offset;
+    const size_t blockEnd = getBlockBodyEnd(blockIndex);
+
+    // bhkRigidBody layout (version 20.0.0.4):
+    //   Shape:Ref(4)
+    //   Havok Filter:HavokFilter(4)
+    //   World Object Info:bhkWorldObjectCInfo(20)
+    //     Unused01:uint(4) | BroadPhaseType:enum(1) | Unused02:byte[3]
+    //     | Property:bhkWorldObjCInfoProperty(12)
+    //   Entity Info:bhkEntityCInfo(4)
+    //     Collision Response:enum(1) | Unused01:byte(1) | Process Contact Callback Delay:ushort(2)
+    //   Rigid Body Info:bhkRigidBodyCInfo550_660(196)
+    //   Num Constraints:uint(4) | Constraints:Ref[N](4 each) | Body Flags:uint(4)
+    shapeIndex = readUInt32();
+
+    // Havok Filter at the bhkWorldObject level carries the layer/group bits the
+    // rest of the engine uses for collision filtering.
+    const uint8_t layer = readUInt8();
+    const uint8_t filterFlags = readUInt8();
+    const uint16_t group = readUInt16();
+    info.collisionGroup = layer;
+    info.collisionFilter = group;
+    info.isTrigger = (filterFlags & 0x80) != 0;
+
+    skipBytes(20);                              // World Object Info
+    skipBytes(4);                               // Entity Info
+
+    // bhkRigidBodyCInfo550_660 (196 bytes)
+    skipBytes(4);                               // Unused 01
+    skipBytes(4);                               // Havok Filter (duplicate)
+    skipBytes(4);                               // Unused 02
+    const uint8_t collisionResponse = readUInt8();
+    skipBytes(1);                               // Unused 03
+    skipBytes(2);                               // Process Contact Callback Delay
+    skipBytes(4);                               // Unused 04
+
+    const NIFVector3 translation = readHKVector3();
+    const NIFVector3 rotation = readHKVector3();          // hkQuaternion
+    info.linearVelocity = readHKVector3();
+    info.angularVelocity = readHKVector3();
+    skipBytes(48);                              // Inertia Tensor (hkMatrix3)
+    skipBytes(16);                              // Center (hkVector4)
+
+    info.mass = readFloat();
+    const float linearDamping = readFloat();
+    const float angularDamping = readFloat();
+    info.friction = readFloat();
+    info.restitution = readFloat();
+    const float maxLinearVelocity = readFloat();
+    const float maxAngularVelocity = readFloat();
+    const float penetrationDepth = readFloat();
+    const uint8_t motionSystem = readUInt8();
+    const uint8_t deactivatorType = readUInt8();
+    const uint8_t solverDeactivation = readUInt8();
+    const uint8_t qualityType = readUInt8();
+    skipBytes(12);                              // Unused 05
+    if (readError) {
+        return false;
+    }
+
+    info.transform.translation = translation;
+    (void)rotation;                             // Quaternion order needs the Havok convention
+
+    const uint32_t numConstraints = readUInt32();
+    if (readError) {
+        return false;
+    }
+    if (numConstraints > MAX_RIGID_BODY_CONSTRAINTS) {
+        LOGE("bhkRigidBody: %u constraints exceeds limit", numConstraints);
+        return false;
+    }
+    skipRefArray(numConstraints);
+    skipBytes(4);                               // Body Flags
+    if (readError) {
+        return false;
+    }
+
+    LOGD("bhkRigidBody: shape=%u, layer=%u, group=%u, mass=%.2f, friction=%.2f,"
+         " restitution=%.2f, response=%u, motion=%u/%u/%u/%u, damping=%.3f/%.3f,"
+         " vel=(%.2f, %.2f, %.2f), constraints=%u, %zu/%zu bytes",
+         shapeIndex, layer, group, info.mass, info.friction, info.restitution,
+         collisionResponse, motionSystem, deactivatorType, solverDeactivation, qualityType,
+         linearDamping, angularDamping,
+         info.linearVelocity.x, info.linearVelocity.y, info.linearVelocity.z,
+         numConstraints, cursor - offset, blockEnd - offset);
     return true;
 }
 
 bool NIFParser::parseBhkShape(CollisionShape& shape) {
-    // bhkShape is abstract - read the block type to determine actual shape
-    // This is called from the main block parser when a bhkShape block is encountered
-    // The actual shape type is determined by the block type string
-    LOGD("parseBhkShape: dispatching based on block type");
+    LOGD("Parsing bhkShape...");
+
+    // bhkShape is abstract. A bhkShape block can only be reached by block index,
+    // and the concrete reader is chosen from the block's own type name.
+    uint32_t blockIndex = 0;
+    if (!seekToAnyBlockOfType({"bhkSphereShape", "bhkBoxShape", "bhkCapsuleShape",
+                               "bhkConvexVerticesShape", "bhkNiTriStripsShape",
+                               "bhkMoppBvTreeShape", "bhkListShape", "bhkMeshShape"},
+                              blockIndex)) {
+        LOGE("parseBhkShape: no bhkShape-derived block in file");
+        return false;
+    }
+    return parseBhkShapeAt(blockIndex, shape);
+}
+
+bool NIFParser::parseBhkShapeAt(uint32_t blockIndex, CollisionShape& shape) {
+    const std::string typeName = getBlockTypeName(blockIndex);
+
+    size_t offset = 0;
+    if (!locateBlockBody(blockIndex, offset)) {
+        return false;
+    }
+    cursor = offset;
+    const size_t blockEnd = getBlockBodyEnd(blockIndex);
+
+    // Every bhk*Shape starts with Material:HavokMaterial(4) + Radius:float(4),
+    // except bhkListShape, whose material follows its sub-shape array.
+    bool ok = false;
+    if (typeName == "bhkSphereShape") {
+        ok = parseBhkSphereShape(shape);
+    } else if (typeName == "bhkBoxShape") {
+        ok = parseBhkBoxShape(shape);
+    } else if (typeName == "bhkCapsuleShape") {
+        ok = parseBhkCapsuleShape(shape);
+    } else if (typeName == "bhkConvexVerticesShape") {
+        ok = parseBhkConvexVerticesShape(shape);
+    } else if (typeName == "bhkNiTriStripsShape") {
+        ok = parseBhkNiTriStripsShape(shape);
+    } else if (typeName == "bhkMoppBvTreeShape") {
+        ok = parseBhkMoppBvTreeShape(shape);
+    } else if (typeName == "bhkListShape") {
+        ok = parseBhkListShape(shape);
+    } else if (typeName == "bhkMeshShape") {
+        ok = parseBhkMeshShape(shape);
+    } else {
+        LOGE("parseBhkShape: unsupported shape block type '%s'", typeName.c_str());
+        return false;
+    }
+
+    if (!ok) {
+        LOGE("parseBhkShape: '%s' reader failed", typeName.c_str());
+        return false;
+    }
+
+    LOGD("bhkShape '%s': %zu/%zu bytes consumed",
+         typeName.c_str(), cursor - offset, blockEnd - offset);
     return true;
 }
 
 bool NIFParser::parseBhkBoxShape(CollisionShape& shape) {
-    // bhkBoxShape:
-    //   material (uint32_t)
-    //   radius (float)
-    //   dimensions (hkVector4: x, y, z, w) - half extents
-    //   unknown (uint8_t[8])
+    LOGD("Parsing bhkBoxShape...");
 
+    // bhkBoxShape layout:
+    //   Material:HavokMaterial(4) | Radius:float(4) | Unused01:byte[8]
+    //   | Dimensions:hkVector4(16) | Unused Float(4)
     shape.type = CollisionShapeType::Box;
 
-    uint32_t material = 0;
-    if (!readBytes(reinterpret_cast<char*>(&material), 4)) return false;
-
-    float radius = 0;
-    if (!readBytes(reinterpret_cast<char*>(&radius), 4)) return false;
-    shape.radius = radius;
-
-    float dx, dy, dz, dw;
-    if (!readBytes(reinterpret_cast<char*>(&dx), 4)) return false;
-    if (!readBytes(reinterpret_cast<char*>(&dy), 4)) return false;
-    if (!readBytes(reinterpret_cast<char*>(&dz), 4)) return false;
-    if (!readBytes(reinterpret_cast<char*>(&dw), 4)) return false;
-    shape.halfExtents = {dx, dy, dz};
-
-    char unknown[8];
-    if (!readBytes(unknown, 8)) return false;
+    skipBytes(4);                               // Material
+    shape.radius = readFloat();
+    skipBytes(8);                               // Unused 01
+    const NIFVector3 dimensions = readHKVector3();
+    skipBytes(4);                               // Unused Float
+    if (readError) {
+        return false;
+    }
+    shape.halfExtents = dimensions;
 
     LOGD("bhkBoxShape: halfExtents=(%.2f, %.2f, %.2f), radius=%.2f",
-         dx, dy, dz, radius);
+         dimensions.x, dimensions.y, dimensions.z, shape.radius);
     return true;
 }
 
 bool NIFParser::parseBhkSphereShape(CollisionShape& shape) {
-    // bhkSphereShape:
-    //   material (uint32_t)
-    //   radius (float)
+    LOGD("Parsing bhkSphereShape...");
 
+    // bhkSphereShape layout: Material:HavokMaterial(4) | Radius:float(4)
     shape.type = CollisionShapeType::Sphere;
 
-    uint32_t material = 0;
-    if (!readBytes(reinterpret_cast<char*>(&material), 4)) return false;
-
-    if (!readBytes(reinterpret_cast<char*>(&shape.radius), 4)) return false;
+    skipBytes(4);                               // Material
+    shape.radius = readFloat();
+    if (readError) {
+        return false;
+    }
 
     LOGD("bhkSphereShape: radius=%.2f", shape.radius);
     return true;
 }
 
 bool NIFParser::parseBhkCapsuleShape(CollisionShape& shape) {
-    // bhkCapsuleShape:
-    //   material (uint32_t)
-    //   radius (float)
-    //   unknown1 (uint8_t[4])
-    //   firstPoint (hkVector4: x, y, z, w)
-    //   unknown2 (uint8_t[4])
-    //   secondPoint (hkVector4: x, y, z, w)
-    //   unknown3 (uint8_t[4])
+    LOGD("Parsing bhkCapsuleShape...");
 
+    // bhkCapsuleShape layout:
+    //   Material:HavokMaterial(4) | Radius:float(4) | Unused01:byte[8]
+    //   | First Point:hkVector4(16) | Radius1:float(4)
+    //   | Second Point:hkVector4(16) | Radius2:float(4)
     shape.type = CollisionShapeType::Capsule;
 
-    uint32_t material = 0;
-    if (!readBytes(reinterpret_cast<char*>(&material), 4)) return false;
+    skipBytes(4);                               // Material
+    shape.radius = readFloat();
+    skipBytes(8);                               // Unused 01
+    const NIFVector3 firstPoint = readHKVector3();
+    skipBytes(4);                               // Radius 1
+    const NIFVector3 secondPoint = readHKVector3();
+    skipBytes(4);                               // Radius 2
+    if (readError) {
+        return false;
+    }
 
-    if (!readBytes(reinterpret_cast<char*>(&shape.radius), 4)) return false;
-
-    char unknown1[4];
-    if (!readBytes(unknown1, 4)) return false;
-
-    float p1x, p1y, p1z, p1w;
-    if (!readBytes(reinterpret_cast<char*>(&p1x), 4)) return false;
-    if (!readBytes(reinterpret_cast<char*>(&p1y), 4)) return false;
-    if (!readBytes(reinterpret_cast<char*>(&p1z), 4)) return false;
-    if (!readBytes(reinterpret_cast<char*>(&p1w), 4)) return false;
-
-    char unknown2[4];
-    if (!readBytes(unknown2, 4)) return false;
-
-    float p2x, p2y, p2z, p2w;
-    if (!readBytes(reinterpret_cast<char*>(&p2x), 4)) return false;
-    if (!readBytes(reinterpret_cast<char*>(&p2y), 4)) return false;
-    if (!readBytes(reinterpret_cast<char*>(&p2z), 4)) return false;
-    if (!readBytes(reinterpret_cast<char*>(&p2w), 4)) return false;
-
-    char unknown3[4];
-    if (!readBytes(unknown3, 4)) return false;
-
-    // Height = distance between two points
-    float dx = p2x - p1x, dy = p2y - p1y, dz = p2z - p1z;
-    shape.height = sqrtf(dx*dx + dy*dy + dz*dz);
-    shape.center = {(p1x + p2x) * 0.5f, (p1y + p2y) * 0.5f, (p1z + p2z) * 0.5f};
+    const float dx = secondPoint.x - firstPoint.x;
+    const float dy = secondPoint.y - firstPoint.y;
+    const float dz = secondPoint.z - firstPoint.z;
+    shape.height = sqrtf(dx * dx + dy * dy + dz * dz);
+    shape.center = {(firstPoint.x + secondPoint.x) * 0.5f,
+                    (firstPoint.y + secondPoint.y) * 0.5f,
+                    (firstPoint.z + secondPoint.z) * 0.5f};
 
     LOGD("bhkCapsuleShape: radius=%.2f, height=%.2f", shape.radius, shape.height);
     return true;
 }
 
 bool NIFParser::parseBhkConvexVerticesShape(CollisionShape& shape) {
-    // bhkConvexVerticesShape:
-    //   material (uint32_t)
-    //   radius (float)
-    //   unknown1 (uint8_t[16]) - hkAabb
-    //   numVertices (uint32_t)
-    //   vertices[] (hkVector4: x, y, z, w per vertex)
-    //   numNormals (uint32_t)
-    //   normals[] (hkVector4: x, y, z, w per normal)
+    LOGD("Parsing bhkConvexVerticesShape...");
 
+    // bhkConvexVerticesShape layout:
+    //   Material:HavokMaterial(4) | Radius:float(4)
+    //   | Vertices Property:bhkWorldObjCInfoProperty(12)
+    //   | Normals Property:bhkWorldObjCInfoProperty(12)
+    //   | Num Vertices:uint(4) | Vertices:hkVector4[N](16 each)
+    //   | Num Normals:uint(4) | Normals:hkVector4[N](16 each)
     shape.type = CollisionShapeType::ConvexHull;
 
-    uint32_t material = 0;
-    if (!readBytes(reinterpret_cast<char*>(&material), 4)) return false;
+    skipBytes(4);                               // Material
+    shape.radius = readFloat();
+    skipBytes(24);                              // Vertices + Normals properties
 
-    if (!readBytes(reinterpret_cast<char*>(&shape.radius), 4)) return false;
+    const uint32_t numVertices = readUInt32();
+    if (readError) {
+        return false;
+    }
+    if (numVertices > MAX_CONVEX_VERTICES) {
+        LOGE("bhkConvexVerticesShape: %u vertices exceeds limit", numVertices);
+        return false;
+    }
 
-    // Skip unknown (16 bytes - hkAabb min/max)
-    char unknown1[16];
-    if (!readBytes(unknown1, 16)) return false;
-
-    uint32_t numVertices = 0;
-    if (!readBytes(reinterpret_cast<char*>(&numVertices), 4)) return false;
-
+    shape.vertices.clear();
     shape.vertices.reserve(numVertices);
     for (uint32_t i = 0; i < numVertices; i++) {
-        float vx, vy, vz, vw;
-        if (!readBytes(reinterpret_cast<char*>(&vx), 4)) return false;
-        if (!readBytes(reinterpret_cast<char*>(&vy), 4)) return false;
-        if (!readBytes(reinterpret_cast<char*>(&vz), 4)) return false;
-        if (!readBytes(reinterpret_cast<char*>(&vw), 4)) return false;
-        shape.vertices.push_back({vx, vy, vz});
+        shape.vertices.push_back(readHKVector3());
+    }
+    if (readError) {
+        return false;
     }
 
-    uint32_t numNormals = 0;
-    if (!readBytes(reinterpret_cast<char*>(&numNormals), 4)) return false;
-    // Skip normals (not needed for collision detection)
-    for (uint32_t i = 0; i < numNormals; i++) {
-        char normalData[16];
-        if (!readBytes(normalData, 16)) return false;
+    const uint32_t numNormals = readUInt32();
+    if (readError) {
+        return false;
+    }
+    if (numNormals > MAX_CONVEX_VERTICES) {
+        LOGE("bhkConvexVerticesShape: %u normals exceeds limit", numNormals);
+        return false;
+    }
+    skipBytes(static_cast<size_t>(numNormals) * 16);
+    if (readError) {
+        return false;
     }
 
-    LOGD("bhkConvexVerticesShape: %u vertices, %u normals", numVertices, numNormals);
+    LOGD("bhkConvexVerticesShape: %u vertices, %u normals, radius=%.2f",
+         numVertices, numNormals, shape.radius);
     return true;
 }
 
@@ -2470,136 +2697,132 @@ bool NIFParser::parseBhkMeshShape(CollisionShape& shape) {
     return true;
 }
 
-bool NIFParser::parseBhkPackedNiTriStripsShape(CollisionShape& shape) {
-    // bhkPackedNiTriStripsShape:
-    //   material (uint32_t)
-    //   radius (float)
-    //   unknown1 (uint8_t[8])
-    //   unknown2 (uint8_t[4])
-    //   unknown3 (uint8_t[4])
-    //   numSubShapes (uint32_t)
-    //   subShapes[] (each: numVertices(uint16_t), unknown(uint16_t), material(uint32_t))
-    //   unknown4 (uint8_t[4])
-    //   unknown5 (uint8_t[4])
-    //   numVertices (uint32_t)
-    //   vertices[] (hkVector4: x, y, z, w per vertex)
-    //   numTriangles (uint32_t)
-    //   triangles[] (3 x uint16_t + uint16_t weldingInfo per triangle)
-    //   numUnknown (uint32_t)
-    //   unknown6[] (uint8_t[4] per entry)
+bool NIFParser::parseBhkNiTriStripsShape(CollisionShape& shape) {
+    LOGD("Parsing bhkNiTriStripsShape...");
 
+    // bhkNiTriStripsShape layout:
+    //   Material:HavokMaterial(4) | Radius:float(4) | Unused01:byte[20]
+    //   | Grow By:uint(4) | Scale:hkVector4(16)
+    //   | Num Strips Data:uint(4) | Strips Data:Ref[N](4 each)
+    //   | Num Filters:uint(4) | Filters:HavokFilter[N](4 each)
+    // The strip vertices live in separate bhkNiTriStripsData blocks; the strip
+    // refs are recorded so a caller can resolve them through the block table.
     shape.type = CollisionShapeType::TriMesh;
 
-    uint32_t material = 0;
-    if (!readBytes(reinterpret_cast<char*>(&material), 4)) return false;
+    skipBytes(4);                               // Material
+    shape.radius = readFloat();
+    skipBytes(20);                              // Unused 01
+    skipBytes(4);                               // Grow By
+    skipBytes(16);                              // Scale
 
-    if (!readBytes(reinterpret_cast<char*>(&shape.radius), 4)) return false;
+    const uint32_t numStripsData = readUInt32();
+    if (readError) {
+        return false;
+    }
+    if (numStripsData > MAX_STRIPS_DATA) {
+        LOGE("bhkNiTriStripsShape: %u strip blocks exceeds limit", numStripsData);
+        return false;
+    }
+    shape.stripsDataRefs.clear();
+    shape.stripsDataRefs.reserve(numStripsData);
+    for (uint32_t i = 0; i < numStripsData; i++) {
+        shape.stripsDataRefs.push_back(readUInt32());
+    }
 
-    char unknown1[8];
-    if (!readBytes(unknown1, 8)) return false;
+    const uint32_t numFilters = readUInt32();
+    if (readError) {
+        return false;
+    }
+    if (numFilters > MAX_SHAPE_FILTERS) {
+        LOGE("bhkNiTriStripsShape: %u filters exceeds limit", numFilters);
+        return false;
+    }
+    skipBytes(static_cast<size_t>(numFilters) * 4);
+    if (readError) {
+        return false;
+    }
 
-    char unknown2[4];
-    if (!readBytes(unknown2, 4)) return false;
+    LOGD("bhkNiTriStripsShape: radius=%.2f, strips=%u, filters=%u",
+         shape.radius, numStripsData, numFilters);
+    return true;
+}
 
-    char unknown3[4];
-    if (!readBytes(unknown3, 4)) return false;
+bool NIFParser::parseBhkListShape(CollisionShape& shape) {
+    LOGD("Parsing bhkListShape...");
 
-    uint32_t numSubShapes = 0;
-    if (!readBytes(reinterpret_cast<char*>(&numSubShapes), 4)) return false;
+    // bhkListShape layout:
+    //   Num Sub Shapes:uint(4) | Sub Shapes:Ref[N](4 each) | Material:HavokMaterial(4)
+    //   | Child Shape Property:bhkWorldObjCInfoProperty(12)
+    //   | Child Filter Property:bhkWorldObjCInfoProperty(12)
+    //   | Num Filters:uint(4) | Filters:HavokFilter[N](4 each)
+    shape.type = CollisionShapeType::List;
 
+    const uint32_t numSubShapes = readUInt32();
+    if (readError) {
+        return false;
+    }
+    if (numSubShapes > MAX_LIST_SUB_SHAPES) {
+        LOGE("bhkListShape: %u sub shapes exceeds limit", numSubShapes);
+        return false;
+    }
+    shape.subShapeRefs.clear();
+    shape.subShapeRefs.reserve(numSubShapes);
     for (uint32_t i = 0; i < numSubShapes; i++) {
-        uint16_t numVerts, unknown;
-        uint32_t subMaterial;
-        if (!readBytes(reinterpret_cast<char*>(&numVerts), 2)) return false;
-        if (!readBytes(reinterpret_cast<char*>(&unknown), 2)) return false;
-        if (!readBytes(reinterpret_cast<char*>(&subMaterial), 4)) return false;
+        shape.subShapeRefs.push_back(readUInt32());
     }
 
-    char unknown4[4];
-    if (!readBytes(unknown4, 4)) return false;
+    skipBytes(4);                               // Material
+    skipBytes(12);                              // Child Shape Property
+    skipBytes(12);                              // Child Filter Property
 
-    char unknown5[4];
-    if (!readBytes(unknown5, 4)) return false;
-
-    uint32_t numVertices = 0;
-    if (!readBytes(reinterpret_cast<char*>(&numVertices), 4)) return false;
-
-    shape.vertices.reserve(numVertices);
-    for (uint32_t i = 0; i < numVertices; i++) {
-        float vx, vy, vz, vw;
-        if (!readBytes(reinterpret_cast<char*>(&vx), 4)) return false;
-        if (!readBytes(reinterpret_cast<char*>(&vy), 4)) return false;
-        if (!readBytes(reinterpret_cast<char*>(&vz), 4)) return false;
-        if (!readBytes(reinterpret_cast<char*>(&vw), 4)) return false;
-        shape.vertices.push_back({vx, vy, vz});
+    const uint32_t numFilters = readUInt32();
+    if (readError) {
+        return false;
+    }
+    if (numFilters > MAX_SHAPE_FILTERS) {
+        LOGE("bhkListShape: %u filters exceeds limit", numFilters);
+        return false;
+    }
+    skipBytes(static_cast<size_t>(numFilters) * 4);
+    if (readError) {
+        return false;
     }
 
-    uint32_t numTriangles = 0;
-    if (!readBytes(reinterpret_cast<char*>(&numTriangles), 4)) return false;
-
-    shape.triangles.reserve(numTriangles);
-    for (uint32_t i = 0; i < numTriangles; i++) {
-        uint16_t v0, v1, v2, weldingInfo;
-        if (!readBytes(reinterpret_cast<char*>(&v0), 2)) return false;
-        if (!readBytes(reinterpret_cast<char*>(&v1), 2)) return false;
-        if (!readBytes(reinterpret_cast<char*>(&v2), 2)) return false;
-        if (!readBytes(reinterpret_cast<char*>(&weldingInfo), 2)) return false;
-        shape.triangles.push_back({v0, v1, v2});
-    }
-
-    uint32_t numUnknown = 0;
-    if (!readBytes(reinterpret_cast<char*>(&numUnknown), 4)) return false;
-    for (uint32_t i = 0; i < numUnknown; i++) {
-        char unknownData[4];
-        if (!readBytes(unknownData, 4)) return false;
-    }
-
-    LOGD("bhkPackedNiTriStripsShape: %u vertices, %u triangles", numVertices, numTriangles);
+    LOGD("bhkListShape: %u sub shapes, %u filters", numSubShapes, numFilters);
     return true;
 }
 
 bool NIFParser::parseBhkMoppBvTreeShape(CollisionShape& shape) {
-    // bhkMoppBvTreeShape:
-    //   material (uint32_t)
-    //   radius (float)
-    //   unknown1 (uint8_t[8])
-    //   child (uint32_t ref - bhkShape)
-    //   unknown2 (uint8_t[4])
-    //   unknown3 (uint8_t[4])
-    //   moppDataSize (uint32_t)
-    //   moppData[] (uint8_t)
-    //   unknown4 (uint8_t[16]) - scale/offset
+    LOGD("Parsing bhkMoppBvTreeShape...");
 
+    // bhkMoppBvTreeShape layout:
+    //   Shape:Ref(4) | Unused01:byte[12] | Scale:float(4)
+    //   | MOPP Code:hkpMoppCode { Data Size:uint(4) | Offset:hkVector4(16)
+    //                            | Data:byte[Data Size] }
     shape.type = CollisionShapeType::MoppBvTree;
 
-    uint32_t material = 0;
-    if (!readBytes(reinterpret_cast<char*>(&material), 4)) return false;
+    shape.childShapeRef = readUInt32();
+    skipBytes(12);                              // Unused 01
+    const float scale = readFloat();
+    const uint32_t moppDataSize = readUInt32();
+    skipBytes(16);                              // Offset (hkVector4)
+    if (readError) {
+        return false;
+    }
+    if (moppDataSize > MAX_MOPP_DATA_SIZE) {
+        LOGE("bhkMoppBvTreeShape: %u byte MOPP code exceeds limit", moppDataSize);
+        return false;
+    }
 
-    if (!readBytes(reinterpret_cast<char*>(&shape.radius), 4)) return false;
-
-    char unknown1[8];
-    if (!readBytes(unknown1, 8)) return false;
-
-    uint32_t childRef = 0;
-    if (!readBytes(reinterpret_cast<char*>(&childRef), 4)) return false;
-
-    char unknown2[4];
-    if (!readBytes(unknown2, 4)) return false;
-
-    char unknown3[4];
-    if (!readBytes(unknown3, 4)) return false;
-
-    uint32_t moppDataSize = 0;
-    if (!readBytes(reinterpret_cast<char*>(&moppDataSize), 4)) return false;
     shape.moppDataSize = moppDataSize;
-
     shape.moppData.resize(moppDataSize);
-    if (!readBytes(reinterpret_cast<char*>(shape.moppData.data()), moppDataSize)) return false;
+    if (moppDataSize > 0 && !readBytes(reinterpret_cast<char*>(shape.moppData.data()),
+                                       moppDataSize)) {
+        return false;
+    }
 
-    char unknown4[16];
-    if (!readBytes(unknown4, 16)) return false;
-
-    LOGD("bhkMoppBvTreeShape: child=%u, moppDataSize=%u", childRef, moppDataSize);
+    LOGD("bhkMoppBvTreeShape: child=%u, scale=%.3f, moppDataSize=%u",
+         shape.childShapeRef, scale, moppDataSize);
     return true;
 }
 

@@ -73,8 +73,9 @@ public:
     bool parseBhkCapsuleShape(CollisionShape& shape);
     bool parseBhkConvexVerticesShape(CollisionShape& shape);
     bool parseBhkMeshShape(CollisionShape& shape);
-    bool parseBhkPackedNiTriStripsShape(CollisionShape& shape);
+    bool parseBhkNiTriStripsShape(CollisionShape& shape);
     bool parseBhkMoppBvTreeShape(CollisionShape& shape);
+    bool parseBhkListShape(CollisionShape& shape);
     bool parseBhkCollisionFilter(uint32_t& group, uint32_t& filter);
 
 private:
@@ -137,6 +138,17 @@ private:
     void skipNiPSysEmitterBase(bool hasEmitterObject);
     static int keyValueSize(const char* valueType);
 
+    // Block-anchored readers. These position the cursor on a block body that
+    // walkAllBlocks() recorded, so they no longer depend on the sequential
+    // parse position left behind by parseObjectArray().
+    bool seekToBlockOfType(const std::string& typeName, uint32_t& blockIndex);
+    bool seekToAnyBlockOfType(const std::vector<std::string>& typeNames, uint32_t& blockIndex);
+    bool parseNiSkinDataAt(uint32_t blockIndex, NIFSkinData& skinData);
+    bool parseNiSkinPartitionAt(uint32_t blockIndex, NIFSkinPartition& partition);
+    bool parseNiControllerSequenceAt(uint32_t blockIndex, NIFControllerSequence& sequence);
+    bool parseBhkRigidBodyAt(uint32_t blockIndex, RigidBodyInfo& info, uint32_t& shapeIndex);
+    bool parseBhkShapeAt(uint32_t blockIndex, CollisionShape& shape);
+
     // Binary reading helpers
     bool readBytes(char* buffer, size_t count);
     uint8_t readUInt8();
@@ -148,6 +160,7 @@ private:
     float readFloat();
     NIFVector3 readVector3();
     NIFVector4 readVector4();
+    NIFVector3 readHKVector3();                 // hkVector4 / hkQuaternion, w dropped
     NIFMatrix3x3 readMatrix3x3();
     NIFTransform readTransform();
     

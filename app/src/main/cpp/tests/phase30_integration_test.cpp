@@ -48,6 +48,18 @@ static const char* TEST_NIF_SHIELD = "meshes/armor/spellbreaker/shield.nif";
 // Creatures (skeleton + animation)
 static const char* TEST_NIF_CREATURE = "meshes/creatures/horse/horse.nif";
 
+// Animated architecture (NiControllerManager + NiControllerSequence + text keys)
+static const char* TEST_NIF_ANIMATED = "meshes/architecture/castle/kvatch/stonewallgatedoor01.nif";
+
+// Meshes that actually carry NiSkinInstance / NiSkinData / NiSkinPartition.
+// The plain skeletons (e.g. _1stperson/skeleton.nif) are bone-only and have
+// no skinning blocks at all.
+static const char* TEST_NIFS_SKINNED[] = {
+    TEST_NIF_HUMAN_MESH,
+    TEST_NIF_CREATURE,
+    TEST_NIF_HUMAN,
+};
+
 // ============================================
 // Helper: High-resolution timer
 // ============================================
@@ -89,6 +101,27 @@ static std::vector<NIFNode> derefNodes(const std::vector<std::shared_ptr<NIFNode
 bool Phase30IntegrationTest::fileExists(const std::string& path) const {
     std::ifstream f(path);
     return f.good();
+}
+
+// ============================================
+// Helper: Find the first candidate NIF that carries skinning blocks
+// ============================================
+// The plain skeleton meshes are bone-only (no NiSkinInstance), so tests that
+// need skinning data must probe the candidates instead of trusting that the
+// first file on disk is usable.
+static bool selectSkinnedNIF(const std::string& basePath, NIFParser& parser,
+                             NIFSkinInstance& skinInstance, std::string& usedCandidate) {
+    for (const char* candidate : TEST_NIFS_SKINNED) {
+        std::string path = basePath + "/" + candidate;
+        std::ifstream probe(path);
+        if (!probe.good()) continue;
+        probe.close();
+        if (!parser.parseFile(path)) continue;
+        if (!parser.parseNiSkinInstance(skinInstance)) continue;
+        usedCandidate = candidate;
+        return true;
+    }
+    return false;
 }
 
 // ============================================
@@ -283,35 +316,20 @@ void Phase30IntegrationTest::testNIFParsing() {
 void Phase30IntegrationTest::testSkeletonBuilding() {
     TEST_LOGI("--- Test Group: Skeleton Building ---");
 
-    std::string path = basePath + "/" + TEST_NIF_HUMAN;
-    if (!fileExists(path)) {
-        path = basePath + "/" + TEST_NIF_HUMAN_MESH;
-    }
-    if (!fileExists(path)) {
-        record("Skeleton_Build", false, "No test NIF with skeleton found");
-        return;
-    }
-
     NIFParser parser;
-    if (!parser.parseFile(path)) {
-        record("Skeleton_Build", false, "NIF parse failed");
-        return;
-    }
-
-    // Try to parse skin instance
     NIFSkinInstance skinInstance;
     NIFSkinData skinData;
-
+    std::string usedCandidate;
     float t0 = getTimeMs();
-    bool hasSkin = parser.parseNiSkinInstance(skinInstance);
-    float dt = getTimeMs() - t0;
-
-    if (!hasSkin) {
-        record("Skeleton_Build", false, "No NiSkinInstance found in test NIF");
+    if (!selectSkinnedNIF(basePath, parser, skinInstance, usedCandidate)) {
+        record("Skeleton_Build", false, "No test NIF with NiSkinInstance found");
         return;
     }
+    float dt = getTimeMs() - t0;
 
-    record("Skeleton_ParseSkinInstance", true, "skinDataIndex=" + std::to_string(skinInstance.skinDataIndex), dt);
+    record("Skeleton_ParseSkinInstance", true,
+           "skinDataIndex=" + std::to_string(skinInstance.skinDataIndex) +
+           " file=" + usedCandidate, dt);
 
     // Parse skin data
     t0 = getTimeMs();
@@ -372,18 +390,12 @@ void Phase30IntegrationTest::testSkeletonBuilding() {
 void Phase30IntegrationTest::testSkinPartitionPacking() {
     TEST_LOGI("--- Test Group: Skin Partition Packing ---");
 
-    std::string path = basePath + "/" + TEST_NIF_HUMAN;
-    if (!fileExists(path)) {
-        path = basePath + "/" + TEST_NIF_HUMAN_MESH;
-    }
-    if (!fileExists(path)) {
-        record("SkinPartition_Pack", false, "No test NIF found");
-        return;
-    }
-
+    // Find a NIF that actually carries a NiSkinPartition block.
     NIFParser parser;
-    if (!parser.parseFile(path)) {
-        record("SkinPartition_Pack", false, "NIF parse failed");
+    NIFSkinInstance skinInstance;
+    std::string usedCandidate;
+    if (!selectSkinnedNIF(basePath, parser, skinInstance, usedCandidate)) {
+        record("SkinPartition_Pack", false, "No test NIF with skinning data found");
         return;
     }
 
@@ -462,8 +474,11 @@ void Phase30IntegrationTest::testSkinPartitionPacking() {
 void Phase30IntegrationTest::testAnimationParsing() {
     TEST_LOGI("--- Test Group: Animation Parsing ---");
 
-    // Try multiple NIFs that might have animation data
+    // Try multiple NIFs that might have animation data. Only animated doors and
+    // shield effects carry a NiControllerManager in the Oblivion corpus; the
+    // character skeletons do not.
     std::vector<std::string> candidates = {
+        TEST_NIF_ANIMATED,
         TEST_NIF_HUMAN,
         TEST_NIF_HUMAN_MESH,
         TEST_NIF_CREATURE
@@ -484,7 +499,9 @@ void Phase30IntegrationTest::testAnimationParsing() {
         float dt = getTimeMs() - t0;
 
         if (!hasManager) {
-            record("Animation_ParseManager", false, "No NiControllerManager in " + candidate);
+            // A candidate without a NiControllerManager is not a failure by
+            // itself; the suite only fails when no candidate has animation data.
+            TEST_LOGI("No NiControllerManager in %s; trying next candidate", candidate.c_str());
             continue;
         }
 
@@ -532,25 +549,17 @@ void Phase30IntegrationTest::testAnimationPlayback() {
     TEST_LOGI("--- Test Group: Animation Playback ---");
 
     // Build skeleton from NIF
-    std::string path = basePath + "/" + TEST_NIF_HUMAN;
-    if (!fileExists(path)) {
-        path = basePath + "/" + TEST_NIF_HUMAN_MESH;
-    }
-    if (!fileExists(path)) {
-        record("Animation_Playback", false, "No test NIF found");
-        return;
-    }
-
     NIFParser parser;
-    if (!parser.parseFile(path)) {
-        record("Animation_Playback", false, "NIF parse failed");
+    NIFSkinInstance skinInstance;
+    NIFSkinData skinData;
+    std::string usedCandidate;
+    if (!selectSkinnedNIF(basePath, parser, skinInstance, usedCandidate)) {
+        record("Animation_Playback", false, "No test NIF with skinning data found");
         return;
     }
 
     // Build skeleton
-    NIFSkinInstance skinInstance;
-    NIFSkinData skinData;
-    if (!parser.parseNiSkinInstance(skinInstance) || !parser.parseNiSkinData(skinData)) {
+    if (!parser.parseNiSkinData(skinData)) {
         record("Animation_Playback", false, "No skin data for skeleton");
         return;
     }
@@ -561,9 +570,13 @@ void Phase30IntegrationTest::testAnimationPlayback() {
         return;
     }
 
-    // Parse animation
+    // Parse animation. The skinned meshes carry no controller manager, so the
+    // animated architecture mesh supplies the sequences.
     NIFControllerManager manager;
-    if (!parser.parseNiControllerManager(manager)) {
+    NIFParser animParser;
+    std::string animPath = basePath + "/" + TEST_NIF_ANIMATED;
+    if (!fileExists(animPath) || !animParser.parseFile(animPath) ||
+        !animParser.parseNiControllerManager(manager)) {
         record("Animation_Playback", false, "No animation data");
         return;
     }
@@ -888,29 +901,23 @@ void Phase30IntegrationTest::testFullPipeline() {
     // This test exercises the entire pipeline:
     // NIF Parse -> Skeleton -> Skinning -> Animation -> Collision -> CharacterController
 
-    std::string path = basePath + "/" + TEST_NIF_HUMAN;
-    if (!fileExists(path)) {
-        path = basePath + "/" + TEST_NIF_HUMAN_MESH;
-    }
-    if (!fileExists(path)) {
-        record("FullPipeline", false, "No test NIF found");
+    // Step 1: Parse NIF. The pipeline needs skinning data, so pick a mesh that
+    // actually carries it (the plain skeletons are bone-only).
+    NIFParser parser;
+    NIFSkinInstance skinInstance;
+    std::string usedCandidate;
+    if (!selectSkinnedNIF(basePath, parser, skinInstance, usedCandidate)) {
+        record("FullPipeline", false, "No test NIF with skinning data found");
         return;
     }
 
     float totalStart = getTimeMs();
 
-    // Step 1: Parse NIF
-    NIFParser parser;
-    if (!parser.parseFile(path)) {
-        record("FullPipeline", false, "NIF parse failed");
-        return;
-    }
-    record("FullPipeline_Parse", true, "nodes=" + std::to_string(parser.getNodes().size()));
+    record("FullPipeline_Parse", true,
+           "nodes=" + std::to_string(parser.getNodes().size()) + " file=" + usedCandidate);
 
     // Step 2: Build skeleton
-    NIFSkinInstance skinInstance;
     NIFSkinData skinData;
-    parser.parseNiSkinInstance(skinInstance);
     parser.parseNiSkinData(skinData);
 
     Skeleton skeleton;
@@ -924,9 +931,20 @@ void Phase30IntegrationTest::testFullPipeline() {
     record("FullPipeline_SkinPartition", true,
            "partitions=" + std::to_string(partition.partitions.size()));
 
-    // Step 4: Parse animation
+    // Step 4: Parse animation. The character skeletons carry no controller
+    // manager, so animation is read from a NIF that is known to be animated.
     NIFControllerManager manager;
-    bool hasAnim = parser.parseNiControllerManager(manager);
+    bool hasAnim = false;
+    for (const char* candidate : {TEST_NIF_ANIMATED, TEST_NIF_HUMAN, TEST_NIF_CREATURE}) {
+        std::string animPath = basePath + "/" + candidate;
+        if (!fileExists(animPath)) continue;
+        NIFParser animParser;
+        if (!animParser.parseFile(animPath)) continue;
+        if (animParser.parseNiControllerManager(manager) && !manager.sequences.empty()) {
+            hasAnim = true;
+            break;
+        }
+    }
     record("FullPipeline_Animation", hasAnim,
            hasAnim ? "sequences=" + std::to_string(manager.sequences.size()) : "no animation");
 
@@ -942,9 +960,22 @@ void Phase30IntegrationTest::testFullPipeline() {
     floor.isStatic = true;
     world.addBody(floor);
 
-    // Try to add collision from NIF
+    // Try to add collision from NIF. The character meshes carry no collision
+    // object, so a mesh that is known to have one is used for this step.
     CollisionObject colObj;
-    if (parser.parseBhkCollisionObject(colObj)) {
+    bool colOk = false;
+    for (const char* candidate : {TEST_NIF_DOOR, TEST_NIF_ANIMATED, TEST_NIF_FURNITURE,
+                                  TEST_NIF_SWORD, TEST_NIF_SHIELD}) {
+        std::string colPath = basePath + "/" + candidate;
+        if (!fileExists(colPath)) continue;
+        NIFParser colParser;
+        if (!colParser.parseFile(colPath)) continue;
+        if (colParser.parseBhkCollisionObject(colObj)) {
+            colOk = true;
+            break;
+        }
+    }
+    if (colOk) {
         CollisionBody nifBody;
         nifBody.shapeType = ShapeType::BOX;  // Simplified
         nifBody.position = glm::vec3(colObj.bodyInfo.transform.translation.x,
