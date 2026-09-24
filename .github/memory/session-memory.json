@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-24T18:47:08",
+  "lastUpdated": "2026-09-24T19:00:00.103411",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -3479,10 +3479,59 @@
         "measured"
       ],
       "compressed": false
+    },
+    {
+      "id": "8ef08cd9-219f-4de7-8f77-227d986dde52",
+      "timestamp": "2026-09-24T19:00:00.103411",
+      "category": "decision",
+      "priority": "high",
+      "content": "SCDA 43-record anchor imbalance ROOT CAUSE = malformed retail scripts, NOT a decoder fault. Replaying every record as a block machine from the byte stream alone (no SCTX): all 2646 records finish at depth 0, 0 records with else/elseif at depth 0, and exactly 43 records close a block that was never opened. Rec 1153 MS39NirnrootPlantScript = 'begin OnActivate / Activate / Disable / endif / end' with NO if at all; rec 1983 DarkLachanceNoteScript = 'if NoteRead == 0 ... endif / else / Activate / endif / End' with an extra endif before else. The compiler transcribed both verbatim - the bytecode carries the same orphan 0x0019. REQUIREMENT FOR WS-B VM: clamp block depth at 0 and continue. A 'stream is corrupt' check that rejects unbalanced nesting would refuse 43 scripts that ship in the retail game.",
+      "tags": [
+        "oblivion",
+        "scda",
+        "disassembler",
+        "script-vm",
+        "ws-b",
+        "measured",
+        "root-cause"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "25a2e7ec-33af-4ff7-8312-f51b59a0adbe",
+      "timestamp": "2026-09-24T19:00:00.103411",
+      "category": "reference",
+      "priority": "high",
+      "content": "SCTX newlines are LOSSY - never use the SCTX line layout as ground truth for statement counts or for pairing a statement with an instruction. Rec 2580 line 13 has 38 'set' statements concatenated with no newline ('...ChorrolCastleWallTowerSW 1set MS51.TalkedOrgnolf to 2set MS51.TalkedOrok to 2set ...'); the bytecode holds all 38 as separate 0x0015. Run-on keywords sit directly against a digit or letter (1set / Nirnrootset / MS51set), so any line-oriented counter undercounts: measured residuals vs opcodes are set 12860/13097, if 10577/10604, endif 10632/10654, while begin 4344/4344, end 4344/4344, else 968/968, elseif 2016/2016, return 191/191 are exactly equal. Source-anchor sequence is a subsequence of opcode-anchor sequence in 2646/2646 records, equal counts in 2617 (98.9%), and 0 records hold a source anchor the bytecode lacks -> the walk never invents, drops or reorders a construct.",
+      "tags": [
+        "oblivion",
+        "sctx",
+        "source-text",
+        "newline-loss",
+        "measured",
+        "scda"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "e656cc2a-c85b-4f0e-89d7-8b5bf07221b8",
+      "timestamp": "2026-09-24T19:00:00.103411",
+      "category": "reference",
+      "priority": "high",
+      "content": "Oblivion SCDA facts confirmed 2026-09-25: (1) 'else if X' is legal source and compiles to 0x0018 elseif, NOT else+if - the corpus has 7 'else if' lines yet else is 968 source against 968 opcodes exactly, so the two-word form emits no 0x0017. (2) SCTX contains NO loop constructs at all - while/loop/for/foreach/do/endwhile/until are all absent from 2388 distinct line-head tokens, so 'a source-only control construct' is not a viable explanation for any opcode surplus. (3) The SCDA step rule is off += 4 if op == 0x001C else 4 + argLength, and it is pinned by 2646/2646 records landing exactly on the end of their block plus 2646/2646 finishing at block depth 0.",
+      "tags": [
+        "oblivion",
+        "scda",
+        "script-vm",
+        "sctx",
+        "measured",
+        "bytecode"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 244,
+    "totalEntries": 247,
     "compressedCount": 2,
     "sessionCount": 25
   }
