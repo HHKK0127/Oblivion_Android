@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-25T00:00:00+09:00",
+  "lastUpdated": "2026-09-25T03:10:00",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -3350,10 +3350,43 @@
       "id": "b3c4e3b7-08ed-4d40-aa70-d84ba4877eb2",
       "timestamp": "2026-09-24T17:40:05+09:00",
       "compressed": false
+    },
+    {
+      "id": "6d823879-d7b3-4cb0-bc64-4d45222d980a",
+      "timestamp": "2026-09-25T02:40:00",
+      "category": "reference",
+      "priority": "high",
+      "content": "SCDA: the strict 1:1 alignment vote (probe_tail.py: 8,497 runs where the statement count equals the instruction count, 137 of the 140 ordinary opcodes) names every opcode that had no name, all unanimous. 0x1009 SetAngle [2][<f>][<f>] (setangle x fx / y fy / z fz); 0x1057 Drop; 0x10B7 Wait [1][<r>]; 0x10C8 SetPCFactionAttack [2][<r>][n 0] (sibling of 0x10C4 SetPCFactionMurder / 0x10C6 SetPCFactionSteal); 0x10D3 SetForceSneak [1][n] - this settles the tie against SetFactionRank, which is 0x1089; 0x10FC SetPCFame and 0x10FD SetPCInfamy [1][<f>] (setter pair of 0x10F8 ModPCFame / 0x10FA ModPCInfamy); 0x1114 PlayBink [1][string]; 0x1122 SetPackDuration [1][<z>] (a double even though the source reads setpackduration 3); 0x1126 StopMagicEffectVisuals, emitted short as sme [1][<r>] (stop twin of 0x1124); 0x1134 ResetFallDamageTimer (empty payload); 0x114D EssentialDeathReload [1][string] - NOT a message, all four instances are the reload text of an essential NPC death, so the earlier Message guess is wrong; 0x1154 SetActorRefraction; 0x1155 SetItemValue; 0x1159 SetAllReachable [1][n]; 0x115A SetAllVisible; 0x115B SetNoAvoidance (the three travel flags of records 1425 and 1791); 0x1168 DeleteFullActorCopy. The same vote confirms the quest set independently: 0x1036 startquest 72/72, 0x1037 stopquest 111/111, 0x1071 completequest 3/3. Alias splits do not follow one rule: 0x1101 is scaonactor 44/47 vs stopcombatalarmonactor 3 (long dominant) and 0x1104 is setweather 30/32 vs sw 2 (short dominant), so both need to accept two spellings. probe_tail2.py dumps the aligned examples: %TEMP%\\async_race\\probe_tail2.txt.",
+      "tags": [
+        "scda",
+        "opcodes",
+        "esm",
+        "script-vm",
+        "phase-67",
+        "corpus"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "122bcfba-0b62-4c7a-9bd2-7694ee0fa6f8",
+      "timestamp": "2026-09-25T03:10:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "SCDA payload grammar is fully closed: all 14,379 command payloads parse exactly with no catch-all token. (1) Counting proof: the leading u16 of every command payload (op>=0x1000, argLength>=2) takes only 0..5 (843/6056/7159/171/146/4) and no payload begins with a type letter or a bare actor-value code, so it is an argument count; the count-free flat model is unfalsifiable (one catch-all token accepts everything) and is not evidence. (2) The 3-byte token family is r/s/f/l/G - G=0x47 is required by 01 00 47 0a 00 (rec454 ModCrimeGold) and 02 00 72 05 00 47 06 00 (rec2612 AddItem). (3) 0x1059 Message = [1][len][text] + [u16 n][tokens] + [u16 x][u16 y]: 232/232 parse, y is always 0, x is 0 in 225 and 1/5/7/10 in 7 (rec 576/894/1414/1415/1920/1965), so the earlier 'trailing u32 0' is wrong for 7 of 232. (4) 0x1000 MessageBox = [1][len][text] + [u16 n][tokens] + [u16 buttons] + buttons, each button being [u16 1][u16 len][text]: 482/482 parse, button counts {0:424, 1:2, 2:49, 3:4, 4:3}; not reading the button's own count 1 misaligns 56 payloads and was the cause of the earlier 421/482 reading. (5) 0x114D EssentialDeathReload = [u16 1][u16 len][text] + 4 zero bytes (argLength = len+8), not [1][string]. (6) Axis family 0x1004 Rotate / 0x1007 SetPos / 0x1009 SetAngle = [u16 2][1-byte axis X=0x58/Y=0x59/Z=0x5A][typed value f/n/z]; the 12-byte SetPos Z <double> (rec 2502, sources MS08FortGLeverPreRef.SetPos Z 200 and MS08FortGriefKeepDoorLeverRef.SetPos Z 261) forces the 1-byte axis reading. (7) The n+1 calling-reference rule extends on the byte side to 0x1002(45), 0x1076(8), 0x1052(3) and newly 0x1004(9). Final tally: 13,594 count-only + 65 count+1 + 718 string-family + 2 axis = 14,379. Scratch: probe_first.py, probe_walk_fast.py, probe_flat.py, probe_strict.py, probe_strtail2/3/4.py, probe_msg_tail.py under %TEMP%\\async_race\\.",
+      "tags": [
+        "scda",
+        "opcodes",
+        "esm",
+        "script-vm",
+        "phase-67",
+        "corpus",
+        "payload-grammar"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 236,
+    "totalEntries": 238,
     "compressedCount": 2,
     "sessionCount": 24
   }
