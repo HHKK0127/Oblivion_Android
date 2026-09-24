@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-24T19:12:52.882298",
+  "lastUpdated": "2026-09-24T19:16:15.627655",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -3593,10 +3593,28 @@
         "census"
       ],
       "compressed": false
+    },
+    {
+      "id": "52aacb9c-411f-450e-87bb-94b91a52ef30",
+      "timestamp": "2026-09-24T19:16:15.627655",
+      "category": "constraint",
+      "priority": "high",
+      "content": "TES4 (Oblivion) header field offsets - get these wrong and the parser silently misreads instead of failing. RECORD header (20 B): tag +0, dataSize u32 +4, flags u32 +8, FormID u32 +12, two u16 fields at +16. File header record bytes are 54 45 53 34 E8 02 00 00 01 00 00 00 00 00 00 00 00 00 00 00 (TES4 / 744 / flags 1 / FormID 0). GRUP header (20 B): tag +0, size u32 +4 (INCLUDES the 20-byte header, so descend with p += 20 and the end is p + size), label u32 +8, groupType i32 +12, two u16 fields at +16. The label is at +8, NOT +16: a walk that reads +16 gets the trailing u16 pair and reports every top-level label as a small integer such as 0x00020E0F - this produced the false finding that the top-level DIAL group was 'labelled 0'. Correct readings: for groupType 0 the label is the ASCII tag name (GMST = 0x54534D47, DIAL = 0x4C414944), for groupType 7 it is the parent DIAL FormID (0x000000AA). Verified 2026-09-25: 56 top-level groups over 56 distinct labels, every label appearing exactly once, QUST holding 390 records directly, DIAL 3,817, SCPT 2,393, and NO top-level INFO group (INFO only ever lives inside type-7 groups). Separately, exactly one zero-size record exists in Oblivion3.esm - a STAT with FormID 0x0008050C at offset 7,984,486 - and it must be skipped with p += 20; a walk that skips it reports 1,167,016 records while one that counts it reports 1,167,017, which is the correct figure and matches the plan inventory row (85,079 GRUPs).",
+      "tags": [
+        "oblivion",
+        "esm",
+        "tes4",
+        "grup",
+        "header",
+        "offset",
+        "constraint",
+        "measured"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 251,
+    "totalEntries": 252,
     "compressedCount": 2,
     "sessionCount": 25
   }
