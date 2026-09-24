@@ -303,6 +303,10 @@ enum class FunctionID : uint16_t {
     GetQuestCompleted      = 0x007F,
     GetQuestStarted        = 0x0080,
     AddTopic               = 0x0081,
+
+    // Tier 4 - Frequently used aliases observed in vanilla SCTX
+    GetDead                = 0x0082,
+    GetStageDone           = 0x0083,
 };
 
 // ============================================================================

@@ -567,6 +567,8 @@ void ScriptVMTests::testScriptFunctions() {
         ok = ok && funcs.hasFunction(FunctionID::IsQuestStageDone);
         ok = ok && funcs.hasFunction(FunctionID::GetQuestCompleted);
         ok = ok && funcs.hasFunction(FunctionID::GetQuestStarted);
+        ok = ok && funcs.hasFunction(FunctionID::GetDead);
+        ok = ok && funcs.hasFunction(FunctionID::GetStageDone);
 
         record("ScriptFunctions: Registration", ok,
                "Tier 1+2 functions registered", getTimeMs38() - start);
@@ -584,6 +586,8 @@ void ScriptVMTests::testScriptFunctions() {
         ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::IsDead), "IsDead") == 0);
         ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::StartQuest), "StartQuest") == 0);
         ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::GetQuestStarted), "GetQuestStarted") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::GetDead), "GetDead") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::GetStageDone), "GetStageDone") == 0);
         record("ScriptFunctions: Name lookup", ok,
                "FunctionID to name conversion", getTimeMs38() - start);
     }
@@ -623,6 +627,10 @@ void ScriptVMTests::testScriptFunctions() {
             FunctionID::IsQuestStageDone,
             ctx,
             {ScriptValue::makeRef(questRecord.formID), ScriptValue::makeInt(10)});
+        FunctionResult getStageDoneResult = funcs.execute(
+            FunctionID::GetStageDone,
+            ctx,
+            {ScriptValue::makeRef(questRecord.formID), ScriptValue::makeInt(10)});
         FunctionResult setObjectiveResult = funcs.execute(
             FunctionID::SetObjectiveCompleted,
             ctx,
@@ -637,6 +645,7 @@ void ScriptVMTests::testScriptFunctions() {
         ok = ok && startResult.success && startResult.returnValue.intVal == 1;
         ok = ok && startedResult.success && startedResult.returnValue.intVal == 1;
         ok = ok && stageResult.success && stageResult.returnValue.intVal == 1;
+        ok = ok && getStageDoneResult.success && getStageDoneResult.returnValue.intVal == 1;
         ok = ok && setObjectiveResult.success && setObjectiveResult.returnValue.intVal == 1;
         ok = ok && objectiveResult.success && objectiveResult.returnValue.intVal == 1;
         ok = ok && completeResult.success && completeResult.returnValue.intVal == 1;
@@ -741,6 +750,7 @@ void ScriptVMTests::testScriptFunctions() {
         FunctionResult set_health_result = funcs.execute(
             FunctionID::SetHealth, ctx, {ScriptValue::makeFloat(50.0f)});
         FunctionResult dead_result = funcs.execute(FunctionID::IsDead, ctx, {});
+        FunctionResult get_dead_result = funcs.execute(FunctionID::GetDead, ctx, {});
         FunctionResult combat_result = funcs.execute(FunctionID::IsInCombat, ctx, {});
         FunctionResult set_pos_result = funcs.execute(
             FunctionID::SetPos, ctx, {ScriptValue::makeInt(0), ScriptValue::makeFloat(2.0f)});
@@ -754,6 +764,7 @@ void ScriptVMTests::testScriptFunctions() {
         ok = ok && health_result.success && health_result.returnValue.floatVal == 100.0f;
         ok = ok && set_health_result.success && npc->status.currentHealth == 50.0f;
         ok = ok && dead_result.success && dead_result.returnValue.intVal == 0;
+        ok = ok && get_dead_result.success && get_dead_result.returnValue.intVal == 0;
         ok = ok && combat_result.success && combat_result.returnValue.intVal == 1;
         ok = ok && set_pos_result.success && get_pos_result.success;
         ok = ok && get_pos_result.returnValue.floatVal == 2.0f;

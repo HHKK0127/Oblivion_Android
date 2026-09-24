@@ -215,6 +215,10 @@ private:
     FunctionResult fnIsQuestStageDone(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
     FunctionResult fnGetQuestCompleted(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
     FunctionResult fnGetQuestStarted(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+
+    // --- Tier 4 function implementations ---
+    FunctionResult fnGetDead(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnGetStageDone(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
 };
 
 } // namespace script

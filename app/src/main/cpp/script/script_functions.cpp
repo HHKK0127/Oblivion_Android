@@ -241,6 +241,8 @@ const char* ScriptFunctions::getFunctionName(FunctionID funcID) const {
         case FunctionID::GetQuestCompleted: return "GetQuestCompleted";
         case FunctionID::GetQuestStarted: return "GetQuestStarted";
         case FunctionID::AddTopic: return "AddTopic";
+        case FunctionID::GetDead: return "GetDead";
+        case FunctionID::GetStageDone: return "GetStageDone";
         default: return "Unknown";
     }
 }
@@ -512,6 +514,11 @@ void ScriptFunctions::registerTier3Functions() {
         std::bind(&ScriptFunctions::fnGetQuestCompleted, this, _1, _2);
     handlers_[static_cast<uint16_t>(FunctionID::GetQuestStarted)] =
         std::bind(&ScriptFunctions::fnGetQuestStarted, this, _1, _2);
+
+    handlers_[static_cast<uint16_t>(FunctionID::GetDead)] =
+        std::bind(&ScriptFunctions::fnGetDead, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::GetStageDone)] =
+        std::bind(&ScriptFunctions::fnGetStageDone, this, _1, _2);
 }
 
 // ============================================================================
@@ -1847,6 +1854,7 @@ FunctionResult ScriptFunctions::fnGetQuestStarted(
         result.errorMessage = "GetQuestStarted requires 1 argument (questFormID)";
         return result;
     }
+
     if (!questFlowController_) {
         result.errorMessage = "GetQuestStarted requires an initialized QuestFlowController";
         return result;
@@ -1860,6 +1868,16 @@ FunctionResult ScriptFunctions::fnGetQuestStarted(
         state == QuestFlowState::COMPLETED ||
         state == QuestFlowState::FAILED ? 1 : 0);
     return result;
+}
+
+FunctionResult ScriptFunctions::fnGetDead(
+        ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    return fnIsDead(ctx, args);
+}
+
+FunctionResult ScriptFunctions::fnGetStageDone(
+        ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    return fnIsQuestStageDone(ctx, args);
 }
 
 } // namespace script

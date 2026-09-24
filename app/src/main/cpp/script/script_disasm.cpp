@@ -329,6 +329,8 @@ const char* ScriptDisasm::getFunctionName(uint16_t funcID) {
         case FunctionID::GetQuestCompleted: return "GetQuestCompleted";
         case FunctionID::GetQuestStarted: return "GetQuestStarted";
         case FunctionID::AddTopic: return "AddTopic";
+        case FunctionID::GetDead: return "GetDead";
+        case FunctionID::GetStageDone: return "GetStageDone";
         default: return "Unknown";
     }
 }
