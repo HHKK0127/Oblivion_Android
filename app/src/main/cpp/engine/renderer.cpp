@@ -13,6 +13,7 @@
 #include <glm/glm.hpp>
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -3983,8 +3984,15 @@ void Renderer::renderWater() {
     const float cellSize = 4096.0f;
     const float half = cellSize * 0.5f;
 
+    // NOTE: there is no app-side frustum culling here. 'drawn' counts cells
+    // whose plane was sent to glDrawElements; whether it is actually visible
+    // is decided by GLES clipping against the viewport, which app-side code
+    // cannot observe. 'waterCells' is the count of active exterior cells with
+    // a drawable surface before any visibility filtering.
     size_t drawn = 0;
     size_t waterCells = 0;
+    float minLevel = std::numeric_limits<float>::max();
+    float maxLevel = -std::numeric_limits<float>::max();
     for (const auto& cell : cells) {
         if (!cell) continue;
         if (cell->cellType != CellType::EXTERIOR) continue;
@@ -3994,6 +4002,8 @@ void Renderer::renderWater() {
         if (!cell->hasTerrain) continue;
 
         waterCells++;
+        if (cell->waterLevel < minLevel) minLevel = cell->waterLevel;
+        if (cell->waterLevel > maxLevel) maxLevel = cell->waterLevel;
 
         auto it = waterMeshes_.find(cell->cellId);
         if (it == waterMeshes_.end()) {
@@ -4069,8 +4079,11 @@ void Renderer::renderWater() {
 
     static int waterLogFrame = 0;
     if (++waterLogFrame % 120 == 1) {
-        LOGI("Water: %zu active cells with water, %zu drawn, cache=%zu",
-             waterCells, drawn, waterMeshes_.size());
+        LOGI("Water: %zu active cells with water, %zu drawn (no app-side culling), "
+             "cache=%zu, level range=%.1f..%.1f",
+             waterCells, drawn, waterMeshes_.size(),
+             minLevel <= maxLevel ? minLevel : 0.0f,
+             minLevel <= maxLevel ? maxLevel : 0.0f);
     }
 }
 void Renderer::renderTerrainMeshes() {
