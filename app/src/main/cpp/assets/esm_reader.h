@@ -11,6 +11,7 @@
 
 // Script VM data structures (for SCPT record storage)
 #include "../script/script_context.h"
+#include "../quest/quest_record.h"
 
 namespace oblivion {
 
@@ -230,6 +231,7 @@ struct QuestData {
     std::string fullName;
     uint8_t flags = 0;
     uint8_t priority = 0;
+    QuestRecord questRecord;
 };
 
 /// Dialogue response (INFO record) — a single line in a dialogue topic
@@ -247,6 +249,7 @@ struct InfoData {
     uint32_t questFormID = 0;        // Linked quest (QSTI)
     int32_t questStage = -1;         // Required quest stage (QSTN)
     std::string conditionFunction;   // Condition function name (CTDA)
+    script::ScriptData resultScript; // Inline INFO script, when SCHR is present
 };
 
 struct DialogData {

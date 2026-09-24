@@ -320,8 +320,10 @@ bool QuestRecordParser::parseDATA(const uint8_t* data, size_t size,
 
 bool QuestRecordParser::parseStageEntry(const uint8_t* data, size_t size,
                                          QuestStageEntry& outStage) {
-    if (!data || size < 4) return false;
-    std::memcpy(&outStage.stageIndex, data, 4);
+    if (!data || size < 2) return false;
+    uint16_t stageIndex = 0;
+    std::memcpy(&stageIndex, data, sizeof(stageIndex));
+    outStage.stageIndex = static_cast<int32_t>(stageIndex);
     return true;
 }
 

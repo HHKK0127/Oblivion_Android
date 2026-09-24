@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <functional>
 #include <android/log.h>
+#include "../script/script_context.h"
 
 #define LOG_TAG "QuestRecord"
 #ifdef ENABLE_DEBUG_LOGS
@@ -60,12 +61,24 @@ struct QuestCondition {
 // ============================================================================
 // Quest Stage Entry (per-stage data)
 // ============================================================================
+struct QuestStageBlock {
+    uint16_t scriptIndex = 0;  // QSDT/SCHR block ordinal within the stage
+    uint8_t qsdtFlags = 0;     // Bit 0: run once
+    std::vector<QuestCondition> conditions;
+    std::string logText;
+    oblivion::script::ScriptData script;
+
+    bool hasBytecode() const { return !script.bytecode.empty(); }
+    bool runsOnce() const { return (qsdtFlags & 0x01) != 0; }
+};
+
 struct QuestStageEntry {
     int32_t stageIndex = 0;
     StageFlag flags = StageFlag::NONE;
     std::string logText;
     std::vector<QuestCondition> conditions;
     uint32_t nextQuestFormID = 0;
+    std::vector<QuestStageBlock> blocks;
 
     bool isCompletionStage() const {
         return (static_cast<uint8_t>(flags) & static_cast<uint8_t>(StageFlag::COMPLETE_QUEST)) != 0;

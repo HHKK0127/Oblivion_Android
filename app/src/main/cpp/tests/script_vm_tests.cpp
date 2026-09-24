@@ -915,6 +915,19 @@ void ScriptVMTests::testScriptManager() {
         record("ScriptManager: Inline script", ok,
                "Own inline data and reject duplicate stage scripts", getTimeMs38() - start);
     }
+
+    // Test 6: Quest stage indices use the on-disk u16 width.
+    {
+        float start = getTimeMs38();
+        QuestStageEntry stage;
+        const uint8_t rawStage[] = {0xC8, 0x00};
+        const bool ok = QuestRecordParser::parseStageEntry(
+                            rawStage, sizeof(rawStage), stage) &&
+                        stage.stageIndex == 200;
+
+        record("ScriptManager: Quest stage index", ok,
+               "Parse u16 INDX stage indices", getTimeMs38() - start);
+    }
 }
 
 // ============================================
