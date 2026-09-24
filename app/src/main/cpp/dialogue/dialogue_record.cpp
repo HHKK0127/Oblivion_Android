@@ -46,10 +46,12 @@ std::string DialogueInfoRecord::getResponseText() const {
 }
 
 std::string DialogueInfoRecord::getPromptText() const {
-    // Prefer BNAM, then first RESP prompt, then promptText
+    // Prefer BNAM, then the first response's acting notes. Oblivion INFO records
+    // never carry BNAM, so this currently surfaces NAM2 (a voice-actor direction)
+    // as the player-visible prompt; the choice list should use the topic name.
     if (!promptText.empty()) return promptText;
-    if (!responses.empty() && !responses[0].promptText.empty()) {
-        return responses[0].promptText;
+    if (!responses.empty() && !responses[0].actingNotes.empty()) {
+        return responses[0].actingNotes;
     }
     return "";
 }
@@ -271,33 +273,20 @@ DialogueCondition DialogueRecordParser::parseCTDA(const SubRecord& sub) {
 
 ResponseData DialogueRecordParser::parseTRDT(const SubRecord& sub) {
     ResponseData resp;
-    if (sub.data.size() < 8) return resp;
+    if (sub.data.size() < 13) return resp;
 
-    // TRDT format:
-    // Byte 0: response type
-    // Bytes 1-3: padding
-    // Bytes 4-7: emotion type (uint32)
-    // Bytes 8-11: emotion value (int32)
-    // Bytes 12-15: speaker FormID
-    // Bytes 16-19: sound FormID
-    // Byte 20: use emotion animation
+    // TRDT is a fixed 16-byte subrecord (measured over all 23,877 TRDT
+    // subrecords in Oblivion3.esm):
+    //   byte 0     emotion type (0..6)
+    //   bytes 1-3  always 0
+    //   byte 4     emotion value (0..100)
+    //   bytes 5-11 always 0
+    //   byte 12    1-based response ordinal within the INFO
+    //   bytes 13-15 leftover bytes with no meaning
 
-    resp.type = static_cast<ResponseType>(sub.data[0]);
-    if (sub.data.size() >= 8) {
-        std::memcpy(&resp.emotionType, sub.data.data() + 4, 4);
-    }
-    if (sub.data.size() >= 12) {
-        std::memcpy(&resp.emotionValue, sub.data.data() + 8, 4);
-    }
-    if (sub.data.size() >= 16) {
-        std::memcpy(&resp.speakerFormID, sub.data.data() + 12, 4);
-    }
-    if (sub.data.size() >= 20) {
-        std::memcpy(&resp.soundFormID, sub.data.data() + 16, 4);
-    }
-    if (sub.data.size() >= 21) {
-        resp.useEmotionAnimation = sub.data[20];
-    }
+    resp.emotionType = sub.data[0];
+    resp.emotionValue = sub.data[4];
+    resp.responseNumber = sub.data[12];
 
     return resp;
 }

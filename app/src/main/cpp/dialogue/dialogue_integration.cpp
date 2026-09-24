@@ -81,7 +81,7 @@ void DialogueIntegration::loadFromESM(const oblivion::ESMManager& esmMgr) {
             ResponseData resp;
             resp.type = static_cast<ResponseType>(esmInfo.responseType);
             resp.responseText = esmInfo.responseText;
-            resp.promptText = esmInfo.promptText;
+            resp.actingNotes = esmInfo.promptText;
             info.responses.push_back(resp);
 
             // Set priority based on specificity
