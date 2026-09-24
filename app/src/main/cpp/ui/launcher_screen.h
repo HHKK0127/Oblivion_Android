@@ -22,7 +22,8 @@ enum class LauncherState {
     MAIN,           // Main launcher
     OPTIONS,        // Options sub-screen
     DATA_FILES,     // Data Files (plugin management)
-    SUPPORT,        // Support info display
+    SUPPORT,        // Technical support info display
+    WEBSITE,        // Official website link
     TRANSITIONING   // Transitioning to game
 };
 
@@ -78,10 +79,12 @@ private:
 
     // Menu items (authentic original)
     static constexpr int BTN_PLAY       = 0;
-    static constexpr int BTN_OPTIONS    = 1;
-    static constexpr int BTN_DATA_FILES = 2;
-    static constexpr int BTN_SUPPORT    = 3;
-    static constexpr int BTN_EXIT       = 4;
+    static constexpr int BTN_DATA_FILES = 1;
+    static constexpr int BTN_OPTIONS    = 2;
+    static constexpr int BTN_WEBSITE    = 3;
+    static constexpr int BTN_SUPPORT    = 4;
+    static constexpr int BTN_UNINSTALL  = 5;
+    static constexpr int BTN_EXIT       = 6;
 
     // Intro slide: the menu panel enters from the left, the logo from the right.
     static constexpr float INTRO_SLIDE_SPEED = 2.2f;       // 1 / seconds

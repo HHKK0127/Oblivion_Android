@@ -41,8 +41,8 @@ void LauncherScreen::initialize(LocalizationManager* lm, TextRenderer* tr,
     if (!texturesLoaded) {
         // Original: dark stone/metal background
         bgTexture = TextureLoader::loadTextureFromAsset("textures/ui/launcher_bg.png");
-        // Right side Oblivion logo (large)
-        logoTexture = TextureLoader::loadTextureFromAsset("textures/ui/oblivion_logo_large.png");
+        // Classic Oblivion crest placed on the left side of the parchment.
+        logoTexture = TextureLoader::loadTextureFromAsset("textures/ui/oblivion_crest.png");
         // Button background (stone style)
         buttonBgTex = TextureLoader::loadTextureFromAsset("textures/ui/btn_stone.png");
         // Hover state (bright stone style)
@@ -81,9 +81,11 @@ void LauncherScreen::buildMainMenu() {
     struct BtnInfo { int index; std::string labelKey; };
     BtnInfo infos[] = {
         {BTN_PLAY,       "launcher_play"},
-        {BTN_OPTIONS,    "launcher_options"},
         {BTN_DATA_FILES, "launcher_data_files"},
-        {BTN_SUPPORT,    "launcher_support"},
+        {BTN_OPTIONS,    "launcher_options"},
+        {BTN_WEBSITE,    "launcher_website"},
+        {BTN_SUPPORT,    "launcher_technical_support"},
+        {BTN_UNINSTALL,  "launcher_uninstall"},
         {BTN_EXIT,       "launcher_exit"}
     };
 
@@ -94,23 +96,13 @@ void LauncherScreen::buildMainMenu() {
         btn->setLabel(label);
         btn->setTextRenderer(textRenderer);
 
-        // Larger buttons for premium feel
-        btn->setSize(400.0f, 78.0f);
-        btn->setLabelScale(1.7f);
-
-        // Gold label color
+        // The original launcher uses text-only menu entries on parchment.
+        btn->setSize(430.0f, 58.0f);
+        btn->setLabelScale(1.45f);
         btn->setLabelColor(COLOR_GOLD_DIM);
-
-        // Premium stone/glass button background with gold tint
-        if (buttonBgTex != 0) {
-            btn->setNormalTexture(buttonBgTex);
-            btn->setHoverTexture(buttonHoverTex);
-        } else {
-            // Sophisticated gradient: dark stone top, deep amber bottom
-            btn->setNormalColor(glm::vec4(0.16f, 0.12f, 0.08f, 0.92f));
-            btn->setHoverColor(glm::vec4(0.28f, 0.20f, 0.12f, 0.95f));
-            btn->setPressedColor(glm::vec4(0.10f, 0.08f, 0.05f, 0.95f));
-        }
+        btn->setNormalColor(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
+        btn->setHoverColor(glm::vec4(0.48f, 0.30f, 0.12f, 0.16f));
+        btn->setPressedColor(glm::vec4(0.38f, 0.22f, 0.08f, 0.24f));
 
         int idx = info.index;
         btn->setOnClick([this, idx]() {
@@ -129,24 +121,24 @@ void LauncherScreen::rebuildLayout() {
     if (!mainPanel) return;
     mainPanel->setScreenSize(screenWidth, screenHeight);
 
-    // Larger panel for premium feel
-    float panelW = 480.0f;
-    float panelH = 600.0f;
-    float px = screenWidth * 0.04f;   // Left-aligned
-    float py = screenHeight * 0.12f;  // Slightly upper
+    // Centered parchment panel matching the classic desktop launcher.
+    float panelW = std::min(static_cast<float>(screenWidth) * 0.82f, 1180.0f);
+    float panelH = std::min(static_cast<float>(screenHeight) * 0.80f, 760.0f);
+    float px = (screenWidth - panelW) * 0.5f;
+    float py = (screenHeight - panelH) * 0.5f;
     // Intro slide: offset the whole panel (and its buttons) until it settles.
     px -= (1.0f - introEase()) * PANEL_SLIDE_DISTANCE;
     mainPanel->setPosition(px, py);
     mainPanel->setSize(panelW, panelH);
 
-    // Push buttons down a bit so they sit below the logo's bottom
-    float btnW = 420.0f;
-    float btnH = 78.0f;
-    float startY = 30.0f;
-    float gap = 22.0f;
+    // Menu occupies the right half; the left half is reserved for the crest.
+    float btnW = panelW * 0.48f;
+    float btnH = panelH * 0.105f;
+    float startY = panelH * 0.10f;
+    float gap = panelH * 0.012f;
 
     for (size_t i = 0; i < menuButtons.size(); ++i) {
-        float bx = (panelW - btnW) * 0.5f;
+        float bx = panelW * 0.47f;
         float by = startY + static_cast<float>(i) * (btnH + gap);
         menuButtons[i]->setPosition(bx, by);
         menuButtons[i]->setSize(btnW, btnH);
@@ -162,14 +154,15 @@ float LauncherScreen::introEase() const {
 int LauncherScreen::hitTestMenuButton(float x, float y) const {
     // Mirrors rebuildLayout() exactly (intro slide included) so the item that
     // lights up under the finger is the item a tap at that point would click.
-    const float panelW = 480.0f;
-    const float btnW = 420.0f;
-    const float btnH = 78.0f;
-    const float startY = 30.0f;
-    const float gap = 22.0f;
-    const float panelX = screenWidth * 0.04f - (1.0f - introEase()) * PANEL_SLIDE_DISTANCE;
-    const float panelY = screenHeight * 0.12f;
-    const float btnX = panelX + (panelW - btnW) * 0.5f;
+    const float panelW = std::min(static_cast<float>(screenWidth) * 0.82f, 1180.0f);
+    const float panelH = std::min(static_cast<float>(screenHeight) * 0.80f, 760.0f);
+    const float btnW = panelW * 0.48f;
+    const float btnH = panelH * 0.105f;
+    const float startY = panelH * 0.10f;
+    const float gap = panelH * 0.012f;
+    const float panelX = (screenWidth - panelW) * 0.5f - (1.0f - introEase()) * PANEL_SLIDE_DISTANCE;
+    const float panelY = (screenHeight - panelH) * 0.5f;
+    const float btnX = panelX + panelW * 0.47f;
 
     if (x < btnX || x > btnX + btnW) return -1;
     for (size_t i = 0; i < menuButtons.size(); ++i) {
@@ -228,6 +221,7 @@ void LauncherScreen::render() {
             renderDataFiles();
             break;
         case LauncherState::SUPPORT:
+        case LauncherState::WEBSITE:
             renderSupport();
             break;
         case LauncherState::TRANSITIONING:
@@ -264,12 +258,12 @@ void LauncherScreen::renderMain() {
 // Background (dark stone/metal) - Enhanced with gradient + portal effect
 // ============================================================================
 void LauncherScreen::renderBackground() {
-    // Full-screen deep gradient (top dark -> bottom slightly red-tinged)
+    // Warm walnut surround from the original launcher artwork.
     UIDrawHelper::drawVerticalGradient(
         0.0f, 0.0f,
         static_cast<float>(screenWidth), static_cast<float>(screenHeight),
-        glm::vec4(0.06f, 0.05f, 0.10f, 1.0f),
-        glm::vec4(0.02f, 0.01f, 0.04f, 1.0f),
+        glm::vec4(0.19f, 0.10f, 0.055f, 1.0f),
+        glm::vec4(0.055f, 0.025f, 0.012f, 1.0f),
         screenWidth, screenHeight);
 
     // Texture overlay if available
@@ -295,33 +289,25 @@ void LauncherScreen::renderBackground() {
         return;
     }
 
-    // Oblivion portal swirl: subtle pulsing purple radial glow at center-right
-    float portalAlpha = 0.18f + 0.05f * sin(glowPhase * 0.7f);
-    UIDrawHelper::drawRadialGlow(
-        screenWidth * 0.7f, screenHeight * 0.45f,
-        static_cast<float>(screenWidth) * 0.4f,
-        glm::vec4(0.45f, 0.20f, 0.85f, portalAlpha),
-        glm::vec4(0.05f, 0.02f, 0.15f, 0.0f),
-        screenWidth, screenHeight);
-
-    // Original: thin panel background on left side (button area) - enhanced gradient
-    // Carries the same intro slide as rebuildLayout() so the frame and the
-    // buttons travel together; at rest the offset is zero.
-    float panelX = screenWidth * 0.04f - (1.0f - introEase()) * PANEL_SLIDE_DISTANCE;
-    float panelY = screenHeight * 0.12f;
-    float panelW = 480.0f;
-    float panelH = 560.0f;
+    // Parchment center with the double inset frame of the classic launcher.
+    float panelW = std::min(static_cast<float>(screenWidth) * 0.82f, 1180.0f);
+    float panelH = std::min(static_cast<float>(screenHeight) * 0.80f, 760.0f);
+    float panelX = (screenWidth - panelW) * 0.5f - (1.0f - introEase()) * PANEL_SLIDE_DISTANCE;
+    float panelY = (screenHeight - panelH) * 0.5f;
     UIDrawHelper::drawVerticalGradient(
         panelX, panelY, panelW, panelH,
-        glm::vec4(0.10f, 0.08f, 0.06f, 0.85f),
-        glm::vec4(0.03f, 0.02f, 0.02f, 0.85f),
+        glm::vec4(0.78f, 0.70f, 0.54f, 1.0f),
+        glm::vec4(0.51f, 0.42f, 0.29f, 1.0f),
         screenWidth, screenHeight);
-
-    // Ornate frame: gold border with inner shadow
     UIDrawHelper::drawOrnateFrame(
-        panelX, panelY, panelW, panelH, 2.5f,
-        glm::vec4(COLOR_GOLD_DIM.x, COLOR_GOLD_DIM.y, COLOR_GOLD_DIM.z, 0.7f),
-        glm::vec4(0.0f, 0.0f, 0.0f, 0.5f),
+        panelX + 10.0f, panelY + 10.0f, panelW - 20.0f, panelH - 20.0f, 7.0f,
+        glm::vec4(0.30f, 0.22f, 0.13f, 1.0f),
+        glm::vec4(0.08f, 0.035f, 0.015f, 0.75f),
+        screenWidth, screenHeight);
+    UIDrawHelper::drawOrnateFrame(
+        panelX + 30.0f, panelY + 30.0f, panelW - 60.0f, panelH - 60.0f, 3.0f,
+        glm::vec4(0.68f, 0.60f, 0.45f, 0.95f),
+        glm::vec4(0.22f, 0.14f, 0.07f, 0.55f),
         screenWidth, screenHeight);
 }
 
@@ -331,14 +317,15 @@ void LauncherScreen::renderBackground() {
 void LauncherScreen::renderLogo() {
     if (logoTexture == 0) return;
 
-    // Larger scale for prominence
-    float scaleFactor = (screenWidth > screenHeight) ? 0.65f : 0.85f;
-    float logoW = static_cast<float>(screenWidth) * scaleFactor;
-    float logoH = logoW * 0.22f;
-    float logoX = (static_cast<float>(screenWidth) - logoW) * 0.5f;
-    // Intro slide: the logo settles in from the right.
-    logoX += (1.0f - introEase()) * LOGO_SLIDE_DISTANCE;
-    float logoY = static_cast<float>(screenHeight) * 0.18f;
+    float panelW = std::min(static_cast<float>(screenWidth) * 0.82f, 1180.0f);
+    float panelH = std::min(static_cast<float>(screenHeight) * 0.80f, 760.0f);
+    float panelX = (screenWidth - panelW) * 0.5f;
+    float panelY = (screenHeight - panelH) * 0.5f;
+    float logoW = panelW * 0.24f;
+    float logoH = logoW * 1.33f;
+    float logoX = panelX + panelW * 0.11f;
+    float logoY = panelY + panelH * 0.24f;
+    logoX -= (1.0f - introEase()) * LOGO_SLIDE_DISTANCE;
 
     // Gold halo behind the logo for elegance
     float glowAlpha = 0.25f + 0.10f * sin(glowPhase);
@@ -829,9 +816,18 @@ void LauncherScreen::handleSelection() {
             LOGI("Launcher: Data Files selected");
             break;
         }
+        case BTN_WEBSITE: {
+            state = LauncherState::WEBSITE;
+            LOGI("Launcher: Website selected");
+            break;
+        }
         case BTN_SUPPORT: {
             state = LauncherState::SUPPORT;
-            LOGI("Launcher: Support selected");
+            LOGI("Launcher: Technical support selected");
+            break;
+        }
+        case BTN_UNINSTALL: {
+            LOGW("Launcher: Uninstall selected; Android uninstall intent is not available from native launcher yet");
             break;
         }
         case BTN_EXIT: {

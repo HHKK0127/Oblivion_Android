@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-25T00:05:00",
+  "lastUpdated": "2026-09-24T17:40:05+09:00",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -3337,10 +3337,93 @@
         "opcode-payload"
       ],
       "compressed": false
+    },
+    {
+      "category": "decision",
+      "priority": "high",
+      "content": "【タイトル画面の「減光」の正体＝デバッグオーバーレイ（確定・再現済み）】`adb shell input tap 74 74` で画面が暗くなるのは描画バグではなく、左上の `btn_debug_toggle` を押して`debug_overlay_container` が開いたため。ボタンは 36dp / layout_gravity=top|start / margin 10dp → 密度 420dpi（倍率 2.625）で x26..121 / y26..121 なので (74,74) が矩形内。オーバーレイは activity_main.xml:15-25 の全画面 FrameLayout（初期 gone）で、中身は `#80000000` の全面 50% 黒スクリム + 左寄せ 260dp（=682.5px）の LinearLayout パネル。合成は out = in * (1 - 0x80/255) = in * 0.498。logcat に `D MainActivity: Debug panel shown`（MainActivity.kt:296）。可逆（再タップで復帰）。実測: content p50 輝度 167→60→161 / after/before 比 p50 0.491（予測 0.498）/ グリフ芯 (117,59,33)→(58,29,16) / corr(after,before) 左 x0-640 = +0.145・右 x1280-1920 = +0.833（左 682px パネルと厳密一致）/ corr(rp_after, 964d16fb の t7) = +0.915。",
+      "tags": [
+        "title-screen",
+        "debug-overlay",
+        "root-cause",
+        "screenshot",
+        "confirmed"
+      ],
+      "id": "2503573f-da35-444c-82ec-a9109317c531",
+      "timestamp": "2026-09-24T17:40:05+09:00",
+      "compressed": false
+    },
+    {
+      "category": "reference",
+      "priority": "high",
+      "content": "タイトル画面スクショの汚染検出法（デバッグオーバーレイが開いていないかの判定）。メニュー帯インク tol20（y765-840 / x420-1520）: 正常 約7,500〜8,100 に対し **汚染時は 0**。content p50 輝度: 正常 約160〜167 に対し **汚染時 約60**。最大輝度: 正常 約243 に対し **汚染時 255**（パネルの白文字）。`tol20=0 かつ p50≈60` なら汚染確定。デバッグトグルは alpha=0.7 で常時表示のため左上付近を誤タップすると開く。スクショ手順から `taps 74 74` は恒久的に外すこと。",
+      "tags": [
+        "title-screen",
+        "screenshot",
+        "pitfall",
+        "debug-overlay"
+      ],
+      "id": "3258397a-d419-4590-8f09-64737fbd9c02",
+      "timestamp": "2026-09-24T17:40:05+09:00",
+      "compressed": false
+    },
+    {
+      "category": "constraint",
+      "priority": "high",
+      "content": "計測指標 tol40（インク RGB(117,59,33) に許容 40）は**背景が変わると無効**。デバッグオーバーレイ表示中の t7.png では tol40=22,744px（正常な ta.png は 10,154px の 2.2 倍）で、tol20 は 0。暗色背景 RGB(104,88,72) は |104-117|=13 / |88-59|=29 / |72-33|=39 で全チャンネルが許容 40 以内に入り、背景を文字として計上する。「AA の増分を分離する」という tol40 の前提は背景が同一のときだけ成立する。主指標は tol20 を使うこと。",
+      "tags": [
+        "measurement",
+        "pitfall",
+        "tol40",
+        "title-screen"
+      ],
+      "id": "aab6834f-11da-44aa-b90f-78a4a727422f",
+      "timestamp": "2026-09-24T17:40:05+09:00",
+      "compressed": false
+    },
+    {
+      "category": "reference",
+      "priority": "medium",
+      "content": "暗色化の正体を相関で特定した手法（再利用可）。同一セッションでタップのみを変えた制御実験 3 枚（rp_before / rp_after / rp_after2）を撮り、領域別に corr(after, before) を取ると 左 x0-640 = +0.145（無相関）/ 右 x1280-1920 = +0.833（構造が残る）に分離。この左右非対称が「左 682.5px のパネル」の決め手になった。平均値の比（0.491）だけでは一様減光と誤認する。corr(rp_after, 964d16fb の t7) = +0.915、corr(rp_after2, rp_before) = +0.905。",
+      "tags": [
+        "diagnosis",
+        "method",
+        "correlation",
+        "title-screen"
+      ],
+      "id": "2472948e-b278-4e76-96fe-b380cedf15b3",
+      "timestamp": "2026-09-24T17:40:05+09:00",
+      "compressed": false
+    },
+    {
+      "category": "constraint",
+      "priority": "medium",
+      "content": "near-black 率の閾値定義が 2 セッションで異なる。964d16fb は `max(R,G,B) < 60`、本セッションは `mean(R,G,B) < 60`。絶対値が約 4 倍違う（3.36% vs 13.04%）が、変化量は一致（-0.16pp / -0.17pp）。跨セッションで絶対値を比較するときは定義を揃えること。",
+      "tags": [
+        "measurement",
+        "pitfall",
+        "title-screen"
+      ],
+      "id": "976076c8-dd21-4ee4-aeb4-d109a7e5346c",
+      "timestamp": "2026-09-24T17:40:05+09:00",
+      "compressed": false
+    },
+    {
+      "category": "reference",
+      "priority": "medium",
+      "content": "タイトル画面の成果物と記録の所在。`TITLE_PLAN.md`（本セッションの files/ 配下、§16.17 まで、103,265B / 1,582行）に ソース裏取り表 / 制御実験表 / 相関 / 汚染検出法 / tol40 の落とし穴 / per-item クラスタ汚染 / near-black 閾値差 / 教訓を記載。成果物画像: `files\\debug_panel_cause.png`（before/after/after2 の並置）、`files\\debug_toggle_zone.png`（トグル矩形 x26..121 とパネル x0..682 を重ねた図）。計測スクリプト: `files\\measure_ink.py`（単一）/ `files\\compare_outline.py`（複数比較）。",
+      "tags": [
+        "title-screen",
+        "artifact",
+        "documentation"
+      ],
+      "id": "b3c4e3b7-08ed-4d40-aa70-d84ba4877eb2",
+      "timestamp": "2026-09-24T17:40:05+09:00",
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 233,
+    "totalEntries": 239,
     "compressedCount": 2,
     "sessionCount": 24
   }
