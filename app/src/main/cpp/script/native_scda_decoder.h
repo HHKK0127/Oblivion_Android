@@ -244,5 +244,44 @@ bool resolveNativeReferenceSlot(uint16_t slot,
                                 NativeReferenceSlot& out,
                                 std::string& error);
 
+// MoveTo (0x109E) argument shapes. The compiler emits exactly four, all framed
+// as [u16 argumentCount][tokens]:
+//
+//   [1][<r>]              MoveTo ref            payload 5
+//   [2][<r>][z]           MoveTo ref x          payload 14
+//   [4][<r>][z][z][z]     MoveTo ref x y z      payload 32
+//   [4][<r>][f][f][z]     MoveTo ref x y z      payload 20
+//
+// No shape carries a cell reference, so the first token is always the reference
+// and the tokens after it are the offsets in source order x, y, z. The compiler
+// emits either one offset or three, never two, and the one-offset form is read
+// as x with y and z left at zero: the bytecode does not record which axis it is
+// and reading it as x is the only self-consistent interpretation.
+//
+// An offset slot is not always a literal. The payload-20 shape comes from
+// sources such as "SEHaskillRef.moveto player x y 0", where x and y are float
+// script variables and only z is a literal. In this grammar 'f' introduces a
+// 3-byte float variable reference, not a 4-byte float, so the tokens are
+// exposed for the VM to evaluate and the literal arrays are filled in only for
+// slots the compiler actually wrote as a numeric literal.
+struct NativeMoveToArguments {
+    bool valid = false;
+    bool hasOffsets = false;   // false for the [1][<r>] form
+    size_t offsetCount = 0;    // 0, 1 or 3
+    // Offset slots in source order x, y, z. The pointers alias the decoded
+    // instruction's token vector, so they stay valid only while it does.
+    const NativeToken* offsetTokens[3] = {nullptr, nullptr, nullptr};
+    // Set for slots the compiler wrote as a numeric literal (z / n / bare u16),
+    // with the value in offsetLiterals. Cleared for variable references.
+    bool offsetIsLiteral[3] = {false, false, false};
+    float offsetLiterals[3] = {0.0f, 0.0f, 0.0f};
+};
+
+// Extracts the MoveTo arguments from a decoded instruction. Returns false when
+// the instruction is not a MoveTo or its payload does not match one of the four
+// shapes.
+bool decodeNativeMoveToArguments(const NativeInstruction& instruction,
+                                 NativeMoveToArguments& out);
+
 } // namespace script
 } // namespace oblivion

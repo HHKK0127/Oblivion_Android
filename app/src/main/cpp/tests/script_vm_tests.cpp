@@ -1323,6 +1323,117 @@ void ScriptVMTests::testNativeScdaDecoder() {
                getTimeMs38() - start);
     }
 
+    // Test 8b: MoveTo accepts exactly the four shapes the compiler emits and
+    // reads the offsets in source order x, y, z. The one-offset form lands in x
+    // with y and z left at zero, and no shape carries a cell reference.
+    {
+        const float start = getTimeMs38();
+
+        auto decodeMoveTo = [](const std::vector<uint8_t>& payload,
+                               NativeMoveToArguments& args) {
+            std::vector<uint8_t> code;
+            appendInstruction(code, 0x109E, payload);
+            const NativeDecodeResult result = decodeNativeScda(code);
+            if (!result.success || result.instructions.size() != 1) return false;
+            return decodeNativeMoveToArguments(result.instructions[0], args);
+        };
+
+        auto refToken = [](std::vector<uint8_t>& payload) {
+            payload.push_back('r');
+            appendU16(payload, 4);
+        };
+        auto doubleToken = [](std::vector<uint8_t>& payload, double value) {
+            payload.push_back('z');
+            uint64_t bits = 0;
+            std::memcpy(&bits, &value, 8);
+            for (int i = 0; i < 8; ++i) {
+                payload.push_back(static_cast<uint8_t>((bits >> (8 * i)) & 0xFF));
+            }
+        };
+        auto floatVarToken = [](std::vector<uint8_t>& payload, uint16_t index) {
+            payload.push_back('f');
+            appendU16(payload, index);
+        };
+
+        bool ok = true;
+
+        // [1][<r>] — no offsets
+        {
+            std::vector<uint8_t> payload;
+            appendU16(payload, 1);
+            refToken(payload);
+            NativeMoveToArguments args;
+            ok = ok && decodeMoveTo(payload, args) && args.valid &&
+                 !args.hasOffsets && args.offsetCount == 0;
+        }
+
+        // [2][<r>][z] — x only
+        {
+            std::vector<uint8_t> payload;
+            appendU16(payload, 2);
+            refToken(payload);
+            doubleToken(payload, 20.0);
+            NativeMoveToArguments args;
+            ok = ok && decodeMoveTo(payload, args) && args.valid &&
+                 args.hasOffsets && args.offsetCount == 1 &&
+                 args.offsetIsLiteral[0] && args.offsetLiterals[0] == 20.0f &&
+                 !args.offsetIsLiteral[1] && !args.offsetIsLiteral[2];
+        }
+
+        // [4][<r>][z][z][z] — x y z
+        {
+            std::vector<uint8_t> payload;
+            appendU16(payload, 4);
+            refToken(payload);
+            doubleToken(payload, 0.0);
+            doubleToken(payload, 100.0);
+            doubleToken(payload, 0.0);
+            NativeMoveToArguments args;
+            ok = ok && decodeMoveTo(payload, args) && args.valid &&
+                 args.hasOffsets && args.offsetCount == 3 &&
+                 args.offsetIsLiteral[0] && args.offsetLiterals[0] == 0.0f &&
+                 args.offsetIsLiteral[1] && args.offsetLiterals[1] == 100.0f &&
+                 args.offsetIsLiteral[2] && args.offsetLiterals[2] == 0.0f;
+        }
+
+        // [4][<r>][f][f][z] — the shape behind
+        // "SEHaskillRef.moveto player x y 0": x and y are float script
+        // variables, so only z carries a literal.
+        {
+            std::vector<uint8_t> payload;
+            appendU16(payload, 4);
+            refToken(payload);
+            floatVarToken(payload, 4);
+            floatVarToken(payload, 5);
+            doubleToken(payload, 0.0);
+            NativeMoveToArguments args;
+            ok = ok && decodeMoveTo(payload, args) && args.valid &&
+                 args.hasOffsets && args.offsetCount == 3 &&
+                 !args.offsetIsLiteral[0] && !args.offsetIsLiteral[1] &&
+                 args.offsetIsLiteral[2] && args.offsetLiterals[2] == 0.0f &&
+                 args.offsetTokens[0] != nullptr &&
+                 args.offsetTokens[0]->kind == NativeTokenKind::Variable &&
+                 args.offsetTokens[0]->index == 4 &&
+                 args.offsetTokens[1] != nullptr &&
+                 args.offsetTokens[1]->index == 5;
+        }
+
+        // Two offsets never occur, so they must not be accepted.
+        {
+            std::vector<uint8_t> payload;
+            appendU16(payload, 3);
+            refToken(payload);
+            doubleToken(payload, 10.0);
+            doubleToken(payload, 20.0);
+            NativeMoveToArguments args;
+            ok = ok && !decodeMoveTo(payload, args);
+        }
+
+        record("NativeScda: MoveTo offset shapes", ok,
+               "MoveTo accepts the four emitted shapes and reads offsets as x, y, z",
+               getTimeMs38() - start);
+    }
+
     // Test 9: payload-free commands are bare
     {
         const float start = getTimeMs38();

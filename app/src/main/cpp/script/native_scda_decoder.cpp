@@ -621,6 +621,46 @@ bool resolveNativeReferenceSlot(uint16_t slot,
     return true;
 }
 
+bool decodeNativeMoveToArguments(const NativeInstruction& instruction,
+                                 NativeMoveToArguments& out) {
+    out = NativeMoveToArguments{};
+    if (instruction.opcode != 0x109E) return false;
+
+    const auto& tokens = instruction.tokens;
+    // Every shape starts with the reference token, so a payload without one is
+    // not a MoveTo the compiler could have emitted.
+    if (tokens.empty() || tokens[0].kind != NativeTokenKind::Variable) return false;
+
+    const size_t offsetCount = tokens.size() - 1;
+    // The compiler emits one offset or three, never two; [1][<r>] has none.
+    if (offsetCount != 0 && offsetCount != 1 && offsetCount != 3) return false;
+
+    out.valid = true;
+    out.hasOffsets = offsetCount != 0;
+    out.offsetCount = offsetCount;
+
+    for (size_t i = 0; i < offsetCount; ++i) {
+        const NativeToken& token = tokens[i + 1];
+        out.offsetTokens[i] = &token;
+        switch (token.kind) {
+            case NativeTokenKind::Double:
+                out.offsetIsLiteral[i] = true;
+                out.offsetLiterals[i] = static_cast<float>(token.doubleValue);
+                break;
+            case NativeTokenKind::Integer:
+            case NativeTokenKind::BareU16:
+                out.offsetIsLiteral[i] = true;
+                out.offsetLiterals[i] = static_cast<float>(token.intValue);
+                break;
+            default:
+                // A float script variable such as the x and y of
+                // "SEHaskillRef.moveto player x y 0"; the VM resolves it.
+                break;
+        }
+    }
+    return true;
+}
+
 bool decodeNativeInstruction(const uint8_t* data, size_t size, uint32_t offset,
                              NativeInstruction& out, std::string& error) {
     if (offset + HEADER_SIZE > size) {
