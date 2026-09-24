@@ -967,6 +967,70 @@ void ScriptVMTests::testScriptManager() {
                "Suppress QSDT run-once blocks while repeating other blocks",
                getTimeMs38() - start);
     }
+
+    // Test 8: QUST subrecords follow the on-disk layout, not the old
+    // QSTN/QSTF/QSTR shape. INDX is a u16 stage, QSDT opens a block, CNAM is
+    // block-level journal text, and CTDA belongs to the nearest preceding
+    // owner (QSTA, QSDT or the quest-level run after DATA).
+    {
+        float start = getTimeMs38();
+
+        auto appendSub = [](std::vector<uint8_t>& out, const char* type,
+                            const std::vector<uint8_t>& body) {
+            out.insert(out.end(), type, type + 4);
+            const uint16_t size = static_cast<uint16_t>(body.size());
+            out.push_back(static_cast<uint8_t>(size & 0xFF));
+            out.push_back(static_cast<uint8_t>((size >> 8) & 0xFF));
+            out.insert(out.end(), body.begin(), body.end());
+        };
+        auto ascii = [](const char* text) {
+            return std::vector<uint8_t>(text, text + std::strlen(text));
+        };
+
+        std::vector<uint8_t> questBytes;
+        appendSub(questBytes, "EDID", ascii("TestQuest"));
+        appendSub(questBytes, "DATA", {0x01, 0x3C});
+        // Quest-level condition: runs after DATA, before the first INDX.
+        appendSub(questBytes, "CTDA", std::vector<uint8_t>(24, 0x00));
+        // Stage 10 with one run-once block carrying bytecode and journal text.
+        appendSub(questBytes, "INDX", {0x0A, 0x00});
+        appendSub(questBytes, "QSDT", {0x01});
+        appendSub(questBytes, "SCHR", std::vector<uint8_t>(20, 0x00));
+        appendSub(questBytes, "SCDA", {0x00, 0x00, 0x00, 0x00});
+        appendSub(questBytes, "CNAM", ascii("Stage ten journal"));
+        appendSub(questBytes, "CTDA", std::vector<uint8_t>(24, 0x00));
+        // Stage 20 with a repeatable block and no bytecode.
+        appendSub(questBytes, "INDX", {0x14, 0x00});
+        appendSub(questBytes, "QSDT", {0x00});
+        appendSub(questBytes, "SCHR", std::vector<uint8_t>(20, 0x00));
+        appendSub(questBytes, "CNAM", ascii("Stage twenty journal"));
+
+        QuestRecord quest;
+        const bool parsed =
+            QuestRecordParser::parse(questBytes.data(), questBytes.size(), quest);
+
+        const bool ok = parsed && quest.editorID == "TestQuest" &&
+                        quest.questFlags == 0x01 && quest.priority == 0x3C &&
+                        quest.conditions.size() == 1 && quest.stages.size() == 2 &&
+                        quest.stages[0].stageIndex == 10 &&
+                        quest.stages[1].stageIndex == 20 &&
+                        quest.stages[0].blocks.size() == 1 &&
+                        quest.stages[0].blocks[0].scriptIndex == 0 &&
+                        quest.stages[0].blocks[0].runsOnce() &&
+                        quest.stages[0].blocks[0].hasBytecode() &&
+                        quest.stages[0].blocks[0].logText == "Stage ten journal" &&
+                        quest.stages[0].blocks[0].conditions.size() == 1 &&
+                        quest.stages[1].blocks.size() == 1 &&
+                        !quest.stages[1].blocks[0].runsOnce() &&
+                        !quest.stages[1].blocks[0].hasBytecode() &&
+                        quest.stages[1].blocks[0].logText == "Stage twenty journal" &&
+                        quest.stages[0].isCompletionStage() &&
+                        !quest.stages[1].isCompletionStage();
+
+        record("ScriptManager: Quest record layout", ok,
+               "Parse INDX/QSDT/CNAM/CTDA owners from the on-disk QUST shape",
+               getTimeMs38() - start);
+    }
 }
 
 // ============================================

@@ -171,10 +171,17 @@ bool QuestRecordParser::parse(const uint8_t* data, size_t dataSize, QuestRecord&
         return false;
     }
 
-    // Parse subrecords sequentially
+    // The stage body is strictly "script entries then target groups": no QSDT
+    // ever follows that stage's first QSTA, and no stage carries QSTA without
+    // QSDT. CTDA is owned by the nearest preceding owner subrecord, which is
+    // QSTA (2,115), QSDT (950) or the quest-level run after DATA (719).
+    QuestStageEntry* currentStage = nullptr;
+    QuestStageBlock* currentBlock = nullptr;
+    QuestTarget* currentTarget = nullptr;
+    uint16_t blockIndex = 0;
+
     size_t offset = 0;
     while (offset + 6 <= dataSize) {
-        // Read subrecord header: 4-char type + 2-byte size
         char recType[5] = {};
         std::memcpy(recType, data + offset, 4);
         uint16_t recSize = 0;
@@ -211,42 +218,70 @@ bool QuestRecordParser::parse(const uint8_t* data, size_t dataSize, QuestRecord&
                 while (len > 0 && recData[len - 1] == '\0') --len;
                 outRecord.altName.assign(reinterpret_cast<const char*>(recData), len);
             }
-        } else if (std::memcmp(recType, "QSTN", 4) == 0) {
-            // Quest stage entry
+        } else if (std::memcmp(recType, "INDX", 4) == 0) {
+            // INDX is the stage index and is always 2 bytes. It is a plain
+            // stage number, not a decile grid: 112 of the 136 distinct values
+            // are not multiples of 10 and 0 is a legal stage.
             QuestStageEntry stage;
             if (parseStageEntry(recData, recSize, stage)) {
                 outRecord.stages.push_back(std::move(stage));
+                currentStage = &outRecord.stages.back();
+                currentBlock = nullptr;
+                currentTarget = nullptr;
+                blockIndex = 0;
             }
-        } else if (std::memcmp(recType, "QSTF", 4) == 0) {
-            // Quest stage flags (applied to last parsed stage)
-            if (!outRecord.stages.empty() && recSize >= 1) {
-                outRecord.stages.back().flags = static_cast<StageFlag>(recData[0]);
+        } else if (std::memcmp(recType, "QSDT", 4) == 0) {
+            // QSDT opens a script block. Its byte is a run-once flag, and the
+            // block index must be the QSDT ordinal rather than the ordinal of
+            // the blocks that happen to carry SCDA, because 1,277 blocks
+            // declare a header with neither bytecode nor source.
+            if (currentStage && recSize >= 1) {
+                QuestStageBlock block;
+                block.scriptIndex = blockIndex++;
+                block.qsdtFlags = recData[0];
+                currentStage->blocks.push_back(std::move(block));
+                currentBlock = &currentStage->blocks.back();
+                currentTarget = nullptr;
             }
-        } else if (std::memcmp(recType, "QSTR", 4) == 0) {
-            // Quest stage log text (applied to last parsed stage)
-            if (!outRecord.stages.empty() && recSize > 0) {
-                size_t len = recSize;
-                while (len > 0 && recData[len - 1] == '\0') --len;
-                outRecord.stages.back().logText.assign(
-                    reinterpret_cast<const char*>(recData), len);
+        } else if (std::memcmp(recType, "SCHR", 4) == 0) {
+            // Script header, always 20 bytes and 1:1 with QSDT.
+            if (currentBlock && recSize >= 20) {
+                currentBlock->script.formID = outRecord.formID;
+                currentBlock->script.editorID = outRecord.editorID;
             }
-        } else if (std::memcmp(recType, "INDX", 4) == 0) {
-            // Objective index
-            QuestObjectiveEntry obj;
-            if (recSize >= 4) {
-                std::memcpy(&obj.objectiveIndex, recData, 4);
+        } else if (std::memcmp(recType, "SCDA", 4) == 0) {
+            // Compiled bytecode. Long scripts are split across several SCDA
+            // subrecords, so every chunk is appended rather than replaced.
+            if (currentBlock) {
+                currentBlock->script.bytecode.insert(
+                    currentBlock->script.bytecode.end(), recData, recData + recSize);
             }
-            outRecord.objectives.push_back(std::move(obj));
+        } else if (std::memcmp(recType, "SCTX", 4) == 0) {
+            if (currentBlock) {
+                currentBlock->script.source.append(
+                    reinterpret_cast<const char*>(recData), recSize);
+            }
+        } else if (std::memcmp(recType, "SCRO", 4) == 0) {
+            if (currentBlock && recSize >= 4) {
+                uint32_t reference = 0;
+                std::memcpy(&reference, recData, 4);
+                currentBlock->script.references.push_back(reference);
+            }
         } else if (std::memcmp(recType, "CNAM", 4) == 0) {
-            // Objective description (applied to last parsed objective)
-            if (!outRecord.objectives.empty() && recSize > 0) {
+            // Journal text of the enclosing block, not of the stage: 192 of the
+            // 194 multi-block stages carrying more than one CNAM have texts
+            // that all differ, so a single per-stage logText cannot represent
+            // real data.
+            if (currentBlock && recSize > 0) {
                 size_t len = recSize;
                 while (len > 0 && recData[len - 1] == '\0') --len;
-                outRecord.objectives.back().description.assign(
-                    reinterpret_cast<const char*>(recData), len);
+                currentBlock->logText.assign(reinterpret_cast<const char*>(recData), len);
+                if (currentStage->logText.empty()) {
+                    currentStage->logText = currentBlock->logText;
+                }
             }
         } else if (std::memcmp(recType, "QSTA", 4) == 0) {
-            // Quest target
+            // QSTA opens a target group and owns the CTDA that follow it.
             QuestTarget target;
             if (recSize >= 4) {
                 std::memcpy(&target.targetFormID, recData, 4);
@@ -255,20 +290,24 @@ bool QuestRecordParser::parse(const uint8_t* data, size_t dataSize, QuestRecord&
                 std::memcpy(&target.objectiveIndex, recData + 4, 4);
             }
             outRecord.targets.push_back(std::move(target));
+            currentTarget = &outRecord.targets.back();
+            currentBlock = nullptr;
         } else if (std::memcmp(recType, "CTDA", 4) == 0) {
-            // Condition - attach to last stage or objective
             QuestCondition cond;
             if (parseCondition(recData, recSize, cond)) {
-                if (!outRecord.stages.empty()) {
-                    outRecord.stages.back().conditions.push_back(cond);
-                } else if (!outRecord.objectives.empty()) {
-                    outRecord.objectives.back().conditions.push_back(cond);
+                if (currentTarget) {
+                    // QSTA-owned conditions gate the target, not the stage.
+                } else if (currentBlock) {
+                    currentBlock->conditions.push_back(cond);
+                } else if (currentStage) {
+                    currentStage->conditions.push_back(cond);
+                } else {
+                    // Quest-level conditions run after DATA and belong to no
+                    // stage; they gate the quest itself.
+                    outRecord.conditions.push_back(cond);
                 }
             }
-        } else if (std::memcmp(recType, "SCRD", 4) == 0) {
-            // Screen data (icon) - skip for now
         } else if (std::memcmp(recType, "SCRN", 4) == 0) {
-            // Screen icon path
             if (recSize > 0) {
                 size_t len = recSize;
                 while (len > 0 && recData[len - 1] == '\0') --len;
@@ -320,6 +359,8 @@ bool QuestRecordParser::parseDATA(const uint8_t* data, size_t size,
 
 bool QuestRecordParser::parseStageEntry(const uint8_t* data, size_t size,
                                          QuestStageEntry& outStage) {
+    // INDX is always 2 bytes on real data; the old size < 4 guard made this
+    // return false for every stage in the file.
     if (!data || size < 2) return false;
     uint16_t stageIndex = 0;
     std::memcpy(&stageIndex, data, sizeof(stageIndex));

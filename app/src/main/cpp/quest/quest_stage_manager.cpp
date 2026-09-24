@@ -265,7 +265,6 @@ bool QuestStageManager::setStage(uint32_t questFormID, int32_t stage) {
         if (stageEntry) {
             transition.logText = stageEntry->logText;
             transition.isCompletion = stageEntry->isCompletionStage();
-            transition.isFailure = stageEntry->isFailStage();
         }
     }
 
