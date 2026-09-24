@@ -23,7 +23,6 @@ INCLUDES=(
   -Iapp/src/main/cpp/include
   -Iapp/src/main/cpp/assets
   -Iapp/src/main/cpp/third_party/JoltPhysics
-  -Itests
 )
 
 # Flags mirroring the Android target (CMakeLists.txt):
@@ -41,6 +40,35 @@ DEFINES=(
   -include memory
   -include unordered_map
   -include cfloat
+  # Ubuntu g++ does not hand these out transitively the way MinGW's libstdc++
+  # does, so the sources that rely on a transitive include would break in CI.
+  # Keep the workaround here, centrally, instead of editing each source.
+  -include fstream
+  -include sstream
+  -include iostream
+  -include istream
+  -include ostream
+  -include thread
+  -include mutex
+  -include atomic
+  -include condition_variable
+  -include future
+  -include chrono
+  -include functional
+  -include array
+  -include map
+  -include set
+  -include queue
+  -include limits
+  -include cmath
+  -include cstdlib
+  -include cstdio
+  -include exception
+  -include stdexcept
+  -include utility
+  -include type_traits
+  -include iomanip
+  -include new
 )
 
 SOURCES=(

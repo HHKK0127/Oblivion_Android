@@ -105,8 +105,19 @@ bash tools/host_tests/run_host_tests.sh
 ```
 
 Configured include flags are the same ones the Android build uses
-(`-DAUDIO_SYSTEM_ENABLED -DJPH_PROFILE_ENABLED`), plus `-include` headers to
-compensate for sources that rely on transitive includes.
+(`-DAUDIO_SYSTEM_ENABLED -DJPH_PROFILE_ENABLED`), plus a `-include` list that
+force-includes the standard headers the sources use implicitly. MinGW's
+libstdc++ hands several of those out transitively (a source can therefore
+compile here while it is missing an `#include`), while Ubuntu g++ does not, so
+the workaround lives centrally in `DEFINES` rather than in each source. The list
+is deliberately generous (`fstream`, `sstream`, `thread`, `mutex`, `atomic`,
+`future`, `chrono`, ...); extending it is the supported fix for a header that is
+only missing in CI. Do not add compiler-specific branches or Windows-only paths
+to the runner - the only Windows-shaped code is the `PATH` prepend below, which
+just puts the directory of the `g++` in use first and is a no-op on Linux.
+
+Both toolchains are verified green with the current `SOURCES`: MinGW g++ 16.2.0
+on Windows and Ubuntu 24.04 g++ 13.3.0 (the CI image) under WSL.
 
 On Windows the runner also prepends the directory holding the `g++` it uses to
 `PATH`, because Git Bash's bundled `/mingw64/bin` ships an older
