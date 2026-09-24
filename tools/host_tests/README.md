@@ -12,7 +12,7 @@ The runner builds one binary that executes every wired suite in order:
 | Suite | Source | Tests | Notes |
 |-------|--------|-------|-------|
 | `ScriptVMTests` | `tests/script_vm_tests.cpp` | 22 | Script bytecode interpreter (`ExecutionContext`, `ScriptVM`, opcode execution) and the native game function registry (`ScriptFunctions`) |
-| `Phase45UnitTests` | `tests/phase45_unit_tests.cpp` | 40 | Combat/spell/NPC/dialogue/quest/save units plus `MemoryPool`, `AsyncTaskManager`, `CacheManager` |
+| `Phase45UnitTests` | `tests/phase45_unit_tests.cpp` | 41 | Combat/spell/NPC/dialogue/quest/save units plus `MemoryPool`, `AsyncTaskManager`, `CacheManager` |
 | `Phase48StressTest` | `tests/phase48_stress_test.cpp` | 5 | Concurrent task, object pool, cache, `EventBus` and `NpcManager` stress |
 | `Phase48IntegrationTest` | `tests/phase48_integration_test.cpp` | 7 | `StateManager` / `InputRouter` / `GameLoopCoordinator` / world / cell transition / combat / quest / save integration |
 | `Phase30IntegrationTest` | `tests/phase30_integration_test.cpp` | 1 (skip) | NIF/animation/collision asset pipeline; skips itself when real Oblivion assets are absent (see below) |
@@ -62,6 +62,19 @@ task's exception in its shared state instead of rethrowing it, so
 then forwards the exception to the promise, which makes a failing task both
 observable to its caller (`future::get()` rethrows) and visible in
 `getStats().totalFailed`.
+
+`Phase45UnitTests/Async_FailureAccounting` pins that behaviour: it submits a
+throwing value task, a throwing void task and a succeeding task, asserts that
+`future::get()` rethrows `std::runtime_error` for both failures, and checks the
+counters settle at `submitted=3`, `completed=1`, `failed=2` with
+`submitted == completed + failed`.
+
+Writing that assertion exposed a third, related hazard: `submit()` pushed the
+task onto the queue *before* incrementing `totalSubmitted_`, so a worker could
+finish and record a task before the submitting thread counted it, leaving
+`submitted` momentarily below `completed + failed`. The increment now happens
+before the push, so the identity holds at every observation point rather than
+only in the steady state. The suite count went from 40 to 41 with this case.
 
 ## Layout
 

@@ -109,8 +109,9 @@ jobs:
     runs-on: ubuntu-latest
     # 53 translation units at -O2 are compiled and linked in a single g++
     # invocation, so the compile is sequential and does not benefit from the
-    # runner's core count. Measured locally (Windows/MinGW, contended): 12m15s
-    # end to end. 15 minutes was too close to that; 30 leaves real headroom.
+    # runner's core count. Measured end to end: 9m42s to 12m15s on
+    # Windows/MinGW and 8m05s under WSL (g++ 13.3.0). 15 minutes was too close
+    # to the slow end; 30 leaves real headroom.
     timeout-minutes: 30
 
     steps:
