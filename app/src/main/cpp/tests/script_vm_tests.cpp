@@ -364,6 +364,24 @@ void ScriptVMTests::testScriptVM() {
         record("ScriptVM: Frame budget", ok,
                "Exceeds instruction limit", getTimeMs38() - start);
     }
+
+    // Test 6: Unknown opcode diagnostic
+    {
+        float start = getTimeMs38();
+        ScriptVM vm;
+        ExecutionContext ctx;
+        ScriptData script;
+        script.bytecode = {0x1D, 0x00, 0x00, 0x00};
+        ctx.init(&script);
+        ctx.setRunning(true);
+
+        const VMResult result = vm.execute(ctx);
+        const bool ok = result == VMResult::Error &&
+                        vm.getLastError().find("Unknown opcode 0x1d") != std::string::npos;
+
+        record("ScriptVM: Unknown opcode diagnostic", ok,
+               "Unknown opcode values are reported in hexadecimal", getTimeMs38() - start);
+    }
 }
 
 // ============================================

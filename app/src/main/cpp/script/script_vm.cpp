@@ -1,6 +1,7 @@
 #include "script_vm.h"
 #include <cstring>
 #include <cmath>
+#include <sstream>
 
 // ============================================================================
 // Oblivion Script VM - Bytecode Execution Engine Implementation
@@ -94,8 +95,10 @@ VMResult ScriptVM::step(ExecutionContext& ctx) {
     } else if (op == Opcode::CALL) {
         result = executeCall(ctx, inst);
     } else {
-        setError("Unknown opcode 0x" + std::to_string(static_cast<uint16_t>(op)) +
-                 " at PC=" + std::to_string(ctx.getPC()));
+        std::ostringstream error;
+        error << "Unknown opcode 0x" << std::hex << static_cast<uint16_t>(op)
+              << std::dec << " at PC=" << ctx.getPC();
+        setError(error.str());
         ctx.stop();
         return VMResult::Error;
     }
