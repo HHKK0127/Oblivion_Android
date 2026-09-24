@@ -183,6 +183,7 @@ std::string getNativeOpcodeName(uint16_t opcode) {
         case 0x1060: return "EnablePlayerControls";
         case 0x1061: return "DisablePlayerControls";
         case 0x1064: return "PickIdle";
+        case 0x1071: return "CompleteQuest";
         case 0x1072: return "Lock";
         case 0x1073: return "Unlock";
         case 0x1075: return "SetCrimeGold";
@@ -195,6 +196,7 @@ std::string getNativeOpcodeName(uint16_t opcode) {
         case 0x109E: return "MoveTo";
         case 0x10A5: return "RemoveMe";
         case 0x10A8: return "SetFactionReaction";
+        case 0x10A9: return "ModFactionReaction";
         case 0x10AD: return "RemoveAllItems";
         case 0x10AE: return "WakeUpPC";
         case 0x10B1: return "SetCombatStyle";
@@ -208,11 +210,18 @@ std::string getNativeOpcodeName(uint16_t opcode) {
         case 0x10CC: return "SetDestroyed";
         case 0x10D1: return "SetForceRun";
         case 0x10D8: return "SetDoorDefaultOpen";
+        case 0x10D9: return "ShowClassMenu";
+        case 0x10DA: return "ShowRaceMenu";
+        case 0x10DB: return "ShowBirthsignMenu";
         case 0x10DD: return "SetOpenState";
         case 0x10DE: return "CloseOblivionGate";
+        case 0x10E7: return "SetInChargen";
+        case 0x10EA: return "ShowSpellmaking";
+        case 0x10EB: return "ShowEnchantment";
         case 0x10EC: return "SetGhost";
         case 0x10EE: return "EquipItem";
         case 0x10EF: return "UnequipItem";
+        case 0x10F0: return "SetClass";
         case 0x10F1: return "SetUnconscious";
         case 0x10F3: return "SetRestrained";
         case 0x10F8: return "ModPCFame";
@@ -223,6 +232,7 @@ std::string getNativeOpcodeName(uint16_t opcode) {
         case 0x110D: return "SetQuestObject";
         case 0x110E: return "ForceAV";
         case 0x110F: return "ModPCSkill";
+        case 0x1111: return "EnableFastTravel";
         case 0x1117: return "SetOwnership";
         case 0x1119: return "SetCellOwnership";
         case 0x1114: return "PlayBink";
@@ -231,6 +241,7 @@ std::string getNativeOpcodeName(uint16_t opcode) {
         case 0x1123: return "PlayMagicShaderVisuals";
         case 0x1124: return "PlayMagicEffectVisuals";
         case 0x1125: return "StopMagicShaderVisuals";
+        case 0x1127: return "ResetInterior";
         case 0x1129: return "SAA";
         case 0x112A: return "EnableLinkedPathPoints";
         case 0x112B: return "DisableLinkedPathPoints";
@@ -238,8 +249,10 @@ std::string getNativeOpcodeName(uint16_t opcode) {
         case 0x1133: return "SetLevel";
         case 0x1137: return "ModPCMiscStat";
         case 0x113C: return "SetScale";
+        case 0x1141: return "SetNoRumors";
         case 0x1142: return "Dispel";
         case 0x1144: return "TriggerHitShader";
+        case 0x1145: return "RefreshTopicList";
         case 0x1146: return "Reset3DState";
         case 0x114A: return "AddAchievement";
         case 0x114E: return "SetShowQuestItems";
@@ -247,10 +260,13 @@ std::string getNativeOpcodeName(uint16_t opcode) {
         case 0x1151: return "SetIgnoreFriendlyHits";
         case 0x1156: return "SetRigidBodyMass";
         case 0x1158: return "ReleaseWeatherOverride";
+        case 0x115C: return "SendTrespassAlarm";
         case 0x115D: return "SetSceneIsComplex";
         case 0x115E: return "Autosave";
         case 0x1164: return "ShowDialogSubtitles";
+        case 0x1165: return "ForceCloseOblivionGate";
         case 0x116B: return "PCB";
+        case 0x116C: return "SetPlayerInSEWorld";
         case 0x116E: return "PushActorAway";
         case 0x116F: return "SetActorsAI";
         case 0x1170: return "ClearOwnership";
@@ -274,6 +290,35 @@ std::vector<std::string> getNativeOpcodeAliases(uint16_t opcode) {
         case 0x112D: return {"forceweather", "fw"};
         default: return {};
     }
+}
+
+bool resolveNativeReferenceSlot(uint16_t slot,
+                                const std::vector<uint32_t>& scroRefs,
+                                uint16_t localRefCount,
+                                NativeReferenceSlot& out,
+                                std::string& error) {
+    if (slot == 0) {
+        error = "reference slot 0 is not a valid selector";
+        return false;
+    }
+    const uint32_t scroCount = static_cast<uint32_t>(scroRefs.size());
+    const uint32_t bound = scroCount + localRefCount;
+    if (slot > bound) {
+        error = "reference slot " + std::to_string(slot) +
+                " is outside the reference table (bound " +
+                std::to_string(bound) + ")";
+        return false;
+    }
+    out = NativeReferenceSlot{};
+    out.slot = slot;
+    if (slot <= scroCount) {
+        out.kind = NativeReferenceKind::Scro;
+        out.formId = scroRefs[slot - 1];
+    } else {
+        out.kind = NativeReferenceKind::LocalRef;
+        out.localOrdinal = static_cast<uint16_t>(slot - scroCount);
+    }
+    return true;
 }
 
 bool decodeNativeInstruction(const uint8_t* data, size_t size, uint32_t offset,

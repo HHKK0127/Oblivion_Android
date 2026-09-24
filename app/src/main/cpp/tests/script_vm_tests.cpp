@@ -1309,6 +1309,57 @@ void ScriptVMTests::testNativeScdaDecoder() {
                "Short and long spellings resolve to the same opcode",
                getTimeMs38() - start);
     }
+
+    // Test 16: selector slots resolve against SCRO first, then local refs
+    {
+        const float start = getTimeMs38();
+        const std::vector<uint32_t> scro = {0x000446A1, 0x000446A7, 0x000446B9};
+
+        NativeReferenceSlot slot{};
+        std::string error;
+        const bool scroOk = resolveNativeReferenceSlot(2, scro, 2, slot, error) &&
+                            slot.kind == NativeReferenceKind::Scro &&
+                            slot.formId == 0x000446A7 && slot.slot == 2;
+
+        const bool localOk = resolveNativeReferenceSlot(5, scro, 2, slot, error) &&
+                             slot.kind == NativeReferenceKind::LocalRef &&
+                             slot.localOrdinal == 2 && slot.formId == 0;
+
+        const bool zeroRejected = !resolveNativeReferenceSlot(0, scro, 2, slot, error) &&
+                                  !error.empty();
+        error.clear();
+        const bool overRejected = !resolveNativeReferenceSlot(6, scro, 2, slot, error) &&
+                                  !error.empty();
+        error.clear();
+        const bool emptyTable = !resolveNativeReferenceSlot(1, {}, 0, slot, error) &&
+                                !error.empty();
+
+        const bool ok = scroOk && localOk && zeroRejected && overRejected && emptyTable;
+        record("NativeScda: reference slot", ok,
+               "Slots map to SCRO then local refs; out-of-range slots are errors",
+               getTimeMs38() - start);
+    }
+
+    // Test 17: the later naming batch resolves
+    {
+        const float start = getTimeMs38();
+        const bool ok = getNativeOpcodeName(0x1071) == "CompleteQuest" &&
+                        getNativeOpcodeName(0x10A9) == "ModFactionReaction" &&
+                        getNativeOpcodeName(0x10D9) == "ShowClassMenu" &&
+                        getNativeOpcodeName(0x10E7) == "SetInChargen" &&
+                        getNativeOpcodeName(0x10F0) == "SetClass" &&
+                        getNativeOpcodeName(0x1111) == "EnableFastTravel" &&
+                        getNativeOpcodeName(0x1127) == "ResetInterior" &&
+                        getNativeOpcodeName(0x1141) == "SetNoRumors" &&
+                        getNativeOpcodeName(0x1145) == "RefreshTopicList" &&
+                        getNativeOpcodeName(0x115C) == "SendTrespassAlarm" &&
+                        getNativeOpcodeName(0x1165) == "ForceCloseOblivionGate" &&
+                        getNativeOpcodeName(0x116C) == "SetPlayerInSEWorld" &&
+                        getNativeOpcodeName(0x1037) == "StopQuest";
+        record("NativeScda: naming batch", ok,
+               "CompleteQuest and the later command names resolve, StopQuest stays distinct",
+               getTimeMs38() - start);
+    }
 }
 
 // ============================================
