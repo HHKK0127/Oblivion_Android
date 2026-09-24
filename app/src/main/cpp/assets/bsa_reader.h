@@ -59,8 +59,8 @@ struct BSAFileEntry {
 
     uint64_t hash = 0;              // File name hash (from BSAFileRecord)
     uint32_t offset;                // Data offset in archive
-    uint32_t size;                  // Raw size in archive
-    uint32_t realSize;              // Uncompressed size (0 if unknown)
+    uint32_t size;                  // Stored size in archive (compressed size when compressed)
+    uint32_t realSize;              // Uncompressed size; 0 for compressed entries until extracted
     bool compressed;                // Whether data is ZLib compressed
 
     BSAFileEntry()

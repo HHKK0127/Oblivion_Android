@@ -232,7 +232,10 @@ bool BSArchive::parseFolderRecords() {
             entry.hash = fileRec.hash;
             entry.offset = fileRec.offset;
             entry.size = actualSize;
-            entry.realSize = actualSize;
+            // Uncompressed entries store their real size directly; compressed
+            // entries carry the uncompressed size in a 4-byte prefix that is
+            // only read when the entry is extracted.
+            entry.realSize = compressed ? 0 : actualSize;
             entry.compressed = compressed;
             entry.folderPath = folderPath;
 

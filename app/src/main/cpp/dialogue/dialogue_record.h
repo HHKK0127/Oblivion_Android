@@ -179,14 +179,15 @@ struct DialogueCondition {
 // Response data (TRDT subrecord)
 // ============================================================================
 struct ResponseData {
-    ResponseType type = ResponseType::Neutral;
-    uint32_t emotionType = 0;     // 0=Neutral, 1=Anger, 2=Disgust, 3=Fear, 4=Sad, 5=Happy, 6=Surprise
-    int32_t emotionValue = 0;     // Emotion magnitude (0-100)
-    uint32_t speakerFormID = 0;   // Speaker reference
-    uint32_t soundFormID = 0;     // Sound file FormID
-    uint8_t useEmotionAnimation = 0;
-    std::string responseText;     // NAM1 - NPC response text
-    std::string promptText;       // NAM2 - Player prompt text
+    ResponseType type = ResponseType::Neutral;  // Set from DATA[0] by the integration path; not part of TRDT
+    uint32_t emotionType = 0;     // TRDT[0] - 0=Neutral, 1=Anger, 2=Disgust, 3=Fear, 4=Sad, 5=Happy, 6=Surprise
+    int32_t emotionValue = 0;     // TRDT[4] - emotion magnitude (0-100)
+    uint8_t responseNumber = 0;   // TRDT[12] - 1-based ordinal of this response within the INFO
+    uint32_t speakerFormID = 0;   // Not present in TRDT (measured over all 23,877 TRDT subrecords)
+    uint32_t soundFormID = 0;     // Not present in TRDT (measured)
+    uint8_t useEmotionAnimation = 0;  // Not present in TRDT (measured)
+    std::string responseText;     // NAM1 - the line the NPC speaks
+    std::string actingNotes;      // NAM2 - voice-actor direction, never player-visible text
 };
 
 // ============================================================================

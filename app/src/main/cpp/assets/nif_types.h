@@ -52,14 +52,59 @@ enum class NIFBlockType : uint32_t {
 };
 
 // NIF structures
+//
+// Header layout verified against 322 meshes sampled from Oblivion - Meshes.bsa,
+// covering every family present in the archive:
+//
+//   Gamebryo File Format, Version 20.0.0.4 / 20.0.0.5   (u8 endian byte = 1)
+//   Gamebryo File Format, Version 10.2.0.0 / 10.1.0.106 (no endian byte)
+//   NetImmerse File Format, Version 10.0.1.0            (compact legacy header)
+//
+// Gamebryo layout:
+//
+//   magic line            "Gamebryo File Format, Version X.X.X.X\n" (39..41 bytes)
+//   u32  version          e.g. 0x0A01006A = 10.1.0.106, 0x14000004 = 20.0.0.4
+//   u8   endian           present only when version >= 0x14000000 (always 1)
+//   u32  userVersion      10 or 11
+//   u32  numObjects       block count of the NiObject array
+//   u32  unknownField     unidentified; 11 for 20.0.0.4, 5 for 10.1.0.106, 6 for 10.2.0.0
+//   bzstring creator      "ccafasso" / "cmeister" / empty
+//   bzstring processScript
+//   bzstring exportScript
+//   u16  numBlockTypes
+//   (u32 len + chars) x numBlockTypes   block type name table
+//   u16  blockTypeIndices[numObjects]   one type index per block, all < numBlockTypes
+//   u32  numGroups        0 in every sampled mesh
+//   u32  groups[numGroups] always empty, so block 0 begins right after numGroups
+//   <block 0 body>        begins with the inline object name, see below
+//
+// The inline object name of block 0 (and of every NiObjectNET-derived block) is
+// always a SizedString: a u32 length followed by that many bytes. The bytes are
+// not NUL terminated and the length counts them exactly, so a 18 byte length
+// precedes an 18 byte name.
+//
+// NetImmerse legacy layout differs only in the preamble:
+//
+//   magic line            "NetImmerse File Format, Version 10.0.1.0\n"
+//   u32  version          0x0A000100
+//   u32  numObjects       block count, read straight after the version
+//   u16  numBlockTypes    then the same type table, index array and string tail
 struct NIFHeader {
-    char magic[256];           // "Gamebryo File Format, Version X.X.X.X"
-    uint32_t version;          // Version number
-    uint32_t userVersion;      // User version
-    uint32_t userVersion2;     // User version 2
-    uint32_t numObjects;       // Number of objects in the file
-    uint32_t numStrings;       // Number of strings in string table
-    uint32_t maxStringLength;  // Maximum string length
+    char magic[256] = {};      // "Gamebryo File Format, Version X.X.X.X"
+    uint32_t version = 0;      // Version number
+    uint8_t endian = 0;        // Endian byte, valid only when hasEndianByte is true
+    bool hasEndianByte = false;// True for the 20.0.0.x family and later
+    bool legacyNetImmerse = false; // True for the compact NetImmerse 10.0.1.0 header
+    uint32_t userVersion = 0;  // User version
+    uint32_t numObjects = 0;   // Number of blocks in the file
+    uint32_t unknownField = 0; // Block stream (BS) version: 11 for 20.0.0.4, 5 for 10.1.0.106, 6 for 10.2.0.0
+    uint32_t numGroups = 0;    // Number of block groups; 0 in every sampled mesh
+    std::string creator;       // Creator string
+    std::string processScript; // Process script string
+    std::string exportScript;  // Export script string
+    std::vector<std::string> blockTypeNames;  // One entry per distinct block type
+    std::vector<uint16_t> blockTypeIndices;   // One entry per block
+    size_t blockDataOffset = 0; // File offset at which block 0 begins
 };
 
 struct NIFVector3 {
@@ -154,13 +199,15 @@ struct NIFGeometry {
 // NIF Node (base structure)
 struct NIFNode {
     std::string name;
-    uint32_t nodeIndex;
-    int32_t parentIndex;                    // -1 if root
+    uint32_t nodeIndex = 0;
+    int32_t parentIndex = -1;               // -1 if root
     std::vector<int32_t> childIndices;
-    
+    uint16_t blockTypeIndex = 0;            // Index into NIFHeader::blockTypeNames
+    std::string blockTypeName;              // Resolved block type, e.g. "NiNode"
+
     // Node-specific data
     NIFTransform transform;
-    bool hasGeometry;
+    bool hasGeometry = false;
     NIFGeometry geometry;
 };
 
@@ -175,7 +222,8 @@ enum class CollisionShapeType : uint32_t {
     Capsule,
     ConvexHull,
     TriMesh,
-    MoppBvTree
+    MoppBvTree,
+    List
 };
 
 struct CollisionShape {
@@ -188,6 +236,9 @@ struct CollisionShape {
     std::vector<NIFTriangle> triangles;
     std::vector<uint8_t> moppData;
     uint32_t moppDataSize = 0;
+    uint32_t childShapeRef = 0;                     // bhkMoppBvTreeShape
+    std::vector<uint32_t> stripsDataRefs;           // bhkNiTriStripsShape
+    std::vector<uint32_t> subShapeRefs;             // bhkListShape
 };
 
 struct RigidBodyInfo {
@@ -261,6 +312,7 @@ struct NIFSkinInstance {
     uint32_t skinDataIndex = 0;
     uint32_t skinPartitionIndex = 0;
     uint32_t skeletonRootIndex = 0;
+    std::vector<uint32_t> boneNodeIndices;
     std::string name;
 };
 
@@ -323,6 +375,19 @@ struct NIFKeyframeController {
     NIFAnimationClip clip;
     // Phase 30: resolved bone index for fast lookup
     int32_t resolvedBoneIndex = -1;
+
+    // Raw NiControllerSequence::ControlledBlock fields (version 20.0.0.4).
+    // Node and controller names are not stored inline; they live in the
+    // sequence's NiStringPalette and are addressed by these offsets.
+    uint32_t interpolatorIndex = 0;
+    uint32_t controllerIndex = 0;
+    uint32_t stringPaletteIndex = 0;
+    uint8_t priority = 0;
+    uint32_t nodeNameOffset = 0;
+    uint32_t propertyTypeOffset = 0;
+    uint32_t controllerTypeOffset = 0;
+    uint32_t controllerIdOffset = 0;
+    uint32_t interpolatorIdOffset = 0;
 };
 
 struct NIFControllerSequence {
