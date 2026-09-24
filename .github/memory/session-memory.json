@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-24T19:10:00Z",
+  "lastUpdated": "2026-09-24T19:09:23.955188",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -3543,10 +3543,44 @@
         "glm"
       ],
       "compressed": false
+    },
+    {
+      "id": "693aaf7e-10e7-4cb1-80bc-e227b94dad50",
+      "timestamp": "2026-09-24T19:09:23.955188",
+      "category": "reference",
+      "priority": "high",
+      "content": "Oblivion INFO record topic ownership (measured 2026-09-25 over 19,278 INFO and 3,817 DIAL records). The OWNING topic is structural, not a subrecord: every INFO sits inside exactly one GRUP of type 7 whose 4-byte label equals the FormID of the DIAL record immediately preceding it (3,053/3,053 groups, label never 0). 2,961 distinct owning topics, dominated by conversation-framework entries: GREETING 3743, HELLO 1893, Rumors 1854, GOODBYE 1144, Attack 302, Question 205, Hit 105, Idle 86. GREETING alone holds 19.4% of all INFO. INFO.NAME is a SECOND DIAL reference carried by only 1,044 of 19,278 records; it can repeat (1 entry 837, 2:153, 3:38, 4:4, 5:6, 6:4, 7:1, 8:1 = 1,342 occurrences over 582 distinct DIAL targets); it sits at subrecord index 2 (right after DATA and QSTI, BEFORE TRDT, not at the end of the record); and it names a different topic than the owning group in 1,043 of 1,044 cases. For the twelve most-named topics, NOT ONE INFO both sits in that topic's own group and names it (Doubles 36/42/both 0, Join the Mages Guild 14/34/0, Mirili's Research 6/20/0, Umbacano 15/15/0, Savage Garden 2/13/0), and framework topics carry NAME zero times across their 8,936 records. NAME is additive, never an override. TCLT is a third DIAL reference (9,698 occurrences, 1,955 distinct, 100% resolving to DIAL and 0% to INFO) naming conversation-flow targets: GOODBYE 1081, TRANSITION 830, NeutralReceive 766, Rumors 472, SE 377, Question 363. Oblivion INFO carries NO TPIC and NO PNAM (Skyrim-shaped readers find nothing). Consequence: decodeInfo() must take the owning topic from the enclosing group label, treat NAME/TCLT as extra links, and never assume NAME is the owner. Recorded in plan.md.",
+      "tags": [
+        "oblivion",
+        "info",
+        "dial",
+        "esm",
+        "ws-b",
+        "measured",
+        "dialogue"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "184b71da-6108-41e9-b99c-7de83121a1ca",
+      "timestamp": "2026-09-24T19:09:23.955188",
+      "category": "constraint",
+      "priority": "high",
+      "content": "Oblivion INFO.QSTI is the total, unambiguous quest link and reference resolution in the ESM must always be TWO-PASS. QSTI is present exactly once in all 19,278 INFO records (none has zero or two); its 337 distinct values ALL resolve to a QUST (337/337, zero unresolved) and reach 337 of the 390 quests, so registerQuests() can join dialogue to quests through QSTI alone. A single-pass resolver that compares QSTI against a QUST set it is still filling reports 337 FALSE unresolved values, because QUST records are not guaranteed to precede the INFO records that name them. Always build the complete FormID-to-tag map in pass 1, then resolve in pass 2. Also confirmed in the same measurement: GRUP type 7 immediately follows its DIAL record (3,053/3,053); GRUP type 0 label is the ASCII tag name (0x4C414944 = 'DIAL') and must never be read as a FormID; Oblivion DIAL FormIDs live in the low integer range (0x000000AA..0x0018D923) so small labels like 200 (0xC8 GREETING) and 210 (0xD2 HELLO) are real FormIDs.",
+      "tags": [
+        "oblivion",
+        "qsti",
+        "qust",
+        "esm",
+        "ws-b",
+        "measured",
+        "two-pass"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 248,
+    "totalEntries": 250,
     "compressedCount": 2,
     "sessionCount": 25
   }
