@@ -1072,9 +1072,13 @@ void ESMFile::decodeQuest(const ESMRecord& rec) {
         } else if (std::memcmp(sub.tag, "SCHR", 4) == 0 && currentBlock) {
             decodeInlineScriptHeader(sub, currentBlock->script);
         } else if (std::memcmp(sub.tag, "SCDA", 4) == 0 && currentBlock) {
-            currentBlock->script.bytecode = sub.data;
+            // SCDA is split across multiple subrecords when the compiled script
+            // exceeds the u16 subrecord length limit, so every chunk must be
+            // appended rather than replaced.
+            currentBlock->script.bytecode.insert(
+                currentBlock->script.bytecode.end(), sub.data.begin(), sub.data.end());
         } else if (std::memcmp(sub.tag, "SCTX", 4) == 0 && currentBlock) {
-            currentBlock->script.source.assign(
+            currentBlock->script.source.append(
                 reinterpret_cast<const char*>(sub.data.data()), sub.size());
         } else if (std::memcmp(sub.tag, "SCRO", 4) == 0 &&
                    currentBlock && sub.size() >= 4) {
@@ -1156,9 +1160,11 @@ void ESMFile::decodeInfo(const ESMRecord& rec) {
         if (std::memcmp(sub.tag, "SCHR", 4) == 0) {
             decodeInlineScriptHeader(sub, info.resultScript);
         } else if (std::memcmp(sub.tag, "SCDA", 4) == 0) {
-            info.resultScript.bytecode = sub.data;
+            // Concatenate every chunk: long scripts are split across subrecords.
+            info.resultScript.bytecode.insert(
+                info.resultScript.bytecode.end(), sub.data.begin(), sub.data.end());
         } else if (std::memcmp(sub.tag, "SCTX", 4) == 0) {
-            info.resultScript.source.assign(
+            info.resultScript.source.append(
                 reinterpret_cast<const char*>(sub.data.data()), sub.size());
         } else if (std::memcmp(sub.tag, "SCRO", 4) == 0 && sub.size() >= 4) {
             info.resultScript.references.push_back(readU32(sub.data.data()));
@@ -2383,18 +2389,21 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
                  lastVarIndex, refCount);
         }
 
-        // SCDA: compiled bytecode
-        auto* scda = rec.findSubRecord("SCDA");
-        if (scda && !scda->data.empty()) {
-            script.bytecode = scda->data;
+        // SCDA: compiled bytecode. Long scripts are split across several SCDA
+        // subrecords, so every chunk is concatenated in record order.
+        for (const auto& sub : rec.subRecords) {
+            if (std::memcmp(sub.tag, "SCDA", 4) == 0 && !sub.data.empty()) {
+                script.bytecode.insert(script.bytecode.end(),
+                                       sub.data.begin(), sub.data.end());
+            }
         }
 
         // SCTX: script source text (optional, for debugging)
-        auto* sctx = rec.findSubRecord("SCTX");
-        if (sctx && !sctx->data.empty()) {
-            script.source = std::string(
-                reinterpret_cast<const char*>(sctx->data.data()),
-                sctx->data.size());
+        for (const auto& sub : rec.subRecords) {
+            if (std::memcmp(sub.tag, "SCTX", 4) == 0 && !sub.data.empty()) {
+                script.source.append(
+                    reinterpret_cast<const char*>(sub.data.data()), sub.data.size());
+            }
         }
 
         // SLSD: variable data (24 bytes). Measured on Oblivion.esm: only two bytes

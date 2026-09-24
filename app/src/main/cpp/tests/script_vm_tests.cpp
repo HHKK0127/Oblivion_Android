@@ -10,6 +10,7 @@
 #include "../script/script_functions.h"
 #include "../script/script_manager.h"
 #include "../script/script_opcodes.h"
+#include "../script/native_scda_decoder.h"
 #include "../quest/quest_flow_controller.h"
 #include "../game/inventory_manager.h"
 
@@ -969,6 +970,342 @@ void ScriptVMTests::testScriptManager() {
 }
 
 // ============================================
+// Native SCDA decoder
+// ============================================
+namespace {
+
+void appendU16(std::vector<uint8_t>& out, uint16_t value) {
+    out.push_back(static_cast<uint8_t>(value & 0xFF));
+    out.push_back(static_cast<uint8_t>((value >> 8) & 0xFF));
+}
+
+void appendU32(std::vector<uint8_t>& out, uint32_t value) {
+    for (int i = 0; i < 4; ++i) {
+        out.push_back(static_cast<uint8_t>((value >> (8 * i)) & 0xFF));
+    }
+}
+
+void appendInstruction(std::vector<uint8_t>& out, uint16_t opcode,
+                       const std::vector<uint8_t>& payload) {
+    appendU16(out, opcode);
+    appendU16(out, static_cast<uint16_t>(payload.size()));
+    out.insert(out.end(), payload.begin(), payload.end());
+}
+
+void appendMarker(std::vector<uint8_t>& out, uint16_t meta) {
+    appendU16(out, NATIVE_SCDA_MARKER_OPCODE);
+    appendU16(out, meta);
+}
+
+} // namespace
+
+void ScriptVMTests::testNativeScdaDecoder() {
+    // Test 1: marker is always 4 bytes regardless of its metadata word
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> code;
+        appendMarker(code, 37);
+        appendInstruction(code, 0x0019, {});
+
+        const NativeDecodeResult result = decodeNativeScda(code);
+        const bool ok = result.success && result.instructions.size() == 2 &&
+                        result.instructions[0].isMarker &&
+                        result.instructions[0].encodedLength == 4 &&
+                        result.instructions[1].opcode == 0x0019;
+        record("NativeScda: marker is 4 bytes", ok,
+               "Marker metadata word must not be treated as a payload length",
+               getTimeMs38() - start);
+    }
+
+    // Test 2: Begin body length lets the decoder skip the whole block
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> body;
+        appendU16(body, 0x0000);  // gamemode
+        appendU16(body, 0);       // body length patched below
+        appendU32(body, 0);
+
+        std::vector<uint8_t> code;
+        appendInstruction(code, 0x0010, body);
+        appendInstruction(code, 0x0011, {});
+
+        const NativeDecodeResult result = decodeNativeScda(code);
+        const bool ok = result.success && result.instructions.size() == 2 &&
+                        result.instructions[0].isStructural &&
+                        result.instructions[0].blockType == 0x0000 &&
+                        result.instructions[1].opcode == 0x0011;
+        record("NativeScda: Begin block", ok,
+               "Begin payload exposes block type and body length",
+               getTimeMs38() - start);
+    }
+
+    // Test 3: If expression length must equal payload length minus 4
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> payload;
+        appendU16(payload, 1);   // compiler metadata
+        appendU16(payload, 3);   // expression length
+        payload.push_back('n');
+        payload.push_back(0x01);
+        payload.push_back(0x00);
+
+        std::vector<uint8_t> code;
+        appendInstruction(code, 0x0016, payload);
+        appendInstruction(code, 0x0019, {});
+
+        const NativeDecodeResult result = decodeNativeScda(code);
+        const bool ok = result.success && result.instructions.size() == 2 &&
+                        result.instructions[0].meta == 1 &&
+                        result.instructions[0].expression.size() == 3;
+        record("NativeScda: If expression", ok,
+               "If payload splits into metadata and expression bytes",
+               getTimeMs38() - start);
+    }
+
+    // Test 4: Else is exactly 2 bytes
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> payload;
+        appendU16(payload, 1);
+
+        std::vector<uint8_t> code;
+        appendInstruction(code, 0x0017, payload);
+
+        const NativeDecodeResult result = decodeNativeScda(code);
+        const bool ok = result.success && result.instructions.size() == 1 &&
+                        result.instructions[0].meta == 1;
+        record("NativeScda: Else is 2 bytes", ok,
+               "Else carries a single metadata word",
+               getTimeMs38() - start);
+    }
+
+    // Test 5: SetStage SQ07 100 -> [2][<r3>][n 100]
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> payload;
+        appendU16(payload, 2);
+        payload.push_back('r');
+        appendU16(payload, 3);
+        payload.push_back('n');
+        appendU32(payload, 100);
+
+        std::vector<uint8_t> code;
+        appendInstruction(code, 0x1039, payload);
+
+        const NativeDecodeResult result = decodeNativeScda(code);
+        const bool ok = result.success && result.instructions.size() == 1 &&
+                        result.instructions[0].tokens.size() == 2 &&
+                        result.instructions[0].tokens[0].kind == NativeTokenKind::Variable &&
+                        result.instructions[0].tokens[0].typeChar == 'r' &&
+                        result.instructions[0].tokens[0].index == 3 &&
+                        result.instructions[0].tokens[1].kind == NativeTokenKind::Integer &&
+                        result.instructions[0].tokens[1].intValue == 100 &&
+                        !result.instructions[0].hasImplicitSelf;
+        record("NativeScda: SetStage tokens", ok,
+               "SetStage decodes as a reference and an integer literal",
+               getTimeMs38() - start);
+    }
+
+    // Test 6: AddItem with a leading call reference (argc + 1 tokens)
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> payload;
+        appendU16(payload, 2);
+        payload.push_back('r');
+        appendU16(payload, 2);
+        payload.push_back('r');
+        appendU16(payload, 3);
+        payload.push_back('s');
+        appendU16(payload, 5);
+
+        std::vector<uint8_t> code;
+        appendInstruction(code, 0x1002, payload);
+
+        const NativeDecodeResult result = decodeNativeScda(code);
+        const bool ok = result.success && result.instructions.size() == 1 &&
+                        result.instructions[0].tokens.size() == 3 &&
+                        result.instructions[0].hasImplicitSelf &&
+                        result.instructions[0].declaredArgumentCount == 2;
+        record("NativeScda: implicit self", ok,
+               "A token count of argc + 1 marks a leading call reference",
+               getTimeMs38() - start);
+    }
+
+    // Test 7: bare u16 tokens are not limited to values below 0x20
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> payload;
+        appendU16(payload, 2);
+        appendU16(payload, 0x0021);  // Aggression
+        payload.push_back('n');
+        appendU32(payload, 5);
+
+        std::vector<uint8_t> code;
+        appendInstruction(code, 0x100F, payload);
+
+        const NativeDecodeResult result = decodeNativeScda(code);
+        const bool ok = result.success && result.instructions.size() == 1 &&
+                        result.instructions[0].tokens.size() == 2 &&
+                        result.instructions[0].tokens[0].kind == NativeTokenKind::BareU16 &&
+                        result.instructions[0].tokens[0].intValue == 0x0021;
+        record("NativeScda: bare u16 actor value", ok,
+               "Actor value codes above 0x20 must decode as bare u16 tokens",
+               getTimeMs38() - start);
+    }
+
+    // Test 8: MoveTo accepts only [1][<r>]
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> payload;
+        appendU16(payload, 1);
+        payload.push_back('r');
+        appendU16(payload, 4);
+
+        std::vector<uint8_t> code;
+        appendInstruction(code, 0x109E, payload);
+
+        const NativeDecodeResult result = decodeNativeScda(code);
+        const bool ok = result.success && result.instructions.size() == 1 &&
+                        result.instructions[0].tokens.size() == 1 &&
+                        result.instructions[0].tokens[0].kind == NativeTokenKind::Variable;
+        record("NativeScda: MoveTo single reference", ok,
+               "MoveTo payload is a single reference token",
+               getTimeMs38() - start);
+    }
+
+    // Test 9: payload-free commands are bare
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> code;
+        appendInstruction(code, 0x1021, {});
+        appendInstruction(code, 0x1022, {});
+        appendInstruction(code, 0x105E, {});
+
+        const NativeDecodeResult result = decodeNativeScda(code);
+        const bool ok = result.success && result.instructions.size() == 3 &&
+                        result.instructions[0].isBare &&
+                        result.instructions[1].isBare &&
+                        result.instructions[2].isBare;
+        record("NativeScda: bare commands", ok,
+               "Enable, Disable and Evp carry no payload",
+               getTimeMs38() - start);
+    }
+
+    // Test 10: an unframed payload is preserved instead of guessed
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> payload;
+        appendU16(payload, 1);
+        appendU16(payload, 4);
+        payload.push_back('Y');
+        payload.push_back('e');
+        payload.push_back('s');
+        payload.push_back(0x00);
+
+        std::vector<uint8_t> code;
+        appendInstruction(code, 0x1000, payload);
+
+        const NativeDecodeResult result = decodeNativeScda(code);
+        const bool ok = result.success && result.instructions.size() == 1 &&
+                        result.instructions[0].tokens.empty() &&
+                        result.instructions[0].payload.size() == payload.size();
+        record("NativeScda: unframed payload kept", ok,
+               "MessageBox keeps its raw payload rather than guessing tokens",
+               getTimeMs38() - start);
+    }
+
+    // Test 11: a truncated instruction reports its exact offset
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> code;
+        appendInstruction(code, 0x0019, {});
+        appendU16(code, 0x1039);
+        appendU16(code, 10);
+        code.push_back(0x00);
+
+        const NativeDecodeResult result = decodeNativeScda(code);
+        const bool ok = !result.success && result.errorOffset == 4 &&
+                        result.errorOpcode == 0x1039;
+        record("NativeScda: truncated payload", ok,
+               "Truncation reports the failing opcode and offset",
+               getTimeMs38() - start);
+    }
+
+    // Test 12: the SCPT prologue is decoded but never required
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> prologuePayload;
+        appendU16(prologuePayload, 0x0001);
+
+        std::vector<uint8_t> code;
+        appendInstruction(code, NATIVE_SCDA_PROLOGUE_OPCODE, prologuePayload);
+        appendInstruction(code, 0x0019, {});
+
+        const NativeDecodeResult result = decodeNativeScda(code);
+        const bool ok = result.success && result.instructions.size() == 2 &&
+                        result.instructions[0].isPrologue &&
+                        result.instructions[1].opcode == 0x0019;
+        record("NativeScda: prologue optional", ok,
+               "Prologue decodes without being required by the decoder",
+               getTimeMs38() - start);
+    }
+
+    // Test 13: an argument count mismatch is an explicit failure
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> payload;
+        appendU16(payload, 3);
+        payload.push_back('r');
+        appendU16(payload, 1);
+
+        std::vector<uint8_t> code;
+        appendInstruction(code, 0x1039, payload);
+
+        const NativeDecodeResult result = decodeNativeScda(code);
+        const bool ok = result.success && result.instructions.size() == 1 &&
+                        result.instructions[0].tokens.empty() &&
+                        !result.instructions[0].payload.empty();
+        record("NativeScda: argc mismatch", ok,
+               "An argument count mismatch falls back to the raw payload",
+               getTimeMs38() - start);
+    }
+
+    // Test 14: opcode names resolve for the confirmed command set
+    {
+        const float start = getTimeMs38();
+        const bool ok = getNativeOpcodeName(0x1039) == "SetStage" &&
+                        getNativeOpcodeName(0x109E) == "MoveTo" &&
+                        getNativeOpcodeName(0x001E) == "Return" &&
+                        getNativeOpcodeName(0x1076) == "ModCrimeGold" &&
+                        getNativeOpcodeName(0x1075) == "SetCrimeGold" &&
+                        getNativeOpcodeName(0x111B) == "SetCellFullName" &&
+                        getNativeOpcodeName(0x111C) == "SetActorFullName" &&
+                        getNativeOpcodeName(0x1007) == "SetPos" &&
+                        getNativeOpcodeName(0x9999).empty();
+        record("NativeScda: opcode names", ok,
+               "Confirmed opcodes resolve and unknown ones stay unnamed",
+               getTimeMs38() - start);
+    }
+
+    // Test 15: both spellings of an opcode are accepted
+    {
+        const float start = getTimeMs38();
+        const auto evp = getNativeOpcodeAliases(0x105E);
+        const auto moveTo = getNativeOpcodeAliases(0x109E);
+        const auto setAv = getNativeOpcodeAliases(0x100F);
+        const bool ok = evp.size() == 2 && evp[0] == "evp" &&
+                        evp[1] == "evaluatepackage" &&
+                        moveTo.size() == 2 && moveTo[0] == "moveto" &&
+                        moveTo[1] == "movetomarker" &&
+                        setAv.size() == 2 && setAv[0] == "setav" &&
+                        getNativeOpcodeAliases(0x1039).empty();
+        record("NativeScda: opcode aliases", ok,
+               "Short and long spellings resolve to the same opcode",
+               getTimeMs38() - start);
+    }
+}
+
+// ============================================
 // Run all tests
 // ============================================
 bool ScriptVMTests::runAllTests() {
@@ -983,6 +1320,7 @@ bool ScriptVMTests::runAllTests() {
     testOpcodes();
     testScriptFunctions();
     testScriptManager();
+    testNativeScdaDecoder();
 
     TEST_LOGI("========================================");
     TEST_LOGI("Results: %d passed, %d failed, %zu total",

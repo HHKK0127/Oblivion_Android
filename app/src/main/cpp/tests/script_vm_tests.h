@@ -40,6 +40,7 @@ private:
     void testOpcodes();
     void testScriptFunctions();
     void testScriptManager();
+    void testNativeScdaDecoder();
 
     // Helper
     void record(const std::string& name, bool passed,
