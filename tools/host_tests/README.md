@@ -37,17 +37,31 @@ OBLIVION_ASSET_BASE=/path/to/Oblivion/Data bash tools/host_tests/run_host_tests.
 No test assertion is weakened by the gate: every test is left intact and runs
 unchanged as soon as assets are present.
 
-### Known intermittent failure (pre-existing, app side)
+### Resolved: `AsyncTaskManager` completion ordering
 
-`Phase45UnitTests`' `Async_Statistics` case is racy: it submits two no-op tasks,
-waits on their futures and then reads `AsyncTaskManager::getStats()`, expecting
-`totalCompleted >= 2`. `AsyncTaskManager::workerThread()` fulfils a task's
-promise inside `task.func()` *before* `recordCompletion()` bumps
-`totalCompleted_`, so a woken waiter can still observe the counter lagging by
-one (observed once in ~86 consecutive runs of the same binary). The harness does
-not mask this and no assertion was relaxed; removing it means restructuring
-`AsyncTaskManager::submit()` / `workerThread()` so completion bookkeeping
-happens before the future becomes ready.
+`Phase45UnitTests`' `Async_Statistics` case used to be racy: it submitted two
+no-op tasks, waited on their futures and then read
+`AsyncTaskManager::getStats()`, expecting `totalCompleted >= 2`.
+`AsyncTaskManager::submit()` wrapped the callable in a `std::packaged_task`,
+which fulfils the shared state from *inside* the callable, so
+`workerThread()`'s `recordCompletion()` — the call that bumps
+`totalCompleted_` — could still be pending when the waiter woke up.
+
+A standalone probe reproduced it before the fix: 27 of 500 iterations failed
+when polling with `wait_for(0ms)`, and 2 of 4000 iterations failed with
+`wait()`, the path the unit test uses. `submit()` now hands the task a
+`std::function` plus a `std::promise`, and `task.func()` records completion
+*before* it publishes the result, so a ready future always implies the
+statistics already include that task. After the fix, 20000 iterations of each
+mode pass with zero failures.
+
+The same change fixed a second defect: `std::packaged_task` stores a throwing
+task's exception in its shared state instead of rethrowing it, so
+`workerThread()`'s `catch` blocks never observed task failures and
+`totalFailed_` stayed at 0 forever. The task now counts its own failure and
+then forwards the exception to the promise, which makes a failing task both
+observable to its caller (`future::get()` rethrows) and visible in
+`getStats().totalFailed`.
 
 ## Layout
 
@@ -96,3 +110,15 @@ you have not stubbed yet, follow the pattern of `host_stub_syms.cpp`.
 Note that MinGW/PE links resolve every symbol of every compiled translation
 unit, so a suite only links when the whole transitive closure is satisfiable;
 `--gc-sections` does not remove unreachable undefined references there.
+
+Keep stubs and real sources mutually exclusive: a stub and the real `.cpp`
+for the same symbol must never both be listed in `SOURCES`, because MinGW/PE
+links then fail with a duplicate-symbol error. Every symbol the wired suites
+need comes from exactly one of the two sides. `weave::EventBus`
+(`engine/event_bus.cpp`), `NpcManager::getNPC(uint32_t)` (`game/npc_manager.cpp`)
+and `Player::addExperience(float)` (`game/player.cpp`) are real implementation
+sources - no stub defines them. The only host-only stand-ins are the `AAsset*` /
+`jni_audio_*` symbols, the GLES3 entry points and `PhysicsManager`, whose real
+counterparts (NDK, the JNI bridge, a GL driver, the Jolt library) cannot run on a
+host. `PhysicsManager` is reached only from `game/npc_manager.cpp` and
+`game/player_controller.cpp`, and only on the physics-disabled path.
