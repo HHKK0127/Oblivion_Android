@@ -224,7 +224,7 @@ With parallelization (rendering and Script VM split between developers), 45-60 w
 | No wired tests | Regression blindness | Phase 62 CI landed before any content work (`d94317bc`, green); the remaining gap is the 4 native suites that are still unwired |
 | Build config duplication | Release correctness | Phase 62 single source of truth |
 | BSA v103 folder table mismatch | Asset loading | Phase 64; extension counting already works via byte scan |
-| Broken gitlink `tools/BSAFileExtractor` | Repo hygiene, CI | It is committed as mode 160000 (a gitlink) with no `.gitmodules` entry, so it shows as a permanently modified path and `git status` is never clean. Either remove the gitlink or add a real submodule mapping |
+| Broken gitlink `tools/BSAFileExtractor` | Repo hygiene, CI | **Resolved 2026-09-24.** It was committed as mode 160000 (a gitlink) with no `.gitmodules` entry, so it showed as a permanently modified path and `git status` was never clean. `.gitignore:28` already listed `tools/BSAFileExtractor/`, so the intent was always to keep the tool untracked; the gitlink was removed from the index with `git rm --cached` and the checkout is left in place for local use. No source, script or workflow references the path |
 | 4 of the 5 native test suites are unwired | Regression blindness | Extend `tools/host_tests/run_host_tests.sh`; it already compiles the script and audio graph, so `phase45_unit_tests` and the rest are close to buildable |
 
 ### Quality Assurance
@@ -245,8 +245,9 @@ workstreams that can run at the same time without fighting each other.
   concurrent Gradle builds on this machine degrade both.
 - The whole body of local work is **committed and pushed** (`012a5bb4`, `55542f87`, `d4b27570`,
   `d94317bc`) and `master` is level with `origin/master`. `Android CI` has run: run 35884733212 on
-  `d94317bc` is green in 6m23s. The only uncommitted paths left are
-  `.github/memory/session-memory.json` and the stale `tools/BSAFileExtractor` gitlink.
+  `d94317bc` is green in 6m23s. The `tools/BSAFileExtractor` gitlink that used to keep `git status`
+  permanently dirty has been removed from the index, so the only uncommitted path left is
+  `.github/memory/session-memory.json`.
 - **`.github/workflows/android.yml` has been pre-validated against the real project so the first CI run is not a debugging session.** Three mismatches were found and fixed: the workflow set up JDK 17 while `gradle/gradle-daemon-jvm.properties` pins `toolchainVersion=21`, so the daemon JVM criteria could not be satisfied; `ndkVersion` was not pinned anywhere, leaving AGP free to resolve a different NDK than the one the workflow installs (it is now `26.1.10909125` in `app/build.gradle`, matching AGP 8.5's default and the local SDK, verified with a successful `assembleDebug`); and `cmake;3.22.1` — which AGP 8.5 requires and will not substitute — is now installed explicitly alongside the NDK, after `sdkmanager --licenses`. The workflow's version-consistency gate was also run locally and passes: `versionName=0.9.10` derives `versionCode=910`. The remaining unverified parts are the GitHub-hosted runner itself and the native build time for 3 ABIs, which the 60-minute timeout covers. The first run has since happened (`d94317bc`, run 35884733212, 6m23s, green), which confirms the pre-validation: the JDK 21, NDK and CMake pins were all correct and the first green run needed no workflow fix
 - **WS-B can start as a separate worktree session.** A worktree
   session branches off committed `master`, and `master` now carries the verified project
