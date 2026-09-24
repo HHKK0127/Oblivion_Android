@@ -8,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 #include <cstring>
+#include <cstdlib>
 #include <ctime>
 #include <chrono>
 #include <filesystem>
@@ -36,7 +37,18 @@ bool SaveManager::initialize() {
 }
 
 std::string SaveManager::getBaseDir() const {
+#ifdef __ANDROID__
     return "/data/data/com.example.oblivion/files/saves/";
+#else
+    // Host/desktop builds have no Android app sandbox and no writable "/data",
+    // so the hardcoded path above would make SaveSlotManager::initialize() fail.
+    // Allow an explicit override, otherwise keep saves in the working directory.
+    const char* overrideDir = std::getenv("OBLIVION_SAVE_DIR");
+    if (overrideDir != nullptr && overrideDir[0] != '\0') {
+        return std::string(overrideDir);
+    }
+    return "./host_saves/";
+#endif
 }
 
 // ============================================================================

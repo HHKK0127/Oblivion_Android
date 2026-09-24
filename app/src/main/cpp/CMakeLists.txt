@@ -39,6 +39,7 @@ add_library(native-lib SHARED
     engine/texture_loader.cpp
     engine/graphics/retro_filter.cpp
     engine/imperial_weave.cpp
+    engine/event_bus.cpp
 
     # Phase 44: Performance Optimization
     engine/memory_pool.cpp

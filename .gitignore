@@ -64,6 +64,9 @@ build/
 app/build/
 external/
 
+# Host test scratch output (tools/host_tests/run_host_tests.sh)
+host_saves/
+
 # Jolt Physics vendored build scripts must stay tracked for CI (Build/ is NOT
 # an output directory; the generic build/ rule above would ignore it).
 !app/src/main/cpp/third_party/JoltPhysics/Build/
