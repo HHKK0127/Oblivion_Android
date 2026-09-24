@@ -10,6 +10,7 @@
 #include "../script/script_manager.h"
 #include "../script/script_opcodes.h"
 #include "../quest/quest_flow_controller.h"
+#include "../game/inventory_manager.h"
 
 #include <chrono>
 #include <cstring>
@@ -642,6 +643,88 @@ void ScriptVMTests::testScriptFunctions() {
 
         record("ScriptFunctions: SetStage/GetStage", ok,
                "Persist stage without a registered quest record", getTimeMs38() - start);
+    }
+
+    // Test 6: Inventory function round trip and input validation
+    {
+        float start = getTimeMs38();
+        InventoryManager inventory_manager;
+        ScriptFunctions funcs;
+        ExecutionContext ctx;
+        bool ok = inventory_manager.initialize();
+
+        funcs.init(nullptr, nullptr, nullptr, &inventory_manager);
+
+        FunctionResult initial_count = funcs.execute(
+            FunctionID::GetItemCount, ctx, {ScriptValue::makeRef(201)});
+        FunctionResult add_result = funcs.execute(
+            FunctionID::AddItem,
+            ctx,
+            {ScriptValue::makeRef(201), ScriptValue::makeInt(2)});
+        FunctionResult added_count = funcs.execute(
+            FunctionID::GetItemCount, ctx, {ScriptValue::makeRef(201)});
+        FunctionResult remove_result = funcs.execute(
+            FunctionID::RemoveItem,
+            ctx,
+            {ScriptValue::makeRef(201), ScriptValue::makeInt(2)});
+        FunctionResult removed_count = funcs.execute(
+            FunctionID::GetItemCount, ctx, {ScriptValue::makeRef(201)});
+        FunctionResult invalid_count = funcs.execute(
+            FunctionID::AddItem,
+            ctx,
+            {ScriptValue::makeRef(201), ScriptValue::makeInt(0)});
+        FunctionResult missing_item = funcs.execute(
+            FunctionID::AddItem,
+            ctx,
+            {ScriptValue::makeRef(0x0BADF00D), ScriptValue::makeInt(1)});
+
+        ok = ok && initial_count.success && initial_count.returnValue.intVal == 5;
+        ok = ok && add_result.success && add_result.returnValue.intVal == 1;
+        ok = ok && added_count.success && added_count.returnValue.intVal == 7;
+        ok = ok && remove_result.success && remove_result.returnValue.intVal == 1;
+        ok = ok && removed_count.success && removed_count.returnValue.intVal == 5;
+        ok = ok && !invalid_count.success && !missing_item.success;
+
+        record("ScriptFunctions: Inventory", ok,
+               "Add, remove, count, and reject invalid items", getTimeMs38() - start);
+    }
+
+    // Test 7: Actor functions reject unresolved references
+    {
+        float start = getTimeMs38();
+        ScriptFunctions funcs;
+        ExecutionContext ctx;
+        NpcManager npc_manager;
+        bool ok = true;
+
+        auto npc = npc_manager.createNPC("Script Actor", glm::vec3(0.0f, 0.0f, 0.0f));
+        ok = ok && npc != nullptr;
+        if (npc) {
+            npc->status.currentHealth = 100.0f;
+            npc->status.maxHealth = 100.0f;
+            npc->inCombat = true;
+            ctx.setSelfRef(npc->npcId);
+        }
+        funcs.init(nullptr, nullptr, &npc_manager, nullptr);
+
+        FunctionResult health_result = funcs.execute(FunctionID::GetHealth, ctx, {});
+        FunctionResult set_health_result = funcs.execute(
+            FunctionID::SetHealth, ctx, {ScriptValue::makeFloat(50.0f)});
+        FunctionResult dead_result = funcs.execute(FunctionID::IsDead, ctx, {});
+        FunctionResult combat_result = funcs.execute(FunctionID::IsInCombat, ctx, {});
+
+        ok = ok && health_result.success && health_result.returnValue.floatVal == 100.0f;
+        ok = ok && set_health_result.success && npc->status.currentHealth == 50.0f;
+        ok = ok && dead_result.success && dead_result.returnValue.intVal == 0;
+        ok = ok && combat_result.success && combat_result.returnValue.intVal == 1;
+
+        ctx.setSelfRef(0x0BADF00D);
+        FunctionResult unresolved_result = funcs.execute(FunctionID::GetHealth, ctx, {});
+        ok = ok && !unresolved_result.success;
+
+        record("ScriptFunctions: Actor resolution", ok,
+               "Read and modify NPC state while rejecting unresolved references",
+               getTimeMs38() - start);
     }
 }
 

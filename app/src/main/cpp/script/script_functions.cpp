@@ -1,4 +1,5 @@
 #include "script_functions.h"
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <android/log.h>
@@ -9,6 +10,7 @@
 #include "../world/world_manager.h"
 #include "../game/npc_manager.h"
 #include "../game/inventory_manager.h"
+#include "../game/player.h"
 
 #define SF_LOG_TAG "ScriptFunctions"
 #ifdef ENABLE_DEBUG_LOGS
@@ -26,6 +28,20 @@
 
 namespace oblivion {
 namespace script {
+
+namespace {
+
+constexpr uint32_t PLAYER_FORM_ID = 0x00000014;
+
+Player* get_script_player(QuestFlowController* quest_flow_controller) {
+    return quest_flow_controller ? quest_flow_controller->getPlayer() : nullptr;
+}
+
+std::shared_ptr<NPC> get_script_npc(NpcManager* npc_manager, uint32_t form_id) {
+    return npc_manager ? npc_manager->getNPC(form_id) : nullptr;
+}
+
+}  // namespace
 
 ScriptFunctions::ScriptFunctions() {
     registerTier1Functions();
@@ -526,13 +542,28 @@ FunctionResult ScriptFunctions::fnAddItem(ExecutionContext& ctx, const std::vect
 
     SF_LOGD("AddItem(0x%08X, %d) on self=0x%08X", itemFormID, count, ctx.getSelfRef());
 
-    if (inventoryManager_) {
-        auto tmpl = inventoryManager_->getItemTemplate(itemFormID);
-        if (tmpl) { inventoryManager_->playerAddItem(*tmpl, count); }
+    if (count <= 0) {
+        result.errorMessage = "AddItem requires a positive count";
+        return result;
     }
 
-    result.success = true;
-    result.returnValue = ScriptValue::makeInt(1);
+    if (!inventoryManager_) {
+        result.errorMessage = "AddItem requires an initialized InventoryManager";
+        return result;
+    }
+
+    auto item_template = inventoryManager_->getItemTemplate(itemFormID);
+    if (!item_template) {
+        result.errorMessage = "AddItem item template not found";
+        return result;
+    }
+
+    result.success = inventoryManager_->playerAddItem(
+        *item_template, static_cast<uint32_t>(count));
+    result.returnValue = ScriptValue::makeInt(result.success ? 1 : 0);
+    if (!result.success) {
+        result.errorMessage = "AddItem failed to add item to player inventory";
+    }
     return result;
 }
 
@@ -547,12 +578,22 @@ FunctionResult ScriptFunctions::fnRemoveItem(ExecutionContext& ctx, const std::v
 
     SF_LOGD("RemoveItem(0x%08X, %d) on self=0x%08X", itemFormID, count, ctx.getSelfRef());
 
-    if (inventoryManager_) {
-        inventoryManager_->playerRemoveItem(itemFormID, count);
+    if (count <= 0) {
+        result.errorMessage = "RemoveItem requires a positive count";
+        return result;
     }
 
-    result.success = true;
-    result.returnValue = ScriptValue::makeInt(1);
+    if (!inventoryManager_) {
+        result.errorMessage = "RemoveItem requires an initialized InventoryManager";
+        return result;
+    }
+
+    result.success = inventoryManager_->playerRemoveItem(
+        itemFormID, static_cast<uint32_t>(count));
+    result.returnValue = ScriptValue::makeInt(result.success ? 1 : 0);
+    if (!result.success) {
+        result.errorMessage = "RemoveItem failed to remove item from player inventory";
+    }
     return result;
 }
 
@@ -566,13 +607,15 @@ FunctionResult ScriptFunctions::fnGetItemCount(ExecutionContext& ctx, const std:
 
     SF_LOGD("GetItemCount(0x%08X) on self=0x%08X", itemFormID, ctx.getSelfRef());
 
-    if (inventoryManager_) {
-        auto inv = inventoryManager_->getPlayerInventory();
-        result.returnValue = ScriptValue::makeInt(inv ? inv->getItemQuantity(itemFormID) : 0);
+    if (!inventoryManager_) {
+        result.errorMessage = "GetItemCount requires an initialized InventoryManager";
+        return result;
     }
 
+    auto inventory = inventoryManager_->getPlayerInventory();
     result.success = true;
-    result.returnValue = ScriptValue::makeInt(0);
+    result.returnValue = ScriptValue::makeInt(
+        inventory ? static_cast<int32_t>(inventory->getItemQuantity(itemFormID)) : 0);
     return result;
 }
 
@@ -871,13 +914,56 @@ FunctionResult ScriptFunctions::fnIsLocked(ExecutionContext& ctx, const std::vec
 
 FunctionResult ScriptFunctions::fnGetHealth(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
     FunctionResult result;
+
+    if (ctx.getSelfRef() == PLAYER_FORM_ID) {
+        Player* player = get_script_player(questFlowController_);
+        if (!player) {
+            result.errorMessage = "GetHealth could not resolve the player";
+            return result;
+        }
+        result.success = true;
+        result.returnValue = ScriptValue::makeFloat(player->health);
+        return result;
+    }
+
+    auto npc = get_script_npc(npcManager_, ctx.getSelfRef());
+    if (!npc) {
+        result.errorMessage = "GetHealth could not resolve actor reference";
+        return result;
+    }
+
     result.success = true;
-    result.returnValue = ScriptValue::makeFloat(100.0f);
+    result.returnValue = ScriptValue::makeFloat(npc->status.currentHealth);
     return result;
 }
 
 FunctionResult ScriptFunctions::fnSetHealth(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
     FunctionResult result;
+    if (args.empty()) {
+        result.errorMessage = "SetHealth requires 1 argument (health)";
+        return result;
+    }
+
+    const float health = args[0].toFloat();
+    if (ctx.getSelfRef() == PLAYER_FORM_ID) {
+        Player* player = get_script_player(questFlowController_);
+        if (!player) {
+            result.errorMessage = "SetHealth could not resolve the player";
+            return result;
+        }
+        player->health = std::clamp(health, 0.0f, player->maxHealth);
+        result.success = true;
+        result.returnValue = ScriptValue::makeInt(1);
+        return result;
+    }
+
+    auto npc = get_script_npc(npcManager_, ctx.getSelfRef());
+    if (!npc) {
+        result.errorMessage = "SetHealth could not resolve actor reference";
+        return result;
+    }
+
+    npc->status.currentHealth = std::clamp(health, 0.0f, npc->status.maxHealth);
     result.success = true;
     result.returnValue = ScriptValue::makeInt(1);
     return result;
@@ -899,15 +985,49 @@ FunctionResult ScriptFunctions::fnSetLevel(ExecutionContext& ctx, const std::vec
 
 FunctionResult ScriptFunctions::fnIsDead(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
     FunctionResult result;
+
+    if (ctx.getSelfRef() == PLAYER_FORM_ID) {
+        Player* player = get_script_player(questFlowController_);
+        if (!player) {
+            result.errorMessage = "IsDead could not resolve the player";
+            return result;
+        }
+        result.success = true;
+        result.returnValue = ScriptValue::makeInt(player->health <= 0.0f ? 1 : 0);
+        return result;
+    }
+
+    auto npc = get_script_npc(npcManager_, ctx.getSelfRef());
+    if (!npc) {
+        result.errorMessage = "IsDead could not resolve actor reference";
+        return result;
+    }
+
     result.success = true;
-    result.returnValue = ScriptValue::makeInt(0);
+    result.returnValue = ScriptValue::makeInt(npc->status.isAlive() ? 0 : 1);
     return result;
 }
 
 FunctionResult ScriptFunctions::fnIsInCombat(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
     FunctionResult result;
+
+    if (ctx.getSelfRef() == PLAYER_FORM_ID) {
+        if (!get_script_player(questFlowController_)) {
+            result.errorMessage = "IsInCombat could not resolve the player";
+            return result;
+        }
+        result.errorMessage = "IsInCombat is unavailable for Player without combat state";
+        return result;
+    }
+
+    auto npc = get_script_npc(npcManager_, ctx.getSelfRef());
+    if (!npc) {
+        result.errorMessage = "IsInCombat could not resolve actor reference";
+        return result;
+    }
+
     result.success = true;
-    result.returnValue = ScriptValue::makeInt(0);
+    result.returnValue = ScriptValue::makeInt(npc->inCombat ? 1 : 0);
     return result;
 }
 

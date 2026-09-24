@@ -132,6 +132,8 @@ public:
     QuestStageManager* getStageManager() { return &stageManager_; }
     QuestObjectiveTracker* getObjectiveTracker() { return &objectiveTracker_; }
     QuestRewardManager* getRewardManager() { return &rewardManager_; }
+    Player* getPlayer() const { return player_; }
+    PlayerController* getPlayerController() const { return playerController_; }
 
     // Callbacks
     void setQuestFlowCallback(QuestFlowCallback callback) {
