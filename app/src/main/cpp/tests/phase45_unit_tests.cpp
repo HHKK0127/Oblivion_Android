@@ -23,6 +23,7 @@
 #include <chrono>
 #include <cstring>
 #include <cmath>
+#include <stdexcept>
 #include <thread>
 #include <atomic>
 #include <algorithm>
@@ -883,6 +884,55 @@ void Phase45UnitTests::testAsyncTaskManager() {
         float dt = getTimeMs45() - t0;
         record("Async_Categories", ok,
                "Cell/Texture/ESM task categories work", dt);
+    }
+
+    // Test 7.6: Task failure accounting
+    // A throwing task must be counted as failed, must surface its exception
+    // through future::get(), and must not be counted as completed. The counters
+    // are read from a future-readiness point only, so this also pins the
+    // ordering guarantee: a ready future implies a counted outcome.
+    {
+        float t0 = getTimeMs45();
+        AsyncTaskManager mgr;
+        mgr.initialize(2);
+
+        auto badValue = mgr.submit([]() -> int {
+            throw std::runtime_error("value task failed");
+        });
+        auto badVoid = mgr.submit([]() {
+            throw std::runtime_error("void task failed");
+        });
+        auto good = mgr.submit([]() { return 7; });
+
+        badValue.wait_for(std::chrono::seconds(2));
+        badVoid.wait_for(std::chrono::seconds(2));
+        good.wait_for(std::chrono::seconds(2));
+
+        bool rethrewValue = false;
+        bool rethrewVoid = false;
+        try {
+            (void)badValue.get();
+        } catch (const std::runtime_error&) {
+            rethrewValue = true;
+        }
+        try {
+            badVoid.get();
+        } catch (const std::runtime_error&) {
+            rethrewVoid = true;
+        }
+
+        auto stats = mgr.getStats();
+        bool ok = rethrewValue && rethrewVoid
+               && (good.get() == 7)
+               && (stats.totalSubmitted == 3)
+               && (stats.totalCompleted == 1)
+               && (stats.totalFailed == 2)
+               && (stats.totalSubmitted == stats.totalCompleted + stats.totalFailed);
+
+        mgr.cleanup();
+        float dt = getTimeMs45() - t0;
+        record("Async_FailureAccounting", ok,
+               "throwing tasks count as failed and rethrow via future::get", dt);
     }
 }
 

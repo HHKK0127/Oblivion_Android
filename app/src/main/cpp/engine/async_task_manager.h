@@ -280,8 +280,10 @@ auto AsyncTaskManager::submit(Priority priority, Category category,
             taskHistory_[taskId] = info;
         }
 
-        taskQueue_.push(std::move(task));
+        // Count the submission before the task becomes visible to a worker, so
+        // submitted is never momentarily behind completed + failed.
         totalSubmitted_.fetch_add(1);
+        taskQueue_.push(std::move(task));
     }
 
     condition_.notify_one();
