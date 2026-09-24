@@ -928,6 +928,44 @@ void ScriptVMTests::testScriptManager() {
         record("ScriptManager: Quest stage index", ok,
                "Parse u16 INDX stage indices", getTimeMs38() - start);
     }
+
+    // Test 7: Run-once quest blocks do not run after returning to their stage.
+    {
+        float start = getTimeMs38();
+        QuestManager questManager;
+        ScriptManager scriptManager;
+        QuestStageManager stageManager;
+        scriptManager.init(&questManager, nullptr, nullptr, nullptr);
+        stageManager.initialize(&questManager, &scriptManager, nullptr, nullptr);
+
+        QuestRecord quest;
+        quest.formID = 0x0100ABCD;
+        QuestStageEntry stage;
+        stage.stageIndex = 10;
+        QuestStageBlock block;
+        block.scriptIndex = 0;
+        block.qsdtFlags = 0x01;
+        block.script.bytecode = {0x00, 0x00, 0x00, 0x00};
+        stage.blocks.push_back(block);
+        QuestStageBlock repeatableBlock;
+        repeatableBlock.scriptIndex = 1;
+        repeatableBlock.script.bytecode = {0x00, 0x00, 0x00, 0x00};
+        stage.blocks.push_back(repeatableBlock);
+        quest.stages.push_back(stage);
+        stageManager.registerQuest(quest);
+
+        const bool firstTransition = stageManager.setStage(quest.formID, 10);
+        const bool firstStarted = scriptManager.getActiveScriptCount() == 2;
+        scriptManager.update(0.0f);
+        const bool movedAway = stageManager.setStage(quest.formID, 20);
+        const bool returned = stageManager.setStage(quest.formID, 10);
+
+        const bool ok = firstTransition && firstStarted && movedAway && returned &&
+                        scriptManager.getActiveScriptCount() == 1;
+        record("ScriptManager: Run-once quest block", ok,
+               "Suppress QSDT run-once blocks while repeating other blocks",
+               getTimeMs38() - start);
+    }
 }
 
 // ============================================

@@ -191,6 +191,7 @@ bool QuestStageManager::initialize(QuestManager* questMgr,
 void QuestStageManager::cleanup() {
     questRecords_.clear();
     currentStages_.clear();
+    executedRunOnceBlocks_.clear();
     questManager_ = nullptr;
     scriptManager_ = nullptr;
     npcManager_ = nullptr;
@@ -369,15 +370,45 @@ void QuestStageManager::onStageTransition(const StageTransition& transition) {
 void QuestStageManager::triggerStageScripts(uint32_t questFormID, int32_t stageIndex) {
     if (!scriptManager_) return;
 
-    // In Oblivion, quest stages can trigger scripts
-    // The script is typically associated with the quest record
     auto recordIt = questRecords_.find(questFormID);
     if (recordIt == questRecords_.end()) return;
 
-    // Look for script references in the quest record
-    // For now, we log the stage change
-    LOGD("Quest 0x%08X: Stage %d script trigger (ScriptManager integration pending)",
-         questFormID, stageIndex);
+    const QuestStageEntry* stage = recordIt->second.findStage(stageIndex);
+    if (!stage) return;
+
+    for (const QuestStageBlock& block : stage->blocks) {
+        if (!block.hasBytecode()) {
+            continue;
+        }
+
+        if (!StageConditionEvaluator::evaluateAll(
+                block.conditions, questFormID, stageIndex, questManager_,
+                npcManager_, worldManager_, inventoryManager_)) {
+            continue;
+        }
+
+        const auto key = oblivion::script::InlineScriptKey{
+            questFormID, static_cast<uint16_t>(stageIndex), block.scriptIndex};
+        const uint64_t runOnceKey = makeRunOnceBlockKey(
+            questFormID, key.stageIndex, key.scriptIndex);
+        if (block.runsOnce() &&
+            executedRunOnceBlocks_.find(runOnceKey) != executedRunOnceBlocks_.end()) {
+            continue;
+        }
+
+        if (scriptManager_->startInlineScript(block.script, key, questFormID) >= 0 &&
+            block.runsOnce()) {
+            executedRunOnceBlocks_.insert(runOnceKey);
+        }
+    }
+}
+
+uint64_t QuestStageManager::makeRunOnceBlockKey(uint32_t questFormID,
+                                                 uint16_t stageIndex,
+                                                 uint16_t scriptIndex) {
+    return (static_cast<uint64_t>(questFormID) << 32) |
+           (static_cast<uint64_t>(stageIndex) << 16) |
+           scriptIndex;
 }
 
 bool QuestStageManager::checkCompletionStage(uint32_t questFormID, int32_t stageIndex) {

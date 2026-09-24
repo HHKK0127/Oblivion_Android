@@ -4,6 +4,7 @@
 #include "../game/quest_manager.h"
 #include "../script/script_manager.h"
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <memory>
 #include <functional>
@@ -136,6 +137,9 @@ private:
     // Current stage per quest (FormID -> stage index)
     std::unordered_map<uint32_t, int32_t> currentStages_;
 
+    // QSDT run-once blocks that have been scheduled during this quest runtime.
+    std::unordered_set<uint64_t> executedRunOnceBlocks_;
+
     // Game system pointers
     QuestManager* questManager_ = nullptr;
     oblivion::script::ScriptManager* scriptManager_ = nullptr;
@@ -151,4 +155,7 @@ private:
     void triggerStageScripts(uint32_t questFormID, int32_t stageIndex);
     bool checkCompletionStage(uint32_t questFormID, int32_t stageIndex);
     bool checkFailStage(uint32_t questFormID, int32_t stageIndex);
+    static uint64_t makeRunOnceBlockKey(uint32_t questFormID,
+                                        uint16_t stageIndex,
+                                        uint16_t scriptIndex);
 };
