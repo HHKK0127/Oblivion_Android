@@ -35,6 +35,20 @@ public:
     size_t getCursor() const { return cursor; }
     void setCursor(size_t offset) { cursor = offset; }
 
+    // --- Phase 30: Block body walker ---
+    // Retail NIF files store no per-block size table, so the only way to reach a
+    // block body is to walk every preceding block in order. walkAllBlocks()
+    // decodes each body just far enough to measure it and records the byte range
+    // of every block, which lets the readers below seek straight to a block.
+    bool walkAllBlocks();
+    bool areBlocksWalked() const { return blocksWalked; }
+    uint32_t getBlockPrefix() const { return blockPrefix; }
+    size_t getBlockBodyOffset(uint32_t index) const;
+    size_t getBlockBodyEnd(uint32_t index) const;
+    bool locateBlockBody(uint32_t index, size_t& offset) const;
+    bool findBlocksOfType(const std::string& typeName, std::vector<uint32_t>& out) const;
+    const std::string& getWalkError() const { return walkError; }
+
     // --- Phase 30: Skinning ---
     bool parseNiSkinInstance(NIFSkinInstance& skin);
     bool parseNiSkinData(NIFSkinData& skinData);
@@ -72,11 +86,56 @@ private:
     size_t cursor = 0;                 // Read position inside fileBuffer
     bool readError = false;            // Set when a read runs past the end of fileBuffer
 
+    // Block walker state (see walkAllBlocks)
+    std::vector<size_t> blockBodyOffsets;   // Body start of every block, prefix included
+    std::vector<size_t> blockBodyEnds;      // One past the last body byte of every block
+    uint32_t blockPrefix = 0;               // Per-block leading uint32 on 10.1.0.x meshes
+    bool blocksWalked = false;              // True once walkAllBlocks() has succeeded
+    std::string walkError;                  // Human-readable reason the walk stopped
+
     // Parsing helpers
     bool readHeader();
     bool parseObjectArray();
     bool buildNodeHierarchy();
     static bool isNamedBlockType(const std::string& typeName);
+
+    // Block walker
+    bool walkBlockBody(const std::string& typeName);
+    bool skipBytes(size_t count);
+    void skipFixed(size_t count);
+    void skipRefArray(uint32_t count);
+    void skipPtrArray(uint32_t count);
+    void skipVector3Array(uint32_t count);
+    void skipVector4Array(uint32_t count);
+    void skipColor4Array(uint32_t count);
+    void skipFloatArray(uint32_t count);
+    void skipU16Array(uint32_t count);
+    void skipStringArray(uint32_t count);
+    void skipNiObjectNET();
+    void skipNiAVObject();
+    void skipNiGeometry();
+    void skipNiTimeController();
+    void skipNiInterpController();
+    void skipNiPSysModifier();
+    void skipNiGeometryData(const std::string& typeName);
+    void skipMaterialData();
+    void skipTexDesc();
+    void skipShaderTexDescs(uint32_t count);
+    void skipKeyGroup(const char* valueType);
+    void skipKeys(uint32_t count, const char* valueType, int arg);
+    void skipQuatKeys(uint32_t count, int rotationType);
+    void skipKeyframeData();
+    void skipBlendInterpolator(bool boolValue);
+    void skipInterpBlendItems(uint32_t count);
+    void skipNodeSet();
+    void skipAVObjectArray(uint32_t count);
+    void skipMatchGroups(uint32_t count);
+    void skipFurniturePositions(uint32_t count);
+    void skipSkinPartition();
+    void skipControlledBlock();
+    void skipMorph(uint32_t numVertices);
+    void skipNiPSysEmitterBase(bool hasEmitterObject);
+    static int keyValueSize(const char* valueType);
 
     // Binary reading helpers
     bool readBytes(char* buffer, size_t count);

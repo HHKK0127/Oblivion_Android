@@ -74,19 +74,14 @@ enum class NIFBlockType : uint32_t {
 //   u16  numBlockTypes
 //   (u32 len + chars) x numBlockTypes   block type name table
 //   u16  blockTypeIndices[numObjects]   one type index per block, all < numBlockTypes
-//   u32  numStrings       0 in every sampled mesh
-//   u32  maxStringLength  width of the fixed-width inline block names, 0 when unused
+//   u32  numGroups        0 in every sampled mesh
+//   u32  groups[numGroups] always empty, so block 0 begins right after numGroups
 //   <block 0 body>        begins with the inline object name, see below
 //
 // The inline object name of block 0 (and of every NiObjectNET-derived block) is
-// encoded in one of two ways, decided by maxStringLength:
-//
-//   maxStringLength > 0   fixed width: exactly maxStringLength raw bytes
-//   maxStringLength == 0  SizedString: u32 length followed by the bytes
-//
-// Gamebryo 20.0.0.4 meshes use the fixed-width form, while Gamebryo 10.1.0.106
-// and legacy NetImmerse 10.0.1.0 meshes set maxStringLength to 0 and use the
-// SizedString form. Both forms were verified against retail Oblivion meshes.
+// always a SizedString: a u32 length followed by that many bytes. The bytes are
+// not NUL terminated and the length counts them exactly, so a 18 byte length
+// precedes an 18 byte name.
 //
 // NetImmerse legacy layout differs only in the preamble:
 //
@@ -102,9 +97,8 @@ struct NIFHeader {
     bool legacyNetImmerse = false; // True for the compact NetImmerse 10.0.1.0 header
     uint32_t userVersion = 0;  // User version
     uint32_t numObjects = 0;   // Number of blocks in the file
-    uint32_t unknownField = 0; // Unidentified u32 between numObjects and the creator strings
-    uint32_t numStrings = 0;   // Number of strings in the header string table
-    uint32_t maxStringLength = 0; // Width of fixed-width inline block names, 0 = length-prefixed
+    uint32_t unknownField = 0; // Block stream (BS) version: 11 for 20.0.0.4, 5 for 10.1.0.106, 6 for 10.2.0.0
+    uint32_t numGroups = 0;    // Number of block groups; 0 in every sampled mesh
     std::string creator;       // Creator string
     std::string processScript; // Process script string
     std::string exportScript;  // Export script string

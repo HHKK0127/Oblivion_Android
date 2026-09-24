@@ -29,6 +29,14 @@ bool NIFParser::parseFile(const std::string& filepath) {
     readError = false;
     header = NIFHeader();
 
+    // Block ranges from a previous file would otherwise stay visible through
+    // locateBlockBody() even though the new file has not been walked yet.
+    blockBodyOffsets.clear();
+    blockBodyEnds.clear();
+    blockPrefix = 0;
+    blocksWalked = false;
+    walkError.clear();
+
     // Read the whole file up front. Block bodies have no size table, so block
     // parsing continues after parseFile() returns and needs random access.
     std::ifstream in(filepath, std::ios::binary | std::ios::ate);
@@ -175,21 +183,16 @@ bool NIFParser::readHeader() {
         header.blockTypeIndices[i] = typeIndex;
     }
 
-    // Header string table. numStrings is 0 in every retail Oblivion mesh, so
-    // this loop normally does nothing. maxStringLength is the width of the
-    // fixed-width inline block names and is 0 when the file uses SizedStrings.
-    header.numStrings = readUInt32();
-    header.maxStringLength = readUInt32();
-    if (header.numStrings > 0x10000) {
-        LOGE("Invalid header string count: %u", header.numStrings);
+    // Block groups. numGroups is 0 in every sampled retail mesh, and the group
+    // array is not a string table: it sits between the block type index array
+    // and block 0, so block 0 begins immediately after numGroups.
+    header.numGroups = readUInt32();
+    if (header.numGroups > 0x10000) {
+        LOGE("Invalid block group count: %u", header.numGroups);
         return false;
     }
-    for (uint32_t i = 0; i < header.numStrings; i++) {
-        std::string ignored;
-        if (!readString(ignored)) {
-            LOGE("Failed to read header string %u", i);
-            return false;
-        }
+    for (uint32_t i = 0; i < header.numGroups; i++) {
+        readUInt32();  // Group description index
     }
 
     header.blockDataOffset = cursor;
@@ -221,20 +224,7 @@ bool NIFParser::parseObjectArray() {
     }
 
     setCursor(header.blockDataOffset);
-    if (header.maxStringLength > 0) {
-        // Fixed-width form: exactly maxStringLength raw bytes.
-        if (header.maxStringLength > 1024) {
-            LOGE("Root object name too long: %u", header.maxStringLength);
-            return false;
-        }
-        std::vector<char> nameBuffer(header.maxStringLength);
-        if (!readBytes(nameBuffer.data(), header.maxStringLength)) {
-            LOGE("Failed to read root object name at offset %zu", header.blockDataOffset);
-            return false;
-        }
-        nodes[0]->name.assign(nameBuffer.data(), header.maxStringLength);
-    } else if (!readString(nodes[0]->name)) {
-        // Length-prefixed form used by the 10.x and legacy NetImmerse headers.
+    if (!readString(nodes[0]->name)) {
         LOGE("Failed to read root object name at offset %zu", header.blockDataOffset);
         return false;
     }
@@ -460,6 +450,1071 @@ bool NIFParser::parseMaterialProperty() {
 bool NIFParser::parseTexturingProperty() {
     LOGD("Parsing NiTexturingProperty");
     return true;
+}
+
+// ---------------------------------------------------------------------------
+// Block body walker
+// ---------------------------------------------------------------------------
+// Retail NIF files store no per-block size table, so the only way to reach a
+// given block body is to measure every preceding body in order. The helpers
+// below reproduce the nif.xml field lists for the 80 block types that appear in
+// the shipped Oblivion meshes (20.0.0.4, user version 2817, BS version 11).
+// They only advance the cursor; the typed readers (parseNiSkinData and friends)
+// re-read the bodies afterwards. Any skip that runs past the end of the buffer
+// leaves readError set, which every helper checks before doing more work.
+
+bool NIFParser::skipBytes(size_t count) {
+    if (readError) {
+        return false;
+    }
+    if (cursor + count > fileBuffer.size()) {
+        readError = true;
+        return false;
+    }
+    cursor += count;
+    return true;
+}
+
+void NIFParser::skipFixed(size_t count) {
+    skipBytes(count);
+}
+
+void NIFParser::skipRefArray(uint32_t count) {
+    skipBytes(static_cast<size_t>(count) * 4);
+}
+
+void NIFParser::skipPtrArray(uint32_t count) {
+    skipBytes(static_cast<size_t>(count) * 4);
+}
+
+void NIFParser::skipVector3Array(uint32_t count) {
+    skipBytes(static_cast<size_t>(count) * 12);
+}
+
+void NIFParser::skipVector4Array(uint32_t count) {
+    skipBytes(static_cast<size_t>(count) * 16);
+}
+
+void NIFParser::skipColor4Array(uint32_t count) {
+    skipBytes(static_cast<size_t>(count) * 16);
+}
+
+void NIFParser::skipFloatArray(uint32_t count) {
+    skipBytes(static_cast<size_t>(count) * 4);
+}
+
+void NIFParser::skipU16Array(uint32_t count) {
+    skipBytes(static_cast<size_t>(count) * 2);
+}
+
+// SizedString / ByteArray / FilePath all share the u32 length prefix layout.
+void NIFParser::skipStringArray(uint32_t count) {
+    for (uint32_t i = 0; i < count && !readError; i++) {
+        const uint32_t length = readUInt32();
+        if (readError) {
+            return;
+        }
+        skipBytes(length);
+    }
+}
+
+// NiObjectNET: Name | Extra Data List | Controller
+void NIFParser::skipNiObjectNET() {
+    skipStringArray(1);
+    const uint32_t extraDataCount = readUInt32();
+    if (readError) {
+        return;
+    }
+    skipRefArray(extraDataCount);
+    skipBytes(4);
+}
+
+// NiAVObject: NiObjectNET | Flags | Translation | Rotation | Scale | Properties
+// | Collision Object
+void NIFParser::skipNiAVObject() {
+    skipNiObjectNET();
+    if (readError) {
+        return;
+    }
+    skipBytes(2);
+    skipBytes(12);
+    skipBytes(36);
+    skipBytes(4);
+    const uint32_t propertyCount = readUInt32();
+    if (readError) {
+        return;
+    }
+    skipRefArray(propertyCount);
+    skipBytes(4);
+}
+
+// NiGeometry: NiAVObject | Data | Skin Instance | Material Data
+void NIFParser::skipNiGeometry() {
+    skipNiAVObject();
+    if (readError) {
+        return;
+    }
+    skipBytes(4);
+    skipBytes(4);
+    skipMaterialData();
+}
+
+// MaterialData on these meshes is Has Shader plus its optional pair.
+void NIFParser::skipMaterialData() {
+    const uint8_t hasShader = readUInt8();
+    if (readError) {
+        return;
+    }
+    if (hasShader != 0) {
+        skipStringArray(1);   // Shader Name
+        skipBytes(4);         // Shader Extra Data
+    }
+}
+
+// NiTimeController: Next Controller | Flags | Frequency | Phase | Start Time
+// | Stop Time | Target
+void NIFParser::skipNiTimeController() {
+    skipBytes(4 + 2 + 4 + 4 + 4 + 4 + 4);
+}
+
+// NiInterpController adds Manager Controlled inside the 10.1.0.104..10.1.0.108
+// window (inclusive), so only the 10.1.0.106 meshes carry the extra byte.
+void NIFParser::skipNiInterpController() {
+    skipNiTimeController();
+    if (header.version >= 0x0A010068 && header.version <= 0x0A01006C) {
+        skipBytes(1);   // Manager Controlled
+    }
+}
+
+// NiPSysModifier: Name | Order | Target | Active
+void NIFParser::skipNiPSysModifier() {
+    skipStringArray(1);
+    skipBytes(4 + 4 + 1);
+}
+
+// NiPSysEmitter: Speed | Speed Variation | Declination | Declination Variation
+// | Planar Angle | Planar Angle Variation | Initial Color | Initial Radius
+// | Radius Variation | Life Span | Life Span Variation [| Emitter Object]
+void NIFParser::skipNiPSysEmitterBase(bool hasEmitterObject) {
+    skipBytes(6 * 4);
+    skipBytes(16);          // Initial Color (Color4)
+    skipBytes(4 * 4);
+    if (hasEmitterObject) {
+        skipBytes(4);
+    }
+}
+
+// TexDesc: Source | Clamp Mode | Filter Mode | UV Set | PS2 L | PS2 K
+// | Has Texture Transform plus the transform block when present.
+// PS2 L / PS2 K only exist up to 10.4.0.1.
+void NIFParser::skipTexDesc() {
+    skipBytes(4 + 4 + 4 + 4);
+    if (header.version <= 0x0A040001) {
+        skipBytes(2 + 2);               // PS2 L, PS2 K
+    }
+    const uint8_t hasTransform = readUInt8();
+    if (readError) {
+        return;
+    }
+    if (hasTransform != 0) {
+        skipBytes(8 + 8 + 4 + 4 + 8);   // Translation, Scale, Rotation, Method, Center
+    }
+}
+
+void NIFParser::skipShaderTexDescs(uint32_t count) {
+    for (uint32_t i = 0; i < count && !readError; i++) {
+        const uint8_t hasMap = readUInt8();
+        if (readError) {
+            return;
+        }
+        if (hasMap != 0) {
+            skipTexDesc();
+            skipBytes(4);   // Map ID
+        }
+    }
+}
+
+int NIFParser::keyValueSize(const char* valueType) {
+    if (std::strcmp(valueType, "float") == 0) return 4;
+    if (std::strcmp(valueType, "byte") == 0) return 1;
+    if (std::strcmp(valueType, "Color4") == 0) return 16;
+    if (std::strcmp(valueType, "Vector3") == 0) return 12;
+    if (std::strcmp(valueType, "Quaternion") == 0) return 16;
+    return 0;   // "string" and anything else are length prefixed
+}
+
+// Key: Time | Value [| Forward | Backward] [| TBC]. The arg carries the
+// interpolation of the enclosing KeyGroup: 2 adds a tangent pair, 3 a TBC triple.
+void NIFParser::skipKeys(uint32_t count, const char* valueType, int arg) {
+    const bool isString = (std::strcmp(valueType, "string") == 0);
+    const int valueBytes = isString ? 0 : keyValueSize(valueType);
+    const int tangentBytes = (arg == 2) ? 2 * valueBytes : 0;
+    const int tbcBytes = (arg == 3) ? 12 : 0;
+    for (uint32_t i = 0; i < count && !readError; i++) {
+        skipBytes(4);                     // Time
+        if (isString) {
+            skipStringArray(1);           // Value
+        } else {
+            skipBytes(valueBytes);        // Value
+        }
+        if (tangentBytes > 0) {
+            skipBytes(tangentBytes);
+        }
+        if (tbcBytes > 0) {
+            skipBytes(tbcBytes);
+        }
+    }
+}
+
+// QuatKey: Time | Value, plus TBC for rotation type 3. Rotation type 4 switches
+// the whole array over to XYZ Euler KeyGroups and reads no quaternion at all.
+void NIFParser::skipQuatKeys(uint32_t count, int rotationType) {
+    if (rotationType == 4) {
+        return;
+    }
+    for (uint32_t i = 0; i < count && !readError; i++) {
+        skipBytes(4);       // Time
+        skipBytes(16);      // Value (Quaternion)
+        if (rotationType == 3) {
+            skipBytes(12);  // TBC
+        }
+    }
+}
+
+// KeyGroup: Num Keys | Interpolation | Keys[Num Keys]. Num Keys == 0 leaves the
+// interpolation unread, which matches the zero length array that follows.
+void NIFParser::skipKeyGroup(const char* valueType) {
+    const uint32_t numKeys = readUInt32();
+    if (readError) {
+        return;
+    }
+    int interpolation = 0;
+    if (numKeys != 0) {
+        interpolation = static_cast<int>(readUInt32());
+        if (readError) {
+            return;
+        }
+    }
+    skipKeys(numKeys, valueType, interpolation);
+}
+
+// NiKeyframeData: rotation keys (quaternion or XYZ KeyGroups) | Translations
+// | Scales.
+void NIFParser::skipKeyframeData() {
+    const uint32_t numRotationKeys = readUInt32();
+    if (readError) {
+        return;
+    }
+    int rotationType = 0;
+    if (numRotationKeys != 0) {
+        rotationType = static_cast<int>(readUInt32());
+        if (readError) {
+            return;
+        }
+    }
+    skipQuatKeys(numRotationKeys, rotationType);
+    if (rotationType == 4) {
+        for (int axis = 0; axis < 3 && !readError; axis++) {
+            skipKeyGroup("float");      // XYZ Rotations
+        }
+    }
+    skipKeyGroup("Vector3");            // Translations
+    skipKeyGroup("float");              // Scales
+}
+
+// InterpBlendItem: Interpolator | Weight | Normalized Weight | Priority | Ease Spinner
+void NIFParser::skipInterpBlendItems(uint32_t count) {
+    skipBytes(static_cast<size_t>(count) * 17);
+}
+
+// NiBlendInterpolator: Flags | Array Size | Weight Threshold, then the single
+// item shortcut fields when the "interpolator count valid" bit is clear.
+void NIFParser::skipBlendInterpolator(bool boolValue) {
+    const uint8_t flags = readUInt8();
+    const uint32_t arraySize = readUInt8();
+    if (readError) {
+        return;
+    }
+    skipBytes(4);                       // Weight Threshold
+    if ((flags & 1) == 0) {
+        skipBytes(1 + 1 + 1 + 1 + 4 + 4 + 4 + 4);
+        skipInterpBlendItems(arraySize);
+    }
+    skipBytes(boolValue ? 1 : 4);       // Value
+}
+
+// NodeSet: Num Nodes | Nodes
+void NIFParser::skipNodeSet() {
+    const uint32_t numNodes = readUInt32();
+    if (readError) {
+        return;
+    }
+    skipPtrArray(numNodes);
+}
+
+// AVObject: Name | AV Object
+void NIFParser::skipAVObjectArray(uint32_t count) {
+    for (uint32_t i = 0; i < count && !readError; i++) {
+        skipStringArray(1);
+        skipBytes(4);
+    }
+}
+
+// MatchGroup: Num Vertices | Vertex Indices
+void NIFParser::skipMatchGroups(uint32_t count) {
+    for (uint32_t i = 0; i < count && !readError; i++) {
+        const uint32_t numVertices = readUInt16();
+        if (readError) {
+            return;
+        }
+        skipU16Array(numVertices);
+    }
+}
+
+// FurniturePosition: Offset | Orientation | Position Ref 1 | Position Ref 2
+void NIFParser::skipFurniturePositions(uint32_t count) {
+    skipBytes(static_cast<size_t>(count) * 16);
+}
+
+// NiGeometryData: the shared vertex payload followed by the per-type tail.
+void NIFParser::skipNiGeometryData(const std::string& typeName) {
+    skipBytes(4);                                   // Group ID
+    const uint32_t numVertices = readUInt16();
+    if (readError) {
+        return;
+    }
+    skipBytes(1);                                   // Keep Flags
+    skipBytes(1);                                   // Compress Flags
+    const uint8_t hasVertices = readUInt8();
+    if (readError) {
+        return;
+    }
+    if (hasVertices != 0) {
+        skipVector3Array(numVertices);
+    }
+
+    const uint16_t dataFlags = readUInt16();
+    const uint8_t hasNormals = readUInt8();
+    if (readError) {
+        return;
+    }
+    if (hasNormals != 0) {
+        skipVector3Array(numVertices);              // Normals
+        // BS Data Flags only exists on the 20.2+ streams, which these meshes
+        // predate, so the tangent bit comes from Data Flags alone.
+        if ((dataFlags & 0x1000) != 0) {
+            skipVector3Array(numVertices);          // Tangents
+            skipVector3Array(numVertices);          // Bitangents
+        }
+    }
+
+    skipBytes(16);                                  // Bounding Sphere
+    const uint8_t hasVertexColors = readUInt8();
+    if (readError) {
+        return;
+    }
+    if (hasVertexColors != 0) {
+        skipColor4Array(numVertices);
+    }
+    skipBytes(static_cast<size_t>(dataFlags & 63) * numVertices * 8);   // UV Sets
+    skipBytes(2);                                   // Consistency Flags
+    if (header.version >= 0x14000004) {
+        skipBytes(4);                               // Additional Data (since 20.0.0.4)
+    }
+
+    if (typeName == "NiTriShapeData") {
+        const uint32_t numTriangles = readUInt16();
+        skipBytes(4);                               // Num Triangle Points
+        const uint8_t hasTriangles = readUInt8();
+        if (readError) {
+            return;
+        }
+        if (hasTriangles != 0) {
+            skipBytes(static_cast<size_t>(numTriangles) * 6);
+        }
+        const uint32_t numMatchGroups = readUInt16();
+        if (readError) {
+            return;
+        }
+        skipMatchGroups(numMatchGroups);
+        return;
+    }
+
+    if (typeName == "NiTriStripsData") {
+        skipBytes(2);                               // Num Triangles
+        const uint32_t numStrips = readUInt16();
+        if (readError) {
+            return;
+        }
+        size_t totalPoints = 0;
+        for (uint32_t i = 0; i < numStrips && !readError; i++) {
+            totalPoints += readUInt16();
+        }
+        if (readError) {
+            return;
+        }
+        const uint8_t hasPoints = readUInt8();
+        if (readError) {
+            return;
+        }
+        if (hasPoints != 0) {
+            skipBytes(totalPoints * 2);
+        }
+        return;
+    }
+
+    // NiPSysData
+    const uint8_t hasRadii = readUInt8();
+    if (readError) {
+        return;
+    }
+    if (hasRadii != 0) {
+        skipFloatArray(numVertices);
+    }
+    skipBytes(2);                                   // Num Active
+    const uint8_t hasSizes = readUInt8();
+    if (readError) {
+        return;
+    }
+    if (hasSizes != 0) {
+        skipFloatArray(numVertices);
+    }
+    const uint8_t hasRotations = readUInt8();
+    if (readError) {
+        return;
+    }
+    if (hasRotations != 0) {
+        skipBytes(static_cast<size_t>(numVertices) * 16);   // Quaternion
+    }
+    const uint8_t hasRotationAngles = readUInt8();
+    if (readError) {
+        return;
+    }
+    if (hasRotationAngles != 0) {
+        skipFloatArray(numVertices);
+    }
+    const uint8_t hasRotationAxes = readUInt8();
+    if (readError) {
+        return;
+    }
+    if (hasRotationAxes != 0) {
+        skipVector3Array(numVertices);
+    }
+    skipBytes(static_cast<size_t>(numVertices) * 28);       // Particle Info
+    const uint8_t hasRotationSpeeds = readUInt8();
+    if (readError) {
+        return;
+    }
+    if (hasRotationSpeeds != 0) {
+        skipFloatArray(numVertices);
+    }
+    skipBytes(2 + 2);                               // Num Added Particles, Base
+}
+
+// SkinPartition: the vertex payload is sparse, so every optional block is
+// gated by its own flag byte.
+void NIFParser::skipSkinPartition() {
+    const uint32_t numVertices = readUInt16();
+    const uint32_t numTriangles = readUInt16();
+    const uint32_t numBones = readUInt16();
+    const uint32_t numStrips = readUInt16();
+    const uint32_t numWeightsPerVertex = readUInt16();
+    if (readError) {
+        return;
+    }
+    skipU16Array(numBones);
+    const uint8_t hasVertexMap = readUInt8();
+    if (readError) {
+        return;
+    }
+    if (hasVertexMap != 0) {
+        skipU16Array(numVertices);
+    }
+    const uint8_t hasVertexWeights = readUInt8();
+    if (readError) {
+        return;
+    }
+    if (hasVertexWeights != 0) {
+        skipBytes(static_cast<size_t>(numVertices) * numWeightsPerVertex * 4);
+    }
+    std::vector<uint32_t> stripLengths(numStrips);
+    for (uint32_t i = 0; i < numStrips && !readError; i++) {
+        stripLengths[i] = readUInt16();
+    }
+    if (readError) {
+        return;
+    }
+    const uint8_t hasFaces = readUInt8();
+    if (readError) {
+        return;
+    }
+    if (hasFaces != 0) {
+        if (numStrips != 0) {
+            for (uint32_t i = 0; i < numStrips && !readError; i++) {
+                skipBytes(static_cast<size_t>(stripLengths[i]) * 2);
+            }
+        } else {
+            skipBytes(static_cast<size_t>(numTriangles) * 6);
+        }
+    }
+    const uint8_t hasBoneIndices = readUInt8();
+    if (readError) {
+        return;
+    }
+    if (hasBoneIndices != 0) {
+        skipBytes(static_cast<size_t>(numVertices) * numWeightsPerVertex);
+    }
+}
+
+// ControlledBlock: Interpolator | Controller | Priority | String Palette
+// | five string palette offsets
+void NIFParser::skipControlledBlock() {
+    skipBytes(4 + 4 + 1 + 4 + 20);
+}
+
+// Morph: Frame Name | Vectors
+void NIFParser::skipMorph(uint32_t numVertices) {
+    skipStringArray(1);
+    skipVector3Array(numVertices);
+}
+
+// Measures one block body. Every branch consumes exactly the bytes nif.xml
+// describes for version 20.0.0.4 with BS version 11.
+bool NIFParser::walkBlockBody(const std::string& typeName) {
+    // --- NiExtraData roots (Name only, no extra data list or controller) ----
+    if (typeName == "NiStringExtraData") {
+        skipStringArray(1);                     // Name
+        skipStringArray(1);                     // String Data
+    } else if (typeName == "NiBinaryExtraData") {
+        skipStringArray(1);                     // Name
+        skipStringArray(1);                     // Binary Data (ByteArray)
+    } else if (typeName == "BSXFlags") {
+        skipStringArray(1);                     // Name
+        skipBytes(4);                           // Integer Data
+    } else if (typeName == "BSBound") {
+        skipStringArray(1);                     // Name
+        skipBytes(12 + 12);                     // Center, Dimensions
+    } else if (typeName == "BSFurnitureMarker") {
+        skipStringArray(1);                     // Name
+        const uint32_t numPositions = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipFurniturePositions(numPositions);
+    } else if (typeName == "NiTextKeyExtraData") {
+        skipStringArray(1);                     // Name
+        const uint32_t numTextKeys = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipKeys(numTextKeys, "string", 1);
+
+    // --- NiObjectNET roots -------------------------------------------------
+    } else if (typeName == "NiMaterialProperty") {
+        skipNiObjectNET();
+        skipBytes(4 * 12 + 4 + 4);              // Four colors, Glossiness, Alpha
+    } else if (typeName == "NiAlphaProperty") {
+        skipNiObjectNET();
+        skipBytes(2 + 1);                       // Flags, Threshold
+    } else if (typeName == "NiVertexColorProperty") {
+        skipNiObjectNET();
+        skipBytes(2 + 4 + 4);                   // Flags, Vertex Mode, Lighting Mode
+    } else if (typeName == "NiZBufferProperty") {
+        skipNiObjectNET();
+        skipBytes(2 + 4);                       // Flags, Function
+    } else if (typeName == "NiStencilProperty") {
+        skipNiObjectNET();
+        skipBytes(1 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
+    } else if (typeName == "NiSourceTexture") {
+        skipNiObjectNET();
+        skipBytes(1);                           // Use External
+        skipStringArray(1);                     // File Name
+        skipBytes(4);                           // Pixel Data
+        skipBytes(12);                          // Format Prefs
+        skipBytes(1 + 1);                       // Is Static, Direct Render
+    } else if (typeName == "NiStringPalette") {
+        skipStringArray(1);                     // Palette
+        skipBytes(4);                           // Length
+    } else if (typeName == "NiTexturingProperty") {
+        skipNiObjectNET();
+        skipBytes(4);                           // Apply Mode
+        const uint32_t textureCount = readUInt32();
+        if (readError) {
+            return false;
+        }
+        for (int slot = 0; slot < 5 && !readError; slot++) {
+            const uint8_t hasTexture = readUInt8();
+            if (readError) {
+                return false;
+            }
+            if (hasTexture != 0) {
+                skipTexDesc();
+            }
+        }
+        if (textureCount > 5) {
+            const uint8_t hasBumpMap = readUInt8();
+            if (readError) {
+                return false;
+            }
+            if (hasBumpMap != 0) {
+                skipTexDesc();
+                skipBytes(4 + 4 + 16);          // Luma Scale, Luma Offset, Matrix22
+            }
+        }
+        for (uint32_t slot = 6; slot <= 9 && !readError; slot++) {
+            if (textureCount <= slot) {
+                break;
+            }
+            const uint8_t hasDecal = readUInt8();
+            if (readError) {
+                return false;
+            }
+            if (hasDecal != 0) {
+                skipTexDesc();
+            }
+        }
+        const uint32_t numShaderTextures = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipShaderTexDescs(numShaderTextures);
+
+    // --- NiAVObject roots --------------------------------------------------
+    } else if (typeName == "NiNode") {
+        skipNiAVObject();
+        const uint32_t childCount = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipRefArray(childCount);
+        const uint32_t effectCount = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipRefArray(effectCount);
+    } else if (typeName == "NiTriShape" || typeName == "NiTriStrips") {
+        skipNiGeometry();
+    } else if (typeName == "NiParticleSystem") {
+        skipNiGeometry();
+        skipBytes(1);                           // World Space
+        const uint32_t numModifiers = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipRefArray(numModifiers);
+
+    // --- Geometry data -----------------------------------------------------
+    } else if (typeName == "NiTriShapeData" || typeName == "NiTriStripsData" ||
+               typeName == "NiPSysData") {
+        skipNiGeometryData(typeName);
+
+    // --- NiTimeController roots --------------------------------------------
+    } else if (typeName == "NiPSysUpdateCtlr") {
+        skipNiTimeController();
+    } else if (typeName == "NiAlphaController" || typeName == "NiVisController" ||
+               typeName == "NiTransformController") {
+        skipNiInterpController();
+        skipBytes(4);                           // Interpolator
+    } else if (typeName == "NiPSysEmitterSpeedCtlr" ||
+               typeName == "NiPSysEmitterDeclinationCtlr" ||
+               typeName == "NiPSysEmitterInitialRadiusCtlr") {
+        skipNiInterpController();
+        skipBytes(4);                           // Interpolator
+        skipStringArray(1);                     // Modifier Name
+    } else if (typeName == "NiMaterialColorController") {
+        skipNiInterpController();
+        skipBytes(4 + 2);                       // Interpolator, Target Color (MaterialColor)
+    } else if (typeName == "NiTextureTransformController") {
+        skipNiInterpController();
+        skipBytes(4 + 1 + 4 + 4);               // Interpolator, Shader Map, Slot, Operation
+    } else if (typeName == "NiFlipController") {
+        skipNiInterpController();
+        skipBytes(4 + 4);                       // Interpolator, Texture Slot
+        const uint32_t numSources = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipRefArray(numSources);
+    } else if (typeName == "NiGeomMorpherController") {
+        skipNiInterpController();
+        skipBytes(2);                           // Morpher Flags
+        skipBytes(4);                           // Data
+        skipBytes(1);                           // Always Update
+        const uint32_t numInterpolators = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipRefArray(numInterpolators);
+        const uint32_t numUnknownInts = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipBytes(static_cast<size_t>(numUnknownInts) * 4);
+    } else if (typeName == "NiMultiTargetTransformController") {
+        skipNiInterpController();
+        const uint32_t numExtraTargets = readUInt16();
+        if (readError) {
+            return false;
+        }
+        skipPtrArray(numExtraTargets);
+    } else if (typeName == "NiBSBoneLODController") {
+        skipNiTimeController();
+        skipBytes(4);                           // LOD
+        const uint32_t numLods = readUInt32();
+        skipBytes(4);                           // Num Node Groups
+        if (readError) {
+            return false;
+        }
+        // Node Groups is sized by Num LODs rather than Num Node Groups.
+        for (uint32_t i = 0; i < numLods && !readError; i++) {
+            skipNodeSet();
+        }
+    } else if (typeName == "NiPSysEmitterCtlr") {
+        skipNiInterpController();
+        skipBytes(4);                           // Interpolator
+        skipStringArray(1);                     // Modifier Name
+        skipBytes(4);                           // Visibility Interpolator
+    } else if (typeName == "NiControllerManager") {
+        skipNiTimeController();
+        skipBytes(1);                           // Cumulative
+        const uint32_t numSequences = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipRefArray(numSequences);
+        skipBytes(4);                           // Object Palette
+    } else if (typeName == "bhkBlendController") {
+        skipNiTimeController();
+        skipBytes(4);                           // Keys
+
+    // --- Interpolators -----------------------------------------------------
+    } else if (typeName == "NiTransformInterpolator") {
+        skipBytes(32);                          // Translation, Rotation, Scale
+        if (header.version <= 0x0A01006D) {
+            skipBytes(3);                       // TRS Valid: bool[3] (until 10.1.0.109)
+        }
+        skipBytes(4);                           // Data
+    } else if (typeName == "NiFloatInterpolator") {
+        skipBytes(4 + 4);                       // Value, Data
+    } else if (typeName == "NiBoolInterpolator") {
+        skipBytes(1 + 4);                       // Value, Data
+    } else if (typeName == "NiPoint3Interpolator") {
+        skipBytes(12 + 4);                      // Value, Data
+    } else if (typeName == "NiBlendFloatInterpolator") {
+        skipBlendInterpolator(false);
+    } else if (typeName == "NiBlendBoolInterpolator") {
+        skipBlendInterpolator(true);
+
+    // --- Key data ----------------------------------------------------------
+    } else if (typeName == "NiFloatData") {
+        skipKeyGroup("float");
+    } else if (typeName == "NiBoolData") {
+        skipKeyGroup("byte");
+    } else if (typeName == "NiColorData") {
+        skipKeyGroup("Color4");
+    } else if (typeName == "NiPosData") {
+        skipKeyGroup("Vector3");
+    } else if (typeName == "NiTransformData") {
+        skipKeyframeData();
+
+    // --- Animation payload -------------------------------------------------
+    } else if (typeName == "NiMorphData") {
+        const uint32_t numMorphs = readUInt32();
+        const uint32_t numVertices = readUInt32();
+        skipBytes(1);                           // Relative Targets
+        if (readError) {
+            return false;
+        }
+        for (uint32_t i = 0; i < numMorphs && !readError; i++) {
+            skipMorph(numVertices);
+        }
+    } else if (typeName == "NiControllerSequence") {
+        skipStringArray(1);                     // Name
+        const uint32_t numControlledBlocks = readUInt32();
+        skipBytes(4);                           // Array Grow By
+        if (readError) {
+            return false;
+        }
+        for (uint32_t i = 0; i < numControlledBlocks && !readError; i++) {
+            skipControlledBlock();
+        }
+        skipBytes(4 + 4 + 4 + 4 + 4 + 4);       // Weight .. Stop Time
+        skipBytes(4);                           // Manager
+        skipStringArray(1);                     // Accum Root Name
+        skipBytes(4);                           // String Palette
+    } else if (typeName == "NiDefaultAVObjectPalette") {
+        skipBytes(4);                           // Scene
+        const uint32_t numObjs = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipAVObjectArray(numObjs);
+    } else if (typeName == "NiSkinInstance") {
+        skipBytes(4 + 4 + 4);                   // Data, Skin Partition, Skeleton Root
+        const uint32_t numBones = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipPtrArray(numBones);
+    } else if (typeName == "NiSkinData") {
+        skipBytes(52);                          // Skin Transform
+        const uint32_t numBones = readUInt32();
+        const uint8_t hasVertexWeights = readUInt8();
+        if (readError) {
+            return false;
+        }
+        for (uint32_t i = 0; i < numBones && !readError; i++) {
+            skipBytes(52 + 16);                 // Bone skin transform, Bounding Sphere
+            const uint32_t numVertices = readUInt16();
+            if (readError) {
+                return false;
+            }
+            if (hasVertexWeights != 0) {
+                skipBytes(static_cast<size_t>(numVertices) * 6);   // BoneVertData
+            }
+        }
+    } else if (typeName == "NiSkinPartition") {
+        const uint32_t numPartitions = readUInt32();
+        if (readError) {
+            return false;
+        }
+        for (uint32_t i = 0; i < numPartitions && !readError; i++) {
+            skipSkinPartition();
+        }
+
+    // --- Particle system modifiers -----------------------------------------
+    } else if (typeName == "NiPSysAgeDeathModifier") {
+        skipNiPSysModifier();
+        skipBytes(1 + 4);                       // Spawn on Death, Spawn Modifier
+    } else if (typeName == "NiPSysBoundUpdateModifier") {
+        skipNiPSysModifier();
+        skipBytes(2);                           // Update Skip
+    } else if (typeName == "NiPSysGrowFadeModifier") {
+        skipNiPSysModifier();
+        skipBytes(4 + 2 + 4 + 2);               // Grow Time, Grow Generation, Fade pair
+    } else if (typeName == "NiPSysPositionModifier") {
+        skipNiPSysModifier();
+    } else if (typeName == "NiPSysSpawnModifier") {
+        skipNiPSysModifier();
+        skipBytes(2 + 4 + 2 + 2 + 4 + 4 + 4 + 4);
+    } else if (typeName == "NiPSysColorModifier") {
+        skipNiPSysModifier();
+        skipBytes(4);                           // Data
+    } else if (typeName == "NiPSysColliderManager") {
+        skipNiPSysModifier();
+        skipBytes(4);                           // Collider
+    } else if (typeName == "NiPSysSphereEmitter") {
+        skipNiPSysModifier();
+        skipNiPSysEmitterBase(true);
+        skipBytes(4);                           // Radius
+    } else if (typeName == "NiPSysBoxEmitter") {
+        skipNiPSysModifier();
+        skipNiPSysEmitterBase(true);
+        skipBytes(4 + 4 + 4);                   // Width, Height, Depth
+    } else if (typeName == "NiPSysMeshEmitter") {
+        skipNiPSysModifier();
+        skipNiPSysEmitterBase(false);           // No emitter object on this one
+        const uint32_t numEmitterMeshes = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipPtrArray(numEmitterMeshes);
+        skipBytes(4 + 4 + 12);                  // Velocity Type, Emission Type, Axis
+    } else if (typeName == "NiPSysRotationModifier") {
+        skipNiPSysModifier();
+        skipBytes(4 + 4 + 4 + 4 + 1 + 1 + 12);
+    } else if (typeName == "NiPSysPlanarCollider") {
+        // Derives from NiPSysCollider, not NiPSysModifier.
+        skipBytes(4 + 1 + 1 + 4 + 4 + 4 + 4);   // Bounce .. Collider Object
+        skipBytes(4 + 4 + 12 + 12);             // Width, Height, X Axis, Y Axis
+
+    // --- Havok collision ---------------------------------------------------
+    } else if (typeName == "bhkCollisionObject") {
+        skipBytes(4 + 2 + 4);                   // Target, Flags, Body
+    } else if (typeName == "bhkBlendCollisionObject") {
+        skipBytes(4 + 2 + 4 + 4 + 4);           // plus Heir Gain, Vel Gain
+    } else if (typeName == "bhkRigidBody" || typeName == "bhkRigidBodyT") {
+        skipBytes(4);                           // Shape
+        skipBytes(4);                           // Havok Filter
+        skipBytes(4 + 1 + 3 + 12);              // World Object Info
+        skipBytes(1 + 1 + 2);                   // Entity Info
+        skipBytes(196);                         // bhkRigidBodyCInfo550_660
+        const uint32_t numConstraints = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipRefArray(numConstraints);
+        skipBytes(4);                           // Body Flags
+    } else if (typeName == "bhkSphereShape") {
+        skipBytes(4 + 4);                       // Material, Radius
+    } else if (typeName == "bhkBoxShape") {
+        skipBytes(4 + 4 + 8 + 12 + 4);
+    } else if (typeName == "bhkCapsuleShape") {
+        skipBytes(4 + 4 + 8 + 12 + 4 + 12 + 4);
+    } else if (typeName == "bhkConvexVerticesShape") {
+        skipBytes(4 + 4 + 12 + 12);             // Material, Radius, two properties
+        const uint32_t numVertices = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipVector4Array(numVertices);
+        const uint32_t numNormals = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipVector4Array(numNormals);
+    } else if (typeName == "bhkNiTriStripsShape") {
+        skipBytes(4 + 4 + 20 + 4 + 16);         // Material .. Scale
+        const uint32_t numStripsData = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipRefArray(numStripsData);
+        const uint32_t numFilters = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipBytes(static_cast<size_t>(numFilters) * 4);   // HavokFilter
+    } else if (typeName == "bhkListShape") {
+        const uint32_t numSubShapes = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipRefArray(numSubShapes);
+        skipBytes(4 + 12 + 12);                 // Material, two properties
+        const uint32_t numFilters = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipBytes(static_cast<size_t>(numFilters) * 4);
+    } else if (typeName == "bhkMoppBvTreeShape") {
+        skipBytes(4 + 12 + 4);                  // Shape, Unused, Scale
+        const uint32_t codeSize = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipBytes(16);                          // MOPP code offset
+        skipBytes(codeSize);                    // MOPP code data
+    } else if (typeName == "bhkLimitedHingeConstraint") {
+        skipBytes(16);                          // bhkConstraintCInfo
+        skipBytes(124);                         // 7 x Vector4, Min/Max Angle, Friction
+    } else if (typeName == "bhkRagdollConstraint") {
+        skipBytes(16);                          // bhkConstraintCInfo
+        skipBytes(120);                         // 6 x Vector4, 5 angles, Friction
+    } else if (typeName == "bhkMalleableConstraint") {
+        skipBytes(16);                          // bhkConstraintCInfo
+        const uint32_t constraintType = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipBytes(16);                          // nested bhkConstraintCInfo
+        switch (constraintType) {
+            case 0: skipBytes(32); break;       // Ball and socket
+            case 1: skipBytes(80); break;       // Hinge
+            case 2: skipBytes(124); break;      // Limited hinge
+            case 6: skipBytes(140); break;      // Prismatic
+            case 7: skipBytes(120); break;      // Ragdoll
+            case 8: skipBytes(36); break;       // Stiff spring
+            default: break;
+        }
+        skipBytes(4 + 4);                       // Tau, Damping
+    } else {
+        return false;
+    }
+
+    return !readError;
+}
+
+// Walks every block body in order and records its byte range. Retail files have
+// no block size table, so this is the only way to seek to a specific body. The
+// caller can verify the walk by checking that the cursor lands 8 bytes short of
+// the end of the file (the trailing group count and its zero terminator).
+bool NIFParser::walkAllBlocks() {
+    blockBodyOffsets.clear();
+    blockBodyEnds.clear();
+    blockPrefix = 0;
+    blocksWalked = false;
+    walkError.clear();
+
+    const uint32_t blockCount = getBlockCount();
+    if (blockCount == 0) {
+        walkError = "no blocks in block table";
+        return false;
+    }
+
+    // Meshes from the 10.1.0.x line prefix each block body with a uint32 that
+    // holds the body length. The 10.2+ and 20.x meshes drop it.
+    if (header.version >= 0x0A010000 && header.version <= 0x0A01006A) {
+        blockPrefix = 4;
+    }
+
+    readError = false;
+    blockBodyOffsets.reserve(blockCount);
+    blockBodyEnds.reserve(blockCount);
+    cursor = header.blockDataOffset;
+
+    for (uint32_t index = 0; index < blockCount; index++) {
+        const size_t bodyStart = cursor;
+        if (!skipBytes(blockPrefix)) {
+            break;
+        }
+        const std::string typeName = getBlockTypeName(index);
+        if (!walkBlockBody(typeName)) {
+            walkError = "cannot measure block " + std::to_string(index) + " (" +
+                        (typeName.empty() ? "unknown" : typeName) + ")";
+            break;
+        }
+        blockBodyOffsets.push_back(bodyStart);
+        blockBodyEnds.push_back(cursor);
+    }
+
+    if (blockBodyOffsets.size() != blockCount) {
+        if (walkError.empty()) {
+            walkError = "walk stopped after " + std::to_string(blockBodyOffsets.size()) +
+                        " of " + std::to_string(blockCount) + " blocks";
+        }
+        readError = true;
+        return false;
+    }
+
+    blocksWalked = true;
+    return true;
+}
+
+size_t NIFParser::getBlockBodyOffset(uint32_t index) const {
+    if (index >= blockBodyOffsets.size()) {
+        return 0;
+    }
+    return blockBodyOffsets[index];
+}
+
+size_t NIFParser::getBlockBodyEnd(uint32_t index) const {
+    if (index >= blockBodyEnds.size()) {
+        return 0;
+    }
+    return blockBodyEnds[index];
+}
+
+// Points at the first field of a block body, past the 10.1.0.x size prefix.
+bool NIFParser::locateBlockBody(uint32_t index, size_t& offset) const {
+    if (!blocksWalked || index >= blockBodyOffsets.size()) {
+        return false;
+    }
+    offset = blockBodyOffsets[index] + blockPrefix;
+    return offset <= blockBodyEnds[index];
+}
+
+bool NIFParser::findBlocksOfType(const std::string& typeName, std::vector<uint32_t>& out) const {
+    out.clear();
+    if (!blocksWalked) {
+        return false;
+    }
+    for (uint32_t index = 0; index < getBlockCount(); index++) {
+        if (getBlockTypeName(index) == typeName) {
+            out.push_back(index);
+        }
+    }
+    return !out.empty();
 }
 
 std::shared_ptr<NIFNode> NIFParser::getNodeByName(const std::string& name) const {
