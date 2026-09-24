@@ -242,6 +242,11 @@ bool QuestStageManager::setStage(uint32_t questFormID, int32_t stage) {
     }
 
     int32_t oldStage = it->second;
+    if (oldStage == stage) {
+        LOGD("Quest 0x%08X: Stage %d is already active", questFormID, stage);
+        return false;
+    }
+
     it->second = stage;
 
     LOGI("Quest 0x%08X: Stage changed from %d to %d", questFormID, oldStage, stage);

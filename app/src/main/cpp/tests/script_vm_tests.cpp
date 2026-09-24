@@ -692,12 +692,17 @@ void ScriptVMTests::testScriptFunctions() {
             FunctionID::GetStage,
             ctx,
             {ScriptValue::makeRef(questFormID)});
+        FunctionResult repeatedSetResult = funcs.execute(
+            FunctionID::SetStage,
+            ctx,
+            {ScriptValue::makeRef(questFormID), ScriptValue::makeInt(20)});
 
         ok = ok && setResult.success && setResult.returnValue.intVal == 1;
         ok = ok && getResult.success && getResult.returnValue.intVal == 20;
+        ok = ok && !repeatedSetResult.success && repeatedSetResult.returnValue.intVal == 0;
 
         record("ScriptFunctions: SetStage/GetStage", ok,
-               "Persist stage without a registered quest record", getTimeMs38() - start);
+               "Persist stages and reject duplicate transitions", getTimeMs38() - start);
     }
 
     // Test 6: Inventory function round trip and input validation
