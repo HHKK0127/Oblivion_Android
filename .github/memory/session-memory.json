@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-25T03:10:00",
+  "lastUpdated": "2026-09-25T04:20:00",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -3383,10 +3383,28 @@
         "payload-grammar"
       ],
       "compressed": false
+    },
+    {
+      "id": "0adede5c-83d5-4736-87c0-be84908cf699",
+      "timestamp": "2026-09-25T04:20:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "QUST/INFO layout measured from the real Oblivion3.esm (277,504,985 bytes, two full walks ending exactly at EOF). QUST = 390 records in ONE top-level GRUP (no descent needed); 125 of them have no INDX. QUST head = EDID + SCRI(4B, 255/390) + FULL(343) + DATA(2 bytes, 390/390) + ICON(283). Stage blocks are introduced by INDX (u16, size 2 in 2,516/2,516), NOT by QSTN/QSTF/QSTR. Each stage block holds 1..n script entries introduced by QSDT (u8, size 1 in 2,978/2,978; value 0 x2600, 1 x378, nothing else), each followed by optional CNAM (journal line, 2,338) and exactly one SCHR (20 bytes, 2,978 = QSDT count), then SCDA/SCTX/SCRO. QSDT 2,978 > INDX 2,516 means 462 stage blocks carry a SECOND script entry (e.g. INDX QSDT CTDA CNAM SCHR QSDT CTDA CNAM SCHR x34): the correct shape is QuestStageEntry keyed by INDX with a CHILD LIST of script entries - the opposite of what plan.md said before this measurement. QSTA (8 bytes, 1,154) is a stage target that OWNS the CTDA records following it (1/2/3/4/5/6/8; 8 carry none). Exact QUST subrecord set: SCRO 6,119 / CTDA 3,784 / QSDT 2,978 / SCHR 2,978 / INDX 2,516 / CNAM 2,338 / SCTX 1,881 / SCDA 1,701 / QSTA 1,154 / EDID 390 / DATA 390 / FULL 343 / ICON 283 / SCRI 255 - no other tag in 14,489 subrecords. QuestRecordParser::parse() is wrong on every point: INDX read as a u32 objective index pushed into objectives, CNAM attached to that objective, CTDA attached to stages.back(), and stages built from QSTN/QSTF/QSTR which never occur; parseStageEntry() requires size >= 4 so it would reject every real INDX. INFO = 19,278 records living in 3,053 nested GRUPs of type 7 under the single top-level DIAL GRUP, labelled with the parent DIAL FormID (3,817 DIAL records); INFO is never inline in DIAL. INFO.QSTI (4 bytes) is present in 19,278/19,278 records and names the owning quest, reaching 337 of the 390 quests - this is the registerQuests() join key. INFO layout: DATA(3B) + QSTI + TRDT(16B, 23,877 so more than one per record) + NAM1 + NAM2 + CTDA(24B, 48,531) + optional TCLT/TCLF(4B, 9,698/4,141) + SCHR(20B, 19,231) + SCDA 5,552 / SCTX 5,718 / SCRO 8,405 + NAME(4B, 1,342) / CTDT(20B, 72) / SCHD(24-28B, 47). Every SCHR in QUST and INFO is 20 bytes, matching the already-decoded SCPT header. Root cause of the earlier failed walk probe: it assumed a 24-byte GRUP header; Oblivion's GRUP header is 20 bytes with a header-inclusive size, so the walk must use 'p += size if GRUP else 20 + size' and must not descend (plan.md L271 already stated this).",
+      "tags": [
+        "qust",
+        "info",
+        "esm",
+        "quest",
+        "registerQuests",
+        "phase-67",
+        "layout",
+        "measured"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 238,
+    "totalEntries": 239,
     "compressedCount": 2,
     "sessionCount": 24
   }
