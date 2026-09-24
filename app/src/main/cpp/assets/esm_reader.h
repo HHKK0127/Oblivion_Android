@@ -126,6 +126,9 @@ struct CellData {
     // can treat hasWaterLevel + a valid height as "water present".
     float waterLevel = 0.0f;
     bool hasWaterLevel = false;
+    // XCWT subrecord: the WATR FormID that defines this cell's water colour,
+    // opacity and texture. 0 when the cell carries no explicit water type.
+    uint32_t waterTypeFormID = 0;
         // Lighting / climate data omitted for simplicity
 };
 

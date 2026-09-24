@@ -870,6 +870,13 @@ void ESMFile::decodeCell(const ESMRecord& rec) {
         ++m_exteriorCellsNoXclw;
     }
 
+    // XCWT subrecord: WATR FormID for this cell's water type. Without it the
+    // cell falls back to the worldspace default water type at render time.
+    auto* xcwt = rec.findSubRecord("XCWT");
+    if (xcwt && xcwt->size() >= 4) {
+        cell.waterTypeFormID = readU32(xcwt->data.data());
+    }
+
     m_cells.push_back(std::move(cell));
 }
 

@@ -2472,10 +2472,10 @@ void Renderer::createTestScenario() {
                                                                                         if (cell->hasWaterLevel && !std::isnan(cell->waterLevel)) {
                                                                                             worldCell->waterLevel = cell->waterLevel;
                                                                                             worldCell->hasWater = true;
+                                                                                            worldCell->waterTypeFormID = cell->waterTypeFormID;
                                                                                         } else {
                                                                                             worldCell->hasWater = false;
                                                                                         }
-                                                                                        worldCell->waterTypeFormID = 0;   // WATR lookup not implemented
                                                                                         ++registeredCells;
                                         }
                                     }
@@ -4049,7 +4049,26 @@ void Renderer::renderWater() {
                            1, GL_FALSE, viewProj.value_ptr());
         glUniform3fv(glGetUniformLocation(waterShader, "uCameraPos"), 1,
                      &cameraPos.x);
-        const float waterColor[4] = {0.15f, 0.35f, 0.40f, 0.55f};
+        // Water colour comes from the cell's WATR record when present, so the
+        // surface matches the game's original water material (deep blue/teal
+        // for Tamriel's lakes and rivers) instead of a hardcoded placeholder.
+        // In Oblivion's WATR DATA block (102 bytes of floats) the Deep Color
+        // RGB sits at float offsets 12..14 (byte offsets 48..56); opacity
+        // (ANAM) is a 0..255 byte scaled to 0..1. A fallback is used when the
+        // cell has no resolvable WATR type or the record is too short.
+        float waterColor[4] = {0.15f, 0.35f, 0.40f, 0.55f};
+        if (cell->waterTypeFormID != 0 && assetManager) {
+            const auto& esmMgr = assetManager->getEsmManager();
+            const oblivion::WaterData* watr = esmMgr.findWater(cell->waterTypeFormID);
+            if (watr && watr->shaderFloats.size() >= 15) {
+                waterColor[0] = watr->shaderFloats[12];
+                waterColor[1] = watr->shaderFloats[13];
+                waterColor[2] = watr->shaderFloats[14];
+                waterColor[3] = watr->opacity > 0
+                    ? watr->opacity / 255.0f
+                    : 0.55f;
+            }
+        }
         glUniform4fv(glGetUniformLocation(waterShader, "uColor"), 1, waterColor);
 
         glBindVertexArray(it->second.vao);
