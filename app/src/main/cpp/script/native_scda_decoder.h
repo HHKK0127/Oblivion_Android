@@ -14,7 +14,7 @@
 //
 // Grammar confirmed against the vanilla Oblivion3.esm census:
 //   [u16 opcode][u16 argLength][argLength bytes]
-//   opcode 0x001C is always 4 bytes; its second u16 is metadata, not a length.
+//   opcode 0x001C is always 4 bytes; its second u16 is a call reference index.
 // ============================================================================
 
 namespace oblivion {
@@ -33,7 +33,10 @@ enum class NativeStructuralOpcode : uint16_t {
     Return = 0x001E,  // no payload
 };
 
-// Marker opcode. Its second u16 is compiler metadata with no length meaning.
+// Call reference selector. Its second u16 is a reference index, not a length:
+// it selects the reference used by the command that follows, which is how the
+// compiler encodes `Ref.command`. The 4 bytes must always be consumed and the
+// index applied, otherwise every bare `Ref.command` resolves to the wrong ref.
 constexpr uint16_t NATIVE_SCDA_MARKER_OPCODE = 0x001C;
 // Prologue opcode. Present in SCPT records only; QUST/INFO inline scripts do
 // not carry it, so a decoder must never require it.
@@ -71,6 +74,7 @@ struct NativeInstruction {
     bool isPrologue = false;
     bool isStructural = false;
     bool isBare = false;        // Structural opcode with no payload
+    uint16_t referenceIndex = 0; // Marker: call reference selector for the next command
 
     // Structural payloads
     uint16_t blockType = 0;     // Begin

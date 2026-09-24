@@ -144,7 +144,7 @@ std::string getNativeOpcodeName(uint16_t opcode) {
         case 0x0017: return "Else";
         case 0x0018: return "ElseIf";
         case 0x0019: return "EndIf";
-        case 0x001C: return "Marker";
+        case 0x001C: return "SetCallRef";
         case 0x001D: return "Prologue";
         case 0x001E: return "Return";
         case 0x1000: return "MessageBox";
@@ -200,6 +200,7 @@ std::string getNativeOpcodeName(uint16_t opcode) {
         case 0x10B1: return "SetCombatStyle";
         case 0x10B2: return "PlaySound3D";
         case 0x10BB: return "SetCellPublicFlag";
+        case 0x10BF: return "ModAmountSoldStolen";
         case 0x10C0: return "CloseCurrentOblivionGate";
         case 0x10C2: return "SetPCExpelled";
         case 0x10C4: return "SetPCFactionMurder";
@@ -208,6 +209,7 @@ std::string getNativeOpcodeName(uint16_t opcode) {
         case 0x10D1: return "SetForceRun";
         case 0x10D8: return "SetDoorDefaultOpen";
         case 0x10DD: return "SetOpenState";
+        case 0x10DE: return "CloseOblivionGate";
         case 0x10EC: return "SetGhost";
         case 0x10EE: return "EquipItem";
         case 0x10EF: return "UnequipItem";
@@ -223,6 +225,7 @@ std::string getNativeOpcodeName(uint16_t opcode) {
         case 0x110F: return "ModPCSkill";
         case 0x1117: return "SetOwnership";
         case 0x1119: return "SetCellOwnership";
+        case 0x1114: return "PlayBink";
         case 0x111B: return "SetCellFullName";
         case 0x111C: return "SetActorFullName";
         case 0x1123: return "PlayMagicShaderVisuals";
@@ -232,6 +235,7 @@ std::string getNativeOpcodeName(uint16_t opcode) {
         case 0x112A: return "EnableLinkedPathPoints";
         case 0x112B: return "DisableLinkedPathPoints";
         case 0x112D: return "ForceWeather";
+        case 0x1133: return "SetLevel";
         case 0x1137: return "ModPCMiscStat";
         case 0x113C: return "SetScale";
         case 0x1142: return "Dispel";
@@ -285,7 +289,10 @@ bool decodeNativeInstruction(const uint8_t* data, size_t size, uint32_t offset,
     const uint16_t lengthWord = readU16(data + offset + 2);
 
     if (out.opcode == NATIVE_SCDA_MARKER_OPCODE) {
+        // Call reference selector: the second u16 is a reference index, not a
+        // payload length. The 4 bytes are always consumed.
         out.isMarker = true;
+        out.referenceIndex = lengthWord;
         out.encodedLength = HEADER_SIZE;
         out.payloadLength = 0;
         return true;

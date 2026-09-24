@@ -1000,7 +1000,7 @@ void appendMarker(std::vector<uint8_t>& out, uint16_t meta) {
 } // namespace
 
 void ScriptVMTests::testNativeScdaDecoder() {
-    // Test 1: marker is always 4 bytes regardless of its metadata word
+    // Test 1: the call reference selector is always 4 bytes
     {
         const float start = getTimeMs38();
         std::vector<uint8_t> code;
@@ -1011,9 +1011,10 @@ void ScriptVMTests::testNativeScdaDecoder() {
         const bool ok = result.success && result.instructions.size() == 2 &&
                         result.instructions[0].isMarker &&
                         result.instructions[0].encodedLength == 4 &&
+                        result.instructions[0].referenceIndex == 37 &&
                         result.instructions[1].opcode == 0x0019;
-        record("NativeScda: marker is 4 bytes", ok,
-               "Marker metadata word must not be treated as a payload length",
+        record("NativeScda: call ref selector", ok,
+               "The selector index is read and its 4 bytes are always consumed",
                getTimeMs38() - start);
     }
 
@@ -1281,6 +1282,11 @@ void ScriptVMTests::testNativeScdaDecoder() {
                         getNativeOpcodeName(0x111B) == "SetCellFullName" &&
                         getNativeOpcodeName(0x111C) == "SetActorFullName" &&
                         getNativeOpcodeName(0x1007) == "SetPos" &&
+                        getNativeOpcodeName(0x10BF) == "ModAmountSoldStolen" &&
+                        getNativeOpcodeName(0x10DE) == "CloseOblivionGate" &&
+                        getNativeOpcodeName(0x10C0) == "CloseCurrentOblivionGate" &&
+                        getNativeOpcodeName(0x1133) == "SetLevel" &&
+                        getNativeOpcodeName(0x1114) == "PlayBink" &&
                         getNativeOpcodeName(0x9999).empty();
         record("NativeScda: opcode names", ok,
                "Confirmed opcodes resolve and unknown ones stay unnamed",
