@@ -698,7 +698,9 @@ void ScriptVMTests::testScriptFunctions() {
         bool ok = true;
 
         auto npc = npc_manager.createNPC("Script Actor", glm::vec3(0.0f, 0.0f, 0.0f));
+        auto target_npc = npc_manager.createNPC("Script Target", glm::vec3(2.0f, 3.0f, 4.0f));
         ok = ok && npc != nullptr;
+        ok = ok && target_npc != nullptr;
         if (npc) {
             npc->status.currentHealth = 100.0f;
             npc->status.maxHealth = 100.0f;
@@ -712,11 +714,25 @@ void ScriptVMTests::testScriptFunctions() {
             FunctionID::SetHealth, ctx, {ScriptValue::makeFloat(50.0f)});
         FunctionResult dead_result = funcs.execute(FunctionID::IsDead, ctx, {});
         FunctionResult combat_result = funcs.execute(FunctionID::IsInCombat, ctx, {});
+        FunctionResult set_pos_result = funcs.execute(
+            FunctionID::SetPos, ctx, {ScriptValue::makeInt(0), ScriptValue::makeFloat(2.0f)});
+        FunctionResult get_pos_result = funcs.execute(
+            FunctionID::GetPos, ctx, {ScriptValue::makeInt(0)});
+        FunctionResult distance_result = funcs.execute(
+            FunctionID::GetDistance, ctx, {ScriptValue::makeRef(target_npc->npcId)});
+        FunctionResult move_result = funcs.execute(
+            FunctionID::MoveTo, ctx, {ScriptValue::makeRef(target_npc->npcId)});
 
         ok = ok && health_result.success && health_result.returnValue.floatVal == 100.0f;
         ok = ok && set_health_result.success && npc->status.currentHealth == 50.0f;
         ok = ok && dead_result.success && dead_result.returnValue.intVal == 0;
         ok = ok && combat_result.success && combat_result.returnValue.intVal == 1;
+        ok = ok && set_pos_result.success && get_pos_result.success;
+        ok = ok && get_pos_result.returnValue.floatVal == 2.0f;
+        ok = ok && distance_result.success && distance_result.returnValue.floatVal == 5.0f;
+        ok = ok && move_result.success && npc->position.x == target_npc->position.x;
+        ok = ok && npc->position.y == target_npc->position.y;
+        ok = ok && npc->position.z == target_npc->position.z;
 
         ctx.setSelfRef(0x0BADF00D);
         FunctionResult unresolved_result = funcs.execute(FunctionID::GetHealth, ctx, {});

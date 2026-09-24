@@ -41,6 +41,33 @@ std::shared_ptr<NPC> get_script_npc(NpcManager* npc_manager, uint32_t form_id) {
     return npc_manager ? npc_manager->getNPC(form_id) : nullptr;
 }
 
+struct ScriptActor {
+    Player* player = nullptr;
+    std::shared_ptr<NPC> npc;
+
+    glm::vec3* getPosition() const {
+        if (player) {
+            return &player->position;
+        }
+        return npc ? &npc->position : nullptr;
+    }
+
+    void updateModelMatrix() const {
+        if (npc) {
+            npc->updateModelMatrix();
+        }
+    }
+};
+
+ScriptActor resolve_script_actor(QuestFlowController* quest_flow_controller,
+                                 NpcManager* npc_manager,
+                                 uint32_t form_id) {
+    if (form_id == PLAYER_FORM_ID) {
+        return {get_script_player(quest_flow_controller), nullptr};
+    }
+    return {nullptr, get_script_npc(npc_manager, form_id)};
+}
+
 }  // namespace
 
 ScriptFunctions::ScriptFunctions() {
@@ -671,13 +698,23 @@ FunctionResult ScriptFunctions::fnGetDistance(ExecutionContext& ctx, const std::
 
     SF_LOGD("GetDistance(0x%08X) from self=0x%08X", refFormID, ctx.getSelfRef());
 
-    if (worldManager_) {
-        // WorldManager does not have getDistance - return 0 for now
-        result.returnValue = ScriptValue::makeFloat(0.0f);
+    const ScriptActor self = resolve_script_actor(
+        questFlowController_, npcManager_, ctx.getSelfRef());
+    const ScriptActor target = resolve_script_actor(
+        questFlowController_, npcManager_, refFormID);
+    const glm::vec3* self_position = self.getPosition();
+    const glm::vec3* target_position = target.getPosition();
+    if (!self_position || !target_position) {
+        result.errorMessage = "GetDistance could not resolve actor reference";
+        return result;
     }
 
+    const float delta_x = self_position->x - target_position->x;
+    const float delta_y = self_position->y - target_position->y;
+    const float delta_z = self_position->z - target_position->z;
     result.success = true;
-    result.returnValue = ScriptValue::makeFloat(0.0f);
+    result.returnValue = ScriptValue::makeFloat(
+        std::sqrt(delta_x * delta_x + delta_y * delta_y + delta_z * delta_z));
     return result;
 }
 
@@ -692,11 +729,24 @@ FunctionResult ScriptFunctions::fnSetPos(ExecutionContext& ctx, const std::vecto
 
     SF_LOGD("SetPos(%d, %.2f) on self=0x%08X", axis, value, ctx.getSelfRef());
 
-    if (worldManager_) {
-        // WorldManager does not have setObjectPosition - logging only
-        SF_LOGD("SetPos axis=%d val=%.2f on 0x%08X", axis, value, ctx.getSelfRef());
+    ScriptActor actor = resolve_script_actor(
+        questFlowController_, npcManager_, ctx.getSelfRef());
+    glm::vec3* position = actor.getPosition();
+    if (!position) {
+        result.errorMessage = "SetPos could not resolve actor reference";
+        return result;
     }
 
+    switch (axis) {
+        case 0: position->x = value; break;
+        case 1: position->y = value; break;
+        case 2: position->z = value; break;
+        default:
+            result.errorMessage = "SetPos axis must be 0 (X), 1 (Y), or 2 (Z)";
+            return result;
+    }
+
+    actor.updateModelMatrix();
     result.success = true;
     result.returnValue = ScriptValue::makeInt(1);
     return result;
@@ -712,13 +762,26 @@ FunctionResult ScriptFunctions::fnGetPos(ExecutionContext& ctx, const std::vecto
 
     SF_LOGD("GetPos(%d) on self=0x%08X", axis, ctx.getSelfRef());
 
-    if (worldManager_) {
-        // WorldManager does not have getObjectPosition - return 0
-        result.returnValue = ScriptValue::makeFloat(0.0f);
+    const ScriptActor actor = resolve_script_actor(
+        questFlowController_, npcManager_, ctx.getSelfRef());
+    const glm::vec3* position = actor.getPosition();
+    if (!position) {
+        result.errorMessage = "GetPos could not resolve actor reference";
+        return result;
+    }
+
+    float value = 0.0f;
+    switch (axis) {
+        case 0: value = position->x; break;
+        case 1: value = position->y; break;
+        case 2: value = position->z; break;
+        default:
+            result.errorMessage = "GetPos axis must be 0 (X), 1 (Y), or 2 (Z)";
+            return result;
     }
 
     result.success = true;
-    result.returnValue = ScriptValue::makeFloat(0.0f);
+    result.returnValue = ScriptValue::makeFloat(value);
     return result;
 }
 
@@ -864,10 +927,20 @@ FunctionResult ScriptFunctions::fnMoveTo(ExecutionContext& ctx, const std::vecto
     }
     uint32_t refFormID = static_cast<uint32_t>(args[0].toInt());
     SF_LOGD("MoveTo(0x%08X) for self=0x%08X", refFormID, ctx.getSelfRef());
-    if (worldManager_) {
-        // WorldManager does not have moveToObject - logging only
-        SF_LOGD("MoveTo(0x%08X) for 0x%08X", refFormID, ctx.getSelfRef());
+
+    ScriptActor actor = resolve_script_actor(
+        questFlowController_, npcManager_, ctx.getSelfRef());
+    const ScriptActor target = resolve_script_actor(
+        questFlowController_, npcManager_, refFormID);
+    glm::vec3* position = actor.getPosition();
+    const glm::vec3* target_position = target.getPosition();
+    if (!position || !target_position) {
+        result.errorMessage = "MoveTo could not resolve actor reference";
+        return result;
     }
+
+    *position = *target_position;
+    actor.updateModelMatrix();
     result.success = true;
     result.returnValue = ScriptValue::makeInt(1);
     return result;
