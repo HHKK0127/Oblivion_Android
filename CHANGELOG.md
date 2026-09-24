@@ -138,8 +138,25 @@ The current version is **0.9.10 (versionCode 910)**.
   Two earlier readings of this bug were wrong and are retracted: the black strip at y1017-1079 is
   outside the GL surface (the title screen shows the same 52 rows), and the load screen being
   static between screenshots is by design (`save_load_bg.png` is drawn full-screen).
+- **Stale build-size and phase figures in the docs**: `.github/copilot-instructions.md` still
+  claimed an 8.4 MB APK and "Phase 36", and `README.md` claimed a 79.0 MiB debug APK for two ABIs.
+  The debug APK is actually 115.4 MiB: `build.gradle` now also builds `x86_64` for the emulator
+  (+15.9 MiB of native libs), and 82.9 MiB of it is `assets/videos/`, which is gitignored and not
+  redistributed, so a build without those local assets is about 32.5 MiB. The current phase is 64
+  (Phase 65 next), and `app/build.gradle` remains the single source of truth for the version.
 
 ### Notes
+- **The title screen's "dimming" was the debug overlay, not a rendering bug.** Tapping the
+  top-left corner of the title screen appeared to darken the whole frame and was first read as a
+  uniform scrim. It is the `btn_debug_toggle` button: 36 dp at `top|start` with a 10 dp margin,
+  which at the emulator's 420 dpi is x26..121 / y26..121, so a tap at (74,74) lands inside it and
+  opens `debug_overlay_container` - a full-screen `#80000000` scrim plus a 260 dp (682.5 px)
+  left-hand panel. `MainActivity` logs `Debug panel shown` on the toggle. The measured frame
+  matches the composite exactly: content p50 luminance 167 -> 60, after/before ratio p50 0.491
+  against the predicted 0.498, glyph cores (117,59,33) -> (58,29,16), and
+  `corr(after, before)` splits into +0.145 on the left 640 px (the panel overwrites it) versus
+  +0.833 on the right (scrim only). The state is reversible by tapping again. Screenshots taken
+  with the panel open are identifiable by `menu ink tol20 = 0` together with p50 luminance ~60.
 - The outlined row is **not** a match for the reference art's stroke weight (about 2.1x it at
   equal capital height). It is a deliberate deviation in favour of readability, as requested; the
   row still matches the art's width, centre and capital height.
@@ -157,6 +174,11 @@ The current version is **0.9.10 (versionCode 910)**.
   only from the layout log: ink tops sit at y787 with the log's `baselineY=812.1`, so the capitals
   are 25.1 px = 2.47% of the 1017 px view (about 24.5-25.1 px once the ~0.6 px outline dilation is
   removed), matching the log's `cap=25.4` and the reference art's 2.50%.
+- **`tol40` is only valid while the background is unchanged.** The ink metric that allows a
+  tolerance of 40 per channel counts the background itself once the frame darkens: the debug
+  overlay's backdrop RGB(104,88,72) passes all three channels (13 / 29 / 39), which inflated the
+  count from 10,154 px to 22,744 px while `tol20` correctly reported 0. Use `tol20` as the primary
+  metric and only compare `tol40` between shots of the same background phase.
 
 ---
 

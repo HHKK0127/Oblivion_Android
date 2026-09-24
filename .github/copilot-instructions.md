@@ -3,7 +3,7 @@
 ## プロジェクト概要
 
 **Oblivion Android** - The Elder Scrolls IV: Oblivion の完全ネイティブAndroid移植
-- バージョン: 0.9.10 (Phase 36)
+- バージョン: 0.9.10 (Phase 64 完了、Phase 65 が次)。単一の真実源は `app/build.gradle`
 - リポジトリ: HHKK0127/Oblivion_Android
 - 技術スタック: C++17, OpenGL ES 3.0, Android NDK r26.1, JNI
 
@@ -154,7 +154,7 @@ adb logcat -s OblivionEngine             # ログ確認
 | FPS | 30 fps | 60 fps |
 | メモリ | < 1 GB | 40 MB |
 | CPU | < 10% | < 0.1% |
-| APKサイズ | < 100 MB | 8.4 MB |
+| APKサイズ | < 100 MB | 115.4 MiB（デバッグ、3 ABI + ローカル動画 82.9 MiB 込み。動画を除くと約 32.5 MiB） |
 
 ## 参考資料
 

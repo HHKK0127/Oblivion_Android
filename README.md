@@ -478,7 +478,8 @@ oblivion-android/
 - **Graphical UI & HUD (Phase 9-24)**: 5,000+ lines (UIPanel, UIButton, TextureLoader, UIDrawHelper)
 - **Sound Effects**: 93 sound definitions, 307 WAV files
 - **Compilation Time**: ~40 seconds (debug, incremental)
-- **APK Size**: 79.0 MiB (debug build, arm64-v8a + armeabi-v7a)
+- **APK Size**: 115.4 MiB (debug build, arm64-v8a + armeabi-v7a + x86_64, including 82.9 MiB of
+  local video assets that are not redistributed; ~32.5 MiB without them)
 
 ---
 
@@ -977,7 +978,8 @@ oblivion-android/
 - **グラフィカルUI・HUD (Phase 9-24)**: 5,000行以上（UIPanel、UIButton、TextureLoader、UIDrawHelper）
 - **効果音**: 93サウンド定義、307個のWAVファイル
 - **コンパイル時間**: 約40秒（デバッグ、増分ビルド）
-- **APKサイズ**: 79.0 MiB（デバッグビルド、arm64-v8a + armeabi-v7a）
+- **APKサイズ**: 115.4 MiB（デバッグビルド、arm64-v8a + armeabi-v7a + x86_64。再配布しない
+  ローカル動画アセット 82.9 MiB を含む。動画を除くと約 32.5 MiB）
 
 ---
 

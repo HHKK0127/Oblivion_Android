@@ -12,6 +12,8 @@
 
 #include <glm/glm.hpp>
 #include <algorithm>
+#include <cmath>
+#include <limits>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -2464,20 +2466,37 @@ void Renderer::createTestScenario() {
             }
         }
 
-        for (const auto& entry : cellByCoord) {
-            const oblivion::CellData* cell = entry.second;
-            if (registeredCells < 8) {
-                LOGI("  Cell: 0x%08X '%s' (%s) grid=[%d,%d]",
-                     cell->formID, cell->editorID.c_str(),
-                     cell->fullName.c_str(), cell->gridX, cell->gridY);
-            }
-            if (worldManager->addCellFromESM(
-                    cell->gridX, cell->gridY,
-                    cell->editorID, cell->fullName,
-                    cell->formID, cell->isExterior, cell->worldspaceID)) {
-                ++registeredCells;
-            }
-        }
+                    // Water is strictly per-cell from the XCLW subrecord. ESM analysis proved
+                                        // Oblivion keeps no WRLD-level water plane: WNAM is the parent
+                                        // worldspace reference (not a WATR color) and no WHGT exists, so
+                                        // there is no default-water fallback for the root worldspace.
+                                        LOGI("Main worldspace 0x%08X: per-cell XCLW water only (no WRLD default)",
+                                             mainWorldspace);
+
+                    for (const auto& entry : cellByCoord) {
+                        const oblivion::CellData* cell = entry.second;
+                        if (registeredCells < 8) {
+                            LOGI("  Cell: 0x%08X '%s' (%s) grid=[%d,%d]",
+                                 cell->formID, cell->editorID.c_str(),
+                                 cell->fullName.c_str(), cell->gridX, cell->gridY);
+                        }
+                    if (auto worldCell = worldManager->addCellFromESM(
+                                        cell->gridX, cell->gridY,
+                                        cell->editorID, cell->fullName,
+                                        cell->formID, cell->isExterior, cell->worldspaceID)) {
+                                            // Water is strictly per-cell from the XCLW subrecord; only a positive
+                                                                                        // height means a drawable surface (negative sentinels were
+                                                                                        // mapped to NaN during decodeCell).
+                                                                                        if (cell->hasWaterLevel && !std::isnan(cell->waterLevel)) {
+                                                                                            worldCell->waterLevel = cell->waterLevel;
+                                                                                            worldCell->hasWater = true;
+                                                                                            worldCell->waterTypeFormID = cell->waterTypeFormID;
+                                                                                        } else {
+                                                                                            worldCell->hasWater = false;
+                                                                                        }
+                                                                                        ++registeredCells;
+                                        }
+                                    }
         LOGI("Registered %zu exterior cells (%zu interior skipped, %zu other worldspaces skipped, %zu duplicate grid squares)",
              registeredCells, interiorCells, otherWorldspaceCells, duplicateCoords);
 
@@ -3393,8 +3412,14 @@ void Renderer::render(float deltaTime) {
         // Ensure viewport is set for the full screen (Retro filter framebuffer may have changed it)
         glViewport(0, 0, static_cast<GLsizei>(screenWidth), static_cast<GLsizei>(screenHeight));
 
-        // Render World (main game scene) - Clear with game background color
-        glClearColor(0.2f, 0.2f, 0.2f, 1.0f);  // Dark gray for game screen
+        // Render World (main game scene) - Clear with weather-based horizon color
+        if (skyWeatherSystem) {
+            float skyR, skyG, skyB;
+            skyWeatherSystem->getFogColor(skyR, skyG, skyB);
+            glClearColor(skyR, skyG, skyB, 1.0f);
+        } else {
+            glClearColor(0.2f, 0.2f, 0.2f, 1.0f);  // Fallback dark gray
+        }
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         GLCHECK_MSG("game-clear");
 
@@ -3477,6 +3502,12 @@ void Renderer::render(float deltaTime) {
 
     // Phase 65: Render exterior terrain from LAND heightmaps
     renderTerrainMeshes();
+
+    // Phase 65: Render water surfaces from CELL XCLW levels on top of terrain
+    renderWater();
+
+    // Phase 66: Render the weather-driven sky dome as the far background.
+    renderSkyDome();
 
     // Phase XX: Render placeholder primitives for entities with missing meshes
     // (e.g., imperial_male.nif or imp.nif not present in APK assets)
@@ -3846,6 +3877,423 @@ void Renderer::releaseTerrainMeshes() {
         if (entry.second.ibo) glDeleteBuffers(1, &entry.second.ibo);
     }
     terrainMeshes.clear();
+
+    // Water planes live as long as the terrain do; release them together so
+    // nothing touches stale GL handles after cleanup or an EGL context swap.
+    for (auto& entry : waterMeshes_) {
+        if (entry.second.vao) glDeleteVertexArrays(1, &entry.second.vao);
+        if (entry.second.vbo) glDeleteBuffers(1, &entry.second.vbo);
+        if (entry.second.ibo) glDeleteBuffers(1, &entry.second.ibo);
+    }
+    waterMeshes_.clear();
+}
+
+// ============================================================
+// Phase 65: Water rendering from CELL XCLW / WRLD WNAM-WHGT
+// ============================================================
+// Flat translucent planes at each cell's water level. The fragment shader applies
+// a single-pass fresnel tint and fades by distance so the far water does not wash
+// out the underlying terrain. Depth writes stay on so the water hides geometry
+// underneath and later passes (entities, UI) sort above it correctly.
+static const char* waterVertexSrc =
+"#version 300 es\n"
+"uniform mat4 uMVP;\n"
+"in vec3 aPosition;\n"
+"in vec3 aNormal;\n"
+"out vec3 vNormal;\n"
+"out vec3 vWorldPos;\n"
+"void main() {\n"
+"    vWorldPos = aPosition;\n"
+"    vNormal = aNormal;\n"
+"    gl_Position = uMVP * vec4(aPosition, 1.0);\n"
+"}\n";
+
+static const char* waterFragmentSrc =
+"#version 300 es\n"
+"precision mediump float;\n"
+"uniform vec4 uColor;\n"
+"uniform vec3 uCameraPos;\n"
+"in vec3 vNormal;\n"
+"in vec3 vWorldPos;\n"
+"out vec4 fragColor;\n"
+"void main() {\n"
+"    vec3 N = normalize(vNormal);\n"
+"    vec3 V = normalize(uCameraPos - vWorldPos);\n"
+"    float fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);\n"
+"    // Blend the base water colour toward the sky colour at grazing angles.\n"
+"    vec3 sky = vec3(0.55, 0.67, 0.78);\n"
+"    vec3 color = mix(uColor.rgb, sky, fresnel * 0.45);\n"
+"    float dist = length(uCameraPos - vWorldPos);\n"
+"    float alpha = uColor.a * clamp(1.0 - dist / 14000.0, 0.2, 1.0);\n"
+"    fragColor = vec4(color, alpha);\n"
+"}\n";
+
+void Renderer::renderWater() {
+    if (!worldManager) return;
+
+    const auto& cells = worldManager->getActiveCells();
+    if (cells.empty()) return;
+
+    // Compile the water shader once (flat translucent surface).
+    static GLuint waterShader = 0;
+    static bool waterShaderInit = false;
+    if (!waterShaderInit) {
+        waterShaderInit = true;
+
+        GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+        glShaderSource(vs, 1, &waterVertexSrc, nullptr);
+        glCompileShader(vs);
+        GLint ok = 0;
+        glGetShaderiv(vs, GL_COMPILE_STATUS, &ok);
+        if (!ok) {
+            char buf[512];
+            glGetShaderInfoLog(vs, sizeof(buf), nullptr, buf);
+            LOGE("Water vertex shader error: %s", buf);
+            glDeleteShader(vs);
+            return;
+        }
+
+        GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+        glShaderSource(fs, 1, &waterFragmentSrc, nullptr);
+        glCompileShader(fs);
+        glGetShaderiv(fs, GL_COMPILE_STATUS, &ok);
+        if (!ok) {
+            char buf[512];
+            glGetShaderInfoLog(fs, sizeof(buf), nullptr, buf);
+            LOGE("Water fragment shader error: %s", buf);
+            glDeleteShader(vs);
+            glDeleteShader(fs);
+            return;
+        }
+
+        waterShader = glCreateProgram();
+        glAttachShader(waterShader, vs);
+        glAttachShader(waterShader, fs);
+        glLinkProgram(waterShader);
+        glGetProgramiv(waterShader, GL_LINK_STATUS, &ok);
+        glDeleteShader(vs);
+        glDeleteShader(fs);
+        if (!ok) {
+            char buf[512];
+            glGetProgramInfoLog(waterShader, sizeof(buf), nullptr, buf);
+            LOGE("Water shader link error: %s", buf);
+            glDeleteProgram(waterShader);
+            waterShader = 0;
+            return;
+        }
+        LOGI("Water shader compiled (program=%u)", waterShader);
+    }
+    if (!waterShader) return;
+
+    glm::mat4 viewMatrix;
+    glm::mat4 projMatrix;
+    const float aspect = static_cast<float>(screenWidth) / static_cast<float>(screenHeight);
+    if (playerController) {
+        const glm::vec3 target = playerController->getPlayerPosition();
+        const glm::vec3 eye = target + glm::vec3(0.0f, PH_CAMERA_HEIGHT, PH_CAMERA_DIST);
+        viewMatrix = glm::lookAt(eye, target, glm::vec3(0.0f, 1.0f, 0.0f));
+        projMatrix = glm::perspective(glm::radians(60.0f), aspect, 10.0f, 20000.0f);
+    } else if (camera) {
+        viewMatrix = camera->getViewMatrix();
+        projMatrix = camera->getProjectionMatrix(aspect);
+    } else {
+        return;
+    }
+
+    const glm::mat4 viewProj = projMatrix * viewMatrix;
+    const glm::vec3 cameraPos = playerController
+        ? playerController->getPlayerPosition() + glm::vec3(0.0f, PH_CAMERA_HEIGHT, PH_CAMERA_DIST)
+        : glm::vec3(0.0f, 0.0f, 0.0f);
+
+    // Water planes are built lazily per cell and evicted with the terrain mesh.
+    // A 1x1 cell plane uses 4 vertices / 6 indices and is always the same shape,
+    // so the only per-cell state is the plane's vertical offset.
+    const float cellSize = 4096.0f;
+    const float half = cellSize * 0.5f;
+
+    // NOTE: there is no app-side frustum culling here. 'drawn' counts cells
+    // whose plane was sent to glDrawElements; whether it is actually visible
+    // is decided by GLES clipping against the viewport, which app-side code
+    // cannot observe. 'waterCells' is the count of active exterior cells with
+    // a drawable surface before any visibility filtering.
+    size_t drawn = 0;
+    size_t waterCells = 0;
+    float minLevel = std::numeric_limits<float>::max();
+    float maxLevel = -std::numeric_limits<float>::max();
+    for (const auto& cell : cells) {
+        if (!cell) continue;
+        if (cell->cellType != CellType::EXTERIOR) continue;
+        if (!cell->hasWater) continue;
+        // Only paint water over real ground so cells that never had LAND data
+        // (and thus never render terrain) do not flash a lone blue plane.
+        if (!cell->hasTerrain) continue;
+
+        waterCells++;
+        if (cell->waterLevel < minLevel) minLevel = cell->waterLevel;
+        if (cell->waterLevel > maxLevel) maxLevel = cell->waterLevel;
+
+        auto it = waterMeshes_.find(cell->cellId);
+        if (it == waterMeshes_.end()) {
+            WaterGpuMesh mesh;
+            const float baseX = static_cast<float>(cell->cellX) * cellSize;
+            const float baseZ = static_cast<float>(cell->cellY) * cellSize;
+            const float y = cell->waterLevel;
+            // A single plane at the cell's water level. Normal is +Y so the
+            // fresnel term in the shader sees the viewer from above.
+            const float vertices[6 * 4] = {
+                baseX - half, y, baseZ - half, 0.0f, 1.0f, 0.0f,
+                baseX + half, y, baseZ - half, 0.0f, 1.0f, 0.0f,
+                baseX + half, y, baseZ + half, 0.0f, 1.0f, 0.0f,
+                baseX - half, y, baseZ + half, 0.0f, 1.0f, 0.0f,
+            };
+            const uint16_t indices[6] = {0, 1, 2, 0, 2, 3};
+
+            glGenVertexArrays(1, &mesh.vao);
+            glGenBuffers(1, &mesh.vbo);
+            glGenBuffers(1, &mesh.ibo);
+            glBindVertexArray(mesh.vao);
+            glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.ibo);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+            glEnableVertexAttribArray(1);
+            glBindVertexArray(0);
+            mesh.indexCount = 6;
+
+            waterMeshes_.emplace(cell->cellId, mesh);
+            it = waterMeshes_.find(cell->cellId);
+        }
+        if (it == waterMeshes_.end()) continue;
+
+        // Water is translucent: enable blending for this pass and restore it after.
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glUseProgram(waterShader);
+        glUniformMatrix4fv(glGetUniformLocation(waterShader, "uMVP"),
+                           1, GL_FALSE, viewProj.value_ptr());
+        glUniform3fv(glGetUniformLocation(waterShader, "uCameraPos"), 1,
+                     &cameraPos.x);
+        // Water colour comes from the cell's WATR record when present, so the
+        // surface matches the game's original water material (deep blue/teal
+        // for Tamriel's lakes and rivers) instead of a hardcoded placeholder.
+        // In Oblivion's WATR DATA block (102 bytes of floats) the Deep Color
+        // RGB sits at float offsets 12..14 (byte offsets 48..56); opacity
+        // (ANAM) is a 0..255 byte scaled to 0..1. A fallback is used when the
+        // cell has no resolvable WATR type or the record is too short.
+        float waterColor[4] = {0.15f, 0.35f, 0.40f, 0.55f};
+        if (cell->waterTypeFormID != 0 && assetManager) {
+            const auto& esmMgr = assetManager->getEsmManager();
+            const oblivion::WaterData* watr = esmMgr.findWater(cell->waterTypeFormID);
+            if (watr && watr->shaderFloats.size() >= 15) {
+                waterColor[0] = watr->shaderFloats[12];
+                waterColor[1] = watr->shaderFloats[13];
+                waterColor[2] = watr->shaderFloats[14];
+                waterColor[3] = watr->opacity > 0
+                    ? watr->opacity / 255.0f
+                    : 0.55f;
+            }
+        }
+        glUniform4fv(glGetUniformLocation(waterShader, "uColor"), 1, waterColor);
+
+        glBindVertexArray(it->second.vao);
+        glDrawElements(GL_TRIANGLES, it->second.indexCount, GL_UNSIGNED_SHORT, nullptr);
+        drawn++;
+    }
+    glBindVertexArray(0);
+    glDisable(GL_BLEND);
+    glUseProgram(0);
+
+    // Drop water meshes for cells that have left the active set so the GPU buffer
+    // does not linger for the rest of the session.
+    for (auto meshIt = waterMeshes_.begin(); meshIt != waterMeshes_.end();) {
+        bool active = false;
+        for (const auto& c : cells) {
+            if (c && c->cellId == meshIt->first) { active = true; break; }
+        }
+        if (!active) {
+            if (meshIt->second.vao) glDeleteVertexArrays(1, &meshIt->second.vao);
+            if (meshIt->second.vbo) glDeleteBuffers(1, &meshIt->second.vbo);
+            if (meshIt->second.ibo) glDeleteBuffers(1, &meshIt->second.ibo);
+            meshIt = waterMeshes_.erase(meshIt);
+        } else {
+            ++meshIt;
+        }
+    }
+
+    static int waterLogFrame = 0;
+    if (++waterLogFrame % 120 == 1) {
+        LOGI("Water: %zu active cells with water, %zu drawn (no app-side culling), "
+             "cache=%zu, level range=%.1f..%.1f",
+             waterCells, drawn, waterMeshes_.size(),
+             minLevel <= maxLevel ? minLevel : 0.0f,
+             minLevel <= maxLevel ? maxLevel : 0.0f);
+    }
+}
+
+// Sky dome vertex shader: transforms a unit hemisphere centred on the camera.
+static const char* kSkyVertexSrc = R"(#version 300 es
+precision highp float;
+layout(location = 0) in vec3 aPosition;
+uniform mat4 uVP;
+out vec3 vDirection;
+void main() {
+    vec4 p = uVP * vec4(aPosition, 1.0);
+    gl_Position = p.xyww; // push depth to the far plane so the dome stays as backdrop
+    vDirection = aPosition;
+}
+)";
+
+// Phase 66: Render the weather-driven sky dome. The shader source comes from
+// SkyWeatherSystem::generateSkyShader(), and every uniform (zenith/horizon
+// colour, sun direction/colour/intensity, time) is fed from the live weather
+// state so the sky reflects the current time of day and weather conditions.
+void Renderer::renderSkyDome() {
+    if (!skyWeatherSystem) return;
+
+    static GLuint skyProgram = 0;
+    static GLuint skyVao = 0, skyVbo = 0, skyIbo = 0;
+    static GLsizei skyIndexCount = 0;
+    static bool skyInit = false;
+    if (!skyInit) {
+        skyInit = true;
+
+        const std::string fragSrc = skyWeatherSystem->generateSkyShader();
+        const char* vsSrc = kSkyVertexSrc;
+        const char* fsSrc = fragSrc.c_str();
+
+        GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+        glShaderSource(vs, 1, &vsSrc, nullptr);
+        glCompileShader(vs);
+        GLint ok = 0;
+        glGetShaderiv(vs, GL_COMPILE_STATUS, &ok);
+        if (!ok) {
+            char buf[512];
+            glGetShaderInfoLog(vs, sizeof(buf), nullptr, buf);
+            LOGE("Sky vertex shader error: %s", buf);
+            glDeleteShader(vs);
+            return;
+        }
+
+        GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+        glShaderSource(fs, 1, &fsSrc, nullptr);
+        glCompileShader(fs);
+        glGetShaderiv(fs, GL_COMPILE_STATUS, &ok);
+        if (!ok) {
+            char buf[512];
+            glGetShaderInfoLog(fs, sizeof(buf), nullptr, buf);
+            LOGE("Sky fragment shader error: %s", buf);
+            glDeleteShader(vs);
+            glDeleteShader(fs);
+            return;
+        }
+
+        skyProgram = glCreateProgram();
+        glAttachShader(skyProgram, vs);
+        glAttachShader(skyProgram, fs);
+        glLinkProgram(skyProgram);
+        glGetProgramiv(skyProgram, GL_LINK_STATUS, &ok);
+        glDeleteShader(vs);
+        glDeleteShader(fs);
+        if (!ok) {
+            char buf[512];
+            glGetProgramInfoLog(skyProgram, sizeof(buf), nullptr, buf);
+            LOGE("Sky shader link error: %s", buf);
+            glDeleteProgram(skyProgram);
+            skyProgram = 0;
+            return;
+        }
+
+        // Build an upper-hemisphere UV sphere (unit radius) as the dome.
+        const int stacks = 16;
+        const int slices = 24;
+        std::vector<float> verts;
+        verts.reserve(static_cast<size_t>((stacks + 1) * (slices + 1) * 3));
+        for (int i = 0; i <= stacks; ++i) {
+            float phi = static_cast<float>(i) / static_cast<float>(stacks) * 1.5707963f; // 0..90 deg
+            float cp = std::cos(phi), sp = std::sin(phi);
+            for (int j = 0; j <= slices; ++j) {
+                float theta = static_cast<float>(j) / static_cast<float>(slices) * 6.2831853f;
+                verts.push_back(std::cos(theta) * cp);
+                verts.push_back(sp);
+                verts.push_back(std::sin(theta) * cp);
+            }
+        }
+        std::vector<uint16_t> idx;
+        idx.reserve(static_cast<size_t>(stacks) * slices * 6);
+        for (int i = 0; i < stacks; ++i) {
+            for (int j = 0; j < slices; ++j) {
+                uint16_t a = static_cast<uint16_t>(i * (slices + 1) + j);
+                uint16_t b = static_cast<uint16_t>(a + slices + 1);
+                idx.push_back(a); idx.push_back(b); idx.push_back(a + 1);
+                idx.push_back(a + 1); idx.push_back(b); idx.push_back(b + 1);
+            }
+        }
+        skyIndexCount = static_cast<GLsizei>(idx.size());
+
+        glGenVertexArrays(1, &skyVao);
+        glGenBuffers(1, &skyVbo);
+        glGenBuffers(1, &skyIbo);
+        glBindVertexArray(skyVao);
+        glBindBuffer(GL_ARRAY_BUFFER, skyVbo);
+        glBufferData(GL_ARRAY_BUFFER, verts.size() * sizeof(float), verts.data(), GL_STATIC_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skyIbo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, idx.size() * sizeof(uint16_t), idx.data(), GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+        glBindVertexArray(0);
+        LOGI("Sky dome shader compiled (program=%u), indices=%d", skyProgram, skyIndexCount);
+    }
+    if (!skyProgram || !skyVao || skyIndexCount == 0) return;
+
+    // Camera matrices; strip translation so the dome stays centred on the viewer.
+    glm::mat4 viewMatrix;
+    glm::mat4 projMatrix;
+    const float aspect = static_cast<float>(screenWidth) / static_cast<float>(screenHeight);
+    if (playerController) {
+        const glm::vec3 target = playerController->getPlayerPosition();
+        const glm::vec3 eye = target + glm::vec3(0.0f, PH_CAMERA_HEIGHT, PH_CAMERA_DIST);
+        viewMatrix = glm::lookAt(eye, target, glm::vec3(0.0f, 1.0f, 0.0f));
+        projMatrix = glm::perspective(glm::radians(60.0f), aspect, 10.0f, 20000.0f);
+    } else if (camera) {
+        viewMatrix = camera->getViewMatrix();
+        projMatrix = camera->getProjectionMatrix(aspect);
+    } else {
+        return;
+    }
+    // Strip translation so the dome stays centred on the viewer.
+    glm::mat4 viewRot = viewMatrix;
+    float* vp = viewRot.value_ptr();
+    vp[12] = 0.0f; vp[13] = 0.0f; vp[14] = 0.0f; vp[15] = 1.0f;
+    const glm::mat4 viewProj = projMatrix * viewRot;
+
+    const auto& weather = skyWeatherSystem->getCurrentWeather();
+    float fogR, fogG, fogB;
+    skyWeatherSystem->getFogColor(fogR, fogG, fogB);
+    float sunX, sunY, sunZ;
+    skyWeatherSystem->getSunDirection(sunX, sunY, sunZ);
+
+    glUseProgram(skyProgram);
+    glUniformMatrix4fv(glGetUniformLocation(skyProgram, "uVP"), 1, GL_FALSE, viewProj.value_ptr());
+    glUniform3f(glGetUniformLocation(skyProgram, "uZenithColor"),
+                weather.sky.zenith[0], weather.sky.zenith[1], weather.sky.zenith[2]);
+    glUniform3f(glGetUniformLocation(skyProgram, "uHorizonColor"), fogR, fogG, fogB);
+    glUniform3f(glGetUniformLocation(skyProgram, "uSunDir"), sunX, sunY, sunZ);
+    glUniform3f(glGetUniformLocation(skyProgram, "uSunColor"),
+                weather.sun.color[0], weather.sun.color[1], weather.sun.color[2]);
+    glUniform1f(glGetUniformLocation(skyProgram, "uSunIntensity"), weather.sun.intensity);
+    glUniform1f(glGetUniformLocation(skyProgram, "uTime"), skyWeatherSystem->getGameTime());
+
+    // Draw with depth writes disabled so the dome remains the far backdrop and
+    // does not occlude any subsequent geometry.
+    glDepthMask(GL_FALSE);
+    glBindVertexArray(skyVao);
+    glDrawElements(GL_TRIANGLES, skyIndexCount, GL_UNSIGNED_SHORT, nullptr);
+    glBindVertexArray(0);
+    glDepthMask(GL_TRUE);
+    glUseProgram(0);
 }
 
 void Renderer::renderTerrainMeshes() {

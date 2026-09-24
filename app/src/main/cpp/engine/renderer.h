@@ -418,4 +418,17 @@ private:
     void renderTerrainMeshes();
     void releaseTerrainMeshes();
     std::unordered_map<uint32_t, TerrainGpuMesh> terrainMeshes;
+
+    // Water rendering from CELL XCLW / WRLD WNAM-WHGT (TES4 WATR)
+    struct WaterGpuMesh {
+        GLuint vao = 0;
+        GLuint vbo = 0;
+        GLuint ibo = 0;
+        GLuint indexCount = 0;
+    };
+    void renderWater();
+    std::unordered_map<uint32_t, WaterGpuMesh> waterMeshes_;
+
+    // Sky dome rendering driven by SkyWeatherSystem (Phase 56 / 66)
+    void renderSkyDome();
 };

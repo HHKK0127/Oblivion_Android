@@ -38,6 +38,7 @@ app/src/main/assets/textures/ui/tes_oblivion_logo_bink.png
 app/src/main/assets/textures/ui/tes_oblivion_logo_final.png
 app/src/main/assets/textures/ui/dialog_selection_cut.png
 app/src/main/assets/textures/ui/dialog_selection_full.png
+app/src/main/assets/textures/ui/oblivion_crest.png
 
 # Debug screenshots and XML dumps (root directory)
 /*.png

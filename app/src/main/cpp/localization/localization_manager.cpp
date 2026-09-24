@@ -110,7 +110,10 @@ void LocalizationManager::initializeTranslationDatabase() {
     translations["launcher_play"] = {"Play", "プレイ"};
     translations["launcher_options"] = {"Options", "オプション"};
     translations["launcher_data_files"] = {"Data Files", "データファイル"};
+    translations["launcher_website"] = {"Elderscrolls.com", "Elderscrolls.com"};
+    translations["launcher_technical_support"] = {"Technical Support", "テクニカルサポート"};
     translations["launcher_support"] = {"Support", "サポート"};
+    translations["launcher_uninstall"] = {"Uninstall", "アンインストール"};
     translations["launcher_exit"] = {"Exit", "終了"};
 
     // UI - Language Menu
