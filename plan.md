@@ -419,9 +419,10 @@ contended file in the split. WS-B's pending diff adds 21 lines plus one member: 
 after the `ScriptManager` is created, which is the only existing initialization point that can
 connect `SetStage` / `GetStage` to the runtime `QuestFlowController` (on `master` that class is
 currently never instantiated). WS-C's diff adds the terrain VTXT statistics log, the texture LRU
-and the `cleanup()` join. Both are wanted: `master`'s rendering changes win and WS-B's injection is
-re-applied by hand on top. The merge into `master` is performed by session `964d16fb` once WS-C's
-current increment has landed, so neither workstream resolves the other's rendering code.
+and the `cleanup()` join. Both are wanted, and sequence 7 below shows they do not actually collide:
+`git merge-tree` merges them without a conflict report and keeps both sets of changes, so no hand
+re-application is needed. The merge into `master` is performed by session `964d16fb` once WS-C's
+current increment has landed.
 
 **Why this split**
 - WS-A and WS-B are pure code/config work with no device dependency, so they can run fully in
@@ -501,6 +502,19 @@ current increment has landed, so neither workstream resolves the other's renderi
    `game/npc_manager.cpp`, `game/player.cpp` and the five `quest/*.cpp` files that were added for this
    workstream in the first place. Its worktree also carries an untracked `tools/host_tests/_run_tmp.sh`,
    a byte-for-byte copy of its own runner, which must be deleted rather than committed.
+7. The `master` merge is pre-verified instead of assumed, and the one contended file turns out not to
+   contend. `git merge-tree --write-tree master hhkk0127-script-vm-expansion` exits 0 with no conflict
+   report: the merged tree keeps all 5 of WS-B's `QuestFlowController` references in
+   `engine/renderer.cpp` and its 1 in `engine/renderer.h` alongside WS-C's 17 VTXT / terrain-overlay
+   markers, so the rendering changes and the quest injection coexist without a hand re-application.
+   The tree `b386be5a` differs from `master` in 25 files - `assets/esm_reader.*`, `engine/renderer.*`,
+   `quest/*`, `script/*`, `tests/script_vm_tests.*`, `CMakeLists.txt` and the one-line
+   `run_host_tests.sh` addition - which is WS-B's 17 non-merge commits, +2,978 / -103. `git archive`
+   of that tree into an empty directory (1,904 files) and running the permanent harness there is exit
+   0 with all 5 suites passed - ScriptVMTests 57/57, Phase45UnitTests 41/41, Phase48StressTest 5/5,
+   Phase48IntegrationTest 7/7, Phase30IntegrationTest skipping itself - and 0 duplicate-symbol or
+   undefined-reference diagnostics. The merge result is therefore green before the merge commit
+   exists.
 
 **WS-C first increment: landscape texturing (LTEX/BTXT/VTXT)**
 
