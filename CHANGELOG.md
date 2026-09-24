@@ -138,6 +138,12 @@ The current version is **0.9.10 (versionCode 910)**.
   Two earlier readings of this bug were wrong and are retracted: the black strip at y1017-1079 is
   outside the GL surface (the title screen shows the same 52 rows), and the load screen being
   static between screenshots is by design (`save_load_bg.png` is drawn full-screen).
+- **Stale build-size and phase figures in the docs**: `.github/copilot-instructions.md` still
+  claimed an 8.4 MB APK and "Phase 36", and `README.md` claimed a 79.0 MiB debug APK for two ABIs.
+  The debug APK is actually 115.4 MiB: `build.gradle` now also builds `x86_64` for the emulator
+  (+15.9 MiB of native libs), and 82.9 MiB of it is `assets/videos/`, which is gitignored and not
+  redistributed, so a build without those local assets is about 32.5 MiB. The current phase is 64
+  (Phase 65 next), and `app/build.gradle` remains the single source of truth for the version.
 
 ### Notes
 - **The title screen's "dimming" was the debug overlay, not a rendering bug.** Tapping the
