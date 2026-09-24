@@ -16,14 +16,16 @@ void ScriptManager::init(
     QuestManager* questMgr,
     WorldManager* worldMgr,
     NpcManager* npcMgr,
-    InventoryManager* invMgr
+    InventoryManager* invMgr,
+    QuestFlowController* questFlowController
 ) {
     questManager_ = questMgr;
+    questFlowController_ = questFlowController;
     worldManager_ = worldMgr;
     npcManager_ = npcMgr;
     inventoryManager_ = invMgr;
 
-    functions_.init(questMgr, worldMgr, npcMgr, invMgr);
+    functions_.init(questMgr, worldMgr, npcMgr, invMgr, questFlowController);
 
     SCM_LOGI("ScriptManager initialized");
 }

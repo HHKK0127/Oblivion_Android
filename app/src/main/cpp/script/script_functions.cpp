@@ -5,6 +5,7 @@
 
 // Forward declarations for game systems
 #include "../game/quest_manager.h"
+#include "../quest/quest_flow_controller.h"
 #include "../world/world_manager.h"
 #include "../game/npc_manager.h"
 #include "../game/inventory_manager.h"
@@ -29,15 +30,18 @@ namespace script {
 ScriptFunctions::ScriptFunctions() {
     registerTier1Functions();
     registerTier2Functions();
+    registerTier3Functions();
 }
 
 void ScriptFunctions::init(
     QuestManager* questMgr,
     WorldManager* worldMgr,
     NpcManager* npcMgr,
-    InventoryManager* invMgr
+    InventoryManager* invMgr,
+    QuestFlowController* questFlowController
 ) {
     questManager_ = questMgr;
+    questFlowController_ = questFlowController;
     worldManager_ = worldMgr;
     npcManager_ = npcMgr;
     inventoryManager_ = invMgr;
@@ -185,6 +189,15 @@ const char* ScriptFunctions::getFunctionName(FunctionID funcID) const {
         case FunctionID::IsPCAmount: return "IsPCAmount";
         case FunctionID::GetPCLocation: return "GetPCLocation";
         case FunctionID::IsPCLocation: return "IsPCLocation";
+        case FunctionID::StartQuest: return "StartQuest";
+        case FunctionID::StopQuest: return "StopQuest";
+        case FunctionID::CompleteQuest: return "CompleteQuest";
+        case FunctionID::SetObjectiveCompleted: return "SetObjectiveCompleted";
+        case FunctionID::GetObjectiveCompleted: return "GetObjectiveCompleted";
+        case FunctionID::IsQuestStageDone: return "IsQuestStageDone";
+        case FunctionID::GetQuestCompleted: return "GetQuestCompleted";
+        case FunctionID::GetQuestStarted: return "GetQuestStarted";
+        case FunctionID::AddTopic: return "AddTopic";
         default: return "Unknown";
     }
 }
@@ -439,6 +452,25 @@ void ScriptFunctions::registerTier2Functions() {
         std::bind(&ScriptFunctions::fnIsPCLocation, this, _1, _2);
 }
 
+void ScriptFunctions::registerTier3Functions() {
+    using namespace std::placeholders;
+
+    handlers_[static_cast<uint16_t>(FunctionID::StartQuest)] =
+        std::bind(&ScriptFunctions::fnStartQuest, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::CompleteQuest)] =
+        std::bind(&ScriptFunctions::fnCompleteQuest, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::SetObjectiveCompleted)] =
+        std::bind(&ScriptFunctions::fnSetObjectiveCompleted, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::GetObjectiveCompleted)] =
+        std::bind(&ScriptFunctions::fnGetObjectiveCompleted, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::IsQuestStageDone)] =
+        std::bind(&ScriptFunctions::fnIsQuestStageDone, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::GetQuestCompleted)] =
+        std::bind(&ScriptFunctions::fnGetQuestCompleted, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::GetQuestStarted)] =
+        std::bind(&ScriptFunctions::fnGetQuestStarted, this, _1, _2);
+}
+
 // ============================================================================
 // Tier 1 Function Implementations
 // ============================================================================
@@ -454,13 +486,16 @@ FunctionResult ScriptFunctions::fnSetStage(ExecutionContext& ctx, const std::vec
 
     SF_LOGD("SetStage(0x%08X, %d)", questFormID, stage);
 
-    if (questManager_) {
-        // QuestManager does not have setQuestStage - quest stage is managed by QuestFlowController
-        // questManager_->updateObjectiveProgress(questFormID, 0, stage);
+    if (!questFlowController_) {
+        result.errorMessage = "SetStage requires an initialized QuestFlowController";
+        return result;
     }
 
-    result.success = true;
-    result.returnValue = ScriptValue::makeInt(1);
+    result.success = questFlowController_->setStage(questFormID, stage);
+    result.returnValue = ScriptValue::makeInt(result.success ? 1 : 0);
+    if (!result.success) {
+        result.errorMessage = "SetStage failed for quest 0x" + std::to_string(questFormID);
+    }
     return result;
 }
 
@@ -474,13 +509,9 @@ FunctionResult ScriptFunctions::fnGetStage(ExecutionContext& ctx, const std::vec
 
     SF_LOGD("GetStage(0x%08X)", questFormID);
 
-    if (questManager_) {
-        auto q = questManager_->getQuest(questFormID);
-        result.returnValue = ScriptValue::makeInt(q ? (int)q->state : -1);
-    }
-
     result.success = true;
-    result.returnValue = ScriptValue::makeInt(0);
+    result.returnValue = ScriptValue::makeInt(
+        questFlowController_ ? questFlowController_->getCurrentStage(questFormID) : -1);
     return result;
 }
 
@@ -1486,6 +1517,155 @@ FunctionResult ScriptFunctions::fnIsPCLocation(ExecutionContext& ctx, const std:
     FunctionResult result;
     result.success = true;
     result.returnValue = ScriptValue::makeInt(0);
+    return result;
+}
+
+// ============================================================================
+// Tier 3 Function Implementations - Quest Flow
+// ============================================================================
+
+FunctionResult ScriptFunctions::fnStartQuest(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 1) {
+        result.errorMessage = "StartQuest requires 1 argument (questFormID)";
+        return result;
+    }
+    if (!questFlowController_) {
+        result.errorMessage = "StartQuest requires an initialized QuestFlowController";
+        return result;
+    }
+
+    uint32_t questFormID = static_cast<uint32_t>(args[0].toInt());
+    result.success = questFlowController_->activateQuest(questFormID);
+    result.returnValue = ScriptValue::makeInt(result.success ? 1 : 0);
+    if (!result.success) {
+        result.errorMessage = "StartQuest failed for quest 0x" + std::to_string(questFormID);
+    }
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnCompleteQuest(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 1) {
+        result.errorMessage = "CompleteQuest requires 1 argument (questFormID)";
+        return result;
+    }
+    if (!questFlowController_) {
+        result.errorMessage = "CompleteQuest requires an initialized QuestFlowController";
+        return result;
+    }
+
+    uint32_t questFormID = static_cast<uint32_t>(args[0].toInt());
+    result.success = questFlowController_->completeQuest(questFormID);
+    result.returnValue = ScriptValue::makeInt(result.success ? 1 : 0);
+    if (!result.success) {
+        result.errorMessage = "CompleteQuest failed for quest 0x" + std::to_string(questFormID);
+    }
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnSetObjectiveCompleted(
+        ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 2) {
+        result.errorMessage = "SetObjectiveCompleted requires 2 arguments (questFormID, objectiveIndex)";
+        return result;
+    }
+    if (!questFlowController_) {
+        result.errorMessage = "SetObjectiveCompleted requires an initialized QuestFlowController";
+        return result;
+    }
+
+    uint32_t questFormID = static_cast<uint32_t>(args[0].toInt());
+    uint32_t objectiveIndex = static_cast<uint32_t>(args[1].toInt());
+    result.success = questFlowController_->completeObjective(questFormID, objectiveIndex);
+    result.returnValue = ScriptValue::makeInt(result.success ? 1 : 0);
+    if (!result.success) {
+        result.errorMessage = "SetObjectiveCompleted failed for quest 0x" +
+                              std::to_string(questFormID);
+    }
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnGetObjectiveCompleted(
+        ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 2) {
+        result.errorMessage = "GetObjectiveCompleted requires 2 arguments (questFormID, objectiveIndex)";
+        return result;
+    }
+    if (!questFlowController_) {
+        result.errorMessage = "GetObjectiveCompleted requires an initialized QuestFlowController";
+        return result;
+    }
+
+    uint32_t questFormID = static_cast<uint32_t>(args[0].toInt());
+    uint32_t objectiveIndex = static_cast<uint32_t>(args[1].toInt());
+    const ObjectiveProgress* objective =
+        questFlowController_->getObjectiveTracker()->getObjectiveProgress(questFormID, objectiveIndex);
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(objective && objective->isCompleted ? 1 : 0);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnIsQuestStageDone(
+        ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 2) {
+        result.errorMessage = "IsQuestStageDone requires 2 arguments (questFormID, stage)";
+        return result;
+    }
+    if (!questFlowController_) {
+        result.errorMessage = "IsQuestStageDone requires an initialized QuestFlowController";
+        return result;
+    }
+
+    uint32_t questFormID = static_cast<uint32_t>(args[0].toInt());
+    int32_t stage = args[1].toInt();
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(
+        questFlowController_->getCurrentStage(questFormID) >= stage ? 1 : 0);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnGetQuestCompleted(
+        ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 1) {
+        result.errorMessage = "GetQuestCompleted requires 1 argument (questFormID)";
+        return result;
+    }
+    if (!questFlowController_) {
+        result.errorMessage = "GetQuestCompleted requires an initialized QuestFlowController";
+        return result;
+    }
+
+    uint32_t questFormID = static_cast<uint32_t>(args[0].toInt());
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(
+        questFlowController_->getQuestState(questFormID) == QuestFlowState::COMPLETED ? 1 : 0);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnGetQuestStarted(
+        ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 1) {
+        result.errorMessage = "GetQuestStarted requires 1 argument (questFormID)";
+        return result;
+    }
+    if (!questFlowController_) {
+        result.errorMessage = "GetQuestStarted requires an initialized QuestFlowController";
+        return result;
+    }
+
+    uint32_t questFormID = static_cast<uint32_t>(args[0].toInt());
+    QuestFlowState state = questFlowController_->getQuestState(questFormID);
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(
+        state == QuestFlowState::ACTIVE ||
+        state == QuestFlowState::COMPLETED ||
+        state == QuestFlowState::FAILED ? 1 : 0);
     return result;
 }
 

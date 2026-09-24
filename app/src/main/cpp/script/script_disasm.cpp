@@ -312,6 +312,15 @@ const char* ScriptDisasm::getFunctionName(uint16_t funcID) {
         case FunctionID::IsPCAmount: return "IsPCAmount";
         case FunctionID::GetPCLocation: return "GetPCLocation";
         case FunctionID::IsPCLocation: return "IsPCLocation";
+        case FunctionID::StartQuest: return "StartQuest";
+        case FunctionID::StopQuest: return "StopQuest";
+        case FunctionID::CompleteQuest: return "CompleteQuest";
+        case FunctionID::SetObjectiveCompleted: return "SetObjectiveCompleted";
+        case FunctionID::GetObjectiveCompleted: return "GetObjectiveCompleted";
+        case FunctionID::IsQuestStageDone: return "IsQuestStageDone";
+        case FunctionID::GetQuestCompleted: return "GetQuestCompleted";
+        case FunctionID::GetQuestStarted: return "GetQuestStarted";
+        case FunctionID::AddTopic: return "AddTopic";
         default: return "Unknown";
     }
 }

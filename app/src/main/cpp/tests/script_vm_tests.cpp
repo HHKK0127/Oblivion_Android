@@ -9,6 +9,7 @@
 #include "../script/script_functions.h"
 #include "../script/script_manager.h"
 #include "../script/script_opcodes.h"
+#include "../quest/quest_flow_controller.h"
 
 #include <chrono>
 #include <cstring>
@@ -530,6 +531,13 @@ void ScriptVMTests::testScriptFunctions() {
         ok = ok && funcs.hasFunction(FunctionID::Enable);
         ok = ok && funcs.hasFunction(FunctionID::Disable);
         ok = ok && funcs.hasFunction(FunctionID::GetPlayer);
+        ok = ok && funcs.hasFunction(FunctionID::StartQuest);
+        ok = ok && funcs.hasFunction(FunctionID::CompleteQuest);
+        ok = ok && funcs.hasFunction(FunctionID::SetObjectiveCompleted);
+        ok = ok && funcs.hasFunction(FunctionID::GetObjectiveCompleted);
+        ok = ok && funcs.hasFunction(FunctionID::IsQuestStageDone);
+        ok = ok && funcs.hasFunction(FunctionID::GetQuestCompleted);
+        ok = ok && funcs.hasFunction(FunctionID::GetQuestStarted);
 
         record("ScriptFunctions: Registration", ok,
                "Tier 1+2 functions registered", getTimeMs38() - start);
@@ -545,6 +553,8 @@ void ScriptVMTests::testScriptFunctions() {
         ok = ok && (funcs.getFunctionName(FunctionID::GetPlayer) == "GetPlayer");
         ok = ok && (funcs.getFunctionName(FunctionID::AddItem) == "AddItem");
         ok = ok && (funcs.getFunctionName(FunctionID::IsDead) == "IsDead");
+        ok = ok && (funcs.getFunctionName(FunctionID::StartQuest) == "StartQuest");
+        ok = ok && (funcs.getFunctionName(FunctionID::GetQuestStarted) == "GetQuestStarted");
 
         record("ScriptFunctions: Name lookup", ok,
                "FunctionID to name conversion", getTimeMs38() - start);
@@ -560,6 +570,79 @@ void ScriptVMTests::testScriptFunctions() {
 
         record("ScriptFunctions: Unknown function", ok,
                "Unknown FunctionID returns false", getTimeMs38() - start);
+    }
+
+    // Test 4: Quest flow functions
+    {
+        float start = getTimeMs38();
+        QuestFlowController questFlowController;
+        ScriptFunctions funcs;
+        ExecutionContext ctx;
+        QuestRecord questRecord;
+        questRecord.formID = 0x0100ABCE;
+        questRecord.fullName = "Script VM Quest";
+        questRecord.stages.push_back({10});
+        questRecord.objectives.push_back({1, "Complete the test objective"});
+        questFlowController.registerQuest(questRecord);
+        funcs.init(nullptr, nullptr, nullptr, nullptr, &questFlowController);
+
+        const std::vector<ScriptValue> questArgs = {ScriptValue::makeRef(questRecord.formID)};
+        bool ok = true;
+
+        FunctionResult startResult = funcs.execute(FunctionID::StartQuest, ctx, questArgs);
+        FunctionResult startedResult = funcs.execute(FunctionID::GetQuestStarted, ctx, questArgs);
+        FunctionResult stageResult = funcs.execute(
+            FunctionID::IsQuestStageDone,
+            ctx,
+            {ScriptValue::makeRef(questRecord.formID), ScriptValue::makeInt(10)});
+        FunctionResult setObjectiveResult = funcs.execute(
+            FunctionID::SetObjectiveCompleted,
+            ctx,
+            {ScriptValue::makeRef(questRecord.formID), ScriptValue::makeInt(1)});
+        FunctionResult objectiveResult = funcs.execute(
+            FunctionID::GetObjectiveCompleted,
+            ctx,
+            {ScriptValue::makeRef(questRecord.formID), ScriptValue::makeInt(1)});
+        FunctionResult completeResult = funcs.execute(FunctionID::CompleteQuest, ctx, questArgs);
+        FunctionResult completedResult = funcs.execute(FunctionID::GetQuestCompleted, ctx, questArgs);
+
+        ok = ok && startResult.success && startResult.returnValue.intVal == 1;
+        ok = ok && startedResult.success && startedResult.returnValue.intVal == 1;
+        ok = ok && stageResult.success && stageResult.returnValue.intVal == 1;
+        ok = ok && setObjectiveResult.success && setObjectiveResult.returnValue.intVal == 1;
+        ok = ok && objectiveResult.success && objectiveResult.returnValue.intVal == 1;
+        ok = ok && completeResult.success && completeResult.returnValue.intVal == 1;
+        ok = ok && completedResult.success && completedResult.returnValue.intVal == 1;
+
+        record("ScriptFunctions: Quest flow", ok,
+               "Start, complete objective, and complete quest", getTimeMs38() - start);
+    }
+
+    // Test 5: Quest stage round trip
+    {
+        float start = getTimeMs38();
+        QuestFlowController questFlowController;
+        ScriptFunctions funcs;
+        ExecutionContext ctx;
+        bool ok = true;
+
+        funcs.init(nullptr, nullptr, nullptr, nullptr, &questFlowController);
+
+        const uint32_t questFormID = 0x0100ABCD;
+        FunctionResult setResult = funcs.execute(
+            FunctionID::SetStage,
+            ctx,
+            {ScriptValue::makeRef(questFormID), ScriptValue::makeInt(20)});
+        FunctionResult getResult = funcs.execute(
+            FunctionID::GetStage,
+            ctx,
+            {ScriptValue::makeRef(questFormID)});
+
+        ok = ok && setResult.success && setResult.returnValue.intVal == 1;
+        ok = ok && getResult.success && getResult.returnValue.intVal == 20;
+
+        record("ScriptFunctions: SetStage/GetStage", ok,
+               "Persist stage without a registered quest record", getTimeMs38() - start);
     }
 }
 

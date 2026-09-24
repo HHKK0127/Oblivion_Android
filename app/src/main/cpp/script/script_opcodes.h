@@ -267,6 +267,17 @@ enum class FunctionID : uint16_t {
     IsPCAmount      = 0x0076,
     GetPCLocation   = 0x0077,
     IsPCLocation    = 0x0078,
+
+    // Tier 3 - Quest flow
+    StartQuest             = 0x0079,
+    StopQuest              = 0x007A,
+    CompleteQuest          = 0x007B,
+    SetObjectiveCompleted  = 0x007C,
+    GetObjectiveCompleted  = 0x007D,
+    IsQuestStageDone       = 0x007E,
+    GetQuestCompleted      = 0x007F,
+    GetQuestStarted        = 0x0080,
+    AddTopic               = 0x0081,
 };
 
 // ============================================================================

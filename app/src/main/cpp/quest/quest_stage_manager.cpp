@@ -237,8 +237,8 @@ bool QuestStageManager::advanceStage(uint32_t questFormID, int32_t newStage) {
 bool QuestStageManager::setStage(uint32_t questFormID, int32_t stage) {
     auto it = currentStages_.find(questFormID);
     if (it == currentStages_.end()) {
-        LOGW("Quest 0x%08X not registered for stage management", questFormID);
-        return false;
+        it = currentStages_.emplace(questFormID, 0).first;
+        LOGD("Quest 0x%08X has no record; tracking stage state only", questFormID);
     }
 
     int32_t oldStage = it->second;

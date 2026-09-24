@@ -26,6 +26,7 @@
 
 // Forward declarations
 class QuestManager;
+class QuestFlowController;
 class WorldManager;
 class NpcManager;
 class InventoryManager;
@@ -57,7 +58,8 @@ public:
         QuestManager* questMgr,
         WorldManager* worldMgr,
         NpcManager* npcMgr,
-        InventoryManager* invMgr
+        InventoryManager* invMgr,
+        QuestFlowController* questFlowController = nullptr
     );
 
     // Load scripts from parsed ESM data
@@ -108,6 +110,7 @@ private:
 
     // Game system pointers
     QuestManager* questManager_ = nullptr;
+    QuestFlowController* questFlowController_ = nullptr;
     WorldManager* worldManager_ = nullptr;
     NpcManager* npcManager_ = nullptr;
     InventoryManager* inventoryManager_ = nullptr;
