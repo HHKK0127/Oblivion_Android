@@ -24,6 +24,23 @@ The current version is **0.9.10 (versionCode 910)**.
   so the script VM / function-registry logic is covered without a device or emulator.
   The host link also exposed a real Windows portability gap in `engine/cache_manager.cpp`
   (`mkdir` is 1-arg on `_WIN32`), now guarded with `_mkdir`.
+- **All five native test suites now build and run**: `run_host_tests.sh` previously compiled only
+  `script_vm_tests.cpp`, so `phase45_unit_tests`, `phase48_stress_test`, `phase48_integration_test`
+  and `phase30_integration_test` existed in the tree but were never built or executed. The harness
+  now links 53 translation units of the real gameplay, asset, save, script, world and collision code
+  (`-lz` for the NIF reader, `--gc-sections` for size), leaving only two stand-ins: no-op GLES3 entry
+  points, and a `PhysicsManager` whose `init()` returns false so callers take their existing
+  "physics disabled" path - no suite can pass on fabricated simulation. `phase30_integration_test`
+  records `SKIP_Assets_Unavailable` and succeeds when the Oblivion assets are absent, which is the
+  normal CI case because they are not redistributable. Result: ScriptVMTests 22/22,
+  Phase45UnitTests 40/40, Phase48StressTest 5/5, Phase48IntegrationTest 7/7,
+  Phase30IntegrationTest 1/1 (self-skipped). The CI job itself was hardened at the same time:
+  `zlib1g-dev` is installed explicitly, because the harness links `-lz` and
+  `assets/esm_reader.cpp` / `assets/bsa_reader.cpp` include `<zlib.h>`, and the job timeout went
+  from 15 to 30 minutes. 53 translation units are compiled by a single `g++` invocation, so the
+  compile is sequential and cannot use the runner's core count: the run measured 12m15s end to end,
+  which left too little headroom under 15 minutes. The job runs in parallel with the APK build, so
+  the longer ceiling costs no wall clock time.
 
 ### Fixed
 - **ScriptFunctions name lookup test**: `tests/script_vm_tests.cpp` compared the
@@ -32,6 +49,14 @@ The current version is **0.9.10 (versionCode 910)**.
   `std::strcmp`. The function implementation itself was correct.
 
 ### Changed
+- **`EventBus` moved into its own translation unit**: its 7 out-of-line definitions were moved
+  verbatim from `engine/imperial_weave.cpp` into a new `engine/event_bus.cpp` (registered in
+  `app/src/main/cpp/CMakeLists.txt`) so the event system can be linked without the renderer, video
+  and Jolt subsystems that `imperial_weave.cpp` pulls in. The relocation is exact - the same 7
+  methods, no duplicate definitions in the tree.
+- **`SaveManager` base directory on non-Android builds**: `getBaseDir()` is now split with
+  `#ifdef __ANDROID__` and honours `OBLIVION_SAVE_DIR` on the host, defaulting to `./host_saves/`,
+  so the host test suites no longer need the Android asset path.
 - **Title menu stroke weight (thinner)**: the ink outline is now `MENU_OUTLINE_WIDTH = 0.45f`
   (was 0.6f) and the renderer's ring clamp lower bound is 0.25 px (was 0.6 px), so widths below
   0.6 px are no longer silently ignored. The title's font scale is about 0.92, so the effective

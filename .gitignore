@@ -67,6 +67,13 @@ external/
 # Host test scratch output (tools/host_tests/run_host_tests.sh)
 host_saves/
 
+# Repo-root scratch: local build/launch logs and the local game-data pull.
+# oblivion_esm_pull/ holds the real Oblivion.esm used for offline verification;
+# it is data, not source, and must never be committed (BYO-data model).
+buildlog_*.txt
+launch_out.txt
+oblivion_esm_pull/
+
 # Jolt Physics vendored build scripts must stay tracked for CI (Build/ is NOT
 # an output directory; the generic build/ rule above would ignore it).
 !app/src/main/cpp/third_party/JoltPhysics/Build/
