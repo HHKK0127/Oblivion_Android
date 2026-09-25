@@ -32,6 +32,7 @@
 | [FPS_CONTROL_GUIDE.md](FPS_CONTROL_GUIDE.md) | FPS制御ガイド | 実装エンジニア |
 | [SAVE_LOAD_IMPLEMENTATION.md](SAVE_LOAD_IMPLEMENTATION.md) | セーブ/ロード実装 | 実装エンジニア |
 | [CODE_QUALITY_IMPROVEMENTS.md](CODE_QUALITY_IMPROVEMENTS.md) | コード品質改善 | 全開発者 |
+| [JPWIKI_ANALYSIS.md](JPWIKI_ANALYSIS.md) | JPWiki日本語化データ解析 | 実装エンジニア |
 
 ### 計画・履歴ドキュメント
 
@@ -131,6 +132,7 @@ docs/
 ├── FPS_CONTROL_GUIDE.md         # FPS制御ガイド
 ├── SAVE_LOAD_IMPLEMENTATION.md  # セーブ/ロード実装
 ├── CODE_QUALITY_IMPROVEMENTS.md # コード品質改善
+├── JPWIKI_ANALYSIS.md           # JPWiki日本語化データ解析
 ├── DEVELOPMENT_HISTORY.md       # 開発履歴
 └── PHASE9_PLAN.md               # Phase 9計画
 ```
