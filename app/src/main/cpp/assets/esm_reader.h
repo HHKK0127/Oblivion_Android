@@ -924,6 +924,12 @@ struct WaterData {
     std::vector<float> shaderFloats;  // DATA (102 bytes) interpreted as floats
     std::vector<uint8_t> shaderData;  // DATA raw
     float damage[3] = {0.0f, 0.0f, 0.0f};  // GNAM (3 floats)
+    // DATA colour block: three RGBA (u8) entries at byte offsets 44/48/52.
+    // These are NOT floats; reading them as floats yields garbage. Normalised
+    // to 0..1 here so the renderer can use them directly.
+    float shallowColor[3] = {0.0f, 0.0f, 0.0f};     // DATA byte 44
+    float deepColor[3] = {0.0f, 0.0f, 0.0f};        // DATA byte 48
+    float reflectionColor[3] = {0.0f, 0.0f, 0.0f};  // DATA byte 52
 };
 
 /// One time-of-day sky colour set from a WTHR NAM0 subrecord.

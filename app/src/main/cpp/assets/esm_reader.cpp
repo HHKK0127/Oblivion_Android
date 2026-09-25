@@ -2825,6 +2825,21 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
             for (size_t i = 0; i < floatCount; i++) {
                 water.shaderFloats.push_back(readF32(data->data.data() + i * 4));
             }
+
+            // The colour block is three RGBA (u8) entries, not floats. In the
+            // 102-byte Oblivion WATR DATA they sit at byte offsets 44 (shallow),
+            // 48 (deep) and 52 (reflection). Reading them as floats (the old
+            // shaderFloats[12..14] path) produced garbage, so decode the bytes.
+            auto readColor = [&](size_t byteOffset, float out[3]) {
+                if (data->size() >= byteOffset + 3) {
+                    out[0] = data->data[byteOffset] / 255.0f;
+                    out[1] = data->data[byteOffset + 1] / 255.0f;
+                    out[2] = data->data[byteOffset + 2] / 255.0f;
+                }
+            };
+            readColor(44, water.shallowColor);
+            readColor(48, water.deepColor);
+            readColor(52, water.reflectionColor);
         }
 
         auto* gnam = rec.findSubRecord("GNAM");

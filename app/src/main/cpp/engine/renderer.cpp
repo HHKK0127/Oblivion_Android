@@ -4095,18 +4095,19 @@ void Renderer::renderWater() {
         // Water colour comes from the cell's WATR record when present, so the
         // surface matches the game's original water material (deep blue/teal
         // for Tamriel's lakes and rivers) instead of a hardcoded placeholder.
-        // In Oblivion's WATR DATA block (102 bytes of floats) the Deep Color
-        // RGB sits at float offsets 12..14 (byte offsets 48..56); opacity
-        // (ANAM) is a 0..255 byte scaled to 0..1. A fallback is used when the
-        // cell has no resolvable WATR type or the record is too short.
+        // In Oblivion's WATR DATA block the colour block is three RGBA (u8)
+        // entries at byte offsets 44 (shallow), 48 (deep) and 52 (reflection);
+        // the decoder normalises them to 0..1. Opacity (ANAM) is a 0..255 byte
+        // scaled to 0..1. A fallback is used when the cell has no resolvable
+        // WATR type or the record is too short.
         float waterColor[4] = {0.15f, 0.35f, 0.40f, 0.55f};
         if (cell->waterTypeFormID != 0 && assetManager) {
             const auto& esmMgr = assetManager->getEsmManager();
             const oblivion::WaterData* watr = esmMgr.findWater(cell->waterTypeFormID);
-            if (watr && watr->shaderFloats.size() >= 15) {
-                waterColor[0] = watr->shaderFloats[12];
-                waterColor[1] = watr->shaderFloats[13];
-                waterColor[2] = watr->shaderFloats[14];
+            if (watr) {
+                waterColor[0] = watr->deepColor[0];
+                waterColor[1] = watr->deepColor[1];
+                waterColor[2] = watr->deepColor[2];
                 waterColor[3] = watr->opacity > 0
                     ? watr->opacity / 255.0f
                     : 0.55f;
