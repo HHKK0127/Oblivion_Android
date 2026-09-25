@@ -49,6 +49,8 @@ public:
     bool locateBlockBody(uint32_t index, size_t& offset) const;
     bool findBlocksOfType(const std::string& typeName, std::vector<uint32_t>& out) const;
     const std::string& getWalkError() const { return walkError; }
+    uint32_t getTrailerValueCount() const { return trailerValueCount; }
+    size_t getTrailingDataSize() const { return trailingDataSize; }
 
     // --- Phase 30: Skinning ---
     bool parseNiSkinInstance(NIFSkinInstance& skin);
@@ -94,6 +96,8 @@ private:
     uint32_t blockPrefix = 0;               // Per-block leading uint32 on 10.1.0.x meshes
     bool blocksWalked = false;              // True once walkAllBlocks() has succeeded
     std::string walkError;                  // Human-readable reason the walk stopped
+    uint32_t trailerValueCount = 0;         // Value count word of the file trailer
+    size_t trailingDataSize = 0;            // Tool data skipped before the repeated trailer
 
     // Parsing helpers
     bool readHeader();
@@ -103,6 +107,7 @@ private:
 
     // Block walker
     bool walkBlockBody(const std::string& typeName);
+    bool readTrailer();
     bool skipBytes(size_t count);
     void skipFixed(size_t count);
     void skipRefArray(uint32_t count);

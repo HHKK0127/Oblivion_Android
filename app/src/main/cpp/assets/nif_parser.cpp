@@ -29,6 +29,7 @@ constexpr uint32_t MAX_SHAPE_FILTERS = 4096;
 constexpr uint32_t MAX_LIST_SUB_SHAPES = 4096;
 constexpr uint32_t MAX_MOPP_DATA_SIZE = 1u << 20;
 constexpr uint32_t MAX_SPLINE_CONTROL_POINTS = 1u << 20;
+constexpr uint32_t MAX_TRAILER_VALUES = 64;
 
 // Gamebryo version cut-offs used by the .kf sequence records. Oblivion's own
 // animations are 20.0.0.4, but the shipped archives still carry a handful of
@@ -828,6 +829,9 @@ void NIFParser::skipKeyframeData() {
     }
     skipQuatKeys(numRotationKeys, rotationType);
     if (rotationType == 4) {
+        if (header.version <= 0x0A010000) {
+            skipBytes(4);               // Order
+        }
         for (int axis = 0; axis < 3 && !readError; axis++) {
             skipKeyGroup("float");      // XYZ Rotations
         }
@@ -1142,7 +1146,9 @@ void NIFParser::skipNiGeometryData(const std::string& typeName) {
 }
 
 // SkinPartition: the vertex payload is sparse, so every optional block is
-// gated by its own flag byte.
+// gated by its own flag byte. Below 10.1.0.0 there are no flag bytes at all --
+// the vertex map, the weight table and the face data are unconditional there
+// (nif.xml SkinPartition).
 void NIFParser::skipSkinPartition() {
     const uint32_t numVertices = readUInt16();
     const uint32_t numTriangles = readUInt16();
@@ -1153,6 +1159,34 @@ void NIFParser::skipSkinPartition() {
         return;
     }
     skipU16Array(numBones);
+
+    if (header.version < 0x0A010000) {
+        skipU16Array(numVertices);              // Vertex Map
+        skipBytes(static_cast<size_t>(numVertices) * numWeightsPerVertex * 4);
+        std::vector<uint32_t> legacyStripLengths(numStrips);
+        for (uint32_t i = 0; i < numStrips && !readError; i++) {
+            legacyStripLengths[i] = readUInt16();
+        }
+        if (readError) {
+            return;
+        }
+        if (numStrips != 0) {
+            for (uint32_t i = 0; i < numStrips && !readError; i++) {
+                skipBytes(static_cast<size_t>(legacyStripLengths[i]) * 2);
+            }
+        } else {
+            skipBytes(static_cast<size_t>(numTriangles) * 6);
+        }
+        const uint8_t legacyHasBoneIndices = readUInt8();
+        if (readError) {
+            return;
+        }
+        if (legacyHasBoneIndices != 0) {
+            skipBytes(static_cast<size_t>(numVertices) * numWeightsPerVertex);
+        }
+        return;
+    }
+
     const uint8_t hasVertexMap = readUInt8();
     if (readError) {
         return;
@@ -1460,6 +1494,27 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
     // --- NiTimeController roots --------------------------------------------
     } else if (typeName == "NiPSysUpdateCtlr") {
         skipNiTimeController();
+    } else if (typeName == "NiKeyframeController") {
+        // The interpolator link starts at 10.1.0.104 while the keyframe data
+        // link stops at 10.1.0.103, so a file carries one, the other, or (in
+        // the 10.1.0.104..10.1.0.108 window) both.
+        skipNiInterpController();
+        if (header.version >= 0x0A010068) {
+            skipBytes(4);                       // Interpolator
+        }
+        if (header.version <= 0x0A010067) {
+            skipBytes(4);                       // Data
+        }
+    } else if (typeName == "BSKeyframeController") {
+        // NiKeyframeController plus a second keyframe data link (nif.xml).
+        skipNiInterpController();
+        if (header.version >= 0x0A010068) {
+            skipBytes(4);                       // Interpolator
+        }
+        if (header.version <= 0x0A010067) {
+            skipBytes(4);                       // Data
+        }
+        skipBytes(4);                           // Data 2
     } else if (typeName == "NiAlphaController" || typeName == "NiVisController" ||
                typeName == "NiTransformController") {
         skipNiInterpController();
@@ -1595,7 +1650,7 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
         skipKeyGroup("Color4");
     } else if (typeName == "NiPosData") {
         skipKeyGroup("Vector3");
-    } else if (typeName == "NiTransformData") {
+    } else if (typeName == "NiTransformData" || typeName == "NiKeyframeData") {
         skipKeyframeData();
 
     // --- Spline data -------------------------------------------------------
@@ -1661,7 +1716,15 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
         }
         skipAVObjectArray(numObjs);
     } else if (typeName == "NiSkinInstance") {
-        skipBytes(4 + 4 + 4);                   // Data, Skin Partition, Skeleton Root
+        // The partition link sits between Data and Skeleton Root, and only
+        // exists since 10.1.0.101 (nif.xml). Below that the two references are
+        // adjacent, so reading a partition link there shifts every following
+        // field by four bytes.
+        skipBytes(4);                           // Data
+        if (header.version >= 0x0A010065) {
+            skipBytes(4);                       // Skin Partition
+        }
+        skipBytes(4);                           // Skeleton Root
         const uint32_t numBones = readUInt32();
         if (readError) {
             return false;
@@ -1670,7 +1733,17 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
     } else if (typeName == "NiSkinData") {
         skipBytes(52);                          // Skin Transform
         const uint32_t numBones = readUInt32();
-        const uint8_t hasVertexWeights = readUInt8();
+        // The partition link lives on this block only below 10.1.0.0, where the
+        // skin instance has no partition of its own (nif.xml: since 4.0.0.2).
+        if (header.version >= 0x04000002 && header.version < 0x0A010000) {
+            skipBytes(4);                       // Skin Partition
+        }
+        // Has Vertex Weights defaults to true below 4.2.1.0, where the byte is
+        // absent from the stream.
+        uint8_t hasVertexWeights = 1;
+        if (header.version >= 0x04020100) {
+            hasVertexWeights = readUInt8();
+        }
         if (readError) {
             return false;
         }
@@ -1772,6 +1845,9 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
         skipBytes(4 + 2 + 4);                   // Target, Flags, Body
     } else if (typeName == "bhkBlendCollisionObject") {
         skipBytes(4 + 2 + 4 + 4 + 4);           // plus Heir Gain, Vel Gain
+        if (bsVersion() < 9) {
+            skipBytes(4 + 4);                   // Unknown Float 1, Unknown Float 2
+        }
     } else if (typeName == "bhkRigidBody" || typeName == "bhkRigidBodyT") {
         skipBytes(4);                           // Shape
         skipBytes(4);                           // Havok Filter
@@ -1945,8 +2021,8 @@ uint32_t NIFParser::blockBodyPrefix(const std::string& typeName) const {
 
 // Walks every block body in order and records its byte range. Retail files have
 // no block size table, so this is the only way to seek to a specific body. The
-// caller can verify the walk by checking that the cursor lands 8 bytes short of
-// the end of the file (the trailing group count and its zero terminator).
+// walk ends by consuming the file trailer, so a caller can verify it by
+// checking that the cursor landed exactly on the end of the file.
 bool NIFParser::walkAllBlocks() {
     blockBodyOffsets.clear();
     blockBodyEnds.clear();
@@ -1997,7 +2073,55 @@ bool NIFParser::walkAllBlocks() {
         return false;
     }
 
+    if (!readTrailer()) {
+        walkError = "unrecognised file trailer at offset " + std::to_string(cursor);
+        readError = true;
+        return false;
+    }
+
     blocksWalked = true;
+    return true;
+}
+
+// Every shipped mesh ends with a trailer: a uint32 value count followed by that
+// many uint32 values. 8,030 of the 8,032 corpus meshes store one zero and the
+// two magiceffects meshes store two values. Consuming it leaves the cursor
+// exactly on the end of the file, which is how callers validate the walk.
+//
+// Eight landscape LOD tiles carry tool data between the trailer and a repeated
+// trailer at the very end. The block table never references that data, so it is
+// measured and skipped rather than parsed.
+bool NIFParser::readTrailer() {
+    trailerValueCount = 0;
+    trailingDataSize = 0;
+
+    const uint32_t valueCount = readUInt32();
+    if (readError || valueCount > MAX_TRAILER_VALUES) {
+        return false;
+    }
+    trailerValueCount = valueCount;
+    if (!skipBytes(static_cast<size_t>(valueCount) * 4)) {
+        return false;
+    }
+    if (cursor == fileBuffer.size()) {
+        return true;
+    }
+
+    // Extra data is only accepted when the file still ends with a trailer that
+    // repeats the same value count, so a truncated mesh keeps failing the walk.
+    if (fileBuffer.size() - cursor < 8) {
+        return false;
+    }
+    uint32_t tailCount = 0;
+    uint32_t tailTerminator = 0;
+    std::memcpy(&tailCount, fileBuffer.data() + fileBuffer.size() - 8, sizeof(uint32_t));
+    std::memcpy(&tailTerminator, fileBuffer.data() + fileBuffer.size() - 4, sizeof(uint32_t));
+    if (tailCount != valueCount || tailTerminator != 0) {
+        return false;
+    }
+
+    trailingDataSize = fileBuffer.size() - cursor;
+    cursor = fileBuffer.size();
     return true;
 }
 
@@ -2110,7 +2234,7 @@ bool NIFParser::parseNiSkinInstance(NIFSkinInstance& skin) {
     LOGD("Parsing NiSkinInstance...");
 
     // NiSkinInstance layout (nif.xml):
-    // Data:Ref(4) | Skin Partition:Ref(4) | Skeleton Root:Ptr(4)
+    // Data:Ref(4) | Skin Partition:Ref(4, since 10.1.0.101) | Skeleton Root:Ptr(4)
     // | Num Bones:uint(4) | Bones:Ptr[Num Bones](4 each)
     uint32_t blockIndex = 0;
     if (!seekToBlockOfType("NiSkinInstance", blockIndex)) {
@@ -2118,7 +2242,11 @@ bool NIFParser::parseNiSkinInstance(NIFSkinInstance& skin) {
     }
 
     skin.skinDataIndex = readUInt32();
-    skin.skinPartitionIndex = readUInt32();
+    if (header.version >= 0x0A010065) {
+        skin.skinPartitionIndex = readUInt32();
+    } else {
+        skin.skinPartitionIndex = 0xFFFFFFFF;
+    }
     skin.skeletonRootIndex = readUInt32();
     const uint32_t numBones = readUInt32();
     if (readError) {
@@ -2161,14 +2289,21 @@ bool NIFParser::parseNiSkinDataAt(uint32_t blockIndex, NIFSkinData& skinData) {
     cursor = offset;
 
     // NiSkinData layout (nif.xml):
-    // Skin Transform:NiTransform(52) | Num Bones:uint(4)
-    // | Has Vertex Weights:bool(1) | Bone List:BoneData[Num Bones]
+    // Skin Transform:NiTransform(52) | Skin Partition:Ref(4, 4.0.0.2..10.1.0.0)
+    // | Num Bones:uint(4) | Has Vertex Weights:bool(1, since 4.2.1.0)
+    // | Bone List:BoneData[Num Bones]
     // BoneData: NiTransform(52) | Bounding Sphere:NiBound(16) | Num Vertices:ushort(2)
     //           | Vertex Weights:BoneVertData[Num Vertices] (only when Has Vertex Weights)
     // BoneVertData: Index:ushort(2) | Weight:float(4)
     skinData.rootRotation = readMatrix3x3();
     skinData.rootTranslation = readVector3();
     skinData.rootScale = readFloat();
+
+    // The partition link lives on this block only below 10.1.0.0; from there on
+    // the skin instance owns it instead.
+    if (header.version >= 0x04000002 && header.version < 0x0A010000) {
+        skipBytes(4);                           // Skin Partition
+    }
 
     skinData.numBones = readUInt32();
     if (readError) {
@@ -2180,8 +2315,13 @@ bool NIFParser::parseNiSkinDataAt(uint32_t blockIndex, NIFSkinData& skinData) {
     }
 
     // Without this flag the bone list holds transforms only and every Num
-    // Vertices field is followed directly by the next bone.
-    const bool hasVertexWeights = (readUInt8() != 0);
+    // Vertices field is followed directly by the next bone. The byte itself is
+    // absent below 4.2.1.0, where the flag defaults to true.
+    uint8_t hasVertexWeightsByte = 1;
+    if (header.version >= 0x04020100) {
+        hasVertexWeightsByte = readUInt8();
+    }
+    const bool hasVertexWeights = (hasVertexWeightsByte != 0);
     if (readError) {
         return false;
     }
