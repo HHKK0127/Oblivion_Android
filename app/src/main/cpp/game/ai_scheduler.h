@@ -29,7 +29,7 @@
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 // Forward declarations
-class NPC;
+struct NPC;
 class NpcManager;
 class WorldManager;
 
@@ -102,7 +102,7 @@ public:
         auto it = npcPackages.find(npcId);
         return (it != npcPackages.end()) ? it->second.getActivePackage() : nullptr;
     }
-    void stepNpc(uint32_t npcId) { /* force re-evaluate */ }
+    void stepNpc(uint32_t npcId) { (void)npcId; /* force re-evaluate */ }
 
 private:
     NpcManager* npcManager = nullptr;

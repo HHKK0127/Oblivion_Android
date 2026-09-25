@@ -703,7 +703,8 @@ bool Renderer::initGameSystems() {
     refs.setMaxHealth = [this](float h) {
         if (playerController && playerController->getPlayer()) playerController->getPlayer()->maxHealth = h;
     };
-    refs.setMana = [this](float m) {
+    refs.setMana = [](float m) {
+        (void)m;
         // Magicka not implemented in Player struct yet
     };
     refs.setStamina = [this](float s) {
@@ -768,10 +769,10 @@ bool Renderer::initGameSystems() {
             }
         }
     };
-    refs.blockAction = [this]() {
+    refs.blockAction = []() {
         // Block handled by combat system
     };
-    refs.dodgeAction = [this]() {
+    refs.dodgeAction = []() {
         // Dodge handled by combat system
     };
     refs.applyDamageToNpc = [this](uint32_t npcId, float dmg) {
@@ -804,7 +805,7 @@ bool Renderer::initGameSystems() {
             }
         }
     };
-    refs.toggleCombatDebug = [this]() {
+    refs.toggleCombatDebug = []() {
         // Combat debug not implemented yet
     };
     refs.addItem = [this](uint32_t id, uint32_t qty) {
@@ -818,22 +819,26 @@ bool Renderer::initGameSystems() {
     refs.removeItem = [this](uint32_t id, uint32_t qty) {
         if (inventoryManager) inventoryManager->playerRemoveItem(id, qty);
     };
-    refs.equipItem = [this](uint32_t id) {
+    refs.equipItem = [](uint32_t id) {
+        (void)id;
         // Equip not implemented in InventoryManager yet
     };
-    refs.unequipItem = [this](uint32_t id) {
+    refs.unequipItem = [](uint32_t id) {
+        (void)id;
         // Unequip not implemented in InventoryManager yet
     };
-    refs.listInventory = [this]() -> std::string {
+    refs.listInventory = []() -> std::string {
         return "Inventory items";
     };
-    refs.clearInventory = [this]() {
+    refs.clearInventory = []() {
         // Clear inventory not implemented yet
     };
-    refs.setCarryWeight = [this](float w) {
+    refs.setCarryWeight = [](float w) {
+        (void)w;
         // Set carry weight not implemented yet
     };
-    refs.learnSpell = [this](uint32_t id) {
+    refs.learnSpell = [](uint32_t id) {
+        (void)id;
         // Learn spell not directly available
     };
     refs.castSpellOnTarget = [this](uint32_t spellId, uint32_t targetId) {
@@ -842,7 +847,7 @@ bool Renderer::initGameSystems() {
     refs.equipSpell = [this](uint32_t id) {
         if (spellManager) spellManager->equipSpellToNpc(1, id);
     };
-    refs.listSpells = [this]() -> std::string {
+    refs.listSpells = []() -> std::string {
         return "Spells available";
     };
     refs.createSpell = [this](const std::string& name, float dmg, float cost) {
@@ -874,13 +879,18 @@ bool Renderer::initGameSystems() {
         }
         return 0;
     };
-    refs.setNpcAiState = [this](uint32_t id, const std::string& state) {
+    refs.setNpcAiState = [](uint32_t id, const std::string& state) {
+        (void)id;
+        (void)state;
         // AI state not directly settable
     };
-    refs.setNpcAggression = [this](uint32_t id, float val) {
+    refs.setNpcAggression = [](uint32_t id, float val) {
+        (void)id;
+        (void)val;
         // Aggression not directly settable
     };
-    refs.calmNpc = [this](uint32_t id) {
+    refs.calmNpc = [](uint32_t id) {
+        (void)id;
         // Calm not directly settable
     };
     refs.listNpcs = [this]() -> std::string {
@@ -894,31 +904,37 @@ bool Renderer::initGameSystems() {
         }
         return "No nearby NPCs";
     };
-    refs.startDialogueWith = [this](uint32_t id) {
+    refs.startDialogueWith = [](uint32_t id) {
+        (void)id;
         // DialogueRunner not connected
     };
-    refs.selectDialogueTopic = [this](int t) {
+    refs.selectDialogueTopic = [](int t) {
+        (void)t;
         // DialogueRunner not connected
     };
-    refs.selectDialogueChoice = [this](int c) {
+    refs.selectDialogueChoice = [](int c) {
+        (void)c;
         // DialogueRunner not connected
     };
-    refs.endDialogue = [this]() {
+    refs.endDialogue = []() {
         // DialogueRunner not connected
     };
-    refs.setWeather = [this](const std::string& w) {
+    refs.setWeather = [](const std::string& w) {
+        (void)w;
         // Weather not implemented yet
     };
-    refs.setTimeScale = [this](float s) {
+    refs.setTimeScale = [](float s) {
+        (void)s;
         // Time scale not implemented yet
     };
-    refs.setTimeOfDay = [this](float h) {
+    refs.setTimeOfDay = [](float h) {
+        (void)h;
         // Time of day not implemented yet
     };
     refs.loadCell = [this](int32_t x, int32_t y) {
         if (worldManager) worldManager->loadCell(x, y);
     };
-    refs.getWorldInfo = [this]() -> std::string {
+    refs.getWorldInfo = []() -> std::string {
         return "World info not available";
     };
     // Phase 66: Map debug callbacks
@@ -998,7 +1014,7 @@ bool Renderer::initGameSystems() {
         result += "Peak Memory: " + std::to_string(metrics.memoryMetrics.peakMemory / 1024 / 1024) + " MB\n";
         return result;
     };
-    refs.resetPerformanceStats = [this]() {
+    refs.resetPerformanceStats = []() {
         // Performance stats reset not implemented yet
         LOGI("Performance stats reset requested");
     };
@@ -1014,7 +1030,7 @@ bool Renderer::initGameSystems() {
         result += "Allocations: " + std::to_string(metrics.memoryMetrics.allocationCount) + "\n";
         return result;
     };
-    refs.getDrawCallStats = [this]() -> std::string {
+    refs.getDrawCallStats = []() -> std::string {
         // Draw call stats would need renderer integration
         return "Draw Call Stats:\n  (Not implemented yet)";
     };
@@ -1065,7 +1081,7 @@ bool Renderer::initGameSystems() {
         }
         LOGI("Killed all NPCs");
     };
-    refs.toggleNpcAi = [this](bool enabled) {
+    refs.toggleNpcAi = [](bool enabled) {
         // Toggle NPC AI updates
         LOGI("NPC AI %s", enabled ? "enabled" : "disabled");
     };
@@ -1107,16 +1123,16 @@ bool Renderer::initGameSystems() {
             LOGI("Attacking nearest enemy: %s", enemy->name.c_str());
         }
     };
-    refs.toggleCombatOverlay = [this](bool enabled) {
+    refs.toggleCombatOverlay = [](bool enabled) {
         LOGI("Combat overlay %s", enabled ? "enabled" : "disabled");
     };
-    refs.setDamageMultiplier = [this](float multiplier) {
+    refs.setDamageMultiplier = [](float multiplier) {
         LOGI("Damage multiplier set to %f", multiplier);
     };
-    refs.toggleInvincibility = [this](bool enabled) {
+    refs.toggleInvincibility = [](bool enabled) {
         LOGI("Invincibility %s", enabled ? "enabled" : "disabled");
     };
-    refs.setPlayerDamage = [this](float minDmg, float maxDmg) {
+    refs.setPlayerDamage = [](float minDmg, float maxDmg) {
         LOGI("Player damage range set to %f - %f", minDmg, maxDmg);
     };
 
@@ -1148,10 +1164,10 @@ bool Renderer::initGameSystems() {
             LOGI("Cast spell %d at %s", spellId, enemy->name.c_str());
         }
     };
-    refs.setSpellDamageMultiplier = [this](float multiplier) {
+    refs.setSpellDamageMultiplier = [](float multiplier) {
         LOGI("Spell damage multiplier set to %f", multiplier);
     };
-    refs.toggleInfiniteMana = [this](bool enabled) {
+    refs.toggleInfiniteMana = [](bool enabled) {
         LOGI("Infinite mana %s", enabled ? "enabled" : "disabled");
     };
     refs.getPlayerSpells = [this]() -> std::string {
@@ -1238,7 +1254,7 @@ bool Renderer::initGameSystems() {
         if (!inventory) return "Player inventory not available";
         return "Weight: " + std::to_string((int)inventory->getTotalWeight()) + "/" + std::to_string((int)inventory->MAX_WEIGHT) + " kg";
     };
-    refs.setCarryCapacity = [this](float capacity) {
+    refs.setCarryCapacity = [](float capacity) {
         LOGI("Carry capacity set to %f kg", capacity);
     };
 
@@ -1312,19 +1328,19 @@ bool Renderer::initGameSystems() {
     };
 
     // Phase 73: Dialogue debug enhanced callbacks
-    refs.getDialogueState = [this]() -> std::string {
+    refs.getDialogueState = []() -> std::string {
         return "=== Dialogue State ===\nDialogue system: Available\nUse 'talk <npcId>' to start dialogue";
     };
-    refs.getDialogueTopics = [this]() -> std::string {
+    refs.getDialogueTopics = []() -> std::string {
         return "=== Available Topics ===\nUse 'dialoguetopics' after starting dialogue";
     };
-    refs.getDialogueChoices = [this]() -> std::string {
+    refs.getDialogueChoices = []() -> std::string {
         return "=== Current Choices ===\nUse 'dialoguechoices' after starting dialogue";
     };
-    refs.getDialogueHistory = [this]() -> std::string {
+    refs.getDialogueHistory = []() -> std::string {
         return "=== Dialogue History ===\nNo dialogue history available";
     };
-    refs.resetDialogue = [this]() {
+    refs.resetDialogue = []() {
         // DialogueRunner not connected - placeholder
         LOGI("Dialogue reset requested");
     };
@@ -1401,10 +1417,10 @@ bool Renderer::initGameSystems() {
         }
         return "No saves";
     };
-    refs.openMenu = [this](const std::string& menu) {
+    refs.openMenu = [](const std::string& menu) {
         LOGI("Menu open requested: %s", menu.c_str());
     };
-    refs.closeMenu = [this]() {
+    refs.closeMenu = []() {
         LOGI("Menu close requested");
     };
     refs.toggleDebugMenu = [this]() {
@@ -1549,6 +1565,7 @@ bool Renderer::initGameSystems() {
         return assetManager->getLoadedTextureList();
     };
     refs.getTextureDetail = [this](const std::string& name) -> std::string {
+        (void)name;
         if (!assetManager) return "Asset manager not available";
         return assetManager->getTextureCacheStats();
     };
@@ -2048,22 +2065,27 @@ bool Renderer::initGameSystems() {
         if (floatingText) {
             auto& bus = weave::ImperialWeave::instance().getEventBus();
             bus.subscribe("COMBAT_ATTACK_HIT", [this](const weave::Event& e) {
+                (void)e;
                 floatingText->addText("Hit!", screenWidth * 0.5f, screenHeight * 0.4f,
                                      UIFloatingText::DAMAGE, 1.5f);
             });
             bus.subscribe("COMBAT_CRITICAL_HIT", [this](const weave::Event& e) {
+                (void)e;
                 floatingText->addText("CRITICAL!", screenWidth * 0.5f, screenHeight * 0.35f,
                                      UIFloatingText::CRITICAL, 2.0f);
             });
             bus.subscribe("COMBAT_BLOCK", [this](const weave::Event& e) {
+                (void)e;
                 floatingText->addText("Blocked!", screenWidth * 0.5f, screenHeight * 0.4f,
                                      UIFloatingText::BLOCK, 1.5f);
             });
             bus.subscribe("COMBAT_PARRY", [this](const weave::Event& e) {
+                (void)e;
                 floatingText->addText("Parry!", screenWidth * 0.5f, screenHeight * 0.4f,
                                      UIFloatingText::BUFF, 1.5f);
             });
             bus.subscribe("COMBAT_DODGE", [this](const weave::Event& e) {
+                (void)e;
                 floatingText->addText("Dodge!", screenWidth * 0.5f, screenHeight * 0.4f,
                                      UIFloatingText::MISS, 1.5f);
             });

@@ -328,7 +328,7 @@ void AIScheduler::executeTravel(uint32_t npcId, NPC* npc, AIPackage& pkg, float 
     }
 }
 
-void AIScheduler::executePatrol(uint32_t npcId, NPC* npc, AIPackage& pkg, float deltaTime) {
+void AIScheduler::executePatrol(uint32_t /*npcId*/, NPC* npc, AIPackage& pkg, float deltaTime) {
     if (pkg.data.patrolWaypoints.empty()) {
         npc->setAIState(AIState::IDLE);
         return;
@@ -355,7 +355,7 @@ void AIScheduler::executePatrol(uint32_t npcId, NPC* npc, AIPackage& pkg, float 
     moveToward(npc, currentWaypoint, deltaTime);
 }
 
-void AIScheduler::executeFollow(uint32_t npcId, NPC* npc, AIPackage& pkg, float deltaTime) {
+void AIScheduler::executeFollow(uint32_t /*npcId*/, NPC* npc, AIPackage& pkg, float deltaTime) {
     if (!npcManager) {
         npc->setAIState(AIState::IDLE);
         return;
@@ -396,7 +396,7 @@ void AIScheduler::executeFollow(uint32_t npcId, NPC* npc, AIPackage& pkg, float 
     }
 }
 
-void AIScheduler::executeGuard(uint32_t npcId, NPC* npc, AIPackage& pkg, float deltaTime) {
+void AIScheduler::executeGuard(uint32_t /*npcId*/, NPC* npc, AIPackage& pkg, float deltaTime) {
     npc->setAIState(AIState::PATROL);  // Use PATROL for guard behavior
 
     float dx = npc->position.x - pkg.data.guardPosition.x;
@@ -412,7 +412,7 @@ void AIScheduler::executeGuard(uint32_t npcId, NPC* npc, AIPackage& pkg, float d
     }
 }
 
-void AIScheduler::executeSleep(uint32_t npcId, NPC* npc, AIPackage& pkg, float deltaTime) {
+void AIScheduler::executeSleep(uint32_t /*npcId*/, NPC* npc, AIPackage& pkg, float deltaTime) {
     // Move to bed if not there
     if (!hasReached(npc, pkg.data.bedPosition, 2.0f)) {
         npc->setAIState(AIState::WANDER);
@@ -427,7 +427,7 @@ void AIScheduler::executeSleep(uint32_t npcId, NPC* npc, AIPackage& pkg, float d
     }
 }
 
-void AIScheduler::executeEat(uint32_t npcId, NPC* npc, AIPackage& pkg, float deltaTime) {
+void AIScheduler::executeEat(uint32_t /*npcId*/, NPC* npc, AIPackage& pkg, float deltaTime) {
     // Move to food location
     if (!hasReached(npc, pkg.data.destination, 2.0f)) {
         npc->setAIState(AIState::WANDER);
@@ -502,7 +502,7 @@ void AIScheduler::executeFlee(uint32_t npcId, NPC* npc, AIPackage& pkg, float de
         fleeDir.z /= len;
     } else {
         // Random direction if at threat position
-        float angle = static_cast<float>(std::rand()) / RAND_MAX * 6.2831853f;
+        float angle = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX) * 6.2831853f;
         fleeDir.x = std::cos(angle);
         fleeDir.z = std::sin(angle);
     }
@@ -563,8 +563,8 @@ bool AIScheduler::hasReached(const NPC* npc, const glm::vec3& target, float thre
 }
 
 glm::vec3 AIScheduler::getRandomPosition(const glm::vec3& center, float radius) const {
-    float angle = static_cast<float>(std::rand()) / RAND_MAX * 6.2831853f;
-    float r = static_cast<float>(std::rand()) / RAND_MAX * radius;
+    float angle = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX) * 6.2831853f;
+    float r = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX) * radius;
     return glm::vec3(
         center.x + std::cos(angle) * r,
         center.y,
@@ -596,7 +596,7 @@ bool AIScheduler::isStuck(uint32_t npcId, const NPC* npc, float threshold) {
 // Default Schedule
 // ============================================================================
 
-std::vector<AIPackage> AIScheduler::createDefaultSchedule(uint32_t npcId) const {
+std::vector<AIPackage> AIScheduler::createDefaultSchedule(uint32_t /*npcId*/) const {
     std::vector<AIPackage> packages;
     uint32_t pkgId = 1;
 

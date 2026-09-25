@@ -230,6 +230,7 @@ void GameLoopCoordinator::phaseScriptVM(float dt) {
 }
 
 void GameLoopCoordinator::phaseAI(float dt) {
+    (void)dt;
     // AI is handled by NpcManager::update which includes AI scheduling
     // This phase is for any additional AI processing
     // The actual NPC AI runs in phaseNPC

@@ -24,7 +24,7 @@
 #include <glm/glm.hpp>
 
 // Forward declarations
-class NPC;
+struct NPC;
 
 namespace ai {
 
