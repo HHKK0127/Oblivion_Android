@@ -3812,12 +3812,14 @@ static const char* terrainVertexSrc =
 "out vec2 vUv;\n"
 "out vec4 vBlend;\n"
 "out vec4 vAddBlend;\n"
+"out vec3 vWorldPos;\n"
 "void main() {\n"
 "    gl_Position = uMVP * vec4(aPosition, 1.0);\n"
 "    vNormal = aNormal;\n"
 "    vUv = aUv;\n"
 "    vBlend = aBlend;\n"
 "    vAddBlend = aAddBlend;\n"
+"    vWorldPos = aPosition;\n"
 "}\n";
 
 static const char* terrainFragmentSrc =
@@ -3835,6 +3837,10 @@ static const char* terrainFragmentSrc =
 "uniform vec4 uHasAddTex;\n"
 "uniform vec4 uColor;\n"
 "uniform vec3 uLightDir;\n"
+"uniform vec3 uAmbientColor;\n"
+"uniform vec3 uFogColor;\n"
+"uniform vec2 uFogRange;\n"
+"uniform vec3 uCameraPos;\n"
 "in vec3 vNormal;\n"
 "in vec2 vUv;\n"
 "in vec4 vBlend;\n"
@@ -3864,7 +3870,10 @@ static const char* terrainFragmentSrc =
 "    }\n"
 "    vec3 n = normalize(vNormal);\n"
 "    float NdotL = max(dot(n, normalize(uLightDir)), 0.0);\n"
-"    fragColor = vec4(color * (0.3 + 0.7 * NdotL), 1.0);\n"
+"    vec3 lit = color * (uAmbientColor + (1.0 - uAmbientColor) * NdotL);\n"
+"    float fogDist = length(vWorldPos - uCameraPos);\n"
+"    float fogFactor = clamp((fogDist - uFogRange.x) / max(uFogRange.y - uFogRange.x, 1.0), 0.0, 1.0);\n"
+"    fragColor = vec4(mix(lit, uFogColor, fogFactor), 1.0);\n"
 "}\n";
 
 void Renderer::releaseTerrainMeshes() {
@@ -4667,7 +4676,26 @@ void Renderer::renderTerrainMeshes() {
     const glm::mat4 viewProj = projMatrix * viewMatrix;
 
     glUseProgram(terrainShader);
-    glUniform3f(glGetUniformLocation(terrainShader, "uLightDir"), 0.5f, 1.0f, 0.3f);
+    // Phase 66: drive terrain lighting and fog from the current weather so the
+    // ground matches the sky dome instead of a fixed studio light.
+    float sunX = 0.5f, sunY = 1.0f, sunZ = 0.3f;
+    float ambR = 0.3f, ambG = 0.3f, ambB = 0.3f;
+    float fogR = 0.2f, fogG = 0.2f, fogB = 0.2f;
+    float fogFar = 20000.0f;
+    if (skyWeatherSystem) {
+        skyWeatherSystem->getSunDirection(sunX, sunY, sunZ);
+        skyWeatherSystem->getAmbientColor(ambR, ambG, ambB);
+        skyWeatherSystem->getFogColor(fogR, fogG, fogB);
+        fogFar = skyWeatherSystem->getFogDistance();
+    }
+    glUniform3f(glGetUniformLocation(terrainShader, "uLightDir"), sunX, sunY, sunZ);
+    glUniform3f(glGetUniformLocation(terrainShader, "uAmbientColor"), ambR, ambG, ambB);
+    glUniform3f(glGetUniformLocation(terrainShader, "uFogColor"), fogR, fogG, fogB);
+    glUniform2f(glGetUniformLocation(terrainShader, "uFogRange"), fogFar * 0.35f, fogFar);
+    const glm::vec3 terrainEye = playerController
+        ? (playerController->getPlayerPosition() + glm::vec3(0.0f, PH_CAMERA_HEIGHT, PH_CAMERA_DIST))
+        : glm::vec3(0.0f, 0.0f, 0.0f);
+    glUniform3f(glGetUniformLocation(terrainShader, "uCameraPos"), terrainEye.x, terrainEye.y, terrainEye.z);
     glUniformMatrix4fv(glGetUniformLocation(terrainShader, "uMVP"),
                        1, GL_FALSE, viewProj.value_ptr());
     const float terrainColor[4] = {0.32f, 0.42f, 0.22f, 1.0f};
