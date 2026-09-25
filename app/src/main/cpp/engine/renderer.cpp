@@ -3845,6 +3845,7 @@ static const char* terrainFragmentSrc =
 "in vec2 vUv;\n"
 "in vec4 vBlend;\n"
 "in vec4 vAddBlend;\n"
+"in vec3 vWorldPos;\n"
 "out vec4 fragColor;\n"
 "void main() {\n"
 "    vec3 accum = vec3(0.0);\n"
