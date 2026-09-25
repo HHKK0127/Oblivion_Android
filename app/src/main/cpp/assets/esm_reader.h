@@ -1434,6 +1434,7 @@ public:
     const std::vector<EyesData>& getAllEyes() const;
     const std::vector<HairData>& getAllHairs() const;
     const std::vector<ClimateData>& getAllClimates() const;
+    const std::vector<WeatherData>& getAllWeathers() const;
     const std::vector<RegionData>& getAllRegions() const;
     const std::vector<LeveledListData>& getAllLeveledLists() const;
     const std::vector<NavMeshData>& getAllNavMeshes() const;

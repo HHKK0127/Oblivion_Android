@@ -17,8 +17,6 @@ LauncherScreen::LauncherScreen()
 LauncherScreen::~LauncherScreen() {
     TextureLoader::deleteTexture(bgTexture);
     TextureLoader::deleteTexture(logoTexture);
-    TextureLoader::deleteTexture(buttonBgTex);
-    TextureLoader::deleteTexture(buttonHoverTex);
     LOGD("LauncherScreen destroyed");
 }
 
@@ -39,14 +37,10 @@ void LauncherScreen::initialize(LocalizationManager* lm, TextRenderer* tr,
     buildMainMenu();
 
     if (!texturesLoaded) {
-        // Original: dark stone/metal background
-        bgTexture = TextureLoader::loadTextureFromAsset("textures/ui/launcher_bg.png");
-        // Classic Oblivion crest placed on the left side of the parchment.
-        logoTexture = TextureLoader::loadTextureFromAsset("textures/ui/oblivion_crest.png");
-        // Button background (stone style)
-        buttonBgTex = TextureLoader::loadTextureFromAsset("textures/ui/btn_stone.png");
-        // Hover state (bright stone style)
-        buttonHoverTex = TextureLoader::loadTextureFromAsset("textures/ui/btn_stone_hover.png");
+        // Official parchment background (extracted from the original BSA).
+        bgTexture = TextureLoader::loadTextureFromAsset("textures/ui/loading_background.png");
+        // Official Elderscrolls IV logo (extracted from the original BSA).
+        logoTexture = TextureLoader::loadTextureFromAsset("textures/ui/tes_oblivion_logo_final.png");
 
         texturesLoaded = true;
         LOGI("Launcher textures loaded");
@@ -131,14 +125,14 @@ void LauncherScreen::rebuildLayout() {
     mainPanel->setPosition(px, py);
     mainPanel->setSize(panelW, panelH);
 
-    // Menu occupies the right half; the left half is reserved for the crest.
+    // Menu occupies the center; no crest so the launcher centers cleanly.
     float btnW = panelW * 0.48f;
     float btnH = panelH * 0.105f;
-    float startY = panelH * 0.10f;
+    float startY = panelH * 0.24f;
     float gap = panelH * 0.012f;
 
     for (size_t i = 0; i < menuButtons.size(); ++i) {
-        float bx = panelW * 0.47f;
+        float bx = (panelW - btnW) * 0.5f;
         float by = startY + static_cast<float>(i) * (btnH + gap);
         menuButtons[i]->setPosition(bx, by);
         menuButtons[i]->setSize(btnW, btnH);
@@ -158,11 +152,11 @@ int LauncherScreen::hitTestMenuButton(float x, float y) const {
     const float panelH = std::min(static_cast<float>(screenHeight) * 0.80f, 760.0f);
     const float btnW = panelW * 0.48f;
     const float btnH = panelH * 0.105f;
-    const float startY = panelH * 0.10f;
+    const float startY = panelH * 0.24f;
     const float gap = panelH * 0.012f;
     const float panelX = (screenWidth - panelW) * 0.5f - (1.0f - introEase()) * PANEL_SLIDE_DISTANCE;
     const float panelY = (screenHeight - panelH) * 0.5f;
-    const float btnX = panelX + panelW * 0.47f;
+    const float btnX = panelX + (panelW - btnW) * 0.5f;
 
     if (x < btnX || x > btnX + btnW) return -1;
     for (size_t i = 0; i < menuButtons.size(); ++i) {
@@ -255,7 +249,7 @@ void LauncherScreen::renderMain() {
 }
 
 // ============================================================================
-// Background (dark stone/metal) - Enhanced with gradient + portal effect
+// Background - Official parchment texture (extracted from the original BSA)
 // ============================================================================
 void LauncherScreen::renderBackground() {
     // Warm walnut surround from the original launcher artwork.
@@ -266,12 +260,12 @@ void LauncherScreen::renderBackground() {
         glm::vec4(0.055f, 0.025f, 0.012f, 1.0f),
         screenWidth, screenHeight);
 
-    // Texture overlay if available
+    // Official parchment sheet as the launcher backdrop.
     if (bgTexture != 0) {
         UIDrawHelper::drawTexturedQuad(
             0.0f, 0.0f,
             static_cast<float>(screenWidth), static_cast<float>(screenHeight),
-            bgTexture, glm::vec4(1.0f, 1.0f, 1.0f, 0.35f),
+            bgTexture, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
             screenWidth, screenHeight);
     }
 
@@ -312,7 +306,7 @@ void LauncherScreen::renderBackground() {
 }
 
 // ============================================================================
-// Right side logo (large) - Enhanced with glow and shadow
+// Top logo - Official TES IV logo (extracted from the original BSA)
 // ============================================================================
 void LauncherScreen::renderLogo() {
     if (logoTexture == 0) return;
@@ -321,11 +315,12 @@ void LauncherScreen::renderLogo() {
     float panelH = std::min(static_cast<float>(screenHeight) * 0.80f, 760.0f);
     float panelX = (screenWidth - panelW) * 0.5f;
     float panelY = (screenHeight - panelH) * 0.5f;
-    float logoW = panelW * 0.24f;
-    float logoH = logoW * 1.33f;
-    float logoX = panelX + panelW * 0.11f;
-    float logoY = panelY + panelH * 0.24f;
-    logoX -= (1.0f - introEase()) * LOGO_SLIDE_DISTANCE;
+    // The official logo is a wide 4:1 banner; place it at the top center.
+    float logoW = panelW * 0.62f;
+    float logoH = logoW * 0.25f;
+    float logoX = panelX + (panelW - logoW) * 0.5f;
+    float logoY = panelY + panelH * 0.03f;
+    logoX -= (1.0f - introEase()) * (LOGO_SLIDE_DISTANCE * 0.25f);
 
     // Gold halo behind the logo for elegance
     float glowAlpha = 0.25f + 0.10f * sin(glowPhase);

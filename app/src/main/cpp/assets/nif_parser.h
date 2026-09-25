@@ -117,7 +117,10 @@ private:
     void skipNiGeometry();
     void skipNiTimeController();
     void skipNiInterpController();
+    uint32_t bsVersion() const;
     void skipNiPSysModifier();
+    void skipNiDynamicEffect();
+    void skipNiLight();
     void skipNiGeometryData(const std::string& typeName);
     void skipMaterialData();
     void skipTexDesc();
@@ -126,7 +129,9 @@ private:
     void skipKeys(uint32_t count, const char* valueType, int arg);
     void skipQuatKeys(uint32_t count, int rotationType);
     void skipKeyframeData();
-    void skipBlendInterpolator(bool boolValue);
+    void skipBSplineInterpolator(const std::string& typeName);
+    void skipBSplineData();
+    void skipBlendInterpolator(size_t valueSize);
     void skipInterpBlendItems(uint32_t count);
     void skipNodeSet();
     void skipAVObjectArray(uint32_t count);

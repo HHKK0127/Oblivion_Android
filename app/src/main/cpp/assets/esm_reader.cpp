@@ -4485,6 +4485,14 @@ const std::vector<ClimateData>& ESMManager::getAllClimates() const {
     return m_files.back()->getClimates();
 }
 
+const std::vector<WeatherData>& ESMManager::getAllWeathers() const {
+    if (m_files.empty()) {
+        static std::vector<WeatherData> empty;
+        return empty;
+    }
+    return m_files.back()->getWeathers();
+}
+
 const std::vector<RegionData>& ESMManager::getAllRegions() const {
     if (m_files.empty()) {
         static std::vector<RegionData> empty;

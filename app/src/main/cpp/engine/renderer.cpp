@@ -2375,6 +2375,14 @@ void Renderer::createTestScenario() {
     if (hasEsmData) {
         LOGI("=== Building world from ESM data ===");
 
+        // Phase 66: Drive the sky/weather presets from the real WTHR records so
+        // the sky dome uses Oblivion's authored colours instead of the
+        // hardcoded fallbacks.
+        if (skyWeatherSystem) {
+            const int wthrApplied = skyWeatherSystem->loadFromESM(esmMgr.getAllWeathers());
+            LOGI("SkyWeatherSystem: %d WTHR records applied from ESM", wthrApplied);
+        }
+
         // Wire the ESM manager into the NPC manager so actors can be created
         // from ACHR/ACRE records (NPC_ and CREA base records).
         npcMgr->setESMManager(&esmMgr);
@@ -3395,12 +3403,19 @@ void Renderer::render(float deltaTime) {
         glViewport(0, 0, static_cast<GLsizei>(screenWidth), static_cast<GLsizei>(screenHeight));
 
         // Render World (main game scene) - Clear with weather-based horizon color
-        if (skyWeatherSystem) {
+        // for exteriors, or a dark neutral tone for interiors (which have no sky).
+        bool playerIndoors = false;
+        if (worldManager) {
+            if (auto playerCell = worldManager->getCellAt(worldManager->getPlayerPosition())) {
+                playerIndoors = (playerCell->cellType != CellType::EXTERIOR);
+            }
+        }
+        if (skyWeatherSystem && !playerIndoors) {
             float skyR, skyG, skyB;
             skyWeatherSystem->getFogColor(skyR, skyG, skyB);
             glClearColor(skyR, skyG, skyB, 1.0f);
         } else {
-            glClearColor(0.2f, 0.2f, 0.2f, 1.0f);  // Fallback dark gray
+            glClearColor(0.05f, 0.05f, 0.06f, 1.0f);  // Interior / fallback dark tone
         }
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         GLCHECK_MSG("game-clear");
@@ -4145,6 +4160,17 @@ void main() {
 // state so the sky reflects the current time of day and weather conditions.
 void Renderer::renderSkyDome() {
     if (!skyWeatherSystem) return;
+
+    // Phase 66: The sky dome is an exterior-only backdrop. Interior cells
+    // (houses, caves, ruins) have their own ceiling geometry and must not show
+    // the outdoor sky, so skip the dome whenever the player is indoors.
+    if (worldManager) {
+        if (auto playerCell = worldManager->getCellAt(worldManager->getPlayerPosition())) {
+            if (playerCell->cellType != CellType::EXTERIOR) {
+                return;
+            }
+        }
+    }
 
     static GLuint skyProgram = 0;
     static GLuint skyVao = 0, skyVbo = 0, skyIbo = 0;

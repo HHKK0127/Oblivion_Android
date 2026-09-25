@@ -28,6 +28,20 @@ constexpr uint32_t MAX_STRIPS_DATA = 4096;
 constexpr uint32_t MAX_SHAPE_FILTERS = 4096;
 constexpr uint32_t MAX_LIST_SUB_SHAPES = 4096;
 constexpr uint32_t MAX_MOPP_DATA_SIZE = 1u << 20;
+constexpr uint32_t MAX_SPLINE_CONTROL_POINTS = 1u << 20;
+
+// Gamebryo version cut-offs used by the .kf sequence records. Oblivion's own
+// animations are 20.0.0.4, but the shipped archives still carry a handful of
+// legacy 10.1.0.106 / 10.2.0.0 creature idle files whose sequence and
+// controlled block records differ in exactly these ranges.
+constexpr uint32_t VERSION_10_1_0_104 = 0x0A010068;
+constexpr uint32_t VERSION_10_1_0_106 = 0x0A01006A;
+constexpr uint32_t VERSION_10_1_0_110 = 0x0A01006E;
+constexpr uint32_t VERSION_10_1_0_113 = 0x0A010071;
+constexpr uint32_t VERSION_10_2_0_0 = 0x0A020000;
+constexpr uint32_t VERSION_10_4_0_1 = 0x0A040001;
+constexpr uint32_t VERSION_20_0_0_5 = 0x14000005;
+constexpr uint32_t VERSION_20_1_0_0 = 0x14010000;
 }
 
 NIFParser::NIFParser() {
@@ -594,7 +608,9 @@ void NIFParser::skipNiGeometry() {
     }
     skipBytes(4);
     skipBytes(4);
-    skipMaterialData();
+    if (header.version >= 0x0A000100) {
+        skipMaterialData();     // Material Data (since 10.0.1.0)
+    }
 }
 
 // MaterialData on these meshes is Has Shader plus its optional pair.
@@ -624,6 +640,16 @@ void NIFParser::skipNiInterpController() {
     }
 }
 
+// nif.xml #BSVER#: the header user version carries the Bethesda stream version.
+// The BS header carries the block stream version separately from the user
+// version: the 20.0.0.4 meshes report 11, the 10.1.0.106 menus 5 and the
+// 10.2.0.0 meshes 6 or 9. The legacy NetImmerse files have no BS header, which
+// is the zero that nif.xml means when it says that the #BSVER# #LT# conditions
+// also apply to the NI streams.
+uint32_t NIFParser::bsVersion() const {
+    return header.unknownField;
+}
+
 // NiPSysModifier: Name | Order | Target | Active
 void NIFParser::skipNiPSysModifier() {
     skipStringArray(1);
@@ -633,13 +659,47 @@ void NIFParser::skipNiPSysModifier() {
 // NiPSysEmitter: Speed | Speed Variation | Declination | Declination Variation
 // | Planar Angle | Planar Angle Variation | Initial Color | Initial Radius
 // | Radius Variation | Life Span | Life Span Variation [| Emitter Object]
+// Radius Variation only exists from 10.4.0.1 on. The Oblivion meshes carry
+// neither it nor the Unknown QQSpeed pair of nif.xml, which is contradicted by
+// the exact block boundaries of miscfirefly01.nif (10.2.0.0), so the payload
+// stays 52 bytes without an emitter object and 56 bytes with one.
 void NIFParser::skipNiPSysEmitterBase(bool hasEmitterObject) {
     skipBytes(6 * 4);
     skipBytes(16);          // Initial Color (Color4)
-    skipBytes(4 * 4);
-    if (hasEmitterObject) {
-        skipBytes(4);
+    skipBytes(4);           // Initial Radius
+    if (header.version >= 0x0A040001) {
+        skipBytes(4);       // Radius Variation (since 10.4.0.1)
     }
+    skipBytes(4 + 4);       // Life Span, Life Span Variation
+    if (hasEmitterObject && header.version >= 0x0A010000) {
+        skipBytes(4);       // Emitter Object (since 10.1.0.0)
+    }
+}
+
+// NiDynamicEffect: Switch State | Num Affected Nodes | Affected Nodes
+// The affected node list only exists from 10.1.0.0 on, and the switch state
+// only from 10.1.0.106 on, so the 10.0.1.0 lights carry neither field.
+void NIFParser::skipNiDynamicEffect() {
+    if (header.version < 0x0A010000) {
+        return;
+    }
+    if (header.version >= 0x0A01006A) {
+        skipBytes(1);       // Switch State (since 10.1.0.106)
+    }
+    const uint32_t numAffectedNodes = readUInt32();
+    if (readError) {
+        return;
+    }
+    skipPtrArray(numAffectedNodes);
+}
+
+// NiLight: Dimmer | Ambient Color | Diffuse Color | Specular Color
+void NIFParser::skipNiLight() {
+    skipNiDynamicEffect();
+    if (readError) {
+        return;
+    }
+    skipBytes(4 + 12 + 12 + 12);
 }
 
 // TexDesc: Source | Clamp Mode | Filter Mode | UV Set | PS2 L | PS2 K
@@ -650,12 +710,14 @@ void NIFParser::skipTexDesc() {
     if (header.version <= 0x0A040001) {
         skipBytes(2 + 2);               // PS2 L, PS2 K
     }
-    const uint8_t hasTransform = readUInt8();
-    if (readError) {
-        return;
-    }
-    if (hasTransform != 0) {
-        skipBytes(8 + 8 + 4 + 4 + 8);   // Translation, Scale, Rotation, Method, Center
+    if (header.version >= 0x0A010000) {
+        const uint8_t hasTransform = readUInt8();
+        if (readError) {
+            return;
+        }
+        if (hasTransform != 0) {
+            skipBytes(8 + 8 + 4 + 4 + 8);   // Translation, Scale, Rotation, Method, Center
+        }
     }
 }
 
@@ -760,25 +822,106 @@ void NIFParser::skipKeyframeData() {
     skipKeyGroup("float");              // Scales
 }
 
-// InterpBlendItem: Interpolator | Weight | Normalized Weight | Priority | Ease Spinner
-void NIFParser::skipInterpBlendItems(uint32_t count) {
-    skipBytes(static_cast<size_t>(count) * 17);
+// NiBSplineInterpolator family. Every member opens with the same four fields
+// and only the tail differs, so the block type name picks the tail. Oblivion's
+// .kf files use NiBSplineCompTransformInterpolator for the human and horse
+// skeletons and NiTransformInterpolator for the creature skeletons.
+void NIFParser::skipBSplineInterpolator(const std::string& typeName) {
+    skipBytes(4 + 4 + 4 + 4);               // Start Time, Stop Time, Spline Data, Basis Data
+    if (typeName == "NiBSplineCompTransformInterpolator" ||
+        typeName == "NiBSplineTransformInterpolator") {
+        skipBytes(32);                      // Transform
+        skipBytes(4 + 4 + 4);               // Translation, Rotation, Scale Handle
+        if (typeName == "NiBSplineCompTransformInterpolator") {
+            skipBytes(4 * 6);               // Offset / Half Range for translation, rotation, scale
+        }
+    } else if (typeName == "NiBSplineCompPoint3Interpolator") {
+        skipBytes(12 + 4);                  // Value, Handle
+        skipBytes(4 + 4);                   // Position Offset, Position Half Range
+    } else if (typeName == "NiBSplinePoint3Interpolator") {
+        skipBytes(12 + 4);                  // Value, Handle
+    } else if (typeName == "NiBSplineCompFloatInterpolator") {
+        skipBytes(4 + 4);                   // Value, Handle
+        skipBytes(4 + 4);                   // Float Offset, Float Half Range
+    } else if (typeName == "NiBSplineFloatInterpolator") {
+        skipBytes(4 + 4);                   // Value, Handle
+    }
 }
 
-// NiBlendInterpolator: Flags | Array Size | Weight Threshold, then the single
-// item shortcut fields when the "interpolator count valid" bit is clear.
-void NIFParser::skipBlendInterpolator(bool boolValue) {
-    const uint8_t flags = readUInt8();
-    const uint32_t arraySize = readUInt8();
+// NiBSplineData: Num Float Control Points | Float Control Points |
+// Num Compact Control Points | Compact Control Points. The compact control
+// points are 16 bit values that the interpolator's offset and half range
+// expand back to the original floats.
+void NIFParser::skipBSplineData() {
+    const uint32_t numFloatControlPoints = readUInt32();
     if (readError) {
         return;
     }
-    skipBytes(4);                       // Weight Threshold
-    if ((flags & 1) == 0) {
-        skipBytes(1 + 1 + 1 + 1 + 4 + 4 + 4 + 4);
-        skipInterpBlendItems(arraySize);
+    if (numFloatControlPoints > MAX_SPLINE_CONTROL_POINTS) {
+        readError = true;
+        return;
     }
-    skipBytes(boolValue ? 1 : 4);       // Value
+    skipFloatArray(numFloatControlPoints);
+    const uint32_t numCompactControlPoints = readUInt32();
+    if (readError) {
+        return;
+    }
+    if (numCompactControlPoints > MAX_SPLINE_CONTROL_POINTS) {
+        readError = true;
+        return;
+    }
+    skipU16Array(numCompactControlPoints);
+}
+
+// InterpBlendItem: Interpolator | Weight | Normalized Weight | Priority | Ease
+// Spinner. The priority field narrows from an int to a byte at 10.1.0.110, so the
+// item stride is 20 bytes below that cut-off and 17 from 10.1.0.110 onwards.
+void NIFParser::skipInterpBlendItems(uint32_t count) {
+    const size_t stride = (header.version <= 0x0A01006D) ? 20 : 17;
+    skipBytes(static_cast<size_t>(count) * stride);
+}
+
+// NiBlendInterpolator. Three record layouts ship in the shipped archives: the
+// 10.1.0.106/107 records keep 16 bit array and count fields, 10.1.0.108/109 add
+// the single interpolator shortcut, 10.1.0.110/111 narrow those fields to bytes,
+// and 10.1.0.112 leads with a flags byte and drops the array grow by field.
+void NIFParser::skipBlendInterpolator(size_t valueSize) {
+    const uint32_t version = header.version;
+    if (version >= 0x0A010070) {        // 10.1.0.112 and later
+        const uint8_t flags = readUInt8();
+        const uint32_t arraySize = readUInt8();
+        if (readError) {
+            return;
+        }
+        skipBytes(4);                   // Weight Threshold
+        if ((flags & 1) == 0) {
+            skipBytes(1 + 1 + 1 + 1 + 4 + 4 + 4 + 4);
+            skipInterpBlendItems(arraySize);
+        }
+        skipBytes(valueSize);           // Value
+        return;
+    }
+    const uint32_t arraySize = (version >= 0x0A01006E) ? readUInt8() : readUInt16();
+    if (version <= 0x0A01006D) {
+        skipBytes(2);                   // Array Grow By
+    }
+    if (readError) {
+        return;
+    }
+    skipInterpBlendItems(arraySize);
+    skipBytes(1 + 4 + 1);               // Manager Controlled, Weight Threshold, Only Use Highest Weight
+    if (version >= 0x0A01006E) {        // 10.1.0.110, 10.1.0.111
+        skipBytes(1 + 1);               // Interp Count, Single Index
+        skipBytes(4 + 4);               // Single Interpolator, Single Time
+        skipBytes(1 + 1);               // High Priority, Next High Priority
+    } else {
+        skipBytes(2 + 2);               // Interp Count, Single Index
+        if (version >= 0x0A01006C) {    // 10.1.0.108 and later
+            skipBytes(4 + 4);           // Single Interpolator, Single Time
+        }
+        skipBytes(4 + 4);               // High Priority, Next High Priority
+    }
+    skipBytes(valueSize);               // Value
 }
 
 // NodeSet: Num Nodes | Nodes
@@ -816,13 +959,17 @@ void NIFParser::skipFurniturePositions(uint32_t count) {
 
 // NiGeometryData: the shared vertex payload followed by the per-type tail.
 void NIFParser::skipNiGeometryData(const std::string& typeName) {
-    skipBytes(4);                                   // Group ID
+    if (header.version >= 0x0A010072) {
+        skipBytes(4);                               // Group ID (since 10.1.0.114)
+    }
     const uint32_t numVertices = readUInt16();
     if (readError) {
         return;
     }
-    skipBytes(1);                                   // Keep Flags
-    skipBytes(1);                                   // Compress Flags
+    if (header.version >= 0x0A010000) {
+        skipBytes(1);                               // Keep Flags (since 10.1.0.0)
+        skipBytes(1);                               // Compress Flags (since 10.1.0.0)
+    }
     const uint8_t hasVertices = readUInt8();
     if (readError) {
         return;
@@ -840,7 +987,7 @@ void NIFParser::skipNiGeometryData(const std::string& typeName) {
         skipVector3Array(numVertices);              // Normals
         // BS Data Flags only exists on the 20.2+ streams, which these meshes
         // predate, so the tangent bit comes from Data Flags alone.
-        if ((dataFlags & 0x1000) != 0) {
+        if (header.version >= 0x0A010000 && (dataFlags & 0x1000) != 0) {
             skipVector3Array(numVertices);          // Tangents
             skipVector3Array(numVertices);          // Bitangents
         }
@@ -863,11 +1010,14 @@ void NIFParser::skipNiGeometryData(const std::string& typeName) {
     if (typeName == "NiTriShapeData") {
         const uint32_t numTriangles = readUInt16();
         skipBytes(4);                               // Num Triangle Points
-        const uint8_t hasTriangles = readUInt8();
-        if (readError) {
-            return;
+        bool hasTriangles = true;                   // Triangles are unconditional until 10.0.1.2
+        if (header.version >= 0x0A010000) {
+            hasTriangles = readUInt8() != 0;        // Has Triangles (since 10.1.0.0)
+            if (readError) {
+                return;
+            }
         }
-        if (hasTriangles != 0) {
+        if (hasTriangles) {
             skipBytes(static_cast<size_t>(numTriangles) * 6);
         }
         const uint32_t numMatchGroups = readUInt16();
@@ -891,7 +1041,7 @@ void NIFParser::skipNiGeometryData(const std::string& typeName) {
         if (readError) {
             return;
         }
-        const uint8_t hasPoints = readUInt8();
+        const uint8_t hasPoints = header.version >= 0x0A010003 ? readUInt8() : 1;
         if (readError) {
             return;
         }
@@ -902,9 +1052,14 @@ void NIFParser::skipNiGeometryData(const std::string& typeName) {
     }
 
     // NiPSysData
-    const uint8_t hasRadii = readUInt8();
-    if (readError) {
-        return;
+    uint8_t hasRadii = 0;
+    if (header.version >= 0x0A010000) {
+        hasRadii = readUInt8();                     // Has Radii (since 10.1.0.0)
+        if (readError) {
+            return;
+        }
+    } else {
+        skipBytes(4);                               // Particle Radius (until 10.0.1.0)
     }
     if (hasRadii != 0) {
         skipFloatArray(numVertices);
@@ -917,36 +1072,59 @@ void NIFParser::skipNiGeometryData(const std::string& typeName) {
     if (hasSizes != 0) {
         skipFloatArray(numVertices);
     }
-    const uint8_t hasRotations = readUInt8();
-    if (readError) {
-        return;
+    uint8_t hasRotations = 0;
+    if (header.version >= 0x0A000100) {
+        hasRotations = readUInt8();                 // Has Rotations (since 10.0.1.0)
+        if (readError) {
+            return;
+        }
     }
     if (hasRotations != 0) {
         skipBytes(static_cast<size_t>(numVertices) * 16);   // Quaternion
     }
-    const uint8_t hasRotationAngles = readUInt8();
-    if (readError) {
-        return;
+    // Has Rotation Angles and Has Rotation Axes only exist since 20.0.0.4, so
+    // Oblivion meshes never carry them.
+    if (header.version >= 0x14000004) {
+        const uint8_t hasRotationAngles = readUInt8();
+        if (readError) {
+            return;
+        }
+        if (hasRotationAngles != 0) {
+            skipFloatArray(numVertices);
+        }
+        const uint8_t hasRotationAxes = readUInt8();
+        if (readError) {
+            return;
+        }
+        if (hasRotationAxes != 0) {
+            skipVector3Array(numVertices);
+        }
     }
-    if (hasRotationAngles != 0) {
-        skipFloatArray(numVertices);
-    }
-    const uint8_t hasRotationAxes = readUInt8();
-    if (readError) {
-        return;
-    }
-    if (hasRotationAxes != 0) {
-        skipVector3Array(numVertices);
-    }
-    skipBytes(static_cast<size_t>(numVertices) * 28);       // Particle Info
-    const uint8_t hasRotationSpeeds = readUInt8();
-    if (readError) {
-        return;
-    }
-    if (hasRotationSpeeds != 0) {
-        skipFloatArray(numVertices);
+    // NiParticleInfo is 40 bytes until 10.4.0.1 because of Rotation Axis, and
+    // 28 bytes afterwards.
+    const size_t particleInfoStride = header.version <= 0x0A040001 ? 40 : 28;
+    skipBytes(static_cast<size_t>(numVertices) * particleInfoStride);   // Particle Info
+    if (header.version >= 0x14000002) {
+        const uint8_t hasRotationSpeeds = readUInt8();   // Has Rotation Speeds (since 20.0.0.2)
+        if (readError) {
+            return;
+        }
+        if (hasRotationSpeeds != 0) {
+            skipFloatArray(numVertices);
+        }
     }
     skipBytes(2 + 2);                               // Num Added Particles, Base
+
+    if (typeName == "NiMeshPSysData") {
+        skipBytes(4);                               // Default Pool Size
+        skipBytes(1);                               // Fill Pools On Load
+        const uint32_t numGenerations = readUInt32();
+        if (readError) {
+            return;
+        }
+        skipBytes(static_cast<size_t>(numGenerations) * 4);   // Generations
+        skipBytes(4);                               // Particle Meshes
+    }
 }
 
 // SkinPartition: the vertex payload is sparse, so every optional block is
@@ -1004,15 +1182,65 @@ void NIFParser::skipSkinPartition() {
     }
 }
 
-// ControlledBlock: Interpolator | Controller | Priority | String Palette
-// | five string palette offsets
+// ControlledBlock. Records below 10.1.0.104 hold the target name and the
+// controller reference only, 10.1.0.104/105 add the blend interpolator and
+// index, and the controller ID strings run from 10.1.0.104 through 10.1.0.113.
+// The name-in-palette offsets replace those strings between 10.2.0.0 and
+// 20.1.0.0.
 void NIFParser::skipControlledBlock() {
-    skipBytes(4 + 4 + 1 + 4 + 20);
+    const uint32_t version = header.version;
+    if (version < VERSION_10_1_0_104) {
+        skipStringArray(1);                     // Target Name
+        skipBytes(4);                           // Controller
+        return;
+    }
+    if (version < VERSION_10_1_0_106) {
+        skipBytes(4);                           // Controller
+    } else {
+        skipBytes(4 + 4);                       // Interpolator, Controller
+    }
+    if (version <= VERSION_10_1_0_110) {
+        skipBytes(4);                           // Blend Interpolator
+        skipBytes(2);                           // Blend Index
+    }
+    if (version >= VERSION_10_1_0_106) {
+        skipBytes(1);                           // Priority
+    }
+    if (version <= VERSION_10_1_0_113) {
+        skipStringArray(5);                     // Node Name .. Interpolator ID
+    } else if (version <= VERSION_20_1_0_0) {
+        skipBytes(4 + 20);                      // String Palette, five name offsets
+    } else {
+        skipStringArray(5);                     // Node Name .. Interpolator ID
+    }
 }
 
-// Morph: Frame Name | Vectors
+// Morph: Frame Name (10.1.0.106 and later) | Num Keys, Interpolation and Keys
+// (before 10.1.0.0) | Legacy Weight (10.1.0.104-20.1.0.2) | Vectors. The legacy
+// weight follows the stream version, not the user version: the 10.1.0.106
+// menus report BS version 5 and keep the weight, while the 20.0.0.4 meshes
+// report 11 and go straight from the frame name to the vectors.
 void NIFParser::skipMorph(uint32_t numVertices) {
-    skipStringArray(1);
+    const uint32_t version = header.version;
+    if (version >= VERSION_10_1_0_106) {
+        skipStringArray(1);                     // Frame Name
+    } else if (version < 0x0A010000) {
+        const uint32_t numKeys = readUInt32();
+        if (readError) {
+            return;
+        }
+        int interpolation = 0;
+        if (numKeys != 0) {
+            interpolation = static_cast<int>(readUInt32());
+            if (readError) {
+                return;
+            }
+        }
+        skipKeys(numKeys, "float", interpolation);
+    }
+    if (version >= VERSION_10_1_0_104 && bsVersion() < 10) {
+        skipBytes(4);                           // Legacy Weight
+    }
     skipVector3Array(numVertices);
 }
 
@@ -1026,6 +1254,12 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
     } else if (typeName == "NiBinaryExtraData") {
         skipStringArray(1);                     // Name
         skipStringArray(1);                     // Binary Data (ByteArray)
+    } else if (typeName == "NiBooleanExtraData") {
+        skipStringArray(1);                     // Name
+        skipBytes(1);                           // Boolean Data
+    } else if (typeName == "NiIntegerExtraData") {
+        skipStringArray(1);                     // Name
+        skipBytes(4);                           // Integer Data
     } else if (typeName == "BSXFlags") {
         skipStringArray(1);                     // Name
         skipBytes(4);                           // Integer Data
@@ -1050,6 +1284,9 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
     // --- NiObjectNET roots -------------------------------------------------
     } else if (typeName == "NiMaterialProperty") {
         skipNiObjectNET();
+        if (header.version <= 0x0A000102) {
+            skipBytes(2);                       // Flags (until 10.0.1.2)
+        }
         skipBytes(4 * 12 + 4 + 4);              // Four colors, Glossiness, Alpha
     } else if (typeName == "NiAlphaProperty") {
         skipNiObjectNET();
@@ -1060,21 +1297,57 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
     } else if (typeName == "NiZBufferProperty") {
         skipNiObjectNET();
         skipBytes(2 + 4);                       // Flags, Function
+    } else if (typeName == "NiSpecularProperty") {
+        skipNiObjectNET();
+        skipBytes(2);                           // Flags
+    } else if (typeName == "NiWireframeProperty") {
+        skipNiObjectNET();
+        skipBytes(2);                           // Flags
+    } else if (typeName == "NiDitherProperty") {
+        skipNiObjectNET();
+        skipBytes(2);                           // Flags
+    } else if (typeName == "NiFogProperty") {
+        skipNiObjectNET();
+        skipBytes(2 + 4 + 12);                  // Flags, Fog Depth, Fog Color
     } else if (typeName == "NiStencilProperty") {
         skipNiObjectNET();
         skipBytes(1 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
     } else if (typeName == "NiSourceTexture") {
         skipNiObjectNET();
-        skipBytes(1);                           // Use External
-        skipStringArray(1);                     // File Name
-        skipBytes(4);                           // Pixel Data
+        const uint8_t useExternal = readUInt8();
+        if (readError) {
+            return false;
+        }
+        if (header.version < 0x0A010000) {
+            uint8_t useInternal = 0;
+            if (useExternal == 0) {
+                useInternal = readUInt8();      // Use Internal (until 10.0.1.3)
+                if (readError) {
+                    return false;
+                }
+            } else {
+                skipStringArray(1);             // File Name
+            }
+            if (useExternal == 0 && useInternal != 0) {
+                skipBytes(4);                   // Pixel Data
+            }
+        } else {
+            skipStringArray(1);                 // File Name
+            skipBytes(4);                       // Pixel Data
+        }
         skipBytes(12);                          // Format Prefs
-        skipBytes(1 + 1);                       // Is Static, Direct Render
+        skipBytes(1);                           // Is Static
+        if (header.version >= 0x0A010067) {
+            skipBytes(1);                       // Direct Render (since 10.1.0.103)
+        }
     } else if (typeName == "NiStringPalette") {
         skipStringArray(1);                     // Palette
         skipBytes(4);                           // Length
     } else if (typeName == "NiTexturingProperty") {
         skipNiObjectNET();
+        if (header.version <= 0x0A000102) {
+            skipBytes(2);                       // Flags (until 10.0.1.2)
+        }
         skipBytes(4);                           // Apply Mode
         const uint32_t textureCount = readUInt32();
         if (readError) {
@@ -1118,7 +1391,7 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
         skipShaderTexDescs(numShaderTextures);
 
     // --- NiAVObject roots --------------------------------------------------
-    } else if (typeName == "NiNode") {
+    } else if (typeName == "NiNode" || typeName == "NiBillboardNode") {
         skipNiAVObject();
         const uint32_t childCount = readUInt32();
         if (readError) {
@@ -1130,9 +1403,30 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
             return false;
         }
         skipRefArray(effectCount);
+        if (typeName == "NiBillboardNode") {
+            skipBytes(2);                       // Billboard Mode
+        }
+    } else if (typeName == "NiAmbientLight" || typeName == "NiDirectionalLight") {
+        skipNiAVObject();
+        skipNiLight();
+    } else if (typeName == "NiPointLight") {
+        skipNiAVObject();
+        skipNiLight();
+        skipBytes(4 * 3);                       // Constant, Linear, Quadratic
+    } else if (typeName == "NiSpotLight") {
+        skipNiAVObject();
+        skipNiLight();
+        skipBytes(4 * 3 + 4 + 4);               // Point light pair, Angle, Exponent
+    } else if (typeName == "NiCamera") {
+        skipNiAVObject();
+        skipBytes(2);                           // Camera Flags
+        skipBytes(6 * 4);                       // Frustum
+        skipBytes(1);                           // Use Orthographic Projection
+        skipBytes(4 * 4);                       // Viewport
+        skipBytes(4 + 4 + 4 + 4);               // LOD Adjust, Scene, Screen counts
     } else if (typeName == "NiTriShape" || typeName == "NiTriStrips") {
         skipNiGeometry();
-    } else if (typeName == "NiParticleSystem") {
+    } else if (typeName == "NiParticleSystem" || typeName == "NiMeshParticleSystem") {
         skipNiGeometry();
         skipBytes(1);                           // World Space
         const uint32_t numModifiers = readUInt32();
@@ -1143,7 +1437,7 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
 
     // --- Geometry data -----------------------------------------------------
     } else if (typeName == "NiTriShapeData" || typeName == "NiTriStripsData" ||
-               typeName == "NiPSysData") {
+               typeName == "NiPSysData" || typeName == "NiMeshPSysData") {
         skipNiGeometryData(typeName);
 
     // --- NiTimeController roots --------------------------------------------
@@ -1155,10 +1449,15 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
         skipBytes(4);                           // Interpolator
     } else if (typeName == "NiPSysEmitterSpeedCtlr" ||
                typeName == "NiPSysEmitterDeclinationCtlr" ||
-               typeName == "NiPSysEmitterInitialRadiusCtlr") {
+               typeName == "NiPSysEmitterInitialRadiusCtlr" ||
+               typeName == "NiPSysModifierActiveCtlr" ||
+               typeName == "NiPSysGravityStrengthCtlr" ||
+               typeName == "NiPSysEmitterLifeSpanCtlr") {
         skipNiInterpController();
         skipBytes(4);                           // Interpolator
         skipStringArray(1);                     // Modifier Name
+    } else if (typeName == "NiPSysResetOnLoopCtlr") {
+        skipNiTimeController();
     } else if (typeName == "NiMaterialColorController") {
         skipNiInterpController();
         skipBytes(4 + 2);                       // Interpolator, Target Color (MaterialColor)
@@ -1183,11 +1482,17 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
             return false;
         }
         skipRefArray(numInterpolators);
-        const uint32_t numUnknownInts = readUInt32();
-        if (readError) {
-            return false;
+        // The int list that 10.2.0.0 appends after the interpolator refs is
+        // guarded by a BS version above 9. The 10.1.0.106 menus report 5 and
+        // the 10.2.0.0 meshes 6 or 9, so only the 20.0.0.4 meshes carry it.
+        if (header.version >= VERSION_10_2_0_0 && header.version < VERSION_20_0_0_5 &&
+            bsVersion() > 9) {
+            const uint32_t numUnknownInts = readUInt32();
+            if (readError) {
+                return false;
+            }
+            skipBytes(numUnknownInts * 4);
         }
-        skipBytes(static_cast<size_t>(numUnknownInts) * 4);
     } else if (typeName == "NiMultiTargetTransformController") {
         skipNiInterpController();
         const uint32_t numExtraTargets = readUInt16();
@@ -1239,9 +1544,30 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
     } else if (typeName == "NiPoint3Interpolator") {
         skipBytes(12 + 4);                      // Value, Data
     } else if (typeName == "NiBlendFloatInterpolator") {
-        skipBlendInterpolator(false);
+        skipBlendInterpolator(4);
     } else if (typeName == "NiBlendBoolInterpolator") {
-        skipBlendInterpolator(true);
+        skipBlendInterpolator(1);
+    } else if (typeName == "NiBlendTransformInterpolator") {
+        // The stored NiQuatTransform disappears at 10.1.0.110.
+        skipBlendInterpolator(header.version <= 0x0A01006D ? 35 : 0);
+    } else if (typeName == "NiBlendPoint3Interpolator") {
+        skipBlendInterpolator(12);
+    } else if (typeName == "NiBlendColorInterpolator") {
+        skipBlendInterpolator(16);
+    } else if (typeName == "NiBlendQuaternionInterpolator") {
+        skipBlendInterpolator(16);
+    } else if (typeName == "NiBoolTimelineInterpolator") {
+        skipBytes(1 + 4);                       // Value, Data
+    } else if (typeName == "NiPathInterpolator") {
+        skipBytes(2 + 4 + 4 + 4 + 2 + 4 + 4);   // Flags, Bank, Angle, Smoothing, Axis, Path, Percent
+    } else if (typeName == "NiBSplineInterpolator" ||
+               typeName == "NiBSplineTransformInterpolator" ||
+               typeName == "NiBSplineCompTransformInterpolator" ||
+               typeName == "NiBSplinePoint3Interpolator" ||
+               typeName == "NiBSplineCompPoint3Interpolator" ||
+               typeName == "NiBSplineFloatInterpolator" ||
+               typeName == "NiBSplineCompFloatInterpolator") {
+        skipBSplineInterpolator(typeName);
 
     // --- Key data ----------------------------------------------------------
     } else if (typeName == "NiFloatData") {
@@ -1254,6 +1580,12 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
         skipKeyGroup("Vector3");
     } else if (typeName == "NiTransformData") {
         skipKeyframeData();
+
+    // --- Spline data -------------------------------------------------------
+    } else if (typeName == "NiBSplineData") {
+        skipBSplineData();
+    } else if (typeName == "NiBSplineBasisData") {
+        skipBytes(4);                           // Num Control Points
 
     // --- Animation payload -------------------------------------------------
     } else if (typeName == "NiMorphData") {
@@ -1268,18 +1600,42 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
         }
     } else if (typeName == "NiControllerSequence") {
         skipStringArray(1);                     // Name
-        const uint32_t numControlledBlocks = readUInt32();
-        skipBytes(4);                           // Array Grow By
-        if (readError) {
-            return false;
+        if (header.version < VERSION_10_1_0_106) {
+            // Legacy NiSequence: the accum root name and the text keys replace
+            // the weight, timing and manager block that 10.1.0.106 introduced,
+            // and the controlled block array has no grow by field.
+            skipStringArray(1);                 // Accum Root Name
+            skipBytes(4);                       // Text Keys
+            const uint32_t numLegacyBlocks = readUInt32();
+            if (readError) {
+                return false;
+            }
+            for (uint32_t i = 0; i < numLegacyBlocks && !readError; i++) {
+                skipControlledBlock();
+            }
+        } else {
+            const uint32_t numControlledBlocks = readUInt32();
+            skipBytes(4);                       // Array Grow By
+            if (readError) {
+                return false;
+            }
+            for (uint32_t i = 0; i < numControlledBlocks && !readError; i++) {
+                skipControlledBlock();
+            }
+            skipBytes(4 + 4 + 4 + 4);           // Weight, Text Keys, Cycle Type, Frequency
+            if (header.version >= VERSION_10_1_0_106 && header.version <= VERSION_10_4_0_1) {
+                skipBytes(4);                   // Phase
+            }
+            skipBytes(4 + 4);                   // Start Time, Stop Time
+            if (header.version == VERSION_10_1_0_106) {
+                skipBytes(1);                   // Play Backwards
+            }
+            skipBytes(4);                       // Manager
+            skipStringArray(1);                 // Accum Root Name
+            if (header.version >= VERSION_10_1_0_113 && header.version <= VERSION_20_1_0_0) {
+                skipBytes(4);                   // String Palette
+            }
         }
-        for (uint32_t i = 0; i < numControlledBlocks && !readError; i++) {
-            skipControlledBlock();
-        }
-        skipBytes(4 + 4 + 4 + 4 + 4 + 4);       // Weight .. Stop Time
-        skipBytes(4);                           // Manager
-        skipStringArray(1);                     // Accum Root Name
-        skipBytes(4);                           // String Palette
     } else if (typeName == "NiDefaultAVObjectPalette") {
         skipBytes(4);                           // Scene
         const uint32_t numObjs = readUInt32();
@@ -1341,10 +1697,38 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
     } else if (typeName == "NiPSysColliderManager") {
         skipNiPSysModifier();
         skipBytes(4);                           // Collider
+    } else if (typeName == "NiPSysGravityModifier") {
+        skipNiPSysModifier();
+        skipBytes(4 + 12 + 4 + 4 + 4 + 4 + 4);  // Object, Axis, Decay, Strength,
+                                                // Force Type, Turbulence pair
+    } else if (typeName == "NiPSysBombModifier") {
+        skipNiPSysModifier();
+        skipBytes(4 + 12 + 4 + 4 + 4 + 4);      // Object, Axis, Decay, Delta V,
+                                                // Decay Type, Symmetry Type
+    } else if (typeName == "NiPSysDragModifier") {
+        skipNiPSysModifier();
+        skipBytes(4 + 12 + 4 + 4 + 4);          // Object, Axis, Percentage, Range pair
+    } else if (typeName == "NiPSysMeshUpdateModifier") {
+        skipNiPSysModifier();
+        const uint32_t numMeshes = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipPtrArray(numMeshes);
+    } else if (typeName == "BSParentVelocityModifier") {
+        skipNiPSysModifier();
+        skipBytes(4);                           // Damping
     } else if (typeName == "NiPSysSphereEmitter") {
         skipNiPSysModifier();
         skipNiPSysEmitterBase(true);
         skipBytes(4);                           // Radius
+    } else if (typeName == "NiPSysCylinderEmitter") {
+        skipNiPSysModifier();
+        skipNiPSysEmitterBase(true);
+        skipBytes(4 + 4);                       // Radius, Height
+    } else if (typeName == "BSPSysArrayEmitter") {
+        skipNiPSysModifier();
+        skipNiPSysEmitterBase(true);
     } else if (typeName == "NiPSysBoxEmitter") {
         skipNiPSysModifier();
         skipNiPSysEmitterBase(true);
@@ -1383,6 +1767,24 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
         }
         skipRefArray(numConstraints);
         skipBytes(4);                           // Body Flags
+    } else if (typeName == "bhkSPCollisionObject") {
+        skipBytes(4 + 2 + 4);                   // Target, Flags, Body
+    } else if (typeName == "bhkTransformShape" || typeName == "bhkConvexTransformShape") {
+        skipBytes(4 + 4 + 4 + 8);               // Shape, Material, Radius, Unused 01
+        skipBytes(64);                          // Transform
+    } else if (typeName == "bhkConvexSweepShape") {
+        skipBytes(4 + 4 + 4 + 12);              // Shape, Material, Radius, Unknown
+    } else if (typeName == "bhkMultiSphereShape") {
+        skipBytes(4 + 12);                      // Material, Shape Property
+        const uint32_t numSpheres = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipBytes(static_cast<size_t>(numSpheres) * 16);   // NiBound
+    } else if (typeName == "bhkSimpleShapePhantom") {
+        skipBytes(4 + 4 + 20);                  // Shape, Havok Filter, World Object Info
+        skipBytes(8);                           // Unused 01
+        skipBytes(64);                          // Transform
     } else if (typeName == "bhkSphereShape") {
         skipBytes(4 + 4);                       // Material, Radius
     } else if (typeName == "bhkBoxShape") {
@@ -1436,6 +1838,15 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
     } else if (typeName == "bhkLimitedHingeConstraint") {
         skipBytes(16);                          // bhkConstraintCInfo
         skipBytes(124);                         // 7 x Vector4, Min/Max Angle, Friction
+    } else if (typeName == "bhkHingeConstraint") {
+        skipBytes(16);                          // bhkConstraintCInfo
+        skipBytes(80);                          // 5 x Vector4
+    } else if (typeName == "bhkPrismaticConstraint") {
+        skipBytes(16);                          // bhkConstraintCInfo
+        skipBytes(140);                         // 8 x Vector4, Min/Max, Friction
+    } else if (typeName == "bhkStiffSpringConstraint") {
+        skipBytes(16);                          // bhkConstraintCInfo
+        skipBytes(36);                          // Pivot pair, Length
     } else if (typeName == "bhkRagdollConstraint") {
         skipBytes(16);                          // bhkConstraintCInfo
         skipBytes(120);                         // 6 x Vector4, 5 angles, Friction
@@ -1480,9 +1891,11 @@ bool NIFParser::walkAllBlocks() {
         return false;
     }
 
-    // Meshes from the 10.1.0.x line prefix each block body with a uint32 that
-    // holds the body length. The 10.2+ and 20.x meshes drop it.
-    if (header.version >= 0x0A010000 && header.version <= 0x0A01006A) {
+    // Meshes from the 10.0.1.x and 10.1.0.x lines prefix each block body with a
+    // uint32 that reads as zero in every sample of the shipped corpus, so the
+    // first field of the body sits four bytes after the recorded offset. The
+    // 10.2+ and 20.x meshes drop the prefix.
+    if (header.version >= 0x0A000100 && header.version <= 0x0A01006A) {
         blockPrefix = 4;
     }
 

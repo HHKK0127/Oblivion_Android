@@ -51,8 +51,6 @@ private:
     // Textures
     GLuint bgTexture = 0;
     GLuint logoTexture = 0;
-    GLuint buttonBgTex = 0;
-    GLuint buttonHoverTex = 0;
     bool texturesLoaded = false;
 
     // Plugin data for DataFiles screen

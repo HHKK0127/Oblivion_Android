@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cctype>
 #include <string>
 #include <mutex>
 #include <cmath>
@@ -251,6 +252,64 @@ public:
         b = currentWeather_.sky.horizon[2];
     }
 
+    // ========================================================================
+    // Phase 66: Drive the weather presets from real Oblivion.esm WTHR records.
+    //
+    // The ESM stores 37 WTHR records, each with four time-of-day sky colour
+    // sets (NAM0: Sunrise/Day/Sunset/Night) plus fog distances (FNAM) and a
+    // wind speed (DATA). We classify each record into one of the eight
+    // WeatherType buckets using its editorID (Oblivion's naming is stable:
+    // "Clear", "Cloudy", "Fog", "Overcast", "Rain", "Thunderstorm", "Snow",
+    // "Blight") and then blend the real colours into the matching preset.
+    //
+    // Colours in the ESM are BGRA uint32; we convert to linear-ish float RGB.
+    // ========================================================================
+    template <typename WeatherList>
+    int loadFromESM(const WeatherList& weathers) {
+        std::lock_guard<std::mutex> lock(mutex_);
+
+        int applied = 0;
+        for (const auto& w : weathers) {
+            const WeatherType type = classifyWeather(w.editorID);
+            if (type == WeatherType::COUNT) continue;
+
+            auto& preset = weatherPresets_[static_cast<size_t>(type)];
+
+            // NAM0 index 1 is the "Day" sky set, the most representative for
+            // the preset's default look. Fall back to index 0 if unset.
+            const oblivion::WeatherSkyColors& day =
+                (w.sky[1].upperSky != 0) ? w.sky[1] : w.sky[0];
+            if (day.upperSky != 0) {
+                bgraToRgb(day.upperSky, preset.sky.zenith);
+            }
+            if (day.fog != 0) {
+                bgraToRgb(day.fog, preset.sky.horizon);
+            }
+            if (day.clouds != 0) {
+                bgraToRgb(day.clouds, preset.clouds.color);
+            }
+
+            // Fog distances: FNAM day near/far. Oblivion stores these in game
+            // units; the renderer treats visibility as the far plane distance.
+            if (w.fogDayFar > 0.0f) {
+                preset.visibility = w.fogDayFar;
+            }
+
+            // Wind speed (DATA offset 0, 0-255 scale).
+            preset.windSpeed = static_cast<float>(w.windSpeed) * 0.1f;
+
+            applied++;
+        }
+
+        // Re-seed the live state from the (now ESM-backed) presets so the very
+        // first frame already reflects real data.
+        currentWeather_ = weatherPresets_[static_cast<size_t>(currentWeather_.type)];
+        targetWeather_ = currentWeather_;
+
+        LOGI_SKY("SkyWeatherSystem: applied %d WTHR records from ESM", applied);
+        return applied;
+    }
+
     // Generate sky shader
     std::string generateSkyShader() const {
         std::string src;
@@ -446,6 +505,37 @@ private:
         blizzard.windSpeed = 15.0f;
         blizzard.temperature = -15.0f;
     }
+
+    // Map an Oblivion WTHR editorID onto one of the eight preset buckets.
+    static WeatherType classifyWeather(const std::string& editorID) {
+        // Lower-case copy for case-insensitive matching.
+        std::string id;
+        id.reserve(editorID.size());
+        for (char c : editorID) {
+            id.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+        }
+
+        if (id.find("blight") != std::string::npos) return WeatherType::BLIZZARD;
+        if (id.find("thunder") != std::string::npos) return WeatherType::THUNDER;
+        if (id.find("snow") != std::string::npos) return WeatherType::SNOW;
+        if (id.find("rain") != std::string::npos) return WeatherType::RAIN;
+        if (id.find("fog") != std::string::npos) return WeatherType::FOGGY;
+        if (id.find("overcast") != std::string::npos) return WeatherType::OVERCAST;
+        if (id.find("cloud") != std::string::npos) return WeatherType::CLOUDY;
+        if (id.find("clear") != std::string::npos) return WeatherType::CLEAR;
+        return WeatherType::COUNT;
+    }
+
+    // ESM colours are packed BGRA (0xAARRGGBB little-endian); convert to float RGB.
+    static void bgraToRgb(uint32_t bgra, float out[3]) {
+        const float b = static_cast<float>((bgra >> 16) & 0xFF) / 255.0f;
+        const float g = static_cast<float>((bgra >> 8) & 0xFF) / 255.0f;
+        const float r = static_cast<float>(bgra & 0xFF) / 255.0f;
+        out[0] = r;
+        out[1] = g;
+        out[2] = b;
+    }
 };
 
 } // namespace engine
+
