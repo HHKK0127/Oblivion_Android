@@ -41,6 +41,7 @@ private:
     void testScriptFunctions();
     void testScriptManager();
     void testNativeScdaDecoder();
+    void testNativeScdaVm();
 
     // Helper
     void record(const std::string& name, bool passed,

@@ -11,6 +11,7 @@
 #include "../script/script_manager.h"
 #include "../script/script_opcodes.h"
 #include "../script/native_scda_decoder.h"
+#include "../script/native_scda_vm.h"
 #include "../quest/quest_flow_controller.h"
 #include "../game/inventory_manager.h"
 #include "../assets/esm_reader.h"
@@ -1357,7 +1358,7 @@ void ScriptVMTests::testNativeScdaDecoder() {
 
         bool ok = true;
 
-        // [1][<r>] — no offsets
+        // [1][<r>] ? no offsets
         {
             std::vector<uint8_t> payload;
             appendU16(payload, 1);
@@ -1367,7 +1368,7 @@ void ScriptVMTests::testNativeScdaDecoder() {
                  !args.hasOffsets && args.offsetCount == 0;
         }
 
-        // [2][<r>][z] — x only
+        // [2][<r>][z] ? x only
         {
             std::vector<uint8_t> payload;
             appendU16(payload, 2);
@@ -1380,7 +1381,7 @@ void ScriptVMTests::testNativeScdaDecoder() {
                  !args.offsetIsLiteral[1] && !args.offsetIsLiteral[2];
         }
 
-        // [4][<r>][z][z][z] — x y z
+        // [4][<r>][z][z][z] ? x y z
         {
             std::vector<uint8_t> payload;
             appendU16(payload, 4);
@@ -1396,7 +1397,7 @@ void ScriptVMTests::testNativeScdaDecoder() {
                  args.offsetIsLiteral[2] && args.offsetLiterals[2] == 0.0f;
         }
 
-        // [4][<r>][f][f][z] — the shape behind
+        // [4][<r>][f][f][z] ? the shape behind
         // "SEHaskillRef.moveto player x y 0": x and y are float script
         // variables, so only z carries a literal.
         {
@@ -1895,6 +1896,752 @@ void ScriptVMTests::testNativeScdaDecoder() {
 }
 
 // ============================================
+// Native SCDA virtual machine
+// ============================================
+namespace {
+
+// Builds a Begin block. bodyLength counts the bytes from the payload start to
+// the last instruction inside the block, so it is the body size plus the 4 byte
+// End that closes it.
+void appendBeginBlock(std::vector<uint8_t>& out, uint16_t blockType,
+                      const std::vector<uint8_t>& body) {
+    std::vector<uint8_t> payload;
+    appendU16(payload, blockType);
+    appendU16(payload, static_cast<uint16_t>(body.size() + 4));
+    appendU32(payload, 0);
+    appendInstruction(out, 0x0010, payload);
+    out.insert(out.end(), body.begin(), body.end());
+    appendInstruction(out, 0x0011, {});
+}
+
+// An If/ElseIf/Else payload: compiler metadata, expression length, expression.
+// Else carries only the metadata word; measured over the retail corpus, all 172
+// Else instructions are exactly 2 bytes.
+void appendConditional(std::vector<uint8_t>& out, uint16_t opcode,
+                       const std::vector<uint8_t>& expression) {
+    std::vector<uint8_t> payload;
+    appendU16(payload, 1);
+    if (opcode != 0x0017) {
+        appendU16(payload, static_cast<uint16_t>(expression.size()));
+        payload.insert(payload.end(), expression.begin(), expression.end());
+    }
+    appendInstruction(out, opcode, payload);
+}
+
+// An Else payload: the metadata word only. Measured over the retail corpus, all
+// 172 Else instructions are exactly 2 bytes.
+void appendElse(std::vector<uint8_t>& out) {
+    std::vector<uint8_t> payload;
+    appendU16(payload, 1);
+    appendInstruction(out, 0x0017, payload);
+}
+
+// A Set payload: target tokens, then the expression length and expression.
+void appendSet(std::vector<uint8_t>& out, const std::vector<uint8_t>& target,
+               const std::vector<uint8_t>& expression) {
+    std::vector<uint8_t> payload = target;
+    appendU16(payload, static_cast<uint16_t>(expression.size()));
+    payload.insert(payload.end(), expression.begin(), expression.end());
+    appendInstruction(out, 0x0015, payload);
+}
+
+// A postfix expression made of ASCII text operands and operators.
+std::vector<uint8_t> textExpression(const std::vector<std::string>& parts) {
+    std::vector<uint8_t> out;
+    for (const std::string& part : parts) {
+        out.push_back(0x20);
+        out.insert(out.end(), part.begin(), part.end());
+    }
+    return out;
+}
+
+} // namespace
+
+void ScriptVMTests::testNativeScdaVm() {
+    // Test 1: a block runs to its End and stops there
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> body;
+        appendInstruction(body, 0x1021, {});  // Enable
+        appendInstruction(body, 0x1022, {});  // Disable
+
+        std::vector<uint8_t> code;
+        appendBeginBlock(code, 0x0000, body);
+
+        const NativeDecodeResult program = decodeNativeScda(code);
+        NativeScdaVm vm;
+        int calls = 0;
+        vm.registerCommand(0x1021, [&calls](NativeCommandContext&, const std::vector<NativeToken>&,
+                                            ScriptValue&, std::string&) {
+            ++calls;
+            return true;
+        });
+        vm.registerCommand(0x1022, [&calls](NativeCommandContext&, const std::vector<NativeToken>&,
+                                            ScriptValue&, std::string&) {
+            ++calls;
+            return true;
+        });
+
+        const NativeVmResult result = vm.run(program, 0x0000, 0x1234);
+        const bool ok = result == NativeVmResult::Success && calls == 2 &&
+                        vm.getExecutedInstructionCount() == 2;
+        record("NativeVm: block runs to End", ok,
+               "A gamemode block executes its commands and stops at End",
+               getTimeMs38() - start);
+    }
+
+    // Test 2: a block type that is absent reports NotRunning
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> code;
+        appendBeginBlock(code, 0x0000, {});
+
+        const NativeDecodeResult program = decodeNativeScda(code);
+        NativeScdaVm vm;
+        const NativeVmResult result = vm.run(program, 0x0003, 0x1234);
+        const bool ok = result == NativeVmResult::NotRunning && !vm.getLastError().empty();
+        record("NativeVm: missing block type", ok,
+               "A block type the program does not contain reports NotRunning",
+               getTimeMs38() - start);
+    }
+
+    // Test 3: If takes the true branch and skips the else
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> body;
+        appendConditional(body, 0x0016, textExpression({"1"}));  // if 1
+        appendInstruction(body, 0x1021, {});                     // Enable
+        appendElse(body);                                        // else
+        appendInstruction(body, 0x1022, {});                     // Disable
+        appendInstruction(body, 0x0019, {});                     // endif
+
+        std::vector<uint8_t> code;
+        appendBeginBlock(code, 0x0000, body);
+
+        const NativeDecodeResult program = decodeNativeScda(code);
+        NativeScdaVm vm;
+        int enabled = 0;
+        int disabled = 0;
+        vm.registerCommand(0x1021, [&enabled](NativeCommandContext&, const std::vector<NativeToken>&,
+                                              ScriptValue&, std::string&) {
+            ++enabled;
+            return true;
+        });
+        vm.registerCommand(0x1022, [&disabled](NativeCommandContext&, const std::vector<NativeToken>&,
+                                               ScriptValue&, std::string&) {
+            ++disabled;
+            return true;
+        });
+
+        const NativeVmResult result = vm.run(program, 0x0000, 0x1234);
+        const bool ok = result == NativeVmResult::Success && enabled == 1 && disabled == 0;
+        record("NativeVm: if true branch", ok,
+               "A true condition runs the if body and skips the else body",
+               getTimeMs38() - start);
+    }
+
+    // Test 4: a false condition falls through to the else body
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> body;
+        appendConditional(body, 0x0016, textExpression({"0"}));  // if 0
+        appendInstruction(body, 0x1021, {});                     // Enable
+        appendElse(body);                     // else
+        appendInstruction(body, 0x1022, {});                     // Disable
+        appendInstruction(body, 0x0019, {});                     // endif
+
+        std::vector<uint8_t> code;
+        appendBeginBlock(code, 0x0000, body);
+
+        const NativeDecodeResult program = decodeNativeScda(code);
+        NativeScdaVm vm;
+        int enabled = 0;
+        int disabled = 0;
+        vm.registerCommand(0x1021, [&enabled](NativeCommandContext&, const std::vector<NativeToken>&,
+                                              ScriptValue&, std::string&) {
+            ++enabled;
+            return true;
+        });
+        vm.registerCommand(0x1022, [&disabled](NativeCommandContext&, const std::vector<NativeToken>&,
+                                               ScriptValue&, std::string&) {
+            ++disabled;
+            return true;
+        });
+
+        const NativeVmResult result = vm.run(program, 0x0000, 0x1234);
+        const bool ok = result == NativeVmResult::Success && enabled == 0 && disabled == 1;
+        record("NativeVm: if false branch", ok,
+               "A false condition skips the if body and runs the else body",
+               getTimeMs38() - start);
+    }
+
+    // Test 5: ElseIf is only evaluated when no earlier branch was taken
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> body;
+        appendConditional(body, 0x0016, textExpression({"0"}));  // if 0
+        appendInstruction(body, 0x1021, {});                     // Enable
+        appendConditional(body, 0x0018, textExpression({"1"}));  // elseif 1
+        appendInstruction(body, 0x1022, {});                     // Disable
+        appendElse(body);                     // else
+        appendInstruction(body, 0x105E, {});                     // Evp
+        appendInstruction(body, 0x0019, {});                     // endif
+
+        std::vector<uint8_t> code;
+        appendBeginBlock(code, 0x0000, body);
+
+        const NativeDecodeResult program = decodeNativeScda(code);
+        NativeScdaVm vm;
+        int enabled = 0;
+        int disabled = 0;
+        int evp = 0;
+        vm.registerCommand(0x1021, [&enabled](NativeCommandContext&, const std::vector<NativeToken>&,
+                                              ScriptValue&, std::string&) {
+            ++enabled;
+            return true;
+        });
+        vm.registerCommand(0x1022, [&disabled](NativeCommandContext&, const std::vector<NativeToken>&,
+                                               ScriptValue&, std::string&) {
+            ++disabled;
+            return true;
+        });
+        vm.registerCommand(0x105E, [&evp](NativeCommandContext&, const std::vector<NativeToken>&,
+                                          ScriptValue&, std::string&) {
+            ++evp;
+            return true;
+        });
+
+        const NativeVmResult result = vm.run(program, 0x0000, 0x1234);
+        const bool ok = result == NativeVmResult::Success && enabled == 0 &&
+                        disabled == 1 && evp == 0;
+        record("NativeVm: elseif chain", ok,
+               "The first true branch wins and later branches are skipped",
+               getTimeMs38() - start);
+    }
+
+    // Test 6: a stray EndIf at depth zero is a no-op, not an error. The retail
+    // corpus ships 43 scripts with an unbalanced block, so rejecting them would
+    // drop real content.
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> body;
+        appendInstruction(body, 0x0019, {});  // endif with no if
+        appendInstruction(body, 0x1021, {});  // Enable
+        appendInstruction(body, 0x0019, {});  // another stray endif
+
+        std::vector<uint8_t> code;
+        appendBeginBlock(code, 0x0000, body);
+
+        const NativeDecodeResult program = decodeNativeScda(code);
+        NativeScdaVm vm;
+        int enabled = 0;
+        vm.registerCommand(0x1021, [&enabled](NativeCommandContext&, const std::vector<NativeToken>&,
+                                              ScriptValue&, std::string&) {
+            ++enabled;
+            return true;
+        });
+
+        const NativeVmResult result = vm.run(program, 0x0000, 0x1234);
+        const bool ok = result == NativeVmResult::Success && enabled == 1;
+        record("NativeVm: stray endif is a no-op", ok,
+               "An EndIf with an empty block stack is ignored and execution continues",
+               getTimeMs38() - start);
+    }
+
+    // Test 7: a stray Else at depth zero is a no-op too
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> body;
+        appendElse(body);  // else with no if
+        appendInstruction(body, 0x1021, {});  // Enable
+
+        std::vector<uint8_t> code;
+        appendBeginBlock(code, 0x0000, body);
+
+        const NativeDecodeResult program = decodeNativeScda(code);
+        NativeScdaVm vm;
+        int enabled = 0;
+        vm.registerCommand(0x1021, [&enabled](NativeCommandContext&, const std::vector<NativeToken>&,
+                                              ScriptValue&, std::string&) {
+            ++enabled;
+            return true;
+        });
+
+        const NativeVmResult result = vm.run(program, 0x0000, 0x1234);
+        const bool ok = result == NativeVmResult::Success && enabled == 1;
+        record("NativeVm: stray else is a no-op", ok,
+               "An Else with an empty block stack is ignored and execution continues",
+               getTimeMs38() - start);
+    }
+
+    // Test 8: Set writes a local variable and the value survives the run
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> target;
+        target.push_back('f');
+        appendU16(target, 3);
+
+        std::vector<uint8_t> body;
+        appendSet(body, target, textExpression({"7"}));
+
+        std::vector<uint8_t> code;
+        appendBeginBlock(code, 0x0000, body);
+
+        const NativeDecodeResult program = decodeNativeScda(code);
+        NativeScdaVm vm;
+        const NativeVmResult result = vm.run(program, 0x0000, 0x1234);
+        const bool ok = result == NativeVmResult::Success &&
+                        vm.variables().get(3).toInt() == 7;
+        record("NativeVm: Set local", ok,
+               "Set stores the expression result in the target local variable",
+               getTimeMs38() - start);
+    }
+
+    // Test 9: the whole measured operator set evaluates. The set is closed: it
+    // was measured over every expression in the vanilla corpus.
+    {
+        const float start = getTimeMs38();
+        NativeScdaVm vm;
+        std::string error;
+
+        auto eval = [&vm, &error](const std::vector<std::string>& parts, ScriptValue& out) {
+            error.clear();
+            std::vector<uint8_t> bytes = textExpression(parts);
+            std::vector<NativeToken> tokens;
+            if (!decodeNativeExpression(bytes.data(), bytes.size(), tokens, error)) {
+                return false;
+            }
+            return vm.evaluateExpression(tokens, out, error);
+        };
+
+        ScriptValue value;
+        bool ok = true;
+
+        ok = ok && eval({"1", "2", "+"}, value) && value.toInt() == 3;
+        ok = ok && eval({"5", "3", "-"}, value) && value.toInt() == 2;
+        ok = ok && eval({"4", "3", "*"}, value) && value.toInt() == 12;
+        ok = ok && eval({"9", "3", "/"}, value) && value.toInt() == 3;
+        ok = ok && eval({"1", "1", "=="}, value) && value.toInt() == 1;
+        ok = ok && eval({"1", "2", "!="}, value) && value.toInt() == 1;
+        ok = ok && eval({"1", "2", "<"}, value) && value.toInt() == 1;
+        ok = ok && eval({"2", "2", "<="}, value) && value.toInt() == 1;
+        ok = ok && eval({"3", "2", ">"}, value) && value.toInt() == 1;
+        ok = ok && eval({"2", "2", ">="}, value) && value.toInt() == 1;
+        ok = ok && eval({"1", "0", "&&"}, value) && value.toInt() == 0;
+        ok = ok && eval({"1", "0", "||"}, value) && value.toInt() == 1;
+        ok = ok && eval({"0", "~"}, value) && value.toInt() == 1;
+        ok = ok && eval({"1", "~"}, value) && value.toInt() == 0;
+
+        record("NativeVm: operator set", ok,
+               "All thirteen measured operators evaluate in postfix order",
+               getTimeMs38() - start);
+    }
+
+    // Test 10: decimal literals keep their fractional part
+    {
+        const float start = getTimeMs38();
+        NativeScdaVm vm;
+        std::string error;
+
+        auto eval = [&vm, &error](const std::vector<std::string>& parts, ScriptValue& out) {
+            error.clear();
+            std::vector<uint8_t> bytes = textExpression(parts);
+            std::vector<NativeToken> tokens;
+            if (!decodeNativeExpression(bytes.data(), bytes.size(), tokens, error)) {
+                return false;
+            }
+            return vm.evaluateExpression(tokens, out, error);
+        };
+
+        ScriptValue value;
+        bool ok = true;
+
+        // ".5" is a valid literal in this grammar, and a float operand keeps the
+        // result a float. Integer operands stay integral: all seven divisions in
+        // the retail corpus are "value / 2" or "value / 4", where truncation is
+        // the intended behaviour.
+        ok = ok && eval({".5"}, value) && value.type == ScriptValue::Type::Float &&
+             std::fabs(value.toFloat() - 0.5f) < 0.0001f;
+        ok = ok && eval({"1", "2", "/"}, value) &&
+             value.type == ScriptValue::Type::Integer && value.toInt() == 0;
+        ok = ok && eval({"1.5", "1.5", "+"}, value) &&
+             std::fabs(value.toFloat() - 3.0f) < 0.0001f;
+
+        record("NativeVm: decimal literals", ok,
+               "Leading-dot and dotted literals parse and keep float precision",
+               getTimeMs38() - start);
+    }
+
+    // Test 11: division by zero is an explicit error rather than a crash
+    {
+        const float start = getTimeMs38();
+        NativeScdaVm vm;
+        std::string error;
+        std::vector<uint8_t> bytes = textExpression({"1", "0", "/"});
+        std::vector<NativeToken> tokens;
+        ScriptValue value;
+        const bool decoded = decodeNativeExpression(bytes.data(), bytes.size(), tokens, error);
+        const bool ok = decoded && !vm.evaluateExpression(tokens, value, error) &&
+                        !error.empty();
+        record("NativeVm: division by zero", ok,
+               "Dividing by zero reports an error instead of trapping",
+               getTimeMs38() - start);
+    }
+
+    // Test 12: an expression function is called with evaluated arguments
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> body;
+        std::vector<uint8_t> target;
+        target.push_back('f');
+        appendU16(target, 1);
+
+        // set x to (GetStage 42) == 3
+        std::vector<uint8_t> expression;
+        expression.push_back(0x20);
+        expression.push_back('X');
+        appendU16(expression, 0x103A);  // GetStage
+        // argumentBytes spans the whole argument list, including the 2 byte
+        // count word: [argc=1] + 'n' + u32 = 2 + 5 = 7.
+        appendU16(expression, 7);
+        appendU16(expression, 1);
+        expression.push_back('n');
+        appendU32(expression, 42);
+        expression.push_back(0x20);
+        expression.push_back('3');
+        expression.push_back(0x20);
+        expression.push_back('=');
+        expression.push_back('=');
+
+        appendSet(body, target, expression);
+
+        std::vector<uint8_t> code;
+        appendBeginBlock(code, 0x0000, body);
+
+        const NativeDecodeResult program = decodeNativeScda(code);
+        NativeScdaVm vm;
+        uint16_t seenOpcode = 0;
+        int seenArg = -1;
+        vm.registerExpressionFunction(
+            0x103A, [&seenOpcode, &seenArg](NativeCommandContext& context,
+                                            const std::vector<ScriptValue>& args,
+                                            ScriptValue& returnValue, std::string&) {
+                seenOpcode = context.opcode;
+                if (!args.empty()) seenArg = args[0].toInt();
+                returnValue = ScriptValue::makeInt(3);
+                return true;
+            });
+
+        const NativeVmResult result = vm.run(program, 0x0000, 0x1234);
+        const bool ok = result == NativeVmResult::Success && seenOpcode == 0x103A &&
+                        seenArg == 42 && vm.variables().get(1).toInt() == 1;
+        record("NativeVm: expression function", ok,
+               "An expression function receives evaluated arguments and returns a value",
+               getTimeMs38() - start);
+    }
+
+    // Test 13: an unregistered expression function is an explicit error
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> body;
+        std::vector<uint8_t> target;
+        target.push_back('f');
+        appendU16(target, 1);
+
+        std::vector<uint8_t> expression;
+        expression.push_back(0x20);
+        expression.push_back('X');
+        appendU16(expression, 0x103A);
+        appendU16(expression, 5);
+        appendU16(expression, 1);
+        expression.push_back('n');
+        appendU32(expression, 42);
+
+        appendSet(body, target, expression);
+
+        std::vector<uint8_t> code;
+        appendBeginBlock(code, 0x0000, body);
+
+        const NativeDecodeResult program = decodeNativeScda(code);
+        NativeScdaVm vm;
+        const NativeVmResult result = vm.run(program, 0x0000, 0x1234);
+        const bool ok = result == NativeVmResult::Error && !vm.getLastError().empty();
+        record("NativeVm: unknown expression function", ok,
+               "An expression function with no handler reports an error",
+               getTimeMs38() - start);
+    }
+
+    // Test 14: an unregistered command is counted and does not stop the run
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> body;
+        appendInstruction(body, 0x10B8, {});  // unnamed opcode
+        appendInstruction(body, 0x1021, {});  // Enable
+
+        std::vector<uint8_t> code;
+        appendBeginBlock(code, 0x0000, body);
+
+        const NativeDecodeResult program = decodeNativeScda(code);
+        NativeScdaVm vm;
+        int enabled = 0;
+        vm.registerCommand(0x1021, [&enabled](NativeCommandContext&, const std::vector<NativeToken>&,
+                                              ScriptValue&, std::string&) {
+            ++enabled;
+            return true;
+        });
+
+        const NativeVmResult result = vm.run(program, 0x0000, 0x1234);
+        const bool ok = result == NativeVmResult::Success && enabled == 1 &&
+                        vm.getUnhandledCommandCount() == 1;
+        record("NativeVm: unhandled command", ok,
+               "A command with no handler is counted and the block keeps running",
+               getTimeMs38() - start);
+    }
+
+    // Test 15: the selector marker names the reference a command acts on
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> body;
+        appendMarker(body, 2);                // selector slot 2
+        appendInstruction(body, 0x1021, {});  // Enable
+
+        std::vector<uint8_t> code;
+        appendBeginBlock(code, 0x0000, body);
+
+        const NativeDecodeResult program = decodeNativeScda(code);
+        NativeScdaVm vm;
+        vm.setReferences({0x000446A1, 0x000446A7, 0x000446B9}, 0);
+
+        uint32_t seenRef = 0;
+        uint16_t seenIndex = 0;
+        vm.registerCommand(0x1021, [&seenRef, &seenIndex](NativeCommandContext& context,
+                                                          const std::vector<NativeToken>&,
+                                                          ScriptValue&, std::string&) {
+            seenRef = context.referenceFormId;
+            seenIndex = context.referenceIndex;
+            return true;
+        });
+
+        const NativeVmResult result = vm.run(program, 0x0000, 0x1234);
+        const bool ok = result == NativeVmResult::Success && seenIndex == 2 &&
+                        seenRef == 0x000446A7;
+        record("NativeVm: selector reference", ok,
+               "The marker before a command resolves to the SCRO entry it names",
+               getTimeMs38() - start);
+    }
+
+    // Test 16: a selector slot outside the table is an explicit error
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> body;
+        appendMarker(body, 9);
+        appendInstruction(body, 0x1021, {});
+
+        std::vector<uint8_t> code;
+        appendBeginBlock(code, 0x0000, body);
+
+        const NativeDecodeResult program = decodeNativeScda(code);
+        NativeScdaVm vm;
+        vm.setReferences({0x000446A1}, 0);
+        vm.registerCommand(0x1021, [](NativeCommandContext&, const std::vector<NativeToken>&,
+                                      ScriptValue&, std::string&) { return true; });
+
+        const NativeVmResult result = vm.run(program, 0x0000, 0x1234);
+        const bool ok = result == NativeVmResult::Error && !vm.getLastError().empty();
+        record("NativeVm: selector out of range", ok,
+               "A selector slot past the reference table reports an error",
+               getTimeMs38() - start);
+    }
+
+    // Test 17: the instruction budget stops a run and it can be resumed
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> body;
+        for (int i = 0; i < 10; ++i) {
+            appendInstruction(body, 0x1021, {});
+        }
+
+        std::vector<uint8_t> code;
+        appendBeginBlock(code, 0x0000, body);
+
+        const NativeDecodeResult program = decodeNativeScda(code);
+        NativeScdaVm vm;
+        int calls = 0;
+        vm.registerCommand(0x1021, [&calls](NativeCommandContext&, const std::vector<NativeToken>&,
+                                            ScriptValue&, std::string&) {
+            ++calls;
+            return true;
+        });
+
+        const NativeVmResult first = vm.run(program, 0x0000, 0x1234, 0, 4);
+        const int callsAfterBudget = calls;
+        const NativeVmResult second = vm.resume(100);
+        const bool ok = first == NativeVmResult::FrameBudget && callsAfterBudget == 4 &&
+                        second == NativeVmResult::Success && calls == 10;
+        record("NativeVm: instruction budget", ok,
+               "A budgeted run stops and resumes where it left off",
+               getTimeMs38() - start);
+    }
+
+    // Test 18: Return stops the block before its End
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> body;
+        appendInstruction(body, 0x1021, {});  // Enable
+        appendInstruction(body, 0x001E, {});  // Return
+        appendInstruction(body, 0x1022, {});  // Disable, never reached
+
+        std::vector<uint8_t> code;
+        appendBeginBlock(code, 0x0000, body);
+
+        const NativeDecodeResult program = decodeNativeScda(code);
+        NativeScdaVm vm;
+        int enabled = 0;
+        int disabled = 0;
+        vm.registerCommand(0x1021, [&enabled](NativeCommandContext&, const std::vector<NativeToken>&,
+                                              ScriptValue&, std::string&) {
+            ++enabled;
+            return true;
+        });
+        vm.registerCommand(0x1022, [&disabled](NativeCommandContext&, const std::vector<NativeToken>&,
+                                               ScriptValue&, std::string&) {
+            ++disabled;
+            return true;
+        });
+
+        const NativeVmResult result = vm.run(program, 0x0000, 0x1234);
+        const bool ok = result == NativeVmResult::Success && enabled == 1 && disabled == 0;
+        record("NativeVm: Return stops the block", ok,
+               "Return ends the run before the remaining instructions execute",
+               getTimeMs38() - start);
+    }
+
+    // Test 19: a handler failure surfaces the handler's own message
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> body;
+        appendInstruction(body, 0x1021, {});
+
+        std::vector<uint8_t> code;
+        appendBeginBlock(code, 0x0000, body);
+
+        const NativeDecodeResult program = decodeNativeScda(code);
+        NativeScdaVm vm;
+        vm.registerCommand(0x1021, [](NativeCommandContext&, const std::vector<NativeToken>&,
+                                      ScriptValue&, std::string& error) {
+            error = "handler refused";
+            return false;
+        });
+
+        const NativeVmResult result = vm.run(program, 0x0000, 0x1234);
+        const bool ok = result == NativeVmResult::Error &&
+                        vm.getLastError() == "handler refused" &&
+                        vm.getLastErrorOpcode() == 0x1021;
+        record("NativeVm: handler failure", ok,
+               "A failing handler reports its message and the failing opcode",
+               getTimeMs38() - start);
+    }
+
+    // Test 20: a reference literal in an expression resolves through the table
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> body;
+        std::vector<uint8_t> target;
+        target.push_back('f');
+        appendU16(target, 1);
+
+        // set x to (ref literal SCRO[1]) == 0x000446A7
+        std::vector<uint8_t> expression;
+        expression.push_back(0x20);
+        expression.push_back(NATIVE_SCDA_REFERENCE_LITERAL_CHAR);
+        appendU16(expression, 2);
+        expression.push_back(0x20);
+        expression.push_back('n');
+        appendU32(expression, 0x000446A7);
+        expression.push_back(0x20);
+        expression.push_back('=');
+        expression.push_back('=');
+
+        appendSet(body, target, expression);
+
+        std::vector<uint8_t> code;
+        appendBeginBlock(code, 0x0000, body);
+
+        const NativeDecodeResult program = decodeNativeScda(code);
+        NativeScdaVm vm;
+        vm.setReferences({0x000446A1, 0x000446A7}, 0);
+
+        const NativeVmResult result = vm.run(program, 0x0000, 0x1234);
+        const bool ok = result == NativeVmResult::Success &&
+                        vm.variables().get(1).toInt() == 1;
+        record("NativeVm: reference literal", ok,
+               "A reference literal resolves to the SCRO FormID it indexes",
+               getTimeMs38() - start);
+    }
+
+    // Test 21: a global variable round-trips through the 'G' type char. The
+    // global index is a u16, so the FormID must fit in 16 bits.
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> body;
+        std::vector<uint8_t> target;
+        target.push_back('G');
+        appendU16(target, 0x2345);
+
+        appendSet(body, target, textExpression({"11"}));
+
+        std::vector<uint8_t> code;
+        appendBeginBlock(code, 0x0000, body);
+
+        const NativeDecodeResult program = decodeNativeScda(code);
+        NativeScdaVm vm;
+        const NativeVmResult result = vm.run(program, 0x0000, 0x1234);
+        const bool ok = result == NativeVmResult::Success &&
+                        vm.getGlobal(0x2345).toInt() == 11;
+        record("NativeVm: global variable", ok,
+               "Set writes a global variable addressed by its FormID",
+               getTimeMs38() - start);
+    }
+
+    // Test 22: a nested if inside a taken branch is skipped as a whole
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> body;
+        appendConditional(body, 0x0016, textExpression({"0"}));  // if 0
+        appendConditional(body, 0x0016, textExpression({"1"}));  // nested if 1
+        appendInstruction(body, 0x1021, {});                     // Enable
+        appendInstruction(body, 0x0019, {});                     // nested endif
+        appendElse(body);                     // else
+        appendInstruction(body, 0x1022, {});                     // Disable
+        appendInstruction(body, 0x0019, {});                     // endif
+
+        std::vector<uint8_t> code;
+        appendBeginBlock(code, 0x0000, body);
+
+        const NativeDecodeResult program = decodeNativeScda(code);
+        NativeScdaVm vm;
+        int enabled = 0;
+        int disabled = 0;
+        vm.registerCommand(0x1021, [&enabled](NativeCommandContext&, const std::vector<NativeToken>&,
+                                              ScriptValue&, std::string&) {
+            ++enabled;
+            return true;
+        });
+        vm.registerCommand(0x1022, [&disabled](NativeCommandContext&, const std::vector<NativeToken>&,
+                                               ScriptValue&, std::string&) {
+            ++disabled;
+            return true;
+        });
+
+        const NativeVmResult result = vm.run(program, 0x0000, 0x1234);
+        const bool ok = result == NativeVmResult::Success && enabled == 0 && disabled == 1;
+        record("NativeVm: nested if skipped", ok,
+               "A false outer condition skips a nested if without running its body",
+               getTimeMs38() - start);
+    }
+}
+
+// ============================================
 // Run all tests
 // ============================================
 bool ScriptVMTests::runAllTests() {
@@ -1910,6 +2657,7 @@ bool ScriptVMTests::runAllTests() {
     testScriptFunctions();
     testScriptManager();
     testNativeScdaDecoder();
+    testNativeScdaVm();
 
     TEST_LOGI("========================================");
     TEST_LOGI("Results: %d passed, %d failed, %zu total",

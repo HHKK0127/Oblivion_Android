@@ -106,6 +106,7 @@ SOURCES=(
   app/src/main/cpp/script/script_functions.cpp
   app/src/main/cpp/script/script_manager.cpp
   app/src/main/cpp/script/native_scda_decoder.cpp
+  app/src/main/cpp/script/native_scda_vm.cpp
   app/src/main/cpp/game/quest_manager.cpp
   app/src/main/cpp/game/inventory_manager.cpp
   app/src/main/cpp/game/inventory.cpp
