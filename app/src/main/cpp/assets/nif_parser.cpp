@@ -175,6 +175,20 @@ bool NIFParser::readHeader() {
         // NetImmerse 10.0.1.0 meshes have no endian byte, no user version, no
         // unknown field and no creator strings: the block count follows the version.
         header.numObjects = readUInt32();
+
+        // 10.0.1.2 is the single NetImmerse version that carries the Bethesda
+        // stream header (nif.xml: BSStreamHeader cond is VER == 10.0.1.2): one
+        // unknown uint followed by three byte strings. Verified against all 23
+        // retail 10.0.1.2 meshes in the shipped BSA archives.
+        if (header.version == 0x0A000102) {
+            header.unknownField = readUInt32();
+            if (!readByteString(header.creator) ||
+                !readByteString(header.processScript) ||
+                !readByteString(header.exportScript)) {
+                LOGE("Failed to read header byte strings");
+                return false;
+            }
+        }
     } else {
         // The 20.0.0.x family and later insert an endian byte after the version.
         if (header.version >= 0x14000000) {
@@ -1311,6 +1325,9 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
         skipBytes(2 + 4 + 12);                  // Flags, Fog Depth, Fog Color
     } else if (typeName == "NiStencilProperty") {
         skipNiObjectNET();
+        if (header.version <= 0x0A000102) {
+            skipBytes(2);                       // Flags (until 10.0.1.2)
+        }
         skipBytes(1 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
     } else if (typeName == "NiSourceTexture") {
         skipNiObjectNET();
@@ -1760,7 +1777,9 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
         skipBytes(4);                           // Havok Filter
         skipBytes(4 + 1 + 3 + 12);              // World Object Info
         skipBytes(1 + 1 + 2);                   // Entity Info
-        skipBytes(196);                         // bhkRigidBodyCInfo550_660
+        // The leading six fields and the three Max fields of the info struct
+        // only exist from 10.1.0.0 on.
+        skipBytes(header.version >= 0x0A010000 ? 196 : 168);   // bhkRigidBodyCInfo550_660
         const uint32_t numConstraints = readUInt32();
         if (readError) {
             return false;
@@ -1804,7 +1823,10 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
         }
         skipVector4Array(numNormals);
     } else if (typeName == "bhkNiTriStripsShape") {
-        skipBytes(4 + 4 + 20 + 4 + 16);         // Material .. Scale
+        skipBytes(4 + 4 + 20 + 4);              // Material, Radius, Unused 01, Grow By
+        if (header.version >= 0x0A010000) {
+            skipBytes(16);                      // Scale (since 10.1.0.0)
+        }
         const uint32_t numStripsData = readUInt32();
         if (readError) {
             return false;
@@ -1821,19 +1843,45 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
             return false;
         }
         skipRefArray(numSubShapes);
-        skipBytes(4 + 12 + 12);                 // Material, two properties
+        // A HavokMaterial leads with an extra word up to and including
+        // 10.0.1.2: oar01 measures the sub-shape list as 56 bytes with eight
+        // bytes of material, the 20.0.0.4 meshes only four.
+        skipBytes((header.version <= 0x0A000102 ? 8 : 4) + 12 + 12);
         const uint32_t numFilters = readUInt32();
         if (readError) {
             return false;
         }
         skipBytes(static_cast<size_t>(numFilters) * 4);
+    } else if (typeName == "bhkMeshShape") {
+        // 10.0.1.0 only. ungrdltraphingedoor measures 204 bytes: eight bytes of
+        // unknown words, the radius, two more, a scale, the shape property
+        // array, three trailing words and a single strip data reference.
+        skipBytes(8 + 4 + 8 + 16);
+        const uint32_t numShapeProperties = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipBytes(static_cast<size_t>(numShapeProperties) * 12);
+        skipBytes(12);                          // Unknown 03
+        const uint32_t numStripsData = readUInt32();
+        if (readError) {
+            return false;
+        }
+        skipRefArray(numStripsData);
     } else if (typeName == "bhkMoppBvTreeShape") {
-        skipBytes(4 + 12 + 4);                  // Shape, Unused, Scale
+        // Below 10.1.0.0 the shape ref lives in the per-block prefix and the
+        // MOPP code offset does not exist yet.
+        if (header.version >= 0x0A010000) {
+            skipBytes(4);                       // Shape
+        }
+        skipBytes(12 + 4);                      // Unused, Scale
         const uint32_t codeSize = readUInt32();
         if (readError) {
             return false;
         }
-        skipBytes(16);                          // MOPP code offset
+        if (header.version >= 0x0A010000) {
+            skipBytes(16);                      // MOPP code offset
+        }
         skipBytes(codeSize);                    // MOPP code data
     } else if (typeName == "bhkLimitedHingeConstraint") {
         skipBytes(16);                          // bhkConstraintCInfo
@@ -1874,6 +1922,27 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
     return !readError;
 }
 
+// Leading word in front of a block body. Every 10.0.1.x and 10.1.0.x sample
+// carries one except the NiCollisionObject subclasses, which start straight at
+// their Target reference: floorplane01 measures bhkCollisionObject as ten bytes
+// with the reference at the body start, and four extra bytes there derail the
+// whole walk. The 10.2+ and 20.x meshes drop the prefix everywhere.
+//
+// For shapes that read their own HavokMaterial the prefix is the leading word
+// of that material, so counting it as a prefix and again as material doubles
+// it. Those types take the prefix out and let the body read the full material.
+uint32_t NIFParser::blockBodyPrefix(const std::string& typeName) const {
+    if (typeName == "bhkCollisionObject" || typeName == "bhkBlendCollisionObject" ||
+        typeName == "bhkSPCollisionObject") {
+        return 0;
+    }
+    if (header.version <= 0x0A000102 &&
+        (typeName == "bhkListShape" || typeName == "bhkMeshShape")) {
+        return 0;
+    }
+    return blockPrefix;
+}
+
 // Walks every block body in order and records its byte range. Retail files have
 // no block size table, so this is the only way to seek to a specific body. The
 // caller can verify the walk by checking that the cursor lands 8 bytes short of
@@ -1906,10 +1975,10 @@ bool NIFParser::walkAllBlocks() {
 
     for (uint32_t index = 0; index < blockCount; index++) {
         const size_t bodyStart = cursor;
-        if (!skipBytes(blockPrefix)) {
+        const std::string typeName = getBlockTypeName(index);
+        if (!skipBytes(blockBodyPrefix(typeName))) {
             break;
         }
-        const std::string typeName = getBlockTypeName(index);
         if (!walkBlockBody(typeName)) {
             walkError = "cannot measure block " + std::to_string(index) + " (" +
                         (typeName.empty() ? "unknown" : typeName) + ")";
@@ -1951,7 +2020,7 @@ bool NIFParser::locateBlockBody(uint32_t index, size_t& offset) const {
     if (!blocksWalked || index >= blockBodyOffsets.size()) {
         return false;
     }
-    offset = blockBodyOffsets[index] + blockPrefix;
+    offset = blockBodyOffsets[index] + blockBodyPrefix(getBlockTypeName(index));
     return offset <= blockBodyEnds[index];
 }
 

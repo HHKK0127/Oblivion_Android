@@ -43,6 +43,7 @@ public:
     bool walkAllBlocks();
     bool areBlocksWalked() const { return blocksWalked; }
     uint32_t getBlockPrefix() const { return blockPrefix; }
+    uint32_t blockBodyPrefix(const std::string& typeName) const;
     size_t getBlockBodyOffset(uint32_t index) const;
     size_t getBlockBodyEnd(uint32_t index) const;
     bool locateBlockBody(uint32_t index, size_t& offset) const;
