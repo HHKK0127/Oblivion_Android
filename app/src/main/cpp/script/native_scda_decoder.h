@@ -107,11 +107,19 @@ enum class NativeStructuralOpcode : uint16_t {
 //      zero violations over 1,654 records carrying `r` tokens and 1,173 carrying
 //      selectors, so both index the same table.
 //
-// What is NOT settled is the relative order of the two halves. The vanilla
-// corpus contains examples of both readings, so resolution must stay
-// conservative: treat slots up to the SCRO count as SCRO entries and any
-// remaining slot as a local ref, and report an out-of-range slot as an explicit
-// error instead of inventing a reference.
+// The two halves are ordered SCRO first, then local refs: slot 1..N is SCRO
+// subrecord order and slot N+1..N+L is the local ref variables. The decisive
+// evidence is `mySelf`, the variable that receives `getSelf`: in all eight
+// records that use it, its `r` slot equals N+L, and the parent variable that
+// receives `getParentRef` sits at N+1. The local ordinal therefore counts from
+// the end of the SCRO half, not from the SLSD declaration order.
+//
+// The selector space is NOT the same as the `r`/`Z` slot space. In
+// XPXirethard01TrapButton01SCRIPT the SCRO half is 7 entries and the local half
+// is 2, so `myParent` is `r8`; the selector that precedes its Activate is 1,
+// because selectors are numbered in first-appearance order over the call
+// targets. Resolving a selector through the `r` table would name the wrong
+// object, so the two must stay separate APIs.
 constexpr uint16_t NATIVE_SCDA_MARKER_OPCODE = 0x001C;
 // Prologue opcode. Present in SCPT records only; QUST/INFO inline scripts do
 // not carry it, so a decoder must never require it.
@@ -230,19 +238,37 @@ struct NativeReferenceSlot {
     uint16_t localOrdinal = 0; // 1-based local ref ordinal when kind == LocalRef
 };
 
-// Resolves a 1-based selector slot against a script's SCRO list.
+// Resolves a 1-based `r`/`Z` slot against a script's reference table.
 //
-// Slots up to scroRefs.size() resolve to SCRO entries. Slots above that resolve
-// to a local `ref` variable, reported by ordinal only: the vanilla corpus does
-// not settle how a local ref ordinal maps onto the script's variable storage, so
-// the caller must not assume it equals the declaration order. A slot of 0, or one
-// beyond scroRefs.size() + localRefCount, is an explicit error rather than a
+// The table is SCRO entries first, then local refs: slot 1..N resolves to
+// SCRO[slot-1] and slot N+1..N+L resolves to a local `ref` variable, reported by
+// ordinal only. The ordinal counts from the end of the SCRO half, which is the
+// order the compiler uses; it is not the SLSD declaration order, so the caller
+// must not map it onto variable storage by declaration index. A slot of 0, or
+// one beyond scroRefs.size() + localRefCount, is an explicit error rather than a
 // guessed reference.
+//
+// This is the `r`/`Z` space only. A `0x001C` call selector is a different space
+// and must be resolved with resolveNativeCallTarget instead.
 bool resolveNativeReferenceSlot(uint16_t slot,
                                 const std::vector<uint32_t>& scroRefs,
                                 uint16_t localRefCount,
                                 NativeReferenceSlot& out,
                                 std::string& error);
+
+// Resolves a `0x001C` call selector.
+//
+// Selectors are numbered in first-appearance order over the call targets the
+// bytecode actually uses, so selector 1 is the target of the first `Ref.command`
+// in the stream, not SCRO[0]. The mapping is therefore a property of the decoded
+// instruction stream, not of the SCRO list, and cannot be derived from the
+// reference table alone. The caller supplies the targets it has already seen, in
+// first-appearance order; a selector past the end of that list is an explicit
+// error rather than a guessed reference.
+bool resolveNativeCallTarget(uint16_t selector,
+                             const std::vector<uint32_t>& callTargets,
+                             uint32_t& out,
+                             std::string& error);
 
 // MoveTo (0x109E) argument shapes. The compiler emits exactly four, all framed
 // as [u16 argumentCount][tokens]:

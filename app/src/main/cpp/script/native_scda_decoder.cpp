@@ -630,6 +630,24 @@ bool resolveNativeReferenceSlot(uint16_t slot,
     return true;
 }
 
+bool resolveNativeCallTarget(uint16_t selector,
+                             const std::vector<uint32_t>& callTargets,
+                             uint32_t& out,
+                             std::string& error) {
+    if (selector == 0) {
+        error = "call selector 0 is not a valid selector";
+        return false;
+    }
+    if (selector > callTargets.size()) {
+        error = "call selector " + std::to_string(selector) +
+                " is outside the call target table (bound " +
+                std::to_string(callTargets.size()) + ")";
+        return false;
+    }
+    out = callTargets[selector - 1];
+    return true;
+}
+
 bool decodeNativeMoveToArguments(const NativeInstruction& instruction,
                                  NativeMoveToArguments& out) {
     out = NativeMoveToArguments{};

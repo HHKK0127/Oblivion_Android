@@ -105,6 +105,15 @@ bool NativeScdaVm::resolveReference(uint16_t slot, NativeReferenceSlot& out,
     return resolveNativeReferenceSlot(slot, scroRefs_, localRefCount_, out, error);
 }
 
+void NativeScdaVm::setCallTargets(const std::vector<uint32_t>& callTargets) {
+    callTargets_ = callTargets;
+}
+
+bool NativeScdaVm::resolveCallTarget(uint16_t selector, uint32_t& out,
+                                     std::string& error) const {
+    return resolveNativeCallTarget(selector, callTargets_, out, error);
+}
+
 void NativeScdaVm::setError(const std::string& message, uint32_t offset,
                             uint16_t opcode) {
     lastError_ = message;
@@ -496,15 +505,10 @@ bool NativeScdaVm::executeCommand(const NativeInstruction& instruction,
     pendingReferenceIndex_ = 0;
     if (selector != 0) {
         context.referenceIndex = selector;
-        NativeReferenceSlot slot;
+        uint32_t target = 0;
         std::string slotError;
-        if (resolveReference(selector, slot, slotError)) {
-            if (slot.kind == NativeReferenceKind::Scro) {
-                context.referenceFormId = slot.formId;
-            } else {
-                const ScriptValue value = variables_.get(slot.localOrdinal);
-                context.referenceFormId = static_cast<uint32_t>(value.toInt());
-            }
+        if (resolveCallTarget(selector, target, slotError)) {
+            context.referenceFormId = target;
         } else {
             error = slotError;
             return false;

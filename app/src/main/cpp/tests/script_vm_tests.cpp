@@ -1708,6 +1708,41 @@ void ScriptVMTests::testNativeScdaDecoder() {
                getTimeMs38() - start);
     }
 
+    // Test 16b: the call selector space is separate from the r/Z slot space.
+    // XPXirethard01TrapButton01SCRIPT has 7 SCRO entries and 2 local refs, so
+    // myParent is r8, yet the selector that precedes its Activate is 1.
+    {
+        const float start = getTimeMs38();
+        const std::vector<uint32_t> scro = {0x000446A1, 0x000446A7, 0x000446B9};
+        const std::vector<uint32_t> callTargets = {0x000446A1, 0x000446A7};
+
+        NativeReferenceSlot slot{};
+        std::string error;
+        const bool slotIsScro = resolveNativeReferenceSlot(1, scro, 2, slot, error) &&
+                                slot.kind == NativeReferenceKind::Scro &&
+                                slot.formId == 0x000446A1;
+
+        uint32_t target = 0;
+        error.clear();
+        const bool selectorIsFirst = resolveNativeCallTarget(1, callTargets, target, error) &&
+                                     target == 0x000446A1;
+        error.clear();
+        const bool selectorSecond = resolveNativeCallTarget(2, callTargets, target, error) &&
+                                    target == 0x000446A7;
+        error.clear();
+        const bool zeroRejected = !resolveNativeCallTarget(0, callTargets, target, error) &&
+                                  !error.empty();
+        error.clear();
+        const bool overRejected = !resolveNativeCallTarget(3, callTargets, target, error) &&
+                                  !error.empty();
+
+        const bool ok = slotIsScro && selectorIsFirst && selectorSecond &&
+                        zeroRejected && overRejected;
+        record("NativeScda: call target space", ok,
+               "Call selectors number first-appearance order, not the r/Z slot table",
+               getTimeMs38() - start);
+    }
+
     // Test 17: the later naming batch resolves
     {
         const float start = getTimeMs38();
@@ -2411,7 +2446,7 @@ void ScriptVMTests::testNativeScdaVm() {
 
         const NativeDecodeResult program = decodeNativeScda(code);
         NativeScdaVm vm;
-        vm.setReferences({0x000446A1, 0x000446A7, 0x000446B9}, 0);
+        vm.setCallTargets({0x000446A1, 0x000446A7, 0x000446B9});
 
         uint32_t seenRef = 0;
         uint16_t seenIndex = 0;
@@ -2427,11 +2462,11 @@ void ScriptVMTests::testNativeScdaVm() {
         const bool ok = result == NativeVmResult::Success && seenIndex == 2 &&
                         seenRef == 0x000446A7;
         record("NativeVm: selector reference", ok,
-               "The marker before a command resolves to the SCRO entry it names",
+               "The marker before a command resolves to the call target it names",
                getTimeMs38() - start);
     }
 
-    // Test 16: a selector slot outside the table is an explicit error
+    // Test 16: a selector outside the call target table is an explicit error
     {
         const float start = getTimeMs38();
         std::vector<uint8_t> body;
@@ -2443,14 +2478,14 @@ void ScriptVMTests::testNativeScdaVm() {
 
         const NativeDecodeResult program = decodeNativeScda(code);
         NativeScdaVm vm;
-        vm.setReferences({0x000446A1}, 0);
+        vm.setCallTargets({0x000446A1});
         vm.registerCommand(0x1021, [](NativeCommandContext&, const std::vector<NativeToken>&,
                                       ScriptValue&, std::string&) { return true; });
 
         const NativeVmResult result = vm.run(program, 0x0000, 0x1234);
         const bool ok = result == NativeVmResult::Error && !vm.getLastError().empty();
         record("NativeVm: selector out of range", ok,
-               "A selector slot past the reference table reports an error",
+               "A selector past the call target table reports an error",
                getTimeMs38() - start);
     }
 
@@ -2719,7 +2754,7 @@ void ScriptVMTests::testNativeScdaBridge() {
         functions.init(nullptr, nullptr, nullptr, nullptr, &questFlowController);
 
         registerNativeFunctionBridge(vm, functions);
-        vm.setReferences({0x1234}, 0);
+        vm.setCallTargets({0x1234});
         vm.variables().set(1, ScriptValue::makeRef(0x1234));
 
         const NativeVmResult result = vm.run(program, 0x0000, 0x1234);

@@ -152,17 +152,27 @@ public:
     NativeVariableStore& variables() { return variables_; }
     const NativeVariableStore& variables() const { return variables_; }
 
-    // Reference table used to resolve selector slots. Slots up to the SCRO count
+    // Reference table used to resolve `r`/`Z` slots. Slots up to the SCRO count
     // resolve to SCRO entries; the remainder resolve to local refs.
     void setReferences(const std::vector<uint32_t>& scroRefs, uint16_t localRefCount);
+
+    // Call target table used to resolve `0x001C` selectors. Selectors are
+    // numbered in first-appearance order over the call targets the bytecode
+    // uses, which is a different space from the `r`/`Z` slots, so the caller
+    // supplies the targets in that order.
+    void setCallTargets(const std::vector<uint32_t>& callTargets);
 
     // Global variables, keyed by FormID, as the 'G' type char addresses them.
     void setGlobal(uint32_t formId, const ScriptValue& value);
     ScriptValue getGlobal(uint32_t formId) const;
 
-    // Resolves a selector slot through the reference table. Returns false and
+    // Resolves an `r`/`Z` slot through the reference table. Returns false and
     // fills error when the slot is out of range.
     bool resolveReference(uint16_t slot, NativeReferenceSlot& out, std::string& error) const;
+
+    // Resolves a `0x001C` selector through the call target table. Returns false
+    // and fills error when the selector is out of range.
+    bool resolveCallTarget(uint16_t selector, uint32_t& out, std::string& error) const;
 
     const std::string& getLastError() const { return lastError_; }
     uint32_t getLastErrorOffset() const { return lastErrorOffset_; }
@@ -193,6 +203,7 @@ private:
     std::unordered_map<uint32_t, ScriptValue> globals_;
     std::vector<uint32_t> scroRefs_;
     uint16_t localRefCount_ = 0;
+    std::vector<uint32_t> callTargets_;
     // A 0x001C marker names the reference the next command acts on, so the
     // selector is held here until that command consumes it.
     uint16_t pendingReferenceIndex_ = 0;
