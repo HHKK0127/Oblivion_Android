@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-24T20:17:54.272627",
+  "lastUpdated": "2026-09-25T12:05:47Z",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -3282,7 +3282,7 @@
     },
     {
       "id": "4f1a7c02-8e35-4b19-9a6d-2c7e51b8d3a4",
-      "timestamp": "2026-09-25T00:00:00.000000",
+      "timestamp": "2026-09-25T00:00:00",
       "category": "decision",
       "priority": "high",
       "content": "SCDA quest opcodes: 0x1036 StartQuest, 0x1037 StopQuest, 0x1071 CompleteQuest. 0x1071 was misnamed StopQuest by the keyword vote, because the compiler emits CompleteQuest and StopQuest as an adjacent pair on the same reference, which makes the per-record counts of the two words identical; a vote on 0x1071 alone scores 8 of 8 against stopquest and is still wrong. Aligning the ordered instruction stream against the ordered statement list separates them: record 1563 (MS91MazogaScript) emits 0x1071 then 0x1037 on r 06 00 and again on r 07 00, against setstage ms91 200 / completequest ms91 / stopquest ms91 / completequest ms92 / stopquest ms92, and record 2554 pairs its single 0x1036 (r 09 00) and single 0x1037 (r 02 00) with StartQuest TG08Blind and StopQuest TG07Lex. Also named by the command-position vote: 0x10A9 ModFactionReaction ([3][r][r][n], 5 of 6, negative third operand -50), 0x1127 ResetInterior ([1][r], 3 of 3, record 2407), 0x1141 SetNoRumors ([1][n 0], 3 of 3), 0x1145 RefreshTopicList, 0x116C SetPlayerInSEWorld, 0x115C SendTrespassAlarm, 0x1111 EnableFastTravel, 0x10F0 SetClass, 0x10E7 SetInChargen, 0x10D9 ShowClassMenu, 0x10DA ShowRaceMenu, 0x10DB ShowBirthsignMenu, 0x10EA ShowSpellmaking, 0x10EB ShowEnchantment and 0x1165 ForceCloseOblivionGate ([u16 0], 3 of 3). The plan.md enumeration of opcodes seen at least five times held 103 ordinary entries and missed five that qualify, so the count is 107, not 100. The vote returns no candidate at all for an opcode that also appears inside expressions, which is every opcode named in an earlier pass, so further names must come from order alignment. Unresolved: 0x10D3 (SetFactionRank or SetForceSneak, tied in its one record) and the 0x10FC / 0x10FD pair (SetPCFame / SetPCInfamy, equal counts in either order).",
@@ -3297,7 +3297,7 @@
     },
     {
       "id": "b8c5e913-47d2-4a86-8f10-6d93ea2c74bf",
-      "timestamp": "2026-09-25T00:05:00.000000",
+      "timestamp": "2026-09-25T00:05:00",
       "category": "decision",
       "priority": "high",
       "content": "SCDA command-layer grammar is settled and carries no terminator byte: [u16 opcode][u16 argLength][argLength bytes]. argLength == 0 means no parameter block at all (3,763 of the 18,142 ordinary commands); argLength == 2 with payload [u16 0] is an explicit zero-argument block (all 8 0x10A5 RemoveMe, the 3 0x10DE CloseOblivionGate in record 2504, the 3 0x1165 ForceCloseOblivionGate); argLength above 2 is [u16 n][n typed tokens], where n is the argument count (0x110D SetQuestObject = 02 00 72 02 00 6e 00 00 00 00, 0x109E MoveTo = 01 00 72 0b 00). The tokenizer needs backtracking for the string family: a greedy left-to-right pass matches 13,180 of 14,379 payloads (91.66%) against 13,601 (94.59%) with backtracking, and the residual 778 are 0x1059 Message and 0x1000 MessageBox, whose argLength includes the padded body. Never mix the command layer (op >= 0x1000) with the anchor layer in one payload statistic: the structural anchors and 0x001C / 0x001D carry raw source text or nested streams, and treating a small opcode as length-bearing is what produced the invalid 117-unnamed / 78.61% census.",
@@ -3703,10 +3703,24 @@
         "constraint"
       ],
       "compressed": false
+    },
+    {
+      "id": "63c5fae6-5751-4d3e-a22b-5590530ab932",
+      "timestamp": "2026-09-25T12:05:47Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "plan.md updated and pushed (commit 6a9293dd, 2026-09-25): Phase 65 row and Current Status now record water (WATR, b7222f25) and the weather-driven sky dome (13d9f905) as landed and build-verified but NOT yet re-measured on the device. Open weather items: drive SkyWeatherSystem from the 37 real WTHR records (NAM0 = 4 time-of-day x 40-byte colour sets) instead of hard-coded presets; connect getAmbientColor/getFogDistance/sun light to world lighting and fog; gate the sky dome on exterior cells so interiors get no sky. Native build verified green: .\\gradlew :app:externalNativeBuildDebug BUILD SUCCESSFUL in 11s.",
+      "tags": [
+        "phase65",
+        "weather",
+        "water",
+        "plan"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 257,
+    "totalEntries": 258,
     "compressedCount": 2,
     "sessionCount": 25
   }
