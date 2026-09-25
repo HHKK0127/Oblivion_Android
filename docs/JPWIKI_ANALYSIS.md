@@ -152,6 +152,74 @@ The parser used for this analysis is a standalone Python script that walks the G
 decodes cp932 text, and reports record and text statistics. It is a session artifact and is
 not part of the repository.
 
+## Localization Data Integration
+
+The JPWiki text is redistributable, so the game setting strings are shipped with the app.
+
+### Extracted data
+
+`app/src/main/assets/localization/jpwiki_localization.tsv` is a UTF-8, tab-separated file
+generated from the three plugins:
+
+| kind | entries | key | description |
+|------|---------|-----|-------------|
+| `gmst` | 723 | editor ID (e.g. `sContinue`) | Game Setting UI strings |
+| `book` | 640 | FormID | Book body text (`DESC`) |
+| `info` | 19,179 | FormID | Dialogue responses (`NAM1`) |
+| `dial` | 3,474 | FormID | Dialogue topics (`FULL`) |
+| `qst` | 249 | FormID | Quest names (`FULL`) |
+| `full` | 4,421 | `RECTYPE:FormID` | Object names (`FULL`) |
+
+Line format: `kind \t key \t english \t japanese`. The `english` column is currently empty
+for all rows; English text is resolved from `Oblivion.esm` at runtime.
+
+### Runtime loading
+
+`LocalizationManager::loadJpwikiData()` reads the asset through `AAssetManager` during
+`initialize()` and populates one map per kind:
+
+| Map | Getter | Consumer |
+|-----|--------|----------|
+| `gameSettings` | `getGameSetting(editorID, fallback)` | UI strings |
+| `bookTexts` | `getBookText(formID, fallback)` | `BookReader::getBookDescription()` |
+| `infoTexts` | `getInfoText(formID, fallback)` | `DialogueManager::loadDialoguesFromESM()` |
+| `dialogTexts` | `getDialogText(formID, fallback)` | `DialogueManager::loadDialoguesFromESM()` |
+| `questTexts` | `getQuestText(formID, fallback)` | `QuestFlowController::getQuestName()` |
+| `fullTexts` | `getFullText(recordType, formID, fallback)` | Object names |
+
+Every getter returns the fallback when the current language is not Japanese or the key is
+absent, so English behaviour is unchanged.
+
+### Consumer wiring
+
+- `BookReader::setLocalizationManager()` supplies the source used by `getBookDescription()`.
+- `DialogueManager::setLocalizationManager()` supplies the default source for
+  `loadDialoguesFromESM()`; the explicit parameter still overrides it.
+- `QuestFlowController::setLocalizationManager()` supplies the source used by
+  `getQuestName()`, which `activateQuest()` uses when creating the quest in `QuestManager`.
+- `Renderer::initGameSystems()` attaches the manager to `DialogueManager` at construction.
+- `Renderer` owns a `UIDialogue` panel and exposes `loadDialoguesFromESM()`,
+  `openDialogueWithNpc(formID)`, `openDialogueWithNearestNpc()`, `isDialogueOpen()` and
+  `closeDialogue()`. `createTestScenario()` calls `loadDialoguesFromESM()` after actors are
+  placed so faction memberships are available for topic filtering.
+- `NpcManager::getNpcByFormID()` resolves a spawned actor from its ESM base record FormID;
+  `NPC::formID` and `NPC::factionFormIDs` are populated by `createNPCFromESM()`.
+- The JNI layer exposes `nativeStartDialogue()`, `nativeCloseDialogue()` and
+  `nativeIsDialogueOpen()` on `OblivionEngine`, backed by the `Renderer` instance held in
+  `jni_bridge.cpp` (`jni_bridge_get_renderer()`).
+
+### Language preference
+
+`SettingsManager` owns the persisted preference (`LANGUAGE=` in the app settings file).
+`Renderer::initGameSystems()` mirrors it into `LocalizationManager` once both exist, and the
+language toggles in `SettingsUI` and `LauncherScreen` update both objects. This replaces the
+earlier behaviour where `LocalizationManager` reset to English on every launch.
+
+### Terminology
+
+The original game uses `Magicka` and `Fatigue`, not `Mana` and `Stamina`. The JPWiki data
+keeps the original terms, and the built-in translation table was corrected to match.
+
 ## Executable and DLL Analysis
 
 ### `TES4_12416_JaPatch_015.EXE`

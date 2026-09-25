@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <string>
 #include "../assets/esm_reader.h"
+#include "../localization/localization_manager.h"
 #include "npc.h"
 
 namespace oblivion {
@@ -22,6 +23,14 @@ public:
      * @param esmMgr ESM manager with loaded data
      */
     void initialize(const ESMManager* esmMgr);
+
+    /**
+     * @brief Set the localization source used for book text
+     * @param localization Localization manager, or nullptr to disable
+     */
+    void setLocalizationManager(const LocalizationManager* localization) {
+        localizationManager = localization;
+    }
 
     /**
      * @brief Read a book and apply effects
@@ -47,6 +56,7 @@ public:
 
 private:
     const ESMManager* esmManager = nullptr;
+    const LocalizationManager* localizationManager = nullptr;
 
     /**
      * @brief Resolve a skill formID to a skill name

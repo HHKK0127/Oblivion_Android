@@ -58,6 +58,13 @@ public:
     std::shared_ptr<NPC> getNPC(uint32_t npcId) const;
     void removeNPC(uint32_t npcId);
 
+    /**
+     * @brief Find a spawned NPC by its ESM base record FormID
+     * @param formID Base record FormID (NPC_/CREA)
+     * @return The NPC, or nullptr when no spawned actor uses that record
+     */
+    std::shared_ptr<NPC> getNpcByFormID(uint32_t formID) const;
+
     // ESM-driven player initialization
     void initializePlayerFromESM(NPC& player, uint32_t raceFormID,
                                   uint32_t classFormID, uint32_t birthsignFormID);

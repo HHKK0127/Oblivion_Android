@@ -179,6 +179,9 @@ void Renderer::resize(unsigned int width, unsigned int height) {
         activeEffects->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
         LOGI("UIActiveEffects screen size updated to: %ux%u", screenWidth, screenHeight);
     }
+    if (dialogueUI) {
+        dialogueUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    }
 
     // Update RetroFilter resolution
     if (retroFilter) {
@@ -494,6 +497,15 @@ bool Renderer::initGameSystems() {
     }
     LOGI("SettingsManager initialized successfully");
 
+    // SettingsManager owns the persisted language preference, so mirror it into
+    // LocalizationManager now that both exist.
+    if (localizationManager) {
+        const std::string lang = settingsManager->getLanguage();
+        localizationManager->setLanguage(lang == "ja" ? Language::JAPANESE
+                                                      : Language::ENGLISH);
+        LOGI("LocalizationManager language synced from settings: %s", lang.c_str());
+    }
+
     // Initialize Text Renderer (for debug HUD and settings UI)
     LOGI("Creating TextRenderer...");
     textRenderer = std::make_unique<TextRenderer>();
@@ -654,6 +666,14 @@ bool Renderer::initGameSystems() {
         LOGE("Failed to initialize UIActiveEffects");
     } else {
         LOGI("UIActiveEffects initialized successfully");
+    }
+
+    dialogueUI = std::make_unique<UIDialogue>();
+    if (!dialogueUI->initialize(textRenderer.get())) {
+        LOGE("Failed to initialize UIDialogue");
+    } else {
+        dialogueUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        LOGI("UIDialogue initialized successfully");
     }
 
     // Initialize Debug HUD
@@ -1624,7 +1644,8 @@ bool Renderer::initGameSystems() {
     // Initialize Settings UI
     LOGI("Creating SettingsUI...");
     settingsUI = std::make_unique<SettingsUI>();
-    if (!settingsUI->initialize(textRenderer.get(), settingsManager.get(), this)) {
+    if (!settingsUI->initialize(textRenderer.get(), settingsManager.get(), this,
+                                localizationManager.get())) {
         LOGE("Failed to initialize SettingsUI");
         return false;
     }
@@ -1728,6 +1749,7 @@ bool Renderer::initGameSystems() {
 
     // Initialize DialogueManager
     dialogueManager = std::make_unique<DialogueManager>();
+    dialogueManager->setLocalizationManager(localizationManager.get());
     alchemySystem = std::make_unique<oblivion::AlchemySystem>();
     enchantingSystem = std::make_unique<game::EnchantingSystem>();
     LOGI("DialogueManager initialized successfully");
@@ -2599,6 +2621,10 @@ void Renderer::createTestScenario() {
         LOGI("Placed %zu actors and indexed %zu object references (%zu interior refs skipped, %zu unowned refs skipped)",
                      placedActors, placedObjects, skippedInteriorRefs, skippedForeignRefs);
 
+        // Load DIAL/INFO dialogue trees now that the actors exist, so faction
+        // memberships can be resolved for topic filtering.
+        loadDialoguesFromESM();
+
                 // 4. Load LAND terrain data and assign to cells
                 const auto& terrains = esmMgr.getAllTerrains();
         LOGI("Loading %zu terrain records from ESM data", terrains.size());
@@ -3059,6 +3085,103 @@ void Renderer::createTestScenario() {
     combatManager->logCombatStatus();
     if (spellManager) {
         spellManager->logSpellStatus();
+    }
+}
+
+void Renderer::loadDialoguesFromESM() {
+    if (!dialogueManager) {
+        LOGW("loadDialoguesFromESM: DialogueManager not available");
+        return;
+    }
+    if (!assetManager) {
+        LOGW("loadDialoguesFromESM: AssetManager not available");
+        return;
+    }
+
+    const auto& esmMgr = assetManager->getEsmManager();
+    if (esmMgr.getPluginCount() == 0) {
+        LOGW("loadDialoguesFromESM: no plugins loaded");
+        return;
+    }
+
+    // Faction memberships are resolved from the NPC manager so faction-gated
+    // topics can be filtered per actor.
+    std::function<std::vector<uint32_t>(uint32_t)> factionLookup;
+    if (npcManager) {
+        factionLookup = [this](uint32_t npcFormID) {
+            std::vector<uint32_t> factions;
+            auto npc = npcManager->getNpcByFormID(npcFormID);
+            if (npc) {
+                factions = npc->factionFormIDs;
+            }
+            return factions;
+        };
+    }
+
+    dialogueManager->loadDialoguesFromESM(esmMgr, factionLookup,
+                                          localizationManager.get());
+    LOGI("DialogueManager: %zu dialogue trees loaded from ESM",
+         dialogueManager->getDialogueCount());
+}
+
+bool Renderer::openDialogueWithNpc(uint32_t npcFormID) {
+    if (!dialogueManager || !dialogueUI) {
+        LOGW("openDialogueWithNpc: dialogue system not available");
+        return false;
+    }
+
+    auto dialogue = dialogueManager->getDialogue(npcFormID);
+    if (!dialogue) {
+        LOGW("openDialogueWithNpc: no dialogue for NPC 0x%08X", npcFormID);
+        return false;
+    }
+
+    dialogueUI->openDialogue(dialogue);
+    LOGI("Dialogue opened with NPC 0x%08X '%s' (%zu topics)",
+         npcFormID, dialogue->npcName.c_str(), dialogue->topics.size());
+    return true;
+}
+
+bool Renderer::openDialogueWithNearestNpc() {
+    if (!npcManager || !playerController) {
+        LOGW("openDialogueWithNearestNpc: NPC or player system not available");
+        return false;
+    }
+
+    const glm::vec3 playerPos = playerController->getPlayerPosition();
+
+    // Oblivion's activation range is roughly 150 units; use a slightly wider
+    // radius so the touch target is forgiving on a phone screen.
+    constexpr float kActivationRange = 200.0f;
+
+    uint32_t nearestFormID = 0;
+    float nearestDistSq = kActivationRange * kActivationRange;
+
+    for (const auto& npc : npcManager->getAllNPCs()) {
+        if (!npc || npc->formID == 0) continue;
+        const glm::vec3 delta = npc->position - playerPos;
+        const float distSq = glm::dot(delta, delta);
+        if (distSq < nearestDistSq) {
+            nearestDistSq = distSq;
+            nearestFormID = npc->formID;
+        }
+    }
+
+    if (nearestFormID == 0) {
+        LOGI("openDialogueWithNearestNpc: no NPC within %.0f units", kActivationRange);
+        return false;
+    }
+
+    return openDialogueWithNpc(nearestFormID);
+}
+
+bool Renderer::isDialogueOpen() const {
+    return dialogueUI && dialogueUI->isVisible();
+}
+
+void Renderer::closeDialogue() {
+    if (dialogueUI) {
+        dialogueUI->closeDialogue();
     }
 }
 
@@ -3697,6 +3820,10 @@ void Renderer::render(float deltaTime) {
         if (activeEffects) {
             activeEffects->update(deltaTime);
             activeEffects->render();
+        }
+        if (dialogueUI && dialogueUI->isVisible()) {
+            dialogueUI->update(deltaTime);
+            dialogueUI->render();
         }
     }
 

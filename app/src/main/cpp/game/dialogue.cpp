@@ -108,11 +108,16 @@ void DialogueManager::clearDialogues() {
 }
 
 void DialogueManager::loadDialoguesFromESM(const oblivion::ESMManager& esmMgr,
-                                          std::function<std::vector<uint32_t>(uint32_t)> npcFactionLookup) {
+                                          std::function<std::vector<uint32_t>(uint32_t)> npcFactionLookup,
+                                          const LocalizationManager* localization) {
+    if (!localization) {
+        localization = m_localization;
+    }
     const auto& esmDialogs = esmMgr.getAllDialogs();
     size_t loaded = 0;
     size_t topicCount = 0;
     size_t factionGated = 0;
+    size_t localized = 0;
 
     for (const auto& dia : esmDialogs) {
         if (dia.formID == 0) continue;
@@ -120,7 +125,12 @@ void DialogueManager::loadDialoguesFromESM(const oblivion::ESMManager& esmMgr,
         // Use DIAL formID as synthetic NPC ID for dialogue lookup
         uint32_t npcId = dia.formID;
 
-        auto dialogue = createDialogue(npcId, dia.fullName, dia.fullName);
+        std::string dialName = dia.fullName;
+        if (localization) {
+            dialName = localization->getDialogText(dia.formID, dialName);
+        }
+
+        auto dialogue = createDialogue(npcId, dialName, dialName);
         dialogue->esmDialFormID = dia.formID;
 
         // Attach NPC faction memberships (for branching)
@@ -135,7 +145,17 @@ void DialogueManager::loadDialoguesFromESM(const oblivion::ESMManager& esmMgr,
                                     : info.editorID;
             std::string responseText = info.responseText;
 
+            if (localization) {
+                const std::string localizedResponse =
+                    localization->getInfoText(info.formID, responseText);
+                if (localizedResponse != responseText) {
+                    responseText = localizedResponse;
+                    ++localized;
+                }
+            }
+
             DialogueTopic topic(info.editorID, topicText, responseText, info.questFormID != 0);
+            topic.infoFormID = info.formID;
             topic.factionFormID = info.factionFormID;
             topic.factionRank = info.factionRank;
 
@@ -150,8 +170,8 @@ void DialogueManager::loadDialoguesFromESM(const oblivion::ESMManager& esmMgr,
         ++loaded;
     }
 
-    LOGI("DialogueManager: Loaded %zu dialogues, %zu topics, %zu faction-gated from ESM",
-         loaded, topicCount, factionGated);
+    LOGI("DialogueManager: Loaded %zu dialogues, %zu topics, %zu faction-gated, %zu localized from ESM",
+         loaded, topicCount, factionGated, localized);
 }
 
 std::vector<int> DialogueManager::getAvailableTopics() const {

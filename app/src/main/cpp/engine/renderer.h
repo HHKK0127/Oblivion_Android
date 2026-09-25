@@ -59,6 +59,7 @@
 #include "../ui/crosshair.h"
 #include "../ui/ui_target_info.h"
 #include "../ui/ui_active_effects.h"
+#include "../ui/ui_dialogue.h"
 #include "../animation/animation_subscriber.h"
 #include "../audio/audio_subscriber.h"
 #include "../map/map_system.h"
@@ -157,6 +158,7 @@ private:
     std::unique_ptr<Crosshair> crosshair;
     std::unique_ptr<UITargetInfo> targetInfo;
     std::unique_ptr<UIActiveEffects> activeEffects;
+    std::unique_ptr<UIDialogue> dialogueUI;
     bool hudVisible = true;
     
     // Responsive UI Manager
@@ -281,6 +283,7 @@ public:
     InventoryManager* getInventoryManager() { return inventoryManager.get(); }
     DialogueManager* getDialogueManager() { return dialogueManager.get(); }
     InventoryUI* getInventoryUI() { return inventoryUI.get(); }
+
 #ifdef AUDIO_SYSTEM_ENABLED
     AudioManager* getAudioManager() { return audioManager.get(); }
 #endif
@@ -348,6 +351,19 @@ public:
     // Phase 31: World Entity System
     WorldLoader* getWorldLoader() { return worldLoader.get(); }
     std::vector<WorldEntity>& getWorldEntities() { return worldEntities; }
+
+    // Dialogue
+    // Loads DIAL/INFO records from the ESM into the DialogueManager, applying
+    // JPWiki text when the current language is Japanese. Safe to call more than
+    // once; the previous set is replaced.
+    void loadDialoguesFromESM();
+    // Opens the dialogue UI for the NPC nearest to the player, if any.
+    // Returns true when a dialogue was opened.
+    bool openDialogueWithNearestNpc();
+    // Opens the dialogue UI for a specific NPC FormID. Returns true on success.
+    bool openDialogueWithNpc(uint32_t npcFormID);
+    bool isDialogueOpen() const;
+    void closeDialogue();
 
     // FPS Control
     void setTargetFPS(int fps);

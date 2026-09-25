@@ -6,6 +6,7 @@
 #include "quest_rewards.h"
 #include "../game/quest_manager.h"
 #include "../engine/imperial_weave.h"
+#include "../localization/localization_manager.h"
 #include <unordered_map>
 #include <vector>
 #include <memory>
@@ -99,6 +100,21 @@ public:
     void cleanup();
     void update(float deltaTime);
 
+    /**
+     * @brief Set the localization source used for quest names
+     * @param localization Localization manager, or nullptr to disable
+     */
+    void setLocalizationManager(const LocalizationManager* localization) {
+        localizationManager_ = localization;
+    }
+
+    /**
+     * @brief Get the localized quest name for a registered quest
+     * @param questFormID Quest FormID
+     * @return Localized name, or the raw ESM name when unavailable
+     */
+    std::string getQuestName(uint32_t questFormID) const;
+
     // Quest registration (from ESM data)
     void registerQuest(const QuestRecord& record);
     void registerQuests(const std::vector<QuestRecord>& records);
@@ -161,6 +177,7 @@ private:
     NpcManager* npcManager_ = nullptr;
     WorldManager* worldManager_ = nullptr;
     engine::SkyWeatherSystem* skyWeatherSystem_ = nullptr;
+    const LocalizationManager* localizationManager_ = nullptr;
 
     // Callback
     QuestFlowCallback flowCallback_;

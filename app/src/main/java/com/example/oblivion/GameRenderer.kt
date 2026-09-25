@@ -499,4 +499,9 @@ class GameRenderer : GLSurfaceView.Renderer {
 
     // Exit request check
     external fun nativeIsExitRequested(): Boolean
+
+    // Dialogue system (JPWiki localized DIAL/INFO trees)
+    external fun nativeStartDialogue(): Boolean
+    external fun nativeCloseDialogue()
+    external fun nativeIsDialogueOpen(): Boolean
 }

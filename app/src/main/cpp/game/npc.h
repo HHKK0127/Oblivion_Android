@@ -113,6 +113,10 @@ struct NPC {
     std::vector<uint32_t> availableQuests;  // Quest IDs this NPC can give
     std::vector<uint32_t> givenQuests;      // Quests already given
 
+    // ESM linkage
+    uint32_t formID = 0;                    // Base record FormID (NPC_/CREA), 0 if procedural
+    std::vector<uint32_t> factionFormIDs;   // Faction memberships (for dialogue branching)
+
     // Methods
     NPC(uint32_t id, const std::string& n);
     ~NPC();

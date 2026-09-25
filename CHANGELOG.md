@@ -16,6 +16,26 @@ The current version is **0.9.10 (versionCode 910)**.
 ## [Unreleased]
 
 ### Added
+- **JPWiki Japanese localization data**: `app/src/main/assets/localization/jpwiki_localization.tsv`
+  (5.7 MB, UTF-8/TSV) carries 28,686 strings extracted from `JPWikiMod_Vanilla.esp`,
+  `JPWikiMod_Vanilla+SI.esp` and `JPBooks_Merged[V+S+ML].esp` - 723 game settings, 640 book
+  bodies, 19,179 dialogue responses, 3,474 dialogue topics, 249 quest names and 4,421 object
+  names. `LocalizationManager::loadJpwikiData()` loads it through `AAssetManager` and exposes
+  one getter per kind (`getGameSetting`, `getBookText`, `getInfoText`, `getDialogText`,
+  `getQuestText`, `getFullText`). Every getter falls back to the English source text when the
+  language is not Japanese or the key is missing, so English behaviour is unchanged.
+- **Localization consumers**: `BookReader::getBookDescription()`,
+  `DialogueManager::loadDialoguesFromESM()` and `QuestFlowController::getQuestName()` now
+  resolve their text through `LocalizationManager`. Each system takes the manager through a
+  `setLocalizationManager()` setter, and `Renderer::initGameSystems()` attaches it to
+  `DialogueManager` at construction.
+- **Dialogue system wiring**: `Renderer` now owns a `UIDialogue` panel and exposes
+  `loadDialoguesFromESM()`, `openDialogueWithNpc()`, `openDialogueWithNearestNpc()`,
+  `isDialogueOpen()` and `closeDialogue()`. `createTestScenario()` loads the DIAL/INFO trees
+  after actors are placed, so 3,817 dialogue trees and 19,278 topics are available in game.
+  `NPC` gained `formID` / `factionFormIDs` (populated by `createNPCFromESM()`) and
+  `NpcManager::getNpcByFormID()` resolves a spawned actor from its base record. The JNI layer
+  adds `nativeStartDialogue()`, `nativeCloseDialogue()` and `nativeIsDialogueOpen()`.
 - **Native C++ host test runner for CI**: new `tools/host_tests/` directory with
   desktop stubs for the NDK headers (`<android/log.h>`, `<android/asset_manager.h>`,
   `<jni.h>`, GLES), stub implementations for `AAsset*` and `jni_audio_*` symbols, and
@@ -43,6 +63,14 @@ The current version is **0.9.10 (versionCode 910)**.
   the longer ceiling costs no wall clock time.
 
 ### Fixed
+- **Language preference was never applied**: `LocalizationManager::loadLanguagePreference()`
+  reset to English on every launch and `saveLanguagePreference()` was a no-op, so the
+  `LANGUAGE=` value persisted by `SettingsManager` was ignored. `Renderer::initGameSystems()`
+  now mirrors the setting into `LocalizationManager` once both objects exist, and the language
+  toggles in `SettingsUI` and `LauncherScreen` update both objects together.
+- **Incorrect terminology in the built-in translation table**: the table used `Mana` and
+  `Stamina`, which do not exist in Oblivion. They are now `Magicka` and `Fatigue`, matching the
+  original game and the JPWiki data.
 - **`AsyncTaskManager` completion-ordering race**: `submit()` wrapped the callable in a
   `std::packaged_task`, which fulfils the task's shared state from *inside* the callable, so
   `workerThread()`'s `recordCompletion()` (the call that bumps `totalCompleted_`) could still be

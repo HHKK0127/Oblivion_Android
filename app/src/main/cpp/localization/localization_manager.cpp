@@ -1,13 +1,17 @@
 #include "localization_manager.h"
 #include <fstream>
 #include <sstream>
+#include <cstdio>
 #include <android/log.h>
+#include <android/asset_manager.h>
 
 #define LOG_TAG "LocalizationManager"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+
+extern "C" AAssetManager* jni_audio_get_asset_manager();
 
 static LocalizationManager* g_localizationManager = nullptr;
 
@@ -27,10 +31,14 @@ bool LocalizationManager::initialize() {
     // Initialize translation database
     initializeTranslationDatabase();
 
+    // Load the JPWiki game setting data from the APK assets
+    loadJpwikiData();
+
     // Load language preference from persistent storage
     loadLanguagePreference();
 
-    LOGI("LocalizationManager initialized with %zu translations", translations.size());
+    LOGI("LocalizationManager initialized with %zu translations, %zu game settings",
+         translations.size(), gameSettings.size());
     return true;
 }
 
@@ -39,6 +47,12 @@ void LocalizationManager::cleanup() {
     saveLanguagePreference();
 
     translations.clear();
+    gameSettings.clear();
+    bookTexts.clear();
+    infoTexts.clear();
+    dialogTexts.clear();
+    questTexts.clear();
+    fullTexts.clear();
     LOGD("LocalizationManager cleaned up");
 }
 
@@ -64,18 +78,76 @@ std::string LocalizationManager::getString(const std::string& key) {
     }
 }
 
+std::string LocalizationManager::getGameSetting(const std::string& editorID,
+                                                const std::string& fallback) const {
+    if (currentLanguage != Language::JAPANESE) {
+        return fallback;
+    }
+    auto it = gameSettings.find(editorID);
+    if (it == gameSettings.end()) {
+        return fallback;
+    }
+    return it->second;
+}
+
+namespace {
+
+// FormID keys are stored as lowercase 8-digit hex so lookups are stable
+// regardless of how the caller obtained the ID.
+std::string formKey(uint32_t formID) {
+    char buf[9];
+    snprintf(buf, sizeof(buf), "%08x", formID);
+    return std::string(buf);
+}
+
+std::string lookup(const std::unordered_map<std::string, std::string>& table,
+                   const std::string& key, const std::string& fallback) {
+    auto it = table.find(key);
+    return (it == table.end()) ? fallback : it->second;
+}
+
+}  // namespace
+
+std::string LocalizationManager::getBookText(uint32_t formID,
+                                             const std::string& fallback) const {
+    if (currentLanguage != Language::JAPANESE) return fallback;
+    return lookup(bookTexts, formKey(formID), fallback);
+}
+
+std::string LocalizationManager::getInfoText(uint32_t formID,
+                                             const std::string& fallback) const {
+    if (currentLanguage != Language::JAPANESE) return fallback;
+    return lookup(infoTexts, formKey(formID), fallback);
+}
+
+std::string LocalizationManager::getDialogText(uint32_t formID,
+                                               const std::string& fallback) const {
+    if (currentLanguage != Language::JAPANESE) return fallback;
+    return lookup(dialogTexts, formKey(formID), fallback);
+}
+
+std::string LocalizationManager::getQuestText(uint32_t formID,
+                                              const std::string& fallback) const {
+    if (currentLanguage != Language::JAPANESE) return fallback;
+    return lookup(questTexts, formKey(formID), fallback);
+}
+
+std::string LocalizationManager::getFullText(const std::string& recordType, uint32_t formID,
+                                             const std::string& fallback) const {
+    if (currentLanguage != Language::JAPANESE) return fallback;
+    return lookup(fullTexts, recordType + ":" + formKey(formID), fallback);
+}
+
 void LocalizationManager::loadLanguagePreference() {
-    // Persistent storage via Android SharedPreferences
-    // JNI call to read saved language preference
-    // For now, default to English
-    currentLanguage = Language::ENGLISH;
+    // The language preference is owned by SettingsManager, which persists it to
+    // the app settings file. LocalizationManager mirrors that value so the two
+    // stay in sync; see Renderer::initLocalization().
     LOGD("Language preference loaded: %s",
          (currentLanguage == Language::JAPANESE) ? "Japanese" : "English");
 }
 
 void LocalizationManager::saveLanguagePreference() {
-    // Persistent storage via Android SharedPreferences
-    // JNI call to save current language preference
+    // Persistence is handled by SettingsManager::saveSettings().
     LOGD("Language preference saved: %s",
          (currentLanguage == Language::JAPANESE) ? "Japanese" : "English");
 }
@@ -88,12 +160,90 @@ void LocalizationManager::logTranslationStats() const {
     LOGD("========== Localization Manager Status ==========");
     LOGD("Current Language: %s", getLanguageName().c_str());
     LOGD("Total Translations: %zu", translations.size());
+    LOGD("Total Game Settings: %zu", gameSettings.size());
+    LOGD("Total Record Texts: book=%zu info=%zu dial=%zu qst=%zu full=%zu",
+         bookTexts.size(), infoTexts.size(), dialogTexts.size(),
+         questTexts.size(), fullTexts.size());
     LOGD("================================================");
+}
+
+void LocalizationManager::loadJpwikiData() {
+    AAssetManager* mgr = jni_audio_get_asset_manager();
+    if (!mgr) {
+        LOGW("AAssetManager unavailable, skipping JPWiki data");
+        return;
+    }
+
+    AAsset* asset = AAssetManager_open(mgr, JPWIKI_DATA_ASSET, AASSET_MODE_BUFFER);
+    if (!asset) {
+        LOGW("JPWiki data asset not found: %s", JPWIKI_DATA_ASSET);
+        return;
+    }
+
+    off_t len = AAsset_getLength(asset);
+    std::string content;
+    content.resize(static_cast<size_t>(len));
+    int read = AAsset_read(asset, &content[0], static_cast<size_t>(len));
+    AAsset_close(asset);
+
+    if (read <= 0) {
+        LOGE("Failed to read JPWiki data asset");
+        return;
+    }
+    content.resize(static_cast<size_t>(read));
+
+    std::istringstream stream(content);
+    std::string line;
+    size_t loaded = 0;
+    while (std::getline(stream, line)) {
+        if (line.empty() || line[0] == '#') {
+            continue;
+        }
+        // kind \t key \t english \t japanese
+        size_t t1 = line.find('\t');
+        if (t1 == std::string::npos) {
+            continue;
+        }
+        size_t t2 = line.find('\t', t1 + 1);
+        if (t2 == std::string::npos) {
+            continue;
+        }
+        size_t t3 = line.find('\t', t2 + 1);
+        if (t3 == std::string::npos) {
+            continue;
+        }
+        const std::string kind = line.substr(0, t1);
+        const std::string key = line.substr(t1 + 1, t2 - t1 - 1);
+        const std::string japanese = line.substr(t3 + 1);
+        if (key.empty() || japanese.empty()) {
+            continue;
+        }
+        if (kind == "gmst") {
+            gameSettings[key] = japanese;
+        } else if (kind == "book") {
+            bookTexts[key] = japanese;
+        } else if (kind == "info") {
+            infoTexts[key] = japanese;
+        } else if (kind == "dial") {
+            dialogTexts[key] = japanese;
+        } else if (kind == "qst") {
+            questTexts[key] = japanese;
+        } else if (kind == "full") {
+            fullTexts[key] = japanese;
+        } else {
+            continue;
+        }
+        ++loaded;
+    }
+
+    LOGI("Loaded %zu JPWiki entries from %s (gmst=%zu book=%zu info=%zu dial=%zu qst=%zu full=%zu)",
+         loaded, JPWIKI_DATA_ASSET, gameSettings.size(), bookTexts.size(),
+         infoTexts.size(), dialogTexts.size(), questTexts.size(), fullTexts.size());
 }
 
 void LocalizationManager::initializeTranslationDatabase() {
     // UI - Menu Items (Original Oblivion title screen style)
-    translations["menu_continue"] = {"Continue", "続きから"};
+    translations["menu_continue"] = {"Continue", "続ける"};
     translations["menu_new"] = {"New", "新規"};
     translations["menu_load"] = {"Load", "ロード"};
     translations["menu_options"] = {"Options", "オプション"};
@@ -143,9 +293,9 @@ void LocalizationManager::initializeTranslationDatabase() {
     translations["combat_victory"] = {"Victory", "勝利"};
     translations["combat_defeat"] = {"Defeat", "敗北"};
     translations["damage_dealt"] = {"Damage Dealt", "ダメージを与えた"};
-    translations["health_points"] = {"Health", "体力"};
-    translations["mana_points"] = {"Mana", "マナ"};
-    translations["stamina_points"] = {"Stamina", "スタミナ"};
+    translations["health_points"] = {"Health", "Health"};
+    translations["mana_points"] = {"Magicka", "Magicka"};
+    translations["stamina_points"] = {"Fatigue", "Fatigue"};
 
     // Magic System (for M5-3)
     translations["magic_spell"] = {"Spell", "呪文"};
@@ -160,8 +310,8 @@ void LocalizationManager::initializeTranslationDatabase() {
     // Spells (M5-3)
     translations["spell_fireball"] = {"Fireball", "ファイアボール"};
     translations["spell_heal"] = {"Heal", "ヒール"};
-    translations["spell_restore_mana"] = {"Restore Mana", "マナ回復"};
-    translations["spell_restore_stamina"] = {"Restore Stamina", "スタミナ回復"};
+    translations["spell_restore_mana"] = {"Restore Magicka", "Magicka回復"};
+    translations["spell_restore_stamina"] = {"Restore Fatigue", "Fatigue回復"};
     translations["spell_paralyze"] = {"Paralyze", "麻痺"};
     translations["spell_invisibility"] = {"Invisibility", "姿を隠す"};
     translations["spell_summon"] = {"Summon", "召喚"};
@@ -170,14 +320,14 @@ void LocalizationManager::initializeTranslationDatabase() {
     // Magic Effects
     translations["effect_damage"] = {"Damage", "ダメージ"};
     translations["effect_heal"] = {"Healing", "回復"};
-    translations["effect_mana"] = {"Mana Effect", "マナ効果"};
+    translations["effect_mana"] = {"Magicka Effect", "Magicka効果"};
     translations["effect_buff"] = {"Fortification", "強化"};
     translations["effect_debuff"] = {"Weakness", "弱体化"};
 
     // Combat AI Messages
     translations["ai_casting_spell"] = {"Casting spell", "呪文を発動"};
-    translations["ai_low_health"] = {"Low health", "体力が低い"};
-    translations["ai_low_mana"] = {"Low mana", "マナが不足"};
+    translations["ai_low_health"] = {"Low health", "Healthが低い"};
+    translations["ai_low_mana"] = {"Low magicka", "Magickaが不足"};
     translations["ai_selecting_heal"] = {"Selecting healing spell", "回復呪文を選択"};
     translations["ai_selecting_damage"] = {"Selecting damage spell", "攻撃呪文を選択"};
     translations["ai_selecting_restore"] = {"Selecting restore spell", "回復系呪文を選択"};
@@ -207,8 +357,8 @@ void LocalizationManager::initializeTranslationDatabase() {
     // Items/Equipment
     translations["item_iron_sword"] = {"Iron Sword", "鉄の剣"};
     translations["item_steel_armor"] = {"Steel Armor", "鋼の鎧"};
-    translations["item_health_potion"] = {"Health Potion", "体力回復薬"};
-    translations["item_mana_potion"] = {"Mana Potion", "マナ回復薬"};
+    translations["item_health_potion"] = {"Health Potion", "Health回復薬"};
+    translations["item_mana_potion"] = {"Magicka Potion", "Magicka回復薬"};
     translations["item_gold"] = {"Gold", "ゴールド"};
 
     // General Messages
@@ -218,7 +368,7 @@ void LocalizationManager::initializeTranslationDatabase() {
     translations["message_success"] = {"Success", "成功"};
     translations["message_back"] = {"Back", "戻る"};
     translations["message_confirm"] = {"Confirm", "確認"};
-    translations["message_cancel"] = {"Cancel", "キャンセル"};
+    translations["message_cancel"] = {"Cancel", "取り消し"};
 
     LOGI("Loaded %zu translations into database", translations.size());
 }

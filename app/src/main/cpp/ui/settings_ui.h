@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include "text_renderer.h"
 #include "../system/settings_manager.h"
+#include "../localization/localization_manager.h"
 #include "ui_panel.h"
 #include "ui_button.h"
 
@@ -31,7 +32,9 @@ public:
     /**
      * @brief Initialize settings UI
      */
-    bool initialize(TextRenderer* textRenderer, SettingsManager* settingsManager, class Renderer* renderer = nullptr);
+    bool initialize(TextRenderer* textRenderer, SettingsManager* settingsManager,
+                    class Renderer* renderer = nullptr,
+                    LocalizationManager* localization = nullptr);
 
     /**
      * @brief Toggle show/hide
@@ -74,6 +77,7 @@ private:
     TextRenderer* textRenderer;
     SettingsManager* settingsManager;
     class Renderer* renderer;
+    LocalizationManager* localizationManager;
 
     bool visible;
     bool returnToMenu;

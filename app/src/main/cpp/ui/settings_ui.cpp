@@ -6,6 +6,7 @@
 
 SettingsUI::SettingsUI()
     : textRenderer(nullptr), settingsManager(nullptr), renderer(nullptr),
+      localizationManager(nullptr),
       visible(false), returnToMenu(false), selectedIndex(0) {
     LOGD("SettingsUI created");
 }
@@ -17,7 +18,8 @@ SettingsUI::~SettingsUI() {
     cleanup();
 }
 
-bool SettingsUI::initialize(TextRenderer* textRend, SettingsManager* settings, Renderer* rend) {
+bool SettingsUI::initialize(TextRenderer* textRend, SettingsManager* settings, Renderer* rend,
+                            LocalizationManager* localization) {
     if (!textRend || !settings) {
         LOGD("Error: TextRenderer or SettingsManager is null");
         return false;
@@ -26,6 +28,7 @@ bool SettingsUI::initialize(TextRenderer* textRend, SettingsManager* settings, R
     textRenderer = textRend;
     settingsManager = settings;
     renderer = rend;
+    localizationManager = localization;
 
     // Set menu items
     menuItems.push_back(SettingItem::DEBUG_MODE);
@@ -275,10 +278,15 @@ void SettingsUI::selectItem(SettingItem item) {
             break;
         }
         case SettingItem::LANGUAGE: {
-            // Toggle language
+            // Toggle language and keep LocalizationManager in sync
             std::string current = settingsManager->getLanguage();
             std::string newLang = (current == "ja") ? "en" : "ja";
             settingsManager->setLanguage(newLang);
+            if (localizationManager) {
+                localizationManager->setLanguage(newLang == "ja" ? Language::JAPANESE
+                                                                 : Language::ENGLISH);
+            }
+            updateButtonLabels();
             LOGD("Language changed to: %s", newLang.c_str());
             break;
         }

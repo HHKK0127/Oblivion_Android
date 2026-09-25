@@ -29,7 +29,7 @@ development tags, not release versions.
 - [x] **Quest System** - Multi-objective quests with rewards (gold, experience)
 - [x] **Magic System** - 6 schools with 10+ spells and mana management
 - [x] **Character Status** - Health, mana, stamina, attributes, skills
-- [x] **Localization** - Japanese + English (100+ translations)
+- [x] **Localization** - Japanese + English (100+ UI translations, 28,686 JPWiki game strings)
 - [x] **Performance Monitoring** - Frame timing, memory, CPU profiling
 - [x] **Text Rendering** - On-screen text with color and positioning
 - [x] **Debug HUD** - FPS, frame time, memory, system info overlay
@@ -682,7 +682,7 @@ The Elder Scrolls IV: Oblivion の進行中のネイティブ Android 移植版�
 - [x] **クエストシステム** - マルチオブジェクト＋報酬（ゴールド、経験値）
 - [x] **魔法システム** - 6系統10種以上＋マナ管理
 - [x] **キャラクターステータス** - HP/MP/スタミナ/属性/スキル
-- [x] **多言語化** - 日本語＋英語（100以上の翻訳）
+- [x] **多言語化** - 日本語＋英語（UI翻訳100以上、JPWikiゲーム文字列28,686件）
 - [x] **パフォーマンス監視** - フレームタイム・メモリ・CPUプロファイル
 - [x] **テキストレンダリング** - カラー・位置指定対応のオンスクリーンテキスト
 - [x] **デバッグHUD** - FPS・フレームタイム・メモリ・システム情報オーバーレイ

@@ -88,6 +88,9 @@ std::string BookReader::getBookDescription(uint32_t bookFormID) const {
     const BookData* book = esmManager->findBook(bookFormID);
     if (!book) return "";
 
+    if (localizationManager) {
+        return localizationManager->getBookText(bookFormID, book->description);
+    }
     return book->description;
 }
 

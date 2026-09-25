@@ -25,6 +25,12 @@ extern "C" {
     void jni_audio_set_main_activity(jobject activity);
 }
 
+// Exposes the active Renderer to other translation units (e.g. the dialogue JNI
+// entry points in com_example_oblivion_OblivionEngine.cpp).
+extern "C" Renderer* jni_bridge_get_renderer() {
+    return g_renderer;
+}
+
 // Initialize engine and return handle to Java
 extern "C" JNIEXPORT jlong JNICALL
 Java_com_example_oblivion_GameRenderer_nativeInitEngine(

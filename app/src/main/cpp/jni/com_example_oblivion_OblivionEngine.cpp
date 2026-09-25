@@ -1,5 +1,6 @@
 #include "com_example_oblivion_OblivionEngine.h"
 #include "../engine/Engine.h"
+#include "../engine/renderer.h"
 #include <android/log.h>
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
@@ -8,7 +9,11 @@
 
 #define LOG_TAG "OblivionJNI"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+
+// Defined in jni_bridge.cpp; the Renderer is owned there, not by Engine.
+extern "C" Renderer* jni_bridge_get_renderer();
 
 // Thread-safe engine instance management
 static std::mutex engineMutex;
@@ -283,6 +288,38 @@ JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeCloseDialo
             uiManager->closeDialogue();
         }
     }
+
+    Renderer* renderer = jni_bridge_get_renderer();
+    if (renderer) {
+        renderer->closeDialogue();
+    }
+}
+
+JNIEXPORT jboolean JNICALL Java_com_example_oblivion_OblivionEngine_nativeStartDialogue(
+    JNIEnv* /* env */,
+    jobject /* obj */) {
+
+    LOGI("nativeStartDialogue called");
+
+    Renderer* renderer = jni_bridge_get_renderer();
+    if (!renderer) {
+        LOGW("nativeStartDialogue: Renderer not available");
+        return JNI_FALSE;
+    }
+
+    return renderer->openDialogueWithNearestNpc() ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jboolean JNICALL Java_com_example_oblivion_OblivionEngine_nativeIsDialogueOpen(
+    JNIEnv* /* env */,
+    jobject /* obj */) {
+
+    Renderer* renderer = jni_bridge_get_renderer();
+    if (!renderer) {
+        return JNI_FALSE;
+    }
+
+    return renderer->isDialogueOpen() ? JNI_TRUE : JNI_FALSE;
 }
 
 JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeCloseShop(

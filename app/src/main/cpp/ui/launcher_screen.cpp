@@ -2,6 +2,7 @@
 #include "text_renderer.h"
 #include "../engine/texture_loader.h"
 #include "../system/settings_manager.h"
+#include "../localization/localization_manager.h"
 #include "../engine/renderer.h"
 #include "ui_draw_helper.h"
 #include <GLES3/gl3.h>
@@ -430,11 +431,16 @@ void LauncherScreen::renderOptions() {
                         LOGI("Audio settings: Use in-game settings for volume control");
                     }
                 } else if (key == "language") {
-                    // Toggle language
+                    // Toggle language and keep LocalizationManager in sync
                     if (settingsManager) {
                         std::string current = settingsManager->getLanguage();
                         std::string newLang = (current == "ja") ? "en" : "ja";
                         settingsManager->setLanguage(newLang);
+                        if (localizationManager) {
+                            localizationManager->setLanguage(newLang == "ja"
+                                                                 ? Language::JAPANESE
+                                                                 : Language::ENGLISH);
+                        }
                         LOGI("Language changed to: %s", newLang.c_str());
                         // Rebuild menu to update labels
                         optionsPanel.reset();
