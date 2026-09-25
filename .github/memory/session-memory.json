@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-25T13:05:22+09:00",
+  "lastUpdated": "2026-09-25T13:22:52Z",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -3732,10 +3732,26 @@
         "title-plan"
       ],
       "compressed": false
+    },
+    {
+      "id": "bd3cfd5d-9d78-4f64-9d42-5ea3cb6ee673",
+      "timestamp": "2026-09-25T13:22:52Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Issue plan for the Phase 65/66 weather/water/sky-dome problems written to C:/Users/hiroki.kogarumai/.copilot/session-state/9427ac74-c35e-4e3d-b47e-79c1c4621727/files/ISSUE_PLAN.md and tracked as 7 todos (p1..p7). Priority order: P1 device-verify sky dome + water (highest, unverified), P2 drive SkyWeatherSystem from the 37 real WTHR records (NAM0 4x40B BGRA sky colours, FNAM fog near/far, HNAM, DATA windSpeed) + CLMT weatherTypes[16] selection, P3 connect fog/ambient/sun light, P4 gate sky dome on CellType::EXTERIOR, P5 verify the WATR Deep Color offset (assumed float 12-14), P6 resolve the parallel-session uncommitted changes (nif_parser, launcher_screen, renderer), P7 reduce the 66 renderer.cpp warnings. Deps: p2<-p1, p3<-p2, p4<-p1. Milestones: M-A (P1,P4,P5) drawing correct, M-B (P2,P3) real weather data, M-C (P6,P7) cleanup.",
+      "tags": [
+        "phase65",
+        "phase66",
+        "weather",
+        "water",
+        "plan",
+        "issues"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 259,
+    "totalEntries": 260,
     "compressedCount": 2,
     "sessionCount": 25
   }
