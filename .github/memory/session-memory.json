@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-25T12:05:47Z",
+  "lastUpdated": "2026-09-25T13:05:22+09:00",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -3717,10 +3717,25 @@
         "plan"
       ],
       "compressed": false
+    },
+    {
+      "id": "06b2e899-954c-412d-9cac-dcbacfcd8a1a",
+      "timestamp": "2026-09-25T13:05:22+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "Title screen: the 'Special Edition' subtitle is permanently removed - the user closed the question on 2026-09-25 with 'Special Edition is forgotten, drop it'. The current implementation (renderSubtitle() and SUBTITLE_WIDTH_RATIO / SUBTITLE_CENTER_Y_RATIO deleted by session 964d16fb) is the final state; do not restore it and do not raise it as an open decision again. Background: the string was a Remastered-only element absent from the original menus/options/main_menu.xml, and before deletion it measured 17.1%W / 47.6%H against the reference art's 17.3%W / 47.8%H. Deletion is confirmed on device: the subtitle band (y460-520, x795-1123) went from 1048 ink pixels to 0. TITLE_PLAN.md section 5 item 1 is closed; items 2-5 (Version text, selection fallback colour, background, video playback) remain open.",
+      "tags": [
+        "title-screen",
+        "special-edition",
+        "subtitle",
+        "decision-closed",
+        "title-plan"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 258,
+    "totalEntries": 259,
     "compressedCount": 2,
     "sessionCount": 25
   }
