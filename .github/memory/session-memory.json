@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-25T13:22:52Z",
+  "lastUpdated": "2026-09-25T15:11:50.088897",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -3748,10 +3748,50 @@
         "issues"
       ],
       "compressed": false
+    },
+    {
+      "id": "bf775d6e-8de0-4963-bdbe-6d784f06ef25",
+      "timestamp": "2026-09-25T15:11:50.088897",
+      "category": "reference",
+      "priority": "high",
+      "content": "Phase 66 ISSUE_PLAN P1-P7 all complete (2026-09-25). P1 sky-dome/water device verify; P2 WTHR connect (21 records); P3 terrain fog/ambient/sunlight (commits adb1863d, 54894033); P4 indoor/outdoor gate; P5 WATR colour offset measured (commit 76184356); P6 uncommitted cleanup (commit 263c146f); P7 warning cleanup 66->0 (commit ee12d4cc).",
+      "tags": [
+        "phase66",
+        "issue-plan",
+        "complete"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "20a2ea6d-cbb0-47b7-be63-05f0496692a4",
+      "timestamp": "2026-09-25T15:11:50.088897",
+      "category": "decision",
+      "priority": "high",
+      "content": "Oblivion WATR DATA colour block is 4-byte RGBA (u8), NOT float. Shallow=byte 44, Deep=byte 48, Reflection=byte 52. Old code reading shaderFloats[12..14] was wrong. Guard with data->size() >= byteOffset + 3 (some records like Blood/CamoranLava have DATA<55 bytes).",
+      "tags": [
+        "watr",
+        "esm",
+        "water",
+        "phase66"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "7672469c-40ed-4ee8-8e5c-a015493c4a05",
+      "timestamp": "2026-09-25T15:11:50.088897",
+      "category": "reference",
+      "priority": "medium",
+      "content": "P7 warning cleanup patterns: unused-lambda-capture [this]->[] only when this unused; unused-parameter use /*name*/ in defs and (void)name; in lambdas; mismatched-tags NPC is struct; inconsistent-missing-override add override; RAND_MAX -> static_cast<float>(RAND_MAX); sign-compare -> static_cast<int>(vec.size()). Vendored glm.hpp warning intentionally skipped.",
+      "tags": [
+        "warnings",
+        "build",
+        "phase66"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 260,
+    "totalEntries": 263,
     "compressedCount": 2,
     "sessionCount": 25
   }
