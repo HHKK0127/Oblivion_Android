@@ -2783,13 +2783,13 @@ void Renderer::createTestScenario() {
                 if (worldLoader) {
                     LOGI("=== Phase 31: Loading WorldEntities from NIF files ===");
 
-                    // Test NIF paths (common Oblivion meshes)
+                    // Test NIF paths (all present in the Oblivion Meshes.bsa catalog)
                     const char* testNifs[] = {
-                        "meshes/characters/imperial_male.nif",
-                        "meshes/creatures/imp.nif",
-                        "meshes/architecture/buildings/imperial_house_01.nif",
-                        "meshes/furniture/chair_01.nif",
-                        "meshes/clutter/barrel_01.nif"
+                        "meshes/characters/imperial/headhuman.nif",
+                        "meshes/creatures/horse/horse.nif",
+                        "meshes/architecture/farmhouse/farmhousedoor01.nif",
+                        "meshes/furniture/middleclass/middlechair01.nif",
+                        "meshes/architecture/castle/kvatch/kvatchcastledoor03.nif"
                     };
 
                     for (size_t i = 0; i < sizeof(testNifs)/sizeof(testNifs[0]); ++i) {
@@ -4002,6 +4002,8 @@ void Renderer::renderWater() {
     size_t waterCells = 0;
     float minLevel = std::numeric_limits<float>::max();
     float maxLevel = -std::numeric_limits<float>::max();
+    std::string waterCellNames;
+    std::string waterCellCoords;
     for (const auto& cell : cells) {
         if (!cell) continue;
         if (cell->cellType != CellType::EXTERIOR) continue;
@@ -4011,6 +4013,13 @@ void Renderer::renderWater() {
         if (!cell->hasTerrain) continue;
 
         waterCells++;
+        if (waterCells <= 8) {
+            const char* name = cell->editorID.empty() ? "-" : cell->editorID.c_str();
+            waterCellNames += std::string(name) + "; ";
+            waterCellCoords += "[" + std::to_string(cell->cellX) + "," +
+                               std::to_string(cell->cellY) + "@" +
+                               std::to_string((int)cell->waterLevel) + "] ";
+        }
         if (cell->waterLevel < minLevel) minLevel = cell->waterLevel;
         if (cell->waterLevel > maxLevel) maxLevel = cell->waterLevel;
 
@@ -4108,10 +4117,12 @@ void Renderer::renderWater() {
     static int waterLogFrame = 0;
     if (++waterLogFrame % 120 == 1) {
         LOGI("Water: %zu active cells with water, %zu drawn (no app-side culling), "
-             "cache=%zu, level range=%.1f..%.1f",
+             "cache=%zu, level range=%.1f..%.1f%s%s",
              waterCells, drawn, waterMeshes_.size(),
              minLevel <= maxLevel ? minLevel : 0.0f,
-             minLevel <= maxLevel ? maxLevel : 0.0f);
+             minLevel <= maxLevel ? maxLevel : 0.0f,
+             waterCellNames.empty() ? "" : (" | cells=" + waterCellNames).c_str(),
+             waterCellCoords.empty() ? "" : (" | coords=" + waterCellCoords).c_str());
     }
 }
 
