@@ -54,31 +54,6 @@ struct NativeIfFrame {
     bool branchTaken = false; // A branch of this chain has already run
 };
 
-// A command handler. The reference is the selector that preceded the command,
-// or 0 when the command had none. The tokens are the decoded argument list.
-struct NativeCommandContext {
-    uint32_t selfRef = 0;        // FormID the script is attached to
-    uint32_t targetRef = 0;      // FormID passed as the call target
-    uint16_t referenceIndex = 0; // Raw selector slot, 0 when absent
-    uint32_t referenceFormId = 0; // Resolved selector FormID, 0 when absent
-    uint16_t opcode = 0;
-    uint32_t offset = 0;         // Byte offset of the command in the bytecode
-};
-
-using NativeCommandHandler = std::function<bool(NativeCommandContext& context,
-                                                const std::vector<NativeToken>& args,
-                                                ScriptValue& returnValue,
-                                                std::string& error)>;
-
-// A handler for a function used inside an expression, such as GetStage or
-// IsActionRef. Its arguments arrive already evaluated, because an expression
-// operand is a value rather than a token list.
-using NativeExpressionHandler =
-    std::function<bool(NativeCommandContext& context,
-                       const std::vector<ScriptValue>& args,
-                       ScriptValue& returnValue,
-                       std::string& error)>;
-
 // Local variable storage. The native encoding indexes locals by slot, and the
 // slot space is shared by the f/s/l type chars, so one vector serves all three.
 class NativeVariableStore {
@@ -104,6 +79,35 @@ public:
 private:
     std::vector<ScriptValue> values_;
 };
+
+// A command handler. The reference is the selector that preceded the command,
+// or 0 when the command had none. The tokens are the decoded argument list.
+struct NativeCommandContext {
+    uint32_t selfRef = 0;        // FormID the script is attached to
+    uint32_t targetRef = 0;      // FormID passed as the call target
+    uint16_t referenceIndex = 0; // Raw selector slot, 0 when absent
+    uint32_t referenceFormId = 0; // Resolved selector FormID, 0 when absent
+    uint16_t opcode = 0;
+    uint32_t offset = 0;         // Byte offset of the command in the bytecode
+    // Local variable storage of the running VM. Argument tokens of the f/s/l
+    // type chars name a slot rather than a value, so a handler that needs the
+    // value reads it here. Null when the VM has no store attached.
+    const NativeVariableStore* variables = nullptr;
+};
+
+using NativeCommandHandler = std::function<bool(NativeCommandContext& context,
+                                                const std::vector<NativeToken>& args,
+                                                ScriptValue& returnValue,
+                                                std::string& error)>;
+
+// A handler for a function used inside an expression, such as GetStage or
+// IsActionRef. Its arguments arrive already evaluated, because an expression
+// operand is a value rather than a token list.
+using NativeExpressionHandler =
+    std::function<bool(NativeCommandContext& context,
+                       const std::vector<ScriptValue>& args,
+                       ScriptValue& returnValue,
+                       std::string& error)>;
 
 class NativeScdaVm {
 public:

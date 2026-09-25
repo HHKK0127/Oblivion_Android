@@ -486,6 +486,7 @@ bool NativeScdaVm::executeCommand(const NativeInstruction& instruction,
     context.targetRef = targetRef_;
     context.opcode = instruction.opcode;
     context.offset = instruction.offset;
+    context.variables = &variables_;
 
     // The selector marker that precedes a command names the reference the
     // command acts on. A command without one acts on the script's self.

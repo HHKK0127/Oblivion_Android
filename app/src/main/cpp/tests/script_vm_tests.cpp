@@ -12,6 +12,7 @@
 #include "../script/script_opcodes.h"
 #include "../script/native_scda_decoder.h"
 #include "../script/native_scda_vm.h"
+#include "../script/native_scda_bridge.h"
 #include "../quest/quest_flow_controller.h"
 #include "../game/inventory_manager.h"
 #include "../assets/esm_reader.h"
@@ -2641,6 +2642,149 @@ void ScriptVMTests::testNativeScdaVm() {
     }
 }
 
+void ScriptVMTests::testNativeScdaBridge() {
+    // Test 1: every bridged opcode maps to a FunctionID and is registered
+    {
+        const float start = getTimeMs38();
+        NativeScdaVm vm;
+        ScriptFunctions functions;
+        const size_t registered = registerNativeFunctionBridge(vm, functions);
+
+        // The bridge only forwards to FunctionIDs that actually have a
+        // handler, so the expected count is the number of mapped entries
+        // whose FunctionID is implemented.
+        size_t expected = 0;
+        bool allMapped = true;
+        for (uint16_t opcode = 0x1000; opcode <= 0x1170; ++opcode) {
+            FunctionID id;
+            if (!mapNativeOpcodeToFunctionId(opcode, id)) {
+                continue;
+            }
+            if (!functions.hasFunction(id)) {
+                continue;
+            }
+            ++expected;
+            if (!vm.hasCommand(opcode)) {
+                allMapped = false;
+            }
+        }
+
+        const bool ok = registered > 0 && registered == expected && allMapped;
+        record("NativeBridge: opcodes registered", ok,
+               "Every mapped native opcode with a handler has a forwarding handler",
+               getTimeMs38() - start);
+    }
+
+    // Test 2: an opcode with no counterpart stays unregistered
+    {
+        const float start = getTimeMs38();
+        FunctionID id;
+        const bool mapped = mapNativeOpcodeToFunctionId(0x1004, id);  // Rotate
+        const bool ok = !mapped;
+        record("NativeBridge: unmapped opcode", ok,
+               "An opcode without a FunctionID counterpart is not bridged",
+               getTimeMs38() - start);
+    }
+
+    // Test 3: a bridged command forwards its selector and arguments
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> body;
+        appendMarker(body, 1);  // selector slot 1
+
+        // SetStage <ref> 10 -> [2][<r1>][n 10]
+        std::vector<uint8_t> payload;
+        appendU16(payload, 2);
+        payload.push_back('r');
+        appendU16(payload, 1);
+        payload.push_back('n');
+        appendU32(payload, 10);
+        appendInstruction(body, 0x1039, payload);
+
+        std::vector<uint8_t> code;
+        appendBeginBlock(code, 0x0000, body);
+
+        const NativeDecodeResult program = decodeNativeScda(code);
+        NativeScdaVm vm;
+        ScriptFunctions functions;
+
+        // SetStage needs a quest flow controller, so give the bridge a real
+        // one with the quest the block targets.
+        QuestFlowController questFlowController;
+        QuestRecord questRecord;
+        questRecord.formID = 0x1234;
+        questRecord.fullName = "Bridge Quest";
+        questRecord.stages.push_back({10});
+        questFlowController.registerQuest(questRecord);
+        functions.init(nullptr, nullptr, nullptr, nullptr, &questFlowController);
+
+        registerNativeFunctionBridge(vm, functions);
+        vm.setReferences({0x1234}, 0);
+        vm.variables().set(1, ScriptValue::makeRef(0x1234));
+
+        const NativeVmResult result = vm.run(program, 0x0000, 0x1234);
+        const bool ok = result == NativeVmResult::Success;
+        record("NativeBridge: command forwarded", ok,
+               "A bridged command runs through the native VM without error",
+               getTimeMs38() - start);
+    }
+
+    // Test 4: token conversion preserves literal kinds
+    {
+        const float start = getTimeMs38();
+        NativeCommandContext context;
+        context.referenceFormId = 0xABCD;
+
+        std::vector<NativeToken> tokens;
+        NativeToken integer;
+        integer.kind = NativeTokenKind::Integer;
+        integer.intValue = 42;
+        tokens.push_back(integer);
+
+        NativeToken text;
+        text.kind = NativeTokenKind::String;
+        text.text = "hello";
+        tokens.push_back(text);
+
+        const std::vector<ScriptValue> args = nativeTokensToArguments(context, tokens);
+        const bool ok = args.size() == 3 &&
+                        args[0].type == ScriptValue::Type::Ref &&
+                        args[0].refVal == 0xABCD &&
+                        args[1].toInt() == 42 &&
+                        args[2].type == ScriptValue::Type::String &&
+                        args[2].strVal == "hello";
+        record("NativeBridge: token conversion", ok,
+               "The selector becomes a Ref argument and literals keep their kind",
+               getTimeMs38() - start);
+    }
+
+    // Test 5: a variable token reads its slot from the VM store instead of
+    // passing the slot index through as a value.
+    {
+        const float start = getTimeMs38();
+        NativeVariableStore store;
+        store.set(3, ScriptValue::makeRef(0x5678));
+
+        NativeCommandContext context;
+        context.variables = &store;
+
+        std::vector<NativeToken> tokens;
+        NativeToken variable;
+        variable.kind = NativeTokenKind::Variable;
+        variable.index = 3;
+        variable.intValue = 3;
+        tokens.push_back(variable);
+
+        const std::vector<ScriptValue> args = nativeTokensToArguments(context, tokens);
+        const bool ok = args.size() == 1 &&
+                        args[0].type == ScriptValue::Type::Ref &&
+                        args[0].refVal == 0x5678;
+        record("NativeBridge: variable token", ok,
+               "A variable token resolves to its stored value, not its slot index",
+               getTimeMs38() - start);
+    }
+}
+
 // ============================================
 // Run all tests
 // ============================================
@@ -2658,6 +2802,7 @@ bool ScriptVMTests::runAllTests() {
     testScriptManager();
     testNativeScdaDecoder();
     testNativeScdaVm();
+    testNativeScdaBridge();
 
     TEST_LOGI("========================================");
     TEST_LOGI("Results: %d passed, %d failed, %zu total",

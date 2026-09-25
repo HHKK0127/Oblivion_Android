@@ -279,6 +279,7 @@ add_library(native-lib SHARED
     script/script_disasm.cpp
     script/native_scda_decoder.cpp
     script/native_scda_vm.cpp
+    script/native_scda_bridge.cpp
 
     # Quest System (Phase 39 - Quest Flow)
     quest/quest_record.cpp
