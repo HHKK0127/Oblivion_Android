@@ -172,6 +172,22 @@ bool NIFParser::readHeader() {
     // Version info
     header.version = readUInt32();
 
+    // Meshes older than 5.0.0.1 have no block type table and no header tail at
+    // all: nif.xml opens "User Version" at 10.0.1.8 and both "Num Block Types"
+    // and "Block Type Index" at 5.0.0.1, so the block count is the last header
+    // field and block 0 starts right after it. Each block body then carries its
+    // own inline SizedString type name, which walkAllBlocks() reads.
+    if (header.version < 0x05000001) {
+        header.hasBlockTypeTable = false;
+        header.numObjects = readUInt32();
+        if (readError || header.numObjects == 0 || header.numObjects > 0x100000) {
+            LOGE("Invalid block count: %u", header.numObjects);
+            return false;
+        }
+        header.blockDataOffset = cursor;
+        return true;
+    }
+
     if (legacyNetImmerse) {
         // NetImmerse 10.0.1.0 meshes have no endian byte, no user version, no
         // unknown field and no creator strings: the block count follows the version.
@@ -263,6 +279,22 @@ bool NIFParser::parseObjectArray() {
 
     nodes.resize(header.numObjects);
 
+    // Pre-5.0.0.1 meshes carry no type table, so block 0's own inline type name
+    // is the only block type known before the walk. The remaining entries are
+    // filled in by walkAllBlocks(), which reads the type name of every block.
+    if (!header.hasBlockTypeTable) {
+        setCursor(header.blockDataOffset);
+        std::string rootTypeName;
+        if (!readString(rootTypeName)) {
+            LOGE("Failed to read inline block type name at offset %zu", header.blockDataOffset);
+            return false;
+        }
+        header.blockTypeNames.clear();
+        header.blockTypeNames.push_back(rootTypeName);
+        header.blockTypeIndices.assign(header.numObjects, 0);
+        LOGD("Legacy block table: block 0 type is %s", rootTypeName.c_str());
+    }
+
     for (uint32_t i = 0; i < header.numObjects; i++) {
         auto node = std::make_shared<NIFNode>();
         node->nodeIndex = i;
@@ -282,6 +314,13 @@ bool NIFParser::parseObjectArray() {
     }
 
     setCursor(header.blockDataOffset);
+    if (!header.hasBlockTypeTable) {
+        std::string inlineTypeName;
+        if (!readString(inlineTypeName)) {  // Type name precedes the object name
+            LOGE("Failed to skip inline block type name at offset %zu", header.blockDataOffset);
+            return false;
+        }
+    }
     if (!readString(nodes[0]->name)) {
         LOGE("Failed to read root object name at offset %zu", header.blockDataOffset);
         return false;
@@ -546,6 +585,16 @@ void NIFParser::skipFixed(size_t count) {
     skipBytes(count);
 }
 
+// nif.xml: bool is "32-bit up to and including 4.0.0.2, 8-bit from 4.1.0.1 on".
+// The pre-5.0.0.1 meshes that this walker now reaches all sit below that cut, so
+// their flags occupy a full uint32.
+uint32_t NIFParser::readBoolField() {
+    if (header.version <= 0x04000002) {
+        return readUInt32();
+    }
+    return readUInt8();
+}
+
 void NIFParser::skipRefArray(uint32_t count) {
     skipBytes(static_cast<size_t>(count) * 4);
 }
@@ -588,6 +637,13 @@ void NIFParser::skipStringArray(uint32_t count) {
 // NiObjectNET: Name | Extra Data List | Controller
 void NIFParser::skipNiObjectNET() {
     skipStringArray(1);
+    if (!header.hasBlockTypeTable) {
+        // Pre-5.0.0.1 meshes store Extra Data as a single ref with no list
+        // count, which only arrived with the 10.0.1.0 layout.
+        skipBytes(4);                           // Extra Data
+        skipBytes(4);                           // Controller
+        return;
+    }
     const uint32_t extraDataCount = readUInt32();
     if (readError) {
         return;
@@ -607,11 +663,22 @@ void NIFParser::skipNiAVObject() {
     skipBytes(12);
     skipBytes(36);
     skipBytes(4);
+    if (!header.hasBlockTypeTable) {
+        skipBytes(12);                          // Velocity (until 4.2.2.0)
+    }
     const uint32_t propertyCount = readUInt32();
     if (readError) {
         return;
     }
     skipRefArray(propertyCount);
+    if (!header.hasBlockTypeTable) {
+        // Has Bounding Volume is version-sized per nif.xml, and the collision
+        // object only exists from 10.0.1.0 on.
+        if (readBoolField() != 0) {
+            skipBytes(16);                      // Bounding Volume
+        }
+        return;
+    }
     skipBytes(4);
 }
 
@@ -622,7 +689,9 @@ void NIFParser::skipNiGeometry() {
         return;
     }
     skipBytes(4);
-    skipBytes(4);
+    if (header.version >= 0x0303000D) {
+        skipBytes(4);                           // Skin Instance (since 3.3.0.13)
+    }
     if (header.version >= 0x0A000100) {
         skipMaterialData();     // Material Data (since 10.0.1.0)
     }
@@ -977,6 +1046,79 @@ void NIFParser::skipFurniturePositions(uint32_t count) {
 
 // NiGeometryData: the shared vertex payload followed by the per-type tail.
 void NIFParser::skipNiGeometryData(const std::string& typeName) {
+    // Pre-5.0.0.1 meshes predate Group ID, Keep/Compress Flags and Consistency
+    // Flags, order the flags as Bound -> Vertex Colors -> Data Flags -> Has UV,
+    // and store every flag as a full uint32. Verified byte-exact against
+    // marker_arrow.nif (4.0.0.2) and marker_radius.nif (3.3.0.13).
+    if (!header.hasBlockTypeTable) {
+        const uint32_t numVertices = readUInt16();
+        if (readError) {
+            return;
+        }
+        if (readBoolField() != 0) {
+            skipVector3Array(numVertices);      // Vertices
+        }
+        if (readError) {
+            return;
+        }
+        if (readBoolField() != 0) {
+            skipVector3Array(numVertices);      // Normals
+        }
+        if (readError) {
+            return;
+        }
+        skipBytes(16);                          // Bounding Sphere
+        if (readBoolField() != 0) {
+            skipColor4Array(numVertices);       // Vertex Colors
+        }
+        if (readError) {
+            return;
+        }
+        const uint32_t legacyDataFlags = readUInt16();
+        // Has UV is an explicit bool only up to and including 4.0.0.2. From
+        // 4.1.0.1 the set count lives in Data Flags instead.
+        if (header.version <= 0x04000002) {
+            if (readBoolField() != 0) {
+                skipBytes(static_cast<size_t>(numVertices) * 8);
+            }
+        } else {
+            const uint32_t uvSets = legacyDataFlags & 63;
+            if (uvSets != 0) {
+                skipBytes(static_cast<size_t>(uvSets) * numVertices * 8);
+            }
+        }
+        if (readError) {
+            return;
+        }
+        if (typeName == "NiTriShapeData") {
+            const uint32_t numTriangles = readUInt16();
+            skipBytes(4);                       // Num Triangle Points
+            skipBytes(static_cast<size_t>(numTriangles) * 6);
+            const uint32_t numMatchGroups = readUInt16();
+            if (readError) {
+                return;
+            }
+            skipMatchGroups(numMatchGroups);
+            return;
+        }
+        if (typeName == "NiTriStripsData") {
+            skipBytes(2);                       // Num Triangles
+            const uint32_t numStrips = readUInt16();
+            if (readError) {
+                return;
+            }
+            size_t totalPoints = 0;
+            for (uint32_t i = 0; i < numStrips && !readError; i++) {
+                totalPoints += readUInt16();
+            }
+            if (readError) {
+                return;
+            }
+            skipBytes(totalPoints * 2);
+        }
+        return;
+    }
+
     if (header.version >= 0x0A010072) {
         skipBytes(4);                               // Group ID (since 10.1.0.114)
     }
@@ -1344,7 +1486,10 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
         skipBytes(2 + 4 + 4);                   // Flags, Vertex Mode, Lighting Mode
     } else if (typeName == "NiZBufferProperty") {
         skipNiObjectNET();
-        skipBytes(2 + 4);                       // Flags, Function
+        skipBytes(2);                           // Flags
+        if (header.version >= 0x0401000C) {
+            skipBytes(4);                       // Function (since 4.1.0.12)
+        }
     } else if (typeName == "NiSpecularProperty") {
         skipNiObjectNET();
         skipBytes(2);                           // Flags
@@ -2049,9 +2194,29 @@ bool NIFParser::walkAllBlocks() {
     blockBodyEnds.reserve(blockCount);
     cursor = header.blockDataOffset;
 
+    if (!header.hasBlockTypeTable) {
+        header.blockTypeNames.clear();
+        header.blockTypeIndices.clear();
+    }
+
     for (uint32_t index = 0; index < blockCount; index++) {
         const size_t bodyStart = cursor;
-        const std::string typeName = getBlockTypeName(index);
+        std::string typeName;
+        if (header.hasBlockTypeTable) {
+            typeName = getBlockTypeName(index);
+        } else {
+            // Every block of a pre-5.0.0.1 mesh opens with its own type name.
+            if (!readString(typeName)) {
+                walkError = "cannot read inline type name of block " + std::to_string(index);
+                break;
+            }
+            header.blockTypeNames.push_back(typeName);
+            header.blockTypeIndices.push_back(static_cast<uint16_t>(header.blockTypeNames.size() - 1));
+            if (index < nodes.size()) {
+                nodes[index]->blockTypeName = typeName;
+                nodes[index]->blockTypeIndex = header.blockTypeIndices.back();
+            }
+        }
         if (!skipBytes(blockBodyPrefix(typeName))) {
             break;
         }

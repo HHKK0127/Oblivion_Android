@@ -163,6 +163,7 @@ private:
     // Binary reading helpers
     bool readBytes(char* buffer, size_t count);
     uint8_t readUInt8();
+    uint32_t readBoolField();  // Sized per nif.xml: 4 bytes up to 4.0.0.2, else 1
     bool readString(std::string& str);
     bool readByteString(std::string& str);  // bzstring: u8 length (NUL included) + body
     bool readStringRef(std::string& str);  // String reference from string table
