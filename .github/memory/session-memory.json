@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-26T22:40:17.613054",
+  "lastUpdated": "2026-09-26T13:51:32Z",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -4056,10 +4056,69 @@
         "ws-b"
       ],
       "compressed": false
+    },
+    {
+      "category": "decision",
+      "priority": "high",
+      "content": "SCDA Begin block census, 100% positional (measured 2026-09-26, probe_blocks2.py / durable files\\scro_probe\\probe_blocks3.py, all 2,393 SCPT records): reading each record's ordered 'begin <keyword>' lines from SCTX and zipping them against the ordered 0x0010 block types gives 4,344 pairs from 2,321 records, 0 unpaired records, 0 count mismatches, and every one of the 25 types touched is 100.000% pure - the k-th block in the byte stream is always the k-th begin in the source. The 72 records with no begin line carry no 0x0010 either. 0x0010 is written 'onpackagedone' 174x and 'onpackageend' 133x, one type serving two source spellings. This supersedes the corpus-wide count-agreement numbers that stood in plan.md.",
+      "tags": [
+        "scda",
+        "begin",
+        "blocktype",
+        "scpt",
+        "alignment"
+      ],
+      "id": "ac3537b6-c520-4312-8224-a9ab685f17bd",
+      "timestamp": "2026-09-26T13:51:32Z",
+      "compressed": false
+    },
+    {
+      "category": "reference",
+      "priority": "high",
+      "content": "Begin block type totals (exact, all 4,344 blocks, 2026-09-26): gamemode 0x0000 1332, onactivate 0x0002 891, ondeath 0x000A 441, onpackagedone/onpackageend 0x0010 307, onreset 0x001E 215, onload 0x0015 208, ontrigger 0x0018 151, onadd 0x0003 102, onpackagechange 0x0014 89, scripteffectstart 0x0011 84, onhit 0x0008 82, onpackagestart 0x000F 61, scripteffectfinish 0x0012 57, onmagiceffecthit 0x0016 44, menumode 0x0001 42, onequip 0x0004 41, scripteffectupdate 0x0013 35, onalarm 0x000D 32, ontriggeractor 0x001A 31, onhitwith 0x0009 31, onstartcombat 0x0019 29, onunequip 0x0005 23, ondrop 0x0006 8, ontriggermob 0x001B 5, onsell 0x0017 2, onactorequip 0x001C 1. lengthWord: 6->1931, 8->1377, 10->6, 11->994, 13->36; no block has lengthWord < 4.",
+      "tags": [
+        "scda",
+        "begin",
+        "blocktype",
+        "census"
+      ],
+      "id": "a4068a34-3af9-46c1-8463-0bdbdaef25c4",
+      "timestamp": "2026-09-26T13:51:32Z",
+      "compressed": false
+    },
+    {
+      "category": "constraint",
+      "priority": "high",
+      "content": "Begin decode guard (2026-09-26): the decoder must NOT require lengthWord >= 8. The histogram is 6 (1,931 blocks / 44.4%), 8 (1,377), 10 (6), 11 (994), 13 (36), and no block has lengthWord < 4, so the only safe precondition is lengthWord >= 4. WS-B's native_scda_decoder.cpp currently errors on lengthWord < 8 and therefore rejects 1,931 of 4,344 blocks. bodyLength invariant (correct form): bodyLength == end of the matching 0x0011 instruction - end of the 0x0010 payload, true in 4,344/4,344 with 0 mismatches; the earlier '0 of 4,344' reading compared against End end - 4 and is withdrawn.",
+      "tags": [
+        "scda",
+        "begin",
+        "guard",
+        "regression",
+        "ws-b"
+      ],
+      "id": "3d81583e-b600-40dd-a340-8e55f978c685",
+      "timestamp": "2026-09-26T13:51:32Z",
+      "compressed": false
+    },
+    {
+      "category": "reference",
+      "priority": "medium",
+      "content": "Begin trailing bytes framing (2026-09-26): after [u16 blockType][u16 bodyLength] the next u16 is 0 in 4,344/4,344 blocks. When lengthWord >= 8 the remaining bytes are [u16 argc][tokens] in the same framing the statement operands use, and the token walk consumes the payload exactly in 2,413/2,413 blocks with 0 residue; argc == 0 for all 1,377 eight-byte blocks, argc >= 1 for all 1,036 ten/eleven/thirteen-byte blocks (994 carry exactly one r <slot> reference, onalarm carries two operands, menumode an int32 literal). The six-byte form has no argument list. A VM should read the header, skip the payload rest via bodyLength, and parse the argument list from payload offset 6 (argc) / 8 (tokens) only when it needs the block parameters. Shape is per block, not per type: onactivate 8B x876 / 11B x15, ondeath 8B x339 / 11B x102, menumode 8B x32 / 13B x10, onalarm 10B x6 / 13B x26.",
+      "tags": [
+        "scda",
+        "begin",
+        "payload",
+        "args",
+        "framing"
+      ],
+      "id": "142a110d-7292-4fbf-bbf5-b30704e9b7a1",
+      "timestamp": "2026-09-26T13:51:32Z",
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 282,
+    "totalEntries": 286,
     "compressedCount": 2,
     "sessionCount": 28
   }
