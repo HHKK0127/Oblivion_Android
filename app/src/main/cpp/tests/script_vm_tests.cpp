@@ -1258,7 +1258,9 @@ void ScriptVMTests::testNativeScdaDecoder() {
                getTimeMs38() - start);
     }
 
-    // Test 6: AddItem with a leading call reference (argc + 1 tokens)
+    // Test 6: AddItem with a reference property operand. The declared count
+    // counts operands, so the reference and its member fold into one token and
+    // the token count matches argc exactly.
     {
         const float start = getTimeMs38();
         std::vector<uint8_t> payload;
@@ -1275,11 +1277,13 @@ void ScriptVMTests::testNativeScdaDecoder() {
 
         const NativeDecodeResult result = decodeNativeScda(code);
         const bool ok = result.success && result.instructions.size() == 1 &&
-                        result.instructions[0].tokens.size() == 3 &&
-                        result.instructions[0].hasImplicitSelf &&
+                        result.instructions[0].tokens.size() == 2 &&
+                        !result.instructions[0].hasImplicitSelf &&
+                        result.instructions[0].tokens[1].hasMember &&
+                        result.instructions[0].tokens[1].memberIndex == 5 &&
                         result.instructions[0].declaredArgumentCount == 2;
-        record("NativeScda: implicit self", ok,
-               "A token count of argc + 1 marks a leading call reference",
+        record("NativeScda: reference property operand", ok,
+               "A reference and its member fold into one operand",
                getTimeMs38() - start);
     }
 
@@ -2749,6 +2753,69 @@ void ScriptVMTests::testNativeScdaVm() {
                             program.instructions[1].expressionDecoded;
         record("NativeDecoder: remote Set wins", framed,
                "A 0x72 Set payload reads as the remote form, not a local target pair",
+               getTimeMs38() - start);
+    }
+
+    // Test 21d: a reference operand followed by a local variable operand keeps
+    // both tokens. The bytecode for a property access and for two adjacent
+    // operands is identical, so the plain reading wins whenever it satisfies the
+    // declared count. Folding unconditionally would collapse the pair and break
+    // the many argument lists that pass a reference and a local variable.
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> body;
+        std::vector<uint8_t> payload;
+        appendU16(payload, 2);
+        payload.push_back('r');
+        appendU16(payload, 7);
+        payload.push_back('s');
+        appendU16(payload, 1);
+        appendInstruction(body, 0x1052, payload);
+
+        std::vector<uint8_t> code;
+        appendBeginBlock(code, 0x0000, body);
+
+        const NativeDecodeResult program = decodeNativeScda(code);
+        const bool framed = program.instructions.size() == 3 &&
+                            !program.instructions[1].framingFailed &&
+                            program.instructions[1].tokens.size() == 2 &&
+                            program.instructions[1].tokens[0].typeChar == 'r' &&
+                            program.instructions[1].tokens[0].index == 7 &&
+                            !program.instructions[1].tokens[0].hasMember &&
+                            program.instructions[1].tokens[1].typeChar == 's' &&
+                            program.instructions[1].tokens[1].index == 1;
+        record("NativeDecoder: adjacent operands", framed,
+               "A reference and a local variable stay two operands when argc says two",
+               getTimeMs38() - start);
+    }
+
+    // Test 21e: the same byte shape folds into one operand when the declared
+    // count only fits the folded reading. This is the reference property form,
+    // where the member index selects a variable on the referenced object.
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> body;
+        std::vector<uint8_t> payload;
+        appendU16(payload, 1);
+        payload.push_back('r');
+        appendU16(payload, 5);
+        payload.push_back('s');
+        appendU16(payload, 9);
+        appendInstruction(body, 0x1076, payload);
+
+        std::vector<uint8_t> code;
+        appendBeginBlock(code, 0x0000, body);
+
+        const NativeDecodeResult program = decodeNativeScda(code);
+        const bool framed = program.instructions.size() == 3 &&
+                            !program.instructions[1].framingFailed &&
+                            program.instructions[1].tokens.size() == 1 &&
+                            program.instructions[1].tokens[0].typeChar == 'r' &&
+                            program.instructions[1].tokens[0].index == 5 &&
+                            program.instructions[1].tokens[0].hasMember &&
+                            program.instructions[1].tokens[0].memberIndex == 9;
+        record("NativeDecoder: reference property folds", framed,
+               "A reference and member fold into one operand when argc says one",
                getTimeMs38() - start);
     }
 

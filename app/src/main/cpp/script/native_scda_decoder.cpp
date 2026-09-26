@@ -32,6 +32,28 @@ bool isVariableTypeChar(uint8_t c) {
     return c == 'f' || c == 's' || c == 'r' || c == 'l' || c == 'G';
 }
 
+// A string token is [u16 length][length bytes] with no type byte. Inside an
+// argument list it must be tested before the typed tokens, because a length word
+// such as 0x0072 reads as the reference variable type char 'r' and would swallow
+// the string. The text bytes are printable ASCII, which no typed token payload
+// contains, so the test does not misfire on real tokens.
+bool looksLikeStringToken(const uint8_t* data, size_t size, uint32_t offset) {
+    if (offset + 2 > size) {
+        return false;
+    }
+    const uint16_t length = readU16(data + offset);
+    if (length == 0 || offset + 2 + length > size) {
+        return false;
+    }
+    for (uint16_t i = 0; i < length; ++i) {
+        const uint8_t c = data[offset + 2 + i];
+        if (c < 0x20 || c > 0x7E) {
+            return false;
+        }
+    }
+    return true;
+}
+
 // Axis selectors are single bytes and only appear inside argument lists, never
 // inside expressions, where 'X' is always a function call. 'X' itself is only an
 // axis when too few bytes remain for a function token.
@@ -61,6 +83,16 @@ bool decodeToken(const uint8_t* data, size_t size, uint32_t offset,
     out = NativeToken{};
     out.offset = offset;
     const uint8_t lead = data[offset];
+
+    // Argument lists carry string tokens, and their length word can look like a
+    // typed token, so the string reading is tried first there.
+    if (allowAxis && looksLikeStringToken(data, size, offset)) {
+        const uint16_t length = readU16(data + offset);
+        out.kind = NativeTokenKind::String;
+        out.text.assign(reinterpret_cast<const char*>(data + offset + 2), length);
+        out.length = 2 + length;
+        return true;
+    }
 
     if (isVariableTypeChar(lead)) {
         if (offset + 3 > size) {
@@ -153,10 +185,17 @@ bool decodeToken(const uint8_t* data, size_t size, uint32_t offset,
 // Walks [u16 argc][typed tokens] to the end of the given range and checks the
 // resulting token count. A count of argc + 1 means the first token is the call
 // reference, which the compiler emits for dotted calls.
+//
+// A reference property operand is a reference variable followed by the member
+// variable it selects, and the pair counts as one operand. The bytecode for a
+// property access and for two adjacent operands is identical, so the reading is
+// chosen by which one satisfies the declared count: the plain reading first,
+// then the folding reading. Folding unconditionally would break the many
+// argument lists that pass a reference and a local variable side by side.
 bool walkArgumentList(const uint8_t* data, size_t size, uint32_t offset,
-                      bool allowAxis, std::vector<NativeToken>& tokens,
-                      uint16_t& declaredCount, bool& implicitSelf,
-                      std::string& error) {
+                      bool allowAxis, bool foldMembers,
+                      std::vector<NativeToken>& tokens, uint16_t& declaredCount,
+                      bool& implicitSelf, std::string& error) {
     tokens.clear();
     implicitSelf = false;
     declaredCount = 0;
@@ -169,10 +208,9 @@ bool walkArgumentList(const uint8_t* data, size_t size, uint32_t offset,
     declaredCount = readU16(data + offset);
     uint32_t cursor = offset + 2;
 
-    // The declared count bounds the walk, but a leading call reference makes the
-    // token count argc + 1, so allow one extra. Reading to the end of the slice
-    // would swallow the tokens that follow the argument list, because the slice
-    // is sized to the argument bytes and the count word is not part of them.
+    // The declared count bounds the walk. Reading to the end of the slice would
+    // swallow the tokens that follow the argument list, because the slice is
+    // sized to the argument bytes and the count word is not part of them.
     const size_t walkLimit = static_cast<size_t>(declaredCount) + 1;
     while (cursor < size && tokens.size() < walkLimit) {
         NativeToken token;
@@ -180,20 +218,28 @@ bool walkArgumentList(const uint8_t* data, size_t size, uint32_t offset,
             error = "truncated argument token";
             return false;
         }
-        tokens.push_back(token);
         cursor += token.length;
+
+        if (foldMembers && token.kind == NativeTokenKind::Variable &&
+            token.typeChar == 'r' && cursor + 3 <= size && data[cursor] == 's') {
+            NativeToken member;
+            if (decodeToken(data, size, cursor, allowAxis, member) &&
+                member.kind == NativeTokenKind::Variable) {
+                token.hasMember = true;
+                token.memberIndex = member.index;
+                cursor += member.length;
+            }
+        }
+
+        tokens.push_back(token);
     }
 
-    if (tokens.size() != declaredCount &&
-        tokens.size() != static_cast<size_t>(declaredCount) + 1) {
+    if (tokens.size() != declaredCount) {
         error = "argument count " + std::to_string(declaredCount) +
                 " does not match " + std::to_string(tokens.size()) + " tokens";
         return false;
     }
 
-    if (tokens.size() == static_cast<size_t>(declaredCount) + 1) {
-        implicitSelf = true;
-    }
     return true;
 }
 
@@ -203,19 +249,27 @@ bool walkArgumentList(const uint8_t* data, size_t size, uint32_t offset,
 // yields, while a bare u16 whose value happens to be 0x005A needs the plain
 // reading. Both readings exist in the corpus, so prefer the one that satisfies
 // the declared count: axis first, because that is what the vanilla argument
-// lists use, then plain.
+// lists use, then plain. Member folding is tried only after both plain readings
+// fail, so that adjacent reference and local variable operands keep their own
+// tokens.
 bool decodeArgumentList(const uint8_t* data, size_t size, uint32_t offset,
                         std::vector<NativeToken>& tokens, uint16_t& declaredCount,
                         bool& implicitSelf, std::string& error) {
     std::string axisError;
-    if (walkArgumentList(data, size, offset, true, tokens, declaredCount,
+    if (walkArgumentList(data, size, offset, true, false, tokens, declaredCount,
                          implicitSelf, axisError)) {
         return true;
     }
 
     std::string plainError;
-    if (walkArgumentList(data, size, offset, false, tokens, declaredCount,
+    if (walkArgumentList(data, size, offset, false, false, tokens, declaredCount,
                          implicitSelf, plainError)) {
+        return true;
+    }
+
+    std::string foldError;
+    if (walkArgumentList(data, size, offset, true, true, tokens, declaredCount,
+                         implicitSelf, foldError)) {
         return true;
     }
 
@@ -246,6 +300,8 @@ bool decodeStringArgument(const uint8_t* payload, uint32_t size, uint32_t& curso
         }
         cursor += token.length;
         out.tokens.push_back(token);
+        // The reference is the call target, not a declared operand, so the
+        // string command carries one implicit self operand.
         out.hasImplicitSelf = true;
     } else if (argc != 1) {
         error = "unexpected string argument count " + std::to_string(argc);

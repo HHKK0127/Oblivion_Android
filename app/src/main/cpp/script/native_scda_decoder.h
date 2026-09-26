@@ -154,6 +154,12 @@ struct NativeToken {
     uint16_t argumentBytes = 0; // Function argument byte count
     std::string text;           // String literal or operator text
 
+    // A reference property operand is [0x72][u16 refSlot] followed by an
+    // optional [0x73][u16 shortIndex]. The pair counts as one operand, so the
+    // member token is folded into the reference token and marked here.
+    bool hasMember = false;
+    uint16_t memberIndex = 0;
+
     // Function arguments. The nested list carries its own declared count, and
     // hasImplicitSelf is set when it holds one token more than declared.
     std::vector<NativeToken> arguments;
