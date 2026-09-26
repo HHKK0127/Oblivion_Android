@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-26T23:41:57+09:00",
+  "lastUpdated": "2026-09-26T23:54:00+09:00",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -4470,10 +4470,25 @@
       "category": "decision",
       "priority": "high",
       "content": "0x1059 message command trailer, settled by WS-B 3aa7a4e9 against this session's second measurement batch: the stored payload is [u16 formatCount][format tokens][u16 value][u16 0]. The old decoder required a zero u32 tail and therefore rejected eight retail records, and the count word undercounts in one record, so the operand list is now walked greedily until the fixed 4-byte tail remains (readGreedyTokenBlock, cursor+2 skips the count word while cursor+4 < size) and the end test is readU16(payload+cursor+2) != 0 instead of readU32 != 0. RESOLVED - the earlier seven-versus-eight question: bounding the operand list by the trailer from the end gives tail histogram 223 zero / 7 non-zero (01 00 00 00 x3 = SE12AnimatingDoorSCRIPT twice + MQ14Script; 05 00 00 00 = MQ09OneTimeLeverSCRIPT; 07 00 00 00 = TG11HeistScript; 0a 00 00 00 x2 = ARTrapEvilStoneFireSCRIPT + ARTrapEvilStoneAUTOFIREFireSCRIPT), so 7 payloads carry a non-zero value word; adding ValenDrethScript (the single count-word undercount, n0=1 against two operands, leaving 7 bytes instead of 4) gives exactly the 8 WS-B names. Both the zero-u32 rule and the count-driven walk fail on the same eight records. The meaning of the non-zero value words (1/1/1/5/7/10/10) is still unknown. Do not 'fix' the count word: it equals the number of '%' format specifiers in the text. Sources: files/scro_probe/struct3.txt (tail histogram) and struct2.txt section 4 (8 anomalies)."
+    },
+    {
+      "id": "merge-gate-remeasured-20260926-e5c16845",
+      "timestamp": "2026-09-26T23:54:00+09:00",
+      "category": "reference",
+      "priority": "high",
+      "content": "Merge/tip state re-measured from git on 2026-09-26 at master e5c16845 (supersedes the 005c384d and b3449cd5 readings): the WS-B branch hhkk0127-script-vm-expansion tip is 8efc03b6 (\"Name the expression side function ids and add two opcode aliases\", which implements queue items 4 and 5 - the 198-expression-fid name table and the getgs / scaonactor aliases), 36 commits ahead of the merge base b3529e8a and 66 behind master; master is 23 commits ahead of origin/master aabb9dd7 and unpushed. git merge-tree --write-tree master hhkk0127-script-vm-expansion exits 0 with merged root tree 722ac914 - the hash moves with every master commit because the merged tree contains master's tree, so exit 0 is the claim and the hash is only a receipt. master..branch == b3529e8a..branch == 36, which proves master carries no cherry-pick from the branch (clean side branch). The merge gate is now exactly three dirty rewritten paths, measured by intersecting git status --porcelain with the 32 paths of git diff --name-only master...hhkk0127-script-vm-expansion: assets/esm_reader.cpp (+51/-171 against the merged tree), assets/esm_reader.h (+34/-37) and engine/renderer.cpp (+34/-36). CMakeLists.txt and tools/host_tests/run_host_tests.sh dropped out of the gate when session 9427ac74 landed 9e1fd406. All three remaining gate paths sit inside the seven-path set attributed to WS-C's in-flight Phase 66 P19 increment (the renderer.cpp diff is the weather / timescale / timeofday console wiring plus the sky-clock report and the deleted duplicate skyWeatherSystem->update, NOT the P16 GameStateReport format, which is committed as 9e1fd406). The gate closes when WS-C commits its increment; moving master still needs the user's approval.",
+      "tags": [
+        "merge-gate",
+        "ws-b",
+        "ws-c",
+        "branch-state",
+        "plan-verification"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 311,
+    "totalEntries": 312,
     "compressedCount": 2,
     "sessionCount": 28
   }
