@@ -74,6 +74,13 @@ The current version is **0.9.10 (versionCode 910)**.
   the longer ceiling costs no wall clock time.
 
 ### Fixed
+- **Water reflection colour was hard-coded instead of read from WATR**: the water fragment
+  shader blended the surface toward a fixed sky tint `vec3(0.55, 0.67, 0.78)`, so every body of
+  water reflected the same colour regardless of the record that defined it. The shader now takes
+  a `uReflectionColor` uniform and `Renderer::renderWater()` feeds it the WATR reflection colour
+  (DATA byte 52, RGBA), so `DefaultWater`, `SwampWater`, `OblivionLavaTest01` and the other 20
+  records each reflect their own authored colour. The uniform defaults to the previous sky tint
+  when no WATR record is bound, so behaviour without water data is unchanged.
 - **WATR records with a short DATA subrecord rendered as black water**: three records in
   `Oblivion3.esm` (`CamoranLava` 2 bytes, `Blood` 42 bytes, `CamoranLava02` 42 bytes) carry a
   DATA subrecord shorter than the 55 bytes needed to reach the colour block at byte offsets

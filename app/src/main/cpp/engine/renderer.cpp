@@ -4225,6 +4225,7 @@ static const char* waterFragmentSrc =
 "#version 300 es\n"
 "precision mediump float;\n"
 "uniform vec4 uColor;\n"
+"uniform vec3 uReflectionColor;\n"
 "uniform vec3 uCameraPos;\n"
 "in vec3 vNormal;\n"
 "in vec3 vWorldPos;\n"
@@ -4233,9 +4234,10 @@ static const char* waterFragmentSrc =
 "    vec3 N = normalize(vNormal);\n"
 "    vec3 V = normalize(uCameraPos - vWorldPos);\n"
 "    float fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);\n"
-"    // Blend the base water colour toward the sky colour at grazing angles.\n"
-"    vec3 sky = vec3(0.55, 0.67, 0.78);\n"
-"    vec3 color = mix(uColor.rgb, sky, fresnel * 0.45);\n"
+"    // Blend the base water colour toward the WATR reflection colour at grazing\n"
+"    // angles. The reflection colour is the game's own DATA byte 52 entry, so the\n"
+"    // sheen matches the original material instead of a hardcoded sky tint.\n"
+"    vec3 color = mix(uColor.rgb, uReflectionColor, fresnel * 0.45);\n"
 "    float dist = length(uCameraPos - vWorldPos);\n"
 "    float alpha = uColor.a * clamp(1.0 - dist / 14000.0, 0.2, 1.0);\n"
 "    fragColor = vec4(color, alpha);\n"
@@ -4407,6 +4409,7 @@ void Renderer::renderWater() {
         // scaled to 0..1. A fallback is used when the cell has no resolvable
         // WATR type or the record is too short.
         float waterColor[4] = {0.15f, 0.35f, 0.40f, 0.55f};
+        float reflectionColor[3] = {0.55f, 0.67f, 0.78f};
         if (cell->waterTypeFormID != 0 && assetManager) {
             const auto& esmMgr = assetManager->getEsmManager();
             const oblivion::WaterData* watr = esmMgr.findWater(cell->waterTypeFormID);
@@ -4417,9 +4420,13 @@ void Renderer::renderWater() {
                 waterColor[3] = watr->opacity > 0
                     ? watr->opacity / 255.0f
                     : 0.55f;
+                reflectionColor[0] = watr->reflectionColor[0];
+                reflectionColor[1] = watr->reflectionColor[1];
+                reflectionColor[2] = watr->reflectionColor[2];
             }
         }
         glUniform4fv(glGetUniformLocation(waterShader, "uColor"), 1, waterColor);
+        glUniform3fv(glGetUniformLocation(waterShader, "uReflectionColor"), 1, reflectionColor);
 
         glBindVertexArray(it->second.vao);
         glDrawElements(GL_TRIANGLES, it->second.indexCount, GL_UNSIGNED_SHORT, nullptr);
