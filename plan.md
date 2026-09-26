@@ -666,8 +666,8 @@ workstreams that can run at the same time without fighting each other.
   permanently dirty has been removed from the index.
 - **Re-measured on 2026-09-26, and two of the earlier sentences above no longer hold.** `master` is
   **not** level with `origin/master`: it is **23 commits ahead of `aabb9dd7`** and unpushed, the
-  plan-side commits (`cc04a4c2`, `d667a54c`) being the newest of them. The working tree is now
-  **clean**; when this bullet was first written it held **9 modified paths plus 4 untracked ones**,
+  plan-side commits (`cc04a4c2`, `d667a54c`) being the newest of them. The working tree was
+  **clean at that measurement** (it is not at `dfa09d7a`, see the merge-gate paragraph below); when this bullet was first written it held **9 modified paths plus 4 untracked ones**,
   all owned by other sessions and none of them mine - kept here because the measurement is what named
   the owner and cleared the merge gate: `CHANGELOG.md`, `app/src/main/cpp/CMakeLists.txt`,
   `app/src/main/cpp/engine/renderer.cpp`, `app/src/main/cpp/ui/game_console.cpp`,
@@ -768,6 +768,28 @@ also asked for a rebase onto `master` plus a re-verification pass before the mer
 `master` needs the user's approval because it is the shared branch. The preparation that can be done
 without approval is done: the content merge is verified conflict-free and the branch's own host-test
 run is green.
+**Re-measured at `dfa09d7a`, the revision this plan now describes: the gate is unchanged - the same three
+dirty rewritten paths - and the four untracked `game_state_report` paths are no longer part of it.**
+`master`'s worktree holds **13 modified paths and 0 untracked ones**; intersecting that with the 32 paths
+the branch rewrites leaves exactly `assets/esm_reader.cpp` (+17/-15), `assets/esm_reader.h` (+27/-11) and
+`engine/renderer.cpp` (+32/-17) - the same three paths `e5c16845` named - so the merge gate is still held
+by WS-C's uncommitted increment and closes when that session commits it. The other ten modified paths
+(`CHANGELOG.md`, `ui/game_console.cpp`, `ui/title_screen.cpp`, `java/.../MainActivity.kt`,
+`res/layout/activity_main.xml`, `java/.../GameRenderer.kt`, `world/world_manager.{cpp,h}`,
+`engine/sky_weather_system.h`, `tests/weather_transition_tests.cpp`) are not in the rewritten set, so they
+do not block `git merge`. `CMakeLists.txt` and `tools/host_tests/run_host_tests.sh` are rewritten by the
+merge but clean, and they are the two paths that dropped out of the gate when `9e1fd406` landed.
+`git merge-tree --write-tree master hhkk0127-script-vm-expansion` is `exit 0` here too. The branch stands
+36 commits ahead of the merge base and 68 behind `master`.
+**Two measurement traps, recorded because each has already produced a wrong answer.** First, the gate is
+the *intersection* of `git status --porcelain` with `git diff --name-only master...<branch>`, not a
+remembered file list: `CHANGELOG.md`, `ui/game_console.cpp`, `MainActivity.kt` and `activity_main.xml` are
+dirty yet harmless, while a clean `CMakeLists.txt` is still rewritten and would still block. Second, it
+must be taken in the `master` worktree (`C:\Users\hiroki.kogarumai\Oblivion_Android`); a branch-side
+worktree's `status` says nothing about it, and four worktrees exist now (`master` at `dfa09d7a`,
+`hhkk0127-script-vm-expansion` at `8efc03b6`, `hhkk0127-oblivion-android-completion-plan` at `5dfaa88b`,
+and `hhkk0127-virtual-controller`, prunable with no commit at all).
+
 
 **Why this split**
 - WS-A and WS-B are pure code/config work with no device dependency, so they can run fully in

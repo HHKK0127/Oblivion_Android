@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-27T00:01:33+09:00",
+  "lastUpdated": "2026-09-27T01:05:00+09:00",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -4501,10 +4501,27 @@
         "verification"
       ],
       "compressed": false
+    },
+    {
+      "id": "merge-gate-master-worktree-20260927-b8d1e4f7",
+      "timestamp": "2026-09-27T01:05:00+09:00",
+      "category": "constraint",
+      "priority": "high",
+      "content": "The merge gate for master is the INTERSECTION of the master worktree's `git status --porcelain` with `git diff --name-only master...hhkk0127-script-vm-expansion` (32 paths), not a remembered file list and not a branch-side worktree's status. Measured at master HEAD dfa09d7a (2026-09-26, in C:\\Users\\hiroki.kogarumai\\Oblivion_Android): 13 modified paths, 0 untracked; the intersection is exactly three WS-C-owned paths - assets/esm_reader.cpp (+17/-15), assets/esm_reader.h (+27/-11), engine/renderer.cpp (+32/-17) - so `git merge` is refused until session 30cbb1e4 commits them. The other ten dirty paths (CHANGELOG.md, ui/game_console.cpp, ui/title_screen.cpp, java/.../MainActivity.kt, res/layout/activity_main.xml, java/.../GameRenderer.kt, world/world_manager.{cpp,h}, engine/sky_weather_system.h, tests/weather_transition_tests.cpp) are not rewritten by the merge and do not block it; CMakeLists.txt and tools/host_tests/run_host_tests.sh are rewritten but clean since 9e1fd406 landed. The four untracked game_state_report / gamestate_report_tests paths are gone (committed as 9e1fd406). git merge-tree --write-tree master hhkk0127-script-vm-expansion = exit 0. Branch is 36 commits ahead of the merge base b3529e8a and 68 behind master. Four worktrees exist: master@dfa09d7a, hhkk0127-script-vm-expansion@8efc03b6, hhkk0127-oblivion-android-completion-plan@5dfaa88b, hhkk0127-virtual-controller (prunable, no commit). WS-B's report of master HEAD 3ef1a678 with 9 M + 4 untracked was a stale reading (3ef1a678 is an ancestor of master).",
+      "tags": [
+        "merge-gate",
+        "worktree",
+        "git",
+        "coordination",
+        "ws-b",
+        "ws-c",
+        "verification"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 313,
+    "totalEntries": 314,
     "compressedCount": 2,
     "sessionCount": 28
   }
