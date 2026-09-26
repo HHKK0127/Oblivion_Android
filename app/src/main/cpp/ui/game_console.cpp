@@ -671,6 +671,14 @@ void GameConsole::registerBuiltinCommands() {
         const std::string query = args.size() >= 2 ? args[1] : std::string();
         print(gameRefs.teleportToInterior(query));
     });
+    registerCommand("teleportexterior", "Leave the interior cell and resume exterior streaming", [this](const std::vector<std::string>& args) {
+        (void)args;
+        if (!gameRefs.teleportToExterior) {
+            print("Exterior teleport not available");
+            return;
+        }
+        print(gameRefs.teleportToExterior());
+    });
     registerCommand("moverel", "Move relative: moverel <dx> <dz>", [this](const std::vector<std::string>& args) {
         if (args.size() < 3) {
             print("Usage: moverel <dx> <dz>");

@@ -1061,17 +1061,28 @@ bool Renderer::initGameSystems() {
                                  : "No interior cell matching '" + query + "'";
         }
 
+        // Park the player at the cell origin. Interior references are cell
+        // relative, so the origin is the natural anchor until interior geometry
+        // is placed. Set the position before entering so the exterior cell at
+        // world (0,0) never becomes current.
+        if (playerController) playerController->setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+        worldManager->setPlayerPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+
         auto cell = worldManager->enterInteriorCell(chosen->formID, chosen->editorID,
                                                     chosen->fullName);
         if (!cell) return "Failed to enter interior cell";
 
-        // Park the player at the cell origin. Interior references are cell
-        // relative, so the origin is the natural anchor until interior geometry
-        // is placed.
-        if (playerController) playerController->setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
-        worldManager->setPlayerPosition(glm::vec3(0.0f, 0.0f, 0.0f));
         return "Entered interior: " + cell->cellName + " (0x" +
                std::to_string(chosen->formID) + ")";
+    };
+    refs.teleportToExterior = [this]() -> std::string {
+        if (!worldManager) return "World manager not available";
+        if (!worldManager->isPlayerIndoors()) return "Not inside an interior cell";
+        const std::string left = worldManager->getCurrentCell()
+                                     ? worldManager->getCurrentCell()->cellName
+                                     : std::string("interior");
+        if (!worldManager->leaveInteriorCell()) return "Failed to leave interior cell";
+        return "Left interior: " + left;
     };
 
     // Phase 67: Performance monitoring callbacks
@@ -3827,7 +3838,9 @@ void Renderer::render(float deltaTime) {
 
     // Render world objects
     if (worldManager) {
-        worldManager->render();
+        // P15: exterior cell objects stay resident inside an interior cell but
+        // must not be drawn over the interior view.
+        if (!worldManager->isPlayerIndoors()) worldManager->render();
     } else {
         LOGW("worldManager is null!");
     }
@@ -4282,6 +4295,9 @@ static const char* waterFragmentSrc =
 
 void Renderer::renderWater() {
     if (!worldManager) return;
+    // P15: water planes are an exterior-only feature. Inside an interior cell the
+    // exterior CELLs stay resident for fast re-entry, so suppress them here.
+    if (worldManager->isPlayerIndoors()) return;
 
     const auto& cells = worldManager->getActiveCells();
     if (cells.empty()) return;
@@ -4678,6 +4694,8 @@ void Renderer::renderSkyDome() {
 
 void Renderer::renderTerrainMeshes() {
     if (!worldManager) return;
+    // P15: exterior LAND terrain must not draw inside an interior cell.
+    if (worldManager->isPlayerIndoors()) return;
 
     const auto& cells = worldManager->getActiveCells();
     if (cells.empty()) return;
@@ -5153,6 +5171,8 @@ void Renderer::renderTerrainMeshes() {
 
 void Renderer::renderPlaceholderEntities() {
     if (!worldManager) return;
+    // P15: placeholder actors are exterior-placed; suppress them indoors.
+    if (worldManager->isPlayerIndoors()) return;
 
     NpcManager* npcMgr = worldManager->getNpcManager();
     if (!npcMgr) return;

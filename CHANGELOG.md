@@ -86,6 +86,17 @@ The current version is **0.9.10 (versionCode 910)**.
   `WorldManager::isPlayerIndoors()`, so the suppression actually fires. A new
   `InteriorCellTests` host suite covers registration, FormID lookup, re-entry reuse and the
   indoors predicate.
+- **Entering an interior cell snapped straight back outside**: `PlayerController::update()` calls
+  `WorldManager::setPlayerPosition()` every frame, and that method re-resolved `currentCell`
+  through `getCellAt()`. Interior cells carry no grid coordinate, so the lookup always returned
+  the exterior cell under the player and overwrote the interior within a frame - the emulator
+  still drew outdoor terrain and sky after `teleportinterior` reported success.
+  `setPlayerPosition()` now returns early while `isPlayerIndoors()` is true, so an interior stays
+  current until it is explicitly left. A new `leaveInteriorCell()` (and the matching
+  `teleportexterior` console command) restores exterior streaming on demand. The renderer also
+  parks the player at the interior origin *before* registering the cell, so the exterior cell at
+  world (0,0) can never win the race. `InteriorCellTests` now covers the sticky-interior and
+  leave/return paths.
 - **Weather transitions finished in a fraction of their configured duration**:
   `SkyWeatherSystem::setWeather()` lerped the live `currentWeather_` toward `targetWeather_`
   by the absolute progress `t` on every frame. Because the source of each lerp was the

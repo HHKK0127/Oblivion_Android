@@ -108,6 +108,12 @@ public:
     bool isPlayerIndoors() const {
         return currentCell && currentCell->cellType != CellType::EXTERIOR;
     }
+
+    // Phase 66 P15: leave the current interior cell and resume exterior cell
+    // streaming at the player's world position. Returns true when an interior
+    // was actually left.
+    bool leaveInteriorCell();
+
     std::shared_ptr<Cell> getCellAt(const glm::vec3& worldPos);
     std::shared_ptr<Cell> getCellById(uint32_t cellId);
     std::shared_ptr<Cell> getCellByCoord(int32_t cellX, int32_t cellY);

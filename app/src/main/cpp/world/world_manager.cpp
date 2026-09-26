@@ -242,12 +242,35 @@ void WorldManager::updateActiveCells() {
 void WorldManager::setPlayerPosition(const glm::vec3& pos) {
     worldState.playerPosition = pos;
 
+    // Phase 66 P15: interior cells carry no grid coordinate, so getCellAt()
+    // resolves the player's exterior position and would immediately pull the
+    // player back outside. Keep the interior current until leaveInteriorCell().
+    if (isPlayerIndoors()) {
+        return;
+    }
+
     // Update current cell
     auto newCell = getCellAt(pos);
     if (newCell && newCell != currentCell) {
         currentCell = newCell;
         LOGD_WORLD("Player entered cell: %s", currentCell->cellName.c_str());
     }
+}
+
+bool WorldManager::leaveInteriorCell() {
+    if (!isPlayerIndoors()) return false;
+
+    const uint32_t interiorCellId = currentCell->cellId;
+    currentCell.reset();
+
+    auto newCell = getCellAt(worldState.playerPosition);
+    if (newCell) {
+        currentCell = newCell;
+    }
+
+    LOGI_WORLD("Left interior cell %u, resumed exterior cell %u", interiorCellId,
+               currentCell ? currentCell->cellId : 0);
+    return true;
 }
 
 void WorldManager::setPlayerRotation(const glm::vec3& rot) {

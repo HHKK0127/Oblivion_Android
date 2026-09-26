@@ -98,6 +98,32 @@ bool InteriorCellTests::runAllTests() {
     record("empty name falls back to editor ID",
            unnamed && unnamed->cellName == "SomeEditorID");
 
+    // 8. Exterior cell streaming must not pull the player back outside. The
+    //    player controller calls setPlayerPosition() every frame, and interior
+    //    cells have no grid coordinate for getCellAt() to resolve.
+    wm.enterInteriorCell(kFormChorrol, "ChorrolFightersGuild",
+                         "Chorrol Fighters Guild");
+    wm.setPlayerPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+    record("setPlayerPosition keeps the interior cell current",
+           wm.getCurrentCell() == wm.getCellByFormID(kFormChorrol));
+    record("still indoors after a position update", wm.isPlayerIndoors());
+    wm.setPlayerPosition(glm::vec3(4096.0f, 128.0f, 4096.0f));
+    record("a distant position update also keeps the interior",
+           wm.getCurrentCell() == wm.getCellByFormID(kFormChorrol));
+
+    // 9. Leaving an interior resumes exterior streaming and clears indoors.
+    record("leaveInteriorCell succeeds while indoors", wm.leaveInteriorCell());
+    record("not indoors after leaving", !wm.isPlayerIndoors());
+    record("leaveInteriorCell is a no-op when already outside",
+           !wm.leaveInteriorCell());
+    record("interior cells stay registered after leaving",
+           wm.getCellByFormID(kFormChorrol) != nullptr);
+
+    // 10. A position update after leaving behaves normally again.
+    wm.setPlayerPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+    record("position updates apply again after leaving",
+           !wm.isPlayerIndoors());
+
     const auto t1 = std::chrono::high_resolution_clock::now();
     const float totalMs =
         std::chrono::duration<float, std::milli>(t1 - t0).count();

@@ -205,6 +205,10 @@ public:
         // suppression paths can be exercised in game.
         std::function<std::string(const std::string&)> teleportToInterior;
 
+        // Phase 66 P15: leave the current interior cell and resume exterior
+        // streaming (the inverse of teleportToInterior).
+        std::function<std::string()> teleportToExterior;
+
         // Phase 67: Performance monitoring
         std::function<std::string()> getPerformanceStats;
         std::function<std::string()> getDetailedPerformance;
