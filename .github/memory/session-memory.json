@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-26T14:03:38Z",
+  "lastUpdated": "2026-09-26T00:00:00Z",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -4187,10 +4187,25 @@
         "expression"
       ],
       "compressed": false
+    },
+    {
+      "id": "ws-b-branch-channel-state-20260926",
+      "timestamp": "2026-09-26T00:00:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Workstream channel state re-measured from git on 2026-09-26. hhkk0127-script-vm-expansion: merge base b3529e8a, tip 51248b09 (Frame MessageBox buttons with their leading marker word), 33 commits ahead of the base and 53 behind master. The six newest commits are 3e13cfdb (Bridge native SCDA opcodes to the synthetic script functions), 9a7fef9d (Separate native call selectors from the r/Z reference slot table), d2cb7013 (Number native reference slots in SCPT subrecord file order), 6da0cd9e (Decode the remote Set form before the local target form), 9c608fc3 (Fold reference property operands only when argc requires it) and 51248b09. master is 10 commits ahead of origin/master aabb9dd7 and unpushed. The working tree holds 9 modified plus 4 untracked paths, all owned by other sessions. The merge is gated on uncommitted edits to CMakeLists.txt, engine/renderer.cpp and tools/host_tests/run_host_tests.sh plus user approval; git merge-tree --write-tree exits 0 with no conflict.",
+      "tags": [
+        "workstream",
+        "ws-b",
+        "merge",
+        "branch-state",
+        "git"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 291,
+    "totalEntries": 292,
     "compressedCount": 2,
     "sessionCount": 28
   }
