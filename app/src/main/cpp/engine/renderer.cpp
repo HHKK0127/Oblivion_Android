@@ -975,17 +975,27 @@ bool Renderer::initGameSystems() {
         }
         return out;
     };
-    refs.setWeather = [](const std::string& w) {
-        (void)w;
-        // Weather not implemented yet
+    refs.setWeather = [this](const std::string& w) {
+        // Phase 66 P19: this was also a no-op stub, so "setweather storm" did
+        // nothing at all. Apply it instantly rather than ramping, so a debug
+        // A/B screenshot shows the new sky on the next frame.
+        if (!skyWeatherSystem) return;
+        const engine::WeatherType type = engine::SkyWeatherSystem::weatherTypeFromName(w);
+        if (type == engine::WeatherType::COUNT) return;
+        skyWeatherSystem->setWeatherImmediate(type);
     };
-    refs.setTimeScale = [](float s) {
-        (void)s;
-        // Time scale not implemented yet
+    refs.setTimeScale = [this](float s) {
+        // Phase 66 P19: this was a no-op stub, so the console's "settimescale"
+        // reported success while the 30x clock kept running unchanged.
+        if (skyWeatherSystem) skyWeatherSystem->setTimeScale(s);
     };
-    refs.setTimeOfDay = [](float h) {
-        (void)h;
-        // Time of day not implemented yet
+    refs.setTimeOfDay = [this](float h) {
+        // Phase 66 P19: "settime" was also a no-op stub, which left every
+        // day/night measurement waiting for the clock to drift into place and made
+        // P19 impossible to verify. Drive the sky clock and the world clock
+        // together so the gamestate report and the rendered sky agree.
+        if (skyWeatherSystem) skyWeatherSystem->setGameTime(h);
+        if (worldManager) worldManager->setTimeOfDay(h);
     };
     refs.loadCell = [this](int32_t x, int32_t y) {
         if (worldManager) worldManager->loadCell(x, y);
@@ -1019,8 +1029,14 @@ bool Renderer::initGameSystems() {
         snapshot.activeCells = worldManager->getActiveCells().size();
         snapshot.cachedCells = worldManager->getCacheSize();
         snapshot.terrainCells = worldManager->countExteriorCellsWithTerrain();
-        snapshot.timeOfDay = worldManager->getTimeOfDay();
-        snapshot.day = worldManager->getDayCount();
+        // Report the clock that actually drives the sun. The sky system owns it
+        // (it is the only one with a time scale and a sunrise/sunset curve);
+        // WorldManager's separate counter ran at a different rate, so the report
+        // disagreed with the sky the player was looking at.
+        snapshot.timeOfDay = skyWeatherSystem ? skyWeatherSystem->getGameTime()
+                                              : worldManager->getTimeOfDay();
+        snapshot.day = skyWeatherSystem ? skyWeatherSystem->getDayCount()
+                                        : worldManager->getDayCount();
 
         if (playerController) {
             const glm::vec3 pos = playerController->getPlayerPosition();
@@ -3526,10 +3542,9 @@ void Renderer::render(float deltaTime) {
         questFlowController->update(deltaTime);
     }
 
-    // Phase 47: Update weather system
-    if (skyWeatherSystem) {
-        skyWeatherSystem->update(deltaTime);
-    }
+    // Phase 47: the weather/sky clock is stepped once per frame further down, in
+    // the main render path. Stepping it here as well advanced game time at double
+    // rate whenever the title screen was not up.
 
     // Begin performance monitoring
     if (performanceMonitor) {

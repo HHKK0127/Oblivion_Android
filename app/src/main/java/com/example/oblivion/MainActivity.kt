@@ -402,6 +402,28 @@ class MainActivity : Activity() {
                 Log.d(TAG, "Executed: gamestate")
             }
 
+            // Lighting A/B: the same viewpoint at noon and at midnight is what proves the
+            // sun and ambient curves are actually connected (P19).
+            findViewById<Button>(R.id.btn_debug_time_noon)?.setOnClickListener {
+                gameRenderer?.nativeExecuteConsoleCommand("settime 12")
+                Log.d(TAG, "Executed: settime 12")
+            }
+
+            findViewById<Button>(R.id.btn_debug_time_midnight)?.setOnClickListener {
+                gameRenderer?.nativeExecuteConsoleCommand("settime 0")
+                Log.d(TAG, "Executed: settime 0")
+            }
+
+            findViewById<Button>(R.id.btn_debug_weather_clear)?.setOnClickListener {
+                gameRenderer?.nativeExecuteConsoleCommand("setweather clear")
+                Log.d(TAG, "Executed: setweather clear")
+            }
+
+            findViewById<Button>(R.id.btn_debug_weather_storm)?.setOnClickListener {
+                gameRenderer?.nativeExecuteConsoleCommand("setweather storm")
+                Log.d(TAG, "Executed: setweather storm")
+            }
+
             Log.i(TAG, "Debug buttons setup complete")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to setup debug buttons: ${e.message}", e)

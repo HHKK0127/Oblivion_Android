@@ -32,6 +32,10 @@ class GameRenderer : GLSurfaceView.Renderer {
     @Volatile
     private var titleVideoCallbackCount: Int = 0
     private var titleVideoInitAttempted: Boolean = false
+    // P17: true once the title screen has actually been shown. The renderer starts in the
+    // launcher phase, where isTitleScreenActive() is already false, so the release below
+    // must not fire before the title screen has been entered at least once.
+    private var titleScreenSeenActive: Boolean = false
     // Diagnostics: frames pulled from the SurfaceTexture per second.
     private var titleVideoFrameCount: Int = 0
     private var titleVideoErrorCount: Int = 0
@@ -73,6 +77,9 @@ class GameRenderer : GLSurfaceView.Renderer {
 
         @JvmStatic
         external fun nativeUpdateTitleVideoTexture()
+
+        @JvmStatic
+        external fun nativeTitleScreenActive(): Boolean
     }
 
     constructor()
@@ -382,15 +389,29 @@ class GameRenderer : GLSurfaceView.Renderer {
                 // updateTexImage called 0 times in 5 s) the BufferQueue filled up, MediaPlayer
                 // blocked in dequeueBuffer and the picture never advanced again. The callback
                 // is only used as a hint now; it must not gate the update.
+                //
+                // P17: the video must also stop once the player leaves the title screen.
+                // Nothing called releaseTitleVideo(), so MediaPlayer kept decoding and the
+                // OES texture kept being uploaded for the whole session.
                 val titleSurfaceTexture = titleVideoSurfaceTexture
                 if (titleSurfaceTexture != null) {
-                    try {
-                        titleSurfaceTexture.updateTexImage()
-                        nativeUpdateTitleVideoTexture()
-                        titleVideoFrameCount++
-                    } catch (e: Exception) {
-                        if (titleVideoErrorCount++ < 3) {
-                            Log.w(TAG, "Error updating title video texture: ${e.message}")
+                    val titleActive = nativeTitleScreenActive()
+                    if (titleActive) {
+                        titleScreenSeenActive = true
+                    }
+                    if (titleScreenSeenActive && !titleActive) {
+                        Log.i(TAG, "Title screen left - releasing title video")
+                        releaseTitleVideo()
+                        nativeSetTitleVideoTexture(0)
+                    } else {
+                        try {
+                            titleSurfaceTexture.updateTexImage()
+                            nativeUpdateTitleVideoTexture()
+                            titleVideoFrameCount++
+                        } catch (e: Exception) {
+                            if (titleVideoErrorCount++ < 3) {
+                                Log.w(TAG, "Error updating title video texture: ${e.message}")
+                            }
                         }
                     }
                 }

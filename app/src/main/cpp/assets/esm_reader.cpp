@@ -2893,21 +2893,23 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
         WeatherData weather;
         weather.formID = rec.formID;
         weather.editorID = rec.getString("EDID");
-        weather.cloudTextureUpper = rec.getString("CNAM");
-        weather.cloudTextureLower = rec.getString("DNAM");
+        weather.cloudTextureUpper = rec.getString("DNAM");
+        weather.cloudTextureLower = rec.getString("CNAM");
 
-        // NAM0: 4 time-of-day blocks of 40 bytes (10 uint32 each)
-        auto* nam0 = rec.findSubRecord("NAM0");
-        if (nam0 && nam0->size() >= 160) {
-            for (int block = 0; block < 4; block++) {
-                const uint8_t* base = nam0->data.data() + block * 40;
-                WeatherSkyColors& colors = weather.sky[block];
-                colors.upperSky = static_cast<uint32_t>(readI32(base));
-                colors.fog = static_cast<uint32_t>(readI32(base + 4));
-                colors.unknown = static_cast<uint32_t>(readI32(base + 8));
-                colors.clouds = static_cast<uint32_t>(readI32(base + 12));
-                for (int d = 0; d < 6; d++) {
-                    colors.detail[d] = static_cast<uint32_t>(readI32(base + 16 + d * 4));
+        // NAM0: 160 bytes, field-major. Oblivion stores 10 fields, each as
+                // 4 x uint32 (Sunrise, Day, Sunset, Night). Colours are packed
+                // 0x00BBGGRR (byte 0 = R, byte 1 = G, byte 2 = B, byte 3 reserved and
+                // always 0). Reading it time-major (4 blocks of 40 bytes) swapped the
+                // field meanings and produced the purple-grey Day sky and black fog
+                // seen in earlier builds. A partial trailing field is skipped rather
+                // than misread.
+                auto* nam0 = rec.findSubRecord("NAM0");
+        if (nam0 && nam0->size() >= static_cast<int>(NAM0_FIELD_COUNT * 4 * 4)) {
+            for (int f = 0; f < NAM0_FIELD_COUNT; f++) {
+                const uint8_t* base = nam0->data.data() + f * 16;
+                WeatherNam0Field& field = weather.nam0[f];
+                for (int s = 0; s < 4; s++) {
+                    field.slot[s] = static_cast<uint32_t>(readI32(base + s * 4));
                 }
             }
         }

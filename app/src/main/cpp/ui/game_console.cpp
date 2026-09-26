@@ -1997,7 +1997,7 @@ void GameConsole::cmdEndTalk(const std::vector<std::string>& args) {
 
 void GameConsole::cmdSetWeather(const std::vector<std::string>& args) {
     if (args.size() < 2) {
-        appendOutput("Usage: setweather <clear|rain|snow|fog|storm>");
+        appendOutput("Usage: setweather <clear|cloudy|overcast|fog|rain|storm|snow|blizzard>");
         return;
     }
     if (gameRefs.setWeather) {
@@ -2010,15 +2010,16 @@ void GameConsole::cmdSetWeather(const std::vector<std::string>& args) {
 
 void GameConsole::cmdSetTimeScale(const std::vector<std::string>& args) {
     if (args.size() < 2) {
-        appendOutput("Usage: settimescale <multiplier>");
-        appendOutput("  1 = real-time, 30 = default Oblivion, 0 = paused");
+        appendOutput("Usage: settimescale <game minutes per real minute>");
+        appendOutput("  30 = Oblivion default (a game day in 48 real minutes), 0 = paused");
         return;
     }
     try {
         float scale = std::stof(args[1]);
         if (gameRefs.setTimeScale) {
             gameRefs.setTimeScale(scale);
-            appendOutput("Time scale set to " + std::to_string(scale) + "x");
+            appendOutput("Time scale set to " + std::to_string(scale) +
+                         " game minutes per real minute");
         } else {
             appendOutput("World system not connected");
         }

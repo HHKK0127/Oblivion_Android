@@ -149,6 +149,7 @@ public:
 
     // Time management
     void advanceTime(float deltaTime);
+    void setTimeOfDay(float hours);
     float getTimeOfDay() const { return worldState.timeOfDay; }
     uint32_t getDayCount() const { return worldState.dayCount; }
 

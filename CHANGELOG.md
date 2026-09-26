@@ -87,6 +87,79 @@ The current version is **0.9.10 (versionCode 910)**.
   the longer ceiling costs no wall clock time.
 
 ### Fixed
+- **The title screen video kept playing for the whole session.** `GameRenderer.releaseTitleVideo()`
+  existed but nothing ever called it, so once the player left the title screen `MediaPlayer`
+  went on decoding and the OES texture went on being uploaded every frame - the
+  `Title video: updateTexImage=21/s` line in the log was the only visible symptom, and the
+  wasted work was charged to the game's frame budget. `onDrawFrame` now watches the native
+  `isTitleScreenActive()` (exposed as `nativeTitleScreenActive()`, previously bridged in
+  `jni_bridge.cpp` but never declared on the Kotlin side) and, on the first frame after the
+  title screen is left, stops and releases the player, releases the `SurfaceTexture`, deletes
+  the GL texture and calls `nativeSetTitleVideoTexture(0)`. The renderer starts in the launcher
+  phase where `isTitleScreenActive()` is already `false`, so the release is armed by the first
+  frame that reports `true`; it can never fire before the title screen has actually been shown.
+- **The sky and the ambient light now actually follow the clock, so noon and midnight look
+  different.** P19 was first written off as "already wired", but reading the code showed the
+  clock reached the colours through no working path at all, and turned up six independent
+  time-keeping bugs alongside it:
+  1. `SkyWeatherSystem::loadFromESM()` read only `w.sky[1]` (the NAM0 Day set) and discarded
+     Sunrise/Sunset/Night, so every hour produced the same sky. It now stores all four sets and
+     re-derives any set a WTHR record does not supply from the preset's own colours.
+  2. `setGameTime()` wrote `gameTime_` and recomputed nothing, so `settime` only took effect on
+     the next frame. It now re-derives the time of day, the sun, the moon and the sky.
+  3. `init()` never called `updateSunPosition()`, leaving frame 0 with the preset's default sun.
+  4. `update()` added `dt * timeScale_` straight to the hour counter - with the default
+     `timeScale_ = 30` that is **30 game hours per real second**, so a whole day raced past in
+     under a second and every clock-dependent effect was a blur. Oblivion's `timescale` is
+     *game minutes per real minute*, so the correct step is `dt * timeScale_ / 3600.0f`.
+  5. `renderer.cpp` called `skyWeatherSystem->update(deltaTime)` from two places, doubling the
+     rate on top of (4).
+  6. `refs.setTimeOfDay`, `refs.setTimeScale` and `refs.setWeather` were all `(void)` no-op
+     stubs, so `settime`, `settimescale` and `setweather` did nothing at all - the very
+     commands a device verification would use.
+  The four NAM0 time sets are blended with linear tent weights over the key hours
+  `{06:00, 12:00, 18:00, 00:00}`. Because the keys are six hours apart the weights sum to
+  exactly one everywhere on the 24-hour circle, so no normalisation is needed and there is no
+  seam at midnight. A new `daylight_` factor smoothsteps the sun's elevation across roughly
+  +/-1 hour of the horizon, and the ambient term is derived from the blended sky
+  (`lerp(night floor, sky bounce, daylight)`) instead of a hard-coded constant - which is what
+  made midnight as bright as noon.
+- **`setweather overcast` no longer silently behaves as `clear`.** `OVERCAST` had no preset in
+  `initWeatherPresets()`, so it kept the default-constructed `WeatherState` whose `type` is
+  `CLEAR`: it reported itself as clear and blended the clear sky curve. `OVERCAST` now has its
+  own preset, and `interpolateWeather()` no longer lerps `zenith`/`horizon`/`ambient` - those
+  are owned by the clock blend, and lerping them in two places made it undefined which one won.
+- **`WorldManager::advanceTime()` ran the world clock at twelve times the sun's rate** and
+  wrapped past midnight at most once per call. It now advances at the same game-minutes rate as
+  the sky and folds as many days as the step actually covers, so a long frame can no longer
+  leave `timeOfDay` above 24. `WorldManager::setTimeOfDay()` is new, and `settime` drives the
+  sky clock and the world clock together so the `gamestate` report and the rendered sky agree.
+- **`setweather` and `settimescale` were unusable from the console**: `refs.setWeather` is now
+  implemented and resolves console names (`clear`, `cloudy`, `overcast`, `fog`, `rain`, `storm`,
+  `snow`, `blizzard`) through the new `SkyWeatherSystem::weatherTypeFromName()`, applying the
+  change immediately so a debug A/B screenshot is settled on the next frame. The debug panel
+  gains `Time: Noon (12:00)`, `Time: Midnight (00:00)`, `Weather: Clear` and `Weather: Storm`
+  buttons (`btn_debug_time_noon` / `btn_debug_time_midnight` / `btn_debug_weather_clear` /
+  `btn_debug_weather_storm`), which is the whole P19 acceptance test: tap one, tap the other,
+  compare the dominant colour of the two screenshots.
+- **`WeatherTransitionTests` expanded from 5 to 14 cases.** The original five only held while
+  the sky colour was constant, so they now freeze the clock (`setTimeScale(0)`,
+  `setGameTime(10)`) before measuring the weather ramp. The nine new cases pin the behaviour
+  that was broken: `NoonSkyDiffersFromMidnight`, `NoonAmbientDiffersFromMidnight`,
+  `MidnightIsDarker`, `DaylightFollowsSun`, `ClockUsesOblivionRate` (60 real seconds at
+  timescale 30 must advance exactly 30 game minutes), `ClockWrapsPastMidnight`,
+  `OvercastHasItsOwnPreset`, `SkyIsFiniteAllDay` (all 24 hours yield a finite, non-black sky,
+  including the midnight seam) and `ConsoleWeatherNamesResolve`.
+- **WTHR `NAM0` was parsed time-major instead of field-major, which is why the Day sky was a
+  washed-out purple-grey and fog rendered black.** The record is 160 bytes laid out as ten
+  colour *fields*, each holding the four Sunrise/Day/Sunset/Night slots as BGRA; the reader
+  treated it as four 40-byte blocks, so every field read its neighbour's channel and
+  `upperSky`/`fog`/`clouds` all ended up holding the wrong colour. `WeatherData` now exposes
+  `nam0[NAM0_FIELD_COUNT]` with a named `WeatherNam0FieldIndex` (sky-upper, fog, clouds-lower,
+  ambient, sunlight, sun, stars, sky-lower, horizon, clouds-upper) and the reader decodes
+  field-major, skipping a partial trailing field rather than misreading it. `CNAM`/`DNAM` were
+  also swapped: Oblivion's `DNAM` is the upper cloud layer and `CNAM` the lower one, the
+  reverse of the previous comment.
 - **Interior cells were unreachable, leaving the interior render paths dead**: the world build
   deliberately skips interior cells (`WorldManager::addCellFromESM()` returns `nullptr` for
   them, and the emulator log confirms `1855 interior skipped`), so the player could never enter

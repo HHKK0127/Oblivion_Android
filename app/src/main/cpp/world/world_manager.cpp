@@ -321,12 +321,29 @@ std::vector<NPC*> WorldManager::getNpcsInCell(std::shared_ptr<Cell> cell) {
 // ============================================================================
 
 void WorldManager::advanceTime(float deltaTime) {
-    worldState.timeOfDay += deltaTime * 0.1f;  // 1 game second = 0.1 real seconds (approx)
+    // Same time base as SkyWeatherSystem: Oblivion's default timescale of 30 game
+    // minutes per real minute, i.e. one real second is 1/120 of a game hour. The
+    // old rate (deltaTime * 0.1 hours) ran the world clock twelve times faster
+    // than the sun, so NPC day/night schedules drifted away from the sky.
+    const float advance = deltaTime / 120.0f;
+    if (!(advance > 0.0f)) return;           // a NaN or negative delta must not rewind the clock
 
-    if (worldState.timeOfDay >= 24.0f) {
-        worldState.timeOfDay -= 24.0f;
-        worldState.dayCount++;
-    }
+    // The old code subtracted 24 once, so a single large step (a long stall, a
+    // debug fast-forward) left timeOfDay above 24 and every clock consumer read a
+    // bogus hour. Fold the whole multiple in one go instead.
+    const float total = worldState.timeOfDay + advance;
+    const float days = std::floor(total / 24.0f);
+    worldState.timeOfDay = total - days * 24.0f;
+    worldState.dayCount += static_cast<uint32_t>(days);
+}
+
+void WorldManager::setTimeOfDay(float hours) {
+    // Driven by the console's "settime" and the P19 debug buttons. Normalise into
+    // [0, 24) so a negative or out-of-range script value cannot put the clock
+    // somewhere advanceTime() would need many frames to recover from.
+    float wrapped = std::fmod(hours, 24.0f);
+    if (wrapped < 0.0f) wrapped += 24.0f;
+    worldState.timeOfDay = wrapped;
 }
 
 // ============================================================================

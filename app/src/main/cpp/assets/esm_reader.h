@@ -938,13 +938,29 @@ struct WaterData {
     bool hasColorBlock = false;
 };
 
-/// One time-of-day sky colour set from a WTHR NAM0 subrecord.
-struct WeatherSkyColors {
-    uint32_t upperSky = 0;     // BGRA
-    uint32_t fog = 0;
-    uint32_t unknown = 0;
-    uint32_t clouds = 0;
-    uint32_t detail[6] = {0, 0, 0, 0, 0, 0};
+/// One NAM0 colour field across the four time slots (Sunrise, Day, Sunset,
+/// Night). Oblivion stores NAM0 field-major: 10 fields x 4 slots x 3 used
+/// bytes; byte 3 of each slot is reserved and always zero.
+struct WeatherNam0Field {
+    // Packed as 0x00BBGGRR (byte 0 = R, byte 1 = G, byte 2 = B, byte 3
+    // reserved); slot 0 = Sunrise, 1 = Day, 2 = Sunset, 3 = Night.
+    uint32_t slot[4] = {0, 0, 0, 0};
+};
+
+// NAM0 field order. Field 2 (fog) is unused in vanilla Oblivion despite being
+// laid out, and field 9 (clouds-upper) is what owns the cloud layer colour.
+enum WeatherNam0FieldIndex : int {
+    NAM0_FIELD_SKY_UPPER = 0,
+    NAM0_FIELD_FOG = 1,
+    NAM0_FIELD_CLOUDS_LOWER = 2,
+    NAM0_FIELD_AMBIENT = 3,
+    NAM0_FIELD_SUNLIGHT = 4,
+    NAM0_FIELD_SUN = 5,
+    NAM0_FIELD_STARS = 6,
+    NAM0_FIELD_SKY_LOWER = 7,
+    NAM0_FIELD_HORIZON = 8,
+    NAM0_FIELD_CLOUDS_UPPER = 9,
+    NAM0_FIELD_COUNT = 10
 };
 
 /// Weather sound entry from a WTHR SNAM subrecord (8 bytes).
@@ -957,10 +973,10 @@ struct WeatherSound {
 struct WeatherData {
     uint32_t formID = 0;
     std::string editorID;
-    std::string cloudTextureUpper;  // CNAM
-    std::string cloudTextureLower;  // DNAM
-    // NAM0: Sunrise, Day, Sunset, Night (40 bytes each)
-    WeatherSkyColors sky[4];
+    std::string cloudTextureUpper;  // DNAM = upper cloud layer
+    std::string cloudTextureLower;  // CNAM = lower cloud layer
+    // NAM0: 10 colour fields, each across the Sunrise/Day/Sunset/Night slots
+    WeatherNam0Field nam0[NAM0_FIELD_COUNT];
     float fogDayNear = 0.0f;        // FNAM offset 0
     float fogDayFar = 0.0f;         // FNAM offset 4
     float fogNightNear = 0.0f;      // FNAM offset 8

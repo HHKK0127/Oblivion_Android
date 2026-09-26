@@ -327,6 +327,12 @@ void TitleScreen::applyMenuLayoutToButtons() {
         menuButtons[i]->setPosition(x, hitY);
         menuButtons[i]->setSize(w, hitH);
         menuButtons[i]->setScreenSize(screenWidth, screenHeight);
+        // P18: log the effective rectangle so a tap can be matched against it. The row is
+        // drawn directly in renderMenu, so these rectangles are the only thing the hit test
+        // sees; any drift between the two is invisible without this trace.
+        LOGI("Menu hit rect [%zu] '%s': x=[%.1f..%.1f] y=[%.1f..%.1f] (screen %dx%d)",
+             i, menuButtons[i]->getLabel().c_str(), x, x + w, hitY, hitY + hitH,
+             screenWidth, screenHeight);
         x += w + menuLayout.gap;
     }
 }

@@ -7,6 +7,9 @@
 #include <cmath>
 #include <algorithm>
 #include <android/log.h>
+// loadFromESM() consumes WTHR records, so the NAM0 field indices it indexes
+// with come from the ESM reader's WeatherData layout.
+#include "../assets/esm_reader.h"
 
 #define LOG_TAG_SKY "SkyWeather"
 #ifdef ENABLE_DEBUG_LOGS
@@ -97,6 +100,25 @@ struct WeatherState {
     float transitionTime = 30.0f; // Seconds to transition
 };
 
+// Phase 66 P19: one time-of-day colour set from a WTHR record's NAM0 subrecord.
+// Oblivion stores four of these per weather (Sunrise, Day, Sunset, Night) and
+// blends them by the clock. Rendering only the Day set is what made noon and
+// midnight look identical.
+struct SkyTimeSet {
+    float upperSky[3] = {0.2f, 0.4f, 0.8f};
+    float fog[3] = {0.6f, 0.7f, 0.9f};
+    float clouds[3] = {0.9f, 0.9f, 0.95f};
+};
+
+// NAM0 order, which is also the order of the key hours below.
+enum SkyTimeSetIndex : int {
+    SKY_SUNRISE = 0,
+    SKY_DAY = 1,
+    SKY_SUNSET = 2,
+    SKY_NIGHT = 3,
+    SKY_TIME_SET_COUNT = 4
+};
+
 // ============================================================================
 // SkyWeatherSystem - manages sky dome and weather
 // ============================================================================
@@ -123,6 +145,13 @@ public:
         gameTime_ = 10.0f; // 10:00 AM
         timeScale_ = 30.0f; // 30x real time (1 real second = 30 game seconds)
 
+        // Seed every value derived from the clock so frame 0 already matches the
+        // time of day instead of holding whatever the presets defaulted to.
+        updateTimeOfDay();
+        updateSunPosition();
+        updateMoonPosition();
+        updateSkyFromTimeOfDay();
+
         initialized_ = true;
         LOGI_SKY("SkyWeatherSystem initialized");
     }
@@ -136,11 +165,17 @@ public:
         std::lock_guard<std::mutex> lock(mutex_);
         if (!initialized_) return;
 
-        // Advance game time
-        gameTime_ += dt * timeScale_;
-        if (gameTime_ >= 24.0f) {
-            gameTime_ -= 24.0f;
-            dayCount_++;
+        // Advance game time. timeScale_ follows Oblivion's convention of game
+        // minutes per real minute (30 = the default, i.e. a full day in 48 real
+        // minutes), so one real second is timeScale_/3600 hours. The old code added
+        // dt*timeScale_ straight to the hour counter -- 30 hours per real second,
+        // which raced a whole day past in about a second.
+        const float hours = dt * timeScale_ / 3600.0f;
+        if (hours > 0.0f) {
+            const float total = gameTime_ + hours;
+            const float days = std::floor(total / 24.0f);
+            gameTime_ = total - days * 24.0f;
+            dayCount_ += static_cast<uint32_t>(days);
         }
 
         // Update time of day
@@ -155,6 +190,10 @@ public:
 
         // Update sun position
         updateSunPosition();
+
+        // Re-derive the sky from the clock now that the sun's elevation (and so
+        // the daylight factor) is known for this frame.
+        updateSkyFromTimeOfDay();
 
         // Update moon position (opposite of sun)
         updateMoonPosition();
@@ -188,6 +227,9 @@ public:
         targetWeather_ = currentWeather_;
         startWeather_ = currentWeather_;
         transitionProgress_ = 1.0f;
+        // The sky colours are derived, so they have to be recomputed here or the
+        // console's "setweather" would leave the previous sky on screen.
+        updateSkyFromTimeOfDay();
     }
 
     WeatherType getCurrentWeatherType() const {
@@ -200,6 +242,14 @@ public:
     void setGameTime(float hours) {
         std::lock_guard<std::mutex> lock(mutex_);
         gameTime_ = std::fmod(hours, 24.0f);
+        if (gameTime_ < 0.0f) gameTime_ += 24.0f;
+
+        // Apply immediately rather than waiting for the next update(), so the
+        // console's "settime" changes the world on the same frame it is typed.
+        updateTimeOfDay();
+        updateSunPosition();
+        updateMoonPosition();
+        updateSkyFromTimeOfDay();
     }
 
     float getGameTime() const {
@@ -207,9 +257,20 @@ public:
         return gameTime_;
     }
 
+    // 1.0 in full daylight, 0.0 once the sun is below the horizon. Exposed so a
+    // host test can pin the day/night curve without a device.
+    float getDaylight() const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return daylight_;
+    }
+
+    // Game minutes per real minute, as in Oblivion's "set timescale" command, so
+    // 30 is the retail default and 0 freezes the clock (which is what the host
+    // tests use to keep the derived sky colours constant while they measure the
+    // weather ramp).
     void setTimeScale(float scale) {
         std::lock_guard<std::mutex> lock(mutex_);
-        timeScale_ = scale;
+        timeScale_ = std::max(0.0f, scale);
     }
 
     TimeOfDay getTimeOfDay() const {
@@ -280,19 +341,45 @@ public:
             if (type == WeatherType::COUNT) continue;
 
             auto& preset = weatherPresets_[static_cast<size_t>(type)];
+            auto& curve = skyCurve_[static_cast<size_t>(type)];
 
-            // NAM0 index 1 is the "Day" sky set, the most representative for
-            // the preset's default look. Fall back to index 0 if unset.
-            const oblivion::WeatherSkyColors& day =
-                (w.sky[1].upperSky != 0) ? w.sky[1] : w.sky[0];
-            if (day.upperSky != 0) {
-                bgraToRgb(day.upperSky, preset.sky.zenith);
+            // NAM0 is field-major: 10 colour fields, each holding the four
+            // Sunrise/Day/Sunset/Night slot values (BGRA). We keep the sky-upper
+            // and clouds-upper fields per slot so the clock can blend the
+            // record's real sunrise/day/sunset/night colours instead of painting
+            // the same sky at noon and at midnight. A field the record does not
+            // define keeps the hand-authored fallback.
+            bool slotProvided[SKY_TIME_SET_COUNT] = {false, false, false, false};
+            for (int s = 0; s < SKY_TIME_SET_COUNT; ++s) {
+                const uint32_t upper = w.nam0[oblivion::NAM0_FIELD_SKY_UPPER].slot[s];
+                const uint32_t fog = w.nam0[oblivion::NAM0_FIELD_FOG].slot[s];
+                const uint32_t clouds = w.nam0[oblivion::NAM0_FIELD_CLOUDS_UPPER].slot[s];
+                slotProvided[s] = (upper != 0);
+                if (upper != 0) bgraToRgb(upper, curve[s].upperSky);
+                if (fog != 0) bgraToRgb(fog, curve[s].fog);
+                if (clouds != 0) bgraToRgb(clouds, curve[s].clouds);
             }
-            if (day.fog != 0) {
-                bgraToRgb(day.fog, preset.sky.horizon);
+
+            // The Day slot is also the preset's flat colour, which stays the
+            // reference for anything that inspects a preset rather than the sky.
+            const uint32_t dayUpper = w.nam0[oblivion::NAM0_FIELD_SKY_UPPER].slot[SKY_DAY];
+            const uint32_t dayFog = w.nam0[oblivion::NAM0_FIELD_FOG].slot[SKY_DAY];
+            const uint32_t dayClouds = w.nam0[oblivion::NAM0_FIELD_CLOUDS_UPPER].slot[SKY_DAY];
+            if (dayUpper != 0) {
+                bgraToRgb(dayUpper, preset.sky.zenith);
             }
-            if (day.clouds != 0) {
-                bgraToRgb(day.clouds, preset.clouds.color);
+            if (dayFog != 0) {
+                bgraToRgb(dayFog, preset.sky.horizon);
+            }
+            if (dayClouds != 0) {
+                bgraToRgb(dayClouds, preset.clouds.color);
+            }
+
+            // A set the record omitted must be re-derived from the colours we just
+            // loaded, otherwise it would still be built from the placeholder preset
+            // and the sky would jump to an unrelated hue at dusk.
+            for (int s = 0; s < SKY_TIME_SET_COUNT; ++s) {
+                if (s != SKY_DAY && !slotProvided[s]) deriveSkyTimeSet(preset, s, curve[s]);
             }
 
             // Fog distances: FNAM day near/far. Oblivion stores these in game
@@ -311,6 +398,7 @@ public:
         // first frame already reflects real data.
         currentWeather_ = weatherPresets_[static_cast<size_t>(currentWeather_.type)];
         targetWeather_ = currentWeather_;
+        updateSkyFromTimeOfDay();
 
         LOGI_SKY("SkyWeatherSystem: applied %d WTHR records from ESM", applied);
         return applied;
@@ -362,6 +450,13 @@ private:
 
     std::array<WeatherState, static_cast<size_t>(WeatherType::COUNT)> weatherPresets_;
 
+    // Per-weather NAM0 curve: [WeatherType][Sunrise|Day|Sunset|Night].
+    std::array<std::array<SkyTimeSet, SKY_TIME_SET_COUNT>,
+               static_cast<size_t>(WeatherType::COUNT)> skyCurve_;
+
+    // Fraction of the day's light reaching the ground: 1 at noon, 0 after dark.
+    float daylight_ = 1.0f;
+
     mutable std::mutex mutex_;
 
     void updateTimeOfDay() {
@@ -403,6 +498,13 @@ private:
 
         // Intensity based on elevation
         currentWeather_.sun.intensity = std::max(0.0f, currentWeather_.sun.position[1]) * 1.5f;
+
+        // Daylight factor for the sky and ambient curves. Smoothstepped over
+        // roughly +/-1 hour of the horizon crossing so dawn and dusk fade instead
+        // of snapping from night to noon.
+        const float elevation = currentWeather_.sun.position[1];
+        const float t = std::clamp((elevation + 0.30f) / 0.60f, 0.0f, 1.0f);
+        daylight_ = t * t * (3.0f - 2.0f * t);
     }
 
     void updateMoonPosition() {
@@ -416,19 +518,112 @@ private:
         currentWeather_.moon.intensity = std::max(0.0f, -currentWeather_.sun.position[1]) * 0.3f;
     }
 
+    // --- Phase 66 P19: sky and ambient light as a function of the clock -------
+
+    // Tent weight for one of the four NAM0 key hours. The keys sit six hours
+    // apart on the 24-hour circle, so tents of half-width six sum to exactly one
+    // at every clock value: no normalisation and no seam at midnight.
+    float skyTimeWeight(float keyHour) const {
+        float d = std::fabs(gameTime_ - keyHour);
+        if (d > 12.0f) d = 24.0f - d;
+        return std::max(0.0f, 1.0f - d / 6.0f);
+    }
+
+    // The three non-Day sets derived from a preset's own colours, so the clock
+    // always has something plausible to blend towards when a WTHR record does not
+    // supply a set. `out` is only touched when `set` names a non-Day entry.
+    static void deriveSkyTimeSet(const WeatherState& preset, int set, SkyTimeSet& out) {
+        for (int i = 0; i < 3; ++i) {
+            switch (set) {
+                case SKY_SUNRISE:
+                    out.upperSky[i] = lerp(preset.sky.zenith[i], kSunriseTint[i], 0.55f) * 0.85f;
+                    out.fog[i] = lerp(preset.sky.horizon[i], kSunriseTint[i], 0.75f);
+                    out.clouds[i] = lerp(preset.clouds.color[i], kSunriseTint[i], 0.45f);
+                    break;
+                case SKY_SUNSET:
+                    out.upperSky[i] = lerp(preset.sky.zenith[i], kSunsetTint[i], 0.60f) * 0.60f;
+                    out.fog[i] = lerp(preset.sky.horizon[i], kSunsetTint[i], 0.80f) * 0.85f;
+                    out.clouds[i] = lerp(preset.clouds.color[i], kSunsetTint[i], 0.50f) * 0.80f;
+                    break;
+                default:  // SKY_NIGHT
+                    // Keep a trace of the preset so overcast stays overcast, but
+                    // collapse towards a dark cold sky rather than daytime blue.
+                    out.upperSky[i] = preset.sky.zenith[i] * 0.10f + kNightSky[i];
+                    out.fog[i] = preset.sky.horizon[i] * 0.12f + kNightSky[i];
+                    out.clouds[i] = preset.clouds.color[i] * 0.18f;
+                    break;
+            }
+        }
+    }
+
+    // Fill a whole curve from the preset alone. Used at startup, before any WTHR
+    // record has been read.
+    void buildDefaultSkyCurve(WeatherType type) {
+        const auto& preset = weatherPresets_[static_cast<size_t>(type)];
+        auto& curve = skyCurve_[static_cast<size_t>(type)];
+
+        for (int i = 0; i < 3; ++i) {
+            curve[SKY_DAY].upperSky[i] = preset.sky.zenith[i];
+            curve[SKY_DAY].fog[i] = preset.sky.horizon[i];
+            curve[SKY_DAY].clouds[i] = preset.clouds.color[i];
+        }
+        for (int s = 0; s < SKY_TIME_SET_COUNT; ++s) {
+            if (s != SKY_DAY) deriveSkyTimeSet(preset, s, curve[s]);
+        }
+    }
+
+    // Blend the four time sets of the current (or in-flight) weather and store the
+    // result in currentWeather_, which is what the renderer reads. Called every
+    // frame; also called directly by setGameTime/setWeatherImmediate so a console
+    // command takes effect without waiting for the next frame.
+    void updateSkyFromTimeOfDay() {
+        const size_t from = static_cast<size_t>(startWeather_.type);
+        const size_t to = static_cast<size_t>(targetWeather_.type);
+        const float t = transitionProgress_;
+
+        const float weights[SKY_TIME_SET_COUNT] = {
+            skyTimeWeight(kSkyKeyHour[SKY_SUNRISE]),
+            skyTimeWeight(kSkyKeyHour[SKY_DAY]),
+            skyTimeWeight(kSkyKeyHour[SKY_SUNSET]),
+            skyTimeWeight(kSkyKeyHour[SKY_NIGHT]),
+        };
+
+        float upperSky[3] = {0.0f, 0.0f, 0.0f};
+        float fog[3] = {0.0f, 0.0f, 0.0f};
+        float clouds[3] = {0.0f, 0.0f, 0.0f};
+        for (int s = 0; s < SKY_TIME_SET_COUNT; ++s) {
+            const auto& a = skyCurve_[from][static_cast<size_t>(s)];
+            const auto& b = skyCurve_[to][static_cast<size_t>(s)];
+            for (int i = 0; i < 3; ++i) {
+                upperSky[i] += weights[s] * lerp(a.upperSky[i], b.upperSky[i], t);
+                fog[i] += weights[s] * lerp(a.fog[i], b.fog[i], t);
+                clouds[i] += weights[s] * lerp(a.clouds[i], b.clouds[i], t);
+            }
+        }
+
+        for (int i = 0; i < 3; ++i) {
+            currentWeather_.sky.zenith[i] = upperSky[i];
+            currentWeather_.sky.horizon[i] = fog[i];
+            currentWeather_.clouds.color[i] = clouds[i];
+
+            // Ambient light is sky bounce by day and a cold moonlight floor by
+            // night. Deriving it from the blended sky keeps the fill light
+            // consistent with what the player is looking at instead of the
+            // hard-coded constant that made midnight as bright as noon.
+            const float skyBounce = 0.5f * lerp(upperSky[i], 1.0f, 0.5f);
+            currentWeather_.sky.ambient[i] = lerp(kNightAmbient[i], skyBounce, daylight_);
+        }
+    }
+
     void interpolateWeather() {
         float t = transitionProgress_;
         // Interpolate from the snapshot taken when the transition started, not
         // from the partially-updated current state.
-        // Lerp sky colors
-        for (int i = 0; i < 3; i++) {
-            currentWeather_.sky.zenith[i] = lerp(startWeather_.sky.zenith[i],
-                                                  targetWeather_.sky.zenith[i], t);
-            currentWeather_.sky.horizon[i] = lerp(startWeather_.sky.horizon[i],
-                                                   targetWeather_.sky.horizon[i], t);
-            currentWeather_.sky.ambient[i] = lerp(startWeather_.sky.ambient[i],
-                                                    targetWeather_.sky.ambient[i], t);
-        }
+        //
+        // Sky colours are deliberately absent here: zenith/horizon/clouds/ambient
+        // are owned by updateSkyFromTimeOfDay(), which blends the two weathers'
+        // NAM0 curves and the clock together. Lerping them here as well would just
+        // be overwritten a few lines later.
         // Lerp fog/visibility
         currentWeather_.visibility = lerp(startWeather_.visibility,
                                            targetWeather_.visibility, t);
@@ -447,6 +642,13 @@ private:
     static float lerp(float a, float b, float t) {
         return a + (b - a) * t;
     }
+
+    // Key hour of each NAM0 set: sunrise 06:00, day 12:00, sunset 18:00, night 00:00.
+    static constexpr float kSkyKeyHour[SKY_TIME_SET_COUNT] = {6.0f, 12.0f, 18.0f, 0.0f};
+    static constexpr float kSunriseTint[3] = {1.00f, 0.62f, 0.35f};
+    static constexpr float kSunsetTint[3] = {1.00f, 0.45f, 0.25f};
+    static constexpr float kNightSky[3] = {0.02f, 0.03f, 0.07f};
+    static constexpr float kNightAmbient[3] = {0.10f, 0.11f, 0.17f};
 
     void initWeatherPresets() {
         // Clear
@@ -475,6 +677,17 @@ private:
         foggy.clouds.coverage = 0.8f;
         foggy.visibility = 100.0f;
         foggy.windSpeed = 0.5f;
+
+        // Overcast. This bucket had no preset at all, so it silently kept the
+        // default-constructed state whose `type` is CLEAR: setweather overcast
+        // reported itself as clear and blended the clear sky curve.
+        auto& overcast = weatherPresets_[static_cast<size_t>(WeatherType::OVERCAST)];
+        overcast.type = WeatherType::OVERCAST;
+        overcast.sky.zenith[0] = 0.45f; overcast.sky.zenith[1] = 0.47f; overcast.sky.zenith[2] = 0.50f;
+        overcast.sky.horizon[0] = 0.55f; overcast.sky.horizon[1] = 0.57f; overcast.sky.horizon[2] = 0.60f;
+        overcast.clouds.coverage = 0.85f;
+        overcast.visibility = 600.0f;
+        overcast.windSpeed = 3.0f;
 
         // Rain
         auto& rain = weatherPresets_[static_cast<size_t>(WeatherType::RAIN)];
@@ -513,6 +726,12 @@ private:
         blizzard.visibility = 50.0f;
         blizzard.windSpeed = 15.0f;
         blizzard.temperature = -15.0f;
+
+        // Every preset needs all four time sets before anything can blend them;
+        // loadFromESM() overwrites the entries a WTHR record actually provides.
+        for (int t = 0; t < static_cast<int>(WeatherType::COUNT); ++t) {
+            buildDefaultSkyCurve(static_cast<WeatherType>(t));
+        }
     }
 
     // Map an Oblivion WTHR editorID onto one of the eight preset buckets.
@@ -535,7 +754,54 @@ private:
         return WeatherType::COUNT;
     }
 
-    // ESM colours are packed BGRA (0xAARRGGBB little-endian); convert to float RGB.
+    // Console-facing helpers. These live in the public interface because
+    // `renderer.cpp` resolves `setweather <name>` through them and the tests pin
+    // the name table, while `classifyWeather` stays private because it only ever
+    // serves WTHR editor IDs from inside this class.
+public:
+    // Console names ("storm", "fog", ...) are shorter than the WTHR editor IDs
+    // classifyWeather expects, so resolve those first and only then fall back to
+    // substring matching for real editor IDs. Returns WeatherType::COUNT when the
+    // name matches nothing.
+    static WeatherType weatherTypeFromName(const std::string& name) {
+        std::string id;
+        id.reserve(name.size());
+        for (char c : name) {
+            id.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+        }
+
+        if (id == "clear" || id == "sunny") return WeatherType::CLEAR;
+        if (id == "cloudy" || id == "clouds") return WeatherType::CLOUDY;
+        if (id == "overcast") return WeatherType::OVERCAST;
+        if (id == "fog" || id == "foggy") return WeatherType::FOGGY;
+        if (id == "rain" || id == "rainy") return WeatherType::RAIN;
+        if (id == "storm" || id == "thunder" || id == "thunderstorm") {
+            return WeatherType::THUNDER;
+        }
+        if (id == "snow" || id == "snowy") return WeatherType::SNOW;
+        if (id == "blizzard") return WeatherType::BLIZZARD;
+        return classifyWeather(id);
+    }
+
+    // Inverse of weatherTypeFromName(), for console output and the HUD.
+    static const char* weatherTypeName(WeatherType type) {
+        switch (type) {
+            case WeatherType::CLEAR:    return "clear";
+            case WeatherType::CLOUDY:   return "cloudy";
+            case WeatherType::FOGGY:    return "fog";
+            case WeatherType::OVERCAST: return "overcast";
+            case WeatherType::RAIN:     return "rain";
+            case WeatherType::THUNDER:  return "storm";
+            case WeatherType::SNOW:     return "snow";
+            case WeatherType::BLIZZARD: return "blizzard";
+            default:                    return "unknown";
+        }
+    }
+
+private:
+    // ESM colours are packed 0x00BBGGRR (byte 0 = R, byte 1 = G, byte 2 = B,
+    // byte 3 reserved). Despite the historical name this reads the bytes in
+    // RGB order; do not swap the shifts when "fixing" it.
     static void bgraToRgb(uint32_t bgra, float out[3]) {
         const float b = static_cast<float>((bgra >> 16) & 0xFF) / 255.0f;
         const float g = static_cast<float>((bgra >> 8) & 0xFF) / 255.0f;
