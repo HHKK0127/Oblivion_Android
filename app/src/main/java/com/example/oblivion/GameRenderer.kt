@@ -504,4 +504,7 @@ class GameRenderer : GLSurfaceView.Renderer {
     external fun nativeStartDialogue(): Boolean
     external fun nativeCloseDialogue()
     external fun nativeIsDialogueOpen(): Boolean
+    external fun nativeOpenBook(bookFormID: Int): Boolean
+    external fun nativeCloseBook()
+    external fun nativeIsBookOpen(): Boolean
 }

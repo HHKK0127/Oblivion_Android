@@ -3,12 +3,24 @@
 #include <GLES3/gl3.h>
 #include <sstream>
 #include <algorithm>
+#include <cstdio>
 #include <stdexcept>
 #include <android/log.h>
 
 #define LOG_TAG_CONSOLE "GameConsole"
 #define LOGD_CONSOLE(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG_CONSOLE, __VA_ARGS__)
 #define LOGI_CONSOLE(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG_CONSOLE, __VA_ARGS__)
+
+namespace {
+
+// Formats a FormID as an 8-digit lowercase hex string without the 0x prefix.
+std::string toHex8(uint32_t value) {
+    char buf[9];
+    std::snprintf(buf, sizeof(buf), "%08x", value);
+    return std::string(buf);
+}
+
+} // namespace
 
 GameConsole::GameConsole()
     : textRenderer(nullptr), visible(false), initialized(false),
@@ -388,6 +400,45 @@ void GameConsole::registerBuiltinCommands() {
             print("Dialogue reset");
         } else {
             print("Dialogue Runner not available");
+        }
+    });
+
+    // === Book reader commands ===
+    registerCommand("readbook", "Open a book by FormID (hex or decimal)", [this](const std::vector<std::string>& args) {
+        if (args.size() < 2) {
+            appendOutput("Usage: readbook <formID>  (e.g. readbook 0x00002DAB)");
+            return;
+        }
+        if (!gameRefs.openBook) {
+            appendOutput("Book reader not connected");
+            return;
+        }
+        try {
+            const std::string& raw = args[1];
+            const uint32_t formID = static_cast<uint32_t>(
+                std::stoul(raw, nullptr, (raw.rfind("0x", 0) == 0 || raw.rfind("0X", 0) == 0) ? 16 : 10));
+            if (gameRefs.openBook(formID)) {
+                appendOutput("Opened book 0x" + toHex8(formID));
+            } else {
+                appendOutput("Book 0x" + toHex8(formID) + " not found");
+            }
+        } catch (...) {
+            appendOutput("Invalid FormID. Use: readbook <formID>");
+        }
+    });
+    registerCommand("closebook", "Close the book reader", [this](const std::vector<std::string>&) {
+        if (gameRefs.closeBook) {
+            gameRefs.closeBook();
+            appendOutput("Book closed");
+        } else {
+            appendOutput("Book reader not connected");
+        }
+    });
+    registerCommand("listbooks", "List books available from the ESM", [this](const std::vector<std::string>&) {
+        if (gameRefs.listBooks) {
+            appendOutput(gameRefs.listBooks());
+        } else {
+            appendOutput("Book reader not connected");
         }
     });
 

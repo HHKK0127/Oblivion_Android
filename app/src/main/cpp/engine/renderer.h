@@ -32,6 +32,8 @@
 #include "../game/ai_scheduler.h"
 #include "../game/player_controller.h"
 #include "../game/dialogue.h"
+#include "../game/book_reader.h"
+#include "../quest/quest_flow_controller.h"
 #include "../game/inventory_manager.h"
 #include "../game/alchemy_system.h"
 #include "../game/enchanting_system.h"
@@ -60,6 +62,7 @@
 #include "../ui/ui_target_info.h"
 #include "../ui/ui_active_effects.h"
 #include "../ui/ui_dialogue.h"
+#include "../ui/ui_book_reader.h"
 #include "../animation/animation_subscriber.h"
 #include "../audio/audio_subscriber.h"
 #include "../map/map_system.h"
@@ -134,6 +137,8 @@ private:
     std::unique_ptr<PlayerController> playerController;
     std::unique_ptr<InventoryManager> inventoryManager;
     std::unique_ptr<DialogueManager> dialogueManager;
+    std::unique_ptr<oblivion::BookReader> bookReader;
+    std::unique_ptr<QuestFlowController> questFlowController;
     std::unique_ptr<oblivion::AlchemySystem> alchemySystem;
     std::unique_ptr<game::EnchantingSystem> enchantingSystem;
 
@@ -159,6 +164,7 @@ private:
     std::unique_ptr<UITargetInfo> targetInfo;
     std::unique_ptr<UIActiveEffects> activeEffects;
     std::unique_ptr<UIDialogue> dialogueUI;
+    std::unique_ptr<UIBookReader> bookReaderUI;
     bool hudVisible = true;
     
     // Responsive UI Manager
@@ -282,6 +288,8 @@ public:
     PlayerController* getPlayerController() { return playerController.get(); }
     InventoryManager* getInventoryManager() { return inventoryManager.get(); }
     DialogueManager* getDialogueManager() { return dialogueManager.get(); }
+    oblivion::BookReader* getBookReader() { return bookReader.get(); }
+    QuestFlowController* getQuestFlowController() { return questFlowController.get(); }
     InventoryUI* getInventoryUI() { return inventoryUI.get(); }
 
 #ifdef AUDIO_SYSTEM_ENABLED
@@ -364,6 +372,18 @@ public:
     bool openDialogueWithNpc(uint32_t npcFormID);
     bool isDialogueOpen() const;
     void closeDialogue();
+
+    // Books
+    // Opens the book reader UI for a book FormID, applying JPWiki text when the
+    // current language is Japanese. Returns true when the book was found.
+    bool openBook(uint32_t bookFormID);
+    bool isBookOpen() const;
+    void closeBook();
+
+    // Quests
+    // Registers every QUST record from the ESM into the QuestFlowController,
+    // applying JPWiki names when the current language is Japanese.
+    void loadQuestsFromESM();
 
     // FPS Control
     void setTargetFPS(int fps);

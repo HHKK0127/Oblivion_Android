@@ -173,6 +173,7 @@ add_library(native-lib SHARED
     ui/ui_spellbook.cpp
     ui/ui_quest_log.cpp
     ui/ui_dialogue.cpp
+    ui/ui_book_reader.cpp
     ui/ui_shop.cpp
     ui/ui_character_creation.cpp
     ui/ui_pause_menu.cpp

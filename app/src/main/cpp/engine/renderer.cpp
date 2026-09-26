@@ -13,6 +13,7 @@
 #include <glm/glm.hpp>
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <limits>
 #include <string>
 #include <unordered_map>
@@ -181,6 +182,9 @@ void Renderer::resize(unsigned int width, unsigned int height) {
     }
     if (dialogueUI) {
         dialogueUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    }
+    if (bookReaderUI) {
+        bookReaderUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
     }
 
     // Update RetroFilter resolution
@@ -676,6 +680,14 @@ bool Renderer::initGameSystems() {
         LOGI("UIDialogue initialized successfully");
     }
 
+    bookReaderUI = std::make_unique<UIBookReader>();
+    if (!bookReaderUI->initialize(textRenderer.get())) {
+        LOGE("Failed to initialize UIBookReader");
+    } else {
+        bookReaderUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        LOGI("UIBookReader initialized successfully");
+    }
+
     // Initialize Debug HUD
     LOGI("Creating DebugHUD...");
     debugHUD = std::make_unique<DebugHUD>();
@@ -938,6 +950,28 @@ bool Renderer::initGameSystems() {
     };
     refs.endDialogue = []() {
         // DialogueRunner not connected
+    };
+    refs.openBook = [this](uint32_t formID) -> bool {
+        return openBook(formID);
+    };
+    refs.closeBook = [this]() {
+        closeBook();
+    };
+    refs.listBooks = [this]() -> std::string {
+        if (!assetManager) return "AssetManager not available";
+        const auto& books = assetManager->getEsmManager().getAllBooks();
+        if (books.empty()) return "No books loaded";
+        std::string out = "Books: " + std::to_string(books.size()) + "\n";
+        const size_t limit = std::min<size_t>(books.size(), 20);
+        for (size_t i = 0; i < limit; ++i) {
+            char id[9];
+            std::snprintf(id, sizeof(id), "%08x", books[i].formID);
+            out += "  0x" + std::string(id) + " '" + books[i].fullName + "'\n";
+        }
+        if (books.size() > limit) {
+            out += "  ... " + std::to_string(books.size() - limit) + " more\n";
+        }
+        return out;
     };
     refs.setWeather = [](const std::string& w) {
         (void)w;
@@ -1753,6 +1787,17 @@ bool Renderer::initGameSystems() {
     alchemySystem = std::make_unique<oblivion::AlchemySystem>();
     enchantingSystem = std::make_unique<game::EnchantingSystem>();
     LOGI("DialogueManager initialized successfully");
+
+    // Initialize BookReader (JPWiki book bodies)
+    bookReader = std::make_unique<oblivion::BookReader>();
+    bookReader->setLocalizationManager(localizationManager.get());
+    LOGI("BookReader initialized successfully");
+
+    // Initialize QuestFlowController (JPWiki quest names)
+    questFlowController = std::make_unique<QuestFlowController>();
+    questFlowController->setLocalizationManager(localizationManager.get());
+    LOGI("QuestFlowController initialized successfully");
+
     
     // Initialize AlchemySystem
     alchemySystem->initialize(nullptr);  // ESMManager will be set later
@@ -2063,6 +2108,27 @@ bool Renderer::initGameSystems() {
             &vegetation::SpeedTreeManager::instance()  // SpeedTree integration (singleton)
         );
         imperialWeaveInitialized = true;
+
+        // Initialize QuestFlowController now that the EventBus and all game
+        // systems exist. Quest names come from the JPWiki data when Japanese.
+        if (questFlowController) {
+            Player* player = (playerController && playerController->getPlayer())
+                ? playerController->getPlayer().get() : nullptr;
+            if (questFlowController->initialize(
+                    questManager.get(),
+                    &weave::ImperialWeave::instance().getEventBus(),
+                    scriptManager.get(),
+                    player,
+                    playerController.get(),
+                    inventoryManager.get(),
+                    npcManager.get(),
+                    worldManager.get(),
+                    skyWeatherSystem)) {
+                LOGI("QuestFlowController initialized successfully");
+            } else {
+                LOGE("Failed to initialize QuestFlowController");
+            }
+        }
 
         // Connect CombatManager to Imperial Weave EventBus
         if (combatManager) {
@@ -2625,6 +2691,14 @@ void Renderer::createTestScenario() {
         // memberships can be resolved for topic filtering.
         loadDialoguesFromESM();
 
+        // Wire the book reader and quest flow controller to the same ESM data.
+        if (bookReader) {
+            bookReader->initialize(&esmMgr);
+            LOGI("BookReader bound to ESMManager (%zu books available)",
+                 esmMgr.getAllBooks().size());
+        }
+        loadQuestsFromESM();
+
                 // 4. Load LAND terrain data and assign to cells
                 const auto& terrains = esmMgr.getAllTerrains();
         LOGI("Loading %zu terrain records from ESM data", terrains.size());
@@ -3185,6 +3259,80 @@ void Renderer::closeDialogue() {
     }
 }
 
+bool Renderer::openBook(uint32_t bookFormID) {
+    if (!bookReader || !bookReaderUI) {
+        LOGW("openBook: book system not available");
+        return false;
+    }
+    if (!assetManager) {
+        LOGW("openBook: AssetManager not available");
+        return false;
+    }
+
+    const auto& esmMgr = assetManager->getEsmManager();
+    const oblivion::BookData* book = esmMgr.findBook(bookFormID);
+    if (!book) {
+        LOGW("openBook: book 0x%08X not found", bookFormID);
+        return false;
+    }
+
+    const std::string title = localizationManager
+        ? localizationManager->getFullText("BOOK", bookFormID, book->fullName)
+        : book->fullName;
+    const std::string body = bookReader->getBookDescription(bookFormID);
+
+    bookReaderUI->openBook(title, body);
+    LOGI("Book opened: 0x%08X '%s' (%zu chars)", bookFormID, title.c_str(), body.size());
+    return true;
+}
+
+bool Renderer::isBookOpen() const {
+    return bookReaderUI && bookReaderUI->isVisible();
+}
+
+void Renderer::closeBook() {
+    if (bookReaderUI) {
+        bookReaderUI->closeBook();
+    }
+}
+
+void Renderer::loadQuestsFromESM() {
+    if (!questFlowController) {
+        LOGW("loadQuestsFromESM: QuestFlowController not available");
+        return;
+    }
+    if (!assetManager) {
+        LOGW("loadQuestsFromESM: AssetManager not available");
+        return;
+    }
+
+    const auto& esmMgr = assetManager->getEsmManager();
+    if (esmMgr.getPluginCount() == 0) {
+        LOGW("loadQuestsFromESM: no plugins loaded");
+        return;
+    }
+
+    const auto& quests = esmMgr.getAllQuests();
+    std::vector<QuestRecord> records;
+    records.reserve(quests.size());
+
+    for (const auto& quest : quests) {
+        QuestRecord record;
+        record.formID = quest.formID;
+        record.editorID = quest.editorID;
+        record.fullName = localizationManager
+            ? localizationManager->getQuestText(quest.formID, quest.fullName)
+            : quest.fullName;
+        record.questFlags = quest.flags;
+        record.priority = quest.priority;
+        records.push_back(std::move(record));
+    }
+
+    questFlowController->registerQuests(records);
+    LOGI("QuestFlowController: %zu quests registered from ESM",
+         questFlowController->getRegisteredQuestCount());
+}
+
 void Renderer::render(float deltaTime) {
     // Safety net: the world must exist before anything is drawn. Normally the
     // scenario is built from game data at the end of loadBSAArchives().
@@ -3283,6 +3431,11 @@ void Renderer::render(float deltaTime) {
     // Phase 35: Radiant AI — update AI scheduler after ImperialWeave
     if (aiScheduler) {
         aiScheduler->update(deltaTime);
+    }
+
+    // Phase 39: Quest flow (stage transitions, objective tracking, rewards)
+    if (questFlowController) {
+        questFlowController->update(deltaTime);
     }
 
     // Phase 47: Update weather system
@@ -3824,6 +3977,10 @@ void Renderer::render(float deltaTime) {
         if (dialogueUI && dialogueUI->isVisible()) {
             dialogueUI->update(deltaTime);
             dialogueUI->render();
+        }
+        if (bookReaderUI && bookReaderUI->isVisible()) {
+            bookReaderUI->update(deltaTime);
+            bookReaderUI->render();
         }
     }
 

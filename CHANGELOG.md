@@ -36,6 +36,17 @@ The current version is **0.9.10 (versionCode 910)**.
   `NPC` gained `formID` / `factionFormIDs` (populated by `createNPCFromESM()`) and
   `NpcManager::getNpcByFormID()` resolves a spawned actor from its base record. The JNI layer
   adds `nativeStartDialogue()`, `nativeCloseDialogue()` and `nativeIsDialogueOpen()`.
+- **Book reader and quest flow wiring**: `Renderer` now owns a `BookReader` and a
+  `QuestFlowController`, both attached to the same `LocalizationManager`.
+  `createTestScenario()` binds the reader to the `ESMManager` (887 books) and registers 390
+  quests from the ESM data. A new `UIBookReader` panel renders book bodies with markup
+  stripping and CJK-aware word wrapping; `Renderer` exposes `openBook()`, `isBookOpen()` and
+  `closeBook()`, the JNI layer adds `nativeOpenBook()`, `nativeCloseBook()` and
+  `nativeIsBookOpen()`, and the debug console gains `readbook`, `closebook` and `listbooks`.
+- **FormID key normalization for JPWiki data**: the source plugins store FormIDs as uppercase
+  hex, while `LocalizationManager::formKey()` produces lowercase. Keys are now lowercased
+  during `loadJpwikiData()`, which fixes every FormID-based lookup (books, dialogue, quests,
+  object names) that previously fell back to English.
 - **Native C++ host test runner for CI**: new `tools/host_tests/` directory with
   desktop stubs for the NDK headers (`<android/log.h>`, `<android/asset_manager.h>`,
   `<jni.h>`, GLES), stub implementations for `AAsset*` and `jni_audio_*` symbols, and

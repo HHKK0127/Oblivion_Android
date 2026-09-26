@@ -322,6 +322,46 @@ JNIEXPORT jboolean JNICALL Java_com_example_oblivion_OblivionEngine_nativeIsDial
     return renderer->isDialogueOpen() ? JNI_TRUE : JNI_FALSE;
 }
 
+JNIEXPORT jboolean JNICALL Java_com_example_oblivion_OblivionEngine_nativeOpenBook(
+    JNIEnv* /* env */,
+    jobject /* obj */,
+    jint bookFormID) {
+
+    LOGI("nativeOpenBook called: 0x%08X", static_cast<uint32_t>(bookFormID));
+
+    Renderer* renderer = jni_bridge_get_renderer();
+    if (!renderer) {
+        LOGW("nativeOpenBook: Renderer not available");
+        return JNI_FALSE;
+    }
+
+    return renderer->openBook(static_cast<uint32_t>(bookFormID)) ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jboolean JNICALL Java_com_example_oblivion_OblivionEngine_nativeIsBookOpen(
+    JNIEnv* /* env */,
+    jobject /* obj */) {
+
+    Renderer* renderer = jni_bridge_get_renderer();
+    if (!renderer) {
+        return JNI_FALSE;
+    }
+
+    return renderer->isBookOpen() ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeCloseBook(
+    JNIEnv* /* env */,
+    jobject /* obj */) {
+
+    LOGI("nativeCloseBook called");
+
+    Renderer* renderer = jni_bridge_get_renderer();
+    if (renderer) {
+        renderer->closeBook();
+    }
+}
+
 JNIEXPORT void JNICALL Java_com_example_oblivion_OblivionEngine_nativeCloseShop(
     JNIEnv* /* env */,
     jobject /* obj */) {

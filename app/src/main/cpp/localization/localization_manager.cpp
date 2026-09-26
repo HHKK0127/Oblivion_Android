@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <cstdio>
+#include <cctype>
 #include <android/log.h>
 #include <android/asset_manager.h>
 
@@ -213,10 +214,16 @@ void LocalizationManager::loadJpwikiData() {
             continue;
         }
         const std::string kind = line.substr(0, t1);
-        const std::string key = line.substr(t1 + 1, t2 - t1 - 1);
+        std::string key = line.substr(t1 + 1, t2 - t1 - 1);
         const std::string japanese = line.substr(t3 + 1);
         if (key.empty() || japanese.empty()) {
             continue;
+        }
+        // FormID keys are normalized to lowercase hex so they match formKey().
+        if (kind != "gmst") {
+            for (char& c : key) {
+                c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+            }
         }
         if (kind == "gmst") {
             gameSettings[key] = japanese;

@@ -173,6 +173,25 @@ generated from the three plugins:
 Line format: `kind \t key \t english \t japanese`. The `english` column is currently empty
 for all rows; English text is resolved from `Oblivion.esm` at runtime.
 
+FormID keys are normalized to lowercase 8-digit hex while loading so they match
+`LocalizationManager::formKey()`. The source plugins store them uppercase, which previously
+made every FormID lookup miss and silently fall back to English.
+
+Not every record carries a translation. The JPWiki plugins leave some strings in English,
+so the Japanese column is not always Japanese:
+
+| kind | entries | with Japanese text |
+|------|---------|--------------------|
+| `gmst` | 723 | 723 |
+| `book` | 640 | 340 |
+| `info` | 19,179 | 19,167 |
+| `dial` | 3,474 | 2,607 |
+| `qst` | 249 | 0 |
+| `full` | 4,421 | 2,682 |
+
+Quest names (`qst`) are never translated by JPWiki, so `getQuestName()` returns the English
+name from `Oblivion.esm` for every quest. This is expected, not a lookup failure.
+
 ### Runtime loading
 
 `LocalizationManager::loadJpwikiData()` reads the asset through `AAssetManager` during
@@ -207,6 +226,17 @@ absent, so English behaviour is unchanged.
 - The JNI layer exposes `nativeStartDialogue()`, `nativeCloseDialogue()` and
   `nativeIsDialogueOpen()` on `OblivionEngine`, backed by the `Renderer` instance held in
   `jni_bridge.cpp` (`jni_bridge_get_renderer()`).
+- `Renderer` owns a `BookReader` and a `QuestFlowController`, both attached to the same
+  `LocalizationManager`. `createTestScenario()` calls `bookReader->initialize(&esmMgr)` and
+  `loadQuestsFromESM()` after the ESM data is available.
+- `Renderer` owns a `UIBookReader` panel and exposes `openBook(formID)`, `isBookOpen()` and
+  `closeBook()`. The panel strips Oblivion's HTML-style markup (`<font>`, `<DIV>`, `<br>`)
+  and word-wraps the body, splitting CJK runs by character.
+- `loadQuestsFromESM()` converts the ESM `QuestData` records into `QuestRecord`s and
+  registers them with `QuestFlowController`; `QuestFlowController::initialize()` is called
+  right after the Imperial Weave is initialized.
+- The JNI layer exposes `nativeOpenBook()`, `nativeCloseBook()` and `nativeIsBookOpen()`.
+- The debug console provides `readbook <formID>`, `closebook` and `listbooks`.
 
 ### Language preference
 

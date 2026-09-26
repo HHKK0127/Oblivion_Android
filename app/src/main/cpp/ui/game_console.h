@@ -130,6 +130,11 @@ public:
         std::function<void(int)> selectDialogueChoice;
         std::function<void()> endDialogue;
 
+        // Books
+        std::function<bool(uint32_t)> openBook;
+        std::function<void()> closeBook;
+        std::function<std::string()> listBooks;
+
         // World
         std::function<void(const std::string&)> setWeather;
         std::function<void(float)> setTimeScale;
