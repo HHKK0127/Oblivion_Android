@@ -1800,17 +1800,43 @@ void ScriptVMTests::testNativeScdaDecoder() {
                getTimeMs38() - start);
     }
 
+    // Test 14b: the expression side function names resolve
+    {
+        const float start = getTimeMs38();
+        const bool ok = getNativeOpcodeName(0x103A) == "GetStage" &&
+                        getNativeOpcodeName(0x102F) == "GetItemCount" &&
+                        getNativeOpcodeName(0x103B) == "GetStageDone" &&
+                        getNativeOpcodeName(0x102E) == "GetDead" &&
+                        getNativeOpcodeName(0x1069) == "IsActionRef" &&
+                        getNativeOpcodeName(0x10CE) == "GetSelf" &&
+                        getNativeOpcodeName(0x1001) == "GetDistance" &&
+                        getNativeOpcodeName(0x100E) == "GetAV" &&
+                        getNativeOpcodeName(0x1048) == "GetIsID" &&
+                        getNativeOpcodeName(0x1113) == "GetParentRef" &&
+                        getNativeOpcodeName(0x1121) == "IsInCombat" &&
+                        getNativeOpcodeName(0x1100) == "GetGameSetting";
+        record("NativeScda: expression function names", ok,
+               "The expression side function ids resolve to their command names",
+               getTimeMs38() - start);
+    }
+
     // Test 15: both spellings of an opcode are accepted
     {
         const float start = getTimeMs38();
         const auto evp = getNativeOpcodeAliases(0x105E);
         const auto moveTo = getNativeOpcodeAliases(0x109E);
         const auto setAv = getNativeOpcodeAliases(0x100F);
+        const auto getGs = getNativeOpcodeAliases(0x1100);
+        const auto scaOnActor = getNativeOpcodeAliases(0x1101);
         const bool ok = evp.size() == 2 && evp[0] == "evp" &&
                         evp[1] == "evaluatepackage" &&
                         moveTo.size() == 2 && moveTo[0] == "moveto" &&
                         moveTo[1] == "movetomarker" &&
                         setAv.size() == 2 && setAv[0] == "setav" &&
+                        getGs.size() == 2 && getGs[0] == "getgs" &&
+                        getGs[1] == "getgamesetting" &&
+                        scaOnActor.size() == 2 && scaOnActor[0] == "scaonactor" &&
+                        scaOnActor[1] == "stopcombalarmonactor" &&
                         getNativeOpcodeAliases(0x1039).empty();
         record("NativeScda: opcode aliases", ok,
                "Short and long spellings resolve to the same opcode",
