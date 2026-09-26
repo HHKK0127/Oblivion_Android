@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-26T01:00:00Z",
+  "lastUpdated": "2026-09-26T01:30:00Z",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -4272,10 +4272,50 @@
         "9427ac74"
       ],
       "compressed": false
+    },
+    {
+      "id": "005c384d-f9ac-42cd-bee7-7b7078fe7855",
+      "timestamp": "2026-09-26T01:30:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "WS-B channel state, measured 2026-09-26: branch hhkk0127-script-vm-expansion tip is 80f02472 (\"Accept the minimal Begin payload shape\"), 34 commits ahead of merge base b3529e8a and 59 behind master. Seven newest: 3e13cfdb, 9a7fef9d, d2cb7013, 6da0cd9e, 9c608fc3, 51248b09, 80f02472. git merge-tree --write-tree master hhkk0127-script-vm-expansion exits 0, merged root tree 7f9729c6.",
+      "tags": [
+        "ws-b",
+        "merge",
+        "channel"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "c76544ab-9b68-42e6-990f-e0d87b3829e3",
+      "timestamp": "2026-09-26T01:30:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "WS-B commit 80f02472 confirms the measured Begin precondition from the second measurement batch: the guard was lowered from lengthWord < 8 to lengthWord < 4, and WS-B reports the too-strict guard had been rejecting 1,556 of 2,393 SCPT records (65% of the corpus, exactly the recorded decodeFail=1556). Prediction to check on their side: decodeFail collapses, framingFail stays at its baseline of 2 (the 0x1000 pair).",
+      "tags": [
+        "scda",
+        "begin",
+        "ws-b",
+        "measurement"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "5fd93851-8c5b-420e-b85e-e6d5f411a0e9",
+      "timestamp": "2026-09-26T01:30:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "master is 16 commits ahead of origin/master aabb9dd7 and unpushed; git ls-remote origin refs/heads/master confirms the remote is still aabb9dd7 (checked 2026-09-26).",
+      "tags": [
+        "git",
+        "push",
+        "master"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 297,
+    "totalEntries": 300,
     "compressedCount": 2,
     "sessionCount": 28
   }
