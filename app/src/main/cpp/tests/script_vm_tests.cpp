@@ -2169,6 +2169,21 @@ void appendBeginBlock(std::vector<uint8_t>& out, uint16_t blockType,
     appendInstruction(out, 0x0011, {});
 }
 
+// A Begin block whose payload is the six byte shape: blockType, bodyLength and
+// a zero word, with no argument list. The vanilla corpus uses this shape for
+// gamemode, onreset, onload and the three scripteffect blocks, so the block end
+// must be derived from the length word rather than assumed to be eight.
+void appendShortBeginBlock(std::vector<uint8_t>& out, uint16_t blockType,
+                           const std::vector<uint8_t>& body) {
+    std::vector<uint8_t> payload;
+    appendU16(payload, blockType);
+    appendU16(payload, static_cast<uint16_t>(body.size() + 4));
+    appendU16(payload, 0);
+    appendInstruction(out, 0x0010, payload);
+    out.insert(out.end(), body.begin(), body.end());
+    appendInstruction(out, 0x0011, {});
+}
+
 // An If/ElseIf/Else payload: compiler metadata, expression length, expression.
 // Else carries only the metadata word; measured over the retail corpus, all 172
 // Else instructions are exactly 2 bytes.
@@ -2242,6 +2257,38 @@ void ScriptVMTests::testNativeScdaVm() {
                         vm.getExecutedInstructionCount() == 2;
         record("NativeVm: block runs to End", ok,
                "A gamemode block executes its commands and stops at End",
+               getTimeMs38() - start);
+    }
+
+    // Test 1b: a six byte Begin payload still ends at its own End
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> body;
+        appendInstruction(body, 0x1021, {});  // Enable
+        appendInstruction(body, 0x1022, {});  // Disable
+
+        std::vector<uint8_t> code;
+        appendShortBeginBlock(code, 0x0000, body);
+
+        const NativeDecodeResult program = decodeNativeScda(code);
+        NativeScdaVm vm;
+        int calls = 0;
+        vm.registerCommand(0x1021, [&calls](NativeCommandContext&, const std::vector<NativeToken>&,
+                                            ScriptValue&, std::string&) {
+            ++calls;
+            return true;
+        });
+        vm.registerCommand(0x1022, [&calls](NativeCommandContext&, const std::vector<NativeToken>&,
+                                            ScriptValue&, std::string&) {
+            ++calls;
+            return true;
+        });
+
+        const NativeVmResult result = vm.run(program, 0x0000, 0x1234);
+        const bool ok = result == NativeVmResult::Success && calls == 2 &&
+                        vm.getExecutedInstructionCount() == 2;
+        record("NativeVm: short Begin payload", ok,
+               "A six byte Begin payload ends at its own End, not eight bytes on",
                getTimeMs38() - start);
     }
 

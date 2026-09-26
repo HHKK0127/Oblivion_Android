@@ -27,8 +27,10 @@
 // as corruption would reject real content.
 //
 // Begin selects the block to run by block type. The block ends at
-// begin.offset + 8 + begin.bodyLength, which is the End instruction, so End and
-// Return both stop the run.
+// begin.offset + begin.payloadLength + begin.bodyLength, which is the End
+// instruction, so End and Return both stop the run. The payload length is the
+// Begin length word, which takes five values (6, 8, 10, 11, 13) in the vanilla
+// corpus, so it must be read rather than assumed to be 8.
 //
 // Expressions are reverse Polish. The operator set was measured over the whole
 // vanilla corpus and is closed: == != < <= > >= + - * / && || and the unary ~.

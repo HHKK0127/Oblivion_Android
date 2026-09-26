@@ -692,9 +692,11 @@ NativeVmResult NativeScdaVm::run(const NativeDecodeResult& program,
     const NativeInstruction& begin = program.instructions[beginIndex];
     // bodyLength counts the bytes from the payload start to the last
     // instruction inside the block, so the End that closes it sits 4 bytes
-    // further on. Measured over all 948 vanilla blocks: the instruction at
-    // begin.offset + 8 + bodyLength is End in every case.
-    blockEnd_ = begin.offset + 8 + begin.bodyLength;
+    // further on. Measured over all 4,344 vanilla blocks: the instruction at
+    // begin.offset + payloadLength + bodyLength is End in every case. The
+    // payload length is the Begin length word, which is 6, 8, 10, 11 or 13, so
+    // it has to be read; assuming 8 lands on End for only 1,377 of the 4,344.
+    blockEnd_ = begin.offset + begin.payloadLength + begin.bodyLength;
     pc_ = beginIndex + 1;
     running_ = true;
 
