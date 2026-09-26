@@ -769,45 +769,33 @@ also asked for a rebase onto `master` plus a re-verification pass before the mer
 `master` needs the user's approval because it is the shared branch. The preparation that can be done
 without approval is done: the content merge is verified conflict-free and the branch's own host-test
 run is green.
-**Re-measured at `dfa09d7a`, the revision this plan now describes: the gate is unchanged - the same three
-dirty rewritten paths - and the four untracked `game_state_report` paths are no longer part of it.**
-Re-confirmed at `441d075d` while answering WS-C: still 13 dirty paths, 0 untracked, the same three
-rewritten ones, and `merge-tree` still `exit 0`.
-`master`'s worktree holds **13 modified paths and 0 untracked ones**; intersecting that with the 32 paths
-the branch rewrites leaves exactly `assets/esm_reader.cpp` (+17/-15), `assets/esm_reader.h` (+27/-11) and
-`engine/renderer.cpp` (+32/-17) - the same three paths `e5c16845` named - so the merge gate is still held
-by WS-C's uncommitted increment and closes when that session commits it. **All three are WS-C's own work,
-which a `git diff` of the tree settles**: `engine/renderer.cpp` holds the Phase 66 P19 fix - the three
-console no-op stubs (`refs.setWeather` / `refs.setTimeScale` / `refs.setTimeOfDay`) replaced with real
-`SkyWeatherSystem` calls, the gamestate report repointed at the sky clock, and the second
-`skyWeatherSystem->update` deleted so game time stops advancing at double rate while the title screen is
-down - and `assets/esm_reader.{cpp,h}` hold the WTHR `NAM0` field-major decode. The gamestate increment's
-*own* `renderer.cpp` hunk (+44/-2, the `getWorldInfo` lambda) landed in `9e1fd406`, so reading the
-remaining diff as gamestate work is the attribution trap: compare the working tree against
-`git log -1 -- <path>`, not against a remembered diff. WS-C re-asserted the gamestate reading at
-`f1878660`, three commits behind the live `master`, quoting `+42/-2` - which is exactly the stat
-`9e1fd406` recorded for this path (44 changed lines = 42 added + 2 removed), so the quote is a
-committed diff read as a pending one; the include sits at line 11 of the committed file and the two
-`getWorldInfo` lambdas at lines 993 and 1491, all outside the working diff. The two readings
-reconcile by time rather than by fact: WS-C's `+42/-2` was the live diff at `f1878660` (23:00:14),
-the gamestate session committed that same hunk eight minutes later as `9e1fd406` (23:08:59), and the
-P19 hunks are what remained afterwards - so a reading can be correct when taken and wrong when
-re-used, and only a fresh measurement, not a re-arbitration of the same number, settles it. A second,
-independent attribution source can be read from the session store's file-edit records: the local
-`session_files` table shows `30cbb1e4` as the only recent editor of `engine/sky_weather_system.h` in the
-`master` worktree (23:42, after `9e1fd406`), which corroborates WS-C's ownership of the P19 increment.
-Five sessions now share the `master` worktree (`964d16fb`, `30cbb1e4`, `9427ac74`, `f5aa54cb`,
-`fe7f23f7`), so a clean `status` is a snapshot of one instant and must be quoted with its revision:
-`9427ac74` reported it empty at `9e1fd406` (23:08:59), and it already held 13 dirty paths again by
-`fbc813ca` (00:15) - none of them that session's fault, all of them still outside the gate except three.
-The other ten modified paths
-(`CHANGELOG.md`, `ui/game_console.cpp`, `ui/title_screen.cpp`, `java/.../MainActivity.kt`,
-`res/layout/activity_main.xml`, `java/.../GameRenderer.kt`, `world/world_manager.{cpp,h}`,
-`engine/sky_weather_system.h`, `tests/weather_transition_tests.cpp`) are not in the rewritten set, so they
-do not block `git merge`. `CMakeLists.txt` and `tools/host_tests/run_host_tests.sh` are rewritten by the
-merge but clean, and they are the two paths that dropped out of the gate when `9e1fd406` landed.
-`git merge-tree --write-tree master hhkk0127-script-vm-expansion` is `exit 0` here too. The branch stands
-36 commits ahead of the merge base and 68 behind `master`.
+**Re-measured at `87e09c23`: the gate closed at `36021dc5` and reopened inside the hour, and this snapshot
+is the first one that spans two sessions.** WS-C's `36021dc5` (00:23:37) landed all thirteen paths the
+previous snapshot listed, the three gate paths among them, and `git status --porcelain` read **empty at
+`5cc2173a` (00:23:59)** - the first clean reading since `9e1fd406`. It did not hold. `9427ac74` committed
+its P19 fixes as `3935c7c1` (00:53:25, every system driven by the measured frame delta instead of a fixed
+`0.0167f`) and `87e09c23` (01:14:32, the World Status heartbeat quietened), and by 04:38 the worktree held
+**11 modified paths and 775 inserted lines**, every one of them uncommitted. **The gate is two paths now -
+`engine/renderer.cpp` and `engine/renderer.h`, the header entering it for the first time** - and both sit in
+the branch's rewritten set, so `git merge` would be refused at this instant. The nine other dirty paths
+(`assets/world_data_loader.{cpp,h}`, `tests/interior_cell_tests.{cpp,h}`, `world/object_placer.{cpp,h}`,
+`world/world_data.h`, `world/world_manager.{cpp,h}`) are outside the rewritten set and do not block, which is
+why a path count is never the gate and the intersection always is. **The file-edit records name two sessions
+for this one dirty set** - `30cbb1e4` on `assets/world_data_loader.{cpp,h}`, `9427ac74` on `world/world_data.h`,
+`world/object_placer.{cpp,h}`, `world/world_manager.{cpp,h}` and `tests/interior_cell_tests.{cpp,h}`, all stamped
+01:15-01:23, i.e. after that session's own commits - so neither session can commit the whole set as one
+increment and the split has to be settled before the gate can close. `git merge-tree --write-tree master
+hhkk0127-script-vm-expansion` is still `exit 0` (merged tree `01728803` at `5cc2173a`, `fdc0f62a` at
+`87e09c23`; the hash moves with every `master` commit, so only `exit 0` is the durable claim). **The user held
+the merge on 2026-09-27** - the decision is to wait for WS-B's remaining queue rather than merge now - so the
+gate is a deferred precondition, not a rejection, and `master` stands 35 commits ahead of `origin/master`,
+unpushed. The branch moved twice while this was being measured, to `b8ecfeb8` (five more expression-side ids)
+and **`b353809a` ("Derive the Begin block end from its length word", which is this plan's
+`begin.offset + lengthWord + bodyLength` rule, implemented 4 commits later)**; the census driver rebuilt
+against `b353809a` still reads **`decodeFail 0 / instr 65,628 / framingFail 0`** and still prints **`0x114D
+reached by the decoder: 4`** at the same four offsets (`MartinScript` 254, `MQ14Script` 556, `JauffreScript`
+159, `MQ13Script` 358), so neither new commit moves a counter. The gate needs no new mechanism - only
+`git status` in the `master` worktree, at the revision being claimed.
 **Two measurement traps, recorded because each has already produced a wrong answer.** First, the gate is
 the *intersection* of `git status --porcelain` with `git diff --name-only master...<branch>`, not a
 remembered file list: `CHANGELOG.md`, `ui/game_console.cpp`, `MainActivity.kt` and `activity_main.xml` are
@@ -816,6 +804,18 @@ must be taken in the `master` worktree (`C:\Users\hiroki.kogarumai\Oblivion_Andr
 worktree's `status` says nothing about it, and four worktrees exist now (`master` at `dfa09d7a`,
 `hhkk0127-script-vm-expansion` at `8efc03b6`, `hhkk0127-oblivion-android-completion-plan` at `5dfaa88b`,
 and `hhkk0127-virtual-controller`, prunable with no commit at all).
+**Four more traps, each already paid for.** Third, `mtime` is not ownership: the four paths whose
+timestamps fall after both sessions' latest commits (`engine/renderer.{cpp,h}`, `world/world_manager.{cpp,h}`)
+cannot be attributed from the filesystem at all, and the answer has to come from the edit records or from the
+sessions themselves. Fourth, a reading can be stale before it is sent: `9427ac74` reported "working tree holds
+3 files" while `3935c7c1` and `87e09c23` were already in history, so a reply must be preceded by
+`git rev-parse --short HEAD` in the same breath. Fifth, a commit message describes its own increment, so a
+dirty path absent from every recent message is a second, uncommitted increment - `3935c7c1` named the frame
+delta and never touched `object_placer`, which is how the gamestate set split in two. Sixth, the plan's own
+numbers go stale: the paragraph above quoted `dfa09d7a` and 13 paths while the live revision was `87e09c23`
+and the count was 11, and the earlier draft of this very section had to be re-measured before it could be
+committed. A number without a revision is not evidence.
+
 
 **Why this split**
 - WS-A and WS-B are pure code/config work with no device dependency, so they can run fully in
