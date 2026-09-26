@@ -770,6 +770,8 @@ without approval is done: the content merge is verified conflict-free and the br
 run is green.
 **Re-measured at `dfa09d7a`, the revision this plan now describes: the gate is unchanged - the same three
 dirty rewritten paths - and the four untracked `game_state_report` paths are no longer part of it.**
+Re-confirmed at `441d075d` while answering WS-C: still 13 dirty paths, 0 untracked, the same three
+rewritten ones, and `merge-tree` still `exit 0`.
 `master`'s worktree holds **13 modified paths and 0 untracked ones**; intersecting that with the 32 paths
 the branch rewrites leaves exactly `assets/esm_reader.cpp` (+17/-15), `assets/esm_reader.h` (+27/-11) and
 `engine/renderer.cpp` (+32/-17) - the same three paths `e5c16845` named - so the merge gate is still held
@@ -781,7 +783,11 @@ console no-op stubs (`refs.setWeather` / `refs.setTimeScale` / `refs.setTimeOfDa
 down - and `assets/esm_reader.{cpp,h}` hold the WTHR `NAM0` field-major decode. The gamestate increment's
 *own* `renderer.cpp` hunk (+44/-2, the `getWorldInfo` lambda) landed in `9e1fd406`, so reading the
 remaining diff as gamestate work is the attribution trap: compare the working tree against
-`git log -1 -- <path>`, not against a remembered diff.
+`git log -1 -- <path>`, not against a remembered diff. WS-C re-asserted the gamestate reading at
+`f1878660`, three commits behind the live `master`, quoting `+42/-2` - which is exactly the stat
+`9e1fd406` recorded for this path (44 changed lines = 42 added + 2 removed), so the quote is a
+committed diff read as a pending one; the include sits at line 11 of the committed file and the two
+`getWorldInfo` lambdas at lines 993 and 1491, all outside the working diff.
 The other ten modified paths
 (`CHANGELOG.md`, `ui/game_console.cpp`, `ui/title_screen.cpp`, `java/.../MainActivity.kt`,
 `res/layout/activity_main.xml`, `java/.../GameRenderer.kt`, `world/world_manager.{cpp,h}`,
