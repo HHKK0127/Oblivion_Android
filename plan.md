@@ -260,6 +260,152 @@ Scratch: `%TEMP%\async_race\opcode_freq_all.py` / `opcode_freq_all.txt` hold the
 
 **The one record that appeared to break the file-order table does not: `SEScalonScript` needs `Cast`'s operand order to be spell then target** (measured 2026-09-25, one-record dump plus a FormID-to-`EDID` lookup). Its subrecords are `SCRV(5)` = `OnMyself`, then `SCRO 0x001881` = `MGEF INVI`, `SCRO 0x00189D` = `MGEF SLNC` and `SCRO 0x096FF6` = `SPEL SELpScalonInvisibility`, and the bytecode uses exactly those slots: the `0x0016` at offset 16 tests `r 2` and `r 3` with `HasMagicEffect` (`X 0x10D6`), matching `HasMagicEffect INVI == 0 && HasMagicEffect SLNC == 0`; the `0x0015` at offset 83 assigns the local `f 5`, the `SLSD` index that `SCRV(5)` points at, matching `Set OnMyself to GetSelf`; and the `0x101E` at offset 98 is `[u16 2][r 4][r 1]`, which the source line `Cast SELpScalonInvisibility OnMyself` reads as **spell `r 4` then target `r 1`**. With `Cast` taking `[spell][target]` the whole record agrees with file order and `r 1` stays `OnMyself`; the earlier `r 1` = `SELpScalonInvisibility` reading came from assuming the opposite operand order. `HasMagicEffect` also takes an `MGEF` through this same table, so the table is not spell-only.
 **Expression-side function ids can be identified by per-record occurrence count, and four of the most common ones are now settled with zero exceptions** (measured 2026-09-25 by `%TEMP%\scro_probe\probe_xids3.py` over all 2,393 `SCPT` records). The method needs no alignment: for a candidate name, count the name in the record's `SCTX` and count the id in its `SCDA`, and a correct name matches the id's count in **every** record that uses the id. `0x103A` = **`GetStage`** (791 records, 2,013 calls), `0x102F` = **`GetItemCount`** (156 records, 586 calls), `0x103B` = **`GetStageDone`** (123 records, 289 calls) and `0x102E` = **`GetDead`** (190 records, 384 calls) each agree in 100% of their records - `791/791`, `156/156`, `123/123`, `190/190`, differ 0. The first pass, which compared case-sensitively and did not exclude the `ScriptName` keyword, reported only `574/791` for `GetStage`; that residual was entirely the corpus writing both `GetStage` and `getstage` plus `ScriptName` counting as an identifier, and lowercasing both sides removed it. A VM can therefore dispatch these four by name, and the same count test identifies the remaining expression-side ids without reading a single payload by hand.
+### Expression-side function ID names (198 fids confirmed)
+
+Function IDs in the expression (`X` token) space were identified by counting, not by guessing:
+the occurrence count of a name in a record's source must equal the sum of (opcodes >= 0x1000 with that
+ID) + (`X` tokens with that ID in command payloads), for every record that mentions either. Five
+preprocessing steps are mandatory or the test produces false positives:
+
+1. Strip string literals (`"..."` -> spaces) - `MessageBox "...Say nothing..."` inflates `say`.
+2. Strip comments (`;` to end of line).
+3. Exclude declarations: `scn|scriptname|ref|short|long|float|int|bool <name>` and `begin <block>` names.
+4. Exclude records that declare the name from that name's denominator (`short cast` / `short Enable`).
+5. **Require set equality, not just count equality** - the set of records where the name appears must
+   equal the set of records carrying the opcode (`fp = |records(name) - records(fid)| == 0`). This is
+   the decisive criterion: it eliminates reference names (`dark09roseofsithis`, `bleakminedoorref`,
+   `cgsewerexitmarker`) that coincidentally match a single-record count.
+
+16 alias pairs must be merged before counting: `getav`/`getactorvalue`, `getbaseav`/`getbaseactorvalue`,
+`setav`/`setactorvalue`, `modav`/`modactorvalue`, `forceav`/`forceactorvalue`, `evp`/`evaluatepackage`,
+`moveto`/`movetomarker`, `setweather`/`sw`, `forceweather`/`fw`, `pms`/`playmagicshadervisuals`,
+`pme`/`playmagiceffectvisuals`, `sms`/`stopmagicshadervisuals`, `saa`/`setactoralpha`,
+`getgs`/`getgamesetting`, `scaonactor`/`stopcombatalarmonactor`. Do **not** alias `getself`/`this`: only 4
+records (MQ09GhostBladeSpawn01-04) compile `this` as `GetSelf`.
+
+196 fids satisfy `fp = 0` with a 100% per-record count match:
+
+```
+  0x1000 messagebox                0x1001 getdistance               0x1002 additem
+  0x1003 setessential              0x1004 rotate                    0x1005 getlocked
+  0x1006 getpos                    0x1007 setpos                    0x1008 getangle
+  0x1009 setangle                  0x100C getsecondspassed          0x100D activate
+  0x100E getav                     0x100F setav                     0x1010 modav
+  0x1012 getcurrenttime            0x1013 playgroup                 0x1016 startcombat
+  0x1017 stopcombat                0x101B getlos                    0x101C addspell
+  0x101D removespell               0x101E cast                      0x101F getbuttonpressed
+  0x1020 getinsamecell             0x1021 enable                    0x1022 disable
+  0x1023 getdisabled               0x1024 menumode                  0x1025 placeatme
+  0x1026 playsound                 0x102D getdetected               0x102E getdead
+  0x102F getitemcount              0x1031 getsleeping               0x1032 gettalkedtopc
+  0x1033 say                       0x1034 sayto                     0x1036 startquest
+  0x1037 stopquest                 0x1038 getquestrunning           0x1039 setstage
+  0x103A getstage                  0x103B getstagedone              0x103E israining
+  0x1040 getiscreature             0x1043 getincell                 0x1045 getisrace
+  0x1047 getinfaction              0x1048 getisid                   0x1049 getfactionrank
+  0x104C getdisposition            0x104D getrandompercent          0x1050 getlevel
+  0x1052 removeitem                0x1053 moddisposition            0x1054 getdeadcount
+  0x1055 showmap                   0x1056 startconversation         0x1058 addtopic
+  0x1059 message                   0x105A setalert                  0x105B getisalerted
+  0x105C look                      0x105D stoplook                  0x105E evp
+  0x1060 enableplayercontrols      0x1061 disableplayercontrols     0x1063 getheadingangle
+  0x1064 pickidle                  0x1065 isweaponout               0x1069 isactionref
+  0x106C getweaponanimtype         0x106E getcurrentaipackage       0x1070 isidleplaying
+  0x1072 lock                      0x1073 unlock                    0x1074 getcrimegold
+  0x1075 setcrimegold              0x1076 modcrimegold              0x1077 getcrimeknown
+  0x1082 getpcisrace               0x1088 getisreference            0x1089 setfactionrank
+  0x108B kill                      0x108C resurrect                 0x108F getcurrentaiprocedure
+  0x1095 getiscurrentweather       0x1097 addscriptpackage          0x1098 removescriptpackage
+  0x109D getopenstate              0x109E moveto                    0x109F getsitting
+  0x10A1 getiscurrentpackage       0x10A5 removeme                  0x10A8 setfactionreaction
+  0x10AA getdayofweek              0x10AB isplayerinjail            0x10AD removeallitems
+  0x10AE wakeuppc                  0x10AF ispcsleeping              0x10B1 setcombatstyle
+  0x10B2 playsound3d               0x10B4 getdetectionlevel         0x10B5 isactordetected
+  0x10B6 getequipped               0x10B9 isswimming                0x10BA scripteffectelapsedseconds
+  0x10BB setcellpublicflag         0x10BE getamountsoldstolen       0x10C0 closecurrentobliviongate
+  0x10C1 getpcexpelled             0x10C2 setpcexpelled             0x10C3 getpcfactionmurder
+  0x10C4 setpcfactionmurder        0x10C5 getpcfactionsteal         0x10C6 setpcfactionsteal
+  0x10C7 getpcfactionattack        0x10CB getdestroyed              0x10CC setdestroyed
+  0x10CD getactionref              0x10CE getself                   0x10CF getcontainer
+  0x10D1 setforcerun               0x10D6 hasmagiceffect            0x10D8 setdoordefaultopen
+  0x10DB showbirthsignmenu         0x10DD setopenstate              0x10DF isspelltarget
+  0x10E8 getcombattarget           0x10EC setghost                  0x10EE equipitem
+  0x10EF unequipitem               0x10F1 setunconscious            0x10F3 setrestrained
+  0x10F8 modpcfame                 0x10F9 getpcfame                 0x10FB getpcinfamy
+  0x1100 getgs                     0x1101 scaonactor                0x1104 setweather
+  0x1109 istimepassing             0x110C trapupdate                0x110D setquestobject
+  0x110E forceav                   0x110F modpcskill                0x1113 getparentref
+  0x1115 getbaseav                 0x1116 isowner                   0x1117 setownership
+  0x111C setactorfullname          0x111E issneaking                0x1121 isincombat
+  0x1122 setpackduration           0x1123 pms                       0x1124 pme
+  0x1125 sms                       0x1128 isanimplaying             0x1129 saa
+  0x112A enablelinkedpathpoints    0x112B disablelinkedpathpoints   0x112C isininterior
+  0x112D forceweather              0x1132 anga                      0x1134 resetfalldamagetimer
+  0x1136 getinworldspace           0x1137 modpcmiscstat             0x113C setscale
+  0x1142 dispel                    0x1144 triggerhitshader          0x1145 refreshtopiclist
+  0x1146 reset3dstate              0x1147 isridinghorse             0x114D essentialdeathreload
+  0x114E setshowquestitems         0x1150 resethealth               0x1151 setignorefriendlyhits
+  0x1156 setrigidbodymass          0x1158 releaseweatheroverride    0x1159 setallreachable
+  0x115A setallvisible             0x115B setallvisible             0x115C sendtrespassalarm
+  0x115D setsceneiscomplex         0x115E autosave                  0x1161 isactor
+  0x1162 isessential               0x1164 showdialogsubtitles       0x1165 forcecloseobliviongate
+  0x1167 createfullactorcopy       0x116B pcb                       0x116C setplayerinseworld
+  0x116D getplayerinseworld        0x116E pushactoraway             0x116F setactorsai
+  0x1170 clearownership
+```
+
+Two more are `fp = 0` but deviate in a few records; both deviations are source-text artifacts, so the
+names are still certain:
+
+* `0x1069 isActionRef` - 621 records / 756 calls; `CGateOPEN01SCRIPT` has 1 opcode but 2 occurrences
+  because its `else` clause restates the `if` condition (`else isActionRef mySelf == 0 && busy == 0`).
+  The bytecode holds one instruction; the source holds two mentions.
+* `0x10CE getSelf` - 438 records / 614 calls; 4 records write `set X to this` instead of `getself`.
+
+`0x1101` was the last disagreement: MG17Script writes the long form `FalcarRef.StopCombatAlarmonActor`
+3 times (matching 3 `0x1101 len=0` opcodes) while the other 33 records use the short form `scaOnActor`,
+so a single-form table scored 0 occurrences there. Both forms must be accepted.
+
+40 fids appear in a single record only. Set equality reduces their candidates to identifiers that occur
+nowhere else, which isolates the real command name from reference names:
+
+```
+0x100A getstartingpos            0x100B getstartingangle
+0x1029 getclothingvalue          0x1030 getgold
+0x1042 getshouldattack           0x1051 getarmorrating
+0x1057 drop                      0x1062 getplayercontrolsdisabled
+0x106B getknockedstate           0x1071 completequest
+0x107D isguard                   0x1083 cureforvampirism
+0x108D istalking                 0x10A9 modfactionreaction
+0x10B0 ispcamurderer             0x10B7 wait
+0x10C8 setpcfactionattack        0x10D2 getforcesneak
+0x10D3 setforcesneak             0x10E0 getisplayerbirthsign
+0x10EA showspellmaking           0x10EB showenchantment
+0x10F4 getrestrained             0x10FE getisplayablerace
+0x1111 enablefasttravel          0x1126 sme
+0x1138 getpcmiscstat             0x1141 setnorumors
+0x114C isindangerouswater        0x1154 setactorrefraction
+0x1155 setitemvalue              0x1168 deletefullactorcopy
+```
+
+Still ambiguous - both candidates are real commands and both fids occur in the same records with the
+same count, so only bytecode order can separate them: `0x1135`/`0x114A` (AddAchievement | IsXBox),
+`0x115A`/`0x115B` (SetAllVisible | SetNoAvoidance), `0x1083`/`0x10E3` (CureForVampirism | GetPCIsSex |
+HasVampireFed), `0x10FC`/`0x10FD` (SetPCFame | SetPCInfamy), `0x10D9`/`0x10DA` (ShowClassMenu |
+ShowRaceMenu). `0x10F0` has too many candidates to resolve.
+
+### Occurrence-count identification caveats
+
+The seven ways a name's source count can differ from its bytecode count, in the order they were found:
+
+1. Aliases (the 16 pairs above).
+2. Double occurrence: `Say`/`SayTo` are written as `Set SpeechLengthTimer to Ref.Say X` plus `Ref.Say X`.
+3. `else`/`elseif` clauses restating the condition (see `0x1069`).
+4. No argument path: `GetGameSetting` takes its setting through `getgs`, so the name never enters a payload.
+5. Function names inside string literals (`MessageBox "...Say nothing..."`).
+6. Local variable declarations sharing a function name (`short cast`, `short Enable`).
+7. A short form that never appears in source (`scaOnActor` vs `StopCombatAlarmOnActor`).
+
 **The selector is consumed by the one command that follows it and is not latched** (measured 2026-09-25 with `%TEMP%\scro_probe\probe_cast14.py` and `probe_cast15.py`, which resolve every `0x001C` through the file-order table and print it beside the instruction it precedes). Over the 2,393 SCPT records the 5,647 selectors are followed by **65 distinct opcodes** - most often `0x1021` (520), `0x100D` `Activate` (519), `0x101D` (361), `0x105E` (343), `0x109E` `MoveTo` (332) and `0x1022` (286) - so the selector serves the whole calling-reference family and is not a `Cast` prefix. **A command with no selector in front of it runs on the script's own reference**: `SEXidPuzHungerSCRIPT` issues a bare `cast LvlSpell SEXidHungerOrigin` at @768 while its first selector only appears at @848, and in `XPXirethard01TrapButton01SCRIPT` the last selector sits at @324 in front of the eighth `Activate` at @328 while the `playgroup backward 0` of source line 47 at @400 carries none. **A VM has to clear the selector after every command rather than latch it** - the compiler re-emits it even when the slot repeats, as `SEObelisk13Activator` shows with `0x001C` slot 1 at @146 in front of `0x10CC` `SetDestroyed 0` and again at @161 in front of `0x100D` `Activate`. The same dump fixes **`0x101E` `Cast` as `[u16 2][<spell>][<target>]` with the caster taken from the selector**, and 14 casts over two records agree with one source line each: `SEXidPuzHungerSCRIPT`'s six are `self` at @768 and then selectors 1 / 3 / 5 / 7 / 9 with `r 12` = `LvlSpell` and `r 3` / `r 5` / `r 7` / `r 9` / `r 11` = `SEXidPuzGrum2b` / `Grum3` / `Grum4` / `Grum5` / `SEXidPuzWall` against source lines 91 / 96 / 102 / 108 / 114, and `XPEbroccaHungerCustomSCRIPT`'s eight are selectors 1..8 = `Statue1`..`Statue8` with `r 9` = `LvlSpell` and `r 10`..`r 17` = `Target1`..`Target8` against lines 94..108. **The spell operand is an ordinary `ref` local and not a FormID slot** - `LvlSpell` is an `SCRV` entry - so a VM cannot type-check the operand against the spell form list. The two records also close the ordering question from the far side, because their subrecords interleave in the two ways the rival global rules each predicted and only the file order survives both: `SEXidPuzHungerSCRIPT` stores `SCRO` x11, then one `SCRV` (`LvlSpell`, slot 12), then `SCRO` x8, and `XPEbroccaHungerCustomSCRIPT` stores `SCRV` x17, then `SCRO` x6. With `XPXirethard01TrapButton01SCRIPT` (`SCRV`, `SCRO` x7, `SCRV`) and `SEXiditteArbiterButtonSCRIPT` (`SCRO`, `SCRV` x2) that is four records with four different interleavings, and **every selector, `r` and `Z` in all four resolves under the file order and under nothing else**. The same pass names **`0x10CC` `SetDestroyed`** (2026-09-25): its payload is always `[u16 1][n 0 or 1]` - 20 zeros and 48 ones - and over the 34 records that use it the instruction count equals the source's `setdestroyed` keyword count in **34 of 34**, 68 instructions in all, so the name rests on the same count-equals-keyword-count test as the axis family.
 
 **Seven more condition-side names were read off the bytes in the same pass** (2026-09-25), all of them inside RPN expressions rather than at statement position: **`0x100C` `getSecondsPassed`**, **`0x100E` `GetAv`** (`GetAv Magicka >= 10` carrying a bare `u16` 9), **`0x10CD` `getActionRef`**, **`0x10CE` `getSelf`**, **`0x10D6` `HasMagicEffect`**, **`0x1113` `getParentRef`** and **`0x1128` `isAnimPlaying`** (empty argument block, `argByteLength == 0`).
