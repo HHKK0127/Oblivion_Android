@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-26T09:30:44.814954",
+  "lastUpdated": "2026-09-26T21:40:31.513732",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -3844,11 +3844,93 @@
         "bug-prevention"
       ],
       "compressed": false
+    },
+    {
+      "id": "8a4f15bb-d93d-4e06-b473-46294db2a7a3",
+      "timestamp": "2026-09-26T21:40:31.513732",
+      "category": "reference",
+      "priority": "high",
+      "content": "Phase 66 P8-P15 all complete (2026-09-26). P8 WATR short-DATA colour decode; P13 weather linear ramp (0eaf9c62); P14 WATR reflection colour in water shader (76a53d3c); P15 interior cell entry + exterior render suppression (1577c7a0). Remaining from the 2nd plan: P9-P12 (quality infra), folded into the 3rd plan as P21.",
+      "tags": [
+        "phase66",
+        "issue-plan",
+        "p15"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "57bec816-0174-46bb-b961-2ded536a868a",
+      "timestamp": "2026-09-26T21:40:31.513732",
+      "category": "decision",
+      "priority": "high",
+      "content": "P15 interior gating verified on the emulator with a clean A/B test. Exterior (day, 16:24): logs 'Terrain rendered: 9 exterior cells with heightmap, 9 drawn' and 'Water: 1 active cells with water, 1 drawn'; 3D region pixels dominated by terrain (25,32,25) 79.5% + sky (0,12,25) 5.4%. After teleportinterior: Terrain 0 lines and Water 0 lines over 12s, and the 3D region is the bare clear colour (8,6,8) at 90.9% with the HUD still drawn. Conclusion: the interior gate works; the earlier 'outdoor geometry still drawn indoors' report was a misdiagnosis.",
+      "tags": [
+        "phase66",
+        "p15",
+        "verification",
+        "emulator"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "0918f603-4628-4675-94ea-3e46b8cbc883",
+      "timestamp": "2026-09-26T21:40:31.513732",
+      "category": "constraint",
+      "priority": "high",
+      "content": "Renderer.cpp has an early return inside the 'if (showTitleScreen)' block right after titleScreen->render(), so while the title screen is up NOTHING of the game world is drawn. Log line 'Title screen active (frame N), titleStarted=0' means the game has NOT started. Any device verification of world rendering must first start a game: tap New Game at approximately (650, 794) on the 1920x1080 title menu row; Continue is at x 450-500 and opens SaveLoadUI (close with keyevent 4). Skipping this step caused a full misdiagnosis of the P15 interior bug.",
+      "tags": [
+        "title-screen",
+        "pitfall",
+        "verification",
+        "renderer"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "5004d0d7-e20c-4cd4-9405-d49484f0c857",
+      "timestamp": "2026-09-26T21:40:31.513732",
+      "category": "reference",
+      "priority": "high",
+      "content": "3rd issue plan (P16-P22) added to ISSUE_PLAN.md after the P15 device verification: P16 gamestate dump command (highest value, kills misdiagnosis), P17 stop the title video player once the game starts (GameRenderer.kt:409 logs 'Title video: updateTexImage=21/s' forever because it only checks titleVideoSurfaceTexture != null), P18 title menu hit-test offset, P19 daytime sun/ambient still too dark (terrain (25,32,25) at 16:24), P20 interior REFR/NIF geometry rendering, P21 logcat ring buffer + log file output, P22 faster world load and auto-start.",
+      "tags": [
+        "issue-plan",
+        "phase67",
+        "planning"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "313dc3a8-ad42-435c-83ee-a915b5110e83",
+      "timestamp": "2026-09-26T21:40:31.513732",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "The emulator logcat ring buffer only holds roughly 20 seconds, so decisive logs are lost during multi-step verification. Set 'adb logcat -G 16M' before a session, and clear with 'adb logcat -c' immediately before the action under test. Terrain and water logs are throttled to every 120 frames (~5-6s at 21 fps), so a 10-12s observation window is the reliable sampling period.",
+      "tags": [
+        "adb",
+        "logcat",
+        "verification",
+        "emulator"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "e28a998c-e6eb-44a4-9d5f-a7389ab84ef4",
+      "timestamp": "2026-09-26T21:40:31.513732",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Emulator interior verification recipe: adb shell monkey -p com.example.oblivion -c android.intent.category.LAUNCHER 1; wait 60-90s for the world load; adb shell input tap 650 794 (New Game, confirm 'Game started!' in the log); adb shell input tap 73 73 (debug panel); the 'Enter Interior Cell' button is btn_debug_interior at [26,896][709,991] (center 367,943) - uiautomator dump to confirm; tap 367 943; verify 'WorldManager: Entered interior cell <id>' plus zero terrain/water logs. Screenshots: adb shell screencap -p /sdcard/x.png then adb pull.",
+      "tags": [
+        "adb",
+        "verification",
+        "interior",
+        "emulator"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 267,
+    "totalEntries": 273,
     "compressedCount": 2,
-    "sessionCount": 26
+    "sessionCount": 27
   }
 }
