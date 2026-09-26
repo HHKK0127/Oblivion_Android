@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-26T22:22:00.222928",
+  "lastUpdated": "2026-09-26T22:31:30",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -3980,10 +3980,26 @@
         "gamestate"
       ],
       "compressed": false
+    },
+    {
+      "id": "29aef880-cb56-4ff8-965f-b2e70a7cb4e8",
+      "timestamp": "2026-09-26T22:31:30",
+      "category": "decision",
+      "priority": "high",
+      "content": "SCDA selector space RESOLVED (2026-09-26, probe_fileorder.py over all 2393 SCPT records): the r / Z / 0x001C selector spaces are ONE table = the record's SCRV/SCRO subrecords in FILE ORDER. Evidence: SCHR[4] == len(SCRV)+len(SCRO) in 2393/2393 records; of 2052 commands with a source ref prefix, the 2020 whose 0x001C is the immediately preceding instruction resolve 2020/2020 (100.0%) to the name the source writes; all 32 mismatches are non-immediate and caused by probe prefix false positives (health / BaseFatigue / GameDaysPassed / onHitWith / scaonactor are actor values, variables, event names). The competing rules previously reported to WS-B - locals-first (745/1106) and first-use order (906/1106) - are WITHDRAWN: they ordered locals by SCTX declaration order instead of SCRV file position. WS-B must keep ONE resolver, resolveReferenceSlot(slot), shared by r, Z and the selector; slot 0 or slot > len(SCRV)+len(SCRO) = explicit opcode+offset error, never a guess. plan.md 292/294 already documented this and now carries the 2020/2020 quantification; plan.md's expression-side fid heading corrected 236 -> 196 to match its own table (196 entries counted).",
+      "tags": [
+        "script-vm",
+        "scda",
+        "selector-space",
+        "file-order",
+        "plan-md",
+        "ws-b"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 277,
+    "totalEntries": 278,
     "compressedCount": 2,
     "sessionCount": 28
   }
