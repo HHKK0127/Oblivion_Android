@@ -1191,6 +1191,31 @@ void ScriptVMTests::testNativeScdaDecoder() {
                getTimeMs38() - start);
     }
 
+    // Test 2b: A six byte Begin payload is the dominant retail shape. The
+    // trailing word and the argument list are optional, so only blockType and
+    // bodyLength are required. Rejecting these dropped 1,556 of 2,393 records.
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> payload;
+        appendU16(payload, 0x0000);  // gamemode
+        appendU16(payload, 0x00db);  // body length
+        appendU16(payload, 0);       // trailing word, no argument list
+
+        std::vector<uint8_t> code;
+        appendInstruction(code, 0x0010, payload);
+        appendInstruction(code, 0x0011, {});
+
+        const NativeDecodeResult result = decodeNativeScda(code);
+        const bool ok = result.success && result.instructions.size() == 2 &&
+                        result.instructions[0].isStructural &&
+                        result.instructions[0].blockType == 0x0000 &&
+                        result.instructions[0].bodyLength == 0x00db &&
+                        result.instructions[1].opcode == 0x0011;
+        record("NativeScda: six byte Begin payload", ok,
+               "Begin accepts the minimal blockType and bodyLength payload",
+               getTimeMs38() - start);
+    }
+
     // Test 3: If expression length must equal payload length minus 4
     {
         const float start = getTimeMs38();

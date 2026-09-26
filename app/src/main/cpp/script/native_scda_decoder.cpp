@@ -804,8 +804,10 @@ bool decodeNativeInstruction(const uint8_t* data, size_t size, uint32_t offset,
     switch (out.opcode) {
         case static_cast<uint16_t>(NativeStructuralOpcode::Begin): {
             out.isStructural = true;
-            if (lengthWord < 8) {
-                error = "Begin payload shorter than 8 bytes";
+            // The payload always carries blockType and bodyLength. The trailing
+            // word and the argument list are optional, so the minimum is 4.
+            if (lengthWord < 4) {
+                error = "Begin payload shorter than 4 bytes";
                 return false;
             }
             out.blockType = readU16(payload);
