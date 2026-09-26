@@ -673,8 +673,11 @@ workstreams that can run at the same time without fighting each other.
   here attributed to WS-C), plus the two CMake/test-runner registrations. **Three of those modified
   paths are the merge blockers** (see the WS-B row): the host-test runner and `CMakeLists.txt` have to
   be settled before `master` can take the branch, and `renderer.cpp` and `run_host_tests.sh` are the
-  other two files `git merge` would refuse to overwrite. A commit request was sent to that session on
-  2026-09-26.
+  other two files `git merge` would refuse to overwrite. That three-path set is measured, not assumed:
+  intersecting `git status --porcelain` with `git diff --name-only master...hhkk0127-script-vm-expansion`
+  (32 paths) yields exactly `CMakeLists.txt`, `engine/renderer.cpp` and `run_host_tests.sh`, and none of
+  the four untracked files collides with a path the merge adds. A commit request was sent to that
+  session on 2026-09-26.
 - **`.github/workflows/android.yml` has been pre-validated against the real project so the first CI run is not a debugging session.** Three mismatches were found and fixed: the workflow set up JDK 17 while `gradle/gradle-daemon-jvm.properties` pins `toolchainVersion=21`, so the daemon JVM criteria could not be satisfied; `ndkVersion` was not pinned anywhere, leaving AGP free to resolve a different NDK than the one the workflow installs (it is now `26.1.10909125` in `app/build.gradle`, matching AGP 8.5's default and the local SDK, verified with a successful `assembleDebug`); and `cmake;3.22.1` — which AGP 8.5 requires and will not substitute — is now installed explicitly alongside the NDK, after `sdkmanager --licenses`. The workflow's version-consistency gate was also run locally and passes: `versionName=0.9.10` derives `versionCode=910`. The remaining unverified parts are the GitHub-hosted runner itself and the native build time for 3 ABIs, which the 60-minute timeout covers. The first run has since happened (`d94317bc`, run 35884733212, 6m23s, green), which confirms the pre-validation: the JDK 21, NDK and CMake pins were all correct and the first green run needed no workflow fix
 - **WS-B can start as a separate worktree session.** A worktree
   session branches off committed `master`, and `master` now carries the verified project
