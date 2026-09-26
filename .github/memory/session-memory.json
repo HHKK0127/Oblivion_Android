@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-26T23:54:00+09:00",
+  "lastUpdated": "2026-09-27T00:01:33+09:00",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -4485,10 +4485,26 @@
         "plan-verification"
       ],
       "compressed": false
+    },
+    {
+      "id": "ws-b-tip-census-20260926-a7f3c21d",
+      "timestamp": "2026-09-27T00:01:33+09:00",
+      "category": "reference",
+      "priority": "high",
+      "content": "SCDA census of the WS-B branch tip (2026-09-26, verified without merging: the decoder includes only its own header and <cstring>, so a git-show blob plus a small driver links against this session's Oblivion3.esm). At hhkk0127-script-vm-expansion: scdaBlocks 2393 / decodeFail 0 / instr 65628 / framingFail 0. At 51248b09^: decodeFail 1556 / instr 9466. So the plan's earlier 'framingFail 2' and 'decodeFail 1556' were two commits stale; 1,556 of 2,393 records (65.0%) failed to decode before the fix. Per-instruction walk: at 51248b09^ exactly 1,931 instructions fail and all report 0x0010 lengthWord 6 as 'Begin payload shorter than 8 bytes'; the tip fails none. 1,931 equals the lw=6 row of the Begin shape histogram {6:1931, 8:1377, 10:6, 11:994, 13:36} (4,344 blocks, independently reproduced), so the whole recovery is commit 80f02472 (Begin guard 8 -> 4 bytes) and NOT the MessageBox marker fix 51248b09 (which is real - 48/48 buttons carry the leading 1 - but did not move the count). 0x114D is confirmed to exist in Oblivion3.esm: 4 payloads, MartinScript off 254, MQ14Script off 556, JauffreScript off 159, MQ13Script off 358, all [u16 1][u16 len][text][u16 value][u16 0], walk consumes the SCDA exactly at all four (WS-B's '0 of them in Oblivion3.esm' was measured against pre-80f02472 code/master). Begin block-end law: with bodyLength = u16 at instruction offset + 6, the closing 0x0011 sits at begin.offset + lengthWord + bodyLength in 4,344 / 4,344 blocks with no exception, and (begin.offset + 8 + bodyLength) - end is exactly 8 - lengthWord (+2 x1931, 0 x1377, -2 x6, -3 x994, -5 x36). The +8 form is only the lengthWord == 8 special case (1,377 of 4,344 = 31.7%); the body after the Begin instruction is bodyLength - 4 bytes.",
+      "tags": [
+        "scda",
+        "census",
+        "ws-b",
+        "begin",
+        "0x114d",
+        "verification"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 312,
+    "totalEntries": 313,
     "compressedCount": 2,
     "sessionCount": 28
   }
