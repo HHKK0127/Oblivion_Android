@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-26T13:59:46Z",
+  "lastUpdated": "2026-09-26T14:03:38Z",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -4159,10 +4159,38 @@
         "plan-md"
       ],
       "compressed": false
+    },
+    {
+      "id": "removescriptpackage-0x1098-no-package-arg-20260926",
+      "category": "reference",
+      "priority": "high",
+      "content": "0x1098 RemoveScriptPackage has an empty payload in all 7 SCPT occurrences (argLength 0). The call target comes from a preceding 0x001C whose lengthWord is the slot (len=1 in both SEXiditteArbiterButtonSCRIPT @167 and SEXiditteArbiterTrapSCRIPT02 @65, len=5 in MS38Script @411), but 4 of the 7 have no 0x001C at all (preceded by 0x0016 or 0x1059: KurtTestMagicEffect2 @146, MS22SrazirrScript @79, MS45DarMaScript @328), so a decoder must not require the selector and must fall back to the calling reference. The package name (SEXiditteArbiterTrapPKG) never appears in the bytecode: the compiler resolves and drops it. Probe: probe_rmpkg.py / rmpkg.txt.",
+      "tags": [
+        "script",
+        "scda",
+        "opcode",
+        "0x1098",
+        "removeScriptPackage"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "axis-byte-one-byte-statement-stream-20260926",
+      "category": "reference",
+      "priority": "high",
+      "content": "The axis byte (0x58 X / 0x59 Y / 0x5A Z) is one byte in statement and nested argument operands; the five-byte X form belongs to the expression stream only and must never be reused at argument position. probe_axis.py over the full SCPT corpus: with the four text opcodes excluded, 9,574 non-empty statement payloads remain and all 9,574 are consumed exactly by the one-byte rule; only 20 axis bytes reach an argument position (0x58 x3, 0x59 x4, 0x5A x13) and each has a typed value token behind it (SE39ObjectScript [u16 2][0x58][0x66 03 00] at @1110 = source set posX to getPos X). Expression payloads cannot be measured with a token walk (3,383 of 6,234 X-bearing payloads frame under neither reading) because they carry ASCII operators, so a decoder keeps one table per stream. Files: probe_axis.py / axis2.txt.",
+      "tags": [
+        "script",
+        "scda",
+        "token",
+        "axis",
+        "expression"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 289,
+    "totalEntries": 291,
     "compressedCount": 2,
     "sessionCount": 28
   }
