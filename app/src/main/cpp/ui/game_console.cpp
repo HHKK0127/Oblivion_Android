@@ -663,6 +663,14 @@ void GameConsole::registerBuiltinCommands() {
         if (gameRefs.teleportToCell) gameRefs.teleportToCell(cx, cz);
         print("Teleported to cell (" + args[1] + ", " + args[2] + ")");
     });
+    registerCommand("teleportinterior", "Enter an interior cell: teleportinterior [name]", [this](const std::vector<std::string>& args) {
+        if (!gameRefs.teleportToInterior) {
+            print("Interior teleport not available");
+            return;
+        }
+        const std::string query = args.size() >= 2 ? args[1] : std::string();
+        print(gameRefs.teleportToInterior(query));
+    });
     registerCommand("moverel", "Move relative: moverel <dx> <dz>", [this](const std::vector<std::string>& args) {
         if (args.size() < 3) {
             print("Usage: moverel <dx> <dz>");

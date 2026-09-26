@@ -12,6 +12,7 @@
 
 #include <glm/glm.hpp>
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <limits>
@@ -1035,6 +1036,42 @@ bool Renderer::initGameSystems() {
             LOGI("Teleported to cell (%d, %d)", cx, cz);
         }
         if (worldManager) worldManager->loadCell(cx, cz);
+    };
+    refs.teleportToInterior = [this](const std::string& query) -> std::string {
+        if (!worldManager) return "World manager not available";
+        const oblivion::ESMManager* esm = assetManager ? &assetManager->getEsmManager() : nullptr;
+        if (!esm) return "ESM manager not available";
+
+        // Pick the first interior cell whose editorID or full name contains the
+        // query (case-insensitive). An empty query takes the first interior cell
+        // in the ESM, which is enough to exercise the interior render paths.
+        std::string needle = query;
+        for (char& c : needle) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+
+        const oblivion::CellData* chosen = nullptr;
+        for (const auto& cell : esm->getAllCells()) {
+            if (cell.isExterior) continue;
+            if (needle.empty()) { chosen = &cell; break; }
+            std::string hay = cell.editorID + " " + cell.fullName;
+            for (char& c : hay) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+            if (hay.find(needle) != std::string::npos) { chosen = &cell; break; }
+        }
+        if (!chosen) {
+            return query.empty() ? "No interior cells in the ESM"
+                                 : "No interior cell matching '" + query + "'";
+        }
+
+        auto cell = worldManager->enterInteriorCell(chosen->formID, chosen->editorID,
+                                                    chosen->fullName);
+        if (!cell) return "Failed to enter interior cell";
+
+        // Park the player at the cell origin. Interior references are cell
+        // relative, so the origin is the natural anchor until interior geometry
+        // is placed.
+        if (playerController) playerController->setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+        worldManager->setPlayerPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+        return "Entered interior: " + cell->cellName + " (0x" +
+               std::to_string(chosen->formID) + ")";
     };
 
     // Phase 67: Performance monitoring callbacks
@@ -3704,9 +3741,9 @@ void Renderer::render(float deltaTime) {
         // for exteriors, or a dark neutral tone for interiors (which have no sky).
         bool playerIndoors = false;
         if (worldManager) {
-            if (auto playerCell = worldManager->getCellAt(worldManager->getPlayerPosition())) {
-                playerIndoors = (playerCell->cellType != CellType::EXTERIOR);
-            }
+            // Interior cells have no grid coordinate, so getCellAt() cannot
+            // find them; ask the manager directly (P15).
+            playerIndoors = worldManager->isPlayerIndoors();
         }
         if (skyWeatherSystem && !playerIndoors) {
             float skyR, skyG, skyB;
@@ -4489,10 +4526,10 @@ void Renderer::renderSkyDome() {
     // (houses, caves, ruins) have their own ceiling geometry and must not show
     // the outdoor sky, so skip the dome whenever the player is indoors.
     if (worldManager) {
-        if (auto playerCell = worldManager->getCellAt(worldManager->getPlayerPosition())) {
-            if (playerCell->cellType != CellType::EXTERIOR) {
-                return;
-            }
+        // Interior cells have no grid coordinate, so getCellAt() cannot find
+        // them; ask the manager directly (P15).
+        if (worldManager->isPlayerIndoors()) {
+            return;
         }
     }
 

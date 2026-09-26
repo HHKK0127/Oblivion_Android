@@ -387,6 +387,11 @@ class MainActivity : Activity() {
                 Log.d(TAG, "Executed: noclip")
             }
 
+            findViewById<Button>(R.id.btn_debug_interior)?.setOnClickListener {
+                gameRenderer?.nativeExecuteConsoleCommand("teleportinterior")
+                Log.d(TAG, "Executed: teleportinterior")
+            }
+
             Log.i(TAG, "Debug buttons setup complete")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to setup debug buttons: ${e.message}", e)

@@ -201,6 +201,9 @@ public:
         std::function<void(float, float)> movePlayerRelative;
         std::function<std::string()> listNearbyCells;
         std::function<void(int32_t, int32_t)> teleportToCell;
+        // Phase 66 P15: enter a real interior cell so the interior sky/water
+        // suppression paths can be exercised in game.
+        std::function<std::string(const std::string&)> teleportToInterior;
 
         // Phase 67: Performance monitoring
         std::function<std::string()> getPerformanceStats;

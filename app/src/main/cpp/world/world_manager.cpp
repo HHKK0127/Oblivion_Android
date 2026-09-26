@@ -543,6 +543,44 @@ std::shared_ptr<Cell> WorldManager::addCellFromESM(int32_t cellX, int32_t cellY,
     return cell;
 }
 
+std::shared_ptr<Cell> WorldManager::enterInteriorCell(uint32_t tesFormID,
+                                                      const std::string& editorID,
+                                                      const std::string& fullName) {
+    if (tesFormID == 0) return nullptr;
+
+    // Re-entering the same interior reuses the existing cell.
+    if (auto existing = getCellByFormID(tesFormID)) {
+        currentCell = existing;
+        return existing;
+    }
+
+    uint32_t cellId = nextCellId++;
+    std::string name = fullName.empty() ? editorID : fullName;
+    if (name.empty()) name = "Interior_" + std::to_string(tesFormID);
+
+    // Interior cells carry no grid coordinate. createCell() would register a
+    // (0,0) coordinate for them, which would collide with the real exterior
+    // cell at that square, so build the cell directly and key it by FormID.
+    auto cell = std::make_shared<Cell>();
+    cell->cellId = cellId;
+    cell->cellX = 0;
+    cell->cellY = 0;
+    cell->cellName = name;
+    cell->editorID = editorID;
+    cell->tesFormID = tesFormID;
+    cell->worldspaceFormID = 0;
+    cell->cellType = CellType::INTERIOR;
+    cell->loadState = CellLoadState::LOADED;
+
+    cells[cellId] = cell;
+    formIdToCellId[tesFormID] = cellId;
+    currentCell = cell;
+
+    LOGI_WORLD("Entered interior cell %u (0x%08X) '%s'", cellId, tesFormID,
+               name.c_str());
+    return cell;
+}
+
 void WorldManager::clearAllCells() {
     activeCells.clear();
     currentCell.reset();

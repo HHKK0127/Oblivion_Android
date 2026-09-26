@@ -100,6 +100,14 @@ public:
     // ========================================================================
 
     std::shared_ptr<Cell> getCurrentCell() const { return currentCell; }
+
+    // Phase 66 P15: true when the player is inside an interior cell. Interior
+    // cells have no grid coordinate, so getCellAt(playerPosition) cannot find
+    // them; the renderer must ask this instead to suppress sky, water and
+    // terrain fog while indoors.
+    bool isPlayerIndoors() const {
+        return currentCell && currentCell->cellType != CellType::EXTERIOR;
+    }
     std::shared_ptr<Cell> getCellAt(const glm::vec3& worldPos);
     std::shared_ptr<Cell> getCellById(uint32_t cellId);
     std::shared_ptr<Cell> getCellByCoord(int32_t cellX, int32_t cellY);
@@ -112,6 +120,15 @@ public:
 
     // Find cell by TES FormID (ESM formID)
     std::shared_ptr<Cell> getCellByFormID(uint32_t tesFormID) const;
+
+    // Phase 66 P15: register an interior cell and make it the player's current
+    // cell. Interior cells have no grid coordinate, so they are keyed by their
+    // TES FormID instead of a (cellX, cellY) pair. This is what makes the
+    // renderer's interior sky/water suppression paths reachable in game; the
+    // normal world build deliberately skips interiors.
+    std::shared_ptr<Cell> enterInteriorCell(uint32_t tesFormID,
+                                            const std::string& editorID,
+                                            const std::string& fullName);
 
     // Get all NPCs in a specific cell
     std::vector<NPC*> getNpcsInCell(uint32_t cellId);

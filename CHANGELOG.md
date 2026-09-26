@@ -74,6 +74,18 @@ The current version is **0.9.10 (versionCode 910)**.
   the longer ceiling costs no wall clock time.
 
 ### Fixed
+- **Interior cells were unreachable, leaving the interior render paths dead**: the world build
+  deliberately skips interior cells (`WorldManager::addCellFromESM()` returns `nullptr` for
+  them, and the emulator log confirms `1855 interior skipped`), so the player could never enter
+  one. That made the renderer's interior suppression - the dark clear colour, the skipped water
+  pass, the skipped sky dome and the exterior-only terrain fog - unreachable code. A new
+  `teleportinterior [name]` console command registers an interior cell on demand through
+  `WorldManager::enterInteriorCell()`, which keys the cell by its TES FormID (interiors have no
+  grid coordinate) and makes it current. Because `getCellAt(playerPosition)` cannot find a
+  coordinate-less cell, the renderer's "am I indoors" checks now call the new
+  `WorldManager::isPlayerIndoors()`, so the suppression actually fires. A new
+  `InteriorCellTests` host suite covers registration, FormID lookup, re-entry reuse and the
+  indoors predicate.
 - **Weather transitions finished in a fraction of their configured duration**:
   `SkyWeatherSystem::setWeather()` lerped the live `currentWeather_` toward `targetWeather_`
   by the absolute progress `t` on every frame. Because the source of each lerp was the
