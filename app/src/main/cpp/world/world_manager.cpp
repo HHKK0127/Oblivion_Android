@@ -361,11 +361,33 @@ size_t WorldManager::getTotalMemoryUsage() const {
 }
 
 void WorldManager::logWorldStatus() const {
-    size_t totalMemory = getTotalMemoryUsage();
+    // Called from updateActiveCells() every 0.5 s. A full line at that rate buried
+    // every other message in logcat, so only speak up when something a reader cares
+    // about has moved, with a heartbeat (about every 30 s) for the steady case.
+    constexpr uint32_t kHeartbeatTicks = 60;   // 60 calls * 0.5 s
+
+    const size_t activeCount = activeCells.size();
+    const uint32_t day = worldState.dayCount;
+    const int hour = static_cast<int>(worldState.timeOfDay);
+
+    ++statusLogTicks;
+    const bool moved = activeCount != statusLogActiveCells || day != statusLogDay ||
+                       hour != statusLogHour;
+    if (!moved && statusLogTicks < kHeartbeatTicks) {
+        return;
+    }
+
+    statusLogActiveCells = activeCount;
+    statusLogDay = day;
+    statusLogHour = hour;
+    statusLogTicks = 0;
+
+    // Only walk every cell for the memory figure when the line is actually emitted.
+    const size_t totalMemory = getTotalMemoryUsage();
     LOGD_WORLD("World Status: %zu cells, %zu active, Memory: %.2f MB, Day: %u, Time: %.1f",
-               cells.size(), activeCells.size(),
+               cells.size(), activeCount,
                static_cast<float>(totalMemory) / (1024.0f * 1024.0f),
-               worldState.dayCount, worldState.timeOfDay);
+               day, worldState.timeOfDay);
 }
 
 // ============================================================================

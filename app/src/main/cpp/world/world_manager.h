@@ -245,6 +245,15 @@ private:
     float cellUnloadRadius;
     float loadUpdateTimer;                  // Batch update every N seconds
 
+    // logWorldStatus() throttling. updateActiveCells() calls it every 0.5 s, which
+    // used to emit two full status lines per second and bury everything else in
+    // logcat. Speak up only when one of these values moves, plus a slow heartbeat so
+    // a steady state still leaves a trace. Mutable because logWorldStatus() is const.
+    mutable size_t statusLogActiveCells = static_cast<size_t>(-1);
+    mutable uint32_t statusLogDay = static_cast<uint32_t>(-1);
+    mutable int statusLogHour = -1;
+    mutable uint32_t statusLogTicks = 0;
+
     // Counters
     uint32_t nextCellId;
     uint32_t nextWorldItemId;  // For unique WorldItem IDs
