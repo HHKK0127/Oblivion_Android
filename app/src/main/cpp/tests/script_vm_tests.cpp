@@ -1551,6 +1551,73 @@ void ScriptVMTests::testNativeScdaDecoder() {
                getTimeMs38() - start);
     }
 
+    // Test 10e: a real message whose tail word is not zero
+    {
+        const float start = getTimeMs38();
+        // Payload taken verbatim from Oblivion3.esm: "The lever is stuck and
+        // will not budge." carries a nonzero tail word of 5.
+        const char* hex =
+            "01002600546865206c6576657220697320737475636b20616e642077696c6c20"
+            "6e6f742062756467652e000005000000";
+        std::vector<uint8_t> payload;
+        for (size_t i = 0; hex[i] != '\0' && hex[i + 1] != '\0'; i += 2) {
+            const auto nibble = [](char c) -> uint8_t {
+                if (c >= '0' && c <= '9') {
+                    return static_cast<uint8_t>(c - '0');
+                }
+                return static_cast<uint8_t>(c - 'a' + 10);
+            };
+            payload.push_back(static_cast<uint8_t>((nibble(hex[i]) << 4) |
+                                                   nibble(hex[i + 1])));
+        }
+
+        std::vector<uint8_t> code;
+        appendInstruction(code, 0x1059, payload);
+
+        const NativeDecodeResult result = decodeNativeScda(code);
+        const bool ok = result.success && result.instructions.size() == 1 &&
+                        !result.instructions[0].framingFailed &&
+                        result.instructions[0].text ==
+                            "The lever is stuck and will not budge." &&
+                        result.instructions[0].formatArgumentCount == 0;
+        record("NativeScda: Message nonzero tail", ok,
+               "A message with a nonzero tail word still frames exactly",
+               getTimeMs38() - start);
+    }
+
+    // Test 10f: a real message whose format count word undercounts
+    {
+        const float start = getTimeMs38();
+        // Payload taken verbatim from Oblivion3.esm: the format count word is
+        // 1 but two tokens follow, so the token list is walked greedily.
+        const char* hex =
+            "01002f0044454255473a2056616c656e204472657468206c61737420696e666f"
+            "2c20636f6e7654696d657220746f20252e32660100720100660a0000000000";
+        std::vector<uint8_t> payload;
+        for (size_t i = 0; hex[i] != '\0' && hex[i + 1] != '\0'; i += 2) {
+            const auto nibble = [](char c) -> uint8_t {
+                if (c >= '0' && c <= '9') {
+                    return static_cast<uint8_t>(c - '0');
+                }
+                return static_cast<uint8_t>(c - 'a' + 10);
+            };
+            payload.push_back(static_cast<uint8_t>((nibble(hex[i]) << 4) |
+                                                   nibble(hex[i + 1])));
+        }
+
+        std::vector<uint8_t> code;
+        appendInstruction(code, 0x1059, payload);
+
+        const NativeDecodeResult result = decodeNativeScda(code);
+        const bool ok = result.success && result.instructions.size() == 1 &&
+                        !result.instructions[0].framingFailed &&
+                        result.instructions[0].formatArgumentCount == 2 &&
+                        result.instructions[0].formatTokens.size() == 2;
+        record("NativeScda: Message format count undercount", ok,
+               "A message whose count word undercounts still frames exactly",
+               getTimeMs38() - start);
+    }
+
     // Test 10d: a real tombstone message with two buttons
     {
         const float start = getTimeMs38();

@@ -341,6 +341,34 @@ bool readTokenBlock(const uint8_t* payload, uint32_t size, uint32_t& cursor,
     return true;
 }
 
+// Decodes the format argument block of the message commands. The stored count
+// word undercounts in a few retail records, so the token list is walked until
+// only the four byte tail remains and the count is reported as the number of
+// tokens actually read.
+bool readGreedyTokenBlock(const uint8_t* payload, uint32_t size,
+                          uint32_t& cursor, std::vector<NativeToken>& tokens,
+                          uint16_t& count, std::string& error) {
+    tokens.clear();
+    count = 0;
+    if (cursor + 2 > size) {
+        error = "truncated token block count";
+        return false;
+    }
+
+    cursor += 2;
+    while (cursor + 4 < size) {
+        NativeToken token;
+        if (!decodeToken(payload, size, cursor, false, token)) {
+            error = "truncated token block token";
+            return false;
+        }
+        cursor += token.length;
+        tokens.push_back(token);
+    }
+    count = static_cast<uint16_t>(tokens.size());
+    return true;
+}
+
 // Decodes [u16 byteLength][bytes]. The stored length counts the bytes that
 // follow, and the text keeps only the part before the terminating NUL.
 bool readNativeString(const uint8_t* payload, uint32_t size, uint32_t& cursor,
@@ -405,12 +433,14 @@ bool decodeStringCommand(uint16_t opcode, const uint8_t* payload, uint32_t size,
             }
             break;
         }
-        case 0x1059: {  // Message: text, format arguments, u32 0
-            if (!readTokenBlock(payload, size, cursor, out.formatTokens,
-                                out.formatArgumentCount, error)) {
+        case 0x1059: {  // Message: text, format arguments, u16 value, u16 0
+            // The format count word undercounts in a few records, so the token
+            // list is walked greedily until the four byte tail remains.
+            if (!readGreedyTokenBlock(payload, size, cursor, out.formatTokens,
+                                      out.formatArgumentCount, error)) {
                 return false;
             }
-            if (cursor + 4 != size || readU32(payload + cursor) != 0) {
+            if (cursor + 4 != size || readU16(payload + cursor + 2) != 0) {
                 error = "message payload is not terminated by a zero word";
                 return false;
             }
