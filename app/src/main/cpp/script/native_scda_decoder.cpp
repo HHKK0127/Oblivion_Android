@@ -701,6 +701,7 @@ std::string getNativeOpcodeName(uint16_t opcode) {
         case 0x10DE: return "CloseOblivionGate";
         case 0x10DF: return "IsSpellTarget";
         case 0x10E0: return "GetIsPlayerBirthsign";
+        case 0x10E3: return "GetPCIsSex";
         case 0x10E7: return "SetInChargen";
         case 0x10E8: return "GetCombatTarget";
         case 0x10EA: return "ShowSpellmaking";
@@ -716,6 +717,8 @@ std::string getNativeOpcodeName(uint16_t opcode) {
         case 0x10F9: return "GetPCFame";
         case 0x10FA: return "ModPCInfamy";
         case 0x10FB: return "GetPCInfamy";
+        case 0x10FC: return "SetPCFame";
+        case 0x10FD: return "SetPCInfamy";
         case 0x10FE: return "GetIsPlayableRace";
         case 0x1100: return "GetGameSetting";
         case 0x1101: return "SCAOnActor";
@@ -751,6 +754,7 @@ std::string getNativeOpcodeName(uint16_t opcode) {
         case 0x1132: return "ANGA";
         case 0x1133: return "SetLevel";
         case 0x1134: return "ResetFallDamageTimer";
+        case 0x1135: return "IsXBox";
         case 0x1136: return "GetInWorldspace";
         case 0x1137: return "ModPCMiscStat";
         case 0x1138: return "GetPCMiscStat";
@@ -773,6 +777,7 @@ std::string getNativeOpcodeName(uint16_t opcode) {
         case 0x1158: return "ReleaseWeatherOverride";
         case 0x1159: return "SetAllReachable";
         case 0x115A: return "SetAllVisible";
+        case 0x115B: return "SetNoAvoidance";
         case 0x115C: return "SendTrespassAlarm";
         case 0x115D: return "SetSceneIsComplex";
         case 0x115E: return "Autosave";

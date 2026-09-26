@@ -1814,7 +1814,13 @@ void ScriptVMTests::testNativeScdaDecoder() {
                         getNativeOpcodeName(0x1048) == "GetIsID" &&
                         getNativeOpcodeName(0x1113) == "GetParentRef" &&
                         getNativeOpcodeName(0x1121) == "IsInCombat" &&
-                        getNativeOpcodeName(0x1100) == "GetGameSetting";
+                        getNativeOpcodeName(0x1100) == "GetGameSetting" &&
+                        getNativeOpcodeName(0x1076) == "ModCrimeGold" &&
+                        getNativeOpcodeName(0x1135) == "IsXBox" &&
+                        getNativeOpcodeName(0x10E3) == "GetPCIsSex" &&
+                        getNativeOpcodeName(0x10FC) == "SetPCFame" &&
+                        getNativeOpcodeName(0x10FD) == "SetPCInfamy" &&
+                        getNativeOpcodeName(0x115B) == "SetNoAvoidance";
         record("NativeScda: expression function names", ok,
                "The expression side function ids resolve to their command names",
                getTimeMs38() - start);
