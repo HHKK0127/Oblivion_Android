@@ -1782,14 +1782,51 @@ void ScriptVMTests::testNativeScdaDecoder() {
                getTimeMs38() - start);
     }
 
-    // Test 18: Set with a two token target, taken from MQ04.convtimer
+    // Test 18: the remote Set form, taken from SEHaskillSummonQuestScript.
+    // The payload is [0x72][u16 refSlot][type][u16 remoteVarIndex][u16 elen][expr]
+    // and the remote variable index belongs to the target script's SLSD table.
     {
         const float start = getTimeMs38();
         std::vector<uint8_t> payload;
-        payload.push_back('r');
-        appendU16(payload, 1);   // MQ04
+        payload.push_back(NATIVE_SCDA_REMOTE_SET_CHAR);
+        appendU16(payload, 1);   // reference slot 1
+        payload.push_back('f');  // remote variable type
+        appendU16(payload, 0x000B);
+        appendU16(payload, 2);   // expression length
+        payload.push_back(0x20);
+        payload.push_back('1');
+
+        std::vector<uint8_t> code;
+        appendInstruction(code, 0x0015, payload);
+
+        const NativeDecodeResult result = decodeNativeScda(code);
+        const bool ok = result.success && result.instructions.size() == 1 &&
+                        !result.instructions[0].framingFailed &&
+                        result.instructions[0].tokens.size() == 1 &&
+                        result.instructions[0].tokens[0].kind == NativeTokenKind::Variable &&
+                        result.instructions[0].tokens[0].typeChar == 'f' &&
+                        result.instructions[0].tokens[0].index == 0x000B &&
+                        result.instructions[0].expressionDecoded &&
+                        result.instructions[0].expressionTokens.size() == 1 &&
+                        result.instructions[0].expressionTokens[0].kind ==
+                            NativeTokenKind::Text &&
+                        result.instructions[0].expressionTokens[0].text == "1";
+        record("NativeScda: remote Set target", ok,
+               "Set resolves a remote variable target and its expression",
+               getTimeMs38() - start);
+    }
+
+    // Test 18b: a local Set whose target is a reference member. The local form
+    // starts with the target's type char, and the measured local type chars are
+    // only f, s and G, so a reference member target is written as a reference
+    // variable followed by the member variable.
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> payload;
         payload.push_back('f');
-        appendU16(payload, 8);   // convtimer
+        appendU16(payload, 3);   // local reference variable
+        payload.push_back('f');
+        appendU16(payload, 8);   // member variable
         appendU16(payload, 2);   // expression length
         payload.push_back(0x20);
         payload.push_back('1');
@@ -1801,16 +1838,11 @@ void ScriptVMTests::testNativeScdaDecoder() {
         const bool ok = result.success && result.instructions.size() == 1 &&
                         !result.instructions[0].framingFailed &&
                         result.instructions[0].tokens.size() == 2 &&
-                        result.instructions[0].tokens[0].kind == NativeTokenKind::Variable &&
-                        result.instructions[0].tokens[0].typeChar == 'r' &&
-                        result.instructions[0].tokens[0].index == 1 &&
+                        result.instructions[0].tokens[0].typeChar == 'f' &&
+                        result.instructions[0].tokens[0].index == 3 &&
                         result.instructions[0].tokens[1].typeChar == 'f' &&
                         result.instructions[0].tokens[1].index == 8 &&
-                        result.instructions[0].expressionDecoded &&
-                        result.instructions[0].expressionTokens.size() == 1 &&
-                        result.instructions[0].expressionTokens[0].kind ==
-                            NativeTokenKind::Text &&
-                        result.instructions[0].expressionTokens[0].text == "1";
+                        result.instructions[0].expressionDecoded;
         record("NativeScda: Set two token target", ok,
                "Set resolves a reference member target and its expression",
                getTimeMs38() - start);
@@ -1820,8 +1852,6 @@ void ScriptVMTests::testNativeScdaDecoder() {
     {
         const float start = getTimeMs38();
         std::vector<uint8_t> payload;
-        payload.push_back('r');
-        appendU16(payload, 1);   // MQ04
         payload.push_back('f');
         appendU16(payload, 7);   // speaker
         appendU16(payload, 4);   // expression length
@@ -2655,6 +2685,70 @@ void ScriptVMTests::testNativeScdaVm() {
                         vm.getGlobal(0x2345).toInt() == 11;
         record("NativeVm: global variable", ok,
                "Set writes a global variable addressed by its FormID",
+               getTimeMs38() - start);
+    }
+
+    // Test 21b: the remote form of Set writes a variable of another script.
+    // Its payload starts with 0x72 and places the expression length after the
+    // remote variable index, so the local length equation must not be applied.
+    // 0x72 is also the type char of a reference variable, so the local reading
+    // is tried first and the remote reading is the fallback.
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> body;
+        std::vector<uint8_t> payload;
+        payload.push_back(NATIVE_SCDA_REMOTE_SET_CHAR);
+        appendU16(payload, 1);          // reference slot 1
+        payload.push_back('f');         // remote variable type
+        appendU16(payload, 0x000B);     // remote variable index
+        const std::vector<uint8_t> expression = textExpression({"0"});
+        appendU16(payload, static_cast<uint16_t>(expression.size()));
+        payload.insert(payload.end(), expression.begin(), expression.end());
+        appendInstruction(body, 0x0015, payload);
+
+        std::vector<uint8_t> code;
+        appendBeginBlock(code, 0x0000, body);
+
+        const NativeDecodeResult program = decodeNativeScda(code);
+        const bool framed = program.instructions.size() == 3 &&
+                            !program.instructions[1].framingFailed &&
+                            program.instructions[1].tokens.size() == 1 &&
+                            program.instructions[1].tokens[0].index == 0x000B &&
+                            program.instructions[1].expressionDecoded;
+        record("NativeDecoder: remote Set", framed,
+               "A 0x72 Set payload frames as [refSlot][type][varIndex][elen][expr]",
+               getTimeMs38() - start);
+    }
+
+    // Test 21c: a payload that starts with 0x72 is always the remote form, even
+    // when the local two token reading would also satisfy the length equation.
+    // The remote variable index belongs to the target script's SLSD table, so
+    // the local reading is never taken for a 0x72 payload.
+    {
+        const float start = getTimeMs38();
+        std::vector<uint8_t> body;
+        std::vector<uint8_t> payload;
+        payload.push_back(NATIVE_SCDA_REMOTE_SET_CHAR);
+        appendU16(payload, 1);
+        payload.push_back('f');
+        appendU16(payload, 8);
+        const std::vector<uint8_t> expression = textExpression({"1"});
+        appendU16(payload, static_cast<uint16_t>(expression.size()));
+        payload.insert(payload.end(), expression.begin(), expression.end());
+        appendInstruction(body, 0x0015, payload);
+
+        std::vector<uint8_t> code;
+        appendBeginBlock(code, 0x0000, body);
+
+        const NativeDecodeResult program = decodeNativeScda(code);
+        const bool framed = program.instructions.size() == 3 &&
+                            !program.instructions[1].framingFailed &&
+                            program.instructions[1].tokens.size() == 1 &&
+                            program.instructions[1].tokens[0].typeChar == 'f' &&
+                            program.instructions[1].tokens[0].index == 8 &&
+                            program.instructions[1].expressionDecoded;
+        record("NativeDecoder: remote Set wins", framed,
+               "A 0x72 Set payload reads as the remote form, not a local target pair",
                getTimeMs38() - start);
     }
 

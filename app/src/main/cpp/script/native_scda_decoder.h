@@ -79,6 +79,15 @@ namespace script {
 // referenced form. All 20 vanilla occurrences were confirmed against SCTX.
 constexpr uint8_t NATIVE_SCDA_REFERENCE_LITERAL_CHAR = 0x5A;
 
+// The remote form of Set writes a variable that belongs to another script:
+//   [u8 0x72][u16 refSlot][u8 type][u16 remoteVarIndex][u16 elen][expr]
+// The local form has no such prefix and places elen right after the target
+// token. 0x72 is also the type char of a reference variable, so a local Set
+// whose first target is a reference starts with the same byte and both readings
+// can satisfy the length equation; the remote reading wins whenever the payload
+// starts with 0x72.
+constexpr uint8_t NATIVE_SCDA_REMOTE_SET_CHAR = 0x72;
+
 // Structural opcodes. These are the only opcodes whose payload is interpreted
 // by the decoder itself rather than treated as an opaque argument blob.
 enum class NativeStructuralOpcode : uint16_t {

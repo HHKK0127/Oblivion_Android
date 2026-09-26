@@ -787,12 +787,42 @@ bool decodeNativeInstruction(const uint8_t* data, size_t size, uint32_t offset,
         }
         case static_cast<uint16_t>(NativeStructuralOpcode::Set): {
             out.isStructural = true;
-            // Set stores no target count. The target is one token, or two when
-            // the statement writes a member of a reference, and the length
-            // equation resolves it: exactly one reading makes
+            // Set has two payload shapes. The remote shape writes a variable of
+            // another script:
+            //   [u8 0x72][u16 refSlot][u8 type][u16 remoteVarIndex][u16 elen][expr]
+            // The local shape stores no target count. Its target is one token,
+            // or two when the statement writes a member of a reference, and the
+            // length equation resolves it: exactly one reading makes
             // targetBytes + 2 + expressionLength equal the payload length.
             // Targets are always variables, which rejects the reading that
             // would swallow the first expression operand as a second target.
+            //
+            // 0x72 is also the type char of a reference variable, so a local Set
+            // whose first target is a reference starts with the same byte and
+            // both readings can satisfy the length equation. The remote reading
+            // therefore wins whenever the payload starts with 0x72, which is the
+            // only reading that keeps the remote variable index and its type
+            // char together.
+            if (lengthWord >= 8 && payload[0] == NATIVE_SCDA_REMOTE_SET_CHAR) {
+                const uint16_t expressionLength = readU16(payload + 6);
+                if (expressionLength != 0 &&
+                    static_cast<uint32_t>(expressionLength) + 8 == lengthWord) {
+                    NativeToken target;
+                    target.kind = NativeTokenKind::Variable;
+                    target.offset = 1;
+                    target.length = 2;
+                    target.typeChar = static_cast<char>(payload[3]);
+                    target.index = readU16(payload + 4);
+                    out.tokens.push_back(target);
+                    out.declaredArgumentCount = 1;
+                    out.expression.assign(payload + 8, payload + lengthWord);
+                    std::string remoteExpressionError;
+                    out.expressionDecoded = decodeExpressionTokens(
+                        payload + 8, expressionLength, out.expressionTokens,
+                        remoteExpressionError);
+                    break;
+                }
+            }
             bool framed = false;
             for (uint16_t targetCount = 2; targetCount >= 1 && !framed; --targetCount) {
                 uint32_t cursor = 0;
