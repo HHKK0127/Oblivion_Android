@@ -82,10 +82,8 @@ bool NativeScdaVm::hasExpressionFunction(uint16_t opcode) const {
     return expressionFunctions_.find(opcode) != expressionFunctions_.end();
 }
 
-void NativeScdaVm::setReferences(const std::vector<uint32_t>& scroRefs,
-                                 uint16_t localRefCount) {
-    scroRefs_ = scroRefs;
-    localRefCount_ = localRefCount;
+void NativeScdaVm::setReferences(const std::vector<NativeReferenceEntry>& entries) {
+    referenceEntries_ = entries;
 }
 
 void NativeScdaVm::setGlobal(uint32_t formId, const ScriptValue& value) {
@@ -102,7 +100,7 @@ ScriptValue NativeScdaVm::getGlobal(uint32_t formId) const {
 
 bool NativeScdaVm::resolveReference(uint16_t slot, NativeReferenceSlot& out,
                                     std::string& error) const {
-    return resolveNativeReferenceSlot(slot, scroRefs_, localRefCount_, out, error);
+    return resolveNativeReferenceSlot(slot, referenceEntries_, out, error);
 }
 
 void NativeScdaVm::setCallTargets(const std::vector<uint32_t>& callTargets) {

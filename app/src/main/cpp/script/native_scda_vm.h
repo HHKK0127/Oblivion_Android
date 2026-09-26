@@ -152,9 +152,9 @@ public:
     NativeVariableStore& variables() { return variables_; }
     const NativeVariableStore& variables() const { return variables_; }
 
-    // Reference table used to resolve `r`/`Z` slots. Slots up to the SCRO count
-    // resolve to SCRO entries; the remainder resolve to local refs.
-    void setReferences(const std::vector<uint32_t>& scroRefs, uint16_t localRefCount);
+    // Reference table used to resolve `r`/`Z` slots. The entries are the SCPT
+    // record's SCRV/SCRO subrecords in file order, so slot k is the k-th one.
+    void setReferences(const std::vector<NativeReferenceEntry>& entries);
 
     // Call target table used to resolve `0x001C` selectors. Selectors are
     // numbered in first-appearance order over the call targets the bytecode
@@ -201,8 +201,7 @@ private:
 
     NativeVariableStore variables_;
     std::unordered_map<uint32_t, ScriptValue> globals_;
-    std::vector<uint32_t> scroRefs_;
-    uint16_t localRefCount_ = 0;
+    std::vector<NativeReferenceEntry> referenceEntries_;
     std::vector<uint32_t> callTargets_;
     // A 0x001C marker names the reference the next command acts on, so the
     // selector is held here until that command consumes it.

@@ -102,24 +102,20 @@ enum class NativeStructuralOpcode : uint16_t {
 //   1. Slots are handed out densely from 1 in first-appearance order across the
 //      bytecode; re-using an existing slot does not consume a new one. All 1,173
 //      records that carry a selector produce exactly 1..K with no gaps.
-//   2. The table bound is `SCRO count + local ref declaration count`. Both the
-//      selector operand and the `r` variable token index stay within it, with
-//      zero violations over 1,654 records carrying `r` tokens and 1,173 carrying
+//   2. The table bound is the SCRV count plus the SCRO count. Both the selector
+//      operand and the `r` variable token index stay within it, with zero
+//      violations over 1,654 records carrying `r` tokens and 1,173 carrying
 //      selectors, so both index the same table.
 //
-// The two halves are ordered SCRO first, then local refs: slot 1..N is SCRO
-// subrecord order and slot N+1..N+L is the local ref variables. The decisive
-// evidence is `mySelf`, the variable that receives `getSelf`: in all eight
-// records that use it, its `r` slot equals N+L, and the parent variable that
-// receives `getParentRef` sits at N+1. The local ordinal therefore counts from
-// the end of the SCRO half, not from the SLSD declaration order.
+// The table is the record's ref subrecords in file order, not a fixed
+// "SCRO first, then locals" split. See resolveNativeReferenceSlot.
 //
 // The selector space is NOT the same as the `r`/`Z` slot space. In
-// XPXirethard01TrapButton01SCRIPT the SCRO half is 7 entries and the local half
-// is 2, so `myParent` is `r8`; the selector that precedes its Activate is 1,
-// because selectors are numbered in first-appearance order over the call
-// targets. Resolving a selector through the `r` table would name the wrong
-// object, so the two must stay separate APIs.
+// XPXirethard01TrapButton01SCRIPT the file order is SCRV(myParent), SCRO x7,
+// SCRV(mySelf), so `myParent` is `r1`; the selector that precedes its Activate
+// is also 1, but only because selectors are numbered in first-appearance order
+// over the call targets. The two numberings coincide there by construction and
+// diverge elsewhere, so they must stay separate APIs.
 constexpr uint16_t NATIVE_SCDA_MARKER_OPCODE = 0x001C;
 // Prologue opcode. Present in SCPT records only; QUST/INFO inline scripts do
 // not carry it, so a decoder must never require it.
@@ -238,21 +234,32 @@ struct NativeReferenceSlot {
     uint16_t localOrdinal = 0; // 1-based local ref ordinal when kind == LocalRef
 };
 
+// One entry of a script's reference table, in the order the slots are numbered.
+struct NativeReferenceEntry {
+    NativeReferenceKind kind = NativeReferenceKind::Scro;
+    uint32_t formId = 0;       // Valid when kind == Scro
+    uint32_t variableIndex = 0; // SLSD/SCVR variable index when kind == LocalRef
+};
+
 // Resolves a 1-based `r`/`Z` slot against a script's reference table.
 //
-// The table is SCRO entries first, then local refs: slot 1..N resolves to
-// SCRO[slot-1] and slot N+1..N+L resolves to a local `ref` variable, reported by
-// ordinal only. The ordinal counts from the end of the SCRO half, which is the
-// order the compiler uses; it is not the SLSD declaration order, so the caller
-// must not map it onto variable storage by declaration index. A slot of 0, or
-// one beyond scroRefs.size() + localRefCount, is an explicit error rather than a
-// guessed reference.
+// The table is the SCPT record's ref subrecords in file order: slot k is the
+// k-th SCRV or SCRO subrecord of the record, whichever kind it is. SCRV carries
+// a u32 SLSD/SCVR variable index and SCRO carries a FormID, and the two kinds
+// interleave freely because the compiler emits them in the order it needs them.
+// The decisive structural check is SCHR[4], which equals the SCRV count plus the
+// SCRO count in 2,393 of 2,393 records: it is the slot count itself.
 //
-// This is the `r`/`Z` space only. A `0x001C` call selector is a different space
-// and must be resolved with resolveNativeCallTarget instead.
+// A fixed "SCRO first, then locals" rule is wrong. In
+// XPXirethard01TrapButton01SCRIPT the file order is SCRV(myParent), SCRO x7,
+// SCRV(mySelf), so myParent is slot 1 and mySelf is slot 9; a fixed rule would
+// put myParent at slot 8 and name the wrong object for every selector.
+//
+// A slot of 0, or one beyond the table, is an explicit error rather than a
+// guessed reference. This is the `r`/`Z` space only: a `0x001C` call selector is
+// a different space and must be resolved with resolveNativeCallTarget instead.
 bool resolveNativeReferenceSlot(uint16_t slot,
-                                const std::vector<uint32_t>& scroRefs,
-                                uint16_t localRefCount,
+                                const std::vector<NativeReferenceEntry>& entries,
                                 NativeReferenceSlot& out,
                                 std::string& error);
 

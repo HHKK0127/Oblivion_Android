@@ -1678,49 +1678,67 @@ void ScriptVMTests::testNativeScdaDecoder() {
                getTimeMs38() - start);
     }
 
-    // Test 16: selector slots resolve against SCRO first, then local refs
+    // Test 16: slots number the record's ref subrecords in file order
     {
         const float start = getTimeMs38();
-        const std::vector<uint32_t> scro = {0x000446A1, 0x000446A7, 0x000446B9};
+        // XPXirethard01TrapButton01SCRIPT file order: SCRV(myParent), SCRO x3,
+        // SCRV(mySelf). A fixed "SCRO first" rule would put myParent at slot 4.
+        const std::vector<NativeReferenceEntry> entries = {
+            {NativeReferenceKind::LocalRef, 0, 5},
+            {NativeReferenceKind::Scro, 0x000446A1, 0},
+            {NativeReferenceKind::Scro, 0x000446A7, 0},
+            {NativeReferenceKind::Scro, 0x000446B9, 0},
+            {NativeReferenceKind::LocalRef, 0, 4},
+        };
 
         NativeReferenceSlot slot{};
         std::string error;
-        const bool scroOk = resolveNativeReferenceSlot(2, scro, 2, slot, error) &&
-                            slot.kind == NativeReferenceKind::Scro &&
-                            slot.formId == 0x000446A7 && slot.slot == 2;
+        const bool localFirst = resolveNativeReferenceSlot(1, entries, slot, error) &&
+                                slot.kind == NativeReferenceKind::LocalRef &&
+                                slot.localOrdinal == 5 && slot.slot == 1;
 
-        const bool localOk = resolveNativeReferenceSlot(5, scro, 2, slot, error) &&
-                             slot.kind == NativeReferenceKind::LocalRef &&
-                             slot.localOrdinal == 2 && slot.formId == 0;
+        const bool scroMiddle = resolveNativeReferenceSlot(2, entries, slot, error) &&
+                                slot.kind == NativeReferenceKind::Scro &&
+                                slot.formId == 0x000446A1;
 
-        const bool zeroRejected = !resolveNativeReferenceSlot(0, scro, 2, slot, error) &&
+        const bool localLast = resolveNativeReferenceSlot(5, entries, slot, error) &&
+                               slot.kind == NativeReferenceKind::LocalRef &&
+                               slot.localOrdinal == 4;
+
+        const bool zeroRejected = !resolveNativeReferenceSlot(0, entries, slot, error) &&
                                   !error.empty();
         error.clear();
-        const bool overRejected = !resolveNativeReferenceSlot(6, scro, 2, slot, error) &&
+        const bool overRejected = !resolveNativeReferenceSlot(6, entries, slot, error) &&
                                   !error.empty();
         error.clear();
-        const bool emptyTable = !resolveNativeReferenceSlot(1, {}, 0, slot, error) &&
+        const bool emptyTable = !resolveNativeReferenceSlot(1, {}, slot, error) &&
                                 !error.empty();
 
-        const bool ok = scroOk && localOk && zeroRejected && overRejected && emptyTable;
+        const bool ok = localFirst && scroMiddle && localLast && zeroRejected &&
+                        overRejected && emptyTable;
         record("NativeScda: reference slot", ok,
-               "Slots map to SCRO then local refs; out-of-range slots are errors",
+               "Slots number SCRV/SCRO subrecords in file order; out-of-range slots are errors",
                getTimeMs38() - start);
     }
 
     // Test 16b: the call selector space is separate from the r/Z slot space.
-    // XPXirethard01TrapButton01SCRIPT has 7 SCRO entries and 2 local refs, so
-    // myParent is r8, yet the selector that precedes its Activate is 1.
+    // XPXirethard01TrapButton01SCRIPT numbers myParent as r1, yet the selector
+    // that precedes its Activate is also 1 only because selectors count call
+    // targets in first-appearance order. The two tables are supplied separately
+    // and must not be interchangeable.
     {
         const float start = getTimeMs38();
-        const std::vector<uint32_t> scro = {0x000446A1, 0x000446A7, 0x000446B9};
+        const std::vector<NativeReferenceEntry> entries = {
+            {NativeReferenceKind::LocalRef, 0, 5},
+            {NativeReferenceKind::Scro, 0x000446A1, 0},
+            {NativeReferenceKind::Scro, 0x000446A7, 0},
+        };
         const std::vector<uint32_t> callTargets = {0x000446A1, 0x000446A7};
 
         NativeReferenceSlot slot{};
         std::string error;
-        const bool slotIsScro = resolveNativeReferenceSlot(1, scro, 2, slot, error) &&
-                                slot.kind == NativeReferenceKind::Scro &&
-                                slot.formId == 0x000446A1;
+        const bool slotIsLocal = resolveNativeReferenceSlot(1, entries, slot, error) &&
+                                 slot.kind == NativeReferenceKind::LocalRef;
 
         uint32_t target = 0;
         error.clear();
@@ -1736,7 +1754,7 @@ void ScriptVMTests::testNativeScdaDecoder() {
         const bool overRejected = !resolveNativeCallTarget(3, callTargets, target, error) &&
                                   !error.empty();
 
-        const bool ok = slotIsScro && selectorIsFirst && selectorSecond &&
+        const bool ok = slotIsLocal && selectorIsFirst && selectorSecond &&
                         zeroRejected && overRejected;
         record("NativeScda: call target space", ok,
                "Call selectors number first-appearance order, not the r/Z slot table",
@@ -2605,7 +2623,8 @@ void ScriptVMTests::testNativeScdaVm() {
 
         const NativeDecodeResult program = decodeNativeScda(code);
         NativeScdaVm vm;
-        vm.setReferences({0x000446A1, 0x000446A7}, 0);
+        vm.setReferences({{NativeReferenceKind::Scro, 0x000446A1, 0},
+                          {NativeReferenceKind::Scro, 0x000446A7, 0}});
 
         const NativeVmResult result = vm.run(program, 0x0000, 0x1234);
         const bool ok = result == NativeVmResult::Success &&

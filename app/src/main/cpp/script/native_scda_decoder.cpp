@@ -602,30 +602,27 @@ std::vector<std::string> getNativeOpcodeAliases(uint16_t opcode) {
 }
 
 bool resolveNativeReferenceSlot(uint16_t slot,
-                                const std::vector<uint32_t>& scroRefs,
-                                uint16_t localRefCount,
+                                const std::vector<NativeReferenceEntry>& entries,
                                 NativeReferenceSlot& out,
                                 std::string& error) {
     if (slot == 0) {
         error = "reference slot 0 is not a valid selector";
         return false;
     }
-    const uint32_t scroCount = static_cast<uint32_t>(scroRefs.size());
-    const uint32_t bound = scroCount + localRefCount;
-    if (slot > bound) {
+    if (slot > entries.size()) {
         error = "reference slot " + std::to_string(slot) +
                 " is outside the reference table (bound " +
-                std::to_string(bound) + ")";
+                std::to_string(entries.size()) + ")";
         return false;
     }
+    const NativeReferenceEntry& entry = entries[slot - 1];
     out = NativeReferenceSlot{};
     out.slot = slot;
-    if (slot <= scroCount) {
-        out.kind = NativeReferenceKind::Scro;
-        out.formId = scroRefs[slot - 1];
+    out.kind = entry.kind;
+    if (entry.kind == NativeReferenceKind::Scro) {
+        out.formId = entry.formId;
     } else {
-        out.kind = NativeReferenceKind::LocalRef;
-        out.localOrdinal = static_cast<uint16_t>(slot - scroCount);
+        out.localOrdinal = static_cast<uint16_t>(entry.variableIndex);
     }
     return true;
 }
