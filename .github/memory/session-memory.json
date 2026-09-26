@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-26T13:51:32Z",
+  "lastUpdated": "2026-09-26T13:59:46Z",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -4115,10 +4115,54 @@
       "id": "142a110d-7292-4fbf-bbf5-b30704e9b7a1",
       "timestamp": "2026-09-26T13:51:32Z",
       "compressed": false
+    },
+    {
+      "id": "modav-0x1010-shape-20260926",
+      "timestamp": "2026-09-26T13:59:46Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "0x1010 ModActorValue operand shape closed (2026-09-26, probe_msg.py over 2,393 SCPT records): payload = [u16 2][u16 actorValueIndex][value token] and nothing else - no trailing bytes. 64 payloads, all argc==2, all consumed to the last byte: argLength 9 in 59 (02 00 21 00 6e 9c ff ff ff = modav aggression with int32 -100) and argLength 7 in 5 whose value token is 3 bytes. The reported 'two trailing bytes on 0x1010' is an artefact of a fixed-width int read; the WS-B queue item is closed. The actor value index is a bare u16 out of the standard enum (0 Strength, 1 Intelligence, 3 Agility, 4 Speed, 6 Personality, 8 Health, 10 Fatigue, 31 Sneak, 33 Aggression). The five short payloads are HelviusCeciaScript (02 00 08 00 66 06 00 = f 2 on Health), MQ15MythicDawnPrisonerSCRIPT (f 1 on Health) and KurtTestMagicEffect (02 00 08 00 73 01 00 = s 1 on Health), so a decoder must accept f and s as well as n for the value and an int-only reader misframes those five. This is the counter-evidence that the SetActorValue / ModActorValue / ForceAV second argument is not Int-fixed.",
+      "tags": [
+        "script-vm",
+        "scda",
+        "modav",
+        "actor-value",
+        "plan-md"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "residue-census-20260926",
+      "timestamp": "2026-09-26T13:59:46Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Instruction-level residue census (2026-09-26, probe_residue.py / probe_strings.py over 2,393 SCPT records, the ten structural opcodes excluded): 12,662 statement instructions = 2,370 with an empty payload + 9,477 that the separate parse consumes to the last byte + 782 governed by their own rule (718 text opcodes + 64 0x1010) + 33 needing the fused parse (0x1002 26, 0x1076 7). No command payload is left over, and no opcode outside 0x1002 / 0x1076 / the five text-and-value rules leaves a byte unconsumed. Correction to an earlier note: probe_strings.py reaches the 33 residue by EXCLUDING the four text opcodes from the argument walk, not by making string tokens first class - consume() has no string-token path. Implementation guidance: exclude, do not first-class.",
+      "tags": [
+        "script-vm",
+        "scda",
+        "residue",
+        "plan-md"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "scpt-subrecord-not-split-20260926",
+      "timestamp": "2026-09-26T13:59:46Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "SCPT scripts are never split across SCDA subrecords (2026-09-26, probe_strings.py over 2,393 SCPT records): 2,393 / 2,393 hold exactly one SCDA and exactly one SCTX, so 0 SCPT instructions are lost by a last-chunk-only read. This does not contradict plan.md's '210 records are split' / '191 hold more than one SCDA chunk': those counts come from the 2,646-pair corpus, of which 2,393 are SCPT and 253 are not, so the split records lie among the 253 non-SCPT pairs (quest-side scripts) and the concatenation requirement stands for them. plan.md carries the per-record-type measurement.",
+      "tags": [
+        "script-vm",
+        "scda",
+        "sctx",
+        "subrecord-split",
+        "plan-md"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 286,
+    "totalEntries": 289,
     "compressedCount": 2,
     "sessionCount": 28
   }
