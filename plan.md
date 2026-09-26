@@ -1,5 +1,33 @@
 # Oblivion Android Implementation Plan
 
+> **How to read this file.** It is a measurement log, so it is effectively append-only: when a later
+> measurement corrects an earlier paragraph, the correction is recorded as a new paragraph that names
+> what it supersedes, and the earlier text is left in place so that every number keeps its provenance
+> and its measurement date. Where two paragraphs disagree, the later date is authoritative. See
+> [Current Status](#current-status-measured-on-emulator) for the live state of the project, and
+> [Verified build history](#verified-build-history-2026-09-23-to-2026-09-26) for what was measured on which build.
+
+**Contents**
+
+- [Phase 36: Virtual Controller Integration](#phase-36-virtual-controller-integration)
+- [Phase 37-45: Completed](#phase-37-45-completed)
+- [Phase 46-55: Completion Plan](#phase-46-55-completion-plan)
+  - [Phase Schedule, Milestones, Risk Factors, Quality Assurance (Phase 46-61)](#phase-schedule-phase-46-61)
+  - [Phase 56-59: Future Expansion](#phase-56-59-future-expansion)
+  - [Phase 60-61: Runtime Integration](#phase-60-61-runtime-integration)
+- [Phase 62-72: Roadmap to Product Completion (Full Game Scope)](#phase-62-72-roadmap-to-product-completion-full-game-scope)
+  - [Measured Content Inventory](#measured-content-inventory)
+  - [Expression-side function ID names (236 fids confirmed)](#expression-side-function-id-names-236-fids-confirmed)
+  - [Occurrence-count identification caveats](#occurrence-count-identification-caveats)
+  - [Implementation Coverage (measured)](#implementation-coverage-measured)
+  - [Acceptance Criteria (product level)](#acceptance-criteria-product-level)
+  - [Phase Schedule, Milestones, Risk Factors, Quality Assurance (Phase 62-72)](#phase-schedule-phase-62-72)
+  - [Execution Plan: Parallel Workstreams](#execution-plan-parallel-workstreams)
+  - [Current Status (measured on emulator)](#current-status-measured-on-emulator)
+  - [Verified build history](#verified-build-history-2026-09-23-to-2026-09-26)
+
+---
+
 ## Phase 36: Virtual Controller Integration
 
 ### Completed
@@ -48,16 +76,16 @@ All phases 37-45 have been completed:
 ## Phase 46-55: Completion Plan
 
 **Project**: HHKK0127/Oblivion_Android
-**Current Version**: 0.9.10 (`versionName`, deriving `versionCode` 910) - features through Phase 64 are complete, Phase 65 is in progress
+**Current Version**: 0.9.10 (`versionName`, deriving `versionCode` 910) - features through Phase 64 are complete. Phase 65 is in progress, and the first Phase 66 items have already landed (WTHR-driven sky and weather, interior cells); see [Current Status](#current-status-measured-on-emulator) for the measured position
 **Goal**: Complete Oblivion gameplay experience on Android
-**Last updated**: 2026-09-24 - the measured state is in "Verified build and status (2026-09-24)" near the end of this file
+**Last updated**: 2026-09-26 - the live state is in "Current Status (measured on emulator)" and the per-build measurements are in "Verified build history", near the end of this file
 
 ### Unimplemented Features Identified (all closed as of 2026-09-24)
 - renderer.cpp: Weather, Time, Equip/Unequip, Magicka, Combat debug (11 TODOs) - **closed**: `renderer.cpp` now contains 0 TODO markers (Phase 47 weather, Phase 48 equipment)
 - audio_decoder.cpp: MP3/OGG decode (header parsing only) - **closed**: `decodeMp3()` uses minimp3 and `decodeOgg()` uses stb_vorbis (`third_party/minimp3`, `third_party/stb`)
 - Other: Icon mapping, Gender selection, Texture loading - **closed** in Phases 41 and 44
 
-### Phase Schedule
+### Phase Schedule (Phase 46-61)
 
 | Phase | Feature | Priority | Estimate | Dependencies | Status |
 |-------|---------|----------|----------|--------------|--------|
@@ -90,7 +118,7 @@ All phases 37-45 have been completed:
 | **Phase 60** | ScriptVM Runtime Integration | High | 2-3 days | Phase 37 | Complete |
 | **Phase 61** | SpeedTree Renderer Verification | Medium | 1-2 days | Phase 59 | Complete |
 
-### Milestones
+### Milestones (Phase 46-61)
 
 | Milestone | Phase | Goal | Success Criteria |
 |-----------|-------|------|------------------|
@@ -104,13 +132,13 @@ All phases 37-45 have been completed:
 - Phase 47 (Weather) + Phase 48 (Equipment)
 - Phase 51 (Lockpick) + Phase 52 (Alchemy)
 
-### Risk Factors
+### Risk Factors (Phase 46-61)
 1. DDS decode compatibility - all Oblivion texture formats must be supported
 2. Script VM complexity - 1000+ script functions need integration
 3. Memory management - large world streaming may cause memory exhaustion
 4. Android device compatibility - OpenGL ES 3.0 implementation differences
 
-### Quality Assurance
+### Quality Assurance (Phase 46-61)
 - Unit tests at each phase completion
 - Device testing (Android 9+)
 - Performance profiling
@@ -118,8 +146,13 @@ All phases 37-45 have been completed:
 ---
 
 *Plan created: 2026-09-17*
-*Last updated: 2026-09-25*
-*Next update: WS-B's next handler batch, verified by `bash tools/host_tests/run_host_tests.sh` inside its own worktree rather than by the provisional runner. **Water (WATR) and the weather-driven sky dome are landed (2026-09-25, `b7222f25` / `13d9f905`)** - water is now device-verified end to end (magenta-anchored proof, then the real `WATR` colour, PSS 401,898 KB, 0 kills), while the sky dome is build-verified only and still needs a device pass; the next weather increment is to drive `SkyWeatherSystem` from the 37 real `WTHR` records instead of its hard-coded presets. **Phase 30 is no longer asset-blocked (2026-09-25)**: the NIF block walker is byte-exact on the 17-mesh corpus and the Phase 30 suite is green with real assets supplied, so the NIF half of Phase 65 (static objects) and Phase 66 (skeleton and animation) no longer waits on the parser - see the NIF paragraph in Current Status*
+*Last updated: 2026-09-26*
+
+**Next update**
+
+- WS-B's next handler batch, verified by `bash tools/host_tests/run_host_tests.sh` inside its own worktree rather than by the provisional runner.
+- **Water (WATR) and the weather-driven sky dome are landed** (2026-09-25, `b7222f25` / `13d9f905`). Water is device-verified end to end (magenta-anchored proof, then the real `WATR` colour, PSS 401,898 KB, 0 kills); the sky dome is build-verified only and still needs a device pass, and the next weather increment is to drive `SkyWeatherSystem` from the 37 real `WTHR` records instead of its hard-coded presets.
+- **Phase 30 is no longer asset-blocked** (2026-09-25). The NIF block walker is byte-exact on the 17-mesh corpus and the Phase 30 suite is green with real assets supplied, so the NIF half of Phase 65 (static objects) and Phase 66 (skeleton and animation) no longer waits on the parser - see the NIF paragraphs in [Current Status](#current-status-measured-on-emulator).
 
 ---
 
@@ -260,7 +293,8 @@ Scratch: `%TEMP%\async_race\opcode_freq_all.py` / `opcode_freq_all.txt` hold the
 
 **The one record that appeared to break the file-order table does not: `SEScalonScript` needs `Cast`'s operand order to be spell then target** (measured 2026-09-25, one-record dump plus a FormID-to-`EDID` lookup). Its subrecords are `SCRV(5)` = `OnMyself`, then `SCRO 0x001881` = `MGEF INVI`, `SCRO 0x00189D` = `MGEF SLNC` and `SCRO 0x096FF6` = `SPEL SELpScalonInvisibility`, and the bytecode uses exactly those slots: the `0x0016` at offset 16 tests `r 2` and `r 3` with `HasMagicEffect` (`X 0x10D6`), matching `HasMagicEffect INVI == 0 && HasMagicEffect SLNC == 0`; the `0x0015` at offset 83 assigns the local `f 5`, the `SLSD` index that `SCRV(5)` points at, matching `Set OnMyself to GetSelf`; and the `0x101E` at offset 98 is `[u16 2][r 4][r 1]`, which the source line `Cast SELpScalonInvisibility OnMyself` reads as **spell `r 4` then target `r 1`**. With `Cast` taking `[spell][target]` the whole record agrees with file order and `r 1` stays `OnMyself`; the earlier `r 1` = `SELpScalonInvisibility` reading came from assuming the opposite operand order. `HasMagicEffect` also takes an `MGEF` through this same table, so the table is not spell-only.
 **Expression-side function ids can be identified by per-record occurrence count, and four of the most common ones are now settled with zero exceptions** (measured 2026-09-25 by `%TEMP%\scro_probe\probe_xids3.py` over all 2,393 `SCPT` records). The method needs no alignment: for a candidate name, count the name in the record's `SCTX` and count the id in its `SCDA`, and a correct name matches the id's count in **every** record that uses the id. `0x103A` = **`GetStage`** (791 records, 2,013 calls), `0x102F` = **`GetItemCount`** (156 records, 586 calls), `0x103B` = **`GetStageDone`** (123 records, 289 calls) and `0x102E` = **`GetDead`** (190 records, 384 calls) each agree in 100% of their records - `791/791`, `156/156`, `123/123`, `190/190`, differ 0. The first pass, which compared case-sensitively and did not exclude the `ScriptName` keyword, reported only `574/791` for `GetStage`; that residual was entirely the corpus writing both `GetStage` and `getstage` plus `ScriptName` counting as an identifier, and lowercasing both sides removed it. A VM can therefore dispatch these four by name, and the same count test identifies the remaining expression-side ids without reading a single payload by hand.
-### Expression-side function ID names (198 fids confirmed)
+
+### Expression-side function ID names (236 fids confirmed)
 
 Function IDs in the expression (`X` token) space were identified by counting, not by guessing:
 the occurrence count of a name in a record's source must equal the sum of (opcodes >= 0x1000 with that
@@ -346,7 +380,7 @@ records (MQ09GhostBladeSpawn01-04) compile `this` as `GetSelf`.
   0x1146 reset3dstate              0x1147 isridinghorse             0x114D essentialdeathreload
   0x114E setshowquestitems         0x1150 resethealth               0x1151 setignorefriendlyhits
   0x1156 setrigidbodymass          0x1158 releaseweatheroverride    0x1159 setallreachable
-  0x115A setallvisible             0x115B setallvisible             0x115C sendtrespassalarm
+  0x115A setallvisible             0x115B setnoavoidance           0x115C sendtrespassalarm
   0x115D setsceneiscomplex         0x115E autosave                  0x1161 isactor
   0x1162 isessential               0x1164 showdialogsubtitles       0x1165 forcecloseobliviongate
   0x1167 createfullactorcopy       0x116B pcb                       0x116C setplayerinseworld
@@ -537,7 +571,7 @@ Note: ACHR/ACRE are decoded and 105 exterior actors are placed from real data (4
 | A7 | Legal compliance: BYO-data model enforced, zero decompiled-derived code |
 | A8 | First-run UX: data install to gameplay in under 5 minutes |
 
-### Phase Schedule
+### Phase Schedule (Phase 62-72)
 
 | Phase | Feature | Estimate | Dependencies | Status |
 |-------|---------|----------|--------------|--------|
@@ -557,7 +591,7 @@ Note: ACHR/ACRE are decoded and 105 exterior actors are placed from real data (4
 Critical path: 64 -> 65 -> 66 -> 67 -> 68. Phase 67 (Script VM) is the largest single work item.
 With parallelization (rendering and Script VM split between developers), 45-60 weeks is achievable.
 
-### Milestones
+### Milestones (Phase 62-72)
 
 | Milestone | Phase | Goal | Success Criteria |
 |-----------|-------|------|------------------|
@@ -571,7 +605,7 @@ With parallelization (rendering and Script VM split between developers), 45-60 w
 | **M18: Mod Support** | 70 | Load order | .esp files apply in load order |
 | **M19: Release** | 71-72 | Product ready | A1-A8 all satisfied |
 
-### Risk Factors
+### Risk Factors (Phase 62-72)
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
@@ -589,7 +623,7 @@ With parallelization (rendering and Script VM split between developers), 45-60 w
 | Broken gitlink `tools/BSAFileExtractor` | Repo hygiene, CI | **Resolved 2026-09-24.** It was committed as mode 160000 (a gitlink) with no `.gitmodules` entry, so it showed as a permanently modified path and `git status` was never clean. `.gitignore:28` already listed `tools/BSAFileExtractor/`, so the intent was always to keep the tool untracked; the gitlink was removed from the index with `git rm --cached` and the checkout is left in place for local use. No source, script or workflow references the path |
 | 4 of the 5 native test suites were unwired | Regression blindness | **Resolved 2026-09-24.** `tools/host_tests/run_host_tests.sh` now compiles all 5 suites and links the real gameplay, asset, save, script, world and collision code (53 translation units, `-lz`, `--gc-sections`). The two remaining stand-ins are deliberately honest: no-op GLES3 entry points, and a `PhysicsManager` whose `init()` returns false so callers take their existing "physics disabled" path - no suite can pass on fabricated simulation. `phase30_integration_test` self-skips when the Oblivion assets are absent, which is the normal CI case. See `48a9c934` |
 
-### Quality Assurance
+### Quality Assurance (Phase 62-72)
 - Unit tests wired into CI at Phase 62, extended per phase
 - Device testing (Android 9+), device matrix defined in Phase 71
 - Performance profiling against A2 thresholds each phase
@@ -816,9 +850,11 @@ Steps, each independently verifiable on the emulator:
 - **Dead code was removed and UI ownership unified on `Renderer` (2026-09-26, `45787523`).** The unused `engine/Engine.{h,cpp}` (780 lines), `engine/graphics/VulkanRenderer.{h,cpp}` (485 lines), `ui/ui_manager.{h,cpp}` (588 lines), the stale JNI pair `jni/com_example_oblivion_OblivionEngine.{h,cpp}` (1,294 lines) and the Kotlin `GameActivity.kt` / `OblivionEngine.kt` (201 lines) were deleted - **3,389 lines removed against 18 added** - and `jni_bridge.cpp` / `scene_renderer.cpp` / `CMakeLists.txt` were updated to match. `Renderer` is now the single owner of the UI, so there is no second `UIManager` path to keep in sync. The build stays green and the host-test runner is unchanged
 - Not at product level. Next: Phase 65 (full world rendering - terrain mesh, BTXT/LTEX texturing, VTXT blending, water, the weather-driven sky dome and **interior cell entry with exterior render suppression** are done; door transitions, LOD, static-object NIF rendering, **interior REFR/NIF geometry** and the WTHR-driven weather data remain)
 
-### Verified build and status (2026-09-24, extended 2026-09-26)
+### Verified build history (2026-09-23 to 2026-09-26)
 
 Everything in this section was measured on the current APK, on the emulator, unless stated otherwise.
+
+**This section is the per-build record.** Each bullet states what was measured, on which build and when; it is kept as history rather than rewritten, so the live project state belongs in [Current Status (measured on emulator)](#current-status-measured-on-emulator) above and this section answers "which build produced that number".
 
 - **Current build: 115,289,641 B (2026-09-23 21:09:27), containing arm64-v8a, armeabi-v7a and x86_64.** It grew from 93,522,973 B because the 8 opening-sequence videos are now bundled in `app/src/main/assets/videos/` (`oblivion_intro` 47.93 MB, `credits_menu` 21.74 MB, `map_loop` 10.01 MB, `oblivion_iv_logo` 4.30 MB, `game_studios_logo` 2.06 MB, `bethesda_logo` 0.40 MB, `oblivion_legal` 0.28 MB, `2k_games_logo` 0.12 MB). That directory is gitignored (`.gitignore:33`) and no video is tracked, so a fresh clone still builds without them.
 - **The opening sequence plays end to end and is skippable.** `IntroVideoActivity` plays `bethesda_logo -> 2k_games_logo -> game_studios_logo -> oblivion_legal` and then launches the game: the unattended run reached `Launching MainActivity` at 00:02:01 with 0 `Video error` and 0 safety-timeout events, and 4 taps advanced through the 4 clips in 18.4 s (`User tapped to skip video, advancing`). The skip predicate used to be `mediaPlayer.isPlaying`, which cannot be satisfied when playback never starts, leaving the user on a frozen frame; it is now `videoStarted && !videoCompleted`, plus a safety-net timer of `duration + 5 s` (30 s fixed when the duration is unknown) that force-launches the game. Both paths verified on the emulator.
