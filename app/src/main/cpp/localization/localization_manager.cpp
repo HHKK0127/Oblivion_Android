@@ -307,12 +307,13 @@ void LocalizationManager::initializeTranslationDatabase() {
     // Magic System (for M5-3)
     translations["magic_spell"] = {"Spell", "呪文"};
     translations["magic_cast"] = {"Cast", "発動"};
-    translations["magic_school_alteration"] = {"Alteration", "変化の魔法"};
-    translations["magic_school_conjuration"] = {"Conjuration", "召喚の魔法"};
-    translations["magic_school_destruction"] = {"Destruction", "破壊の魔法"};
-    translations["magic_school_illusion"] = {"Illusion", "幻覚の魔法"};
-    translations["magic_school_mysticism"] = {"Mysticism", "神秘の魔法"};
-    translations["magic_school_restoration"] = {"Restoration", "回復の魔法"};
+    // Magic school names follow the JPWiki policy of keeping original game terms.
+    translations["magic_school_alteration"] = {"Alteration", "Alteration"};
+    translations["magic_school_conjuration"] = {"Conjuration", "Conjuration"};
+    translations["magic_school_destruction"] = {"Destruction", "Destruction"};
+    translations["magic_school_illusion"] = {"Illusion", "Illusion"};
+    translations["magic_school_mysticism"] = {"Mysticism", "Mysticism"};
+    translations["magic_school_restoration"] = {"Restoration", "Restoration"};
 
     // Spells (M5-3)
     translations["spell_fireball"] = {"Fireball", "ファイアボール"};
@@ -322,7 +323,7 @@ void LocalizationManager::initializeTranslationDatabase() {
     translations["spell_paralyze"] = {"Paralyze", "麻痺"};
     translations["spell_invisibility"] = {"Invisibility", "姿を隠す"};
     translations["spell_summon"] = {"Summon", "召喚"};
-    translations["spell_fortify"] = {"Fortify Attribute", "属性強化"};
+    translations["spell_fortify"] = {"Fortify Attribute", "Attribute強化"};
 
     // Magic Effects
     translations["effect_damage"] = {"Damage", "ダメージ"};
@@ -347,19 +348,21 @@ void LocalizationManager::initializeTranslationDatabase() {
     // Test NPC Names
     translations["npc_izar"] = {"Izar", "イザール"};
     translations["npc_hellas"] = {"Hellas", "ヘラス"};
-    translations["npc_merchant"] = {"Merchant", "商人"};
-    translations["npc_guard"] = {"Guard", "衛兵"};
-    translations["npc_mage"] = {"Mage", "魔術師"};
+    // Class names follow the JPWiki policy of keeping original game terms.
+    translations["npc_merchant"] = {"Merchant", "Merchant"};
+    translations["npc_guard"] = {"Guard", "Guard"};
+    translations["npc_mage"] = {"Mage", "Mage"};
 
     // Attributes (Character Stats)
-    translations["attr_strength"] = {"Strength", "力"};
-    translations["attr_intelligence"] = {"Intelligence", "知性"};
-    translations["attr_willpower"] = {"Willpower", "意志力"};
-    translations["attr_agility"] = {"Agility", "敏捷性"};
-    translations["attr_speed"] = {"Speed", "速度"};
-    translations["attr_endurance"] = {"Endurance", "耐久力"};
-    translations["attr_personality"] = {"Personality", "魅力"};
-    translations["attr_luck"] = {"Luck", "運"};
+    // Attribute names follow the JPWiki policy of keeping original game terms.
+    translations["attr_strength"] = {"Strength", "Strength"};
+    translations["attr_intelligence"] = {"Intelligence", "Intelligence"};
+    translations["attr_willpower"] = {"Willpower", "Willpower"};
+    translations["attr_agility"] = {"Agility", "Agility"};
+    translations["attr_speed"] = {"Speed", "Speed"};
+    translations["attr_endurance"] = {"Endurance", "Endurance"};
+    translations["attr_personality"] = {"Personality", "Personality"};
+    translations["attr_luck"] = {"Luck", "Luck"};
 
     // Items/Equipment
     translations["item_iron_sword"] = {"Iron Sword", "鉄の剣"};

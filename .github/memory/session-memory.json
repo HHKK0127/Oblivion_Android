@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-25T15:11:50.088897",
+  "lastUpdated": "2026-09-26T09:30:44.814954",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -3788,11 +3788,67 @@
         "phase66"
       ],
       "compressed": false
+    },
+    {
+      "id": "35dfafd3-4a80-46f6-981e-ec1d117d5dc7",
+      "timestamp": "2026-09-26T09:30:44.814954",
+      "category": "decision",
+      "priority": "high",
+      "content": "JPWiki translation data is the PRIMARY source for all game text. When the built-in LocalizationManager translations conflict with JPWiki, JPWiki wins. Built-in translations are only for project-specific UI (launcher, debug HUD, test scenario) that JPWiki does not cover.",
+      "tags": [
+        "localization",
+        "jpwiki",
+        "translation-policy",
+        "priority"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "bb7a29b1-1b4a-4580-9fa5-9a1928401ee3",
+      "timestamp": "2026-09-26T09:30:44.814954",
+      "category": "decision",
+      "priority": "high",
+      "content": "JPWiki keeps original Oblivion game terms in English (Strength, Intelligence, Willpower, Agility, Speed, Endurance, Personality, Luck, Alteration, Conjuration, Destruction, Illusion, Mysticism, Restoration, Health, Magicka, Fatigue, class names like Mage/Guard/Merchant). The built-in translation table was aligned to this policy: attr_* and magic_school_* and npc_merchant/guard/mage now return the English term in both languages. Do NOT re-translate these to Japanese.",
+      "tags": [
+        "localization",
+        "jpwiki",
+        "terminology",
+        "english-terms"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "9f76fb9d-6185-4f18-b241-955626ec4d6f",
+      "timestamp": "2026-09-26T09:30:44.814954",
+      "category": "reference",
+      "priority": "high",
+      "content": "JPWiki data coverage (app/src/main/assets/localization/jpwiki_localization.tsv, 28,686 entries): gmst 723/723 Japanese, book 640 (340 JP), info 19,179 (19,167 JP), dial 3,474 (2,607 JP), qst 249 (0 JP - quest names never translated by JPWiki), full 4,421 (2,682 JP). Quest names returning English is expected, not a bug.",
+      "tags": [
+        "localization",
+        "jpwiki",
+        "coverage",
+        "data"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "6c03ec27-41a4-4d3b-bd8d-0bbe3251eb82",
+      "timestamp": "2026-09-26T09:30:44.814954",
+      "category": "constraint",
+      "priority": "high",
+      "content": "JPWiki TSV stores FormIDs as UPPERCASE hex but LocalizationManager::formKey() emits lowercase. loadJpwikiData() lowercases all non-gmst keys on load. Any new FormID-keyed lookup must use lowercase keys or it will silently fall back to English.",
+      "tags": [
+        "localization",
+        "jpwiki",
+        "formid",
+        "bug-prevention"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 263,
+    "totalEntries": 267,
     "compressedCount": 2,
-    "sessionCount": 25
+    "sessionCount": 26
   }
 }
