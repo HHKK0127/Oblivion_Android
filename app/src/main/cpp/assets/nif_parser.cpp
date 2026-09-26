@@ -2149,9 +2149,10 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
 // with the reference at the body start, and four extra bytes there derail the
 // whole walk. The 10.2+ and 20.x meshes drop the prefix everywhere.
 //
-// For shapes that read their own HavokMaterial the prefix is the leading word
-// of that material, so counting it as a prefix and again as material doubles
-// it. Those types take the prefix out and let the body read the full material.
+// Two shape types read their own leading word, so counting it as a prefix and
+// again as body content would double it: bhkListShape starts at its Num Sub
+// Shapes count (measured 8 in handscythe01 and 2 in oar01, matching each file's
+// sub-shape groups) and bhkMeshShape at the first of its eight leading words.
 uint32_t NIFParser::blockBodyPrefix(const std::string& typeName) const {
     if (typeName == "bhkCollisionObject" || typeName == "bhkBlendCollisionObject" ||
         typeName == "bhkSPCollisionObject") {
