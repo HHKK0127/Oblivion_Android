@@ -773,7 +773,16 @@ dirty rewritten paths - and the four untracked `game_state_report` paths are no 
 `master`'s worktree holds **13 modified paths and 0 untracked ones**; intersecting that with the 32 paths
 the branch rewrites leaves exactly `assets/esm_reader.cpp` (+17/-15), `assets/esm_reader.h` (+27/-11) and
 `engine/renderer.cpp` (+32/-17) - the same three paths `e5c16845` named - so the merge gate is still held
-by WS-C's uncommitted increment and closes when that session commits it. The other ten modified paths
+by WS-C's uncommitted increment and closes when that session commits it. **All three are WS-C's own work,
+which a `git diff` of the tree settles**: `engine/renderer.cpp` holds the Phase 66 P19 fix - the three
+console no-op stubs (`refs.setWeather` / `refs.setTimeScale` / `refs.setTimeOfDay`) replaced with real
+`SkyWeatherSystem` calls, the gamestate report repointed at the sky clock, and the second
+`skyWeatherSystem->update` deleted so game time stops advancing at double rate while the title screen is
+down - and `assets/esm_reader.{cpp,h}` hold the WTHR `NAM0` field-major decode. The gamestate increment's
+*own* `renderer.cpp` hunk (+44/-2, the `getWorldInfo` lambda) landed in `9e1fd406`, so reading the
+remaining diff as gamestate work is the attribution trap: compare the working tree against
+`git log -1 -- <path>`, not against a remembered diff.
+The other ten modified paths
 (`CHANGELOG.md`, `ui/game_console.cpp`, `ui/title_screen.cpp`, `java/.../MainActivity.kt`,
 `res/layout/activity_main.xml`, `java/.../GameRenderer.kt`, `world/world_manager.{cpp,h}`,
 `engine/sky_weather_system.h`, `tests/weather_transition_tests.cpp`) are not in the rewritten set, so they
@@ -789,7 +798,6 @@ must be taken in the `master` worktree (`C:\Users\hiroki.kogarumai\Oblivion_Andr
 worktree's `status` says nothing about it, and four worktrees exist now (`master` at `dfa09d7a`,
 `hhkk0127-script-vm-expansion` at `8efc03b6`, `hhkk0127-oblivion-android-completion-plan` at `5dfaa88b`,
 and `hhkk0127-virtual-controller`, prunable with no commit at all).
-
 
 **Why this split**
 - WS-A and WS-B are pure code/config work with no device dependency, so they can run fully in
