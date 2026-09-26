@@ -791,7 +791,14 @@ committed diff read as a pending one; the include sits at line 11 of the committ
 reconcile by time rather than by fact: WS-C's `+42/-2` was the live diff at `f1878660` (23:00:14),
 the gamestate session committed that same hunk eight minutes later as `9e1fd406` (23:08:59), and the
 P19 hunks are what remained afterwards - so a reading can be correct when taken and wrong when
-re-used, and only a fresh measurement, not a re-arbitration of the same number, settles it.
+re-used, and only a fresh measurement, not a re-arbitration of the same number, settles it. A second,
+independent attribution source can be read from the session store's file-edit records: the local
+`session_files` table shows `30cbb1e4` as the only recent editor of `engine/sky_weather_system.h` in the
+`master` worktree (23:42, after `9e1fd406`), which corroborates WS-C's ownership of the P19 increment.
+Five sessions now share the `master` worktree (`964d16fb`, `30cbb1e4`, `9427ac74`, `f5aa54cb`,
+`fe7f23f7`), so a clean `status` is a snapshot of one instant and must be quoted with its revision:
+`9427ac74` reported it empty at `9e1fd406` (23:08:59), and it already held 13 dirty paths again by
+`fbc813ca` (00:15) - none of them that session's fault, all of them still outside the gate except three.
 The other ten modified paths
 (`CHANGELOG.md`, `ui/game_console.cpp`, `ui/title_screen.cpp`, `java/.../MainActivity.kt`,
 `res/layout/activity_main.xml`, `java/.../GameRenderer.kt`, `world/world_manager.{cpp,h}`,
