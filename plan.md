@@ -366,8 +366,10 @@ names are still certain:
 3 times (matching 3 `0x1101 len=0` opcodes) while the other 33 records use the short form `scaOnActor`,
 so a single-form table scored 0 occurrences there. Both forms must be accepted.
 
-40 fids appear in a single record only. Set equality reduces their candidates to identifiers that occur
-nowhere else, which isolates the real command name from reference names:
+40 fids appear in a single record only, so they never reach the `fp = 0` plus count-match bar of the
+multi-record set. Set equality still reduces their candidates to identifiers that occur nowhere else in
+that record, which isolates the command name from the reference names; the bytecode then confirms every
+one of them. All 40 are resolved:
 
 ```
 0x100A getstartingpos            0x100B getstartingangle
@@ -375,24 +377,68 @@ nowhere else, which isolates the real command name from reference names:
 0x1042 getshouldattack           0x1051 getarmorrating
 0x1057 drop                      0x1062 getplayercontrolsdisabled
 0x106B getknockedstate           0x1071 completequest
-0x107D isguard                   0x1083 cureforvampirism
+0x107D isguard                   0x1083 getpcisex
 0x108D istalking                 0x10A9 modfactionreaction
 0x10B0 ispcamurderer             0x10B7 wait
 0x10C8 setpcfactionattack        0x10D2 getforcesneak
-0x10D3 setforcesneak             0x10E0 getisplayerbirthsign
-0x10EA showspellmaking           0x10EB showenchantment
-0x10F4 getrestrained             0x10FE getisplayablerace
+0x10D3 setforcesneak             0x10D9 showclassmenu
+0x10DA showracemenu              0x10E0 getisplayerbirthsign
+0x10E3 hasvampirefed             0x10EA showspellmaking
+0x10EB showenchantment           0x10F0 setclass
+0x10F4 getrestrained             0x10FC setpcfame
+0x10FD setpcinfamy               0x10FE getisplayablerace
 0x1111 enablefasttravel          0x1126 sme
-0x1138 getpcmiscstat             0x1141 setnorumors
+0x1135 isxbox                    0x1138 getpcmiscstat
+0x1141 setnorumors               0x114A addachievement
 0x114C isindangerouswater        0x1154 setactorrefraction
-0x1155 setitemvalue              0x1168 deletefullactorcopy
+0x1155 setitemvalue              0x115A setallvisible
+0x115B setnoavoidance            0x1168 deletefullactorcopy
 ```
 
-Still ambiguous - both candidates are real commands and both fids occur in the same records with the
-same count, so only bytecode order can separate them: `0x1135`/`0x114A` (AddAchievement | IsXBox),
-`0x115A`/`0x115B` (SetAllVisible | SetNoAvoidance), `0x1083`/`0x10E3` (CureForVampirism | GetPCIsSex |
-HasVampireFed), `0x10FC`/`0x10FD` (SetPCFame | SetPCInfamy), `0x10D9`/`0x10DA` (ShowClassMenu |
-ShowRaceMenu). `0x10F0` has too many candidates to resolve.
+All 40 single-record fids were then confirmed against the source: for each one the payload shape (argument
+count, type and literal value) and the bytecode order were matched against the source line. That also
+separates the five pairs where both candidates are real commands, because both fids occur in the same
+records with equal counts:
+
+* `0x114A` AddAchievement vs `0x1135` IsXBox - MGPostQuestScript carries `0x114A` as an opcode with payload
+  `[u16 1][n 40]` at @76 against source line 31 `addachievement 40`, and `0x1135` only as an argument-less
+  `X` token at @57 inside the `if` payload against line 29 `if ( isxbox == 1 )`.
+* `0x115B` SetNoAvoidance vs `0x115A` SetAllVisible - in both records the opcode order (`0x115B` at @270 /
+  @530, `0x115A` at @292 / @552) matches the source order (`SetNoAvoidance 1` on lines 67 / 83,
+  `SetAllVisible 1` on lines 71 / 87).
+* `0x10FC` SetPCFame vs `0x10FD` SetPCInfamy - TGGrayCowlScript interleaves them four times (@161 / @317 and
+  @220 / @341) against lines 45 / 75 and 57 / 81, so the mapping holds 4 of 4.
+* `0x10DA` ShowRaceMenu vs `0x10D9` ShowClassMenu - CGSewerExitScript puts `0x10DA` at @422 before `0x10D9`
+  at @477 against `showracemenu` on line 77 before `showclassmenu` on line 87.
+* `0x1083` GetPCIsSex vs `0x10E3` HasVampireFed - VampireScript has `0x1083` as an `X` token with
+  `[u16 1][n 0]` at @373 against line 119 `if ( GetPCIsSex Male == 1 )` (Male is 0), and `0x10E3` as an
+  argument-less token at @1393 against line 169 `if ( Player.HasVampireFed == 1 )`.
+* `0x1132` IsActorUsingATorch - the four DANamiraForgottenScript records each carry two argument-less tokens
+  against two `Player.IsActorUsingATorch == 1` conditions; the rival candidate `anga` is the cell name in
+  `player.GetInCell Anga`.
+* `0x10F0` SetClass - SE09AltarScript carries it as an opcode with `[u16 1][r 20]` against line 153
+  `SEFelasSarandasRef.setClass SEOrderPriestClass`.
+* `0x1126` SME - AtronachFrostHealSCRIPT carries it with `[u16 1][r 1]` against line 17 `sme frsh`; the name
+  is the literal short form, next to `0x1123` PMS / `0x1124` PME / `0x1125` SMS.
+
+The same pass produced the argument signature of every single-record fid, which a VM can use for arity
+checks:
+
+* No argument: `IsXBox`, `GetArmorRating`, `IsActorUsingATorch`, `GetClothingValue`, `GetGold`,
+  `GetPlayerControlsDisabled`, `GetKnockedState`, `IsGuard`, `IsTalking`, `IsPCAMurderer`, `GetForceSneak`,
+  `ShowSpellmaking`, `ShowEnchantment`, `GetRestrained`, `GetIsPlayableRace`, `IsInDangerousWater`,
+  `DeleteFullActorCopy`, `SetAllVisible`, `SetNoAvoidance`, `ShowClassMenu`, `ShowRaceMenu`, `HasVampireFed`.
+* One integer: `AddAchievement`, `SetPCFame`, `SetPCInfamy`, `SetNoRumors`, `SetItemValue`, `EnableFastTravel`,
+  `SetForceSneak`, `GetPCMiscStat`, `ModCrimeGold`.
+* Two integers: `Drop`, `SetPCFactionAttack`. Three: `ModFactionReaction` (two refs and an int).
+* One reference: `Wait`, `CompleteQuest`, `SetClass`, `GetIsPlayerBirthsign`, `GetShouldAttack`.
+* One float: `SetActorRefraction` - the payload is `[u16 1][0x7A][f64 1.0]`, so the argument is a `z` token.
+* One ASCII axis byte: `GetStartingPos` and `GetStartingAngle` - `[u16 1][0x58]` for X, `0x59` for Y and
+  `0x5A` for Z, the same three bytes that mean the `X`, `Y` and `Z` selectors in an expression.
+
+With that, **all 236 fids of the table carry a name**: 194 satisfy `fp = 0` with a full count match,
+`0x1069` and `0x10CE` satisfy `fp = 0` with a source-text deviation, and the 40 single-record fids were
+matched to a source line one by one.
 
 ### Occurrence-count identification caveats
 
