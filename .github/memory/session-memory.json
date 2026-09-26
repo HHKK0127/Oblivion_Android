@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-27T00:49:02",
+  "lastUpdated": "2026-09-27T04:45:00",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -4639,10 +4639,96 @@
         "follow-up"
       ],
       "compressed": false
+    },
+    {
+      "id": "dcf94246-e8bc-4b8f-a2f6-8dbe06661e63",
+      "timestamp": "2026-09-27T04:45:00",
+      "category": "reference",
+      "priority": "high",
+      "content": "0x1010 ModActorValue second operand is a local variable, not an int. Measured 2026-09-27 with the dump1010.cpp driver linked against the branch decoder at b353809a over Oblivion3.esm: 64 payloads, framingFail 0, payload length 9 in 59 (n + int32 immediate) and 7 in 5 (3-byte typed variable token). SCTX settles it: HelviusCeciaScript reads 'ModAV Health modhealth' three times (f index 6), MQ15MythicDawnPrisonerSCRIPT reads 'modav health basehealth' (f index 1), KurtTestMagicEffect reads 'modav health, damage' (s index 1). So the value accepts n, f and s; the old 'two trailing bytes on 0x1010' note was a width difference, not a framing defect.",
+      "tags": [
+        "script-vm",
+        "0x1010",
+        "opcode-grammar",
+        "ws-b"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "72f0a6bc-a2a7-41d2-a2b9-63f7ef9fece0",
+      "timestamp": "2026-09-27T04:45:00",
+      "category": "reference",
+      "priority": "high",
+      "content": "0x114D EssentialDeathReload carries a u32 zero trailer and 0x111C SetActorFullName does not. Measured 2026-09-27 by dump1010.exe over Oblivion3.esm: 0x114D has 4 payloads (MartinScript 254, MQ14Script 556, JauffreScript 159, MQ13Script 358) each '01 00 <strlen> <text> 00 00 00 00' with argLength = strlen + 8, and 0x111C has 2 (GrayFoxScript 97 = 'The Gray Fox' 16 bytes, DASkullofCorruptionStaffScript 309 = 'Corrupted Clone' 19 bytes) with argLength = strlen + 4 and no trailer. Both read framingFail 0, and both are present in Oblivion3.esm, so the branch report that 0x114D is absent from the file is a scan-scope artefact.",
+      "tags": [
+        "script-vm",
+        "0x114D",
+        "0x111C",
+        "opcode-grammar",
+        "ws-b"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "03068c3b-f6af-4295-b470-3e04cfbcaeb3",
+      "timestamp": "2026-09-27T04:45:00",
+      "category": "reference",
+      "priority": "high",
+      "content": "Begin block census (probe_blocks3.py, 2026-09-27, durable output blocks3.txt): 4,344 Begin/End pairs over 2,393 SCPT records, bodyLength == End.end - Begin.payload.end in 4,344 of 4,344 with 0 mismatches, and no block has lengthWord < 4. lengthWord histogram 6:1931, 8:1377, 10:6, 11:994, 13:36; extra bytes after [blockType][bodyLength] are 2, 4, 6, 7, 9 respectively, and the grammar is [u16 0] followed by an optional [u16 argc][tokens]. 26 distinct blockTypes pair positionally with the SCTX begin keywords at purity 1.0 except 0x0010 which splits onpackagedone 174 / onpackageend 133 (0.567); 0x0000 gamemode 1332, 0x0002 onactivate 891, 0x000A ondeath 441, 0x0015 onload 208, 0x001E onreset 215.",
+      "tags": [
+        "esm",
+        "begin-block",
+        "opcode-grammar",
+        "census"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "5d509d2e-fed4-4b10-8ea6-4f97e7d9f7b6",
+      "timestamp": "2026-09-27T04:45:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "Merge gate definition, re-measured 2026-09-27: the gate is the intersection of the master working tree's git status --porcelain with git diff --name-only master...hhkk0127-script-vm-expansion. Dirty paths that the branch never rewrites are harmless. At master HEAD 87e09c23 the status held 11 modified paths (+775 -49) and the gate was exactly 2 files, engine/renderer.cpp (+540) and engine/renderer.h (+13, ObjectPlacer member plus renderInteriorObjects/ensureInteriorObjectsPlaced/renderStaticObjects). renderer.h joining the gate set was new. git merge-tree --write-tree master hhkk0127-script-vm-expansion returned exit 0.",
+      "tags": [
+        "merge",
+        "gate",
+        "renderer",
+        "ws-b",
+        "gamestate"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "a6ed34e6-ab16-43e0-942b-69e8e8648253",
+      "timestamp": "2026-09-27T04:45:00",
+      "category": "constraint",
+      "priority": "high",
+      "content": "Attribution traps for the master working tree, learned 2026-09-25 to 2026-09-27: (3) mtime is not evidence of ownership, so a file newer than both candidate sessions' commits is undecidable - use the session store's session_files or ask; (4) re-measure git rev-parse --short HEAD immediately before replying, because a once-correct measurement goes stale; (5) a commit message names only its own increment, so any dirty path that no message mentions is a second uncommitted increment (3935c7c1 named jni_bridge and never touched object_placer); (6) numbers in plan.md itself go stale - a figure without a revision is not evidence. The three independent sources are git diff in the master tree, git log -1 -- path, and session_files.",
+      "tags": [
+        "attribution",
+        "workflow",
+        "merge",
+        "traps"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "98ea2f17-6b44-4383-b8da-eee1c7227956",
+      "timestamp": "2026-09-27T04:45:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "The user decided on 2026-09-27 to hold the merge of hhkk0127-script-vm-expansion into master until WS-B finishes its remaining queue (expression-side function ids, the two aliases, 0x111C, 0x114D), even though the gate is closed by an owned increment and merge-tree reports no conflicts. merge, rebase and push are never run without explicit user approval, and plan.md or memory commits are made alone so no other session's modified file is ever staged.",
+      "tags": [
+        "merge",
+        "user-decision",
+        "constraint",
+        "workflow"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 322,
+    "totalEntries": 328,
     "compressedCount": 2,
     "sessionCount": 29
   }
