@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-26T01:30:00Z",
+  "lastUpdated": "2026-09-26T02:30:00Z",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -4312,10 +4312,85 @@
         "master"
       ],
       "compressed": false
+    },
+    {
+      "id": "85ce447d-6bb3-4dee-96d6-00bd739398eb",
+      "timestamp": "2026-09-26T02:30:00Z",
+      "category": "constraint",
+      "priority": "high",
+      "content": "The master worktree is NOT clean as of 2026-09-26, and the plan's earlier \"working tree is clean\" statement was corrected the same day: session 9427ac74 holds uncommitted edits to app/src/main/java/com/example/oblivion/MainActivity.kt (+22) and app/src/main/res/layout/activity_main.xml (+40) - four P19 lighting A/B debug buttons driving settime 12 / settime 0 / setweather clear / setweather storm, which duplicate the existing buttons in ui/debug_menu.cpp:1348-1359 and the commands registered in ui/game_console.cpp:632-634. Neither path is one of the three the WS-B merge rewrites (CMakeLists.txt, engine/renderer.cpp, tools/host_tests/run_host_tests.sh), so the merge gate stays open, but those two files must never be swept into this session's commits.",
+      "tags": [
+        "worktree",
+        "git",
+        "ownership",
+        "9427ac74",
+        "merge-gate"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "94ebfc81-dfe0-48b4-98fe-981cdb56f47c",
+      "timestamp": "2026-09-26T02:30:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "WS-C (session 30cbb1e4) next increment assigned 2026-09-26: the static-object NIF draw path - REFR -> real MODL -> streamed NIF mesh -> lit draw pass, for exterior AND interior cells alike (interiors are the same path and are the first real interior geometry). Order after it: interior REFR geometry completion, doors, LOD. WS-D (characters) stays blocked until this mesh path is usable.",
+      "tags": [
+        "ws-c",
+        "phase-65",
+        "static-objects",
+        "assignment",
+        "phase-66"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "1db3ae6b-c2e0-44ee-aecf-bbe2cd4739a0",
+      "timestamp": "2026-09-26T02:30:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "The WTHR-driven weather work is LANDED (263c146f, Phase 66) and must not be reassigned or re-scoped. Evidence: engine/sky_weather_system.h:262-315 applyWeatherRecords() consumes the real WTHR records (NAM0 = 4 time-of-day x 40-byte colour sets); engine/renderer.cpp:2576-2581 logs \"SkyWeatherSystem: %d WTHR records applied from ESM\"; renderTerrainMeshes() already reads getSunDirection / getAmbientColor / getFogColor / getFogDistance at renderer.cpp:5096-5099; the sky dome is gated on exterior cells. plan.md had four stale \"WTHR-driven weather data remain\" statements (the Next update bullet, the Phase 65 row, the WS-C workstream row and the «Not at product level» line) plus the weather paragraph in Current Status; all were corrected on 2026-09-26.",
+      "tags": [
+        "weather",
+        "wthr",
+        "phase-66",
+        "plan-accuracy",
+        "263c146f"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "49f16c6b-e110-49a3-953a-6946e3680ff2",
+      "timestamp": "2026-09-26T02:30:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Static-object draw path: the data and the pieces already exist, only the draw pass and the real model path are missing. Cell::staticObjects / dynamicObjects are populated (world/cell_loader.cpp:157-159) but referenced ONLY from the six world/ files (cell.cpp, cell_loader.cpp, object_placer.cpp, world_builder.cpp, world_data.h) - no engine/ code draws them. world/cell_loader.cpp:105-135 writes placeholder model paths (\"objects/static\", \"nature/tree\", \"nature/flora\", \"items/weapon\", \"objects/container\", \"objects/light\", \"objects/activator\"). The real resolver exists: WorldDataLoader::resolveModelPath(baseFormID) at assets/world_data_loader.cpp:215-266 (STAT/CONT/LIGH/ACTI/TREE/FLOR/ARMO/CLOT/MISC/BOOK/INGR/ALCH/APPA) and WorldDataLoader::extractCellObjects(cellFormID) at :198-213 (refFormID/baseFormID/position/rotation/scale/flags). Mesh API in use: assetManager->loadNifMesh(path) at engine/renderer.cpp:3840 (NPC meshes). Renderer has exactly four draw paths (renderWater 4336, renderSkyDome 4578, renderTerrainMeshes 4735, renderPlaceholderEntities 5212) and no generic world-mesh shader (nearest precedent shaders::MESH_VERTEX in vegetation/speed_tree_manager.cpp:126-131).",
+      "tags": [
+        "static-objects",
+        "world-data-loader",
+        "nif",
+        "renderer",
+        "reference"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "b3449cd5-6c6c-42d6-b856-91e9831303f2",
+      "timestamp": "2026-09-26T02:30:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Merge/tip state measured 2026-09-26 (second confirmation): master is 0453aaaa and origin/master is aabb9dd7 (unpushed); WS-B branch tip 80f02472 is 34 commits ahead of the merge base b3529e8a and 59-60 behind master; git merge-tree --write-tree master hhkk0127-script-vm-expansion exits 0 with merged root tree 7f9729c6. The only remaining gate before the merge is the user's approval for moving master; the branch owner still owes its rebase-and-re-verify pass. Note git rev-parse --short fails with \"fatal: Needed a single revision\" when several refs are passed at once - resolve refs one at a time.",
+      "tags": [
+        "merge",
+        "master",
+        "ws-b",
+        "git",
+        "user-approval"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 300,
+    "totalEntries": 305,
     "compressedCount": 2,
     "sessionCount": 28
   }
