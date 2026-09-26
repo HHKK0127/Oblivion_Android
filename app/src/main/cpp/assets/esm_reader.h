@@ -931,6 +931,11 @@ struct WaterData {
     float shallowColor[3] = {0.0f, 0.0f, 0.0f};     // DATA byte 44
     float deepColor[3] = {0.0f, 0.0f, 0.0f};        // DATA byte 48
     float reflectionColor[3] = {0.0f, 0.0f, 0.0f};  // DATA byte 52
+    // False when the DATA subrecord is shorter than 55 bytes, i.e. the record
+    // carries no colour block at all (Blood, CamoranLava, CamoranLava02 in
+    // Oblivion3.esm). Such records get the DefaultWater colours in
+    // resolveWaterColorFallbacks() instead of rendering as black.
+    bool hasColorBlock = false;
 };
 
 /// One time-of-day sky colour set from a WTHR NAM0 subrecord.
@@ -1281,6 +1286,7 @@ private:
                 void decodeLandscapeTexture(const ESMRecord& rec);
                 void decodeGrass(const ESMRecord& rec);
                 void decodeWater(const ESMRecord& rec);
+                void resolveWaterColorFallbacks();
                 void decodeWeather(const ESMRecord& rec);
                 void decodeCombatStyle(const ESMRecord& rec);
                 void decodeLoadScreen(const ESMRecord& rec);

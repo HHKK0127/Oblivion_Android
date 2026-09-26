@@ -268,6 +268,9 @@ add_library(native-lib SHARED
     tests/phase48_integration_test.cpp
     tests/phase48_stress_test.cpp
 
+    # Tests (Phase 66 P8: WATR colour fallback)
+    tests/watr_decode_tests.cpp
+
     # Physics System (Phase 36 - Jolt Physics)
     physics/physics_manager.cpp
 

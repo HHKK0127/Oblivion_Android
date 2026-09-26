@@ -74,6 +74,17 @@ The current version is **0.9.10 (versionCode 910)**.
   the longer ceiling costs no wall clock time.
 
 ### Fixed
+- **WATR records with a short DATA subrecord rendered as black water**: three records in
+  `Oblivion3.esm` (`CamoranLava` 2 bytes, `Blood` 42 bytes, `CamoranLava02` 42 bytes) carry a
+  DATA subrecord shorter than the 55 bytes needed to reach the colour block at byte offsets
+  44/48/52, so `decodeWater()` left their shallow/deep/reflection colours at `(0,0,0)` and the
+  surface drew black. `WaterData` now records whether the colour block was present
+  (`hasColorBlock`), and a new post-parse pass `resolveWaterColorFallbacks()` copies the colours
+  from the game's own `DefaultWater` record (formID `0x18`) into every record that lacks them,
+  falling back to a neutral dark water colour only if `DefaultWater` itself is missing. The
+  other 20 WATR records are untouched. Verified on the emulator against the real ESM
+  (`WATR=23`, `WATR colour fallback applied to 3 short record(s) from DefaultWater`) and by a
+  new `WatrDecodeTests` host suite that builds a synthetic ESM with 102/42/2-byte records.
 - **Language preference was never applied**: `LocalizationManager::loadLanguagePreference()`
   reset to English on every launch and `saveLanguagePreference()` was a no-op, so the
   `LANGUAGE=` value persisted by `SettingsManager` was ignored. `Renderer::initGameSystems()`

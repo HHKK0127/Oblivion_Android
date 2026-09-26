@@ -2830,6 +2830,8 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
             // 102-byte Oblivion WATR DATA they sit at byte offsets 44 (shallow),
             // 48 (deep) and 52 (reflection). Reading them as floats (the old
             // shaderFloats[12..14] path) produced garbage, so decode the bytes.
+            // Records shorter than 55 bytes carry no colour block at all; they
+            // are flagged here and filled from DefaultWater after the parse.
             auto readColor = [&](size_t byteOffset, float out[3]) {
                 if (data->size() >= byteOffset + 3) {
                     out[0] = data->data[byteOffset] / 255.0f;
@@ -2840,6 +2842,7 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
             readColor(44, water.shallowColor);
             readColor(48, water.deepColor);
             readColor(52, water.reflectionColor);
+            water.hasColorBlock = data->size() >= 55;
         }
 
         auto* gnam = rec.findSubRecord("GNAM");
@@ -2850,6 +2853,40 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
         }
 
         m_waters.push_back(std::move(water));
+    }
+
+    // WATR records whose DATA subrecord is shorter than 55 bytes carry no
+    // colour block (Blood, CamoranLava, CamoranLava02 in Oblivion3.esm). Left
+    // as-is they render as black water. The game's own DefaultWater record
+    // (formID 0x18) is the canonical fallback, so copy its colours rather than
+    // inventing constants. If DefaultWater is missing, keep a neutral dark
+    // water colour so the surface is still visible.
+    void ESMFile::resolveWaterColorFallbacks() {
+        const WaterData* defaultWater = nullptr;
+        for (const auto& w : m_waters) {
+            if (w.formID == 0x18) { defaultWater = &w; break; }
+        }
+        const float fallbackShallow[3] = {0.15f, 0.35f, 0.40f};
+        const float fallbackDeep[3] = {0.10f, 0.25f, 0.30f};
+        const float fallbackReflection[3] = {0.20f, 0.40f, 0.45f};
+
+        size_t patched = 0;
+        for (auto& water : m_waters) {
+            if (water.hasColorBlock) continue;
+            const float* shallow = defaultWater ? defaultWater->shallowColor : fallbackShallow;
+            const float* deep = defaultWater ? defaultWater->deepColor : fallbackDeep;
+            const float* reflection = defaultWater ? defaultWater->reflectionColor : fallbackReflection;
+            for (int i = 0; i < 3; i++) {
+                water.shallowColor[i] = shallow[i];
+                water.deepColor[i] = deep[i];
+                water.reflectionColor[i] = reflection[i];
+            }
+            ++patched;
+        }
+        if (patched > 0) {
+            LOGD("WATR colour fallback applied to %zu short record(s) from %s",
+                 patched, defaultWater ? "DefaultWater" : "built-in neutral");
+        }
     }
 
     void ESMFile::decodeWeather(const ESMRecord& rec) {
@@ -3196,6 +3233,7 @@ bool ESMFile::parseFromMemory(const std::string& name, const uint8_t* data, size
     logWaterCensus(m_exteriorCellsWithWater, m_exteriorCellsNoWaterSentinel,
                    m_exteriorCellsNoXclw);
 
+    resolveWaterColorFallbacks();
     resolveMagicReferences();
 
     return true;
