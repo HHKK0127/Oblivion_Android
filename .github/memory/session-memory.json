@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-26T22:31:30",
+  "lastUpdated": "2026-09-26T22:40:17.613054",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -3996,10 +3996,70 @@
         "ws-b"
       ],
       "compressed": false
+    },
+    {
+      "id": "9da8ecee-5918-47c2-972f-7c77909a5988",
+      "timestamp": "2026-09-26T22:40:17.613054",
+      "category": "decision",
+      "priority": "high",
+      "content": "SCDA argument count RESOLVED at 100.000% (2026-09-26, probe_legend.py + probe_member2.py + probe_localidx.py over all 2393 SCPT records): a command payload is [u16 argc][token...]. argc counts OPERANDS, not tokens. An s (0x73) token directly after an r (0x72) token whose index is NOT a member of the record's SLSD slot-number SET is a member index of that reference (ref.questvar = two tokens, one argument); an s index that IS a declared slot is an argument of its own. Measured: operand count == argc in 9574/9574 non-empty non-message payloads (zero disagreements), versus 9541 for a plain token count and 9518 for an always-merge count. CRITICAL: SLSD slot numbers are a SET, not a range - SE09AltarScript declares 11 variables numbered [25,1,2,10,20,19,21,22,23,24,11] (max 25), so a decoder testing index < localCount misclassifies slot 24 as a reference member. The merge actually fires only 33 times (0x1002 x26, 0x1076 x7), which is why byte-only rules cannot be right: RonaHassildorScript (01 00 72 05 00 73 09 00 = 1 argument Player.ModCrimeGold SECrimeGold) and XPEbroccaCrematorySCRIPT (02 00 72 07 00 73 01 00 = 2 arguments) differ only in slot declared-ness. Also: all 57 0x66 indices and 83 of 116 0x73 indices are declared slots; an s index outside the set with no preceding r never occurs (safe to make it an explicit error). plan.md now carries this paragraph.",
+      "tags": [
+        "script-vm",
+        "scda",
+        "argc",
+        "slds",
+        "plan-md",
+        "ws-b"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "7727cf9f-2828-4b28-9dd1-cb3cfafae865",
+      "timestamp": "2026-09-26T22:40:17.613054",
+      "category": "decision",
+      "priority": "high",
+      "content": "SCDA token legend v2 confirmed by suffix sweep (2026-09-26, probe_legend2.py / probe_res2.py): 0x6E = 5 bytes [0x6E][int32]; 0x7A = 9 bytes [0x7A][float64] (real values 1.0 / 5.0 / 0.0128); 0x66 (f) / 0x73 (s) / 0x72 (r) / 0x47 (G) = 3 bytes; 0x58 / 0x59 / 0x5A = 1 byte (axis letters X / Y / Z from SetPos-SetAngle grammars, always followed by another token); anything else = 2 bytes (bare u16). Under this table the greedy read consumes the payload to its last byte in 11944/11944 non-empty payloads with ZERO residue (the earlier 10636/11944 = 89.0% was the message/string opcodes). WITHDRAWN: the WS-C 'out.length = 5 + argumentBytes' formula (the argumentBytes word is an argc count) and the 'Z <u16>' reading of 0x5A - a one-byte 0x5A cannot carry a u16; the 0x59 / 0x5A choice between Y and Z is structural, not semantic, and needs no further probing. 0x47 is a three-byte GLOBAL variable token, which is exactly what ModCrimeGold SECrimeGold carries. Three-byte tokens are [tag][u16 index]; read the index at offset 1, not 0 - reading at 0 produced nonsense slot numbers (0x72XX) during the first membership probe.",
+      "tags": [
+        "script-vm",
+        "scda",
+        "token-legend",
+        "framing",
+        "ws-b"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "ca25da20-2ce9-4bd6-8760-43077d295b9d",
+      "timestamp": "2026-09-26T22:40:17.613054",
+      "category": "reference",
+      "priority": "high",
+      "content": "SCDA selector-space enumeration excludes the message-family opcodes (2026-09-26): 0x1000 messagebox, 0x1059 message, 0x114D essentialdeathreload and 0x111C setactorfullname carry an in-line string record [u16 1][u16 strlen][ASCII text] instead of [u16 argc][tokens]. Of 4172 non-structural payload commands, 2386 (57.2%) are message-family and all 2386 decode as strings with zero framing failures; they are the entire residue mass that the naive argument parser reported (1296 at the first pass). The remaining 1786 all parse as argument lists under the argc rule. Measured Begin lengthWord distribution over 4344 blocks: 6 (1931), 8 (1377), 10 (6), 11 (994), 13 (36) - the guard lengthWord < 8 used by WS-B would reject 1931/4344 = 44.4% of real SCPT blocks, so it must be reconsidered before relying on it. 0x0010 Begin payload = [u16 blockType][u16 bodyLength][extra], and bodyLength == End_opcode_offset + 4 - Begin_payload_end holds for 4344/4344 blocks (the trustworthy framing invariant).",
+      "tags": [
+        "script-vm",
+        "scda",
+        "message-opcodes",
+        "begin",
+        "ws-b"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "9127bdaf-ee4e-41c4-9350-0e3310bf0e56",
+      "timestamp": "2026-09-26T22:40:17.613054",
+      "category": "reference",
+      "priority": "medium",
+      "content": "SCDA misc confirmations (2026-09-26): 0x1098 RemoveScriptPackage carries NO payload (7 of 7 lengthWord = 0); its target is the calling-reference context set by the preceding 0x001C, so WS-B's 'no payload yet the source passes a package argument' question is answered - the payload has no argument. 0x1076 ModCrimeGold is a normal argument command (payload 01 00 47 0a 00 = argc1 + global token), not an unnamed opcode. Expression-side fid table (196 fids, fp=0) is unchanged from final_table.txt.",
+      "tags": [
+        "script-vm",
+        "scda",
+        "fid",
+        "ws-b"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 278,
+    "totalEntries": 282,
     "compressedCount": 2,
     "sessionCount": 28
   }
