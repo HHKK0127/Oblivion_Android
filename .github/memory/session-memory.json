@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-26T21:40:31.513732",
+  "lastUpdated": "2026-09-26T22:22:00.222928",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -3926,11 +3926,65 @@
         "emulator"
       ],
       "compressed": false
+    },
+    {
+      "id": "merge-blocker-20260926",
+      "timestamp": "2026-09-26T22:22:00.222928",
+      "category": "decision",
+      "priority": "high",
+      "content": "master merge of hhkk0127-script-vm-expansion (32 commits ahead, tip 9c608fc3) is conflict-free (git merge-tree --write-tree exit 0, tree d9b69d915aeebde762c9fc88df57c96f674f9e11, 32 files changed, 5932 insertions(+), 184 deletions(-)) but is BLOCKED by three uncommitted working-tree files that the merge would overwrite: app/src/main/cpp/CMakeLists.txt (+1/-3), app/src/main/cpp/engine/renderer.cpp (+44/-21), tools/host_tests/run_host_tests.sh (+2/-3). git merge refuses with 'Your local changes would be overwritten'. Precondition = the owning sessions commit those files. Do NOT merge, rebase, or push without explicit user approval.",
+      "tags": [
+        "merge",
+        "phase-67",
+        "git",
+        "blocker"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "phase-62-72-audit-20260926",
+      "timestamp": "2026-09-26T22:22:00.222928",
+      "category": "reference",
+      "priority": "high",
+      "content": "plan.md Phase 62-72 code-level coverage audit (2026-09-26), recorded in commits bf8a11d3 and eff4a8c3: 62 Foundation done (legal audit deferred, A7 release blocker); 63 Performance foundation done; 64 Real data pipeline done (20 record types decode); 65 Full world rendering IN PROGRESS (terrain/water b7222f25 + weather 13d9f905 landed; remaining = door/LOD/static-object NIF draw + WTHR-driven weather); 66 Characters and AI NOT STARTED (asset side ready, P20 interior REFR/NIF geometry missing); 67 Full Script VM exists only on branch hhkk0127-script-vm-expansion (master dispatch still 118 cases); 68 Game systems and GUI NOT STARTED (module inventory already present: game/ 10 managers + ui/ 58 sources, but real-record data driving is unproven); 69 Persistence much further along than its label; 70 Mods and load order NOT STARTED (plugins.txt/loadOrder/overrideRecord all absent, launcher_screen.cpp L487 is a hardcoded 7-entry mock); 71 UX and QA NOT STARTED (Japanese only); 72 Release NOT STARTED (no signingConfig, applicationId com.example.oblivion).",
+      "tags": [
+        "plan",
+        "phase-audit",
+        "roadmap"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "phase65-door-xtel-20260926",
+      "timestamp": "2026-09-26T22:22:00.222928",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Phase 65 door rendering is blocked by data, not by drawing code: DoorManager::useDoor() and performCellTransition() have zero gameplay callers (only renderer.cpp L1538 debug console uses getDoorManager()), world_manager.cpp L380 registers 3 hardcoded test doors, and teleport destinations live on the referencing REFR's XTEL subrecord (esm_reader.h L782) which is not decoded yet. XTEL decode is the precondition for a data-driven door transition.",
+      "tags": [
+        "phase-65",
+        "door",
+        "xtel",
+        "esm"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "gamestate-wip-20260926",
+      "timestamp": "2026-09-26T22:22:00.222928",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "A sibling session is mid-flight implementing a 'gamestate' console command (GameConsole GAMESTATE log line + debug panel buttons) and currently owns uncommitted edits in CHANGELOG.md, app/src/main/cpp/CMakeLists.txt, engine/renderer.cpp, ui/game_console.{cpp,h}, tools/host_tests/host_runner_main.cpp, tools/host_tests/run_host_tests.sh, MainActivity.kt, res/layout/activity_main.xml plus untracked world/game_state_report.{cpp,h} and tests/gamestate_report_tests.{cpp,h}. Treat these as another session's work in progress: never commit, revert, or stash them for coordinator-session bookkeeping.",
+      "tags": [
+        "worktree",
+        "ownership",
+        "gamestate"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 273,
+    "totalEntries": 277,
     "compressedCount": 2,
-    "sessionCount": 27
+    "sessionCount": 28
   }
 }
