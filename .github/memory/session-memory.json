@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-27T00:20:00+09:00",
+  "lastUpdated": "2026-09-27T00:49:02",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -4519,11 +4519,131 @@
         "ws-c"
       ],
       "compressed": false
+    },
+    {
+      "id": "1fa6afd5-62ad-4a34-8933-037a9824a242",
+      "timestamp": "2026-09-27T00:49:02",
+      "category": "decision",
+      "priority": "high",
+      "content": "Phase 66 P19 device verification found the real root cause of slow-motion gameplay: jni_bridge.cpp nativeRenderFrame passed the constant 0.0167f (60 fps) to Renderer::render(), so the simulation advanced one 60 Hz frame per RENDERED frame. Measured on the emulator (16-19 fps): gamestate reported time=12:00 and 60 real seconds later time=12:09, where timescale 30 demands 12:30 - about 32% of real time. Because the same deltaTime is forwarded to ImperialWeave, every dt-driven phase was affected (animation, AI, physics, combat, video decode, sun orbit). Fix: measure the interval with std::chrono::steady_clock, clamp to kMaxDelta = 0.1f (about a 10 fps floor) so a long cell load or a background return cannot teleport the world, fall back to 1/60 s on the first frame, and clear the marker in nativeCleanup and in the nativeInitEngine resume path.",
+      "tags": [
+        "phase66",
+        "p19",
+        "jni-bridge",
+        "frame-pacing",
+        "root-cause",
+        "delta-time"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "3fad1ea1-b1f5-4eb6-a44a-5952b15876a9",
+      "timestamp": "2026-09-27T00:49:02",
+      "category": "constraint",
+      "priority": "high",
+      "content": "The fixed-dt bug could not be caught by run_host_tests.sh: jni_bridge.cpp depends on Android-only headers and is not in the harness SOURCES. Any logic that lives only in the JNI layer is invisible to CI. Follow-up improvement I1: extract the frame pacing into an Android-independent FrameClock class under engine/ so the measured-dt, clamp and reset behaviour can be host-tested.",
+      "tags": [
+        "phase66",
+        "testing",
+        "host-tests",
+        "coverage-gap",
+        "improvement"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "e3fe9513-2e81-4a44-82b3-52aaac34cb19",
+      "timestamp": "2026-09-27T00:49:02",
+      "category": "reference",
+      "priority": "high",
+      "content": "Phase 66 P19 device A/B result (2026-09-27, emulator 1920x1080, density 420). Day vs night via the debug panel buttons: sky (44.2,60.4,54.1) -> (8.0,13.6,12.0) delta -36/-47/-42, mid (48.3,56.7,32.4) -> (16.6,16.8,11.0) delta -32/-40/-21, ground (45.0,53.8,34.0) -> (14.5,15.9,13.4) delta -31/-38/-21. Both sky and terrain change clearly, so the P19 acceptance condition is met. Weather clear vs storm changes the sky only (-12.8/-21.6/-20.9); mid and ground are unchanged, so the terrain-side weather effects (fog, cloud shadow) are still unimplemented (problem N2). The comparison tool is files/ab_time.py.",
+      "tags": [
+        "phase66",
+        "p19",
+        "device-verification",
+        "a-b-test",
+        "sky",
+        "weather"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "e94b2592-c5a8-4b73-9d15-7c295c15bd5c",
+      "timestamp": "2026-09-27T00:49:02",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Host test suites and counts after the P16-P19 work (run_host_tests.sh, one g++ invocation over 59 translation units): ScriptVMTests 22/22, Phase45UnitTests 41/41, Phase48StressTest 5/5, Phase48IntegrationTest 7/7, WatrDecodeTests 11/11, WeatherTransitionTests 14/14, InteriorCellTests 27/27, GameStateReportTests 30/30, Phase30IntegrationTest 1/1 (self-skipped without OBLIVION_ASSET_BASE). 158 assertions total. The CHANGELOG said 53 translation units, which was stale; it is now 59.",
+      "tags": [
+        "phase66",
+        "host-tests",
+        "test-counts",
+        "changelog"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "a62fb8c5-c517-42ff-9c86-57ad37e1a142",
+      "timestamp": "2026-09-27T00:49:02",
+      "category": "constraint",
+      "priority": "high",
+      "content": "Windows/Android environment pitfalls that have each cost real time in this project: (1) gradlew.bat fails when invoked through cmd /c because the working directory is not resolved - run it from PowerShell as '& .\\gradlew.bat assembleDebug', it takes about 14 minutes; (2) 'adb shell am start' is rejected with 'not exported from uid', so launch with 'monkey -p com.example.oblivion -c android.intent.category.LAUNCHER 1'; (3) the default logcat ring buffer holds only about 20 seconds, so run 'adb logcat -G 16M' before any verification; (4) app start to a usable menu is about 75 seconds because of ESM loading.",
+      "tags": [
+        "environment",
+        "windows",
+        "gradle",
+        "adb",
+        "logcat",
+        "pitfall"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "f51c33d6-7c75-4b29-b570-2272bb45422a",
+      "timestamp": "2026-09-27T00:49:02",
+      "category": "reference",
+      "priority": "high",
+      "content": "Debug panel tap coordinates on the 1920x1080 / density 420 emulator. The panel is a ScrollView, so the lower buttons are off screen until it is scrolled: 'adb shell input swipe 367 900 367 200 400' twice. Button centres: gamestate (367,543), time noon (367,643), time midnight (367,743), weather clear (367,843), weather storm (367,943). Debug toggle D is at (73,73); the panel close X is at (1799..1894, 26..121).",
+      "tags": [
+        "device-verification",
+        "debug-panel",
+        "coordinates",
+        "emulator"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "51b10cd7-0e8f-457f-9c88-7d036c85d41b",
+      "timestamp": "2026-09-27T00:49:02",
+      "category": "decision",
+      "priority": "medium",
+      "content": "P18 was closed as 'no real defect'. The title screen needs three taps (INTRO_MOVIE -> LOGO_DISPLAY -> MENU) by design, and 'Menu selection:' is only logged in the MENU state, which is why the first tap looked dead. The genuine P18 defect was log noise: applyMenuLayoutToButtons() runs every frame from renderMenu() -> computeMenuLayout(), so the six 'Menu hit rect' lines repeated at frame rate and pushed everything useful out of the ring buffer. They are now emitted only when the layout actually changes, after a single 'Menu hit layout' summary line.",
+      "tags": [
+        "phase66",
+        "p18",
+        "title-screen",
+        "logging",
+        "conclusion"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "7fdb7c7a-2782-4b05-9199-41aee4a97fd8",
+      "timestamp": "2026-09-27T00:49:02",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Open problems carried forward from the P16-P19 verification, to review with the user: N3 WorldManager::getCacheSize() returns cells.size(), so gamestate's 'cached=14686' is the registered exterior cell count, not a cache size; N4 the NAM0 field-major fix has only been exercised against synthetic bytes, never a real WTHR record; N5 the 'World Status: Time: 12.0' log and 'gamestate time=12:09' disagreed, which needs re-measuring because two independent clocks still exist (improvement I2: make SkyWeatherSystem the single time source); N6 the emulator renders at 16-19 fps against a 30 fps target. The full report is files/P16_P19_REPORT.md.",
+      "tags": [
+        "phase66",
+        "open-issues",
+        "improvement",
+        "follow-up"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 314,
+    "totalEntries": 322,
     "compressedCount": 2,
-    "sessionCount": 28
+    "sessionCount": 29
   }
 }

@@ -4,6 +4,7 @@
 #include <string>
 #include <memory>
 #include <array>
+#include <cstddef>
 #include <android/log.h>
 #include "../localization/localization_manager.h"
 #include "../video/bink_video_player.h"
@@ -164,6 +165,13 @@ private:
         float width[MAX_MENU_BUTTONS] = {0.0f};
     };
     MenuRowLayout menuLayout;
+
+    // P18: the hit rectangles are recomputed every frame (renderMenu ->
+    // computeMenuLayout), so the diagnostic below must fire only when the layout
+    // actually changes or it floods logcat at frame rate.
+    bool menuHitLogValid = false;
+    MenuRowLayout menuHitLogLayout;
+    size_t menuHitLogCount = 0;
 
     // The title screen draws dark text over bright parchment, so it runs the text renderer
     // in a style of its own: a gentler coverage window, a plain size multiplier, and an

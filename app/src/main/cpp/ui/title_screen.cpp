@@ -321,18 +321,38 @@ void TitleScreen::applyMenuLayoutToButtons() {
 
     float hitH = std::max(menuLayout.capHeight, 24.0f) * 1.8f;
     float hitY = menuLayout.baselineY - hitH * 0.78f;
+
+    // P18: renderMenu() recomputes the layout every frame, so this runs at frame rate while
+    // the row only depends on the screen size. Log once per distinct layout -- a repeating
+    // 6-line-per-frame trace buries everything else in logcat (see P21).
+    const bool layoutChanged =
+        !menuHitLogValid || menuHitLogCount != menuButtons.size() ||
+        menuHitLogLayout.startX != menuLayout.startX ||
+        menuHitLogLayout.baselineY != menuLayout.baselineY ||
+        menuHitLogLayout.scale != menuLayout.scale ||
+        menuHitLogLayout.gap != menuLayout.gap ||
+        menuHitLogLayout.capHeight != menuLayout.capHeight;
+    if (layoutChanged) {
+        menuHitLogLayout = menuLayout;
+        menuHitLogCount = menuButtons.size();
+        menuHitLogValid = true;
+        LOGI("Menu hit layout (screen %dx%d): startX=%.1f baselineY=%.1f scale=%.4f gap=%.1f cap=%.1f",
+             screenWidth, screenHeight, menuLayout.startX, menuLayout.baselineY,
+             menuLayout.scale, menuLayout.gap, menuLayout.capHeight);
+    }
+
     float x = menuLayout.startX;
     for (size_t i = 0; i < menuButtons.size(); ++i) {
         float w = menuLayout.width[i] * menuLayout.scale;
         menuButtons[i]->setPosition(x, hitY);
         menuButtons[i]->setSize(w, hitH);
         menuButtons[i]->setScreenSize(screenWidth, screenHeight);
-        // P18: log the effective rectangle so a tap can be matched against it. The row is
-        // drawn directly in renderMenu, so these rectangles are the only thing the hit test
-        // sees; any drift between the two is invisible without this trace.
-        LOGI("Menu hit rect [%zu] '%s': x=[%.1f..%.1f] y=[%.1f..%.1f] (screen %dx%d)",
-             i, menuButtons[i]->getLabel().c_str(), x, x + w, hitY, hitY + hitH,
-             screenWidth, screenHeight);
+        // P18: the row is drawn directly in renderMenu, so these rectangles are the only
+        // thing the hit test sees; any drift between the two is invisible without this trace.
+        if (layoutChanged) {
+            LOGI("Menu hit rect [%zu] '%s': x=[%.1f..%.1f] y=[%.1f..%.1f]",
+                 i, menuButtons[i]->getLabel().c_str(), x, x + w, hitY, hitY + hitH);
+        }
         x += w + menuLayout.gap;
     }
 }

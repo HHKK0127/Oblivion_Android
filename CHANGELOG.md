@@ -71,22 +71,47 @@ The current version is **0.9.10 (versionCode 910)**.
 - **All five native test suites now build and run**: `run_host_tests.sh` previously compiled only
   `script_vm_tests.cpp`, so `phase45_unit_tests`, `phase48_stress_test`, `phase48_integration_test`
   and `phase30_integration_test` existed in the tree but were never built or executed. The harness
-  now links 53 translation units of the real gameplay, asset, save, script, world and collision code
+  now links 59 translation units of the real gameplay, asset, save, script, world and collision code
   (`-lz` for the NIF reader, `--gc-sections` for size), leaving only two stand-ins: no-op GLES3 entry
   points, and a `PhysicsManager` whose `init()` returns false so callers take their existing
   "physics disabled" path - no suite can pass on fabricated simulation. `phase30_integration_test`
   records `SKIP_Assets_Unavailable` and succeeds when the Oblivion assets are absent, which is the
   normal CI case because they are not redistributable. Result: ScriptVMTests 22/22,
   Phase45UnitTests 41/41, Phase48StressTest 5/5, Phase48IntegrationTest 7/7,
-  Phase30IntegrationTest 1/1 (self-skipped). The CI job itself was hardened at the same time:
+  WatrDecodeTests 11/11, WeatherTransitionTests 14/14, InteriorCellTests 27/27,
+  GameStateReportTests 30/30, Phase30IntegrationTest 1/1 (self-skipped) - 158 assertions in
+  total, and the suites added since the harness was first written (WATR decode, weather
+  transition, interior cells, game state report) are the ones that cover P5, P13, P15 and P16. The CI job itself was hardened at the same time:
   `zlib1g-dev` is installed explicitly, because the harness links `-lz` and
   `assets/esm_reader.cpp` / `assets/bsa_reader.cpp` include `<zlib.h>`, and the job timeout went
-  from 15 to 30 minutes. 53 translation units are compiled by a single `g++` invocation, so the
+  from 15 to 30 minutes. 59 translation units are compiled by a single `g++` invocation, so the
   compile is sequential and cannot use the runner's core count: the run measured 12m15s end to end,
   which left too little headroom under 15 minutes. The job runs in parallel with the APK build, so
   the longer ceiling costs no wall clock time.
 
 ### Fixed
+- **Every `dt`-driven system ran in slow motion on any device below 60 fps.** `nativeRenderFrame`
+  handed `Renderer::render()` the hard-coded constant `0.0167f`, so the simulation advanced by
+  exactly one 60 Hz frame per *rendered* frame regardless of how long that frame really took.
+  The emulator renders at 16-19 fps, so the world ran at about a third of real time: with the
+  P19 debug buttons, `gamestate` reported `time=12:00` and, 60 real seconds later, `time=12:09`
+  where the expected reading was `12:30` (timescale 30 is 30 game minutes per real minute).
+  Because the same `deltaTime` is forwarded to `ImperialWeave`, every phase was affected -
+  animation, AI, physics, combat, the video decoder and the sun's orbit - and the fault was
+  invisible in the log because `Frame rendered: deltaTime=0.017` looked exactly right. The frame
+  now measures its own interval with `std::chrono::steady_clock`, clamped to 100 ms
+  (`kMaxDelta`, roughly a 10 fps floor) so a long cell load or a return from the background
+  cannot teleport the world forward by seconds, and falling back to 1/60 s on the first frame.
+  The marker is cleared by `nativeCleanup` and by the resume path in `nativeInitEngine`, so a
+  new renderer's first frame is exact rather than merely bounded. No host test can cover this:
+  `jni_bridge.cpp` is Android-only and is not part of `run_host_tests.sh`.
+- **`Menu hit rect` flooded logcat at frame rate.** `applyMenuLayoutToButtons()` is reached from
+  `renderMenu()` -> `computeMenuLayout()` on every frame, so the six hit rectangles were logged
+  6 lines per frame - over 100 lines a second at the emulator's frame rate - and pushed the
+  useful lines out of the ring buffer within seconds. That is what made earlier device
+  verification hard to read. The rectangles are now emitted only when the layout actually
+  changes, preceded by a single `Menu hit layout` summary line, and the row is drawn directly in
+  `renderMenu` so the rectangles remain the only thing the hit test sees.
 - **The title screen video kept playing for the whole session.** `GameRenderer.releaseTitleVideo()`
   existed but nothing ever called it, so once the player left the title screen `MediaPlayer`
   went on decoding and the OES texture went on being uploaded every frame - the
