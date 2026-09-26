@@ -416,6 +416,7 @@ private:
     void cmdSetTime(const std::vector<std::string>& args);
     void cmdLoadCell(const std::vector<std::string>& args);
     void cmdWorldInfo(const std::vector<std::string>& args);
+    void cmdGameState(const std::vector<std::string>& args);
 
     // Save/Load commands
     void cmdSave(const std::vector<std::string>& args);

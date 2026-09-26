@@ -392,6 +392,16 @@ class MainActivity : Activity() {
                 Log.d(TAG, "Executed: teleportinterior")
             }
 
+            findViewById<Button>(R.id.btn_debug_exterior)?.setOnClickListener {
+                gameRenderer?.nativeExecuteConsoleCommand("teleportexterior")
+                Log.d(TAG, "Executed: teleportexterior")
+            }
+
+            findViewById<Button>(R.id.btn_debug_gamestate)?.setOnClickListener {
+                gameRenderer?.nativeExecuteConsoleCommand("gamestate")
+                Log.d(TAG, "Executed: gamestate")
+            }
+
             Log.i(TAG, "Debug buttons setup complete")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to setup debug buttons: ${e.message}", e)

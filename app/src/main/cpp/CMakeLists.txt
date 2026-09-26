@@ -72,6 +72,7 @@ add_library(native-lib SHARED
     # World System (Phase 3+)
     world/world_manager.cpp
     world/world_item_manager.cpp
+    world/game_state_report.cpp
     world/cell.cpp
     world/cell_loader.cpp
     world/cell_transition_manager.cpp

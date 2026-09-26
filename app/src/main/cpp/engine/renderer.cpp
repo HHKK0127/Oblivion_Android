@@ -8,6 +8,7 @@
 #include "../assets/bsa_reader.h"
 #include "../inventory/item_factory.h"
 #include "../physics/physics_manager.h"
+#include "../world/game_state_report.h"
 // #include "../jni_audio_bridge.h"  // Deferred - requires Java MainActivity
 
 #include <glm/glm.hpp>
@@ -989,8 +990,47 @@ bool Renderer::initGameSystems() {
     refs.loadCell = [this](int32_t x, int32_t y) {
         if (worldManager) worldManager->loadCell(x, y);
     };
-    refs.getWorldInfo = []() -> std::string {
-        return "World info not available";
+    refs.getWorldInfo = [this]() -> std::string {
+        // Phase 66 P16: one line that answers "where is the game right now?".
+        // Every device-verification mistake so far (P15 especially) came from
+        // not knowing whether the world was even being drawn, so this is the
+        // first thing any measurement should read. The format itself lives in
+        // GameStateReport so a host test can pin it without a device.
+        GameStateReport::Snapshot snapshot;
+        snapshot.phase = showLauncher ? GameStateReport::Phase::Launcher
+                                      : (showTitleScreen ? GameStateReport::Phase::Title
+                                                         : GameStateReport::Phase::Playing);
+        if (!worldManager) return GameStateReport::format(snapshot);
+        snapshot.worldAvailable = true;
+
+        const bool indoors = worldManager->isPlayerIndoors();
+        snapshot.space = indoors ? GameStateReport::Space::Interior
+                                 : GameStateReport::Space::Exterior;
+
+        if (auto cell = worldManager->getCurrentCell()) {
+            snapshot.hasCell = true;
+            snapshot.cellName = cell->cellName;
+            snapshot.editorID = cell->editorID;
+            snapshot.cellFormID = cell->tesFormID;
+            snapshot.gridX = cell->cellX;
+            snapshot.gridY = cell->cellY;
+        }
+
+        snapshot.activeCells = worldManager->getActiveCells().size();
+        snapshot.cachedCells = worldManager->getCacheSize();
+        snapshot.terrainCells = worldManager->countExteriorCellsWithTerrain();
+        snapshot.timeOfDay = worldManager->getTimeOfDay();
+        snapshot.day = worldManager->getDayCount();
+
+        if (playerController) {
+            const glm::vec3 pos = playerController->getPlayerPosition();
+            snapshot.hasPlayerPosition = true;
+            snapshot.playerX = pos.x;
+            snapshot.playerY = pos.y;
+            snapshot.playerZ = pos.z;
+        }
+
+        return GameStateReport::format(snapshot);
     };
     // Phase 66: Map debug callbacks
     refs.teleportTo = [this](float x, float y, float z) {

@@ -16,6 +16,19 @@ The current version is **0.9.10 (versionCode 910)**.
 ## [Unreleased]
 
 ### Added
+- **`gamestate` console command reports where the game actually is, in one line.** Every
+  device-verification mistake made so far - most expensively the P15 interior bug, which was
+  first diagnosed as "outdoor geometry still renders indoors" when the app was simply still
+  sitting on the title screen - came from not being able to tell, cheaply, whether the world was
+  even being drawn. `refs.getWorldInfo` was a stub returning `"World info not available"`; it now
+  builds `GAMESTATE phase=<LAUNCHER|TITLE|PLAYING> space=<INTERIOR|EXTERIOR> cell="<name>"
+  formID=0x... editorID=... grid=(x,y) active=N cached=N terrainCells=N time=HH:MM day=D
+  pos=(x,y,z)`, with `grid` omitted indoors because interior cells have no coordinate. The new
+  `gamestate` command (alias `state`) prints it to the console **and** writes it to logcat as
+  `GameConsole: GAMESTATE ...`, so an automated run can read the phase with `adb logcat -d`
+  instead of analysing a screenshot. The debug panel gains `Game State (logcat)` and
+  `Exit Interior Cell` buttons (`btn_debug_gamestate`, `btn_debug_exterior`) so both halves of an
+  interior A/B test are reachable by tap alone.
 - **JPWiki Japanese localization data**: `app/src/main/assets/localization/jpwiki_localization.tsv`
   (5.7 MB, UTF-8/TSV) carries 28,686 strings extracted from `JPWikiMod_Vanilla.esp`,
   `JPWikiMod_Vanilla+SI.esp` and `JPBooks_Merged[V+S+ML].esp` - 723 game settings, 640 book

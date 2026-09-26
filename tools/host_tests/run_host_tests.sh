@@ -84,6 +84,7 @@ SOURCES=(
   app/src/main/cpp/tests/watr_decode_tests.cpp
   app/src/main/cpp/tests/weather_transition_tests.cpp
   app/src/main/cpp/tests/interior_cell_tests.cpp
+  app/src/main/cpp/tests/gamestate_report_tests.cpp
   app/src/main/cpp/quest/quest_flow_controller.cpp
   app/src/main/cpp/localization/localization_manager.cpp
   app/src/main/cpp/quest/quest_stage_manager.cpp
@@ -126,6 +127,7 @@ SOURCES=(
   app/src/main/cpp/collision/aabb_tree.cpp
   app/src/main/cpp/collision/character_controller.cpp
   app/src/main/cpp/world/world_manager.cpp
+  app/src/main/cpp/world/game_state_report.cpp
   app/src/main/cpp/world/cell.cpp
   app/src/main/cpp/world/door.cpp
   app/src/main/cpp/world/cell_transition_manager.cpp

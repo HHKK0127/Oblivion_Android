@@ -634,6 +634,9 @@ void GameConsole::registerBuiltinCommands() {
     registerCommand("settime", "Set time of day: settime <hour 0-24>", [this](const std::vector<std::string>& args) { cmdSetTime(args); });
     registerCommand("loadcell", "Load cell: loadcell <x> <y>", [this](const std::vector<std::string>& args) { cmdLoadCell(args); });
     registerCommand("worldinfo", "Show world info", [this](const std::vector<std::string>& args) { cmdWorldInfo(args); });
+    // Phase 66 P16: phase/cell/space dump, also emitted to logcat.
+    registerCommand("gamestate", "Show phase, space and current cell (also logs)", [this](const std::vector<std::string>& args) { cmdGameState(args); });
+    registerCommand("state", "Alias for gamestate", [this](const std::vector<std::string>& args) { cmdGameState(args); });
     // Phase 66: Map debug commands
     registerCommand("playerpos", "Show player position", [this](const std::vector<std::string>&) {
         if (gameRefs.getPlayerPosition) {
@@ -2072,6 +2075,18 @@ void GameConsole::cmdWorldInfo(const std::vector<std::string>& args) {
     } else {
         appendOutput("World system not connected");
     }
+}
+
+void GameConsole::cmdGameState(const std::vector<std::string>& args) {
+    // Phase 66 P16: same payload as worldinfo, but also written to logcat so a
+    // device measurement can read the phase without a screenshot.
+    if (!gameRefs.getWorldInfo) {
+        appendOutput("World system not connected");
+        return;
+    }
+    const std::string state = gameRefs.getWorldInfo();
+    appendOutput(state);
+    LOGI_CONSOLE("%s", state.c_str());
 }
 
 // ============================================================
