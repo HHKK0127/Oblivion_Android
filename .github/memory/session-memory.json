@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-26T00:30:00Z",
+  "lastUpdated": "2026-09-26T01:00:00Z",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -4258,10 +4258,24 @@
         "measurement"
       ],
       "compressed": false
+    },
+    {
+      "id": "b3bcc336-95cd-4cac-b29e-dde15e5fd02e",
+      "timestamp": "2026-09-26T01:00:00Z",
+      "category": "constraint",
+      "priority": "high",
+      "content": "The three-path merge blocker is resolved. Session 9427ac74 committed the GameStateReport increment as 9e1fd406 (\"Phase 66 P16: one-line game state report for device verification\") on 2026-09-26, so CMakeLists.txt / engine/renderer.cpp / tools/host_tests/run_host_tests.sh and the four new game_state_report / gamestate_report_tests files are in master. git status --porcelain reports only 964d16fb's own documentation edits, and git merge-tree --write-tree master hhkk0127-script-vm-expansion is still exit 0 (merged root tree f2ab962a). The remaining gate on the merge is the user's approval plus the branch's rebase-and-re-verify pass.",
+      "tags": [
+        "merge",
+        "ws-b",
+        "master",
+        "9427ac74"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 296,
+    "totalEntries": 297,
     "compressedCount": 2,
     "sessionCount": 28
   }

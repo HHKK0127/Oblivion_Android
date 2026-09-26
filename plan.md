@@ -681,7 +681,10 @@ workstreams that can run at the same time without fighting each other.
   intersecting `git status --porcelain` with `git diff --name-only master...hhkk0127-script-vm-expansion`
   (32 paths) yields exactly `CMakeLists.txt`, `engine/renderer.cpp` and `run_host_tests.sh`, and none of
   the four untracked files collides with a path the merge adds. A commit request was sent to that
-  session on 2026-09-26.
+  session on 2026-09-26 and has been carried out: the increment landed as `9e1fd406` (`Phase 66 P16:
+  one-line game state report for device verification`), `git status --porcelain` now reports only this
+  session's own documentation edits, and the three-path merge blocker is therefore resolved rather
+  than pending.
 - **`.github/workflows/android.yml` has been pre-validated against the real project so the first CI run is not a debugging session.** Three mismatches were found and fixed: the workflow set up JDK 17 while `gradle/gradle-daemon-jvm.properties` pins `toolchainVersion=21`, so the daemon JVM criteria could not be satisfied; `ndkVersion` was not pinned anywhere, leaving AGP free to resolve a different NDK than the one the workflow installs (it is now `26.1.10909125` in `app/build.gradle`, matching AGP 8.5's default and the local SDK, verified with a successful `assembleDebug`); and `cmake;3.22.1` — which AGP 8.5 requires and will not substitute — is now installed explicitly alongside the NDK, after `sdkmanager --licenses`. The workflow's version-consistency gate was also run locally and passes: `versionName=0.9.10` derives `versionCode=910`. The remaining unverified parts are the GitHub-hosted runner itself and the native build time for 3 ABIs, which the 60-minute timeout covers. The first run has since happened (`d94317bc`, run 35884733212, 6m23s, green), which confirms the pre-validation: the JDK 21, NDK and CMake pins were all correct and the first green run needed no workflow fix
 - **WS-B can start as a separate worktree session.** A worktree
   session branches off committed `master`, and `master` now carries the verified project
@@ -719,8 +722,13 @@ rather than scheduled**: `git merge` is refused while other workstreams hold unc
 three paths the merge rewrites (`app/src/main/cpp/CMakeLists.txt`, `engine/renderer.cpp`,
 `tools/host_tests/run_host_tests.sh`), all three of which belong to session `9427ac74`'s
 GameStateReport increment - re-checked 2026-09-26, all three still modified, and a request to
-host-test, build and commit that increment has been sent. The branch owner has also asked for a
-rebase onto `master` plus a re-verification pass before the merge, and moving
+host-test, build and commit that increment has been sent. **That request was acted on the same day:
+session `9427ac74` committed the whole increment as `9e1fd406` (`Phase 66 P16: one-line game state
+report for device verification`), so all eight paths are now in `master`, `git status --porcelain`
+returns only this session's own documentation edits, and the three-path blocker is gone.**
+`git merge-tree --write-tree` re-run at that commit is still `exit 0` with the branch's `51248b09`
+(the merged root tree is `f2ab962a`), so the content merge remains conflict-free. The branch owner has
+also asked for a rebase onto `master` plus a re-verification pass before the merge, and moving
 `master` needs the user's approval because it is the shared branch. The preparation that can be done
 without approval is done: the content merge is verified conflict-free and the branch's own host-test
 run is green.
