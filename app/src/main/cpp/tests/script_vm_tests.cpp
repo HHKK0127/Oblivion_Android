@@ -1470,11 +1470,13 @@ void ScriptVMTests::testNativeScdaDecoder() {
         payload.push_back(0x00);
         appendU16(payload, 0);   // no format arguments
         appendU16(payload, 2);   // two buttons
+        appendU16(payload, 1);   // button marker
         appendU16(payload, 4);
         payload.push_back('Y');
         payload.push_back('e');
         payload.push_back('s');
         payload.push_back(0x00);
+        appendU16(payload, 1);   // button marker
         appendU16(payload, 3);
         payload.push_back('N');
         payload.push_back('o');
@@ -1521,6 +1523,47 @@ void ScriptVMTests::testNativeScdaDecoder() {
                         result.instructions[0].formatArgumentCount == 0;
         record("NativeScda: Message framing", ok,
                "Message splits into text, format arguments and a zero word",
+               getTimeMs38() - start);
+    }
+
+    // Test 10d: a real tombstone message with two buttons
+    {
+        const float start = getTimeMs38();
+        // Payload taken verbatim from Oblivion3.esm: the Countess
+        // Sheen-In-Glade tombstone offers "Pry Coffin Open" and
+        // "Leave it Alone".
+        const char* hex =
+            "01005c0048657265206c69657320436f756e7465737320536865656e2d496e2d"
+            "476c6164652c204d6174726f6e205363686f6c6172206f6620566974686172"
+            "6e2c20616e6420416d6261737361646f72206f6620426c61636b204d617273"
+            "682e0000020001000f0050727920436f6666696e204f70656e01000e004c65"
+            "61766520697420416c6f6e65";
+        std::vector<uint8_t> payload;
+        for (size_t i = 0; hex[i] != '\0' && hex[i + 1] != '\0'; i += 2) {
+            const auto nibble = [](char c) -> uint8_t {
+                if (c >= '0' && c <= '9') {
+                    return static_cast<uint8_t>(c - '0');
+                }
+                return static_cast<uint8_t>(c - 'a' + 10);
+            };
+            payload.push_back(static_cast<uint8_t>((nibble(hex[i]) << 4) |
+                                                   nibble(hex[i + 1])));
+        }
+
+        std::vector<uint8_t> code;
+        appendInstruction(code, 0x1000, payload);
+
+        const NativeDecodeResult result = decodeNativeScda(code);
+        const bool ok = result.success && result.instructions.size() == 1 &&
+                        !result.instructions[0].framingFailed &&
+                        result.instructions[0].buttonCount == 2 &&
+                        result.instructions[0].buttonTexts.size() == 2 &&
+                        result.instructions[0].buttonTexts[0] ==
+                            "Pry Coffin Open" &&
+                        result.instructions[0].buttonTexts[1] ==
+                            "Leave it Alone";
+        record("NativeScda: MessageBox tombstone", ok,
+               "A real two-button tombstone message frames exactly",
                getTimeMs38() - start);
     }
 

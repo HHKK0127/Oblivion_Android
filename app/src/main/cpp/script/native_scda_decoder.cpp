@@ -385,6 +385,17 @@ bool decodeStringCommand(uint16_t opcode, const uint8_t* payload, uint32_t size,
             out.buttonCount = readU16(payload + cursor);
             cursor += 2;
             for (uint16_t i = 0; i < out.buttonCount; ++i) {
+                // Each button carries a leading marker word that is always 1,
+                // followed by the usual length-prefixed string.
+                if (cursor + 2 > size) {
+                    error = "truncated button marker";
+                    return false;
+                }
+                if (readU16(payload + cursor) != 1) {
+                    error = "unexpected button marker";
+                    return false;
+                }
+                cursor += 2;
                 std::string button;
                 if (!readNativeString(payload, size, cursor, button)) {
                     error = "truncated button text";
