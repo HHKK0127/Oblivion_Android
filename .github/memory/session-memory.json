@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-26T23:36:08+09:00",
+  "lastUpdated": "2026-09-26T23:41:57+09:00",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -4278,7 +4278,7 @@
       "timestamp": "2026-09-26T01:30:00Z",
       "category": "reference",
       "priority": "high",
-      "content": "WS-B channel state, measured 2026-09-26: branch hhkk0127-script-vm-expansion tip is 80f02472 (\"Accept the minimal Begin payload shape\"), 34 commits ahead of merge base b3529e8a and 59 behind master. Seven newest: 3e13cfdb, 9a7fef9d, d2cb7013, 6da0cd9e, 9c608fc3, 51248b09, 80f02472. git merge-tree --write-tree master hhkk0127-script-vm-expansion exits 0, merged root tree 7f9729c6.",
+      "content": "WS-B channel state, measured 2026-09-26 (latest): branch hhkk0127-script-vm-expansion tip is 3aa7a4e9 (\"Frame the message tail as a value word and a zero word\"), 35 commits ahead of merge base b3529e8a and 62 behind master. Eight newest: 3e13cfdb, 9a7fef9d, d2cb7013, 6da0cd9e, 9c608fc3, 51248b09, 80f02472, 3aa7a4e9. git merge-tree --write-tree master hhkk0127-script-vm-expansion exits 0, merged root tree d0a33446.",
       "tags": [
         "ws-b",
         "merge",
@@ -4378,7 +4378,7 @@
       "timestamp": "2026-09-26T02:30:00Z",
       "category": "reference",
       "priority": "medium",
-      "content": "Merge/tip state measured 2026-09-26 (second confirmation): master is 0453aaaa and origin/master is aabb9dd7 (unpushed); WS-B branch tip 80f02472 is 34 commits ahead of the merge base b3529e8a and 59-60 behind master; git merge-tree --write-tree master hhkk0127-script-vm-expansion exits 0 with merged root tree 7f9729c6. The only remaining gate before the merge is the user's approval for moving master; the branch owner still owes its rebase-and-re-verify pass. Note git rev-parse --short fails with \"fatal: Needed a single revision\" when several refs are passed at once - resolve refs one at a time.",
+      "content": "Merge/tip state measured 2026-09-26 (third confirmation, supersedes the 0453aaaa / 7f9729c6 reading): master is 202b7a87 and origin/master is aabb9dd7 (unpushed); WS-B branch tip 3aa7a4e9 is 35 commits ahead of the merge base b3529e8a and 62 behind master; git merge-tree --write-tree master hhkk0127-script-vm-expansion exits 0 with merged root tree d0a33446. The root tree moved from 7f9729c6 because both sides advanced, not because a conflict appeared. The only remaining gate before the merge is the user's approval for moving master; the branch owner still owes its rebase-and-re-verify pass. Note git rev-parse --short fails with \"fatal: Needed a single revision\" when several refs are passed at once - resolve refs one at a time.",
       "tags": [
         "merge",
         "master",
@@ -4463,10 +4463,17 @@
         "session-state"
       ],
       "compressed": false
+    },
+    {
+      "id": "d5201b32-8714-46cf-8d5d-29172175c9d8",
+      "timestamp": "2026-09-26T23:41:57+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "0x1059 message command trailer, settled by WS-B 3aa7a4e9 against this session's second measurement batch: the stored payload is [u16 formatCount][format tokens][u16 value][u16 0]. The old decoder required a zero u32 tail and therefore rejected the eight retail records whose value word is nonzero, and the stored count word undercounts in a few records, so the operand list is now walked greedily until the fixed 4-byte tail remains (readGreedyTokenBlock, cursor+2 skips the count word while cursor+4 < size) and the end test is readU16(payload+cursor+2) != 0 instead of readU32 != 0. This is consistent with the measurement recorded here - the trailer consumed by reverse framing from the end is 223 zero / 7 non-zero - but WS-B counts EIGHT records with a nonzero value word against this session's SEVEN, a one-record bookkeeping discrepancy that is unresolved and harmless because the greedy walk does not depend on it. Do not 'fix' the count word; it equals the number of '%' format specifiers in the text."
     }
   ],
   "metadata": {
-    "totalEntries": 310,
+    "totalEntries": 311,
     "compressedCount": 2,
     "sessionCount": 28
   }
