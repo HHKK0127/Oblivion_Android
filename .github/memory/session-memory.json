@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-26T00:10:00Z",
+  "lastUpdated": "2026-09-26T00:30:00Z",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -4217,10 +4217,51 @@
         "master"
       ],
       "compressed": false
+    },
+    {
+      "id": "cefdca0f-6186-4f94-9593-4ac49259e2d1",
+      "timestamp": "2026-09-26T00:30:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "The u16 following a text body in 0x1000 / 0x1059 / 0x114D is the count of '%' format specifiers in that text, not the operand count: measured 482/482 (0x1000), 230/230 (0x1059), 4/4 (0x114D) over the 2,393 SCPT records (probe_struct3.py / struct3.txt). For 0x1059 the operand list must be bounded by the fixed 4-byte trailer - consume operand tokens while more than 4 bytes remain - which frames 230/230. ValenDrethScript is the only record where the two disagree (1 specifier, 2 operands, 'DEBUG: Valen Dreth last info, convTimer to %.2f'). The 0x1059 trailer is 223 all-zero and 7 non-zero (01 00 00 00 x3, 0a 00 00 00 x2, 05 00, 07 00).",
+      "tags": [
+        "script-vm",
+        "scda",
+        "string-opcodes",
+        "measurement"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "268df20d-a77b-4e38-94b7-0911b69106ef",
+      "timestamp": "2026-09-26T00:30:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "0x001D is a per-block header and not an instruction: over all 2,393 SCPT records it appears exactly once per SCDA block, always as the block's first instruction, never twice, with a zero length word and an empty payload. Structural length words are absolute: 0x0011 End zero-length 4,344/4,344; 0x0019 EndIf zero-length 10,530/10,530; 0x001E Return zero-length 191/191; 0x0017 Else exactly 2 bytes 953/953. The plan's return row had listed only the 30 positionally paired returns.",
+      "tags": [
+        "script-vm",
+        "scda",
+        "structure-opcodes",
+        "measurement"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "a96cfc6c-0e45-41f7-8fb1-bcedccb36795",
+      "timestamp": "2026-09-26T00:30:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Second WS-B measurement batch (2026-09-26) sent from session 964d16fb: five Begin length words with lengthWord >= 4 the correct precondition (no block below 6), 0x001D per-block header, 0x1000 button area [u16 count][count x [u16 1][u16 len][text]] exact 482/482, 0x1010 has no trailing bytes and accepts f / s for its value, and the string count word is a specifier count. Sources: files\\scro_probe\\probe_struct.py, probe_struct2.py, probe_struct3.py.",
+      "tags": [
+        "ws-b",
+        "handoff",
+        "measurement"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 293,
+    "totalEntries": 296,
     "compressedCount": 2,
     "sessionCount": 28
   }
