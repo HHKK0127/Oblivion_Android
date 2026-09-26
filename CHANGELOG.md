@@ -74,6 +74,16 @@ The current version is **0.9.10 (versionCode 910)**.
   the longer ceiling costs no wall clock time.
 
 ### Fixed
+- **Weather transitions finished in a fraction of their configured duration**:
+  `SkyWeatherSystem::setWeather()` lerped the live `currentWeather_` toward `targetWeather_`
+  by the absolute progress `t` on every frame. Because the source of each lerp was the
+  already-partially-updated state, the ramp converged geometrically: a 30-second transition
+  reached 90% of the target in about 1.5 seconds and looked like an instant snap. The system
+  now snapshots the starting state (`startWeather_`) when a transition begins and interpolates
+  from that fixed origin, so the ramp is linear in time (50% at 15 s, 99% at 29.7 s for a 30 s
+  transition). `setWeatherImmediate()` and `init()` seed the snapshot as well. A new
+  `WeatherTransitionTests` host suite drives the system at a fixed 60 Hz step and fails against
+  the old geometric behaviour, so the regression is locked down.
 - **Water reflection colour was hard-coded instead of read from WATR**: the water fragment
   shader blended the surface toward a fixed sky tint `vec3(0.55, 0.67, 0.78)`, so every body of
   water reflected the same colour regardless of the record that defined it. The shader now takes

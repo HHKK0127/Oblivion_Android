@@ -117,6 +117,7 @@ public:
         // Set initial state
         currentWeather_ = weatherPresets_[static_cast<size_t>(WeatherType::CLEAR)];
         targetWeather_ = currentWeather_;
+        startWeather_ = currentWeather_;
 
         // Set initial time
         gameTime_ = 10.0f; // 10:00 AM
@@ -170,6 +171,10 @@ public:
 
     void setWeather(WeatherType type, float transitionTime = 30.0f) {
         std::lock_guard<std::mutex> lock(mutex_);
+        // Snapshot the current state so the transition interpolates from a fixed
+        // origin. Lerping currentWeather_ toward targetWeather_ in place would
+        // converge geometrically and finish in a fraction of transitionTime.
+        startWeather_ = currentWeather_;
         targetWeather_ = weatherPresets_[static_cast<size_t>(type)];
         targetWeather_.transitionTime = transitionTime;
         transitionProgress_ = 0.0f;
@@ -181,6 +186,7 @@ public:
         std::lock_guard<std::mutex> lock(mutex_);
         currentWeather_ = weatherPresets_[static_cast<size_t>(type)];
         targetWeather_ = currentWeather_;
+        startWeather_ = currentWeather_;
         transitionProgress_ = 1.0f;
     }
 
@@ -351,6 +357,7 @@ private:
 
     WeatherState currentWeather_;
     WeatherState targetWeather_;
+    WeatherState startWeather_;
     float transitionProgress_ = 1.0f;
 
     std::array<WeatherState, static_cast<size_t>(WeatherType::COUNT)> weatherPresets_;
@@ -411,23 +418,25 @@ private:
 
     void interpolateWeather() {
         float t = transitionProgress_;
+        // Interpolate from the snapshot taken when the transition started, not
+        // from the partially-updated current state.
         // Lerp sky colors
         for (int i = 0; i < 3; i++) {
-            currentWeather_.sky.zenith[i] = lerp(currentWeather_.sky.zenith[i],
+            currentWeather_.sky.zenith[i] = lerp(startWeather_.sky.zenith[i],
                                                   targetWeather_.sky.zenith[i], t);
-            currentWeather_.sky.horizon[i] = lerp(currentWeather_.sky.horizon[i],
+            currentWeather_.sky.horizon[i] = lerp(startWeather_.sky.horizon[i],
                                                    targetWeather_.sky.horizon[i], t);
-            currentWeather_.sky.ambient[i] = lerp(currentWeather_.sky.ambient[i],
+            currentWeather_.sky.ambient[i] = lerp(startWeather_.sky.ambient[i],
                                                     targetWeather_.sky.ambient[i], t);
         }
         // Lerp fog/visibility
-        currentWeather_.visibility = lerp(currentWeather_.visibility,
+        currentWeather_.visibility = lerp(startWeather_.visibility,
                                            targetWeather_.visibility, t);
         // Lerp wind
-        currentWeather_.windSpeed = lerp(currentWeather_.windSpeed,
+        currentWeather_.windSpeed = lerp(startWeather_.windSpeed,
                                           targetWeather_.windSpeed, t);
         // Lerp clouds
-        currentWeather_.clouds.coverage = lerp(currentWeather_.clouds.coverage,
+        currentWeather_.clouds.coverage = lerp(startWeather_.clouds.coverage,
                                                 targetWeather_.clouds.coverage, t);
 
         if (transitionProgress_ >= 1.0f) {
