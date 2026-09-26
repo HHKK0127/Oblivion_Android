@@ -190,7 +190,6 @@ add_library(native-lib SHARED
     ui/ui_alert_notification.cpp
     ui/ui_minimap.cpp
     ui/ui_player_stats.cpp
-    ui/ui_manager.cpp
     ui/ui_joystick.cpp
     ui/virtual_controller.cpp
     ui/crosshair.cpp

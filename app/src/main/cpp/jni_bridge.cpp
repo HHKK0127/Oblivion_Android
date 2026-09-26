@@ -25,8 +25,7 @@ extern "C" {
     void jni_audio_set_main_activity(jobject activity);
 }
 
-// Exposes the active Renderer to other translation units (e.g. the dialogue JNI
-// entry points in com_example_oblivion_OblivionEngine.cpp).
+// Exposes the active Renderer to other translation units.
 extern "C" Renderer* jni_bridge_get_renderer() {
     return g_renderer;
 }
@@ -925,37 +924,6 @@ Java_com_example_oblivion_GameRenderer_nativeOnBackKey(
     LOGI("nativeOnBackKey called");
     if (g_renderer) {
         return g_renderer->handleBackKey() ? JNI_TRUE : JNI_FALSE;
-    }
-    return JNI_FALSE;
-}
-
-// OblivionEngine helpers (used by GameActivity which talks directly to OblivionEngine)
-extern "C" JNIEXPORT void JNICALL
-Java_com_example_oblivion_OblivionEngine_nativeSetEngineHandle(
-        [[maybe_unused]] JNIEnv* env,
-        [[maybe_unused]] jobject obj,
-        jlong handle) {
-    LOGI("nativeSetEngineHandle: handle=%lld", (long long)handle);
-    g_renderer = reinterpret_cast<Renderer*>(handle);
-}
-
-extern "C" JNIEXPORT jboolean JNICALL
-Java_com_example_oblivion_OblivionEngine_nativeOnBackKey(
-        [[maybe_unused]] JNIEnv* env,
-        [[maybe_unused]] jobject obj) {
-    LOGI("OblivionEngine.nativeOnBackKey called");
-    if (g_renderer) {
-        return g_renderer->handleBackKey() ? JNI_TRUE : JNI_FALSE;
-    }
-    return JNI_FALSE;
-}
-
-extern "C" JNIEXPORT jboolean JNICALL
-Java_com_example_oblivion_OblivionEngine_nativeIsExitRequested(
-        [[maybe_unused]] JNIEnv* env,
-        [[maybe_unused]] jobject obj) {
-    if (g_renderer) {
-        return g_renderer->isExitRequested() ? JNI_TRUE : JNI_FALSE;
     }
     return JNI_FALSE;
 }
