@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-26T00:00:00Z",
+  "lastUpdated": "2026-09-26T00:10:00Z",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -4202,10 +4202,25 @@
         "git"
       ],
       "compressed": false
+    },
+    {
+      "id": "merge-blocker-owner-gamestate-9427ac74-20260926",
+      "timestamp": "2026-09-26T00:10:00Z",
+      "category": "constraint",
+      "priority": "high",
+      "content": "The uncommitted paths that keep git merge from accepting hhkk0127-script-vm-expansion into master all belong to session 9427ac74-c35e-4e3d-b47e-79c1c4621727 (GameStateReport increment), not to WS-C: world/game_state_report.{h,cpp} and tests/gamestate_report_tests.{h,cpp} are new files created 2026-09-26 12:48, and the same increment edits app/src/main/cpp/CMakeLists.txt, engine/renderer.cpp (42 lines: the game_state_report.h include plus the refs.getWorldInfo lambda switched to GameStateReport::format), tools/host_tests/host_runner_main.cpp and tools/host_tests/run_host_tests.sh. renderer.cpp therefore is not a one-line WS-C leftover. A request to host-test, assembleDebug and commit that increment was sent to 9427ac74; nothing may be pushed, since master is 11 commits ahead of origin/master aabb9dd7 by user-gated intent.",
+      "tags": [
+        "merge",
+        "blocker",
+        "ownership",
+        "gamestate",
+        "master"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 292,
+    "totalEntries": 293,
     "compressedCount": 2,
     "sessionCount": 28
   }
