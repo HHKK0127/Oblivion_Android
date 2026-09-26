@@ -274,7 +274,7 @@ Scratch: `%TEMP%\async_race\opcode_freq_all.py` / `opcode_freq_all.txt` hold the
 
 | Keyword | Opcode | Payload | Matched |
 |---------|--------|---------|---------|
-| `begin <type>` | `0x0010` | `[u16 blockType][u16 bodyByteLength][u32 0 or 1]` plus an optional `[u16 1][type char][u16 ref]` | 4,344 / 4,344 |
+| `begin <type>` | `0x0010` | `[u16 blockType][u16 bodyByteLength]`, then a `u16` that is 0 in 4,344 / 4,344, then for `bodyByteLength >= 8` an optional `[u16 argc][tokens]` operand list (5 length words: 6 / 8 / 10 / 11 / 13) | 4,344 / 4,344 |
 | `end` | `0x0011` | none | 4,344 / 4,344 |
 | `if` | `0x0016` | `[u16 meta][u16 len][len bytes]` | 10,480 / 10,480 |
 | `elseif` | `0x0018` | same shape as `0x0016` | 1,986 / 1,986 |
