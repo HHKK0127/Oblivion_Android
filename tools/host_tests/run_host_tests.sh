@@ -82,6 +82,7 @@ SOURCES=(
   app/src/main/cpp/tests/phase48_integration_test.cpp
   app/src/main/cpp/tests/phase30_integration_test.cpp
   app/src/main/cpp/quest/quest_flow_controller.cpp
+  app/src/main/cpp/localization/localization_manager.cpp
   app/src/main/cpp/quest/quest_stage_manager.cpp
   app/src/main/cpp/quest/quest_objective_tracker.cpp
   app/src/main/cpp/quest/quest_rewards.cpp
