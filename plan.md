@@ -787,7 +787,11 @@ remaining diff as gamestate work is the attribution trap: compare the working tr
 `f1878660`, three commits behind the live `master`, quoting `+42/-2` - which is exactly the stat
 `9e1fd406` recorded for this path (44 changed lines = 42 added + 2 removed), so the quote is a
 committed diff read as a pending one; the include sits at line 11 of the committed file and the two
-`getWorldInfo` lambdas at lines 993 and 1491, all outside the working diff.
+`getWorldInfo` lambdas at lines 993 and 1491, all outside the working diff. The two readings
+reconcile by time rather than by fact: WS-C's `+42/-2` was the live diff at `f1878660` (23:00:14),
+the gamestate session committed that same hunk eight minutes later as `9e1fd406` (23:08:59), and the
+P19 hunks are what remained afterwards - so a reading can be correct when taken and wrong when
+re-used, and only a fresh measurement, not a re-arbitration of the same number, settles it.
 The other ten modified paths
 (`CHANGELOG.md`, `ui/game_console.cpp`, `ui/title_screen.cpp`, `java/.../MainActivity.kt`,
 `res/layout/activity_main.xml`, `java/.../GameRenderer.kt`, `world/world_manager.{cpp,h}`,
