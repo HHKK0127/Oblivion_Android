@@ -792,7 +792,8 @@ struct DoorData {
 };
 
 /// Path grid (PGRD) record — terrain navigation graph plus road nodes.
-/// PGRD records are always compressed; the reader inflates them before decode.
+/// Nearly all PGRD records are compressed (8,224 / 8,228 in Oblivion3.esm);
+/// the reader inflates those flagged `REC_FLAG_COMPRESSED` before decode.
 struct PathGridData {
     uint32_t formID = 0;
     uint32_t cellFormID = 0;
