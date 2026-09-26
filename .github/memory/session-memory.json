@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-26T02:30:00Z",
+  "lastUpdated": "2026-09-26T23:36:08+09:00",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -3709,7 +3709,7 @@
       "timestamp": "2026-09-25T12:05:47Z",
       "category": "reference",
       "priority": "medium",
-      "content": "plan.md updated and pushed (commit 6a9293dd, 2026-09-25): Phase 65 row and Current Status now record water (WATR, b7222f25) and the weather-driven sky dome (13d9f905) as landed and build-verified but NOT yet re-measured on the device. Open weather items: drive SkyWeatherSystem from the 37 real WTHR records (NAM0 = 4 time-of-day x 40-byte colour sets) instead of hard-coded presets; connect getAmbientColor/getFogDistance/sun light to world lighting and fog; gate the sky dome on exterior cells so interiors get no sky. Native build verified green: .\\gradlew :app:externalNativeBuildDebug BUILD SUCCESSFUL in 11s.",
+      "content": "plan.md updated and pushed (commit 6a9293dd, 2026-09-25): Phase 65 row and Current Status now record water (WATR, b7222f25) and the weather-driven sky dome (13d9f905) as landed and build-verified but NOT yet re-measured on the device. Open weather items: drive SkyWeatherSystem from the 37 real WTHR records (NAM0 = 10 colour fields x 4 times of day (160 B, field-major; see the NAM0 field-major entry, corrected 2026-09-26)) instead of hard-coded presets; connect getAmbientColor/getFogDistance/sun light to world lighting and fog; gate the sky dome on exterior cells so interiors get no sky. Native build verified green: .\\gradlew :app:externalNativeBuildDebug BUILD SUCCESSFUL in 11s.",
       "tags": [
         "phase65",
         "weather",
@@ -4348,7 +4348,7 @@
       "timestamp": "2026-09-26T02:30:00Z",
       "category": "decision",
       "priority": "high",
-      "content": "The WTHR-driven weather work is LANDED (263c146f, Phase 66) and must not be reassigned or re-scoped. Evidence: engine/sky_weather_system.h:262-315 applyWeatherRecords() consumes the real WTHR records (NAM0 = 4 time-of-day x 40-byte colour sets); engine/renderer.cpp:2576-2581 logs \"SkyWeatherSystem: %d WTHR records applied from ESM\"; renderTerrainMeshes() already reads getSunDirection / getAmbientColor / getFogColor / getFogDistance at renderer.cpp:5096-5099; the sky dome is gated on exterior cells. plan.md had four stale \"WTHR-driven weather data remain\" statements (the Next update bullet, the Phase 65 row, the WS-C workstream row and the «Not at product level» line) plus the weather paragraph in Current Status; all were corrected on 2026-09-26.",
+      "content": "The WTHR-driven weather work is LANDED (263c146f, Phase 66) and must not be reassigned or re-scoped. Evidence: engine/sky_weather_system.h:262-315 applyWeatherRecords() consumes the real WTHR records (NAM0 = 10 colour fields x 4 times of day (160 B, field-major; see the NAM0 field-major entry, corrected 2026-09-26)); engine/renderer.cpp:2576-2581 logs \"SkyWeatherSystem: %d WTHR records applied from ESM\"; renderTerrainMeshes() already reads getSunDirection / getAmbientColor / getFogColor / getFogDistance at renderer.cpp:5096-5099; the sky dome is gated on exterior cells. plan.md had four stale \"WTHR-driven weather data remain\" statements (the Next update bullet, the Phase 65 row, the WS-C workstream row and the «Not at product level» line) plus the weather paragraph in Current Status; all were corrected on 2026-09-26.",
       "tags": [
         "weather",
         "wthr",
@@ -4387,10 +4387,86 @@
         "user-approval"
       ],
       "compressed": false
+    },
+    {
+      "id": "3f33b023-0c62-4e74-960c-d1b31e625b24",
+      "timestamp": "2026-09-26T23:36:08+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "The WTHR NAM0 colour block is FIELD-MAJOR, not time-major, and this is now fixed by an authoritative source rather than inference (2026-09-26). NAM0 = 160 bytes = 10 colour fields x 4 times of day: word index i belongs to field i//4 and slot i%4 (0 Sunrise, 1 Day, 2 Sunset, 3 Night), so field f occupies words f*4..f*4+3 and time-of-day is the inner dimension. Authority: xEdit TES5Edit/TES5Edit @ 9fb016884bec138ea6c7b872cec831537d464c3e - Core/wbDefinitionsTES4.pas:3583 wbRecord(WTHR) includes wbWeatherColors; Core/wbDefinitionsCommon.pas:9707 wbWeatherColors = wbStruct(NAM0, [10 x wbWeatherTimeOfDay]); :8609 wbWeatherTimeOfDay = wbStruct(name, [Sunrise, Day, Sunset, Night]) each wbByteColors; :6962 wbByteColors = Red(u8), Green(u8), Blue(u8), wbUnused(1). TES4 field names in order: 0 Sky-Upper, 1 Fog, 2 Clouds-Lower, 3 Ambient, 4 Sunlight, 5 Sun, 6 Stars, 7 Sky-Lower, 8 Horizon, 9 Clouds-Upper (TES5 renames 1 Fog Near / 2 Unused / 9 Effect Lighting, so use the TES4 names). The landed reading is wrong in two places: assets/esm_reader.cpp:2899-2912 loops block*40 (time-major) and assets/esm_reader.h:942-963 defines WeatherSkyColors sky[4]. Measured consequence on Clear (0x00038eee): sky[0].upperSky = w0 = Sky-Upper/Sunrise (the only field right by accident), sky[0].clouds = w3 = Sky-Upper/Night = (0,3,13) black clouds, sky[1].upperSky = w10 = Clouds-Lower/Sunset = (109,101,133) consumed as the Day set, sky[1].fog = w11 = (4,12,23), sky[2].upperSky = w20 = Sun/Sunrise = (104,65,55), sky[3] starts at w30 = Sky-Lower/Sunset. WS-C in-flight Phase 66 P19 inherits this: SkyTimeSet[4] / skyCurve_[type][4] and setProvided[s] = (set.upperSky != 0) are time-set shaped and need a field-level redesign (per-field entry, per-field defined check); preset.sky.zenith comes from sky[SKY_DAY].upperSky = (109,101,133) for Clear. Corrections sent to WS-C (30cbb1e4) on 2026-09-26. Keep: the new time blending, the timeScale_/3600 fix and the updateSkyFromTimeOfDay() calls.",
+      "tags": [
+        "weather",
+        "wthr",
+        "nam0",
+        "esm-reader",
+        "field-major"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "0199df5a-1985-4d78-af80-f6291037568d",
+      "timestamp": "2026-09-26T23:36:08+09:00",
+      "category": "constraint",
+      "priority": "high",
+      "content": "WTHR NAM0 colour bytes are RGB, not BGRA: byte0 = R, byte1 = G, byte2 = B, byte3 = reserved. Authority: xEdit wbByteColors = Red(u8), Green(u8), Blue(u8), wbUnused(1) (Core/wbDefinitionsCommon.pas:6962). Measured: the 4th byte is 0 in all 1,480 values of the 37-record corpus, so it is padding and not alpha. The landed helper engine/sky_weather_system.h:750-757 bgraToRgb has a WRONG name and comment (\"ESM colours are packed BGRA (0xAARRGGBB)\") but already decodes byte0->R, byte1->G, byte2->B correctly, so the packed value is really 0x00BBGGRR. Renaming it is fine; swapping its body to match the old name would turn the sky orange. Verify by reading Clear's Sun field: Day must be (255,183,85) orange-yellow, and BGRA gives (85,183,255) sky-blue which is wrong for a sun.",
+      "tags": [
+        "weather",
+        "wthr",
+        "rgb",
+        "byte-order",
+        "sky-weather"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "c85995a0-d79f-4b3f-8ede-8b8ef900f71b",
+      "timestamp": "2026-09-26T23:36:08+09:00",
+      "category": "reference",
+      "priority": "high",
+      "content": "xEdit definitions are the authority for Oblivion record layouts. Raw fetch MUST use a commit SHA - the ref=master URL returns 14 bytes (failure): https://raw.githubusercontent.com/TES5Edit/TES5Edit/9fb016884bec138ea6c7b872cec831537d464c3e/Core/wbDefinitionsTES4.pas (124,465 B) and .../Core/wbDefinitionsCommon.pas (338,167 B). UESP's Oblivion Mod File Format WTHR page leaves NAM0/FNAM/HNAM/DATA as \"?\" so it is useless for submrecord detail, but it does agree on CNAM = cloud texture lower layer and DNAM = cloud texture upper layer (the comment in assets/esm_reader.h has them swapped). FNAM = Fog Distance = four floats Day-Near, Day-Far, Night-Near, Night-Far (Day/Night only, not four time sets), which is what the code already reads.",
+      "tags": [
+        "xesm",
+        "tes4",
+        "wthr",
+        "authority",
+        "reference",
+        "uesp"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "81b19128-b738-4ffa-ad94-c1c61c3ab7ab",
+      "timestamp": "2026-09-26T23:36:08+09:00",
+      "category": "decision",
+      "priority": "medium",
+      "content": "WTHR layout proofs measured over all 37 records of oblivion_esm_pull\\Oblivion3.esm (2026-09-26). (1) Run lengths of identical consecutive words in time-invariant weathers are always multiples of 4 and never of 10: CamoranWeather / OblivionStormTamriel / OblivionStormTamrielMQ16 / Obliviondefault give runs = [4]*10, MS14Sky gives [4,4,4,4,4,8,4,4,4], SigilWhiteOut gives [40]. (2) Time-major is impossible: it would require w[i] == w[i+10], and for CamoranWeather that forces w[8..11] and w[12..15] constant i.e. w[2]=w[3]=w[4]=w[5], which contradicts the two separate 4-word runs at w[0..3] and w[4..7]; MS14Sky fails the same way via its 8-word run. (3) Per-field time curves are physically right (Clear field 5 Sun = (104,65,55)/(255,183,85)/(255,107,96)/(0,0,0); Thunderstorm's Sun is black at all four times; Sky-Lower and Horizon go orange at Sunrise/Sunset). DefaultWeather's words[0..11] == words[28..39] is real authored data (Sky-Lower == Sky-Upper, Horizon == Fog, Clouds-Upper == Clouds-Lower), not an extraction artefact: that record's own runs are [4]*10 and not 4-periodic, so field-major holds for it independently. Time-invariant records to exclude from visual A/B: SigilWhiteOut, OblivionStormTamriel, OblivionStormTamrielMQ16, MS14Sky, CamoranWeather, Obliviondefault - use Clear / SEClear / SEClear01. Note there are two records named SEClear (0x38eee and 0x78801), so A/B instructions must name the formID.",
+      "tags": [
+        "weather",
+        "wthr",
+        "nam0",
+        "proof",
+        "ab-test",
+        "esm"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "b5220c1c-8c07-4bcc-a18e-e7ca458fbe39",
+      "timestamp": "2026-09-26T23:36:08+09:00",
+      "category": "reference",
+      "priority": "medium",
+      "content": "WTHR probe of record: use probe_wthr_fieldmajor.py -> wthr_fieldmajor.txt (37 records x 10 fields x 4 slots, RGB, field-major). It supersedes the deleted time-major probe (probe_wthr.py / wthr_table.txt / wthr_fields.txt / wthr_runs.txt). It reads the cached primary data wthr_nam0.json ([{editorID, formID, nam0:[40 uint32]}]) so the 277 MB ESM does not need re-reading, and it self-checks: records=37 reserved-nonzero=0/1480 fully-invariant=6. Python gotcha: a %-format string containing i%4 must escape it as i%%4 or it raises ValueError unsupported format character.",
+      "tags": [
+        "probe",
+        "wthr",
+        "tooling",
+        "session-state"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 305,
+    "totalEntries": 310,
     "compressedCount": 2,
     "sessionCount": 28
   }
