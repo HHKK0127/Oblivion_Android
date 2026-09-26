@@ -1994,7 +1994,10 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
             skipBytes(4 + 4);                   // Unknown Float 1, Unknown Float 2
         }
     } else if (typeName == "bhkRigidBody" || typeName == "bhkRigidBodyT") {
-        skipBytes(4);                           // Shape
+        // nif.xml names this word "Unknown Int" (declared until 10.0.1.2, but the
+        // corpus needs it at 10.1.0.x as well, which is why blockBodyPrefix() keeps
+        // its 4 there). The block's real Shape reference is that leading word.
+        skipBytes(4);                           // Unknown Int
         skipBytes(4);                           // Havok Filter
         skipBytes(4 + 1 + 3 + 12);              // World Object Info
         skipBytes(1 + 1 + 2);                   // Entity Info
@@ -2010,6 +2013,8 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
     } else if (typeName == "bhkSPCollisionObject") {
         skipBytes(4 + 2 + 4);                   // Target, Flags, Body
     } else if (typeName == "bhkTransformShape" || typeName == "bhkConvexTransformShape") {
+        // The wrapped shape index sits in the leading word blockBodyPrefix() skips,
+        // so these labels are one field late; the byte count is unaffected.
         skipBytes(4 + 4 + 4 + 8);               // Shape, Material, Radius, Unused 01
         skipBytes(64);                          // Transform
     } else if (typeName == "bhkConvexSweepShape") {
