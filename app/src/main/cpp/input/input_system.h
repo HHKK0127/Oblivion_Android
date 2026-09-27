@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../util/ThreadSafeQueue.h"
+#include "../util/thread_safe_queue.h"
 #include <vector>
 #include <atomic>
 #include <mutex>

@@ -173,6 +173,8 @@ docs/
 - [DONE] Phase 6: パフォーマンス最適化
 - [DONE] Phase 7: リリース準備
 - [DONE] Phase 8: オーディオシステム
+- [DONE] Phase 9〜64: 完了（各 Phase の詳細は [../plan.md](../plan.md) を参照）
+- [IN PROGRESS] Phase 65: フル世界レンダリング（静的オブジェクト）
 
 ### パフォーマンス
 
@@ -181,7 +183,7 @@ docs/
 | FPS | 30 fps | 60 fps [DONE] |
 | メモリ | < 1 GB | 40 MB [DONE] |
 | CPU | < 10% | < 0.1% [DONE] |
-| APKサイズ | < 100 MB | 8.4 MB [DONE] |
+| APKサイズ | < 100 MB | デバッグ 115.4 MiB（3 ABI + ローカル動画 82.9 MiB 込み）。動画を除くと約 32.5 MiB [NOTE] |
 
 ---
 
@@ -229,5 +231,5 @@ A: IMPLEMENTATION_GUIDE.mdのトラブルシューティングセクションを
 
 ---
 
-**最終更新**: 2026-08-27  
-**ステータス**: ドキュメント統合完了
+**最終更新**: 2026-09-27  
+**ステータス**: Phase 64 完了、Phase 65 進行中

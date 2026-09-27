@@ -437,7 +437,7 @@ adb logcat | grep "MainActivity"
 
 ### 実装チェックリスト
 
-#### Week 1: OpenAL統合＆基本 ✓
+#### Week 1: OpenAL統合＆基本
 - [x] OpenAL device/context初期化
 - [x] AudioClip構造体定義
 - [x] AudioSource構造体定義

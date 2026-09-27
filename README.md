@@ -97,7 +97,7 @@ The engine uses a layered architecture with **Imperial Weave** as the central co
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                        Android JNI Layer                            │
-│  native-lib.cpp / jni_bridge.cpp / jni_audio_bridge.cpp             │
+│  native_lib.cpp / jni_bridge.cpp / jni_audio_bridge.cpp             │
 └───────────────────────────┬─────────────────────────────────────────┘
                             │
 ┌───────────────────────────▼─────────────────────────────────────────┐

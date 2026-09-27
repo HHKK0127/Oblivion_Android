@@ -16,7 +16,7 @@ GameSurfaceView (GLSurfaceView)
     ↓
 GameRenderer (Renderer callback)
     ↓
-JNI Bridge (native-lib.cpp)
+JNI Bridge (jni_bridge.cpp)
 ```
 
 **Key Classes**:
@@ -29,7 +29,7 @@ JNI Bridge (native-lib.cpp)
 
 **Key Function**:
 ```cpp
-// native-lib.cpp
+// jni_bridge.cpp
 Java_com_example_oblivion_GameRenderer_nativeRender(JNIEnv*, jobject)
 ```
 
