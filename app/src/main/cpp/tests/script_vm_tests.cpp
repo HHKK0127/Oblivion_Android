@@ -3452,6 +3452,33 @@ void ScriptVMTests::testNativeScdaBridge() {
                "A variable token resolves to its stored value, not its slot index",
                getTimeMs38() - start);
     }
+
+    // Test 6: the mapping table is a bijection and both name spaces agree
+    {
+        const float start = getTimeMs38();
+        std::string error;
+        const bool valid = validateNativeFunctionMappings(error);
+
+        size_t count = 0;
+        const NativeFunctionMapping* mappings = nativeFunctionMappings(count);
+
+        // Every row must also be reachable through the lookup the bridge uses,
+        // so the table and the lookup cannot drift apart.
+        bool lookupAgrees = true;
+        for (size_t i = 0; i < count; ++i) {
+            FunctionID id;
+            if (!mapNativeOpcodeToFunctionId(mappings[i].opcode, id) ||
+                id != mappings[i].functionId) {
+                lookupAgrees = false;
+            }
+        }
+
+        const bool ok = valid && lookupAgrees && count > 0;
+        record("NativeBridge: mapping bijection", ok,
+               valid ? "The native-to-FunctionID table is a bijection and both name spaces agree"
+                     : error.c_str(),
+               getTimeMs38() - start);
+    }
 }
 
 // ============================================

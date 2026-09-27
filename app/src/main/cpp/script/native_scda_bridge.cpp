@@ -1,5 +1,7 @@
 #include "native_scda_bridge.h"
 
+#include "script_disasm.h"
+
 #include <string>
 
 namespace oblivion {
@@ -10,11 +12,6 @@ namespace {
 // The native opcode space and the synthetic FunctionID space are separate
 // numbering schemes. This table is the only place that relates them, and it
 // lists an entry only where the two names agree exactly.
-struct NativeFunctionMapping {
-    uint16_t opcode;
-    FunctionID functionId;
-};
-
 constexpr NativeFunctionMapping kNativeFunctionMappings[] = {
     {0x1000, FunctionID::MessageBox},
     {0x1002, FunctionID::AddItem},
@@ -82,6 +79,46 @@ bool mapNativeOpcodeToFunctionId(uint16_t opcode, FunctionID& out) {
         }
     }
     return false;
+}
+
+const NativeFunctionMapping* nativeFunctionMappings(size_t& count) {
+    count = sizeof(kNativeFunctionMappings) / sizeof(kNativeFunctionMappings[0]);
+    return kNativeFunctionMappings;
+}
+
+bool validateNativeFunctionMappings(std::string& error) {
+    size_t count = 0;
+    const NativeFunctionMapping* mappings = nativeFunctionMappings(count);
+
+    for (size_t i = 0; i < count; ++i) {
+        const NativeFunctionMapping& row = mappings[i];
+
+        // The two name spaces must agree, or the bridge would forward a call
+        // under a name the native side never uses.
+        const std::string nativeName = getNativeOpcodeName(row.opcode);
+        const std::string functionName =
+            ScriptDisasm::getFunctionName(static_cast<uint16_t>(row.functionId));
+        if (nativeName != functionName) {
+            error = "native opcode 0x" + std::to_string(row.opcode) +
+                    " is named '" + nativeName + "' but its FunctionID is named '" +
+                    functionName + "'";
+            return false;
+        }
+
+        for (size_t j = i + 1; j < count; ++j) {
+            if (mappings[j].opcode == row.opcode) {
+                error = "native opcode 0x" + std::to_string(row.opcode) +
+                        " appears twice in the mapping table";
+                return false;
+            }
+            if (mappings[j].functionId == row.functionId) {
+                error = "FunctionID '" + functionName +
+                        "' is mapped from two native opcodes";
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 std::vector<ScriptValue> nativeTokensToArguments(
