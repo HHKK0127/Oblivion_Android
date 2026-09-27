@@ -130,6 +130,11 @@ public:
         std::function<void(int)> selectDialogueChoice;
         std::function<void()> endDialogue;
 
+        // Books
+        std::function<bool(uint32_t)> openBook;
+        std::function<void()> closeBook;
+        std::function<std::string()> listBooks;
+
         // World
         std::function<void(const std::string&)> setWeather;
         std::function<void(float)> setTimeScale;
@@ -196,6 +201,13 @@ public:
         std::function<void(float, float)> movePlayerRelative;
         std::function<std::string()> listNearbyCells;
         std::function<void(int32_t, int32_t)> teleportToCell;
+        // Phase 66 P15: enter a real interior cell so the interior sky/water
+        // suppression paths can be exercised in game.
+        std::function<std::string(const std::string&)> teleportToInterior;
+
+        // Phase 66 P15: leave the current interior cell and resume exterior
+        // streaming (the inverse of teleportToInterior).
+        std::function<std::string()> teleportToExterior;
 
         // Phase 67: Performance monitoring
         std::function<std::string()> getPerformanceStats;
@@ -404,6 +416,7 @@ private:
     void cmdSetTime(const std::vector<std::string>& args);
     void cmdLoadCell(const std::vector<std::string>& args);
     void cmdWorldInfo(const std::vector<std::string>& args);
+    void cmdGameState(const std::vector<std::string>& args);
 
     // Save/Load commands
     void cmdSave(const std::vector<std::string>& args);

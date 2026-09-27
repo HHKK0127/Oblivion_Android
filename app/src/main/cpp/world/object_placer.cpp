@@ -106,10 +106,35 @@ bool ObjectPlacer::placeReference(std::shared_ptr<Cell> cell,
     return true;
 }
 
+std::vector<InteriorObjectPlacement> ObjectPlacer::collectInteriorPlacements(
+    uint32_t cellFormID, const oblivion::ESMManager& esmMgr) {
+    std::vector<InteriorObjectPlacement> out;
+
+    const auto& refs = esmMgr.getAllReferences();
+    for (const auto& ref : refs) {
+        if (ref.cellFormID != cellFormID) continue;
+
+        InteriorObjectPlacement p;
+        p.formID = ref.formID;
+        p.baseFormID = ref.baseFormID;
+        p.position = ref.position;
+        p.rotation = ref.rotation;
+        p.scale = ref.scale > 0.0f ? ref.scale : 1.0f;
+
+        ObjectType type = resolveObjectType(ref.baseFormID, esmMgr);
+        p.modelPath = resolveModelPath(ref.baseFormID, type, esmMgr);
+        p.name = resolveObjectName(ref.baseFormID, type, esmMgr);
+
+        out.push_back(std::move(p));
+    }
+
+    LOGI_OBJ("Interior cell 0x%08X: resolved %zu REFR records", cellFormID, out.size());
+    return out;
+}
+
 // ============================================================================
 // Object Type Resolution
 // ============================================================================
-
 ObjectPlacer::ObjectType ObjectPlacer::resolveObjectType(
     uint32_t baseFormID, const oblivion::ESMManager& esmMgr) {
 
@@ -117,6 +142,7 @@ ObjectPlacer::ObjectType ObjectPlacer::resolveObjectType(
     if (esmMgr.findStatic(baseFormID)) return ObjectType::STATIC;
     if (esmMgr.findActivator(baseFormID)) return ObjectType::ACTIVATOR;
     if (esmMgr.findContainer(baseFormID)) return ObjectType::CONTAINER;
+    if (esmMgr.findDoor(baseFormID)) return ObjectType::DOOR;
     if (esmMgr.findLight(baseFormID)) return ObjectType::LIGHT;
     if (esmMgr.findTree(baseFormID)) return ObjectType::TREE;
     if (esmMgr.findFlora(baseFormID)) return ObjectType::FLORA;
@@ -149,6 +175,10 @@ std::string ObjectPlacer::resolveModelPath(uint32_t baseFormID,
         }
         case ObjectType::CONTAINER: {
             auto* data = esmMgr.findContainer(baseFormID);
+            return data ? data->modelPath : "";
+        }
+        case ObjectType::DOOR: {
+            auto* data = esmMgr.findDoor(baseFormID);
             return data ? data->modelPath : "";
         }
         case ObjectType::LIGHT: {
@@ -203,10 +233,49 @@ std::string ObjectPlacer::resolveModelPath(uint32_t baseFormID,
     }
 }
 
+std::string ObjectPlacer::resolveObjectName(uint32_t baseFormID,
+                                            ObjectType type,
+                                            const oblivion::ESMManager& esmMgr) {
+    // Only STAT lacks a full name; everything else prefers FULL over EDID.
+    switch (type) {
+        case ObjectType::STATIC: {
+            auto* data = esmMgr.findStatic(baseFormID);
+            if (data && !data->editorID.empty()) return data->editorID;
+            break;
+        }
+        case ObjectType::ACTIVATOR: {
+            auto* data = esmMgr.findActivator(baseFormID);
+            if (data && !data->fullName.empty()) return data->fullName;
+            if (data && !data->editorID.empty()) return data->editorID;
+            break;
+        }
+        case ObjectType::CONTAINER: {
+            auto* data = esmMgr.findContainer(baseFormID);
+            if (data && !data->fullName.empty()) return data->fullName;
+            if (data && !data->editorID.empty()) return data->editorID;
+            break;
+        }
+        case ObjectType::DOOR: {
+            auto* data = esmMgr.findDoor(baseFormID);
+            if (data && !data->fullName.empty()) return data->fullName;
+            if (data && !data->editorID.empty()) return data->editorID;
+            break;
+        }
+        case ObjectType::LIGHT: {
+            auto* data = esmMgr.findLight(baseFormID);
+            if (data && !data->fullName.empty()) return data->fullName;
+            if (data && !data->editorID.empty()) return data->editorID;
+            break;
+        }
+        default:
+            break;
+    }
+    return getObjectTypeName(type);
+}
+
 // ============================================================================
 // Private Methods
 // ============================================================================
-
 std::shared_ptr<WorldObject> ObjectPlacer::createWorldObject(
     const oblivion::ReferenceData& ref,
     ObjectType type,

@@ -242,12 +242,35 @@ void WorldManager::updateActiveCells() {
 void WorldManager::setPlayerPosition(const glm::vec3& pos) {
     worldState.playerPosition = pos;
 
+    // Phase 66 P15: interior cells carry no grid coordinate, so getCellAt()
+    // resolves the player's exterior position and would immediately pull the
+    // player back outside. Keep the interior current until leaveInteriorCell().
+    if (isPlayerIndoors()) {
+        return;
+    }
+
     // Update current cell
     auto newCell = getCellAt(pos);
     if (newCell && newCell != currentCell) {
         currentCell = newCell;
         LOGD_WORLD("Player entered cell: %s", currentCell->cellName.c_str());
     }
+}
+
+bool WorldManager::leaveInteriorCell() {
+    if (!isPlayerIndoors()) return false;
+
+    const uint32_t interiorCellId = currentCell->cellId;
+    currentCell.reset();
+
+    auto newCell = getCellAt(worldState.playerPosition);
+    if (newCell) {
+        currentCell = newCell;
+    }
+
+    LOGI_WORLD("Left interior cell %u, resumed exterior cell %u", interiorCellId,
+               currentCell ? currentCell->cellId : 0);
+    return true;
 }
 
 void WorldManager::setPlayerRotation(const glm::vec3& rot) {
@@ -298,12 +321,29 @@ std::vector<NPC*> WorldManager::getNpcsInCell(std::shared_ptr<Cell> cell) {
 // ============================================================================
 
 void WorldManager::advanceTime(float deltaTime) {
-    worldState.timeOfDay += deltaTime * 0.1f;  // 1 game second = 0.1 real seconds (approx)
+    // Same time base as SkyWeatherSystem: Oblivion's default timescale of 30 game
+    // minutes per real minute, i.e. one real second is 1/120 of a game hour. The
+    // old rate (deltaTime * 0.1 hours) ran the world clock twelve times faster
+    // than the sun, so NPC day/night schedules drifted away from the sky.
+    const float advance = deltaTime / 120.0f;
+    if (!(advance > 0.0f)) return;           // a NaN or negative delta must not rewind the clock
 
-    if (worldState.timeOfDay >= 24.0f) {
-        worldState.timeOfDay -= 24.0f;
-        worldState.dayCount++;
-    }
+    // The old code subtracted 24 once, so a single large step (a long stall, a
+    // debug fast-forward) left timeOfDay above 24 and every clock consumer read a
+    // bogus hour. Fold the whole multiple in one go instead.
+    const float total = worldState.timeOfDay + advance;
+    const float days = std::floor(total / 24.0f);
+    worldState.timeOfDay = total - days * 24.0f;
+    worldState.dayCount += static_cast<uint32_t>(days);
+}
+
+void WorldManager::setTimeOfDay(float hours) {
+    // Driven by the console's "settime" and the P19 debug buttons. Normalise into
+    // [0, 24) so a negative or out-of-range script value cannot put the clock
+    // somewhere advanceTime() would need many frames to recover from.
+    float wrapped = std::fmod(hours, 24.0f);
+    if (wrapped < 0.0f) wrapped += 24.0f;
+    worldState.timeOfDay = wrapped;
 }
 
 // ============================================================================
@@ -321,11 +361,33 @@ size_t WorldManager::getTotalMemoryUsage() const {
 }
 
 void WorldManager::logWorldStatus() const {
-    size_t totalMemory = getTotalMemoryUsage();
+    // Called from updateActiveCells() every 0.5 s. A full line at that rate buried
+    // every other message in logcat, so only speak up when something a reader cares
+    // about has moved, with a heartbeat (about every 30 s) for the steady case.
+    constexpr uint32_t kHeartbeatTicks = 60;   // 60 calls * 0.5 s
+
+    const size_t activeCount = activeCells.size();
+    const uint32_t day = worldState.dayCount;
+    const int hour = static_cast<int>(worldState.timeOfDay);
+
+    ++statusLogTicks;
+    const bool moved = activeCount != statusLogActiveCells || day != statusLogDay ||
+                       hour != statusLogHour;
+    if (!moved && statusLogTicks < kHeartbeatTicks) {
+        return;
+    }
+
+    statusLogActiveCells = activeCount;
+    statusLogDay = day;
+    statusLogHour = hour;
+    statusLogTicks = 0;
+
+    // Only walk every cell for the memory figure when the line is actually emitted.
+    const size_t totalMemory = getTotalMemoryUsage();
     LOGD_WORLD("World Status: %zu cells, %zu active, Memory: %.2f MB, Day: %u, Time: %.1f",
-               cells.size(), activeCells.size(),
+               cells.size(), activeCount,
                static_cast<float>(totalMemory) / (1024.0f * 1024.0f),
-               worldState.dayCount, worldState.timeOfDay);
+               day, worldState.timeOfDay);
 }
 
 // ============================================================================
@@ -541,6 +603,86 @@ std::shared_ptr<Cell> WorldManager::addCellFromESM(int32_t cellX, int32_t cellY,
         formIdToCellId[tesFormID] = cellId;
     }
     return cell;
+}
+
+std::shared_ptr<Cell> WorldManager::enterInteriorCell(uint32_t tesFormID,
+                                                      const std::string& editorID,
+                                                      const std::string& fullName) {
+    if (tesFormID == 0) return nullptr;
+
+    // Re-entering the same interior reuses the existing cell.
+    if (auto existing = getCellByFormID(tesFormID)) {
+        currentCell = existing;
+        return existing;
+    }
+
+    uint32_t cellId = nextCellId++;
+    std::string name = fullName.empty() ? editorID : fullName;
+    if (name.empty()) name = "Interior_" + std::to_string(tesFormID);
+
+    // Interior cells carry no grid coordinate. createCell() would register a
+    // (0,0) coordinate for them, which would collide with the real exterior
+    // cell at that square, so build the cell directly and key it by FormID.
+    auto cell = std::make_shared<Cell>();
+    cell->cellId = cellId;
+    cell->cellX = 0;
+    cell->cellY = 0;
+    cell->cellName = name;
+    cell->editorID = editorID;
+    cell->tesFormID = tesFormID;
+    cell->worldspaceFormID = 0;
+    cell->cellType = CellType::INTERIOR;
+    cell->loadState = CellLoadState::LOADED;
+
+    cells[cellId] = cell;
+    formIdToCellId[tesFormID] = cellId;
+    currentCell = cell;
+
+    LOGI_WORLD("Entered interior cell %u (0x%08X) '%s'", cellId, tesFormID,
+               name.c_str());
+    return cell;
+}
+
+size_t WorldManager::placeInteriorObjects(
+    uint32_t cellFormID, const std::vector<InteriorObjectPlacement>& objects) {
+    auto cell = getCellByFormID(cellFormID);
+    if (!cell) {
+        LOGW_WORLD("placeInteriorObjects: no cell for 0x%08X", cellFormID);
+        return 0;
+    }
+
+    // Re-entering an interior must not stack a second copy of the room.
+    if (!cell->staticObjects.empty() || !cell->dynamicObjects.empty()) {
+        return 0;
+    }
+
+    size_t added = 0;
+    size_t withoutModel = 0;
+    for (const auto& src : objects) {
+        if (src.modelPath.empty()) {
+            ++withoutModel;
+            continue;
+        }
+
+        auto obj = std::make_shared<WorldObject>();
+        obj->objectId = src.formID;
+        obj->objectName = src.name.empty() ? "Interior" : src.name;
+        obj->modelPath = src.modelPath;
+        obj->position = src.position;
+        obj->rotation = src.rotation;
+        obj->scale = src.scale > 0.0f ? src.scale : 1.0f;
+        // Interior statics never move; the renderer keeps them resident for as
+        // long as the cell is loaded, which is the whole time the player is in it.
+        obj->isStatic = true;
+        obj->isInteractable = false;
+
+        cell->staticObjects.push_back(obj);
+        ++added;
+    }
+
+    LOGI_WORLD("Interior 0x%08X '%s': placed %zu objects (%zu without a model)",
+               cellFormID, cell->cellName.c_str(), added, withoutModel);
+    return added;
 }
 
 void WorldManager::clearAllCells() {

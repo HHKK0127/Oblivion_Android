@@ -95,6 +95,12 @@ struct NIFHeader {
     uint8_t endian = 0;        // Endian byte, valid only when hasEndianByte is true
     bool hasEndianByte = false;// True for the 20.0.0.x family and later
     bool legacyNetImmerse = false; // True for the compact NetImmerse 10.0.1.0 header
+    // False for the pre-5.0.0.1 meshes, which predate the block type table: the
+    // header holds only the version and the block count, and every block body is
+    // introduced by its own inline SizedString type name. nif.xml gates both
+    // "Num Block Types" and "Block Type Index" at 5.0.0.1 and "User Version" at
+    // 10.0.1.8, so nothing else sits between the block count and block 0.
+    bool hasBlockTypeTable = true;
     uint32_t userVersion = 0;  // User version
     uint32_t numObjects = 0;   // Number of blocks in the file
     uint32_t unknownField = 0; // Block stream (BS) version: 11 for 20.0.0.4, 5 for 10.1.0.106, 6 for 10.2.0.0

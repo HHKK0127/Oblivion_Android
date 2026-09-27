@@ -33,12 +33,15 @@
 #include "../game/ai_scheduler.h"
 #include "../game/player_controller.h"
 #include "../game/dialogue.h"
+#include "../game/book_reader.h"
+#include "../quest/quest_flow_controller.h"
 #include "../game/inventory_manager.h"
 #include "../game/alchemy_system.h"
 #include "../game/enchanting_system.h"
 #include "../ui/inventory_ui.h"
 #include "../ui/ui_inventory_panel.h"
 #include "../world/world_manager.h"
+#include "../world/object_placer.h"
 #include "../world/world_entity.h"
 #include "../localization/localization_manager.h"
 #include "../profiling/performance_monitor.h"
@@ -60,6 +63,8 @@
 #include "../ui/crosshair.h"
 #include "../ui/ui_target_info.h"
 #include "../ui/ui_active_effects.h"
+#include "../ui/ui_dialogue.h"
+#include "../ui/ui_book_reader.h"
 #include "../animation/animation_subscriber.h"
 #include "../audio/audio_subscriber.h"
 #include "../map/map_system.h"
@@ -126,6 +131,9 @@ private:
     std::unique_ptr<LocalizationManager> localizationManager;
     std::unique_ptr<NpcManager> npcManager;
     std::unique_ptr<WorldManager> worldManager;
+    // Phase 66 P20: resolves interior REFR records into WorldObjects. Kept here
+    // rather than inside WorldManager so the world layer stays ESM agnostic.
+    std::unique_ptr<ObjectPlacer> objectPlacer;
     std::unique_ptr<QuestManager> questManager;
     std::unique_ptr<QuestFlowController> questFlowController;
     std::unique_ptr<CombatManager> combatManager;
@@ -135,6 +143,7 @@ private:
     std::unique_ptr<PlayerController> playerController;
     std::unique_ptr<InventoryManager> inventoryManager;
     std::unique_ptr<DialogueManager> dialogueManager;
+    std::unique_ptr<oblivion::BookReader> bookReader;
     std::unique_ptr<oblivion::AlchemySystem> alchemySystem;
     std::unique_ptr<game::EnchantingSystem> enchantingSystem;
 
@@ -159,6 +168,8 @@ private:
     std::unique_ptr<Crosshair> crosshair;
     std::unique_ptr<UITargetInfo> targetInfo;
     std::unique_ptr<UIActiveEffects> activeEffects;
+    std::unique_ptr<UIDialogue> dialogueUI;
+    std::unique_ptr<UIBookReader> bookReaderUI;
     bool hudVisible = true;
     
     // Responsive UI Manager
@@ -282,7 +293,10 @@ public:
     PlayerController* getPlayerController() { return playerController.get(); }
     InventoryManager* getInventoryManager() { return inventoryManager.get(); }
     DialogueManager* getDialogueManager() { return dialogueManager.get(); }
+    oblivion::BookReader* getBookReader() { return bookReader.get(); }
+    QuestFlowController* getQuestFlowController() { return questFlowController.get(); }
     InventoryUI* getInventoryUI() { return inventoryUI.get(); }
+
 #ifdef AUDIO_SYSTEM_ENABLED
     AudioManager* getAudioManager() { return audioManager.get(); }
 #endif
@@ -350,6 +364,31 @@ public:
     // Phase 31: World Entity System
     WorldLoader* getWorldLoader() { return worldLoader.get(); }
     std::vector<WorldEntity>& getWorldEntities() { return worldEntities; }
+
+    // Dialogue
+    // Loads DIAL/INFO records from the ESM into the DialogueManager, applying
+    // JPWiki text when the current language is Japanese. Safe to call more than
+    // once; the previous set is replaced.
+    void loadDialoguesFromESM();
+    // Opens the dialogue UI for the NPC nearest to the player, if any.
+    // Returns true when a dialogue was opened.
+    bool openDialogueWithNearestNpc();
+    // Opens the dialogue UI for a specific NPC FormID. Returns true on success.
+    bool openDialogueWithNpc(uint32_t npcFormID);
+    bool isDialogueOpen() const;
+    void closeDialogue();
+
+    // Books
+    // Opens the book reader UI for a book FormID, applying JPWiki text when the
+    // current language is Japanese. Returns true when the book was found.
+    bool openBook(uint32_t bookFormID);
+    bool isBookOpen() const;
+    void closeBook();
+
+    // Quests
+    // Registers every QUST record from the ESM into the QuestFlowController,
+    // applying JPWiki names when the current language is Japanese.
+    void loadQuestsFromESM();
 
     // FPS Control
     void setTargetFPS(int fps);
@@ -431,4 +470,11 @@ private:
 
     // Sky dome rendering driven by SkyWeatherSystem (Phase 56 / 66)
     void renderSkyDome();
-};
+
+    // Phase 66 P20: interior cell geometry (REFR resolved NIFs)
+    void renderInteriorObjects();
+    size_t ensureInteriorObjectsPlaced();
+
+        // Phase 65: exterior static-object world (REFR -> MODL -> NIF)
+        void renderStaticObjects();
+    };

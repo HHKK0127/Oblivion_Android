@@ -72,6 +72,7 @@ add_library(native-lib SHARED
     # World System (Phase 3+)
     world/world_manager.cpp
     world/world_item_manager.cpp
+    world/game_state_report.cpp
     world/cell.cpp
     world/cell_loader.cpp
     world/cell_transition_manager.cpp
@@ -173,6 +174,7 @@ add_library(native-lib SHARED
     ui/ui_spellbook.cpp
     ui/ui_quest_log.cpp
     ui/ui_dialogue.cpp
+    ui/ui_book_reader.cpp
     ui/ui_shop.cpp
     ui/ui_character_creation.cpp
     ui/ui_pause_menu.cpp
@@ -189,7 +191,6 @@ add_library(native-lib SHARED
     ui/ui_alert_notification.cpp
     ui/ui_minimap.cpp
     ui/ui_player_stats.cpp
-    ui/ui_manager.cpp
     ui/ui_joystick.cpp
     ui/virtual_controller.cpp
     ui/crosshair.cpp
@@ -267,6 +268,11 @@ add_library(native-lib SHARED
     # Tests (Phase 48: Game Loop Integration & Stress)
     tests/phase48_integration_test.cpp
     tests/phase48_stress_test.cpp
+
+    # Tests (Phase 66 P8: WATR colour fallback)
+    tests/watr_decode_tests.cpp
+    tests/weather_transition_tests.cpp
+    tests/interior_cell_tests.cpp
 
     # Physics System (Phase 36 - Jolt Physics)
     physics/physics_manager.cpp

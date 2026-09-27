@@ -8,11 +8,14 @@
 #include "../assets/bsa_reader.h"
 #include "../inventory/item_factory.h"
 #include "../physics/physics_manager.h"
+#include "../world/game_state_report.h"
 // #include "../jni_audio_bridge.h"  // Deferred - requires Java MainActivity
 
 #include <glm/glm.hpp>
 #include <algorithm>
+#include <cctype>
 #include <cmath>
+#include <cstdio>
 #include <limits>
 #include <string>
 #include <unordered_map>
@@ -178,6 +181,12 @@ void Renderer::resize(unsigned int width, unsigned int height) {
     if (activeEffects) {
         activeEffects->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
         LOGI("UIActiveEffects screen size updated to: %ux%u", screenWidth, screenHeight);
+    }
+    if (dialogueUI) {
+        dialogueUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    }
+    if (bookReaderUI) {
+        bookReaderUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
     }
 
     // Update RetroFilter resolution
@@ -494,6 +503,15 @@ bool Renderer::initGameSystems() {
     }
     LOGI("SettingsManager initialized successfully");
 
+    // SettingsManager owns the persisted language preference, so mirror it into
+    // LocalizationManager now that both exist.
+    if (localizationManager) {
+        const std::string lang = settingsManager->getLanguage();
+        localizationManager->setLanguage(lang == "ja" ? Language::JAPANESE
+                                                      : Language::ENGLISH);
+        LOGI("LocalizationManager language synced from settings: %s", lang.c_str());
+    }
+
     // Initialize Text Renderer (for debug HUD and settings UI)
     LOGI("Creating TextRenderer...");
     textRenderer = std::make_unique<TextRenderer>();
@@ -656,6 +674,22 @@ bool Renderer::initGameSystems() {
         LOGI("UIActiveEffects initialized successfully");
     }
 
+    dialogueUI = std::make_unique<UIDialogue>();
+    if (!dialogueUI->initialize(textRenderer.get())) {
+        LOGE("Failed to initialize UIDialogue");
+    } else {
+        dialogueUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        LOGI("UIDialogue initialized successfully");
+    }
+
+    bookReaderUI = std::make_unique<UIBookReader>();
+    if (!bookReaderUI->initialize(textRenderer.get())) {
+        LOGE("Failed to initialize UIBookReader");
+    } else {
+        bookReaderUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        LOGI("UIBookReader initialized successfully");
+    }
+
     // Initialize Debug HUD
     LOGI("Creating DebugHUD...");
     debugHUD = std::make_unique<DebugHUD>();
@@ -703,7 +737,8 @@ bool Renderer::initGameSystems() {
     refs.setMaxHealth = [this](float h) {
         if (playerController && playerController->getPlayer()) playerController->getPlayer()->maxHealth = h;
     };
-    refs.setMana = [this](float m) {
+    refs.setMana = [](float m) {
+        (void)m;
         // Magicka not implemented in Player struct yet
     };
     refs.setStamina = [this](float s) {
@@ -768,10 +803,10 @@ bool Renderer::initGameSystems() {
             }
         }
     };
-    refs.blockAction = [this]() {
+    refs.blockAction = []() {
         // Block handled by combat system
     };
-    refs.dodgeAction = [this]() {
+    refs.dodgeAction = []() {
         // Dodge handled by combat system
     };
     refs.applyDamageToNpc = [this](uint32_t npcId, float dmg) {
@@ -804,7 +839,7 @@ bool Renderer::initGameSystems() {
             }
         }
     };
-    refs.toggleCombatDebug = [this]() {
+    refs.toggleCombatDebug = []() {
         // Combat debug not implemented yet
     };
     refs.addItem = [this](uint32_t id, uint32_t qty) {
@@ -818,22 +853,26 @@ bool Renderer::initGameSystems() {
     refs.removeItem = [this](uint32_t id, uint32_t qty) {
         if (inventoryManager) inventoryManager->playerRemoveItem(id, qty);
     };
-    refs.equipItem = [this](uint32_t id) {
+    refs.equipItem = [](uint32_t id) {
+        (void)id;
         // Equip not implemented in InventoryManager yet
     };
-    refs.unequipItem = [this](uint32_t id) {
+    refs.unequipItem = [](uint32_t id) {
+        (void)id;
         // Unequip not implemented in InventoryManager yet
     };
-    refs.listInventory = [this]() -> std::string {
+    refs.listInventory = []() -> std::string {
         return "Inventory items";
     };
-    refs.clearInventory = [this]() {
+    refs.clearInventory = []() {
         // Clear inventory not implemented yet
     };
-    refs.setCarryWeight = [this](float w) {
+    refs.setCarryWeight = [](float w) {
+        (void)w;
         // Set carry weight not implemented yet
     };
-    refs.learnSpell = [this](uint32_t id) {
+    refs.learnSpell = [](uint32_t id) {
+        (void)id;
         // Learn spell not directly available
     };
     refs.castSpellOnTarget = [this](uint32_t spellId, uint32_t targetId) {
@@ -842,7 +881,7 @@ bool Renderer::initGameSystems() {
     refs.equipSpell = [this](uint32_t id) {
         if (spellManager) spellManager->equipSpellToNpc(1, id);
     };
-    refs.listSpells = [this]() -> std::string {
+    refs.listSpells = []() -> std::string {
         return "Spells available";
     };
     refs.createSpell = [this](const std::string& name, float dmg, float cost) {
@@ -874,13 +913,18 @@ bool Renderer::initGameSystems() {
         }
         return 0;
     };
-    refs.setNpcAiState = [this](uint32_t id, const std::string& state) {
+    refs.setNpcAiState = [](uint32_t id, const std::string& state) {
+        (void)id;
+        (void)state;
         // AI state not directly settable
     };
-    refs.setNpcAggression = [this](uint32_t id, float val) {
+    refs.setNpcAggression = [](uint32_t id, float val) {
+        (void)id;
+        (void)val;
         // Aggression not directly settable
     };
-    refs.calmNpc = [this](uint32_t id) {
+    refs.calmNpc = [](uint32_t id) {
+        (void)id;
         // Calm not directly settable
     };
     refs.listNpcs = [this]() -> std::string {
@@ -894,32 +938,115 @@ bool Renderer::initGameSystems() {
         }
         return "No nearby NPCs";
     };
-    refs.startDialogueWith = [this](uint32_t id) {
+    refs.startDialogueWith = [](uint32_t id) {
+        (void)id;
         // DialogueRunner not connected
     };
-    refs.selectDialogueTopic = [this](int t) {
+    refs.selectDialogueTopic = [](int t) {
+        (void)t;
         // DialogueRunner not connected
     };
-    refs.selectDialogueChoice = [this](int c) {
+    refs.selectDialogueChoice = [](int c) {
+        (void)c;
         // DialogueRunner not connected
     };
-    refs.endDialogue = [this]() {
+    refs.endDialogue = []() {
         // DialogueRunner not connected
+    };
+    refs.openBook = [this](uint32_t formID) -> bool {
+        return openBook(formID);
+    };
+    refs.closeBook = [this]() {
+        closeBook();
+    };
+    refs.listBooks = [this]() -> std::string {
+        if (!assetManager) return "AssetManager not available";
+        const auto& books = assetManager->getEsmManager().getAllBooks();
+        if (books.empty()) return "No books loaded";
+        std::string out = "Books: " + std::to_string(books.size()) + "\n";
+        const size_t limit = std::min<size_t>(books.size(), 20);
+        for (size_t i = 0; i < limit; ++i) {
+            char id[9];
+            std::snprintf(id, sizeof(id), "%08x", books[i].formID);
+            out += "  0x" + std::string(id) + " '" + books[i].fullName + "'\n";
+        }
+        if (books.size() > limit) {
+            out += "  ... " + std::to_string(books.size() - limit) + " more\n";
+        }
+        return out;
     };
     refs.setWeather = [this](const std::string& w) {
-        // Weather not implemented yet
+        // Phase 66 P19: this was also a no-op stub, so "setweather storm" did
+        // nothing at all. Apply it instantly rather than ramping, so a debug
+        // A/B screenshot shows the new sky on the next frame.
+        if (!skyWeatherSystem) return;
+        const engine::WeatherType type = engine::SkyWeatherSystem::weatherTypeFromName(w);
+        if (type == engine::WeatherType::COUNT) return;
+        skyWeatherSystem->setWeatherImmediate(type);
     };
     refs.setTimeScale = [this](float s) {
-        // Time scale not implemented yet
+        // Phase 66 P19: this was a no-op stub, so the console's "settimescale"
+        // reported success while the 30x clock kept running unchanged.
+        if (skyWeatherSystem) skyWeatherSystem->setTimeScale(s);
     };
     refs.setTimeOfDay = [this](float h) {
-        // Time of day not implemented yet
+        // Phase 66 P19: "settime" was also a no-op stub, which left every
+        // day/night measurement waiting for the clock to drift into place and made
+        // P19 impossible to verify. Drive the sky clock and the world clock
+        // together so the gamestate report and the rendered sky agree.
+        if (skyWeatherSystem) skyWeatherSystem->setGameTime(h);
+        if (worldManager) worldManager->setTimeOfDay(h);
     };
     refs.loadCell = [this](int32_t x, int32_t y) {
         if (worldManager) worldManager->loadCell(x, y);
     };
     refs.getWorldInfo = [this]() -> std::string {
-        return "World info not available";
+        // Phase 66 P16: one line that answers "where is the game right now?".
+        // Every device-verification mistake so far (P15 especially) came from
+        // not knowing whether the world was even being drawn, so this is the
+        // first thing any measurement should read. The format itself lives in
+        // GameStateReport so a host test can pin it without a device.
+        GameStateReport::Snapshot snapshot;
+        snapshot.phase = showLauncher ? GameStateReport::Phase::Launcher
+                                      : (showTitleScreen ? GameStateReport::Phase::Title
+                                                         : GameStateReport::Phase::Playing);
+        if (!worldManager) return GameStateReport::format(snapshot);
+        snapshot.worldAvailable = true;
+
+        const bool indoors = worldManager->isPlayerIndoors();
+        snapshot.space = indoors ? GameStateReport::Space::Interior
+                                 : GameStateReport::Space::Exterior;
+
+        if (auto cell = worldManager->getCurrentCell()) {
+            snapshot.hasCell = true;
+            snapshot.cellName = cell->cellName;
+            snapshot.editorID = cell->editorID;
+            snapshot.cellFormID = cell->tesFormID;
+            snapshot.gridX = cell->cellX;
+            snapshot.gridY = cell->cellY;
+        }
+
+        snapshot.activeCells = worldManager->getActiveCells().size();
+        snapshot.cachedCells = worldManager->getCacheSize();
+        snapshot.terrainCells = worldManager->countExteriorCellsWithTerrain();
+        // Report the clock that actually drives the sun. The sky system owns it
+        // (it is the only one with a time scale and a sunrise/sunset curve);
+        // WorldManager's separate counter ran at a different rate, so the report
+        // disagreed with the sky the player was looking at.
+        snapshot.timeOfDay = skyWeatherSystem ? skyWeatherSystem->getGameTime()
+                                              : worldManager->getTimeOfDay();
+        snapshot.day = skyWeatherSystem ? skyWeatherSystem->getDayCount()
+                                        : worldManager->getDayCount();
+
+        if (playerController) {
+            const glm::vec3 pos = playerController->getPlayerPosition();
+            snapshot.hasPlayerPosition = true;
+            snapshot.playerX = pos.x;
+            snapshot.playerY = pos.y;
+            snapshot.playerZ = pos.z;
+        }
+
+        return GameStateReport::format(snapshot);
     };
     // Phase 66: Map debug callbacks
     refs.teleportTo = [this](float x, float y, float z) {
@@ -966,6 +1093,56 @@ bool Renderer::initGameSystems() {
         }
         if (worldManager) worldManager->loadCell(cx, cz);
     };
+    refs.teleportToInterior = [this](const std::string& query) -> std::string {
+        if (!worldManager) return "World manager not available";
+        const oblivion::ESMManager* esm = assetManager ? &assetManager->getEsmManager() : nullptr;
+        if (!esm) return "ESM manager not available";
+
+        // Pick the first interior cell whose editorID or full name contains the
+        // query (case-insensitive). An empty query takes the first interior cell
+        // in the ESM, which is enough to exercise the interior render paths.
+        std::string needle = query;
+        for (char& c : needle) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+
+        const oblivion::CellData* chosen = nullptr;
+        for (const auto& cell : esm->getAllCells()) {
+            if (cell.isExterior) continue;
+            if (needle.empty()) { chosen = &cell; break; }
+            std::string hay = cell.editorID + " " + cell.fullName;
+            for (char& c : hay) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+            if (hay.find(needle) != std::string::npos) { chosen = &cell; break; }
+        }
+        if (!chosen) {
+            return query.empty() ? "No interior cells in the ESM"
+                                 : "No interior cell matching '" + query + "'";
+        }
+
+        // Park the player at the cell origin. Interior references are cell
+        // relative, so the origin is the natural anchor until interior geometry
+        // is placed. Set the position before entering so the exterior cell at
+        // world (0,0) never becomes current.
+        if (playerController) playerController->setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+        worldManager->setPlayerPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+
+        auto cell = worldManager->enterInteriorCell(chosen->formID, chosen->editorID,
+                                                    chosen->fullName);
+        if (!cell) return "Failed to enter interior cell";
+
+        const size_t placed = ensureInteriorObjectsPlaced();
+
+        return "Entered interior: " + cell->cellName + " (0x" +
+               std::to_string(chosen->formID) + ", " + std::to_string(placed) +
+               " objects)";
+    };
+    refs.teleportToExterior = [this]() -> std::string {
+        if (!worldManager) return "World manager not available";
+        if (!worldManager->isPlayerIndoors()) return "Not inside an interior cell";
+        const std::string left = worldManager->getCurrentCell()
+                                     ? worldManager->getCurrentCell()->cellName
+                                     : std::string("interior");
+        if (!worldManager->leaveInteriorCell()) return "Failed to leave interior cell";
+        return "Left interior: " + left;
+    };
 
     // Phase 67: Performance monitoring callbacks
     refs.getPerformanceStats = [this]() -> std::string {
@@ -998,7 +1175,7 @@ bool Renderer::initGameSystems() {
         result += "Peak Memory: " + std::to_string(metrics.memoryMetrics.peakMemory / 1024 / 1024) + " MB\n";
         return result;
     };
-    refs.resetPerformanceStats = [this]() {
+    refs.resetPerformanceStats = []() {
         // Performance stats reset not implemented yet
         LOGI("Performance stats reset requested");
     };
@@ -1014,7 +1191,7 @@ bool Renderer::initGameSystems() {
         result += "Allocations: " + std::to_string(metrics.memoryMetrics.allocationCount) + "\n";
         return result;
     };
-    refs.getDrawCallStats = [this]() -> std::string {
+    refs.getDrawCallStats = []() -> std::string {
         // Draw call stats would need renderer integration
         return "Draw Call Stats:\n  (Not implemented yet)";
     };
@@ -1065,7 +1242,7 @@ bool Renderer::initGameSystems() {
         }
         LOGI("Killed all NPCs");
     };
-    refs.toggleNpcAi = [this](bool enabled) {
+    refs.toggleNpcAi = [](bool enabled) {
         // Toggle NPC AI updates
         LOGI("NPC AI %s", enabled ? "enabled" : "disabled");
     };
@@ -1107,16 +1284,16 @@ bool Renderer::initGameSystems() {
             LOGI("Attacking nearest enemy: %s", enemy->name.c_str());
         }
     };
-    refs.toggleCombatOverlay = [this](bool enabled) {
+    refs.toggleCombatOverlay = [](bool enabled) {
         LOGI("Combat overlay %s", enabled ? "enabled" : "disabled");
     };
-    refs.setDamageMultiplier = [this](float multiplier) {
+    refs.setDamageMultiplier = [](float multiplier) {
         LOGI("Damage multiplier set to %f", multiplier);
     };
-    refs.toggleInvincibility = [this](bool enabled) {
+    refs.toggleInvincibility = [](bool enabled) {
         LOGI("Invincibility %s", enabled ? "enabled" : "disabled");
     };
-    refs.setPlayerDamage = [this](float minDmg, float maxDmg) {
+    refs.setPlayerDamage = [](float minDmg, float maxDmg) {
         LOGI("Player damage range set to %f - %f", minDmg, maxDmg);
     };
 
@@ -1148,10 +1325,10 @@ bool Renderer::initGameSystems() {
             LOGI("Cast spell %d at %s", spellId, enemy->name.c_str());
         }
     };
-    refs.setSpellDamageMultiplier = [this](float multiplier) {
+    refs.setSpellDamageMultiplier = [](float multiplier) {
         LOGI("Spell damage multiplier set to %f", multiplier);
     };
-    refs.toggleInfiniteMana = [this](bool enabled) {
+    refs.toggleInfiniteMana = [](bool enabled) {
         LOGI("Infinite mana %s", enabled ? "enabled" : "disabled");
     };
     refs.getPlayerSpells = [this]() -> std::string {
@@ -1238,7 +1415,7 @@ bool Renderer::initGameSystems() {
         if (!inventory) return "Player inventory not available";
         return "Weight: " + std::to_string((int)inventory->getTotalWeight()) + "/" + std::to_string((int)inventory->MAX_WEIGHT) + " kg";
     };
-    refs.setCarryCapacity = [this](float capacity) {
+    refs.setCarryCapacity = [](float capacity) {
         LOGI("Carry capacity set to %f kg", capacity);
     };
 
@@ -1312,19 +1489,19 @@ bool Renderer::initGameSystems() {
     };
 
     // Phase 73: Dialogue debug enhanced callbacks
-    refs.getDialogueState = [this]() -> std::string {
+    refs.getDialogueState = []() -> std::string {
         return "=== Dialogue State ===\nDialogue system: Available\nUse 'talk <npcId>' to start dialogue";
     };
-    refs.getDialogueTopics = [this]() -> std::string {
+    refs.getDialogueTopics = []() -> std::string {
         return "=== Available Topics ===\nUse 'dialoguetopics' after starting dialogue";
     };
-    refs.getDialogueChoices = [this]() -> std::string {
+    refs.getDialogueChoices = []() -> std::string {
         return "=== Current Choices ===\nUse 'dialoguechoices' after starting dialogue";
     };
-    refs.getDialogueHistory = [this]() -> std::string {
+    refs.getDialogueHistory = []() -> std::string {
         return "=== Dialogue History ===\nNo dialogue history available";
     };
-    refs.resetDialogue = [this]() {
+    refs.resetDialogue = []() {
         // DialogueRunner not connected - placeholder
         LOGI("Dialogue reset requested");
     };
@@ -1401,10 +1578,10 @@ bool Renderer::initGameSystems() {
         }
         return "No saves";
     };
-    refs.openMenu = [this](const std::string& menu) {
+    refs.openMenu = [](const std::string& menu) {
         LOGI("Menu open requested: %s", menu.c_str());
     };
-    refs.closeMenu = [this]() {
+    refs.closeMenu = []() {
         LOGI("Menu close requested");
     };
     refs.toggleDebugMenu = [this]() {
@@ -1549,6 +1726,7 @@ bool Renderer::initGameSystems() {
         return assetManager->getLoadedTextureList();
     };
     refs.getTextureDetail = [this](const std::string& name) -> std::string {
+        (void)name;
         if (!assetManager) return "Asset manager not available";
         return assetManager->getTextureCacheStats();
     };
@@ -1607,7 +1785,8 @@ bool Renderer::initGameSystems() {
     // Initialize Settings UI
     LOGI("Creating SettingsUI...");
     settingsUI = std::make_unique<SettingsUI>();
-    if (!settingsUI->initialize(textRenderer.get(), settingsManager.get(), this)) {
+    if (!settingsUI->initialize(textRenderer.get(), settingsManager.get(), this,
+                                localizationManager.get())) {
         LOGE("Failed to initialize SettingsUI");
         return false;
     }
@@ -1649,6 +1828,15 @@ bool Renderer::initGameSystems() {
         return false;
     }
     LOGI("WorldManager initialized successfully");
+
+    // Phase 66 P20: interior REFR -> WorldObject resolver
+    LOGI("Creating ObjectPlacer...");
+    objectPlacer = std::make_unique<ObjectPlacer>();
+    if (!objectPlacer->initialize(assetManager.get())) {
+        LOGE("Failed to initialize ObjectPlacer");
+        return false;
+    }
+    LOGI("ObjectPlacer initialized successfully");
 
     // Connect WorldManager to DebugMenu's WorldViewer (deferred injection)
     if (debugMenu) {
@@ -1711,9 +1899,21 @@ bool Renderer::initGameSystems() {
 
     // Initialize DialogueManager
     dialogueManager = std::make_unique<DialogueManager>();
+    dialogueManager->setLocalizationManager(localizationManager.get());
     alchemySystem = std::make_unique<oblivion::AlchemySystem>();
     enchantingSystem = std::make_unique<game::EnchantingSystem>();
     LOGI("DialogueManager initialized successfully");
+
+    // Initialize BookReader (JPWiki book bodies)
+    bookReader = std::make_unique<oblivion::BookReader>();
+    bookReader->setLocalizationManager(localizationManager.get());
+    LOGI("BookReader initialized successfully");
+
+    // Initialize QuestFlowController (JPWiki quest names)
+    questFlowController = std::make_unique<QuestFlowController>();
+    questFlowController->setLocalizationManager(localizationManager.get());
+    LOGI("QuestFlowController initialized successfully");
+
     
     // Initialize AlchemySystem
     alchemySystem->initialize(nullptr);  // ESMManager will be set later
@@ -1791,19 +1991,10 @@ bool Renderer::initGameSystems() {
     // Initialize ScriptManager
     LOGI("Initializing ScriptManager...");
     scriptManager = std::make_unique<oblivion::script::ScriptManager>();
-    questFlowController = std::make_unique<QuestFlowController>();
-    if (!questFlowController->initialize(
-            questManager.get(),
-            &weave::ImperialWeave::instance().getEventBus(),
-            scriptManager.get(),
-            playerController ? playerController->getPlayer().get() : nullptr,
-            playerController.get(),
-            inventoryManager.get(),
-            npcManager.get(),
-            worldManager.get())) {
-        LOGE("Failed to initialize QuestFlowController");
-        questFlowController.reset();
-    }
+    // questFlowController is created above (with the JPWiki localization manager)
+    // and fully initialized in the Imperial Weave section below. Re-creating it
+    // here would drop the localization binding and double-subscribe the quest
+    // EventBus handlers, so it is only handed to the ScriptManager.
     scriptManager->init(
         questManager.get(),
         worldManager.get(),
@@ -2043,6 +2234,27 @@ bool Renderer::initGameSystems() {
         );
         imperialWeaveInitialized = true;
 
+        // Initialize QuestFlowController now that the EventBus and all game
+        // systems exist. Quest names come from the JPWiki data when Japanese.
+        if (questFlowController) {
+            Player* player = (playerController && playerController->getPlayer())
+                ? playerController->getPlayer().get() : nullptr;
+            if (questFlowController->initialize(
+                    questManager.get(),
+                    &weave::ImperialWeave::instance().getEventBus(),
+                    scriptManager.get(),
+                    player,
+                    playerController.get(),
+                    inventoryManager.get(),
+                    npcManager.get(),
+                    worldManager.get(),
+                    skyWeatherSystem)) {
+                LOGI("QuestFlowController initialized successfully");
+            } else {
+                LOGE("Failed to initialize QuestFlowController");
+            }
+        }
+
         // Connect CombatManager to Imperial Weave EventBus
         if (combatManager) {
             combatManager->setEventBus(&weave::ImperialWeave::instance().getEventBus());
@@ -2066,22 +2278,27 @@ bool Renderer::initGameSystems() {
         if (floatingText) {
             auto& bus = weave::ImperialWeave::instance().getEventBus();
             bus.subscribe("COMBAT_ATTACK_HIT", [this](const weave::Event& e) {
+                (void)e;
                 floatingText->addText("Hit!", screenWidth * 0.5f, screenHeight * 0.4f,
                                      UIFloatingText::DAMAGE, 1.5f);
             });
             bus.subscribe("COMBAT_CRITICAL_HIT", [this](const weave::Event& e) {
+                (void)e;
                 floatingText->addText("CRITICAL!", screenWidth * 0.5f, screenHeight * 0.35f,
                                      UIFloatingText::CRITICAL, 2.0f);
             });
             bus.subscribe("COMBAT_BLOCK", [this](const weave::Event& e) {
+                (void)e;
                 floatingText->addText("Blocked!", screenWidth * 0.5f, screenHeight * 0.4f,
                                      UIFloatingText::BLOCK, 1.5f);
             });
             bus.subscribe("COMBAT_PARRY", [this](const weave::Event& e) {
+                (void)e;
                 floatingText->addText("Parry!", screenWidth * 0.5f, screenHeight * 0.4f,
                                      UIFloatingText::BUFF, 1.5f);
             });
             bus.subscribe("COMBAT_DODGE", [this](const weave::Event& e) {
+                (void)e;
                 floatingText->addText("Dodge!", screenWidth * 0.5f, screenHeight * 0.4f,
                                      UIFloatingText::MISS, 1.5f);
             });
@@ -2393,6 +2610,14 @@ void Renderer::createTestScenario() {
     if (hasEsmData) {
         LOGI("=== Building world from ESM data ===");
 
+        // Phase 66: Drive the sky/weather presets from the real WTHR records so
+        // the sky dome uses Oblivion's authored colours instead of the
+        // hardcoded fallbacks.
+        if (skyWeatherSystem) {
+            const int wthrApplied = skyWeatherSystem->loadFromESM(esmMgr.getAllWeathers());
+            LOGI("SkyWeatherSystem: %d WTHR records applied from ESM", wthrApplied);
+        }
+
         // Wire the ESM manager into the NPC manager so actors can be created
         // from ACHR/ACRE records (NPC_ and CREA base records).
         npcMgr->setESMManager(&esmMgr);
@@ -2467,36 +2692,36 @@ void Renderer::createTestScenario() {
         }
 
                     // Water is strictly per-cell from the XCLW subrecord. ESM analysis proved
-                                        // Oblivion keeps no WRLD-level water plane: WNAM is the parent
-                                        // worldspace reference (not a WATR color) and no WHGT exists, so
-                                        // there is no default-water fallback for the root worldspace.
-                                        LOGI("Main worldspace 0x%08X: per-cell XCLW water only (no WRLD default)",
-                                             mainWorldspace);
+        // Oblivion keeps no WRLD-level water plane: WNAM is the parent worldspace
+        // reference (not a WATR color) and no WHGT exists, so there is no
+        // default-water fallback for the root worldspace.
+        LOGI("Main worldspace 0x%08X: per-cell XCLW water only (no WRLD default)",
+             mainWorldspace);
 
-                    for (const auto& entry : cellByCoord) {
-                        const oblivion::CellData* cell = entry.second;
-                        if (registeredCells < 8) {
-                            LOGI("  Cell: 0x%08X '%s' (%s) grid=[%d,%d]",
-                                 cell->formID, cell->editorID.c_str(),
-                                 cell->fullName.c_str(), cell->gridX, cell->gridY);
-                        }
-                    if (auto worldCell = worldManager->addCellFromESM(
-                                        cell->gridX, cell->gridY,
-                                        cell->editorID, cell->fullName,
-                                        cell->formID, cell->isExterior, cell->worldspaceID)) {
-                                            // Water is strictly per-cell from the XCLW subrecord; only a positive
-                                                                                        // height means a drawable surface (negative sentinels were
-                                                                                        // mapped to NaN during decodeCell).
-                                                                                        if (cell->hasWaterLevel && !std::isnan(cell->waterLevel)) {
-                                                                                            worldCell->waterLevel = cell->waterLevel;
-                                                                                            worldCell->hasWater = true;
-                                                                                            worldCell->waterTypeFormID = cell->waterTypeFormID;
-                                                                                        } else {
-                                                                                            worldCell->hasWater = false;
-                                                                                        }
-                                                                                        ++registeredCells;
-                                        }
-                                    }
+        for (const auto& entry : cellByCoord) {
+            const oblivion::CellData* cell = entry.second;
+            if (registeredCells < 8) {
+                LOGI("  Cell: 0x%08X '%s' (%s) grid=[%d,%d]",
+                     cell->formID, cell->editorID.c_str(),
+                     cell->fullName.c_str(), cell->gridX, cell->gridY);
+            }
+            if (auto worldCell = worldManager->addCellFromESM(
+                                     cell->gridX, cell->gridY,
+                                     cell->editorID, cell->fullName,
+                                     cell->formID, cell->isExterior, cell->worldspaceID)) {
+                // Water is strictly per-cell from the XCLW subrecord; only a positive
+                // height means a drawable surface (negative sentinels were
+                // mapped to NaN during decodeCell).
+                if (cell->hasWaterLevel && !std::isnan(cell->waterLevel)) {
+                    worldCell->waterLevel = cell->waterLevel;
+                    worldCell->hasWater = true;
+                    worldCell->waterTypeFormID = cell->waterTypeFormID;
+                } else {
+                    worldCell->hasWater = false;
+                }
+                ++registeredCells;
+            }
+        }
         LOGI("Registered %zu exterior cells (%zu interior skipped, %zu other worldspaces skipped, %zu duplicate grid squares)",
              registeredCells, interiorCells, otherWorldspaceCells, duplicateCoords);
 
@@ -2514,6 +2739,11 @@ void Renderer::createTestScenario() {
              refs.size() - esmMgr.getNpcReferenceCount() - esmMgr.getCreatureReferenceCount());
         size_t placedActors = 0;
         size_t placedObjects = 0;
+        // Phase 65 (a) static-object census: how many exterior REFR references
+        // resolve to a real NIF path through the base record.
+        size_t resolvedObjectRefs = 0;   // model path non-empty
+        size_t resolvedStatics = 0;      // of those, base type is STAT
+        size_t unresolvedObjectRefs = 0; // no base record / no model / UNKNOWN
         size_t skippedInteriorRefs = 0;
         size_t skippedForeignRefs = 0;
         for (const auto& ref : refs) {
@@ -2521,7 +2751,8 @@ void Renderer::createTestScenario() {
             // position is absolute world space, whereas interior references are
             // relative to their cell origin. A reference is exterior exactly when
             // its owning cell is one of the registered (main worldspace) cells.
-            if (!worldManager->getCellByFormID(ref.cellFormID)) {
+            auto worldCell = worldManager->getCellByFormID(ref.cellFormID);
+            if (!worldCell) {
                 // Interior cells are never registered; other worldspaces were
                 // filtered out during cell registration.
                 if (ref.cellFormID != 0) { ++skippedInteriorRefs; }
@@ -2581,14 +2812,58 @@ void Renderer::createTestScenario() {
                     }
                 }
             } else {
-                placedObjects++;
+                // Phase 65 (a): resolve this exterior REFR into a WorldObject so
+                // the engine can actually draw it. The base record (STAT/DOOR/...)
+                // carries the NIF path; all model resolution is deferred, only the
+                // path is captured here.
+                ++placedObjects;
+                const auto objType = objectPlacer->resolveObjectType(ref.baseFormID, esmMgr);
+                auto obj = std::make_shared<WorldObject>();
+                obj->objectId = ref.formID;
+                obj->modelPath = objectPlacer->resolveModelPath(ref.baseFormID, objType, esmMgr);
+                if (!obj->modelPath.empty()) {
+                    ++resolvedObjectRefs;
+                    if (objType == ObjectPlacer::ObjectType::STATIC) {
+                        ++resolvedStatics;
+                    }
+                    obj->objectName =
+                        objectPlacer->resolveObjectName(ref.baseFormID, objType, esmMgr);
+                } else {
+                    // A record exists but the base has no NIF path (e.g. an
+                    // unmapped type) or no base was found at all.
+                    ++unresolvedObjectRefs;
+                    obj->objectName = "Unknown";
+                }
+
+                // ESM exterior coordinates are Z-up world space; the engine is
+                // Y-up, so the height axis is swapped before placing, exactly as
+                // the actor placement above does.
+                obj->position = worldPos;
+                obj->rotation = worldRot;
+                obj->scale = ref.scale > 0.0f ? ref.scale : 1.0f;
+                obj->isStatic = true;
+                obj->isInteractable = false;
+                worldCell->staticObjects.push_back(obj);
             }
         }
-        LOGI("Placed %zu actors and indexed %zu object references (%zu interior refs skipped, %zu unowned refs skipped)",
-                     placedActors, placedObjects, skippedInteriorRefs, skippedForeignRefs);
+        LOGI("Placed %zu actors and %zu object references (%zu resolved to a model, %zu STAT, %zu unresolvable; %zu interior refs skipped, %zu unowned refs skipped)",
+             placedActors, placedObjects, resolvedObjectRefs, resolvedStatics,
+             unresolvedObjectRefs, skippedInteriorRefs, skippedForeignRefs);
 
-                // 4. Load LAND terrain data and assign to cells
-                const auto& terrains = esmMgr.getAllTerrains();
+        // Load DIAL/INFO dialogue trees now that the actors exist, so faction
+        // memberships can be resolved for topic filtering.
+        loadDialoguesFromESM();
+
+        // Wire the book reader and quest flow controller to the same ESM data.
+        if (bookReader) {
+            bookReader->initialize(&esmMgr);
+            LOGI("BookReader bound to ESMManager (%zu books available)",
+                 esmMgr.getAllBooks().size());
+        }
+        loadQuestsFromESM();
+
+        // 4. Load LAND terrain data and assign to cells
+        const auto& terrains = esmMgr.getAllTerrains();
         LOGI("Loading %zu terrain records from ESM data", terrains.size());
         size_t assignedTerrains = 0;
         size_t orphanTerrains = 0;
@@ -2801,13 +3076,13 @@ void Renderer::createTestScenario() {
                 if (worldLoader) {
                     LOGI("=== Phase 31: Loading WorldEntities from NIF files ===");
 
-                    // Test NIF paths (common Oblivion meshes)
+                    // Test NIF paths (all present in the Oblivion Meshes.bsa catalog)
                     const char* testNifs[] = {
-                        "meshes/characters/imperial_male.nif",
-                        "meshes/creatures/imp.nif",
-                        "meshes/architecture/buildings/imperial_house_01.nif",
-                        "meshes/furniture/chair_01.nif",
-                        "meshes/clutter/barrel_01.nif"
+                        "meshes/characters/imperial/headhuman.nif",
+                        "meshes/creatures/horse/horse.nif",
+                        "meshes/architecture/farmhouse/farmhousedoor01.nif",
+                        "meshes/furniture/middleclass/middlechair01.nif",
+                        "meshes/architecture/castle/kvatch/kvatchcastledoor03.nif"
                     };
 
                     for (size_t i = 0; i < sizeof(testNifs)/sizeof(testNifs[0]); ++i) {
@@ -3050,6 +3325,177 @@ void Renderer::createTestScenario() {
     }
 }
 
+void Renderer::loadDialoguesFromESM() {
+    if (!dialogueManager) {
+        LOGW("loadDialoguesFromESM: DialogueManager not available");
+        return;
+    }
+    if (!assetManager) {
+        LOGW("loadDialoguesFromESM: AssetManager not available");
+        return;
+    }
+
+    const auto& esmMgr = assetManager->getEsmManager();
+    if (esmMgr.getPluginCount() == 0) {
+        LOGW("loadDialoguesFromESM: no plugins loaded");
+        return;
+    }
+
+    // Faction memberships are resolved from the NPC manager so faction-gated
+    // topics can be filtered per actor.
+    std::function<std::vector<uint32_t>(uint32_t)> factionLookup;
+    if (npcManager) {
+        factionLookup = [this](uint32_t npcFormID) {
+            std::vector<uint32_t> factions;
+            auto npc = npcManager->getNpcByFormID(npcFormID);
+            if (npc) {
+                factions = npc->factionFormIDs;
+            }
+            return factions;
+        };
+    }
+
+    dialogueManager->loadDialoguesFromESM(esmMgr, factionLookup,
+                                          localizationManager.get());
+    LOGI("DialogueManager: %zu dialogue trees loaded from ESM",
+         dialogueManager->getDialogueCount());
+}
+
+bool Renderer::openDialogueWithNpc(uint32_t npcFormID) {
+    if (!dialogueManager || !dialogueUI) {
+        LOGW("openDialogueWithNpc: dialogue system not available");
+        return false;
+    }
+
+    auto dialogue = dialogueManager->getDialogue(npcFormID);
+    if (!dialogue) {
+        LOGW("openDialogueWithNpc: no dialogue for NPC 0x%08X", npcFormID);
+        return false;
+    }
+
+    dialogueUI->openDialogue(dialogue);
+    LOGI("Dialogue opened with NPC 0x%08X '%s' (%zu topics)",
+         npcFormID, dialogue->npcName.c_str(), dialogue->topics.size());
+    return true;
+}
+
+bool Renderer::openDialogueWithNearestNpc() {
+    if (!npcManager || !playerController) {
+        LOGW("openDialogueWithNearestNpc: NPC or player system not available");
+        return false;
+    }
+
+    const glm::vec3 playerPos = playerController->getPlayerPosition();
+
+    // Oblivion's activation range is roughly 150 units; use a slightly wider
+    // radius so the touch target is forgiving on a phone screen.
+    constexpr float kActivationRange = 200.0f;
+
+    uint32_t nearestFormID = 0;
+    float nearestDistSq = kActivationRange * kActivationRange;
+
+    for (const auto& npc : npcManager->getAllNPCs()) {
+        if (!npc || npc->formID == 0) continue;
+        const glm::vec3 delta = npc->position - playerPos;
+        const float distSq = glm::dot(delta, delta);
+        if (distSq < nearestDistSq) {
+            nearestDistSq = distSq;
+            nearestFormID = npc->formID;
+        }
+    }
+
+    if (nearestFormID == 0) {
+        LOGI("openDialogueWithNearestNpc: no NPC within %.0f units", kActivationRange);
+        return false;
+    }
+
+    return openDialogueWithNpc(nearestFormID);
+}
+
+bool Renderer::isDialogueOpen() const {
+    return dialogueUI && dialogueUI->isVisible();
+}
+
+void Renderer::closeDialogue() {
+    if (dialogueUI) {
+        dialogueUI->closeDialogue();
+    }
+}
+
+bool Renderer::openBook(uint32_t bookFormID) {
+    if (!bookReader || !bookReaderUI) {
+        LOGW("openBook: book system not available");
+        return false;
+    }
+    if (!assetManager) {
+        LOGW("openBook: AssetManager not available");
+        return false;
+    }
+
+    const auto& esmMgr = assetManager->getEsmManager();
+    const oblivion::BookData* book = esmMgr.findBook(bookFormID);
+    if (!book) {
+        LOGW("openBook: book 0x%08X not found", bookFormID);
+        return false;
+    }
+
+    const std::string title = localizationManager
+        ? localizationManager->getFullText("BOOK", bookFormID, book->fullName)
+        : book->fullName;
+    const std::string body = bookReader->getBookDescription(bookFormID);
+
+    bookReaderUI->openBook(title, body);
+    LOGI("Book opened: 0x%08X '%s' (%zu chars)", bookFormID, title.c_str(), body.size());
+    return true;
+}
+
+bool Renderer::isBookOpen() const {
+    return bookReaderUI && bookReaderUI->isVisible();
+}
+
+void Renderer::closeBook() {
+    if (bookReaderUI) {
+        bookReaderUI->closeBook();
+    }
+}
+
+void Renderer::loadQuestsFromESM() {
+    if (!questFlowController) {
+        LOGW("loadQuestsFromESM: QuestFlowController not available");
+        return;
+    }
+    if (!assetManager) {
+        LOGW("loadQuestsFromESM: AssetManager not available");
+        return;
+    }
+
+    const auto& esmMgr = assetManager->getEsmManager();
+    if (esmMgr.getPluginCount() == 0) {
+        LOGW("loadQuestsFromESM: no plugins loaded");
+        return;
+    }
+
+    const auto& quests = esmMgr.getAllQuests();
+    std::vector<QuestRecord> records;
+    records.reserve(quests.size());
+
+    for (const auto& quest : quests) {
+        QuestRecord record;
+        record.formID = quest.formID;
+        record.editorID = quest.editorID;
+        record.fullName = localizationManager
+            ? localizationManager->getQuestText(quest.formID, quest.fullName)
+            : quest.fullName;
+        record.questFlags = quest.flags;
+        record.priority = quest.priority;
+        records.push_back(std::move(record));
+    }
+
+    questFlowController->registerQuests(records);
+    LOGI("QuestFlowController: %zu quests registered from ESM",
+         questFlowController->getRegisteredQuestCount());
+}
+
 void Renderer::render(float deltaTime) {
     // Safety net: the world must exist before anything is drawn. Normally the
     // scenario is built from game data at the end of loadBSAArchives().
@@ -3150,10 +3596,14 @@ void Renderer::render(float deltaTime) {
         aiScheduler->update(deltaTime);
     }
 
-    // Phase 47: Update weather system
-    if (skyWeatherSystem) {
-        skyWeatherSystem->update(deltaTime);
+    // Phase 39: Quest flow (stage transitions, objective tracking, rewards)
+    if (questFlowController) {
+        questFlowController->update(deltaTime);
     }
+
+    // Phase 47: the weather/sky clock is stepped once per frame further down, in
+    // the main render path. Stepping it here as well advanced game time at double
+    // rate whenever the title screen was not up.
 
     // Begin performance monitoring
     if (performanceMonitor) {
@@ -3413,12 +3863,19 @@ void Renderer::render(float deltaTime) {
         glViewport(0, 0, static_cast<GLsizei>(screenWidth), static_cast<GLsizei>(screenHeight));
 
         // Render World (main game scene) - Clear with weather-based horizon color
-        if (skyWeatherSystem) {
+        // for exteriors, or a dark neutral tone for interiors (which have no sky).
+        bool playerIndoors = false;
+        if (worldManager) {
+            // Interior cells have no grid coordinate, so getCellAt() cannot
+            // find them; ask the manager directly (P15).
+            playerIndoors = worldManager->isPlayerIndoors();
+        }
+        if (skyWeatherSystem && !playerIndoors) {
             float skyR, skyG, skyB;
             skyWeatherSystem->getFogColor(skyR, skyG, skyB);
             glClearColor(skyR, skyG, skyB, 1.0f);
         } else {
-            glClearColor(0.2f, 0.2f, 0.2f, 1.0f);  // Fallback dark gray
+            glClearColor(0.05f, 0.05f, 0.06f, 1.0f);  // Interior / fallback dark tone
         }
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         GLCHECK_MSG("game-clear");
@@ -3495,13 +3952,23 @@ void Renderer::render(float deltaTime) {
 
     // Render world objects
     if (worldManager) {
-        worldManager->render();
+        // P15: exterior cell objects stay resident inside an interior cell but
+        // must not be drawn over the interior view.
+        if (!worldManager->isPlayerIndoors()) worldManager->render();
     } else {
         LOGW("worldManager is null!");
     }
 
-    // Phase 65: Render exterior terrain from LAND heightmaps
-    renderTerrainMeshes();
+    // Phase 66 P20: interior cell geometry (REFR resolved NIFs)
+    renderInteriorObjects();
+
+        // Phase 65: exterior static-object world (REFR -> MODL -> NIF). Draws after
+        // the placeholder entities so real geometry can stand in before they are
+        // removed, and before terrain so objects ground themselves on the heightmap.
+        renderStaticObjects();
+
+        // Phase 65: Render exterior terrain from LAND heightmaps
+        renderTerrainMeshes();
 
     // Phase 65: Render water surfaces from CELL XCLW levels on top of terrain
     renderWater();
@@ -3679,6 +4146,14 @@ void Renderer::render(float deltaTime) {
             activeEffects->update(deltaTime);
             activeEffects->render();
         }
+        if (dialogueUI && dialogueUI->isVisible()) {
+            dialogueUI->update(deltaTime);
+            dialogueUI->render();
+        }
+        if (bookReaderUI && bookReaderUI->isVisible()) {
+            bookReaderUI->update(deltaTime);
+            bookReaderUI->render();
+        }
     }
 
     // Render Floating Combat Text
@@ -3815,12 +4290,14 @@ static const char* terrainVertexSrc =
 "out vec2 vUv;\n"
 "out vec4 vBlend;\n"
 "out vec4 vAddBlend;\n"
+"out vec3 vWorldPos;\n"
 "void main() {\n"
 "    gl_Position = uMVP * vec4(aPosition, 1.0);\n"
 "    vNormal = aNormal;\n"
 "    vUv = aUv;\n"
 "    vBlend = aBlend;\n"
 "    vAddBlend = aAddBlend;\n"
+"    vWorldPos = aPosition;\n"
 "}\n";
 
 static const char* terrainFragmentSrc =
@@ -3838,10 +4315,15 @@ static const char* terrainFragmentSrc =
 "uniform vec4 uHasAddTex;\n"
 "uniform vec4 uColor;\n"
 "uniform vec3 uLightDir;\n"
+"uniform vec3 uAmbientColor;\n"
+"uniform vec3 uFogColor;\n"
+"uniform vec2 uFogRange;\n"
+"uniform vec3 uCameraPos;\n"
 "in vec3 vNormal;\n"
 "in vec2 vUv;\n"
 "in vec4 vBlend;\n"
 "in vec4 vAddBlend;\n"
+"in vec3 vWorldPos;\n"
 "out vec4 fragColor;\n"
 "void main() {\n"
 "    vec3 accum = vec3(0.0);\n"
@@ -3867,7 +4349,10 @@ static const char* terrainFragmentSrc =
 "    }\n"
 "    vec3 n = normalize(vNormal);\n"
 "    float NdotL = max(dot(n, normalize(uLightDir)), 0.0);\n"
-"    fragColor = vec4(color * (0.3 + 0.7 * NdotL), 1.0);\n"
+"    vec3 lit = color * (uAmbientColor + (1.0 - uAmbientColor) * NdotL);\n"
+"    float fogDist = length(vWorldPos - uCameraPos);\n"
+"    float fogFactor = clamp((fogDist - uFogRange.x) / max(uFogRange.y - uFogRange.x, 1.0), 0.0, 1.0);\n"
+"    fragColor = vec4(mix(lit, uFogColor, fogFactor), 1.0);\n"
 "}\n";
 
 void Renderer::releaseTerrainMeshes() {
@@ -3912,6 +4397,7 @@ static const char* waterFragmentSrc =
 "#version 300 es\n"
 "precision mediump float;\n"
 "uniform vec4 uColor;\n"
+"uniform vec3 uReflectionColor;\n"
 "uniform vec3 uCameraPos;\n"
 "in vec3 vNormal;\n"
 "in vec3 vWorldPos;\n"
@@ -3920,9 +4406,10 @@ static const char* waterFragmentSrc =
 "    vec3 N = normalize(vNormal);\n"
 "    vec3 V = normalize(uCameraPos - vWorldPos);\n"
 "    float fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);\n"
-"    // Blend the base water colour toward the sky colour at grazing angles.\n"
-"    vec3 sky = vec3(0.55, 0.67, 0.78);\n"
-"    vec3 color = mix(uColor.rgb, sky, fresnel * 0.45);\n"
+"    // Blend the base water colour toward the WATR reflection colour at grazing\n"
+"    // angles. The reflection colour is the game's own DATA byte 52 entry, so the\n"
+"    // sheen matches the original material instead of a hardcoded sky tint.\n"
+"    vec3 color = mix(uColor.rgb, uReflectionColor, fresnel * 0.45);\n"
 "    float dist = length(uCameraPos - vWorldPos);\n"
 "    float alpha = uColor.a * clamp(1.0 - dist / 14000.0, 0.2, 1.0);\n"
 "    fragColor = vec4(color, alpha);\n"
@@ -3930,6 +4417,9 @@ static const char* waterFragmentSrc =
 
 void Renderer::renderWater() {
     if (!worldManager) return;
+    // P15: water planes are an exterior-only feature. Inside an interior cell the
+    // exterior CELLs stay resident for fast re-entry, so suppress them here.
+    if (worldManager->isPlayerIndoors()) return;
 
     const auto& cells = worldManager->getActiveCells();
     if (cells.empty()) return;
@@ -4020,6 +4510,8 @@ void Renderer::renderWater() {
     size_t waterCells = 0;
     float minLevel = std::numeric_limits<float>::max();
     float maxLevel = -std::numeric_limits<float>::max();
+    std::string waterCellNames;
+    std::string waterCellCoords;
     for (const auto& cell : cells) {
         if (!cell) continue;
         if (cell->cellType != CellType::EXTERIOR) continue;
@@ -4029,6 +4521,13 @@ void Renderer::renderWater() {
         if (!cell->hasTerrain) continue;
 
         waterCells++;
+        if (waterCells <= 8) {
+            const char* name = cell->editorID.empty() ? "-" : cell->editorID.c_str();
+            waterCellNames += std::string(name) + "; ";
+            waterCellCoords += "[" + std::to_string(cell->cellX) + "," +
+                               std::to_string(cell->cellY) + "@" +
+                               std::to_string((int)cell->waterLevel) + "] ";
+        }
         if (cell->waterLevel < minLevel) minLevel = cell->waterLevel;
         if (cell->waterLevel > maxLevel) maxLevel = cell->waterLevel;
 
@@ -4079,24 +4578,30 @@ void Renderer::renderWater() {
         // Water colour comes from the cell's WATR record when present, so the
         // surface matches the game's original water material (deep blue/teal
         // for Tamriel's lakes and rivers) instead of a hardcoded placeholder.
-        // In Oblivion's WATR DATA block (102 bytes of floats) the Deep Color
-        // RGB sits at float offsets 12..14 (byte offsets 48..56); opacity
-        // (ANAM) is a 0..255 byte scaled to 0..1. A fallback is used when the
-        // cell has no resolvable WATR type or the record is too short.
+        // In Oblivion's WATR DATA block the colour block is three RGBA (u8)
+        // entries at byte offsets 44 (shallow), 48 (deep) and 52 (reflection);
+        // the decoder normalises them to 0..1. Opacity (ANAM) is a 0..255 byte
+        // scaled to 0..1. A fallback is used when the cell has no resolvable
+        // WATR type or the record is too short.
         float waterColor[4] = {0.15f, 0.35f, 0.40f, 0.55f};
+        float reflectionColor[3] = {0.55f, 0.67f, 0.78f};
         if (cell->waterTypeFormID != 0 && assetManager) {
             const auto& esmMgr = assetManager->getEsmManager();
             const oblivion::WaterData* watr = esmMgr.findWater(cell->waterTypeFormID);
-            if (watr && watr->shaderFloats.size() >= 15) {
-                waterColor[0] = watr->shaderFloats[12];
-                waterColor[1] = watr->shaderFloats[13];
-                waterColor[2] = watr->shaderFloats[14];
+            if (watr) {
+                waterColor[0] = watr->deepColor[0];
+                waterColor[1] = watr->deepColor[1];
+                waterColor[2] = watr->deepColor[2];
                 waterColor[3] = watr->opacity > 0
                     ? watr->opacity / 255.0f
                     : 0.55f;
+                reflectionColor[0] = watr->reflectionColor[0];
+                reflectionColor[1] = watr->reflectionColor[1];
+                reflectionColor[2] = watr->reflectionColor[2];
             }
         }
         glUniform4fv(glGetUniformLocation(waterShader, "uColor"), 1, waterColor);
+        glUniform3fv(glGetUniformLocation(waterShader, "uReflectionColor"), 1, reflectionColor);
 
         glBindVertexArray(it->second.vao);
         glDrawElements(GL_TRIANGLES, it->second.indexCount, GL_UNSIGNED_SHORT, nullptr);
@@ -4126,10 +4631,12 @@ void Renderer::renderWater() {
     static int waterLogFrame = 0;
     if (++waterLogFrame % 120 == 1) {
         LOGI("Water: %zu active cells with water, %zu drawn (no app-side culling), "
-             "cache=%zu, level range=%.1f..%.1f",
+             "cache=%zu, level range=%.1f..%.1f%s%s",
              waterCells, drawn, waterMeshes_.size(),
              minLevel <= maxLevel ? minLevel : 0.0f,
-             minLevel <= maxLevel ? maxLevel : 0.0f);
+             minLevel <= maxLevel ? maxLevel : 0.0f,
+             waterCellNames.empty() ? "" : (" | cells=" + waterCellNames).c_str(),
+             waterCellCoords.empty() ? "" : (" | coords=" + waterCellCoords).c_str());
     }
 }
 
@@ -4152,6 +4659,17 @@ void main() {
 // state so the sky reflects the current time of day and weather conditions.
 void Renderer::renderSkyDome() {
     if (!skyWeatherSystem) return;
+
+    // Phase 66: The sky dome is an exterior-only backdrop. Interior cells
+    // (houses, caves, ruins) have their own ceiling geometry and must not show
+    // the outdoor sky, so skip the dome whenever the player is indoors.
+    if (worldManager) {
+        // Interior cells have no grid coordinate, so getCellAt() cannot find
+        // them; ask the manager directly (P15).
+        if (worldManager->isPlayerIndoors()) {
+            return;
+        }
+    }
 
     static GLuint skyProgram = 0;
     static GLuint skyVao = 0, skyVbo = 0, skyIbo = 0;
@@ -4296,8 +4814,414 @@ void Renderer::renderSkyDome() {
     glUseProgram(0);
 }
 
+// ============================================================
+// Phase 66 P20: interior cell geometry
+// ============================================================
+// Interior statics differ from the placeholder spheres in two ways that need
+// their own shader: the player stands *inside* them (so back faces must be lit,
+// not black) and they carry rotations (so normals must follow the model matrix).
+static const char* interiorVertexSrc =
+"#version 300 es\n"
+"uniform mat4 uMVP;\n"
+"uniform mat4 uModel;\n"
+"in vec3 aPosition;\n"
+"in vec3 aNormal;\n"
+"out vec3 vNormal;\n"
+"void main() {\n"
+"    gl_Position = uMVP * vec4(aPosition, 1.0);\n"
+"    vNormal = mat3(uModel) * aNormal;\n"
+"}\n";
+
+static const char* interiorFragmentSrc =
+"#version 300 es\n"
+"precision mediump float;\n"
+"uniform vec4 uColor;\n"
+"uniform vec3 uLightDir;\n"
+"in vec3 vNormal;\n"
+"out vec4 fragColor;\n"
+"void main() {\n"
+"    vec3 n = normalize(vNormal);\n"
+"    float NdotL = abs(dot(n, normalize(uLightDir)));\n"
+"    fragColor = vec4(uColor.rgb * (0.35 + 0.65 * NdotL), uColor.a);\n"
+"}\n";
+
+// Interior statics are authored Z-up, the engine renders Y-up. Rotating -90
+// degrees about X maps the authored +Z to the engine's +Y.
+static glm::mat4 interiorAxisFix() {
+    return glm::rotate(glm::mat4(), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+}
+
+// Resolve the current interior cell's REFR records into WorldObjects, once.
+// Safe to call every frame: WorldManager::placeInteriorObjects refuses to add a
+// second copy, so this returns 0 on all but the first call for a given cell.
+size_t Renderer::ensureInteriorObjectsPlaced() {
+    if (!worldManager || !objectPlacer || !assetManager) return 0;
+    if (!worldManager->isPlayerIndoors()) return 0;
+
+    auto cell = worldManager->getCurrentCell();
+    if (!cell) return 0;
+    if (!cell->staticObjects.empty() || !cell->dynamicObjects.empty()) return 0;
+
+    const auto placements =
+        objectPlacer->collectInteriorPlacements(cell->tesFormID, assetManager->getEsmManager());
+    return worldManager->placeInteriorObjects(cell->tesFormID, placements);
+}
+
+void Renderer::renderInteriorObjects() {
+    if (!worldManager || !assetManager) return;
+    // P15/P20: exterior geometry must not draw inside an interior cell, and this
+    // path is the interior counterpart of renderTerrainMeshes/renderSkyDome.
+    if (!worldManager->isPlayerIndoors()) return;
+
+    ensureInteriorObjectsPlaced();
+
+    auto cell = worldManager->getCurrentCell();
+    if (!cell) return;
+    if (cell->staticObjects.empty() && cell->dynamicObjects.empty()) return;
+
+    // Compile the interior shader once.
+    static GLuint interiorShader = 0;
+    static bool interiorShaderInit = false;
+    if (!interiorShaderInit) {
+        interiorShaderInit = true;
+
+        GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+        glShaderSource(vs, 1, &interiorVertexSrc, nullptr);
+        glCompileShader(vs);
+        GLint ok = 0;
+        glGetShaderiv(vs, GL_COMPILE_STATUS, &ok);
+        if (!ok) {
+            char buf[512];
+            glGetShaderInfoLog(vs, sizeof(buf), nullptr, buf);
+            LOGE("Interior vertex shader error: %s", buf);
+            glDeleteShader(vs);
+            return;
+        }
+
+        GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+        glShaderSource(fs, 1, &interiorFragmentSrc, nullptr);
+        glCompileShader(fs);
+        glGetShaderiv(fs, GL_COMPILE_STATUS, &ok);
+        if (!ok) {
+            char buf[512];
+            glGetShaderInfoLog(fs, sizeof(buf), nullptr, buf);
+            LOGE("Interior fragment shader error: %s", buf);
+            glDeleteShader(vs);
+            glDeleteShader(fs);
+            return;
+        }
+
+        interiorShader = glCreateProgram();
+        glAttachShader(interiorShader, vs);
+        glAttachShader(interiorShader, fs);
+        glLinkProgram(interiorShader);
+        glGetProgramiv(interiorShader, GL_LINK_STATUS, &ok);
+        if (!ok) {
+            char buf[512];
+            glGetProgramInfoLog(interiorShader, sizeof(buf), nullptr, buf);
+            LOGE("Interior shader link error: %s", buf);
+            glDeleteProgram(interiorShader);
+            interiorShader = 0;
+            glDeleteShader(vs);
+            glDeleteShader(fs);
+            return;
+        }
+        glDeleteShader(vs);
+        glDeleteShader(fs);
+        LOGI("Interior shader compiled successfully");
+    }
+    if (!interiorShader) return;
+
+    // Same camera as the exterior placeholder pass so interiors and exteriors are
+    // framed identically while the interior view is still under development.
+    glm::mat4 viewMatrix = glm::mat4();
+    glm::mat4 projMatrix = glm::mat4();
+    const float aspect = static_cast<float>(screenWidth) / static_cast<float>(screenHeight);
+    if (playerController) {
+        glm::vec3 target = playerController->getPlayerPosition();
+        glm::vec3 eye = target + glm::vec3(0.0f, PH_CAMERA_HEIGHT, PH_CAMERA_DIST);
+        viewMatrix = glm::lookAt(eye, target, glm::vec3(0.0f, 1.0f, 0.0f));
+        projMatrix = glm::perspective(glm::radians(60.0f), aspect, 10.0f, 20000.0f);
+    } else if (camera) {
+        viewMatrix = camera->getViewMatrix();
+        projMatrix = camera->getProjectionMatrix(aspect);
+    } else {
+        return;
+    }
+
+    const glm::mat4 axisFix = interiorAxisFix();
+
+    glUseProgram(interiorShader);
+    const GLint locMVP = glGetUniformLocation(interiorShader, "uMVP");
+    const GLint locModel = glGetUniformLocation(interiorShader, "uModel");
+    const GLint locColor = glGetUniformLocation(interiorShader, "uColor");
+    const GLint locLight = glGetUniformLocation(interiorShader, "uLightDir");
+    // Light from above and slightly to the side, as an interior equivalent of the
+    // placeholder pass's directional light.
+    glUniform3f(locLight, 0.4f, 0.8f, 0.3f);
+
+    size_t drawn = 0;
+    size_t pending = 0;
+
+    auto drawObjectList = [&](const std::vector<std::shared_ptr<WorldObject>>& objects) {
+        for (const auto& obj : objects) {
+            if (!obj || obj->modelPath.empty()) continue;
+
+            // Lazily upload the NIF. AssetManager caches both hits and misses, so
+            // a missing NIF is only searched for once per path.
+            if (!obj->mesh) {
+                obj->mesh = assetManager->loadNifMesh(obj->modelPath);
+            }
+            if (!obj->mesh || !obj->mesh->isReady()) {
+                ++pending;
+                continue;
+            }
+
+            // ESM positions are Z-up and cell relative; the engine is Y-up, and
+            // interiorAxisFix() performs that conversion for the whole placement,
+            // so the raw ESM coordinates go in here.
+            glm::mat4 model = glm::translate(glm::mat4(), obj->position);
+
+            // ESM applies rotations X, then Y, then Z. Post-multiplying builds
+            // Rz * Ry * Rx, which rotates a vertex in exactly that order.
+            if (obj->rotation.x != 0.0f) {
+                model = glm::rotate(model, obj->rotation.x, glm::vec3(1.0f, 0.0f, 0.0f));
+            }
+            if (obj->rotation.y != 0.0f) {
+                model = glm::rotate(model, obj->rotation.y, glm::vec3(0.0f, 1.0f, 0.0f));
+            }
+            if (obj->rotation.z != 0.0f) {
+                model = glm::rotate(model, obj->rotation.z, glm::vec3(0.0f, 0.0f, 1.0f));
+            }
+
+            model = axisFix * model;
+
+            const float s = obj->scale > 0.0f ? obj->scale : 1.0f;
+            if (s != 1.0f) {
+                for (int c = 0; c < 3; c++) {
+                    for (int row = 0; row < 3; row++) {
+                        model.data[c][row] *= s;
+                    }
+                }
+            }
+
+            const glm::mat4 mvp = projMatrix * viewMatrix * model;
+            glUniformMatrix4fv(locMVP, 1, GL_FALSE, mvp.value_ptr());
+            glUniformMatrix4fv(locModel, 1, GL_FALSE, model.value_ptr());
+            glUniform4f(locColor, 0.62f, 0.60f, 0.55f, 1.0f);
+
+            glBindVertexArray(obj->mesh->getVAO());
+            glDrawElements(GL_TRIANGLES, obj->mesh->getIndexCount(), GL_UNSIGNED_INT, nullptr);
+            glBindVertexArray(0);
+            ++drawn;
+        }
+    };
+
+    drawObjectList(cell->staticObjects);
+    drawObjectList(cell->dynamicObjects);
+
+    glUseProgram(0);
+
+    // This runs every frame, so keep the diagnostic to a periodic summary.
+    static int interiorLogCounter = 0;
+    if ((interiorLogCounter++ % 300) == 0) {
+        LOGI("renderInteriorObjects: cell '%s' drew %zu meshes (%zu still loading)",
+             cell->cellName.c_str(), drawn, pending);
+    }
+}
+
+// ============================================================
+// Phase 65: exterior static-object world (REFR -> MODL -> NIF)
+// ============================================================
+// Exterior REFR placements resolve to real MODL paths during world build
+// (WorldObject.modelPath). This pass streams the NIF geometry for the player's
+// neighbourhood and draws it with a weather-driven lit shader. The shader is
+// shared with the interior pass: the player is outside, so the back faces are
+// secondary, but the same normal-following model matrix is required for rotated
+// placements. Interior geometry must not draw through the interior path, so this
+// pass returns early indoors just like renderTerrainMeshes.
+void Renderer::renderStaticObjects() {
+    if (!worldManager || !assetManager) return;
+    if (worldManager->isPlayerIndoors()) return;
+
+    const auto& cells = worldManager->getActiveCells();
+    if (cells.empty()) return;
+
+    // Compile once, mirroring renderInteriorObjects.
+    static GLuint staticShader = 0;
+    static bool staticShaderInit = false;
+    if (!staticShaderInit) {
+        staticShaderInit = true;
+        GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+        glShaderSource(vs, 1, &interiorVertexSrc, nullptr);
+        glCompileShader(vs);
+        GLint ok = 0;
+        glGetShaderiv(vs, GL_COMPILE_STATUS, &ok);
+        if (!ok) {
+            char buf[512];
+            glGetShaderInfoLog(vs, sizeof(buf), nullptr, buf);
+            LOGE("Static vertex shader error: %s", buf);
+            glDeleteShader(vs);
+            return;
+        }
+        GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+        glShaderSource(fs, 1, &interiorFragmentSrc, nullptr);
+        glCompileShader(fs);
+        glGetShaderiv(fs, GL_COMPILE_STATUS, &ok);
+        if (!ok) {
+            char buf[512];
+            glGetShaderInfoLog(fs, sizeof(buf), nullptr, buf);
+            LOGE("Static fragment shader error: %s", buf);
+            glDeleteShader(vs);
+            glDeleteShader(fs);
+            return;
+        }
+        staticShader = glCreateProgram();
+        glAttachShader(staticShader, vs);
+        glAttachShader(staticShader, fs);
+        glLinkProgram(staticShader);
+        glGetProgramiv(staticShader, GL_LINK_STATUS, &ok);
+        if (!ok) {
+            char buf[512];
+            glGetProgramInfoLog(staticShader, sizeof(buf), nullptr, buf);
+            LOGE("Static shader link error: %s", buf);
+            glDeleteProgram(staticShader);
+            staticShader = 0;
+            glDeleteShader(vs);
+            glDeleteShader(fs);
+            return;
+        }
+        glDeleteShader(vs);
+        glDeleteShader(fs);
+        LOGI("Static shader compiled successfully");
+    }
+    if (!staticShader) return;
+
+    glm::mat4 viewMatrix = glm::mat4();
+    glm::mat4 projMatrix = glm::mat4();
+    const float aspect = static_cast<float>(screenWidth) / static_cast<float>(screenHeight);
+    if (playerController) {
+        const glm::vec3 target = playerController->getPlayerPosition();
+        const glm::vec3 eye = target + glm::vec3(0.0f, PH_CAMERA_HEIGHT, PH_CAMERA_DIST);
+        viewMatrix = glm::lookAt(eye, target, glm::vec3(0.0f, 1.0f, 0.0f));
+        projMatrix = glm::perspective(glm::radians(60.0f), aspect, 10.0f, 20000.0f);
+    } else if (camera) {
+        viewMatrix = camera->getViewMatrix();
+        projMatrix = camera->getProjectionMatrix(aspect);
+    } else {
+        return;
+    }
+    const glm::mat4 viewProj = projMatrix * viewMatrix;
+
+    // Weather-driven lighting, identical to the terrain pass so statics and the
+    // ground share one sun/fog.
+    float sunX = 0.5f, sunY = 1.0f, sunZ = 0.3f;
+    float ambR = 0.3f, ambG = 0.3f, ambB = 0.3f;
+    float fogR = 0.2f, fogG = 0.2f, fogB = 0.2f;
+    float fogFar = 20000.0f;
+    if (skyWeatherSystem) {
+        skyWeatherSystem->getSunDirection(sunX, sunY, sunZ);
+        skyWeatherSystem->getAmbientColor(ambR, ambG, ambB);
+        skyWeatherSystem->getFogColor(fogR, fogG, fogB);
+        fogFar = skyWeatherSystem->getFogDistance();
+    }
+
+    glm::vec3 playerPos(0.0f, 0.0f, 0.0f);
+    if (playerController) playerPos = playerController->getPlayerPosition();
+
+    size_t placed = 0;
+    size_t meshes = 0;
+    size_t drawn = 0;
+    size_t cache = 0;
+    size_t pending = 0;
+    size_t missing = 0;
+
+    glUseProgram(staticShader);
+    const GLint locMVP = glGetUniformLocation(staticShader, "uMVP");
+    const GLint locModel = glGetUniformLocation(staticShader, "uModel");
+    const GLint locColor = glGetUniformLocation(staticShader, "uColor");
+    const GLint locLight = glGetUniformLocation(staticShader, "uLightDir");
+    glUniform3f(locLight, sunX, sunY, sunZ);
+
+    static std::unordered_set<std::string> unresolvedStaticMeshes;
+
+    for (const auto& cell : cells) {
+        if (!cell) continue;
+        for (const auto& obj : cell->staticObjects) {
+            if (!obj || obj->modelPath.empty()) continue;
+            ++placed;
+
+            const glm::vec3 delta = obj->position - playerPos;
+            if (glm::length(delta) > NPC_MESH_STREAM_RADIUS) continue;
+
+            if (!obj->mesh && !unresolvedStaticMeshes.count(obj->modelPath) &&
+                !assetManager->isMeshKnownMissing(obj->modelPath)) {
+                obj->mesh = assetManager->loadNifMesh(obj->modelPath);
+                if (obj->mesh) {
+                    ++meshes;
+                } else {
+                    unresolvedStaticMeshes.insert(obj->modelPath);
+                    ++missing;
+                }
+            }
+            if (!obj->mesh || !obj->mesh->isReady()) {
+                ++pending;
+                continue;
+            }
+            if (obj->mesh->getVAO() == 0) {
+                ++pending;
+                continue;
+            }
+            ++cache;
+
+            // Exterior positions are already Y-up swapped absolute world
+            // coordinates, so no axis fix is applied here (unlike interiors,
+            // which fix the whole Z-up placement once).
+            glm::mat4 model = glm::translate(glm::mat4(), obj->position);
+            if (obj->rotation.x != 0.0f) {
+                model = glm::rotate(model, obj->rotation.x, glm::vec3(1.0f, 0.0f, 0.0f));
+            }
+            if (obj->rotation.y != 0.0f) {
+                model = glm::rotate(model, obj->rotation.y, glm::vec3(0.0f, 1.0f, 0.0f));
+            }
+            if (obj->rotation.z != 0.0f) {
+                model = glm::rotate(model, obj->rotation.z, glm::vec3(0.0f, 0.0f, 1.0f));
+            }
+            const float s = obj->scale > 0.0f ? obj->scale : 1.0f;
+            if (s != 1.0f) {
+                for (int c = 0; c < 3; c++) {
+                    for (int row = 0; row < 3; row++) {
+                        model.data[c][row] *= s;
+                    }
+                }
+            }
+
+            const glm::mat4 mvp = viewProj * model;
+            glUniformMatrix4fv(locMVP, 1, GL_FALSE, mvp.value_ptr());
+            glUniformMatrix4fv(locModel, 1, GL_FALSE, model.value_ptr());
+            const float color[4] = {ambR * 0.62f, ambG * 0.62f, ambB * 0.62f, 1.0f};
+            glUniform4fv(locColor, 1, color);
+
+            glBindVertexArray(obj->mesh->getVAO());
+            glDrawElements(GL_TRIANGLES, obj->mesh->getIndexCount(), GL_UNSIGNED_INT, nullptr);
+            glBindVertexArray(0);
+            ++drawn;
+        }
+    }
+
+    glUseProgram(0);
+
+    static int staticLogCounter = 0;
+    if ((staticLogCounter++ % 300) == 0) {
+        LOGI("Static: placed=%zu, meshes=%zu, drawn=%zu, cache=%zu (pending=%zu, missing=%zu, radius=%.0f)",
+             placed, meshes, drawn, cache, pending, missing, NPC_MESH_STREAM_RADIUS);
+    }
+}
+
 void Renderer::renderTerrainMeshes() {
     if (!worldManager) return;
+    // P15: exterior LAND terrain must not draw inside an interior cell.
+    if (worldManager->isPlayerIndoors()) return;
 
     const auto& cells = worldManager->getActiveCells();
     if (cells.empty()) return;
@@ -4648,7 +5572,26 @@ void Renderer::renderTerrainMeshes() {
     const glm::mat4 viewProj = projMatrix * viewMatrix;
 
     glUseProgram(terrainShader);
-    glUniform3f(glGetUniformLocation(terrainShader, "uLightDir"), 0.5f, 1.0f, 0.3f);
+    // Phase 66: drive terrain lighting and fog from the current weather so the
+    // ground matches the sky dome instead of a fixed studio light.
+    float sunX = 0.5f, sunY = 1.0f, sunZ = 0.3f;
+    float ambR = 0.3f, ambG = 0.3f, ambB = 0.3f;
+    float fogR = 0.2f, fogG = 0.2f, fogB = 0.2f;
+    float fogFar = 20000.0f;
+    if (skyWeatherSystem) {
+        skyWeatherSystem->getSunDirection(sunX, sunY, sunZ);
+        skyWeatherSystem->getAmbientColor(ambR, ambG, ambB);
+        skyWeatherSystem->getFogColor(fogR, fogG, fogB);
+        fogFar = skyWeatherSystem->getFogDistance();
+    }
+    glUniform3f(glGetUniformLocation(terrainShader, "uLightDir"), sunX, sunY, sunZ);
+    glUniform3f(glGetUniformLocation(terrainShader, "uAmbientColor"), ambR, ambG, ambB);
+    glUniform3f(glGetUniformLocation(terrainShader, "uFogColor"), fogR, fogG, fogB);
+    glUniform2f(glGetUniformLocation(terrainShader, "uFogRange"), fogFar * 0.35f, fogFar);
+    const glm::vec3 terrainEye = playerController
+        ? (playerController->getPlayerPosition() + glm::vec3(0.0f, PH_CAMERA_HEIGHT, PH_CAMERA_DIST))
+        : glm::vec3(0.0f, 0.0f, 0.0f);
+    glUniform3f(glGetUniformLocation(terrainShader, "uCameraPos"), terrainEye.x, terrainEye.y, terrainEye.z);
     glUniformMatrix4fv(glGetUniformLocation(terrainShader, "uMVP"),
                        1, GL_FALSE, viewProj.value_ptr());
     const float terrainColor[4] = {0.32f, 0.42f, 0.22f, 1.0f};
@@ -4754,6 +5697,8 @@ void Renderer::renderTerrainMeshes() {
 
 void Renderer::renderPlaceholderEntities() {
     if (!worldManager) return;
+    // P15: placeholder actors are exterior-placed; suppress them indoors.
+    if (worldManager->isPlayerIndoors()) return;
 
     NpcManager* npcMgr = worldManager->getNpcManager();
     if (!npcMgr) return;

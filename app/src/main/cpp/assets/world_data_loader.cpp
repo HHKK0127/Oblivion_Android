@@ -194,16 +194,16 @@ const WorldChunk* WorldDataLoader::getChunk(uint32_t worldFormID,
 // REFR -> Positioned Objects
 // ============================================================================
 
-std::vector<WorldObject> WorldDataLoader::extractCellObjects(
+std::vector<PlacedObject> WorldDataLoader::extractCellObjects(
     uint32_t cellFormID) const {
-    std::vector<WorldObject> objects;
+    std::vector<PlacedObject> objects;
     if (!esmManager) return objects;
 
     const auto& allRefs = esmManager->getAllReferences();
     for (const auto& ref : allRefs) {
         if (ref.cellFormID != cellFormID) continue;
 
-        WorldObject obj;
+        PlacedObject obj;
         obj.refFormID = ref.formID;
         obj.baseFormID = ref.baseFormID;
         obj.position = ref.position;

@@ -464,7 +464,6 @@ void Phase45UnitTests::testQuestManager() {
         float t0 = getTimeMs45();
         Quest quest(2, 100, "Test Quest", "Description");
         quest.accept();
-        bool ok1 = (quest.state == QuestState::ACCEPTED);
         // Note: Quest::accept() may set IN_PROGRESS or ACCEPTED
         // depending on implementation; check both
         bool ok1b = (quest.state == QuestState::ACCEPTED
@@ -686,6 +685,7 @@ void Phase45UnitTests::testMemoryPool() {
         int* a = pool.acquire();
         int* b = pool.acquire();
         int* c = pool.acquire();
+        (void)a; (void)b; (void)c;
         bool ok1 = (pool.getActiveCount() == 3);
         pool.resetAll();
         bool ok2 = (pool.getActiveCount() == 0);
@@ -716,6 +716,7 @@ void Phase45UnitTests::testMemoryPool() {
         mgr.getEffectPool().release(effect);
         // Check stats
         auto stats = mgr.getStats();
+        (void)stats;
         bool ok = ok1 && ok2 && ok3;
         mgr.cleanup();
         float dt = getTimeMs45() - t0;

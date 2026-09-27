@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <functional>
 #include "../assets/esm_reader.h"
+#include "../localization/localization_manager.h"
 
 /**
  * Dialogue Topic - A single conversation topic
@@ -15,6 +16,9 @@ struct DialogueTopic {
     std::string topicText;         // Display text for topic
     std::string responseText;      // NPC response
     bool isQuest;                  // Is this a quest-related topic?
+
+    // ESM linkage (for localization lookup)
+    uint32_t infoFormID = 0;       // Originating INFO formID
 
     // Faction branching (ESM integration)
     uint32_t factionFormID = 0;    // Required faction to see this topic (0 = no requirement)
@@ -118,8 +122,11 @@ public:
     // ESM-driven dialogue loading
     // Loads dialogue trees from ESM DIAL/INFO records and attaches to NPCs
     // npcFactionLookup: function returning faction memberships for an NPC FormID
+    // localization: optional JPWiki text source; when supplied, topic and
+    //               response text are replaced with the localized strings.
     void loadDialoguesFromESM(const oblivion::ESMManager& esmMgr,
-                              std::function<std::vector<uint32_t>(uint32_t)> npcFactionLookup = nullptr);
+                              std::function<std::vector<uint32_t>(uint32_t)> npcFactionLookup = nullptr,
+                              const LocalizationManager* localization = nullptr);
 
     // Faction-based topic filtering for current dialogue
     // Returns indices of topics available given NPC's factions
@@ -129,10 +136,16 @@ public:
     using FactionRankProvider = std::function<bool(uint32_t, int32_t)>;
     void setFactionRankProvider(FactionRankProvider provider) { m_factionRankProvider = provider; }
 
+    // Localization source used when loading dialogue from ESM
+    void setLocalizationManager(const LocalizationManager* localization) {
+        m_localization = localization;
+    }
+
 private:
     std::unordered_map<uint32_t, std::shared_ptr<Dialogue>> dialogues;  // NPC ID -> Dialogue
     std::shared_ptr<Dialogue> currentDialogue;  // Currently active dialogue
     FactionRankProvider m_factionRankProvider;  // Returns true if NPC has faction rank
+    const LocalizationManager* m_localization = nullptr;  // Optional JPWiki text source
 
     void logDialogueStats() const;
 };

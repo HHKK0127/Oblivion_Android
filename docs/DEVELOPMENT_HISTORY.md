@@ -437,8 +437,8 @@ app/src/main/cpp/
 - [ARCHITECTURE.md](ARCHITECTURE.md) - システムアーキテクチャ
 - [IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md) - 実装ガイド
 - [JNI_BRIDGE_DESIGN.md](JNI_BRIDGE_DESIGN.md) - JNIブリッジ設計
-- [PHASE9_PLAN.md](PHASE9_PLAN.md) - Phase 9計画
+- [../plan.md](../plan.md) - 実装計画（Phase 9〜72、正典）
 
 ---
 
-**最終更新**: 2026-08-27
+**最終更新**: 2026-09-27

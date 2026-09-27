@@ -3,6 +3,7 @@
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
 #include <android/native_window_jni.h>
+#include <chrono>
 #include "engine/renderer.h"
 #include "engine/imperial_weave.h"
 #include "ui/viewer_3d.h"
@@ -19,10 +20,22 @@ static Renderer* g_renderer = nullptr;
 AAssetManager* g_assetManager = nullptr;
 std::string g_pendingDataPath;
 
+// Phase 66 P19: real frame pacing. Renderer::render() used to be handed the
+// constant 1/60 s, so every dt-driven system ran in slow motion below 60 FPS.
+// These track the previous frame so nativeRenderFrame() can pass the measured
+// interval instead.
+static std::chrono::steady_clock::time_point g_lastFrameTime;
+static bool g_hasLastFrameTime = false;
+
 extern "C" {
     void jni_audio_set_asset_manager(AAssetManager* mgr);
     void jni_audio_set_java_vm(JavaVM* vm);
     void jni_audio_set_main_activity(jobject activity);
+}
+
+// Exposes the active Renderer to other translation units.
+extern "C" Renderer* jni_bridge_get_renderer() {
+    return g_renderer;
 }
 
 // Initialize engine and return handle to Java
@@ -38,6 +51,10 @@ Java_com_example_oblivion_GameRenderer_nativeInitEngine(
         g_renderer->cleanup();
         delete g_renderer;
         g_renderer = nullptr;
+        // Phase 66 P19: the paused session's timestamp is meaningless for the new
+        // renderer, so start its first frame from the 1/60 s fallback instead of
+        // the 100 ms clamp.
+        g_hasLastFrameTime = false;
     }
 
     LOGI("Creating new Renderer instance...");
@@ -180,7 +197,23 @@ Java_com_example_oblivion_GameRenderer_nativeRenderFrame(
         jlong handle) {
     Renderer* renderer = reinterpret_cast<Renderer*>(handle);
     if (renderer) {
-        renderer->render(0.0167f);  // 60 FPS default (1/60 sec)
+        // Phase 66 P19: see the g_lastFrameTime comment. The clamp below keeps a
+        // stale timestamp harmless, but clearing it makes the first frame after
+        // a fresh renderer exact rather than merely bounded.
+        static constexpr float kFallbackDelta = 1.0f / 60.0f;
+        static constexpr float kMaxDelta = 0.1f;  // 100 ms, ~10 FPS floor
+
+        const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+        float deltaTime = kFallbackDelta;
+        if (g_hasLastFrameTime) {
+            deltaTime = std::chrono::duration<float>(now - g_lastFrameTime).count();
+            if (deltaTime < 0.0f) deltaTime = 0.0f;
+            if (deltaTime > kMaxDelta) deltaTime = kMaxDelta;
+        }
+        g_lastFrameTime = now;
+        g_hasLastFrameTime = true;
+
+        renderer->render(deltaTime);
     } else {
         LOGD("WARNING: nativeRenderFrame called with null renderer handle");
     }
@@ -197,6 +230,9 @@ Java_com_example_oblivion_GameRenderer_nativeCleanup(
         delete g_renderer;
         g_renderer = nullptr;
     }
+    // Phase 66 P19: drop the frame timestamp so the next renderer's first frame
+    // measures from its own start rather than from the previous session.
+    g_hasLastFrameTime = false;
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -919,37 +955,6 @@ Java_com_example_oblivion_GameRenderer_nativeOnBackKey(
     LOGI("nativeOnBackKey called");
     if (g_renderer) {
         return g_renderer->handleBackKey() ? JNI_TRUE : JNI_FALSE;
-    }
-    return JNI_FALSE;
-}
-
-// OblivionEngine helpers (used by GameActivity which talks directly to OblivionEngine)
-extern "C" JNIEXPORT void JNICALL
-Java_com_example_oblivion_OblivionEngine_nativeSetEngineHandle(
-        [[maybe_unused]] JNIEnv* env,
-        [[maybe_unused]] jobject obj,
-        jlong handle) {
-    LOGI("nativeSetEngineHandle: handle=%lld", (long long)handle);
-    g_renderer = reinterpret_cast<Renderer*>(handle);
-}
-
-extern "C" JNIEXPORT jboolean JNICALL
-Java_com_example_oblivion_OblivionEngine_nativeOnBackKey(
-        [[maybe_unused]] JNIEnv* env,
-        [[maybe_unused]] jobject obj) {
-    LOGI("OblivionEngine.nativeOnBackKey called");
-    if (g_renderer) {
-        return g_renderer->handleBackKey() ? JNI_TRUE : JNI_FALSE;
-    }
-    return JNI_FALSE;
-}
-
-extern "C" JNIEXPORT jboolean JNICALL
-Java_com_example_oblivion_OblivionEngine_nativeIsExitRequested(
-        [[maybe_unused]] JNIEnv* env,
-        [[maybe_unused]] jobject obj) {
-    if (g_renderer) {
-        return g_renderer->isExitRequested() ? JNI_TRUE : JNI_FALSE;
     }
     return JNI_FALSE;
 }

@@ -1,4 +1,5 @@
 #include "asset_manager.h"
+#include "asset_path_resolver.h"
 #include <android/log.h>
 #include <algorithm>
 #include <fstream>
@@ -199,30 +200,33 @@ std::vector<uint8_t> AssetManager::loadFileData(const std::string& path) {
     std::string searchPath = path;
     std::replace(searchPath.begin(), searchPath.end(), '\\', '/');
 
-    // Search BSA archives in reverse order (last loaded = highest priority)
-    for (auto it = m_archives.rbegin(); it != m_archives.rend(); ++it) {
-        const BSAFileEntry* entry = (*it)->findFile(searchPath);
-        if (entry) {
+    for (const auto& candidate : buildAssetPathCandidates(searchPath)) {
+        // Search BSA archives in reverse order (last loaded = highest priority)
+        for (auto it = m_archives.rbegin(); it != m_archives.rend(); ++it) {
+            const BSAFileEntry* entry = (*it)->findFile(candidate);
+            if (!entry) {
+                continue;
+            }
             std::vector<uint8_t> data;
             if ((*it)->extractFileDecompressed(*entry, data)) {
-                LOGD("Loaded file from BSA: %s (%zu bytes)", searchPath.c_str(), data.size());
+                LOGD("Loaded file from BSA: %s (%zu bytes)", candidate.c_str(), data.size());
                 return data;
             }
         }
-    }
 
-    // Fallback to direct file access
-    if (!m_dataPath.empty()) {
-        std::string fullPath = m_dataPath + "/" + searchPath;
-        std::ifstream file(fullPath, std::ios::binary);
-        if (file.is_open()) {
-            file.seekg(0, std::ios::end);
-            size_t size = file.tellg();
-            file.seekg(0, std::ios::beg);
-            std::vector<uint8_t> data(size);
-            file.read(reinterpret_cast<char*>(data.data()), size);
-            LOGD("Loaded file from disk: %s (%zu bytes)", fullPath.c_str(), data.size());
-            return data;
+        // Fallback to direct file access
+        if (!m_dataPath.empty()) {
+            std::string fullPath = m_dataPath + "/" + candidate;
+            std::ifstream file(fullPath, std::ios::binary);
+            if (file.is_open()) {
+                file.seekg(0, std::ios::end);
+                size_t size = file.tellg();
+                file.seekg(0, std::ios::beg);
+                std::vector<uint8_t> data(size);
+                file.read(reinterpret_cast<char*>(data.data()), size);
+                LOGD("Loaded file from disk: %s (%zu bytes)", fullPath.c_str(), data.size());
+                return data;
+            }
         }
     }
 
@@ -234,16 +238,19 @@ bool AssetManager::fileExists(const std::string& path) const {
     std::string searchPath = path;
     std::replace(searchPath.begin(), searchPath.end(), '\\', '/');
 
-    for (const auto& archive : m_archives) {
-        if (archive->findFile(searchPath)) {
-            return true;
+    for (const auto& candidate : buildAssetPathCandidates(searchPath)) {
+        for (const auto& archive : m_archives) {
+            if (archive->findFile(candidate)) {
+                return true;
+            }
         }
-    }
 
-    if (!m_dataPath.empty()) {
-        std::string fullPath = m_dataPath + "/" + searchPath;
-        std::ifstream file(fullPath);
-        return file.good();
+        if (!m_dataPath.empty()) {
+            std::ifstream file(m_dataPath + "/" + candidate);
+            if (file.good()) {
+                return true;
+            }
+        }
     }
 
     return false;

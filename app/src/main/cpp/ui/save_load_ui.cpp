@@ -112,6 +112,7 @@ void SaveLoadUI::render() {
 }
 
 void SaveLoadUI::update(float deltaTime) {
+    (void)deltaTime;
     if (!visible) {
         return;
     }
@@ -482,14 +483,14 @@ void SaveLoadUI::handleExecuteAction() {
     }
 
     if (currentMode == Mode::SAVE) {
-        if (selectedSlotIndex < availableSlots.size() && saveManager->hasSave(availableSlots[selectedSlotIndex].slotIndex)) {
+        if (selectedSlotIndex < static_cast<int>(availableSlots.size()) && saveManager->hasSave(availableSlots[selectedSlotIndex].slotIndex)) {
             dialogState = DialogState::CONFIRM_OVERWRITE;
             pendingSlotName = availableSlots[selectedSlotIndex].displayName;
         } else {
             handleConfirmOverwrite();
         }
     } else {
-        if (selectedSlotIndex < availableSlots.size()) {
+        if (selectedSlotIndex < static_cast<int>(availableSlots.size())) {
             pendingSlotName = availableSlots[selectedSlotIndex].displayName;
             handleConfirmOverwrite();
         } else {
@@ -507,7 +508,7 @@ void SaveLoadUI::handleConfirmOverwrite() {
     if (currentMode == Mode::SAVE) {
         uint32_t slotIndex;
         std::string slotName;
-        if (selectedSlotIndex < availableSlots.size()) {
+        if (selectedSlotIndex < static_cast<int>(availableSlots.size())) {
             slotIndex = availableSlots[selectedSlotIndex].slotIndex;
             slotName = availableSlots[selectedSlotIndex].displayName;
         } else {
@@ -530,7 +531,7 @@ void SaveLoadUI::handleConfirmOverwrite() {
         }
     } else {
         // Load
-        if (selectedSlotIndex < availableSlots.size()) {
+        if (selectedSlotIndex < static_cast<int>(availableSlots.size())) {
             uint32_t slotIndex = availableSlots[selectedSlotIndex].slotIndex;
 
             // Execute binary load (deserialize all system state)
@@ -557,7 +558,7 @@ void SaveLoadUI::handleConfirmDelete() {
         return;
     }
 
-    if (selectedSlotIndex < availableSlots.size()) {
+    if (selectedSlotIndex < static_cast<int>(availableSlots.size())) {
         uint32_t slotIndex = availableSlots[selectedSlotIndex].slotIndex;
         if (saveManager->deleteSave(slotIndex)) {
             LOGI("Deleted slot %u: %s", slotIndex, availableSlots[selectedSlotIndex].displayName.c_str());
@@ -577,7 +578,7 @@ void SaveLoadUI::handleCancel() {
 }
 
 std::string SaveLoadUI::getSelectedSlot() const {
-    if (selectedSlotIndex < availableSlots.size()) {
+    if (selectedSlotIndex < static_cast<int>(availableSlots.size())) {
         return availableSlots[selectedSlotIndex].displayName;
     }
     return "";

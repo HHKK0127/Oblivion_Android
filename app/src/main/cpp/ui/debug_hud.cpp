@@ -421,7 +421,7 @@ void DebugHUD::renderPhasePage(float& xPos, float& yPos, float lineHeight, float
     }
 }
 
-void DebugHUD::renderFpsGraph(float x, float y, float width, float height) {
+void DebugHUD::renderFpsGraph(float x, float y, float /*width*/, float /*height*/) {
     // Text-based FPS graph (OpenGL ES 3.0 compatible)
     int count = std::min(fpsHistoryIndex, FPS_HISTORY_SIZE);
     if (count < 2) return;
@@ -440,7 +440,7 @@ void DebugHUD::renderFpsGraph(float x, float y, float width, float height) {
     textRenderer->renderText(graph, x, y, glm::vec3(0.0f, 1.0f, 0.0f), 0.8f);
 }
 
-void DebugHUD::renderFrameTimeBar(float x, float y, float width, float height) {
+void DebugHUD::renderFrameTimeBar(float x, float y, float /*width*/, float /*height*/) {
     // Text-based frame time breakdown (OpenGL ES 3.0 compatible)
     float total = cpuTimeMs + gpuTimeMs + waitTimeMs;
     if (total <= 0.0f) return;

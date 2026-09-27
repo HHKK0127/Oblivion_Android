@@ -159,6 +159,17 @@ void QuestFlowController::registerQuests(const std::vector<QuestRecord>& records
 // Quest Lifecycle
 // ============================================================================
 
+std::string QuestFlowController::getQuestName(uint32_t questFormID) const {
+    auto it = quests_.find(questFormID);
+    if (it == quests_.end()) return std::string();
+
+    const std::string& rawName = it->second.record.fullName;
+    if (localizationManager_) {
+        return localizationManager_->getQuestText(questFormID, rawName);
+    }
+    return rawName;
+}
+
 bool QuestFlowController::activateQuest(uint32_t questFormID) {
     auto it = quests_.find(questFormID);
     if (it == quests_.end()) {
@@ -179,7 +190,7 @@ bool QuestFlowController::activateQuest(uint32_t questFormID) {
         // Create quest in QuestManager if not already there
         auto existingQuest = questManager_->getQuest(questFormID);
         if (!existingQuest) {
-            questManager_->createQuest(0, entry.record.fullName,
+            questManager_->createQuest(0, getQuestName(questFormID),
                                         entry.record.description);
         }
         questManager_->acceptQuest(questFormID);

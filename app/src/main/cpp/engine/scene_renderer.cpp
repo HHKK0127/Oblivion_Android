@@ -103,7 +103,7 @@ void SceneRenderer::renderUI(float deltaTime) {
     (void)deltaTime;
     startPassTimer();
 
-    // UI/HUD rendering is handled by UIManager within Renderer::render
+    // UI/HUD rendering is handled by Renderer::render.
     // This pass is for any additional 2D overlay rendering.
 
     stats_.uiRenderMs = endPassTimer();

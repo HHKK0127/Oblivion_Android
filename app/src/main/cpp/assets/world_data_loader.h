@@ -37,8 +37,10 @@ constexpr int STREAM_LOAD_RADIUS = 3;
 // Streaming: unload cells beyond this radius
 constexpr int STREAM_UNLOAD_RADIUS = 5;
 
-// Positioned object in the world
-struct WorldObject {
+// Positioned object in the world. Named PlacedObject to keep this TU-copy
+// distinct from world::WorldObject (world/world_data.h) which the renderer
+// also pulls in — both live in the global namespace, so they cannot coexist.
+struct PlacedObject {
     uint32_t refFormID = 0;         // REFR FormID
     uint32_t baseFormID = 0;        // Base object FormID (STAT, DOOR, NPC_, etc.)
     glm::vec3 position{0.0f, 0.0f, 0.0f};
@@ -69,7 +71,7 @@ struct WorldChunk {
     bool isInterior = false;
     bool loaded = false;
 
-    std::vector<WorldObject> objects;
+    std::vector<PlacedObject> objects;
     std::unique_ptr<TerrainChunk> terrain;
 };
 
@@ -129,7 +131,7 @@ public:
     // ========================================================================
 
     // Extract positioned objects from a cell's references
-    std::vector<WorldObject> extractCellObjects(uint32_t cellFormID) const;
+        std::vector<PlacedObject> extractCellObjects(uint32_t cellFormID) const;
 
     // Resolve model path from base form ID
     std::string resolveModelPath(uint32_t baseFormID) const;

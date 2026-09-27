@@ -3,12 +3,24 @@
 #include <GLES3/gl3.h>
 #include <sstream>
 #include <algorithm>
+#include <cstdio>
 #include <stdexcept>
 #include <android/log.h>
 
 #define LOG_TAG_CONSOLE "GameConsole"
 #define LOGD_CONSOLE(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG_CONSOLE, __VA_ARGS__)
 #define LOGI_CONSOLE(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG_CONSOLE, __VA_ARGS__)
+
+namespace {
+
+// Formats a FormID as an 8-digit lowercase hex string without the 0x prefix.
+std::string toHex8(uint32_t value) {
+    char buf[9];
+    std::snprintf(buf, sizeof(buf), "%08x", value);
+    return std::string(buf);
+}
+
+} // namespace
 
 GameConsole::GameConsole()
     : textRenderer(nullptr), visible(false), initialized(false),
@@ -391,6 +403,45 @@ void GameConsole::registerBuiltinCommands() {
         }
     });
 
+    // === Book reader commands ===
+    registerCommand("readbook", "Open a book by FormID (hex or decimal)", [this](const std::vector<std::string>& args) {
+        if (args.size() < 2) {
+            appendOutput("Usage: readbook <formID>  (e.g. readbook 0x00002DAB)");
+            return;
+        }
+        if (!gameRefs.openBook) {
+            appendOutput("Book reader not connected");
+            return;
+        }
+        try {
+            const std::string& raw = args[1];
+            const uint32_t formID = static_cast<uint32_t>(
+                std::stoul(raw, nullptr, (raw.rfind("0x", 0) == 0 || raw.rfind("0X", 0) == 0) ? 16 : 10));
+            if (gameRefs.openBook(formID)) {
+                appendOutput("Opened book 0x" + toHex8(formID));
+            } else {
+                appendOutput("Book 0x" + toHex8(formID) + " not found");
+            }
+        } catch (...) {
+            appendOutput("Invalid FormID. Use: readbook <formID>");
+        }
+    });
+    registerCommand("closebook", "Close the book reader", [this](const std::vector<std::string>&) {
+        if (gameRefs.closeBook) {
+            gameRefs.closeBook();
+            appendOutput("Book closed");
+        } else {
+            appendOutput("Book reader not connected");
+        }
+    });
+    registerCommand("listbooks", "List books available from the ESM", [this](const std::vector<std::string>&) {
+        if (gameRefs.listBooks) {
+            appendOutput(gameRefs.listBooks());
+        } else {
+            appendOutput("Book reader not connected");
+        }
+    });
+
     // === Phase 74: World debug enhanced commands ===
     registerCommand("worldinfodetail", "Show detailed world info", [this](const std::vector<std::string>&) {
         if (gameRefs.getWorldInfoDetailed) {
@@ -583,6 +634,9 @@ void GameConsole::registerBuiltinCommands() {
     registerCommand("settime", "Set time of day: settime <hour 0-24>", [this](const std::vector<std::string>& args) { cmdSetTime(args); });
     registerCommand("loadcell", "Load cell: loadcell <x> <y>", [this](const std::vector<std::string>& args) { cmdLoadCell(args); });
     registerCommand("worldinfo", "Show world info", [this](const std::vector<std::string>& args) { cmdWorldInfo(args); });
+    // Phase 66 P16: phase/cell/space dump, also emitted to logcat.
+    registerCommand("gamestate", "Show phase, space and current cell (also logs)", [this](const std::vector<std::string>& args) { cmdGameState(args); });
+    registerCommand("state", "Alias for gamestate", [this](const std::vector<std::string>& args) { cmdGameState(args); });
     // Phase 66: Map debug commands
     registerCommand("playerpos", "Show player position", [this](const std::vector<std::string>&) {
         if (gameRefs.getPlayerPosition) {
@@ -611,6 +665,22 @@ void GameConsole::registerBuiltinCommands() {
         int32_t cz = std::stoi(args[2]);
         if (gameRefs.teleportToCell) gameRefs.teleportToCell(cx, cz);
         print("Teleported to cell (" + args[1] + ", " + args[2] + ")");
+    });
+    registerCommand("teleportinterior", "Enter an interior cell: teleportinterior [name]", [this](const std::vector<std::string>& args) {
+        if (!gameRefs.teleportToInterior) {
+            print("Interior teleport not available");
+            return;
+        }
+        const std::string query = args.size() >= 2 ? args[1] : std::string();
+        print(gameRefs.teleportToInterior(query));
+    });
+    registerCommand("teleportexterior", "Leave the interior cell and resume exterior streaming", [this](const std::vector<std::string>& args) {
+        (void)args;
+        if (!gameRefs.teleportToExterior) {
+            print("Exterior teleport not available");
+            return;
+        }
+        print(gameRefs.teleportToExterior());
     });
     registerCommand("moverel", "Move relative: moverel <dx> <dz>", [this](const std::vector<std::string>& args) {
         if (args.size() < 3) {
@@ -1927,7 +1997,7 @@ void GameConsole::cmdEndTalk(const std::vector<std::string>& args) {
 
 void GameConsole::cmdSetWeather(const std::vector<std::string>& args) {
     if (args.size() < 2) {
-        appendOutput("Usage: setweather <clear|rain|snow|fog|storm>");
+        appendOutput("Usage: setweather <clear|cloudy|overcast|fog|rain|storm|snow|blizzard>");
         return;
     }
     if (gameRefs.setWeather) {
@@ -1940,15 +2010,16 @@ void GameConsole::cmdSetWeather(const std::vector<std::string>& args) {
 
 void GameConsole::cmdSetTimeScale(const std::vector<std::string>& args) {
     if (args.size() < 2) {
-        appendOutput("Usage: settimescale <multiplier>");
-        appendOutput("  1 = real-time, 30 = default Oblivion, 0 = paused");
+        appendOutput("Usage: settimescale <game minutes per real minute>");
+        appendOutput("  30 = Oblivion default (a game day in 48 real minutes), 0 = paused");
         return;
     }
     try {
         float scale = std::stof(args[1]);
         if (gameRefs.setTimeScale) {
             gameRefs.setTimeScale(scale);
-            appendOutput("Time scale set to " + std::to_string(scale) + "x");
+            appendOutput("Time scale set to " + std::to_string(scale) +
+                         " game minutes per real minute");
         } else {
             appendOutput("World system not connected");
         }
@@ -2005,6 +2076,18 @@ void GameConsole::cmdWorldInfo(const std::vector<std::string>& args) {
     } else {
         appendOutput("World system not connected");
     }
+}
+
+void GameConsole::cmdGameState(const std::vector<std::string>& args) {
+    // Phase 66 P16: same payload as worldinfo, but also written to logcat so a
+    // device measurement can read the phase without a screenshot.
+    if (!gameRefs.getWorldInfo) {
+        appendOutput("World system not connected");
+        return;
+    }
+    const std::string state = gameRefs.getWorldInfo();
+    appendOutput(state);
+    LOGI_CONSOLE("%s", state.c_str());
 }
 
 // ============================================================

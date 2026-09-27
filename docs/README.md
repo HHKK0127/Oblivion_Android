@@ -1,8 +1,8 @@
 # Oblivion Android - ドキュメント目次
 
-**最終更新**: 2026-08-27  
-**バージョン**: 0.9.0  
-**ステータス**: Phase 9 進行中
+**最終更新**: 2026-09-27  
+**バージョン**: 0.9.10  
+**ステータス**: Phase 64 完了、Phase 65 進行中（計画の正典は [../plan.md](../plan.md)）
 
 ---
 
@@ -32,13 +32,14 @@
 | [FPS_CONTROL_GUIDE.md](FPS_CONTROL_GUIDE.md) | FPS制御ガイド | 実装エンジニア |
 | [SAVE_LOAD_IMPLEMENTATION.md](SAVE_LOAD_IMPLEMENTATION.md) | セーブ/ロード実装 | 実装エンジニア |
 | [CODE_QUALITY_IMPROVEMENTS.md](CODE_QUALITY_IMPROVEMENTS.md) | コード品質改善 | 全開発者 |
+| [JPWIKI_ANALYSIS.md](JPWIKI_ANALYSIS.md) | JPWiki日本語化データ解析 | 実装エンジニア |
 
 ### 計画・履歴ドキュメント
 
 | ファイル | 内容 | 対象者 |
 |---------|------|--------|
 | [DEVELOPMENT_HISTORY.md](DEVELOPMENT_HISTORY.md) | 開発履歴（全フェーズ） | 全員 |
-| [PHASE9_PLAN.md](PHASE9_PLAN.md) | Phase 9実装計画 | PM、リードエンジニア |
+| [../plan.md](../plan.md) | 実装計画（Phase 9〜72、正典） | PM、リードエンジニア |
 
 ---
 
@@ -64,7 +65,7 @@
 
 1. **README.md** - プロジェクト概要
 2. **DEVELOPMENT_HISTORY.md** - 開発進捗
-3. **PHASE9_PLAN.md** - 今後の計画
+3. **[../plan.md](../plan.md)** - 実装計画（Phase 9〜72）
 4. **ARCHITECTURE.md** - 技術的な全体像
 
 ---
@@ -131,8 +132,11 @@ docs/
 ├── FPS_CONTROL_GUIDE.md         # FPS制御ガイド
 ├── SAVE_LOAD_IMPLEMENTATION.md  # セーブ/ロード実装
 ├── CODE_QUALITY_IMPROVEMENTS.md # コード品質改善
+├── JPWIKI_ANALYSIS.md           # JPWiki日本語化データ解析
 ├── DEVELOPMENT_HISTORY.md       # 開発履歴
-└── PHASE9_PLAN.md               # Phase 9計画
+└── README.md                    # このファイル（目次）
+
+計画の正典は リポジトリ直下の plan.md（Phase 9〜72）です。
 ```
 
 ---
@@ -154,9 +158,10 @@ docs/
 
 ### バージョン情報
 
-- **現在バージョン**: 0.9.0
-- **現在フェーズ**: Phase 9 (最終統合)
+- **現在バージョン**: 0.9.10
+- **現在フェーズ**: Phase 65 (フル世界レンダリング)
 - **目標**: v1.0.0リリース
+- **計画の正典**: [../plan.md](../plan.md)（Phase 9〜72）
 
 ### 完了フェーズ
 

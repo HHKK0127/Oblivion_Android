@@ -133,21 +133,25 @@ void ImperialWeave::init(const ImperialWeaveConfig& config) {
 
     // v4: Subscribe to new engine events
     eventBus_.subscribe("TREE_WIND_CHANGE", [this](const Event& e) {
+        (void)e;
         // Forward wind changes to SpeedTree for dynamic wind response
         if (speedTreeManager_) {
             // SpeedTree reads wind params internally during update
         }
     });
-    eventBus_.subscribe("FACE_MORPH_UPDATE", [this](const Event& e) {
+    eventBus_.subscribe("FACE_MORPH_UPDATE", [](const Event& e) {
+        (void)e;
         // FaceGen morph target updates are handled in phaseFaceGenUpdate
     });
     eventBus_.subscribe("VIDEO_PLAYBACK_EVENT", [this](const Event& e) {
+        (void)e;
         // BinkVideo playback state changes
         if (binkVideoPlayer_) {
             // Video state is queried via isPlaying() in phaseVideoUpdate
         }
     });
     eventBus_.subscribe("LOD_DISTANCE_CHANGE", [this](const Event& e) {
+        (void)e;
         // Distant LOD distance threshold changes
         if (distantLodManager_) {
             // LOD distances are updated in phaseRenderSubmit

@@ -16,6 +16,50 @@ The current version is **0.9.10 (versionCode 910)**.
 ## [Unreleased]
 
 ### Added
+- **`gamestate` console command reports where the game actually is, in one line.** Every
+  device-verification mistake made so far - most expensively the P15 interior bug, which was
+  first diagnosed as "outdoor geometry still renders indoors" when the app was simply still
+  sitting on the title screen - came from not being able to tell, cheaply, whether the world was
+  even being drawn. `refs.getWorldInfo` was a stub returning `"World info not available"`; it now
+  builds `GAMESTATE phase=<LAUNCHER|TITLE|PLAYING> space=<INTERIOR|EXTERIOR> cell="<name>"
+  formID=0x... editorID=... grid=(x,y) active=N cached=N terrainCells=N time=HH:MM day=D
+  pos=(x,y,z)`, with `grid` omitted indoors because interior cells have no coordinate. The new
+  `gamestate` command (alias `state`) prints it to the console **and** writes it to logcat as
+  `GameConsole: GAMESTATE ...`, so an automated run can read the phase with `adb logcat -d`
+  instead of analysing a screenshot. The debug panel gains `Game State (logcat)` and
+  `Exit Interior Cell` buttons (`btn_debug_gamestate`, `btn_debug_exterior`) so both halves of an
+  interior A/B test are reachable by tap alone.
+- **JPWiki Japanese localization data**: `app/src/main/assets/localization/jpwiki_localization.tsv`
+  (5.7 MB, UTF-8/TSV) carries 28,686 strings extracted from `JPWikiMod_Vanilla.esp`,
+  `JPWikiMod_Vanilla+SI.esp` and `JPBooks_Merged[V+S+ML].esp` - 723 game settings, 640 book
+  bodies, 19,179 dialogue responses, 3,474 dialogue topics, 249 quest names and 4,421 object
+  names. `LocalizationManager::loadJpwikiData()` loads it through `AAssetManager` and exposes
+  one getter per kind (`getGameSetting`, `getBookText`, `getInfoText`, `getDialogText`,
+  `getQuestText`, `getFullText`). Every getter falls back to the English source text when the
+  language is not Japanese or the key is missing, so English behaviour is unchanged.
+- **Localization consumers**: `BookReader::getBookDescription()`,
+  `DialogueManager::loadDialoguesFromESM()` and `QuestFlowController::getQuestName()` now
+  resolve their text through `LocalizationManager`. Each system takes the manager through a
+  `setLocalizationManager()` setter, and `Renderer::initGameSystems()` attaches it to
+  `DialogueManager` at construction.
+- **Dialogue system wiring**: `Renderer` now owns a `UIDialogue` panel and exposes
+  `loadDialoguesFromESM()`, `openDialogueWithNpc()`, `openDialogueWithNearestNpc()`,
+  `isDialogueOpen()` and `closeDialogue()`. `createTestScenario()` loads the DIAL/INFO trees
+  after actors are placed, so 3,817 dialogue trees and 19,278 topics are available in game.
+  `NPC` gained `formID` / `factionFormIDs` (populated by `createNPCFromESM()`) and
+  `NpcManager::getNpcByFormID()` resolves a spawned actor from its base record. The JNI layer
+  adds `nativeStartDialogue()`, `nativeCloseDialogue()` and `nativeIsDialogueOpen()`.
+- **Book reader and quest flow wiring**: `Renderer` now owns a `BookReader` and a
+  `QuestFlowController`, both attached to the same `LocalizationManager`.
+  `createTestScenario()` binds the reader to the `ESMManager` (887 books) and registers 390
+  quests from the ESM data. A new `UIBookReader` panel renders book bodies with markup
+  stripping and CJK-aware word wrapping; `Renderer` exposes `openBook()`, `isBookOpen()` and
+  `closeBook()`, the JNI layer adds `nativeOpenBook()`, `nativeCloseBook()` and
+  `nativeIsBookOpen()`, and the debug console gains `readbook`, `closebook` and `listbooks`.
+- **FormID key normalization for JPWiki data**: the source plugins store FormIDs as uppercase
+  hex, while `LocalizationManager::formKey()` produces lowercase. Keys are now lowercased
+  during `loadJpwikiData()`, which fixes every FormID-based lookup (books, dialogue, quests,
+  object names) that previously fell back to English.
 - **Native C++ host test runner for CI**: new `tools/host_tests/` directory with
   desktop stubs for the NDK headers (`<android/log.h>`, `<android/asset_manager.h>`,
   `<jni.h>`, GLES), stub implementations for `AAsset*` and `jni_audio_*` symbols, and
@@ -27,22 +71,179 @@ The current version is **0.9.10 (versionCode 910)**.
 - **All five native test suites now build and run**: `run_host_tests.sh` previously compiled only
   `script_vm_tests.cpp`, so `phase45_unit_tests`, `phase48_stress_test`, `phase48_integration_test`
   and `phase30_integration_test` existed in the tree but were never built or executed. The harness
-  now links 53 translation units of the real gameplay, asset, save, script, world and collision code
+  now links 59 translation units of the real gameplay, asset, save, script, world and collision code
   (`-lz` for the NIF reader, `--gc-sections` for size), leaving only two stand-ins: no-op GLES3 entry
   points, and a `PhysicsManager` whose `init()` returns false so callers take their existing
   "physics disabled" path - no suite can pass on fabricated simulation. `phase30_integration_test`
   records `SKIP_Assets_Unavailable` and succeeds when the Oblivion assets are absent, which is the
   normal CI case because they are not redistributable. Result: ScriptVMTests 22/22,
   Phase45UnitTests 41/41, Phase48StressTest 5/5, Phase48IntegrationTest 7/7,
-  Phase30IntegrationTest 1/1 (self-skipped). The CI job itself was hardened at the same time:
+  WatrDecodeTests 11/11, WeatherTransitionTests 14/14, InteriorCellTests 27/27,
+  GameStateReportTests 30/30, Phase30IntegrationTest 1/1 (self-skipped) - 158 assertions in
+  total, and the suites added since the harness was first written (WATR decode, weather
+  transition, interior cells, game state report) are the ones that cover P5, P13, P15 and P16. The CI job itself was hardened at the same time:
   `zlib1g-dev` is installed explicitly, because the harness links `-lz` and
   `assets/esm_reader.cpp` / `assets/bsa_reader.cpp` include `<zlib.h>`, and the job timeout went
-  from 15 to 30 minutes. 53 translation units are compiled by a single `g++` invocation, so the
+  from 15 to 30 minutes. 59 translation units are compiled by a single `g++` invocation, so the
   compile is sequential and cannot use the runner's core count: the run measured 12m15s end to end,
   which left too little headroom under 15 minutes. The job runs in parallel with the APK build, so
   the longer ceiling costs no wall clock time.
 
 ### Fixed
+- **Every `dt`-driven system ran in slow motion on any device below 60 fps.** `nativeRenderFrame`
+  handed `Renderer::render()` the hard-coded constant `0.0167f`, so the simulation advanced by
+  exactly one 60 Hz frame per *rendered* frame regardless of how long that frame really took.
+  The emulator renders at 16-19 fps, so the world ran at about a third of real time: with the
+  P19 debug buttons, `gamestate` reported `time=12:00` and, 60 real seconds later, `time=12:09`
+  where the expected reading was `12:30` (timescale 30 is 30 game minutes per real minute).
+  Because the same `deltaTime` is forwarded to `ImperialWeave`, every phase was affected -
+  animation, AI, physics, combat, the video decoder and the sun's orbit - and the fault was
+  invisible in the log because `Frame rendered: deltaTime=0.017` looked exactly right. The frame
+  now measures its own interval with `std::chrono::steady_clock`, clamped to 100 ms
+  (`kMaxDelta`, roughly a 10 fps floor) so a long cell load or a return from the background
+  cannot teleport the world forward by seconds, and falling back to 1/60 s on the first frame.
+  The marker is cleared by `nativeCleanup` and by the resume path in `nativeInitEngine`, so a
+  new renderer's first frame is exact rather than merely bounded. No host test can cover this:
+  `jni_bridge.cpp` is Android-only and is not part of `run_host_tests.sh`.
+- **`Menu hit rect` flooded logcat at frame rate.** `applyMenuLayoutToButtons()` is reached from
+  `renderMenu()` -> `computeMenuLayout()` on every frame, so the six hit rectangles were logged
+  6 lines per frame - over 100 lines a second at the emulator's frame rate - and pushed the
+  useful lines out of the ring buffer within seconds. That is what made earlier device
+  verification hard to read. The rectangles are now emitted only when the layout actually
+  changes, preceded by a single `Menu hit layout` summary line, and the row is drawn directly in
+  `renderMenu` so the rectangles remain the only thing the hit test sees.
+- **The title screen video kept playing for the whole session.** `GameRenderer.releaseTitleVideo()`
+  existed but nothing ever called it, so once the player left the title screen `MediaPlayer`
+  went on decoding and the OES texture went on being uploaded every frame - the
+  `Title video: updateTexImage=21/s` line in the log was the only visible symptom, and the
+  wasted work was charged to the game's frame budget. `onDrawFrame` now watches the native
+  `isTitleScreenActive()` (exposed as `nativeTitleScreenActive()`, previously bridged in
+  `jni_bridge.cpp` but never declared on the Kotlin side) and, on the first frame after the
+  title screen is left, stops and releases the player, releases the `SurfaceTexture`, deletes
+  the GL texture and calls `nativeSetTitleVideoTexture(0)`. The renderer starts in the launcher
+  phase where `isTitleScreenActive()` is already `false`, so the release is armed by the first
+  frame that reports `true`; it can never fire before the title screen has actually been shown.
+- **The sky and the ambient light now actually follow the clock, so noon and midnight look
+  different.** P19 was first written off as "already wired", but reading the code showed the
+  clock reached the colours through no working path at all, and turned up six independent
+  time-keeping bugs alongside it:
+  1. `SkyWeatherSystem::loadFromESM()` read only `w.sky[1]` (the NAM0 Day set) and discarded
+     Sunrise/Sunset/Night, so every hour produced the same sky. It now stores all four sets and
+     re-derives any set a WTHR record does not supply from the preset's own colours.
+  2. `setGameTime()` wrote `gameTime_` and recomputed nothing, so `settime` only took effect on
+     the next frame. It now re-derives the time of day, the sun, the moon and the sky.
+  3. `init()` never called `updateSunPosition()`, leaving frame 0 with the preset's default sun.
+  4. `update()` added `dt * timeScale_` straight to the hour counter - with the default
+     `timeScale_ = 30` that is **30 game hours per real second**, so a whole day raced past in
+     under a second and every clock-dependent effect was a blur. Oblivion's `timescale` is
+     *game minutes per real minute*, so the correct step is `dt * timeScale_ / 3600.0f`.
+  5. `renderer.cpp` called `skyWeatherSystem->update(deltaTime)` from two places, doubling the
+     rate on top of (4).
+  6. `refs.setTimeOfDay`, `refs.setTimeScale` and `refs.setWeather` were all `(void)` no-op
+     stubs, so `settime`, `settimescale` and `setweather` did nothing at all - the very
+     commands a device verification would use.
+  The four NAM0 time sets are blended with linear tent weights over the key hours
+  `{06:00, 12:00, 18:00, 00:00}`. Because the keys are six hours apart the weights sum to
+  exactly one everywhere on the 24-hour circle, so no normalisation is needed and there is no
+  seam at midnight. A new `daylight_` factor smoothsteps the sun's elevation across roughly
+  +/-1 hour of the horizon, and the ambient term is derived from the blended sky
+  (`lerp(night floor, sky bounce, daylight)`) instead of a hard-coded constant - which is what
+  made midnight as bright as noon.
+- **`setweather overcast` no longer silently behaves as `clear`.** `OVERCAST` had no preset in
+  `initWeatherPresets()`, so it kept the default-constructed `WeatherState` whose `type` is
+  `CLEAR`: it reported itself as clear and blended the clear sky curve. `OVERCAST` now has its
+  own preset, and `interpolateWeather()` no longer lerps `zenith`/`horizon`/`ambient` - those
+  are owned by the clock blend, and lerping them in two places made it undefined which one won.
+- **`WorldManager::advanceTime()` ran the world clock at twelve times the sun's rate** and
+  wrapped past midnight at most once per call. It now advances at the same game-minutes rate as
+  the sky and folds as many days as the step actually covers, so a long frame can no longer
+  leave `timeOfDay` above 24. `WorldManager::setTimeOfDay()` is new, and `settime` drives the
+  sky clock and the world clock together so the `gamestate` report and the rendered sky agree.
+- **`setweather` and `settimescale` were unusable from the console**: `refs.setWeather` is now
+  implemented and resolves console names (`clear`, `cloudy`, `overcast`, `fog`, `rain`, `storm`,
+  `snow`, `blizzard`) through the new `SkyWeatherSystem::weatherTypeFromName()`, applying the
+  change immediately so a debug A/B screenshot is settled on the next frame. The debug panel
+  gains `Time: Noon (12:00)`, `Time: Midnight (00:00)`, `Weather: Clear` and `Weather: Storm`
+  buttons (`btn_debug_time_noon` / `btn_debug_time_midnight` / `btn_debug_weather_clear` /
+  `btn_debug_weather_storm`), which is the whole P19 acceptance test: tap one, tap the other,
+  compare the dominant colour of the two screenshots.
+- **`WeatherTransitionTests` expanded from 5 to 14 cases.** The original five only held while
+  the sky colour was constant, so they now freeze the clock (`setTimeScale(0)`,
+  `setGameTime(10)`) before measuring the weather ramp. The nine new cases pin the behaviour
+  that was broken: `NoonSkyDiffersFromMidnight`, `NoonAmbientDiffersFromMidnight`,
+  `MidnightIsDarker`, `DaylightFollowsSun`, `ClockUsesOblivionRate` (60 real seconds at
+  timescale 30 must advance exactly 30 game minutes), `ClockWrapsPastMidnight`,
+  `OvercastHasItsOwnPreset`, `SkyIsFiniteAllDay` (all 24 hours yield a finite, non-black sky,
+  including the midnight seam) and `ConsoleWeatherNamesResolve`.
+- **WTHR `NAM0` was parsed time-major instead of field-major, which is why the Day sky was a
+  washed-out purple-grey and fog rendered black.** The record is 160 bytes laid out as ten
+  colour *fields*, each holding the four Sunrise/Day/Sunset/Night slots as BGRA; the reader
+  treated it as four 40-byte blocks, so every field read its neighbour's channel and
+  `upperSky`/`fog`/`clouds` all ended up holding the wrong colour. `WeatherData` now exposes
+  `nam0[NAM0_FIELD_COUNT]` with a named `WeatherNam0FieldIndex` (sky-upper, fog, clouds-lower,
+  ambient, sunlight, sun, stars, sky-lower, horizon, clouds-upper) and the reader decodes
+  field-major, skipping a partial trailing field rather than misreading it. `CNAM`/`DNAM` were
+  also swapped: Oblivion's `DNAM` is the upper cloud layer and `CNAM` the lower one, the
+  reverse of the previous comment.
+- **Interior cells were unreachable, leaving the interior render paths dead**: the world build
+  deliberately skips interior cells (`WorldManager::addCellFromESM()` returns `nullptr` for
+  them, and the emulator log confirms `1855 interior skipped`), so the player could never enter
+  one. That made the renderer's interior suppression - the dark clear colour, the skipped water
+  pass, the skipped sky dome and the exterior-only terrain fog - unreachable code. A new
+  `teleportinterior [name]` console command registers an interior cell on demand through
+  `WorldManager::enterInteriorCell()`, which keys the cell by its TES FormID (interiors have no
+  grid coordinate) and makes it current. Because `getCellAt(playerPosition)` cannot find a
+  coordinate-less cell, the renderer's "am I indoors" checks now call the new
+  `WorldManager::isPlayerIndoors()`, so the suppression actually fires. A new
+  `InteriorCellTests` host suite covers registration, FormID lookup, re-entry reuse and the
+  indoors predicate.
+- **Entering an interior cell snapped straight back outside**: `PlayerController::update()` calls
+  `WorldManager::setPlayerPosition()` every frame, and that method re-resolved `currentCell`
+  through `getCellAt()`. Interior cells carry no grid coordinate, so the lookup always returned
+  the exterior cell under the player and overwrote the interior within a frame - the emulator
+  still drew outdoor terrain and sky after `teleportinterior` reported success.
+  `setPlayerPosition()` now returns early while `isPlayerIndoors()` is true, so an interior stays
+  current until it is explicitly left. A new `leaveInteriorCell()` (and the matching
+  `teleportexterior` console command) restores exterior streaming on demand. The renderer also
+  parks the player at the interior origin *before* registering the cell, so the exterior cell at
+  world (0,0) can never win the race. `InteriorCellTests` now covers the sticky-interior and
+  leave/return paths.
+- **Weather transitions finished in a fraction of their configured duration**:
+  `SkyWeatherSystem::setWeather()` lerped the live `currentWeather_` toward `targetWeather_`
+  by the absolute progress `t` on every frame. Because the source of each lerp was the
+  already-partially-updated state, the ramp converged geometrically: a 30-second transition
+  reached 90% of the target in about 1.5 seconds and looked like an instant snap. The system
+  now snapshots the starting state (`startWeather_`) when a transition begins and interpolates
+  from that fixed origin, so the ramp is linear in time (50% at 15 s, 99% at 29.7 s for a 30 s
+  transition). `setWeatherImmediate()` and `init()` seed the snapshot as well. A new
+  `WeatherTransitionTests` host suite drives the system at a fixed 60 Hz step and fails against
+  the old geometric behaviour, so the regression is locked down.
+- **Water reflection colour was hard-coded instead of read from WATR**: the water fragment
+  shader blended the surface toward a fixed sky tint `vec3(0.55, 0.67, 0.78)`, so every body of
+  water reflected the same colour regardless of the record that defined it. The shader now takes
+  a `uReflectionColor` uniform and `Renderer::renderWater()` feeds it the WATR reflection colour
+  (DATA byte 52, RGBA), so `DefaultWater`, `SwampWater`, `OblivionLavaTest01` and the other 20
+  records each reflect their own authored colour. The uniform defaults to the previous sky tint
+  when no WATR record is bound, so behaviour without water data is unchanged.
+- **WATR records with a short DATA subrecord rendered as black water**: three records in
+  `Oblivion3.esm` (`CamoranLava` 2 bytes, `Blood` 42 bytes, `CamoranLava02` 42 bytes) carry a
+  DATA subrecord shorter than the 55 bytes needed to reach the colour block at byte offsets
+  44/48/52, so `decodeWater()` left their shallow/deep/reflection colours at `(0,0,0)` and the
+  surface drew black. `WaterData` now records whether the colour block was present
+  (`hasColorBlock`), and a new post-parse pass `resolveWaterColorFallbacks()` copies the colours
+  from the game's own `DefaultWater` record (formID `0x18`) into every record that lacks them,
+  falling back to a neutral dark water colour only if `DefaultWater` itself is missing. The
+  other 20 WATR records are untouched. Verified on the emulator against the real ESM
+  (`WATR=23`, `WATR colour fallback applied to 3 short record(s) from DefaultWater`) and by a
+  new `WatrDecodeTests` host suite that builds a synthetic ESM with 102/42/2-byte records.
+- **Language preference was never applied**: `LocalizationManager::loadLanguagePreference()`
+  reset to English on every launch and `saveLanguagePreference()` was a no-op, so the
+  `LANGUAGE=` value persisted by `SettingsManager` was ignored. `Renderer::initGameSystems()`
+  now mirrors the setting into `LocalizationManager` once both objects exist, and the language
+  toggles in `SettingsUI` and `LauncherScreen` update both objects together.
+- **Incorrect terminology in the built-in translation table**: the table used `Mana` and
+  `Stamina`, which do not exist in Oblivion. They are now `Magicka` and `Fatigue`, matching the
+  original game and the JPWiki data.
 - **`AsyncTaskManager` completion-ordering race**: `submit()` wrapped the callable in a
   `std::packaged_task`, which fulfils the task's shared state from *inside* the callable, so
   `workerThread()`'s `recordCompletion()` (the call that bumps `totalCompleted_`) could still be

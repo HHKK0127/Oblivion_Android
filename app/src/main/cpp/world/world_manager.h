@@ -100,6 +100,20 @@ public:
     // ========================================================================
 
     std::shared_ptr<Cell> getCurrentCell() const { return currentCell; }
+
+    // Phase 66 P15: true when the player is inside an interior cell. Interior
+    // cells have no grid coordinate, so getCellAt(playerPosition) cannot find
+    // them; the renderer must ask this instead to suppress sky, water and
+    // terrain fog while indoors.
+    bool isPlayerIndoors() const {
+        return currentCell && currentCell->cellType != CellType::EXTERIOR;
+    }
+
+    // Phase 66 P15: leave the current interior cell and resume exterior cell
+    // streaming at the player's world position. Returns true when an interior
+    // was actually left.
+    bool leaveInteriorCell();
+
     std::shared_ptr<Cell> getCellAt(const glm::vec3& worldPos);
     std::shared_ptr<Cell> getCellById(uint32_t cellId);
     std::shared_ptr<Cell> getCellByCoord(int32_t cellX, int32_t cellY);
@@ -112,6 +126,24 @@ public:
 
     // Find cell by TES FormID (ESM formID)
     std::shared_ptr<Cell> getCellByFormID(uint32_t tesFormID) const;
+
+    // Phase 66 P15: register an interior cell and make it the player's current
+    // cell. Interior cells have no grid coordinate, so they are keyed by their
+    // TES FormID instead of a (cellX, cellY) pair. This is what makes the
+    // renderer's interior sky/water suppression paths reachable in game; the
+    // normal world build deliberately skips interiors.
+    std::shared_ptr<Cell> enterInteriorCell(uint32_t tesFormID,
+                                            const std::string& editorID,
+                                            const std::string& fullName);
+
+    // Phase 66 P20: materialise interior references into the cell's object list
+    // so the renderer has geometry to draw. Returns the number of objects added.
+    //
+    // Returns 0 without touching the cell when the FormID is unknown or the cell
+    // already holds objects, so callers may invoke this on every teleport and
+    // re-entering the same interior never duplicates geometry.
+    size_t placeInteriorObjects(uint32_t cellFormID,
+                                const std::vector<InteriorObjectPlacement>& objects);
 
     // Get all NPCs in a specific cell
     std::vector<NPC*> getNpcsInCell(uint32_t cellId);
@@ -126,6 +158,7 @@ public:
 
     // Time management
     void advanceTime(float deltaTime);
+    void setTimeOfDay(float hours);
     float getTimeOfDay() const { return worldState.timeOfDay; }
     uint32_t getDayCount() const { return worldState.dayCount; }
 
@@ -220,6 +253,15 @@ private:
     float cellLoadRadius;
     float cellUnloadRadius;
     float loadUpdateTimer;                  // Batch update every N seconds
+
+    // logWorldStatus() throttling. updateActiveCells() calls it every 0.5 s, which
+    // used to emit two full status lines per second and bury everything else in
+    // logcat. Speak up only when one of these values moves, plus a slow heartbeat so
+    // a steady state still leaves a trace. Mutable because logWorldStatus() is const.
+    mutable size_t statusLogActiveCells = static_cast<size_t>(-1);
+    mutable uint32_t statusLogDay = static_cast<uint32_t>(-1);
+    mutable int statusLogHour = -1;
+    mutable uint32_t statusLogTicks = 0;
 
     // Counters
     uint32_t nextCellId;

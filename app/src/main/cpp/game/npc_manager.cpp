@@ -70,6 +70,16 @@ std::shared_ptr<NPC> NpcManager::getNPC(uint32_t npcId) const {
     return it->second;
 }
 
+std::shared_ptr<NPC> NpcManager::getNpcByFormID(uint32_t formID) const {
+    if (formID == 0) return nullptr;
+    for (const auto& entry : npcs) {
+        if (entry.second && entry.second->formID == formID) {
+            return entry.second;
+        }
+    }
+    return nullptr;
+}
+
 void NpcManager::removeNPC(uint32_t npcId) {
     auto it = npcs.find(npcId);
     if (it != npcs.end()) {
@@ -219,6 +229,11 @@ std::shared_ptr<NPC> NpcManager::createNPCFromESM(uint32_t formID, const glm::ve
 
         npc->meshAssetPath = "meshes/characters/imperial_male.nif";
 
+        npc->formID = formID;
+        if (npcData->factionID != 0) {
+            npc->factionFormIDs.push_back(npcData->factionID);
+        }
+
         npcs[npcId] = npc;
         LOGD("NPC spawned from ESM: %s (formID=0x%08X, ID=%u, HP=%u, LVL=%u)",
              npc->name.c_str(), formID, npcId, npcData->health, npcData->level);
@@ -246,6 +261,11 @@ std::shared_ptr<NPC> NpcManager::createNPCFromESM(uint32_t formID, const glm::ve
 
         // Set mesh path from ESM model
         npc->meshAssetPath = creature->modelPath;
+
+        npc->formID = formID;
+        if (creature->factionID != 0) {
+            npc->factionFormIDs.push_back(creature->factionID);
+        }
 
         npcs[npcId] = npc;
         LOGD("Creature spawned from ESM: %s (formID=0x%08X, ID=%u, HP=%.0f, ATK=%u, LVL=%u)",

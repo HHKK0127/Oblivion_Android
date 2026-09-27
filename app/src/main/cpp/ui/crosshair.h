@@ -21,7 +21,7 @@ public:
     Crosshair();
     ~Crosshair() override = default;
 
-    bool initialize();
+    bool initialize() override;
     void render() override;
     void onScreenResize(int width, int height) override;
 

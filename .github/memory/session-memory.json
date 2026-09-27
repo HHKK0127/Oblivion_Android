@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-24T20:17:54.272627",
+  "lastUpdated": "2026-09-27T11:20:00",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -3282,7 +3282,7 @@
     },
     {
       "id": "4f1a7c02-8e35-4b19-9a6d-2c7e51b8d3a4",
-      "timestamp": "2026-09-25T00:00:00.000000",
+      "timestamp": "2026-09-25T00:00:00",
       "category": "decision",
       "priority": "high",
       "content": "SCDA quest opcodes: 0x1036 StartQuest, 0x1037 StopQuest, 0x1071 CompleteQuest. 0x1071 was misnamed StopQuest by the keyword vote, because the compiler emits CompleteQuest and StopQuest as an adjacent pair on the same reference, which makes the per-record counts of the two words identical; a vote on 0x1071 alone scores 8 of 8 against stopquest and is still wrong. Aligning the ordered instruction stream against the ordered statement list separates them: record 1563 (MS91MazogaScript) emits 0x1071 then 0x1037 on r 06 00 and again on r 07 00, against setstage ms91 200 / completequest ms91 / stopquest ms91 / completequest ms92 / stopquest ms92, and record 2554 pairs its single 0x1036 (r 09 00) and single 0x1037 (r 02 00) with StartQuest TG08Blind and StopQuest TG07Lex. Also named by the command-position vote: 0x10A9 ModFactionReaction ([3][r][r][n], 5 of 6, negative third operand -50), 0x1127 ResetInterior ([1][r], 3 of 3, record 2407), 0x1141 SetNoRumors ([1][n 0], 3 of 3), 0x1145 RefreshTopicList, 0x116C SetPlayerInSEWorld, 0x115C SendTrespassAlarm, 0x1111 EnableFastTravel, 0x10F0 SetClass, 0x10E7 SetInChargen, 0x10D9 ShowClassMenu, 0x10DA ShowRaceMenu, 0x10DB ShowBirthsignMenu, 0x10EA ShowSpellmaking, 0x10EB ShowEnchantment and 0x1165 ForceCloseOblivionGate ([u16 0], 3 of 3). The plan.md enumeration of opcodes seen at least five times held 103 ordinary entries and missed five that qualify, so the count is 107, not 100. The vote returns no candidate at all for an opcode that also appears inside expressions, which is every opcode named in an earlier pass, so further names must come from order alignment. Unresolved: 0x10D3 (SetFactionRank or SetForceSneak, tied in its one record) and the 0x10FC / 0x10FD pair (SetPCFame / SetPCInfamy, equal counts in either order).",
@@ -3297,7 +3297,7 @@
     },
     {
       "id": "b8c5e913-47d2-4a86-8f10-6d93ea2c74bf",
-      "timestamp": "2026-09-25T00:05:00.000000",
+      "timestamp": "2026-09-25T00:05:00",
       "category": "decision",
       "priority": "high",
       "content": "SCDA command-layer grammar is settled and carries no terminator byte: [u16 opcode][u16 argLength][argLength bytes]. argLength == 0 means no parameter block at all (3,763 of the 18,142 ordinary commands); argLength == 2 with payload [u16 0] is an explicit zero-argument block (all 8 0x10A5 RemoveMe, the 3 0x10DE CloseOblivionGate in record 2504, the 3 0x1165 ForceCloseOblivionGate); argLength above 2 is [u16 n][n typed tokens], where n is the argument count (0x110D SetQuestObject = 02 00 72 02 00 6e 00 00 00 00, 0x109E MoveTo = 01 00 72 0b 00). The tokenizer needs backtracking for the string family: a greedy left-to-right pass matches 13,180 of 14,379 payloads (91.66%) against 13,601 (94.59%) with backtracking, and the residual 778 are 0x1059 Message and 0x1000 MessageBox, whose argLength includes the padded body. Never mix the command layer (op >= 0x1000) with the anchor layer in one payload statistic: the structural anchors and 0x001C / 0x001D carry raw source text or nested streams, and treating a small opcode as length-bearing is what produced the invalid 117-unnamed / 78.61% census.",
@@ -3703,11 +3703,1078 @@
         "constraint"
       ],
       "compressed": false
+    },
+    {
+      "id": "63c5fae6-5751-4d3e-a22b-5590530ab932",
+      "timestamp": "2026-09-25T12:05:47Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "plan.md updated and pushed (commit 6a9293dd, 2026-09-25): Phase 65 row and Current Status now record water (WATR, b7222f25) and the weather-driven sky dome (13d9f905) as landed and build-verified but NOT yet re-measured on the device. Open weather items: drive SkyWeatherSystem from the 37 real WTHR records (NAM0 = 10 colour fields x 4 times of day (160 B, field-major; see the NAM0 field-major entry, corrected 2026-09-26)) instead of hard-coded presets; connect getAmbientColor/getFogDistance/sun light to world lighting and fog; gate the sky dome on exterior cells so interiors get no sky. Native build verified green: .\\gradlew :app:externalNativeBuildDebug BUILD SUCCESSFUL in 11s.",
+      "tags": [
+        "phase65",
+        "weather",
+        "water",
+        "plan"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "06b2e899-954c-412d-9cac-dcbacfcd8a1a",
+      "timestamp": "2026-09-25T13:05:22+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "Title screen: the 'Special Edition' subtitle is permanently removed - the user closed the question on 2026-09-25 with 'Special Edition is forgotten, drop it'. The current implementation (renderSubtitle() and SUBTITLE_WIDTH_RATIO / SUBTITLE_CENTER_Y_RATIO deleted by session 964d16fb) is the final state; do not restore it and do not raise it as an open decision again. Background: the string was a Remastered-only element absent from the original menus/options/main_menu.xml, and before deletion it measured 17.1%W / 47.6%H against the reference art's 17.3%W / 47.8%H. Deletion is confirmed on device: the subtitle band (y460-520, x795-1123) went from 1048 ink pixels to 0. TITLE_PLAN.md section 5 item 1 is closed; items 2-5 (Version text, selection fallback colour, background, video playback) remain open.",
+      "tags": [
+        "title-screen",
+        "special-edition",
+        "subtitle",
+        "decision-closed",
+        "title-plan"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "bd3cfd5d-9d78-4f64-9d42-5ea3cb6ee673",
+      "timestamp": "2026-09-25T13:22:52Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Issue plan for the Phase 65/66 weather/water/sky-dome problems written to C:/Users/hiroki.kogarumai/.copilot/session-state/9427ac74-c35e-4e3d-b47e-79c1c4621727/files/ISSUE_PLAN.md and tracked as 7 todos (p1..p7). Priority order: P1 device-verify sky dome + water (highest, unverified), P2 drive SkyWeatherSystem from the 37 real WTHR records (NAM0 4x40B BGRA sky colours, FNAM fog near/far, HNAM, DATA windSpeed) + CLMT weatherTypes[16] selection, P3 connect fog/ambient/sun light, P4 gate sky dome on CellType::EXTERIOR, P5 verify the WATR Deep Color offset (assumed float 12-14), P6 resolve the parallel-session uncommitted changes (nif_parser, launcher_screen, renderer), P7 reduce the 66 renderer.cpp warnings. Deps: p2<-p1, p3<-p2, p4<-p1. Milestones: M-A (P1,P4,P5) drawing correct, M-B (P2,P3) real weather data, M-C (P6,P7) cleanup.",
+      "tags": [
+        "phase65",
+        "phase66",
+        "weather",
+        "water",
+        "plan",
+        "issues"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "bf775d6e-8de0-4963-bdbe-6d784f06ef25",
+      "timestamp": "2026-09-25T15:11:50.088897",
+      "category": "reference",
+      "priority": "high",
+      "content": "Phase 66 ISSUE_PLAN P1-P7 all complete (2026-09-25). P1 sky-dome/water device verify; P2 WTHR connect (21 records); P3 terrain fog/ambient/sunlight (commits adb1863d, 54894033); P4 indoor/outdoor gate; P5 WATR colour offset measured (commit 76184356); P6 uncommitted cleanup (commit 263c146f); P7 warning cleanup 66->0 (commit ee12d4cc).",
+      "tags": [
+        "phase66",
+        "issue-plan",
+        "complete"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "20a2ea6d-cbb0-47b7-be63-05f0496692a4",
+      "timestamp": "2026-09-25T15:11:50.088897",
+      "category": "decision",
+      "priority": "high",
+      "content": "Oblivion WATR DATA colour block is 4-byte RGBA (u8), NOT float. Shallow=byte 44, Deep=byte 48, Reflection=byte 52. Old code reading shaderFloats[12..14] was wrong. Guard with data->size() >= byteOffset + 3 (some records like Blood/CamoranLava have DATA<55 bytes).",
+      "tags": [
+        "watr",
+        "esm",
+        "water",
+        "phase66"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "7672469c-40ed-4ee8-8e5c-a015493c4a05",
+      "timestamp": "2026-09-25T15:11:50.088897",
+      "category": "reference",
+      "priority": "medium",
+      "content": "P7 warning cleanup patterns: unused-lambda-capture [this]->[] only when this unused; unused-parameter use /*name*/ in defs and (void)name; in lambdas; mismatched-tags NPC is struct; inconsistent-missing-override add override; RAND_MAX -> static_cast<float>(RAND_MAX); sign-compare -> static_cast<int>(vec.size()). Vendored glm.hpp warning intentionally skipped.",
+      "tags": [
+        "warnings",
+        "build",
+        "phase66"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "35dfafd3-4a80-46f6-981e-ec1d117d5dc7",
+      "timestamp": "2026-09-26T09:30:44.814954",
+      "category": "decision",
+      "priority": "high",
+      "content": "JPWiki translation data is the PRIMARY source for all game text. When the built-in LocalizationManager translations conflict with JPWiki, JPWiki wins. Built-in translations are only for project-specific UI (launcher, debug HUD, test scenario) that JPWiki does not cover.",
+      "tags": [
+        "localization",
+        "jpwiki",
+        "translation-policy",
+        "priority"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "bb7a29b1-1b4a-4580-9fa5-9a1928401ee3",
+      "timestamp": "2026-09-26T09:30:44.814954",
+      "category": "decision",
+      "priority": "high",
+      "content": "JPWiki keeps original Oblivion game terms in English (Strength, Intelligence, Willpower, Agility, Speed, Endurance, Personality, Luck, Alteration, Conjuration, Destruction, Illusion, Mysticism, Restoration, Health, Magicka, Fatigue, class names like Mage/Guard/Merchant). The built-in translation table was aligned to this policy: attr_* and magic_school_* and npc_merchant/guard/mage now return the English term in both languages. Do NOT re-translate these to Japanese.",
+      "tags": [
+        "localization",
+        "jpwiki",
+        "terminology",
+        "english-terms"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "9f76fb9d-6185-4f18-b241-955626ec4d6f",
+      "timestamp": "2026-09-26T09:30:44.814954",
+      "category": "reference",
+      "priority": "high",
+      "content": "JPWiki data coverage (app/src/main/assets/localization/jpwiki_localization.tsv, 28,686 entries): gmst 723/723 Japanese, book 640 (340 JP), info 19,179 (19,167 JP), dial 3,474 (2,607 JP), qst 249 (0 JP - quest names never translated by JPWiki), full 4,421 (2,682 JP). Quest names returning English is expected, not a bug.",
+      "tags": [
+        "localization",
+        "jpwiki",
+        "coverage",
+        "data"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "6c03ec27-41a4-4d3b-bd8d-0bbe3251eb82",
+      "timestamp": "2026-09-26T09:30:44.814954",
+      "category": "constraint",
+      "priority": "high",
+      "content": "JPWiki TSV stores FormIDs as UPPERCASE hex but LocalizationManager::formKey() emits lowercase. loadJpwikiData() lowercases all non-gmst keys on load. Any new FormID-keyed lookup must use lowercase keys or it will silently fall back to English.",
+      "tags": [
+        "localization",
+        "jpwiki",
+        "formid",
+        "bug-prevention"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "8a4f15bb-d93d-4e06-b473-46294db2a7a3",
+      "timestamp": "2026-09-26T21:40:31.513732",
+      "category": "reference",
+      "priority": "high",
+      "content": "Phase 66 P8-P15 all complete (2026-09-26). P8 WATR short-DATA colour decode; P13 weather linear ramp (0eaf9c62); P14 WATR reflection colour in water shader (76a53d3c); P15 interior cell entry + exterior render suppression (1577c7a0). Remaining from the 2nd plan: P9-P12 (quality infra), folded into the 3rd plan as P21.",
+      "tags": [
+        "phase66",
+        "issue-plan",
+        "p15"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "57bec816-0174-46bb-b961-2ded536a868a",
+      "timestamp": "2026-09-26T21:40:31.513732",
+      "category": "decision",
+      "priority": "high",
+      "content": "P15 interior gating verified on the emulator with a clean A/B test. Exterior (day, 16:24): logs 'Terrain rendered: 9 exterior cells with heightmap, 9 drawn' and 'Water: 1 active cells with water, 1 drawn'; 3D region pixels dominated by terrain (25,32,25) 79.5% + sky (0,12,25) 5.4%. After teleportinterior: Terrain 0 lines and Water 0 lines over 12s, and the 3D region is the bare clear colour (8,6,8) at 90.9% with the HUD still drawn. Conclusion: the interior gate works; the earlier 'outdoor geometry still drawn indoors' report was a misdiagnosis.",
+      "tags": [
+        "phase66",
+        "p15",
+        "verification",
+        "emulator"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "0918f603-4628-4675-94ea-3e46b8cbc883",
+      "timestamp": "2026-09-26T21:40:31.513732",
+      "category": "constraint",
+      "priority": "high",
+      "content": "Renderer.cpp has an early return inside the 'if (showTitleScreen)' block right after titleScreen->render(), so while the title screen is up NOTHING of the game world is drawn. Log line 'Title screen active (frame N), titleStarted=0' means the game has NOT started. Any device verification of world rendering must first start a game: tap New Game at approximately (650, 794) on the 1920x1080 title menu row; Continue is at x 450-500 and opens SaveLoadUI (close with keyevent 4). Skipping this step caused a full misdiagnosis of the P15 interior bug.",
+      "tags": [
+        "title-screen",
+        "pitfall",
+        "verification",
+        "renderer"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "5004d0d7-e20c-4cd4-9405-d49484f0c857",
+      "timestamp": "2026-09-26T21:40:31.513732",
+      "category": "reference",
+      "priority": "high",
+      "content": "3rd issue plan (P16-P22) added to ISSUE_PLAN.md after the P15 device verification: P16 gamestate dump command (highest value, kills misdiagnosis), P17 stop the title video player once the game starts (GameRenderer.kt:409 logs 'Title video: updateTexImage=21/s' forever because it only checks titleVideoSurfaceTexture != null), P18 title menu hit-test offset, P19 daytime sun/ambient still too dark (terrain (25,32,25) at 16:24), P20 interior REFR/NIF geometry rendering, P21 logcat ring buffer + log file output, P22 faster world load and auto-start.",
+      "tags": [
+        "issue-plan",
+        "phase67",
+        "planning"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "313dc3a8-ad42-435c-83ee-a915b5110e83",
+      "timestamp": "2026-09-26T21:40:31.513732",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "The emulator logcat ring buffer only holds roughly 20 seconds, so decisive logs are lost during multi-step verification. Set 'adb logcat -G 16M' before a session, and clear with 'adb logcat -c' immediately before the action under test. Terrain and water logs are throttled to every 120 frames (~5-6s at 21 fps), so a 10-12s observation window is the reliable sampling period.",
+      "tags": [
+        "adb",
+        "logcat",
+        "verification",
+        "emulator"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "e28a998c-e6eb-44a4-9d5f-a7389ab84ef4",
+      "timestamp": "2026-09-26T21:40:31.513732",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Emulator interior verification recipe: adb shell monkey -p com.example.oblivion -c android.intent.category.LAUNCHER 1; wait 60-90s for the world load; adb shell input tap 650 794 (New Game, confirm 'Game started!' in the log); adb shell input tap 73 73 (debug panel); the 'Enter Interior Cell' button is btn_debug_interior at [26,896][709,991] (center 367,943) - uiautomator dump to confirm; tap 367 943; verify 'WorldManager: Entered interior cell <id>' plus zero terrain/water logs. Screenshots: adb shell screencap -p /sdcard/x.png then adb pull.",
+      "tags": [
+        "adb",
+        "verification",
+        "interior",
+        "emulator"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "merge-blocker-20260926",
+      "timestamp": "2026-09-26T22:22:00.222928",
+      "category": "decision",
+      "priority": "high",
+      "content": "master merge of hhkk0127-script-vm-expansion (32 commits ahead, tip 9c608fc3) is conflict-free (git merge-tree --write-tree exit 0, tree d9b69d915aeebde762c9fc88df57c96f674f9e11, 32 files changed, 5932 insertions(+), 184 deletions(-)) but is BLOCKED by three uncommitted working-tree files that the merge would overwrite: app/src/main/cpp/CMakeLists.txt (+1/-3), app/src/main/cpp/engine/renderer.cpp (+44/-21), tools/host_tests/run_host_tests.sh (+2/-3). git merge refuses with 'Your local changes would be overwritten'. Precondition = the owning sessions commit those files. Do NOT merge, rebase, or push without explicit user approval.",
+      "tags": [
+        "merge",
+        "phase-67",
+        "git",
+        "blocker"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "phase-62-72-audit-20260926",
+      "timestamp": "2026-09-26T22:22:00.222928",
+      "category": "reference",
+      "priority": "high",
+      "content": "plan.md Phase 62-72 code-level coverage audit (2026-09-26), recorded in commits bf8a11d3 and eff4a8c3: 62 Foundation done (legal audit deferred, A7 release blocker); 63 Performance foundation done; 64 Real data pipeline done (20 record types decode); 65 Full world rendering IN PROGRESS (terrain/water b7222f25 + weather 13d9f905 landed; remaining = door/LOD/static-object NIF draw + WTHR-driven weather); 66 Characters and AI NOT STARTED (asset side ready, P20 interior REFR/NIF geometry missing); 67 Full Script VM exists only on branch hhkk0127-script-vm-expansion (master dispatch still 118 cases); 68 Game systems and GUI NOT STARTED (module inventory already present: game/ 10 managers + ui/ 58 sources, but real-record data driving is unproven); 69 Persistence much further along than its label; 70 Mods and load order NOT STARTED (plugins.txt/loadOrder/overrideRecord all absent, launcher_screen.cpp L487 is a hardcoded 7-entry mock); 71 UX and QA NOT STARTED (Japanese only); 72 Release NOT STARTED (no signingConfig, applicationId com.example.oblivion).",
+      "tags": [
+        "plan",
+        "phase-audit",
+        "roadmap"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "phase65-door-xtel-20260926",
+      "timestamp": "2026-09-26T22:22:00.222928",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Phase 65 door rendering is blocked by data, not by drawing code: DoorManager::useDoor() and performCellTransition() have zero gameplay callers (only renderer.cpp L1538 debug console uses getDoorManager()), world_manager.cpp L380 registers 3 hardcoded test doors, and teleport destinations live on the referencing REFR's XTEL subrecord (esm_reader.h L782) which is not decoded yet. XTEL decode is the precondition for a data-driven door transition.",
+      "tags": [
+        "phase-65",
+        "door",
+        "xtel",
+        "esm"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "gamestate-wip-20260926",
+      "timestamp": "2026-09-26T22:22:00.222928",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "A sibling session is mid-flight implementing a 'gamestate' console command (GameConsole GAMESTATE log line + debug panel buttons) and currently owns uncommitted edits in CHANGELOG.md, app/src/main/cpp/CMakeLists.txt, engine/renderer.cpp, ui/game_console.{cpp,h}, tools/host_tests/host_runner_main.cpp, tools/host_tests/run_host_tests.sh, MainActivity.kt, res/layout/activity_main.xml plus untracked world/game_state_report.{cpp,h} and tests/gamestate_report_tests.{cpp,h}. Treat these as another session's work in progress: never commit, revert, or stash them for coordinator-session bookkeeping.",
+      "tags": [
+        "worktree",
+        "ownership",
+        "gamestate"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "29aef880-cb56-4ff8-965f-b2e70a7cb4e8",
+      "timestamp": "2026-09-26T22:31:30",
+      "category": "decision",
+      "priority": "high",
+      "content": "SCDA selector space RESOLVED (2026-09-26, probe_fileorder.py over all 2393 SCPT records): the r / Z / 0x001C selector spaces are ONE table = the record's SCRV/SCRO subrecords in FILE ORDER. Evidence: SCHR[4] == len(SCRV)+len(SCRO) in 2393/2393 records; of 2052 commands with a source ref prefix, the 2020 whose 0x001C is the immediately preceding instruction resolve 2020/2020 (100.0%) to the name the source writes; all 32 mismatches are non-immediate and caused by probe prefix false positives (health / BaseFatigue / GameDaysPassed / onHitWith / scaonactor are actor values, variables, event names). The competing rules previously reported to WS-B - locals-first (745/1106) and first-use order (906/1106) - are WITHDRAWN: they ordered locals by SCTX declaration order instead of SCRV file position. WS-B must keep ONE resolver, resolveReferenceSlot(slot), shared by r, Z and the selector; slot 0 or slot > len(SCRV)+len(SCRO) = explicit opcode+offset error, never a guess. plan.md 292/294 already documented this and now carries the 2020/2020 quantification; plan.md's expression-side fid heading corrected 236 -> 196 to match its own table (196 entries counted).",
+      "tags": [
+        "script-vm",
+        "scda",
+        "selector-space",
+        "file-order",
+        "plan-md",
+        "ws-b"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "9da8ecee-5918-47c2-972f-7c77909a5988",
+      "timestamp": "2026-09-26T22:40:17.613054",
+      "category": "decision",
+      "priority": "high",
+      "content": "SCDA argument count RESOLVED at 100.000% (2026-09-26, probe_legend.py + probe_member2.py + probe_localidx.py over all 2393 SCPT records): a command payload is [u16 argc][token...]. argc counts OPERANDS, not tokens. An s (0x73) token directly after an r (0x72) token whose index is NOT a member of the record's SLSD slot-number SET is a member index of that reference (ref.questvar = two tokens, one argument); an s index that IS a declared slot is an argument of its own. Measured: operand count == argc in 9574/9574 non-empty non-message payloads (zero disagreements), versus 9541 for a plain token count and 9518 for an always-merge count. CRITICAL: SLSD slot numbers are a SET, not a range - SE09AltarScript declares 11 variables numbered [25,1,2,10,20,19,21,22,23,24,11] (max 25), so a decoder testing index < localCount misclassifies slot 24 as a reference member. The merge actually fires only 33 times (0x1002 x26, 0x1076 x7), which is why byte-only rules cannot be right: RonaHassildorScript (01 00 72 05 00 73 09 00 = 1 argument Player.ModCrimeGold SECrimeGold) and XPEbroccaCrematorySCRIPT (02 00 72 07 00 73 01 00 = 2 arguments) differ only in slot declared-ness. Also: all 57 0x66 indices and 83 of 116 0x73 indices are declared slots; an s index outside the set with no preceding r never occurs (safe to make it an explicit error). plan.md now carries this paragraph.",
+      "tags": [
+        "script-vm",
+        "scda",
+        "argc",
+        "slds",
+        "plan-md",
+        "ws-b"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "7727cf9f-2828-4b28-9dd1-cb3cfafae865",
+      "timestamp": "2026-09-26T22:40:17.613054",
+      "category": "decision",
+      "priority": "high",
+      "content": "SCDA token legend v2 confirmed by suffix sweep (2026-09-26, probe_legend2.py / probe_res2.py): 0x6E = 5 bytes [0x6E][int32]; 0x7A = 9 bytes [0x7A][float64] (real values 1.0 / 5.0 / 0.0128); 0x66 (f) / 0x73 (s) / 0x72 (r) / 0x47 (G) = 3 bytes; 0x58 / 0x59 / 0x5A = 1 byte (axis letters X / Y / Z from SetPos-SetAngle grammars, always followed by another token); anything else = 2 bytes (bare u16). Under this table the greedy read consumes the payload to its last byte in 11944/11944 non-empty payloads with ZERO residue (the earlier 10636/11944 = 89.0% was the message/string opcodes). WITHDRAWN: the WS-C 'out.length = 5 + argumentBytes' formula (the argumentBytes word is an argc count) and the 'Z <u16>' reading of 0x5A - a one-byte 0x5A cannot carry a u16; the 0x59 / 0x5A choice between Y and Z is structural, not semantic, and needs no further probing. 0x47 is a three-byte GLOBAL variable token, which is exactly what ModCrimeGold SECrimeGold carries. Three-byte tokens are [tag][u16 index]; read the index at offset 1, not 0 - reading at 0 produced nonsense slot numbers (0x72XX) during the first membership probe.",
+      "tags": [
+        "script-vm",
+        "scda",
+        "token-legend",
+        "framing",
+        "ws-b"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "ca25da20-2ce9-4bd6-8760-43077d295b9d",
+      "timestamp": "2026-09-26T22:40:17.613054",
+      "category": "reference",
+      "priority": "high",
+      "content": "SCDA selector-space enumeration excludes the message-family opcodes (2026-09-26): 0x1000 messagebox, 0x1059 message, 0x114D essentialdeathreload and 0x111C setactorfullname carry an in-line string record [u16 1][u16 strlen][ASCII text] instead of [u16 argc][tokens]. Of 4172 non-structural payload commands, 2386 (57.2%) are message-family and all 2386 decode as strings with zero framing failures; they are the entire residue mass that the naive argument parser reported (1296 at the first pass). The remaining 1786 all parse as argument lists under the argc rule. Measured Begin lengthWord distribution over 4344 blocks: 6 (1931), 8 (1377), 10 (6), 11 (994), 13 (36) - the guard lengthWord < 8 used by WS-B would reject 1931/4344 = 44.4% of real SCPT blocks, so it must be reconsidered before relying on it. 0x0010 Begin payload = [u16 blockType][u16 bodyLength][extra], and bodyLength == End_opcode_offset + 4 - Begin_payload_end holds for 4344/4344 blocks (the trustworthy framing invariant).",
+      "tags": [
+        "script-vm",
+        "scda",
+        "message-opcodes",
+        "begin",
+        "ws-b"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "9127bdaf-ee4e-41c4-9350-0e3310bf0e56",
+      "timestamp": "2026-09-26T22:40:17.613054",
+      "category": "reference",
+      "priority": "medium",
+      "content": "SCDA misc confirmations (2026-09-26): 0x1098 RemoveScriptPackage carries NO payload (7 of 7 lengthWord = 0); its target is the calling-reference context set by the preceding 0x001C, so WS-B's 'no payload yet the source passes a package argument' question is answered - the payload has no argument. 0x1076 ModCrimeGold is a normal argument command (payload 01 00 47 0a 00 = argc1 + global token), not an unnamed opcode. Expression-side fid table (196 fids, fp=0) is unchanged from final_table.txt.",
+      "tags": [
+        "script-vm",
+        "scda",
+        "fid",
+        "ws-b"
+      ],
+      "compressed": false
+    },
+    {
+      "category": "decision",
+      "priority": "high",
+      "content": "SCDA Begin block census, 100% positional (measured 2026-09-26, probe_blocks2.py / durable files\\scro_probe\\probe_blocks3.py, all 2,393 SCPT records): reading each record's ordered 'begin <keyword>' lines from SCTX and zipping them against the ordered 0x0010 block types gives 4,344 pairs from 2,321 records, 0 unpaired records, 0 count mismatches, and every one of the 25 types touched is 100.000% pure - the k-th block in the byte stream is always the k-th begin in the source. The 72 records with no begin line carry no 0x0010 either. 0x0010 is written 'onpackagedone' 174x and 'onpackageend' 133x, one type serving two source spellings. This supersedes the corpus-wide count-agreement numbers that stood in plan.md.",
+      "tags": [
+        "scda",
+        "begin",
+        "blocktype",
+        "scpt",
+        "alignment"
+      ],
+      "id": "ac3537b6-c520-4312-8224-a9ab685f17bd",
+      "timestamp": "2026-09-26T13:51:32Z",
+      "compressed": false
+    },
+    {
+      "category": "reference",
+      "priority": "high",
+      "content": "Begin block type totals (exact, all 4,344 blocks, 2026-09-26): gamemode 0x0000 1332, onactivate 0x0002 891, ondeath 0x000A 441, onpackagedone/onpackageend 0x0010 307, onreset 0x001E 215, onload 0x0015 208, ontrigger 0x0018 151, onadd 0x0003 102, onpackagechange 0x0014 89, scripteffectstart 0x0011 84, onhit 0x0008 82, onpackagestart 0x000F 61, scripteffectfinish 0x0012 57, onmagiceffecthit 0x0016 44, menumode 0x0001 42, onequip 0x0004 41, scripteffectupdate 0x0013 35, onalarm 0x000D 32, ontriggeractor 0x001A 31, onhitwith 0x0009 31, onstartcombat 0x0019 29, onunequip 0x0005 23, ondrop 0x0006 8, ontriggermob 0x001B 5, onsell 0x0017 2, onactorequip 0x001C 1. lengthWord: 6->1931, 8->1377, 10->6, 11->994, 13->36; no block has lengthWord < 4.",
+      "tags": [
+        "scda",
+        "begin",
+        "blocktype",
+        "census"
+      ],
+      "id": "a4068a34-3af9-46c1-8463-0bdbdaef25c4",
+      "timestamp": "2026-09-26T13:51:32Z",
+      "compressed": false
+    },
+    {
+      "category": "constraint",
+      "priority": "high",
+      "content": "Begin decode guard (2026-09-26): the decoder must NOT require lengthWord >= 8. The histogram is 6 (1,931 blocks / 44.4%), 8 (1,377), 10 (6), 11 (994), 13 (36), and no block has lengthWord < 4, so the only safe precondition is lengthWord >= 4. WS-B's native_scda_decoder.cpp currently errors on lengthWord < 8 and therefore rejects 1,931 of 4,344 blocks. bodyLength invariant (correct form): bodyLength == end of the matching 0x0011 instruction - end of the 0x0010 payload, true in 4,344/4,344 with 0 mismatches; the earlier '0 of 4,344' reading compared against End end - 4 and is withdrawn.",
+      "tags": [
+        "scda",
+        "begin",
+        "guard",
+        "regression",
+        "ws-b"
+      ],
+      "id": "3d81583e-b600-40dd-a340-8e55f978c685",
+      "timestamp": "2026-09-26T13:51:32Z",
+      "compressed": false
+    },
+    {
+      "category": "reference",
+      "priority": "medium",
+      "content": "Begin trailing bytes framing (2026-09-26): after [u16 blockType][u16 bodyLength] the next u16 is 0 in 4,344/4,344 blocks. When lengthWord >= 8 the remaining bytes are [u16 argc][tokens] in the same framing the statement operands use, and the token walk consumes the payload exactly in 2,413/2,413 blocks with 0 residue; argc == 0 for all 1,377 eight-byte blocks, argc >= 1 for all 1,036 ten/eleven/thirteen-byte blocks (994 carry exactly one r <slot> reference, onalarm carries two operands, menumode an int32 literal). The six-byte form has no argument list. A VM should read the header, skip the payload rest via bodyLength, and parse the argument list from payload offset 6 (argc) / 8 (tokens) only when it needs the block parameters. Shape is per block, not per type: onactivate 8B x876 / 11B x15, ondeath 8B x339 / 11B x102, menumode 8B x32 / 13B x10, onalarm 10B x6 / 13B x26.",
+      "tags": [
+        "scda",
+        "begin",
+        "payload",
+        "args",
+        "framing"
+      ],
+      "id": "142a110d-7292-4fbf-bbf5-b30704e9b7a1",
+      "timestamp": "2026-09-26T13:51:32Z",
+      "compressed": false
+    },
+    {
+      "id": "modav-0x1010-shape-20260926",
+      "timestamp": "2026-09-26T13:59:46Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "0x1010 ModActorValue operand shape closed (2026-09-26, probe_msg.py over 2,393 SCPT records): payload = [u16 2][u16 actorValueIndex][value token] and nothing else - no trailing bytes. 64 payloads, all argc==2, all consumed to the last byte: argLength 9 in 59 (02 00 21 00 6e 9c ff ff ff = modav aggression with int32 -100) and argLength 7 in 5 whose value token is 3 bytes. The reported 'two trailing bytes on 0x1010' is an artefact of a fixed-width int read; the WS-B queue item is closed. The actor value index is a bare u16 out of the standard enum (0 Strength, 1 Intelligence, 3 Agility, 4 Speed, 6 Personality, 8 Health, 10 Fatigue, 31 Sneak, 33 Aggression). The five short payloads are HelviusCeciaScript (02 00 08 00 66 06 00 = f 2 on Health), MQ15MythicDawnPrisonerSCRIPT (f 1 on Health) and KurtTestMagicEffect (02 00 08 00 73 01 00 = s 1 on Health), so a decoder must accept f and s as well as n for the value and an int-only reader misframes those five. This is the counter-evidence that the SetActorValue / ModActorValue / ForceAV second argument is not Int-fixed.",
+      "tags": [
+        "script-vm",
+        "scda",
+        "modav",
+        "actor-value",
+        "plan-md"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "residue-census-20260926",
+      "timestamp": "2026-09-26T13:59:46Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Instruction-level residue census (2026-09-26, probe_residue.py / probe_strings.py over 2,393 SCPT records, the ten structural opcodes excluded): 12,662 statement instructions = 2,370 with an empty payload + 9,477 that the separate parse consumes to the last byte + 782 governed by their own rule (718 text opcodes + 64 0x1010) + 33 needing the fused parse (0x1002 26, 0x1076 7). No command payload is left over, and no opcode outside 0x1002 / 0x1076 / the five text-and-value rules leaves a byte unconsumed. Correction to an earlier note: probe_strings.py reaches the 33 residue by EXCLUDING the four text opcodes from the argument walk, not by making string tokens first class - consume() has no string-token path. Implementation guidance: exclude, do not first-class.",
+      "tags": [
+        "script-vm",
+        "scda",
+        "residue",
+        "plan-md"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "scpt-subrecord-not-split-20260926",
+      "timestamp": "2026-09-26T13:59:46Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "SCPT scripts are never split across SCDA subrecords (2026-09-26, probe_strings.py over 2,393 SCPT records): 2,393 / 2,393 hold exactly one SCDA and exactly one SCTX, so 0 SCPT instructions are lost by a last-chunk-only read. This does not contradict plan.md's '210 records are split' / '191 hold more than one SCDA chunk': those counts come from the 2,646-pair corpus, of which 2,393 are SCPT and 253 are not, so the split records lie among the 253 non-SCPT pairs (quest-side scripts) and the concatenation requirement stands for them. plan.md carries the per-record-type measurement.",
+      "tags": [
+        "script-vm",
+        "scda",
+        "sctx",
+        "subrecord-split",
+        "plan-md"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "removescriptpackage-0x1098-no-package-arg-20260926",
+      "category": "reference",
+      "priority": "high",
+      "content": "0x1098 RemoveScriptPackage has an empty payload in all 7 SCPT occurrences (argLength 0). The call target comes from a preceding 0x001C whose lengthWord is the slot (len=1 in both SEXiditteArbiterButtonSCRIPT @167 and SEXiditteArbiterTrapSCRIPT02 @65, len=5 in MS38Script @411), but 4 of the 7 have no 0x001C at all (preceded by 0x0016 or 0x1059: KurtTestMagicEffect2 @146, MS22SrazirrScript @79, MS45DarMaScript @328), so a decoder must not require the selector and must fall back to the calling reference. The package name (SEXiditteArbiterTrapPKG) never appears in the bytecode: the compiler resolves and drops it. Probe: probe_rmpkg.py / rmpkg.txt.",
+      "tags": [
+        "script",
+        "scda",
+        "opcode",
+        "0x1098",
+        "removeScriptPackage"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "axis-byte-one-byte-statement-stream-20260926",
+      "category": "reference",
+      "priority": "high",
+      "content": "The axis byte (0x58 X / 0x59 Y / 0x5A Z) is one byte in statement and nested argument operands; the five-byte X form belongs to the expression stream only and must never be reused at argument position. probe_axis.py over the full SCPT corpus: with the four text opcodes excluded, 9,574 non-empty statement payloads remain and all 9,574 are consumed exactly by the one-byte rule; only 20 axis bytes reach an argument position (0x58 x3, 0x59 x4, 0x5A x13) and each has a typed value token behind it (SE39ObjectScript [u16 2][0x58][0x66 03 00] at @1110 = source set posX to getPos X). Expression payloads cannot be measured with a token walk (3,383 of 6,234 X-bearing payloads frame under neither reading) because they carry ASCII operators, so a decoder keeps one table per stream. Files: probe_axis.py / axis2.txt.",
+      "tags": [
+        "script",
+        "scda",
+        "token",
+        "axis",
+        "expression"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "ws-b-branch-channel-state-20260926",
+      "timestamp": "2026-09-26T00:00:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Workstream channel state re-measured from git on 2026-09-26. hhkk0127-script-vm-expansion: merge base b3529e8a, tip 51248b09 (Frame MessageBox buttons with their leading marker word), 33 commits ahead of the base and 53 behind master. The six newest commits are 3e13cfdb (Bridge native SCDA opcodes to the synthetic script functions), 9a7fef9d (Separate native call selectors from the r/Z reference slot table), d2cb7013 (Number native reference slots in SCPT subrecord file order), 6da0cd9e (Decode the remote Set form before the local target form), 9c608fc3 (Fold reference property operands only when argc requires it) and 51248b09. master is 10 commits ahead of origin/master aabb9dd7 and unpushed. The working tree holds 9 modified plus 4 untracked paths, all owned by other sessions. The merge is gated on uncommitted edits to CMakeLists.txt, engine/renderer.cpp and tools/host_tests/run_host_tests.sh plus user approval; git merge-tree --write-tree exits 0 with no conflict.",
+      "tags": [
+        "workstream",
+        "ws-b",
+        "merge",
+        "branch-state",
+        "git"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "merge-blocker-owner-gamestate-9427ac74-20260926",
+      "timestamp": "2026-09-26T00:10:00Z",
+      "category": "constraint",
+      "priority": "high",
+      "content": "The uncommitted paths that keep git merge from accepting hhkk0127-script-vm-expansion into master all belong to session 9427ac74-c35e-4e3d-b47e-79c1c4621727 (GameStateReport increment), not to WS-C: world/game_state_report.{h,cpp} and tests/gamestate_report_tests.{h,cpp} are new files created 2026-09-26 12:48, and the same increment edits app/src/main/cpp/CMakeLists.txt, engine/renderer.cpp (42 lines: the game_state_report.h include plus the refs.getWorldInfo lambda switched to GameStateReport::format), tools/host_tests/host_runner_main.cpp and tools/host_tests/run_host_tests.sh. renderer.cpp therefore is not a one-line WS-C leftover. A request to host-test, assembleDebug and commit that increment was sent to 9427ac74; nothing may be pushed, since master is 11 commits ahead of origin/master aabb9dd7 by user-gated intent.",
+      "tags": [
+        "merge",
+        "blocker",
+        "ownership",
+        "gamestate",
+        "master"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "cefdca0f-6186-4f94-9593-4ac49259e2d1",
+      "timestamp": "2026-09-26T00:30:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "The u16 following a text body in 0x1000 / 0x1059 / 0x114D is the count of '%' format specifiers in that text, not the operand count: measured 482/482 (0x1000), 230/230 (0x1059), 4/4 (0x114D) over the 2,393 SCPT records (probe_struct3.py / struct3.txt). For 0x1059 the operand list must be bounded by the fixed 4-byte trailer - consume operand tokens while more than 4 bytes remain - which frames 230/230. ValenDrethScript is the only record where the two disagree (1 specifier, 2 operands, 'DEBUG: Valen Dreth last info, convTimer to %.2f'). The 0x1059 trailer is 223 all-zero and 7 non-zero (01 00 00 00 x3, 0a 00 00 00 x2, 05 00, 07 00).",
+      "tags": [
+        "script-vm",
+        "scda",
+        "string-opcodes",
+        "measurement"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "268df20d-a77b-4e38-94b7-0911b69106ef",
+      "timestamp": "2026-09-26T00:30:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "0x001D is a per-block header and not an instruction: over all 2,393 SCPT records it appears exactly once per SCDA block, always as the block's first instruction, never twice, with a zero length word and an empty payload. Structural length words are absolute: 0x0011 End zero-length 4,344/4,344; 0x0019 EndIf zero-length 10,530/10,530; 0x001E Return zero-length 191/191; 0x0017 Else exactly 2 bytes 953/953. The plan's return row had listed only the 30 positionally paired returns.",
+      "tags": [
+        "script-vm",
+        "scda",
+        "structure-opcodes",
+        "measurement"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "a96cfc6c-0e45-41f7-8fb1-bcedccb36795",
+      "timestamp": "2026-09-26T00:30:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Second WS-B measurement batch (2026-09-26) sent from session 964d16fb: five Begin length words with lengthWord >= 4 the correct precondition (no block below 6), 0x001D per-block header, 0x1000 button area [u16 count][count x [u16 1][u16 len][text]] exact 482/482, 0x1010 has no trailing bytes and accepts f / s for its value, and the string count word is a specifier count. Sources: files\\scro_probe\\probe_struct.py, probe_struct2.py, probe_struct3.py.",
+      "tags": [
+        "ws-b",
+        "handoff",
+        "measurement"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "b3bcc336-95cd-4cac-b29e-dde15e5fd02e",
+      "timestamp": "2026-09-26T01:00:00Z",
+      "category": "constraint",
+      "priority": "high",
+      "content": "The three-path merge blocker is resolved. Session 9427ac74 committed the GameStateReport increment as 9e1fd406 (\"Phase 66 P16: one-line game state report for device verification\") on 2026-09-26, so CMakeLists.txt / engine/renderer.cpp / tools/host_tests/run_host_tests.sh and the four new game_state_report / gamestate_report_tests files are in master. git status --porcelain reports only 964d16fb's own documentation edits, and git merge-tree --write-tree master hhkk0127-script-vm-expansion is still exit 0 (merged root tree f2ab962a). The remaining gate on the merge is the user's approval plus the branch's rebase-and-re-verify pass.",
+      "tags": [
+        "merge",
+        "ws-b",
+        "master",
+        "9427ac74"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "005c384d-f9ac-42cd-bee7-7b7078fe7855",
+      "timestamp": "2026-09-26T01:30:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "WS-B channel state, measured 2026-09-26 (latest): branch hhkk0127-script-vm-expansion tip is 3aa7a4e9 (\"Frame the message tail as a value word and a zero word\"), 35 commits ahead of merge base b3529e8a and 62 behind master. Eight newest: 3e13cfdb, 9a7fef9d, d2cb7013, 6da0cd9e, 9c608fc3, 51248b09, 80f02472, 3aa7a4e9. git merge-tree --write-tree master hhkk0127-script-vm-expansion exits 0, merged root tree d0a33446.",
+      "tags": [
+        "ws-b",
+        "merge",
+        "channel"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "c76544ab-9b68-42e6-990f-e0d87b3829e3",
+      "timestamp": "2026-09-26T01:30:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "WS-B commit 80f02472 confirms the measured Begin precondition from the second measurement batch: the guard was lowered from lengthWord < 8 to lengthWord < 4, and WS-B reports the too-strict guard had been rejecting 1,556 of 2,393 SCPT records (65% of the corpus, exactly the recorded decodeFail=1556). Prediction to check on their side: decodeFail collapses, framingFail stays at its baseline of 2 (the 0x1000 pair).",
+      "tags": [
+        "scda",
+        "begin",
+        "ws-b",
+        "measurement"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "5fd93851-8c5b-420e-b85e-e6d5f411a0e9",
+      "timestamp": "2026-09-26T01:30:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "master is 16 commits ahead of origin/master aabb9dd7 and unpushed; git ls-remote origin refs/heads/master confirms the remote is still aabb9dd7 (checked 2026-09-26).",
+      "tags": [
+        "git",
+        "push",
+        "master"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "85ce447d-6bb3-4dee-96d6-00bd739398eb",
+      "timestamp": "2026-09-26T02:30:00Z",
+      "category": "constraint",
+      "priority": "high",
+      "content": "The master worktree is NOT clean as of 2026-09-26, and the plan's earlier \"working tree is clean\" statement was corrected the same day: session 9427ac74 holds uncommitted edits to app/src/main/java/com/example/oblivion/MainActivity.kt (+22) and app/src/main/res/layout/activity_main.xml (+40) - four P19 lighting A/B debug buttons driving settime 12 / settime 0 / setweather clear / setweather storm, which duplicate the existing buttons in ui/debug_menu.cpp:1348-1359 and the commands registered in ui/game_console.cpp:632-634. Neither path is one of the three the WS-B merge rewrites (CMakeLists.txt, engine/renderer.cpp, tools/host_tests/run_host_tests.sh), so the merge gate stays open, but those two files must never be swept into this session's commits.",
+      "tags": [
+        "worktree",
+        "git",
+        "ownership",
+        "9427ac74",
+        "merge-gate"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "94ebfc81-dfe0-48b4-98fe-981cdb56f47c",
+      "timestamp": "2026-09-26T02:30:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "WS-C (session 30cbb1e4) next increment assigned 2026-09-26: the static-object NIF draw path - REFR -> real MODL -> streamed NIF mesh -> lit draw pass, for exterior AND interior cells alike (interiors are the same path and are the first real interior geometry). Order after it: interior REFR geometry completion, doors, LOD. WS-D (characters) stays blocked until this mesh path is usable.",
+      "tags": [
+        "ws-c",
+        "phase-65",
+        "static-objects",
+        "assignment",
+        "phase-66"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "1db3ae6b-c2e0-44ee-aecf-bbe2cd4739a0",
+      "timestamp": "2026-09-26T02:30:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "The WTHR-driven weather work is LANDED (263c146f, Phase 66) and must not be reassigned or re-scoped. Evidence: engine/sky_weather_system.h:262-315 applyWeatherRecords() consumes the real WTHR records (NAM0 = 10 colour fields x 4 times of day (160 B, field-major; see the NAM0 field-major entry, corrected 2026-09-26)); engine/renderer.cpp:2576-2581 logs \"SkyWeatherSystem: %d WTHR records applied from ESM\"; renderTerrainMeshes() already reads getSunDirection / getAmbientColor / getFogColor / getFogDistance at renderer.cpp:5096-5099; the sky dome is gated on exterior cells. plan.md had four stale \"WTHR-driven weather data remain\" statements (the Next update bullet, the Phase 65 row, the WS-C workstream row and the «Not at product level» line) plus the weather paragraph in Current Status; all were corrected on 2026-09-26.",
+      "tags": [
+        "weather",
+        "wthr",
+        "phase-66",
+        "plan-accuracy",
+        "263c146f"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "49f16c6b-e110-49a3-953a-6946e3680ff2",
+      "timestamp": "2026-09-26T02:30:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Static-object draw path: the data and the pieces already exist, only the draw pass and the real model path are missing. Cell::staticObjects / dynamicObjects are populated (world/cell_loader.cpp:157-159) but referenced ONLY from the six world/ files (cell.cpp, cell_loader.cpp, object_placer.cpp, world_builder.cpp, world_data.h) - no engine/ code draws them. world/cell_loader.cpp:105-135 writes placeholder model paths (\"objects/static\", \"nature/tree\", \"nature/flora\", \"items/weapon\", \"objects/container\", \"objects/light\", \"objects/activator\"). The real resolver exists: WorldDataLoader::resolveModelPath(baseFormID) at assets/world_data_loader.cpp:215-266 (STAT/CONT/LIGH/ACTI/TREE/FLOR/ARMO/CLOT/MISC/BOOK/INGR/ALCH/APPA) and WorldDataLoader::extractCellObjects(cellFormID) at :198-213 (refFormID/baseFormID/position/rotation/scale/flags). Mesh API in use: assetManager->loadNifMesh(path) at engine/renderer.cpp:3840 (NPC meshes). Renderer has exactly four draw paths (renderWater 4336, renderSkyDome 4578, renderTerrainMeshes 4735, renderPlaceholderEntities 5212) and no generic world-mesh shader (nearest precedent shaders::MESH_VERTEX in vegetation/speed_tree_manager.cpp:126-131).",
+      "tags": [
+        "static-objects",
+        "world-data-loader",
+        "nif",
+        "renderer",
+        "reference"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "b3449cd5-6c6c-42d6-b856-91e9831303f2",
+      "timestamp": "2026-09-26T02:30:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Merge/tip state measured 2026-09-26 (third confirmation, supersedes the 0453aaaa / 7f9729c6 reading): master is 202b7a87 and origin/master is aabb9dd7 (unpushed); WS-B branch tip 3aa7a4e9 is 35 commits ahead of the merge base b3529e8a and 62 behind master; git merge-tree --write-tree master hhkk0127-script-vm-expansion exits 0 with merged root tree d0a33446. The root tree moved from 7f9729c6 because both sides advanced, not because a conflict appeared. The only remaining gate before the merge is the user's approval for moving master; the branch owner still owes its rebase-and-re-verify pass. Note git rev-parse --short fails with \"fatal: Needed a single revision\" when several refs are passed at once - resolve refs one at a time.",
+      "tags": [
+        "merge",
+        "master",
+        "ws-b",
+        "git",
+        "user-approval"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "3f33b023-0c62-4e74-960c-d1b31e625b24",
+      "timestamp": "2026-09-26T23:36:08+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "The WTHR NAM0 colour block is FIELD-MAJOR, not time-major, and this is now fixed by an authoritative source rather than inference (2026-09-26). NAM0 = 160 bytes = 10 colour fields x 4 times of day: word index i belongs to field i//4 and slot i%4 (0 Sunrise, 1 Day, 2 Sunset, 3 Night), so field f occupies words f*4..f*4+3 and time-of-day is the inner dimension. Authority: xEdit TES5Edit/TES5Edit @ 9fb016884bec138ea6c7b872cec831537d464c3e - Core/wbDefinitionsTES4.pas:3583 wbRecord(WTHR) includes wbWeatherColors; Core/wbDefinitionsCommon.pas:9707 wbWeatherColors = wbStruct(NAM0, [10 x wbWeatherTimeOfDay]); :8609 wbWeatherTimeOfDay = wbStruct(name, [Sunrise, Day, Sunset, Night]) each wbByteColors; :6962 wbByteColors = Red(u8), Green(u8), Blue(u8), wbUnused(1). TES4 field names in order: 0 Sky-Upper, 1 Fog, 2 Clouds-Lower, 3 Ambient, 4 Sunlight, 5 Sun, 6 Stars, 7 Sky-Lower, 8 Horizon, 9 Clouds-Upper (TES5 renames 1 Fog Near / 2 Unused / 9 Effect Lighting, so use the TES4 names). The landed reading is wrong in two places: assets/esm_reader.cpp:2899-2912 loops block*40 (time-major) and assets/esm_reader.h:942-963 defines WeatherSkyColors sky[4]. Measured consequence on Clear (0x00038eee): sky[0].upperSky = w0 = Sky-Upper/Sunrise (the only field right by accident), sky[0].clouds = w3 = Sky-Upper/Night = (0,3,13) black clouds, sky[1].upperSky = w10 = Clouds-Lower/Sunset = (109,101,133) consumed as the Day set, sky[1].fog = w11 = (4,12,23), sky[2].upperSky = w20 = Sun/Sunrise = (104,65,55), sky[3] starts at w30 = Sky-Lower/Sunset. WS-C in-flight Phase 66 P19 inherits this: SkyTimeSet[4] / skyCurve_[type][4] and setProvided[s] = (set.upperSky != 0) are time-set shaped and need a field-level redesign (per-field entry, per-field defined check); preset.sky.zenith comes from sky[SKY_DAY].upperSky = (109,101,133) for Clear. Corrections sent to WS-C (30cbb1e4) on 2026-09-26. Keep: the new time blending, the timeScale_/3600 fix and the updateSkyFromTimeOfDay() calls.",
+      "tags": [
+        "weather",
+        "wthr",
+        "nam0",
+        "esm-reader",
+        "field-major"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "0199df5a-1985-4d78-af80-f6291037568d",
+      "timestamp": "2026-09-26T23:36:08+09:00",
+      "category": "constraint",
+      "priority": "high",
+      "content": "WTHR NAM0 colour bytes are RGB, not BGRA: byte0 = R, byte1 = G, byte2 = B, byte3 = reserved. Authority: xEdit wbByteColors = Red(u8), Green(u8), Blue(u8), wbUnused(1) (Core/wbDefinitionsCommon.pas:6962). Measured: the 4th byte is 0 in all 1,480 values of the 37-record corpus, so it is padding and not alpha. The landed helper engine/sky_weather_system.h:750-757 bgraToRgb has a WRONG name and comment (\"ESM colours are packed BGRA (0xAARRGGBB)\") but already decodes byte0->R, byte1->G, byte2->B correctly, so the packed value is really 0x00BBGGRR. Renaming it is fine; swapping its body to match the old name would turn the sky orange. Verify by reading Clear's Sun field: Day must be (255,183,85) orange-yellow, and BGRA gives (85,183,255) sky-blue which is wrong for a sun.",
+      "tags": [
+        "weather",
+        "wthr",
+        "rgb",
+        "byte-order",
+        "sky-weather"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "c85995a0-d79f-4b3f-8ede-8b8ef900f71b",
+      "timestamp": "2026-09-26T23:36:08+09:00",
+      "category": "reference",
+      "priority": "high",
+      "content": "xEdit definitions are the authority for Oblivion record layouts. Raw fetch MUST use a commit SHA - the ref=master URL returns 14 bytes (failure): https://raw.githubusercontent.com/TES5Edit/TES5Edit/9fb016884bec138ea6c7b872cec831537d464c3e/Core/wbDefinitionsTES4.pas (124,465 B) and .../Core/wbDefinitionsCommon.pas (338,167 B). UESP's Oblivion Mod File Format WTHR page leaves NAM0/FNAM/HNAM/DATA as \"?\" so it is useless for submrecord detail, but it does agree on CNAM = cloud texture lower layer and DNAM = cloud texture upper layer (the comment in assets/esm_reader.h has them swapped). FNAM = Fog Distance = four floats Day-Near, Day-Far, Night-Near, Night-Far (Day/Night only, not four time sets), which is what the code already reads.",
+      "tags": [
+        "xesm",
+        "tes4",
+        "wthr",
+        "authority",
+        "reference",
+        "uesp"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "81b19128-b738-4ffa-ad94-c1c61c3ab7ab",
+      "timestamp": "2026-09-26T23:36:08+09:00",
+      "category": "decision",
+      "priority": "medium",
+      "content": "WTHR layout proofs measured over all 37 records of oblivion_esm_pull\\Oblivion3.esm (2026-09-26). (1) Run lengths of identical consecutive words in time-invariant weathers are always multiples of 4 and never of 10: CamoranWeather / OblivionStormTamriel / OblivionStormTamrielMQ16 / Obliviondefault give runs = [4]*10, MS14Sky gives [4,4,4,4,4,8,4,4,4], SigilWhiteOut gives [40]. (2) Time-major is impossible: it would require w[i] == w[i+10], and for CamoranWeather that forces w[8..11] and w[12..15] constant i.e. w[2]=w[3]=w[4]=w[5], which contradicts the two separate 4-word runs at w[0..3] and w[4..7]; MS14Sky fails the same way via its 8-word run. (3) Per-field time curves are physically right (Clear field 5 Sun = (104,65,55)/(255,183,85)/(255,107,96)/(0,0,0); Thunderstorm's Sun is black at all four times; Sky-Lower and Horizon go orange at Sunrise/Sunset). DefaultWeather's words[0..11] == words[28..39] is real authored data (Sky-Lower == Sky-Upper, Horizon == Fog, Clouds-Upper == Clouds-Lower), not an extraction artefact: that record's own runs are [4]*10 and not 4-periodic, so field-major holds for it independently. Time-invariant records to exclude from visual A/B: SigilWhiteOut, OblivionStormTamriel, OblivionStormTamrielMQ16, MS14Sky, CamoranWeather, Obliviondefault - use Clear / SEClear / SEClear01. Note there are two records named SEClear (0x38eee and 0x78801), so A/B instructions must name the formID.",
+      "tags": [
+        "weather",
+        "wthr",
+        "nam0",
+        "proof",
+        "ab-test",
+        "esm"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "b5220c1c-8c07-4bcc-a18e-e7ca458fbe39",
+      "timestamp": "2026-09-26T23:36:08+09:00",
+      "category": "reference",
+      "priority": "medium",
+      "content": "WTHR probe of record: use probe_wthr_fieldmajor.py -> wthr_fieldmajor.txt (37 records x 10 fields x 4 slots, RGB, field-major). It supersedes the deleted time-major probe (probe_wthr.py / wthr_table.txt / wthr_fields.txt / wthr_runs.txt). It reads the cached primary data wthr_nam0.json ([{editorID, formID, nam0:[40 uint32]}]) so the 277 MB ESM does not need re-reading, and it self-checks: records=37 reserved-nonzero=0/1480 fully-invariant=6. Python gotcha: a %-format string containing i%4 must escape it as i%%4 or it raises ValueError unsupported format character.",
+      "tags": [
+        "probe",
+        "wthr",
+        "tooling",
+        "session-state"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "d5201b32-8714-46cf-8d5d-29172175c9d8",
+      "timestamp": "2026-09-26T23:41:57+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "0x1059 message command trailer, settled by WS-B 3aa7a4e9 against this session's second measurement batch: the stored payload is [u16 formatCount][format tokens][u16 value][u16 0]. The old decoder required a zero u32 tail and therefore rejected eight retail records, and the count word undercounts in one record, so the operand list is now walked greedily until the fixed 4-byte tail remains (readGreedyTokenBlock, cursor+2 skips the count word while cursor+4 < size) and the end test is readU16(payload+cursor+2) != 0 instead of readU32 != 0. RESOLVED - the earlier seven-versus-eight question: bounding the operand list by the trailer from the end gives tail histogram 223 zero / 7 non-zero (01 00 00 00 x3 = SE12AnimatingDoorSCRIPT twice + MQ14Script; 05 00 00 00 = MQ09OneTimeLeverSCRIPT; 07 00 00 00 = TG11HeistScript; 0a 00 00 00 x2 = ARTrapEvilStoneFireSCRIPT + ARTrapEvilStoneAUTOFIREFireSCRIPT), so 7 payloads carry a non-zero value word; adding ValenDrethScript (the single count-word undercount, n0=1 against two operands, leaving 7 bytes instead of 4) gives exactly the 8 WS-B names. Both the zero-u32 rule and the count-driven walk fail on the same eight records. The meaning of the non-zero value words (1/1/1/5/7/10/10) is still unknown. Do not 'fix' the count word: it equals the number of '%' format specifiers in the text. Sources: files/scro_probe/struct3.txt (tail histogram) and struct2.txt section 4 (8 anomalies)."
+    },
+    {
+      "id": "merge-gate-remeasured-20260926-e5c16845",
+      "timestamp": "2026-09-26T23:54:00+09:00",
+      "category": "reference",
+      "priority": "high",
+      "content": "Merge/tip state re-measured from git on 2026-09-26 at master e5c16845 (supersedes the 005c384d and b3449cd5 readings): the WS-B branch hhkk0127-script-vm-expansion tip is 8efc03b6 (\"Name the expression side function ids and add two opcode aliases\", which implements queue items 4 and 5 - the 198-expression-fid name table and the getgs / scaonactor aliases), 36 commits ahead of the merge base b3529e8a and 66 behind master; master is 23 commits ahead of origin/master aabb9dd7 and unpushed. git merge-tree --write-tree master hhkk0127-script-vm-expansion exits 0 with merged root tree 722ac914 - the hash moves with every master commit because the merged tree contains master's tree, so exit 0 is the claim and the hash is only a receipt. master..branch == b3529e8a..branch == 36, which proves master carries no cherry-pick from the branch (clean side branch). The merge gate is now exactly three dirty rewritten paths, measured by intersecting git status --porcelain with the 32 paths of git diff --name-only master...hhkk0127-script-vm-expansion: assets/esm_reader.cpp (+51/-171 against the merged tree), assets/esm_reader.h (+34/-37) and engine/renderer.cpp (+34/-36). CMakeLists.txt and tools/host_tests/run_host_tests.sh dropped out of the gate when session 9427ac74 landed 9e1fd406. All three remaining gate paths sit inside the seven-path set attributed to WS-C's in-flight Phase 66 P19 increment (the renderer.cpp diff is the weather / timescale / timeofday console wiring plus the sky-clock report and the deleted duplicate skyWeatherSystem->update, NOT the P16 GameStateReport format, which is committed as 9e1fd406). The gate closes when WS-C commits its increment; moving master still needs the user's approval.",
+      "tags": [
+        "merge-gate",
+        "ws-b",
+        "ws-c",
+        "branch-state",
+        "plan-verification"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "ws-b-tip-census-20260926-a7f3c21d",
+      "timestamp": "2026-09-27T00:01:33+09:00",
+      "category": "reference",
+      "priority": "high",
+      "content": "SCDA census of the WS-B branch tip (2026-09-26, verified without merging: the decoder includes only its own header and <cstring>, so a git-show blob plus a small driver links against this session's Oblivion3.esm). At hhkk0127-script-vm-expansion: scdaBlocks 2393 / decodeFail 0 / instr 65628 / framingFail 0. At 51248b09^: decodeFail 1556 / instr 9466. So the plan's earlier 'framingFail 2' and 'decodeFail 1556' were two commits stale; 1,556 of 2,393 records (65.0%) failed to decode before the fix. Per-instruction walk: at 51248b09^ exactly 1,931 instructions fail and all report 0x0010 lengthWord 6 as 'Begin payload shorter than 8 bytes'; the tip fails none. 1,931 equals the lw=6 row of the Begin shape histogram {6:1931, 8:1377, 10:6, 11:994, 13:36} (4,344 blocks, independently reproduced), so the whole recovery is commit 80f02472 (Begin guard 8 -> 4 bytes) and NOT the MessageBox marker fix 51248b09 (which is real - 48/48 buttons carry the leading 1 - but did not move the count). 0x114D is confirmed to exist in Oblivion3.esm: 4 payloads, MartinScript off 254, MQ14Script off 556, JauffreScript off 159, MQ13Script off 358, all [u16 1][u16 len][text][u16 value][u16 0], walk consumes the SCDA exactly at all four (WS-B's '0 of them in Oblivion3.esm' was measured against pre-80f02472 code/master). Begin block-end law: with bodyLength = u16 at instruction offset + 6, the closing 0x0011 sits at begin.offset + lengthWord + bodyLength in 4,344 / 4,344 blocks with no exception, and (begin.offset + 8 + bodyLength) - end is exactly 8 - lengthWord (+2 x1931, 0 x1377, -2 x6, -3 x994, -5 x36). The +8 form is only the lengthWord == 8 special case (1,377 of 4,344 = 31.7%); the body after the Begin instruction is bodyLength - 4 bytes.",
+      "tags": [
+        "scda",
+        "census",
+        "ws-b",
+        "begin",
+        "0x114d",
+        "verification"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "merge-gate-master-worktree-20260927-b8d1e4f7",
+      "timestamp": "2026-09-27T00:20:00+09:00",
+      "category": "constraint",
+      "priority": "high",
+      "content": "The merge gate for master is the INTERSECTION of the master worktree's `git status --porcelain` with `git diff --name-only master...hhkk0127-script-vm-expansion` (32 paths), not a remembered file list and not a branch-side worktree's status. Measured at master HEAD dfa09d7a (2026-09-26, in C:\\Users\\hiroki.kogarumai\\Oblivion_Android): 13 modified paths, 0 untracked; the intersection is exactly three WS-C-owned paths - assets/esm_reader.cpp (+17/-15), assets/esm_reader.h (+27/-11), engine/renderer.cpp (+32/-17) - so `git merge` is refused until session 30cbb1e4 commits them. The other ten dirty paths (CHANGELOG.md, ui/game_console.cpp, ui/title_screen.cpp, java/.../MainActivity.kt, res/layout/activity_main.xml, java/.../GameRenderer.kt, world/world_manager.{cpp,h}, engine/sky_weather_system.h, tests/weather_transition_tests.cpp) are not rewritten by the merge and do not block it; CMakeLists.txt and tools/host_tests/run_host_tests.sh are rewritten but clean since 9e1fd406 landed. The four untracked game_state_report / gamestate_report_tests paths are gone (committed as 9e1fd406). git merge-tree --write-tree master hhkk0127-script-vm-expansion = exit 0. Branch is 36 commits ahead of the merge base b3529e8a and 68 behind master. Four worktrees exist: master@dfa09d7a, hhkk0127-script-vm-expansion@8efc03b6, hhkk0127-oblivion-android-completion-plan@5dfaa88b, hhkk0127-virtual-controller (prunable, no commit). WS-B's report of master HEAD 3ef1a678 with 9 M + 4 untracked was a stale reading (3ef1a678 is an ancestor of master). Attribution of a dirty path is settled by the working tree, not by memory: WS-C first read the remaining engine/renderer.cpp diff as session 9427ac74's gamestate work and declined to commit it, but `git diff` shows the Phase 66 P19 weather/clock fix (real SkyWeatherSystem calls behind refs.setWeather / setTimeScale / setTimeOfDay, the report repointed at the sky clock, the duplicate skyWeatherSystem->update deleted) plus the WTHR NAM0 field-major decode in assets/esm_reader.{cpp,h}, and the gamestate hunk (+44/-2, the getWorldInfo lambda) is already inside 9e1fd406. So all three gate paths are WS-C's own in-flight increment - compare the tree against `git log -1 -- <path>` before claiming or declining a diff. WS-C re-asserted the gamestate attribution at master HEAD f1878660 (three commits behind the live master) quoting +42/-2, which is exactly the stat 9e1fd406 recorded for engine/renderer.cpp (44 changed lines = 42 added + 2 removed) - a committed diff read as a pending one. Proof that the gamestate code is out of the diff: `git show HEAD:app/src/main/cpp/engine/renderer.cpp` contains the game_state_report.h include at line 11 and the getWorldInfo / getWorldInfoDetailed lambdas at lines 993 and 1491. Re-confirmed at 441d075d: 13 dirty, 0 untracked, same three gate paths, merge-tree exit 0. The remaining renderer.cpp hunks are @@ -978,11 +978,21 @@, @@ -1022,2 +1032,8 @@ and @@ -3529,4 +3545,3 @@. The two readings reconcile by time, not by fact: WS-C's +42/-2 was genuinely the live diff at f1878660 (23:00:14), the gamestate session committed that hunk eight minutes later as 9e1fd406 (23:08:59), and the P19 hunks are what remained. A reading can be correct when taken and wrong when re-used, so re-measure instead of re-arbitrating the same number. Independent attribution source: the local session_files table shows 30cbb1e4 as the only recent editor of engine/sky_weather_system.h in the master worktree (23:42, after 9e1fd406), which corroborates WS-C's ownership of the P19 increment. Five sessions now share the master worktree (964d16fb, 30cbb1e4, 9427ac74, f5aa54cb, fe7f23f7), so a clean status is a snapshot and must be quoted with its revision: 9427ac74 reported it empty at 9e1fd406 (23:08:59) and it held 13 dirty paths again by fbc813ca (00:15).",
+      "tags": [
+        "attribution",
+        "coordination",
+        "git",
+        "merge-gate",
+        "verification",
+        "worktree",
+        "ws-b",
+        "ws-c"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "1fa6afd5-62ad-4a34-8933-037a9824a242",
+      "timestamp": "2026-09-27T00:49:02",
+      "category": "decision",
+      "priority": "high",
+      "content": "Phase 66 P19 device verification found the real root cause of slow-motion gameplay: jni_bridge.cpp nativeRenderFrame passed the constant 0.0167f (60 fps) to Renderer::render(), so the simulation advanced one 60 Hz frame per RENDERED frame. Measured on the emulator (16-19 fps): gamestate reported time=12:00 and 60 real seconds later time=12:09, where timescale 30 demands 12:30 - about 32% of real time. Because the same deltaTime is forwarded to ImperialWeave, every dt-driven phase was affected (animation, AI, physics, combat, video decode, sun orbit). Fix: measure the interval with std::chrono::steady_clock, clamp to kMaxDelta = 0.1f (about a 10 fps floor) so a long cell load or a background return cannot teleport the world, fall back to 1/60 s on the first frame, and clear the marker in nativeCleanup and in the nativeInitEngine resume path.",
+      "tags": [
+        "phase66",
+        "p19",
+        "jni-bridge",
+        "frame-pacing",
+        "root-cause",
+        "delta-time"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "3fad1ea1-b1f5-4eb6-a44a-5952b15876a9",
+      "timestamp": "2026-09-27T00:49:02",
+      "category": "constraint",
+      "priority": "high",
+      "content": "The fixed-dt bug could not be caught by run_host_tests.sh: jni_bridge.cpp depends on Android-only headers and is not in the harness SOURCES. Any logic that lives only in the JNI layer is invisible to CI. Follow-up improvement I1: extract the frame pacing into an Android-independent FrameClock class under engine/ so the measured-dt, clamp and reset behaviour can be host-tested.",
+      "tags": [
+        "phase66",
+        "testing",
+        "host-tests",
+        "coverage-gap",
+        "improvement"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "e3fe9513-2e81-4a44-82b3-52aaac34cb19",
+      "timestamp": "2026-09-27T00:49:02",
+      "category": "reference",
+      "priority": "high",
+      "content": "Phase 66 P19 device A/B result (2026-09-27, emulator 1920x1080, density 420). Day vs night via the debug panel buttons: sky (44.2,60.4,54.1) -> (8.0,13.6,12.0) delta -36/-47/-42, mid (48.3,56.7,32.4) -> (16.6,16.8,11.0) delta -32/-40/-21, ground (45.0,53.8,34.0) -> (14.5,15.9,13.4) delta -31/-38/-21. Both sky and terrain change clearly, so the P19 acceptance condition is met. Weather clear vs storm changes the sky only (-12.8/-21.6/-20.9); mid and ground are unchanged, so the terrain-side weather effects (fog, cloud shadow) are still unimplemented (problem N2). The comparison tool is files/ab_time.py.",
+      "tags": [
+        "phase66",
+        "p19",
+        "device-verification",
+        "a-b-test",
+        "sky",
+        "weather"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "e94b2592-c5a8-4b73-9d15-7c295c15bd5c",
+      "timestamp": "2026-09-27T00:49:02",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Host test suites and counts after the P16-P19 work (run_host_tests.sh, one g++ invocation over 59 translation units): ScriptVMTests 22/22, Phase45UnitTests 41/41, Phase48StressTest 5/5, Phase48IntegrationTest 7/7, WatrDecodeTests 11/11, WeatherTransitionTests 14/14, InteriorCellTests 27/27, GameStateReportTests 30/30, Phase30IntegrationTest 1/1 (self-skipped without OBLIVION_ASSET_BASE). 158 assertions total. The CHANGELOG said 53 translation units, which was stale; it is now 59.",
+      "tags": [
+        "phase66",
+        "host-tests",
+        "test-counts",
+        "changelog"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "a62fb8c5-c517-42ff-9c86-57ad37e1a142",
+      "timestamp": "2026-09-27T00:49:02",
+      "category": "constraint",
+      "priority": "high",
+      "content": "Windows/Android environment pitfalls that have each cost real time in this project: (1) gradlew.bat fails when invoked through cmd /c because the working directory is not resolved - run it from PowerShell as '& .\\gradlew.bat assembleDebug', it takes about 14 minutes; (2) 'adb shell am start' is rejected with 'not exported from uid', so launch with 'monkey -p com.example.oblivion -c android.intent.category.LAUNCHER 1'; (3) the default logcat ring buffer holds only about 20 seconds, so run 'adb logcat -G 16M' before any verification; (4) app start to a usable menu is about 75 seconds because of ESM loading.",
+      "tags": [
+        "environment",
+        "windows",
+        "gradle",
+        "adb",
+        "logcat",
+        "pitfall"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "f51c33d6-7c75-4b29-b570-2272bb45422a",
+      "timestamp": "2026-09-27T00:49:02",
+      "category": "reference",
+      "priority": "high",
+      "content": "Debug panel tap coordinates on the 1920x1080 / density 420 emulator. The panel is a ScrollView, so the lower buttons are off screen until it is scrolled: 'adb shell input swipe 367 900 367 200 400' twice. Button centres: gamestate (367,543), time noon (367,643), time midnight (367,743), weather clear (367,843), weather storm (367,943). Debug toggle D is at (73,73); the panel close X is at (1799..1894, 26..121).",
+      "tags": [
+        "device-verification",
+        "debug-panel",
+        "coordinates",
+        "emulator"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "51b10cd7-0e8f-457f-9c88-7d036c85d41b",
+      "timestamp": "2026-09-27T00:49:02",
+      "category": "decision",
+      "priority": "medium",
+      "content": "P18 was closed as 'no real defect'. The title screen needs three taps (INTRO_MOVIE -> LOGO_DISPLAY -> MENU) by design, and 'Menu selection:' is only logged in the MENU state, which is why the first tap looked dead. The genuine P18 defect was log noise: applyMenuLayoutToButtons() runs every frame from renderMenu() -> computeMenuLayout(), so the six 'Menu hit rect' lines repeated at frame rate and pushed everything useful out of the ring buffer. They are now emitted only when the layout actually changes, after a single 'Menu hit layout' summary line.",
+      "tags": [
+        "phase66",
+        "p18",
+        "title-screen",
+        "logging",
+        "conclusion"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "7fdb7c7a-2782-4b05-9199-41aee4a97fd8",
+      "timestamp": "2026-09-27T00:49:02",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Open problems carried forward from the P16-P19 verification, to review with the user: N3 WorldManager::getCacheSize() returns cells.size(), so gamestate's 'cached=14686' is the registered exterior cell count, not a cache size; N4 the NAM0 field-major fix has only been exercised against synthetic bytes, never a real WTHR record; N5 the 'World Status: Time: 12.0' log and 'gamestate time=12:09' disagreed, which needs re-measuring because two independent clocks still exist (improvement I2: make SkyWeatherSystem the single time source); N6 the emulator renders at 16-19 fps against a 30 fps target. The full report is files/P16_P19_REPORT.md.",
+      "tags": [
+        "phase66",
+        "open-issues",
+        "improvement",
+        "follow-up"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "dcf94246-e8bc-4b8f-a2f6-8dbe06661e63",
+      "timestamp": "2026-09-27T04:45:00",
+      "category": "reference",
+      "priority": "high",
+      "content": "0x1010 ModActorValue second operand is a local variable, not an int. Measured 2026-09-27 with the dump1010.cpp driver linked against the branch decoder at b353809a over Oblivion3.esm: 64 payloads, framingFail 0, payload length 9 in 59 (n + int32 immediate) and 7 in 5 (3-byte typed variable token). SCTX settles it: HelviusCeciaScript reads 'ModAV Health modhealth' three times (f index 6), MQ15MythicDawnPrisonerSCRIPT reads 'modav health basehealth' (f index 1), KurtTestMagicEffect reads 'modav health, damage' (s index 1). So the value accepts n, f and s; the old 'two trailing bytes on 0x1010' note was a width difference, not a framing defect.",
+      "tags": [
+        "script-vm",
+        "0x1010",
+        "opcode-grammar",
+        "ws-b"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "72f0a6bc-a2a7-41d2-a2b9-63f7ef9fece0",
+      "timestamp": "2026-09-27T04:45:00",
+      "category": "reference",
+      "priority": "high",
+      "content": "0x114D EssentialDeathReload carries a u32 zero trailer and 0x111C SetActorFullName does not. Measured 2026-09-27 by dump1010.exe over Oblivion3.esm: 0x114D has 4 payloads (MartinScript 254, MQ14Script 556, JauffreScript 159, MQ13Script 358) each '01 00 <strlen> <text> 00 00 00 00' with argLength = strlen + 8, and 0x111C has 2 (GrayFoxScript 97 = 'The Gray Fox' 16 bytes, DASkullofCorruptionStaffScript 309 = 'Corrupted Clone' 19 bytes) with argLength = strlen + 4 and no trailer. Both read framingFail 0, and both are present in Oblivion3.esm, so the branch report that 0x114D is absent from the file is a scan-scope artefact.",
+      "tags": [
+        "script-vm",
+        "0x114D",
+        "0x111C",
+        "opcode-grammar",
+        "ws-b"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "03068c3b-f6af-4295-b470-3e04cfbcaeb3",
+      "timestamp": "2026-09-27T04:45:00",
+      "category": "reference",
+      "priority": "high",
+      "content": "Begin block census (probe_blocks3.py, 2026-09-27, durable output blocks3.txt): 4,344 Begin/End pairs over 2,393 SCPT records, bodyLength == End.end - Begin.payload.end in 4,344 of 4,344 with 0 mismatches, and no block has lengthWord < 4. lengthWord histogram 6:1931, 8:1377, 10:6, 11:994, 13:36; extra bytes after [blockType][bodyLength] are 2, 4, 6, 7, 9 respectively, and the grammar is [u16 0] followed by an optional [u16 argc][tokens]. 26 distinct blockTypes pair positionally with the SCTX begin keywords at purity 1.0 except 0x0010 which splits onpackagedone 174 / onpackageend 133 (0.567); 0x0000 gamemode 1332, 0x0002 onactivate 891, 0x000A ondeath 441, 0x0015 onload 208, 0x001E onreset 215.",
+      "tags": [
+        "esm",
+        "begin-block",
+        "opcode-grammar",
+        "census"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "5d509d2e-fed4-4b10-8ea6-4f97e7d9f7b6",
+      "timestamp": "2026-09-27T04:45:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "Merge gate definition, re-measured 2026-09-27: the gate is the intersection of the master working tree's git status --porcelain with git diff --name-only master...hhkk0127-script-vm-expansion. Dirty paths that the branch never rewrites are harmless. At master HEAD 87e09c23 the status held 11 modified paths (+775 -49) and the gate was exactly 2 files, engine/renderer.cpp (+540) and engine/renderer.h (+13, ObjectPlacer member plus renderInteriorObjects/ensureInteriorObjectsPlaced/renderStaticObjects). renderer.h joining the gate set was new. git merge-tree --write-tree master hhkk0127-script-vm-expansion returned exit 0.",
+      "tags": [
+        "merge",
+        "gate",
+        "renderer",
+        "ws-b",
+        "gamestate"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "a6ed34e6-ab16-43e0-942b-69e8e8648253",
+      "timestamp": "2026-09-27T04:45:00",
+      "category": "constraint",
+      "priority": "high",
+      "content": "Attribution traps for the master working tree, learned 2026-09-25 to 2026-09-27: (3) mtime is not evidence of ownership, so a file newer than both candidate sessions' commits is undecidable - use the session store's session_files or ask; (4) re-measure git rev-parse --short HEAD immediately before replying, because a once-correct measurement goes stale; (5) a commit message names only its own increment, so any dirty path that no message mentions is a second uncommitted increment (3935c7c1 named jni_bridge and never touched object_placer); (6) numbers in plan.md itself go stale - a figure without a revision is not evidence. The three independent sources are git diff in the master tree, git log -1 -- path, and session_files.",
+      "tags": [
+        "attribution",
+        "workflow",
+        "merge",
+        "traps"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "98ea2f17-6b44-4383-b8da-eee1c7227956",
+      "timestamp": "2026-09-27T04:45:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "The user decided on 2026-09-27 to hold the merge of hhkk0127-script-vm-expansion into master until WS-B finishes its remaining queue (expression-side function ids, the two aliases, 0x111C, 0x114D), even though the gate is closed by an owned increment and merge-tree reports no conflicts. merge, rebase and push are never run without explicit user approval, and plan.md or memory commits are made alone so no other session's modified file is ever staged.",
+      "tags": [
+        "merge",
+        "user-decision",
+        "constraint",
+        "workflow"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "0fc5cbf9-ae2f-4456-9dfe-57dc66834e24",
+      "timestamp": "2026-09-27T11:07:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "Merge gate CLOSED at b4446bf7 (\"Save uncommitted changes\", 2026-09-27 11:05:17 +09:00) in the master worktree C:\\Users\\hiroki.kogarumai\\Oblivion_Android. git status --porcelain reads empty. That single bulk commit landed 16 files / +1,016 -483, containing all 11 modified paths the previous snapshot listed, engine/renderer.cpp +540 and engine/renderer.h +13 among them (the only two gate paths). It also deleted docs/PHASE9_PLAN.md (423 lines merged into the Phase 9 section of plan.md) and updated docs/README.md and .github/copilot-instructions.md, so the subject names no increment and only reading the commit tells you what closed the gate. Re-measured: branch tip b353809a, merge base b3529e8a, 38 ahead of base / 83 behind master, 32 paths / +6,314 -184, merge-tree exit 0, master 40 ahead of and 0 behind origin/master (aabb9dd7), still unpushed.",
+      "tags": [
+        "merge-gate",
+        "git",
+        "plan-md",
+        "b4446bf7",
+        "ws-coord"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "aa508162-28cd-4f2c-b12c-be649ab1bba3",
+      "timestamp": "2026-09-27T11:07:00",
+      "category": "constraint",
+      "priority": "high",
+      "content": "WS-B's first batch of 20 new script function ids 0x0084-0x0097 (GetAngle .. SetAlert) is settled in every detail except permission: native opcodes, signatures and SetActorValue's second-operand types (n / f / s) are all agreed, but the parent session 30cbb1e4's standing instruction is to add no new id until it answers, and WS-C declined to rule on it. Only the user can give the go. Items needing no approval: getNativeOpcodeName for the 198 expression-side ids, the getgs / scaonactor aliases, and the 0x111C / 0x114D string-shape confirmations. WS-B tip b353809a, census at the tip is decodeFail 0 / instr 65,628 / framingFail 0.",
+      "tags": [
+        "ws-b",
+        "script-vm",
+        "approval",
+        "blocker",
+        "phase-67"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "04e3e58e-fe23-4e92-b300-0bf3577652ae",
+      "timestamp": "2026-09-27T11:20:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "The user granted the go (2026-09-27) for Script VM's first batch of 20 function ids 0x0084-0x0097 (GetAngle through SetAlert), superseding the parent session 30cbb1e4's standing instruction not to add new ids. Relayed to WS-B (0c8d192d) at branch tip b353809a, together with two constraints: WS-B must still not merge, rebase or push master (a closed gate is a precondition, not approval to move the shared branch), and each increment must land alone. plan.md committed this as 073a5227.",
+      "tags": [
+        "workstream-coordination",
+        "script-vm",
+        "approval",
+        "ws-b",
+        "plan"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 257,
+    "totalEntries": 331,
     "compressedCount": 2,
-    "sessionCount": 25
+    "sessionCount": 29
   }
 }

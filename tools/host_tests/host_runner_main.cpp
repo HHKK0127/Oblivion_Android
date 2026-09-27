@@ -6,6 +6,11 @@
 #include "tests/phase45_unit_tests.h"
 #include "tests/phase48_stress_test.h"
 #include "tests/phase48_integration_test.h"
+#include "tests/watr_decode_tests.h"
+#include "tests/weather_transition_tests.h"
+#include "tests/interior_cell_tests.h"
+#include "tests/gamestate_report_tests.h"
+#include "tests/asset_path_tests.h"
 
 // Print a suite summary and report whether it passed.
 static void runSuite(const char* name, bool ok, const std::string& summary, int& failed) {
@@ -40,6 +45,31 @@ int main() {
         Phase48IntegrationTest t;
         const bool ok = t.runAllTests();
         runSuite("Phase48IntegrationTest", ok, t.getSummary(), failed);
+    }
+    {
+        WatrDecodeTests t;
+        const bool ok = t.runAllTests();
+        runSuite("WatrDecodeTests", ok, t.getSummary(), failed);
+    }
+    {
+        WeatherTransitionTests t;
+        const bool ok = t.runAllTests();
+        runSuite("WeatherTransitionTests", ok, t.getSummary(), failed);
+    }
+    {
+        InteriorCellTests t;
+        const bool ok = t.runAllTests();
+        runSuite("InteriorCellTests", ok, t.getSummary(), failed);
+    }
+    {
+        GameStateReportTests t;
+        const bool ok = t.runAllTests();
+        runSuite("GameStateReportTests", ok, t.getSummary(), failed);
+    }
+    {
+        AssetPathTests t;
+        const bool ok = t.runAllTests();
+        runSuite("AssetPathTests", ok, t.getSummary(), failed);
     }
     {
         // Real Oblivion assets are not redistributable; the suite skips itself when

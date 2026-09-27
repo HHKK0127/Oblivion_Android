@@ -43,11 +43,14 @@ public:
     bool walkAllBlocks();
     bool areBlocksWalked() const { return blocksWalked; }
     uint32_t getBlockPrefix() const { return blockPrefix; }
+    uint32_t blockBodyPrefix(const std::string& typeName) const;
     size_t getBlockBodyOffset(uint32_t index) const;
     size_t getBlockBodyEnd(uint32_t index) const;
     bool locateBlockBody(uint32_t index, size_t& offset) const;
     bool findBlocksOfType(const std::string& typeName, std::vector<uint32_t>& out) const;
     const std::string& getWalkError() const { return walkError; }
+    uint32_t getTrailerValueCount() const { return trailerValueCount; }
+    size_t getTrailingDataSize() const { return trailingDataSize; }
 
     // --- Phase 30: Skinning ---
     bool parseNiSkinInstance(NIFSkinInstance& skin);
@@ -93,6 +96,8 @@ private:
     uint32_t blockPrefix = 0;               // Per-block leading uint32 on 10.1.0.x meshes
     bool blocksWalked = false;              // True once walkAllBlocks() has succeeded
     std::string walkError;                  // Human-readable reason the walk stopped
+    uint32_t trailerValueCount = 0;         // Value count word of the file trailer
+    size_t trailingDataSize = 0;            // Tool data skipped before the repeated trailer
 
     // Parsing helpers
     bool readHeader();
@@ -102,6 +107,7 @@ private:
 
     // Block walker
     bool walkBlockBody(const std::string& typeName);
+    bool readTrailer();
     bool skipBytes(size_t count);
     void skipFixed(size_t count);
     void skipRefArray(uint32_t count);
@@ -117,7 +123,10 @@ private:
     void skipNiGeometry();
     void skipNiTimeController();
     void skipNiInterpController();
+    uint32_t bsVersion() const;
     void skipNiPSysModifier();
+    void skipNiDynamicEffect();
+    void skipNiLight();
     void skipNiGeometryData(const std::string& typeName);
     void skipMaterialData();
     void skipTexDesc();
@@ -126,7 +135,9 @@ private:
     void skipKeys(uint32_t count, const char* valueType, int arg);
     void skipQuatKeys(uint32_t count, int rotationType);
     void skipKeyframeData();
-    void skipBlendInterpolator(bool boolValue);
+    void skipBSplineInterpolator(const std::string& typeName);
+    void skipBSplineData();
+    void skipBlendInterpolator(size_t valueSize);
     void skipInterpBlendItems(uint32_t count);
     void skipNodeSet();
     void skipAVObjectArray(uint32_t count);
@@ -152,6 +163,7 @@ private:
     // Binary reading helpers
     bool readBytes(char* buffer, size_t count);
     uint8_t readUInt8();
+    uint32_t readBoolField();  // Sized per nif.xml: 4 bytes up to 4.0.0.2, else 1
     bool readString(std::string& str);
     bool readByteString(std::string& str);  // bzstring: u8 length (NUL included) + body
     bool readStringRef(std::string& str);  // String reference from string table
