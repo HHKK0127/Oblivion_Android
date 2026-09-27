@@ -24,6 +24,7 @@
 #include "../ui/world_debug_info.h"
 #include "../ui/performance_graph.h"
 #include "../game/quest_manager.h"
+#include "../quest/quest_flow_controller.h"
 #include "../game/npc_manager.h"
 #include "../system/settings_manager.h"
 #include "../game/combat_manager.h"
@@ -134,6 +135,7 @@ private:
     // rather than inside WorldManager so the world layer stays ESM agnostic.
     std::unique_ptr<ObjectPlacer> objectPlacer;
     std::unique_ptr<QuestManager> questManager;
+    std::unique_ptr<QuestFlowController> questFlowController;
     std::unique_ptr<CombatManager> combatManager;
     std::unique_ptr<SpellManager> spellManager;
     std::unique_ptr<oblivion::NavMeshManager> navMeshManager;

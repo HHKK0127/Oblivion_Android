@@ -11,6 +11,7 @@
 
 // Script VM data structures (for SCPT record storage)
 #include "../script/script_context.h"
+#include "../quest/quest_record.h"
 
 namespace oblivion {
 
@@ -240,6 +241,7 @@ struct QuestData {
     std::string fullName;
     uint8_t flags = 0;
     uint8_t priority = 0;
+    QuestRecord questRecord;
 };
 
 /// Dialogue response (INFO record) — a single line in a dialogue topic
@@ -248,15 +250,28 @@ struct InfoData {
     std::string editorID;
     uint32_t dialFormID = 0;         // Parent DIAL formID
     std::string responseText;        // NAM1 — NPC response text
-    std::string promptText;          // NAM2 — player prompt (optional)
-    uint8_t responseType = 0;        // TES4: 0=neutral, 1=positive, 2=negative, 3=command
-    uint32_t flags = 0;              // INFO flags
-    uint32_t speakerFormID = 0;      // TRDT speaker reference
-    uint32_t factionFormID = 0;      // Faction condition (ANAM)
-    int32_t factionRank = -1;        // Required faction rank (CNAM)
+    // NAM2 is a voice-acting direction for the performer, not player-facing
+    // text: 19,316 of 23,877 are empty and the non-empty ones read like
+    // "Lucien Lachance -- sinister" or "compulsive lying". Never show it.
+    std::string actingNotes;         // NAM2 — acting direction (not player text)
+    // DATA is 3 bytes on 19,276 of 19,278 records. Byte 0 is the owning topic's
+    // category (GREETING 0, HELLO/INFOGENERAL/GOODBYE/Question 1, Attack/Hit 2,
+    // Idle 6), byte 1 is a per-INFO flag byte, byte 2 carries no field.
+    uint8_t responseType = 0;        // DATA[0] — owning topic category
+    uint8_t infoFlags = 0;           // DATA[1] — per-INFO flags
+    // TRDT is 16 bytes and holds no speaker FormID: bytes 8..11 are always
+    // zero. The speaker is the DIAL/INFO owner, not a TRDT field.
+    uint8_t emotionType = 0;         // TRDT[0] — 0..6
+    uint8_t emotionValue = 0;        // TRDT[4] — 0..100
+    uint8_t responseNumber = 0;      // TRDT[12] — 1-based response ordinal
+    // ANAM, CNAM and QSTN do not occur in INFO records, so faction and quest
+    // requirements are read from CTDA conditions instead.
+    uint32_t factionFormID = 0;      // Faction condition (from CTDA)
+    int32_t factionRank = -1;        // Required faction rank (from CTDA)
     uint32_t questFormID = 0;        // Linked quest (QSTI)
-    int32_t questStage = -1;         // Required quest stage (QSTN)
+    int32_t questStage = -1;         // Required quest stage (from CTDA)
     std::string conditionFunction;   // Condition function name (CTDA)
+    script::ScriptData resultScript; // Inline INFO script, when SCHR is present
 };
 
 struct DialogData {
@@ -268,6 +283,10 @@ struct DialogData {
     uint8_t dialogType = 0;          // 0=Topic, 1=Conversation, 2=Combat, 3=Persuasion, 4=Detection, 5=Service, 6=Misc
     std::vector<InfoData> infos;     // Child INFO records
 };
+
+/// Decode an INFO record body into `info`. Exposed so the host tests can
+/// exercise the on-disk layout without an ESM file.
+void decodeInfoRecord(const ESMRecord& rec, InfoData& info);
 
 /// Worldspace definition
 struct WorldData {

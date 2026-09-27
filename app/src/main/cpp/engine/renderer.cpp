@@ -1991,7 +1991,25 @@ bool Renderer::initGameSystems() {
     // Initialize ScriptManager
     LOGI("Initializing ScriptManager...");
     scriptManager = std::make_unique<oblivion::script::ScriptManager>();
-    scriptManager->init(questManager.get(), worldManager.get(), npcManager.get(), inventoryManager.get());
+    questFlowController = std::make_unique<QuestFlowController>();
+    if (!questFlowController->initialize(
+            questManager.get(),
+            &weave::ImperialWeave::instance().getEventBus(),
+            scriptManager.get(),
+            playerController ? playerController->getPlayer().get() : nullptr,
+            playerController.get(),
+            inventoryManager.get(),
+            npcManager.get(),
+            worldManager.get())) {
+        LOGE("Failed to initialize QuestFlowController");
+        questFlowController.reset();
+    }
+    scriptManager->init(
+        questManager.get(),
+        worldManager.get(),
+        npcManager.get(),
+        inventoryManager.get(),
+        questFlowController.get());
     LOGI("ScriptManager initialized successfully");
 
     // Initialize SpeedTreeManager (singleton)
@@ -6524,4 +6542,3 @@ bool Renderer::loadGameState(const std::string& slotName) {
     LOGI("Game loaded from slot: %s", slotName.c_str());
     return true;
 }
-

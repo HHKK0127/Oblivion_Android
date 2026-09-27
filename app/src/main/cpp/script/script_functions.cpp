@@ -1,13 +1,16 @@
 #include "script_functions.h"
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <android/log.h>
 
 // Forward declarations for game systems
 #include "../game/quest_manager.h"
+#include "../quest/quest_flow_controller.h"
 #include "../world/world_manager.h"
 #include "../game/npc_manager.h"
 #include "../game/inventory_manager.h"
+#include "../game/player.h"
 
 #define SF_LOG_TAG "ScriptFunctions"
 #ifdef ENABLE_DEBUG_LOGS
@@ -26,18 +29,62 @@
 namespace oblivion {
 namespace script {
 
+namespace {
+
+constexpr uint32_t PLAYER_FORM_ID = 0x00000014;
+
+Player* get_script_player(QuestFlowController* quest_flow_controller) {
+    return quest_flow_controller ? quest_flow_controller->getPlayer() : nullptr;
+}
+
+std::shared_ptr<NPC> get_script_npc(NpcManager* npc_manager, uint32_t form_id) {
+    return npc_manager ? npc_manager->getNPC(form_id) : nullptr;
+}
+
+struct ScriptActor {
+    Player* player = nullptr;
+    std::shared_ptr<NPC> npc;
+
+    glm::vec3* getPosition() const {
+        if (player) {
+            return &player->position;
+        }
+        return npc ? &npc->position : nullptr;
+    }
+
+    void updateModelMatrix() const {
+        if (npc) {
+            npc->updateModelMatrix();
+        }
+    }
+};
+
+ScriptActor resolve_script_actor(QuestFlowController* quest_flow_controller,
+                                 NpcManager* npc_manager,
+                                 uint32_t form_id) {
+    if (form_id == PLAYER_FORM_ID) {
+        return {get_script_player(quest_flow_controller), nullptr};
+    }
+    return {nullptr, get_script_npc(npc_manager, form_id)};
+}
+
+}  // namespace
+
 ScriptFunctions::ScriptFunctions() {
     registerTier1Functions();
     registerTier2Functions();
+    registerTier3Functions();
 }
 
 void ScriptFunctions::init(
     QuestManager* questMgr,
     WorldManager* worldMgr,
     NpcManager* npcMgr,
-    InventoryManager* invMgr
+    InventoryManager* invMgr,
+    QuestFlowController* questFlowController
 ) {
     questManager_ = questMgr;
+    questFlowController_ = questFlowController;
     worldManager_ = worldMgr;
     npcManager_ = npcMgr;
     inventoryManager_ = invMgr;
@@ -185,6 +232,17 @@ const char* ScriptFunctions::getFunctionName(FunctionID funcID) const {
         case FunctionID::IsPCAmount: return "IsPCAmount";
         case FunctionID::GetPCLocation: return "GetPCLocation";
         case FunctionID::IsPCLocation: return "IsPCLocation";
+        case FunctionID::StartQuest: return "StartQuest";
+        case FunctionID::StopQuest: return "StopQuest";
+        case FunctionID::CompleteQuest: return "CompleteQuest";
+        case FunctionID::SetObjectiveCompleted: return "SetObjectiveCompleted";
+        case FunctionID::GetObjectiveCompleted: return "GetObjectiveCompleted";
+        case FunctionID::IsQuestStageDone: return "IsQuestStageDone";
+        case FunctionID::GetQuestCompleted: return "GetQuestCompleted";
+        case FunctionID::GetQuestStarted: return "GetQuestStarted";
+        case FunctionID::AddTopic: return "AddTopic";
+        case FunctionID::GetDead: return "GetDead";
+        case FunctionID::GetStageDone: return "GetStageDone";
         default: return "Unknown";
     }
 }
@@ -439,6 +497,30 @@ void ScriptFunctions::registerTier2Functions() {
         std::bind(&ScriptFunctions::fnIsPCLocation, this, _1, _2);
 }
 
+void ScriptFunctions::registerTier3Functions() {
+    using namespace std::placeholders;
+
+    handlers_[static_cast<uint16_t>(FunctionID::StartQuest)] =
+        std::bind(&ScriptFunctions::fnStartQuest, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::CompleteQuest)] =
+        std::bind(&ScriptFunctions::fnCompleteQuest, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::SetObjectiveCompleted)] =
+        std::bind(&ScriptFunctions::fnSetObjectiveCompleted, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::GetObjectiveCompleted)] =
+        std::bind(&ScriptFunctions::fnGetObjectiveCompleted, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::IsQuestStageDone)] =
+        std::bind(&ScriptFunctions::fnIsQuestStageDone, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::GetQuestCompleted)] =
+        std::bind(&ScriptFunctions::fnGetQuestCompleted, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::GetQuestStarted)] =
+        std::bind(&ScriptFunctions::fnGetQuestStarted, this, _1, _2);
+
+    handlers_[static_cast<uint16_t>(FunctionID::GetDead)] =
+        std::bind(&ScriptFunctions::fnGetDead, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::GetStageDone)] =
+        std::bind(&ScriptFunctions::fnGetStageDone, this, _1, _2);
+}
+
 // ============================================================================
 // Tier 1 Function Implementations
 // ============================================================================
@@ -454,13 +536,16 @@ FunctionResult ScriptFunctions::fnSetStage(ExecutionContext& ctx, const std::vec
 
     SF_LOGD("SetStage(0x%08X, %d)", questFormID, stage);
 
-    if (questManager_) {
-        // QuestManager does not have setQuestStage - quest stage is managed by QuestFlowController
-        // questManager_->updateObjectiveProgress(questFormID, 0, stage);
+    if (!questFlowController_) {
+        result.errorMessage = "SetStage requires an initialized QuestFlowController";
+        return result;
     }
 
-    result.success = true;
-    result.returnValue = ScriptValue::makeInt(1);
+    result.success = questFlowController_->setStage(questFormID, stage);
+    result.returnValue = ScriptValue::makeInt(result.success ? 1 : 0);
+    if (!result.success) {
+        result.errorMessage = "SetStage failed for quest 0x" + std::to_string(questFormID);
+    }
     return result;
 }
 
@@ -474,13 +559,9 @@ FunctionResult ScriptFunctions::fnGetStage(ExecutionContext& ctx, const std::vec
 
     SF_LOGD("GetStage(0x%08X)", questFormID);
 
-    if (questManager_) {
-        auto q = questManager_->getQuest(questFormID);
-        result.returnValue = ScriptValue::makeInt(q ? (int)q->state : -1);
-    }
-
     result.success = true;
-    result.returnValue = ScriptValue::makeInt(0);
+    result.returnValue = ScriptValue::makeInt(
+        questFlowController_ ? questFlowController_->getCurrentStage(questFormID) : -1);
     return result;
 }
 
@@ -495,13 +576,28 @@ FunctionResult ScriptFunctions::fnAddItem(ExecutionContext& ctx, const std::vect
 
     SF_LOGD("AddItem(0x%08X, %d) on self=0x%08X", itemFormID, count, ctx.getSelfRef());
 
-    if (inventoryManager_) {
-        auto tmpl = inventoryManager_->getItemTemplate(itemFormID);
-        if (tmpl) { inventoryManager_->playerAddItem(*tmpl, count); }
+    if (count <= 0) {
+        result.errorMessage = "AddItem requires a positive count";
+        return result;
     }
 
-    result.success = true;
-    result.returnValue = ScriptValue::makeInt(1);
+    if (!inventoryManager_) {
+        result.errorMessage = "AddItem requires an initialized InventoryManager";
+        return result;
+    }
+
+    auto item_template = inventoryManager_->getItemTemplate(itemFormID);
+    if (!item_template) {
+        result.errorMessage = "AddItem item template not found";
+        return result;
+    }
+
+    result.success = inventoryManager_->playerAddItem(
+        *item_template, static_cast<uint32_t>(count));
+    result.returnValue = ScriptValue::makeInt(result.success ? 1 : 0);
+    if (!result.success) {
+        result.errorMessage = "AddItem failed to add item to player inventory";
+    }
     return result;
 }
 
@@ -516,12 +612,22 @@ FunctionResult ScriptFunctions::fnRemoveItem(ExecutionContext& ctx, const std::v
 
     SF_LOGD("RemoveItem(0x%08X, %d) on self=0x%08X", itemFormID, count, ctx.getSelfRef());
 
-    if (inventoryManager_) {
-        inventoryManager_->playerRemoveItem(itemFormID, count);
+    if (count <= 0) {
+        result.errorMessage = "RemoveItem requires a positive count";
+        return result;
     }
 
-    result.success = true;
-    result.returnValue = ScriptValue::makeInt(1);
+    if (!inventoryManager_) {
+        result.errorMessage = "RemoveItem requires an initialized InventoryManager";
+        return result;
+    }
+
+    result.success = inventoryManager_->playerRemoveItem(
+        itemFormID, static_cast<uint32_t>(count));
+    result.returnValue = ScriptValue::makeInt(result.success ? 1 : 0);
+    if (!result.success) {
+        result.errorMessage = "RemoveItem failed to remove item from player inventory";
+    }
     return result;
 }
 
@@ -535,13 +641,15 @@ FunctionResult ScriptFunctions::fnGetItemCount(ExecutionContext& ctx, const std:
 
     SF_LOGD("GetItemCount(0x%08X) on self=0x%08X", itemFormID, ctx.getSelfRef());
 
-    if (inventoryManager_) {
-        auto inv = inventoryManager_->getPlayerInventory();
-        result.returnValue = ScriptValue::makeInt(inv ? inv->getItemQuantity(itemFormID) : 0);
+    if (!inventoryManager_) {
+        result.errorMessage = "GetItemCount requires an initialized InventoryManager";
+        return result;
     }
 
+    auto inventory = inventoryManager_->getPlayerInventory();
     result.success = true;
-    result.returnValue = ScriptValue::makeInt(0);
+    result.returnValue = ScriptValue::makeInt(
+        inventory ? static_cast<int32_t>(inventory->getItemQuantity(itemFormID)) : 0);
     return result;
 }
 
@@ -597,13 +705,23 @@ FunctionResult ScriptFunctions::fnGetDistance(ExecutionContext& ctx, const std::
 
     SF_LOGD("GetDistance(0x%08X) from self=0x%08X", refFormID, ctx.getSelfRef());
 
-    if (worldManager_) {
-        // WorldManager does not have getDistance - return 0 for now
-        result.returnValue = ScriptValue::makeFloat(0.0f);
+    const ScriptActor self = resolve_script_actor(
+        questFlowController_, npcManager_, ctx.getSelfRef());
+    const ScriptActor target = resolve_script_actor(
+        questFlowController_, npcManager_, refFormID);
+    const glm::vec3* self_position = self.getPosition();
+    const glm::vec3* target_position = target.getPosition();
+    if (!self_position || !target_position) {
+        result.errorMessage = "GetDistance could not resolve actor reference";
+        return result;
     }
 
+    const float delta_x = self_position->x - target_position->x;
+    const float delta_y = self_position->y - target_position->y;
+    const float delta_z = self_position->z - target_position->z;
     result.success = true;
-    result.returnValue = ScriptValue::makeFloat(0.0f);
+    result.returnValue = ScriptValue::makeFloat(
+        std::sqrt(delta_x * delta_x + delta_y * delta_y + delta_z * delta_z));
     return result;
 }
 
@@ -618,11 +736,24 @@ FunctionResult ScriptFunctions::fnSetPos(ExecutionContext& ctx, const std::vecto
 
     SF_LOGD("SetPos(%d, %.2f) on self=0x%08X", axis, value, ctx.getSelfRef());
 
-    if (worldManager_) {
-        // WorldManager does not have setObjectPosition - logging only
-        SF_LOGD("SetPos axis=%d val=%.2f on 0x%08X", axis, value, ctx.getSelfRef());
+    ScriptActor actor = resolve_script_actor(
+        questFlowController_, npcManager_, ctx.getSelfRef());
+    glm::vec3* position = actor.getPosition();
+    if (!position) {
+        result.errorMessage = "SetPos could not resolve actor reference";
+        return result;
     }
 
+    switch (axis) {
+        case 0: position->x = value; break;
+        case 1: position->y = value; break;
+        case 2: position->z = value; break;
+        default:
+            result.errorMessage = "SetPos axis must be 0 (X), 1 (Y), or 2 (Z)";
+            return result;
+    }
+
+    actor.updateModelMatrix();
     result.success = true;
     result.returnValue = ScriptValue::makeInt(1);
     return result;
@@ -638,13 +769,26 @@ FunctionResult ScriptFunctions::fnGetPos(ExecutionContext& ctx, const std::vecto
 
     SF_LOGD("GetPos(%d) on self=0x%08X", axis, ctx.getSelfRef());
 
-    if (worldManager_) {
-        // WorldManager does not have getObjectPosition - return 0
-        result.returnValue = ScriptValue::makeFloat(0.0f);
+    const ScriptActor actor = resolve_script_actor(
+        questFlowController_, npcManager_, ctx.getSelfRef());
+    const glm::vec3* position = actor.getPosition();
+    if (!position) {
+        result.errorMessage = "GetPos could not resolve actor reference";
+        return result;
+    }
+
+    float value = 0.0f;
+    switch (axis) {
+        case 0: value = position->x; break;
+        case 1: value = position->y; break;
+        case 2: value = position->z; break;
+        default:
+            result.errorMessage = "GetPos axis must be 0 (X), 1 (Y), or 2 (Z)";
+            return result;
     }
 
     result.success = true;
-    result.returnValue = ScriptValue::makeFloat(0.0f);
+    result.returnValue = ScriptValue::makeFloat(value);
     return result;
 }
 
@@ -790,10 +934,20 @@ FunctionResult ScriptFunctions::fnMoveTo(ExecutionContext& ctx, const std::vecto
     }
     uint32_t refFormID = static_cast<uint32_t>(args[0].toInt());
     SF_LOGD("MoveTo(0x%08X) for self=0x%08X", refFormID, ctx.getSelfRef());
-    if (worldManager_) {
-        // WorldManager does not have moveToObject - logging only
-        SF_LOGD("MoveTo(0x%08X) for 0x%08X", refFormID, ctx.getSelfRef());
+
+    ScriptActor actor = resolve_script_actor(
+        questFlowController_, npcManager_, ctx.getSelfRef());
+    const ScriptActor target = resolve_script_actor(
+        questFlowController_, npcManager_, refFormID);
+    glm::vec3* position = actor.getPosition();
+    const glm::vec3* target_position = target.getPosition();
+    if (!position || !target_position) {
+        result.errorMessage = "MoveTo could not resolve actor reference";
+        return result;
     }
+
+    *position = *target_position;
+    actor.updateModelMatrix();
     result.success = true;
     result.returnValue = ScriptValue::makeInt(1);
     return result;
@@ -840,13 +994,56 @@ FunctionResult ScriptFunctions::fnIsLocked(ExecutionContext& ctx, const std::vec
 
 FunctionResult ScriptFunctions::fnGetHealth(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
     FunctionResult result;
+
+    if (ctx.getSelfRef() == PLAYER_FORM_ID) {
+        Player* player = get_script_player(questFlowController_);
+        if (!player) {
+            result.errorMessage = "GetHealth could not resolve the player";
+            return result;
+        }
+        result.success = true;
+        result.returnValue = ScriptValue::makeFloat(player->health);
+        return result;
+    }
+
+    auto npc = get_script_npc(npcManager_, ctx.getSelfRef());
+    if (!npc) {
+        result.errorMessage = "GetHealth could not resolve actor reference";
+        return result;
+    }
+
     result.success = true;
-    result.returnValue = ScriptValue::makeFloat(100.0f);
+    result.returnValue = ScriptValue::makeFloat(npc->status.currentHealth);
     return result;
 }
 
 FunctionResult ScriptFunctions::fnSetHealth(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
     FunctionResult result;
+    if (args.empty()) {
+        result.errorMessage = "SetHealth requires 1 argument (health)";
+        return result;
+    }
+
+    const float health = args[0].toFloat();
+    if (ctx.getSelfRef() == PLAYER_FORM_ID) {
+        Player* player = get_script_player(questFlowController_);
+        if (!player) {
+            result.errorMessage = "SetHealth could not resolve the player";
+            return result;
+        }
+        player->health = std::clamp(health, 0.0f, player->maxHealth);
+        result.success = true;
+        result.returnValue = ScriptValue::makeInt(1);
+        return result;
+    }
+
+    auto npc = get_script_npc(npcManager_, ctx.getSelfRef());
+    if (!npc) {
+        result.errorMessage = "SetHealth could not resolve actor reference";
+        return result;
+    }
+
+    npc->status.currentHealth = std::clamp(health, 0.0f, npc->status.maxHealth);
     result.success = true;
     result.returnValue = ScriptValue::makeInt(1);
     return result;
@@ -868,15 +1065,49 @@ FunctionResult ScriptFunctions::fnSetLevel(ExecutionContext& ctx, const std::vec
 
 FunctionResult ScriptFunctions::fnIsDead(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
     FunctionResult result;
+
+    if (ctx.getSelfRef() == PLAYER_FORM_ID) {
+        Player* player = get_script_player(questFlowController_);
+        if (!player) {
+            result.errorMessage = "IsDead could not resolve the player";
+            return result;
+        }
+        result.success = true;
+        result.returnValue = ScriptValue::makeInt(player->health <= 0.0f ? 1 : 0);
+        return result;
+    }
+
+    auto npc = get_script_npc(npcManager_, ctx.getSelfRef());
+    if (!npc) {
+        result.errorMessage = "IsDead could not resolve actor reference";
+        return result;
+    }
+
     result.success = true;
-    result.returnValue = ScriptValue::makeInt(0);
+    result.returnValue = ScriptValue::makeInt(npc->status.isAlive() ? 0 : 1);
     return result;
 }
 
 FunctionResult ScriptFunctions::fnIsInCombat(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
     FunctionResult result;
+
+    if (ctx.getSelfRef() == PLAYER_FORM_ID) {
+        if (!get_script_player(questFlowController_)) {
+            result.errorMessage = "IsInCombat could not resolve the player";
+            return result;
+        }
+        result.errorMessage = "IsInCombat is unavailable for Player without combat state";
+        return result;
+    }
+
+    auto npc = get_script_npc(npcManager_, ctx.getSelfRef());
+    if (!npc) {
+        result.errorMessage = "IsInCombat could not resolve actor reference";
+        return result;
+    }
+
     result.success = true;
-    result.returnValue = ScriptValue::makeInt(0);
+    result.returnValue = ScriptValue::makeInt(npc->inCombat ? 1 : 0);
     return result;
 }
 
@@ -1487,6 +1718,166 @@ FunctionResult ScriptFunctions::fnIsPCLocation(ExecutionContext& ctx, const std:
     result.success = true;
     result.returnValue = ScriptValue::makeInt(0);
     return result;
+}
+
+// ============================================================================
+// Tier 3 Function Implementations - Quest Flow
+// ============================================================================
+
+FunctionResult ScriptFunctions::fnStartQuest(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 1) {
+        result.errorMessage = "StartQuest requires 1 argument (questFormID)";
+        return result;
+    }
+    if (!questFlowController_) {
+        result.errorMessage = "StartQuest requires an initialized QuestFlowController";
+        return result;
+    }
+
+    uint32_t questFormID = static_cast<uint32_t>(args[0].toInt());
+    result.success = questFlowController_->activateQuest(questFormID);
+    result.returnValue = ScriptValue::makeInt(result.success ? 1 : 0);
+    if (!result.success) {
+        result.errorMessage = "StartQuest failed for quest 0x" + std::to_string(questFormID);
+    }
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnCompleteQuest(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 1) {
+        result.errorMessage = "CompleteQuest requires 1 argument (questFormID)";
+        return result;
+    }
+    if (!questFlowController_) {
+        result.errorMessage = "CompleteQuest requires an initialized QuestFlowController";
+        return result;
+    }
+
+    uint32_t questFormID = static_cast<uint32_t>(args[0].toInt());
+    result.success = questFlowController_->completeQuest(questFormID);
+    result.returnValue = ScriptValue::makeInt(result.success ? 1 : 0);
+    if (!result.success) {
+        result.errorMessage = "CompleteQuest failed for quest 0x" + std::to_string(questFormID);
+    }
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnSetObjectiveCompleted(
+        ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 2) {
+        result.errorMessage = "SetObjectiveCompleted requires 2 arguments (questFormID, objectiveIndex)";
+        return result;
+    }
+    if (!questFlowController_) {
+        result.errorMessage = "SetObjectiveCompleted requires an initialized QuestFlowController";
+        return result;
+    }
+
+    uint32_t questFormID = static_cast<uint32_t>(args[0].toInt());
+    uint32_t objectiveIndex = static_cast<uint32_t>(args[1].toInt());
+    result.success = questFlowController_->completeObjective(questFormID, objectiveIndex);
+    result.returnValue = ScriptValue::makeInt(result.success ? 1 : 0);
+    if (!result.success) {
+        result.errorMessage = "SetObjectiveCompleted failed for quest 0x" +
+                              std::to_string(questFormID);
+    }
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnGetObjectiveCompleted(
+        ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 2) {
+        result.errorMessage = "GetObjectiveCompleted requires 2 arguments (questFormID, objectiveIndex)";
+        return result;
+    }
+    if (!questFlowController_) {
+        result.errorMessage = "GetObjectiveCompleted requires an initialized QuestFlowController";
+        return result;
+    }
+
+    uint32_t questFormID = static_cast<uint32_t>(args[0].toInt());
+    uint32_t objectiveIndex = static_cast<uint32_t>(args[1].toInt());
+    const ObjectiveProgress* objective =
+        questFlowController_->getObjectiveTracker()->getObjectiveProgress(questFormID, objectiveIndex);
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(objective && objective->isCompleted ? 1 : 0);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnIsQuestStageDone(
+        ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 2) {
+        result.errorMessage = "IsQuestStageDone requires 2 arguments (questFormID, stage)";
+        return result;
+    }
+    if (!questFlowController_) {
+        result.errorMessage = "IsQuestStageDone requires an initialized QuestFlowController";
+        return result;
+    }
+
+    uint32_t questFormID = static_cast<uint32_t>(args[0].toInt());
+    int32_t stage = args[1].toInt();
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(
+        questFlowController_->getCurrentStage(questFormID) >= stage ? 1 : 0);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnGetQuestCompleted(
+        ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 1) {
+        result.errorMessage = "GetQuestCompleted requires 1 argument (questFormID)";
+        return result;
+    }
+    if (!questFlowController_) {
+        result.errorMessage = "GetQuestCompleted requires an initialized QuestFlowController";
+        return result;
+    }
+
+    uint32_t questFormID = static_cast<uint32_t>(args[0].toInt());
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(
+        questFlowController_->getQuestState(questFormID) == QuestFlowState::COMPLETED ? 1 : 0);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnGetQuestStarted(
+        ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 1) {
+        result.errorMessage = "GetQuestStarted requires 1 argument (questFormID)";
+        return result;
+    }
+
+    if (!questFlowController_) {
+        result.errorMessage = "GetQuestStarted requires an initialized QuestFlowController";
+        return result;
+    }
+
+    uint32_t questFormID = static_cast<uint32_t>(args[0].toInt());
+    QuestFlowState state = questFlowController_->getQuestState(questFormID);
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(
+        state == QuestFlowState::ACTIVE ||
+        state == QuestFlowState::COMPLETED ||
+        state == QuestFlowState::FAILED ? 1 : 0);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnGetDead(
+        ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    return fnIsDead(ctx, args);
+}
+
+FunctionResult ScriptFunctions::fnGetStageDone(
+        ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    return fnIsQuestStageDone(ctx, args);
 }
 
 } // namespace script

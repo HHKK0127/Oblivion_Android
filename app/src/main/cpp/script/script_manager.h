@@ -26,6 +26,7 @@
 
 // Forward declarations
 class QuestManager;
+class QuestFlowController;
 class WorldManager;
 class NpcManager;
 class InventoryManager;
@@ -33,12 +34,21 @@ class InventoryManager;
 namespace oblivion {
 namespace script {
 
+struct InlineScriptKey {
+    uint32_t questFormID = 0;
+    uint16_t stageIndex = 0;
+    uint16_t scriptIndex = 0;
+};
+
 // ============================================================================
 // Active script instance
 // ============================================================================
 struct ActiveScript {
     uint32_t scriptFormID = 0;          // SCPT record FormID
     uint32_t selfRefFormID = 0;         // Object this script is attached to
+    InlineScriptKey inlineKey;
+    int32_t inlineScriptIndex = -1;
+    bool isInlineScript = false;
     ExecutionContext context;            // Execution state
     bool waitingForFrame = false;       // True if hit frame budget last tick
     float waitTimer = 0.0f;             // For Wait() function
@@ -57,7 +67,8 @@ public:
         QuestManager* questMgr,
         WorldManager* worldMgr,
         NpcManager* npcMgr,
-        InventoryManager* invMgr
+        InventoryManager* invMgr,
+        QuestFlowController* questFlowController = nullptr
     );
 
     // Load scripts from parsed ESM data
@@ -69,6 +80,13 @@ public:
     // Start executing a script on an object
     // Returns the active script index, or -1 on failure
     int startScript(uint32_t scriptFormID, uint32_t selfRefFormID, uint32_t targetRefFormID = 0);
+
+    // Start a script embedded in a quest stage. The manager retains its data
+    // so ExecutionContext bytecode pointers remain valid while it runs.
+    int startInlineScript(const ScriptData& script,
+                          const InlineScriptKey& key,
+                          uint32_t selfRefFormID,
+                          uint32_t targetRefFormID = 0);
 
     // Stop a running script
     void stopScript(uint32_t scriptFormID, uint32_t selfRefFormID);
@@ -95,6 +113,7 @@ public:
 private:
     // Script storage (FormID -> ScriptData)
     std::unordered_map<uint32_t, ScriptData> scripts_;
+    std::vector<std::unique_ptr<ScriptData>> inlineScripts_;
 
     // Active script instances
     std::vector<ActiveScript> activeScripts_;
@@ -108,12 +127,15 @@ private:
 
     // Game system pointers
     QuestManager* questManager_ = nullptr;
+    QuestFlowController* questFlowController_ = nullptr;
     WorldManager* worldManager_ = nullptr;
     NpcManager* npcManager_ = nullptr;
     InventoryManager* inventoryManager_ = nullptr;
 
     // Find active script by formID + selfRef
     ActiveScript* findActiveScript(uint32_t scriptFormID, uint32_t selfRefFormID);
+    bool isInlineScriptRunning(const InlineScriptKey& key, uint32_t selfRefFormID) const;
+    void releaseInlineScript(const ActiveScript& active);
 };
 
 } // namespace script

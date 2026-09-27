@@ -13,6 +13,37 @@
 namespace oblivion {
 namespace script {
 
+namespace {
+
+void initialize_locals(const ScriptData* script, std::vector<ScriptValue>& locals) {
+    locals.clear();
+    if (!script) {
+        return;
+    }
+
+    locals.resize(static_cast<size_t>(script->lastVarIndex) + 1);
+    for (const ScriptVariable& variable : script->variables) {
+        if (variable.index < locals.size()) {
+            switch (variable.type) {
+                case ScriptValue::Type::Integer:
+                    locals[variable.index] = ScriptValue::makeInt(variable.defaultValue.toInt());
+                    break;
+                case ScriptValue::Type::Float:
+                    locals[variable.index] = ScriptValue::makeFloat(variable.defaultValue.toFloat());
+                    break;
+                case ScriptValue::Type::String:
+                    locals[variable.index] = ScriptValue::makeString(variable.defaultValue.strVal);
+                    break;
+                case ScriptValue::Type::Ref:
+                    locals[variable.index] = ScriptValue::makeRef(variable.defaultValue.refVal);
+                    break;
+            }
+        }
+    }
+}
+
+}  // namespace
+
 void ExecutionContext::init(const ScriptData* script) {
     script_ = script;
     if (script) {
@@ -20,11 +51,7 @@ void ExecutionContext::init(const ScriptData* script) {
         bytecodeSize_ = script->bytecode.size();
 
         // Initialize local variables from script definition
-        locals_.clear();
-        locals_.resize(script->variables.size());
-        for (size_t i = 0; i < script->variables.size(); ++i) {
-            locals_[i] = script->variables[i].defaultValue;
-        }
+        initialize_locals(script, locals_);
 
         // Initialize references from script definition
         references_.clear();
@@ -57,11 +84,7 @@ void ExecutionContext::reset() {
 
     // Re-initialize locals from script definition
     if (script_) {
-        locals_.clear();
-        locals_.resize(script_->variables.size());
-        for (size_t i = 0; i < script_->variables.size(); ++i) {
-            locals_[i] = script_->variables[i].defaultValue;
-        }
+        initialize_locals(script_, locals_);
     }
 }
 

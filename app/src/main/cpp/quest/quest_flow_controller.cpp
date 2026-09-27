@@ -285,9 +285,6 @@ bool QuestFlowController::advanceStage(uint32_t questFormID, int32_t newStage) {
 }
 
 bool QuestFlowController::setStage(uint32_t questFormID, int32_t stage) {
-    auto it = quests_.find(questFormID);
-    if (it == quests_.end()) return false;
-
     return stageManager_.setStage(questFormID, stage);
 }
 

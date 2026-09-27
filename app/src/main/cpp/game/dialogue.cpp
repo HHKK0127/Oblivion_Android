@@ -140,9 +140,9 @@ void DialogueManager::loadDialoguesFromESM(const oblivion::ESMManager& esmMgr,
 
         // Convert INFO records to DialogueTopics with faction branching
         for (const auto& info : dia.infos) {
-            std::string topicText = !info.promptText.empty()
-                                    ? info.promptText
-                                    : info.editorID;
+            // NAM2 is an acting direction, not player-facing text, so the topic
+            // label falls back to the editor ID.
+            std::string topicText = info.editorID;
             std::string responseText = info.responseText;
 
             if (localization) {

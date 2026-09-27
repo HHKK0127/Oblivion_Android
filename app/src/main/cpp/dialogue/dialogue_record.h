@@ -239,6 +239,9 @@ struct DialogueInfoRecord {
     std::vector<ResponseData> responses; // RESP - response data
     std::string promptText;            // BNAM - player prompt (alternative)
     std::string responseText;          // GNAM - response text (alternative)
+    // NAM2 is a voice-acting direction for the performer, not player-facing
+    // text. Keep it separate so it can never be shown as a prompt.
+    std::string actingNotes;           // NAM2 - acting direction
     uint32_t actorFormID = 0;          // ANAM - speaking actor FormID
     uint32_t infoCount = 0;            // TIFC - info count in topic
     std::vector<DialogueCondition> conditions; // CTDA conditions

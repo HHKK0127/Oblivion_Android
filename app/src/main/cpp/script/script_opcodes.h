@@ -143,8 +143,33 @@ enum class Opcode : uint16_t {
 };
 
 // ============================================================================
+// Native SCDA opcode observations
+//
+// These values describe raw opcodes observed in Oblivion3.esm. They are kept
+// separate from Opcode and FunctionID because native payloads do not use this
+// VM's synthetic stack/call encoding. Do not dispatch these values to
+// ScriptFunctions until their payload contracts are decoded.
+// ============================================================================
+enum class NativeScdaOpcode : uint16_t {
+    Stop = 0x0011,
+    Marker = 0x001C,     // Fixed 4-byte instruction; its length word is a marker value.
+    Prologue = 0x001D,
+
+    // Script-level SCTX/SCDA co-occurrence candidates. The distributions below
+    // were observed in the vanilla Oblivion3.esm census, not inferred ABI.
+    Activate = 0x100D,   // argLength: 2 (349), 5 (27), 10 (512)
+    SetActorValue = 0x100F, // argLength: 7 (16), 9 (291)
+    PlayGroup = 0x1013,  // argLength: 9 (824)
+    Cast = 0x101E,       // argLength: 8 (338)
+    SetStage = 0x1039,   // argLength: 8 (8), 10 (1383)
+    MoveTo = 0x109E,     // argLength: 5 (447), 14 (7), 20 (1), 32 (8)
+};
+
+// ============================================================================
 // Game function IDs (used with CALL opcode)
 // ============================================================================
+// FunctionID values are synthetic VM call IDs. They are not native SCDA opcode
+// values and must not be remapped from NativeScdaOpcode numeric values.
 enum class FunctionID : uint16_t {
     // Tier 1 - Must implement
     SetStage        = 0x0001,
@@ -267,6 +292,21 @@ enum class FunctionID : uint16_t {
     IsPCAmount      = 0x0076,
     GetPCLocation   = 0x0077,
     IsPCLocation    = 0x0078,
+
+    // Tier 3 - Quest flow
+    StartQuest             = 0x0079,
+    StopQuest              = 0x007A,
+    CompleteQuest          = 0x007B,
+    SetObjectiveCompleted  = 0x007C,
+    GetObjectiveCompleted  = 0x007D,
+    IsQuestStageDone       = 0x007E,
+    GetQuestCompleted      = 0x007F,
+    GetQuestStarted        = 0x0080,
+    AddTopic               = 0x0081,
+
+    // Tier 4 - Frequently used aliases observed in vanilla SCTX
+    GetDead                = 0x0082,
+    GetStageDone           = 0x0083,
 };
 
 // ============================================================================

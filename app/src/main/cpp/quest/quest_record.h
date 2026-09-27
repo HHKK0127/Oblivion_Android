@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <functional>
 #include <android/log.h>
+#include "../script/script_context.h"
 
 #define LOG_TAG "QuestRecord"
 #ifdef ENABLE_DEBUG_LOGS
@@ -35,11 +36,13 @@ enum class QuestFlag : uint8_t {
     UNKNOWN_80     = 0x80
 };
 
-// Quest stage flags
+// Quest stage flags. The on-disk QSDT byte is a per-block run-once flag, not a
+// stage flag, so it lives on QuestStageBlock::qsdtFlags. A stage carries no
+// flag byte of its own in the file; the only values that occur are 0x00 and
+// 0x01, and 0x01 marks the block that terminates the quest.
 enum class StageFlag : uint8_t {
-    NONE           = 0x00,
-    COMPLETE_QUEST = 0x01,
-    FAIL_QUEST     = 0x02
+    NONE     = 0x00,
+    RUN_ONCE = 0x01
 };
 
 // ============================================================================
@@ -60,18 +63,35 @@ struct QuestCondition {
 // ============================================================================
 // Quest Stage Entry (per-stage data)
 // ============================================================================
+struct QuestStageBlock {
+    uint16_t scriptIndex = 0;  // QSDT/SCHR block ordinal within the stage
+    uint8_t qsdtFlags = 0;     // Bit 0: run once
+    std::vector<QuestCondition> conditions;
+    std::string logText;
+    oblivion::script::ScriptData script;
+
+    bool hasBytecode() const { return !script.bytecode.empty(); }
+    bool runsOnce() const { return (qsdtFlags & 0x01) != 0; }
+};
+
 struct QuestStageEntry {
     int32_t stageIndex = 0;
     StageFlag flags = StageFlag::NONE;
     std::string logText;
     std::vector<QuestCondition> conditions;
     uint32_t nextQuestFormID = 0;
+    std::vector<QuestStageBlock> blocks;
 
+    // A stage completes its quest when one of its blocks is a run-once block.
+    // The measurement over all 390 QUST records shows QSDT bit 0 predicts
+    // StopQuest far more strongly than position does (67% of flagged blocks
+    // below the highest stage call it against 1% of unflagged ones), so the
+    // flag is the completion signal and there is no separate stage flag byte.
     bool isCompletionStage() const {
-        return (static_cast<uint8_t>(flags) & static_cast<uint8_t>(StageFlag::COMPLETE_QUEST)) != 0;
-    }
-    bool isFailStage() const {
-        return (static_cast<uint8_t>(flags) & static_cast<uint8_t>(StageFlag::FAIL_QUEST)) != 0;
+        for (const auto& block : blocks) {
+            if (block.runsOnce()) return true;
+        }
+        return false;
     }
 };
 
@@ -124,6 +144,9 @@ struct QuestRecord {
     std::vector<QuestStageEntry> stages;
     std::vector<QuestObjectiveEntry> objectives;
     std::vector<QuestTarget> targets;
+    // Quest-level conditions: the 719 CTDA that run after DATA and belong to no
+    // stage. They gate the quest itself.
+    std::vector<QuestCondition> conditions;
 
     uint32_t nextQuestFormID = 0;
     uint32_t extendedFlags = 0;

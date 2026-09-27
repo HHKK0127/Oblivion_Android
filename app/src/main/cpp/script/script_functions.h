@@ -14,6 +14,7 @@
 
 // Forward declarations
 class QuestManager;
+class QuestFlowController;
 class WorldManager;
 class NpcManager;
 class InventoryManager;
@@ -51,7 +52,8 @@ public:
         QuestManager* questMgr,
         WorldManager* worldMgr,
         NpcManager* npcMgr,
-        InventoryManager* invMgr
+        InventoryManager* invMgr,
+        QuestFlowController* questFlowController = nullptr
     );
 
     // Execute a function by ID
@@ -70,6 +72,7 @@ public:
 private:
     // Game system pointers
     QuestManager* questManager_ = nullptr;
+    QuestFlowController* questFlowController_ = nullptr;
     WorldManager* worldManager_ = nullptr;
     NpcManager* npcManager_ = nullptr;
     InventoryManager* inventoryManager_ = nullptr;
@@ -80,6 +83,7 @@ private:
     // Registration helpers
     void registerTier1Functions();
     void registerTier2Functions();
+    void registerTier3Functions();
 
     // --- Tier 1 function implementations ---
     FunctionResult fnSetStage(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
@@ -202,6 +206,19 @@ private:
     FunctionResult fnIsPCAmount(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
     FunctionResult fnGetPCLocation(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
     FunctionResult fnIsPCLocation(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+
+    // --- Tier 3 function implementations ---
+    FunctionResult fnStartQuest(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnCompleteQuest(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnSetObjectiveCompleted(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnGetObjectiveCompleted(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnIsQuestStageDone(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnGetQuestCompleted(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnGetQuestStarted(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+
+    // --- Tier 4 function implementations ---
+    FunctionResult fnGetDead(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnGetStageDone(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
 };
 
 } // namespace script

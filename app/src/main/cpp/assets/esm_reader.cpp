@@ -26,6 +26,24 @@ static inline int32_t  readI32(const uint8_t* p) { int32_t  v; std::memcpy(&v, p
 static inline float    readF32(const uint8_t* p) { float    v; std::memcpy(&v, p, 4); return v; }
 static inline uint16_t readU16(const uint8_t* p) { uint16_t v; std::memcpy(&v, p, 2); return v; }
 
+static void decodeInlineScriptHeader(const SubRecord& sub, script::ScriptData& script) {
+    if (sub.size() < 20) {
+        return;
+    }
+
+    const uint8_t* data = sub.data.data();
+    const uint32_t scriptTypeRaw = readU32(data + 16);
+    script.scriptType = script::ScriptType::Object;
+    if (scriptTypeRaw == 1) {
+        script.scriptType = script::ScriptType::Quest;
+    } else if (scriptTypeRaw == 256) {
+        script.scriptType = script::ScriptType::Magic;
+    }
+    script.refCount = readU32(data + 4);
+    script.compiledLength = readU32(data + 8);
+    script.lastVarIndex = readU32(data + 12);
+}
+
 // Case-insensitive prefix test (BSA and ESM store paths with differing case).
 static inline bool startsWithNoCase(const std::string& value, const char* prefix) {
     size_t i = 0;
@@ -1043,10 +1061,76 @@ void ESMFile::decodeQuest(const ESMRecord& rec) {
     qst.formID = rec.formID;
     qst.editorID = rec.getString("EDID");
     qst.fullName = rec.getString("FULL");
+    qst.questRecord.formID = qst.formID;
+    qst.questRecord.editorID = qst.editorID;
+    qst.questRecord.fullName = qst.fullName;
 
     auto* data = rec.findSubRecord("DATA");
     if (data && data->size() >= 1) {
         qst.flags = data->data[0];
+        qst.questRecord.questFlags = qst.flags;
+        if (data->size() >= 2) {
+            qst.priority = data->data[1];
+            qst.questRecord.priority = qst.priority;
+        }
+    }
+
+    QuestStageEntry* currentStage = nullptr;
+    QuestStageBlock* currentBlock = nullptr;
+    uint16_t blockIndex = 0;
+
+    for (const auto& sub : rec.subRecords) {
+        if (std::memcmp(sub.tag, "INDX", 4) == 0 && sub.size() >= 2) {
+            QuestStageEntry stage;
+            stage.stageIndex = static_cast<int32_t>(readU16(sub.data.data()));
+            qst.questRecord.stages.push_back(std::move(stage));
+            currentStage = &qst.questRecord.stages.back();
+            currentBlock = nullptr;
+            blockIndex = 0;
+        } else if (std::memcmp(sub.tag, "QSDT", 4) == 0 &&
+                   currentStage && sub.size() >= 1) {
+            QuestStageBlock block;
+            block.scriptIndex = blockIndex++;
+            block.qsdtFlags = sub.data[0];
+            block.script.formID = rec.formID;
+            block.script.editorID = qst.editorID;
+            block.script.scriptType = script::ScriptType::Quest;
+            currentStage->blocks.push_back(std::move(block));
+            currentBlock = &currentStage->blocks.back();
+        } else if (std::memcmp(sub.tag, "CTDA", 4) == 0 && currentBlock) {
+            QuestCondition condition;
+            if (QuestRecordParser::parseCondition(
+                    sub.data.data(), sub.size(), condition)) {
+                currentBlock->conditions.push_back(condition);
+            }
+        } else if (std::memcmp(sub.tag, "CNAM", 4) == 0 && currentBlock) {
+            currentBlock->logText.assign(
+                reinterpret_cast<const char*>(sub.data.data()), sub.size());
+            if (!currentBlock->logText.empty() &&
+                currentBlock->logText.back() == '\0') {
+                currentBlock->logText.pop_back();
+            }
+            if (currentStage->logText.empty()) {
+                currentStage->logText = currentBlock->logText;
+            }
+        } else if (std::memcmp(sub.tag, "SCHR", 4) == 0 && currentBlock) {
+            decodeInlineScriptHeader(sub, currentBlock->script);
+        } else if (std::memcmp(sub.tag, "SCDA", 4) == 0 && currentBlock) {
+            // SCDA is split across multiple subrecords when the compiled script
+            // exceeds the u16 subrecord length limit, so every chunk must be
+            // appended rather than replaced.
+            currentBlock->script.bytecode.insert(
+                currentBlock->script.bytecode.end(), sub.data.begin(), sub.data.end());
+        } else if (std::memcmp(sub.tag, "SCTX", 4) == 0 && currentBlock) {
+            currentBlock->script.source.append(
+                reinterpret_cast<const char*>(sub.data.data()), sub.size());
+        } else if (std::memcmp(sub.tag, "SCRO", 4) == 0 &&
+                   currentBlock && sub.size() >= 4) {
+            currentBlock->script.references.push_back(readU32(sub.data.data()));
+        } else if (std::memcmp(sub.tag, "QSTA", 4) == 0) {
+            currentStage = nullptr;
+            currentBlock = nullptr;
+        }
     }
 
     m_quests.push_back(std::move(qst));
@@ -1070,49 +1154,84 @@ void ESMFile::decodeDialog(const ESMRecord& rec) {
     m_lastDialFormID = rec.formID;  // Track for child INFO records
 }
 
-void ESMFile::decodeInfo(const ESMRecord& rec) {
-    InfoData info;
+void decodeInfoRecord(const ESMRecord& rec, InfoData& info) {
     info.formID = rec.formID;
     info.editorID = rec.getString("EDID");
-    info.dialFormID = m_lastDialFormID;
+    info.resultScript.formID = rec.formID;
+    info.resultScript.editorID = info.editorID;
 
     // NAM1 = response text (NPC says this)
     info.responseText = rec.getString("NAM1");
 
-    // NAM2 = prompt text (player says this, optional)
-    info.promptText = rec.getString("NAM2");
+    // NAM2 = acting direction for the performer, not player-facing text.
+    info.actingNotes = rec.getString("NAM2");
 
-    // DATA = info response data
+    // DATA is 3 bytes on 19,276 of 19,278 records, so the old >= 4 guard never
+    // ran and left responseType and flags at zero for every INFO.
     auto* data = rec.findSubRecord("DATA");
-    if (data && data->size() >= 4) {
+    if (data && data->size() >= 1) {
         info.responseType = data->data[0];
-        // flags at bytes 1-3
-        std::memcpy(&info.flags, data->data.data() + 1, 3);
+        if (data->size() >= 2) {
+            info.infoFlags = data->data[1];
+        }
     }
 
-    // TRDT = speaker/trigger data (12 bytes: emotion type, emotion value, response number, speaker)
+    // TRDT is 16 bytes: emotion type, emotion value and a 1-based response
+    // ordinal. Bytes 8..11 are always zero, so there is no speaker FormID here.
     auto* trdt = rec.findSubRecord("TRDT");
-    if (trdt && trdt->size() >= 12) {
-        std::memcpy(&info.speakerFormID, trdt->data.data() + 8, 4);
-    }
-
-    // ANAM = faction FormID condition
-    info.factionFormID = rec.getFormID("ANAM");
-
-    // CNAM = faction rank condition
-    auto* cnam = rec.findSubRecord("CNAM");
-    if (cnam && cnam->size() >= 4) {
-        std::memcpy(&info.factionRank, cnam->data.data(), 4);
+    if (trdt && trdt->size() >= 13) {
+        info.emotionType = trdt->data[0];
+        info.emotionValue = trdt->data[4];
+        info.responseNumber = trdt->data[12];
     }
 
     // QSTI = linked quest FormID
     info.questFormID = rec.getFormID("QSTI");
 
-    // QSTN = required quest stage
-    auto* qstn = rec.findSubRecord("QSTN");
-    if (qstn && qstn->size() >= 4) {
-        std::memcpy(&info.questStage, qstn->data.data(), 4);
+    // ANAM, CNAM and QSTN do not occur in INFO records. Faction and quest
+    // requirements live in CTDA conditions, so read them from there.
+    for (const auto& sub : rec.subRecords) {
+        if (std::memcmp(sub.tag, "CTDA", 4) == 0) {
+            QuestCondition condition;
+            if (QuestRecordParser::parseCondition(
+                    sub.data.data(), sub.size(), condition)) {
+                const char* functionName =
+                    QuestCondition::getFunctionName(condition.functionIndex);
+                if (functionName) {
+                    const std::string name(functionName);
+                    if (name == "GetFactionRank" || name == "GetInFaction") {
+                        info.factionFormID = condition.param1;
+                        info.factionRank =
+                            static_cast<int32_t>(condition.comparisonValue);
+                    } else if (name == "GetStage" || name == "GetStageDone") {
+                        info.questStage =
+                            static_cast<int32_t>(condition.comparisonValue);
+                    }
+                }
+            }
+        }
     }
+
+    for (const auto& sub : rec.subRecords) {
+        if (std::memcmp(sub.tag, "SCHR", 4) == 0) {
+            decodeInlineScriptHeader(sub, info.resultScript);
+        } else if (std::memcmp(sub.tag, "SCDA", 4) == 0) {
+            // Concatenate every chunk: long scripts are split across subrecords.
+            info.resultScript.bytecode.insert(
+                info.resultScript.bytecode.end(), sub.data.begin(), sub.data.end());
+        } else if (std::memcmp(sub.tag, "SCTX", 4) == 0) {
+            info.resultScript.source.append(
+                reinterpret_cast<const char*>(sub.data.data()), sub.size());
+        } else if (std::memcmp(sub.tag, "SCRO", 4) == 0 && sub.size() >= 4) {
+            info.resultScript.references.push_back(readU32(sub.data.data()));
+        }
+    }
+}
+
+void ESMFile::decodeInfo(const ESMRecord& rec) {
+    InfoData info;
+    info.dialFormID = m_lastDialFormID;
+    decodeInfoRecord(rec, info);
 
     // Attach to parent DIAL
     for (auto& dia : m_dialogs) {
@@ -2343,18 +2462,21 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
                  lastVarIndex, refCount);
         }
 
-        // SCDA: compiled bytecode
-        auto* scda = rec.findSubRecord("SCDA");
-        if (scda && !scda->data.empty()) {
-            script.bytecode = scda->data;
+        // SCDA: compiled bytecode. Long scripts are split across several SCDA
+        // subrecords, so every chunk is concatenated in record order.
+        for (const auto& sub : rec.subRecords) {
+            if (std::memcmp(sub.tag, "SCDA", 4) == 0 && !sub.data.empty()) {
+                script.bytecode.insert(script.bytecode.end(),
+                                       sub.data.begin(), sub.data.end());
+            }
         }
 
         // SCTX: script source text (optional, for debugging)
-        auto* sctx = rec.findSubRecord("SCTX");
-        if (sctx && !sctx->data.empty()) {
-            script.source = std::string(
-                reinterpret_cast<const char*>(sctx->data.data()),
-                sctx->data.size());
+        for (const auto& sub : rec.subRecords) {
+            if (std::memcmp(sub.tag, "SCTX", 4) == 0 && !sub.data.empty()) {
+                script.source.append(
+                    reinterpret_cast<const char*>(sub.data.data()), sub.data.size());
+            }
         }
 
         // SLSD: variable data (24 bytes). Measured on Oblivion.esm: only two bytes
