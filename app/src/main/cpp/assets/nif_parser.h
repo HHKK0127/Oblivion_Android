@@ -196,4 +196,11 @@ private:
                               std::vector<NIFTriangle>& out);
     bool parseMaterialProperty();
     bool parseTexturingProperty();
+
+    // Phase 66: follow a NiTexturingProperty base-texture slot to the
+    // NiSourceTexture it names and return that block's File Name. Both bodies
+    // are variable length and sit in the same file, so the walker's recorded
+    // block ranges are used to reach them.
+    bool resolveTexturePath(uint32_t texturingBlockIndex, std::string& outPath);
+    bool readSourceTexturePath(uint32_t sourceTextureBlockIndex, std::string& outPath);
 };

@@ -568,6 +568,108 @@ bool NIFParser::parseTexturingProperty() {
     return true;
 }
 
+// NiTexturingProperty -> base texture slot -> NiSourceTexture -> File Name.
+// nif.xml TexDesc starts with the Source ref, so only that first field is read
+// and the rest of the descriptor is skipped by the same widths the walker uses.
+bool NIFParser::resolveTexturePath(uint32_t texturingBlockIndex, std::string& outPath) {
+    if (texturingBlockIndex >= getBlockCount()) {
+        return false;
+    }
+    if (getBlockTypeName(texturingBlockIndex) != "NiTexturingProperty") {
+        return false;
+    }
+
+    size_t bodyOffset = 0;
+    if (!locateBlockBody(texturingBlockIndex, bodyOffset)) {
+        return false;
+    }
+    const size_t savedCursor = cursor;
+    const bool savedError = readError;
+    setCursor(bodyOffset);
+    readError = false;
+
+    skipNiObjectNET();
+    if (header.version <= 0x0A000102) {
+        skipBytes(2);                               // Flags (until 10.0.1.2)
+    }
+    skipBytes(4);                                   // Apply Mode
+    const uint32_t textureCount = readUInt32();
+    if (readError || textureCount == 0) {
+        setCursor(savedCursor);
+        readError = savedError;
+        return false;
+    }
+
+    // The base texture is slot 0. Its TexDesc leads with the Source ref.
+    const uint8_t hasBaseTexture = readUInt8();
+    if (readError || hasBaseTexture == 0) {
+        setCursor(savedCursor);
+        readError = savedError;
+        return false;
+    }
+    const uint32_t sourceRef = readUInt32();
+
+    setCursor(savedCursor);
+    readError = savedError;
+
+    if (readError) {
+        return false;
+    }
+    return readSourceTexturePath(sourceRef, outPath);
+}
+
+// NiSourceTexture: the NiObjectNET header, then the external/internal flags that
+// decide whether a File Name is stored at all. Everything past it (Pixel Data,
+// Format Prefs, Is Static, Direct Render) is skipped by the walker's widths.
+bool NIFParser::readSourceTexturePath(uint32_t sourceTextureBlockIndex, std::string& outPath) {
+    if (sourceTextureBlockIndex >= getBlockCount()) {
+        return false;
+    }
+    if (getBlockTypeName(sourceTextureBlockIndex) != "NiSourceTexture") {
+        return false;
+    }
+
+    size_t bodyOffset = 0;
+    if (!locateBlockBody(sourceTextureBlockIndex, bodyOffset)) {
+        return false;
+    }
+    const size_t savedCursor = cursor;
+    const bool savedError = readError;
+    setCursor(bodyOffset);
+    readError = false;
+
+    skipNiObjectNET();
+    const uint8_t useExternal = readUInt8();
+
+    bool found = false;
+    if (header.version < 0x0A010000) {
+        // Pre-10.1 files store File Name only for external textures; internal
+        // ones carry the pixels inline and name nothing.
+        if (useExternal != 0) {
+            found = readString(outPath);
+        }
+    } else {
+        // 10.1+ always stores File Name, external or not.
+        found = readString(outPath);
+    }
+    if (readError) {
+        found = false;
+    }
+
+    setCursor(savedCursor);
+    readError = savedError;
+
+    if (found) {
+        // Retail paths use backslashes; every consumer resolves forward slashes.
+        for (char& c : outPath) {
+            if (c == '\\') {
+                c = '/';
+            }
+        }
+    }
+    return found && !outPath.empty();
+}
+
 // ---------------------------------------------------------------------------
 // Block body walker
 // ---------------------------------------------------------------------------
@@ -2528,7 +2630,21 @@ bool NIFParser::parseGeometryNode(uint32_t blockIndex, std::shared_ptr<NIFNode>&
     }
 
     node->hasGeometry = readGeometryData(dataRef, dataType, node->geometry);
-    return node->hasGeometry;
+    if (!node->hasGeometry) {
+        return false;
+    }
+
+    // Resolve the diffuse texture once the shape body has been fully consumed,
+    // because the resolver moves the cursor into two other block bodies. A shape
+    // whose NiTexturingProperty names no base texture keeps an empty string,
+    // which is what the material builder treats as "untextured".
+    if (node->geometry.texturingPropertyIndex != 0xFFFFFFFFu) {
+        std::string diffusePath;
+        if (resolveTexturePath(node->geometry.texturingPropertyIndex, diffusePath)) {
+            node->geometry.diffuseTexture = diffusePath;
+        }
+    }
+    return true;
 }
 
 // NiGeometryData plus the per-type tail. The field order mirrors
