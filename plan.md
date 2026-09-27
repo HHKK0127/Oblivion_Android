@@ -1278,6 +1278,17 @@ Acceptance criteria, in order:
 4. `getDoorInfo` reports `DoorManager::getDoorCount()` plus the nearest door, so the device log states a number instead of "Active".
 5. No regression: the host suites at WS-C's own revision (counted from `tools/host_tests/host_runner_main.cpp`, never quoted from memory) plus `gradlew assembleDebug`.
 
+**LOD increment: measured prerequisites (2026-09-27, at `6dced75d`)**
+
+Not yet assigned; recorded here because the doors section above already orders the LOD increment after it and the gap turned out to be narrower than "`renderer.cpp:2232` hands the weave a `nullptr`" suggests.
+
+- `world/distant_lod/distant_lod_manager.{h,cpp}` is a complete `DistantLodManager` singleton (`initialize()` at `:23`, mesh generation at `:97`, horizon ring at `:366`, frustum culling at `:533`, GPU upload at `:606`, `update()` at `:270`, `render()` at `:275`), and `engine/imperial_weave.cpp` already drives it (`:381` update, `:388-389` render) - both gated on the `distantLodManager_` member.
+- **That member is never set.** `engine/renderer.cpp:2232` passes `nullptr` for the `DistantLodManager` argument and `engine/imperial_weave.cpp:109` copies it into the member, so the gate at `:381` is always false in a real session.
+- The one wiring that exists does not reach the member: `Java_com_example_oblivion_GameRenderer_nativeInitDistantLod` (`jni_bridge.cpp:440`) calls the singleton's `initialize()` and then `getLocator().registerService(&dlod)` (`:457`), which only fills the locator - and **nothing in the tree resolves a service out of the locator** (a search for `locator_.get` / `locator_.find` / `getLocator().get` matches zero call sites), so the registration is inert.
+- **Nothing calls that JNI entry point at all**: `nativeInitDistantLod` has no Kotlin or Java caller anywhere under `app/src`, so even the inert wiring never runs and the singleton is never initialized.
+- Naming hazard for whoever takes this: two different classes are both called `LODSystem` in the global namespace - `world/lod_system.{h,cpp}` (161 lines of header, 11,588 bytes, the one in `app/src/main/cpp/CMakeLists.txt:90`) and `engine/lod_system.{h,cpp}` (164 lines, 5,565 bytes, not compiled). They declare the same class name, the same `LODConfig`/`LODLevel` struct names and overlapping out-of-line methods (`LODSystem::initialize(const LODConfig&)`, `clear()`), so adding the second to the build reproduces the duplicate-definition failure that `cf4ddb6b` had to fix for `QuestFlowController`. The increment has to say which one is authoritative before touching either.
+- The single wiring point is therefore `engine/renderer.cpp:2232` - a hub file, so the host suites (which do not compile `renderer.{cpp,h}`) cannot detect a mistake there and `assembleDebug` is the only gate, as the doors section already notes.
+
 **WS-C correction: the `WTHR` `NAM0` colour block is field-major, and its bytes are RGB (verified 2026-09-26)**
 
 The "4 time-of-day blocks of 40 bytes" reading that `assets/esm_reader.cpp:2899-2912` implements (and that
