@@ -44,6 +44,14 @@ app/src/main/assets/textures/ui/oblivion_crest.png
 /*.png
 /*.xml
 
+# Local debug screenshots moved out of the repo root. Kept on disk for
+# reference only; never redistributed or uploaded.
+/screenshots/
+
+# Repo-root scratch area for temporary files (build logs, UI dumps, local
+# APK output). Local-only; never uploaded.
+/tmp/
+
 # Keystore (sensitive)
 *.keystore
 
