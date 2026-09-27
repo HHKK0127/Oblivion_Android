@@ -1280,7 +1280,7 @@ Acceptance criteria, in order:
 
 **LOD increment: measured prerequisites (2026-09-27, at `6dced75d`)**
 
-Not yet assigned; recorded here because the doors section above already orders the LOD increment after it and the gap turned out to be narrower than "`renderer.cpp:2232` hands the weave a `nullptr`" suggests.
+Not yet assigned; recorded here because the doors section above already orders the LOD increment after it and the gap turned out to be wider than "`renderer.cpp:2232` hands the weave a `nullptr`" suggests.
 
 - `world/distant_lod/distant_lod_manager.{h,cpp}` is a complete `DistantLodManager` singleton (`initialize()` at `:23`, mesh generation at `:97`, horizon ring at `:366`, frustum culling at `:533`, GPU upload at `:606`, `update()` at `:270`, `render()` at `:275`), and `engine/imperial_weave.cpp` already drives it (`:381` update, `:388-389` render) - both gated on the `distantLodManager_` member.
 - **That member is never set.** `engine/renderer.cpp:2232` passes `nullptr` for the `DistantLodManager` argument and `engine/imperial_weave.cpp:109` copies it into the member, so the gate at `:381` is always false in a real session.
