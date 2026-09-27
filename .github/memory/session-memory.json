@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-27T11:07:00Z",
+  "lastUpdated": "2026-09-27T11:20:00",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -4755,10 +4755,25 @@
         "phase-67"
       ],
       "compressed": false
+    },
+    {
+      "id": "04e3e58e-fe23-4e92-b300-0bf3577652ae",
+      "timestamp": "2026-09-27T11:20:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "The user granted the go (2026-09-27) for Script VM's first batch of 20 function ids 0x0084-0x0097 (GetAngle through SetAlert), superseding the parent session 30cbb1e4's standing instruction not to add new ids. Relayed to WS-B (0c8d192d) at branch tip b353809a, together with two constraints: WS-B must still not merge, rebase or push master (a closed gate is a precondition, not approval to move the shared branch), and each increment must land alone. plan.md committed this as 073a5227.",
+      "tags": [
+        "workstream-coordination",
+        "script-vm",
+        "approval",
+        "ws-b",
+        "plan"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 330,
+    "totalEntries": 331,
     "compressedCount": 2,
     "sessionCount": 29
   }
