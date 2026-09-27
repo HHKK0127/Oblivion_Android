@@ -183,6 +183,17 @@ private:
     bool parseNiNode(std::shared_ptr<NIFNode>& node);
     bool parseNiTriShape(std::shared_ptr<NIFNode>& node);
     bool parseNiTriStrips(std::shared_ptr<NIFNode>& node);
+    bool parseGeometryTransform(std::shared_ptr<NIFNode>& node);
+
+    // Phase 66: decode NiTriShape/NiTriStrips scene blocks and their
+    // NiTriShapeData/NiTriStripsData payloads into the node table.
+    bool parseGeometryBlocks();
+    bool parseGeometryNode(uint32_t blockIndex, std::shared_ptr<NIFNode>& node);
+    bool readGeometryData(uint32_t blockIndex, const std::string& typeName,
+                          NIFGeometry& geometry);
+    void appendStripTriangles(const std::vector<uint16_t>& points,
+                              const std::vector<uint16_t>& stripLengths,
+                              std::vector<NIFTriangle>& out);
     bool parseMaterialProperty();
     bool parseTexturingProperty();
 };

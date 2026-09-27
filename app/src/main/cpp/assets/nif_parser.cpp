@@ -127,6 +127,10 @@ bool NIFParser::parseFile(const std::string& filepath) {
     if (walkAllBlocks()) {
         LOGD("NIF block walk: %zu blocks, prefix=%u",
              blockBodyOffsets.size(), blockPrefix);
+        // The scene blocks hold the mesh, so they are decoded once the walk has
+        // made their bodies addressable. Meshes without geometry (collision
+        // only, markers, particles) legitimately report nothing here.
+        parseGeometryBlocks();
     } else {
         LOGW("NIF block walk failed (%s); block-anchored readers unavailable",
              walkError.c_str());
@@ -514,10 +518,11 @@ NIFMatrix3x3 NIFParser::readMatrix3x3() {
     return matrix;
 }
 
+// NiAVObject stores Translation, then Rotation, then Scale.
 NIFTransform NIFParser::readTransform() {
     NIFTransform transform;
-    transform.rotation = readMatrix3x3();
     transform.translation = readVector3();
+    transform.rotation = readMatrix3x3();
     transform.scale = readFloat();
     return transform;
 }
@@ -533,19 +538,24 @@ bool NIFParser::parseNiNode(std::shared_ptr<NIFNode>& node) {
 }
 
 bool NIFParser::parseNiTriShape(std::shared_ptr<NIFNode>& node) {
-    LOGD("Parsing NiTriShape: %s", node->name.c_str());
-    node->hasGeometry = true;
-    node->geometry.name = node->name;
-    node->geometry.transform = readTransform();
-    return true;
+    return parseGeometryTransform(node);
 }
 
 bool NIFParser::parseNiTriStrips(std::shared_ptr<NIFNode>& node) {
-    LOGD("Parsing NiTriStrips: %s", node->name.c_str());
+    return parseGeometryTransform(node);
+}
+
+// NiAVObject: Flags | Translation | Rotation | Scale. The same field order as
+// skipNiAVObject(), which is what measured this block during the walk.
+bool NIFParser::parseGeometryTransform(std::shared_ptr<NIFNode>& node) {
     node->hasGeometry = true;
     node->geometry.name = node->name;
+    skipBytes(2);                                   // Flags
     node->geometry.transform = readTransform();
-    return true;
+    if (!header.hasBlockTypeTable) {
+        skipBytes(12);                              // Velocity (until 4.2.2.0)
+    }
+    return !readError;
 }
 
 bool NIFParser::parseMaterialProperty() {
@@ -1700,9 +1710,10 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
         }
         skipRefArray(numInterpolators);
         // The int list that 10.2.0.0 appends after the interpolator refs is
-        // guarded by a BS version above 9. The 10.1.0.106 menus report 5 and
-        // the 10.2.0.0 meshes 6 or 9, so only the 20.0.0.4 meshes carry it.
-        if (header.version >= VERSION_10_2_0_0 && header.version < VERSION_20_0_0_5 &&
+        // guarded by a BS version above 9. nif.xml bounds it with
+        // until="20.0.0.5", which is inclusive, so the 20.0.0.5 meshes carry it
+        // too: bow.nif has Num Unknown Ints = 2 right here.
+        if (header.version >= VERSION_10_2_0_0 && header.version <= VERSION_20_0_0_5 &&
             bsVersion() > 9) {
             const uint32_t numUnknownInts = readUInt32();
             if (readError) {
@@ -2141,6 +2152,62 @@ bool NIFParser::walkBlockBody(const std::string& typeName) {
             default: break;
         }
         skipBytes(4 + 4);                       // Tau, Damping
+    // --- Havok packed triangle data ----------------------------------------
+    } else if (typeName == "hkPackedNiTriStripsData") {
+        // Shipped on the Shivering Isles (20.0.0.5) meshes. ruinsonroomfloora01
+        // measures the block as 96 bytes with two triangles and four vertices,
+        // matching nif.xml field for field: the triangle count is a uint, not
+        // the ushort of the pre-BSVER-34 reads, and the payload is always
+        // materialised (there is no "Has Data" flag).
+        const uint32_t numTriangles = readUInt32();
+        if (readError) {
+            return false;
+        }
+        // TriangleData = Triangle (3 x ushort) + Welding Info (ushort) plus the
+        // triangle normal, which nif.xml drops after 20.0.0.5.
+        const size_t triangleSize = 6 + 2 + (header.version <= 0x14000005 ? 12 : 0);
+        skipBytes(static_cast<size_t>(numTriangles) * triangleSize);
+        const uint32_t numVertices = readUInt32();
+        if (readError) {
+            return false;
+        }
+        if (header.version >= 0x14020007) {
+            // From 20.2.0.7 on the vertices may be half-precision and the sub
+            // part data moved into this block.
+            const uint8_t compressed = readUInt8();
+            if (readError) {
+                return false;
+            }
+            skipBytes(static_cast<size_t>(numVertices) * (compressed != 0 ? 6 : 12));
+            const uint16_t numSubShapes = readUInt16();
+            if (readError) {
+                return false;
+            }
+            skipBytes(static_cast<size_t>(numSubShapes) * 12);   // hkSubPartData
+        } else {
+            skipVector3Array(numVertices);
+        }
+    } else if (typeName == "bhkPackedNiTriStripsShape") {
+        // Shipped on the Shivering Isles (20.0.0.5) meshes. ruinsonroomfloora01
+        // measures the block as 70 bytes with one sub shape, matching nif.xml:
+        // hkSubPartData is a HavokFilter (4 bytes), the sub-shape vertex count
+        // and the Havok material, and the sub shape list only exists up to and
+        // including 20.0.0.5.
+        if (header.version <= 0x14000005) {
+            const uint16_t numSubShapes = readUInt16();
+            if (readError) {
+                return false;
+            }
+            skipBytes(static_cast<size_t>(numSubShapes) * 12);
+        }
+        skipBytes(4);                           // User Data
+        skipBytes(4);                           // Unused 01
+        skipBytes(4);                           // Radius
+        skipBytes(4);                           // Unused 02
+        skipBytes(16);                          // Scale
+        skipBytes(4);                           // Radius Copy
+        skipBytes(16);                          // Scale Copy
+        skipBytes(4);                           // Data reference
     } else {
         return false;
     }
@@ -2349,6 +2416,300 @@ std::vector<NIFGeometry> NIFParser::extractAllGeometry() const {
         }
     }
     return geometries;
+}
+
+// ============================================================
+// Phase 66: Mesh geometry (NiTriShape / NiTriStrips)
+// ============================================================
+// extractAllGeometry() reports whatever a node carries, so the scene blocks and
+// their geometry payloads have to be decoded first. Both halves are anchored on
+// the byte ranges recorded by walkAllBlocks(), which is the only way to reach a
+// variable-length body in a file that stores no block size table.
+
+bool NIFParser::parseGeometryBlocks() {
+    if (!blocksWalked) {
+        return false;
+    }
+
+    size_t meshCount = 0;
+    const uint32_t blockCount = getBlockCount();
+    for (uint32_t index = 0; index < blockCount; index++) {
+        const std::string typeName = getBlockTypeName(index);
+        if (typeName != "NiTriShape" && typeName != "NiTriStrips") {
+            continue;
+        }
+        if (index >= nodes.size() || !nodes[index]) {
+            continue;
+        }
+        if (parseGeometryNode(index, nodes[index])) {
+            ++meshCount;
+        }
+    }
+
+    readError = false;
+    LOGD("NIF geometry: %zu of %u blocks carry a mesh", meshCount, blockCount);
+    return meshCount > 0;
+}
+
+// NiTriShape / NiTriStrips: the NiObjectNET name, the NiAVObject transform and
+// properties, then the NiGeometry payload reference. The byte order matches
+// skipNiGeometry() in the walker, which produced this block's range.
+bool NIFParser::parseGeometryNode(uint32_t blockIndex, std::shared_ptr<NIFNode>& node) {
+    size_t bodyOffset = 0;
+    if (!locateBlockBody(blockIndex, bodyOffset)) {
+        return false;
+    }
+    setCursor(bodyOffset);
+    readError = false;
+
+    const std::string typeName = getBlockTypeName(blockIndex);
+
+    if (!readString(node->name)) {
+        return false;
+    }
+    const uint32_t extraDataCount = readUInt32();
+    if (readError) {
+        return false;
+    }
+    skipRefArray(extraDataCount);
+    skipBytes(4);                                   // Controller
+
+    if (typeName == "NiTriStrips") {
+        if (!parseNiTriStrips(node)) {
+            return false;
+        }
+    } else if (!parseNiTriShape(node)) {
+        return false;
+    }
+
+    // The material and texturing properties are refs into the block table, so
+    // they are recorded by index for the caller to resolve.
+    const uint32_t propertyCount = readUInt32();
+    if (readError) {
+        return false;
+    }
+    for (uint32_t i = 0; i < propertyCount; i++) {
+        const uint32_t propertyRef = readUInt32();
+        if (readError) {
+            return false;
+        }
+        const std::string propertyType = getBlockTypeName(propertyRef);
+        if (propertyType == "NiMaterialProperty" &&
+            node->geometry.materialPropertyIndex == 0xFFFFFFFFu) {
+            node->geometry.materialPropertyIndex = propertyRef;
+        } else if (propertyType == "NiTexturingProperty" &&
+                   node->geometry.texturingPropertyIndex == 0xFFFFFFFFu) {
+            node->geometry.texturingPropertyIndex = propertyRef;
+        }
+    }
+
+    skipBytes(4);                                   // Collision Object
+
+    const uint32_t dataRef = readUInt32();
+    skipBytes(4);                                   // Skin Instance
+    const uint8_t hasShader = readUInt8();
+    if (readError) {
+        return false;
+    }
+    if (hasShader != 0) {
+        std::string shaderName;
+        if (!readString(shaderName)) {
+            return false;
+        }
+        skipBytes(4);                               // Shader Extra Data
+    }
+
+    const std::string dataType = getBlockTypeName(dataRef);
+    if (dataType != "NiTriShapeData" && dataType != "NiTriStripsData") {
+        LOGD("Geometry block %u (%s): Data ref %u is %s, no mesh",
+             blockIndex, typeName.c_str(), dataRef,
+             dataType.empty() ? "out of range" : dataType.c_str());
+        return false;
+    }
+
+    node->hasGeometry = readGeometryData(dataRef, dataType, node->geometry);
+    return node->hasGeometry;
+}
+
+// NiGeometryData plus the per-type tail. The field order mirrors
+// skipNiGeometryData(), and the two must stay in step or the strip/triangle
+// payload below the shared header lands on the wrong bytes.
+bool NIFParser::readGeometryData(uint32_t blockIndex, const std::string& typeName,
+                                 NIFGeometry& geometry) {
+    size_t bodyOffset = 0;
+    if (!locateBlockBody(blockIndex, bodyOffset)) {
+        return false;
+    }
+    setCursor(bodyOffset);
+    readError = false;
+
+    if (header.version >= 0x0A010072) {
+        skipBytes(4);                               // Group ID (since 10.1.0.114)
+    }
+    const uint32_t numVertices = readUInt16();
+    if (readError) {
+        return false;
+    }
+    if (header.version >= 0x0A010000) {
+        skipBytes(2);                               // Keep Flags, Compress Flags
+    }
+    if (readUInt8() != 0) {                         // Has Vertices
+        geometry.vertices.reserve(numVertices);
+        for (uint32_t i = 0; i < numVertices && !readError; i++) {
+            geometry.vertices.push_back(readVector3());
+        }
+        if (readError) {
+            return false;
+        }
+    }
+
+    const uint16_t dataFlags = readUInt16();
+    if (readError) {
+        return false;
+    }
+    if (readUInt8() != 0) {                         // Has Normals
+        geometry.normals.reserve(numVertices);
+        for (uint32_t i = 0; i < numVertices && !readError; i++) {
+            geometry.normals.push_back(readVector3());
+        }
+        if (readError) {
+            return false;
+        }
+        // Tangents are only present on the 10.1+ streams, where Data Flags bit
+        // 12 gates them; the 20.x meshes this port ships carry none.
+        if (header.version >= 0x0A010000 && (dataFlags & 0x1000) != 0) {
+            skipVector3Array(numVertices * 2);      // Tangents, Bitangents
+        }
+    }
+
+    skipBytes(16);                                  // Bounding Sphere
+
+    if (readUInt8() != 0) {                         // Has Vertex Colors
+        geometry.colors.reserve(numVertices);
+        for (uint32_t i = 0; i < numVertices && !readError; i++) {
+            geometry.colors.push_back(readVector4());
+        }
+        if (readError) {
+            return false;
+        }
+    }
+
+    // The low six bits of Data Flags hold the number of UV sets. Only the first
+    // set is kept, because a mesh material samples a single diffuse texture.
+    const uint32_t uvSets = dataFlags & 63;
+    if (uvSets != 0) {
+        geometry.texCoords.reserve(numVertices);
+        for (uint32_t i = 0; i < numVertices && !readError; i++) {
+            const float u = readFloat();
+            const float v = readFloat();
+            geometry.texCoords.push_back(glm::vec2(u, v));
+        }
+        if (readError) {
+            return false;
+        }
+        if (uvSets > 1) {
+            skipBytes(static_cast<size_t>(uvSets - 1) * numVertices * 8);
+        }
+    }
+
+    skipBytes(2);                                   // Consistency Flags
+    if (header.version >= 0x14000004) {
+        skipBytes(4);                               // Additional Data (since 20.0.0.4)
+    }
+
+    if (typeName == "NiTriShapeData") {
+        const uint32_t numTriangles = readUInt16();
+        skipBytes(4);                               // Num Triangle Points
+        bool hasTriangles = true;                   // Unconditional until 10.0.1.2
+        if (header.version >= 0x0A010000) {
+            hasTriangles = readUInt8() != 0;        // Has Triangles (since 10.1.0.0)
+        }
+        if (readError) {
+            return false;
+        }
+        if (hasTriangles) {
+            geometry.triangles.reserve(numTriangles);
+            for (uint32_t i = 0; i < numTriangles && !readError; i++) {
+                NIFTriangle triangle;
+                triangle.v0 = readUInt16();
+                triangle.v1 = readUInt16();
+                triangle.v2 = readUInt16();
+                geometry.triangles.push_back(triangle);
+            }
+            if (readError) {
+                return false;
+            }
+        }
+        return !geometry.vertices.empty();
+    }
+
+    skipBytes(2);                                   // Num Triangles
+    const uint32_t numStrips = readUInt16();
+    if (readError) {
+        return false;
+    }
+    std::vector<uint16_t> stripLengths(numStrips);
+    size_t totalPoints = 0;
+    for (uint32_t i = 0; i < numStrips && !readError; i++) {
+        stripLengths[i] = readUInt16();
+        totalPoints += stripLengths[i];
+    }
+    if (readError) {
+        return false;
+    }
+    const uint8_t hasPoints = header.version >= 0x0A010003 ? readUInt8() : 1;
+    if (readError) {
+        return false;
+    }
+    if (hasPoints != 0) {
+        // A corrupt strip length can claim more points than the file holds, so
+        // the payload is measured against the remaining bytes before it is
+        // allocated.
+        const size_t remaining = cursor <= fileBuffer.size()
+                                     ? fileBuffer.size() - cursor : 0;
+        if (totalPoints > remaining / 2) {
+            LOGE("NiTriStripsData block %u: %zu strip points exceed the %zu bytes left",
+                 blockIndex, totalPoints, remaining);
+            return false;
+        }
+        std::vector<uint16_t> points(totalPoints);
+        for (size_t i = 0; i < totalPoints && !readError; i++) {
+            points[i] = readUInt16();
+        }
+        if (readError) {
+            return false;
+        }
+        appendStripTriangles(points, stripLengths, geometry.triangles);
+    }
+
+    return !geometry.vertices.empty();
+}
+
+// A strip of n points yields n-2 triangles. Every other triangle is wound the
+// other way, which is what keeps the facing consistent along the shared edge.
+void NIFParser::appendStripTriangles(const std::vector<uint16_t>& points,
+                                     const std::vector<uint16_t>& stripLengths,
+                                     std::vector<NIFTriangle>& out) {
+    size_t offset = 0;
+    for (const uint16_t stripLength : stripLengths) {
+        if (offset + stripLength > points.size()) {
+            return;
+        }
+        for (size_t i = 0; i + 2 < stripLength; i++) {
+            NIFTriangle triangle;
+            if ((i % 2) == 0) {
+                triangle.v0 = points[offset + i];
+                triangle.v1 = points[offset + i + 1];
+                triangle.v2 = points[offset + i + 2];
+            } else {
+                triangle.v0 = points[offset + i + 1];
+                triangle.v1 = points[offset + i];
+                triangle.v2 = points[offset + i + 2];
+            }
+            out.push_back(triangle);
+        }
+        offset += stripLength;
+    }
 }
 
 // ============================================

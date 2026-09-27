@@ -198,8 +198,10 @@ struct NIFGeometry {
     // Material/Texture references
     std::string diffuseTexture;
     std::string normalTexture;
-    uint32_t materialPropertyIndex;
-    uint32_t texturingPropertyIndex;
+    // Block table indices of the attached properties, or 0xFFFFFFFF when the
+    // scene block has none. Set by NIFParser::parseGeometryNode().
+    uint32_t materialPropertyIndex = 0xFFFFFFFFu;
+    uint32_t texturingPropertyIndex = 0xFFFFFFFFu;
 };
 
 // NIF Node (base structure)
