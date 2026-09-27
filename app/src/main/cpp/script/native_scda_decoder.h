@@ -256,6 +256,19 @@ struct NativeReferenceEntry {
     uint32_t variableIndex = 0; // SLSD/SCVR variable index when kind == LocalRef
 };
 
+// Resolves a 1-based index into a table, the shape both selector spaces share.
+//
+// The `r`/`Z` slot space and the `0x001C` call selector space are different
+// tables, but they agree on the addressing rule: index 0 is not a valid
+// selector, and an index past the end is an explicit error rather than a
+// guessed reference. Keeping that rule in one place means the two spaces cannot
+// drift apart on the boundary they share.
+bool resolveNativeTableIndex(uint16_t index,
+                             size_t tableSize,
+                             const char* spaceName,
+                             size_t& out,
+                             std::string& error);
+
 // Resolves a 1-based `r`/`Z` slot against a script's reference table.
 //
 // The table is the SCPT record's ref subrecords in file order: slot k is the
