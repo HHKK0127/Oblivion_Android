@@ -331,6 +331,26 @@ const char* ScriptDisasm::getFunctionName(uint16_t funcID) {
         case FunctionID::AddTopic: return "AddTopic";
         case FunctionID::GetDead: return "GetDead";
         case FunctionID::GetStageDone: return "GetStageDone";
+        case FunctionID::GetAngle: return "GetAngle";
+        case FunctionID::SetAngle: return "SetAngle";
+        case FunctionID::GetStartingAngle: return "GetStartingAngle";
+        case FunctionID::GetStartingPos: return "GetStartingPos";
+        case FunctionID::GetPosX: return "GetPosX";
+        case FunctionID::GetPosY: return "GetPosY";
+        case FunctionID::GetPosZ: return "GetPosZ";
+        case FunctionID::SetPosX: return "SetPosX";
+        case FunctionID::SetPosY: return "SetPosY";
+        case FunctionID::SetPosZ: return "SetPosZ";
+        case FunctionID::GetScale: return "GetScale";
+        case FunctionID::SetScale: return "SetScale";
+        case FunctionID::GetDisabled: return "GetDisabled";
+        case FunctionID::GetInSameCell: return "GetInSameCell";
+        case FunctionID::GetLineOfSight: return "GetLineOfSight";
+        case FunctionID::GetCurrentAIPackage: return "GetCurrentAIPackage";
+        case FunctionID::GetIsCurrentPackage: return "GetIsCurrentPackage";
+        case FunctionID::GetIsUsedItem: return "GetIsUsedItem";
+        case FunctionID::GetIsUsedItemType: return "GetIsUsedItemType";
+        case FunctionID::SetAlert: return "SetAlert";
         default: return "Unknown";
     }
 }
