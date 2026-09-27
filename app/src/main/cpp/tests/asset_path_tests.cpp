@@ -147,6 +147,31 @@ bool AssetPathTests::runAllTests() {
         record("candidates contain no duplicates", unique);
     }
 
+    // 12. A leading separator must not survive into the prefixed spellings. The
+    //     real corpus spells all 22 SpeedTree models this way, and the double
+    //     separator it used to produce ("trees//Tree...") resolves nowhere.
+    {
+        const auto c = candidatesFor("\\TreeSugarMapleYoungSU.spt");
+        record("leading separator is stripped from the prefixed spelling",
+               contains(c, "trees/TreeSugarMapleYoungSU.spt"));
+        record("leading separator never yields a double separator",
+               std::find_if(c.begin(), c.end(), [](const std::string& s) {
+                   return s.find("//") != std::string::npos;
+               }) == c.end());
+        record("trees is still the preferred spt root once trimmed",
+               c.size() > 2 && c[2] == "trees/TreeSugarMapleYoungSU.spt");
+    }
+
+    // 13. A path that is nothing but separators must not produce an empty
+    //     candidate, and must not lose the original spelling.
+    {
+        const auto c = candidatesFor("\\");
+        record("separator-only path keeps its original spelling",
+               !c.empty() && c[0] == "/");
+        record("separator-only path yields no empty candidate",
+               std::find(c.begin(), c.end(), std::string()) == c.end());
+    }
+
     const auto t1 = std::chrono::high_resolution_clock::now();
     const float totalMs = std::chrono::duration<float, std::milli>(t1 - t0).count();
     record("suite completed", true, "", totalMs);

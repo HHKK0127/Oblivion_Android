@@ -29,11 +29,27 @@ inline std::vector<std::string> buildAssetPathCandidates(const std::string& norm
     std::vector<std::string> candidates;
     candidates.push_back(normalized);
 
+    // Some ESM records spell a model path with a leading separator
+    // ("/TreeSugarMapleYoungSU.spt"). Left in place the first segment is empty,
+    // which matches no type folder, and every prefixed spelling then carries a
+    // double separator ("trees//TreeSugarMapleYoungSU.spt") that no BSA entry or
+    // loose file has, so all 22 SpeedTree models in the corpus failed to resolve.
+    const size_t firstNonSlash = normalized.find_first_not_of('/');
+    const std::string path = (firstNonSlash == std::string::npos)
+                                 ? std::string()
+                                 : normalized.substr(firstNonSlash);
+    if (path.empty()) {
+        return candidates;
+    }
+    if (path != normalized) {
+        candidates.push_back(path);
+    }
+
     const std::vector<std::string>& roots = assetRootFolders();
 
     // Folder roots and extensions are matched case-insensitively: ESM records
     // are inconsistent about it ("TrigZone01.NIF" vs "trigzone01.nif").
-    std::string firstSegment = normalized.substr(0, normalized.find('/'));
+    std::string firstSegment = path.substr(0, path.find('/'));
     std::transform(firstSegment.begin(), firstSegment.end(), firstSegment.begin(),
                    [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
     if (std::find(roots.begin(), roots.end(), firstSegment) != roots.end()) {
@@ -43,8 +59,8 @@ inline std::vector<std::string> buildAssetPathCandidates(const std::string& norm
     // Extension-specific root first, then the remaining roots as a safety net
     // for assets whose extension does not reveal where they live.
     std::vector<std::string> ordered;
-    const size_t dot = normalized.rfind('.');
-    std::string ext = (dot == std::string::npos) ? std::string() : normalized.substr(dot);
+    const size_t dot = path.rfind('.');
+    std::string ext = (dot == std::string::npos) ? std::string() : path.substr(dot);
     std::transform(ext.begin(), ext.end(), ext.begin(),
                    [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
     if (ext == ".nif" || ext == ".kf" || ext == ".kfa") {
@@ -65,7 +81,7 @@ inline std::vector<std::string> buildAssetPathCandidates(const std::string& norm
     }
 
     for (const auto& root : ordered) {
-        candidates.push_back(root + "/" + normalized);
+        candidates.push_back(root + "/" + path);
     }
     return candidates;
 }
