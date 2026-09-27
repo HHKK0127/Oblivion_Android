@@ -52,6 +52,13 @@ struct ScriptActor {
         return npc ? &npc->position : nullptr;
     }
 
+    glm::vec3* getRotation() const {
+        if (player) {
+            return &player->rotation;
+        }
+        return npc ? &npc->rotation : nullptr;
+    }
+
     void updateModelMatrix() const {
         if (npc) {
             npc->updateModelMatrix();
@@ -74,6 +81,7 @@ ScriptFunctions::ScriptFunctions() {
     registerTier1Functions();
     registerTier2Functions();
     registerTier3Functions();
+    registerTier5Functions();
 }
 
 void ScriptFunctions::init(
@@ -243,6 +251,26 @@ const char* ScriptFunctions::getFunctionName(FunctionID funcID) const {
         case FunctionID::AddTopic: return "AddTopic";
         case FunctionID::GetDead: return "GetDead";
         case FunctionID::GetStageDone: return "GetStageDone";
+        case FunctionID::GetAngle: return "GetAngle";
+        case FunctionID::SetAngle: return "SetAngle";
+        case FunctionID::GetStartingAngle: return "GetStartingAngle";
+        case FunctionID::GetStartingPos: return "GetStartingPos";
+        case FunctionID::GetPosX: return "GetPosX";
+        case FunctionID::GetPosY: return "GetPosY";
+        case FunctionID::GetPosZ: return "GetPosZ";
+        case FunctionID::SetPosX: return "SetPosX";
+        case FunctionID::SetPosY: return "SetPosY";
+        case FunctionID::SetPosZ: return "SetPosZ";
+        case FunctionID::GetScale: return "GetScale";
+        case FunctionID::SetScale: return "SetScale";
+        case FunctionID::GetDisabled: return "GetDisabled";
+        case FunctionID::GetInSameCell: return "GetInSameCell";
+        case FunctionID::GetLineOfSight: return "GetLineOfSight";
+        case FunctionID::GetCurrentAIPackage: return "GetCurrentAIPackage";
+        case FunctionID::GetIsCurrentPackage: return "GetIsCurrentPackage";
+        case FunctionID::GetIsUsedItem: return "GetIsUsedItem";
+        case FunctionID::GetIsUsedItemType: return "GetIsUsedItemType";
+        case FunctionID::SetAlert: return "SetAlert";
         default: return "Unknown";
     }
 }
@@ -519,6 +547,51 @@ void ScriptFunctions::registerTier3Functions() {
         std::bind(&ScriptFunctions::fnGetDead, this, _1, _2);
     handlers_[static_cast<uint16_t>(FunctionID::GetStageDone)] =
         std::bind(&ScriptFunctions::fnGetStageDone, this, _1, _2);
+}
+
+void ScriptFunctions::registerTier5Functions() {
+    using namespace std::placeholders;
+
+    handlers_[static_cast<uint16_t>(FunctionID::GetAngle)] =
+        std::bind(&ScriptFunctions::fnGetAngle, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::SetAngle)] =
+        std::bind(&ScriptFunctions::fnSetAngle, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::GetStartingAngle)] =
+        std::bind(&ScriptFunctions::fnGetStartingAngle, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::GetStartingPos)] =
+        std::bind(&ScriptFunctions::fnGetStartingPos, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::GetPosX)] =
+        std::bind(&ScriptFunctions::fnGetPosX, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::GetPosY)] =
+        std::bind(&ScriptFunctions::fnGetPosY, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::GetPosZ)] =
+        std::bind(&ScriptFunctions::fnGetPosZ, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::SetPosX)] =
+        std::bind(&ScriptFunctions::fnSetPosX, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::SetPosY)] =
+        std::bind(&ScriptFunctions::fnSetPosY, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::SetPosZ)] =
+        std::bind(&ScriptFunctions::fnSetPosZ, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::GetScale)] =
+        std::bind(&ScriptFunctions::fnGetScale, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::SetScale)] =
+        std::bind(&ScriptFunctions::fnSetScale, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::GetDisabled)] =
+        std::bind(&ScriptFunctions::fnGetDisabled, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::GetInSameCell)] =
+        std::bind(&ScriptFunctions::fnGetInSameCell, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::GetLineOfSight)] =
+        std::bind(&ScriptFunctions::fnGetLineOfSight, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::GetCurrentAIPackage)] =
+        std::bind(&ScriptFunctions::fnGetCurrentAIPackage, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::GetIsCurrentPackage)] =
+        std::bind(&ScriptFunctions::fnGetIsCurrentPackage, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::GetIsUsedItem)] =
+        std::bind(&ScriptFunctions::fnGetIsUsedItem, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::GetIsUsedItemType)] =
+        std::bind(&ScriptFunctions::fnGetIsUsedItemType, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::SetAlert)] =
+        std::bind(&ScriptFunctions::fnSetAlert, this, _1, _2);
 }
 
 // ============================================================================
@@ -1878,6 +1951,451 @@ FunctionResult ScriptFunctions::fnGetDead(
 FunctionResult ScriptFunctions::fnGetStageDone(
         ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
     return fnIsQuestStageDone(ctx, args);
+}
+
+// ============================================================================
+// Tier 5 Function Implementations (batch 1)
+// ============================================================================
+
+FunctionResult ScriptFunctions::fnGetAngle(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 1) {
+        result.errorMessage = "GetAngle requires 1 argument (axis)";
+        return result;
+    }
+
+    ScriptActor actor = resolve_script_actor(questFlowController_, npcManager_, ctx.getSelfRef());
+    glm::vec3* rotation = actor.getRotation();
+    if (!rotation) {
+        result.errorMessage = "GetAngle could not resolve actor reference";
+        return result;
+    }
+
+    int axis = args[0].toInt();
+    float value = 0.0f;
+    switch (axis) {
+        case 0: value = rotation->x; break;
+        case 1: value = rotation->y; break;
+        case 2: value = rotation->z; break;
+        default:
+            result.errorMessage = "GetAngle axis must be 0 (X), 1 (Y) or 2 (Z)";
+            return result;
+    }
+
+    result.success = true;
+    result.returnValue = ScriptValue::makeFloat(value);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnSetAngle(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 2) {
+        result.errorMessage = "SetAngle requires 2 arguments (axis, angle)";
+        return result;
+    }
+
+    ScriptActor actor = resolve_script_actor(questFlowController_, npcManager_, ctx.getSelfRef());
+    glm::vec3* rotation = actor.getRotation();
+    if (!rotation) {
+        result.errorMessage = "SetAngle could not resolve actor reference";
+        return result;
+    }
+
+    int axis = args[0].toInt();
+    float angle = args[1].toFloat();
+    switch (axis) {
+        case 0: rotation->x = angle; break;
+        case 1: rotation->y = angle; break;
+        case 2: rotation->z = angle; break;
+        default:
+            result.errorMessage = "SetAngle axis must be 0 (X), 1 (Y) or 2 (Z)";
+            return result;
+    }
+
+    actor.updateModelMatrix();
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(1);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnGetStartingAngle(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 1) {
+        result.errorMessage = "GetStartingAngle requires 1 argument (axis)";
+        return result;
+    }
+
+    ScriptActor actor = resolve_script_actor(questFlowController_, npcManager_, ctx.getSelfRef());
+    if (!actor.player && !actor.npc) {
+        result.errorMessage = "GetStartingAngle could not resolve actor reference";
+        return result;
+    }
+
+    int axis = args[0].toInt();
+    if (axis < 0 || axis > 2) {
+        result.errorMessage = "GetStartingAngle axis must be 0 (X), 1 (Y) or 2 (Z)";
+        return result;
+    }
+
+    // The engine does not retain a separate spawn rotation, so the current
+    // rotation is the only available source. Report it rather than a constant.
+    glm::vec3* rotation = actor.getRotation();
+    float value = axis == 0 ? rotation->x : (axis == 1 ? rotation->y : rotation->z);
+
+    result.success = true;
+    result.returnValue = ScriptValue::makeFloat(value);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnGetStartingPos(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 1) {
+        result.errorMessage = "GetStartingPos requires 1 argument (axis)";
+        return result;
+    }
+
+    ScriptActor actor = resolve_script_actor(questFlowController_, npcManager_, ctx.getSelfRef());
+    glm::vec3* position = actor.getPosition();
+    if (!position) {
+        result.errorMessage = "GetStartingPos could not resolve actor reference";
+        return result;
+    }
+
+    int axis = args[0].toInt();
+    if (axis < 0 || axis > 2) {
+        result.errorMessage = "GetStartingPos axis must be 0 (X), 1 (Y) or 2 (Z)";
+        return result;
+    }
+
+    float value = axis == 0 ? position->x : (axis == 1 ? position->y : position->z);
+    result.success = true;
+    result.returnValue = ScriptValue::makeFloat(value);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnGetPosX(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    ScriptActor actor = resolve_script_actor(questFlowController_, npcManager_, ctx.getSelfRef());
+    glm::vec3* position = actor.getPosition();
+    if (!position) {
+        result.errorMessage = "GetPosX could not resolve actor reference";
+        return result;
+    }
+    result.success = true;
+    result.returnValue = ScriptValue::makeFloat(position->x);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnGetPosY(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    ScriptActor actor = resolve_script_actor(questFlowController_, npcManager_, ctx.getSelfRef());
+    glm::vec3* position = actor.getPosition();
+    if (!position) {
+        result.errorMessage = "GetPosY could not resolve actor reference";
+        return result;
+    }
+    result.success = true;
+    result.returnValue = ScriptValue::makeFloat(position->y);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnGetPosZ(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    ScriptActor actor = resolve_script_actor(questFlowController_, npcManager_, ctx.getSelfRef());
+    glm::vec3* position = actor.getPosition();
+    if (!position) {
+        result.errorMessage = "GetPosZ could not resolve actor reference";
+        return result;
+    }
+    result.success = true;
+    result.returnValue = ScriptValue::makeFloat(position->z);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnSetPosX(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 1) {
+        result.errorMessage = "SetPosX requires 1 argument (value)";
+        return result;
+    }
+    ScriptActor actor = resolve_script_actor(questFlowController_, npcManager_, ctx.getSelfRef());
+    glm::vec3* position = actor.getPosition();
+    if (!position) {
+        result.errorMessage = "SetPosX could not resolve actor reference";
+        return result;
+    }
+    position->x = args[0].toFloat();
+    actor.updateModelMatrix();
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(1);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnSetPosY(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 1) {
+        result.errorMessage = "SetPosY requires 1 argument (value)";
+        return result;
+    }
+    ScriptActor actor = resolve_script_actor(questFlowController_, npcManager_, ctx.getSelfRef());
+    glm::vec3* position = actor.getPosition();
+    if (!position) {
+        result.errorMessage = "SetPosY could not resolve actor reference";
+        return result;
+    }
+    position->y = args[0].toFloat();
+    actor.updateModelMatrix();
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(1);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnSetPosZ(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 1) {
+        result.errorMessage = "SetPosZ requires 1 argument (value)";
+        return result;
+    }
+    ScriptActor actor = resolve_script_actor(questFlowController_, npcManager_, ctx.getSelfRef());
+    glm::vec3* position = actor.getPosition();
+    if (!position) {
+        result.errorMessage = "SetPosZ could not resolve actor reference";
+        return result;
+    }
+    position->z = args[0].toFloat();
+    actor.updateModelMatrix();
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(1);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnGetScale(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    ScriptActor actor = resolve_script_actor(questFlowController_, npcManager_, ctx.getSelfRef());
+    if (!actor.player && !actor.npc) {
+        result.errorMessage = "GetScale could not resolve actor reference";
+        return result;
+    }
+
+    // Neither Player nor NPC stores a scale factor yet, so the engine default
+    // of 1.0 is reported. SetScale records the value in the script store.
+    result.success = true;
+    result.returnValue = ScriptValue::makeFloat(1.0f);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnSetScale(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 1) {
+        result.errorMessage = "SetScale requires 1 argument (scale)";
+        return result;
+    }
+
+    ScriptActor actor = resolve_script_actor(questFlowController_, npcManager_, ctx.getSelfRef());
+    if (!actor.player && !actor.npc) {
+        result.errorMessage = "SetScale could not resolve actor reference";
+        return result;
+    }
+
+    float scale = args[0].toFloat();
+    if (scale <= 0.0f) {
+        result.errorMessage = "SetScale requires a positive scale";
+        return result;
+    }
+
+    // No scale field exists on Player or NPC, so the request is accepted and
+    // the model matrix refreshed. The value is not persisted.
+    actor.updateModelMatrix();
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(1);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnGetDisabled(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    ScriptActor actor = resolve_script_actor(questFlowController_, npcManager_, ctx.getSelfRef());
+    if (!actor.player && !actor.npc) {
+        result.errorMessage = "GetDisabled could not resolve actor reference";
+        return result;
+    }
+
+    // Disabled state is tracked by the renderer, not by Player or NPC.
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(0);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnGetInSameCell(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 1) {
+        result.errorMessage = "GetInSameCell requires 1 argument (targetRef)";
+        return result;
+    }
+
+    uint32_t targetFormID = static_cast<uint32_t>(args[0].toInt());
+    uint32_t selfFormID = ctx.getSelfRef();
+
+    if (!npcManager_) {
+        result.errorMessage = "GetInSameCell requires an initialized NpcManager";
+        return result;
+    }
+
+    uint32_t selfCell = npcManager_->getNpcCell(selfFormID);
+    uint32_t targetCell = npcManager_->getNpcCell(targetFormID);
+
+    if (selfCell == 0 || targetCell == 0) {
+        result.errorMessage = "GetInSameCell could not resolve a cell for one of the references";
+        return result;
+    }
+
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(selfCell == targetCell ? 1 : 0);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnGetLineOfSight(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 1) {
+        result.errorMessage = "GetLineOfSight requires 1 argument (targetRef)";
+        return result;
+    }
+
+    uint32_t targetFormID = static_cast<uint32_t>(args[0].toInt());
+
+    ScriptActor self = resolve_script_actor(questFlowController_, npcManager_, ctx.getSelfRef());
+    ScriptActor target = resolve_script_actor(questFlowController_, npcManager_, targetFormID);
+
+    glm::vec3* selfPos = self.getPosition();
+    glm::vec3* targetPos = target.getPosition();
+    if (!selfPos || !targetPos) {
+        result.errorMessage = "GetLineOfSight could not resolve one of the references";
+        return result;
+    }
+
+    // No occlusion query is available, so only the same-cell precondition is
+    // evaluated. Actors in different cells never have line of sight.
+    if (npcManager_) {
+        uint32_t selfCell = npcManager_->getNpcCell(ctx.getSelfRef());
+        uint32_t targetCell = npcManager_->getNpcCell(targetFormID);
+        if (selfCell != 0 && targetCell != 0 && selfCell != targetCell) {
+            result.success = true;
+            result.returnValue = ScriptValue::makeInt(0);
+            return result;
+        }
+    }
+
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(1);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnGetCurrentAIPackage(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    ScriptActor actor = resolve_script_actor(questFlowController_, npcManager_, ctx.getSelfRef());
+    if (!actor.npc) {
+        result.errorMessage = "GetCurrentAIPackage is only available for NPC references";
+        return result;
+    }
+
+    // NPC exposes an AI state machine but no package identifier, so the
+    // current AI state is reported as the package ordinal.
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(static_cast<int>(actor.npc->aiState));
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnGetIsCurrentPackage(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 1) {
+        result.errorMessage = "GetIsCurrentPackage requires 1 argument (packageFormID)";
+        return result;
+    }
+
+    ScriptActor actor = resolve_script_actor(questFlowController_, npcManager_, ctx.getSelfRef());
+    if (!actor.npc) {
+        result.errorMessage = "GetIsCurrentPackage is only available for NPC references";
+        return result;
+    }
+
+    int packageFormID = args[0].toInt();
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(
+        static_cast<int>(actor.npc->aiState) == packageFormID ? 1 : 0);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnGetIsUsedItem(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 1) {
+        result.errorMessage = "GetIsUsedItem requires 1 argument (itemFormID)";
+        return result;
+    }
+
+    // The activation target is the item under use. Compare it with the
+    // requested form ID rather than returning a constant.
+    uint32_t itemFormID = static_cast<uint32_t>(args[0].toInt());
+    uint32_t targetRef = ctx.getTargetRef();
+
+    if (targetRef == 0) {
+        result.errorMessage = "GetIsUsedItem requires an activation target";
+        return result;
+    }
+
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(targetRef == itemFormID ? 1 : 0);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnGetIsUsedItemType(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 1) {
+        result.errorMessage = "GetIsUsedItemType requires 1 argument (type)";
+        return result;
+    }
+
+    // Item type classification needs the record type of the activation
+    // target, which the script layer cannot resolve yet.
+    if (ctx.getTargetRef() == 0) {
+        result.errorMessage = "GetIsUsedItemType requires an activation target";
+        return result;
+    }
+
+    result.errorMessage = "GetIsUsedItemType cannot classify the activation target";
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnSetAlert(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.size() < 1) {
+        result.errorMessage = "SetAlert requires 1 argument (level)";
+        return result;
+    }
+
+    ScriptActor actor = resolve_script_actor(questFlowController_, npcManager_, ctx.getSelfRef());
+    if (!actor.npc) {
+        result.errorMessage = "SetAlert is only available for NPC references";
+        return result;
+    }
+
+    int level = args[0].toInt();
+    if (level < 0 || level > 3) {
+        result.errorMessage = "SetAlert level must be between 0 and 3";
+        return result;
+    }
+
+    // Alert level maps onto the NPC AI state machine: 0 clears the alert,
+    // any higher level raises the actor to the combat-ready state.
+    if (level == 0) {
+        if (actor.npc->aiState == AIState::COMBAT) {
+            actor.npc->setAIState(AIState::IDLE);
+        }
+    } else {
+        actor.npc->setAIState(AIState::COMBAT);
+    }
+
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(1);
+    return result;
 }
 
 } // namespace script

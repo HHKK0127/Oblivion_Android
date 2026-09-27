@@ -84,6 +84,7 @@ private:
     void registerTier1Functions();
     void registerTier2Functions();
     void registerTier3Functions();
+    void registerTier5Functions();
 
     // --- Tier 1 function implementations ---
     FunctionResult fnSetStage(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
@@ -219,6 +220,28 @@ private:
     // --- Tier 4 function implementations ---
     FunctionResult fnGetDead(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
     FunctionResult fnGetStageDone(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+
+    // --- Tier 5 function implementations (batch 1) ---
+    FunctionResult fnGetAngle(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnSetAngle(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnGetStartingAngle(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnGetStartingPos(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnGetPosX(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnGetPosY(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnGetPosZ(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnSetPosX(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnSetPosY(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnSetPosZ(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnGetScale(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnSetScale(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnGetDisabled(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnGetInSameCell(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnGetLineOfSight(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnGetCurrentAIPackage(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnGetIsCurrentPackage(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnGetIsUsedItem(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnGetIsUsedItemType(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnSetAlert(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
 };
 
 } // namespace script

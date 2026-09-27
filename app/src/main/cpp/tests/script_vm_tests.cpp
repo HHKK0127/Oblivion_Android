@@ -615,6 +615,246 @@ void ScriptVMTests::testScriptFunctions() {
                "FunctionID to name conversion", getTimeMs38() - start);
     }
 
+    // Test 2b: Tier 5 registration and name lookup
+    {
+        float start = getTimeMs38();
+        ScriptFunctions funcs;
+        bool ok = true;
+
+        funcs.init(nullptr, nullptr, nullptr, nullptr);
+
+        ok = ok && funcs.hasFunction(FunctionID::GetAngle);
+        ok = ok && funcs.hasFunction(FunctionID::SetAngle);
+        ok = ok && funcs.hasFunction(FunctionID::GetStartingAngle);
+        ok = ok && funcs.hasFunction(FunctionID::GetStartingPos);
+        ok = ok && funcs.hasFunction(FunctionID::GetPosX);
+        ok = ok && funcs.hasFunction(FunctionID::GetPosY);
+        ok = ok && funcs.hasFunction(FunctionID::GetPosZ);
+        ok = ok && funcs.hasFunction(FunctionID::SetPosX);
+        ok = ok && funcs.hasFunction(FunctionID::SetPosY);
+        ok = ok && funcs.hasFunction(FunctionID::SetPosZ);
+        ok = ok && funcs.hasFunction(FunctionID::GetScale);
+        ok = ok && funcs.hasFunction(FunctionID::SetScale);
+        ok = ok && funcs.hasFunction(FunctionID::GetDisabled);
+        ok = ok && funcs.hasFunction(FunctionID::GetInSameCell);
+        ok = ok && funcs.hasFunction(FunctionID::GetLineOfSight);
+        ok = ok && funcs.hasFunction(FunctionID::GetCurrentAIPackage);
+        ok = ok && funcs.hasFunction(FunctionID::GetIsCurrentPackage);
+        ok = ok && funcs.hasFunction(FunctionID::GetIsUsedItem);
+        ok = ok && funcs.hasFunction(FunctionID::GetIsUsedItemType);
+        ok = ok && funcs.hasFunction(FunctionID::SetAlert);
+
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::GetAngle), "GetAngle") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::SetAngle), "SetAngle") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::GetStartingAngle), "GetStartingAngle") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::GetStartingPos), "GetStartingPos") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::GetPosX), "GetPosX") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::GetPosY), "GetPosY") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::GetPosZ), "GetPosZ") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::SetPosX), "SetPosX") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::SetPosY), "SetPosY") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::SetPosZ), "SetPosZ") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::GetScale), "GetScale") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::SetScale), "SetScale") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::GetDisabled), "GetDisabled") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::GetInSameCell), "GetInSameCell") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::GetLineOfSight), "GetLineOfSight") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::GetCurrentAIPackage), "GetCurrentAIPackage") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::GetIsCurrentPackage), "GetIsCurrentPackage") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::GetIsUsedItem), "GetIsUsedItem") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::GetIsUsedItemType), "GetIsUsedItemType") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::SetAlert), "SetAlert") == 0);
+
+        record("ScriptFunctions: Tier 5 registration", ok,
+               "Tier 5 functions registered and named", getTimeMs38() - start);
+    }
+
+    // Test 2c: Tier 5 position and angle round trip
+    {
+        float start = getTimeMs38();
+        QuestManager questManager;
+        QuestFlowController questFlowController;
+        ScriptFunctions funcs;
+        ExecutionContext ctx;
+        Player player;
+
+        questFlowController.initialize(&questManager, nullptr, nullptr, &player,
+                                       nullptr, nullptr, nullptr, nullptr);
+        funcs.init(nullptr, nullptr, nullptr, nullptr, &questFlowController);
+
+        ctx.setSelfRef(0x00000014);
+
+        player.position = glm::vec3(11.0f, 22.0f, 33.0f);
+        player.rotation = glm::vec3(4.0f, 5.0f, 6.0f);
+
+        bool ok = true;
+
+        FunctionResult r = funcs.execute(FunctionID::GetPosX, ctx, {});
+        ok = ok && r.success && std::fabs(r.returnValue.toFloat() - 11.0f) < 0.001f;
+
+        r = funcs.execute(FunctionID::GetPosY, ctx, {});
+        ok = ok && r.success && std::fabs(r.returnValue.toFloat() - 22.0f) < 0.001f;
+
+        r = funcs.execute(FunctionID::GetPosZ, ctx, {});
+        ok = ok && r.success && std::fabs(r.returnValue.toFloat() - 33.0f) < 0.001f;
+
+        r = funcs.execute(FunctionID::SetPosX, ctx, {ScriptValue::makeFloat(44.0f)});
+        ok = ok && r.success && std::fabs(player.position.x - 44.0f) < 0.001f;
+
+        r = funcs.execute(FunctionID::SetPosY, ctx, {ScriptValue::makeFloat(55.0f)});
+        ok = ok && r.success && std::fabs(player.position.y - 55.0f) < 0.001f;
+
+        r = funcs.execute(FunctionID::SetPosZ, ctx, {ScriptValue::makeFloat(66.0f)});
+        ok = ok && r.success && std::fabs(player.position.z - 66.0f) < 0.001f;
+
+        r = funcs.execute(FunctionID::GetAngle, ctx, {ScriptValue::makeInt(1)});
+        ok = ok && r.success && std::fabs(r.returnValue.toFloat() - 5.0f) < 0.001f;
+
+        r = funcs.execute(FunctionID::SetAngle, ctx, {ScriptValue::makeInt(1), ScriptValue::makeFloat(90.0f)});
+        ok = ok && r.success && std::fabs(player.rotation.y - 90.0f) < 0.001f;
+
+        r = funcs.execute(FunctionID::GetStartingPos, ctx, {ScriptValue::makeInt(0)});
+        ok = ok && r.success && std::fabs(r.returnValue.toFloat() - 44.0f) < 0.001f;
+
+        r = funcs.execute(FunctionID::GetStartingAngle, ctx, {ScriptValue::makeInt(1)});
+        ok = ok && r.success && std::fabs(r.returnValue.toFloat() - 90.0f) < 0.001f;
+
+        r = funcs.execute(FunctionID::GetAngle, ctx, {ScriptValue::makeInt(7)});
+        ok = ok && !r.success;
+
+        record("ScriptFunctions: Tier 5 position round trip", ok,
+               "GetPos/SetPos/GetAngle/SetAngle on the player", getTimeMs38() - start);
+    }
+
+    // Test 2d: Tier 5 NPC-only functions
+    {
+        float start = getTimeMs38();
+        NpcManager npcManager;
+        ScriptFunctions funcs;
+        ExecutionContext ctx;
+
+        funcs.init(nullptr, nullptr, &npcManager, nullptr);
+
+        auto npc = npcManager.createNPC("Tier 5 Actor", glm::vec3(1.0f, 2.0f, 3.0f));
+        bool ok = npc != nullptr;
+        if (!ok) {
+            record("ScriptFunctions: Tier 5 NPC functions", false,
+                   "createNPC returned null", getTimeMs38() - start);
+        } else {
+            npc->aiState = AIState::IDLE;
+            ctx.setSelfRef(npc->npcId);
+
+            FunctionResult r = funcs.execute(FunctionID::GetCurrentAIPackage, ctx, {});
+            ok = ok && r.success && r.returnValue.toInt() == static_cast<int>(AIState::IDLE);
+
+            r = funcs.execute(FunctionID::GetIsCurrentPackage, ctx,
+                              {ScriptValue::makeInt(static_cast<int>(AIState::IDLE))});
+            ok = ok && r.success && r.returnValue.toInt() == 1;
+
+            r = funcs.execute(FunctionID::GetIsCurrentPackage, ctx, {ScriptValue::makeInt(99)});
+            ok = ok && r.success && r.returnValue.toInt() == 0;
+
+            r = funcs.execute(FunctionID::SetAlert, ctx, {ScriptValue::makeInt(2)});
+            ok = ok && r.success && npc->aiState == AIState::COMBAT;
+
+            r = funcs.execute(FunctionID::SetAlert, ctx, {ScriptValue::makeInt(0)});
+            ok = ok && r.success && npc->aiState == AIState::IDLE;
+
+            r = funcs.execute(FunctionID::SetAlert, ctx, {ScriptValue::makeInt(9)});
+            ok = ok && !r.success;
+
+            r = funcs.execute(FunctionID::GetScale, ctx, {});
+            ok = ok && r.success && std::fabs(r.returnValue.toFloat() - 1.0f) < 0.001f;
+
+            r = funcs.execute(FunctionID::SetScale, ctx, {ScriptValue::makeFloat(1.5f)});
+            ok = ok && r.success;
+
+            r = funcs.execute(FunctionID::SetScale, ctx, {ScriptValue::makeFloat(0.0f)});
+            ok = ok && !r.success;
+
+            r = funcs.execute(FunctionID::GetDisabled, ctx, {});
+            ok = ok && r.success && r.returnValue.toInt() == 0;
+
+            record("ScriptFunctions: Tier 5 NPC functions", ok,
+                   "AI package, alert and scale on an NPC", getTimeMs38() - start);
+        }
+    }
+
+    // Test 2e: Tier 5 same-cell and line of sight
+    {
+        float start = getTimeMs38();
+        NpcManager npcManager;
+        ScriptFunctions funcs;
+        ExecutionContext ctx;
+
+        funcs.init(nullptr, nullptr, &npcManager, nullptr);
+
+        auto npcA = npcManager.createNPC("Cell Actor A", glm::vec3(0.0f, 0.0f, 0.0f));
+        auto npcB = npcManager.createNPC("Cell Actor B", glm::vec3(10.0f, 0.0f, 0.0f));
+
+        bool ok = npcA != nullptr && npcB != nullptr;
+        if (!ok) {
+            record("ScriptFunctions: Tier 5 cell queries", false,
+                   "createNPC returned null", getTimeMs38() - start);
+        } else {
+            npcManager.registerNpcToCell(npcA->npcId, 0x0000AAAA);
+            npcManager.registerNpcToCell(npcB->npcId, 0x0000AAAA);
+
+            ctx.setSelfRef(npcA->npcId);
+
+            FunctionResult r = funcs.execute(FunctionID::GetInSameCell, ctx,
+                                             {ScriptValue::makeRef(npcB->npcId)});
+            ok = ok && r.success && r.returnValue.toInt() == 1;
+
+            r = funcs.execute(FunctionID::GetLineOfSight, ctx,
+                              {ScriptValue::makeRef(npcB->npcId)});
+            ok = ok && r.success && r.returnValue.toInt() == 1;
+
+            npcManager.unregisterNpcFromCell(npcB->npcId);
+            npcManager.registerNpcToCell(npcB->npcId, 0x0000BBBB);
+
+            r = funcs.execute(FunctionID::GetInSameCell, ctx,
+                              {ScriptValue::makeRef(npcB->npcId)});
+            ok = ok && r.success && r.returnValue.toInt() == 0;
+
+            r = funcs.execute(FunctionID::GetLineOfSight, ctx,
+                              {ScriptValue::makeRef(npcB->npcId)});
+            ok = ok && r.success && r.returnValue.toInt() == 0;
+
+            record("ScriptFunctions: Tier 5 cell queries", ok,
+                   "GetInSameCell and GetLineOfSight across cells", getTimeMs38() - start);
+        }
+    }
+
+    // Test 2f: Tier 5 used item queries
+    {
+        float start = getTimeMs38();
+        ScriptFunctions funcs;
+        ExecutionContext ctx;
+
+        funcs.init(nullptr, nullptr, nullptr, nullptr);
+
+        bool ok = true;
+
+        ctx.setTargetRef(0x00030001);
+
+        FunctionResult r = funcs.execute(FunctionID::GetIsUsedItem, ctx, {ScriptValue::makeInt(0x00030001)});
+        ok = ok && r.success && r.returnValue.toInt() == 1;
+
+        r = funcs.execute(FunctionID::GetIsUsedItem, ctx, {ScriptValue::makeInt(0x00030002)});
+        ok = ok && r.success && r.returnValue.toInt() == 0;
+
+        r = funcs.execute(FunctionID::GetIsUsedItemType, ctx, {ScriptValue::makeInt(1)});
+        ok = ok && !r.success;
+
+        ctx.setTargetRef(0);
+        r = funcs.execute(FunctionID::GetIsUsedItem, ctx, {ScriptValue::makeInt(0x00030001)});
+        ok = ok && !r.success;
+
+        record("ScriptFunctions: Tier 5 used item", ok,
+               "GetIsUsedItem compares the activation target", getTimeMs38() - start);
+    }
+
     // Test 3: Unknown function handling
     {
         float start = getTimeMs38();

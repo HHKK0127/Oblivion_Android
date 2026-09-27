@@ -307,6 +307,28 @@ enum class FunctionID : uint16_t {
     // Tier 4 - Frequently used aliases observed in vanilla SCTX
     GetDead                = 0x0082,
     GetStageDone           = 0x0083,
+
+    // Tier 5 - Batch 1 (approved 2026-09-27)
+    GetAngle               = 0x0084,
+    SetAngle               = 0x0085,
+    GetStartingAngle       = 0x0086,
+    GetStartingPos         = 0x0087,
+    GetPosX                = 0x0088,
+    GetPosY                = 0x0089,
+    GetPosZ                = 0x008A,
+    SetPosX                = 0x008B,
+    SetPosY                = 0x008C,
+    SetPosZ                = 0x008D,
+    GetScale               = 0x008E,
+    SetScale               = 0x008F,
+    GetDisabled            = 0x0090,
+    GetInSameCell          = 0x0091,
+    GetLineOfSight         = 0x0092,
+    GetCurrentAIPackage    = 0x0093,
+    GetIsCurrentPackage    = 0x0094,
+    GetIsUsedItem          = 0x0095,
+    GetIsUsedItemType      = 0x0096,
+    SetAlert               = 0x0097,
 };
 
 // ============================================================================
