@@ -5,9 +5,7 @@
 #include <android/native_window_jni.h>
 #include <chrono>
 #include "engine/renderer.h"
-#include "engine/imperial_weave.h"
 #include "ui/viewer_3d.h"
-#include "vegetation/speed_tree_manager.h"
 #include "video/bink_video_player.h"
 #include "video/video_decoder_jni.h"
 
@@ -431,38 +429,6 @@ Java_com_example_oblivion_GameRenderer_nativeRunPhase30Test(
 // ============================================
 #include "tests/phase45_unit_tests.h"
 
-// ============================================
-// Phase 50: Distant LOD System
-// ============================================
-#include "world/distant_lod/distant_lod_manager.h"
-
-extern "C" JNIEXPORT jboolean JNICALL
-Java_com_example_oblivion_GameRenderer_nativeInitDistantLod(
-        [[maybe_unused]] JNIEnv* env,
-        [[maybe_unused]] jobject obj,
-        jlong worldManagerHandle) {
-    LOGI("nativeInitDistantLod called");
-
-    WorldManager* worldMgr = reinterpret_cast<WorldManager*>(worldManagerHandle);
-    if (!worldMgr) {
-        LOGE("nativeInitDistantLod: WorldManager handle is null");
-        return JNI_FALSE;
-    }
-
-    DistantLodManager& dlod = DistantLodManager::instance();
-    bool result = dlod.initialize(worldMgr, nullptr);
-
-    if (result) {
-        // Register with ImperialWeave
-        weave::ImperialWeave::instance().getLocator().registerService(&dlod);
-        LOGI("DistantLodManager initialized and registered with ImperialWeave");
-    } else {
-        LOGE("DistantLodManager initialization failed");
-    }
-
-    return result ? JNI_TRUE : JNI_FALSE;
-}
-
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_example_oblivion_GameRenderer_nativeRunPhase45Test(
         [[maybe_unused]] JNIEnv* env,
@@ -536,85 +502,6 @@ Java_com_example_oblivion_GameRenderer_nativeRunScriptVmTests(
          allPassed ? "ALL PASSED" : "SOME FAILED");
 
     return env->NewStringUTF(summary.c_str());
-}
-
-// ============================================
-// ============================================
-// Phase 51: SpeedTree Vegetation System
-// ============================================
-
-extern "C" JNIEXPORT jboolean JNICALL
-Java_com_example_oblivion_GameRenderer_nativeInitSpeedTree(
-        [[maybe_unused]] JNIEnv* env,
-        [[maybe_unused]] jobject obj,
-        jlong handle) {
-    LOGI("=== nativeInitSpeedTree called ===");
-
-    Renderer* renderer = reinterpret_cast<Renderer*>(handle);
-    if (!renderer) {
-        LOGE("nativeInitSpeedTree: null renderer handle");
-        return JNI_FALSE;
-    }
-
-    auto& speedTree = vegetation::SpeedTreeManager::instance();
-    bool result = speedTree.initialize(renderer);
-
-    if (result) {
-        // Register default tree types
-        vegetation::TreeType oakType;
-        oakType.typeId = 1;
-        oakType.meshPath = "meshes/trees/oak01.nif";
-        oakType.texturePath = "textures/trees/oak_bark.dds";
-        oakType.billboardTexturePath = "textures/trees/oak_billboard.dds";
-        oakType.minHeight = 5.0f;
-        oakType.maxHeight = 12.0f;
-        oakType.billboardWidth = 5.0f;
-        oakType.billboardHeight = 10.0f;
-        speedTree.registerTreeType(1, oakType);
-
-        vegetation::TreeType pineType;
-        pineType.typeId = 2;
-        pineType.meshPath = "meshes/trees/pine01.nif";
-        pineType.texturePath = "textures/trees/pine_bark.dds";
-        pineType.billboardTexturePath = "textures/trees/pine_billboard.dds";
-        pineType.minHeight = 8.0f;
-        pineType.maxHeight = 18.0f;
-        pineType.billboardWidth = 4.0f;
-        pineType.billboardHeight = 14.0f;
-        speedTree.registerTreeType(2, pineType);
-
-        vegetation::TreeType mapleType;
-        mapleType.typeId = 3;
-        mapleType.meshPath = "meshes/trees/maple01.nif";
-        mapleType.texturePath = "textures/trees/maple_bark.dds";
-        mapleType.billboardTexturePath = "textures/trees/maple_billboard.dds";
-        mapleType.minHeight = 4.0f;
-        mapleType.maxHeight = 10.0f;
-        mapleType.billboardWidth = 6.0f;
-        mapleType.billboardHeight = 9.0f;
-        speedTree.registerTreeType(3, mapleType);
-
-        LOGI("SpeedTree initialized with %lu tree types",
-             (unsigned long)speedTree.getTypeCount());
-    } else {
-        LOGE("SpeedTree initialization failed");
-    }
-
-    return result ? JNI_TRUE : JNI_FALSE;
-}
-
-extern "C" JNIEXPORT jint JNICALL
-Java_com_example_oblivion_GameRenderer_nativeGetSpeedTreeCount(
-        [[maybe_unused]] JNIEnv* env,
-        [[maybe_unused]] jobject obj) {
-    return static_cast<jint>(vegetation::SpeedTreeManager::instance().getTreeCount());
-}
-
-extern "C" JNIEXPORT jint JNICALL
-Java_com_example_oblivion_GameRenderer_nativeGetSpeedTreeVisibleCount(
-        [[maybe_unused]] JNIEnv* env,
-        [[maybe_unused]] jobject obj) {
-    return static_cast<jint>(vegetation::SpeedTreeManager::instance().getVisibleCount());
 }
 
 // ============================================
