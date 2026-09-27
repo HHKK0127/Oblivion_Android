@@ -375,18 +375,14 @@ void ImperialWeave::phaseVideoUpdate(float dt) {
 }
 
 void ImperialWeave::phaseRenderSubmit(float dt) {
-    (void)dt;
-
-    // Phase 50: Distant LOD rendering
-    if (distantLodManager_ && renderer_) {
-        glm::mat4 viewProj;
-        glm::vec3 cameraPos;
-        if (worldManager_) {
-            cameraPos = worldManager_->getCameraPosition();
-            // viewProj matrix computed from camera state in render pipeline
-        }
+    // Phase 50: Distant LOD. The draw itself belongs to the renderer's frame,
+    // where a real view-projection matrix exists (Renderer::renderDistantLod()).
+    // This phase used to call render() with an uninitialised glm::mat4, and the
+    // gate on distantLodManager_ was false until the renderer started handing the
+    // singleton over, so nothing drew at all. Only the manager's own per-frame
+    // state advance stays here.
+    if (distantLodManager_) {
         distantLodManager_->update(dt);
-        distantLodManager_->render(renderer_, viewProj);
     }
 
     // v4: Phase 51: SpeedTree vegetation rendering

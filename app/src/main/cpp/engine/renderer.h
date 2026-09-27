@@ -471,6 +471,9 @@ private:
     // Sky dome rendering driven by SkyWeatherSystem (Phase 56 / 66)
     void renderSkyDome();
 
+    // Phase 50: distant LOD backdrop (DistantLodManager horizon ring)
+    void renderDistantLod();
+
     // Phase 66 P20: interior cell geometry (REFR resolved NIFs)
     void renderInteriorObjects();
     size_t ensureInteriorObjectsPlaced();

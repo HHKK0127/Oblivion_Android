@@ -10,6 +10,7 @@
 #include "../physics/physics_manager.h"
 #include "../world/game_state_report.h"
 #include "../world/door.h"
+#include "../world/distant_lod/distant_lod_manager.h"
 // #include "../jni_audio_bridge.h"  // Deferred - requires Java MainActivity
 
 #include <glm/glm.hpp>
@@ -2309,6 +2310,19 @@ bool Renderer::initGameSystems() {
 
     LOGI("All game systems initialized");
 
+    // DistantLOD: the manager is a singleton, so the renderer hands the weave its
+    // address instead of leaving the member null. The weave's RenderSubmit phase
+    // gates on that member, so while it was null the entire LOD path - including
+    // the horizon ring, the only part of it that is implemented - never ran.
+    // initialize() needs the GL context, which is current here: init() is reached
+    // from nativeInitEngine() inside onSurfaceCreated().
+    DistantLodManager& distantLod = DistantLodManager::instance();
+    if (distantLod.initialize(worldManager.get(), nullptr)) {
+        LOGI("DistantLodManager initialized for the render path");
+    } else {
+        LOGW("DistantLodManager initialization failed; distant LOD stays off");
+    }
+
     // Imperial Weave: initialize thin integration layer
         LOGI("Initializing Imperial Weave...");
         weave::ImperialWeave::instance().init(
@@ -2325,7 +2339,7 @@ bool Renderer::initGameSystems() {
             audioManager.get(),
             &oblivion::PhysicsManager::getInstance(),
             scriptManager.get(),  // ScriptManager integration
-            nullptr,  // DistantLodManager
+            &distantLod,  // DistantLodManager (singleton)
             &vegetation::SpeedTreeManager::instance()  // SpeedTree integration (singleton)
         );
         imperialWeaveInitialized = true;
@@ -4074,6 +4088,10 @@ void Renderer::render(float deltaTime) {
     // Phase 65: Render water surfaces from CELL XCLW levels on top of terrain
     renderWater();
 
+    // Phase 50: distant LOD backdrop (horizon ring). Drawn after the near terrain
+    // and before the sky dome, which sits at the far plane either way.
+    renderDistantLod();
+
     // Phase 66: Render the weather-driven sky dome as the far background.
     renderSkyDome();
 
@@ -4753,6 +4771,39 @@ void main() {
     vDirection = aPosition;
 }
 )";
+
+// Phase 50: distant LOD. The horizon ring is the one part of DistantLodManager
+// that is implemented (registerLodMesh() and generateLodFromLand() have no
+// callers yet), so today this draws the outdoor backdrop ring and nothing else.
+// The view-projection is built here, from the same camera the terrain and water
+// passes use, because the manager needs a real matrix to derive its frustum
+// planes from - the weave phase used to hand it an uninitialised one.
+void Renderer::renderDistantLod() {
+    DistantLodManager& lod = DistantLodManager::instance();
+    if (!lod.isInitialized()) return;
+
+    // Interiors have no worldspace, and their ceilings must not be pierced by an
+    // outdoor horizon ring.
+    if (worldManager && worldManager->isPlayerIndoors()) return;
+
+    glm::mat4 viewMatrix;
+    glm::mat4 projMatrix;
+    const float aspect = static_cast<float>(screenWidth) / static_cast<float>(screenHeight);
+    if (playerController) {
+        const glm::vec3 target = playerController->getPlayerPosition();
+        const glm::vec3 eye = target + glm::vec3(0.0f, PH_CAMERA_HEIGHT, PH_CAMERA_DIST);
+        viewMatrix = glm::lookAt(eye, target, glm::vec3(0.0f, 1.0f, 0.0f));
+        projMatrix = glm::perspective(glm::radians(60.0f), aspect, 10.0f, 20000.0f);
+    } else if (camera) {
+        viewMatrix = camera->getViewMatrix();
+        projMatrix = camera->getProjectionMatrix(aspect);
+    } else {
+        return;
+    }
+
+    const glm::mat4 viewProj = projMatrix * viewMatrix;
+    lod.render(this, viewProj);
+}
 
 // Phase 66: Render the weather-driven sky dome. The shader source comes from
 // SkyWeatherSystem::generateSkyShader(), and every uniform (zenith/horizon
