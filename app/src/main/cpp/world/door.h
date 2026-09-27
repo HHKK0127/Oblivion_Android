@@ -31,10 +31,21 @@ struct Door {
     std::string modelPath;        // NIF file for 3D model
     glm::vec3 rotation;           // Door rotation
 
+    // Source information
+    uint32_t sourceCellFormID = 0; // TES FormID of the cell the door stands in
+
     // Destination information
-    uint32_t destinationCell;     // Target cell ID
+    uint32_t destinationCell;     // TES FormID of the target cell
     glm::vec3 destinationPos;     // Spawn position in destination cell
     glm::vec3 destinationRotation;// Camera rotation at destination
+    // ESM doors do not name their destination cell directly: a REFR's XTEL
+    // payload carries the FormID of the *target door reference*, and the
+    // destination cell is whichever cell that reference lives in. The resolver
+    // in the renderer follows that link once and records the answer here, so
+    // DoorManager never has to consult the ESM.
+    bool destinationIsInterior = false;
+    std::string destinationCellName;   // Display name of the target cell
+    std::string destinationEditorID;   // Editor ID of the target cell
 
     // Metadata
     std::string name;             // Display name ("Small House Door", etc.)
@@ -72,6 +83,9 @@ public:
                      const std::string& nameEn, const std::string& nameJa,
                      uint32_t destinationCell, const glm::vec3& destinationPos);
 
+    // Drop every registered door. Used when the world is rebuilt from ESM data.
+    void clearDoors();
+
     // Door Queries
     const Door* getDoor(uint32_t doorId) const;
     const Door* getDoorAtPosition(const glm::vec3& position, float radius = 2.0f) const;
@@ -81,7 +95,7 @@ public:
     bool useDoor(uint32_t doorId);
 
     // Cell-specific queries
-    std::vector<const Door*> getDoorsInCell(uint32_t cellId) const;
+    std::vector<const Door*> getDoorsInCell(uint32_t cellFormID) const;
 
     // Statistics
     size_t getDoorCount() const { return doors.size(); }

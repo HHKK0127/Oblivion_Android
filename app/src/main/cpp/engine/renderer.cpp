@@ -9,6 +9,7 @@
 #include "../inventory/item_factory.h"
 #include "../physics/physics_manager.h"
 #include "../world/game_state_report.h"
+#include "../world/door.h"
 // #include "../jni_audio_bridge.h"  // Deferred - requires Java MainActivity
 
 #include <glm/glm.hpp>
@@ -473,6 +474,14 @@ void Renderer::initLocalization() {
 
     LOGI("LocalizationManager initialized");
     localizationManager->logTranslationStats();
+}
+
+// TES FormIDs are conventionally shown in hex; the console output would be
+// unreadable otherwise.
+static std::string formIDToHex(uint32_t formID) {
+    char buffer[16];
+    std::snprintf(buffer, sizeof(buffer), "0x%08X", formID);
+    return std::string(buffer);
 }
 
 bool Renderer::initGameSystems() {
@@ -1556,7 +1565,94 @@ bool Renderer::initGameSystems() {
         if (!worldManager) return "World Manager not available";
         auto* doorMgr = worldManager->getDoorManager();
         if (!doorMgr) return "Door Manager not available";
-        return "Door Manager: Active";
+
+        auto currentCell = worldManager->getCurrentCell();
+        const uint32_t hereFormID = currentCell ? currentCell->tesFormID : 0;
+        const std::string hereName =
+            currentCell ? (currentCell->cellName.empty() ? currentCell->editorID
+                                                         : currentCell->cellName)
+                        : std::string("(none)");
+
+        std::string result = "=== Doors (" + std::to_string(doorMgr->getDoorCount()) +
+                             " registered) ===\n";
+        result += "Current cell: " + hereName + " (" + formIDToHex(hereFormID) + ")\n";
+
+        const auto inCell = doorMgr->getDoorsInCell(hereFormID);
+        result += "Doors in this cell: " + std::to_string(inCell.size()) + "\n";
+        size_t shown = 0;
+        for (const Door* door : inCell) {
+            if (!door || shown >= 12) break;
+            result += "  [" + std::to_string(door->doorId) + "] " + door->name +
+                      " -> " + (door->destinationCellName.empty()
+                                    ? formIDToHex(door->destinationCell)
+                                    : door->destinationCellName) +
+                      (door->destinationIsInterior ? " (interior)" : " (exterior)") + "\n";
+            ++shown;
+        }
+        if (inCell.size() > shown) {
+            result += "  ... " + std::to_string(inCell.size() - shown) + " more\n";
+        }
+        return result;
+    };
+
+    // Phase 65: walk through the door nearest to the player, i.e. the in-game
+    // "activate" action. This is what makes the registered XTEL pairs reachable
+    // without a UI: `usedoor` in the console.
+    refs.useNearestDoor = [this]() -> std::string {
+        if (!worldManager) return "World Manager not available";
+        auto* doorMgr = worldManager->getDoorManager();
+        if (!doorMgr) return "Door Manager not available";
+
+        auto currentCell = worldManager->getCurrentCell();
+        if (!currentCell) return "No current cell";
+
+        // Interior door positions are cell relative, so doors of different
+        // interiors share a coordinate space. Restricting the search to the
+        // current cell's FormID is what keeps the lookup unambiguous.
+        const auto candidates = doorMgr->getDoorsInCell(currentCell->tesFormID);
+        if (candidates.empty()) {
+            return "No doors registered in cell '" + currentCell->cellName + "'";
+        }
+
+        const glm::vec3 playerPos = worldManager->getPlayerPosition();
+        const Door* door = nullptr;
+        float bestSq = std::numeric_limits<float>::max();
+        for (const Door* candidate : candidates) {
+            if (!candidate) continue;
+            const float sq = glm::dot(candidate->position - playerPos,
+                                      candidate->position - playerPos);
+            if (sq < bestSq) {
+                bestSq = sq;
+                door = candidate;
+            }
+        }
+        if (!door) return "No doors registered in this cell";
+
+        const uint32_t doorId = door->doorId;
+        const std::string name = door->name;
+        const std::string destination = door->destinationCellName.empty()
+                                            ? formIDToHex(door->destinationCell)
+                                            : door->destinationCellName;
+        if (!doorMgr->useDoor(doorId)) {
+            return "Door transition failed: " + name + " -> " + destination;
+        }
+
+        // An interior destination places its geometry lazily on the first frame
+        // after the switch, exactly as teleportinterior does; the player
+        // controller has to be moved too, since it drives the camera.
+        if (playerController) {
+            playerController->setPosition(worldManager->getPlayerPosition());
+        }
+        auto landed = worldManager->getCurrentCell();
+        const std::string landedName =
+            landed ? (landed->cellName.empty() ? landed->editorID : landed->cellName)
+                   : std::string("?");
+        if (worldManager->isPlayerIndoors()) {
+            const size_t placed = ensureInteriorObjectsPlaced();
+            return "Used door '" + name + "' -> " + landedName + " (interior, " +
+                   std::to_string(placed) + " objects placed)";
+        }
+        return "Used door '" + name + "' -> " + landedName + " (exterior)";
     };
 
     refs.saveGameSlot = [this](uint32_t slot) {
@@ -2849,6 +2945,11 @@ void Renderer::createTestScenario() {
         LOGI("Placed %zu actors and %zu object references (%zu resolved to a model, %zu STAT, %zu unresolvable; %zu interior refs skipped, %zu unowned refs skipped)",
              placedActors, placedObjects, resolvedObjectRefs, resolvedStatics,
              unresolvedObjectRefs, skippedInteriorRefs, skippedForeignRefs);
+
+        // 3b. Wire door transitions. This must run here, not during cell
+        // registration: XTEL resolution needs the full reference *and* cell
+        // lists, and doors live in interior cells that the world build skips.
+        registerEsmDoors();
 
         // Load DIAL/INFO dialogue trees now that the actors exist, so faction
         // memberships can be resolved for topic filtering.
@@ -4849,6 +4950,112 @@ static const char* interiorFragmentSrc =
 // degrees about X maps the authored +Z to the engine's +Y.
 static glm::mat4 interiorAxisFix() {
     return glm::rotate(glm::mat4(), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+}
+
+// Phase 65: register every ESM door REFR with DoorManager.
+//
+// A door REFR's XTEL subrecord names the *target door reference*, not the
+// destination cell, so each link needs one hop: target REFR -> its cellFormID
+// -> CellData. That hop needs the whole reference and cell list at once, which
+// only exists here, after the ESM has been parsed. Both lists are indexed into
+// hash maps first so the walk stays linear instead of O(doors * refs).
+//
+// Links are one-way in this corpus, so every door is registered with its own
+// resolved destination and the pair is never assumed symmetric.
+size_t Renderer::registerEsmDoors() {
+    if (!worldManager || !assetManager) return 0;
+
+    DoorManager* doorMgr = worldManager->getDoorManager();
+    if (!doorMgr) return 0;
+
+    const auto& esmMgr = assetManager->getEsmManager();
+    const auto& refs = esmMgr.getAllReferences();
+    const auto& cells = esmMgr.getAllCells();
+    if (refs.empty() || cells.empty()) return 0;
+
+    std::unordered_map<uint32_t, const oblivion::ReferenceData*> refByFormID;
+    refByFormID.reserve(refs.size());
+    for (const auto& ref : refs) {
+        if (ref.formID != 0) refByFormID.emplace(ref.formID, &ref);
+    }
+
+    std::unordered_map<uint32_t, const oblivion::CellData*> cellByFormID;
+    cellByFormID.reserve(cells.size());
+    for (const auto& cell : cells) {
+        if (cell.formID != 0) cellByFormID.emplace(cell.formID, &cell);
+    }
+
+    // The world build registers only exterior cells, so a door in an interior
+    // has no Cell to look up; formID-keyed lookups above cover both cases.
+    doorMgr->clearDoors();
+
+    size_t registered = 0;
+    size_t doorRefs = 0;
+    size_t noXtel = 0;
+    size_t unresolvedTarget = 0;
+    size_t unresolvedCell = 0;
+    for (const auto& ref : refs) {
+        if (ref.refType != 0) continue;
+        if (!esmMgr.findDoor(ref.baseFormID)) continue;
+        ++doorRefs;
+
+        if (!ref.hasXtel || ref.doorTargetFormID == 0) {
+            ++noXtel;
+            continue;
+        }
+
+        auto targetIt = refByFormID.find(ref.doorTargetFormID);
+        if (targetIt == refByFormID.end()) {
+            ++unresolvedTarget;
+            continue;
+        }
+        const oblivion::ReferenceData& targetRef = *targetIt->second;
+
+        auto destCellIt = cellByFormID.find(targetRef.cellFormID);
+        if (destCellIt == cellByFormID.end()) {
+            ++unresolvedCell;
+            continue;
+        }
+        const oblivion::CellData& destCell = *destCellIt->second;
+
+        const oblivion::DoorData* doorData = esmMgr.findDoor(ref.baseFormID);
+
+        Door door;
+        door.doorId = ref.formID;
+        // ESM coordinates are Z-up; the engine is Y-up.
+        door.position = glm::vec3(ref.position.x, ref.position.z, ref.position.y);
+        door.rotation = glm::vec3(ref.rotation.x, ref.rotation.z, ref.rotation.y);
+        door.sourceCellFormID = ref.cellFormID;
+        door.destinationCell = destCell.formID;
+        door.destinationIsInterior = !destCell.isExterior;
+        door.destinationCellName = destCell.fullName.empty() ? destCell.editorID
+                                                             : destCell.fullName;
+        door.destinationEditorID = destCell.editorID;
+        // Spawn on the *target* door so the player lands where the matching door
+        // stands. XTEL carries the same transform, but the target reference is
+        // authoritative when the two disagree.
+        door.destinationPos =
+            glm::vec3(targetRef.position.x, targetRef.position.z, targetRef.position.y);
+        door.destinationRotation =
+            glm::vec3(0.0f, targetRef.rotation.z, 0.0f);
+        door.interactionRadius = 2.0f;
+        if (doorData) {
+            door.modelPath = doorData->modelPath;
+            door.name = doorData->fullName.empty() ? doorData->editorID : doorData->fullName;
+        }
+        if (door.name.empty()) {
+            door.name = "Door " + formIDToHex(ref.formID);
+        }
+        door.nameJa = door.name;
+
+        doorMgr->registerDoor(door);
+        ++registered;
+    }
+
+    LOGI("Door transitions: %zu doors registered (%zu door REFRs, %zu without XTEL, "
+         "%zu target ref unresolved, %zu target cell unresolved)",
+         registered, doorRefs, noXtel, unresolvedTarget, unresolvedCell);
+    return registered;
 }
 
 // Resolve the current interior cell's REFR records into WorldObjects, once.

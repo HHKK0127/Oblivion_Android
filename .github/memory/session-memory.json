@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-27T10:33:55Z",
+  "lastUpdated": "2026-09-27T11:40:00Z",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -4842,10 +4842,51 @@
         "powershell"
       ],
       "compressed": false
+    },
+    {
+      "category": "decision",
+      "priority": "high",
+      "content": "Door transitions landed 2026-09-27 (plan-data session 9427ac74). XTEL holds the DESTINATION DOOR REFR FormID, not a cell, so the destination cell is resolved one hop later: Renderer::registerEsmDoors() indexes refs and cells, maps door REFR -> target REFR -> target cellFormID, and bakes the result into Door.destinationCell / destinationIsWorldspace. DoorManager stays ESM-agnostic. Registration must run inside createTestScenario after the reference loop, not at world build time, because initializeTestCells only creates test cells and interior cells are skipped by addCellFromESM.",
+      "tags": [
+        "doors",
+        "xtel",
+        "renderer",
+        "world"
+      ],
+      "id": "4217b564-2e72-41a7-86e4-4c0d573cb37d",
+      "timestamp": "2026-09-27T11:40:00Z",
+      "compressed": false
+    },
+    {
+      "category": "decision",
+      "priority": "high",
+      "content": "Door transition ordering (door.cpp performCellTransition): (1) write player position/rotation BEFORE switching cells, because leaveInteriorCell() resolves the return exterior cell from the recorded position; (2) interior -> enterInteriorCell(formID, editorID, fullName), exterior -> getCellByFormID() then leaveInteriorCell() only if wasIndoors, then loadCell(cellX, cellY); (3) skip updateActiveCells() while indoors - interior positions are cell relative and streaming would pull back the exterior cell at the same coordinate. The usedoor command filters candidates with getDoorsInCell(currentCell->tesFormID) before the distance compare for the same reason.",
+      "tags": [
+        "doors",
+        "world-manager",
+        "renderer"
+      ],
+      "id": "f469532b-4ca7-4d03-8a5b-8866e6f92bae",
+      "timestamp": "2026-09-27T11:40:00Z",
+      "compressed": false
+    },
+    {
+      "category": "configuration",
+      "priority": "medium",
+      "content": "Door-transition verification 2026-09-27: bash tools/host_tests/run_host_tests.sh = ALL GREEN (0 suite(s) failed), HOSTEXIT=0 (InteriorCellTests 47/47, GameStateReportTests 30/30, AssetPathTests 19/19, XtelDecodeTests 15/15, Phase30IntegrationTest self-skips without OBLIVION_ASSET_BASE); gradlew assembleDebug = BUILD SUCCESSFUL with libnative-lib.so relinked for arm64-v8a / armeabi-v7a / x86_64. The host runner does NOT compile engine/renderer.cpp, so assembleDebug is the only gate that sees registerEsmDoors() - and the on-device transition is still unmeasured.",
+      "tags": [
+        "build",
+        "host-tests",
+        "doors",
+        "verification"
+      ],
+      "id": "ae09e5dc-fa63-442e-9203-c0cbfd51fed6",
+      "timestamp": "2026-09-27T11:40:00Z",
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 336,
+    "totalEntries": 339,
     "compressedCount": 2,
     "sessionCount": 29
   }

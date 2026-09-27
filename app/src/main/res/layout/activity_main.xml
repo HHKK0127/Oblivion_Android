@@ -239,6 +239,16 @@
                         android:textColor="#66FFFF"  android:fontFamily="sans-serif-medium" android:textAllCaps="false" android:minHeight="0dp" android:stateListAnimator="@null"/>
 
                     <Button
+                        android:id="@+id/btn_debug_usedoor"
+                        android:layout_width="match_parent"
+                        android:layout_height="36dp"
+                        android:text="Use Nearest Door"
+                        android:textSize="11sp"
+                        android:layout_marginTop="2dp"
+                        android:background="@drawable/debug_button_action"
+                        android:textColor="#66FF66"  android:fontFamily="sans-serif-medium" android:textAllCaps="false" android:minHeight="0dp" android:stateListAnimator="@null"/>
+
+                    <Button
                         android:id="@+id/btn_debug_gamestate"
                         android:layout_width="match_parent"
                         android:layout_height="36dp"

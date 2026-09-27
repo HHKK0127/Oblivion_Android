@@ -484,6 +484,13 @@ void GameConsole::registerBuiltinCommands() {
             print("World Manager not available");
         }
     });
+    registerCommand("usedoor", "Walk through the door nearest the player", [this](const std::vector<std::string>&) {
+        if (gameRefs.useNearestDoor) {
+            print(gameRefs.useNearestDoor());
+        } else {
+            print("Door Manager not available");
+        }
+    });
 
     // === Magic commands ===
     registerCommand("learnspell", "Learn spell: learnspell <spellId>", [this](const std::vector<std::string>& args) { cmdLearnSpell(args); });

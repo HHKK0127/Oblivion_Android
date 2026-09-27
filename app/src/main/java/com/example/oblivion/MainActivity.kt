@@ -397,6 +397,11 @@ class MainActivity : Activity() {
                 Log.d(TAG, "Executed: teleportexterior")
             }
 
+            findViewById<Button>(R.id.btn_debug_usedoor)?.setOnClickListener {
+                gameRenderer?.nativeExecuteConsoleCommand("usedoor")
+                Log.d(TAG, "Executed: usedoor")
+            }
+
             findViewById<Button>(R.id.btn_debug_gamestate)?.setOnClickListener {
                 gameRenderer?.nativeExecuteConsoleCommand("gamestate")
                 Log.d(TAG, "Executed: gamestate")

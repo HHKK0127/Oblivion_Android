@@ -270,6 +270,8 @@ public:
         std::function<std::string()> getActiveCellsList;
         std::function<std::string()> getWorldItemsList;
         std::function<std::string()> getDoorInfo;
+        // Phase 65: activate the door nearest to the player (cell transition).
+        std::function<std::string()> useNearestDoor;
 
         // Logs
         std::function<void(const std::string&)> setLogLevel;

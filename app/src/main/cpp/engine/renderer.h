@@ -475,6 +475,11 @@ private:
     void renderInteriorObjects();
     size_t ensureInteriorObjectsPlaced();
 
+    // Phase 65: door transitions. Walks the ESM reference list, follows each
+    // door REFR's XTEL link to its target door reference and registers the
+    // resolved pair with DoorManager. Returns the number of doors registered.
+    size_t registerEsmDoors();
+
         // Phase 65: exterior static-object world (REFR -> MODL -> NIF)
         void renderStaticObjects();
     };

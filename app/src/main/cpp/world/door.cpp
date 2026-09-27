@@ -49,8 +49,16 @@ void DoorManager::registerDoor(const Door& door) {
     }
 
     doors[door.doorId] = door;
-    LOGD_DOOR("Door registered: ID=%u, Name=%s, Dest Cell=%u",
-             door.doorId, door.name.c_str(), door.destinationCell);
+    // The ESM corpus holds ~4,400 door references and registerEsmDoors() walks
+    // all of them in one go, so a per-door DEBUG line would flood logcat.
+    // DoorManager::logDoorStatus() dumps the full table on demand instead.
+    if (doors.size() <= 4) {
+        LOGD_DOOR("Door registered: ID=%u, Name=%s, Cell 0x%08X -> 0x%08X",
+                 door.doorId, door.name.c_str(), door.sourceCellFormID,
+                 door.destinationCell);
+    } else if (doors.size() == 5) {
+        LOGD_DOOR("Door registration log throttled (use logDoorStatus for the full table)");
+    }
 }
 
 void DoorManager::registerDoor(uint32_t doorId, const glm::vec3& position,
@@ -58,6 +66,13 @@ void DoorManager::registerDoor(uint32_t doorId, const glm::vec3& position,
                               uint32_t destinationCell, const glm::vec3& destinationPos) {
     Door door(doorId, position, nameEn, nameJa, destinationCell, destinationPos);
     registerDoor(door);
+}
+
+void DoorManager::clearDoors() {
+    if (!doors.empty()) {
+        LOGI_DOOR("Clearing %zu registered doors", doors.size());
+    }
+    doors.clear();
 }
 
 // ============================================================================
@@ -112,15 +127,18 @@ const Door* DoorManager::getNearestDoor(const glm::vec3& position) const {
     return closestDoor;
 }
 
-std::vector<const Door*> DoorManager::getDoorsInCell(uint32_t cellId) const {
+std::vector<const Door*> DoorManager::getDoorsInCell(uint32_t cellFormID) const {
     std::vector<const Door*> result;
+
+    if (cellFormID == 0) {
+        return result;
+    }
 
     for (const auto& pair : doors) {
         const Door& door = pair.second;
-        // A door in a cell is one that leads FROM that cell
-        // This is implicit based on the cell it's located in
-        // For now, we can't determine this without additional metadata
-        // This method is for future enhancement
+        if (door.sourceCellFormID == cellFormID) {
+            result.push_back(&door);
+        }
     }
 
     return result;
@@ -155,26 +173,62 @@ bool DoorManager::performCellTransition(const Door& door) {
     // 1. Get current cell before transition
     auto currentCell = worldManager->getCurrentCell();
     uint32_t oldCellId = currentCell ? currentCell->cellId : 0;
+    const bool wasIndoors = worldManager->isPlayerIndoors();
 
-    // 2. Load destination cell
-    if (!worldManager->loadCell(door.destinationCell)) {
-        LOGE_DOOR("Failed to load destination cell: ID=%u", door.destinationCell);
-        return false;
-    }
-
-    // 3. Set player position at destination
+    // 2. Move the player to the destination transform *before* switching cells.
+    // WorldManager records the position even while the player is indoors, and
+    // leaveInteriorCell() resolves the resumed exterior cell from it, so the
+    // destination has to be in place first or the player resumes streaming at
+    // the coordinate they left.
     worldManager->setPlayerPosition(door.destinationPos);
-
-    // 4. Set player rotation if specified
-    if (door.destinationRotation.x != 0.0f || door.destinationRotation.y != 0.0f || door.destinationRotation.z != 0.0f) {
+    if (door.destinationRotation.x != 0.0f || door.destinationRotation.y != 0.0f ||
+        door.destinationRotation.z != 0.0f) {
         worldManager->setPlayerRotation(door.destinationRotation);
     }
 
-    // 5. Update active cells (will unload distant cells, including old cell if needed)
-    worldManager->updateActiveCells();
+    // 3. Switch cells. Interior cells are keyed by TES FormID and carry no grid
+    // coordinate, so they go through enterInteriorCell(); an exterior
+    // destination is a registered cell and is reached by its grid square.
+    if (door.destinationIsInterior) {
+        // enterInteriorCell() replaces currentCell outright, so a preceding
+        // leaveInteriorCell() would only add a pointless exterior re-resolve.
+        if (!worldManager->enterInteriorCell(door.destinationCell,
+                                            door.destinationEditorID,
+                                            door.destinationCellName)) {
+            LOGE_DOOR("Failed to enter interior cell: 0x%08X", door.destinationCell);
+            return false;
+        }
+    } else {
+        auto destCell = worldManager->getCellByFormID(door.destinationCell);
+        if (!destCell) {
+            LOGE_DOOR("Destination cell 0x%08X is not loaded in this worldspace",
+                      door.destinationCell);
+            return false;
+        }
+        // Drop the interior first: while the player is marked indoors,
+        // getCellAt() is bypassed and the exterior never becomes current.
+        if (wasIndoors) {
+            worldManager->leaveInteriorCell();
+        }
+        if (!worldManager->loadCell(destCell->cellX, destCell->cellY)) {
+            LOGE_DOOR("Failed to load destination cell: grid (%d, %d)",
+                      destCell->cellX, destCell->cellY);
+            return false;
+        }
+    }
 
-    LOGI_DOOR("Cell transition complete: %u → %u via door ID=%u",
-             oldCellId, door.destinationCell, door.doorId);
+    // 4. Stream cells around the destination. Skipped indoors: interior
+    // positions are cell relative, so streaming would pull the exterior cells
+    // sharing that coordinate back in.
+    if (!worldManager->isPlayerIndoors()) {
+        worldManager->updateActiveCells();
+    }
+
+    auto landed = worldManager->getCurrentCell();
+    LOGI_DOOR("Cell transition complete: %u -> %u via door ID=%u (0x%08X -> 0x%08X, %s)",
+             oldCellId, landed ? landed->cellId : 0,
+             door.doorId, door.sourceCellFormID, door.destinationCell,
+             door.destinationIsInterior ? "interior" : "exterior");
 
     return true;
 }
@@ -213,9 +267,10 @@ void DoorManager::logDoorStatus() const {
 
     for (const auto& pair : doors) {
         const Door& door = pair.second;
-        LOGD_DOOR("  Door: %s (ID=%u, Cell %u → %u)",
+        LOGD_DOOR("  Door: %s (ID=%u, Cell 0x%08X -> 0x%08X%s)",
                  door.name.c_str(), door.doorId,
-                 0, door.destinationCell);  // Note: 0 is placeholder for source cell
+                 door.sourceCellFormID, door.destinationCell,
+                 door.destinationIsInterior ? " interior" : "");
     }
 
     LOGD_DOOR("========================================");
