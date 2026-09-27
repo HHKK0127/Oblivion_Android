@@ -1,5 +1,6 @@
 #include "asset_manager.h"
 #include "asset_path_resolver.h"
+#include "mesh_builder.h"
 #include <android/log.h>
 #include <algorithm>
 #include <fstream>
@@ -329,32 +330,16 @@ std::shared_ptr<Mesh> AssetManager::loadNifMesh(const std::string& nifPath) {
     // Create mesh from NIF geometry
     auto mesh = std::make_shared<Mesh>();
 
-    auto geometries = nifParser->extractAllGeometry();
-    if (!geometries.empty()) {
-        const auto& geom = geometries[0];
-
-        std::vector<Vertex> vertices;
-        for (size_t i = 0; i < geom.vertices.size(); i++) {
-            Vertex v;
-            v.position = geom.vertices[i].toGLM();
-            if (i < geom.normals.size()) v.normal = geom.normals[i].toGLM();
-            if (i < geom.texCoords.size()) v.texCoord = geom.texCoords[i];
-            if (i < geom.colors.size()) v.color = glm::vec3(geom.colors[i].x, geom.colors[i].y, geom.colors[i].z);
-            vertices.push_back(v);
-        }
-
-        std::vector<unsigned int> indices;
-        for (const auto& tri : geom.triangles) {
-            indices.push_back(tri.v0);
-            indices.push_back(tri.v1);
-            indices.push_back(tri.v2);
-        }
-
-        mesh->setVertices(vertices);
-        mesh->setIndices(indices);
+    const auto geometries = nifParser->extractAllGeometry();
+    const oblivion::MergedMeshData merged = oblivion::mergeGeometry(geometries);
+    if (!merged.vertices.empty() && !merged.indices.empty()) {
+        mesh->setVertices(merged.vertices);
+        mesh->setIndices(merged.indices);
         mesh->uploadToGPU();
 
-        LOGD("Mesh created: %zu vertices, %zu indices", vertices.size(), indices.size());
+        LOGD("Mesh created: %zu of %zu geometries, %zu vertices, %zu indices",
+             merged.geometryCount, geometries.size(),
+             merged.vertices.size(), merged.indices.size());
     }
 
     CacheEntry entry;
@@ -390,30 +375,16 @@ std::shared_ptr<Mesh> AssetManager::loadNifFromData(const std::string& path,
     }
 
     auto mesh = std::make_shared<Mesh>();
-    auto geometries = nifParser->extractAllGeometry();
-    if (!geometries.empty()) {
-        const auto& geom = geometries[0];
-
-        std::vector<Vertex> vertices;
-        for (size_t i = 0; i < geom.vertices.size(); i++) {
-            Vertex v;
-            v.position = geom.vertices[i].toGLM();
-            if (i < geom.normals.size()) v.normal = geom.normals[i].toGLM();
-            if (i < geom.texCoords.size()) v.texCoord = geom.texCoords[i];
-            if (i < geom.colors.size()) v.color = glm::vec3(geom.colors[i].x, geom.colors[i].y, geom.colors[i].z);
-            vertices.push_back(v);
-        }
-
-        std::vector<unsigned int> indices;
-        for (const auto& tri : geom.triangles) {
-            indices.push_back(tri.v0);
-            indices.push_back(tri.v1);
-            indices.push_back(tri.v2);
-        }
-
-        mesh->setVertices(vertices);
-        mesh->setIndices(indices);
+    const auto geometries = nifParser->extractAllGeometry();
+    const oblivion::MergedMeshData merged = oblivion::mergeGeometry(geometries);
+    if (!merged.vertices.empty() && !merged.indices.empty()) {
+        mesh->setVertices(merged.vertices);
+        mesh->setIndices(merged.indices);
         mesh->uploadToGPU();
+
+        LOGD("Mesh merged from BSA: %zu of %zu geometries, %zu vertices, %zu indices",
+             merged.geometryCount, geometries.size(),
+             merged.vertices.size(), merged.indices.size());
     }
 
     // Clean up temp file

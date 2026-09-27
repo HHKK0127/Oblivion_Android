@@ -87,6 +87,7 @@ SOURCES=(
   app/src/main/cpp/tests/interior_cell_tests.cpp
   app/src/main/cpp/tests/gamestate_report_tests.cpp
   app/src/main/cpp/tests/asset_path_tests.cpp
+  app/src/main/cpp/tests/mesh_builder_tests.cpp
   app/src/main/cpp/quest/quest_flow_controller.cpp
   app/src/main/cpp/localization/localization_manager.cpp
   app/src/main/cpp/quest/quest_stage_manager.cpp
@@ -124,6 +125,7 @@ SOURCES=(
   app/src/main/cpp/animation/animation_player.cpp
   app/src/main/cpp/assets/nif_parser.cpp
   app/src/main/cpp/assets/nif_block_type_map.cpp
+  app/src/main/cpp/assets/mesh_builder.cpp
   app/src/main/cpp/assets/mesh_loader.cpp
   app/src/main/cpp/character/face_gen_morpher.cpp
   app/src/main/cpp/character/face_gen_cache.cpp

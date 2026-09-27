@@ -247,6 +247,7 @@ add_library(native-lib SHARED
     # Asset System
     assets/nif_parser.cpp
     assets/nif_block_type_map.cpp
+    assets/mesh_builder.cpp
     assets/dds_loader.cpp
     assets/asset_manager.cpp
     assets/bsa_reader.cpp

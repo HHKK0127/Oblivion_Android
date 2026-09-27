@@ -1,6 +1,7 @@
 #include "world_entity.h"
 #include "../assets/asset_manager.h"
 #include "../assets/nif_parser.h"
+#include "../assets/mesh_builder.h"
 #include "../geometry/skin_partition_packer.h"
 #include <android/log.h>
 #include <cmath>
@@ -432,47 +433,12 @@ int32_t WorldLoader::convertCollision(const CollisionObject& obj,
 // ----------------------------------------------------------------------------
 
 std::shared_ptr<Mesh> WorldLoader::buildMesh(const std::vector<NIFGeometry>& geometries) {
-    if (geometries.empty()) return nullptr;
+    const oblivion::MergedMeshData merged = oblivion::mergeGeometry(geometries);
+    if (merged.vertices.empty() || merged.indices.empty()) return nullptr;
 
     auto mesh = std::make_shared<Mesh>();
-
-    std::vector<Vertex> vertices;
-    std::vector<unsigned int> indices;
-
-    // Merge all geometries into one mesh
-    for (const auto& geo : geometries) {
-        unsigned int baseIndex = static_cast<unsigned int>(vertices.size());
-
-        // Add vertices
-        for (size_t i = 0; i < geo.vertices.size(); i++) {
-            Vertex v;
-            v.position = geo.vertices[i].toGLM();
-
-            if (i < geo.normals.size()) {
-                v.normal = geo.normals[i].toGLM();
-            }
-            if (i < geo.texCoords.size()) {
-                v.texCoord = geo.texCoords[i];
-            }
-            if (i < geo.colors.size()) {
-                v.color = glm::vec3(geo.colors[i].x, geo.colors[i].y, geo.colors[i].z);
-            }
-
-            vertices.push_back(v);
-        }
-
-        // Add indices
-        for (const auto& tri : geo.triangles) {
-            indices.push_back(baseIndex + tri.v0);
-            indices.push_back(baseIndex + tri.v1);
-            indices.push_back(baseIndex + tri.v2);
-        }
-    }
-
-    if (vertices.empty() || indices.empty()) return nullptr;
-
-    mesh->setVertices(vertices);
-    mesh->setIndices(indices);
+    mesh->setVertices(merged.vertices);
+    mesh->setIndices(merged.indices);
     mesh->uploadToGPU();
 
     return mesh;

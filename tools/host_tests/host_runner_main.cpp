@@ -12,6 +12,7 @@
 #include "tests/interior_cell_tests.h"
 #include "tests/gamestate_report_tests.h"
 #include "tests/asset_path_tests.h"
+#include "tests/mesh_builder_tests.h"
 
 // Print a suite summary and report whether it passed.
 static void runSuite(const char* name, bool ok, const std::string& summary, int& failed) {
@@ -76,6 +77,11 @@ int main() {
         AssetPathTests t;
         const bool ok = t.runAllTests();
         runSuite("AssetPathTests", ok, t.getSummary(), failed);
+    }
+    {
+        MeshBuilderTests t;
+        const bool ok = t.runAllTests();
+        runSuite("MeshBuilderTests", ok, t.getSummary(), failed);
     }
     {
         // Real Oblivion assets are not redistributable; the suite skips itself when
