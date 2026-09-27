@@ -2321,6 +2321,52 @@ void ScriptVMTests::testNativeScdaDecoder() {
                getTimeMs38() - start);
     }
 
+    // Test 17c: the nine opcode slots that no script in Oblivion3.esm emits are
+    // named from the authoritative function table. Eight of them never appear
+    // in any SCDA stream, so only the name can be checked; 0x10F5 ForceFlee is
+    // emitted once (ParadiseGrotto01, "forceflee ParadiseGrotto01,
+    // MQ15ResurrectPad3") and its payload is [u16 8][u16 2][<r>][<r>], which
+    // matches the two reference arguments the source line passes.
+    {
+        const float start = getTimeMs38();
+        const bool namesOk =
+            getNativeOpcodeName(0x10E1) == "GetPersuasionNumber" &&
+            getNativeOpcodeName(0x10E2) == "VampireFeed" &&
+            getNativeOpcodeName(0x10E4) == "GetIsClassDefault" &&
+            getNativeOpcodeName(0x10E5) == "GetClassDefaultMatch" &&
+            getNativeOpcodeName(0x10E6) == "GetInCellParam" &&
+            getNativeOpcodeName(0x10F2) == "GetUnconscious" &&
+            getNativeOpcodeName(0x10F5) == "ForceFlee" &&
+            getNativeOpcodeName(0x10F6) == "GetIsUsedItem" &&
+            getNativeOpcodeName(0x10F7) == "GetIsUsedItemType";
+
+        // 0x10F5 ForceFlee: [u16 2][<r>][<r>], the measured payload of the
+        // single record that emits it (length word 8 = 2 + 3 + 3).
+        std::vector<uint8_t> forceFlee;
+        appendU16(forceFlee, 2);
+        forceFlee.push_back('r');
+        appendU16(forceFlee, 1);
+        forceFlee.push_back('r');
+        appendU16(forceFlee, 2);
+        std::vector<uint8_t> forceFleeCode;
+        appendInstruction(forceFleeCode, 0x10F5, forceFlee);
+        const NativeDecodeResult forceFleeResult = decodeNativeScda(forceFleeCode);
+        const bool forceFleeOk = forceFleeResult.success &&
+                                 forceFleeResult.instructions.size() == 1 &&
+                                 !forceFleeResult.instructions[0].framingFailed &&
+                                 forceFleeResult.instructions[0].tokens.size() == 2 &&
+                                 forceFleeResult.instructions[0].tokens[0].kind ==
+                                     NativeTokenKind::Variable &&
+                                 forceFleeResult.instructions[0].tokens[0].typeChar == 'r' &&
+                                 forceFleeResult.instructions[0].tokens[1].kind ==
+                                     NativeTokenKind::Variable &&
+                                 forceFleeResult.instructions[0].tokens[1].typeChar == 'r';
+
+        record("NativeScda: unused slot names", namesOk && forceFleeOk,
+               "The nine unemitted opcode slots resolve and ForceFlee carries its two reference arguments",
+               getTimeMs38() - start);
+    }
+
     // Test 18: the remote Set form, taken from SEHaskillSummonQuestScript.
     // The payload is [0x72][u16 refSlot][type][u16 remoteVarIndex][u16 elen][expr]
     // and the remote variable index belongs to the target script's SLSD table.
