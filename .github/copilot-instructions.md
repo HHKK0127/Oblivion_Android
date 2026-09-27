@@ -61,6 +61,7 @@ app/src/main/cpp/
 - `README.md` - メインドキュメント（英語+日本語）
 - `CHANGELOG.md` - 変更履歴
 - `Handbook.md` - プロジェクト哲学・ガイドライン
+- `plan.md` - 実装計画（Phase 9〜72、唯一の正典）
 
 ### docs/ディレクトリ
 - `README.md` - ドキュメント目次
@@ -70,7 +71,6 @@ app/src/main/cpp/
 - `ASSET_GUIDE.md` - アセット統合ガイド
 - `AUDIO_SYSTEM.md` - オーディオシステム
 - `DEVELOPMENT_HISTORY.md` - 開発履歴
-- `PHASE9_PLAN.md` - Phase 9実装計画
 
 ## 開発ガイドライン
 

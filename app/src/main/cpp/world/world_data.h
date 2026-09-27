@@ -91,6 +91,26 @@ struct WorldObject {
 };
 
 // ============================================================================
+// Phase 66 P20: interior object placement
+// ============================================================================
+
+// One REFR record resolved far enough to become a WorldObject.
+//
+// ESM interior references carry Z-up cell-relative positions, and the NIF path
+// lives on the *base* record (STAT/DOOR/LIGH/...), not on the reference itself.
+// WorldManager holds no ESM handle, so the renderer resolves both and hands the
+// result over as plain data.
+struct InteriorObjectPlacement {
+    uint32_t formID = 0;            // REFR FormID (debug identity)
+    uint32_t baseFormID = 0;        // STAT/DOOR/... FormID the REFR points at
+    std::string name;               // Base record's full name or editor ID
+    std::string modelPath;          // NIF path, empty when the base has none
+    glm::vec3 position{0.0f, 0.0f, 0.0f};   // Z-up, cell relative
+    glm::vec3 rotation{0.0f, 0.0f, 0.0f};   // Radians, ESM axes
+    float scale = 1.0f;
+};
+
+// ============================================================================
 // Cell - Core unit of the world
 // ============================================================================
 

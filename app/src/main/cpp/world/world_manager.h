@@ -136,6 +136,15 @@ public:
                                             const std::string& editorID,
                                             const std::string& fullName);
 
+    // Phase 66 P20: materialise interior references into the cell's object list
+    // so the renderer has geometry to draw. Returns the number of objects added.
+    //
+    // Returns 0 without touching the cell when the FormID is unknown or the cell
+    // already holds objects, so callers may invoke this on every teleport and
+    // re-entering the same interior never duplicates geometry.
+    size_t placeInteriorObjects(uint32_t cellFormID,
+                                const std::vector<InteriorObjectPlacement>& objects);
+
     // Get all NPCs in a specific cell
     std::vector<NPC*> getNpcsInCell(uint32_t cellId);
     std::vector<NPC*> getNpcsInCell(std::shared_ptr<Cell> cell);

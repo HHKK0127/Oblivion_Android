@@ -40,6 +40,7 @@
 #include "../ui/inventory_ui.h"
 #include "../ui/ui_inventory_panel.h"
 #include "../world/world_manager.h"
+#include "../world/object_placer.h"
 #include "../world/world_entity.h"
 #include "../localization/localization_manager.h"
 #include "../profiling/performance_monitor.h"
@@ -129,6 +130,9 @@ private:
     std::unique_ptr<LocalizationManager> localizationManager;
     std::unique_ptr<NpcManager> npcManager;
     std::unique_ptr<WorldManager> worldManager;
+    // Phase 66 P20: resolves interior REFR records into WorldObjects. Kept here
+    // rather than inside WorldManager so the world layer stays ESM agnostic.
+    std::unique_ptr<ObjectPlacer> objectPlacer;
     std::unique_ptr<QuestManager> questManager;
     std::unique_ptr<CombatManager> combatManager;
     std::unique_ptr<SpellManager> spellManager;
@@ -465,4 +469,11 @@ private:
 
     // Sky dome rendering driven by SkyWeatherSystem (Phase 56 / 66)
     void renderSkyDome();
-};
+
+    // Phase 66 P20: interior cell geometry (REFR resolved NIFs)
+    void renderInteriorObjects();
+    size_t ensureInteriorObjectsPlaced();
+
+        // Phase 65: exterior static-object world (REFR -> MODL -> NIF)
+        void renderStaticObjects();
+    };

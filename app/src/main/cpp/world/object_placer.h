@@ -45,6 +45,14 @@ public:
                         const oblivion::ReferenceData& ref,
                         const oblivion::ESMManager& esmMgr);
 
+    // Phase 66 P20: resolve every REFR belonging to cellFormID into a plain-data
+    // placement record. Unlike placeObjectsForCell this does not touch a Cell and
+    // does not create WorldObjects, so the caller can decide when to materialise
+    // them; it also keeps WorldManager free of any ESM dependency.
+    std::vector<InteriorObjectPlacement> collectInteriorPlacements(
+        uint32_t cellFormID,
+        const oblivion::ESMManager& esmMgr);
+
     // ========================================================================
     // Object Type Resolution
     // ========================================================================
@@ -78,6 +86,12 @@ public:
 
     // Get model path for a base object
     std::string resolveModelPath(uint32_t baseFormID,
+                                  ObjectType type,
+                                  const oblivion::ESMManager& esmMgr);
+
+    // Get a human readable name for a base object: full name when the record has
+    // one, otherwise the editor ID, otherwise the generic type name.
+    std::string resolveObjectName(uint32_t baseFormID,
                                   ObjectType type,
                                   const oblivion::ESMManager& esmMgr);
 

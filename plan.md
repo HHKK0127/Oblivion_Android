@@ -6,9 +6,14 @@
 > and its measurement date. Where two paragraphs disagree, the later date is authoritative. See
 > [Current Status](#current-status-measured-on-emulator) for the live state of the project, and
 > [Verified build history](#verified-build-history-2026-09-23-to-2026-09-26) for what was measured on which build.
+>
+> **This file is the single plan of record.** The Phase 9 plan that used to live in
+> `docs/PHASE9_PLAN.md` was merged into the [Phase 9](#phase-9-graphical-ui--sound-effects-original-plan)
+> section below on 2026-09-27, and that file was deleted; no other plan document supersedes this one.
 
 **Contents**
 
+- [Phase 9: Graphical UI & Sound Effects (original plan)](#phase-9-graphical-ui--sound-effects-original-plan)
 - [Phase 36: Virtual Controller Integration](#phase-36-virtual-controller-integration)
 - [Phase 37-45: Completed](#phase-37-45-completed)
 - [Phase 46-55: Completion Plan](#phase-46-55-completion-plan)
@@ -25,6 +30,228 @@
   - [Execution Plan: Parallel Workstreams](#execution-plan-parallel-workstreams)
   - [Current Status (measured on emulator)](#current-status-measured-on-emulator)
   - [Verified build history](#verified-build-history-2026-09-23-to-2026-09-26)
+
+---
+
+## Phase 9: Graphical UI & Sound Effects (original plan)
+
+**Status: Complete.** This section is the Phase 9 implementation plan as written on 2026-06-07,
+merged into this file on 2026-09-27 from `docs/PHASE9_PLAN.md` so that `plan.md` is the single plan of
+record. The phase shipped as version 0.9.0 (see `CHANGELOG.md`). The text is kept as the historical
+baseline: its own "next steps" are superseded by the Phase 36+ sections below.
+
+- **Project**: Oblivion Android (Plan A - keep OpenGL ES)
+- **Created**: 2026-06-07
+- **Version**: 0.9.0 -> 1.0.0
+- **Asset strategy**: reuse existing assets + program-generated placeholders (Option A)
+- **Planned duration**: 8 weeks
+
+### 1. Existing asset assessment and reuse policy
+
+| File | Size | Use | Policy |
+|------|------|-----|--------|
+| `oblivion_logo.png` | 241 KB | Oblivion logo | used as-is on the title screen |
+| `main_background.png` | 1,299 KB | parchment background | reused for UI panels and menu backgrounds |
+| `shared_button_long_off.png` | 5.7 KB | long button (unselected) | main menu buttons |
+| `shared_button_long_on.png` | 4.5 KB | long button (selected) | main menu button hover state |
+| `shared_button_short_off.png` | 4.0 KB | short button (unselected) | sub-buttons, close buttons |
+| `shared_button_short_on.png` | 2.7 KB | short button (selected) | sub-button hover state |
+| `sky_clouds.png` | 1,202 KB | cloud texture | title screen background (optional) |
+| `terrain_grass.png` | 556 KB | grass | existing in-game use (unchanged) |
+| `terrain_grass2.png` | 492 KB | grass 2 | existing in-game use (unchanged) |
+
+Every asset follows one "parchment / old book" theme - beige-brown button borders, old-paper
+background, stone-cut logo font - so new placeholders were drawn in the same palette
+(`#C4A97F`, `#8B7355`, `#5C4033`).
+
+### 2. Placeholders (temporary assets)
+
+Program-generated drawing API (`ui/placeholder_assets.h`):
+
+```cpp
+namespace PlaceholderAssets {
+    // Parchment palette
+    constexpr glm::vec3 PARCHMENT_LIGHT(0.77f, 0.66f, 0.50f);  // #C4A97F
+    constexpr glm::vec3 PARCHMENT_DARK(0.55f, 0.45f, 0.33f);   // #8B7355
+    constexpr glm::vec3 BROWN_ACCENT(0.36f, 0.25f, 0.20f);     // #5C4033
+    constexpr glm::vec3 GOLD_HIGHLIGHT(0.85f, 0.65f, 0.13f);   // #DAA520
+
+    // Drawing functions (OpenGL ES)
+    void drawSolidRect(float x, float y, float w, float h, glm::vec3 color);
+    void drawPanel(float x, float y, float w, float h);  // bordered panel
+    void drawIconFrame(float x, float y, float size);    // icon frame
+    void drawStatusBar(float x, float y, float w, float h, float fillRatio, glm::vec3 fillColor);
+}
+```
+
+| Category | Placeholder | Implementation | Priority |
+|----------|-------------|----------------|----------|
+| Panel | `panel_default` | scale `main_background.png` as a 9-patch | High |
+| Status bar | `bar_hp_bg`, `bar_hp_fill` | program-generated (green/red/blue gradient) | High |
+| Icons | `icon_inventory`, `icon_map`, `icon_quest`, `icon_settings` | program-generated (simple symbols) | High |
+| Scrollbar | `scroll_track`, `scroll_thumb` | program-generated | Medium |
+| Checkbox | `check_off`, `check_on` | program-generated | Medium |
+| Slider | `slider_track`, `slider_thumb` | program-generated | Medium |
+| Item slot | `item_slot_empty`, `item_slot_selected` | program-generated | Medium |
+| Map marker | `marker_player`, `marker_quest`, `marker_npc` | program-generated (triangle/circle) | Low |
+| NPC portrait | `portrait_placeholder` | flat rect + "?" text | Low |
+
+### 3. Development phases (MVP approach)
+
+#### Phase 9A: UI framework foundation (Week 1-2)
+
+**Goal**: load the existing assets and get the basic UI components running.
+
+- **Week 1 - foundation**: copy the existing textures into `app/src/main/assets/textures/` where
+  needed, verify the DDS and PNG loaders, add UI-texture registration to `TextureManager`, and
+  implement the placeholder drawing functions (`ui/placeholder_assets.cpp`). Build the UI core: a
+  `UIComponent` base class (position, size, show/hide, touch hit-test, parent-child relation so a
+  `UIPanel` can own child components), `UIPanel` with background-texture support (scaled
+  `main_background.png`) and `UIButton` with the existing button textures in three states
+  (normal / hover / pressed) plus a text-label overlay. Build the HUD: `HUDRenderer` as an overlay on
+  the game view, HP/MP/STA bars and minimap frame and quick-slot bar as generated placeholders, and
+  integrate with the debug HUD inherited from Phase 8.
+- **Week 1 deliverables**: `ui/ui_component.h/cpp`, `ui/ui_panel.h/cpp`, `ui/ui_button.h/cpp`,
+  `ui/hud_renderer.h/cpp`, `ui/placeholder_assets.h/cpp`
+- **Week 2 - menus**: `MainMenuUI` with the parchment background, the logo centred at the top and the
+  buttons "New Game" / "Continue" / "Settings" / "Exit" drawn from `shared_button_long_off/on.png`,
+  plus a hover animation (scale 1.05, 0.1 s fade) and touch-accuracy tuning. Make `SettingsUI`
+  graphical (parchment panel, short-button back button, generated toggle switches, language buttons
+  with placeholder flags) and make `SaveLoadUI` graphical (slot panels, selected-slot highlight,
+  "EMPTY" on empty slots), both inherited from Phase 7.1.
+- **Week 2 deliverables**: `ui/main_menu_ui.h/cpp`, `ui/settings_ui.h/cpp` (updated),
+  `ui/save_load_ui.h/cpp` (updated)
+
+#### Phase 9B: Inventory system (Week 3-4)
+
+- **Week 3 - data layer and UI layout**: an `Item` class (ID, name, type Weapon/Armor/Potion/Key,
+  weight, value) backed by a JSON database (`assets/items/item_database.json`); an `Inventory` class
+  with an 8x5 = 40-slot grid, a weight limit derived from player strength and stacking (up to 99 for
+  potions); and an `EquipmentManager` with Head, Body, Hands, Feet, MainHand and OffHand slots that
+  applies stats on equip. The UI is `InventoryUI` (parchment panel, 40-slot grid, generated slot
+  frames, equipment area) with the drag-and-drop basis (touch down selects, move makes the icon
+  follow, up resolves the drop) and an item detail popup on long press (name, description, stats, and
+  Equip / Use / Drop / Close buttons on a small scaled `main_background.png`).
+- **Week 3 deliverables**: `game/item.h/cpp`, `game/inventory.h/cpp`, `game/equipment_manager.h/cpp`,
+  `ui/inventory_ui.h/cpp`, `assets/items/item_database.json` (10 samples)
+- **Week 4 - integration**: dropping an item spawns it in the world as a colour-coded cube
+  placeholder and a "pick up" button appears within 2 m (drawn from `shared_button_short_off/on.png`);
+  potions restore HP/MP; equipment changes defence and attack in real time and feeds weapon damage
+  into `CombatManager`; and the save data gains the inventory state (slot contents, counts, equipped
+  items) with a matching restore path on load.
+- **Week 4 deliverables**: the inventory fully functional, save/load integration complete, drop and
+  pickup verified
+
+#### Phase 9C: Map system (Week 5)
+
+- **Map data layer**: a `WorldMap` class that generates the map texture from the existing cell data,
+  colour-coded per cell type (grassland green, cave grey, city brown) and generated procedurally as a
+  flat colour per cell, plus a `MapMarker` class for Player / Quest / NPC / FastTravel markers drawn
+  with generated icons.
+- **Map UI**: `MapUI` full screen over the parchment background with pinch zoom (0.5x - 3.0x), drag
+  pan and an optional player-centred follow toggle.
+- **Quest marker integration**: active quest objectives shown as markers that name the quest when
+  tapped, main quest in gold and side quests in blue.
+- **Fast travel foundation**: record discovered locations and show fast-travel points on the map, with
+  the full UI deferred to the following phase.
+- **Week 5 deliverables**: `game/world_map.h/cpp`, `game/map_marker.h/cpp`, `ui/map_ui.h/cpp`,
+  procedural map-texture generation
+
+#### Phase 9D: UI polish + integration test (Week 6)
+
+- **Animations**: screen transitions as a 0.2 s fade, panels sliding in from below, buttons scaling
+  and changing colour on hover, and a toast that slides in from the top and disappears after 3 s.
+- **Notification system**: item acquired, quest updated and level-up notices rendered by a generated
+  toast UI at the top of the screen.
+- **Tutorial integration**: a first-run control guide with placeholder figures and Next / Skip
+  buttons using the existing button textures.
+- **Integration test preparation**: a transition map for every UI screen, an exhaustive touch test
+  list, and a memory measurement with a target below 120 MB.
+- **Week 6 deliverables**: `ui/ui_animation.h/cpp`, `ui/notification_ui.h/cpp`,
+  `ui/tutorial_ui.h/cpp`, the integration test plan
+
+#### Phase 9E: Test and optimization (Week 7-8)
+
+- **Week 7 - device test and fixes**: the device matrix was Xiaomi 24018RPACG (Android 16, full
+  functional test and performance measurement), Amazon Fire Tablet (Android 9, touch UI and memory
+  limit) and the Pixel 7 API 33 emulator (resolution change and rotation). The test items were every
+  menu display and transition (text -> graphical), inventory drag-and-drop and weight limit, map zoom
+  / pan / markers, save and load preserving the inventory, and a 30-minute run for leaks. Fixes
+  covered touch-offset errors, texture load errors and texture-release leaks, and the performance
+  work measured UI draw overhead against a target below 2 ms/frame, evaluated ETC2 texture
+  compression and reduced redundant texture binds.
+- **Week 8 - release preparation**: update `docs/README.md`, `CHANGELOG.md` and
+  `docs/DEVELOPMENT_HISTORY.md` and take 5 screenshots; verify the release build (APK below 15 MB,
+  signing, NDK r26.1 compatibility); and run the Phase 9 completion review (architecture
+  consistency, unused-asset cleanup, debug-log reduction).
+
+### 4. Directory layout (final form)
+
+```
+app/src/main/
+├── assets/
+│   ├── textures/
+│   │   ├── menus/              # existing buttons (unchanged)
+│   │   ├── ui/                 # NEW: UI textures (main_background and others copied in)
+│   │   ├── items/              # NEW: item icons (placeholders)
+│   │   └── map/                # NEW: map assets (procedurally generated)
+│   └── items/
+│       └── item_database.json  # NEW: item definitions
+├── cpp/
+│   ├── ui/                     # NEW: UI framework
+│   │   ├── ui_component.h/cpp
+│   │   ├── ui_panel.h/cpp
+│   │   ├── ui_button.h/cpp
+│   │   ├── hud_renderer.h/cpp
+│   │   ├── main_menu_ui.h/cpp
+│   │   ├── settings_ui.h/cpp
+│   │   ├── save_load_ui.h/cpp
+│   │   ├── inventory_ui.h/cpp
+│   │   ├── map_ui.h/cpp
+│   │   ├── notification_ui.h/cpp
+│   │   ├── tutorial_ui.h/cpp
+│   │   └── placeholder_assets.h/cpp
+│   ├── game/
+│   │   ├── item.h/cpp          # NEW
+│   │   ├── inventory.h/cpp     # NEW
+│   │   ├── equipment_manager.h/cpp  # NEW
+│   │   ├── world_map.h/cpp     # NEW
+│   │   └── map_marker.h/cpp    # NEW
+│   └── engine/
+│       └── texture_manager.h/cpp  # updated: UI texture support
+└── res/
+    └── ... (unchanged)
+```
+
+### 5. Risk management
+
+| Risk | Probability | Impact | Mitigation |
+|------|-------------|--------|------------|
+| Drag-and-drop is unstable | Medium | High | prototype early on Day 18-19 and verify on the Xiaomi device immediately |
+| Memory use exceeds 120 MB | Low | High | profile in Week 7 and release textures consistently |
+| Existing button textures have too little resolution | Low | Medium | 4x scaling is fine (slightly blurry above 512x512 screens) |
+| JSON parser defects | Low | Medium | start `item_database.json` at 10 items and grow it in steps |
+| Schedule slip | Medium | Medium | map fast travel is foundation-only in Week 5, and the complete version can move past Week 7 |
+
+### 6. Success criteria
+
+Phase 9 completion conditions:
+
+- **UI**: every menu drawn graphically (zero text UI)
+- **Inventory**: 40 slots, drag-and-drop, equipment changes, save integration
+- **Map**: procedural display, pinch zoom, quest markers
+- **Performance**: 60 FPS sustained, memory below 120 MB
+- **Stability**: zero crashes in a 30-minute continuous session
+- **Compatibility**: verified on Xiaomi and Fire Tablet
+- **APK size**: below 15 MB (even after the added assets)
+
+### 7. Next steps (historical)
+
+The original section listed the first tasks that could start the same day - copying the existing
+textures into `app/src/main/assets/textures/ui/`, creating the `ui/` directory, and opening the
+`UIComponent` skeleton - with shell commands that referenced a `Projects/oblivion-android/` working
+copy outside this repository. Those steps were carried out during Phase 9 and the commands are no
+longer valid, so only this note is kept.
 
 ---
 

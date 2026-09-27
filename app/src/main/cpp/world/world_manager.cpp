@@ -643,6 +643,48 @@ std::shared_ptr<Cell> WorldManager::enterInteriorCell(uint32_t tesFormID,
     return cell;
 }
 
+size_t WorldManager::placeInteriorObjects(
+    uint32_t cellFormID, const std::vector<InteriorObjectPlacement>& objects) {
+    auto cell = getCellByFormID(cellFormID);
+    if (!cell) {
+        LOGW_WORLD("placeInteriorObjects: no cell for 0x%08X", cellFormID);
+        return 0;
+    }
+
+    // Re-entering an interior must not stack a second copy of the room.
+    if (!cell->staticObjects.empty() || !cell->dynamicObjects.empty()) {
+        return 0;
+    }
+
+    size_t added = 0;
+    size_t withoutModel = 0;
+    for (const auto& src : objects) {
+        if (src.modelPath.empty()) {
+            ++withoutModel;
+            continue;
+        }
+
+        auto obj = std::make_shared<WorldObject>();
+        obj->objectId = src.formID;
+        obj->objectName = src.name.empty() ? "Interior" : src.name;
+        obj->modelPath = src.modelPath;
+        obj->position = src.position;
+        obj->rotation = src.rotation;
+        obj->scale = src.scale > 0.0f ? src.scale : 1.0f;
+        // Interior statics never move; the renderer keeps them resident for as
+        // long as the cell is loaded, which is the whole time the player is in it.
+        obj->isStatic = true;
+        obj->isInteractable = false;
+
+        cell->staticObjects.push_back(obj);
+        ++added;
+    }
+
+    LOGI_WORLD("Interior 0x%08X '%s': placed %zu objects (%zu without a model)",
+               cellFormID, cell->cellName.c_str(), added, withoutModel);
+    return added;
+}
+
 void WorldManager::clearAllCells() {
     activeCells.clear();
     currentCell.reset();

@@ -1128,8 +1128,11 @@ bool Renderer::initGameSystems() {
                                                     chosen->fullName);
         if (!cell) return "Failed to enter interior cell";
 
+        const size_t placed = ensureInteriorObjectsPlaced();
+
         return "Entered interior: " + cell->cellName + " (0x" +
-               std::to_string(chosen->formID) + ")";
+               std::to_string(chosen->formID) + ", " + std::to_string(placed) +
+               " objects)";
     };
     refs.teleportToExterior = [this]() -> std::string {
         if (!worldManager) return "World manager not available";
@@ -1825,6 +1828,15 @@ bool Renderer::initGameSystems() {
         return false;
     }
     LOGI("WorldManager initialized successfully");
+
+    // Phase 66 P20: interior REFR -> WorldObject resolver
+    LOGI("Creating ObjectPlacer...");
+    objectPlacer = std::make_unique<ObjectPlacer>();
+    if (!objectPlacer->initialize(assetManager.get())) {
+        LOGE("Failed to initialize ObjectPlacer");
+        return false;
+    }
+    LOGI("ObjectPlacer initialized successfully");
 
     // Connect WorldManager to DebugMenu's WorldViewer (deferred injection)
     if (debugMenu) {
@@ -2671,36 +2683,36 @@ void Renderer::createTestScenario() {
         }
 
                     // Water is strictly per-cell from the XCLW subrecord. ESM analysis proved
-                                        // Oblivion keeps no WRLD-level water plane: WNAM is the parent
-                                        // worldspace reference (not a WATR color) and no WHGT exists, so
-                                        // there is no default-water fallback for the root worldspace.
-                                        LOGI("Main worldspace 0x%08X: per-cell XCLW water only (no WRLD default)",
-                                             mainWorldspace);
+        // Oblivion keeps no WRLD-level water plane: WNAM is the parent worldspace
+        // reference (not a WATR color) and no WHGT exists, so there is no
+        // default-water fallback for the root worldspace.
+        LOGI("Main worldspace 0x%08X: per-cell XCLW water only (no WRLD default)",
+             mainWorldspace);
 
-                    for (const auto& entry : cellByCoord) {
-                        const oblivion::CellData* cell = entry.second;
-                        if (registeredCells < 8) {
-                            LOGI("  Cell: 0x%08X '%s' (%s) grid=[%d,%d]",
-                                 cell->formID, cell->editorID.c_str(),
-                                 cell->fullName.c_str(), cell->gridX, cell->gridY);
-                        }
-                    if (auto worldCell = worldManager->addCellFromESM(
-                                        cell->gridX, cell->gridY,
-                                        cell->editorID, cell->fullName,
-                                        cell->formID, cell->isExterior, cell->worldspaceID)) {
-                                            // Water is strictly per-cell from the XCLW subrecord; only a positive
-                                                                                        // height means a drawable surface (negative sentinels were
-                                                                                        // mapped to NaN during decodeCell).
-                                                                                        if (cell->hasWaterLevel && !std::isnan(cell->waterLevel)) {
-                                                                                            worldCell->waterLevel = cell->waterLevel;
-                                                                                            worldCell->hasWater = true;
-                                                                                            worldCell->waterTypeFormID = cell->waterTypeFormID;
-                                                                                        } else {
-                                                                                            worldCell->hasWater = false;
-                                                                                        }
-                                                                                        ++registeredCells;
-                                        }
-                                    }
+        for (const auto& entry : cellByCoord) {
+            const oblivion::CellData* cell = entry.second;
+            if (registeredCells < 8) {
+                LOGI("  Cell: 0x%08X '%s' (%s) grid=[%d,%d]",
+                     cell->formID, cell->editorID.c_str(),
+                     cell->fullName.c_str(), cell->gridX, cell->gridY);
+            }
+            if (auto worldCell = worldManager->addCellFromESM(
+                                     cell->gridX, cell->gridY,
+                                     cell->editorID, cell->fullName,
+                                     cell->formID, cell->isExterior, cell->worldspaceID)) {
+                // Water is strictly per-cell from the XCLW subrecord; only a positive
+                // height means a drawable surface (negative sentinels were
+                // mapped to NaN during decodeCell).
+                if (cell->hasWaterLevel && !std::isnan(cell->waterLevel)) {
+                    worldCell->waterLevel = cell->waterLevel;
+                    worldCell->hasWater = true;
+                    worldCell->waterTypeFormID = cell->waterTypeFormID;
+                } else {
+                    worldCell->hasWater = false;
+                }
+                ++registeredCells;
+            }
+        }
         LOGI("Registered %zu exterior cells (%zu interior skipped, %zu other worldspaces skipped, %zu duplicate grid squares)",
              registeredCells, interiorCells, otherWorldspaceCells, duplicateCoords);
 
@@ -2718,6 +2730,11 @@ void Renderer::createTestScenario() {
              refs.size() - esmMgr.getNpcReferenceCount() - esmMgr.getCreatureReferenceCount());
         size_t placedActors = 0;
         size_t placedObjects = 0;
+        // Phase 65 (a) static-object census: how many exterior REFR references
+        // resolve to a real NIF path through the base record.
+        size_t resolvedObjectRefs = 0;   // model path non-empty
+        size_t resolvedStatics = 0;      // of those, base type is STAT
+        size_t unresolvedObjectRefs = 0; // no base record / no model / UNKNOWN
         size_t skippedInteriorRefs = 0;
         size_t skippedForeignRefs = 0;
         for (const auto& ref : refs) {
@@ -2725,7 +2742,8 @@ void Renderer::createTestScenario() {
             // position is absolute world space, whereas interior references are
             // relative to their cell origin. A reference is exterior exactly when
             // its owning cell is one of the registered (main worldspace) cells.
-            if (!worldManager->getCellByFormID(ref.cellFormID)) {
+            auto worldCell = worldManager->getCellByFormID(ref.cellFormID);
+            if (!worldCell) {
                 // Interior cells are never registered; other worldspaces were
                 // filtered out during cell registration.
                 if (ref.cellFormID != 0) { ++skippedInteriorRefs; }
@@ -2785,11 +2803,43 @@ void Renderer::createTestScenario() {
                     }
                 }
             } else {
-                placedObjects++;
+                // Phase 65 (a): resolve this exterior REFR into a WorldObject so
+                // the engine can actually draw it. The base record (STAT/DOOR/...)
+                // carries the NIF path; all model resolution is deferred, only the
+                // path is captured here.
+                ++placedObjects;
+                const auto objType = objectPlacer->resolveObjectType(ref.baseFormID, esmMgr);
+                auto obj = std::make_shared<WorldObject>();
+                obj->objectId = ref.formID;
+                obj->modelPath = objectPlacer->resolveModelPath(ref.baseFormID, objType, esmMgr);
+                if (!obj->modelPath.empty()) {
+                    ++resolvedObjectRefs;
+                    if (objType == ObjectPlacer::ObjectType::STATIC) {
+                        ++resolvedStatics;
+                    }
+                    obj->objectName =
+                        objectPlacer->resolveObjectName(ref.baseFormID, objType, esmMgr);
+                } else {
+                    // A record exists but the base has no NIF path (e.g. an
+                    // unmapped type) or no base was found at all.
+                    ++unresolvedObjectRefs;
+                    obj->objectName = "Unknown";
+                }
+
+                // ESM exterior coordinates are Z-up world space; the engine is
+                // Y-up, so the height axis is swapped before placing, exactly as
+                // the actor placement above does.
+                obj->position = worldPos;
+                obj->rotation = worldRot;
+                obj->scale = ref.scale > 0.0f ? ref.scale : 1.0f;
+                obj->isStatic = true;
+                obj->isInteractable = false;
+                worldCell->staticObjects.push_back(obj);
             }
         }
-        LOGI("Placed %zu actors and indexed %zu object references (%zu interior refs skipped, %zu unowned refs skipped)",
-                     placedActors, placedObjects, skippedInteriorRefs, skippedForeignRefs);
+        LOGI("Placed %zu actors and %zu object references (%zu resolved to a model, %zu STAT, %zu unresolvable; %zu interior refs skipped, %zu unowned refs skipped)",
+             placedActors, placedObjects, resolvedObjectRefs, resolvedStatics,
+             unresolvedObjectRefs, skippedInteriorRefs, skippedForeignRefs);
 
         // Load DIAL/INFO dialogue trees now that the actors exist, so faction
         // memberships can be resolved for topic filtering.
@@ -2803,8 +2853,8 @@ void Renderer::createTestScenario() {
         }
         loadQuestsFromESM();
 
-                // 4. Load LAND terrain data and assign to cells
-                const auto& terrains = esmMgr.getAllTerrains();
+        // 4. Load LAND terrain data and assign to cells
+        const auto& terrains = esmMgr.getAllTerrains();
         LOGI("Loading %zu terrain records from ESM data", terrains.size());
         size_t assignedTerrains = 0;
         size_t orphanTerrains = 0;
@@ -3900,8 +3950,16 @@ void Renderer::render(float deltaTime) {
         LOGW("worldManager is null!");
     }
 
-    // Phase 65: Render exterior terrain from LAND heightmaps
-    renderTerrainMeshes();
+    // Phase 66 P20: interior cell geometry (REFR resolved NIFs)
+    renderInteriorObjects();
+
+        // Phase 65: exterior static-object world (REFR -> MODL -> NIF). Draws after
+        // the placeholder entities so real geometry can stand in before they are
+        // removed, and before terrain so objects ground themselves on the heightmap.
+        renderStaticObjects();
+
+        // Phase 65: Render exterior terrain from LAND heightmaps
+        renderTerrainMeshes();
 
     // Phase 65: Render water surfaces from CELL XCLW levels on top of terrain
     renderWater();
@@ -4745,6 +4803,410 @@ void Renderer::renderSkyDome() {
     glBindVertexArray(0);
     glDepthMask(GL_TRUE);
     glUseProgram(0);
+}
+
+// ============================================================
+// Phase 66 P20: interior cell geometry
+// ============================================================
+// Interior statics differ from the placeholder spheres in two ways that need
+// their own shader: the player stands *inside* them (so back faces must be lit,
+// not black) and they carry rotations (so normals must follow the model matrix).
+static const char* interiorVertexSrc =
+"#version 300 es\n"
+"uniform mat4 uMVP;\n"
+"uniform mat4 uModel;\n"
+"in vec3 aPosition;\n"
+"in vec3 aNormal;\n"
+"out vec3 vNormal;\n"
+"void main() {\n"
+"    gl_Position = uMVP * vec4(aPosition, 1.0);\n"
+"    vNormal = mat3(uModel) * aNormal;\n"
+"}\n";
+
+static const char* interiorFragmentSrc =
+"#version 300 es\n"
+"precision mediump float;\n"
+"uniform vec4 uColor;\n"
+"uniform vec3 uLightDir;\n"
+"in vec3 vNormal;\n"
+"out vec4 fragColor;\n"
+"void main() {\n"
+"    vec3 n = normalize(vNormal);\n"
+"    float NdotL = abs(dot(n, normalize(uLightDir)));\n"
+"    fragColor = vec4(uColor.rgb * (0.35 + 0.65 * NdotL), uColor.a);\n"
+"}\n";
+
+// Interior statics are authored Z-up, the engine renders Y-up. Rotating -90
+// degrees about X maps the authored +Z to the engine's +Y.
+static glm::mat4 interiorAxisFix() {
+    return glm::rotate(glm::mat4(), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+}
+
+// Resolve the current interior cell's REFR records into WorldObjects, once.
+// Safe to call every frame: WorldManager::placeInteriorObjects refuses to add a
+// second copy, so this returns 0 on all but the first call for a given cell.
+size_t Renderer::ensureInteriorObjectsPlaced() {
+    if (!worldManager || !objectPlacer || !assetManager) return 0;
+    if (!worldManager->isPlayerIndoors()) return 0;
+
+    auto cell = worldManager->getCurrentCell();
+    if (!cell) return 0;
+    if (!cell->staticObjects.empty() || !cell->dynamicObjects.empty()) return 0;
+
+    const auto placements =
+        objectPlacer->collectInteriorPlacements(cell->tesFormID, assetManager->getEsmManager());
+    return worldManager->placeInteriorObjects(cell->tesFormID, placements);
+}
+
+void Renderer::renderInteriorObjects() {
+    if (!worldManager || !assetManager) return;
+    // P15/P20: exterior geometry must not draw inside an interior cell, and this
+    // path is the interior counterpart of renderTerrainMeshes/renderSkyDome.
+    if (!worldManager->isPlayerIndoors()) return;
+
+    ensureInteriorObjectsPlaced();
+
+    auto cell = worldManager->getCurrentCell();
+    if (!cell) return;
+    if (cell->staticObjects.empty() && cell->dynamicObjects.empty()) return;
+
+    // Compile the interior shader once.
+    static GLuint interiorShader = 0;
+    static bool interiorShaderInit = false;
+    if (!interiorShaderInit) {
+        interiorShaderInit = true;
+
+        GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+        glShaderSource(vs, 1, &interiorVertexSrc, nullptr);
+        glCompileShader(vs);
+        GLint ok = 0;
+        glGetShaderiv(vs, GL_COMPILE_STATUS, &ok);
+        if (!ok) {
+            char buf[512];
+            glGetShaderInfoLog(vs, sizeof(buf), nullptr, buf);
+            LOGE("Interior vertex shader error: %s", buf);
+            glDeleteShader(vs);
+            return;
+        }
+
+        GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+        glShaderSource(fs, 1, &interiorFragmentSrc, nullptr);
+        glCompileShader(fs);
+        glGetShaderiv(fs, GL_COMPILE_STATUS, &ok);
+        if (!ok) {
+            char buf[512];
+            glGetShaderInfoLog(fs, sizeof(buf), nullptr, buf);
+            LOGE("Interior fragment shader error: %s", buf);
+            glDeleteShader(vs);
+            glDeleteShader(fs);
+            return;
+        }
+
+        interiorShader = glCreateProgram();
+        glAttachShader(interiorShader, vs);
+        glAttachShader(interiorShader, fs);
+        glLinkProgram(interiorShader);
+        glGetProgramiv(interiorShader, GL_LINK_STATUS, &ok);
+        if (!ok) {
+            char buf[512];
+            glGetProgramInfoLog(interiorShader, sizeof(buf), nullptr, buf);
+            LOGE("Interior shader link error: %s", buf);
+            glDeleteProgram(interiorShader);
+            interiorShader = 0;
+            glDeleteShader(vs);
+            glDeleteShader(fs);
+            return;
+        }
+        glDeleteShader(vs);
+        glDeleteShader(fs);
+        LOGI("Interior shader compiled successfully");
+    }
+    if (!interiorShader) return;
+
+    // Same camera as the exterior placeholder pass so interiors and exteriors are
+    // framed identically while the interior view is still under development.
+    glm::mat4 viewMatrix = glm::mat4();
+    glm::mat4 projMatrix = glm::mat4();
+    const float aspect = static_cast<float>(screenWidth) / static_cast<float>(screenHeight);
+    if (playerController) {
+        glm::vec3 target = playerController->getPlayerPosition();
+        glm::vec3 eye = target + glm::vec3(0.0f, PH_CAMERA_HEIGHT, PH_CAMERA_DIST);
+        viewMatrix = glm::lookAt(eye, target, glm::vec3(0.0f, 1.0f, 0.0f));
+        projMatrix = glm::perspective(glm::radians(60.0f), aspect, 10.0f, 20000.0f);
+    } else if (camera) {
+        viewMatrix = camera->getViewMatrix();
+        projMatrix = camera->getProjectionMatrix(aspect);
+    } else {
+        return;
+    }
+
+    const glm::mat4 axisFix = interiorAxisFix();
+
+    glUseProgram(interiorShader);
+    const GLint locMVP = glGetUniformLocation(interiorShader, "uMVP");
+    const GLint locModel = glGetUniformLocation(interiorShader, "uModel");
+    const GLint locColor = glGetUniformLocation(interiorShader, "uColor");
+    const GLint locLight = glGetUniformLocation(interiorShader, "uLightDir");
+    // Light from above and slightly to the side, as an interior equivalent of the
+    // placeholder pass's directional light.
+    glUniform3f(locLight, 0.4f, 0.8f, 0.3f);
+
+    size_t drawn = 0;
+    size_t pending = 0;
+
+    auto drawObjectList = [&](const std::vector<std::shared_ptr<WorldObject>>& objects) {
+        for (const auto& obj : objects) {
+            if (!obj || obj->modelPath.empty()) continue;
+
+            // Lazily upload the NIF. AssetManager caches both hits and misses, so
+            // a missing NIF is only searched for once per path.
+            if (!obj->mesh) {
+                obj->mesh = assetManager->loadNifMesh(obj->modelPath);
+            }
+            if (!obj->mesh || !obj->mesh->isReady()) {
+                ++pending;
+                continue;
+            }
+
+            // ESM positions are Z-up and cell relative; the engine is Y-up, and
+            // interiorAxisFix() performs that conversion for the whole placement,
+            // so the raw ESM coordinates go in here.
+            glm::mat4 model = glm::translate(glm::mat4(), obj->position);
+
+            // ESM applies rotations X, then Y, then Z. Post-multiplying builds
+            // Rz * Ry * Rx, which rotates a vertex in exactly that order.
+            if (obj->rotation.x != 0.0f) {
+                model = glm::rotate(model, obj->rotation.x, glm::vec3(1.0f, 0.0f, 0.0f));
+            }
+            if (obj->rotation.y != 0.0f) {
+                model = glm::rotate(model, obj->rotation.y, glm::vec3(0.0f, 1.0f, 0.0f));
+            }
+            if (obj->rotation.z != 0.0f) {
+                model = glm::rotate(model, obj->rotation.z, glm::vec3(0.0f, 0.0f, 1.0f));
+            }
+
+            model = axisFix * model;
+
+            const float s = obj->scale > 0.0f ? obj->scale : 1.0f;
+            if (s != 1.0f) {
+                for (int c = 0; c < 3; c++) {
+                    for (int row = 0; row < 3; row++) {
+                        model.data[c][row] *= s;
+                    }
+                }
+            }
+
+            const glm::mat4 mvp = projMatrix * viewMatrix * model;
+            glUniformMatrix4fv(locMVP, 1, GL_FALSE, mvp.value_ptr());
+            glUniformMatrix4fv(locModel, 1, GL_FALSE, model.value_ptr());
+            glUniform4f(locColor, 0.62f, 0.60f, 0.55f, 1.0f);
+
+            glBindVertexArray(obj->mesh->getVAO());
+            glDrawElements(GL_TRIANGLES, obj->mesh->getIndexCount(), GL_UNSIGNED_INT, nullptr);
+            glBindVertexArray(0);
+            ++drawn;
+        }
+    };
+
+    drawObjectList(cell->staticObjects);
+    drawObjectList(cell->dynamicObjects);
+
+    glUseProgram(0);
+
+    // This runs every frame, so keep the diagnostic to a periodic summary.
+    static int interiorLogCounter = 0;
+    if ((interiorLogCounter++ % 300) == 0) {
+        LOGI("renderInteriorObjects: cell '%s' drew %zu meshes (%zu still loading)",
+             cell->cellName.c_str(), drawn, pending);
+    }
+}
+
+// ============================================================
+// Phase 65: exterior static-object world (REFR -> MODL -> NIF)
+// ============================================================
+// Exterior REFR placements resolve to real MODL paths during world build
+// (WorldObject.modelPath). This pass streams the NIF geometry for the player's
+// neighbourhood and draws it with a weather-driven lit shader. The shader is
+// shared with the interior pass: the player is outside, so the back faces are
+// secondary, but the same normal-following model matrix is required for rotated
+// placements. Interior geometry must not draw through the interior path, so this
+// pass returns early indoors just like renderTerrainMeshes.
+void Renderer::renderStaticObjects() {
+    if (!worldManager || !assetManager) return;
+    if (worldManager->isPlayerIndoors()) return;
+
+    const auto& cells = worldManager->getActiveCells();
+    if (cells.empty()) return;
+
+    // Compile once, mirroring renderInteriorObjects.
+    static GLuint staticShader = 0;
+    static bool staticShaderInit = false;
+    if (!staticShaderInit) {
+        staticShaderInit = true;
+        GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+        glShaderSource(vs, 1, &interiorVertexSrc, nullptr);
+        glCompileShader(vs);
+        GLint ok = 0;
+        glGetShaderiv(vs, GL_COMPILE_STATUS, &ok);
+        if (!ok) {
+            char buf[512];
+            glGetShaderInfoLog(vs, sizeof(buf), nullptr, buf);
+            LOGE("Static vertex shader error: %s", buf);
+            glDeleteShader(vs);
+            return;
+        }
+        GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+        glShaderSource(fs, 1, &interiorFragmentSrc, nullptr);
+        glCompileShader(fs);
+        glGetShaderiv(fs, GL_COMPILE_STATUS, &ok);
+        if (!ok) {
+            char buf[512];
+            glGetShaderInfoLog(fs, sizeof(buf), nullptr, buf);
+            LOGE("Static fragment shader error: %s", buf);
+            glDeleteShader(vs);
+            glDeleteShader(fs);
+            return;
+        }
+        staticShader = glCreateProgram();
+        glAttachShader(staticShader, vs);
+        glAttachShader(staticShader, fs);
+        glLinkProgram(staticShader);
+        glGetProgramiv(staticShader, GL_LINK_STATUS, &ok);
+        if (!ok) {
+            char buf[512];
+            glGetProgramInfoLog(staticShader, sizeof(buf), nullptr, buf);
+            LOGE("Static shader link error: %s", buf);
+            glDeleteProgram(staticShader);
+            staticShader = 0;
+            glDeleteShader(vs);
+            glDeleteShader(fs);
+            return;
+        }
+        glDeleteShader(vs);
+        glDeleteShader(fs);
+        LOGI("Static shader compiled successfully");
+    }
+    if (!staticShader) return;
+
+    glm::mat4 viewMatrix = glm::mat4();
+    glm::mat4 projMatrix = glm::mat4();
+    const float aspect = static_cast<float>(screenWidth) / static_cast<float>(screenHeight);
+    if (playerController) {
+        const glm::vec3 target = playerController->getPlayerPosition();
+        const glm::vec3 eye = target + glm::vec3(0.0f, PH_CAMERA_HEIGHT, PH_CAMERA_DIST);
+        viewMatrix = glm::lookAt(eye, target, glm::vec3(0.0f, 1.0f, 0.0f));
+        projMatrix = glm::perspective(glm::radians(60.0f), aspect, 10.0f, 20000.0f);
+    } else if (camera) {
+        viewMatrix = camera->getViewMatrix();
+        projMatrix = camera->getProjectionMatrix(aspect);
+    } else {
+        return;
+    }
+    const glm::mat4 viewProj = projMatrix * viewMatrix;
+
+    // Weather-driven lighting, identical to the terrain pass so statics and the
+    // ground share one sun/fog.
+    float sunX = 0.5f, sunY = 1.0f, sunZ = 0.3f;
+    float ambR = 0.3f, ambG = 0.3f, ambB = 0.3f;
+    float fogR = 0.2f, fogG = 0.2f, fogB = 0.2f;
+    float fogFar = 20000.0f;
+    if (skyWeatherSystem) {
+        skyWeatherSystem->getSunDirection(sunX, sunY, sunZ);
+        skyWeatherSystem->getAmbientColor(ambR, ambG, ambB);
+        skyWeatherSystem->getFogColor(fogR, fogG, fogB);
+        fogFar = skyWeatherSystem->getFogDistance();
+    }
+
+    glm::vec3 playerPos(0.0f, 0.0f, 0.0f);
+    if (playerController) playerPos = playerController->getPlayerPosition();
+
+    size_t placed = 0;
+    size_t meshes = 0;
+    size_t drawn = 0;
+    size_t cache = 0;
+    size_t pending = 0;
+    size_t missing = 0;
+
+    glUseProgram(staticShader);
+    const GLint locMVP = glGetUniformLocation(staticShader, "uMVP");
+    const GLint locModel = glGetUniformLocation(staticShader, "uModel");
+    const GLint locColor = glGetUniformLocation(staticShader, "uColor");
+    const GLint locLight = glGetUniformLocation(staticShader, "uLightDir");
+    glUniform3f(locLight, sunX, sunY, sunZ);
+
+    static std::unordered_set<std::string> unresolvedStaticMeshes;
+
+    for (const auto& cell : cells) {
+        if (!cell) continue;
+        for (const auto& obj : cell->staticObjects) {
+            if (!obj || obj->modelPath.empty()) continue;
+            ++placed;
+
+            const glm::vec3 delta = obj->position - playerPos;
+            if (glm::length(delta) > NPC_MESH_STREAM_RADIUS) continue;
+
+            if (!obj->mesh && !unresolvedStaticMeshes.count(obj->modelPath) &&
+                !assetManager->isMeshKnownMissing(obj->modelPath)) {
+                obj->mesh = assetManager->loadNifMesh(obj->modelPath);
+                if (obj->mesh) {
+                    ++meshes;
+                } else {
+                    unresolvedStaticMeshes.insert(obj->modelPath);
+                    ++missing;
+                }
+            }
+            if (!obj->mesh || !obj->mesh->isReady()) {
+                ++pending;
+                continue;
+            }
+            if (obj->mesh->getVAO() == 0) {
+                ++pending;
+                continue;
+            }
+            ++cache;
+
+            // Exterior positions are already Y-up swapped absolute world
+            // coordinates, so no axis fix is applied here (unlike interiors,
+            // which fix the whole Z-up placement once).
+            glm::mat4 model = glm::translate(glm::mat4(), obj->position);
+            if (obj->rotation.x != 0.0f) {
+                model = glm::rotate(model, obj->rotation.x, glm::vec3(1.0f, 0.0f, 0.0f));
+            }
+            if (obj->rotation.y != 0.0f) {
+                model = glm::rotate(model, obj->rotation.y, glm::vec3(0.0f, 1.0f, 0.0f));
+            }
+            if (obj->rotation.z != 0.0f) {
+                model = glm::rotate(model, obj->rotation.z, glm::vec3(0.0f, 0.0f, 1.0f));
+            }
+            const float s = obj->scale > 0.0f ? obj->scale : 1.0f;
+            if (s != 1.0f) {
+                for (int c = 0; c < 3; c++) {
+                    for (int row = 0; row < 3; row++) {
+                        model.data[c][row] *= s;
+                    }
+                }
+            }
+
+            const glm::mat4 mvp = viewProj * model;
+            glUniformMatrix4fv(locMVP, 1, GL_FALSE, mvp.value_ptr());
+            glUniformMatrix4fv(locModel, 1, GL_FALSE, model.value_ptr());
+            const float color[4] = {ambR * 0.62f, ambG * 0.62f, ambB * 0.62f, 1.0f};
+            glUniform4fv(locColor, 1, color);
+
+            glBindVertexArray(obj->mesh->getVAO());
+            glDrawElements(GL_TRIANGLES, obj->mesh->getIndexCount(), GL_UNSIGNED_INT, nullptr);
+            glBindVertexArray(0);
+            ++drawn;
+        }
+    }
+
+    glUseProgram(0);
+
+    static int staticLogCounter = 0;
+    if ((staticLogCounter++ % 300) == 0) {
+        LOGI("Static: placed=%zu, meshes=%zu, drawn=%zu, cache=%zu (pending=%zu, missing=%zu, radius=%.0f)",
+             placed, meshes, drawn, cache, pending, missing, NPC_MESH_STREAM_RADIUS);
+    }
 }
 
 void Renderer::renderTerrainMeshes() {

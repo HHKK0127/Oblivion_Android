@@ -8,6 +8,10 @@
 // `teleportinterior` console command registers an interior cell on demand via
 // WorldManager::enterInteriorCell, so those paths can actually run.
 //
+// It also covers the P20 follow-up: WorldManager::placeInteriorObjects turns the
+// renderer's resolved REFR records into cell objects, including the duplicate
+// guard that keeps a re-entered interior from stacking a second copy of itself.
+//
 // The suite drives WorldManager directly; it needs no game data.
 
 #include <string>
