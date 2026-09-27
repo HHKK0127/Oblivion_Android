@@ -84,11 +84,12 @@ add_library(native-lib SHARED
     world/world_loader.cpp
 
     # Phase 38: Full World Load (ESM -> 3D Space)
-    world/landscape_renderer.cpp
+    # The Phase 38 cluster that used to sit here - landscape_renderer, texture_manager,
+    # lod_system and world_builder - was removed on 2026-09-27. It was reachable only
+    # from WorldBuilder itself, and WorldBuilder had no caller anywhere in the tree, so
+    # none of it ever ran. ObjectPlacer is the one survivor: renderer.cpp uses it for
+    # the static-object and interior-REFR passes.
     world/object_placer.cpp
-    world/texture_manager.cpp
-    world/lod_system.cpp
-    world/world_builder.cpp
 
     # Phase 50: Distant LOD System
     world/distant_lod/distant_lod_manager.cpp
