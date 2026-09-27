@@ -1127,10 +1127,11 @@ bool Renderer::initGameSystems() {
                                  : "No interior cell matching '" + query + "'";
         }
 
-        // Park the player at the cell origin. Interior references are cell
-        // relative, so the origin is the natural anchor until interior geometry
-        // is placed. Set the position before entering so the exterior cell at
-        // world (0,0) never becomes current.
+        // Park the player at the cell origin. REFR positions are cell relative,
+        // but the origin is not necessarily inside the room, so this is only a
+        // provisional anchor: ensureInteriorObjectsPlaced() moves the player onto
+        // the placed geometry as soon as it exists. Set the position before
+        // entering so the exterior cell at world (0,0) never becomes current.
         if (playerController) playerController->setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
         worldManager->setPlayerPosition(glm::vec3(0.0f, 0.0f, 0.0f));
 
@@ -5109,6 +5110,55 @@ size_t Renderer::registerEsmDoors() {
     return registered;
 }
 
+// A placement this close to the player counts as "the player is already in the
+// room": a door destination sits a few tens of units from the door REFR it
+// targets, while the origin of a displaced cell is thousands of units away.
+static constexpr float INTERIOR_SPAWN_NEARBY = 512.0f;
+
+// Put the player where the interior geometry is.
+//
+// REFR positions are cell relative, but a cell's origin is not necessarily
+// inside the room: the first interior cell in this corpus spans
+// lo=(-1309,-3392,-67) / hi=(5472,7104,2287) in authored units, so a player
+// parked at (0,0,0) sees nothing but the clear colour (measured: 97.4% of the
+// frame was clear, and every sampled placement projected outside the frustum).
+// The anchor therefore has to come from the placements themselves: their
+// component-wise centroid, converted from authored Z-up to engine Y-up the same
+// way interiorAxisFix() converts the draw matrices.
+//
+// A player that is already near a placement is left alone, so a door
+// destination - a legitimate spawn - is never overridden.
+void Renderer::anchorPlayerToInteriorCell(const std::vector<InteriorObjectPlacement>& placements) {
+    if (!playerController || !worldManager) return;
+
+    // A single unset float would poison the centroid, so skip those placements.
+    const auto finite = [](const glm::vec3& v) {
+        return v.x > -1.0e30f && v.x < 1.0e30f && v.y > -1.0e30f && v.y < 1.0e30f &&
+               v.z > -1.0e30f && v.z < 1.0e30f;
+    };
+
+    const glm::vec3 player = playerController->getPlayerPosition();
+    glm::vec3 sum(0.0f, 0.0f, 0.0f);
+    size_t count = 0;
+    float nearest = 1.0e30f;
+    for (const auto& p : placements) {
+        const glm::vec3 e(p.position.x, p.position.z, -p.position.y);
+        if (!finite(e)) continue;
+        sum += e;
+        ++count;
+        const float d = glm::length(e - player);
+        if (d < nearest) nearest = d;
+    }
+    if (count == 0 || nearest <= INTERIOR_SPAWN_NEARBY) return;
+
+    const glm::vec3 anchor = sum / static_cast<float>(count);
+    LOGI("Interior spawn: player (%.0f,%.0f,%.0f) is %.0f units from the nearest of "
+         "%zu placements; anchored to their centroid (%.0f,%.0f,%.0f)",
+         player.x, player.y, player.z, nearest, count, anchor.x, anchor.y, anchor.z);
+    playerController->setPosition(anchor);
+    worldManager->setPlayerPosition(anchor);
+}
+
 // Resolve the current interior cell's REFR records into WorldObjects, once.
 // Safe to call every frame: WorldManager::placeInteriorObjects refuses to add a
 // second copy, so this returns 0 on all but the first call for a given cell.
@@ -5122,7 +5172,11 @@ size_t Renderer::ensureInteriorObjectsPlaced() {
 
     const auto placements =
         objectPlacer->collectInteriorPlacements(cell->tesFormID, assetManager->getEsmManager());
-    return worldManager->placeInteriorObjects(cell->tesFormID, placements);
+    const size_t placed = worldManager->placeInteriorObjects(cell->tesFormID, placements);
+    if (placed > 0) {
+        anchorPlayerToInteriorCell(placements);
+    }
+    return placed;
 }
 
 void Renderer::renderInteriorObjects() {
@@ -5195,8 +5249,10 @@ void Renderer::renderInteriorObjects() {
     glm::mat4 viewMatrix = glm::mat4();
     glm::mat4 projMatrix = glm::mat4();
     const float aspect = static_cast<float>(screenWidth) / static_cast<float>(screenHeight);
+    glm::vec3 cameraTarget(0.0f, 0.0f, 0.0f);
     if (playerController) {
         glm::vec3 target = playerController->getPlayerPosition();
+        cameraTarget = target;
         glm::vec3 eye = target + glm::vec3(0.0f, PH_CAMERA_HEIGHT, PH_CAMERA_DIST);
         viewMatrix = glm::lookAt(eye, target, glm::vec3(0.0f, 1.0f, 0.0f));
         projMatrix = glm::perspective(glm::radians(60.0f), aspect, 10.0f, 20000.0f);
@@ -5235,9 +5291,11 @@ void Renderer::renderInteriorObjects() {
                 continue;
             }
 
-            // ESM positions are Z-up and cell relative; the engine is Y-up, and
-            // interiorAxisFix() performs that conversion for the whole placement,
-            // so the raw ESM coordinates go in here.
+            // REFR positions are authored Z-up and cell relative; the engine is
+            // Y-up, and interiorAxisFix() performs that conversion for the whole
+            // placement, so the raw ESM coordinates go in here. The cell origin
+            // is not necessarily inside the room - see
+            // anchorPlayerToInteriorCell() for how the player gets there.
             glm::mat4 model = glm::translate(glm::mat4(), obj->position);
 
             // ESM applies rotations X, then Y, then Z. Post-multiplying builds
@@ -5283,8 +5341,8 @@ void Renderer::renderInteriorObjects() {
     // This runs every frame, so keep the diagnostic to a periodic summary.
     static int interiorLogCounter = 0;
     if ((interiorLogCounter++ % 300) == 0) {
-        LOGI("renderInteriorObjects: cell '%s' drew %zu meshes (%zu still loading)",
-             cell->cellName.c_str(), drawn, pending);
+        LOGI("renderInteriorObjects: cell '%s' drew %zu meshes (%zu still loading), camera (%.0f,%.0f,%.0f)",
+             cell->cellName.c_str(), drawn, pending, cameraTarget.x, cameraTarget.y, cameraTarget.z);
     }
 }
 

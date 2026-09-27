@@ -477,6 +477,7 @@ private:
     // Phase 66 P20: interior cell geometry (REFR resolved NIFs)
     void renderInteriorObjects();
     size_t ensureInteriorObjectsPlaced();
+    void anchorPlayerToInteriorCell(const std::vector<InteriorObjectPlacement>& placements);
 
     // Phase 65: door transitions. Walks the ESM reference list, follows each
     // door REFR's XTEL link to its target door reference and registers the

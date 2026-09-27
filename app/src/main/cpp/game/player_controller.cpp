@@ -64,14 +64,30 @@ void PlayerController::update(float deltaTime) {
 
     // Phase 36: Use Jolt Physics if available
     if (physicsCharacter) {
+        // Capture the height before Jolt runs: updatePhysics() copies the character
+        // transform back into the player, so this is the only chance to see the
+        // height the player was placed at (interior anchor, door spawn, teleport).
+        const float placedY = player->position.y;
         updatePhysics(deltaTime);
-        // Jolt has no collider for the LAND heightmap, so the heightmap is the
-        // authoritative ground surface. Without this clamp the character free-falls
-        // through the terrain.
-        checkGroundCollision();
-        if (player->isOnGround) {
+        if (worldManager->isPlayerIndoors()) {
+            // Interior cells have no Jolt colliders and the exterior heightmap below
+            // the cell is meaningless, so neither surface can hold the player: keep
+            // the placed height and let the character follow the player instead of
+            // the other way round. Without this the player is clamped to the terrain
+            // under the cell origin or dropped through the cell by gravity.
+            player->position.y = placedY;
+            player->isOnGround = true;
             oblivion::PhysicsManager::getInstance().snapCharacterToGround(physicsCharacter,
                                                                           player->position.y);
+        } else {
+            // Jolt has no collider for the LAND heightmap, so the heightmap is the
+            // authoritative ground surface. Without this clamp the character free-falls
+            // through the terrain.
+            checkGroundCollision();
+            if (player->isOnGround) {
+                oblivion::PhysicsManager::getInstance().snapCharacterToGround(physicsCharacter,
+                                                                              player->position.y);
+            }
         }
     } else {
         // Phase 31: Fixed timestep accumulator for physics
