@@ -2089,6 +2089,47 @@ void ScriptVMTests::testNativeScdaDecoder() {
                getTimeMs38() - start);
     }
 
+    // Test 15b: the begin block type keyword table
+    {
+        const float start = getTimeMs38();
+
+        // The block type namespace is separate from the opcode namespace, so
+        // 0x001E is onreset here and the return opcode there.
+        const bool separateNamespace =
+            getNativeBlockTypeName(0x001E) == "onreset" &&
+            getNativeOpcodeName(0x001E) == "Return";
+
+        const bool knownTypes =
+            getNativeBlockTypeName(0x0000) == "gamemode" &&
+            getNativeBlockTypeName(0x0002) == "onactivate" &&
+            getNativeBlockTypeName(0x000A) == "ondeath" &&
+            getNativeBlockTypeName(0x0015) == "onload" &&
+            getNativeBlockTypeName(0x001C) == "onactorequip";
+
+        // The package-done block has two spellings; the primary name is the
+        // first and the alternate is reachable through the alias list.
+        const std::vector<std::string> packageAliases =
+            getNativeBlockTypeAliases(0x0010);
+        const bool packageSpellings =
+            getNativeBlockTypeName(0x0010) == "onpackagedone" &&
+            packageAliases.size() == 2 &&
+            packageAliases[0] == "onpackagedone" &&
+            packageAliases[1] == "onpackageend";
+
+        // An unknown block type is an empty string, not a guessed keyword, and
+        // a block type without an alternate spelling has an empty alias list.
+        const bool unknownRejected =
+            getNativeBlockTypeName(0x0007).empty() &&
+            getNativeBlockTypeName(0xFFFF).empty() &&
+            getNativeBlockTypeAliases(0x0002).empty();
+
+        const bool ok = separateNamespace && knownTypes && packageSpellings &&
+                        unknownRejected;
+        record("NativeScda: block type names", ok,
+               "Begin block types map to their source keywords in their own namespace",
+               getTimeMs38() - start);
+    }
+
     // Test 16: slots number the record's ref subrecords in file order
     {
         const float start = getTimeMs38();
