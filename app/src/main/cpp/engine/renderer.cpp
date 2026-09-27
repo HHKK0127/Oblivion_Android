@@ -1991,19 +1991,10 @@ bool Renderer::initGameSystems() {
     // Initialize ScriptManager
     LOGI("Initializing ScriptManager...");
     scriptManager = std::make_unique<oblivion::script::ScriptManager>();
-    questFlowController = std::make_unique<QuestFlowController>();
-    if (!questFlowController->initialize(
-            questManager.get(),
-            &weave::ImperialWeave::instance().getEventBus(),
-            scriptManager.get(),
-            playerController ? playerController->getPlayer().get() : nullptr,
-            playerController.get(),
-            inventoryManager.get(),
-            npcManager.get(),
-            worldManager.get())) {
-        LOGE("Failed to initialize QuestFlowController");
-        questFlowController.reset();
-    }
+    // questFlowController is created above (with the JPWiki localization manager)
+    // and fully initialized in the Imperial Weave section below. Re-creating it
+    // here would drop the localization binding and double-subscribe the quest
+    // EventBus handlers, so it is only handed to the ScriptManager.
     scriptManager->init(
         questManager.get(),
         worldManager.get(),

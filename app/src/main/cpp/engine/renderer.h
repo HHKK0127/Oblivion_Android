@@ -144,7 +144,6 @@ private:
     std::unique_ptr<InventoryManager> inventoryManager;
     std::unique_ptr<DialogueManager> dialogueManager;
     std::unique_ptr<oblivion::BookReader> bookReader;
-    std::unique_ptr<QuestFlowController> questFlowController;
     std::unique_ptr<oblivion::AlchemySystem> alchemySystem;
     std::unique_ptr<game::EnchantingSystem> enchantingSystem;
 
