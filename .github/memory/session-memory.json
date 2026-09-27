@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-27T11:40:00Z",
+  "lastUpdated": "2026-09-27T23:46:22Z",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -4883,10 +4883,62 @@
       "id": "ae09e5dc-fa63-442e-9203-c0cbfd51fed6",
       "timestamp": "2026-09-27T11:40:00Z",
       "compressed": false
+    },
+    {
+      "id": "7a19b8e1-5588-4c12-88bb-b8eeeb34e3f2",
+      "timestamp": "2026-09-27T23:46:22Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "NIF diffuse texture resolved through NiTexturingProperty (commit 4262e387, 2026-09-27): nif_parser resolveTexturePath()/readSourceTexturePath() walks NiTexturingProperty -> NiSourceTexture File Name. Backslash normalized to forward slash into NIFGeometry::diffuseTexture.",
+      "tags": [
+        "nif",
+        "texture",
+        "p20"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "cbbb9b59-f40f-47f2-96ca-95061ab140e5",
+      "timestamp": "2026-09-27T23:46:22Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "Interior player anchoring fixed (commit d21f333c, 2026-09-27): anchorPlayerToInteriorCell() moves the player to the placed-geometry centroid; INTERIOR_SPAWN_NEARBY=512.0f below which the door destination is respected. PlayerController keeps placedY while indoors to avoid exterior heightmap clamping in checkGroundCollision().",
+      "tags": [
+        "interior",
+        "player",
+        "p20"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "6bd9b7b5-ec99-44c9-90ed-f9402bfe0290",
+      "timestamp": "2026-09-27T23:46:22Z",
+      "category": "configuration",
+      "priority": "medium",
+      "content": "P20 interior REFR draw is fully committed on master as of 2026-09-27: merge commit b4446bf7 (16 files/+1016-483), then 4262e387 (nif diffuse) + d21f333c (anchor) + 2a33f698 (plan.md record). Working tree clean. origin/master is 3 behind HEAD (unpushed). Host tests ALL GREEN, gradlew assembleDebug BUILD SUCCESSFUL.",
+      "tags": [
+        "p20",
+        "commit",
+        "merge-gate"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "2f4dbdfb-691d-446a-8f1d-b5f82586fd24",
+      "timestamp": "2026-09-27T23:46:22Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "ISSUE_PLAN.md (session-state 9427ac74 files/, git-untracked) updated 2026-09-27: P20 row set to 完了, 3rd-plan header notes P17-P19/P21-P22 remaining, P20 section documents implementation + device A/B (559 meshes, 84.4% stone wall, 0.0% clear colour, screenshots/p20_interior_rendered.png).",
+      "tags": [
+        "issue-plan",
+        "p20",
+        "docs"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 339,
+    "totalEntries": 343,
     "compressedCount": 2,
     "sessionCount": 29
   }
