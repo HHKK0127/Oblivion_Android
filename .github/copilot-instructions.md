@@ -72,6 +72,19 @@ app/src/main/cpp/
 - `AUDIO_SYSTEM.md` - オーディオシステム
 - `DEVELOPMENT_HISTORY.md` - 開発履歴
 
+## 一時ファイル・スクリーンショット
+
+一時ファイルとスクリーンショットは Git 管理外の専用フォルダに保存する。GitHub にはアップロードしない。
+
+| 種別 | 保存先 | 備考 |
+|---|---|---|
+| スクリーンショット（デバッグ・検証用） | `screenshots/` | `.gitignore` の `/screenshots/` で管理外 |
+| 一時ファイル（ビルドログ、実行ログ、UI/XML ダンプ、ローカル APK 出力） | `tmp/` | `.gitignore` の `/tmp/` で管理外 |
+
+- 出力先は最初から上記フォルダを指定する（`adb shell screencap` の pull 先は `screenshots/`、`./gradlew ... > tmp/build_log.txt` のリダイレクト先は `tmp/`）。リポジトリ直下に `*.png` / `*.jpg` / `*.jpeg` / `*.webp` / `*.xml` / `*.log` / `*.apk` を生成しない
+- 散らばった既存ファイルを整理する場合は移動のみを行い、削除しない
+- 追跡対象（コミット済み）のファイルを移動すると Git 上は削除扱いになる。コミットするか否かは必ずユーザーに確認する
+
 ## 開発ガイドライン
 
 ### コードスタイル
