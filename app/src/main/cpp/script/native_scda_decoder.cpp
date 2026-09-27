@@ -819,21 +819,77 @@ std::vector<std::string> getNativeOpcodeAliases(uint16_t opcode) {
     }
 }
 
+std::string getNativeBlockTypeName(uint16_t blockType) {
+    // The 25 measured block types, in the order the census listed them. The
+    // block type namespace is separate from the opcode namespace: 0x001E is
+    // onreset here and the return opcode there.
+    switch (blockType) {
+        case 0x0000: return "gamemode";
+        case 0x0001: return "menumode";
+        case 0x0002: return "onactivate";
+        case 0x0003: return "onadd";
+        case 0x0004: return "onequip";
+        case 0x0005: return "onunequip";
+        case 0x0006: return "ondrop";
+        case 0x0008: return "onhit";
+        case 0x0009: return "onhitwith";
+        case 0x000A: return "ondeath";
+        case 0x000D: return "onalarm";
+        case 0x000F: return "onpackagestart";
+        case 0x0010: return "onpackagedone";
+        case 0x0011: return "scripteffectstart";
+        case 0x0012: return "scripteffectfinish";
+        case 0x0013: return "scripteffectupdate";
+        case 0x0014: return "onpackagechange";
+        case 0x0015: return "onload";
+        case 0x0016: return "onmagiceffecthit";
+        case 0x0018: return "ontrigger";
+        case 0x0019: return "onstartcombat";
+        case 0x001A: return "ontriggeractor";
+        case 0x001B: return "ontriggermob";
+        case 0x001C: return "onactorequip";
+        case 0x001E: return "onreset";
+        default: return std::string();
+    }
+}
+
+std::vector<std::string> getNativeBlockTypeAliases(uint16_t blockType) {
+    // Only the package-done block has two spellings in the corpus; the
+    // compiler emits both for the same block type.
+    if (blockType == 0x0010) {
+        return {"onpackagedone", "onpackageend"};
+    }
+    return {};
+}
+
+bool resolveNativeTableIndex(uint16_t index,
+                             size_t tableSize,
+                             const char* spaceName,
+                             size_t& out,
+                             std::string& error) {
+    if (index == 0) {
+        error = std::string(spaceName) + " 0 is not a valid selector";
+        return false;
+    }
+    if (index > tableSize) {
+        error = std::string(spaceName) + " " + std::to_string(index) +
+                " is outside the " + spaceName + " table (bound " +
+                std::to_string(tableSize) + ")";
+        return false;
+    }
+    out = index - 1;
+    return true;
+}
+
 bool resolveNativeReferenceSlot(uint16_t slot,
                                 const std::vector<NativeReferenceEntry>& entries,
                                 NativeReferenceSlot& out,
                                 std::string& error) {
-    if (slot == 0) {
-        error = "reference slot 0 is not a valid selector";
+    size_t index = 0;
+    if (!resolveNativeTableIndex(slot, entries.size(), "reference slot", index, error)) {
         return false;
     }
-    if (slot > entries.size()) {
-        error = "reference slot " + std::to_string(slot) +
-                " is outside the reference table (bound " +
-                std::to_string(entries.size()) + ")";
-        return false;
-    }
-    const NativeReferenceEntry& entry = entries[slot - 1];
+    const NativeReferenceEntry& entry = entries[index];
     out = NativeReferenceSlot{};
     out.slot = slot;
     out.kind = entry.kind;
@@ -849,17 +905,11 @@ bool resolveNativeCallTarget(uint16_t selector,
                              const std::vector<uint32_t>& callTargets,
                              uint32_t& out,
                              std::string& error) {
-    if (selector == 0) {
-        error = "call selector 0 is not a valid selector";
+    size_t index = 0;
+    if (!resolveNativeTableIndex(selector, callTargets.size(), "call selector", index, error)) {
         return false;
     }
-    if (selector > callTargets.size()) {
-        error = "call selector " + std::to_string(selector) +
-                " is outside the call target table (bound " +
-                std::to_string(callTargets.size()) + ")";
-        return false;
-    }
-    out = callTargets[selector - 1];
+    out = callTargets[index];
     return true;
 }
 

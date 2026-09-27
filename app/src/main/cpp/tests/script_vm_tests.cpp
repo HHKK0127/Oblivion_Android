@@ -2089,6 +2089,47 @@ void ScriptVMTests::testNativeScdaDecoder() {
                getTimeMs38() - start);
     }
 
+    // Test 15b: the begin block type keyword table
+    {
+        const float start = getTimeMs38();
+
+        // The block type namespace is separate from the opcode namespace, so
+        // 0x001E is onreset here and the return opcode there.
+        const bool separateNamespace =
+            getNativeBlockTypeName(0x001E) == "onreset" &&
+            getNativeOpcodeName(0x001E) == "Return";
+
+        const bool knownTypes =
+            getNativeBlockTypeName(0x0000) == "gamemode" &&
+            getNativeBlockTypeName(0x0002) == "onactivate" &&
+            getNativeBlockTypeName(0x000A) == "ondeath" &&
+            getNativeBlockTypeName(0x0015) == "onload" &&
+            getNativeBlockTypeName(0x001C) == "onactorequip";
+
+        // The package-done block has two spellings; the primary name is the
+        // first and the alternate is reachable through the alias list.
+        const std::vector<std::string> packageAliases =
+            getNativeBlockTypeAliases(0x0010);
+        const bool packageSpellings =
+            getNativeBlockTypeName(0x0010) == "onpackagedone" &&
+            packageAliases.size() == 2 &&
+            packageAliases[0] == "onpackagedone" &&
+            packageAliases[1] == "onpackageend";
+
+        // An unknown block type is an empty string, not a guessed keyword, and
+        // a block type without an alternate spelling has an empty alias list.
+        const bool unknownRejected =
+            getNativeBlockTypeName(0x0007).empty() &&
+            getNativeBlockTypeName(0xFFFF).empty() &&
+            getNativeBlockTypeAliases(0x0002).empty();
+
+        const bool ok = separateNamespace && knownTypes && packageSpellings &&
+                        unknownRejected;
+        record("NativeScda: block type names", ok,
+               "Begin block types map to their source keywords in their own namespace",
+               getTimeMs38() - start);
+    }
+
     // Test 16: slots number the record's ref subrecords in file order
     {
         const float start = getTimeMs38();
@@ -3450,6 +3491,33 @@ void ScriptVMTests::testNativeScdaBridge() {
                         args[0].refVal == 0x5678;
         record("NativeBridge: variable token", ok,
                "A variable token resolves to its stored value, not its slot index",
+               getTimeMs38() - start);
+    }
+
+    // Test 6: the mapping table is a bijection and both name spaces agree
+    {
+        const float start = getTimeMs38();
+        std::string error;
+        const bool valid = validateNativeFunctionMappings(error);
+
+        size_t count = 0;
+        const NativeFunctionMapping* mappings = nativeFunctionMappings(count);
+
+        // Every row must also be reachable through the lookup the bridge uses,
+        // so the table and the lookup cannot drift apart.
+        bool lookupAgrees = true;
+        for (size_t i = 0; i < count; ++i) {
+            FunctionID id;
+            if (!mapNativeOpcodeToFunctionId(mappings[i].opcode, id) ||
+                id != mappings[i].functionId) {
+                lookupAgrees = false;
+            }
+        }
+
+        const bool ok = valid && lookupAgrees && count > 0;
+        record("NativeBridge: mapping bijection", ok,
+               valid ? "The native-to-FunctionID table is a bijection and both name spaces agree"
+                     : error.c_str(),
                getTimeMs38() - start);
     }
 }

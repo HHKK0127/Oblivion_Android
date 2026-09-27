@@ -101,6 +101,25 @@ enum class NativeStructuralOpcode : uint16_t {
     Return = 0x001E,  // no payload
 };
 
+// The `begin` block type keyword for a Begin payload's blockType word.
+//
+// The 25 measured block types map to their source keywords over the 2,351
+// records where the keyword and opcode counts agree. The block type lives in
+// its own namespace: `0x001E` is `onreset` here while the same number is the
+// `return` opcode, so a block type must never be compared against an opcode.
+//
+// `0x0010` has two spellings in the corpus, `onpackagedone` and
+// `onpackageend`, and the compiler emits both for the same block type, so the
+// primary name is returned and the alternate is available through
+// getNativeBlockTypeAliases.
+//
+// An unknown block type returns an empty string rather than a guessed keyword.
+std::string getNativeBlockTypeName(uint16_t blockType);
+
+// The alternate spellings of a block type, in the order they were measured.
+// Only `0x0010` has one; every other block type returns an empty list.
+std::vector<std::string> getNativeBlockTypeAliases(uint16_t blockType);
+
 // Call reference selector. Its second u16 is a reference index, not a length:
 // it selects the reference used by the command that follows, which is how the
 // compiler encodes `Ref.command`. The 4 bytes must always be consumed and the
@@ -255,6 +274,19 @@ struct NativeReferenceEntry {
     uint32_t formId = 0;       // Valid when kind == Scro
     uint32_t variableIndex = 0; // SLSD/SCVR variable index when kind == LocalRef
 };
+
+// Resolves a 1-based index into a table, the shape both selector spaces share.
+//
+// The `r`/`Z` slot space and the `0x001C` call selector space are different
+// tables, but they agree on the addressing rule: index 0 is not a valid
+// selector, and an index past the end is an explicit error rather than a
+// guessed reference. Keeping that rule in one place means the two spaces cannot
+// drift apart on the boundary they share.
+bool resolveNativeTableIndex(uint16_t index,
+                             size_t tableSize,
+                             const char* spaceName,
+                             size_t& out,
+                             std::string& error);
 
 // Resolves a 1-based `r`/`Z` slot against a script's reference table.
 //
