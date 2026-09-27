@@ -1280,8 +1280,24 @@ void ESMFile::decodeReference(const ESMRecord& rec) {
     // (position relative to the cell origin).
     ref.cellFormID = rec.parentFormID;
 
-    m_references.push_back(std::move(ref));
-}
+        // Door intercept target (XTEL). Only door-base references carry XTEL, and
+        // the leading u32 is the target door reference's FormID, not the
+        // destination cell's. The remaining 24 bytes are pos/rot. Lengths other
+        // than 28 are rejected safely — this corpus contains only 28-byte XTELs.
+        auto* xtel = rec.findSubRecord("XTEL");
+        if (xtel && xtel->size() >= 28) {
+            ref.hasXtel = true;
+            ref.doorTargetFormID = readU32(xtel->data.data());
+            ref.doorTargetPos.x = readF32(xtel->data.data() + 4);
+            ref.doorTargetPos.y = readF32(xtel->data.data() + 8);
+            ref.doorTargetPos.z = readF32(xtel->data.data() + 12);
+            ref.doorTargetRot.x = readF32(xtel->data.data() + 16);
+            ref.doorTargetRot.y = readF32(xtel->data.data() + 20);
+            ref.doorTargetRot.z = readF32(xtel->data.data() + 24);
+        }
+
+        m_references.push_back(std::move(ref));
+    }
 
 // ============================================================================
 // Actor reference (ACHR/ACRE) decoding — placed actors in cells.

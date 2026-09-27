@@ -664,7 +664,19 @@ struct ReferenceData {
         uint16_t flags = 0;
         // Reference kind: 0 = object (REFR), 1 = actor NPC (ACHR), 2 = actor creature (ACRE)
         uint8_t refType = 0;
-};
+                // Door intercept target (XTEL subrecord, 28 bytes), present only on
+                // door-base references. The leading u32 is the FormID of the target
+                // door reference — not the destination cell — so the destination cell
+                // is resolved lazily after all references and cells are loaded. The
+                // remaining 24 bytes are the target door's pos/rot (Z-up, like the
+                // reference DATA block). XTEL is the only door-transition data source;
+                // links are one-way in general (this corpus has exactly one one-way
+                // link out of 4,397), so consumers must not assume symmetry.
+                bool hasXtel = false;
+                uint32_t doorTargetFormID = 0;
+                glm::vec3 doorTargetPos{0.0f, 0.0f, 0.0f};
+                glm::vec3 doorTargetRot{0.0f, 0.0f, 0.0f};
+        };
 
 /// Terrain data from a LAND record. Oblivion (TES4) LAND is a 33x33 grid, not
 /// the 65x65 grid used by Morrowind (TES3).

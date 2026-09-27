@@ -7,6 +7,7 @@
 #include "tests/phase48_stress_test.h"
 #include "tests/phase48_integration_test.h"
 #include "tests/watr_decode_tests.h"
+#include "tests/xtel_decode_tests.h"
 #include "tests/weather_transition_tests.h"
 #include "tests/interior_cell_tests.h"
 #include "tests/gamestate_report_tests.h"
@@ -50,6 +51,11 @@ int main() {
         WatrDecodeTests t;
         const bool ok = t.runAllTests();
         runSuite("WatrDecodeTests", ok, t.getSummary(), failed);
+    }
+    {
+        XtelDecodeTests t;
+        const bool ok = t.runAllTests();
+        runSuite("XtelDecodeTests", ok, t.getSummary(), failed);
     }
     {
         WeatherTransitionTests t;

@@ -82,6 +82,7 @@ SOURCES=(
   app/src/main/cpp/tests/phase48_integration_test.cpp
   app/src/main/cpp/tests/phase30_integration_test.cpp
   app/src/main/cpp/tests/watr_decode_tests.cpp
+  app/src/main/cpp/tests/xtel_decode_tests.cpp
   app/src/main/cpp/tests/weather_transition_tests.cpp
   app/src/main/cpp/tests/interior_cell_tests.cpp
   app/src/main/cpp/tests/gamestate_report_tests.cpp
