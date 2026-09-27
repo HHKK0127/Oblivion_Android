@@ -85,6 +85,7 @@ SOURCES=(
   app/src/main/cpp/tests/weather_transition_tests.cpp
   app/src/main/cpp/tests/interior_cell_tests.cpp
   app/src/main/cpp/tests/gamestate_report_tests.cpp
+  app/src/main/cpp/tests/asset_path_tests.cpp
   app/src/main/cpp/quest/quest_flow_controller.cpp
   app/src/main/cpp/localization/localization_manager.cpp
   app/src/main/cpp/quest/quest_stage_manager.cpp
