@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-27T11:32:47",
+  "lastUpdated": "2026-09-27T10:33:55Z",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -4785,10 +4785,67 @@
         "convention"
       ],
       "compressed": false
+    },
+    {
+      "id": "6ed64cf5-f445-4ef1-ae2c-370c6f89a9b9",
+      "timestamp": "2026-09-27T10:33:55Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "Interior REFR geometry is DEVICE-VERIFIED as of 2026-09-27 (commits b4446bf7 + 78f98de9, master HEAD 69e6a055). Entering a cell via the Android debug panel button nativeExecuteConsoleCommand(\"teleportinterior\") logs `renderInteriorObjects: cell 'Aichan Prison' drew 559 meshes (5 still loading)` - the same log read `drew 0 meshes` before the NIF geometry extraction landed. The exterior pass in the same session logs `Terrain rendered: 9 exterior cells with heightmap, 9 drawn, cache=9`. Pixel evidence (1920x1080): exterior 474 distinct sampled colours (17.9% (82,105,58) grass, 8.7% (99,138,181) sky); interior 1,351 (77.6% (16,12,16) dungeon dark, 1.1% (74,140,74) RuinsRoots01 greenery, 1.1% white HUD). Neither frame is a clear-colour frame. Screenshots live in git-ignored screenshots/ (p20_03_exterior.png, p20_04_interior.png). This closes the item WS-COORD (964d16fb) asked for.",
+      "tags": [
+        "phase-65",
+        "p20",
+        "interior",
+        "device-verification",
+        "nif"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "bc8b7649-90ec-486f-9d3f-bb1eff279e04",
+      "timestamp": "2026-09-27T10:33:55Z",
+      "category": "constraint",
+      "priority": "high",
+      "content": "The 2026-09-27 interior/exterior device run was SOFTWARE GL, so its frame-rate numbers must not be quoted as the project's. The AVD was started with `-gpu swiftshader_indirect` and `dumpsys SurfaceFlinger` reports `Android Emulator OpenGL ES Translator (Google SwiftShader), OpenGL ES 3.0` - not the accelerated NVIDIA transport the memory section of plan.md describes. Observed 12-16 fps in the interior is that, not a regression. The draw path does not depend on the transport, but any fps conclusion from this session does. Related: `renderInteriorObjects` logs only every 300 frames, so at software-GL frame rates a second reading takes ~25 s - absence of a new line is not a stall.",
+      "tags": [
+        "emulator",
+        "swiftshader",
+        "performance",
+        "caveat"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "036e432c-5e82-4ac9-af74-330e8cd9b282",
+      "timestamp": "2026-09-27T10:33:55Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Stable on-device input coordinates for the 2026-09-27 build, read from the app's own log rather than guessed (surface is 1920x1017, density 420, UI is Japanese because JPWiki localization is live): title menu is ONE horizontal row, logged as `TitleScreen: Menu hit rect [i] '<label>': x=[..] y=[..]` with baselineY=812.1 - item [1] is 新規 (New Game) at x=[612.6..702.9] y=[776.4..822.1], so tap (658, 799); `btn_debug_toggle` (\"D\") at (73, 73); after scrolling the debug panel with 4x `input swipe 367 900 367 250 300`, `btn_debug_interior` (\"Enter Interior Cell\") is at (367, 343) and `btn_close_debug` (\"X\") at (1846, 73). Always re-read `adb shell uiautomator dump` rather than trusting these after a layout change.",
+      "tags": [
+        "emulator",
+        "adb",
+        "ui-coordinates",
+        "debug-panel",
+        "runbook"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "c1a6668f-b7f6-4c1c-8711-d9d75b79027b",
+      "timestamp": "2026-09-27T10:33:55Z",
+      "category": "constraint",
+      "priority": "high",
+      "content": "Emulator run pitfall learned 2026-09-27: piping the emulator's stdout (`emulator -avd ... | Select-Object -First 30`) KILLS the emulator process when the pipe closes. Redirect to a file instead and run it async: `& $emu -avd Pixel_API34 -no-snapshot-load -no-boot-anim -gpu swiftshader_indirect -memory 4096 *> \"$env:TEMP\\emu.log\"`. Then poll `adb shell getprop sys.boot_completed` for 1.",
+      "tags": [
+        "emulator",
+        "pitfall",
+        "powershell"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 332,
+    "totalEntries": 336,
     "compressedCount": 2,
     "sessionCount": 29
   }
