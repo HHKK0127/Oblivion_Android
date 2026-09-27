@@ -1261,6 +1261,15 @@ Assigned after the static-object landing above. What is measured, at `7ad53f6f`:
 
 **Step 1 is a measurement rather than a code change**, and it decides the shape of step 2 the way the static-object assignment was designed to: census every `REFR` whose base record is a `DOOR` in `Oblivion3.esm` and report (a) how many carry an `XTEL` at all, (b) the `XTEL` length distribution, and (c) whether the destination `FormID` resolves to an interior cell, an exterior cell or an unresolved record. xEdit's TES4 definitions give the expected shape 28 bytes (`wbDefinitionsTES4.pas`: `wbStruct(XTEL, [wbFormID, wbPosRot])`, i.e. door FormID + position + rotation), but the census is what has to confirm it on this corpus - the rule the `WTHR` `NAM0` correction above already demonstrated.
 
+**Step 1 census, measured 2026-09-27 and run independently in this session and in WS-C's, with the same numbers.** `Oblivion3.esm` (277,504,985 bytes) holds 1,167,016 records, 35,494 `CELL` records and 501 `DOOR` base records; 6,949 references use a `DOOR` base record, and every `REFR` decoded (`inflateFail = 0`, `malformed = 0`).
+
+- (a) `XTEL` present on 4,397 of the door references, absent on 2,552.
+- (b) Every present `XTEL` is exactly 28 bytes (4,397 of 4,397), i.e. xEdit's `[FormID + PosRot]`; no other length occurs.
+- (c) All 4,397 destinations resolve to a `REFR` record, and every one of those `REFR`s has a `DOOR` base record, so the first `FormID` is the *destination door* and not the destination cell. Unresolved count is 0.
+- (d) Classified by the engine's own rule (`assets/esm_reader.cpp:857`, `cell.isExterior = (rec.worldspaceFormID != 0)`, i.e. inside a `WRLD` group) the destinations split 1,073 exterior / 3,324 interior. Counting `XCLC` instead gives 616 / 3,781, and the two axes differ only on 79 worldspace cells that carry `DATA` and no `XCLC`; the loader already implements the worldspace rule, so that is the axis used here.
+
+Two further facts the census settled, both of which step 2 can rely on: `XTEL` never appears on a reference whose base record is not a `DOOR` (0 cases), and the top byte of every destination `FormID` is `0x00`, so no destination is a record outside this file. Link symmetry was measured too, because the step 2 design resolves the destination cell through the destination door: 4,396 of the 4,397 links are mutual (A points at B and B back at A) and exactly one is one-way, and no destination is a door without `XTEL`, so the door-to-cell chain always terminates. The transition matrix by cell class is interior-to-interior 2,361, interior-to-exterior 963, exterior-to-interior 963, exterior-to-exterior 110.
+
 Acceptance criteria, in order:
 
 1. The census above, reported with the door `REFR` count, the `XTEL` present/absent split and the destination-resolution split.
