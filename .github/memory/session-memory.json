@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-27T11:20:00",
+  "lastUpdated": "2026-09-27T11:32:47",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -4770,10 +4770,25 @@
         "plan"
       ],
       "compressed": false
+    },
+    {
+      "id": "tmp-screenshots-policy-20260927",
+      "timestamp": "2026-09-27T11:32:47",
+      "category": "configuration",
+      "priority": "high",
+      "content": "Repo-root scratch file policy (2026-09-27, user instruction): temporary files that must never reach GitHub go in the gitignored repo-root folder `tmp/`, and debug screenshots go in the gitignored repo-root folder `screenshots/`. Both folders are local-only and are excluded by `/tmp/` and `/screenshots/` in .gitignore (lines 53 and 49). Future temporary output (build logs, adb screencaps, UI/XML dumps, local APK output) must be written there instead of the repo root. Applied in this session: 148 root screenshots moved to `screenshots/`, and 12 temp files moved to `tmp/` (build_log.txt, build_log2.txt, build_font.log, build_output.log, buildlog_water.txt, launch_out.txt, dbg_dump.log, ui.xml, ui2.xml, ui_dump.xml, window_dump.xml, app-release-aligned.apk). build_log.txt and build_log2.txt had been tracked since commit 20134bba; they now appear as unstaged deletions, which the user chose not to commit.",
+      "tags": [
+        "repo-hygiene",
+        "tmp",
+        "screenshots",
+        "gitignore",
+        "convention"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 331,
+    "totalEntries": 332,
     "compressedCount": 2,
     "sessionCount": 29
   }
