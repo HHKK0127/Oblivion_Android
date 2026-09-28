@@ -10,7 +10,9 @@
 // ============================================================================
 // BSA Archive Reader for Oblivion (TES4) .bsa files
 //
-// Implements the Oblivion BSA format based on SharpBSABA2 source analysis.
+// Original implementation written for this project. The on-disk format is
+// documented publicly by UESP ("Oblivion Mod:BSA File Format"); this reader
+// is an independent C++ implementation of that specification.
 // BSA Header Magic: 0x00415342 ("BSA\0")
 // Oblivion Version: 0x67
 // ============================================================================
