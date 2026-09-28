@@ -2101,15 +2101,7 @@ bool Renderer::initGameSystems() {
         questFlowController.get());
     LOGI("ScriptManager initialized successfully");
 
-    // Initialize SpeedTreeManager (singleton)
-    LOGI("Initializing SpeedTreeManager...");
-    if (vegetation::SpeedTreeManager::instance().initialize(this)) {
-        LOGI("SpeedTreeManager initialized successfully");
-    } else {
-        LOGE("Failed to initialize SpeedTreeManager");
-    }
-
-    // Initialize Phase 36 Jolt Physics
+        // Initialize Phase 36 Jolt Physics
     LOGI("Initializing Jolt Physics...");
     {
         auto& physics = oblivion::PhysicsManager::getInstance();
@@ -2340,9 +2332,8 @@ bool Renderer::initGameSystems() {
             audioManager.get(),
             &oblivion::PhysicsManager::getInstance(),
             scriptManager.get(),  // ScriptManager integration
-            &distantLod,  // DistantLodManager (singleton)
-            &vegetation::SpeedTreeManager::instance()  // SpeedTree integration (singleton)
-        );
+            &distantLod  // DistantLodManager (singleton)
+                    );
         imperialWeaveInitialized = true;
 
         // Initialize QuestFlowController now that the EventBus and all game

@@ -305,11 +305,6 @@ add_library(native-lib SHARED
     dialogue/dialogue_history.cpp
     dialogue/dialogue_integration.cpp
 
-    # Phase 51: SpeedTree Vegetation System
-    vegetation/speed_tree_manager.cpp
-    vegetation/tree_wind_field.cpp
-    vegetation/tree_emitter.cpp
-
     # Phase 52: FaceGen System
     character/face_gen_morpher.cpp
     character/face_gen_cache.cpp

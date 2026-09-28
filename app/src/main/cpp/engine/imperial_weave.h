@@ -48,10 +48,6 @@ class AnimationPlayer;
 
 class DistantLodManager;
 
-namespace vegetation {
-class SpeedTreeManager;
-}
-
 namespace oblivion {
 namespace video {
 class BinkVideoPlayer;
@@ -255,8 +251,7 @@ struct ImperialWeaveConfig {
     ::oblivion::PhysicsManager* joltPhysics = nullptr;
     ::oblivion::script::ScriptManager* script = nullptr;
     ::DistantLodManager* distantLod = nullptr;
-    ::vegetation::SpeedTreeManager* speedTree = nullptr;
-    ::facegen::FaceGenMorpher* faceGen = nullptr;
+        ::facegen::FaceGenMorpher* faceGen = nullptr;
     ::oblivion::video::BinkVideoPlayer* binkVideo = nullptr;
 
     // Frame budget in milliseconds (default: 16.6ms = 60fps)
@@ -290,8 +285,7 @@ public:
         ::oblivion::PhysicsManager* joltPhysics = nullptr,
         ::oblivion::script::ScriptManager* script = nullptr,
         ::DistantLodManager* distantLod = nullptr,
-        ::vegetation::SpeedTreeManager* speedTree = nullptr,
-        ::facegen::FaceGenMorpher* faceGen = nullptr,
+                ::facegen::FaceGenMorpher* faceGen = nullptr,
         ::oblivion::video::BinkVideoPlayer* binkVideo = nullptr
     );
 
@@ -337,8 +331,7 @@ private:
     ::oblivion::PhysicsManager* joltPhysics_ = nullptr;
     ::oblivion::script::ScriptManager* scriptManager_ = nullptr;
     ::DistantLodManager* distantLodManager_ = nullptr;
-    ::vegetation::SpeedTreeManager* speedTreeManager_ = nullptr;
-    ::facegen::FaceGenMorpher* faceGenMorpher_ = nullptr;
+        ::facegen::FaceGenMorpher* faceGenMorpher_ = nullptr;
     ::oblivion::video::BinkVideoPlayer* binkVideoPlayer_ = nullptr;
 
     bool initialized_ = false;
@@ -365,8 +358,7 @@ private:
     void phaseCombatUpdate(float dt);
     void phaseQuestUpdate(float dt);
     void phaseScriptUpdate(float dt);
-    void phaseVegetationUpdate(float dt);   // v4: SpeedTree
-    void phaseFaceGenUpdate(float dt);      // v4: FaceGen
+        void phaseFaceGenUpdate(float dt);      // v4: FaceGen
     void phaseVideoUpdate(float dt);        // v4: BinkVideo
     void phaseAudioUpdate(float dt);
     void phaseRenderSubmit(float dt);

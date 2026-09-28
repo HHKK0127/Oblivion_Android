@@ -14,7 +14,6 @@
 #include "../physics/physics_manager.h"
 #include "../script/script_manager.h"
 #include "../world/distant_lod/distant_lod_manager.h"
-#include "../vegetation/speed_tree_manager.h"
 #include "../character/face_gen_morpher.h"
 #include "../video/bink_video_player.h"
 
@@ -107,8 +106,7 @@ void ImperialWeave::init(const ImperialWeaveConfig& config) {
     joltPhysics_ = config.joltPhysics;
     scriptManager_ = config.script;
     distantLodManager_ = config.distantLod;
-    speedTreeManager_ = config.speedTree;
-    faceGenMorpher_ = config.faceGen;
+        faceGenMorpher_ = config.faceGen;
     binkVideoPlayer_ = config.binkVideo;
     frameBudgetMs_ = config.frameBudgetMs;
 
@@ -127,19 +125,11 @@ void ImperialWeave::init(const ImperialWeaveConfig& config) {
     if (joltPhysics_) locator_.registerService(joltPhysics_);
     if (scriptManager_) locator_.registerService(scriptManager_);
     if (distantLodManager_) locator_.registerService(distantLodManager_);
-    if (speedTreeManager_) locator_.registerService(speedTreeManager_);
-    if (faceGenMorpher_) locator_.registerService(faceGenMorpher_);
+        if (faceGenMorpher_) locator_.registerService(faceGenMorpher_);
     if (binkVideoPlayer_) locator_.registerService(binkVideoPlayer_);
 
     // v4: Subscribe to new engine events
-    eventBus_.subscribe("TREE_WIND_CHANGE", [this](const Event& e) {
-        (void)e;
-        // Forward wind changes to SpeedTree for dynamic wind response
-        if (speedTreeManager_) {
-            // SpeedTree reads wind params internally during update
-        }
-    });
-    eventBus_.subscribe("FACE_MORPH_UPDATE", [](const Event& e) {
+        eventBus_.subscribe("FACE_MORPH_UPDATE", [](const Event& e) {
         (void)e;
         // FaceGen morph target updates are handled in phaseFaceGenUpdate
     });
@@ -177,10 +167,9 @@ void ImperialWeave::init(
     ::oblivion::PhysicsManager* joltPhysics,
     ::oblivion::script::ScriptManager* script,
     ::DistantLodManager* distantLod,
-    ::vegetation::SpeedTreeManager* speedTree,
-    ::facegen::FaceGenMorpher* faceGen,
-    ::oblivion::video::BinkVideoPlayer* binkVideo
-) {
+        ::facegen::FaceGenMorpher* faceGen,
+        ::oblivion::video::BinkVideoPlayer* binkVideo
+    ) {
     ImperialWeaveConfig config;
     config.renderer = renderer;
     config.world = world;
@@ -196,10 +185,9 @@ void ImperialWeave::init(
     config.joltPhysics = joltPhysics;
     config.script = script;
     config.distantLod = distantLod;
-    config.speedTree = speedTree;
-    config.faceGen = faceGen;
-    config.binkVideo = binkVideo;
-    init(config);
+        config.faceGen = faceGen;
+        config.binkVideo = binkVideo;
+        init(config);
 }
 
 void ImperialWeave::shutdown() {
@@ -219,8 +207,7 @@ void ImperialWeave::shutdown() {
     joltPhysics_ = nullptr;
     scriptManager_ = nullptr;
     distantLodManager_ = nullptr;
-    speedTreeManager_ = nullptr;
-    faceGenMorpher_ = nullptr;
+        faceGenMorpher_ = nullptr;
     binkVideoPlayer_ = nullptr;
     lastFrameTimeMs_ = 0.0f;
     frameBudgetExceeded_ = false;
@@ -260,12 +247,9 @@ void ImperialWeave::update(float deltaTime) {
         WEAVE_PROFILE_PHASE(ScriptUpdate,    phaseScriptUpdate(deltaTime));
 
         // v4: New engine phases (skip if over budget)
-        if (withinBudget(frameStart)) {
-            WEAVE_PROFILE_PHASE(VegetationUpdate, phaseVegetationUpdate(deltaTime));
-        }
-        if (withinBudget(frameStart)) {
-            WEAVE_PROFILE_PHASE(FaceGenUpdate, phaseFaceGenUpdate(deltaTime));
-        }
+                if (withinBudget(frameStart)) {
+                    WEAVE_PROFILE_PHASE(FaceGenUpdate, phaseFaceGenUpdate(deltaTime));
+                }
         if (withinBudget(frameStart)) {
             WEAVE_PROFILE_PHASE(VideoUpdate, phaseVideoUpdate(deltaTime));
         }
@@ -344,17 +328,6 @@ void ImperialWeave::phaseAudioUpdate(float dt) {
     if (audioManager_) audioManager_->update(dt);
 }
 
-// v4: SpeedTree vegetation update
-void ImperialWeave::phaseVegetationUpdate(float dt) {
-    if (speedTreeManager_) {
-        // Update wind field simulation
-        // Update LOD transitions based on camera distance
-        // Update billboard generation for distant trees
-        glm::vec3 windDir(1.0f, 0.0f, 0.5f); // Default wind direction
-        speedTreeManager_->update(dt, windDir);
-    }
-}
-
 // v4: FaceGen morph update
 void ImperialWeave::phaseFaceGenUpdate(float dt) {
     (void)dt;
@@ -382,21 +355,8 @@ void ImperialWeave::phaseRenderSubmit(float dt) {
     // singleton over, so nothing drew at all. Only the manager's own per-frame
     // state advance stays here.
     if (distantLodManager_) {
-        distantLodManager_->update(dt);
-    }
-
-    // v4: Phase 51: SpeedTree vegetation rendering
-    if (speedTreeManager_ && renderer_) {
-        // SpeedTree handles its own instanced rendering
-        // Billboard trees rendered for distant LOD
-        glm::mat4 viewProj;
-        glm::vec3 cameraPos;
-        if (worldManager_) {
-            cameraPos = worldManager_->getCameraPosition();
-            // viewProj matrix computed from camera state in render pipeline
+            distantLodManager_->update(dt);
         }
-        speedTreeManager_->render(renderer_, viewProj, cameraPos);
-    }
 
     // v4: Phase 52: FaceGen face rendering
     if (faceGenMorpher_ && renderer_) {
