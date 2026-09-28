@@ -21,7 +21,8 @@ public:
     explicit UIBookReader(const std::string& title = "");
     ~UIBookReader() override = default;
 
-    bool initialize(TextRenderer* textRenderer);
+        using UIPanel::initialize;
+        bool initialize(TextRenderer* textRenderer);
 
     /**
      * @brief Open a book

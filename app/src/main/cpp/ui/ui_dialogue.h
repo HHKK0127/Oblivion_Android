@@ -20,7 +20,8 @@ public:
     explicit UIDialogue(const std::string& title = "");
     ~UIDialogue() override = default;
 
-    bool initialize(TextRenderer* textRenderer);
+        using UIPanel::initialize;
+        bool initialize(TextRenderer* textRenderer);
 
     // Open dialogue with NPC
     void openDialogue(std::shared_ptr<Dialogue> dialogue);
