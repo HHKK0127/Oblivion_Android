@@ -473,6 +473,10 @@ private:
     // Phase 50: distant LOD backdrop (DistantLodManager horizon ring)
     void renderDistantLod();
 
+        // Phase 65: generate and register distant LOD meshes for the ring of cells
+        // around the player that sits between the active 3x3 block and maxDistance.
+        void updateDistantLodMeshes();
+
     // Phase 66 P20: interior cell geometry (REFR resolved NIFs)
     void renderInteriorObjects();
     size_t ensureInteriorObjectsPlaced();

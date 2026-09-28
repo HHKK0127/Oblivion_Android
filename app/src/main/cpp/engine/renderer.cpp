@@ -4791,12 +4791,12 @@ void main() {
 }
 )";
 
-// Phase 50: distant LOD. The horizon ring is the one part of DistantLodManager
-// that is implemented (registerLodMesh() and generateLodFromLand() have no
-// callers yet), so today this draws the outdoor backdrop ring and nothing else.
-// The view-projection is built here, from the same camera the terrain and water
-// passes use, because the manager needs a real matrix to derive its frustum
-// planes from - the weave phase used to hand it an uninitialised one.
+// Phase 50: distant LOD. The horizon ring is generated at initialize() time,
+// and updateDistantLodMeshes() (Phase 65) keeps a ring of low-detail terrain
+// meshes registered for the cells between the active 3x3 block and the fade
+// distance. The view-projection is built here, from the same camera the terrain
+// and water passes use, because the manager needs a real matrix to derive its
+// frustum planes from - the weave phase used to hand it an uninitialised one.
 void Renderer::renderDistantLod() {
     DistantLodManager& lod = DistantLodManager::instance();
     if (!lod.isInitialized()) return;
@@ -4804,6 +4804,10 @@ void Renderer::renderDistantLod() {
     // Interiors have no worldspace, and their ceilings must not be pierced by an
     // outdoor horizon ring.
     if (worldManager && worldManager->isPlayerIndoors()) return;
+
+    // Phase 65: keep the LOD mesh ring around the player populated. Runs before
+    // the draw so newly registered meshes are visible this frame.
+    updateDistantLodMeshes();
 
     glm::mat4 viewMatrix;
     glm::mat4 projMatrix;
@@ -4823,6 +4827,86 @@ void Renderer::renderDistantLod() {
     const glm::mat4 viewProj = projMatrix * viewMatrix;
     lod.render(this, viewProj);
 }
+
+    // Phase 65: keep the distant LOD mesh ring populated. The active 3x3 block is
+    // drawn in full detail by renderTerrainMeshes(); the cells one and two rings
+    // further out (Chebyshev distance 2..3) get a low-detail LOD mesh each so the
+    // world does not end at the dense-terrain budget. Meshes are generated from the
+    // same ESM LAND heightmap the dense path uses, downsampled by the manager.
+    //
+    // The default DistantLodConfig (maxDistance=2048) predates cell-based terrain
+    // and is smaller than one cell, so the config is widened here to reach the
+    // outer ring. The horizon ring still sits at its own config.horizonDistance.
+    void Renderer::updateDistantLodMeshes() {
+        if (!worldManager || !assetManager) return;
+
+        DistantLodManager& lod = DistantLodManager::instance();
+        if (!lod.isInitialized()) return;
+
+        // Widen the Phase 50 defaults to cell-scale distances. One cell spans
+        // CELL_SIZE units; the outer LOD ring sits ~2-3 cells from the player.
+        const DistantLodConfig& cfg = lod.getConfig();
+        if (cfg.maxDistance < static_cast<float>(CELL_SIZE) * 3.0f) {
+            DistantLodConfig scaled = cfg;
+            scaled.maxDistance = static_cast<float>(CELL_SIZE) * 3.0f;
+            scaled.fadeStartDistance = static_cast<float>(CELL_SIZE) * 2.0f;
+            scaled.fadeEndDistance = static_cast<float>(CELL_SIZE) * 3.0f;
+            scaled.lodThresholdNear = static_cast<float>(CELL_SIZE);
+            scaled.lodThresholdFar = static_cast<float>(CELL_SIZE) * 2.0f;
+            lod.setConfig(scaled);
+        }
+
+        const glm::vec3 playerPos = worldManager->getPlayerPosition();
+        const int playerCellX = static_cast<int>(std::floor(playerPos.x / static_cast<float>(CELL_SIZE)));
+        const int playerCellY = static_cast<int>(std::floor(playerPos.z / static_cast<float>(CELL_SIZE)));
+
+        // Track which cells already have a registered LOD mesh so generation runs
+        // once per cell instead of every frame.
+        static std::unordered_set<uint64_t> lodCellKeys;
+        static std::unordered_set<uint64_t> lodCellKeysThisFrame;
+
+        lodCellKeysThisFrame.clear();
+
+        const oblivion::ESMManager* esmMgrPtr = &assetManager->getEsmManager();
+        const int maxLodMeshes = lod.getConfig().maxLodMeshes;
+
+        // Chebyshev distance 2..3 around the player cell. Distance 0..1 is the
+        // active 3x3 block drawn in full detail; anything further is beyond the
+        // widened maxDistance and gets unregistered below.
+        for (int dy = -3; dy <= 3; ++dy) {
+            for (int dx = -3; dx <= 3; ++dx) {
+                const int cheb = std::max(std::abs(dx), std::abs(dy));
+                if (cheb < 2 || cheb > 3) continue;
+
+                const int cellX = playerCellX + dx;
+                const int cellY = playerCellY + dy;
+                const uint64_t key = (static_cast<uint64_t>(cellX) << 32) |
+                                     (static_cast<uint64_t>(cellY) & 0xFFFFFFFFu);
+                lodCellKeysThisFrame.insert(key);
+
+                if (lodCellKeys.count(key)) continue;  // already generated
+                if (static_cast<int>(lodCellKeys.size()) >= maxLodMeshes) continue;
+
+                const std::shared_ptr<Cell> cell = worldManager->getCellByCoord(cellX, cellY);
+                if (!cell || cell->cellType != CellType::EXTERIOR || !cell->hasTerrain) continue;
+                if (!cell->hasDenseTerrain() && !expandCellTerrain(*cell, *esmMgrPtr)) continue;
+
+                const std::string meshId = "lod_" + std::to_string(cellX) + "_" + std::to_string(cellY);
+                LodMeshData mesh = lod.generateLodFromLand(cell->heightData, cellX, cellY, 0);
+                lod.registerLodMesh(meshId, mesh);
+                lodCellKeys.insert(key);
+            }
+        }
+
+        // Unregister meshes for cells that left the ring (player moved on).
+        for (const uint64_t key : lodCellKeys) {
+            if (lodCellKeysThisFrame.count(key)) continue;
+            const int cellX = static_cast<int>(key >> 32);
+            const int cellY = static_cast<int>(key & 0xFFFFFFFFu);
+            lod.unregisterLodMesh("lod_" + std::to_string(cellX) + "_" + std::to_string(cellY));
+        }
+        lodCellKeys = std::move(lodCellKeysThisFrame);
+    }
 
 // Phase 66: Render the weather-driven sky dome. The shader source comes from
 // SkyWeatherSystem::generateSkyShader(), and every uniform (zenith/horizon
