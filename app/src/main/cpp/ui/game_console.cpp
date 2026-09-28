@@ -479,14 +479,20 @@ void GameConsole::registerBuiltinCommands() {
     });
     registerCommand("doorinfo", "Show door info", [this](const std::vector<std::string>&) {
         if (gameRefs.getDoorInfo) {
-            print(gameRefs.getDoorInfo());
+            const std::string result = gameRefs.getDoorInfo();
+            print(result);
+            LOGI_CONSOLE("%s", result.c_str());
         } else {
             print("World Manager not available");
         }
     });
     registerCommand("usedoor", "Walk through the door nearest the player", [this](const std::vector<std::string>&) {
         if (gameRefs.useNearestDoor) {
-            print(gameRefs.useNearestDoor());
+            const std::string result = gameRefs.useNearestDoor();
+            print(result);
+            // Mirrored to logcat so capture scripts can read the outcome
+            // without screenshotting the on-screen console.
+            LOGI_CONSOLE("%s", result.c_str());
         } else {
             print("Door Manager not available");
         }
