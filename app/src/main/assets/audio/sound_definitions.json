@@ -1,0 +1,31 @@
+{
+  "sounds": {
+    "combat/attack_swing": { "file": "traps/trp_bluntobjectswish.wav", "type": "se", "volume": 0.9, "loop": false, "3d": true },
+    "combat/hit_generic":   { "file": "fst/metal/fst_metal_01.wav", "type": "se", "volume": 0.9, "loop": false, "3d": true },
+    "combat/hit_critical":  { "file": "fst/metal/fst_metal_02.wav", "type": "se", "volume": 1.0, "loop": false, "3d": true },
+    "combat/block_generic": { "file": "fst/metal/fst_metal_03.wav", "type": "se", "volume": 0.9, "loop": false, "3d": true },
+    "combat/parry":         { "file": "fst/metal/fst_metal_04.wav", "type": "se", "volume": 0.9, "loop": false, "3d": true },
+    "combat/dodge":         { "file": "fst/dodge/fst_dodge.wav", "type": "se", "volume": 0.7, "loop": false, "3d": true },
+    "combat/blade_equip":   { "file": "wpn/wpn_blade2hand_equip.wav", "type": "se", "volume": 0.8, "loop": false, "3d": false },
+    "combat/death_generic": { "file": "npc/clannfear/death/npc_clannfear_death_01.wav", "type": "se", "volume": 1.0, "loop": false, "3d": true },
+    "combat/hit_blade":     { "file": "fst/metal/fst_metal_05.wav", "type": "se", "volume": 0.9, "loop": false, "3d": true },
+    "combat/hit_blunt":     { "file": "fst/wood/fst_wood_01.wav", "type": "se", "volume": 0.9, "loop": false, "3d": true },
+    "combat/hit_axe":       { "file": "fst/wood/fst_wood_02.wav", "type": "se", "volume": 0.9, "loop": false, "3d": true },
+    "combat/bow_shoot":     { "file": "wpn/wpn_bowshoot.wav", "type": "se", "volume": 0.9, "loop": false, "3d": true },
+    "combat/hit_unarmed":   { "file": "fst/dodge/fst_dodgebackward.wav", "type": "se", "volume": 0.7, "loop": false, "3d": true },
+    "magic/spell_equip":    { "file": "spl/spl_equip.wav", "type": "se", "volume": 0.8, "loop": false, "3d": false },
+    "magic/spell_hit":      { "file": "spl/spl_destruction_hit.wav", "type": "se", "volume": 1.0, "loop": false, "3d": true },
+    "magic/destruction_cast": { "file": "spl/spl_destruction_cast.wav", "type": "se", "volume": 0.9, "loop": false, "3d": true },
+    "magic/restoration_cast": { "file": "spl/spl_restoration_cast.wav", "type": "se", "volume": 0.9, "loop": false, "3d": true },
+    "magic/conjuration_cast": { "file": "spl/spl_conjuration_cast.wav", "type": "se", "volume": 0.9, "loop": false, "3d": true },
+    "magic/alteration_cast":  { "file": "spl/spl_alteration_cast.wav", "type": "se", "volume": 0.9, "loop": false, "3d": true },
+    "magic/illusion_cast":    { "file": "spl/spl_illusion_cast.wav", "type": "se", "volume": 0.9, "loop": false, "3d": true },
+    "magic/mysticism_cast":   { "file": "spl/spl_mysticism_cast.wav", "type": "se", "volume": 0.9, "loop": false, "3d": true },
+    "ui/click":         { "file": "ui/ui_message.wav", "type": "se", "volume": 0.8, "loop": false, "3d": false },
+    "ui/navigate":      { "file": "ui/ui_speechrollover.wav", "type": "se", "volume": 0.7, "loop": false, "3d": false },
+    "ui/select":        { "file": "ui/ui_speechrotate.wav", "type": "se", "volume": 0.8, "loop": false, "3d": false },
+    "ui/quest_new":     { "file": "ui/ui_questnew.wav", "type": "se", "volume": 0.9, "loop": false, "3d": false },
+    "ui/quest_update":  { "file": "ui/ui_questupdate.wav", "type": "se", "volume": 0.9, "loop": false, "3d": false },
+    "ui/notification":  { "file": "ui/ui_message.wav", "type": "se", "volume": 0.8, "loop": false, "3d": false }
+  }
+}
