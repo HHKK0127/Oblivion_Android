@@ -4519,6 +4519,10 @@ static const char* waterFragmentSrc =
 "uniform vec4 uColor;\n"
 "uniform vec3 uReflectionColor;\n"
 "uniform vec3 uCameraPos;\n"
+"uniform vec3 uLightDir;\n"
+"uniform vec3 uAmbientColor;\n"
+"uniform vec3 uFogColor;\n"
+"uniform vec2 uFogRange;\n"
 "in vec3 vNormal;\n"
 "in vec3 vWorldPos;\n"
 "out vec4 fragColor;\n"
@@ -4530,8 +4534,15 @@ static const char* waterFragmentSrc =
 "    // angles. The reflection colour is the game's own DATA byte 52 entry, so the\n"
 "    // sheen matches the original material instead of a hardcoded sky tint.\n"
 "    vec3 color = mix(uColor.rgb, uReflectionColor, fresnel * 0.45);\n"
+"    // Weather-driven lighting, identical to the terrain pass: the flat plane's\n"
+"    // normal is +Y so sun height modulates brightness while the ambient term\n"
+"    // keeps the surface readable at night.\n"
+"    float NdotL = max(dot(N, normalize(uLightDir)), 0.0);\n"
+"    color *= uAmbientColor + (1.0 - uAmbientColor) * NdotL;\n"
 "    float dist = length(uCameraPos - vWorldPos);\n"
 "    float alpha = uColor.a * clamp(1.0 - dist / 14000.0, 0.2, 1.0);\n"
+"    // Distance fog so the far water blends into the horizon like the terrain.\n"
+"    color = mix(color, uFogColor, clamp((dist - uFogRange.x) / max(uFogRange.y - uFogRange.x, 1.0), 0.0, 1.0));\n"
 "    fragColor = vec4(color, alpha);\n"
 "}\n";
 
@@ -4695,6 +4706,22 @@ void Renderer::renderWater() {
                            1, GL_FALSE, viewProj.value_ptr());
         glUniform3fv(glGetUniformLocation(waterShader, "uCameraPos"), 1,
                      &cameraPos.x);
+                // Weather-driven lighting and fog, identical to the terrain pass so the
+                // water surface shares the current sun/ambient/fog with the ground.
+                float sunX = 0.5f, sunY = 1.0f, sunZ = 0.3f;
+                float ambR = 0.3f, ambG = 0.3f, ambB = 0.3f;
+                float fogR = 0.2f, fogG = 0.2f, fogB = 0.2f;
+                float fogFar = 20000.0f;
+                if (skyWeatherSystem) {
+                    skyWeatherSystem->getSunDirection(sunX, sunY, sunZ);
+                    skyWeatherSystem->getAmbientColor(ambR, ambG, ambB);
+                    skyWeatherSystem->getFogColor(fogR, fogG, fogB);
+                    fogFar = skyWeatherSystem->getFogDistance();
+                }
+                glUniform3f(glGetUniformLocation(waterShader, "uLightDir"), sunX, sunY, sunZ);
+                glUniform3f(glGetUniformLocation(waterShader, "uAmbientColor"), ambR, ambG, ambB);
+                glUniform3f(glGetUniformLocation(waterShader, "uFogColor"), fogR, fogG, fogB);
+                glUniform2f(glGetUniformLocation(waterShader, "uFogRange"), fogFar * 0.35f, fogFar);
         // Water colour comes from the cell's WATR record when present, so the
         // surface matches the game's original water material (deep blue/teal
         // for Tamriel's lakes and rivers) instead of a hardcoded placeholder.
@@ -4980,9 +5007,11 @@ static const char* interiorVertexSrc =
 "in vec3 aPosition;\n"
 "in vec3 aNormal;\n"
 "out vec3 vNormal;\n"
+"out vec3 vWorldPos;\n"
 "void main() {\n"
 "    gl_Position = uMVP * vec4(aPosition, 1.0);\n"
 "    vNormal = mat3(uModel) * aNormal;\n"
+"    vWorldPos = (uModel * vec4(aPosition, 1.0)).xyz;\n"
 "}\n";
 
 static const char* interiorFragmentSrc =
@@ -4990,12 +5019,23 @@ static const char* interiorFragmentSrc =
 "precision mediump float;\n"
 "uniform vec4 uColor;\n"
 "uniform vec3 uLightDir;\n"
+"uniform vec3 uFogColor;\n"
+"uniform vec2 uFogRange;\n"
+"uniform vec3 uCameraPos;\n"
+"uniform float uFogEnabled;\n"
 "in vec3 vNormal;\n"
+"in vec3 vWorldPos;\n"
 "out vec4 fragColor;\n"
 "void main() {\n"
 "    vec3 n = normalize(vNormal);\n"
 "    float NdotL = abs(dot(n, normalize(uLightDir)));\n"
-"    fragColor = vec4(uColor.rgb * (0.35 + 0.65 * NdotL), uColor.a);\n"
+"    vec3 color = uColor.rgb * (0.35 + 0.65 * NdotL);\n"
+"    if (uFogEnabled > 0.5) {\n"
+"        float fogDist = length(vWorldPos - uCameraPos);\n"
+"        float fogFactor = clamp((fogDist - uFogRange.x) / max(uFogRange.y - uFogRange.x, 1.0), 0.0, 1.0);\n"
+"        color = mix(color, uFogColor, fogFactor);\n"
+"    }\n"
+"    fragColor = vec4(color, uColor.a);\n"
 "}\n";
 
 // Interior statics are authored Z-up, the engine renders Y-up. Rotating -90
@@ -5273,6 +5313,9 @@ void Renderer::renderInteriorObjects() {
     // Light from above and slightly to the side, as an interior equivalent of the
     // placeholder pass's directional light.
     glUniform3f(locLight, 0.4f, 0.8f, 0.3f);
+        // Interiors have no distance fog: the room is bounded and fog would wash out
+        // the walls. The uniform stays wired so the shared shader compiles once.
+        glUniform1f(glGetUniformLocation(interiorShader, "uFogEnabled"), 0.0f);
 
     size_t drawn = 0;
     size_t pending = 0;
@@ -5458,6 +5501,13 @@ void Renderer::renderStaticObjects() {
     const GLint locColor = glGetUniformLocation(staticShader, "uColor");
     const GLint locLight = glGetUniformLocation(staticShader, "uLightDir");
     glUniform3f(locLight, sunX, sunY, sunZ);
+        // Exterior statics share the interior shader; enable distance fog so far
+        // objects blend into the horizon like the terrain and water passes.
+        glUniform1f(glGetUniformLocation(staticShader, "uFogEnabled"), 1.0f);
+        glUniform3f(glGetUniformLocation(staticShader, "uFogColor"), fogR, fogG, fogB);
+        glUniform2f(glGetUniformLocation(staticShader, "uFogRange"), fogFar * 0.35f, fogFar);
+        glUniform3f(glGetUniformLocation(staticShader, "uCameraPos"),
+                    playerPos.x, playerPos.y + PH_CAMERA_HEIGHT, playerPos.z + PH_CAMERA_DIST);
 
     static std::unordered_set<std::string> unresolvedStaticMeshes;
 
