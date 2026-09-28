@@ -131,6 +131,7 @@ private:
 
     // Sound
     AudioManager* audioManager = nullptr;
+    bool bgmStarted = false;
 
     // Bink video integration
     oblivion::video::BinkVideoPlayer* videoPlayer = nullptr;

@@ -362,6 +362,14 @@ void TitleScreen::update(float deltaTime) {
     glowPhase += deltaTime * 2.0f;
     movieFrameTime += deltaTime;
 
+        // Start title theme BGM once the title screen is active
+        if (!bgmStarted && audioManager && audioManager->hasSoundDefinitions()) {
+            if (audioManager->playMusic("music/tes4title")) {
+                bgmStarted = true;
+                LOGI("Title theme BGM started");
+            }
+        }
+
     if (!movieFrames.empty() && movieFrameTime > 1.0f / MOVIE_FPS) {
         currentMovieFrame = (currentMovieFrame + 1) % movieFrames.size();
         movieFrameTime = 0.0f;
