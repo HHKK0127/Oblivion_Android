@@ -18,6 +18,7 @@
 #include <cctype>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <limits>
 #include <string>
 #include <unordered_map>
@@ -3690,6 +3691,12 @@ void Renderer::render(float deltaTime) {
         if (audioSubscriber) {
             audioSubscriber->setPlayerPosition(cameraPos);
         }
+
+        // Area/combat-driven BGM switching (Phase 66).
+        // Suppressed while the title screen owns BGM playback (tes4title).
+        if (!showTitleScreen) {
+            updateAreaBgm();
+        }
     }
 #endif
 
@@ -4465,6 +4472,83 @@ static const char* terrainFragmentSrc =
 "    float fogFactor = clamp((fogDist - uFogRange.x) / max(uFogRange.y - uFogRange.x, 1.0), 0.0, 1.0);\n"
 "    fragColor = vec4(mix(lit, uFogColor, fogFactor), 1.0);\n"
 "}\n";
+
+#ifdef AUDIO_SYSTEM_ENABLED
+void Renderer::updateAreaBgm() {
+    if (!audioManager || !worldManager || !combatManager) return;
+    if (!audioManager->hasSoundDefinitions()) return;
+
+    // Determine combat state (any active combat instance)
+    const bool inCombat = combatManager->getActiveCombatCount() > 0;
+
+    // Determine area category
+    std::string category;
+    auto cell = worldManager->getCurrentCell();
+    if (inCombat) {
+        category = "battle";
+    } else if (cell && cell->cellType == CellType::INTERIOR) {
+        category = "dungeon";
+    } else {
+        // Exterior: town vs explore based on cell name keywords
+        const std::string& cellName = cell ? cell->cellName : std::string();
+        static const char* townKeywords[] = {
+            "Imperial City", "Chorrol", "Skingrad", "Anvil", "Bravil",
+            "Bruma", "Cheydinhal", "Kvatch", "Leyawiin", "Weye",
+            "Hackdirt", "Aleswell", "Water's Edge", "Border Watch",
+            "Bleaker's Way", "Sardavar Leed", "Weatherleah", "Drakelowe"
+        };
+        bool isTown = false;
+        for (const char* kw : townKeywords) {
+            if (cellName.find(kw) != std::string::npos) {
+                isTown = true;
+                break;
+            }
+        }
+        category = isTown ? "town" : "explore";
+    }
+
+    const std::string cellName = cell ? cell->cellName : std::string();
+
+    // Detect state change
+    const bool combatChanged = (inCombat != wasInCombat);
+    const bool cellChanged = (cellName != lastBgmCellName);
+    const bool categoryChanged = (category != currentBgmCategory);
+
+    wasInCombat = inCombat;
+    lastBgmCellName = cellName;
+
+    if (!combatChanged && !cellChanged && !categoryChanged) {
+        return;  // No state change
+    }
+
+    // Pick a random track from the category
+    std::string key = pickRandomBgmTrack(category);
+    if (key.empty()) {
+        LOGW("No BGM tracks for category: %s", category.c_str());
+        return;
+    }
+
+    LOGI("BGM switch: category=%s key=%s (combatChanged=%d cellChanged=%d)",
+         category.c_str(), key.c_str(), combatChanged ? 1 : 0, cellChanged ? 1 : 0);
+    audioManager->playMusic(key);
+    currentBgmCategory = category;
+}
+
+std::string Renderer::pickRandomBgmTrack(const std::string& category) {
+    if (!audioManager) return "";
+    std::vector<std::string> candidates;
+    const std::string prefix = "music/" + category + "_";
+    const auto& defs = audioManager->getSoundDefs();
+    for (const auto& pair : defs) {
+        if (pair.second.type == 0 && pair.first.rfind(prefix, 0) == 0) {
+            candidates.push_back(pair.first);
+        }
+    }
+    if (candidates.empty()) return "";
+    const int idx = rand() % static_cast<int>(candidates.size());
+    return candidates[idx];
+}
+#endif
 
 void Renderer::releaseTerrainMeshes() {
     for (auto& entry : terrainMeshes) {

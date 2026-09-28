@@ -221,6 +221,13 @@ private:
 #ifdef AUDIO_SYSTEM_ENABLED
     std::unique_ptr<AudioManager> audioManager;
     std::unique_ptr<oblivion::script::ScriptManager> scriptManager;
+
+    // Area/combat-driven BGM state (Phase 66)
+    std::string currentBgmCategory;     // "explore" | "dungeon" | "town" | "battle"
+    bool wasInCombat = false;
+    std::string lastBgmCellName;
+    void updateAreaBgm();
+    std::string pickRandomBgmTrack(const std::string& category);
 #endif
 
     // Retro Filter (Post-Processing)
