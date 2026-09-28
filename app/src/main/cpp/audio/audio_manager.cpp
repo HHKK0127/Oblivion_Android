@@ -40,45 +40,47 @@ bool AudioManager::initialize() {
     LOGI("AudioManager initializing...");
     g_audioManager = this;
 
-    // Open OpenAL device
+    // Open OpenAL device (optional). The Android build uses stub OpenAL headers and
+    // routes playback through the Java MediaPlayer/SoundPool bridge, so a missing
+    // device is non-fatal: audio continues in Java-only mode.
     device = alcOpenDevice(nullptr);
     if (!device) {
-        LOGE("Failed to open OpenAL device");
-        return false;
+        LOGW("OpenAL device unavailable - using Java MediaPlayer/SoundPool bridge only");
+    } else {
+        LOGD("OpenAL device opened");
+
+        // Create context
+        context = alcCreateContext(device, nullptr);
+        if (!context) {
+            LOGE("Failed to create OpenAL context");
+            alcCloseDevice(device);
+            device = nullptr;
+        } else {
+            LOGD("OpenAL context created");
+
+            // Activate context
+            if (!alcMakeContextCurrent(context)) {
+                LOGE("Failed to make OpenAL context current");
+                alcDestroyContext(context);
+                alcCloseDevice(device);
+                context = nullptr;
+                device = nullptr;
+            } else {
+                LOGD("OpenAL context made current");
+
+                // Log device info
+                const char* deviceName = alcGetString(device, ALC_DEVICE_SPECIFIER);
+                LOGI("OpenAL Device: %s", deviceName ? deviceName : "Unknown");
+
+                const char* vendorStr = alGetString(AL_VENDOR);
+                const char* versionStr = alGetString(AL_VERSION);
+                LOGI("OpenAL Vendor: %s", vendorStr ? vendorStr : "Unknown");
+                LOGI("OpenAL Version: %s", versionStr ? versionStr : "Unknown");
+            }
+        }
     }
-    LOGD("OpenAL device opened");
 
-    // Create context
-    context = alcCreateContext(device, nullptr);
-    if (!context) {
-        LOGE("Failed to create OpenAL context");
-        alcCloseDevice(device);
-        device = nullptr;
-        return false;
-    }
-    LOGD("OpenAL context created");
-
-    // Activate context
-    if (!alcMakeContextCurrent(context)) {
-        LOGE("Failed to make OpenAL context current");
-        alcDestroyContext(context);
-        alcCloseDevice(device);
-        context = nullptr;
-        device = nullptr;
-        return false;
-    }
-    LOGD("OpenAL context made current");
-
-    // Log device info
-    const char* deviceName = alcGetString(device, ALC_DEVICE_SPECIFIER);
-    LOGI("OpenAL Device: %s", deviceName ? deviceName : "Unknown");
-
-    const char* vendorStr = alGetString(AL_VENDOR);
-    const char* versionStr = alGetString(AL_VERSION);
-    LOGI("OpenAL Vendor: %s", vendorStr ? vendorStr : "Unknown");
-    LOGI("OpenAL Version: %s", versionStr ? versionStr : "Unknown");
-
-    // Initialize 3D audio system
+    // 3D audio metadata is maintained natively even in Java-only mode.
     audio3D = std::make_unique<Audio3D>();
     LOGD("Audio3D system initialized");
 
@@ -147,36 +149,37 @@ uint32_t AudioManager::loadClip(const std::string& filename, uint8_t type,
                                bool isLooping) {
     LOGD("Loading audio clip: %s", filename.c_str());
 
-    if (!device || !context) {
-        LOGE("OpenAL not initialized, cannot load clip");
-        return 0;
-    }
-
-    // Load WAV file
-    ALint format;
-    ALsizei frequency, size;
-    ALuint buffer = loadWavFile(filename, format, frequency, size);
-
-    if (buffer == 0) {
-        LOGE("Failed to load WAV file: %s", filename.c_str());
-        return 0;
-    }
-
     // Create AudioClip
     auto clip = std::make_shared<AudioClip>();
     clip->clipId = nextClipId++;
     clip->filename = filename;
-    clip->alBuffer = buffer;
+    clip->alBuffer = 0;
     clip->isLooping = isLooping;
     clip->type = type;
     clip->volume = 1.0f;
     clip->isStreamed = false;
+    clip->duration = 0.0f;
 
-    // Calculate playback time from WAV data
-    // duration = size / (frequency * channels * bytes_per_sample)
-    int channels = (format == AL_FORMAT_STEREO16 || format == AL_FORMAT_STEREO8) ? 2 : 1;
-    int bytesPerSample = (format == AL_FORMAT_STEREO16 || format == AL_FORMAT_MONO16) ? 2 : 1;
-    clip->duration = static_cast<float>(size) / static_cast<float>(frequency * channels * bytesPerSample);
+    // In Java-only mode (no OpenAL device) the buffer is decoded on the Java side
+    // by MediaPlayer/SoundPool, so we only register the filename here.
+    if (device && context) {
+        // Load WAV file into an OpenAL buffer
+        ALint format;
+        ALsizei frequency, size;
+        ALuint buffer = loadWavFile(filename, format, frequency, size);
+
+        if (buffer == 0) {
+            LOGE("Failed to load WAV file: %s", filename.c_str());
+        } else {
+            clip->alBuffer = buffer;
+
+            // Calculate playback time from WAV data
+            // duration = size / (frequency * channels * bytes_per_sample)
+            int channels = (format == AL_FORMAT_STEREO16 || format == AL_FORMAT_STEREO8) ? 2 : 1;
+            int bytesPerSample = (format == AL_FORMAT_STEREO16 || format == AL_FORMAT_MONO16) ? 2 : 1;
+            clip->duration = static_cast<float>(size) / static_cast<float>(frequency * channels * bytesPerSample);
+        }
+    }
 
     clips[clip->clipId] = clip;
 
@@ -356,6 +359,15 @@ uint32_t AudioManager::playSE(uint32_t clipId, const glm::vec3& position,
         return 0;
     }
 
+    // Java-only mode: route SE playback through the SoundPool bridge. OpenAL source
+    // management is skipped because the Android build links stub OpenAL headers.
+    if (!device || !context) {
+        jni_audio_call_play_se(clip->filename.c_str());
+        LOGD("SE playing via Java SoundPool: clipId=%u, file=%s",
+             clipId, clip->filename.c_str());
+        return JAVA_BGM_SOURCE_ID;  // Sentinel: single-fire, no managed source
+    }
+
     // Create source
     uint32_t sourceId = createSource(clipId);
     if (sourceId == 0) {
@@ -372,9 +384,6 @@ uint32_t AudioManager::playSE(uint32_t clipId, const glm::vec3& position,
 
     // Start playback
     alSourcePlay(source->alSource);
-
-    // Bug #83: Removed Java SoundPool fallback to prevent double playback
-    // OpenAL is the primary audio engine
 
     LOGD("SE playing: sourceId=%u, clipId=%u, pos=(%.1f, %.1f, %.1f)",
          sourceId, clipId, position.x, position.y, position.z);
