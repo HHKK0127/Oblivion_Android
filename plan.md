@@ -283,6 +283,56 @@ longer valid, so only this note is kept.
 - [x] Inventory system (InventoryManager)
 - [x] Dialogue system (DialogueManager)
 
+### Enhancement Candidates (adopted 2026-09-29, from controlwear/virtual-joystick-android and erz05/JoyStick review)
+
+The current VirtualController is fixed-position, dual-stick, with press animations and dead-zone
+re-scaling. The following features were reviewed against two open-source joystick libraries and
+adopted into the plan. All use the game's original assets where applicable.
+
+#### 1. Floating joystick (dynamic positioning)
+- [ ] Joystick appears at the touch position instead of a fixed anchor (currently fixed-position hit-test only)
+- [ ] Left stick: touch anywhere in the lower-left region spawns the stick there; right stick: lower-right region
+- [ ] Stick returns to its default anchor when released (or stays put, configurable)
+- [ ] Reference: controlwear/virtual-joystick-android floating mode; erz05/JoyStick `stayPut` flag
+- Priority: high (standard mobile-game control, enables one-handed play)
+- Cost: medium (onTouchDown hit-test -> dynamic placement, layout calculation extension)
+
+#### 2. Auto-fade / auto-hide when idle
+- [ ] Idle timer in `update()`; opacity interpolates down after N seconds without input
+- [ ] Touch restores full opacity instantly
+- [ ] Configurable fade duration and idle threshold in `VirtualControllerConfig`
+- [ ] Reference: controlwear/virtual-joystick-android fade animation
+- Priority: medium (improves screen visibility)
+- Cost: low (idle timer + opacity interpolation in `update()`)
+
+#### 3. Image-based appearance (original Oblivion UI textures)
+- [ ] Draw pad/knob from DDS textures instead of `drawSoftCircle` circles
+- [ ] Use Oblivion's original UI textures (menus/ DDS) once extracted
+- [ ] Fall back to the current circle rendering when no texture is available
+- [ ] Reference: controlwear/virtual-joystick-android and erz05/JoyStick image-based pad/button
+- Priority: medium (visual fidelity, depends on texture extraction)
+- Cost: medium (extend `UIDrawHelper` with textured-quad drawing, asset extraction needed)
+
+#### 4. Stay-put knob (from erz05/JoyStick)
+- [ ] Knob stays at its last position when released instead of snapping back to center
+- [ ] Configurable via `VirtualControllerConfig` (default: snap back, matching current behavior)
+- [ ] Complements floating joystick: released stick keeps its position until the next touch
+- [ ] Reference: erz05/JoyStick `stayPut` flag (JoyStickView.kt ACTION_UP branch)
+- Priority: medium (natural feel for floating sticks, small change in `reset_joystick`)
+- Cost: low
+
+#### 5. Axis restriction types (from erz05/JoyStick)
+- [ ] `JoystickType`-style restriction: 8-axis (default), 4-axis, 2-axis horizontal, 2-axis vertical
+- [ ] Useful for menu navigation and precise movement modes
+- Priority: low (nice-to-have, small code change in `update_joystick`)
+- Cost: low
+
+#### 6. Tap / double-tap detection (from erz05/JoyStick)
+- [ ] Detect tap (down+up without drag) and double-tap (within 300 ms) on the joystick
+- [ ] Expose as new state flags in `VirtualControllerState`
+- Priority: low (optional, useful for context actions)
+- Cost: low
+
 ---
 
 ## Phase 37-45: Completed

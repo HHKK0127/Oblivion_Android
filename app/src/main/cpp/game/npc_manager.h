@@ -54,6 +54,10 @@ public:
                                                uint32_t playerLevel,
                                                const glm::vec3& position,
                                                int recursionDepth = 0);
+        // Resolve an NPC's body mesh from its RACE record (Oblivion stores NPC
+        // models on the race, not the NPC_ record). Falls back to the default
+        // Imperial male mesh when the race is unknown or has no model path.
+        std::string resolveNpcMeshPath(const oblivion::NPCData& npcData) const;
     void setESMManager(const oblivion::ESMManager* esm) { m_esm = esm; }
     std::shared_ptr<NPC> getNPC(uint32_t npcId) const;
     void removeNPC(uint32_t npcId);

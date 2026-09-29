@@ -909,8 +909,9 @@ void ESMFile::decodeNPC(const ESMRecord& rec) {
 
     auto* acbs = rec.findSubRecord("ACBS");
     if (acbs && acbs->size() >= 16) {
-        npc.level = acbs->data[4];  // Level is byte 4 (0-indexed)
-    }
+            npc.isFemale = (acbs->data[0] & 0x01) != 0;  // ACBS flags bit 0 = Female
+            npc.level = acbs->data[4];  // Level is byte 4 (0-indexed)
+        }
 
     npc.health = static_cast<uint32_t>(10 * npc.level + 50);
     npc.stamina = static_cast<uint32_t>(10 * npc.level + 50);
@@ -2185,14 +2186,13 @@ void ESMFile::decodeRace(const ESMRecord& rec) {
     race.fullName = rec.getString("FULL");
     race.description = rec.getString("DESC");
 
-    // RNAM: male model path
-    race.maleModelPath = rec.getString("RNAM");
-    // FNAM: female model path (actually used in RACE)
-    // But Oblivion uses MNAM/FNAM for model paths in RACE records
-    auto* fnam = rec.findSubRecord("FNAM");
-    if (fnam) {
-        race.femaleModelPath = std::string(reinterpret_cast<const char*>(fnam->data.data()), fnam->data.size());
-    }
+    // MNAM: male model path (RACE records use MNAM/FNAM, not RNAM)
+        race.maleModelPath = rec.getString("MNAM");
+        // FNAM: female model path
+        auto* fnam = rec.findSubRecord("FNAM");
+        if (fnam) {
+            race.femaleModelPath = std::string(reinterpret_cast<const char*>(fnam->data.data()), fnam->data.size());
+        }
 
     // Spells: SPLO subrecords
     for (const auto& sub : rec.subRecords) {

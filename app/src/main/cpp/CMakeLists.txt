@@ -402,6 +402,9 @@ target_compile_options(native-lib PRIVATE
 # Enable audio system (OpenAL stub headers used)
 target_compile_definitions(native-lib PRIVATE AUDIO_SYSTEM_ENABLED)
 
+# Enable debug logging in NpcManager (LOGD gated behind this macro)
+target_compile_definitions(native-lib PRIVATE ENABLE_DEBUG_LOGS)
+
 # Warning suppression for specific headers
 set_source_files_properties(
     game/npc_manager.cpp

@@ -381,7 +381,7 @@ void AIScheduler::executeFollow(uint32_t /*npcId*/, NPC* npc, AIPackage& pkg, fl
 
     if (distSq > maxDist * maxDist) {
         // Too far — teleport closer or give up
-        LOGD("NPC %u lost follow target %u (too far)", npcId, pkg.data.targetId);
+        LOGD("NPC %u lost follow target %u (too far)", npc->npcId, pkg.data.targetId);
         pkg.reset();
         npc->setAIState(AIState::IDLE);
         return;

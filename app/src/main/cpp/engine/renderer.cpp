@@ -2900,7 +2900,7 @@ void Renderer::createTestScenario() {
                         static_cast<float>(npcData->magicka),
                         npcData->level);
                     npcPtr->rotation = worldRot;
-                    npcPtr->meshAssetPath = "meshes/characters/imperial_male.nif";
+                    npcPtr->meshAssetPath = npcMgr->resolveNpcMeshPath(*npcData);
                     npcPtr->updateModelMatrix();
 
                     // Register ESM NPC with AI Scheduler (Phase 35: Radiant AI)
@@ -3075,7 +3075,7 @@ void Renderer::createTestScenario() {
                                     static_cast<float>(npcData->health),
                                     static_cast<float>(npcData->magicka),
                                     npcData->level);
-                                npc->meshAssetPath = "meshes/characters/imperial_male.nif";
+                                npc->meshAssetPath = npcMgr->resolveNpcMeshPath(*npcData);
                                 npc->updateModelMatrix();
 
                                 // Register spawned creature with AI Scheduler

@@ -227,7 +227,7 @@ std::shared_ptr<NPC> NpcManager::createNPCFromESM(uint32_t formID, const glm::ve
         npc->status.maxStamina = static_cast<float>(npcData->stamina);
         npc->status.stamina = npc->status.maxStamina;
 
-        npc->meshAssetPath = "meshes/characters/imperial_male.nif";
+        npc->meshAssetPath = resolveNpcMeshPath(*npcData);
 
         npc->formID = formID;
         if (npcData->factionID != 0) {
@@ -278,6 +278,33 @@ std::shared_ptr<NPC> NpcManager::createNPCFromESM(uint32_t formID, const glm::ve
     LOGW("createNPCFromESM: formID 0x%08X not found in NPC_ or CREA records", formID);
     return createNPC("Unknown", position);
 }
+
+    std::string NpcManager::resolveNpcMeshPath(const oblivion::NPCData& npcData) const {
+        // Oblivion resolves NPC body meshes from the RACE record, not the NPC_
+        // record itself. Fall back to the default Imperial male mesh when the
+        // race is unknown or carries no model path.
+        if (npcData.raceID != 0 && m_esm) {
+            const oblivion::RaceData* race = m_esm->findRace(npcData.raceID);
+            if (race) {
+                const std::string& modelPath =
+                    npcData.isFemale ? race->femaleModelPath : race->maleModelPath;
+                if (!modelPath.empty()) {
+                    LOGD("NPC mesh resolved from race 0x%08X (%s): %s",
+                         npcData.raceID, npcData.isFemale ? "female" : "male",
+                         modelPath.c_str());
+                    return modelPath;
+                }
+                LOGW("resolveNpcMeshPath: race 0x%08X found but model path empty (male='%s', female='%s')",
+                     npcData.raceID, race->maleModelPath.c_str(), race->femaleModelPath.c_str());
+            } else {
+                LOGW("resolveNpcMeshPath: race 0x%08X not found in race index", npcData.raceID);
+            }
+        } else {
+            LOGW("resolveNpcMeshPath: raceID=0x%08X (m_esm=%s)", npcData.raceID,
+                 m_esm ? "present" : "null");
+        }
+        return "meshes/characters/imperial_male.nif";
+    }
 
 std::shared_ptr<NPC> NpcManager::spawnFromLeveledList(uint32_t leveledListFormID,
                                                        uint32_t playerLevel,

@@ -190,6 +190,7 @@ struct NPCData {
     uint32_t raceID = 0;
     std::string className;
     uint8_t level = 1;
+        bool isFemale = false;  // ACBS flags bit 0 (0x00000001)
     uint32_t factionID = 0;
     uint32_t health = 50;
     uint32_t stamina = 50;
