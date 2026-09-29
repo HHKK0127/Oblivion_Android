@@ -81,9 +81,22 @@ std::shared_ptr<NIFCache> WorldLoader::getOrParseNIF(const std::string& nifPath)
     auto cache = std::make_shared<NIFCache>();
     cache->filePath = nifPath;
 
-    // Parse NIF file
+    // Parse NIF file. Resolve the path through AssetManager first so that BSA
+    // archives and the loose data directory (m_dataPath) are searched, not just
+    // the process working directory. Falls back to a direct file open for
+    // absolute paths and legacy callers.
     NIFParser parser;
-    if (!parser.parseFile(nifPath)) {
+    bool parsed = false;
+    if (assetManager) {
+        std::vector<uint8_t> fileData = assetManager->loadFileData(nifPath);
+        if (!fileData.empty()) {
+            parsed = parser.parseFromData(fileData);
+        }
+    }
+    if (!parsed) {
+        parsed = parser.parseFile(nifPath);
+    }
+    if (!parsed) {
         LOGE_WL("Failed to parse NIF: %s", nifPath.c_str());
         nifCache[nifPath] = cache;
         return cache;

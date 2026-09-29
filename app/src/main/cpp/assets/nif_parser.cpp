@@ -55,21 +55,6 @@ NIFParser::~NIFParser() {
 bool NIFParser::parseFile(const std::string& filepath) {
     LOGD("=== Starting NIF parse: %s ===", filepath.c_str());
 
-    nodes.clear();
-    rootNodeIndices.clear();
-    fileBuffer.clear();
-    cursor = 0;
-    readError = false;
-    header = NIFHeader();
-
-    // Block ranges from a previous file would otherwise stay visible through
-    // locateBlockBody() even though the new file has not been walked yet.
-    blockBodyOffsets.clear();
-    blockBodyEnds.clear();
-    blockPrefix = 0;
-    blocksWalked = false;
-    walkError.clear();
-
     // Read the whole file up front. Block bodies have no size table, so block
     // parsing continues after parseFile() returns and needs random access.
     std::ifstream in(filepath, std::ios::binary | std::ios::ate);
@@ -85,13 +70,39 @@ bool NIFParser::parseFile(const std::string& filepath) {
         return false;
     }
 
-    fileBuffer.resize(static_cast<size_t>(fileSize));
+    std::vector<uint8_t> data(static_cast<size_t>(fileSize));
     in.seekg(0, std::ios::beg);
-    in.read(reinterpret_cast<char*>(fileBuffer.data()), fileSize);
+    in.read(reinterpret_cast<char*>(data.data()), fileSize);
     const bool shortRead = (in.gcount() != fileSize);
     in.close();
     if (shortRead) {
         LOGE("Short read on NIF file: %s", filepath.c_str());
+        return false;
+    }
+
+    return parseFromData(data);
+}
+
+bool NIFParser::parseFromData(const std::vector<uint8_t>& data) {
+    LOGD("=== Starting NIF parse from buffer (%zu bytes) ===", data.size());
+
+    nodes.clear();
+    rootNodeIndices.clear();
+    fileBuffer = data;
+    cursor = 0;
+    readError = false;
+    header = NIFHeader();
+
+    // Block ranges from a previous file would otherwise stay visible through
+    // locateBlockBody() even though the new file has not been walked yet.
+    blockBodyOffsets.clear();
+    blockBodyEnds.clear();
+    blockPrefix = 0;
+    blocksWalked = false;
+    walkError.clear();
+
+    if (fileBuffer.empty()) {
+        LOGE("Empty NIF buffer");
         fileBuffer.clear();
         return false;
     }

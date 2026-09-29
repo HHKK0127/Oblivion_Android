@@ -11,8 +11,11 @@ public:
     NIFParser();
     ~NIFParser();
 
-    // Main parsing function
+    // Main parsing functions
     bool parseFile(const std::string& filepath);
+    // Parse from an in-memory buffer (e.g. resolved through AssetManager).
+    // The buffer is copied into the parser, so the caller may release it.
+    bool parseFromData(const std::vector<uint8_t>& data);
 
     // Data access
     const NIFHeader& getHeader() const { return header; }
