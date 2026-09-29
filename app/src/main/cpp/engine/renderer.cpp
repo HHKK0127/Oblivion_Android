@@ -5278,7 +5278,14 @@ size_t Renderer::registerEsmDoors() {
         door.rotation = glm::vec3(ref.rotation.x, ref.rotation.z, ref.rotation.y);
         door.sourceCellFormID = ref.cellFormID;
         door.destinationCell = destCell.formID;
-        door.destinationIsInterior = !destCell.isExterior;
+        // A destination in a non-main worldspace (e.g. Realm of Sheogorath) is
+        // an exterior cell the world build skips, so it is unreachable by grid
+        // coordinate. Treat it as an interior so enterInteriorCell() registers
+        // it and the player can still travel there.
+        const uint32_t mainWorldspace = worldManager->getCurrentWorldspace();
+        door.destinationIsInterior =
+            !destCell.isExterior ||
+            (mainWorldspace != 0 && destCell.worldspaceID != mainWorldspace);
         door.destinationCellName = destCell.fullName.empty() ? destCell.editorID
                                                              : destCell.fullName;
         door.destinationEditorID = destCell.editorID;
