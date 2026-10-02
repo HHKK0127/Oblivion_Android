@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-02T03:25:00Z",
+  "lastUpdated": "10/02/2026 13:13:56",
   "entries": [
     {
       "timestamp": "2026-09-16T14:58:00Z",
@@ -5032,10 +5032,26 @@
         "phase64"
       ],
       "compressed": false
+    },
+    {
+      "id": "0ff08a2d-5f99-4794-8833-dce781be16e6",
+      "timestamp": "2026-10-02T04:13:56Z",
+      "category": "configuration",
+      "priority": "high",
+      "content": "Game data source selection: debug panel GAME DATA section now has a DATA SOURCE RadioGroup (APK Bundled Data / Steam Data (Copied)), persisted in SharedPreferences game_data/data_source (default bundled). When 'bundled' is selected, AssetExtractor extracts .bsa/.esm bundled in APK assets/data into filesDir/data at startup (skip if size matches, overwrite if mismatch). When 'steam' is selected, data already copied via SAF is used (no extraction). Data path is always filesDir/data; native engine unchanged. assets/data/README.md keeps the folder in git (.bsa/.esm are gitignored BYO-data). Docs: docs/STEAM_DATA_TRANSFER.md (method A vs B). Verified on emulator: radio switch, persistence, Restart App loads Oblivion.esm.",
+      "tags": [
+        "data",
+        "data-source",
+        "bundled",
+        "steam",
+        "saf",
+        "phase65"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 349,
+    "totalEntries": 350,
     "compressedCount": 81,
     "sessionCount": 31
   }
