@@ -279,8 +279,9 @@ WorldEntity WorldLoader::loadActor(const std::string& nifPath, const glm::vec3& 
             cache->collisionObject, pos, rot, scl);
     }
 
-    // Store entity
-    entities[entity.entityId] = std::make_unique<WorldEntity>(std::move(entity));
+    // NOTE: entity is returned by value so the caller (e.g. renderer worldEntities)
+    // owns the full skinned mesh / skeleton / animator. NPC mapping is handled by
+    // loadActorForNpc, which stores the entity into the entities map.
 
     LOGD_WL("Loaded actor entity #%u: %s (skinned=%d, skel=%d, anim=%d, body=%d)",
             entity.entityId, nifPath.c_str(),
@@ -462,7 +463,11 @@ std::shared_ptr<Mesh> WorldLoader::buildMesh(const std::vector<NIFGeometry>& geo
 // ----------------------------------------------------------------------------
 
 std::shared_ptr<SkinnedMesh> WorldLoader::buildSkinnedMesh(const NIFCache& cache) {
-    if (!cache.hasSkin || cache.geometries.empty()) return nullptr;
+    if (!cache.hasSkin || cache.geometries.empty()) {
+        LOGW_WL("buildSkinnedMesh: skip (hasSkin=%d, geometries=%zu)",
+                cache.hasSkin ? 1 : 0, cache.geometries.size());
+        return nullptr;
+    }
 
     auto skinnedMesh = std::make_shared<SkinnedMesh>();
 
@@ -472,6 +477,9 @@ std::shared_ptr<SkinnedMesh> WorldLoader::buildSkinnedMesh(const NIFCache& cache
 
     // Use first geometry (most common case for skinned meshes)
     const auto& geo = cache.geometries[0];
+    LOGD_WL("buildSkinnedMesh: geo0 verts=%zu tris=%zu normals=%zu tex=%zu colors=%zu bones=%zu",
+            geo.vertices.size(), geo.triangles.size(), geo.normals.size(),
+            geo.texCoords.size(), geo.colors.size(), cache.skinData.boneData.size());
 
     // Build vertex weights from NIFSkinData
     // Map: vertexIndex → [(boneIndex, weight), ...]
@@ -536,7 +544,14 @@ std::shared_ptr<SkinnedMesh> WorldLoader::buildSkinnedMesh(const NIFCache& cache
         skinIndices.push_back(tri.v2);
     }
 
-    if (skinVertices.empty() || skinIndices.empty()) return nullptr;
+    if (skinVertices.empty() || skinIndices.empty()) {
+        LOGW_WL("buildSkinnedMesh: no skin geometry produced (verts=%zu, idx=%zu)",
+                skinVertices.size(), skinIndices.size());
+        return nullptr;
+    }
+
+    LOGD_WL("buildSkinnedMesh: built verts=%zu idx=%zu (weighted=%zu)",
+            skinVertices.size(), skinIndices.size(), vertexWeightMap.size());
 
     skinnedMesh->setSkinVertices(skinVertices, skinIndices);
 
