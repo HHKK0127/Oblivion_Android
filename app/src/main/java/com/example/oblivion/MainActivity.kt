@@ -519,6 +519,16 @@ class MainActivity : Activity() {
                     Log.w(TAG, "Failed to initialize audio bridge: ${e.message}")
                 }
 
+                // Pass the cache directory to native so BSA audio can be staged
+                // for Java MediaPlayer/SoundPool playback.
+                try {
+                    val cacheDir = cacheDir.absolutePath
+                    GameRenderer.nativeSetAudioCacheDir(cacheDir)
+                    Log.i(TAG, "Audio cache dir registered on native: $cacheDir")
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to set audio cache dir: ${e.message}")
+                }
+
                 // Set data path for BSA/ESM file lookup
                 // Note: nativeSetDataPath will be called after nativeInitEngine creates the renderer
                 // Store for later use in onSurfaceCreated callback
@@ -641,12 +651,18 @@ class MainActivity : Activity() {
             }
             mp.reset()
 
-            val assetPath = "audio/music/$filename"
-            Log.i(TAG, "Loading BGM: $assetPath")
+            if (filename.startsWith("/")) {
+                // Absolute path (BSA audio staged in cache dir)
+                Log.i(TAG, "Loading BGM from absolute path: $filename")
+                mp.setDataSource(filename)
+            } else {
+                val assetPath = "audio/music/$filename"
+                Log.i(TAG, "Loading BGM: $assetPath")
 
-            val afd = assets.openFd(assetPath)
-            mp.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
-            afd.close()
+                val afd = assets.openFd(assetPath)
+                mp.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                afd.close()
+            }
             mp.prepare()
             mp.isLooping = true
             mp.start()
@@ -672,12 +688,19 @@ class MainActivity : Activity() {
                 return
             }
 
-            val assetPath = "audio/sounds/$filename"
-            Log.i(TAG, "Loading SE: $assetPath")
+            val soundId: Int
+            if (filename.startsWith("/")) {
+                // Absolute path (BSA audio staged in cache dir)
+                Log.i(TAG, "Loading SE from absolute path: $filename")
+                soundId = sp.load(filename, 1)
+            } else {
+                val assetPath = "audio/sounds/$filename"
+                Log.i(TAG, "Loading SE: $assetPath")
 
-            val afd = assets.openFd(assetPath)
-            val soundId = sp.load(afd, 1)
-            afd.close()
+                val afd = assets.openFd(assetPath)
+                soundId = sp.load(afd, 1)
+                afd.close()
+            }
             loadedSounds[filename] = soundId
 
             // Set listener only once

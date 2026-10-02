@@ -8,6 +8,7 @@
 #include "ui/viewer_3d.h"
 #include "video/bink_video_player.h"
 #include "video/video_decoder_jni.h"
+#include "audio/jni_audio_bridge.h"
 
 #define LOG_TAG "JNI_Bridge"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -332,6 +333,20 @@ Java_com_example_oblivion_GameRenderer_nativeSetDataPath(
 
     // Now that data path is set, load BSA archives and ESM
     g_renderer->loadBSAArchives();
+}
+
+// Set the audio cache directory from Java (used to stage BSA audio for playback)
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeSetAudioCacheDir(
+        JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jstring cacheDir) {
+    const char* pathStr = env->GetStringUTFChars(cacheDir, nullptr);
+    std::string path(pathStr ? pathStr : "");
+    env->ReleaseStringUTFChars(cacheDir, pathStr);
+
+    jni_audio_set_cache_dir(path.c_str());
+    LOGI("Audio cache dir set to: %s", path.c_str());
 }
 
 extern "C" JNIEXPORT void JNICALL

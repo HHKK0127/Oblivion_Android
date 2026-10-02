@@ -22,10 +22,12 @@ extern "C" {
 void jni_audio_call_play_bgm(const char* path);
 void jni_audio_call_stop_bgm();
 void jni_audio_call_play_se(const char* path);
+const char* jni_audio_get_cache_dir();
 }
 
 // Forward declaration
 class AudioManager;
+class AssetManager;
 
 // Global AudioManager pointer for UI and game systems
 extern AudioManager* g_audioManager;
@@ -82,6 +84,18 @@ public:
      */
     uint32_t loadClip(const std::string& filename, uint8_t type = 1,
                      bool isLooping = false);
+
+    /**
+     * @brief Set the AssetManager used to read audio files from BSA archives.
+     * @param am AssetManager pointer (owned by Renderer)
+     */
+    void setAssetManager(AssetManager* am) { m_assetManager = am; }
+
+    /**
+     * @brief Set the cache directory used to stage BSA audio for Java playback.
+     * @param path Absolute cache directory path (e.g. context.getCacheDir())
+     */
+    void setCacheDirPath(const std::string& path) { m_cacheDir = path; }
 
     /**
      * @brief Get clip from resources
@@ -344,4 +358,29 @@ public:
      * @param sourceId Source ID
      */
     void destroySource(uint32_t sourceId);
+
+    // ========== BSA Audio Support ==========
+
+    /**
+     * @brief Resolve a clip filename to a playable path.
+     *
+     * BSA-internal paths (e.g. "sound/voice/...") are extracted to the cache
+     * directory so the Java MediaPlayer/SoundPool bridge can play them.
+     * @param filename Clip filename as requested by the caller
+     * @return Playable path (absolute cache path for BSA audio, unchanged otherwise)
+     */
+    std::string resolvePlayablePath(const std::string& filename);
+
+    /**
+     * @brief Extract an audio file from a BSA archive into the cache directory.
+     * @param bsaPath BSA-internal path (e.g. "sound/voice/oblivion.esm/...")
+     * @return Absolute cache path on success, empty string on failure
+     */
+    std::string extractBsaAudioToCache(const std::string& bsaPath);
+
+    // AssetManager for BSA audio extraction (owned by Renderer)
+    AssetManager* m_assetManager = nullptr;
+
+    // Cache directory for staged BSA audio (set from Java)
+    std::string m_cacheDir;
 };

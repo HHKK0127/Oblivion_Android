@@ -58,6 +58,9 @@ class GameRenderer : GLSurfaceView.Renderer {
         external fun nativeInitAudioBridge(assetManager: AssetManager, mainActivity: Any)
 
         @JvmStatic
+        external fun nativeSetAudioCacheDir(path: String)
+
+        @JvmStatic
         external fun nativeSetDataPath(path: String)
 
         @JvmStatic

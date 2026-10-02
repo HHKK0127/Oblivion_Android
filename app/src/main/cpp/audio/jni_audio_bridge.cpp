@@ -2,6 +2,7 @@
 #include <android/log.h>
 #include <jni.h>
 #include <cstring>
+#include <string>
 
 #undef LOG_TAG
 #define LOG_TAG "AudioJNI"
@@ -14,12 +15,24 @@ extern AAssetManager* g_assetManager;
 JavaVM* g_javaVM = nullptr;
 jobject g_mainActivity = nullptr;
 
+// Cache directory for staged BSA audio (set from Java)
+static std::string g_cacheDir;
+
 // Method IDs for MainActivity audio methods (cached)
 static jmethodID g_playBGMMethodId = nullptr;
 static jmethodID g_stopBGMMethodId = nullptr;
 static jmethodID g_playSEMethodId = nullptr;
 
 extern "C" {
+
+void jni_audio_set_cache_dir(const char* path) {
+    g_cacheDir = path ? path : "";
+    LOGI("Audio cache dir set: %s", g_cacheDir.c_str());
+}
+
+const char* jni_audio_get_cache_dir() {
+    return g_cacheDir.c_str();
+}
 
 void jni_audio_set_asset_manager(AAssetManager* mgr) {
     g_assetManager = mgr;

@@ -2074,6 +2074,7 @@ bool Renderer::initGameSystems() {
     } else {
         LOGI("AudioManager initialized successfully");
         audioManager->setListenerPosition(glm::vec3(0.0f, 1.7f, 0.0f));
+        audioManager->setAssetManager(assetManager.get());
         LOGD("Audio listener positioned at world center");
         
         // Load sound definitions from JSON

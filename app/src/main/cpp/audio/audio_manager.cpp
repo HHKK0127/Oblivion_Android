@@ -2,7 +2,10 @@
 #include <android/asset_manager.h>
 #include <cstring>
 #include <algorithm>
+#include <fstream>
+#include <sys/stat.h>
 #include "../jni_audio_bridge.h"
+#include "../assets/asset_manager.h"
 
 extern "C" AAssetManager* jni_audio_get_asset_manager();
 
@@ -84,6 +87,13 @@ bool AudioManager::initialize() {
     audio3D = std::make_unique<Audio3D>();
     LOGD("Audio3D system initialized");
 
+    // Adopt the cache directory set from Java (used to stage BSA audio).
+    const char* cacheDir = jni_audio_get_cache_dir();
+    if (cacheDir && *cacheDir) {
+        m_cacheDir = cacheDir;
+        LOGI("Audio cache dir adopted: %s", m_cacheDir.c_str());
+    }
+
     LOGI("AudioManager initialization complete");
     return true;
 }
@@ -152,7 +162,7 @@ uint32_t AudioManager::loadClip(const std::string& filename, uint8_t type,
     // Create AudioClip
     auto clip = std::make_shared<AudioClip>();
     clip->clipId = nextClipId++;
-    clip->filename = filename;
+    clip->filename = resolvePlayablePath(filename);
     clip->alBuffer = 0;
     clip->isLooping = isLooping;
     clip->type = type;
@@ -166,7 +176,7 @@ uint32_t AudioManager::loadClip(const std::string& filename, uint8_t type,
         // Load WAV file into an OpenAL buffer
         ALint format;
         ALsizei frequency, size;
-        ALuint buffer = loadWavFile(filename, format, frequency, size);
+        ALuint buffer = loadWavFile(clip->filename, format, frequency, size);
 
         if (buffer == 0) {
             LOGE("Failed to load WAV file: %s", filename.c_str());
@@ -449,6 +459,56 @@ void AudioManager::setMasterVolume(float volume) {
 void AudioManager::setSEVolume(float volume) {
     seVolume = clampf(volume, 0.0f, 1.0f);
     LOGD("SE volume set: %.2f", seVolume);
+}
+
+std::string AudioManager::resolvePlayablePath(const std::string& filename) {
+    // BSA-internal audio paths start with "sound/" (e.g. "sound/voice/...").
+    // These are not directly readable by the Java MediaPlayer/SoundPool bridge,
+    // so extract them into the cache directory first.
+    if (filename.rfind("sound/", 0) == 0) {
+        return extractBsaAudioToCache(filename);
+    }
+    return filename;
+}
+
+std::string AudioManager::extractBsaAudioToCache(const std::string& bsaPath) {
+    if (!m_assetManager || m_cacheDir.empty()) {
+        LOGW("BSA audio extraction unavailable (assetManager=%p cacheDir='%s')",
+             (void*)m_assetManager, m_cacheDir.c_str());
+        return bsaPath;
+    }
+
+    // Build a safe cache filename from the BSA path.
+    std::string safeName = bsaPath;
+    std::replace(safeName.begin(), safeName.end(), '/', '_');
+    std::replace(safeName.begin(), safeName.end(), '\\', '_');
+    const std::string cachePath = m_cacheDir + "/" + safeName;
+
+    // Skip extraction if the file is already cached.
+    struct stat st;
+    if (stat(cachePath.c_str(), &st) == 0 && st.st_size > 0) {
+        return cachePath;
+    }
+
+    // Extract the raw bytes from the BSA archive (or disk fallback).
+    std::vector<uint8_t> data = m_assetManager->loadFileData(bsaPath);
+    if (data.empty()) {
+        LOGW("BSA audio not found: %s", bsaPath.c_str());
+        return bsaPath;
+    }
+
+    std::ofstream out(cachePath, std::ios::binary);
+    if (!out) {
+        LOGW("Failed to open cache file for writing: %s", cachePath.c_str());
+        return bsaPath;
+    }
+    out.write(reinterpret_cast<const char*>(data.data()),
+              static_cast<std::streamsize>(data.size()));
+    out.close();
+
+    LOGD("Extracted BSA audio to cache: %s (%zu bytes)", cachePath.c_str(),
+         data.size());
+    return cachePath;
 }
 
 ALuint AudioManager::loadWavFile(const std::string& filename, ALint& format,
