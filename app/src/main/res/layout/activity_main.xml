@@ -365,6 +365,17 @@
 
                     </RadioGroup>
 
+                    <TextView
+                        android:id="@+id/txt_data_restart_hint"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Data source change applies on next launch. Tap Restart App below to reload game data now."
+                        android:textColor="#FFD700"
+                        android:textSize="10sp"
+                        android:paddingTop="2dp"
+                        android:paddingBottom="2dp"
+                        android:visibility="gone" />
+
                     <Button
                         android:id="@+id/btn_data_pick"
                         android:layout_width="match_parent"

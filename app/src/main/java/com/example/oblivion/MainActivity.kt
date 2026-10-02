@@ -722,8 +722,14 @@ class MainActivity : Activity() {
                 setDataSource(newSource)
                 Log.i(TAG, "Data source changed to: $newSource (restart to apply)")
                 refreshDataStatus()
+                showDataSourceRestartHint()
             }
         }
+    }
+
+    /** Tell the user the data-source change only applies on next launch. */
+    private fun showDataSourceRestartHint() {
+        findViewById<TextView>(R.id.txt_data_restart_hint)?.visibility = View.VISIBLE
     }
 
     private fun getDataSource(): String {
