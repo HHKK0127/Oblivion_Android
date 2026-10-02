@@ -2,15 +2,19 @@ package com.example.oblivion
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.Intent
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.media.SoundPool
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.documentfile.provider.DocumentFile
 import java.io.IOException
 import java.io.File
 
@@ -32,6 +36,9 @@ class MainActivity : Activity() {
 
         /** Intent extra that makes the activity run the native test suites and exit. */
         const val EXTRA_RUN_NATIVE_TESTS = "run_native_tests"
+
+        private const val REQUEST_CODE_PICK_DATA_FOLDER = 1001
+        private const val DATA_DIR_NAME = "data"
 
         @Volatile
         private var instance: MainActivity? = null
@@ -270,6 +277,9 @@ class MainActivity : Activity() {
 
             // Setup debug buttons
             setupDebugButtons()
+
+            // Setup game data transfer buttons
+            setupDataButtons()
 
             Log.i(TAG, "ContentView set successfully")
         } catch (e: Exception) {
@@ -650,6 +660,148 @@ class MainActivity : Activity() {
             soundPool = null
         } catch (e: Exception) {
             Log.e(TAG, "Error during audio cleanup", e)
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Steam game data transfer (SAF folder picker + copy to filesDir/data)
+    // ------------------------------------------------------------------
+
+    private fun setupDataButtons() {
+        findViewById<Button>(R.id.btn_data_pick)?.setOnClickListener {
+            startSteamDataPicker()
+        }
+        findViewById<Button>(R.id.btn_data_restart)?.setOnClickListener {
+            Log.i(TAG, "Restarting app to reload game data")
+            val intent = Intent(this, MainActivity::class.java)
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+            finish()
+            startActivity(intent)
+        }
+        refreshDataStatus()
+    }
+
+    private fun refreshDataStatus() {
+        val statusText = findViewById<TextView>(R.id.txt_data_status) ?: return
+        val dataDir = File(filesDir, DATA_DIR_NAME)
+        val files = dataDir.listFiles()?.filter { it.isFile } ?: emptyList()
+        val bsaCount = files.count { it.extension.equals("bsa", ignoreCase = true) }
+        val esmCount = files.count { it.extension.equals("esm", ignoreCase = true) }
+        val totalBytes = files.sumOf { it.length() }
+        statusText.text = "Data folder: $DATA_DIR_NAME\nBSA: $bsaCount, ESM: $esmCount (${formatSize(totalBytes)})"
+    }
+
+    private fun formatSize(bytes: Long): String {
+        if (bytes < 1024) return "$bytes B"
+        val kb = bytes / 1024.0
+        if (kb < 1024) return String.format("%.1f KB", kb)
+        val mb = kb / 1024.0
+        if (mb < 1024) return String.format("%.1f MB", mb)
+        return String.format("%.2f GB", mb / 1024.0)
+    }
+
+    private fun startSteamDataPicker() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+        intent.addFlags(
+            Intent.FLAG_GRANT_READ_URI_PERMISSION or
+            Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or
+            Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+        )
+        startActivityForResult(intent, REQUEST_CODE_PICK_DATA_FOLDER)
+    }
+
+    @Suppress("DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_CODE_PICK_DATA_FOLDER && resultCode == Activity.RESULT_OK) {
+            val uri = data?.data ?: return
+            try {
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (e: Exception) {
+                Log.w(TAG, "takePersistableUriPermission failed: ${e.message}")
+            }
+            startSteamDataCopy(uri)
+        }
+    }
+
+    private fun startSteamDataCopy(treeUri: Uri) {
+        val progressText = findViewById<TextView>(R.id.txt_data_progress)
+        val pickButton = findViewById<Button>(R.id.btn_data_pick)
+        pickButton.isEnabled = false
+        progressText.text = "Scanning folder..."
+
+        Thread {
+            try {
+                val rootDoc = DocumentFile.fromTreeUri(this, treeUri)
+                if (rootDoc == null) {
+                    runOnUiThread {
+                        progressText.text = "Cannot access the selected folder"
+                        pickButton.isEnabled = true
+                    }
+                    return@Thread
+                }
+                val dataFiles = mutableListOf<DocumentFile>()
+                collectDataFiles(rootDoc, dataFiles)
+                if (dataFiles.isEmpty()) {
+                    runOnUiThread {
+                        progressText.text = "No .bsa or .esm files found. Select the Oblivion Data folder."
+                        pickButton.isEnabled = true
+                    }
+                    return@Thread
+                }
+                val dataDir = File(filesDir, DATA_DIR_NAME)
+                if (!dataDir.exists()) dataDir.mkdirs()
+
+                var copied = 0
+                for (doc in dataFiles) {
+                    val fileName = doc.name ?: continue
+                    runOnUiThread {
+                        progressText.text = "Copying ($copied/${dataFiles.size}): $fileName"
+                    }
+                    copyDocumentToFile(doc, File(dataDir, fileName))
+                    copied++
+                }
+                runOnUiThread {
+                    progressText.text = "Copy complete: $copied file(s). Restart the app to load game data."
+                    refreshDataStatus()
+                    pickButton.isEnabled = true
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Steam data copy failed: ${e.message}", e)
+                runOnUiThread {
+                    progressText.text = "Copy failed: ${e.message}"
+                    pickButton.isEnabled = true
+                }
+            }
+        }.start()
+    }
+
+    private fun collectDataFiles(doc: DocumentFile, out: MutableList<DocumentFile>) {
+        if (!doc.isDirectory) return
+        for (child in doc.listFiles()) {
+            if (child.isDirectory) {
+                collectDataFiles(child, out)
+            } else {
+                val name = child.name ?: continue
+                val ext = name.substringAfterLast('.', "").lowercase()
+                if (ext == "bsa" || ext == "esm") {
+                    out.add(child)
+                }
+            }
+        }
+    }
+
+    private fun copyDocumentToFile(doc: DocumentFile, target: File) {
+        val input = contentResolver.openInputStream(doc.uri) ?: return
+        try {
+            target.outputStream().use { out ->
+                input.copyTo(out, bufferSize = 1 shl 20)
+            }
+        } finally {
+            input.close()
         }
     }
 }

@@ -298,6 +298,62 @@
                         android:background="@drawable/debug_button_cyan"
                         android:textColor="#66FFFF"  android:fontFamily="sans-serif-medium" android:textAllCaps="false" android:minHeight="0dp" android:stateListAnimator="@null"/>
 
+                    <!-- Divider -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#444444"
+                        android:layout_marginTop="6dp"
+                        android:layout_marginBottom="6dp" />
+
+                    <!-- Section: Game Data (Steam transfer) -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="GAME DATA"
+                        android:textColor="#888888"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:paddingBottom="2dp" />
+
+                    <TextView
+                        android:id="@+id/txt_data_status"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text=""
+                        android:textColor="#CCCCCC"
+                        android:textSize="10sp"
+                        android:paddingBottom="2dp" />
+
+                    <Button
+                        android:id="@+id/btn_data_pick"
+                        android:layout_width="match_parent"
+                        android:layout_height="36dp"
+                        android:text="Select Steam Data Folder"
+                        android:textSize="11sp"
+                        android:layout_marginTop="2dp"
+                        android:background="@drawable/debug_button_action"
+                        android:textColor="#FFD700"  android:fontFamily="sans-serif-medium" android:textAllCaps="false" android:minHeight="0dp" android:stateListAnimator="@null"/>
+
+                    <Button
+                        android:id="@+id/btn_data_restart"
+                        android:layout_width="match_parent"
+                        android:layout_height="36dp"
+                        android:text="Restart App (Load Data)"
+                        android:textSize="11sp"
+                        android:layout_marginTop="2dp"
+                        android:background="@drawable/debug_button_cyan"
+                        android:textColor="#66FFFF"  android:fontFamily="sans-serif-medium" android:textAllCaps="false" android:minHeight="0dp" android:stateListAnimator="@null"/>
+
+                    <TextView
+                        android:id="@+id/txt_data_progress"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text=""
+                        android:textColor="#66FF66"
+                        android:textSize="10sp"
+                        android:paddingTop="2dp" />
+
                 </LinearLayout>
             </ScrollView>
 
