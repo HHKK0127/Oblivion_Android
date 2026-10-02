@@ -33,6 +33,13 @@ class MainActivity : Activity() {
     private var isDebugPanelVisible = false
     private var isDebugMenuOpen = false
 
+    // Tracks whether the debug panel ScrollView is scrolling (or has just
+    // scrolled). Used to absorb taps that arrive right after a scroll so they
+    // do not leak to the native engine or hit the wrong button.
+    private var isScrollViewScrolling = false
+    private var lastScrollTime = 0L
+    private val scrollSettleDelayMs = 500L
+
     companion object {
         private const val TAG = "MainActivity"
 
@@ -199,7 +206,7 @@ class MainActivity : Activity() {
 
                     val shouldForwardToNative = !isDebugPanelVisible || isNativeMenuVisible
                     if (actionMasked == android.view.MotionEvent.ACTION_DOWN) {
-                        Log.d(TAG, "shouldForwardToNative=$shouldForwardToNative isDebugPanelVisible=$isDebugPanelVisible isNativeMenuVisible=$isNativeMenuVisible")
+                        Log.d(TAG, "shouldForwardToNative=$shouldForwardToNative isDebugPanelVisible=$isDebugPanelVisible isNativeMenuVisible=$isNativeMenuVisible isScrollViewScrolling=$isScrollViewScrolling")
                     }
                     if (shouldForwardToNative) {
                         // Forward touch to native (game or DebugMenu)
@@ -282,8 +289,18 @@ class MainActivity : Activity() {
                                               rawY >= toggleTop && rawY <= toggleBottom)
 
                             if (inDebugArea) {
-                                Log.d(TAG, "Touch in debug area, letting Android handle it")
-                                return@setOnTouchListener false
+                                // Absorb taps that arrive right after a scroll so
+                                // they do not leak to the native engine or hit the
+                                // wrong button while the content is still settling.
+                                if (isScrollViewScrolling) {
+                                    Log.d(TAG, "Touch in debug area absorbed (scroll settling)")
+                                    return@setOnTouchListener true
+                                }
+                                Log.d(TAG, "Touch in debug area, consuming it (Android handles it)")
+                                // Return true so GameSurfaceView.onTouchEvent is not
+                                // invoked; returning false would fall through to the
+                                // surface view and leak the touch to the native engine.
+                                return@setOnTouchListener true
                             }
                         }
                     }
@@ -318,6 +335,22 @@ class MainActivity : Activity() {
             debugButtonPanel = findViewById<LinearLayout>(R.id.debug_button_panel)
             val debugToggleBtn = findViewById<Button>(R.id.btn_debug_toggle)
             val closeDebugBtn = findViewById<Button>(R.id.btn_close_debug)
+
+            // Track ScrollView scroll state so taps arriving right after a
+            // scroll can be absorbed (prevents leaks to the native engine and
+            // taps landing on the wrong button while the content is settling).
+            val debugScrollView = findViewById<DebugScrollView>(R.id.debug_scroll_view)
+            debugScrollView?.setOnScrollChangeListener { _, _, _, _, _ ->
+                isScrollViewScrolling = true
+                debugScrollView.isSettling = true
+                lastScrollTime = System.currentTimeMillis()
+                debugScrollView.postDelayed({
+                    if (System.currentTimeMillis() - lastScrollTime >= scrollSettleDelayMs) {
+                        isScrollViewScrolling = false
+                        debugScrollView.isSettling = false
+                    }
+                }, scrollSettleDelayMs)
+            }
 
             // Toggle debug panel visibility
             debugToggleBtn.setOnClickListener {
