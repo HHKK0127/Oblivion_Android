@@ -8,10 +8,20 @@
 ## 概要
 
 Oblivion Android は、Steam 版 Oblivion のオリジナルデータ（BSA / ESM）を端末に取り込んで使用します。
-大容量データは APK の外（`filesDir/data`）に配置する **BYO-data モデル** を採用しています。
+ゲームデータの供給方法は **2 つの方式** から選択できます（デバッグパネルの **GAME DATA** → **DATA SOURCE**）。
 
-- コード・BGM・動画・UI: APK 内（`assets/`）
-- ゲームデータ（BSA / ESM）: APK 外（`filesDir/data`）
+- **方式A: APK Bundled Data（APK 内蔵）** — データを APK 内（`assets/data/`）に同梱し、起動時に展開して使用
+- **方式B: Steam Data (Copied)（端末コピー・既定）** — SAF フォルダピッカーで Steam データを `filesDir/data` にコピーして使用
+
+| 項目 | 方式A: APK 内蔵 | 方式B: Steam コピー |
+|------|----------------|--------------------|
+| データの置き場所 | `app/src/main/assets/data/` | 端末の `filesDir/data` |
+| APK サイズ | 大きくなる（ESM だけで約 278MB） | 変わらない |
+| 設定 | デバッグパネルで "APK Bundled Data" | デバッグパネルで "Steam Data (Copied)" |
+| 使い分け | 小さ���必須データ（ESM 等） | 大きな BSA アーカイブ |
+
+> 大きなデータ（数 GB の BSA）は APK の外に置く **BYO-data モデル** が推奨です。
+> APK 内蔵は ESM などの小さい必須データに向いています。
 
 ---
 
@@ -25,7 +35,19 @@ Oblivion Android は、Steam 版 Oblivion のオリジナルデータ（BSA / ES
 
 ## 手順
 
-### 1. 端末へファイルを転送
+### 方法A: APK 内蔵データを使う（小さい必須データ向け）
+
+1. `app/src/main/assets/data/` に、内蔵したい `.bsa` / `.esm` を配置します。
+   （例: `Oblivion.esm` のみを内蔵し、大きな BSA は方式Bで転送する運用が現実的）
+2. アプリをビルド・インストールします。
+3. デバッグパネル（**D** ボタン）の **GAME DATA** → **DATA SOURCE** で **APK Bundled Data** を選択します。
+4. **Restart App (Load Data)** で再起動すると、`assets/data/` のファイルが `filesDir/data` へ展開され、エンジンがロードします。
+
+> `assets/data/` 内の `.bsa` / `.esm` は `.gitignore` で管理外（BYO-data モデル）。コミットされません。
+
+### 方法B: Steam データを端末へ転送（既定・大容量向け）
+
+#### 1. 端末へファイルを転送
 
 Steam 版の Data フォルダを探します。
 
@@ -46,7 +68,7 @@ adb push "Oblivion - Meshes.bsa" /sdcard/OblivionData/
 adb push "Oblivion.esm" /sdcard/OblivionData/
 ```
 
-### 2. アプリでデータフォルダを選択
+#### 2. アプリでデータフォルダを選択
 
 1. アプリを起動します。
 2. 左上の **D** ボタンでデバッグパネルを開きます。
@@ -55,7 +77,7 @@ adb push "Oblivion.esm" /sdcard/OblivionData/
 5. コピーが自動で開始されます（進捗表示付き）。
 6. 完了後、**Restart App (Load Data)** をタップしてアプリを再起動します。
 
-### 3. 確認
+#### 3. 確認
 
 再起動後にログ（`adb logcat -s OblivionEngine`）で BSA のロード結果を確認できます。
 
@@ -70,8 +92,9 @@ adb push "Oblivion.esm" /sdcard/OblivionData/
 ### データパス
 
 - ゲームデータの場所: `filesDir/data`（アプリ専用領域、APK 外）
-- SAF（Storage Access Framework）フォルダピッカー���選択したフォルダ内の `.bsa` / `.esm` を再帰的に検索し、`filesDir/data` へコピーします。
-- コピー後はアプリ再起動が必要です（エンジンの BSA ロードは起動時に 1 回だけ実行されます）。
+- **方式A（APK 内蔵）**: 起動時（バックグラウンド）に `assets/data/` 内の `.bsa` / `.esm` を `filesDir/data` へ展開します。同名ファイルはサイズ一致ならスキップ、不一致なら上書きします。
+- **方式B（Steam コピー）**: SAF（Storage Access Framework）フォルダピッカーで選択したフォルダ内の `.bsa` / `.esm` を再帰的に検索し、`filesDir/data` へコピーします。
+- どちらの方式でも、エンジンの BSA / ESM ロードは起動時に 1 回だけ実行されるため、データ準備後はアプリ再起動が必要です。
 
 ### 対応ファイル
 

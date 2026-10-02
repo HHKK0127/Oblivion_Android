@@ -13,6 +13,8 @@ import android.view.View
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.RadioButton
+import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.documentfile.provider.DocumentFile
 import java.io.IOException
@@ -39,6 +41,12 @@ class MainActivity : Activity() {
 
         private const val REQUEST_CODE_PICK_DATA_FOLDER = 1001
         private const val DATA_DIR_NAME = "data"
+
+        // Game data source selection (APK bundled vs. Steam data copied via SAF)
+        private const val PREF_NAME = "game_data"
+        private const val PREF_DATA_SOURCE = "data_source"
+        const val DATA_SOURCE_BUNDLED = "bundled"
+        const val DATA_SOURCE_STEAM = "steam"
 
         @Volatile
         private var instance: MainActivity? = null
@@ -126,6 +134,23 @@ class MainActivity : Activity() {
                     }
                 } catch (e: Exception) {
                     Log.w(TAG, "Background asset extraction failed (non-fatal): ${e.message}")
+                }
+                // Prepare game data based on the selected data source.
+                // "bundled": extract .bsa/.esm bundled in APK assets/data into filesDir/data.
+                // "steam":  data was already copied via SAF, nothing to do here.
+                try {
+                    if (getDataSource() == DATA_SOURCE_BUNDLED) {
+                        val assetExtractor = AssetExtractor(this@MainActivity)
+                        val bundled = assetExtractor.listBundledGameData()
+                        if (bundled.isNotEmpty()) {
+                            Log.i(TAG, "Background: Extracting ${bundled.size} bundled game data file(s)")
+                            assetExtractor.extractBundledGameData { current, total ->
+                                Log.d(TAG, "Bundled data: $current/$total")
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Background bundled data extraction failed (non-fatal): ${e.message}")
                 }
             }.start()
         } catch (e: Exception) {
@@ -678,7 +703,39 @@ class MainActivity : Activity() {
             finish()
             startActivity(intent)
         }
+        setupDataSourceSelection()
         refreshDataStatus()
+    }
+
+    /** Restore the persisted data-source choice and wire up the radio buttons. */
+    private fun setupDataSourceSelection() {
+        val radioGroup = findViewById<RadioGroup>(R.id.radio_data_source) ?: return
+        val bundled = findViewById<RadioButton>(R.id.radio_data_bundled) ?: return
+        val steam = findViewById<RadioButton>(R.id.radio_data_steam) ?: return
+        val source = getDataSource()
+        bundled.isChecked = source == DATA_SOURCE_BUNDLED
+        steam.isChecked = source == DATA_SOURCE_STEAM
+        radioGroup.setOnCheckedChangeListener { _, checkedId ->
+            val newSource =
+                if (checkedId == R.id.radio_data_bundled) DATA_SOURCE_BUNDLED else DATA_SOURCE_STEAM
+            if (newSource != getDataSource()) {
+                setDataSource(newSource)
+                Log.i(TAG, "Data source changed to: $newSource (restart to apply)")
+                refreshDataStatus()
+            }
+        }
+    }
+
+    private fun getDataSource(): String {
+        return getSharedPreferences(PREF_NAME, MODE_PRIVATE)
+            .getString(PREF_DATA_SOURCE, DATA_SOURCE_BUNDLED) ?: DATA_SOURCE_BUNDLED
+    }
+
+    private fun setDataSource(source: String) {
+        getSharedPreferences(PREF_NAME, MODE_PRIVATE)
+            .edit()
+            .putString(PREF_DATA_SOURCE, source)
+            .apply()
     }
 
     private fun refreshDataStatus() {
@@ -688,7 +745,14 @@ class MainActivity : Activity() {
         val bsaCount = files.count { it.extension.equals("bsa", ignoreCase = true) }
         val esmCount = files.count { it.extension.equals("esm", ignoreCase = true) }
         val totalBytes = files.sumOf { it.length() }
-        statusText.text = "Data folder: $DATA_DIR_NAME\nBSA: $bsaCount, ESM: $esmCount (${formatSize(totalBytes)})"
+
+        val bundled = AssetExtractor(this).listBundledGameData()
+        val sourceLabel = if (getDataSource() == DATA_SOURCE_BUNDLED) "APK bundled" else "Steam (copied)"
+        val bundledLabel = if (bundled.isEmpty()) "none in APK" else "${bundled.size} file(s) in APK"
+        statusText.text =
+            "Source: $sourceLabel | Bundled: $bundledLabel\n" +
+            "Data folder: $DATA_DIR_NAME\n" +
+            "BSA: $bsaCount, ESM: $esmCount (${formatSize(totalBytes)})"
     }
 
     private fun formatSize(bytes: Long): String {

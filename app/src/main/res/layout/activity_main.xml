@@ -325,6 +325,46 @@
                         android:textSize="10sp"
                         android:paddingBottom="2dp" />
 
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="DATA SOURCE"
+                        android:textColor="#888888"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="2dp" />
+
+                    <RadioGroup
+                        android:id="@+id/radio_data_source"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <RadioButton
+                            android:id="@+id/radio_data_bundled"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="APK Bundled Data"
+                            android:textColor="#CCCCCC"
+                            android:textSize="11sp"
+                            android:minHeight="0dp"
+                            android:paddingTop="2dp"
+                            android:paddingBottom="2dp" />
+
+                        <RadioButton
+                            android:id="@+id/radio_data_steam"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Steam Data (Copied)"
+                            android:textColor="#CCCCCC"
+                            android:textSize="11sp"
+                            android:minHeight="0dp"
+                            android:paddingTop="2dp"
+                            android:paddingBottom="2dp" />
+
+                    </RadioGroup>
+
                     <Button
                         android:id="@+id/btn_data_pick"
                         android:layout_width="match_parent"

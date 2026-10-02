@@ -16,6 +16,8 @@ class AssetExtractor(private val context: Context) {
         private const val VERSION_FILE = "version.txt"
         private const val CURRENT_VERSION = 6  // v4: intro OP clips; v5: added oblivion_iv_logo; v6: added credits_menu (1% title easter egg)
         private const val EXTRACTION_MARKER = ".extraction_complete"
+        private const val BUNDLED_DATA_ASSET_DIR = "data"
+        private const val GAME_DATA_DIR_NAME = "data"
     }
     
     private val externalDir: File
@@ -237,5 +239,72 @@ class AssetExtractor(private val context: Context) {
     fun cleanup() {
         externalDir.deleteRecursively()
         Log.i(TAG, "Cleaned up extracted assets")
+    }
+
+    // ------------------------------------------------------------------
+    // Bundled game data (APK-internal .bsa/.esm -> filesDir/data)
+    // ------------------------------------------------------------------
+
+    /**
+     * List .bsa/.esm files bundled inside the APK under assets/data.
+     * These are copied into filesDir/data at startup so the native engine
+     * can load them. Empty when the folder is absent.
+     */
+    fun listBundledGameData(): List<String> {
+        return try {
+            context.assets.list(BUNDLED_DATA_ASSET_DIR)
+                ?.filter {
+                    it.endsWith(".bsa", ignoreCase = true) || it.endsWith(".esm", ignoreCase = true)
+                }
+                ?.sorted()
+                ?: emptyList()
+        } catch (e: Exception) {
+            Log.w(TAG, "No assets/$BUNDLED_DATA_ASSET_DIR directory")
+            emptyList()
+        }
+    }
+
+    /**
+     * Copy bundled .bsa/.esm from APK assets/data into filesDir/data.
+     * Existing files are skipped when sizes match; a size mismatch overwrites.
+     * @return true on success (including "nothing to copy")
+     */
+    fun extractBundledGameData(progressCallback: (Int, Int) -> Unit): Boolean {
+        return try {
+            val bundled = listBundledGameData()
+            if (bundled.isEmpty()) {
+                Log.i(TAG, "No bundled game data to extract")
+                return true
+            }
+            val dataDir = File(context.filesDir, GAME_DATA_DIR_NAME)
+            dataDir.mkdirs()
+            bundled.forEachIndexed { index, name ->
+                val target = File(dataDir, name)
+                val bundledSize = assetSize("$BUNDLED_DATA_ASSET_DIR/$name")
+                if (!target.exists() || target.length() != bundledSize) {
+                    context.assets.open("$BUNDLED_DATA_ASSET_DIR/$name").use { input ->
+                        FileOutputStream(target).use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    Log.i(TAG, "Bundled game data extracted: $name (${target.length()} bytes)")
+                } else {
+                    Log.d(TAG, "Bundled game data up to date: $name")
+                }
+                progressCallback(index + 1, bundled.size)
+            }
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Bundled game data extraction failed", e)
+            false
+        }
+    }
+
+    private fun assetSize(assetPath: String): Long {
+        return try {
+            context.assets.open(assetPath).use { it.available().toLong() }
+        } catch (e: Exception) {
+            -1L
+        }
     }
 }
