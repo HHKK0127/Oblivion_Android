@@ -40,8 +40,10 @@ Oblivion Android は、Steam 版 Oblivion のオリジナルデータ（BSA / ES
 1. `app/src/main/assets/data/` に、内蔵したい `.bsa` / `.esm` を配置します。
    （例: `Oblivion.esm` のみを内蔵し、大きな BSA は方式Bで転送する運用が現実的）
 2. アプリをビルド・インストールします。
-3. デバッグパネル（**D** ボタン）の **GAME DATA** → **DATA SOURCE** で **APK Bundled Data** を選択します。
+3. デバッグパネル（**D** ボタン）の **GAME DATA** → **DATA SOURCE** で **APK Bundled Data** を選択します。切り替えると「Data source change applies on next launch. Tap Restart App below to reload game data now.」という案内が表示されます。
 4. **Restart App (Load Data)** で再起動すると、`assets/data/` のファイルが `filesDir/data` へ展開され、エンジンがロードします。
+
+> データソースの変更は **次回起動時のみ** 反映されます（エンジンは起動時に 1 回だけデータをロード）。案内は切り替え直後���け表示され、再起動後の初期状態では非表示です。
 
 > `assets/data/` 内の `.bsa` / `.esm` は `.gitignore` で管理外（BYO-data モデル）。コミットされません。
 
