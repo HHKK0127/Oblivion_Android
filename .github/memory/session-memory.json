@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-09-27T23:46:22Z",
+  "lastUpdated": "2026-10-02T01:10:59.568154Z",
   "entries": [
     {
       "id": "all-todos-resolved-20260918",
@@ -4935,11 +4935,66 @@
         "docs"
       ],
       "compressed": false
+    },
+    {
+      "id": "p66-nif-assetmanager-path-3ed09479",
+      "timestamp": "2026-10-02T00:00:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "NIF mesh resolution via AssetManager data path (commit eec57fbd, 2026-10-01): WorldLoader::getOrParseNIF now uses AssetManager::loadFileData -> parseFromData with parseFile fallback. Real Oblivion.esm (277MB) + real NIF meshes 5/5 load successfully on emulator.",
+      "tags": [
+        "p66",
+        "nif",
+        "esm",
+        "world-loader"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "p66-loadactor-move-bug-8c961cb6",
+      "timestamp": "2026-10-02T01:00:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "loadActor move-after-return bug FIXED (commit 35f0ff79, 2026-10-02): loadActor stored entity into entities map via std::move then returned the emptied entity by value, so renderer saw skinned=0 and fell back to static mesh. Fix: removed move-based storage, return full entity to caller (renderer worldEntities). NPC mapping still handled by loadActorForNpc which stores into map. Now headhuman.nif (5 bones, verts=1275) and horse.nif (40 bones, verts=2351) render with skinned=1, skel=1. Verified on screen (skin/hair pixels in center region), no GL errors.",
+      "tags": [
+        "p66",
+        "skinned-mesh",
+        "bugfix",
+        "world-loader"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "p66-debug-logs-gated-a52ceb8f",
+      "timestamp": "2026-10-02T01:10:00Z",
+      "category": "configuration",
+      "priority": "low",
+      "content": "buildSkinnedMesh diagnostics kept as LOGD_WL (ENABLE_DEBUG_LOGS guard) - debug builds only, no release impact. Toggle via ENABLE_DEBUG_LOGS define in world_loader.cpp.",
+      "tags": [
+        "p66",
+        "logging",
+        "world-loader"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "p66-log-timing-4f535343",
+      "timestamp": "2026-10-02T01:15:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Emulator verification timing: ESM parse ~18s + async load, Phase 31 (world entity load) completes ~66s after app launch and ~100s after New Game tap (658,872). Fetch logcat at 95-110s for Phase 31 logs. Emulator may need restart if adb loses device (Pixel_API34 AVD).",
+      "tags": [
+        "p66",
+        "emulator",
+        "verification",
+        "logcat"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 343,
+    "totalEntries": 347,
     "compressedCount": 2,
-    "sessionCount": 29
+    "sessionCount": 30
   }
 }
