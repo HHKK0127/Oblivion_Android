@@ -3261,10 +3261,11 @@ void Renderer::createTestScenario() {
                  izar->npcId, hellas->npcId);
         }
 
-        // Set mesh asset paths (from Oblivion ISO extracted meshes)
-        // These are relative paths that will be resolved by AssetManager
-        izar->meshAssetPath = "meshes/creatures/imp.nif";  // Monster model
-        hellas->meshAssetPath = "meshes/characters/imperial_male.nif";  // NPC model
+        // Set mesh asset paths (real NIFs present on device; the original
+        // "meshes/creatures/imp.nif" and "meshes/characters/imperial_male.nif"
+        // do not exist anywhere on device)
+        izar->meshAssetPath = "meshes/creatures/horse/horse.nif";  // Real creature mesh
+        hellas->meshAssetPath = "meshes/characters/imperial/headhuman.nif";  // Real NPC mesh
         LOGI("NPC mesh paths set: Izar=%s, Hellas=%s",
              izar->meshAssetPath.c_str(), hellas->meshAssetPath.c_str());
 

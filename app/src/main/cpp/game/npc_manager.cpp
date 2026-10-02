@@ -1,5 +1,6 @@
 #include "npc_manager.h"
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdlib>
 #include <ctime>
@@ -283,6 +284,7 @@ std::shared_ptr<NPC> NpcManager::createNPCFromESM(uint32_t formID, const glm::ve
         // Oblivion resolves NPC body meshes from the RACE record, not the NPC_
         // record itself. Fall back to the default Imperial male mesh when the
         // race is unknown or carries no model path.
+        std::string resolved;
         if (npcData.raceID != 0 && m_esm) {
             const oblivion::RaceData* race = m_esm->findRace(npcData.raceID);
             if (race) {
@@ -292,10 +294,11 @@ std::shared_ptr<NPC> NpcManager::createNPCFromESM(uint32_t formID, const glm::ve
                     LOGD("NPC mesh resolved from race 0x%08X (%s): %s",
                          npcData.raceID, npcData.isFemale ? "female" : "male",
                          modelPath.c_str());
-                    return modelPath;
+                    resolved = modelPath;
+                } else {
+                    LOGW("resolveNpcMeshPath: race 0x%08X found but model path empty (male='%s', female='%s')",
+                         npcData.raceID, race->maleModelPath.c_str(), race->femaleModelPath.c_str());
                 }
-                LOGW("resolveNpcMeshPath: race 0x%08X found but model path empty (male='%s', female='%s')",
-                     npcData.raceID, race->maleModelPath.c_str(), race->femaleModelPath.c_str());
             } else {
                 LOGW("resolveNpcMeshPath: race 0x%08X not found in race index", npcData.raceID);
             }
@@ -303,7 +306,25 @@ std::shared_ptr<NPC> NpcManager::createNPCFromESM(uint32_t formID, const glm::ve
             LOGW("resolveNpcMeshPath: raceID=0x%08X (m_esm=%s)", npcData.raceID,
                  m_esm ? "present" : "null");
         }
-        return "meshes/characters/imperial_male.nif";
+
+        // RACE model paths are spelled like "Characters\Imperial\HeadHuman.nif"
+        // while the asset lookup (and the loose files on Android) expect a
+        // lowercase, slash-separated "meshes/..." path. Normalize here so the
+        // fallback below can resolve to a real on-device mesh.
+        if (!resolved.empty()) {
+            std::string norm = resolved;
+            for (char& c : norm) {
+                c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+            }
+            std::replace(norm.begin(), norm.end(), '\\', '/');
+            if (norm.rfind("meshes/", 0) != 0) {
+                norm = "meshes/" + norm;
+            }
+            return norm;
+        }
+
+        // No RACE or empty path: use a mesh that is actually present on device.
+        return "meshes/characters/imperial/headhuman.nif";
     }
 
 std::shared_ptr<NPC> NpcManager::spawnFromLeveledList(uint32_t leveledListFormID,

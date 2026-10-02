@@ -2186,13 +2186,38 @@ void ESMFile::decodeRace(const ESMRecord& rec) {
     race.fullName = rec.getString("FULL");
     race.description = rec.getString("DESC");
 
-    // MNAM: male model path (RACE records use MNAM/FNAM, not RNAM)
-        race.maleModelPath = rec.getString("MNAM");
-        // FNAM: female model path
-        auto* fnam = rec.findSubRecord("FNAM");
-        if (fnam) {
-            race.femaleModelPath = std::string(reinterpret_cast<const char*>(fnam->data.data()), fnam->data.size());
+    // RACE records do NOT carry a single body mesh. The MNAM/FNAM subrecords
+    // always exist but have len=0 in the real Oblivion ESM, so they never
+    // resolve to a file. The body/face parts are stored as INDX+MODL+MODB+ICON
+    // groups; the first MODL (the head mesh, e.g. "Characters\Imperial\
+    // HeadHuman.nif") is the most useful model path for a fallback mesh.
+    // Fall back to the first MODL when MNAM/FNAM are empty.
+    race.maleModelPath = rec.getString("MNAM");
+    auto* fnam = rec.findSubRecord("FNAM");
+    if (fnam) {
+        race.femaleModelPath = std::string(reinterpret_cast<const char*>(fnam->data.data()), fnam->data.size());
+    }
+    if (race.maleModelPath.empty() || race.femaleModelPath.empty()) {
+        for (const auto& sub : rec.subRecords) {
+            if (std::memcmp(sub.tag, "MODL", 4) != 0 || sub.data.empty()) {
+                continue;
+            }
+            // MODL data is a null-terminated string
+            size_t len = 0;
+            while (len < sub.data.size() && sub.data[len] != 0) {
+                ++len;
+            }
+            if (len == 0) {
+                continue;
+            }
+            const std::string part(reinterpret_cast<const char*>(sub.data.data()), len);
+            if (race.maleModelPath.empty()) {
+                race.maleModelPath = part;
+            } else if (race.femaleModelPath.empty()) {
+                race.femaleModelPath = part;
+            }
         }
+    }
 
     // Spells: SPLO subrecords
     for (const auto& sub : rec.subRecords) {
