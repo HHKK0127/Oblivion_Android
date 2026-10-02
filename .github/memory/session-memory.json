@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "10/02/2026 13:13:56",
+  "lastUpdated": "10/02/2026 14:24:40",
   "entries": [
     {
       "timestamp": "2026-09-16T14:58:00Z",
@@ -5048,10 +5048,25 @@
         "phase65"
       ],
       "compressed": false
+    },
+    {
+      "id": "data-source-restart-hint-20261002",
+      "timestamp": "2026-10-02T05:00:00Z",
+      "category": "configuration",
+      "priority": "medium",
+      "content": "Data source change restart hint: GAME DATA section in debug panel now shows 'Data source change applies on next launch. Tap Restart App below to reload game data now.' (txt_data_restart_hint TextView) when the data source radio is switched (setDataSource success). Default visibility gone, so it is hidden on fresh launch and shown only right after a switch. Verified on emulator: (1) hidden at startup, (2) shown after switching to Steam, (3) persists data_source=steam in game_data.xml, (4) after force-stop restart the hint is hidden again while data source stays steam.",
+      "tags": [
+        "data",
+        "data-source",
+        "restart",
+        "hint",
+        "phase65"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 350,
+    "totalEntries": 351,
     "compressedCount": 81,
     "sessionCount": 31
   }
