@@ -5016,10 +5016,26 @@
         "asset-manager"
       ],
       "compressed": false
+    },
+    {
+      "id": "1a06e293-a3c8-4e98-ae62-93ca4542ee04",
+      "timestamp": "2026-10-02T03:55:40Z",
+      "category": "configuration",
+      "priority": "high",
+      "content": "Steam data import (SAF): debug panel GAME DATA section lets user pick a Steam data folder via ACTION_OPEN_DOCUMENT_TREE (androidx.documentfile) and copies all .bsa/.esm into filesDir/data. Restart App button recreates MainActivity; native engine loads files/data/Oblivion.esm and BSA archives on restart. Verified on emulator end-to-end. Docs: docs/STEAM_DATA_TRANSFER.md. Future plan: extract original data from Steam data instead of APK assets.",
+      "tags": [
+        "data",
+        "saf",
+        "steam",
+        "bsa",
+        "esm",
+        "phase64"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 348,
+    "totalEntries": 349,
     "compressedCount": 81,
     "sessionCount": 31
   }
