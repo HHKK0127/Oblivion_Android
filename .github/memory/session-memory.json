@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-02T02:33:51Z",
+  "lastUpdated": "2026-10-02T03:25:00Z",
   "entries": [
     {
       "timestamp": "2026-09-16T14:58:00Z",
@@ -5001,11 +5001,26 @@
         "title-screen"
       ],
       "compressed": false
+    },
+    {
+      "id": "p66-npc-mesh-existcheck-82619f2d",
+      "timestamp": "2026-10-02T03:25:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "resolveNpcMeshPath now verifies mesh existence via AssetManager->fileExists before returning. Missing head meshes fall back to meshes/characters/imperial/headhuman.nif instead of entering the renderer's permanent unresolved cache. NpcManager receives AssetManager via setAssetManager() injected in renderer.cpp initGameSystems after assetManager init. Verified: NPC mesh streaming 2 loaded, 0 unresolved; Khajiit/Imperial/Orc deployed heads resolve without fallback.",
+      "tags": [
+        "p66",
+        "npc",
+        "mesh",
+        "fallback",
+        "asset-manager"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 347,
+    "totalEntries": 348,
     "compressedCount": 81,
-    "sessionCount": 30
+    "sessionCount": 31
   }
 }
