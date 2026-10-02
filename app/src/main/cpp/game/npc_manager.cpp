@@ -1,4 +1,5 @@
 #include "npc_manager.h"
+#include "../assets/asset_manager.h"
 #include <algorithm>
 #include <cctype>
 #include <cmath>
@@ -319,6 +320,14 @@ std::shared_ptr<NPC> NpcManager::createNPCFromESM(uint32_t formID, const glm::ve
             std::replace(norm.begin(), norm.end(), '\\', '/');
             if (norm.rfind("meshes/", 0) != 0) {
                 norm = "meshes/" + norm;
+            }
+            // Verify the resolved mesh actually exists on device (or in a BSA).
+            // A missing head mesh used to fall into the permanent "unresolved"
+            // cache in the renderer, so guard against it here.
+            if (m_assetMgr && !m_assetMgr->fileExists(norm)) {
+                LOGW("resolveNpcMeshPath: '%s' not found on device, "
+                     "falling back to headhuman.nif", norm.c_str());
+                return "meshes/characters/imperial/headhuman.nif";
             }
             return norm;
         }

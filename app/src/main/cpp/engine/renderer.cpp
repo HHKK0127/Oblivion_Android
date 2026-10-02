@@ -1917,6 +1917,9 @@ bool Renderer::initGameSystems() {
         return false;
     }
     LOGI("NpcManager initialized successfully");
+    // Inject AssetManager so resolveNpcMeshPath can verify mesh existence and
+    // fall back to a deployed head mesh instead of a permanent unresolved cache.
+    npcManager->setAssetManager(assetManager.get());
 
     // Initialize World Manager
     LOGI("Creating WorldManager...");

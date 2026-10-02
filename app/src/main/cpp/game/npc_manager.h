@@ -20,12 +20,15 @@
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
+class AssetManager;
+
 class NpcManager {
 private:
     std::unordered_map<uint32_t, std::shared_ptr<NPC>> npcs;
     std::unordered_map<uint32_t, std::vector<uint32_t>> cellNpcs;  // cellId → NPC IDs
     std::unordered_map<uint32_t, uint32_t> npcToCell;              // npcId → cellId
     const oblivion::ESMManager* m_esm = nullptr;
+    const AssetManager* m_assetMgr = nullptr;
     facegen::FaceGenMorpher* m_faceGen = nullptr;
     std::unordered_map<uint32_t, facegen::FaceGenRecord> m_faceGenRecords;
     uint32_t nextNpcId;
@@ -59,6 +62,7 @@ public:
         // Imperial male mesh when the race is unknown or has no model path.
         std::string resolveNpcMeshPath(const oblivion::NPCData& npcData) const;
     void setESMManager(const oblivion::ESMManager* esm) { m_esm = esm; }
+    void setAssetManager(const AssetManager* assetMgr) { m_assetMgr = assetMgr; }
     std::shared_ptr<NPC> getNPC(uint32_t npcId) const;
     void removeNPC(uint32_t npcId);
 
