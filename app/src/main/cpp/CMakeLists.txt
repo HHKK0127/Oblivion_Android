@@ -304,6 +304,7 @@ add_library(native-lib SHARED
     dialogue/dialogue_runner.cpp
     dialogue/dialogue_history.cpp
     dialogue/dialogue_integration.cpp
+        dialogue/voice_sound_db.cpp
 
     # Phase 52: FaceGen System
     character/face_gen_morpher.cpp

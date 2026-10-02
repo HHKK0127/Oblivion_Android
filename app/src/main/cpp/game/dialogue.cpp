@@ -47,6 +47,13 @@ std::shared_ptr<Dialogue> DialogueManager::getDialogue(uint32_t npcId) {
     return nullptr;
 }
 
+uint32_t DialogueManager::getFirstDialogueFormID() const {
+    if (dialogues.empty()) {
+        return 0;
+    }
+    return dialogues.begin()->first;
+}
+
 bool DialogueManager::startDialogue(uint32_t npcId) {
     auto dialogue = getDialogue(npcId);
     if (!dialogue) {
@@ -156,8 +163,9 @@ void DialogueManager::loadDialoguesFromESM(const oblivion::ESMManager& esmMgr,
 
             DialogueTopic topic(info.editorID, topicText, responseText, info.questFormID != 0);
             topic.infoFormID = info.formID;
-            topic.factionFormID = info.factionFormID;
-            topic.factionRank = info.factionRank;
+                        topic.soundResponseNumber = info.responseNumber;
+                        topic.factionFormID = info.factionFormID;
+                        topic.factionRank = info.factionRank;
 
             if (info.factionFormID != 0) {
                 ++factionGated;

@@ -33,6 +33,7 @@
 #include "../game/ai_scheduler.h"
 #include "../game/player_controller.h"
 #include "../game/dialogue.h"
+#include "../dialogue/voice_sound_db.h"
 #include "../game/book_reader.h"
 #include "../quest/quest_flow_controller.h"
 #include "../game/inventory_manager.h"
@@ -142,6 +143,8 @@ private:
     std::unique_ptr<PlayerController> playerController;
     std::unique_ptr<InventoryManager> inventoryManager;
     std::unique_ptr<DialogueManager> dialogueManager;
+    // In-game voice line index built from the BSA voice archives.
+        std::unique_ptr<VoiceSoundDatabase> voiceSoundDatabase;
     std::unique_ptr<oblivion::BookReader> bookReader;
     std::unique_ptr<oblivion::AlchemySystem> alchemySystem;
     std::unique_ptr<game::EnchantingSystem> enchantingSystem;
@@ -381,7 +384,15 @@ public:
     bool openDialogueWithNearestNpc();
     // Opens the dialogue UI for a specific NPC FormID. Returns true on success.
     bool openDialogueWithNpc(uint32_t npcFormID);
+    // Opens the dialogue UI for the first spawned NPC that has a dialogue tree,
+    // ignoring distance. Used as a fallback so dialogue/voice can be exercised
+    // even when no NPC is within activation range.
+    bool openDialogueWithAnyNpc();
     bool isDialogueOpen() const;
+    // Runs a self-contained dialogue + voice verification and returns a summary
+    // line. Opens a dialogue with any available NPC, selects the first topic
+    // that has a resolvable voice line, and plays it.
+    std::string runVoiceTest();
     void closeDialogue();
 
     // Books

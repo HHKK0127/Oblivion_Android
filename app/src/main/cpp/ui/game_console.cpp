@@ -636,7 +636,8 @@ void GameConsole::registerBuiltinCommands() {
     });
 
     // === Dialogue commands ===
-    registerCommand("talk", "Start dialogue with NPC: talk <npcId>", [this](const std::vector<std::string>& args) { cmdTalk(args); });
+    registerCommand("talk", "Start dialogue with NPC: talk [npcId] (nearest when omitted)", [this](const std::vector<std::string>& args) { cmdTalk(args); });
+    registerCommand("voicetest", "Verify NPC voice playback end to end", [this](const std::vector<std::string>&) { cmdVoiceTest(); });
     registerCommand("selecttopic", "Select dialogue topic: selecttopic <index>", [this](const std::vector<std::string>& args) { cmdSelectTopic(args); });
     registerCommand("selectchoice", "Select dialogue choice: selectchoice <index>", [this](const std::vector<std::string>& args) { cmdSelectChoice(args); });
     registerCommand("endtalk", "End current dialogue", [this](const std::vector<std::string>& args) { cmdEndTalk(args); });
@@ -1942,8 +1943,15 @@ void GameConsole::cmdResurrectNpc(const std::vector<std::string>& args) {
 // ============================================================
 
 void GameConsole::cmdTalk(const std::vector<std::string>& args) {
-    if (args.size() < 2) {
-        appendOutput("Usage: talk <npcId>");
+    // "talk" with no argument (or 0) opens the dialogue with the nearest NPC,
+    // which is what the debug menu's "Talk NPC" button wants.
+    if (args.size() < 2 || args[1] == "0") {
+        if (gameRefs.startDialogueWithNearest) {
+            gameRefs.startDialogueWithNearest();
+            appendOutput("Started dialogue with nearest NPC");
+        } else {
+            appendOutput("Dialogue system not connected");
+        }
         return;
     }
     try {
@@ -1955,8 +1963,20 @@ void GameConsole::cmdTalk(const std::vector<std::string>& args) {
             appendOutput("Dialogue system not connected");
         }
     } catch (...) {
-        appendOutput("Invalid NPC ID. Use: talk <npcId>");
+        appendOutput("Invalid NPC ID. Use: talk [npcId]");
     }
+}
+
+void GameConsole::cmdVoiceTest() {
+    if (!gameRefs.runVoiceTest) {
+        appendOutput("Voice test not connected");
+        return;
+    }
+    const std::string result = gameRefs.runVoiceTest();
+    // The console buffer is only visible inside the in-game console overlay, so
+    // mirror the outcome to logcat for headless verification.
+    LOGI_CONSOLE("voicetest -> %s", result.c_str());
+    appendOutput(result);
 }
 
 void GameConsole::cmdSelectTopic(const std::vector<std::string>& args) {

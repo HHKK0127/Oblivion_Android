@@ -126,6 +126,8 @@ public:
 
         // Dialogue
         std::function<void(uint32_t)> startDialogueWith;
+        std::function<void()> startDialogueWithNearest;
+        std::function<std::string()> runVoiceTest;
         std::function<void(int)> selectDialogueTopic;
         std::function<void(int)> selectDialogueChoice;
         std::function<void()> endDialogue;
@@ -408,6 +410,7 @@ private:
 
     // Dialogue commands
     void cmdTalk(const std::vector<std::string>& args);
+    void cmdVoiceTest();
     void cmdSelectTopic(const std::vector<std::string>& args);
     void cmdSelectChoice(const std::vector<std::string>& args);
     void cmdEndTalk(const std::vector<std::string>& args);

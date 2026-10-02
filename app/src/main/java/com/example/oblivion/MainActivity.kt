@@ -401,6 +401,13 @@ class MainActivity : Activity() {
                 Log.d(TAG, "Toggled all debug systems")
             }
 
+            // Voice Test - opens a dialogue with any NPC and plays the first
+            // resolvable voice line, so voice playback can be verified on device.
+            findViewById<Button>(R.id.btn_debug_voicetest)?.setOnClickListener {
+                gameRenderer?.nativeExecuteConsoleCommand("voicetest")
+                Log.d(TAG, "Ran voice test")
+            }
+
             // Debug Menu toggle - opens Assets tab and3D Viewer directly
             val menuBtn = findViewById<Button>(R.id.btn_debug_menu)
             menuBtn?.setOnClickListener {

@@ -30,7 +30,8 @@ AudioManager::AudioManager()
       currentBGMSourceId(0), currentBGMClipId(0),
       bgmVolume(1.0f), bgmFadeTarget(1.0f), bgmFadeRate(0.0f),
       bgmFading(false),
-      masterVolume(1.0f), seVolume(1.0f) {
+      masterVolume(1.0f), seVolume(1.0f),
+      currentVoiceSourceId(0) {
     LOGD("AudioManager constructed");
 }
 
@@ -413,7 +414,7 @@ void AudioManager::stopSE(uint32_t sourceId) {
 void AudioManager::stopAllSE() {
     std::vector<uint32_t> sourceIds;
     for (auto& pair : sources) {
-        if (pair.first != currentBGMSourceId) {
+        if (pair.first != currentBGMSourceId && pair.first != currentVoiceSourceId) {
             sourceIds.push_back(pair.first);
         }
     }
@@ -423,6 +424,43 @@ void AudioManager::stopAllSE() {
     }
 
     LOGD("All SE stopped");
+}
+
+uint32_t AudioManager::playVoice(const std::string& bsaPath, float volume) {
+    if (bsaPath.empty()) {
+        LOGW("playVoice: empty path");
+        return 0;
+    }
+
+    // Stop any voice line still playing to avoid overlapping dialogue.
+    if (currentVoiceSourceId != 0) {
+        stopSE(currentVoiceSourceId);
+        currentVoiceSourceId = 0;
+    }
+
+    // Resolve to a playable path (extracts from BSA into the cache when needed).
+    const std::string playablePath = resolvePlayablePath(bsaPath);
+    if (playablePath.empty()) {
+        LOGW("playVoice: cannot resolve voice path: %s", bsaPath.c_str());
+        return 0;
+    }
+
+    uint32_t clipId = loadClip(playablePath, 2, false);  // type 2 = Voice
+    if (clipId == 0) {
+        LOGW("playVoice: loadClip failed: %s", playablePath.c_str());
+        return 0;
+    }
+
+    // Listener position voices are short; keep default 3D position.
+    currentVoiceSourceId = playSE(clipId, glm::vec3(0.0f, 0.0f, 0.0f), volume);
+    if (currentVoiceSourceId == 0) {
+        LOGW("playVoice: playSE failed: %s", playablePath.c_str());
+        return 0;
+    }
+
+    LOGD("Voice playing: clipId=%u, sourceId=%u, file=%s",
+         clipId, currentVoiceSourceId, playablePath.c_str());
+    return currentVoiceSourceId;
 }
 
 void AudioManager::setListenerPosition(const glm::vec3& pos) {
@@ -462,13 +500,19 @@ void AudioManager::setSEVolume(float volume) {
 }
 
 std::string AudioManager::resolvePlayablePath(const std::string& filename) {
+    // BSA archives report raw paths with backslash separators, while the
+    // voice naming convention uses forward slashes. Normalize so the prefix
+    // check and cache extraction work regardless of separator style.
+    std::string normalized = filename;
+    std::replace(normalized.begin(), normalized.end(), '\\', '/');
+
     // BSA-internal audio paths start with "sound/" (e.g. "sound/voice/...").
     // These are not directly readable by the Java MediaPlayer/SoundPool bridge,
     // so extract them into the cache directory first.
-    if (filename.rfind("sound/", 0) == 0) {
-        return extractBsaAudioToCache(filename);
+    if (normalized.rfind("sound/", 0) == 0) {
+        return extractBsaAudioToCache(normalized);
     }
-    return filename;
+    return normalized;
 }
 
 std::string AudioManager::extractBsaAudioToCache(const std::string& bsaPath) {

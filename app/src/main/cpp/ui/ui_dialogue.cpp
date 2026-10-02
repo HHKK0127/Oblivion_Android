@@ -20,6 +20,9 @@ UIDialogue::UIDialogue(const std::string& title)
     setTitleBarColor(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));  // hidden — portrait takes its place
     setCloseButtonVisible(true);
     setDraggable(false);  // Oblivion dialogue is fixed
+    // UIComponent starts visible, but a dialogue panel must not exist on screen
+    // (or swallow input) until openDialogue() is called.
+    setVisible(false);
 }
 
 bool UIDialogue::initialize(TextRenderer* tr) {
@@ -45,6 +48,18 @@ void UIDialogue::closeDialogue() {
     if (currentDialogue) currentDialogue->end();
     currentDialogue = nullptr;
     setVisible(false);
+}
+
+void UIDialogue::selectTopic(int index) {
+    if (!currentDialogue) return;
+    if (index < 0 || index >= static_cast<int>(currentDialogue->topics.size())) return;
+
+    currentDialogue->selectTopic(index);
+    responseVisible = true;
+    responseAlpha = 0.0f;
+    if (onTopicSelected) {
+        onTopicSelected(currentDialogue->topics[index].topicId);
+    }
 }
 
 void UIDialogue::update(float deltaTime) {

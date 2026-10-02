@@ -949,21 +949,27 @@ bool Renderer::initGameSystems() {
         }
         return "No nearby NPCs";
     };
-    refs.startDialogueWith = [](uint32_t id) {
-        (void)id;
-        // DialogueRunner not connected
-    };
-    refs.selectDialogueTopic = [](int t) {
-        (void)t;
-        // DialogueRunner not connected
-    };
-    refs.selectDialogueChoice = [](int c) {
-        (void)c;
-        // DialogueRunner not connected
-    };
-    refs.endDialogue = []() {
-        // DialogueRunner not connected
-    };
+    refs.startDialogueWith = [this](uint32_t id) {
+            openDialogueWithNpc(id);
+        };
+        refs.startDialogueWithNearest = [this]() {
+            openDialogueWithNearestNpc();
+        };
+        refs.runVoiceTest = [this]() -> std::string {
+            return runVoiceTest();
+        };
+        refs.selectDialogueTopic = [this](int t) {
+            if (dialogueUI) {
+                dialogueUI->selectTopic(t);
+            }
+        };
+        refs.selectDialogueChoice = [](int c) {
+            (void)c;
+            // Choice selection is handled through the UIDialogue touch path.
+        };
+        refs.endDialogue = [this]() {
+            closeDialogue();
+        };
     refs.openBook = [this](uint32_t formID) -> bool {
         return openBook(formID);
     };
@@ -3454,6 +3460,14 @@ void Renderer::loadDialoguesFromESM() {
         return;
     }
 
+    // Build the in-game voice line index from the BSA archives so dialogue
+    // topics can resolve their sound files. Missing voice archives are not
+    // fatal: dialogue text still works, audio is skipped gracefully.
+    if (!voiceSoundDatabase) {
+        voiceSoundDatabase = std::make_unique<VoiceSoundDatabase>();
+    }
+    voiceSoundDatabase->initialize(assetManager.get());
+
     // Faction memberships are resolved from the NPC manager so faction-gated
     // topics can be filtered per actor.
     std::function<std::vector<uint32_t>(uint32_t)> factionLookup;
@@ -3486,11 +3500,47 @@ bool Renderer::openDialogueWithNpc(uint32_t npcFormID) {
         return false;
     }
 
+    // Make this the manager's active conversation too. Without it
+    // getCurrentDialogue() stays null and the voice-resolution callback (which
+    // reads the selected topic from the manager) can never find a topic.
+    dialogueManager->setCurrentDialogue(dialogue);
+
     dialogueUI->openDialogue(dialogue);
-    LOGI("Dialogue opened with NPC 0x%08X '%s' (%zu topics)",
-         npcFormID, dialogue->npcName.c_str(), dialogue->topics.size());
-    return true;
-}
+
+        // Wire voice playback: resolving a topic's sound and playing it through the
+        // audio manager. Missing voices degrade to silent dialogue (log only).
+        dialogueUI->setOnTopicSelected([this](const std::string& topicId) {
+            if (!voiceSoundDatabase || !dialogueManager) {
+                return;
+            }
+            auto dlg = dialogueManager->getCurrentDialogue();
+            if (!dlg) {
+                return;
+            }
+            auto topic = dlg->getSelectedTopic();
+            if (!topic) {
+                return;
+            }
+            const std::string voicePath =
+                voiceSoundDatabase->resolveVoicePath(topic->infoFormID,
+                                                     topic->soundResponseNumber);
+            if (voicePath.empty()) {
+                LOGD("No voice for topic '%s' (formID 0x%08X, resp %u)",
+                     topicId.c_str(), topic->infoFormID, topic->soundResponseNumber);
+                return;
+            }
+            LOGI("Voice resolved for topic '%s': %s", topicId.c_str(), voicePath.c_str());
+    #ifdef AUDIO_SYSTEM_ENABLED
+            if (audioManager) {
+                audioManager->playVoice(voicePath);
+            }
+    #endif
+        });
+
+        LOGI("Dialogue opened with NPC 0x%08X '%s' (%zu topics)",
+             npcFormID, dialogue->npcName.c_str(), dialogue->topics.size());
+        return true;
+    }
 
 bool Renderer::openDialogueWithNearestNpc() {
     if (!npcManager || !playerController) {
@@ -3519,19 +3569,106 @@ bool Renderer::openDialogueWithNearestNpc() {
 
     if (nearestFormID == 0) {
         LOGI("openDialogueWithNearestNpc: no NPC within %.0f units", kActivationRange);
-        return false;
+        return openDialogueWithAnyNpc();
     }
 
     return openDialogueWithNpc(nearestFormID);
 }
 
+bool Renderer::openDialogueWithAnyNpc() {
+    if (!dialogueManager || !npcManager) {
+        LOGW("openDialogueWithAnyNpc: dialogue or NPC system not available");
+        return false;
+    }
+
+    // Prefer an NPC that is actually spawned in the world so the UI has a
+    // matching actor; fall back to any dialogue tree if none match.
+    for (const auto& npc : npcManager->getAllNPCs()) {
+        if (!npc || npc->formID == 0) continue;
+        if (dialogueManager->getDialogue(npc->formID)) {
+            LOGI("openDialogueWithAnyNpc: using spawned NPC 0x%08X '%s'",
+                 npc->formID, npc->name.c_str());
+            return openDialogueWithNpc(npc->formID);
+        }
+    }
+
+    const uint32_t firstFormID = dialogueManager->getFirstDialogueFormID();
+    if (firstFormID == 0) {
+        LOGW("openDialogueWithAnyNpc: no dialogue trees available");
+        return false;
+    }
+    LOGI("openDialogueWithAnyNpc: no spawned NPC has dialogue, using 0x%08X",
+         firstFormID);
+    return openDialogueWithNpc(firstFormID);
+}
+
 bool Renderer::isDialogueOpen() const {
-    return dialogueUI && dialogueUI->isVisible();
+    return dialogueUI && dialogueUI->isVisible() && dialogueUI->hasDialogue();
+}
+
+std::string Renderer::runVoiceTest() {
+    if (!voiceSoundDatabase) {
+        LOGW("runVoiceTest: VoiceSoundDatabase not initialized");
+        return "Voice test: VoiceSoundDatabase not initialized";
+    }
+    if (!dialogueManager || !dialogueUI) {
+        LOGW("runVoiceTest: dialogue system not available (manager=%d ui=%d)",
+             dialogueManager ? 1 : 0, dialogueUI ? 1 : 0);
+        return "Voice test: dialogue system not available";
+    }
+
+    if (!isDialogueOpen() && !openDialogueWithAnyNpc()) {
+        LOGW("runVoiceTest: could not open a dialogue");
+        return "Voice test: could not open a dialogue";
+    }
+
+    auto dlg = dialogueManager->getCurrentDialogue();
+    if (!dlg) {
+        LOGW("runVoiceTest: no current dialogue");
+        return "Voice test: no current dialogue";
+    }
+    if (dlg->topics.empty()) {
+        LOGW("runVoiceTest: dialogue 0x%08X '%s' has no topics",
+             dlg->npcId, dlg->npcName.c_str());
+        return "Voice test: dialogue has no topics";
+    }
+
+    size_t resolvable = 0;
+    for (size_t i = 0; i < dlg->topics.size(); ++i) {
+        const auto& topic = dlg->topics[i];
+        const std::string path =
+            voiceSoundDatabase->resolveVoicePath(topic.infoFormID, topic.soundResponseNumber);
+        if (path.empty()) {
+            continue;
+        }
+        ++resolvable;
+        if (resolvable > 1) {
+            continue;  // count the rest, only play the first hit
+        }
+        // Selecting the topic runs the same callback the touch path uses, so
+        // this exercises resolution plus playVoice end to end.
+        dialogueUI->selectTopic(static_cast<int>(i));
+        char buf[320];
+        snprintf(buf, sizeof(buf),
+                 "Voice test: '%s' (NPC 0x%08X '%s', topic %zu/%zu, formID 0x%08X, resp %u)",
+                 path.c_str(), dlg->npcId, dlg->npcName.c_str(), i,
+                 dlg->topics.size(), topic.infoFormID, topic.soundResponseNumber);
+        LOGI("%s", buf);
+        return std::string(buf);
+    }
+
+    LOGW("runVoiceTest: %zu topics in dialogue 0x%08X '%s', none resolved a voice line",
+         dlg->topics.size(), dlg->npcId, dlg->npcName.c_str());
+    return "Voice test: no topic has a resolvable voice line (" +
+           std::to_string(dlg->topics.size()) + " topics)";
 }
 
 void Renderer::closeDialogue() {
     if (dialogueUI) {
         dialogueUI->closeDialogue();
+    }
+    if (dialogueManager) {
+        dialogueManager->endCurrentDialogue();
     }
 }
 
@@ -6552,6 +6689,21 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
     // GameConsole handles touch when visible
     if (gameConsole && gameConsole->isVisible()) {
         gameConsole->onTouchEvent(x, y, action);
+        return;
+    }
+
+    // Dialogue is modal while open. The panel is not part of UISystem, so its
+    // touches have to be routed here or topic rows and the close button would be
+    // unreachable.
+    if (dialogueUI && dialogueUI->isVisible() && dialogueUI->hasDialogue()) {
+        if (action == 0 || action == 5) { // DOWN
+            dialogueUI->onTouchDown(x, y, pointerId);
+            // The panel's own close button ends the conversation on the UI side;
+            // keep the manager's active dialogue in sync with it.
+            if (!dialogueUI->hasDialogue() && dialogueManager) {
+                dialogueManager->endCurrentDialogue();
+            }
+        }
         return;
     }
 

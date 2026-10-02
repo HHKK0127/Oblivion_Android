@@ -27,6 +27,15 @@ public:
     void openDialogue(std::shared_ptr<Dialogue> dialogue);
     void closeDialogue();
 
+    // Programmatic topic selection (mirrors the touch path so console-driven
+    // verification exercises the same voice playback callback).
+    void selectTopic(int index);
+
+    // True only while a conversation is actually loaded. Visibility alone is not
+    // enough: the panel is hidden until openDialogue() and must not be treated as
+    // an open conversation before that.
+    bool hasDialogue() const { return currentDialogue != nullptr; }
+
     void update(float deltaTime) override;
     bool onTouchDown(float x, float y, int pointerId) override;
     void render() override;

@@ -165,6 +165,20 @@ public:
      */
     void stopAllSE();
 
+        // ========== Voice Management ==========
+
+        /**
+         * @brief Play a dialogue voice line by BSA-internal path.
+         *
+         * Extracts the clip to cache (if needed), loads it, then plays through the
+         * same SE pipeline so the Java SoundPool bridge also works. A currently
+         * playing voice is stopped first to avoid overlapping lines.
+         * @param bsaPath BSA-internal voice path (e.g. sound/voice/...)
+         * @param volume Playback volume (0.0 - 1.0)
+         * @return Source ID (0 on failure); logs a warning when the file is missing
+         */
+        uint32_t playVoice(const std::string& bsaPath, float volume = 1.0f);
+
     // ========== 3D Audio ==========
 
     /**
@@ -320,6 +334,9 @@ public:
     float bgmFadeTarget;
     float bgmFadeRate;
     bool bgmFading;
+
+        // Voice state
+        uint32_t currentVoiceSourceId = 0;  // Active dialogue voice source (0 = none)
 
     // Volume levels
     float masterVolume;

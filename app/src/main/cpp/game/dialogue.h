@@ -19,6 +19,7 @@ struct DialogueTopic {
 
     // ESM linkage (for localization lookup)
     uint32_t infoFormID = 0;       // Originating INFO formID
+        uint8_t soundResponseNumber = 0;  // 1-based response ordinal (TRDT[12])
 
     // Faction branching (ESM integration)
     uint32_t factionFormID = 0;    // Required faction to see this topic (0 = no requirement)
@@ -107,6 +108,13 @@ public:
     // Get current active dialogue
     std::shared_ptr<Dialogue> getCurrentDialogue() const { return currentDialogue; }
 
+    // Adopt an already-created dialogue as the active conversation. The UI owns
+    // the panel, so it hands the same object over instead of the manager
+    // re-creating it (startDialogue would rebuild and lose the UI state).
+    void setCurrentDialogue(const std::shared_ptr<Dialogue>& dialogue) {
+        currentDialogue = dialogue;
+    }
+
     // Select dialogue topic
     void selectTopic(int topicIndex);
 
@@ -115,6 +123,10 @@ public:
 
     // Statistics
     size_t getDialogueCount() const { return dialogues.size(); }
+
+    // Returns the FormID of one loaded dialogue tree (0 when none exist).
+    // Used to open a dialogue when no matching spawned NPC can be found.
+    uint32_t getFirstDialogueFormID() const;
 
     // Cleanup
     void clearDialogues();
