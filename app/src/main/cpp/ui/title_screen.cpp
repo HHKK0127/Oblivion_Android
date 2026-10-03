@@ -869,6 +869,11 @@ void TitleScreen::renderVignette() {
 }
 
 void TitleScreen::renderOblivionLogo(float alpha, bool large) {
+    // The IV logo clip animates its own lockup down to the final size; drawing the native
+    // logo on top of it would show two logos at once. Stay hidden until the clip ends and
+    // the video switches to the plain looping background.
+    if (videoLogoPhase) return;
+
     // Prefer the extracted original Oblivion logo texture (tes_oblivion_logo_final.png);
     // fall back to text rendering if the texture is unavailable.
     float minDim = static_cast<float>(std::min(screenWidth, screenHeight));

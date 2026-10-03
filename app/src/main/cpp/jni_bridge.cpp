@@ -382,6 +382,16 @@ Java_com_example_oblivion_GameRenderer_nativeSetTitleVideoTexture(
 }
 
 extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeSetTitleVideoLogoPhase(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jboolean active) {
+    if (g_renderer && g_renderer->getTitleScreen()) {
+        g_renderer->getTitleScreen()->setVideoLogoPhase(active == JNI_TRUE);
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL
 Java_com_example_oblivion_GameRenderer_nativeUpdateTitleVideoTexture(
         [[maybe_unused]] JNIEnv* env,
         [[maybe_unused]] jobject obj) {

@@ -79,6 +79,9 @@ class GameRenderer : GLSurfaceView.Renderer {
         external fun nativeSetTitleVideoTexture(textureId: Int)
 
         @JvmStatic
+        external fun nativeSetTitleVideoLogoPhase(active: Boolean)
+
+        @JvmStatic
         external fun nativeUpdateTitleVideoTexture()
 
         @JvmStatic
@@ -194,6 +197,9 @@ class GameRenderer : GLSurfaceView.Renderer {
     private var binkVideoInitialized = false
     private var binkVideoInitFailed = false
 
+    // How long the minimized IV logo frame is held before the looping background starts.
+    private val IV_LOGO_HOLD_MS = 1200L
+
     // Title screen video background
     private fun initTitleVideo(context: android.content.Context) {
         Log.i(TAG, "initTitleVideo called")
@@ -242,13 +248,27 @@ class GameRenderer : GLSurfaceView.Renderer {
                     isLooping = ivLogoFile == null
                     if (ivLogoFile != null) {
                         setOnCompletionListener {
-                            Log.i(TAG, "Title IV logo completed, switching to background: $backgroundName")
-                            switchToBackgroundVideo(titleVideoPlayer, backgroundFile)
+                            Log.i(TAG, "Title IV logo completed, holding minimized frame for ${IV_LOGO_HOLD_MS}ms")
+                            // The clip shrinks its lockup right up to the last frame, so the
+                            // final frame is the minimized logo. Hold it on screen for a beat
+                            // before the looping background takes over, then hand the logo
+                            // back to the native renderer at the same lockup position.
+                            Handler(Looper.getMainLooper()).postDelayed({
+                                Log.i(TAG, "Title IV logo hold done, switching to background: $backgroundName")
+                                switchToBackgroundVideo(titleVideoPlayer, backgroundFile)
+                                nativeSetTitleVideoLogoPhase(false)
+                            }, IV_LOGO_HOLD_MS)
                         }
                     }
                     setVolume(0f, 0f) // Muted - game has its own music
                     prepare()
                     start()
+                }
+
+                // While the IV logo clip plays, its own animated lockup is on screen, so the
+                // native logo must stay hidden or the two would overlap.
+                if (ivLogoFile != null) {
+                    nativeSetTitleVideoLogoPhase(true)
                 }
 
                 val startedFile = if (ivLogoFile != null) "oblivion_iv_logo.mp4 -> $backgroundName" else backgroundName
