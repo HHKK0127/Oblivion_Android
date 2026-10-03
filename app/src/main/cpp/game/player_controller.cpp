@@ -107,6 +107,15 @@ void PlayerController::update(float deltaTime) {
 
     // Update player internal state
     player->update(deltaTime);
+
+    // P23: keep WorldManager's player position in sync every frame. The world
+    // state is the single source of truth for cell loading, camera and audio,
+    // so it must track the player continuously rather than only on cell
+    // transitions. setPlayerPosition() also updates the current cell.
+    if (worldManager) {
+        worldManager->setPlayerPosition(player->position);
+        worldManager->setPlayerRotation(player->rotation);
+    }
 }
 
 void PlayerController::cleanup() {
@@ -272,8 +281,9 @@ void PlayerController::checkCellTransition() {
         player->currentCellX = newCellX;
         player->currentCellY = newCellY;
 
-        // WorldManager will handle cell loading
-        worldManager->setPlayerPosition(player->position);
+        // P23: WorldManager's position is synced every frame in update(), so
+        // the cell transition itself is handled there via setPlayerPosition().
+        // This method only tracks the player's own cell coordinate.
     }
 }
 
