@@ -144,6 +144,10 @@ private:
     GLuint videoBackgroundTexture = 0;
     bool videoBackgroundActive = false;
     bool videoReadyOverride = false;
+    // True while the title video is still playing the Oblivion IV logo clip. That clip
+    // animates its own lockup, so the native logo must stay hidden until the video hands
+    // over to the plain looping background.
+    bool videoLogoPhase = false;
 
     static constexpr float INTRO_DURATION = 4.0f;
     static constexpr float LOGO_FADE_DURATION = 2.0f;
@@ -336,6 +340,13 @@ public:
         LOGI("Video background texture set: %u, active: %d", tex, videoBackgroundActive);
     }
     void updateVideoBackground() { /* Frame update handled by SurfaceTexture */ }
+
+    // Toggle the IV logo phase. While active the video frame already carries the animated
+    // lockup, so renderOblivionLogo() stays out of the way and the logo is not doubled.
+    void setVideoLogoPhase(bool active) {
+        videoLogoPhase = active;
+        LOGI("Video logo phase: %d", active);
+    }
 
     bool isGameStarted() const { return gameStarted; }
     bool isSettingsRequested() const { return settingsRequested; }
