@@ -71,6 +71,7 @@ private:
 
     GLuint bgTexture = 0;
     GLuint logoTexture = 0;
+    GLuint logoBinkTexture = 0;
     GLuint vignetteTexture = 0;
     GLuint selectBarTexture = 0;
     GLuint selectCutTexture = 0;
@@ -88,6 +89,9 @@ private:
     float glowPhase = 0.0f;
     float logoFadeAlpha = 0.0f;
     float introLogoAlpha = 0.0f;
+    // Strength of the bink lockup layer stacked over the static logo. The original fades it
+    // out to hand the intro BINK over to the final logo (see LOGO_BINK_* below).
+    float logoBinkAlpha = 0.0f;
     float lastTouchX = 0.0f;
     float lastTouchY = 0.0f;
 
@@ -286,6 +290,17 @@ private:
     static constexpr float LOGO_HEIGHT_RATIO  = 0.161f;
     static constexpr float LOGO_TOP_RATIO     = 0.275f;
 
+    // The original stacks a second copy of the lockup on the same depth as the final logo:
+    // tes_oblivion_logo_bink.dds is drawn 760x169 at the final logo's -5,-5 (which is 748x159
+    // in menus/options/main_menu.xml), and it is the layer that fades out to hand the intro
+    // BINK over to the static logo. The scales and offsets below are those XML figures
+    // expressed against the final logo's own box.
+    static constexpr float LOGO_BINK_WIDTH_SCALE   = 760.0f / 748.0f;
+    static constexpr float LOGO_BINK_HEIGHT_SCALE  = 169.0f / 159.0f;
+    static constexpr float LOGO_BINK_OFFSET_X      = 5.0f / 748.0f;
+    static constexpr float LOGO_BINK_OFFSET_Y      = 5.0f / 159.0f;
+    static constexpr float LOGO_BINK_FADE_DURATION = 1.2f;
+
     // The lockup's "Special Edition" line was removed at the user's request, so the logo box
     // (which ends at LOGO_TOP_RATIO + LOGO_HEIGHT_RATIO = 0.436 of the frame) runs straight into
     // the item row. The prompt hangs from this ratio instead of being measured down from the
@@ -344,6 +359,11 @@ public:
     // Toggle the IV logo phase. While active the video frame already carries the animated
     // lockup, so renderOblivionLogo() stays out of the way and the logo is not doubled.
     void setVideoLogoPhase(bool active) {
+        // The clip's last frame is the bink lockup, so when the video hands over, start that
+        // layer at full strength and let it fade down onto the static logo underneath.
+        if (videoLogoPhase && !active) {
+            logoBinkAlpha = 1.0f;
+        }
         videoLogoPhase = active;
         LOGI("Video logo phase: %d", active);
     }

@@ -81,6 +81,7 @@ TitleScreen::TitleScreen()
 TitleScreen::~TitleScreen() {
     TextureLoader::deleteTexture(bgTexture);
     TextureLoader::deleteTexture(logoTexture);
+    TextureLoader::deleteTexture(logoBinkTexture);
     TextureLoader::deleteTexture(vignetteTexture);
     TextureLoader::deleteTexture(selectBarTexture);
     TextureLoader::deleteTexture(selectCutTexture);
@@ -119,6 +120,7 @@ void TitleScreen::initialize(LocalizationManager* lm, TextRenderer* tr) {
     bgAnimTime = 0.0f;
     logoFadeAlpha = 0.0f;
     introLogoAlpha = 0.0f;
+    logoBinkAlpha = 0.0f;
     glowPhase = 0.0f;
     state = TitleScreenState::INTRO_MOVIE;
     selectedIndex = 0;
@@ -130,13 +132,14 @@ void TitleScreen::initialize(LocalizationManager* lm, TextRenderer* tr) {
     if (!texturesLoaded) {
         bgTexture = TextureLoader::loadTextureFromAsset("textures/ui/loading_background.png");
         logoTexture = TextureLoader::loadTextureFromAsset("textures/ui/tes_oblivion_logo_final.png");
+        logoBinkTexture = TextureLoader::loadTextureFromAsset("textures/ui/tes_oblivion_logo_bink.png");
         vignetteTexture = TextureLoader::loadTextureFromAsset("textures/ui/load_in_game_default.png");
         selectBarTexture = TextureLoader::loadTextureFromAsset("textures/ui/dialog_selection_full.png");
         selectCutTexture = TextureLoader::loadTextureFromAsset("textures/ui/dialog_selection_cut.png");
 
         texturesLoaded = true;
-        LOGI("TitleScreen textures: bg=%u logo=%u vignette=%u selectBar=%u selectCut=%u",
-             bgTexture, logoTexture, vignetteTexture, selectBarTexture, selectCutTexture);
+        LOGI("TitleScreen textures: bg=%u logo=%u logoBink=%u vignette=%u selectBar=%u selectCut=%u",
+             bgTexture, logoTexture, logoBinkTexture, vignetteTexture, selectBarTexture, selectCutTexture);
     }
 
     // Register intro video clip if BinkVideoPlayer is available
@@ -361,6 +364,12 @@ void TitleScreen::update(float deltaTime) {
     bgAnimTime += deltaTime;
     glowPhase += deltaTime * 2.0f;
     movieFrameTime += deltaTime;
+
+    // Fade the bink lockup layer down onto the static logo after the intro clip hands over.
+    if (logoBinkAlpha > 0.0f) {
+        logoBinkAlpha -= deltaTime / LOGO_BINK_FADE_DURATION;
+        if (logoBinkAlpha < 0.0f) logoBinkAlpha = 0.0f;
+    }
 
         // Start title theme BGM once the title screen is active
         if (!bgmStarted && audioManager && audioManager->hasSoundDefinitions()) {
@@ -899,6 +908,20 @@ void TitleScreen::renderOblivionLogo(float alpha, bool large) {
             logoX, logoY, logoW, logoH,
             logoTexture, glm::vec4(1.0f, 1.0f, 1.0f, alpha),
             screenWidth, screenHeight);
+
+        // Original main_menu.xml stacks tes_oblivion_logo_bink.dds on the same depth as the
+        // final logo, 760x169 at the final logo's -5,-5, and fades it out to hand the intro
+        // BINK over to the static lockup. Reproduce that hand-over here.
+        if (logoBinkTexture != 0 && logoBinkAlpha > 0.0f) {
+            float binkW = logoW * LOGO_BINK_WIDTH_SCALE;
+            float binkH = logoH * LOGO_BINK_HEIGHT_SCALE;
+            float binkX = logoX - logoW * LOGO_BINK_OFFSET_X;
+            float binkY = logoY - logoH * LOGO_BINK_OFFSET_Y;
+            UIDrawHelper::drawTexturedQuad(
+                binkX, binkY, binkW, binkH,
+                logoBinkTexture, glm::vec4(1.0f, 1.0f, 1.0f, alpha * logoBinkAlpha),
+                screenWidth, screenHeight);
+        }
     } else if (textRenderer) {
         // Text fallback for "The Elder Scrolls IV: OBLIVION"
         float titleScale = (large ? 1.15f : 0.85f) * scale;
