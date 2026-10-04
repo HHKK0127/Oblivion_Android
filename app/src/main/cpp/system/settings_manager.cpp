@@ -4,7 +4,7 @@
 #include <cstdlib>
 
 SettingsManager::SettingsManager()
-    : debugModeEnabled(true), currentLanguage("ja") {
+    : debugModeEnabled(true), currentLanguage("ja"), fpsCap(60) {
     LOGD("SettingsManager created");
 }
 
@@ -43,6 +43,16 @@ void SettingsManager::setLanguage(const std::string& lang) {
     }
 }
 
+void SettingsManager::setFpsCap(int fps) {
+    if (fps < 15 || fps > 120) {
+        LOGW("Invalid FPS cap: %d (expected 15-120)", fps);
+        return;
+    }
+    fpsCap = fps;
+    LOGD("FPS cap set to: %d", fps);
+    saveSettings();
+}
+
 void SettingsManager::saveSettings() {
     std::string filePath = getSettingsFilePath();
 
@@ -55,6 +65,7 @@ void SettingsManager::saveSettings() {
     // Save settings in simple text format
     file << "DEBUG_MODE=" << (debugModeEnabled ? "1" : "0") << "\n";
     file << "LANGUAGE=" << currentLanguage << "\n";
+    file << "FPS_CAP=" << fpsCap << "\n";
 
     file.close();
     LOGD("Settings saved to: %s", filePath.c_str());
@@ -89,6 +100,15 @@ void SettingsManager::loadSettings() {
             if (value == "ja" || value == "en") {
                 currentLanguage = value;
             }
+        } else if (key == "FPS_CAP") {
+            try {
+                int fps = std::stoi(value);
+                if (fps >= 15 && fps <= 120) {
+                    fpsCap = fps;
+                }
+            } catch (...) {
+                LOGW("Invalid FPS_CAP value: %s", value.c_str());
+            }
         }
     }
 
@@ -99,6 +119,7 @@ void SettingsManager::loadSettings() {
 void SettingsManager::resetToDefaults() {
     debugModeEnabled = true;  // Debug mode is ON by default
     currentLanguage = "ja";   // Language defaults to Japanese
+    fpsCap = 60;              // 60 fps is the default frame rate cap
     LOGD("Settings reset to defaults");
 }
 

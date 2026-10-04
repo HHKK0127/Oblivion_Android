@@ -151,6 +151,10 @@ public:
         std::function<void()> quickLoad;
         std::function<std::string()> listSaveSlots;
 
+        // Display / frame pacing
+        std::function<void(int)> setTargetFPS;
+        std::function<int()> getTargetFPS;
+
         // UI
         std::function<void(const std::string&)> openMenu;
         std::function<void()> closeMenu;
@@ -353,6 +357,7 @@ private:
     void cmdSetMana(const std::vector<std::string>& args);
     void cmdNoclip(const std::vector<std::string>& args);
     void cmdFPS(const std::vector<std::string>& args);
+    void cmdSetFpsCap(const std::vector<std::string>& args);
     void cmdTime(const std::vector<std::string>& args);
     void cmdPos(const std::vector<std::string>& args);
     void cmdStats(const std::vector<std::string>& args);

@@ -44,6 +44,16 @@ public:
     std::string getLanguage() const { return currentLanguage; }
 
     /**
+     * @brief Set the frame rate cap (15-120). Persisted with the other settings.
+     */
+    void setFpsCap(int fps);
+
+    /**
+     * @brief Get the frame rate cap
+     */
+    int getFpsCap() const { return fpsCap; }
+
+    /**
      * @brief Save settings
      */
     void saveSettings();
@@ -66,6 +76,7 @@ public:
 private:
     bool debugModeEnabled;
     std::string currentLanguage;
+    int fpsCap;
 
     // File path
     std::string getSettingsFilePath() const;

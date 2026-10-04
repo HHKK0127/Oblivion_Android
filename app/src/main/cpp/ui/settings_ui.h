@@ -18,6 +18,7 @@ public:
     enum class SettingItem {
         DEBUG_MODE,
         LANGUAGE,
+        FPS_CAP,
         PIXELATION,
         SCANLINES,
         COLOR_REDUCTION,

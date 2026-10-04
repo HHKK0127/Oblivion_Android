@@ -33,6 +33,9 @@ bool SettingsUI::initialize(TextRenderer* textRend, SettingsManager* settings, R
     // Set menu items
     menuItems.push_back(SettingItem::DEBUG_MODE);
     menuItems.push_back(SettingItem::LANGUAGE);
+    if (renderer) {
+        menuItems.push_back(SettingItem::FPS_CAP);
+    }
 
     // Add RetroFilter options (Phase 6+)
     if (renderer) {
@@ -141,6 +144,9 @@ void SettingsUI::updateButtonLabels() {
         } else if (item == SettingItem::LANGUAGE) {
             std::string lang = settingsManager->getLanguage();
             displayText = label + ": " + (lang == "ja" ? "Japanese" : "English");
+        } else if (item == SettingItem::FPS_CAP) {
+            int cap = renderer ? renderer->getTargetFPS() : 60;
+            displayText = label + ": " + std::to_string(cap) + " fps";
         } else if (renderer) {
             auto* retroSettings = renderer->getRetroSettings();
             if (item == SettingItem::PIXELATION) {
@@ -249,6 +255,8 @@ std::string SettingsUI::getSettingLabel(SettingItem item) const {
             return "Debug Mode";
         case SettingItem::LANGUAGE:
             return "Language";
+        case SettingItem::FPS_CAP:
+            return "Frame Rate";
         case SettingItem::PIXELATION:
             return "[Opt] Pixelation";
         case SettingItem::SCANLINES:
@@ -288,6 +296,25 @@ void SettingsUI::selectItem(SettingItem item) {
             }
             updateButtonLabels();
             LOGD("Language changed to: %s", newLang.c_str());
+            break;
+        }
+        // Display options (Phase 66+)
+        case SettingItem::FPS_CAP: {
+            if (renderer) {
+                // Cycle through the supported caps: 60 -> 90 -> 120 -> 30 -> 60
+                int current = renderer->getTargetFPS();
+                int next = 60;
+                if (current == 60) next = 90;
+                else if (current == 90) next = 120;
+                else if (current == 120) next = 30;
+                else next = 60;
+
+                renderer->setTargetFPS(next);
+                if (settingsManager) {
+                    settingsManager->setFpsCap(next);
+                }
+                LOGD("Frame rate cap changed to: %d fps", next);
+            }
             break;
         }
         // RetroFilter options (Phase 6+)

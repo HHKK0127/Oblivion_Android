@@ -523,6 +523,10 @@ bool Renderer::initGameSystems() {
         LOGI("LocalizationManager language synced from settings: %s", lang.c_str());
     }
 
+    // Apply the persisted frame rate cap (defaults to 60 fps).
+    setTargetFPS(settingsManager->getFpsCap());
+    LOGI("Frame rate cap applied from settings: %d fps", getTargetFPS());
+
     // Initialize Text Renderer (for debug HUD and settings UI)
     LOGI("Creating TextRenderer...");
     textRenderer = std::make_unique<TextRenderer>();
@@ -1697,6 +1701,17 @@ bool Renderer::initGameSystems() {
     };
     refs.getTitlePlainStyle = [this]() -> bool {
         return titleScreen ? titleScreen->isPlainStyleDisabled() : false;
+    };
+
+    // Display / frame pacing
+    refs.setTargetFPS = [this](int fps) {
+        setTargetFPS(fps);
+        if (settingsManager) {
+            settingsManager->setFpsCap(fps);
+        }
+    };
+    refs.getTargetFPS = [this]() -> int {
+        return getTargetFPS();
     };
 
     // Phase 65: Extended Debug callbacks

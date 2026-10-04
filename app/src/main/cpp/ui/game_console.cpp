@@ -200,6 +200,7 @@ void GameConsole::registerBuiltinCommands() {
     registerCommand("setmana", "Set player mana: setmana <value>", [this](const std::vector<std::string>& args) { cmdSetMana(args); });
     registerCommand("noclip", "Toggle noclip mode", [this](const std::vector<std::string>& args) { cmdNoclip(args); });
     registerCommand("fps", "Toggle FPS display", [this](const std::vector<std::string>& args) { cmdFPS(args); });
+    registerCommand("setfpscap", "Set frame rate cap: setfpscap <15-120>", [this](const std::vector<std::string>& args) { cmdSetFpsCap(args); });
     registerCommand("time", "Show current game time", [this](const std::vector<std::string>& args) { cmdTime(args); });
     registerCommand("pos", "Show current position", [this](const std::vector<std::string>& args) { cmdPos(args); });
     registerCommand("stats", "Show player stats", [this](const std::vector<std::string>& args) { cmdStats(args); });
@@ -1304,6 +1305,38 @@ void GameConsole::cmdNoclip(const std::vector<std::string>& args) {
 
 void GameConsole::cmdFPS(const std::vector<std::string>& args) {
     appendOutput("FPS display toggled (handled by renderer)");
+}
+
+void GameConsole::cmdSetFpsCap(const std::vector<std::string>& args) {
+    if (args.size() < 2) {
+        if (gameRefs.getTargetFPS) {
+            appendOutput("Current FPS cap: " + std::to_string(gameRefs.getTargetFPS()));
+        }
+        appendOutput("Usage: setfpscap <15-120>");
+        return;
+    }
+
+    int fps = 0;
+    try {
+        fps = std::stoi(args[1]);
+    } catch (...) {
+        appendOutput("Invalid FPS value: " + args[1]);
+        return;
+    }
+
+    if (fps < 15 || fps > 120) {
+        appendOutput("FPS cap out of range (15-120): " + std::to_string(fps));
+        return;
+    }
+
+    if (!gameRefs.setTargetFPS) {
+        appendOutput("FPS cap not available");
+        return;
+    }
+
+    gameRefs.setTargetFPS(fps);
+    appendOutput("FPS cap set to " + std::to_string(fps));
+    LOGI_CONSOLE("FPS cap set to %d", fps);
 }
 
 void GameConsole::cmdTime(const std::vector<std::string>& args) {
