@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "10/02/2026 14:24:40",
+  "lastUpdated": "2026-10-04T10:41:03Z",
   "entries": [
     {
       "timestamp": "2026-09-16T14:58:00Z",
@@ -5063,11 +5063,185 @@
         "phase65"
       ],
       "compressed": false
+    },
+    {
+      "id": "77b05e28-44ef-44db-b2bd-0635dd088a5c",
+      "timestamp": "2026-10-04T08:58:42.43383Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "BSA103(Textures BSA)フォーマット完全解明。レイアウト: ヘッダ36B@0 → フォルダレコード16B×1090@36 → フォルダ名ブロック@17476〜330784(名前と16Bファイルレコードのインターリーブ) → ファイル名ブロック@348260〜686659(NUL連結, 18040名) → データ@686659〜106371381。フォルダレコード16B = u64 hash + u32 fileCount + u32(エントリ位置+355875の一定加算)。ファイルレコード16B = u64 hash + u32 圧縮サイズ + u32 データ絶対オフセット。データ = u32展開後サイズ + zlib。DDS展開検証成功(64x64 DXT3)。",
+      "tags": [
+        "bsa103",
+        "reverse-engineering",
+        "oblivion",
+        "format"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "47b8622a-b13a-482f-8b3f-aa4a93d3fcc3",
+      "timestamp": "2026-10-04T08:58:42.43383Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "BSA抽出パイプライン確立。tmp/bsa_folder_map.json = 全1090フォルダのname/fileCount/fileNames/fileRecords(hash,size,offset) 完全マップ。tmp/dds_decode.py = DXT1/3/5+BGRA32デコーダ(NetImmerse 128Bヘッダ対応, decode_bytes()追加済)。menus80/icons系全1060枚をPNG化しscreenshots/bsa_menus80_{armor,clothes,weapons,magic,clutter,quest,small,stats}_sheet.png にコンタクトシート保存。個別PNGはtmp/extracted/。",
+      "tags": [
+        "bsa103",
+        "extraction",
+        "textures",
+        "oblivion"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "3042fec1-6796-4e4d-bab1-d2b436ac7703",
+      "timestamp": "2026-10-04T08:58:42.43383Z",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "BSA103フォルダ名ブロックのパース規則: エントリ = len(1B, NUL込みバイト長) + 名前(len-1バイト, NUL終端) + ファイルレコード(16B×c1)。名前は len-1 バイトをスライスすること(lenを含めると末尾NUL混入)。フォルダ名は 'textures\\menus80\\icons\\armor\\daedricbracers' 形式で末尾NUL、性別サブフォルダ(\\m,\\f)や番号サブフォルダあり。",
+      "tags": [
+        "bsa103",
+        "parse",
+        "format"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "eeb83d18-e84e-46ee-b237-62b96ff5bfe2",
+      "timestamp": "2026-10-04T08:58:42.43383Z",
+      "category": "decision",
+      "priority": "medium",
+      "content": "Oblivion Steam版データの次解析ターゲット: 優先1 = Oblivion - Meshes.bsa(NIF 3D本物化)、優先2 = Oblivion.esm+各DLC.esp(アイテム/クエスト/会話データ)。その次 = Oblivion.ini、Sounds.bsa/Voices1/2.bsa、ゲーム本体menus/XML。Android側プレースホルダー突合にはmenus80抽出済みPNGを直接使用可能。",
+      "tags": [
+        "oblivion",
+        "plan",
+        "next-steps"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "b98dc667-4733-4a5e-b000-a7b49b455272",
+      "timestamp": "2026-10-04T08:58:42.43383Z",
+      "category": "constraint",
+      "priority": "low",
+      "content": "BSA103のフォルダレコード/ファイルレコードのハッシュ関数は未特定のまま(murmur2_64(seed=0)/FNV1a64の8種パス変種で不一致)。ファイル名のみでの変種も未試行。ただし抽出はoffset直読みのためハッシュ特定は非ブロッキング。",
+      "tags": [
+        "bsa103",
+        "hash",
+        "open-question"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "0b891d63-253a-44a0-8972-c9550d564a5b",
+      "timestamp": "2026-10-04T18:35:21.947494+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "Oblivionフォント情報の確定: オリジナル版(Steam)のフォントはOblivion_default.iniの[Fonts]セクションで定義。SFontFile_1=Kingthings_Regular.fnt, _2=Kingthings_Shadowed.fnt, _3=Tahoma_Bold_Small.fnt, _4=Daedric_Font.fnt, _5=Handwritten.fnt。実体はData/Oblivion - Misc.bsaのfonts\\フォルダ(10ファイル: 5x .fnt + 5x .tex)",
+      "tags": [
+        "font",
+        "oblivion",
+        "reverse-engineering",
+        "steam"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "444288ee-a25d-438f-8771-3dab5879508b",
+      "timestamp": "2026-10-04T18:35:21.947494+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "Oblivion .texアトラス形式を解明: ヘッダ8バイト(00 02 00 00 00 02 00 00、tahoma_bold_smallのみ00 01 00 00 00 01 00 00) + RGBA生ピクセルデータ。DDSではない。512x512 RGBA=1048584B、256x256 RGBA=262152B。.fntのUV座標最大値からテクスチャサイズを逆算可能(512/256)",
+      "tags": [
+        "font",
+        "tex-format",
+        "reverse-engineering",
+        "atlas"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "08d413fb-37b3-4857-8881-a9dd5b34781f",
+      "timestamp": "2026-10-04T18:35:21.947494+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "Android版フォントはオリジナル版と完全一致(ピクセル単位で同一、max diff=0)。.fnt 5ファイルと.texデコード結果はAndroid版assets/fonts/のPNGと同一。フォントの本物化は完了済みで追加の差し替えは不要。Android版の.fntパーサー(オフセット344, 56B x 255レコード, 14 float)がオリジナル版にそのまま適用可能と実証",
+      "tags": [
+        "font",
+        "android",
+        "verification",
+        "complete"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "26edbd5a-474c-4ab6-83aa-c26f3481d405",
+      "timestamp": "2026-10-04T18:35:21.947494+09:00",
+      "category": "reference",
+      "priority": "medium",
+      "content": "フォント解析の成果物: tmp/oblivion_fonts/にMisc.bsaから抽出した10ファイル(5x .fnt + 5x .tex)とデコードPNG(_decoded.png)を保存。Android版フォント実装はapp/src/main/cpp/ui/text_renderer.cppのTextRendererクラス(FontType enum: Roboto/Daedric/KingthingsRegular/KingthingsShadowed/Handwritten/TahomaBoldSmall)",
+      "tags": [
+        "font",
+        "files",
+        "reference"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "icon-impl-001",
+      "timestamp": "2026-10-04T10:41:03Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "インベントリUIアイコン本物化を実装完了。iconId規約: 0=なし、1始まりの連番(UI icon atlas参照)。定数はItemFactoryにICON_ID_*として定義(IRON_SWORD=1, IRON_CUIRASS=2, HEALTH_POTION=3, MANA_POTION=4, IRON_ORE=5, LEATHER=6, SCROLL_SHIELD=7)。既存のiconId使用箇所(map_system, alchemy_system, clothing_converter, misc_item_converter)は全て0(未使用)だったため衝突なし",
+      "tags": [
+        "inventory",
+        "icon",
+        "implementation",
+        "decision"
+      ]
+    },
+    {
+      "id": "icon-impl-002",
+      "timestamp": "2026-10-04T10:41:03Z",
+      "category": "configuration",
+      "priority": "high",
+      "content": "本物アイコン7枚をassets/textures/ui/icons/に配置(icon_iron_sword.png, icon_iron_cuirass.png, icon_health_potion.png, icon_mana_potion.png, icon_iron_ore.png, icon_leather.png, icon_scroll_shield.png)。元ファイルはtmp/extracted/のicons_*_*.png(928個の本物アイコン抽出物)。APKにassets/textures/ui/icons/としてパッケージングされることをjar tfで確認済み",
+      "tags": [
+        "inventory",
+        "icon",
+        "assets",
+        "configuration"
+      ]
+    },
+    {
+      "id": "icon-impl-003",
+      "timestamp": "2026-10-04T10:41:03Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "UIInventoryPanel::getIconTexture(iconId)がテクスチャをキャッシュ(iconTextures: unordered_map<iconId, GLuint>)。iconIdToAssetPath()でiconId→assetsパスを解決。renderInventoryGrid()はテクスチャがあればdrawTexturedQuad、無ければ従来のカテゴリ色矩形を描画(フォールバック)。TextureLoader::loadTextureFromAsset()はAAssetManager経由でassetsからPNGをGLテクスチャ化",
+      "tags": [
+        "inventory",
+        "icon",
+        "implementation",
+        "reference"
+      ]
+    },
+    {
+      "id": "icon-impl-004",
+      "timestamp": "2026-10-04T10:41:03Z",
+      "category": "decision",
+      "priority": "medium",
+      "content": "ESMのICONフィールドはワールド内アイコン(Clutter\\...dds)を指し、インベントリUIアイコン(menus\\icons\\...)とは別系統。Iron Ore/Leather(素材)はESMに存在しないAndroid版独自アイテム。Scroll系はBOOKレコードのClutter\\IconScroll1.dds/IconScroll2.dds。Iron Ore→iconmadstone, Leather→iconbearpelt, Scroll→iconscroll1 が最有力対応",
+      "tags": [
+        "esm",
+        "icon",
+        "reverse-engineering",
+        "decision"
+      ]
     }
   ],
   "metadata": {
-    "totalEntries": 351,
+    "totalEntries": 364,
     "compressedCount": 81,
-    "sessionCount": 31
+    "sessionCount": 32
   }
 }

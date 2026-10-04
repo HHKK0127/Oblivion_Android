@@ -2,6 +2,8 @@
 #include "ui_draw_helper.h"
 #include "placeholder_assets.h"
 #include "text_renderer.h"
+#include "../engine/texture_loader.h"
+#include "../inventory/item_factory.h"
 #include <GLES3/gl3.h>
 #include <algorithm>
 
@@ -161,6 +163,36 @@ void UIInventoryPanel::refreshLayout() {
     equipStartY = gridStartY;
 }
 
+// Map iconId (UI icon atlas index) to asset path under textures/ui/icons/
+static const char* iconIdToAssetPath(uint32_t iconId) {
+    switch (iconId) {
+        case inventory::ItemFactory::ICON_ID_IRON_SWORD:     return "textures/ui/icons/icon_iron_sword.png";
+        case inventory::ItemFactory::ICON_ID_IRON_CUIRASS:   return "textures/ui/icons/icon_iron_cuirass.png";
+        case inventory::ItemFactory::ICON_ID_HEALTH_POTION:  return "textures/ui/icons/icon_health_potion.png";
+        case inventory::ItemFactory::ICON_ID_MANA_POTION:    return "textures/ui/icons/icon_mana_potion.png";
+        case inventory::ItemFactory::ICON_ID_IRON_ORE:       return "textures/ui/icons/icon_iron_ore.png";
+        case inventory::ItemFactory::ICON_ID_LEATHER:        return "textures/ui/icons/icon_leather.png";
+        case inventory::ItemFactory::ICON_ID_SCROLL_SHIELD:  return "textures/ui/icons/icon_scroll_shield.png";
+        default:                                             return nullptr;
+    }
+}
+
+GLuint UIInventoryPanel::getIconTexture(uint32_t iconId) {
+    if (iconId == 0) return 0;
+
+    auto it = iconTextures.find(iconId);
+    if (it != iconTextures.end()) return it->second;
+
+    const char* path = iconIdToAssetPath(iconId);
+    if (!path) return 0;
+
+    GLuint tex = TextureLoader::loadTextureFromAsset(path);
+    if (tex != 0) {
+        iconTextures[iconId] = tex;
+    }
+    return tex;
+}
+
 void UIInventoryPanel::renderInventoryGrid() {
     if (!inventory) return;
 
@@ -193,31 +225,37 @@ void UIInventoryPanel::renderInventoryGrid() {
 
             PlaceholderAssets::drawPanel(x, y, cellSize, cellSize, bgColor, borderColor);
 
-            // Item icon placeholder (category-based color)
+            // Item icon (real texture if available, else category color placeholder)
             if (!slot.isEmpty()) {
-                glm::vec3 itemColor(0.6f, 0.6f, 0.6f);
-                switch (slot.item.category) {
-                    case inventory::ItemCategory::Weapon:
-                        itemColor = glm::vec3(0.9f, 0.3f, 0.3f);
-                        break;
-                    case inventory::ItemCategory::Armor:
-                        itemColor = glm::vec3(0.3f, 0.5f, 0.9f);
-                        break;
-                    case inventory::ItemCategory::Consumable:
-                        itemColor = glm::vec3(0.3f, 0.9f, 0.4f);
-                        break;
-                    case inventory::ItemCategory::Material:
-                        itemColor = glm::vec3(0.7f, 0.6f, 0.3f);
-                        break;
-                    case inventory::ItemCategory::Quest:
-                        itemColor = glm::vec3(0.9f, 0.8f, 0.2f);
-                        break;
-                    default:
-                        break;
-                }
-                float pad = cellSize * 0.15f;
-                UIDrawHelper::drawColoredQuad(x + pad, y + pad, cellSize - pad * 2.0f, cellSize - pad * 2.0f,
-                                              glm::vec4(itemColor.x, itemColor.y, itemColor.z, 1.0f), screenWidth, screenHeight);
+                            GLuint iconTex = getIconTexture(slot.item.iconId);
+                            float pad = cellSize * 0.15f;
+                            if (iconTex != 0) {
+                                UIDrawHelper::drawTexturedQuad(x + pad, y + pad, cellSize - pad * 2.0f, cellSize - pad * 2.0f,
+                                                               iconTex, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), screenWidth, screenHeight);
+                            } else {
+                                glm::vec3 itemColor(0.6f, 0.6f, 0.6f);
+                                switch (slot.item.category) {
+                                    case inventory::ItemCategory::Weapon:
+                                        itemColor = glm::vec3(0.9f, 0.3f, 0.3f);
+                                        break;
+                                    case inventory::ItemCategory::Armor:
+                                        itemColor = glm::vec3(0.3f, 0.5f, 0.9f);
+                                        break;
+                                    case inventory::ItemCategory::Consumable:
+                                        itemColor = glm::vec3(0.3f, 0.9f, 0.4f);
+                                        break;
+                                    case inventory::ItemCategory::Material:
+                                        itemColor = glm::vec3(0.7f, 0.6f, 0.3f);
+                                        break;
+                                    case inventory::ItemCategory::Quest:
+                                        itemColor = glm::vec3(0.9f, 0.8f, 0.2f);
+                                        break;
+                                    default:
+                                        break;
+                                }
+                                UIDrawHelper::drawColoredQuad(x + pad, y + pad, cellSize - pad * 2.0f, cellSize - pad * 2.0f,
+                                                              glm::vec4(itemColor.x, itemColor.y, itemColor.z, 1.0f), screenWidth, screenHeight);
+                            }
 
                 // Stack quantity indicator
                 if (slot.quantity > 1) {

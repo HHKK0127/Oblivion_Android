@@ -77,7 +77,8 @@ void ItemFactory::initializeDefaultItems() {
         sword.value = 75;
         sword.maxStack = 1;
         sword.stats.damage = 8;
-        registerItem(sword);
+                sword.iconId = ICON_ID_IRON_SWORD;
+                registerItem(sword);
     }
 
     // Armor
@@ -93,7 +94,8 @@ void ItemFactory::initializeDefaultItems() {
         armor.value = 120;
         armor.maxStack = 1;
         armor.stats.defense = 12;
-        registerItem(armor);
+                armor.iconId = ICON_ID_IRON_CUIRASS;
+                registerItem(armor);
     }
 
     // Consumables - Health Potion
@@ -108,7 +110,8 @@ void ItemFactory::initializeDefaultItems() {
         potion.value = 25;
         potion.maxStack = 20;
         potion.healAmount = 50;
-        registerItem(potion);
+                potion.iconId = ICON_ID_HEALTH_POTION;
+                registerItem(potion);
     }
 
     // Consumables - Mana Potion
@@ -123,7 +126,8 @@ void ItemFactory::initializeDefaultItems() {
         potion.value = 25;
         potion.maxStack = 20;
         potion.manaAmount = 50;
-        registerItem(potion);
+                potion.iconId = ICON_ID_MANA_POTION;
+                registerItem(potion);
     }
 
     // Materials - Iron Ore
@@ -137,7 +141,8 @@ void ItemFactory::initializeDefaultItems() {
         ore.weight = 1.0f;
         ore.value = 10;
         ore.maxStack = 50;
-        registerItem(ore);
+                ore.iconId = ICON_ID_IRON_ORE;
+                registerItem(ore);
     }
 
     // Materials - Leather
@@ -151,7 +156,8 @@ void ItemFactory::initializeDefaultItems() {
         leather.weight = 0.5f;
         leather.value = 15;
         leather.maxStack = 30;
-        registerItem(leather);
+                leather.iconId = ICON_ID_LEATHER;
+                registerItem(leather);
     }
 
     // Scroll
@@ -165,7 +171,8 @@ void ItemFactory::initializeDefaultItems() {
         scroll.weight = 0.2f;
         scroll.value = 100;
         scroll.maxStack = 1;
-        registerItem(scroll);
+                scroll.iconId = ICON_ID_SCROLL_SHIELD;
+                registerItem(scroll);
     }
 }
 

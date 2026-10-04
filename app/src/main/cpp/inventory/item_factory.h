@@ -47,6 +47,16 @@ public:
     static constexpr uint32_t ITEM_ID_LEATHER = 3002;
     static constexpr uint32_t ITEM_ID_SCROLL_SHIELD = 4001;
 
+        // Icon ID constants (UI icon atlas indices, 0 = no icon)
+        // Mapped to assets/textures/ui/icons/ by UIInventoryPanel
+        static constexpr uint32_t ICON_ID_IRON_SWORD = 1;
+        static constexpr uint32_t ICON_ID_IRON_CUIRASS = 2;
+        static constexpr uint32_t ICON_ID_HEALTH_POTION = 3;
+        static constexpr uint32_t ICON_ID_MANA_POTION = 4;
+        static constexpr uint32_t ICON_ID_IRON_ORE = 5;
+        static constexpr uint32_t ICON_ID_LEATHER = 6;
+        static constexpr uint32_t ICON_ID_SCROLL_SHIELD = 7;
+
 private:
     std::unordered_map<uint32_t, Item> itemDatabase;
 

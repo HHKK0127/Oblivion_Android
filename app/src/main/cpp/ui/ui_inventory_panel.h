@@ -3,7 +3,9 @@
 #include "ui_panel.h"
 #include "../inventory/inventory_grid.h"
 #include "../inventory/equipment_manager.h"
+#include <GLES3/gl3.h>
 #include <memory>
+#include <unordered_map>
 
 // Forward declaration
 class TextRenderer;
@@ -71,6 +73,10 @@ private:
 
     int screenWidth = 1080;
     int screenHeight = 1920;
+
+        // Cached item icon textures (iconId -> GL texture)
+        std::unordered_map<uint32_t, GLuint> iconTextures;
+        GLuint getIconTexture(uint32_t iconId);
 };
 
 } // namespace ui
