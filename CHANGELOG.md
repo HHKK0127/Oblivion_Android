@@ -16,6 +16,13 @@ The current version is **0.9.10 (versionCode 910)**.
 ## [Unreleased]
 
 ### Added
+- **Frame rate cap is now reachable from three places instead of being fixed at 60.**
+  `SettingsManager` gained `fpsCap` (default 60, range 15-120) persisted as `FPS_CAP=` in
+  `settings.txt`; `Renderer::init` applies it once and logs `Frame rate cap applied from
+  settings: N fps`; the debug console gained `setfpscap <n>` through the `GameSystemRefs`
+  callbacks; and the settings menu gained a `Frame Rate` item that cycles 60 -> 90 -> 120 -> 30.
+  The renderer's frame pacing already derived its sleep threshold from `setTargetFPS()`, so no
+  loop change was needed - only the missing plumbing. Verified on Pixel_API34 by logcat.
 - **`gamestate` console command reports where the game actually is, in one line.** Every
   device-verification mistake made so far - most expensively the P15 interior bug, which was
   first diagnosed as "outdoor geometry still renders indoors" when the app was simply still
