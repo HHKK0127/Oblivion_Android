@@ -101,6 +101,12 @@ SOURCES=(
   app/src/main/cpp/game/spell_manager.cpp
   app/src/main/cpp/game/navmesh_manager.cpp
   app/src/main/cpp/assets/esm_reader.cpp
+  app/src/main/cpp/assets/asset_manager.cpp
+  app/src/main/cpp/assets/bsa_reader.cpp
+  app/src/main/cpp/assets/dds_loader.cpp
+  app/src/main/cpp/geometry/mesh.cpp
+  app/src/main/cpp/geometry/material.cpp
+  app/src/main/cpp/engine/shader.cpp
   app/src/main/cpp/engine/memory_pool.cpp
   app/src/main/cpp/engine/async_task_manager.cpp
   app/src/main/cpp/engine/cache_manager.cpp

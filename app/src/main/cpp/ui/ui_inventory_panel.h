@@ -75,8 +75,12 @@ private:
     int screenHeight = 1920;
 
         // Cached item icon textures (iconId -> GL texture)
-        std::unordered_map<uint32_t, GLuint> iconTextures;
-        GLuint getIconTexture(uint32_t iconId);
-};
+            std::unordered_map<uint32_t, GLuint> iconTextures;
+            GLuint getIconTexture(uint32_t iconId);
+
+            // Cached original UI textures (asset path -> GL texture)
+            std::unordered_map<std::string, GLuint> uiTextures;
+            GLuint getUiTexture(const std::string& assetPath);
+        };
 
 } // namespace ui

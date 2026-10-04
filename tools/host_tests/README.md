@@ -139,25 +139,46 @@ unit, so a suite only links when the whole transitive closure is satisfiable;
 
 List a source only when a wired suite's assertions actually reach it, so every
 entry is justifiable as "suite X calls Y". The graph is derivable per object
-with `nm -P --defined-only` / `nm -P -u`; 47 of the current 53 entries are
-reachable from the five suites. The six unreachable entries are kept on
-purpose: the five `quest/*.cpp` files were requested by the script-VM expansion
-workstream (whose test file calls `QuestFlowController` and the quest
-sub-systems) and `script/script_disasm.cpp` is used by that same file
+with `nm -P --defined-only` / `nm -P -u`. Most of the current entries are
+reachable from the wired suites; the unreachable ones are kept on purpose: the
+five `quest/*.cpp` files were requested by the script-VM expansion workstream
+(whose test file calls `QuestFlowController` and the quest sub-systems) and
+`script/script_disasm.cpp` is used by that same file
 (`ScriptDisasm::disassemble`). Nothing in the current master test set
 references either, so dropping them would only save a few seconds of compile
 time - and would break the expansion branch's link.
+
+Reachability is not just about what the assertions call: MinGW/PE links resolve
+every symbol of every compiled translation unit, so a source pulled in as a
+dependency drags in its own closure. `assets/asset_manager.cpp` is the clearest
+example - `npc_manager.cpp` (`fileExists`) and `audio_manager.cpp`
+(`loadFileData`) need it, and it in turn instantiates `NIFParser`, `DDSLoader`,
+`BSArchive`, `Mesh`, `Material` and `ShaderProgram`, so `geometry/mesh.cpp`,
+`geometry/material.cpp` and `engine/shader.cpp` are all in `SOURCES`. Do not
+conclude a closure is satisfied from an `nm` pass alone; a filtered `nm` list
+hides C++ mangled names easily. Verify by actually linking.
 
 Stubs are only acceptable for *leaf* dependencies, i.e. things with no host
 implementation at all: the NDK/JNI APIs (`stubs/`, `host_stub_syms.cpp`), GLES
 (needs a GL context) and Jolt (`host_physics_stubs.cpp`). Never stub a
 mid-layer class a suite exercises (`CellManager`, `DoorManager`,
 `CellTransitionManager`, `WorldManager`, `ESMManager`, `NpcManager`,
-`SaveManager`, `weave::EventBus`, ...) - a suite that passes only because its
-subject was stubbed verifies nothing but the stub's defaults. All of those are
-real sources here. If a suite cannot link without stubbing what it tests, leave
-it unwired and report the blocker rather than wiring a hollow suite; and keep
-any skip explicit in code, because the runner runs under `set -euo pipefail`.
+`SaveManager`, `weave::EventBus`, `AssetManager`, ...) - a suite that passes
+only because its subject was stubbed verifies nothing but the stub's defaults.
+All of those are real sources here. If a suite cannot link without stubbing what
+it tests, leave it unwired and report the blocker rather than wiring a hollow
+suite; and keep any skip explicit in code, because the runner runs under
+`set -euo pipefail`.
+
+The GLES stub is a *leaf* stand-in for a driver, not for a renderer: it declares
+the entry points `geometry/mesh.cpp`, `geometry/material.cpp` and
+`engine/shader.cpp` reference and defines them as no-ops in
+`host_gl_stubs.cpp`. `glCreateShader` / `glCreateProgram` return `0` and
+`glGetShaderiv` / `glGetProgramiv` write `0`, so `ShaderProgram::compile()` takes
+its failure path and never dereferences a null program. Extend the header and
+the stub file together, one declaration per definition - a declaration without a
+definition is an undefined reference, and a definition without a declaration
+does not compile.
 
 Keep stubs and real sources mutually exclusive: a stub and the real `.cpp`
 for the same symbol must never both be listed in `SOURCES`, because MinGW/PE

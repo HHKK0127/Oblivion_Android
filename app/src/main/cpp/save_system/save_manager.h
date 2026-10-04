@@ -113,6 +113,10 @@ private:
     SaveSlotManager slotManager_;
     AutoSave autoSave_;
 
+    // Format version of the last file read by readFromFile(). Load paths use it
+    // to decide whether optional, version-gated fields exist in the payload.
+    uint32_t loadedFormatVersion_ = save_format::CURRENT_VERSION;
+
     // Base directory
     std::string getBaseDir() const;
 

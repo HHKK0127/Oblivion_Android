@@ -97,6 +97,26 @@ The current version is **0.9.10 (versionCode 910)**.
   the longer ceiling costs no wall clock time.
 
 ### Fixed
+- **Saving and loading dropped the player's magicka.** `SaveManager::captureGameState()` copied
+  `player->stamina` into `currentMana`, and neither the `PLYR` block nor the JSON state carried a
+  magicka field at all, so a load restored the correct health and stamina but silently reset the
+  magicka pool to whatever the freshly spawned player had. The `PLYR` block now writes
+  `magicka` / `maxMagicka` after `maxHealth`, `captureGameState()` / `restoreGameState()` /
+  `serializeGameState()` / `deserializeGameState()` all carry `currentMana` / `maxMana`, and the
+  save header moved to `formatVersion 2` so the field insertion cannot misalign v1 files
+  (`MIN_SUPPORTED_VERSION` stays 1 and `validateHeader()` accepts both, so existing saves still
+  load with magicka restored to its default). `BinaryReader` has no rewind/seek, which is why the
+  version branch - not an in-place layout change - is the only safe way to extend the block.
+- **A save written without every manager attached could not be loaded back.** `saveGame()` wrote each
+  section body only when the matching manager was non-null (`if (inventoryManager_)`, `if (spellManager_
+  && playerController_)`, ...) while `loadGame()` read every body unconditionally, so a partially
+  wired `SaveManager` produced a stream whose sections no longer lined up: the reader walked past the
+  end of the payload, `BinaryReader::readRaw()` refused to advance the cursor, and the count-driven
+  loops spun forever emitting `read out of bounds`. The writer now emits every section body
+  unconditionally (null managers serialize as empty sections), the inventory reader moved its
+  `slotCount` read outside the `inventoryManager_` guard to match, and `readRaw()` saturates the
+  cursor at EOF on an out-of-bounds read so a corrupt payload fails fast through `isEOF()` instead of
+  hanging.
 - **Every `dt`-driven system ran in slow motion on any device below 60 fps.** `nativeRenderFrame`
   handed `Renderer::render()` the hard-coded constant `0.0167f`, so the simulation advanced by
   exactly one 60 Hz frame per *rendered* frame regardless of how long that frame really took.

@@ -131,6 +131,10 @@ private:
     T readRaw() {
         if (pos_ + sizeof(T) > size_) {
             SER_LOGE("BinaryReader: read out of bounds at pos %zu", pos_);
+            // Saturate the cursor so a caller that keeps reading after a
+            // corrupt/truncated payload fails every subsequent read and can
+            // bail out via isEOF() instead of spinning forever.
+            pos_ = size_;
             return T{};
         }
         T value;

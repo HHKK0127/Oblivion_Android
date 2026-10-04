@@ -153,8 +153,7 @@ void UIInventoryPanel::refreshLayout() {
     float gridAreaWidth = availableWidth - equipPanelWidth - 20.0f;
 
     cellSize = std::min(56.0f, (gridAreaWidth - (GRID_COLS - 1) * CELL_MARGIN) / GRID_COLS);
-    float gridTotalWidth = cellSize * GRID_COLS + CELL_MARGIN * (GRID_COLS - 1);
-    float gridTotalHeight = cellSize * GRID_ROWS + CELL_MARGIN * (GRID_ROWS - 1);
+        float gridTotalWidth = cellSize * GRID_COLS + CELL_MARGIN * (GRID_COLS - 1);
 
     gridStartX = cp.x;
     gridStartY = cp.y + 30.0f; // leave room for sort buttons
@@ -189,6 +188,17 @@ GLuint UIInventoryPanel::getIconTexture(uint32_t iconId) {
     GLuint tex = TextureLoader::loadTextureFromAsset(path);
     if (tex != 0) {
         iconTextures[iconId] = tex;
+    }
+    return tex;
+}
+
+GLuint UIInventoryPanel::getUiTexture(const std::string& assetPath) {
+    auto it = uiTextures.find(assetPath);
+    if (it != uiTextures.end()) return it->second;
+
+    GLuint tex = TextureLoader::loadTextureFromAsset(assetPath);
+    if (tex != 0) {
+        uiTextures[assetPath] = tex;
     }
     return tex;
 }
@@ -286,7 +296,20 @@ void UIInventoryPanel::renderEquipmentSlots() {
             borderColor = glm::vec3(PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
         }
 
-        PlaceholderAssets::drawPanel(x, y, EQUIP_SLOT_SIZE, EQUIP_SLOT_SIZE, bgColor, borderColor);
+        // Draw original Oblivion equipment marker as the slot frame (1..6)
+        char markerPath[128];
+        snprintf(markerPath, sizeof(markerPath),
+                 "textures/ui/inventory/inv_equiped_marker_%u.png", i);
+        GLuint markerTex = getUiTexture(markerPath);
+        if (markerTex != 0) {
+            // Marker is 1024x64; draw its left portion as the slot frame
+            UIDrawHelper::drawTexturedQuad(x, y, EQUIP_SLOT_SIZE, EQUIP_SLOT_SIZE,
+                                           markerTex, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
+                                           screenWidth, screenHeight,
+                                           0.0f, 0.0f, 0.5f, 1.0f);
+        } else {
+            PlaceholderAssets::drawPanel(x, y, EQUIP_SLOT_SIZE, EQUIP_SLOT_SIZE, bgColor, borderColor);
+        }
 
         // Draw label if text renderer available
         if (textRenderer && i > 0 && i < 8) {
@@ -403,13 +426,20 @@ void UIInventoryPanel::renderDraggedItem() {
             break;
     }
 
-    // Draw dragged item as semi-transparent icon
-    PlaceholderAssets::drawPanel(dragPos.x - sz * 0.5f, dragPos.y - sz * 0.5f, sz, sz,
-                                 itemColor * 0.8f, PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
-}
+    // Draw dragged item as semi-transparent icon (real texture if available)
+        GLuint iconTex = getIconTexture(slot.item.iconId);
+        if (iconTex != 0) {
+            UIDrawHelper::drawTexturedQuad(dragPos.x - sz * 0.5f, dragPos.y - sz * 0.5f, sz, sz,
+                                           iconTex, glm::vec4(1.0f, 1.0f, 1.0f, 0.8f),
+                                           screenWidth, screenHeight);
+        } else {
+            PlaceholderAssets::drawPanel(dragPos.x - sz * 0.5f, dragPos.y - sz * 0.5f, sz, sz,
+                                         itemColor * 0.8f, PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
+        }
+        }
 
 void UIInventoryPanel::renderSortButtons() {
-    // Sort buttons with Oblivion styling
+    // Sort buttons with original Oblivion tab icons as backgrounds
     glm::vec2 cp = getContentPosition();
     float btnW = 50.0f;
     float btnH = 22.0f;
@@ -418,18 +448,27 @@ void UIInventoryPanel::renderSortButtons() {
     float y = cp.y;
 
     const char* labels[] = { "Name", "Type", "Rare", "Weight", "Value" };
-    const glm::vec3 bgColors[] = {
-        PlaceholderAssets::Colors::PARCHMENT_DARK,
-        PlaceholderAssets::Colors::PARCHMENT_DARK,
-        PlaceholderAssets::Colors::PARCHMENT_DARK,
-        PlaceholderAssets::Colors::PARCHMENT_DARK,
-        PlaceholderAssets::Colors::PARCHMENT_DARK
+    // Original inventory tab icons (64x64) used as button backgrounds
+    const char* tabPaths[] = {
+        "textures/ui/inventory/inv_icon_tab_all.png",
+        "textures/ui/inventory/inv_icon_tab_weapons.png",
+        "textures/ui/inventory/inv_icon_tab_apparel.png",
+        "textures/ui/inventory/inv_icon_tab_alchemy.png",
+        "textures/ui/inventory/inv_icon_tab_misc.png",
     };
 
     for (int i = 0; i < 5; ++i) {
         float btnX = startX + i * (btnW + gap);
-        PlaceholderAssets::drawPanel(btnX, y, btnW, btnH,
-                                     bgColors[i], PlaceholderAssets::Colors::BROWN_ACCENT);
+        GLuint tabTex = getUiTexture(tabPaths[i]);
+        if (tabTex != 0) {
+            UIDrawHelper::drawTexturedQuad(btnX, y, btnW, btnH,
+                                           tabTex, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
+                                           screenWidth, screenHeight);
+        } else {
+            PlaceholderAssets::drawPanel(btnX, y, btnW, btnH,
+                                         PlaceholderAssets::Colors::PARCHMENT_DARK,
+                                         PlaceholderAssets::Colors::BROWN_ACCENT);
+        }
         if (textRenderer) {
             textRenderer->renderText(labels[i], btnX + 4.0f, y + 2.0f, glm::vec3(0.1f, 0.1f, 0.1f), 0.6f);
         }

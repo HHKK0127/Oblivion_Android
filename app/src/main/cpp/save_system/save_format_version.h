@@ -21,7 +21,9 @@ namespace save_format {
 constexpr uint32_t MAGIC_NUMBER = 0x4F424C56;
 
 // Current save format version
-constexpr uint32_t CURRENT_VERSION = 1;
+// v1: original binary layout
+// v2: player magicka/maxMagicka appended to the PLYR block (after maxHealth)
+constexpr uint32_t CURRENT_VERSION = 2;
 
 // Minimum supported version (for backward compatibility)
 constexpr uint32_t MIN_SUPPORTED_VERSION = 1;

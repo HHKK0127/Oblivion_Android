@@ -15,6 +15,8 @@ inline void jni_audio_set_main_activity(void* activity) {}
 inline void jni_audio_call_play_bgm(const char* path) {}
 inline void jni_audio_call_stop_bgm() {}
 inline void jni_audio_call_play_se(const char* path) {}
+inline void jni_audio_set_cache_dir(const char* path) {}
+inline const char* jni_audio_get_cache_dir() { return ""; }
 
 #ifdef __cplusplus
 }

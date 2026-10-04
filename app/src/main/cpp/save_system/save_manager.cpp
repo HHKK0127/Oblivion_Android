@@ -69,6 +69,8 @@ bool SaveManager::saveGame(uint32_t slotIndex, const std::string& slotName) {
                 writer.writeVec3(player->velocity);
                 writer.writeFloat(player->health);
                 writer.writeFloat(player->maxHealth);
+                writer.writeFloat(player->magicka);     // v2+
+                writer.writeFloat(player->maxMagicka);  // v2+
                 writer.writeFloat(player->stamina);
                 writer.writeFloat(player->maxStamina);
                 writer.writeUint32(player->playerLevel);
@@ -128,59 +130,67 @@ bool SaveManager::saveGame(uint32_t slotIndex, const std::string& slotName) {
 
         // Serialize InventoryManager
         writer.writeUint32(0x494E5654);  // "INVT" marker
-        if (inventoryManager_) {
-            auto inv = inventoryManager_->getPlayerInventory();
-            if (inv) {
-                const auto& slots = inv->getAllSlots();
-                writer.writeUint32(static_cast<uint32_t>(slots.size()));
-                for (const auto& slot : slots) {
-                    writer.writeUint32(slot.item.itemId);
-                    writer.writeUint32(slot.quantity);
-                    writer.writeString(slot.item.name);
-                    writer.writeUint8(static_cast<uint8_t>(slot.item.type));
-                    writer.writeFloat(slot.item.weight);
-                    writer.writeUint32(slot.item.value);
-                    writer.writeUint32(slot.slotIndex);
-                }
-                writer.writeFloat(inv->getTotalWeight());
-                LOGD("Serialized %zu inventory slots", slots.size());
+        {
+            // Always write section body so the byte layout matches loadGame(),
+            // which reads every section unconditionally.
+            static const std::vector<InventorySlot> emptySlots;
+            auto inv = inventoryManager_ ? inventoryManager_->getPlayerInventory() : nullptr;
+            const auto& slots = inv ? inv->getAllSlots() : emptySlots;
+            writer.writeUint32(static_cast<uint32_t>(slots.size()));
+            for (const auto& slot : slots) {
+                writer.writeUint32(slot.item.itemId);
+                writer.writeUint32(slot.quantity);
+                writer.writeString(slot.item.name);
+                writer.writeUint8(static_cast<uint8_t>(slot.item.type));
+                writer.writeFloat(slot.item.weight);
+                writer.writeUint32(slot.item.value);
+                writer.writeUint32(slot.slotIndex);
             }
+            writer.writeFloat(inv ? inv->getTotalWeight() : 0.0f);
+            LOGD("Serialized %zu inventory slots", slots.size());
         }
 
         // Serialize SpellManager
         writer.writeUint32(0x53504C4C);  // "SPLL" marker
-        if (spellManager_ && playerController_) {
-            auto player = playerController_->getPlayer();
-            if (player) {
-                // Serialize player's known spells from CharacterStatus
-                // We store spell IDs that the player knows
-                auto playerSpells = spellManager_->getNpcSpells(1);  // Player ID = 1
-                writer.writeUint32(static_cast<uint32_t>(playerSpells.size()));
-                for (const auto& spell : playerSpells) {
-                    writer.writeUint32(spell->spellId);
-                    writer.writeString(spell->name);
-                    writer.writeUint8(static_cast<uint8_t>(spell->school));
-                    writer.writeFloat(spell->manaCost);
-                    writer.writeFloat(spell->baseDamage);
-                    writer.writeUint32(spell->targetType);
-                    // Effects
-                    writer.writeUint32(static_cast<uint32_t>(spell->effects.size()));
-                    for (const auto& effect : spell->effects) {
-                        writer.writeUint8(static_cast<uint8_t>(effect.type));
-                        writer.writeFloat(effect.magnitude);
-                        writer.writeFloat(effect.duration);
-                        writer.writeString(effect.affectedAttribute);
-                    }
-                }
-                LOGD("Serialized %zu player spells", playerSpells.size());
+        {
+            // Always write section body so the byte layout matches loadGame(),
+            // which reads every section unconditionally.
+            auto player = playerController_ ? playerController_->getPlayer() : nullptr;
+            std::vector<std::shared_ptr<Spell>> playerSpells;
+            if (spellManager_ && player) {
+                playerSpells = spellManager_->getNpcSpells(1);  // Player ID = 1
             }
+            writer.writeUint32(static_cast<uint32_t>(playerSpells.size()));
+            for (const auto& spell : playerSpells) {
+                writer.writeUint32(spell->spellId);
+                writer.writeString(spell->name);
+                writer.writeUint8(static_cast<uint8_t>(spell->school));
+                writer.writeFloat(spell->manaCost);
+                writer.writeFloat(spell->baseDamage);
+                writer.writeUint32(spell->targetType);
+                // Effects
+                writer.writeUint32(static_cast<uint32_t>(spell->effects.size()));
+                for (const auto& effect : spell->effects) {
+                    writer.writeUint8(static_cast<uint8_t>(effect.type));
+                    writer.writeFloat(effect.magnitude);
+                    writer.writeFloat(effect.duration);
+                    writer.writeString(effect.affectedAttribute);
+                }
+            }
+            LOGD("Serialized %zu player spells", playerSpells.size());
         }
 
         // Serialize QuestManager
         writer.writeUint32(0x51535453);  // "QSTS" marker
-        if (questManager_) {
-            auto activeQuests = questManager_->getActiveQuests();
-            auto completedQuests = questManager_->getCompletedQuests();
+        {
+            // Always write section body so the byte layout matches loadGame(),
+            // which reads every section unconditionally.
+            std::vector<std::shared_ptr<Quest>> activeQuests;
+            std::vector<std::shared_ptr<Quest>> completedQuests;
+            if (questManager_) {
+                activeQuests = questManager_->getActiveQuests();
+                completedQuests = questManager_->getCompletedQuests();
+            }
 
             writer.writeUint32(static_cast<uint32_t>(activeQuests.size()));
             for (const auto& quest : activeQuests) {
@@ -222,8 +232,11 @@ bool SaveManager::saveGame(uint32_t slotIndex, const std::string& slotName) {
 
         // Serialize WorldManager
         writer.writeUint32(0x574C4453);  // "WLDS" marker
-        if (worldManager_) {
-            const auto& ws = worldManager_->getWorldState();
+        {
+            // Always write section body so the byte layout matches loadGame(),
+            // which reads every section unconditionally.
+            WorldState defaultState;
+            const WorldState& ws = worldManager_ ? worldManager_->getWorldState() : defaultState;
             writer.writeVec3(ws.playerPosition);
             writer.writeVec3(ws.playerRotation);
             writer.writeFloat(ws.timeOfDay);
@@ -232,7 +245,8 @@ bool SaveManager::saveGame(uint32_t slotIndex, const std::string& slotName) {
             writer.writeUint32(ws.dayCount);
 
             // Loaded cells
-            const auto& activeCells = worldManager_->getActiveCells();
+            static const std::vector<std::shared_ptr<Cell>> emptyCells;
+            const auto& activeCells = worldManager_ ? worldManager_->getActiveCells() : emptyCells;
             writer.writeUint32(static_cast<uint32_t>(activeCells.size()));
             for (const auto& cell : activeCells) {
                 writer.writeUint32(cell->cellId);
@@ -248,10 +262,9 @@ bool SaveManager::saveGame(uint32_t slotIndex, const std::string& slotName) {
 
         // Serialize ScriptManager
         writer.writeUint32(0x53435250);  // "SCRP" marker
-        if (scriptManager_) {
-            // Global variables
-            // We need to serialize the global variable state
-            // For now, write a placeholder count
+        {
+            // Always write section body so the byte layout matches loadGame(),
+            // which reads every section unconditionally.
             writer.writeUint32(0);  // Will be populated when script globals are accessible
             LOGD("Serialized script state");
         }
@@ -295,6 +308,10 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
                 player->velocity = reader.readVec3();
                 player->health = reader.readFloat();
                 player->maxHealth = reader.readFloat();
+                if (loadedFormatVersion_ >= 2) {
+                    player->magicka = reader.readFloat();
+                    player->maxMagicka = reader.readFloat();
+                }
                 player->stamina = reader.readFloat();
                 player->maxStamina = reader.readFloat();
                 player->playerLevel = reader.readUint32();
@@ -364,27 +381,33 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
             auto inv = inventoryManager_->getPlayerInventory();
             if (inv) {
                 inv->clear();
-                uint32_t slotCount = reader.readUint32();
-                for (uint32_t i = 0; i < slotCount; ++i) {
-                    Item item;
-                    item.itemId = reader.readUint32();
-                    uint32_t qty = reader.readUint32();
-                    item.name = reader.readString();
-                    item.type = static_cast<ItemType>(reader.readUint8());
-                    item.weight = reader.readFloat();
-                    item.value = reader.readUint32();
-                    uint32_t slotIdx = reader.readUint32();
-                    (void)slotIdx;
+            }
+        }
+        {
+            // Always read section data to maintain reader position
+            uint32_t slotCount = reader.readUint32();
+            for (uint32_t i = 0; i < slotCount; ++i) {
+                Item item;
+                item.itemId = reader.readUint32();
+                uint32_t qty = reader.readUint32();
+                item.name = reader.readString();
+                item.type = static_cast<ItemType>(reader.readUint8());
+                item.weight = reader.readFloat();
+                item.value = reader.readUint32();
+                uint32_t slotIdx = reader.readUint32();
+                (void)slotIdx;
 
-                    if (qty > 0 && item.itemId > 0) {
+                if (inventoryManager_ && qty > 0 && item.itemId > 0) {
+                    auto inv = inventoryManager_->getPlayerInventory();
+                    if (inv) {
                         inv->addItem(item, qty);
                     }
                 }
-                float totalWeight = reader.readFloat();
-                (void)totalWeight;
-
-                LOGD("Loaded %u inventory slots", slotCount);
             }
+            float totalWeight = reader.readFloat();
+            (void)totalWeight;
+
+            LOGD("Loaded %u inventory slots", slotCount);
         }
 
         // Deserialize SpellManager
@@ -621,6 +644,8 @@ bool SaveManager::readFromFile(uint32_t slotIndex, std::vector<uint8_t>& payload
         return false;
     }
 
+    loadedFormatVersion_ = header.formatVersion;
+
     payload.resize(header.payloadSize);
     file.read(reinterpret_cast<char*>(payload.data()), header.payloadSize);
 
@@ -694,8 +719,10 @@ bool SaveManager::captureGameState(GameState& state) {
             state.playerExperience = player->experience;
             state.playerStatus.currentHealth = player->health;
             state.playerStatus.maxHealth = player->maxHealth;
-            state.playerStatus.currentMana = player->stamina;  // Using stamina as proxy
-            state.playerStatus.maxMana = player->maxStamina;
+            state.playerStatus.currentMana = player->magicka;
+            state.playerStatus.maxMana = player->maxMagicka;
+            state.playerStatus.stamina = player->stamina;
+            state.playerStatus.maxStamina = player->maxStamina;
             state.playerStatus.level = player->playerLevel;
         }
     }
@@ -719,6 +746,10 @@ bool SaveManager::restoreGameState(const GameState& state) {
             player->experience = state.playerExperience;
             player->health = state.playerStatus.currentHealth;
             player->maxHealth = state.playerStatus.maxHealth;
+            player->magicka = state.playerStatus.currentMana;
+            player->maxMagicka = state.playerStatus.maxMana;
+            player->stamina = state.playerStatus.stamina;
+            player->maxStamina = state.playerStatus.maxStamina;
             playerController_->setPosition(state.playerPosition);
         }
     }
@@ -831,6 +862,8 @@ std::string SaveManager::serializeGameState(const GameState& state) const {
        << state.playerRotation.y << ", " << state.playerRotation.z << "],\n";
     ss << "  \"playerHealth\": " << state.playerStatus.currentHealth << ",\n";
     ss << "  \"playerMana\": " << state.playerStatus.currentMana << ",\n";
+    ss << "  \"playerMaxMana\": " << state.playerStatus.maxMana << ",\n";
+    ss << "  \"playerStamina\": " << state.playerStatus.stamina << ",\n";
     ss << "  \"playerLevel\": " << state.playerLevel << ",\n";
     ss << "  \"timeOfDay\": " << state.timeOfDay << ",\n";
     ss << "  \"dayCount\": " << state.dayCount << ",\n";
@@ -917,6 +950,24 @@ bool SaveManager::deserializeGameState(const std::string& json, GameState& outSt
             size_t val_end = json.find(",", val_start);
             if (val_end == std::string::npos) val_end = json.find("}", val_start);
             outState.playerStatus.currentMana = std::stof(json.substr(val_start, val_end - val_start));
+        }
+
+        // Extract max mana
+        pos = json.find("playerMaxMana");
+        if (pos != std::string::npos) {
+            size_t val_start = json.find(":", pos) + 1;
+            size_t val_end = json.find(",", val_start);
+            if (val_end == std::string::npos) val_end = json.find("}", val_start);
+            outState.playerStatus.maxMana = std::stof(json.substr(val_start, val_end - val_start));
+        }
+
+        // Extract stamina
+        pos = json.find("playerStamina");
+        if (pos != std::string::npos) {
+            size_t val_start = json.find(":", pos) + 1;
+            size_t val_end = json.find(",", val_start);
+            if (val_end == std::string::npos) val_end = json.find("}", val_start);
+            outState.playerStatus.stamina = std::stof(json.substr(val_start, val_end - val_start));
         }
 
         // Extract NPC states

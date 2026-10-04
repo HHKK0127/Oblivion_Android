@@ -17,6 +17,8 @@ void jni_audio_set_main_activity(void*) {}
 void jni_audio_call_play_bgm(const char*) {}
 void jni_audio_call_stop_bgm() {}
 void jni_audio_call_play_se(const char*) {}
+void jni_audio_set_cache_dir(const char*) {}
+const char* jni_audio_get_cache_dir() { return ""; }
 
 AAsset* AAssetManager_open(AAssetManager*, const char*, int) { return nullptr; }
 void AAsset_close(AAsset*) {}

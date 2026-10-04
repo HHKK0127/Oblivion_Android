@@ -14,6 +14,13 @@
 
 // Save system
 #include "../save_system/save_manager.h"
+#include "../save_system/save_slot_manager.h"
+#include "../game/player_controller.h"
+#include "../world/world_manager.h"
+
+#include <cstdlib>
+#include <filesystem>
+#include <string>
 
 // Engine subsystems
 #include "../engine/memory_pool.h"
@@ -632,6 +639,125 @@ void Phase45UnitTests::testSaveManager() {
         float dt = getTimeMs45() - t0;
         record("Save_ManagerInit", ok,
                "SaveManager::initialize() succeeds", dt);
+    }
+
+    // Test 5.6: Player magicka/maxMagicka survive a binary save/load roundtrip
+    // (save format v2 added these fields; they used to be dropped on load).
+    {
+        float t0 = getTimeMs45();
+        const uint32_t slot = SaveSlotManager::QUICK_SAVE_SLOT;
+        const char* tmpDir = std::getenv("OBLIVION_SAVE_DIR");
+        std::string saveDir = (tmpDir != nullptr && tmpDir[0] != '\0')
+                            ? std::string(tmpDir) : "./host_saves/";
+        std::string savePath = saveDir;
+        if (!savePath.empty() && savePath.back() != '/' && savePath.back() != '\\') {
+            savePath += '/';
+        }
+        savePath += "quicksave.sav";
+
+        WorldManager wm;
+        PlayerController pc;
+        bool setupOk = pc.initialize(&wm);
+
+        SaveManager mgr;
+        bool initOk = mgr.initialize();
+        mgr.setPlayerController(&pc);
+        mgr.setWorldManager(&wm);
+
+        bool saveOk = false;
+        bool loadOk = false;
+        bool valueOk = false;
+        if (setupOk && initOk) {
+            auto player = pc.getPlayer();
+            if (player) {
+                player->magicka = 37.5f;
+                player->maxMagicka = 150.0f;
+                player->health = 61.25f;
+                player->stamina = 42.0f;
+
+                saveOk = mgr.saveGame(slot, "MagickaRoundTrip");
+
+                // Corrupt the live values so a successful load must overwrite them
+                player->magicka = 1.0f;
+                player->maxMagicka = 1.0f;
+                player->health = 1.0f;
+                player->stamina = 1.0f;
+
+                loadOk = mgr.loadGame(slot);
+
+                valueOk = (std::fabs(player->magicka - 37.5f) < 0.001f)
+                       && (std::fabs(player->maxMagicka - 150.0f) < 0.001f)
+                       && (std::fabs(player->health - 61.25f) < 0.001f)
+                       && (std::fabs(player->stamina - 42.0f) < 0.001f);
+            }
+        }
+
+        // Leave no artifacts behind
+        mgr.deleteSave(slot);
+        std::error_code ec;
+        std::filesystem::remove(savePath, ec);
+        pc.cleanup();
+
+        bool ok = setupOk && initOk && saveOk && loadOk && valueOk;
+        float dt = getTimeMs45() - t0;
+        record("Save_MagickaRoundTrip", ok,
+               ok ? "magicka/maxMagicka restored from save"
+                  : "magicka/maxMagicka roundtrip failed", dt);
+    }
+
+    // Test 5.7: captureGameState/restoreGameState carry magicka (not stamina)
+    {
+        float t0 = getTimeMs45();
+        WorldManager wm;
+        PlayerController pc;
+        bool setupOk = pc.initialize(&wm);
+
+        SaveManager mgr;
+        mgr.setPlayerController(&pc);
+
+        bool captureOk = false;
+        bool restoreOk = false;
+        bool valueOk = false;
+        if (setupOk) {
+            auto player = pc.getPlayer();
+            if (player) {
+                player->health = 80.0f;
+                player->maxHealth = 120.0f;
+                player->magicka = 55.0f;
+                player->maxMagicka = 175.0f;
+                player->stamina = 33.0f;
+                player->maxStamina = 90.0f;
+
+                GameState state;
+                captureOk = mgr.captureGameState(state);
+
+                // The captured snapshot must hold the real magicka, not stamina
+                bool captureValues =
+                    (std::fabs(state.playerStatus.currentMana - 55.0f) < 0.001f)
+                 && (std::fabs(state.playerStatus.maxMana - 175.0f) < 0.001f)
+                 && (std::fabs(state.playerStatus.stamina - 33.0f) < 0.001f)
+                 && (std::fabs(state.playerStatus.maxStamina - 90.0f) < 0.001f);
+
+                player->magicka = 0.0f;
+                player->maxMagicka = 0.0f;
+                player->stamina = 0.0f;
+                player->maxStamina = 0.0f;
+
+                restoreOk = mgr.restoreGameState(state);
+                valueOk = captureValues
+                       && (std::fabs(player->magicka - 55.0f) < 0.001f)
+                       && (std::fabs(player->maxMagicka - 175.0f) < 0.001f)
+                       && (std::fabs(player->stamina - 33.0f) < 0.001f)
+                       && (std::fabs(player->maxStamina - 90.0f) < 0.001f);
+            }
+        }
+        pc.cleanup();
+
+        bool ok = setupOk && captureOk && restoreOk && valueOk;
+        float dt = getTimeMs45() - t0;
+        record("Save_GameStateMagicka", ok,
+               ok ? "captureGameState/restoreGameState keep magicka separate from stamina"
+                  : "capture/restore magicka mismatch", dt);
     }
 }
 

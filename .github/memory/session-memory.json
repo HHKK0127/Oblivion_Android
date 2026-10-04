@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-04T10:41:03Z",
+  "lastUpdated": "2026-10-04T15:37:20Z",
   "entries": [
     {
       "timestamp": "2026-09-16T14:58:00Z",
@@ -5241,10 +5241,37 @@
         "decision"
       ],
       "compressed": false
+    },
+    {
+      "category": "decision",
+      "priority": "high",
+      "timestamp": "2026-10-04T15:37:20Z",
+      "content": "インベントリアイコン本物化のビルド検証完了。renderDraggedItem()の余分な閉じ括弧を修正し、ui_inventory_panel.cpp/h、item_factory.cpp/hのインデントを整備。gridTotalHeight未使用変数を削除。:app:externalNativeBuildDebug と :app:assembleDebug が BUILD SUCCESSFUL。APK内にassets/textures/ui/icons/の7アイコンが含まれることをaaptで確認済み。",
+      "tags": [
+        "inventory",
+        "icons",
+        "build",
+        "verification"
+      ],
+      "compressed": false,
+      "id": "0b9562af-6ce4-4d07-a5f4-a3b96999ca1c"
+    },
+    {
+      "category": "reference",
+      "priority": "medium",
+      "timestamp": "2026-10-04T15:37:20Z",
+      "content": "ビルド検証コマンド: .\\gradlew.bat :app:externalNativeBuildDebug (C++のみ、約2分) / :app:assembleDebug (APK全体)。aaptは C:\\Users\\hiroki.kogarumai\\AppData\\Local\\Android\\Sdk\\build-tools\\配下を再帰検索して使用。adbは C:\\Users\\hiroki.kogarumai\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe。現在デバイス未接続のため実機検証は未実施。",
+      "tags": [
+        "build",
+        "verification",
+        "tooling"
+      ],
+      "compressed": false,
+      "id": "b3f05000-ea69-47e2-b41c-3609e36adb69"
     }
   ],
   "metadata": {
-    "totalEntries": 364,
+    "totalEntries": 366,
     "compressedCount": 81,
     "sessionCount": 32
   }
