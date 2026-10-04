@@ -30,6 +30,7 @@
 | [ASSET_GUIDE.md](ASSET_GUIDE.md) | アセット統合ガイド | 実装エンジニア |
 | [AUDIO_SYSTEM.md](AUDIO_SYSTEM.md) | オーディオシステム | 実装エンジニア |
 | [STEAM_DATA_TRANSFER.md](STEAM_DATA_TRANSFER.md) | Steam データ転送ガイド | 全ユーザー |
+| [RE_TITLE_SCREEN_REPORT.md](RE_TITLE_SCREEN_REPORT.md) | Steam版タイトル画面リバースエンジニアリング解析 | 実装エンジニア |
 | [FPS_CONTROL_GUIDE.md](FPS_CONTROL_GUIDE.md) | FPS制御ガイド | 実装エンジニア |
 | [SAVE_LOAD_IMPLEMENTATION.md](SAVE_LOAD_IMPLEMENTATION.md) | セーブ/ロード実装 | 実装エンジニア |
 | [CODE_QUALITY_IMPROVEMENTS.md](CODE_QUALITY_IMPROVEMENTS.md) | コード品質改善 | 全開発者 |
@@ -134,6 +135,7 @@ docs/
 ├── SAVE_LOAD_IMPLEMENTATION.md  # セーブ/ロード実装
 ├── CODE_QUALITY_IMPROVEMENTS.md # コード品質改善
 ├── JPWIKI_ANALYSIS.md           # JPWiki日本語化データ解析
+├── RE_TITLE_SCREEN_REPORT.md   # Steam版タイトル画面 RE解析
 ├── DEVELOPMENT_HISTORY.md       # 開発履歴
 └── README.md                    # このファイル（目次）
 
