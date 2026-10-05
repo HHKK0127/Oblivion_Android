@@ -32,6 +32,7 @@
 | [STEAM_DATA_TRANSFER.md](STEAM_DATA_TRANSFER.md) | Steam データ転送ガイド | 全ユーザー |
 | [RE_TITLE_SCREEN_REPORT.md](RE_TITLE_SCREEN_REPORT.md) | Steam版タイトル画面リバースエンジニアリング解析 | 実装エンジニア |
 | [RE_FONT_REPORT.md](RE_FONT_REPORT.md) | Steam版フォント情報リバースエンジニアリング解析 | 実装エンジニア |
+| [RE_UI_TEXTURE_REPORT.md](RE_UI_TEXTURE_REPORT.md) | Steam版UIテクスチャ・メニューXMLリバースエンジニアリング解析 | 実装エンジニア |
 | [FPS_CONTROL_GUIDE.md](FPS_CONTROL_GUIDE.md) | FPS制御ガイド | 実装エンジニア |
 | [SAVE_LOAD_IMPLEMENTATION.md](SAVE_LOAD_IMPLEMENTATION.md) | セーブ/ロード実装 | 実装エンジニア |
 | [CODE_QUALITY_IMPROVEMENTS.md](CODE_QUALITY_IMPROVEMENTS.md) | コード品質改善 | 全開発者 |
@@ -138,6 +139,7 @@ docs/
 ├── JPWIKI_ANALYSIS.md           # JPWiki日本語化データ解析
 ├── RE_TITLE_SCREEN_REPORT.md   # Steam版タイトル画面 RE解析
 ├── RE_FONT_REPORT.md           # Steam版フォント情報 RE解析
+├── RE_UI_TEXTURE_REPORT.md     # Steam版UIテクスチャ・メニューXML RE解析
 ├── DEVELOPMENT_HISTORY.md       # 開発履歴
 └── README.md                    # このファイル（目次）
 

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-04T15:37:20Z",
+  "lastUpdated": "2026-10-05T06:46:28Z",
   "entries": [
     {
       "timestamp": "2026-09-16T14:58:00Z",
@@ -5268,11 +5268,199 @@
       ],
       "compressed": false,
       "id": "b3f05000-ea69-47e2-b41c-3609e36adb69"
+    },
+    {
+      "category": "decision",
+      "priority": "high",
+      "timestamp": "2026-10-05T05:07:59Z",
+      "content": "UIテクスチャの正典は BSA の textures\\menus ティア（1975ファイル、非アイコン814）。menus80(1712)とmenus50(1789)はLOD用の部分セットで不完全: spell effect timer(81), faders(2), credits(4) が欠落し、misc(85→4), loading(53→5), lockpicking(14→2), persuasion(11→1), quick-keys(4→1) も大半が未収録。完全なUIテクスチャが必要な場合は必ず textures\\menus から抽出すること。",
+      "tags": [
+        "bsa",
+        "ui-texture",
+        "menus",
+        "quality-tier"
+      ],
+      "compressed": false,
+      "id": "486c8916-1bbc-4983-a2d6-3bc326cc74e2"
+    },
+    {
+      "category": "reference",
+      "priority": "high",
+      "timestamp": "2026-10-05T05:07:59Z",
+      "content": "menus BSA には16bit非圧縮DDSが存在する。world_map_icon_*.dds / world_map_marker_*.dds は ARGB4444 (masks R=0x0F00 G=0x00F0 B=0x000F A=0xF000)、misc\\healthbar3dbw.dds は RGB565 (masks R=0xF800 G=0x07E0 B=0x001F)。dds_decode.py に decode_rgb565 / decode_argb4444 / decode_16bit を追加済み。",
+      "tags": [
+        "dds",
+        "decoder",
+        "16bit",
+        "rgb565",
+        "argb4444"
+      ],
+      "compressed": false,
+      "id": "1ee10d0b-7680-4255-8e37-b53ff26121e8"
+    },
+    {
+      "category": "reference",
+      "priority": "high",
+      "timestamp": "2026-10-05T05:07:59Z",
+      "content": "非アイコンUIテクスチャ完全セットを抽出済み: tmp\\extracted_menus_full\\menus\\ に814 PNG (tier=menus)、非圧縮PNG合計92.2 MiB、ユニーク784 (24重複グループ)。抽出スクリプトは tmp\\extract_menus_full.py (--tier / --skip-icons / --only-missing / --manifest-only)。マニフェストは tmp\\ui_texture_manifest.json (3ティア5476エントリ)。分析レポートは tmp\\ui_texture_report.json / .txt。",
+      "tags": [
+        "ui-texture",
+        "extraction",
+        "manifest",
+        "menus"
+      ],
+      "compressed": false,
+      "id": "0a4c21a1-93b2-4791-9594-58167e285133"
+    },
+    {
+      "category": "constraint",
+      "priority": "high",
+      "timestamp": "2026-10-05T05:07:59Z",
+      "content": "Android版のUIテクスチャは極端に不足: app/src/main/assets/textures/ui/ 配下は43 PNGのみ(トップ7 + icons 7 + inventory 29) で、menusティアの非アイコン814に対して 814 が未統合。",
+      "tags": [
+        "android",
+        "assets",
+        "gap",
+        "ui-texture"
+      ],
+      "compressed": false,
+      "id": "f6d42b43-419d-46ce-8791-e189e7a1632f"
+    },
+    {
+      "category": "reference",
+      "priority": "high",
+      "timestamp": "2026-10-05T05:07:59Z",
+      "content": "OblivionのUIは完全にデータ駆動XML。BSA内 menus\\ に104個のメニュー定義XMLが存在する(menus\\main: inventory/magic/map/hud系, menus\\chargen: race_sex/class/skills, menus\\dialog: alchemy/enchantment/spellmaking/persuasion/sigilstone, menus\\generic, menus\\ 直下: loading/message/quantity/repair/sleep_wait/training 等) に加え strings.xml(11KB) と master_menu_file.txt(1.08MB)。要素は rect/image/nif/text、演算子は copy/add/sub/mul/div/eq/gt/onlyif/onlyifnot、trait(screen()/parent()/me()/strings())。Android版にはこのXMLインタプリタが存在せず、UIは約90個の手書きC++ファイルで個別実装されている。",
+      "tags": [
+        "ui",
+        "menu-xml",
+        "data-driven",
+        "architecture",
+        "gap"
+      ],
+      "compressed": false,
+      "id": "c1a044c3-8b62-4786-b6e0-ac33f092cd09"
+    },
+    {
+      "category": "reference",
+      "priority": "medium",
+      "timestamp": "2026-10-05T05:07:59Z",
+      "content": "menusティアの解像度分布(非アイコン814): 128x128=147, 64x64=107, 512x512=86, 128x32=81(spell effect timer), 256x256=66, 1024x512=47(loading画面), 1024x1024=39, 32x32=47。最大は map_world\\cyrodiil_resized.dds 2048x2048。",
+      "tags": [
+        "ui-texture",
+        "resolution",
+        "menus"
+      ],
+      "compressed": false,
+      "id": "74ab9f8e-4963-4e1b-8429-374c48922c82"
+    },
+    {
+      "category": "reference",
+      "priority": "medium",
+      "timestamp": "2026-10-05T05:07:59Z",
+      "content": "UIテクスチャカテゴリ別ファイル数のAndroid統合先ヒント: icons→icons, genericbackground→menus/background, loading→menus/loading, shared→menus/shared, stats→menus/stats, inventory→menus/inventory, magic→menus/magic, map→menus/map, book→menus/book, dialog→menus/dialog, hud→menus/hud, container→menus/container。",
+      "tags": [
+        "ui-texture",
+        "integration",
+        "android",
+        "layout"
+      ],
+      "compressed": false,
+      "id": "c4257184-5c96-4266-8988-30d2bbb834bb"
+    },
+    {
+      "category": "reference",
+      "priority": "high",
+      "timestamp": "2026-10-05T05:09:45Z",
+      "content": "Android版 assets/textures/ui/ の既存40枚は品質ティアが混在: menus出自が4枚(loading_background, load_in_game_default, tes_oblivion_logo_bink, tes_oblivion_logo_final)、menus80出自が29枚(inventory/inv_border_*, inv_equiped_marker_*, inv_icon_tab_*, loading_symbol, dialog_selection_*)。同一UI内で解像度は同じでも圧縮品質が揃っていない（例 dialog_selection_full.dds: menus 103,135B vs menus80 14,830B）。統合時にmenusへ統一すれば品質が揃う。",
+      "tags": [
+        "android",
+        "assets",
+        "ui-texture",
+        "quality-tier",
+        "inconsistency"
+      ],
+      "compressed": false,
+      "id": "ba6f3b8f-03a3-4f48-9d63-e0ed8051f1e5"
+    },
+    {
+      "category": "reference",
+      "priority": "high",
+      "timestamp": "2026-10-05T05:13:56Z",
+      "content": "Android版 assets/textures/ui/ 既存40枚の出自ティアを全ティア分デコードして画素照合で確定 (tmp/android_tier_origin.py, tmp/android_tier_origin.json): menus80と画素完全一致=29枚 (inventory/* 全26枚, dialog_selection_cut, dialog_selection_full, loading_symbol)、menusと画素完全一致=3枚 (load_in_game_default, tes_oblivion_logo_bink, tes_oblivion_logo_final)、BSAに同名なし=7枚 (icons/icon_*.png, Android版の自作プレースホルダ)。同一UI内でmenus80とmenusが混在しており圧縮品質が不統一。統合時はmenusに統一すべき。",
+      "tags": [
+        "android",
+        "assets",
+        "ui-texture",
+        "quality-tier",
+        "verified"
+      ],
+      "compressed": false,
+      "id": "114defb8de0f41b18e9d5615403371a1"
+    },
+    {
+      "category": "reference",
+      "priority": "high",
+      "timestamp": "2026-10-05T05:13:56Z",
+      "content": "Android版 loading_background.png は textures\\menus\\loading\\loading_background.dds ではなく textures\\menus\\genericbackground\\center_background.dds と画素完全一致 (max diff 0, SHA256 4B04343F...)。center_background と loading_background は同一絵柄の別グレーディング版 (NCC 0.888, 平均輝度 213.0 vs 192.1, 単純ガンマでは不一致)。原作ローディング画面に忠実にしたい場合は Menus\\Loading\\loading_background.dds から再抽出。参照元: loading_menu.xml / options\\main_menu.xml -> Loading\\loading_background.dds, prefabs\\generic_background.xml -> GenericBackground\\center_background.dds。",
+      "tags": [
+        "android",
+        "assets",
+        "ui-texture",
+        "loading",
+        "verified"
+      ],
+      "compressed": false,
+      "id": "85502d420c874499bc8af5de0c583b6b"
+    },
+    {
+      "category": "reference",
+      "priority": "low",
+      "timestamp": "2026-10-05T05:13:56Z",
+      "content": "Oblivion BSA には開発者アーティファクトが混入: textures\\menus\\loading\\load_troll.psd (4,075,177 B, Photoshop元データ)、textures\\menus\\loading\\_loading screens here must be 100%.txt / menus50\\loading\\_loading screens here should be 50%.txt (80 B の作業メモ)、menus\\main\\copy of stats_menu.txt, menus\\s.txt, menus\\warning - changing these files.txt。",
+      "tags": [
+        "oblivion",
+        "bsa",
+        "artifact",
+        "reverse-engineering"
+      ],
+      "compressed": false,
+      "id": "32cfd01ca1dd4531b39ca95a632e4d27"
+    },
+    {
+      "id": "d88426a3-3e28-46d7-9c53-497aeb657f2b",
+      "timestamp": "2026-10-05T06:21:58.444965+00:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "UI品質ティア方針を確定: 方針A「menusを単一ソースとするオンデマンド統合」。menus80は使用しない(新規テクスチャ0枚のため)。menus50はmenusに存在しない8枚のフォールバック。解像度上限=長辺1024px、ただし画素数262144以下(例: 2048x64の細長UI)は上限非適用。格納形式=PNG(TextureLoaderはstb_imageでPNGのみ)。初期適用でmenus80由来29枚をmenus版へ差し替え完了(全29枚が画素完全一致)。loading_background.pngとicons/icon_*7枚はBSA非由来のため対象外。",
+      "tags": [
+        "ui-textures",
+        "quality-tier",
+        "policy",
+        "reverse-engineering"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "eb843e28-da08-4552-a62f-3707f262524a",
+      "timestamp": "2026-10-05T06:46:28Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "UI orphan asset policy (2026-10-05): code-reference check (tmp/ui_asset_reference_check.py) classified ALL 40 UI PNGs. 17 orphans (1.18 MiB) have NO C++/Java literal references: inventory/inv_* header/border/hilite/icon_small (15) + loading_symbol.png + tes_oblivion_logo_bink.png. User decision: KEEP all 17 -- do not delete. Reason: inventory decorations reserved for future menu implementation (PlaceholderAssets::drawPanel currently fills panels solid), loading_symbol/logo_bink are title-screen reserves (title uses loading_background + logo_final). REF=17 literal + DYN=6 inv_equiped_marker_%u dynamic. Integrate-on-demand when implementing each menu.",
+      "tags": [
+        "ui",
+        "textures",
+        "assets",
+        "inventory",
+        "loading",
+        "decision"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 366,
+    "totalEntries": 379,
     "compressedCount": 81,
-    "sessionCount": 32
+    "sessionCount": 33
   }
 }
