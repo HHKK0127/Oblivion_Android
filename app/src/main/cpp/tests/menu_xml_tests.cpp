@@ -2,6 +2,7 @@
 
 #include "menu_xml_tests.h"
 
+#include "../ui/menu_ui_builder.h"
 #include "../ui/menu_xml_interpreter.h"
 #include "../ui/xml_parser.h"
 
@@ -14,6 +15,7 @@ using oblivion::ui::MenuDef;
 using oblivion::ui::MenuEvalContext;
 using oblivion::ui::MenuExpressionEvaluator;
 using oblivion::ui::MenuXmlInterpreter;
+using oblivion::ui::ResolvedMenu;
 using oblivion::ui::ResolvedWidget;
 using oblivion::ui::WidgetDef;
 using oblivion::ui::XmlNode;
@@ -953,9 +955,219 @@ bool MenuXmlTests::runAllTests() {
                                  /*lenient=*/false));
     }
 
-    const auto t1 = std::chrono::high_resolution_clock::now();
-    const float totalMs = std::chrono::duration<float, std::milli>(t1 - t0).count();
-    record("suite completed", true, "", totalMs);
+    // --- 19. M4: MenuUiBuilder ------------------------------------------------------
+        {
+            using oblivion::ui::MenuNodeKind;
+            using oblivion::ui::MenuScaleMode;
+            using oblivion::ui::MenuUiBuilder;
+            using oblivion::ui::MenuUiNode;
+
+            // Texture path conversion -----------------------------------------------
+            record("M4 texture path: full windows path",
+                   MenuUiBuilder::convertTexturePath("Menus\\Loading\\loading_background.dds") ==
+                   "textures/ui/loading_background.png");
+            record("M4 texture path: forward slashes",
+                   MenuUiBuilder::convertTexturePath("Textures/Menus/load_progress.dds") ==
+                   "textures/ui/load_progress.png");
+            record("M4 texture path: stray padding is trimmed",
+                   MenuUiBuilder::convertTexturePath(" Menus\\Loading\\load_main.dds ") ==
+                   "textures/ui/load_main.png");
+            record("M4 texture path: bare file name",
+                   MenuUiBuilder::convertTexturePath("load_symbol.dds") ==
+                   "textures/ui/load_symbol.png");
+            record("M4 texture path: non dds extension is replaced",
+                   MenuUiBuilder::convertTexturePath("Menus\\foo.png") == "textures/ui/foo.png");
+            record("M4 texture path: empty value",
+                   MenuUiBuilder::convertTexturePath("").empty());
+            record("M4 texture path: whitespace only",
+                   MenuUiBuilder::convertTexturePath("   ").empty());
+            record("M4 texture path: extensionless file",
+                   MenuUiBuilder::convertTexturePath("Menus\\Loading\\logo") ==
+                   "textures/ui/logo.png");
+            // A file name of ".." or "." would collapse to nothing.
+            record("M4 texture path: separator only",
+                   MenuUiBuilder::convertTexturePath("Menus\\").empty());
+
+            // Font index --------------------------------------------------------------
+            record("M4 font index: padded value", MenuUiBuilder::fontIndex(" 1 ") == 1);
+            record("M4 font index: empty", MenuUiBuilder::fontIndex("") == 0);
+            record("M4 font index: maximum", MenuUiBuilder::fontIndex("5") == 5);
+            record("M4 font index: above range falls back", MenuUiBuilder::fontIndex("9") == 0);
+            record("M4 font index: negative falls back", MenuUiBuilder::fontIndex("-2") == 0);
+            record("M4 font index: non numeric falls back", MenuUiBuilder::fontIndex("daedric") == 0);
+
+            // buildNode: rectangle -----------------------------------------------------
+            {
+                std::string err;
+                MenuDef def;
+                const bool built = MenuXmlInterpreter::buildMenuDef(
+                    "<menu name=\"m\">"
+                    "<rect name=\"fg\"><x>10</x><y>20</y><width>100</width><height>50</height>"
+                    "<alpha>48</alpha><red>255</red><green>128</green><blue>0</blue>"
+                    "<visible>0</visible></rect>"
+                    "</menu>",
+                    def, err);
+                const auto widgets = MenuXmlInterpreter::resolve(def, MenuEvalContext{});
+                const MenuUiNode node =
+                    widgets.empty() ? MenuUiNode{} : MenuUiBuilder::buildNode(widgets[0]);
+                record("M4 rect: parses and resolves", built && widgets.size() == 1);
+                record("M4 rect: kind", node.kind == MenuNodeKind::Rectangle);
+                record("M4 rect: position and size",
+                       near(node.x, 10.0f) && near(node.y, 20.0f) &&
+                       near(node.width, 100.0f) && near(node.height, 50.0f));
+                record("M4 rect: alpha is normalised to 0..1", near(node.alpha, 48.0f / 255.0f));
+                record("M4 rect: rgb is normalised to 0..1",
+                       near(node.red, 1.0f) && near(node.green, 128.0f / 255.0f) &&
+                       near(node.blue, 0.0f));
+                record("M4 rect: visible flag", !node.visible);
+            }
+            {
+                std::string err;
+                MenuDef def;
+                MenuXmlInterpreter::buildMenuDef("<menu name=\"m\"><rect name=\"plain\"/></menu>",
+                                                 def, err);
+                const auto widgets = MenuXmlInterpreter::resolve(def, MenuEvalContext{});
+                const MenuUiNode node = MenuUiBuilder::buildNode(widgets[0]);
+                // A tile without <alpha> is fully opaque, not 1/255.
+                record("M4 rect: alpha defaults to opaque when not authored",
+                       near(node.alpha, 1.0f));
+            }
+
+            // buildNode: image -----------------------------------------------------------
+            {
+                std::string err;
+                MenuDef def;
+                MenuXmlInterpreter::buildMenuDef(
+                    "<menu name=\"m\">"
+                    "<image name=\"bg\"><filename>Menus\\Loading\\loading_background.dds"
+                    "</filename><zoom> -1 </zoom></image>"
+                    "</menu>",
+                    def, err);
+                MenuEvalContext ctx;
+                ctx.texture_size = [](const std::string&, float& w, float& h) {
+                    w = 1024.0f;
+                    h = 768.0f;
+                    return true;
+                };
+                const auto widgets = MenuXmlInterpreter::resolve(def, ctx);
+                const MenuUiNode node = MenuUiBuilder::buildNode(widgets[0]);
+                record("M4 image: kind", node.kind == MenuNodeKind::Image);
+                record("M4 image: texture path", node.texture_path == "textures/ui/loading_background.png");
+                record("M4 image: zoom < 0 fills the tile rect", node.fill_rect);
+                record("M4 image: zoom < 0 fits inside the rect",
+                       node.scale_mode == MenuScaleMode::Fit);
+                record("M4 image: native texture size is carried through",
+                       near(node.texture_width, 1024.0f) && near(node.texture_height, 768.0f));
+                record("M4 image: zoom < 0 keeps unit rescale", near(node.zoom_scale, 1.0f));
+            }
+            {
+                std::string err;
+                MenuDef def;
+                MenuXmlInterpreter::buildMenuDef(
+                    "<menu name=\"m\"><image name=\"big\"><filename>x.dds</filename>"
+                    "<zoom> 200 </zoom></image></menu>",
+                    def, err);
+                const auto widgets = MenuXmlInterpreter::resolve(def, MenuEvalContext{});
+                const MenuUiNode node = MenuUiBuilder::buildNode(widgets[0]);
+                record("M4 image: zoom > 0 is a percentage", near(node.zoom_scale, 2.0f));
+                record("M4 image: zoom > 0 stretches", node.scale_mode == MenuScaleMode::Stretch);
+            }
+
+            // buildNode: text --------------------------------------------------------------
+            {
+                std::string err;
+                MenuDef def;
+                MenuXmlInterpreter::buildMenuDef(
+                    "<menu name=\"m\">"
+                    "<text name=\"t\"><string>Hello</string><font> 1 </font>"
+                    "<justify> &center; </justify><wrapwidth> 850 </wrapwidth></text>"
+                    "</menu>",
+                    def, err);
+                const auto widgets = MenuXmlInterpreter::resolve(def, MenuEvalContext{});
+                const MenuUiNode node = MenuUiBuilder::buildNode(widgets[0]);
+                record("M4 text: kind", node.kind == MenuNodeKind::Text);
+                record("M4 text: string", node.text == "Hello");
+                // <justify> &center; </justify> resolves through the entity reference
+                // even without a strings.xml table.
+                record("M4 text: justify resolves from an entity",
+                       node.justify == "center");
+                record("M4 text: font index", node.font_index == 1);
+                record("M4 text: wrap width", near(node.wrap_width, 850.0f));
+            }
+
+            // buildNode: ignored tiles and recursion -----------------------------------------
+            {
+                std::string err;
+                MenuDef def;
+                MenuXmlInterpreter::buildMenuDef(
+                    "<menu name=\"m\">"
+                    "<mesh name=\"skip\"/>"
+                    "<image name=\"a\"><filename>x.dds</filename>"
+                    "<rect name=\"b\"><x>1</x><y>2</y></rect>"
+                    "<text name=\"c\"><justify> &right; </justify><string>R</string></text>"
+                    "</image>"
+                    "</menu>",
+                    def, err);
+                const auto widgets = MenuXmlInterpreter::resolve(def, MenuEvalContext{});
+                const MenuUiNode skip = MenuUiBuilder::buildNode(widgets[0]);
+                const MenuUiNode image = MenuUiBuilder::buildNode(widgets[1]);
+                record("M4 ignore: unknown widgets map to ignored", skip.kind == MenuNodeKind::Ignored);
+                record("M4 tree: children are converted recursively",
+                       image.children.size() == 2 &&
+                       image.children[0].kind == MenuNodeKind::Rectangle &&
+                       image.children[0].x == 1.0f && image.children[0].y == 2.0f &&
+                       image.children[1].kind == MenuNodeKind::Text &&
+                       image.children[1].justify == "right");
+            }
+
+            // build(): full menu in loading_menu.xml shape -------------------------------------
+            {
+                std::string err;
+                MenuDef def;
+                MenuXmlInterpreter::buildMenuDef(
+                    "<menu name=\"Loading\">"
+                    "<rect name=\"black\"><x>0</x><y>0</y><width>1920</width><height>1080</height>"
+                    "<alpha>255</alpha><red>0</red><green>0</green><blue>0</blue></rect>"
+                    "<image name=\"load_title_page\">"
+                    "<filename>Menus\\Loading\\load_title_page.dds</filename><zoom> -1 </zoom>"
+                    "</image>"
+                    "<image name=\"load_main\">"
+                    "<filename>Menus\\Loading\\loading_background.dds</filename><zoom> -1 </zoom>"
+                    "<text name=\"load_text\"><string>Loading</string><font> 1 </font>"
+                    "<justify> &center; </justify><wrapwidth> 850 </wrapwidth></text>"
+                    "</image>"
+                    "</menu>",
+                    def, err);
+                MenuEvalContext ctx;
+                ctx.texture_size = [](const std::string&, float& w, float& h) {
+                    w = 1024.0f;
+                    h = 768.0f;
+                    return true;
+                };
+                const ResolvedMenu menu = MenuXmlInterpreter::resolveMenu(def, ctx);
+                const std::vector<MenuUiNode> nodes = MenuUiBuilder::build(menu);
+                record("M4 build: parses the loading menu shape", menu.widgets.size() == 3);
+                record("M4 build: converts every root in document order",
+                       nodes.size() == 3 &&
+                       nodes[0].kind == MenuNodeKind::Rectangle &&
+                       nodes[1].kind == MenuNodeKind::Image &&
+                       nodes[2].kind == MenuNodeKind::Image);
+                record("M4 build: rect carries the loaded colour set",
+                       near(nodes[0].alpha, 1.0f) && near(nodes[0].red, 0.0f));
+                record("M4 build: image keeps its asset path and fit mode",
+                       nodes[1].texture_path == "textures/ui/load_title_page.png" &&
+                       nodes[1].scale_mode == MenuScaleMode::Fit);
+                record("M4 build: nested label becomes a text child",
+                       nodes[2].children.size() == 1 &&
+                       nodes[2].children[0].kind == MenuNodeKind::Text &&
+                       nodes[2].children[0].text == "Loading" &&
+                       nodes[2].children[0].font_index == 1);
+            }
+        }
+
+        const auto t1 = std::chrono::high_resolution_clock::now();
+        const float totalMs = std::chrono::duration<float, std::milli>(t1 - t0).count();
+        record("suite completed", true, "", totalMs);
 
     return getFailCount() == 0;
 }

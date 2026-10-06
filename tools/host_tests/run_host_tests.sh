@@ -91,6 +91,7 @@ SOURCES=(
   app/src/main/cpp/tests/menu_xml_tests.cpp
   app/src/main/cpp/ui/xml_parser.cpp
   app/src/main/cpp/ui/menu_xml_interpreter.cpp
+  app/src/main/cpp/ui/menu_ui_builder.cpp
   app/src/main/cpp/quest/quest_flow_controller.cpp
   app/src/main/cpp/localization/localization_manager.cpp
   app/src/main/cpp/quest/quest_stage_manager.cpp

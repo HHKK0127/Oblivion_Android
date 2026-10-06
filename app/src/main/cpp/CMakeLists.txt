@@ -199,6 +199,9 @@ add_library(native-lib SHARED
     ui/hud_renderer.cpp
     ui/xml_parser.cpp
     ui/menu_xml_interpreter.cpp
+        ui/menu_ui_builder.cpp
+        ui/menu_text_component.cpp
+        ui/menu_ui_instantiator.cpp
 
     # Phase 43: UI/UX Final Adjustments
     ui/touch_gesture_handler.cpp

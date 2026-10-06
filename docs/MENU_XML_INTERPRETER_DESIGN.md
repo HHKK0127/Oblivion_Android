@@ -400,15 +400,34 @@ public:
 | 負値 | true | 1.0（`texture_scale` に実倍率） | タイル矩形に合わせて一様フィット |
 | 正值 | false | `zoom / 100` | パーセント倍率 |
 
-### 5.5 既存UIへの統合インターフェース（M4 へ延期）
+### 5.5 既存UIへの統合インターフェース（M4）
 
-`MenuUiBuilder`（`ResolvedWidget` → 既存 `UIComponent` への変換と `UISystem` 登録）は **M4 で実装**する。M3 の成果物は `ResolvedWidget` / `ResolvedMenu` までであり、UI層はこれを入力として受け取る。
+M4 で `MenuUiBuilder`（`ResolvedWidget` → GL非依存の `MenuUiNode` へ変換）と `MenuUiInstantiator`（`MenuUiNode` → `UIComponent` / `UISystem` へ実体化）を実装した。
 
-変換規則（M4 で確定する案）:
-- `rect` → 既存の矩形描画コンポーネント（色 = red/green/blue/alpha、座標 = x/y/width/height、depth）
-- `image` → テクスチャ付きUIComponent（filename を DDS→PNG アセットパスへ解決、既存の `TextureScaleMode` を利用）
-- `text` → テキストUIComponent（string / font / justify / wrapwidth）
-- 座標は `abs_x` / `abs_y` を使用（`locus` による中央基準変換は行わない。§5.4.1）、`zoom` は `zoom_scale` / `texture_scale` を適用
+**2層構成の理由**: `UIComponent` の生成・`UISystem` への登録は GL コンテキストが必要だが、変換規則自体は純ロジックである。変換を `MenuUiBuilder` に隔離することで、ホストテスト（§8）が実機なしで変換全体を検証できる。
+
+| 変換 | 規則 |
+|---|---|
+| `rect` | 矩形 `UIComponent`。色 = red/green/blue/alpha を **0..255 → 0..1 へ正規化**（実データの alpha 値は 0/160/200/255 の4値のみ）。`<alpha>` を宣言しないタイルは **1.0（完全不透明）** を保持する |
+| `image` | テクスチャ付き `UIComponent`。`filename` は basename 抽出 + 拡張子置換（DDS→PNG）で `textures/ui/<base>.png` へ解決する。`fill_rect`（zoom<0）→ `PRESERVE_ASPECT_FIT`、それ以外 → `STRETCH`。zoom>0 は `zoom_scale` として保持し、ネイティブ寸法（`texture_width/height`）も引き継ぐ |
+| `text` | 専用 `MenuTextComponent`（`UIComponent` 派生）。`justify` で文字列計測後のアンカー補正（left/center/right）、`wrap_width` 保持、`font` は `fontIndex()` で `TextRenderer::FontType` へマップ |
+| 座標 | **`x` / `y`（親タイル左上からの相対）と `width`/`height` をそのまま `setPosition`/`setSize` へ渡す**。**`abs_x` / `abs_y` は使わない**。理由: `UIComponent::getAbsolutePosition()` が親チェーンを再加算するため、`abs_*` を使うと二重計上になる（§5.4.1 の `locus` 中央基準変換は行わない方針と整合） |
+| `<nif>` 等の非描画タイル | `Ignored` にマップし、children は親へ繰り上げて保持する |
+
+#### 5.5.1 ホスト → 実機のデータフロー
+
+```mermaid
+flowchart LR
+  A[menu XML] --> B[XmlParser]
+  B --> C[MenuDef]
+  C --> D[expandIncludes]
+  D --> E[resolveMenu]
+  E --> F[MenuUiBuilder :: MenuUiNode]
+  F --> G[MenuUiInstantiator :: UIComponent]
+  G --> H[UISystem registerComponent]
+```
+
+`MenuEvalContext::text_size` / `texture_size` フックは instantiator の `makeTextSizeHook()` / `makeTextureSizeHook()` で接続し、実フォント・実テクスチャ寸法を式評価へ供給する。`MenuTextComponent` の描画は `UIComponent` が持たないため、`UIButton::renderLabel()` を流用せず専用実装とした（ボタン状態を持つため流用不可）。
 
 ### 5.6 `<include>` 展開規則
 
@@ -469,14 +488,14 @@ public:
 | **M1** | XmlParser + XmlNode + ホストテスト（実XMLをパースしてツリー構造を検証） | host_tests | 完了 |
 | **M2** | 評価器（copy/add/sub/div/mul/mult/max/min/onlyif/not/rand 等 + screen()/me()/parent()/strings()/child()/sibling()/last()/名前参照） | host_tests | 完了 |
 | **M3** | buildMenuDef / resolveMenu による MenuDef→ResolvedWidget/ResolvedMenu 変換、include 展開、templates 保持、lenient 回復、locus/zoom 規則確定、text 計測フック | host_tests + 実コーパス89件 + `:app:externalNativeBuildDebug` | 完了（MenuXmlTests 142ケース PASS） |
-| **M4** | MenuUiBuilder（ResolvedWidget → UIComponent）+ 実メニュー適用（loading_menu → ロード画面、title_menu → タイトル画面） | host_tests + 実機 + logcat | 未着手 |
+| **M4** | MenuUiBuilder（ResolvedWidget → MenuUiNode）+ MenuTextComponent + MenuUiInstantiator（MenuUiNode → UIComponent）+ 実メニュー適用（loading_menu → ロード画面） | host_tests + 実機 + logcat | 実装中（Builder/Instantiator 実装・ホストテスト184ケース PASS。画面適用は次段階） |
 
-`MenuUiBuilder`（§5.5）は M4 に送る。M3 の完了条件は「実コーパス89 XML がすべて解析でき、座標・サイズ・状態が数値として解決される」こと。
+M3 の完了条件は「実コーパス89 XML がすべて解析でき、座標・サイズ・状態が数値として解決される」こと。`MenuUiBuilder` / `MenuUiInstantiator` は M4 で実装した（§5.5）。
 
 ## 8. テスト計画（ホストテスト）
 
 - `app/src/main/cpp/tests/menu_xml_tests.h/cpp`（GL不要の純ロジックのみ）※ `tools/host_tests/` から参照
-- 実際のテスト構成（**142ケース / 全PASS**）:
+- 実際のテスト構成（**184ケース / 全PASS**）:
 
 | # | セクション | 内容 |
 |---|---|---|
@@ -495,8 +514,9 @@ public:
 | 16 | 未知名 trait | `filewidth` / `fileheight` と未知 trait の保持 |
 | 17 | 実コーパス | `loading_menu.xml` の zoom / locus / text 計測 |
 | 18 / 18b–18d | lenient 回復 | adopt 修復、最内閉じ、フラグメントの adopt、trait マージ優先順位、未終端コメント |
+| 19 | M4 builder | テクスチャパス変換 / fontIndex / 色正規化（0..255→0..1） / scale_mode / justify 解決 / 再帰 / `loading_menu.xml` 形の統合 build |
 
-- `run_host_tests.sh` の SOURCES に `xml_parser.cpp` / `menu_xml_interpreter.cpp` を追加（依存ポリシー: leaf 依存のみ、GLES/NDK は stub で回避）
+- `run_host_tests.sh` の SOURCES に `xml_parser.cpp` / `menu_xml_interpreter.cpp` / `menu_ui_builder.cpp` を追加（依存ポリシー: leaf 依存のみ、GLES/NDK は stub で回避。`MenuUiInstantiator` は GL 依存のためホストから除外）
 - `host_runner_main.cpp` に `MenuXmlTests` スイートを追加
 - 実コーパス回帰チェック: `MENUS 60 FRAGMENTS 25 EMPTY 4 PARSE_FAIL 0 EXPAND_FAIL 0 WIDGETS 203 ALL 2651 INCLUDES 0`（`tmp/menu_xml_corpus.exe`）
 
@@ -516,16 +536,17 @@ public:
 | 式評価の累積セマンティクス（§6.2 の単独演算子子） | 座標・サイズが原作とずれる | 解決済み（§6.2 実装時確定。`_pagenum` 等を入力に MenuXmlTests で検証） |
 | `<include>` / `<template>` / `<prefab>` の展開 | メニュー構造が不完全 | 解決済み。include は §5.6 の規則で展開、template/prefab はリスト行の雛形として保持（§3.6） |
 | `strings.xml` のエンティティ量が多い | パースが重い | 定数は起動時1回ロードしてキャッシュ |
-| `locus` の解釈 | 表示ズレ | 解決済み。実データ2件の根拠から「レイアウトに影響しない」と確定（§5.4.1）。M4 でも `abs_x` / `abs_y` をそのまま使う |
+| `locus` の解釈 | 表示ズレ | 解決済み。実データ2件の根拠から「レイアウトに影響しない」と確定（§5.4.1）。M4 でも `x` / `y` をそのまま使う |
 | 原作データの閉じタグ誤記 | 文書の切り捨て・trait 欠落 | 解決済み。lenient 回復（§3.7）。adopt は3件のみ、strict には影響なし。コーパス回帰チェックで `PARSE_FAIL 0` を維持 |
-| text の描画寸法 | 中央寄せラベルがずれる | `MenuEvalContext::text_size` フックで計測値を式評価器へ渡す。実フォント寸法の供給は M4 で接続 |
-| BSA内DDSパスとアセットパスの解決 | 画像表示不能 | 資産側は解決済み（`docs/RE_UI_TEXTURE_REPORT.md`、`textures\menus` 正典）。パス変換は M4 で接続 |
-| `MenuUiBuilder` 未実装 | 実際の画面には未反映 | M4 の作業として明示。M3 の成果物は数値解決まで |
+| text の描画寸法 | 中央寄せラベルがずれる | 部分対応済み。`makeTextSizeHook()` が実フォント計測を式評価へ接続（§5.5.1）。実機の目視確認は画面適用の次段階 |
+| BSA内DDSパスとアセットパスの解決 | 画像表示不能 | 解決済み。`convertTexturePath()` が basename 抽出 + PNG 拡張子へ解決（§5.5）。実機のテクスチャ表示は画面適用次段階で確認 |
+| `MenuUiBuilder` 未実装 | 実際の画面には未反映 | 解決済み。M4 で Builder / Instantiator / MenuTextComponent を実装し、ホストテスト184ケース PASS。実メニューの画面適用は次段階 |
 
 ## 10. 参考資料
 
 - 実XML: `tmp/bsa_misc_full/menus/*.xml`（89個、`loading_menu.xml` / `book_menu.xml` / `strings.xml` が代表例）
 - 既存UI: `app/src/main/cpp/ui/ui_system.h`, `ui_component.h`, `ui_button.*`, `ui_panel.*`
+- M4: `app/src/main/cpp/ui/menu_ui_builder.{h,cpp}`, `menu_text_component.{h,cpp}`, `menu_ui_instantiator.{h,cpp}`
 - ホストテスト基盤: `tools/host_tests/README.md`, `run_host_tests.sh`, `host_runner_main.cpp`
 - 実装: `app/src/main/cpp/ui/xml_parser.{h,cpp}`, `app/src/main/cpp/ui/menu_xml_interpreter.{h,cpp}`, `app/src/main/cpp/tests/menu_xml_tests.{h,cpp}`
 - 設計意図: `docs/ASSET_GUIDE.md` L380-390
