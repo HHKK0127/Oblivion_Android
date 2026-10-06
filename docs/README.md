@@ -33,6 +33,7 @@
 | [RE_TITLE_SCREEN_REPORT.md](RE_TITLE_SCREEN_REPORT.md) | Steam版タイトル画面リバースエンジニアリング解析 | 実装エンジニア |
 | [RE_FONT_REPORT.md](RE_FONT_REPORT.md) | Steam版フォント情報リバースエンジニアリング解析 | 実装エンジニア |
 | [RE_UI_TEXTURE_REPORT.md](RE_UI_TEXTURE_REPORT.md) | Steam版UIテクスチャ・メニューXMLリバースエンジニアリング解析 | 実装エンジニア |
+| [MENU_XML_INTERPRETER_DESIGN.md](MENU_XML_INTERPRETER_DESIGN.md) | メニューXMLインタプリタ設計（パーサ・式評価器） | 実装エンジニア |
 | [FPS_CONTROL_GUIDE.md](FPS_CONTROL_GUIDE.md) | FPS制御ガイド | 実装エンジニア |
 | [SAVE_LOAD_IMPLEMENTATION.md](SAVE_LOAD_IMPLEMENTATION.md) | セーブ/ロード実装 | 実装エンジニア |
 | [CODE_QUALITY_IMPROVEMENTS.md](CODE_QUALITY_IMPROVEMENTS.md) | コード品質改善 | 全開発者 |

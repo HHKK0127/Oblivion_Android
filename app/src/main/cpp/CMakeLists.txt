@@ -197,6 +197,8 @@ add_library(native-lib SHARED
     ui/crosshair.cpp
     ui/placeholder_assets.cpp
     ui/hud_renderer.cpp
+    ui/xml_parser.cpp
+    ui/menu_xml_interpreter.cpp
 
     # Phase 43: UI/UX Final Adjustments
     ui/touch_gesture_handler.cpp

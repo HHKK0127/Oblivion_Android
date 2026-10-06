@@ -336,12 +336,25 @@ textures/ui/icons/icon_{iron_sword,iron_cuirass,health_potion,mana_potion,iron_o
 
 未適用（別途判断が必要）:
 
-- `loading_background.png` — BSA上のどのティアとも画素一致せず、内容は
+- ~~`loading_background.png` — BSA上のどのティアとも画素一致せず、内容は
   `textures\menus\genericbackground\center_background.dds` と同一。
   原作のローディング画面（`textures\menus\loading\loading_background.dds`）へ
-  差し替えるかは別途判断とする。
+  差し替えるかは別途判断とする。~~ → **完了（2026-10-05）**
 - `icons/icon_*.png` 7枚 — `textures\menus*` に同名・同形状の元テクスチャが存在せず、
   BSA由来ではない（コミット `52f6a2c4` で追加）。出自の再確認が必要。
+
+#### `loading_background.png` 原作差し替え（2026-10-05 実施）
+
+`tmp/extracted_menus_full/menus/loading__loading_background.png` を
+`app/src/main/assets/textures/ui/loading_background.png` へ差し替え済み。
+
+- 適用先は5画面（タイトル/ランチャー/設定/セーブロード/マップ）。タイトル画面は
+  videoBackgroundActive 時のみ動画背景を優先し、通常時は本テクスチャを汎用背景として使用。
+- BSAから直接再抽出（`tmp/verify_loading_background.py`）して画素完全一致を確認の上で適用。
+- SHA256 `0461d4cc...`（原作 `Menus\Loading\loading_background.dds` と一致）。
+- 旧アセット（`center_background` と一致、SHA `4b04343f...`）は
+  `tmp/ui_assets_backup/textures/ui/loading_background.png` に退避済み。
+- APKサイズは約 +230 KB（1,219,199 B → 1,330,140 B）。
 
 #### 参照整合性の全数照合（2026-10-05 実施）
 
@@ -430,5 +443,5 @@ Android版は約90個の手書きC++ファイル（`app/src/main/cpp/ui/`）で�
 2. 参照整合性の全数照合を実施し、孤児17枚（1.18 MiB）は**保持**と決定。→ 完了（2026-10-05）
 3. 抽出済み814枚のAndroid統合: **参照が生じた分だけ** `menus` から抽出・縮小・PNG変換して追加。
 4. メニューXMLインタプリタの実装検討（要素・演算子・traitのサブセットから着手）。
-5. `loading_background.png` を原作ローディング画面（`textures\menus\loading\loading_background.dds`）へ差し替えるか否かの判断。
+5. `loading_background.png` の原作差し替え。→ 完了（2026-10-05）
 6. `icons/icon_*.png` 7枚の出自再確認（BSA非由来）。
