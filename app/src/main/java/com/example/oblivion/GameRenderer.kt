@@ -539,6 +539,7 @@ class GameRenderer : GLSurfaceView.Renderer {
     external fun nativeToggle3DViewer()
     external fun nativeStartGame()
         external fun nativeOnBackKey(): Boolean
+        external fun nativeOnKeyPress(key: Int)
         external fun nativeExecuteConsoleCommand(command: String)
 
     // Exit request check

@@ -118,3 +118,7 @@ __pycache__/
 # Logs
 *.log
 *.tmp
+
+# Graphify index output (local-only, regenerable)
+/graphify-out/
+graphify-out/

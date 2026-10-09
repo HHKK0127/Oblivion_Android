@@ -160,6 +160,14 @@ bool MenuXmlTests::runAllTests() {
         record("min clamps", near(eval("50<min> 10 </min>").toNumber(), 10.0f));
         record("max clamps", near(eval("5<max> 10 </max>").toNumber(), 10.0f));
 
+                // <neg> is the unary minus (`~` in the original engine's RPN evaluator).
+                record("neg negates literal", near(eval("<neg> 5 </neg>").toNumber(), -5.0f));
+                record("neg negates float", near(eval("<neg> 1.5 </neg>").toNumber(), -1.5f));
+                record("neg with src operand",
+                       near(eval("<neg src=\"screen()\" trait=\"width\"/>").toNumber(), -1280.0f));
+                record("neg nests inside operators",
+                       near(eval("10<add><neg> 4 </neg></add>").toNumber(), 6.0f));
+
         record("screen() width", near(eval("<copy src=\"screen()\" trait=\"width\"/>").toNumber(), 1280.0f));
         record("screen() height", near(eval("<copy src=\"screen()\" trait=\"height\"/>").toNumber(), 720.0f));
         record("operator with src operand",
@@ -1165,7 +1173,92 @@ bool MenuXmlTests::runAllTests() {
             }
         }
 
-        const auto t1 = std::chrono::high_resolution_clock::now();
+                    // --- 20. Device tokens and strings.xml loader -------------------------
+                    {
+                        MenuEvalContext ctx;
+                        ctx.screen_width = 1280.0f;
+                        auto eval = [&](const std::string& body) {
+                            const std::string xml = "<menu name=\"m\"><_t>" + body + "</_t></menu>";
+                            XmlNode root;
+                            std::string err;
+                            XmlParser::parse(xml, root, err);
+                            return MenuExpressionEvaluator::evaluate(root.children[0], ctx);
+                        };
+
+                        // &xbox;/&xenon;/&xboxhint; resolve to the is_console flag. On a
+                        // touch device the console-only arrangements must disappear.
+                        record("xbox token is false on touch", eval("&xbox;").toBool() == false);
+                        record("xenon token is false on touch", eval("&xenon;").toBool() == false);
+                        record("xboxhint token is false on touch", eval("&xboxhint;").toBool() == false);
+                        record("xbox as operator operand", eval("<and>&xbox;</and>").toBool() == false);
+                        record("not xbox is true on touch", eval("<not>&xbox;</not>").toBool() == true);
+                        // Gated layout: sub/add on <onlyif>&xbox;</onlyif> skip on touch.
+                        record("onlyif xbox skips next op",
+                               near(eval("10<onlyif>&xbox;</onlyif><add> 5 </add>").toNumber(), 10.0f));
+
+                        // The flag also flips the tokens to true.
+                        ctx.is_console = true;
+                        record("xbox token is true on console", eval("&xbox;").toBool() == true);
+                        record("xenon token is true on console", eval("&xenon;").toBool() == true);
+                        record("onlyif xbox keeps next op on console",
+                               near(eval("10<onlyif>&xbox;</onlyif><add> 5 </add>").toNumber(), 15.0f));
+
+                        // Button glyph tokens carry the button name for hint display.
+                        record("xbuttona resolves to A", eval("&xbuttona;").toString() == "A");
+                        record("xbuttonb resolves to B", eval("&xbuttonb;").toString() == "B");
+                        record("xbuttonx resolves to X", eval("&xbuttonx;").toString() == "X");
+                        record("xbuttony resolves to Y", eval("&xbuttony;").toString() == "Y");
+                        record("xbuttonls resolves to LS", eval("&xbuttonls;").toString() == "LS");
+                        record("xbuttonrt resolves to RT", eval("&xbuttonrt;").toString() == "RT");
+
+                        // strings.xml loader: <rect name="Strings"><_name> text </_name>.
+                        {
+                            const std::string stringsXml =
+                                "<rect name=\"Strings\">"
+                                "  <_exit> Exit </_exit>"
+                                "  <_load> Load </_load>"
+                                "  <_prev> Prev </_prev>"
+                                "  <_loading> Loading... </_loading>"
+                                "</rect>";
+                            std::map<std::string, std::string> strings;
+                            std::string err;
+                            const bool ok =
+                                MenuXmlInterpreter::loadStringsXml(stringsXml, strings, err);
+                            record("loadStringsXml parses the table", ok && err.empty());
+                            record("loadStringsXml trims values",
+                                   strings["_exit"] == "Exit" &&
+                                   strings["_load"] == "Load");
+                            record("loadStringsXml keeps underscore ids",
+                                   strings.count("_prev") == 1 && strings["_prev"] == "Prev");
+                            record("loadStringsXml keeps spaces in value",
+                                   strings["_loading"] == "Loading...");
+
+                            // Feed the loaded table into a real evaluation.
+                            ctx.strings = &strings;
+                            record("strings() reads the loaded table",
+                                   eval("<copy src=\"strings()\" trait=\"_load\"/>").toString() ==
+                                       "Load");
+                            record("entity falls back to strings table",
+                                   eval("&_prev;").toString() == "Prev");
+                            record("unknown entity falls back to its name",
+                                   eval("&nonexistent;").toString() == "nonexistent");
+                        }
+                        // Real corpus duplicate ids are last-wins.
+                        {
+                            const std::string stringsXml =
+                                "<rect name=\"Strings\">"
+                                "  <_done> Done </_done>"
+                                "  <_done> Finished </_done>"
+                                "</rect>";
+                            std::map<std::string, std::string> strings;
+                            std::string err;
+                            MenuXmlInterpreter::loadStringsXml(stringsXml, strings, err);
+                            record("loadStringsXml duplicate id is last-wins",
+                                   strings["_done"] == "Finished");
+                        }
+                    }
+
+                    const auto t1 = std::chrono::high_resolution_clock::now();
         const float totalMs = std::chrono::duration<float, std::milli>(t1 - t0).count();
         record("suite completed", true, "", totalMs);
 

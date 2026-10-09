@@ -24,6 +24,14 @@ class GameSurfaceView : GLSurfaceView {
 
     companion object {
         private const val TAG = "GameSurfaceView"
+
+        // Keys forwarded to the native title screen: D-pad up/down/center and Enter.
+        private val MENU_KEY_CODES = setOf(
+            KeyEvent.KEYCODE_DPAD_UP,
+            KeyEvent.KEYCODE_DPAD_DOWN,
+            KeyEvent.KEYCODE_DPAD_CENTER,
+            KeyEvent.KEYCODE_ENTER
+        )
     }
 
     constructor(context: Context) : super(context) {
@@ -117,6 +125,7 @@ class GameSurfaceView : GLSurfaceView {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        Log.i(TAG, "DBG-KEY dispatch code=${event.keyCode} action=${event.action} repeat=${event.repeatCount} renderer=${renderer != null}")
         if (event.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
             Log.i(TAG, "BACK key pressed, forwarding to native")
             val consumed = renderer?.nativeOnBackKey() ?: false
@@ -126,6 +135,11 @@ class GameSurfaceView : GLSurfaceView {
             }
             // Not consumed by native - let system handle it (will finish activity)
             Log.i(TAG, "BACK key not consumed by native, letting system handle")
+        }
+        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0 &&
+            event.keyCode in MENU_KEY_CODES) {
+            renderer?.nativeOnKeyPress(event.keyCode)
+            return true
         }
         return super.dispatchKeyEvent(event)
     }

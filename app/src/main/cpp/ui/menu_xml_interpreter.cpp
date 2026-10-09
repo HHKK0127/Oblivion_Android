@@ -136,6 +136,25 @@ EvalValue literalValue(const std::string& raw, const MenuEvalContext& ctx) {
         const std::string name = t.substr(1, t.size() - 2);
         if (name == "true") return EvalValue::makeBool(true);
         if (name == "false") return EvalValue::makeBool(false);
+        // Console device tokens. The shipped menus gate console-only
+        // arrangements (controller button hints, stick lists, ...) behind
+        // these; on a touch device they resolve to false so the PC/touch
+        // layout is shown instead.
+        if (name == "xbox" || name == "xenon" || name == "xboxhint") {
+            return EvalValue::makeBool(ctx.is_console);
+        }
+        // Controller button hint tokens used in <user20>/<xdefault> to pick
+        // the button glyph. Gated by &xbox; above, so only meaningful when
+        // is_console is true; resolved to the button name for that case.
+        if (name == "xbuttona") return EvalValue::makeString("A");
+        if (name == "xbuttonb") return EvalValue::makeString("B");
+        if (name == "xbuttonx") return EvalValue::makeString("X");
+        if (name == "xbuttony") return EvalValue::makeString("Y");
+        if (name == "xbuttonls") return EvalValue::makeString("LS");
+        if (name == "xbuttonrs") return EvalValue::makeString("RS");
+        if (name == "xbuttonlt") return EvalValue::makeString("LT");
+        if (name == "xbuttonrt") return EvalValue::makeString("RT");
+        if (name == "xbuttonstart") return EvalValue::makeString("START");
         if (ctx.strings) {
             const auto it = ctx.strings->find(name);
             if (it != ctx.strings->end()) return EvalValue::makeString(it->second);
@@ -170,6 +189,12 @@ public:
         if (node.name == "not") {
             return EvalValue::makeBool(!unaryOperand(node, ctx, depth).toBool());
         }
+                // <neg> is the unary minus of the original engine (`~` RPN opcode 0xf):
+                // it flips the sign of its own operand, never the accumulator.
+                // e.g. <neg> 5 </neg> -> -5, <neg src="me()" trait="user2"/> -> -value.
+                if (node.name == "neg") {
+                    return EvalValue::makeNumber(-unaryOperand(node, ctx, depth).toNumber());
+                }
         // <rand> N </rand> yields a uniform integer in 1..N. Its operand may
         // itself be an expression (e.g. <rand><copy src="parent()" .../></rand>).
         if (node.name == "rand") {
@@ -181,7 +206,7 @@ public:
         return evaluateContent(node, ctx, depth);
     }
 
-    // The operand of a unary <not>/<rand>: its `src` trait when present,
+    // The operand of a unary <not>/<neg>/<rand>: its `src` trait when present,
     // otherwise its own content.
     static EvalValue unaryOperand(const XmlNode& node, const MenuEvalContext& ctx, int depth) {
         const std::string src = attrOf(node, "src", "");
@@ -699,6 +724,22 @@ bool MenuXmlInterpreter::buildMenuDef(const std::string& xml, MenuDef& out,
     for (const auto& child : root.children) {
         classifyChild(child, out.traits, out.widgets, out.includes, out.templates,
                       "", out.name);
+    }
+    return true;
+}
+
+bool MenuXmlInterpreter::loadStringsXml(const std::string& xml,
+                                        std::map<std::string, std::string>& out,
+                                        std::string& error) {
+    XmlNode root;
+    if (!XmlParser::parse(xml, root, error, /*lenient=*/true)) return false;
+    out.clear();
+    // The root is <rect name="Strings"> and every child is a <_name> text
+    // </_name> entry (leading underscore is part of the id). Duplicate ids
+    // within the shipped file are last-wins, matching the original table.
+    for (const auto& child : root.children) {
+        if (child.name.empty() || child.name == "rect") continue;
+        out[child.name] = trim(child.text);
     }
     return true;
 }

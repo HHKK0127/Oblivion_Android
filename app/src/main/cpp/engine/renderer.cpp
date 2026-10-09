@@ -1687,9 +1687,12 @@ bool Renderer::initGameSystems() {
         }
         return "No saves";
     };
-    refs.openMenu = [](const std::string& menu) {
+    refs.openMenu = [this](const std::string& menu) {
         LOGI("Menu open requested: %s", menu.c_str());
-    };
+            if (menu == "inventory") {
+                toggleInventory();
+            }
+        };
     refs.closeMenu = []() {
         LOGI("Menu close requested");
     };

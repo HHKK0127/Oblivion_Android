@@ -104,6 +104,10 @@ struct MenuEvalContext {
     // True while evaluating a menu-level trait: me() then refers to the menu.
     bool self_is_menu = false;
     const std::map<std::string, std::string>* strings = nullptr;  // strings.xml table
+        // Console flag backing the device tokens &xbox;/&xenon;/&xboxhint;. The
+        // shipped menus gate console-only arrangements behind them (button hints,
+        // left-stick lists, ...); on a touch device they resolve to false.
+        bool is_console = false;
     // Optional texture metadata (native pixel size of a <filename> texture).
     // Enables the filewidth/fileheight traits and image auto sizing.
     std::function<bool(const std::string& filename, float& width, float& height)> texture_size;
@@ -185,6 +189,13 @@ public:
 
     // Parse a menu XML file into a MenuDef (traits kept as raw expressions).
     static bool buildMenuDef(const std::string& xml, MenuDef& out, std::string& error);
+
+        // Parse the shipped strings.xml (<rect name="Strings"> table of
+        // <_name> text </_name> entries) into a name -> text map that the
+        // evaluator resolves through strings() and &name; literals.
+        static bool loadStringsXml(const std::string& xml,
+                                   std::map<std::string, std::string>& out,
+                                   std::string& error);
 
     // Evaluate a MenuDef against a runtime context.
     static std::vector<ResolvedWidget> resolve(const MenuDef& def, const MenuEvalContext& ctx);

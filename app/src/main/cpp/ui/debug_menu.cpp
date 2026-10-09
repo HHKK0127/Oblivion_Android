@@ -1218,7 +1218,8 @@ void DebugMenu::createAllTabContents() {
             {"Add Shield", "additem 200 1"},
             {"Add Armor", "additem 300 1"},
             {"Carry Weight", "carryweight"},
-        };
+                        {"Open Inventory", "openmenu inventory"},
+                    };
         for (const auto& item : items) {
             Button btn;
             btn.label = item.first;
