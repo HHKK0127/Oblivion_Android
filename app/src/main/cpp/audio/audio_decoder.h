@@ -12,17 +12,21 @@
 #include <memory>
 #include <android/log.h>
 
-#undef LOG_TAG
-#undef LOGD
-#undef LOGI
-#undef LOGW
-#undef LOGE
-
+#ifndef LOG_TAG
 #define LOG_TAG "AudioDecoder"
+#endif
+#ifndef LOGD
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#endif
+#ifndef LOGI
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#endif
+#ifndef LOGW
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
+#endif
+#ifndef LOGE
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+#endif
 
 namespace audio {
 

@@ -192,13 +192,6 @@ uint32_t NpcManager::getNpcCell(uint32_t npcId) const {
 void NpcManager::logNpcStatus() const {
     LOGD("========== NPC Manager Status ==========");
     LOGD("Total NPCs: %zu", npcs.size());
-    for (const auto& pair : npcs) {
-        if (pair.second) {
-            LOGD("  NPC: %s (ID=%u, HP=%.1f/%.1f)",
-                 pair.second->name.c_str(), pair.second->npcId,
-                 pair.second->status.currentHealth, pair.second->status.maxHealth);
-        }
-    }
     LOGD("=======================================");
 }
 
@@ -237,12 +230,10 @@ std::shared_ptr<NPC> NpcManager::createNPCFromESM(uint32_t formID, const glm::ve
         }
 
         npcs[npcId] = npc;
-        LOGD("NPC spawned from ESM: %s (formID=0x%08X, ID=%u, HP=%u, LVL=%u)",
-             npc->name.c_str(), formID, npcId, npcData->health, npcData->level);
-        return npc;
-    }
+                return npc;
+            }
 
-    // Try creature (ACRE records)
+            // Try creature (ACRE records)
     const oblivion::CreatureData* creature = m_esm->findCreature(formID);
     if (creature) {
         uint32_t npcId = nextNpcId++;
@@ -270,10 +261,7 @@ std::shared_ptr<NPC> NpcManager::createNPCFromESM(uint32_t formID, const glm::ve
         }
 
         npcs[npcId] = npc;
-        LOGD("Creature spawned from ESM: %s (formID=0x%08X, ID=%u, HP=%.0f, ATK=%u, LVL=%u)",
-             npc->name.c_str(), formID, npcId, npc->status.maxHealth,
-             creature->attackDamage, creature->level);
-        return npc;
+                return npc;
     }
 
     // Fallback: generic NPC
@@ -512,24 +500,17 @@ void NpcManager::addStatusEffect(NPC& npc, SpellEffectType type, float duration,
     m_statusEffects[npc.npcId].push_back(effect);
 
     // Apply immediate effects
-    switch (type) {
-        case SpellEffectType::PARALYZE:
-            npc.setAIState(AIState::IDLE);
-            LOGI("NPC %s paralyzed for %.1fs", npc.name.c_str(), duration);
-            break;
-        case SpellEffectType::INVISIBILITY:
-            LOGI("NPC %s invisible for %.1fs", npc.name.c_str(), duration);
-            break;
-        case SpellEffectType::FORTIFY_ATTR:
-            LOGI("NPC %s attribute fortified by %.0f for %.1fs", npc.name.c_str(), magnitude, duration);
-            break;
-        case SpellEffectType::SUMMON:
-            LOGI("NPC %s summoned for %.1fs", npc.name.c_str(), duration);
-            break;
-        default:
-            break;
+        switch (type) {
+            case SpellEffectType::PARALYZE:
+                npc.setAIState(AIState::IDLE);
+                break;
+            case SpellEffectType::INVISIBILITY:
+            case SpellEffectType::FORTIFY_ATTR:
+            case SpellEffectType::SUMMON:
+            default:
+                break;
+        }
     }
-}
 
 void NpcManager::updateStatusEffects(NPC& npc, float deltaTime) {
     auto it = m_statusEffects.find(npc.npcId);

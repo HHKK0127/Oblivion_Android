@@ -1317,6 +1317,8 @@ private:
     uint32_t m_currentCellFormID = 0;
     // Worldspace FormID taken from the enclosing WorldChildren GRUP (type 1).
     uint32_t m_currentWorldspaceFormID = 0;
+        // Total GRUP headers traversed (memory parsing path), for a single summary log.
+        uint32_t m_grupCount = 0;
 
     // Parsing helpers
         bool readRecordHeader(std::ifstream& file, ESMRecord& rec);

@@ -234,11 +234,10 @@ bool ESMFile::open(const std::string& filePath) {
         uint64_t currentPos = file.tellg();
         
         // Pop expired GRUP levels
-        while (!groupEndStack.empty() && currentPos >= groupEndStack.back()) {
-            LOGD("  GRUP ended at offset %llu (stack size %zu)", (unsigned long long)currentPos, groupEndStack.size());
-            groupEndStack.pop_back();
-            if (!groupInfoStack.empty()) groupInfoStack.pop_back();
-        }
+                while (!groupEndStack.empty() && currentPos >= groupEndStack.back()) {
+                    groupEndStack.pop_back();
+                    if (!groupInfoStack.empty()) groupInfoStack.pop_back();
+                }
         
         // Read 4-byte tag WITHOUT seekback to avoid position drift
         char tag[4];
@@ -1455,12 +1454,6 @@ void ESMFile::decodeWorld(const ESMRecord& rec) {
         world.parentWorldspaceFormID = readU32(wnam->data.data());
     }
 
-    LOGD("  WRLD: 0x%08X '%s' '%s' offset=(%.0f,%.0f) bounds=[(%d,%d)-(%d,%d)] parentWorldspace=0x%08X",
-         world.formID, world.editorID.c_str(), world.fullName.c_str(),
-         world.worldOffset.x, world.worldOffset.y,
-         world.minX, world.minY, world.maxX, world.maxY,
-         world.parentWorldspaceFormID);
-
     m_worlds.push_back(std::move(world));
 }
 
@@ -1509,11 +1502,6 @@ void ESMFile::decodeSpell(const ESMRecord& rec) {
         }
     }
 
-    LOGD("  SPEL: 0x%08X '%s' cost=%u type=%d level=%d effects=%zu",
-         spell.formID, spell.fullName.c_str(),
-         spell.cost, spell.spellType, spell.level,
-         spell.effectFormIDs.size());
-
     m_spells.push_back(std::move(spell));
 }
 
@@ -1551,11 +1539,6 @@ void ESMFile::decodeEnchantment(const ESMRecord& rec) {
             }
         }
     }
-
-    LOGD("  ENCH: 0x%08X '%s' type=%u charge=%u cost=%u effects=%zu",
-         enchant.formID, enchant.fullName.c_str(),
-         enchant.enchantType, enchant.chargeAmount, enchant.enchantCost,
-         enchant.effectFormIDs.size());
 
     m_enchantments.push_back(std::move(enchant));
 }
@@ -1928,13 +1911,6 @@ void ESMFile::decodeLeveledList(const ESMRecord& rec) {
         }
     }
 
-    const char* recLabel = std::memcmp(rec.recType, "LVLC", 4) == 0 ? "LVLC" :
-                           (std::memcmp(rec.recType, "LVSP", 4) == 0 ? "LVSP" : "LVLI");
-
-    LOGD("  %s: 0x%08X '%s' chanceNone=%u flags=0x%02X entries=%zu",
-         recLabel, list.formID, list.editorID.c_str(),
-         list.chanceNone, list.flags, list.entries.size());
-
     m_leveledLists.push_back(std::move(list));
 }
 
@@ -2001,10 +1977,6 @@ void ESMFile::decodeNavMesh(const ESMRecord& rec) {
         // Remaining NVNM data (preferred paths, door links, cover) is ignored for now
     }
 
-    LOGD("  NAVM: 0x%08X '%s' cell=0x%08X verts=%d tris=%d",
-         navMesh.formID, navMesh.editorID.c_str(),
-         navMesh.cellFormID, navMesh.numVertices, navMesh.numTriangles);
-
     m_navMeshes.push_back(std::move(navMesh));
 }
 
@@ -2043,10 +2015,6 @@ void ESMFile::decodeArmor(const ESMRecord& rec) {
         armor.enchantmentID = readU32(enam->data.data());
     }
 
-    LOGD("  ARMO: 0x%08X '%s' rating=%u weight=%.1f value=%u",
-         armor.formID, armor.fullName.c_str(),
-         armor.armorRating, armor.weight, armor.value);
-
     m_armors.push_back(std::move(armor));
 }
 
@@ -2075,9 +2043,6 @@ void ESMFile::decodeBook(const ESMRecord& rec) {
             book.teachesSkillLevel = 1;  // Default +1 for skill books
         }
     }
-
-    LOGD("  BOOK: 0x%08X '%s' teachesSkill=0x%08X",
-         book.formID, book.fullName.c_str(), book.teachesSkillID);
 
     m_books.push_back(std::move(book));
 }
@@ -2128,10 +2093,6 @@ void ESMFile::decodeFaction(const ESMRecord& rec) {
             faction.relations.push_back(rel);
         }
     }
-
-    LOGD("  FACT: 0x%08X '%s' ranks=%zu relations=%zu",
-         faction.formID, faction.fullName.c_str(),
-         faction.ranks.size(), faction.relations.size());
 
     m_factions.push_back(std::move(faction));
 }
@@ -2193,10 +2154,6 @@ void ESMFile::decodeRace(const ESMRecord& rec) {
     // Full parsing requires understanding subrecord order in RACE
     // ATTR and SKIL subrecords are not always present in decompiled dumps
 
-    LOGD("  RACE: 0x%08X '%s' spells=%zu",
-         race.formID, race.fullName.c_str(),
-         race.spellFormIDs.size());
-
     m_races.push_back(std::move(race));
 }
 
@@ -2226,10 +2183,6 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
         std::memcpy(&clas.primaryAttribute2, prat->data.data() + 4, 4);
     }
 
-    LOGD("  CLAS: 0x%08X '%s' spec=%d attr1=%u attr2=%u",
-         clas.formID, clas.fullName.c_str(),
-         clas.specialization, clas.primaryAttribute1, clas.primaryAttribute2);
-
     m_classes.push_back(std::move(clas));
 }
 
@@ -2257,7 +2210,6 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
             std::memcpy(&cloth.enchantmentID, enam->data.data(), 4);
         }
 
-        LOGD("  CLOT: 0x%08X '%s' value=%u weight=%.1f", cloth.formID, cloth.fullName.c_str(), cloth.value, cloth.weight);
         m_clothing.push_back(std::move(cloth));
     }
 
@@ -2314,7 +2266,6 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
             }
         }
 
-        LOGD("  INGR: 0x%08X '%s' value=%u effects=%zu", ingr.formID, ingr.fullName.c_str(), ingr.value, ingr.effectFormIDs.size());
         m_ingredients.push_back(std::move(ingr));
     }
 
@@ -2357,7 +2308,6 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
             }
         }
 
-        LOGD("  ALCH: 0x%08X '%s' value=%u effects=%zu", alch.formID, alch.fullName.c_str(), alch.value, alch.effectFormIDs.size());
         m_alchemy.push_back(std::move(alch));
     }
 
@@ -2379,7 +2329,6 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
             std::memcpy(&misc.weight, data->data.data() + 4, 4);
         }
 
-        LOGD("  MISC: 0x%08X '%s' value=%u weight=%.1f", misc.formID, misc.fullName.c_str(), misc.value, misc.weight);
         m_miscItems.push_back(std::move(misc));
     }
 
@@ -2418,7 +2367,6 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
             }
         }
 
-        LOGD("  ROAD: 0x%08X nodes=%d edges=%d", road.formID, (int)road.nodes.size(), (int)road.edges.size());
         m_roads.push_back(std::move(road));
     }
 
@@ -2458,11 +2406,7 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
             script.compiledLength = compiledLength;
             script.lastVarIndex = lastVarIndex;
 
-            LOGD("  SCPT: 0x%08X '%s' type=%d bytecode=%u lastVar=%u refs=%u",
-                 script.formID, script.editorID.c_str(),
-                 static_cast<int>(scriptType), compiledLength,
-                 lastVarIndex, refCount);
-        }
+            }
 
         // SCDA: compiled bytecode. Long scripts are split across several SCDA
         // subrecords, so every chunk is concatenated in record order.
@@ -2578,25 +2522,9 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
         }
 
         // The variable count is not stored in SCHR: derive it from the decoded pairs
-        script.varCount = static_cast<uint32_t>(script.variables.size());
+                script.varCount = static_cast<uint32_t>(script.variables.size());
 
-        // Type census, so an APK run can confirm the SCTX-derived types against the
-        // measured distribution (int 5,100 / float 1,170 / ref 996 = 7,266).
-        if (!script.variables.empty()) {
-            uint32_t intVars = 0, floatVars = 0, refVars = 0;
-            for (const auto& var : script.variables) {
-                switch (var.type) {
-                    case script::ScriptValue::Type::Float: ++floatVars; break;
-                    case script::ScriptValue::Type::Ref:   ++refVars;   break;
-                    default:                               ++intVars;   break;
-                }
-            }
-            LOGD("  SCPT vars: 0x%08X '%s' count=%u int=%u float=%u ref=%u",
-                 script.formID, script.editorID.c_str(), script.varCount,
-                 intVars, floatVars, refVars);
-        }
-
-        // SCRO: object references (4 bytes each - FormID)
+                // SCRO: object references (4 bytes each - FormID)
         for (const auto& sub : rec.subRecords) {
             if (std::memcmp(sub.tag, "SCRO", 4) == 0 && sub.size() >= 4) {
                 uint32_t refFormID;
@@ -3264,8 +3192,7 @@ bool ESMFile::readGroupMem(const uint8_t*& pos, const uint8_t* end, GroupType gr
     }
     
     const uint8_t* groupEnd = pos + groupSize;
-    
-    LOGD("readGroupMem: type=%u, size=%u", static_cast<uint32_t>(groupType), groupSize);
+        ++m_grupCount;
     
     while (pos < groupEnd) {
         if (pos + 4 > groupEnd) break;
@@ -3352,8 +3279,14 @@ bool ESMFile::parseFromMemory(const std::string& name, const uint8_t* data, size
         }
     }
     
-    LOGD("ESM parsed from memory: %zu cells, %zu NPCs, %zu weapons, %zu quests, %zu dialogs",
-         m_cells.size(), m_npcs.size(), m_weapons.size(), m_quests.size(), m_dialogs.size());
+    LOGD("ESM parsed from memory: %zu cells, %zu NPCs, %zu weapons, %zu quests, %zu dialogs (%u GRUPs)",
+             m_cells.size(), m_npcs.size(), m_weapons.size(), m_quests.size(), m_dialogs.size(), m_grupCount);
+        LOGD("ESM primary records: SCPT=%zu SPEL=%zu ENCH=%zu LVLI=%zu NAVM=%zu ARMO=%zu BOOK=%zu "
+             "FACT=%zu RACE=%zu CLAS=%zu CLOT=%zu INGR=%zu ALCH=%zu MISC=%zu WRLD=%zu ROAD=%zu",
+             m_scripts.size(), m_spells.size(), m_enchantments.size(), m_leveledLists.size(),
+             m_navMeshes.size(), m_armors.size(), m_books.size(), m_factions.size(),
+             m_races.size(), m_classes.size(), m_clothing.size(), m_ingredients.size(),
+             m_alchemy.size(), m_miscItems.size(), m_worlds.size(), m_roads.size());
     LOGD("ESM secondary types: GMST=%zu GLOB=%zu DOOR=%zu PACK=%zu PGRD=%zu IDLE=%zu "
          "KEYM=%zu AMMO=%zu SGST=%zu SLGM=%zu FURN=%zu LTEX=%zu GRAS=%zu WATR=%zu "
          "WTHR=%zu CSTY=%zu LSCR=%zu EFSH=%zu ANIO=%zu SBSP=%zu",

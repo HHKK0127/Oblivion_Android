@@ -92,9 +92,8 @@ NPC::NPC(uint32_t id, const std::string& n)
 
     // Initialize status
     status.initialize(100.0f, 50.0f, 1);
-    lastSpellCastTime = 0.0f;
-    LOGD("NPC created: ID=%u, Name=%s", npcId, name.c_str());
-}
+        lastSpellCastTime = 0.0f;
+    }
 
 NPC::~NPC() {
     LOGD("NPC destroyed: ID=%u, Name=%s", npcId, name.c_str());
@@ -282,23 +281,19 @@ void NPC::enterCombat(std::shared_ptr<NPC> opponent) {
     combatTarget = opponent;
     aiState = AIState::COMBAT;
     combatEngagementTime = 0.0f;
-    LOGI("NPC entered combat: ID=%u, Target=%u", npcId,
-         opponent ? opponent->npcId : 0);
-}
-
-void NPC::exitCombat() {
-    inCombat = false;
-    combatTarget = nullptr;
-    aiState = AIState::IDLE;
-    LOGI("NPC exited combat: ID=%u", npcId);
-}
-
-void NPC::setAIState(AIState newState) {
-    if (aiState != newState) {
-        aiState = newState;
-        LOGD("NPC AI state changed: ID=%u, State=%d", npcId, static_cast<int>(newState));
     }
-}
+
+    void NPC::exitCombat() {
+        inCombat = false;
+        combatTarget = nullptr;
+        aiState = AIState::IDLE;
+    }
+
+    void NPC::setAIState(AIState newState) {
+        if (aiState != newState) {
+            aiState = newState;
+        }
+    }
 
 void NPC::moveTo(const glm::vec3& target, const oblivion::NavMeshManager* navMesh) {
     targetPosition = target;

@@ -448,21 +448,12 @@ class GameRenderer : GLSurfaceView.Renderer {
                 }
 
                 val currentTime = System.currentTimeMillis()
-                if (currentTime - lastLogTime >= 1000) {
-                    Log.d(TAG, "FPS: $frameCount")
-                    if (titleVideoSurfaceTexture != null) {
-                        Log.d(
-                            TAG,
-                            "Title video: updateTexImage=$titleVideoFrameCount/s" +
-                                " callbacks=$titleVideoCallbackCount/s" +
-                                " errors(total)=$titleVideoErrorCount"
-                        )
-                        titleVideoFrameCount = 0
-                        titleVideoCallbackCount = 0
-                    }
-                    frameCount = 0
-                    lastLogTime = currentTime
-                }
+                                if (currentTime - lastLogTime >= 1000) {
+                                    titleVideoFrameCount = 0
+                                    titleVideoCallbackCount = 0
+                                    frameCount = 0
+                                    lastLogTime = currentTime
+                                }
             } else {
                 if (frameCount == 0) {
                     Log.e(TAG, "CRITICAL: onDrawFrame called but nativeEngineHandle is 0 - native initialization never completed")

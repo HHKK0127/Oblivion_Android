@@ -211,12 +211,9 @@ void QuestStageManager::registerQuest(const QuestRecord& record) {
 
     // Initialize stage to 0 if not already set
     if (currentStages_.find(record.formID) == currentStages_.end()) {
-        currentStages_[record.formID] = 0;
+            currentStages_[record.formID] = 0;
+        }
     }
-
-    LOGD("Registered quest: FormID=0x%08X, EDID=%s, Stages=%zu",
-         record.formID, record.editorID.c_str(), record.stages.size());
-}
 
 bool QuestStageManager::advanceStage(uint32_t questFormID, int32_t newStage) {
     auto it = currentStages_.find(questFormID);

@@ -3282,21 +3282,11 @@ void Renderer::ensureScenarioBuilt() {
 
         // 5. Load WEAP records for reference
         const auto& weapons = esmMgr.getAllWeapons();
-        LOGI("Loaded %zu weapons from ESM data", weapons.size());
-        for (const auto& weapon : weapons) {
-            LOGD("  Weapon: 0x%08X '%s' dmg=%u value=%u weight=%u",
-                 weapon.formID, weapon.fullName.c_str(),
-                 weapon.damage, weapon.value, weapon.weight);
-        }
+                LOGI("Loaded %zu weapons from ESM data", weapons.size());
 
-        // 6. Log worldspace definitions with bounds
-        const auto& worlds = esmMgr.getAllWorlds();
-        LOGI("Found %zu worldspaces", worlds.size());
-        for (const auto& w : worlds) {
-            LOGI("  WRLD: 0x%08X '%s' '%s' bounds=[%d,%d] to [%d,%d]",
-                 w.formID, w.editorID.c_str(), w.fullName.c_str(),
-                 w.minX, w.minY, w.maxX, w.maxY);
-        }
+                // 6. Log worldspace definitions with bounds
+                const auto& worlds = esmMgr.getAllWorlds();
+                LOGI("Found %zu worldspaces", worlds.size());
 
                 // 7. Import armor records from ESM into ItemFactory
                 inventory::ItemFactory::getInstance().loadArmorsFromESM(esmMgr);
@@ -3313,11 +3303,9 @@ void Renderer::ensureScenarioBuilt() {
                 for (const auto& ll : leveledLists) {
                     // Count by type based on editorID prefix or entries
                     if (ll.editorID.find("LL") != std::string::npos) lvliCount++;
-                    else if (ll.editorID.find("LC") != std::string::npos) lvlcCount++;
-                    else lvspCount++;
-                    LOGD("  LeveledList: 0x%08X '%s' chanceNone=%u flags=0x%02X entries=%zu",
-                         ll.formID, ll.editorID.c_str(), ll.chanceNone, ll.flags, ll.entries.size());
-                }
+                                        else if (ll.editorID.find("LC") != std::string::npos) lvlcCount++;
+                                        else lvspCount++;
+                                    }
                 LOGI("  LVLI=%zu LVLC=%zu LVSP=%zu", lvliCount, lvlcCount, lvspCount);
 
                 // 10. Resolve LVLC lists to spawn creatures at player level 5 (test)
@@ -3370,11 +3358,9 @@ void Renderer::ensureScenarioBuilt() {
                 LOGI("Found %zu NavMesh records", navMeshes.size());
                 size_t totalVertices = 0, totalTriangles = 0;
                 for (const auto& nm : navMeshes) {
-                    totalVertices += nm.vertices.size();
-                    totalTriangles += nm.triangles.size();
-                    LOGD("  NavMesh: 0x%08X '%s' verts=%zu tris=%zu",
-                         nm.formID, nm.editorID.c_str(), nm.vertices.size(), nm.triangles.size());
-                }
+                                    totalVertices += nm.vertices.size();
+                                    totalTriangles += nm.triangles.size();
+                                }
                 LOGI("  Total: %zu vertices, %zu triangles", totalVertices, totalTriangles);
 
                 // Load NavMesh data into NavMeshManager
@@ -3391,64 +3377,30 @@ void Renderer::ensureScenarioBuilt() {
                 // 12. Log race and class data for character creation
                 const auto& races = esmMgr.getAllRaces();
                 LOGI("Found %zu races", races.size());
-                for (const auto& race : races) {
-                    LOGI("  RACE: 0x%08X '%s' '%s' HP=%u spells=%zu",
-                         race.formID, race.editorID.c_str(), race.fullName.c_str(),
-                         race.startingHealth, race.spellFormIDs.size());
-                    LOGD("    STR=%u INT=%u WIL=%u AGI=%u SPD=%u END=%u PER=%u",
-                         race.attrStrength, race.attrIntelligence, race.attrWillpower,
-                         race.attrAgility, race.attrSpeed, race.attrEndurance, race.attrPersonality);
-                }
-
                 const auto& classes = esmMgr.getAllClasses();
-                LOGI("Found %zu classes", classes.size());
-                for (const auto& cls : classes) {
-                    LOGI("  CLAS: 0x%08X '%s' '%s' spec=%u",
-                         cls.formID, cls.editorID.c_str(), cls.fullName.c_str(), cls.specialization);
-                }
+                                LOGI("Found %zu classes", classes.size());
 
                 // 13. Log book data (skill books)
                 const auto& books = esmMgr.getAllBooks();
                 LOGI("Found %zu books", books.size());
                 size_t skillBookCount = 0;
-                for (const auto& book : books) {
-                    if (book.teachesSkillID != 0) {
-                        skillBookCount++;
-                        LOGD("  SkillBook: 0x%08X '%s' skill=0x%08X level=%u value=%u",
-                             book.formID, book.fullName.c_str(),
-                             book.teachesSkillID, book.teachesSkillLevel, book.value);
-                    }
-                }
+                                for (const auto& book : books) {
+                                    if (book.teachesSkillID != 0) skillBookCount++;
+                                }
                 LOGI("  Skill books: %zu", skillBookCount);
 
                 // 14. Log remaining item types
                 const auto& clothing = esmMgr.getAllClothing();
-                LOGI("Found %zu clothing items", clothing.size());
-                for (const auto& cl : clothing) {
-                    LOGD("  CLOT: 0x%08X '%s' value=%u weight=%.1f",
-                         cl.formID, cl.fullName.c_str(), cl.value, cl.weight);
-                }
+                                LOGI("Found %zu clothing items", clothing.size());
 
-                const auto& ingredients = esmMgr.getAllIngredients();
-                LOGI("Found %zu ingredients", ingredients.size());
-                for (const auto& ing : ingredients) {
-                    LOGD("  INGR: 0x%08X '%s' value=%u weight=%.1f",
-                         ing.formID, ing.fullName.c_str(), ing.value, ing.weight);
-                }
+                                const auto& ingredients = esmMgr.getAllIngredients();
+                                LOGI("Found %zu ingredients", ingredients.size());
 
-                const auto& alchemy = esmMgr.getAllAlchemy();
-                LOGI("Found %zu alchemy items", alchemy.size());
-                for (const auto& alc : alchemy) {
-                    LOGD("  ALCH: 0x%08X '%s' value=%u weight=%.1f",
-                         alc.formID, alc.fullName.c_str(), alc.value, alc.weight);
-                }
+                                const auto& alchemy = esmMgr.getAllAlchemy();
+                                LOGI("Found %zu alchemy items", alchemy.size());
 
-                const auto& miscItems = esmMgr.getAllMiscItems();
-                LOGI("Found %zu misc items", miscItems.size());
-                for (const auto& misc : miscItems) {
-                    LOGD("  MISC: 0x%08X '%s' value=%u weight=%.1f",
-                         misc.formID, misc.fullName.c_str(), misc.value, misc.weight);
-                }
+                                const auto& miscItems = esmMgr.getAllMiscItems();
+                                LOGI("Found %zu misc items", miscItems.size());
 
                 LOGI("ESM-based world generation complete");
 
@@ -4720,15 +4672,9 @@ void Renderer::render(float deltaTime) {
         }
     }
     if (gameConsole && gameConsole->isVisible()) {
-        gameConsole->render();
+            gameConsole->render();
+        }
     }
-
-    static int frameLogCounter = 0;
-    if (++frameLogCounter % 120 == 1) {
-        LOGD("Frame rendered: deltaTime=%.3f, FPS=%.1f, Target FPS=%d",
-             deltaTime, performanceMonitor ? performanceMonitor->getFPS() : 0.0f, targetFPS);
-    }
-}
 
 // ============================================================
 // Placeholder rendering for entities whose NIF meshes failed to load

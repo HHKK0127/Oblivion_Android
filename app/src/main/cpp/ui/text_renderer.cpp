@@ -2,6 +2,7 @@
 #include <android/log.h>
 #include <android/asset_manager.h>
 #include <algorithm>
+#include <cstdlib>
 #include <cstring>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -14,6 +15,60 @@
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
+
+namespace {
+
+// Decodes a UTF-8 byte string into Unicode codepoints. Malformed or incomplete
+// sequences are skipped so a damaged byte never renders as mojibake in a string
+// that mixes Latin (Latin-1 in request strings) with Japanese (UTF-8).
+std::vector<unsigned int> decodeUtf8(const std::string& text) {
+    std::vector<unsigned int> codepoints;
+    codepoints.reserve(text.size());
+    const size_t n = text.size();
+    size_t i = 0;
+    while (i < n) {
+        unsigned char c = (unsigned char)text[i];
+        size_t len = 0;
+        unsigned int cp = 0;
+        if (c < 0x80) {
+            cp = c;
+            len = 1;
+        } else if ((c & 0xE0) == 0xC0) {
+            cp = c & 0x1F;
+            len = 2;
+        } else if ((c & 0xF0) == 0xE0) {
+            cp = c & 0x0F;
+            len = 3;
+        } else if ((c & 0xF8) == 0xF0) {
+            cp = c & 0x07;
+            len = 4;
+        } else {
+            ++i;  // invalid lead byte: skip
+            continue;
+        }
+        if (i + len > n) {
+            break;  // truncated sequence at end of string
+        }
+        bool valid = true;
+        for (size_t k = 1; k < len; ++k) {
+            unsigned char cc = (unsigned char)text[i + k];
+            if ((cc & 0xC0) != 0x80) {
+                valid = false;
+                break;
+            }
+            cp = (cp << 6) | (cc & 0x3F);
+        }
+        if (!valid) {
+            ++i;
+            continue;
+        }
+        codepoints.push_back(cp);
+        i += len;
+    }
+    return codepoints;
+}
+
+}  // namespace
 
 // Vertex shader: for 2D text
 const char* textVertexShader = R"(#version 300 es
@@ -106,9 +161,7 @@ bool TextRenderer::initialize(AAssetManager* assetMgr) {
     alphaCurveLoc = glGetUniformLocation(shaderProgram, "alphaCurveOn");
     fontTextureLoc = glGetUniformLocation(shaderProgram, "fontTexture");
 
-    LOGI("Shader program=%u, projectionLoc=%d, colorLoc=%d, alphaChannelLoc=%d, alphaRangeLoc=%d, alphaCurveLoc=%d",
-         shaderProgram, projectionLoc, colorLoc, alphaChannelLoc, alphaRangeLoc, alphaCurveLoc);
-    LOGI("Fragment shader source:\n%s", textFragmentShader);
+        LOGI("Text shader program=%u compiled", shaderProgram);
 
     // Generate VAO/VBO
     glGenVertexArrays(1, &vao);
@@ -146,7 +199,13 @@ bool TextRenderer::initialize(AAssetManager* assetMgr) {
         return false;
     }
 
-    LOGI("TextRenderer initialized successfully");
+        // Bundled CJK fallback: the game's original fonts are Latin-only, so any Japanese
+        // text falls back to this face. Failure is non-fatal: Latin still renders.
+        if (!loadCjkFontFromAssets("fonts/NotoSansJP-Regular.ttf")) {
+            LOGW("CJK font (Noto Sans JP) unavailable; Japanese text will advance as spaces");
+        }
+
+        LOGI("TextRenderer initialized successfully");
     return true;
 }
 
@@ -301,10 +360,7 @@ bool TextRenderer::createFontTextureAtlas() {
 
         fontData->glyphCache[codepoint] = g;
 
-        LOGD("Glyph %c (%d): atlas pos=(%d,%d) size=(%d,%d) advance=%f",
-             (char)codepoint, codepoint, currentAtlasX, currentAtlasY, width, height, g.advanceX);
-
-        currentAtlasX += width + 1;  // 1 pixel padding
+                currentAtlasX += width + 1;  // 1 pixel padding
         rowHeight = (height > rowHeight) ? height : rowHeight;
     }
 
@@ -336,77 +392,7 @@ void TextRenderer::renderText(const std::string& text, float x, float y,
         drawOblivionText(text, x, y, glm::vec4(color.x, color.y, color.z, 1.0f), scale, static_cast<int>(activeFont));
         return;
     }
-
-    if (text.empty() || shaderProgram == 0 || fontTexture == 0) {
-        return;
-    }
-
-    glUseProgram(shaderProgram);
-
-    // Set projection matrix
-    glm::mat4 projection = glm::ortho(0.0f, (float)screenWidth, (float)screenHeight, 0.0f, -1.0f, 1.0f);
-    glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, &projection[0][0]);
-
-    // Set text color (vec4: alpha=1.0 for opaque)
-    glUniform4f(colorLoc, color.x, color.y, color.z, 1.0f);
-    glUniform1i(alphaChannelLoc, 0);  // Use red channel for Roboto (GL_R8)
-
-    // Bind font texture
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, fontTexture);
-
-    glBindVertexArray(vao);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
-    float currentX = x;
-    float currentY = y;
-
-    batchScratch_.clear();
-    batchScratch_.reserve(text.size() * 24);
-
-    for (char ch : text) {
-        unsigned int codepoint = (unsigned char)ch;
-
-        // Get glyph info
-        Glyph glyph = getGlyph(codepoint);
-
-        // Actual character width and height (restored from texture coordinates in atlas)
-        float charWidth = (glyph.x1 - glyph.x0) * ATLAS_WIDTH * scale;
-        float charHeight = (glyph.y1 - glyph.y0) * ATLAS_HEIGHT * scale;
-
-        // Apply bearing (position adjustment offset)
-        float posX = currentX + glyph.bearingX * scale;
-        // stb_truetype bearingY is offset from baseline (usually negative)
-        // Offset by FONT_SIZE here to align top-based drawing with baseline
-        float posY = currentY + (FONT_SIZE + glyph.bearingY) * scale;
-
-        // Generate vertex data (quad: 2 triangles)
-        const float vertices[24] = {
-            // Position coords        Texture coords
-            posX,             posY,              glyph.x0, glyph.y0,  // Top-left
-            posX + charWidth, posY,              glyph.x1, glyph.y0,  // Top-right
-            posX,             posY + charHeight, glyph.x0, glyph.y1,  // Bottom-left
-
-            posX + charWidth, posY,              glyph.x1, glyph.y0,  // Top-right
-            posX + charWidth, posY + charHeight, glyph.x1, glyph.y1,  // Bottom-right
-            posX,             posY + charHeight, glyph.x0, glyph.y1,  // Bottom-left
-        };
-        batchScratch_.insert(batchScratch_.end(), vertices, vertices + 24);
-
-        currentX += glyph.advanceX * scale;
-    }
-
-    if (!batchScratch_.empty()) {
-        glBufferData(GL_ARRAY_BUFFER,
-                     static_cast<GLsizeiptr>(batchScratch_.size() * sizeof(float)),
-                     batchScratch_.data(), GL_DYNAMIC_DRAW);
-        glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(batchScratch_.size() / 4));
-    }
-
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glUseProgram(0);
+    drawRobotoText(text, x, y, glm::vec4(color.x, color.y, color.z, 1.0f), scale);
 }
 
 void TextRenderer::renderText(const std::string& text, float x, float y,
@@ -416,7 +402,14 @@ void TextRenderer::renderText(const std::string& text, float x, float y,
         drawOblivionText(text, x, y, color, scale, static_cast<int>(activeFont));
         return;
     }
+    drawRobotoText(text, x, y, color, scale);
+}
 
+// Roboto/fallback text path. The string is decoded to codepoints first so ASCII
+// (glyph cache) and Japanese (Noto Sans JP page atlas) mix in one call. Both metric
+// spaces are authored at FONT_SIZE (32 px em), so they line up on the same baseline.
+void TextRenderer::drawRobotoText(const std::string& text, float x, float y,
+                                  const glm::vec4& color, float scale) {
     if (text.empty() || shaderProgram == 0 || fontTexture == 0) {
         return;
     }
@@ -425,13 +418,11 @@ void TextRenderer::renderText(const std::string& text, float x, float y,
 
     glm::mat4 projection = glm::ortho(0.0f, (float)screenWidth, (float)screenHeight, 0.0f, -1.0f, 1.0f);
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, &projection[0][0]);
-
-    // Set text color (vec4: with alpha channel)
     glUniform4f(colorLoc, color.x, color.y, color.z, color.w);
-    glUniform1i(alphaChannelLoc, 0);  // Use red channel for Roboto (GL_R8)
+    glUniform1i(alphaChannelLoc, 0);  // Roboto + CJK are both GL_R8 coverage (red channel)
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, fontTexture);
+    std::vector<unsigned int> codepoints = decodeUtf8(text);
+    std::vector<CjkBatch> cjkBatches;
 
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -440,37 +431,88 @@ void TextRenderer::renderText(const std::string& text, float x, float y,
     float currentY = y;
 
     batchScratch_.clear();
-    batchScratch_.reserve(text.size() * 24);
+    batchScratch_.reserve(codepoints.size() * 24);
 
-    for (char ch : text) {
-        unsigned int codepoint = (unsigned char)ch;
-        Glyph glyph = getGlyph(codepoint);
+    for (unsigned int codepoint : codepoints) {
+        if (codepoint < 0x80 ||
+            fontData->glyphCache.find(codepoint) != fontData->glyphCache.end()) {
+            Glyph glyph = getGlyph(codepoint);
 
-        float charWidth = (glyph.x1 - glyph.x0) * ATLAS_WIDTH * scale;
-        float charHeight = (glyph.y1 - glyph.y0) * ATLAS_HEIGHT * scale;
+            float charWidth = (glyph.x1 - glyph.x0) * ATLAS_WIDTH * scale;
+            float charHeight = (glyph.y1 - glyph.y0) * ATLAS_HEIGHT * scale;
 
-        float posX = currentX + glyph.bearingX * scale;
-        float posY = currentY + (FONT_SIZE + glyph.bearingY) * scale;
+            float posX = currentX + glyph.bearingX * scale;
+            // stb_truetype bearingY is offset from baseline (usually negative).
+            // Offset by FONT_SIZE here to align top-based drawing with baseline.
+            float posY = currentY + (FONT_SIZE + glyph.bearingY) * scale;
 
-        const float vertices[24] = {
-            posX,             posY,              glyph.x0, glyph.y0,
-            posX + charWidth, posY,              glyph.x1, glyph.y0,
-            posX,             posY + charHeight, glyph.x0, glyph.y1,
+            const float vertices[24] = {
+                posX,             posY,              glyph.x0, glyph.y0,
+                posX + charWidth, posY,              glyph.x1, glyph.y0,
+                posX,             posY + charHeight, glyph.x0, glyph.y1,
 
-            posX + charWidth, posY,              glyph.x1, glyph.y0,
-            posX + charWidth, posY + charHeight, glyph.x1, glyph.y1,
-            posX,             posY + charHeight, glyph.x0, glyph.y1,
-        };
-        batchScratch_.insert(batchScratch_.end(), vertices, vertices + 24);
+                posX + charWidth, posY,              glyph.x1, glyph.y0,
+                posX + charWidth, posY + charHeight, glyph.x1, glyph.y1,
+                posX,             posY + charHeight, glyph.x0, glyph.y1,
+            };
+            batchScratch_.insert(batchScratch_.end(), vertices, vertices + 24);
 
-        currentX += glyph.advanceX * scale;
+            currentX += glyph.advanceX * scale;
+        } else if (const CjkGlyph* g = getCjkGlyph(codepoint)) {
+            // Japanese glyph: rasterized into a GL_R8 page atlas on demand.
+            if (g->width > 0.0f && g->height > 0.0f) {
+                CjkBatch* batch = nullptr;
+                for (auto& b : cjkBatches) {
+                    if (b.pageTextureId == cjkPages_[g->pageIndex].textureId) {
+                        batch = &b;
+                        break;
+                    }
+                }
+                if (!batch) {
+                    cjkBatches.push_back(CjkBatch{cjkPages_[g->pageIndex].textureId, {}});
+                    batch = &cjkBatches.back();
+                }
+
+                float posX = currentX + g->bearingX * scale;
+                float posY = currentY + (FONT_SIZE + g->bearingY) * scale;
+
+                const float vertices[24] = {
+                    posX,           posY,           g->u0, g->v0,
+                    posX + g->width * scale,  posY,           g->u1, g->v0,
+                    posX,           posY + g->height * scale, g->u0, g->v1,
+
+                    posX + g->width * scale,  posY,           g->u1, g->v0,
+                    posX + g->width * scale,  posY + g->height * scale, g->u1, g->v1,
+                    posX,           posY + g->height * scale, g->u0, g->v1,
+                };
+                batch->vertices.insert(batch->vertices.end(), vertices, vertices + 24);
+            }
+            currentX += g->advanceX * scale;
+        } else {
+            // Neither the glyph cache nor the CJK face has it: advance like a space.
+            currentX += FONT_SIZE * 0.5f * scale;
+        }
     }
 
     if (!batchScratch_.empty()) {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, fontTexture);
         glBufferData(GL_ARRAY_BUFFER,
                      static_cast<GLsizeiptr>(batchScratch_.size() * sizeof(float)),
                      batchScratch_.data(), GL_DYNAMIC_DRAW);
         glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(batchScratch_.size() / 4));
+    }
+
+    for (const CjkBatch& batch : cjkBatches) {
+        if (batch.vertices.empty()) {
+            continue;
+        }
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, batch.pageTextureId);
+        glBufferData(GL_ARRAY_BUFFER,
+                     static_cast<GLsizeiptr>(batch.vertices.size() * sizeof(float)),
+                     batch.vertices.data(), GL_DYNAMIC_DRAW);
+        glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(batch.vertices.size() / 4));
     }
 
     glBindVertexArray(0);
@@ -479,52 +521,94 @@ void TextRenderer::renderText(const std::string& text, float x, float y,
     glUseProgram(0);
 }
 
-void TextRenderer::appendOblivionRun(const std::string& text, float x, float y, float fontScale,
-                                     const OblivionFontAtlas& atlas) {
+void TextRenderer::appendMixedRun(const std::vector<unsigned int>& codepoints, float x, float y,
+                                  float fontScale, const OblivionFontAtlas& atlas,
+                                  std::vector<CjkBatch>& cjkBatches) {
     float currentX = x;
     float currentY = y;
+    // CJK metrics are authored at FONT_SIZE (32 px) while Oblivion metrics are authored
+    // at atlas.fontSize, so scale the JP glyphs by their ratio to sit on the same em.
+    const float cjkScale = fontScale * (atlas.fontSize / (float)FONT_SIZE);
 
-    for (char ch : text) {
-        unsigned int codepoint = (unsigned char)ch;
+    for (unsigned int codepoint : codepoints) {
         auto it = atlas.glyphs.find(codepoint);
-        if (it == atlas.glyphs.end()) {
+        if (it != atlas.glyphs.end()) {
+            const OblivionGlyph& g = it->second;
+
+            float gw = g.width * fontScale;
+            float gh = g.height * fontScale;
+            float posX = currentX + g.bearing_x * fontScale;
+            // y is the top of a capital cell. Cells are tight boxes around their own ink,
+            // so shift each glyph down until its ink bottom reaches the shared baseline.
+            float posY = currentY + (atlas.capBaseline - g.baseline_rel) * fontScale;
+
+            const float vertices[24] = {
+                posX,        posY,        g.u0, g.v0,
+                posX + gw,   posY,        g.u1, g.v0,
+                posX,        posY + gh,   g.u0, g.v1,
+                posX + gw,   posY,        g.u1, g.v0,
+                posX + gw,   posY + gh,   g.u1, g.v1,
+                posX,        posY + gh,   g.u0, g.v1,
+            };
+            batchScratch_.insert(batchScratch_.end(), vertices, vertices + 24);
+
+            currentX += g.advance * fontScale;
+            continue;
+        }
+
+        // Not in the original Latin atlas (Japanese, or a glyph the face lacks):
+        // fall back to the bundled CJK face, sharing the Latin baseline.
+        if (const CjkGlyph* g = getCjkGlyph(codepoint)) {
+            if (g->width > 0.0f && g->height > 0.0f) {
+                CjkBatch* batch = nullptr;
+                for (auto& b : cjkBatches) {
+                    if (b.pageTextureId == cjkPages_[g->pageIndex].textureId) {
+                        batch = &b;
+                        break;
+                    }
+                }
+                if (!batch) {
+                    cjkBatches.push_back(CjkBatch{cjkPages_[g->pageIndex].textureId, {}});
+                    batch = &cjkBatches.back();
+                }
+
+                float posX = currentX + g->bearingX * cjkScale;
+                // baseline sits capBaseline rows below the cell top; bearingY is the
+                // distance (negative) from that baseline up to the ink top.
+                float posY = currentY + (atlas.capBaseline + g->bearingY) * cjkScale;
+
+                const float vertices[24] = {
+                    posX,           posY,           g->u0, g->v0,
+                    posX + g->width * cjkScale,  posY,           g->u1, g->v0,
+                    posX,           posY + g->height * cjkScale, g->u0, g->v1,
+
+                    posX + g->width * cjkScale,  posY,           g->u1, g->v0,
+                    posX + g->width * cjkScale,  posY + g->height * cjkScale, g->u1, g->v1,
+                    posX,           posY + g->height * cjkScale, g->u0, g->v1,
+                };
+                batch->vertices.insert(batch->vertices.end(), vertices, vertices + 24);
+            }
+            currentX += g->advanceX * cjkScale;
+        } else {
             auto spaceIt = atlas.glyphs.find(32);
             float spaceAdvance = (spaceIt != atlas.glyphs.end()) ? spaceIt->second.advance : atlas.fontSize * 0.5f;
             currentX += spaceAdvance * fontScale;
-            continue;
         }
-        const OblivionGlyph& g = it->second;
-
-        float gw = g.width * fontScale;
-        float gh = g.height * fontScale;
-        float posX = currentX + g.bearing_x * fontScale;
-        // y is the top of a capital cell. Cells are tight boxes around their own ink,
-        // so shift each glyph down until its ink bottom reaches the shared baseline;
-        // otherwise x-height letters float ~8px above the capitals at UI sizes.
-        float posY = currentY + (atlas.capBaseline - g.baseline_rel) * fontScale;
-
-        const float vertices[24] = {
-            posX,        posY,        g.u0, g.v0,
-            posX + gw,   posY,        g.u1, g.v0,
-            posX,        posY + gh,   g.u0, g.v1,
-            posX + gw,   posY,        g.u1, g.v0,
-            posX + gw,   posY + gh,   g.u1, g.v1,
-            posX,        posY + gh,   g.u0, g.v1,
-        };
-        batchScratch_.insert(batchScratch_.end(), vertices, vertices + 24);
-
-        currentX += g.advance * fontScale;
     }
 }
 
-void TextRenderer::uploadAndDrawBatch() {
-    if (batchScratch_.empty()) {
+void TextRenderer::uploadAndDrawScratch(const std::vector<float>& vertices, GLuint textureId,
+                                        int alphaChannel) {
+    if (vertices.empty() || textureId == 0) {
         return;
     }
+    glUniform1i(alphaChannelLoc, alphaChannel);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, textureId);
     glBufferData(GL_ARRAY_BUFFER,
-                 static_cast<GLsizeiptr>(batchScratch_.size() * sizeof(float)),
-                 batchScratch_.data(), GL_DYNAMIC_DRAW);
-    glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(batchScratch_.size() / 4));
+                 static_cast<GLsizeiptr>(vertices.size() * sizeof(float)),
+                 vertices.data(), GL_DYNAMIC_DRAW);
+    glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertices.size() / 4));
 }
 
 void TextRenderer::drawOblivionText(const std::string& text, float x, float y,
@@ -544,17 +628,17 @@ void TextRenderer::drawOblivionText(const std::string& text, float x, float y,
         return;
     }
 
+    std::vector<unsigned int> codepoints = decodeUtf8(text);
+    std::vector<CjkBatch> cjkBatches;
+
     glUseProgram(shaderProgram);
 
     glm::mat4 projection = glm::ortho(0.0f, (float)screenWidth, (float)screenHeight, 0.0f, -1.0f, 1.0f);
     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, &projection[0][0]);
-    glUniform1i(alphaChannelLoc, atlas.useRgbChannel ? 0 : 1);  // shadowed atlases keep the letter in RGB
     glUniform1i(fontTextureLoc, 0);
     glUniform2f(alphaRangeLoc, fontAlphaLo_, fontAlphaHi_);
     glUniform1i(alphaCurveLoc, fontAlphaCurveEnabled_ ? 1 : 0);
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, atlas.textureId);
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
@@ -562,9 +646,6 @@ void TextRenderer::drawOblivionText(const std::string& text, float x, float y,
 
     // Outline pass: stamp the same glyph batch several times, offset by a small ring of
     // screen pixels so the decorative faces stay separated from the background behind them.
-    // The floor only binds for the decorative faces that ask for a sub-pixel ring (the title
-    // row does); it is low enough that the UI default of 1.0 px is never touched by it, so
-    // lowering it does not thin any other screen's text.
     if (fontOutlineEnabled_ && fontOutlineColor_.w > 0.0f) {
         const float ring = std::clamp(fontScale * fontOutlineWidth_, 0.25f, 3.0f);
         const float offsets[9][2] = {
@@ -576,20 +657,28 @@ void TextRenderer::drawOblivionText(const std::string& text, float x, float y,
         glUniform4f(colorLoc, fontOutlineColor_.x, fontOutlineColor_.y,
                     fontOutlineColor_.z, fontOutlineColor_.w * color.w);
 
+        cjkBatches.clear();
         batchScratch_.clear();
-        batchScratch_.reserve(text.size() * 24 * 9);
+        batchScratch_.reserve(codepoints.size() * 24 * 9);
         for (int i = 0; i < 9; ++i) {
-            appendOblivionRun(text, x + offsets[i][0], y + offsets[i][1], fontScale, atlas);
+            appendMixedRun(codepoints, x + offsets[i][0], y + offsets[i][1], fontScale, atlas, cjkBatches);
         }
-        uploadAndDrawBatch();
+        uploadAndDrawScratch(batchScratch_, atlas.textureId, atlas.useRgbChannel ? 0 : 1);
+        for (const CjkBatch& batch : cjkBatches) {
+            uploadAndDrawScratch(batch.vertices, batch.pageTextureId, 0);
+        }
     }
 
     glUniform4f(colorLoc, color.x, color.y, color.z, color.w);
 
+    cjkBatches.clear();
     batchScratch_.clear();
-    batchScratch_.reserve(text.size() * 24);
-    appendOblivionRun(text, x, y, fontScale, atlas);
-    uploadAndDrawBatch();
+    batchScratch_.reserve(codepoints.size() * 24);
+    appendMixedRun(codepoints, x, y, fontScale, atlas, cjkBatches);
+    uploadAndDrawScratch(batchScratch_, atlas.textureId, atlas.useRgbChannel ? 0 : 1);
+    for (const CjkBatch& batch : cjkBatches) {
+        uploadAndDrawScratch(batch.vertices, batch.pageTextureId, 0);
+    }
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -600,6 +689,10 @@ void TextRenderer::drawOblivionText(const std::string& text, float x, float y,
 float TextRenderer::getTextWidth(const std::string& text, float scale) {
     if (text.empty()) return 0.0f;
 
+    // CJK strings are authored in UTF-8; measure by codepoint so a mixed
+    // Latin/Japanese string is laid out exactly as it will be drawn.
+    std::vector<unsigned int> codepoints = decodeUtf8(text);
+
     // Use Oblivion font metrics when active font is not Roboto
     if (activeFont != FontType::Roboto) {
         int idx = static_cast<int>(activeFont);
@@ -608,12 +701,16 @@ float TextRenderer::getTextWidth(const std::string& text, float scale) {
             return 0.0f;
         }
         float fontScale = scale * (atlas.fontSize / 22.0f) * fontSizeMultiplier_;
+        // CJK metrics are authored at FONT_SIZE; the Oblivion faces are not, so scale
+        // the JP advances by the em ratio to keep a mixed string uniform.
+        const float cjkScale = fontScale * (atlas.fontSize / (float)FONT_SIZE);
         float width = 0.0f;
-        for (char ch : text) {
-            unsigned int codepoint = (unsigned char)ch;
+        for (unsigned int codepoint : codepoints) {
             auto it = atlas.glyphs.find(codepoint);
             if (it != atlas.glyphs.end()) {
                 width += it->second.advance * fontScale;
+            } else if (cjkFontReady_) {
+                width += getCjkAdvance(codepoint, cjkScale);
             } else {
                 auto spaceIt = atlas.glyphs.find(32);
                 float spaceAdvance = (spaceIt != atlas.glyphs.end()) ? spaceIt->second.advance : atlas.fontSize * 0.5f;
@@ -627,10 +724,15 @@ float TextRenderer::getTextWidth(const std::string& text, float scale) {
         return 0.0f;
     }
     float width = 0.0f;
-    for (char ch : text) {
-        unsigned int codepoint = (unsigned char)ch;
-        Glyph glyph = getGlyph(codepoint);
-        width += glyph.advanceX * scale;
+    for (unsigned int codepoint : codepoints) {
+        if (codepoint < 0x80 ||
+            fontData->glyphCache.find(codepoint) != fontData->glyphCache.end()) {
+            width += getGlyph(codepoint).advanceX * scale;
+        } else if (cjkFontReady_) {
+            width += getCjkAdvance(codepoint, scale);
+        } else {
+            width += getGlyph(32).advanceX * scale;
+        }
     }
     return width;
 }
@@ -1106,6 +1208,21 @@ void TextRenderer::cleanup() {
         fontData = nullptr;
     }
 
+    // Cleanup CJK page atlases and the bundled JP font
+    cjkGlyphs_.clear();
+    for (CjkAtlasPage& page : cjkPages_) {
+        if (page.textureId != 0) {
+            glDeleteTextures(1, &page.textureId);
+            page.textureId = 0;
+        }
+    }
+    cjkPages_.clear();
+    if (cjkFontData_ != nullptr) {
+        delete[] cjkFontData_;
+        cjkFontData_ = nullptr;
+    }
+    cjkFontReady_ = false;
+
     LOGD("TextRenderer cleaned up");
 }
 
@@ -1136,3 +1253,148 @@ void TextRenderer::renderDebugQuad() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glUseProgram(0);
 }
+
+    // Loads the bundled Noto Sans JP TTF into memory and initializes stb_truetype
+    // against it. The variable TTF resolves to its default Regular instance, which
+    // is our UI weight. Caller must own a GL context for getCjkGlyph later.
+    bool TextRenderer::loadCjkFontFromAssets(const std::string& filename) {
+        if (!assetManager) {
+            LOGE("AssetManager is null, cannot load CJK font");
+            return false;
+        }
+
+        AAsset* asset = AAssetManager_open(assetManager, filename.c_str(), AASSET_MODE_STREAMING);
+        if (!asset) {
+            LOGE("Could not open CJK font asset: %s", filename.c_str());
+            return false;
+        }
+
+        off_t size = AAsset_getLength(asset);
+        if (size <= 0) {
+            LOGE("Invalid CJK font size: %ld", (long)size);
+            AAsset_close(asset);
+            return false;
+        }
+
+        unsigned char* buffer = new unsigned char[size];
+        int bytesRead = AAsset_read(asset, buffer, (size_t)size);
+        AAsset_close(asset);
+        if (bytesRead != size) {
+            LOGE("Failed to read CJK font: read %d of %ld bytes", bytesRead, (long)size);
+            delete[] buffer;
+            return false;
+        }
+
+        if (!stbtt_InitFont(&cjkFontInfo_, buffer, 0)) {
+            LOGE("Failed to initialize stb_truetype for %s", filename.c_str());
+            delete[] buffer;
+            return false;
+        }
+
+        cjkFontData_ = buffer;
+        cjkFontScale_ = stbtt_ScaleForPixelHeight(&cjkFontInfo_, (float)FONT_SIZE);
+        cjkFontReady_ = true;
+        LOGI("CJK font loaded: %s (%ld bytes)", filename.c_str(), (long)size);
+        return true;
+    }
+
+    // Rasterizes the codepoint into the first free slot of the current page atlas,
+    // caching the packed CjkGlyph. Blank glyphs (space, control chars) cache their
+    // advance only, so they are never re-rasterized during shaping.
+    const TextRenderer::CjkGlyph* TextRenderer::getCjkGlyph(unsigned int codepoint) {
+        if (!cjkFontReady_) {
+            return nullptr;
+        }
+        auto it = cjkGlyphs_.find(codepoint);
+        if (it != cjkGlyphs_.end()) {
+            return &it->second;
+        }
+
+        int advancePx = 0, lsb = 0;
+        stbtt_GetCodepointHMetrics(&cjkFontInfo_, (int)codepoint, &advancePx, &lsb);
+
+        int w = 0, h = 0, xoff = 0, yoff = 0;
+        unsigned char* bitmap = stbtt_GetCodepointBitmap(&cjkFontInfo_, cjkFontScale_, cjkFontScale_,
+                                                         (int)codepoint, &w, &h, &xoff, &yoff);
+
+        CjkGlyph glyph;
+        glyph.advanceX = (float)advancePx * cjkFontScale_;
+        glyph.bearingX = (float)xoff;
+        glyph.bearingY = (float)yoff;
+        glyph.width = (float)w;
+        glyph.height = (float)h;
+        glyph.u0 = glyph.v0 = 0.0f;
+        glyph.u1 = glyph.v1 = 0.0f;
+        glyph.pageIndex = 0;
+
+        if (bitmap != nullptr && w > 0 && h > 0) {
+            if (cjkPages_.empty()) {
+                cjkPages_.push_back(CjkAtlasPage{createCjkAtlasTexture(), 0, 0, 0});
+            }
+            // std::map references stay valid, but the vector of pages does not when it
+            // grows, so address pages by index across the reservation points.
+            size_t pageIdx = cjkPages_.size() - 1;
+            if (cjkPages_[pageIdx].cursorX + w > CJK_ATLAS_SIZE) {
+                cjkPages_[pageIdx].cursorX = 0;
+                cjkPages_[pageIdx].cursorY += cjkPages_[pageIdx].rowHeight;
+                cjkPages_[pageIdx].rowHeight = 0;
+            }
+            if (cjkPages_[pageIdx].cursorY + h > CJK_ATLAS_SIZE) {
+                cjkPages_.push_back(CjkAtlasPage{createCjkAtlasTexture(), 0, 0, 0});
+                pageIdx = cjkPages_.size() - 1;
+            }
+
+            CjkAtlasPage& page = cjkPages_[pageIdx];
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, page.textureId);
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, page.cursorX, page.cursorY, w, h,
+                            GL_RED, GL_UNSIGNED_BYTE, bitmap);
+
+            glyph.u0 = (float)page.cursorX / (float)CJK_ATLAS_SIZE;
+            glyph.v0 = (float)page.cursorY / (float)CJK_ATLAS_SIZE;
+            glyph.u1 = (float)(page.cursorX + w) / (float)CJK_ATLAS_SIZE;
+            glyph.v1 = (float)(page.cursorY + h) / (float)CJK_ATLAS_SIZE;
+            glyph.pageIndex = pageIdx;
+
+            page.cursorX += w;
+            if (h > page.rowHeight) {
+                page.rowHeight = h;
+            }
+        }
+
+        STBTT_free(bitmap, nullptr);
+
+        return &cjkGlyphs_.emplace(codepoint, glyph).first->second;
+    }
+
+    // Advance width without rasterizing; used by getTextWidth, which must not touch
+    // the GL context. For an uncached codepoint the metric is queried directly from
+    // the face, scaled by the FONT_SIZE-em factor.
+    float TextRenderer::getCjkAdvance(unsigned int codepoint, float scale) const {
+        if (!cjkFontReady_) {
+            return 0.0f;
+        }
+        auto it = cjkGlyphs_.find(codepoint);
+        if (it != cjkGlyphs_.end()) {
+            return it->second.advanceX * scale;
+        }
+        int advancePx = 0, lsb = 0;
+        stbtt_GetCodepointHMetrics(&cjkFontInfo_, (int)codepoint, &advancePx, &lsb);
+        return (float)advancePx * cjkFontScale_ * scale;
+    }
+
+    // Allocates a cleared GL_R8 page atlas. Glyphs are uploaded later with
+    // glTexSubImage2D by getCjkGlyph, so data stays null here.
+    GLuint TextRenderer::createCjkAtlasTexture() {
+        GLuint tex = 0;
+        glGenTextures(1, &tex);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, CJK_ATLAS_SIZE, CJK_ATLAS_SIZE, 0,
+                     GL_RED, GL_UNSIGNED_BYTE, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        return tex;
+    }

@@ -152,8 +152,6 @@ bool NIFParser::parseFromData(const std::vector<uint8_t>& data) {
 }
 
 bool NIFParser::readHeader() {
-    LOGD("Reading NIF header...");
-
     // Read magic string until null terminator or newline (NIF headers are variable length)
     char magic[256];
     std::memset(magic, 0, sizeof(magic));
@@ -383,13 +381,10 @@ bool NIFParser::isNamedBlockType(const std::string& typeName) {
 }
 
 bool NIFParser::buildNodeHierarchy() {
-    LOGD("Building node hierarchy...");
-
     // Find root nodes (those without parents)
     for (const auto& node : nodes) {
         if (node && node->parentIndex == -1) {
             rootNodeIndices.push_back(node->nodeIndex);
-            LOGD("Root node found: %s (index %u)", node->name.c_str(), node->nodeIndex);
         }
     }
 
@@ -543,7 +538,6 @@ NIFBlockType NIFParser::getBlockType(const std::string& blockName) {
 }
 
 bool NIFParser::parseNiNode(std::shared_ptr<NIFNode>& node) {
-    LOGD("Parsing NiNode: %s", node->name.c_str());
     node->transform = readTransform();
     return true;
 }
@@ -570,12 +564,10 @@ bool NIFParser::parseGeometryTransform(std::shared_ptr<NIFNode>& node) {
 }
 
 bool NIFParser::parseMaterialProperty() {
-    LOGD("Parsing NiMaterialProperty");
     return true;
 }
 
 bool NIFParser::parseTexturingProperty() {
-    LOGD("Parsing NiTexturingProperty");
     return true;
 }
 
@@ -2890,7 +2882,6 @@ bool NIFParser::seekToAnyBlockOfType(const std::vector<std::string>& typeNames,
 }
 
 bool NIFParser::parseNiSkinInstance(NIFSkinInstance& skin) {
-    LOGD("Parsing NiSkinInstance...");
 
     // NiSkinInstance layout (nif.xml):
     // Data:Ref(4) | Skin Partition:Ref(4, since 10.1.0.101) | Skeleton Root:Ptr(4)
@@ -2931,7 +2922,6 @@ bool NIFParser::parseNiSkinInstance(NIFSkinInstance& skin) {
 }
 
 bool NIFParser::parseNiSkinData(NIFSkinData& skinData) {
-    LOGD("Parsing NiSkinData...");
 
     uint32_t blockIndex = 0;
     if (!seekToBlockOfType("NiSkinData", blockIndex)) {
@@ -3028,7 +3018,6 @@ bool NIFParser::parseNiSkinDataAt(uint32_t blockIndex, NIFSkinData& skinData) {
 }
 
 bool NIFParser::parseNiSkinPartition(NIFSkinPartition& partition) {
-    LOGD("Parsing NiSkinPartition...");
 
     uint32_t blockIndex = 0;
     if (!seekToBlockOfType("NiSkinPartition", blockIndex)) {
@@ -3193,7 +3182,6 @@ bool NIFParser::parseNiSkinPartitionAt(uint32_t blockIndex, NIFSkinPartition& pa
 // ============================================
 
 bool NIFParser::parseNiControllerManager(NIFControllerManager& manager) {
-    LOGD("Parsing NiControllerManager...");
 
     // NiControllerManager layout (version 20.0.0.4):
     //   NiTimeController: Next Controller:Ref(4) | Flags:ushort(2) | Frequency:float(4)
@@ -3264,7 +3252,6 @@ bool NIFParser::parseNiControllerManager(NIFControllerManager& manager) {
 }
 
 bool NIFParser::parseNiControllerSequence(NIFControllerSequence& sequence) {
-    LOGD("Parsing NiControllerSequence...");
 
     uint32_t blockIndex = 0;
     if (!seekToBlockOfType("NiControllerSequence", blockIndex)) {
@@ -3375,7 +3362,6 @@ bool NIFParser::parseNiControllerSequenceAt(uint32_t blockIndex, NIFControllerSe
 }
 
 bool NIFParser::parseNiKeyframeController(NIFKeyframeController& controller) {
-    LOGD("Parsing NiControllerManager...");
 
     // NiTimeController base
     // uint32_t nextControllerIndex
@@ -3401,7 +3387,6 @@ bool NIFParser::parseNiKeyframeController(NIFKeyframeController& controller) {
 }
 
 bool NIFParser::parseNiKeyframeData(NIFAnimationClip& clip) {
-    LOGD("Parsing NiKeyframeData...");
 
     // uint32_t numRotationKeys
     uint32_t numRotKeys = readUInt32();
@@ -3498,7 +3483,6 @@ bool NIFParser::parseNiKeyframeData(NIFAnimationClip& clip) {
 }
 
 bool NIFParser::parseNiTextKeyExtraData(std::vector<NIFTextKey>& textKeys) {
-    LOGD("Parsing NiTextKeyExtraData...");
 
     // NiExtraDataBase
     // uint32_t name (string ref)
@@ -3518,7 +3502,6 @@ bool NIFParser::parseNiTextKeyExtraData(std::vector<NIFTextKey>& textKeys) {
 }
 
 bool NIFParser::parseNiTransformController(NIFTransformController& controller) {
-    LOGD("Parsing NiTransformController...");
 
     // NiTimeController base
     uint32_t nextController = readUInt32();
@@ -3564,7 +3547,6 @@ bool NIFParser::resolveControllerReferences(NIFControllerManager& manager,
 // ============================================
 
 bool NIFParser::parseBhkCollisionObject(CollisionObject& obj) {
-    LOGD("Parsing bhkCollisionObject...");
 
     // bhkCollisionObject layout (version 20.0.0.4):
     //   Target:Ptr(4) | Flags:bhkCOFlags(2) | Body:Ref(4)
@@ -3614,7 +3596,6 @@ bool NIFParser::parseBhkCollisionObject(CollisionObject& obj) {
 }
 
 bool NIFParser::parseBhkRigidBody(RigidBodyInfo& info) {
-    LOGD("Parsing bhkRigidBody...");
 
     // bhkRigidBodyT derives from bhkRigidBody without adding a single field.
     uint32_t blockIndex = 0;
@@ -3721,7 +3702,6 @@ bool NIFParser::parseBhkRigidBodyAt(uint32_t blockIndex, RigidBodyInfo& info,
 }
 
 bool NIFParser::parseBhkShape(CollisionShape& shape) {
-    LOGD("Parsing bhkShape...");
 
     // bhkShape is abstract. A bhkShape block can only be reached by block index,
     // and the concrete reader is chosen from the block's own type name.
@@ -3781,7 +3761,6 @@ bool NIFParser::parseBhkShapeAt(uint32_t blockIndex, CollisionShape& shape) {
 }
 
 bool NIFParser::parseBhkBoxShape(CollisionShape& shape) {
-    LOGD("Parsing bhkBoxShape...");
 
     // bhkBoxShape layout:
     //   Material:HavokMaterial(4) | Radius:float(4) | Unused01:byte[8]
@@ -3804,7 +3783,6 @@ bool NIFParser::parseBhkBoxShape(CollisionShape& shape) {
 }
 
 bool NIFParser::parseBhkSphereShape(CollisionShape& shape) {
-    LOGD("Parsing bhkSphereShape...");
 
     // bhkSphereShape layout: Material:HavokMaterial(4) | Radius:float(4)
     shape.type = CollisionShapeType::Sphere;
@@ -3820,7 +3798,6 @@ bool NIFParser::parseBhkSphereShape(CollisionShape& shape) {
 }
 
 bool NIFParser::parseBhkCapsuleShape(CollisionShape& shape) {
-    LOGD("Parsing bhkCapsuleShape...");
 
     // bhkCapsuleShape layout:
     //   Material:HavokMaterial(4) | Radius:float(4) | Unused01:byte[8]
@@ -3852,7 +3829,6 @@ bool NIFParser::parseBhkCapsuleShape(CollisionShape& shape) {
 }
 
 bool NIFParser::parseBhkConvexVerticesShape(CollisionShape& shape) {
-    LOGD("Parsing bhkConvexVerticesShape...");
 
     // bhkConvexVerticesShape layout:
     //   Material:HavokMaterial(4) | Radius:float(4)
@@ -3979,7 +3955,6 @@ bool NIFParser::parseBhkMeshShape(CollisionShape& shape) {
 }
 
 bool NIFParser::parseBhkNiTriStripsShape(CollisionShape& shape) {
-    LOGD("Parsing bhkNiTriStripsShape...");
 
     // bhkNiTriStripsShape layout:
     //   Material:HavokMaterial(4) | Radius:float(4) | Unused01:byte[20]
@@ -4029,7 +4004,6 @@ bool NIFParser::parseBhkNiTriStripsShape(CollisionShape& shape) {
 }
 
 bool NIFParser::parseBhkListShape(CollisionShape& shape) {
-    LOGD("Parsing bhkListShape...");
 
     // bhkListShape layout:
     //   Num Sub Shapes:uint(4) | Sub Shapes:Ref[N](4 each) | Material:HavokMaterial(4)
@@ -4074,7 +4048,6 @@ bool NIFParser::parseBhkListShape(CollisionShape& shape) {
 }
 
 bool NIFParser::parseBhkMoppBvTreeShape(CollisionShape& shape) {
-    LOGD("Parsing bhkMoppBvTreeShape...");
 
     // bhkMoppBvTreeShape layout:
     //   Shape:Ref(4) | Unused01:byte[12] | Scale:float(4)

@@ -40,8 +40,7 @@ bool InventoryManager::registerItem(const Item& item) {
     }
 
     itemDatabase[item.itemId] = item;
-    LOGD("Registered item: %u - %s", item.itemId, item.name.c_str());
-    return true;
+        return true;
 }
 
 std::shared_ptr<Item> InventoryManager::getItemTemplate(uint32_t itemId) {

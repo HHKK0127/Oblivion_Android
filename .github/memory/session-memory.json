@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-11T13:16:26+09:00",
+  "lastUpdated": "2026-10-11T19:33:58.825346+09:00",
   "entries": [
     {
       "timestamp": "2026-09-16T14:58:00Z",
@@ -5429,7 +5429,7 @@
     },
     {
       "id": "d88426a3-3e28-46d7-9c53-497aeb657f2b",
-      "timestamp": "2026-10-05T06:21:58.444965+00:00",
+      "timestamp": "2026-10-05T15:21:58.444965+09:00",
       "category": "decision",
       "priority": "high",
       "content": "UI品質ティア方針を確定: 方針A「menusを単一ソースとするオンデマンド統合」。menus80は使用しない(新規テクスチャ0枚のため)。menus50はmenusに存在しない8枚のフォールバック。解像度上限=長辺1024px、ただし画素数262144以下(例: 2048x64の細長UI)は上限非適用。格納形式=PNG(TextureLoaderはstb_imageでPNGのみ)。初期適用でmenus80由来29枚をmenus版へ差し替え完了(全29枚が画素完全一致)。loading_background.pngとicons/icon_*7枚はBSA非由来のため対象外。",
@@ -5490,7 +5490,7 @@
     },
     {
       "id": "menu-xml-m1m2-complete-20261005",
-      "timestamp": "2026-10-05T08:53:59.894963+00:00",
+      "timestamp": "2026-10-05T17:53:59.894963+09:00",
       "category": "decision",
       "priority": "high",
       "content": "impl-menu-xml-interpreter M1(xml_parser.cpp)+M2(menu_xml_interpreter.cpp)完了。確定セマンティクス: (1)evaluateSequenceは演算子が先頭の子ならゼロシード(0)から累積, floor/ceilはオペランド不要でaccに直接適用 (2)evaluateNodeは混合コンテンツ10<sub>4</sub>等の非空白node.textを暗黙リテラルシードとしてchildren先頭に前置 (3)multはmulの別名でapplyOperatorにもケース追加 (4)kTraitsにcropy/pagecount/clicked/mouseover/child_count/childcountを追加(コーパスtrait属性から抽出)。MenuXmlTests 59/59 PASS, ホストテストALL GREEN。M3(buildWidget/fillResolved完全化+locus/zoom座標変換)未着手。設計書docs/MENU_XML_INTERPRETER_DESIGN.md(§6.2実装確定, §7状態列, §9リスク解決)。docs/README.md目次に登録済み。",
@@ -5507,7 +5507,7 @@
     },
     {
       "id": "menu-xml-m3-complete-20261006",
-      "timestamp": "2026-10-06T02:00:16.629497+00:00",
+      "timestamp": "2026-10-06T11:00:16.629497+09:00",
       "category": "decision",
       "priority": "high",
       "content": "impl-menu-xml-m3 完了(メニューXML M3: buildMenuDef/resolveMenuのMenuDef->ResolvedWidget/ResolvedMenu変換, include展開§5.6, templates保持§3.6, lenient回復§3.7, locus/zoom規則確定§5.4.1)。確定事項: (1)locusはレイアウトに影響しない(x/yは常に親左上からの左端/上端。inventory_menu.xmlのlocusタブx=28/165/304/443/578が左端解釈でのみ成立、loading_menu.xmlの全画面locus+x=0) (2)zoomは生値保持、負値=fill_rect(矩形フィット、texture_scaleに実倍率)、正值=zoom/100のzoom_scale (3)textタイルの幅高未宣言時はmenuEvalContext.text_sizeで計測、justifyで伸長方向 (4)lenient回復: adopt(閉じタグ名がopen_stackに存在し深側が全て無名traitなら祖先が採用。誤記要素は捨て子は祖先children末尾へ)+最内閉じ(祖先に名前付きウィジェットが挟まれば最内で閉じる)。adoptは実データ3件のみ、strict無影響 (5)閉じタグの所有者フレームは解析継続して自ら消費=adopt伝播切り捨てバグの真因修正 (6)未終端コメントはlenient=EOFまでコメント扱い、strict=エラー。検証: MenuXmlTests 142/142 PASS、実コーパス MENUS 60/FRAGMENTS 25/EMPTY 4/PARSE_FAIL 0/EXPAND_FAIL 0/WIDGETS 203/ALL 2651/INCLUDES 0、ホストテストALL GREEN、:app:externalNativeBuildDebug成功。設計書v0.2へ更新。MenuUiBuilderはM4へ延期。",
@@ -5570,12 +5570,69 @@
         "funds"
       ],
       "compressed": false
+    },
+    {
+      "id": "font-mojibake-default-lang-en-20261011",
+      "timestamp": "2026-10-11T16:50:58.768519+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "Text mojibake root cause: SettingsManager defaulted currentLanguage to ja (constructor + resetToDefaults), forcing Japanese mode every cold start (no settings file). JPWiki Japanese strings then rendered with Latin-only Kingthings font. Fix: default language changed to en. In-game ja/en toggle preserved for when Japanese rendering is implemented.",
+      "tags": [
+        "font",
+        "mojibake",
+        "localization",
+        "settings-manager"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "6efcb8b3-5324-48e9-b96a-4fc1af595899",
+      "timestamp": "2026/10/11 17:09:05",
+      "category": "decision",
+      "priority": "high",
+      "content": "JPwiki mod (D:\\Cargo\\Other\\Oblivion\\JPwiki) surveyed: contains JPWikiMod_Vanilla.esp / JPWikiMod_Vanilla+SI.esp / JPBooks_Merged.esp (translation text data only), obja.dll + obja_config.exe + TES4_12416_JaPatch_015.EXE (Windows process-hook DLL patcher), Oblivion.exe.bak/.OLD. NO Japanese font assets (.fnt/.png/.ttf/.dds) included anywhere. Japanese display works on PC via obja.dll hooking Windows system fonts (MS Gothic class). For Android: translate text already extracted to jpwiki_localization.tsv; Japanese font must come from an external source (not from game/JPwiki assets).",
+      "tags": [
+        "jpwiki",
+        "font",
+        "japanese",
+        "research"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "log-noise-cycle4-20261011",
+      "timestamp": "2026-10-11T19:33:58.825346+09:00",
+      "category": "decision",
+      "priority": "medium",
+      "content": "Log noise reduction cycle 4 complete: startup log 1335 -> 1323 lines (50s boot). Removed 4 duplicate status-effect LOGI lines in npc_manager.cpp addStatusEffect (paralyzed/invisible/attribute fortified/summoned; spell_manager.cpp already had same). Play-loop noise essentially depleted; remaining multi-occurrence items are Android system internals (CCodec/MediaCodec), env-specific BSA-not-found x20 (external data path unset in emulator), NIFParser normal fallback 'no block of this type' (6-10 lines), TitleScreen layout rebuild logs (11 lines, size-change triggered), shader recompile x6 (one per program type = normal init). Convergence judged: log reduction essentially done.",
+      "tags": [
+        "logging",
+        "noise",
+        "npc-manager",
+        "converged"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "log-mojibake-rootcause-20261011",
+      "timestamp": "2026-10-11T19:33:58.825346+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "Log mojibake root cause CONFIRMED NOT app-side: log file bytes are valid UTF-8 (e.g. menu label 'continue' renders as bytes e7 b6 9a e3 81 91 e3 82 8b), zero U+FFFD replacement chars in file. Garbled text seen is Windows console/text-editor interpreting UTF-8 bytes as CP932. Fix for viewing: chcp 65001 or UTF-8 editor. Screen rendering is correct (user confirmed). Keyboard namespace: adb logcat outputs UTF-8; do NOT decode with errors='replace' in Python when analyzing.",
+      "tags": [
+        "logging",
+        "mojibake",
+        "utf8",
+        "cp932",
+        "analysis"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 386,
+    "totalEntries": 390,
     "compressedCount": 81,
     "sessionCount": 33,
-    "lastUpdated": "2026-10-11T03:09:19.493738+00:00"
+    "lastUpdated": "2026-10-11T19:33:58.825346+09:00"
   }
 }

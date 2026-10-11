@@ -444,33 +444,29 @@ void SpellManager::applySpellEffect(std::shared_ptr<NPC> target, const Spell& sp
         switch (effect.type) {
             case SpellEffectType::DAMAGE: {
                 float damage = calculateSpellDamage(spell, caster, target->status);
-                target->takeDamage(damage);
-                LOGI("Damage applied: %.1f HP", damage);
-                break;
+                                target->takeDamage(damage);
+                                break;
             }
 
             case SpellEffectType::HEAL: {
                 target->heal(effect.magnitude);
-                LOGI("Healing applied: +%.1f HP", effect.magnitude);
-                break;
+                                break;
             }
 
             case SpellEffectType::RESTORE_MANA: {
                 target->status.currentMana += effect.magnitude;
                 if (target->status.currentMana > target->status.maxMana) {
-                    target->status.currentMana = target->status.maxMana;
-                }
-                LOGI("Mana restored: +%.1f", effect.magnitude);
-                break;
+                                    target->status.currentMana = target->status.maxMana;
+                                }
+                                break;
             }
 
             case SpellEffectType::RESTORE_STAMINA: {
                 target->status.stamina += effect.magnitude;
                 if (target->status.stamina > target->status.maxStamina) {
-                    target->status.stamina = target->status.maxStamina;
-                }
-                LOGI("Stamina restored: +%.1f", effect.magnitude);
-                break;
+                                    target->status.stamina = target->status.maxStamina;
+                                }
+                                break;
             }
 
             case SpellEffectType::PARALYZE: {
@@ -482,10 +478,8 @@ void SpellManager::applySpellEffect(std::shared_ptr<NPC> target, const Spell& sp
                                                 duration, effect.magnitude);
                 }
                 // Force target out of combat movement
-                target->setAIState(AIState::IDLE);
-                LOGI("Paralyze: %s paralyzed for %.1fs (magnitude=%.0f)",
-                     target->name.c_str(), duration, effect.magnitude);
-                break;
+                                target->setAIState(AIState::IDLE);
+                                break;
             }
 
             case SpellEffectType::INVISIBILITY: {
@@ -497,12 +491,10 @@ void SpellManager::applySpellEffect(std::shared_ptr<NPC> target, const Spell& sp
                                                 duration, effect.magnitude);
                 }
                 // Exit combat when becoming invisible
-                if (target->inCombat) {
-                    target->exitCombat();
-                }
-                LOGI("Invisibility: %s invisible for %.1fs (magnitude=%.0f)",
-                     target->name.c_str(), duration, effect.magnitude);
-                break;
+                                if (target->inCombat) {
+                                    target->exitCombat();
+                                }
+                                break;
             }
 
             case SpellEffectType::FORTIFY_ATTR: {
@@ -518,17 +510,12 @@ void SpellManager::applySpellEffect(std::shared_ptr<NPC> target, const Spell& sp
                 // Apply immediate attribute boost
                 auto attrIt = target->status.attributes.find(attr);
                 if (attrIt != target->status.attributes.end()) {
-                    attrIt->second += effect.magnitude;
-                    LOGI("Fortify: %s %s boosted by %.0f (now %.0f) for %.1fs",
-                         target->name.c_str(), attr.c_str(), effect.magnitude,
-                         attrIt->second, duration);
-                } else {
-                    // Attribute not found, apply to Strength as fallback
-                    target->status.attributes["Strength"] += effect.magnitude;
-                    LOGI("Fortify: %s Strength boosted by %.0f for %.1fs (attr '%s' not found)",
-                         target->name.c_str(), effect.magnitude, duration, attr.c_str());
-                }
-                break;
+                                    attrIt->second += effect.magnitude;
+                                } else {
+                                    // Attribute not found, apply to Strength as fallback
+                                    target->status.attributes["Strength"] += effect.magnitude;
+                                }
+                                break;
             }
 
             case SpellEffectType::SUMMON: {
@@ -546,11 +533,8 @@ void SpellManager::applySpellEffect(std::shared_ptr<NPC> target, const Spell& sp
                         summoned->status.maxHealth = effect.magnitude * 5.0f;
                         summoned->status.currentHealth = summoned->status.maxHealth;
                         summoned->status.weaponDamage = effect.magnitude;
-                        summoned->moveSpeed = 6.0f;
-                        LOGI("Summon: creature spawned at (%.1f, %.1f, %.1f) HP=%.0f DMG=%.0f for %.1fs",
-                             spawnPos.x, spawnPos.y, spawnPos.z,
-                             summoned->status.maxHealth, effect.magnitude, duration);
-                    }
+                                                summoned->moveSpeed = 6.0f;
+                                            }
                     // Track summoned NPC ID for cleanup on expiry
                     npcManager->addStatusEffect(*target, SpellEffectType::SUMMON,
                                                 duration, effect.magnitude, "", summonedId);
@@ -610,15 +594,5 @@ bool SpellManager::hasSpell(uint32_t npcId, uint32_t spellId) const {
 void SpellManager::logSpellStatus() const {
     LOGD("========== Spell Manager Status ==========");
     LOGD("Total spells: %zu", spells.size());
-
-    for (const auto& pair : spells) {
-        const auto& spell = pair.second;
-        LOGD("  Spell: %s(%s) [%s]",
-             spell->name.c_str(), spell->nameJa.c_str(),
-             spell->getSchoolNameJa().c_str());
-        LOGD("    ManaCost: %.1f, Damage: %.1f, Effects: %zu",
-             spell->manaCost, spell->baseDamage, spell->effects.size());
-    }
-
     LOGD("==========================================");
 }

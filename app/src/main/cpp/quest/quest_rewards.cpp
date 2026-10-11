@@ -36,8 +36,6 @@ void QuestRewardManager::cleanup() {
 
 void QuestRewardManager::registerReward(uint32_t questFormID, const QuestRewardPackage& reward) {
     rewards_[questFormID] = reward;
-    LOGD("Registered rewards for quest 0x%08X: %zu entries",
-         questFormID, reward.rewards.size());
 }
 
 bool QuestRewardManager::grantRewards(uint32_t questFormID) {

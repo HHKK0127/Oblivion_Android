@@ -81,11 +81,8 @@ void QuestObjectiveTracker::registerQuestObjectives(const QuestRecord& record) {
         if (it != questObjectives.end()) {
             it->second.targetFormID = target.targetFormID;
         }
+        }
     }
-
-    LOGD("Registered %zu objectives for quest 0x%08X",
-         record.objectives.size(), record.formID);
-}
 
 bool QuestObjectiveTracker::activateObjective(uint32_t questFormID, uint32_t objectiveIndex) {
     auto questIt = objectives_.find(questFormID);

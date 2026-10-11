@@ -158,8 +158,6 @@ void AudioManager::cleanup() {
 
 uint32_t AudioManager::loadClip(const std::string& filename, uint8_t type,
                                bool isLooping) {
-    LOGD("Loading audio clip: %s", filename.c_str());
-
     // Create AudioClip
     auto clip = std::make_shared<AudioClip>();
     clip->clipId = nextClipId++;
@@ -194,11 +192,8 @@ uint32_t AudioManager::loadClip(const std::string& filename, uint8_t type,
 
     clips[clip->clipId] = clip;
 
-    LOGI("Audio clip loaded: id=%u, file=%s, type=%u, looping=%s",
-         clip->clipId, filename.c_str(), type, isLooping ? "true" : "false");
-
-    return clip->clipId;
-}
+        return clip->clipId;
+    }
 
 AudioClip* AudioManager::getClip(uint32_t clipId) {
     auto it = clips.find(clipId);
@@ -983,9 +978,8 @@ bool AudioManager::parseSoundDefinitionsJson(const std::string& json) {
             uint32_t clipId = loadClip(def.file, def.type, def.loop);
             if (clipId != 0) {
                 def.clipId = clipId;
-                soundDefs[key] = def;
-                LOGD("Sound registered: key=%s file=%s clipId=%u", key.c_str(), def.file.c_str(), clipId);
-            } else {
+                                soundDefs[key] = def;
+                            } else {
                 LOGW("Failed to load sound: key=%s file=%s", key.c_str(), def.file.c_str());
             }
 

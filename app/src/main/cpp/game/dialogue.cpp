@@ -34,9 +34,8 @@ std::shared_ptr<Dialogue> DialogueManager::createDialogue(uint32_t npcId,
     dialogue->greeting = greeting;
 
     dialogues[npcId] = dialogue;
-    LOGD("Dialogue created for NPC: %s (ID=%u)", npcName.c_str(), npcId);
 
-    return dialogue;
+        return dialogue;
 }
 
 std::shared_ptr<Dialogue> DialogueManager::getDialogue(uint32_t npcId) {

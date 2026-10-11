@@ -6,6 +6,10 @@
 #include <glm/glm.hpp>
 #include <GLES3/gl3.h>
 #include <android/asset_manager.h>
+// stb_truetype is used for bundled TTF faces (Roboto + Noto Sans JP). The
+// implementation is compiled once in text_renderer.cpp via STB_TRUETYPE_IMPLEMENTATION;
+// including the header here only exposes the fontinfo struct needed by the CJK atlas.
+#include "../include/stb_truetype.h"
 
 /**
  * @brief Font type selector for Oblivion original fonts
@@ -134,6 +138,33 @@ private:
         std::map<unsigned int, Glyph> glyphCache;
     };
 
+        // CJK glyph cached in a dynamic page atlas (Noto Sans JP). The glyph is baked as
+        // an alpha coverage bitmap at FONT_SIZE; UVs point into the page that holds it.
+        struct CjkGlyph {
+            float u0, v0, u1, v1;    // UV rectangle in the page atlas
+            float advanceX;           // Horizontal advance in atlas pixels
+            float bearingX, bearingY; // Bitmap offset from the pen origin (baselineY is
+                                      // negative, pointing above the baseline)
+            float width, height;      // Bitmap size in atlas pixels
+            size_t pageIndex;         // Index into cjkPages_ that owns this glyph's texel
+        };
+
+        // One 1024x1024 GL_R8 atlas page. Glyphs are packed left-to-right in rows; a new
+        // row starts below the tallest glyph in the current one.
+        struct CjkAtlasPage {
+            GLuint textureId = 0;
+            int cursorX = 0;   // Left edge of the next free cell (current row)
+            int cursorY = 0;   // Top of the current row
+            int rowHeight = 0; // Height of the tallest cell in the current row
+        };
+
+        // Vertex run collected for one page texture, so a mixed Latin/JP string draws in
+        // a single call per page instead of one call per glyph.
+        struct CjkBatch {
+            GLuint pageTextureId;
+            std::vector<float> vertices;
+        };
+
     GLuint vao;
     GLuint vbo;
     GLuint shaderProgram;
@@ -155,6 +186,16 @@ private:
     // Font data
     FontData* fontData;
 
+        // CJK font (bundled Noto Sans JP) and its dynamic page atlases. Oblivion ships no
+        // CJK face at all, so any Japanese text falls back to this bundled TTF. Glyphs are
+        // rasterized lazily on first use and cached; pages are created on demand.
+        unsigned char* cjkFontData_ = nullptr;
+        stbtt_fontinfo cjkFontInfo_;
+        bool cjkFontReady_ = false;
+        float cjkFontScale_ = 0.0f;
+        std::map<unsigned int, CjkGlyph> cjkGlyphs_;
+        std::vector<CjkAtlasPage> cjkPages_;
+
     // Android AssetManager (for font loading)
     AAssetManager* assetManager;
 
@@ -162,6 +203,9 @@ private:
     static constexpr int ATLAS_WIDTH = 512;
     static constexpr int ATLAS_HEIGHT = 512;
     static constexpr int FONT_SIZE = 32;
+        // CJK page atlas size. Japanese strings can reach thousands of unique glyphs, so
+        // pages are 1024x1024 and new ones are allocated on demand.
+        static constexpr int CJK_ATLAS_SIZE = 1024;
 
     // Oblivion font system
     FontType activeFont;
@@ -192,11 +236,28 @@ private:
     void compileShaders();
     void drawOblivionText(const std::string& text, float x, float y,
                           const glm::vec4& color, float scale, int atlasIndex);
-    void appendOblivionRun(const std::string& text, float x, float y, float fontScale,
-                           const OblivionFontAtlas& atlas);
-    void uploadAndDrawBatch();
-    Glyph getGlyph(unsigned int codepoint);
-    bool loadFontFromAssets(const std::string& filename);
-    bool createFontTextureAtlas();
-    bool loadOblivionFnt(const char* fntPath, const char* pngPath, FontType type);
-};
+        // Lays out one codepoint run (Latin + CJK) into batchScratch_ (Latin, current
+        // atlas texture) and cjkBatches (JP glyphs, one per page texture). The batched
+        // vertices are uploaded and drawn by uploadAndDrawScratch once per texture.
+        void appendMixedRun(const std::vector<unsigned int>& codepoints, float x, float y,
+                            float fontScale, const OblivionFontAtlas& atlas,
+                            std::vector<CjkBatch>& cjkBatches);
+        void uploadAndDrawScratch(const std::vector<float>& vertices, GLuint textureId,
+                                  int alphaChannel);
+        Glyph getGlyph(unsigned int codepoint);
+        bool loadFontFromAssets(const std::string& filename);
+        bool createFontTextureAtlas();
+        bool loadOblivionFnt(const char* fntPath, const char* pngPath, FontType type);
+
+        // Shared Roboto path used by both renderText overloads (UTF-8 → codepoint loop).
+                void drawRobotoText(const std::string& text, float x, float y,
+                                    const glm::vec4& color, float scale);
+
+                // CJK (Japanese) support.
+                bool loadCjkFontFromAssets(const std::string& filename);
+        // Rasterizes the codepoint into a page atlas on first use and caches it.
+        const CjkGlyph* getCjkGlyph(unsigned int codepoint);
+        // Advance width without rasterizing; safe on the const getTextWidth path.
+        float getCjkAdvance(unsigned int codepoint, float scale) const;
+        GLuint createCjkAtlasTexture();
+    };

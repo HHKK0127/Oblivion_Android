@@ -50,10 +50,8 @@ void AIScheduler::registerNPC(uint32_t npcId, const std::vector<AIPackage>& pack
     }
 
     NPCAIState& state = npcStates[npcId];
-    state.nextPackageId = packages.size() + 1;
-
-    LOGD("Registered NPC %u with %zu packages", npcId, packages.size());
-}
+        state.nextPackageId = packages.size() + 1;
+    }
 
 void AIScheduler::unregisterNPC(uint32_t npcId) {
     npcPackages.erase(npcId);
@@ -114,9 +112,7 @@ void AIScheduler::triggerCombat(uint32_t npcId, uint32_t targetId) {
     // Add combat package at high priority
     AIPackage combat = PackageFactory::createCombat(npcStates[npcId].nextPackageId++, targetId);
     it->second.pushPackage(combat);
-
-    LOGD("NPC %u entered combat with target %u", npcId, targetId);
-}
+    }
 
 void AIScheduler::triggerFlee(uint32_t npcId, const glm::vec3& threatPosition) {
     auto it = npcPackages.find(npcId);
@@ -199,10 +195,7 @@ void AIScheduler::updateNPC(uint32_t npcId, NPC* npc, float deltaTime) {
         activePkg->elapsed = 0.0f;
         state.stuckTimer = 0.0f;
         state.movingToTarget = false;
-        LOGD("NPC %u started package %u (type %d, priority %d)",
-             npcId, activePkg->packageId, static_cast<int>(activePkg->type),
-             activePkg->priority);
-    }
+            }
 
     // Update elapsed time
     activePkg->elapsed += deltaTime;
@@ -414,8 +407,7 @@ void AIScheduler::executeFollow(uint32_t npcId, NPC* npc, AIPackage& pkg, float 
             // the package. Resetting here made the scheduler re-select and re-look
             // the same FOLLOW package every frame (infinite loop).
             state.giveUpTimer = kFOLLOW_GIVEUP_TIME;
-            LOGD("NPC %u lost follow target %u (too far)", npc->npcId, pkg.data.targetId);
-            npc->setAIState(AIState::IDLE);
+                        npc->setAIState(AIState::IDLE);
             return;
         }
 

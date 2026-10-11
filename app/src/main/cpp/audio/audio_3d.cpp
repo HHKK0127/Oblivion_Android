@@ -52,25 +52,41 @@ Audio3D::~Audio3D() {
 }
 
 void Audio3D::setListenerPosition(const glm::vec3& pos) {
+    const bool changed = fabsf(pos.x - listenerPosition.x) > 1e-4f ||
+                         fabsf(pos.y - listenerPosition.y) > 1e-4f ||
+                         fabsf(pos.z - listenerPosition.z) > 1e-4f;
+    if (changed) {
+        LOGD("Listener position set: (%.2f, %.2f, %.2f)", pos.x, pos.y, pos.z);
+    }
     listenerPosition = pos;
     alListener3f(AL_POSITION, pos.x, pos.y, pos.z);
-    LOGD("Listener position set: (%.2f, %.2f, %.2f)", pos.x, pos.y, pos.z);
 }
 
 void Audio3D::setListenerOrientation(const glm::vec3& forward, const glm::vec3& up) {
-    listenerForward = normalize_vec3(forward);
-    listenerUp = normalize_vec3(up);
+    const glm::vec3 newForward = normalize_vec3(forward);
+    const glm::vec3 newUp = normalize_vec3(up);
+
+    const bool forwardChanged = fabsf(newForward.x - listenerForward.x) > 1e-4f ||
+                                fabsf(newForward.y - listenerForward.y) > 1e-4f ||
+                                fabsf(newForward.z - listenerForward.z) > 1e-4f;
+    const bool upChanged = fabsf(newUp.x - listenerUp.x) > 1e-4f ||
+                           fabsf(newUp.y - listenerUp.y) > 1e-4f ||
+                           fabsf(newUp.z - listenerUp.z) > 1e-4f;
+    if (forwardChanged || upChanged) {
+        LOGD("Listener orientation set: forward=(%.2f, %.2f, %.2f) up=(%.2f, %.2f, %.2f)",
+             newForward.x, newForward.y, newForward.z,
+             newUp.x, newUp.y, newUp.z);
+    }
 
     // OpenAL format: [forward.x, forward.y, forward.z, up.x, up.y, up.z]
     float orientation[6] = {
-        listenerForward.x, listenerForward.y, listenerForward.z,
-        listenerUp.x, listenerUp.y, listenerUp.z
+        newForward.x, newForward.y, newForward.z,
+        newUp.x, newUp.y, newUp.z
     };
 
+    listenerForward = newForward;
+    listenerUp = newUp;
     alListenerfv(AL_ORIENTATION, orientation);
-    LOGD("Listener orientation set: forward=(%.2f, %.2f, %.2f) up=(%.2f, %.2f, %.2f)",
-         listenerForward.x, listenerForward.y, listenerForward.z,
-         listenerUp.x, listenerUp.y, listenerUp.z);
 }
 
 void Audio3D::setListenerVelocity(const glm::vec3& vel) {

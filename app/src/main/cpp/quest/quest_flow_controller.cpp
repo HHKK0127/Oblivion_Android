@@ -140,13 +140,10 @@ void QuestFlowController::registerQuest(const QuestRecord& record) {
 
     // Create default rewards if none specified
     if (!rewardManager_.hasRewards(record.formID)) {
-        auto rewards = createDefaultRewards(record);
-        rewardManager_.registerReward(record.formID, rewards);
+            auto rewards = createDefaultRewards(record);
+            rewardManager_.registerReward(record.formID, rewards);
+        }
     }
-
-    LOGD("Registered quest flow: FormID=0x%08X, EDID=%s",
-         record.formID, record.editorID.c_str());
-}
 
 void QuestFlowController::registerQuests(const std::vector<QuestRecord>& records) {
     for (const auto& record : records) {
