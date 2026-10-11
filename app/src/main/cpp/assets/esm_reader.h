@@ -133,54 +133,90 @@ struct CellData {
         // Lighting / climate data omitted for simplicity
 };
 
-/// AI Package types from ESM
+/// AI Package types stored in the PKDT subrecord: byte 2 for the 4-byte PKDT
+/// layout, byte 4 for the 8-byte layout. Both are decoded into
+/// AIPackageData::packageType.
+///
+/// Values 0..11 are the only types present in the retail game data. The
+/// original engine reserves 12..32 for internally generated packages which
+/// never appear in an ESM file; they are listed in the trailing comment so the
+/// enum can be cross-referenced against the engine's type name table.
 enum class AIPackageType : uint8_t {
-    NONE = 0,
-    FIND = 1,       // AI_A: Activate/Find
-    FOLLOW = 2,     // AI_F: Follow
-    ESCORT = 3,     // AI_E: Escort
-    TRAVEL = 4,     // AI_T: Travel
-    WANDER = 5,     // AI_W: Wander
-    SLEEP = 6,      // AI_S: Sleep
-    EAT = 7,        // AI_E: Eat (same subrecord, different context)
-    COMBAT = 8,     // AI_C: Combat
-    FLEE = 9,       // AI_F: Flee (same subrecord, different context)
-    YIELD = 10,     // AI_Y: Yield
-    DIALOGUE = 11,  // AI_D: Dialogue
-    ACCOMPANY = 12, // AI_A: Accompany
-    USE_ITEM = 13,  // AI_U: Use Item
-    WAIT = 14       // AI_W: Wait
+    FIND = 0,             // Find
+    FOLLOW = 1,           // Follow (target: player or actor)
+    ESCORT = 2,           // Escort (lead target to a location)
+    EAT = 3,              // Eat
+    SLEEP = 4,            // Sleep
+    WANDER = 5,           // Wander
+    TRAVEL = 6,           // Travel
+    ACCOMPANY = 7,        // Accompany
+    USE_ITEM_AT = 8,      // Use Item At
+    AMBUSH = 9,           // Ambush
+    FLEE_NOT_COMBAT = 10, // Flee not Combat
+    CAST_MAGIC = 11       // Cast Magic
+    // 12 Combat, 13 CombatLow, 14 Activate, 15 Alarm, 16 Flee, 17 Trespass,
+    // 18 Dialogue, 19 Spectator, 20 ReactToDead, 21 GetUp from Chair/Bed,
+    // 22 Mount Horse, 23 Dis-mount Horse, 24 Do Nothing, 25 Cast Target Spell,
+    // 26 Cast Touch Spell, 27 Vampire Feed, 28 Surface, 29 Search for Attacker,
+    // 30 Clear Mount Position, 31 Summon Creature Defend, 32 Movement Blocked
 };
 
 /// AI Package data from ESM
+///
+/// A PACK record is built from these subrecords:
+///   PKDT - package flags plus the package type (4-byte or 8-byte layout)
+///   PLDT - location (type, reference/cell FormID, radius)
+///   PSDT - schedule (start hour at byte 3, duration in hours at offset 4)
+///   PTDT - target (type, reference/object FormID, count)
+///   CTDA - conditions, 24 bytes each
 struct AIPackageData {
-    AIPackageType type = AIPackageType::NONE;
-    uint8_t flags = 0;              // Package flags
-    uint8_t scheduleDay = 0;        // Day of week (0=any, 1=sunday, etc.)
-    uint8_t scheduleHour = 0;       // Start hour (0-23)
-    uint8_t scheduleDuration = 0;   // Duration in hours
-    uint32_t targetFormID = 0;      // Target object/NPC FormID
-    float targetX = 0.0f;           // Target location X
-    float targetY = 0.0f;           // Target location Y
-    float targetZ = 0.0f;           // Target location Z
-    uint32_t locationFormID = 0;    // Location reference FormID
-    uint8_t wanderDistance = 0;      // Wander radius
-    uint8_t idleTime = 0;           // Idle time in seconds
-
-    // --- Raw ESM PACK fields ---
-    // Oblivion AI packages are far richer than the trimmed runtime struct above.
-    // These carry the untouched values straight from the PKDT/PLDT/PTDT/PSDT
-    // subrecords so AI code can interpret them without re-parsing the record.
     uint32_t formID = 0;
     std::string editorID;
-    uint32_t packageFlags = 0;       // PKDT offset 0
-    uint8_t packageType = 0;         // PKDT offset 4 (0=Find..11=CastMagic)
+
+    uint32_t packageFlags = 0;       // PKDT offset 0 (u16 when PKDT is 4 bytes)
+    uint8_t packageType = 0;         // PKDT byte 2 (short form) / byte 4 (long form)
+
+    // PSDT - schedule. A start hour of 0xFF means "no time constraint".
+    uint32_t startHour = 0xFF;
+    uint32_t scheduleDuration = 0;   // Duration in hours; 0 = unconstrained
+
+    // PLDT - location
     int32_t locationType = 0;        // PLDT offset 0
+    uint32_t locationFormID = 0;     // PLDT offset 4
     int32_t locationRadius = 0;      // PLDT offset 8
-    int32_t targetKind = 0;          // PTDT/PSDT offset 0
+
+    // PTDT - target
+    int32_t targetKind = 0;          // PTDT offset 0
+    uint32_t targetFormID = 0;       // PTDT offset 4
     int32_t targetCount = 0;         // PTDT offset 8
+
     uint32_t conditionCount = 0;     // Number of CTDA subrecords
+
+    // False while this is still a bare PKID placeholder captured from an
+    // actor record; true once the PACK record has been merged in.
+    bool resolved = false;
 };
+
+/// Human readable name of an AI package type, matching the engine's own type
+/// name table. Returns "Unknown" for the internally generated types that never
+/// appear in an ESM file.
+inline const char* getAIPackageTypeName(uint8_t type) {
+    switch (type) {
+        case 0: return "Find";
+        case 1: return "Follow";
+        case 2: return "Escort";
+        case 3: return "Eat";
+        case 4: return "Sleep";
+        case 5: return "Wander";
+        case 6: return "Travel";
+        case 7: return "Accompany";
+        case 8: return "Use Item At";
+        case 9: return "Ambush";
+        case 10: return "Flee not Combat";
+        case 11: return "Cast Magic";
+        default: return "Unknown";
+    }
+}
 
 struct NPCData {
     uint32_t formID = 0;
@@ -204,7 +240,9 @@ struct NPCData {
     uint8_t mood = 0;               // 0-8: mood (0=neutral, 1=afraid, etc.)
     uint8_t aiFlags = 0;            // AI flags (auto-calc, etc.)
 
-    // AI Packages (up to 8 packages per NPC in Oblivion)
+    // AI Packages referenced by the PKID subrecords. Oblivion stores one u32
+    // package FormID per entry; the largest NPC_ record in the retail master
+    // file carries 60 of them.
     std::vector<AIPackageData> aiPackages;
 };
 
@@ -223,6 +261,9 @@ struct CreatureData {
     uint32_t soulLevel = 0;   // Soul gem level
     uint32_t factionID = 0;
     uint32_t templateFormID = 0;  // Template creature
+
+    // AI Packages referenced by the PKID subrecords (one u32 FormID per entry).
+    std::vector<AIPackageData> aiPackages;
 };
 
 struct WeaponData {
@@ -1181,6 +1222,16 @@ public:
         void resolveMagicReferences(
             const std::unordered_map<std::string, uint32_t>* externalFormIDs = nullptr,
             const std::unordered_map<uint32_t, uint32_t>* externalSchools = nullptr);
+
+        // Expand the PKID package FormIDs captured on NPC_/CREA records into
+        // full AIPackageData by looking each FormID up in m_packages. Must run
+        // after all records are decoded because PACK records generally appear
+        // after the actors that reference them. Returns the number of package
+        // entries that were resolved; unresolved entries are left as FormID-only
+        // placeholders so that plugins can still link them against a master.
+        // The optional map supplies formID lookups owned by other files.
+        size_t resolveAIPackageReferences(
+            const std::unordered_map<uint32_t, const AIPackageData*>* external = nullptr);
 
 private:
     std::string m_fileName;

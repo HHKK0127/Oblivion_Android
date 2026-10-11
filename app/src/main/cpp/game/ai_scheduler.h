@@ -138,6 +138,7 @@ private:
     void executeTravel(uint32_t npcId, NPC* npc, AIPackage& pkg, float deltaTime);
     void executePatrol(uint32_t npcId, NPC* npc, AIPackage& pkg, float deltaTime);
     void executeFollow(uint32_t npcId, NPC* npc, AIPackage& pkg, float deltaTime);
+    void executeEscort(uint32_t npcId, NPC* npc, AIPackage& pkg, float deltaTime);
     void executeGuard(uint32_t npcId, NPC* npc, AIPackage& pkg, float deltaTime);
     void executeSleep(uint32_t npcId, NPC* npc, AIPackage& pkg, float deltaTime);
     void executeEat(uint32_t npcId, NPC* npc, AIPackage& pkg, float deltaTime);

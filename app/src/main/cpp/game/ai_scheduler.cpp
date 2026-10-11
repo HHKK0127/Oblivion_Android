@@ -225,6 +225,7 @@ void AIScheduler::executePackage(uint32_t npcId, NPC* npc, AIPackage& pkg, float
         case PackageType::TRAVEL:   executeTravel(npcId, npc, pkg, deltaTime); break;
         case PackageType::PATROL:   executePatrol(npcId, npc, pkg, deltaTime); break;
         case PackageType::FOLLOW:   executeFollow(npcId, npc, pkg, deltaTime); break;
+        case PackageType::ESCORT:   executeEscort(npcId, npc, pkg, deltaTime); break;
         case PackageType::GUARD:    executeGuard(npcId, npc, pkg, deltaTime); break;
         case PackageType::SLEEP:    executeSleep(npcId, npc, pkg, deltaTime); break;
         case PackageType::EAT:      executeEat(npcId, npc, pkg, deltaTime); break;
@@ -356,13 +357,25 @@ void AIScheduler::executePatrol(uint32_t /*npcId*/, NPC* npc, AIPackage& pkg, fl
 }
 
 void AIScheduler::executeFollow(uint32_t /*npcId*/, NPC* npc, AIPackage& pkg, float deltaTime) {
-    if (!npcManager) {
-        npc->setAIState(AIState::IDLE);
-        return;
+    // targetId 0 is the player (no NPC owns formID 0); fall back to the NPC
+    // manager only for real actor targets.
+    glm::vec3 targetPos;
+    bool haveTarget = false;
+
+    if (pkg.data.targetId == 0) {
+        if (worldManager) {
+            targetPos = worldManager->getPlayerPosition();
+            haveTarget = true;
+        }
+    } else if (npcManager) {
+        auto target = npcManager->getNPC(pkg.data.targetId);
+        if (target) {
+            targetPos = target->position;
+            haveTarget = true;
+        }
     }
 
-    auto target = npcManager->getNPC(pkg.data.targetId);
-    if (!target) {
+    if (!haveTarget) {
         npc->setAIState(AIState::IDLE);
         return;
     }
@@ -371,8 +384,8 @@ void AIScheduler::executeFollow(uint32_t /*npcId*/, NPC* npc, AIPackage& pkg, fl
 
     float distSq = 0.0f;
     {
-        float dx = npc->position.x - target->position.x;
-        float dz = npc->position.z - target->position.z;
+        float dx = npc->position.x - targetPos.x;
+        float dz = npc->position.z - targetPos.z;
         distSq = dx * dx + dz * dz;
     }
 
@@ -389,11 +402,86 @@ void AIScheduler::executeFollow(uint32_t /*npcId*/, NPC* npc, AIPackage& pkg, fl
 
     if (distSq > followDist * followDist) {
         // Too far — move closer
-        moveToward(npc, target->position, deltaTime);
+        moveToward(npc, targetPos, deltaTime);
     } else {
         // Close enough — stop
         npc->setAIState(AIState::IDLE);
     }
+}
+
+void AIScheduler::executeEscort(uint32_t npcId, NPC* npc, AIPackage& pkg, float deltaTime) {
+    // Escort leads an actor (targetId 0 = player) toward destination and keeps
+    // a followDistance gap, slowing down or waiting whenever the escorted
+    // actor falls behind beyond followMaxDistance.
+    glm::vec3 escortPos;
+    bool haveEscortee = false;
+
+    if (pkg.data.targetId == 0) {
+        if (worldManager) {
+            escortPos = worldManager->getPlayerPosition();
+            haveEscortee = true;
+        }
+    } else if (npcManager) {
+        auto target = npcManager->getNPC(pkg.data.targetId);
+        if (target) {
+            escortPos = target->position;
+            haveEscortee = true;
+        }
+    }
+
+    if (!haveEscortee) {
+        LOGD("NPC %u escort target %u not found", npcId, pkg.data.targetId);
+        npc->setAIState(AIState::IDLE);
+        return;
+    }
+
+    npc->setAIState(AIState::FOLLOW_PLAYER);
+
+    float gap = 0.0f;
+    {
+        float dx = npc->position.x - escortPos.x;
+        float dz = npc->position.z - escortPos.z;
+        gap = std::sqrt(dx * dx + dz * dz);
+    }
+
+    // Escorted actor strayed too far: hold position until they catch up.
+    if (gap > pkg.data.followMaxDistance) {
+        npc->setAIState(AIState::IDLE);
+        return;
+    }
+
+    // Destination reached (both the NPC and the escorted actor are close):
+    // stop leading and let the package restart on the next selection.
+    bool selfAtDestination = hasReached(npc, pkg.data.destination, 2.0f);
+    bool escorteeAtDestination = false;
+    {
+        float dx = escortPos.x - pkg.data.destination.x;
+        float dz = escortPos.z - pkg.data.destination.z;
+        escorteeAtDestination =
+            (dx * dx + dz * dz) <= (pkg.data.followMaxDistance * pkg.data.followMaxDistance);
+    }
+
+    if (selfAtDestination && escorteeAtDestination) {
+        LOGD("NPC %u finished escort to destination", npcId);
+        pkg.reset();
+        npc->setAIState(AIState::IDLE);
+        return;
+    }
+
+    // Wait when the escorted actor is closer to us than followDistance; keep
+    // walking toward the destination otherwise.
+    if (gap > pkg.data.followDistance && escorteeAtDestination) {
+        npc->setAIState(AIState::IDLE);
+        return;
+    }
+
+    float moveSpeed = npc->moveSpeed;
+    // Do not outrun the escorted actor.
+    if (gap < pkg.data.followDistance) {
+        moveSpeed *= 0.5f;
+    }
+
+    moveToward(npc, pkg.data.destination, deltaTime, moveSpeed);
 }
 
 void AIScheduler::executeGuard(uint32_t /*npcId*/, NPC* npc, AIPackage& pkg, float deltaTime) {

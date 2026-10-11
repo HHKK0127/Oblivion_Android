@@ -1,6 +1,6 @@
 {
  "version": "1.0.0",
- "lastUpdated": "2026-10-06T02:00:16.629497+00:00",
+ "lastUpdated": "2026-10-11T03:09:19.493738+00:00",
  "entries": [
   {
    "timestamp": "2026-09-16T14:58:00Z",
@@ -5524,12 +5524,58 @@
     "decision"
    ],
    "compressed": false
+  },
+  {
+   "id": "re-vtable-family-map-20261011",
+   "timestamp": "2026-10-11T00:00:00Z",
+   "category": "reference",
+   "priority": "high",
+   "content": "OBLIVION.EXE vtable family map (static RE, tmp/re_vtable_family_map.md): 31 vtable (0x00a89718-0x00a946e0) all share slot1=FUN_0077a1b0. slot0 dispatchers classified: draw-helper/technique (FUN_007c9f30 mega jumptable 416 cases fallback receiver, FUN_008098e0/0080f280/008067f0 switch(DAT_00b42e90) -> 200+ helpers), draw-delegate (FUN_007bd3d0/007dcbd0/007ef6b0/0080d110), path state machine (FUN_007b0d20/007b1e00/007c0560/007e1120/007de3b0/007f58d0/00800cf0), const-setter+refcount (FUN_007eac80/007ec890/007f13b0/007fa890/008048e0/00805f20/007af9c0), shader-property (FUN_007e3e00/007f4790/00811ed0), lighting/emissive (FUN_007e8e10/0080e9a0), stub (FUN_007790d0/00801020 shared/0076d360). NOT COM: refcount via slot2+ Interlocked helper (FUN_007604d0/00772560). Every slot0 calls (**)(*this+0x80)() first, ends with FUN_0076ce40 + param_1[0xe]++ and returns 0. Hypothesis: switch(DAT_00b42e90) family=technique(shader path), switch(param_1[N]) family=path(geometry/texstate).",
+   "tags": [
+    "RE",
+    "vtable",
+    "renderer",
+    "steam-exe",
+    "path",
+    "technique"
+   ],
+   "compressed": false
+  },
+  {
+   "id": "re-path-descriptor-model-20261011",
+   "timestamp": "2026-10-11T00:00:00Z",
+   "category": "reference",
+   "priority": "high",
+   "content": "OBLIVION.EXE path descriptor static model (tmp/re_path_descriptor_model.md): FUN_0080d110(slot0) param_5 = path holder obj, +0x18 -> descriptor piVar2. Struct: +0x00 vtable(0xa942d0, slot+0x54=FUN_0077aa10), +0x1c flags&pathId (bit0x400/800/1000; bit0x80 selects DAT_00b430dc vs f0; top4bit -> FUN_007b4280), +0x20 link ptr (DAT_00b464a4), +0xe0 sub_object, +0x100 byte reset by FUN_007fb400, +0x158..164 Toggles float4, +0x168/16c smart ptrs freed by FUN_0076c910. 4-comp copied to 2 banks: bankA _DAT_00b4616c..78 = screen/UV normalized float4 init 0.5,0.5,0.5,1.0 (FUN_007ba0f0/FUN_00508b80 pixel/256) CONFIRMED; bankB _DAT_00b46688..94 = 1.0/0.0 orthogonal flags (FUN_007f6ae0/007f7ee0) ESTIMATED. BankB selected when DAT_00b42f32==0 || DAT_00b42f48==1. ctor FUN_0080cf20 writes vtable 0xa942a4; 0xa942d0=+0x2c derived. Descriptor own ctor not statically found (dynamic/vtable overwrite). Static limits: bankB reader FUN_007cc280 untraced.",
+   "tags": [
+    "RE",
+    "path-descriptor",
+    "toggles",
+    "renderer",
+    "steam-exe"
+   ],
+   "compressed": false
+  },
+  {
+   "id": "re-child-402-limit-20261011",
+   "timestamp": "2026-10-11T00:00:00Z",
+   "category": "constraint",
+   "priority": "high",
+   "content": "RE child sessions repeatedly failed with HTTP 402 'Insufficient account funds' (6x each in events.jsonl). Root cause = upstream LLM query fund exhaustion, aggravated by parallel launch. Mitigation: launch at most 3 RE child sessions concurrently. Archive is irreversible (durably archived sessions cannot receive messages; restore via app).",
+   "tags": [
+    "RE",
+    "child-session",
+    "constraint",
+    "402",
+    "funds"
+   ],
+   "compressed": false
   }
  ],
  "metadata": {
-  "totalEntries": 382,
+  "totalEntries": 386,
   "compressedCount": 81,
   "sessionCount": 33,
-  "lastUpdated": "2026-10-05T07:32:57Z"
+  "lastUpdated": "2026-10-11T03:09:19.493738+00:00"
  }
 }

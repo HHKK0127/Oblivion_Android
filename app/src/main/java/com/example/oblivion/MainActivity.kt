@@ -43,6 +43,14 @@ class MainActivity : Activity() {
     companion object {
         private const val TAG = "MainActivity"
 
+        // Keys forwarded to the native title screen: D-pad up/down/center and Enter.
+        private val MENU_KEY_CODES = setOf(
+            android.view.KeyEvent.KEYCODE_DPAD_UP,
+            android.view.KeyEvent.KEYCODE_DPAD_DOWN,
+            android.view.KeyEvent.KEYCODE_DPAD_CENTER,
+            android.view.KeyEvent.KEYCODE_ENTER
+        )
+
         /** Intent extra that makes the activity run the native test suites and exit. */
         const val EXTRA_RUN_NATIVE_TESTS = "run_native_tests"
 
@@ -163,6 +171,15 @@ class MainActivity : Activity() {
         } catch (e: Exception) {
             Log.e(TAG, "Exception in onCreate: ${e.message}", e)
         }
+    }
+
+    override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+        if (event.action == android.view.KeyEvent.ACTION_DOWN && event.repeatCount == 0 &&
+            event.keyCode in MENU_KEY_CODES) {
+            gameRenderer?.nativeOnKeyPress(event.keyCode)
+            return true
+        }
+        return super.dispatchKeyEvent(event)
     }
 
     private fun initializeGame() {

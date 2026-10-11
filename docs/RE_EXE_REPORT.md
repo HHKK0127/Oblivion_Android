@@ -761,9 +761,15 @@ Steam版は `Data\Shaders\shaderpackage001.sdp` 〜 `shaderpackage019.sdp`（計
 - `z` は `mad` の係数や `pow` の指数として使われ、切替ではない
 - 成分ごとの機能名（どのフラグがどの効果か）はまだ特定できていない。CPU 側の値の設定箇所の解析が必要
 
-**Toggles の CPU 側書き込み（追加解析・部分確定）**
-- `FUN_0080d110` は Toggles の x / y / z / w を `piVar2[0x56]`〜`piVar2[0x59]`（描画パスオブジェクトの +0x158〜+0x164）からコピーする（`DAT_00b46688`〜`DAT_00b46694`、または別系統の `DAT_00b4616c`〜`DAT_00b46178`）
-- `piVar2` は引数 `param_5 + 0x18` から得る。その `piVar2[7]` のビット 0x400 / 0x800 / 0x1000 は別途読まれるが、各ビットが何の機能かは未確認
+**Toggles の CPU 側書き込み（解析確定・FUN_0080d110 デコンパイル）**
+- `FUN_0080d110`（__thiscall, 1878B, 関数ポインタテーブル 0x00a942d0 から参照）は **描画パスディスパッチャ**。パスタイプ `DAT_00b42e90` で分岐する
+  - `DAT_00b42e90` が 0xe0 / 0xe1 / 0x18c / 0x18d / 0x18e / 0x18f(399) の場合に描画パス処理を実行（それ以外のタスクIDでは別処理へ分岐）
+  - case 0xe0 / 0xe1: 定数セッターを直接呼ぶ（`FUN_0076c910`・`FUN_0076c730`・`FUN_007aec20`・`FUN_007aec60`・`FUN_007aecb0` がシェーダー定数 c0〜c17 などの書き込み）
+  - case 0x18c / 0x18d / 0x18e / 399: `FUN_00851ca0`・`FUN_00851e70`・`FUN_00848950`・`FUN_00848ad0` に委譲（引数 param_2/param_3/param_5/piVar2 を渡す）
+- Toggles 書き込み（確定）: `piVar2 = param_5 + 0x18` のパスオブジェクトから、`piVar2[0x56]`〜`piVar2[0x59]`（= +0x158〜+0x164）を 4 成分 x/y/z/w としてコピーする
+  - **分岐条件**: `DAT_00b42f32==0` または `DAT_00b42f48==1` → `_DAT_00b46688`〜`_DAT_00b46694` 系に書く（この場合 iVar8=1 で処理）
+  - それ以外 → `_DAT_00b4616c`〜`_DAT_00b46178` 系に書く
+- `piVar2[7]` のビット **0x400 (bVar9) / 0x800 (bVar10) / 0x1000 (bVar11)** が定数セットの選択子として読まれる（case 0xe1 で bVar9/bVar10/bVar11 に応じて描画パスオブジェクト +0x44〜 のフィールドを使い分け）
 - `FUN_007f6ae0` は `DAT_00b46688` に対し、別オブジェクトの +0x24 フラグが非 0 なら 1.0、0 なら 0.0 を書く（x のみ）
 - 未確認: `piVar2[0x56]` 等の上流の書き込み元（パスオブジェクトを構築する関数）。ここが特定できれば x / y と機能の対応が決まる
 ### 11.6 結論
@@ -835,7 +841,31 @@ Steam版は `Data\Shaders\shaderpackage001.sdp` 〜 `shaderpackage019.sdp`（計
 - `engine/renderer.cpp` の 2595〜2602 行で Voices1/2 と DLC Shivering Isles の BSA を読み込み、3481 行で索引を構築する。APK には含めない。
 - lip（口形同期データ）は未使用。
 
-### 13.2 未確認 / 次の候補
+### 13.2 音声再生システム（EXE 内部・直接調査 2026-10）
+
+EXE（Steam 版）のオーディオは **3 系統** で構成される（import 一覧から確定）。
+
+| 系統 | API | 用途 |
+|---|---|---|
+| DirectSound8 | `DirectSoundCreate8`（Ordinal_11） | 効果音・3D 音（Sounds.bsa の wav） |
+| Bink（RAD ゲームツール） | `_BinkOpenDirectSound@4`, `_BinkOpen@8`, `_BinkDoFrame@4` 等 | 動画（.bik）の音声 |
+| winmm | `mmioOpenA`, `mmioDescend`, `mmioRead` 等 | WAV リソース読み出し |
+
+BGM は `Data\Music\Special\*.mp3`（`success.mp3`, `death.mp3`, `TES4Title.mp3`）、ボイスは BSA 内 `sound\voice\...mp3`（§13 参照）。`%s*.mp3` / `%s.lip` によりファイル名組み立て。
+
+**DirectSound 初期化チェーン（確定）:**
+- `FUN_00404a00`（アプリ初期化）が `param_1+0x24` にオーディオシステムを構築。
+- `FUN_006abc80`（__thiscall）が DirectSound システム初期化:
+  - `DirectSoundCreate8(0, &dev, 0)` でデバイス生成。
+  - vtable +0x18: 協調レベル設定に相当（`param_2, 2`）、+0x10/+0x0c: バッファ生成。
+  - `param_1[0x1e]` = primary buffer、`*param_1[3]` = 2D buffer caps 0x91。
+  - マスター音量 `_DAT_00b161d8`（0x3f800000=1.0 / 0x41200000=10.0 の切替）。
+  - `param_1[0xc0]`, `param_1[0xc1]` = `FUN_006abb00`/`FUN_006abb50`(0x25) 生成の **37 エントリ配列**（サウンドハンドル格納用、vtable PTR_FUN_00a7714c）。
+- システム本体ポインタはグローバル `_DAT_00b3c214` に保持。`CoInitialize` で COM 初期化も行う。
+
+Android 側は OpenAL（stub ヘッダ、デバイス無しなら Java MediaPlayer / SoundPool ブリッジへ）で再生しており、EXE の DirectSound8 再生パスに対応する。ハンドル配列（0xc0/0xc1）は Android 側のサウンドハンドル管理（SoundPool/ソースID）と類比。
+
+### 13.3 未確認 / 次の候補
 
 - lip の形式（口形キーフレーム）の解析と、Android 側のリップシンク実装の要否。
 - DLC Shivering Isles - Voices.bsa（452 MiB）の索引件数確認。
@@ -976,3 +1006,580 @@ DATA の 224 バイト各フィールド（フラグ、ブレンド、寿命、�
 - Note: the 60 DLC-only icons are present only when the Shivering Isles DLC is installed.
 
 > Addendum (2026-10-08): Headless Ghidra (project program Oblivion.exe) found zero direct references to FUN_0080d110. Its caller is likely an indirect call (vtable or function pointer), so the upstream writer of piVar2[0x56..0x59] is still unidentified.
+
+## 17. NPC AI（プロセス／パッケージ）— 2026-10-10 追記
+
+解析対象: `D:\Cargo\Ghidra\temp\Oblivion_Steam版\Oblivion.exe`（PE image base 0x400000、.text 0x401000-0xa27dff、.rdata 0xa28000-0xb019ff、.data 0xb02000-0xbabc1b）。
+
+### 17.0 AI プロセス本体と RE カバレッジ（確定・2026-10-10）
+
+- **RE カバレッジ数値**: Ghidra の本 EXE の関数総数は **22,295**（実測）。本レポートで RE 識別・命名済みの関数はその一部（描画 / シェーダ / AI / オーディオ / セーブ等）。AI 系は §17〜§18 で対応を体系化。
+- **AI プロセス vtable: `0xa72d64`**。AI プロセス本体の更新入口は `UpdateAiProcess`（`0x6588c0`）。
+- **AI 更新ディスパッチ: `AiUpdateDispatch`（`0x649340`）**。選択専用であり、種別実行本体は含まない（§17.8）。
+- **手続き種別名表: `0xB12988`（33 エントリ）**。種別バイト `package+0x20` をインデックスとする（§17.1）。
+- **`FUN_005ebb30`（アクター単位 AI プロセス更新、1601 バイト）**: レベル別リストを走査し、AI レベルに応じてプロセスを差し替える。種別 5（Wander）のパッケージに対し `process+4` をクリアするフローを確認（§17.5 参照）。
+
+### 17.1 AI手続き種別テーブル（0xB12988、33エントリ）
+
+パッケージの種別バイト（`package+0x20`）を添字にした文字列テーブル。`tmp\ai_procedure_types.txt`。
+
+| idx | 名称 | idx | 名称 | idx | 名称 |
+|---|---|---|---|---|---|
+| 0 | Find | 11 | CastMagic | 22 | MountHorse |
+| 1 | Follow | 12 | Combat | 23 | DismountHorse |
+| 2 | Escort | 13 | CombatLow | 24 | DoNothing |
+| 3 | Eat | 14 | Activate | 25 | CastTargetSpell |
+| 4 | Sleep | 15 | Alarm | 26 | CastTouchSpell |
+| 5 | Wander | 16 | Flee | 27 | VampireFeed |
+| 6 | Travel | 17 | Trespass | 28 | Surface |
+| 7 | Accompany | 18 | Dialogue | 29 | SearchForAttacker |
+| 8 | UseItemAt | 19 | Spectator | 30 | ClearMountPosition |
+| 9 | Ambush | 20 | ReactToDead | 31 | SummonCreatureDefend |
+| 10 | FleeNotCombat | 21 | GetUp | 32 | MovementBlocked |
+
+### 17.2 データレイアウト
+
+- `Actor + 0x58` が AI プロセス。プロセス `+8` が現在のパッケージ。パッケージ `+0x20` が種別バイト、`+0x1c` がフラグ（bit 0x14 / 0x15 / 0x17）、`+0x24` がポインタ。
+- プロセス vtable の主要スロット: `+8` レベル取得（0=高 / 1=中 / 2=低）、`+0x18` update(actor, flag)、`+0x174` 現在パッケージ取得、`+0x178` 設定、`+0x184` パッケージ取得、`+0x194` 状態更新、`+0x36c` 種別取得、`+0x394` / `+0xbc` / `+0x38c` 状態リセット、`+0x21c` リセット、`+0x594` パッケージ開始。
+- アクター vtable: `+0x170` 基本NPC取得、`+0x380` 乗騎/対象、`+0x44` 種別判定。
+- グローバル: `DAT_00b333c4` = プレイヤーアクター、`DAT_00b33a98 + 0xcd4` = フラグ。
+
+### 17.3 パッケージ選択チェーン（検証済み）
+
+1. `FUN_00569020(actor, bool)` — アクターのパッケージリストから最良のパッケージを選択する。判定は `FUN_0056a950` / `FUN_00568eb0`。デバッグ文字列 `"%s Picked Package %s (%s)"`（`0x5691xx`）を出力。
+2. `FUN_00648e40(process, actor)` — パッケージリストの再取得。`FUN_005e0330` → `FUN_00468670` → `FUN_005e02e0` 経由でレベル別リスト（`+0x68` / `+0` / `+0xc` / `+0x18`）をたどる。
+3. `FUN_00649340`（別名 `AiFindPackageMid`）— 現在パッケージの切替。旧パッケージの終了処理（`FUN_005eae70`）と vtable `+0x594` / `+0x21c` / `+0x38c` / `+0xbc` / `+0x394` のリセットを行う。`process+0xf` / `+0x10` のリストを消化する。
+4. `FUN_00629b70` — アクター更新ラッパー。`vtbl+0x36c` が 0 / 4 / 9 の場合のみ本体を実行するゲート構造。
+5. `FUN_006588c0` — `FUN_00649340` を `+0x90` のキャッシュ付きでラップ。
+
+### 17.4 レベル別リスト管理
+
+- `FUN_00673a90` / `FUN_00674550`（thiscall、管理オブジェクト）— レベル 0 は `+0x68`、1 は `+0`、2 は `+0xc`、3 は `+0x18` のリストにアクターを振り分ける。レベルは `FUN_00659a00`（プロセス vtable `+8` を呼ぶ）で取得。
+- `FUN_0067b260` = リスト追加、`FUN_0065c620` = リストからの削除（単純な連結リスト操作）。
+
+### 17.5 種別専用ハンドラ
+
+| 関数 | 意味 |
+|---|---|
+| `AiPackage_IsDialogue`(`FUN_005e6b40`) | IsDialogue（種別 0x12） |
+| `FUN_005e6b70` | IsSpectator（種別 0x13） |
+| `FUN_005e6ba0` | IsAlarm（種別 0xf） |
+| `AiPackage_IsSurface`(`FUN_005e6fe0`) | IsSurface（種別 0x1c） |
+| `AiPackage_IsEatType5`(`FUN_005e6fa0`) | IsEat 系（種別 0x3 + 型条件表 `PTR_DAT_00b152b0[pkg+0x18]==5`） |
+| `FUN_005e6cd0(actor, flag)` | IsFleeing（0x10 / 0xa / 条件付き 0xd）、呼出元 16 |
+
+- **種別述語クラスタ（確定・2026-10-11）**: `actor+0x58` → パッケージ vtable `+0x184`/`+0x180`（アクセス演算子）→ `pkg->type`（`[[pkg]+0x20]`）を検査する短小関数群（35〜150 バイト）が 0x5e6000〜0x5e7000 に密集する。これらは「単一 executor の case」ではなく **選択系の述語ハンドラ** で、§17.8 の実行モデル (a) に該当。`AiPackage_IsEatType5` は型バイト 0x3 に加え `PTR_DAT_00b152b0[pkg+0x18]==5` を要求する複合条件。
+| `FUN_005eb400` | Travel（種別 6）位置ヘルパー |
+| `FUN_005ebb30` | アクター単位の AI プロセス更新（1601 バイト）。レベルに応じてプロセスを差し替え、種別 5（Wander）で `process+4` をクリア |
+| `FUN_00601b80` | パッケージ変更/停止。種別 0x12 / 0x17 / 0x1e をスキップ、種別 4（Sleep）と `pkg+0x1c` フラグを処理 |
+| `FUN_005eae70` | パッケージ終了処理。種別 0x16（MountHorse）/ 0x11（Trespass）に専用分岐 |
+| `FUN_005e9e70` | アクター状態リセット |
+| `FUN_005e4b00` / `FUN_005e4fc0` | アクター保有リスト（`+0x58` など）の走査 |
+
+### 17.6 種別バイト比較サイト
+
+`tmp\ai_switch.txt`（約 133 行）。`CMP byte ptr [reg+0x20], imm` と 0x20 エントリの switch ジャンプテーブルを走査した結果。主なサイト: Combat 0xc @ 0x5e619e / 0x61d469 / 0x624e0b、Dialogue 0x12 @ 0x5e6b57 / 0x601815、Flee 0x10 @ 0x5e6cea / 0x5eff4e、Alarm 0xf @ 0x5e6baa、Sleep 4 @ 0x601d94、Wander 5 @ 0x5ebc9b、Travel 6 @ 0x5eb44d。
+
+### 17.7 種別名テーブルの参照元（表示コード）
+
+`0x63b6f7` / `0x649f1c` / `0x6581f7` などは種別名を sprintf で整形するデバッグ/UI コードであり、実行処理ではない。関数 `FUN_0063a210` / `FUN_006497f0` / `FUN_00659010` / `FUN_00657cc0` を定義済み。
+
+### 17.8 パッケージ実行モデル（検証済み・2026-10-11）
+
+`AiUpdateDispatch`（`FUN_00649340`、改名済み・確定）は **選択専用** であり、種別ごとの実行本体は含まない。実行はパッケージ・サブクラスの vtable 上書きと、種別ファクトリ関数群が担う。
+
+- **パッケージ基底 vtable: `0xa6743c`**。基底 ctor `FUN_00568e10` が vtable を設置し `+1` に `0x3d` を書く。主要スロット: `+0x00`=0x60d0a0（破棄口）、`+0x10`=0x568e90（スカラ削除破棄 ct・`FUN_00568640` → free）、`+0x14`=0x568730、`+0x18`=0x569140、`+0x1c`=0x566530。`+0x10` は旧パッケージの終了/破棄に使われる。
+- **パッケージ設置関数 `FUN_005f1590`（thiscall, actor, newPkg, flag）**。新パッケージの種別バイト `newPkg+0x20` を読み、変更が必要なら旧パッケージの vtable `+0x10` を呼んで終了し、`process+8` へ新パッケージ、`process+4=0` を設置。`FUN_005660a0`（`pkg+0x1c` の bit0xb 判定）+ `FUN_00566830` で後始末。
+- **種別ファクトリ（基底 ctor `FUN_00568e10` の呼出元 = 34 個）**。例 `FUN_005f5170`: タイプ 0xe/0xd（Alarm 系）を `AiPackageSetType` で設定、`+0x18=3`、0xc バイトのサブオブジェクト 2 個（ctor `FUN_005696b0` / `FUN_00569e40`）を追加し、`FUN_005f1590` で設置。ファクトリ群: 0x5f5170 / 0x5f5730 / 0x5f5870 / 0x5f59e0 / 0x5f7cf0 / 0x5f7ec0 / 0x5f8000 / 0x5f80d0 / 0x5f8170 / 0x5f94b0 / 0x5f9eb0 / 0x606860 / 0x6068d0 / 0x60ec60 / 0x611d70 / 0x612240 / 0x61bb60 / 0x625d00 / 0x625d80 / 0x627490 / 0x631dc0 / 0x631ec0 / 0x643e30 / 0x646020（複合ビルダ）/ 0x660760 / 0x66cc40 / 0x6765f0 / 0x67c260 / 0x67d300 / 0x67d3a0 / 0x692430 / 0x6a40b0。
+- **実行モデル結論**: 33 種別を一括 switch する「単一 executor」は存在しない。種別ごとの挙動は (a) 選択系の種別述語ハンドラ（§17.5 の `AiPackage_IsDialogue` / `FUN_005e6ba0` IsAlarm / `AiPackage_IsSurface` / `AiPackage_IsEatType5` / `FUN_005e6cd0` IsFleeing など）と (b) パッケージ・サブクラス vtable 上書き＋種別ファクトリが担う。`PTR_DAT_00b152b0` は関数表ではなく、`pkg+0x18` を索引とする *.data* の種別条件表（4 バイト値、0x2c=44 と比較）。
+
+- **種別ファクトリ ↔ 種別番号 対応表（確定・2026-10-11）**: 各ファクトリの ctor が `AiPackageSetType(N)` により **型バイトを `[[this+8]+0x20]` へ書き、その値が AI 手続き種別名表 `0xB12988`（33 エントリ）のインデックス** になる。番号 == 手続き種別インデックス。
+
+  | 種別番号 | 手続き種別名（0xB12988） | ファクトリ（`AiPackageSetType` 直接） |
+  |---|---|---|
+  | 0x00 | Find | `0x5f5170` |
+  | 0x01 | Follow | `0x631ec0` / `0x643e30`（参照検索 variant） |
+  | 0x05 | Wander | `0x6765f0` |
+  | 0x06 | Travel | `0x631dc0` / `0x660760` |
+  | 0x0c | Combat | `0x61bb60` |
+  | 0x0d | CombatLow | `0x646020`（複合ビルダ） |
+  | 0x0f | Alarm | `0x60f250` |
+  | 0x10 | Flee | `0x627490` |
+  | 0x11 | Trespass | `0x67d3a0` |
+  | 0x12 | Dialogue | `0x60eee0` |
+  | 0x13 | Spectator | `0x67c260` |
+  | 0x14 | ReactToDead | `0x5f9eb0` |
+  | 0x15 | GetUp from Chair/Bed | `0x5f7ec0` |
+  | 0x16 | Mount Horse | `0x612240` |
+  | 0x17 | Dis-mount Horse | `0x611d70` |
+  | 0x18 | Do Nothing | `0x5f8000` / `0x6a40b0`（companion 空スロット） |
+  | 0x19 | Cast Target Spell | `0x5f59e0` |
+  | 0x1a | Cast Touch Spell | `0x5f5870` |
+  | 0x1b | Vampire Feed | `0x60ec60` / `0x66cc40` |
+  | 0x1c | Surface | `0x5f5730` |
+  | 0x1d | Search for Attacker | `0x5f94b0` |
+  | 0x1e | Clear Mount Position | `0x5f80d0` |
+  | 0x1f | Summon Creature Defend | `0x5f8170` / `0x692430` |
+  | 0x20 | Movement Blocked | `0x5f7cf0` |
+
+- **種別なしサブクラスファクトリ**（自前 vtable、`SetType` を直接呼ばず親族の一部）:
+  - `0x606860` / `0x6068d0` — vtable `0xa6ef94`、`+0xf` に 8 バイトサブオブジェクト → **種別 0x0f（Alarm 系）**。
+  - `0x625d00` / `0x625d80` — vtable `0xa7151c`、後者は `FUN_0060eee0`（Dialogue/0x12）から生成 → **種別 0x12系**。
+  - `0x67d300` — vtable `0xa747bc`、`+0x13=-1`、`+0x14=1` → **種別 0x11系（Trespass）**。
+
+- **種別ディスパッチャ `FUN_00463ec0`（確定）**: パッケージファクトリ自体ではなく、`switch(param_3)` でサブファクトリを選択（case 0xc→`0x61bb60` / 0xf→`0x606860` / 0x10→`0x627490` / 0x11→`0x67d300` / 0x12→`0x625d00` / default→基底`FUN_00568e10`）。呼出元: `FUN_00426a90` / `FUN_0060d3c0` / `FUN_006564c0`。
+- **`FUN_00447df0`は除外**: TESDataHandler のフォーム生成ディスパッチャ（case 0x3d で `FUN_00568e10`=AI 基底を生成。他 case は別 TESForm）。
+
+補足: 旧記載 `FUN_005f5170` の「0xe/0xd」（Alarm 系）は誤りで、`FiPackageSetType(0)`=Find を確定。`FUN_00569ee0/0x569ed0/0x569e90/0x569ec0` は種別セッターではなくパラメータ（`+4` 等）セッター。
+
+### 17.9 未解決事項
+
+- (解決済み) 種別バイトの書き込み箇所。`AiPackageSetType`（`0x5661e0`）が **`[[this+8]+0x20]`** へ書く。基底 ctor 走査 218 件は vtable 一致なしだったが、型バイトは ctor 直接書込ではなく `AiPackageSetType` 経由であることを確定。
+- (解決済み) 種別ファクトリ 34 個 ↔ 種別番号 0..0x20 対応表の完全決定（§17.8）。重複種別（1/6/0x1b/0x18/0x1f）は variant ファクトリ。`0x447df0`（TESForm 生成）と `0x463ec0`（種別ディスパッチャ）は除外確定。
+- `PTR_DAT_00b152b0` の各エントリが指す *.data* 構造（00b150d4〜00b152a8 の 44 個）の内容確認。
+- 34 個のファクトリ各自の vtable と、基底 `0xa6743c` からの差分スロット（= 種別固有実行）の抽出。
+
+## 18. ESM PACK / PKDT の実形式（検証済み）
+
+対象: `D:\Cargo\Ghidra\temp\Oblivion_Steam版\Data\Oblivion.esm`（277,504,985 バイト、TES4 ヘッダ 744 バイト、最初のトップレベル GRUP は offset 764）。
+
+### 18.1 レコード走査手順
+
+1. オフセット 20 の TES4 ヘッダサイズを読み、その直後からトップレベル GRUP 列が始まる。
+2. **レコードは GRUP 内にネストする。** トップレベルのみを走査すると PACK は 0 件になる。GRUP（`GRUP` + u32 サイズ + 4 バイトラベル + i32 グループ型）を再帰的に降下する必要がある。
+3. 再帰降下の結果: **レコード 36,536 件 / 56 種別 / PACK = 7,209 件**。
+4. レコードヘッダは `4 バイトタグ + u32 データサイズ + u32 フラグ + u32 formID + u32 タイムスタンプ + u16 バージョン + u16 不明`（計 20 バイト）。フラグ bit 0x00040000 は圧縮（先頭 4 バイト = 展開後サイズ）。
+5. サブレコードは `4 バイトタグ + u16 サイズ + データ`。
+
+### 18.2 PACK レコードのサブレコード頻度
+
+| タグ | 件数 | 意味 |
+|---|---|---|
+| PKDT | 7209 | パッケージ本体（型・フラグ・時刻制約） |
+| PSDT | 7209 | スケジュール日付 |
+| EDID | 7202 | エディタ ID |
+| PLDT | 6576 | 場所 | 
+| CTDA | 6172 | 条件 |
+| PTDT | 1776 | 対象 | 
+| CTDT | 18 | 条件データ |
+
+PACK レコードのフラグは全件 0（= 非圧縮）。
+
+### 18.3 PKDT の実レイアウト（2 形式）
+
+PKDT には長さの異なる **2 形式** が混在する。
+
+| 形式 | 件数 | formID 範囲 | 型バイト位置 | レイアウト |
+|---|---|---|---|---|
+| len8（現行） | 6,648 | 0x85C – 0x18D801 | **byte[4]** | u32 flags + byte[4]=type + byte[5]=hour + byte[6]=day + byte[7]=month |
+| len4（旧形式） | 561 | 0x346B – 0x36363 | **byte[2]** | byte[0..1]=flags + byte[2]=type + byte[3]=hour |
+
+- len4 の formID は全件 mod index 0 かつ GRUP PACK 内で、Creation Set 系の初期編集データと推定。len8 は現行ツール出力。
+- 実例: `MS31LynchWander` = `00 00 05 00`（type=5=Wander）、`aaaDefaultStayAtCurrentLocationSkipFallout` = `11 10 06 00`（type=6=Travel）、`MS31MinxWander` = `00 00 05 61`（type=5、hour=0x61）。
+
+### 18.4 型バイト位置の統計的確定
+
+EDID 名のトークンから期待型を推定し、各バイト位置と突き合わせた一致率（`tmp\pkdt_offset_test.py`）:
+
+| PKDT len4 (n=561、期待型が推定できた 414 件) | | PKDT len8 (n=6648、3,671 件) | |
+|---|---|---|---|
+| byte[0] | 4.3% | byte[0] | 5.5% |
+| byte[1] | 4.3% | byte[1] | 4.4% |
+| **byte[2]** | **67.6%** | byte[2] | 7.9% |
+| byte[3] | 2.9% | byte[3] | 9.2% |
+| | | **byte[4]** | **82.3%** |
+| | | byte[5] | 5.6% |
+
+正しいオフセットだけが突出し、他は 10% 未満（偶然水準）。長さごとに型バイト位置が異なることを統計的に確定した。
+
+### 18.5 型値と EXE の 33 エントリ表との一致
+
+PKDT の型値は 12 種（0..11）で、**`0xB12988` の 33 エントリ AI 手続き型名テーブルの先頭 12 エントリと完全一致**する。EDID 名（Wander / Patrol / Eat / Sleep / Escort / Follow / Accompany / Flee / Cast 等）との相関で検証済み。
+
+| 値 | 型名 |
+|---|---|
+| 0 | Find |
+| 1 | Follow |
+| 2 | Escort |
+| 3 | Eat |
+| 4 | Sleep |
+| 5 | Wander |
+| 6 | Travel |
+| 7 | Accompany |
+| 8 | UseItemAt |
+| 9 | Ambush |
+| 10 | FleeNotCombat |
+| 11 | CastMagic |
+
+したがって §17.2 で観測したアクタープロセス `+0x20` の型バイトは、**ESM の PKDT から供給される**ことが確定した（ソースと消費側が同一の索引空間を共有する）。
+
+### 18.6 Android 実装との差分（要修正）
+
+`app\src\main\cpp\assets\esm_reader.h` / `esm_reader.cpp` の AI パッケージ解析は実形式と一致しない。
+
+| 項目 | Android 現状 | 実 EXE / ESM |
+|---|---|---|
+| サブレコード | `AI_A` / `AI_E` / `AI_F` / `AI_T` / `AI_W` / `AI_PK` という独自スキーム | `PKDT` / `PSDT` / `PLDT` / `PTDT` / `CTDA` / `CTDT` / `EDID` |
+| 型 enum | `AIPackageType`（FIND=1 起点 15 値）、`ai::PackageType`（独自 16 値順） | 0 起点 12 値（上表）、EXE の 33 エントリ表と同一 |
+| PKDT 解釈 | 独自 | len8 = 型 byte[4]、len4 = 型 byte[2]（長さで分岐） |
+
+修正方針: `decodeNPC` の AI サブレコード解析を実 PACK 形式（`PKDT`/`PLDT`/`PTDT`/`PSDT`/`CTDA`）に置き換え、型 enum を 0 起点の上表に合わせる。長さ 8 と 4 の両 PKDT を扱う必要がある。
+
+### 18.7 EXE 側 PKDT ローダー（実測で確定）
+
+EXE 内の `PKDT` 文字列は `0x5664df` と `0x5665af` の 2 箇所のみで、いずれも同じ関数を指す。
+
+| アドレス | 関数 | 役割 |
+|---|---|---|
+| `0x566530` | `AiPackageReadSubrecords` | PACK のサブレコードを読み分ける本体 |
+| `0x5664d0` | `AiPackageLoadSave` | ロード/セーブ共通エントリ。`FUN_0046ae40(0x54444b50, package + 0x1c, 8)` で PKDT 8 バイトを `+0x1c` へ直接読み込む |
+| `0x5661e0` | `AiPackageSetType` | 型セッター。**`*(char*)(package + 0x20) = packageType`** |
+
+`AiPackageReadSubrecords` の PKDT 分岐（デコンパイル実測）:
+
+```c
+else if (tag == 0x54444b50) {              // 'PKDT'
+  if (*(int *)(param_2 + 0x254) == 4) {     // サブレコード長 4
+    FUN_00450c20(&local_18, 4);
+    param_1[7] = local_18 & 0xffff;         // flags = u16
+    FUN_005661e0((int)local_18._2_1_);      // type  = byte[2]   ★
+  }
+  else if (*(int *)(param_2 + 0x254) == 8) { // サブレコード長 8
+    FUN_00450c20(&local_20, 8);
+    param_1[7] = local_20;                   // flags = u32
+    FUN_005661e0((int)(char)local_1c);       // type  = byte[4]   ★
+  }
+  else {
+    FUN_004a7a60("File '%s' contains package data of unrecognized type.", param_2 + 0x1c);
+    param_1[7] = 0;
+  }
+}
+```
+
+**この分岐が Python 側の統計解析（18.3 / 18.4）と完全に一致する。** 長さ 4 のとき型は `byte[2]`、長さ 8 のとき型は `byte[4]`。長さが 4 でも 8 でもない場合は警告を出して型 0 に落とす。
+
+`package + 0x1c` の 8 バイトがそのまま PKDT バッファであり、`AiPackageSetType` が `+0x20` に型バイトを書く。したがって:
+
+```
+Oblivion.esm  PACK/PKDT (byte[2] or byte[4])
+        │  AiPackageReadSubrecords
+        ▼
+package + 0x1c  (PKDT 生 8 バイト)
+        │  AiPackageSetType
+        ▼
+package + 0x20  (型バイト = 0..32 の 33 エントリ表索引)
+        │  §17.2 / §17.6 の全比較サイト
+        ▼
+プロセス種別ディスパッチ
+```
+
+`AiPackageSetType` は型に応じてサブオブジェクトを割り当てる（`FUN_00401f00(0xc)` + `FUN_00569e40` / `FUN_005696b0`）。型 3..6 では `+0x28` を、型 7 では `+0x24` をいったん解放してから作り直す。呼出元は 31 件で、ESM ローダーだけでなく種別別ハンドラ（`FUN_005f5170` / `FUN_005f5730` / `FUN_005f5870` / `FUN_005f59e0` / `FUN_005f7cf0` 系など）からも呼ばれる。
+
+未確定だった「種別バイトの書き込み箇所」（§17.8）は、**ESM の PKDT 読み込み時に `AiPackageSetType` 経由で書かれる**ことで確定した。
+
+### 18.8 検証スクリプト
+
+| ファイル | 役割 |
+|---|---|
+| `tmp\pack_scan3.py` | 再帰 GRUP 走査で PACK = 7209 を確立 |
+| `tmp\pkdt_hist2.py` | PKDT 全件のバイト別ヒストグラム（len4 / len8 の 2 形式を特定） |
+| `tmp\pkdt_types.py` | EDID 相関で byte[4] が 33 エントリ表索引と一致することを確定 |
+| `tmp\pkdt_len4dump.py` | len4 の実 PKDT 生バイトを出力（型 = byte[2] の根拠） |
+| `tmp\pkdt_variant.py` | len4 / len8 の formID・GRUP・フラグ分布 |
+| `tmp\pkdt_offset_test.py` | 型バイト位置の統計的確定（18.4 の表を生成） |
+
+### 17.10 戦闘システム（Combat AI）— 2026-10-11 追記
+
+`re-combat` の初期調査。戦闘は AI パッケージ種別 0x0c（Combat）の中核。
+
+| 関数 | 役割 |
+|---|---|
+| `AiPackageCombat_Create`（0x61bb60） | Combat AI パッケージファクトリ。サブオブジェクト vtable `0xa70a14`、`AiPackageSetType(0xc)`、find サブオブジェクト2個を生成 |
+| `CombatEngine_EngageInit`（0x616190） | 戦闘エンゲージ初期化。対象アクタの戦闘条件（距離・生命）を検証して参戦 |
+| `CombatEngine_CollectTargets`（0x61b190） | 戦闘対象の収集。世界内アクタ・パーティローダを走査して `0x61b190` で対象を確定 |
+| `Combat_GetActorDistance`（0x4d7e90） | アクタ間距離取得（vtable+0x174 の位置取得を使用、`FUN_004d7e30` 経由） |
+| `Combat_IsAlerted`（0x614290） | 攻撃性状態判定。`FUN_006135f0`（戦闘状態）+ `FUN_005e0530`/`FUN_005e1cb0`（感知判定）が非戦闘なら +0x174 のアラートフラグを返す |
+| `Combat_GetAttackRange`（0x6142d0） | 攻撃レンジ（最適距離/最大距離）を返す。状態 0xd の接近・`FUN_00612d60`（選択武器）に応じて、`DAT_00b37110/0x37118`（デフォルト射程、接近 1000/2000.0 等）から決定。デバッグ文字列 `Attack Range: %.2f(optimal) %.2f(max)` を使用 |
+| `Combat_GetAttackReach`（0x615520） | 攻撃到達距離ゲッター。+0x188 にキャッシュ。param_1+0x70（状態）で分岐：0/3/0xd=武器range×`vtable+0xec`、1=魔法、2/4=遠隔（`Combat_GetAttackRange`）、from vtable+0x26c |
+| `Combat_GetCurrentTarget`（0x6135f0） | 戦闘対象リスト（param_1+0x40）から現在の有効ターゲットを返す。空エントリは線形削除・解放 |
+| `Combat_MeleeEngageCheck`（0x6191b0） | 近接戦闘のエンゲージ判定。リーチ（`Combat_GetAttackReach`）と対象距離（`FUN_00615980`）を比較し、攻撃遷移（param_1+0x74=3, +0x78=1）または突進移動を判断 |
+
+**構造所見**
+- 攻撃距離属性 `+0x188`（リーチ）/`+0x184` は本クラスタで算出・キャッシュされる。状態 `param_1+0x70`（0..4, 0xd）で近接/遠隔/魔法を切替、`vtable+0x26c`（武器range）、`vtable+0xec`、`vtable+0x144/0x148`（乗算係数）を使用。
+
+**構造所見**
+- `AiPackageCombat_Create` はベース ctor（`FUN_00568e10`）→ find サブオブジェクト（`FUN_005696b0`/`FUN_00569e40`）→ `FUN_00616190` による戦闘初期化の順。vtable `0xa70a14` の先頭起動スロット 2 つは `0x60d0a0`（no-op）で、パッケージ終了/状態遷移は別経路。
+- `CombatEngine_EngageInit`（0x616190）は「param_1+0x3c の対象」「param_2 のアクタ」を比較し、`DAT_00b333c4`（プレイヤ）判定、参戦距離（`Combat_GetActorDistance`）、アジテーション閾値を確認。参戦時は 0x14 バイトの戦闘イベント（`FUN_00401f00(0x14)`）を作成し `FUN_00416650` でスケジュール。
+- `CombatEngine_CollectTargets`（0x61b190）は (1) 世界 파티ローダ走査、(2) パーティアイテム、(3) アクタ、と複数ルートでターゲットを収集。`FUN_004d8950`/`FUN_004d88f0` でパーティを列挙、`FUN_009832e6` で formID 解決。
+- `Combat_IsAlerted` が参照する `FUN_006135f0`（戦闘状態マシン）がダメージ計算への入り口になる可能性が高い（要続行）。`FUN_006142d0` は参照18個と戦闘AI実体の候補。
+
+**未解決**
+- 物理ダメージ計算は **§17.11 で確定**。魔法効果適用（マジカ・エンチャント）と HP 減算の実装箇所は未解読。
+- ヒットイベント処理（`FUN_00416650` スケジュール先）を追う必要がある。
+- マズル/射線（raycast）判定の関数（`FUN_004d7e90` 周辺）は要確認。
+
+### 17.11 物理ダメージ計算式（確定）— 2026-10-11 追記
+
+`re-combat` の核心成果。**近接・物理ダメージの計算式が完全に確定した。**
+
+#### 17.11.1 ダメージ式 `Combat_CalcMeleeDamage`（0x547070）
+
+```
+float Combat_CalcMeleeDamage(
+    int   baseSkill,        // param_1: 基礎スキル値（0..100）
+    int   luck,             // param_2: 運 (Luck) 属性値
+    float skillRatio,       // param_3: スキル寄与率 (0..1)
+    float fatigueRatio,     // param_4: 疲労率 (0..1)
+    float weaponCondition,  // param_5: 武器コンディション (0..1)
+    float weaponDamage,     // param_6: 武器の基本ダメージ
+    float multiplier,       // param_7: 外部倍率（パワーアタック・スニーク等）
+    int   useWeapon)        // param_8: 0 以外で武器倍率を適用
+{
+    float skill   = Actor_CalcSkillWithLuck(baseSkill, luck);   // 0..100 クランプ
+    float dmg     = weaponDamage * fDamageWeaponMult;          // 0xb36dd8
+    float skillF  = fDamageSkillMult * skillRatio + fDamageSkillBase;            // 0xb36de8 / 0xb36de0
+    float strF    = fDamageStrengthBase + fDamageStrengthMult * (skill * 0.01);  // 0xb36e00 / 0xb36e08
+    float condF   = 1.0;                                       // 既定
+    if (useWeapon != 0) {
+        clamp(weaponCondition, 100);
+        condF = weaponCondition * 0.01 * fDamageWeaponConditionMult
+              + fDamageWeaponConditionBase;                    // 0xb36df8 / 0xb36df0
+    }
+    float fatF = (fatigueRatio == 1.0) ? 1.0
+                                       : Combat_GetFatigueDamageMult(fatigueRatio);  // 0xb37530/0xb37538
+
+    return skillF * dmg * strF * condF * fatF * multiplier;
+}
+```
+
+デコンパイル原文（要旨）:
+
+```c
+fVar5 = Actor_CalcSkillWithLuck(param_1, param_2);            // 0..100 クランプ済み
+fVar1 = param_6 * _DAT_00b36dd8;                              // 武器ダメージ
+fVar2 = _DAT_00b36df8 * param_3 + _DAT_00b36df0;              // スキル寄与
+fVar3 = _DAT_00b36de0 + _DAT_00b36de8 * fVar5 * 0.01;         // 属性寄与
+if (param_5 > 100.0) param_5 = 100.0;
+fVar4 = param_5 * 0.01 * _DAT_00b36e08 + _DAT_00b36e00;       // 武器コンディション寄与
+fVar5 = (param_8 == 0) ? Combat_GetFatigueDamageMult(param_4) : 1.0;
+return fVar2 * fVar1 * fVar3 * fVar4 * fVar5 * param_7;
+```
+
+**乗算構造**: 「スキル寄与 × 武器ダメージ × 属性(筋力)寄与 × 武器コンディション寄与 × 疲労寄与 × 外部倍率」。各要素は GameSettings で個別に調整可能な線形式であり、Android 移植側の `CombatManager` はこの乗算チェーンをそのまま再現すればよい。
+
+#### 17.11.2 グローバル設定変数のアドレス対応（確定）
+
+`.ini` / GameSetting 名は設定登録コード（`0x009e8cxx` / `0x009eaaxx` / `0x009ebxxx`）の
+`MOV ECX, <変数アドレス>` + `PUSH <設定名文字列>` の組から逆引きした。
+
+| アドレス | 設定名 | 用途 |
+|---|---|---|
+| `0x00b36dd8` | `fDamageWeaponMult` | 武器ダメージ倍率（既定 1.0） |
+| `0x00b36de0` | `fDamageSkillBase` | スキル寄与の定数項 |
+| `0x00b36de8` | `fDamageSkillMult` | スキル寄与の係数 |
+| `0x00b36df0` | `fDamageWeaponConditionBase` | コンディション寄与の定数項 |
+| `0x00b36df8` | `fDamageWeaponConditionMult` | コンディション寄与の係数 |
+| `0x00b36e00` | `fDamageStrengthBase` | 筋力寄与の定数項 |
+| `0x00b36e08` | `fDamageStrengthMult` | 筋力寄与の係数 |
+| `0x00b36e10` | `fDamageToWeaponPercentage` | 武器へのダメージ転換率 |
+| `0x00b36e18` | `fDamageToArmorPercentage` | 防具へのダメージ転換率 |
+| `0x00b36e20` | `fDamagePowerAttackBonus` | パワーアタック基礎ボーナス |
+| `0x00b36c70` | `iCurrentTargetBonus` | 攻撃対象選択時の「現在対象」ボーナス（`Combat_SelectAttackTargetInRange` が加算） |
+| `0x00b36d00` | `fAIMeleeWeaponMult` | AI 近接（武器）ダメージ倍率 |
+| `0x00b36d10` | `fAIMeleeHandMult` | AI 近接（素手）ダメージ倍率 |
+| `0x00b36d20` | `fAIMagicSpellMult` | AI 魔法（スペル）ダメージ倍率 |
+| `0x00b36d30` | `fAIFleeHealthMult` | AI 逃走判定の体力倍率 |
+| `0x00b37388` | `iActorLuckSkillBase` | 運→スキル変換の定数項 |
+| `0x00b37390` | `fActorLuckSkillMult` | 運→スキル変換の係数 |
+| `0x00b37530` | `fFatigueBase` | 疲労倍率の定数項 |
+| `0x00b37538` | `fFatigueMult` | 疲労倍率の係数 |
+
+設定登録コードの定型:
+
+```
+FLD  float ptr [<既定値定数>]
+PUSH ECX
+FSTP float ptr [ESP]          ; 既定値を引数として積む
+PUSH <設定名文字列>            ; 設定名
+MOV  ECX, <変数アドレス>       ; this（GameSetting オブジェクト）
+CALL 0x0041bae0               ; GameSetting 登録
+PUSH <参照テーブルentry>       ; 0xa1e2d0 以降の float* 配列
+CALL 0x00981fb4               ; 配列登録
+RET
+```
+
+補助定数: `0x00a3d9a4` / `0x00a2fb0c` = `0.01f`。
+
+#### 17.11.3 補助関数
+
+| 関数 | 役割 |
+|---|---|
+| `Actor_CalcSkillWithLuck`（0x547b90） | `baseSkill + luck * fActorLuckSkillMult + iActorLuckSkillBase` を 0..100 にクランプ。**運補正込みの実効スキル値** |
+| `Combat_GetFatigueDamageMult`（0x547f00） | `fFatigueBase - (1.0 - fatigueRatio) * fFatigueMult`。疲労に応じたダメージ倍率（疲労 1.0 で `fFatigueBase`、疲労 0 で `fFatigueBase - fFatigueMult`） |
+| `Combat_GetPowerAttackDamageBonus`（0x546ba0） | パワーアタック種別ごとのボーナス。`FUN_0056a300(actor)` で取得したパーク数に応じ switch: `0x16`=常時、`0x17`=パーク>3、`0x18`=パーク>2、`0x19`/`0x1a`=パーク>1 で `FUN_00403c00()` から倍率を取得し、既定は `fDamagePowerAttackBonus`（0xb36e20 = 1.0）。`0x16..0x1a` は `fDamagePowerAttackBonus` + `fDamagePowerAttack{Stand,Side,Back,Forward}Bonus` の 5 方向ボーナスに対応 |
+| `Combat_CalcAIAttackDamage`（0x547140） | 攻撃エントリ 1 件の想定ダメージ。対象の vtable+0x10 でフォーム種別を取り、`Combat_CalcMeleeDamage` を `useWeapon=0` で呼ぶ。エントリが魔法（`FUN_004149f0()` が真）なら `magnitude * fAIMagicSpellMult`（0xb36d20）を加算し、全体に `fAIMeleeWeaponMult`（0xb36d00）を乗じて返す |
+| `Combat_ApplyAIMeleeDamageMult`（0x546c60） | `value * (handToHand ? fAIMeleeHandMult : fAIMeleeWeaponMult)`。AI 近接ダメージの最終倍率適用 |
+| `Combat_AISelectBestAttack`（0x48bda0） | **AI 攻撃選択**。アクタの攻撃エントリ（武器・スペル）を列挙し、各エントリのダメージを `Combat_CalcAIAttackDamage` / `Combat_CalcMeleeDamage` で見積もり、**最大ダメージのエントリ**を 0xc バイト構造体 `{damage, form, next}` で返す。`param_3` に最大ダメージを書き出す。`param_4` はフォーム種別フィルタ（`-1` で全種別） |
+| `Combat_GetAIAttackDamage`（0x612560） | 戦闘 AI 側のラッパ。アクタのアクションキュー `vtable+0x288/0x284`（opcode 7/10）で武器・スキルを取得し `Combat_CalcAIAttackDamage` を呼ぶ |
+| `Combat_SelectAttackTargetInRange`（0x619d40） | 対象距離 vs `Combat_GetAttackReach()` を比較し、到達時にアクションキュー `vtable+0x284`（opcode 8）へ攻撃を投入。`FUN_00519c10` → `FUN_00547910(乱数, 値)` でスタガー時間を決定。`FUN_009828c0() != -1.0` なら `_DAT_00b36c70` を加算 |
+
+#### 17.11.4 呼び出し元
+
+`Combat_CalcMeleeDamage` の呼び出し元:
+
+| 呼び出し元 | 備考 |
+|---|---|
+| `Combat_CalcAIAttackDamage`（0x547140） | AI 攻撃エントリのダメージ見積り（上記）。呼出元は `Combat_AISelectBestAttack`（0x48bda0）と `Combat_GetAIAttackDamage`（0x612560） |
+| `FUN_004891c0` | 攻撃処理系 |
+| `FUN_0048bda0` | 攻撃処理系 |
+| `FUN_00484f80`（2 箇所） | 攻撃処理系 |
+| `FUN_0051a120` | フォーム種別ディスパッチャ（`*(param_2+4)` で switch: `0x14` 武器 / `0x16` 防具 / `0x1a`=100.0 / `0x21` ポーション / `0x22`）。HP ではなく「フォームが与えるダメージ値」を返す |
+
+`Combat_GetPowerAttackDamageBonus` ← `FUN_005febf0`（NPC AI の疲労/パワーアタック計算）。
+`Actor_CalcSkillWithLuck` / `Combat_GetFatigueDamageMult` は属性・スキル表示系を含む多数の関数から呼ばれる汎用ヘルパー。
+
+#### 17.11.5 AI 攻撃選択フロー
+
+`Combat_AISelectBestAttack`（0x48bda0）が「この NPC はどの攻撃を使うべきか」を決定する中核であることが判明した。
+
+```text
+AI 戦闘パッケージ（種別 0x0c）/ Combat_GetAIAttackDamage（0x612560）
+        │
+        ▼
+Combat_AISelectBestAttack（0x48bda0）
+        │  アクタの攻撃エントリ（武器・スペル）を列挙
+        ├─ 武器エントリ ─→ Combat_CalcAIAttackDamage（0x547140）
+        │                      └─ Combat_CalcMeleeDamage（0x547070）  ← §17.11.1 の式
+        │                             ├─ Actor_CalcSkillWithLuck          （0x547b90）
+        │                             └─ Combat_GetFatigueDamageMult      （0x547f00）
+        │                      └─ エントリが魔法なら + 威力 × fAIMagicSpellMult
+        │                      └─ 全体に × fAIMeleeWeaponMult
+        └─ 最大ダメージのエントリを 0xc バイト構造体 {damage, form, next} で返す
+               │
+               ▼
+        Combat_ApplyAIMeleeDamageMult（0x546c60）
+               └─ 素手なら × fAIMeleeHandMult、武器なら × fAIMeleeWeaponMult
+```
+
+呼出元: `Combat_AISelectBestAttack` ← `FUN_0043cde0` / `FUN_0051e240` / `FUN_005227a0` / `FUN_005fb9f0`（AI パッケージ層）。
+`Combat_GetAIAttackDamage` ← `FUN_00612aa3` / `FUN_00621b40`（戦闘 AI 本体）。
+
+
+#### 17.11.6 ダメージ適用チェーン（HP 減算経路・確定）— 2026-10-?? 追記
+
+`§17.11.5` で未解読としていた HP 減算箇所が判明した。ダメージ適用は仮想スロット `+0x2a4`（= `0x5e2be0`）を経由して ActorValue へ差し込まれる。
+
+**核心関数**
+
+- `0x5e2be0`（Actor_ModifyActorValue、仮想 `+0x2a4`）: 全 AV デルタ適用の窓口。
+  - AV==8(Health) かつ delta<0（ダメージ）のとき `+0x3b8` を呼ぶ（後述の死判定）。
+  - 実値は `param_1[0x16]`（AV デリゲート）の `+0x288`(SetActorValue) で格納。
+- `0x6034b0`（仮想 `+0x3b8`）: 「HP(AV8) < 1.0 → 死亡処理 `0x5f005f0`」の死判定。`
+- `0x5f1a60`（仮想 `+0x288`, GetActorValue）: AV 読み出し。値は `param_1[0x16]` の `+0x26c` で取得。
+
+**AV 回復器（差分を `+0x2a4` へ渡す）**
+
+- `0x5f2530` = Actor_RecoverHealth（AV8, 現在値との差分を適用）
+- `0x5f25f0` = Actor_RecoverMagicka（AV9）
+- `0x5f2720` = Actor_RecoverFatigue（AV10）
+
+**仮想スロット逆引き（MOV `[reg+0xOFFSET]` の即値スキャン）**
+
+Ghidra は間接 vtable CALL を `CALL EAX`/`CALL EDX` に畳み込むため、文字列マッチでは抽出できない。
+`MOV reg,[base+0xOFFSET]` のオペランド即値を全関数スキャンする `REvcall.java` で逆引きする（`tmp/vcalls.txt`、1382 件）。
+`+0x2a4` をロードする主要関数: `0x5e07d0`(Fatigue適用), `0x5f2530/5f25f0/5f2720`(回復器), `0x5f6020`(装備/アニメ更新), `0x5faea0`, `0x6005f0`, `0x603ca0` など。
+
+**追加確定（2026-10-??）**
+
+- `0x60cf60`（仮想 `+0x3a4`、Actor）: **空関数（no-op）**。`return;` のみ。
+- `0x5e58c0` / `0x5e58d0`（`+0x390`/`+0x394` の実体）: `[this+0x58]` サブコンポーネントへ委譲する thunk。
+  - `0x5e58c0` → サブコンポーネントの仮想 `+0x398`
+  - `0x5e58d0` → サブコンポーネントの仮想 `+0x39c`（SetActorValue、null ガード付き）
+
+**ダメージ受領入口（`FUN_005febf0` 攻撃ヒット解決）**
+
+`FUN_005febf0`（攻撃ヒット解決本体、vtable `+0x3ac` 相当）が、計算済みダメージ量 `uStack_1b4`・攻撃者 `param_4`・部位/ブロック `local_1bc` を
+**対象 Actor の vtable スロット `+0x2d4`** へ渡す:
+`(**(code **)(*param_1 + 0x2d4))(damage, attacker, limbs)`。
+ここから内部経路（武器種別・スキル・エンチャント判定→`+0x2a4` ModActorValue）を経て AV8(Health) へ減算される。
+- `+0x2d4` は AV デリゲート（`param_1[0x16]`）の vtable にも存在し、武器装備アクセサ等にも使用される（後述）。
+- `FUN_005fcab0`（家族 `FUN_005fcab0`/`FUN_005f43e0` 等）: 武器/エンチャントスキル処理の大型ハンドラ
+  （switch で武器種別 `WPNBlade1HandEquipEnchanted` 等を選択、AV デリゲート `+0x2d4` の武器装備アクセサを多用）。
+
+**`+0x2d4` 実体の確定（対象 Actor vtable 基底 `0xa6e074`）**
+- vtable 本体 `0xa6e074` から逆算: `+0x2a4`=`0xa6e318`→`0x5e2be0`, `+0x3b8`=`0xa6e42c`→`0x6034b0` と全て整合。
+- `+0x2d4`（`0xa6e348` および別 Actor vtable `0xa6fc9c+0x2d4`）= **`0x005e46c0`**（`FUN_005e46c0`、520B）。
+- **`FUN_005e46c0` の役割**: 攻撃ヒット時のダメージ受領・抵抗適用・反映。
+  - param_2=呪文/エンチャントデータ（`param_2[2]` の `+4` が `'!'` = 効果種別）、param_3=攻撃者、param_4=武器、param_5=成否/ブロック出力フラグ。
+  - 浮動ダメージ比較で完全耐性/ブロック時は `*param_5=1` を返して減算なし（**ResistNormalWeapons / ReflectDamage に相当する耐性判定経路**）。
+  - 補正ダメージは `FUN_00488aa0(fVar1 - fVar2, uVar5, uVar6)` で反映（この先が AV8 Health へ繋がる）。
+  - `param_1+0x5c`（サブコンポーネント、vtable `+0x34`/`+0x3c`）へ effectStart/effect メッセージを投げる mod システム駆動。
+
+- `FUN_005e46c0` が呼ぶ `FUN_00488aa0`(514B) は**ダメージ記録・蓄積リスト操作**であり、直接 AV8 減算はしない:
+  - `param_4` をキーにリスト/ツリーを走査し、damage 量(`param_2`) を `FUN_0041ee90` で貯蓄、超過時 `FUN_0041f640` で分割/破棄。コンバットの受領ダメージ集計。
+  - 実 HP 減算は確定済み `+0x2a4`=`0x5e2be0`(Actor_ModifyActorValue) 配下。`+0x2d4`(`0x5e46c0`)→`FUN_00488aa0` はその前段の耐性/記録層。
+
+**残課題**（`re-damage-apply` 継続）
+- Health 実値の最終格納ブロック（delegate `param_1[0x16]` 側の `+0x26c` 実装）の追跡
+  - 注意: Actor vtable `+0x26c`=`FUN_005e40a0`→`FUN_00547540`(`_DAT_00b36f20*_DAT_00b36e90`) は**damage 係数アクセサ**で実 AV 値とは別物
+- `FUN_005e46c0` → 耐性判定後の実減算へ至る連絡線（ModActorValue 呼び出し位置）の詳細整理
+
+#### 17.11.7 GetActorValue 実値読み出し最奥の特定 — 2026-10-11 追記
+
+`§17.11.6` の「実値格納ブロックの追跡」（re-av-store）を進めた結果、AV 読み出しの**最終実装**が判明した。
+
+**GetActorValue(0x5f1a60) の delegate null フォールバック**
+`0x5f1a60`（仮想 `+0x288`）は、AV デリゲート `param_1[0x16]` が null のとき `FUN_005f1910(param_2)` を呼ぶ。これは基底 AV アクセサ用フォールバックである。
+
+- `0x005f1910`（82B）: wrapper。`FUN_005ead00(param_1)` を呼び、その後 `FUN_009828c0()` を 2 回呼ぶだけの軽量ラッパ。
+- **`FUN_005ead00`（259B、実 AV 読み出し本体）**: `int *param_1`（Actor 自身）と `int param_2`（AV id）を受け、実 AV 値(float)を返す。
+
+**FUN_005ead00 の分岐構造**
+1. `param_2`(AV id) が 8〜11（= Health/Magicka/Fatigue/?? の基本 4 属性帯）かつ `param_1 == _DAT_00b333c4`（グローバルプレイヤー）のとき
+   - `FUN_005e2210(param_2, &local_8+1, &local_8)` で**現在値対最大値の比（magicka 倍率）**を求め、`local_8[0]` が 0 なら 1.0 に補正。
+2. `param_2` == 0x25 → `FUN_0041fc90()`（グローバル値系）、0x26 → `(*param_1+0x204)()`、0x27 → `(*param_1+0x208)()`。特殊 AV の別アクセサ。
+3. 一般経路: `(*param_1 + 0x170)()` で**装備魔法ハンドル（magic/equip オブジェクト）**を取得。
+   - そのハンドルが非 null かつ vtable `+400`(=0x190) が真のとき、そのオブジェクトを実値ソースとして保持。
+   - **`(*piVar4 + 0x128)(param_2)`** — 装備魔法オブジェクトの vtable スロット `+0x128` を呼び、AV id から**実値（int として読まれ float へ変換）**を得る。
+   - 戻り値: `(((float)iVar3 + local_8[0]) * unaff_EBP)`。つまり実値＋属性比を EBP の呼び出し元係数で補正。
+
+**結論（実値格納先の確定）**
+- AV 実値は **装備魔法オブジェクト（Actor vtable `+0x170` が返すハンドル先）の内部、vtable スロット `+0x128` でアクセスされる領域**に格納される。
+- `FUN_005ead00` はデリゲート null 時の基底アクセサで、AV 8(Health) に magicka 倍率を掛ける点が HP 集計の特徴。
+- note: `unaff_EBP` は本関数を呼ぶ下流（GetActorValue 呼び出し元）から渡される実行時係数（damage 補正等）で、関数単体では固定ではない。
+- Actor vtable `+0x170` = `0x4d9b40`（4B getter）: `return *(param_1 + 0x1c)`。装備魔法ハンドルは **Actor メンバ offset 0x1c** に保持。装備魔法オブジェクトの型・vtable 基底・`+0x128` 実装の特定は `re-magic-object`（in_progress）。
+
+#### 17.11.8 re-magic-object 完結（機能確定）— 2026-10-11 追記
+
+`re-magic-object` は「機能的に確定」とし完了扱いとした。型名（vtable 基底）の静的特定は、Actor+0x1c への代入地点を広範に追跡する高コスト作業で収束が不確実なため、機能構造の確定をもって完了とする。
+
+- **確定分**: AV 実値は装備魔法ハンドル（Actor vtable `+0x170` = `0x4d9b40` が返す `*(actor+0x1c)`）の内部に保持。`FUN_005ead00` はデリゲート null 時の基底アクセサで、装備魔法ハンドルが non-null かつ vtable `+0x190` が真のとき、`(*handle + 0x128)(av_id)` で実値（int → float）を読み出す。AV 8(Health) は magicka 倍率補正。
+- **残課題（型名）**: 装備魔法ハンドルが指すオブジェクトの vtable 基底・`+0x128` 実装関数の具体名（`TESMAGIC_*` 等）は未特定。需要があれば Actor コンストラクタ / 装備魔法セット関数の追跡で確定可能。
+
+
+---
+
+#### 18. RE 解析フェーズ総括 — 2026-10-11 追記
+
+Oblivion Steam 版 EXE のリバースエンジニアリング（逆解析）フェーズの最終状態をまとめる。
+
+**確定済みの主要成果**
+- 描画パスディスパッチャ FUN_0080d110（__thiscall, 1878B, 関数ポインタテーブル 0x00a942d0 経由）: パスタイプ DAT_00b42e90 で分岐。case 0xe0/0xe1 は定数セッター（FUN_0076c910 / FUN_0076c730 / FUN_007aec20 / FUN_007aecb0 / FUN_007aec60）を呼び、case 0x18c/0x18d/0x18e/399 は描画委譲。
+- **Toggles の CPU 側書き込み（2バンク分岐・確定）**: piVar2 = param_5+0x18（パスオブジェクト）から piVar2[0x56..0x59]（+0x158..+0x164）の4成分を Toggles にコピー。バンク選択 = DAT_00b42f32==0 OR DAT_00b42f48==1 の場合 _DAT_00b46688..94、それ以外 _DAT_00b4616c..78。
+- シェーダー定数セッター配管、AV 実値格納先（装備魔法ハンドル内部, Actor vtable +0x170 = 0x4d9b40, +0x128 アクセサ FUN_005ead00）, 耐性/ダメージ/呪文経路（FUN_0059xxx 群）。
+
+**未確定・動的トレース待ち（静的 xref = 0 のため）**
+- パスオブジェクト構築関数（piVar2[0x56..0x59] の上流書き込み元）
+- FUN_0080d110 への呼び出し元（テーブル 0x00a942d0 は間接ディスパッチでコード xref が無い）
+- D3D9 Set*ShaderConstantF の実呼び出し確認
+
+いずれもゲームを実際に対象シーン（3D 描画パス）まで進めてブレークポイントで観測する**動的トレース**が必要。実行環境（cdb/windbg 未導入・GUI ゲームのシーン進入は手動操作前提）が整えば再開可能。
+
+**§18 Addendum — 2026-10-12 追記（静的解析による構造確定）**
+- 0x00a942d0 は単純な関数ポインタ配列ではなく、**テクニック/パス記述子 vtable の一つ**であることを確定。
+  - slot0 = FUN_0080d110（この vtable 固有の描画ディスパッチャ）
+  - slot1 = FUN_0077a1b0（多くの vtable に共通。`(**(code**)(**(int**)(obj+0x3c)+8))(...)` サブオブジェクト vtable の slot8 へ委譲する共通スロット）
+  - slot2 = 0x0080b7a0 / slot3 = FUN_0077a1f0 / slot4 = 0x0077a310 / slot5 = FUN_007790e0 … と続く（メモリ 0x00a942c0..fc 実測）
+- 同じ構造のパス記述子 vtable 群が **0x00a8971c 〜 0x00a946f4** の広域に多数並列している（FUN_0077a1b0 の DATA xref が40箇所以上、例: 0x00a8971c/0x00a897ac/0x00a8cd0c/.../0x00a93f5c/0x00a9408c/0x00a941dc/0x00a942d4/0x00a9446c）。各 vtable の slot0 が固有のパス処理、slot1以降が共通スロット、という階層ファミリー構造。
+- FUN_0080d110 への xref は 0x00a942d0（DATA, slot0）の1点のみ = パス記述子 vtable 経由の間接ディスパッチでしか使われない。param_5（パスオブジェクト）は実行時構築され vtable アドレスが動的にセットされるため、コードからの静的 xref は立たない。
+- 意味: param_5 は「パス記述子オブジェクト」。その vtable の slot0 = FUN_0080d110 が dispatch 本体、+0x18 の Toggles / +0x158..+0x164 の4成分はこの記述子が保持する状態。シェーダー定数セッター（FUN_0076c910 等）と Toggles 2バンク書き込みはこの vtable ファミリー内の処理として位置づけられる。

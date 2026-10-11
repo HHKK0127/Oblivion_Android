@@ -354,6 +354,25 @@ namespace PackageFactory {
         return pkg;
     }
 
+    // Escort: stay close to targetId (0 = player) while leading them toward
+    // destination. Follows the same parameter layout as createFollow, plus the
+    // destination the escorted actor is being led to.
+    inline AIPackage createEscort(uint32_t id, uint32_t targetId,
+                                   const glm::vec3& destination,
+                                   float distance = 3.0f,
+                                   float maxDistance = 50.0f,
+                                   uint8_t priority = 50) {
+        AIPackage pkg;
+        pkg.packageId = id;
+        pkg.type = PackageType::ESCORT;
+        pkg.priority = priority;
+        pkg.data.targetId = targetId;
+        pkg.data.destination = destination;
+        pkg.data.followDistance = distance;
+        pkg.data.followMaxDistance = maxDistance;
+        return pkg;
+    }
+
 } // namespace PackageFactory
 
 } // namespace ai

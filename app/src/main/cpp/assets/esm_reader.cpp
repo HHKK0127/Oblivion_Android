@@ -928,68 +928,18 @@ void ESMFile::decodeNPC(const ESMRecord& rec) {
         npc.aiFlags = aidt->data[5];         // AI flags
     }
 
-    // Parse AI packages (AI_A, AI_E, AI_F, AI_T, AI_W, AI_PK)
-    // Oblivion stores up to 8 AI packages per NPC
+    // The retail data does not use the legacy AI_A/AI_E/AI_F/AI_T/AI_W/AI_PK
+    // subrecords; the AI packages of an actor are referenced by PKID, which
+    // holds one u32 package FormID per entry (observed maximum: 60). The
+    // entries are placeholders here and are filled in by
+    // resolveAIPackageReferences() once every plugin has been parsed.
     for (const auto& sub : rec.subRecords) {
-        AIPackageData pkg;
-
-        if (std::memcmp(sub.tag, "AI_A", 4) == 0) {
-            // AI Activate/Find
-            pkg.type = AIPackageType::FIND;
-            if (sub.size() >= 16) {
-                pkg.targetFormID = readU32(sub.data.data());
-                pkg.idleTime = sub.data[4];
-            }
-        } else if (std::memcmp(sub.tag, "AI_E", 4) == 0) {
-            // AI Escort
-            pkg.type = AIPackageType::ESCORT;
-            if (sub.size() >= 16) {
-                pkg.targetFormID = readU32(sub.data.data());
-                pkg.targetX = readF32(sub.data.data() + 4);
-                pkg.targetY = readF32(sub.data.data() + 8);
-                pkg.targetZ = readF32(sub.data.data() + 12);
-            }
-        } else if (std::memcmp(sub.tag, "AI_F", 4) == 0) {
-            // AI Follow
-            pkg.type = AIPackageType::FOLLOW;
-            if (sub.size() >= 16) {
-                pkg.targetFormID = readU32(sub.data.data());
-                pkg.targetX = readF32(sub.data.data() + 4);
-                pkg.targetY = readF32(sub.data.data() + 8);
-                pkg.targetZ = readF32(sub.data.data() + 12);
-            }
-        } else if (std::memcmp(sub.tag, "AI_T", 4) == 0) {
-            // AI Travel
-            pkg.type = AIPackageType::TRAVEL;
-            if (sub.size() >= 12) {
-                pkg.targetX = readF32(sub.data.data());
-                pkg.targetY = readF32(sub.data.data() + 4);
-                pkg.targetZ = readF32(sub.data.data() + 8);
-            }
-        } else if (std::memcmp(sub.tag, "AI_W", 4) == 0) {
-            // AI Wander
-            pkg.type = AIPackageType::WANDER;
-            if (sub.size() >= 8) {
-                pkg.idleTime = sub.data[0];
-                pkg.wanderDistance = sub.data[1];
-            }
-        } else if (std::memcmp(sub.tag, "AI_PK", 4) == 0) {
-            // AI Package (newer format with more data)
-            if (sub.size() >= 20) {
-                pkg.type = static_cast<AIPackageType>(sub.data[0]);
-                pkg.flags = sub.data[1];
-                pkg.scheduleDay = sub.data[2];
-                pkg.scheduleHour = sub.data[3];
-                pkg.scheduleDuration = sub.data[4];
-                pkg.targetFormID = readU32(sub.data.data() + 8);
-                pkg.locationFormID = readU32(sub.data.data() + 12);
-                pkg.targetX = readF32(sub.data.data() + 16);
-            }
-        } else {
-            continue;  // Not an AI package subrecord
+        if (std::memcmp(sub.tag, "PKID", 4) != 0) continue;
+        for (size_t off = 0; off + 4 <= sub.size(); off += 4) {
+            AIPackageData pkg;
+            pkg.formID = readU32(sub.data.data() + off);
+            if (pkg.formID != 0) npc.aiPackages.push_back(std::move(pkg));
         }
-
-        npc.aiPackages.push_back(std::move(pkg));
     }
 
     m_npcs.push_back(std::move(npc));
@@ -1027,6 +977,17 @@ void ESMFile::decodeCreature(const ESMRecord& rec) {
 
     // Template from TNAM
     creature.templateFormID = rec.getFormID("TNAM");
+
+    // AI packages referenced by PKID (one u32 FormID per entry); resolved by
+    // resolveAIPackageReferences() after parsing.
+    for (const auto& sub : rec.subRecords) {
+        if (std::memcmp(sub.tag, "PKID", 4) != 0) continue;
+        for (size_t off = 0; off + 4 <= sub.size(); off += 4) {
+            AIPackageData pkg;
+            pkg.formID = readU32(sub.data.data() + off);
+            if (pkg.formID != 0) creature.aiPackages.push_back(std::move(pkg));
+        }
+    }
 
     m_creatures.push_back(std::move(creature));
 }
@@ -2708,28 +2669,38 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
         pack.formID = rec.formID;
         pack.editorID = rec.getString("EDID");
 
+        // PKDT packs the package flags and the package type. Oblivion writes it
+        // in two lengths: 8 bytes (flags u32 at offset 0, type at offset 4) and
+        // 4 bytes (flags u16 at offset 0, type at offset 2).
         auto* pkdt = rec.findSubRecord("PKDT");
         if (pkdt && pkdt->size() >= 8) {
-            pack.packageFlags = readI32(pkdt->data.data());
+            pack.packageFlags = readU32(pkdt->data.data());
             pack.packageType = pkdt->data[4];
+        } else if (pkdt && pkdt->size() >= 4) {
+            pack.packageFlags = readU16(pkdt->data.data());
+            pack.packageType = pkdt->data[2];
         }
 
         for (const auto& sub : rec.subRecords) {
             if (std::memcmp(sub.tag, "PLDT", 4) == 0 && sub.size() >= 12) {
                 pack.locationType = readI32(sub.data.data());
-                pack.locationFormID = readI32(sub.data.data() + 4);
+                pack.locationFormID = readU32(sub.data.data() + 4);
                 pack.locationRadius = readI32(sub.data.data() + 8);
             } else if (std::memcmp(sub.tag, "PTDT", 4) == 0 && sub.size() >= 12) {
                 pack.targetKind = readI32(sub.data.data());
-                pack.targetFormID = readI32(sub.data.data() + 4);
+                pack.targetFormID = readU32(sub.data.data() + 4);
                 pack.targetCount = readI32(sub.data.data() + 8);
             } else if (std::memcmp(sub.tag, "PSDT", 4) == 0 && sub.size() >= 8) {
-                pack.targetKind = readI32(sub.data.data());
+                // byte 3 is the start hour (0xFF = unconstrained), offset 4 is
+                // the duration in hours (0 = unconstrained).
+                pack.startHour = sub.data[3];
+                pack.scheduleDuration = readU32(sub.data.data() + 4);
             } else if (std::memcmp(sub.tag, "CTDA", 4) == 0) {
                 pack.conditionCount++;
             }
         }
 
+        pack.resolved = true;
         m_packages.push_back(std::move(pack));
     }
 
@@ -3400,6 +3371,7 @@ bool ESMFile::parseFromMemory(const std::string& name, const uint8_t* data, size
 
     resolveWaterColorFallbacks();
     resolveMagicReferences();
+    resolveAIPackageReferences();
 
     return true;
 }
@@ -3540,6 +3512,51 @@ void ESMFile::resolveMagicReferences(
     LOGI("Magic references resolved for %s: %zu effect links (%zu unresolved), "
          "%zu/%zu spells have a school",
          m_fileName.c_str(), resolved, unresolved, schooled, m_spells.size());
+}
+
+size_t ESMFile::resolveAIPackageReferences(
+    const std::unordered_map<uint32_t, const AIPackageData*>* external) {
+    if (m_packages.empty()) return 0;
+
+    std::unordered_map<uint32_t, const AIPackageData*> packageByFormID;
+    packageByFormID.reserve(m_packages.size() * 2);
+    for (const auto& pkg : m_packages) {
+        if (pkg.formID != 0) packageByFormID.emplace(pkg.formID, &pkg);
+    }
+
+    size_t resolved = 0;
+    size_t unresolved = 0;
+    auto resolveList = [&](auto& records) {
+        for (auto& rec : records) {
+            for (auto& pkg : rec.aiPackages) {
+                if (pkg.resolved) continue;
+                const AIPackageData* src = nullptr;
+                auto it = packageByFormID.find(pkg.formID);
+                if (it != packageByFormID.end()) {
+                    src = it->second;
+                } else if (external) {
+                    auto ext = external->find(pkg.formID);
+                    if (ext != external->end()) src = ext->second;
+                }
+                if (!src || src == &pkg) {
+                    ++unresolved;
+                    continue;
+                }
+                uint32_t formID = pkg.formID;
+                pkg = *src;
+                pkg.formID = formID;
+                pkg.resolved = true;
+                ++resolved;
+            }
+        }
+    };
+    resolveList(m_npcs);
+    resolveList(m_creatures);
+
+    LOGI("AI package references resolved for %s: %zu links (%zu unresolved), "
+         "%zu packages available",
+         m_fileName.c_str(), resolved, unresolved, m_packages.size());
+    return resolved;
 }
 
 // ============================================================================
@@ -3861,6 +3878,26 @@ void ESMManager::rebuildIndices() {
         }
         for (auto& file : m_files) {
             file->resolveMagicReferences(&formIDByCode, &schoolByFormID);
+        }
+    }
+
+    // Second pass: resolve PKID package links that point at PACK records living
+    // in another plugin (e.g. a DLC actor using a package from Oblivion.esm).
+    {
+        std::unordered_map<uint32_t, const AIPackageData*> packageByFormID;
+        for (const auto& file : m_files) {
+            for (const auto& pkg : file->getPackages()) {
+                if (pkg.formID != 0) packageByFormID.emplace(pkg.formID, &pkg);
+            }
+        }
+        if (!packageByFormID.empty()) {
+            size_t resolved = 0;
+            for (auto& file : m_files) {
+                resolved += file->resolveAIPackageReferences(&packageByFormID);
+            }
+            if (resolved > 0) {
+                LOGI("AI packages linked across plugins: %zu", resolved);
+            }
         }
     }
 }
