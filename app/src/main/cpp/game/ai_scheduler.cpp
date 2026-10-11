@@ -13,6 +13,10 @@
 
 namespace ai {
 
+// Seconds an NPC waits after losing a too-far follow target before it may
+// retry following. Prevents an immediate reset/restart loop every frame.
+static constexpr float kFOLLOW_GIVEUP_TIME = 10.0f;
+
 AIScheduler::AIScheduler() {
     LOGD("AIScheduler created");
 }
@@ -356,7 +360,20 @@ void AIScheduler::executePatrol(uint32_t /*npcId*/, NPC* npc, AIPackage& pkg, fl
     moveToward(npc, currentWaypoint, deltaTime);
 }
 
-void AIScheduler::executeFollow(uint32_t /*npcId*/, NPC* npc, AIPackage& pkg, float deltaTime) {
+void AIScheduler::executeFollow(uint32_t npcId, NPC* npc, AIPackage& pkg, float deltaTime) {
+    auto stateIt = npcStates.find(npcId);
+    if (stateIt == npcStates.end()) return;
+    NPCAIState& state = stateIt->second;
+
+    // While in a give-up cooldown, stay idle and do NOT reset the package.
+    // Without this, resetting every frame makes the scheduler re-select the
+    // same package and spam "started/lost follow" logs in an infinite loop.
+    if (state.giveUpTimer > 0.0f) {
+        state.giveUpTimer = std::max(0.0f, state.giveUpTimer - deltaTime);
+        npc->setAIState(AIState::IDLE);
+        return;
+    }
+
     // targetId 0 is the player (no NPC owns formID 0); fall back to the NPC
     // manager only for real actor targets.
     glm::vec3 targetPos;
@@ -393,12 +410,14 @@ void AIScheduler::executeFollow(uint32_t /*npcId*/, NPC* npc, AIPackage& pkg, fl
     float maxDist = pkg.data.followMaxDistance;
 
     if (distSq > maxDist * maxDist) {
-        // Too far — teleport closer or give up
-        LOGD("NPC %u lost follow target %u (too far)", npc->npcId, pkg.data.targetId);
-        pkg.reset();
-        npc->setAIState(AIState::IDLE);
-        return;
-    }
+            // Target is too far away: enter a give-up cooldown instead of resetting
+            // the package. Resetting here made the scheduler re-select and re-look
+            // the same FOLLOW package every frame (infinite loop).
+            state.giveUpTimer = kFOLLOW_GIVEUP_TIME;
+            LOGD("NPC %u lost follow target %u (too far)", npc->npcId, pkg.data.targetId);
+            npc->setAIState(AIState::IDLE);
+            return;
+        }
 
     if (distSq > followDist * followDist) {
         // Too far — move closer

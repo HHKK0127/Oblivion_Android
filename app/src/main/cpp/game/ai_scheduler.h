@@ -124,7 +124,11 @@ private:
         bool movingToTarget = false;
         glm::vec3 moveTarget = glm::vec3(0.0f, 0.0f, 0.0f);
         uint32_t nextPackageId = 1;
-    };
+                // Cooldown (seconds) after a follow/escort target is lost outside
+                // range. While active, the NPC stays idle instead of resetting and
+                // re-selecting the same package every frame.
+                float giveUpTimer = 0.0f;
+            };
     std::unordered_map<uint32_t, NPCAIState> npcStates;
 
     // Update a single NPC's AI
