@@ -2704,8 +2704,215 @@ void Renderer::ensureScenarioBuilt() {
     createTestScenario();
 }
 
-void Renderer::createTestScenario() {
-    LOGI("=== createTestScenario() START ===");
+    // ============================================================================
+    // ESM to runtime AI package conversion (Phase 65: AI package wiring).
+    //
+    // The retail ESM's PACK records describe authored daily schedules (sleep at
+    // night, eat at noon, wander the market square, ...). These helpers translate
+    // an actor base record's AIPackageData list into the runtime ai::AIPackage
+    // form consumed by AIScheduler, so placed actors follow their true schedules
+    // instead of the generic default.
+    //
+    // Known limitations handled here:
+    //  * Bare PKID placeholders (resolved == false) are skipped.
+    //  * PLDT type 0 (REFR) locations resolve only through exterior references:
+    //    interior cells are never registered in the world manager and their
+    //    reference positions are cell-relative rather than absolute.
+    //  * Package types that ship no dedicated executor (Find/Ambush/...) degrade
+    //    to SAND_BOX so the NPC idles instead of behaving oddly.
+    // ============================================================================
+    namespace {
+
+    constexpr uint32_t kPlayerFormID = 0x14;            // Oblivion's player actor FormID
+    constexpr float kPackageRadiusFallback = 300.0f;    // market-square scale
+
+    ai::PackageType ToRuntimePackageType(uint8_t esmType) {
+        switch (esmType) {
+            case 1: return ai::PackageType::FOLLOW;
+            case 2: return ai::PackageType::ESCORT;
+            case 3: return ai::PackageType::EAT;
+            case 4: return ai::PackageType::SLEEP;
+            case 5: return ai::PackageType::WANDER;
+            case 6: return ai::PackageType::TRAVEL;
+            case 7: return ai::PackageType::ACCOMPANY;
+            case 8: return ai::PackageType::USE_ITEM;
+            default: return ai::PackageType::SAND_BOX;
+        }
+    }
+
+    // Priority ladder for the authored schedule types. A package with an explicit
+    // time window outranks its unconstrained sibling so the NPC actually leaves
+    // for the tavern at midday rather than idling.
+    uint8_t RuntimePriorityFor(ai::PackageType type, bool timeConstrained) {
+        uint8_t priority = 20;
+        switch (type) {
+            case ai::PackageType::SLEEP:            priority = 60; break;
+            case ai::PackageType::EAT:              priority = 55; break;
+            case ai::PackageType::FOLLOW:
+            case ai::PackageType::ESCORT:
+            case ai::PackageType::ACCOMPANY:        priority = 50; break;
+            case ai::PackageType::TRAVEL:           priority = 40; break;
+            case ai::PackageType::WANDER:           priority = 30; break;
+            default:                                priority = 20; break;
+        }
+        if (timeConstrained) {
+            priority = static_cast<uint8_t>(std::min<int>(100, priority + 10));
+        }
+        return priority;
+    }
+
+    // Resolve a PLDT location to engine world space. Type 1 targets a CELL (grid
+    // origin becomes a world coordinate), type 0 a REFR which is only usable when
+    // its FormID is present in the exterior reference position map (absolute world
+    // space). Returns false when no usable position can be derived.
+    bool TryResolvePackageLocation(const oblivion::ESMManager& esmMgr,
+                                   const oblivion::AIPackageData& src,
+                                   const std::unordered_map<uint32_t, glm::vec3>& refPositions,
+                                   glm::vec3& outPos) {
+        if (src.locationType == 1) {
+            const oblivion::CellData* cell = esmMgr.findCell(src.locationFormID);
+            if (cell && cell->isExterior) {
+                // Grid origin plus half a cell, matching WorldManager cell centers.
+                outPos = glm::vec3(static_cast<float>(cell->gridX) * 4096.0f + 2048.0f,
+                                   0.0f,
+                                   static_cast<float>(cell->gridY) * 4096.0f + 2048.0f);
+                return true;
+            }
+            return false;
+        }
+        if (src.locationType == 0) {
+            const auto it = refPositions.find(src.locationFormID);
+            if (it != refPositions.end()) {
+                outPos = it->second;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Build the runtime schedule for an actor base record. An empty result means
+    // "no authored schedule" and the caller keeps AIScheduler's default schedule.
+    std::vector<ai::AIPackage> BuildPackagesFromESM(
+        const oblivion::ESMManager& esmMgr,
+        uint32_t baseFormID,
+        const std::unordered_map<uint32_t, glm::vec3>& refPositions,
+        const NpcManager& npcMgr) {
+        std::vector<ai::AIPackage> result;
+
+        // NPC_ records are the common case; CREA creatures fall back to their own
+        // package list. Only records that actually reference packages apply.
+        const std::vector<oblivion::AIPackageData>* src = nullptr;
+        if (const oblivion::NPCData* npc = esmMgr.findNPC(baseFormID)) {
+            if (!npc->aiPackages.empty()) src = &npc->aiPackages;
+        }
+        if (!src) {
+            if (const oblivion::CreatureData* crea = esmMgr.findCreature(baseFormID)) {
+                if (!crea->aiPackages.empty()) src = &crea->aiPackages;
+            }
+        }
+        if (!src) return result;
+
+        result.reserve(src->size());
+        uint32_t nextId = 1;
+        for (const oblivion::AIPackageData& entry : *src) {
+            if (!entry.resolved) continue;  // bare PKID placeholder, no PACK record
+
+            const bool timeConstrained = (entry.startHour != 0xFF);
+            const ai::PackageType type = ToRuntimePackageType(entry.packageType);
+            const uint8_t priority = RuntimePriorityFor(type, timeConstrained);
+
+            ai::AIPackage pkg;
+            pkg.packageId = nextId++;
+            pkg.type = type;
+            pkg.priority = priority;
+
+            // Schedule window: start + duration in hours, wrapped past midnight.
+            // A zero duration means "all day from the start hour".
+            if (timeConstrained) {
+                const uint32_t endHour =
+                    entry.scheduleDuration == 0
+                        ? 24
+                        : (entry.startHour + entry.scheduleDuration) % 24;
+                pkg.conditions.time.enabled = true;
+                pkg.conditions.time.startHour = static_cast<uint8_t>(entry.startHour);
+                pkg.conditions.time.startMinute = 0;
+                pkg.conditions.time.endHour = static_cast<uint8_t>(endHour);
+                pkg.conditions.time.endMinute = 0;
+            }
+
+            glm::vec3 place;
+            const bool hasPlace = TryResolvePackageLocation(esmMgr, entry, refPositions, place);
+
+            // Follow family: resolve the target to a placed NPC; unresolved or the
+            // player FormID falls back to npcId 0 (the player).
+            uint32_t targetId = 0;
+            if ((type == ai::PackageType::FOLLOW ||
+                 type == ai::PackageType::ESCORT ||
+                 type == ai::PackageType::ACCOMPANY) &&
+                entry.targetFormID != 0 && entry.targetFormID != kPlayerFormID) {
+                if (auto target = npcMgr.getNpcByFormID(entry.targetFormID)) {
+                    targetId = target->npcId;
+                }
+            }
+
+            switch (type) {
+                case ai::PackageType::TRAVEL:
+                    if (!hasPlace) continue;  // never march toward the world origin
+                    pkg.data.destination = place;
+                    break;
+                case ai::PackageType::EAT:
+                case ai::PackageType::SLEEP: {
+                    // Only gate on proximity when the exact spot is known; an
+                    // unresolvable table/bed reference is not worth a city-wide trip.
+                    if (!hasPlace) continue;
+                    pkg.data.bedPosition = place;
+                    if (type == ai::PackageType::SLEEP) {
+                        pkg.data.sleepDuration =
+                            entry.scheduleDuration > 0 ? static_cast<float>(entry.scheduleDuration) : 8.0f;
+                    } else {
+                        pkg.data.eatDuration =
+                            entry.scheduleDuration > 0 ? static_cast<float>(entry.scheduleDuration) : 1.0f;
+                    }
+                    pkg.conditions.location.enabled = true;
+                    pkg.conditions.location.position = place;
+                    pkg.conditions.location.radius =
+                        entry.locationRadius > 0
+                            ? static_cast<float>(entry.locationRadius)
+                            : kPackageRadiusFallback;
+                    break;
+                }
+                case ai::PackageType::FOLLOW:
+                case ai::PackageType::ESCORT:
+                case ai::PackageType::ACCOMPANY:
+                    if (type == ai::PackageType::ESCORT && !hasPlace) continue;
+                    pkg.data.targetId = targetId;  // 0 resolves to the player
+                    if (type == ai::PackageType::ESCORT && hasPlace) {
+                        pkg.data.destination = place;
+                    }
+                    break;
+                case ai::PackageType::WANDER:
+                    pkg.data.wanderRadius =
+                        entry.locationRadius > 0
+                            ? static_cast<float>(entry.locationRadius)
+                            : kPackageRadiusFallback;
+                    break;
+                case ai::PackageType::USE_ITEM:
+                case ai::PackageType::SAND_BOX:
+                default:
+                    // No executor for these yet; sandbox keeps the actor idling.
+                    pkg.data.sandboxRadius = 15.0f;
+                    break;
+            }
+
+            result.push_back(pkg);
+        }
+        return result;
+    }
+
+    }  // namespace
+
+    void Renderer::createTestScenario() {
+        LOGI("=== createTestScenario() START ===");
 
     // Safety checks
     if (!worldManager) {
@@ -2863,8 +3070,24 @@ void Renderer::createTestScenario() {
             npcLookup[npc.formID] = &npc;
         }
 
-        // 3. Process REFR/ACHR/ACRE references to place actors and objects
-        const auto& refs = esmMgr.getAllReferences();
+        // 2b. Index exterior reference positions so PACK location targets
+                // (PLDT type 0) can be resolved without repeated linear scans.
+                const auto& refs = esmMgr.getAllReferences();
+                std::unordered_map<uint32_t, glm::vec3> exteriorRefPositions;
+                {
+                    exteriorRefPositions.reserve(refs.size());
+                    for (const auto& ref : refs) {
+                        // Same exterior-only rule as the placement loop below.
+                        if (!worldManager->getCellByFormID(ref.cellFormID)) continue;
+                        exteriorRefPositions.emplace(
+                            ref.formID,
+                            glm::vec3(ref.position.x, ref.position.z, ref.position.y));
+                    }
+                    LOGI("Indexed %zu exterior reference positions for AI package locations",
+                         exteriorRefPositions.size());
+                }
+
+                // 3. Process REFR/ACHR/ACRE references to place actors and objects
         LOGI("Processing %zu references from ESM data (ACHR=%zu, ACRE=%zu, REFR=%zu)",
              refs.size(), esmMgr.getNpcReferenceCount(), esmMgr.getCreatureReferenceCount(),
              refs.size() - esmMgr.getNpcReferenceCount() - esmMgr.getCreatureReferenceCount());
@@ -2903,11 +3126,18 @@ void Renderer::createTestScenario() {
                     npcPtr->rotation = worldRot;
                     npcPtr->updateModelMatrix();
                     if (aiScheduler) {
-                        aiScheduler->registerNPC(npcPtr->npcId);
-                    }
-                    placedActors++;
-                    if (placedActors <= 8) {
-                        LOGI("  Placed %s: 0x%08X '%s' at (%.1f, %.1f, %.1f)",
+                                        // Phase 65 wires the authored PACK schedule where present.
+                                        auto pkgs = BuildPackagesFromESM(esmMgr, ref.baseFormID,
+                                                                         exteriorRefPositions, *npcMgr);
+                                        if (pkgs.empty()) {
+                                            aiScheduler->registerNPC(npcPtr->npcId);
+                                        } else {
+                                            aiScheduler->registerNPC(npcPtr->npcId, pkgs);
+                                        }
+                                    }
+                                    placedActors++;
+                                        if (placedActors <= 8) {
+                                            LOGI("  Placed %s: 0x%08X '%s' at (%.1f, %.1f, %.1f)",
                              ref.refType == 1 ? "NPC" : "Creature",
                              ref.formID, npcPtr->name.c_str(),
                              worldPos.x, worldPos.y, worldPos.z);
@@ -2931,13 +3161,20 @@ void Renderer::createTestScenario() {
                     npcPtr->meshAssetPath = npcMgr->resolveNpcMeshPath(*npcData);
                     npcPtr->updateModelMatrix();
 
-                    // Register ESM NPC with AI Scheduler (Phase 35: Radiant AI)
-                    if (aiScheduler) {
-                        aiScheduler->registerNPC(npcPtr->npcId);
-                    }
-                    placedActors++;
-                    if (placedActors <= 8) {
-                        LOGI("  Placed NPC: 0x%08X '%s' at (%.1f, %.1f, %.1f)",
+                                        // Register ESM NPC with AI Scheduler (Phase 35: Radiant AI);
+                                        // Phase 65 supplies the authored PACK schedule where one exists.
+                                        if (aiScheduler) {
+                                            auto pkgs = BuildPackagesFromESM(esmMgr, ref.baseFormID,
+                                                                             exteriorRefPositions, *npcMgr);
+                                            if (pkgs.empty()) {
+                                                aiScheduler->registerNPC(npcPtr->npcId);
+                                            } else {
+                                                aiScheduler->registerNPC(npcPtr->npcId, pkgs);
+                                            }
+                                        }
+                                        placedActors++;
+                                        if (placedActors <= 8) {
+                                            LOGI("  Placed NPC: 0x%08X '%s' at (%.1f, %.1f, %.1f)",
                              ref.formID, npcData->fullName.c_str(),
                              worldPos.x, worldPos.y, worldPos.z);
                     }
@@ -3106,10 +3343,17 @@ void Renderer::createTestScenario() {
                                 npc->meshAssetPath = npcMgr->resolveNpcMeshPath(*npcData);
                                 npc->updateModelMatrix();
 
-                                // Register spawned creature with AI Scheduler
-                                if (aiScheduler) {
-                                    aiScheduler->registerNPC(npc->npcId);
-                                }
+                                                                // Register spawned creature with AI Scheduler; Phase 65
+                                                                // wires the creature base record's authored schedule.
+                                                                if (aiScheduler) {
+                                                                    auto pkgs = BuildPackagesFromESM(esmMgr, refFormID,
+                                                                                                     exteriorRefPositions, *npcMgr);
+                                                                    if (pkgs.empty()) {
+                                                                        aiScheduler->registerNPC(npc->npcId);
+                                                                    } else {
+                                                                        aiScheduler->registerNPC(npc->npcId, pkgs);
+                                                                    }
+                                                                }
 
                                 spawnedFromLists++;
                                 LOGD("  Spawned from LVLC '%s': NPC '%s' (0x%08X) level=%u",
