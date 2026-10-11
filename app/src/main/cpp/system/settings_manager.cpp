@@ -4,7 +4,7 @@
 #include <cstdlib>
 
 SettingsManager::SettingsManager()
-    : debugModeEnabled(true), currentLanguage("ja"), fpsCap(60) {
+    : debugModeEnabled(true), currentLanguage("en"), fpsCap(60) {
     LOGD("SettingsManager created");
 }
 
@@ -118,7 +118,7 @@ void SettingsManager::loadSettings() {
 
 void SettingsManager::resetToDefaults() {
     debugModeEnabled = true;  // Debug mode is ON by default
-    currentLanguage = "ja";   // Language defaults to Japanese
+    currentLanguage = "en";   // Language defaults to English (Japanese rendering not yet supported)
     fpsCap = 60;              // 60 fps is the default frame rate cap
     LOGD("Settings reset to defaults");
 }
