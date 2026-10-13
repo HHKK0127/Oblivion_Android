@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-13T19:20:10.760046",
+  "lastUpdated": "2026-10-13T20:04:30.874213",
   "entries": [
     {
       "timestamp": "2026-09-16T14:58:00Z",
@@ -6330,12 +6330,65 @@
       "id": "9196a3c8-2ae1-43e8-8991-683ad1fe1d09",
       "timestamp": "2026-10-13T19:20:10.760046",
       "compressed": false
+    },
+    {
+      "id": "ed9fa8de-05c6-47d7-97ed-eba5cbfa4e4f",
+      "timestamp": "2026-10-13T20:04:30.874213",
+      "category": "decision",
+      "priority": "high",
+      "content": "Renderer::handleTouch must dispatch slider-owning option panels (gameplayOptionsUI, videoOptionsUI, controlsOptionsUI, audioOptionsUI) outside the DOWN-only guard. They need ACTION_MOVE/ACTION_UP, otherwise onTouchMove/onTouchUp are unreachable and the handle cannot be dragged. DOWN-only panels (saveLoadUI, videoDisplayUI, optionsUI, settingsUI, inventoryUI, questUI) stay inside the guard.",
+      "tags": [
+        "ui",
+        "touch",
+        "options-menu",
+        "bugfix"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "0f496cf5-fe5e-4cf7-8190-ea2ec9eb19ab",
+      "timestamp": "2026-10-13T20:04:30.874213",
+      "category": "constraint",
+      "priority": "high",
+      "content": "Touch coordinates are identity-mapped: GL y == screenshot y, view 1920x1110 on emulator-5554 (physical 1920x1200, y>=1110 is a white system bar). A swipe must START INSIDE the slider handle rect; starting on the track triggers the +-0.10 jump instead, which looks like reversed movement. Self-calibrating test: start = handle_x0 + 19.",
+      "tags": [
+        "device",
+        "verification",
+        "slider"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "b0bb48b5-94e2-4b0f-abf6-b056784a158c",
+      "timestamp": "2026-10-13T20:04:30.874213",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Slider handle x0 = 759.5 + 361 * sens for the Controls sensitivity slider (LINE_WIDTH 400, HANDLE_WIDTH 39, line.x 760). Handle template crop: v27.png rows 396-431, cols 940-979; valid match ssd <= 30, ssd > 3000 means wrong screen.",
+      "tags": [
+        "verification",
+        "slider",
+        "controls-menu"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "540efc87-e60a-4e30-b1fa-0a4705e9cb3a",
+      "timestamp": "2026-10-13T20:04:30.874213",
+      "category": "decision",
+      "priority": "medium",
+      "content": "Controls menu page-2 Return matches the original controls_menu.xml: the page-2 Return (id 1) is the generic Return button and exits to Options, while the Android BACK key returns to page 1. Both behaviours are kept; no deviation from retail.",
+      "tags": [
+        "controls-menu",
+        "xml",
+        "ux"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 441,
+    "totalEntries": 445,
     "compressedCount": 81,
     "sessionCount": 38,
-    "lastUpdated": "2026-10-13T03:22:27Z"
+    "lastUpdated": "2026-10-13T20:04:30.874213Z"
   }
 }
