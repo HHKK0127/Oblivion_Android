@@ -997,12 +997,14 @@ bool MenuXmlTests::runAllTests() {
                    MenuUiBuilder::convertTexturePath("Menus\\").empty());
 
             // Font index --------------------------------------------------------------
-            record("M4 font index: padded value", MenuUiBuilder::fontIndex(" 1 ") == 1);
-            record("M4 font index: empty", MenuUiBuilder::fontIndex("") == 0);
-            record("M4 font index: maximum", MenuUiBuilder::fontIndex("5") == 5);
-            record("M4 font index: above range falls back", MenuUiBuilder::fontIndex("9") == 0);
-            record("M4 font index: negative falls back", MenuUiBuilder::fontIndex("-2") == 0);
-            record("M4 font index: non numeric falls back", MenuUiBuilder::fontIndex("daedric") == 0);
+            // fontIndex() returns a TextRenderer::FontType value (see xmlFontToFontType):
+            // XML 1 = Kingthings_Regular = 2, XML 5 = Handwritten = 4, unknown = default 2.
+            record("M4 font index: padded value", MenuUiBuilder::fontIndex(" 1 ") == 2);
+            record("M4 font index: empty", MenuUiBuilder::fontIndex("") == 2);
+            record("M4 font index: maximum", MenuUiBuilder::fontIndex("5") == 4);
+            record("M4 font index: above range falls back", MenuUiBuilder::fontIndex("9") == 2);
+            record("M4 font index: negative falls back", MenuUiBuilder::fontIndex("-2") == 2);
+            record("M4 font index: non numeric falls back", MenuUiBuilder::fontIndex("daedric") == 2);
 
             // buildNode: rectangle -----------------------------------------------------
             {
@@ -1099,7 +1101,9 @@ bool MenuXmlTests::runAllTests() {
                 // even without a strings.xml table.
                 record("M4 text: justify resolves from an entity",
                        node.justify == "center");
-                record("M4 text: font index", node.font_index == 1);
+                // <font> 1 is Kingthings_Regular in the ini; FontType orders
+                // the faces differently, so the builder maps 1 -> 2.
+                record("M4 text: font index", node.font_index == 2);
                 record("M4 text: wrap width", near(node.wrap_width, 850.0f));
             }
 
@@ -1169,7 +1173,7 @@ bool MenuXmlTests::runAllTests() {
                        nodes[2].children.size() == 1 &&
                        nodes[2].children[0].kind == MenuNodeKind::Text &&
                        nodes[2].children[0].text == "Loading" &&
-                       nodes[2].children[0].font_index == 1);
+                       nodes[2].children[0].font_index == 2);  // font 1 = Kingthings_Regular
             }
         }
 

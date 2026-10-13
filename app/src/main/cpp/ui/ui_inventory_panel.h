@@ -35,6 +35,8 @@ public:
     void setScreenSize(int w, int h) { screenWidth = w; screenHeight = h; }
 
 protected:
+    void renderBorderFrame();
+    void renderCategoryHeaders();
     void renderInventoryGrid();
     void renderEquipmentSlots();
     void renderItemDetail();

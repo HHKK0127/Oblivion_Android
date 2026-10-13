@@ -53,6 +53,12 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // Product build: hides the debug HUD and disables its gesture (see debug_hud.h)
+            externalNativeBuild {
+                cmake {
+                    arguments '-DOBLIVION_PRODUCT_BUILD=ON'
+                }
+            }
         }
     }
 

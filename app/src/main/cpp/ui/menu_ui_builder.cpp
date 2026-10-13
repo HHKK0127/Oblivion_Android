@@ -42,6 +42,25 @@ float byteToUnit(float value) {
     return unit < 0.0f ? 0.0f : (unit > 1.0f ? 1.0f : unit);
 }
 
+// <font> is a 1-based index into Oblivion_default.ini [Fonts]
+// (1 Kingthings_Regular, 2 Kingthings_Shadowed, 3 Tahoma_Bold_Small,
+// 4 Daedric, 5 Handwritten). TextRenderer::FontType uses a different order
+// and is 0-based, so the raw number cannot be cast directly. A widget that
+// omits <font> uses the menu default, which is the first entry
+// (Kingthings_Regular).
+constexpr int kDefaultFontType = 2;  // TextRenderer::FontType::KingthingsRegular
+
+int xmlFontToFontType(long xmlIndex) {
+    switch (xmlIndex) {
+        case 1: return 2;  // Kingthings_Regular
+        case 2: return 3;  // Kingthings_Shadowed
+        case 3: return 5;  // Tahoma_Bold_Small
+        case 4: return 1;  // Daedric
+        case 5: return 4;  // Handwritten
+        default: return kDefaultFontType;
+    }
+}
+
 }  // namespace
 
 std::string MenuUiBuilder::convertTexturePath(const std::string& filename) {
@@ -63,13 +82,13 @@ std::string MenuUiBuilder::convertTexturePath(const std::string& filename) {
 
 int MenuUiBuilder::fontIndex(const std::string& font) {
     const std::string s = trim(font);
-    if (s.empty()) return 0;
+    if (s.empty()) return kDefaultFontType;
     const char* begin = s.c_str();
     char* end = nullptr;
     const long value = std::strtol(begin, &end, 10);
-    if (end == begin) return 0;  // no leading digits
-    if (value < 0 || value > kMaxFontIndex) return 0;
-    return static_cast<int>(value);
+    if (end == begin) return kDefaultFontType;  // no leading digits
+    if (value < 1 || value > kMaxFontIndex) return kDefaultFontType;
+    return xmlFontToFontType(value);
 }
 
 MenuUiNode MenuUiBuilder::buildNode(const ResolvedWidget& widget) {

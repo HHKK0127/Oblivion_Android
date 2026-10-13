@@ -16,6 +16,39 @@ The current version is **0.9.10 (versionCode 910)**.
 ## [Unreleased]
 
 ### Added
+- **The Options menu family is rebuilt from the original PC XML layouts.** `Options` previously
+  handed every sub-category except Gameplay/Video/Audio to the generic settings screen. Each of
+  the five panels now has its own source, its own geometry transcribed from the retail XML, and
+  its own textures taken from the game's `menus\` BSA folder, so no label or decoration is
+  invented:
+  - `ui/options_ui.cpp` - the 240x360 (400 from pause) category list.
+  - `ui/gameplay_options_ui.cpp` - difficulty slider, crosshair/subtitle/autosave toggles.
+  - `ui/video_options_ui.cpp` - brightness/contrast sliders, LOD/shadow/water/grass settings,
+    and a resolution entry that pops `VideoDisplayUI` on top.
+  - `ui/video_display_ui.cpp` - the resolution list panel.
+  - `ui/audio_options_ui.cpp` - master/music/effect sliders backed by `AudioManager`.
+  - `ui/controls_options_ui.cpp` - the 666x580 two-page Controls menu.
+
+  Every sub-panel is opened with `OptionsUI::suspend()` and returns through
+  `OptionsUI::resume()`, so the category list keeps its focus while a child is up, and the
+  Android back key unwinds one level at a time (`handleBackKey` closes the child first).
+  All sub-panel labels come from the game's own `menus\strings.xml` string table
+  (`_mousesensitivity`, `_inverty`, `_swapstickcontrols`, `_leftstick`, `_rightstick`,
+  `_return`, `_defaults`, ...) rather than from new English text.
+- **The Controls menu is implemented as a two-page screen matching `controls_menu.xml`.**
+  Page 1 carries the mouse-sensitivity slider (`horiz_floating_scroll`, arrow caps plus a
+  draggable handle), the Invert Y and Swap Stick Controls toggles (`button_floating_2`), the
+  left/right stick labels and the `Controls` / `Return` long buttons. Page 2 carries the device
+  selector (124x36 and 121x36 arrow buttons around a centred device name) over a 538x400
+  bordered list of six visible binding rows (`_item_height` 82 scaled to `main.h / 6`), with the
+  `vert_floating_scroll` bar on the right edge and a Defaults / Return pair at the bottom.
+  Because the list has to clip its rows, this introduced the first `glScissor` use in the
+  codebase: a `ScissorScope` RAII helper in `controls_options_ui.cpp` converts the top-left-origin
+  row rect to GL's bottom-left origin, enables `GL_SCISSOR_TEST`, and restores both the previous
+  scissor box and the previous enable state in its destructor.
+  Verified on `emulator-5554`: `Options > Controls` opens, page 2 draws the device name at the
+  XML's `DEVICE_TEXT_Y` and six rows at the expected 66.7 px pitch, Return closes back to
+  Options, and the back key then closes Options - with no GL errors in the log.
 - **Frame rate cap is now reachable from three places instead of being fixed at 60.**
   `SettingsManager` gained `fpsCap` (default 60, range 15-120) persisted as `FPS_CAP=` in
   `settings.txt`; `Renderer::init` applies it once and logs `Frame rate cap applied from
@@ -97,6 +130,20 @@ The current version is **0.9.10 (versionCode 910)**.
   the longer ceiling costs no wall clock time.
 
 ### Fixed
+- **Every Options sub-panel slider was impossible to drag.** `Renderer::handleTouch` wrapped the
+  whole legacy-UI dispatch in `if (action == 0 || action == 5)`, so the `case 2:` / `case 1,3,6:`
+  arms inside the `gameplayOptionsUI` / `videoOptionsUI` / `controlsOptionsUI` / `audioOptionsUI`
+  branches could never run - the panels received `ACTION_DOWN` and nothing else. The four panels
+  that own a slider are now dispatched ahead of that guard behind an
+  `is_touch_down || is_touch_move || is_touch_up` test, so `onTouchMove`/`onTouchUp` are reachable,
+  while the DOWN-only panels (`saveLoadUI`, `videoDisplayUI`, `optionsUI`, `settingsUI`,
+  `inventoryUI`, `questUI`) keep their previous behaviour. The same defect also let `ACTION_MOVE`
+  fall through to the in-game camera while a slider panel was up, rotating the view behind the
+  open menu; the panels now consume the move. Verified on `emulator-5554`: the Controls
+  sensitivity handle follows a 1500 ms swipe from x 940 to x 1100 (right) and back to x 782 (left,
+  `0.062`), and the Audio master volume handle moves from x 1371 to x 1081. Arrow caps, track
+  jumps, the toggles, `Defaults`, the device arrows, page-2 row selection and the page-2
+  scroll bar were re-checked and are unchanged.
 - **Saving and loading dropped the player's magicka.** `SaveManager::captureGameState()` copied
   `player->stamina` into `currentMana`, and neither the `PLYR` block nor the JSON state carried a
   magicka field at all, so a load restored the correct health and stamina but silently reset the

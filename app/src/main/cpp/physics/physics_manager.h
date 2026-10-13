@@ -49,7 +49,7 @@ public:
     JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer inLayer) const override {
         return mObjectToBroadPhase[inLayer];
     }
-    const char* GetBroadPhaseLayerName(JPH::BroadPhaseLayer inLayer) const override {
+    const char* GetBroadPhaseLayerName(JPH::BroadPhaseLayer inLayer) const {
         switch (inLayer.GetValue()) {
             case 0: return "NON_MOVING";
             case 1: return "MOVING";

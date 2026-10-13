@@ -164,6 +164,12 @@ add_library(native-lib SHARED
     ui/performance_graph.cpp
     ui/settings_ui.cpp
     ui/save_load_ui.cpp
+    ui/options_ui.cpp
+    ui/audio_options_ui.cpp
+    ui/gameplay_options_ui.cpp
+    ui/video_options_ui.cpp
+    ui/video_display_ui.cpp
+    ui/controls_options_ui.cpp
     ui/ui_component.cpp
     ui/ui_system.cpp
     ui/ui_panel.cpp
@@ -282,6 +288,9 @@ add_library(native-lib SHARED
         tests/weather_transition_tests.cpp
         tests/interior_cell_tests.cpp
 
+        # Tests (Phase 65: LIP decode)
+        tests/lip_sync_decode_tests.cpp
+
     # Physics System (Phase 36 - Jolt Physics)
     physics/physics_manager.cpp
 
@@ -314,6 +323,9 @@ add_library(native-lib SHARED
     # Phase 52: FaceGen System
     character/face_gen_morpher.cpp
     character/face_gen_cache.cpp
+
+        # Phase 65: Lip sync decoder
+        character/lip_sync_decoder.cpp
 
     # Phase 53: Bink Video replacement (MediaCodec-based video playback)
     video/bink_video_player.cpp
@@ -411,6 +423,12 @@ target_compile_definitions(native-lib PRIVATE AUDIO_SYSTEM_ENABLED)
 # Enable debug logging in NpcManager (LOGD gated behind this macro)
 target_compile_definitions(native-lib PRIVATE ENABLE_DEBUG_LOGS)
 
+# Product build (release buildType passes -DOBLIVION_PRODUCT_BUILD=ON): hides the debug HUD
+option(OBLIVION_PRODUCT_BUILD "Build as a product release (no debug HUD)" OFF)
+if (OBLIVION_PRODUCT_BUILD)
+    target_compile_definitions(native-lib PRIVATE OBLIVION_PRODUCT_BUILD=1)
+endif ()
+
 # Warning suppression for specific headers
 set_source_files_properties(
     game/npc_manager.cpp
@@ -418,3 +436,4 @@ set_source_files_properties(
     PROPERTIES
     COMPILE_FLAGS "-Wno-unused-variable"
 )
+

@@ -68,8 +68,12 @@ private:
     SaveManager* saveManager = nullptr;
     Renderer* renderer = nullptr;
 
-    // Phase 9: Background texture
-    GLuint bgTexture = 0;
+    // Original Oblivion textures (extracted from the menus tier of the BSA)
+    GLuint bgTexture = 0;               // Menus/Level_up/level_up_background.dds
+    GLuint linesTexture = 0;            // Menus/Loading/loading_save_lines.dds
+    GLuint foldTexture = 0;             // Menus/Loading/loading_save_center_fold.dds
+    GLuint previewFrameTexture = 0;     // Menus/Loading/loading_save_wide_frame.dds
+    GLuint emptyPreviewTexture = 0;     // Menus/Shared/shared_empty_large.dds
 
     // Screen size (Renderer::setScreenSize must be called; landscape default)
     int screenWidth = 1920;
@@ -88,13 +92,37 @@ private:
     std::string pendingSlotName;
     std::string errorMessage;
 
-    static constexpr float SLOT_HEIGHT = 60.0f;
-    static constexpr float SLOT_MARGIN = 10.0f;
+    // Geometry taken from LoadMenu in the original master_menu_file.xml (pixels)
+    static constexpr float BG_WIDTH = 1020.0f;
+    static constexpr float BG_HEIGHT = 614.0f;
+    static constexpr float LINES_WIDTH = 420.0f;
+    static constexpr float LINES_HEIGHT = 600.0f;
+    static constexpr float LINES_Y_OFFSET = 18.0f;
+    static constexpr float LIST_X_OFFSET = 20.0f;
+    static constexpr float LIST_Y_OFFSET = 58.0f;
+    static constexpr float ITEM_HEIGHT = 82.0f;
+    static constexpr int VISIBLE_ROWS = 6;
+    static constexpr float FOLD_WIDTH = 70.0f;
+    static constexpr float PREVIEW_WIDTH = 458.0f;
+    static constexpr float PREVIEW_HEIGHT = 262.0f;
+    static constexpr float PREVIEW_X_OFFSET = 30.0f;
+    static constexpr float PREVIEW_Y_OFFSET = 64.0f;
     static constexpr float BUTTON_HEIGHT = 50.0f;
-    static constexpr float PADDING = 20.0f;
-    static constexpr float SLOT_PANEL_WIDTH = 640.0f;
-    static constexpr float SLOT_PANEL_Y = 110.0f;
-    static constexpr int MAX_VISIBLE_SLOTS = 6;
+
+    struct Layout {
+        float bgX, bgY;
+        float linesX, linesY;
+        float rowX, rowY;
+        float foldX;
+        float previewX, previewY;
+    };
+    Layout computeLayout() const;
+
+    // LOAD/SAVE (execute) and CANCEL button rectangles, placed under the preview column
+    struct ButtonRects {
+        float execX, cancelX, y, w, h;
+    };
+    ButtonRects computeButtonRects(const Layout& l) const;
 
     struct SlotEntry {
         std::string name;

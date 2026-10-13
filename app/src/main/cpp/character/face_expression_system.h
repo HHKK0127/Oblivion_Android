@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <glm/glm.hpp>
 #include <android/log.h>
+#include "lip_sync_decoder.h"
 
 // ============================================================================
 // Phase 55: Face Expression System
@@ -346,6 +347,68 @@ struct ExpressionLayer {
 };
 
 // ----------------------------------------------------------------------------
+// LIP -> morph channel mapping (Phase 65).
+//
+// A decoded LipTimeline carries 16 viseme channels (array A, mouth/jaw) and
+// 17 aux channels (array B, expression). Each source channel is mapped onto
+// a single ExpressionMorphChannel (or -1 to ignore). Decode the real channels
+// below: validated on all 9204 shipped lips (tmp/lip_buildcheck/viseme_report.txt).
+//
+// Because the shipped LIP files do not document their channel semantics, the
+// mappings below are data-informed defaults grounded in:
+//   * viseme A: speech drives mouth/jaw; the most-active channels over average
+//     speech (V0, V1, V2, V4, V5, V6, V8, V10, V11) are routed to mouth/jaw.
+//   * aux B: expression is mostly symmetric (B0=B1, B6=B7 are identical mirror
+//     pairs); channels B2,B3,B4,B5,B12,B13 are always zero (never driven) and
+//     are ignored.
+// These are constant tables so they can be retuned without touching the
+// playback path. -1 = channel unused.
+// ----------------------------------------------------------------------------
+static constexpr int kLipVisemeToMorph[kLipVariantCount] = {
+    MORPH_MOUTH_OPEN,      // V0  (strong)   -> open
+    MORPH_MOUTH_WIDE,      // V1  (strong)   -> wide
+    MORPH_MOUTH_PUCKER,    // V2  (strong)   -> pucker
+    MORPH_MOUTH_PRESS,     // V3              -> press
+    MORPH_JAW_OPEN,        // V4  (strong)   -> jaw open
+    MORPH_LIP_UPPER_UP,    // V5  (strong)   -> upper lip
+    MORPH_LIP_LOWER_DOWN,  // V6              -> lower lip
+    MORPH_JAW_LEFT,        // V7              -> jaw left
+    MORPH_JAW_RIGHT,       // V8              -> jaw right
+    MORPH_LIP_CORNER_UP,   // V9              -> corner up
+    MORPH_LIP_CORNER_DOWN, // V10             -> corner down
+    -1,                    // V11 (weak, ~SMILE bleed)  ignored
+    -1,                    // V12 (weak)                ignored
+    -1,                    // V13 (weak)                ignored
+    -1,                    // V14 (weak)                ignored
+    -1,                    // V15 (weak)                ignored
+};
+
+static constexpr int kLipAuxToMorph[kLipAuxCount] = {
+    MORPH_BROW_INNER_UP,  // B0 (mirror of B1) -> inner up
+    MORPH_BROW_INNER_UP,  // B1 (mirror of B0) -> inner up
+    -1,                   // B2 dead
+    -1,                   // B3 dead
+    -1,                   // B4 dead
+    -1,                   // B5 dead
+    MORPH_EYE_WIDE,       // B6 (mirror of B7) -> eye wide
+    MORPH_EYE_WIDE,       // B7 (mirror of B6) -> eye wide
+    MORPH_EYE_CLOSE,      // B8 (strong)       -> eye close
+    MORPH_CHEEK_RAISE,    // B9                -> cheek raise
+    MORPH_NOSE_SNEER,     // B10               -> sneer
+    MORPH_BROW_DOWN,      // B11 (weak)        -> brow down
+    -1,                   // B12 dead
+    -1,                   // B13 dead
+    MORPH_MOUTH_SMILE,    // B14 (weak const-ish) -> smile
+    -1,                   // B15 (weak)
+    -1,                   // B16 (weak)
+};
+
+// Nominal frame rate of LIP timelines. The .lip files carry no explicit
+// timebase; a fixed 60fps matches typical FaceGen lip data intended to play
+// at 60Hz with the accompanying audio.
+static constexpr float kLipFramesPerSecond = 60.0f;
+
+// ----------------------------------------------------------------------------
 // FaceExpressionSystem
 //
 // Owns per-NPC expression state: current blended morph weights, the target
@@ -431,9 +494,36 @@ public:
 
     bool IsVisemePlaying() const { return visemePlaying_; }
 
-    // Advances blending and viseme playback. Returns the composed morph
-    // weights to feed into the mesh morph pass.
-    const MorphWeights& Update(float deltaTime) {
+        // Starts raw LIP-driven lip sync playback. This is the game-faithful path
+        // (Phase 65): samples a frame-based LipTimeline decoded from a .lip file
+        // and overlays the mapped weights directly (no phoneme quantization). Takes
+        // priority over the phoneme viseme timeline; a null/empty timeline stops it.
+        void PlayLipTimeline(std::shared_ptr<LipTimeline> timeline) {
+            std::lock_guard<std::mutex> lock(mutex_);
+            if (!timeline || timeline->Empty()) {
+                lipPlaying_ = false;
+                lipTimeline_.reset();
+                return;
+            }
+            lipTimeline_ = std::move(timeline);
+            lipTime_ = 0.0f;
+            lipPlaying_ = true;
+            // Raw LIP overrides the phoneme path while active.
+            visemePlaying_ = false;
+            activeTimeline_.reset();
+        }
+
+        void StopLipTimeline() {
+            std::lock_guard<std::mutex> lock(mutex_);
+            lipPlaying_ = false;
+            lipTimeline_.reset();
+        }
+
+        bool IsLipPlaying() const { return lipPlaying_; }
+
+        // Advances blending and viseme playback. Returns the composed morph
+        // weights to feed into the mesh morph pass.
+        const MorphWeights& Update(float deltaTime) {
         if (baseHoldRemaining_ > 0.0f) {
             baseHoldRemaining_ = std::max(0.0f, baseHoldRemaining_ - deltaTime);
         }
@@ -475,9 +565,34 @@ public:
             currentWeights_[c] += (targetWeights_[c] - currentWeights_[c]) * alpha;
         }
 
-        // 3. Overlay lip sync viseme onto mouth/jaw channels only, so
-        //    dialogue speech doesn't fight with brow/eye emotion channels.
-        if (visemePlaying_) {
+        // 3. Overlay lip sync onto mouth/jaw + expression channels only, so
+                //    dialogue speech doesn't fight with the persistent expression base.
+                //    Raw LIP timeline (Phase 65) wins over the phoneme viseme path.
+                if (lipPlaying_) {
+                    std::lock_guard<std::mutex> lock(mutex_);
+                    if (lipTimeline_) {
+                        lipTime_ += deltaTime;
+                        float framePos = lipTime_ * kLipFramesPerSecond;
+                        LipFrame lf = lipTimeline_->Sample(framePos);
+                        // Viseme channels: mouth/jaw.
+                        for (int c = 0; c < kLipVariantCount; ++c) {
+                            int m = kLipVisemeToMorph[c];
+                            if (m >= 0) {
+                                currentWeights_[m] = lf.viseme[c];
+                            }
+                        }
+                        // Aux channels: brows/eyes/cheeks/nose/smile.
+                        for (int c = 0; c < kLipAuxCount; ++c) {
+                            int m = kLipAuxToMorph[c];
+                            if (m >= 0) {
+                                currentWeights_[m] = lf.aux[c];
+                            }
+                        }
+                        if (framePos >= static_cast<float>(lipTimeline_->GetFrameCount() - 1)) {
+                            lipPlaying_ = false;
+                        }
+                    }
+                } else if (visemePlaying_) {
             std::lock_guard<std::mutex> lock(mutex_);
             if (activeTimeline_) {
                 visemeTime_ += deltaTime;
@@ -516,7 +631,11 @@ private:
     float visemeTime_ = 0.0f;
     bool visemePlaying_ = false;
 
-    std::mutex mutex_;
+        std::shared_ptr<LipTimeline> lipTimeline_;
+        float lipTime_ = 0.0f;
+        bool lipPlaying_ = false;
+
+        std::mutex mutex_;
 };
 
 } // namespace facegen

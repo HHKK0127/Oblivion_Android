@@ -67,12 +67,15 @@ void DebugSystem::onTouch(int action, int pointerCount, float x, float y, int64_
         float dist = std::sqrt(dx * dx + dy * dy);
 
         if (duration <= TAP_MAX_DURATION_MS && dist <= TAP_MAX_DISTANCE_PX) {
-            // 3-finger tap confirmed -> toggle DebugMenu
+            // 3-finger tap confirmed -> toggle DebugMenu.
+            // Disabled in product builds so the debug menu cannot be opened by end users.
+#ifndef OBLIVION_PRODUCT_BUILD
             if (debugMenu) {
                 debugMenu->toggle();
                 LOGI("3-finger tap: DebugMenu %s",
                      debugMenu->isVisible() ? "opened" : "closed");
             }
+#endif
         }
         threeFingerDown = false;
     }
@@ -95,13 +98,16 @@ void DebugSystem::onTouch(int action, int pointerCount, float x, float y, int64_
             float dist = std::sqrt(dx * dx + dy * dy);
 
             if (dist <= TAP_MAX_DISTANCE_PX * 2.0f) {
-                // 2-finger double-tap confirmed -> toggle DebugHUD
+                // 2-finger double-tap confirmed -> toggle DebugHUD.
+                // Disabled in product builds so the HUD cannot be shown to end users.
+#ifndef OBLIVION_PRODUCT_BUILD
                 if (debugHUD) {
                     bool wasVisible = debugHUD->isVisible();
                     debugHUD->setVisible(!wasVisible);
                     LOGI("2-finger double-tap: DebugHUD %s",
                          debugHUD->isVisible() ? "shown" : "hidden");
                 }
+#endif
                 tapCount = 0;
                 lastTapTime = 0;
                 return;

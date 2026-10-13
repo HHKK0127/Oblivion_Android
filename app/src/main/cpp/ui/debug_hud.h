@@ -6,6 +6,14 @@
 #include <glm/glm.hpp>
 #include "text_renderer.h"
 
+// Product builds (OBLIVION_PRODUCT_BUILD, set by the release buildType) start with the HUD hidden
+// and have no gesture to show it. Debug builds keep the HUD visible by default.
+#ifdef OBLIVION_PRODUCT_BUILD
+#define DEBUG_HUD_DEFAULT_VISIBLE false
+#else
+#define DEBUG_HUD_DEFAULT_VISIBLE true
+#endif
+
 class AudioManager;
 class Renderer;
 

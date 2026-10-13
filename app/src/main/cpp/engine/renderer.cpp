@@ -453,6 +453,25 @@ void Renderer::resize(unsigned int width, unsigned int height) {
         saveLoadUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
         LOGI("SaveLoadUI screen size updated to: %ux%u", screenWidth, screenHeight);
     }
+
+    if (optionsUI) {
+        optionsUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    }
+    if (gameplayOptionsUI) {
+        gameplayOptionsUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    }
+    if (videoOptionsUI) {
+        videoOptionsUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    }
+    if (videoDisplayUI) {
+        videoDisplayUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    }
+    if (controlsOptionsUI) {
+        controlsOptionsUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    }
+    if (audioOptionsUI) {
+        audioOptionsUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    }
 }
 
 void Renderer::setTargetFPS(int fps) {
@@ -2079,6 +2098,56 @@ bool Renderer::initGameSystems() {
         if (worldManager) saveManager->setWorldManager(worldManager.get());
     }
 
+    // OptionsUI: layout follows the original OptionsMenu XML (PC values)
+    optionsUI = std::make_unique<OptionsUI>();
+    if (!optionsUI->initialize(textRenderer.get())) {
+        LOGE("Failed to initialize OptionsUI");
+    } else {
+        optionsUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    }
+
+    // AudioOptionsUI: Options > Audio sub-screen (900x500, original audio_menu.xml layout)
+    audioOptionsUI = std::make_unique<AudioOptionsUI>();
+    if (!audioOptionsUI->initialize(textRenderer.get())) {
+        LOGE("Failed to initialize AudioOptionsUI");
+    } else {
+        audioOptionsUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    }
+
+    // GameplayOptionsUI: Options > Gameplay sub-screen (790x528, original gameplay_menu.xml layout)
+    gameplayOptionsUI = std::make_unique<GameplayOptionsUI>();
+    if (!gameplayOptionsUI->initialize(textRenderer.get())) {
+        LOGE("Failed to initialize GameplayOptionsUI");
+    } else {
+        gameplayOptionsUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    }
+
+    // VideoOptionsUI: Options > Video sub-screen (900x600, original video_menu.xml layout)
+    videoOptionsUI = std::make_unique<VideoOptionsUI>();
+    if (!videoOptionsUI->initialize(textRenderer.get())) {
+        LOGE("Failed to initialize VideoOptionsUI");
+    } else {
+        videoOptionsUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    }
+
+    // VideoDisplayUI: resolution list panel shown when the resolution changes
+    // (520x680, original video_display_menu.xml layout)
+    videoDisplayUI = std::make_unique<VideoDisplayUI>();
+    if (!videoDisplayUI->initialize(textRenderer.get())) {
+        LOGE("Failed to initialize VideoDisplayUI");
+    } else {
+        videoDisplayUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    }
+
+    // ControlsOptionsUI: Options > Controls sub-screen (666x580, original
+    // controls_menu.xml layout, two pages + scrollable binding list)
+    controlsOptionsUI = std::make_unique<ControlsOptionsUI>();
+    if (!controlsOptionsUI->initialize(textRenderer.get())) {
+        LOGE("Failed to initialize ControlsOptionsUI");
+    } else {
+        controlsOptionsUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    }
+
     // Complete SaveLoadUI initialization (now that SaveManager is ready)
     if (saveLoadUI && saveManager) {
         if (!saveLoadUI->initialize(textRenderer.get(), saveManager.get(), this)) {
@@ -2269,7 +2338,8 @@ bool Renderer::initGameSystems() {
         auto invPanel = std::make_shared<ui::UIInventoryPanel>("Inventory");
         invPanel->setInventory(inventoryGrid.get());
         invPanel->setEquipment(equipmentManager.get());
-        invPanel->setSize(static_cast<float>(screenWidth) * 0.85f, static_cast<float>(screenHeight) * 0.75f);
+                invPanel->setTextRenderer(textRenderer.get());
+                invPanel->setSize(static_cast<float>(screenWidth) * 0.85f, static_cast<float>(screenHeight) * 0.75f);
         invPanel->setPosition(static_cast<float>(screenWidth) * 0.075f, static_cast<float>(screenHeight) * 0.125f);
         invPanel->setVisible(false);
         uiSystem->registerComponent(invPanel, 15);
@@ -3723,7 +3793,7 @@ bool Renderer::openDialogueWithNpc(uint32_t npcFormID) {
 
         // Wire voice playback: resolving a topic's sound and playing it through the
         // audio manager. Missing voices degrade to silent dialogue (log only).
-        dialogueUI->setOnTopicSelected([this](const std::string& topicId) {
+        dialogueUI->setOnTopicSelected([this, npcFormID](const std::string& topicId) {
             if (!voiceSoundDatabase || !dialogueManager) {
                 return;
             }
@@ -3749,7 +3819,36 @@ bool Renderer::openDialogueWithNpc(uint32_t npcFormID) {
                 audioManager->playVoice(voicePath);
             }
     #endif
-        });
+
+                        // Phase 65: drive lip-sync from the matching .lip file. Oblivion
+                        // stores each voice line's phoneme timeline as a .lip next to the
+                        // .mp3; derive it by replacing the extension. Missing lips degrade
+                        // to speech without mouth animation (log only).
+                        if (assetManager) {
+                            const std::string lipPath =
+                                voicePath.size() > 4 ? voicePath.substr(0, voicePath.size() - 4) + ".lip"
+                                                     : std::string();
+                            if (auto data = assetManager->loadFileData(lipPath); !data.empty()) {
+                                facegen::LipTimeline timeline;
+                                if (facegen::DecodeLipFile(data.data(), data.size(), &timeline) &&
+                                    !timeline.Empty()) {
+                                    // Remember the speaker so the per-frame update logs morph
+                                    // weights against the correct NPC formID.
+                                    lipSpeakerNpcFormID_ = npcFormID;
+                                    faceExpressionSystem_.StopLipTimeline();
+                                    faceExpressionSystem_.PlayLipTimeline(
+                                        std::make_shared<facegen::LipTimeline>(std::move(timeline)));
+                                    LOGI("Lip-sync started for topic '%s' (%d frames, %zu bytes)",
+                                         topicId.c_str(), timeline.GetFrameCount(), data.size());
+                                } else {
+                                    LOGD("Lip-sync disabled for topic '%s': unreadable/empty .lip",
+                                         topicId.c_str());
+                                }
+                            } else {
+                                LOGD("No .lip for topic '%s' at '%s'", topicId.c_str(), lipPath.c_str());
+                            }
+                        }
+                    });
 
         LOGI("Dialogue opened with NPC 0x%08X '%s' (%zu topics)",
              npcFormID, dialogue->npcName.c_str(), dialogue->topics.size());
@@ -3878,6 +3977,9 @@ std::string Renderer::runVoiceTest() {
 }
 
 void Renderer::closeDialogue() {
+    // Phase 65: stop mouth animation with the dialogue.
+    faceExpressionSystem_.StopLipTimeline();
+    lipSpeakerNpcFormID_ = 0;
     if (dialogueUI) {
         dialogueUI->closeDialogue();
     }
@@ -3965,11 +4067,27 @@ void Renderer::render(float deltaTime) {
     // scenario is built from game data at the end of loadBSAArchives().
     ensureScenarioBuilt();
 
-    // Font switches arrive from the input thread, which has no GL context; the atlas
-    // upload happens here, where the context is current.
-    if (textRenderer) {
-        textRenderer->processPendingFontRequest();
-    }
+        // Phase 65: advance face-lip animation each frame. When a dialogue lip is
+            // playing, Update() produces per-frame morph weights consumed later by the
+            // (deferred) face render path and exposed to the debug HUD.
+            {
+                const facegen::MorphWeights& weights = faceExpressionSystem_.Update(deltaTime);
+                if (lipSpeakerNpcFormID_ != 0 && faceExpressionSystem_.IsLipPlaying()) {
+                    // Log a compact weight summary so the wiring is verifiable without
+                    // a debug overlay; mouth/jaw visemes first.
+                    static int lipLogCounter = 0;
+                    if ((lipLogCounter++ % 60) == 0) {
+                        LOGD("Lip weights (NPC 0x%08X): M0=%.2f M1=%.2f M2=%.2f",
+                             lipSpeakerNpcFormID_, weights[0], weights[1], weights[2]);
+                    }
+                }
+            }
+
+            // Font switches arrive from the input thread, which has no GL context; the atlas
+            // upload happens here, where the context is current.
+            if (textRenderer) {
+                textRenderer->processPendingFontRequest();
+            }
 
     // Launcher takes priority - render and return early
     // When launched from IntroVideoActivity, skip launcher and go directly to title screen
@@ -4115,9 +4233,9 @@ void Renderer::render(float deltaTime) {
         // Check if Settings was requested
         if (titleScreen->isSettingsRequested()) {
             titleScreen->resetSettingsRequest();
-            if (settingsUI) {
-                settingsUI->toggle();  // Open settings UI
-                LOGI("Settings UI opened from title screen menu");
+            if (optionsUI) {
+                optionsUI->open(false);  // Title entry: no pause banner
+                LOGI("Options UI opened from title screen menu");
             }
         }
 
@@ -4170,6 +4288,24 @@ void Renderer::render(float deltaTime) {
         // while they still consumed every touch (menu looked frozen).
         if (saveLoadUI && saveLoadUI->isVisible()) {
             saveLoadUI->render();
+        }
+        if (optionsUI && optionsUI->isVisible()) {
+            optionsUI->render();
+        }
+        if (audioOptionsUI && audioOptionsUI->isVisible()) {
+            audioOptionsUI->render();
+        }
+        if (gameplayOptionsUI && gameplayOptionsUI->isVisible()) {
+            gameplayOptionsUI->render();
+        }
+        if (videoOptionsUI && videoOptionsUI->isVisible()) {
+            videoOptionsUI->render();
+        }
+        if (videoDisplayUI && videoDisplayUI->isVisible()) {
+            videoDisplayUI->render();
+        }
+        if (controlsOptionsUI && controlsOptionsUI->isVisible()) {
+            controlsOptionsUI->render();
         }
         if (settingsUI && settingsUI->isVisible()) {
             settingsUI->render();
@@ -4560,24 +4696,52 @@ void Renderer::render(float deltaTime) {
         saveLoadUI->render();
     }
 
+    if (optionsUI && optionsUI->isVisible()) {
+        optionsUI->render();
+    }
+    if (audioOptionsUI && audioOptionsUI->isVisible()) {
+        audioOptionsUI->render();
+    }
+    if (gameplayOptionsUI && gameplayOptionsUI->isVisible()) {
+        gameplayOptionsUI->render();
+    }
+    if (videoOptionsUI && videoOptionsUI->isVisible()) {
+        videoOptionsUI->render();
+    }
+    if (videoDisplayUI && videoDisplayUI->isVisible()) {
+        videoDisplayUI->render();
+    }
+    if (controlsOptionsUI && controlsOptionsUI->isVisible()) {
+        controlsOptionsUI->render();
+    }
+
     // Render Settings UI if visible
     if (settingsUI && settingsUI->isVisible()) {
         settingsUI->render();
     }
 
+    // Hidden while SaveLoadUI is open: these overlays would otherwise draw over the dimmed menu
+    const bool saveLoadOpen = (saveLoadUI && saveLoadUI->isVisible()) ||
+                              (optionsUI && optionsUI->isVisible()) ||
+                              (audioOptionsUI && audioOptionsUI->isVisible()) ||
+                              (gameplayOptionsUI && gameplayOptionsUI->isVisible()) ||
+                              (videoOptionsUI && videoOptionsUI->isVisible()) ||
+                              (videoDisplayUI && videoDisplayUI->isVisible()) ||
+                              (controlsOptionsUI && controlsOptionsUI->isVisible());
+
     // Render Phase 9 UI Framework components (overlays on top of existing UI)
-    if (uiSystem) {
+    if (uiSystem && !saveLoadOpen) {
         uiSystem->render();
     }
 
     // Render Virtual Controller (game overlay)
-    if (virtualController && virtualControllerEnabled && !showLauncher && !showTitleScreen) {
+    if (virtualController && virtualControllerEnabled && !showLauncher && !showTitleScreen && !saveLoadOpen) {
         virtualController->update(deltaTime);
         virtualController->render();
     }
 
     // Render HUD System (health/mana/stamina bars, compass, status)
-    if (hudVisible && !showLauncher && !showTitleScreen) {
+    if (hudVisible && !showLauncher && !showTitleScreen && !saveLoadOpen) {
         // Update HUD with player status
         if (playerController && hudRenderer) {
             auto player = playerController->getPlayer();
@@ -6934,14 +7098,84 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
         LOGI("UISystem did not handle touch");
     }
 
-    // Only process legacy UI elements on ACTION_DOWN (0 or 5)
-    if (action == 0 || action == 5) {
+    // Options sub-panels that own a slider need ACTION_MOVE and ACTION_UP as
+    // well as ACTION_DOWN. They used to sit behind a DOWN-only guard, which
+    // made every drag handler unreachable, so they are dispatched first.
+    const bool is_touch_down = (action == 0 || action == 5);
+    const bool is_touch_move = (action == 2);
+    const bool is_touch_up = (action == 1 || action == 3 || action == 6);
+
+    if (is_touch_down || is_touch_move || is_touch_up) {
+        if (gameplayOptionsUI && gameplayOptionsUI->isVisible()) {
+            if (is_touch_move) {
+                gameplayOptionsUI->onTouchMove(x);
+            } else if (is_touch_up) {
+                gameplayOptionsUI->onTouchUp();
+            } else {
+                gameplayOptionsUI->onTouchDown(x, y);
+            }
+            pumpGameplayOptions();
+            return;
+        }
+
+        if (videoOptionsUI && videoOptionsUI->isVisible()) {
+            if (is_touch_move) {
+                videoOptionsUI->onTouchMove(x);
+            } else if (is_touch_up) {
+                videoOptionsUI->onTouchUp();
+            } else {
+                videoOptionsUI->onTouchDown(x, y);
+            }
+            pumpVideoOptions();
+            return;
+        }
+
+        if (controlsOptionsUI && controlsOptionsUI->isVisible()) {
+            if (is_touch_move) {
+                controlsOptionsUI->onTouchMove(x);
+            } else if (is_touch_up) {
+                controlsOptionsUI->onTouchUp();
+            } else {
+                controlsOptionsUI->onTouchDown(x, y);
+            }
+            pumpControlsOptions();
+            return;
+        }
+
+        if (audioOptionsUI && audioOptionsUI->isVisible()) {
+            if (is_touch_move) {
+                audioOptionsUI->onTouchMove(x);
+            } else if (is_touch_up) {
+                audioOptionsUI->onTouchUp();
+            } else {
+                audioOptionsUI->onTouchDown(x, y);
+            }
+            pumpAudioOptions();
+            return;
+        }
+    }
+
+    // Only process the remaining legacy UI elements on ACTION_DOWN (0 or 5)
+    if (is_touch_down) {
         if (saveLoadUI && saveLoadUI->isVisible()) {
             saveLoadUI->onTouchEvent(x, y);
             if (saveLoadUI->shouldReturnToMenu()) {
                 saveLoadUI->resetReturnFlag();
                 saveLoadUI->close();
             }
+            return;
+        }
+
+        if (videoDisplayUI && videoDisplayUI->isVisible()) {
+            videoDisplayUI->onTouchDown(x, y);
+            pumpVideoDisplay();
+            return;
+        }
+
+        if (optionsUI && optionsUI->isVisible()) {
+            optionsUI->onTouchEvent(x, y);
+            handleOptionsCategoryRequest(optionsUI->consumeCategoryRequest());
+            optionsUI->resetReturnFlag();
             return;
         }
 
@@ -7091,6 +7325,25 @@ void Renderer::onTrimMemory(int level) {
 
     if (saveLoadUI) {
         saveLoadUI->cleanup();
+    }
+
+    if (gameplayOptionsUI) {
+        gameplayOptionsUI->cleanup();
+    }
+    if (videoOptionsUI) {
+        videoOptionsUI->cleanup();
+    }
+    if (videoDisplayUI) {
+        videoDisplayUI->cleanup();
+    }
+    if (controlsOptionsUI) {
+        controlsOptionsUI->cleanup();
+    }
+    if (audioOptionsUI) {
+        audioOptionsUI->cleanup();
+    }
+    if (optionsUI) {
+        optionsUI->cleanup();
     }
 
     if (inventoryUI) {
@@ -7283,7 +7536,167 @@ void Renderer::startGame() {
     LOGI("startGame: Game world should now be visible");
 }
 
-    bool Renderer::handleBackKey() {
+bool Renderer::handleOptionsKey(int keyCode) {
+    if (videoDisplayUI && videoDisplayUI->isVisible()) {
+        const bool handled = videoDisplayUI->onKeyPress(keyCode);
+        pumpVideoDisplay();
+        return handled;
+    }
+    if (gameplayOptionsUI && gameplayOptionsUI->isVisible()) {
+        const bool handled = gameplayOptionsUI->onKeyPress(keyCode);
+        pumpGameplayOptions();
+        return handled;
+    }
+    if (videoOptionsUI && videoOptionsUI->isVisible()) {
+        const bool handled = videoOptionsUI->onKeyPress(keyCode);
+        pumpVideoOptions();
+        return handled;
+    }
+    if (audioOptionsUI && audioOptionsUI->isVisible()) {
+        const bool handled = audioOptionsUI->onKeyPress(keyCode);
+        pumpAudioOptions();
+        return handled;
+    }
+    if (controlsOptionsUI && controlsOptionsUI->isVisible()) {
+        const bool handled = controlsOptionsUI->onKeyPress(keyCode);
+        pumpControlsOptions();
+        return handled;
+    }
+    if (optionsUI && optionsUI->isVisible()) {
+        const bool handled = optionsUI->onKeyPress(keyCode);
+        handleOptionsCategoryRequest(optionsUI->consumeCategoryRequest());
+        return handled;
+    }
+    return false;
+}
+
+void Renderer::handleOptionsCategoryRequest(OptionsUI::Category category) {
+    if (category == OptionsUI::Category::NONE) {
+        return;
+    }
+    if (category == OptionsUI::Category::GAMEPLAY && gameplayOptionsUI) {
+        // Options stays alive underneath and resumes when Gameplay returns
+        optionsUI->suspend();
+        gameplayOptionsUI->open(gameplayOptionsUI->settings());
+        return;
+    }
+    if (category == OptionsUI::Category::VIDEO && videoOptionsUI) {
+        // Options stays alive underneath and resumes when Video returns
+        optionsUI->suspend();
+        videoOptionsUI->open();
+        return;
+    }
+    if (category == OptionsUI::Category::AUDIO && audioOptionsUI) {
+        // Options stays alive underneath and resumes when Audio returns
+        AudioOptionsUI::Volumes current;
+        if (audioManager) {
+            current.master = audioManager->getMasterVolume();
+            current.music = audioManager->getBGMVolume();
+            current.effect = audioManager->getSEVolume();
+        }
+        optionsUI->suspend();
+        audioOptionsUI->open(current);
+        return;
+    }
+    if (category == OptionsUI::Category::CONTROLS && controlsOptionsUI) {
+        // Options stays alive underneath and resumes when Controls returns
+        optionsUI->suspend();
+        controlsOptionsUI->open(controlsOptionsUI->settings());
+        return;
+    }
+    // Other sub-categories are still provided by SettingsUI until they get their own panels
+    optionsUI->close();
+    if (settingsUI) {
+        settingsUI->toggle();
+    }
+}
+
+void Renderer::pumpAudioOptions() {
+    if (!audioOptionsUI) {
+        return;
+    }
+    if (audioOptionsUI->consumeChanged() && audioManager) {
+        const AudioOptionsUI::Volumes v = audioOptionsUI->volumes();
+        audioManager->setMasterVolume(v.master);
+        audioManager->setBGMVolume(v.music);
+        audioManager->setSEVolume(v.effect);
+    }
+    if (audioOptionsUI->shouldReturnToOptions()) {
+        audioOptionsUI->resetReturnFlag();
+        audioOptionsUI->close();
+        if (optionsUI) {
+            optionsUI->resume();
+        }
+    }
+}
+
+void Renderer::pumpGameplayOptions() {
+    if (!gameplayOptionsUI) {
+        return;
+    }
+    // Values are kept in GameplayOptionsUI; consumers (crosshair, subtitles, autosave) are not wired yet
+    gameplayOptionsUI->consumeChanged();
+    if (gameplayOptionsUI->shouldReturnToOptions()) {
+        gameplayOptionsUI->resetReturnFlag();
+        gameplayOptionsUI->close();
+        if (optionsUI) {
+            optionsUI->resume();
+        }
+    }
+}
+
+void Renderer::pumpVideoOptions() {
+    if (!videoOptionsUI) {
+        return;
+    }
+    // Values are kept in VideoOptionsUI; renderer-side consumers (resolution, LOD, shadows)
+    // are not wired yet.
+    videoOptionsUI->consumeChanged();
+
+    // A resolution change pops the original resolution list panel on top.
+    int selected = 0;
+    if (videoDisplayUI && videoOptionsUI->consumeDisplayRequest(selected)) {
+        videoDisplayUI->open(selected);
+        return;
+    }
+
+    if (videoOptionsUI->shouldReturnToOptions()) {
+        videoOptionsUI->resetReturnFlag();
+        videoOptionsUI->close();
+        if (optionsUI) {
+            optionsUI->resume();
+        }
+    }
+}
+
+void Renderer::pumpVideoDisplay() {
+    if (!videoDisplayUI) {
+        return;
+    }
+    if (videoDisplayUI->shouldReturn()) {
+        videoDisplayUI->resetReturnFlag();
+        videoDisplayUI->close();
+    }
+}
+
+void Renderer::pumpControlsOptions() {
+    if (!controlsOptionsUI) {
+        return;
+    }
+    // Values are kept in ControlsOptionsUI; consumers (camera sensitivity, invert Y,
+    // stick mapping) are not wired yet.
+    controlsOptionsUI->consumeChanged();
+
+    if (controlsOptionsUI->shouldReturnToOptions()) {
+        controlsOptionsUI->resetReturnFlag();
+        controlsOptionsUI->close();
+        if (optionsUI) {
+            optionsUI->resume();
+        }
+    }
+}
+
+bool Renderer::handleBackKey() {
         // Priority: DebugMenu > DebugConsole > GameConsole > Title > Launcher > Exit dialog
 
         // 1. Close DebugMenu if open
@@ -7305,6 +7718,41 @@ void Renderer::startGame() {
             saveLoadUI->close();
             saveLoadUI->resetReturnFlag();
             LOGI("handleBackKey: Closed SaveLoadUI");
+            return true;
+        }
+        if (gameplayOptionsUI && gameplayOptionsUI->isVisible()) {
+            gameplayOptionsUI->handleBack();
+            pumpGameplayOptions();
+            LOGI("handleBackKey: Closed GameplayOptionsUI");
+            return true;
+        }
+        if (videoDisplayUI && videoDisplayUI->isVisible()) {
+            videoDisplayUI->handleBack();
+            pumpVideoDisplay();
+            LOGI("handleBackKey: Closed VideoDisplayUI");
+            return true;
+        }
+        if (videoOptionsUI && videoOptionsUI->isVisible()) {
+            videoOptionsUI->handleBack();
+            pumpVideoOptions();
+            LOGI("handleBackKey: Closed VideoOptionsUI");
+            return true;
+        }
+        if (audioOptionsUI && audioOptionsUI->isVisible()) {
+            audioOptionsUI->handleBack();
+            pumpAudioOptions();
+            LOGI("handleBackKey: Closed AudioOptionsUI");
+            return true;
+        }
+        if (controlsOptionsUI && controlsOptionsUI->isVisible()) {
+            controlsOptionsUI->handleBack();
+            pumpControlsOptions();
+            LOGI("handleBackKey: Closed ControlsOptionsUI");
+            return true;
+        }
+        if (optionsUI && optionsUI->isVisible()) {
+            optionsUI->handleBack();  // Return button
+            LOGI("handleBackKey: Closed OptionsUI");
             return true;
         }
         if (settingsUI && settingsUI->isVisible()) {

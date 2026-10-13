@@ -18,6 +18,12 @@
 #include "../system/debug_system.h"
 #include "../ui/settings_ui.h"
 #include "../ui/save_load_ui.h"
+#include "../ui/options_ui.h"
+#include "../ui/audio_options_ui.h"
+#include "../ui/gameplay_options_ui.h"
+#include "../ui/video_options_ui.h"
+#include "../ui/video_display_ui.h"
+#include "../ui/controls_options_ui.h"
 #include "../ui/game_console.h"
 #include "../ui/debug_menu.h"
 #include "../ui/npc_debug_visualizer.h"
@@ -68,6 +74,8 @@
 #include "../ui/ui_book_reader.h"
 #include "../animation/animation_subscriber.h"
 #include "../audio/audio_subscriber.h"
+#include "../character/face_expression_system.h"
+#include "../character/lip_sync_decoder.h"
 #include "../map/map_system.h"
 #include "../inventory/inventory_grid.h"
 #include "../inventory/equipment_manager.h"
@@ -114,6 +122,12 @@ private:
     std::unique_ptr<DebugHUD> debugHUD;
     std::unique_ptr<SettingsUI> settingsUI;
     std::unique_ptr<SaveLoadUI> saveLoadUI;
+    std::unique_ptr<OptionsUI> optionsUI;
+    std::unique_ptr<AudioOptionsUI> audioOptionsUI;
+    std::unique_ptr<GameplayOptionsUI> gameplayOptionsUI;
+    std::unique_ptr<VideoOptionsUI> videoOptionsUI;
+    std::unique_ptr<VideoDisplayUI> videoDisplayUI;
+    std::unique_ptr<ControlsOptionsUI> controlsOptionsUI;
     std::unique_ptr<GameConsole> gameConsole;
     std::unique_ptr<DebugMenu> debugMenu;
     std::unique_ptr<NpcDebugVisualizer> npcDebugVisualizer;
@@ -173,6 +187,10 @@ private:
     std::unique_ptr<UIDialogue> dialogueUI;
     std::unique_ptr<UIBookReader> bookReaderUI;
     bool hudVisible = true;
+
+        // Lip-sync playback (Phase 65): face morph weights driven by .lip data.
+        facegen::FaceExpressionSystem faceExpressionSystem_;
+        uint32_t lipSpeakerNpcFormID_ = 0;
     
     // Responsive UI Manager
     std::unique_ptr<ResponsiveUIManager> responsiveUIManager;
@@ -365,6 +383,14 @@ public:
     bool isDebugMenuVisible() const;
     void startGame();  // Skip launcher/title and start game world directly
         bool handleBackKey();  // Handle Android back button, returns true if consumed
+    // Returns true when the Options menu consumed the key (title screen must not see it).
+    bool handleOptionsKey(int keyCode);
+    void handleOptionsCategoryRequest(OptionsUI::Category category);
+    void pumpAudioOptions();
+    void pumpGameplayOptions();
+    void pumpVideoOptions();
+    void pumpVideoDisplay();
+    void pumpControlsOptions();
         void toggleNpcDebugVisualizer();
     void toggleWorldDebugInfo();
     void togglePerformanceGraph();

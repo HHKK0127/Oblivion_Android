@@ -18,6 +18,42 @@
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
+namespace {
+void drawTextureIfLoaded(GLuint texture, float x, float y, float w, float h, int sw, int sh) {
+    if (texture != 0) {
+        UIDrawHelper::drawTexturedQuad(x, y, w, h, texture, glm::vec4(1.0f), sw, sh);
+    }
+}
+
+// The original .dds art has transparent margins. The opaque area (measured from
+// the PNG alpha bounds) is stretched to the target rect so the visible panel
+// matches the XML geometry instead of the padded texture size.
+struct OpaqueBounds {
+    float x, y, w, h;   // opaque sub-rect in texture pixels
+    float texW, texH;   // full texture size in pixels
+};
+
+void drawTextureFitOpaque(GLuint texture, const OpaqueBounds& b,
+                          float tx, float ty, float tw, float th, int sw, int sh) {
+    if (texture == 0) {
+        return;
+    }
+    const float scaleX = tw / b.w;
+    const float scaleY = th / b.h;
+    const float quadW = b.texW * scaleX;
+    const float quadH = b.texH * scaleY;
+    const float originX = tx - b.x * scaleX;
+    const float originY = ty - b.y * scaleY;
+    UIDrawHelper::drawTexturedQuad(originX, originY, quadW, quadH, texture, glm::vec4(1.0f), sw, sh);
+}
+
+// Opaque bounds measured from the extracted PNGs (alpha bbox).
+const OpaqueBounds kBgBounds    {0.0f, 0.0f, 820.0f, 648.0f, 1024.0f, 1024.0f};
+const OpaqueBounds kLinesBounds {1.0f, 0.0f, 364.0f, 467.0f, 512.0f, 512.0f};
+const OpaqueBounds kFoldBounds  {0.0f, 0.0f, 60.0f, 512.0f, 64.0f, 512.0f};
+const OpaqueBounds kFrameBounds {0.0f, 0.0f, 396.0f, 225.0f, 512.0f, 256.0f};
+}
+
 SaveLoadUI::SaveLoadUI()
     : textRenderer(nullptr), saveManager(nullptr),
       visible(false), returnToMenu(false),
@@ -27,8 +63,12 @@ SaveLoadUI::SaveLoadUI()
 }
 
 SaveLoadUI::~SaveLoadUI() {
-    if (bgTexture != 0) {
-        TextureLoader::deleteTexture(bgTexture);
+    for (GLuint* tex : {&bgTexture, &linesTexture, &foldTexture,
+                        &previewFrameTexture, &emptyPreviewTexture}) {
+        if (*tex != 0) {
+            TextureLoader::deleteTexture(*tex);
+            *tex = 0;
+        }
     }
     cleanup();
 }
@@ -43,10 +83,15 @@ bool SaveLoadUI::initialize(TextRenderer* renderer, SaveManager* manager, Render
     saveManager = manager;
     this->renderer = rend;
 
-    // Load background texture
+    // Load original menu textures (placed under assets/textures/ui/menus/)
     if (bgTexture == 0) {
-        bgTexture = TextureLoader::loadTextureFromAsset("textures/ui/loading_background.png");
-        LOGI("SaveLoadUI: Background texture loaded: %u", bgTexture);
+        bgTexture = TextureLoader::loadTextureFromAsset("textures/ui/menus/level_up__level_up_background.png");
+        linesTexture = TextureLoader::loadTextureFromAsset("textures/ui/menus/loading__loading_save_lines.png");
+        foldTexture = TextureLoader::loadTextureFromAsset("textures/ui/menus/loading__loading_save_center_fold.png");
+        previewFrameTexture = TextureLoader::loadTextureFromAsset("textures/ui/menus/loading__loading_save_wide_frame.png");
+        emptyPreviewTexture = TextureLoader::loadTextureFromAsset("textures/ui/menus/shared__shared_empty_large.png");
+        LOGI("SaveLoadUI: textures bg=%u lines=%u fold=%u frame=%u empty=%u",
+             bgTexture, linesTexture, foldTexture, previewFrameTexture, emptyPreviewTexture);
     }
 
     refreshSaveSlots();
@@ -69,32 +114,24 @@ void SaveLoadUI::render() {
         return;
     }
 
-    // Draw background texture if available
-    if (bgTexture != 0 && renderer) {
-        int sw = static_cast<int>(renderer->getScreenWidth());
-        int sh = static_cast<int>(renderer->getScreenHeight());
-        UIDrawHelper::drawTexturedQuad(
-            0.0f, 0.0f,
-            static_cast<float>(sw),
-            static_cast<float>(sh),
-            bgTexture,
-            glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
-            sw,
-            sh
-        );
-    } else {
-        // Fallback: dark background
-        glClearColor(0.0f, 0.0f, 0.0f, 0.5f);
-        glClear(GL_COLOR_BUFFER_BIT);
-    }
+    const Layout l = computeLayout();
 
-    // Title
+    // 2D overlay: ignore depth left over from 3D passes so the dim covers everything
+    glDisable(GL_DEPTH_TEST);
+
+    // Translucent dim over the scene already drawn by the caller (title or world)
+    UIDrawHelper::drawColoredQuad(0.0f, 0.0f, static_cast<float>(screenWidth),
+                                  static_cast<float>(screenHeight),
+                                  glm::vec4(0.0f, 0.0f, 0.0f, 0.72f),
+                                  screenWidth, screenHeight);
+    drawTextureFitOpaque(bgTexture, kBgBounds, l.bgX, l.bgY, BG_WIDTH, BG_HEIGHT,
+                         screenWidth, screenHeight);
+
+    // Title sits in the left column above the list so it never crosses the center fold
     std::string title = (currentMode == Mode::SAVE) ? "SAVE GAME" : "LOAD GAME";
-    glm::vec3 titleColor(1.0f, 1.0f, 0.0f);
-    const float titleScale = 1.5f;
-    const float titleX = (static_cast<float>(screenWidth) -
-                          textRenderer->getTextWidth(title, titleScale)) * 0.5f;
-    textRenderer->renderText(title, titleX, 40.0f, titleColor, titleScale);
+    glm::vec3 titleColor(117.0f / 255.0f, 59.0f / 255.0f, 33.0f / 255.0f);
+    const float titleScale = 1.2f;
+    textRenderer->renderText(title, l.bgX + LIST_X_OFFSET, l.bgY + 14.0f, titleColor, titleScale);
 
     // Switch display based on dialog state
     if (dialogState == DialogState::CONFIRM_OVERWRITE) {
@@ -214,21 +251,26 @@ void SaveLoadUI::onTouchEvent(float x, float y) {
         }
     }
 
-    // Button handling (bottom of screen)
-    const float btnW = 200.0f;
-    const float btnH = BUTTON_HEIGHT;
-    const float centerX = screenWidth * 0.5f;
-    const float btnY = screenHeight - 200.0f;
-    const float gap = 30.0f;
+    // Button handling (under the preview column)
+    const ButtonRects b = computeButtonRects(computeLayout());
 
-    float execX = centerX - btnW - gap * 0.5f;
-    float cancelX = centerX + gap * 0.5f;
-
-    if (x >= execX && x < execX + btnW && y >= btnY && y < btnY + btnH) {
+    if (x >= b.execX && x < b.execX + b.w && y >= b.y && y < b.y + b.h) {
         handleExecuteAction();
-    } else if (x >= cancelX && x < cancelX + btnW && y >= btnY && y < btnY + btnH) {
+    } else if (x >= b.cancelX && x < b.cancelX + b.w && y >= b.y && y < b.y + b.h) {
         handleCancel();
     }
+}
+
+SaveLoadUI::ButtonRects SaveLoadUI::computeButtonRects(const Layout& l) const {
+    const float gap = 30.0f;
+    const float w = (PREVIEW_WIDTH - gap) * 0.5f;
+    ButtonRects b;
+    b.w = w;
+    b.h = BUTTON_HEIGHT;
+    b.y = l.previewY + PREVIEW_HEIGHT + 180.0f;
+    b.execX = l.previewX;
+    b.cancelX = l.previewX + w + gap;
+    return b;
 }
 
 void SaveLoadUI::refreshSaveSlots() {
@@ -247,94 +289,73 @@ void SaveLoadUI::refreshSaveSlots() {
 }
 
 void SaveLoadUI::renderSlotList() {
-    const float panelX = (static_cast<float>(screenWidth) - SLOT_PANEL_WIDTH) * 0.5f;
-    const float panelY = SLOT_PANEL_Y;
-    const float panelW = SLOT_PANEL_WIDTH;
-    const float slotW = panelW - PADDING * 2.0f;
-    const float maxVisibleSlots = static_cast<float>(MAX_VISIBLE_SLOTS);
+    const Layout l = computeLayout();
+    const int sw = screenWidth;
+    const int sh = screenHeight;
+    const float rowW = LINES_WIDTH - LIST_X_OFFSET * 2.0f;
+    const glm::vec3 textColor(117.0f / 255.0f, 59.0f / 255.0f, 33.0f / 255.0f);
 
-    // Slot panel outer frame
-    PlaceholderAssets::drawPanel(panelX, panelY,
-                                 panelW, maxVisibleSlots * (SLOT_HEIGHT + SLOT_MARGIN) + PADDING,
-                                 PlaceholderAssets::Colors::PARCHMENT_DARK,
-                                 PlaceholderAssets::Colors::BROWN_ACCENT);
+    // Original list backdrop (loading_save_lines.dds)
+    drawTextureFitOpaque(linesTexture, kLinesBounds, l.linesX, l.linesY,
+                         LINES_WIDTH, LINES_HEIGHT, sw, sh);
 
-    // When slot is empty
-    if (availableSlots.empty()) {
-        // Empty slot placeholder
-        for (int i = 0; i < 3; i++) {
-            float sx = panelX + PADDING;
-            float sy = panelY + PADDING + i * (SLOT_HEIGHT + SLOT_MARGIN);
-            PlaceholderAssets::drawPanel(sx, sy, slotW, SLOT_HEIGHT,
-                                        PlaceholderAssets::Colors::PARCHMENT_LIGHT,
-                                        PlaceholderAssets::Colors::PARCHMENT_DARK);
-            if (textRenderer) {
-                textRenderer->renderText("EMPTY", sx + 20.0f, sy + SLOT_HEIGHT * 0.3f,
-                                        PlaceholderAssets::Colors::BROWN_ACCENT, 0.8f);
-            }
-        }
-        if (textRenderer && currentMode == Mode::LOAD) {
-            textRenderer->renderText("No saves available",
-                                    panelX + panelW * 0.2f, panelY + maxVisibleSlots * (SLOT_HEIGHT + SLOT_MARGIN) * 0.4f,
-                                    PlaceholderAssets::Colors::PARCHMENT_DARK, 0.9f);
-        }
-        return;
-    }
+    // Every visible row is drawn, including empty ones
+    for (int i = 0; i < VISIBLE_ROWS; i++) {
+        const float rx = l.rowX;
+        const float ry = l.rowY + static_cast<float>(i) * ITEM_HEIGHT;
+        const bool hasSlot = (i < static_cast<int>(availableSlots.size()));
+        const bool isSelected = (i == selectedSlotIndex);
+        const bool isHovered = (i == hoveredSlotIndex);
 
-    // Slot list display
-    for (size_t i = 0; i < availableSlots.size() && i < static_cast<size_t>(maxVisibleSlots); i++) {
-        float sx = panelX + PADDING;
-        float sy = panelY + PADDING + static_cast<float>(i) * (SLOT_HEIGHT + SLOT_MARGIN);
-        bool isSelected = (static_cast<int>(i) == selectedSlotIndex);
-        bool isHovered = (static_cast<int>(i) == hoveredSlotIndex);
-
-        // Slot background: gold frame when selected, light parchment on hover
-        if (isSelected) {
-            PlaceholderAssets::drawPanel(sx, sy, slotW, SLOT_HEIGHT,
-                                        PlaceholderAssets::Colors::PARCHMENT_LIGHT,
-                                        PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
-        } else if (isHovered) {
-            PlaceholderAssets::drawPanel(sx, sy, slotW, SLOT_HEIGHT,
-                                        PlaceholderAssets::Colors::PARCHMENT_LIGHT,
-                                        PlaceholderAssets::Colors::PARCHMENT_DARK);
-        } else {
-            PlaceholderAssets::drawPanel(sx, sy, slotW, SLOT_HEIGHT,
-                                        PlaceholderAssets::Colors::PARCHMENT_DARK,
-                                        PlaceholderAssets::Colors::BROWN_ACCENT);
+        if (hasSlot && isSelected) {
+            UIDrawHelper::drawColoredQuad(rx, ry, rowW, ITEM_HEIGHT,
+                                          glm::vec4(0.85f, 0.65f, 0.25f, 0.35f), sw, sh);
+        } else if (hasSlot && isHovered) {
+            UIDrawHelper::drawColoredQuad(rx, ry, rowW, ITEM_HEIGHT,
+                                          glm::vec4(1.0f, 1.0f, 1.0f, 0.15f), sw, sh);
         }
 
-        // Slot name text
-        if (textRenderer) {
-            glm::vec3 textColor = isSelected
-                ? PlaceholderAssets::Colors::GOLD_HIGHLIGHT
-                : PlaceholderAssets::Colors::PARCHMENT_LIGHT;
-            std::string displayText = availableSlots[i].displayName;
-            if (!availableSlots[i].isEmpty) {
-                displayText += "  Lv" + std::to_string(availableSlots[i].playerLevel);
+        if (!textRenderer) {
+            continue;
+        }
+        const float textY = ry + ITEM_HEIGHT * 0.3f;
+        if (hasSlot) {
+            const SaveSlotInfo& slot = availableSlots[i];
+            const std::string rowName = slot.displayName.empty()
+                ? "Save " + std::to_string(i + 1) : slot.displayName;
+            textRenderer->renderText(rowName, rx + 16.0f, textY, textColor, 1.0f);
+            if (!slot.isEmpty) {
+                textRenderer->renderText("Lv " + std::to_string(slot.playerLevel),
+                                         rx + rowW - 110.0f, textY, textColor, 0.9f);
             }
-            textRenderer->renderText(displayText,
-                                    sx + 20.0f, sy + SLOT_HEIGHT * 0.28f,
-                                    textColor, 1.0f);
-
-            // Selection indicator
-            if (isSelected) {
-                textRenderer->renderText(">", sx + 5.0f, sy + SLOT_HEIGHT * 0.28f,
-                                        PlaceholderAssets::Colors::GOLD_HIGHLIGHT, 1.0f);
-            }
+        } else if (i == 0 && currentMode == Mode::LOAD) {
+            textRenderer->renderText("No saves available", rx + 16.0f, textY, textColor, 0.9f);
+        } else if (currentMode == Mode::SAVE) {
+            textRenderer->renderText("New Save", rx + 16.0f, textY, textColor, 1.0f);
         }
     }
 
-    // Additional empty slot frame
-    for (size_t i = availableSlots.size(); i < static_cast<size_t>(maxVisibleSlots); i++) {
-        float sx = panelX + PADDING;
-        float sy = panelY + PADDING + static_cast<float>(i) * (SLOT_HEIGHT + SLOT_MARGIN);
-        PlaceholderAssets::drawPanel(sx, sy, slotW, SLOT_HEIGHT,
-                                    PlaceholderAssets::Colors::PARCHMENT_LIGHT,
-                                    PlaceholderAssets::Colors::PARCHMENT_DARK);
-        if (textRenderer && currentMode == Mode::SAVE) {
-            textRenderer->renderText("EMPTY - New Save",
-                                    sx + 20.0f, sy + SLOT_HEIGHT * 0.28f,
-                                    PlaceholderAssets::Colors::BROWN_ACCENT, 0.8f);
+    // Center fold separates the list from the preview (loading_save_center_fold.dds)
+    drawTextureFitOpaque(foldTexture, kFoldBounds, l.foldX, l.bgY, FOLD_WIDTH, BG_HEIGHT, sw, sh);
+
+    // Preview frame (loading_save_wide_frame.dds) with placeholder art (shared_empty_large.dds)
+    drawTextureFitOpaque(previewFrameTexture, kFrameBounds, l.previewX, l.previewY,
+                         PREVIEW_WIDTH, PREVIEW_HEIGHT, sw, sh);
+    const float artW = 256.0f;
+    const float artH = 252.0f;
+    drawTextureIfLoaded(emptyPreviewTexture,
+                        l.previewX + (PREVIEW_WIDTH - artW) * 0.5f, l.previewY + 5.0f,
+                        artW, artH, sw, sh);
+
+    // Details of the selected slot below the preview
+    if (textRenderer && selectedSlotIndex >= 0 &&
+        selectedSlotIndex < static_cast<int>(availableSlots.size())) {
+        const SaveSlotInfo& slot = availableSlots[selectedSlotIndex];
+        const float tx = l.previewX + 10.0f;
+        const float ty = l.previewY + PREVIEW_HEIGHT + 14.0f;
+        textRenderer->renderText(slot.displayName, tx, ty, textColor, 1.0f);
+        if (!slot.locationName.empty()) {
+            textRenderer->renderText(slot.locationName, tx, ty + 34.0f, textColor, 0.9f);
         }
     }
 }
@@ -431,40 +452,27 @@ void SaveLoadUI::renderErrorDialog() {
 }
 
 void SaveLoadUI::renderButtons() {
-    const float btnW = 200.0f;
-    const float btnH = BUTTON_HEIGHT;
-    const float centerX = screenWidth * 0.5f;
-    const float btnY = screenHeight - 200.0f;
-    const float gap = 30.0f;
+    const ButtonRects b = computeButtonRects(computeLayout());
 
     // Execute button (left)
-    float execX = centerX - btnW - gap * 0.5f;
-    PlaceholderAssets::drawPanel(execX, btnY, btnW, btnH,
+    PlaceholderAssets::drawPanel(b.execX, b.y, b.w, b.h,
                                  PlaceholderAssets::Colors::PARCHMENT_LIGHT,
                                  PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
     if (textRenderer) {
         std::string executeLabel = (currentMode == Mode::SAVE) ? "SAVE" : "LOAD";
-        textRenderer->renderText(executeLabel,
-                                execX + btnW * 0.3f, btnY + btnH * 0.25f,
+        const float labelX = b.execX + (b.w - textRenderer->getTextWidth(executeLabel, 1.1f)) * 0.5f;
+        textRenderer->renderText(executeLabel, labelX, b.y + b.h * 0.25f,
                                 PlaceholderAssets::Colors::BROWN_ACCENT, 1.1f);
     }
 
     // Cancel button (right)
-    float cancelX = centerX + gap * 0.5f;
-    PlaceholderAssets::drawPanel(cancelX, btnY, btnW, btnH,
+    PlaceholderAssets::drawPanel(b.cancelX, b.y, b.w, b.h,
                                  PlaceholderAssets::Colors::PARCHMENT_DARK,
                                  PlaceholderAssets::Colors::BROWN_ACCENT);
     if (textRenderer) {
-        textRenderer->renderText("CANCEL",
-                                cancelX + btnW * 0.2f, btnY + btnH * 0.25f,
-                                PlaceholderAssets::Colors::PARCHMENT_LIGHT, 1.1f);
-    }
-
-    // Help text
-    if (textRenderer) {
-        textRenderer->renderText("Tap a slot to select, then SAVE or LOAD",
-                                screenWidth * 0.15f, btnY + btnH + 10.0f,
-                                PlaceholderAssets::Colors::PARCHMENT_DARK, 0.75f);
+        const float cancelLabelX = b.cancelX + (b.w - textRenderer->getTextWidth("CANCEL", 1.1f)) * 0.5f;
+        textRenderer->renderText("CANCEL", cancelLabelX, b.y + b.h * 0.25f,
+                                PlaceholderAssets::Colors::BROWN_ACCENT, 1.1f);
     }
 }
 
@@ -587,22 +595,33 @@ std::string SaveLoadUI::getSelectedSlot() const {
 void SaveLoadUI::updateLayout() {
     slotEntries.clear();
 
-    const float panelX = (static_cast<float>(screenWidth) - SLOT_PANEL_WIDTH) * 0.5f;
-    const float slotX = panelX + PADDING;
-    const float slotW = SLOT_PANEL_WIDTH - PADDING * 2.0f;
+    const Layout l = computeLayout();
+    const float rowW = LINES_WIDTH - LIST_X_OFFSET * 2.0f;
 
-    // Only the slots that renderSlotList() draws get hit rectangles, and they
-    // must use the same geometry so the drawn list and the hit list agree.
-    for (size_t i = 0; i < availableSlots.size() && i < static_cast<size_t>(MAX_VISIBLE_SLOTS); i++) {
+    // Hit rectangles match the rows drawn by renderSlotList()
+    for (int i = 0; i < VISIBLE_ROWS && i < static_cast<int>(availableSlots.size()); i++) {
         SlotEntry entry;
         entry.name = availableSlots[i].displayName;
         entry.slotIndex = availableSlots[i].slotIndex;
-        entry.position = glm::vec2(slotX, SLOT_PANEL_Y + PADDING +
-                                             static_cast<float>(i) * (SLOT_HEIGHT + SLOT_MARGIN));
-        entry.size = glm::vec2(slotW, SLOT_HEIGHT);
-        entry.selected = (static_cast<int>(i) == selectedSlotIndex);
-        entry.hovered = (static_cast<int>(i) == hoveredSlotIndex);
+        entry.position = glm::vec2(l.rowX, l.rowY + static_cast<float>(i) * ITEM_HEIGHT);
+        entry.size = glm::vec2(rowW, ITEM_HEIGHT);
+        entry.selected = (i == selectedSlotIndex);
+        entry.hovered = (i == hoveredSlotIndex);
 
         slotEntries.push_back(entry);
     }
+}
+
+SaveLoadUI::Layout SaveLoadUI::computeLayout() const {
+    Layout l{};
+    l.bgX = (static_cast<float>(screenWidth) - BG_WIDTH) * 0.5f;
+    l.bgY = (static_cast<float>(screenHeight) - BG_HEIGHT) * 0.5f;
+    l.linesX = l.bgX;
+    l.linesY = l.bgY + LINES_Y_OFFSET;
+    l.rowX = l.bgX + LIST_X_OFFSET;
+    l.rowY = l.bgY + LIST_Y_OFFSET;
+    l.foldX = l.bgX + (BG_WIDTH - FOLD_WIDTH) * 0.5f;
+    l.previewX = l.bgX + BG_WIDTH * 0.5f + PREVIEW_X_OFFSET;
+    l.previewY = l.bgY + PREVIEW_Y_OFFSET;
+    return l;
 }

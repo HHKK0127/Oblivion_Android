@@ -131,9 +131,11 @@ void UIInventoryPanel::render() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    renderInventoryGrid();
-    renderEquipmentSlots();
-    renderSortButtons();
+    renderBorderFrame();
+        renderSortButtons();
+        renderCategoryHeaders();
+        renderInventoryGrid();
+        renderEquipmentSlots();
     if (selectedSlot >= 0) {
         renderItemDetail();
     }
@@ -156,7 +158,7 @@ void UIInventoryPanel::refreshLayout() {
         float gridTotalWidth = cellSize * GRID_COLS + CELL_MARGIN * (GRID_COLS - 1);
 
     gridStartX = cp.x;
-    gridStartY = cp.y + 30.0f; // leave room for sort buttons
+        gridStartY = cp.y + 54.0f; // leave room for sort buttons + category headers
 
     equipStartX = cp.x + gridTotalWidth + 20.0f;
     equipStartY = gridStartY;
@@ -201,6 +203,80 @@ GLuint UIInventoryPanel::getUiTexture(const std::string& assetPath) {
         uiTextures[assetPath] = tex;
     }
     return tex;
+}
+
+void UIInventoryPanel::renderBorderFrame() {
+    glm::vec2 cp = getContentPosition();
+    glm::vec2 cs = getContentSize();
+
+    // Original Oblivion borders stack vertically inside the panel:
+    //   top(596x160) + middle(576x249) + bottom(628x160)
+    // Keep the same height proportions over the full content area.
+    const float totalRef = 160.0f + 249.0f + 160.0f;
+    const float topH   = cs.y * (160.0f / totalRef);
+    const float midH   = cs.y * (249.0f / totalRef);
+    const float bottomH = cs.y - topH - midH;
+
+    float x = cp.x;
+    float y = cp.y;
+
+    GLuint topTex = getUiTexture("textures/ui/inventory/inv_border_top.png");
+    if (topTex != 0) {
+        UIDrawHelper::drawTexturedQuad(x, y, cs.x, topH, topTex,
+                                       glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
+                                       screenWidth, screenHeight);
+    }
+
+    y += topH;
+    GLuint midTex = getUiTexture("textures/ui/inventory/inv_border_middle.png");
+    if (midTex != 0) {
+        UIDrawHelper::drawTexturedQuad(x, y, cs.x, midH, midTex,
+                                       glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
+                                       screenWidth, screenHeight);
+    }
+
+    y += midH;
+    GLuint bottomTex = getUiTexture("textures/ui/inventory/inv_border_bottom.png");
+    if (bottomTex != 0) {
+        UIDrawHelper::drawTexturedQuad(x, y, cs.x, bottomH, bottomTex,
+                                       glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
+                                       screenWidth, screenHeight);
+    }
+}
+
+void UIInventoryPanel::renderCategoryHeaders() {
+    // Original inventory category headers (256x32) rendered as a header strip
+    // across the grid area, mirroring the list-category headings in
+    // inventory_menu.xml.
+    glm::vec2 cp = getContentPosition();
+    glm::vec2 cs = getContentSize();
+
+    const char* headerPaths[] = {
+        "textures/ui/inventory/inv_weapon_header.png",
+        "textures/ui/inventory/inv_armor_header.png",
+        "textures/ui/inventory/inv_alchemy_header.png",
+        "textures/ui/inventory/inv_misc_header.png",
+    };
+
+    float stripW = cs.x * 0.92f;
+    float headH = 18.0f;
+    float headGap = 6.0f;
+    float headW = (stripW - headGap * 3.0f) / 4.0f;
+    float y = cp.y + 28.0f;
+
+    for (int i = 0; i < 4; ++i) {
+        float hx = cp.x + (cs.x - stripW) * 0.5f + i * (headW + headGap);
+        GLuint tex = getUiTexture(headerPaths[i]);
+        if (tex != 0) {
+            UIDrawHelper::drawTexturedQuad(hx, y, headW, headH, tex,
+                                           glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
+                                           screenWidth, screenHeight);
+        } else {
+            PlaceholderAssets::drawPanel(hx, y, headW, headH,
+                                         PlaceholderAssets::Colors::PARCHMENT_DARK,
+                                         PlaceholderAssets::Colors::BROWN_ACCENT);
+        }
+    }
 }
 
 void UIInventoryPanel::renderInventoryGrid() {
@@ -281,6 +357,15 @@ void UIInventoryPanel::renderInventoryGrid() {
 void UIInventoryPanel::renderEquipmentSlots() {
     if (!equipment) return;
 
+    // Equipment column header using the original category header art.
+    GLuint equipHeaderTex = getUiTexture("textures/ui/inventory/inv_weapon_header.png");
+    if (equipHeaderTex != 0) {
+        UIDrawHelper::drawTexturedQuad(equipStartX, equipStartY - 22.0f,
+                                       EQUIP_SLOT_SIZE * 1.5f + 20.0f, 18.0f,
+                                       equipHeaderTex, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
+                                       screenWidth, screenHeight);
+    }
+
     const char* labels[] = { "None", "Head", "Body", "Hands", "Feet", "Weapon", "Offhand", "Accessory" };
     for (uint32_t i = 1; i < static_cast<uint32_t>(inventory::EquipSlot::Accessory) + 1; ++i) {
         float x = equipStartX;
@@ -311,6 +396,17 @@ void UIInventoryPanel::renderEquipmentSlots() {
             PlaceholderAssets::drawPanel(x, y, EQUIP_SLOT_SIZE, EQUIP_SLOT_SIZE, bgColor, borderColor);
         }
 
+        // Equipped highlight overlay (original hilite texture)
+        if (equipment->isSlotOccupied(slot)) {
+            GLuint hiliteTex = getUiTexture("textures/ui/inventory/inv_hilite_equipped.png");
+            if (hiliteTex != 0) {
+                UIDrawHelper::drawTexturedQuad(x - 2.0f, y - 2.0f,
+                                               EQUIP_SLOT_SIZE + 4.0f, EQUIP_SLOT_SIZE + 4.0f,
+                                               hiliteTex, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
+                                               screenWidth, screenHeight);
+            }
+        }
+
         // Draw label if text renderer available
         if (textRenderer && i > 0 && i < 8) {
             textRenderer->renderText(labels[i], x + 4.0f, y + 4.0f, glm::vec3(0.2f, 0.2f, 0.2f), 0.6f);
@@ -328,7 +424,7 @@ void UIInventoryPanel::renderItemDetail() {
 
     // Detail popup panel positioned at bottom
     float detailW = 280.0f;
-    float detailH = 200.0f;
+    float detailH = 220.0f;
     float detailX = cp.x + cs.x - detailW - 10.0f;
     float detailY = cp.y + cs.y - detailH - 10.0f;
 
@@ -343,11 +439,23 @@ void UIInventoryPanel::renderItemDetail() {
         float textY = detailY + 8.0f;
         const auto& item = slot.item;
 
-        // Item name
+        // Small icon size (original 32x32, displayed at 16x16)
+        const float iconSize = 16.0f;
+        // Draw a small attribute icon left of the label text
+        auto drawStatIcon = [&](const char* assetPath, float rowY) {
+            GLuint tex = getUiTexture(assetPath);
+            if (tex != 0) {
+                UIDrawHelper::drawTexturedQuad(textX, rowY, iconSize, iconSize,
+                                               tex, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
+                                               screenWidth, screenHeight);
+            }
+        };
+
+        // Item name (no icon)
         textRenderer->renderText(item.name, textX, textY, glm::vec3(0.1f, 0.1f, 0.1f), 1.0f);
         textY += 18.0f;
 
-        // Category label
+        // Category label (no icon)
         const char* catLabel = "Item";
         switch (item.category) {
             case inventory::ItemCategory::Weapon:     catLabel = "Weapon"; break;
@@ -358,29 +466,33 @@ void UIInventoryPanel::renderItemDetail() {
             default: break;
         }
         textRenderer->renderText(catLabel, textX, textY, glm::vec3(0.4f, 0.25f, 0.2f), 0.8f);
-        textY += 14.0f;
+        textY += 16.0f;
 
-        // Weight and value
+        // Weight and value (with original small icons)
         char infoStr[128];
         snprintf(infoStr, sizeof(infoStr), "Weight: %.1f kg", item.weight);
-        textRenderer->renderText(infoStr, textX, textY, glm::vec3(0.2f, 0.2f, 0.2f), 0.7f);
-        textY += 12.0f;
+        drawStatIcon("textures/ui/inventory/inv_icon_small_weight.png", textY);
+        textRenderer->renderText(infoStr, textX + iconSize + 4.0f, textY, glm::vec3(0.2f, 0.2f, 0.2f), 0.7f);
+        textY += 14.0f;
 
         snprintf(infoStr, sizeof(infoStr), "Value: %u gp", item.value);
-        textRenderer->renderText(infoStr, textX, textY, glm::vec3(0.2f, 0.2f, 0.2f), 0.7f);
-        textY += 14.0f;
+        drawStatIcon("textures/ui/inventory/inv_icon_small_value.png", textY);
+        textRenderer->renderText(infoStr, textX + iconSize + 4.0f, textY, glm::vec3(0.2f, 0.2f, 0.2f), 0.7f);
+        textY += 16.0f;
 
         // Stats display (if any)
         if (item.stats.damage > 0 || item.stats.defense > 0) {
             if (item.stats.damage > 0) {
                 snprintf(infoStr, sizeof(infoStr), "Damage: +%d", item.stats.damage);
-                textRenderer->renderText(infoStr, textX, textY, glm::vec3(0.8f, 0.2f, 0.2f), 0.7f);
-                textY += 12.0f;
+                drawStatIcon("textures/ui/inventory/inv_icon_small_damage.png", textY);
+                textRenderer->renderText(infoStr, textX + iconSize + 4.0f, textY, glm::vec3(0.8f, 0.2f, 0.2f), 0.7f);
+                textY += 14.0f;
             }
             if (item.stats.defense > 0) {
                 snprintf(infoStr, sizeof(infoStr), "Defense: +%d", item.stats.defense);
-                textRenderer->renderText(infoStr, textX, textY, glm::vec3(0.3f, 0.4f, 0.8f), 0.7f);
-                textY += 12.0f;
+                drawStatIcon("textures/ui/inventory/inv_icon_small_armor.png", textY);
+                textRenderer->renderText(infoStr, textX + iconSize + 4.0f, textY, glm::vec3(0.3f, 0.4f, 0.8f), 0.7f);
+                textY += 14.0f;
             }
         }
 
@@ -388,12 +500,14 @@ void UIInventoryPanel::renderItemDetail() {
         if (item.isConsumable()) {
             if (item.healAmount > 0) {
                 snprintf(infoStr, sizeof(infoStr), "Restores %d HP", item.healAmount);
-                textRenderer->renderText(infoStr, textX, textY, glm::vec3(0.8f, 0.1f, 0.1f), 0.7f);
-                textY += 12.0f;
+                drawStatIcon("textures/ui/inventory/inv_icon_small_health.png", textY);
+                textRenderer->renderText(infoStr, textX + iconSize + 4.0f, textY, glm::vec3(0.8f, 0.1f, 0.1f), 0.7f);
+                textY += 14.0f;
             }
             if (item.manaAmount > 0) {
                 snprintf(infoStr, sizeof(infoStr), "Restores %d MP", item.manaAmount);
-                textRenderer->renderText(infoStr, textX, textY, glm::vec3(0.2f, 0.3f, 0.8f), 0.7f);
+                drawStatIcon("textures/ui/inventory/inv_icon_small_uses.png", textY);
+                textRenderer->renderText(infoStr, textX + iconSize + 4.0f, textY, glm::vec3(0.2f, 0.3f, 0.8f), 0.7f);
             }
         }
     }

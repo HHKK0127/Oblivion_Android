@@ -354,7 +354,13 @@ Java_com_example_oblivion_GameRenderer_nativeOnKeyPress(
         [[maybe_unused]] JNIEnv* env,
         [[maybe_unused]] jobject obj,
         jint key) {
-    if (g_renderer && g_renderer->getTitleScreen()) {
+    if (!g_renderer) {
+        return;
+    }
+    if (g_renderer->handleOptionsKey(key)) {
+        return;
+    }
+    if (g_renderer->getTitleScreen()) {
         g_renderer->getTitleScreen()->onKeyPress(key);
     }
 }

@@ -14,7 +14,7 @@
 
 DebugHUD::DebugHUD()
     : textRenderer(nullptr), audioManager(nullptr), renderer(nullptr),
-      visible(true), logVisible(false),
+      visible(DEBUG_HUD_DEFAULT_VISIBLE), logVisible(false),
       currentPage(0),
       fps(0.0f), frameTimeMs(0.0f), avgFrameTimeMs(0.0f),
       minFrameTimeMs(std::numeric_limits<float>::max()), maxFrameTimeMs(0.0f),

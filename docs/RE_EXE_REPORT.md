@@ -865,11 +865,35 @@ BGM は `Data\Music\Special\*.mp3`（`success.mp3`, `death.mp3`, `TES4Title.mp3`
 
 Android 側は OpenAL（stub ヘッダ、デバイス無しなら Java MediaPlayer / SoundPool ブリッジへ）で再生しており、EXE の DirectSound8 再生パスに対応する。ハンドル配列（0xc0/0xc1）は Android 側のサウンドハンドル管理（SoundPool/ソースID）と類比。
 
-### 13.3 未確認 / 次の候補
+### 13.3 lip（口形同期）フォーマット — 完全解読済み（2026-10）
 
-- lip の形式（口形キーフレーム）の解析と、Android 側のリップシンク実装の要否。
+`.lip` バイナリフォーマットは **EXE パーサ（FUN_00493f60 → 00493ed0 → 00493bd0 → 00493ad0）の静的解析と、
+抽出済み 9,204 実ファイルの回帰検証で完全解読**した。詳細は `tmp/re_lip_format.md`。
+
+- 先頭12B ヘッダ: `u32[0]=1`, `u32[1]=24+count*132`, `u32[2]=1`。
+- 本体（ファイルサイズ−12）はトークンストリーム: 非0バイト→リテラル1B / 0x00→u16長ゼロラン3B。
+- 展開後: `dword[0]=count`（キーフレーム数, 13〜548）, dword[1]=補助値, 以降 `count × 132B`。
+- 各キーフレーム = **16 u32（配列A, 視素ウェイト）+ 17 u32（配列B, 補助）** = 0x40 + 0x44。
+- 検証: 9,196/9,204（99.78%）が完全デコード成功。標準9,189/9,196 が `h1==24+count*132` 厳密一致。
+- 例外 8 件（0.87%）: 空ファイル1 + ヘッダ先頭 0xFF の小型変種7。標準実装のみ対応で十分。
+- 旧「20Bヘッダ+7B固定レコード」仮説は誤りで破棄。
+- Android リップシンク実装時は 33 float/キーフレームをタイムラインへマッピングすればよい（要否は別途判断）。
+
+### 13.3 ボイス mp3 と INFO の全数照合（完了 2026-10）
+
+`tmp/re_voice_naming.md` に詳細。メイン本編 mp3 計 **38,898**（形式装着 38,772 ＋ 汎用グリーティング 126）。
+
+- 形式 `{prefix}_{formID:08x}_{n}.mp3` の 38,772 件中 **38,500 件（99.3%）** の formid が INFO レコードに存在（INFO 応答ボイス確定）。
+- 残り 272 行 / 140 distinct formid は INFO 非該当（REFR=145、マスター ESM 未検出=127）。クエスト外／アクター付きグリーティングと判断。
+- **INFO には EDID サブレコードが無い**。接頭辞 `{prefix}` は DIAL／クエスト文脈の別名（例 `ms14_ms14returnhome`）であり、INFO の EDID 照合は原理的に不能。
+- **応答番号 n はトピック（DIAL）累積番号**。例: INFO `0000566f` は TRDT=8 だが mp3 `_9` まで存在。単純 `n<=TRDT` チェックは 481 件を誤検出。
+- Android の `{formID:08x}_{n}` 索引は {prefix} を検査しないため、本結論の影響を受けない（索引方式は正しい）。
+
+### 13.3b 次の候補
+
 - DLC Shivering Isles - Voices.bsa（452 MiB）の索引件数確認。
-- mp3 と INFO レコードの対応件数の全数照合（`verify_voice_naming.py` の拡張）。
+- 非 INFO（REFR 等）272 行と汎用グリーティング 126 件の再生経路調査。
+- DIAL 側の `{prefix}` 生成則特定（Android 照合には不要、命名逆引き目的のみ）。
 ## 14. ESM / DLC BSA / ムービーの解析
 
 ### 14.1 Oblivion.esm（264.6 MiB）のレコード集計
@@ -934,7 +958,7 @@ Bink 形式（ヘッダ "BIKi"）。フィールド順は size, frames, largest,
 
 - ESM のレコード数は集計値。Android の ESM リーダーが全レコードを読めているかは未照合。
 - NPC・QUST・SPEL の詳細フィールド（クエスト段階の内容、魔法効果の値）は今回は集計のみ。
-- DLC の esp（ShiveringIsles 等）は未解析。
+- DLC の esp は `tmp\re_dlc_bsa.md` で調査済み（2026-10-11）。`DLCShiveringIsles.esp` は TES4 スタブ（85 B, レコード 0）で、SI 本体は `Oblivion.esm` に内包。実体のある 9 種（BattlehornCastle / Frostcrag / HorseArmor / MehrunesRazor / Orrery / SpellTomes / ThievesDen / VileLair / Knights）のレコード数を確定（合計 24,134 件、Knights.esp が最多 9,563）。
 ## 15. エフェクト/パーティクルとクレジットの解析
 
 集計スクリプトは `tmp\effects_credits_survey.py`、出力は `tmp\effects_credits_survey.txt`。
@@ -969,7 +993,7 @@ DATA の 224 バイト各フィールド（フラグ、ブレンド、寿命、�
 
 - Bethesda.TXT はインストールルート直下にあり（Data 内ではない）、ゲームデータではなくサポート連絡先（395 バイト）のテキストである。ゲーム機能には使われない。
 - Credits.txt の `<X:>`/`<Y:>` 座標系と Android のスクロール座標の対応は未確認。
-- EFSH DATA のフラグ・ブレンド値は未デコード。
+- EFSH DATA のフラグ値の意味（Flags バイト）は未デコード。ブレンド値は §15.5 で解読済み（描画上の意味は `tmp/re_efsh_blend.md`）。
 ### 15.5 EFSH DATA 224 バイトのデコード（xEdit 定義で検証済み）
 
 - 出典: xEdit（TES5Edit）の `wbDefinitionsTES4.pas`（`matortheeternal/merge-plugins` ミラー、commit 309a23ce）。`tmp\wbDefinitionsTES4.pas` に保存。UESP は取得できなかった。
@@ -994,7 +1018,10 @@ DATA の 224 バイト各フィールド（フラグ、ブレンド、寿命、�
 | +212 〜 | Color Key1/2/3 Time | f32 ×3 |
 
 - 注記: 上表の位置は xEdit の宣言順からの累積計算値（合計 224 バイト）。色は RGB 3 バイト + pad 1 バイトとして定義されている。
-- 未確認: 色のバイト順の実機での見た目確認、Blend 列挙値の描画上の意味（ゲーム内の見た目との突き合わせ）。
+- Blend 列挙値の描画上の意味は解明済み（`tmp/re_efsh_blend.md`）。ブレンド列挙（1〜11）は OpenGL ブレンドファクタへ直接対応する（1=GL_ZERO, 2=GL_ONE, 3=GL_SRC_COLOR, 4=GL_ONE_MINUS_SRC_COLOR, 5=GL_SRC_ALPHA, 6=GL_ONE_MINUS_SRC_ALPHA, 7=GL_DST_ALPHA, 8=GL_ONE_MINUS_DST_ALPHA, 9=GL_DST_COLOR, 10=GL_ONE_MINUS_DST_COLOR, 11=GL_SRC_ALPHA_SATURATE）。
+- 実データ 100 件の分布: SrcBlend はほぼ全件 SourceAlpha（GL_SRC_ALPHA 固定）。DstBlend は SourceInvAlpha（標準アルファ）と One（加算）の 2 値に集約。BlendOp はほぼ全件 Add。つまり EFSH の実際の描画は「通常アルファ」と「加算ブレンド」に大別される。
+- Android 側: `ParticleBlend` enum（ALPHA/ADDITIVE/MULTIPLY/PREMULTIPLIED）は定義済みだが、`blendMode` は CPP で参照されておらず、描画は全ハードコードの標準アルファ。EFSH の加算ブレンド（Dst=One）は未反映。
+- 未確認: 色のバイト順の実機での見た目確認。
 - 96 バイト 2 件は別レイアウトの可能性があり、今回は未分析。
 ## 16. ESM world icon extraction (ICON = Clutter\...)
 
@@ -1556,6 +1583,12 @@ Ghidra は間接 vtable CALL を `CALL EAX`/`CALL EDX` に畳み込むため、�
 - **確定分**: AV 実値は装備魔法ハンドル（Actor vtable `+0x170` = `0x4d9b40` が返す `*(actor+0x1c)`）の内部に保持。`FUN_005ead00` はデリゲート null 時の基底アクセサで、装備魔法ハンドルが non-null かつ vtable `+0x190` が真のとき、`(*handle + 0x128)(av_id)` で実値（int → float）を読み出す。AV 8(Health) は magicka 倍率補正。
 - **残課題（型名）**: 装備魔法ハンドルが指すオブジェクトの vtable 基底・`+0x128` 実装関数の具体名（`TESMAGIC_*` 等）は未特定。需要があれば Actor コンストラクタ / 装備魔法セット関数の追跡で確定可能。
 
+**Android 移植済み（impl-av-store-magic-handle）** — 2026-10 追記
+Android 版には delegate / 装備魔法ハンドル構造が無いため、本節の確定事実を `CharacterStatus::getActorValue(avId)` アクセサとして移植した（`game/npc.h` / `game/npc.cpp`）。
+- AV ID 定数を `CharacterStatus` に追加（AV_STRENGTH=0〜AV_LUCK=7 の属性、AV_HEALTH=8、AV_MAGICKA=9、AV_STAMINA=10。AV 0-7 は属性 map を id 引数で参照）。
+- AV 8(Health) は「現在値対最大値の magicka 倍率」補正を実装。`max==0` 時に比率を 1.0 にガード（`current/max` の除算 0 回避）。戻り値 `(currentHealth + ratio) * kCoeff`。`kCoeff`（原版 `unaff_EBP` 相当の実行時係数）は Android では 1.0 固定。
+- 検証: `phase45_unit_tests.cpp` に `NPC_GetActorValue` テストを追加（満タン / 被ダメージ / ゼロ最大値ガード / 未知 ID=0）。
+
 
 ---
 
@@ -1583,3 +1616,1507 @@ Oblivion Steam 版 EXE のリバースエンジニアリング（逆解析）フ
 - 同じ構造のパス記述子 vtable 群が **0x00a8971c 〜 0x00a946f4** の広域に多数並列している（FUN_0077a1b0 の DATA xref が40箇所以上、例: 0x00a8971c/0x00a897ac/0x00a8cd0c/.../0x00a93f5c/0x00a9408c/0x00a941dc/0x00a942d4/0x00a9446c）。各 vtable の slot0 が固有のパス処理、slot1以降が共通スロット、という階層ファミリー構造。
 - FUN_0080d110 への xref は 0x00a942d0（DATA, slot0）の1点のみ = パス記述子 vtable 経由の間接ディスパッチでしか使われない。param_5（パスオブジェクト）は実行時構築され vtable アドレスが動的にセットされるため、コードからの静的 xref は立たない。
 - 意味: param_5 は「パス記述子オブジェクト」。その vtable の slot0 = FUN_0080d110 が dispatch 本体、+0x18 の Toggles / +0x158..+0x164 の4成分はこの記述子が保持する状態。シェーダー定数セッター（FUN_0076c910 等）と Toggles 2バンク書き込みはこの vtable ファミリー内の処理として位置づけられる。
+
+## 19. Constant-setter call sites in FUN_0080d110 (partial, in progress)
+
+Verified by disassembly (FUN_0080d110, case 0xe0/0xe1 blocks around 0x0080d588 and 0x0080d6f6):
+
+- Call pattern per site: PUSH 0 (flag), PUSH value, PUSH key, MOV ECX,[ESI], CALL 0x0076c730.
+- Ghidra's decompiler parameter labels are wrong for this call. ECX is the table pointer, and the key is the last-pushed immediate.
+- Keys seen (key:value, flag 0): 0x1c:0, 0xa8:7, 0x1b:1, 0x13:5, 0x14:6, 0x07:1, 0x17:4, 0x0e:1.
+
+Origin of ESI (confirmed by disassembly and decompile):
+- 0x0080d1f4: CALL FUN_007b4280 returns DAT_00b42f54[idx] (idx from flag bits of the function argument).
+- 0x0080d1f9: MOV EAX,[EAX+0x118], so the manager object is reached through that table.
+- 0x0080d202-0x0080d209: PUSH ECX (out-pointer = ESP+0x18), MOV ECX,EAX, CALL FUN_00405ad0.
+- FUN_00405ad0 (__thiscall, 1 stack arg): *out = this->[+0x100]; InterlockedIncrement on that object's refcount (+4). It returns out.
+- So ESI = refcounted pointer stored at manager+0x100. The value is taken at 0x0080d22c, MOV ESI,EAX, after a TEST guard.
+- At 0x0080d231-0x0080d248 the code releases the temporary (InterlockedDecrement via [0x00a2807c]; if zero, vtable slot 0 called with arg 1).
+- The later `MOV ECX,[ESI]` before each setter call reads the object's first dword (table pointer).
+- CALL 0x008aa390 is a Vector3 compare, not the producer.
+
+ID to CTAB mapping (status: NOT established):
+- FUN_007727d0 (key lookup) has a single caller, FUN_00772cd0 (insert/update). The keys are stored in linked-list nodes and are not read by any name table here.
+- The reader that translates a key ID to a shader constant (CTAB name) has not been located. The tmp/ctab_map.txt names are register-level hypotheses only and are not linked to these IDs.
+
+Name-registration side (found this session):
+- FUN_007db4b0 registers SunDir=2, SunColor=3, EyePosition=1, FogParam=9, FogColor=10 (this+0x2c / this+0x30 tables).
+- FUN_007cc280 registers, per table, name -> fixed index: ShadowProj=0x1c, DiffuseColor0=0x13, DiffuseColor1=0x14, "FogParam | ShadowVolumeFatness"=0x17, Toggles=0x07, BoneMatrix3=0x0e (partial list).
+- Candidate matches with key IDs seen in FUN_0080d110: 0x1c, 0x13, 0x14, 0x17, 0x07, 0x0e. Unmatched so far: 0x1b, 0xa8.
+- Caveat: indices are per-table. The match is a hypothesis until FUN_00772cd0's value/bank semantics are checked.
+
+Key-to-CTAB name mapping: PARTIAL (hypothesis). The names in tmp/ctab_map.txt are register-level hypotheses only.
+
+Store layout (from disassembly of FUN_00772cd0; the move helpers are not yet identified):
+- ECX = table object (`this`). Stack args: [ESP+0x14] = key ID, [ESP+0x18] = value, [ESP+0x1c] = bank flag (byte).
+- FUN_007727d0(table, key, &flag) searches list A (table+0x8) first, then list B (table+0x10). The out flag is 0 for list A and 1 for list B.
+- On hit: writes value to node+0x4. If the stored flag differs from the new flag, the node moves to the other list (the move code path is not yet verified).
+- On miss: a node is taken from the pool at DAT_00b427ac and linked into list A or B by the flag.
+- Decompiler labels for FUN_00772cd0 are misleading (the `param_1 & 0xffffff` line is an artifact). Trust the disassembly.
+- Still open: the reader of the key IDs (the code that walks lists A/B and reads node+0x4), and the verified mapping of IDs 0x1b and 0xa8.
+- Reader search, step 1: FUN_007727d0 has a single caller, FUN_00772cd0 (0x772ce7). So no other code path uses this lookup. The reader must either walk lists A/B itself or go through FUN_00772cd0 with a different entry point. This is not yet resolved.
+- Reader search, step 2: FUN_0052efa0 (key 0x1c, list at this+0x28, value at node+4) is a real key-match reader, but for a different container. Its only caller FUN_0052f650 does not read constant values. It writes an index into the element array at +0x20 (short). So it is not the constant-table reader. FUN_00536740 (key 0xa8) is ruled out as a scene-tree traversal.
+- Reader search, step 3: FUN_0076c730 has 74 direct call sites in 9 callers (FUN_007d1320, FUN_0076d0a0, FUN_007bd3d0, FUN_008098e0, FUN_0080f280, FUN_007c9f30, FUN_008048e0, FUN_008067f0, FUN_0080d110). All are constant setters (writers). No reader is among them. Conclusion: the static xref graph shows only writes to the +0x30 table. The read path is either inlined list walking or a vtable call, so it cannot be found this way. Confirming it needs a dynamic trace.
+
+## 20. MSVC RTTI vtable 全体スキャンと 0x4d9b40 共有 getter の同定（確定 2026-10-12）
+
+### 20.1 方法
+- headless で全イメージ非実行領域を 4 バイト刻みで走査し、各候補 base-4 が有効な RTTI CompleteObjectLocator（sig 0..1、TypeDescriptor 文字列が `.?AV`/`.?AU` で始まる）を指す vtable を全列挙するスクリプト `RttiIndex.java` を作成。
+- 各 vtable について先頭 512 スロット内に共有 getter 0x004d9b40 が現れるか、現れるなら base からのオフセットも併記。
+
+### 20.2 結果
+- 検出 vtable 総数：**1715 個**（スキャン 398,599 語）。
+- 0x004d9b40（`__thiscall` `return *(param_1 + 0x1c)`、Actor vtable +0x170）は **67 個**の vtable に共有されている。
+
+**対象クラス vtable（+0x170 前後で 0x4d9b40 を持つ主なもの）**
+| vtable base | クラス | getter offset |
+|---|---|---|
+| 00a46c44 | TESObjectREFR | +0x170 |
+| 00a6e074 | Actor | +0x170 |
+| 00a6fc9c | Character | +0x170 |
+| 00a710f4 | Creature | +0x170 |
+| 00a73a0c | PlayerCharacter | +0x170 |
+| 00a732fc | MobileObject | +0x170 |
+| 00a6f08c | ArrowProjectile | +0x170 |
+| 00a34be4 | SpellItem | +0x28 |
+| 00a34bf4 | SpellItem | +0x18 |
+| 00a46c38 | TESObjectREFR | +0x17c |
+
+### 20.3 判定
+- 以前 RTTI で名前を付けられなかった 00a34be0 付近のテーブルは **SpellItem の vtable 領域**であることを確定（00a34c0c = 00a34be4 + 0x28、すなわち SpellItem vtable の +0x28 スロットが共有 getter 0x4d9b40）。
+- つまり上記の getter は「オブジェクトの +0x1c 先頭 dword（装備魔法/呪文ハンドル等）を返す」共通アクセサで、TES 系オブジェクト階層（TESObjectREFR → MobileObject → Actor → Character/Creature/PlayerCharacter）と SpellItem、ArrowProjectile に広く共有されている。
+- FUN_005ead00（装備魔法 +0x128 の AV 実値アクセサ）を調べる対象クラスは SpellItem 系と確定。
+
+### 20.4 未解決（動的トレース待ち）
+- これらの vtable の各スロット実装が実際にどのシェーダー定数/AV に対応するかは本 vtable スキャンでは決定せず、実行時到達が必要。
+
+## 21. 新規ゲーム開始フローとキャラクタ生成（確定 2026-10-13）
+
+タイトル画面「New」から導入ムービー・キャラクタ生成までの経路を、headless Ghidra（DecompOnly.java / FindScalar.java / DisasmRange.java）で追跡した。
+
+### 21.1 タイトルメニューのボタン処理
+MainMenu（メニュー ID 0x414）の生成は `FUN_005b6040`。ボタン押下は `FUN_005b64c0`（`__thiscall(param_1, buttonId, ...)`）の switch で分岐し、`Data\Menus\Options\main_menu.xml` の表示順（main_continue, main_new, main_load, main_options, main_credits, main_exit）と一致する。
+
+| buttonId | XML 要素 | 遷移先 | 内容 |
+|---|---|---|---|
+| 2 | main_continue | `LAB_005b5d60` | 最新セーブ有無を判定し CONTINUE（`FUN_00465860`→`FUN_00459400`） |
+| 3 | main_new | `FUN_005b5df0` | NEW GAME 開始 |
+| 4 | main_load | `FUN_005aea60(0)` | LOAD メニュー |
+| 5 | main_options | `FUN_005bd680` | OPTIONS |
+| 6 | main_credits | `FUN_0059d680` | CREDITS |
+| 7 | main_exit | `LAB_005b59b0` | 終了確認 |
+
+### 21.2 New Game ハンドラ FUN_005b5df0（0x005b5df0）
+```
+FUN_00578d70()                 // オプション/前提フラグ（==1 で続行）
+FUN_00589b70(0x414)            // MainMenu 取得
+FUN_005898f0()                 // 現在メニュー
+strtol(PTR_s_...1436c,0x10)    // INI の chargen クエスト FormID 文字列
+FUN_0046b250(formId)           // FormID → TESQuest 解決（+4 == ';' = クエスト種別）
+FUN_009832e6(...&PTR_PTR_00b05468...)   // キャラ生成クエストのインスタンス化
+FUN_005b5960()                 // MainMenu を隠す（要素 0x1772 alpha=0）
+DAT_00b3c0ec = 0
+*(char*)(DAT_00b333c4 + 0x7f8) = 1      // 新規ゲームフラグ（PlayerCharacter シングルトン）
+DAT_00b3a6d3 = 1
+FUN_00529820(1)                // プレイヤーのフラグ bit0 を立てる
+FUN_0060d0a0()
+```
+- クエストが見つからない場合は `"Unable to find character generation quest '%s'."`（0x00a6cb64）を表示。
+- フラグ実体は `PlayerCharacter + 0x7f8`（= `param_1[0x1fe]`、1 バイト）。コンストラクタ `FUN_0066a740` が 0 で初期化する。`FUN_005b5df0` だけが 1 を書き込む（`FindScalar.java 0x7f8` の全走査で確認）。
+
+### 21.3 ワールドロード FUN_0066eaf0 とフラグ消費
+`FUN_0066eaf0`（`__thiscall`, 2170 バイト）はセル/ワールドのロード本体。末尾で新規ゲームフラグを消費する。
+```
+if (*(char*)(param_1 + 0x7f8) != 0) {
+    FUN_005732d0(2, _DAT_00a3744c);        // シーン/クエスト開始
+    FUN_00440af0(0,0,0);
+    FUN_0057b7e0();                        // キャラクタ生成の開始
+    *(char*)(param_1 + 0x7f8) = 0;
+    FUN_00572ec0(2, 0);
+    FUN_006a8d00(); FUN_006a9b40();
+    FUN_00410ba0(PTR_s_OblivionIntro_bik_00b030a4,1,1,0,0,1,0);  // OblivionIntro.bik 再生
+    FUN_006a8d50(); FUN_006a9c00();
+    *(char*)(param_1 + 0x7f8) = 0;
+}
+```
+- `FUN_00410ba0` = Bink ムービー再生、`DAT_00b030a4` = `"OblivionIntro.bik"`。Android 側の `TitleScreen::setupIntroVideo()`（`videos/oblivion_intro.mp4`）に対応。
+
+### 21.4 キャラクタ生成の開始 FUN_0057b7e0（0x0057b7e0）
+```
+FUN_00678d90(DAT_00b333c4)      // プレイヤー初期化
+FUN_00589b70(0x40c, ...&PTR_PTR_00b13348...)  // RaceSexMenu（0x40c）生成
+FUN_005ca010(1)                 // 種族/性別メニュー生成（race_sex_menu.xml）
+```
+
+### 21.5 キャラ生成ウィザード（ステップマシン）
+`FUN_005976b0` はキャラ生成メニューのコールバック（ディスパッチテーブル 0xa6b490 の +0x38）で、`param_1[0x16]`（ステップ番号）で分岐する。
+
+| step | 処理 |
+|---|---|
+| 1 | `FUN_005d6390(param_1[0x14], 2)` |
+| 2 | `FUN_005d6390(param_1[0x13], 1)` |
+| 3 | `FUN_005d6390(param_1[0x12], 0)` |
+| 4 | `FUN_005dcf20(...)`（確定処理） |
+| 5 | `"%s %s %s?"`（sStartNewGame 等）を組み立て `FUN_00579c10(callback LAB_005974e0)` で確認ダイアログ表示 |
+
+- `FUN_005d6390`（0x005d6390, 1238 バイト）= スキル/属性メニュー生成（`Data\Menus\CharGen\skills_menu.xml`）。引数 0/1/2 は画面モード。
+- 関連 XML: `Data\Menus\CharGen\race_sex_menu.xml`（0x00a6973c）、`Data\Menus\CharGen\skills_menu.xml`（0x00a69718）、`Data\Menus\Chargen\class_menu.xml`（0x00a6b53c）。
+- 関連文字列: `SetInChargen`（0x00a4ec0c）、`sCharGenQuest:General`（0x00a6cc40）、`GetIsPlayerBirthsign`（0x00a4ec90）、`ShowBirthSignMenu`（0x00a4ed14）、`sStartNewGame`（0x00a5ead0）、`sNewGame`（0x00a5eca4）。
+
+### 21.6 メニューディスパッチャ FUN_00587550（参考）
+メニュー ID → 生成関数の switch。0x3ff=MapMenu/`FUN_00579f80`、0x3ea=Inventory/`FUN_0057a2d0`、0x3eb=Stats/`FUN_0057a440`、0x3ec=HUDMainMenu/`FUN_005a6b00`、0x3f2=SleepWait/`FUN_005a8e30`、0x414=MainMenu/`FUN_005b6040`、0x40c=RaceSex（21.4）。
+
+### 21.7 Android 移植への示唆
+- Android の `title_screen.cpp::handleMenuSelection()` の New は現状スタブ（`gameStarted=true`）。本経路のフラグ（PlayerCharacter+0x7f8）とキャラ生成ウィザード（種族→性別→クラス→星座→確認）が未実装分。
+- 導入ムービー `OblivionIntro.bik` は New Game 確定後に再生される順序（キャラ生成開始と同フレーム）。
+
+
+## 22. Options / Load / Credits メニュー処理の詳細（確定 2026-10-14）
+
+第 21 章で扱ったタイトル画面（MainMenu 0x414）以外のメニュー系処理を、headless Ghidra（`DecompTargets.java`）で
+`Oblivion.exe`（Steam 版、image base 0x400000）を直接逆コンパイルして確定した。
+
+### 22.1 共通のメニュー生成パターン
+
+各メニュー生成ハンドラは同一の定型を持つ（Options / Load / Credits すべてで確認）。
+
+```
+1. FUN_00589b70(<menuId>)            // 既存メニュー取得。非 NULL なら vtable[0](1) で解放
+2. FUN_00582160(0,1)                 // メニューシステム シングルトン取得（遅延生成）
+3. thunk_FUN_00584980()              // 深度(time)再計算 → float 戻り値
+4. FUN_00590420(<xml パス>)          // XML ロード
+5. FUN_005898f0()                    // 現在メニュー取得。NULL なら失敗
+6. vtable[0x34]() != <menuId>        // 種別不一致なら解放して失敗
+7. FUN_009832e6(xml,0,&PTR_PTR_00b13240,&PTR_PTR_00b13a74,0)  // 共通ルート生成
+8. FUN_00584880(...)                 // ルート登録（22.4）
+9. FUN_009832e6(currentMenu,0,&PTR_PTR_00b0a018,&PTR_PTR_00b1xxxx,0) // メニュー固有生成
+10. trait 0xfa5（stackingtype）判定 → trait 0xfab（depth）に time を設定
+11. FUN_00585190(0)                  // メニューリセット
+```
+
+- `FUN_009832e6(xml,0,c1,c2,0)` = RTTI に基づく XML → C++ オブジェクトのインスタンス化（第 20 章の共有 getter 系）。
+- trait 0xfa5（stackingtype）が `_DAT_00a69770` / `_DAT_00a69778`（スタック種別 enum 値）に一致するときだけ
+  trait 0xfab（depth）へ時刻を書き込む。つまり「スタック型でないメニュー」は深度同期をスキップする。
+
+### 22.2 各ハンドラの固有処理
+
+| ハンドラ | メニュー ID | XML | 固有 vtable ペア | 固有処理 |
+|---|---|---|---|---|
+| FUN_005bd680 | 0x3f7 OptionsMenu | `Data\Menus\Options\options_menu.xml` | 0x00b143ec | 6 タイルフィールド検証、背面 PauseMenu(0x3f5) 探索 |
+| FUN_005aea60 | 0x40e LoadMenu | `Data\Menus\Options\load_menu.xml` | 0x00b14178 | セーブ走査・スロット一覧生成、XBox セーブ変換 |
+| FUN_0059d680 | 0x417 CreditsMenu | `Data\Menus\Options\credits_menu.xml` | 0x00b13fa8 | Credits.txt 解析でスクロール構築、アスペクト比補正 |
+
+#### Options（FUN_005bd680）
+- 生成後 `*(int *)(iVar5+0x28)`, `+0x2c`, `+0x30`, `+0x34`, `+0x38`, `+0x3c` の 6 フィールドがすべて非 NULL か検証。
+  1 つでも NULL なら `"Options Menu Creation Failed... Are your menu and art resources up to date?"`（0x00a2xxxx）。
+- 背面探索: メニューシステムのスタック配列（`+0xe0`、最大 9 要素）を `FUN_0057cfa0(i)` で走査し、
+  0x3f7（自分）に到達する前に 0x3f5（PauseMenu）が見つかれば `bVar1=true`。
+  最後に `FUN_0058ceb0(0xfae, bVar1+1)` で trait 0xfae（user0）= 1 または 2 を設定。
+  これは「Options がポーズメニューから開かれたか（背面に PauseMenu があるか）」の判別値で、ESC の戻り先制御に使う。
+
+#### Load（FUN_005aea60(param_1)）
+- `param_1 != '\0'` のとき `FUN_0058ceb0(0xfa1, 0x3f800000)`（trait 0xfa1=visible を 1.0f）。タイトル画面からの場合は 0。
+- `FUN_0045e6a0()`（22.5 XBox セーブ変換）の戻り値 `cStack_141`。
+- MainMenu(0x414) が存在しない、または XBox 変換が発生した場合のみ `FUN_0045d450()`（22.6 セーブフォルダ再走査）。
+- セーブリスト単体 `DAT_00b33b00`（セーブマネージャのシングルトン）+ `0x6c` = リスト先頭。
+  この連結リストを辿って有効エントリ数を数え、0 件なら `FUN_005ae6d0(...,0,0,0)` で空エントリを 1 件生成。
+- 各エントリを `FUN_005ae6d0(buf, index, saveObj, count)` で生成し、リスト先頭の生成結果を保持。
+- 末尾で `FUN_0058fba0(0)`（フォーカス更新）→ `FUN_00585190(0)`（リセット）→
+  `FUN_0057f9f0(firstEntry, 0xfdd, 0)`（先頭行を選択状態に）。メニュー再表示のたびにリストを全再構築する。
+
+#### Credits（FUN_0059d680）
+- `*(int *)(iVar5+0x28) == 0` なら `"Credits Menu Creation Failed... Are your menu and art resources up to date?"`。
+- `DAT_00b3b290 != '\0'`（デバッグ/開発フラグ）のとき、`FUN_00589930("background")`（22.7 名前検索）で背景タイルを取得し
+  `FUN_0058ceb0(0xfa7, 0)`（trait 0xfa7=alpha を 0 = 非表示）。さらに MainMenu の背景も `FUN_005b5a80()` で隠す。
+- `FUN_0058ceb0(0xfae, (*(char *)(menuSys+8) != 1))` → trait 0xfae（user0）= 0 または 1（開発表示の有無）。
+- `FUN_0059d030()`（22.3）で Credits.txt を解析しスクロール本文を構築。
+- 画面アスペクト比 `DAT_00b06c50 / DAT_00b06c4c` が `_DAT_00a31c70`（4:3 = 1.3333）と異なる場合、
+  スクロールルート（`*(int *)(*(int *)(iVar5+0x28)+0x24)`）の +0x54 に `_DAT_00a6b808` を加算し、
+  `FUN_00707370(0,0)` を呼ぶ（ワイド画面でのスクロール基準位置補正とマウス解放）。
+
+### 22.3 Credits.txt スクロール構築 FUN_0059d030（0x0059d030）
+
+`FUN_00430970("Data\Credits.txt",0,0x2800,0)` でアーカイブから読み込み、内部マークアップを解析して
+1 行ずつテキストタイル（`FUN_00575870` で生成）をスクロールルートに追加する。
+
+| タグ | 書式 | 処理 |
+|---|---|---|
+| `<C ...>` | `<C x y w h>` | 4 つの atol 値 ÷ `_DAT_00a3ddd8`（=1000.0f 相当）で RGBA を +0x4c/+0x50/+0x54/+0x58 に設定 |
+| `<F n>` | `<F1>`.. | フォントインデックスを +0x3c に設定（`FUN_00576a30()` のフォントテーブル参照） |
+| `<I ...>` | `<I x y idx>` | 画像タイルを挿入（`FUN_0059cc00`）、Y を画像高さ分だけ進める |
+| `<J C\|R>` | | 行揃え: `C`→+0x40=2（中央）、それ以外→+0x40=4（右） |
+| `<X±n>` `<Xn>` | | テキスト X オフセット +0x44 を加減算/設定 |
+| `<Y±n>` `<Yn>` | | テキスト Y オフセット +0x48 を加減算/設定 |
+| `*` | | 行末まで（コメント）スキップ |
+| `\r` | | タイル高さ `*(float*)(iVar4+0x2c)` を Y に反映 |
+
+- 解析用一時バッファは `FUN_00401f00`/`FUN_00401f20` で確保/解放（`__security_check_cookie` 付き）。
+- 完了後 `FUN_00707610` / `FUN_00707980` / `FUN_00707370(0,1)` でレイアウト確定とマウス再有効化。
+
+### 22.4 ルート登録 FUN_00584880（0x00584880）
+
+```
+void FUN_00584880(int *param_1, int param_2) {
+  param_1[1] = param_2;                       // 親/所有ポインタ保持
+  if (param_2 == 0) return;
+  if (trait(0xfa5) == 0x00a69778/00a69770/00a69768/00a69764 のいずれか) {   // スタック型
+    param_1[5] = vtable[0x34]();              // メニュー ID 記録
+    menuSys = FUN_00582160(0,1);
+    FUN_0057d640(vtable[0x34]());             // メニュー ID → 内部スロット解決
+    if (*(int **)(menuSys + 0x9c) != param_1) {
+      if (*(int *)(menuSys + 0x98) != 0) FUN_0058ceb0(0xfdd, 0);  // mouseover 解除
+      *(int *)(menuSys + 0x98) = 0;
+      *(int *)(menuSys + 0x9c) = 0;
+    }
+  }
+}
+```
+- スタック方針（0xfa5）を持たないメニューは登録のみで終わる。
+- スタック型のときはメニューシステムの「現在アクティブメニュー」(+0x9c) を更新し、旧メニューの mouseover(0xfdd) を解除する。
+
+### 22.5 XBox セーブ変換 FUN_0045e6a0（0x0045e6a0）
+
+`XBoxSaves\*.*` を `FindFirstFileA`/`FindNextFileA` で列挙し、各ファイルを `FUN_00430970`（アーカイブ開）＋展開で
+`"%s%s%s.ess"` に書き出し、変換後に `DeleteFileA` で元ファイルを削除する。bool を返す。
+Load メニュー表示時に毎回呼ばれ、XBox 版セーブの移行（1 回限り）を担う。
+
+### 22.6 セーブフォルダ走査 FUN_0045d450（0x0045d450）
+
+```
+path = DAT_00b3f280 (セーブフォルダ) + PTR_DAT_00b05564 (区切り) + "*.ess"
+FindFirstFileA(path)
+  各ファイル（サイズ 0 以外）: _sprintf("%s%s%s", dir, sep, cFileName)
+     obj = FUN_00401f00(0x160); FUN_00430970(path, 0, 0x20000, 0);
+     obj->vtable = &PTR_FUN_00a39094; obj[0x55] = 0;
+     FUN_00416650(obj, &LAB_00459450)          // リストへ挿入
+FindClose
+```
+- this の `+0x6c` に連結リストの先頭を格納。既存リストは `FUN_00459400` で破棄してから作り直す。
+- 各エントリは 0x160 バイトの `TESFile`（アーカイブ）派生オブジェクトで、`0x20000` バイトのバッファを持つ。
+
+### 22.7 セーブスロット表示行生成 FUN_005ae6d0（0x005ae6d0）
+
+`"save_game_template"`（`FUN_004028d0` で取得）と書式文字列 `DAT_00b38700`（`"%s %i - %s\n%s: %s"`）で
+スロットテキストを組み立て、以下の trait を設定する。
+
+| trait | 値 |
+|---|---|
+| 0xfa1 | visible = 1.0f |
+| 0xfde | スロット種別 |
+| 0xfae | user0 = param_3（スロット番号） |
+| 0xfb1 | 組み立てた表示文字列 |
+| 0xfa8 | listindex = param_3 + 0x65（= 101） |
+| 0xff0 | リスト項目マーカー |
+
+- 文字列中の空白をアンダースコアに置換し、`param_1+0x5c` と `__stricmp` で突き合わせる（既存スロット判定）。
+- `param_3 == 0` のとき `_DAT_00b3b3f0` をクリアする（先頭スロット＝最新セーブ）。
+
+### 22.8 深度再計算 FUN_00584980（0x00584980）
+
+メニューシステムの子メニュー一覧（`FUN_00582160(0,1)` の `+0x68`、要素 `+0x34` にメニュー ID）を走査し、
+HUD 系（0x400 / 0x3ed=HUDInfoMenu / 0x3f2=SleepWait）を除外して
+`max(menu+0x18 + trait(0xfab))` を求める。その値に epsilon（`_DAT_00a309f0`）を加えて trait 0xfab（depth）に書き戻し、
+スクロール同伴値（`+0x58`）を `val * _DAT_00a68fd0` で更新する。0x3f2（SleepWait）だけは `_DAT_00a3f3e8` でオフセット。
+戻り値は `float10`（描画順の基準時刻）。
+
+### 22.9 名前検索 FUN_00589930（0x00589930）
+
+```
+int FUN_00589930(this, char *name)      // ツリー再帰
+  for each child in this->+0x34:
+    if (__mbscmp(child->+0x08, name) == 0) return child;
+    r = FUN_00589930(child, name); if (r) return r;
+  return 0;
+```
+- メニューツリーをたどり、XML の要素名（例 `"background"`）からタイルオブジェクトを解決する。
+
+### 22.10 trait アクセサ（確定）
+
+| 関数 | 役割 |
+|---|---|
+| FUN_0058ceb0(token, value) | 現在メニューに trait 値を設定。内部で `FUN_0058b220(token)`（trait 記述子解決）→ `FUN_0058ca00(value)`（値格納）。既存レポート §3.2 の setter。 |
+| FUN_00588bd0(this, token)  | `this+0x18` の trait 連結リストを走査し `token` 一致の float 値を返す。Ghidra では `this` が省略表示される。第 3 章の 0xfab/0xfa5 読み出しは本関数。 |
+
+### 22.11 メニュー関連補助関数一覧（追記）
+
+| アドレス | 関数 | 役割 |
+|---|---|---|
+| 0x0057cfa0 | FUN_0057cfa0 | `*(menu+0xe0+index*4)` = メニュースタック配列要素取得 |
+| 0x0057f9f0 | FUN_0057f9f0 | リスト行選択/マウスオーバー状態機械（trait 0xff0/0xfdd/0xfa8/0xfc9/0xfe1-0xfe5） |
+| 0x0058fba0 | FUN_0058fba0 | メニューフォーカス/入力更新（stackingtype 0xfa5 を参照） |
+| 0x00585190 | FUN_00585190 | メニューリセット（visible 復帰・tooltip クリア・深度再計算） |
+| 0x00582160 | FUN_00582160 | メニューシステム シングルトン取得（`DAT_00b3a6e0`、遅延生成） |
+| 0x0058b220 | FUN_0058b220 | trait ID → trait 記述子解決 |
+| 0x0058ca00 | FUN_0058ca00 | trait 記述子へ float 値を格納 |
+
+### 22.12 シングルトン一覧（確定）
+
+| シンボル | 内容 |
+|---|---|
+| DAT_00b3a6e0 | メニューシステム（`FUN_00582160` で遅延生成、`FUN_00401f00(0x134)`） |
+| DAT_00b33b00 | セーブマネージャ（+0x6c にセーブファイル連結リスト先頭） |
+| DAT_00b333c4 | PlayerCharacter シングルトン（第 21 章、+0x7f8 新規ゲームフラグ） |
+
+### 22.13 Android 移植への示唆
+
+- `app\src\main\cpp\ui\title_screen.cpp::handleMenuSelection()` の Load / Options / Credits 分岐は
+  本節の処理順（XML ロード → 固有生成 → trait 設定 → リスト生成 → リセット）に合わせる。
+- Load はメニュー再表示のたびにセーブフォルダを再走査する設計（`FUN_0045d450`）。Android 側も
+  「一度キャッシュして使い回す」ではなく、表示時にディレクトリを列挙する実装が原作挙動に一致する。
+- Options の trait 0xfae（user0）= 1/2 は「背面に PauseMenu があるか」の戻り先制御値。
+- Credits は `Data\Credits.txt` の独自マークアップ（`<C>/<F>/<I>/<J>/<X>/<Y>/ *`）を解析する。移植時は
+  このマークアップパーサ（`FUN_0059d030` 相当）が必要。
+
+---
+
+## 23. メニュー固有「vtable ペア」の正体（MSVC RTTI TypeDescriptor）
+
+本章は、各メニューハンドラが参照する「ペア」の実体を確定させる。
+結論として、これらは **vtable ではなく MSVC RTTI の `TypeDescriptor` レコード**であり、
+ハンドラは `dynamic_cast` の型識別子としてこれを 2 回使っていた。
+
+### 23.1 各ハンドラの先頭で起きていること
+
+Options ハンドラ `FUN_005bd680` の先頭付近（デコンパイル整形後）:
+
+```c
+uVar3 = FUN_009832e6(uVar3, 0, &PTR_PTR_00b13240 /* .?AVTile@@   */, &PTR_PTR_00b13a74 /* .?AVTileMenu@@ */, 0);
+iVar5 = FUN_009832e6(piVar4, 0, &PTR_PTR_00b0a018 /* .?AVMenu@@   */, &PTR_PTR_00b143ec /* .?AVOptionsMenu@@ */, 0);
+```
+
+この 2 呼び出しが「ペア」の正体である。
+
+1. **XML ルート Tile オブジェクト → TileMenu**（第 1 引数がロード済みタイル、第 4 引数が `.?AVTileMenu@@`）
+2. **Menu 派生オブジェクト → 具象メニュークラス**（第 4 引数が `.?AVOptionsMenu@@` など）
+
+### 23.2 FUN_009832e6 = MSVC `__RTDynamicCast`
+
+`FUN_009832e6`（0x009832e6）の逆コンパイル結果は次のとおりで、MSVC CRT の
+`__RTDynamicCast`（C++ `dynamic_cast` ランタイムヘルパ）そのものである。
+
+- 引数: `(void* obj, int offset, RTTICompleteObjectLocator* srcCOL, TypeDescriptor* dstTD, int throwFlag)`
+- 内部で `FindSITargetTypeInstance` / `FindMITargetTypeInstance` / `FindVITargetTypeInstance` を呼び分け、
+  失敗時は `FUN_00983d6e("Bad dynamic_cast!")` → `__CxxThrowException_8` で例外送出。
+- 成功時は `PMDtoOffset` でポインタを調整して返す。
+
+したがって「ペア」とは **`dynamic_cast` の (変換元, 変換先) の組**であり、vtable の組ではない。
+
+### 23.3 TypeDescriptor レコードの形式（確定）
+
+各レコードは **0x1c バイト境界**で並ぶ次の構造:
+
+| オフセット | 内容 |
+|---|---|
+| +0x00 | vftable ポインタ（`TypeDescriptor::vftable`） |
+| +0x04 | 予約 dword（0） |
+| +0x08 | マングル名 ASCII（`.\?AV<class>@@` 形式、NUL 終端） |
+| +0x18 | パディング（テスト値 `0x00004040` が見えるのは隣接レコードの境界） |
+
+`TypeDescDump.java`（新規スクリプト）で +0x08 の `.\?AV` を走査して全域を列挙した結果が次節。
+
+### 23.4 メニュー RTTI TypeDescriptor 一覧（0x00b13240 - 0x00b147d8）
+
+0x00b13240 以降にメニュー固有ディスクリプタが連続配置されている（`.rdata` 内）。
+
+| アドレス | 型名 | アドレス | 型名 |
+|---|---|---|---|
+| 0x00b13240 | Tile | 0x00b13e44 | AudioMenu |
+| 0x00b13254 | ContainerMenu | 0x00b13e5c | BreathMenu |
+| 0x00b13270 | LoadingMenu | 0x00b13e78 | ClassMenu |
+| 0x00b1328c | MessageMenu | 0x00b13f90 | MainMenu |
+| 0x00b132a8 | StatsMenu | 0x00b13fa8 | CreditsMenu |
+| 0x00b132c0 | HUDSubtitleMenu | 0x00b13fd0 | EffectSettingMenu |
+| 0x00b132e0 | SleepWaitMenu | 0x00b13ff0 | EnchantmentMenu |
+| 0x00b132fc | PauseMenu | 0x00b14010 | GameplayMenu |
+| 0x00b13314 | LockPickMenu | 0x00b1402c | GenericMenu |
+| 0x00b13330 | BookMenu | 0x00b14048 | HUDInfoMenu |
+| 0x00b13348 | RaceSexMenu | 0x00b140c8 | HUDReticle |
+| 0x00b13364 | MagicPopupMenu | 0x00b140e8 | InventoryMenu |
+| 0x00b13384 | PersuasionMenu | 0x00b14104 | LevelUpMenu |
+| 0x00b133a4 | SigilStoneMenu | 0x00b14178 | LoadgameMenu |
+| 0x00b13ae4 | ControlsMenu | 0x00b14344 | MagicMenu |
+| 0x00b13b5c | TextEditMenu | 0x00b14398 | MapMenu |
+| 0x00b13ba8 | VideoMenu | 0x00b143b0 | NegotiateMenu |
+| 0x00b13e28 | AlchemyMenu | 0x00b143cc | SpellPurchaseMenu |
+| 0x00b143ec | OptionsMenu | 0x00b14744 | SaveMenu |
+| 0x00b14408 | QuantityMenu | 0x00b1475c | SkillsMenu |
+| 0x00b14424 | QuickKeysMenu | 0x00b1477c | SpellMakingMenu |
+| 0x00b14504 | RechargeMenu | 0x00b1479c | TrainingMenu |
+| 0x00b14728 | RepairMenu | 0x00b147b8 | VideoDisplayMenu |
+| 0x00b13a74 | TileMenu | 0x00b14700 | RepairMenuList@RepairMenu |
+
+同領域には Tile 系コンテナ（`NiTList<...>` / `NiTPointerMap<...>` / `NiTStringTemplateMap<...>` 等）の
+ディスクリプタも混在する。`Menu` および `DialogMenu` / `HUDMainMenu` の基底寄りディスクリプタは
+低番地側（0x00b0a018 = Menu, 0x00b0a02c = DialogMenu, 0x00b0a064 = HUDMainMenu）にあり、
+メニュー本体ディスクリプタとは別クラスタを成す。
+
+### 23.5 ハンドラ ⇔ 具象メニュークラス対応表（確定）
+
+`FUN_009832e6` の第 4 引数（変換先 TypeDescriptor）を `RttiCastTargets.java`（新規スクリプト）で
+全コードから機械的に抽出した結果。各行が 1 つの `dynamic_cast<クラス*>` に対応する。
+
+| 具象クラス | TypeDescriptor | 使用ハンドラ |
+|---|---|---|
+| TileMenu | 0x00b13a74 | 全ハンドラ共通（Tile → TileMenu） |
+| LoadingMenu | 0x00b13270 | FUN_00578e30, FUN_00578e90, FUN_005adcf0 |
+| MessageMenu | 0x00b1328c | FUN_00579970, FUN_005bc8b0 |
+| StatsMenu | 0x00b132a8 | FUN_0057a6f0 |
+| ContainerMenu | 0x00b13254 | FUN_00599ee0, 0x00597b3a, 0x005bd4d6, 0x005c08d5 |
+| HUDSubtitleMenu | 0x00b132c0 | FUN_0057acc0, FUN_0057add0, FUN_0057af10, FUN_0057afb0, FUN_0057b050, FUN_0057b0f0 |
+| SleepWaitMenu | 0x00b132e0 | FUN_0057b420, FUN_005d6d20, FUN_005d7090 |
+| PauseMenu | 0x00b132fc | FUN_0057b560, FUN_0057b600, FUN_005ae080, FUN_005bda90, 0x005bde9e |
+| LockPickMenu | 0x00b13314 | FUN_0057b6a0, FUN_005af440, 0x005b0a2e |
+| BookMenu | 0x00b13330 | FUN_0057b740, FUN_00586000, FUN_005962c0 |
+| RaceSexMenu | 0x00b13348 | FUN_0057b7e0, FUN_005c9c70, FUN_005c9cd0, 0x005c2bb8, 0x005c9f88, 0x005c9fd8 |
+| MagicPopupMenu | 0x00b13364 | FUN_0057bb20, FUN_0057bbf0, FUN_0057bcc0, FUN_005b3e50, FUN_005b3f00, FUN_005b4230, FUN_005b4a10, FUN_005b4e10 |
+| SigilStoneMenu | 0x00b133a4 | FUN_005d1080, FUN_005d41e0, FUN_005d5200 |
+| ControlsMenu | 0x00b13ae4 | FUN_0059b9e0, FUN_0059ba40, 0x0059b8ed |
+| TextEditMenu | 0x00b13b5c | FUN_005dcf20 |
+| VideoMenu | 0x00b13ba8 | FUN_005dde20, FUN_005deb80 |
+| AlchemyMenu | 0x00b13e28 | FUN_00593810, FUN_005d0a20, FUN_005d1080, FUN_005d2070 |
+| AudioMenu | 0x00b13e44 | FUN_00595380 |
+| BreathMenu | 0x00b13e5c | FUN_00596470, FUN_00596550, FUN_005965c0 |
+| ClassMenu | 0x00b13e78 | 0x00596a09, 0x005974f9, FUN_005d6390 |
+| MainMenu | 0x00b13f90 | FUN_0059c890, FUN_0059c9f0, FUN_0059d680, FUN_005b6040 |
+| CreditsMenu | 0x00b13fa8 | FUN_0059d680 |
+| EffectSettingMenu | 0x00b13fd0 | FUN_005d5e50 |
+| EnchantmentMenu | 0x00b13ff0 | FUN_005a1740, FUN_005a1ec0 |
+| GameplayMenu | 0x00b14010 | FUN_005a3540 |
+| GenericMenu | 0x00b1402c | FUN_005a3ff0 |
+| HUDInfoMenu | 0x00b14048 | FUN_005a4840, FUN_00663070 |
+| InventoryMenu | 0x00b140e8 | FUN_005ab5a0, 0x005c091a, 0x005c0966 |
+| LevelUpMenu | 0x00b14104 | FUN_005ace20 |
+| LoadgameMenu | 0x00b14178 | FUN_005aea60 |
+| MagicMenu | 0x00b14344 | FUN_005b3760 |
+| MapMenu | 0x00b14398 | FUN_005bb6c0 |
+| NegotiateMenu | 0x00b143b0 | FUN_005bd080 |
+| SpellPurchaseMenu | 0x00b143cc | 0x005bd50f, FUN_005d9590, 0x005d974f |
+| **OptionsMenu** | **0x00b143ec** | **FUN_005bd680** |
+| QuantityMenu | 0x00b14408 | FUN_005c05d0 |
+| QuickKeysMenu | 0x00b14424 | FUN_005c1290 |
+| RechargeMenu | 0x00b14504 | FUN_005ce840, FUN_005cf9db, FUN_005cfb50, FUN_005cfce0 |
+| RepairMenu | 0x00b14728 | FUN_005d1e50, FUN_005d2070 |
+| SaveMenu | 0x00b14744 | FUN_005d39a0, 0x005d33b5, 0x005d3b8d |
+| SkillsMenu | 0x00b1475c | FUN_005d6390, 0x005d5a58 |
+| TrainingMenu | 0x00b1479c | FUN_005dd4b0, 0x005dd40c |
+| VideoDisplayMenu | 0x00b147b8 | 0x005ddb9e |
+| DialogMenu | 0x00b0a02c | FUN_0057ab70, FUN_0057ac20, FUN_00583f40, FUN_005be270 |
+| HUDMainMenu | 0x00b0a064 | FUN_0057a6f0, FUN_0057b190, FUN_0057b230, FUN_0057b2d0, FUN_005a5900, FUN_005a6040, FUN_005a64b0, FUN_005a6b00, FUN_00663070, FUN_00668070, FUN_0068ee90 |
+| Menu（基底） | 0x00b0a018 | 全メニューハンドラ共通（121 箇所） |
+
+補足:
+
+- `PersuasionMenu`（0x00b13384）と `SpellMakingMenu`（0x00b1477c）には**直接の構成ハンドラが存在しない**。
+  Persuasion は DialogMenu（0x00b0a02c）配下、SpellMaking は SpellPurchaseMenu 経由で開かれる。
+- 1 ハンドラが複数クラスを cast するのは、親メニュー配下の子タイルをそれぞれ別クラスとして扱うため
+  （例: FUN_0057a6f0 = StatsMenu と HUDMainMenu の両方を cast）。
+- `.?AVMenu@@`（0x00b0a018）を第 3 引数に取る呼び出しは 121 箇所で、メニューシステム全体の共通プロローグ。
+  同ディスクリプタは前掲 §22 のメニュー ID 体系とは独立した RTTI 上の基底型である。
+
+### 23.6 Android 移植への示唆
+
+- 原作のメニュー生成は「XML ルート Tile を取得 → TileMenu へ cast → 具象メニューへ cast」という
+  2 段階の型確定を前提にしている。Android 側に対応する型階層は不要だが、
+  **`<メニュー ID> → <具象クラス>` の対応表（§23.5）が原作の正典**として利用できる。
+- 各メニューの初期化順序・固有処理は、§23.5 で得たハンドラ関数の逆コンパイルを起点に読むのが最短。
+  たとえば Options の固有処理は `FUN_005bd680`、Load は `FUN_005aea60`、Credits は `FUN_0059d680`
+  （§22 と一致）に集約されている。
+- メニュー ID（0x3ed/0x3ee/0x3f2/0x3f5/0x3f7/0x40e/0x40f/0x414/0x417 など）と本節の
+  クラス対応表を突き合わせることで、`title_screen.cpp` の分岐を原作準拠に拡張できる。
+
+### 23.7 本章で新規追加した解析スクリプト
+
+| スクリプト | 用途 |
+|---|---|
+| `RttiCastTargets.java` | ある TypeDescriptor を PUSH する全命令を走査し、近傍の別ディスクリプタとともに (呼び出し元関数, 変換先クラス) を出力 |
+| `TypeDescDump.java` | 指定アドレス範囲を走査し `.\?AV` で始まる RTTI TypeDescriptor 名を列挙 |
+
+---
+
+## 24. Options メニューファミリーのレイアウト（XML 静的解析）
+
+本章は Oblivion.exe のコード解析ではなく、原作が配布する **メニュー定義 XML** の静的解析結果である。抽出元は `Oblivion - Misc.bsa` 内の `menus\*.xml`（89 ファイル）。Ghidra は不要（§22 で扱ったハンドラ側コードと対になる「見た目・座標」の確定情報）。
+
+### 24.1 対象ファイルと抽出結果
+
+| ファイル | 行数 | メニュークラス | 背景サイズ (w×h) | 役割 |
+|---|---|---|---|---|
+| `options\options_menu.xml` | 213 | `OptionsMenu` | 240×360 (+40/+60) | Options トップ（6 / Xbox 7 ボタン） |
+| `options\audio_menu.xml` | 539 | `AudioMenu` | 900×500 | 音量 5 スライダー |
+| `options\video_menu.xml` | 2120 | `VideoMenu` | 900×600 | 描画設定 27 項目（スクロールリスト） |
+| `options\video_display_menu.xml` | 130 | `VideoDisplayMenu` | 520×680 | 解像度リスト |
+| `options\gameplay_menu.xml` | 490 | `GameplayMenu` | 790×528 | 難易度 + トグル 6 |
+| `options\controls_menu.xml` | 873 | `ControlsMenu` | 666×580 | 2 ページ（感度 / キー割当） |
+| `options\downloads_menu.xml` | 302 | `DownloadsMenu` | — | Xbox Live 限定（PC 版では非表示） |
+| `options\xcontrols_menu.xml` | 570 | — | — | Xbox 用代替レイアウト |
+
+抽出ツリー: `tmp\bsa_misc\menus\`（`chargen\ dialog\ generic\ main\ message\ options\ prefabs\` + ルート `*_menu.xml` + `strings.xml`）
+
+### 24.2 共通骨格（全子画面で同一）
+
+```xml
+<menu name="AudioMenu">
+  <class> &AudioMenu; </class>
+  <stackingtype> &no_click_past; </stackingtype>
+  <alpha> 0 </alpha>
+  <locus> &true; </locus>
+  <explorefade> 0.25 </explorefade>
+  ...
+  <xbuttonb> <ref src="audio_return_button" trait="clicked"/> </xbuttonb>
+  <xbuttony> <ref src="audio_defaults_button" trait="clicked"/> </xbuttony>
+</menu>
+```
+
+- `&no_click_past;` = 背後への入力を遮断。
+- `alpha 0` = 開いた直後は透明でフェードイン。
+- `explorefade 0.25` = 探索（非ポーズ）中のみのフェード量。
+- `locus &true;` = フォーカス（キーボード操作）対象。
+- 全画面共通のテキスト色は `rgb(117,59,33)`。
+
+背景は全画面が `prefabs\generic_background.xml` を include して中央寄せする:
+
+```
+x = (screen().width  - me().width ) / 2
+y = (screen().height - me().height) / 2
+```
+
+include 直後に `user0`（幅）/ `user1`（高さ）を上書きするのが、各画面がサイズを指定する唯一の方法。`generic_background.xml` は 4 枚を組み合わせる: `Menus\GenericBackground\{edge_corners, edge_horizontal, edge_vertical, center_background}.dds`。
+
+下部ボタンは全画面が `prefabs\button_long.xml` を include する（177×44、depth 3）。位置は必ず **return ボタン基準**で決まる（Gameplay の実例）:
+
+- Return: `x = parent.width - me.width - 30`, `y = parent.height - me.height - 20`
+- Defaults: `x = return.x - me.width - 10`（Xenon は -40）, `y = return.y`
+- `user0` = 表示文字列（`strings()._return` / `_defaults`）、`user20` = Xbox ボタン絵、`clicksound 2`。
+- 幅・高さは `button_long.xml` 側で `177` / `44` 固定。
+
+ボタン背景テクスチャは `button_long.xml` の `<filename>` が `me()._filename_`（`user20` 未設定時のフォールバック）を参照するため、Options 系 XML には明示されていない。抽出済みの 177×44 素材 `Menus\Container\cont_button_long_off.dds` / `_on.dds` が対応すると **推定**（コード側でユーザ20/ファイル名を注入している可能性がある）。
+
+### 24.3 options_menu.xml（トップ）
+
+```xml
+<menu name="OptionsMenu">
+  <class> &OptionsMenu; </class>
+  <stackingtype> &no_click_past; </stackingtype>
+  <alpha> 0 </alpha>
+  <locus> &true; </locus>
+  <explorefade> 0.25 </explorefade>
+  <user0> ... </user0>   <!-- True if from pause menu -->
+  <xbuttonb> <ref src="options_return_button" trait="clicked"/> </xbuttonb>
+</menu>
+```
+
+- `user0` = ポーズメニュー経由で開いたか（真なら背景高 +40px、ポーズ表示を出す）。Xbox は更に +60。
+- `_top_button_y = (background.height - return_button.height * (5 [+1 xbox])) / 2 + pause offset` → ボタン列全体を背景の縦中央に配置。
+- `_button_rect_height = return_button.height`。
+- `options_background`: `generic_background.xml` を include、`x`/`y` は画面中央、`user0 = 240`、`user1 = 360`（+40 pause / +60 xbox）。
+- ポーズ表示:
+  - `options_pause_indication_border_left` = `Menus\Shared\shared_decor_blue_left.dds`、35×17、depth 3、`x 30` `y 26`、`user0` のとき表示。
+  - `options_pause_indication_border_right` = `shared_decor_blue_right.dds`、35×17、`x = parent.width - border_left.x - me.width`、`y 26`。
+  - `options_pause_indication` (`<text>`) = `strings()._paused`、font 3、`rgb(51,79,142)`、alpha 255、depth 3、justify center、`x = parent.width/2`、`y 20`。
+- ボタンは `button_floating_2.xml` を include して縦積み（`listindex` 順）:
+
+| listindex | 名前 | 遷移先 | id / clicksound |
+|---|---|---|---|
+| 0 | `options_return_button` | 閉じる | 2 / 2 |
+| 1 | `options_gameplay_button` | GameplayMenu | 5 / 1 |
+| 2 | `options_video_button` | VideoMenu | 6 / 1 |
+| 3 | `options_audio_button` | AudioMenu | 7 / 1 |
+| 4 | `options_controls_button` | ControlsMenu | 8 / 1 |
+| 5 | `options_downloads_button` | DownloadsMenu（Xbox のみ） | 9 / 1 |
+
+- 各ボタン `_center_x = parent.width / 2`、`_top = _top_button_y + _button_rect_height * listindex`。
+- ラベルは `strings()` の `_return` / `_gameplay` / `_video` / `_audio` / `_controls`。
+- `button_floating_2.xml` のテクスチャは `Menus\Dialog\dialog_selection_full.dds` / `dialog_selection_cut.dds`。
+
+### 24.4 audio_menu.xml
+
+- `_y_buffer` = 40（項目間の縦間隔）。
+- `_long_label_width` = 5 つのラベル幅の **最大値**（`copy` + `max` 連鎖）。全スライダーの左端をここに揃える。
+- `_label_to_scrollbar_buffer` = 64。
+- `audio_background` = 900×500（中央寄せ）。
+- 5 行: `audio_master` / `audio_voice` / `audio_effect` / `audio_foot` / `audio_music`。各行は `*_label`(text) + `*_slider`(`horiz_floating_scroll.xml` include) + `*_slider_marker` + `*_slider_marker_2` で構成。
+- スライダーは `user6` = マーカー id、`user8` = false（数値テキスト非表示）。`_full_width = me.width + horizontal_scroll_left.width + horizontal_scroll_right.width`。
+- id 割り当て（原本直読で確定）: スライダー 1/3/5/7/9（master/voice/effect/foot/music）、スクロールマーカー `user6` 2/4/6/8/10、`audio_defaults_button` 11、`audio_return_button` 12。
+- ボタン: `audio_defaults_button`(id 11) / `audio_return_button`(id 12)。`xbuttonb`/`xbuttony` が両者に束縛される。
+
+### 24.5 gameplay_menu.xml
+
+- `_y_buffer` = 24、`_label_to_scrollbar_buffer` = 64、`_long_label_width` は audio と同方式。
+- `gameplay_background` = 790×528。
+- 難易度: `gameplay_difficulty_label` + `gameplay_difficulty_slider`（`horiz_floating_scroll.xml`、id 1、depth 8、`repeathorizontal`）。
+- トグル 6 個（`button_floating_2.xml`）: `general_subtitles` / `dialogue_subtitles` / `crosshair` / `rest_save` / `wait_save` / `travel_save`。
+- ボタン: `gameplay_defaults_button`(id 9) / `gameplay_return_button`(id 10)。両者は `xup`/`xdown`/`xleft`/`xright` で相互にフォーカスを結ぶ。
+
+### 24.6 video_menu.xml（スクロールリスト方式）
+
+メニュー trait:
+
+| trait | 値 | 意味 |
+|---|---|---|
+| `user0` | 27（Xbox 28） | 総項目数 |
+| `user1` | 7 | 同時表示項目数 |
+| `user2` | `video_main_rect.height / user1` | 1 項目の高さ |
+| `user3` | — | 解像度フットノートの表示可否 |
+| `user4` | コード設定 | 解像度テキスト |
+| `user5` | コード設定 | アンチエイリアステキスト |
+
+- `video_background` = 900×600。
+- `_x_buffer` = `vertical_scroll_top.width`、`_y_buffer` = `video_return_button.height + 20`。
+- `video_main_rect` (id 7, `target true`): `width = parent.width - 2*_x_buffer`、`height = parent.height - 2*_y_buffer`、`x = _x_buffer`、`y = 50`、`alpha 0`、`depth 3`、`user0 = me.width * 0.65`（第 2 列のセンタ X）。
+- `video_vertical_scroll` (id 2) = `vert_floating_scroll.xml` include、`user1 0` / `user2 = VideoMenu.user0 - user8` / `user4 = user8 - 1` / `user5 0` / `user6 3` / `user8 = VideoMenu.user1`。
+- **行カリング**: 各項目の `<visible>` は `me().y >= 0 && me().y + me().height <= parent().height` 相当で、画面外の行を描画しない。スクロールリストを成立させる要となるため、移植側でも必須。
+
+項目一覧（スクロール順）:
+
+| 順 | 名前 | 形式 |
+|---|---|---|
+| 1 | resolution | 左右矢印選択（`video_resolution_rect` + float_left/right）+ テキスト + フットノート |
+| 2 | gamma | horizontal slider |
+| 3 | texsize | toggle (`button_floating_2.xml`) |
+| 4-9 | tree_lod / actor_lod / item_lod / object_lod / grass / viewdist | horizontal slider |
+| 10-12 | LOD / distbuild / disttrees | toggle |
+| 13-14 | intshad / extshad | horizontal slider |
+| 15-18 | self_shadows / grass_shadows / canopy / shadow_filter | toggle |
+| 19 | speclight | horizontal slider |
+| 20-27 | hdr / bloom / water_detail / water_reflections / water_displacement / window_reflections / hair_detail / blood | toggle |
+| 28 | anti-alias | 左右矢印選択（`video_antialias_rect`）+ テキスト（`user5` をコード設定） |
+
+- スライダー系は `horiz_floating_scroll.xml`、トグル系は `button_floating_2.xml` を include。
+- 矢印素材: `Menus\Shared\shared_arrow_left.dds` / `shared_arrow_right.dds`。
+- ボタン: `video_defaults_button` / `video_return_button`（`button_long.xml`）。
+
+### 24.7 video_display_menu.xml
+
+`generic_background` を使わない独立画面（メニュー自身が `screen()/2 - background/2` で位置決め）。
+
+- `video_display_background` (id 1, `target true`): `Menus\Shared\main_page_5.dds`、520×680、depth 1、`x 0` `y 0`。
+- `video_display_text` (id 2): `strings()._resolutionlist`、justify left、`rgb(117,59,33)`、alpha 200、`wrapwidth = parent.width - 50`、`x 40` `y 60`。
+- `video_first_text`〜`fifth_text` (id 4〜8): 静的固定文字列 `- 800 x 600` / `1080 x 607` / `1024 x 768` / `1280 x 720` / `1280 x 960`。各行の `y` は前行 + 60 / 40 / 40 / 40。
+- `video_display_return_button` (id 3): `Menus\Container\cont_button_long_off.dds`、190×50、depth 31、`clicksound 2`、`x = parent.width - me.width / 2 + 150`、`y = video_fourth_text.y + 280`。
+  - 子 `return_button_on`: `cont_button_long_on.dds`、176×51、`parent.alpha < 1` のとき表示。
+  - 子 `return_button_text`: `strings()._return`、`rgb(117,59,33)`。
+
+> 注: 解像度一覧は原作でも **固定 5 行**であり、実際の選択結果はコード側が保持する（Android では実機解像度をここへ流し込むことになる）。
+
+### 24.8 controls_menu.xml（2 ページ + スクロールリスト）
+
+メニュー trait:
+
+| trait | 値 | 意味 |
+|---|---|---|
+| `user0` | 1 または 2 | ページ番号（これ自体がページ切替） |
+| `user1` | `controls_main_rect.height / vertical_scroll.user8` | 1 行の高さ |
+| `user2` | `strings()._move` | 左スティック見出し |
+| `user3` | `strings()._look` | 右スティック見出し |
+| `user4` | `&true;` / `&false;` | normal / selected モード |
+| `user5` | コード設定 | デバイス名文字列 |
+
+- `_button_buffer` = 50、`controls_background` = 666×580。
+- **PAGE 1 (`controls_page_1`)**: sensitivity スライダー（`horiz_floating_scroll.xml`）、`invert_y` トグル、`swap_button`、左スティック / 右スティックのラベル + 設定値、`controls_return_button_2`。`user2`/`user3` が見出し文字列。
+- **PAGE 2 (`controls_page_2`)**: デバイス切替（ハイライト + floating/left/right トグル + `effset_attribute_floating_end`）、`controls_device_text`（`user5` をコード設定）、`controls_main_rect` とその枠 5 枚（`shared_border_horizontal_1.dds` / `shared_border_vertical_2.dds`）、`controls_vertical_scroll` (id 2)、`controls_list_pane` (id 4)。
+  - `controls_list_pane`: `clips true`、`height = childcount * ControlsMenu.user1`、`y = 0 - controls_vertical_scroll.user7 * ControlsMenu.user1`。**子はコードがテンプレートから生成**する。
+  - `controls_vertical_scroll`: `user1 0` / `user2 = list_pane.childcount - user8` / `user3 1` / `user4 5` / `user5 0` / `user6 3` / `user8 6`。
+  - 行テンプレート `controls_template_item`（フローティング背景）+ `controls_template_label` + `controls_template_button`。
+- ボタン: `controls_return_button` (id 1, page 2 のみ)、`controls_more_button` (id 9, `_controls`, page 1 のみ)、`controls_defaults_button` (id 10, page 2 のみ)。
+
+### 24.9 スクロールバー プレハブの trait 仕様（確定）
+
+`vert_floating_scroll.xml`: 子 `vertical_scroll_top` / `vertical_scroll_bottom` / `vertical_scroll_line` / `vertical_scroll_marker`。テクスチャは `Menus\Dialog\dialog_scrollbar_up.dds` / `_down.dds` / `_line.dds` / `_marker.dds`。
+
+| trait | 意味 |
+|---|---|
+| `user1` | min 値（通常 0） |
+| `user2` | max 値（項目数 - 表示数） |
+| `user3` | 矢印クリック時の進み |
+| `user4` | バー本体クリック時の進み |
+| `user5` | 初期位置 |
+| `user6` | マーカー id |
+| `user7` | 現在値（エンジンが更新） |
+| `user8` | 同時表示数 |
+
+`horiz_floating_scroll.xml`: 子 `horizontal_scroll_left` / `horizontal_scroll_right` / マーカー。テクスチャは `Menus\Shared\horizontal_scrollbar_line.dds` / `horizontal_scrollbar_parts.dds`。バー本体を「左端 + 線 + 右端」で伸縮させるため、`_full_width = me.width + left.width + right.width` という計算が各画面に現れる。
+
+### 24.10 テクスチャ対応表（全て抽出済みを確認）
+
+| 画面 | テクスチャ | 抽出ファイル |
+|---|---|---|
+| Options ポーズ表示 | `Menus\Shared\shared_decor_blue_left/right.dds` | `shared__shared_decor_blue_left/right.png` |
+| 共通背景 | `Menus\GenericBackground\{edge_corners,edge_horizontal,edge_vertical,center_background}.dds` | `genericbackground__*.png` |
+| トグルボタン | `Menus\Dialog\dialog_selection_full/cut.dds` | `dialog__dialog_selection_full/cut.png` |
+| 長ボタン | `Menus\Container\cont_button_long_off/on.dds` | `container__cont_button_long_off/on.png`（+ `shared__shared_button_long_off/on.png`） |
+| 解像度画面 | `Menus\Shared\main_page_5.dds` | `shared__main_page_5.png` |
+| 左右矢印 | `Menus\Shared\shared_arrow_left/right.dds` | `shared__shared_arrow_left/right.png` |
+| リスト枠 | `Menus\Shared\shared_border_horizontal_1.dds`, `shared_border_vertical_2.dds` | `shared__shared_border_horizontal_1.png`, `shared__shared_border_vertical_2.png` |
+| 横スクロール | `Menus\Shared\horizontal_scrollbar_{left,line,marker,parts,right}.dds` | `shared__horizontal_scrollbar_*.png` |
+| 縦スクロール | `Menus\Dialog\dialog_scrollbar_{up,down,line,line_cut,marker}.dds` | `dialog__dialog_scrollbar_*.png` |
+| タブ / 空プレビュー | `shared_page_tabs.dds`, `shared_empty_large.dds` | `shared__shared_page_tabs.png`, `shared__shared_empty_large.png` |
+
+### 24.11 Android 移植への示唆
+
+1. **レイアウトは XML から機械的に復元できる**。`docs\MENU_XML_INTERPRETER_DESIGN.md` の M4（`MenuUiBuilder`）をそのまま Options ファミリーに適用するのが最短。座標式（`copy`/`sub`/`div`、`me()`/`parent()`/`screen()`）は既に評価器が実装済み。
+2. **追加実装が必要な要素**（現設計では out-of-scope 扱い）:
+   - リストスクロール UI（`vert_floating_scroll` の `user1..user8` と `list_pane` の `childcount` 連動）。
+   - `<visible>` による行カリング（`video_menu.xml` の画面外行の非描画）。
+   - テンプレートからの行生成（`controls_list_pane` は子を作る側がコード）。
+3. `video_display_menu.xml` の解像度一覧は原作でも固定 5 行 + コード側の選択状態保持。Android では実機の解像度 / アンチエイリアス可否をコードから注入する設計に合わせる（原作も `user4` / `user5` をコード設定している）。
+4. 現時点で `app\src\main\cpp\ui\title_screen.cpp` に Options 系メニューの参照は皆無 → **未移植**。`OptionsMenu`(0x3f7) の起動ハンドラは §22 で特定済み（`FUN_005bd680`）なので、移植時の入口はここ。
+5. `downloads_menu.xml` / `xcontrols_menu.xml` は Xbox Live 専用のため PC 版移植対象外。ただし `xcontrols_menu.xml` は Xbox コントローラ対応時に参照価値がある。
+
+---
+
+## 25. セーブ・ロード メニューのレイアウト（XML 静的解析）
+
+対象: `Menus\Options\save_menu.xml` / `load_menu.xml` と、両者が `include` する
+`Menus\Prefabs\vertical_scroll.xml` / `focus_box.xml` / `button_long.xml` / `generic_background.xml`。
+`save_menu` と `load_menu` はほぼ同一の骨格で、相違点は §25.4 に集約する。
+
+### 25.1 対象ファイルと抽出結果
+
+`Oblivion - Misc.bsa` から展開済みの XML（`tmp\bsa_misc\menus\...`）と、
+`Oblivion - Textures - Compressed.bsa` から展開済みのテクスチャ PNG（`tmp\extracted_menus_full\menus\*.png`）を静的解析した。
+
+- 抽出パイプラインは `tools\BSAFileExtractor\BSAFileExtractor.py` と `tmp\extract_menus_full.py`
+  （`--tier menus|menus80|menus50`）。**3 段階（100%/80%/50%）すべて展開済み**であり、再抽出は不要。
+- 以前「素材が 5 つ不足」と見えたのは、`tmp\bsa_textures_title` が
+  **タイトル系アセットのみの部分抽出（29 ファイル）**だったためで、セーブ/ロードの素材は
+  別フォルダ `tmp\extracted_menus_full\menus\` に最初から揃っている。誤認に注意。
+
+### 25.2 共通骨格
+
+両メニューともトップ属性はほぼ同一。
+
+| 属性 | save_menu | load_menu |
+|---|---|---|
+| `name` | `SaveMenu` | `LoadMenu` |
+| `class` | `&SaveMenu;` | `&LoadMenu;` |
+| `stackingtype` | `no_click_past` | 同左 |
+| alpha / explorefade / menufade | 0 / 0.25 / 0.25 | 同左 |
+| `locus` | true | 同左 |
+| `_item_height` | 82 | 82 |
+| `user0` | true（既存セーブ有無 = ハイライト制御） | （無し） |
+| `xbuttonb` | `save_button_return.clicked` | `load_return_button.clicked` |
+
+背景は共通プレハブ `generic_background.xml`（`target` / `depth 1` / `locus`）。
+save は `user0=1020` / `user1=614` の無地、load は `filename = Menus\Level_up\level_up_background.dds`（1020×614）。
+
+### 25.3 save_menu.xml
+
+`save_background` 配下の子（すべて親座標基準）。
+
+| 要素 | id | 主な値 |
+|---|---|---|
+| `save_instructions` (text) | - | `font3` / `visible = not xbox` / `string = _savemenuinstructions` / `justify center` / `x = parent.width/2` / `y 10` / `alpha 255` / `rgb 117,59,33` |
+| `save_lines` (image) | - | `Menus\Loading\loading_save_lines.dds` / `420×600` / `zoom 124` / `x = LoadMenu.x` / `y 18` |
+| `save_list` (rect, clipwindow) | 5 | `locus` / `height = _item_height*6`（=492）/ `width = save_lines.width`（=420）/ `x 20` / `y 58` |
+| `save_scroll_bar` (image) | 3 | `include vertical_scroll.xml` / `x = parent.width − me.width/2 + 10` / `y 20` / `height = parent.height − me.y` / `depth 20` |
+| `save_list_pane` (rect) | 9 | `locus` / `width = parent.width` / `height = childcount*_item_height` / `x 0` / `y = (0 − save_scroll_bar.user7)*_item_height` / `clips` |
+| `save_center_line` (image) | - | `loading_save_center_fold.dds` / `70×parent.height` / `zoom 124` / 中央 / `y 0` |
+| `save_Picture_background` (image) | 6 | `loading_save_wide_frame.dds` / `458×262` / `zoom 116` / `x = parent.width/2+30` / `y 64` / `locus` |
+| `save_Picture` (image) | 6 | `shared_empty_large.dds` / `width = bg.width−10` / `height = bg.height−10` / `zoom 177` / `x = bg.x+5` / `y = bg.y+5` |
+| `save_Text` (text) | 7 | `justify left` / `rgb 117,59,33` / `font1` / `alpha 200` / `wrapwidth = parent.width−600` / `x = save_Picture.x` / `y = save_Picture.y + height + 20` |
+| `save_delete_icon` (image) | - | `icon_xbox_x_large.dds` / `visible = xbox AND user0` / `64×64` / `x 618` |
+| `save_delete_text` (text) | - | `string = _delete` / `visible = save_delete_icon.visible` |
+| `save_button_return` (image) | 1 | `include button_long.xml` / `x = parent.width − me.width − 30` / `y = parent.height − me.height − 20` / `depth 4` / `user0 = _return` / `user20 = xbuttonb` / `userdefault = xboxhint` |
+
+スクロールバーへの入力（save）：`user1 0` / `user2 = save_list_pane.child_count − me.user8` / `user3 1` / `user4 5` / `user5 0` / `user6 4`（marker id）/ `user8 6`（同時表示数）。`user7`（現在値）はエンジンが更新。
+
+### 25.4 load_menu.xml（save との相違点）
+
+`load_background` 以外の骨格は save と同一。相違は以下に限定される。
+
+| 項目 | save_menu | load_menu |
+|---|---|---|
+| 背景 | 無地（1020×614） | `level_up_background.dds` |
+| `load_scroll_bar` | `user1..user8` | **`user9 0` が追加**（手動ステップ） |
+| `load_Picture` サイズ | `bg.width−10` × `bg.height−10` | `width = me.filewidth` × `bg.height−10` |
+| `load_Picture` 縦位置 | なし | `cropy = max(0, 0 − (bg.height − me.user0)/256 * bg.height * 1.8)` / `zoom 176` / `x = bg.x+4` / `user0`（画像内有効高。**コードが設定**） |
+| delete 表示条件 | `visible = xbox AND user0` | `visible = xbox` のみ |
+| return ボタン y | `parent.height − me.height − 20` | **`parent.height − me.height/2 + 270`** |
+| 行テンプレート y | `me.listindex*height` | `me.user0*height` |
+| 行のカリング | `<visible> = me.y≥0 AND me.y+20 < parent.height` | 無し（カリング要素なし） |
+
+`load_return_button` の y 式が save と異なる点は意図的な差（ロード画面はリスト下端の余白が異なる）と判断。Android 側は
+XML 式をそのまま評価すれば再現できるため、個別のハードコードは不要。
+
+### 25.5 スクロールバー プレハブ vertical_scroll.xml
+
+`Menus\Shared\all_general_scrollbar.dds` をソースに、`cropx 32` / `width 20` / `height 300` で構成。`vert_floating_scroll`（§24.9）とは別物で、こちらは save/load 用の「汎用ストリップ」版。
+
+| trait | 意味 |
+|---|---|
+| `user1` | min 値（通常 0） |
+| `user2` | max 値（通常 100。save/load では `child_count − user8` をコード設定） |
+| `user3` | 矢印クリック時の進み（1） |
+| `user4` | バー本体クリック時の進み（10） |
+| `user5` | 初期位置（0） |
+| `user6` | マーカーのドラッグ id（-1 = なし。save/load は 4） |
+| `user7` | 現在値（`vertical_scroll_marker._value_scrolled_to`、**エンジン更新。設定しない**） |
+| `user8` | 同時表示数（5。save/load は 6） |
+| `user9` | 手動ステップ（0） |
+| `user10` | 予約 |
+
+`_scrollable_range = max(user2 − user1, 0)`。子は `vertical_scroll_topside` / `vertical_scroll_bottomside` /
+`vertical_scroll_top` / `vertical_scroll_bottom`（`cropy 98`, 20×32）/ `vertical_scroll_marker`
+（`cropy 32`, 20×42, `y = (parent.height − me.height) * ((_value_scrolled_to − user1)/_scrollable_range)`）。
+`visible = (user2 > 0)`。
+
+### 25.6 focus_box プレハブ
+
+`FocusBox`（`locus`）。`focus_center`（`focus_center_x4.dds`, `x/y −1`, `w = parent.width+2`, `h = parent.height+2`）を
+中心に、上下左右のタイル（`focus_top/bottom/left/right`）と四隅（`focus_top_left/right`, `focus_bottom_left/right`）で枠を描く。
+右下隅だけ子 `fade_right`（8×8）+ `fade_bottom`（8×8）を持つ。save/load では `save_FocusBox` / `save_FocusBox`（id 2）として
+`user15 = parent.depth + 0.5` で深度挿入される。
+
+### 25.7 スロット行テンプレートと実行時生成（§22.6/§22.7 連携）
+
+`save_game_template` → `rect "SAVES"`（`save_menu.xml` 内）は行 1 つの雛形で、実行時にコード側が複製して
+スロットごとの行を作る。雛形の要点：
+
+- `alpha 0` / `user10 false` / `focusinset 8` / `locus` / `target` / `repeatvertical true` / `depth 5`
+- カリング: `visible = (me.y ≥ 0 AND me.y + 20 < parent.height)`
+- `height = _item_height`（=82）/ `width = parent.width − 15` / `y = listindex*height` / `clips`
+- `user0 = listindex` / `user1 = "Save Game Image File Name"` / `user2 = "Save Game Name"` / `user3 = "SaveGameName"`
+- `xscroll = listindex − ceil(user8/2) + 1`
+- 子 `save_game_name`（text, `depth 1`, `string = parent.user3`, `rgb 117,59,33`, `alpha 255`, `wrapwidth 380`, `clips`, `x 6`, `y 10`）
+
+この雛形に対する**実行時の値注入**は §22.7 `FUN_005ae6d0` が担う（表示文字列は `"%s %i - %s\n%s: %s"`、trait 0xfae=user0,
+0xfa8=listindex=slot+0x65, 0xff0=リストマーカー）。セーブフォルダの列挙は §22.6 `FUN_0045d450`（`*.ess` 走査, 各エントリは
+0x160 バイト `TESFile` 派生 + 0x20000 バイトバッファ）。したがって save/load 画面の移植は
+「XML 雛形（本節）＋ 行生成コード（§22.7）＋ セーブ走査（§22.6）」の 3 点セットで初めて成立する。
+
+load 側テンプレート `load_game_template` は y 起点が `me.user0*height` に変わる（save の `listindex` に相当）。
+`LoadgameMenu`(0x00b14178) / `SaveMenu`(0x00b14744) の RTTI 対応は §23.5 を参照。
+
+### 25.8 テクスチャ対応表（全て抽出済みを確認）
+
+`tmp\extracted_menus_full\menus\` に存在（カッコ内は元解像度）。100/80/50 の 3 段すべてに存在するのは
+`icons__icon_xbox_x_large` を除き共通。
+
+| 用途 | 元 DDS | 抽出 PNG（解像度） |
+|---|---|---|
+| リスト枠 | `Menus\Loading\loading_save_lines.dds` | `loading__loading_save_lines.png`（512×512） |
+| プレビュー枠 | `Menus\Loading\loading_save_wide_frame.dds` | `loading__loading_save_wide_frame.png`（512×256） |
+| 中央区切り線 | `Menus\Loading\loading_save_center_fold.dds` | `loading__loading_save_center_fold.png`（64×512） |
+| 通常枠 | `Menus\Loading\loading_save_normal_frame.dds` | `loading__loading_save_normal_frame.png`（512×512） |
+| ロード背景 | `Menus\Level_up\level_up_background.dds` | `level_up__level_up_background.png`（1024×1024） |
+| 空プレビュー | `Menus\Shared\shared_empty_large.dds` | `shared__shared_empty_large.png`（256×256） |
+| 縦スクロール | `Menus\Shared\all_general_scrollbar.dds` | `shared__all_general_scrollbar.png`（64×128） |
+| delete アイコン | `Menus\Icons\icon_xbox_x_large.dds` | `icons__icon_xbox_x_large.png`（64×64, 80/50 には無し） |
+| フォーカス中心 | `Menus\Focus\focus_center_x4.dds` | `focus__focus_center_x4.png`（4×4） |
+
+### 25.9 Android 移植への示唆
+
+1. **レイアウトは XML から機械的に復元できる**（§24 と同じ結論）。座標式（`copy`/`sub`/`div`/`max`、`me()`/`parent()`）は
+   既存評価器で評価可能。`cropy` と `me.filewidth` も式評価の対象に入れる必要がある。
+2. **追加実装が必要な要素**: リストスクロール UI（`vertical_scroll.xml` の `user1..user9`）、
+   `<visible>` 行カリング、テンプレート行生成（save/load の `repeatvertical`）、
+   および行ごとの `xscroll = listindex − ceil(user8/2) + 1`。
+3. **行生成コードの移植が必須**。§22.7 `FUN_005ae6d0` の表示文字列書式
+   （`"%s %i - %s\n%s: %s"`）と trait 0xfae/0xfa8/0xff0 の意味を `save_menu` 雛形に適用する。
+4. **セーブ走査は表示時に毎回**実行する（§22.6、`FUN_0045d450`）。キャッシュ再利用ではなく都度 `*.ess` 列挙。
+5. `load_Picture` の `cropy` は画像内有効高（`user0`）をコードが設定する前提。Android では
+   プレビュー画像から有効高を算出して注入する。
+6. 現時点で `app\src\main\cpp\ui\` に save/load 画面の実装は無い（未移植）。入口は
+   `SaveMenu`(0x00b14744) / `LoadgameMenu`(0x00b14178)、起動ハンドラは §23.5 の `FUN_005d39a0` 群 / `FUN_005aea60`。
+
+---
+
+## 26. video_menu（VideoMenu, 900×600）のレイアウト（XML 静的解析）
+
+対象: `Data\Menus\Options\video_menu.xml`（71,739 バイト / 2,120 行、メニュー XML 中で最大）。
+確定 2026-10-15。§24（Options ファミリー）の続き。値はすべて XML 名目座標（UI 空間）。
+
+### 26.1 メニューメタ
+
+| 項目 | 値 |
+|---|---|
+| menu name | `VideoMenu` |
+| class | `&VideoMenu;` |
+| stackingtype | `&no_click_past;` |
+| alpha | 0（`me.alpha` は 0。実描画は子側で行う） |
+| locus | `&true;` |
+| explorefade / menufade | 0.25 |
+| red / green / blue | 117 / 59 / 33 |
+| user0（総項目数） | 27（非 Xbox）／ 1 + xbox |
+| user1（同時表示数） | 7 |
+| user2（行ピッチ） | `video_main_rect.height / user1` |
+| user3 | 解像度脚注（`_widescreen`）の表示可否。コードが設定 |
+| user4 | 解像度の表示文字列（コードが設定。`video_resolution_text` の string） |
+| user5 | アンチエイリアスの表示文字列（コードが設定。`video_antialias_text` の string） |
+| xbuttonb | → `video_return_button.clicked` |
+| xbuttony | → `video_defaults_button.clicked` |
+
+`strings()` から引く Trait 一覧（実在を確認済み）:
+`_resolution` `_gamma` `_texturesize` `_treelod` `_actorlod` `_itemlod` `_objectlod` `_grass`
+`_viewdist` `_distantlod` `_distbuild` `_disttrees` `_intshad` `_extshad` `_self_shadows`
+`_grass_shadows` `_canopyshadows` `_shadowfiltering` `_speclight` `_hdr` `_bloom`
+`_water_detail` `_water_reflections` `_water_displacement` `_window_reflections` `_blood`
+`_antialiasing` `_hair_detail` `_onoff` `_defaults` `_return` `_widescreen`
+
+注: `_alpha` / `_x_buffer` / `_y_buffer` / `_mouseover_any` も `trait=` で現れるが、これらは
+strings() ではなくローカル trait（`me`/`parent` 等）への参照。
+
+### 26.3 背景と main_rect の実寸
+
+| 要素 | 値 |
+|---|---|
+| `video_background` | `generic_background.xml` を include（`_x_buffer = vertical_scroll_top.width`、`_y_buffer = video_return_button.height + 20`）。x = (screen.width − me.width)/2、y = (screen.height − me.height)/2 |
+| 背景 user0 / user1 | 900 / 600（実効キャンバスは 900×600） |
+| `_x_buffer` | 37（= `vertical_scroll_top.width`） |
+| `_y_buffer` | 64（= `button_long.height` 44 + 20） |
+| `video_main_rect` | id 7。**x = 37 / y = 50 / width = 900 − 37×2 = 826 / height = 600 − 64×2 = 472**。alpha 0、depth 3、locus true、`target`（ホイール受付） |
+| `video_main_rect.user0` | `me.width × 0.65` = **536.9**（第 2 カラム＝スライダー／ボタンの中心 X） |
+| `VideoMenu.user2`（行ピッチ） | 472 / 7 = **67.43** |
+
+### 26.4 縦スクロールバー
+
+`video_vertical_scroll` = `vert_floating_scroll.xml` include、image id 2。
+
+| trait | 値 | 意味 |
+|---|---|---|
+| x | `parent.width` = 826 | main_rect 右端 |
+| y | `vertical_scroll_top.height` = 50 | 上矢印の下端 |
+| height | `parent.height − top.height − bottom.height` = 472 − 50 − 51 = **371** | レール長 |
+| user1 | 0 | 最小値 |
+| user2 | `VideoMenu.user0 − user8` = 27 − 7 = **20** | 最大値（＝総数 − 表示数。＝スクロール量の上限） |
+| user4 | `user8 − 1` = **6** | ジャンプ距離 |
+| user5 | 0 | 開始値 |
+| user6 | 3 | マーカー id（ドラッグ有効化） |
+| user8 | `VideoMenu.user1` = **7** | 同時表示数 |
+| user7 | 実行時にコピーされる現在値。**実装側で設定してはならない** | |
+
+スクロール可否は `user2 > 0` かつ `user10`（既定 true）で判定。
+
+### 26.5 行リスト（27 行）
+
+行 y は全行共通で
+
+```
+y = (<copy> 行番号 </copy> − video_vertical_scroll.user7) × VideoMenu.user2
+```
+
+行の可視条件（ラベル／ボタン／スライダー共通）:
+
+```
+visible = (me.y >= 0) AND (me.y + me.height <= parent.height) AND NOT xbox
+```
+
+| 行 | string trait | y の行番号 | コントロール | 種別 | id | マーカー id |
+|---|---|---|---|---|---|---|
+| 0 | `_resolution` | 0 | `video_resolution_rect`（矢印式） | range | rect 27 / left 8 / right 26 | - |
+| 1 | `_gamma` | 1（xbox では 0） | `video_gamma_slider` | slider | 5 | 6 |
+| 2 | `_texturesize` | 2 | `video_texsize_button` | button | 20 | - |
+| 3 | `_treelod` | 3 | `video_tree_lod_slider` | slider | 12 | 13 |
+| 4 | `_actorlod` | 4 | `video_actor_lod_slider` | slider | 14 | 15 |
+| 5 | `_itemlod` | 5 | `video_item_lod_slider` | slider | 16 | 17 |
+| 6 | `_objectlod` | 6 | `video_object_lod_slider` | slider | 18 | 19 |
+| 7 | `_grass` | 7 | `video_grass_slider` | slider | 22 | 23 |
+| 8 | `_viewdist` | 8 | `video_viewdist_slider` | slider | 28 | 29 |
+| 9 | `_distantlod` | 9 | `video_LOD_button` | button | 9 | - |
+| 10 | `_distbuild` | 10 | `video_distbuild_button` | button | 30 | - |
+| 11 | `_disttrees` | 11 | `video_disttrees_button` | button | 31 | - |
+| 12 | `_intshad` | 12 | `video_intshad_slider` | slider | 32 | 33 |
+| 13 | `_extshad` | 13 | `video_extshad_slider` | slider | 34 | 35 |
+| 14 | `_self_shadows` | 14 | `video_self_shadows_button` | button | 10 | - |
+| 15 | `_grass_shadows` | 15 | `video_grass_shadows_button` | button | 21 | - |
+| 16 | `_canopyshadows` | 16 | `video_canopy_button` | button | 11 | - |
+| 17 | `_shadowfiltering` | 17 | `video_shadow_filter_button` | button | 48 | - |
+| 18 | `_speclight` | 18 | `video_speclight_slider` | slider | 36 | 37 |
+| 19 | `_hdr` | 19 | `video_hdr_button` | button | 38 | - |
+| 20 | `_bloom` | 20 | `video_bloom_button` | button | 47 | - |
+| 21 | `_water_detail` | 21 | `video_water_detail_button` | button | 39 | - |
+| 22 | `_water_reflections` | 22 | `video_water_reflections_button` | button | 40 | - |
+| 23 | `_water_displacement` | 23 | `video_water_displacement_button` | button | 41 | - |
+| 24 | `_window_reflections` | 24 | `video_window_reflections_button` | button | 42 | - |
+| 25 | `_blood` | 25 | `video_blood_button` | button | 43 | - |
+| 26 | `_antialiasing` | 26 | `video_antialias_rect`（矢印式） | range | rect 44 / left 45 / right 46 | - |
+
+- ラベルは `<text>`、`x = 0`、`alpha = 255`、色は VideoMenu の rgb（117/59/33）。
+- ボタンの表示文字列は `strings():_onoff`（`button_floating_2` の `_top = ラベル.y − 12`）。
+- 解像度・アンチエイリアスは `_onoff` ではなく現在値の文字列（`VideoMenu.user4` / `user5`）。
+- 有効な行は 0〜26 の **27 行**。行番号 27 以降は存在しない（`user0 = 27` と一致）。
+
+### 26.6 コントロールの共通ジオメトリ
+
+**(a) ボタン（`button_floating_2.xml` include、`<rect>`）**
+
+| trait | 値 |
+|---|---|
+| `_center_x` | `parent.user0` = 536.9 |
+| `_top` | 対応ラベル.y − 12 |
+| width | `child(button_text).width + 40` |
+| height | 64（固定） |
+| depth | 5 |
+| x | `_center_x − child(button_floating).width / 2`（＝実質 user0 中心） |
+| y | `_top` |
+| `child(button_floating)` | `dialog_selection_full.dds`、幅 = max(parent.width, 104)、高 64、y = 3、parent の mouseover かつ target のときのみ可視 |
+| `child(button_end)` | `dialog_selection_cut.dds`、104×64、`parent.width + 8 − me.width` |
+| `child(button_text)` | font 1、justify center、depth 7、rgb = target ? (117,59,33) : (+128, alpha 196) |
+| user1 | true = enabled |
+
+**(b) スライダー（`horiz_floating_scroll.xml` を内部に include、`<image>`）**
+
+スライダーは単体ではなく「マーカー画像（ハイライト枠）」の子として定義される:
+
+| 要素 | 値 |
+|---|---|
+| マーカー画像 | `Menus\dialog\dialog_selection_full.dds`、`repeathorizontal`、depth 3 |
+| マーカー width | `video_*_slider.width + 120` |
+| マーカー height | 64 |
+| マーカー x | `parent.user0 − me.width / 2`（＝ user0 中心） |
+| マーカー y | 対応ラベル.y − 15 |
+| マーカー子 `*_marker_2` | `dialog\dialog_selection_cut.dds`、104×64、x = `parent.width − 100` |
+| スライダー x / y | 60 / 22（マーカー内相対） |
+| スライダー width / height | 400（prefab 既定） / 16 |
+| user4（ジャンプ距離） | 25 |
+| user6（マーカー id） | 上表のとおり |
+| user8 | `&false;`（数値表示は非表示） |
+| レール素材 | `\Menus\Shared\horizontal_scrollbar_line.dds`、`repeathorizontal`、alpha = user13 ? 255 : 128 |
+| 左矢印 | `horizontal_scrollbar_parts.dds` cropx 0、50×37、x = −49、y = −11 |
+| 右矢印 | `horizontal_scrollbar_parts.dds` cropx 128、51×42、x = `parent.width − 1`、y = −11 |
+| ノブ（マーカー image） | `horizontal_scrollbar_parts.dds` cropx 64、39×34、x = (parent.width − me.width) × 比率、y = −10、depth 6 |
+| 左右の当たり判定 | `horizontal_scroll_leftside` / `rightside`（37 高、alpha 0、target = user13） |
+
+左矢印→ n 段、右矢印→ n 段、サイドクリック→ user4 ジャンプ、ノブドラッグ→ `user8` 間隔。
+`user13` は有効/無効、`user9` は 0〜1 の正規化現在値。
+
+**(c) 範囲矢印（解像度 / アンチエイリアス）**
+
+`video_resolution_left` / `_right`（および antialias 版）は `microsoft` 共通の左右矢印セット。
+
+| trait | 値 |
+|---|---|
+| left / right 素材 | `\Menus\Shared\shared_arrow_left.dds` / `shared_arrow_right.dds`、121×36、depth 5 |
+| left x | 288 |
+| left y | `対応 text.y + text.height − me.height` / 2 |
+| right x | `text.x + (text.x − left.x) − me.width` |
+| 現在値テキスト | `justify center`、depth 1、x = `parent.user0`、y = `対応ラベル.y`、string = VideoMenu.user4 / user5 |
+| rect（当たり判定） | `video_resolution_rect` は `video_resolution_floating` の x/y/width/height をコピー。`video_resolution_floating` = `dialog_selection_full.dds` 512×64、x = `left.x − 10`、y = 左矢印とテキストの縦中央合わせ |
+| ハイライト端 | 子 `effset_range_floating_end` = `dialog_selection_cut.dds` 104×64、x = `parent.width + 8 − me.width` |
+| 発光条件 | rect / left / right のいずれかが mouseover のとき alpha 255 |
+
+### 26.7 フッター
+
+`video_background` の直下、`video_main_rect` の外側に配置される。
+
+| 要素 | 値 |
+|---|---|
+| `video_resolution_footnote` | font 3、`visible = VideoMenu.user3`、depth 3、x = 20、y = `parent.height − 40`（= 560）、string = `_widescreen`、色は VideoMenu rgb |
+| `video_defaults_button` | `button_long.xml` include、id 4、depth 3。x = `video_return_button.x − me.width − (xenon ? 40 : 10)`、y = `video_return_button.y`、string = `_defaults`、clicksound 2、user20 = `xbuttony` |
+| `video_return_button` | `button_long.xml` include、id 1、depth 3。x = `parent.width − me.width − 30`、y = `parent.height − me.height − 20`、string = `_return`、clicksound 2、user20 = `xbuttonb` |
+
+`button_long.xml` の実寸: 177×44、font 既定 1、`user20 = 1` のときは通常ボタン
+（`Menus\Shared\shared_button_long_off.dds` / `_on.dds`）、`user20 >= 2` のとき Xbox ボタン画像
+（`Menus\Shared\all_xbox_buttons.dds` を cropx で切替、64×64）。
+
+十字キーの巡回（非 Xbox）:
+
+- return: left/right → defaults の mouseover、up → blood の mouseover
+- defaults: left/right → return の mouseover、up → blood の mouseover
+- resolution_rect: up → scroll 上端、down → gamma マーカー、left/right → 左右矢印
+- antialias_rect: up → blood、down → scroll 下端、left/right → 左右矢印
+
+### 26.8 hair_detail は無効化されている（重要）
+
+`video_hair_detail_label` / `video_hair_detail_button` のブロックは
+**コメントアウトされており、実行時には存在しない**。
+
+```
+1813: <!--text name="video_hair_detail_label">
+1852: </rect-->
+```
+
+内部の行番号も `<copy> ?? </copy>`、id も `??` のままで、開発時のプレースホルダが
+そのまま残っている。したがって **VideoMenu の行数は 27 行（0〜26）で確定**。
+`_hair_detail` trait は strings 側に残っているが、この画面では参照されない
+（HUD／他メニューでも未使用）。
+
+### 26.9 Android 移植向け確定値（まとめ）
+
+- 実効キャンバス 900×600。main_rect は **(37, 50) から 826×472**。
+- 1 行あたりの送りは main_rect.height / 7 = **67.43**。表示は 7 行。
+- ラベル列 X = 0（main_rect 左端）、コントロール列の中心 X = **536.9**（= 826 × 0.65）。
+- ラベル（`<text>`）は x=0・可視判定は前述の culling 式のみ。
+- ボタンは main_rect の X 中心に、ラベル y − 12 を上端として 64 高で描く。
+- スライダーは幅 400・高 16。ハイライト枠はそれを中心に左右 60 ずつ広げた 520×64。
+- 数値表示は `user8 = false` のため出さない。
+- 色は常に (117, 59, 33)。非 target 時のみ +128 して alpha 196。
+- Xbox 分岐では gamma 行だけ index が 0 に繰り上がる（他行は +1 ずれ込む）。
+- 解像度とアンチエイリアスだけは矢印式（`shared_arrow_left/right.dds` 121×36）で、
+  現在値はコード（`VideoMenu.user4` / `user5`）が設定する。
+
+## 27. セーブスロットオブジェクト（0x160 構造体）と .ess セーブフォーマット（逆コンパイル）
+
+> 既存 XML レイアウト（§25）に加え、save_slot_layout / save_slot_parse 相当を
+> headless Ghidra（`D:\Cargo\ReaProj`、fresh import + createFunction + decompiler）で
+> 逆コンパイルした結果。該当関数:
+> - `save_slot_layout` @ 0x0045d450（スロット一覧構築）
+> - `save_slot_obj_ctor` @ 0x00430970（0x160 確保）
+> - `ess_file_load` @ 0x00585410 / `ess_query_time` @ 0x00590330
+> - `data_reader_open` @ 0x0045f2e0 / `data_reader_size` @ 0x0045dbc0
+> - `header_field_reader` @ 0x0045d5f0
+
+### 27.1 セーブスロットオブジェクト（0x160 バイト）のレイアウト
+
+スロット1個は 0x160 バイト。`save_slot_layout`(0x0045d450) が
+`func_0x00401f00(0x160)` で確保し、リストに挿入する。
+
+| オフセット | サイズ | 内容 |
+|---|---|---|
+| +0x00 | 4 | vtable `&UNK_00a39094` |
+| +0x04 | 4 | 関数 ptr |
+| +0x08 | 4 | 関数 ptr |
+| +0x0c | 4 | ctor の param_4（種別フラグ） |
+| +0x10..0x1c | 13B | 0 初期化 |
+| +0x20 | 4 | param_3（0=load / 1=save） |
+| +0x24 | 4 | bool |
+| +0x28..0x38 | 0x11B | 初期化（+0x30 = -1 / 0xffffffff） |
+| **+0x3c** | 0x104 | **name[260]**（strcpy、キャラ名） |
+| +0x140..0x150 | 0x11B | 0 初期化 |
+| +0x154 | 1 | クリアバイト（index 0x55 の byte 位置） |
+| +0x15c | 4 | dword |
+| **= 0x160** | | **1 スロット合計** |
+
+- vtable `&UNK_00a39094`（0x90 0a 43 00 ...）＝ ctor の `&UNK_00a3636c` と
+  **同一の関数エントリ列**（0x00430a90, 0x007481c0, 0x004307f0, 0x0042ff80,
+  0x00430010, 0x00430ba0, 0x0042fe80, 0x00430240, ...）。両アドレスとも
+  同じ vtable 実体を指す。
+- ±パス構築: `lstrcpyA(0xb3f280 dir表記) + lstrcatA(0x00b05564 氏名) + &UNK_00a3a884`
+  で `*.ess` を列挙 → `FindFirstFileA/FindNextFileA`。
+- 表示名: `func_0x0098208b(sprintf)` に `&UNK_00a3a88c`(= "%s%s%s.ess") を渡す。
+- `+0x20` が save なら `func_0x0042fe80(0, param_5)` を呼ぶ（セーブ専用フラグ）。
+
+### 27.2 .ess ファイルのヘッダ（data_reader_size / header_field_reader）
+
+`data_reader_size`(0x0045dbc0) はストリームコールバック `param_2[1]` で読み出す。
+
+- **ヘッダマジック 12 バイト = `TES4SAVEGAME`（@0x00a38fa0）**。
+  `func_0x00984166`(strncmp系)で先頭 4 バイト・12 バイトの両比較。
+  一致しない場合エラーコード 0xd000 / 0xde0c 系。先頭 4 バイトが `CON ` に一致すると
+  0xd000（デバイス名の誤検出）として弾く。
+- version+1 バイトを `param_1+0x70`/`+0x71`、`*(byte*)(param_1+0x7c)` に保存。
+  **セーブファイルバージョンはグローバル `iRam00b33b00 + 0x7c`**。
+- version >= 0x52 (82): `+0x94` に 16 バイト、`+0xa4` に 4 バイト読み足す（GUID/追加ヘッダ）。
+  version < 0x52: `+0x94..0xa4` を 0xffffffff 初期化。
+- エラー時は vtable+0xc からハンドラ（0xd000 等）を呼ぶ。
+
+`header_field_reader`(0x0045d5f0) はヘッダを **順次フィールド** として読む。
+
+| 順 | version 条件 | サイズ | 内容 |
+|---|---|---|---|
+| 1 | > 0x37 | u32 | param_2（ver<0x38 は 0） |
+| 2 | 常 | u8 長 + 文字列 | param_3（長さ接頭辞文字列、0 なら空） |
+| 3 | >= 0x34 | u16 | param_4（ver<0x34 は 0） |
+| 4 | 常 | u8 長 + 文字列 | param_5（キャラ名、長さ = bVar1） |
+| 5 | 常 | u32 | param_6 |
+| 6 | > 0x1c | u32 | param_8 |
+| 7 | > 0x37 | 16B/4dword | param_7 tuple（ver<0x38 は func_0x004301a0 から代入） |
+| 8 | 常 | 0x70 確保構造 | varray 構築（`iVar16*iVar5*3` バイト）、ver<0x2e で +0x24 をスキップ、memcpy、InterlockedIncrement |
+
+- **バージョンゲート閾値**: 0x1c(28) / 0x2e(46) / 0x34(52) / 0x37(55) / 0x38(56) /
+  0x51(81) / 0x52(82)。Steam 版は 0x50 代が想定。
+- 読み終了後 `param_1+0x14 = 0`。
+
+### 27.3 セーブスロットの表示/保存まわりで判明した文字列定数
+
+| アドレス | 内容 |
+|---|---|
+| 0x00a3a884 | `*.ess`（検索パターン） |
+| 0x00a3a88c | `%s%s%s.ess`（表示名 sprintf パス） |
+| 0x00a3a8e8 | `Save game version is %i.%02i and current version is %i.%02i, so ...`（版数差診断フォーマット） |
+| 0x00a3a8f8 付近 | `%02i:%02i:%02i`（時:分:秒、再生時間） |
+| 0x00a3aeb8 | `%s %i`（名前+番号） |
+| 0x00a3b144 | `quicksave` |
+| 0x00a3aad4 | `autosave` / `.bak` |
+| 0x00a3a954 | `CON `（デバイス名誤検出チェック） |
+| 0x00b3f280 | dir 表記ルート（バッファ） |
+
+### 27.4 注意：ess_file_obj_load(0x0058cf40) は .ess 本体パーサではない
+
+`func_0x0058cf40` の実体は **スクリプト VM 的なオペコード分岐**
+（opcode 0x14/0x19/.../0x3c = 20..60 の連番、`piVar4[4]` を 0xbba/0xfe6/0xfde/0xfa2
+と比較）。生 .ess バイナリを直接読み切るのではなく、**保存済みゲーム状態の
+オブジェクト復元** を目的とする。.ess 全体の完全バイナリマップはメニュー表示に
+不要であり、メニューで必要なのは §27.2 のヘッダフィールド（氏名・レベル・
+再生時間・状態）のみ。
+
+### 27.5 Android 移植向け確定値
+
+- スロットは **0x160 バイトの固定オブジェクト**、`name[]` は +0x3c から 260 文字。
+- ヘッダ先頭のマジックは **`TES4SAVEGAME`（12 バイト）**。
+- バージョン byte はヘッダ冒頭付近（+0x70/0x71、グローバル +0x7c）で、
+  表示名の再構築には version ゲート（0x34 / 0x37 / 0x38 / 0x52）を尊重する。
+- 再生時間は `%02i:%02i:%02i`、表示名は `%s %i` / `Save %i - %s - ...` 系で整形。
+
+## 28. メニュー vtable 全列挙と未文書化メニューファミリー（逆コンパイル / RTTI、確定 2026-10-16）
+
+### 28.1 手法
+
+§20 の RTTI スキャンを基盤に `MenuVtables.java`（headless Ghidra、
+`-process -noanalysis -postScript`）で非実行・初期化済みブロックを 4 バイト刻みで
+走査し、MSVC RTTI の vtable レイアウトを検出した。
+
+- 検出条件: 直前語（coldata ポインタ）→ `(int)readInt() & ~1 == 0`
+  （RTTI complete-object `sig=0` / `sig=1`）、TypeDescriptor ポインタ（`colPtr+0xC`）
+  → `colPtr+0x10` のクラス名が `.?AV` / `.?AU` で始まる。
+- クラス名に `Menu` を含むものを抽出。
+- **スロット数** = vtable 先頭からコード/データポインタが連続する個数（上限 512）。
+  これが仮想関数テーブルのエントリ数（= デストラクタ + 仮想メソッド）。
+
+結果: **実メニュークラス 50 件＋補助コンテナ 3 件＋基底 1 件 = 53 vtable**。
+
+### 28.2 vtable スロット規則（全メニュー共通）
+
+| スロット | 役割 | 備考 |
+|---|---|---|
+| [0] | デストラクタ | クラス固有、基底破棄呼出→`operator delete` |
+| [1] | スカラ削除デストラクタ | 同上＋`param_2 & 1` 分岐 |
+| [2] | 共通スタブ | ほぼ常に `FUN_0060cf60`（no-op/非対応既定） |
+| [3] | 初期化 / コンストラクト | クラス固有（tile 構築・イベント登録） |
+| [6][7] | 共通処理 | `FUN_00890b90` |
+| [11] | メニュー固有ハンドラ | 未実装既定は `FUN_0060d0a0` |
+| [12] | 共通処理 | `FUN_006fe080` |
+| [13] | 共通デストラクタ系 | クラス固有の小関数 |
+| [14] | 共通処理 | `FUN_00725da0`（一部はメニュー固有 15 番以降に拡張） |
+
+**共通関数（複数メニューで共有）**: `FUN_0060cf60`（既定スタブ）/
+`FUN_0060d0a0`（既定ハンドラ）/ `FUN_006fe080` / `FUN_00890b90` /
+`FUN_006f7070` / `FUN_00725da0` / `FUN_00982d85`（補助コンテナの
+デフォルト実装）。
+
+**デストラクタの同定規則**（逆コンパイル所見）: `func_0x<基底破棄>()` 呼出後、
+`if (param_2 & 1) func_0x00401f20(param_1)`（operator delete）を呼ぶ
+MSVC スカラデストラクタの定型。例: 基底 `Menu::FUN_005853f0`。
+
+### 28.3 実メニュー vtable 一覧（ベースアドレス / スロット数 / 主要スロット関数）
+
+| # | クラス名 | ベース | slots | [0] dtor | [3] init | [11] handler |
+|---|---|---|---|---|---|---|
+| 1 | Menu（基底） | 00a696dc | 15 | FUN_005853f0 | FUN_0060cf60 | FUN_0060d0a0 |
+| 2 | ControlsMenu | 00a69ff4 | 19 | FUN_00587520 | FUN_0059c5e0 | FUN_0059bd80 |
+| 3 | TextEditMenu | 00a6a04c | 35 | FUN_00587ac0 | FUN_005dd1b0 | FUN_005dd160 |
+| 4 | VideoMenu | 00a6a09c | 15 | FUN_00587cd0 | FUN_005df160 | FUN_005ddea0 |
+| 5 | TileMenu | 00a6af14 | 7 | FUN_005900f0 | FUN_005900d0 | — |
+| 6 | AlchemyMenu | 00a6b1b4 | 15 | FUN_005936f0 | FUN_00595080 | FUN_00593af0 |
+| 7 | AudioMenu | 00a6b29c | 15 | FUN_00595350 | FUN_00595790 | FUN_00595a20 |
+| 8 | BookMenu | 00a6b334 | 15 | FUN_00595c40 | FUN_00595fc0 | FUN_0060d0a0 |
+| 9 | BreathMenu | 00a6b404 | 15 | FUN_00596520 | FUN_0060cf60 | FUN_0060d0a0 |
+| 10 | ClassMenu | 00a6b49c | 15 | FUN_00596fc0 | FUN_00596fe0 | FUN_005976b0 |
+| 11 | ContainerMenu | 00a6b574 | 19 | FUN_00597af0 | FUN_0059a400 | FUN_00598710 |
+| 12 | CreditsMenu | 00a6b784 | 15 | FUN_0059c9d0 | FUN_0060cf60 | FUN_0059ca70 |
+| 13 | DialogMenu | 00a6b88c | 15 | FUN_0059e660 | FUN_0059f010 | FUN_0059f640 |
+| 14 | EffectSettingMenu | 00a6b92c | 15 | FUN_0059fc30 | FUN_0059ff60 | FUN_005a0260 |
+| 15 | EnchantmentMenu | 00a6ba0c | 15 | FUN_005a1ea0 | FUN_005a3160 | FUN_005a20c0 |
+| 16 | GameplayMenu | 00a6bd0c | 15 | FUN_005a3430 | FUN_005a3860 | FUN_0060d0a0 |
+| 17 | GenericMenu | 00a6bd9c | 15 | FUN_005a3ce0 | FUN_005a3d80 | FUN_0060d0a0 |
+| 18 | HUDInfoMenu | 00a6bdf4 | 15 | FUN_005a4810 | FUN_0060cf60 | FUN_005a5540 |
+| 19 | HUDMainMenu | 00a6bee4 | 15 | FUN_005a6ae0 | FUN_005a68c0 | FUN_005a6de0 |
+| 20 | HUDSubtitleMenu | 00a6c0dc | 15 | FUN_005a9960 | FUN_0060cf60 | FUN_005a93b0 |
+| 21 | InventoryMenu | 00a6c18c | 15 | FUN_005a9bb0 | FUN_005abbc0 | FUN_005aa1b0 |
+| 22 | LevelUpMenu | 00a6c264 | 16 | FUN_005ac5b0 | FUN_005ac7b0 | FUN_0060d0a0 |
+| 23 | LoadingMenu | 00a6c40c | 15 | FUN_005ae060 | FUN_0060cf60 | FUN_0060d0a0 |
+| 24 | LoadgameMenu | 00a6c6bc | 15 | FUN_005ae6b0 | FUN_005aeed0 | FUN_0060d0a0 |
+| 25 | LockPickMenu | 00a6c73c | 15 | FUN_005af410 | FUN_0060cf60 | FUN_005b11a0 |
+| 26 | MagicMenu | 00a6c974 | 15 | FUN_005b28b0 | FUN_005b3990 | FUN_005b1410 |
+| 27 | MagicPopupMenu | 00a6ca54 | 15 | FUN_005b3ed0 | FUN_0060cf60 | FUN_005b4080 |
+| 28 | MainMenu | 00a6cb1c | 15 | FUN_005b6020 | FUN_005b64c0 | FUN_0060d0a0 |
+| 29 | MapMenu | 00a6cc9c | 15 | FUN_005b87b0 | FUN_005bb880 | FUN_005b70f0 |
+| 30 | MessageMenu | 00a6ce5c | 15 | FUN_005bc690 | FUN_005bcdd0 | FUN_0060d0a0 |
+| 31 | NegotiateMenu | 00a6cf0c | 15 | FUN_005bd050 | FUN_005bd490 | FUN_005bd550 |
+| 32 | OptionsMenu | 00a6cfac | 15 | FUN_005bd650 | FUN_005bd880 | FUN_0060d0a0 |
+| 33 | PauseMenu | 00a6d03c | 15 | FUN_005bda60 | FUN_005bde70 | FUN_0060d0a0 |
+| 34 | PersuasionMenu | 00a6d0cc | 15 | FUN_005be240 | FUN_005c0440 | FUN_005bec70 |
+| 35 | QuantityMenu | 00a6d15c | 15 | FUN_005c05a0 | FUN_005c0820 | FUN_0060d0a0 |
+| 36 | QuickKeysMenu | 00a6d1f4 | 23 | FUN_005c0cf0 | FUN_0060cf60 | FUN_0060d0a0 |
+| 37 | RaceSexMenu（chargen） | 00a6d38c | 15 | FUN_005c4e20 | FUN_005cc200 | FUN_005ce570 |
+| 38 | RechargeMenu | 00a6d45c | 19 | FUN_005ce820 | FUN_005cfd90 | FUN_005ceb50 |
+| 39 | RepairMenu | 00a6d5b4 | 15 | FUN_005d1060 | FUN_005d22c0 | FUN_005ceb50 |
+| 40 | SaveMenu | 00a6d624 | 31 | FUN_005d3630 | FUN_005d3d20 | FUN_0060d0a0 |
+| 41 | SigilStoneMenu | 00a6d664 | 15 | FUN_005d4880 | FUN_005d5470 | FUN_005d5520 |
+| 42 | SkillsMenu | 00a6d71c | 15 | FUN_005d56f0 | FUN_005d5e50 | FUN_005d5ab0 |
+| 43 | SleepWaitMenu | 00a6d7c4 | 15 | FUN_005d6d00 | FUN_005d6a80 | FUN_0060d0a0 |
+| 44 | SpellMakingMenu | 00a6d864 | 15 | FUN_005d7c80 | FUN_005d7ca0 | FUN_005d8130 |
+| 45 | SpellPurchaseMenu | 00a6d8cc | 15 | FUN_005d8950 | FUN_005d9890 | FUN_005ceb50 |
+| 46 | StatsMenu | 00a6d9dc | 15 | FUN_005d9d70 | FUN_005dcd70 | FUN_005da180 |
+| 47 | TrainingMenu | 00a6dc74 | 15 | FUN_005dd310 | FUN_005dd3e0 | FUN_005ceb50 |
+| 48 | VideoDisplayMenu | 00a6dccc | 15 | FUN_005dda20 | FUN_005ddb70 | FUN_0060d0a0 |
+| 49 | MenuBGShader | 00a8cfd4 | 47 | FUN_007b1de0 | FUN_006f7070 | FUN_0060d0a0 |
+
+補助コンテナクラス（`NiTList` 系。実メニューではないが RTTI に `Menu` を含む）:
+
+| クラス名 | ベース | slots | 備考 |
+|---|---|---|---|
+| `?$NiTListBase@V?$DFALL@UVideoRes@VideoMenu@@@@UVideoRes@VideoMenu` | 00a69fe0 | 3 | VideoMenu の VideoRes リスト |
+| `?$NiTPointerListBase@V?$DFALL@UVideoRes@VideoMenu@@@@UVideoRes@VideoMenu` | 00a6a034 | 3 | 同上 |
+| `?$NiTList@UVideoRes@VideoMenu` | 00a6a08c | 19 | 同上（MapMenu 系にも共有） |
+| `RepairMenuList@RepairMenu` | 00a6d5a4 | 19 | RepairMenu の項目リスト |
+
+### 28.4 スロット 15 以降を持つ拡張メニュー
+
+slots>15 のメニューは、[15] 以降に固有の追加仮想関数（リスト操作・項目描画）を持つ。
+
+- **TextEditMenu**(35) / **SaveMenu**(31) / **QuickKeysMenu**(23) /
+  **ControlsMenu**(19) / **ContainerMenu**(19) / **RechargeMenu**(19) /
+  **RepairMenuList**(19) / **LevelUpMenu**(16)。
+- 例 SaveMenu: [15]=FUN_00ac2e2c, [16]=FUN_005d4880, [17]=FUN_005d3fb0,
+  [19]=FUN_005d5470, [20]=FUN_005d4260, [21]=FUN_005d4400。SaveMenu と
+  SigilStoneMenu は [0]/[3] 系を共有（FUN_005d4880/FUN_005d5470/FUN_005d4260/
+  FUN_005d4400）し、**セーブ一覧の行オブジェクト基底を共有**している。
+
+### 28.5 未文書化メニューファミリーの役割（逆コンパイル所見）
+
+`DecompOnly.java` で主要関数を逆コンパイルした結果（§23.5 のハンドラ表を補強）:
+
+- **基底 Menu**: `FUN_005853f0`（デストラクタ）。スロット [0]..[14] のうち大半が
+  既定スタブ `FUN_0060cf60` で、実質的にイベントディスパッチ基盤のみを持つ。
+- **GenericMenu**: [0]=`FUN_005a3ce0`（デストラクタ: `func_0x005a3c60` 呼出）、
+  [3]=`FUN_005a3d80`（初期化）、[13]=`FUN_005a3cd0`。§23.5 の設定項目ハンドラ
+  `FUN_005a3ff0` は ID `0xfae..0xfc2`（21 個）の設定スライダー/トグルを構築し、
+  `func_0x00588bd0(設定ID)` で各設定値を読み、グローバル配列 `0xb3b2e0` に格納、
+  `uRam00b3b2d8=*(param_1+0x34)` / `iRam00b3b2dc=param_2` を更新する。
+  Gameplay/Video/Audio の各設定画面はこの GenericMenu のインスタンスとして生成される。
+- **MessageMenu**: [0]=`FUN_005bc690`（デストラクタ: `func_0x005bc4a0`）、
+  [1]=`FUN_005bc510`、[3]=`FUN_005bcdd0`、[4]=`FUN_005bc770`、[5]=`FUN_005bc890`。
+  `FUN_005bcdd0(param_1,param_2)` は表示種別 `param_2` に応じて処理分岐し、
+  `param_2==2`→`func_0x005bccb0`、`param_2>3`→`func_0x0057de50(1)`。メニュー取得後
+  `+0x98..+0xa4` を 0 クリアし、`*(char*)(+0xb0) = *(char*)(param_1+0x60) + param_2 - 4`
+  でメッセージ種別を算出する。`FUN_005bc8b0(char*)` は文字列引数の関連処理。
+- **FUN_00579970**: メニュー `0xfa8` 系の更新処理。グローバル
+  `iRam00b3a6d8` / `piRam00b3a6dc` で前回値を保持し、vtable
+  `[0xc]`/`[0x10]`/`[0x14]`（set 系）を呼び出す。
+- **HUDMainMenu**: [0]=`FUN_005a6ae0`、[1]=`FUN_005a55f0`、[3]=`FUN_005a68c0`、
+  [8]=`FUN_005a6940`、[11]=`FUN_005a6de0`、[13]=`FUN_005a6840`。
+  HUD 常駐メニュー（体力/魔力/コンパス等）の更新系。
+- **DialogMenu**: [0]=`FUN_0059e660`、[1]=`FUN_0059d8f0`、[2]=`FUN_0059da30`
+  （PersuasionMenu の [2] と共有）、[3]=`FUN_0059f010`、[4]=`FUN_0059db70`、
+  [5]=`FUN_0059dca0`、[11]=`FUN_0059f640`。
+- **RaceSexMenu（chargen）**: [0]=`FUN_005c4e20`、[2]=`FUN_005c2790`、
+  [3]=`FUN_005cc200`（大規模キャラクタ生成初期化）、[10]=`FUN_005c2870`、
+  [11]=`FUN_005ce570`、[12]=`FUN_005c3dd0`。新規ゲーム開始（§21）時に
+  人種・性別・外見の選択 UI を構築する。
+- **ClassMenu**: [0]=`FUN_00596fc0`、[3]=`FUN_00596fe0`、[11]=`FUN_005976b0`、
+  [13]=`FUN_00596ce0`、[14]=`FUN_00596980`。chargen のクラス選択。
+
+### 28.6 Android 移植向けメモ
+
+- メニューは **共通基底 vtable（`FUN_0060cf60` 既定スタブ＋`FUN_0060d0a0` 既定
+  ハンドラ）** と **クラス固有の [0]/[1]/[3] と必要な追加スロット** で構成される。
+  Android 側の UI 実装では、共通スロット（イベントディスパッチ）は 1 系統に統一し、
+  クラス固有スロットのみ各画面で実装すればよい。
+- **行オブジェクト系メニュー**（SaveMenu/SigilStoneMenu/RepairMenu 等）は
+  リスト項目の仮想関数を共有するため、行ウィジェット基底を 1 つ実装して
+  Save/Load/Repair/Recharge で再利用できる。
+- XML レイアウト（§24〜26）と vtable（本章）を突き合わせることで、
+  各メニューの「表示要素（XML）」と「更新ロジック（vtable ハンドラ）」が対応する。
+
+## 29. 残メニュー関数 6 件の詳細逆コンパイル（確定 2026-10-16）
+
+§28.5 で役割のみ記載していた 6 関数を、`DecompOnly.java` で実際に逆コンパイルした。
+
+### 29.1 手法と注意（`size=1` は誤検知だった）
+
+- 対象プロジェクトは **`D:\Cargo\ReaProj` Fresh**（Oblivion.exe 解析済み）。
+  `-process -noanalysis -postScript DecompOnly.java <addr...>` で実行。
+- 出力の `size=1` は「プロジェクトが関数ボディを持たない」ことを示すだけで、
+  **デコンパイラが生バイトからオンデマンド逆アセンブルして C を生成**する。
+  既知関数 `0x005853f0` でも `size=1` のまま正常に本文が出ることを確認済み。
+- 以前「本体なし」と判定したのは、**ログ整形フィルタ**が Ghidra の
+  `INFO  DecompOnly.java> ` プレフィックス付き行（各 println の先頭行のみ）を
+  残し、複数行にまたがる C 本文を落としていたため。生ログには全関数の本文が
+  含まれる（`tmp\fam_out3.txt`、2713 行）。
+- 結論: **残 6 関数はすべて当該プログラムに実在し、正常に逆コンパイル可能**。
+  関数境界の欠落や別アドレスの問題はなかった。
+
+### 29.2 HUDMainMenu
+
+- **[3] init `FUN_005a68c0`**: `func_0x00589b70(0x3ec)`（メニュー 0x3ec の取得）→
+  `func_0x005898f0` → `func_0x00589390(0xfb1)` → `func_0x00588bd0()` の値が
+  `_UNK_00a2faa8` と一致するとき、スタック上のスロット値 9/10/0xb/0xc に応じて
+  `FUN_005a5e80` / `005a5ef0` / `005a5f60` / `005a5fd0` を呼び分ける。
+  HUD 常駐要素のサブ初期化（体力/魔力/コンパス等の個別スロット）。
+- **[11] handler `FUN_005a6de0`**: HUD の毎フレーム更新（重量級）。
+  `func_0x006ecc80`（HUD 有効判定）後、`this+0x54`/`+0x4c`/`+0x44`（サブ要素）の
+  有無で分岐し、`*piRam00b333c4`（PlayerCharacter vtable）の `+0x174`/`+0x1e0`/
+  `+0x198`/`+0x19d` を呼んで座標・向き・名前を取得。取得値は
+  `func_0x0058ceb0(id, value)` で HUD 要素へ設定する（ID `0xfa1`/`0xfa7`/`0xfab`/
+  `0xfae`/`0xfb0`/`0xfb3`/`0xfb4`/`0xfb7`/`0xfb8`/`0xfb9`/`0xfba` =
+  テキスト・座標・スケール・アルファ・可視フラグ）。
+  `piRam00b333c4[0x18e]` はコンパス/クエストマーカー、`piRam00b333c4[399]` は
+  サブメニュー参照。`this+0x84`（登録要素数）/`this+0x90`（アクティブ数）ループで
+  `*(this+0x78)+4`（vtable スロット 1）を呼び、要素をフェードアウト除去する。
+- **[8] `FUN_005a6940` / [13] `FUN_005a6840`** は更新系の補助（§28.3 参照）。
+
+### 29.3 DialogMenu
+
+- **[3] init `FUN_0059f010(int* this, int id)`**: ボタン ID `id` ごとに分岐。
+  - `id > 99`（数値入力・テキスト文字列 ID）: `func_0x00588c10(0xfde)` で
+    テキストボックス取得、`func_0x0058ceb0(0xfa1, 1.0)`、`func_0x006b8660`
+    （IME/文字入力状態）を処理。`func_0x006b8650` の結果から `this+0x22` と
+    グローバル `uRam00b3b294` を更新し、`func_0x0059eb90`（ダイアログ再構築）へ。
+  - `id == 4`: `func_0x005ef930` → 再構築 `func_0x0059eb90`。
+  - `id == 7`: `0x3f1` 取得後 `func_0x00582160(0,1,0,0xfdd,0)`（メニュー 0xfdd を開く）、
+    `func_0x0057f9f0`・`func_0x0058fba0(0)`・`func_0x0057de50(1)`（トランジション）、
+    vtable `+0x14` を `(7, ...)` で呼出 → `func_0x005c01d0`。
+  - `id == 8` / `9` / `0xd` / `0x10`: `func_0x0052ed50(5,0)` で選択対象を取得し、
+    `func_0x0052f790(this[0x18], iRam00b333c4, ...)` で実行。グローバル
+    `uRam00b131f8` に **1/2/3/4**（結果コード）を設定。後処理として
+    `func_0x0057a8d0`（8）/ `func_0x0057a940`（9）/ `func_0x005cfce0`（0xd）/
+    `func_0x005d9590`（0x10）を呼ぶ。
+  - `id == 3` / `10`: `func_0x0057de50(2)`、`this[0x19] = 0`。
+  → 「説得・賄賂・盗む・呪文・アイテム」等の各アクション ID ハンドラ。
+- **[11] handler `FUN_0059f640(int this)`**: 戻り値はメニュー ID。
+  `func_0x00578fe0()`（現在メニュー ID）が `0x3f1`/`0x3f0`/`0x40d`/`0x404`/`0x40b`/
+  `0x419`（ダイアログ系・コンソール系）のいずれかなら処理をスキップ。
+  `cRam00b3b298` フラグで `func_0x006b7220`/`func_0x006b7190`（テキスト入力の
+  開始・終了）を制御。`this+0x60`（テキストボックス）の vtable `+0x304`・`+0x33c`
+  を呼ぶ。`this+0x6c`（フェードタイマ、int、負値で逆方向）と `this+0x68`（経過 float）
+  からグローバル `fRam00b13fcc`（0..1 のフェード係数）を算出する。
+
+### 29.4 RaceSexMenu（chargen）
+
+- **[3] init `FUN_005cc200(int this, int id)`**: 1586 行の大規模初期化。
+  スタック上に多数の一時 UI/リスト項目オブジェクト（`apuStack_338` 等）を構築。
+  - `func_0x00419b10`（93 回）＝リスト/配列への追加、`func_0x00588bd0`（71 回）
+    ＝ゲーム設定値の読み出し、`func_0x005c3440`（28 回）/`func_0x005c3110`（24 回）
+    ＝ RaceSex 固有のヘルパ（人種・顔・髪・目の項目生成）。
+  - `func_0x0058ceb0(id, value)` で UI 要素値を設定、`func_0x00579c10`（4 回）
+    で選択確定メッセージを生成。
+  → 新規ゲーム開始（§21）時の**人種・性別・外見・髪型・目の選択 UI を構築**する。
+
+### 29.5 ClassMenu（chargen）
+
+- **[11] handler `FUN_005976b0(int* this)`**: `func_0x00578fe0()` が `0x41b`
+  （ClassMenu のメニュー ID）と等しいとき `cRam00b3b274 = 1` を立てて戻る。
+  それ以外では `cRam00b3b274` が立っていれば選択インデックス `this[0x16]` を
+  増減し、`switch(this[0x16])` で分岐する。
+  - `case 1..3`: `func_0x005d6390(this[0x14|0x13|0x12], 2|1|0)`（クラス属性の説明更新）。
+  - `case 4`: `this[0x10]+0x1c`（クラス説明文字列、null 時 `&UNK_00a2f7ec`）を
+    `func_0x005dcf20(uRam00b38658, text)` で設定。
+  - `case 5`: `this+0x15 = 1` を立て、`func_0x00402e30` でクラス名文字列を整形し、
+    `func_0x00579c10(&uStack_14, &UNK_005974e0, 1, ...)` で**クラス作成の確認
+    メッセージ**を出す（`this[0xd]` の有無で既定名 `uRam00b38648` /
+    `uRam00b38650` を選択）。
+  → chargen のクラス選択と「クラス作成」確定処理。
+
+### 29.6 メニュー ID 定数（本章で確定したもの）
+
+| ID | メニュー |
+|---|---|
+| 0x3ec | HUDMainMenu の取得対象（§29.2） |
+| 0x3f0 / 0x3f1 | DialogMenu（0x3f1 は表示中判定、§29.3） |
+| 0x404 / 0x40b / 0x40d / 0x419 | ダイアログ・コンソール系（§29.3 のスキップ条件） |
+| 0x41b | ClassMenu（§29.5） |
+| 0xfdd | DialogMenu が開く対象メニュー（§29.3） |
+| 0xfde | テキストボックス要素 ID（§29.3） |
+
+### 29.7 Android 移植向けメモ
+
+- HUDMainMenu は「**要素 ID → `func_0x0058ceb0(id, value)`**」の一方向設定で
+  描画される。Android 側は同じ ID 表（`0xfa1`/`0xfa7`/`0xfab`/`0xfae`/`0xfb0`/
+  `0xfb3`/`0xfb4`/`0xfb7`/`0xfb8`/`0xfb9`/`0xfba`）を HUD ウィジェットに
+  マッピングすれば、描画ロジックを再現できる。
+- DialogMenu / ClassMenu の init/handler は「**ボタン ID → アクション**」の
+  スイッチであり、Android 側のボタンコールバックにそのまま対応させられる。
+- chargen（RaceSex）は設定値（`func_0x00588bd0`）と項目生成ヘルパ
+  （`func_0x005c3110`/`005c3440`）の 2 系統で構成されるため、Android 側も
+  「データ表＋リスト生成」に分離すると移植しやすい。

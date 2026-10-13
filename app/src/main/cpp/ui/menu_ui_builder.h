@@ -70,7 +70,8 @@ struct MenuUiNode {
     // Text only.
     std::string text;
     std::string font;               // raw <font> value as authored
-    int font_index = 0;             // <font> mapped onto TextRenderer::FontType
+    int font_index = 2;             // <font> mapped onto TextRenderer::FontType
+                                    // (defaults to Kingthings_Regular)
     std::string justify;            // "left" / "center" / "right"
     float wrap_width = 0.0f;        // <wrapwidth>, 0 = unwrapped
 

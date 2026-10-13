@@ -75,6 +75,41 @@ float CharacterStatus::getAttributeBonus(const std::string& attr) const {
     return 0.0f;
 }
 
+float CharacterStatus::getActorValue(uint32_t avId) const {
+    // Real AV read accessor (RE_EXE_REPORT §17.11.7). Android has no delegate /
+    // equipped-magic-handle object, so each value maps to a stored field. In the
+    // original EXE the result is scaled by a runtime coefficient; here that
+    // unaff_EBP coefficient defaults to 1.0 (no runtime scaling on Android).
+    const float kCoeff = 1.0f;
+
+    // AV 0-7: attributes.
+    static const char* kAttributeNames[] = {
+        "Strength", "Intelligence", "Willpower", "Agility",
+        "Speed", "Endurance", "Personality", "Luck"
+    };
+    if (avId <= AV_LUCK) {
+        auto it = attributes.find(kAttributeNames[avId]);
+        return it != attributes.end() ? it->second : 0.0f;
+    }
+
+    switch (avId) {
+        case AV_HEALTH: {
+            // AV 8 (Health): applies the current/max ratio ("magicka
+            // multiplier"), guarded to 1.0 when the max divisor is zero, then
+            // scaled by the coefficient. Return = (real + ratio) * kCoeff.
+            const float ratio =
+                (maxHealth > 0.0f) ? (currentHealth / maxHealth) : 1.0f;
+            return (currentHealth + ratio) * kCoeff;
+        }
+        case AV_MAGICKA:
+            return currentMana * kCoeff;
+        case AV_STAMINA:
+            return stamina * kCoeff;
+        default:
+            return 0.0f;
+    }
+}
+
 // NPC Implementation
 NPC::NPC(uint32_t id, const std::string& n)
     : npcId(id), name(n), race("Human"), class_("Warrior"),

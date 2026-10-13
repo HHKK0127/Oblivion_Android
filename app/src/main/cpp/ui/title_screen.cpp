@@ -199,21 +199,21 @@ void TitleScreen::buildGraphicalMenu() {
     menuPanel->setBorderColor(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
     menuPanel->setBorderWidth(0.0f);
 
-    struct BtnInfo { int index; std::string labelKey; };
+    // Title menu labels are always English, independent of the in-game language setting
+    struct BtnInfo { int index; std::string label; };
     BtnInfo infos[] = {
-        {MENU_CONTINUE, "menu_continue"},
-        {MENU_NEW,      "menu_new"},
-        {MENU_LOAD,     "menu_load"},
-        {MENU_OPTIONS,  "menu_options"},
-        {MENU_CREDITS,  "menu_credits"},
-        {MENU_EXIT,     "menu_exit"}
+        {MENU_CONTINUE, "Continue"},
+        {MENU_NEW,      "New"},
+        {MENU_LOAD,     "Load"},
+        {MENU_OPTIONS,  "Options"},
+        {MENU_CREDITS,  "Credits"},
+        {MENU_EXIT,     "Exit"}
     };
 
     for (const auto& info : infos) {
         auto btn = std::make_shared<UIButton>("MenuBtn" + std::to_string(info.index));
         btn->initialize();
-        std::string label = localizationManager ? localizationManager->getString(info.labelKey) : info.labelKey;
-        btn->setLabel(label);
+        btn->setLabel(info.label);
         btn->setTextRenderer(textRenderer);
         btn->setSize(340.0f, 42.0f);
         btn->setLabelScale(1.3f);

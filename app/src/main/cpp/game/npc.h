@@ -47,14 +47,35 @@ struct CharacterStatus {
     std::vector<uint32_t> knownSpells;     // Spell IDs this NPC can cast
     std::vector<uint32_t> equippedSpells;  // Currently equipped spells
 
-    // Methods
-    CharacterStatus();
-    void initialize(float baseHealth, float baseMana, uint32_t level);
-    bool isAlive() const { return currentHealth > 0.0f; }
-    void takeDamage(float amount);
-    void heal(float amount);
-    float getAttributeBonus(const std::string& attr) const;
-};
+    // Oblivion Actor Value (AV) IDs. The first three map to the derived
+        // vitals; 0-7 map to the attributes. See dialogue_filter_engine.cpp for
+        // the full skill/attribute AV id table.
+        static constexpr uint32_t AV_STRENGTH     = 0;
+        static constexpr uint32_t AV_INTELLIGENCE = 1;
+        static constexpr uint32_t AV_WILLPOWER    = 2;
+        static constexpr uint32_t AV_AGILITY      = 3;
+        static constexpr uint32_t AV_SPEED        = 4;
+        static constexpr uint32_t AV_ENDURANCE    = 5;
+        static constexpr uint32_t AV_PERSONALITY  = 6;
+        static constexpr uint32_t AV_LUCK         = 7;
+        static constexpr uint32_t AV_HEALTH       = 8;
+        static constexpr uint32_t AV_MAGICKA      = 9;
+        static constexpr uint32_t AV_STAMINA      = 10;
+
+        // Methods
+        CharacterStatus();
+        void initialize(float baseHealth, float baseMana, uint32_t level);
+        bool isAlive() const { return currentHealth > 0.0f; }
+        void takeDamage(float amount);
+        void heal(float amount);
+        float getAttributeBonus(const std::string& attr) const;
+
+        // Real AV read accessor. Mirrors the confirmed RE behavior (RE_EXE_REPORT
+        // §17.11.7): AV values are stored in an equipped magic-handle object and
+        // read through GetActorValue. AV 8 (Health) applies the current/max ratio
+        // ("magicka multiplier"); a zero max is guarded to a ratio of 1.0.
+        float getActorValue(uint32_t avId) const;
+    };
 
 struct NPC {
     uint32_t npcId;

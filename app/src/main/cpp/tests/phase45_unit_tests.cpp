@@ -429,7 +429,35 @@ void Phase45UnitTests::testNPC() {
                "CharacterStatus init/damage/heal correct", dt);
     }
 
-    // Test 3.5: Quest offering
+            // Test 3.4b: ActorValue accessor (RE §17.11.7)
+            {
+                float t0 = getTimeMs45();
+                CharacterStatus status;
+                status.initialize(100.0f, 50.0f, 5);
+                // Healthy: Health = current + (current/max), ratio 1.0 when at max.
+                bool ok1 = (status.getActorValue(CharacterStatus::AV_HEALTH) == 101.0f)
+                        && (status.getActorValue(CharacterStatus::AV_MAGICKA) == 50.0f)
+                        && (status.getActorValue(CharacterStatus::AV_STAMINA) == 100.0f);
+                // Attribute lookup by id (AV 0-7): Strength initialized to 50 + level*2.
+                bool ok2 = (status.getActorValue(CharacterStatus::AV_STRENGTH) == 60.0f)
+                        && (status.getActorValue(CharacterStatus::AV_LUCK) == 60.0f);
+                // Damaged Health still applies the current/max ratio.
+                status.takeDamage(50.0f);
+                bool ok3 = status.getActorValue(CharacterStatus::AV_HEALTH) == 50.5f;
+                // Divide-by-zero guard: a zero max corrects the ratio to 1.0.
+                CharacterStatus zero;
+                zero.maxHealth = 0.0f;
+                zero.currentHealth = 0.0f;
+                bool ok4 = zero.getActorValue(CharacterStatus::AV_HEALTH) == 1.0f;
+                // Unknown AV id returns 0.
+                bool ok5 = status.getActorValue(999u) == 0.0f;
+                bool ok = ok1 && ok2 && ok3 && ok4 && ok5;
+                float dt = getTimeMs45() - t0;
+                record("NPC_GetActorValue", ok,
+                       "CharacterStatus AV accessor + Health ratio guard correct", dt);
+            }
+
+            // Test 3.5: Quest offering
     {
         float t0 = getTimeMs45();
         NPC npc(400, "QuestGiver");
