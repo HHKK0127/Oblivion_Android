@@ -38,6 +38,9 @@ public:
     bool consumeChanged();
     Settings settings() const { return current; }
 
+    // Seed the panel from persisted options without opening it.
+    void setSettings(const Settings& value) { current = value; }
+
     void onTouchDown(float x, float y);
     void onTouchMove(float x);
     void onTouchUp();

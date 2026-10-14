@@ -2,6 +2,15 @@
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
+#include <cmath>
+
+float difficultyDamageMultiplier(int difficulty) {
+    if (difficulty < 0) difficulty = 0;
+    if (difficulty > 100) difficulty = 100;
+    // 0 -> 1/6, 50 -> 1.0, 100 -> 6.0 (exponential in the slider offset).
+    const float exponent = (static_cast<float>(difficulty) - 50.0f) / 50.0f;
+    return std::pow(6.0f, exponent);
+}
 
 SettingsManager::SettingsManager()
     : debugModeEnabled(true), currentLanguage("en"), fpsCap(60) {
@@ -53,6 +62,26 @@ void SettingsManager::setFpsCap(int fps) {
     saveSettings();
 }
 
+void SettingsManager::setAudioVolumes(const AudioVolumeSettings& volumes) {
+    audioSettings = volumes;
+    // Keep the sliders inside the range the original accepts (0..1).
+    float* const values[] = {&audioSettings.master, &audioSettings.voice,
+                             &audioSettings.effect, &audioSettings.foot,
+                             &audioSettings.music};
+    for (float* const value : values) {
+        if (*value < 0.0f) *value = 0.0f;
+        if (*value > 1.0f) *value = 1.0f;
+    }
+    saveSettings();
+}
+
+void SettingsManager::setGameplaySettings(const GameplaySettings& settings) {
+    gameplay = settings;
+    if (gameplay.difficulty < 0) gameplay.difficulty = 0;
+    if (gameplay.difficulty > 100) gameplay.difficulty = 100;
+    saveSettings();
+}
+
 void SettingsManager::saveSettings() {
     std::string filePath = getSettingsFilePath();
 
@@ -66,6 +95,18 @@ void SettingsManager::saveSettings() {
     file << "DEBUG_MODE=" << (debugModeEnabled ? "1" : "0") << "\n";
     file << "LANGUAGE=" << currentLanguage << "\n";
     file << "FPS_CAP=" << fpsCap << "\n";
+    file << "AUDIO_MASTER=" << audioSettings.master << "\n";
+    file << "AUDIO_VOICE=" << audioSettings.voice << "\n";
+    file << "AUDIO_EFFECT=" << audioSettings.effect << "\n";
+    file << "AUDIO_FOOT=" << audioSettings.foot << "\n";
+    file << "AUDIO_MUSIC=" << audioSettings.music << "\n";
+    file << "GAMEPLAY_DIFFICULTY=" << gameplay.difficulty << "\n";
+    file << "GAMEPLAY_GENERAL_SUBTITLES=" << (gameplay.generalSubtitles ? "1" : "0") << "\n";
+    file << "GAMEPLAY_DIALOGUE_SUBTITLES=" << (gameplay.dialogueSubtitles ? "1" : "0") << "\n";
+    file << "GAMEPLAY_CROSSHAIR=" << (gameplay.crosshair ? "1" : "0") << "\n";
+    file << "GAMEPLAY_SAVE_ON_REST=" << (gameplay.saveOnRest ? "1" : "0") << "\n";
+    file << "GAMEPLAY_SAVE_ON_WAIT=" << (gameplay.saveOnWait ? "1" : "0") << "\n";
+    file << "GAMEPLAY_SAVE_ON_TRAVEL=" << (gameplay.saveOnTravel ? "1" : "0") << "\n";
 
     file.close();
     LOGD("Settings saved to: %s", filePath.c_str());
@@ -109,6 +150,8 @@ void SettingsManager::loadSettings() {
             } catch (...) {
                 LOGW("Invalid FPS_CAP value: %s", value.c_str());
             }
+        } else if (key.rfind("AUDIO_", 0) == 0 || key.rfind("GAMEPLAY_", 0) == 0) {
+            loadOptionSetting(key, value);
         }
     }
 
@@ -120,7 +163,53 @@ void SettingsManager::resetToDefaults() {
     debugModeEnabled = true;  // Debug mode is ON by default
     currentLanguage = "en";   // Language defaults to English (Japanese rendering not yet supported)
     fpsCap = 60;              // 60 fps is the default frame rate cap
+    audioSettings = AudioVolumeSettings{};
+    gameplay = GameplaySettings{};
     LOGD("Settings reset to defaults");
+}
+
+void SettingsManager::loadOptionSetting(const std::string& key, const std::string& value) {
+    // Boolean option keys are stored as "0"/"1"; the rest are numeric.
+    if (key == "GAMEPLAY_GENERAL_SUBTITLES") {
+        gameplay.generalSubtitles = (value == "1");
+    } else if (key == "GAMEPLAY_DIALOGUE_SUBTITLES") {
+        gameplay.dialogueSubtitles = (value == "1");
+    } else if (key == "GAMEPLAY_CROSSHAIR") {
+        gameplay.crosshair = (value == "1");
+    } else if (key == "GAMEPLAY_SAVE_ON_REST") {
+        gameplay.saveOnRest = (value == "1");
+    } else if (key == "GAMEPLAY_SAVE_ON_WAIT") {
+        gameplay.saveOnWait = (value == "1");
+    } else if (key == "GAMEPLAY_SAVE_ON_TRAVEL") {
+        gameplay.saveOnTravel = (value == "1");
+    } else if (key == "GAMEPLAY_DIFFICULTY") {
+        try {
+            int level = std::stoi(value);
+            if (level >= 0 && level <= 100) {
+                gameplay.difficulty = level;
+            }
+        } catch (...) {
+            LOGW("Invalid GAMEPLAY_DIFFICULTY value: %s", value.c_str());
+        }
+    } else {
+        float* target = nullptr;
+        if (key == "AUDIO_MASTER") target = &audioSettings.master;
+        else if (key == "AUDIO_VOICE") target = &audioSettings.voice;
+        else if (key == "AUDIO_EFFECT") target = &audioSettings.effect;
+        else if (key == "AUDIO_FOOT") target = &audioSettings.foot;
+        else if (key == "AUDIO_MUSIC") target = &audioSettings.music;
+        if (!target) {
+            return;
+        }
+        try {
+            float parsed = std::stof(value);
+            if (parsed >= 0.0f && parsed <= 1.0f) {
+                *target = parsed;
+            }
+        } catch (...) {
+            LOGW("Invalid %s value: %s", key.c_str(), value.c_str());
+        }
+    }
 }
 
 void SettingsManager::cleanup() {

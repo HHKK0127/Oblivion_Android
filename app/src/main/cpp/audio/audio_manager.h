@@ -218,6 +218,41 @@ public:
      */
     float getSEVolume() const { return seVolume; }
 
+    /**
+     * @brief Set the dialogue voice channel volume (AudioMenu "Voice Volume")
+     * @param volume 0.0 - 1.0
+     */
+    void setVoiceVolume(float volume);
+
+    /**
+     * @brief Get the dialogue voice channel volume
+     */
+    float getVoiceVolume() const { return voiceVolume; }
+
+    /**
+     * @brief Set the footstep channel volume (AudioMenu "Footstep Volume")
+     * @param volume 0.0 - 1.0
+     */
+    void setFootVolume(float volume);
+
+    /**
+     * @brief Get the footstep channel volume
+     */
+    float getFootVolume() const { return footVolume; }
+
+    /**
+     * @brief Final gain for a channel slider.
+     *
+     * Mirrors the original FUN_006aa1a0: gain = clamp(slider, 0, 1)^2 * master,
+     * and any gain below the silence threshold is quantized to 0.
+     */
+    static float channelGain(float slider, float master);
+
+    /**
+     * @brief Gain value below which the original emits silence (-10000 dB floor)
+     */
+    static constexpr float SILENCE_THRESHOLD = 0.005f;
+
     // ========== Status Query ==========
 
     /**
@@ -338,11 +373,20 @@ public:
         // Voice state
         uint32_t currentVoiceSourceId = 0;  // Active dialogue voice source (0 = none)
 
-    // Volume levels
+    // Volume levels (raw slider values, 0.0 - 1.0)
     float masterVolume;
     float seVolume;
+    float voiceVolume;
+    float footVolume;
 
     // ========== Private Methods ==========
+
+    /**
+     * @brief Shared SE playback path so voice lines can use their own channel.
+     * @param channelValue Raw slider value of the channel the sound belongs to
+     */
+    uint32_t playSEOnChannel(uint32_t clipId, const glm::vec3& position,
+                             float volume, float channelValue);
 
     /**
      * @brief Load WAV file

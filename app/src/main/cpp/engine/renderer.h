@@ -187,6 +187,8 @@ private:
     std::unique_ptr<UIDialogue> dialogueUI;
     std::unique_ptr<UIBookReader> bookReaderUI;
     bool hudVisible = true;
+    // bCrossHair: when off, the crosshair is not drawn (also hidden behind menus).
+    bool crosshairEnabled = true;
 
         // Lip-sync playback (Phase 65): face morph weights driven by .lip data.
         facegen::FaceExpressionSystem faceExpressionSystem_;
@@ -367,6 +369,11 @@ public:
     void toggleVirtualController();
     bool isVirtualControllerEnabled() const { return virtualControllerEnabled; }
 
+    // True while any full-screen menu owns the input focus. Mirrors the
+    // original's "menu is displayed" gate (0x00b3a6d4 != 0): world/camera input,
+    // physics and AI updates are suppressed while it is true.
+    bool anyMenuOpen() const;
+
     // HUD System
     HUDRenderer* getHUDRenderer() { return hudRenderer.get(); }
     UIHudCompass* getHUDCompass() { return hudCompass.get(); }
@@ -388,6 +395,8 @@ public:
     void handleOptionsCategoryRequest(OptionsUI::Category category);
     void pumpAudioOptions();
     void pumpGameplayOptions();
+    // Push gameplay options into their live consumers (crosshair, difficulty).
+    void applyGameplaySettings(const GameplaySettings& settings);
     void pumpVideoOptions();
     void pumpVideoDisplay();
     void pumpControlsOptions();

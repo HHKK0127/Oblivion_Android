@@ -16,6 +16,34 @@ The current version is **0.9.10 (versionCode 910)**.
 ## [Unreleased]
 
 ### Added
+- **Option values are now persisted, and the audio chain matches the original's curve.** The
+  Audio and Gameplay panels previously kept their values in memory only, so every restart reset
+  them; `SettingsManager` now stores both groups in `settings.txt` (`AUDIO_MASTER`, `AUDIO_VOICE`,
+  `AUDIO_EFFECT`, `AUDIO_FOOT`, `AUDIO_MUSIC`, `GAMEPLAY_DIFFICULTY`, `GAMEPLAY_*_SUBTITLES`,
+  `GAMEPLAY_CROSSHAIR`, `GAMEPLAY_SAVE_ON_*`) and `Renderer::init` re-applies them before the
+  first frame.
+  - **Channel gain is quadratic, not linear** (RE `§30.2`): `AudioManager::channelGain(slider,
+    master)` returns `clamp(slider,0,1)^2 * clamp(master,0,1)`, and returns silence below
+    `0.005` - matching `FUN_006aa1a0`, which computes `vol = clamp(slider)^2 * master` and drops
+    to `-10000` below `0x00a34ba0`. Every BGM/SE/master application point now goes through it.
+  - **All five channels exist.** `voice` and `footstep` were missing entirely: `AudioManager`
+    gained `setVoiceVolume`/`getVoiceVolume`/`setFootVolume`/`getFootVolume`, `playSE` was split
+    so `playVoice` can route through the voice channel, and `AudioSource` gained
+    `channelVolume` (the owning channel's slider) beside `baseVolume` (the raw per-instance
+    volume) so a master change can rescale without losing either.
+  - **The AudioMenu defaults were wrong and are now the game's INI values**: master `0.8`,
+    music `0.8`, effect `0.8`, voice `0.0`, footstep `0.3` (`fDefaultMasterVolume`,
+    `fDefaultMusicVolume`, `fDefaultEffectsVolume`, `fDefaultVoiceVolume`, `fDefaultFootVolume`).
+- **Physics and AI now stop while a menu is open.** `ImperialWeave` gained
+  `setMenuOpen()`/`isMenuOpen()` and its AI, physics-sync and Jolt phases return early when it is
+  set, which is the `FUN_00679a70` skip the original performs when `0x00b3a6d4 != 0`
+  (RE `§30.1`). `Renderer::anyMenuOpen()` is the aggregate of the fourteen modal panels and is
+  published once per frame before `ImperialWeave::update()`; the same predicate suppresses camera
+  drag, so a touch that is dragging a slider no longer also spins the view.
+- **Gameplay options reach the game.** `difficultyDamageMultiplier()` converts the 0..100 slider
+  into the damage multiplier applied to incoming damage at `Player::takeDamage` (neutral at the
+  default 50), and `bCrossHair` now hides the crosshair. The crosshair is additionally hidden
+  whenever a menu owns the screen, as in the original.
 - **The Options menu family is rebuilt from the original PC XML layouts.** `Options` previously
   handed every sub-category except Gameplay/Video/Audio to the generic settings screen. Each of
   the five panels now has its own source, its own geometry transcribed from the retail XML, and

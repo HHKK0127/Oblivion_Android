@@ -302,6 +302,13 @@ public:
 
     bool isInitialized() const { return initialized_; }
 
+    // Menu gate (original 0x00b3a6d4 / active menu count 0x00b13978): while a
+    // menu owns the screen the simulation phases that the original suspends
+    // (physics FUN_00679a70, AI) are skipped. World/time updates keep running
+    // for explore-type menus such as Options.
+    void setMenuOpen(bool open) { menuOpen_ = open; }
+    bool isMenuOpen() const { return menuOpen_; }
+
     // v4: Frame budget accessors
     float getFrameBudgetMs() const { return frameBudgetMs_; }
     void setFrameBudgetMs(float budget) { frameBudgetMs_ = budget; }
@@ -335,6 +342,8 @@ private:
     ::oblivion::video::BinkVideoPlayer* binkVideoPlayer_ = nullptr;
 
     bool initialized_ = false;
+
+    bool menuOpen_ = false;
 
     // v4: Frame budget management
     float frameBudgetMs_ = 16.6f;

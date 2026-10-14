@@ -9,7 +9,7 @@ void Player::initialize(const glm::vec3& startPos) {
     stamina = maxStamina;
 }
 
-void Player::update(float deltaTime) {
+void Player::update(float) {
     // Update movement state
     float speed_sq = velocity.x * velocity.x + velocity.z * velocity.z;
     if (speed_sq > 0.01f) {
@@ -50,7 +50,7 @@ void Player::updateGroundDetection(float terrainHeight) {
 }
 
 void Player::takeDamage(float amount) {
-    health -= amount;
+    health -= amount * difficultyScale;
     if (health < 0.0f) health = 0.0f;
 }
 

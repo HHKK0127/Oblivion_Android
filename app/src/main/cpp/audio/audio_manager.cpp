@@ -30,9 +30,17 @@ AudioManager::AudioManager()
       currentBGMSourceId(0), currentBGMClipId(0),
       bgmVolume(1.0f), bgmFadeTarget(1.0f), bgmFadeRate(0.0f),
       bgmFading(false),
-      masterVolume(1.0f), seVolume(1.0f),
-      currentVoiceSourceId(0) {
+      masterVolume(1.0f), seVolume(1.0f), voiceVolume(1.0f), footVolume(1.0f) {
     LOGD("AudioManager constructed");
+}
+
+// FUN_006aa1a0: gain = clamp(slider, 0, 1)^2 * master, quantized to silence
+// below 0x00a34ba0 (0.005). The original applies this per channel slider, so
+// the response is a squared curve rather than a linear ramp.
+float AudioManager::channelGain(float slider, float master) {
+    const float clamped = clampf(slider, 0.0f, 1.0f);
+    const float gain = clamped * clamped * clampf(master, 0.0f, 1.0f);
+    return gain < SILENCE_THRESHOLD ? 0.0f : gain;
 }
 
 AudioManager::~AudioManager() {
@@ -322,13 +330,18 @@ void AudioManager::setBGMVolume(float volume) {
     if (currentBGMSourceId != 0) {
         auto it = sources.find(currentBGMSourceId);
         if (it != sources.end() && it->second) {
-            it->second->setVolume(bgmVolume * masterVolume);
+            it->second->setVolume(channelGain(bgmVolume, masterVolume));
         }
     }
 }
 
 uint32_t AudioManager::playSE(uint32_t clipId, const glm::vec3& position,
                              float volume) {
+    return playSEOnChannel(clipId, position, volume, seVolume);
+}
+
+uint32_t AudioManager::playSEOnChannel(uint32_t clipId, const glm::vec3& position,
+                                       float volume, float channelValue) {
     // Ensure OpenAL context is current for this thread
     if (context) {
         alcMakeContextCurrent(context);
@@ -383,8 +396,10 @@ uint32_t AudioManager::playSE(uint32_t clipId, const glm::vec3& position,
 
     // SE source settings
     auto source = sources[sourceId];
-    source->baseVolume = volume * seVolume;  // Save original SE volume before master scaling
-    source->setVolume(source->baseVolume * masterVolume);
+    source->baseVolume = volume;  // Raw per-instance volume before channel scaling
+    source->channelVolume = clampf(channelValue, 0.0f, 1.0f);
+    source->setVolume(source->baseVolume *
+                      channelGain(source->channelVolume, masterVolume));
     source->setPosition(position);
     source->enable3D();
 
@@ -447,7 +462,9 @@ uint32_t AudioManager::playVoice(const std::string& bsaPath, float volume) {
     }
 
     // Listener position voices are short; keep default 3D position.
-    currentVoiceSourceId = playSE(clipId, glm::vec3(0.0f, 0.0f, 0.0f), volume);
+    // Route through the Voice channel (fDefaultVoiceVolume / "Voice Volume").
+    currentVoiceSourceId = playSEOnChannel(clipId, glm::vec3(0.0f, 0.0f, 0.0f),
+                                           volume, voiceVolume);
     if (currentVoiceSourceId == 0) {
         LOGW("playVoice: playSE failed: %s", playablePath.c_str());
         return 0;
@@ -474,14 +491,16 @@ void AudioManager::setListenerOrientation(const glm::vec3& forward,
 void AudioManager::setMasterVolume(float volume) {
     masterVolume = clampf(volume, 0.0f, 1.0f);
 
-    // Recalculate volume for all sources
+    // Recalculate volume for all sources. Master is the linear multiplier that
+    // channelGain() applies on top of the squared channel slider.
     for (auto& pair : sources) {
         if (pair.second) {
             if (pair.first == currentBGMSourceId) {
-                pair.second->setVolume(bgmVolume * masterVolume);
+                pair.second->setVolume(channelGain(bgmVolume, masterVolume));
             } else {
-                // SE volume: preserve original SE volume * master volume
-                pair.second->setVolume(pair.second->baseVolume * masterVolume);
+                pair.second->setVolume(
+                    pair.second->baseVolume *
+                    channelGain(pair.second->channelVolume, masterVolume));
             }
         }
     }
@@ -490,8 +509,44 @@ void AudioManager::setMasterVolume(float volume) {
 }
 
 void AudioManager::setSEVolume(float volume) {
+    const float previous = seVolume;
     seVolume = clampf(volume, 0.0f, 1.0f);
+
+    // Re-apply to live sources that were started on the Effects channel.
+    for (auto& pair : sources) {
+        if (pair.second && pair.first != currentBGMSourceId &&
+            pair.second->channelVolume == previous) {
+            pair.second->channelVolume = seVolume;
+            pair.second->setVolume(pair.second->baseVolume *
+                                   channelGain(seVolume, masterVolume));
+        }
+    }
+
     LOGD("SE volume set: %.2f", seVolume);
+}
+
+void AudioManager::setVoiceVolume(float volume) {
+    voiceVolume = clampf(volume, 0.0f, 1.0f);
+
+    // Re-apply to the live dialogue source when it is still the active voice.
+    if (currentVoiceSourceId != 0) {
+        auto it = sources.find(currentVoiceSourceId);
+        if (it != sources.end() && it->second) {
+            it->second->channelVolume = voiceVolume;
+            it->second->setVolume(it->second->baseVolume *
+                                  channelGain(voiceVolume, masterVolume));
+        }
+    }
+
+    LOGD("Voice volume set: %.2f", voiceVolume);
+}
+
+void AudioManager::setFootVolume(float volume) {
+    footVolume = clampf(volume, 0.0f, 1.0f);
+
+    // No footstep playback path exists yet; the channel value is retained so
+    // surface footstep sounds pick it up once they are wired to AudioManager.
+    LOGD("Footstep volume set: %.2f", footVolume);
 }
 
 std::string AudioManager::resolvePlayablePath(const std::string& filename) {
@@ -754,7 +809,7 @@ void AudioManager::updateBGMFade(float deltaTime) {
     float newVolume = bgmVolume + (bgmFadeRate * deltaTime);
     newVolume = clampf(newVolume, 0.0f, 1.0f);
 
-    source->setVolume(newVolume * masterVolume);
+    source->setVolume(channelGain(newVolume, masterVolume));
 
     // Check fade completion
     if (newVolume == bgmFadeTarget) {
@@ -1038,5 +1093,7 @@ std::string AudioManager::getAudioStats() const {
            "  Sources: " + std::to_string(sources.size()) + "/" + std::to_string(MAX_SOURCES) + "\n" +
            "  Master Vol: " + std::to_string(masterVolume) + "\n" +
            "  BGM Vol: " + std::to_string(bgmVolume) + "\n" +
-           "  SE Vol: " + std::to_string(seVolume);
+           "  SE Vol: " + std::to_string(seVolume) + "\n" +
+           "  Voice Vol: " + std::to_string(voiceVolume) + "\n" +
+           "  Footstep Vol: " + std::to_string(footVolume);
 }

@@ -61,8 +61,9 @@ const glm::vec4 kIdleText(128.0f / 255.0f, 128.0f / 255.0f, 128.0f / 255.0f, 196
 const char* const kLabels[] = {"Master Volume:", "Voice Volume:", "Effect Volume:",
                                "Footstep Volume:", "Music Volume:"};
 
-// Initial values from Oblivion_default.ini [Audio]: master, voice, effect, foot, music.
-constexpr float kDefaults[] = {1.0f, 0.8f, 0.8f, 0.8f, 0.3f};
+// Initial values from Oblivion_default.ini [Audio] fDefault*Volume:
+// master 0.8 / voice 0.0 / effect 0.8 / foot 0.3 / music 0.8.
+constexpr float kDefaults[] = {0.8f, 0.0f, 0.8f, 0.3f, 0.8f};
 
 // Android keycodes
 constexpr int KEY_BACK = 4;

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-13T20:04:30.874213",
+  "lastUpdated": "2026-10-14T13:58:20.793146",
   "entries": [
     {
       "timestamp": "2026-09-16T14:58:00Z",
@@ -6383,10 +6383,76 @@
         "ux"
       ],
       "compressed": false
+    },
+    {
+      "id": "acff9779-a022-4b46-8d19-391bf24af99c",
+      "timestamp": "2026-10-14T12:46:44.188383",
+      "category": "decision",
+      "priority": "high",
+      "content": "RE_EXE_REPORT.md §30 追加解析依頼の解析完了（main c35e... へ返信済み）。§30.1 依頼1: メニュー入力抑制は単一でなく6経路合成。正本=アクティブメニュー配列 0x00b13974/件数 0x00b13978/上限 0x00b1397a、表示中フラグ 0x00b3a6d4。6経路=(1)0x00b3a6d4!=0 (2)入力モード配列 0xb12dc8/0xb12dd0/0xb12dd4(stride24B,+0x0c duration,+0x10 handler,+0x14 progress) (3)最前面[+0x24]=1/8ブロック (4)LoadingMenu(0x3ef)早期return (5)FUN_0057f170 dt==0全skip (6)FUN_00679a70 物理skip。ポーズ判定 FUN_0040fda0(0x00b33434=0x103)。メニューAPI FUN_00589b70 get / FUN_005898f0 front / FUN_00582160 MenuManager。移植: is_any_menu_open()=0x00b3a6d4!=0。§30.2 依頼2: audio 実音量=FUN_006aa1a0: clamp(slider,0,1)^2 * master([ECX+0xb8])。線形でなく二乗カーブ。bit0!=0 かつ <0.005(0x00a34ba0) で無音 -10000。中心 FUN_006ad030(1081insns) が6回呼ぶ。記述子テーブル 0x00b1617c(+4=0x00b16180,8B) 13キー。5系統 master/music/effects/voice/footstep。gameplay: 難易度 min0 max100 default50, トグル6(FUN_005a3540)=DialogueSubtitles/GeneralSubtitles/CrossHair/SaveOnRest/SaveOnWait/SaveOnTravel。§30.3 依頼3: 重要訂正 - fResolution(0x00b45fe4) は画面解像度でなく テクスチャ解像度比。FUN_007e0ed0/FUN_00499ef0 が fResolution=1.0/texRes(128|256)=0.0078125|0.00390625。EnumDisplaySettings/Devices は import 不在(212件)。フォーマット文字列 %d x %d(0xa6cf2c)等は .text 参照0。bIgnoreResolutionCheck(0xa3d524) 4参照は全て RTTI/vftable。§30.4 依頼4: フェード登録 FUN_00584300/進行 FUN_00583c30, ノード20B(+0x0 id,+0x4 current,+0x8 duration), current+=dt([0x00b33e9c]), >=1.0 除去。explorefade/menufade 0.25=duration。FUN_00579cf0 の FUN_00588bd0(0xfae)==2.0f(0x00a379b4) 分岐 -> true FUN_005bc8b0 / false FUN_005bcc00。OptionsMenu.user0==2.0f が背面 PauseMenu 有無の正本。user field 0xfae/0xfaf/0xfb1。§30.5 依頼5(途中): メニュー XML 実体は tmp\\bsa_misc\\menus\\ (extracted_menus_full は PNG のみ)。全メニュー ID 0x3e9〜0x41b。trait image0x386 rect0x385 text0x387 nif0x388 menu0x389 window0x38b template0x3e7。次回 Container->QuickKeys->LevelUp の widget 表。§30.6 未確定: (1)audio 5系統の対応順序 (2)FUN_0066f420 全文 (3)widget 表。",
+      "tags": [
+        "re-exe",
+        "RE_EXE_REPORT",
+        "ss30",
+        "menu-input-gate",
+        "settings-consumers",
+        "resolution",
+        "fade",
+        "unreversed-menus"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "68fe780f-0fbf-4915-951f-d0fc1eae5cc7",
+      "timestamp": "2026-10-14T12:56:22.998979",
+      "category": "reference",
+      "priority": "high",
+      "content": "RE_EXE_REPORT.md §31 追記完了（依頼5 widget 単位レイアウト表）。対象5メニューとID: ContainerMenu=0x3f0, QuickKeysMenu=0x416, LevelUpMenu=0x403, RechargeMenu=0x419, RepairMenu=0x40b。共通: ルート alpha=0/locus=true/x=y=0/menufade=0.25、先頭に不可視 FocusBox (QuickKeys/LevelUp は無し)、Container/LevelUp/Recharge/Repair は stackingtype=no_click_past、QuickKeys は does_not_stack。リスト行は例外なく y=me().listindex。行送り Container=81px, Repair=80px, Recharge=user3(可変), LevelUp=67px。列x: Container name80/cost418/weight496/damage556/health616、LevelUp icon40/text130/value380/multiplier480。スクロールバー: Container id11, Recharge id4, Repair id5 (LevelUp なし)。trait user1..4 は §24.9/§25.5 プレハブと同一。user フィールド用途: ContainerMenu user0=ページ/見出し活性, user6=所持金, user7=inv/cont, user9=NPC取引, user11=NPC名, user12=NPC資金, user13=現重量, user14=最大重量, user25=ソート矢印; QuickKeys user2=paper背景, user3=numbers背景; LevelUp user1=multiplier可視, user2=multiplier文字列, user3=value, user4=picture filename(属性図), user5=属性説明; Recharge user0=info/ソウル欄表示, user2=infoテキスト, user3=行高, user4=コスト, user6=個数表示; Repair user0=背景種別(装甲/汎用)・列罫線可視, user8=行可視/高さ。行テンプレの子は parent().userN を参照、sibling(name) は同行の兄弟座標。§30.5/§30.6-4 は解消済みに更新。未着手の残り未文書化メニュー: LockPick/Message/Quantity/Negotiate/Persuasion/Training/SleepWait/Book/Scroll/chargen系/HUD系。素材XMLは tmp\\bsa_misc\\menus\\、抽出は tmp\\r30_menuparse.py --md。レポート全3885行。",
+      "tags": [
+        "re-exe",
+        "RE_EXE_REPORT",
+        "ss31",
+        "menu-widget-layout",
+        "container-menu",
+        "quickkeys",
+        "levelup",
+        "recharge",
+        "repair"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "512455a4-6a14-4300-a252-370bb2c9ec5a",
+      "timestamp": "2026-10-14T13:58:20.793146",
+      "category": "decision",
+      "priority": "high",
+      "content": "RE §30/§31 の設定反映は実機で往復検証済み (2026-10-14, emulator-5554)。(1) 保存: GameplayOptionsUI のトグルを tap すると Renderer::pumpGameplayOptions が発火し 'Gameplay settings applied: ...' を LOGI 出力、settings.txt に GAMEPLAY_*/AUDIO_* 15 キーが書き出される。(2) 読み込み: settings.txt を difficulty=73/crosshair=0/master=0.50/voice=0.20 に差し替えて再起動すると起動ログが 'difficulty=73 (x2.280) crosshair=0' / 'master=0.50 ... voice=0.20' を出力 = 読み込みと適用の両方が機能。難易度倍率は pow(6,(d-50)/50) で 73 -> 2.280。",
+      "tags": [
+        "re",
+        "settings",
+        "verification",
+        "gameplay",
+        "audio"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "480192b2-9054-4243-996e-0f5b0860eba1",
+      "timestamp": "2026-10-14T13:58:20.793146",
+      "category": "reference",
+      "priority": "medium",
+      "content": "実機タッチ検証の座標系: Renderer の screenWidth/Height は 1920x1110 (touch scale=1.000 view=(1920,1110))、GL y == screencap y。screencap は 1920x1200 RGBA なので crop((0,0,1920,1110)) 必須。GameplayOptionsUI の bodyRect() は screenHeight 1110 で y=291。ラベル左端 x は OCR 実測 ~580 (blockX=677.5-L/2 より L~190)、行間 52。難易度スライダーのトラック/矢印は y=324..361 (安全域)、トグルは各行 line.y+188 付近 y=467..531 (row3 Crosshair)、Return/Defaults ボタンは y~755 以降なのでタップ時は y<=531 に限定すれば誤操作しない。x=1000..1180 の範囲がトグルに当たる。",
+      "tags": [
+        "ui",
+        "verification",
+        "coordinates",
+        "gameplay-options"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 445,
+    "totalEntries": 449,
     "compressedCount": 81,
     "sessionCount": 38,
     "lastUpdated": "2026-10-13T20:04:30.874213Z"

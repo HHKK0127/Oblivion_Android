@@ -10,12 +10,14 @@
 // Five volume sliders plus Defaults and Return buttons. Values are normalized to 0..1.
 class AudioOptionsUI {
 public:
+    // Oblivion_default.ini Audio defaults (fDefault*Volume):
+    // Master 0.8 / Music 0.8 / Effects 0.8 / Voice 0.0 / Foot 0.3
     struct Volumes {
-        float master = 1.0f;
-        float voice = 0.8f;
+        float master = 0.8f;
+        float voice = 0.0f;
         float effect = 0.8f;
-        float foot = 0.8f;
-        float music = 0.3f;
+        float foot = 0.3f;
+        float music = 0.8f;
     };
 
     AudioOptionsUI();

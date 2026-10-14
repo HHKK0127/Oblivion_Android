@@ -28,7 +28,8 @@ struct AudioSource {
 
     // Volume & Pitch
     float volume;                   // 0.0 - 1.0
-    float baseVolume;               // Original SE volume (before master volume scaling)
+    float baseVolume;               // Raw per-instance volume (before channel/master scaling)
+    float channelVolume = 1.0f;     // Channel slider this source belongs to (0.0 - 1.0)
     float pitch;                    // 0.5 - 2.0
 
     // Playback state

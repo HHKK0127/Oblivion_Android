@@ -114,6 +114,13 @@ struct Player {
     void updateGroundDetection(float terrainHeight);
     void takeDamage(float amount);
     void heal(float amount);
+
+    // Gameplay difficulty scales incoming damage (GameplayMenu difficulty slider).
+    // 1.0 is neutral; see difficultyDamageMultiplier().
+    static void setDifficultyScale(float scale) {
+        difficultyScale = (scale > 0.0f) ? scale : 1.0f;
+    }
+    static float getDifficultyScale() { return difficultyScale; }
     void updateStamina(float deltaTime, bool isSprinting);  // Update stamina based on sprint state
     void reduceStamina(float amount);                        // Manually reduce stamina
     void recoverStamina(float amount);                       // Manually recover stamina
@@ -125,4 +132,7 @@ struct Player {
     void maxOutAllSkills();                                  // Set all skills to 100 (for MAX_SKILLS cheat)
     void resetSkills();                                      // Reset all skills to 10
     void resetAttributes();                                  // Reset all attributes to 40
+
+private:
+    static inline float difficultyScale = 1.0f;
 };

@@ -70,7 +70,6 @@ const char* const kLabels[] = {"Difficulty:", "General Subtitles:", "Dialogue Su
                                "Crosshair:", "Save on Rest:", "Save on Wait:", "Save on Travel:"};
 
 // Android keycodes
-constexpr int KEY_BACK = 4;
 constexpr int KEY_DPAD_UP = 19;
 constexpr int KEY_DPAD_DOWN = 20;
 constexpr int KEY_DPAD_LEFT = 21;

@@ -2120,6 +2120,20 @@ bool Renderer::initGameSystems() {
         LOGE("Failed to initialize GameplayOptionsUI");
     } else {
         gameplayOptionsUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        // Seed the panel and the live consumers from the persisted options.
+        if (settingsManager) {
+            const GameplaySettings& saved = settingsManager->gameplaySettings();
+            GameplayOptionsUI::Settings initial;
+            initial.difficulty = saved.difficulty;
+            initial.generalSubtitles = saved.generalSubtitles;
+            initial.dialogueSubtitles = saved.dialogueSubtitles;
+            initial.crosshair = saved.crosshair;
+            initial.saveOnRest = saved.saveOnRest;
+            initial.saveOnWait = saved.saveOnWait;
+            initial.saveOnTravel = saved.saveOnTravel;
+            gameplayOptionsUI->setSettings(initial);
+            applyGameplaySettings(saved);
+        }
     }
 
     // VideoOptionsUI: Options > Video sub-screen (900x600, original video_menu.xml layout)
@@ -2180,6 +2194,18 @@ bool Renderer::initGameSystems() {
         
         if (debugHUD) {
             debugHUD->setAudioManager(audioManager.get());
+        }
+
+        // Apply the persisted AudioMenu volumes (RE §30.2.2 defaults).
+        if (settingsManager) {
+            const AudioVolumeSettings& saved = settingsManager->audioVolumes();
+            audioManager->setMasterVolume(saved.master);
+            audioManager->setBGMVolume(saved.music);
+            audioManager->setSEVolume(saved.effect);
+            audioManager->setVoiceVolume(saved.voice);
+            audioManager->setFootVolume(saved.foot);
+            LOGI("Audio volumes applied from settings: master=%.2f music=%.2f effect=%.2f voice=%.2f foot=%.2f",
+                 saved.master, saved.music, saved.effect, saved.voice, saved.foot);
         }
     }
 #endif
@@ -4176,6 +4202,9 @@ void Renderer::render(float deltaTime) {
 
     // Imperial Weave: process game logic updates (events, world, AI, animation, physics)
     if (imperialWeaveInitialized) {
+        // Publish the menu gate so physics/AI phases match the original's
+        // 0x00b3a6d4 / active-menu-count suspension (RE §30.1).
+        weave::ImperialWeave::instance().setMenuOpen(anyMenuOpen());
         weave::ImperialWeave::instance().update(deltaTime);
     }
 
@@ -4773,7 +4802,7 @@ void Renderer::render(float deltaTime) {
             hudRenderer->update(deltaTime);
             hudRenderer->render();
         }
-        if (crosshair) {
+        if (crosshair && crosshairEnabled && !anyMenuOpen()) {
             crosshair->render();
         }
         if (targetInfo) {
@@ -7217,7 +7246,14 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
             // Hardcoding a check assuming half screen width is around 1000px, 
             // but normally we should check real screen size. Let's just pass dx/dy for now
             // since Joystick will consume touches on the left side via UISystem.
-            playerController->onTouchInput(dx, dy);
+            //
+            // Suppressed while a menu owns the screen: the original gates this
+            // path on the "menu displayed" flag (0x00b3a6d4 != 0) and on the
+            // front-most menu's block value, so dragging on a menu panel must
+            // not spin the camera behind it.
+            if (!anyMenuOpen()) {
+                playerController->onTouchInput(dx, dy);
+            }
         }
     }
 }
@@ -7593,6 +7629,8 @@ void Renderer::handleOptionsCategoryRequest(OptionsUI::Category category) {
             current.master = audioManager->getMasterVolume();
             current.music = audioManager->getBGMVolume();
             current.effect = audioManager->getSEVolume();
+            current.voice = audioManager->getVoiceVolume();
+            current.foot = audioManager->getFootVolume();
         }
         optionsUI->suspend();
         audioOptionsUI->open(current);
@@ -7611,6 +7649,18 @@ void Renderer::handleOptionsCategoryRequest(OptionsUI::Category category) {
     }
 }
 
+void Renderer::applyGameplaySettings(const GameplaySettings& settings) {
+    crosshairEnabled = settings.crosshair;
+    Player::setDifficultyScale(difficultyDamageMultiplier(settings.difficulty));
+    // bGeneralSubtitles / aDialogueSubtitles and the three autosave toggles have
+    // no consumer yet: subtitle overlay rendering and the rest/wait/travel
+    // actions are not implemented. The values are persisted so they take effect
+    // as soon as those features exist.
+    LOGI("Gameplay settings applied: difficulty=%d (x%.3f) crosshair=%d",
+         settings.difficulty, Player::getDifficultyScale(),
+         settings.crosshair ? 1 : 0);
+}
+
 void Renderer::pumpAudioOptions() {
     if (!audioOptionsUI) {
         return;
@@ -7620,6 +7670,17 @@ void Renderer::pumpAudioOptions() {
         audioManager->setMasterVolume(v.master);
         audioManager->setBGMVolume(v.music);
         audioManager->setSEVolume(v.effect);
+        audioManager->setVoiceVolume(v.voice);
+        audioManager->setFootVolume(v.foot);
+        if (settingsManager) {
+            AudioVolumeSettings saved;
+            saved.master = v.master;
+            saved.music = v.music;
+            saved.effect = v.effect;
+            saved.voice = v.voice;
+            saved.foot = v.foot;
+            settingsManager->setAudioVolumes(saved);
+        }
     }
     if (audioOptionsUI->shouldReturnToOptions()) {
         audioOptionsUI->resetReturnFlag();
@@ -7634,8 +7695,21 @@ void Renderer::pumpGameplayOptions() {
     if (!gameplayOptionsUI) {
         return;
     }
-    // Values are kept in GameplayOptionsUI; consumers (crosshair, subtitles, autosave) are not wired yet
-    gameplayOptionsUI->consumeChanged();
+    if (gameplayOptionsUI->consumeChanged()) {
+        const GameplayOptionsUI::Settings& s = gameplayOptionsUI->settings();
+        GameplaySettings saved;
+        saved.difficulty = s.difficulty;
+        saved.generalSubtitles = s.generalSubtitles;
+        saved.dialogueSubtitles = s.dialogueSubtitles;
+        saved.crosshair = s.crosshair;
+        saved.saveOnRest = s.saveOnRest;
+        saved.saveOnWait = s.saveOnWait;
+        saved.saveOnTravel = s.saveOnTravel;
+        applyGameplaySettings(saved);
+        if (settingsManager) {
+            settingsManager->setGameplaySettings(saved);
+        }
+    }
     if (gameplayOptionsUI->shouldReturnToOptions()) {
         gameplayOptionsUI->resetReturnFlag();
         gameplayOptionsUI->close();
@@ -7694,6 +7768,27 @@ void Renderer::pumpControlsOptions() {
             optionsUI->resume();
         }
     }
+}
+
+bool Renderer::anyMenuOpen() const {
+    // Aggregate of every modal panel. The original tracks this as the active
+    // menu count (0x00b13978) plus the "menu displayed" flag (0x00b3a6d4);
+    // both are non-zero exactly while one of these panels owns the screen.
+    if (optionsUI && optionsUI->isVisible()) return true;
+    if (audioOptionsUI && audioOptionsUI->isVisible()) return true;
+    if (gameplayOptionsUI && gameplayOptionsUI->isVisible()) return true;
+    if (videoOptionsUI && videoOptionsUI->isVisible()) return true;
+    if (videoDisplayUI && videoDisplayUI->isVisible()) return true;
+    if (controlsOptionsUI && controlsOptionsUI->isVisible()) return true;
+    if (settingsUI && settingsUI->isVisible()) return true;
+    if (saveLoadUI && saveLoadUI->isVisible()) return true;
+    if (questUI && questUI->getVisibility()) return true;
+    if (inventoryUI && inventoryUI->isVisible()) return true;
+    if (uiInventoryPanel && uiInventoryPanel->isVisible()) return true;
+    if (mapUI && mapUI->isVisible()) return true;
+    if (dialogueUI && dialogueUI->isVisible()) return true;
+    if (bookReaderUI && bookReaderUI->isVisible()) return true;
+    return false;
 }
 
 bool Renderer::handleBackKey() {

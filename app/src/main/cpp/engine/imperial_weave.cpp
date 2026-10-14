@@ -285,6 +285,8 @@ void ImperialWeave::phaseWorldUpdate(float dt) {
 }
 
 void ImperialWeave::phaseAiUpdate(float dt) {
+    // FUN_00679a70-equivalent gate: AI reasoning is suspended while a menu is open.
+    if (menuOpen_) return;
     if (npcManager_) npcManager_->update(dt);
 }
 
@@ -293,10 +295,14 @@ void ImperialWeave::phaseAnimationUpdate(float dt) {
 }
 
 void ImperialWeave::phasePhysicsSync(float dt) {
+    // FUN_00679a70-equivalent gate: physics stepping is skipped while a menu is open.
+    if (menuOpen_) return;
     if (physics_) physics_->step(dt);
 }
 
 void ImperialWeave::phaseJoltPhysicsUpdate(float dt) {
+    // FUN_00679a70-equivalent gate: physics stepping is skipped while a menu is open.
+    if (menuOpen_) return;
     if (joltPhysics_) joltPhysics_->update(dt);
 }
 

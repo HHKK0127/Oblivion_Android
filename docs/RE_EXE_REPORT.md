@@ -3120,3 +3120,766 @@ slots>15 のメニューは、[15] 以降に固有の追加仮想関数（リス
 - chargen（RaceSex）は設定値（`func_0x00588bd0`）と項目生成ヘルパ
   （`func_0x005c3110`/`005c3440`）の 2 系統で構成されるため、Android 側も
   「データ表＋リスト生成」に分離すると移植しやすい。
+
+---
+
+# 30. 追加解析依頼（メニュー入力抑制 / 設定値の消費者 / 解像度 / フェード / 未文書化メニュー）
+
+本章は main セッションからの追加解析依頼 5 件への回答である。対象は Steam 版
+`Oblivion.exe`（imagebase `0x00400000`、sha256 `a8f313845c...b7dc6`）。各節末に
+**Android 移植向け確定値**を置く。確定に至らなかった点は明示する。
+
+## 30.1 依頼1: メニュー表示中のワールド入力（特にカメラ回転）の抑制
+
+### 30.1.1 結論（要約）
+
+オリジナルは「メニューが開いているか」を返す**単一の共通クエリ関数を持たない**。
+抑制は次の 6 経路の**合成**で成立している。
+
+1. グローバル フラグ `0x00b3a6d4`（メニュー表示中 = 1）
+2. 入力動作モード配列 `0x00b12dc8`（有効 byte）/ `0x00b12dd0`（配列 base）/ `0x00b12dd4`（値）
+3. 最前面メニューの入力消費フィールド（`[+0x24]`、値 `1`/`8` でブロック）
+4. `LoadingMenu`（ID `0x3ef`）表示中の早期リターン
+5. 毎フレームのワールド/カメラ更新 `FUN_0057f170` の `dt == 0` スキップ
+6. 物理更新 `FUN_00679a70` の `0x00b3a6d4 != 0` スキップ
+
+つまりカメラ回転が止まるのは「`dt == 0` でワールド/カメラ更新ごとスキップされ、
+かつ物理更新もスキップされ、さらにモード配列でポーリング済み入力が握り潰される」
+ためである。**移植側で `ACTION_MOVE` がカメラへ到達するのは、この合成のどれか
+（特に dt ゲート）を実装していないため**と考えられる。
+
+### 30.1.2 メインループ `FUN_00579cf0`（毎フレーム、219 insns）
+
+```
+[0x00b131fc] = 0xff
+FUN_00572ec0(2, 1)                     ; 入力動作モードのセット/更新
+FUN_00582160 x4                        ; MenuManager 取得
+FUN_00588bd0(0xfae) の戻り値 == [0x00a379b4] (=2.0f)
+    ? FUN_005bc8b0  : FUN_005bcc00     ; user0 == 2.0 で分岐（30.4.3）
+メッセージポンプ / FUN_004046a0 / FUN_00583e60 / FUN_005821f0 / FUN_00583f40
+if ( FUN_0040fda0() == false )         ; ポーズ判定（0x00b33434 終了コード 0x103）
+    FUN_0057f170(0, 1, 0)              ; ワールド/カメラ更新（30.1.4）
+```
+→ **`FUN_0040fda0()` が真（ポーズ中）の間はワールド/カメラ更新自体が呼ばれない。**
+
+### 30.1.3 入力動作モード別ゲート `FUN_00572ec0(mode, flag)`
+
+- モード配列 base = `0x00b12dd0`、有効 byte = `0x00b12dc8`、値(float) = `0x00b12dd4`
+- ストライド **24 バイト**、レコード内: `+0x0c` = duration、`+0x10` = handler、`+0x14` = progress
+- `mode` 引数（ここでは `2`）で「どの入力系を有効にするか」を切り替える。
+- **`[0x00b131fc] = 0xff`** は入力側の「リセット/全無効マーカー」で、フレーム先頭で
+  立ててから `FUN_00572ec0` で必要な系だけを再有効化する。→ 前フレームの入力が
+  フレームを跨いで持ち越されない（ポーリング結果の単一フレーム寿命）。
+
+### 30.1.4 ワールド/カメラ更新 `FUN_0057f170(a, b, c)`
+
+- **`dt == 0` ならワールド更新ブロック全体をスキップ**。
+- `dt != 0` のときのみ `FUN_0070c0b0`（ワールド物理/シーン）→ `FUN_0070e0a0`（カメラ）
+  を呼ぶ。
+→ **`dt`（経過時間）が 0 に固定される（時刻停止 = ポーズ相当）とカメラは回らない。**
+`dt` の正本は §28 で確定した時刻構造体（`0x00b33e90` = 再入深度ロック、周期計算は
+QPC 差 / `0x00a2fc70`(=1000.0)）。
+
+### 30.1.5 物理更新 `FUN_00679a70`
+
+```
+CMP byte [0x00b3a6d4], 0
+JNZ RET                 ; メニュー表示中は丸ごとスキップ
+```
+→ **`0x00b3a6d4` は「メニュー表示中」フラグの正本**（物理系の抑制に使用）。
+
+### 30.1.6 入力 update consumer `FUN_00440af0`
+
+- `arg2 != 0` のとき、`LoadingMenu(0x3ef)` が非 0 なら**即リターン**。
+- ポーズ中はサウンド側の処理をスキップ。
+- **DirectInput の取得入口は `FUN_00404150`**（§29 で特定）。
+
+### 30.1.7 最前面メニューの入力ブロック
+
+最前面実メニュー取得 `FUN_005898f0()` が返すオブジェクトの **`[+0x24]`** が
+入力消費フィールド。値 `1` または `8` のとき、そのメニューが入力を吸い上げる
+（背面のワールドへフォールスルーさせない）。
+
+### 30.1.8 メニュー API / 正本（確定）
+
+| 名称 | アドレス / シグネチャ | 役割 |
+|---|---|---|
+| アクティブメニュー取得 | `FUN_00589b70(id)` | ID 指定で表示中メニューを取得 |
+| 最前面メニュー取得 | `FUN_005898f0()` | 最前面の実メニュー |
+| MenuManager 取得/生成 | `FUN_00582160(0, 1)` | `0x134` バイト、`0x00b3a6e0` に格納。`[+0x1c] != 0` で有効 |
+| アクティブメニュー配列 | `0x00b13974`（先頭）/ `0x00b13978`（件数）/ `0x00b1397a`（上限） | **「開いているメニューの有無」の正本** |
+| メニュー表示中フラグ | `0x00b3a6d4` | 物理・その他抑制のゲート |
+| フェードリスト管理 | MenuManager `[+0x130]` | §30.4 |
+| アプリインスタンス | `0x00b3a6b0` | `[+0x24]`=オーディオ、`[+0x28]`=入力、`[+0x2c]`=DirectInput、`[+0x1c]`=ポーズ |
+
+### 30.1.9 ポーズ中 / 探索中メニューの扱いの差
+
+- **ポーズ系（PauseMenu `0x3f5`）**: `FUN_0040fda0()` が真になり、`FUN_0057f170` 自体が
+  呼ばれない → ワールド/カメラ/物理が完全停止。ゲーム時刻も停止する。
+- **非ポーズ系（Options 等、`explorefade 0.25`）**: ポーズ判定は偽のままなので
+  `FUN_0057f170` は呼ばれるが、`dt` と物理スキップ（`0x00b3a6d4`）および
+  モード配列／`[+0x24]` 入力ブロックで入力を握り潰す。**カメラ回転は
+  `[+0x24]` 入力ブロック＋モード配列側で止める**（dt は進み続ける）。
+
+### Android 移植向け確定値（依頼1）
+
+- 「メニューが開いているか」共通クエリは、オリジナル相当では
+  **`0x00b13978`（アクティブメニュー件数） > 0** または **`0x00b3a6d4 != 0`**。
+  移植側は `bool any_menu_open()` を 1 つ用意し、件数 >0 で真を返す実装が等価。
+- 入力経路の移植は次の 3 段を**すべて**実装する:
+  1. メニューが 1 つでも開いていれば **物理/AI 更新をスキップ**（`FUN_00679a70` 相当）。
+  2. 最前面メニューが入力を消費する（`[+0x24]` 相当）→ `ACTION_MOVE` を
+     カメラ handler に**渡さない**。
+  3. ポーズ系メニューのみ **dt = 0 にしてワールド/カメラ更新ごと止める**
+     （`FUN_0057f170` の `dt == 0` 早期スキップ相当）。
+- `FUN_00679a70` のゲートは `0x00b3a6d4` 1 バイトなので、移植側は
+  「メニュー表示中フラグ」1 個＋「最前面メニューの入力消費フラグ」で足りる。
+
+## 30.2 依頼2: オプション設定値の「消費者」
+
+### 30.2.1 audio: 実音量の算出式（確定）
+
+実音量適用関数 **`FUN_006aa1a0`（215 バイト）**:
+
+1. スライダー値を `0..1` にクランプ
+2. `FMUL [ECX + 0xb8]` … **マスター音量を乗算**
+3. `FMUL ST0` … **二乗（平方カーブ）**
+4. `bit0 != 0` かつ結果 `< [0x00a34ba0] (= 0.005f)` なら無音定数 `0xffffd8f0`（= -10000、dB 相当の下限）
+
+→ **実音量 = clamp(slider, 0, 1)² × masterVolume。線形ではない。**
+スライダー `0` および極小値（< 0.005）は無音に量子化される。
+**dB 変換はこの関数では行わず、線形振幅（0..1）をそのまま下位 API に渡す。**
+
+音量適用の中心は **`FUN_006ad030`（1081 insns）** で、`FUN_006aa1a0` を **6 回**
+呼ぶ（＝ 6 系統の音量を同時適用）。アクセサ 14 関数はすべてオーディオマネージャ
+正本 `[0x00b3c214]` へフォワードし、下位 `FUN_006ab500`〜`FUN_006acbf0` を呼ぶ。
+
+### 30.2.2 audio: チャンネルグループ対応（確定）
+
+INI 記述子テーブル **`0x00b1617c`**（8 バイト/エントリ、`+4` = `0x00b16180`）。
+Audio セクションのキー 13 個とその既定値:
+
+| # | キー | 既定値 |
+|---|---|---|
+| 0 | `bSoundEnabled:Audio` | 1（真） |
+| 1 | `bMusicEnabled:Audio` | 1（真） |
+| 2 | `fMainMenuMusicVolume:Audio` | 1.0 |
+| 3 | `fDefaultMasterVolume:Audio` | 0.8 |
+| 4 | `fDefaultFootVolume:Audio` | 0.3 |
+| 5 | `fDefaultMusicVolume:Audio` | 0.8 |
+| 6 | `fDefaultEffectsVolume:Audio` | 0.8 |
+| 7 | `fDefaultVoiceVolume:Audio` | 0.0 |
+| 8 | `fUnderwaterFrequencyDelta:Audio` | （整数） |
+| 9 | `bUseSoundDebugInfo:Audio` | （真偽） |
+| 10 | `fDialogAttenuationMin:Audio` | 7.75 |
+| 11 | `fDialogAttenuationMax:Audio` | 35.0 |
+| 12 | `fDSoundRolloffFactor:Audio` | 4.0 |
+| 13 | `fDBVoiceAttenuationIn2D:Audio` | （float） |
+
+→ **チャンネルグループは Master / Music / Effects / Voice / Footstep（Foot）の 5 系統**
+（`fDefaultMasterVolume` / `fDefaultMusicVolume` / `fDefaultEffectsVolume` /
+`fDefaultVoiceVolume` / `fDefaultFootVolume`）。audio_menu.xml のスライダーは
+この 5 系統の**現在値**を、INI の `fDefault*` は**初期値**を保持する。
+`FUN_006ad030` の `FUN_006aa1a0` 6 回呼び出しは、この 5 系統＋ system/ambient 系
+1 系統と解釈できる（**系統順序の最終確定は未了**、オフセットからの推定）。
+
+### 30.2.3 gameplay: 難易度とトグル（確定）
+
+- 難易度スライダー: `fDifficultyMinValue:GamePlay` = **0.0f**、
+  `fDifficultyMaxValue` = **100.0f**、既定 = **50.0f**（`FUN_005a3540` で初期化、
+  呼出元 `0x005bd8be`）。
+- トグル（`FUN_005a3540` が読む 6 個、値は bool）:
+
+| キー | 効果 |
+|---|---|
+| `aDialogueSubtitles:GamePlay` | 会話字幕 |
+| `bGeneralSubtitles:GamePlay` | 一般字幕 |
+| `bCrossHair:GamePlay` | 照準カーソル表示 |
+| `bSaveOnRest:GamePlay` | 休息時オートセーブ |
+| `bSaveOnWait:GamePlay` | 待機時オートセーブ |
+| `bSaveOnTravel:GamePlay` | 移動時オートセーブ |
+
+難易度 0..100 はそのまま**ダメージ係数**（`0`=易、`100`=難）として戦闘計算に渡る。
+`FUN_005a3540` が唯一の読取点であり、値を変更すると次回の同関数実行で反映される。
+
+### 30.2.4 gameplay: 設定 UI → 実挙動の消費者（確定）
+
+`FUN_005a3540`（難易度初期化）と 6 トグルの読取関数が**消費者**である。
+UI 側（`gameplay_menu.xml`）のスライダー/トグルは INI または設定オブジェクトに
+書き込み、上記関数群が読む。移植側 `Settings` は次の 3 点を実装すれば挙動が変わる:
+
+1. 難易度 `0..100` → 戦闘ダメージ係数へ反映（`0.0`/`50.0`/`100.0` が min/既定/max）。
+2. 6 トグルをそれぞれ「字幕表示」「照準表示」「休息/待機/移動時オートセーブ」の
+   実行分岐に接続する。
+3. audio の 5 スライダー → `実音量 = clamp(v,0,1)² × master`、`< 0.005` は無音。
+
+### Android 移植向け確定値（依頼2）
+
+- `volume_actual(v) = clamp(v,0,1)^2 * master`（平方カーブ）。`v < 0.005` は無音。
+- チャンネルは master / music / effects / voice / footstep の 5 系統
+  （INI 既定 0.8 / 0.8 / 0.8 / 0.0 / 0.3）。
+- 難易度は `0.0..100.0`（既定 50.0）の float。6 トグルは §30.2.3 の表のとおり。
+- 旧 TODO `audio-voice-footstep-setters` / `gameplay-settings-consumers` は
+  上記で解消可能。
+
+## 30.3 依頼3: video_display の解像度リスト生成 — 前提の訂正
+
+### 30.3.1 重要な訂正
+
+**`fResolution`（`0x00b45fe4`）は画面解像度ではない。** テクスチャ解像度比である。
+
+`FUN_007e0ed0`（557 バイト、テクスチャ設定オブジェクト初期化）:
+
+```
+[ESI] = 0xa91b74                       ; vtable
+[0x00b45fe0] = ESI                     ; 設定オブジェクトのグローバル正本
+[0x00b45fc4] = [0x00a31e2c]            ; float 設定
+[0x00b45fc0] = [0x00a430cc]
+[0x00b45fd8] = [0x00a3d65c]
+[0x00b45fd4] = 1.0f
+if ([0x00b45fd0] != 0) {               ; 品質フラグ
+    [0x00b45fc8] = 0x100   ; 256
+    [0x00b45fcc] = 0x8     ; mip 8
+} else {
+    [0x00b45fc8] = 0x80    ; 128
+    [0x00b45fcc] = 0x7     ; mip 7
+}
+[0x00b45fd1] = 1
+fResolution = 1.0f / [0x00b45fc8]      ; = 1/256 または 1/128
+[0x00b45fe4] = [0x00b45fe8] = [0x00b45fec] = [0x00b45ff0] = その値
+```
+
+`FUN_00499ef0`（255 バイト）は同じ計算を再実行する再初期化関数
+（`[0x00b07058]` のトグルに応じて 128/256 を選び、`FUN_007e0cb0` と
+`FUN_007e1710` でテクスチャを再生成）。呼出元は `FUN_007e1430@007e1430` の 1 件のみ。
+
+**したがって**:
+- `0x00b45fc8` = テクスチャ解像度（128 or 256）
+- `0x00b45fcc` = mip 数（7 or 8）
+- `0x00b45fd0` = 品質/設定トグル
+- `0x00b45fe0` = テクスチャ設定オブジェクトのグローバル正本
+- `0x00b45fe4`（fResolution） = **1.0 / テクスチャ解像度**（0.00390625 or 0.0078125）
+
+`FUN_007dfa30`（134 insns）は INI 記述子登録関数であり、グループ 1 =
+`"Time"` / `"fPassNum"` / `"fResolution"`、グループ 2 = `"texRatio0"` / `"texRatio1"`。
+**`fResolution` はテクスチャ系キーであり、画面解像度とは無関係。**
+
+### 30.3.2 解像度リストの生成元
+
+- **`EnumDisplaySettings` / `EnumDisplayDevices` 等のインポートは存在しない**（212
+  インポート中に不在）。→ 解像度列挙は **DirectX/D3D レンダラ内部**で行われる。
+- `"%d x %d"`(`0xa6cf2c`)、`"%d: %s,%dx%d,%dkb"`(`0xa2f5e0`)、
+  `sCantChangeResolution`(`0xa60613`)、`close-current-game`(`0xa6062c`) は
+  **.text からの参照が 0 件**（VA・VA+IB・push 即値のいずれでも不検出）。
+  → 解像度テキストは**レンダラ側の別文字列**（D3D が返すモード文字列）または
+  動的整形で生成される。`exit-restart`(`0xa600c8`) のみ `0x9f1fb1` に参照あり。
+- `bIgnoreResolutionCheck:Display`(`0xa3d524`) への参照 4 件
+  （`0x47dee9` / `0x89e32a` / `0x89e49b` / `0x89e55b`）は**すべて RTTI/vftable
+  記述子**（`MOV dword ptr [ESI], 0xa3d524` 等）であり、実 INI ブールの消費者では
+  ない。→ **実消費者はレジストリ/動的文字列経由の可能性が高く、未確定。**
+
+### 30.3.3 VideoRes / user3 / user4
+
+- `VideoRes@VideoMenu` の RTTI は確認済み（§24.7 / §26.9 の記述と整合）。
+- `user4`（解像度テキスト）と `user3`（フットノート表示可否）は、§19c の
+  逆アセンブル `0x005dc260-0x005dc2fc` が **`0xfae` / `0xfaf` / `0xfb1` の
+  メニュー user フィールド setter** であることから、**実行時にレンダラが返した
+  モード文字列を setter 経由で流し込む**方式と確定。静的定数テーブルではない。
+
+### Android 移植向け確定値（依頼3）
+
+- `fResolution` は**画面解像度ではない**（テクスチャ解像度比 1/128 or 1/256）。
+  移植側でこのキーを画面解像度に使ってはならない。
+- 解像度リストは **Android の `Display.getSupportedModes()`** 相当で列挙し、
+  `"<w> x <h>"` 形式の文字列を生成して VideoRes の `user4` に設定する
+  （フットノート可否は `user3`）。
+- `bIgnoreResolutionCheck` の実消費者は未確定（レジストリ/動的文字列候補）。
+  移植側では解像度チェックを**無効化しておく**のが安全。
+- 旧 TODO §24.11 の「解像度テキスト生成関数」は、**レンダラ内部 + setter 経由**
+  であるため EXE 単体では静的特定できない（DirectX レイヤが生成）。
+
+## 30.4 依頼4: メニュー開閉時のポーズ / フェード遷移
+
+### 30.4.1 フェード登録 / 進行（確定）
+
+- 登録: **`FUN_00584300(fade_id, duration, ...)`**（MenuManager `[+0x130]` の
+  フェードリストへ追加）
+- 進行: **`FUN_00583c30()`**（毎フレーム）
+- フェードノードは **20 バイト**:
+  - `+0x00` = `fade_id`
+  - `+0x04` = `current`
+  - `+0x08` = `duration`
+- 進行で `current += dt`（`dt` = `[0x00b33e9c]`）。`current >= 1.0` でノードを除去
+  （= フェード完了）。
+- `explorefade`（既定 `0.25`）と `menufade`（既定 `0.25`）は **duration 引数**であり、
+  フェード係数は `current / duration` の線形補間で求める。**係数算出は
+  `FUN_00583c30` 内の `current += dt` と比較のみ**（別関数ではない）。
+
+### 30.4.2 ゲーム時刻停止（ポーズ）
+
+- ポーズ判定は **`FUN_0040fda0`**（レンダースレッドハンドル `0x00b33434`、
+  終了コード `0x103` = ポーズ）。
+- `FUN_00579cf0` は `FUN_0040fda0() == false` のときだけ `FUN_0057f170`（ワールド/
+  カメラ更新、`dt` 依存）を呼ぶ。→ **ポーズ中は dt が実質 0 扱いになり時刻が止まる。**
+- 探索中メニュー（Options 等）はポーズ判定が偽のため時刻は進む（§30.1.9）。
+
+### 30.4.3 OptionsMenu.user0 と ESC / 戻るキー制御
+
+メインループ `FUN_00579cf0` の分岐:
+
+```
+if ( FUN_00588bd0(0xfae) == 2.0f )     ; 0x00a379b4 = 2.0f
+    FUN_005bc8b0
+else
+    FUN_005bcc00
+```
+
+- `0xfae` = メニュー user フィールド **user0**（§22 の記述と一致）。
+- `0x00a379b4` の実体 = **`2.0f`**（確認済み定数）。
+- **`user0 == 2.0` のときの分岐先が「背面に PauseMenu がある」側**であり、
+  ESC / 戻るキーの戻り先（PauseMenu へ戻る or ルートへ戻る）を切り替える。
+  `FUN_005bc8b0`（260 insns 超）と `FUN_005bcc00`（55 insns）がその 2 ハンドラ。
+- 汎用 Return（id `1`）は Options へ退出、BACK はページ 1 へ戻る（main 側検証済み・
+  一致確認）。
+
+### Android 移植向け確定値（依頼4）
+
+- フェードは「`fade_id` + 現在値 + 継続時間」の 20 バイトノード 1 個で表現。
+  `current += dt`、`current >= 1.0` で完了・除去。`explorefade 0.25` /
+  `menufade 0.25` は継続時間（秒）。
+- ポーズは「レンダースレッドが 0x103 を返す」＝ ワールド/カメラ更新の停止。
+  移植側は「ポーズ中はワールド更新を呼ばない」で等価。
+- メニューの `user0 == 2.0f` を「背面に PauseMenu あり」フラグとして使い、
+  ESC / 戻るの遷移先を分岐させる（`2.0f` が PauseMenu 側）。
+
+## 30.5 依頼5: 未文書化メニューの XML レイアウト素材（低優先・途中）
+
+### 30.5.1 素材の実在パス（確定）
+
+依頼文の `tmp\extracted_menus_full\menus\` は**PNG テクスチャのみ**を格納しており、
+**XML は存在しない**。メニュー XML の実体は **`tmp\bsa_misc\menus\`** 配下:
+
+| ファミリー | XML パス（`tmp\bsa_misc\menus\` 相対） |
+|---|---|
+| Container | `container_menu.xml` |
+| LevelUp | `levelup_menu.xml` |
+| QuickKeys | `main\quickkeys_menu.xml` |
+| Recharge | `recharge_menu.xml` |
+| Repair | `armorrepair` 系は `repair_menu.xml` |
+| LockPick | `lockpick_menu.xml` |
+| Message | `message_menu.xml` |
+| Quantity | `quantity_menu.xml` |
+| Negotiate / Persuasion | `negotiate_menu.xml` / `persuasion_menu.xml` |
+| Training | `training_menu.xml` |
+| Sleep/Wait | `sleep_wait_menu.xml` |
+| Breath | `breath_meter_menu.xml` |
+| Generic | `generic\test_menu.xml` |
+| Dialog | `dialog\dialog_menu.xml` |
+| chargen 系 | `chargen\attributes_menu.xml` / `birthsign_menu.xml` / `class_menu.xml` / `race_sex_menu.xml` / `skills_menu.xml` / `specilization_menu.xml` |
+| HUD 系 | `main\hud_info_menu.xml` / `hud_main_menu.xml` / `hud_subtitle_menu.xml` |
+| Inventory / Magic / Map / MagicPopup | `main\inventory_menu.xml` / `magic_menu.xml` / `map_menu.xml` / `magic_popup_menu.xml` |
+| Loading 系 | `loading_menu.xml` / `loading_ingame_menu.xml` / `loading_bar_ingame_menu.xml` |
+| Book / Scroll | `book_menu.xml` / `scroll_menu.xml` |
+
+全メニュー ID↔名前↔型マッピングは §30.5.2 に確定済み（§29 の続き）。
+
+### 30.5.2 全メニュー ID マッピング（確定・再掲）
+
+trait: `image=0x386`, `rect=0x385`, `text=0x387`, `3d/nif=0x388`, `menu=0x389`,
+`window=0x38b`, `template=0x3e7`。実メニュー:
+
+`MessageMenu=0x3e9`, `InventoryMenu=0x3ea`, `StatsMenu=0x3eb`, `HUDMainMenu=0x3ec`,
+`HUDInfoMenu=0x3ed`, `HUDReticle=0x3ee`, `LoadingMenu=0x3ef`, `ContainerMenu=0x3f0`,
+`DialogMenu=0x3f1`, `HUDSubtitleMenu=0x3f2`, `GenericMenu=0x3f3`, `SleepWaitMenu=0x3f4`,
+`PauseMenu=0x3f5`, `LockPickMenu=0x3f6`, `OptionsMenu=0x3f7`, `QuantityMenu=0x3f8`,
+`AudioMenu=0x3f9`, `VideoMenu=0x3fa`, `VideoDisplayMenu=0x3fb`, `GameplayMenu=0x3fc`,
+`ControlsMenu=0x3fd`, `MagicMenu=0x3fe`, `MapMenu=0x3ff`, `MagicPopupMenu=0x400`,
+`NegotiateMenu=0x401`, `BookMenu=0x402`, `LevelUpMenu=0x403`, `TrainingMenu=0x404`,
+`BirthSignMenu=0x405`, `ClassMenu=0x406`, `SkillsMenu=0x408`, `RepairMenu=0x40b`,
+`RaceSexMenu=0x40c`, `SpellPurchaseMenu=0x40d`, `LoadMenu=0x40e`, `SaveMenu=0x40f`,
+`AlchemyMenu=0x410`, `SpellmakingMenu=0x411`, `EnchantmentMenu=0x412`,
+`EffectSettingMenu=0x413`, `MainMenu=0x414`, `BreathMenu=0x415`, `QuickKeysMenu=0x416`,
+`CreditsMenu=0x417`, `SigilStoneMenu=0x418`, `RechargeMenu=0x419`, `TextEditMenu=0x41b`。
+
+### Android 移植向け確定値（依頼5）
+
+- 未文書化ファミリーの XML レイアウトは **`tmp\bsa_misc\menus\`** のファイルが
+  素材（`tmp\extracted_menus_full\menus\` はテクスチャのみ）。
+- §24/§25/§26 と同じ粒度の widget 表は **§31 で追記済み**（Container / QuickKeys /
+  LevelUp / Recharge / Repair の 5 メニュー、31.1〜31.7）。本章では素材パスと ID を
+  確定し、widget 単位の詳細は §31 を正典とする。
+
+## 30.6 未確定事項（main へ申し送り）
+
+1. `FUN_006ad030` の 6 回 `FUN_006aa1a0` 呼び出しの**チャンネル系統順序**
+   （master/music/effects/voice/footstep + 1）は記述子オフセットからの推定。
+2. `bIgnoreResolutionCheck` の実 INI 消費者の特定（レジストリ/動的文字列候補）。
+3. 解像度テキスト生成は DirectX レイヤ内部のため EXE 単体では静的特定不可。
+4. 未文書化ファミリーの widget 単位レイアウト表: Container / QuickKeys / LevelUp /
+   Recharge / Repair の 5 メニューは **§31 で解消済み**。残り（LockPick / Message /
+   Quantity / Negotiate / Persuasion / Training / SleepWait / Book / Scroll /
+   chargen 系 / HUD 系 等）は未着手。
+5. `FUN_005bc8b0`（260+ insns）後半と `FUN_005bcc00`（55 insns）の分岐詳細は
+   依頼4 の ESC 制御の補強として次回精読。
+
+---
+
+## 31. 未文書化メニュー ウィジェット単位レイアウト（依頼5 対応）
+
+### 31.1 共通事項と読み方
+
+依頼5 の対象 5 メニュー（Container / QuickKeys / LevelUp / Recharge / Repair）を、
+§24（options）/ §25（save_load）/ §26（video_display）と同粒度の widget 単位表で
+確定した。素材は `tmp\bsa_misc\menus\` の XML（`tmp\extracted_menus_full\menus\` は
+テクスチャのみ）。抽出は自作パーサ `tmp\r30_menuparse.py --md`。
+
+**メニュー ID（再掲）**
+
+| メニュー | ID | ルートサイズ | stackingtype |
+|---|---|---|---|
+| ContainerMenu | 0x3f0 | 840×854 背景基準（screen 中央） | no_click_past |
+| QuickKeysMenu | 0x416 | selector 800,275 + screen サイズ | does_not_stack |
+| LevelUpMenu | 0x403 | screen 中央 + pane 540×536 | no_click_past |
+| RechargeMenu | 0x419 | 956×837 背景基準 | no_click_past |
+| RepairMenu | 0x40b | 1000×750 / 746×799 切替 | no_click_past |
+
+**5 メニュー共通の外枠**
+
+- ルート `alpha=0`、`locus=true`、`x=0`、`y=0`、`menufade=0.25`。
+- 先頭に不可視の `@<name>_FocusBox`（`type=rect`, `visible=false`）を必ず持つ。
+  ContainerMenu=`cont_FocusBox`(id14), RechargeMenu=`recharge_FocusBox`(id1),
+  RepairMenu=`rep_FocusBox`(id7)。QuickKeys/LevelUp は FocusBox を持たない。
+- Container / LevelUp / Recharge / Repair は `stackingtype=no_click_past`
+  （背面メニューへのクリック透過を遮断）、QuickKeys のみ `does_not_stack`。
+
+**表の列**
+
+`Widget (path)` は `\` 区切りの親→子パス。`nest` は `<copy src="me()">` 系の
+入れ子参照方向、`renderDepth` は同階層の描画順。`x`/`y`/`w`/`h` は値または
+trait 式（`sub()`=自身の同 trait を引く、`add(N)`=N を加算、`div(N)`=N で除算、
+`mul(N)`=N を乗算、`max()/min()`=兄弟を含む最大/最小）。`visible`/`content` の
+`Menu.userN` は EXE 側が設定するメニュー固有 user フィールド。
+
+---
+
+### 31.2 ContainerMenu (`container_menu.xml`)
+
+| Widget (path) | type | id | nest | renderDepth | x | y | w | h | visible | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| cont_FocusBox | rect | 14 | 0 |  |  |  |  | false | 1 |  |
+| cont_background | image |  | 0 | add() max() sub(65) max() max(40) | screen().height div(2) sub(2) | 840 | 854 |  | 0 | Menus\Container\cont_box_background_1.dds |
+| cont_background\cont_background_2 | image |  | 1 | 720 | 0 | 128 | 854 |  | 0 | Menus\Container\cont_box_background_2.dds |
+| cont_background\cont_inv_background | image |  | 1 | 35 | 21 | 745 | 792 | parent().alpha | 1 | Menus\Shared\shared_main_background_1.dds |
+| cont_background\cont_inv_background\cont_inv_background_2 | image |  | 2 | 700 | 0 | 54 | 792 |  | -15 | Menus\Shared\shared_main_background_2.dds |
+| cont_background\page_layout | rect |  | 1 | 41 | 15 |  |  | true | 10 |  |
+| cont_background\page_layout\cont_page_5 | image |  | 2 | 18 | 539 | 791 | 176 | ContainerMenu.user0 | 5 | Menus\Shared\shared_05_tab.dds |
+| cont_background\page_layout\cont_page_4 | image |  | 2 | 18 | 539 | 791 | 176 | ContainerMenu.user0 | 5 | Menus\Shared\shared_04_tab.dds |
+| cont_background\page_layout\cont_page_3 | image |  | 2 | 18 | 539 | 791 | 176 | ContainerMenu.user0 | 5 | Menus\Shared\shared_03_tab.dds |
+| cont_background\page_layout\cont_page_2 | image |  | 2 | 18 | 539 | 791 | 176 | ContainerMenu.user0 | 5 | Menus\Shared\shared_02_tab.dds |
+| cont_background\page_layout\cont_page_1 | image |  | 2 | 18 | 539 | 791 | 176 | ContainerMenu.user0 | 5 | Menus\Shared\shared_01_tab.dds |
+| cont_background\page_layout\cont_tab_layout | rect |  | 2 | 21 | 20 |  |  |  |  |  |
+| cont_background\page_layout\cont_tab_layout\cont_tabs_prev | rect | 7 | 3 | -1 | -1 | 1 | 1 |  |  |  |
+| cont_background\page_layout\cont_tab_layout\cont_tabs_next | rect | 8 | 3 | -1 | -1 | 1 | 1 |  |  |  |
+| cont_background\page_layout\cont_tab_layout\cont_p5_tab | rect | 5 | 3 | 553 | 610 |  |  |  | 6 | Menus\Inventory\inv_icon_tab_misc.dds |
+| cont_background\page_layout\cont_tab_layout\cont_p4_tab | rect | 4 | 3 | 417 | 610 |  |  |  | 6 | Menus\Inventory\inv_icon_tab_alchemy.dds |
+| cont_background\page_layout\cont_tab_layout\cont_p3_tab | rect | 3 | 3 | 279 | 610 |  |  |  | 6 | Menus\Inventory\inv_icon_tab_apparel.dds |
+| cont_background\page_layout\cont_tab_layout\cont_p2_tab | rect | 2 | 3 | 141 | 610 |  |  |  | 6 | Menus\Inventory\inv_icon_tab_weapons.dds |
+| cont_background\page_layout\cont_tab_layout\cont_p1_tab | rect | 1 | 3 | 1 | 610 |  |  |  | 6 | Menus\Inventory\inv_icon_tab_all.dds |
+| cont_background\page_layout\cont_contents | rect |  | 2 | 8 | -70 |  |  |  | 7 |  |
+| cont_background\page_layout\cont_contents\cont_border_top | image |  | 3 | 91 | 140 | 596 | 160 |  | 1 | Menus\Inventory\inv_border_top.dds |
+| cont_background\page_layout\cont_contents\cont_border_middle | image |  | 3 | 91 | 276 | 576 | 249 |  | 1 | Menus\Inventory\inv_border_middle.dds |
+| cont_background\page_layout\cont_contents\cont_border_bottom | image |  | 3 | 34 | 521 | 628 | 160 |  | 1 | Menus\Inventory\inv_border_bottom.dds |
+| cont_background\page_layout\cont_contents\cont_player_money_icon | image |  | 3 | 50 | 648 | 32 | 32 |  | 1 | Menus\Shared\all_small_icons.dds |
+| cont_background\page_layout\cont_contents\cont_player_money_icon\cont_player_money_text | text |  | 4 | 42 | -5 |  |  |  | 1 | ContainerMenu.user6 |
+| cont_background\page_layout\cont_contents\cont_npc_money_icon | image |  | 3 | cont_scroll_bar.x sub(20) sub() sub() | 648 | 32 | 32 | ContainerMenu.user9 | 1 | Menus\Shared\all_small_icons.dds |
+| cont_background\page_layout\cont_contents\cont_npc_money_icon\cont_npc_name | text |  | 4 | 0 sub() sub(10) | -5 |  |  | ContainerMenu.user9 | 1 | ContainerMenu.user11 |
+| cont_background\page_layout\cont_contents\cont_npc_money_icon\cont_npc_money_text | text |  | 4 | 42 | -5 |  |  | ContainerMenu.user9 | 1 | ContainerMenu.user12 |
+| cont_background\page_layout\cont_contents\cont_encumberance_icon | image |  | 3 | cont_scroll_bar.x sub(20) sub() sub() | 648 | 32 | 32 | ContainerMenu.user9 |  | Menus\Shared\all_small_icons.dds |
+| cont_background\page_layout\cont_contents\cont_encumberance_icon\cont_encumberance_text | text |  | 4 | 40 | -5 |  |  |  |  | ContainerMenu.user13 |
+| cont_background\page_layout\cont_contents\cont_encumberance_icon\cont_encumberance_slash | text |  | 4 | cont_encumberance_text.x add() add(1) | -5 |  |  |  |  | / |
+| cont_background\page_layout\cont_contents\cont_encumberance_icon\cont_encumberance_max | text |  | 4 | cont_encumberance_slash.x add() add(1) | -5 |  |  |  |  | ContainerMenu.user14 |
+| cont_background\page_layout\cont_contents\cont_button_take_all | image | 32 | 3 | 17 add(-24) | 810 |  |  | ContainerMenu.user7 | 1 |  |
+| cont_background\page_layout\cont_contents\cont_button_haggle | image | 34 | 3 | 17 add(-16) | cont_button_take_all.y |  |  | ContainerMenu.user9 | 1 |  |
+| cont_background\page_layout\cont_contents\cont_button_exit | image | 33 | 3 | 590 add(-35) | cont_button_take_all.y |  |  |  | 1 |  |
+| cont_background\page_layout\cont_contents\cont_scroll_bar | image | 11 | 3 | 675 | cont_window.y |  | cont_window.height |  | 150 |  |
+| cont_background\page_layout\cont_contents\cont_headers_top | rect |  | 3 | 20 | 22 |  |  |  |  |  |
+| cont_background\page_layout\cont_contents\cont_window | rect |  | 3 | 10 | 150 | 645 | 480 |  | 12 |  |
+| cont_background\page_layout\cont_contents\cont_window\cont_pane | rect |  | 4 | 6 | cont_scroll_bar.user7 mul(-81) |  |  |  |  |  |
+| cont_background\page_layout\cont_contents\cont_window\cont_pane\cont_list_contents | rect | 13 | 5 |  |  |  |  |  |  |  |
+| cont_background\page_layout\cont_contents\cont_item_template | template |  | 3 |  |  |  |  |  |  |  |
+| cont_background\cont_select_frame | image |  | 1 | 272 | 729 | 287 | 86 |  | 10 | Menus\Container\cont_select_frame.dds |
+| cont_background\cont_select_frame\cont_icon_inv_off | image | 42 | 2 | 53 | 4 | 86 | 78 | ContainerMenu.user7 | -2 | Menus\Container\cont_icon_inv_off.dds |
+| cont_background\cont_select_frame\cont_icon_inv_on | image |  | 2 | 53 | 4 | 86 | 78 | cont_icon_inv_off.visible | -2 | Menus\Container\cont_icon_inv_on.dds |
+| cont_background\cont_select_frame\cont_icon_cont_off | image | 43 | 2 | 141 | 5 | 90 | 78 | ContainerMenu.user7 | -2 | Menus\Container\cont_icon_cont_off.dds |
+| cont_background\cont_select_frame\cont_icon_cont_on | image |  | 2 | 145 | 5 | 90 | 78 | cont_icon_cont_off.visible | -2 | Menus\Container\cont_icon_cont_on.dds |
+| cont_background\cont_select_frame\cont_select_frame_marker | image |  | 2 | me().user1 add() | -3 | 128 | 95 |  | 30 | Menus\Container\cont_select_frame_marker.dds |
+| cont_background\cont_select_frame\cont_select_left | image |  | 2 | 0 sub() add(56) | 25 | 42 | 35 | xbox | 6 | Menus\HUD\hud_xbox_lt.dds |
+| cont_background\cont_select_frame\cont_select_right | image |  | 2 | parent().width sub(56) | 25 | 42 | 35 | xbox | 6 | Menus\HUD\hud_xbox_rt.dds |
+
+#### 31.2.1 コンテナ リスト行テンプレート（`cont_item_template`）
+
+| Widget (path) | type | id | nest | renderDepth | x | y | w | h | visible | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| cont_item_template\cont_item | rect |  | 4 | 0 | me().listindex | 650 | 81 | me().user8 | 1 |  |
+| cont_item_template\cont_item\cont_equiped_marker | image |  | 5 | 7 | 7 | 635 | 64 | parent().user10 | 2 | Menus\Inventory\inv_equiped_marker_1.dds |
+| cont_item_template\cont_item\cont_item_icon | image |  | 5 | 5 | 7 | 64 | 64 | sub() | 3 | parent().user0 |
+| cont_item_template\cont_item\cont_item_over_icon | image |  | 5 | 5 | 7 | 64 | 64 | sub() | 3 | parent().user6 |
+| cont_item_template\cont_item\cont_item_count | text |  | 5 | sibling(cont_item_icon).x add() | parent().height sub() sub(6) |  |  |  | 5 | parent().user7 |
+| cont_item_template\cont_item\cont_item_status | image |  | 5 | cont_item_icon.x | cont_item_icon.y add() sub() | 64 sub(32) | 32 add(25) | parent().user12 | cont_item_icon.depth add(1) | parent().user13 |
+| cont_item_template\cont_item\cont_item_name | text |  | 5 | 80 | parent().height sub() div(2) |  |  |  | 3 | parent().user1 |
+| cont_item_template\cont_item\cont_item_cost | text |  | 5 | 418 | parent().height sub() div(2) |  |  |  | 3 | parent().user2 |
+| cont_item_template\cont_item\cont_item_weight | text |  | 5 | 496 | parent().height sub() div(2) |  |  |  | 3 | parent().user3 |
+| cont_item_template\cont_item\cont_item_damage | text |  | 5 | 556 | parent().height sub() div(2) |  |  |  | 3 | parent().user4 |
+| cont_item_template\cont_item\cont_item_health | text |  | 5 | 616 | parent().height sub() div(2) |  |  |  | 3 | parent().user5 |
+
+行高 **81 px**、`y = me().listindex`（`cont_pane.y = cont_scroll_bar.user7 mul(-81)`
+と対でスクロール）。列 x は name=80 / cost=418 / weight=496 / damage=556 /
+health=616。`cont_item_status` の w/h trait は `sub()`/`add()` の連鎖による
+耐久バー幅の算出。
+
+#### 31.2.2 カテゴリ見出し（`cont_headers_top` 配下 + 各行テンプレート）
+
+上段見出し `cont_p123_header_top`(depth4) / `cont_p4p5_header_top`(depth4) は
+同一構造で、`cont_p<N>_header_text` の content は
+`parent()._headernum parent()._header_`（動的文字列）。子は
+`_header_left`(shared_decor_blue_left.dds 35×17, depth7) /
+`_header_right`(shared_decor_blue_right.dds 35×17, depth7) /
+`_header_text`(text, x=130 y=5) /
+`_header_img1..img4`(all_small_icons.dds 32×32, depth5, x=300/375/435/495,
+`visible=parent()._headernum`) と、`_header_img1` 配下の
+`_header_arrow`(x=23 y=0 32×32, `visible=ContainerMenu.user25`)。
+
+`cont_window\cont_pane` 配下のカテゴリ見出し 9 種は同一テンプレートで、
+差異は下表のみ（それ以外の子 widget の x/y/w/h/depth は共通）。
+
+| 見出し | rect y | rect visible | text content |
+|---|---|---|---|
+| cont_weapon_header | ContainerMenu.user1 | ContainerMenu.user1 | strings()._weapons |
+| cont_apparel_header | ContainerMenu.user2 | ContainerMenu.user2 | strings()._apparel |
+| cont_apparatus_header | ContainerMenu.user3 | ContainerMenu.user3 | strings()._apparatuses |
+| cont_potions_header | ContainerMenu.user4 add() | ContainerMenu.user0 | strings()._potions |
+| cont_ingr_header | ContainerMenu.user15 add() | ContainerMenu.user0 | strings()._ingredients |
+| cont_book_header | ContainerMenu.user16 | ContainerMenu.user16 | strings()._books |
+| cont_keys_header | ContainerMenu.user17 add() | ContainerMenu.user0 | strings()._keys |
+| cont_stones_header | ContainerMenu.user18 add() | ContainerMenu.user0 | strings()._stones |
+| cont_misc_header | ContainerMenu.user19 add() | ContainerMenu.user0 | strings()._misc |
+
+共通子 widget（各見出し直下）:
+
+| Widget | type | renderDepth | x | y | w | h | visible | content |
+|---|---|---|---|---|---|---|---|---|
+| <h>_header_left | image | 7 | text.x sub(2) sub(55) | text.y add(5) | 35 | 17 |  | Menus\Shared\shared_decor_blue_left.dds |
+| <h>_header_right | image | 7 | text.width div(2) add() add(20) | text.y add(5) | 35 | 17 |  | Menus\Shared\shared_decor_blue_right.dds |
+| <h>_header_text | text |  | 130 | 35 |  |  |  | strings()._<cat> |
+
+右側アイコン列（x=300 起点、y=30、32×32、all_small_icons.dds）:
+
+| 見出し | アイコン数 | アイコン x | 矢印 widget | 矢印 x | 矢印 content |
+|---|---|---|---|---|---|
+| weapon | 4 (value/weight/damage/health) | 300, 374, 438, 502 | cont_value_arrow | 23 | all_small_icons.dds (visible=ContainerMenu.user25) |
+| apparel | 4 (value/weight/armor/health) | 300, 374, 438, 502 | cont_apparel_arrow_icon | 23 | all_small_icons.dds (user25) |
+| apparatus | 3 | 300, 375, 435 | cont_apparatus_header_arrow | 23 | all_small_icons.dds (user25) |
+| potions | 2 | 300, 375 | cont_potions_header_arrow | 23 | all_small_icons.dds (user25) |
+| ingr | 2 | 300, 375 | cont_ingr_header_arrow | 23 | all_small_icons.dds (user25) |
+| book | 2 | 300, 375 | cont_book_header_arrow | 23 | all_small_icons.dds (user25) |
+| keys | 2 | 300, 375 | cont_keys_header_arrow | 300 (depth10) | Menus\Icons\icon_small_arrow.dds (user25) |
+| stones | 2 | 300, 375 | cont_stones_header_arrow | 300 (depth10) | Menus\Shared\all_small_icons.dds (user25) |
+| misc | 2 | 300, 375 | cont_misc_header_arrow | 23 | all_small_icons.dds (user25) |
+
+（weapon/apparel の 3 番目以降は `_icon.x add(74)` / `add(64)` の連鎖で配置。
+apparatus は `add()` のみ、potions/ingr/book/misc は `value_icon.x add(74)` の
+2 個目のみが確定値で 375。keys/stones の `_img3` はそれぞれ
+`Menus\Icons\icon_small_arrow.dds` / `Menus\Icons\icon_small_weight.dds` を参照。）
+
+---
+
+### 31.3 QuickKeysMenu (`quickkeys_menu.xml`)
+
+ルート直下はわずか 2 widget（`quick_key_text` id6 と `Quick_key_selector` id7）で、
+8 スロットはすべて `Quick_key_selector` の子。
+
+| Widget (path) | type | id | nest | renderDepth | x | y | w | h | visible | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| quick_key_text | text | 6 | 0 | Quick_key_selector.x add() add(200) | Quick_key_selector.y add(20) sub() |  |  |  | 11 | strings()._quickkey |
+| Quick_key_selector | rect | 7 | 0 | 800 | 275 | screen().width | screen().height | true |  |  |
+| Quick_key_selector\background_selector_image | image |  | 1 | -58 | -58 | 512 | 512 | parent().user2 | 1 | Quick-Keys\background_paper.dds |
+| Quick_key_selector\background_selector_image2 | nif |  | 1 | 200 | 200 |  |  | parent().user3 | 1 | Quick-Keys\pc_background_paper_numbers.nif |
+| Quick_key_selector\quick_key_1_image | image | 8 | 1 | 202 sub(2) | 102 sub(2) | 64 | 64 | parent().visible | 2 |  |
+| Quick_key_selector\quick_key_2_image | image | 9 | 1 | 274 sub(2) | 132 sub(2) | 64 | 64 | parent().visible | 2 |  |
+| Quick_key_selector\quick_key_3_image | image | 10 | 1 | 302 sub(2) | 205 sub(2) | 64 | 64 | parent().visible | 2 |  |
+| Quick_key_selector\quick_key_4_image | image | 11 | 1 | 272 sub(2) | 275 sub(2) | 64 | 64 | parent().visible | 2 |  |
+| Quick_key_selector\quick_key_5_image | image | 12 | 1 | 200 sub(2) | 303 sub(2) | 64 | 64 | parent().visible | 2 |  |
+| Quick_key_selector\quick_key_6_image | image | 13 | 1 | 130 sub(2) | 273 sub(2) | 64 | 64 | parent().visible | 2 |  |
+| Quick_key_selector\quick_key_7_image | image | 14 | 1 | 102 sub(2) | 202 sub(2) | 64 | 64 | parent().visible | 2 |  |
+| Quick_key_selector\quick_key_8_image | image | 15 | 1 | 132 sub(2) | 130 sub(2) | 64 | 64 | parent().visible | 2 |  |
+| Quick_key_selector\selector_image | nif |  | 1 | -235 | -90 |  |  | parent().visible | 3 | Quick-Keys\quick keys.nif |
+
+- 8 スロットは八分円配置（時計回りに 1→8）。`sub(2)` は自サイズ 64 の 1/2=32 を
+  中心補正する式。実効中心座標は 1=(202,102) 2=(274,132) 3=(302,205) 4=(272,275)
+  5=(200,303) 6=(130,273) 7=(102,202) 8=(132,130)。
+- 背景切替は `parent().user2`（paper.dds）と `parent().user3`（numbers.nif）の排他。
+- `quick_key_text` は selector 右上（+200, +20）にラベルを出す。
+
+---
+
+### 31.4 LevelUpMenu (`levelup_menu.xml`)
+
+| Widget (path) | type | id | nest | renderDepth | x | y | w | h | visible | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| levelup_background | rect |  | 0 | screen().width sub() div(2) | screen().height sub() div(2) |  |  |  | 1 |  |
+| levelup_background\levelup_title | text |  | 1 | parent().width sub() div(2) | 20 |  |  |  | 4 | LevelUpMenu.user3 |
+| levelup_background\levelup_description | text |  | 1 | parent().width sub() div(2) | levelup_title.y add() add(20) |  |  |  | 4 | LevelUpMenu.user2 |
+| levelup_background\levelup_instructions | text |  | 1 | levelup_pane.width sub() div(2) | levelup_description.y add() add(30) |  |  |  | 4 | strings()._threeattributes |
+| levelup_background\level_up_picture | image |  | 1 | 620 | levelup_pane.y | 256 | 256 |  | 10 | LevelUpMenu.user4 |
+| levelup_background\levelup_attribute_description | text |  | 1 | level_up_picture.x sub() | level_up_picture.y add() add(20) |  |  |  | 4 | LevelUpMenu.user5 |
+| levelup_background\levelup_pane | rect | 2 | 1 | 30 | levelup_instructions.y add() add(20) | 540 | 536 |  | 5 |  |
+| levelup_background\levelup_exit_button | image | 1 | 1 | parent().width sub() sub(30) | parent().height sub() sub(20) |  |  |  | 6 |  |
+| levelup_template | template |  | 0 |  |  |  |  |  |  |  |
+| levelup_template\levelup_item | rect | 3 | 1 | 0 | me().listindex | 450 | 67 | true | 1 |  |
+| levelup_template\levelup_item\levelup_item_coin | image |  | 2 | -10 | parent().height sub() div(2) | 32 | 32 | parent().user0 | 4 | Menus\Shared\all_small_icons.dds |
+| levelup_template\levelup_item\levelup_item_icon | image |  | 2 | 40 | parent().height sub() div(2) | 64 | 64 |  | 4 | parent().user5 |
+| levelup_template\levelup_item\levelup_item_text | text |  | 2 | 130 | parent().height sub() div(2) |  |  |  | 4 | parent().user4 |
+| levelup_template\levelup_item\levelup_item_value | text |  | 2 | 380 | parent().height sub() div(2) |  |  |  | 4 | parent().user3 |
+| levelup_template\levelup_item\levelup_item_multiplier | text |  | 2 | 480 | parent().height sub() div(2) |  |  | parent().user1 | 4 | parent().user2 |
+| levelup_template\levelup_item\levelup_item_selected | image |  | 2 | 115 | parent().height sub() div(2) add(1) | parent().width sub(70) | 64 | parent().user0 | 1 | Menus\Inventory\inv_equiped_marker_1.dds |
+| levelup_template\levelup_item\levelup_item_mouseover_marker | image |  | 2 | 115 | 5 | parent().width sub(90) | 64 |  | 2 | Menus\dialog\dialog_selection_full.dds |
+| levelup_template\levelup_item\levelup_item_mouseover_marker_2 | image |  | 2 | parent().width add(55) sub() | 5 | 104 | 64 |  | 3 | dialog\dialog_selection_cut.dds |
+
+- 説明文は `user2`、属性名は `user5`、属性図は `user4`（`level_up_picture.filename`）。
+- 行高 **67 px**、`y = me().listindex`。列 x は icon=40 / text=130 / value=380 /
+  multiplier=480。`multiplier` のみ `visible=parent().user1`。
+- 退出ボタン `levelup_exit_button`(id1) は右下（-30, -20）。`user0` に `_exit`、
+  `user1` に遷移先を持つ（§28 の user フィールド表と整合）。
+
+---
+
+### 31.5 RechargeMenu (`recharge_menu.xml`)
+
+| Widget (path) | type | id | nest | renderDepth | x | y | w | h | visible | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| recharge_FocusBox | rect | 1 | 0 |  |  |  |  | false |  |  |
+| recharge_background | image |  | 0 | screen().width sub() div(2) | screen().height sub() div(2) | 956 | 837 |  | 1 | Menus\Recharge\recharge_background.dds |
+| recharge_background\recharge_info_icon | image |  | 1 | 214 add() | 108 add() | 32 add(32) | me().width |  | 2 | RechargeMenu.user0 me()._filename_ |
+| recharge_background\recharge_info_icon\recharge_info_count | text |  | 2 | 65 | 42 |  |  | RechargeMenu.user6 | 2 | RechargeMenu.user6 |
+| recharge_background\recharge_info_icon\recharge_info_text | text |  | 2 | parent().width add(10) | parent().height sub() div(2) |  |  |  | 2 | RechargeMenu.user2 |
+| recharge_background\recharge_soulgem_soul_layout | rect |  | 1 | 600 | 104 | 175 |  | RechargeMenu.user0 |  |  |
+| recharge_background\recharge_soulgem_soul_layout\recharge_soulgem_soul_label | text |  | 2 | parent().width sub() div(2) | 0 |  |  |  | 2 | strings()._soul |
+| recharge_background\recharge_soulgem_soul_layout\recharge_cost | text |  | 2 | parent().width sub() div(2) | 30 |  |  |  | 2 | RechargeMenu.user4 |
+| recharge_background\spell_gold_money_icon | image |  | 1 | 600 | recharge_info_icon.y | 32 | 32 | RechargeMenu.user0 | 2 | Menus\Shared\all_small_icons.dds |
+| recharge_background\spell_gold_money_icon\spell_gold_arrow_icon | image |  | 2 | 23 | 0 | 32 | 32 |  | 2 | Menus\Shared\all_small_icons.dds |
+| recharge_background\spell_gold_money_icon\recharge_cost | text |  | 2 | 55 | -3 |  |  |  | 2 | RechargeMenu.user4 |
+| recharge_background\recharge_health_icon | image |  | 1 | parent().width | parent().height | 32 | 32 |  | 2 | Menus\Shared\all_small_icons.dds |
+| recharge_background\recharge_contents | rect |  | 1 | 138 | 226 | 640 | 475 |  | 2 |  |
+| recharge_background\recharge_contents\recharge_list_pane | rect | 6 | 2 | 0 | 0 sub() | parent().width | me().childcount |  |  |  |
+| recharge_background\recharge_contents\recharge_scroll_bar | image | 4 | 2 | parent().width add(20) | 32 |  | parent().height sub(64) |  | 0 |  |
+| recharge_background\recharge_button_exit | image | 3 | 1 | parent().width sub(50) | parent().height |  |  |  | 2 |  |
+| recharge_item_template | template |  | 0 |  |  |  |  |  |  |  |
+| recharge_item_template\recharge_item | rect |  | 1 | 0 | me().listindex | recharge_contents.width | RechargeMenu.user3 |  |  |  |
+| recharge_item_template\recharge_item\item_icon | image |  | 2 | 0 | parent().height sub() div(2) | 64 | 64 |  |  | parent().user3 |
+| recharge_item_template\recharge_item\item_name | text |  | 2 | sibling(item_icon).x add() add(20) | parent().height sub() div(2) |  |  |  |  | parent().user1 |
+| recharge_item_template\recharge_item\item_charge | text |  | 2 | sibling(item_name).x add() add(sibling(item_name).x add(),2) | parent().height sub() div(2) |  |  |  |  | parent().user2 |
+
+- `recharge_info_icon` は `filename = RechargeMenu.user0 me()._filename_`
+  （アイコン画像 + 個数表示）。`recharge_info_count` の表示可否は `user6`。
+- ソウル欄 `recharge_soulgem_soul_layout`(600,104,175) は `user0` で開閉、
+  コストは `recharge_cost = user4`（2 箇所に同 content）。
+- リスト行高は `RechargeMenu.user3`（行ごとの可変高）、
+  `recharge_list_pane.h = me().childcount`、スクロールバーは
+  `recharge_scroll_bar`(id4, h=parent().height-64)。
+
+---
+
+### 31.6 RepairMenu (`repair_menu.xml`)
+
+| Widget (path) | type | id | nest | renderDepth | x | y | w | h | visible | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| rep_FocusBox | rect | 7 | 0 |  |  |  |  | false |  |  |
+| rep_background_repair | image | generic | 0 | screen().width sub() div(2) | screen().height sub() div(2) | 1000 | 750 | RepairMenu.user0 | 1 | Menus\ArmorRepair\Armor_Repair.dds |
+| rep_background_general | image | generic | 0 | screen().width sub() div(2) sub(200) | screen().height sub() div(2) | 746 | 799 | RepairMenu.user0 | rep_background_repair.depth | Menus\Shared\shared_combo_background_1.dds |
+| rep_background_general\rep_background_general_2 | image |  | 1 | 700 | 0 | 64 | 799 |  | -15 | Menus\Shared\shared_combo_background_2.dds |
+| rep_title | text |  | 0 | rep_background_repair.x add(2) sub(100) | rep_contents.y sub() sub(10) |  |  | parent().user0 | 3 | strings()._repair |
+| rep_contents | rect |  | 0 | rep_background_general.x add(55) add(182) | rep_background_general.y add(100) add(70) | 582 | 400 add(160) |  | rep_background_repair.depth add() add(2) |  |
+| rep_contents\horiz_grid_top | image |  | 1 | 0 | 0 sub(2) | parent().width | 4 | true | 31 | Menus\Shared\shared_border_horizontal_1.dds |
+| rep_contents\horiz_grid_bottom | image |  | 1 | 0 | parent().height sub(2) | parent().width | 4 | true | 31 | Menus\Shared\shared_border_horizontal_3.dds |
+| rep_contents\vert_grid_left | image |  | 1 | 0 sub(2) | 0 | 4 | parent().height | true | 31 | Menus\Shared\shared_border_vertical_2.dds |
+| rep_contents\vert_grid_column1 | image |  | 1 | parent().width sub(2) sub(190) | 0 | 4 | parent().height | RepairMenu.user0 | 31 | Menus\Shared\shared_border_vertical_1.dds |
+| rep_contents\vert_grid_column2 | image |  | 1 | parent().width sub(2) sub(95) | 0 | 4 | parent().height | RepairMenu.user0 | 31 | Menus\Shared\shared_border_vertical_1.dds |
+| rep_contents\vert_grid_right | image |  | 1 | parent().width sub(2) | 0 | 4 | parent().height | true | 31 | Menus\Shared\shared_border_vertical_2.dds |
+| rep_contents\money_icon | image |  | 1 | vert_grid_column1.x add() add(vert_grid_column1.x add(),2) sub(5) | 0 sub() sub(10) | 32 | 32 | RepairMenu.user0 | 20 | Menus\Shared\all_small_icons.dds |
+| rep_contents\money_icon\money_icon_arrow | image |  | 2 | 23 | 0 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| rep_contents\health_icon | image |  | 1 | vert_grid_column2.x add() add(vert_grid_column2.x add(),2) | 0 sub() sub(10) | 32 | 32 | RepairMenu.user0 | 20 | Menus\Shared\all_small_icons.dds |
+| rep_contents\rep_list_pane | rect | 8 | 1 | 0 | 0 sub() mul(80) | parent().width | me().childcount mul(80) |  |  |  |
+| rep_contents\rep_scroll_bar | image | 5 | 1 | parent().width add(20) | 32 |  | parent().height sub(64) |  | 0 |  |
+| rep_item_template | template |  | 0 |  |  |  |  |  |  |  |
+| rep_item_template\rep_item | rect |  | 1 | -2 | me().listindex | rep_contents.width sub() | 80 | me().user8 | 1 |  |
+| rep_item_template\rep_item\rep_equiped_marker | image |  | 2 | 7 | 7 | parent().width | 64 | parent().user10 | 2 | Menus\Inventory\inv_equiped_marker_1.dds |
+| rep_item_template\rep_item\rep_item_icon | image |  | 2 | 5 | 7 | 64 | 64 | sub() | 3 | parent().user0 |
+| rep_item_template\rep_item\rep_item_over_icon | image |  | 2 | 5 | 7 | 64 | 64 | sub() | 3 | parent().user6 |
+| rep_item_template\rep_item\rep_item_count | text |  | 2 | rep_item_icon.x add() add(2) | parent().height sub() |  |  |  | 5 | parent().user7 |
+| rep_item_template\rep_item\rep_item_name | text |  | 2 | 80 | parent().height sub() div(2) |  |  |  | 3 | parent().user1 |
+| rep_item_template\rep_item\rep_item_health | text |  | 2 | parent().width sub(44) | parent().height sub() div(2) |  |  |  | 3 | parent().user5 |
+| rep_buy_item_template | template |  | 0 |  |  |  |  |  |  |  |
+| rep_buy_item_template\rep_item | rect |  | 1 | -2 | me().listindex | rep_contents.width sub() | 80 | me().user8 | 1 |  |
+| rep_buy_item_template\rep_item\rep_equiped_marker | image |  | 2 | 7 | 7 | parent().width | 64 | parent().user10 | 2 | Menus\Inventory\inv_equiped_marker_1.dds |
+| rep_buy_item_template\rep_item\rep_item_icon | image |  | 2 | 5 | 7 | 64 | 64 | sub() | 3 | parent().user0 |
+| rep_buy_item_template\rep_item\rep_item_over_icon | image |  | 2 | 5 | 7 | 64 | 64 | sub() | 3 | parent().user6 |
+| rep_buy_item_template\rep_item\rep_item_count | text |  | 2 | 70 | 65 |  |  |  | 5 | parent().user7 |
+| rep_buy_item_template\rep_item\rep_item_name | text |  | 2 | 80 | parent().height sub() div(2) |  |  |  | 3 | parent().user1 |
+| rep_buy_item_template\rep_item\rep_item_cost | text |  | 2 | rep_item_health.x sub(96) | parent().height sub() div(2) |  |  |  | 3 | parent().user2 |
+| rep_buy_item_template\rep_item\rep_item_health | text |  | 2 | parent().width sub(44) | parent().height sub() div(2) |  |  |  | 3 | parent().user5 |
+| rep_button_remove | image | 15 | 0 | rep_background_general.x add(90) sub(30) | 670 add(85) |  |  | false | rep_background_repair.depth add() add(2) |  |
+| rep_button_repair_all | image | 16 | 0 | rep_button_exit.x sub(500) add(10) | rep_button_exit.y |  |  |  | rep_button_remove.depth |  |
+| rep_button_filter | image | 17 | 0 | rep_button_exit.x sub(200) | rep_button_exit.y |  |  |  | rep_button_remove.depth |  |
+
+- 背景は 2 種の切替。`visible = RepairMenu.user0` で
+  `Armor_Repair.dds`(1000×750, 装甲修理) / `shared_combo_background_1.dds`
+  (746×799, 汎用) を排他表示。`rep_background_general_2`(64×799) は右端の
+  連続テクスチャ。
+- 格子罫線 `rep_contents` 配下は `shared_border_*`。列境界は
+  `vert_grid_column1`(右端-190) / `vert_grid_column2`(右端-95)、左/右端は
+  `vert_grid_left`/`vert_grid_right`、上/下は `horiz_grid_top`/`horiz_grid_bottom`。
+- リストは 2 テンプレート。`rep_item_template`(修理) と
+  `rep_buy_item_template`(購入) は行高 **80 px** で共通、`y = me().listindex`。
+  行の表示可否は `me().user8`。購入テンプレートのみ `rep_item_cost`
+  (`content = parent().user2`, x = `rep_item_health.x sub(96)`) を追加。
+- 行アイコン: `rep_item_icon`(content = `parent().user0`) と
+  `rep_item_over_icon`(`parent().user6`) を重ねる。装備マーカーは
+  `inv_equiped_marker_1.dds`(`visible = parent().user10`)。
+- ボタン: `rep_button_remove`(id15, 初期 `visible=false`) /
+  `rep_button_repair_all`(id16) / `rep_button_filter`(id17) /
+  `rep_button_exit`(id2, 参照基準)。ボタン x はすべて `rep_button_exit` からの
+  相対（-500/+10、-200）。`repair_info_icon` の `filename = user0 me()._icon_`、
+  `hammer_number_text`(id3) は `me().user0`。
+
+---
+
+### 31.7 Android 移植向け確定値（依頼5 総括）
+
+1. **メニュー登録**: ContainerMenu=0x3f0 / QuickKeysMenu=0x416 / LevelUpMenu=0x403 /
+   RechargeMenu=0x419 / RepairMenu=0x40b。いずれもルートに `alpha=0`、
+   `locus=true`、`x=y=0`、`menufade=0.25` を設定する。
+2. **リスト行の座標系**: 行の `y` は例外なく `me().listindex`（行インデックス）。
+   スクロール量は親 `*_scroll_bar.user7` で与え、行送りは
+   Container=81 px / Repair=80 px / Recharge=可変(`user3`) / LevelUp=固定 67 px。
+   Android 実装では「行 y = index * lineHeight - scrollOffset」に帰着する。
+3. **スクロールバー**: `*_scroll_bar`(Container=id11, LevelUp=なし, Recharge=id4,
+   Repair=id5) の trait `user1..user4` は §24.9 / §25.5 のプレハブ定義と同一。
+   実装は共通スクロールバー widget を再利用できる。
+4. **user フィールド用途表**
+
+   | メニュー | user フィールド |
+   |---|---|
+   | ContainerMenu | user0=ページ/見出し活性, user1..4=見出し y/可視, user6=所持金, user7=inv/cont モード, user9=NPC 取引有無, user11=NPC 名, user12=NPC 資金, user13=現重量, user14=最大重量, user15..19=見出し y, user25=ソート矢印 |
+   | QuickKeysMenu | user2=paper 背景表示, user3=numbers 背景表示 |
+   | LevelUpMenu | user1=multiplier 可視, user2=multiplier 文字列, user3=value, user4=picture filename(属性図), user5=属性説明 |
+   | RechargeMenu | user0=info アイコン/ソウル欄表示, user2=info テキスト, user3=行高, user4=コスト, user6=個数表示 |
+   | RepairMenu | user0=背景種別(装甲/汎用)・列罫線可視, user8=行可視/高さ |
+
+5. **行テンプレートの親子**: 行 widget の子は `parent().userN` を参照する
+   （`me()` は行自身）。`sibling(name)` は同行内の兄弟 widget の座標を参照する。
+   Android 側は「行オブジェクト → 子 widget」の 1 段のプロパティ供給で再現可能。
+6. **未検証**: RepairMenu の `rep_button_exit`(id2) の実座標は
+   `rep_button_repair_all`/`rep_button_filter` の参照基準としてのみ現れ、
+   自身の x/y 確定値は他メニュー（§25 save_load 系）と共通の右下配置と推定。
+   `ContainerMenu` の `cont_tabs_prev`/`cont_tabs_next`(id7/id8) は 1×1 の
+   当たり判定専用 widget で、タブ送りの入力領域として扱う。
