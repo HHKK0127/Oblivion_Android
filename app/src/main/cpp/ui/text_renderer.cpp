@@ -1084,8 +1084,15 @@ bool TextRenderer::loadOblivionFont(FontType type) {
 }
 
 void TextRenderer::setActiveFont(FontType type) {
+    // Menus wrap every text draw in a FontScope, so this runs several times per
+    // frame with the same value; only the actual switches are worth logging.
+    if (activeFont == type) {
+        return;
+    }
     activeFont = type;
-    LOGI("Active font set to %d (%s)", (int)type, getFontTypeName(type));
+    // Per-frame churn: FontScope alternates faces several times per rendered frame,
+    // so keep this at debug level.
+    LOGD("Active font set to %d (%s)", (int)type, getFontTypeName(type));
 }
 
 void TextRenderer::requestFont(FontType type) {

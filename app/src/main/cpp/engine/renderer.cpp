@@ -2419,12 +2419,8 @@ bool Renderer::initGameSystems() {
     titleScreen = std::make_unique<TitleScreen>();
     titleScreen->initialize(localizationManager.get(), textRenderer.get());
     // Auto-load Oblivion fonts for title screen
-    if (textRenderer) {
-        textRenderer->loadOblivionFont(FontType::KingthingsRegular);
-        textRenderer->loadOblivionFont(FontType::KingthingsShadowed);
-        textRenderer->setActiveFont(FontType::KingthingsRegular);
-        LOGI("Oblivion fonts loaded for title screen");
-    }
+    loadUiFonts();
+    LOGI("Oblivion fonts loaded for title screen");
 #ifdef AUDIO_SYSTEM_ENABLED
     if (audioManager) {
         titleScreen->setAudioManager(audioManager.get());
@@ -4152,12 +4148,8 @@ void Renderer::render(float deltaTime) {
                 // Auto-load Oblivion fonts for title screen. Menu layout is measured from
                 // the active face, so the screen size has to be applied after the font is
                 // in place; doing it earlier measures Roboto and misplaces every hit box.
-                if (textRenderer) {
-                    textRenderer->loadOblivionFont(FontType::KingthingsRegular);
-                    textRenderer->loadOblivionFont(FontType::KingthingsShadowed);
-                    textRenderer->setActiveFont(FontType::KingthingsRegular);
-                    LOGI("Oblivion fonts loaded for title screen (auto-skip)");
-                }
+                loadUiFonts();
+                LOGI("Oblivion fonts loaded for title screen (auto-skip)");
                 titleScreen->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
 #ifdef AUDIO_SYSTEM_ENABLED
                 if (audioManager) {
@@ -7823,6 +7815,23 @@ void Renderer::pumpControlsOptions() {
             optionsUI->resume();
         }
     }
+}
+
+void Renderer::loadUiFonts() {
+    if (!textRenderer || uiFontsLoaded) {
+        return;
+    }
+    uiFontsLoaded = true;
+    // Upload every Oblivion face the shipped menus can reference, not just the two
+    // the title screen draws with. A FontScope switch onto a face whose atlas was
+    // never uploaded silently draws nothing (drawOblivionText bails on textureId 0),
+    // which is how the pause menu's "Paused" banner lost its text: Tahoma Bold Small
+    // is only reachable from the console's `font` command, so it was never loaded.
+    // Roboto (index 0) has no Oblivion atlas and is always available.
+    for (int i = 1; i < static_cast<int>(FontType::COUNT); ++i) {
+        textRenderer->loadOblivionFont(static_cast<FontType>(i));
+    }
+    textRenderer->setActiveFont(FontType::KingthingsRegular);
 }
 
 void Renderer::pumpPauseMenu() {

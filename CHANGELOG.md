@@ -186,6 +186,22 @@ The current version is **0.9.10 (versionCode 910)**.
   the longer ceiling costs no wall clock time.
 
 ### Fixed
+- **The pause menu's "Paused" caption and every other Oblivion face were never uploaded.**
+  `Renderer` auto-loaded only `KingthingsRegular` and `KingthingsShadowed` at startup, so the
+  three remaining faces (`Daedric`, `Handwritten`, `TahomaBoldSmall`) had no atlas until the
+  console's `font` command asked for one. `FontScope` only calls `setActiveFont`, which switches
+  the index without loading anything, so `drawOblivionText` hit its `textureId == 0` bail-out and
+  silently drew nothing - the pause menu's `_paused` caption (Tahoma Bold Small, `pause_menu.xml`
+  font 3) was therefore blank while the Kingthings button labels were fine. `Renderer::loadUiFonts()`
+  now uploads every face the shipped menus can reference (`FontType` 1..COUNT-1, Roboto excluded
+  because it has no Oblivion atlas) and is guarded so the second caller - the launcher auto-skip
+  path - cannot upload a duplicate set. Verified on `emulator-5554`: five
+  `Oblivion font loaded: type=1..5` lines, the caption renders at x=912..1007 / y=375..397, which
+  is `pause_menu.xml`'s body y + 20 with the face's real 22px height.
+- **`setActiveFont` spammed logcat.** It logged on every call, and menus wrap each text draw in a
+  `FontScope`, so a single pause-menu frame emitted ~16 lines. It now returns early when the face
+  is unchanged and logs at debug level, which removes the noise entirely while keeping real
+  switches visible.
 - **Every Options sub-panel slider was impossible to drag.** `Renderer::handleTouch` wrapped the
   whole legacy-UI dispatch in `if (action == 0 || action == 5)`, so the `case 2:` / `case 1,3,6:`
   arms inside the `gameplayOptionsUI` / `videoOptionsUI` / `controlsOptionsUI` / `audioOptionsUI`

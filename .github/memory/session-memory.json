@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-14T14:46:17.800713",
+  "lastUpdated": "2026-10-14T06:35:50.663660",
   "entries": [
     {
       "timestamp": "2026-09-16T14:58:00Z",
@@ -6553,12 +6553,54 @@
       "id": "eb1ec832-f99b-4329-ae79-b524e70ce593",
       "timestamp": "2026-10-14T14:55:35.672377",
       "compressed": false
+    },
+    {
+      "category": "decision",
+      "priority": "high",
+      "content": "Oblivion フォントの全フェイス起動時ロード: Renderer::loadUiFonts() を新設し FontType 1..COUNT-1 を loadOblivionFont() で一括アップロード（Roboto=0 は Oblivion アトラスを持たないため除外）。起動時(L2422)と launcher auto-skip 経路(L4151)の 2 箇所から呼ぶが、bool uiFontsLoaded ガードで 2 回目の重複アップロード（GL テクスチャ 5 枚リーク）を防止。原因: 旧実装は KingthingsRegular / KingthingsShadowed の 2 種のみ自動ロードし、TahomaBoldSmall(5) は game_console の font コマンド経由でしか到達できなかった。FontScope は setActiveFont を呼ぶだけでロードしないため atlas.textureId==0 のまま → drawOblivionText が無描画で return。実機検証: Oblivion font loaded type=1..5 が各 1 件、Paused が x=912..1007 / y=375..397 に描画。",
+      "tags": [
+        "font",
+        "text-renderer",
+        "renderer",
+        "pause-menu",
+        "bugfix"
+      ],
+      "id": "a10b3e9c-2f69-4d56-894d-97502f586a0e",
+      "timestamp": "2026-10-14T06:35:50.663660",
+      "compressed": false
+    },
+    {
+      "category": "decision",
+      "priority": "low",
+      "content": "TextRenderer::setActiveFont() のログ削減: 同値スキップ(activeFont==type で return)を追加し、ログを LOGI から LOGD へ降格。FontScope は 1 フレーム内で複数回フェイスを切り替えるため、ポーズメニュー表示中は毎秒数十行の Active font set to が出ていた。",
+      "tags": [
+        "logging",
+        "text-renderer",
+        "performance"
+      ],
+      "id": "cfd17464-b95d-4b64-b5f4-80c8db31d49e",
+      "timestamp": "2026-10-14T06:35:50.663660",
+      "compressed": false
+    },
+    {
+      "category": "constraint",
+      "priority": "medium",
+      "content": "既知の不整合（未修正）: TextRenderer::getTextHeight() は FONT_SIZE(32)*scale を返すが、Oblivion フォントの実 fontSize は 22〜57。getTextCapHeight() には atlas.fontSize/22.0f の補正があるが getTextHeight() には無い。getTextHeight() の呼び出しは約 25 箇所（options / audio / video / gameplay / controls / debug_menu / menu_ui_instantiator / title_screen / ui_pause_menu）に及び、変更すると全オプション画面のラベル行送りが動くため単独の検証パスが必要。ポーズメニューの Paused 位置は XML 意図どおり（body y+20、実測 y=375..397）なので実害なし。",
+      "tags": [
+        "font",
+        "text-renderer",
+        "layout",
+        "known-issue"
+      ],
+      "id": "f54883ce-4801-4a76-801f-bc9725ccf3fa",
+      "timestamp": "2026-10-14T06:35:50.663660",
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 456,
+    "totalEntries": 459,
     "compressedCount": 81,
     "sessionCount": 38,
-    "lastUpdated": "2026-10-14T14:55:35.672377Z"
+    "lastUpdated": "2026-10-14T06:35:50.663660Z"
   }
 }

@@ -409,6 +409,11 @@ public:
     void pumpVideoDisplay();
     void pumpControlsOptions();
     void pumpPauseMenu();
+    // Uploads every Oblivion font face the shipped menus can reference. Render
+    // thread only (allocates GL textures); call once the context is current.
+    // Idempotent: the second caller (launcher auto-skip) must not upload again.
+    void loadUiFonts();
+    bool uiFontsLoaded = false;
     // Re-opens the pause menu after a sub-menu (Options / Save / Load) closes.
     void syncPauseMenuLifetime();
     // Shared "leave the game" path: returns to the launcher and hides the
