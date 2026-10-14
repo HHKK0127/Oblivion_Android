@@ -4363,8 +4363,13 @@ void Renderer::render(float deltaTime) {
         if (settingsUI && settingsUI->isVisible()) {
             settingsUI->render();
         }
-        if (uiPauseMenu && uiPauseMenu->isVisible()) {
-            uiPauseMenu->render();
+        if (uiPauseMenu) {
+            // This path returns before the game-frame UI update pass, so the fade
+            // ramp has to be advanced here as well or the menu would never appear.
+            uiPauseMenu->update(deltaTime);
+            if (uiPauseMenu->isVisible() || uiPauseMenu->isFading()) {
+                uiPauseMenu->render();
+            }
         }
         // Skip frame rate control for quick return
         if (performanceMonitor) {
@@ -4703,6 +4708,12 @@ void Renderer::render(float deltaTime) {
         debugHUD->update(deltaTime);
     }
 
+    // Advance the pause menu open/close fade. Runs even while the menu is hidden
+    // so the close ramp can finish (RE_EXE_REPORT §33.3).
+    if (uiPauseMenu) {
+        uiPauseMenu->update(deltaTime);
+    }
+
     // Update new debug systems
     if (gameConsole) {
         gameConsole->update(deltaTime);
@@ -4748,7 +4759,8 @@ void Renderer::render(float deltaTime) {
     }
 
     // Pause menu sits below its own sub-menus (Save/Load/Options) but above the world.
-    if (uiPauseMenu && uiPauseMenu->isVisible()) {
+    // Keep drawing it while the close ramp runs so the fade-out is visible.
+    if (uiPauseMenu && (uiPauseMenu->isVisible() || uiPauseMenu->isFading())) {
         uiPauseMenu->render();
     }
 
@@ -7848,7 +7860,7 @@ void Renderer::pumpPauseMenu() {
 
         case UIPauseMenu::Item::SAVE:
         case UIPauseMenu::Item::LOAD:
-            uiPauseMenu->close();
+            uiPauseMenu->close(false);
             if (saveLoadUI) {
                 // The pause menu comes back once SaveLoadUI closes.
                 pauseMenuBehindSubmenu = true;
@@ -7860,7 +7872,7 @@ void Renderer::pumpPauseMenu() {
             break;
 
         case UIPauseMenu::Item::OPTIONS:
-            uiPauseMenu->close();
+            uiPauseMenu->close(false);
             if (optionsUI) {
                 // open(true) keeps the "Paused" banner: OptionsMenu.user0 == 2.0f
                 // is the original's "PauseMenu is behind me" flag (RE 30.4).
@@ -7899,7 +7911,9 @@ void Renderer::syncPauseMenuLifetime() {
     }
 
     pauseMenuBehindSubmenu = false;
-    uiPauseMenu->open();
+    // The menu was hidden without a fade when the sub-menu opened, so bring it
+    // back at full opacity instead of blending in a second time.
+    uiPauseMenu->open(false);
     LOGI("Pause menu: restored after sub-menu");
 }
 

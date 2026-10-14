@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-14T06:35:50.663660",
+  "lastUpdated": "2026-10-14T17:20:00Z",
   "entries": [
     {
       "timestamp": "2026-09-16T14:58:00Z",
@@ -6595,12 +6595,104 @@
       "id": "f54883ce-4801-4a76-801f-bc9725ccf3fa",
       "timestamp": "2026-10-14T06:35:50.663660",
       "compressed": false
+    },
+    {
+      "id": "cb5efa06-be70-45ff-85ad-273787d97241",
+      "timestamp": "2026-10-14T16:37:33.383885",
+      "category": "decision",
+      "priority": "high",
+      "content": "難易度ダメージ倍率の実式は FUN_005E2560。x = Player+0x734 * fDifficultyDamageMultiplier(既定10.0)。playerDiff<=0 なら x+=1.0、x==1.0 で無補正、他は 1/|x-1|。攻撃者=Player なら除算、被攻撃者=Player なら乗算。Android 暫定 pow(6,(d-50)/50) は誤り。",
+      "tags": [
+        "re",
+        "damage",
+        "difficulty"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "1a08c5b0-b9e1-402a-90c6-83ffeb71cde4",
+      "timestamp": "2026-10-14T16:37:33.383885",
+      "category": "decision",
+      "priority": "high",
+      "content": "NPC→プレイヤーダメージ経路: FUN_005FEBF0(vtable+0x3ac)→FUN_005E46C0(+0x2d4)→FUN_00488AA0→FUN_005E2BE0(AV減算)→FUN_006034B0(死判定, +0x3b8, HP<_DAT_00a2f948)。プレイヤー HP = Actor AV index 8。",
+      "tags": [
+        "re",
+        "damage",
+        "npc"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "065c3b1b-dfac-4fdd-a2d2-f9d471f6230f",
+      "timestamp": "2026-10-14T16:37:33.383885",
+      "category": "decision",
+      "priority": "high",
+      "content": "近接ダメージ合成 FUN_00547070 = fVar2*fVar1*fVar3*fVar4*fVar5*param_7。技能項/防具項は 0..100 clamp 後 ×0.01。疲労倍率 FUN_00547f00 = _DAT_00b37530-(1-f)*_DAT_00b37538。AI は FUN_00547140。",
+      "tags": [
+        "re",
+        "damage",
+        "melee"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "92636e69-6c83-42db-a607-56b98847b9bf",
+      "timestamp": "2026-10-14T16:37:33.383885",
+      "category": "reference",
+      "priority": "medium",
+      "content": "grant: fade ノード20B=[0]fade_id [1]current [2]duration [3]prev [4]next。生成 FUN_00584300, fade_id算出 FUN_005898f0, trait 0xfdb/0xfdc, duration 0.25, 閉じ時逆再生 FUN_00588a70。表示中フラグ 0x00b3a6d4。",
+      "tags": [
+        "re",
+        "menu",
+        "fade"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "c871514a-9d5c-425e-98ae-948ad5d07f35",
+      "timestamp": "2026-10-14T16:37:33.383885",
+      "category": "reference",
+      "priority": "high",
+      "content": "grant: bSaveOnRest(0x00b13218)/bSaveOnWait(0x00b13220) の消費者は FUN_005D6A80 (SleepWaitMenu vtable 0x00a6d7c4 [3], Ghidra未認識)。オートセーブ発行 = FUN_00466B70(0x00b33b00)。bSaveOnTravel(0x00b13228) は FUN_0066F420 先頭/FUN_004B7B40 末尾。",
+      "tags": [
+        "re",
+        "settings",
+        "autosave"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "87f81f82-c135-4808-b4c9-3aadc2b4e865",
+      "timestamp": "2026-10-14T16:37:33.383885",
+      "category": "reference",
+      "priority": "medium",
+      "content": "audio 5系統対応順: master→[+0xb8], voice→FUN_006aa1a0, effect→[+0xc4], foot→[+0xbc], music→[+0xc0]。FUN_006aa1a0 = clamp(0,1)→master乗算→dB時 log10(v^2*master)*2000。",
+      "tags": [
+        "re",
+        "audio"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "e6a0f0b0-fade-menufade-2026-10-14",
+      "timestamp": "2026-10-14T17:20:00Z",
+      "category": "decision",
+      "priority": "medium",
+      "content": "Pause menu open/close fade implemented from RE_EXE_REPORT 33.3 (menufade/explorefade). UIPauseMenu gained fadeProgress (0..1) ramped by update(dt) at FADE_DURATION=0.25s, the original fade node's default duration. The dim quad, 9 border pieces, the focused-row highlight pair, the blue decor and every text colour are scaled by the ramp, so both the dim and the widgets blend together. Renderer keeps drawing while isVisible()||isFading() and calls update() every frame in BOTH the game-frame path and the title-screen early-return path (that path returns before the game UI update pass, so it needs its own update call). open(fadeIn)/close(fadeOut) take flags: sub-menu transitions (Save/Load/Options) pass false because the original swaps panels instantly, which also avoids a double blend on restore. Verified on emulator: an intermediate blend frame was captured during the transition, the restore path renders at full opacity (mean luminance 26.97 vs 26.99 for a normal open), and the world resumes bright after Return. The original's parabolic easing near the target (_DAT_00a57604 / _DAT_00a2faa0) is still pending RE 34 request D; current ramp is linear.",
+      "tags": [
+        "ui",
+        "pause-menu",
+        "fade",
+        "re",
+        "menufade"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 459,
+    "totalEntries": 466,
     "compressedCount": 81,
     "sessionCount": 38,
-    "lastUpdated": "2026-10-14T06:35:50.663660Z"
+    "lastUpdated": "2026-10-14T17:20:00Z"
   }
 }

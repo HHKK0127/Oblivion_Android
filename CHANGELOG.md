@@ -16,6 +16,13 @@ The current version is **0.9.10 (versionCode 910)**.
 ## [Unreleased]
 
 ### Added
+- **The pause menu fades in and out as the original's `menufade` does (RE `§33.3`).** `UIPauseMenu`
+  gained `fadeProgress`, a 0..1 ramp driven at the original's 0.25 s `menufade` duration, and
+  `update(dt)` advances it toward the visibility target. Every part of the menu - the dim quad,
+  the 9 border pieces, the focused-row highlight pair, the blue decor and all text - is scaled by
+  the ramp, and `Renderer` keeps drawing while `isVisible() || isFading()` so the fade-out is not
+  cut short. `open(false)` / `close(false)` are used for Save / Load / Options transitions, which
+  in the original are instantaneous swaps rather than a close-then-open fade pair.
 - **The pause menu is the original's PauseMenu, not an ad-hoc list.** `UIPauseMenu` was rebuilt
   from `options\pause_menu.xml`: a 240x400 `generic_background` body centred on the screen with
   the 44px tiled border drawn around it, the blue decor pair at x=30 / y=26, the `_paused`

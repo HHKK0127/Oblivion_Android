@@ -122,3 +122,6 @@ __pycache__/
 # Graphify index output (local-only, regenerable)
 /graphify-out/
 graphify-out/
+
+# Local reverse-engineering tooling checkout (not project source)
+/ghidra-mcp/

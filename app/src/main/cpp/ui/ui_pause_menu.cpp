@@ -30,6 +30,8 @@ constexpr float PAUSE_DECOR_WIDTH = 35.0f;
 constexpr float PAUSE_DECOR_HEIGHT = 17.0f;
 constexpr float LABEL_SCALE = 1.0f;
 constexpr float DIM_ALPHA = 0.6f;
+// RE_EXE_REPORT §33.3: the fade node's default duration (menufade / explorefade).
+constexpr float FADE_DURATION = 0.25f;
 constexpr int ITEM_COUNT = 5;
 
 // XML <font> values mapped to FontType: 1 = Kingthings_Regular, 3 = Tahoma_Bold_Small.
@@ -43,9 +45,10 @@ const glm::vec4 kPauseText(51.0f / 255.0f, 79.0f / 255.0f, 142.0f / 255.0f, 1.0f
 // strings()._return / _save / _load / _options / _quit, in XML listindex order.
 const char* const kItemLabels[ITEM_COUNT] = {"Return", "Save", "Load", "Options", "Quit"};
 
-void drawIfLoaded(GLuint tex, float x, float y, float w, float h, int sw, int sh) {
+void drawIfLoaded(GLuint tex, float x, float y, float w, float h, int sw, int sh,
+                  float alpha = 1.0f) {
     if (tex != 0) {
-        UIDrawHelper::drawTexturedQuad(x, y, w, h, tex, glm::vec4(1.0f), sw, sh);
+        UIDrawHelper::drawTexturedQuad(x, y, w, h, tex, glm::vec4(1.0f, 1.0f, 1.0f, alpha), sw, sh);
     }
 }
 
@@ -68,7 +71,7 @@ private:
 
 UIPauseMenu::UIPauseMenu()
     : textRenderer(nullptr), screenWidth(1920), screenHeight(1080),
-      visible(false), focusIndex(0), hasSelection(false),
+      visible(false), focusIndex(0), fadeProgress(0.0f), hasSelection(false),
       pendingSelection(Item::RETURN),
       bgCenterTexture(0), bgEdgeTopTexture(0), bgEdgeBottomTexture(0),
       bgEdgeLeftTexture(0), bgEdgeRightTexture(0),
@@ -133,15 +136,36 @@ void UIPauseMenu::setScreenSize(int width, int height) {
     screenHeight = height;
 }
 
-void UIPauseMenu::open() {
+void UIPauseMenu::open(bool fadeIn) {
     visible = true;
     hasSelection = false;
     focusIndex = 0;  // pause_return_button carries xdefault 3 (focused by default)
+    // fadeIn leaves the ramp alone: it climbs from wherever it is (0.0 after a
+    // completed close = full blend-in). The sub-menu restore path passes false so
+    // the menu reappears without a second black-out.
+    if (!fadeIn) {
+        fadeProgress = 1.0f;
+    }
 }
 
-void UIPauseMenu::close() {
+void UIPauseMenu::close(bool fadeOut) {
     visible = false;
     hasSelection = false;
+    // fadeOut leaves the ramp alone so it runs down to 0 over FADE_DURATION;
+    // otherwise the menu vanishes on this frame (a sub-menu takes over).
+    if (!fadeOut) {
+        fadeProgress = 0.0f;
+    }
+}
+
+void UIPauseMenu::update(float dt) {
+    const float target = visible ? 1.0f : 0.0f;
+    if (fadeProgress == target) {
+        return;
+    }
+    const float step = (dt > 0.0f ? dt : 0.0f) / FADE_DURATION;
+    fadeProgress = (fadeProgress < target) ? std::min(target, fadeProgress + step)
+                                           : std::max(target, fadeProgress - step);
 }
 
 UIPauseMenu::Rect UIPauseMenu::bodyRect() const {
@@ -232,15 +256,15 @@ void UIPauseMenu::renderBorder(const Rect& b) {
     const int sw = screenWidth;
     const int sh = screenHeight;
 
-    drawIfLoaded(bgCenterTexture, b.x, b.y, b.w, b.h, sw, sh);
-    drawIfLoaded(bgEdgeTopTexture, b.x, b.y - BORDER, b.w, BORDER, sw, sh);
-    drawIfLoaded(bgEdgeBottomTexture, b.x, b.y + b.h, b.w, BORDER, sw, sh);
-    drawIfLoaded(bgEdgeLeftTexture, b.x - BORDER, b.y, BORDER, b.h, sw, sh);
-    drawIfLoaded(bgEdgeRightTexture, b.x + b.w, b.y, BORDER, b.h, sw, sh);
-    drawIfLoaded(bgCornerTLTexture, b.x - BORDER, b.y - BORDER, BORDER, BORDER, sw, sh);
-    drawIfLoaded(bgCornerTRTexture, b.x + b.w, b.y - BORDER, BORDER, BORDER, sw, sh);
-    drawIfLoaded(bgCornerBLTexture, b.x - BORDER, b.y + b.h, BORDER, BORDER, sw, sh);
-    drawIfLoaded(bgCornerBRTexture, b.x + b.w, b.y + b.h, BORDER, BORDER, sw, sh);
+    drawIfLoaded(bgCenterTexture, b.x, b.y, b.w, b.h, sw, sh, fadeProgress);
+    drawIfLoaded(bgEdgeTopTexture, b.x, b.y - BORDER, b.w, BORDER, sw, sh, fadeProgress);
+    drawIfLoaded(bgEdgeBottomTexture, b.x, b.y + b.h, b.w, BORDER, sw, sh, fadeProgress);
+    drawIfLoaded(bgEdgeLeftTexture, b.x - BORDER, b.y, BORDER, b.h, sw, sh, fadeProgress);
+    drawIfLoaded(bgEdgeRightTexture, b.x + b.w, b.y, BORDER, b.h, sw, sh, fadeProgress);
+    drawIfLoaded(bgCornerTLTexture, b.x - BORDER, b.y - BORDER, BORDER, BORDER, sw, sh, fadeProgress);
+    drawIfLoaded(bgCornerTRTexture, b.x + b.w, b.y - BORDER, BORDER, BORDER, sw, sh, fadeProgress);
+    drawIfLoaded(bgCornerBLTexture, b.x - BORDER, b.y + b.h, BORDER, BORDER, sw, sh, fadeProgress);
+    drawIfLoaded(bgCornerBRTexture, b.x + b.w, b.y + b.h, BORDER, BORDER, sw, sh, fadeProgress);
 }
 
 void UIPauseMenu::renderButton(int index) {
@@ -251,24 +275,28 @@ void UIPauseMenu::renderButton(int index) {
         // button_floating spans the full rect width at y + 3; button_end caps the
         // right edge with an 8px overlap.
         drawIfLoaded(selectionFullTexture, r.x, r.y + SELECTION_OFFSET_Y, r.w, BUTTON_HEIGHT,
-                     screenWidth, screenHeight);
+                     screenWidth, screenHeight, fadeProgress);
         drawIfLoaded(selectionCutTexture,
                      r.x + r.w + SELECTION_CAP_GAP - SELECTION_MIN_WIDTH,
                      r.y + SELECTION_OFFSET_Y, SELECTION_MIN_WIDTH, BUTTON_HEIGHT,
-                     screenWidth, screenHeight);
+                     screenWidth, screenHeight, fadeProgress);
     }
 
     if (textRenderer) {
         const std::string label = kItemLabels[index];
         const float tw = textRenderer->getTextWidth(label, LABEL_SCALE);
         const float th = textRenderer->getTextHeight(LABEL_SCALE);
+        const glm::vec4 color = focused ? kFocusedText : kIdleText;
         textRenderer->renderText(label, r.x + (r.w - tw) * 0.5f, r.y + (BUTTON_HEIGHT - th) * 0.5f,
-                                 focused ? kFocusedText : kIdleText, LABEL_SCALE);
+                                 glm::vec4(color.x, color.y, color.z, color.w * fadeProgress),
+                                 LABEL_SCALE);
     }
 }
 
 void UIPauseMenu::render() {
-    if (!visible || !textRenderer) {
+    // fadeProgress reaches 0 only after a completed close ramp, so this also
+    // covers the "closed and fully faded" case.
+    if (fadeProgress <= 0.0f || !textRenderer) {
         return;
     }
 
@@ -276,10 +304,11 @@ void UIPauseMenu::render() {
     glDisable(GL_DEPTH_TEST);
 
     // The XML root carries alpha 0 and an explorefade of 0.25: the world behind
-    // is faded out while the pause menu owns the screen.
+    // is faded out while the pause menu owns the screen. The fade node drives the
+    // ramp (RE_EXE_REPORT §33.3) so opening and closing both blend.
     UIDrawHelper::drawColoredQuad(0.0f, 0.0f, static_cast<float>(screenWidth),
                                   static_cast<float>(screenHeight),
-                                  glm::vec4(0.0f, 0.0f, 0.0f, DIM_ALPHA),
+                                  glm::vec4(0.0f, 0.0f, 0.0f, DIM_ALPHA * fadeProgress),
                                   screenWidth, screenHeight);
 
     const Rect body = bodyRect();
@@ -301,13 +330,15 @@ void UIPauseMenu::render() {
         const float tw = textRenderer->getTextWidth(paused, LABEL_SCALE);
 
         drawIfLoaded(decorLeftTexture, body.x + PAUSE_DECOR_INSET, body.y + PAUSE_DECOR_Y,
-                     PAUSE_DECOR_WIDTH, PAUSE_DECOR_HEIGHT, screenWidth, screenHeight);
+                     PAUSE_DECOR_WIDTH, PAUSE_DECOR_HEIGHT, screenWidth, screenHeight, fadeProgress);
         drawIfLoaded(decorRightTexture,
                      body.x + BODY_WIDTH - PAUSE_DECOR_INSET - PAUSE_DECOR_WIDTH,
                      body.y + PAUSE_DECOR_Y, PAUSE_DECOR_WIDTH, PAUSE_DECOR_HEIGHT,
-                     screenWidth, screenHeight);
+                     screenWidth, screenHeight, fadeProgress);
         textRenderer->renderText(paused, body.x + (BODY_WIDTH - tw) * 0.5f, body.y + PAUSE_TEXT_Y,
-                                 kPauseText, LABEL_SCALE);
+                                 glm::vec4(kPauseText.x, kPauseText.y, kPauseText.z,
+                                           kPauseText.w * fadeProgress),
+                                 LABEL_SCALE);
     }
 
     {

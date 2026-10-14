@@ -5322,3 +5322,240 @@ Bethesda のプレハブ断片は `<image><include/>...<trait>...<rect>` の閉�
 5. **未検証**: 各メニューの実行時供給値（`userN` の実データ）は、対応する
    ゲームシステム章（Container / Magic / Quest 等）で確定する。本章は
    レイアウト確定までを範囲とする。
+
+
+## 33. main 依頼分の追加解析（NPC ダメージ経路 / メニュー登録 ID / フェード / audio 残 / 設定消費者）
+
+本章は main（9427ac74）から受領した §33 以降の解析依頼 5 件の結果である。
+対象バイナリは §1 と同じ Steam 版 `Oblivion.exe`（md5 CDD2F0C5EFF198D4F26B7B5B54CE4930）。
+
+### 33.1 依頼1: NPC からプレイヤーへのダメージ計算経路
+
+#### 33.1.1 近接ダメージ入口と適用チェーン
+
+NPC 近接攻撃のダメージは次の順でプレイヤー HP に届く。
+
+| 段 | 関数 | VA | 役割 |
+|---|---|---|---|
+| 1 | `Actor::ApplyDamage`（vtable +0x3ac） | 0x005FEBF0 | 攻撃ヒット入口。対象抽出→ヒットメッセージ→適用呼出 |
+| 2 | `Actor::ApplyDamageEffect`（vtable +0x2d4） | 0x005E46C0 | 効果オブジェクト解釈、抵抗適用、値減算 |
+| 3 | Active Effects リスト管理 | 0x00488AA0 | magic-type 別テーブル引当 |
+| 4 | `Actor::ModifyActorValue` | 0x005E2BE0 | AV 更新。AV==8(Health) かつ負値で死判定呼出 |
+| 5 | 死判定（vtable +0x3b8） | 0x006034B0 | HP < 閾値 `_DAT_00a2f948` で死亡本体 `FUN_006005f0` |
+
+- 入口 `FUN_005FEBF0`（6650B）は `param_4==0 || FUN_0041df00()==0` で対象を抽出し、ヒット方向ベクトルを
+  `FUN_0053d4b0`/`FUN_005e6a40`/`FUN_006fcdc0` で計算した後、`(**(code**)(*param_1+0x2d4))(...)` を呼ぶ。
+  適用後に `[+0x288](8)` で Health を読み、`FUN_00579b60` でヒットメッセージを発行する。
+- `FUN_005E46C0`（520B, RET 0x10）は効果オブジェクト `param_2` の `+8->+4=='!'` で magic 判定し、
+  減算経路は `fVar1=FUN_004849c0()`（効果値）、`fVar2=ABS(対象現値)`、delta=効果値-現値 として `FUN_00488AA0` へ渡す。
+- `FUN_005E2BE0`（239B）は `if(param_2==8 && param_3<0.0) (**(vtable(*param_1)+0x3b8))(...)` で
+  **Health AV の減算時にのみ死判定を起動**する。
+- プレイヤー HP フィールドは Actor の AV 配列（Health は AV index 8）経由でアクセスする。
+  移植側は AV[8] を HP として直接減算してよい（`+0x3b8` 死判定を AV 減算内で呼ぶこと）。
+
+#### 33.1.2 ダメージ式（近接・AI・スキル・疲労・防具）
+
+近接ダメージは合成関数 `FUN_00547070`（206B, Combat_CalcMeleeDamage）で算出する。
+
+```
+fVar5 = FUN_00547b90(スキル参照値, スケール)         // スキル→0..100 レーティング
+param_5 = fDamageWeaponMult * 武器ダメージ
+fVar3 = base + scale * (ratingA * 0.01)              // 技能項（clamp 0..100）
+fVar4 = base + scale * (armor  / clamp0..100 * 0.01) // 防具項
+fVar5 = (param_8==0) ? FUN_00547f00(疲労) : 1.0      // 疲労倍率
+return fVar2 * fVar1 * fVar3 * fVar4 * fVar5 * param_7
+```
+
+- スキル参照値→レーティング: `FUN_00547b90`: `fVar1 = param_1 + param_2*_DAT_00b37390 + _DAT_00b37388` → 0..100 clamp。
+- 疲労倍率: `FUN_00547f00`: `return _DAT_00b37530 - (1.0 - param_1) * _DAT_00b37538`。
+- AI 攻撃: `FUN_00547140`（246B）は武器ダメージ(short)→`FUN_00547070`（近接）→
+  `fAIMagicSpellMult * 魔法値` を加算→`fAIMeleeWeaponMult * (近接+魔法項)`。
+- 防具レーティング合計: `FUN_00611FA0`（armor/clothing rating 合算）。
+
+#### 33.1.3 難易度倍率（確定式）
+
+`FUN_005E2560(attacker, damage, target)`（267B, float10 `__thiscall`, 戻=補正後ダメージ）:
+
+```
+fVar3 = damage;
+if (target != 0 && *(float*)(DAT_00b333c4 + 0x734) != 0.0) {
+    fVar2 = *(float*)(DAT_00b333c4 + 0x734) * _DAT_00b37b88;   // × fDifficultyDamageMultiplier(=10.0)
+    if (playerDifficulty <= 0.0) fVar2 = fVar2 + _DAT_00a2f928; // +1.0 (double)
+    else { if (fVar2 == 1.0) return damage; fVar2 = 1.0 / ABS(fVar2 - 1.0); }
+    if (fVar2 != 0.0) {
+        if (attacker == Player) { return (damage >= 0) ? damage/fVar2 : fVar2*damage; }
+        if (target   == Player) { return (damage >= 0) ? fVar2*damage : damage/fVar2; }
+        return damage;
+    }
+}
+return fVar3;
+```
+
+- param_1=ECX(attacker)、param_2=[ESP+4](damage)、param_3=EDI([ESP+0x10]=target)。
+- 難易度設定値は `Player+0x734`（`DAT_00b333c4 = Player`, 書き込み元は §32 で確定）。
+- `_DAT_00b37b88` = `fDifficultyDamageMultiplier`（GMST, 既定 10.0）、`_DAT_00a2f928` = 1.0(double)。
+- **Android 側の暫定式 `pow(6,(d-50)/50)` は誤り。** 実式は `playerDifficulty`（0..1 正規化に相当する
+  ゲーム設定スカラー）を `DifficultyDamageMultiplier` 倍し、`<=0` なら +1.0、それ以外は
+  `1/|x-1|` へ変換してから攻撃者/被攻撃者で乗除を切り替える。`x==1.0` は無補正。
+- `FUN_005E2560` の呼出元は 3 件のみ:
+  - `FUN_00699EB0`（418B）: 敵魔法効果→Health AV 合算→AI 攻撃見積り。
+  - `FUN_006A86F0`（268B）: GUIscript Actor property、AV==8 の負ダメージ時のみ適用。
+  - `FUN_005E58F0`: damage→FCHS→倍率→FCHS→vtable +0x330→`FUN_00613640`→集計 obj +0x10/+0xc へ FADD。
+
+#### 33.1.4 魔法・遠距離
+
+魔法ダメージは同じ `FUN_005E46C0`（効果オブジェクト経由）を通る。遠距離（弓/投射）は
+`FUN_005FEBF0` のヒット対象抽出（`FUN_0041df00` = レイキャスト相当）を経て同一適用チェーンへ入る。
+プレイヤー→NPC の攻撃は `FUN_00547070`/`FUN_00547140` を通り、既存 `calculateDamage` と一致することを確認した。
+
+#### 33.1.5 Android 移植向け確定値
+
+1. プレイヤー HP = Actor AV index 8。AV 減算は `ModifyActorValue(AV=8, 負値)` で行い、
+   内部で死判定（HP < `_DAT_00a2f948`）を必ず呼ぶ。
+2. 難易度倍率は §33.1.3 の実式を実装する（暫定 `pow(6,...)` を置換）。
+3. 近接ダメージは §33.1.2 の合成式を実装する。防具項は 0..100 clamp 後の ×0.01。
+4. NPC→プレイヤー経路は現状移植側に存在しないため、`FUN_005E46C0` 相当の
+   「効果オブジェクト→AV 減算→死判定」を新設する。
+
+### 33.2 依頼2: メニュー登録 ID の全割当
+
+`FUN_00582160`（MenuManager ctor）が構築するメニュー配列は正本グローバル
+`0x00b13974`（配列）/`0x00b13978`（件数）（§30.1）。§32.8 の確定分に、
+MenuVtables 走査で得た vtable を突き合わせた結果を次に示す。
+
+| メニュー | 登録 ID | vtable | 出典 |
+|---|---|---|---|
+| MessageMenu | 0x3e9 | — | §30.4.3 |
+| ContainerMenu | 0x3f0 | — | §31 |
+| PauseMenu | 0x3f5 | — | §22 / §32 |
+| AudioMenu | 0x3f9 | — | §26 / §30.7 |
+| VideoMenu | 0x3fa | — | §24 |
+| VideoDisplayMenu | 0x3fb | — | §24 |
+| GameplayMenu | 0x3fc | — | §26 |
+| ControlsMenu | 0x3fd | — | §24.11 |
+| LevelUpMenu | 0x403 | — | §31 |
+| RepairMenu | 0x40b | — | §31 |
+| QuickKeysMenu | 0x416 | — | §31.3 |
+| RechargeMenu | 0x419 | — | §31 |
+| SleepWaitMenu | — | 0x00a6d7c4 (nslots=15) | §33.5 |
+| SkillsMenu | — | 0x00a6d71c (nslots=15) | MenuVtables |
+
+MenuVtables による全メニュー vtable は 56 件。`MVT <addr> nslots=N <Name> [i]=FUN_xxx` 形式で
+各スロットポインタが取得できる。ID との突き合わせは `FUN_00582160` の配列走査で確定する。
+
+### 33.3 依頼3: メニュー開閉フェードの実装値
+
+- フェードノードは 20 バイト。レイアウトは
+  `[0]=fade_id`、`[1]=current`、`[2]=duration`、`[3]=prev`、`[4]=next`。
+- 生成は `FUN_00584300(fadeNode, duration)`。`fade_id` は `FUN_005898f0` が算出する。
+- trait は `0xfdb`/`0xfdc` の 2 系統。duration 既定値は 0.25（`explorefade`/`menufade` 共通）。
+- 係数式（`FUN_006ad030` 内、`param_1+0x2f0`=current, `+0x2f8`=target/duration）:
+
+```
+local_420 = ABS(current - target)
+if (_DAT_00a57604 <= local_420)
+    fVar3 = current ± _DAT_00a73e80        // 線形ステップ
+else
+    fVar3 = duration - ((local_420 - _DAT_00a2faa0) + (local_420 - _DAT_00a2faa0)) * duration  // 放物線
+```
+
+  `_DAT_00a68610`/`DAT_00a3d65c` による別分岐あり。`+0xdc` の bit フラグで fade 状態を管理。
+- `FUN_00588a70` は**メニューを閉じる時のノード挿入**を行い、暗転を逆再生させる
+  （閉じ時に逆再生あり）。
+- `FUN_00588bd0(menuObj, traitId)` は trait の float 値を取得する。
+- メニュー表示中フラグは `0x00b3a6d4`。MenuManager シングルトンは `0x00b3a6e0`（`+0x130` にメニューリスト）。
+
+#### Android 移植向け確定値
+
+1. 暗転は全画面黒クアッドのアルファ = `current / duration` でよい。ただし
+   §33.3 の放物線分岐（`local_420 < _DAT_00a57604`）ではイージングが入るため、
+   精度を求める場合は放物線式を実装する。
+2. `explorefade` は探索中の非ポーズメニュー、`menufade` はポーズ系メニューに使う
+   （trait 0xfdb/0xfdc の 2 系統）。
+3. フェードは `0x00b3a6d4`（メニュー表示中）でゲートする。
+
+### 33.4 依頼4: §30.6 の残 2 点
+
+#### 33.4.1 audio チャンネル 5 系統と `FUN_006aa1a0` の対応順序
+
+`FUN_00595a20()`（設定適用）は `DAT_00b33398+0x24` のオブジェクトに対し
+`FUN_00588bd0(0xfb5)` を 5 回呼び、各チャンネル値を次へ渡す。
+
+| 順 | チャンネル | 格納先 |
+|---|---|---|
+| 1 | master | `[obj+0xb8]` |
+| 2 | voice | `FUN_006aa1a0` |
+| 3 | effect | `[obj+0xc4]` |
+| 4 | foot | `[obj+0xbc]` |
+| 5 | music | `[obj+0xc0]` |
+
+`FUN_006aa1a0(obj, value, commit)`:
+
+```
+value = clamp(value, 0, 1)
+value = value * [obj+0xb8]              // master 乗算
+if ([obj+0xdc] & 1) {                   // dB モード
+    if (value*value < 0.01f) return;    // 無音
+    return (int)(log10(value*value * master) * 2000.0)
+}
+```
+
+audio_menu.xml の行順は master, voice, effect, foot, music。`FUN_006ad030` が
+`FUN_006aa1a0` を 6 回呼ぶのは、保存済み voice 音量を 6 回再適用するためである。
+
+#### 33.4.2 `FUN_0066F420`（2410B）全文精読
+
+先頭で `if (DAT_00b13228 != '\0') FUN_00466b70();` を実行する
+（`bSaveOnTravel` が真なら移動時オートセーブを発行）。以降はセーブ/移動処理本体。
+`FUN_004b7b40`（617B）末尾は
+`if (DAT_00b13230 != '\0' && DAT_00b13228 != '\0' && ...) *(uint*)(DAT_00b33b00+0x18) |= 0x8000;`。
+
+### 33.5 依頼5: 字幕・オートセーブの消費者（完全確定）
+
+| グローバル | 設定 | 実行時消費者 | VA |
+|---|---|---|---|
+| 0x00b13200 | bGeneralSubtitles | 字幕描画（非0時に `FUN_0057acc0`） | 0x005BFB90 |
+| 0x00b13208 | aDialogueSubtitles | 会話応答キャスト（距離判定後に字幕発行） | 0x0062A0E0 |
+| 0x00b13210 | bCrosshair | crosshair 表示制御（trait 0xfb0/0xfb6） | 0x005A8710 |
+| 0x00b13218 | bSaveOnRest | SleepWaitMenu 更新ハンドラ | 0x005D6A80 |
+| 0x00b13220 | bSaveOnWait | SleepWaitMenu 更新ハンドラ | 0x005D6A80 |
+| 0x00b13228 | bSaveOnTravel | 移動処理 | 0x004B7B40 / 0x0066F420 |
+
+- `0x00b13208`（aDialogueSubtitles）の真の消費者は `FUN_0062A0E0`（621B, 会話応答キャスト）。
+  `if (DAT_00b13208 != '\0' && *piVar4 != 0)` かつ距離 <= 2×基準で
+  `FUN_0057acc0(*piVar4, param_1[0x88], 0, DAT_00a30634)` を実行（字幕発行）。
+  `param_1[0x87]` は字幕残時間。
+- **rest/wait の消費者は `FUN_005D6A80`**（SleepWaitMenu vtable `0x00a6d7c4` スロット[3] 更新ハンドラ。
+  Ghidra は本関数を未認識のため DisasmRange で生命令を取得した）。
+
+```
+MOV AL, [ESI+0x4c]                        ; 休息種別フラグ
+if (AL && [0x00b13218] != 0) || [0x00b13220] != 0:
+    MOV ECX, [0x00b33b00]
+    CALL 0x00466b70                       ; オートセーブ発行
+```
+
+  以降、`FUN_00588bd0(0xfb5)`、`FUN_009828c0`、`[0xb3b730]`/`[Player+0x590]` 設定、
+  `FUN_005732d0(0xb3a6b0, 1, 1.0)` を実行する。
+- **オートセーブ発行関数 = `FUN_00466b70(0x00b33b00)`。**
+
+#### Android 移植向け確定値
+
+1. 休憩/待機のオートセーブは SleepWaitMenu 更新ハンドラで、休息種別（rest/wait）に対応する
+   トグルが真のとき発行する（セーブマネージャ obj = `0x00b33b00`）。
+2. 移動オートセーブは移動処理先頭で `bSaveOnTravel` を判定して発行する。
+3. 字幕は「一般字幕」と「会話字幕」で別経路。会話字幕は距離ゲート（<= 2×基準）付き。
+
+### 33.6 Android 移植向け確定値（本章まとめ）
+
+1. **NPC→プレイヤーダメージ経路を新設する**。入口は近接/魔法とも
+   「効果値→`FUN_005E46C0` 相当→AV[8] 減算→死判定」の 4 段。死亡閾値は `_DAT_00a2f948`。
+2. **難易度倍率を §33.1.3 の実式へ置換する**（暫定 `pow(6,...)` を廃止）。
+3. **近接ダメージ合成式を §33.1.2 のとおり実装する**（技能項・防具項は 0..100 clamp 後 ×0.01、
+   疲労倍率は `FUN_00547f00`）。
+4. **メニュー開閉フェード**は 20B ノード（fade_id/current/duration/prev/next）、
+   trait 0xfdb/0xfdc、duration 0.25。閉じ時は逆再生。精度が必要なら放物線イージングを実装。
+5. **audio チャンネル順**は master, voice, effect, foot, music。
+   `FUN_006aa1a0` は clamp→master 乗算→dB 変換（`log10(v^2*master)*2000`）。
+6. **設定トグル消費者**は §33.5 の表のとおり。rest/wait は SleepWaitMenu 更新ハンドラ、
+   travel は移動処理先頭、字幕は描画/会話応答キャスト。
