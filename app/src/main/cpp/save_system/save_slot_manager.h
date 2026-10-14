@@ -25,6 +25,7 @@ struct SaveSlotInfo {
     uint64_t timestamp = 0;
     uint32_t playerLevel = 1;
     float gameTimeHours = 0.0f;
+    uint32_t playTimeSeconds = 0;
     std::string locationName;
     bool isAutoSave = false;
     bool isEmpty = true;

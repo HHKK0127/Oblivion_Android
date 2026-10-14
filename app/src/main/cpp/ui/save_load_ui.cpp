@@ -5,6 +5,7 @@
 #include "../engine/texture_loader.h"
 #include <sstream>
 #include <iomanip>
+#include <cstdio>
 #include <ctime>
 #include <GLES3/gl3.h>
 
@@ -23,6 +24,18 @@ void drawTextureIfLoaded(GLuint texture, float x, float y, float w, float h, int
     if (texture != 0) {
         UIDrawHelper::drawTexturedQuad(x, y, w, h, texture, glm::vec4(1.0f), sw, sh);
     }
+}
+
+// Original save/load rows show the play time as "%02i:%02i:%02i"
+// (RE_EXE_REPORT §27). Hours keep the minimum width but may exceed two digits.
+std::string formatPlayTime(uint32_t totalSeconds) {
+    const uint32_t hours = totalSeconds / 3600u;
+    const uint32_t minutes = (totalSeconds / 60u) % 60u;
+    const uint32_t seconds = totalSeconds % 60u;
+
+    char buffer[32];
+    std::snprintf(buffer, sizeof(buffer), "%02u:%02u:%02u", hours, minutes, seconds);
+    return std::string(buffer);
 }
 
 // The original .dds art has transparent margins. The opaque area (measured from
@@ -325,7 +338,10 @@ void SaveLoadUI::renderSlotList() {
                 ? "Save " + std::to_string(i + 1) : slot.displayName;
             textRenderer->renderText(rowName, rx + 16.0f, textY, textColor, 1.0f);
             if (!slot.isEmpty) {
+                // Right side of the row: level then play time (RE_EXE_REPORT §27)
                 textRenderer->renderText("Lv " + std::to_string(slot.playerLevel),
+                                         rx + rowW - 200.0f, textY, textColor, 0.9f);
+                textRenderer->renderText(formatPlayTime(slot.playTimeSeconds),
                                          rx + rowW - 110.0f, textY, textColor, 0.9f);
             }
         } else if (i == 0 && currentMode == Mode::LOAD) {
@@ -354,8 +370,13 @@ void SaveLoadUI::renderSlotList() {
         const float tx = l.previewX + 10.0f;
         const float ty = l.previewY + PREVIEW_HEIGHT + 14.0f;
         textRenderer->renderText(slot.displayName, tx, ty, textColor, 1.0f);
+        if (!slot.isEmpty) {
+            textRenderer->renderText("Lv " + std::to_string(slot.playerLevel) +
+                                     "   " + formatPlayTime(slot.playTimeSeconds),
+                                     tx, ty + 34.0f, textColor, 0.9f);
+        }
         if (!slot.locationName.empty()) {
-            textRenderer->renderText(slot.locationName, tx, ty + 34.0f, textColor, 0.9f);
+            textRenderer->renderText(slot.locationName, tx, ty + 68.0f, textColor, 0.9f);
         }
     }
 }

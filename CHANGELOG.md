@@ -16,6 +16,13 @@ The current version is **0.9.10 (versionCode 910)**.
 ## [Unreleased]
 
 ### Added
+- **The save list now shows real level and play time.** `SaveMenu`'s rows previously read `Lv 1`
+  for every file and had no play time, because `SaveSlotInfo::playerLevel`/`gameTimeHours` were
+  never populated from the file. The save header is now format v3, appending
+  `playerLevel` and `playTimeSeconds` after `slotName` (64-byte legacy prefix preserved, so v1/v2
+  saves still load through `save_format::readSaveHeader`), `SaveManager` accumulates play time
+  from its per-frame `update()` and restores it on load, and `SaveLoadUI` renders the row the way
+  the original does - name, level, then `%02i:%02i:%02i` play time (RE `§27`).
 - **Option values are now persisted, and the audio chain matches the original's curve.** The
   Audio and Gameplay panels previously kept their values in memory only, so every restart reset
   them; `SettingsManager` now stores both groups in `settings.txt` (`AUDIO_MASTER`, `AUDIO_VOICE`,

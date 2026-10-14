@@ -6449,12 +6449,27 @@
         "gameplay-options"
       ],
       "compressed": false
+    },
+    {
+      "id": "404bca22-79fa-4a14-ac9f-60739e5f4c93",
+      "timestamp": "2026-10-14T14:18:37.695910",
+      "category": "decision",
+      "priority": "high",
+      "content": "セーブヘッダを format v3 に拡張し、セーブ一覧の Lv とプレイ時間を実データ化した。SaveHeader は 64 バイトのレガシープレフィックスの後に playerLevel(uint32) と playTimeSeconds(uint32) を追加した 72 バイト。save_format::readSaveHeader(istream&, SaveHeader&) が先頭 64 バイトだけ読んでから formatVersion>=3 のときだけ残り 8 バイトを読むので、v1/v2 の既存セーブもそのままロードできる（CURRENT_VERSION=3, MIN_SUPPORTED_VERSION=1, LEGACY_HEADER_SIZE=64, static_assert(sizeof(SaveHeader)==72)）。SaveManager は update(dt) でplayTimeSeconds_ を毎フレーム加算（dt は 1.0 秒でクランプ、端数は playTimeAccumulator_ に繰り越し）し、readFromFile() で header.playTimeSeconds から復元、writeToFile() で header に書き戻す（プレイヤーレベルは playerController_->getPlayer()->playerLevel から取得）。SaveSlotManager::renameSlot() の最小サイズ判定は LEGACY_HEADER_SIZE に変更（slotName はオフセット 32..63 なのでレガシーでも安全）。SaveLoadUI は行に「名前 / Lv N / %02u:%02u:%02u」を表示し、プレビュー下の詳細欄にも Lv とプレイ時間を出す（RE_EXE_REPORT §27 の一覧表示仕様に準拠）。ペイロードは v2 と同一なので loadedFormatVersion_ >= 2 の分岐は変更不要。",
+      "tags": [
+        "save-system",
+        "save-format",
+        "save-load-ui",
+        "re-section-27",
+        "build-verified"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 449,
+    "totalEntries": 450,
     "compressedCount": 81,
     "sessionCount": 38,
-    "lastUpdated": "2026-10-13T20:04:30.874213Z"
+    "lastUpdated": "2026-10-14T05:18:37.695910Z"
   }
 }

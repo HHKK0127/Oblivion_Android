@@ -6,6 +6,7 @@
 #include "../world/world_manager.h"
 #include "../script/script_manager.h"
 #include <fstream>
+#include <algorithm>
 #include <sstream>
 #include <cstring>
 #include <cstdlib>
@@ -426,6 +427,7 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
                 float manaCost = reader.readFloat();
                 float baseDamage = reader.readFloat();
                 uint32_t targetType = reader.readUint32();
+                (void)targetType;
 
                 uint32_t newId = 0;
                 if (spellManager_) {
@@ -603,6 +605,14 @@ bool SaveManager::writeToFile(uint32_t slotIndex, const std::string& slotName,
     header.slotIndex = slotIndex;
     header.checksum = save_format::computeCRC32(payload.data(), payload.size());
 
+    // v3 header fields shown in the save list (RE_EXE_REPORT §27)
+    header.playTimeSeconds = playTimeSeconds_;
+    if (playerController_) {
+        if (auto player = playerController_->getPlayer()) {
+            header.playerLevel = player->playerLevel;
+        }
+    }
+
     size_t copyLen = std::min(slotName.size(), sizeof(header.slotName) - 1);
     std::memcpy(header.slotName, slotName.c_str(), copyLen);
     header.slotName[copyLen] = '\0';  // Ensure null termination
@@ -636,7 +646,10 @@ bool SaveManager::readFromFile(uint32_t slotIndex, std::vector<uint8_t>& payload
     }
 
     save_format::SaveHeader header;
-    file.read(reinterpret_cast<char*>(&header), sizeof(header));
+    if (!save_format::readSaveHeader(file, header)) {
+        LOGE("Failed to read save header for slot %u", slotIndex);
+        return false;
+    }
 
     auto validation = save_format::validateHeader(header);
     if (validation != save_format::ValidationResult::OK) {
@@ -645,6 +658,8 @@ bool SaveManager::readFromFile(uint32_t slotIndex, std::vector<uint8_t>& payload
     }
 
     loadedFormatVersion_ = header.formatVersion;
+    // Resume the accumulated play time from the file being loaded
+    playTimeSeconds_ = header.playTimeSeconds;
 
     payload.resize(header.payloadSize);
     file.read(reinterpret_cast<char*>(payload.data()), header.payloadSize);
@@ -683,6 +698,17 @@ bool SaveManager::quickLoad() {
 
 void SaveManager::update(float deltaTime) {
     autoSave_.update(deltaTime);
+
+    // Accumulate play time for the save-list readout. Clamp the step so a stall
+    // or a resumed app does not inflate the total.
+    if (deltaTime > 0.0f) {
+        playTimeAccumulator_ += std::min(deltaTime, 1.0f);
+        const uint32_t whole = static_cast<uint32_t>(playTimeAccumulator_);
+        if (whole > 0) {
+            playTimeAccumulator_ -= static_cast<float>(whole);
+            playTimeSeconds_ += whole;
+        }
+    }
 }
 
 // ============================================================================

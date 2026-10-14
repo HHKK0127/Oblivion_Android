@@ -117,6 +117,11 @@ constexpr int KEY_ENTER = 66;
 const char* const kOffOn[] = {"Off", "On"};
 const char* const kTextureSize[] = {"Small", "Medium", "Large"};
 const char* const kWaterDetail[] = {"Low", "Medium", "High"};
+// Static code table, matching the original: video_menu.xml marks the resolution
+// text as "Set in code" and the executable never enumerates display modes
+// (EnumDisplaySettings is absent from the imports, and the "%d x %d" format
+// strings have no .text reference - RE section 30.3). Do not replace this with
+// runtime enumeration.
 const char* const kResolution[] = {"800 x 600", "1024 x 768", "1280 x 720",
                                    "1280 x 960", "1600 x 900", "1920 x 1080"};
 constexpr int kResolutionCount = 6;

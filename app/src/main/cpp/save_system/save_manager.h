@@ -90,6 +90,12 @@ public:
     void update(float deltaTime);
     AutoSave& getAutoSave() { return autoSave_; }
 
+    // Accumulated play time of the active session, in seconds. Restored from the
+    // save header on load and written back out on save so the slot list can show
+    // the original's "%02i:%02i:%02i" play time (RE_EXE_REPORT §27).
+    uint32_t getPlayTimeSeconds() const { return playTimeSeconds_; }
+    void setPlayTimeSeconds(uint32_t seconds) { playTimeSeconds_ = seconds; }
+
     // Slot management
     SaveSlotManager& getSlotManager() { return slotManager_; }
     bool deleteSave(uint32_t slotIndex);
@@ -116,6 +122,12 @@ private:
     // Format version of the last file read by readFromFile(). Load paths use it
     // to decide whether optional, version-gated fields exist in the payload.
     uint32_t loadedFormatVersion_ = save_format::CURRENT_VERSION;
+
+    // Accumulated play time of the active session, in seconds.
+    uint32_t playTimeSeconds_ = 0;
+
+    // Fractional carry so sub-second frame steps are not lost.
+    float playTimeAccumulator_ = 0.0f;
 
     // Base directory
     std::string getBaseDir() const;

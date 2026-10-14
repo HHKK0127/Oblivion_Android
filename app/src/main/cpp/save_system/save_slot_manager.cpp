@@ -42,8 +42,7 @@ bool SaveSlotManager::readHeader(const std::string& path, save_format::SaveHeade
     std::ifstream file(path, std::ios::binary);
     if (!file.is_open()) return false;
 
-    file.read(reinterpret_cast<char*>(&header), sizeof(header));
-    return file.good();
+    return save_format::readSaveHeader(file, header);
 }
 
 SaveSlotInfo SaveSlotManager::getSlotInfo(uint32_t slotIndex) const {
@@ -62,6 +61,8 @@ SaveSlotInfo SaveSlotManager::getSlotInfo(uint32_t slotIndex) const {
             info.isEmpty = false;
             info.displayName = std::string(header.slotName);
             info.timestamp = header.timestamp;
+            info.playerLevel = header.playerLevel;
+            info.playTimeSeconds = header.playTimeSeconds;
             info.isAutoSave = (slotIndex == AUTO_SAVE_SLOT);
             info.fileSize = static_cast<uint32_t>(fs::file_size(path));
         }
@@ -146,7 +147,9 @@ bool SaveSlotManager::renameSlot(uint32_t slotIndex, const std::string& newName)
                                    std::istreambuf_iterator<char>());
     inFile.close();
 
-    if (fileData.size() < sizeof(save_format::SaveHeader)) return false;
+    // Only the slotName field (offset 32..63) is rewritten, so a v1/v2 file is
+    // still safe to rename even though its header is shorter than v3's.
+    if (fileData.size() < save_format::LEGACY_HEADER_SIZE) return false;
 
     save_format::SaveHeader* header = reinterpret_cast<save_format::SaveHeader*>(fileData.data());
     std::memset(header->slotName, 0, sizeof(header->slotName));

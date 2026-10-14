@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <istream>
 #include <string>
 #include <vector>
 #include <android/log.h>
@@ -23,10 +24,16 @@ constexpr uint32_t MAGIC_NUMBER = 0x4F424C56;
 // Current save format version
 // v1: original binary layout
 // v2: player magicka/maxMagicka appended to the PLYR block (after maxHealth)
-constexpr uint32_t CURRENT_VERSION = 2;
+// v3: playerLevel + playTimeSeconds appended to the 64-byte header (see
+//     LEGACY_HEADER_SIZE); the payload is unchanged from v2
+constexpr uint32_t CURRENT_VERSION = 3;
 
 // Minimum supported version (for backward compatibility)
 constexpr uint32_t MIN_SUPPORTED_VERSION = 1;
+
+// Size of the v1/v2 header. v3 appends two uint32 fields after slotName.
+// Readers must consume this prefix first so v1/v2 saves still load.
+constexpr uint32_t LEGACY_HEADER_SIZE = 64;
 
 // Save file header (written at the start of every save file)
 // Packed to ensure consistent binary layout across platforms
@@ -40,17 +47,41 @@ struct SaveHeader {
     uint32_t payloadSize;     // Size of payload in bytes (4)
     uint32_t slotIndex;       // Save slot index (0=auto, 1-10=manual) (4)
     char slotName[32];        // Human-readable slot name (32) -> total 64
+    uint32_t playerLevel;     // v3+: player level at save time (4)
+    uint32_t playTimeSeconds; // v3+: accumulated play time in seconds (4) -> 72
 
     SaveHeader()
         : magic(MAGIC_NUMBER), formatVersion(CURRENT_VERSION),
           gameVersion(0x000700), timestamp(0), checksum(0),
-          payloadSize(0), slotIndex(0) {
+          payloadSize(0), slotIndex(0), playerLevel(1), playTimeSeconds(0) {
         std::memset(slotName, 0, sizeof(slotName));
     }
 };
 #pragma pack(pop)
 
-static_assert(sizeof(SaveHeader) == 64, "SaveHeader must be 64 bytes");
+static_assert(sizeof(SaveHeader) == LEGACY_HEADER_SIZE + 8,
+              "SaveHeader must be 72 bytes (64-byte legacy prefix + v3 fields)");
+
+// Reads a save header from an open stream, tolerating the shorter v1/v2 layout.
+// The v1/v2 fields occupy the first 64 bytes, so reading that prefix is safe.
+inline bool readSaveHeader(std::istream& in, SaveHeader& out) {
+    out = SaveHeader{};
+    in.read(reinterpret_cast<char*>(&out), LEGACY_HEADER_SIZE);
+    if (!in) {
+        return false;
+    }
+    if (out.formatVersion >= 3) {
+        in.read(reinterpret_cast<char*>(&out.playerLevel),
+                sizeof(out.playerLevel) + sizeof(out.playTimeSeconds));
+        if (!in) {
+            return false;
+        }
+    } else {
+        out.playerLevel = 1;
+        out.playTimeSeconds = 0;
+    }
+    return true;
+}
 
 // ============================================================================
 // Version validation
