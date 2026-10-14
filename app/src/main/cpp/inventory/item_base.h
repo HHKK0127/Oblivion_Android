@@ -14,6 +14,36 @@ enum class ItemCategory : uint32_t {
     Misc       = 5
 };
 
+// Oblivion's inventory is split into nine sections (Data\Menus\Main\inventory_menu.xml
+// _weapons .. _misc) that ItemCategory cannot express on its own: "Alchemy" alone is
+// apparatuses + potions + ingredients, and "Misc" is books + keys + stones + misc.
+// ItemSubcategory names those nine sections. None falls back to a category default so
+// items authored before this field existed still land in a sane section.
+enum class ItemSubcategory : uint32_t {
+    None = 0,
+    Weapon,
+    Armor,
+    Apparatus,
+    Potion,
+    Ingredient,
+    Book,
+    Key,
+    Stone,
+    Misc
+};
+
+inline ItemSubcategory defaultSubcategory(ItemCategory category) {
+    switch (category) {
+        case ItemCategory::Weapon:     return ItemSubcategory::Weapon;
+        case ItemCategory::Armor:      return ItemSubcategory::Armor;
+        case ItemCategory::Consumable: return ItemSubcategory::Potion;
+        case ItemCategory::Material:   return ItemSubcategory::Apparatus;
+        case ItemCategory::Quest:      return ItemSubcategory::Key;
+        case ItemCategory::Misc:
+        default:                       return ItemSubcategory::Misc;
+    }
+}
+
 enum class ItemRarity : uint32_t {
     Common    = 0,
     Uncommon  = 1,
@@ -48,6 +78,7 @@ struct Item {
     std::string name;
     std::string description;
     ItemCategory category = ItemCategory::Misc;
+    ItemSubcategory subcategory = ItemSubcategory::None;   // None -> defaultSubcategory(category)
     ItemRarity  rarity = ItemRarity::Common;
     EquipSlot   equipSlot = EquipSlot::None;
 
@@ -79,5 +110,10 @@ struct Item {
     bool isEquippable() const { return equipSlot != EquipSlot::None; }
     bool isConsumable() const { return category == ItemCategory::Consumable; }
 };
+
+inline ItemSubcategory effectiveSubcategory(const Item& item) {
+    return item.subcategory == ItemSubcategory::None ? defaultSubcategory(item.category)
+                                                     : item.subcategory;
+}
 
 } // namespace inventory

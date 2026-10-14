@@ -5559,3 +5559,121 @@ if (AL && [0x00b13218] != 0) || [0x00b13220] != 0:
    `FUN_006aa1a0` は clamp→master 乗算→dB 変換（`log10(v^2*master)*2000`）。
 6. **設定トグル消費者**は §33.5 の表のとおり。rest/wait は SleepWaitMenu 更新ハンドラ、
    travel は移動処理先頭、字幕は描画/会話応答キャスト。
+
+---
+
+## §34 メニュー登録 ID の全割当（依頼2 完了）
+
+§32.8-4 の未解決項目を解消した。`FUN_00582160`（MenuManager ctor）が構築する
+メニュー配列 `0x00b13974`（サイズ `0x00b1397a`、初期 capacity 1）に登録される全メニューに
+ついて、**ID ↔ vtable ↔ XML ルート名**を確定した。
+
+### 34.1 登録コンテナの実体
+
+- コンテナ先頭 `0x00b13970` = C++ 動的配列テンプレート。
+  - `+0x04` = 要素配列ポインタ（絶対配置 `0x00b13974`、要素 = メニューポインタ 4B）
+  - `+0x08` = size（ushort）
+  - `+0x0a` = capacity（ushort、絶対配置 `0x00b1397a`、初期 1）
+  - `+0x0c` = 非 null 要素数（short）
+- `FUN_004e4a10` = 配列 resize（`operator new`=`FUN_00401f00`、`operator delete`=`FUN_00401f20`）
+- `FUN_0042bb90` = 要素アクセサ
+- `FUN_00589b70(id)` = ID → vtable getter。`id - 0x3e9 <= 0x32` かつ
+  `id < word[0x00b1397a]` のとき `*(int*)(*(int*)0x00b13974 + id*4 - 0xfa4)`（= index `id-0x3e9`）。
+- `0x00b13974` 絶対参照 6 箇所: 0x57f363, 0x5836ae, 0x5836ee, 0x589b92, 0x5acb4b, 0xa24911。
+- `0x00b1397a` 絶対参照 5 箇所: 0x57f35b, 0x5836a7, 0x5836e6, 0x589b82, 0x5acb43。
+
+### 34.2 ID 空間
+
+- ID 域は `0x3e9`(1001) .. `0x41b`(1051) = 51 スロット、うち 48 使用。
+- **真の欠番は 4 個のみ**: `0x405`(1029), `0x407`(1031), `0x409`(1033), `0x41a`(1050)。
+- `0x3ee`(1006) は欠番ではなく、`strings.xml` をロードする補助メニュー
+  （`FUN_00586000`、ID 即値 `0x3ee` と `0x402` を含有）に割当済み。
+- `TileMenu` のみ ID `0x38b`(907) で範囲外。UI タイル基底（非パネル）の特殊メニュー。
+
+### 34.3 全メニュー対応表（確定値）
+
+| ID | Menu | vtable | getID 関数 | ctor 関数 | XML |
+|---|---|---|---|---|---|
+| 0x3e9 | MessageMenu | 00a6ce5c | 005bc680 | FUN_005bc8b0 | Data\Menus\message_menu.xml |
+| 0x3ea | InventoryMenu | 00a6c18c | 005a9ba0 | FUN_005ab5a0 | Data\Menus\Main\inventory_menu.xml |
+| 0x3eb | StatsMenu | 00a6d9dc | 005d9d60 | FUN_005dcb70 | Data\Menus\Main\stats_menu.xml |
+| 0x3ec | HUDMainMenu | 00a6bee4 | 005a6840 | FUN_005a6b00 | Data\Menus\Main\hud_main_menu.xml |
+| 0x3ed | HUDInfoMenu | 00a6bdf4 | 005a4800 | FUN_005a4840 | Data\Menus\Main\hud_info_menu.xml |
+| 0x3ee | (StringsMenu) | - | - | FUN_00586000 | Data\Menus\strings.xml |
+| 0x3ef | LoadingMenu | 00a6c40c | 005ad370 | FUN_005adcf0 | Data\Menus\loading_menu.xml |
+| 0x3f0 | ContainerMenu | 00a6b574 | 00597a80 | FUN_00599ee0 | Data\Menus\container_menu.xml |
+| 0x3f1 | DialogMenu | 00a6b88c | 0059e570 | FUN_0059ed30 | Data\Menus\Dialog\dialog_menu.xml |
+| 0x3f2 | HUDSubtitleMenu | 00a6c0dc | 005a8e20 | FUN_005a8e30 | Data\Menus\Main\hud_subtitle_menu.xml |
+| 0x3f3 | GenericMenu | 00a6bd9c | 005a3cd0 | FUN_005a3ff0 | Data\Menus\Generic |
+| 0x3f4 | SleepWaitMenu | 00a6d7c4 | 005d6950 | FUN_005d6d20 | Data\Menus\sleep_wait_menu.xml |
+| 0x3f5 | PauseMenu | 00a6d03c | 005bda50 | FUN_005bda90 | Data\Menus\Options\pause_menu.xml |
+| 0x3f6 | LockPickMenu | 00a6c73c | 005af300 | FUN_005af440 | Data\Menus\lockpick_menu.xml |
+| 0x3f7 | OptionsMenu | 00a6cfac | 005bd640 | FUN_005bd680 | Data\Menus\Options\options_menu.xml |
+| 0x3f8 | QuantityMenu | 00a6d15c | 005c0590 | FUN_005c05d0 | Data\Menus\quantity_menu.xml |
+| 0x3f9 | AudioMenu | 00a6b29c | 005952f0 | FUN_00595380 | Data\Menus\Options\audio_menu.xml |
+| 0x3fa | VideoMenu | 00a6a09c | 00587c10 | FUN_005deb80 | Data\Menus\Options\video_menu.xml |
+| 0x3fb | VideoDisplayMenu | 00a6dccc | 005dda10 | 未同定 | (XML なし / video_menu 派生) |
+| 0x3fc | GameplayMenu | 00a6bd0c | 005a3420 | FUN_005a3540 | Data\Menus\Options\gameplay_menu.xml |
+| 0x3fd | ControlsMenu | 00a69ff4 | 005874f0 | FUN_0059ba40 | Data\Menus\Options\controls_menu.xml |
+| 0x3fe | MagicMenu | 00a6c974 | 005b1f60 | FUN_005b3760 | Data\Menus\Main\magic_menu.xml |
+| 0x3ff | MapMenu | 00a6cc9c | 005b7480 | FUN_005bb6c0 | Data\Menus\Main\map_menu.xml |
+| 0x400 | MagicPopupMenu | 00a6ca54 | 005b3ec0 | FUN_005b3f00 | Data\Menus\Main\magic_popup_menu.xml |
+| 0x401 | NegotiateMenu | 00a6cf0c | 005bd040 | FUN_005bd080 | Data\Menus\negotiate_menu.xml |
+| 0x402 | BookMenu | 00a6b334 | 00595c30 | FUN_005962c0 | Data\Menus\book_menu.xml |
+| 0x403 | LevelUpMenu | 00a6c264 | 005ac5a0 | FUN_005ace20 | Data\Menus\levelup_menu.xml |
+| 0x404 | TrainingMenu | 00a6dc74 | 005dd300 | FUN_005dd4b0 | Data\Menus\training_menu.xml |
+| 0x406 | ClassMenu | 00a6b49c | 00596ce0 | 未同定 | Data\Menus\Chargen\class_menu.xml |
+| 0x408 | SkillsMenu | 00a6d71c | 005d56b0 | FUN_005d6390 | Data\Menus\CharGen\skills_menu.xml |
+| 0x40a | PersuasionMenu | 00a6d0cc | 005be230 | FUN_005c01d0 | Data\Menus\dialog\persuasion_menu.xml |
+| 0x40b | RepairMenu | 00a6d5b4 | 005d0e40 | FUN_005d2070 | Data\Menus\repair_menu.xml |
+| 0x40c | RaceSexMenu | 00a6d38c | 005c4e10 | FUN_005ca010 | Data\Menus\CharGen\race_sex_menu.xml |
+| 0x40d | SpellPurchaseMenu | 00a6d8cc | 005d88f0 | FUN_005d9590 | Data\Menus\dialog\spell_purchase.xml |
+| 0x40e | LoadgameMenu | 00a6c6bc | 005ae4e0 | FUN_005aea60 | Data\Menus\Options\load_menu.xml |
+| 0x40f | SaveMenu | 00a6d624 | 005d3310 | FUN_005d39a0 | Data\Menus\Options\save_menu.xml |
+| 0x410 | AlchemyMenu | 00a6b1b4 | 005931b0 | FUN_00593810 | Data\Menus\dialog\Alchemy.xml |
+| 0x411 | SpellMakingMenu | 00a6d864 | 005d7600 | 未同定 | Data\Menus\dialog\Spellmaking.xml |
+| 0x412 | EnchantmentMenu | 00a6ba0c | 005a1670 | FUN_005a1ec0 | Data\Menus\dialog\Enchantment.xml |
+| 0x413 | EffectSettingMenu | 00a6b92c | 0059fc20 | FUN_005a08e0 | Data\Menus\dialog\enchantmentsetting_menu.xml |
+| 0x414 | MainMenu | 00a6cb1c | 005b5950 | FUN_005b6040 | Data\Menus\Options\main_menu.xml |
+| 0x415 | BreathMenu | 00a6b404 | 00596510 | FUN_005965c0 | Data\Menus\breath_meter_menu.xml |
+| 0x416 | QuickKeysMenu | 00a6d1f4 | 005c0ce0 | FUN_005c1290 | Data\Menus\Main\quickkeys_menu.xml |
+| 0x417 | CreditsMenu | 00a6b784 | 0059c950 | FUN_0059d680 | Data\Menus\Options\credits_menu.xml |
+| 0x418 | SigilStoneMenu | 00a6d664 | 005d4130 | FUN_005d5200 | Data\Menus\dialog\SigilStone.xml |
+| 0x419 | RechargeMenu | 00a6d45c | 005ce810 | FUN_005ce840 | Data\Menus\recharge_menu.xml |
+| 0x41b | TextEditMenu | 00a6a04c | 00587ab0 | FUN_005dcf20 | Data\Menus\Dialog\TextEditMenu.xml |
+| 0x38b | TileMenu | 00a6af14 | 00590190 | - | (タイル基底・XML なし) |
+
+### 34.4 Data\Menus\ XML 文字列（EXE 内 50 件、VA 付き）
+
+`0xa68d7c` hud_reticle.xml / `0xa69078` safe_zone.xml / `0xa691d8` strings.xml /
+`0xa69718` CharGen\skills_menu.xml / `0xa6973c` CharGen\race_sex_menu.xml /
+`0xa69844` Options\video_menu.xml / `0xa69868` Options\save_menu.xml /
+`0xa6988c` Options\pause_menu.xml / `0xa698b0` Options\options_menu.xml /
+`0xa698d4` Options\main_menu.xml / `0xa698f8` Options\load_menu.xml /
+`0xa6991c` Options\gameplay_menu.xml / `0xa69944` Options\credits_menu.xml /
+`0xa69968` Options\controls_menu.xml / `0xa69990` Options\audio_menu.xml /
+`0xa699b4` Main\quickkeys_menu.xml / `0xa699d8` Main\magic_popup_menu.xml /
+`0xa69a00` Main\hud_subtitle_menu.xml / `0xa69a28` Main\hud_main_menu.xml /
+`0xa69a4c` Main\hud_info_menu.xml / `0xa69a70` Dialog\dialog_menu.xml /
+`0xa69a94` training_menu.xml / `0xa69ab4` sleep_wait_menu.xml / `0xa69ad4` repair_menu.xml /
+`0xa69af0` quantity_menu.xml / `0xa69b10` negotiate_menu.xml / `0xa69b30` message_menu.xml /
+`0xa69b4c` lockpick_menu.xml / `0xa69b6c` loading_menu.xml / `0xa69b88` levelup_menu.xml /
+`0xa69ba4` container_menu.xml / `0xa69bc4` breath_meter_menu.xml / `0xa69be8` book_menu.xml /
+`0xa69c04` dialog\Alchemy.xml / `0xa6a12c` Prefabs\%s / `0xa6b394` workbook.html /
+`0xa6b53c` Chargen\class_menu.xml / `0xa6b974` dialog\enchantmentsetting_menu.xml /
+`0xa6bc58` dialog\Enchantment.xml / `0xa6bdd8` Generic / `0xa6c238` Main\inventory_menu.xml /
+`0xa6ca2c` Main\magic_menu.xml / `0xa6cdb8` Main\map_menu.xml /
+`0xa6d12c` dialog\persuasion_menu.xml / `0xa6d4f8` recharge_menu.xml / `0xa6d6f0` dialog\SigilStone.xml /
+`0xa6d8a0` dialog\Spellmaking.xml / `0xa6d9a0` dialog\spell_purchase.xml /
+`0xa6dbd4` Main\stats_menu.xml / `0xa6dc48` Dialog\TextEditMenu.xml
+
+### 34.5 Android 移植向け確定値
+
+1. **VideoDisplayMenu(0x3fb) は専用 XML を持たない**。EXE の `Data\Menus\` 文字列 50 件に
+   video_display 系は存在せず、`video_menu.xml` の派生パネルとして構築される
+   （§24.11 の `user3`/`user4` はコード生成。別途 §24.7 参照）。
+   → 移植側の `video_display_menu.xml` は独自実装でよく、元データとの一致義務はない。
+2. **XML パスは大文字小文字混在**（`CharGen` / `Chargen`、`Dialog` / `dialog`）。
+   移植側のパス解決は**大文字小文字を区別せず**引くこと。
+3. ID は `0x3e9` 起点の連番。メニュー種別判定に ID を使う場合、
+   `0x3ee`（strings）と `0x38b`（Tile）は**通常パネルと別扱い**にすること。

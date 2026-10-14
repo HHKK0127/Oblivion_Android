@@ -2333,30 +2333,38 @@ bool Renderer::initGameSystems() {
         sword.name = "Iron Sword";
         sword.description = "A basic iron sword.";
         sword.category = inventory::ItemCategory::Weapon;
+        sword.subcategory = inventory::ItemSubcategory::Weapon;
         sword.rarity = inventory::ItemRarity::Common;
         sword.equipSlot = inventory::EquipSlot::Weapon;
         sword.weight = 3.5f;
         sword.value = 50;
+        sword.iconId = 1;
         sword.stats.damage = 10;
+        sword.stats.maxHealth = 100;
         inventoryGrid->addItem(sword, 1);
 
         inventory::Item helm;
         helm.id = 2;
         helm.name = "Leather Helm";
         helm.category = inventory::ItemCategory::Armor;
+        helm.subcategory = inventory::ItemSubcategory::Armor;
         helm.equipSlot = inventory::EquipSlot::Head;
         helm.weight = 1.2f;
         helm.value = 30;
+        helm.iconId = 2;
         helm.stats.defense = 5;
+        helm.stats.maxHealth = 60;
         inventoryGrid->addItem(helm, 1);
 
         inventory::Item potion;
         potion.id = 3;
         potion.name = "Health Potion";
         potion.category = inventory::ItemCategory::Consumable;
+        potion.subcategory = inventory::ItemSubcategory::Potion;
         potion.weight = 0.3f;
         potion.value = 15;
         potion.maxStack = 20;
+        potion.iconId = 3;
         potion.healAmount = 25;
         inventoryGrid->addItem(potion, 5);
 
@@ -2364,8 +2372,10 @@ bool Renderer::initGameSystems() {
         questItem.id = 4;
         questItem.name = "Ancient Key";
         questItem.category = inventory::ItemCategory::Quest;
+        questItem.subcategory = inventory::ItemSubcategory::Key;
         questItem.weight = 0.1f;
         questItem.value = 0;
+        questItem.iconId = 0;
         inventoryGrid->addItem(questItem, 1);
 
         LOGI("Test items added to inventory");
@@ -2376,9 +2386,10 @@ bool Renderer::initGameSystems() {
         auto invPanel = std::make_shared<ui::UIInventoryPanel>("Inventory");
         invPanel->setInventory(inventoryGrid.get());
         invPanel->setEquipment(equipmentManager.get());
-                invPanel->setTextRenderer(textRenderer.get());
-                invPanel->setSize(static_cast<float>(screenWidth) * 0.85f, static_cast<float>(screenHeight) * 0.75f);
-        invPanel->setPosition(static_cast<float>(screenWidth) * 0.075f, static_cast<float>(screenHeight) * 0.125f);
+        invPanel->setTextRenderer(textRenderer.get());
+        // No setSize/setPosition: inventory_menu.xml lays the sheet out against
+        // the full screen, so the panel derives its own scale and origin from the
+        // screen size it receives through onScreenResize().
         invPanel->setVisible(false);
         uiSystem->registerComponent(invPanel, 15);
         uiInventoryPanel = invPanel.get();
@@ -8007,6 +8018,34 @@ bool Renderer::handleBackKey() {
         if (settingsUI && settingsUI->isVisible()) {
             settingsUI->toggle();
             LOGI("handleBackKey: Closed SettingsUI");
+            return true;
+        }
+
+        // 3b. In-game overlays. In the original, ESC closes the topmost active
+        //     menu (0x00b3a6d4 != 0); it never stacks a new menu on top of one.
+        if (uiInventoryPanel && uiInventoryPanel->isVisible()) {
+            uiInventoryPanel->setVisible(false);
+            LOGI("handleBackKey: Closed InventoryPanel");
+            return true;
+        }
+        if (mapUI && mapUI->isVisible()) {
+            mapUI->setVisible(false);
+            LOGI("handleBackKey: Closed MapUI");
+            return true;
+        }
+        if (questUI && questUI->getVisibility()) {
+            questUI->toggle();
+            LOGI("handleBackKey: Closed QuestUI");
+            return true;
+        }
+        if (bookReaderUI && bookReaderUI->isVisible()) {
+            closeBook();
+            LOGI("handleBackKey: Closed BookReaderUI");
+            return true;
+        }
+        if (dialogueUI && dialogueUI->isVisible()) {
+            closeDialogue();
+            LOGI("handleBackKey: Closed DialogueUI");
             return true;
         }
 

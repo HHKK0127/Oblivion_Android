@@ -16,6 +16,28 @@ The current version is **0.9.10 (versionCode 910)**.
 ## [Unreleased]
 
 ### Added
+- **The inventory menu is the original's InventoryMenu, rebuilt from its XML (RE `§31`/`§32.4`).**
+  `UIInventoryPanel` is no longer an ad-hoc list: it follows `Main\inventory_menu.xml` and the
+  shared `vertical_scroll.xml` / `focus_box.xml` prefabs. The sheet is anchored the way the XML
+  does it (`y = screen.height - me.height + 3`, and the panel derives its own scale and origin
+  from `onScreenResize()` instead of a fixed rect), and it draws, back to front, the
+  `inv_background` / `_2` pair, the five `shared_0N_tab` tabs with their `all_tabs_icons` glyphs
+  and `general_tab_selection_off/on` highlight, the `inv_border_top` / `_middle` / `_bottom`
+  frame, the sortable list header, the 81px-pitch item rows, and the `inv_extra_data` footer.
+  - **Rows.** `inv_item.y = me().listindex * 81` becomes `rowTopFor(index)` minus the scroll
+    offset, and the XML's five columns (name 80 / cost 418 / weight 491 / damage 551 /
+    health 612) are read through `columnValue()` so each of the nine sections
+    (weapons / apparel / alchemy / misc, plus the header rows) can supply its own set.
+  - **Tabs.** Tab order is all / weapons / apparel / alchemy / misc, matching
+    `inv_p1..p5`; `hitTestTab()` picks the page and the per-row section is filtered
+    by `kPageSections`.
+  - **Scrolling.** `drawScrollBar()` reproduces the prefab's atlas crops from
+    `all_general_scrollbar.png` (top `cropy=0`, marker `cropy=32`, bottom `cropy=98`,
+    rail `cropx=32`) with `user2 = visible count - 5` and `user8 = 5` as the XML sets them.
+  - **Equipped rows** draw `inv_equiped_marker_1.dds`, and the focused row draws the
+    `focus_box` prefab's two-piece frame.
+  - New textures under `assets/textures/ui/menus/`: the twelve `shared__*` sheets and the
+    eleven `focus__*` frame pieces. `inventory\*.png` and `icons\*.png` were already present.
 - **The pause menu fades in and out as the original's `menufade` does (RE `§33.3`).** `UIPauseMenu`
   gained `fadeProgress`, a 0..1 ramp driven at the original's 0.25 s `menufade` duration, and
   `update(dt)` advances it toward the visibility target. Every part of the menu - the dim quad,

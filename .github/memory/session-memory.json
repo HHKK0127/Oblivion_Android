@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-14T17:20:00Z",
+  "lastUpdated": "2026-10-14T19:39:44.031236",
   "entries": [
     {
       "timestamp": "2026-09-16T14:58:00Z",
@@ -6687,12 +6687,55 @@
         "menufade"
       ],
       "compressed": false
+    },
+    {
+      "id": "686a0f77-b098-470a-8f7e-bcf7f8ec29a2",
+      "timestamp": "2026-10-14T19:39:44.031236",
+      "category": "reference",
+      "priority": "high",
+      "content": "§34 メニュー登録 ID 全割当。MenuManager ctor FUN_00582160 が構築する配列 0x00b13974 に登録される全 48 メニューの ID(vtable slot13 getID)↔XML ルート名を確定。ID 域 0x3e9..0x41b(51スロット/48使用)、真の欠番は 0x405/0x407/0x409/0x41a の4個のみ。0x3ee は strings.xml ローダ(FUN_00586000)に割当済み。TileMenu のみ 0x38b で範囲外(タイル基底)。",
+      "tags": [
+        "RE",
+        "menu",
+        "id",
+        "xml",
+        "§34"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "ce618d9a-b611-42f5-864f-582acd27aaef",
+      "timestamp": "2026-10-14T19:39:44.031236",
+      "category": "reference",
+      "priority": "high",
+      "content": "§34 登録コンテナ 0x00b13970 = C++ 動的配列。+0x4=配列ポインタ(絶対 0x00b13974,要素4B)、+0x8=size(ushort)、+0xa=capacity(ushort,絶対 0x00b1397a,初期1)、+0xc=非null数(short)。FUN_004e4a10=resize、FUN_0042bb90=要素アクセサ、FUN_00589b70(id)=ID→vtable getter。",
+      "tags": [
+        "RE",
+        "menu",
+        "container",
+        "§34"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "d37eafc7-15ba-42f5-bde5-de8d39b1ed59",
+      "timestamp": "2026-10-14T19:39:44.031236",
+      "category": "reference",
+      "priority": "high",
+      "content": "§34 重要確定: VideoDisplayMenu(0x3fb) は専用 XML を持たない。EXE の Data\\Menus\\ 文字列 50 件に video_display 系は無く、video_menu.xml の派生パネル。XML パスは大文字小文字混在(CharGen/Chargen, Dialog/dialog)なので移植側は case-insensitive で解決すること。",
+      "tags": [
+        "RE",
+        "menu",
+        "video_display",
+        "§34"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 466,
+    "totalEntries": 469,
     "compressedCount": 81,
     "sessionCount": 38,
-    "lastUpdated": "2026-10-14T17:20:00Z"
+    "lastUpdated": "2026-10-14T19:39:44.031236"
   }
 }
