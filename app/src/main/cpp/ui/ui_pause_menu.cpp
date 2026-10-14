@@ -1,179 +1,320 @@
 #include "ui_pause_menu.h"
-#include "placeholder_assets.h"
 #include "ui_draw_helper.h"
-#include <GLES3/gl3.h>
-#include <cstdio>
+#include "../engine/texture_loader.h"
 #include <algorithm>
+#include <android/log.h>
 
-UIPauseMenu::UIPauseMenu(const std::string& title)
-    : UIPanel(title.empty() ? "Pause Menu" : title) {
-    // Dark medieval style menu
-    setBackgroundColor(glm::vec4(
-        PlaceholderAssets::Colors::PARCHMENT_DARK.x * 0.9f,
-        PlaceholderAssets::Colors::PARCHMENT_DARK.y * 0.85f,
-        PlaceholderAssets::Colors::PARCHMENT_DARK.z * 0.8f, 0.95f));
-    setBorderColor(glm::vec4(
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.x,
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.y,
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.z, 1.0f));
-    setBorderWidth(4.0f);
-    setTitleBarColor(glm::vec4(0.15f, 0.1f, 0.05f, 0.9f));
-    setCloseButtonVisible(true);
-    setDraggable(false);
+#undef LOG_TAG
+#undef LOGD
+#undef LOGI
+#undef LOGE
+#define LOG_TAG "UIPauseMenu"
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+
+namespace {
+// Values from options\pause_menu.xml (PC variant).
+constexpr float BODY_WIDTH = 240.0f;          // pause_background user0
+constexpr float BODY_HEIGHT = 400.0f;         // pause_background user1
+constexpr float BORDER = 44.0f;               // generic_background _border_thickness
+constexpr float BUTTON_HEIGHT = 64.0f;        // button_floating_2 height
+constexpr float BUTTON_LABEL_PAD = 40.0f;     // rect width = label width + 40
+constexpr float SELECTION_MIN_WIDTH = 104.0f; // dialog_selection_cut width
+constexpr float SELECTION_CAP_GAP = 8.0f;
+constexpr float SELECTION_OFFSET_Y = 3.0f;
+constexpr float PAUSE_TEXT_Y = 20.0f;
+constexpr float PAUSE_DECOR_Y = 26.0f;
+constexpr float PAUSE_DECOR_INSET = 30.0f;
+constexpr float PAUSE_DECOR_WIDTH = 35.0f;
+constexpr float PAUSE_DECOR_HEIGHT = 17.0f;
+constexpr float LABEL_SCALE = 1.0f;
+constexpr float DIM_ALPHA = 0.6f;
+constexpr int ITEM_COUNT = 5;
+
+// XML <font> values mapped to FontType: 1 = Kingthings_Regular, 3 = Tahoma_Bold_Small.
+constexpr FontType BUTTON_FONT = FontType::KingthingsRegular;
+constexpr FontType PAUSE_FONT = FontType::TahomaBoldSmall;
+
+const glm::vec4 kFocusedText(117.0f / 255.0f, 59.0f / 255.0f, 33.0f / 255.0f, 1.0f);
+const glm::vec4 kIdleText(128.0f / 255.0f, 128.0f / 255.0f, 128.0f / 255.0f, 196.0f / 255.0f);
+const glm::vec4 kPauseText(51.0f / 255.0f, 79.0f / 255.0f, 142.0f / 255.0f, 1.0f);
+
+// strings()._return / _save / _load / _options / _quit, in XML listindex order.
+const char* const kItemLabels[ITEM_COUNT] = {"Return", "Save", "Load", "Options", "Quit"};
+
+void drawIfLoaded(GLuint tex, float x, float y, float w, float h, int sw, int sh) {
+    if (tex != 0) {
+        UIDrawHelper::drawTexturedQuad(x, y, w, h, tex, glm::vec4(1.0f), sw, sh);
+    }
 }
 
-bool UIPauseMenu::initialize(TextRenderer* tr) {
-    if (!tr) return false;
-    textRenderer = tr;
-    return UIPanel::initialize();
+// Switches the text face for one scope, then restores the previous face.
+class FontScope {
+public:
+    FontScope(TextRenderer* renderer, FontType type)
+        : renderer_(renderer), previous_(renderer->getActiveFont()) {
+        renderer_->setActiveFont(type);
+    }
+    ~FontScope() {
+        renderer_->setActiveFont(previous_);
+    }
+
+private:
+    TextRenderer* renderer_;
+    FontType previous_;
+};
+}  // namespace
+
+UIPauseMenu::UIPauseMenu()
+    : textRenderer(nullptr), screenWidth(1920), screenHeight(1080),
+      visible(false), focusIndex(0), hasSelection(false),
+      pendingSelection(Item::RETURN),
+      bgCenterTexture(0), bgEdgeTopTexture(0), bgEdgeBottomTexture(0),
+      bgEdgeLeftTexture(0), bgEdgeRightTexture(0),
+      bgCornerTLTexture(0), bgCornerTRTexture(0),
+      bgCornerBLTexture(0), bgCornerBRTexture(0),
+      selectionFullTexture(0), selectionCutTexture(0),
+      decorLeftTexture(0), decorRightTexture(0),
+      cachedPauseTextHeight(0.0f) {
+    std::fill(std::begin(cachedButtonWidths), std::end(cachedButtonWidths), SELECTION_MIN_WIDTH);
+}
+
+UIPauseMenu::~UIPauseMenu() {
+    cleanup();
+}
+
+bool UIPauseMenu::initialize(TextRenderer* renderer) {
+    if (!renderer) {
+        LOGE("Error: TextRenderer is null");
+        return false;
+    }
+    textRenderer = renderer;
+
+    if (bgCenterTexture == 0) {
+        const std::string dir = "textures/ui/menus/";
+        bgCenterTexture = TextureLoader::loadTextureFromAsset(dir + "genericbackground__center_background.png");
+        bgEdgeTopTexture = TextureLoader::loadTextureFromAsset(dir + "genericbackground__edge_top.png");
+        bgEdgeBottomTexture = TextureLoader::loadTextureFromAsset(dir + "genericbackground__edge_bottom.png");
+        bgEdgeLeftTexture = TextureLoader::loadTextureFromAsset(dir + "genericbackground__edge_left.png");
+        bgEdgeRightTexture = TextureLoader::loadTextureFromAsset(dir + "genericbackground__edge_right.png");
+        bgCornerTLTexture = TextureLoader::loadTextureFromAsset(dir + "genericbackground__top_left_corner.png");
+        bgCornerTRTexture = TextureLoader::loadTextureFromAsset(dir + "genericbackground__top_right_corner.png");
+        bgCornerBLTexture = TextureLoader::loadTextureFromAsset(dir + "genericbackground__bottom_left_corner.png");
+        bgCornerBRTexture = TextureLoader::loadTextureFromAsset(dir + "genericbackground__bottom_right_corner.png");
+        selectionFullTexture = TextureLoader::loadTextureFromAsset(dir + "dialog__dialog_selection_full.png");
+        selectionCutTexture = TextureLoader::loadTextureFromAsset(dir + "dialog__dialog_selection_cut.png");
+        decorLeftTexture = TextureLoader::loadTextureFromAsset(dir + "shared__shared_decor_blue_left.png");
+        decorRightTexture = TextureLoader::loadTextureFromAsset(dir + "shared__shared_decor_blue_right.png");
+    }
+
+    LOGI("UIPauseMenu initialized");
+    return true;
+}
+
+void UIPauseMenu::cleanup() {
+    for (GLuint* tex : {&bgCenterTexture, &bgEdgeTopTexture, &bgEdgeBottomTexture,
+                        &bgEdgeLeftTexture, &bgEdgeRightTexture,
+                        &bgCornerTLTexture, &bgCornerTRTexture,
+                        &bgCornerBLTexture, &bgCornerBRTexture,
+                        &selectionFullTexture, &selectionCutTexture,
+                        &decorLeftTexture, &decorRightTexture}) {
+        if (*tex != 0) {
+            TextureLoader::deleteTexture(*tex);
+            *tex = 0;
+        }
+    }
+    textRenderer = nullptr;
+    visible = false;
+}
+
+void UIPauseMenu::setScreenSize(int width, int height) {
+    screenWidth = width;
+    screenHeight = height;
 }
 
 void UIPauseMenu::open() {
-    selectedItemIndex = RESUME;  // Default to Resume
-    scrollOffset = 0;
-    setVisible(true);
+    visible = true;
+    hasSelection = false;
+    focusIndex = 0;  // pause_return_button carries xdefault 3 (focused by default)
 }
 
 void UIPauseMenu::close() {
-    setVisible(false);
+    visible = false;
+    hasSelection = false;
 }
 
-void UIPauseMenu::update(float deltaTime) {
-    UIPanel::update(deltaTime);
+UIPauseMenu::Rect UIPauseMenu::bodyRect() const {
+    return {(screenWidth - BODY_WIDTH) * 0.5f, (screenHeight - BODY_HEIGHT) * 0.5f,
+            BODY_WIDTH, BODY_HEIGHT};
 }
 
-bool UIPauseMenu::onTouchDown(float x, float y, int pointerId) {
-    if (!isVisible() || !isEnabled()) return false;
-
-    // Close button
-    if (isInsideCloseButton(x, y)) {
-        close();
-        return true;
-    }
-
-    // Menu item selection
-    int itemIdx = hitTestMenuItem(x, y);
-    if (itemIdx >= 0) {
-        selectedItemIndex = itemIdx;
-        if (onMenuSelected) {
-            onMenuSelected(static_cast<MenuItem>(itemIdx));
-        }
-        return true;
-    }
-
-    return true;  // Consume all touches while open
+// XML: _top = (parentH - height * 5 + _y_buffer * 4) / 2 + pause_indication.y
+//              + pause_indication.height / 2, relative to pause_background.
+float UIPauseMenu::bodyTop() const {
+    return (BODY_HEIGHT - BUTTON_HEIGHT * static_cast<float>(ITEM_COUNT)) * 0.5f +
+           PAUSE_TEXT_Y + cachedPauseTextHeight * 0.5f;
 }
 
-void UIPauseMenu::render() {
-    if (!isVisible()) return;
-
-    GLboolean depthTestEnabled;
-    glGetBooleanv(GL_DEPTH_TEST, &depthTestEnabled);
-    glDisable(GL_DEPTH_TEST);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    renderBackgroundOverlay();
-
-    UIPanel::render();
-
-    renderMenuItems();
-    renderSelectedDescription();
-
-    if (depthTestEnabled) glEnable(GL_DEPTH_TEST);
+UIPauseMenu::Rect UIPauseMenu::buttonRect(int index) const {
+    const Rect body = bodyRect();
+    const float w = cachedButtonWidths[index];
+    const float centerX = body.x + BODY_WIDTH * 0.5f;
+    return {centerX - w * 0.5f, body.y + bodyTop() + BUTTON_HEIGHT * static_cast<float>(index),
+            w, BUTTON_HEIGHT};
 }
 
-void UIPauseMenu::renderBackgroundOverlay() {
-    // Semi-transparent black overlay for the game world behind the menu
-    UIDrawHelper::drawColoredQuad(0.0f, 0.0f, screenWidth, screenHeight,
-        glm::vec4(0.0f, 0.0f, 0.0f, 0.5f),
-        screenWidth, screenHeight);
-}
-
-void UIPauseMenu::renderMenuItems() {
-    if (!textRenderer) return;
-    glm::vec2 cp = getContentPosition();
-    float cy = getMenuStartY();
-
-    // Menu header
-    PlaceholderAssets::drawPanel(cp.x + 10.0f, cy - 30.0f, getContentSize().x - 20.0f, 28.0f,
-        PlaceholderAssets::Colors::BROWN_ACCENT,
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
-    textRenderer->renderText("Game Menu",
-        cp.x + 20.0f, cy - 24.0f,
-        glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT), 0.75f);
-    cy += 8.0f;
-
-    // Render visible menu items
-    int visEnd = std::min(scrollOffset + MAX_VISIBLE_ITEMS, static_cast<int>(MENU_COUNT));
-
-    for (int i = scrollOffset; i < visEnd; ++i) {
-        bool selected = (i == selectedItemIndex);
-
-        // Item background
-        glm::vec3 bgColor = selected
-                            ? glm::vec3(PlaceholderAssets::Colors::GOLD_HIGHLIGHT)
-                            : glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT) * 0.85f;
-        glm::vec3 borderColor = selected
-                                ? glm::vec3(PlaceholderAssets::Colors::GOLD_HIGHLIGHT)
-                                : glm::vec3(PlaceholderAssets::Colors::BROWN_ACCENT);
-
-        float itemY = cy + (i - scrollOffset) * (MENU_ITEM_H + MENU_ITEM_GAP);
-        PlaceholderAssets::drawPanel(cp.x + 10.0f, itemY, getContentSize().x - 20.0f, MENU_ITEM_H,
-            bgColor, borderColor);
-
-        // Item text
-        glm::vec3 textColor = selected
-                             ? glm::vec3(0.0f, 0.0f, 0.0f)
-                             : glm::vec3(0.1f, 0.08f, 0.06f);
-        textRenderer->renderText(MENU_LABELS[i],
-            cp.x + 25.0f, itemY + 14.0f,
-            textColor, 0.7f);
-    }
-}
-
-void UIPauseMenu::renderSelectedDescription() {
-    if (!textRenderer || selectedItemIndex < 0 || selectedItemIndex >= MENU_COUNT) return;
-
-    glm::vec2 cp = getContentPosition();
-    float descY = getDescriptionY();
-
-    // Description panel
-    PlaceholderAssets::drawPanel(cp.x + 10.0f, descY, getContentSize().x - 20.0f, 60.0f,
-        glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT) * 0.8f,
-        glm::vec3(PlaceholderAssets::Colors::BROWN_ACCENT));
-
-    // Description text
-    textRenderer->renderText(MENU_DESCRIPTIONS[selectedItemIndex],
-        cp.x + 20.0f, descY + 8.0f,
-        glm::vec3(0.15f, 0.1f, 0.08f), 0.6f);
-}
-
-// ─── hit testing ──────────────────────────────────────────────────────────────
-
-int UIPauseMenu::hitTestMenuItem(float x, float y) const {
-    glm::vec2 cp = getContentPosition();
-    float cy = getMenuStartY() + 8.0f;
-
-    int visEnd = std::min(scrollOffset + MAX_VISIBLE_ITEMS, static_cast<int>(MENU_COUNT));
-
-    for (int i = scrollOffset; i < visEnd; ++i) {
-        float itemY = cy + (i - scrollOffset) * (MENU_ITEM_H + MENU_ITEM_GAP);
-        if (x >= cp.x + 10.0f && x <= cp.x + getContentSize().x - 10.0f &&
-            y >= itemY && y <= itemY + MENU_ITEM_H) {
+int UIPauseMenu::hitTestButton(float x, float y) const {
+    for (int i = 0; i < ITEM_COUNT; ++i) {
+        const Rect r = buttonRect(i);
+        if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
             return i;
         }
     }
     return -1;
 }
 
-// ─── layout helpers ───────────────────────────────────────────────────────────
-
-float UIPauseMenu::getMenuStartY() const {
-    return getContentPosition().y + 20.0f;
+void UIPauseMenu::activate(int index) {
+    if (index < 0 || index >= ITEM_COUNT) {
+        return;
+    }
+    focusIndex = index;
+    pendingSelection = static_cast<Item>(index);
+    hasSelection = true;
 }
 
-float UIPauseMenu::getDescriptionY() const {
-    float menuEnd = getMenuStartY() + 8.0f + MAX_VISIBLE_ITEMS * (MENU_ITEM_H + MENU_ITEM_GAP);
-    return getContentPosition().y + getContentSize().y - 75.0f;
+UIPauseMenu::Item UIPauseMenu::consumeSelection() {
+    hasSelection = false;
+    return pendingSelection;
 }
+
+void UIPauseMenu::onTouchEvent(float x, float y) {
+    if (!visible) {
+        return;
+    }
+    const int index = hitTestButton(x, y);
+    if (index >= 0) {
+        activate(index);
+    }
+}
+
+bool UIPauseMenu::handleBack() {
+    if (!visible) {
+        return false;
+    }
+    activate(0);  // pause_return_button, also the root's xbuttonb target
+    return true;
+}
+
+bool UIPauseMenu::onKeyPress(int keyCode) {
+    if (!visible) {
+        return false;
+    }
+    switch (keyCode) {
+        case 19:  // DPAD_UP
+            focusIndex = (focusIndex + ITEM_COUNT - 1) % ITEM_COUNT;
+            return true;
+        case 20:  // DPAD_DOWN
+            focusIndex = (focusIndex + 1) % ITEM_COUNT;
+            return true;
+        case 23:  // DPAD_CENTER
+        case 66:  // ENTER
+            activate(focusIndex);
+            return true;
+        case 4:  // BACK
+            return handleBack();
+        default:
+            return false;
+    }
+}
+
+void UIPauseMenu::renderBorder(const Rect& b) {
+    const int sw = screenWidth;
+    const int sh = screenHeight;
+
+    drawIfLoaded(bgCenterTexture, b.x, b.y, b.w, b.h, sw, sh);
+    drawIfLoaded(bgEdgeTopTexture, b.x, b.y - BORDER, b.w, BORDER, sw, sh);
+    drawIfLoaded(bgEdgeBottomTexture, b.x, b.y + b.h, b.w, BORDER, sw, sh);
+    drawIfLoaded(bgEdgeLeftTexture, b.x - BORDER, b.y, BORDER, b.h, sw, sh);
+    drawIfLoaded(bgEdgeRightTexture, b.x + b.w, b.y, BORDER, b.h, sw, sh);
+    drawIfLoaded(bgCornerTLTexture, b.x - BORDER, b.y - BORDER, BORDER, BORDER, sw, sh);
+    drawIfLoaded(bgCornerTRTexture, b.x + b.w, b.y - BORDER, BORDER, BORDER, sw, sh);
+    drawIfLoaded(bgCornerBLTexture, b.x - BORDER, b.y + b.h, BORDER, BORDER, sw, sh);
+    drawIfLoaded(bgCornerBRTexture, b.x + b.w, b.y + b.h, BORDER, BORDER, sw, sh);
+}
+
+void UIPauseMenu::renderButton(int index) {
+    const Rect r = buttonRect(index);
+    const bool focused = (index == focusIndex);
+
+    if (focused) {
+        // button_floating spans the full rect width at y + 3; button_end caps the
+        // right edge with an 8px overlap.
+        drawIfLoaded(selectionFullTexture, r.x, r.y + SELECTION_OFFSET_Y, r.w, BUTTON_HEIGHT,
+                     screenWidth, screenHeight);
+        drawIfLoaded(selectionCutTexture,
+                     r.x + r.w + SELECTION_CAP_GAP - SELECTION_MIN_WIDTH,
+                     r.y + SELECTION_OFFSET_Y, SELECTION_MIN_WIDTH, BUTTON_HEIGHT,
+                     screenWidth, screenHeight);
+    }
+
+    if (textRenderer) {
+        const std::string label = kItemLabels[index];
+        const float tw = textRenderer->getTextWidth(label, LABEL_SCALE);
+        const float th = textRenderer->getTextHeight(LABEL_SCALE);
+        textRenderer->renderText(label, r.x + (r.w - tw) * 0.5f, r.y + (BUTTON_HEIGHT - th) * 0.5f,
+                                 focused ? kFocusedText : kIdleText, LABEL_SCALE);
+    }
+}
+
+void UIPauseMenu::render() {
+    if (!visible || !textRenderer) {
+        return;
+    }
+
+    // 2D overlay: ignore depth left over from the 3D passes
+    glDisable(GL_DEPTH_TEST);
+
+    // The XML root carries alpha 0 and an explorefade of 0.25: the world behind
+    // is faded out while the pause menu owns the screen.
+    UIDrawHelper::drawColoredQuad(0.0f, 0.0f, static_cast<float>(screenWidth),
+                                  static_cast<float>(screenHeight),
+                                  glm::vec4(0.0f, 0.0f, 0.0f, DIM_ALPHA),
+                                  screenWidth, screenHeight);
+
+    const Rect body = bodyRect();
+    renderBorder(body);
+
+    {
+        FontScope buttonFont(textRenderer, BUTTON_FONT);
+        for (int i = 0; i < ITEM_COUNT; ++i) {
+            cachedButtonWidths[i] = std::max(
+                textRenderer->getTextWidth(kItemLabels[i], LABEL_SCALE) + BUTTON_LABEL_PAD,
+                SELECTION_MIN_WIDTH);
+        }
+    }
+
+    {
+        FontScope pauseFont(textRenderer, PAUSE_FONT);
+        cachedPauseTextHeight = textRenderer->getTextHeight(LABEL_SCALE);
+        const std::string paused = "Paused";
+        const float tw = textRenderer->getTextWidth(paused, LABEL_SCALE);
+
+        drawIfLoaded(decorLeftTexture, body.x + PAUSE_DECOR_INSET, body.y + PAUSE_DECOR_Y,
+                     PAUSE_DECOR_WIDTH, PAUSE_DECOR_HEIGHT, screenWidth, screenHeight);
+        drawIfLoaded(decorRightTexture,
+                     body.x + BODY_WIDTH - PAUSE_DECOR_INSET - PAUSE_DECOR_WIDTH,
+                     body.y + PAUSE_DECOR_Y, PAUSE_DECOR_WIDTH, PAUSE_DECOR_HEIGHT,
+                     screenWidth, screenHeight);
+        textRenderer->renderText(paused, body.x + (BODY_WIDTH - tw) * 0.5f, body.y + PAUSE_TEXT_Y,
+                                 kPauseText, LABEL_SCALE);
+    }
+
+    {
+        FontScope buttonFont(textRenderer, BUTTON_FONT);
+        for (int i = 0; i < ITEM_COUNT; ++i) {
+            renderButton(i);
+        }
+    }
+}
+

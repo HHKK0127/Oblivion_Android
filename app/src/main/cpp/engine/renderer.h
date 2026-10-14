@@ -24,6 +24,7 @@
 #include "../ui/video_options_ui.h"
 #include "../ui/video_display_ui.h"
 #include "../ui/controls_options_ui.h"
+#include "../ui/ui_pause_menu.h"
 #include "../ui/game_console.h"
 #include "../ui/debug_menu.h"
 #include "../ui/npc_debug_visualizer.h"
@@ -128,6 +129,7 @@ private:
     std::unique_ptr<VideoOptionsUI> videoOptionsUI;
     std::unique_ptr<VideoDisplayUI> videoDisplayUI;
     std::unique_ptr<ControlsOptionsUI> controlsOptionsUI;
+    std::unique_ptr<UIPauseMenu> uiPauseMenu;
     std::unique_ptr<GameConsole> gameConsole;
     std::unique_ptr<DebugMenu> debugMenu;
     std::unique_ptr<NpcDebugVisualizer> npcDebugVisualizer;
@@ -264,6 +266,12 @@ private:
     bool showLauncher;
     bool showTitleScreen;
     bool shouldExit;
+    // Pause menu: true while a sub-menu (Options / Save / Load) was opened from
+    // it and the pause menu should reappear once that sub-menu closes.
+    bool pauseMenuBehindSubmenu = false;
+    // Set when the pause menu's Quit item was chosen; consumed by the frame loop,
+    // which returns to the launcher exactly like the in-game back key used to.
+    bool quitFromPauseMenu = false;
     bool initialized = false;  // Track if initialization succeeded
     bool scenarioBuilt = false;  // True once the world scenario has been built (ESM or fallback)
     // Written by the async ESM parse worker, read by the render thread each frame.
@@ -400,6 +408,12 @@ public:
     void pumpVideoOptions();
     void pumpVideoDisplay();
     void pumpControlsOptions();
+    void pumpPauseMenu();
+    // Re-opens the pause menu after a sub-menu (Options / Save / Load) closes.
+    void syncPauseMenuLifetime();
+    // Shared "leave the game" path: returns to the launcher and hides the
+    // in-game touch controls. Used by the in-game back key and the pause menu.
+    void returnToLauncherFromGame();
         void toggleNpcDebugVisualizer();
     void toggleWorldDebugInfo();
     void togglePerformanceGraph();

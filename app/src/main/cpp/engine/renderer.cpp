@@ -472,6 +472,9 @@ void Renderer::resize(unsigned int width, unsigned int height) {
     if (audioOptionsUI) {
         audioOptionsUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
     }
+    if (uiPauseMenu) {
+        uiPauseMenu->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    }
 }
 
 void Renderer::setTargetFPS(int fps) {
@@ -2160,6 +2163,15 @@ bool Renderer::initGameSystems() {
         LOGE("Failed to initialize ControlsOptionsUI");
     } else {
         controlsOptionsUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    }
+
+    // UIPauseMenu: PauseMenu (0x3f5) laid out from the original pause_menu.xml
+    // (240x400 body + 5 buttons, PC values)
+    uiPauseMenu = std::make_unique<UIPauseMenu>();
+    if (!uiPauseMenu->initialize(textRenderer.get())) {
+        LOGE("Failed to initialize UIPauseMenu");
+    } else {
+        uiPauseMenu->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
     }
 
     // Complete SaveLoadUI initialization (now that SaveManager is ready)
@@ -4115,6 +4127,17 @@ void Renderer::render(float deltaTime) {
                 textRenderer->processPendingFontRequest();
             }
 
+    // Bring the pause menu back once a sub-menu opened from it has closed. Done
+    // once per frame so every close path (touch, back key, key press) is covered.
+    syncPauseMenuLifetime();
+
+    // Pause menu Quit: leave the game exactly like the in-game back key used to.
+    if (quitFromPauseMenu) {
+        quitFromPauseMenu = false;
+        LOGI("Pause menu: leaving game for launcher");
+        returnToLauncherFromGame();
+    }
+
     // Launcher takes priority - render and return early
     // When launched from IntroVideoActivity, skip launcher and go directly to title screen
     if (showLauncher && launcherScreen) {
@@ -4172,10 +4195,16 @@ void Renderer::render(float deltaTime) {
         return;
     }
 
-    // Set joystick input before Imperial Weave update
+    // Set joystick input before Imperial Weave update.
+    // RE §30.1 path (3): while a menu owns the screen no world input reaches the
+    // player, so a neutral stick is fed instead of the (hidden) virtual stick.
     if (playerController && joystick) {
-        glm::vec2 input = joystick->getInputValue();
-        playerController->setJoystickInput(input.x, input.y);
+        if (anyMenuOpen()) {
+            playerController->setJoystickInput(0.0f, 0.0f);
+        } else {
+            glm::vec2 input = joystick->getInputValue();
+            playerController->setJoystickInput(input.x, input.y);
+        }
     }
 
     // Update audio listener position before Imperial Weave update
@@ -4205,6 +4234,9 @@ void Renderer::render(float deltaTime) {
         // Publish the menu gate so physics/AI phases match the original's
         // 0x00b3a6d4 / active-menu-count suspension (RE §30.1).
         weave::ImperialWeave::instance().setMenuOpen(anyMenuOpen());
+        // RE §30.1.9: only the PauseMenu (0x3f5) stops the world entirely
+        // (FUN_0040fda0 true). Exploration menus (Options etc.) keep dt running.
+        weave::ImperialWeave::instance().setPaused(uiPauseMenu && uiPauseMenu->isVisible());
         weave::ImperialWeave::instance().update(deltaTime);
     }
 
@@ -4338,6 +4370,9 @@ void Renderer::render(float deltaTime) {
         }
         if (settingsUI && settingsUI->isVisible()) {
             settingsUI->render();
+        }
+        if (uiPauseMenu && uiPauseMenu->isVisible()) {
+            uiPauseMenu->render();
         }
         // Skip frame rate control for quick return
         if (performanceMonitor) {
@@ -4720,6 +4755,11 @@ void Renderer::render(float deltaTime) {
         performanceGraph->render();
     }
 
+    // Pause menu sits below its own sub-menus (Save/Load/Options) but above the world.
+    if (uiPauseMenu && uiPauseMenu->isVisible()) {
+        uiPauseMenu->render();
+    }
+
     // Render SaveLoadUI if visible (higher priority than SettingsUI)
     if (saveLoadUI && saveLoadUI->isVisible()) {
         saveLoadUI->render();
@@ -4751,6 +4791,7 @@ void Renderer::render(float deltaTime) {
 
     // Hidden while SaveLoadUI is open: these overlays would otherwise draw over the dimmed menu
     const bool saveLoadOpen = (saveLoadUI && saveLoadUI->isVisible()) ||
+                              (uiPauseMenu && uiPauseMenu->isVisible()) ||
                               (optionsUI && optionsUI->isVisible()) ||
                               (audioOptionsUI && audioOptionsUI->isVisible()) ||
                               (gameplayOptionsUI && gameplayOptionsUI->isVisible()) ||
@@ -7186,6 +7227,12 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
 
     // Only process the remaining legacy UI elements on ACTION_DOWN (0 or 5)
     if (is_touch_down) {
+        if (uiPauseMenu && uiPauseMenu->isVisible()) {
+            uiPauseMenu->onTouchEvent(x, y);
+            pumpPauseMenu();
+            return;
+        }
+
         if (saveLoadUI && saveLoadUI->isVisible()) {
             saveLoadUI->onTouchEvent(x, y);
             if (saveLoadUI->shouldReturnToMenu()) {
@@ -7380,6 +7427,9 @@ void Renderer::onTrimMemory(int level) {
     }
     if (optionsUI) {
         optionsUI->cleanup();
+    }
+    if (uiPauseMenu) {
+        uiPauseMenu->cleanup();
     }
 
     if (inventoryUI) {
@@ -7603,6 +7653,11 @@ bool Renderer::handleOptionsKey(int keyCode) {
         handleOptionsCategoryRequest(optionsUI->consumeCategoryRequest());
         return handled;
     }
+    if (uiPauseMenu && uiPauseMenu->isVisible()) {
+        const bool handled = uiPauseMenu->onKeyPress(keyCode);
+        pumpPauseMenu();
+        return handled;
+    }
     return false;
 }
 
@@ -7770,11 +7825,81 @@ void Renderer::pumpControlsOptions() {
     }
 }
 
+void Renderer::pumpPauseMenu() {
+    if (!uiPauseMenu || !uiPauseMenu->hasPendingSelection()) {
+        return;
+    }
+
+    const UIPauseMenu::Item item = uiPauseMenu->consumeSelection();
+    switch (item) {
+        case UIPauseMenu::Item::RETURN:
+            uiPauseMenu->close();
+            LOGI("Pause menu: Return to game");
+            break;
+
+        case UIPauseMenu::Item::SAVE:
+        case UIPauseMenu::Item::LOAD:
+            uiPauseMenu->close();
+            if (saveLoadUI) {
+                // The pause menu comes back once SaveLoadUI closes.
+                pauseMenuBehindSubmenu = true;
+                saveLoadUI->open(item == UIPauseMenu::Item::SAVE ? SaveLoadUI::Mode::SAVE
+                                                                : SaveLoadUI::Mode::LOAD);
+                LOGI("Pause menu: opened SaveLoadUI (%s)",
+                     item == UIPauseMenu::Item::SAVE ? "save" : "load");
+            }
+            break;
+
+        case UIPauseMenu::Item::OPTIONS:
+            uiPauseMenu->close();
+            if (optionsUI) {
+                // open(true) keeps the "Paused" banner: OptionsMenu.user0 == 2.0f
+                // is the original's "PauseMenu is behind me" flag (RE 30.4).
+                pauseMenuBehindSubmenu = true;
+                optionsUI->open(true);
+                LOGI("Pause menu: opened OptionsUI in pause mode");
+            }
+            break;
+
+        case UIPauseMenu::Item::QUIT:
+            uiPauseMenu->close();
+            quitFromPauseMenu = true;
+            LOGI("Pause menu: Quit requested");
+            break;
+    }
+}
+
+void Renderer::syncPauseMenuLifetime() {
+    if (!uiPauseMenu || !pauseMenuBehindSubmenu) {
+        return;
+    }
+
+    // Wait until the sub-menu opened from the pause menu - and any panel that
+    // sub-menu spawned in turn - has fully closed before restoring the pause menu.
+    const bool subMenuOpen =
+        (optionsUI && optionsUI->isVisible()) ||
+        (saveLoadUI && saveLoadUI->isVisible()) ||
+        (gameplayOptionsUI && gameplayOptionsUI->isVisible()) ||
+        (videoOptionsUI && videoOptionsUI->isVisible()) ||
+        (videoDisplayUI && videoDisplayUI->isVisible()) ||
+        (audioOptionsUI && audioOptionsUI->isVisible()) ||
+        (controlsOptionsUI && controlsOptionsUI->isVisible()) ||
+        (settingsUI && settingsUI->isVisible());
+    if (subMenuOpen) {
+        return;
+    }
+
+    pauseMenuBehindSubmenu = false;
+    uiPauseMenu->open();
+    LOGI("Pause menu: restored after sub-menu");
+}
+
 bool Renderer::anyMenuOpen() const {
     // Aggregate of every modal panel. The original tracks this as the active
     // menu count (0x00b13978) plus the "menu displayed" flag (0x00b3a6d4);
     // both are non-zero exactly while one of these panels owns the screen.
     if (optionsUI && optionsUI->isVisible()) return true;
+    if (uiPauseMenu && uiPauseMenu->isVisible()) return true;
     if (audioOptionsUI && audioOptionsUI->isVisible()) return true;
     if (gameplayOptionsUI && gameplayOptionsUI->isVisible()) return true;
     if (videoOptionsUI && videoOptionsUI->isVisible()) return true;
@@ -7850,6 +7975,12 @@ bool Renderer::handleBackKey() {
             LOGI("handleBackKey: Closed OptionsUI");
             return true;
         }
+        if (uiPauseMenu && uiPauseMenu->isVisible()) {
+            uiPauseMenu->handleBack();  // pause_return_button
+            pumpPauseMenu();
+            LOGI("handleBackKey: Closed UIPauseMenu");
+            return true;
+        }
         if (settingsUI && settingsUI->isVisible()) {
             settingsUI->toggle();
             LOGI("handleBackKey: Closed SettingsUI");
@@ -7875,8 +8006,21 @@ bool Renderer::handleBackKey() {
             return false;
         }
 
-        // 6. In game: return to launcher/title
+        // 6. In game: open the pause menu (original: ESC opens PauseMenu 0x3f5).
+        //    Quitting to the launcher is now the pause menu's Quit item, so the
+        //    destination is unchanged - it just costs one extra confirmation tap.
+        if (uiPauseMenu) {
+            uiPauseMenu->open();
+            LOGI("handleBackKey: Opened pause menu");
+            return true;
+        }
+
         LOGI("handleBackKey: In game - returning to launcher");
+        returnToLauncherFromGame();
+        return true;
+    }
+
+    void Renderer::returnToLauncherFromGame() {
         showLauncher = true;
         // Hide combat buttons
         if (joystick) { joystick->setVisible(false); }
@@ -7886,7 +8030,6 @@ bool Renderer::handleBackKey() {
         for (auto& btn : quickSlotButtons) {
             if (btn) btn->setVisible(false);
         }
-        return true;
     }
 
     void Renderer::toggleNpcDebugVisualizer() {

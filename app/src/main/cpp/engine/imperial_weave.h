@@ -309,6 +309,11 @@ public:
     void setMenuOpen(bool open) { menuOpen_ = open; }
     bool isMenuOpen() const { return menuOpen_; }
 
+    // Full pause gate (original PauseMenu 0x3f5 -> FUN_0040fda0 true): the world,
+    // game clock, AI and physics all stop. Explore-type menus only set menuOpen_.
+    void setPaused(bool paused) { paused_ = paused; }
+    bool isPaused() const { return paused_; }
+
     // v4: Frame budget accessors
     float getFrameBudgetMs() const { return frameBudgetMs_; }
     void setFrameBudgetMs(float budget) { frameBudgetMs_ = budget; }
@@ -344,6 +349,7 @@ private:
     bool initialized_ = false;
 
     bool menuOpen_ = false;
+    bool paused_ = false;
 
     // v4: Frame budget management
     float frameBudgetMs_ = 16.6f;

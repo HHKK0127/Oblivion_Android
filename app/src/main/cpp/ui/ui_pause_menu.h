@@ -1,96 +1,89 @@
 #pragma once
 
-#include "ui_panel.h"
+#include <GLES3/gl3.h>
+#include <glm/glm.hpp>
 #include "text_renderer.h"
-#include <memory>
-#include <functional>
 
 /**
- * @brief Game pause menu UI
+ * @brief Pause menu, laid out from the original options\pause_menu.xml (PC values).
  *
- * Phase 13: Menu for pausing the game and accessing various functions
- * Options for character display, spellbook, quest,
- * save/load, settings, and game resume
+ * The body is a 240x400 generic_background rect centred on the screen with the
+ * 44px border drawn outside it. Five 64px buttons stack from the body top in XML
+ * listindex order - Return / Save / Load / Options / Quit, which are the original
+ * PauseMenu widget ids 3, 4, 5, 7 and 8. The blue decor pair and the "Paused"
+ * caption reproduce the XML's pause_indication block.
  */
-class UIPauseMenu : public UIPanel {
+class UIPauseMenu {
 public:
-    enum MenuItem {
-        CHARACTER_SHEET = 0,
-        SPELLBOOK = 1,
-        QUEST_LOG = 2,
-        INVENTORY = 3,
-        SETTINGS = 4,
-        SAVE_GAME = 5,
-        LOAD_GAME = 6,
-        RESUME = 7,
-        QUIT_TO_TITLE = 8,
-        MENU_COUNT = 9
+    enum class Item {
+        RETURN = 0,
+        SAVE,
+        LOAD,
+        OPTIONS,
+        QUIT
     };
 
-    using MenuCallback = std::function<void(MenuItem)>;
-
-    explicit UIPauseMenu(const std::string& title = "Pause");
-    ~UIPauseMenu() override = default;
+    UIPauseMenu();
+    ~UIPauseMenu();
 
     bool initialize(TextRenderer* textRenderer);
+    void cleanup();
+
+    void setScreenSize(int width, int height);
 
     void open();
     void close();
+    bool isVisible() const { return visible; }
 
-    void update(float deltaTime) override;
-    bool onTouchDown(float x, float y, int pointerId) override;
-    void render() override;
+    void render();
+    void onTouchEvent(float x, float y);
+    // Key codes match the other menus: 19 UP, 20 DOWN, 23/66 Enter, 4 Back.
+    bool onKeyPress(int keyCode);
+    bool handleBack();
 
-    void setScreenSize(int w, int h) { screenWidth = w; screenHeight = h; }
-
-    // Callback when menu item is selected
-    void setOnMenuSelected(MenuCallback cb) { onMenuSelected = cb; }
+    bool hasPendingSelection() const { return hasSelection; }
+    // Returns the item activated since the last call, then clears it.
+    Item consumeSelection();
 
 private:
-    TextRenderer* textRenderer = nullptr;
-    MenuCallback onMenuSelected;
+    struct Rect {
+        float x, y, w, h;
+    };
 
-    int selectedItemIndex = 0;
-    int scrollOffset = 0;
+    Rect bodyRect() const;
+    float bodyTop() const;
+    Rect buttonRect(int index) const;
+    int hitTestButton(float x, float y) const;
+    void activate(int index);
 
-    int screenWidth  = 1080;
-    int screenHeight = 1920;
+    void renderBorder(const Rect& body);
+    void renderButton(int index);
 
-    static constexpr float MENU_ITEM_H = 48.0f;
-    static constexpr float MENU_ITEM_GAP = 3.0f;
-    static constexpr int MAX_VISIBLE_ITEMS = 8;
+    TextRenderer* textRenderer;
+    int screenWidth;
+    int screenHeight;
+    bool visible;
+    int focusIndex;
 
-    static constexpr std::array<const char*, MENU_COUNT> MENU_LABELS = {{
-        "Character Sheet",
-        "Spellbook",
-        "Quest Log",
-        "Inventory",
-        "Settings",
-        "Save Game",
-        "Load Game",
-        "Resume Game",
-        "Quit to Title"
-    }};
+    bool hasSelection;
+    Item pendingSelection;
 
-    static constexpr std::array<const char*, MENU_COUNT> MENU_DESCRIPTIONS = {{
-        "View and manage your character",
-        "View and manage your spells",
-        "View your active and completed quests",
-        "Access your inventory and equipment",
-        "Adjust game settings",
-        "Save your current progress",
-        "Load a previously saved game",
-        "Resume playing",
-        "Return to the title screen"
-    }};
+    GLuint bgCenterTexture;
+    GLuint bgEdgeTopTexture;
+    GLuint bgEdgeBottomTexture;
+    GLuint bgEdgeLeftTexture;
+    GLuint bgEdgeRightTexture;
+    GLuint bgCornerTLTexture;
+    GLuint bgCornerTRTexture;
+    GLuint bgCornerBLTexture;
+    GLuint bgCornerBRTexture;
+    GLuint selectionFullTexture;
+    GLuint selectionCutTexture;
+    GLuint decorLeftTexture;
+    GLuint decorRightTexture;
 
-    void renderMenuItems();
-    void renderSelectedDescription();
-    void renderBackgroundOverlay();
-
-    int hitTestMenuItem(float x, float y) const;
-
-    // Layout helpers
-    float getMenuStartY() const;
-    float getDescriptionY() const;
+    // Measured once per frame while rendering; the XML sizes the button rects
+    // from the label width, so hit testing needs the same numbers.
+    float cachedButtonWidths[5];
+    float cachedPauseTextHeight;
 };

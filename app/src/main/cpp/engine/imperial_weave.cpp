@@ -230,21 +230,26 @@ void ImperialWeave::update(float deltaTime) {
     PhaseProfiler::resetFrame();
 #endif
 
+    // RE §30.1.9: while the PauseMenu is up the original freezes the world and the
+    // game clock (FUN_0040fda0 returns true, FUN_0057f170 gets dt == 0). Only the
+    // world-facing phases receive dt == 0; input/audio/render keep real time.
+    const float worldDt = paused_ ? 0.0f : deltaTime;
+
     // v4: 15-phase pipeline with frame budget
     try {
         WEAVE_PROFILE_PHASE(PreUpdate,       phasePreUpdate(deltaTime));
         WEAVE_PROFILE_PHASE(EventProcess,    phaseEventProcess());
-        WEAVE_PROFILE_PHASE(WorldUpdate,     phaseWorldUpdate(deltaTime));
-        WEAVE_PROFILE_PHASE(AiUpdate,        phaseAiUpdate(deltaTime));
+        WEAVE_PROFILE_PHASE(WorldUpdate,     phaseWorldUpdate(worldDt));
+        WEAVE_PROFILE_PHASE(AiUpdate,        phaseAiUpdate(worldDt));
         WEAVE_PROFILE_PHASE(PlayerUpdate,    phasePlayerUpdate(deltaTime));
         WEAVE_PROFILE_PHASE(InventoryUpdate, phaseInventoryUpdate(deltaTime));
         WEAVE_PROFILE_PHASE(SpellUpdate,     phaseSpellUpdate(deltaTime));
-        WEAVE_PROFILE_PHASE(AnimationUpdate, phaseAnimationUpdate(deltaTime));
-        WEAVE_PROFILE_PHASE(JoltPhysics,     phaseJoltPhysicsUpdate(deltaTime));
-        WEAVE_PROFILE_PHASE(PhysicsSync,     phasePhysicsSync(deltaTime));
-        WEAVE_PROFILE_PHASE(CombatUpdate,    phaseCombatUpdate(deltaTime));
-        WEAVE_PROFILE_PHASE(QuestUpdate,     phaseQuestUpdate(deltaTime));
-        WEAVE_PROFILE_PHASE(ScriptUpdate,    phaseScriptUpdate(deltaTime));
+        WEAVE_PROFILE_PHASE(AnimationUpdate, phaseAnimationUpdate(worldDt));
+        WEAVE_PROFILE_PHASE(JoltPhysics,     phaseJoltPhysicsUpdate(worldDt));
+        WEAVE_PROFILE_PHASE(PhysicsSync,     phasePhysicsSync(worldDt));
+        WEAVE_PROFILE_PHASE(CombatUpdate,    phaseCombatUpdate(worldDt));
+        WEAVE_PROFILE_PHASE(QuestUpdate,     phaseQuestUpdate(worldDt));
+        WEAVE_PROFILE_PHASE(ScriptUpdate,    phaseScriptUpdate(worldDt));
 
         // v4: New engine phases (skip if over budget)
                 if (withinBudget(frameStart)) {

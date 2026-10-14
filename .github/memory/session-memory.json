@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-14T13:58:20.793146",
+  "lastUpdated": "2026-10-14T14:46:17.800713",
   "entries": [
     {
       "timestamp": "2026-09-16T14:58:00Z",
@@ -6464,12 +6464,101 @@
         "build-verified"
       ],
       "compressed": false
+    },
+    {
+      "id": "d6119b31-f7f9-4f4a-82c6-3906ef0fedbe",
+      "timestamp": "2026-10-14T14:46:17.800713",
+      "category": "decision",
+      "priority": "high",
+      "content": "RE_EXE_REPORT.md §32 追記完了（依頼5 残ファミリーの widget 単位レイアウト）。§31.7 の直後、docs 総行数 5323。構成: 32.0 読み方(11列: Widget|type|id|nest|x|y|w|h|visible|depth|content)、32.1 Message/prompt(Messagemenu/QuestAddedMenu/SkillPerkMenu/GenericTestMenu)、32.2 クラフト・ダイアログ(Dialog/TextEdit/SpellMaking/SpellPurchase/Enchantment/EffectSetting/Alchemy/SigilStone/Persuasion)、32.3 chargen(BirthSign/Class/RaceSex/Skills)、32.4 HUD・in-game(HUDMain/HUDInfo/HUDReticle/HUDSubtitle/Inventory/Magic/MagicPopup/Map/Stats/player_model/HUDSafeZone)、32.5 Loading×3/Breath、32.6 NOT USED 4件、32.7 prefabs 単体パース不可、32.8 移植向け確定値。重複回避: QuickKeysMenu=§31.3、ClassMenu=§32.3 を正（class_menu.xml と chargen\\class_menu.xml は同一メニュー）。",
+      "tags": [
+        "RE",
+        "menu",
+        "layout",
+        "§32",
+        "docs"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "268dabb9-11f2-4139-9e97-24e799b6b1fc",
+      "timestamp": "2026-10-14T14:46:17.800713",
+      "category": "decision",
+      "priority": "high",
+      "content": "RE §32.8 移植向け確定値: (1) 各メニュー識別は ID ではなく XML ルート名で行う（メニュー登録 ID の全割当は未解決）。確定 ID のみ: MessageMenu=0x3e9, ContainerMenu=0x3f0, AudioMenu=0x3f9, VideoMenu=0x3fa, VideoDisplayMenu=0x3fb, GameplayMenu=0x3fc, LevelUpMenu=0x403, RepairMenu=0x40b, QuickKeysMenu=0x416, RechargeMenu=0x419。残りは FUN_00582160(MenuManager ctor) のメニュー配列(正本 0x00b13974/件数 0x00b13978)全走査で確定予定。(2) 座標式は §24.2 の式言語と同一 → パーサ共通化可。(3) HUD 系4メニューは常時オーバーレイ、visible は userN 実行時切替。(4) in-game 系5メニューの行スクロールは §31.7 と同じ行 y = index*lineHeight - scrollOffset。",
+      "tags": [
+        "RE",
+        "menu",
+        "id",
+        "§32.8",
+        "android"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "4964b100-34c8-43b5-9c2c-0fe3a4a88799",
+      "timestamp": "2026-10-14T14:46:17.800713",
+      "category": "reference",
+      "priority": "high",
+      "content": "RE §32 パーサ完成: tmp\\r30_menuparse.py に _balance_tags（自己終了 br/include/ref/img、逆方向不整合の閉じタグ破棄）、load_xml（DOCTYPE/コメント除去、実体→名前、不正タグ名正規化、strring→string）、parse_root（fromstring 失敗時 _balance_tags 再試行）、md_table（g() None 安全化）、--md ループ（例外時 NOT PARSABLE スタブ）を実装。全64ファイル再検証 OK64/BAD25(prefab22+実体なし3)。パース不能4ファイルは内容コメントのみ(45〜47B): scroll_menu.xml, birthsign_menu.xml, chargen\\attributes_menu.xml, chargen\\specilization_menu.xml。素材: tmp\\r32_tables_raw.md(1301行/40ブロック)、tmp\\r32_assemble.py(GROUP 32.4=[17..25,27,28])。表データ行のパイプ数は11列+両端=12個（前回検証スクリプトは誤判定）。",
+      "tags": [
+        "RE",
+        "parser",
+        "xml",
+        "menu",
+        "tooling"
+      ],
+      "compressed": false
+    },
+    {
+      "category": "decision",
+      "priority": "high",
+      "content": "UIPauseMenu を pause_menu.xml 準拠で独立クラスとして全面書き換え（UIPanel 派生をやめた）。ボディ 240x400 を画面中央、generic_background の 44px 枠を外側に描画。blue decor 35x17 を x=30/y=26、_paused を TahomaBoldSmall で y=20、button_floating_2 の 5 ボタン（Return/Save/Load/Options/Quit = 元 widget id 3/4/5/7/8）を行順に縦積み。ボタン幅 = ラベル幅 + 40、高さ 64。フォーカス行は dialog_selection_full + 右端に dialog_selection_cut（8px 重ね）。Return=再開 / Save,Load=SaveLoadUI / Options=OptionsUI::open(true) / Quit=ランチャー。",
+      "tags": [
+        "ui",
+        "pause-menu",
+        "ui_pause_menu",
+        "original-assets"
+      ],
+      "id": "069cd969-4b71-41e7-a13a-2cc69da59347",
+      "timestamp": "2026-10-14T14:55:35.672377",
+      "compressed": false
+    },
+    {
+      "category": "decision",
+      "priority": "high",
+      "content": "ポーズ dt=0 経路: ImperialWeave に setPaused()/isPaused()/paused_ を追加し、update() 冒頭で worldDt = paused_ ? 0.0f : deltaTime を算出。worldDt を渡す = WorldUpdate/AiUpdate/AnimationUpdate/JoltPhysics/PhysicsSync/CombatUpdate/QuestUpdate/ScriptUpdate。実時間のまま = PreUpdate/EventProcess/PlayerUpdate/InventoryUpdate/SpellUpdate/FaceGenUpdate/VideoUpdate/AudioUpdate/RenderSubmit。engine 内に dt 除算は皆無なので dt=0 は安全（確認済み）。Renderer が毎フレーム setPaused(uiPauseMenu->isVisible()) を発行。",
+      "tags": [
+        "engine",
+        "imperial-weave",
+        "pause",
+        "dt-zero",
+        "re-30.1.9"
+      ],
+      "id": "35544ad2-4b1e-4a2f-a14e-4c4365fe64a4",
+      "timestamp": "2026-10-14T14:55:35.672377",
+      "compressed": false
+    },
+    {
+      "category": "decision",
+      "priority": "medium",
+      "content": "in-game の back キーを「即ランチャー」から「ポーズメニューを開く」に変更（オリジナルの ESC = PauseMenu 0x3f5 に合わせる）。旧処理は Renderer::returnToLauncherFromGame() に抽出し Quit ボタンが使用。Renderer::syncPauseMenuLifetime() が毎フレーム、背面サブメニュー（SaveLoadUI / OptionsUI 系）が閉じたら pauseMenuBehindSubmenu に従ってポーズメニューを復帰させる。anyMenuOpen() は uiPauseMenu->isVisible() を含む。メニュー表示中は PlayerController へ (0,0) を供給（RE 30.1 経路3）。",
+      "tags": [
+        "ui",
+        "renderer",
+        "pause-menu",
+        "back-key",
+        "re-30.1"
+      ],
+      "id": "eb1ec832-f99b-4329-ae79-b524e70ce593",
+      "timestamp": "2026-10-14T14:55:35.672377",
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 450,
+    "totalEntries": 456,
     "compressedCount": 81,
     "sessionCount": 38,
-    "lastUpdated": "2026-10-14T05:18:37.695910Z"
+    "lastUpdated": "2026-10-14T14:55:35.672377Z"
   }
 }

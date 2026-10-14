@@ -16,6 +16,27 @@ The current version is **0.9.10 (versionCode 910)**.
 ## [Unreleased]
 
 ### Added
+- **The pause menu is the original's PauseMenu, not an ad-hoc list.** `UIPauseMenu` was rebuilt
+  from `options\pause_menu.xml`: a 240x400 `generic_background` body centred on the screen with
+  the 44px tiled border drawn around it, the blue decor pair at x=30 / y=26, the `_paused`
+  caption in Tahoma Bold Small at y=20, and the five `button_floating_2` buttons in XML
+  listindex order - Return / Save / Load / Options / Quit (widget ids 3, 4, 5, 7, 8). Button
+  width is `label width + 40` and height 64, exactly as the prefab sizes itself; the focused row
+  draws `dialog_selection_full` with `dialog_selection_cut` capping the right edge 8px past the
+  body. Return / Save / Load / Options / Quit all act: Return resumes, Save and Load open
+  `SaveLoadUI` in the matching mode, Options opens the category list with the `Paused` banner
+  (`OptionsUI::open(true)`), and Quit returns to the launcher.
+- **Pausing now stops the world, as `FUN_0040fda0` does (RE `§30.1.9`).** `ImperialWeave` gained
+  `setPaused()`/`isPaused()`; while set, the world, AI, animation, Jolt, physics-sync, combat,
+  quest and script phases all receive `dt = 0`, while player, inventory, spell, facegen, video,
+  audio and render-submit keep real time. Nothing in the engine divides by `dt`, so the zero
+  timestep is safe. `Renderer` publishes the flag from `UIPauseMenu::isVisible()` every frame.
+- **A menu now neutralises the world stick** (RE `§30.1` path 3). `Renderer` feeds `(0, 0)` to
+  `PlayerController` while any menu is open instead of the hidden virtual stick's residual value,
+  so a menu can no longer walk the player.
+- **The back key opens the pause menu instead of quitting to the launcher**, matching the
+  original where ESC raises PauseMenu (`0x3f5`). The old behaviour is preserved as
+  `Renderer::returnToLauncherFromGame()`, which the Quit button uses.
 - **The save list now shows real level and play time.** `SaveMenu`'s rows previously read `Lv 1`
   for every file and had no play time, because `SaveSlotInfo::playerLevel`/`gameTimeHours` were
   never populated from the file. The save header is now format v3, appending

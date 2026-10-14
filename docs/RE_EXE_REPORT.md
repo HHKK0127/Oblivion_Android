@@ -3239,20 +3239,40 @@ JNZ RET                 ; メニュー表示中は丸ごとスキップ
 
 ### 30.2.1 audio: 実音量の算出式（確定）
 
-実音量適用関数 **`FUN_006aa1a0`（215 バイト）**:
+実音量適用関数 **`FUN_006aa1a0`（215 バイト / 68 insns）**。引数は
+`[ESP+4]` = float 音量、`[ESP+8]` = byte フラグ（非 0 で保存）。逆アセンブルで
+確定した手順:
 
-1. スライダー値を `0..1` にクランプ
-2. `FMUL [ECX + 0xb8]` … **マスター音量を乗算**
-3. `FMUL ST0` … **二乗（平方カーブ）**
-4. `bit0 != 0` かつ結果 `< [0x00a34ba0] (= 0.005f)` なら無音定数 `0xffffd8f0`（= -10000、dB 相当の下限）
+1. `FLDZ` / `FLD [ESP+4]` / `FCOM` による**下限クランプ**: `< 0` なら `0.0f` に置換。
+2. `FLD1` / `FCOM` による**上限クランプ**: `> 1.0f` なら `1.0f` に置換。
+3. `[ESP+8] != 0` なら `FST [ECX+0x2f8]` と `FST [ECX+0x2f0]` へ**保存**
+   （`ECX` = オーディオマネージャ実体。voice 系統の保存先）。
+4. `[0x00b3c0ec] != 0` なら値を `[0x00b16188]` で**上書き**（強制音量）。
+5. `FMUL [ECX + 0xb8]` … **マスター音量（master）を乗算**。
+6. `FMUL ST0` … **二乗（平方カーブ）**。
+7. `TEST [ECX+0xdc], 1`（= dB 出力モード）で分岐:
+   - **bit0 == 0（線形モード）**: そのまま `RET`（線形振幅を返す）。
+   - **bit0 != 0（dB モード）**:
+     - 結果 `< [0x00a34ba0] (= 0.01f)` → 無音定数 `0xffffd8f0`（= **-10000**）を
+       `[ECX+0x74]` の vtable `[+0x1c]` へ渡す（無音）。
+     - それ以外 → `CALL 0x00986cd0`（= **log10**）→ `FMUL double [0x00a77098]`
+       (= **2000.0**) → `CALL 0x009828c0`（float → int）→ vtable `[+0x1c]` へ渡す。
 
-→ **実音量 = clamp(slider, 0, 1)² × masterVolume。線形ではない。**
-スライダー `0` および極小値（< 0.005）は無音に量子化される。
-**dB 変換はこの関数では行わず、線形振幅（0..1）をそのまま下位 API に渡す。**
+→ **線形モード: 実音量 = clamp(slider, 0, 1)² × masterVolume。**
+→ **dB モード: 実音量 = (int)(log10(clamp(slider, 0, 1)² × master) × 2000.0)、
+`0.01` 未満は `-10000`（無音）。**
+閾値は `0.005` ではなく **`0.01`**（`[0x00a34ba0]` の実値を PE 直読みで確認）。
+**dB 係数は 1 dB = 2000 単位**（log10 ベース、1/100 dB 精度）。既定の DirectSound
+経路では `[ECX+0xdc]` の bit0 が 1 なので **dB モードが常用**。
 
 音量適用の中心は **`FUN_006ad030`（1081 insns）** で、`FUN_006aa1a0` を **6 回**
-呼ぶ（＝ 6 系統の音量を同時適用）。アクセサ 14 関数はすべてオーディオマネージャ
-正本 `[0x00b3c214]` へフォワードし、下位 `FUN_006ab500`〜`FUN_006acbf0` を呼ぶ。
+呼ぶが、6 箇所すべてが
+`FLD [ESI+0x2f0]; PUSH 0; PUSH ECX; MOV ECX,ESI; FSTP [ESP]; CALL 0x006aa1a0`
+＝ **`FUN_006aa1a0([ESI+0x2f0], 0)`** と同一コードである。すなわち
+**保存済み voice 音量 `[+0x2f0]` を下位ストリームへ再適用しているだけ**で、
+6 系統の個別音量を適用しているのではない（旧記述を本節で訂正）。アクセサ 14 関数は
+すべてオーディオマネージャ正本 `[0x00b3c214]` へフォワードし、下位
+`FUN_006ab500`〜`FUN_006acbf0` を呼ぶ。
 
 ### 30.2.2 audio: チャンネルグループ対応（確定）
 
@@ -3280,8 +3300,11 @@ Audio セクションのキー 13 個とその既定値:
 （`fDefaultMasterVolume` / `fDefaultMusicVolume` / `fDefaultEffectsVolume` /
 `fDefaultVoiceVolume` / `fDefaultFootVolume`）。audio_menu.xml のスライダーは
 この 5 系統の**現在値**を、INI の `fDefault*` は**初期値**を保持する。
-`FUN_006ad030` の `FUN_006aa1a0` 6 回呼び出しは、この 5 系統＋ system/ambient 系
-1 系統と解釈できる（**系統順序の最終確定は未了**、オフセットからの推定）。
+**スライダー widget ↔ 音量フィールドの対応は三者一致で確定**（AudioMenu ctor
+`FUN_00595380` / 音量適用 `FUN_00595a20` / XML 行順のすべてが同一の対応を示す）。
+詳細表は **§30.7.1** を参照。
+`FUN_006ad030` の `FUN_006aa1a0` 6 回呼び出しは「5 系統＋1」ではなく、
+**保存済み voice 音量の再適用 ×6** である（§30.2.1 末尾）。系統順序の推定は不要。
 
 ### 30.2.3 gameplay: 難易度とトグル（確定）
 
@@ -3311,13 +3334,19 @@ UI 側（`gameplay_menu.xml`）のスライダー/トグルは INI または設�
 1. 難易度 `0..100` → 戦闘ダメージ係数へ反映（`0.0`/`50.0`/`100.0` が min/既定/max）。
 2. 6 トグルをそれぞれ「字幕表示」「照準表示」「休息/待機/移動時オートセーブ」の
    実行分岐に接続する。
-3. audio の 5 スライダー → `実音量 = clamp(v,0,1)² × master`、`< 0.005` は無音。
+3. audio の 5 スライダー → `実音量 = clamp(v,0,1)² × master`。dB 出力時は
+   `(int)(log10(実音量) × 2000.0)`、`0.01` 未満は無音（`-10000`）。
 
 ### Android 移植向け確定値（依頼2）
 
-- `volume_actual(v) = clamp(v,0,1)^2 * master`（平方カーブ）。`v < 0.005` は無音。
+- `v01 = clamp(v, 0, 1)`、`amp = v01^2 * master`（平方カーブ、master 乗算）。
+- 線形出力は `amp` をそのまま使用。dB 出力は
+  `db100 = (int)(log10(amp) * 2000.0)`、`amp < 0.01` は無音（`-10000`）。
+  **1 dB = 2000 単位**として実装すると EXE と一致する（閾値は `0.005` ではなく
+  `0.01`）。
 - チャンネルは master / music / effects / voice / footstep の 5 系統
-  （INI 既定 0.8 / 0.8 / 0.8 / 0.0 / 0.3）。
+  （INI 既定 0.8 / 0.8 / 0.8 / 0.0 / 0.3）。スライダー対応は **§30.7.1** の表のとおり。
+- master スライダーは `0..100` の int 表示で、内部値は `int(volume * 100.0)`。
 - 難易度は `0.0..100.0`（既定 50.0）の float。6 トグルは §30.2.3 の表のとおり。
 - 旧 TODO `audio-voice-footstep-setters` / `gameplay-settings-consumers` は
   上記で解消可能。
@@ -3434,13 +3463,20 @@ else
     FUN_005bcc00
 ```
 
-- `0xfae` = メニュー user フィールド **user0**（§22 の記述と一致）。
-- `0x00a379b4` の実体 = **`2.0f`**（確認済み定数）。
-- **`user0 == 2.0` のときの分岐先が「背面に PauseMenu がある」側**であり、
-  ESC / 戻るキーの戻り先（PauseMenu へ戻る or ルートへ戻る）を切り替える。
-  `FUN_005bc8b0`（260 insns 超）と `FUN_005bcc00`（55 insns）がその 2 ハンドラ。
-- 汎用 Return（id `1`）は Options へ退出、BACK はページ 1 へ戻る（main 側検証済み・
-  一致確認）。
+- `0xfae` = メニュー user フィールド **user0**（`FUN_00588bd0` は当該メニューの
+  trait リストから値を返す）。
+- `0x00a379b4` の実体 = **`2.0f`**（PE 直読みで確認済み）。
+- **訂正**: `FUN_005bc8b0` と `FUN_005bcc00` は ESC / 戻るキーのハンドラでは
+  **なく**、**MessageMenu の表示 2 経路**である。
+  - `FUN_005bc8b0`（390 行分のデコンパイル精読済） = MessageMenu を**新規作成**
+    して前面化。
+  - `FUN_005bcc00`（90 行分、精読済） = 既存 MessageMenu インスタンスの
+    **前面化ラッパー**（作成しない）。
+  - 分岐条件 `user0 == 2.0f` は「メッセージを新規作成するか、既存を前面化するか」
+    の切替。旧 §22 の「ESC ハンドラ」という解釈は誤り（本節で訂正）。
+- ESC / 戻る制御は汎用 Return（id `1`）と `OptionsMenu.user0` で行われる。
+  汎用 Return（id `1`）は Options へ退出、BACK はページ 1 へ戻る
+  （main 側検証済み・一致確認）。
 
 ### Android 移植向け確定値（依頼4）
 
@@ -3511,16 +3547,75 @@ trait: `image=0x386`, `rect=0x385`, `text=0x387`, `3d/nif=0x388`, `menu=0x389`,
 
 ## 30.6 未確定事項（main へ申し送り）
 
-1. `FUN_006ad030` の 6 回 `FUN_006aa1a0` 呼び出しの**チャンネル系統順序**
-   （master/music/effects/voice/footstep + 1）は記述子オフセットからの推定。
+1. ~~`FUN_006ad030` の 6 回 `FUN_006aa1a0` 呼び出しのチャンネル系統順序~~
+   **解消済み**: 6 回の呼び出しはすべて `FUN_006aa1a0([ESI+0x2f0], 0)` で、
+   保存済み voice 音量の再適用 ×6。5 系統対応は §30.2.2 / §30.7 で確定。
 2. `bIgnoreResolutionCheck` の実 INI 消費者の特定（レジストリ/動的文字列候補）。
 3. 解像度テキスト生成は DirectX レイヤ内部のため EXE 単体では静的特定不可。
 4. 未文書化ファミリーの widget 単位レイアウト表: Container / QuickKeys / LevelUp /
    Recharge / Repair の 5 メニューは **§31 で解消済み**。残り（LockPick / Message /
    Quantity / Negotiate / Persuasion / Training / SleepWait / Book / Scroll /
-   chargen 系 / HUD 系 等）は未着手。
-5. `FUN_005bc8b0`（260+ insns）後半と `FUN_005bcc00`（55 insns）の分岐詳細は
-   依頼4 の ESC 制御の補強として次回精読。
+   chargen 系 / HUD 系 等）は **§32 で追記**。
+5. ~~`FUN_005bc8b0` 後半と `FUN_005bcc00` の分岐詳細~~ **解消済み**:
+   `FUN_005bc8b0` = MessageMenu 作成、`FUN_005bcc00` = 前面化ラッパー
+   （§30.4.3 訂正参照）。ESC 制御ではない。
+
+### 30.7 追加確定事項（audio 音量 consumer 経路・完全確定）
+
+#### 30.7.1 audio_menu.xml スライダー ↔ 音量フィールド（確定・三者一致）
+
+`ctor` = `FUN_00595380`（AudioMenu コンストラクタ・951 バイト）、
+`apply` = `FUN_00595a20`（音量適用・434 バイト / 142 insns）、
+`obj` = オーディオマネージャ実体（`[0x00b33398] → [+0x24]`）。
+
+| # | XML 行（ラベル） | slider id | marker id | ctor widget 取得 (`menu+`) | apply が読む widget | obj 側フィールド |
+|---|---|---|---|---|---|---|
+| 1 | master | 1 | 2 | `+0x28` | `MENU[+0x28]` | `[obj+0xb8]`（`×100.0` で int 化） |
+| 2 | voice | 3 | 4 | `+0x48` | `MENU[+0x48]` | `[obj+0x2f0]` / `[obj+0x2f8]`（`FUN_006aa1a0(v,1)`） |
+| 3 | effect | 5 | 6 | `+0x38` | `MENU[+0x38]` | `[obj+0xc4]` |
+| 4 | foot | 7 | 8 | `+0x30` | `MENU[+0x30]` | `[obj+0xc0]` |
+| 5 | music | 9 | 10 | `+0x40` | `MENU[+0x40]` | `[obj+0xbc]` |
+
+- ctor は各スライダー widget に対し `FUN_0058ceb0(this=menu, id, value)` を同一
+  パターンで設定（`r34_dc.txt` listing より確定）:
+  - `0xfaf`（user1, min）= `0.0f`
+  - `0xfb0`（user2, max）= `100.0f`
+  - `0xfb2`（user4, jump）= `25.0f`
+  - `0xfb3`（user5, 現在値）= `int(初期音量 × 100.0)` 設定 → 直後に `0.0f` でクリア
+  - `0xfab`（depth）= `FUN_00588890()`（フェード値）
+  - `0xfa5`（stackingtype）= 各 widget 生成時の共通設定
+  - 未設定の `0xfb1`（user3, step）はプリハブ既定値を使用。
+- ctor が読む初期値は obj 側フィールドから取得し **`× 100.0` して int 化**する
+  （例: master は `FLD [obj+0xb8]; FMUL 100.0; CALL 0x009828c0`）。音声値は 0..1 の
+  float で保持し、スライダーは 0..100 の int で表示する。
+- apply は各スライダーの現在値を `FUN_00588bd0(0xfb5)`（user7 = 現在値）で取得し、
+  `FUN_009828c0` で int 化 → `FILD` で float 化して上表のフィールドへ書き戻す。
+  差分が無ければ early return、あれば末尾で `FUN_006aa280()` を呼ぶ（再適用トリガ）。
+- **ctor での widget ↔ obj の初期値対応（listing 確定）**:
+  `[ESI+0x28]←[obj+0xb8]`（master）、`[ESI+0x48]←FUN_006a8e00()`（voice）、
+  `[ESI+0x40]←[obj+0xbc]`、`[ESI+0x30]←[obj+0xc0]`、`[ESI+0x38]←[obj+0xc4]`。
+  apply 側の読取 widget（`+0x28 / +0x40 / +0x30 / +0x38 / +0x48`）と書き込み先が
+  完全に一致することを確認済み。
+
+#### 30.7.2 apply（`FUN_00595a20`）の書き込み内容
+
+1. `[obj+0xb8]`（master）: `v != int(obj+0xb8 × 100.0)` のときのみ `v / 100.0` を書く。
+2. voice: `v != int(FUN_006a8e00() × 100.0)` のとき `FUN_006aa1a0(v / 100.0, 1)`。
+3. `[obj+0xc4]`（effect）= `v / 100.0`。
+4. `[obj+0xbc]`（music）= `v / 100.0`。
+5. `[obj+0xc0]`（foot）= `v / 100.0`。
+
+呼出元: `FUN_00595380`（ctor 内の保険呼び出し）と vtable スロット `[7]`
+（AudioMenu vtable `0x00a6b2c8`）。→ **スライダー操作 → apply → obj フィールド +
+`FUN_006aa1a0`（実音量式）という一本の経路で確定。**
+
+#### 30.7.3 MessageMenu の 2 経路（§30.4.3 訂正の詳細）
+
+- `FUN_005bc8b0` = MessageMenu を生成して表示（作成経路）。
+- `FUN_005bcc00` = 既存 MessageMenu を最前面へ（前面化経路）。
+- 呼び分け条件は `FUN_00579cf0` 内の `FUN_00588bd0(0xfae) == 2.0f`（user0 == 2.0）。
+- **ESC / 戻るキー制御とは無関係**。移植側は「メッセージキューが空なら作成、
+  非空なら前面化」の 2 経路として実装すれば等価。
 
 ---
 
@@ -3564,7 +3659,7 @@ trait 式（`sub()`=自身の同 trait を引く、`add(N)`=N を加算、`div(N
 
 ### 31.2 ContainerMenu (`container_menu.xml`)
 
-| Widget (path) | type | id | nest | renderDepth | x | y | w | h | visible | content |
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
 |---|---|---|---|---|---|---|---|---|---|---|
 | cont_FocusBox | rect | 14 | 0 |  |  |  |  | false | 1 |  |
 | cont_background | image |  | 0 | add() max() sub(65) max() max(40) | screen().height div(2) sub(2) | 840 | 854 |  | 0 | Menus\Container\cont_box_background_1.dds |
@@ -3618,7 +3713,7 @@ trait 式（`sub()`=自身の同 trait を引く、`add(N)`=N を加算、`div(N
 
 #### 31.2.1 コンテナ リスト行テンプレート（`cont_item_template`）
 
-| Widget (path) | type | id | nest | renderDepth | x | y | w | h | visible | content |
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
 |---|---|---|---|---|---|---|---|---|---|---|
 | cont_item_template\cont_item | rect |  | 4 | 0 | me().listindex | 650 | 81 | me().user8 | 1 |  |
 | cont_item_template\cont_item\cont_equiped_marker | image |  | 5 | 7 | 7 | 635 | 64 | parent().user10 | 2 | Menus\Inventory\inv_equiped_marker_1.dds |
@@ -3698,7 +3793,7 @@ apparatus は `add()` のみ、potions/ingr/book/misc は `value_icon.x add(74)`
 ルート直下はわずか 2 widget（`quick_key_text` id6 と `Quick_key_selector` id7）で、
 8 スロットはすべて `Quick_key_selector` の子。
 
-| Widget (path) | type | id | nest | renderDepth | x | y | w | h | visible | content |
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
 |---|---|---|---|---|---|---|---|---|---|---|
 | quick_key_text | text | 6 | 0 | Quick_key_selector.x add() add(200) | Quick_key_selector.y add(20) sub() |  |  |  | 11 | strings()._quickkey |
 | Quick_key_selector | rect | 7 | 0 | 800 | 275 | screen().width | screen().height | true |  |  |
@@ -3724,7 +3819,7 @@ apparatus は `add()` のみ、potions/ingr/book/misc は `value_icon.x add(74)`
 
 ### 31.4 LevelUpMenu (`levelup_menu.xml`)
 
-| Widget (path) | type | id | nest | renderDepth | x | y | w | h | visible | content |
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
 |---|---|---|---|---|---|---|---|---|---|---|
 | levelup_background | rect |  | 0 | screen().width sub() div(2) | screen().height sub() div(2) |  |  |  | 1 |  |
 | levelup_background\levelup_title | text |  | 1 | parent().width sub() div(2) | 20 |  |  |  | 4 | LevelUpMenu.user3 |
@@ -3755,7 +3850,7 @@ apparatus は `add()` のみ、potions/ingr/book/misc は `value_icon.x add(74)`
 
 ### 31.5 RechargeMenu (`recharge_menu.xml`)
 
-| Widget (path) | type | id | nest | renderDepth | x | y | w | h | visible | content |
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
 |---|---|---|---|---|---|---|---|---|---|---|
 | recharge_FocusBox | rect | 1 | 0 |  |  |  |  | false |  |  |
 | recharge_background | image |  | 0 | screen().width sub() div(2) | screen().height sub() div(2) | 956 | 837 |  | 1 | Menus\Recharge\recharge_background.dds |
@@ -3791,7 +3886,7 @@ apparatus は `add()` のみ、potions/ingr/book/misc は `value_icon.x add(74)`
 
 ### 31.6 RepairMenu (`repair_menu.xml`)
 
-| Widget (path) | type | id | nest | renderDepth | x | y | w | h | visible | content |
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
 |---|---|---|---|---|---|---|---|---|---|---|
 | rep_FocusBox | rect | 7 | 0 |  |  |  |  | false |  |  |
 | rep_background_repair | image | generic | 0 | screen().width sub() div(2) | screen().height sub() div(2) | 1000 | 750 | RepairMenu.user0 | 1 | Menus\ArmorRepair\Armor_Repair.dds |
@@ -3883,3 +3978,1347 @@ apparatus は `add()` のみ、potions/ingr/book/misc は `value_icon.x add(74)`
    自身の x/y 確定値は他メニュー（§25 save_load 系）と共通の右下配置と推定。
    `ContainerMenu` の `cont_tabs_prev`/`cont_tabs_next`(id7/id8) は 1×1 の
    当たり判定専用 widget で、タブ送りの入力領域として扱う。
+
+
+---
+
+## 32. 未文書化メニュー ウィジェット単位レイアウト（残ファミリー／依頼5 追加分）
+
+§24〜§31 で扱わなかった残りのメニュー XML を、§31 と同じ粒度（ウィジェット 1 行＝1 レコード、
+座標・寸法の式は trait 値そのまま）で列挙する。対象は `tmp\bsa_misc\menus\` 配下のうち、
+Options ファミリー（Options / Gameplay / Video / VideoDisplay / Audio / Controls）、
+Save-Load、Container / QuickKeys / LevelUp / Recharge / Repair 以外の全 XML である。
+
+### 32.0 読み方と列の意味
+
+| 列 | 意味 |
+|---|---|
+| Widget (path) | ウィジェット名。`\` 区切りは親子階層を表す（入れ子の各段） |
+| type | `<_tag>` の種別（image / rect / text / nif / menu / window / template / button 等） |
+| id | `<id>` の数値。空欄は固有 id を持たない（装飾・プレハブ断片） |
+| nest | 宣言上の入れ子段（0 = ルート直下）。実際の親子は path の `\` を正とする |
+| x / y | `<x>` / `<y>` の式をそのまま記載。`parent()`/`me()`/`screen()`/`sibling()`/`last()`/`first()` は Bethesda 記法の関数呼び出し |
+| w / h | `<width>` / `<height>`。空欄は既定（画像は画像寸法、テキストは自動） |
+| visible | `<visible>` の初期値。空欄は true（既定） |
+| depth | 描画深度 `<depth>`。値が大きいほど手前 |
+| content | `<filename>`（画像/nif）または `<string>` / trait 参照（テキスト） |
+
+補足:
+- 座標式は「そのまま Android 実装の式へ移植できる」粒度で記載している。`add()`/`sub()`/
+  `div()`/`mul()` は左結合で評価される（裸の `add()` は直前の項を加算）。
+- `userN` 参照は **メニュー固有の実行時供給値** を意味する。どの値が入るかは §30.5 と
+  各メニューの実装章を参照。§32 は「どのウィジェットがどの `userN` を読むか」の確定情報。
+- `template` 行はプレハブ定義（`template` trait）で、実体行はこの親を継承して生成される。
+- 重複回避のため、QuickKeysMenu は §31.3、ClassMenu は §32.3 を正とする
+  （`class_menu.xml` と `chargen\class_menu.xml` は同一メニューの重複記述）。
+
+### 32.1 Message / prompt 系メニュー
+
+#### Messagemenu (`message_menu.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| background | image |  | 0 | 0 | 0 | 712 | box_bottom.y sub() add() | 2 | 200 | Menus\Message\background.dds |
+| background\Text | text | 2 | 1 | parent().x add(25) | parent().y add(50) |  |  |  | 5 | Text |
+| background\box_top | image |  | 1 | background.x add(28) | text.y add() add(2) | 674 | 113 |  | 2 | Menus\Message\frame_top.dds |
+| background\first | text | 4 | 1 | me()._center_x sub(2) | box_top.y add(28) |  |  |  | 5 | First |
+| background\button_template | template |  | 1 |  |  |  |  |  |  |  |
+| background\button_template\button | text | 5 | 2 | first._center_x sub(2) | last().y add() add(10) |  |  |  | 5 | X |
+| background\box_bottom | image |  | 1 | parent().x add(6) | first.y add(10) sub(76) | 672 | 111 |  | 2 | Menus\Message\frame_bottom.dds |
+| background\clutter | image |  | 1 | add() add(10) | add() add(10) | me()._RandImage me()._Width_ | me()._RandImage me()._Height_ |  | 1 | me()._RandImage me()._Filename_ |
+| background\FocusBox | button | 3 | 1 |  |  |  |  | false | 3 |  |
+| background\background_bottom | image |  | 1 | parent().x | parent().y add() sub(180) | 712 | 195 |  | 1 | Menus\Message\background_bottom.dds |
+
+#### QuestAddedMenu (`quest_added.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| qadd_background | rect | generic | 0 | screen().width div(2) sub(2) | screen().height div(2) sub(2) |  |  |  | 1 |  |
+| qadd_background\qadd_quest_message | text |  | 1 | parent().width div(2) | 10 |  |  |  | 3 | QuestAddedMenu.user0 |
+| qadd_background\qadd_divider | image |  | 1 | parent().width sub() div(2) | 55 | 636 | 3 |  | 3 | Menus\Stats\stat_border_horizontal_1.dds |
+| qadd_background\qadd_quest_name | text |  | 1 | 80 | 72 |  |  |  | 3 | QuestAddedMenu.user1 |
+| qadd_background\qadd_quest_date | text |  | 1 | 80 | 105 |  |  |  | 3 | QuestAddedMenu.user2 |
+| qadd_background\map_item_body | text |  | 1 | 10 | 145 |  |  |  | 3 | QuestAddedMenu.user3 |
+| qadd_background\map_log_item_icon | image |  | 1 | 10 | 70 | 64 | 64 |  | 3 | QuestAddedMenu.user4 |
+| qadd_background\qadd_button | rect | 1 | 1 | parent().width sub() div(2) | map_item_body.y add() add(35) |  |  |  | 6 |  |
+| qadd_background\qadd_button_2 | rect | 2 | 1 | parent().width sub() div(2) | qadd_button.height add(20) add() |  |  | QuestAddedMenu.user6 | 6 |  |
+
+#### SkillPerkMenu (`skill_perk.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| skillperk_background | rect |  | 0 | screen().width sub() div(2) | screen().height sub() div(2) |  |  | true | 50 |  |
+| skillperk_background\skill_icon | image |  | 1 | 40 | parent().height sub() div(2) | 320 | 430 |  | 3 | SkillPerkMenu.user0 |
+| skillperk_background\skillperk_description | text |  | 1 | skill_icon.x add() sub(24) | skill_icon.y |  |  | true | 3 | SkillPerkMenu.user1 |
+| skillperk_background\skillperk_ok_button | image | 1 | 1 | skillperk_description.x add(2) | skill_icon.y add() sub() |  |  |  | 3 |  |
+
+#### GenericTestMenu (`test_menu.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| background | image |  | 0 | 0 | 0 | 716 | box_bottom.y sub() add() | 2 | 200 | Menus\Message\msg_background.dds |
+| background\display_text | text | 1 | 1 | 25 | 50 |  |  |  | 5 | TEXT |
+| background\box_top | image |  | 1 | background.x add(28) | text.y add() add(2) | 675 | 114 |  | 2 | Menus\Message\msg_frame_top.dds |
+| background\first | rect |  | 1 | parent().width div(2) | box_top.y add(35) |  |  |  | 5 |  |
+| background\first\first_text | text |  | 2 | 0 | 0 |  |  |  | 1 | me()._final_value |
+| background\first\first_minus | text | 100 | 2 | 0 sub() sub(70) | -12 |  |  |  | 1 | Less |
+| background\first\first_plus | text | 2 | 2 | first_text.x add(70) | 0 |  |  |  | 1 | More |
+| background\second | rect |  | 1 | parent().width div(2) | first.y add(70) |  |  |  | 5 |  |
+| background\second\second_text | text |  | 2 | 0 | 0 |  |  |  | 1 | me()._final_value |
+| background\second\second_minus | text | 100 | 2 | 0 sub() sub(70) | -12 |  |  |  | 1 | Less |
+| background\second\second_plus | text | 3 | 2 | second_text.x add(70) | 0 |  |  |  | 1 | More |
+| background\okay | text | 99 | 1 | parent().width sub() sub(40) | parent().height sub() sub(40) |  |  |  | 5 | Okay |
+| background\box_bottom | image |  | 1 | parent().x add(6) | first.y add(100) | 673 | 109 |  | 2 | Menus\Message\msg_frame_bottom.dds |
+| background\clutter | image |  | 1 | add() add(10) | add() add(10) | me()._RandImage me()._Width_ | me()._RandImage me()._Height_ |  | 1 | me()._RandImage me()._Filename_ |
+| background\background_bottom | image |  | 1 | parent().x | parent().y add() sub(180) | 711 | 192 |  | 1 | Menus\Message\msg_background_bottom.dds |
+
+### 32.2 クラフト / ダイアログ系メニュー
+
+#### DialogMenu (`dialog_menu.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| dialog_hint_a | rect |  | 0 | screen().width sub() sub() | dialog_name.y sub() add(20) |  |  | me()._value | 5 |  |
+| dialog_hint_a\dialog_hint_a_icon | image |  | 1 | 0 sub() sub(60) | dialog_hint_a_text.y sub(6) add(2) | 64 | 64 |  |  | Menus\Shared\all_xbox_buttons.dds |
+| dialog_hint_a\dialog_hint_a_text | text |  | 1 | 0 | 0 |  |  |  | 1 | parent()._value me()._text_ |
+| dialog_name | text |  | 0 | screen().width sub() sub() | screen().height sub() sub() sub() add(5) |  |  |  |  | DialogMenu.user4 |
+| dialog_background | rect | -1 | 0 |  |  | screen().width | screen().height |  |  |  |
+| dialog_topics | rect | 6 | 0 | screen().cropx screen().cropx add(50) | screen().height sub() sub() sub() sub() | screen().width sub() sub() sub(80) | DialogMenu._line_height mul(5) | false | 1 |  |
+| dialog_topics\dialog_button_layout | rect |  | 1 | 35 | 2 |  | parent().height |  |  |  |
+| dialog_topics\dialog_button_layout\dialog_persuade | image | 7 | 2 | dialog_scrollbar.width add(15) | parent().height add(4) | 50 | 50 |  | 1 | Menus\Dialog\dialog_button_persuasion.dds |
+| dialog_topics\dialog_button_layout\dialog_persuade\dialog_persuade_over | image |  | 3 |  |  | 55 | 56 |  |  | xbox me()._filename_ |
+| dialog_topics\dialog_button_layout\dialog_barter | image | 8 | 2 | dialog_persuade.width add(25) add() | parent().height add(4) | 50 | 50 | false | 1 | Menus\Dialog\dialog_button_barter.dds |
+| dialog_topics\dialog_button_layout\dialog_barter\dialog_barter_over | image |  | 3 |  |  | 55 | 56 |  |  | xbox me()._filename_ |
+| dialog_topics\dialog_button_layout\dialog_spell_buy | image | 16 | 2 | dialog_barter.width add(25) add() | parent().height add(4) | 50 | 50 | false | 1 | Menus\Dialog\dialog_button_spell_bartering.dds |
+| dialog_topics\dialog_button_layout\dialog_spell_buy\dialog_spell_buy_over | image |  | 3 |  |  | 55 | 56 |  |  | xbox me()._filename_ |
+| dialog_topics\dialog_button_layout\dialog_repair | image | 12 | 2 | dialog_spell_buy.width add(25) add() | parent().height add(4) | 50 | 50 | false | 1 | Menus\Dialog\dialog_button_repairing.dds |
+| dialog_topics\dialog_button_layout\dialog_repair\dialog_repair_over | image |  | 3 |  |  | 55 | 56 |  |  | xbox me()._filename_ |
+| dialog_topics\dialog_button_layout\dialog_training | image | 9 | 2 | dialog_repair.width add(25) add() | parent().height add(4) | 50 | 50 | false | 1 | Menus\Dialog\dialog_button_training.dds |
+| dialog_topics\dialog_button_layout\dialog_training\dialog_training_over | image |  | 3 |  |  | 55 | 56 |  |  | xbox me()._filename_ |
+| dialog_topics\dialog_button_layout\dialog_recharge | image | 13 | 2 | dialog_training.width add(25) add() | parent().height add(4) | 50 | 50 | false | 1 | Menus\Dialog\dialog_button_recharging.dds |
+| dialog_topics\dialog_button_layout\dialog_recharge\dialog_recharge_image | image |  | 3 |  |  | 55 | 56 |  |  | xbox me()._filename_ |
+| dialog_topics\dialog_button_layout\dialog_goodbye | image | 3 | 2 | dialog_recharge.width add(25) add() | parent().height add(4) | 55 | 56 |  | 1 | xbox me()._filename_ |
+| dialog_topics\dialog_button_layout\dialog_goodbye\dialog_goodbye_over | image |  | 3 |  |  | 50 | 50 |  |  | Menus\Dialog\dialog_button_goodbye_hit.dds |
+| dialog_topics\dialog_xbox_goodbye | rect | 10 | 1 |  |  |  |  | dialog_goodbye.visible |  |  |
+| dialog_topics\dialog_scroll_bar | image | 14 | 1 | 0 | 0 | 16 | parent().height |  |  |  |
+| dialog_topics\dialog_topics_layout | rect |  | 1 | dialog_scroll_bar.width add(30) | 0 | parent().width | parent().height |  |  |  |
+| dialog_topics\dialog_topics_layout\dialog_topics_scroll_pane | rect | 1 | 2 | 5 | 0 sub() mul() | parent().width | me().childcount mul() |  |  |  |
+| topic_template | template |  | 0 |  |  |  |  |  |  |  |
+| topic_template\topic_text_layout | rect | 99 | 1 | 0 | me().listindex mul() | child(topic_text).width | DialogMenu._line_height |  |  | strings()._topic |
+| topic_template\topic_text_layout\topic_text | text |  | 2 | 0 | 2 |  |  |  | 4 | parent().string |
+| dialog_text_layout | rect | 4 | 0 | 0 | 0 | screen().width | screen().height | dialog_topics.visible | 20 |  |
+| dialog_text_layout\dialog_text | text | 2 | 1 | screen().width div(2) | screen().height sub(2) sub(60) sub() |  |  |  | -2 | strings()._havenogreeting |
+| dialog_focus_box | rect | 5 | 0 |  |  | 1053 |  |  |  |  |
+| dialog_focus_box\dialog_focus_left | image |  | 1 | -6 | -8 | parent().width sub(42) max(85) | 64 |  | -1 | Menus\Dialog\dialog_selection_full.dds |
+| dialog_focus_box\dialog_focus_right | image |  | 1 | dialog_focus_left.width sub(44) | -8 | 192 | 64 |  | 0 | Menus\Dialog\dialog_selection_cut.dds |
+
+#### TextEditMenu (`texteditmenu.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| textedit_background | rect |  | 0 | screen().width sub() div(2) | screen().height sub() div(2) |  |  |  | 3 |  |
+| textedit_background\textedit_prompt | text |  | 1 | parent().width sub() div(2) | 8 |  |  |  | 3 | TextEditMenu.user0 |
+| textedit_background\textedit_text | text | 1 | 1 | parent().width sub(185) div(2) | textedit_prompt.y add() add(16) |  |  |  | 3 |  |
+| textedit_background\textedit_button_back | image | 3 | 1 | textedit_button_ok.x sub() sub(16) | textedit_button_ok.y |  |  |  | 3 |  |
+| textedit_background\textedit_button_ok | image | 2 | 1 | parent().width sub() sub(16) | parent().height sub() sub(16) |  |  |  | 3 |  |
+
+#### SpellMakingMenu (`spellmaking.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| spell_focus_box | rect | 8 | 0 |  |  |  |  | false |  |  |
+| spell_background | image |  | 0 | screen().width sub() div(2) | screen().height sub() div(2) | 1033 | 788 |  | 1 | Menus\Spellmaking\Spellmaking.dds |
+| spell_background\spell_name_background | rect | 2 | 1 | 180 | 153 | 655 | 42 |  | 1 |  |
+| spell_background\spell_name_background\spell_name_text | text | 20 | 2 | 15 | 5 |  |  |  | 1 | strings()._spellnameenter |
+| spell_background\spell_icon_layout | rect |  | 1 | parent().width sub() div(2) sub(17) | 203 | child(spell_player_gold_text).x |  |  |  |  |
+| spell_background\spell_icon_layout\spell_cast_cost_icon | image |  | 2 | 0 | 0 | 32 | 32 |  | 1 | Menus\Shared\all_small_icons.dds |
+| spell_background\spell_icon_layout\spell_cast_text | text |  | 2 | spell_cast_cost_icon.x add() add(10) | 2 |  |  |  | 1 | SpellmakingMenu.user4 |
+| spell_background\spell_icon_layout\gold_icon | image |  | 2 | parent().width sub(87) div(2) | 0 | 32 | 32 |  | 1 | Menus\Shared\all_small_icons.dds |
+| spell_background\spell_icon_layout\gold_icon\gold_icon_arrow | image |  | 3 | 23 | 0 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| spell_background\spell_icon_layout\gold_icon\spell_gold_cost_text | text |  | 3 | 55 | 2 |  |  |  | 1 | SpellmakingMenu.user5 |
+| spell_background\spell_icon_layout\player_gold_icon | image |  | 2 | spell_player_gold_text.x sub() sub() sub(10) | 0 | 32 | 32 |  | 1 | Menus\Shared\all_small_icons.dds |
+| spell_background\spell_icon_layout\spell_player_gold_text | text |  | 2 | 608 | 2 |  |  |  | 1 | SpellMakingMenu.user7 |
+| spell_background\known_effect_text | text |  | 1 | 130 | 250 |  |  |  | 1 | strings()._knowneffects |
+| spell_background\spell_known_effect_window | rect |  | 1 | 130 | spell_added_effects_window.y | 330 | spell_added_effects_window.height |  | 8 |  |
+| spell_background\spell_known_effect_window\spell_known_effects_scroll_bar | image | 9 | 2 | parent().width sub() add(10) | 32 |  | parent().height sub(64) |  | 20 |  |
+| spell_background\spell_known_effect_window\spell_known_effects_pane | rect | 6 | 2 | 0 | 0 sub() mul(60) | parent().width | me().childcount mul(60) |  |  |  |
+| spell_background\spell_added_effects_text | text |  | 1 | known_effect_text.x add(367) | known_effect_text.y |  |  |  | 1 | strings()._addedeffects |
+| spell_background\spell_added_effects_window | rect |  | 1 | 492 | 290 | 400 | 300 |  | 8 |  |
+| spell_background\spell_added_effects_window\spell_added_effects_scroll_bar | image | 11 | 2 | parent().width sub() add(10) | 32 |  | parent().height sub(64) |  | 20 |  |
+| spell_background\spell_added_effects_window\spell_added_effects_pane | rect | 7 | 2 | 0 | 0 sub() mul(60) | parent().width | me().childcount mul(60) |  |  |  |
+| spell_background\spell_require_effect_text | text |  | 1 | known_effect_text.x | 600 |  |  | SpellmakingMenu.user6 | 1 | SpellmakingMenu.user3 |
+| spell_background\spell_button_create | image | 14 | 1 | parent().width sub() sub() sub(20) div(2) | 650 |  |  |  |  |  |
+| spell_background\spell_button_exit | image | 15 | 1 | spell_button_create.x add() add(20) | spell_button_create.y |  |  |  |  |  |
+| known_effect_template | template |  | 0 |  |  |  |  |  |  |  |
+| known_effect_template\Effects_known | rect |  | 1 | 8 | me().listindex | 300 | 60 | me().y | 1 |  |
+| known_effect_template\Effects_known\spell_cast_cost_icon | image |  | 2 | 5 | parent().height sub(32) div(2) add(2) | 32 | 32 |  |  | parent().user1 |
+| known_effect_template\Effects_known\effect_text | text |  | 2 | 50 | parent().height sub() div(2) |  |  |  |  | parent().user3 |
+| added_effect_template | template |  | 0 |  |  |  |  |  |  |  |
+| added_effect_template\Effects_added | rect |  | 1 | 0 | me().listindex | parent().width | 60 |  | 1 |  |
+| added_effect_template\Effects_added\spell_cast_cost_icon | image |  | 2 | 13 | parent().height sub(32) div(2) add(2) | 32 | 32 |  | 1 | parent().user1 |
+| added_effect_template\Effects_added\effect_text | text |  | 2 | 50 | parent().height sub() div(2) |  |  |  | 1 | parent().user2 |
+
+#### SpellPurchaseMenu (`spell_purchase.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| inv_FocusBox | rect | 8 | 0 |  |  |  |  | false |  |  |
+| spell_background | image | 1 | 0 | 60 | screen().height sub() div(2) | 746 | 799 |  | 0 | Menus\Shared\shared_combo_background_1.dds |
+| spell_background\spell_background_2 | image |  | 1 | 700 | 0 | 64 | 799 |  | -15 | Menus\Shared\shared_combo_background_2.dds |
+| spell_background\spell_menu_title | text | 9 | 1 | spell_buy_window.x add() sub(2) | spell_cost_icon.y |  |  |  | 3 | strings()._spells |
+| spell_background\spell_cost_icon | image | 10 | 1 | spell_buy_window.x add() add(2) | 45 | 32 | 32 |  | 3 | Menus\Shared\all_small_icons.dds |
+| spell_background\spell_gold_money_icon | image | 11 | 1 | spell_buy_window.x add() add(2) sub(5) | 45 | 32 | 32 |  | 3 | Menus\Shared\all_small_icons.dds |
+| spell_background\spell_gold_money_icon\spell_gold_arrow_icon | image |  | 2 | 23 | 0 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| spell_background\spell_buy_list_scroll_bar | image | 4 | 1 | spell_buy_window.x add() | spell_buy_window.y add(32) |  | spell_buy_window.height sub(64) |  | 20 |  |
+| spell_background\spell_buy_window | rect |  | 1 | 50 | 80 | 640 | 600 |  |  |  |
+| spell_background\spell_buy_window\spell_buy_list | rect | 3 | 2 | 0 | 0 sub() | parent().width | me().childcount mul(75) |  | 2 |  |
+| spell_background\spell_buy_window\horiz_grid_top | image |  | 2 | 0 | 0 sub(2) | parent().width | 4 |  | 2 | Menus\Shared\shared_border_horizontal_1.dds |
+| spell_background\spell_buy_window\horiz_grid_bottom | image |  | 2 | 0 | parent().height sub(2) | parent().width | 4 |  | horiz_grid_top.depth | Menus\Shared\shared_border_horizontal_3.dds |
+| spell_background\spell_buy_window\vert_grid_left | image |  | 2 | 0 sub(2) | 0 | 4 | parent().height |  | horiz_grid_top.depth | Menus\Shared\shared_border_vertical_2.dds |
+| spell_background\spell_buy_window\vert_grid_column1 | image |  | 2 | SpellPurchaseMenu.user0 add() add() add() | 0 | 4 | parent().height |  | horiz_grid_top.depth | Menus\Shared\shared_border_vertical_2.dds |
+| spell_background\spell_buy_window\vert_grid_column2 | image |  | 2 | vert_grid_column1.x add(2) | 0 | 4 | parent().height |  | horiz_grid_top.depth | Menus\Shared\shared_border_vertical_2.dds |
+| spell_background\spell_buy_window\vert_grid_right | image |  | 2 | parent().width sub(2) | 0 | 4 | parent().height |  | horiz_grid_top.depth | Menus\Shared\shared_border_vertical_2.dds |
+| spell_background\cont_money_icon | image |  | 1 | 60 | spell_button_haggle.y | 32 | 32 |  | 2 | Menus\Shared\all_small_icons.dds |
+| spell_background\player_money_text | text | 7 | 1 | cont_money_icon.x add() add(16) | spell_button_haggle.y |  |  |  | 2 |  |
+| spell_background\spell_button_haggle | image | 6 | 1 | spell_button_exit.x sub() sub(40) | spell_button_exit.y |  |  |  | 2 |  |
+| spell_background\spell_button_exit | image | 2 | 1 | parent().width sub() sub(50) sub(32) | parent().height sub() sub(50) |  |  |  | 2 |  |
+| spell_item_template | template |  | 0 |  |  |  |  |  |  |  |
+| spell_item_template\spell_list_item | rect |  | 1 | 0 | me().listindex | spell_buy_window.width | 71 |  | 1 |  |
+| spell_item_template\spell_list_item\effect_icon | image |  | 2 | SpellPurchaseMenu.user0 | parent().height sub() div(2) | SpellPurchaseMenu.user1 | SpellPurchaseMenu.user1 |  |  | parent().user1 |
+| spell_item_template\spell_list_item\effect_text | text |  | 2 | effect_icon.x add() add() | parent().height sub() div(2) |  |  |  |  | parent().user3 |
+| spell_item_template\spell_list_item\spell_cost | text |  | 2 | vert_grid_column1.x add(2) | parent().height sub() div(2) |  |  |  |  | parent().user5 |
+| spell_item_template\spell_list_item\spell_gold_cost | text |  | 2 | vert_grid_column2.x add(2) | parent().height sub() div(2) |  |  |  |  | parent().user9 |
+
+#### EnchantmentMenu (`enchantment.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| ench_focus_box | rect | 8 | 0 |  |  |  |  | false |  |  |
+| ench_background | image |  | 0 | screen().width sub() div(2) | screen().height sub() div(2) | 1064 | 812 |  | 1 | Menus\Enchanting\enchanting.dds |
+| ench_background\ench_name_background | rect | 24 | 1 | 190 | 130 | 660 | 50 |  | 1 |  |
+| ench_background\ench_name_background\ench_name_text | text | 2 | 2 | 30 | parent().height sub() div(2) |  |  |  | 1 | strings()._nameenchantment |
+| ench_background\ench_soul_cost_icon | image | 4 | 1 | 240 | 90 | 32 | 32 | false | 1 | Menus\Shared\all_small_icons.dds |
+| ench_background\ench_soul_cost_text | text |  | 1 | ench_soul_cost_icon.x add() add(15) | ench_soul_cost_icon.y |  |  | ench_soul_cost_icon.visible | 1 | ench_soul_cost_icon.user0 |
+| ench_background\ench_uses_icon | image | 3 | 1 | 400 | 90 | 32 | 32 | false | 1 | Menus\Shared\all_small_icons.dds |
+| ench_background\ench_uses_text | text |  | 1 | ench_uses_icon.x add() add(15) | ench_uses_icon.y |  |  | ench_uses_icon.visible | 1 | ench_uses_icon.user0 |
+| ench_background\ench_gold_cost_icon | image |  | 1 | 560 | ench_soul_cost_icon.y | 32 | 32 |  | 1 | Menus\Shared\all_small_icons.dds |
+| ench_background\ench_gold_cost_icon\ench_gold_arrow_icon | image |  | 2 | 23 | 0 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| ench_background\ench_gold_cost_icon1 | image |  | 1 | ench_gold_cost_text.x add() add(50) | ench_soul_cost_icon.y | 32 | 32 |  | 1 | Menus\Shared\all_small_icons.dds |
+| ench_background\ench_gold_cost_text | text | 5 | 1 | ench_gold_cost_icon.x add() add(25) | ench_soul_cost_icon.y add(4) |  |  |  | 1 | 1 |
+| ench_background\ench_gold_cost_text2 | text | 13 | 1 | ench_gold_cost_icon1.x add() add(10) | ench_gold_cost_icon1.y add(4) |  |  |  | 1 | 1 |
+| ench_background\ench_item_rect | rect | 20 | 1 | 153 | 205 | 325 | 70 |  | 8 |  |
+| ench_background\ench_item_rect\ench_item_icon | image | 25 | 2 | 0 | parent().height sub() div(2) | 64 | 64 | false |  |  |
+| ench_background\ench_item_rect\ench_item_text | text |  | 2 | 75 | parent().height sub() div(2) |  |  |  |  | parent().user0 |
+| ench_background\ench_soulgem_rect | rect | 22 | 1 | 515 | 205 | 390 | 70 |  | 8 |  |
+| ench_background\ench_soulgem_rect\ench_soulgem_icon | image | 26 | 2 | 2 | parent().height sub() div(2) | 64 | 64 | false |  |  |
+| ench_background\ench_soulgem_rect\ench_soulgem_text | text |  | 2 | 75 | parent().height sub() div(2) |  |  |  |  | parent().user0 |
+| ench_background\ench_soulgem_rect\ench_charge_icon | image |  | 2 | 350 | 8 | 32 | 32 | parent().user1 | 1 | Menus\Shared\all_small_icons.dds |
+| ench_background\ench_soulgem_rect\ench_charge_text | text |  | 2 | ench_charge_icon.x add(2) | ench_charge_icon.y add() |  |  | ench_charge_icon.visible |  | parent().user1 |
+| ench_background\ench_known_effect_text | text | 16 | 1 | 150 | 295 |  |  |  | 1 | strings()._applicableeffects |
+| ench_background\ench_known_effects_scroll_bar | image | 9 | 1 | 460 | ench_known_effect_window.y add(32) |  | ench_known_effect_window.height sub(64) |  | 20 |  |
+| ench_background\ench_known_effect_window | rect |  | 1 | 150 | 325 | 330 | 300 |  |  |  |
+| ench_background\ench_known_effect_window\ench_known_effect_pane | rect | 6 | 2 | 0 | 0 sub() |  |  |  | 8 |  |
+| ench_background\ench_added_effect_text | text | 17 | 1 | 525 | ench_known_effect_text.y |  |  |  | 1 | strings()._addedeffects |
+| ench_background\ench_added_effects_scroll_bar | image | 12 | 1 | 893 | ench_added_effect_window.y add(32) |  | ench_added_effect_window.height sub(64) |  | 20 |  |
+| ench_background\ench_added_effect_window | rect |  | 1 | 510 | ench_known_effect_window.y | 370 | 300 |  |  |  |
+| ench_background\ench_added_effect_window\ench_added_effect_pane | rect | 7 | 2 | 0 | 0 sub() | 330 | 300 |  | 8 |  |
+| ench_background\ench_button_create | image | 14 | 1 | 270 | 650 |  |  |  |  |  |
+| ench_background\ench_button_exit | image | 15 | 1 | 650 | ench_button_create.y |  |  |  |  |  |
+| known_effect_template | template |  | 0 |  |  |  |  |  |  |  |
+| known_effect_template\ench_effects_known | rect | 82 | 1 | 0 | me().listindex | 305 | ench_known_effect_window.height div() |  | 1 |  |
+| known_effect_template\ench_effects_known\known_effect_icon | image |  | 2 | 5 | parent().height sub() div(2) | 32 | 32 |  | 1 | parent().user1 |
+| known_effect_template\ench_effects_known\ench_known_effect_text | text |  | 2 | 50 | parent().height sub() div(2) |  |  |  | 1 | parent().user2 |
+| added_effect_template | template |  | 0 |  |  |  |  |  |  |  |
+| added_effect_template\ench_effects_added | rect | 83 | 1 | 20 | me().listindex | 350 | 70 |  | 1 |  |
+| added_effect_template\ench_effects_added\ench_added_effect_icon | image |  | 2 | 5 | parent().height sub() div(2) | 32 | 32 |  | 1 | parent().user1 |
+| added_effect_template\ench_effects_added\ench_added_effect_text | text |  | 2 | 50 | parent().height sub() div(2) | 310 |  |  | 1 | parent().user2 |
+
+#### EffectSettingMenu (`enchantmentsetting_menu.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| effset_focus_box | rect | 1 | 0 |  |  |  |  | false |  |  |
+| effset_background | rect |  | 0 | screen().width sub() div(2) | screen().height sub() div(2) |  |  |  | 1 |  |
+| effset_background\effset_icon | image | 2 | 1 | parent().width sub() sub() div(2) | 20 | 64 | 64 |  | 3 |  |
+| effset_background\effset_name | text | 3 | 1 | effset_icon.x add() | effset_icon.y add(2) |  |  |  | 3 | strings()._effectname |
+| effset_background\effset_items_layout | rect |  | 1 | 40 | effset_icon.y add() add(30) | 720 | me()._item_height add() |  | 3 |  |
+| effset_background\effset_items_layout\effset_attribute_layout | rect | 31 | 2 | 0 | 0 | parent().width | parent()._item_height | true | 3 |  |
+| effset_background\effset_items_layout\effset_attribute_layout\effset_attribute_floating | image |  | 3 | -10 | 0 | parent().width sub(10) | 64 | parent().mouseover | 1 | Menus\Dialog\dialog_selection_full.dds |
+| effset_background\effset_items_layout\effset_attribute_layout\effset_attribute_floating\effset_attribute_floating_end | image |  | 4 | parent().width add(8) sub() | 0 | 104 | 64 |  | 2 | Menus\Dialog\dialog_selection_cut.dds |
+| effset_background\effset_items_layout\effset_attribute_layout\effset_attribute_button | text |  | 3 | 495 | parent().height sub() div(2) |  |  |  | 3 | parent().user0 |
+| effset_background\effset_items_layout\effset_attribute_layout\effset_attribute_label | text |  | 3 | 0 | parent().height sub() div(2) |  |  |  | 3 | strings()._attribute |
+| effset_background\effset_items_layout\effset_skill_layout | rect | 32 | 2 | 0 | parent()._item_height add() | parent().width | parent()._item_height | true | 3 |  |
+| effset_background\effset_items_layout\effset_skill_layout\effset_skill_floating | image |  | 3 | -10 | 0 | parent().width sub(10) | 64 | parent().mouseover | 1 | Menus\Dialog\dialog_selection_full.dds |
+| effset_background\effset_items_layout\effset_skill_layout\effset_skill_floating\effset_skill_floating_end | image |  | 4 | parent().width add(8) sub() | 0 | 104 | 64 |  | 2 | Menus\Dialog\dialog_selection_cut.dds |
+| effset_background\effset_items_layout\effset_skill_layout\effset_skill_button | text |  | 3 | 495 | parent().height sub() div(2) |  |  |  | 3 | parent().user0 |
+| effset_background\effset_items_layout\effset_skill_layout\effset_skill_label | text |  | 3 | 0 | parent().height sub() div(2) |  |  |  | 3 | strings()._skill |
+| effset_background\effset_items_layout\effset_range_layout | rect | 33 | 2 | 0 | parent()._item_height add() | parent().width | parent()._item_height | true | 3 |  |
+| effset_background\effset_items_layout\effset_range_layout\effset_dummy | rect | 39 | 3 |  |  |  |  |  |  |  |
+| effset_background\effset_items_layout\effset_range_layout\effset_range_floating | image |  | 3 | -10 | 0 | parent().width sub(10) | 64 | parent().mouseover | 1 | Menus\Dialog\dialog_selection_full.dds |
+| effset_background\effset_items_layout\effset_range_layout\effset_range_floating\effset_range_floating_end | image |  | 4 | parent().width add(8) sub() | 0 | 104 | 64 |  | 2 | Menus\Dialog\dialog_selection_cut.dds |
+| effset_background\effset_items_layout\effset_range_layout\effset_range_left | image |  | 3 | effset_magnitude_scroll.x sub(50) | parent().height sub() div(2) | 121 | 36 | xbox | 3 | \Menus\Shared\shared_arrow_left.dds |
+| effset_background\effset_items_layout\effset_range_layout\effset_range_button | text |  | 3 | 495 | parent().height sub() div(2) |  |  |  | 3 | parent().user0 |
+| effset_background\effset_items_layout\effset_range_layout\effset_range_right | image |  | 3 | effset_magnitude_scroll.x add() add(50) sub() | parent().height sub() div(2) | 121 | 36 | xbox | 3 | \Menus\Shared\shared_arrow_right.dds |
+| effset_background\effset_items_layout\effset_range_layout\effset_range_label | text |  | 3 | 0 | parent().height sub() div(2) |  |  |  | 3 | strings()._range |
+| effset_background\effset_items_layout\effset_magnitude_layout | rect | 34 | 2 | 0 | parent()._item_height add() | parent().width | parent()._item_height |  | 3 |  |
+| effset_background\effset_items_layout\effset_magnitude_layout\effset_magnitude_floating | image |  | 3 | -10 | 0 | parent().width sub(10) | 64 | parent().mouseover add() | 1 | Menus\Dialog\dialog_selection_full.dds |
+| effset_background\effset_items_layout\effset_magnitude_layout\effset_magnitude_floating\effset_magnitude_floating_end | image |  | 4 | parent().width add(8) sub() | 0 | 104 | 64 |  | 2 | Menus\Dialog\dialog_selection_cut.dds |
+| effset_background\effset_items_layout\effset_magnitude_layout\effset_magnitude_scroll | image | 14 | 3 | 350 | parent().height sub() div(2) | 300 |  | parent().visible | 3 |  |
+| effset_background\effset_items_layout\effset_magnitude_layout\effset_magnitude_number | text |  | 3 | effset_magnitude_scroll.x sub() sub(70) | parent().height sub() div(2) |  |  |  | 3 | effset_magnitude_scroll.user7 |
+| effset_background\effset_items_layout\effset_magnitude_layout\effset_level_number | text |  | 3 | effset_magnitude_scroll.x sub() sub(70) | parent().height sub() div(2) |  |  |  | 3 | parent().user3 |
+| effset_background\effset_items_layout\effset_magnitude_layout\effset_lock_level | text |  | 3 | 495 | parent().height sub() div(2) |  |  | parent().user0 | 3 | parent().user1 |
+| effset_background\effset_items_layout\effset_magnitude_layout\effset_magnitude_label | text |  | 3 | 0 | parent().height sub() div(2) |  |  |  | 3 | parent().user2 |
+| effset_background\effset_items_layout\effset_area_layout | rect | 36 | 2 | 0 | parent()._item_height add() | parent().width | parent()._item_height | effset_area_scroll.visible | 3 |  |
+| effset_background\effset_items_layout\effset_area_layout\effset_area_floating | image |  | 3 | -10 | 0 | parent().width sub(10) | 64 | parent().mouseover add() | 1 | Menus\Dialog\dialog_selection_full.dds |
+| effset_background\effset_items_layout\effset_area_layout\effset_area_floating\effset_area_floating_end | image |  | 4 | parent().width add(8) sub() | 0 | 104 | 64 |  | 2 | Menus\Dialog\dialog_selection_cut.dds |
+| effset_background\effset_items_layout\effset_area_layout\effset_area_scroll | image | 16 | 3 | 350 | parent().height sub() div(2) | 300 |  |  | 3 |  |
+| effset_background\effset_items_layout\effset_area_layout\effset_area_number | text |  | 3 | effset_magnitude_scroll.x sub() sub(70) | parent().height sub() div(2) |  |  |  | 3 | parent().user0 |
+| effset_background\effset_items_layout\effset_area_layout\effset_area_label | text |  | 3 | 0 | parent().height sub() div(2) |  |  |  | 3 | strings()._area |
+| effset_background\effset_items_layout\effset_duration_layout | rect | 38 | 2 | 0 | parent()._item_height add() | parent().width | parent()._item_height | effset_duration_scroll.visible | 3 |  |
+| effset_background\effset_items_layout\effset_duration_layout\effset_duration_floating | image |  | 3 | -10 | 0 | parent().width sub(10) | 64 | parent().mouseover add() | 1 | Menus\Dialog\dialog_selection_full.dds |
+| effset_background\effset_items_layout\effset_duration_layout\effset_duration_floating\effset_duration_floating_end | image |  | 4 | parent().width add(8) sub() | 0 | 104 | 64 |  | 2 | Menus\Dialog\dialog_selection_cut.dds |
+| effset_background\effset_items_layout\effset_duration_layout\effset_duration_scroll | image | 18 | 3 | 350 | parent().height sub() div(2) | 300 |  |  | 3 |  |
+| effset_background\effset_items_layout\effset_duration_layout\effset_duration_number | text |  | 3 | effset_duration_scroll.x sub() sub(70) | parent().height sub() div(2) |  |  |  | 3 | effset_duration_scroll.user7 |
+| effset_background\effset_items_layout\effset_duration_layout\effset_duration_label | text |  | 3 | 0 | parent().height sub() div(2) |  |  |  | 3 | strings()._duration |
+| effset_background\effset_costs_layout | rect |  | 1 | 0 | effset_button_layout.y sub() sub(20) | parent().width | effset_casting_cost_icon.height |  | 3 |  |
+| effset_background\effset_costs_layout\effset_casting_cost_icon | image |  | 2 | 50 | 0 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| effset_background\effset_costs_layout\effset_casting_cost_icon\effset_casting_cost_text | text |  | 3 | effset_casting_cost_icon.width add(10) | 2 |  |  |  |  | EffectSettingMenu.user1 |
+| effset_background\effset_costs_layout\effset_uses_icon | image |  | 2 | 255 | 0 | 32 | 32 | EffectSettingMenu.user3 |  | Menus\Shared\all_small_icons.dds |
+| effset_background\effset_costs_layout\effset_uses_icon\effset_uses_text | text |  | 3 | effset_uses_icon.width add(10) | 2 |  |  |  |  | EffectSettingMenu.user3 |
+| effset_background\effset_costs_layout\effset_gold_cost_icon | image |  | 2 | 80 add(360) | 0 | 32 | 32 |  | 3 | Menus\Shared\all_small_icons.dds |
+| effset_background\effset_costs_layout\effset_gold_cost_icon\effset_gold_cost_arrow | image |  | 3 | 23 | 0 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| effset_background\effset_costs_layout\effset_gold_cost_icon\effset_gold_cost_text | text |  | 3 | 55 | 2 |  |  |  |  | EffectSettingMenu.user2 |
+| effset_background\effset_costs_layout\effset_player_gold_icon | image |  | 2 | effset_player_gold_text.x sub() sub(42) | effset_gold_cost_text.y | 32 | 32 |  | 3 | Menus\Shared\all_small_icons.dds |
+| effset_background\effset_costs_layout\effset_player_gold_text | text |  | 2 | parent().width sub(50) | 2 |  |  |  |  | EffectSettingMenu.user9 |
+| effset_background\effset_button_layout | rect |  | 1 | parent().width sub() sub() div(2) | parent().height sub() sub(20) |  | child(effset_button_ok).height max() max() |  | 3 |  |
+| effset_background\effset_button_layout\effset_button_ok | image | 21 | 2 | 0 | 0 |  |  |  |  |  |
+| effset_background\effset_button_layout\effset_button_delete | image | 22 | 2 | effset_button_ok.width add(20) | 0 |  |  |  |  |  |
+| effset_background\effset_button_layout\effset_button_cancel | image | 23 | 2 | effset_button_delete.width add(20) add() | 0 |  |  |  |  |  |
+
+#### AlchemyMenu (`alchemy.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| inv_FocusBox | rect | 13 | 0 |  |  |  |  | false |  |  |
+| alchemy_background | image |  | 0 | screen().width sub() div(2) | screen().height sub() div(2) | 1150 | 840 |  | 1 | Menus\Alchemy\alchemy.dds |
+| alchemy_background\name_background | rect | 2 | 1 | 210 | 152 | 736 | 40 |  | 1 |  |
+| alchemy_background\name_background\name_text | text | 3 | 2 | 8 | parent().height sub() div(2) |  |  |  | 1 |  |
+| alchemy_background\mortar_icon | image | 4 | 1 | 348 | 221 | 64 | 64 |  | 1 | Shared\shared_empty.dds |
+| alchemy_background\alembic_icon | image | 5 | 1 | retort_icon.x add() add(66) | mortar_icon.y | 64 | 64 | false | 1 | Menus\Shared\shared_empty.dds |
+| alchemy_background\calcinator_icon | image | 6 | 1 | alembic_icon.x add() add(66) | mortar_icon.y | 64 | 64 | false | 1 | Menus\Shared\shared_empty.dds |
+| alchemy_background\retort_icon | image | 7 | 1 | mortar_icon.x add() add(66) | mortar_icon.y | 64 | 64 | false | 1 | Menus\Shared\shared_empty.dds |
+| alchemy_background\ingredient_label | text |  | 1 | ingredient_one.x | 312 |  |  |  | 1 | strings()._ingredients |
+| alchemy_background\ingredient_one | rect | 8 | 1 | 210 | 350 | 380 | 64 |  | 1 | strings()._ingredientone |
+| alchemy_background\ingredient_one\ingredient_one_icon | image | 18 | 2 | 7 | 0 | 64 | 64 | false | 1 |  |
+| alchemy_background\ingredient_one\ingredient_one_icon\ingredient_one_stack_count | text |  | 3 | 72 | 46 |  |  |  | 1 | parent().user0 |
+| alchemy_background\ingredient_one\ingredient_one_text | text |  | 2 | 85 | parent().height sub() div(2) |  |  |  | 1 | parent().user0 |
+| alchemy_background\ingredient_two | rect | 9 | 1 | ingredient_one.x | ingredient_one.y add() add() | ingredient_one.width | ingredient_one.height |  | 1 | strings()._ingredienttwo |
+| alchemy_background\ingredient_two\ingredient_two_icon | image | 19 | 2 | ingredient_one_icon.x | ingredient_one_icon.y | ingredient_one_icon.width | ingredient_one_icon.height | false | 1 |  |
+| alchemy_background\ingredient_two\ingredient_two_icon\ingredient_two_stack_count | text |  | 3 | 72 | 46 |  |  |  | 1 | parent().user0 |
+| alchemy_background\ingredient_two\ingredient_two_text | text |  | 2 | ingredient_one_text.x | parent().height sub() div(2) |  |  |  | 1 | parent().user0 |
+| alchemy_background\ingredient_three | rect | 10 | 1 | ingredient_one.x | ingredient_two.y add() add() | ingredient_one.width | ingredient_one.height |  | 1 | strings()._ingredientthree |
+| alchemy_background\ingredient_three\ingredient_three_icon | image | 20 | 2 | ingredient_one_icon.x | ingredient_one_icon.y | ingredient_one_icon.width | ingredient_one_icon.height | false | 1 |  |
+| alchemy_background\ingredient_three\ingredient_three_icon\ingredient_three_stack_count | text |  | 3 | 72 | 46 |  |  |  | 1 | parent().user0 |
+| alchemy_background\ingredient_three\ingredient_three_text | text |  | 2 | ingredient_one_text.x | parent().height sub() div(2) |  |  |  | 1 | parent().user0 |
+| alchemy_background\ingredient_four | rect | 11 | 1 | ingredient_one.x | ingredient_three.y add() add() | ingredient_one.width | ingredient_one.height |  | 1 | strings()._ingredientfour |
+| alchemy_background\ingredient_four\ingredient_four_icon | image | 21 | 2 | ingredient_one_icon.x | ingredient_one_icon.y | ingredient_one_icon.width | ingredient_one_icon.height | false | 1 |  |
+| alchemy_background\ingredient_four\ingredient_four_icon\ingredient_four_stack_count | text |  | 3 | 72 | 46 |  |  |  | 1 | parent().user0 |
+| alchemy_background\ingredient_four\ingredient_four_text | text |  | 2 | ingredient_one_text.x | parent().height sub() div(2) |  |  |  | 1 | parent().user0 |
+| alchemy_background\effects_label | text |  | 1 | effect_list.x | 312 |  |  |  | 1 | strings()._effects |
+| alchemy_background\effect_list_scroll_bar | image | 16 | 1 | effect_list.x add() | effect_list.y add(32) |  | effect_list.height sub(64) |  | 20 |  |
+| alchemy_background\effect_list | rect | 12 | 1 | 620 | ingredient_one.y | 308 | ingredient_one.height add() |  | 8 |  |
+| alchemy_background\alchemy_button_create | image | 14 | 1 | parent().width sub() div(2) sub(190) | parent().height |  |  |  | 3 |  |
+| alchemy_background\alchemy_button_exit | image | 15 | 1 | parent().width sub() div(2) add(200) | alchemy_button_create.y |  |  |  | 3 |  |
+| effect_template | template |  | 0 |  |  |  |  |  |  |  |
+| effect_template\Effects | rect |  | 1 | 0 | me().user0 sub() | effect_list.width | 60 | me().y | 1 |  |
+| effect_template\Effects\effect_icon | image |  | 2 | 5 | parent().height sub(32) div(2) add(2) | 32 | 32 |  |  | parent().user1 |
+| effect_template\Effects\effect_text | text |  | 2 | 50 | parent().height sub() div(2) |  |  |  |  | parent().user3 |
+
+#### SigilStoneMenu (`sigilstone.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| sigil_focus_box | rect | 8 | 0 |  |  |  |  | false |  |  |
+| sigil_background | image | 1 | 0 | screen().width sub() div(2) | screen().height sub() div(2) | 1064 | 812 |  | 1 | Menus\Enchanting\enchanting.dds |
+| sigil_background\sigil_name_background | rect | 24 | 1 | 190 | 130 | 660 | 50 |  | 1 |  |
+| sigil_background\sigil_name_background\sigil_name_text | text | 2 | 2 | 30 | parent().height sub() div(2) |  |  |  | 1 | strings()._enchanteditem |
+| sigil_background\sigil_effect_icon | image | 3 | 1 | 550 | 90 | 32 | 32 | false | 1 |  |
+| sigil_background\sigil_soul_cost_icon | image |  | 1 | 240 | 90 | 32 | 32 | SigilStoneMenu.user0 | 1 | Menus\Shared\all_small_icons.dds |
+| sigil_background\sigil_soul_cost_text | text |  | 1 | sigil_soul_cost_icon.x add() add(15) | sigil_soul_cost_icon.y |  |  | SigilStoneMenu.user0 | 1 | SigilStoneMenu.user0 |
+| sigil_background\sigil_constant_text | text |  | 1 | sigil_soul_cost_text.x | sigil_soul_cost_icon.y |  |  | SigilStoneMenu.user0 | 1 | strings()._constant_effect |
+| sigil_background\sigil_uses_icon | image |  | 1 | 400 | 90 | 32 | 32 | SigilStoneMenu.user1 | 1 | Menus\Shared\all_small_icons.dds |
+| sigil_background\sigil_uses_text | text |  | 1 | sigil_uses_icon.x add() add(15) | sigil_uses_icon.y |  |  | sigil_uses_icon.visible | 1 | SigilStoneMenu.user1 |
+| sigil_background\sigil_item_enchant_rect | rect | 20 | 1 | 153 | 205 | 325 | 70 |  | 8 |  |
+| sigil_background\sigil_item_enchant_rect\sigil_item_icon | image | 25 | 2 | 0 | parent().height sub() div(2) | 64 | 64 | false |  |  |
+| sigil_background\sigil_item_enchant_rect\sigil_item_text | text |  | 2 | 75 | 37 sub(2) |  |  |  |  | parent().user0 |
+| sigil_background\sigil_stone_rect | rect | 22 | 1 | 515 | 203 | 390 | 70 |  | 8 |  |
+| sigil_background\sigil_stone_rect\soulgem_icon | image | 26 | 2 | 2 | parent().height sub() div(2) | 64 | 64 | true |  |  |
+| sigil_background\sigil_stone_rect\sigil_stone_text | text |  | 2 | soulgem_icon.x add(5) | 37 sub(2) |  |  |  |  | parent().user0 |
+| sigil_background\sigil_known_effect_text | text | 16 | 1 | 150 | 295 |  |  |  | 1 | strings()._sigilstoneeffects |
+| sigil_background\sigil_known_effect_list_scroll_bar | image | 9 | 1 | 460 | sigil_known_effect_window.y add(32) |  | sigil_known_effect_window.height sub(64) |  | 20 |  |
+| sigil_background\sigil_known_effect_window | rect |  | 1 | 140 | 325 | 330 | 300 |  |  |  |
+| sigil_background\sigil_known_effect_window\sigil_known_effect_list | rect | 6 | 2 | 0 | 0 sub() |  |  |  | 8 |  |
+| sigil_background\sigil_known_effect_list_label | text | 17 | 1 | 525 | sigil_known_effect_text.y |  |  |  | 1 | strings()._effectsapplied |
+| sigil_background\sigil_added_effect_list_scroll_bar | rect | 12 | 1 | 893 | sigil_added_effect_window.y add(32) |  | sigil_added_effect_window.height sub(64) |  | 20 |  |
+| sigil_background\sigil_added_effect_window | rect |  | 1 | 510 | sigil_known_effect_window.y | 370 | 300 |  |  |  |
+| sigil_background\sigil_added_effect_window\sigil_added_effect_list | rect | 7 | 2 | 0 | 0 sub() | 330 | 300 |  | 8 |  |
+| sigil_background\sigil_button_create | image | 14 | 1 | 290 | 665 |  |  |  | 5 |  |
+| sigil_background\sigil_button_exit | image | 15 | 1 | 630 | sigil_button_create.y |  |  |  | 5 |  |
+| known_effect_template | template |  | 0 |  |  |  |  |  |  |  |
+| known_effect_template\sigil_known_effect | rect | 82 | 1 | 10 | me().listindex | 305 | sigil_known_effect_window.height div() |  | 1 |  |
+| known_effect_template\sigil_known_effect\sigil_known_effect_icon | image |  | 2 | 5 | parent().height sub() div(2) | 32 | 32 |  | 1 | parent().user1 |
+| known_effect_template\sigil_known_effect\sigil_known_effect_text | text |  | 2 | 50 | parent().height sub() div(2) |  |  |  | 1 | parent().user2 |
+| added_effect_template | template |  | 0 |  |  |  |  |  |  |  |
+| added_effect_template\sigil_added_effect | rect | 83 | 1 | 20 | me().listindex | 350 | 70 |  | 1 |  |
+| added_effect_template\sigil_added_effect\sigil_added_effect_icon | image |  | 2 | 5 | parent().height sub() div(2) | 32 | 32 |  | 1 | parent().user1 |
+| added_effect_template\sigil_added_effect\sigil_known_effect_text | text |  | 2 | 50 | parent().height sub() div(2) | 310 |  |  | 1 | parent().user2 |
+
+#### PersuasionMenu (`persuasion_menu.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Gradient_25 | nif | 16 | 0 | Gradient_image.x | Gradient_image.y |  |  | true |  | Persuasion\New Persuasion\25.nif |
+| Gradient_50 | nif | 17 | 0 | Gradient_image.x | Gradient_image.y |  |  | true |  | Persuasion\New Persuasion\50.nif |
+| Gradient_75 | nif | 18 | 0 | Gradient_image.x | Gradient_image.y |  |  | true |  | Persuasion\New Persuasion\75.nif |
+| Gradient_100 | nif | 19 | 0 | Gradient_image.x | Gradient_image.y |  |  | true |  | Persuasion\New Persuasion\100.nif |
+| Dimmer_1 | nif | 20 | 0 | Gradient_image.x | Gradient_image.y |  |  | true |  | Persuasion\New Persuasion\New_dimer.nif |
+| Dimmer_2 | nif | 21 | 0 | Gradient_image.x | Gradient_image.y |  |  | true |  | Persuasion\New Persuasion\New_dimer.nif |
+| Dimmer_3 | nif | 22 | 0 | Gradient_image.x | Gradient_image.y |  |  | true |  | Persuasion\New Persuasion\New_dimer.nif |
+| Dimmer_4 | nif | 23 | 0 | Gradient_image.x | Gradient_image.y |  |  | true |  | Persuasion\New Persuasion\New_dimer.nif |
+| Gradient_image | nif | 1 | 0 | screen().x add(2) sub(125) | screen().y add(2) sub(50) |  |  | true |  | Persuasion\New Persuasion\New_frme_glass_pop_selector.nif |
+| persuasion_disposition_text | text | 10 | 0 | Gradient_image.x add(295) | Gradient_image.y add(160) |  |  |  | 20 | 100 |
+| persuasion_no_play_text | text | 27 | 0 | persuasion_maxaward_words.x | persuasion_maxaward_words.y |  |  | true |  | strings()._cannotpersuade |
+| persuasion_maxaward_words | text |  | 0 | Gradient_image.x add(120) | Gradient_image.y add(470) |  |  |  |  | strings()._maxpersuasion |
+| persuasion_maxaward_text | text | 15 | 0 | persuasion_maxaward_words.x add(2) add() add(10) | persuasion_maxaward_words.y |  |  |  | 20 | 100 |
+| persuasion_bribe_words | text | 5 | 0 | persuasion_maxaward_words.x | persuasion_maxaward_text.y add(10,persuasion_no_play_text.alpha sub(1)) |  |  |  |  | strings()._bribe |
+| persuasion_bribe_colon | text |  | 0 | persuasion_bribe_words.x add() | persuasion_bribe_words.y |  |  |  |  | : |
+| persuasion_bribe_amount | text |  | 0 | persuasion_bribe_colon.x add(15) | persuasion_bribe_words.y |  |  |  |  | persuasion_bribe_words.user0 |
+| persuasion_bribe_septims | text |  | 0 | persuasion_bribe_amount.x add(0) | persuasion_bribe_words.y |  |  |  |  | strings()._septimsfor |
+| persuasion_bribe_disposition_amount | text |  | 0 | persuasion_bribe_septims.x add(15) | persuasion_bribe_words.y |  |  |  |  | persuasion_bribe_words.user1 |
+| persuasion_bribe_disposition_words | text |  | 0 | persuasion_bribe_disposition_amount.x add(15) | persuasion_bribe_disposition_amount.y |  |  |  |  | strings()._dispositionbonus |
+| persuasion_NPC_name | text | 28 | 0 | screen().width sub(2) sub() sub() | screen().height sub(2) sub() sub() |  |  |  |  |  |
+| persuasion_bribe_button | image | 8 | 0 | Gradient_image.x add(112) | Gradient_image.y add(370) |  |  |  |  |  |
+| persuasion_rotate_button | image | 24 | 0 | persuasion_bribe_button.x add(200) | persuasion_bribe_button.y |  |  |  |  |  |
+| persuasion_start_button | image | 26 | 0 | persuasion_bribe_button.x | persuasion_bribe_button.y add(50) |  |  |  |  |  |
+| persuasion_exit_button | image | 9 | 0 | persuasion_rotate_button.x | persuasion_bribe_button.y add(50) |  |  |  |  |  |
+| persuasion_reaction_text | text | 11 | 0 | screen().cropx add() | screen().cropy add() |  |  |  | 1 |  |
+
+### 32.3 キャラクター生成系メニュー
+
+#### BirthSignMenu (`birthsign_menu.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| inv_FocusBox | button | 38 | 0 |  |  |  |  | false |  |  |
+| BirthSign_background | image | 1 | 0 | screen().width sub() div(2) | screen().height sub() div(2) | 1037 | 818 |  | 1 | Menus\Level_up\level_up_background.dds |
+| BirthSign_background\apprentice_Text | text | 4 | 1 | 30 | 30 |  |  |  | 5 | The Apprentice |
+| BirthSign_background\BirthSign_Picture | image | 2 | 1 | 350 | 100 | 600 | 700 |  | 10 | Menus\\Menus\BirthSign\load_image_apprentice.dds |
+| BirthSign_background\Birth_Text | text | 3 | 1 | 350 | BirthSign_Picture.y add(100) |  |  |  | 5 | BirthSign Description |
+| BirthSign_background\done_button | image | 17 | 1 | parent().width sub() div(2) add(400) | parent().width sub() div(2) add(320) | 177 | 43 |  | 31 | Menus\Container\cont_button_long_off.dds |
+| BirthSign_background\done_button\Done_button_on | image |  | 2 | 0 | 0 | 176 | 51 |  | 2 | Menus\Container\cont_button_long_on.dds |
+| BirthSign_background\done_button\Done_button_text | text |  | 2 | parent().width sub() div(2) sub(2) | 3 |  |  |  | 4 | parent().string |
+
+#### ClassMenu (`class_menu.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| class_background | rect |  | 0 | screen().width sub() div(2) | screen().height sub() div(2) |  |  |  | 1 |  |
+| class_background\class_information_text | text |  | 1 | parent().width div(2) | 18 |  |  |  | 3 | strings()._selectclass |
+| class_background\class_list_scroll_bar | image | 2 | 1 | 260 | class_list_window.y add() |  | class_list_window.height sub() sub() |  | 20 |  |
+| class_background\class_list_window | rect |  | 1 | 10 | parent().height sub() add() div(2) | 250 | 600 |  |  |  |
+| class_background\class_list_window\class_list_pane | rect | 1 | 2 | 0 | 0 sub() | parent().width | 10 |  | 8 |  |
+| class_background\class_picture | image |  | 1 | class_list_window.x add() add(55) | parent().height sub() div(2) | 368 | 507 |  | 10 | ClassMenu.user21 |
+| class_background\class_data_layout | rect |  | 1 | parent().width sub(30) | class_list_window.y |  |  |  | 5 |  |
+| class_background\class_data_layout\class_special_label | text |  | 2 | 0 | 16 |  |  |  |  | strings()._specialization |
+| class_background\class_data_layout\class_special_text | text |  | 2 | 0 | class_special_label.y add() |  |  |  | 2 | ClassMenu.user8 |
+| class_background\class_data_layout\class_attribute_label_1 | text |  | 2 | 0 | class_special_text.y add() add() |  |  |  |  | strings()._favored |
+| class_background\class_data_layout\class_attribute_label_2 | text |  | 2 | 0 | class_attribute_label_1.y add() sub(8) |  |  |  |  | strings()._attributes |
+| class_background\class_data_layout\class_attribute_1_text | text |  | 2 | 0 | class_attribute_label_2.y add() |  |  |  | 2 | ClassMenu.user9 |
+| class_background\class_data_layout\class_attribute_2_text | text |  | 2 | 0 | class_attribute_1_text.y add() add() |  |  |  | 2 | ClassMenu.user10 |
+| class_background\class_data_layout\class_major_skills_label | text |  | 2 | 0 | class_attribute_2_text.y add() add() |  |  |  |  | strings()._majorskills |
+| class_background\class_data_layout\class_major_skills_1_text | text |  | 2 | 0 | class_major_skills_label.y add() |  |  |  | 2 | ClassMenu.user1 |
+| class_background\class_data_layout\class_major_skills_2_text | text |  | 2 | 0 | class_major_skills_1_text.y add() add() |  |  |  | 2 | ClassMenu.user2 |
+| class_background\class_data_layout\class_major_skills_3_text | text |  | 2 | 0 | class_major_skills_2_text.y add() add() |  |  |  | 2 | ClassMenu.user3 |
+| class_background\class_data_layout\class_major_skills_4_text | text |  | 2 | 0 | class_major_skills_3_text.y add() add() |  |  |  | 2 | ClassMenu.user4 |
+| class_background\class_data_layout\class_major_skills_5_text | text |  | 2 | 0 | class_major_skills_4_text.y add() add() |  |  |  | 2 | ClassMenu.user5 |
+| class_background\class_data_layout\class_major_skills_6_text | text |  | 2 | 0 | class_major_skills_5_text.y add() add() |  |  |  | 2 | ClassMenu.user6 |
+| class_background\class_data_layout\class_major_skills_7_text | text |  | 2 | 0 | class_major_skills_6_text.y add() add() |  |  |  | 2 | ClassMenu.user7 |
+| class_background\class_button_create | image | 5 | 1 | class_button_done.x sub() sub(20) sub(40) | class_button_done.y |  |  |  | 5 |  |
+| class_background\class_button_done | image | 4 | 1 | parent().width sub() sub(20) add(40) | parent().height sub() sub(20) |  |  |  | 5 |  |
+| class_template | template |  | 0 |  |  |  |  |  |  |  |
+| class_template\class_template | rect | 99 | 1 | 0 | me().listindex | parent().width | 50 |  | 1 |  |
+| class_template\class_template\class_template_name | text |  | 2 | 10 | parent().height sub() div(2) |  |  |  | 8 | parent().user1 |
+| class_template\class_template\class_selected | image |  | 2 | 7 | -3 | sibling(class_template_name).width max(85) add(8) | 54 | parent().user2 | 5 mul() add(1) | Menus\Inventory\inv_equiped_marker_1.dds |
+| class_template\class_template\class_mouseover_marker | image |  | 2 | 5 | -2 | sibling(class_template_name).width max(85) | 64 |  | 3 | Menus\dialog\dialog_selection_full.dds |
+| class_template\class_template\class_mouseover_marker_2 | image |  | 2 | sibling(class_template_name).width max(85) add(24) sub() | -2 | 104 | 64 |  | 4 | dialog\dialog_selection_cut.dds |
+
+#### RaceSexMenu (`race_sex_menu.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| race_background | rect | generic | 0 | 70 | screen().height sub() div(2) |  |  |  | 1 |  |
+| race_background\race_player_grab | rect | 2 | 1 | 650 | 0 | 800 | 1000 |  | 1 |  |
+| race_background\race_name | text | 10 | 1 | parent().width div(2) | 20 |  |  |  | 5 |  |
+| race_background\race_name_marker | image |  | 1 | parent().width sub() div(2) | 10 | sibling(race_name).width add(120) max(85) | 64 |  | 1 | Menus\dialog\dialog_selection_full.dds |
+| race_background\race_name_marker\race_name_marker_2 | image |  | 2 | parent().width sub() add(10) | 0 | 104 | 64 |  | 1 | dialog\dialog_selection_cut.dds |
+| race_background\race_name_left | image |  | 1 | race_name.x sub(2) sub(20) sub() | 31 | 35 | 17 |  | 5 | Menus\Stats\stat_title_left.dds |
+| race_background\race_name_right | image |  | 1 | race_name.width div(2) add() add(20) | 31 | 35 | 17 |  | 5 | Menus\Stats\stat_title_right.dds |
+| race_background\race_name_separator | image |  | 1 | 75 | 75 | 400 | 3 |  | 3 | Menus\Stats\stat_border_horizontal_1.dds |
+| race_background\race_window | rect | 1 | 1 | 30 | 85 | 500 | 558 |  | 8 |  |
+| race_background\race_window\race_scroll_bar | image | 20 | 2 | parent().width sub(20) | 25 |  | parent().height sub(50) |  | 20 |  |
+| race_background\race_button_done | image | 90 | 1 | parent().width sub() sub(30) | parent().height sub() sub(20) |  |  |  | 5 |  |
+| race_template_pane | template |  | 0 |  |  |  |  |  |  |  |
+| race_template_pane\race_pane | rect | 100 | 1 | 0 | 0 sub(93) | parent().width sub(1,40) |  | me().user0 | 2 |  |
+| race_template_button | template |  | 0 |  |  |  |  |  |  |  |
+| race_template_button\race_template_button_layout | rect | 101 | 1 | 0 | me().listindex mul() | parent().width | 93 |  | 2 |  |
+| race_template_button\race_template_button_layout\race_template_button_label | text |  | 2 | 0 | 0 |  |  |  | 2 | parent().user2 |
+| race_template_button\race_template_button_layout\race_template_button_text | text |  | 2 | parent().width div(2) | 25 |  |  |  | 4 | parent().user6 |
+| race_template_button\race_template_button_layout\race_template_button_marker | image |  | 2 | parent().width sub() div(2) | 15 | sibling(race_template_button_text).width add(30) max(85) | 64 |  | 1 | Menus\dialog\dialog_selection_full.dds |
+| race_template_button\race_template_button_layout\race_template_button_marker\race_template_button_marker_2 | image |  | 3 | parent().width sub() add(10) | 0 | 104 | 64 |  | 1 | dialog\dialog_selection_cut.dds |
+| race_template_toggle | template |  | 0 |  |  |  |  |  |  |  |
+| race_template_toggle\race_template_toggle | rect | 102 | 1 | 0 | me().listindex mul(93) | parent().width | 93 |  |  |  |
+| race_template_toggle\race_template_toggle\race_template_toggle_label | text |  | 2 | 0 | 0 |  |  |  | 2 | parent().user2 |
+| race_template_toggle\race_template_toggle\race_template_toggle_left | image | generic | 2 | 0 | 35 | 124 | 36 |  | 4 | \Menus\Shared\shared_arrow_left.dds |
+| race_template_toggle\race_template_toggle\race_template_toggle_value | text |  | 2 | parent().width div(2) | parent().height sub() div(2) add(5) |  |  |  | 5 | parent().user6 |
+| race_template_toggle\race_template_toggle\race_template_toggle_right | image | generic | 2 | parent().width sub() | 35 | 121 | 36 |  | 4 | \Menus\Shared\shared_arrow_right.dds |
+| race_template_toggle\race_template_toggle\race_template_toggle_marker | image |  | 2 | -10 | 25 | parent().width | 64 |  | 1 | Menus\dialog\dialog_selection_full.dds |
+| race_template_toggle\race_template_toggle\race_template_toggle_marker_2 | image |  | 2 | parent().width add(15) sub() | 25 | 104 | 64 |  | 2 | dialog\dialog_selection_cut.dds |
+| race_template_slider | template |  | 0 |  |  |  |  |  |  |  |
+| race_template_slider\race_template_slider | rect | 103 | 1 | 0 | me().listindex mul(93) | parent().width | 93 |  |  |  |
+| race_template_slider\race_template_slider\race_template_slider_label | text |  | 2 | 0 | 0 |  |  |  | 3 | parent().user2 |
+| race_template_slider\race_template_slider\race_template_slider_bar | image | generic | 2 | child(horizontal_scroll_left).width | 45 | parent().width sub() sub() |  |  | 6 |  |
+| race_template_slider\race_template_slider\race_template_slider_marker | image |  | 2 | -10 | 25 | parent().width add(10) | 64 |  | 4 | Menus\dialog\dialog_selection_full.dds |
+| race_template_slider\race_template_slider\race_template_slider_marker_2 | image |  | 2 | parent().width add(15) sub() | 25 | 104 | 64 |  | 5 | dialog\dialog_selection_cut.dds |
+| race_template_text | template |  | 0 |  |  |  |  |  |  |  |
+| race_template_text\race_template_text | text | 104 | 1 | 0 | me().listindex mul(93) add(20) |  |  |  | 2 | me().user6 |
+
+#### SkillsMenu (`skills_menu.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| skills_background | rect |  | 0 | screen().width sub() div(2) | screen().height sub() div(2) |  |  |  | 1 |  |
+| skills_background\skills_information_text | text |  | 1 | parent().width div(2) | 10 |  |  | SkillsMenu.user4 | 3 | SkillsMenu.user5 |
+| skills_background\skills_list_scroll_bar | image | 2 | 1 | skills_list_window.x add() add(10) | skills_list_window.y add(32) |  | skills_list_window.height sub(50) | skills_list_pane.childcount | 20 |  |
+| skills_background\skills_list_window | rect |  | 1 | 10 | 75 | 270 | 550 |  |  |  |
+| skills_background\skills_list_window\skills_list_pane | rect | 1 | 2 | 0 | 0 sub() | parent().width | 10 |  | 8 |  |
+| skills_background\skills_picture | image |  | 1 | 484 add(436) add(350) add(350) | 120 add(141) add(20) add(40) | 305 add(256) add(368) add(512) | 437 add(256) add(507) add(512) |  | 10 | SkillsMenu.user2 |
+| skills_background\skill_text | text |  | 1 | skills_picture.width sub() div(2) add() sub(30) | 500 add(420) add(500) add(470) |  |  |  | 5 | SkillsMenu.user1 |
+| skills_background\skills_xbutton_done_back | rect | 6 | 1 | -1000 | -1000 |  |  | xbox |  |  |
+| skills_background\skills_xbutton_continue | rect | 7 | 1 | -1000 | -1000 |  |  | xbox |  |  |
+| skills_background\skills_button_back | image | 5 | 1 | skills_button_done.x sub() sub(10) | parent().height sub() sub(20) |  |  |  | 5 |  |
+| skills_background\skills_button_done | image | 4 | 1 | parent().width sub() sub(10) | parent().height sub() sub(20) |  |  |  | 5 |  |
+| skills_background\skills_button_b_icon | image |  | 1 | 498 add(688) | skills_button_back.y | 64 | 64 | xbox | 5 | Menus\Icons\icon_xbox_b_large.dds |
+| skills_background\skills_back_text | text |  | 1 | skills_button_b_icon.x add() | skills_button_b_icon.y add(2) |  |  | xbox | 5 | strings()._back |
+| skills_background\skills_done_text | text |  | 1 | skills_button_b_icon.x add() | skills_button_b_icon.y add(2) |  |  | xbox | 5 | strings()._done |
+| skills_background\skills_button_x_icon | image |  | 1 | 664 | skills_button_done.y | 64 | 64 | xbox | 5 | Menus\Icons\icon_xbox_x_large.dds |
+| skills_background\skills_continue_text | text |  | 1 | skills_button_x_icon.x add() | skills_button_x_icon.y add(2) |  |  | xbox | 5 | strings()._continue |
+| skills_template | template |  | 0 |  |  |  |  |  |  |  |
+| skills_template\skills_template | rect | 99 | 1 | 0 | me().listindex | parent().width | 55 |  | 1 |  |
+| skills_template\skills_template\skills_template_name | text |  | 2 | 10 | parent().height sub() div(2) |  |  |  | 8 | parent().user1 |
+| skills_template\skills_template\skills_selected | image |  | 2 | 7 | -3 | sibling(skills_template_name).width max(85) add(8) | 54 | parent().user3 | 5 mul() add(1) | Menus\Inventory\inv_equiped_marker_1.dds |
+| skills_template\skills_template\skills_mouseover_marker | image |  | 2 | 5 | -2 | sibling(skills_template_name).width max(85) | 64 |  | 3 | Menus\dialog\dialog_selection_full.dds |
+| skills_template\skills_template\skills_mouseover_marker_2 | image |  | 2 | sibling(skills_template_name).width max(85) add(24) sub() | -2 | 104 | 64 |  | 4 | dialog\dialog_selection_cut.dds |
+
+### 32.4 HUD / 主要 in-game 系メニュー
+
+#### HUDMainMenu (`hud_main_menu.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| player_grab_zone | rect | 91 | 0 | 0 | 0 | screen().width | screen().height |  |  |  |
+| magic_icons | rect | 16 | 0 | screen().width sub() sub(24) | 0 add() add(18) |  |  |  |  |  |
+| icon_template | template |  | 0 |  |  |  |  |  |  |  |
+| icon_template\effect_icon | image |  | 1 | magic_icons.x sub() sub() | magic_icons.y add(me().user0 div()) | magic_icons._icon_width | magic_icons._icon_height |  |  |  |
+| icon_template\effect_icon\icon_timer | nif | 17 | 2 | 30 | 0 |  |  | parent().alpha | 1 | Enemy Health Bar\Health_Bar01.NIF |
+| hudmain_region | text |  | 0 | hudmain_background.x add() | hudmain_background.y sub() |  |  |  |  | HUDMainMenu.user8 |
+| hudmain_background | image | 1 | 0 | screen().cropx add() sub(60) max() add(67) | screen().height sub() sub() sub() | 620 | 70 |  | 55 | Menus\HUD\hud_back.dds |
+| hudmain_background\hudmain_frame | image | 8 | 1 | -70 | -5 | 761 | 90 | HUDMainMenu.user3 | 18 | Menus\HUD\hud_frame.dds |
+| hudmain_background\hudmain_frame\hudmain_frame_left | image |  | 2 | 22 | 26 | 42 | 35 | xenon | 1 | Menus\HUD\hud_xbox_lt.dds |
+| hudmain_background\hudmain_frame\hudmain_frame_right | image |  | 2 | parent().width sub() sub(25) | 26 | 45 | 35 | xenon | 1 | Menus\HUD\hud_xbox_rt.dds |
+| hudmain_background\hudmain_statusbars | rect |  | 1 | 0 | 12 |  |  |  |  |  |
+| hudmain_background\hudmain_statusbars\hudmain_health_empty | image |  | 2 | 0 | 0 | 189 | 16 |  | 1 | Menus\HUD\hud_ribbon_health_empty.dds |
+| hudmain_background\hudmain_statusbars\hudmain_health_empty\hudmain_health_full | image |  | 3 | 11 | 2 | me().user0 max(0) min(1) mul(163) | 11 | me().user0 | 1 | Menus\HUD\hud_ribbon_health_full.dds |
+| hudmain_background\hudmain_statusbars\hudmain_health_empty\hudmain_health_edge | image |  | 3 | hudmain_health_full.x add() | 0 | 12 | 14 | true | 2 | Menus\Shared\ribbon_slider.dds |
+| hudmain_background\hudmain_statusbars\hudmain_magic_empty | image |  | 2 | 0 | 18 | 189 | 16 |  | 1 | Menus\HUD\hud_ribbon_magic_empty.dds |
+| hudmain_background\hudmain_statusbars\hudmain_magic_empty\hudmain_magic_full | image |  | 3 | 11 | 1 | me().user0 max(0) min(1) mul(163) | 11 | me().user0 | 1 | Menus\HUD\hud_ribbon_magic_full.dds |
+| hudmain_background\hudmain_statusbars\hudmain_magic_empty\hudmain_magic_edge | image |  | 3 | hudmain_magic_full.x add() | -1 | 12 | 14 | true | 2 | Menus\Shared\ribbon_slider.dds |
+| hudmain_background\hudmain_statusbars\hudmain_fatigue_empty | image |  | 2 | 0 | 36 | 189 | 16 |  | 1 | Menus\HUD\hud_ribbon_fatigue_empty.dds |
+| hudmain_background\hudmain_statusbars\hudmain_fatigue_empty\hudmain_fatigue_full | image |  | 3 | 11 | 1 | me().user0 max(0) min(1) mul(163) | 11 | me().user0 | 1 | Menus\HUD\hud_ribbon_fatigue_full.dds |
+| hudmain_background\hudmain_statusbars\hudmain_fatigue_empty\hudmain_fatigue_edge | image |  | 3 | hudmain_fatigue_full.x add() | 0 | 12 | 14 | true | 2 | Menus\Shared\ribbon_slider.dds |
+| hudmain_background\hudmain_statusbars\hudmain_bars_cover | rect |  | 2 | 0 | -15 | 199 | 80 |  | 5 |  |
+| hudmain_background\hudmain_Weapon_Icon | image | 5 | 1 | hudmain_health_empty.width add(40) | 5 | 63 | 63 |  | 1 | Menus\Icons\icon_hud_default_weapon.dds |
+| hudmain_background\hudmain_Weapon_Icon\hudmain_weapon_status | image |  | 2 | 0 | parent().y add() sub() | 64 sub(32) | 32 add(24) | parent().user0 | 1 | parent().user1 |
+| hudmain_background\hudmain_Weapon_Icon\hudmain_weapon_ammo | text |  | 2 | 65 | 44 |  |  | parent().user3 | 3 | parent().user3 |
+| hudmain_background\hudmain_Weapon_Icon\hudmain_weapon_ammo_shadow | text |  | 2 | 67 | 46 |  |  | sibling(hudmain_weapon_ammo).visible | 2 | parent().user3 |
+| hudmain_background\hudmain_Weapon_Icon\hudmain_weapon_cover | rect | 10 | 2 | -4 | -8 | 72 | 80 |  | 5 |  |
+| hudmain_background\hudmain_Magic_Icon | image | 6 | 1 | hudmain_Weapon_Icon.x add() add(32) | 5 | 63 | 63 |  | 1 | Menus\Icons\icon_hud_default_magic.dds |
+| hudmain_background\hudmain_Magic_Icon\hudmain_magic_cover | rect | 11 | 2 | -4 | -8 | 72 | 80 |  | 5 |  |
+| hudmain_background\hudmain_compass_layout | rect |  | 1 | hudmain_Magic_Icon.x add() add(20) add(1,20) | 5 | 213 | 87 |  |  |  |
+| hudmain_background\hudmain_compass_layout\hudmain_compass_frame | image |  | 2 | -14 | -10 | 220 | 84 |  | hudmain_compass_heading.user1 add(5) | Menus\HUD\hud_compass_frame.dds |
+| hudmain_background\hudmain_compass_layout\hudmain_compass_back | image |  | 2 | -5 | -2 | 200 | 68 |  | 0 | Menus\HUD\hud_back.dds |
+| hudmain_background\hudmain_compass_layout\hudmain_compass_cover | rect | 12 | 2 | -13 | -8 | 217 | 80 |  | 25 |  |
+| hudmain_background\hudmain_compass_layout\hudmain_compass_window | rect | 7 | 2 | 0 | 0 | 200 | 87 |  | 1 |  |
+| hudmain_background\hudmain_compass_layout\hudmain_compass_window\hudmain_compass_heading | image | 14 | 3 | parent().user5 sub(2) mul(-1) | 1 | 2048 | 62 |  | 3 | Menus\HUD\hud_compass_face.dds |
+| hudmain_background\hudmain_compass_layout\hudmain_compass_window\hudmain_compass_heading\hudmain_compass_icon | template |  | 4 |  |  |  |  |  |  |  |
+| hudmain_background\hudmain_compass_layout\hudmain_compass_window\hudmain_compass_heading\hudmain_compass_icon\hudmain_compass_icon | image |  | 5 | me()._pos_raw add(768) add(768) min(6) max(4) sub(2) | 1 | 28 add(4) | 32 add(10) |  | 1 | me().user6 add(3) add(1) parent()._filename_ |
+| hudmain_background\hudmain_Levelup_Icon | image | 18 | 1 | hudmain_compass_window.x add() add(424) | 6 | 63 | 63 | false | 1 | Menus\Icons\icon_level_up.dds |
+| hudmain_background\hudmain_brackets | nif | 20 | 1 | -20 | -12 |  |  | HUDMainMenu.user3 | 37 | hud_brackets\A_B_C_D_seq.NIF |
+
+#### HUDInfoMenu (`hud_info_menu.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| hudinfo_action_icon | image | 11 | 0 | hudinfo_action_text.x sub() sub() | hudinfo_name.y sub() add(8) | 64 | 64 | HUDInfoMenu.user2 |  | Menus\Shared\all_xbox_buttons.dds |
+| hudinfo_action_text | text |  | 0 | hudinfo_name.x | hudinfo_action_icon.y add(2) add(6) |  |  | HUDInfoMenu.user2 |  | parent().user0 |
+| hudinfo_name | text | 1 | 0 | screen().width sub() sub() | hudinfo_dest.y sub() add(-12) add(20) |  |  |  |  |  |
+| hudinfo_dest | text | 9 | 0 | screen().width sub() sub() | screen().height sub() sub() sub(1,me().height) |  |  | false |  |  |
+| hudinfo_lock_icon | image |  | 0 | 0 sub() sub(4) sub() sub(15) add() | screen().height sub() sub() sub() | 32 | 32 | hudinfo_lock_text.visible |  | Menus\Shared\all_small_icons.dds |
+| hudinfo_lock_icon\hudinfo_lock_text | text | 10 | 1 | parent().width add(4) | parent().height sub() div(2) add(6) |  |  | me().user1 |  |  |
+| hudinfo_value_icon | image |  | 0 | 0 sub() sub(4) sub() sub(15) add() | screen().height sub() sub() sub() | 32 | 32 | hudinfo_value_text.visible |  | Menus\Shared\all_small_icons.dds |
+| hudinfo_value_icon\hudinfo_value_text | text | 2 | 1 | parent().width add(4) | parent().height sub() div(2) add(6) |  |  | me().user1 |  |  |
+| hudinfo_weight_icon | image |  | 0 | 0 sub() sub(4) sub() sub(15) add() | screen().height sub() sub() sub() | 32 | 32 | hudinfo_weight_text.visible |  | Menus\Shared\all_small_icons.dds |
+| hudinfo_weight_icon\hudinfo_weight_text | text | 3 | 1 | parent().width add(4) | parent().height sub() div(2) add(6) |  |  | me().user1 |  |  |
+| hudinfo_damage_icon | image |  | 0 | 0 sub() sub(4) sub() sub(15) add() | screen().height sub() sub() sub() | 32 | 32 | hudinfo_damage_text.visible |  | Menus\Shared\all_small_icons.dds |
+| hudinfo_damage_icon\hudinfo_damage_text | text | 4 | 1 | parent().width add(4) | parent().height sub() div(2) add(6) |  |  | me().user1 |  |  |
+| hudinfo_armor_icon | image |  | 0 | 0 sub() sub(4) sub() sub(15) add() | screen().height sub() sub() sub() | 32 | 32 | hudinfo_armor_text.visible |  | Menus\Shared\all_small_icons.dds |
+| hudinfo_armor_icon\hudinfo_armor_text | text | 5 | 1 | parent().width add(4) | parent().height sub() div(2) add(6) |  |  | me().user1 |  |  |
+| hudinfo_health_icon | image |  | 0 | 0 sub() sub(4) sub() sub(15) add() | screen().height sub() sub() sub() | 32 | 32 | hudinfo_health_text.visible |  | Menus\Shared\all_small_icons.dds |
+| hudinfo_health_icon\hudinfo_health_text | text | 7 | 1 | parent().width add(4) | parent().height sub() div(2) add(6) |  |  | me().user1 |  |  |
+| hudinfo_uses_icon | image |  | 0 | 0 sub() sub(4) sub() sub(15) add() | screen().height sub() sub() sub() | 32 | 32 | hudinfo_uses_text.visible |  | Menus\Shared\all_small_icons.dds |
+| hudinfo_uses_icon\hudinfo_uses_text | text | 8 | 1 | parent().width add(4) | parent().height sub() div(2) add(6) |  |  | me().user1 |  |  |
+| hudinfo_quality_icon | image |  | 0 | 0 sub() sub(4) sub() add(15) add() sub() sub() | screen().height sub() sub() sub() | 32 | 32 | hudinfo_quality_text.visible |  | Menus\Shared\all_small_icons.dds |
+| hudinfo_quality_icon\hudinfo_quality_text | text | 6 | 1 | parent().width add(4) | parent().height sub() div(2) add(6) |  |  | me().user1 |  |  |
+
+#### HUDReticle (`hud_reticle.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| hudreticle_reticle | rect | 1 | 0 |  |  |  |  |  |  |  |
+| hudreticle_reticle\hudreticle_reticle_crosshair | image |  | 1 | -18 | -18 | 37 | 37 | parent().user5 |  | Menus\Misc\hud_reticle.dds |
+| hudreticle_reticle\hudreticle_reticle_activate | image |  | 1 | -16 add(-16) | -16 add(-16) | 30 add(34) | 32 add(32) | parent().user5 |  | 1 add(1) me()._filename_ |
+| hudreticle_enemy_health | nif | 2 | 0 | -1 | -20 |  |  | true |  | Enemy Health Bar\Health_Bar01.NIF |
+| hudreticle_sneak | image | 3 | 0 | -30 | -25 | 64 | 64 | true |  | Menus\Icons\icon_small_eye.dds |
+
+#### HUDSubtitleMenu (`hud_subtitle_menu.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| hudsubtitle_text_layout | rect |  | 0 | 0 | 0 |  |  |  | 2 |  |
+| hudsubtitle_text_layout\hudsubtitle_text | text | 1 | 1 | screen().width div(2) | screen().height sub(2) sub(115) sub() min() |  |  | false |  |  |
+| hudsubtitle_text_layout\hudsubtitle_icon | image |  | 1 | screen().cropx mul(2) | screen().cropy mul(2) | 63 | 63 | hudsubtitle_notice.user2 |  | hudsubtitle_notice.user1 |
+| hudsubtitle_text_layout\hudsubtitle_notice | text | 2 | 1 | hudsubtitle_icon.x add() add(8) | hudsubtitle_icon.y |  |  | false |  | strings()._dummynotice |
+
+#### InventoryMenu (`inventory_menu.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| inv_xbox_hints | rect |  | 0 | screen().width sub() sub() sub() | screen().height sub() sub() sub() sub() add(15) | 100 | 100 | xbox | 1 |  |
+| inv_xbox_hints\inv_hint_equip | rect | 5 | 1 | 0 | 0 |  |  | InventoryMenu.user18 | 5 |  |
+| inv_xbox_hints\inv_hint_drop | rect | 5 | 1 | 0 | me().height |  |  |  | 5 |  |
+| inv_xbox_hints\inv_hint_quickkey | rect | 5 | 1 | 0 | inv_hint_drop.y add() |  |  |  | 5 |  |
+| inv_xbox_hints\inv_hint_left_stick | rect | 5 | 1 | 0 | inv_hint_quickkey.y add() |  |  |  | 5 |  |
+| inv_FocusBox | rect | 9 | 0 |  |  |  |  | false |  |  |
+| inv_background | image | generic | 0 | screen().cropx add() sub(60) max() add(7) | screen().height sub() sub() sub() add(3) | 745 | 792 |  | 1 | Menus\Shared\shared_main_background_1.dds |
+| inv_background\inv_background_2 | image |  | 1 | 700 | 0 | 54 | 792 |  | -15 | Menus\Shared\shared_main_background_2.dds |
+| inv_background\inv_p1 | image |  | 1 | 23 | 542 | 791 | 176 | InventoryMenu.user0 | 2 | Menus\Shared\shared_01_tab.dds |
+| inv_background\inv_p2 | image |  | 1 | 23 | 542 | 791 | 176 | InventoryMenu.user0 | 2 | Menus\Shared\shared_02_tab.dds |
+| inv_background\inv_p3 | image |  | 1 | 23 | 542 | 791 | 176 | InventoryMenu.user0 | 2 | Menus\Shared\shared_03_tab.dds |
+| inv_background\inv_p4 | image |  | 1 | 23 | 542 | 791 | 176 | InventoryMenu.user0 | 2 | Menus\Shared\shared_04_tab.dds |
+| inv_background\inv_p5 | image |  | 1 | 23 | 542 | 791 | 176 | InventoryMenu.user0 | 2 | Menus\Shared\shared_05_tab.dds |
+| inv_background\inv_border_top | image |  | 1 | 110 | 65 | 596 | 160 |  | 6 | Menus\Inventory\inv_border_top.dds |
+| inv_background\inv_border_top\inv_border_middle | image |  | 2 | 0 | 157 | 576 | 249 |  |  | Menus\Inventory\inv_border_middle.dds |
+| inv_background\inv_border_top\inv_border_bottom | image |  | 2 | -57 | 393 | 628 | 160 |  |  | Menus\Inventory\inv_border_bottom.dds |
+| inv_background\inv_extra_data | rect |  | 1 | me().width sub() div(2) add(40) | 580 | 640 | 32 |  | 6 |  |
+| inv_background\inv_extra_data\inv_encumberance_icon | image |  | 2 | 0 | 0 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_extra_data\inv_encumberance_text | text |  | 2 | 40 | inv_encumberance_icon.y add(2) |  |  |  |  | InventoryMenu.user6 |
+| inv_background\inv_extra_data\inv_encumberance_slash | text |  | 2 | inv_encumberance_text.x add() add(1) | inv_encumberance_text.y |  |  |  |  | / |
+| inv_background\inv_extra_data\inv_encumberance_max | text |  | 2 | inv_encumberance_slash.x add() add(1) | inv_encumberance_text.y |  |  |  |  | InventoryMenu.user7 |
+| inv_background\inv_extra_data\inv_armor_icon | image |  | 2 | 210 | 0 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_extra_data\inv_armor_text | text |  | 2 | 250 | inv_armor_icon.y add(2) |  |  |  |  | InventoryMenu.user8 |
+| inv_background\inv_extra_data\inv_money_icon | image |  | 2 | 420 | 0 | 32 | 32 |  | 1 | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_extra_data\inv_money_text | text |  | 2 | 460 | inv_money_icon.y add(2) |  |  |  |  | InventoryMenu.user9 |
+| inv_background\inv_tabs | rect |  | 1 | 0 | 594 | 730 | 128 |  | 1 |  |
+| inv_background\inv_tabs\inv_tabs_prev | rect | 7 | 2 | -1 | -1 | 1 | 1 |  |  |  |
+| inv_background\inv_tabs\inv_tabs_next | rect | 8 | 2 | -1 | -1 | 1 | 1 |  |  |  |
+| inv_background\inv_tabs\inv_tabs_p1 | rect | 1 | 2 | 28 | 37 | 135 | 85 |  | 7 |  |
+| inv_background\inv_tabs\inv_tabs_p1\inv_tabs_p1_icon | image |  | 3 | 37 | 8 | 64 | 64 |  |  | Menus\Shared\all_tabs_icons.dds |
+| inv_background\inv_tabs\inv_tabs_p1\inv_tabs_p1_selection_off | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_off.dds |
+| inv_background\inv_tabs\inv_tabs_p1\inv_tabs_p1_selection_on | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_on.dds |
+| inv_background\inv_tabs\inv_tabs_p2 | rect | 2 | 2 | 165 | 37 | 135 | 85 |  | 7 |  |
+| inv_background\inv_tabs\inv_tabs_p2\inv_tabs_p2_icon | image |  | 3 | 37 | 8 | 64 | 64 |  |  | Menus\Shared\all_tabs_icons.dds |
+| inv_background\inv_tabs\inv_tabs_p2\inv_tabs_p2_selection_off | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_off.dds |
+| inv_background\inv_tabs\inv_tabs_p2\inv_tabs_p2_selection_on | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_on.dds |
+| inv_background\inv_tabs\inv_tabs_p3 | rect | 3 | 2 | 304 | 37 | 134 | 85 |  | 7 |  |
+| inv_background\inv_tabs\inv_tabs_p3\inv_tabs_p3_icon | image |  | 3 | 37 | 8 | 64 | 64 |  |  | Menus\Shared\all_tabs_icons.dds |
+| inv_background\inv_tabs\inv_tabs_p3\inv_tabs_p3_selection_off | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_off.dds |
+| inv_background\inv_tabs\inv_tabs_p3\inv_tabs_p3_selection_on | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_on.dds |
+| inv_background\inv_tabs\inv_tabs_p4 | rect | 4 | 2 | 443 | 37 | 135 | 85 |  | 7 |  |
+| inv_background\inv_tabs\inv_tabs_p4\inv_tabs_p4_icon | image |  | 3 | 37 | 8 | 64 | 64 |  | -1 | Menus\Shared\all_tabs_icons.dds |
+| inv_background\inv_tabs\inv_tabs_p4\inv_tabs_p4_selection_off | image |  | 3 | 0 | 24 | 136 | 36 | parent().target | -3 | Menus\Shared\general_tab_selection_off.dds |
+| inv_background\inv_tabs\inv_tabs_p4\inv_tabs_p4_selection_on | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_on.dds |
+| inv_background\inv_tabs\inv_tabs_p5 | rect | 5 | 2 | 578 | 37 | 135 | 85 |  | 7 |  |
+| inv_background\inv_tabs\inv_tabs_p5\inv_tabs_p5_icon | image |  | 3 | 37 | 8 | 64 | 64 |  |  | Menus\Shared\all_tabs_icons.dds |
+| inv_background\inv_tabs\inv_tabs_p5\inv_tabs_p5_selection_off | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_off.dds |
+| inv_background\inv_tabs\inv_tabs_p5\inv_tabs_p5_selection_on | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_on.dds |
+| inv_background\inv_headers_top | rect |  | 1 | 40 | -50 |  |  |  |  |  |
+| inv_background\inv_headers_top\inv_p123_header_top | rect |  | 2 | 102 | 100 |  |  | InventoryMenu.user0 | 7 |  |
+| inv_background\inv_headers_top\inv_p123_header_top\inv_p123_header_left | image |  | 3 | inv_p123_header_text.x sub(2) sub(55) | inv_p123_header_text.y add(6) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_left.dds |
+| inv_background\inv_headers_top\inv_p123_header_top\inv_p123_header_right | image |  | 3 | inv_p123_header_text.x add(2) add(20) | inv_p123_header_left.y | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_right.dds |
+| inv_background\inv_headers_top\inv_p123_header_top\inv_p123_header_text | text | 14 | 3 | 130 | 5 |  |  |  |  | parent()._headernum parent()._header_ |
+| inv_background\inv_headers_top\inv_p123_header_top\inv_p123_header_img1 | image | 15 | 3 | 300 | 0 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_headers_top\inv_p123_header_top\inv_p123_header_img2 | image | 16 | 3 | 375 | 0 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_headers_top\inv_p123_header_top\inv_p123_header_img3a | image | 17 | 3 | 435 | 0 | 32 | 32 | parent()._headernum |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_headers_top\inv_p123_header_top\inv_p123_header_img3b | image | 17 | 3 | 435 | 0 | 32 | 32 | parent()._headernum |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_headers_top\inv_p123_header_top\inv_p123_header_img3c | image | 17 | 3 | 435 | 0 | 32 | 32 | parent()._headernum |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_headers_top\inv_p123_header_top\inv_p123_header_img4 | image | 18 | 3 | 495 | 0 | 32 | 32 | parent()._headernum |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_headers_top\inv_p4p5_header_top | rect | 13 | 2 | 102 | 100 |  |  | InventoryMenu.user0 | 7 |  |
+| inv_background\inv_headers_top\inv_p4p5_header_top\inv_p4p5_header_left | image |  | 3 | inv_p4p5_header_text.x sub(2) sub(55) | inv_p4p5_header_text.y add(6) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_left.dds |
+| inv_background\inv_headers_top\inv_p4p5_header_top\inv_p4p5_header_right | image |  | 3 | inv_p4p5_header_text.x add(2) add(20) | inv_p4p5_header_left.y | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_right.dds |
+| inv_background\inv_headers_top\inv_p4p5_header_top\inv_p4p5_header_text | text | 14 | 3 | 130 | 5 |  |  |  |  | parent()._headernum parent()._header_ |
+| inv_background\inv_headers_top\inv_p4p5_header_top\inv_p4p5_header_img1 | image | 15 | 3 | 300 | 0 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_headers_top\inv_p4p5_header_top\inv_p4p5_header_img2 | image | 16 | 3 | 375 | 0 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_headers_top\inv_p4p5_header_top\inv_p4p5_header_img3 | image | 17 | 3 | 435 | 0 | 32 | 32 | parent()._headernum |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_scroll_bar | image | 11 | 1 | 690 | inv_window.y |  | inv_window.height |  | 12 |  |
+| inv_background\inv_window | rect |  | 1 | 40 | 90 | 645 | 486 |  | 10 |  |
+| inv_background\inv_window\inv_pane | rect |  | 2 | 0 | inv_scroll_bar.user7 mul(-81) add(-8) |  |  |  |  |  |
+| inv_background\inv_window\inv_pane\inv_weapon_header | rect |  | 3 | 102 | InventoryMenu.user1 |  |  | InventoryMenu.user1 | 3 |  |
+| inv_background\inv_window\inv_pane\inv_weapon_header\inv_weapon_header_left | image |  | 4 | inv_weapon_header_text.x sub(2) sub(55) | inv_weapon_header_text.y add(5) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_left.dds |
+| inv_background\inv_window\inv_pane\inv_weapon_header\inv_weapon_header_right | image |  | 4 | inv_weapon_header_text.width div(2) add() add(20) | inv_weapon_header_text.y add(5) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_right.dds |
+| inv_background\inv_window\inv_pane\inv_weapon_header\inv_weapon_header_text | text |  | 4 | 130 | 35 |  |  |  |  | strings()._weapons |
+| inv_background\inv_window\inv_pane\inv_weapon_header\inv_weapon_header_img | image |  | 4 | 300 | 30 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_window\inv_pane\inv_weapon_header\inv_weapon_header_img | image |  | 4 | 375 | 30 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_window\inv_pane\inv_weapon_header\inv_weapon_header_img | image |  | 4 | 435 | 30 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_window\inv_pane\inv_weapon_header\inv_weapon_header_img | image |  | 4 | 495 | 30 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_window\inv_pane\inv_apparel_header | rect |  | 3 | 102 | InventoryMenu.user2 |  |  | InventoryMenu.user2 | 3 |  |
+| inv_background\inv_window\inv_pane\inv_apparel_header\inv_apparel_header_left | image |  | 4 | inv_apparel_header_text.x sub(2) sub(55) | inv_apparel_header_text.y add(5) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_left.dds |
+| inv_background\inv_window\inv_pane\inv_apparel_header\inv_apparel_header_right | image |  | 4 | inv_apparel_header_text.width div(2) add() add(20) | inv_apparel_header_text.y add(5) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_right.dds |
+| inv_background\inv_window\inv_pane\inv_apparel_header\inv_apparel_header_text | text |  | 4 | 130 | 35 |  |  |  |  | strings()._apparel |
+| inv_background\inv_window\inv_pane\inv_apparel_header\inv_apparel_header_img | image |  | 4 | 300 | 30 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_window\inv_pane\inv_apparel_header\inv_apparel_header_img | image |  | 4 | 375 | 30 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_window\inv_pane\inv_apparel_header\inv_apparel_header_img | image |  | 4 | 435 | 30 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_window\inv_pane\inv_apparel_header\inv_apparel_header_img | image |  | 4 | 495 | 30 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_window\inv_pane\inv_apparatus_header | rect |  | 3 | 102 | InventoryMenu.user3 |  |  | InventoryMenu.user3 | 3 |  |
+| inv_background\inv_window\inv_pane\inv_apparatus_header\inv_apparatus_header_left | image |  | 4 | inv_apparatus_header_text.x sub(2) sub(55) | inv_apparatus_header_text.y add(5) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_left.dds |
+| inv_background\inv_window\inv_pane\inv_apparatus_header\inv_apparatus_header_right | image |  | 4 | inv_apparatus_header_text.width div(2) add() add(20) | inv_apparatus_header_text.y add(5) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_right.dds |
+| inv_background\inv_window\inv_pane\inv_apparatus_header\inv_apparatus_header_text | text |  | 4 | 130 | 35 |  |  |  |  | strings()._apparatuses |
+| inv_background\inv_window\inv_pane\inv_apparatus_header\inv_apparatus_header_img | image |  | 4 | 300 | 30 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_window\inv_pane\inv_apparatus_header\inv_apparatus_header_img | image |  | 4 | 375 | 30 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_window\inv_pane\inv_apparatus_header\inv_apparatus_header_img | image |  | 4 | 435 | 30 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_window\inv_pane\inv_potions_header | rect |  | 3 | 102 | InventoryMenu.user4 add() |  |  | InventoryMenu.user0 | 3 |  |
+| inv_background\inv_window\inv_pane\inv_potions_header\inv_potions_header_left | image |  | 4 | inv_potions_header_text.x sub(2) sub(55) | inv_potions_header_text.y add(5) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_left.dds |
+| inv_background\inv_window\inv_pane\inv_potions_header\inv_potions_header_right | image |  | 4 | inv_potions_header_text.width div(2) add() add(20) | inv_potions_header_text.y add(5) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_right.dds |
+| inv_background\inv_window\inv_pane\inv_potions_header\inv_potions_header_text | text |  | 4 | 130 | 35 |  |  |  |  | strings()._potions |
+| inv_background\inv_window\inv_pane\inv_potions_header\inv_potions_header_img | image |  | 4 | 300 | 30 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_window\inv_pane\inv_potions_header\inv_potions_header_img | image |  | 4 | 375 | 30 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_window\inv_pane\inv_ingr_header | rect |  | 3 | 102 | InventoryMenu.user13 add() |  |  | InventoryMenu.user0 | 3 |  |
+| inv_background\inv_window\inv_pane\inv_ingr_header\inv_ingr_header_left | image |  | 4 | inv_ingr_header_text.x sub(2) sub(55) | inv_ingr_header_text.y add(5) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_left.dds |
+| inv_background\inv_window\inv_pane\inv_ingr_header\inv_ingr_header_right | image |  | 4 | inv_ingr_header_text.width div(2) add() add(20) | inv_ingr_header_text.y add(5) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_right.dds |
+| inv_background\inv_window\inv_pane\inv_ingr_header\inv_ingr_header_text | text |  | 4 | 130 | 35 |  |  |  |  | strings()._ingredients |
+| inv_background\inv_window\inv_pane\inv_ingr_header\inv_ingr_header_img | image |  | 4 | 300 | 30 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_window\inv_pane\inv_ingr_header\inv_ingr_header_img | image |  | 4 | 375 | 30 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_window\inv_pane\inv_book_header | rect |  | 3 | 102 | InventoryMenu.user14 |  |  | InventoryMenu.user14 | 3 |  |
+| inv_background\inv_window\inv_pane\inv_book_header\inv_book_header_left | image |  | 4 | inv_book_header_text.x sub(2) sub(55) | inv_book_header_text.y add(5) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_left.dds |
+| inv_background\inv_window\inv_pane\inv_book_header\inv_book_header_right | image |  | 4 | inv_book_header_text.width div(2) add() add(20) | inv_book_header_text.y add(5) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_right.dds |
+| inv_background\inv_window\inv_pane\inv_book_header\inv_book_header_text | text |  | 4 | 130 | 35 |  |  |  |  | strings()._books |
+| inv_background\inv_window\inv_pane\inv_book_header\inv_book_header_img | image |  | 4 | 300 | 30 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_window\inv_pane\inv_book_header\inv_book_header_img | image |  | 4 | 375 | 30 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_window\inv_pane\inv_keys_header | rect |  | 3 | 102 | InventoryMenu.user15 add() |  |  | InventoryMenu.user0 | 3 |  |
+| inv_background\inv_window\inv_pane\inv_keys_header\inv_keys_header_left | image |  | 4 | inv_keys_header_text.x sub(2) sub(55) | inv_keys_header_text.y add(5) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_left.dds |
+| inv_background\inv_window\inv_pane\inv_keys_header\inv_keys_header_right | image |  | 4 | inv_keys_header_text.width div(2) add() add(20) | inv_keys_header_text.y add(5) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_right.dds |
+| inv_background\inv_window\inv_pane\inv_keys_header\inv_keys_header_text | text |  | 4 | 130 | 35 |  |  |  |  | strings()._keys |
+| inv_background\inv_window\inv_pane\inv_keys_header\inv_keys_header_img | image |  | 4 | 300 | 30 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_window\inv_pane\inv_keys_header\inv_keys_header_img | image |  | 4 | 375 | 30 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_window\inv_pane\inv_stones_header | rect |  | 3 | 102 | InventoryMenu.user16 add() |  |  | InventoryMenu.user0 | 3 |  |
+| inv_background\inv_window\inv_pane\inv_stones_header\inv_stones_header_left | image |  | 4 | inv_stones_header_text.x sub(2) sub(55) | inv_stones_header_text.y add(5) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_left.dds |
+| inv_background\inv_window\inv_pane\inv_stones_header\inv_stones_header_right | image |  | 4 | inv_stones_header_text.width div(2) add() add(20) | inv_stones_header_text.y add(5) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_right.dds |
+| inv_background\inv_window\inv_pane\inv_stones_header\inv_stones_header_text | text |  | 4 | 130 | 35 |  |  |  |  | strings()._stones |
+| inv_background\inv_window\inv_pane\inv_stones_header\inv_stones_header_img | image |  | 4 | 300 | 30 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_window\inv_pane\inv_stones_header\inv_stones_header_img | image |  | 4 | 375 | 30 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_window\inv_pane\inv_misc_header | rect |  | 3 | 102 | InventoryMenu.user17 add() |  |  | InventoryMenu.user0 | 3 |  |
+| inv_background\inv_window\inv_pane\inv_misc_header\inv_misc_header_left | image |  | 4 | inv_misc_header_text.x sub(2) sub(55) | inv_misc_header_text.y add(5) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_left.dds |
+| inv_background\inv_window\inv_pane\inv_misc_header\inv_misc_header_right | image |  | 4 | inv_misc_header_text.width div(2) add() add(20) | inv_misc_header_text.y add(5) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_right.dds |
+| inv_background\inv_window\inv_pane\inv_misc_header\inv_misc_header_text | text |  | 4 | 130 | 35 |  |  |  |  | strings()._misc |
+| inv_background\inv_window\inv_pane\inv_misc_header\inv_misc_header_img | image |  | 4 | 300 | 30 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_window\inv_pane\inv_misc_header\inv_misc_header_img | image |  | 4 | 375 | 30 | 32 | 32 |  |  | Menus\Shared\all_small_icons.dds |
+| inv_background\inv_window\inv_pane\inv_list_contents | rect | 10 | 3 |  |  |  |  |  |  |  |
+| inv_background\inv_list_mouse_blocker | rect | generic | 1 | inv_window.x | inv_window.y add(475) | 650 | 50 |  | 50 |  |
+| inv_item_template | template |  | 0 |  |  |  |  |  |  |  |
+| inv_item_template\inv_item | rect |  | 1 | 0 | me().listindex | 650 | 81 | me.user8 | 1 |  |
+| inv_item_template\inv_item\inv_equiped_marker | image |  | 2 | 7 | 7 | 635 | 64 | parent().user10 | 2 | Menus\Inventory\inv_equiped_marker_1.dds |
+| inv_item_template\inv_item\inv_item_icon | image |  | 2 | 5 | 7 | 64 | 64 |  | 3 | parent().user6 |
+| inv_item_template\inv_item\inv_item_count | text |  | 2 | 70 | 56 |  |  |  | 5 | parent().user7 |
+| inv_item_template\inv_item\inv_item_status | image |  | 2 | inv_item_icon.x | inv_item_icon.y add() sub() | 64 sub(32) | 32 add(25) | parent().user12 | inv_item_icon.depth add(1) | parent().user13 |
+| inv_item_template\inv_item\inv_item_name | text |  | 2 | 80 | parent().height sub() div(2) |  |  |  | 3 | parent().user1 |
+| inv_item_template\inv_item\inv_item_cost | text |  | 2 | 418 | parent().height sub() div(2) |  |  |  | 3 | parent().user2 |
+| inv_item_template\inv_item\inv_item_weight | text |  | 2 | 491 | parent().height sub() div(2) |  |  |  | 3 | parent().user3 |
+| inv_item_template\inv_item\inv_item_damage | text |  | 2 | 551 | parent().height sub() div(2) |  |  |  | 3 | parent().user4 |
+| inv_item_template\inv_item\inv_item_health | text |  | 2 | 612 | parent().height sub() div(2) |  |  |  | 3 | parent().user5 |
+
+#### MagicMenu (`magic_menu.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| magic_xbox_hints | rect |  | 0 | screen().width sub() sub() sub() | screen().height sub() sub() sub() sub() add(15) | 100 | 100 | xbox | 1 |  |
+| magic_xbox_hints\magic_hint_equip | rect | 5 | 1 | 0 | 0 |  |  |  | 5 |  |
+| magic_xbox_hints\magic_hint_quickkey | rect | 5 | 1 | 0 | me().height |  |  |  | 5 |  |
+| magic_xbox_hints\magic_hint_left_stick | rect | 5 | 1 | 0 | me().height mul(2) |  |  |  | 5 |  |
+| magic_FocusBox | rect | 9 | 0 |  |  |  |  | false |  |  |
+| magic_background | image | generic | 0 | screen().cropx add() sub(60) max() add(7) | screen().height sub() sub() sub() add(3) | 745 | 792 |  | 1 | Menus\Shared\shared_main_background_1.dds |
+| magic_background\magic_background_2 | image |  | 1 | 700 | 0 | 54 | 792 |  | -15 | Menus\Shared\shared_main_background_2.dds |
+| magic_background\magic_p1 | image |  | 1 | 23 | 542 | 791 | 176 | MagicMenu.user0 | 4 | Menus\Shared\shared_01_tab.dds |
+| magic_background\magic_p2 | image |  | 1 | 23 | 542 | 791 | 176 | MagicMenu.user0 | 4 | Menus\Shared\shared_02_tab.dds |
+| magic_background\magic_p3 | image |  | 1 | 23 | 542 | 791 | 176 | MagicMenu.user0 | 4 | Menus\Shared\shared_03_tab.dds |
+| magic_background\magic_p4 | image |  | 1 | 23 | 542 | 791 | 176 | MagicMenu.user0 | 4 | Menus\Shared\shared_04_tab.dds |
+| magic_background\magic_p5 | image |  | 1 | 23 | 542 | 791 | 176 | MagicMenu.user0 | 4 | Menus\Shared\shared_05_tab.dds |
+| magic_background\magic_misc_elements | rect |  | 1 | 110 | 65 | 596 | 160 |  | 6 |  |
+| magic_background\magic_misc_elements\magic_line_top | image |  | 2 | -50 | 20 | 636 | 8 |  | 1 | Menus\Shared\shared_border_horizontal_1.dds |
+| magic_background\magic_misc_elements\magic_line_bottom | image |  | 2 | -50 | 500 | 630 | 8 |  | 1 | Menus\Shared\shared_border_horizontal_2.dds |
+| magic_background\magic_misc_elements\magic_line_left | image |  | 2 | 2 | 8 | 8 | 512 |  | 1 | Menus\Shared\shared_border_vertical_2.dds |
+| magic_background\magic_misc_elements\magic_line_center | image |  | 2 | 480 | 8 | 8 | 512 |  | 1 | Menus\Shared\shared_border_vertical_1.dds |
+| magic_background\magic_misc_elements\magic_line_right | image |  | 2 | 568 | 8 | 8 | 512 |  | 1 | Menus\Shared\shared_border_vertical_1.dds |
+| magic_background\magic_misc_elements\magic_cost_icon | image | 14 | 2 | 514 | -20 | 32 | 32 | MagicMenu.user0 |  | Menus\Shared\all_small_icons.dds |
+| magic_background\magic_misc_elements\magic_magnitude_icon | image |  | 2 | 514 | -20 | 32 | 32 | MagicMenu.user0 |  | Menus\Shared\all_small_icons.dds |
+| magic_background\magic_effectivness | text |  | 1 | 370 | parent().height sub(213) |  |  |  | 28 | MagicMenu.user6 |
+| magic_background\magic_tabs | image |  | 1 | 0 | 594 | 730 | 128 |  | 1 | Menus\Shared\shared_page_tabs.dds |
+| magic_background\magic_tabs\magic_tabs_prev | rect | 7 | 2 | -1 | -1 | 1 | 1 |  |  |  |
+| magic_background\magic_tabs\magic_tabs_next | rect | 8 | 2 | -1 | -1 | 1 | 1 |  |  |  |
+| magic_background\magic_tabs\magic_tabs_p1 | rect | 1 | 2 | 28 | 37 | 135 | 85 |  | 7 |  |
+| magic_background\magic_tabs\magic_tabs_p1\magic_tabs_p1_icon | image |  | 3 | 37 | 8 | 64 | 64 |  |  | Menus\Shared\all_tabs_icons.dds |
+| magic_background\magic_tabs\magic_tabs_p1\magic_tabs_p1_selection_off | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_off.dds |
+| magic_background\magic_tabs\magic_tabs_p1\magic_tabs_p1_selection_on | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_on.dds |
+| magic_background\magic_tabs\magic_tabs_p2 | rect | 2 | 2 | 165 | 37 | 135 | 85 |  | 7 |  |
+| magic_background\magic_tabs\magic_tabs_p2\magic_tabs_p2_icon | image |  | 3 | 37 | 8 | 64 | 64 |  |  | Menus\Shared\all_tabs_icons.dds |
+| magic_background\magic_tabs\magic_tabs_p2\magic_tabs_p2_selection_off | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_off.dds |
+| magic_background\magic_tabs\magic_tabs_p2\magic_tabs_p2_selection_on | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_on.dds |
+| magic_background\magic_tabs\magic_tabs_p3 | rect | 3 | 2 | 304 | 37 | 135 | 85 |  | 7 |  |
+| magic_background\magic_tabs\magic_tabs_p3\magic_tabs_p3_icon | image |  | 3 | 37 | 8 | 64 | 64 |  |  | Menus\Shared\all_tabs_icons.dds |
+| magic_background\magic_tabs\magic_tabs_p3\magic_tabs_p3_selection_off | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_off.dds |
+| magic_background\magic_tabs\magic_tabs_p3\magic_tabs_p3_selection_on | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_on.dds |
+| magic_background\magic_tabs\magic_tabs_p4 | rect | 4 | 2 | 443 | 37 | 135 | 85 |  | 7 |  |
+| magic_background\magic_tabs\magic_tabs_p4\magic_tabs_p4_icon | image |  | 3 | 37 | 8 | 64 | 64 |  | -1 | Menus\Shared\all_tabs_icons.dds |
+| magic_background\magic_tabs\magic_tabs_p4\magic_tabs_p4_selection_off | image |  | 3 | 0 | 24 | 136 | 36 | parent().target | -3 | Menus\Shared\general_tab_selection_off.dds |
+| magic_background\magic_tabs\magic_tabs_p4\magic_tabs_p4_selection_on | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_on.dds |
+| magic_background\magic_tabs\magic_tabs_p5 | rect | 5 | 2 | 578 | 37 | 135 | 85 |  | 7 |  |
+| magic_background\magic_tabs\magic_tabs_p5\magic_tabs_p5_icon | image |  | 3 | 37 | 8 | 64 | 64 |  |  | Menus\Shared\all_tabs_icons.dds |
+| magic_background\magic_tabs\magic_tabs_p5\magic_tabs_p5_selection_off | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_off.dds |
+| magic_background\magic_tabs\magic_tabs_p5\magic_tabs_p5_selection_on | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_on.dds |
+| magic_background\magic_scroll_bar | image | 11 | 1 | 690 | magic_window.y |  | magic_window.height |  | 12 |  |
+| magic_background\magic_headers_top | rect |  | 1 | 145 | 45 |  |  |  | 7 |  |
+| magic_background\magic_headers_top\magic_p1234_header_top | text | 13 | 2 | 130 | 5 |  |  | MagicMenu.user0 | 7 | parent()._headernum parent()._header_ |
+| magic_background\magic_headers_top\magic_active_header_top | text |  | 2 | 130 | 5 |  |  | MagicMenu.user0 | 7 | strings()._activeeffects |
+| magic_background\magic_headers_top\magic_header_left | image |  | 2 | magic_p1234_header_top.x sub(2) sub() sub(20) | magic_p1234_header_top.y add(7) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_left.dds |
+| magic_background\magic_headers_top\magic_header_right | image |  | 2 | magic_p1234_header_top.x add(2) add(20) | magic_header_left.y | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_right.dds |
+| magic_background\magic_window | rect |  | 1 | 40 | 90 | 645 | 479 |  | 10 |  |
+| magic_background\magic_window\magic_pane | rect |  | 2 | 0 | magic_scroll_bar.user7 mul(-81) add(-8) |  |  |  |  |  |
+| magic_background\magic_window\magic_pane\magic_greater_header | rect |  | 3 | 102 | MagicMenu.user1 |  |  | MagicMenu.user1 | 3 |  |
+| magic_background\magic_window\magic_pane\magic_greater_header\magic_greater_header_left | image |  | 4 | magic_greater_header_text.x sub(2) sub(55) | magic_greater_header_text.y add(7) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_left.dds |
+| magic_background\magic_window\magic_pane\magic_greater_header\magic_greater_header_left_right | image |  | 4 | magic_greater_header_text.x add(2) add(20) | magic_greater_header_text.y add(7) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_right.dds |
+| magic_background\magic_window\magic_pane\magic_greater_header\magic_greater_header_text | text |  | 4 | 130 | 35 |  |  |  |  | strings()._greaterpower |
+| magic_background\magic_window\magic_pane\magic_lesser_header | rect |  | 3 | 102 | MagicMenu.user2 |  |  | MagicMenu.user2 | 3 |  |
+| magic_background\magic_window\magic_pane\magic_lesser_header\magic_lesser_header_left | image |  | 4 | magic_lesser_header_text.x sub(2) sub(55) | magic_lesser_header_text.y add(7) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_left.dds |
+| magic_background\magic_window\magic_pane\magic_lesser_header\magic_lesser_header_left_right | image |  | 4 | magic_lesser_header_text.x add(2) add(20) | magic_lesser_header_text.y add(7) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_right.dds |
+| magic_background\magic_window\magic_pane\magic_lesser_header\magic_lesser_header_text | text |  | 4 | 130 | 35 |  |  |  |  | strings()._lesserpower |
+| magic_background\magic_window\magic_pane\magic_spells_header | rect |  | 3 | 102 | MagicMenu.user3 |  |  | MagicMenu.user3 | 3 |  |
+| magic_background\magic_window\magic_pane\magic_spells_header\magic_spells_header_left | image |  | 4 | magic_spells_header_text.x sub(2) sub(55) | magic_spells_header_text.y add(7) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_left.dds |
+| magic_background\magic_window\magic_pane\magic_spells_header\magic_spells_header_left_right | image |  | 4 | magic_spells_header_text.x add(2) add(20) | magic_spells_header_text.y add(7) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_right.dds |
+| magic_background\magic_window\magic_pane\magic_spells_header\magic_spells_header_text | text |  | 4 | 130 | 35 |  |  |  |  | strings()._spells |
+| magic_background\magic_window\magic_pane\magic_scrolls_header | rect |  | 3 | 102 | MagicMenu.user4 |  |  | MagicMenu.user4 | 3 |  |
+| magic_background\magic_window\magic_pane\magic_scrolls_header\magic_scrolls_header_left | image |  | 4 | magic_scrolls_header_text.x sub(2) sub(55) | magic_scrolls_header_text.y add(7) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_left.dds |
+| magic_background\magic_window\magic_pane\magic_scrolls_header\magic_scrolls_header_left_right | image |  | 4 | magic_scrolls_header_text.x add(2) add(20) | magic_scrolls_header_text.y add(7) | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_right.dds |
+| magic_background\magic_window\magic_pane\magic_scrolls_header\magic_scrolls_header_text | text |  | 4 | 130 | 35 |  |  |  |  | strings()._scrolls |
+| magic_background\magic_window\magic_pane\magic_list_contents | rect | 10 | 3 |  |  |  |  |  |  |  |
+| magic_item_template | template |  | 0 |  |  |  |  |  |  |  |
+| magic_item_template\magic_item | rect |  | 1 | 0 | me().listindex | 650 | 81 | me.user8 | 1 |  |
+| magic_item_template\magic_item\magic_equiped_marker | image |  | 2 | 7 | 7 | 635 | 64 | parent().user10 | 2 | Menus\Inventory\inv_equiped_marker_1.dds |
+| magic_item_template\magic_item\magic_item_icon | image |  | 2 | 5 | 7 | 64 | 64 |  | 3 | parent().user6 |
+| magic_item_template\magic_item\magic_item_name | text |  | 2 | 80 | parent().height sub() div(2) |  |  |  | 3 | parent().user1 |
+| magic_item_template\magic_item\magic_item_magnitude | text |  | 2 | 496 | parent().height sub() div(2) |  |  |  | 3 | parent().user3 |
+| magic_item_template\magic_item\magic_item_duration | text |  | 2 | 556 | parent().height sub() div(2) |  |  |  | 3 | parent().user4 |
+| magic_item_template\magic_item\magic_item_cost | text |  | 2 | 600 | parent().height sub() div(2) |  |  |  | 3 | parent().user5 |
+
+#### MagicPopupMenu (`magic_popup_menu.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| magicpop_background | image | 1 | 0 | parent().user1 sub() | 999999 add() min() | magicpop_effect_1_text.width max() max() max() max() max() max() max() max() add(100) min(430) | magicpop_effect_1.visible add() add() add() add() add() add() add() sub(8) mul() add(25) add() |  | parent().user3 sub(10) | Menus\Magic\magic_popup_background.dds |
+| magicpop_background\magicpop_border_ULcorner | image |  | 1 | 0 | 0 | 10 | 10 |  | 1 | Menus\Magic\magic_popup_border_corner.dds |
+| magicpop_background\magicpop_border_top | image |  | 1 | magicpop_border_ULcorner.x add() | magicpop_border_ULcorner.y | magicpop_border_URcorner.x sub() sub() | 11 |  | 1 | Menus\Magic\magic_popup_border_edge_horizontal.dds |
+| magicpop_background\magicpop_border_URcorner | image |  | 1 | parent().width sub() add(2) | 0 | magicpop_border_ULcorner.width | magicpop_border_ULcorner.height |  | 1 | Menus\Magic\magic_popup_border_corner.dds |
+| magicpop_background\magicpop_border_left | image |  | 1 | magicpop_border_ULcorner.x | magicpop_border_ULcorner.y add() | 11 | magicpop_border_LLcorner.y sub() sub() |  | 1 | Menus\Magic\magic_popup_border_edge_vertical.dds |
+| magicpop_background\magicpop_border_LLcorner | image |  | 1 | 0 | parent().height sub() add(2) | 10 | 10 |  | 1 | Menus\Magic\magic_popup_border_corner.dds |
+| magicpop_background\magicpop_border_bottom | image |  | 1 | magicpop_border_LLcorner.x add() | magicpop_border_LLcorner.y | magicpop_border_LRcorner.x sub() sub() | 11 |  | 1 | Menus\Magic\magic_popup_border_edge_horizontal.dds |
+| magicpop_background\magicpop_border_LRcorner | image |  | 1 | parent().width sub() add(2) | parent().height sub() add(2) | magicpop_border_ULcorner.width | magicpop_border_ULcorner.height |  | 1 | Menus\Magic\magic_popup_border_corner.dds |
+| magicpop_background\magicpop_border_right | image |  | 1 | magicpop_border_URcorner.x | magicpop_border_URcorner.y add() | 11 | magicpop_border_LRcorner.y sub() sub() |  | 1 | Menus\Magic\magic_popup_border_edge_vertical.dds |
+| magicpop_background\magicpop_background_bottom | rect | 21 | 1 | 0 | parent().height sub() | parent().width | magicpop_requires_text.y add() add(16) | false | 1 |  |
+| magicpop_background\magicpop_background_bottom\magicpop_divider | image |  | 2 | parent().width sub() div(2) | 0 sub(2) | 320 | 16 |  | 1 | Menus\Magic\magic_popup_divider.dds |
+| magicpop_background\magicpop_background_bottom\magicpop_requires_text | text |  | 2 | parent().width sub() div(2) | magicpop_divider.y add() add(8) |  |  |  | 1 | parent().string |
+| magicpop_background\magicpop_contents | rect |  | 1 | 0 |  |  |  |  | 1 |  |
+| magicpop_background\magicpop_contents\magicpop_effect_1 | rect | 11 | 2 | 15 | 15 add(2) | magicpop_background.width sub(40) | MagicPopupMenu._item_height | true | 1 |  |
+| magicpop_background\magicpop_contents\magicpop_effect_1\magicpop_effect_1_icon | image |  | 3 | 0 | parent().height sub(32) div(2) add(2) | 32 | 32 |  |  | parent().user1 |
+| magicpop_background\magicpop_contents\magicpop_effect_1\magicpop_effect_1_text | text |  | 3 | 45 | parent().height sub() div(2) |  |  |  |  | parent().user0 |
+| magicpop_background\magicpop_contents\magicpop_effect_2 | rect | 12 | 2 | 15 | magicpop_effect_1.y add() add() | magicpop_background.width sub(40) | MagicPopupMenu._item_height | true | 2 |  |
+| magicpop_background\magicpop_contents\magicpop_effect_2\magicpop_effect_2_divider | image |  | 3 | -5 | 0 sub(2) | magicpop_background.width sub(40) | 4 |  |  | Menus\Magic\magic_popup_divider_1.dds |
+| magicpop_background\magicpop_contents\magicpop_effect_2\magicpop_effect_2_icon | image |  | 3 | 0 | parent().height sub(32) div(2) add(2) | 32 | 32 |  |  | parent().user1 |
+| magicpop_background\magicpop_contents\magicpop_effect_2\magicpop_effect_2_text | text |  | 3 | 45 | parent().height sub() div(2) |  |  |  |  | parent().user0 |
+| magicpop_background\magicpop_contents\magicpop_effect_3 | rect | 13 | 2 | 15 | magicpop_effect_2.y add() add() | magicpop_background.width sub(40) | MagicPopupMenu._item_height | true | 2 |  |
+| magicpop_background\magicpop_contents\magicpop_effect_3\magicpop_effect_3_divider | image |  | 3 | -5 | 0 sub(2) | magicpop_background.width sub(40) | 4 |  |  | Menus\Magic\magic_popup_divider_1.dds |
+| magicpop_background\magicpop_contents\magicpop_effect_3\magicpop_effect_3_icon | image |  | 3 | 0 | parent().height sub(32) div(2) add(2) | 32 | 32 |  |  | parent().user1 |
+| magicpop_background\magicpop_contents\magicpop_effect_3\magicpop_effect_3_text | text |  | 3 | 45 | parent().height sub() div(2) |  |  |  |  | parent().user0 |
+| magicpop_background\magicpop_contents\magicpop_effect_4 | rect | 14 | 2 | 15 | magicpop_effect_3.y add() add() | magicpop_background.width sub(40) | MagicPopupMenu._item_height | true | 2 |  |
+| magicpop_background\magicpop_contents\magicpop_effect_4\magicpop_effect_4_divider | image |  | 3 | -5 | 0 sub(2) | magicpop_background.width sub(40) | 4 |  |  | Menus\Magic\magic_popup_divider_1.dds |
+| magicpop_background\magicpop_contents\magicpop_effect_4\magicpop_effect_4_icon | image |  | 3 | 0 | parent().height sub(32) div(2) add(2) | 32 | 32 |  |  | parent().user1 |
+| magicpop_background\magicpop_contents\magicpop_effect_4\magicpop_effect_4_text | text |  | 3 | 45 | parent().height sub() div(2) |  |  |  |  | parent().user0 |
+| magicpop_background\magicpop_contents\magicpop_effect_5 | rect | 15 | 2 | 15 | magicpop_effect_4.y add() add() | magicpop_background.width sub(40) | MagicPopupMenu._item_height | true | 2 |  |
+| magicpop_background\magicpop_contents\magicpop_effect_5\magicpop_effect_5_divider | image |  | 3 | -5 | 0 sub(2) | magicpop_background.width sub(40) | 4 |  |  | Menus\Magic\magic_popup_divider_1.dds |
+| magicpop_background\magicpop_contents\magicpop_effect_5\magicpop_effect_5_icon | image |  | 3 | 0 | parent().height sub(32) div(2) add(2) | 32 | 32 |  |  | parent().user1 |
+| magicpop_background\magicpop_contents\magicpop_effect_5\magicpop_effect_5_text | text |  | 3 | 45 | parent().height sub() div(2) |  |  |  |  | parent().user0 |
+| magicpop_background\magicpop_contents\magicpop_effect_6 | rect | 16 | 2 | 15 | magicpop_effect_5.y add() add() | magicpop_background.width sub(40) | MagicPopupMenu._item_height | true | 2 |  |
+| magicpop_background\magicpop_contents\magicpop_effect_6\magicpop_effect_6_divider | image |  | 3 | -5 | 0 sub(2) | magicpop_background.width sub(40) | 4 |  |  | Menus\Magic\magic_popup_divider_1.dds |
+| magicpop_background\magicpop_contents\magicpop_effect_6\magicpop_effect_6_icon | image |  | 3 | 0 | parent().height sub(32) div(2) add(2) | 32 | 32 |  |  | parent().user1 |
+| magicpop_background\magicpop_contents\magicpop_effect_6\magicpop_effect_6_text | text |  | 3 | 45 | parent().height sub() div(2) |  |  |  |  | parent().user0 |
+| magicpop_background\magicpop_contents\magicpop_effect_7 | rect | 17 | 2 | 15 | magicpop_effect_6.y add() add() | magicpop_background.width sub(40) | MagicPopupMenu._item_height | true | 2 |  |
+| magicpop_background\magicpop_contents\magicpop_effect_7\magicpop_effect_7_divider | image |  | 3 | -5 | 0 sub(2) | magicpop_background.width sub(40) | 4 |  |  | Menus\Magic\magic_popup_divider_1.dds |
+| magicpop_background\magicpop_contents\magicpop_effect_7\magicpop_effect_7_icon | image |  | 3 | 0 | parent().height sub(32) div(2) add(2) | 32 | 32 |  |  | parent().user1 |
+| magicpop_background\magicpop_contents\magicpop_effect_7\magicpop_effect_7_text | text |  | 3 | 45 | parent().height sub() div(2) |  |  |  |  | parent().user0 |
+| magicpop_background\magicpop_contents\magicpop_effect_8 | rect | 18 | 2 | 15 | magicpop_effect_7.y add() add() | magicpop_background.width sub(40) | MagicPopupMenu._item_height | true | 2 |  |
+| magicpop_background\magicpop_contents\magicpop_effect_8\magicpop_effect_8_divider | image |  | 3 | -5 | 0 sub(2) | magicpop_background.width sub(40) | 4 |  |  | Menus\Magic\magic_popup_divider_1.dds |
+| magicpop_background\magicpop_contents\magicpop_effect_8\magicpop_effect_8_icon | image |  | 3 | 0 | parent().height sub(32) div(2) add(2) | 32 | 32 |  |  | parent().user1 |
+| magicpop_background\magicpop_contents\magicpop_effect_8\magicpop_effect_8_text | text |  | 3 | 45 | parent().height sub() div(2) |  |  |  |  | parent().user0 |
+
+#### MapMenu (`map_menu.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| map_preload_map_icons_1 | image |  | 0 | -100 |  | 1 | 1 |  |  | Menus\Icons\Map\map_icons_all.dds |
+| map_preload_map_icons_2 | image |  | 0 | -100 |  | 1 | 1 |  |  | Menus\HUD\hud_compass_goal.dds |
+| map_preload_map_icons_3 | image |  | 0 | -100 |  | 1 | 1 |  |  | Menus\Map\world_map_arrow_icon.dds |
+| map_xbox_hints | rect |  | 0 | screen().width sub() sub() sub() | screen().height sub() sub() sub() sub() add(15) | 100 | 100 | xbox | 10 |  |
+| map_xbox_hints\map_hint_a | rect | generic | 1 | 0 | 0 |  |  | map_world_icon_paper.visible | 5 |  |
+| map_xbox_hints\map_hint_x | rect | 5 | 1 | 0 | map_hint_a.height |  |  | map_background.user0 | 5 |  |
+| map_xbox_hints\magic_hint_right_stick | rect | 5 | 1 | 0 | map_hint_x.height add() |  |  | map_background.user0 | 5 |  |
+| map_xbox_hints\magic_hint_left_stick | rect | 5 | 1 | 0 | magic_hint_right_stick.y add() |  |  |  | 5 |  |
+| map_focusBox | rect | 23 | 0 |  |  |  |  | false | 1 |  |
+| map_world_icon_paper | image | 42 | 0 | me().user1 add(-4) add(-12) | me().user2 add(-3) | child(map_world_icon_text).width add(30) | 45 | false | me().user0 add(-2) | Menus\Map\world\world_map_paper.dds |
+| map_world_icon_paper\map_world_icon_paper_end | image |  | 1 | parent().width sub(19) | 0 | 40 | 45 |  | 1 | Menus\Map\world\world_map_paper_end.dds |
+| map_world_icon_paper\map_world_icon_text | text |  | 1 | 32 add(8) | 6 |  |  |  | 2 | parent().string |
+| map_background | image | 9 | 0 | screen().cropx add() sub(60) max() add(7) | screen().height sub() sub() sub() add(3) | 745 | 792 |  | 1 | Menus\Shared\shared_main_background_1.dds |
+| map_background\map_background_2 | image |  | 1 | 700 | 0 | 54 | 792 |  | -15 | Menus\Shared\shared_main_background_2.dds |
+| map_background\map_tabs | image |  | 1 | 0 | 594 | 730 | 128 |  | 1 | Menus\Shared\shared_page_tabs.dds |
+| map_background\map_tabs\map_tabs_prev | rect | 7 | 2 | -1 | -1 | 1 | 1 |  |  |  |
+| map_background\map_tabs\map_tabs_next | rect | 8 | 2 | -1 | -1 | 1 | 1 |  |  |  |
+| map_background\map_tabs\map_tabs_p1 | rect | 1 | 2 | 28 | 37 | 135 | 85 |  | 7 |  |
+| map_background\map_tabs\map_tabs_p1\map_tabs_p1_icon | image |  | 3 | 37 | 8 | 64 | 64 |  |  | Menus\Shared\all_tabs_icons.dds |
+| map_background\map_tabs\map_tabs_p1\map_tabs_p1_selection_off | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_off.dds |
+| map_background\map_tabs\map_tabs_p1\map_tabs_p1_selection_on | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_on.dds |
+| map_background\map_tabs\map_tabs_p2 | rect | 2 | 2 | 165 | 37 | 135 | 85 |  | 7 |  |
+| map_background\map_tabs\map_tabs_p2\map_tabs_p2_icon | image |  | 3 | 37 | 8 | 64 | 64 |  |  | Menus\Shared\all_tabs_icons.dds |
+| map_background\map_tabs\map_tabs_p2\map_tabs_p2_selection_off | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_off.dds |
+| map_background\map_tabs\map_tabs_p2\map_tabs_p2_selection_on | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_on.dds |
+| map_background\map_tabs\map_tabs_p3 | rect | 3 | 2 | 304 | 37 | 135 | 85 |  | 7 |  |
+| map_background\map_tabs\map_tabs_p3\map_tabs_p3_icon | image |  | 3 | 37 | 8 | 64 | 64 |  |  | Menus\Shared\all_tabs_icons.dds |
+| map_background\map_tabs\map_tabs_p3\map_tabs_p3_selection_off | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_off.dds |
+| map_background\map_tabs\map_tabs_p3\map_tabs_p3_selection_on | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_on.dds |
+| map_background\map_tabs\map_tabs_p4 | rect | 4 | 2 | 443 | 37 | 135 | 85 |  | 7 |  |
+| map_background\map_tabs\map_tabs_p4\map_tabs_p4_icon | image |  | 3 | 37 | 8 | 64 | 64 |  | -1 | Menus\Shared\all_tabs_icons.dds |
+| map_background\map_tabs\map_tabs_p4\map_tabs_p4_selection_off | image |  | 3 | 0 | 24 | 136 | 36 | parent().target | -3 | Menus\Shared\general_tab_selection_off.dds |
+| map_background\map_tabs\map_tabs_p4\map_tabs_p4_selection_on | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_on.dds |
+| map_background\map_tabs\map_tabs_p5 | rect | 5 | 2 | 578 | 37 | 135 | 85 |  | 7 |  |
+| map_background\map_tabs\map_tabs_p5\map_tabs_p5_icon | image |  | 3 | 37 | 8 | 64 | 64 |  |  | Menus\Shared\all_tabs_icons.dds |
+| map_background\map_tabs\map_tabs_p5\map_tabs_p5_selection_off | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_off.dds |
+| map_background\map_tabs\map_tabs_p5\map_tabs_p5_selection_on | image |  | 3 | 0 | 24 | 136 | 36 | parent().target |  | Menus\Shared\general_tab_selection_on.dds |
+| map_background\map_tab_layout | rect |  | 1 | 26 | 20 |  |  |  |  |  |
+| map_background\map_tab_layout\map_tabs_prev | rect | 7 | 2 | -1 | -1 | 1 | 1 |  |  |  |
+| map_background\map_tab_layout\map_tabs_next | rect | 8 | 2 | -1 | -1 | 1 | 1 |  |  |  |
+| map_background\map_tab_layout\map_tab_page_5_target | rect | 5 | 2 | 555 | 603 | 132 | 85 |  | 2 |  |
+| map_background\map_tab_layout\map_tab_page_4_target | rect | 4 | 2 | 415 | 603 | 132 | 85 |  | 2 |  |
+| map_background\map_tab_layout\map_tab_page_3_target | rect | 3 | 2 | 279 | 603 | 132 | 85 |  | 2 |  |
+| map_background\map_tab_layout\map_tab_page_2_target | rect | 2 | 2 | 144 | 603 | 132 | 85 |  | 2 |  |
+| map_background\map_tab_layout\map_tab_page_1_target | rect | 1 | 2 | 0 | 603 | 140 | 85 |  | 2 |  |
+| map_background\map_page_5 | rect |  | 1 | 26 | 20 | 690 | 691 | me()._is_topmost | 2 |  |
+| map_background\map_page_5\map_p5 | image |  | 2 | -3 | 522 | 791 | 176 |  | 2 | Menus\Shared\shared_05_tab.dds |
+| map_background\map_page_5\map_page_5_extension | image |  | 2 | 585 | 0 | 567 | 613 |  | 4 | Menus\Shared\page_extention.dds |
+| map_background\map_page_4 | rect |  | 1 | 26 | 20 | 690 | 688 | me()._is_topmost | 2 |  |
+| map_background\map_page_4\map_p4 | image |  | 2 | -3 | 522 | 791 | 176 |  | 2 | Menus\Shared\shared_04_tab.dds |
+| map_background\map_page_4\map_page_4_extension | image |  | 2 | 585 | 0 | 567 | 613 |  | 4 | Menus\Shared\page_extention.dds |
+| map_background\map_contents_3_4_5 | rect |  | 1 | 8 | -40 |  |  | map_page_3._is_topmost | 30 |  |
+| map_background\map_contents_3_4_5\map_log_lines_top | image |  | 2 | 40 | 162 | 636 | 3 |  | 1 | Menus\Stats\stat_border_horizontal_1.dds |
+| map_background\map_contents_3_4_5\map_log_lines_top2 | image |  | 2 | 650 | 162 | 436 | 3 |  | 1 | Menus\Stats\stat_border_horizontal_2.dds |
+| map_background\map_contents_3_4_5\map_log_lines_bottom | image |  | 2 | 40 | 622 | 636 | 3 |  | 1 | Menus\Stats\stat_border_horizontal_2.dds |
+| map_background\map_contents_3_4_5\map_log_lines_bottom2 | image |  | 2 | 650 | 622 | 436 | 3 |  | 1 | Menus\Stats\stat_border_horizontal_2.dds |
+| map_background\map_contents_3_4_5\map_log_scroll_bar | image | 11 | 2 | map_log_window.x add() add(25) | map_log_window.y add(32) |  | map_log_window.height sub(64) |  | 5 |  |
+| map_background\map_contents_3_4_5\map_log_window | rect |  | 2 | 25 | 165 | 1060 | 460 |  | 4 |  |
+| map_background\map_contents_3_4_5\map_log_window\map_log_window_pane | rect | 13 | 3 |  | 0 sub() |  | 0 |  |  |  |
+| map_background\map_contents_3_4_5\map_log_window\map_log_window_pane\map_item_template | template |  | 4 |  |  |  |  |  |  |  |
+| map_background\map_contents_3_4_5\map_log_window\map_log_window_pane\map_item_template\map_item | rect | 51 | 5 | 0 | me().user5 | 1068 | 100 add() |  | 4 |  |
+| map_background\map_contents_3_4_5\map_log_window\map_log_window_pane\map_item_template\map_item\map_log_item_active | image |  | 6 | 10 | 5 | sibling(map_item_name).width max() add() add(15) | 64 | parent().user6 | 1 | Menus\Inventory\inv_equiped_marker_1.dds |
+| map_background\map_contents_3_4_5\map_log_window\map_log_window_pane\map_item_template\map_item\map_item_name | text |  | 6 | 80 | 7 |  |  | map_log_back.visible | 2 | parent().user1 |
+| map_background\map_contents_3_4_5\map_log_window\map_log_window_pane\map_item_template\map_item\map_item_date | text |  | 6 | 80 | -16 add(40) |  |  |  | 2 | parent().user2 |
+| map_background\map_contents_3_4_5\map_log_window\map_log_window_pane\map_item_template\map_item\map_item_body | text |  | 6 | 10 | 76 |  |  |  | 2 | parent().user3 |
+| map_background\map_contents_3_4_5\map_log_window\map_log_window_pane\map_item_template\map_item\map_log_item_icon | image |  | 6 | 10 | 5 | 64 | 64 |  | 2 | parent().user4 |
+| map_background\map_contents_3_4_5\map_log_window\map_log_mapit | image | 31 | 3 | 860 | -70 |  |  |  | 10 |  |
+| map_background\map_contents_3_4_5\map_log_window\map_log_back | image | 32 | 3 | 860 | -70 |  |  |  | 10 |  |
+| map_background\map_page_3 | rect |  | 1 | 26 | 20 | 690 | 688 | me()._is_topmost | 2 |  |
+| map_background\map_page_3\map_p3 | image |  | 2 | -3 | 522 | 791 | 176 |  | 2 | Menus\Shared\shared_03_tab.dds |
+| map_background\map_page_3\map_page_3_extension | image |  | 2 | 585 | 0 | 567 | 613 |  | 4 | Menus\Shared\page_extention.dds |
+| map_background\map_page_2 | rect |  | 1 | 26 | 20 | 690 | 688 | me()._is_topmost | 2 |  |
+| map_background\map_page_2\map_p2 | image |  | 2 | -3 | 522 | 791 | 176 |  | 2 | Menus\Shared\shared_02_tab.dds |
+| map_background\map_page_2\map_page_2_extension | image |  | 2 | 585 | 0 | 567 | 613 |  | 4 | Menus\Shared\page_extention.dds |
+| map_background\map_page_2\map_world_layout | rect |  | 2 | 0 | 0 |  |  |  |  |  |
+| map_background\map_page_2\map_world_layout\map_default_world_focus | rect | 21 | 3 | 10 | 10 | 3 | 3 |  |  |  |
+| map_background\map_page_2\map_world_layout\map_world_map_frame_top | image |  | 3 | 75 | 100 | 1003 | 36 |  | 100 | Menus\Map\map_border_top.dds |
+| map_background\map_page_2\map_world_layout\map_world_map_frame_bottom | image |  | 3 | 75 | 544 | 1003 | 36 |  | 100 | Menus\Map\map_border_bottom.dds |
+| map_background\map_page_2\map_world_layout\map_world_map_frame_left | image |  | 3 | 26 | 100 | 52 | 481 |  | 99 | Menus\Map\map_border_left.dds |
+| map_background\map_page_2\map_world_layout\map_world_map_frame_right | image |  | 3 | 1078 | 100 | 52 | 481 |  | 99 | Menus\Map\map_border_right.dds |
+| map_background\map_page_2\map_world_layout\map_world_no_map | text |  | 3 | 580 | 300 |  |  | map_world_map.visible | 8 | strings()._nomap |
+| map_background\map_page_2\map_world_layout\map_world_map_window | rect | 63 | 3 | 30 | 110 | MapMenu.user4 | MapMenu.user5 |  | 2 |  |
+| map_background\map_page_2\map_world_layout\map_world_map_window\map_world_map_cursor | image | 61 | 4 | me().user0 max() min() | me().user1 max() min() | 42 | 42 | xenon | 50 | Menus\Misc\cursor.dds |
+| map_background\map_page_2\map_world_layout\map_world_map_window\map_world_map | image | 41 | 4 | 0 sub() add() | 0 sub() add() | 0 | 0 | true | 4 |  |
+| map_background\map_page_1 | rect |  | 1 | 26 | 20 | 690 | 688 | me()._is_topmost | 2 |  |
+| map_background\map_page_1\map_p1 | image |  | 2 | -3 | 522 | 791 | 176 |  | 2 | Menus\Shared\shared_01_tab.dds |
+| map_background\map_page_1\map_page_1_extension | image |  | 2 | 585 | 0 | 567 | 613 |  | 4 | Menus\Shared\page_extention.dds |
+| map_background\map_page_1\map_local_layout | rect |  | 2 | 0 | 0 |  |  | map_page_1._is_topmost |  |  |
+| map_background\map_page_1\map_local_layout\map_default_local_focus | rect | 22 | 3 | 10 | 10 | 3 | 3 |  |  |  |
+| map_background\map_page_1\map_local_layout\map_local_map_frame_top | image |  | 3 | 75 | 100 | 1003 | 36 |  | 100 | Menus\Map\map_border_top.dds |
+| map_background\map_page_1\map_local_layout\map_local_map_frame_bottom | image |  | 3 | 75 | 544 | 1003 | 36 |  | 100 | Menus\Map\map_border_bottom.dds |
+| map_background\map_page_1\map_local_layout\map_local_map_frame_left | image |  | 3 | 26 | 100 | 52 | 481 |  | 99 | Menus\Map\map_border_left.dds |
+| map_background\map_page_1\map_local_layout\map_local_map_frame_right | image |  | 3 | 1078 | 100 | 52 | 481 |  | 99 | Menus\Map\map_border_right.dds |
+| map_background\map_page_1\map_local_layout\map_local_no_map | text |  | 3 | 560 | 300 |  |  | map_local_map.visible | 8 |  |
+| map_background\map_page_1\map_local_layout\map_local_map_grab | rect | 45 | 3 | 20 | 100 | MapMenu.user4 | MapMenu.user5 | true | 6 |  |
+| map_background\map_page_1\map_local_layout\map_local_map_window | rect |  | 3 | 30 | 110 | MapMenu.user4 | MapMenu.user5 |  | 2 |  |
+| map_background\map_page_1\map_local_layout\map_local_map_window\map_local_map_cursor | image | 62 | 4 | me().user0 max() min() | me().user1 max() min() | 42 | 42 | xenon | 40 | Menus\Misc\cursor.dds |
+| map_background\map_page_1\map_local_layout\map_local_map_window\map_local_map_layout | rect | 46 | 4 | me().user12 sub() add() sub(14) | me().user13 sub() add() sub(21) | child(map_local_map).user0 | child(map_local_map).user1 |  |  |  |
+| map_background\map_page_1\map_local_layout\map_local_map_window\map_local_map_layout\map_local_map | rect | 47 | 5 |  |  |  |  |  | 4 |  |
+| map_background\map_page_1\map_local_layout\map_local_map_window\map_local_map_layout\map_local_icons | rect | 48 | 5 |  |  | 680 | 550 |  | 6 |  |
+| map_background\map_top_title_layout | rect |  | 1 |  |  |  |  | map_log_back.visible |  |  |
+| map_background\map_top_title_layout\map_log_border_left | image |  | 2 | map_log_name.x sub(2) sub(55) | 57 | 35 | 17 |  | 110 | Menus\Shared\shared_decor_blue_left.dds |
+| map_background\map_top_title_layout\map_log_border_right | image |  | 2 | map_log_name.width div(2) add() add(20) | 58 | 35 | 17 |  | 130 | Menus\Shared\shared_decor_blue_right.dds |
+| map_background\map_top_title_layout\map_log_date | text |  | 2 | map_log_name.x | 80 |  |  |  | 140 | MapMenu.user2 |
+| map_background\map_top_title_layout\map_log_name | text |  | 2 | 230 add(370) | 47 |  |  |  | 120 | MapMenu.user1 |
+| map_background\map_item_name | text |  | 1 | 370 | 63 |  |  | map_log_back.visible | 140 | MapMenu.user3 |
+| map_world_icon | template |  | 0 |  |  |  |  |  |  |  |
+| map_world_icon\map_world_icon | image | 43 | 1 | me().user1 sub(17) | me().user2 sub(17) sub(17) | parent()._large_icon_width_adj add(32) add(64) | parent()._large_icon_height_adj add(32) add(64) |  | me()._random_depth max(90) max() add(1) | me().user6 add(3) add(1) parent()._filename_ |
+| map_local_icon | template |  | 0 |  |  |  |  |  |  |  |
+| map_local_icon\map_local_icon | image | 49 | 1 | me().user1 sub(2) | me().user2 sub(2) | parent()._large_icon_width_adj add(32) add(64) | parent()._large_icon_height_adj add(32) add(64) | true | me()._random_depth max(90) max() add(1) | me().user6 add(3) add(1) parent()._filename_ |
+| preload | rect |  | 0 | 10 | -1000 |  |  |  |  |  |
+| preload\pre01 | image |  | 1 |  |  |  |  |  |  | Icons\Quest\icon_amulet_of_king.dds |
+| preload\pre02 | image |  | 1 |  |  |  |  |  |  | Icons\Quest\icon_arena.dds |
+| preload\pre03 | image |  | 1 |  |  |  |  |  |  | Icons\Quest\icon_bruma.dds |
+| preload\pre04 | image |  | 1 |  |  |  |  |  |  | Icons\Quest\icon_daedra.dds |
+| preload\pre05 | image |  | 1 |  |  |  |  |  |  | Icons\Quest\icon_dark_brotherhood.dds |
+| preload\pre06 | image |  | 1 |  |  |  |  |  |  | Icons\Quest\icon_dragonfires.dds |
+| preload\pre07 | image |  | 1 |  |  |  |  |  |  | Icons\Quest\icon_fighters_guild.dds |
+| preload\pre08 | image |  | 1 |  |  |  |  |  |  | Icons\Quest\icon_imperial_city.dds |
+| preload\pre09 | image |  | 1 |  |  |  |  |  |  | Icons\Quest\icon_kvatch.dds |
+| preload\pre10 | image |  | 1 |  |  |  |  |  |  | Icons\Quest\icon_leyawiin.dds |
+| preload\pre11 | image |  | 1 |  |  |  |  |  |  | Icons\Quest\icon_mages_guild.dds |
+| preload\pre12 | image |  | 1 |  |  |  |  |  |  | Icons\Quest\icon_master_trainer.dds |
+| preload\pre13 | image |  | 1 |  |  |  |  |  |  | Icons\Quest\icon_miscarcand.dds |
+| preload\pre14 | image |  | 1 |  |  |  |  |  |  | Icons\Quest\icon_miscellaneous.dds |
+| preload\pre15 | image |  | 1 |  |  |  |  |  |  | Icons\Quest\icon_mythic_dawn.dds |
+| preload\pre16 | image |  | 1 |  |  |  |  |  |  | Icons\Quest\icon_oblivion_gate.dds |
+| preload\pre17 | image |  | 1 |  |  |  |  |  |  | Icons\Quest\icon_paradise.dds |
+| preload\pre18 | image |  | 1 |  |  |  |  |  |  | Icons\Quest\icon_settlements_quest_icon.dds |
+| preload\pre19 | image |  | 1 |  |  |  |  |  |  | Icons\Quest\icon_thieves_guild.dds |
+| preload\pre20 | image |  | 1 |  |  |  |  |  |  | Icons\Quest\icon_tiber_septim's_armor.dds |
+| preload\pre21 | image |  | 1 |  |  |  |  |  |  | Icons\Quest\icon_weynon_priory.dds |
+
+#### StatsMenu (`stats_menu.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| stat_focus_box | rect | 60 | 0 |  |  |  |  | false |  |  |
+| stats_xbox_hints | rect |  | 0 | screen().width sub() sub() sub() | screen().height sub() sub() sub() add(15) | 100 | 100 | xbox | 1 |  |
+| stats_xbox_hints\stats_hint_left_stick | rect | 5 | 1 | 0 | 0 |  |  |  | 5 |  |
+| stat_layout | rect |  | 0 | screen().cropx add() sub(60) max() add(7) | screen().height sub() sub() sub() add(3) |  |  |  |  |  |
+| stat_layout\stat_background | image | generic | 1 | 0 | 0 | 745 | 792 |  | 4 | Menus\Shared\shared_main_background_1.dds |
+| stat_layout\stat_background\stat_background_2 | image |  | 2 | 700 | 0 | 54 | 792 |  | -15 | Menus\Shared\shared_main_background_2.dds |
+| stat_layout\stat_background\stat_p1 | rect | 10 | 2 | 0 | 3 | 730 | 730 | StatsMenu.user0 | 8 |  |
+| stat_layout\stat_background\stat_p1\stats_page_1_tabs | image |  | 3 | 23 | 539 | 791 | 176 |  | 0 | Menus\Shared\shared_01_tab.dds |
+| stat_layout\stat_background\stat_p1\stat_p1_race_layout | rect | 14 | 3 | 110 | me().user0 mul(76) add(104) | 545 | 70 |  | 5 |  |
+| stat_layout\stat_background\stat_p1\stat_p1_race_layout\stat_p1_race | text |  | 4 | 400 | 37 sub(2) |  |  |  | 3 | stat_p1.user2 |
+| stat_layout\stat_background\stat_p1\stat_p1_race_layout\stat_p1_race_label | text |  | 4 | 85 | 21 |  |  |  | 3 | strings()._race |
+| stat_layout\stat_background\stat_p1\stat_p1_birthsign_layout | rect | 14 | 3 | 110 | me().user0 mul(76) add(104) | 545 | 70 |  | 5 |  |
+| stat_layout\stat_background\stat_p1\stat_p1_birthsign_layout\stat_p1_birthsign | text |  | 4 | 406 | 37 sub(2) |  |  |  | 3 | stat_p1.user3 |
+| stat_layout\stat_background\stat_p1\stat_p1_birthsign_layout\stat_p1_birthsign_label | text |  | 4 | 85 | 21 |  |  |  | 3 | strings()._birthsign |
+| stat_layout\stat_background\stat_p1\stat_p1_class_layout | rect | 14 | 3 | 110 | me().user0 mul(76) add(104) | 545 | 70 |  | 5 |  |
+| stat_layout\stat_background\stat_p1\stat_p1_class_layout\stat_p1_class | text |  | 4 | 400 | 37 sub(2) |  |  |  | 3 | stat_p1.user4 |
+| stat_layout\stat_background\stat_p1\stat_p1_class_layout\stat_p1_class_label | text |  | 4 | 85 | 21 |  |  |  | 3 | strings()._class |
+| stat_layout\stat_background\stat_p1\stat_p1_level_layout | rect | 14 | 3 | 110 | me().user0 mul(76) add(104) | 545 | 70 |  | 5 |  |
+| stat_layout\stat_background\stat_p1\stat_p1_level_layout\stat_p1_level | text |  | 4 | 400 | 37 sub(2) |  |  |  | 3 | stat_p1.user5 |
+| stat_layout\stat_background\stat_p1\stat_p1_level_layout\stat_p1_level_label | text |  | 4 | 85 | 21 |  |  |  | 3 | strings()._level |
+| stat_layout\stat_background\stat_p1\stat_p1_title_left | image |  | 3 | stat_p1_name.x sub(2) sub(10) sub() | 60 | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_left.dds |
+| stat_layout\stat_background\stat_p1\stat_p1_title_right | image |  | 3 | stat_p1_name.width div(2) add() add(10) | 60 | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_right.dds |
+| stat_layout\stat_background\stat_p1\stat_p1_name | text |  | 3 | 380 | 51 |  |  |  | 7 | parent().user1 |
+| stat_layout\stat_background\stat_p1\stat_p1_health_layout | rect | 14 | 3 | 65 | me().user0 mul(74) add(117) | 618 | 67 |  | 5 |  |
+| stat_layout\stat_background\stat_p1\stat_p1_health_layout\stat_p1_health_label | text |  | 4 | 24 | 18 |  |  |  | 3 | strings()._health |
+| stat_layout\stat_background\stat_p1\stat_p1_health_layout\stat_p1_health_bar | image |  | 4 | 222 | 20 |  |  |  |  |  |
+| stat_layout\stat_background\stat_p1\stat_p1_health_layout\stat_p1_health_max | text |  | 4 | 595 | 18 |  |  |  | 3 | stat_p1.user7 |
+| stat_layout\stat_background\stat_p1\stat_p1_health_layout\stat_p1_health_div | text |  | 4 | stat_p1_health_max.x sub() | 18 |  |  |  | 3 | / |
+| stat_layout\stat_background\stat_p1\stat_p1_health_layout\stat_p1_health_current | text |  | 4 | stat_p1_health_max.x sub() sub() | 18 |  |  |  | 3 | stat_p1.user6 |
+| stat_layout\stat_background\stat_p1\stat_p1_magica_layout | rect | 14 | 3 | 65 | me().user0 mul(74) add(110) | 618 | 67 |  | 5 |  |
+| stat_layout\stat_background\stat_p1\stat_p1_magica_layout\stat_p1_magica_label | text |  | 4 | 24 | 18 |  |  |  | 3 | strings()._magicka |
+| stat_layout\stat_background\stat_p1\stat_p1_magica_layout\stat_p1_magica_bar | image |  | 4 | 222 | 20 |  |  |  |  |  |
+| stat_layout\stat_background\stat_p1\stat_p1_magica_layout\stat_p1_magica_max | text |  | 4 | 595 | 18 |  |  |  | 3 | stat_p1.user9 |
+| stat_layout\stat_background\stat_p1\stat_p1_magica_layout\stat_p1_magica_div | text |  | 4 | stat_p1_magica_max.x sub() | 18 |  |  |  | 3 | / |
+| stat_layout\stat_background\stat_p1\stat_p1_magica_layout\stat_p1_magica_current | text |  | 4 | stat_p1_magica_max.x sub() sub() | 18 |  |  |  | 3 | stat_p1.user8 |
+| stat_layout\stat_background\stat_p1\stat_p1_fatigue_layout | rect | 14 | 3 | 65 | me().user0 mul(74) add(107) | 618 | 67 |  | 5 |  |
+| stat_layout\stat_background\stat_p1\stat_p1_fatigue_layout\stat_p1_fatigue_label | text |  | 4 | 24 | 18 |  |  |  | 3 | strings()._fatigue |
+| stat_layout\stat_background\stat_p1\stat_p1_fatigue_layout\stat_p1_fatigue_bar | image |  | 4 | 222 | 20 |  |  |  |  |  |
+| stat_layout\stat_background\stat_p1\stat_p1_fatigue_layout\stat_p1_fatigue_max | text |  | 4 | 595 | 18 |  |  |  | 3 | stat_p1.user11 |
+| stat_layout\stat_background\stat_p1\stat_p1_fatigue_layout\stat_p1_fatigue_div | text |  | 4 | stat_p1_fatigue_max.x sub() | 18 |  |  |  | 3 | / |
+| stat_layout\stat_background\stat_p1\stat_p1_fatigue_layout\stat_p1_fatigue_current | text |  | 4 | stat_p1_fatigue_max.x sub() sub() | 18 |  |  |  | 3 | stat_p1.user10 |
+| stat_layout\stat_background\stat_p1\stat_p1_lines | image |  | 3 | 45 | 85 | 659 | 539 |  | 2 | Menus\Stats\stat_player_lines.dds |
+| stat_layout\stat_background\stat_p1\stat_p1_icons | image |  | 3 | 121 | 107 | 64 | 292 |  | 7 | Menus\Stats\stat_player_icons.dds |
+| stat_layout\stat_background\stat_p2 | rect | 20 | 2 | 0 | 3 | 730 | 730 | StatsMenu.user0 | 8 |  |
+| stat_layout\stat_background\stat_p2\stats_page_2_tabs | image |  | 3 | 23 | 539 | 791 | 176 |  | 0 | Menus\Shared\shared_02_tab.dds |
+| stat_layout\stat_background\stat_p2\stat_p2_layout | rect |  | 3 |  | -20 |  |  |  |  |  |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_lines | image |  | 4 | 50 | 62 | 625 | 562 |  | 2 | Menus\Stats\stat_attr_lines.dds |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_icons | image |  | 4 | 81 | 87 | 64 | 533 |  | 6 | Menus\Stats\stat_attr_icons.dds |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_strength_layout | rect | 24 | 4 | 75 | me().user0 mul(67) add(87) | 592 | 64 |  | 5 |  |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_strength_layout\stat_p2_strength | text |  | 5 | 467 | 16 |  |  |  | 3 | stat_p2.user1 |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_strength_layout\stat_p2_strength_label | text |  | 5 | 100 | 16 |  |  |  | 3 | strings()._strength |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_intelligence_layout | rect | 24 | 4 | 75 | me().user0 mul(67) add(87) | 592 | 64 |  | 5 |  |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_intelligence_layout\stat_p2_intelligence | text |  | 5 | 467 | 16 |  |  |  | 3 | stat_p2.user2 |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_intelligence_layout\stat_p2_intelligence_label | text |  | 5 | 100 | 16 |  |  |  | 3 | strings()._intelligence |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_willpower_layout | rect | 24 | 4 | 75 | me().user0 mul(67) add(87) | 592 | 64 |  | 5 |  |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_willpower_layout\stat_p2_willpower | text |  | 5 | 467 | 16 |  |  |  | 3 | stat_p2.user3 |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_willpower_layout\stat_p2_willpower_label | text |  | 5 | 100 | 16 |  |  |  | 3 | strings()._willpower |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_agility_layout | rect | 24 | 4 | 75 | me().user0 mul(67) add(87) | 592 | 64 |  | 5 |  |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_agility_layout\stat_p2_agility | text |  | 5 | 467 | 16 |  |  |  | 3 | stat_p2.user4 |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_agility_layout\stat_p2_agility_label | text |  | 5 | 100 | 16 |  |  |  | 3 | strings()._agility |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_speed_layout | rect | 24 | 4 | 75 | me().user0 mul(67) add(87) | 592 | 64 |  | 5 |  |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_speed_layout\stat_p2_speed | text |  | 5 | 467 | 16 |  |  |  | 3 | stat_p2.user5 |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_speed_layout\stat_p2_speed_label | text |  | 5 | 100 | 16 |  |  |  | 3 | strings()._speed |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_endurance_layout | rect | 24 | 4 | 75 | me().user0 mul(67) add(87) | 592 | 64 |  | 5 |  |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_endurance_layout\stat_p2_endurance | text |  | 5 | 467 | 16 |  |  |  | 3 | stat_p2.user6 |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_endurance_layout\stat_p2_endurance_label | text |  | 5 | 100 | 16 |  |  |  | 3 | strings()._endurance |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_personality_layout | rect | 24 | 4 | 75 | me().user0 mul(67) add(87) | 592 | 64 |  | 5 |  |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_personality_layout\stat_p2_personality | text |  | 5 | 467 | 16 |  |  |  | 3 | stat_p2.user7 |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_personality_layout\stat_p2_personality_label | text |  | 5 | 100 | 16 |  |  |  | 3 | strings()._personality |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_luck_layout | rect | 24 | 4 | 75 | me().user0 mul(67) add(87) | 592 | 64 |  | 5 |  |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_luck_layout\stat_p2_luck | text |  | 5 | 467 | 16 |  |  |  | 3 | stat_p2.user8 |
+| stat_layout\stat_background\stat_p2\stat_p2_layout\stat_p2_luck_layout\stat_p2_luck_label | text |  | 5 | 100 | 16 |  |  |  | 3 | strings()._luck |
+| stat_layout\stat_background\stat_p3 | rect | 30 | 2 | 0 | 3 | 730 | 730 | StatsMenu.user0 | 8 |  |
+| stat_layout\stat_background\stat_p3\stats_page_3_tabs | image |  | 3 | 23 | 539 | 791 | 176 |  | 0 | Menus\Shared\shared_03_tab.dds |
+| stat_layout\stat_background\stat_p3\stat_p3_line_hor_1 | image |  | 3 | 46 | 73 | 636 | 3 |  | 1 | Menus\Stats\stat_border_horizontal_1.dds |
+| stat_layout\stat_background\stat_p3\stat_p3_line_left | image |  | 3 | 66 | 65 | 3 | 511 |  | 1 | Menus\Stats\stat_border_vertical_2.dds |
+| stat_layout\stat_background\stat_p3\stat_p3_line_right | image |  | 3 | 660 | 65 | 3 | 511 |  | 1 | Menus\Stats\stat_border_vertical_2.dds |
+| stat_layout\stat_background\stat_p3\stat_p3_scroll_bar | image | 32 | 3 | stat_p3_window.x add() add(10) | stat_p3_window.y add(32) |  | stat_p3_window.height sub(64) |  | 5 |  |
+| stat_layout\stat_background\stat_p3\stat_p3_title_left | image |  | 3 | stat_p3_title_text.x sub(2) sub(55) | 50 | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_left.dds |
+| stat_layout\stat_background\stat_p3\stat_p3_title_right | image |  | 3 | stat_p3_title_text.width div(2) add() add(20) | 50 | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_right.dds |
+| stat_layout\stat_background\stat_p3\stat_p3_title_text | text |  | 3 | 370 | 45 |  |  |  | 3 | stat_p3_scroll_bar.user7 add(3) min(3) me()._title_ |
+| stat_layout\stat_background\stat_p3\stat_p3_window | rect |  | 3 | 70 | 75 | 600 | 490 |  | 3 |  |
+| stat_layout\stat_background\stat_p3\stat_p3_window\stat_p3_window_pane | rect | 31 | 4 |  | 0 sub() mul(70) |  |  |  | 2 |  |
+| stat_layout\stat_background\stat_p3\stat_p3_window\stat_p3_window_pane\stat_p3_minor_label | rect |  | 5 | 0 | 70 mul() add(-70) | 600 | 70 |  | 3 |  |
+| stat_layout\stat_background\stat_p3\stat_p3_window\stat_p3_window_pane\stat_p3_minor_label\stat_p3_minor_label_left | image |  | 6 | stat_p3_minor_label_text.x sub(2) sub(55) | 35 | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_left.dds |
+| stat_layout\stat_background\stat_p3\stat_p3_window\stat_p3_window_pane\stat_p3_minor_label\stat_p3_minor_label_right | image |  | 6 | stat_p3_minor_label_text.width div(2) add() add(20) | 35 | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_right.dds |
+| stat_layout\stat_background\stat_p3\stat_p3_window\stat_p3_window_pane\stat_p3_minor_label\stat_p3_minor_label_text | text |  | 6 | 300 | 30 |  |  |  | 3 | strings()._minorskills |
+| stat_layout\stat_background\stat_p3\stat_p3_progress_label | text |  | 3 | 100 | 580 |  |  |  | 3 | strings()._levelprogress |
+| stat_layout\stat_background\stat_p3\stat_p3_progress | image |  | 3 | 390 | 575 | 218 | 43 |  | 7 | Menus\Stats\stat_skill_level_ribbon_empty.dds |
+| stat_layout\stat_background\stat_p3\stat_p3_progress\stat_p3_progress_ribbon | image | 55 | 4 | 26 | 6 | stat_p3.user2 div() mul(193) | 20 |  | 8 | Menus\Stats\stat_skill_level_ribbon_full.dds |
+| stat_layout\stat_background\stat_p3\stat_p3_progress\stat_p3_progress_ribbon\stat_p3_progress_slider | image |  | 5 | parent().width sub(10) | -1 | 12 | 23 |  | 1 | Menus\Stats\stat_skill_level_ribbon_slider.dds |
+| stat_layout\stat_background\stat_p4 | rect | 40 | 2 | 0 | 3 | 730 | 730 | StatsMenu.user0 | 8 |  |
+| stat_layout\stat_background\stat_p4\stats_page_4_tabs | image |  | 3 | 23 | 539 | 791 | 176 |  | 0 | Menus\Shared\shared_04_tab.dds |
+| stat_layout\stat_background\stat_p4\stat_p4_title_left | image |  | 3 | stat_p4_title_text.x sub(2) sub(55) | 50 | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_left.dds |
+| stat_layout\stat_background\stat_p4\stat_p4_title_right | image |  | 3 | stat_p4_title_text.width div(2) add() add(20) | 50 | 35 | 17 |  | 7 | Menus\Shared\shared_decor_blue_right.dds |
+| stat_layout\stat_background\stat_p4\stat_p4_title_text | text |  | 3 | 370 | 45 |  |  |  | 3 | strings()._factions |
+| stat_layout\stat_background\stat_p4\stat_p4_line_hor_1 | image |  | 3 | 46 | 88 | 636 | 3 |  | 9 | Menus\Stats\stat_border_horizontal_1.dds |
+| stat_layout\stat_background\stat_p4\stat_p4_line_left | image |  | 3 | 66 | 100 | 3 | 460 |  | 1 | Menus\Stats\stat_border_vertical_2.dds |
+| stat_layout\stat_background\stat_p4\stat_p4_line_right | image |  | 3 | 660 | 100 | 3 | 460 |  | 1 | Menus\Stats\stat_border_vertical_2.dds |
+| stat_layout\stat_background\stat_p4\stat_p4_scroll_bar | image | 42 | 3 | stat_p4_window.x add() add(10) | stat_p4_window.y add(32) |  | stat_p4_window.height sub(64) |  | 5 |  |
+| stat_layout\stat_background\stat_p4\stat_p4_up | rect |  | 3 | 60 | 60 | 5 | 5 |  |  |  |
+| stat_layout\stat_background\stat_p4\stat_p4_down | rect |  | 3 | 60 | 60 | 5 | 5 |  |  |  |
+| stat_layout\stat_background\stat_p4\stat_p4_window | rect |  | 3 | 70 | 100 | 600 | 465 |  | 3 |  |
+| stat_layout\stat_background\stat_p4\stat_p4_window\stat_p4_window_pane | rect | 41 | 4 |  | 0 sub() mul(155) |  |  |  |  |  |
+| stat_layout\stat_background\stat_p5 | rect | 50 | 2 | 0 | 3 | 730 | 730 | StatsMenu.user0 | 8 |  |
+| stat_layout\stat_background\stat_p5\stats_page_5_tabs | image |  | 3 | 23 | 539 | 791 | 176 |  | 0 | Menus\Shared\shared_05_tab.dds |
+| stat_layout\stat_background\stat_p5\stat_p5_line_to | image |  | 3 | 46 | 68 | 636 | 3 |  | 9 | Menus\Stats\stat_border_horizontal_1.dds |
+| stat_layout\stat_background\stat_p5\stat_p5_line_left | image |  | 3 | 66 | 62 | 3 | 511 |  | 1 | Menus\Stats\stat_border_vertical_2.dds |
+| stat_layout\stat_background\stat_p5\stat_p5_line_right | image |  | 3 | 660 | 62 | 3 | 511 |  | 1 | Menus\Stats\stat_border_vertical_2.dds |
+| stat_layout\stat_background\stat_p5\stat_p5_line_bottom | image |  | 3 | 46 | 600 | 636 | 3 |  | 9 | Menus\Stats\stat_border_horizontal_2.dds |
+| stat_layout\stat_background\stat_p5\stat_p5_scroll_bar | image | 52 | 3 | stat_p5_window.x add() add(10) | stat_p5_window.y add(34) |  | stat_p5_window.height sub(64) |  | 5 |  |
+| stat_layout\stat_background\stat_p5\stat_p5_up | rect |  | 3 | 60 | 60 | 5 | 5 |  |  |  |
+| stat_layout\stat_background\stat_p5\stat_p5_down | rect |  | 3 | 60 | 60 | 5 | 5 |  |  |  |
+| stat_layout\stat_background\stat_p5\stat_p5_window | rect |  | 3 | 70 | 70 | 600 | 494 |  | 3 |  |
+| stat_layout\stat_background\stat_p5\stat_p5_window\stat_p5_window_pane | rect | 51 | 4 |  | 0 sub() mul(35) |  |  |  |  |  |
+| stat_layout\stat_background\stat_tabs | rect |  | 2 | 0 | 594 | 730 | 128 |  | 5 |  |
+| stat_layout\stat_background\stat_tabs\stat_tabs_prev | rect | 8 | 3 | -1 | -1 | 1 | 1 |  |  |  |
+| stat_layout\stat_background\stat_tabs\stat_tabs_next | rect | 9 | 3 | -1 | -1 | 1 | 1 |  |  |  |
+| stat_layout\stat_background\stat_tabs\stat_tabs_p1 | rect | 1 | 3 | 28 | 37 | 135 | 85 |  | 5 |  |
+| stat_layout\stat_background\stat_tabs\stat_tabs_p1\stat_tabs_p1_icon | image |  | 4 | 37 | 8 | 64 | 64 |  |  | Menus\Shared\all_tabs_icons.dds |
+| stat_layout\stat_background\stat_tabs\stat_tabs_p1\stat_tabs_p1_selection_off | image |  | 4 | 0 | 24 | 136 | 36 | parent().user1 |  | Menus\Shared\general_tab_selection_off.dds |
+| stat_layout\stat_background\stat_tabs\stat_tabs_p1\stat_tabs_p1_selection_on | image |  | 4 | 0 | 24 | 136 | 36 | parent().user1 |  | Menus\Shared\general_tab_selection_on.dds |
+| stat_layout\stat_background\stat_tabs\stat_tabs_p2 | rect | 2 | 3 | 165 | 37 | 135 | 85 |  | 5 |  |
+| stat_layout\stat_background\stat_tabs\stat_tabs_p2\stat_tabs_p2_icon | image |  | 4 | 37 | 8 | 64 | 64 |  |  | Menus\Shared\all_tabs_icons.dds |
+| stat_layout\stat_background\stat_tabs\stat_tabs_p2\stat_tabs_p2_selection_off | image |  | 4 | 0 | 24 | 136 | 36 | parent().user1 |  | Menus\Shared\general_tab_selection_off.dds |
+| stat_layout\stat_background\stat_tabs\stat_tabs_p2\stat_tabs_p2_selection_on | image |  | 4 | 0 | 24 | 136 | 36 | parent().user1 |  | Menus\Shared\general_tab_selection_on.dds |
+| stat_layout\stat_background\stat_tabs\stat_tabs_p3 | rect | 3 | 3 | 304 | 37 | 135 | 85 |  | 5 |  |
+| stat_layout\stat_background\stat_tabs\stat_tabs_p3\stat_tabs_p3_icon | image |  | 4 | 37 | 8 | 64 | 64 |  |  | Menus\Shared\all_tabs_icons.dds |
+| stat_layout\stat_background\stat_tabs\stat_tabs_p3\stat_tabs_p3_selection_off | image |  | 4 | 0 | 24 | 136 | 36 | parent().user1 |  | Menus\Shared\general_tab_selection_off.dds |
+| stat_layout\stat_background\stat_tabs\stat_tabs_p3\stat_tabs_p3_selection_on | image |  | 4 | 0 | 24 | 136 | 36 | parent().user1 |  | Menus\Shared\general_tab_selection_on.dds |
+| stat_layout\stat_background\stat_tabs\stat_tabs_p4 | rect | 4 | 3 | 443 | 37 | 135 | 85 |  | 5 |  |
+| stat_layout\stat_background\stat_tabs\stat_tabs_p4\stat_tabs_p4_icon | image |  | 4 | 37 | 8 | 64 | 64 |  | -1 | Menus\Shared\all_tabs_icons.dds |
+| stat_layout\stat_background\stat_tabs\stat_tabs_p4\stat_tabs_p4_selection_off | image |  | 4 | 0 | 24 | 136 | 36 | parent().user1 | -3 | Menus\Shared\general_tab_selection_off.dds |
+| stat_layout\stat_background\stat_tabs\stat_tabs_p4\stat_tabs_p4_selection_on | image |  | 4 | 0 | 24 | 136 | 36 | parent().user1 |  | Menus\Shared\general_tab_selection_on.dds |
+| stat_layout\stat_background\stat_tabs\stat_tabs_p5 | rect | 5 | 3 | 578 | 37 | 135 | 85 |  | 5 |  |
+| stat_layout\stat_background\stat_tabs\stat_tabs_p5\stat_tabs_p5_icon | image |  | 4 | 37 | 8 | 64 | 64 |  |  | Menus\Shared\all_tabs_icons.dds |
+| stat_layout\stat_background\stat_tabs\stat_tabs_p5\stat_tabs_p5_selection_off | image |  | 4 | 0 | 24 | 136 | 36 | parent().user1 |  | Menus\Shared\general_tab_selection_off.dds |
+| stat_layout\stat_background\stat_tabs\stat_tabs_p5\stat_tabs_p5_selection_on | image |  | 4 | 0 | 24 | 136 | 36 | parent().user1 |  | Menus\Shared\general_tab_selection_on.dds |
+| stat_pop_background | image | 61 | 0 | stat_layout.x add() add() sub(1 sub()) sub(20) | 170 | 419 | stat_pop_text.y add() add(25) |  | -9 | Menus\Magic\magic_popup_background.dds |
+| stat_pop_background\magicpop_border_ULcorner | image |  | 1 | 0 | 0 | 10 | 10 |  | 3 | Menus\Magic\magic_popup_border_corner.dds |
+| stat_pop_background\magicpop_border_top | image |  | 1 | magicpop_border_ULcorner.x add() | magicpop_border_ULcorner.y | magicpop_border_URcorner.x sub() sub() | 11 |  | 3 | Menus\Magic\magic_popup_border_edge_horizontal.dds |
+| stat_pop_background\magicpop_border_URcorner | image |  | 1 | parent().width sub() add(2) | 0 | magicpop_border_ULcorner.width | magicpop_border_ULcorner.height |  | 3 | Menus\Magic\magic_popup_border_corner.dds |
+| stat_pop_background\magicpop_border_left | image |  | 1 | magicpop_border_ULcorner.x | magicpop_border_ULcorner.y add() | 11 | magicpop_border_LLcorner.y sub() sub() |  | 3 | Menus\Magic\magic_popup_border_edge_vertical.dds |
+| stat_pop_background\magicpop_border_LLcorner | image |  | 1 | 0 | parent().height sub() | 10 | 10 |  | 3 | Menus\Magic\magic_popup_border_corner.dds |
+| stat_pop_background\magicpop_border_bottom | image |  | 1 | magicpop_border_LLcorner.x add() | magicpop_border_LLcorner.y | magicpop_border_LRcorner.x sub() sub() | 11 |  | 3 | Menus\Magic\magic_popup_border_edge_horizontal.dds |
+| stat_pop_background\magicpop_border_LRcorner | image |  | 1 | parent().width sub() add(2) | magicpop_border_LLcorner.y | magicpop_border_ULcorner.width | magicpop_border_ULcorner.height |  | 3 | Menus\Magic\magic_popup_border_corner.dds |
+| stat_pop_background\magicpop_border_right | image |  | 1 | magicpop_border_URcorner.x | magicpop_border_URcorner.y add() | 11 | magicpop_border_LRcorner.y sub() sub() |  | 3 | Menus\Magic\magic_popup_border_edge_vertical.dds |
+| stat_pop_background\stat_pop_image | image |  | 1 | 41 add(85) | 30 | 256 | 256 | parent().user4 | 1 | parent().user2 |
+| stat_pop_background\stat_pop_text | text |  | 1 | 30 | stat_pop_image.height add() add(15) |  |  |  | 7 | parent().user3 |
+| stat_pop_background\stat_pop_hand2hand_icon | image |  | 1 | parent().width sub(128) | stat_pop_text.y add() sub(24) | 32 | 32 | StatsMenu.user0 | 7 | Icons\Weapons\HandToHand.dds |
+| stat_pop_background\stat_pop_hand2hand_damage | text |  | 1 | stat_pop_hand2hand_icon.x add() add(10) | stat_pop_hand2hand_icon.y |  |  | stat_pop_hand2hand_icon.visible | 7 | parent().user5 |
+| stat_skill_template | template |  | 0 |  |  |  |  |  |  |  |
+| stat_skill_template\stat_item | rect | 34 | 1 | 0 | 70 mul() | 600 | 69 |  | 3 |  |
+| stat_skill_template\stat_item\stat_item_icon | image |  | 2 | 3 | 3 | 64 | 64 |  | 1 | parent().user5 |
+| stat_skill_template\stat_item\stat_item_label | text |  | 2 | 75 | 38 sub(2) |  |  |  | 1 | parent().user4 |
+| stat_skill_template\stat_item\temp_fill_bar | image |  | 2 | 330 | 22 |  |  |  | 1 |  |
+| stat_skill_template\stat_item\stat_item_value | text |  | 2 | 555 | 20 |  |  |  | 1 | parent().user3 |
+| stat_skill_template\stat_item\stat_item_line | image |  | 2 | -30 | 68 | 636 | 3 |  | -2 | parent().listindex add(1) me()._file_ |
+| stat_faction_template | template |  | 0 |  |  |  |  |  |  |  |
+| stat_faction_template\stat_faction_item | rect | 44 | 1 | 0 | me().height mul() | 600 | 155 |  | 3 |  |
+| stat_faction_template\stat_faction_item\stat_faction_item_icon | image |  | 2 | 15 | 5 | 128 | 128 |  | 1 | parent().user4 |
+| stat_faction_template\stat_faction_item\stat_faction_item_name | text |  | 2 | 155 | 80 sub() div(2) add(5) |  |  |  | 1 | parent().user1 |
+| stat_faction_template\stat_faction_item\stat_faction_item_rank | text |  | 2 | 155 | sibling(stat_faction_item_name).y add() add(8) |  |  |  | 1 | parent().user2 |
+| stat_faction_template\stat_faction_item\stat_faction_line | image |  | 2 | -30 | 143 | 636 | 3 |  | -2 | parent().listindex add(1) me()._file_ |
+| stat_misc_template | template |  | 0 |  |  |  |  |  |  |  |
+| stat_misc_template\stat_misc_item | rect | 44 | 1 | 0 | me().height mul() | 600 | 32 |  | 3 |  |
+| stat_misc_template\stat_misc_item\stat_misc_label | text |  | 2 | 30 | 16 |  |  |  | 1 | parent().user1 |
+| stat_misc_template\stat_misc_item\stat_misc_value | text |  | 2 | 550 | 16 |  |  |  | 1 | parent().user2 |
+
+#### player_model (`player_model.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+
+#### HUDSafeZone (`safe_zone.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| safe_top | image |  | 0 | 0 | 0 | screen().width | screen().cropy |  |  | Menus\Shared\shared_white.dds |
+| safe_bottom | image |  | 0 | 0 | screen().height sub() | screen().width | screen().cropy |  |  | Menus\Shared\shared_white.dds |
+| safe_left | image |  | 0 | 0 | screen().cropy | screen().cropx | screen().height sub() sub() |  |  | Menus\Shared\shared_white.dds |
+| safe_right | image |  | 0 | screen().width sub() | screen().cropy | screen().cropx | screen().height sub() sub() |  |  | Menus\Shared\shared_white.dds |
+| safe_top_2 | image |  | 0 | safe_left.width | safe_top.height | screen().width sub() sub() | screen().cropy |  |  | Menus\Shared\shared_white.dds |
+| safe_bottom_2 | image |  | 0 | screen().cropx | screen().height sub() sub() | screen().width sub() sub() | screen().cropy |  |  | Menus\Shared\shared_white.dds |
+| safe_left_2 | image |  | 0 | screen().cropx | screen().cropy mul(2) | screen().cropx | screen().height sub() sub() sub() sub() |  |  | Menus\Shared\shared_white.dds |
+| safe_right_2 | image |  | 0 | screen().width sub() sub() | screen().cropy mul(2) | screen().cropx | screen().height sub() sub() sub() sub() |  |  | Menus\Shared\shared_white.dds |
+
+### 32.5 ロード / その他
+
+#### LoadingMenu (`loading_menu.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| black | rect |  | 0 | 0 | 0 | screen().width | screen().height |  | -1 |  |
+| load_title_page | image |  | 0 | 0 | 0 | screen().width | screen().height | LoadingMenu.user0 | 1000 | Menus\Loading\loading_background.dds |
+| load_title_page\load_symbol | image |  | 1 | parent().width sub() div(2) | 250 | 330 | 466 | true | 2 | Menus\Loading\loading_symbol.dds |
+| load_main | image |  | 0 | screen().width sub() div(2) | screen().height sub() div(2) | screen().height mul(16,9) | screen().height | LoadingMenu.user0 | 1000 | LoadingMenu.user1 |
+| load_main\load_text | text |  | 1 | parent().width sub() div(2) | 120 sub() div(2) add(555) |  |  |  | 3 | LoadingMenu.user2 |
+| load_progress | image |  | 0 | screen().width sub() div(2) | 772 | 218 | 43 |  | 1005 | Menus\Stats\stat_skill_level_ribbon_empty.dds |
+| load_progress\load_progress_ribbon | image |  | 1 | 26 | 7 | LoadingMenu.user3 div() mul(180) max(1) | 20 |  | 2 | Menus\Stats\stat_skill_level_ribbon_full.dds |
+| load_progress\load_progress_ribbon\load_t_ribbon_slider | image |  | 2 | parent().width | -1 | 12 | 23 |  | 4 | Menus\Stats\stat_skill_level_ribbon_slider.dds |
+| load_progress\load_loading | text |  | 1 | parent().width div(2) | 35 |  |  |  | 4 | strings()._loading |
+| load_debug_info | text |  | 0 | 60 | 885 |  |  |  | 1004 | LoadingMenu.user5 |
+
+#### LoadingMenu (`loading_ingame_menu.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| black | rect |  | 0 | 0 | 0 | screen().width | screen().height |  | -1 |  |
+| load_main | image | 1 | 0 | screen().width div(2) sub() | screen().height div(2) sub() | 1280 | 960 |  | 1 | Menus\Loading\InGameDefault.dds |
+| load_main\load_text | text | 5 | 1 | 213 | 600 |  |  |  | 3 |  |
+| load_main\load_loading | text | 6 | 1 | parent()._center_width | 802 |  |  |  | 4 | strings()._loading |
+| load_main\load_progress | image |  | 1 | parent()._center_width | 772 | 218 | 43 |  | 5 | Menus\Stats\stat_skill_level_ribbon_empty.dds |
+| load_main\load_progress\load_progress_ribbon | image | 7 | 2 | 26 | 7 | me().user1 div() mul(193) | 20 |  | 1 | Menus\Stats\stat_skill_level_ribbon_full.dds |
+| load_main\load_progress\load_progress_ribbon\load_t_ribbon_slider | image |  | 3 | parent().width sub(10) | -1 | 12 | 23 |  | 2 | Menus\Stats\stat_skill_level_ribbon_slider.dds |
+
+#### LoadingMenu (`loading_bar_ingame_menu.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| load_loading | text | 6 | 0 | parent()._center_width | 802 |  |  |  | 4 | strings()._loading |
+| load_progress | image |  | 0 | parent()._center_width | 772 | 218 | 43 |  | 5 | Menus\Stats\stat_skill_level_ribbon_empty.dds |
+| load_progress\load_progress_ribbon | image | 7 | 1 | 26 | 7 | me().user1 div() mul(193) | 20 |  | 1 | Menus\Stats\stat_skill_level_ribbon_full.dds |
+| load_progress\load_progress_ribbon\load_t_ribbon_slider | image |  | 2 | parent().width sub(10) | -1 | 12 | 23 |  | 2 | Menus\Stats\stat_skill_level_ribbon_slider.dds |
+
+#### BreathMenu (`breath_meter_menu.xml`)
+
+| Widget (path) | type | id | nest | x | y | w | h | visible | depth | content |
+|---|---|---|---|---|---|---|---|---|---|---|
+| breath_progress | image |  | 0 | parent()._center_width | 72 | 418 | 64 |  | 5 | Menus\BreathMeter\Breath_Meter_empty.dds |
+| breath_progress\breath_progress_ribbon | image | 2 | 1 | 11 | 11 | me().user1 div() mul(284) | 40 |  | 1 | Menus\BreathMeter\Breath_Meter_fill.dds |
+
+
+
+### 32.6 NOT USED / 実体なしファイル（パース不能）
+
+以下はファイル内容が「NOT USED」を示すコメントのみで、ウィジェット定義を一切持たない。
+実装対象外であり、相当機能は別ファイルへ統合されている。
+
+| ファイル | サイズ | 内容 | 代替実体 |
+|---|---|---|---|
+| `scroll_menu.xml` | 45 B | コメントのみ | `scroll_bar` プレハブ（§24.9 / §25.5）へ統合 |
+| `birthsign_menu.xml` | 47 B | コメントのみ | `chargen\birthsign_menu.xml`（§32.3 BirthSignMenu） |
+| `chargen\attributes_menu.xml` | 47 B | `<!-- NOT USED - SEE skills_menu.xml INSTEAD -->` | `chargen\skills_menu.xml`（§32.3 SkillsMenu） |
+| `chargen\specilization_menu.xml` | 47 B | `<!-- NOT USED - SEE skills_menu.xml INSTEAD -->` | `chargen\skills_menu.xml`（§32.3 SkillsMenu） |
+
+補足: `menu_labels.txt`(0 B) / `s.txt`(4 B) / 各 `vssver.scc` はレイアウト定義ではなく
+ビルド管理補助ファイルのため対象外。
+
+### 32.7 prefabs / 単体パース不可ファイル
+
+`prefabs\` 配下の断片（`scroll_bar.xml`, `horiz_floating_scroll.xml`, `button_template.xml` 等）は
+メニュー共通のプレハブで、単体ではメニューを構成しない（`<include>` で各メニューへ取り込む）。
+trait 仕様は §24.9 / §25.5 に記載済みで、本節では個別表化しない。
+Bethesda のプレハブ断片は `<image><include/>...<trait>...<rect>` の閉じタグ不整合を含むため、
+単体パースは不可（レイアウト値は取り込み先メニュー側の上書き値が正）。
+
+### 32.8 Android 移植向け確定値（依頼5 追加分）
+
+1. **メニュー登録 ID**: 本章のメニューはすべて §30.5 の連番帯 0x3e9〜0x41b に属する。
+   現時点で確定している ID は次のとおりで、残りの連番への割当は未解決である
+   （メニュー生成テーブル `FUN_00582160` の全走査が未完のため）。
+
+   | メニュー | id | 出典 |
+   |---|---|---|
+   | MessageMenu | 0x3e9 | §30.4.3 |
+   | ContainerMenu | 0x3f0 | §31 |
+   | AudioMenu | 0x3f9 | §26 / §30.7 |
+   | VideoMenu | 0x3fa | §24 |
+   | VideoDisplayMenu | 0x3fb | §24 |
+   | GameplayMenu | 0x3fc | §26 |
+   | LevelUpMenu | 0x403 | §31 |
+   | RepairMenu | 0x40b | §31 |
+   | QuickKeysMenu | 0x416 | §31.3 |
+   | RechargeMenu | 0x419 | §31 |
+
+   未解決分の確定は、`FUN_00582160`(MenuManager ctor) が構築するメニュー配列
+   （正本グローバル `0x00b13974` / 件数 `0x00b13978`、§30.1）の走査で行う。
+   本章の各メニュー表は ID ではなく **XML ルート名とウィジェット構成** を正とする。
+
+2. **寸法・座標**: 各メニューの座標式は表の `x`/`y` 列が正本。式言語
+   （`parent()` / `me()` / `screen()` / `sibling()` / `last()` / `first()` /
+   `add()` / `sub()` / `div()` / `mul()`）の評価規則は §24.2 と同一。
+   Android 側は式パーサを共通化して全メニューへ適用する。
+
+3. **HUD 系**: HUDMainMenu / HUDInfoMenu / HUDReticle / HUDSubtitleMenu は
+   ゲーム中の常時表示オーバーレイ。`visible` は実行時制御（`userN`）で切替わる。
+   レイアウト値は表のとおり固定で、値そのものは動的供給。
+
+4. **in-game 画面系**: InventoryMenu / MagicMenu / MagicPopupMenu / MapMenu /
+   StatsMenu は探索中に開く非ポーズメニュー（§30.4 のフェード規則に従う）。
+   行リストのスクロールは §31.7 と同じ「行 y = index * lineHeight - scrollOffset」に帰着。
+
+5. **未検証**: 各メニューの実行時供給値（`userN` の実データ）は、対応する
+   ゲームシステム章（Container / Magic / Quest 等）で確定する。本章は
+   レイアウト確定までを範囲とする。
