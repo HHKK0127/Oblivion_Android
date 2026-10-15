@@ -8429,3 +8429,214 @@ FUN_00465130(esi, "autosave", 0, 0);
 5. 描画順はメニュー群の背面（Below Menus 相当）。
 
 ---
+
+## §49 便1 回答: フェード開閉の確定 / 難易度式 / ダメージ経路 / audio / FUN_0066F420
+
+本節は main 便1（§48 実装前確認3点＋追加解析依頼）への回答。依頼A（フェード開く側）、
+依頼B（アーマー習熟倍率の適用先）、依頼C（難易度式）、依頼2（FUN_005febf0 への習熟適用）、
+依頼3（フェードノード生成の開/閉ほか）、依頼4-1（audio）、依頼4-2（FUN_0066F420）をまとめる。
+なお §37.6 の一部呼称（FUN_00584740「実際に閉じる」等）は本節の位相機械解明により修正する。
+
+### 49.0 解析基盤（VA 変換の訂正・確定）
+
+- VA→ファイルオフセット: `pe.get_offset_from_rva(VA - 0x400000)`。
+- ファイルオフセット→VA: `pe.get_rva_from_offset(offset) + 0x400000`。
+- 旧式（`F+0x400C00`）は誤り。§49 の VA はすべて上記で検証済みの実 VA。
+- 呼出元走査は生バイト E8 走査（`va+5+rel==target`）。capstone 逆アセンブル走査は
+  命令境界がずれて空を返す穴があるため、呼出元の全数列挙には生 E8 走査を使うこと。
+
+### 49.1 依頼4-1（audio）: FUN_006ad030 / FUN_006aa1a0
+
+- `FUN_006ad030`（0x6ad030-0x6ade00、1080 命令）= audio オブジェクト（this）の音量適用更新。
+  冒頭 `cmp byte [0xb16180],0`（audio 有効フラグ）で即 return、`esi=ecx`（this）は再代入なし。
+- `FUN_006aa1a0(value, apply)` = 音量セッタ。value を 0..1 クランプ。
+  apply 真で `[this+0x2f8]`（target）と `[this+0x2f0]`（current）へ書込。
+  `[0xb3c0ec]` により差替値 `[0xb16188]`、`[this+0xdc]&1` でミュート（`[this+0xb8]` 乗算）。
+- `FUN_006aa1a0` の呼出 6 箇所（0x6ad287 / 0x6ad565 / 0x6ad873 / 0x6ad92f / 0x6adbe7 / 0x6addc3）は
+  すべて同一 this の同一 `[esi+0x2f0]` を更新。site 0x6ad92f のみ差分ランプ
+  （|target-current| > 0.02 = `[0xa57604]` で ±2.0 = `[0xa73e80]` ステップ）。
+- 他 5 site は `test byte [esi+0xdc],0x18; jne` スキップガード → `fld [esi+0x2f0]` → 適用。
+- 結論: 「1 関数が 5 系統（master/music/effects/voice/footstep）を順に回す」構造は存在しない。
+  系統の対応付けはオブジェクト生成側（呼出元 0x6ae8ea / 0x6af319、`FUN_006acd10` 呼出元 11 件）で
+  決まる。FUN_006ad030 / FUN_006aa1a0 は音楽系（DirectShow 経路）の音量適用として整理する
+  （5 系統対応の前提は誤り）。
+- 設定キー文字列群（`:Audio` サフィックス、bSoundEnabled〜iMaxImpactSoundCount）は
+  raw VA 参照 0 件 = 設定ファイル専用文字列。
+
+### 49.2 依頼4-2: FUN_0066F420（Player メソッド、691 命令）構造解析
+
+- 範囲 0x66F420-0x66FD8A、`ret 4`。this = PlayerSingleton（0xb333c4。呼出元で ecx 設定）。
+- 呼出元は 1 件のみ: 0x5B8FB0（E8 走査。データ内ポインタなし）。
+  その手前で `SetupTrait(0xfa1, 1.0)`（表示確定）→ `FUN_0057cfe0`（メニュー復帰/有効化）→
+  MM 更新 3 連（0x583e60 / 0x5821f0 / 0x583f40 フェード更新）が呼ばれており、
+  「メニュー表示確定 → Player 同期」の文脈で呼ばれる。
+- 構造（確定分）:
+  1. 入口ゲート `vtbl+0x25C(this)` が真なら即 return。
+  2. `[Player+0x12C] = 1`（処理中フラグ）… 末尾で 0 に戻す。
+  3. `[0xb13228] != 0` なら `FUN_00466B70`（文字列 "autosave" を参照する 37 命令関数）。
+  4. `vtbl+0x380(this)` を 2 回呼び結果を `[Player+0x1e0]` にキャッシュ。
+     関連オブジェクト `[Player+0x58]` の `vtbl+0x184()` の `[eax+0x20]==0x16` で `FUN_00602050(this, obj)`。
+  5. 中盤: グローバル 0xB3BD00 の管理処理（0x679a70 / 0x677ec0(0.0f)）とアクター系処理群
+     （0x673b00 / 0x673b10 / 0x674200 / 0x673e90 / 0x673c10 / 0x674a20 / 0x676940 / 0x676a40 ほか）、
+     `FUN_0066f370`、0x578e90 / 0x57b950（MM 帯呼出）。
+  6. 末尾: リスト走査。要素の `[→+0xC→+0x1C+0x98]` が `0x47445553`（バイト列 "SUDG"）と一致したら
+     `FUN_009832e6`（スクリプト VM イベント送出）へ `(0xb14914, 0xb14ff8)` を渡し `[eax+0x3D]=1`。
+  7. 終了処理: `[Player+0x12C]=0` → 0x679a70 / 0x677ec0(0.0f) → `vtbl+0x2EC(this)` →
+     `[Player+0x764]/[Player+0x760]` のブロックを 0x6b73e0 → 0x401f20 で解放 →
+     `[Player+0x114]=0` → `FUN_0068aa10`。
+- 確定分の要約: Player 側の「UI 遷移完了後の同期処理」で、管理リスト/アクターの一部を再評価し、
+  条件一致オブジェクトへスクリプトイベントを送出する。イベント種別の断定（0xb14914 / 0xb14ff8 の
+  実行時内容、タグ 0x47445553 の対象カテゴリ）は §50 継続とする。
+- 全命令ダンプ: `tmp\re\f66f420_full.txt`（692 行）。
+
+### 49.3 依頼C: 難易度式の再確認（§41-4 / §45）
+
+- `FUN_005e2560`（0x5e2560、ret 8、ecx=任意 this、引数 [esp+4]=base、[esp+8]=Actor* p）
+  実命令列を完全確定（`tmp\re\s49a.txt` / `d2560.txt`）。
+- 実式（実命令からの復元）: `x = playerDifficulty * 10.0f`（10.0f = `[0xb37b88]`、
+  fDifficultyDamageMultiplier、既定 10.0、setter 0x9ed780）。
+  - `playerDifficulty == 0`（f64 0.0 比較）なら base をそのまま返す（倍率 1.0）。
+  - `x <= 0` 側: `f = x + 1.0f`（f64 1.0 = `[0xa2f928]`）。
+  - `x > 0` 側: `f = 1.0f / |x - 1.0f|`（1.0 は fld1、ABS は fxch/fabs の手動実装。
+    `x == 1.0` は base 返しで回避）。
+  - 適用方向: this==PlayerSingleton / p==PlayerSingleton の比較と cl フラグで
+    `fmul` / `fdiv` を切替。どちらでもない場合は base のまま。
+- `playerDifficulty` = `Player+0x734`（float）。単位はスライダー生整数 0..100 がそのまま入る。
+  書込元は全数走査で 2 件のみ:
+  - 0x5a38d4: 難易度スライダーハンドラ。`GetTrait(0xfb5)`（user7 = スライダー生値 0..100）→
+    `[0xb14eb0]` 経由 → `fstp [Player+0x734]`（`base SetupTrait 写像: 0x5a3540`〜）。
+  - 0x66af7a: グローバル `[0xb14eb0]` からのアクターコピー。
+- 読取元: 0x5a36d6 / 0x5a387f（スライダー UI）、0x5e257c / 0x5e2589 / 0x5e25ac（FUN_005e2560）。
+- 呼出元 3 件: 0x5e5903 / 0x69a028 / 0x6a8755。
+- GMST 4 種＋関連 1 種: `fDifficultyDamageMultiplier`（名 0xa5b128 / slot 0xb37b88 / 既定 10.0 /
+  setter 0x9ed780）、`fDifficultyMinValue`（slot 0xb37b70 / -1.0）、`fDifficultyMaxValue`
+  （0xb37b78 / 1.0）、`fDifficultyDefaultValue`（0xb37b80 / 0.0）、基底 0xb37b68。
+  セレクタ 0xa1fdf0〜0xa1fe30。setter 5 本（0x9ed6c0 / 0x9ed6f0 / 0x9ed720 / 0x9ed750 / 0x9ed780）完全逆アセンブル済み。
+- XML 側: `gameplay_menu.xml` の `gameplay_difficulty_slider`（id=1）。prefab
+  `horiz_floating_scroll.xml`（user1=0 min / user2=100 max）。trait user7（0xfb5）= 0..100 生値。
+- **未解決（継続課題）**: `FUN_005e2560` 実式と「実機 d=73 → 2.280」表示の数値整合。
+  現行移植の `pow(6,(d-50)/50)` は d=73 → 2.2799 で実機と一致するが、実命令の f とは形が異なる。
+  §49 では「実命令は上記のとおり。数値整合（スケール・表示式）は要再検証」と明記する。
+
+### 49.4 依頼B: アーマー習熟倍率の適用先 — 確定 (a) HP 実ダメージ
+
+- `FUN_005f3870`（267 行、ret 0xc）完全逆アセンブル（`tmp\re\f3870_full.txt`）。
+- 軽装 perk 18 / 重装 perk 27。rank>=2 = Journeyman、==0 = Novice の定数
+  （`0xb374f0` / `0xb374f8` / `0xb37500` / `0xb37508`）。
+- `FUN_00403c00`（GMST 倍率）を `fmul` → 現 HP を `FUN_00484850` で取得 → `fsub` → 0 クランプ →
+  `FUN_00488830` で HP 書込。
+- → **習熟倍率は装着者への実 HP ダメージ（a）に乗算適用される**。防具コンディション減少ではない。
+
+### 49.5 依頼2: FUN_005febf0（近接 12 段）への習熟適用
+
+- `FUN_005febf0` 完全逆アセンブル（2107 命令、`tmp\re\febf0_full.txt`、末尾 ret 0xc）。
+- 習熟 4 種定数（0xb374f0 / 0xb374f8 / 0xb37500 / 0xb37508）への直接参照 0 件。
+- アーマー軽減段は VA 0x5ff712 以降。習熟倍率は被弾側 `FUN_005f3870`（49.4）で HP 減算時に乗算され、
+  近接ダメージ式本体（febf0）には組み込まれない。
+
+### 49.6 依頼A・依頼3: メニューフェード「開く側」の確定とノード生成分類（本セッションで確定）
+
+#### 49.6.1 ノード生成の唯一のコンストラクタ FUN_00584300
+
+- 0x14 バイトノード: `[+0x00]`=source（menu）、`[+0x04]`=current（初期値 **0.0**）、
+  `[+0x08]`=duration（下限 0.001 = `[0xa37080]` で clamp）、`[+0x0c]`=prev、`[+0x10]`=next。
+- MenuManager `[0xb3a6e0]+0x130` の双方向リストへ末尾追加。
+- 追加前に `FUN_00583cf0(source)` で同一 source の既存ノードを除去。
+- 呼出元は 7 件のみ（生 E8 走査、既知 7 件と一致）:
+  | site | 所属関数 | 位相 [+0x24] | 分類 |
+  |---|---|---|---|
+  | 0x5843d0 | FUN_00584390（107B） | 8 | 閉じ |
+  | 0x58479a | FUN_00584740（216B） | 2 | 開き（表示） |
+  | 0x587596 | FUN_00587550 / 0x587550（627B、4 大メニュー再構築 switch） | 8 | 再構築（閉じ初期化） |
+  | 0x5875da | 同上 | 8 | 同上 |
+  | 0x58761e | 同上 | 8 | 同上 |
+  | 0x587662 | 同上 | 8 | 同上 |
+  | 0x588a9a | FUN_00588a70（別系統、§37.6 の「現在値から目標値」ノード） | - | 別系統 |
+
+#### 49.6.2 閉じ: FUN_00584390
+
+- duration = `GetTrait(0xFDB)` → 0 なら `GetTrait(0xFDC)`。traits 配列なし（`[menu+4]==0`）は
+  既定 0.25f（`[0xa41304]`）。
+- `FUN_00584300(this, duration)` → `[this+0x24] = 8` → `FUN_00583c30`（リスト即時更新）へ tail jmp。
+- 呼出元 13 件（0x57A5F2 / 0x57C57B / 0x57C763 / 0x57C927 / 0x5851E2 / 0x5A54C8 / 0x5A61F8 /
+  0x5A95E4 / 0x5A999D / 0x5B40AB / 0x5C1BE3 / 0x5D60B0 / 0x663161）。呼出元は
+  `FUN_005898f0(menu)` でルートを取り `FUN_00584390(root)` の形が基本。
+
+#### 49.6.3 開き: FUN_00584740
+
+- 入口ゲート: `GetTrait(0xfa1)` を fcomp `2.0`（`[0xa379b4]`）と比較し、**等しいときのみ**本体実行
+  （不等なら 0x584815 で即 return）。=「現在非表示（visible==2.0）のメニューだけを開きフェードに載せる」。
+- duration 取得順は FUN_00584390 と同じ（0xFDB → 0 → 0xFDC）。
+- `FUN_00584300(this, duration)` → `[this+0x24] = 2`。
+- 親メニュー `[this+0x14]` が存在し `GetTrait(0x1772)==2.0` のとき、`FUN_0057cfe0(MM, 親)` で
+  親メニューを復帰させ、`FUN_0057f9f0(0xfdd)`（mouseover）を設定 → `FUN_00583c30` へ tail jmp。
+- 呼出元 47 件（生 E8 走査。代表: 0x57A559 / 0x57A56B / 0x57A57D / 0x57A60A、0x57C4F9 帯 11 件、
+  0x593354（破棄系パス）、0x5D8A28、0x6630F8 / 0x663110（state ∉ {2,4} のときのみ呼出））。
+
+#### 49.6.4 再構築 switch: FUN_00587550（docs §37.6 の「0x587560」= 先頭 0x587550）
+
+- `GetMenuByID(0x589b70)` → 既存メニューがあれば `vtbl[0](1)` で破棄 →
+  ID 別 getter で再生成: 0x3ff Map → 0x579f80 / 0x3fe Magic → 0x57a180 /
+  0x3ea Inventory → 0x57a2d0 / 0x3eb Stats → 0x57a440。
+  これら getter は ctor ではなく（0x579f80 は MM フィールド検査後に `jmp 0x5bb6c0`）。
+- duration は `GetTrait(0xFDB)` のみ（0xFDC フォールバックなし）→ `FUN_00584300` →
+  `[root+0x24] = 8` → 生成メニューを返す。
+- 呼出元は 1 件のみ（0x5866DC）。通常の開閉では呼ばれず、メニュー再読込/再構築系の専用経路。
+  実装上の意味: 4 大メニューを作り直す際に「閉じ(8)」初期化を付与する。
+
+#### 49.6.5 進行と完了の位相機械（FUN_00583f40、MenuManager フェード更新ループ）
+
+- 呼出元 4 件: 0x579ef9 / 0x5abb40 / 0x5adaef / 0x5b8fa4（→ 0x5b8fa4 の直後に FUN_0066f420 呼出）。
+- ノード progress = current/duration（0..1、clamp）。**開きも閉じも current は 0→1 の前進のみ。
+  逆再生は存在しない（§48 と完全整合）。**
+- `[+0x24]==2`（開き）:
+  - 進行中: `SetupTrait(0xfa1, 2.0)`（非表示のまま）、widget alpha = 1.0 − V、
+    Pause/Message 系のみ Blend Value = V。
+  - 完了: `[+0x24] = 4`（→ 1）。`GetTrait(0x1772)==2.0` の特殊メニュー（Dialog/Pause 系）は
+    0x5841de の再構成処理（DialogMenu 動的キャスト・PauseMenu は破棄 + 0x5a4510）。
+    通常は `SetupTrait(0xfa1, 1.0)`（表示確定）、widget alpha = 0.0、
+    Pause/Message 系のみ Blend Value = 0（黒解除）。
+- `[+0x24]==8`（閉じ）:
+  - 進行中: `[menu+9]=1`、`SetupTrait(0xfa1, 2.0)`、widget alpha = progress、
+    Pause/Message 系のみ Blend Value = V。
+  - 完了: `[+0x24] = 1`、`SetupTrait(0xfa1, 2.0)` 維持、widget alpha = 1.0、
+    Pause/Message 系で arm 時のみ Blend Value = 1.0（黒へ）、arm 解除（`[0xb42d54]=0`）。
+- `[+0x24]` 位相まとめ: **1 = アイドル/完了、2 = 開き、4 = 開き完了直後の中間、8 = 閉じ**。
+- `visible`（0xfa1）: **1.0 = 表示確定、2.0 = 非表示（遷移中含む）**。閉じ完了後は 2.0 のまま
+  （=非表示）。開きが動作するのは visible==2.0 のときだけ（49.6.3 のゲート）。
+- `V` = フレーム先頭で `[0xB33398]+0x20` から取得する共有フェード進行値。
+- Blend Value（`0xb42d50`、float、ウィジェットプロパティ "Blend Value" のグローバルストレージ）を
+  書くのは **PauseMenu(0x3f3) / MessageMenu(0x3e9) 系のみ**（bl 判定）。arm フラグ `0xb42d54` は
+  0x57d13c 系（メニュー開閉ルーチン）で設定される。
+- §37.6 の呼称修正:
+  - `FUN_00584740`: 「実際に閉じる」→ **「開き（表示）フェード」**（state=2、完了で visible=1.0）。
+  - `FUN_00587550`: 「ID 指定クローズ」→ **「4 大メニュー再構築＋閉じ(8)初期化」**（呼出元 1 件）。
+
+#### 49.6.6 依頼A への直接回答
+
+- 開く側は**存在する**。`FUN_00584740`（state=2）が開き（表示）ノードを作る。
+- `FUN_00584300` 呼出元 7 件の開/閉分類: 49.6.1 の表のとおり（開き 1 / 閉じ 4＋再構築 1 / 別系統 1）。
+- current 初期値: **0.0**（`[node+4]`、両方向共通）。
+- `FUN_004A2A90` へ渡す値: **current（0→1）をそのまま**（§48.2 と同じ。開きでも変更なし）。
+- 方向: 逆再生なし。開きも閉じも「新規ノードを current=0 で追加して 1 へ前進」方式。
+- Blend Value: 開き完了で 0（黒解除）、閉じ完了で 1.0（黒）。ただし書込は PauseMenu/MessageMenu 系のみ。
+
+#### 49.6.7 依頼3 残（stackingtype / alpha=0 / locus=true）
+
+- リストノード生成の開/閉: 49.6.1〜49.6.4 で確定（本節が回答）。
+- stackingtype（0xfa5）: §37.5 の 4 値ゲート（6006/6007/102/103）は内部判定用。
+  移植では外部挙動（no_click_past 等）のみ再現すればよい。
+- alpha=0 / locus=true: メニュー XML ルートの宣言属性。alpha=0 = 初期透明
+  （表示はフェード機構が駆動）、locus=true = ルートがキーフォーカス対象（§25.8 / §41 の記述どおり）。
+
+### 49.7 未確定・§50 送り
+
+- 難易度の数値整合（実命令式 vs 実機表示 2.280）— 継続（49.3）。
+- FUN_0066F420 のイベント種別（0xb14914 / 0xb14ff8 の実行時内容、タグ 0x47445553 の対象）— §50。
+- audio 系統対応付けの最終確定（呼出元 0x6ae8ea / 0x6af319、FUN_006acd10 呼出元 11 件の生成順）— §50。
+- 低優先: 未文書化メニュー XML（Container / QuickKeys / LevelUp）— §50。
+- 便2（バッチ2、13 件）は §50 以降で処理。
+
+---
+
+---

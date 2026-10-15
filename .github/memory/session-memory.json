@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-15T17:05:00Z",
+  "lastUpdated": "2026-10-15T19:40:00Z",
   "entries": [
     {
       "timestamp": "2026-09-16T14:58:00Z",
@@ -7840,12 +7840,84 @@
       "priority": "medium",
       "category": "reference",
       "content": "Build staleness trap: app/.cxx/Debug/<hash>/<abi>/CMakeFiles/native-lib.dir/engine/renderer.cpp.o timestamps reveal whether an edit landed inside a running build. Editing during a gradle build compiled arm64-v8a BEFORE the edit while armeabi-v7a/x86_64 got it AFTER - a silently half-stale APK. Always compare the .o mtime per ABI against the source mtime (or just rebuild) after editing during a build. Incremental rebuild of the 3 ABIs took 2m24s vs 6m50s cold-ish."
+    },
+    {
+      "timestamp": "2026-10-15T18:20:00Z",
+      "tags": [
+        "verification",
+        "emulator",
+        "build",
+        "RE-47.4"
+      ],
+      "id": "e0319064-e61b-4431-b651-fc8afbd5eb3a",
+      "compressed": false,
+      "priority": "high",
+      "category": "decision",
+      "content": "Real-device verification (commit ba46c10c): Pixel_API34 is the dev AVD - 1920x1200, API 34, 26 GB free on /data, only 1 third-party package. Tablet_PlayStore_API37 (2560x1600) is the user's personal tablet image: 89% full (674 MB free) and rejects the install with INSTALL_FAILED_INSUFFICIENT_STORAGE / 'Failed to override installation location'. Never delete the user's apps from it. On Pixel_API34 the APK installed (Success), launched via monkey (am start raises SecurityException), and came up clean: Oblivion.esm 277504985 bytes extracted and parsed, 5530 effect links (23 unresolved), 1131/1137 spells have a school, 12119 AI package links / 7209 packages, title screen initialized with map_loop.mp4 playing. No AndroidRuntime errors, no engine errors."
+    },
+    {
+      "timestamp": "2026-10-15T18:20:00Z",
+      "tags": [
+        "build",
+        "apk-size",
+        "emulator",
+        "gotcha"
+      ],
+      "id": "72aaf681-8734-4bd5-8594-567048e122fe",
+      "compressed": false,
+      "priority": "high",
+      "category": "constraint",
+      "content": "The debug APK is now 227.6 MiB (earlier notes said 115.4 MiB) - assets dominate, the three ABI native libs are only 43.2 MiB total. Peak install traffic is roughly twice the APK, so a device needs ~500 MB free. Also: '-Pandroid.injected.build.abi=x86_64' does NOT shrink the assembleDebug output (AGP ignores it for assemble tasks; the APK kept all three ABIs). In PowerShell that property must be quoted whole, otherwise the argument is split at the dot and Gradle reports 'Task .injected.build.abi=x86_64 not found'."
+    },
+    {
+      "timestamp": "2026-10-15T18:20:00Z",
+      "tags": [
+        "combat",
+        "gap",
+        "RE-41.5",
+        "player-damage"
+      ],
+      "id": "b6b4703d-bb47-4be5-9099-89e17ac6121f",
+      "compressed": false,
+      "priority": "high",
+      "category": "decision",
+      "content": "Player::takeDamage(float) (player.cpp:52) has ZERO callers in the whole port, so the player can never lose health. CombatManager only runs NPC-to-NPC pairs: initiateCombat(attacker, defender) is called from exactly one place (renderer.cpp:3798) with two hardcoded NPCs, and CombatManager::update iterates activeCombats keyed by defender->npcId. This matches RE EXE_REPORT 41.5, which states the NPC -> player damage path has to be added on the port side. Open design questions before implementing: which NPCs are hostile, the aggro radius, whether the player can die, and how blocking/armour apply to the player."
+    },
+    {
+      "timestamp": "2026-10-15T18:20:00Z",
+      "tags": [
+        "autosave",
+        "door",
+        "RE-47.4",
+        "verification-gap"
+      ],
+      "id": "1cf40634-c2d7-4c8e-aadf-19257435cb9d",
+      "compressed": false,
+      "priority": "medium",
+      "category": "reference",
+      "content": "RE EXE_REPORT 47.4 cell-transition autosave was implemented and verified as far as the environment allows. DoorManager::setCellTransitionCallback fires at the end of performCellTransition once the destination cell is current; Renderer gates it on bSaveOnTravel and, for an interior/exterior crossing, bSaveOnInteriorExteriorSwitch, then calls AutoSave::triggerEventSave(\"travel\"). The runtime path cannot be exercised on the emulator yet because GameConsole::onTextInput has no JNI wiring, so 'usedoor' cannot be typed. Static review confirms every access is null-guarded."
+    },
+    {
+      "timestamp": "2026-10-15T19:40:00Z",
+      "tags": [
+        "re",
+        "s49",
+        "fade",
+        "oblivion",
+        "re-exe-report",
+        "completion"
+      ],
+      "id": "44784c3f-d7b8-4a39-997c-1a65bf3f1ac5",
+      "compressed": false,
+      "priority": "high",
+      "category": "analysis",
+      "content": "§49 を docs\\RE_EXE_REPORT.md に追記 (便1 依頼A/B/C/2/3/4-1/4-2 回答, 657,326 bytes)。フェード開閉確定: ノード生成は FUN_00584300 唯一 (0x14B: +0=source, +4=current初期0.0, +8=duration, +c=prev, +10=next; MM 0xb3a6e0+0x130)。呼出元7件= 開き FUN_00584740 (state=2, ゲート visible==2.0, 完了で visible=1.0/alpha 0/Blend 0, 親復帰 0x1772==2.0) / 閉じ FUN_00584390 (state=8, 完了で state=1/visible=2.0/alpha 1.0/Blend 1.0[arm時]) / 再構築 switch FUN_00587550 0x587550 (state=8, 呼出元1件 0x5866DC) / 別系統 FUN_00588a70。current は常に 0→1 前進 (逆再生なし)。位相 [+0x24]: 1=アイドル, 2=開き, 4=開き完了直後, 8=閉じ。Blend Value=0xb42d50 (arm 0xb42d54, Pause 0x3f3/Message 0x3e9 系のみ書込)。§37.6 の FUN_00584740「実際に閉じる」は「開き」に修正。依頼B=(a) HP 実ダメージ (FUN_005f3870)。依頼2=FUN_005febf0 に習熟4種直接参照なし。依頼4-1=FUN_006ad030/6aa1a0 は音楽系音量適用 (6 site 同一 this, 5系統前提は誤り)。依頼4-2=FUN_0066F420 構造解析 (Player メソッド, 0xB3BD00 管理, タグ 0x47445553 一致→スクリプトイベント, autosave 呼出, [Player+0x760/764] 解放)。難易度の実命令式 (x=d*10; d==0→base; x<=0→x+1; x>0→1/|x-1|) と実機 2.280 の数値整合は §50 継続。"
     }
   ],
   "metadata": {
-    "totalEntries": 549,
+    "totalEntries": 554,
     "compressedCount": 81,
     "sessionCount": 40,
-    "lastUpdated": "2026-10-15T17:05:00Z"
+    "lastUpdated": "2026-10-15T19:40:00Z"
   }
 }

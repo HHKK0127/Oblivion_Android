@@ -1677,8 +1677,17 @@ void ScriptVMTests::testNativeScdaDecoder() {
             floatVarToken(payload, 4);
             floatVarToken(payload, 5);
             doubleToken(payload, 0.0);
+
+            // args.offsetTokens aliases this result's token vector, so the
+            // result has to outlive the assertions below. Going through
+            // decodeMoveTo would free the tokens before the pointers are read.
+            std::vector<uint8_t> code;
+            appendInstruction(code, 0x109E, payload);
+            const NativeDecodeResult result = decodeNativeScda(code);
             NativeMoveToArguments args;
-            ok = ok && decodeMoveTo(payload, args) && args.valid &&
+            ok = ok && result.success && result.instructions.size() == 1 &&
+                 decodeNativeMoveToArguments(result.instructions[0], args) &&
+                 args.valid &&
                  args.hasOffsets && args.offsetCount == 3 &&
                  !args.offsetIsLiteral[0] && !args.offsetIsLiteral[1] &&
                  args.offsetIsLiteral[2] && args.offsetLiterals[2] == 0.0f &&

@@ -96,6 +96,12 @@ only in the steady state. The suite count went from 40 to 41 with this case.
 - `run_host_tests.sh` — build + run on CI (ubuntu-latest). Fails the job on any
   suite failure or build error. Links against zlib (`-lz`) for the asset
   decompression helpers.
+- `run_host_tests_msvc.ps1` — local-Windows counterpart of the above: builds the
+  same sources with MSVC x64 and runs them, AddressSanitizer on by default. See
+  "Usage (local, MSVC + AddressSanitizer)".
+- `msvc_compat.h` — force-included (`/FI`) by the MSVC runner only. Supplies the
+  `S_ISDIR` / `S_ISREG` macros that g++ gets from `<sys/stat.h>` and MSVC does
+  not define.
 
 ## Usage (local)
 
@@ -123,6 +129,43 @@ On Windows the runner also prepends the directory holding the `g++` it uses to
 `PATH`, because Git Bash's bundled `/mingw64/bin` ships an older
 `libstdc++-6.dll` / `libgcc_s_seh-1.dll` that shadows the ones matching the
 compiler and makes the freshly built binary fail to start.
+
+## Usage (local, MSVC + AddressSanitizer)
+
+`run_host_tests_msvc.ps1` is the local-Windows counterpart of
+`run_host_tests.sh`: same sources, same suites, same include/define set, built
+with MSVC x64 instead of g++. It covers the two things the MinGW runner cannot:
+
+- MSVC's AddressSanitizer (`/fsanitize=address`, enabled by default here)
+  instruments the suites and reports heap/stack misuse that the g++ host build
+  cannot detect.
+- The resulting binary opens in the Visual Studio debugger:
+  `devenv /debugexe tmp\host_tests\host_tests_msvc.exe`.
+
+```powershell
+# From the repo root (needs Visual Studio with the C++ x64 toolset):
+powershell -File tools/host_tests/run_host_tests_msvc.ps1
+
+# Without AddressSanitizer (roughly twice as fast, no memory checking):
+powershell -File tools/host_tests/run_host_tests_msvc.ps1 -NoAsan
+
+# Print the whole compiler output instead of only errors and the summary:
+powershell -File tools/host_tests/run_host_tests_msvc.ps1 -ShowBuildOutput
+```
+
+The runner finds Visual Studio through `vswhere.exe`, parses `INCLUDES`,
+`DEFINES` and `SOURCES` out of `run_host_tests.sh` (so the two runners cannot
+drift - edit the shell script to change the build set) and links zlib, which it
+downloads from `https://zlib.net/fossils/` and builds with MSVC into
+`tmp/host_tests/zlib-build/zlib.lib` on first use. `-RebuildZlib` forces a fresh
+zlib build; `-ZlibLib <dir>\zlib.lib -ZlibInclude <dir>` links an external zlib
+instead (for example one from vcpkg). The compiler log is written to
+`tmp/host_tests/msvc_build.log`; objects go to `tmp/host_tests/obj/` and the
+executable to `tmp/host_tests/host_tests_msvc.exe`.
+
+`run_host_tests.sh` remains the CI path and the source of truth. The suite
+sources stay toolchain-neutral: the only MSVC-specific piece is `msvc_compat.h`,
+which is force-included rather than sprinkled as `#ifdef _MSC_VER` branches.
 
 ## Expanding coverage
 
