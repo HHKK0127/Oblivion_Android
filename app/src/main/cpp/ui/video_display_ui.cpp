@@ -48,18 +48,20 @@ const char* const kReturnLabel = "Return";
 constexpr int kMaxLines = 5;
 
 // First line of the five-line window. When the platform reports more modes than
-// the panel can show, the window slides to keep the caller's current selection
-// visible. RE section 36 documents the enumeration and ordering but not how the
-// original windows a longer list, so the centring below is this port's choice.
-int firstVisibleLine(int total, int selected) {
-    if (total <= kMaxLines || selected < 0) {
+// the panel can show, the window slides to keep the cursor visible. RE section 36
+// documents the enumeration and ordering but not how the original windows a
+// longer list, so the centring below is this port's choice.
+int firstVisibleLine(int total, int cursor) {
+    if (total <= kMaxLines || cursor < 0) {
         return 0;
     }
-    const int first = selected - kMaxLines / 2;
+    const int first = cursor - kMaxLines / 2;
     return std::max(0, std::min(first, total - kMaxLines));
 }
 
 constexpr int KEY_BACK = 4;
+constexpr int KEY_DPAD_UP = 19;
+constexpr int KEY_DPAD_DOWN = 20;
 constexpr int KEY_DPAD_CENTER = 23;
 constexpr int KEY_BUTTON_B = 97;
 constexpr int KEY_ENTER = 66;
@@ -140,7 +142,28 @@ void VideoDisplayUI::setScreenSize(int width, int height) {
 void VideoDisplayUI::open(int selected_index) {
     visible_ = true;
     return_requested_ = false;
+    commit_requested_ = false;
     selected_index_ = selected_index;
+
+    // The list is rebuilt from the platform on every start, so a remembered index
+    // can outlive the mode it named.
+    const int total = display_modes::count();
+    if (total <= 0 || selected_index < 0 || selected_index >= total) {
+        cursor_index_ = 0;
+    } else {
+        cursor_index_ = selected_index;
+    }
+}
+
+bool VideoDisplayUI::consumeCommit(int& committed_index) {
+    if (!commit_requested_) {
+        return false;
+    }
+    commit_requested_ = false;
+    // Picking the mode already in use - and the Return button - commit nothing:
+    // the original closes the menu without the restart prompt in that case.
+    committed_index = (cursor_index_ == selected_index_) ? -1 : cursor_index_;
+    return true;
 }
 
 void VideoDisplayUI::close() {
@@ -155,6 +178,34 @@ VideoDisplayUI::Rect VideoDisplayUI::panelRect() const {
 
 float VideoDisplayUI::lineLocalY(int index) const {
     return TITLE_Y + TITLE_TO_FIRST_DY + LINE_STRIDE * static_cast<float>(index);
+}
+
+VideoDisplayUI::Rect VideoDisplayUI::lineRect(int row) const {
+    const Rect panel = panelRect();
+    const float y = panel.y + lineLocalY(row);
+    // The five text widgets sit 40px apart; give each a full stride of clickable
+    // height so a tap between two baselines still lands on a line.
+    return Rect{panel.x + TEXT_X - 4.0f, y - 4.0f,
+                PANEL_WIDTH - 2.0f * TEXT_X + 8.0f, LINE_STRIDE};
+}
+
+int VideoDisplayUI::rowAtPoint(float px, float py) const {
+    const int total = display_modes::count();
+    const int first = firstVisibleLine(total, cursor_index_);
+    for (int row = 0; row < kMaxLines && first + row < total; ++row) {
+        if (pointInRect(px, py, lineRect(row))) {
+            return first + row;
+        }
+    }
+    return -1;
+}
+
+void VideoDisplayUI::moveCursor(int delta) {
+    const int total = display_modes::count();
+    if (total <= 0) {
+        return;
+    }
+    cursor_index_ = std::max(0, std::min(cursor_index_ + delta, total - 1));
 }
 
 VideoDisplayUI::Rect VideoDisplayUI::returnButtonRect() const {
@@ -192,15 +243,16 @@ void VideoDisplayUI::renderTexts() {
     text_renderer_->renderText(kTitle, panel.x + TEXT_X, panel.y + TITLE_Y, kTextColor, LABEL_SCALE);
 
     const int total = display_modes::count();
-    const int first = firstVisibleLine(total, selected_index_);
+    const int first = firstVisibleLine(total, cursor_index_);
     for (int row = 0; row < kMaxLines && first + row < total; ++row) {
         const int index = first + row;
-        // The original keeps the actual selection in code; dim the other lines
-        // so the caller's current mode stays readable.
-        const bool selected = (selected_index_ < 0) || (selected_index_ == index);
+        // The original has no marker texture here: the mouse cursor is the only
+        // focus feedback (the lines are plain target="true" text). Android has no
+        // pointer, so the focused line keeps full alpha and the rest are dimmed.
+        const bool focused = (index == cursor_index_);
         const std::string text = "- " + display_modes::label(index);
         text_renderer_->renderText(text.c_str(), panel.x + TEXT_X, panel.y + lineLocalY(row),
-                                   selected ? kTextColor : kDimTextColor, LABEL_SCALE);
+                                   focused ? kTextColor : kDimTextColor, LABEL_SCALE);
     }
 }
 
@@ -227,7 +279,16 @@ bool VideoDisplayUI::onTouchDown(float x, float y) {
         return false;
     }
     if (pointInRect(x, y, returnButtonRect())) {
-        return_requested_ = true;
+        // Return leaves without changing anything (FUN_00584740 closes the menu).
+        commit_requested_ = true;
+        return true;
+    }
+    const int row = rowAtPoint(x, y);
+    if (row >= 0) {
+        // Every line carries target="true" in the XML, so tapping one picks and
+        // commits that mode in a single action (RE §36.5).
+        cursor_index_ = row;
+        commit_requested_ = true;
         return true;
     }
     // Swallow taps on the panel so they do not fall through to the world.
@@ -239,10 +300,18 @@ bool VideoDisplayUI::onKeyPress(int keyCode) {
         return false;
     }
     switch (keyCode) {
-        case KEY_BACK:
-        case KEY_BUTTON_B:
+        case KEY_DPAD_UP:
+            moveCursor(-1);
+            return true;
+        case KEY_DPAD_DOWN:
+            moveCursor(1);
+            return true;
         case KEY_DPAD_CENTER:
         case KEY_ENTER:
+            commit_requested_ = true;
+            return true;
+        case KEY_BACK:
+        case KEY_BUTTON_B:
             return_requested_ = true;
             return true;
         default:

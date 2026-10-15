@@ -109,33 +109,53 @@ void Player::setLevel(uint32_t newLevel) {
 }
 
 void Player::maxOutAllSkills() {
+    // All 21 canonical skills (RE_EXE_REPORT §46.1); a skill left at its default
+    // here would make the corresponding dialogue actor-value condition read stale.
+    skills.Armorer = 100;
+    skills.Athletics = 100;
     skills.Blade = 100;
-    skills.Blunt = 100;
     skills.Block = 100;
-    skills.Restoration = 100;
-    skills.Destruction = 100;
+    skills.Blunt = 100;
+    skills.HandToHand = 100;
+    skills.HeavyArmor = 100;
+    skills.Alchemy = 100;
     skills.Alteration = 100;
     skills.Conjuration = 100;
+    skills.Destruction = 100;
     skills.Illusion = 100;
     skills.Mysticism = 100;
-    skills.Marksman = 100;
-    skills.Athletics = 100;
+    skills.Restoration = 100;
     skills.Acrobatics = 100;
+    skills.LightArmor = 100;
+    skills.Marksman = 100;
+    skills.Mercantile = 100;
+    skills.Security = 100;
+    skills.Sneak = 100;
+    skills.Speechcraft = 100;
 }
 
 void Player::resetSkills() {
+    skills.Armorer = 10;
+    skills.Athletics = 10;
     skills.Blade = 10;
-    skills.Blunt = 10;
     skills.Block = 10;
-    skills.Restoration = 10;
-    skills.Destruction = 10;
+    skills.Blunt = 10;
+    skills.HandToHand = 10;
+    skills.HeavyArmor = 10;
+    skills.Alchemy = 10;
     skills.Alteration = 10;
     skills.Conjuration = 10;
+    skills.Destruction = 10;
     skills.Illusion = 10;
     skills.Mysticism = 10;
-    skills.Marksman = 10;
-    skills.Athletics = 10;
+    skills.Restoration = 10;
     skills.Acrobatics = 10;
+    skills.LightArmor = 10;
+    skills.Marksman = 10;
+    skills.Mercantile = 10;
+    skills.Security = 10;
+    skills.Sneak = 10;
+    skills.Speechcraft = 10;
 }
 
 void Player::resetAttributes() {

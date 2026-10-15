@@ -82,6 +82,12 @@ void SettingsManager::setGameplaySettings(const GameplaySettings& settings) {
     saveSettings();
 }
 
+void SettingsManager::setVideoSettings(const VideoSettings& settings) {
+    video = settings;
+    if (video.resolution_index < 0) video.resolution_index = 0;
+    saveSettings();
+}
+
 void SettingsManager::saveSettings() {
     std::string filePath = getSettingsFilePath();
 
@@ -107,6 +113,9 @@ void SettingsManager::saveSettings() {
     file << "GAMEPLAY_SAVE_ON_REST=" << (gameplay.saveOnRest ? "1" : "0") << "\n";
     file << "GAMEPLAY_SAVE_ON_WAIT=" << (gameplay.saveOnWait ? "1" : "0") << "\n";
     file << "GAMEPLAY_SAVE_ON_TRAVEL=" << (gameplay.saveOnTravel ? "1" : "0") << "\n";
+    file << "GAMEPLAY_SAVE_ON_INT_EXT_SWITCH="
+         << (gameplay.saveOnInteriorExteriorSwitch ? "1" : "0") << "\n";
+    file << "VIDEO_RESOLUTION_INDEX=" << video.resolution_index << "\n";
 
     file.close();
     LOGD("Settings saved to: %s", filePath.c_str());
@@ -150,7 +159,8 @@ void SettingsManager::loadSettings() {
             } catch (...) {
                 LOGW("Invalid FPS_CAP value: %s", value.c_str());
             }
-        } else if (key.rfind("AUDIO_", 0) == 0 || key.rfind("GAMEPLAY_", 0) == 0) {
+        } else if (key.rfind("AUDIO_", 0) == 0 || key.rfind("GAMEPLAY_", 0) == 0 ||
+                   key.rfind("VIDEO_", 0) == 0) {
             loadOptionSetting(key, value);
         }
     }
@@ -165,6 +175,7 @@ void SettingsManager::resetToDefaults() {
     fpsCap = 60;              // 60 fps is the default frame rate cap
     audioSettings = AudioVolumeSettings{};
     gameplay = GameplaySettings{};
+    video = VideoSettings{};
     LOGD("Settings reset to defaults");
 }
 
@@ -182,6 +193,8 @@ void SettingsManager::loadOptionSetting(const std::string& key, const std::strin
         gameplay.saveOnWait = (value == "1");
     } else if (key == "GAMEPLAY_SAVE_ON_TRAVEL") {
         gameplay.saveOnTravel = (value == "1");
+    } else if (key == "GAMEPLAY_SAVE_ON_INT_EXT_SWITCH") {
+        gameplay.saveOnInteriorExteriorSwitch = (value == "1");
     } else if (key == "GAMEPLAY_DIFFICULTY") {
         try {
             int level = std::stoi(value);
@@ -190,6 +203,17 @@ void SettingsManager::loadOptionSetting(const std::string& key, const std::strin
             }
         } catch (...) {
             LOGW("Invalid GAMEPLAY_DIFFICULTY value: %s", value.c_str());
+        }
+    } else if (key == "VIDEO_RESOLUTION_INDEX") {
+        try {
+            int index = std::stoi(value);
+            // The list is rebuilt from the platform at every start (RE §36), so a
+            // saved index is clamped again when VideoOptionsUI opens.
+            if (index >= 0) {
+                video.resolution_index = index;
+            }
+        } catch (...) {
+            LOGW("Invalid VIDEO_RESOLUTION_INDEX value: %s", value.c_str());
         }
     } else {
         float* target = nullptr;

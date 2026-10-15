@@ -6,6 +6,7 @@
 #include <vector>
 #include <unordered_map>
 #include <memory>
+#include <functional>
 #include <android/log.h>
 
 // ============================================================================
@@ -94,6 +95,15 @@ public:
     // Door Interaction
     bool useDoor(uint32_t doorId);
 
+    // Fired once after a cell transition completes. The flag is true when the
+    // transition crossed the interior/exterior boundary, which is what the
+    // original's bSaveOnInteriorExteriorSwitch gate keys off. The DoorManager
+    // owns no save state, so the owner supplies the handler.
+    using CellTransitionCallback = std::function<void(bool interiorExteriorSwitch)>;
+    void setCellTransitionCallback(CellTransitionCallback callback) {
+        cellTransitionCallback_ = std::move(callback);
+    }
+
     // Cell-specific queries
     std::vector<const Door*> getDoorsInCell(uint32_t cellFormID) const;
 
@@ -110,6 +120,9 @@ private:
 
     // Counter
     uint32_t nextDoorId;
+
+    // Cell transition notification (owned by the renderer / save layer)
+    CellTransitionCallback cellTransitionCallback_;
 
     // Helper methods
     bool performCellTransition(const Door& door);

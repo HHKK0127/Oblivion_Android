@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-15T05:31:47Z",
+  "lastUpdated": "2026-10-15T17:05:00Z",
   "entries": [
     {
       "timestamp": "2026-09-16T14:58:00Z",
@@ -7737,12 +7737,115 @@
         "request"
       ],
       "compressed": false
+    },
+    {
+      "timestamp": "2026-10-15T17:05:00Z",
+      "tags": [
+        "autosave",
+        "save",
+        "door",
+        "re",
+        "47"
+      ],
+      "id": "047ea66d-ecf4-4475-9851-04ee25d1677d",
+      "compressed": false,
+      "priority": "high",
+      "category": "decision",
+      "content": "Autosave on cell transition implemented (RE 47.4): DoorManager gained setCellTransitionCallback(bool interiorExteriorSwitch) in world/door.h; door.cpp fires it at the end of performCellTransition (after the destination cell is current, so the save stores the arrived-at state) with wasIndoors != door.destinationIsInterior. Renderer::initialize wires it after the SaveManager block: gate = settingsManager->gameplaySettings().saveOnTravel && (!switch || saveOnInteriorExteriorSwitch), then saveManager->getAutoSave().triggerEventSave(\"travel\"). Covers usedoor / Use Nearest Door / any future door activation. Original has NO timed autosave; the port still has AutoSave's 300s timer - open decision whether to disable it."
+    },
+    {
+      "timestamp": "2026-10-15T17:05:00Z",
+      "tags": [
+        "re",
+        "fade",
+        "combat",
+        "blocker",
+        "48"
+      ],
+      "id": "24d138db-9b90-4648-8da5-04c74dea41f8",
+      "compressed": false,
+      "priority": "high",
+      "category": "decision",
+      "content": "RE 48 (menu open/close fade) is NOT implemented and is blocked on a clarification request sent to the RE session: the spec literally reads as alpha 0->1 on BOTH open and close (no reverse), which would darken the screen when a menu opens. Asked RE to classify the 7 callers of FUN_00584300 (0x5843D0 / 0x58479A / 0x587596 / 0x5875DA / 0x58761E / 0x587662 / 0x588A9A) as open-side or close-side, and to confirm whether FUN_004A2A90 receives current or 1-current. Also re-asked 41-4 (FUN_005e2560 difficulty formula - the cited d=73 -> 2.280 evidence matches the port's existing pow(6,(d-50)/50), i.e. circular) and asked whether the 45 armour-perk GMST multipliers (Novice 1.5 / Journeyman 0.5) scale HP damage or armour condition."
+    },
+    {
+      "timestamp": "2026-10-15T17:05:00Z",
+      "tags": [
+        "assets",
+        "fade",
+        "constraint",
+        "48"
+      ],
+      "id": "0d230110-eac5-4612-ad72-cbe37f48e498",
+      "compressed": false,
+      "priority": "high",
+      "category": "constraint",
+      "content": "RE 48 fade asset: Data\\Textures\\Menus\\Faders\\Black.dds has NO counterpart in app/src/main/assets/textures/ui/ (grep for 'black' only hits weapon/armour icon names). LetterBox.dds is likewise absent. If 48 is implemented the full-screen dim must be a program-generated alpha-blended black quad - the only place so far where the 'use the original in-game assets' rule cannot be met from what is already extracted."
+    },
+    {
+      "timestamp": "2026-10-15T17:05:00Z",
+      "tags": [
+        "actorvalue",
+        "skills",
+        "re",
+        "46",
+        "player"
+      ],
+      "id": "28630881-cf76-45df-b0ed-e7eceb8c5f46",
+      "compressed": false,
+      "priority": "medium",
+      "category": "decision",
+      "content": "RE 46 actor-value table adopted: dialogue::ActorValue in dialogue/dialogue_filter_engine.cpp now mirrors the canonical 73-entry table at 0x00B0A1A8 (8 attributes, 4 derived Health/Magicka/Fatigue/Encumbrance, 21 skills at 0x0C-0x20, 39 special values). Stamina renamed Fatigue (index 0x0A). Key indices: 0x12 HeavyArmor, 0x1b LightArmor, 0x3b ReflectDamage, 0x40 ResistMagic; 4 = Speed (not bleeding), 0xf = Block (not fatigue). Player::Skills grew 12 -> 21 (player.h/.cpp), and renderer.cpp chargen setSkill + maxOutAllSkills/resetSkills cover the same 21. game/npc.h AV constants annotated, AV_ENCUMBRANCE added."
+    },
+    {
+      "timestamp": "2026-10-15T17:05:00Z",
+      "tags": [
+        "settings",
+        "gameplay",
+        "re",
+        "47",
+        "bugfix"
+      ],
+      "id": "eb86011f-e34f-47e8-9f5d-59c8e27e3f8a",
+      "compressed": false,
+      "priority": "medium",
+      "category": "decision",
+      "content": "RE 47 Gameplay options: GameplaySettings gained bSaveOnInteriorExteriorSwitch (default true, GAMEPLAY_SAVE_ON_INT_EXT_SWITCH= in settings.txt) - gameplay_menu.xml has no row for it, exactly as the original keeps it in Oblivion.ini. Fixed a real bug in renderer.cpp pumpGameplayOptions(): it used to build a fresh GameplaySettings from the panel rows on every change, resetting that field; it now starts from settingsManager->gameplaySettings() and overwrites only the rows the panel owns. Subtitle toggles stored as bDialogueSubtitles (0x00B13200) / bGeneralSubtitles (0x00B13208) - corrected from the reversed 33.5 reading. Difficulty curve kept as pow(6,(d-50)/50) pending the 41.4 review."
+    },
+    {
+      "timestamp": "2026-10-15T17:05:00Z",
+      "tags": [
+        "video",
+        "resolution",
+        "re",
+        "36",
+        "ui"
+      ],
+      "id": "efe9d57e-da56-4882-b76b-49536376d9d8",
+      "compressed": false,
+      "priority": "medium",
+      "category": "decision",
+      "content": "RE 36.5 resolution commit flow: VideoDisplayUI now separates commit from return. commit_requested_ is raised only by the Return button, a tap on a line, or DPAD_CENTER/ENTER; return_requested_ only by Back / BUTTON_B / handleBack(). consumeCommit(int&) returns the chosen line or -1 when it equals the mode already in use (original treats that as a no-op that closes without the restart prompt). VideoSettings { int resolution_index } added to SettingsManager (VIDEO_RESOLUTION_INDEX=), Renderer::applyResolutionSelection() persists it, and pumpVideoDisplay() follows FUN_005ddaa0: store -> close -> raise sVideoChange/sOk as a modal MessageMenu. Nothing resizes immediately; the original stores to a settings global read only at start-up."
+    },
+    {
+      "timestamp": "2026-10-15T17:05:00Z",
+      "tags": [
+        "build",
+        "gradle",
+        "verification",
+        "tooling"
+      ],
+      "id": "b5b2dea6-36ef-407e-b6e6-171cc84d764f",
+      "compressed": false,
+      "priority": "medium",
+      "category": "reference",
+      "content": "Build staleness trap: app/.cxx/Debug/<hash>/<abi>/CMakeFiles/native-lib.dir/engine/renderer.cpp.o timestamps reveal whether an edit landed inside a running build. Editing during a gradle build compiled arm64-v8a BEFORE the edit while armeabi-v7a/x86_64 got it AFTER - a silently half-stale APK. Always compare the .o mtime per ABI against the source mtime (or just rebuild) after editing during a build. Incremental rebuild of the 3 ABIs took 2m24s vs 6m50s cold-ish."
     }
   ],
   "metadata": {
-    "totalEntries": 542,
+    "totalEntries": 549,
     "compressedCount": 81,
     "sessionCount": 40,
-    "lastUpdated": "2026-10-15T05:31:47Z"
+    "lastUpdated": "2026-10-15T17:05:00Z"
   }
 }

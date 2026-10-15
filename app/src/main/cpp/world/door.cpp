@@ -230,6 +230,13 @@ bool DoorManager::performCellTransition(const Door& door) {
              door.doorId, door.sourceCellFormID, door.destinationCell,
              door.destinationIsInterior ? "interior" : "exterior");
 
+    // Notify the owner once per completed transition. The callback runs after
+    // the destination cell is current so an autosave taken here stores the
+    // arrived-at state rather than the one being left behind.
+    if (cellTransitionCallback_) {
+        cellTransitionCallback_(wasIndoors != door.destinationIsInterior);
+    }
+
     return true;
 }
 

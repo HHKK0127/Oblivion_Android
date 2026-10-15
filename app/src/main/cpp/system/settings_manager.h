@@ -47,6 +47,23 @@ struct GameplaySettings {
     bool saveOnRest = true;         // bSaveOnRest
     bool saveOnWait = true;         // bSaveOnWait
     bool saveOnTravel = true;       // bSaveOnTravel
+    // bSaveOnInteriorExteriorSwitch. gameplay_menu.xml has no row for this one -
+    // it is an Oblivion.ini setting in the original - so it is persisted but never
+    // shown. It gates the extra autosave when a cell transition crosses the
+    // interior/exterior boundary (RE §47.4).
+    bool saveOnInteriorExteriorSwitch = true;
+};
+
+/**
+ * @brief Video options that outlive a run.
+ *
+ * The original stores the chosen resolution in a settings global and only reads
+ * it back at start-up - which is why committing a new one raises the "restart
+ * required" message and nothing changes immediately (RE §36.5). resolution_index
+ * indexes system/display_modes.h.
+ */
+struct VideoSettings {
+    int resolution_index = 0;
 };
 
 /**
@@ -114,6 +131,16 @@ public:
     void setGameplaySettings(const GameplaySettings& settings);
 
     /**
+     * @brief Get the persisted video options
+     */
+    const VideoSettings& videoSettings() const { return video; }
+
+    /**
+     * @brief Store the video options and persist them
+     */
+    void setVideoSettings(const VideoSettings& settings);
+
+    /**
      * @brief Save settings
      */
     void saveSettings();
@@ -139,11 +166,12 @@ private:
     int fpsCap;
     AudioVolumeSettings audioSettings;
     GameplaySettings gameplay;
+    VideoSettings video;
 
     // File path
     std::string getSettingsFilePath() const;
 
-    // Apply one "KEY=VALUE" line for the AUDIO_* / GAMEPLAY_* option keys.
+    // Apply one "KEY=VALUE" line for the AUDIO_* / GAMEPLAY_* / VIDEO_* option keys.
     void loadOptionSetting(const std::string& key, const std::string& value);
 
     static constexpr const char* LOG_TAG = "SettingsManager";

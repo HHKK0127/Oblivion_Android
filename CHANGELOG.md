@@ -16,6 +16,49 @@ The current version is **0.9.10 (versionCode 910)**.
 ## [Unreleased]
 
 ### Added
+- **Committing a resolution in the `VideoDisplayMenu` list panel now applies it the way the
+  original does (RE `§36.5`).** The panel used to treat "the cursor moved" and "the user chose
+  this mode" as the same thing, so backing out with the cursor somewhere else silently changed
+  the setting. `VideoDisplayUI` now separates the two: `commit_requested_` is raised only by the
+  Return button, a tap on a line, or `DPAD_CENTER` / `ENTER`, and `return_requested_` only by
+  Back / `BUTTON_B` / `handleBack()`. `consumeCommit(int&)` reports the chosen line, or `-1`
+  when the choice is the mode already in use - which the original treats as a no-op that closes
+  the menu without the restart prompt. The chosen index is persisted through a new
+  `VideoSettings { int resolution_index }` in `SettingsManager` (`VIDEO_RESOLUTION_INDEX=` in
+  `settings.txt`), and the commit path follows `FUN_005ddaa0`: store the choice, close the
+  panel, then raise `sVideoChange` / `sOk` as a modal `MessageMenu`. Nothing resizes
+  immediately, which matches the original - it stores the value in a settings global and only
+  reads it back at start-up, which is why the prompt says a restart is required.
+- **The actor-value table is the original's canonical 73-entry list (RE `§46`).**
+  `dialogue::ActorValue` carried a hand-written subset in which the slot the original calls
+  `Fatigue` was named `Stamina`, and the derived/skill/special indices were guessed. The
+  namespace now mirrors `0x00B0A1A8` entry for entry - the 8 attributes, the 4 derived values
+  (`Health` / `Magicka` / `Fatigue` / `Encumbrance`), the 21 skills at index `0x0C`-`0x20`, and
+  the 39 special values - so every index the dialogue, combat and actor-value paths exchange
+  means what the executable means by it. `0x12` is `HeavyArmor` and `0x1b` is `LightArmor`,
+  which is what the armour-perk damage path passes, so `§41.7`'s "index 4 / 0xf are bleeding and
+  fatigue" reading is dropped in favour of `4 = Speed` / `0xf = Block`.
+  - `Player::Skills` grows from 12 to the 21 canonical skills, and character creation plus
+    `maxOutAllSkills()` / `resetSkills()` cover the same 21, so a class no longer leaves nine
+    skills at their default value.
+- **Gameplay options persist, and the panel no longer clobbers the field it does not own (RE
+  `§47`).** `GameplaySettings` gained `bSaveOnInteriorExteriorSwitch` (default on,
+  `GAMEPLAY_SAVE_ON_INT_EXT_SWITCH=` in `settings.txt`). `Data\Menus\Options\gameplay_menu.xml`
+  has no row for it - the original keeps it in `Oblivion.ini` - so it is stored but never shown.
+  `pumpGameplayOptions()` used to build a fresh `GameplaySettings` from the panel's rows on
+  every change, which reset that field to its default each time any visible row was touched; it
+  now starts from `settingsManager->gameplaySettings()` and overwrites only the rows the panel
+  owns. The subtitle toggles are stored as the original's `bDialogueSubtitles` /
+  `bGeneralSubtitles` pair (`0x00B13200` / `0x00B13208`), corrected from the reversed reading in
+  `§33.5`. The difficulty slider keeps its existing curve while the `§41.4` correction is still
+  under review with the reverse-engineering track.
+- **Autosave fires on cell transitions, as the original does (RE `§47.4`).** The original has no
+  timed autosave: it writes one save when a door moves the player, gated on `bSaveOnTravel` and,
+  when the move also crosses the interior/exterior boundary, on `bSaveOnInteriorExteriorSwitch`.
+  `DoorManager` gained a `setCellTransitionCallback()` hook and `Renderer` wires it to
+  `AutoSave::triggerEventSave()`, so `usedoor`, `Use Nearest Door` and any future door
+  activation all take the save without the door layer needing to know about saving. The callback
+  runs once the destination cell is current, so the save stores the state the player arrives in.
 - **The Video options screen's Resolution row now enumerates the real display modes (RE `§36`).**
   The row used to cycle a hard-coded string table that did not match the panel the row opens.
   A new `system/display_modes` module holds the authored fallback list

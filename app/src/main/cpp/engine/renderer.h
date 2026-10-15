@@ -419,6 +419,7 @@ public:
     void applyGameplaySettings(const GameplaySettings& settings);
     void pumpVideoOptions();
     void pumpVideoDisplay();
+    void applyResolutionSelection(int index);
     void pumpControlsOptions();
     void pumpPauseMenu();
     void pumpMessageBox();

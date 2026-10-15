@@ -67,18 +67,27 @@ struct Player {
 
     // Skills (0-100 scale, mirroring Oblivion)
     struct Skills {
+        int Armorer = 10;
+        int Athletics = 10;
         int Blade = 10;
-        int Blunt = 10;
         int Block = 10;
-        int Restoration = 10;
-        int Destruction = 10;
+        int Blunt = 10;
+        int HandToHand = 10;
+        int HeavyArmor = 10;
+        int Alchemy = 10;
         int Alteration = 10;
         int Conjuration = 10;
+        int Destruction = 10;
         int Illusion = 10;
         int Mysticism = 10;
-        int Marksman = 10;
-        int Athletics = 10;
+        int Restoration = 10;
         int Acrobatics = 10;
+        int LightArmor = 10;
+        int Marksman = 10;
+        int Mercantile = 10;
+        int Security = 10;
+        int Sneak = 10;
+        int Speechcraft = 10;
     } skills = Skills();
 
     // Attributes

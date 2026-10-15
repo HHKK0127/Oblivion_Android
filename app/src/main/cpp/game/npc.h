@@ -47,9 +47,10 @@ struct CharacterStatus {
     std::vector<uint32_t> knownSpells;     // Spell IDs this NPC can cast
     std::vector<uint32_t> equippedSpells;  // Currently equipped spells
 
-    // Oblivion Actor Value (AV) IDs. The first three map to the derived
-        // vitals; 0-7 map to the attributes. See dialogue_filter_engine.cpp for
-        // the full skill/attribute AV id table.
+    // Oblivion Actor Value (AV) IDs. Indices follow the canonical 73-entry table
+    // at 0x00B0A1A8 in the original executable (RE_EXE_REPORT §46.1): 0-7 are the
+    // attributes, 8-11 the derived values, 12-32 the skills. AV 10 is Fatigue in
+    // the original; this port names the same value "stamina".
         static constexpr uint32_t AV_STRENGTH     = 0;
         static constexpr uint32_t AV_INTELLIGENCE = 1;
         static constexpr uint32_t AV_WILLPOWER    = 2;
@@ -60,7 +61,8 @@ struct CharacterStatus {
         static constexpr uint32_t AV_LUCK         = 7;
         static constexpr uint32_t AV_HEALTH       = 8;
         static constexpr uint32_t AV_MAGICKA      = 9;
-        static constexpr uint32_t AV_STAMINA      = 10;
+        static constexpr uint32_t AV_STAMINA      = 10;   // Fatigue
+        static constexpr uint32_t AV_ENCUMBRANCE  = 11;
 
         // Methods
         CharacterStatus();

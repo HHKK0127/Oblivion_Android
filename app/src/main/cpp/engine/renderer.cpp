@@ -9,6 +9,7 @@
 #include "../inventory/item_factory.h"
 #include "../physics/physics_manager.h"
 #include "../world/game_state_report.h"
+#include "../system/display_modes.h"
 #include "../world/door.h"
 #include "../world/distant_lod/distant_lod_manager.h"
 // #include "../jni_audio_bridge.h"  // Deferred - requires Java MainActivity
@@ -793,18 +794,28 @@ bool Renderer::initGameSystems() {
     refs.setSkill = [this](const std::string& name, int level) {
         if (playerController && playerController->getPlayer()) {
             auto& skills = playerController->getPlayer()->skills;
-            if (name == "Blade") skills.Blade = level;
-            else if (name == "Blunt") skills.Blunt = level;
+            // All 21 skills of the canonical actor-value table (RE_EXE_REPORT §46).
+            if (name == "Armorer") skills.Armorer = level;
+            else if (name == "Athletics") skills.Athletics = level;
+            else if (name == "Blade") skills.Blade = level;
             else if (name == "Block") skills.Block = level;
-            else if (name == "Restoration") skills.Restoration = level;
-            else if (name == "Destruction") skills.Destruction = level;
+            else if (name == "Blunt") skills.Blunt = level;
+            else if (name == "HandToHand") skills.HandToHand = level;
+            else if (name == "HeavyArmor") skills.HeavyArmor = level;
+            else if (name == "Alchemy") skills.Alchemy = level;
             else if (name == "Alteration") skills.Alteration = level;
             else if (name == "Conjuration") skills.Conjuration = level;
+            else if (name == "Destruction") skills.Destruction = level;
             else if (name == "Illusion") skills.Illusion = level;
             else if (name == "Mysticism") skills.Mysticism = level;
-            else if (name == "Marksman") skills.Marksman = level;
-            else if (name == "Athletics") skills.Athletics = level;
+            else if (name == "Restoration") skills.Restoration = level;
             else if (name == "Acrobatics") skills.Acrobatics = level;
+            else if (name == "LightArmor") skills.LightArmor = level;
+            else if (name == "Marksman") skills.Marksman = level;
+            else if (name == "Mercantile") skills.Mercantile = level;
+            else if (name == "Security") skills.Security = level;
+            else if (name == "Sneak") skills.Sneak = level;
+            else if (name == "Speechcraft") skills.Speechcraft = level;
         }
     };
     refs.setAttribute = [this](const std::string& name, int val) {
@@ -2107,6 +2118,23 @@ bool Renderer::initGameSystems() {
         if (worldManager) saveManager->setWorldManager(worldManager.get());
     }
 
+    // Autosave on cell transition (RE_EXE_REPORT §47.4). The original fires one
+    // save when a door moves the player, gated on bSaveOnTravel, plus
+    // bSaveOnInteriorExteriorSwitch when the move also crosses the
+    // interior/exterior boundary.
+    if (saveManager && worldManager) {
+        if (DoorManager* doors = worldManager->getDoorManager()) {
+            doors->setCellTransitionCallback(
+                [this](bool interiorExteriorSwitch) {
+                    if (!settingsManager) return;
+                    const GameplaySettings& opts = settingsManager->gameplaySettings();
+                    if (!opts.saveOnTravel) return;
+                    if (interiorExteriorSwitch && !opts.saveOnInteriorExteriorSwitch) return;
+                    saveManager->getAutoSave().triggerEventSave("travel");
+                });
+        }
+    }
+
     // OptionsUI: layout follows the original OptionsMenu XML (PC values)
     optionsUI = std::make_unique<OptionsUI>();
     if (!optionsUI->initialize(textRenderer.get())) {
@@ -2151,6 +2179,13 @@ bool Renderer::initGameSystems() {
         LOGE("Failed to initialize VideoOptionsUI");
     } else {
         videoOptionsUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        // Seed the resolution row from the persisted choice so the panel shows the
+        // mode the next start will use (RE §36.5 keeps it across runs).
+        if (settingsManager) {
+            VideoOptionsUI::Settings initial = videoOptionsUI->settings();
+            initial.resolution_index = settingsManager->videoSettings().resolution_index;
+            videoOptionsUI->setSettings(initial);
+        }
     }
 
     // VideoDisplayUI: resolution list panel shown when the resolution changes
@@ -7797,7 +7832,10 @@ void Renderer::pumpGameplayOptions() {
     }
     if (gameplayOptionsUI->consumeChanged()) {
         const GameplayOptionsUI::Settings& s = gameplayOptionsUI->settings();
-        GameplaySettings saved;
+        // Start from what is on disk so fields the panel does not own (the INI-only
+        // bSaveOnInteriorExteriorSwitch) survive a change to the visible rows.
+        GameplaySettings saved = settingsManager ? settingsManager->gameplaySettings()
+                                                 : GameplaySettings{};
         saved.difficulty = s.difficulty;
         saved.generalSubtitles = s.generalSubtitles;
         saved.dialogueSubtitles = s.dialogueSubtitles;
@@ -7847,10 +7885,53 @@ void Renderer::pumpVideoDisplay() {
     if (!videoDisplayUI) {
         return;
     }
+
+    int committed = -1;
+    if (videoDisplayUI->consumeCommit(committed)) {
+        // FUN_005ddaa0 runs in this order: write the settings globals, close the
+        // menu, raise the restart prompt (RE §36.5). Return and the mode already in
+        // use commit nothing and only close the panel.
+        videoDisplayUI->close();
+        if (committed >= 0) {
+            if (videoOptionsUI) {
+                VideoOptionsUI::Settings s = videoOptionsUI->settings();
+                s.resolution_index = committed;
+                videoOptionsUI->setSettings(s);
+            }
+            applyResolutionSelection(committed);
+
+            const char* const body_fallback =
+                "You must exit and restart Oblivion for the new resolution to take effect.";
+            const std::string body = localizationManager
+                                         ? localizationManager->getGameSetting("sVideoChange", body_fallback)
+                                         : std::string(body_fallback);
+            const std::string ok = localizationManager
+                                       ? localizationManager->getGameSetting("sOk", "Ok")
+                                       : std::string("Ok");
+            showMessage(body, {ok}, nullptr);
+        }
+        return;
+    }
+
     if (videoDisplayUI->shouldReturn()) {
         videoDisplayUI->resetReturnFlag();
         videoDisplayUI->close();
     }
+}
+
+void Renderer::applyResolutionSelection(int index) {
+    // FUN_00497c10 writes only the settings globals (0x00b06c5c / 0x00b06c64); the
+    // pair actually used for the frame (0x00b06c4c / 0x00b06c50) is read once at
+    // start-up. So the choice is persisted here and takes effect on the next
+    // launch - which is exactly what the sVideoChange prompt tells the player.
+    if (!settingsManager) {
+        return;
+    }
+    VideoSettings saved = settingsManager->videoSettings();
+    saved.resolution_index = index;
+    settingsManager->setVideoSettings(saved);
+    LOGI("Resolution committed: index %d (%s), applied on next start", index,
+         display_modes::label(index).c_str());
 }
 
 void Renderer::pumpControlsOptions() {

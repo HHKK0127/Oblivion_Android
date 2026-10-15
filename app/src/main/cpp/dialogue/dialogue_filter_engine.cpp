@@ -8,37 +8,59 @@ namespace dialogue {
 // ============================================================================
 // Oblivion Actor Value IDs
 // ============================================================================
+// The canonical table is the 73-entry char* array at 0x00B0A1A8 in the original
+// executable (RE_EXE_REPORT §46.1). Dialogue conditions carry these indices
+// verbatim from the game data, so the values must match the original exactly:
+// attributes 0x00-0x07, derived values 0x08-0x0B, skills 0x0C-0x20.
 namespace ActorValue {
-    constexpr uint16_t Strength      = 0;
-    constexpr uint16_t Intelligence  = 1;
-    constexpr uint16_t Willpower     = 2;
-    constexpr uint16_t Agility       = 3;
-    constexpr uint16_t Speed         = 4;
-    constexpr uint16_t Endurance     = 5;
-    constexpr uint16_t Personality   = 6;
-    constexpr uint16_t Luck          = 7;
-    constexpr uint16_t Health        = 8;
-    constexpr uint16_t Magicka       = 9;
-    constexpr uint16_t Stamina       = 10;
-    constexpr uint16_t Blade         = 11;
-    constexpr uint16_t Blunt         = 12;
-    constexpr uint16_t Block         = 13;
-    constexpr uint16_t Armorer       = 14;
-    constexpr uint16_t HeavyArmor    = 15;
-    constexpr uint16_t Alchemy       = 16;
-    constexpr uint16_t Alteration    = 17;
-    constexpr uint16_t Conjuration   = 18;
-    constexpr uint16_t Destruction   = 19;
-    constexpr uint16_t Illusion      = 20;
-    constexpr uint16_t Mysticism     = 21;
-    constexpr uint16_t Restoration   = 22;
-    constexpr uint16_t Marksman      = 23;
-    constexpr uint16_t Mercantile    = 24;
-    constexpr uint16_t Security      = 25;
-    constexpr uint16_t Sneak         = 26;
-    constexpr uint16_t Speechcraft   = 27;
-    constexpr uint16_t Athletics     = 28;
-    constexpr uint16_t Acrobatics    = 29;
+    // Attributes
+    constexpr uint16_t Strength      = 0x00;
+    constexpr uint16_t Intelligence  = 0x01;
+    constexpr uint16_t Willpower     = 0x02;
+    constexpr uint16_t Agility       = 0x03;
+    constexpr uint16_t Speed         = 0x04;
+    constexpr uint16_t Endurance     = 0x05;
+    constexpr uint16_t Personality   = 0x06;
+    constexpr uint16_t Luck          = 0x07;
+
+    // Derived values
+    constexpr uint16_t Health        = 0x08;
+    constexpr uint16_t Magicka       = 0x09;
+    constexpr uint16_t Fatigue       = 0x0a;   // "Stamina" in this port's naming
+    constexpr uint16_t Encumbrance   = 0x0b;
+
+    // Skills
+    constexpr uint16_t Armorer       = 0x0c;
+    constexpr uint16_t Athletics     = 0x0d;
+    constexpr uint16_t Blade         = 0x0e;
+    constexpr uint16_t Block         = 0x0f;
+    constexpr uint16_t Blunt         = 0x10;
+    constexpr uint16_t HandToHand    = 0x11;
+    constexpr uint16_t HeavyArmor    = 0x12;
+    constexpr uint16_t Alchemy       = 0x13;
+    constexpr uint16_t Alteration    = 0x14;
+    constexpr uint16_t Conjuration   = 0x15;
+    constexpr uint16_t Destruction   = 0x16;
+    constexpr uint16_t Illusion      = 0x17;
+    constexpr uint16_t Mysticism     = 0x18;
+    constexpr uint16_t Restoration   = 0x19;
+    constexpr uint16_t Acrobatics    = 0x1a;
+    constexpr uint16_t LightArmor    = 0x1b;
+    constexpr uint16_t Marksman      = 0x1c;
+    constexpr uint16_t Mercantile    = 0x1d;
+    constexpr uint16_t Security      = 0x1e;
+    constexpr uint16_t Sneak         = 0x1f;
+    constexpr uint16_t Speechcraft   = 0x20;
+
+    // Special values
+    constexpr uint16_t Aggression         = 0x21;
+    constexpr uint16_t Confidence         = 0x22;
+    constexpr uint16_t Responsibility     = 0x25;
+    constexpr uint16_t Bounty             = 0x26;
+    constexpr uint16_t Fame               = 0x27;
+    constexpr uint16_t Infamy             = 0x28;
+    constexpr uint16_t ReflectDamage      = 0x3b;
+    constexpr uint16_t ResistMagic        = 0x40;
 }
 
 // ============================================================================
@@ -55,19 +77,30 @@ void DialogueFilterEngine::updatePlayerFromPlayer(const Player& player, uint32_t
     playerCtx.playerLevel = player.playerLevel;
     playerCtx.playerGender = player.gender;
 
-    // Map skills
+    // Map skills. The AV indices are the canonical ones from the original
+    // executable (RE_EXE_REPORT §46.1), so every skill must be populated or a
+    // dialogue condition reading it would silently evaluate against 0.
+    playerCtx.skillValues[ActorValue::Armorer] = static_cast<float>(player.skills.Armorer);
+    playerCtx.skillValues[ActorValue::Athletics] = static_cast<float>(player.skills.Athletics);
     playerCtx.skillValues[ActorValue::Blade] = static_cast<float>(player.skills.Blade);
-    playerCtx.skillValues[ActorValue::Blunt] = static_cast<float>(player.skills.Blunt);
     playerCtx.skillValues[ActorValue::Block] = static_cast<float>(player.skills.Block);
-    playerCtx.skillValues[ActorValue::Restoration] = static_cast<float>(player.skills.Restoration);
-    playerCtx.skillValues[ActorValue::Destruction] = static_cast<float>(player.skills.Destruction);
+    playerCtx.skillValues[ActorValue::Blunt] = static_cast<float>(player.skills.Blunt);
+    playerCtx.skillValues[ActorValue::HandToHand] = static_cast<float>(player.skills.HandToHand);
+    playerCtx.skillValues[ActorValue::HeavyArmor] = static_cast<float>(player.skills.HeavyArmor);
+    playerCtx.skillValues[ActorValue::Alchemy] = static_cast<float>(player.skills.Alchemy);
     playerCtx.skillValues[ActorValue::Alteration] = static_cast<float>(player.skills.Alteration);
     playerCtx.skillValues[ActorValue::Conjuration] = static_cast<float>(player.skills.Conjuration);
+    playerCtx.skillValues[ActorValue::Destruction] = static_cast<float>(player.skills.Destruction);
     playerCtx.skillValues[ActorValue::Illusion] = static_cast<float>(player.skills.Illusion);
     playerCtx.skillValues[ActorValue::Mysticism] = static_cast<float>(player.skills.Mysticism);
-    playerCtx.skillValues[ActorValue::Marksman] = static_cast<float>(player.skills.Marksman);
-    playerCtx.skillValues[ActorValue::Athletics] = static_cast<float>(player.skills.Athletics);
+    playerCtx.skillValues[ActorValue::Restoration] = static_cast<float>(player.skills.Restoration);
     playerCtx.skillValues[ActorValue::Acrobatics] = static_cast<float>(player.skills.Acrobatics);
+    playerCtx.skillValues[ActorValue::LightArmor] = static_cast<float>(player.skills.LightArmor);
+    playerCtx.skillValues[ActorValue::Marksman] = static_cast<float>(player.skills.Marksman);
+    playerCtx.skillValues[ActorValue::Mercantile] = static_cast<float>(player.skills.Mercantile);
+    playerCtx.skillValues[ActorValue::Security] = static_cast<float>(player.skills.Security);
+    playerCtx.skillValues[ActorValue::Sneak] = static_cast<float>(player.skills.Sneak);
+    playerCtx.skillValues[ActorValue::Speechcraft] = static_cast<float>(player.skills.Speechcraft);
 
     // Map attributes
     playerCtx.attributeValues[ActorValue::Strength] = static_cast<float>(player.attributes.Strength);
@@ -82,7 +115,7 @@ void DialogueFilterEngine::updatePlayerFromPlayer(const Player& player, uint32_t
     // Health/Magicka/Stamina
     playerCtx.attributeValues[ActorValue::Health] = player.health;
     playerCtx.attributeValues[ActorValue::Magicka] = player.magicka;
-    playerCtx.attributeValues[ActorValue::Stamina] = player.stamina;
+    playerCtx.attributeValues[ActorValue::Fatigue] = player.stamina;
 }
 
 void DialogueFilterEngine::updateNPCFromNPC(const NPC& npc, uint32_t npcFormID) {
@@ -454,7 +487,7 @@ float DialogueFilterEngine::getNPCActorValue(uint32_t actorValueID) const {
     switch (actorValueID) {
         case ActorValue::Health: return npcCtx.npc->status.currentHealth;
         case ActorValue::Magicka: return npcCtx.npc->status.currentMana;
-        case ActorValue::Stamina: return npcCtx.npc->status.stamina;
+        case ActorValue::Fatigue: return npcCtx.npc->status.stamina;
         default: {
             auto it = npcCtx.npc->status.skills.find(
                 std::to_string(actorValueID));
