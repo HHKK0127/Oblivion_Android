@@ -18,7 +18,6 @@ namespace {
 constexpr float BODY_WIDTH = 240.0f;
 constexpr float BODY_HEIGHT = 360.0f;
 constexpr float PAUSE_EXTRA_HEIGHT = 40.0f;   // body becomes 400 when opened from pause
-constexpr float BORDER = 44.0f;               // generic border sits outside the body
 constexpr float BUTTON_HEIGHT = 64.0f;
 constexpr float BUTTON_LABEL_PAD = 40.0f;     // rect width = label width + 40
 constexpr float SELECTION_MIN_WIDTH = 104.0f; // dialog_selection_cut width
@@ -261,18 +260,12 @@ OptionsUI::Category OptionsUI::consumeCategoryRequest() {
 }
 
 void OptionsUI::renderBorder(const Rect& b) {
-    const int sw = screenWidth;
-    const int sh = screenHeight;
-
-    drawIfLoaded(bgCenterTexture, b.x, b.y, b.w, b.h, sw, sh);
-    drawIfLoaded(bgEdgeTopTexture, b.x, b.y - BORDER, b.w, BORDER, sw, sh);
-    drawIfLoaded(bgEdgeBottomTexture, b.x, b.y + b.h, b.w, BORDER, sw, sh);
-    drawIfLoaded(bgEdgeLeftTexture, b.x - BORDER, b.y, BORDER, b.h, sw, sh);
-    drawIfLoaded(bgEdgeRightTexture, b.x + b.w, b.y, BORDER, b.h, sw, sh);
-    drawIfLoaded(bgCornerTLTexture, b.x - BORDER, b.y - BORDER, BORDER, BORDER, sw, sh);
-    drawIfLoaded(bgCornerTRTexture, b.x + b.w, b.y - BORDER, BORDER, BORDER, sw, sh);
-    drawIfLoaded(bgCornerBLTexture, b.x - BORDER, b.y + b.h, BORDER, BORDER, sw, sh);
-    drawIfLoaded(bgCornerBRTexture, b.x + b.w, b.y + b.h, BORDER, BORDER, sw, sh);
+    const GLuint slices[9] = {
+        bgCenterTexture, bgEdgeTopTexture, bgEdgeBottomTexture, bgEdgeLeftTexture,
+        bgEdgeRightTexture, bgCornerTLTexture, bgCornerTRTexture, bgCornerBLTexture,
+        bgCornerBRTexture};
+    UIDrawHelper::drawGenericBackground(slices, b.x, b.y, b.w, b.h, screenWidth,
+                                        screenHeight);
 }
 
 void OptionsUI::renderButton(int index) {

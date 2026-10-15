@@ -5677,3 +5677,1905 @@ if (AL && [0x00b13218] != 0) || [0x00b13220] != 0:
    移植側のパス解決は**大文字小文字を区別せず**引くこと。
 3. ID は `0x3e9` 起点の連番。メニュー種別判定に ID を使う場合、
    `0x3ee`（strings）と `0x38b`（Tile）は**通常パネルと別扱い**にすること。
+
+## §35 ファストトラベル実行経路とメッセージ確認ダイアログ（依頼2 補完）
+
+§33.4.2 では `FUN_0066F420` の先頭断片のみ記載していた。本章では
+**「マップ画面でマーカーをタップしてファストトラベルが成立するまでの全経路」**と、
+その過程で使われる**確認ダイアログ（MessageMenu）の仕組みとローカライズ文言グローバル**を
+実バイトまで確定した内容で補完する。
+
+### 35.1 呼び出しチェーン全体（確定）
+
+```
+MapMenu 更新/操作
+  └─ FUN_005bb880   MapMenu vtable 00a6cc9c[3]（マーカーヒットテスト、2296B）
+       ├─ 005bb9a2 MOV EDX,[0x00b38d00]        ; "sNo"
+       ├─ 005bb9a8 MOV EAX,[0x00b38cf8]        ; "sYes"
+       ├─ 005bb9b7 PUSH 0x5b8dc0               ; コールバック関数ポインタ
+       └─ 005bb9bd CALL 0x00579c10             ; 確認ダイアログ表示（ADD ESP,0x28 = 10 dword）
+            └─ FUN_00579c10（215B）ShowMessageBox 系 varargs ディスパッチャ
+                 ├─ 通常: FUN_005bc8b0（836B）= MessageMenu 表示の実体
+                 └─ yes/no: FUN_005bcc00（162B）= 上記 ＋ trait 0x1772 を追加設定
+
+ユーザーが Yes を選択した場合のみ
+  └─ FUN_005b8dc0（509B）マーカー走査 → ヒットしたマーカーで
+       ├─ 005b8fa9 MOV ECX,[0x00b333c4]        ; Player
+       ├─ 005b8faf PUSH EDI                    ; marker
+       └─ 005b8fb0 CALL 0x0066f420             ; ファストトラベル実行
+```
+
+- `FUN_005b8dc0` を **直接 CALL する箇所は 0 件**。唯一の参照は
+  `005bb9b7 type=DATA in FUN_005bb880`（＝関数ポインタとして PUSH される引数）。
+  `.rdata`（0xA68000〜0xB02000）全域で dword `0x005b8dc0` を検索してもヒット 0 件であり、
+  **静的 vtable ではなく実行時に引数として渡されるコールバック**である。
+- したがって **No を選ぶと `FUN_005b8dc0` が呼ばれないためファストトラベルは不成立**。
+
+### 35.2 `FUN_005b8dc0`（509B）= マーカーヒット判定と実行
+
+- ガード: `FUN_00578d70() == 1` かつ `FUN_00589b70(0x3ff)`（MapMenu）非 0。
+- MapMenu のマーカーリスト（`+0xC4`）を走査し、各マーカーの
+  `(**(code**)(*piVar1 + 0x174))()` で位置 3 float を取得 →
+  マップ矩形で正規化 → `__stricmp` でセル名／ワールド名一致、
+  さらに浮動小数座標の一致でヒット判定。
+- ヒット時: `FUN_00588bd0(0xfa8)` / `FUN_0058ceb0(0xfa1, 1.0f)` /
+  `FUN_00582160(0,1,1,0)` / `FUN_0057cfe0(1,0)` / `FUN_00583e60()` /
+  `FUN_005821f0()` / `FUN_00583f40()` → `FUN_0066f420(piVar1)`。
+
+### 35.3 `FUN_0066f420`（2410B）= ファストトラベル実行本体
+
+- 署名: `void __thiscall FUN_0066f420(int *param_1, int *param_2)`
+  - `param_1` = 実行主体（呼び出し元は `0x00b333c4`（Player）を ECX で渡す）
+  - `param_2` = 目的マーカーオブジェクト
+- 先頭ガード: `(**(code**)(*param_1 + 0x25c))() != 0` なら即 return。
+- オートセーブ: `if (DAT_00b13228 != 0) FUN_00466b70();`（§33.4.2 参照）
+- 座標・セル移動:
+  `FUN_005f0810(param_2, &fStack_44, x, y, z)` → `FUN_004d8a30(x,y,z)` →
+  `FUN_004dd4b0(ref, cell, worldspace)` → `FUN_004d8af0()`（現在セル取得）。
+- 所要時間:
+  `iVar5 = FUN_0046b250(0x3a)`（GMST）→ `fStack_40 = *(float*)(iVar5 + 0x24)`;
+  `duration = fStack_40 * ((fStack_44 / fVar12) / _DAT_00a2f938)`;
+  `if (bVar2) duration *= _DAT_00a2faa0;`
+- フェードループ: `param_1[0x164]`（= +0x590）をカウントダウンしつつ
+  `FUN_0057b950(0, _DAT_00a309f0 - (_DAT_00a309f0 * param_1[0x164]) / fStack_40)`（1 → 0）。
+  ループ後に `[0x164] = 10` → `FUN_00676940(...)` → `[0x164] = 0`。
+- 移動中フラグ: `*(byte*)(DAT_00b333c4 + 0x4b)` を 1 → 0 に、移動後 `+0x45 = 0`。
+- 最終配置: `DAT_00b3a6d2` を 1→0 で挟み
+  `FUN_0066f370(x, y, z, param_2[8], param_2[9], param_2[10], uVar16, 0)`。
+  `param_2[8]`〜`[10]`（= +0x20..+0x28）はマーカーの回転 3 成分と推定。
+- プレイヤー側で併せて使用: `+0x116` / `+0x4b` / `+0x45` / `+0x12c` /
+  `+0x734`（難易度） / `+0x1E0`（`param_1[0x78]`） / `+0x590`（`param_1[0x164]`） /
+  `+0x760`（`param_1[0x1d8]`） / `+0x764`（`param_1[0x1d9]`）。
+- 末尾: `FUN_00679a70(); FUN_00677ec0(0, 0); (**(code**)(*param_1 + 0x2ec))();`
+  `[0x1d9]` 非 0 なら `FUN_006b73e0()` → `FUN_00401f20(ptr)` → 両フラグを 0 に。
+
+### 35.4 MessageMenu 確認ダイアログの仕組み
+
+- `FUN_00579c10`（215B）= 確認メッセージボックス表示ヘルパー。内部で
+  `FUN_00582160(0,1)`（MenuManager 取得）を 5 回呼び、`[+0x1c]` / `[+0x68]` の非 0 を確認した後、
+  `FUN_00588bd0(0xfae) == 1.0f` の真偽で分岐:
+  - 真 → `FUN_005bc8b0(...)`（通常メッセージ）
+  - 偽 → `FUN_005bcc00(...)`（yes/no ラッパ）
+- `FUN_005bc8b0(char *param_1 /*本文*/, undefined4 param_2, undefined1 param_3,
+  char *param_4 /*ボタン文言*/, int *param_5 /*va_list*/)`（836B）= MessageMenu 表示の実体。
+  - `FUN_00589b70(0x3e9)` で既存 MessageMenu を閉じる
+  - `FUN_00582160(0,1)` → `FUN_00584980()`（フェード時間） → `FUN_005903e0()` →
+    `FUN_00590420("Data\Menus\message_menu.xml")`
+  - `FUN_009832e6(..., &PTR_PTR_00b13240, &PTR_PTR_00b13a74, 0)` と
+    `(..., &PTR_PTR_00b0a018, &PTR_PTR_00b1328c, 0)` で trait テーブル取得。
+    `[+0x2c]` / `[+0x30]` / `[+0x28]` が 0 なら失敗
+    （文言: `"Message Menu Creation Failed... Are your menu and art resources up to date?"` @ `0xa6ceb8`）。
+  - 本文が空 → `DAT_00b38e10`（"sDefaultMessage" =
+    "DEFAULT MESSAGE TEXT"）、ボタン文言が NULL → 非表示（`FUN_0058ceb0(0xfa1, 1.0f)`）、
+    空 → `DAT_00b38cf0`（"sOk" = "Ok"）、それ以外 → 指定値。
+  - `param_5` はボタンリスト配列。4 ボタン目以降は `FUN_005bc5e0(iVar10)` で生成し、
+    失敗時は `"Missing MessageMenu button"`。
+  - 終盤 `FUN_0057de50(0xb)` でメニュー表示、return 1。
+- `FUN_005bcc00`（162B）= `FUN_005bc8b0` を呼んだ後に trait `0x1772` を追加設定する薄いラッパ
+  （yes/no 確認用）。`FUN_0057ea20(uVar3, 1.0f, 0.0f)`、`[+0x24] = 1`。
+
+**MessageMenu の trait ID**
+
+| trait | 意味 |
+|---|---|
+| `0xfde` | テキスト |
+| `0xfa1` | 可視 / alpha |
+| `0xfab` | フェード時間 |
+| `0xfae` | フラグ（`*(char*)(iVar4+8) != 1`） |
+| `0x1772` | yes/no ラッパ用追加設定 |
+
+### 35.5 ローカライズ文言グローバル（全 9 件・実バイト確定）
+
+静的初期化関数は `0x009f2960` 〜 `0x009f2a5a` に連続する小関数群 ＋ `0x009f2e20`。
+各サイトは共通して次の命令列をとる。
+
+```
+PUSH <既定文言>
+PUSH <キー>
+MOV  ECX, <対象グローバル>
+CALL 0x00419A70          ; ローカライズ文字列グローバル初期化
+PUSH <テーブルエントリ>
+CALL 0x00981FB4          ; 初期化完了通知／登録
+POP  ECX
+RET
+```
+
+| 対象グローバル | キー（arg1） | 既定文言（arg2） | 初期化サイト |
+|---|---|---|---|
+| `0x00b38ce0` | `0x00A60EB8` "sVideoChange" | `0x00A60EC8` "You must exit and restart Oblivion for the new resolution to take effect." | `0x009f2960`（CALL 0x419a70 @ 0x9f296f / 0x981fb4 @ 0x9f2979、テーブル `0x00A220E0`） |
+| `0x00b38ce8` | `0x00A60F14` "sMustRestart" | `0x00A60F28` "You must exit and restart Oblivion for changes in resolution to take effect." | `0x009f2980`（@ 0x9f298b / 0x9f2999、`0x00A220F0`） |
+| `0x00b38cf0` | `0x00A60F78` **"sOk"** | `0x00A60F7C` **"Ok"** | `0x009f29a2`（@ 0x9f29af / 0x9f29b9、`0x00A22100`） |
+| `0x00b38cf8` | `0x00A60F80` "sYes" | `0x00A3DAE8` "Yes" | `0x009f29c2`（@ 0x9f29cf / 0x9f29d9、`0x00A22110`） |
+| `0x00b38d00` | `0x00A60F88` "sNo" | `0x00A3DAF4` "No" | `0x009f29e2`（@ 0x9f29ef / 0x9f29f9、`0x00A22120`） |
+| `0x00b38d08` | `0x00A60F8C` "sCancel" | `0x00A60F94` "Cancel" | `0x009f2a02`（@ 0x9f2a0f / 0x9f2a19、`0x00A22130`） |
+| `0x00b38d10` | `0x00A60F9C` "sFor" | `0x00A325E8` "for" | `0x009f2a22`（@ 0x9f2a2f / 0x9f2a39、`0x00A22140`） |
+| `0x00b38d18` | `0x00A60FA4` "sTo" | `0x00A60FA8` "to" | `0x009f2a42`（@ 0x9f2a4f / 0x9f2a59、`0x00A22150`） |
+| `0x00b38e10` | `0x00A612B4` "sDefaultMessage" | `0x00A612C4` "DEFAULT MESSAGE TEXT" | `0x009f2e20` |
+
+- `FUN_00419A70` = **ローカライズ文字列グローバル初期化関数**
+  （呼び規約: `ECX` = 対象グローバル、スタック引数 2 = キー、既定文言）。
+- `FUN_00981FB4` = **初期化完了通知／登録関数**（第 1 引数 = 動的初期化テーブル領域の
+  エントリ VA。領域は `0x00A220E0` 〜 `0x00A22150`）。
+- **重要（訂正）**: `0x00b38cf0` は "Message" ではなく **"sOk"（既定 "Ok"）** である。
+  `0x00a612bc` の "Message" は別リテラル（本ブロックの対象外）。
+- 参照数（絶対 dword）: `0x00b38cf0` = 65 / `0x00b38cf8` = 31 / `0x00b38d00` = 32 /
+  `0x00b38d08` = 4 / `0x00b38d10` = 6 / `0x00b38e10` = 3。
+  **いずれも .text からの絶対アドレス書き込みは 0 件**（BSS ＋ 実行時の静的初期化）。
+  各グローバルで「アドレス値ロード」としてヒットするのは初期化サイト 1 件と
+  動的初期化テーブル内の 1 件のみ。
+- 副次メモ: `0x00b38cf8` のヒット一覧に VA `0x00A22111` が現れるのは、
+  動的初期化テーブルの命令バイトを誤整列で拾ったものである
+  （`0x00A22116` に `b9 f8 8c b3 00` が存在）。
+
+**リテラル帯の並び（`0x00A60EF4` 〜 `0x00A60FB4`）**
+
+```
+"...ew resolution to take effect." / "sMustRestart" / "You must exit and restart Oblivion for c..."
+"sOk" / "Ok" / "sYes" / "sNo" / "sCancel" / "Cancel" / "sFor" / "sTo" / "to" / "sGold"
+```
+
+`0x00A612B4` = "sDefaultMessage" / `0x00A612BC` = "Message" / `0x00A612C4` = "DEFAULT MESSAGE TEXT" /
+`0x00A3DAE8` = "Yes" / `0x00A3DAF4` = "No" / `0x00A325E8` = "for"。
+
+### 35.6 Android 移植向け確定値
+
+1. **マップ操作の正しい挙動**: マーカータップ → 確認ダイアログ
+   （本文 `"%s %s?"`、ボタン "sYes"/"sNo"、コールバック `0x5b8dc0`）→
+   **Yes のときのみファストトラベル開始、No では何も起きない**。
+2. **MessageMenu の既定文言**: 本文未指定 = "sDefaultMessage"
+   （"DEFAULT MESSAGE TEXT"）、ボタン未指定 = **"sOk"（"Ok"）**。ボタンは 4 番目の
+   配列要素から生成される（`FUN_005bc5e0`）。
+3. **文言キー一覧（移植側のローカライズ表に登録すべきキー）**:
+   `sOk` / `sYes` / `sNo` / `sCancel` / `sFor` / `sTo` / `sMustRestart` /
+   `sVideoChange` / `sDefaultMessage`。
+4. **ファストトラベル開始時に `bSaveOnTravel` 真なら自動セーブを 1 回発行**
+   （`FUN_00466b70`、§33.4.2 と同一事実）。
+5. **移動演出**: GMST `0x3a` の `+0x24`（秒）を基準に、
+   距離比（`_DAT_00a2f938`）で duration を算出し、
+   `param_1[0x164]`（+0x590）をカウントダウンしながら
+   `FUN_0057b950` で画面フェード係数を 1 → 0 に落とす。
+   移植側は「移動シーケンス中はプレイヤー入力を止め、`+0x4b` 相当の
+   移動中フラグを立てる」挙動を再現すればよい。
+6. **副産物（依頼3 のフットノート文言の出所）**: 解像度変更時の文言
+   `sVideoChange` / `sMustRestart` の実体を本章で確定した
+   （`0x00A60EB8` / `0x00A60EC8` / `0x00A60F14` / `0x00A60F28`）。
+   video_display のフットノートはこの 2 キーを使う。
+
+
+## §36 video_display 解像度リスト生成の完全仕様（依頼3・A3）
+
+§30.3 / §26.9 で「コード設定」とだけ記していた `user4`（解像度テキスト）と
+`user3`（フットノート表示可否）の生成元を確定した。解像度候補は **XML ではなく
+Direct3D 9 のアダプタモード列挙から実行時に構築**される。
+
+### 36.1 結論
+
+1. 解像度リストは `VideoDisplayMenu`（ID `0x3fb`、vtable `0x00a6dccc`）の
+   コンストラクタ `FUN_005dd960` ではなく、**基底 `Menu` の XML ロード経路で
+   `FUN_005deb80`（VideoMenu 系 ctor、1499 バイト）が構築**する。
+   `FUN_005deb80` の冒頭で `FUN_005de920()` を呼び、続けて
+   Direct3D 9 のモード列挙ループを回す。
+2. 列挙に使うのは **`IDirect3D9` の COM vtable**
+   （`GetAdapterModeCount` / `EnumAdapterModes`）であり、
+   `EnumDisplaySettings` は使っていない。
+3. リストに載るのは **重複のない (幅, 高さ) のうち `幅 * 高さ >= 0x4B000`
+   （= 307200 = 640x480 と等価以上）** のモードのみ。
+4. 初期選択は **実適用中の解像度（`DAT_00b06c4c` / `DAT_00b06c50`、初期値
+   640x480）と一致するノード**。見つからなければリスト先頭。
+
+### 36.2 Direct3D9 シングルトン
+
+| 項目 | 値 |
+|---|---|
+| `DAT_00b42154` | `IDirect3D9*`（BSS、初期値 0） |
+| `DAT_00b42150` | `LoadLibraryA("D3D9.DLL")` の戻り HMODULE |
+| `DAT_00b42158` | `GetProcAddress(h, "Direct3DCreate9")` の関数ポインタ |
+| `DAT_00b42160` | 関連文字列／リソース（`FUN_00775f10` → `FUN_00401f20` で解放） |
+
+生成 `FUN_00761df0`（109 バイト、遅延初期化）:
+
+```
+if (DAT_00b42158 == 0) {
+    DAT_00b42150 = LoadLibraryA("D3D9.DLL");
+    DAT_00b42158 = GetProcAddress(DAT_00b42150, "Direct3DCreate9");
+}
+if (DAT_00b42154 == 0)
+    DAT_00b42154 = (*DAT_00b42158)(0x20);   // D3D_SDK_VERSION = 0x20
+return DAT_00b42154;
+```
+
+破棄 `FUN_007645c0`（98 バイト）:
+
+```
+if (DAT_00b42154 != 0) {
+    (**(code **)(*DAT_00b42154 + 8))(DAT_00b42154);  // IDirect3D9::Release()
+    DAT_00b42154 = 0;
+}
+if (DAT_00b42160 != 0) { FUN_00775f10(); FUN_00401f20(DAT_00b42160); }
+DAT_00b42160 = 0;
+if (DAT_00b42150 != 0) FreeLibrary(DAT_00b42150);
+DAT_00b42158 = 0;
+FUN_00573880(0xb28e00);
+```
+
+- `+8` は COM 規約どおり **Release**（`+0`=QueryInterface、`+4`=AddRef）。
+- 関連アドレス: 生成 `0x00761e33` / 破棄 `0x007645d2` / 生存確認 `0x007645c0`。
+
+**IDirect3D9 COM vtable（オフセット → メソッド）**
+
+| offset | slot | メソッド |
+|---|---|---|
+| 0x00 | 0 | QueryInterface |
+| 0x04 | 1 | AddRef |
+| 0x08 | 2 | Release |
+| 0x0c | 3 | RegisterSoftwareDevice |
+| 0x10 | 4 | GetAdapterCount |
+| 0x14 | 5 | GetAdapterIdentifier |
+| **0x18** | **6** | **GetAdapterModeCount** |
+| **0x1c** | **7** | **EnumAdapterModes** |
+
+### 36.3 列挙ループ（`FUN_005deb80` 冒頭）
+
+```c
+FUN_005de920();                              // 解像度テキスト初期化（後述）
+uVar7 = (*GetAdapterModeCount)(DAT_00b42154, DAT_00b06c54, 0x16);
+                                             // Adapter = DAT_00b06c54, Format = 0x16
+if (uVar7 != 0) {
+    uVar9 = 0;
+    do {
+        (*EnumAdapterModes)(DAT_00b42154, DAT_00b06c54, 0x16, uVar9, &mode);
+        for (p = *(this + 0x104); ; p = *p) {
+            if (p == 0) {                    // 末尾まで到達 = 重複なし
+                if (0x4afff < (uint)(mode.h * mode.w))
+                    FUN_005dea80(&mode);     // リスト先頭へ挿入
+                break;
+            }
+            if (mode.w == p[2] && mode.h == p[3]) break;   // 重複 -> 挿入しない
+        }
+        uVar9++;
+    } while (uVar9 < uVar7);
+}
+for (p = *(this + 0x104); ; p = *p) {
+    if (p == 0) break;
+    if (DAT_00b06c4c == p[2] && DAT_00b06c50 == p[3]) break;  // 実適用中を探す
+}
+*(this + 0x110) = (p != 0) ? p : *(this + 0x104);   // 現在選択ノード
+FUN_005dead0();
+```
+
+| 定数 | 値 | 意味 |
+|---|---|---|
+| `0x16` | 22 | `D3DFMT_X8R8G8B8` |
+| `DAT_00b06c54` | **0**（実測） | Adapter 番号。書き込み命令が無いため **0 固定** |
+| `0x4B000` | 307200 | 最小面積（640x480 と等号で通過） |
+| `DAT_00b06c4c` / `DAT_00b06c50` | 640 / 480（実測初期値） | 実適用中の幅 / 高さ |
+
+`D3DDISPLAYMODE` は 16 バイトで `[+0]=Width` / `[+4]=Height` /
+`[+8]=RefreshRate` / `[+0xc]=Format`。ループ側は先頭 8 バイトのみ参照する。
+
+### 36.4 リスト構造（`NiTList<VideoRes>`）
+
+| オフセット | 内容 |
+|---|---|
+| `this + 0x100` | `NiTList` オブジェクト本体（埋め込み） |
+| `this + 0x104` | head ポインタ |
+| `this + 0x108` | tail ポインタ |
+| `this + 0x10c` | count |
+| `this + 0x110` | 現在選択ノード |
+
+ノードは 16 バイト: `[0]=next` / `[+4]=prev` / `[+8]=幅` / `[+0xc]=高さ`。
+挿入は `FUN_005dea80(list, &res)` = **先頭挿入**（`NiTList` の vtable は
+`0x00a6a08c`、アロケーター vtable は `0x00a69fe0`）。
+
+### 36.5 テキスト生成とワイドスクリーン判定
+
+`FUN_005dead0`（169 バイト）が `user4` を生成する。
+
+```
+sprintf(buf, "%d x %d", node[2], node[3]);
+if ((uint)(h * 4) < (uint)(w * 3))          // 4:3 より横長 -> ワイド
+    trait(0xfb1) = 2; else trait(0xfb1) = 1;
+trait(0xfb2) = buf;                          // 解像度テキスト（user4）
+if (widescreen) strcat(buf, "_widescreen");  // PTR_DAT_00a6dd24
+```
+
+| trait | 意味 |
+|---|---|
+| `0xfb1` | ワイド判定値（2 = ワイド、1 = 標準） |
+| `0xfb2` | 解像度テキスト `"%d x %d"`（+ `_widescreen`） |
+| `0xfb3` | 数値 / スライダー値（`FUN_005de920` が `"%dx"` を設定） |
+| `0xfde` | テキスト（有効 / 無効は `0x00b38da0` / `0x00b38da8`） |
+| `0xfaf` / `0xfb0` | スライダー min / max |
+| `0x1772` | VideoMenu のトグル状態 |
+
+`user3`（フットノート表示可否）は、解像度変更時のみ
+`FUN_00579c10(sVideoChange, 0, 1, sOk, 0)` を出す経路で決まる。
+`FUN_005ddaa0`（解像度適用本体、115 バイト）:
+
+```c
+FUN_00497c10(w, h);                                  // 設定グローバルへ書き込み
+trait(0x1772) = committed;
+FUN_00584740();                                      // メニュー閉じ
+FUN_00579c10(sVideoChange, 0, 1, sOk, 0);            // 再起動要求ダイアログ
+FUN_005ddca0();                                      // VideoMenu 再構築
+```
+
+`FUN_00497c10`（20 バイト）は `DAT_00b06c5c = w` / `DAT_00b06c64 = h` を
+書くだけの設定グローバルセッター。**実適用値（`DAT_00b06c4c` / `0x50`）とは別物**
+であり、実適用は次回起動時に行われる（これが sVideoChange の理由）。
+
+### 36.6 固定解像度スイッチ（`FUN_005ddb70`, VideoDisplayMenu slot[3]）
+
+切り替え操作 `4..8` は固定のプリセットを直接 `FUN_005ddaa0` へ渡す。
+
+| 操作 | 幅 | 高さ |
+|---|---|---|
+| 4 | 800 | 600 |
+| 5 | 1080 | 607 |
+| 6 | 1024 | 768 |
+| 7 | 1280 | 607 |
+| 8 | 1280 | 720 |
+
+`607` は 16:9 近似（1080x607 / 1280x607）のための値。
+
+### 36.7 Android 移植向け確定値
+
+1. **候補リストの作り方**: XML に解像度を書くのではなく、
+   実行時にディスプレイモードを列挙して構築する。Android では
+   `Display.getSupportedModes()` を `w * h >= 307200` かつ (幅, 高さ) 重複除去で
+   フィルタすれば一致する。列挙順は D3D の列挙順（解像度昇順）に合わせ、
+   挿入は先頭ではなく **昇順ソート** で代替してよい（表示順は同じ）。
+2. **初期選択**: 現在の解像度と一致する項目。無ければ先頭。
+3. **`w * h >= 307200` は等号通過**（640x480 は入る）。
+4. **アダプタは 0 のみ**（マルチモニタ非対応）。Android もプライマリディスプレイ固定。
+5. **解像度変更は「次回起動で適用」**。設定グローバル（`+0xc5c` / `+0xc64` 相当）に
+   書くだけで、実適用値は別フィールド。変更時は「再起動が必要」ダイアログ
+   （`sVideoChange` + `sOk`）を出し、VideoMenu を閉じる。
+6. **ワイド判定は `h * 4 < w * 3`**。真なら `_widescreen` サフィックスの
+   表示テキストを使う。
+7. **Direct3D9 は不要**。移植側は D3D9 のライフサイクル（`FUN_00761df0` /
+   `FUN_007645c0`）を再現する必要はなく、`VideoDisplayMenu.slot[3]` の
+   プリセット値（800x600 / 1080x607 / 1024x768 / 1280x607 / 1280x720）だけ
+   移植すれば挙動は一致する。
+
+### 36.8 関連関数一覧（A3）
+
+| 関数 | サイズ | 役割 |
+|---|---|---|
+| `FUN_00761df0` | 109 | Direct3D9 シングルトン遅延生成 |
+| `FUN_007645c0` | 98 | Direct3D9 解放 / `DAT_00b42154` 破棄 |
+| `FUN_005deb80` | 1499 | VideoMenu 系 ctor。冒頭で解像度列挙ループ |
+| `FUN_005dea80` | 72 | `NiTList<VideoRes>` 先頭挿入 |
+| `FUN_005de920` | 64 | `"%dx"` → trait `0xfb3` |
+| `FUN_005dead0` | 169 | `"%d x %d"` + `_widescreen` → trait `0xfb2` |
+| `FUN_005ddaa0` | 115 | 解像度適用本体（`FUN_00497c10` → 確認 → 閉じ） |
+| `FUN_00497c10` | 20 | 設定解像度グローバルセッター |
+| `FUN_005ddb70` | 211 | slot[3] 解像度確定 switch（プリセット 5 種） |
+| `FUN_005dde20` | 125 | VideoMenu 閉じ＋`DAT_00b3b740` 設定 |
+
+---
+
+## §37 メニュー開閉フェードと入力抑制の実装詳細（A4）
+
+§30.4 / §33.3 のフェード記述を、Ghidra デコンパイル結果と実バイト走査で
+全面的に裏取りし直したもの。**§33.3 の `FUN_00588a70` の説明は誤り**（37.11 で訂正）。
+
+対象関数（すべて `Oblivion.exe` 実測、VA は imagebase 0x400000 基準）:
+
+| 関数 | サイズ | 役割 |
+|---|---|---|
+| `FUN_00584300` | 134 | フェードノード（20B）をリスト末尾へ追加 |
+| `FUN_00583c30` | 180 | フェード更新本体（毎フレーム tick） |
+| `FUN_00583cf0` | 86 | 対象のフェードノードをリストから除去＋解放 |
+| `FUN_00584390` | 107 | メニュー「閉じ」のフェード要求 |
+| `FUN_00584740` | 216 | メニューを実際に閉じる（親メニュー復帰付き） |
+| `FUN_00587550` | 627 | メニュー ID 指定クローズ（4 ID のみフェード付き） |
+| `FUN_00584880` | 221 | メニューの有効化／表示登録 |
+| `FUN_00588a70` | 76 | 24B ノード生成＋対象 `+0x28` リストへ登録 |
+| `FUN_00589980` | 277 | 汎用 trait／リスト値セッター |
+| `FUN_00585190` | 115 | 閉じヘルパー |
+| `FUN_00591ca1` | 144 | メニュー表示登録＋キー割当コンテナ登録 |
+| `FUN_00584980` | 221 | メニューオフセット集計 |
+| `FUN_005898f0` | 55 | 現在ルートメニュー取得 |
+
+### 37.1 `explorefade` と `menufade` の使い分け
+
+`menus/*.xml` のルート要素属性を全走査した結果（`tmp\bsa_misc_full\menus\`）。
+
+**`menufade`（ポーズ系メニュー。ゲーム時刻を止める）**
+
+| 値 | メニュー |
+|---|---|
+| `0.25` | `book` / `class` / `container` / `ingredient_select` / `levelup` / `recharge` / `repair` / `training` / `birthsign` / `skills` / `alchemy` / `enchantment` / `enchantmentsetting` / `sigilstone` / `spell_purchase` / `spellmaking` / `hud_main` / `hud_reticle` / `inventory` / `magic` / `map` / `quickkeys` / `safe_zone` / `stats` / `save` / `load` |
+| `0.75` | `persuasion` / `dialog` |
+| `0.15` | `hud_info` / `hud_subtitle` |
+| `0.0` | `loading`（フェードさせない） |
+
+**`explorefade`（探索中メニュー。ゲーム時刻は止めない）**
+
+| 値 | メニュー |
+|---|---|
+| `0.25` | `lockpick` / `message` / `negotiate` / `quantity` / `sleep_wait` / `race_sex` / `texteditmenu` / `quest_added` / `skill_perk` / `test_menu` / `audio` / `controls` / `main` / `downloads` / `gameplay` / `load` / `options` / `pause` / `save` / `video_display` / `video` / `xcontrols` |
+
+- **判定基準**: ポーズするか否か。`menufade` を持つのがポーズ系、
+  `explorefade` を持つのが非ポーズ系。`hud_*` だけは別枠で `menufade`。
+- **値は「秒（duration）」**。`FUN_00584300` の第 2 引数 `param_2` にそのまま入る。
+- 移植側は XML の属性名をそのままキーとして読み、閉じ時も同じ値を使えばよい。
+
+### 37.2 フェードノードのレイアウトと追加（`FUN_00584300`）
+
+```
+フェードノード（20 バイト = 0x14）
+  +0x00  int   対象オブジェクト（Menu インスタンス）
+  +0x04  float current   （進捗。初期 0.0）
+  +0x08  float duration  （XML の menufade / explorefade 値。既定 0.001f）
+  +0x0c  node* prev
+  +0x10  node* next
+```
+
+処理順:
+
+1. まず `FUN_00583cf0(param_1)` を呼び、**同一対象の既存ノードを除去**（重複防止）。
+2. `FUN_00401f00(0x14)` で 20 バイト確保。
+3. `[0]=0` / `[+0x4]=0` / `[+0xc]=0` / `[+0x10]=0` /
+   `[+0x8]=DAT_00a37080`（= **0.001f**、既定 duration）に初期化。
+4. `[0]=param_1`（対象）。`param_2 <= 0.0` なら 0.0 にクランプして `[+0x8]=param_2`。
+5. **末尾に append**（先頭ではない）。`puVar3[+0xc] = 旧 tail`、
+   `旧 tail->+0x10 = puVar3`、リスト tail を `puVar3` に更新。
+6. `FUN_00584390` からは追加直後に `FUN_00583c30()`（フェード更新）を即 1 回呼ぶ。
+
+リストの実体は MenuManager 経由で参照する:
+
+```
+MenuManager = *(int**)0x00b3a6e0
+  リスト構造体 = *(void**)(MenuManager + 0x130)
+    構造体 + 0x0c = tail
+    構造体 + 0x10 = head
+```
+
+### 37.3 フェード更新本体（`FUN_00583c30`）
+
+`__fastcall` で `ECX` = MenuManager。全ノードを先頭から走査し、毎フレーム進める。
+
+```c
+void FUN_00583c30(int menu_manager) {
+  node* n = *(node**)(*(int*)(menu_manager + 0x130) + 0x10);   // head
+  while (n != 0) {
+    float cur = *(float*)(n + 0x04) + _DAT_00b33e9c;  // ★ 歩進量はグローバル float
+    *(float*)(n + 0x04) = cur;
+    float ratio = cur / *(float*)(n + 0x08);          // current / duration
+    if (ratio < 1.0f) {                                // 未完了 → 次へ
+      n = *(node**)(n + 0x10);
+    } else {                                           // 完了 → ノード自動削除
+      node* next = *(node**)(n + 0x10);
+      *(node**)(*(int*)(n + 0x0c) + 0x10) = next;      // prev->next = next
+      if (next == 0)
+        *(int*)(*(int*)(menu_manager + 0x130) + 0x0c) = *(int*)(n + 0x0c);  // tail 更新
+      else
+        *(int*)(next + 0x0c) = *(int*)(n + 0x0c);      // next->prev = prev
+      FUN_00401f20(n);                                 // 解放
+      n = next;
+    }
+  }
+}
+```
+
+実命令列（実測）:
+
+```
+00583c31  MOV EAX,[ECX+0x130]
+00583c37  MOV ECX,[EAX+0x10]      ; head
+00583c41  FLD  dword [ECX+0x4]
+00583c44  FADD dword [0x00b33e9c] ; ★ 歩進量
+00583c52  FST  dword [ECX+0x4]
+00583c57  FDIV dword [ECX+0x8]
+00583c5a  FCOMP ST2               ; 1.0 との比較
+00583c66  FCOMP qword [0x00a2fc68] ; = double 0.0
+00583ca9  MOV [EDX+0x10],ESI      ; prev->next
+00583cb2  MOV [ESI+0xc],EAX       ; next->prev
+00583cb5  CALL 0x00401f20         ; 解放
+00583ccf  MOV EDX,[ECX+0xc]       ; tail
+00583cd3  MOV [EAX+0xc],EDX       ; tail 更新
+```
+
+**確定事項**
+
+1. **補間はリニア**。`current += 歩進量` のみで、イージング（S 字・放物線）は無い。
+2. **完了判定は `ratio >= 1.0`**。`0x00a2fc68` は `.rdata` の `double 0.0`
+   （`FCOMP` の後始末用）。実際の完了は `1.0` 側。
+3. **完了したノードは自動的にリストから外れて解放される**。呼び出し側で
+   明示的に消す必要はない（`FUN_00583cf0` は「追加時の重複除去」用）。
+4. **全画面黒クアッドの描画はフェードモジュールには存在しない**。
+   フェードノードは `current` / `duration` を持つだけで、暗転の描画は
+   **消費者側**（HUD・メニュー描画）が `current / duration` をアルファに使う。
+5. **歩進量はグローバル float 変数 `_DAT_00b33e9c`**（後述 37.9）。
+
+### 37.4 フェードノードの除去（`FUN_00583cf0`）
+
+```c
+void FUN_00583cf0(int target) {
+  node* n = *(node**)(*(int*)(DAT_00b3a6e0 + 0x130) + 0x10);  // head
+  while (n != 0) {
+    if (*(int*)n == target) break;      // [0] == 対象
+    n = *(node**)(n + 0x10);            // next
+  }
+  if (n == 0) return;
+  node* next = *(node**)(n + 0x10);
+  *(node**)(*(int*)(n + 0x0c) + 0x10) = next;       // prev->next = next
+  if (next != 0) *(node**)(next + 0x0c) = *(int*)(n + 0x0c);
+  if (*(int*)(n + 0x10) == 0)                        // 末尾だった場合
+    *(int*)(*(int*)(DAT_00b3a6e0 + 0x130) + 0x0c) = *(int*)(n + 0x0c);  // tail 更新
+  FUN_00401f20(n);                                   // 解放
+}
+```
+
+実命令列: `00583cf0 MOV EAX,[0x00b3a6e0]` → `00583cf5 MOV ECX,[EAX+0x130]` →
+`00583cfb MOV EAX,[ECX+0x10]`（head）→ `00583d0a MOV EAX,[EAX+0x10]`（next）→
+`00583d1a MOV [EDX+0x10],ECX` → `00583d22 MOV [ECX+0xc],EDX` →
+`00583d3a MOV [EDX+0xc],ECX`（tail）→ `00583d41 JMP 0x00401f20`。
+`FUN_00584300`（append）の完全な逆操作。
+
+### 37.5 メニューの有効化（`FUN_00584880`）と trait `0xfa5` のゲート
+
+```c
+void __thiscall FUN_00584880(int* self, int flag) {
+  self[1] = flag;                       // +0x4 = flag
+  if (flag == 0) return;
+  float v = FUN_00588bd0(0xfa5);        // trait 0xfa5 の float 値
+  if (v != _DAT_00a69778 && v != _DAT_00a69770 &&
+      v != _DAT_00a69768 && v != _DAT_00a69764) return;   // 4 種以外は登録しない
+  int id = (**(code**)(*self + 0x34))();   // vtable slot[13] = getID
+  self[5] = id;                            // +0x14 = getID
+  int mm = FUN_00582160(0, 1);             // MenuManager 取得
+  int id2 = (**(code**)(*self + 0x34))();
+  FUN_0057d640(id2);                       // ID 指定で登録／アクティブ化
+  if (*(int**)(mm + 0x9c) != self) {
+    if (*(int*)(mm + 0x98) != 0) FUN_0058ceb0(0xfdd, 0);
+    *(int*)(mm + 0x98) = 0;                // 直前メニュー
+    *(int*)(mm + 0x9c) = 0;                // 現在メニュー
+  }
+}
+```
+
+実命令列: `0058488a MOV [ESI+0x4],EDI` → `00584893 PUSH 0xfa5` →
+`0058489a CALL 0x00588bd0` → `0058489f FCOMP qword [0x00a69778]` →
+`005848b8 FCOMP dword [0x00a69770]` → `005848d1 FCOMP qword [0x00a69768]` →
+`005848ea FCOMP dword [0x00a69764]` → `005848f7 MOV EAX,[ESI]` →
+`005848f9 MOV EDX,[EAX+0x34]` → `005848fe CALL EDX`（**slot 13 = getID**）→
+`00584904 MOV [ESI+0x14],EAX` → `00584907 CALL 0x00582160` →
+`0058491d CALL 0x0057d640` → `00584922 CMP [EDI+0x9c],ESI` →
+`0058493a PUSH 0xfdd` → `0058493f CALL 0x0058ceb0` →
+`00584944 MOV [EDI+0x98],0` → `0058494e MOV [EDI+0x9c],0` → `0058495a RET 0x4`。
+
+**trait `0xfa5` の比較値は 4 種で、`.rdata` 上で float と double がオーバーラップ配置されている**:
+
+| VA | 生 8 バイト | float として | double として |
+|---|---|---|---|
+| `0x00a69764` | `00 B8 BB 45 00 00 00 00` | **6007.0** | 6.7207e-315（無意味） |
+| `0x00a69768` | `00 00 00 00 00 C0 59 40` | 3.40234375 / 0.0 | **103.0** |
+| `0x00a69770` | `00 B0 BB 45 00 00 00 00` | **6006.0** | 6.7206e-315（無意味） |
+| `0x00a69778` | `00 00 00 00 00 80 59 40` | 3.3984375 / 0.0 | **102.0** |
+
+→ 実質の比較値は **6007 / 6006（float）と 103.0 / 102.0（double）** の 4 種。
+trait `0xfa5` は「メニュー種別」を表す列挙（float 値として格納し、
+`6006/6007` 系と `102/103` 系の 2 系統が存在する）。
+**移植側はこの 4 値ゲートを再現する必要はなく**（内部登録の都合）、
+「メニューを開く／閉じる」という外部挙動だけ合わせればよい。
+
+### 37.6 メニューを閉じるときのフェード
+
+**`FUN_00584390(this)`（閉じフェード要求、107B）**
+
+- `this + 0x4 == 0` なら duration = `_DAT_00a41304` = **0.25f**。
+- `this + 0x4 != 0` なら trait **`0xfdb`**、無ければフォールバック **`0xfdc`** の値。
+- `FUN_00584300(this, duration)` でノード追加 →
+  `this + 0x24 = 8`（メニュー状態＝閉じ開始）→ `FUN_00582160(0,1)` →
+  **`FUN_00583c30()` を即 1 回呼ぶ**。
+- 呼び出し元は `0x5843d0` の 1 箇所（`FUN_00584390` 自身は
+  `FUN_00584740` 系から呼ばれる）。
+
+**`FUN_00584740(this)`（実際に閉じる、216B）**
+
+- trait `0xfa1` ガード（`_DAT_00a379b4` = **2.0f**）、trait **`0x1772`**（`2.0f`）、
+  trait **`0xfdd`** を参照。
+- `this + 0x14` = 親メニュー、`this + 0x24` = 状態（**8 = 閉じ開始 / 2 = 完了**）。
+
+**`FUN_00587550(menu_id)`（ID 指定クローズ、627B）**
+
+- **フェード付きで閉じるのは 4 つの ID のみ**: `0x3ff` / `0x3fe` / `0x3ea` / `0x3eb`。
+- フェード無しで閉じる ID: `0x3ec` / `0x3ed` / `0x3f2` / `0x3ef` / `0x414` /
+  `0x3f0` / `0x402` / `0x418`。
+
+**閉じるときの逆再生（reverse）は存在しない。**
+`FUN_00588a70`（24B ノード生成）は「**現在値から目標値へ向かう新しいフェードを
+登録する**」ものであり、時間を逆に走らせる機構ではない。閉じ時は
+「`current = 0` から開始し、`duration` 秒で 1.0 に到達する」ノードが
+新規に追加される（`FUN_00584300` が `+0x4 = 0` / `+0x10 = 0` で初期化）。
+
+### 37.7 現在ルートメニュー取得とオフセット集計
+
+**`FUN_005898f0`（55B、呼び出し元 348 箇所）**
+
+`+0x10`（= next / 親方向）チェーンを末端まで辿り、vtable slot[3]（`+0xc`）が
+**`0x389`** を返すノードの **`+0x44`** を返す。
+
+```
+0058991b  CMP EAX,0x389
+00589922  MOV EAX,[ESI+0x44]
+```
+
+= 汎用「**現在のルートメニュー取得**」。`0x389` は「ルート」を表す特殊 ID。
+
+**`FUN_00584980`（メニューオフセット集計）**
+
+- 除外 ID: **`0x400` / `0x3ed` / `0x3f2`**。
+- 戻り値 = 「最大オフセット + `_DAT_00a3d0c0`（= double 2.0）」。
+- 呼び出し元は 2 箇所のみ。
+
+### 37.8 メニュー表示状態のフィールドと参照箇所
+
+**MenuManager シングルトン `DAT_00b3a6e0`**（参照 15 箇所、Python 実測）:
+
+| VA | 命令 |
+|---|---|
+| `00581b79` | `MOV [0x00b3a6e0],EBX`（生成） |
+| `00582186` | 読出（getter） |
+| `005821c8` | 読出 |
+| `005821d2` | 読出 |
+| `00583bbb` | 読出（フェード更新族） |
+| `00583cc5` | 読出 |
+| `00583cf1` | 読出（FUN_00583cf0 冒頭） |
+| `00583d2d` | 読出 |
+| `00583d52` | 読出 |
+| `00583df1` | 読出 |
+| `00583e32` | 読出 |
+| `00583e4d` | **`MOV dword [0x00b3a6e0],0`（破棄）** |
+| `00584355` | 読出（FUN_00584300 族） |
+| `00584367` | 読出 |
+| `00584378` | 読出 |
+
+**フィールド配置**
+
+| オフセット | 内容 |
+|---|---|
+| `+0x98` | **直前メニュー** |
+| `+0x9c` | **現在メニュー**（`null` ならメニュー非表示＝ゲーム入力を受け付ける） |
+| `+0x130` | フェード／メニューリスト構造体ポインタ（`+0x0c` = tail / `+0x10` = head） |
+
+**メニュー表示中フラグ `DAT_00b3a6d4`（byte）**（参照 7 箇所）:
+
+| VA | 命令 |
+|---|---|
+| `00572ee2` | `CMP byte [0x00b3a6d4],0` / `JNZ` |
+| `0057cccb` | 1 をセット |
+| `0057cd87` | 0 をセット |
+| `00581b18` | 1 をセット |
+| `00581b3d` | `MOV byte [0x00b3a6d4],...` |
+| `005a586b` | `CMP byte [0x00b3a6d4],0` / `JNZ` |
+| `00679a75` | `CMP byte [0x00b3a6d4],0` / `JNZ` |
+
+`0x00b3a6e0 + 0x130`（= `0x00b3a810`）への**直接即値参照は 0 件**。必ず
+`DAT_00b3a6e0` 経由で参照される（ポインタ間接）。
+
+### 37.9 フェード関連の定数（実値一覧）
+
+| VA | セクション | 実値 | 用途 |
+|---|---|---|---|
+| `0x00a37080` | .rdata | **0.001f** | フェードノードの既定 duration |
+| `0x00a41304` | .rdata | **0.25f** | 対象なし時の閉じフェード duration |
+| `0x00a379b4` | .rdata | **2.0f** | trait `0xfa1` / `0x1772` の通過値 |
+| `0x00a2fc68` | .rdata | **double 0.0** | フェード完了しきい値（`FCOMP` の後始末） |
+| `0x00a69764` | .rdata | **float 6007.0** | trait `0xfa5` ゲート |
+| `0x00a69768` | .rdata | **double 103.0** | trait `0xfa5` ゲート |
+| `0x00a69770` | .rdata | **float 6006.0** | trait `0xfa5` ゲート |
+| `0x00a69778` | .rdata | **double 102.0** | trait `0xfa5` ゲート |
+| `0x00a3f3e8` | .rdata | **double 10.0** | `FUN_00584980` オフセット |
+| `0x00a3d0c0` | .rdata | **double 2.0** | `FUN_00584980` オフセット加算 |
+| `0x00a31c80` | .rdata | **10.0f** | `FUN_00584980` オフセット |
+| `0x00a309f0` | .rdata | **double 100.0** | `FUN_00584980` オフセット |
+| `0x00a68fd0` | .rdata | **double -0.008** | `FUN_00584980` オフセット |
+| `0x00a57604` | .rdata | **float 0.02** | フェード係数分岐しきい値 |
+| `0x00a68fd0` | .rdata | double -0.008 | 同上 |
+| `0x00a68610` | .rdata | **double 0.05** | フェード係数分岐 |
+| `0x00a2faa0` | .rdata | **float 0.5** | フェード係数（放物線側） |
+| `0x00a3d65c` | .rdata | **float 0.5** | フェード係数分岐 |
+| `0x00b33e9c` | .data **BSS** | **float グローバル（初期 0）** | フェード `current` の歩進量 |
+
+#### `_DAT_00b33e9c` の性質（Python バイト走査で確定）
+
+- `0x00b33e9c` は **BSS**（`.data` の初期化済み領域は RAW `0x30c00` まで、
+  VA に直すと `0x00b32c00`。`0x00b33e9c > 0x00b32c00`）。
+- 即値 `9C 3E B3 00` を `.text` 全域（VA `0x401000` 〜 `0x9dc2be`）で検索した結果、
+  **164 ヒット / 108 ラン**。前 2 バイト（ModRM）による命令分類:
+
+| バイト | 命令 | 件数 |
+|---|---|---|
+| `D9 05` | `FLD dword [0x00b33e9c]` | 74 |
+| `D8 25` | `FSUB dword [0x00b33e9c]` | 52 |
+| `D8 05` | `FADD dword [0x00b33e9c]` | 21 |
+| `D8 0D` | `FMUL dword [0x00b33e9c]` | 14 |
+| `D8 35` | `FDIV dword [0x00b33e9c]` | 2 |
+| `D9 1D` | `FSTP dword [0x00b33e9c]` | **1（唯一の書き込み）** |
+
+- 参照は `0x4052a2` 〜 `0x9dc2be` に広く分散。最密クラスタ:
+  `0x65f1a6〜0x65f5d8`(5) / `0x40db8d〜0x40deb1`(5) / `0x63a2ef〜0x63a528`(4) /
+  `0x64d81e〜0x64dae4`(4) / `0x67174e〜0x67193f`(4) /
+  `0x65ed83〜0x65edf6`(3) / `0x65ff43〜0x6601ec`(3) / `0x664d16〜0x664d5e`(3) /
+  `0x5a85b7〜0x5a862b`(3) / `0x5a948d〜0x5a9570`(3)。
+- `FUN_00583c30` 内の参照は `0x583c44`（`FADD`）**1 箇所のみ**。
+- **書き込みが 1 箇所だけ**という事実は、これが「毎フレーム 1 回だけ注入される
+  共有スカラー」であることを示す。用途の広さ（164 参照）から、
+  **フレーム経過時間／時間スケール相当の共有グローバル**である可能性が高い。
+  フェードはこの値で**線形に**進む。
+- **注意**: 「フェード専用の歩進量」と断定はできない。§37 では
+  「BSS の float グローバル。外部から毎フレーム注入され、フェードはこの値だけ
+  進む」と扱う。移植側は `deltaTime` をそのまま使ってよい。
+- `va2raw(0x583c30) = 0x183030` を再検算済み（VA 写像の検証）。
+
+### 37.10 関連関数の詳細（A4 補足）
+
+**`FUN_00588a70`（76B）— 24B ノード生成＋対象 `+0x28` リストへ登録**
+
+```c
+void FUN_00588a70(int target, int key, float a, float b, float dur) {
+  node24* n = FUN_00401f00(0x18);     // 24 バイト
+  n[0] = target;   n[1] = key;        // int キー
+  n[2] = a;        n[3] = b;          // float
+  n[4] = dur;                         // duration
+  n[5] = *(int*)(target + 0x28);      // 旧 head
+  *(int*)(target + 0x28) = n;         // 先頭挿入
+  *(int*)(target + 0x2c) |= 0x80;     // フラグ立て
+  FUN_00584300(target, dur);          // フェードノードも登録
+}
+```
+
+**`FUN_00585190(this, flag)`（115B）**
+
+trait `0xfa1` に `1.0f` を書き込み → `flag == 0` なら
+`FUN_00584390()`（閉じフェード）→ `FUN_0057f9f0(0, 0xfdd, 0)` →
+`FUN_00584980()`。
+
+**`FUN_00591ca1(this)`（144B）**
+
+`FUN_00584880` → `getID` → `+0x20` 設定 → trait `0xfa5` が
+`102.0` / `103.0` のとき `+0x14 = getID` → `FUN_00584980()` → trait `0xfab` →
+`FUN_0042bb90`（**ECX = `0x00b13970`** = 登録コンテナ、キー = `ID - 0x3e9`）。
+
+**`FUN_00589980(this, key, type, value, extra)`（277B）**
+
+汎用 trait／リスト値セッター。フェード本体からは直接呼ばれない。
+
+### 37.11 §33.3 の訂正（`FUN_00588a70`）
+
+§33.3 に「メニューを閉じるときの逆再生」と書いたが、**誤り**。
+`FUN_00588a70` は「24 バイトのノードを生成して対象 `+0x28` のリスト先頭へ入れ、
+`+0x2c |= 0x80` を立てたうえでフェードノードを登録する」関数であり、
+**時間を逆走させる機構ではない**。
+
+正しい閉じ挙動:
+
+- 閉じ時は `FUN_00584390` → `FUN_00584300(target, duration)` で
+  **`current = 0` の新しいノード**を追加する。
+- したがって「閉じ」は「**現在値から目標値へ向かう新しい（順方向の）フェード**」。
+- 逆再生（`duration` を負にする／`current` を減算する）コードは存在しない。
+
+### 37.12 Android 移植向け確定値（§37）
+
+1. **フェードは「対象オブジェクトごとの `current` / `duration` ペア」**。
+   ノード 20B、`+0x4 = current`（0 から開始）、`+0x8 = duration`（秒）。
+2. **毎フレーム `current += deltaTime`**、`ratio = current / duration`。
+   **`ratio >= 1.0` で完了し、そのノードは破棄**。**イージング無し（リニア）**。
+3. **閉じるときも同じ機構**。`current` を 0 に戻して新規ノードを追加する。
+   **逆再生はしない**。
+4. **duration は XML の `menufade` / `explorefade` 属性そのまま**。
+   フォールバックは **0.25 秒**。属性 `0.0` の `loading` はフェードしない。
+5. **ポーズするかどうかは `menufade`（ポーズ）/ `explorefade`（非ポーズ）で
+   決まる**（XML 属性が正本）。
+6. **全画面黒クアッドはエンジン側に無い**。暗転の描画は消費者側で
+   `alpha = current / duration` を使う。移植側もフェード値だけ持って
+   描画は HUD／メニュー側で行えばよい。
+7. **「メニューが開いているか」の正本は `MenuManager + 0x9c`（現在メニュー）**。
+   非 `null` ならメニューが開いている。`+0x98` は直前メニュー。
+   補助フラグとして `DAT_00b3a6d4`（byte）がある。
+8. **メニュー入力抑制**は `MenuManager + 0x9c`（および `DAT_00b3a6d4`）を
+   見て、`ACTION_MOVE` をゲーム側へ渡す前に落とす実装で一致する
+   （判定箇所は `0x00572ee2` / `0x005a586b` / `0x00679a75` の 3 箇所で
+   `DAT_00b3a6d4` を `byte` 比較）。
+9. **フェード付きで閉じるメニュー ID は 4 つのみ**:
+   `0x3ff` / `0x3fe` / `0x3ea` / `0x3eb`。他は即時クローズ。
+10. **trait `0xfa5` の 4 値ゲート（6006 / 6007 / 102.0 / 103.0）は
+    エンジン内部のメニュー登録都合**。移植側で再現不要。
+
+### 37.13 未確定事項（§37）
+
+- `_DAT_00b33e9c` に書き込む唯一の `FSTP` 命令の VA（＝歩進量の供給元）。
+  164 参照という広域性から共有グローバル（フレーム時間等）と推定しているが、
+  供給元関数の特定は未了。
+- `0x389`（ルートメニュー ID）の実体（どのメニュー種別か）。
+- `FUN_00584980` のオフセット定数（`10.0` / `100.0` / `-0.008` / `2.0`）の使われ方。
+- `0x00a6976c` = `3.40234375f` と `0x00a6977c` = `3.3984375f` の用途。
+- `FUN_00582160(0, 1)` の 2 引数の意味。
+
+## §38 メニュー ctor / dtor 実 VA 一括同定（A5）
+
+### 38.1 手法
+
+`D:\Cargo\Ghidra\scripts\VtHits.java`（自作）を作成し、`.text` 全域の命令を走査して
+各メニュー vtable アドレスの即値（`MOV [reg], imm32`）参照箇所を検出した。各ヒットについて
+所属関数エントリ・関数サイズ・基底 Menu ctor（`0x00584640`）呼出回数・基底 Menu dtor
+（`0x00585330`）呼出回数を出力し、以下で自動判定した。
+
+```
+ctor84640 >= 1 かつ dtor85330 == 0  ->  その vtable の ctor
+dtor85330 >= 1                      ->  その vtable の dtor（削除デストラクタ）
+両方 0                              ->  基底 Menu を継承しないクラス、または補助 vtable
+```
+
+出力は `tmp\ghidra_vthits_clean.txt`（132 行、`HIT` 行 106 件）。EXIT=0、コンパイルエラーなし。
+`HIT` は `vt=VT at=命令VA mn=ニーモニック fn=所属関数エントリ size=関数サイズ` 形式。
+
+### 38.2 全メニュー vtable -> ctor / dtor 対応表
+
+| メニュー / クラス | vtable | ctor VA | dtor VA |
+|---|---|---|---|
+| Menu | `0xa696dc` | `0x(基底) 00584640` | `0x(基底) 00585330` |
+| (VideoRes NiTListBase 補助) | `0xa69fe0` | `0x-` | `0x-` |
+| ControlsMenu | `0xa69ff4` | `0x005874a0` | `0x00587520` |
+| (VideoRes 補助) | `0xa6a034` | `0x-` | `0x-` |
+| TextEditMenu | `0xa6a04c` | `0x005879c0` | `0x00587a50` |
+| (VideoRes NiTList 補助) | `0xa6a08c` | `0x-` | `0x-` |
+| VideoMenu | `0xa6a09c` | `0x00587bc0` | `0x00587c60` |
+| TileMenu | `0xa6af14` | `0x00590130` | `0x00591b70` |
+| AlchemyMenu | `0xa6b1b4` | `0x00593050` | `0x005931c0` |
+| AudioMenu | `0xa6b29c` | `0x00595150` | `0x00595350` |
+| BookMenu | `0xa6b334` | `0x00595be0` | `0x00595c40` |
+| BreathMenu | `0xa6b404` | `0x00596420` | `0x00596520` |
+| ClassMenu | `0xa6b49c` | `0x00596ef0` | `0x00596c70` |
+| ContainerMenu | `0xa6b574` | `0x00597a90` | `0x005978d0` |
+| CreditsMenu | `0xa6b784` | `0x0059c960` | `0x0059c890` |
+| DialogMenu | `0xa6b88c` | `0x0059e4e0` | `0x0059e580` |
+| EffectSettingMenu | `0xa6b92c` | `0x0059f9b0` | `0x0059fc30` |
+| EnchantmentMenu | `0xa6ba0c` | `0x005a1390` | `0x005a1680` |
+| GameplayMenu | `0xa6bd0c` | `0x005a3310` | `0x005a3430` |
+| GenericMenu | `0xa6bd9c` | `0x005a3be0` | `0x005a3c60` |
+| HUDInfoMenu | `0xa6bdf4` | `0x005a4660` | `0x005a4810` |
+| HUDMainMenu | `0xa6bee4` | `0x005a6780` | `0x005a6850` |
+| HUDSubtitleMenu | `0xa6c0dc` | `0x005a8df0` | `0x005a9320` |
+| InventoryMenu | `0xa6c18c` | `0x005a9b00` | `0x005a9bb0` |
+| LevelUpMenu | `0xa6c264` | `0x005ac550` | `0x005ac5b0` |
+| LoadingMenu | `0xa6c40c` | `0x005ad0d0` | `0x005adbc0` |
+| LoadgameMenu | `0xa6c6bc` | `0x005ae450` | `0x005ae4f0` |
+| LockPickMenu | `0xa6c73c` | `0x005af310` | `0x005af410` |
+| MagicMenu | `0xa6c974` | `0x005b1f20` | `0x005b1f70` |
+| MagicPopupMenu | `0xa6ca54` | `0x005b3d30` | `0x005b3ed0` |
+| MainMenu | `0xa6cb1c` | `0x005b5f20` | `0x005b5870` |
+| MapMenu | `0xa6cc9c` | `0x005b7360` | `0x005b7490` |
+| MessageMenu | `0xa6ce5c` | `0x005bc450` | `0x005bc4a0` |
+| NegotiateMenu | `0xa6cf0c` | `0x005bce40` | `0x005bd050` |
+| OptionsMenu | `0xa6cfac` | `0x005bd580` | `0x005bd650` |
+| PauseMenu | `0xa6d03c` | `0x005bd960` | `0x005bda60` |
+| PersuasionMenu | `0xa6d0cc` | `0x005bdff0` | `0x005be240` |
+| QuantityMenu | `0xa6d15c` | `0x005c04f0` | `0x005c05a0` |
+| QuickKeysMenu | `0xa6d1f4` | `0x005c0b50` | `0x005c0cf0` |
+| RaceSexMenu | `0xa6d38c` | `0x005c4e40` | `0x005c4bf0` |
+| RechargeMenu | `0xa6d45c` | `0x005ce680` | `0x005ce6c0` |
+| RepairMenuList | `0xa6d5a4` | `0x005d1000` | `0x005d0dd0` |
+| RepairMenu | `0xa6d5b4` | `0x005d1000` | `0x005d0dd0` |
+| SaveMenu | `0xa6d624` | `0x005d3290` | `0x005d3320` |
+| SigilStoneMenu | `0xa6d664` | `0x005d3eb0` | `0x005d4140` |
+| SkillsMenu | `0xa6d71c` | `0x005d5610` | `0x005d56f0` |
+| SleepWaitMenu | `0xa6d7c4` | `0x005d6870` | `0x005d6960` |
+| SpellMakingMenu | `0xa6d864` | `0x005d73c0` | `0x005d7610` |
+| SpellPurchaseMenu | `0xa6d8cc` | `0x005d8900` | `0x005d8950` |
+| StatsMenu | `0xa6d9dc` | `0x005d9ad0` | `0x005d9d70` |
+| TrainingMenu | `0xa6dc74` | `0x005dd200` | `0x005dd310` |
+| VideoDisplayMenu | `0xa6dccc` | `0x005dd960` | `0x005dda20` |
+| MenuBGShader | `0xa8cfd4` | `0x007b1200` | `0x007b1c70` |
+
+計 53 vtable。うち 48 件がメニュー本体、4 件が VideoRes 補助 vtable（`0xa69fe0` /
+`0xa6a034` / `0xa6a08c` および `0xa69ff4` と同居する `0xa6a034`）、1 件が `MenuBGShader`。
+
+### 38.3 判定規則の検証（既知 22 関数との一致）
+
+手作業で同定済みだった 22 関数（AudioMenu / GameplayMenu / MagicMenu / SkillsMenu /
+SleepWaitMenu / ClassMenu / ContainerMenu / RechargeMenu / VideoDisplayMenu /
+SpellMakingMenu / LevelUpMenu / QuickKeysMenu）の ctor / dtor VA は、すべて上表と一致した。
+したがって「ctor84640 呼出の有無」と「dtor85330 呼出の有無」による自動判定は妥当。
+
+### 38.4 特殊ケース
+
+- **基底 `Menu`（`0xa696dc`）**: ヒット先は `0x00584640`（ctor 自身、size=40）と
+  `0x00585330`（dtor 自身、size=177）。自己参照のため ctor/dtor カウントは 0。
+  基底 Menu ctor = `0x00584640` / 基底 Menu dtor（削除デストラクタ）= `0x00585330`。
+- **`TileMenu`（`0xa6af14`）**: ctor44640 = 0。基底 Menu ctor を呼ばず、`0x00590130`
+  （size=84）と `0x00591b70`（size=169）が vtable を設定する。前者が ctor、後者が dtor 相当と推定。
+- **`MenuBGShader`（`0xa8cfd4`）**: `0x007b1200`（size=402）と `0x007b1c70`（size=358）が設定。
+  Menu 系ではなく BG シェーダクラス。基底 Menu ctor / dtor は呼ばない。
+- **`RepairMenuList`（`0xa6d5a4`）と `RepairMenu`（`0xa6d5b4`）**: 同じ ctor `0x005d1000` が
+  両 vtable を設定する（リスト vtable は ctor 内で別途設定）。dtor は `0x005d0dd0` が両方を戻す。
+- **VideoRes 補助 vtable**: `0xa69ff4`（ControlsMenu）の ctor `0x005874a0` の近傍で
+  `0xa69fe0` / `0xa6a034` が設定される（`0x00587470` / `0x00587488` / `0x00587940`）。
+  同様に VideoMenu ctor `0x00587bc0` が `0xa6a08c`（NiTList VideoRes）も設定する。
+  `0x00587470` / `0x00587488` は Ghidra 未関数認識（`NOFN`）だが実在する小関数。
+
+### 38.5 dtor の共通構造（全メニュー）
+
+```asm
+mov [esi], <vtable>          ; 自クラス vtable を再設定
+call 0x00585330              ; 基底 Menu デストラクタ
+test byte [esp+8], 1         ; 削除フラグ
+call 0x00401f20              ; free（フラグ時のみ）
+ret 4                        ; thiscall + 引数 1 個
+```
+
+一部（RechargeMenu / MagicMenu / SleepWaitMenu / ContainerMenu）は SEH フレーム付きで、
+先に内部リストを解放してから基底 Menu dtor を呼ぶ。
+
+### 38.6 Android 移植向け確定値
+
+- メニュー実装クラスのコンストラクタ／デストラクタ対応が必要な場合は §38.2 の表を使う。
+- 移植側のメニュー基底（`Menu` 相当）は `0x00584640`（ctor）／`0x00585330`（dtor）に対応。
+  派生メニューの ctor は必ず基底 ctor を呼び、dtor は基底 dtor を呼ぶ。
+- vtable スロット規約は §34.3 と §38.5 のとおり。slot 0 = 削除デストラクタ。
+- `TileMenu` と `MenuBGShader` は基底 `Menu` を継承しないため、移植側でも共通 Menu 基底に
+  載せないこと。
+
+
+## §39 未文書化メニューのレイアウト（A7: Container / QuickKeys / LevelUp）
+
+§28 で「未文書化」として列挙したメニューファミリーのうち、Phase 68（ゲームシステムと GUI）で
+必要になる 3 種（ContainerMenu / QuickKeysMenu / LevelUpMenu）について、§24 / §25 / §26 と
+同じ粒度（ウィジェット表）で XML レイアウトを確定する。
+素材は `Oblivion - Textures - Compressed.bsa` 抽出物ではなく、`Menus` 系 BSA の
+`tmp\bsa_misc_full\menus\` を使用した（`container_menu.xml` = 2529 行、
+`quickkeys_menu.xml` = 329 行、`levelup_menu.xml` = 389 行）。
+機械抽出は `tmp\cont_outline.txt`（148 要素のネスト構造）と `tmp\cont_props.txt`
+（全要素プロパティ、1471 行）に保存した。
+
+### 39.1 ContainerMenu（container_menu.xml）
+
+ルート要素は `<menu name="ContainerMenu">`。vtable は `0x00a6b574`、ctor `0x00597a90`、
+dtor `0x005978d0`（§38）。stackingtype / locus は XML 既定を使用する。
+
+#### 39.1.1 menu 変数（初期値）
+
+| trait | 初期値 | 意味 |
+|---|---|---|
+| user0 | 1 | 現在のタブ番号（1〜5） |
+| user1〜user4 | -1 | タブ別ヘッダの選択状態 |
+| user5 | 0 | 表示件数（リスト行数） |
+| user6 | 0 | プレイヤー所持金 |
+| user7 | true | コンテナ側パネル可視（false で所持品表示） |
+| user8 | true | Take All 許可 |
+| user9 | true | 値切り（haggle）許可 |
+| user10 | 0 | 魔法ポップアップ X 座標 |
+| user11 | "" | 相手 NPC 名 |
+| user12 | 0 | 取引金額 |
+| user13 | 0 | 現在の積載量 |
+| user14 | 0 | 最大積載量 |
+| user15〜user19 | 0 | 追加ヘッダの位置 |
+| user22 | `screen().height - screen().cropy*2 - 240` | リスト高さ |
+| user23 | `cont_background.depth` | 背景奥行き |
+| user25 | false | 金移動アイコン可視 |
+
+キーバインド: `xleft=cont_tabs_prev` / `xright=cont_tabs_next` / `xbuttonb=cont_button_exit` /
+`xbuttonx=cont_button_take_all` / `xbuttony=cont_button_haggle`。
+
+#### 39.1.2 主要ウィジェット（確定値）
+
+属性の無い行は XML 既定値。`<expr>` は実行時式（コピー元 trait は備考に記載）。
+
+| name | id | type | depth | x / y | w x h | visible / target | 備考 |
+|---|---|---|---|---|---|---|---|
+| cont_FocusBox | 14 | include | 1 | - | - | visible=false | `focus_box.xml` |
+| cont_background | - | rect | - | - | - | - | 背景ルート |
+| cont_background_2 | - | image | -15 | 720 / 0 | 128x854 | - | `Menus\Container\cont_box_background_2.dds` |
+| cont_inv_background | - | image | 1 | 35 / 21 | 745x792 | `parent.alpha==0` | `Menus\Shared\shared_main_background_1.dds` |
+| cont_inv_background_2 | - | image | - | 700 / (親) | 54x792 | - | 背景右端 |
+| cont_page_5〜1 | - | rect | 5 | 18 / 539 | 791x176 | `user0==N` | `shared_0N_tab.dds`（5..1 タブの下地） |
+| cont_tabs_prev | 7 | image | - | -1 / -1 | 1x1 | target=true | clicksound=5、タブ左移動 |
+| cont_tabs_next | 8 | image | - | -1 / -1 | 1x1 | target=true | clicksound=5、タブ右移動 |
+| cont_p5_tab〜cont_p1_tab | 5..1 | include | 6 | 553/417/279/141/1, y=610 | - | target=`user0!=N` | `page_tab.xml`、`inv_icon_tab_{misc,alchemy,apparel,weapons,all}.dds` |
+| cont_border_top | - | image | 1 | 91 / 140 | 596x160 | - | `inv_border_top.dds` |
+| cont_border_middle | - | image | - | 91 / 276 | 576x249 | - | `inv_border_middle.dds` |
+| cont_border_bottom | - | image | - | 34 / 521 | 628x160 | - | `inv_border_bottom.dds` |
+| cont_player_money_icon | - | image | 1 | 50 / 648 | 32x32 | - | `all_small_icons.dds` cropx=224 |
+| cont_player_money_text | - | text | 1 | 42 / -5 | - | - | string=`user6`、justify=left、RGB=117,59,33 |
+| cont_npc_money_icon | - | image | 1 | `<expr>` / 648 | 32x32 | `user9` | `all_small_icons.dds` cropx=224、sub=20 |
+| cont_npc_money_text | - | text | 1 | 42 / -5 | - | `<expr>` | justify=left、RGB=117,59,33 |
+| cont_npc_name | - | text | 1 | `<expr>` / -5 | wrap 300 | - | 1 行、justify=left、RGB=117,59,33 |
+| cont_encumberance_icon | - | image | - | `<expr>` / 648 | 32x32 | locus | `all_small_icons.dds` cropx=32、sub=20 |
+| cont_encumberance_text | - | text | - | 40 / -5 | - | - | string=`user13` |
+| cont_encumberance_slash | - | text | - | `<expr>` / -5 | - | - | string=`/`、add=1 |
+| cont_encumberance_max | - | text | - | `<expr>` / -5 | - | - | string=`user14`、add=1 |
+| cont_button_take_all | 32 | include | 1 | `<expr>` / 810 | - | `<expr>` | `button_long.xml`、user0=`_takeall`、user20=`&xbuttonx;` |
+| cont_button_haggle | 34 | include | 1 | `<expr>` / `<copy take_all.y>` | - | `<expr>` | `button_long.xml`、user0=`_haggle`、user20=`&xbuttony;` |
+| cont_button_exit | 33 | include | 1 | `<expr>` / `<copy take_all.y>` | - | - | `button_short.xml`、user0=`_exit`、user20=`&xbuttonb;` |
+| cont_scroll_bar | 11 | include | 150 | 675 / `<copy cont_window.y>` | h=`cont_window.height` | - | `vertical_scroll.xml`、user2=`<expr>`、sub=5 |
+| cont_window | - | rect | 12 | 10 / 150 | 645x480 | locus | clipwindow=true |
+| cont_pane | - | rect | - | 6 / `<expr>` | - | locus | mul=-81（リスト仮想スクロール位置） |
+| cont_list_contents | 13 | rect | - | - | - | target=false | xlist=`&xlist;`、xup=`cont_p123_header_text.mouseover`、xscroll=`cont_scroll_bar.user5` |
+| cont_item_template | - | template | - | - | - | - | 39.1.4 参照 |
+| cont_select_frame | - | image | 10 | 272 / 729 | 287x86 | locus | `cont_select_frame.dds` |
+| cont_select_frame_marker | - | image | 30 | `<expr>` / -3 | 128x95 | - | `cont_select_frame_marker.dds`、add=`<expr>` |
+| cont_icon_inv_off | 42 | image | -2 | 53 / 4 | 86x78 | `user7` | `cont_icon_inv_off.dds` |
+| cont_icon_inv_on | - | image | -2 | 53 / 4 | 86x78 | `cont_icon_inv_off.visible==false` | `cont_icon_inv_on.dds` |
+| cont_icon_cont_off | 43 | image | -2 | 141 / 5 | 90x78 | `user7==false` | `cont_icon_cont_off.dds` |
+| cont_icon_cont_on | - | image | -2 | 145 / 5 | 90x78 | `cont_icon_cont_off.visible==false` | `cont_icon_cont_on.dds` |
+| cont_select_left | - | image | 6 | `<expr>` / 25 | 42x35 | `&xbox;` | `hud_xbox_lt.dds`、copy=0、add=56 |
+| cont_select_right | - | image | 6 | `<expr>` / 25 | 42x35 | `&xbox;` | `hud_xbox_rt.dds`、sub=56 |
+
+#### 39.1.3 タブヘッダ（2 系統 + 8 カテゴリヘッダ）
+
+タブヘッダは 2 系統。`cont_headers_top`（rect）配下に
+`cont_p123_header_top`（id=16、y=100、lte=3）と `cont_p4p5_header_top`（id=15、y=100、gte=4）を持つ。
+
+**cont_p123_header（武器 / 防具タブ用、lte=3）**
+
+| name | id | type | x / y | w x h | visible / 備考 |
+|---|---|---|---|---|---|
+| cont_p123_header_left | - | image | `<expr>` / `<expr>` | 35x17 | `shared_decor_blue_left.dds`、sub=55、div=2、add=6 |
+| cont_p123_header_right | - | image | `<expr>` / `<expr>` | 35x17 | `shared_decor_blue_right.dds`、add=20、div=2 |
+| cont_p123_header_text | 16 | text | 130 / 5 | - | target=true、clicksound=3、string=`<expr>`、font=3、RGB=51,79,142、justify=center、xright=`img1`、xdown=`cont_list_contents` |
+| cont_p123_header_arrow | - | image | 23 / 0 | 32x32 | ソート方向矢印、`all_small_icons.dds` cropx=352、eq=true |
+| cont_p123_header_img1 | 17 | image | 300 / 0 | 32x32 | locus、cropx=224、xleft=text、xright=img2、xdown=list_contents |
+| cont_p123_header_img2 | 18 | image | 375 / 0 | 32x32 | cropx=32、xleft=img1、xright=img3a |
+| cont_p123_header_img3a | 19 | image | 435 / 0 | 32x32 | eq=1、cropx=160、xleft=img2、xright=img3b |
+| cont_p123_header_img3b | 19 | image | - | 32x32 | eq=2、cropx=128、xleft=img3a、xright=img3c |
+| cont_p123_header_img3c | 19 | image | - | 32x32 | eq=3、cropx=96、xleft=img3b、xright=img4 |
+| cont_p123_header_img4 | 20 | image | 495 / 0 | 32x32 | lte=2、cropx=256、xleft=img3c、xdown=list_contents |
+| cont_p123_header_top | 16 | rect | 102 / 100 | - | lte=3、`_header_1..9` = `_weapons/_apparel/_apparatuses/_potions/_ingredients/_books/_keys/_stones/_misc`、`_headernum`=<expr>、mult=81 |
+
+**cont_p4p5_header（錬金 / その他タブ用、gte=4）**
+
+| name | id | type | x / y | w x h | visible / 備考 |
+|---|---|---|---|---|---|
+| cont_p4p5_header_left / right | - | image | `<expr>` / `<expr>` | 35x17 | `shared_decor_blue_left/right.dds` |
+| cont_p4p5_header_text | 16 | text | 130 / 5 | - | target=true、string=`<expr>`、font=3、RGB=51,79,142 |
+| cont_p4p5_header_arrow | - | image | 23 / 0 | 32x32 | cropx=352、eq=true |
+| cont_p4p5_header_img1 | 17 | image | 300 / 0 | 32x32 | locus、cropx=224 |
+| cont_p4p5_header_img2 | 18 | image | 375 / 0 | 32x32 | cropx=32 |
+| cont_p4p5_header_img3 | 19 | image | 435 / 0 | 32x32 | cropx=96 |
+| cont_p4p5_header_top | 15 | rect | 102 / 100 | - | gte=4、`_header_1..9` = `_alchemy/_apparatuses/_potions/_ingredients/_misc/_books/_keys/_stones/_misc`、mult=81 |
+
+**カテゴリヘッダ 9 種（cont_*_header）** はすべて同一構造で、`visible`=式、`locus`、
+`x=102`、`y=<expr>`、`mult=81`、`clips=true`。内部に `_left` / `_right`（image, depth=7,
+35x17, `shared_decor_blue_left/right.dds`）、`_text`（text, x=130, y=35, font=3,
+RGB=51,79,142, justify=center）、矢印 / アイコン群（`all_small_icons.dds`）を持つ。
+
+| ヘッダ rect | 行 | テキスト trait | 矢印 cropx | 備考 |
+|---|---|---|---|---|
+| cont_weapon_header | 1158 | `_weapons` | 352 | 追加アイコン: cont_value_arrow/value_icon/weight_icon/damage_icon/health_icon |
+| cont_apparel_header | 1289 | `_apparel` | 352 | - |
+| cont_apparatus_header | 1399 | `_apparatuses` | 352 | img 3 枚 |
+| cont_potions_header | 1522 | `_potions` | 352 | img 2 枚 |
+| cont_ingr_header | 1646 | `_ingredients` | 352 | img 2 枚 |
+| cont_book_header | 1746 | `_books` | 352 | - |
+| cont_keys_header | 1866 | `_keys` | `Menus\Icons\icon_small_arrow.dds`(depth=10) | eq=5、and/or/onlyif 式あり |
+| cont_stones_header | 1985 | `_stones` | - | - |
+| cont_misc_header | 2108 | `_misc` | - | eq=5、and/or/onlyif 式あり |
+
+カテゴリヘッダの `visible` ゲートは「現在タブ（user0）がそのカテゴリを含む場合のみ」。
+`mult=81` はリスト 1 行の高さ（cont_item.height=81 と一致）で、行位置へスナップさせる。
+
+また武器タブでは `cont_value_arrow` / `cont_value_icon`（cropx=224, x=300, y=30）/
+`cont_weight_icon`（cropx=32, add=74）/ `cont_damage_icon`（cropx=160, add=64）/
+`cont_health_icon`（cropx=256, add=64）が列ヘッダアイコンとなる。
+
+#### 39.1.4 リスト行テンプレート（cont_item_template → cont_item）
+
+`cont_item_template`（行 2423）は `cont_list_contents`（id=13）配下の `cont_item`
+（rect, 行 2422）を 1 行として複製する。
+
+| name | type | depth | x / y | w x h | visible / 備考 |
+|---|---|---|---|---|---|
+| cont_item | rect | 1 | 0 / `<expr>` | 650x81 | visible=`user8`、target=true、locus、alpha=0、listclip、gte、`repeatvertical=true`、focusinset=4、xlist=`&xitem;`、xup=`&prev;`、xdown=`&next;`、xscroll=`<expr>` |
+| cont_equiped_marker | image | 2 | 7 / 7 | 635x64 | visible=`parent.user10`、alpha=160、`inv_equiped_marker_1.dds` |
+| cont_item_icon | image | 3 | 5 / 7 | 64x64 | visible=`parent.user10 <sub> == false`、filename=`<expr>` |
+| cont_item_over_icon | image | 3 | 5 / 7 | 64x64 | visible=`parent.user10`、filename=`<expr>`（重ね着アイコン） |
+| cont_item_count | text | 5 | `<expr>` / `<expr>` | wrap 55 | justify=right、font=3、RGB=117,59,33、1 行、string=`<expr>`、sub=6 |
+| cont_item_status | image | `<expr>` | `<expr>` / `<expr>` | `<expr>` | visible/`gt=0`、filename=`parent.user13`、copy=32、RGB 式、`_handonly`、eq=1 |
+| cont_item_name | text | 3 | 80 / `<expr>` | wrap 280 | justify=left、RGB=117,59,33、2 行、string=`<expr>`、div=2 |
+| cont_item_cost | text | 3 | 418 / `<expr>` | wrap 90 | justify=center、RGB=117,59,33、string=`<expr>`、div=2 |
+| cont_item_weight | text | 3 | 496 / `<expr>` | wrap 64 | justify=center、RGB=117,59,33、div=2 |
+| cont_item_damage | text | 3 | 556 / `<expr>` | wrap 70 | justify=center、RGB=117,59,33、div=2 |
+| cont_item_health | text | 3 | 616 / `<expr>` | wrap 50 | justify=center、RGB=117,59,33、div=2 |
+
+列 x 座標（コスト 418 / 重量 496 / ダメージ 556 / 耐久 616）は武器ヘッダの列アイコン
+（value=300, weight=374, damage=438, health=502 + 幅 32）と対応する。行高 81 は
+`mult=81` と一致。
+
+#### 39.1.5 Android 移植向け確定値（ContainerMenu）
+
+- ルート名 `ContainerMenu`、vtable `0x00a6b574`。
+- リスト行の高さは **81 px**（`cont_item.height`＝全ヘッダの `mult`）。
+- リスト領域は `cont_list_contents`（id=13）、スクロールは `cont_scroll_bar`（id=11、
+  user2=expr、sub=5）。行カリングは `cont_window`（x=10,y=150,645x480, clipwindow=true）。
+- タブは 5 枚（cont_p1_tab〜cont_p5_tab、id=1..5、y=610、x=1/141/279/417/553）、
+  タブ切替は id=7（prev）/id=8（next）。
+- ボタン: Take All=id 32、Exit=id 33、Haggle=id 34。
+- 左右パネル切替アイコン: 所持品=id 42、コンテナ=id 43（user7 で排他）。
+- 相手 NPC 表示系は user9/user11/user12、積載量は user13/user14。
+
+### 39.2 QuickKeysMenu（quickkeys_menu.xml）
+
+ルート要素は `<menu name="QuickKeysMenu">`。vtable は `0x00a6d1f4`、ctor `0x005c0b50`、
+dtor `0x005c0cf0`（§38）。
+
+#### 39.2.1 menu 属性
+
+| 属性 | 値 |
+|---|---|
+| stackingtype | `does_not_stack` |
+| alpha | 0 |
+| locus | true |
+| x / y | 0 / 0 |
+| menufade | 0.25 |
+| _global_alpha | 255 |
+
+#### 39.2.2 主要ウィジェット（確定値）
+
+| name | id | type | depth | x / y | w x h | visible / 備考 |
+|---|---|---|---|---|---|---|
+| quick_key_text | 6 | text | 11 | - | wrap 400 | font=2、string=`_quickkey`、justify=center、RGB=254,241,188、alpha=255 |
+| Quick_key_selector | 7 | rect | - | 800 / 275 | `screen().width` x `screen().height` | target=true、locus、alpha=0、visible=true、user0..3 = 0/255/false/true |
+| background_selector_image | - | image | - | -58 / -58 | 512x512 | visible=`parent.user2`、`Quick-Keys\background_paper.dds` |
+| background_selector_image2 | - | nif | - | 200 / 200 | - | visible=`parent.user3`、`Quick-Keys\pc_background_paper_numbers.nif` |
+| quick_key_1_image〜quick_key_8_image | 8..15 | image | 2 | `<expr>` / `<expr>` | 64x64 | filename は動的（空） |
+| selector_image | - | nif | - | -235 / -90 | - | `Quick-Keys\quick keys.nif`、animation=`parent.user0 + me._animation_`、`_animation_1..8` = `0_`〜`7_` |
+
+#### 39.2.3 8 スロットの座標（中心からの -w/2, -h/2 オフセット）
+
+| スロット | x | y |
+|---|---|---|
+| 1 | 202 | 102 |
+| 2 | 274 | 132 |
+| 3 | 302 | 205 |
+| 4 | 272 | 275 |
+| 5 | 200 | 303 |
+| 6 | 130 | 273 |
+| 7 | 102 | 202 |
+| 8 | 132 | 130 |
+
+8 スロットは円形配置。`selector_image`（quick keys.nif）の animation 名は
+`parent.user0 + me._animation_`（`_animation_N` = `"0_"`〜`"7_"`）で、選択中スロット
+番号 user0（0〜7）に応じて対応アニメを選ぶ。
+
+#### 39.2.4 Android 移植向け確定値（QuickKeysMenu）
+
+- ルート名 `QuickKeysMenu`、vtable `0x00a6d1f4`、stackingtype=`does_not_stack`（他メニューと重ねない）。
+- スロットは 8 個、アイコン id=8..15（64x64）、座標は 39.2.3 の表。
+- `Quick_key_selector`（id=7）が放射状の当たり判定ラッパ。user0=選択インデックス、
+  user1=alpha(255)、user2/user3=背景 2 種の可視フラグ。
+- テキスト `_quickkey`（id=6）は font=2、中心揃え。
+- 開閉フェードは `menufade=0.25`。
+
+### 39.3 LevelUpMenu（levelup_menu.xml）
+
+ルート要素は `<menu name="LevelUpMenu">`。vtable は `0x00a6c264`、ctor `0x005ac550`、
+dtor `0x005ac5b0`（§38）。
+
+#### 39.3.1 menu 属性・変数
+
+| 属性 | 値 |
+|---|---|
+| class | `&LevelUpMenu;` |
+| stackingtype | `no_click_past` |
+| alpha | 0 |
+| x / y | 0 / 0 |
+| locus | true |
+| menufade | 0.25 |
+
+| trait | 初期値 | 意味 |
+|---|---|---|
+| user1 | false | 退出ボタン target |
+| user2 | Descriptive text | 説明文 |
+| user3 | "You have ascended to level x" | タイトル（レベル表記） |
+| user4 | Filename | レベルアップ画像 |
+| user5 | Attribute description | 選択属性の説明 |
+
+`<xbuttonb><ref src="levelup_exit_button" trait="clicked"/></xbuttonb>`。
+
+#### 39.3.2 主要ウィジェット（確定値）
+
+| name | id | type | depth | x / y | w x h | visible / 備考 |
+|---|---|---|---|---|---|---|
+| levelup_background | - | include | 1 | centered | - | user0=1000、`generic_background.xml` |
+| levelup_title | - | text | 4 | centered / 20 | wrap 900 | string=`user3`、justify=left、RGB=33,59,117 |
+| levelup_description | - | text | 4 | - | wrap `parent.width-40` | string=`user2`、RGB=117,59,33 |
+| levelup_instructions | - | text | 4 | - | wrap 900 | string=`_threeattributes`、RGB=33,59,117、font=3 |
+| level_up_picture | - | image | 10 | 620 / - | 256x256 | filename=`user4` |
+| levelup_attribute_description | - | text | 4 | - | wrap `level_up_picture.width + me._extend_text*2` | string=`user5`、RGB=117,59,33、font=3、`_extend_text`=60 |
+| levelup_pane | 2 | rect | 5 | 30 / - | 540x536 | xlist=`&xlist;`、xright=`levelup_exit_button.mouseover` |
+| levelup_exit_button | 1 | include | 6 | - | - | target=`user1`、`button_long.xml`、user20=`&xbuttonb;`、xdefault=`&xboxhint;`、xleft=`levelup_pane.mouseover` |
+
+#### 39.3.3 リスト行テンプレート（levelup_template → levelup_item）
+
+| name | id | type | x / y | w x h | visible / 備考 |
+|---|---|---|---|---|---|
+| levelup_item | 3 | rect | - | 450x67 | alpha=0、y=`me.listindex*67`、`_enabled_alpha`=`(user6 OR user0-1)*127+128`、xlist=`&xitem;`、xup=`&prev;`、xdown=`&next;` |
+| levelup_item_coin | - | image | - | 32x32 | visible=`parent.user0`、`all_small_icons.dds` cropx=224（コイン/ボーナス印） |
+| levelup_item_icon | - | image | 40 / - | 64x64 | filename=`parent.user5`、alpha=`parent._enabled_alpha` |
+| levelup_item_text | - | text | 130 / - | wrap 300 | string=`parent.user4`、RGB=117,59,31 |
+| levelup_item_value | - | text | 380 / - | - | string=`parent.user3`、RGB=33,59,117 |
+| levelup_item_multiplier | - | text | 480 / - | - | string=`parent.user2`、justify=right、visible=`parent.user1` |
+| levelup_item_selected | - | image | 115 / - | `parent.width-70` x 64 | visible=`parent.user0`、`inv_equiped_marker_1.dds` |
+| levelup_item_mouseover_marker | - | image | 115 / - | `parent.width-90` | `dialog_selection_full.dds` |
+| levelup_item_mouseover_marker_2 | - | image | `parent.width+55-me.width` / - | 104x64 | `dialog_selection_cut.dds` |
+
+#### 39.3.4 Android 移植向け確定値（LevelUpMenu）
+
+- ルート名 `LevelUpMenu`、vtable `0x00a6c264`、stackingtype=`no_click_past`
+  （背面メニューへクリックを透過させない）。
+- リスト行の高さは **67 px**（`levelup_item.height`）。
+- 3 属性選択用アイテム（id=3）が選択対象。`_enabled_alpha = (user6 OR user0-1)*127+128`
+  で「既に取得済み／取得可能」を 128..255 の不透明度に変換する。
+- 退出は id=1（levelup_exit_button、`&xbuttonb;`）で `clicked` trait を呼ぶ。
+- 開閉フェードは `menufade=0.25`。
+
+### 39.4 未確認・残課題（A7）
+
+- `container_menu.xml` の `cont_book_header` 以降（keys/stones/misc）の各 `_text` y 値、
+  および `cont_item_status` の色式（red/green/blue の `<expr>` 実体）は式のコピー元が
+  深く、静解析では確定できていない。移植側は RGB 既定（117,59,33 系）で代替可能。
+- `cont_select_frame_marker` の `x=<expr>` / `cont_select_left/right` の `x=<expr>` は
+  選択フレーム内の相対配置式で、確定には runtime 値が必要。
+- QuickKeysMenu の `quick_key_N_image.filename`（動的）はアイテム割当て時に
+  ゲーム側（`FUN_005c0b50` 系 ctor 以降）が設定する。XML には初期値が無い。
+- Container / QuickKeys / LevelUp 以外の未文書化ファミリー（Recharge / Repair /
+  TextEdit / generic / message 等）は §28 の vtable 一覧のみで、XML レイアウトは未解析。
+
+
+## §40 ControlsMenu（0x3fd）ページ2 キー割当の確定値
+
+§24.8 の ControlsMenu 記述を補強し、ページ2（CONTROL MAPPING）の全レイアウトと
+キー割当リスト生成・デバイス切替・コマンドハンドラの switch 表を確定する。
+対象 XML: `Data\Menus\Options\controls_menu.xml`（874 行 / 26,264 文字）。
+解析対象: ControlsMenu vtable `0x00a69ff4`、ctor `0x005874a0`、dtor `0x00587520`、
+生成・起動 `0x0059b9e0` / `0x0059ba40`、更新 `0x0059bd80`、コマンド `0x0059c5e0`、
+補助 `0x0059b640` / `0x0059b670` / `0x0059b920` / `0x0059b980` / `0x0059c3f0` / `0x00587500`。
+
+### 40.1 メニューレベル trait（menu 直下）
+
+| trait | 値 | 意味 |
+|---|---|---|
+| `class` | `&ControlsMenu;` | メニュークラス（vtable 0x00a69ff4） |
+| `stackingtype` | `&no_click_past;` | クリックは背後のメニューへ抜けない |
+| `alpha` | `0` | メニュー全体は不可視（子が個別に alpha 指定） |
+| `locus` | `&true;` | フォーカス可能 |
+| `explorefade` | `0.25` | 非ポーズメニュー（探索中に開く）→ §37 の explorefade |
+| `user0` | `1` | ページ番号（1=PAGE1、2=PAGE2） |
+| `user1` | `controls_main_rect.height / controls_vertical_scroll.user8` | キー行1行の高さ（400/6 ≒ 66.7） |
+| `user2` | `strings()._move` | 左スティック設定の表示文言（"Move"） |
+| `user3` | `strings()._look` | 右スティック設定の表示文言（"Look"） |
+| `user4` | `&true;` | true=normal / false=selected（ページ2の表示可否ゲート） |
+| `user5` | コード設定 | 現在のデバイス名文字列（`FUN_0059b640` / `FUN_0059c3f0` が設定） |
+| `red` / `green` / `blue` | `117` / `59` / `33` | 見出し文字色（茶） |
+| `_button_buffer` | `50` | 画面端からのボタン余白 |
+
+`controls_background`（30 行）は `generic_background.xml` を include し、画面中央寄せ。
+`user0`=666（幅）、`user1`=580（高さ）。実効サイズ **666 x 580**。
+
+### 40.2 PAGE 1（52〜383 行）確定値
+
+`controls_page_1`（52 行）: width/height=`copy parent()`、x=0、y=0、locus=true、
+`xbuttonb`=`ref controls_return_button_2 clicked`（ゲームパッド B で戻る）。
+
+| 要素 | 行 | id | 型 | 主な確定値 |
+|---|---|---|---|---|
+| `controls_sensitivity_label` | 63 | `&generic;` | text | visible=`ControlsMenu.user0==1`、string=`strings()._mousesensitivity`、depth=7、RGB=ControlsMenu、x=スライダー中央、y=96 |
+| `controls_sensitivity_slider` | 92 | **5** | image | include `horiz_floating_scroll.xml`、visible=label と同一、depth=5、y=label.y+label.height+12、user6=6（マーカー id）、user8=false（テキスト非表示） |
+| `controls_sensitivity_slider_marker` | 119 | `&generic;` | image | target=true、depth=3、dialog_selection_full.dds、alpha=255*min(mouseover+slider._mouseover_any,1)、width=slider.width+120、height=64、x=slider.x-60、y=slider.y-18、locus=true |
+| `controls_sensitivity_slider_marker_2` | 150 | - | image | depth=1、dialog_selection_cut.dds、width=104、height=64、x=parent.width-100 |
+| `controls_invert_y_label` | 166 | `&generic;` | text | string=`strings()._inverty`、y=label.y+label.height+96 |
+| `controls_invert_y_button` | 194 | **7** | rect | include `button_floating_2.xml`、depth=3、string=`strings()._onoff`、_center_x=label.x+label.width-32、_top=label.y-12 |
+| `controls_swap_button` | 215 | **8** | rect | include `button_floating_2.xml`、depth=3、string=`strings()._swapstickcontrols`、_center_x=parent.width/2、_top=left_stick_label.y-me.height |
+| `controls_left_stick_label` | 244 | - | text | string=`strings()._leftstick`、locus=true、y=invert_y_label.y+invert_y_label.height+96 |
+| `controls_left_stick_setting` | 271 | - | text | string=`ControlsMenu.user2`、x=invert_y_button._center_x-me.width/2 |
+| `controls_right_stick_label` | 302 | - | text | string=`strings()._rightstick`、locus=true、y=left_stick_label.y+left_stick_label.height |
+| `controls_right_stick_setting` | 328 | - | text | string=`ControlsMenu.user3` |
+| `controls_return_button_2` | 361 | **1** | image | include `button_long.xml`、depth=3、visible=`user0==1`、x=parent.width-me.width-_button_buffer、y=parent.height-me.height-25、clicksound=2、user0=`strings()._return` |
+
+**ページ1の id 集合**: 1（Return2）、5（感度スライダー）、7（Invert Y）、8（Swap Sticks）。
+`controls_swap_button`(8) はゲームパッド前提（`_swapstickcontrols`）で、PC でも表示される。
+
+### 40.3 PAGE 2（392〜756 行）確定値
+
+`controls_page_2`（392 行）: width/height=`copy parent()`、x=0、y=0、locus=true。
+
+#### 40.3.1 DEVICE セクション（399〜513 行）
+
+| 要素 | 行 | id | 主な確定値 |
+|---|---|---|---|
+| `controls_device_activate_highlight` | 400 | `&generic;` | target=true（マウスオーバー用の不可視ヒット領域） |
+| `controls_device_toggle_floating` | 409 | - | visible=`left.mouseover>0 OR right.mouseover>0 OR activate_highlight.mouseover>0`、dialog_selection_full.dds、height=64、depth=3、x=`left.x - me()._buffer`、y=10、locus=true、`_buffer`=10。子 `effset_attribute_floating_end`（440 行、dialog_selection_cut.dds） |
+| `controls_device_toggle_left` | 452 | **12** | **shared_arrow_left.dds**、124x36（前のデバイスへ） |
+| `controls_device_text` | 474 | - | depth=3、visible=`ControlsMenu.user0==2`、justify=center、RGB=117,59,33、alpha=255、string=`ControlsMenu.user5`、y=20（現在のデバイス名） |
+| `controls_device_toggle_right` | 497 | **13** | **shared_arrow_right.dds**、121x36（次のデバイスへ） |
+
+デバイス名は `ControlsMenu.user5`（コード設定）。`user0==2`（ページ2）でのみ可視。
+
+#### 40.3.2 MAIN RECT セクション（518〜657 行）
+
+`controls_main_rect`（518 行）: target=true、depth=3、visible=`ControlsMenu.user0==2`、
+x=(parent.width-me.width)/2、y=75、**width=538 / height=400**、alpha=0、clipwindow=true。
+
+枠 5 枚（すべて `effset_attribute_frame_*.dds` 系）:
+
+| 要素 | 行 | 確定値 |
+|---|---|---|
+| `controls_border_top` | 538 | x=0、y=0、width=parent.width |
+| `controls_border_left` | 553 | x=0、y=32 |
+| `controls_border_middle` | 567 | x=300、y=32 |
+| `controls_border_right` | 578 | x=parent.width-32、y=32 |
+| `controls_border_bottom` | 589 | x=0、y=parent.height-32、width=parent.width |
+
+`controls_vertical_scroll`（602 行、include `vert_floating_scroll.xml`、**id=2**）:
+x=parent.width。trait は user1=0（min）、user2=`list_pane.childcount - me().user8`（max）、
+user3=1（step）、user4=5、user5=0（初期値）、user6=3、**user8=6（可視行数）**。
+user7=現在値（624 行コメント）。
+
+`controls_list_pane`（630 行、**id=4**）: alpha=0、locus=true、clips=true、width=parent.width、
+height=`me().childcount * ControlsMenu.user1`、y=`0 - vertical_scroll.user7 * ControlsMenu.user1`、
+`_left_edge_buffer`=10。651〜659 行コメントのとおり **子要素はコードがテンプレート
+`controls_template` から生成**する（リスト行を XML に静的に持たない）。
+
+#### 40.3.3 ボタンセクション（662〜717 行）
+
+| 要素 | 行 | id | 主な確定値 |
+|---|---|---|---|
+| `controls_defaults_button` | 662 | **10** | include `button_long.xml`、visible=`user0==2 AND user4`、x=`ControlsMenu._button_buffer`、y=`return.y`、user0=`strings()._defaults`（既定に戻す） |
+| `controls_more_button` | 678 | **9** | visible=`user0==1`、x=`defaults.x`、y=`return.y`、user0=`strings()._controls`（ページ1へ） |
+| `controls_return_button` | 695 | **1** | visible=`user0==2 AND user4`、x=parent.width-me.width-_button_buffer、y=parent.height-me.height-25、clicksound=2、user0=`strings()._return` |
+
+**id 1 は PAGE1 の Return2 と PAGE2 の Return で共有**（visible の `user0` 条件で排他）。
+`user4` は「selected モード」＝キー再割当前の確認待ち状態。`user4==false` の間は
+Defaults / Return が隠れ、選択中ボタンのみ操作可能。
+
+#### 40.3.4 INSTRUCTIONS（719〜759 行）
+
+`controls_instructions`（719 行、**id=11**）: visible=`ControlsMenu.user0==2 AND NOT ControlsMenu.user4`、
+depth=3、justify=center、x=`parent().width/2`、y=`controls_defaults_button.y + (defaults.height - me().height)/2`、
+alpha=255、RGB=ControlsMenu、wrapwidth=`parent().width - 32`。
+**`string` プロパティを持たない**（本体文字列はコード（`FUN_0059c3f0` の trait 0xfde 等）
+または親からの継承で供給される）。移植側はコード設定文言を別途用意する必要がある。
+
+### 40.4 controls_template（762〜868 行）キー行テンプレート
+
+`controls_template`（762 行）/ `controls_template_item`（763 行）:
+
+| trait | 値 | 意味 |
+|---|---|---|
+| `x` | 0 | |
+| `y` | `me().listindex * me().height` | 行の縦位置（listindex = 行番号） |
+| `depth` | 1 | |
+| `width` | `parent().width` | リストペイン幅 |
+| `locus` | `true` | フォーカス可能 |
+| `clips` | `true` | 行内クリップ |
+| `target` | `true` | ヒット対象 |
+| `repeatvertical` | `true` | **縦方向の繰り返しテンプレート**（行ごとに複製） |
+| `user0` | `me().listindex` | 行 index |
+| `user1` | `label string` | アクション名（"Move Forward" 等） |
+| `user2` | `parent().width - 128` | ボタン（キー表示）の中央寄せ X |
+| `user3` | `"key"` | PC 用キー名文字列 |
+| `_left_edge_buffer` | `parent()._left_edge_buffer` | 左端余白の継承 |
+
+子要素:
+
+| 要素 | 行 | 確定値 |
+|---|---|---|
+| `controls_template_floating` | 795 | visible=`mouseover>0`（793 行コメント「コマンドが処理できない場合 xlist で親へ委譲」）、dialog_selection_full.dds、width=`parent().width-32`、height=64 |
+| `effset_attribute_floating_end` | 810 | dialog_selection_cut.dds、width=104、height=64、x=`parent().width+8-me().width` |
+| `controls_template_label` | 824 | depth=3、alpha=255、string=`parent().user1`、x=`parent()._left_edge_buffer`、y=12 |
+| `controls_template_button` | 846 | depth=3、x=`parent().user2`、y=12、string=`parent().user3`、justify=center |
+
+`xlist=true`（763 行の item 側）が「未処理コマンドを親へ委譲」する挙動の正体。
+`controls_list_pane`（655 行コメント）の子はこのテンプレートからコード生成される。
+
+### 40.5 キー割当リスト生成（FUN_0059ba40, 832B）
+
+`FUN_0059ba40` は ControlsMenu の生成・起動関数。手順:
+
+1. `FUN_00589b70(0x3fd)` で既存インスタンス取得 → あれば dtor。
+2. `FUN_00582160(0, 1)` → **id 0x3fd を MenuManager に登録**。
+3. `FUN_00590420("Data\Menus\Options\controls_menu.xml")` で XML パス指定。
+4. `FUN_009832e6(...)` x2 → XML ロード。
+5. **ウィジェット存在チェックループ**: `iVar5+0x28` から **13 個**のポインタを走査し、
+   0 があれば `"Controls Menu Creation Failed..."` を出力して return 0。
+   → offset 0x28〜0x5b が **13 個のウィジェットポインタ配列**（§40.8 参照）。
+6. `FUN_00588bd0(0xfa5)` と `_DAT_00a69770/78` を比較 → `0xfab`（モード初期化）。
+7. `0xfb3`（スクロール初期位置）を計算し 0 にリセット。
+8. `FUN_0059b640` でデバイス名表示を初期化。
+9. trait `0xfc9` = 1.0（条件付き）。
+10. **キー割当リスト生成ループ（本関数の中核）**:
+    ```
+    for (iVar7 = 0; iVar7 <= 0x1d; iVar7++) {      /* 0..29（29 行） */
+        if (FUN_0059b670(iVar7) == 0) continue;     /* 有効なキー index のみ */
+        tmpl = テンプレート取得;
+        if (tmpl == 0) continue;
+        FUN_0058ceb0(0xfa8, 0x0e + iVar7);          /* 行 index = 14 + iVar7 */
+        FUN_0058ceb0(0xfae, 行 index);              /* リスト行 index */
+        FUN_0058ced0(0xfaf, (&DAT_00b399d0)[iVar7]); /* アクション名文字列 */
+        trait 0xfca..0xfce をコピー;                 /* 色等の継承 */
+    }
+    ```
+    末尾で `*(float*)(iVar5+0xdc) = FUN_00588bd0(0xfb1)`、
+    `*(float*)(iVar5+0xe0) = FUN_00588bd0(0xfb2)`、`*(byte*)(iVar5+0xd4) = 1`。
+
+**`FUN_0059b670(int idx)`（112B）**: `idx` が `{0..0x10}` または `{0x1a,0x1b,0x1c}` の
+いずれかなら 1、それ以外 0。**キー index 0x1d（29）中、有効なものだけをリストへ載せる
+フィルタ**（0x11〜0x19 と 0x1d を除外）。アクション名は `DAT_00b399d0[idx]`
+（29 要素の文字列ポインタ配列、静的ファイル上は未初期化＝実行時書込）。
+
+### 40.6 デバイス切替ロジック
+
+#### FUN_0059b640(int param_1, byte param_2)（45B, __cdecl, RET 0x8）
+
+```
+if (param_1 != 0)
+    FUN_0058ced0(0xfde, param_2 != 0 ? DAT_00b38da0 : DAT_00b38da8);
+```
+`param_1`=対象ウィジェット、`param_2`=0 なら `DAT_00b38da8`、非0 なら `DAT_00b38da0` の
+文字列を trait `0xfde`（デバイス名表示）へ設定。
+
+#### FUN_0059b920(int this)（88B, __fastcall, ECX=this）— デバイス順送り
+
+`this[0x5c]`（offset 0x5c = 選択デバイス index）を +1 し、2 超なら 0 に戻す。
+最大 3 回試行し、各 index 0/1/2 について `DAT_00b33398+0x20` の
++0x28（キーボード有無）/ +0x2c（マウス有無）/ +0x18f0（ゲームパッド有無）を検査して
+**存在するデバイス index を採用**。成功時 true。
+
+#### FUN_0059b980(int this)（93B, __fastcall）— デバイス逆送り
+
+`FUN_0059b920` の逆。`this[0x5c]` を -1 し、0 なら 2 に戻す。成功時 true。
+
+#### FUN_0059c3f0(int param_1, int param_2)（482B, __thiscall, RET 0x4）
+
+デバイス確定・リスト再構築・INSTRUCTIONS 文字列更新の関数。挙動:
+
+1. `*(param_1+0x34)+0x34` のリンクリストを走査し、`param_2` 以外のウィジェットに対し
+   trait `0xfc9`=1.0、`0xfcc`/`0xfcd`/`0xfce`=`_DAT_00a2ffe8`（**=128.0f**）を設定。
+2. `param_1[0x54]`（offset 0x150）と `param_1[0x58]`（offset 0x160）のウィジェットに
+   `0xfc9`=1.0。
+3. `param_1[0x2c]`（offset 0xb0）のウィジェットから `0xfb1`/`0xfb2` を読み
+   `*(param_1+0xdc)` / `*(param_1+0xe0)` に保存し、`0xfb1`=0、`0xfb2`=1.0 に。
+4. `0x00b39548 + 0x5c*4` の文字列（選択デバイス名）を小文字化し、
+   `"%s %s %s"`（`0x00a6b774`）で `DAT_00b38ee0 / 小文字名 / DAT_00b38ee8` を連結
+   → trait `0xfde` に設定。
+5. `*(param_1+0xd8) = param_2`、文字列解放。
+
+**`FUN_00587500(int param_1)`（26B, __cdecl, RET 0x4）**:
+`if (param_1 - 1U < 0xd) return param_1 - 1; return 0xd;`
+→ param_1（1..13）→ index 0..12、範囲外は 0xd。`FUN_0059c5e0` case 12/13 の分岐に使用。
+
+### 40.7 コマンドハンドラ switch 表（FUN_0059c5e0, 630B）
+
+`switch (param_2)`（1〜13、upper bound 0xc）。EAX = param_2 - 1。
+`MOVZX EAX, byte ptr [EAX + 0x59c874]` → `JMP dword ptr [EAX*4 + 0x59c858]`。
+
+バイトテーブル `0x59c874`（13 要素）:
+`[0, 6, 6, 6, 6, 6, 1, 2, 3, 4, 6, 5, 5]`
+
+分岐先テーブル `0x59c858`:
+
+| case id | idx | 分岐先 | 動作 |
+|---|---|---|---|
+| 1 | 0 | `0x59c644` | 行 index `0xfae` 取得→0 なら 1.0 設定。else 時刻換算→XML 再ロード |
+| 2,3,4,5,6 | 6 | `0x59c820` | 何もしない（末尾の `0xd < param_2` 判定へ） |
+| 7 | 1 | `0x59c7f4` | サウンド3、`DAT_00b14f38` トグル、`FUN_0059b640` でデバイス切替 |
+| 8 | 2 | `0x59c7a9` | サウンド3、`DAT_00b14ec8`↔`DAT_00b14ed8`、`DAT_00b14ed0`↔`DAT_00b14ee0` の2組スワップ、`0xd4`=1 |
+| 9 | 3 | `0x59c78a` | サウンド1、`0xfae`=1.0（先頭行へ） |
+| 10 | 4 | `0x59c6a8` | サウンド1、選択デバイス名を小文字化し `"%s %s %s?"` 確認ダイアログ `FUN_00579c10(&LAB_0059b8c0, ...)` |
+| 11 | 6 | `0x59c820` | 何もしない |
+| 12,13 | 5 | `0x59c751` | サウンド1、`FUN_00587500(param_2)` が 0xb なら `FUN_0059b980`、else `FUN_0059b920`。成功なら `0xd4`=1、失敗なら `0x59c699`=XML再ロード+画面更新 |
+
+末尾: `if ((0xd < param_2) && (*(char*)(param_1+0xe4) == 0)) FUN_0059c3f0(param_3);`
+→ **14 以上のコマンドは `FUN_0059c3f0` へ委譲**（`param_1+0xe4`=0 の条件付き）。
+
+**Android 向け対応付け**:
+- id 7 = デバイス切替トグル（`0x3fd` 内部フラグ）
+- id 8 = 軸（左右スティック）入替
+- id 9 = リスト先頭へ
+- id 10 = 「このデバイスに割り当てますか？」確認ダイアログ
+- id 12 / 13 = 前 / 次のデバイス（`FUN_00587500` で 12→11 が 0xb なので **id 12 が逆送り**）
+- id 11 = INSTRUCTIONS 表示中は無動作
+
+### 40.8 ControlsMenu フィールドオフセット表（ctor FUN_005874a0）
+
+ctor は Menu 基底 ctor → vtable 設定後:
+`_memset(param_1+10, 0, 0x34)`（**offset 0x28**、13 dword）、
+`_memset(param_1+0x18, 0, 0x74)`（**offset 0x60**）、
+`param_1[0x17] = 0xff`（offset 0x5c）、
+`*(byte*)(param_1+0x35) = 0`（0xd4）、`param_1[0x36] = 0`（0xd8）、
+`*(byte*)(param_1+0x39) = 0`（0xe4）。
+
+| offset | 型 | 意味 |
+|---|---|---|
+| 0x28〜0x5b | Widget*[13] | **13 個のウィジェットポインタ**（生成時存在チェックの対象） |
+| 0x5c | int | 選択デバイス index（初期 0xff、0=キーボード / 1=マウス / 2=ゲームパッド） |
+| 0x60〜0xd3 | - | 内部作業領域（0x74 バイト） |
+| 0xd4 | bool | キー割当更新フラグ（1=要更新） |
+| 0xd8 | int | 確定デバイス種別（`FUN_0059c3f0` の param_2） |
+| 0xdc | float | trait 0xfb1 退避値（`FUN_00588bd0(0xfb1)`） |
+| 0xe0 | float | trait 0xfb2 退避値（`FUN_00588bd0(0xfb2)`） |
+| 0xe4 | bool | 委譲ゲート（0 のとき 14 以上のコマンドを `FUN_0059c3f0` へ） |
+
+**補足**: `FUN_0059bd80`（1629B、更新）は冒頭で `0xd4` を判定し、
+選択デバイス名を `0xfb3`、キー状態バイトを
+`*(byte*)(iVar11*0x1d + (*(DAT_00b33398+0x20)) + iVar7 + 0x1b70)`
+（**デバイス index x 0x1d ストライド**）から読む。キー名解決は
+iVar11==0→`(&DAT_00b39578)`（238 要素キーボード名）、
+iVar11==1→`(&DAT_00b39554)`（9 要素マウス名）、
+iVar11==2→ゲームパッド `"%s %d"` または `(&DAT_00b398b0 + uVar10*4)`。
+`DAT_00b14ed0 == 1` なら `0xfb0 = DAT_00b38ec0` / `0xfb1 = DAT_00b38eb8`、else 逆。
+
+### 40.9 Android 移植向け確定値
+
+- **ControlsMenu id = 0x3fd**、vtable `0x00a69ff4`、XML `Data\Menus\Options\controls_menu.xml`。
+- **メニューレベル**: `no_click_past`、alpha=0、locus=true、**explorefade=0.25**（非ポーズ）、
+  背景 666x580、`_button_buffer`=50、文字色 RGB=(117,59,33)。
+- **PAGE 1 id**: 1（Return2）/ 5（感度スライダー）/ 7（Invert Y）/ 8（Swap Sticks）。
+- **PAGE 2 id**: 1（Return、user4 必須）/ 2（縦スクロール）/ 4（リストペイン）/
+  **9（Controls ボタン、user0==1）** / **10（Defaults、user0==2 かつ user4）** /
+  **11（INSTRUCTIONS、user0==2 かつ NOT user4）** / **12（前デバイス）** / **13（次デバイス）**。
+- **スクロール**: min=0 / max=`list_pane.childcount - 6` / step=1 / user4=5 / user6=3 /
+  **可視行数 user8=6** / 現在値 user7。リストペイン y = `- user7 * ControlsMenu.user1`。
+- **キー行高**: `ControlsMenu.user1 = 400 / 6 ≒ 66.7`。
+- **キー行テンプレート**: `repeatvertical=true`、`user0=index`、`user1=アクション名`、
+  `user2=parent.width-128`、`user3=キー名`、`_left_edge_buffer=10`。
+- **キー行生成**: index 0..29 を走査し `FUN_0059b670` でフィルタ
+  （有効 = 0..0x10 と 0x1a/0x1b/0x1c）、行 index = `0x0e + idx`、アクション名 = `DAT_00b399d0[idx]`。
+- **デバイス**: index 0=キーボード / 1=マウス / 2=ゲームパッド。
+  id 12 = 逆送り、id 13 = 順送り。存在チェックは `DAT_00b33398+0x20` の
+  +0x28 / +0x2c / +0x18f0。
+- **確定動作**: id 7=トグル、id 8=軸入替、id 9=先頭へ、id 10=確認ダイアログ、
+  id 11=無動作、id 14 以上=`FUN_0059c3f0` へ委譲（`0xe4==0` 時）。
+- **`controls_instructions`（id 11）は string 未指定** → 文言はコード設定。移植側は別途用意。
+- **id 1 はページ1/2 で共有**（`user0` で排他）。`user4=false`（selected モード）時は
+  Defaults / Return が非表示。
+- **`FUN_0059c3f0` の trait 定数**: `0xfcc/0xfcd/0xfce = 128.0f`、デバイス名連結書式 `"%s %s %s"`。
+- **静的未解決**: `0x00b38ee0` / `0x00b38ee8`（書式の語句）、`0x00b38da0` / `0x00b38da8`（表示文字列）、
+  `0x00b39548[3]`（デバイス名）、`0x00b399d0[29]`（アクション名）、`0x00b39554` / `0x00b39578`
+  （マウス / キーボード名）はいずれも **.data の初期化領域外（RAW 0x700c00〜0x731800 =
+  VA 0xb02000〜0xb33800）にあり静的ファイル上ゼロ**＝実行時書込。静解析での文字列回収は不可。
+- **id 集合の対応**: §28 の vtable 53 件と突き合わせ済み。ControlsMenu の追加 ID
+  （0x3fd）と PAGE1/PAGE2 の id 12 / 13 / 9 / 10 / 11 を反映すれば移植側のコマンド表が完成する。
+
+### 40.10 残課題（A6 以降）
+
+- `FUN_0059bd80`（1629B 更新）の後半 iVar11 分岐（キー割当設定の `FUN_00403f50` 系）は
+  概略まで。キー再割当確定時の個別書込先を厳密化するなら追加精読が必要。
+- `0x00b33e9c` の唯一の FSTP 書込命令 VA は未特定（§34 補足）。
+- `FUN_005deb80` 後半（IDX 180〜629）と `FUN_005dbbd0`（2377B）の精読は A3 補足として残。
+- `controls_instructions` の string 本体（コード供給）の実体文字列は静解析では未回収。
+
+## §41 NPC → プレイヤーのダメージ計算経路（§33.1 の補強・詳細化）
+
+§33.1 で「入口と式の骨格」は文書化済み。本節はそこに欠けていた**未文書化関数 3 件**
+（`FUN_00484850` = HP 取得 / `FUN_00488830` = HP 書込＋被弾タイマーリスト / `FUN_00403c00` = ダメージ係数 getter）と、
+**呪文・反射ダメージ経路 `FUN_005f3870`** を確定値として埋める。§33.1 と重複する記述は再掲しない。
+
+### 41.1 AC（アクター）値アクセスの実体 — 未文書化の中核 3 関数
+
+| 関数 | VA | サイズ | 役割 |
+|---|---|---|---|
+| `FUN_00484850` | 0x00484850 | 282B | HP 取得（絶対値 / 割合×100） |
+| `FUN_00488830` | 0x00488830 | 621B | HP 書込（被弾タイマーリストの追加・更新・削除を兼ねる） |
+| `FUN_00403c00` | 0x00403c00 | 20B | ダメージ係数グローバルのアドレスを返す getter |
+
+これら 3 件は §40 までの RE_EXE_REPORT に一切出現していない（`00484850` / `00488830` = 0 件、`00403c00` = §33.1 内 1 件のみ）。
+
+#### 41.1.1 `FUN_00484850` — HP 取得
+
+```
+float10 __thiscall FUN_00484850(int *param_1, char param_2)
+```
+- `param_1` = アクター、`param_2 != 0` = 割合モード。
+- 冒頭で `FUN_009832e6(param_1[2],0,&PTR_PTR_00b03248,&PTR_PTR_00b05cf4,0)` により
+  サブオブジェクト（AV コンテナ）を解決。null なら `DAT_00a30634` を返す（死亡センチネル）。
+- `(int*)*param_1 == 0 || *(int*)*param_1 == 0` の縮退分岐：
+  - `param_2 != 0` → `_DAT_00a2fe7c`（= 1.0f）を返す
+  - `param_2 == 0` → vtable +0x10 の値を返し、負なら `_DAT_00a2fc78` を加算補正
+- 通常経路：
+  - `fVar4 = FUN_0041e810()`（AV 現在値）
+  - `param_2 == 0` → `fVar4` をそのまま返す（**絶対 HP**）
+  - `param_2 != 0` → `iVar3 = vtable +0x10`（AV 最大値）を取得し負補正後、
+    `FUN_004842f0((fVar4 / iVar3) * _DAT_00a309f0)` を返す。`_DAT_00a309f0` = 100.0f。
+    → **HP パーセンテージ = 現在値 / 最大値 × 100.0f**
+
+**Android 移植向け確定値**：`param_2 == 0` が `GetHealth()`、`param_2 != 0` が `GetHealthPercent()`（0..100）。
+`FUN_00484850(0)` が HP 減算前後の読み取りに使われる（41.3 参照）。
+
+#### 41.1.2 `FUN_00488830` — HP 書込（被弾タイマーリスト管理）
+
+```
+void __thiscall FUN_00488830(int *param_1, float param_2, int param_3,
+                             undefined4 *param_4, char param_5)
+```
+- `param_1` = アクター（`*param_1` が管理リスト先頭）、`param_2` = 設定値、
+  `param_3` = サブオブジェクト、`param_4` = リスト探索キー（比較対象ポインタ）、`param_5` = 末尾削除フラグ。
+- 冒頭：SEH セットアップ（`uStack_4 = 0xffffffff` / `puStack_8 = &LAB_009afbf6`）＋スタッククッキー
+  `DAT_00b30aac`。`iVar3 = FUN_0046ca20(param_1[2])` で上限値を取得。
+- **追加 / 削除の判定**：
+  ```
+  if ((param_2 < (float)iVar3) || (iVar3 < iVar5))   // iVar5 = FUN_009828c0()
+      追加・更新経路
+  else
+      削除・リセット経路
+  ```
+- 追加経路：`*param_1` が null なら新規ノード作成
+  （`FUN_00401f00(0x14)` = 20B 確保 → `FUN_00422ee0()` → `FUN_00401f00(8)` = 8B 確保 →
+  `FUN_0041ee90(param_2)` → `FUN_00446cb0(uVar8)` → `*param_1 = puVar7`）。
+  既存ノードは `*puVar7 == param_4` を探して `FUN_0041ecb0(param_2)` で値更新。
+- **削除経路（末尾 261〜278 行）**：
+  ```
+  puVar7 == param_4 のとき
+      FUN_0041f610();                        // ノード値リセット
+      if ((puVar7[1] == 0) && (param_5 != 0)) {   // puVar7[1] = +0x04 = next ポインタ
+          FUN_00485e80(param_1[2], 1, 0);    // AV 変動通知（stat 更新通知）
+          FUN_0065c620(puVar7);
+          (**(code **)*puVar7)(1);           // vtable[0] = デストラクタ
+      }
+  ```
+- 中盤で `*(int**)(param_3 + 4)` が非 null なら `(**(code**)(**(int**)(param_3+4) + 0x40))(0x8000000)` を呼ぶ
+  （サブオブジェクト側の変更通知、フラグ 0x8000000）。
+
+**Android 移植向け確定値**：実質は「HP 値をアクターへ書き戻し、同時に被弾タイマー／累積ダメージの
+連結リスト（ノード 20B、+0x04 = next）を管理する」関数。ダメージ適用の最終段で必ずここを通る。
+`FUN_005f3870` からは 3 引数形（`param_4` / `param_5` 省略相当）で呼ばれる。
+
+#### 41.1.3 `FUN_00403c00` — ダメージ係数 getter
+
+```
+undefined4 * __fastcall FUN_00403c00(undefined4 *param_1)
+```
+アセンブラ全文（20B）：
+```
+MOV  EAX,ECX
+TEST EAX,EAX
+JNZ  0x00403c13
+FLDZ
+MOV  EAX,0xb35464
+FSTP float ptr [0x00b35464]
+RET
+```
+- `param_1 == 0` のとき `&DAT_00b35464` を返し、同時に `DAT_00b35464 = 0.0f` へ初期化。
+- **乱数関数ではない。グローバル float `DAT_00b35464` のアドレスを返す getter。**
+- `DAT_00b35464` は静的初期化領域（.data 初期化終端 VA 0xb33800）を超えるため、
+  静解析では初期値 0.0 のみ観測可能。**実行時に書き込まれる係数**（難易度・GMST 由来の乗数）。
+  書き込み元関数は未特定（41.7 残課題）。
+
+### 41.2 呪文・反射ダメージ経路 `FUN_005f3870`（新規・アセンブラ裏取り済み）
+
+```
+undefined4 __thiscall FUN_005f3870(int *param_1, undefined4 *param_2, float param_3, char param_4)
+```
+`param_1` = 対象アクター、`param_2` = 効果／呪文記述、`param_3` = ベースダメージ。
+サイズ = 729B。`tmp\ghidra_f3870_clean.txt`（398 行）で裏取り。
+
+#### 41.2.1 入口ガードと抵抗力チェック
+```
+if ((param_2 == 0) || (param_3 <= 0.0)) return 0;
+iVar3 = param_2[2];                        // 種別コード
+if (iVar3 == 0x14) { ... }                 // 環境／特殊効果分岐
+cVar2 = FUN_004b4c70();                    // 対象がコマンド系か判定
+if (cVar2 == 1) { FUN_005f23b0(0x12); FUN_005f23b0(0x12); }
+else if (cVar2 != 0) { /* skip */ }
+FUN_005f23b0(0x1b); FUN_005f23b0(0x1b);
+```
+- 抵抗判定用グローバル `0x00b37508` を使用（`005f3907 MOV ECX,0xb37508`）。
+- `FUN_005f23b0(0x12)` = 種別 0x12、`FUN_005f23b0(0x1b)` = 種別 0x1b の抵抗力チェックを 2 回ずつ呼ぶ。
+
+#### 41.2.2 ダメージ確定 → HP 減算（命令列）
+```
+005f3920  CALL 0x00403c00                  ; EAX = &DAT_00b35464
+005f3925  FLD  float ptr [EAX]             ; 係数
+005f3927  FMUL float ptr [ESP+0x2c]        ; × param_3（ベースダメージ）
+005f392b  FSTP float ptr [ESP+0x28]        ; = 実ダメージ
+005f3933  CALL 0x00484850                  ; (PUSH 0x0, ECX = 対象) → 現在 HP
+005f3938  FSUB float ptr [ESP+0x28]        ; HP - ダメージ
+005f393c  FSTP float ptr [ESP+0x30]
+005f3940  FLD1 / FCOMP / TEST AH,0x41 / JNZ
+005f394d  FLDZ / FSTP                      ; < 1.0 なら 0.0 へクランプ（死亡）
+```
+- **実ダメージ = `DAT_00b35464`（係数グローバル） × `param_3`（ベースダメージ）**
+- **HP 減算は `現在HP - 実ダメージ`、結果が 1.0 未満なら 0.0 にクランプ。**
+  近接 `FUN_005febf0` の式（スキル係数・アーマー軽減を含む多段）とは異なり、こちらは 1 乗算のみのシンプル経路。
+
+#### 41.2.3 デバッグログ
+```
+005f3953  CMP byte ptr [0x00b3b908],0x0     ; ダメージログ有効フラグ
+005f3961  MOV EAX,[EBP+0x28]                ; 対象名ポインタ
+           (null → 0xa2f7ec = デフォルト名)
+005f3973  CALL 0x00484850                   ; 現在 HP をログ用に再取得
+005f3991  CALL 0x004da2a0                   ; 可変長引数準備
+005f3997  PUSH 0xa6e76c                     ; "%.20s's %s takes %.2f points of damage (%.2f/%.2f)!"
+005f399c  CALL 0x00579b60                   ; ログ出力
+```
+`0x00b3b908` = ダメージログ有効化フラグ、`0x00a2f7ec` = 名称未設定時の代替文字列、
+`0x00a6e76c` = ダメージログ書式。
+
+#### 41.2.4 HP 書込と死亡判定
+```
+005f39a4  MOV EAX,[EDI] / MOV EAX,[EAX]
+005f39ab  LEA ECX,[ESI+0x44]               ; stat コンテナ
+005f39ae  CALL 0x0041e6f0                  ; AV エントリ取得
+005f39be  CALL 0x00488830                  ; HP 書込（41.1.2）
+005f39c7  MOV EDX,[ESI] / MOV EAX,[EDX+0x2c0] / CALL EAX   ; HP 更新通知（vtable +0x2c0）
+```
+デコンパイル側の対応箇所：
+```
+fVar10 = (float10)FUN_00484850(0);
+_param_4 = (float)(fVar10 - (float10)(float)param_2);
+if (_param_4 < 1.0) _param_4 = 0.0;
+uVar5  = FUN_0041e6f0(*(undefined4*)*puVar1, 1);
+uVar11 = CONCAT44(1, *(undefined4*)*puVar1);
+FUN_00488830(_param_4, uVar5, uVar11);
+if (iVar9 != 0) (**(code**)(*param_1 + 0x2c0))();
+if (0.0 < _param_4) return 0;
+```
+死亡処理（0.0 クランプ時）：
+```
+if ((puVar1[2] != 0 && *(char*)(puVar1[2]+4) == '!') && (param_1[0x16] != 0 && ...))
+|| ((iVar9 != 0 && (cVar2 = FUN_00468ff0(0xd,0), cVar2 != 0)) && (iVar3 = (vtable+0xf8)(), iVar3 != 0))
+then
+    if ((param_1 != DAT_00b333c4) && ((vtable+0x78)() == 0))
+        iVar9 == 0  → vtable +0x118
+        iVar9 != 0  → vtable +0x120        ; ノックバック方向算出（FUN_00711440）
+    uVar5 = (**(code**)(*param_1 + 0x2c8))(...);
+    FUN_004dc000(param_1, uVar5);
+    return 1;
+```
+- `DAT_00b333c4` = プレイヤーアクターのグローバルポインタ（プレイヤー自身への反射は除外）。
+- `FUN_00468ff0(0xd, 0)` = 種別 0xd の状態判定。
+- **戻り値 1 = 死亡（HP が 0 にクランプされた）、0 = 生存。**
+
+**Android 移植向け確定値**：呪文・反射ダメージは
+`実ダメージ = 係数(DAT_00b35464) × ベースダメージ` → `HP = max(0, HP - 実ダメージ)` →
+`FUN_00488830` 相当で書き戻し → `HP <= 0` で死亡処理（vtable +0x2c8 経由）。
+近接（`FUN_005febf0`）とは別経路であることに注意。
+
+### 41.3 近接経路 `FUN_005febf0` の適用順序（§33.1 の整理）
+
+§33.1.2 / §33.1.3 の式を、実装に落とせる順序へ整理し直す。
+
+| 段 | 内容 | 根拠 |
+|---|---|---|
+| 1 | 難易度倍率 `uStack_1a8 = (vtable+0x26c)() * (vtable+0xec)()` | `FUN_005febf0` 冒頭 |
+| 2 | 武器無効チェック `(vtable+0x284)(0x41)` が 100 未満 → "normal weapons have no effect" | 同上 |
+| 3 | スニーク判定 `FUN_005e0550()` / しきい値 `DAT_00b372f0` / `FUN_005477f0` | 同上 |
+| 4 | ベースダメージ `(vtable+0x34c)()` × AV（0 = 体力 / 7 = 攻撃力 / 0x11 = レベル） | 同上 |
+| 5 | 武器負荷 `FUN_00484f80`（NPC）/ `FUN_004b9f60`（Player） | 同上 |
+| 6 | 合成 `FUN_00547070`（9 引数） = `f2 * f1 * f3 * f4 * f5 * param_7` | `FUN_00547070` |
+| 7 | 1 発上限 `(1.0 - (int)fVar25 / 100.0) * fVar21` | 同上 |
+| 8 | 反射 `(vtable+0x220)(fStack_1ac * fVar21, 0, param_4)`（種別 0x3b） | 同上 |
+| 9 | アーマー軽減 `fStack_1c4 = (vtable+0x348)() / 100.0f`（>=100 で 1.0、上限 `_DAT_00b36ea0`） | 同上 |
+| 10 | スタッガー `(vtable+0x3b4)(...)` | 同上 |
+| 11 | 魔法ダメージ適用 `(vtable+0x398)(param_1, piVar22, fStack_1c4, uVar8)` | 同上 |
+| 12 | HP 比例 `uStack_1b4 = piVar22 / (vtable+0x284)(8)`、係数比較 `FUN_00403c00()` | 末尾 680〜946 行 |
+
+- **`FUN_00547070`**（206B / 55 insns）：戻り値 = `fVar2 * fVar1 * fVar3 * fVar4 * fVar5 * param_7`。
+  `fVar5 = FUN_00547b90(param_1, param_2)`（0..100 クランプ）。定数：`0xb36dd8` / `0xb36df8` / `0xb36df0` /
+  `0xb36de0` / `0xb36de8` / `0xb36e08` / `0xb36e00`、`0xa3b150`（0.01 相当）。
+- **`FUN_00547140`**（246B / 79 insns）：魔法／呪文ラッパ。`uVar3 = (param_1+0x88+0x10)() & 0xffff`、
+  戻り値 = `_DAT_00b36d00 * fVar4 + 出力`（`0xb36d00` = マスタ係数）。
+- **`FUN_00547f00`**（31B）：線形補間 `return _DAT_00b37530 - (1.0 - param_1) * _DAT_00b37538;`
+- **`FUN_00547b90`**（101B）：0..100 クランプ付きスキル合成。定数 `0xb37390`（float）/ `0xb37388`（int）。
+- **`FUN_006034b0`**（70B）：AV index 8（HP）低下時の死亡判定。
+  `fVar2 = (vtable+0x288)(8)`、`fVar2 < _DAT_00a2f948` なら `FUN_006005f0`。
+- **`FUN_005480a0`**（132B）：index → グローバル値テーブル（1..10、`0xb37620`〜`0xb37668`）、
+  null なら `0xb35464` へフォールバック。
+
+**Actor vtable オフセット一覧（§33.1 の補強）**
+
+| offset | 用途 |
+|---|---|
+| +0x78 | 死亡／無敵判定（0 = 通常） |
+| +0xec | レベル／HP 係数 |
+| +0xf8 | 死亡状態取得 |
+| +0x118 / +0x120 | ノックバック方向（iVar9 0 / 非 0） |
+| +0x164 | 戦闘状態 |
+| +0x170 | 種別 |
+| +0x174 | 座標 |
+| +0x198 / +0x19c | 死亡判定 / 魔法チェック |
+| +0x1a0 | 呪文抵抗 |
+| +0x210 / +0x214 | 攻撃カウンタ |
+| +0x218 | 回避 |
+| +0x220 | 反射ダメージ適用 |
+| +0x26c | 難易度倍率 |
+| +0x284 / +0x288 | AV 取得（0x41 = 武器種別、8 = HP 最大） |
+| +0x2c0 / +0x2c4 | HP 更新通知 / HP 変動 |
+| +0x2c8 | 死亡関連 |
+| +0x2d4 | ダメージ効果適用（`FUN_005e46c0`） |
+| +0x304 | 死亡通知 |
+| +0x308 | 死亡処理 |
+| +0x330 | 遮蔽／ターゲット |
+| +0x348 | アーマー値 |
+| +0x34c | ベースダメージ |
+| +0x398 | 魔法ダメージ適用 |
+| +0x39c | 効果 |
+| +0x3a8 | 通知 |
+| +0x3ac | ダメージ入口（`FUN_005febf0`） |
+| +0x3b4 | ノックバック |
+| +0x44c | 条件チェック |
+
+AV（Actor Value）index の解釈：0 = 体力、3 = 魔法、7 = 攻撃力、8 = HP（最大）、0xf = 疲労、
+0x10 = 速度、0x11 = レベル、0x3b = 反射、0x41 = 武器種別／品質。
+
+### 41.4 難易度倍率 `FUN_005e2560`（§33.1.3 の再確認と Android 実装値の訂正）
+
+```
+fVar2 = *(float*)(DAT_00b333c4 + 0x734) * _DAT_00b37b88;   // × 10.0
+if (playerDifficulty <= 0)
+    fVar2 = fVar2 + 1.0;
+else
+    fVar2 = 1.0 / ABS(fVar2 - 1.0);
+```
+- `DAT_00b333c4` = プレイヤー、`+0x734` = 難易度設定値（0..1 のスライダー実値想定）。
+- `_DAT_00b37b88` = 10.0f。
+- 呼出元 3 件：`FUN_00699eb0` / `FUN_006a86f0` / `FUN_005e58f0`。
+
+**Android 移植向け確定値（重要・訂正）**：
+現行移植コードの暫定式 `pow(6, (d - 50) / 50)` は**オリジナルと一致しない**。
+オリジナルは「難易度スライダー実値（0..1）」を 10 倍した値 `x` に対し、
+- `x <= 0`（最低難易度側）→ 倍率 = `x + 1.0`
+- それ以外 → 倍率 = `1.0 / ABS(x - 1.0)`
+
+の 2 分岐。UI の 0..100 スライダーを使う場合は `x = slider / 100.0 * 10.0` として同じ式へ通す。
+
+### 41.5 魔法・遠距離の入口（§33.1.4 の補強）
+
+- 魔法ダメージの共通適用先は `Actor::ApplyDamageEffect` = vtable +0x2d4 = `0x005e46c0`。
+  `FUN_005febf0` の段 11 から `(vtable+0x398)(...)` 経由で到達する。
+- 反射・呪文の直接適用は 41.2 の `FUN_005f3870`。
+- 遠距離（弓）の命中判定は `FUN_0041df00` のレイキャスト（§33.1.4 記載）＋段 12 の HP 比例判定。
+- 生存中も `FUN_00488830`（41.1.2）が最終書込点になるため、**Android 側は
+  「近接 / 魔法 / 遠距離」いずれの経路でも HP 書込を 1 箇所（`FUN_00488830` 相当）へ集約**すれば一致する。
+
+### 41.6 Android 移植向け確定値（§41 のまとめ）
+
+1. **HP 読み書きの共通 API を新設**：
+   - `GetHealth(actor)` = `FUN_00484850(actor, 0)`
+   - `GetHealthPercent(actor)` = `FUN_00484850(actor, 1)`（0..100）
+   - `SetHealth(actor, value)` = `FUN_00488830(actor, value, ...)`（被弾タイマーリスト管理を含む）
+2. **呪文／反射ダメージ式**：`damage = coefficient * baseDamage`、`HP = max(0, HP - damage)`。
+   係数は実行時グローバル（`DAT_00b35464`）で、静解析では 0.0 初期値のみ。
+3. **難易度倍率**：§41.4 の 2 分岐式へ差し替え（`pow(6, ...)` を廃止）。
+4. **死亡処理**：HP が 1.0 未満へクランプされた時点で vtable +0x2c8 → `FUN_004dc000`。
+   プレイヤー自身（`DAT_00b333c4`）への反射は除外。
+5. **NPC → プレイヤーの経路は新設が必要**（§33.1.5 と同一）。NPC の `FUN_005febf0` /
+   `FUN_005f3870` 相当から対象をプレイヤーにして呼ぶ形にする。
+6. **アーマー軽減は `1 - AV(0x348)/100` を上限 `_DAT_00b36ea0` でクランプ**し、
+   ダメージ式の乗算段（段 9）に適用（§33.1.2 の式と同じ）。
+
+### 41.7 残課題（§41）
+
+- `DAT_00b35464`（ダメージ係数グローバル）の**書き込み元関数が未特定**。
+  静的初期化領域外のため実行時書込。候補は GMST ロード経路（`FUN_005480a0` の
+  テーブル `0xb37620`〜`0xb37668` 書き込みと同一系の可能性）。
+- `FUN_004842f0`（`FUN_00484850` 内から呼ばれる丸め／クランプ関数）の挙動未確定。
+- AV index 4 / 0xf の厳密な意味（出血／疲労のいずれか）は未確定。
+- `FUN_00468ff0(0xd, 0)` の種別 0xd の意味（死亡判定の前提状態）未確定。
+- `0x00b3b908`（ダメージログ有効化フラグ）の設定元未確定（デバッグ設定と推定）。
+
+---

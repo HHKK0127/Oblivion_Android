@@ -25,6 +25,7 @@
 #include "../ui/video_display_ui.h"
 #include "../ui/controls_options_ui.h"
 #include "../ui/ui_pause_menu.h"
+#include "../ui/ui_message_box.h"
 #include "../ui/game_console.h"
 #include "../ui/debug_menu.h"
 #include "../ui/npc_debug_visualizer.h"
@@ -130,6 +131,7 @@ private:
     std::unique_ptr<VideoDisplayUI> videoDisplayUI;
     std::unique_ptr<ControlsOptionsUI> controlsOptionsUI;
     std::unique_ptr<UIPauseMenu> uiPauseMenu;
+    std::unique_ptr<UIMessageBox> uiMessageBox;
     std::unique_ptr<GameConsole> gameConsole;
     std::unique_ptr<DebugMenu> debugMenu;
     std::unique_ptr<NpcDebugVisualizer> npcDebugVisualizer;
@@ -382,6 +384,16 @@ public:
     // physics and AI updates are suppressed while it is true.
     bool anyMenuOpen() const;
 
+    // MessageMenu (0x3e9): modal message panel built from the original
+    // message_menu.xml. Empty text falls back to sDefaultMessage and an empty option
+    // list to a single sOk button; the callback receives the activated option's index
+    // (0 = sYes, 1 = sNo), matching the original button array order.
+    void showMessage(const std::string& text,
+                     const std::vector<std::string>& optionLabels = {},
+                     std::function<void(int)> callback = nullptr);
+    void closeMessage();
+    bool isMessageBoxVisible() const { return uiMessageBox && uiMessageBox->isVisible(); }
+
     // HUD System
     HUDRenderer* getHUDRenderer() { return hudRenderer.get(); }
     UIHudCompass* getHUDCompass() { return hudCompass.get(); }
@@ -409,6 +421,7 @@ public:
     void pumpVideoDisplay();
     void pumpControlsOptions();
     void pumpPauseMenu();
+    void pumpMessageBox();
     // Uploads every Oblivion font face the shipped menus can reference. Render
     // thread only (allocates GL textures); call once the context is current.
     // Idempotent: the second caller (launcher auto-skip) must not upload again.

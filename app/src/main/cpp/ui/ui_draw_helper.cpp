@@ -434,6 +434,71 @@ void UIDrawHelper::drawTexturedQuad(float x, float y, float w, float h,
     glBindVertexArray(0);
 }
 
+namespace {
+
+// Data\Menus\prefabs\generic_background.xml: _border_thickness 44, tiles 64 px on the
+// axis each border spans. Only the first 45 px of a tile carry the bevel (rows/cols
+// 0..44); the rest is padding, and the bottom/right tiles append a soft drop shadow.
+// Sampling 0..1 would stretch that padding into the panel and open a transparent seam
+// between the border and the centre, so every slice samples exactly its painted span.
+constexpr float kGenericBorder = 44.0f;
+constexpr float kGenericTileAxis = 64.0f;
+constexpr float kGenericSolidAxis = 45.0f;   // bevel, all tiles
+constexpr float kGenericBottomAxis = 52.0f;  // bottom tiles: bevel + 7 px shadow
+constexpr float kGenericRightAxis = 51.0f;   // right tiles: bevel + 6 px shadow
+
+}  // namespace
+
+void UIDrawHelper::drawGenericBackground(const GLuint slices[9],
+                                         float x, float y, float w, float h,
+                                         int screenW, int screenH) {
+    const glm::vec4 white(1.0f);
+    const float solid = kGenericBorder;
+    const float solidU = kGenericSolidAxis / kGenericTileAxis;
+    const float bottomV = kGenericBottomAxis / kGenericTileAxis;
+    const float rightU = kGenericRightAxis / kGenericTileAxis;
+    // The bevel keeps the authored 44 px thickness; the shadow spans are scaled by the
+    // same ratio so the shadow keeps its authored width instead of being stretched.
+    const float bottomSpan = solid * kGenericBottomAxis / kGenericSolidAxis;
+    const float rightSpan = solid * kGenericRightAxis / kGenericSolidAxis;
+
+    if (slices[0] != 0) {
+        drawTexturedQuad(x, y, w, h, slices[0], white, screenW, screenH);
+    }
+    if (slices[1] != 0) {
+        drawTexturedQuad(x, y - solid, w, solid, slices[1], white, screenW, screenH,
+                         0.0f, 0.0f, 1.0f, solidU);
+    }
+    if (slices[2] != 0) {
+        drawTexturedQuad(x, y + h, w, bottomSpan, slices[2], white, screenW, screenH,
+                         0.0f, 0.0f, 1.0f, bottomV);
+    }
+    if (slices[3] != 0) {
+        drawTexturedQuad(x - solid, y, solid, h, slices[3], white, screenW, screenH,
+                         0.0f, 0.0f, solidU, 1.0f);
+    }
+    if (slices[4] != 0) {
+        drawTexturedQuad(x + w, y, rightSpan, h, slices[4], white, screenW, screenH,
+                         0.0f, 0.0f, rightU, 1.0f);
+    }
+    if (slices[5] != 0) {
+        drawTexturedQuad(x - solid, y - solid, solid, solid, slices[5], white, screenW,
+                         screenH, 0.0f, 0.0f, solidU, solidU);
+    }
+    if (slices[6] != 0) {
+        drawTexturedQuad(x + w, y - solid, rightSpan, solid, slices[6], white, screenW,
+                         screenH, 0.0f, 0.0f, rightU, solidU);
+    }
+    if (slices[7] != 0) {
+        drawTexturedQuad(x - solid, y + h, solid, bottomSpan, slices[7], white, screenW,
+                         screenH, 0.0f, 0.0f, solidU, bottomV);
+    }
+    if (slices[8] != 0) {
+        drawTexturedQuad(x + w, y + h, rightSpan, bottomSpan, slices[8], white,
+                         screenW, screenH, 0.0f, 0.0f, rightU, bottomV);
+    }
+}
+
 void UIDrawHelper::drawBorder(float x, float y, float w, float h,
                               float borderWidth, const glm::vec4& color,
                               int screenW, int screenH) {

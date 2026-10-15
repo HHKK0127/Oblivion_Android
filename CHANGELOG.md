@@ -16,6 +16,21 @@ The current version is **0.9.10 (versionCode 910)**.
 ## [Unreleased]
 
 ### Added
+- **MessageMenu (`0x3e9`) is built from the original `Data\Menus\message_menu.xml`.** The old
+  `UIMessageBox` was dead code (nothing referenced it); it is now a self-contained modal panel
+  that draws the `generic_background` nine-slice body (700px wide, 44px tiled border), the
+  left-justified body text wrapped at 676px in the menu face and the engine's `rgb(117,59,33)`
+  text colour, and the option rows stacked with the XML's 10px gap using the shared
+  focused/idle colours. `visible=false` / `alpha=0` / `explorefade=0.25` become "hidden" and a
+  60% screen dim; the panel height is the XML's "last button bottom + 15" so the body is sized
+  by its content and centred like every other unattached menu. It is modal: `Renderer` offers it
+  touch, keys and Back ahead of the DebugMenu and console, draws it last, and `anyMenuOpen()` now
+  reports it so the world stick, crosshair and physics stay suppressed while it is up (RE `§30.1`).
+  `Renderer::showMessage()` / `closeMessage()` are the entry points; the console gained
+  `message <text>[|option1|option2]` and the DebugMenu System tab three verification buttons.
+  Empty text falls back to `sDefaultMessage` and an empty option list to a single `sOk`, as the
+  original does for an unspecified button array; the callback receives the option index
+  (0 = `sYes`, 1 = `sNo`).
 - **The inventory menu is the original's InventoryMenu, rebuilt from its XML (RE `§31`/`§32.4`).**
   `UIInventoryPanel` is no longer an ad-hoc list: it follows `Main\inventory_menu.xml` and the
   shared `vertical_scroll.xml` / `focus_box.xml` prefabs. The sheet is anchored the way the XML
@@ -38,13 +53,6 @@ The current version is **0.9.10 (versionCode 910)**.
     `focus_box` prefab's two-piece frame.
   - New textures under `assets/textures/ui/menus/`: the twelve `shared__*` sheets and the
     eleven `focus__*` frame pieces. `inventory\*.png` and `icons\*.png` were already present.
-- **The pause menu fades in and out as the original's `menufade` does (RE `§33.3`).** `UIPauseMenu`
-  gained `fadeProgress`, a 0..1 ramp driven at the original's 0.25 s `menufade` duration, and
-  `update(dt)` advances it toward the visibility target. Every part of the menu - the dim quad,
-  the 9 border pieces, the focused-row highlight pair, the blue decor and all text - is scaled by
-  the ramp, and `Renderer` keeps drawing while `isVisible() || isFading()` so the fade-out is not
-  cut short. `open(false)` / `close(false)` are used for Save / Load / Options transitions, which
-  in the original are instantaneous swaps rather than a close-then-open fade pair.
 - **The pause menu is the original's PauseMenu, not an ad-hoc list.** `UIPauseMenu` was rebuilt
   from `options\pause_menu.xml`: a 240x400 `generic_background` body centred on the screen with
   the 44px tiled border drawn around it, the blue decor pair at x=30 / y=26, the `_paused`
@@ -215,6 +223,29 @@ The current version is **0.9.10 (versionCode 910)**.
   the longer ceiling costs no wall clock time.
 
 ### Fixed
+- **Every generic menu background drew a transparent seam between its border and its body, with the bevel squeezed to two thirds of its authored size.**
+  The `generic_background` prefab tiles are 64 px on the axis each border spans, but only
+  rows/cols 0..44 carry the bevel; the remaining rows are padding, and the bottom and right
+  tiles append a 7 px / 6 px drop shadow. Six panels (`UIMessageBox`, `OptionsUI`,
+  `AudioOptionsUI`, `GameplayOptionsUI`, `ControlsOptionsUI`, `VideoOptionsUI`) and `UIPauseMenu`
+  each re-implemented the same nine-slice draw with `UV 0..1`, which stretched that padding into
+  the panel: the border sat ~13 px away from the body over a strip of dimmed world, and the
+  visible bevel shrank by 44/64. `UIDrawHelper::drawGenericBackground()` now owns the nine-slice -
+  each slice samples exactly its painted span and the shadow spans keep their authored width -
+  and every one of those seven panels calls it, so the border no longer carries a per-panel copy
+  of the geometry.
+- **`Renderer::cleanup()` had been silently gutted, so teardown released almost nothing.**
+  Commit `9c4af384` (Phase 64) inserted a `// ... existing code ...` placeholder, closed
+  `cleanup()` right after the Phase 47 block and moved the entire Phase 50+ teardown into a new
+  `Renderer::onTrimMemory()` - a method that no caller invokes. The file still compiled (the
+  braces eventually balanced), so the regression shipped: `UIDrawHelper`, `UISystem`, `MapSystem`,
+  `EquipmentManager`, `InventoryGrid`, `RetroFilter`, `UIPauseMenu`, `TextRenderer`,
+  `QuestManager`, `CombatManager`, `SpellManager`, `PlayerController`, `InventoryManager`,
+  `AssetManager`, `WorldManager`, `LocalizationManager` and `AudioManager` all survived an
+  EGL-surface or activity teardown holding live GL handles, which is a plausible contributor to
+  the stray yellow bar drawn over the title/load screens. `cleanup()` now runs the full teardown
+  again, `onTrimMemory()` only forwards to the profiler dashboard, and the message box is
+  released alongside the other panels.
 - **The pause menu's "Paused" caption and every other Oblivion face were never uploaded.**
   `Renderer` auto-loaded only `KingthingsRegular` and `KingthingsShadowed` at startup, so the
   three remaining faces (`Daedric`, `Handwritten`, `TahomaBoldSmall`) had no atlas until the

@@ -1,262 +1,417 @@
 #include "ui_message_box.h"
-#include "placeholder_assets.h"
-#include "ui_draw_helper.h"
-#include <GLES3/gl3.h>
-#include <cstdio>
+
 #include <algorithm>
+#include <cstddef>
 
-UIMessageBox::UIMessageBox(const std::string& title)
-    : UIPanel(title.empty() ? "Message" : title) {
-    // Gold/cream parchment style for important messages
-    setBackgroundColor(glm::vec4(
-        PlaceholderAssets::Colors::PARCHMENT_LIGHT.x * 0.95f,
-        PlaceholderAssets::Colors::PARCHMENT_LIGHT.y * 0.9f,
-        PlaceholderAssets::Colors::PARCHMENT_LIGHT.z * 0.8f, 0.98f));
-    setBorderColor(glm::vec4(
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.x,
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.y,
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.z, 1.0f));
-    setBorderWidth(3.0f);
-    setTitleBarColor(glm::vec4(0.2f, 0.15f, 0.1f, 0.85f));
-    setCloseButtonVisible(false);
-    setDraggable(false);
-}
+#include <android/log.h>
 
-bool UIMessageBox::initialize(TextRenderer* tr) {
-    if (!tr) return false;
-    textRenderer = tr;
-    return UIPanel::initialize();
-}
+#include "../engine/texture_loader.h"
+#include "ui_draw_helper.h"
 
-void UIMessageBox::queueMessage(const Message& msg) {
-    messageQueue_.push(msg);
-    if (currentMessage_ == nullptr && !messageQueue_.empty()) {
-        displayNextMessage();
+#undef LOG_TAG
+#undef LOGD
+#undef LOGI
+#undef LOGE
+#define LOG_TAG "UIMessageBox"
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+
+namespace {
+
+// Values from Data\Menus\message_menu.xml and the generic_background prefab:
+// background width 700, _border_thickness 44, text wrapwidth = 700 - 24,
+// text y = 15, first button y = text height + 30, button gap = 10, bottom pad = 15.
+constexpr float BODY_WIDTH = 700.0f;
+constexpr float TEXT_TOP = 15.0f;
+constexpr float TEXT_WRAP_INSET = 24.0f;
+constexpr float TEXT_TO_BUTTONS = 30.0f;
+constexpr float BUTTON_GAP = 10.0f;
+constexpr float BUTTON_BOTTOM_PAD = 15.0f;
+constexpr float BUTTON_LABEL_Y = 4.0f;
+constexpr float LABEL_SCALE = 1.0f;
+constexpr float DIM_ALPHA = 0.6f;
+// Touch-only affordance: the gap between rows is 10 px, so the active area of a row
+// is grown by half of it plus a little horizontal slack.
+constexpr float BUTTON_TOUCH_PAD_Y = BUTTON_GAP * 0.5f;
+constexpr float BUTTON_TOUCH_PAD_X = 12.0f;
+
+// XML <font> on message_text is absent, so the menu default face applies.
+constexpr FontType MESSAGE_FONT = FontType::KingthingsRegular;
+
+// Engine default menu text colour (RE report: rgb(117,59,33)); idle matches the
+// colour used by the other menu panels for unselected rows.
+const glm::vec4 kFocusedText(117.0f / 255.0f, 59.0f / 255.0f, 33.0f / 255.0f, 1.0f);
+const glm::vec4 kIdleText(128.0f / 255.0f, 128.0f / 255.0f, 128.0f / 255.0f, 196.0f / 255.0f);
+
+// MessageMenu defaults, from the string table keys sDefaultMessage and sOk.
+const char* const DEFAULT_MESSAGE = "DEFAULT MESSAGE TEXT";
+const char* const DEFAULT_OPTION = "Ok";
+
+// Switches the text face for one scope, then restores the previous face.
+class FontScope {
+public:
+    FontScope(TextRenderer* renderer, FontType type)
+        : renderer_(renderer), previous_(renderer->getActiveFont()) {
+        renderer_->setActiveFont(type);
     }
+    ~FontScope() {
+        renderer_->setActiveFont(previous_);
+    }
+
+private:
+    TextRenderer* renderer_;
+    FontType previous_;
+};
+
+std::string trimSpaces(const std::string& s) {
+    size_t begin = 0;
+    size_t end = s.size();
+    while (begin < end && (s[begin] == ' ' || s[begin] == '\t' || s[begin] == '\r')) {
+        ++begin;
+    }
+    while (end > begin &&
+           (s[end - 1] == ' ' || s[end - 1] == '\t' || s[end - 1] == '\r')) {
+        --end;
+    }
+    return s.substr(begin, end - begin);
 }
 
-void UIMessageBox::displayNextMessage() {
-    if (messageQueue_.empty()) {
-        currentMessage_ = nullptr;
-        setVisible(false);
+// Start offset of every UTF-8 codepoint, so wrapping never splits a character.
+std::vector<size_t> utf8Offsets(const std::string& s) {
+    std::vector<size_t> offsets;
+    for (size_t i = 0; i < s.size();) {
+        offsets.push_back(i);
+        const unsigned char c = static_cast<unsigned char>(s[i]);
+        size_t len = 1;
+        if ((c & 0xE0) == 0xC0) {
+            len = 2;
+        } else if ((c & 0xF0) == 0xE0) {
+            len = 3;
+        } else if ((c & 0xF8) == 0xF0) {
+            len = 4;
+        }
+        i += std::min(len, s.size() - i);
+    }
+    return offsets;
+}
+
+// Width based word wrap; long words (and CJK runs, which carry no spaces) are broken
+// between codepoints. text_renderer has no wrap helper of its own.
+void appendWrappedParagraph(TextRenderer* renderer, const std::string& paragraph,
+                            float maxWidth, float scale, std::vector<std::string>& out) {
+    const std::vector<size_t> offsets = utf8Offsets(paragraph);
+    const size_t count = offsets.size();
+    if (count == 0) {
+        out.push_back(std::string());
         return;
     }
 
-    // Move the first message from queue to current
-    static Message current("", "");  // Static to persist
-    current = messageQueue_.front();
-    messageQueue_.pop();
-    currentMessage_ = &current;
+    size_t start = 0;
+    while (start < count) {
+        size_t i = start;
+        size_t lastSpace = std::string::npos;
+        while (i < count) {
+            const size_t end = (i + 1 < count) ? offsets[i + 1] : paragraph.size();
+            const float width =
+                renderer->getTextWidth(paragraph.substr(offsets[start], end - offsets[start]), scale);
+            if (width > maxWidth && i > start) {
+                break;
+            }
+            if (paragraph[offsets[i]] == ' ') {
+                lastSpace = i;
+            }
+            ++i;
+        }
 
-    setVisible(true);
+        if (i >= count) {
+            out.push_back(trimSpaces(paragraph.substr(offsets[start])));
+            break;
+        }
+
+        const bool breakAtSpace = (lastSpace != std::string::npos && lastSpace > start);
+        size_t cut = breakAtSpace ? lastSpace : i;
+        if (cut <= start) {
+            cut = start + 1;  // single codepoint wider than the wrap width
+        }
+        out.push_back(trimSpaces(paragraph.substr(offsets[start], offsets[cut] - offsets[start])));
+
+        if (breakAtSpace) {
+            ++cut;  // consume the space we broke on
+        }
+        start = cut;
+        while (start < count && paragraph[offsets[start]] == ' ') {
+            ++start;
+        }
+    }
 }
 
-void UIMessageBox::dismissCurrentMessage(bool confirmed) {
-    if (currentMessage_ && currentMessage_->callback) {
-        currentMessage_->callback(confirmed);
-    }
-    displayNextMessage();
+}  // namespace
+
+UIMessageBox::UIMessageBox() = default;
+
+UIMessageBox::~UIMessageBox() {
+    cleanup();
 }
 
-void UIMessageBox::update(float deltaTime) {
-    UIPanel::update(deltaTime);
-}
-
-bool UIMessageBox::onTouchDown(float x, float y, int pointerId) {
-    if (!isVisible() || !isEnabled()) return false;
-    if (!currentMessage_) return false;
-
-    int buttonIdx = hitTestButton(x, y);
-    if (buttonIdx == 0) {  // First button (OK or Yes)
-        dismissCurrentMessage(true);
-        return true;
+bool UIMessageBox::initialize(TextRenderer* renderer) {
+    if (!renderer) {
+        LOGE("Error: TextRenderer is null");
+        return false;
     }
-    if (buttonIdx == 1) {  // Second button (No or Cancel)
-        dismissCurrentMessage(false);
-        return true;
+    textRenderer = renderer;
+
+    if (bgCenterTexture == 0) {
+        const std::string dir = "textures/ui/menus/";
+        bgCenterTexture =
+            TextureLoader::loadTextureFromAsset(dir + "genericbackground__center_background.png");
+        bgEdgeTopTexture = TextureLoader::loadTextureFromAsset(dir + "genericbackground__edge_top.png");
+        bgEdgeBottomTexture =
+            TextureLoader::loadTextureFromAsset(dir + "genericbackground__edge_bottom.png");
+        bgEdgeLeftTexture = TextureLoader::loadTextureFromAsset(dir + "genericbackground__edge_left.png");
+        bgEdgeRightTexture =
+            TextureLoader::loadTextureFromAsset(dir + "genericbackground__edge_right.png");
+        bgCornerTLTexture =
+            TextureLoader::loadTextureFromAsset(dir + "genericbackground__top_left_corner.png");
+        bgCornerTRTexture =
+            TextureLoader::loadTextureFromAsset(dir + "genericbackground__top_right_corner.png");
+        bgCornerBLTexture =
+            TextureLoader::loadTextureFromAsset(dir + "genericbackground__bottom_left_corner.png");
+        bgCornerBRTexture =
+            TextureLoader::loadTextureFromAsset(dir + "genericbackground__bottom_right_corner.png");
     }
 
+    LOGI("UIMessageBox initialized");
     return true;
 }
 
+void UIMessageBox::cleanup() {
+    for (GLuint* tex : {&bgCenterTexture, &bgEdgeTopTexture, &bgEdgeBottomTexture,
+                        &bgEdgeLeftTexture, &bgEdgeRightTexture, &bgCornerTLTexture,
+                        &bgCornerTRTexture, &bgCornerBLTexture, &bgCornerBRTexture}) {
+        if (*tex != 0) {
+            TextureLoader::deleteTexture(*tex);
+            *tex = 0;
+        }
+    }
+    textRenderer = nullptr;
+    visible = false;
+}
+
+void UIMessageBox::setScreenSize(int width, int height) {
+    screenWidth = width;
+    screenHeight = height;
+}
+
+void UIMessageBox::open(const std::string& body, const std::vector<std::string>& optionLabels,
+                        Callback callback) {
+    text = body.empty() ? std::string(DEFAULT_MESSAGE) : body;
+    this->optionLabels = optionLabels;
+    if (this->optionLabels.empty()) {
+        this->optionLabels.push_back(DEFAULT_OPTION);
+    }
+    this->callback = std::move(callback);
+
+    bodyLines.clear();
+    buttonRects.clear();
+    lineHeight = 0.0f;
+    textBlockHeight = 0.0f;
+    panelHeight = 0.0f;
+    focusIndex = 0;
+    hasSelection = false;
+    pendingSelection = 0;
+    visible = true;
+}
+
+void UIMessageBox::close() {
+    // hasSelection is deliberately kept: pumpMessageBox() closes the menu before it
+    // dispatches, so the callback still sees the option the player activated.
+    visible = false;
+}
+
+UIMessageBox::Rect UIMessageBox::bodyRect() const {
+    const float height = (panelHeight > 0.0f) ? panelHeight : 100.0f;
+    return {(static_cast<float>(screenWidth) - BODY_WIDTH) * 0.5f,
+            (static_cast<float>(screenHeight) - height) * 0.5f, BODY_WIDTH, height};
+}
+
+void UIMessageBox::layout() {
+    if (!textRenderer) {
+        return;
+    }
+
+    lineHeight = textRenderer->getTextHeight(LABEL_SCALE);
+    if (lineHeight <= 0.0f) {
+        lineHeight = 1.0f;
+    }
+
+    bodyLines.clear();
+    const float wrapWidth = BODY_WIDTH - TEXT_WRAP_INSET;
+    std::string paragraph;
+    for (size_t i = 0; i <= text.size(); ++i) {
+        if (i == text.size() || text[i] == '\n') {
+            appendWrappedParagraph(textRenderer, paragraph, wrapWidth, LABEL_SCALE, bodyLines);
+            paragraph.clear();
+        } else {
+            paragraph.push_back(text[i]);
+        }
+    }
+    if (bodyLines.empty()) {
+        bodyLines.push_back(std::string());
+    }
+
+    textBlockHeight = lineHeight * static_cast<float>(bodyLines.size());
+
+    // message_menu.xml sets the background height (user1) to "last button bottom + 15",
+    // and the first button to "text height + 30". Resolve it before the body rect so the
+    // background, the text and the buttons all use the same origin in one frame.
+    const float buttonsHeight =
+        optionLabels.empty()
+            ? 0.0f
+            : static_cast<float>(optionLabels.size()) * (lineHeight + BUTTON_GAP) - BUTTON_GAP;
+    panelHeight = TEXT_TOP + textBlockHeight + BUTTON_BOTTOM_PAD;
+    if (!optionLabels.empty()) {
+        panelHeight += TEXT_TO_BUTTONS + buttonsHeight;
+    }
+
+    const Rect body = bodyRect();
+    buttonRects.clear();
+    float y = body.y + TEXT_TOP + textBlockHeight + TEXT_TO_BUTTONS;
+    for (size_t i = 0; i < optionLabels.size(); ++i) {
+        const float width = textRenderer->getTextWidth(optionLabels[i], LABEL_SCALE);
+        Rect r;
+        r.w = width;
+        r.h = lineHeight;
+        r.x = body.x + (BODY_WIDTH - width) * 0.5f;
+        r.y = y;
+        buttonRects.push_back(r);
+        y += lineHeight + BUTTON_GAP;
+    }
+}
+
+void UIMessageBox::renderBackground(const Rect& b) {
+    const GLuint slices[9] = {
+        bgCenterTexture, bgEdgeTopTexture, bgEdgeBottomTexture, bgEdgeLeftTexture,
+        bgEdgeRightTexture, bgCornerTLTexture, bgCornerTRTexture, bgCornerBLTexture,
+        bgCornerBRTexture};
+    UIDrawHelper::drawGenericBackground(slices, b.x, b.y, b.w, b.h, screenWidth,
+                                        screenHeight);
+}
+
 void UIMessageBox::render() {
-    if (!isVisible() || !currentMessage_) return;
+    if (!visible || !textRenderer) {
+        return;
+    }
 
-    GLboolean depthTestEnabled;
-    glGetBooleanv(GL_DEPTH_TEST, &depthTestEnabled);
+    // 2D overlay: ignore depth left over from the 3D passes
     glDisable(GL_DEPTH_TEST);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    UIPanel::render();
+    FontScope font(textRenderer, MESSAGE_FONT);
+    layout();
 
-    renderTypeIndicator();
-    renderMessageDialog();
-    renderButtons();
+    // The root carries alpha 0 and an explorefade of 0.25, so the world behind the
+    // panel is faded out while the message owns the screen.
+    UIDrawHelper::drawColoredQuad(0.0f, 0.0f, static_cast<float>(screenWidth),
+                                  static_cast<float>(screenHeight),
+                                  glm::vec4(0.0f, 0.0f, 0.0f, DIM_ALPHA), screenWidth,
+                                  screenHeight);
 
-    if (depthTestEnabled) glEnable(GL_DEPTH_TEST);
-}
+    const Rect body = bodyRect();
+    renderBackground(body);
 
-void UIMessageBox::renderTypeIndicator() {
-    if (!textRenderer || !currentMessage_) return;
-
-    glm::vec2 cp = getContentPosition();
-    float indicatorW = 6.0f;
-    float indicatorH = getDialogHeight() - 20.0f;
-
-    // Left color bar indicating message type
-    glm::vec3 typeColor = getTypeColor();
-    UIDrawHelper::drawColoredQuad(cp.x + 8.0f, cp.y + 10.0f, indicatorW, indicatorH,
-        glm::vec4(typeColor.x, typeColor.y, typeColor.z, 1.0f),
-        screenWidth, screenHeight);
-}
-
-void UIMessageBox::renderMessageDialog() {
-    if (!textRenderer || !currentMessage_) return;
-
-    glm::vec2 cp = getContentPosition();
-    float dx = getDialogX();
-    float dy = getDialogY();
-    float dw = getDialogWidth();
-
-    // Title
-    float ty = dy + 10.0f;
-    textRenderer->renderText(currentMessage_->title,
-        dx + 20.0f, ty,
-        glm::vec3(0.0f, 0.0f, 0.0f), 0.8f);
-
-    // Message text (word-wrapped)
-    float my = ty + 35.0f;
-    textRenderer->renderText(currentMessage_->text,
-        dx + 20.0f, my,
-        glm::vec3(0.1f, 0.08f, 0.06f), 0.65f);
-}
-
-void UIMessageBox::renderButtons() {
-    if (!textRenderer || !currentMessage_) return;
-
-    glm::vec2 cp = getContentPosition();
-    float by = getButtonY();
-    float buttonW = 90.0f;
-    float buttonH = 34.0f;
-    float spacing = 20.0f;
-
-    // Calculate button positions based on type
-    float button1X, button2X;
-    const char* button1Text = "OK";
-    const char* button2Text = "Cancel";
-
-    switch (currentMessage_->buttons) {
-    case OK:
-        button1X = getDialogX() + getDialogWidth() / 2.0f - buttonW / 2.0f;
-        button1Text = "OK";
-        button2Text = nullptr;
-        break;
-    case YES_NO:
-        button1X = getDialogX() + getDialogWidth() / 2.0f - buttonW - spacing / 2.0f;
-        button2X = getDialogX() + getDialogWidth() / 2.0f + spacing / 2.0f;
-        button1Text = "Yes";
-        button2Text = "No";
-        break;
-    case OK_CANCEL:
-        button1X = getDialogX() + getDialogWidth() / 2.0f - buttonW - spacing / 2.0f;
-        button2X = getDialogX() + getDialogWidth() / 2.0f + spacing / 2.0f;
-        button1Text = "OK";
-        button2Text = "Cancel";
-        break;
+    // message_text is a left justified block centred on the panel.
+    float blockWidth = 0.0f;
+    for (const std::string& line : bodyLines) {
+        blockWidth = std::max(blockWidth, textRenderer->getTextWidth(line, LABEL_SCALE));
+    }
+    const float textX = body.x + (BODY_WIDTH - blockWidth) * 0.5f;
+    for (size_t i = 0; i < bodyLines.size(); ++i) {
+        textRenderer->renderText(bodyLines[i], textX,
+                                 body.y + TEXT_TOP + lineHeight * static_cast<float>(i),
+                                 kFocusedText, LABEL_SCALE);
     }
 
-    // Draw first button
-    PlaceholderAssets::drawPanel(button1X, by, buttonW, buttonH,
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT,
-        glm::vec3(PlaceholderAssets::Colors::GOLD_HIGHLIGHT));
-    textRenderer->renderText(button1Text,
-        button1X + 15.0f, by + 6.0f,
-        glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT), 0.7f);
-
-    // Draw second button if needed
-    if (button2Text != nullptr) {
-        PlaceholderAssets::drawPanel(button2X, by, buttonW, buttonH,
-            PlaceholderAssets::Colors::BROWN_ACCENT,
-            glm::vec3(PlaceholderAssets::Colors::GOLD_HIGHLIGHT));
-        textRenderer->renderText(button2Text,
-            button2X + 10.0f, by + 6.0f,
-            glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT), 0.7f);
+    for (size_t i = 0; i < buttonRects.size(); ++i) {
+        const Rect& r = buttonRects[i];
+        const bool focused = (static_cast<int>(i) == focusIndex);
+        textRenderer->renderText(optionLabels[i], r.x, r.y + BUTTON_LABEL_Y,
+                                 focused ? kFocusedText : kIdleText, LABEL_SCALE);
     }
 }
-
-// ─── hit testing ──────────────────────────────────────────────────────────────
 
 int UIMessageBox::hitTestButton(float x, float y) const {
-    if (!currentMessage_) return -1;
-
-    float by = getButtonY();
-    float buttonW = 90.0f;
-    float buttonH = 34.0f;
-    float spacing = 20.0f;
-
-    float button1X;
-    switch (currentMessage_->buttons) {
-    case OK:
-        button1X = getDialogX() + getDialogWidth() / 2.0f - buttonW / 2.0f;
-        if (x >= button1X && x <= button1X + buttonW &&
-            y >= by && y <= by + buttonH) {
-            return 0;
+    for (size_t i = 0; i < buttonRects.size(); ++i) {
+        const Rect& r = buttonRects[i];
+        if (x >= r.x - BUTTON_TOUCH_PAD_X && x <= r.x + r.w + BUTTON_TOUCH_PAD_X &&
+            y >= r.y - BUTTON_TOUCH_PAD_Y && y <= r.y + r.h + BUTTON_TOUCH_PAD_Y) {
+            return static_cast<int>(i);
         }
-        break;
-    case YES_NO:
-    case OK_CANCEL:
-        button1X = getDialogX() + getDialogWidth() / 2.0f - buttonW - spacing / 2.0f;
-        float button2X = getDialogX() + getDialogWidth() / 2.0f + spacing / 2.0f;
-
-        if (x >= button1X && x <= button1X + buttonW &&
-            y >= by && y <= by + buttonH) {
-            return 0;
-        }
-        if (x >= button2X && x <= button2X + buttonW &&
-            y >= by && y <= by + buttonH) {
-            return 1;
-        }
-        break;
     }
-
     return -1;
 }
 
-// ─── layout helpers ───────────────────────────────────────────────────────────
-
-float UIMessageBox::getDialogWidth() const {
-    return std::min(600.0f, screenWidth - 100.0f);
-}
-
-float UIMessageBox::getDialogHeight() const {
-    return 240.0f;
-}
-
-float UIMessageBox::getDialogX() const {
-    return (screenWidth - getDialogWidth()) / 2.0f;
-}
-
-float UIMessageBox::getDialogY() const {
-    return (screenHeight - getDialogHeight()) / 2.0f;
-}
-
-float UIMessageBox::getButtonY() const {
-    return getDialogY() + getDialogHeight() - 45.0f;
-}
-
-glm::vec3 UIMessageBox::getTypeColor() const {
-    if (!currentMessage_) return glm::vec3(0.5f, 0.5f, 0.5f);
-
-    switch (currentMessage_->type) {
-    case INFO:
-        return glm::vec3(0.2f, 0.4f, 0.8f);  // Blue
-    case SUCCESS:
-        return glm::vec3(0.2f, 0.7f, 0.2f);  // Green
-    case WARNING:
-        return glm::vec3(0.8f, 0.7f, 0.2f);  // Yellow
-    case ERROR:
-        return glm::vec3(0.8f, 0.2f, 0.2f);  // Red
+void UIMessageBox::activate(int index) {
+    if (index < 0 || index >= static_cast<int>(optionLabels.size())) {
+        return;
     }
-    return glm::vec3(0.5f, 0.5f, 0.5f);
+    focusIndex = index;
+    pendingSelection = index;
+    hasSelection = true;
+}
+
+bool UIMessageBox::hasPendingSelection() const {
+    return hasSelection;
+}
+
+int UIMessageBox::dispatchSelection() {
+    if (!hasSelection) {
+        return -1;
+    }
+    hasSelection = false;
+    if (callback) {
+        callback(pendingSelection);
+    }
+    return pendingSelection;
+}
+
+void UIMessageBox::onTouchEvent(float x, float y) {
+    if (!visible) {
+        return;
+    }
+    const int index = hitTestButton(x, y);
+    if (index >= 0) {
+        activate(index);
+    }
+}
+
+bool UIMessageBox::handleBack() {
+    if (!visible) {
+        return false;
+    }
+    // Back maps to the dismissing choice: the last option carries sNo / sCancel.
+    activate(static_cast<int>(optionLabels.size()) - 1);
+    return true;
+}
+
+bool UIMessageBox::onKeyPress(int keyCode) {
+    if (!visible) {
+        return false;
+    }
+    const int count = static_cast<int>(optionLabels.size());
+    switch (keyCode) {
+        case 19:  // DPAD_UP
+            focusIndex = (focusIndex + count - 1) % count;
+            return true;
+        case 20:  // DPAD_DOWN
+            focusIndex = (focusIndex + 1) % count;
+            return true;
+        case 23:  // DPAD_CENTER
+        case 66:  // ENTER
+            activate(focusIndex);
+            return true;
+        case 4:  // BACK
+            return handleBack();
+        default:
+            return false;
+    }
 }

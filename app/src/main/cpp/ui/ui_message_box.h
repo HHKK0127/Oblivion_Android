@@ -1,85 +1,98 @@
 #pragma once
 
-#include "ui_panel.h"
-#include "text_renderer.h"
-#include <memory>
+#include <GLES3/gl3.h>
+
 #include <functional>
-#include <queue>
+#include <string>
+#include <vector>
+
+#include <glm/glm.hpp>
+
+#include "text_renderer.h"
 
 /**
- * @brief Message box UI
+ * @brief MessageMenu (menu id 0x3e9) rebuilt from Data\Menus\message_menu.xml.
  *
- * Phase 14: In-game message display and user selection
- * Displays important notifications such as item acquisition, level up, quest completion
- * in parchment-style dialog
+ * Layout follows the original data:
+ *   - the body rect is 700 px wide and the engine centres it on the screen
+ *     (message_menu.xml defines neither x nor y),
+ *   - the generic_background prefab paints the 44 px border outside that rect,
+ *   - message_text wraps at background.user0 - 24 and sits 15 px below the top,
+ *   - buttons stack from "text bottom + 30" with a 10 px gap, each row centred,
+ *   - the panel height is the last button's bottom + 15,
+ *   - an empty body falls back to sDefaultMessage and an empty option list to sOk.
+ *
+ * The original draws invisible 256x256 placeholders for the buttons, so only the
+ * labels are visible; the focused row uses the shared menu text colours.
  */
-class UIMessageBox : public UIPanel {
+class UIMessageBox {
 public:
-    enum MessageType {
-        INFO = 0,      // Info (blue)
-        SUCCESS = 1,   // Success (green)
-        WARNING = 2,   // Warning (yellow)
-        ERROR = 3      // Error (red)
-    };
+    using Callback = std::function<void(int value)>;
 
-    enum ButtonType {
-        OK = 0,
-        YES_NO = 1,
-        OK_CANCEL = 2
-    };
+    UIMessageBox();
+    ~UIMessageBox();
 
-    using MessageCallback = std::function<void(bool confirmed)>;
+    bool initialize(TextRenderer* renderer);
+    void cleanup();
+    void setScreenSize(int width, int height);
 
-    struct Message {
-        std::string title;
-        std::string text;
-        MessageType type;
-        ButtonType buttons;
-        MessageCallback callback;
+    // Option values handed to the callback are the labels' indices (0-based), which
+    // matches the original data where option 0 is sYes and option 1 is sNo.
+    void open(const std::string& body, const std::vector<std::string>& optionLabels = {},
+              Callback callback = nullptr);
+    void close();
+    bool isVisible() const { return visible; }
 
-        Message(const std::string& t, const std::string& msg,
-                MessageType mt = INFO, ButtonType bt = OK,
-                MessageCallback cb = nullptr)
-            : title(t), text(msg), type(mt), buttons(bt), callback(cb) {}
-    };
+    void render();
+    void onTouchEvent(float x, float y);
+    bool onKeyPress(int keyCode);
+    bool handleBack();
 
-    explicit UIMessageBox(const std::string& title = "Message");
-    ~UIMessageBox() override = default;
-
-    bool initialize(TextRenderer* textRenderer);
-
-    // Queue a message to be displayed
-    void queueMessage(const Message& msg);
-
-    void update(float deltaTime) override;
-    bool onTouchDown(float x, float y, int pointerId) override;
-    void render() override;
-
-    void setScreenSize(int w, int h) { screenWidth = w; screenHeight = h; }
+    bool hasPendingSelection() const;
+    // Invokes the stored callback for the option activated since the last call and
+    // returns its index, or -1 when nothing was selected.
+    int dispatchSelection();
 
 private:
-    TextRenderer* textRenderer = nullptr;
-    std::queue<Message> messageQueue_;
-    Message* currentMessage_ = nullptr;
+    struct Rect {
+        float x = 0.0f;
+        float y = 0.0f;
+        float w = 0.0f;
+        float h = 0.0f;
+    };
 
-    int screenWidth  = 1080;
-    int screenHeight = 1920;
-
-    void displayNextMessage();
-    void dismissCurrentMessage(bool confirmed);
-
-    void renderMessageDialog();
-    void renderButtons();
-    void renderTypeIndicator();
-
+    Rect bodyRect() const;
+    void layout();
+    void renderBackground(const Rect& body);
     int hitTestButton(float x, float y) const;
+    void activate(int index);
 
-    // Layout helpers
-    float getDialogWidth() const;
-    float getDialogHeight() const;
-    float getDialogX() const;
-    float getDialogY() const;
-    float getButtonY() const;
+    TextRenderer* textRenderer = nullptr;
+    int screenWidth = 1920;
+    int screenHeight = 1080;
+    bool visible = false;
 
-    glm::vec3 getTypeColor() const;
+    std::string text;
+    std::vector<std::string> optionLabels;
+    Callback callback;
+
+    std::vector<std::string> bodyLines;
+    std::vector<Rect> buttonRects;
+    float lineHeight = 0.0f;
+    float textBlockHeight = 0.0f;
+    float panelHeight = 0.0f;
+
+    int focusIndex = 0;
+    bool hasSelection = false;
+    int pendingSelection = 0;
+
+    GLuint bgCenterTexture = 0;
+    GLuint bgEdgeTopTexture = 0;
+    GLuint bgEdgeBottomTexture = 0;
+    GLuint bgEdgeLeftTexture = 0;
+    GLuint bgEdgeRightTexture = 0;
+    GLuint bgCornerTLTexture = 0;
+    GLuint bgCornerTRTexture = 0;
+    GLuint bgCornerBLTexture = 0;
+    GLuint bgCornerBRTexture = 0;
 };

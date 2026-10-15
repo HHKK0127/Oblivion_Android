@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-14T19:39:44.031236",
+  "lastUpdated": "2026-10-15T03:36:35Z",
   "entries": [
     {
       "timestamp": "2026-09-16T14:58:00Z",
@@ -5666,9 +5666,9 @@
     {
       "id": "e194cb6e-0dde-4121-bd1f-83542e290a20",
       "timestamp": "2026-10-11T20:28:52.30542",
-      "category": "DLCShiveringIsles.esp は 85B の TES4 スタブ（CNAM=nmcdyer, MAST=Oblivion.esm）でレコード0件。Steam版では Shivering Isles 本体レコードは Oblivion.esm マスターに内包。SI esp の個別解析は不要。",
+      "category": "reference",
       "priority": "high",
-      "content": "reference",
+      "content": "DLCShiveringIsles.esp は 85B の TES4 スタブ（CNAM=nmcdyer, MAST=Oblivion.esm）でレコード0件。Steam版では Shivering Isles 本体レコードは Oblivion.esm マスターに内包。SI esp の個別解析は不要。",
       "tags": [
         "bsa",
         "dlc",
@@ -6674,21 +6674,6 @@
       "compressed": false
     },
     {
-      "id": "e6a0f0b0-fade-menufade-2026-10-14",
-      "timestamp": "2026-10-14T17:20:00Z",
-      "category": "decision",
-      "priority": "medium",
-      "content": "Pause menu open/close fade implemented from RE_EXE_REPORT 33.3 (menufade/explorefade). UIPauseMenu gained fadeProgress (0..1) ramped by update(dt) at FADE_DURATION=0.25s, the original fade node's default duration. The dim quad, 9 border pieces, the focused-row highlight pair, the blue decor and every text colour are scaled by the ramp, so both the dim and the widgets blend together. Renderer keeps drawing while isVisible()||isFading() and calls update() every frame in BOTH the game-frame path and the title-screen early-return path (that path returns before the game UI update pass, so it needs its own update call). open(fadeIn)/close(fadeOut) take flags: sub-menu transitions (Save/Load/Options) pass false because the original swaps panels instantly, which also avoids a double blend on restore. Verified on emulator: an intermediate blend frame was captured during the transition, the restore path renders at full opacity (mean luminance 26.97 vs 26.99 for a normal open), and the world resumes bright after Return. The original's parabolic easing near the target (_DAT_00a57604 / _DAT_00a2faa0) is still pending RE 34 request D; current ramp is linear.",
-      "tags": [
-        "ui",
-        "pause-menu",
-        "fade",
-        "re",
-        "menufade"
-      ],
-      "compressed": false
-    },
-    {
       "id": "686a0f77-b098-470a-8f7e-bcf7f8ec29a2",
       "timestamp": "2026-10-14T19:39:44.031236",
       "category": "reference",
@@ -6730,12 +6715,476 @@
         "§34"
       ],
       "compressed": false
+    },
+    {
+      "id": "dc6a27d0-d8cb-4cf0-b69b-50b594983ad9",
+      "timestamp": "2026-10-14T23:33:59.973909",
+      "category": "decision",
+      "priority": "high",
+      "content": "InventoryMenu rebuilt from Main\\inventory_menu.xml + prefabs vertical_scroll.xml / focus_box.xml (RE 31 / 32.4). UIInventoryPanel derives scale+origin from onScreenResize() (XML: y = screen.height - me.height + 3, x centred) so Renderer no longer calls setSize()/setPosition(). Draw order: background pair -> tabs -> extra data -> top header -> rows -> scroll bar. Row pitch 81px (rowTopFor - scrollOffset); columns name 80 / cost 418 / weight 491 / damage 551 / health 612. Pages all/weapons/apparel/alchemy/misc via kPageSections. Scroll bar atlas crops from all_general_scrollbar.png (top cropy=0, marker cropy=32, bottom cropy=98, rail cropx=32), user2 = visible-5, user8 = 5. Committed 8eff9cf2.",
+      "tags": [
+        "ui",
+        "inventory",
+        "xml",
+        "menue",
+        "8eff9cf2"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "c1eec352-1dd9-4e36-9cb0-569e0a63f4f0",
+      "timestamp": "2026-10-14T23:33:59.973909",
+      "category": "constraint",
+      "priority": "high",
+      "content": "OPEN ITEM for user review: the working tree carries a revert of the pause-menu fade feature from 698bd541 (ui_pause_menu.h/.cpp lose fadeProgress/isFading()/open(bool)/close(bool)/update(dt); renderer.cpp drops the update()+isFading() calls; CHANGELOG.md loses the fade bullet; .gitignore loses /ghidra-mcp/; session-memory loses the fade decision entry). Per the user's instruction this revert was deliberately LEFT UNSTAGED and is NOT part of commit 8eff9cf2. HEAD 8eff9cf2 still contains the fade feature, so the working tree and HEAD disagree by exactly that revert. Recover with `git checkout HEAD -- <file>` or commit the revert, once the user decides.",
+      "tags": [
+        "ui",
+        "pause-menu",
+        "fade",
+        "revert",
+        "open-item"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "386a49ab-47bc-4e54-9676-5d0ea347c320",
+      "timestamp": "2026-10-15T00:18:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "RE §35 追記完了: FUN_0066f420(2410B)=MapMenu マーカータップによるファストトラベル実行。唯一の呼び出し元 FUN_005b8dc0(509B)。その唯一の参照は 005bb9b7 type=DATA in FUN_005bb880 (MapMenu vtable 00a6cc9c slot[3]=マーカーヒットテスト)。静的 vtable ではなく実行時 push されるコールバック関数ポインタ。No 選択時はコールバック未呼出のためファストトラベル不成立。",
+      "tags": [
+        "RE",
+        "§35",
+        "fast-travel",
+        "mapmenu",
+        "A2"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "038f1b56-bbdb-4cf0-b4c4-16cd568393a8",
+      "timestamp": "2026-10-15T00:18:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "RE §35: 確認ダイアログ登録 005bb9a2 MOV EDX,[0x00b38d00](sNo) / 005bb9a8 MOV EAX,[0x00b38cf8](sYes) / 005bb9b7 PUSH 0x5b8dc0 / 005bb9bd CALL 0x00579c10 (ADD ESP,0x28=10dword)。= ShowMessageBox(本文, cb=0x5b8dc0, 1, sYes, sNo, 0)。",
+      "tags": [
+        "RE",
+        "§35",
+        "messagebox"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "779ad0ad-9962-4057-9342-03dc48e8017a",
+      "timestamp": "2026-10-15T00:18:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "RE §35: FUN_00579c10(215B)=MessageMenu 確認ダイアログ表示ヘルパー(ShowMessageBox 系 varargs)。FUN_00588bd0(0xfae)==1.0f で FUN_005bc8b0(通常)/FUN_005bcc00(yes-no ラッパ)を分岐。FUN_005bc8b0(836B)=MessageMenu 表示実体、FUN_005bcc00(162B)=trait 0x1772 追加の薄いラッパ。",
+      "tags": [
+        "RE",
+        "§35",
+        "messagemenu"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "344a38d4-8836-4e4c-95a7-23cfbb6a0265",
+      "timestamp": "2026-10-15T00:18:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "RE §35 MessageMenu trait: 0xfde=テキスト / 0xfa1=可視alpha / 0xfab=フェード時間 / 0xfae=フラグ((char*)(iVar4+8)!=1) / 0x1772=yes-no ラッパ追加。XML=Data\\Menus\\message_menu.xml。失敗文言 0xa6ceb8=Message Menu Creation Failed... Are your menu and art resources up to date? 。ボタンは4番目配列要素から FUN_005bc5e0。",
+      "tags": [
+        "RE",
+        "§35",
+        "messagemenu",
+        "trait"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "f137f4a3-aaaf-40de-9ff5-61946cb3bd88",
+      "timestamp": "2026-10-15T00:18:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "RE §35 文言グローバル9件(実バイト確定): 0x00b38ce0=sVideoChange/0x00b38ce8=sMustRestart/0x00b38cf0=sOk(Ok)/0x00b38cf8=sYes/0x00b38d00=sNo/0x00b38d08=sCancel/0x00b38d10=sFor/0x00b38d18=sTo/0x00b38e10=sDefaultMessage。初期化サイト 0x009f2960-0x009f2a5a + 0x009f2e20。FUN_00419A70=ローカライズ文字列グローバル初期化、FUN_00981FB4=初期化完了通知。テーブル 0x00A220E0-0x00A22150。",
+      "tags": [
+        "RE",
+        "§35",
+        "localize",
+        "globals"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "2095dad3-4a94-48f9-92bf-90a6798aca14",
+      "timestamp": "2026-10-15T00:18:00Z",
+      "category": "configuration",
+      "priority": "high",
+      "content": "RE §35 訂正: 0x00b38cf0 は Message ではなく sOk(既定 Ok)。0x00a612bc の Message は別リテラル。参照数: 0xb38cf0=65 / 0xb38cf8=31 / 0xb38d00=32 / 0xb38d08=4 / 0xb38d10=6 / 0xb38e10=3。全て .text からの絶対書込 0 件(BSS+実行時静的初期化)。",
+      "tags": [
+        "RE",
+        "§35",
+        "correction"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "062a93ab-b8f1-4257-abf9-4dbd075d2d53",
+      "timestamp": "2026-10-15T00:18:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "RE §35 副産物(A3 依頼3 の解像度フットノート文言の出所確定): 0x00A60EB8=sVideoChange / 0x00A60EC8=You must exit and restart Oblivion for the new resolution to take effect. / 0x00A60F14=sMustRestart / 0x00A60F28=You must exit and restart Oblivion for changes in resolution to take effect. 。video_display のフットノートはこの2キー。",
+      "tags": [
+        "RE",
+        "§35",
+        "A3",
+        "video_display"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "eab93d61-57c8-4e06-b8a7-f85882656f54",
+      "timestamp": "2026-10-15T00:18:00Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "RE §35 Android 移植向け確定値: (1)マーカータップ→確認ダイアログ(%s %s?, sYes/sNo)→Yes のみファストトラベル開始 (2)MessageMenu 本文既定=sDefaultMessage、ボタン既定=sOk (3)登録すべきキー: sOk/sYes/sNo/sCancel/sFor/sTo/sMustRestart/sVideoChange/sDefaultMessage (4)bSaveOnTravel 真ならファストトラベル開始時に自動セーブ1回 (5)移動演出: GMST 0x3a の +0x24 秒を距離比 _DAT_00a2f938 で按分、param_1[0x164](+0x590)カウントダウンで FUN_0057b950 によりフェード係数 1→0。",
+      "tags": [
+        "RE",
+        "§35",
+        "android",
+        "fast-travel"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "dca49793-30e2-4731-88b3-4c6a53791ec6",
+      "timestamp": "2026-10-15T00:18:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "RE §35 FUN_0066f420 本体詳細: 署名 void __thiscall(int* param_1 /*Player*/, int* param_2 /*marker*/)。先頭ガード (**(code**)(*param_1+0x25c))()!=0 で早期 return。if(DAT_00b13228!=0) FUN_00466b70()。FUN_005f0810(param_2,&fStack_44,x,y,z)→FUN_004d8a30(x,y,z)→FUN_004dd4b0(ref,cell,worldspace)→FUN_004d8af0()。移動中フラグ *(byte*)(0x00b333c4+0x4b)=1→0、+0x45=0。param_2[8..10](+0x20..0x28)=マーカー回転3成分と推定。難易度 +0x734。",
+      "tags": [
+        "RE",
+        "§35",
+        "FUN_0066f420"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "fc9b76ef-633d-4ff5-ad00-177298db36d4",
+      "timestamp": "2026-10-15T10:31:39.133507",
+      "category": "reference",
+      "priority": "high",
+      "content": "RE §36: video_display 解像度リストは XML でなく実行時列挙。IDirect3D9 COM vtable の GetAdapterModeCount/EnumAdapterModes 使用(EnumDisplaySettings 不使用)。フィルタ=(w,h)重複除去 かつ w*h>=0x4B000(307200、640x480 は等号通過)。アダプタ 0 のみ。初期選択=現在解像度一致、無ければ先頭。解像度変更は次回起動適用(設定グローバルのみ書換、再起動ダイアログ sVideoChange+sOk を出して閉じる)。ワイド判定 h*4<w*3→_widescreen サフィックスのテキスト。VideoDisplayMenu.slot[3] プリセット=800x600/1080x607/1024x768/1280x607/1280x720。Android は Display.getSupportedModes() を同条件でフィルタ＋昇順ソートで代替可。D3D9 ライフサイクル再現不要。",
+      "tags": [
+        "RE",
+        "video",
+        "resolution",
+        "sec36"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "607a4aba-87a5-4abd-9fdb-d5a0a5c84ccf",
+      "timestamp": "2026-10-15T10:31:39.133507",
+      "category": "reference",
+      "priority": "high",
+      "content": "RE §37: メニューフェードは対象オブジェクトごとの current/duration ペア(20B ノード, +0x4=current, +0x8=duration 秒)。毎フレーム current+=deltaTime、ratio=current/duration、ratio>=1.0 でノード破棄。イージング無し(リニア)。閉じる時も current=0 の新規ノード追加で逆再生は存在しない(§33.3 の逆再生記述は誤り、§37.11 で訂正済み)。duration は XML の menufade/explorefade 属性そのまま、フォールバック 0.25 秒、loading の 0.0 はフェード無し。全画面黒クアッドはエンジン側に無く、暗転描画は消費者側で alpha=current/duration。",
+      "tags": [
+        "RE",
+        "menu",
+        "fade",
+        "sec37"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "8483f489-b12b-402f-aea6-eb858155527d",
+      "timestamp": "2026-10-15T10:31:39.133507",
+      "category": "reference",
+      "priority": "high",
+      "content": "RE §37: メニュー表示中判定の正本は MenuManager+0x9c(現在メニュー、非 null=表示中)。+0x98 は直前メニュー。補助フラグ DAT_00b3a6d4(byte) の byte 比較は 0x00572ee2 / 0x005a586b / 0x00679a75 の 3 箇所。入力抑制はメニュー表示中に ACTION_MOVE をゲーム側へ渡す前に落とす実装で一致(camera-rotates-under-menu の解)。フェード付きクローズは ID 0x3ff/0x3fe/0x3ea/0x3eb の 4 つのみ、他は即時。trait 0xfa5 の 4 値ゲート(6006/6007/102.0/103.0)はエンジン内部登録都合で移植不要。",
+      "tags": [
+        "RE",
+        "menu",
+        "input",
+        "sec37"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "a5-ctor-dtor-53-vtables",
+      "timestamp": "2026-10-15T02:11:48Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "§38 A5完了: VtHits.java で全53メニューvtableのctor/dtor実VAを一括同定。判定法=ctor84640呼出>=1かつdtor85330==0->ctor、dtor85330>=1->dtor。基底Menu ctor=0x00584640/dtor=0x00585330。主要: ContainerMenu 0xa6b574 ctor00597a90 dtor005978d0 / GameplayMenu 0xa6bd0c 005a3310 005a3430 / LevelUpMenu 0xa6c264 005ac550 005ac5b0 / QuickKeysMenu 0xa6d1f4 005c0b50 005c0cf0 / OptionsMenu 0xa6cfac 005bd580 005bd650 / PauseMenu 0xa6d03c 005bd960 005bda60 / VideoDisplayMenu 0xa6dccc 005dd960 005dda20。TileMenu(0xa6af14 ctor00590130 dtor00591b70)とMenuBGShader(0xa8cfd4)は基底Menu非継承。RepairMenu/RepairMenuListは共通ctor 005d1000。手作業同定22関数と全一致=判定法妥当。",
+      "tags": [
+        "re",
+        "menu",
+        "vtable",
+        "ctor",
+        "dtor",
+        "section38",
+        "a5"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "a7-menu-layout-container-quickkeys-levelup",
+      "timestamp": "2026-10-15T03:05:00Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "§39 未文書化メニューのレイアウト（A7: Container / QuickKeys / LevelUp）を docs\\RE_EXE_REPORT.md に追記（17106 文字、6644 行目〜、全6946行）。ContainerMenu: vtable 0x00a6b574 / ctor 0x00597a90 / dtor 0x005978d0。行高 mult=81、行テンプレ cont_item_template(2134)→cont_item(2135) width=650 height=81、列x アイコン80/コスト418/重量496/ダメージ556/体力616。タブ cont_p5_tab〜cont_p1_tab(id=1..5)、ボタン TakeAll/Haggle/Exit(id=32,33,34)、左右パネル cont_icon_inv/cont(id=42,43)、cont_list_contents(id=13, xscroll=cont_scroll_bar.user5)、cont_window x=10 y=150 645x480、cont_pane mul=-81。カテゴリヘッダ9種（weapon/apparel/apparatus/potions/ingr/book/keys/stones/misc）は同一構造 x=102 mult=81 text x=130 y=35 font=3 RGB=51,79,142。QuickKeysMenu: vtable 0x00a6d1f4 / ctor 0x005c0b50 / dtor 0x005c0cf0、stackingtype=does_not_stack、menufade=0.25、8スロット座標 1(202,102) 2(274,132) 3(302,205) 4(272,275) 5(200,303) 6(130,273) 7(102,202) 8(132,130)、アイコン id=8..15、selector id=7、text id=6。LevelUpMenu: vtable 0x00a6c264 / ctor 0x005ac550 / dtor 0x005ac5b0、stackingtype=no_click_past、menufade=0.25、行高67、item id=3、exit id=1、_enabled_alpha=(user6 OR user0-1)*127+128、levelup_pane id=2 540x536 x=30。§39.4 に残課題（container _text y値、cont_item_status 色式実体）。",
+      "tags": [
+        "RE",
+        "menu",
+        "container",
+        "quickkeys",
+        "levelup",
+        "§39"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "b31e482a-8b60-4657-96c9-d1531ee0d810",
+      "timestamp": "2026-10-15T02:46:49Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "§40 ControlsMenu(0x3fd) ページ2確定値: vtable 0x00a69ff4, XML Data\\Menus\\Options\\controls_menu.xml(874行/26264B), stackingtype=no_click_past, alpha=0, explorefade=0.25, 背景666x580, _button_buffer=50, 文字色RGB(117,59,33)。user0=ページ番号, user1=400/6≒66.7(キー行高), user2=_move, user3=_look, user4=normal/selected, user5=デバイス名(コード設定)。",
+      "tags": [
+        "§40",
+        "controls",
+        "menu"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "cc3c6e6f-18b2-4ccd-b6af-84f62fb4f8d2",
+      "timestamp": "2026-10-15T02:46:49Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "§40 id割当: PAGE1: 1=Return2,5=感度スライダー,7=InvertY,8=SwapSticks。PAGE2: 1=Return(user4必須),2=縦スクロール,4=リストペイン,9=Controls(user0==1),10=Defaults(user0==2かつuser4),11=INSTRUCTIONS(user0==2かつNOT user4),12=前デバイス,13=次デバイス。id1はPAGE1/2共有。",
+      "tags": [
+        "§40",
+        "controls",
+        "ids"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "e0906e05-8280-49e0-ba3b-a14ff16111bf",
+      "timestamp": "2026-10-15T02:46:49Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "§40 PAGE2レイアウト: controls_main_rect visible=user0==2 x=(parent.width-me.width)/2 y=75 538x400 alpha=0 clipwindow=true 枠top(0,0,pw)/left(0,32)/middle(300,32)/right(pw-32,32)/bottom(0,ph-32,pw)。スクロール(id2) min0/max=list_pane.childcount-6/step1/user4=5/user6=3/user8=6/user7=現在値。list_pane(id4) alpha=0 clips=true height=childcount*user1 y=-user7*user1 _left_edge_buffer=10。device_text visible=user0==2 string=ControlsMenu.user5 y=20。instructions(id11) justify=center x=pw/2 wrapwidth=pw-32, string無し=コード設定。",
+      "tags": [
+        "§40",
+        "controls",
+        "layout"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "338e5c48-32e0-484e-b6d7-83f7e34b2d4a",
+      "timestamp": "2026-10-15T02:46:49Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "§40 キー行テンプレート controls_template: repeatvertical=true, y=listindex*height, user0=listindex, user1=アクション名, user2=parent.width-128, user3=キー名, _left_edge_buffer=10。子: floating(visible=mouseover>0, dialog_selection_full.dds, pw-32x64)/floating_end(104x64, pw+8-me.width)/label(string=parent.user1,y=12)/button(x=parent.user2,y=12,string=parent.user3,justify=center)。xlist=trueが未処理コマンドの親委譲。",
+      "tags": [
+        "§40",
+        "controls",
+        "template"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "d3adc200-52c7-4be8-910f-391450a6989b",
+      "timestamp": "2026-10-15T02:46:49Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "§40 キー割当生成 FUN_0059ba40: for idx=0..0x1d, FUN_0059b670でフィルタ(有効=0..0x10と0x1a/0x1b/0x1c, 0x11〜0x19と0x1d除外), 行index=0x0e+idx, アクション名=DAT_00b399d0[idx](29要素)。生成チェック: offset0x28から13ポインタ,0で失敗'Controls Menu Creation Failed...'。",
+      "tags": [
+        "§40",
+        "controls"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "94f2dbc9-b1d2-4a1d-a879-c2d479c9a1ad",
+      "timestamp": "2026-10-15T02:46:49Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "§40 デバイス切替: idx0=キーボード/1=マウス/2=ゲームパッド。存在チェックDAT_00b33398+0x20の+0x28/+0x2c/+0x18f0。FUN_0059b920=順送り,FUN_0059b980=逆送り(offset0x5cを±1)。id12=逆送り(FUN_00587500(12)=11),id13=順送り。FUN_0059c3f0=確定/再構築/INSTRUCTIONS更新, 定数128.0f, 書式'%s %s %s'。",
+      "tags": [
+        "§40",
+        "controls",
+        "device"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "602bf902-2ae0-4cfd-b3ef-4789b8d9f859",
+      "timestamp": "2026-10-15T02:46:49Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "§40 FUN_0059c5e0 switch(param1..13): 1=0xfae(0なら1.0)else時刻換算+XML再ロード, 2-6,11=無動作, 7=サウンド3+DAT_00b14f38トグル+デバイス切替, 8=サウンド3+軸2組スワップ(DAT_00b14ec8↔ed8, DAT_00b14ed0↔ee0)+0xd4=1, 9=サウンド1+先頭へ(0xfae=1.0), 10=サウンド1+'%s %s %s?'確認ダイアログ, 12,13=前/次デバイス。末尾: 14以上かつ*(this+0xe4)==0ならFUN_0059c3f0委譲。",
+      "tags": [
+        "§40",
+        "controls",
+        "switch"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "a4c6c03b-f6c7-4809-8976-107cd9c79fa6",
+      "timestamp": "2026-10-15T02:46:49Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "§40 ctor FUN_005874a0 フィールド: 0x28〜0x5b=Widget*[13], 0x5c=選択デバイスindex(初期0xff), 0x60〜0xd3=作業領域, 0xd4=更新フラグbool, 0xd8=確定デバイスint, 0xdc/0xe0=trait0xfb1/0xfb2退避float, 0xe4=委譲ゲートbool。",
+      "tags": [
+        "§40",
+        "controls",
+        "ctor"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "f13a90bb-f765-4027-a03b-f0c6a3bfde97",
+      "timestamp": "2026-10-15T02:46:49Z",
+      "category": "constraint",
+      "priority": "high",
+      "content": "§40 追記後 docs\\RE_EXE_REPORT.md: bytes=571032, LF=7270, CRLF=1342, '## §40'=6949行目。§33〜§40 main送信済み。",
+      "tags": [
+        "§40",
+        "docs"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "89c5fca3-0fbe-41d8-b0f9-0fda00077f36",
+      "timestamp": "2026-10-15T03:36:35Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "§41 完了: NPC→プレイヤーのダメージ計算経路を docs\\RE_EXE_REPORT.md に追記（7582行/587016B）。§33.1 の補強。",
+      "tags": [
+        "re",
+        "report",
+        "damage",
+        "s41"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "0ce88c25-d1b9-48db-89a5-de690dd6df1c",
+      "timestamp": "2026-10-15T03:36:35Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "HP アクセサは未文書化3関数に集約: GetHealth=FUN_00484850(actor,0) / GetHealthPercent=FUN_00484850(actor,1)=（cur/max)*100 / SetHealth=FUN_00488830(actor,value,...)。HP更新は必ず FUN_00488830 を通す（被弾タイマーリスト付き）。",
+      "tags": [
+        "re",
+        "damage",
+        "hp",
+        "android-migration"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "9174f4b9-6b5e-4796-96f1-ef9f40b57e9b",
+      "timestamp": "2026-10-15T03:36:35Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "FUN_00403c00 はダメージ係数 getter（乱数ではない）。DAT_00b35464 のアドレスを返すだけ。静解析では 0.0（実行時書込、書き込み元未特定）。",
+      "tags": [
+        "re",
+        "damage",
+        "global"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "8b512b41-150e-45c5-a502-4131d6766921",
+      "timestamp": "2026-10-15T03:36:35Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "呪文・反射ダメージ経路=FUN_005f3870。実ダメージ=DAT_00b35464×baseDamage、HP=max(0,HP-実ダメージ)。入口 param2==0 または baseDamage<=0 は 0 返し。HP<1.0 クランプ→死亡は vtable+0x2c8→FUN_004dc000。プレイヤー自身は反射対象外。",
+      "tags": [
+        "re",
+        "damage",
+        "spell",
+        "android-migration"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "1208fde5-f5ca-40db-9cc5-bf4328475b4b",
+      "timestamp": "2026-10-15T03:36:35Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "難易度倍率 FUN_005e2560 の実式: x=playerDifficulty*10.0f（UI 0..100 は slider/100*10）。x<=0 → f=x+1.0、else f=1.0/ABS(x-1.0)。移植側の pow(6,(d-50)/50) は誤りなので差し替え必須。",
+      "tags": [
+        "re",
+        "difficulty",
+        "android-migration",
+        "fix"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "aca811ec-c6fa-4fc9-8cd6-f5983763decc",
+      "timestamp": "2026-10-15T03:36:35Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "近接ダメージ FUN_005febf0 の12段順序: 難易度倍率(vtable+0x26c)*(+0xec)→武器無効(+0x284,0x41)→スニーク→ベースダメージ(+0x34c)→武器負荷→合成FUN_00547070→1発上限→反射(+0x220)→アーマー軽減→スタッガー→魔法(+0x398)→HP比例。",
+      "tags": [
+        "re",
+        "damage",
+        "melee"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "93c8b288-b34e-4281-a828-c9fbc3a6f27d",
+      "timestamp": "2026-10-15T03:36:35Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "AV index 判明分: 0=体力/3=魔法/7=攻撃力/8=HP最大/0xf=疲労/0x10=速度/0x11=レベル/0x3b=反射/0x41=武器種別。Actor vtable: +0x2c0 HP更新通知/+0x2c8 死亡/+0x2d4 ダメージ効果FUN_005e46c0/+0x3ac ダメージ入口FUN_005febf0。",
+      "tags": [
+        "re",
+        "vtable",
+        "av-index"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "3134ea37-b877-402c-b55f-42c1363c2dfc",
+      "timestamp": "2026-10-15T03:36:35Z",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "§41 の残課題: DAT_00b35464 書き込み元未特定 / FUN_004842f0 挙動未確定 / FUN_00468ff0(0xd,0) の種別0xd 意味未確定 / 0x00b3b908 設定元未確定。",
+      "tags": [
+        "re",
+        "todo",
+        "unknown"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "992f622e-a291-47c8-9621-3691335c6082",
+      "timestamp": "2026-10-15T03:36:35Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "§41 を main セッション(9427ac74-c35e-4e3d-b47e-79c1c4621727)へ要約送信済み。",
+      "tags": [
+        "re",
+        "main",
+        "report"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 469,
+    "totalEntries": 502,
     "compressedCount": 81,
-    "sessionCount": 38,
-    "lastUpdated": "2026-10-14T19:39:44.031236"
+    "sessionCount": 39,
+    "lastUpdated": "2026-10-14T23:33:59.973909"
   }
 }

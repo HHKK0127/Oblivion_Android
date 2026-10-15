@@ -1447,6 +1447,11 @@ void DebugMenu::createAllTabContents() {
             {"Performance", "performance"},
             {"Reset Stats", "resetstats"},
             {"Dump State", "dumpstate"},
+            // MessageMenu (0x3e9) verification. The body text of the first entry is
+            // long on purpose so the 676px wrap width is exercised.
+            {"Msg: simple", "message The quick brown fox jumps over the lazy dog, and this sentence keeps going to force the message body to wrap onto several lines."},
+            {"Msg: Yes/No", "message Fast travel to Bruma?|Yes|No"},
+            {"Msg: 3 options", "message Choose your reward.|Gold|Item|Nothing"},
         };
         for (const auto& item : items) {
             Button btn;

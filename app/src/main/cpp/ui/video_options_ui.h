@@ -149,6 +149,14 @@ private:
 
     // Loaded textures.
     unsigned int tex_generic_bg_ = 0;
+    unsigned int tex_bg_edge_top_ = 0;
+    unsigned int tex_bg_edge_bottom_ = 0;
+    unsigned int tex_bg_edge_left_ = 0;
+    unsigned int tex_bg_edge_right_ = 0;
+    unsigned int tex_bg_corner_tl_ = 0;
+    unsigned int tex_bg_corner_tr_ = 0;
+    unsigned int tex_bg_corner_bl_ = 0;
+    unsigned int tex_bg_corner_br_ = 0;
     unsigned int tex_selection_full_ = 0;
     unsigned int tex_selection_cut_ = 0;
     unsigned int tex_button_long_off_ = 0;

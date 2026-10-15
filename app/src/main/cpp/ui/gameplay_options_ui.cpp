@@ -18,7 +18,6 @@ namespace {
 // GameplayMenu values from the original XML (PC variant), coordinates relative to the body.
 constexpr float BODY_WIDTH = 790.0f;
 constexpr float BODY_HEIGHT = 528.0f;
-constexpr float BORDER = 44.0f;               // generic border sits outside the body
 constexpr float LABEL_FIRST_Y = 32.0f;
 constexpr float LABEL_STRIDE = 52.0f;         // label height 28 + _y_buffer 24
 constexpr float LABEL_TO_SCROLL_DY = 12.0f;   // scroll line sits 12px below its label
@@ -464,18 +463,12 @@ bool GameplayOptionsUI::handleBack() {
 }
 
 void GameplayOptionsUI::renderBorder(const Rect& b) {
-    const int sw = screenWidth;
-    const int sh = screenHeight;
-
-    drawIfLoaded(bgCenterTexture, b.x, b.y, b.w, b.h, sw, sh);
-    drawIfLoaded(bgEdgeTopTexture, b.x, b.y - BORDER, b.w, BORDER, sw, sh);
-    drawIfLoaded(bgEdgeBottomTexture, b.x, b.y + b.h, b.w, BORDER, sw, sh);
-    drawIfLoaded(bgEdgeLeftTexture, b.x - BORDER, b.y, BORDER, b.h, sw, sh);
-    drawIfLoaded(bgEdgeRightTexture, b.x + b.w, b.y, BORDER, b.h, sw, sh);
-    drawIfLoaded(bgCornerTLTexture, b.x - BORDER, b.y - BORDER, BORDER, BORDER, sw, sh);
-    drawIfLoaded(bgCornerTRTexture, b.x + b.w, b.y - BORDER, BORDER, BORDER, sw, sh);
-    drawIfLoaded(bgCornerBLTexture, b.x - BORDER, b.y + b.h, BORDER, BORDER, sw, sh);
-    drawIfLoaded(bgCornerBRTexture, b.x + b.w, b.y + b.h, BORDER, BORDER, sw, sh);
+    const GLuint slices[9] = {
+        bgCenterTexture, bgEdgeTopTexture, bgEdgeBottomTexture, bgEdgeLeftTexture,
+        bgEdgeRightTexture, bgCornerTLTexture, bgCornerTRTexture, bgCornerBLTexture,
+        bgCornerBRTexture};
+    UIDrawHelper::drawGenericBackground(slices, b.x, b.y, b.w, b.h, screenWidth,
+                                        screenHeight);
 }
 
 void GameplayOptionsUI::renderSlider() {

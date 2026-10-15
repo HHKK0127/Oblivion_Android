@@ -17,7 +17,6 @@ namespace {
 // Values from options\pause_menu.xml (PC variant).
 constexpr float BODY_WIDTH = 240.0f;          // pause_background user0
 constexpr float BODY_HEIGHT = 400.0f;         // pause_background user1
-constexpr float BORDER = 44.0f;               // generic_background _border_thickness
 constexpr float BUTTON_HEIGHT = 64.0f;        // button_floating_2 height
 constexpr float BUTTON_LABEL_PAD = 40.0f;     // rect width = label width + 40
 constexpr float SELECTION_MIN_WIDTH = 104.0f; // dialog_selection_cut width
@@ -30,8 +29,6 @@ constexpr float PAUSE_DECOR_WIDTH = 35.0f;
 constexpr float PAUSE_DECOR_HEIGHT = 17.0f;
 constexpr float LABEL_SCALE = 1.0f;
 constexpr float DIM_ALPHA = 0.6f;
-// RE_EXE_REPORT §33.3: the fade node's default duration (menufade / explorefade).
-constexpr float FADE_DURATION = 0.25f;
 constexpr int ITEM_COUNT = 5;
 
 // XML <font> values mapped to FontType: 1 = Kingthings_Regular, 3 = Tahoma_Bold_Small.
@@ -45,10 +42,9 @@ const glm::vec4 kPauseText(51.0f / 255.0f, 79.0f / 255.0f, 142.0f / 255.0f, 1.0f
 // strings()._return / _save / _load / _options / _quit, in XML listindex order.
 const char* const kItemLabels[ITEM_COUNT] = {"Return", "Save", "Load", "Options", "Quit"};
 
-void drawIfLoaded(GLuint tex, float x, float y, float w, float h, int sw, int sh,
-                  float alpha = 1.0f) {
+void drawIfLoaded(GLuint tex, float x, float y, float w, float h, int sw, int sh) {
     if (tex != 0) {
-        UIDrawHelper::drawTexturedQuad(x, y, w, h, tex, glm::vec4(1.0f, 1.0f, 1.0f, alpha), sw, sh);
+        UIDrawHelper::drawTexturedQuad(x, y, w, h, tex, glm::vec4(1.0f), sw, sh);
     }
 }
 
@@ -71,7 +67,7 @@ private:
 
 UIPauseMenu::UIPauseMenu()
     : textRenderer(nullptr), screenWidth(1920), screenHeight(1080),
-      visible(false), focusIndex(0), fadeProgress(0.0f), hasSelection(false),
+      visible(false), focusIndex(0), hasSelection(false),
       pendingSelection(Item::RETURN),
       bgCenterTexture(0), bgEdgeTopTexture(0), bgEdgeBottomTexture(0),
       bgEdgeLeftTexture(0), bgEdgeRightTexture(0),
@@ -136,36 +132,15 @@ void UIPauseMenu::setScreenSize(int width, int height) {
     screenHeight = height;
 }
 
-void UIPauseMenu::open(bool fadeIn) {
+void UIPauseMenu::open() {
     visible = true;
     hasSelection = false;
     focusIndex = 0;  // pause_return_button carries xdefault 3 (focused by default)
-    // fadeIn leaves the ramp alone: it climbs from wherever it is (0.0 after a
-    // completed close = full blend-in). The sub-menu restore path passes false so
-    // the menu reappears without a second black-out.
-    if (!fadeIn) {
-        fadeProgress = 1.0f;
-    }
 }
 
-void UIPauseMenu::close(bool fadeOut) {
+void UIPauseMenu::close() {
     visible = false;
     hasSelection = false;
-    // fadeOut leaves the ramp alone so it runs down to 0 over FADE_DURATION;
-    // otherwise the menu vanishes on this frame (a sub-menu takes over).
-    if (!fadeOut) {
-        fadeProgress = 0.0f;
-    }
-}
-
-void UIPauseMenu::update(float dt) {
-    const float target = visible ? 1.0f : 0.0f;
-    if (fadeProgress == target) {
-        return;
-    }
-    const float step = (dt > 0.0f ? dt : 0.0f) / FADE_DURATION;
-    fadeProgress = (fadeProgress < target) ? std::min(target, fadeProgress + step)
-                                           : std::max(target, fadeProgress - step);
 }
 
 UIPauseMenu::Rect UIPauseMenu::bodyRect() const {
@@ -253,18 +228,11 @@ bool UIPauseMenu::onKeyPress(int keyCode) {
 }
 
 void UIPauseMenu::renderBorder(const Rect& b) {
-    const int sw = screenWidth;
-    const int sh = screenHeight;
-
-    drawIfLoaded(bgCenterTexture, b.x, b.y, b.w, b.h, sw, sh, fadeProgress);
-    drawIfLoaded(bgEdgeTopTexture, b.x, b.y - BORDER, b.w, BORDER, sw, sh, fadeProgress);
-    drawIfLoaded(bgEdgeBottomTexture, b.x, b.y + b.h, b.w, BORDER, sw, sh, fadeProgress);
-    drawIfLoaded(bgEdgeLeftTexture, b.x - BORDER, b.y, BORDER, b.h, sw, sh, fadeProgress);
-    drawIfLoaded(bgEdgeRightTexture, b.x + b.w, b.y, BORDER, b.h, sw, sh, fadeProgress);
-    drawIfLoaded(bgCornerTLTexture, b.x - BORDER, b.y - BORDER, BORDER, BORDER, sw, sh, fadeProgress);
-    drawIfLoaded(bgCornerTRTexture, b.x + b.w, b.y - BORDER, BORDER, BORDER, sw, sh, fadeProgress);
-    drawIfLoaded(bgCornerBLTexture, b.x - BORDER, b.y + b.h, BORDER, BORDER, sw, sh, fadeProgress);
-    drawIfLoaded(bgCornerBRTexture, b.x + b.w, b.y + b.h, BORDER, BORDER, sw, sh, fadeProgress);
+    const GLuint slices[9] = {bgCenterTexture,   bgEdgeTopTexture,    bgEdgeBottomTexture,
+                              bgEdgeLeftTexture, bgEdgeRightTexture,  bgCornerTLTexture,
+                              bgCornerTRTexture, bgCornerBLTexture,   bgCornerBRTexture};
+    UIDrawHelper::drawGenericBackground(slices, b.x, b.y, b.w, b.h, screenWidth,
+                                        screenHeight);
 }
 
 void UIPauseMenu::renderButton(int index) {
@@ -275,28 +243,24 @@ void UIPauseMenu::renderButton(int index) {
         // button_floating spans the full rect width at y + 3; button_end caps the
         // right edge with an 8px overlap.
         drawIfLoaded(selectionFullTexture, r.x, r.y + SELECTION_OFFSET_Y, r.w, BUTTON_HEIGHT,
-                     screenWidth, screenHeight, fadeProgress);
+                     screenWidth, screenHeight);
         drawIfLoaded(selectionCutTexture,
                      r.x + r.w + SELECTION_CAP_GAP - SELECTION_MIN_WIDTH,
                      r.y + SELECTION_OFFSET_Y, SELECTION_MIN_WIDTH, BUTTON_HEIGHT,
-                     screenWidth, screenHeight, fadeProgress);
+                     screenWidth, screenHeight);
     }
 
     if (textRenderer) {
         const std::string label = kItemLabels[index];
         const float tw = textRenderer->getTextWidth(label, LABEL_SCALE);
         const float th = textRenderer->getTextHeight(LABEL_SCALE);
-        const glm::vec4 color = focused ? kFocusedText : kIdleText;
         textRenderer->renderText(label, r.x + (r.w - tw) * 0.5f, r.y + (BUTTON_HEIGHT - th) * 0.5f,
-                                 glm::vec4(color.x, color.y, color.z, color.w * fadeProgress),
-                                 LABEL_SCALE);
+                                 focused ? kFocusedText : kIdleText, LABEL_SCALE);
     }
 }
 
 void UIPauseMenu::render() {
-    // fadeProgress reaches 0 only after a completed close ramp, so this also
-    // covers the "closed and fully faded" case.
-    if (fadeProgress <= 0.0f || !textRenderer) {
+    if (!visible || !textRenderer) {
         return;
     }
 
@@ -304,11 +268,10 @@ void UIPauseMenu::render() {
     glDisable(GL_DEPTH_TEST);
 
     // The XML root carries alpha 0 and an explorefade of 0.25: the world behind
-    // is faded out while the pause menu owns the screen. The fade node drives the
-    // ramp (RE_EXE_REPORT §33.3) so opening and closing both blend.
+    // is faded out while the pause menu owns the screen.
     UIDrawHelper::drawColoredQuad(0.0f, 0.0f, static_cast<float>(screenWidth),
                                   static_cast<float>(screenHeight),
-                                  glm::vec4(0.0f, 0.0f, 0.0f, DIM_ALPHA * fadeProgress),
+                                  glm::vec4(0.0f, 0.0f, 0.0f, DIM_ALPHA),
                                   screenWidth, screenHeight);
 
     const Rect body = bodyRect();
@@ -330,15 +293,13 @@ void UIPauseMenu::render() {
         const float tw = textRenderer->getTextWidth(paused, LABEL_SCALE);
 
         drawIfLoaded(decorLeftTexture, body.x + PAUSE_DECOR_INSET, body.y + PAUSE_DECOR_Y,
-                     PAUSE_DECOR_WIDTH, PAUSE_DECOR_HEIGHT, screenWidth, screenHeight, fadeProgress);
+                     PAUSE_DECOR_WIDTH, PAUSE_DECOR_HEIGHT, screenWidth, screenHeight);
         drawIfLoaded(decorRightTexture,
                      body.x + BODY_WIDTH - PAUSE_DECOR_INSET - PAUSE_DECOR_WIDTH,
                      body.y + PAUSE_DECOR_Y, PAUSE_DECOR_WIDTH, PAUSE_DECOR_HEIGHT,
-                     screenWidth, screenHeight, fadeProgress);
+                     screenWidth, screenHeight);
         textRenderer->renderText(paused, body.x + (BODY_WIDTH - tw) * 0.5f, body.y + PAUSE_TEXT_Y,
-                                 glm::vec4(kPauseText.x, kPauseText.y, kPauseText.z,
-                                           kPauseText.w * fadeProgress),
-                                 LABEL_SCALE);
+                                 kPauseText, LABEL_SCALE);
     }
 
     {

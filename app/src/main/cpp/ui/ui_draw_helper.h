@@ -46,6 +46,17 @@ public:
                                  float uMin, float vMin, float uMax, float vMax);
 
     /**
+     * @brief Draw the generic_background nine-slice panel.
+     *
+     * Slices are indexed centre, top, bottom, left, right, top-left, top-right,
+     * bottom-left, bottom-right; a 0 id skips that slice. The body rect is the
+     * XML "background" rect and the border is painted outside it.
+     */
+    static void drawGenericBackground(const GLuint slices[9],
+                                      float x, float y, float w, float h,
+                                      int screenW, int screenH);
+
+    /**
      * @brief Draw border (4-edge quad)
      */
     static void drawBorder(float x, float y, float w, float h,

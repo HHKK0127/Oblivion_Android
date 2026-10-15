@@ -861,6 +861,7 @@ void GameConsole::registerBuiltinCommands() {
     // === UI commands ===
     registerCommand("openmenu", "Open menu: openmenu <menuName>", [this](const std::vector<std::string>& args) { cmdOpenMenu(args); });
     registerCommand("closemenu", "Close current menu", [this](const std::vector<std::string>& args) { cmdCloseMenu(args); });
+    registerCommand("message", "Show MessageMenu: message <text>[|option1|option2]", [this](const std::vector<std::string>& args) { cmdMessage(args); });
     registerCommand("debugmenu", "Toggle debug menu", [this](const std::vector<std::string>& args) { cmdDebugMenu(args); });
 
     // Phase 65: Extended Debug Commands
@@ -2247,6 +2248,41 @@ void GameConsole::cmdCloseMenu(const std::vector<std::string>& args) {
     } else {
         appendOutput("UI system not connected");
     }
+}
+
+void GameConsole::cmdMessage(const std::vector<std::string>& args) {
+    if (args.size() < 2) {
+        appendOutput("Usage: message <text>[|option1|option2]");
+        appendOutput("Example: message Fast travel to Bruma?|Yes|No");
+        return;
+    }
+    if (!gameRefs.showMessage) {
+        appendOutput("MessageMenu not connected");
+        return;
+    }
+
+    std::string joined = args[1];
+    for (size_t i = 2; i < args.size(); ++i) {
+        joined += ' ';
+        joined += args[i];
+    }
+
+    // Options are pipe separated so the body text itself may contain spaces.
+    std::vector<std::string> parts;
+    size_t start = 0;
+    while (true) {
+        const size_t bar = joined.find('|', start);
+        if (bar == std::string::npos) {
+            parts.push_back(joined.substr(start));
+            break;
+        }
+        parts.push_back(joined.substr(start, bar - start));
+        start = bar + 1;
+    }
+
+    const std::vector<std::string> options(parts.begin() + 1, parts.end());
+    gameRefs.showMessage(parts[0], options);
+    appendOutput("MessageMenu shown (" + std::to_string(options.size()) + " option(s))");
 }
 
 void GameConsole::cmdDebugMenu(const std::vector<std::string>& args) {

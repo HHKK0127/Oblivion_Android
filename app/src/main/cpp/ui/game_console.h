@@ -161,6 +161,9 @@ public:
         std::function<void()> toggleDebugMenu;
         std::function<void(bool)> setTitlePlainStyle;
         std::function<bool()> getTitlePlainStyle;
+        // MessageMenu (0x3e9). Empty option labels fall back to sOk ("Ok"),
+        // matching the original's default for an unspecified button array.
+        std::function<void(const std::string&, const std::vector<std::string>&)> showMessage;
 
         // Phase 65: Extended Debug
         std::function<void()> toggleWireframe;
@@ -438,6 +441,7 @@ private:
     // UI commands
     void cmdOpenMenu(const std::vector<std::string>& args);
     void cmdCloseMenu(const std::vector<std::string>& args);
+    void cmdMessage(const std::vector<std::string>& args);
     void cmdDebugMenu(const std::vector<std::string>& args);
 
     // Sound commands

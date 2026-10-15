@@ -475,6 +475,9 @@ void Renderer::resize(unsigned int width, unsigned int height) {
     if (uiPauseMenu) {
         uiPauseMenu->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
     }
+    if (uiMessageBox) {
+        uiMessageBox->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    }
 }
 
 void Renderer::setTargetFPS(int fps) {
@@ -1727,6 +1730,9 @@ bool Renderer::initGameSystems() {
     refs.getTitlePlainStyle = [this]() -> bool {
         return titleScreen ? titleScreen->isPlainStyleDisabled() : false;
     };
+    refs.showMessage = [this](const std::string& text, const std::vector<std::string>& options) {
+        showMessage(text, options, nullptr);
+    };
 
     // Display / frame pacing
     refs.setTargetFPS = [this](int fps) {
@@ -2172,6 +2178,15 @@ bool Renderer::initGameSystems() {
         LOGE("Failed to initialize UIPauseMenu");
     } else {
         uiPauseMenu->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    }
+
+    // UIMessageBox: MessageMenu (0x3e9) laid out from the original message_menu.xml
+    // (700 wide body, wrapping text, stacked buttons, generic_background border)
+    uiMessageBox = std::make_unique<UIMessageBox>();
+    if (!uiMessageBox->initialize(textRenderer.get())) {
+        LOGE("Failed to initialize UIMessageBox");
+    } else {
+        uiMessageBox->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
     }
 
     // Complete SaveLoadUI initialization (now that SaveManager is ready)
@@ -4374,13 +4389,11 @@ void Renderer::render(float deltaTime) {
         if (settingsUI && settingsUI->isVisible()) {
             settingsUI->render();
         }
-        if (uiPauseMenu) {
-            // This path returns before the game-frame UI update pass, so the fade
-            // ramp has to be advanced here as well or the menu would never appear.
-            uiPauseMenu->update(deltaTime);
-            if (uiPauseMenu->isVisible() || uiPauseMenu->isFading()) {
-                uiPauseMenu->render();
-            }
+        if (uiPauseMenu && uiPauseMenu->isVisible()) {
+            uiPauseMenu->render();
+        }
+        if (uiMessageBox && uiMessageBox->isVisible()) {
+            uiMessageBox->render();
         }
         // Skip frame rate control for quick return
         if (performanceMonitor) {
@@ -4719,12 +4732,6 @@ void Renderer::render(float deltaTime) {
         debugHUD->update(deltaTime);
     }
 
-    // Advance the pause menu open/close fade. Runs even while the menu is hidden
-    // so the close ramp can finish (RE_EXE_REPORT §33.3).
-    if (uiPauseMenu) {
-        uiPauseMenu->update(deltaTime);
-    }
-
     // Update new debug systems
     if (gameConsole) {
         gameConsole->update(deltaTime);
@@ -4770,8 +4777,7 @@ void Renderer::render(float deltaTime) {
     }
 
     // Pause menu sits below its own sub-menus (Save/Load/Options) but above the world.
-    // Keep drawing it while the close ramp runs so the fade-out is visible.
-    if (uiPauseMenu && (uiPauseMenu->isVisible() || uiPauseMenu->isFading())) {
+    if (uiPauseMenu && uiPauseMenu->isVisible()) {
         uiPauseMenu->render();
     }
 
@@ -4921,9 +4927,14 @@ void Renderer::render(float deltaTime) {
         }
     }
     if (gameConsole && gameConsole->isVisible()) {
-            gameConsole->render();
-        }
+        gameConsole->render();
     }
+
+    // MessageMenu (0x3e9): modal, so it is drawn after everything else.
+    if (uiMessageBox && uiMessageBox->isVisible()) {
+        uiMessageBox->render();
+    }
+}
 
 // ============================================================
 // Placeholder rendering for entities whose NIF meshes failed to load
@@ -7129,6 +7140,16 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
         }
     }
 
+    // MessageMenu (0x3e9) is modal and drawn above every other overlay, so it has to
+    // consume touch before the DebugMenu / GameConsole that are drawn underneath.
+    if (uiMessageBox && uiMessageBox->isVisible()) {
+        if (action == 0 || action == 5) { // DOWN
+            uiMessageBox->onTouchEvent(x, y);
+            pumpMessageBox();
+        }
+        return;
+    }
+
     // DebugMenu handles touch when visible (highest priority - must be before UISystem)
     if (debugMenu && debugMenu->isVisible()) {
         if (action == 0 || action == 5) { // DOWN
@@ -7349,19 +7370,6 @@ void Renderer::cleanup() {
         LOGI("SkyWeatherSystem shut down");
     }
 
-// ... existing code ...
-}
-
-void Renderer::onTrimMemory(int level) {
-    LOGI("Renderer::onTrimMemory level=%d", level);
-
-    if (level >= 15) {
-        // TRIM_MEMORY_RUNNING_CRITICAL: flush non-essential caches
-    if (profilerDashboard) {
-        profilerDashboard->onTrimMemory(level);
-    }
-}
-
     // Phase 50: Shutdown Crime & Reputation System
     game::CrimeReputationSystem::getInstance().shutdown();
     LOGI("CrimeReputationSystem shut down");
@@ -7446,6 +7454,9 @@ void Renderer::onTrimMemory(int level) {
     if (uiPauseMenu) {
         uiPauseMenu->cleanup();
     }
+    if (uiMessageBox) {
+        uiMessageBox->cleanup();
+    }
 
     if (inventoryUI) {
         inventoryUI = nullptr;
@@ -7500,6 +7511,15 @@ void Renderer::onTrimMemory(int level) {
 #endif
 
     LOGD("Renderer cleaned up");
+}
+
+void Renderer::onTrimMemory(int level) {
+    LOGI("Renderer::onTrimMemory level=%d", level);
+
+    // Drop non-essential caches so the process survives the trim.
+    if (profilerDashboard) {
+        profilerDashboard->onTrimMemory(level);
+    }
 }
 
 bool Renderer::saveGameState(const std::string& slotName) {
@@ -7638,6 +7658,12 @@ void Renderer::startGame() {
 }
 
 bool Renderer::handleOptionsKey(int keyCode) {
+    // The modal MessageMenu owns the keyboard while it is open.
+    if (uiMessageBox && uiMessageBox->isVisible()) {
+        uiMessageBox->onKeyPress(keyCode);
+        pumpMessageBox();
+        return true;
+    }
     if (videoDisplayUI && videoDisplayUI->isVisible()) {
         const bool handled = videoDisplayUI->onKeyPress(keyCode);
         pumpVideoDisplay();
@@ -7871,7 +7897,7 @@ void Renderer::pumpPauseMenu() {
 
         case UIPauseMenu::Item::SAVE:
         case UIPauseMenu::Item::LOAD:
-            uiPauseMenu->close(false);
+            uiPauseMenu->close();
             if (saveLoadUI) {
                 // The pause menu comes back once SaveLoadUI closes.
                 pauseMenuBehindSubmenu = true;
@@ -7883,7 +7909,7 @@ void Renderer::pumpPauseMenu() {
             break;
 
         case UIPauseMenu::Item::OPTIONS:
-            uiPauseMenu->close(false);
+            uiPauseMenu->close();
             if (optionsUI) {
                 // open(true) keeps the "Paused" banner: OptionsMenu.user0 == 2.0f
                 // is the original's "PauseMenu is behind me" flag (RE 30.4).
@@ -7898,6 +7924,33 @@ void Renderer::pumpPauseMenu() {
             quitFromPauseMenu = true;
             LOGI("Pause menu: Quit requested");
             break;
+    }
+}
+
+void Renderer::pumpMessageBox() {
+    if (!uiMessageBox || !uiMessageBox->hasPendingSelection()) {
+        return;
+    }
+
+    // Close before dispatching so an action that opens another message (for example
+    // the fast-travel confirmation chain) is not immediately dismissed again.
+    uiMessageBox->close();
+    const int value = uiMessageBox->dispatchSelection();
+    LOGI("MessageMenu: option %d selected", value);
+}
+
+void Renderer::showMessage(const std::string& body,
+                           const std::vector<std::string>& optionLabels,
+                           std::function<void(int)> callback) {
+    if (!uiMessageBox) {
+        return;
+    }
+    uiMessageBox->open(body, optionLabels, std::move(callback));
+}
+
+void Renderer::closeMessage() {
+    if (uiMessageBox) {
+        uiMessageBox->close();
     }
 }
 
@@ -7922,9 +7975,7 @@ void Renderer::syncPauseMenuLifetime() {
     }
 
     pauseMenuBehindSubmenu = false;
-    // The menu was hidden without a fade when the sub-menu opened, so bring it
-    // back at full opacity instead of blending in a second time.
-    uiPauseMenu->open(false);
+    uiPauseMenu->open();
     LOGI("Pause menu: restored after sub-menu");
 }
 
@@ -7932,6 +7983,7 @@ bool Renderer::anyMenuOpen() const {
     // Aggregate of every modal panel. The original tracks this as the active
     // menu count (0x00b13978) plus the "menu displayed" flag (0x00b3a6d4);
     // both are non-zero exactly while one of these panels owns the screen.
+    if (uiMessageBox && uiMessageBox->isVisible()) return true;
     if (optionsUI && optionsUI->isVisible()) return true;
     if (uiPauseMenu && uiPauseMenu->isVisible()) return true;
     if (audioOptionsUI && audioOptionsUI->isVisible()) return true;
@@ -7952,6 +8004,14 @@ bool Renderer::anyMenuOpen() const {
 
 bool Renderer::handleBackKey() {
         // Priority: DebugMenu > DebugConsole > GameConsole > Title > Launcher > Exit dialog
+
+        // 0. MessageMenu (0x3e9) is modal and is drawn above every other overlay.
+        if (uiMessageBox && uiMessageBox->isVisible()) {
+            uiMessageBox->handleBack();
+            pumpMessageBox();
+            LOGI("handleBackKey: Closed MessageMenu");
+            return true;
+        }
 
         // 1. Close DebugMenu if open
         if (debugMenu && debugMenu->isVisible()) {

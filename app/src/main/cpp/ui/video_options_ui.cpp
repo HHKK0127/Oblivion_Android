@@ -26,7 +26,6 @@ namespace {
 // All coordinates are relative to the menu body (900x600).
 constexpr float BODY_WIDTH = 900.0f;
 constexpr float BODY_HEIGHT = 600.0f;
-constexpr float BORDER = 44.0f;
 
 constexpr float MAIN_X = 37.0f;      // parent.width - 2*_x_buffer
 constexpr float MAIN_Y = 50.0f;
@@ -189,6 +188,14 @@ bool VideoOptionsUI::initialize(TextRenderer* renderer) {
     if (tex_generic_bg_ == 0) {
         const std::string dir = "textures/ui/menus/";
         tex_generic_bg_ = TextureLoader::loadTextureFromAsset(dir + "genericbackground__center_background.png");
+        tex_bg_edge_top_ = TextureLoader::loadTextureFromAsset(dir + "genericbackground__edge_top.png");
+        tex_bg_edge_bottom_ = TextureLoader::loadTextureFromAsset(dir + "genericbackground__edge_bottom.png");
+        tex_bg_edge_left_ = TextureLoader::loadTextureFromAsset(dir + "genericbackground__edge_left.png");
+        tex_bg_edge_right_ = TextureLoader::loadTextureFromAsset(dir + "genericbackground__edge_right.png");
+        tex_bg_corner_tl_ = TextureLoader::loadTextureFromAsset(dir + "genericbackground__top_left_corner.png");
+        tex_bg_corner_tr_ = TextureLoader::loadTextureFromAsset(dir + "genericbackground__top_right_corner.png");
+        tex_bg_corner_bl_ = TextureLoader::loadTextureFromAsset(dir + "genericbackground__bottom_left_corner.png");
+        tex_bg_corner_br_ = TextureLoader::loadTextureFromAsset(dir + "genericbackground__bottom_right_corner.png");
         tex_selection_full_ = TextureLoader::loadTextureFromAsset(dir + "dialog__dialog_selection_full.png");
         tex_selection_cut_ = TextureLoader::loadTextureFromAsset(dir + "dialog__dialog_selection_cut.png");
         tex_button_long_off_ = TextureLoader::loadTextureFromAsset(dir + "shared__shared_button_long_off.png");
@@ -209,7 +216,11 @@ bool VideoOptionsUI::initialize(TextRenderer* renderer) {
 }
 
 void VideoOptionsUI::cleanup() {
-    for (GLuint* tex : {&tex_generic_bg_, &tex_selection_full_, &tex_selection_cut_,
+    for (GLuint* tex : {&tex_generic_bg_, &tex_bg_edge_top_, &tex_bg_edge_bottom_,
+                        &tex_bg_edge_left_, &tex_bg_edge_right_,
+                        &tex_bg_corner_tl_, &tex_bg_corner_tr_,
+                        &tex_bg_corner_bl_, &tex_bg_corner_br_,
+                        &tex_selection_full_, &tex_selection_cut_,
                         &tex_button_long_off_, &tex_button_long_on_,
                         &tex_scrollbar_line_, &tex_scrollbar_up_, &tex_scrollbar_down_,
                         &tex_scrollbar_marker_, &tex_scrollbar_parts_,
@@ -627,9 +638,12 @@ void VideoOptionsUI::applyDefaults() {
 
 void VideoOptionsUI::renderBorder() {
     const Rect b = bodyRect();
-    const int sw = screen_width_;
-    const int sh = screen_height_;
-    drawIfLoaded(tex_generic_bg_, b.x, b.y, b.w, b.h, sw, sh);
+    const GLuint slices[9] = {
+        tex_generic_bg_, tex_bg_edge_top_, tex_bg_edge_bottom_,
+        tex_bg_edge_left_, tex_bg_edge_right_, tex_bg_corner_tl_,
+        tex_bg_corner_tr_, tex_bg_corner_bl_, tex_bg_corner_br_};
+    UIDrawHelper::drawGenericBackground(slices, b.x, b.y, b.w, b.h, screen_width_,
+                                        screen_height_);
 }
 
 void VideoOptionsUI::renderSliderRow(const Row& row, int index, float row_y) {

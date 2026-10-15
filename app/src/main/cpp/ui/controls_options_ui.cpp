@@ -19,7 +19,6 @@ namespace {
 // All coordinates are relative to the 666x580 body unless noted.
 constexpr float BODY_WIDTH = 666.0f;
 constexpr float BODY_HEIGHT = 580.0f;
-constexpr float BORDER = 44.0f;
 constexpr float BUTTON_BUFFER = 50.0f;        // _button_buffer
 
 // Page 1: horizontal sensitivity slider (horiz_floating_scroll.xml).
@@ -801,18 +800,12 @@ bool ControlsOptionsUI::handleBack() {
 
 void ControlsOptionsUI::renderBackground() {
     const Rect body = bodyRect();
-    const int sw = screen_width_;
-    const int sh = screen_height_;
-
-    drawIfLoaded(tex_generic_bg_, body.x, body.y, body.w, body.h, sw, sh);
-    drawIfLoaded(tex_bg_edge_top_, body.x, body.y - BORDER, body.w, BORDER, sw, sh);
-    drawIfLoaded(tex_bg_edge_bottom_, body.x, body.y + body.h, body.w, BORDER, sw, sh);
-    drawIfLoaded(tex_bg_edge_left_, body.x - BORDER, body.y, BORDER, body.h, sw, sh);
-    drawIfLoaded(tex_bg_edge_right_, body.x + body.w, body.y, BORDER, body.h, sw, sh);
-    drawIfLoaded(tex_bg_corner_tl_, body.x - BORDER, body.y - BORDER, BORDER, BORDER, sw, sh);
-    drawIfLoaded(tex_bg_corner_tr_, body.x + body.w, body.y - BORDER, BORDER, BORDER, sw, sh);
-    drawIfLoaded(tex_bg_corner_bl_, body.x - BORDER, body.y + body.h, BORDER, BORDER, sw, sh);
-    drawIfLoaded(tex_bg_corner_br_, body.x + body.w, body.y + body.h, BORDER, BORDER, sw, sh);
+    const GLuint slices[9] = {
+        tex_generic_bg_, tex_bg_edge_top_, tex_bg_edge_bottom_, tex_bg_edge_left_,
+        tex_bg_edge_right_, tex_bg_corner_tl_, tex_bg_corner_tr_, tex_bg_corner_bl_,
+        tex_bg_corner_br_};
+    UIDrawHelper::drawGenericBackground(slices, body.x, body.y, body.w, body.h,
+                                        screen_width_, screen_height_);
 }
 
 void ControlsOptionsUI::renderPage1() {
