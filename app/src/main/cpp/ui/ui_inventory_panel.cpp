@@ -28,9 +28,12 @@ namespace {
 // Layout constants, straight from Data\Menus\Main\inventory_menu.xml.
 //
 // Every value is in the XML's own coordinate space: the menu canvas is 1280x960
-// and widgets are laid out in raw pixels that map 1:1 onto texels (the 596x160
-// border widget reads [0,596]x[0,160] of a 1024x256 DDS). layoutScale is applied
-// once, at draw time, to the whole tree.
+// and widgets are laid out in raw pixels that map 1:1 onto texels. A widget
+// never scales its texture - the DDS is sampled 1:1 from the widget's source
+// origin and clipped to the widget rect, so the 596x160 border widget reads
+// [0,596]x[0,160] of a 1024x256 DDS and the 745x792 sheet reads the top-left
+// 745x792 of a 1024x1024 DDS. layoutScale is applied once, at draw time, to the
+// whole tree.
 // ---------------------------------------------------------------------------
 
 constexpr float kCanvasWidth = 1280.0f;
@@ -721,8 +724,12 @@ void UIInventoryPanel::drawWidget(const char* assetName, float x, float y, float
     if (texW > 0 && texH > 0) {
         float srcX = cropx;
         float srcY = cropy;
-        const float srcW = (cropW > 0.0f) ? cropW : static_cast<float>(texW);
-        float srcH = (cropH > 0.0f) ? cropH : static_cast<float>(texH);
+        // TileImage semantics: the texture is sampled 1:1 from the source origin
+        // and simply clipped by the widget rect. Only the sub-rect the widget
+        // actually covers is read, so a 1024x256 DDS backing a 596x160 border is
+        // sampled at [0,596]x[0,160] rather than squeezed down to it.
+        const float srcW = (cropW > 0.0f) ? cropW : std::min(w, static_cast<float>(texW));
+        float srcH = (cropH > 0.0f) ? cropH : std::min(h, static_cast<float>(texH));
 
         // inv_window is clipwindow="true", so a partially scrolled row is cut at
         // the window edge by trimming the source rect instead of the quad.
