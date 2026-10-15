@@ -223,6 +223,14 @@ The current version is **0.9.10 (versionCode 910)**.
   the longer ceiling costs no wall clock time.
 
 ### Fixed
+- **The frame delta was clamped at 100 ms instead of the original's 166.666 ms, so anything below
+  10 FPS ran in slow motion.** RE `§42.3.4` disassembled `Timer::Update` (`0x0047D170`): it stores
+  the raw millisecond tick delta, clamps it against `166.666f`, then scales to seconds and applies
+  the `fGlobalTimeMultiplier` GMST. `nativeRenderFrame()` in `jni_bridge.cpp` measured with
+  `steady_clock` but capped at `0.1f`, which is stricter than the original and shortens every
+  simulated step on a slow device. The cap is now `0.166666f`; the freeze-flag and timescale
+  parts of the original are already covered (`setPaused()` stops the update, and the GMST default
+  is `1.0`).
 - **Every generic menu background drew a transparent seam between its border and its body, with the bevel squeezed to two thirds of its authored size.**
   The `generic_background` prefab tiles are 64 px on the axis each border spans, but only
   rows/cols 0..44 carry the bevel; the remaining rows are padding, and the bottom and right

@@ -200,7 +200,10 @@ Java_com_example_oblivion_GameRenderer_nativeRenderFrame(
         // stale timestamp harmless, but clearing it makes the first frame after
         // a fresh renderer exact rather than merely bounded.
         static constexpr float kFallbackDelta = 1.0f / 60.0f;
-        static constexpr float kMaxDelta = 0.1f;  // 100 ms, ~10 FPS floor
+        // RE 42.3.4: the original Timer::Update clamps the frame delta at
+        // 166.666 ms before converting to seconds, so a hitch never advances
+        // game time by more than one sixth of a second.
+        static constexpr float kMaxDelta = 0.166666f;
 
         const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
         float deltaTime = kFallbackDelta;

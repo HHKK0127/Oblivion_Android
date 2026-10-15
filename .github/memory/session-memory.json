@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-15T03:36:35Z",
+  "lastUpdated": "2026-10-15T04:10:58Z",
   "entries": [
     {
       "timestamp": "2026-09-16T14:58:00Z",
@@ -7179,12 +7179,212 @@
         "report"
       ],
       "compressed": false
+    },
+    {
+      "id": "eaa14bf3-13a1-4b9c-81d0-b69d8f28870c",
+      "timestamp": "2026-10-15T04:04:46Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "PE raw->VA delta を pefile で確定し訂正: .text=0x00400C00 / .rdata=0x00400E00 / .data=0x00401400 / .tls=0x0047A800 / .rsrc=0x0047B600 / .bind=0x0047BE00。以前の .data=0x3FEC00 は誤り。.data は VirtualSize 0x0A9C1C に対し raw 0x030C00 のみで、VA 0x00B32C00 より上はゼロ充填。0x00B33E88/0x00B33E90/0x00B39530/0x00B39DB0 が生バイト空なのはこのため。§41 の 0x9DBEBE/0x4AE7C7/0x5A27B6 は delta 誤りの残骸。",
+      "tags": [
+        "RE",
+        "PE",
+        "delta",
+        "§42"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "6bdeadac-0c80-41fc-9331-5e798b04bd34",
+      "timestamp": "2026-10-15T04:04:46Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "0x00B33E90 = Timer オブジェクト(this)。静的初期化は CRT init テーブル 0x00A28848/0x00A2884C に並ぶ 0x009DC280(型名ペア {0x00A3D0E0, 0x00B3FAB0} を 0x00B33E88/0x00B33E8C に格納) と 0x009DC2A0(Timer::Reset)。Ghidra の FUN_009dc2bc(size=18) は同 Reset 途中のゴースト関数(即値参照 0 件)。",
+      "tags": [
+        "RE",
+        "Timer",
+        "§42"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "a416a98a-b5ca-439e-9ae2-c090bf668e51",
+      "timestamp": "2026-10-15T04:04:46Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Timer::Update @0x0047D170 (ECX=0x00B33E90, 引数 tick, RET 4): ms=tick-[ECX+0x14]; 0x00B39DB0/B4 に生 ms 保存; byte[ECX+0] フリーズフラグ非0 なら dt=0; それ以外は ms を 166.666f でクランプ(0x00A3D14C)し FMUL qword 0x00A30E40(=0.001) で秒化、FSTP [ECX+0x0C](=0x00B33E9C) 後 FMUL [0x00B06704](=1.0f timescale)。メインループ 0x0040D8A0: GetTickCount -> Timer::Update -> FLD [0x00B33E9C] -> フレーム更新(dt, byte[0x00B333B8])。",
+      "tags": [
+        "RE",
+        "Timer",
+        "dt",
+        "§42"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "68ad9304-03f3-4c93-8508-afbe139357b3",
+      "timestamp": "2026-10-15T04:04:46Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "0x00B33E9C = フレームデルタ時間(秒,timescale 乗算後)。絶対 FSTP は 0x009DC2BC の 1 件のみ(Reset)、通常は FSTP [ECX+0xC]。FLD は 74 件、getter float Timer::GetDeltaTime() @0x004052A0(直後 0x004052A7 は FLDZ;RET)。Timer::Update 呼び出し元 9 件: 0x0040616A/0x004061AB/0x0040D8A7/0x0040EACE/0x00494A14/0x00494E5A/0x004E15D0/0x004E18C2/0x009DC2B6。",
+      "tags": [
+        "RE",
+        "Timer",
+        "§42"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "2982cf7d-7f02-4ed7-a027-b077210ed8da",
+      "timestamp": "2026-10-15T04:04:46Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "DAT_00b35464 = 未定義 AV 用フォールバック float。FSTP は 8 件のみ(0x00403C0D/0x00404E3E/0x004AEBC0/0x004AEC0D/0x005A06EF/0x005A0736/0x005A2BB4/0x005A2BFF)。パターン: MOV EAX,[EAX*4+0x00B39530]; null なら FLDZ; MOV EBP,0x00B35464; FSTP [0x00B35464]; FLD [EBP]。0x00B39530 は AV 定義ポインタ配列で実行時充填(ファイル上は全0)。移植では「未定義 AV は 0.0f」で等価。",
+      "tags": [
+        "RE",
+        "AV",
+        "§42"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "71289bf2-afba-443b-916e-a940e55153d8",
+      "timestamp": "2026-10-15T04:04:46Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "DAT_00b399d0 = コントロールキー割当テーブル 29 要素(要素 0x38)。順序: 0 Back/1 Sldleft/2 Sldright/3 Use/4 Activate/5 Block/6 Cast/7 Rdyitem/8 Crouch/9 Run/10 Togglerun/11 Automove/12 Jump/13 Togglepov/14 Menumode/15 Restmenu/16 Quickmenu/17-24 Quick1-8/25 Quicksave/26 Quickload/27 Grab/28 終端。格納 VA は 0x009F609B から 0x38 間隔。移植は行順のみ一致させ独自テーブルで可。",
+      "tags": [
+        "RE",
+        "Controls",
+        "§42"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "c23dd735-1a4c-47d0-b0fc-58cdeaa59656",
+      "timestamp": "2026-10-15T04:04:46Z",
+      "category": "decision",
+      "priority": "medium",
+      "content": "§42 を docs/RE_EXE_REPORT.md に追記済み(見出し 7583 行目、総行数 7828)。内容: PE delta 訂正/キー割当29要素/Timer オブジェクト/dt 式/AV フォールバック/移植向け確定値。main へ送信。残課題: 0x00B06704(timescale)書き込み元、0x00B33E88 ペアの用途、0x00B33E98 書き込み元。",
+      "tags": [
+        "RE",
+        "docs",
+        "§42"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "0a531f00-a689-441b-9a57-8fe7975a706e",
+      "timestamp": "2026-10-15T04:08:55Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "0x00B06704 = GMST fGlobalTimeMultiplier (General) の値、既定 1.0f。隣接 0x00A3D150 の文字列は \"fGlobalTimeMultiplier:General\"。0x00B06700 = 時計/カレンダーブロック(+0x00 dword 64 / +0x04 float 1.0 / +0x08 設定名 ptr / +0x10 月日数表 31,28,31,30,31,30,31,31,30,31,30,31 + 月頭通算日 31,59,90,...)。dt_game = dt_real * fGlobalTimeMultiplier、乗算位置は Timer::Update の FSTP [ECX+0xC] 直後。0x00B06704 への直接ストアは .text に 0 件(GMST セッター経由)。起動時登録は CRT init テーブル 0x00A28850 の 0x009DC2D0 -> ヘルパ 0x004000E0(ECX=0x00B07BF0)。GMST は「構造体+設定名文字列(名前:セクション)+登録スタブ」の共通パターン(§30.6 の audio/gameplay 設定も同経路の可能性)。",
+      "tags": [
+        "RE",
+        "GMST",
+        "Timer",
+        "§43"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "fdc84331-8de6-4156-9d95-f4a2941846da",
+      "timestamp": "2026-10-15T04:08:55Z",
+      "category": "decision",
+      "priority": "medium",
+      "content": "§43 を docs/RE_EXE_REPORT.md に追記(7830 行目〜、総行数 7887)。§42 も追記済み(7583 行目〜)。§42+§43 を main へ送信済み。残未解決は 0x00B33E88 の {型名, 付随 const} ペアの用途と 0x00B33E98 書き込み元のみ(実装には不要)。",
+      "tags": [
+        "RE",
+        "docs",
+        "main",
+        "§43"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "c144e3ea-c84b-421c-91a0-15bb6a0864ea",
+      "timestamp": "2026-10-15T04:10:58Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "PauseMenu 9-slice verified on emulator (1920x1200 png / 1920x1110 GL surface): panel x=796..1125 (w=330), y=311..801 (h=491); left/right border 44px present with no gap to the parchment. Verified via horizontal profile continuity, NOT via tmp/vslice.py gap detection.",
+      "tags": [
+        "ui",
+        "9slice",
+        "pausemenu",
+        "verified"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "07168602-c8ee-4a4d-b05d-bb95421f2509",
+      "timestamp": "2026-10-15T04:10:58Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "OptionsUI in pause mode (optionsUI->open(true)) renders the SAME 240x400 generic_background panel geometry as PauseMenu, so screenshots of both look alike. Confirm state via logcat: 'Pause menu: opened OptionsUI in pause mode' on open, 'OptionsUI: Options: Return' + 'handleBackKey: Closed OptionsUI' + 'Pause menu: restored after sub-menu' on Back.",
+      "tags": [
+        "ui",
+        "optionsui",
+        "verified"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "c47d103b-c6f2-42fe-8e38-21ade95fe5b4",
+      "timestamp": "2026-10-15T04:10:58Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "PauseMenu button hit points (x fixed at 960, GL surface height 1110): Return y=461, Save y=525, Load y=589, Options y=653, Quit y=717. Values derived from ui_pause_menu.cpp bodyRect/bodyTop (BODY_HEIGHT=400, BUTTON_HEIGHT=64, ITEM_COUNT=5) and confirmed on-device.",
+      "tags": [
+        "ui",
+        "pausemenu",
+        "coords"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "bfd712cc-93a9-4d21-9e57-72a6aaaf6663",
+      "timestamp": "2026-10-15T04:10:58Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "Frame delta clamp changed from 0.1f (100 ms) to 0.166666f to match the original Timer::Update clamp confirmed in RE 42.3.4. File: app/src/main/cpp/jni_bridge.cpp (nativeRenderFrame).",
+      "tags": [
+        "engine",
+        "dt",
+        "re42"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "6426a039-eddc-4f76-b883-015f588f5647",
+      "timestamp": "2026-10-15T04:10:58Z",
+      "category": "constraint",
+      "priority": "high",
+      "content": "RE 41-4 difficulty damage multiplier is NOT yet applied. The reported 2-branch formula x = playerDifficulty * 10.0f; f = x + 1.0 when playerDifficulty <= 0 else 1.0 / abs(x - 1.0) is ambiguous: applying it to the 0..100 UI slider makes f decrease monotonically (harder => less damage taken), which is inverted. The current port formula pow(6,(d-50)/50) yields 2.2795 at d=73, matching the 'observed 2.280' cited by RE. Resolve the field semantics before replacing.",
+      "tags": [
+        "combat",
+        "difficulty",
+        "re41",
+        "open-question"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "96fd2657-cfa0-49d7-b327-22e5c6373814",
+      "timestamp": "2026-10-15T04:10:58Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "tmp/vslice.py gap detection produces 1-2px false positives from text anti-aliasing. For 'no gap in panel' verification, scan each row for the contiguous non-black x range (left/right border included) instead.",
+      "tags": [
+        "tooling",
+        "verification"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 502,
+    "totalEntries": 517,
     "compressedCount": 81,
-    "sessionCount": 39,
+    "sessionCount": 40,
     "lastUpdated": "2026-10-14T23:33:59.973909"
   }
 }
