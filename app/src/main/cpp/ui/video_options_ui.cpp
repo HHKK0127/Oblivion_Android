@@ -2,6 +2,7 @@
 
 #include "ui_draw_helper.h"
 #include "../engine/texture_loader.h"
+#include "../system/display_modes.h"
 
 #include <algorithm>
 #include <cmath>
@@ -116,14 +117,10 @@ constexpr int KEY_ENTER = 66;
 const char* const kOffOn[] = {"Off", "On"};
 const char* const kTextureSize[] = {"Small", "Medium", "Large"};
 const char* const kWaterDetail[] = {"Low", "Medium", "High"};
-// Static code table, matching the original: video_menu.xml marks the resolution
-// text as "Set in code" and the executable never enumerates display modes
-// (EnumDisplaySettings is absent from the imports, and the "%d x %d" format
-// strings have no .text reference - RE section 30.3). Do not replace this with
-// runtime enumeration.
-const char* const kResolution[] = {"800 x 600", "1024 x 768", "1280 x 720",
-                                   "1280 x 960", "1600 x 900", "1920 x 1080"};
-constexpr int kResolutionCount = 6;
+// The resolution row is not a static table: the original enumerates the display
+// modes at runtime (RE section 36, superseding the section 30.3 reading that
+// concluded EnumDisplaySettings' absence meant a hard-coded list). The list now
+// lives in system/display_modes.h and is fed by the platform.
 
 const char* optionLabel(const char* const* set, int count, int index) {
     if (index < 0) index = 0;
@@ -244,7 +241,7 @@ void VideoOptionsUI::buildRows() {
         return;
     }
     rows_ = {
-        {"Resolution:",        Row::Kind::Arrows, nullptr, &settings_.resolution_index, kResolutionCount},
+        {"Resolution:",        Row::Kind::Arrows, nullptr, &settings_.resolution_index, display_modes::count()},
         {"Gamma:",             Row::Kind::Slider, &settings_.gamma, nullptr, 0},
         {"Texture Size:",      Row::Kind::Button, nullptr, &settings_.texture_size, 3},
         {"Tree LOD:",          Row::Kind::Slider, &settings_.tree_lod, nullptr, 0},
@@ -295,6 +292,11 @@ void VideoOptionsUI::open() {
     focus_row_ = 0;
     drag_slider_ = -1;
     buildRows();
+    // The resolution list is fed by the platform (RE §36), so a saved index can
+    // outlive the mode it referred to.
+    if (settings_.resolution_index < 0 || settings_.resolution_index >= display_modes::count()) {
+        settings_.resolution_index = 0;
+    }
     measureLabels();
 }
 
@@ -463,7 +465,11 @@ void VideoOptionsUI::adjustIndex(int index, int delta) {
     if (!rows_[index].index) {
         return;
     }
-    const int count = std::max(1, rows_[index].option_count);
+    const bool is_resolution = (rows_[index].index == &settings_.resolution_index);
+    // The resolution list is fed by the platform at surface creation, so read its
+    // length live instead of relying on the cached option_count.
+    const int count = std::max(1, is_resolution ? display_modes::count()
+                                                : rows_[index].option_count);
     int next = (*rows_[index].index + delta) % count;
     if (next < 0) {
         next += count;
@@ -472,8 +478,8 @@ void VideoOptionsUI::adjustIndex(int index, int delta) {
         *rows_[index].index = next;
         changed_ = true;
         // Changing the resolution shows the original VideoDisplayMenu panel,
-        // which lists the fixed modes and the current selection.
-        if (rows_[index].index == &settings_.resolution_index) {
+        // which lists the available modes and the current selection.
+        if (is_resolution) {
             display_request_ = true;
         }
     }
@@ -548,6 +554,10 @@ bool VideoOptionsUI::onTouchDown(float x, float y) {
             adjustIndex(index, -1);
         } else if (pointInRect(x, y, right)) {
             adjustIndex(index, 1);
+        } else if (row.index == &settings_.resolution_index) {
+            // Tapping the value itself opens VideoDisplayMenu, the resolution list
+            // panel the original keeps for this row (RE 36.5).
+            display_request_ = true;
         }
         return true;
     }
@@ -609,6 +619,9 @@ bool VideoOptionsUI::onKeyPress(int keyCode) {
         case KEY_ENTER:
             if (row.kind == Row::Kind::Button) {
                 adjustIndex(focus_row_, 1);
+            } else if (row.index == &settings_.resolution_index) {
+                // Enter on the resolution row opens VideoDisplayMenu (RE 36.5).
+                display_request_ = true;
             }
             return true;
         case KEY_BUTTON_Y:
@@ -731,10 +744,11 @@ void VideoOptionsUI::renderArrowsRow(const Row& row, int index, float row_y) {
     drawIfLoaded(tex_arrow_right_, right.x, right.y, right.w, right.h, sw, sh);
 
     if (row.index && text_renderer_) {
-        const int count = row.option_count;
-        const char* value = (count == kResolutionCount)
-                                ? optionLabel(kResolution, kResolutionCount, *row.index)
-                                : optionLabel(kOffOn, 2, *row.index);
+        const bool is_resolution = (row.index == &settings_.resolution_index);
+        const std::string resolution = is_resolution ? display_modes::label(*row.index)
+                                                     : std::string();
+        const char* value = is_resolution ? resolution.c_str()
+                                          : optionLabel(kOffOn, 2, *row.index);
         FontScope font(text_renderer_, LABEL_FONT);
         const float tw = text_renderer_->getTextWidth(value, LABEL_SCALE);
         const float th = text_renderer_->getTextHeight(LABEL_SCALE);

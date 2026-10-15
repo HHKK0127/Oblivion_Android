@@ -13,7 +13,10 @@
 class VideoOptionsUI {
 public:
     struct Settings {
-        int resolution_index = 2;   // 1280x720
+        // Index into system/display_modes.h. The original starts on the mode the
+        // display is currently in, falling back to the first entry (RE §36.6);
+        // this port has no persisted mode yet, so it starts at the first entry.
+        int resolution_index = 0;
         float gamma = 0.5f;
         int texture_size = 2;       // Small / Medium / Large
         float tree_lod = 0.5f;

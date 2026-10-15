@@ -4,7 +4,9 @@
 #include <android/asset_manager_jni.h>
 #include <android/native_window_jni.h>
 #include <chrono>
+#include <vector>
 #include "engine/renderer.h"
+#include "system/display_modes.h"
 #include "ui/viewer_3d.h"
 #include "video/bink_video_player.h"
 #include "video/video_decoder_jni.h"
@@ -186,6 +188,39 @@ Java_com_example_oblivion_GameRenderer_nativeSetViewSize(
     if (renderer) {
         renderer->setViewSize(width, height);
     }
+}
+
+// Feed the platform display modes to the shared resolution list (RE section 36).
+// Called once from the Java side after the surface exists; the arrays may be
+// empty, in which case the authored presets stay in place.
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeSetDisplayModes(
+        JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        [[maybe_unused]] jlong handle,
+        jintArray widths,
+        jintArray heights) {
+    if (widths == nullptr || heights == nullptr) {
+        return;
+    }
+    const jsize count = env->GetArrayLength(widths);
+    if (count <= 0 || env->GetArrayLength(heights) != count) {
+        LOGE("nativeSetDisplayModes: ignoring mismatched arrays");
+        return;
+    }
+    std::vector<jint> width_values(static_cast<size_t>(count));
+    std::vector<jint> height_values(static_cast<size_t>(count));
+    env->GetIntArrayRegion(widths, 0, count, width_values.data());
+    env->GetIntArrayRegion(heights, 0, count, height_values.data());
+
+    // jint is int32_t, which is int on every Android ABI, so the arrays can be
+    // handed over without a conversion pass.
+    static_assert(sizeof(jint) == sizeof(int), "jint must match int");
+    display_modes::set_supported(reinterpret_cast<const int*>(width_values.data()),
+                                 reinterpret_cast<const int*>(height_values.data()),
+                                 static_cast<int>(count));
+    LOGI("nativeSetDisplayModes: %d mode(s) reported, %d kept", static_cast<int>(count),
+         display_modes::count());
 }
 
 // Render frame with handle parameter

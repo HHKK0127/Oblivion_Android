@@ -16,6 +16,20 @@ The current version is **0.9.10 (versionCode 910)**.
 ## [Unreleased]
 
 ### Added
+- **The Video options screen's Resolution row now enumerates the real display modes (RE `§36`).**
+  The row used to cycle a hard-coded string table that did not match the panel the row opens.
+  A new `system/display_modes` module holds the authored fallback list
+  (`800x600 / 1080x607 / 1024x768 / 1280x607 / 1280x720`, the five presets the original's
+  `VideoDisplayMenu` slot 3 applies) and accepts the platform's list through a new
+  `nativeSetDisplayModes` JNI entry point, which `GameRenderer.pushDisplayModes()` feeds from
+  `Display.getSupportedModes()` on every surface change. Entries are filtered with the
+  original's `w * h >= 307200` (640x480 passes), de-duplicated by `(w, h)` and sorted ascending,
+  so the row and the `VideoDisplayMenu` list always agree; an empty platform list falls back to
+  the presets. `VideoOptionsUI` and `VideoDisplayUI` now read the label, count and widescreen
+  flag from that module instead of their own tables, a saved index that no longer exists is
+  clamped to the first entry on open, and entering the row (Enter, or a tap on the value)
+  opens the resolution list panel. The list panel is also given touch input ahead of the
+  Video options panel it is drawn on top of, which it previously never received.
 - **MessageMenu (`0x3e9`) is built from the original `Data\Menus\message_menu.xml`.** The old
   `UIMessageBox` was dead code (nothing referenced it); it is now a self-contained modal panel
   that draws the `generic_background` nine-slice body (700px wide, 44px tiled border), the

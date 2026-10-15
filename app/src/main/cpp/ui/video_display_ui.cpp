@@ -1,6 +1,7 @@
 #include "video_display_ui.h"
 #include "ui_draw_helper.h"
 #include "../engine/texture_loader.h"
+#include "../system/display_modes.h"
 #include <algorithm>
 #include <android/log.h>
 
@@ -41,11 +42,22 @@ const glm::vec4 kButtonTextColor(117.0f / 255.0f, 59.0f / 255.0f, 33.0f / 255.0f
 
 const char* const kTitle = "Resolution List";
 const char* const kReturnLabel = "Return";
-// Fixed list baked into video_display_menu.xml; the game holds the actual
-// selection in code (video_first_text..fifth_text).
-const char* const kLines[] = {"- 800 x 600", "- 1080 x 607", "- 1024 x 768",
-                              "- 1280 x 720", "- 1280 x 960"};
-constexpr int kLineCount = 5;
+
+// video_display_menu.xml declares five resolution lines (video_first_text ..
+// video_fifth_text), so at most five are shown at a time.
+constexpr int kMaxLines = 5;
+
+// First line of the five-line window. When the platform reports more modes than
+// the panel can show, the window slides to keep the caller's current selection
+// visible. RE section 36 documents the enumeration and ordering but not how the
+// original windows a longer list, so the centring below is this port's choice.
+int firstVisibleLine(int total, int selected) {
+    if (total <= kMaxLines || selected < 0) {
+        return 0;
+    }
+    const int first = selected - kMaxLines / 2;
+    return std::max(0, std::min(first, total - kMaxLines));
+}
 
 constexpr int KEY_BACK = 4;
 constexpr int KEY_DPAD_CENTER = 23;
@@ -179,11 +191,15 @@ void VideoDisplayUI::renderTexts() {
 
     text_renderer_->renderText(kTitle, panel.x + TEXT_X, panel.y + TITLE_Y, kTextColor, LABEL_SCALE);
 
-    for (int i = 0; i < kLineCount; ++i) {
+    const int total = display_modes::count();
+    const int first = firstVisibleLine(total, selected_index_);
+    for (int row = 0; row < kMaxLines && first + row < total; ++row) {
+        const int index = first + row;
         // The original keeps the actual selection in code; dim the other lines
         // so the caller's current mode stays readable.
-        const bool selected = (selected_index_ < 0) || (selected_index_ == i);
-        text_renderer_->renderText(kLines[i], panel.x + TEXT_X, panel.y + lineLocalY(i),
+        const bool selected = (selected_index_ < 0) || (selected_index_ == index);
+        const std::string text = "- " + display_modes::label(index);
+        text_renderer_->renderText(text.c_str(), panel.x + TEXT_X, panel.y + lineLocalY(row),
                                    selected ? kTextColor : kDimTextColor, LABEL_SCALE);
     }
 }

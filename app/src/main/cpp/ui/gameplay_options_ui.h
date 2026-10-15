@@ -11,7 +11,7 @@ class GameplayOptionsUI {
 public:
     struct Settings {
         int difficulty = 50;            // Oblivion_default.ini iDifficultyLevel
-        bool generalSubtitles = false;  // bGeneralSubtitles
+        bool generalSubtitles = true;  // bGeneralSubtitles
         bool dialogueSubtitles = true;  // bDialogueSubtitles
         bool crosshair = true;          // bCrossHair
         bool saveOnRest = true;         // bSaveOnRest

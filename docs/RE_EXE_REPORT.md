@@ -7272,7 +7272,7 @@ iVar11==2→ゲームパッド `"%s %d"` または `(&DAT_00b398b0 + uVar10*4)`�
 ## §41 NPC → プレイヤーのダメージ計算経路（§33.1 の補強・詳細化）
 
 §33.1 で「入口と式の骨格」は文書化済み。本節はそこに欠けていた**未文書化関数 3 件**
-（`FUN_00484850` = HP 取得 / `FUN_00488830` = HP 書込＋被弾タイマーリスト / `FUN_00403c00` = ダメージ係数 getter）と、
+（`FUN_00484850` = HP 取得 / `FUN_00488830` = HP 書込＋被弾タイマーリスト / `FUN_00403c00` = 値ポインタ（AV/GMST）の null 安全 getter）と、
 **呪文・反射ダメージ経路 `FUN_005f3870`** を確定値として埋める。§33.1 と重複する記述は再掲しない。
 
 ### 41.1 AC（アクター）値アクセスの実体 — 未文書化の中核 3 関数
@@ -7281,7 +7281,7 @@ iVar11==2→ゲームパッド `"%s %d"` または `(&DAT_00b398b0 + uVar10*4)`�
 |---|---|---|---|
 | `FUN_00484850` | 0x00484850 | 282B | HP 取得（絶対値 / 割合×100） |
 | `FUN_00488830` | 0x00488830 | 621B | HP 書込（被弾タイマーリストの追加・更新・削除を兼ねる） |
-| `FUN_00403c00` | 0x00403c00 | 20B | ダメージ係数グローバルのアドレスを返す getter |
+| `FUN_00403c00` | 0x00403c00 | 20B | 引数ポインタをそのまま返す getter。null 時のみ `0x00b35464`（0.0f）を返す |
 
 これら 3 件は §40 までの RE_EXE_REPORT に一切出現していない（`00484850` / `00488830` = 0 件、`00403c00` = §33.1 内 1 件のみ）。
 
@@ -7344,7 +7344,7 @@ void __thiscall FUN_00488830(int *param_1, float param_2, int param_3,
 連結リスト（ノード 20B、+0x04 = next）を管理する」関数。ダメージ適用の最終段で必ずここを通る。
 `FUN_005f3870` からは 3 引数形（`param_4` / `param_5` 省略相当）で呼ばれる。
 
-#### 41.1.3 `FUN_00403c00` — ダメージ係数 getter
+#### 41.1.3 `FUN_00403c00` — null 安全な値ポインタ getter（旧称: ダメージ係数 getter は誤り。§45 参照）
 
 ```
 undefined4 * __fastcall FUN_00403c00(undefined4 *param_1)
@@ -7360,10 +7360,11 @@ FSTP float ptr [0x00b35464]
 RET
 ```
 - `param_1 == 0` のとき `&DAT_00b35464` を返し、同時に `DAT_00b35464 = 0.0f` へ初期化。
-- **乱数関数ではない。グローバル float `DAT_00b35464` のアドレスを返す getter。**
+- **乱数関数ではない。引数ポインタをそのまま返し、null のときだけ 0.0f を入れたグローバル
+  `DAT_00b35464` のアドレスを返す null 安全 getter。**
 - `DAT_00b35464` は静的初期化領域（.data 初期化終端 VA 0xb33800）を超えるため、
-  静解析では初期値 0.0 のみ観測可能。**実行時に書き込まれる係数**（難易度・GMST 由来の乗数）。
-  書き込み元関数は未特定（41.7 残課題）。
+  絶対 `FSTP` 8 箇所はすべて `FLDZ` → `FSTP [0x00b35464]` の 0 クリアで、
+  **実行時に係数が書き込まれることはない**（「実行時に書き込まれる係数」という当初の推定は誤り。**§45 で訂正**）。
 
 ### 41.2 呪文・反射ダメージ経路 `FUN_005f3870`（新規・アセンブラ裏取り済み）
 
@@ -7383,12 +7384,14 @@ if (cVar2 == 1) { FUN_005f23b0(0x12); FUN_005f23b0(0x12); }
 else if (cVar2 != 0) { /* skip */ }
 FUN_005f23b0(0x1b); FUN_005f23b0(0x1b);
 ```
-- 抵抗判定用グローバル `0x00b37508` を使用（`005f3907 MOV ECX,0xb37508`）。
-- `FUN_005f23b0(0x12)` = 種別 0x12、`FUN_005f23b0(0x1b)` = 種別 0x1b の抵抗力チェックを 2 回ずつ呼ぶ。
+- `005f3907 MOV ECX,0xb37508` は**抵抗判定ではなく被ダメージ倍率 GMST スロット**
+  （`fPerkLightArmorJourneymanDamageMult`）のロード。直後の `CALL 0x00403c00` へ渡す係数ポインタ。
+- `FUN_005f23b0(0x12)` = AV index 18（HeavyArmor）、`FUN_005f23b0(0x1b)` = AV index 27（LightArmor）の
+  **習熟ランク問い合わせ**。抵抗力チェックではない。詳細と訂正は **§45** を参照。
 
 #### 41.2.2 ダメージ確定 → HP 減算（命令列）
 ```
-005f3920  CALL 0x00403c00                  ; EAX = &DAT_00b35464
+005f3920  CALL 0x00403c00                  ; EAX = 係数ポインタ（GMST スロット。null 時のみ &DAT_00b35464）
 005f3925  FLD  float ptr [EAX]             ; 係数
 005f3927  FMUL float ptr [ESP+0x2c]        ; × param_3（ベースダメージ）
 005f392b  FSTP float ptr [ESP+0x28]        ; = 実ダメージ
@@ -7398,9 +7401,11 @@ FUN_005f23b0(0x1b); FUN_005f23b0(0x1b);
 005f3940  FLD1 / FCOMP / TEST AH,0x41 / JNZ
 005f394d  FLDZ / FSTP                      ; < 1.0 なら 0.0 へクランプ（死亡）
 ```
-- **実ダメージ = `DAT_00b35464`（係数グローバル） × `param_3`（ベースダメージ）**
+- **実ダメージ = 係数 × `param_3`（ベースダメージ）**。この係数は **アーマー習熟ダメージ倍率 GMST**
+  （`fPerk{Heavy,Light}Armor{Novice,Journeyman}DamageMult`）で、`0x00B35464` ではない（**§45 で訂正**）。
+  `0x00403C00` は係数ポインタをそのまま返す null 安全 getter で、null のときだけ `0x00B35464`＝0.0f を返す。
 - **HP 減算は `現在HP - 実ダメージ`、結果が 1.0 未満なら 0.0 にクランプ。**
-  近接 `FUN_005febf0` の式（スキル係数・アーマー軽減を含む多段）とは異なり、こちらは 1 乗算のみのシンプル経路。
+  倍率が 1.0（防具なし・習熟ランク 1 など）の経路も `0x005F392F` の同 tail に合流する（倍率計算のみスキップ）。
 
 #### 41.2.3 デバッグログ
 ```
@@ -7451,7 +7456,7 @@ then
 - **戻り値 1 = 死亡（HP が 0 にクランプされた）、0 = 生存。**
 
 **Android 移植向け確定値**：呪文・反射ダメージは
-`実ダメージ = 係数(DAT_00b35464) × ベースダメージ` → `HP = max(0, HP - 実ダメージ)` →
+`実ダメージ = アーマー習熟 GMST 倍率 × ベースダメージ` → `HP = max(0, HP - 実ダメージ)` →
 `FUN_00488830` 相当で書き戻し → `HP <= 0` で死亡処理（vtable +0x2c8 経由）。
 近接（`FUN_005febf0`）とは別経路であることに注意。
 
@@ -7559,7 +7564,8 @@ else
    - `GetHealthPercent(actor)` = `FUN_00484850(actor, 1)`（0..100）
    - `SetHealth(actor, value)` = `FUN_00488830(actor, value, ...)`（被弾タイマーリスト管理を含む）
 2. **呪文／反射ダメージ式**：`damage = coefficient * baseDamage`、`HP = max(0, HP - damage)`。
-   係数は実行時グローバル（`DAT_00b35464`）で、静解析では 0.0 初期値のみ。
+   係数はアーマー習熟ダメージ倍率 GMST（`0x00B374F0` / `0x00B374F8` / `0x00B37500` / `0x00B37508`）。
+   §41.2.2 の `DAT_00b35464` は null フォールバック（0.0f）で、係数ではない（§45 で訂正）。
 3. **難易度倍率**：§41.4 の 2 分岐式へ差し替え（`pow(6, ...)` を廃止）。
 4. **死亡処理**：HP が 1.0 未満へクランプされた時点で vtable +0x2c8 → `FUN_004dc000`。
    プレイヤー自身（`DAT_00b333c4`）への反射は除外。
@@ -7570,12 +7576,11 @@ else
 
 ### 41.7 残課題（§41）
 
-- `DAT_00b35464`（ダメージ係数グローバル）の**書き込み元関数が未特定**。
-  静的初期化領域外のため実行時書込。候補は GMST ロード経路（`FUN_005480a0` の
-  テーブル `0xb37620`〜`0xb37668` 書き込みと同一系の可能性）。
-- `FUN_004842f0`（`FUN_00484850` 内から呼ばれる丸め／クランプ関数）の挙動未確定。
+- `DAT_00b35464` の書き込み元 → **§42.4 で解消**（未定義 AV 用フォールバック 0.0f）。
+  ダメージ係数ではない点は **§45 で訂正**。
+- `FUN_004842f0` = `truncf`（切り捨て）と確定（§44.1）。
 - AV index 4 / 0xf の厳密な意味（出血／疲労のいずれか）は未確定。
-- `FUN_00468ff0(0xd, 0)` の種別 0xd の意味（死亡判定の前提状態）未確定。
+- `FUN_00468ff0(0xd, 0)` = フラグ `word[+4]` の bit13 と確定（名称は未確定、§44.2）。
 - `0x00b3b908`（ダメージログ有効化フラグ）の設定元未確定（デバッグ設定と推定）。
 
 ---
@@ -7930,3 +7935,497 @@ CRT 静的初期化テーブル（§42.3.1）の次エントリ **0x009DC2D0**�
 - 併せて 0x00403BC0 は `p = [ECX+4]; if (p && p[0]=='S') FUN_00401f20(p)` の解放ヘルパ（'S' は
   型名／タグ判定。`[this+4]` は RTTI 記述子と同じ配置規則）。
 - 移植での結論は §42.4 と同じ: **未定義 AV は 0.0f を返すだけで等価**。
+
+## §44 低優先補完：CRT 数値ヘルパとフラグアクセサ（§41.7 残項目の解消）
+
+本章は §41.7 に「未確定」として残していた低優先 2 項目（`FUN_004842f0` の挙動、`FUN_00468ff0(0xd,0)` の種別 0xd）を解消する。ゲームロジックの新規発見は無く、移植への影響は丸め関数の置換のみ。
+
+### 44.1 CRT 数値変換ヘルパ（§41.7 の `FUN_004842f0` 未確定項目の解消）
+
+| VA | 実体 | 挙動 |
+|---|---|---|
+| `0x004842F0` | `(float)(int)x`（trunc） | `fld [arg]` → `fstp qword` → `call 0x00985A00` → 切り捨て結果を引数スロットへ `fstp dword` → `fld` で再ロードして返す |
+| `0x00484370` | `ceilf(x)` | trunc 後、`x - trunc(x) > 0` のときのみ `+1.0`（定数 `0xA2FC68`=0.0 / `0xA2F928`=1.0） |
+| `0x00484310` | 2 フィールド初期化 | `[ecx+8] = [ecx+0xC] = _DAT_00a30634`（= -1.0f のセンチネル） |
+| `0x00985A00` | `__ftol2`（SSE2 版） | `MXCSR`/FPU 制御語を検査し、SSE2 環境でなければ `0x00993E48` へフォールバック |
+| `0x009828C0` | double → int | `cvttsd2si` 系（`[0x00BAABE0]` でゲート） |
+
+- `0x004842F0` は「丸め／クランプ」ではなく **単純な切り捨て（truncf）**。`FUN_00484850` の
+  HP% は `truncf(値 × 100.0f)` であり、0〜100 の整数（切り捨て）で確定（§41.2 の % 表記は正しい）。
+- `0x00484370` は `ceilf`（当初「trunc + floor 補正」としていた推測は誤り。C0（ST0 < 0.0）判定で
+  「小数部が正なら +1」する実装）。
+- いずれも FPU 丸めモードに依存しない値域のみを扱うため、移植では `std::trunc` / `std::ceil` / `(int)` で置換可能。
+
+### 44.2 フラグアクセサ（§41.7 の `FUN_00468ff0(0xd,0)` 項目の解消）
+
+| VA | 挙動 |
+|---|---|
+| `0x00468FF0(index, check)` | 16bit フラグ word `[obj+4]` のビットテスト。`check!=0 && index==1 && bit0` のとき**強制 0**、それ以外は `(word >> index) & 1` |
+| `0x00469020(index, set)` | 同フラグの set / clear（`or word[edx+4], (1<<index)` / `and word[edx+4], ~(1<<index)`） |
+| `0x00469050` | 述語「bit6 / bit7 / bit8 のいずれかが立っている」 |
+
+- `0x00468FF0` の呼び出し元は **87 箇所**（0x0045B8F5 帯、0x0048A0C2 帯、0x00522C67 帯など）に及ぶ汎用ビットアクセサ。
+  したがって §41.2.4 の `FUN_00468ff0(0xd, 0)` は **「オブジェクトのフラグ word[+4] の bit13」** を意味する。
+  bit13 単体の名称（ゲーム内での呼称）は未確定だが、「死亡処理の前提状態フラグ」であることは確定。
+- 所有クラスの vtable は `0x00A3B7A8`（4 エントリ: `0x00468CC0` / `0x00468D10` / `0x00468DF0` / `0x00468E80`、
+  直後に `"Unable to find container object (%08X) on unknown owner."` ほか 3 種のエラー文言群）。クラス名は未確定
+  （コンテナ／オーナー系ヘルパの推定）。以降の解析対象からは外してよい。
+
+### 44.3 Android 移植向け確定値（本章まとめ）
+
+1. 丸めは `truncf` / `ceilf` をそのまま使用する（独自の丸め・クランプ関数は不要）。
+2. `FUN_00468ff0(0xd, 0)` に依存する死亡前提条件は**移植では再現不要**。HP が閾値未満へクランプされた時点で
+   死亡とする現行実装（§41.2.4）で挙動は一致する。
+3. §41.7 の未確定 2 項目（`FUN_004842f0` の挙動 / 種別 0xd）は本章で解消。`DAT_00b35464` の書き込み元も
+   **§45.1 で解消**（8 箇所すべて 0.0f の受皿）。§41.7 の残り（`DAT_00b35464`
+   書き込み元、AV index 4 / 0xf、`0x00b3b908`）は引き続き未確定。
+
+---
+
+## §45 §41.1 / §41.2 の訂正：被ダメージ倍率は「アーマー習熟 GMST」であり DAT_00b35464 は係数ではない
+
+§41.1 / §41.2 は逆コンパイル結果のみから読み取ったため、乗算段の係数を `DAT_00b35464` と誤って結論し、
+その書き込み元を「未特定の実行時係数」としていた。実命令で裏取りした結果、正しくは **防具の重装／軽装
+フラグとアーマー習熟ランクで選ばれる 4 種の GMST 倍率**である。本章で訂正する。
+
+### 45.1 結論
+
+- `FUN_005f3870` のダメージ乗算段の係数は **GMST 4 種（アーマー習熟ダメージ倍率）**。`0x00B35464` ではない。
+- `0x00B35464` は「値ポインタが null／範囲外のとき 0.0f を返すための受皿スロット」。バイト列
+  `d9 1d 64 54 b3 00`（`FSTP dword [0x00B35464]`）はファイル全体で **8 件**で、内訳は次のとおり。
+
+| VA | 所属 | ST(0) の中身 |
+|---|---|---|
+| `0x00403C0D` | getter `FUN_00403C00` | `FLDZ` の 0.0f |
+| `0x00404E3E` | 同型 getter | 0.0f |
+| `0x004AEBC0` | 係数乗算関数の else 入口 | 0.0f |
+| `0x004AEC0D` | `FUN_004AEBE0`（表引き getter） | 0.0f |
+| `0x005A06EF` | AV getter（`FUN_00484850` 系） | 0.0f |
+| `0x005A0736` | 同 | 0.0f |
+| `0x005A2BB4` | 同 | 0.0f |
+| `0x005A2BFF` | 同 | 0.0f |
+
+すべて直前に `FLDZ` が現れ、`FSTP` はその 0.0f を捨てて（同時に 0.0f をメモリへ置いて乗算の
+fallback に）するための命令。**係数を書き込む書き込み元関数は存在しない** → §41.7 の残課題は解消。
+
+### 45.2 同定した GMST（アーマー習熟ダメージ倍率）
+
+| 値スロット | GMST 名（文字列） | 既定値（定数） | 登録スタブ |
+|---|---|---|---|
+| `0x00B374F0` | `fPerkLightArmorNoviceDamageMult`（`0x00A59F50`） | 1.5f（`0x00A35AA4`） | `0x009EB290` |
+| `0x00B374F8` | `fPerkHeavyArmorNoviceDamageMult`（`0x00A59F70`） | 1.5f（`0x00A35AA4`） | `0x009EB2C0` |
+| `0x00B37500` | `fPerkHeavyArmorJourneymanDamageMult`（`0x00A59F90`） | 0.5f（`0x00A3D65C`） | `0x009EB2F0` |
+| `0x00B37508` | `fPerkLightArmorJourneymanDamageMult`（`0x00A59FB4`） | 0.5f（`0x00A3D65C`） | `0x009EB320` |
+
+- 隣接スタブ `0x009EB350` は `fPerkJumpFatigueExpertMult`（`0x00A59FD8`、0.5f）→ `0x00B37510`。同族の登録が連続する。
+- スタブ本体は 0x20 バイト間隔（実測）:
+  ```
+  FLD  dword [既定値]        ; 1.5f / 0.5f
+  PUSH ECX / FSTP [ESP]      ; 既定値をスタック渡し
+  PUSH <名前文字列>
+  MOV  ECX,<値スロット>
+  CALL 0x0041BAE0            ; GMST 登録
+  PUSH <thunk>               ; MOV ECX,<値スロット>; JMP 0x004055E0 の 8 バイト thunk
+  CALL 0x00981FB4            ; アクセサ登録
+  POP  ECX / RET
+  ```
+- アクセサ thunk は `0x00A1F100`（→`0xB374F0`）/ `0x00A1F110` / `0x00A1F120` / `0x00A1F130`（実測）。
+  `0x004055E0` = GMST 値の共通アクセサ本体（未精読）。
+- 4 スロットはいずれも VA > `0x00B32C00`（BSS）で静的初期値 0、起動時にスタブで登録される。
+
+### 45.3 `FUN_005f3870` の分岐（実命令で確定）
+
+```
+ECX = actor(esi) / arg1=[esp+0x24]=対象(edi) / arg2=[esp+0x28]=ベースダメージ / arg3=[esp+0x30]=char
+arg1 == 0              → 0x5F3B3F（本体なし exit）
+arg2 <= 0.0            → 0x5F3B3D（exit）
+item = arg1[8]         → 0x5F392F（係数 1.0 の tail）
+byte[item+4] != 0x14   → 0x5F392F
+arg3 != 0              → 0x5F392F
+heavy = (byte[item+0x6a] >> 7) & 1        ; 0x004B4C70
+heavy == 1:
+    rank = FUN_005f23b0(actor, 0x12)      ; 18 = HeavyArmor
+    rank >= 2 → ECX=0xB37500 → 0x5F3920   ; ×0.5
+    rank != 0 → 0x5F392F                  ; ×1.0
+    rank == 0 → ECX=0xB374F8 → 0x5F3920   ; ×1.5
+heavy == 0:
+    （0x004B4C70 を再取得。al != 0 なら 0x5F392F）
+    rank = FUN_005f23b0(actor, 0x1b)      ; 27 = LightArmor
+    rank >= 2 → ECX=0xB37508 → 0x5F3920   ; ×0.5
+    rank != 0 → 0x5F392F                  ; ×1.0
+    rank == 0 → ECX=0xB374F0 → 0x5F3920   ; ×1.5
+0x5F3920: CALL 0x00403C00 ; FLD [EAX] ; FMUL [esp+0x2c]（= arg2 ベースダメージ）; FSTP [esp+0x28]
+0x5F392F: 現在HP = FUN_00484850(対象, 0) − [esp+0x28] ; 1.0 未満なら 0.0 へクランプ
+```
+
+- `0x004B4C70` = `(byte[ecx+0x6a] >> 7) & 1`（防具の重装フラグ。1 = Heavy）。§41.2.1 の「コマンド系判定」は誤り。
+- `0x005F23B0` = AV index 問い合わせ（有効 index は 0xC〜0x20。内部で `0x005F1910` → `0x0056A300`）。
+  戻り値はスキル値そのものではなく**習熟ランク相当の整数（0 / 1 / 2 以上）**として分岐に使われる。
+  §41.2.1 の「抵抗力チェック」は誤り。
+- `0x00403C00` は係数ポインタ（＝GMST スロット）をそのまま返す null 安全 getter。null のときだけ
+  `0x00B35464`＝0.0f を返す。→ 正常時 `FLD [EAX]` は **GMST の値**を読む。
+- **係数 1.0 の経路も `0x005F392F` の同 tail を通る**（ダメージ 0 ではない。倍率計算だけをスキップ）。
+
+### 45.4 同じ「0.0 fallback」を共有する隣接関数
+
+- `0x004AEBE0` = 添字→float の表引き getter。`index-1 > 0x13` は 0.0、`table = 0xB07F44 + index*16` の
+  ポインタが null のときも 0.0。その受皿が `0x00B35464`（`0x004AEC0D`）。
+- `0x004AEBA0` 帯 = 係数乗算関数（`([esp+0xC] − 1.0) * [係数] → [eax+8]`、`RET 0xC`）。係数ポインタが
+  null のときの else 入口が `0x004AEBC0` で、`0x00B35464`（0.0f）を係数に使う。
+- いずれも「値が無い → 0.0」で一貫しており、特殊な実行時係数ではない。
+
+### 45.5 Android 移植向け確定値（本章まとめ）
+
+1. `実ダメージ = 係数 × ベースダメージ` の**係数は 4 種の GMST 倍率**
+   （`fPerk{Heavy,Light}Armor{Novice,Journeyman}DamageMult`）。`0x00B35464` を係数に使わないこと
+   （§41.2.2 の記述を本節で訂正）。
+2. 倍率は「防具の重装／軽装フラグ」と「アーマー習熟ランク」で決定: ランク 0 → 1.5 / ランク 2 以上 → 0.5 /
+   ランク 1 または防具なし・対象外 → 1.0（tail 直行、ダメージはベース値のまま）。
+3. 続く処理（HP − ダメージ、1.0 未満を 0.0 へクランプ、`0x00B3B908` のデバッグログ）は §41.2.2 / §41.2.3 のまま。
+4. `0x00B35464` は「値が定義されない → 0.0f」の受皿としてのみ実装する（§42.4 / §43.4 と同じ）。
+5. 既定倍率は GMST 登録スタブの即値そのまま（Novice 1.5 / Journeyman 0.5）。INI 相当の上書きは
+   `0x0041BAE0` の GMST テーブル経由なので、移植では定数でよい。
+
+---
+
+## §46 §41.7 残課題の解消：AV index 名テーブル・GMST オブジェクト構造・0x00B3B908
+
+§41.7 に残していた 3 件（AV index 4 / 0xf の意味、`0x00b3b908` の設定元、
+`0x004055e0` の正体）を実命令と .data 実測で確定した。§45 のアーマー習熟経路の裏取りにもなる。
+
+### 46.1 AV index → 名前 の正典テーブル（0x00B0A1A8、73 要素）
+
+`.data` の `0x00B0A1A8` に 73 個の `char*` 配列があり、これがアクター値（AV）名の正典である
+（初期化済み領域。0x00B32C00 未満なのでファイル実体あり）。index は 0 起点。
+
+| index | 名前 | index | 名前 |
+|---|---|---|---|
+| 0x00 | Strength | 0x25 | Bounty |
+| 0x01 | Intelligence | 0x26 | Fame |
+| 0x02 | Willpower | 0x27 | Infamy |
+| 0x03 | Agility | 0x28 | MagickaMultiplier |
+| 0x04 | **Speed** | 0x29 | NightEyeBonus |
+| 0x05 | Endurance | 0x2a | AttackBonus |
+| 0x06 | Personality | 0x2b | DefendBonus |
+| 0x07 | Luck | 0x2c | CastingPenalty |
+| 0x08 | Health | 0x2d | Blindness |
+| 0x09 | Magicka | 0x2e | Chameleon |
+| 0x0a | Fatigue | 0x2f | Invisibility |
+| 0x0b | Encumbrance | 0x30 | Paralysis |
+| 0x0c | Armorer | 0x31 | Silence |
+| 0x0d | Athletics | 0x32 | Confusion |
+| 0x0e | Blade | 0x33 | DetectItemRange |
+| 0x0f | **Block** | 0x34 | SpellAbsorbChance |
+| 0x10 | Blunt | 0x35 | SpellReflectChance |
+| 0x11 | HandToHand | 0x36 | SwimSpeedMultiplier |
+| 0x12 | **HeavyArmor** | 0x37 | WaterBreathing |
+| 0x13 | Alchemy | 0x38 | WaterWalking |
+| 0x14 | Alteration | 0x39 | StuntedMagicka |
+| 0x15 | Conjuration | 0x3a | DetectLifeRange |
+| 0x16 | Destruction | 0x3b | **ReflectDamage** |
+| 0x17 | Illusion | 0x3c | Telekinesis |
+| 0x18 | Mysticism | 0x3d | ResistFire |
+| 0x19 | Restoration | 0x3e | ResistFrost |
+| 0x1a | Acrobatics | 0x3f | ResistDisease |
+| 0x1b | **LightArmor** | 0x40 | ResistMagic |
+| 0x1c | Marksman | 0x41 | ResistNormalWeapons |
+| 0x1d | Mercantile | 0x42 | ResistParalysis |
+| 0x1e | Security | 0x43 | ResistPoison |
+| 0x1f | Sneak | 0x44 | ResistShock |
+| 0x20 | Speechcraft | 0x45 | Vampirism |
+| 0x21 | Aggression | 0x46 | Darkness |
+| 0x22 | Confidence | 0x47 | ResistWaterDamage |
+| 0x23 | Energy | 0x48 | Begin（終端センチネル） |
+| 0x24 | Responsibility | | |
+
+構造上の要点:
+
+- 属性 0x00〜0x07（8 個）、派生属性 0x08〜0x0b（Health / Magicka / Fatigue / Encumbrance）、
+  技能 0x0c〜0x20（21 個）、特殊値 0x21〜0x48。
+- **AV index 4 = Speed、AV index 0xf = Block**。§41.7 の「出血／疲労のいずれか」という推定は誤り。
+- **0x12 = HeavyArmor、0x1b = LightArmor**。§45.3 で `FUN_005f23b0` に渡していた 0x12 / 0x1b が
+  そのまま技能 index であることを裏取りした。技能 index は 0x0c 起点で、`FUN_005f23b0` の
+  有効範囲 0x0C〜0x20 と完全に一致する。
+- 反射・抵抗系: 0x3b = ReflectDamage / 0x34 = SpellAbsorbChance / 0x35 = SpellReflectChance /
+  0x40 = ResistMagic。§41 の反射ダメージ経路が参照する AV は 0x3b。
+- 名前に使う文字列実体は 3 か所に分かれている（0xA51E00 帯の多くと、0xA3CAFC / 0xA2FA34 /
+  0xA346E0 帯の一部）。文字列の配置順は index 順ではないので、並びは本テーブルを正とする。
+
+### 46.2 0x004055E0 の正体（GMST エントリのデストラクタ）
+
+実命令（0x4055E0〜0x40564B、SEH 付き）:
+
+```
+4055e0  push -1 / push 0x9ab578 / mov eax,fs:[0] / push eax / push ecx / push esi
+4055f0  mov eax,[0xb30aac] / xor eax,esp / push eax / lea eax,[esp+0xc] / mov fs:[0],eax
+405602  mov esi,ecx
+405608  test esi,esi / je 0x405626
+405614  mov eax,[esi+4] / test eax,eax / je 0x405626
+40561b  push eax / mov ecx,0xb35574 / call 0x4524c0    ; 登録マップから名前を erase
+405626  mov esi,[esi+4] / test esi,esi / je 0x40563b
+40562d  cmp byte [esi],0x53 / jne 0x40563b              ; 'S' 印チェック
+405632  push esi / call 0x401f20                        ; free(名前文字列)
+40563b  SEH 復帰 / ret
+```
+
+- `0x4524c0` = ハッシュマップ（ECX = コンテナ）の erase。コンテナは `0x00B35574`。
+- `0x401f20` = 汎用 free（内部で `0x401d40` → アロケータ状態 `0x00B02020`）。
+- したがって **0x004055E0 は GMST/Setting オブジェクトのデストラクタ**である（名前を登録マップから
+  外し、ヒープ確保された名前文字列を解放する）。**値のゲッターではない**。
+- §45.2 で「登録スタブ末尾の共通アクセサ」と書いたのは誤称。`0xA1F100` 等の thunk 群は
+  **値スロットを ECX に載せて 0x4055E0 を呼ぶ「シャットダウン時の破棄登録」**である。
+- 副産物として **GMST 値スロットのレイアウトが確定**: 8 バイト構造 `{ float value; char* name; }`
+  （0xB374F0 / F8 / 500 / 508 / 510 が 8 バイト間隔、値は +0、名前は +4）。
+  §45.2 の `call 0x403c00` → `FLD [EAX]` は +0 の float 読みであり整合する。
+
+### 46.3 0x00B3B908 = bVerboseMessages（コンソールトグル）
+
+`0x00B3B908` への書き込みは**ファイル全体で 1 箇所のみ**（0x507930）:
+
+```
+507930  803d08b9b30000  cmp byte [0xb3b908],0
+507937  0f94c0          sete al                  ; 反転
+50793a  a208b9b300      mov byte [0xb3b908],al
+50793f  84c0            test al,al
+507941  b8f8b8a400      mov eax,0xa4b8f8         ; "shown."
+507946  7505            jne 0x50794d
+507948  b8f0b8a400      mov eax,0xa4b8f0         ; "hidden."
+50794d  push eax / push 0xa4c0a0 / call 0x579b60    ; printf("Verbose messages %s")
+```
+
+- `0xA4C0A0` = `"Verbose messages %s"`、`0xA4B8F8` = `"shown."`、`0xA4B8F0` = `"hidden."`。
+- 直前の 0x5078E0〜0x50792E は別コマンドの tail（`"All map markers %s"` = 0xA4C08C、別フラグ）。
+- → **`0x00B3B908` = bVerboseMessages**（既定 0 = hidden）。コンソールの verbose 系コマンドでのみ反転する。
+- 参照 53 箇所のうち書き込みは 1 箇所だけで、残りは `cmp byte [0xb3b908],0` による**詳細ログ出力ガード**。
+- ダメージ経路近傍の `0x5F64EE` も同じ:
+  `cmp byte [0xb3b908],al`（ここで al = 0）→ 0 でなければ `FUN_004da2a0`（名前取得）→
+  `"%.20s stops combat."`（0xA6E8B8）を出力するだけ。
+  → **被ダメージ計算の入力ではなくログ専用**。§41.2.3 の「デバッグログ」記述は正しく、
+  未確定だった「設定元」を本節で解消した。
+
+### 46.4 §41.7 残課題の更新
+
+| 項目 | 状態 |
+|---|---|
+| AV index 4 | **Speed**（46.1） |
+| AV index 0xf | **Block**（46.1） |
+| 0x00b3b908 の設定元 | **bVerboseMessages**、書き込みは 0x507930 のコンソールトグルのみ（46.3） |
+| 0x004055e0 | GMST エントリの**デストラクタ**（46.2、アクセサではない） |
+| DAT_00b35464 の書き込み元 | §42.4 / §45 で解消済み |
+| FUN_00468ff0(0xd,0) = word[+4] bit13 | §44.2 で解消済み（名称のみ未確定） |
+
+### 46.5 Android 移植向け確定値
+
+1. AV index 表は `0x00B0A1A8` の 73 要素をそのまま採用できる。技能は **0x0c 起点**、
+   `0x12 = HeavyArmor` / `0x1b = LightArmor` / `0x3b = ReflectDamage` / `0x40 = ResistMagic`。
+   §45 のアーマー習熟ランク参照引数（0x12 / 0x1b）はこの技能 index で確定。
+2. `0x00B3B908`（bVerboseMessages）はログ専用。移植側では実装不要。
+3. GMST 値スロットは 8 バイト `{ float value; char* name; }`（+0 = 値）。
+   移植では +0 の float だけ読めば十分で、名前ポインタは不要。
+4. `0x004055E0` と `0xA1F1xx` thunk 群はシャットダウン時の破棄処理。移植不要。
+
+---
+
+## §47 GamePlay 設定ディスクリプタ表の確定と §33.5 の字幕グローバル訂正
+
+本体実測（`.data` イメージ）と thunk 群の解析で、GamePlay 設定の値スロット・名称・消費者が確定した。
+§33.5 に割当の誤りがあったため本節で訂正する。
+
+### 47.1 ディスクリプタ表レイアウト（実バイト確定）
+
+`0x00B131F8` の直後から **8 エントリ / stride 8 バイト**で並ぶ。
+
+```
+struct GamePlaySetting { u32 value; const char* name; };   // +0 = 値(実行時に直接 cmp される), +4 = 名称
+```
+
+実測ダンプ（値は起動時の既定値、名称ポインタは `.rdata` の文字列を指す）:
+
+| 値フィールド | 既定値 | 名称ポインタ | 名称 |
+|---|---|---|---|
+| 0x00B13200 | 1 | 0x00B13204 -> 0xA68C10 | `bDialogueSubtitles:GamePlay` |
+| 0x00B13208 | 1 | 0x00B1320C -> 0xA68C2C | `bGeneralSubtitles:GamePlay` |
+| 0x00B13210 | 1 | 0x00B13214 -> 0xA68C48 | `bCrossHair:GamePlay` |
+| 0x00B13218 | 1 | 0x00B1321C -> 0xA68C5C | `bSaveOnRest:GamePlay` |
+| 0x00B13220 | 1 | 0x00B13224 -> 0xA68C74 | `bSaveOnWait:GamePlay` |
+| 0x00B13228 | 1 | 0x00B1322C -> 0xA68C8C | `bSaveOnTravel:GamePlay` |
+| 0x00B13230 | 1 | 0x00B13234 -> 0xA68CA4 | `bSaveOnInteriorExteriorSwitch:GamePlay` |
+| 0x00B13238 | 0 | 0x00B1323C -> 0xA68CCC | `bDisableDynamicCrosshair:GamePlay` |
+
+- 表の直前 `0x00B131F8 = 0xFFFFFFFF` / `0x00B131FC = 0xFF` は番兵。
+- 表の直後 `0x00B13240` 以降は RTTI 型記述子（`"?AVTile@@"` 等）で無関係。
+
+**名称ポインタが `+4` である直接証拠**（破棄 thunk）:
+
+```
+0x00A243D0: push 0xB13200; mov ecx,0xB07CFC; call 0x65C620;  // 設定マップから解除
+            mov eax,[0xB13204];                              // +4 = 名称ポインタ
+            if (byte[eax]=='S') free(eax);                    // "sXxx" 形式のヒープ文字列を解放
+0x00A24400: push 0xB13208; ... mov eax,[0xB1320C]; ...        // 同型（+4 を読む）
+```
+
+- 登録 thunk: `0x9FAF40`(0xB13200) / `0x9FB000`(0xB13208) / `0x9FB060`(0xB13218) / `0x9FB0C0`(0xB13220) / `0x9FB120`(0xB13228) / `0x9FB180`(0xB13230) / `0x9FB1E0`(0xB13238)。いずれも `push <descriptor>; mov ecx,0xB07BF0; call 0x4040E0`。
+- 破棄 thunk: `0xA243D0` ... `0xA24520`（`mov ecx,0xB07CFC; call 0x65C620` で解除）。
+- `0x00403BC0` は「`[ecx+4]` の名称文字列を free する」サブ（`0x9BE820`/`0x9BE850`/... の `mov ecx,<descriptor>; jmp 0x403BC0` がこれ）。値 getter ではない点に注意。
+
+### 47.2 §33.5 の訂正
+
+| グローバル | §33.5 の記載 | 正しい割当 |
+|---|---|---|
+| 0x00B13200 | bGeneralSubtitles | **bDialogueSubtitles**（会話字幕） |
+| 0x00B13208 | aDialogueSubtitles（名称誤記） | **bGeneralSubtitles**（一般字幕） |
+
+名称はディスクリプタ `+4` の実ポインタから復号した確定値であり、両者は §33.5 で入れ替わっていた。名称も
+`bDialogueSubtitles`（`aDialogueSubtitles` は誤記）に訂正する。
+
+### 47.3 消費者一覧（確定・アドレス付き）
+
+`bDialogueSubtitles`（0x00B13200、20 参照）:
+
+- 0x0059DFE2 / 0x0059E0A2 / 0x0059E172 / 0x0059E24C / 0x0059EB07 / 0x0059EC5F / 0x005BE549 /
+  0x005BF6EF / 0x005BFEA6 / 0x005BFF7F / 0x005C03BA
+  - `cmp byte [0xB13200],al; setne al; add eax,1` 型 = メニュー要素の有無（会話・メッセージ UI の 0x59D000〜0x5C1000 帯）。
+- 0x005A36FF / 0x005A391A / 0x005A3924 / 0x005A393D / 0x005A3A88 / 0x005A3B00 = GamePlay 設定 UI と INI 反映。
+- 登録/破棄: 0x9BE820 / 0x9FAF40 / 0xA243D0。
+
+`bGeneralSubtitles`（0x00B13208、14 参照）:
+
+- 0x004D92BB / 0x005F72A8 / 0x00626B4D / 0x0062A247 / 0x0062AE3C = 台詞・会話行の字幕発行（距離ゲート付き）。
+- 0x005A3724 / 0x005A38E8 / 0x005A38F6 / 0x005A390A / 0x005A3A76 / 0x005A3AEB = GamePlay 設定 UI と INI 反映。
+- 登録/破棄: 0x9BE850 / 0x9FB000 / 0xA24400。
+
+`bCrossHair`（0x00B13210）: 0x5A374A / 0x5A394D / 0x5A8769 / 0x5A888C / 0x5A88DD。
+`bDisableDynamicCrosshair`（0x00B13238）: 0x5A8C90 のみ。
+
+### 47.4 字幕発行 API と距離ゲート
+
+- **0x0057ACC0**（`ecx=対象`, arg1, arg2=テキスト, arg3=float）が字幕 1 件を発行する共通経路（§33.5 の HUDSubtitleMenu）。
+- 0x0062A247 / 0x0062AE3C（会話行）の距離ゲート:
+
+```
+if ([0xB13208] == 0) skip;            // bGeneralSubtitles
+if (*piVar4 == 0)    skip;
+d = 0x004D7E90(0xB333C4, 0);          // 音源までの距離
+if (2.0f * fAIMinGreetingDistance < d) skip;   // fadd st,st による 2 倍
+push [0xA30634];                      // 字幕距離倍率
+call 0x0057ACC0;
+```
+
+- 0x005F72A8 / 0x004D92BB は同型だが倍率なし（`fAIMinGreetingDistance < d` でスキップ）。
+- `0x00B36AD8` = **fAIMinGreetingDistance**（既定 150.0）。登録 thunk `0x9E7A00`:
+  `fld [0xA44BA4](=150.0f); push ecx; fstp [esp]; push 0xA57ECC("fAIMinGreetingDistance"); mov ecx,0xB36AD8; call 0x41BAE0`。
+  破棄 thunk `0xA1DCD0`（`jmp 0x4055E0`）。`0xB36AC8` / `0xB36AD0` / `0xB36AE0` ... も同型の float GMST スロット。
+- 注意: 挙動は「距離 > 基準 でスキップ」であり、§33.5 の「距離 <= 2×基準」と同値（不等号の向きを明示）。
+
+### 47.5 オートセーブ経路（確定）
+
+- **0x00465130** = SaveGame 本体（`ecx=セーブマネージャ 0x00B33B00`, `edx=名前`, mode, 0）。
+  呼び出し元: 0x466AF6 / 0x466BD0 / 0x466D21 / 0x5024BA（コンソール `save`）/ 0x5D3246 / 0x5D3438。
+- **0x00466B70** = オートセーブ発行:
+
+```
+if ([esi+0x18] & 0x40000) return;   // メニュー表示中ガード
+if ([0xB333C4] + 0x12C)   return;   // 他セーブ処理中ガード
+[esi+0xAA] = 0;
+FUN_0057ACC0(...);                   // "Autosaving" HUD メッセージ
+FUN_00465130(esi, "autosave", 0, 0);
+```
+
+### 47.6 rest / wait / travel の各条件
+
+- **travel**: `0x004B7D69`（セル遷移処理の末尾）
+  `if ([0xB13230] && [0xB13228] && <travel flag> && <cell changed>) [0xB33B00+0x18] |= 0x8000;`
+  = `bSaveOnInteriorExteriorSwitch` と `bSaveOnTravel` の**両方**が真のときのみ遅延オートセーブ要求を立てる。
+- **rest / wait**: `0x005D6A80`（SleepWaitMenu 更新ハンドラ、vtable `0x00A6D7C4` スロット[3]）
+  `AL=[esi+0x4C]; if ((AL && [0xB13218]) || [0xB13220]) FUN_00466B70([0xB33B00]);`
+  rest 分岐 = 0x5D6AB0 / wait 分岐 = 0x5D6ABD。
+- **FUN_0066F420**（移動系, 691 insn）先頭: `mov eax,[esi]; call [eax+0x25C]; if (false) goto 0x66FD74; if ([0xB13228]) FUN_00466B70(...)`
+  → travel 時のオートセーブは **0x66F45B が直接発行**する。`bSaveOnTravel`（0xB13228）の真の消費者は 0x66F45B と 0x4B7D72 の 2 箇所。
+- コンソール `save`: 0x005024BA（`FUN_00982EC0` で名前を組み立て `[0xB33B00]` へ）。
+
+### 47.7 Android 移植向け確定値
+
+1. GamePlay ブールは 8 個（47.1 の表）。**`bDialogueSubtitles` と `bGeneralSubtitles` を取り違えない**（§33.5 は逆。0x00B13200 = bDialogueSubtitles）。
+2. オートセーブは 2 系統のみ。
+   - 休憩/待機: SleepWaitMenu の確定時に 1 回。条件 `bSaveOnRest`（rest かつ）/ `bSaveOnWait`（wait または）。
+   - 移動: セル遷移の開始時に 1 回。条件 `bSaveOnTravel` かつ（屋内/屋外切替時は追加で `bSaveOnInteriorExteriorSwitch`）。
+3. 字幕発行は 1 箇所に集約（0x0057ACC0 相当）。表示条件 = 「該当設定 != 0 かつ 距離 <= 距離基準」。
+   距離基準は `fAIMinGreetingDistance`（既定 **150.0**）の 1 倍または 2 倍。字幕距離倍率 `[0xA30634]` を乗じる。
+4. 移植での既定値: fAIMinGreetingDistance = 150.0。残り 7 ブールは 47.1 の既定値どおり（bDisableDynamicCrosshair のみ 0、他は 1）。
+
+---
+
+## §48 メニュー開閉フェードの実装値（依頼3 応答・§37 の補強）
+
+### 48.1 結論（Android 移植向け確定値）
+
+| 項目 | 確定値 |
+|---|---|
+| menufade trait ID | 0x0FDB (4059) |
+| explorefade trait ID | 0x0FDC (4060)（GetTrait(0xFDB) が 0 のときのフォールバック） |
+| duration の単位 | 秒（実フレーム dt で加算するため） |
+| 進行 | **リニア**（`current += dt`。イージング無し） |
+| 暗転の描画 | 全画面テクスチャクアッド。アルファ = `current / duration`（= current をそのまま 0..1 で使用） |
+| 暗転テクスチャ | `Data\Textures\Menus\Faders\Black.dds`（フルスクリーン黒） |
+| レターボックス | `Data\Textures\Menus\Faders\LetterBox.dds`（別スロット） |
+| 閉じるときの逆再生 | **無し**。開閉とも同じ duration 値を使い、同一のランプ（alpha 0→1）で描く |
+
+- `menufade` は 0x58AB40 の trait 名→ID 表で `push 0xfdb / push "menufade"` として直接確認（名前はアルファベット順ソート表）。
+- `explorefade` は閉じフェード `FUN_00584390` が `GetTrait(0xFDB)` を先に読み、0 なら `GetTrait(0xFDC)` を読む実装から 0xFDC と確定。
+
+### 48.2 フェードスロット配列（3 スロット・実データ確認済み）
+
+`0x00B12DC0` 起点、stride 0x18（24B）、3 エントリ（0x00B12DC0 / 0x00B12DD8 / 0x00B12DF0）。初期値は .data 上に実在し、以下を実測。
+
+| slot | +0x00 | +0x04 テクスチャ名 | +0x08 | +0x0C | +0x10 | +0x14 |
+|---|---|---|---|---|---|---|
+| 0 | 1 | "LetterBox.dds" | 0 | 0.0 | NULL | 0.0 |
+| 1 | 1 | "Black.dds" | 0 | 0.0 | NULL | 0.0 |
+| 2 | 0 | "Black.dds" | 0 | 0.0 | NULL | 0.0 |
+
+フィールド意味（逆アセンブルから確定）:
+- +0x00 = スロット識別子/種別フラグ（0=通常フェード、1=レターボックス系）
+- +0x04 = テクスチャ名（`Data\Textures\Menus\Faders\%s` に sprintf。文字列テンプレート = 0xA688F0）
+- +0x08 = enabled(u8)。0 のときは非アクティブ
+- +0x0C = 進行係数（duration に対応するスケール。更新時に逆数を dt へ乗じる）
+- +0x10 = 生成済みテクスチャオブジェクト（NULL なら未ロード）
+- +0x14 = current（現在の進行度 0..1、アルファにそのまま使用）
+- +0x18 = duration
+
+主要関数:
+- `FUN_00572DC0` = コンストラクタ。3 スロットを +0/+4/+8=0 で初期化。
+- `FUN_00572D00` = trait 文字列から 3 スロットを構築（`[menu+0x15E0]` に結果を格納）。
+- `FUN_00572EA0(slot)` = current getter（`float[0x00B12DD4 + slot*0x18]`）。
+- `FUN_00572DF0(slot)` / `FUN_00572E30(slot)` = 有効判定述語（+0x8!=0 かつ +0x14<=1.0 / ==1.0）。
+- `FUN_00572EC0(slot, bool)` = スロットリセット（+0x8=0, +0x14=0, +0=0, +4=0）。ゲートは `[0x00B3A6D4]`。
+- `FUN_00572F60` = 全スロット更新＋描画。current を dt で加減し、+0x10 のテクスチャを `FUN_004A2A90(tex, current)` でアルファ描画。+0x8==0 の終了経路でテクスチャ解放。
+- `FUN_004A2A90(texture, alpha)` = フェーダの実描画本体（全画面クアッド）。
+  - 呼び出し元: 0x572FEB / 0x573080（フェード更新）、0x59D000 / 0x60C575 / 0x668EBA / 0x66EAA8。
+
+### 48.3 メニュー単位のフェード要求リスト（MenuManager+0x130）
+
+- MenuManager = `[0x00B3A6E0]`。その **+0x130** がフェード要求リスト。
+- ノード構造（20B）: +0x00 = 対象（メニュー/オブジェクト）, +0x04 = current(0 初期), +0x08 = duration, +0x0C = prev(tail), +0x10 = next(head)。
+- `FUN_00584300`（生成）: 20B 確保、+4=0、+8=duration（既定 0.001 = `0xA37080`）、+0xC=NULL、+0x10=NULL、+0=対象。リスト末尾に append。
+- `FUN_00583C30`（更新）: head = `[MenuManager+0x130+0x10]` を走査、`current += [0x00B33E9C]`（フレーム dt）。`current/duration >= 1.0` で自動削除。
+- `FUN_00583CF0` = 除去。
+- `FUN_00584390`（閉じフェード）: `duration = GetTrait(0xFDB); if (==0) duration = GetTrait(0xFDC);` → `FUN_00584300` → `[this+0x24] = 8` → `MenuManager::FUN_00582160()`。
+- `FUN_00584300` の呼び出し元: 0x5843D0 / 0x58479A / 0x587596 / 0x5875DA / 0x58761E / 0x587662 / 0x588A9A。
+
+### 48.4 FaderNode（描画 Z 順）
+
+- 名称文字列: `FaderNodeLight` = 0xA688B0、`FaderNode Above Menus` = 0xA688C0、`FaderNode Below Menus` = 0xA688D8。
+- テクスチャパス組み立てテンプレート: `Data\Textures\Menus\Faders\%s` = 0xA688F0。
+- 生成関数先頭 = **0x005730B0**（0x5730D0 は関数途中）。`FaderNode Above Menus` を push して `SetName`（0x6FF420）を呼ぶ。
+- 呼び出し元: 0x57EE3D / 0x57F13C。第 4 引数 `push 1` = Above Menus、`push 0` = Below Menus。duration は `[ebx+0x74]` の float。
+- 移植方針: Above/Below はメニュー群に対するクアッドの前後関係。暗転フェードは **Below Menus**（メニューより背面）に置く。
+
+### 48.5 Android 移植への適用
+
+1. `explorefade` / `menufade` の値（既定 0.25）は **duration（秒）** として `FadeController(duration, texture)` に渡す。
+2. 進行はリニア: `t += dt / duration; if (t >= 1.0f) t = 1.0f;` でアルファを `t` に設定。
+3. 全画面暗転は `Data\Textures\Menus\Faders\Black.dds` を画面全体へ描画し、アルファ = `current`。レターボックスが必要な場合のみ `LetterBox.dds` の別スロットを使う。
+4. 閉じるときも逆再生しない（`duration` は同じで、アルファは 0→1 の片方向）。閉じ処理では `GetTrait(0xFDB)` → 0 なら `GetTrait(0xFDC)` の順で duration を取得する。
+5. 描画順はメニュー群の背面（Below Menus 相当）。
+
+---

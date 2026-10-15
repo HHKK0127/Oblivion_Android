@@ -11,7 +11,11 @@
 // (menus/options/video_display_menu.xml). Unlike the other option screens this
 // menu does not use generic_background: a single 520x680 page image is centred
 // on screen (x = screen.width / 2 - width / 2, likewise for y) and holds a
-// localised title, five fixed resolution lines and a Return button.
+// localised title, the resolution lines and a Return button.
+//
+// The lines come from system/display_modes.h, which holds the modes the platform
+// reports (RE section 36: the original enumerates them at runtime instead of
+// reading them from XML).
 class VideoDisplayUI {
 public:
     VideoDisplayUI();

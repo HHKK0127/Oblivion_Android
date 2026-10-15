@@ -234,6 +234,7 @@ add_library(native-lib SHARED
     # System
     system/settings_manager.cpp
     system/debug_system.cpp
+    system/display_modes.cpp
 
     # Localization
     localization/localization_manager.cpp

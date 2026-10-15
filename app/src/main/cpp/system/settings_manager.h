@@ -41,8 +41,8 @@ float difficultyDamageMultiplier(int difficulty);
  */
 struct GameplaySettings {
     int difficulty = 50;            // fDifficultyMinValue..MaxValue = 0..100
-    bool generalSubtitles = false;  // bGeneralSubtitles
-    bool dialogueSubtitles = true;  // aDialogueSubtitles
+    bool generalSubtitles = true;   // bGeneralSubtitles
+    bool dialogueSubtitles = true;  // bDialogueSubtitles
     bool crosshair = true;          // bCrossHair
     bool saveOnRest = true;         // bSaveOnRest
     bool saveOnWait = true;         // bSaveOnWait

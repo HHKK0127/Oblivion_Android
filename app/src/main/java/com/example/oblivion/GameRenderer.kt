@@ -1,5 +1,6 @@
 package com.example.oblivion
 
+import android.content.Context
 import android.content.res.AssetManager
 import android.graphics.SurfaceTexture
 import android.media.MediaPlayer
@@ -10,6 +11,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.Surface
+import android.view.WindowManager
 import kotlin.random.Random
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
@@ -169,6 +171,8 @@ class GameRenderer : GLSurfaceView.Renderer {
                 val viewH = gameSurfaceView?.height ?: height
                 nativeSetViewSize(nativeEngineHandle, viewW.toFloat(), viewH.toFloat())
                 Log.d(TAG, "View size set: ${viewW}x${viewH}")
+
+                pushDisplayModes()
             } else {
                 Log.w(TAG, "onSurfaceChanged: nativeEngineHandle is 0")
             }
@@ -192,6 +196,37 @@ class GameRenderer : GLSurfaceView.Renderer {
         } catch (e: Exception) {
             Log.e(TAG, "Exception in onSurfaceChanged: ${e.message}", e)
         }
+    }
+
+    // RE section 36: the original enumerates the adapter's display modes at
+    // runtime (Direct3D9 GetAdapterModeCount / EnumAdapterModes) and discards
+    // anything below 640x480. Android exposes the same data through
+    // Display.getSupportedModes(); the native side applies the filter, the
+    // de-duplication and the ascending ordering.
+    private fun pushDisplayModes() {
+        if (nativeEngineHandle == 0L) return
+
+        val display = gameSurfaceView?.display ?: run {
+            val ctx = appContext ?: return
+            @Suppress("DEPRECATION")
+            (ctx.getSystemService(Context.WINDOW_SERVICE) as? WindowManager)?.defaultDisplay
+        } ?: return
+
+        val modes = try {
+            display.supportedModes
+        } catch (e: Exception) {
+            Log.w(TAG, "pushDisplayModes: ${e.message}")
+            null
+        } ?: return
+
+        val widths = IntArray(modes.size)
+        val heights = IntArray(modes.size)
+        for (i in modes.indices) {
+            widths[i] = modes[i].physicalWidth
+            heights[i] = modes[i].physicalHeight
+        }
+        nativeSetDisplayModes(nativeEngineHandle, widths, heights)
+        Log.i(TAG, "Pushed ${modes.size} display mode(s)")
     }
 
     private var binkVideoInitialized = false
@@ -477,6 +512,7 @@ class GameRenderer : GLSurfaceView.Renderer {
     private external fun nativeInitEngine(): Long
     private external fun nativeSetViewport(handle: Long, width: Int, height: Int)
     private external fun nativeSetViewSize(handle: Long, width: Float, height: Float)
+    private external fun nativeSetDisplayModes(handle: Long, widths: IntArray, heights: IntArray)
     private external fun nativeRenderFrame(handle: Long)
     private external fun nativeOnTouchEvent(handle: Long, pointerId: Int, x: Float, y: Float, action: Int)
 

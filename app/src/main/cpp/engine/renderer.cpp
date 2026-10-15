@@ -7212,6 +7212,16 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
     const bool is_touch_up = (action == 1 || action == 3 || action == 6);
 
     if (is_touch_down || is_touch_move || is_touch_up) {
+        // VideoDisplayMenu (the resolution list) is opened on top of VideoOptionsUI,
+        // so it has to see the touch before the panel underneath it.
+        if (videoDisplayUI && videoDisplayUI->isVisible()) {
+            if (is_touch_down) {
+                videoDisplayUI->onTouchDown(x, y);
+                pumpVideoDisplay();
+            }
+            return;
+        }
+
         if (gameplayOptionsUI && gameplayOptionsUI->isVisible()) {
             if (is_touch_move) {
                 gameplayOptionsUI->onTouchMove(x);
@@ -7275,12 +7285,6 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
                 saveLoadUI->resetReturnFlag();
                 saveLoadUI->close();
             }
-            return;
-        }
-
-        if (videoDisplayUI && videoDisplayUI->isVisible()) {
-            videoDisplayUI->onTouchDown(x, y);
-            pumpVideoDisplay();
             return;
         }
 
@@ -7748,7 +7752,7 @@ void Renderer::handleOptionsCategoryRequest(OptionsUI::Category category) {
 void Renderer::applyGameplaySettings(const GameplaySettings& settings) {
     crosshairEnabled = settings.crosshair;
     Player::setDifficultyScale(difficultyDamageMultiplier(settings.difficulty));
-    // bGeneralSubtitles / aDialogueSubtitles and the three autosave toggles have
+    // bGeneralSubtitles / bDialogueSubtitles and the three autosave toggles have
     // no consumer yet: subtitle overlay rendering and the rest/wait/travel
     // actions are not implemented. The values are persisted so they take effect
     // as soon as those features exist.

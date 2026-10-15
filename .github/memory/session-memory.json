@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-15T04:10:58Z",
+  "lastUpdated": "2026-10-15T05:31:47Z",
   "entries": [
     {
       "timestamp": "2026-09-16T14:58:00Z",
@@ -7379,12 +7379,370 @@
         "verification"
       ],
       "compressed": false
+    },
+    {
+      "id": "bde6d64a-bc25-4196-983f-68e1113d469f",
+      "timestamp": "2026-10-15T13:21:19.701063",
+      "category": "reference",
+      "priority": "medium",
+      "content": "§43.4 完了: 0x00B33E88 は RTTI 型記述子レコード（+0x00 型名 ptr 0x00A3D0E0=\"BSTempNode\" / +0x04 基底記述子 0x00B3FAB0、登録 FUN_009DC280、判定 0x0047CD60 の IsKindOf ループ、getter 0x0043F520）→ 移植不要。0x00B33E98（Timer+0x08）は 0x009DC2B2 の FST 1 件のみで読み出し 0 件の未使用メンバ → 保持不要。0x00403BE0 = AV null なら 0x00B35464 を 0 クリアして返す getter（=未定義 AV は 0.0f）、0x00403BC0 = [ECX+4] の先頭文字 'S' 判定付き解放ヘルパ。",
+      "tags": [
+        "RE",
+        "§43",
+        "RTTI",
+        "AV",
+        "移植不要"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "822fb41f-39fc-4da9-b854-2a3999ebd3cf",
+      "timestamp": "2026-10-15T13:21:19.701063",
+      "category": "reference",
+      "priority": "medium",
+      "content": "§44 追記完了（docs\\RE_EXE_REPORT.md 見出し 7934 行目、総行数 7978）。CRT 数値ヘルパ: 0x004842F0=truncf（float→int→float 切捨て。0x00484850 の HP% は truncf(値*100)）/ 0x00484370=ceilf（trunc 後、小数部が正なら +1.0。当初の trunk+floor 補正説は誤り）/ 0x00484310=[ecx+8]=[ecx+0xC]=_DAT_00a30634(-1.0f) / 0x00985A00=__ftol2(SSE2 版、非 SSE2 は 0x00993E48 へフォールバック) / 0x009828C0=double→int。フラグアクセサ: 0x00468FF0(index,check)=16bit word[obj+4] のビットテスト（check!=0 && index==1 && bit0 で強制 0）/ 0x00469020=set/clear / 0x00469050=bit6|bit7|bit8 述語。0x00468FF0 の呼出は 87 箇所 → §41.2.4 の 0xd は word[+4] の bit13。所有クラス vtable=0x00A3B7A8（4 エントリ、直後に \"Unable to find container object (%08X) on owner object\" 群）。",
+      "tags": [
+        "RE",
+        "§44",
+        "CRT",
+        "フラグ",
+        "truncf",
+        "ceilf"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "59c411e3-7b8f-4cd6-ad0d-ea8d09ec4338",
+      "timestamp": "2026-10-15T13:21:19.701063",
+      "category": "decision",
+      "priority": "medium",
+      "content": "§44 の Android 移植向け確定値: 丸めは std::trunc/std::ceil/(int) へ置換（独自丸め不要、FPU 丸めモード依存なし）。FUN_00468ff0(0xd,0) 依存の死亡前提条件は移植では再現不要（HP<1 クランプで死亡は再現済み）。§41.7 の未確定 2 項目（FUN_004842f0 の挙動 / 種別 0xd）は §44 で解消。",
+      "tags": [
+        "RE",
+        "§44",
+        "移植向け",
+        "§41.7"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "abd6b485-5aa4-421a-a4cb-7f1ae2cbbebf",
+      "timestamp": "2026-10-15T13:28:21.775184",
+      "category": "reference",
+      "priority": "high",
+      "content": "§45: §41.1/§41.2 の訂正。FUN_005f3870 の被ダメージ係数は 0x00B35464 ではなくアーマー習熟ダメージ倍率 GMST 4 種 (0xB374F0=fPerkLightArmorNoviceDamageMult 1.5 / 0xB374F8=fPerkHeavyArmorNoviceDamageMult 1.5 / 0xB37500=fPerkHeavyArmorJourneymanDamageMult 0.5 / 0xB37508=fPerkLightArmorJourneymanDamageMult 0.5)。 登録スタブ 0x9EB290/0x9EB2C0/0x9EB2F0/0x9EB320（0x20B 間隔、CALL 0x0041BAE0 + CALL 0x00981FB4）。 隣接 0x9EB350=fPerkJumpFatigueExpertMult(0xB37510)。",
+      "tags": [
+        "RE",
+        "damage",
+        "GMST",
+        "perk",
+        "armor"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "c1757229-09b7-4b0b-b318-4a2a83b9f494",
+      "timestamp": "2026-10-15T13:28:21.775184",
+      "category": "reference",
+      "priority": "high",
+      "content": "§45: 0x00B35464 は「値ポインタが null/範囲外 → 0.0f」の受皿スロットで、係数ではない。バイト列 d9 1d 64 54 b3 00 は 全 8 件（0x403C0D/0x404E3E/0x4AEBC0/0x4AEC0D/0x5A06EF/0x5A0736/0x5A2BB4/0x5A2BFF）、すべて直前が FLDZ で 0.0f を捨てるだけ。 書き込み元関数は存在しない（§41.7 の残課題を解消）。0x004AEBE0 = index→float 表引き getter（0xB07F44 + index*16、範囲 1..0x14）。",
+      "tags": [
+        "RE",
+        "fallback",
+        "0xb35464"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "60250844-1e0a-4591-a9f7-590b2d8b3941",
+      "timestamp": "2026-10-15T13:28:21.775184",
+      "category": "reference",
+      "priority": "high",
+      "content": "§45: FUN_005f3870 の分岐（実命令）。arg1=対象/arg2=ベースダメージ/arg3=char。対象 null・ダメージ0・item[+4]!=0x14・char!=0 は 0x5F392F（係数 1.0 の tail）。heavy=(byte[item+0x6a]>>7)&1 @0x004B4C70。 heavy=1: FUN_005f23b0(actor,0x12=HeavyArmor) が 2以上→0xB37500 / 0→0xB374F8 / 1→1.0。 heavy=0: FUN_005f23b0(actor,0x1b=LightArmor) が 2以上→0xB37508 / 0→0xB374F0 / 1→1.0。 0x5F3920: getter(0x403C00)→FLD[eax]→FMUL ベースダメージ。0x5F392F: HP=FUN_00484850(対象,0)-ダメージ、<1.0 は 0.0 クランプ。",
+      "tags": [
+        "RE",
+        "FUN_005f3870",
+        "damage"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "2bc45735-4fe3-4493-b204-d847b398110f",
+      "timestamp": "2026-10-15T13:28:21.775184",
+      "category": "decision",
+      "priority": "high",
+      "content": "Android 移植: 呪文・反射ダメージ式の係数はアーマー習熟 GMST（Novice 1.5 / Journeyman 0.5 / それ以外 1.0）で実装。0x00B35464 は移植不要（値が無い場合は 0.0f 扱い）。",
+      "tags": [
+        "Android",
+        "damage",
+        "porting"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "5108a4b9-b7df-44ca-9481-4eaa1549f6bd",
+      "timestamp": "2026-10-15T04:36:29Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "AV index 名テーブルの正典は 0x00B0A1A8（.data、73 要素の char* 配列）。属性 0x00-0x07 = Strength/Intelligence/Willpower/Agility/Speed/Endurance/Personality/Luck、派生 0x08-0x0b = Health/Magicka/Fatigue/Encumbrance、技能 0x0c-0x20 = Armorer..Speechcraft（21 個）、特殊 0x21-0x48。4=Speed、0xf=Block、0x12=HeavyArmor、0x1b=LightArmor、0x3b=ReflectDamage、0x40=ResistMagic。§45 の FUN_005f23b0 引数 0x12/0x1b は技能 index で確定。",
+      "tags": [
+        "RE",
+        "AV",
+        "actor-value",
+        "0x00B0A1A8",
+        "§46"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "2d08d9a9-a5c8-4e51-83ba-91f9be1444c1",
+      "timestamp": "2026-10-15T04:36:29Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "0x004055E0 = GMST/Setting オブジェクトのデストラクタ（0x4524c0 で登録マップ 0x00B35574 から名前を erase、0x401f20 で名前文字列を free）。アクセサではない。0xA1F100 等の thunk 群は「値スロットを ECX に載せて 0x4055E0 を呼ぶ破棄登録」。副産物として GMST 値スロットのレイアウトが 8 バイト { float value; char* name; }（+0 = 値）と確定。",
+      "tags": [
+        "RE",
+        "GMST",
+        "destructor",
+        "0x4055E0",
+        "§46",
+        "§45訂正"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "cf191da0-f8cb-4a5f-be29-43101544a9e0",
+      "timestamp": "2026-10-15T04:36:29Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "0x00B3B908 = bVerboseMessages（詳細ログ出力フラグ、既定 0 = hidden）。書き込みはファイル全体で 1 箇所のみ = 0x507930 のコンソールトグル（printf \"Verbose messages %s\" 0xA4C0A0、shown. 0xA4B8F8 / hidden. 0xA4B8F0）。他の 52 参照は cmp byte [0xb3b908],0 のログガード。ダメージ経路 0x5F64EE も \"%.20s stops combat.\"（0xA6E8B8）のログのみで計算入力ではない。移植では実装不要。",
+      "tags": [
+        "RE",
+        "bVerboseMessages",
+        "0x00B3B908",
+        "§46"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "a4e557b4-4524-4f8e-a850-d17bf37e9195",
+      "timestamp": "2026-10-15T04:36:29Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "§46 を docs\\RE_EXE_REPORT.md に追記（見出し 8091 行目）。内容: AV index 名テーブル 0x00B0A1A8、0x004055E0 の正体、0x00B3B908 = bVerboseMessages。§41.7 の残課題 3 件（AV index 4 / 0xf の意味、0x00b3b908 設定元、0x004055e0）を解消。main セッションへ §45 と §46 を送信済み。",
+      "tags": [
+        "RE",
+        "§46",
+        "残課題",
+        "main送信"
+      ],
+      "compressed": false
+    },
+    {
+      "category": "reference",
+      "priority": "high",
+      "content": "RE §47: GamePlay設定ディスクリプタ表 0x00B13200, 8エントリ stride 8B {u32 value; const char* name}(nameは+4)。0xB13200=bDialogueSubtitles / 0xB13208=bGeneralSubtitles / 0xB13210=bCrossHair / 0xB13218=bSaveOnRest / 0xB13220=bSaveOnWait / 0xB13228=bSaveOnTravel / 0xB13230=bSaveOnInteriorExteriorSwitch / 0xB13238=bDisableDynamicCrosshair。§33.5の割当は入れ替わりで誤り。",
+      "tags": [
+        "RE",
+        "§47",
+        "GamePlay",
+        "settings",
+        "Oblivion"
+      ],
+      "id": "92a14927-f3f8-4c75-a8ac-d1f99ab60afd",
+      "timestamp": "2026-10-15T13:53:06.734488",
+      "compressed": false
+    },
+    {
+      "category": "reference",
+      "priority": "high",
+      "content": "RE §47: オートセーブ経路。0x00465130=SaveGame本体(ecx=0x00B33B00)。0x00466B70=AutosaveNow(メニュー中ガード [esi+0x18]&0x40000, 発行名 'autosave')。travel=0x004B7D69/0x0066F45B (bSaveOnTravel かつ bSaveOnInteriorExteriorSwitch)、rest/wait=0x005D6A80 (bSaveOnRest/bSaveOnWait)、console save=0x005024BA。",
+      "tags": [
+        "RE",
+        "§47",
+        "autosave",
+        "Oblivion"
+      ],
+      "id": "278967b9-b8dd-448c-ad88-57a29dc49023",
+      "timestamp": "2026-10-15T13:53:06.734488",
+      "compressed": false
+    },
+    {
+      "category": "reference",
+      "priority": "medium",
+      "content": "RE §47: 字幕発行は 0x0057ACC0 に集約。距離ゲートは fAIMinGreetingDistance(0x00B36AD8, 既定150.0) の1倍/2倍。字幕距離倍率は [0xA30634]。bGeneralSubtitles(0xB13208) の消費者=0x004D92BB/0x005F72A8/0x00626B4D/0x0062A247/0x0062AE3C。",
+      "tags": [
+        "RE",
+        "§47",
+        "subtitle",
+        "Oblivion"
+      ],
+      "id": "5f5ee63c-e6ef-4b9b-82cf-8b83afb515e9",
+      "timestamp": "2026-10-15T13:53:06.734488",
+      "compressed": false
+    },
+    {
+      "id": "968f638b-4a90-4662-8d5e-8dab9337935a",
+      "timestamp": "2026-10-15T14:12:11.213790",
+      "category": "reference",
+      "priority": "high",
+      "content": "Oblivion RE §48 メニューフェード確定: menufade=GetTrait(0x0FDB), explorefade=0x0FDC(0xFDBが0のときのフォールバック)。フェードスロット配列0x00B12DC0, stride 0x18, 3スロット(実データ): slot0=LetterBox.dds(+0=1), slot1=Black.dds(+0=1), slot2=Black.dds(+0=0)。フィールド: +0x04=テクスチャ名(Data\\Textures\\Menus\\Faders\\%s, 0xA688F0), +0x08=enabled(u8), +0x0C=scale, +0x10=texture obj, +0x14=current, +0x18=duration。更新FUN_00572F60: current += dt(線形), alpha=currentでFUN_004A2A90(tex,current)が全画面クアッド描画。閉じも逆再生なし(同duration)。MenuManager=[0x00B3A6E0], +0x130に20Bノード(+0=対象,+4=current,+8=duration,+0xC=prev,+0x10=next)のフェード要求リスト。FUN_00584300生成/0x583C30更新(dt加算,ratio>=1で削除)/0x584390閉じ(0xFDB→0なら0xFDC)。FaderNode名: 0xA688B0=FaderNodeLight, 0xA688C0='FaderNode Above Menus', 0xA688D8='FaderNode Below Menus', 生成関数先頭0x005730B0, 呼び出し0x57EE3D/0x57F13C, push1=Above/push0=Below。",
+      "tags": [
+        "RE",
+        "fade",
+        "menu",
+        "menufade",
+        "explorefade",
+        "0xB12DC0",
+        "0xFDB",
+        "0xFDC"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "ecfb31b5-e845-44ac-93a8-1269c01805a4",
+      "timestamp": "2026-10-15T05:24:53Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "RE §48 メニュー開閉フェード確定値: menufade = trait 0x0FDB(4059) / explorefade = trait 0x0FDC(4060)。duration は秒、進行はリニア(current += dt、イージングなし)。暗転描画は Data\\Textures\\Menus\\Faders\\Black.dds の全画面クアッドで alpha = current(0..1) をそのまま使用。閉じるときの逆再生なし(開閉とも同じ duration、alpha は 0->1 の片方向)。描画 Z 順は Below Menus(メニュー群の背面)。閉じ処理の duration は GetTrait(0xFDB) -> 0 なら GetTrait(0xFDC) の順。",
+      "tags": [
+        "re",
+        "menu",
+        "fade",
+        "s48"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "17702689-bc40-4968-a768-bde628a25eda",
+      "timestamp": "2026-10-15T05:24:53Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "RE §47 訂正: GamePlay ブールの実バイトは 0x00B13200 = bDialogueSubtitles(既定1) / 0x00B13208 = bGeneralSubtitles(既定1)。§33.5 の割当は逆で、名称の aDialogueSubtitles は誤記(正は bDialogueSubtitles)。消費者: メニュー UI 要素の有無(0x59DFE2..0x5C03BA)が bDialogueSubtitles、台詞の字幕発行(0x4D92BB/0x5F72A8/0x626B4D/0x62A247/0x62AE3C)が bGeneralSubtitles。移植側は値と名前で保持しているため実害なし。既定値を両方 true にしコメントを修正済み。",
+      "tags": [
+        "re",
+        "settings",
+        "subtitle",
+        "s47"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "383599b3-fa5d-4810-b46c-1b1b1cae6d88",
+      "timestamp": "2026-10-15T05:24:53Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "RE §45 訂正: 呪文/反射ダメージの係数は DAT_00b35464 ではなくアーマー習熟 GMST 4 種(fPerkLightArmorNoviceDamageMult=1.5 / fPerkHeavyArmorNoviceDamageMult=1.5 / fPerkHeavyArmorJourneymanDamageMult=0.5 / fPerkLightArmorJourneymanDamageMult=0.5)。0x00B35464 は「値ポインタが null のとき 0.0f を返す受皿スロット」で移植不要。ランク 2 以上 -> 0.5 / 0 -> 1.5 / 1 -> 1.0。倍率 1.0 の経路も同じ tail(0x5F392F)に合流 = 「ダメージ 0」ではなくベースダメージそのまま。",
+      "tags": [
+        "re",
+        "combat",
+        "damage",
+        "s45"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "516496c2-9457-4ba0-b7a7-718fe470111e",
+      "timestamp": "2026-10-15T05:24:53Z",
+      "category": "decision",
+      "priority": "medium",
+      "content": "RE §46 AV index 正典テーブル(0x00B0A1A8、73 要素、0 起点): 属性 0x00-0x07 / 派生 0x08-0x0b(Health 0x08, Magicka 0x09, Fatigue 0x0a, Encumbrance 0x0b) / 技能 0x0c-0x20(21 個、0x12=HeavyArmor, 0x1b=LightArmor) / 特殊値 0x21-0x48(0x3b=ReflectDamage, 0x40=ResistMagic)。§41.7 の「index 4 / 0xf は出血/疲労」は誤りで 4=Speed / 0xf=Block。GMST 値スロットは 8 バイト { float value; char* name; } で +0 の float のみ読めば十分。0x00B3B908 = bVerboseMessages(ログ専用、移植不要)。",
+      "tags": [
+        "re",
+        "actor",
+        "av",
+        "s46"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "6110b72e-b604-4e6b-8cb7-1272271a668a",
+      "timestamp": "2026-10-15T05:24:53Z",
+      "category": "configuration",
+      "priority": "high",
+      "content": "§36 実装: 解像度リストは system/display_modes(新規 display_modes.h/.cpp)に一元化。プリセット 800x600 / 1080x607 / 1024x768 / 1280x607 / 1280x720。フィルタは (w,h) 重複除去 + w*h >= 307200(=0x4B000、640x480 は等号通過) + 昇順ソート。プラットフォーム値は GameRenderer.pushDisplayModes() が Display.getSupportedModes() から nativeSetDisplayModes JNI で供給。空ならプリセット復帰。ワイド判定は h*4 < w*3。",
+      "tags": [
+        "implementation",
+        "display",
+        "video",
+        "s36"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "4297f6d5-88af-4cc0-aac2-52aeaca2c79c",
+      "timestamp": "2026-10-15T05:24:53Z",
+      "category": "constraint",
+      "priority": "high",
+      "content": ".gitignore の /ghidra-mcp/ 3 行削除は作業ツリーで未ステージのまま保持すること。コミットに含めない。ghidra-mcp/ は untracked のまま。",
+      "tags": [
+        "git",
+        "gitignore",
+        "constraint"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "42ec1937-e1d6-4b23-aeea-6900d572737f",
+      "timestamp": "2026-10-15T05:24:53Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "エミュレータでの Options 画面到達手順: PauseMenu を keyevent 4 で開き DPAD_DOWN x3 + DPAD_CENTER で Options。OptionsUI::open() は focusIndex を 0(Return)へリセットするので、Video へは DPAD_DOWN x2 + DPAD_CENTER。category を選ぶと optionsUI->suspend() で visible=false になり、以降のキーはサブパネル(videoOptionsUI 等)へ直接渡る。どのメニューが開いているかは keyevent 4 後の 'handleBackKey: Closed <X>UI' ログで判定するのが最速。",
+      "tags": [
+        "verification",
+        "adb",
+        "menu",
+        "emulator"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "dda45e46-9771-42ef-a062-a280360d21a5",
+      "timestamp": "2026-10-15T05:24:53Z",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "videoDisplayUI(解像度リスト)は videoOptionsUI の上に重ねて描画される。renderer.cpp のタッチ分岐で videoOptionsUI が先に判定されていたため、リストパネルの Return ボタンにタッチが届かない不具合があった。is_touch_down/move/up ブロックの先頭で videoDisplayUI を判定するよう修正済み(キーは handleOptionsKey が元から videoDisplayUI を最優先)。",
+      "tags": [
+        "renderer",
+        "touch",
+        "video",
+        "bugfix"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "411b4628-52eb-4a03-890b-dfea34f028ca",
+      "timestamp": "2026-10-15T05:31:47Z",
+      "category": "constraint",
+      "priority": "high",
+      "content": "RE §41-4 (difficulty damage multiplier) is self-contradictory: the claimed FUN_005e2560 formula x=playerDifficulty*10; if(<=0) f=x+1 else f=1/ABS(x-1) cannot produce the 2.280 value RE cites for d=73, while the current port formula pow(6,(d-50)/50) yields 2.2799. Circular-reference suspected. Keep the existing port formula and ask RE for Player+0x734 write sites, the unit, and the raw instruction sequence of FUN_005e2560.",
+      "tags": [
+        "re",
+        "combat",
+        "difficulty",
+        "open-question"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "3ce3a812-e05e-4f2a-a5bc-b99023b1478b",
+      "timestamp": "2026-10-15T05:31:47Z",
+      "category": "decision",
+      "priority": "medium",
+      "content": "Sent main->RE follow-up request for 3 items: (1) §41-4 difficulty multiplier unit/write sites/instruction listing plus a 3-point runtime measurement of FUN_005e2560; (2) whether the §45 armor-perk GMST multipliers also apply to the melee path FUN_005febf0 and at which of the 12 stages (subtract vs multiply matters for the port); (3) §48 fade timing - open-side duration source (0xFDB vs 0xFDC), whether fade nodes are created on open, close, or both, and whether stackingtype/alpha=0 menus fade too.",
+      "tags": [
+        "re",
+        "combat",
+        "fade",
+        "request"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 517,
+    "totalEntries": 542,
     "compressedCount": 81,
     "sessionCount": 40,
-    "lastUpdated": "2026-10-14T23:33:59.973909"
+    "lastUpdated": "2026-10-15T05:31:47Z"
   }
 }
