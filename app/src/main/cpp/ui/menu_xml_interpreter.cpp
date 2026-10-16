@@ -239,7 +239,6 @@ public:
         if (depth > kMaxEvalDepth) return EvalValue{};
         EvalValue acc;
         bool initialized = false;
-        bool skipNext = false;
 
         for (const XmlNode& c : children) {
             if (isGateElement(c.name)) {
@@ -250,13 +249,17 @@ public:
                     : traitValue(src, trait, ctx, depth + 1).toBool();
                 // <onlynotif> is the spelling used by the shipped blue button
                 // prefabs and equals <onlyifnot>.
-                const bool apply = (c.name == "onlyif") ? cond : !cond;
-                skipNext = !apply;
+                // The engine gates the running accumulator rather than the next
+                // element: a failing <onlyif> (or a passing <onlyifnot>) zeroes
+                // it. So <copy>128</copy><onlyif user1/> followed by
+                // <add><copy>255</copy><onlyifnot user1/></add> yields 128 when
+                // user1 is set and 255 otherwise (see enchantment.xml alpha).
+                const bool keep = (c.name == "onlyif") ? cond : !cond;
+                if (!keep) {
+                    acc = EvalValue::makeNumber(0.0f);
+                    initialized = true;
+                }
                 continue;
-            }
-            if (skipNext) {
-                if (isOperatorElement(c.name)) continue;  // skip this operator
-                skipNext = false;
             }
             if (isOperatorElement(c.name)) {
                 if (!initialized) {

@@ -8639,4 +8639,243 @@ FUN_00465130(esi, "autosave", 0, 0);
 
 ---
 
+## §50 Opencode 解析統合（便2 B1〜B13 / C1〜C6 / A6）
+
+### §50.0 経緯
+
+別エージェント（Opencode, opencode/deepseek-v4.1-flash-free variant=max）が便2（B1〜B13, C1〜C6）および §39.4 残課題 A6 を解析し、本リポジトリ `tmp\re\` へ成果物を直接出力していた（`opencode.db` = `C:\Users\hiroki.kogarumai\.local\share\opencode\opencode.db`、424 MB）。
+
+最終提出 Markdown まで化けたのは `s50_a5.md`（難易度式）/ `s50_dmg.md`（ダメージ経路）/ `s50_input.md`（入力抑制）/ `s50_magic_stack.md`（魔法・stacking）の 4 本のみ。B2/B3/B10/B12/C 系は subagent が truncate しており最終 md 未作成。本節は残る生ダンプ txt（`s50_*.txt`）と subagent セッションログ（`tmp\re\opencode\*.txt`）から確定値を回収し統合したものである。
+
+対象バイナリは従来どおり `Oblivion.exe`（ImageBase 0x400000、md5=CDD2F0C5EFF198D4F26B7B5B54CE4930、len=7,898,624）。VA→ファイルオフセットは `pe.get_offset_from_rva(VA - 0x400000)`。
+
+### §50.1 難易度ダメージ倍率（訂正: §41.4 / §49.3）
+
+**エンジン実式（確定）**: 難易度 `d` は **[-1.0, +1.0]** の正規化値（既定 0.0）。`M = fDifficultyDamageMultiplier`（EXE 既定 10.0f、Oblivion.esm ロード時 overlay で **実効 5.0**）。`x = d * M`。
+
+```
+被ダメージ倍率 f = (d > 0) ?  x + 1.0
+                  (d < 0) ?  1.0 / |x - 1.0|
+                  (d == 0) ? 1.0
+与ダメージ倍率 = 1.0 / f
+```
+
+- 実バイト根拠: `0x5E25B2 test bl,bl; je 0x5E25F5`（bl = d の符号）。d>0 → `x+1.0`、d<0 → `1.0/|x-1.0|`。**§49.3 の分岐記述は逆であった（訂正）**。
+- `FUN_005e2560` 署名: `float FUN_005e2560(float base, Actor* p)`、`ecx=this`、`ret 8`（0x5E25D8）。呼出元 3 件: `0x5E5903`（FUN_005e58f0、戻りを AV index 8 = Health に適用、this=被弾側）/ `0x69A028`（AI 被害見積り）/ `0x6A8755`（AV==8 判定時に [esi+0x18] へ書戻し）。
+- x87 フラグ復号: FCOM/FUCOM 後 等値=C3(ah bit6=0x40)、大小=C0(bit0=0x01)、非数=C2(bit2=0x04)。`test ah,0x44 + jnp` = 等値分岐、`test ah,0x41 + jne` = not(st0>src)。
+
+**難易度フィールドの単位は [-1,+1]（0..100 ではない）**:
+- `FUN_005a3540` が `SetTrait(0xfb0, fDifficultyMaxValue=1.0)` / `SetTrait(0xfaf, fDifficultyMinValue=-1.0)` を設定。
+- スライダー値 trait `0xfb3`（=user5）はメニュー生成時に `fld [Player+0x734]` で初期化。
+- ハンドラ `0x5A387E` は user7（0xfb5）とフィールドの `fucomp` で同一値スキップ。
+- UI 表示 % = `(d + 1) * 50`。
+
+**[Player+0x734] の書込元は 2 箇所のみ（全数走査で確定）**:
+- `0x5A38D4`: 難易度スライダーイベント。`GetTrait(0xfb5 = user7)` を **変換なしで** 格納。
+- `0x66AF7A`: アクター初期化。`fld [0xB14EB0]; fstp [esi+0x734]`。
+
+**「実機 d=73 → 2.280」は循環参照であった（確定）**。出所は移植側自身のログ（`app\src\main\cpp\engine\renderer.cpp:7822` の `"difficulty=%d (x%.3f)"`）と同移植の `app\src\main\cpp\system\settings_manager.cpp:7` の `pow(6,(d-50)/50)` = 2.2799。エンジンで d=73 相当は被ダメ 3.300 / 与ダメ 0.303。
+
+現行移植式 `pow(6,(d-50)/50)` が一致するのは d=0/50/100 の 3 点のみ（d=25→3.5x、40→2x、45→1.5x、75→0.286 で乖離）。
+
+**推奨修正式（f32、difficulty 0..100 clamp 済み前提）**:
+
+```cpp
+const float v = (difficulty - 50.0f) / 50.0f;   // [-1,+1]
+if (v > 0.0f)  return 1.0f + 5.0f * v;          // d>50 で被ダメ増
+if (v < 0.0f)  return 1.0f / (1.0f - 5.0f * v); // = 1/(1+5|v|)
+return 1.0f;
+```
+
+適用箇所: `app\src\main\cpp\system\settings_manager.cpp:7-13`（現行）→ 被ダメ側 `app\src\main\cpp\game\player.cpp:52-55`（唯一の使用箇所）。与ダメ側（×1/f）はエンジン 3 site で実施されるが移植未実装（別タスク）。
+
+### §50.2 ダメージ計算式（近接・B4 / 疲労・B5）
+
+**`FUN_005FEBF0` = Actor 仮想関数 `vtable+0x3AC` = 戦闘ダメージ値計算**。実装 4 件: vtable `0xA6E074` / `0xA6FC9C` / `0xA710F4` / `0xA73A0C`。呼出形: `ecx=[actorRef+0x58]; call [ecx->vt+0x3AC](refA, int, flag)`。
+
+- `flag == 1` → `0x6AF880(actorObj,0,0,-1,-1,weaponType,0,0.0,0.0)` 経路 → `0x6005C0` 共有テール。
+- `flag == 0` → 本体計算（位置差・block/knockback）。
+
+使用 GMST（名前解決済み）: `fDamageSkillBase/Mult` / `fDamageStrengthBase` / `fDamageToWeaponPercentage` / `fDamageToArmorPercentage` / `fDamageSneakAttackMult` / 素手 `fHand*` / ブロック `fBlockMax/Amount*` / `fCombatDistance` / ノックダウン `fKnockdown*` / ノックバック `fKnockback*` / 疲労 `fFatigueAttackWeapon*` / `fFatigueBlockSkill*` / 死亡吹き飛ばし `fDeathForce*` / 難易度 `fCombatVulnerabilityMod` / `fCombatRelativeDamageMod` / `fCombatDamageScale` / `fCombatDistanceMin` / スニーク特典 `fPerkSneakAttack*` / 運 `iActorLuckSkillBase` / `fActorLuckSkillMult` / `fDetectionNightEyeBonus`（3.0）。
+
+ヘルパー:
+| VA | 役割 |
+|---|---|
+| `0x547B90(a,b)` | 運補正付き技能値 |
+| `0x547280` | 素手ダメージ |
+| `0x546BA0(powerLevel,direction)` | パワーアタック方向別倍率 |
+| `0x5474A0` | ComputeBlockAmount |
+| `0x5475D0` | ノックダウン |
+| `0x547690` | ノックバック |
+| `0x547770` | 死亡吹き飛ばし |
+| `0x5477F0` | GetPerkSneakAttackMult |
+| `0x547910` | 難易度スケール |
+| `0x546B20(min,max)` | `min + rand/32767 * (max-min)`（`0xA3D5A8` = f32 32767.0） |
+| `0x546C60` / `0x546CA0` | AI hand / AI magic |
+| `0x4B4C70` | 重装フラグ |
+| `0x5F23B0` | 熟練度 |
+| `0x6131D0` | 射程判定 |
+| `0x47DF80` | rand |
+
+テール（`0x600379`〜`0x6005E7`）: 対象 Health を `vt+0x284(8)` で取得し比を保存。即死判定は比を GMST `0xB36F58` と比較 + `rand/32767` を `0xB36F50` と比較。`0x5FC090(actorObj,targetRef,int)` でヒット成立 → `0x5F4FD0(targetRef)` 武器耐久処理。死亡吹き飛ばしは方向 `vt+0x174` → `[targetRef+0x58].vt+0x2F0`。プレイヤー判定 `cmp [targetRef],[0xB333C4]` → `0x7EB010(1)`。戦闘通知 `0x679340(0xB3BD00, 8, targetRef)`。最終 `targetRef.vt+0x3A8(actorObj,0)`。
+
+**疲労（AV index 0x0A = Fatigue）**: テーブル `0xB0A1A8`。
+
+- カーブ: `0x547F00` = `fFatigueBase - (1-x) * fFatigueMult`、`0x547F20` = `x * fFatigueReturnMult + fFatigueReturnBase`、`0x547F40`(Run)、`0x547F60`(Jump)。
+- 攻撃消費 `0x547560` = `fFatigueAttackWeaponBase + fFatigueAttackWeaponMult * dmg`（パワーアタック時 × `fPowerAttackFatiguePenalty`）。ブロック消費 `0x547590`。
+- 疲労段階 `0x56A300(fatigue値)` → 0〜4。弓系 `fMarksmanFatigueBurnPerSecond/PerShot`、`fFatigueCastBase`。
+
+疲労系 GMST 既定値（B10 より）: `fFatigueBase`=1.25 / `fFatigueMult`=0.5 / `fFatigueReturnBase`=10.0 / `fFatigueAttackWeaponBase`=8.0 / `fFatigueAttackWeaponMult`=0.1 / `fFatigueBlockSkillBase`=5.0 / `fFatigueBlockSkillMult`=-0.04 / `fFatigueCastBase`=15.0 / `fFatigueRunBase`=8.0 / `fFatigueJumpBase`=4.0 / `fFatigueJumpMult`=4.0。
+
+### §50.3 プレイヤー被ダメージ経路（B1）
+
+- `vt+0x3AC`（=FEBF0）の in-code 呼出は 2 箇所のみ: **`FUN_005F6540`**（攻撃/スニーク統合解決）と **`0x5E8B80`**（プレイヤー露光/視認性、`FEBF0(esi,1)` の戻りを 100.0 と比較）。
+- `FUN_005F6540`: `this=ebx`、args = (対象 ref, out byte, byte[+0x11c], byte[+0x12c])。`[0xB333C4]`（Player singleton）と比較分岐。`0x4D7E90` = GetDistance。`0x5F3B50(ref)` = スニーク状態。`FEBF0(ebp,0)` → ftol、`GetAV(0x29 = NightEyeBonus) > 0` で ×3.0 cap 100。`0x5F2820` = 武器耐久/ヒット処理。`0x5463F0`（16 引数）= スニーク検知値式。最終 `[ebx+0x58].vt+0xA8(ebp, 3 or 0, flag, 値)`。
+- **プレイヤー攻撃の final apply（HP 減算）の直接箇所は `vt+0xA8` スタブのため未確定**。候補は `0x6AF880`。
+
+移植側 `Player::takeDamage` は呼出元ゼロであるため、エンジン経路に合わせるなら「AI 攻撃解決 → `vt+0x3AC`（ダメージ値）→ `vt+0xA8`（適用スタブ、実体 `0x6AF880` 系統）」を再現し、`Player::takeDamage` をその適用スタブから呼ぶ形にするのが最も忠実。
+
+### §50.4 Actor vtable+0x398（魔法/近接ヒット受信、B6）と stackingtype（B7）
+
+**`Actor` 系メイン vtable +0x398 = `0x5EE760` = 魔法/近接ヒット受信処理**。実装 4 件。引数: (`this` = 被弾 Actor, `arg1` = 攻撃元, `arg2` = float 100.0 クランプ, `arg3` = float, `arg4/arg5` = vec3*)。
+
+- 魔法側: `FUN_00699900`（魔法爆発）→ `0x699BCA`。
+- 近接側: `FUN_005febf0` → `0x5FFF97`。
+- 委譲: Actor `+0x390` / `+0x394` thunk → process `+0x398` / `+0x39C`。
+- 訂正: §17.11.6 LowProcess 記述（`Actor+0x58` = LowProcess、vtable `0xA720A4`、基底 `0xA6F464`）。
+
+**stackingtype 値テーブル（確定）**:
+
+| 文字列 | 値 | バニラ出現数 |
+|---|---|---|
+| `&click_past;` | 101 | 0 |
+| `&no_click_past;` | 102 | 41 |
+| `&mixed_menu;` | 103 | 0 |
+| `&does_not_stack;` | 6008 | 8（HUD のみ） |
+
+- 文字列プール `0xA6AA28`〜`0xA6AAE0`。登録関数 `0x58A0A0`（約 223 呼出）。表 slot `0xB3B260`。
+- 挙動 5 系統: 生成時 `SetTrait(0xFAB = depth)` / `TileMenu 0x591CB0` / ゲート `FUN_00584880` / 昇格 `FUN_0058fba0` / does_not_stack 排除。
+- 定数: `6006.0f=0xA69770` / `6007.0f=0xA69764` / `102.0d=0xA69778` / `103.0d=0xA69768` / `6008.0f=0xA6A040` / `101.0d=0xA6C730`。
+
+### §50.5 メニュー開閉時の入力抑制（B11 / B9）と ControlsMenu INSTRUCTIONS（B8）
+
+**`0xb333b8` = スクリプトコマンド `SetSceneIsComplex` の評価結果（第 1 引数 != 0）ラッチ byte（§42.3 のポーズ/複雑シーン判定ではない）**。
+- 唯一の書込 `0x50E9D0`（cmd id 0x115D）。毎フレーム末尾 `0x40DBB9`〜`0x40DBCB` で 0 クリア。
+- 読取 `0x40D8B6 call 0x889810(dt, [0xb333b8])` = フレーム更新モード 2/3。
+- `0xb380f8` = `fMagicTrackingLimit` = 3.0 / `0xb38100` = `fMagicTrackingLimitComplex` = 1.0。
+
+**`0xb3a6d4` = メニュー破棄（teardown）中ラッチ byte**。書込 `0x57CCCB` / `0x57CD87` / `0x581B18` / `0x581B3D`。読取 `0x572EE2` / `0x5A586B` / `0x679A75`。
+**`0xb3a6e0` = UI（メニュー）マネージャ singleton ポインタ**。get-or-create `0x582160` → ctor `0x5802b0`。
+メニュー開閉時のワールド入力抑制は「破棄ラッチを立てる → 入力モード強制解放 / UI 破棄遅延 / ワールド更新停止」。
+**入力モードレコード stride 0x18（24 byte）**: obj `@0xb12dd0+24i`、活性 `@0xb12dc8+24i`、値 float `@0xb12dd4+24i`。旧「stride 8」は撤回。
+
+**ControlsMenu INSTRUCTIONS 実文言（確定）**:
+```
+sprintf("%s %s %s", "Press the", STRUPR(デバイス名テーブル[ControlsMenu+0x5c]), "button you want mapped to this action.")
+```
+- 設定箇所: `FUN_0059C3F0` 末尾 `0x59C538`〜`0x59C599`。呼出 `FUN_0059C5E0`。
+- 文字列: `"Press the" @0xa615e0` / `"button you want mapped to this action." @0xa61608`。デバイス名テーブル `0xb39548`。
+- `FUN_0059B640(widget, flag)` = 汎用 On/Off 表示更新（`"On" @0xa4b910` / `"Off" @0xa4b90c`）。旧推定「FUN_0059B640 が INSTRUCTIONS を書く」は訂正。
+
+### §50.6 ContainerMenu エンジン側（B2 / B3 / B13）
+
+- ID `0x3f0`、vtable `0xA6B574`（19 slot）、RTTI `.?AVContainerMenu@@` @ `0xB13254`。ctor `0x597A90`、dtor `0x5978D0`。
+- slot: [0]削除 dtor `0x597AF0` / [1]`0x597940` / [2]`0x597B80` / **[3] = `0x59A400` コマンドハンドラ（SEH、arg1 = cmd id @ [esp+0x368]、arg2 = widget @ [esp+0x36c]）** / [4]`0x597D00` / [5]`0x598190` / [8]`0x597BD0` / [10]`0x5981D0` / **[11] = `0x598710`** / [13] getID `0x597A80` / [14]`0x5979A0`。生成 `FUN_00599EE0`（§34.3）。
+
+**cmd ハンドラ case マップ @ `0x59A400`**:
+
+| cmd | 意味 | 分岐先 |
+|---|---|---|
+| 1..5 | cont_p1..p5 タブ | — |
+| 7 / 8 | タブ prev / next | `0x59B5AA` |
+| 0x10..0x14 (16-20) | ヘッダクリック | — |
+| 0x20 (32) | **Take All** | `0x59B44B` |
+| 0x21 (33) | **Exit** | `0x59B569`（SetTrait 0xfa7, sound 2, refresh `0x5982A0`） |
+| 0x22 (34) | **Haggle** | `0x59B4E7`（`FUN_005BD080` = NegotiateMenu） |
+| 0x2a (42) | パネル切替 | `0x59B333` |
+| 0x33 (51) | 未特定 | `0x59A4CE` |
+
+**Take All 内部 @ `0x59B44B`**: player/container 選択 `[ebx+0x64]`、`lea ecx,[edi+0x44]; call 0x41E6F0`、container `vtbl+0x190`、`call 0x4876C0`、**`FUN_00492E70(esi,edi,ebp,0,0,[0xb3b279])` = 転送コア候補**、ftol → `[0xb3b27c]`、`FUN_00607B90(edi,1)`、sound 0x1d、`byte[0xb3b278]=1`、refresh `0x5982A0`。
+
+**`FUN_00598710`（slot[11]）`0x598710`-`0x5987B4`**: Enter / keycode 0x1c、kb offset `+0x1b83` / `+0x1b8d`、`FUN_0057C140(0x3f0)` 活性判定、trait `0xfc7`（=user25）書込。
+隣接 **`0x5987F0`** = traits `0xfaf`/`0xfb0`/`0xfb1`/`0xfb2`/`0xfbd`..`0xfc1` 設定・リスト走査 = リスト人口（cont_list_contents）候補。
+
+ヘルパー: `FUN_0057DE50(x)` = UI sound / `FUN_0058CEB0(tile,trait,val)` = SetTrait / `FUN_00588BD0(tile,trait)` = GetTrait / `FUN_009828C0` = float→int / `FUN_005790E0(id,mask)` = メニュー可視判定 / `FUN_00403520(inputmgr,[5|0xf],1)` / `[0xb33398]+0x20` = input mgr / `FUN_0059B670` = キー索引フィルタ。
+
+**XML id 対応（確定）**: `cont_tab_layout=7` / `cont_tabs_next=8` / `cont_list_contents=13` / `header_text=16` / `imgs 17/18/19/20` / `cont_p4p5_header_top=15` / `cont_select_frame=42` / `cont_icon_cont_off=43` / `take_all=32`（436 行）/ `exit=33`（492 行）。
+
+未解決: cmd 0x33(51) の意味、転送コア `FUN_00492E70` の確定、`cont_list_contents` 人口機構、スクロール（id 11）ハンドラ。
+
+### §50.7 container_menu.xml 式（A6）
+
+`D:\Cargo\Other\Oblivion\BSA\bsa_Extraction\menus\container_menu.xml`（2529 行）。
+
+- **A6-1 ヘッダ `_text`**: すべて x=130 / y=35 のリテラル（`cont_book_header_text` 1702 行、`cont_keys_header_text` 1826、`cont_stones_header_text` 1945、`cont_misc_header_text` 2064）。
+  - `cont_book_header` visible = `user16 != user17`、y = `user16 * 81`（1654-1657 行）。
+  - keys/stones/misc visible = `(user0==1 AND userN!=userN+1) OR (user0==5 AND cont_p4p5_header_top.userM!=userM+1)`（N=17/18/19、p4p5 側 user2/3/4）。y = `81 * ((user0==1 ? user17 : 0) + (user0==5 ? p4p5.userN : 0))` の onlyif 連鎖。
+- **A6-2 `cont_item_status`（2257 行〜）**: `_handonly = (parent.user12 == 1)`。red = `_handonly ? 208 : 255`、green/blue = `_handonly ? 0 : 255`。height = `_handonly ? 32 : 25`、width = `64 - ((_handonly OR user12 ∈ {2,4,8}) ? 32 : 0)`。
+- **A6-3 `marker.x` = `user7 ? 127 (me.user1) : 35 (me.user2)`**（2480 行〜）。`cont_select_left.x` = `0 - me.width(42) + 56` = **14**（2499 行〜）。`cont_select_right.x` = `parent.width(287) - 56` = **231**（2513 行〜）。
+- **A6-4 QuickKeysMenu**: `quickkeys_menu.xml` の `quick_key_1_image`〜`8_image`（id 8..15）の filename は全て空（初期値なし）。更新関数 `0x005C1B80` 内 `0x005C1D13` で `push 0xfe6`（filename trait id）→ `sprintf(dest, "%s\\%s\\%s", "Menus", "Icons", iconLeaf)`（fmt `0xa375bc`、`0xa6b100`="Menus"、`0xa3b920`="Icons"）→ **`"Menus\Icons\<leaf>"`** をタイル（menu+0x30+i*4）へ `0x58ced0` で設定。leaf は `0x9832e6` のフォーム情報取得、フォールバック `FUN_005c0c50`、空時 `0xa2f7ec`（""）。
+  - ctor `FUN_005C0B50`: 基底 Menu ctor `0x584640`、vtable = `0xA6D1F4`、8 スロット配列初期化のみ（filename 設定なし）。
+  - `FUN_005c16e0` は trait `0xfde`（string、fmt `"%s %s"` = `0xa32564`）でラベル設定。
+  - スロットグローバル: `0xb3b418..0xb3b41f`（8 フラグ）、`0xb3b420`（状態）、`0xb3b424..`（-1 = 空）、`0xb3b430`（現 index?）、`0xb3b440 + i*16`（16B エントリ）。`0xb14424` は RTTI 文字列。
+  - 文字列: `0xA699C4 'quickkeys_menu.xml'` / `0xA6A681 'QuickKeysMenu;'` / `0xA6D262 'QuickKeysMenu.cpp'` / `0xB14430 'QuickKeysMenu@@'`。
+
+**XML 式セマンティクス（確定寄り・`button_long.xml` で検証）**: エンジンは **累算器モデル**で、gate は **直前の累算値に作用**する。`<onlyif cond>` → `acc = cond ? acc : 0`、`<onlyifnot cond>` → `acc = cond ? 0 : acc`。
+
+### §50.8 GMST 全数解析（B10）
+
+- **registrar は 2 本**: `0x41BAE0` = float 登録（992 call site）/ `0x419A70` = dword 登録（int/string、1312 call site）。合計 **2304 / 2304 全数解析成功、重複ゼロ**（static 2056 / dyn 248）。
+- 型内訳: **f: 992 / s: 1085 / i: 227**。selector reg 付き stub: 2056 / 2304。slot 範囲: `0x00B33460`〜`0x00B3B7C8`。
+- refs 数分布: refs=2 が 262、3 が 1337、4 が 261、…（最大 24）。**descriptor array（配列テーブル）は存在しない** — 登録はコンパイル済みスタブ（registrar 呼出）経由。
+- 最多参照 slot（top-25）: `sHair`(0xB38F88, 83) / `sOk`(0xB38CF0, 65) / `sMain`(0xB38F70, 42) / `sRace`(0xB38F78, 41) / `sNo`(0xB38D00, 32) / `sYes`(0xB38CF8, 31) / `sShape`(0xB38FE0, 29) / `sColor`(0xB39330, 27) / `iActorKeepTurnDegree`(0xB36C18, 26) / `sEyes`(0xB38F90, 24) / `sTone`(0xB38FE8, 23) / `iAICombatMinDetection`(0xB372F0, 21) / `fAIAcquireObjectDistance`(0xB368E8, 20) / …
+- **難易度グループ（4 件）**: `fDifficultyMinValue` `0xB37B70` = -1.0 / `fDifficultyMaxValue` `0xB37B78` = 1.0 / `fDifficultyDefaultValue` `0xB37B80` = 0.0 / `fDifficultyDamageMultiplier` `0xB37B88` = 10.0（EXE 既定、ESM overlay で実効 5.0）。
+- **ESM DATA 確認**: `fDifficultyDamageMultiplier` は Oblivion.esm ロード時 overlay で **5.0f**（EXE 既定 10.0f を上書き）。FNV 名推定 `0x0031C6DA` / `0x0031C6F8`、記録 `0x44 0x49 0x46 0x46 0x00`。
+- 生データ: `s50_gmst_full.txt`(392,772 B) / `s50_gmst_9.txt`(458,409 B) / `s50_gmst_summary.txt`(19,964 B) / `s50_gmst_esm.txt`(14,268) / `s50_gmst_esm2.txt`(41,677)。
+
+### §50.9 SleepWaitMenu 確定処理（B12）
+
+`FUN_005D6A80` 入口: `mov eax,[esp+4]; cmp eax,5; push esi; mov esi,ecx; jne 0x5d6b57`（cmd id == 5 のときのみ本体）。
+
+cmd==5 経路:
+- `push 1; call 0x57de50`（UI sound）
+- `fld1; mov ecx,[esi+0x30]; fstp [esp]; push 0xfa1; call 0x58ceb0`（SetTrait visible = 1.0）
+- `mov al,[esi+0x4c]; test al,al; je 0x5d6abd`
+- `cmp byte [0xb13218],0; jne 0x5d6ac6`
+- `test al,al; jne 0x5d6ad1`
+- `cmp byte [0xb13220],0; je 0x5d6ad1`
+- `mov ecx,[0xb33b00]; call 0x466b70`（オートセーブ関連候補）
+- 以降 `mov ecx,[esi+0x28]` へ続く。
+
+**クロック前進コード `FUN_004029E0`（`0x4029E0`-`0x402B60`）**:
+- `fld [esi+0x14][+0x24] → fmul [esp+0x14](dt) → fdiv qword [0xa2f938] → fadd [ecx+0x24]`（`[ecx+0x24]` に加算。`0xa2f938` = f64 除数）。
+- 次に `fld [0xa2f930]`（= f32 24.0）と `fcom`（`test ah,0x41; jne` で 24 未満/超の分岐）。
+- `call 0x9828c0`（ftol）→ `movsx edx,al; call 0x47d2b0`。
+- `fsub qword [0xa2f920]`。
+- `mov ecx,[0xb333c4]`（Player）; `call 0x5e04c0`（Player メソッド判定）→ 真なら `add dword [eax+0x6b0], 1`（**Player+0x6B0 インクリメント = 時間経過カウンタ候補**）。
+
+文字列: `00A69AB4 = 'Data\Menus\sleep_wait_menu.xml'` / `00A6D800 = '%s %d:%02d %s'`（時刻表示書式）/ `00A6CD04 = 'am'` / `00A6CD08 = 'pm'`。
+定数: `0xa2f930` = f32 24.0 / `0xa2f920` = f64 0.0 / `0xa379b4` = f32 2.0。
+
+月日数表（`0x00B06700 + 0x10`）の使い方とオートセーブ発行タイミングの厳密化は `s50_slp_b12_step2..5.txt` にデータあり（本節では時間前進と Player+0x6B0 までを確定）。
+
+### §50.10 VideoDisplayMenu（C6）
+
+- 対象 XML: `menus\options\video_display_menu.xml`。2 行目 `<menu name="VideoDisplayMenu">`、`<class> &VideoDisplayMenu;`。
+- 主要 widget: `video_display_background`(24 行) / `video_display_text`(34 行) / `video_display_return_button`(158 行)。
+- include / テンプレート合成の有無と主要 widget id 一覧は未確定（全体未読）。
+
+### §50.11 移植側への留意（重要）
+
+**XML 式評価モデルの相違**: 移植側 `app\src\main\cpp\ui\menu_xml_interpreter.cpp`（252-254 行）は **skipNext モデル**（gate が次演算子をスキップ）を採用している。エンジンは累算器モデル（§50.7）。
+
+- 例: `10<onlyif>&false;</onlyif><add>5</add>` → **エンジン 5** / 移植 10。
+- `marker.x` は移植モデルだと 162 / 127 となり、エンジン正値 127 / 35 と不一致。
+- 対応: `menu_xml_interpreter.cpp` の gate 評価を「直前累算値に作用」へ変更し、`tests\menu_xml_tests.cpp`（310-331、1199-1208 行）の期待値をエンジン挙動に合わせ直す必要がある。
+
+**その他の移植差分**:
+- 難易度式は §50.1 の修正式へ差替え（`settings_manager.cpp:7-13` → `player.cpp:52-55`）。与ダメ側 ×1/f は未実装。
+- 入力抑制は `0xb333b8`（SetSceneIsComplex）と `0xb3a6d4`（破棄中）の 2 ラッチを分離して扱う。
+- 入力モードレコードは stride 24 byte で実装する。
+
 ---

@@ -2,14 +2,20 @@
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
-#include <cmath>
 
 float difficultyDamageMultiplier(int difficulty) {
     if (difficulty < 0) difficulty = 0;
     if (difficulty > 100) difficulty = 100;
-    // 0 -> 1/6, 50 -> 1.0, 100 -> 6.0 (exponential in the slider offset).
-    const float exponent = (static_cast<float>(difficulty) - 50.0f) / 50.0f;
-    return std::pow(6.0f, exponent);
+    // The engine keeps the slider normalised to [-1,+1] with 0 at the centre.
+    const float d = (static_cast<float>(difficulty) - 50.0f) / 50.0f;
+    const float x = d * DIFFICULTY_DAMAGE_MULTIPLIER;
+    if (d > 0.0f) return x + 1.0f;           // Above the default: take more damage.
+    if (d < 0.0f) return 1.0f / (1.0f - x);  // Below the default: take less damage.
+    return 1.0f;
+}
+
+float difficultyDealtDamageMultiplier(int difficulty) {
+    return 1.0f / difficultyDamageMultiplier(difficulty);
 }
 
 SettingsManager::SettingsManager()

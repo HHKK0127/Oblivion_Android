@@ -125,11 +125,15 @@ struct Player {
     void heal(float amount);
 
     // Gameplay difficulty scales incoming damage (GameplayMenu difficulty slider).
-    // 1.0 is neutral; see difficultyDamageMultiplier().
+    // 1.0 is neutral; see difficultyDamageMultiplier(). RE §50.1.
     static void setDifficultyScale(float scale) {
         difficultyScale = (scale > 0.0f) ? scale : 1.0f;
     }
     static float getDifficultyScale() { return difficultyScale; }
+    // Damage the player deals is scaled by the reciprocal of the incoming scale:
+    // FUN_005E2560 divides by the difficulty multiplier when the player attacks
+    // (RE §50.1).
+    static float getDealtDamageScale() { return 1.0f / difficultyScale; }
     void updateStamina(float deltaTime, bool isSprinting);  // Update stamina based on sprint state
     void reduceStamina(float amount);                        // Manually reduce stamina
     void recoverStamina(float amount);                       // Manually recover stamina

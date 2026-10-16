@@ -320,15 +320,24 @@ bool MenuXmlTests::runAllTests() {
             return MenuExpressionEvaluator::evaluate(root.children[0], ctx).toNumber();
         };
 
-        // onlyif false -> the next operator is skipped.
-        record("onlyif false skips the next operator",
-               near(eval("10<onlyif>&false;</onlyif><add> 5 </add>"), 10.0f));
-        // onlyif true -> the next operator applies.
-        record("onlyif true keeps the next operator",
+        // A failing <onlyif> zeroes the running accumulator, so the following
+        // <add> starts from 0 instead of 10.
+        record("onlyif false zeroes the accumulator",
+               near(eval("10<onlyif>&false;</onlyif><add> 5 </add>"), 5.0f));
+        // A passing <onlyif> leaves the accumulator untouched.
+        record("onlyif true keeps the accumulator",
                near(eval("10<onlyif>&true;</onlyif><add> 5 </add>"), 15.0f));
-        // onlyifnot true -> the next operator is skipped.
-        record("onlyifnot true skips the next operator",
-               near(eval("10<onlyifnot>&true;</onlyifnot><add> 5 </add>"), 10.0f));
+        // A passing <onlyifnot> zeroes the running accumulator.
+        record("onlyifnot true zeroes the accumulator",
+               near(eval("10<onlyifnot>&true;</onlyifnot><add> 5 </add>"), 5.0f));
+        // The shipped cont_select_frame_marker <x> expression: user1 (127) while
+        // the container pane is selected, user2 (35) otherwise.
+        record("onlyif/onlyifnot select the container branch",
+               near(eval("<copy>127</copy><onlyif>&true;</onlyif>"
+                         "<add><copy>35</copy><onlyifnot>&true;</onlyifnot></add>"), 127.0f));
+        record("onlyif/onlyifnot select the inventory branch",
+               near(eval("<copy>127</copy><onlyif>&false;</onlyif>"
+                         "<add><copy>35</copy><onlyifnot>&false;</onlyifnot></add>"), 35.0f));
     }
 
     // --- 8. resolve(): concrete widget values ----------------------------------
@@ -393,9 +402,9 @@ bool MenuXmlTests::runAllTests() {
         record("rand of 1 is always 1", near(eval("<rand> 1 </rand>").toNumber(), 1.0f));
 
         // onlynotif is the spelling used by the shipped blue button prefabs.
-        record("onlynotif true skips the next operator",
-               near(eval("10<onlynotif>&true;</onlynotif><add> 5 </add>").toNumber(), 10.0f));
-        record("onlynotif false keeps the next operator",
+        record("onlynotif true zeroes the accumulator",
+               near(eval("10<onlynotif>&true;</onlynotif><add> 5 </add>").toNumber(), 5.0f));
+        record("onlynotif false keeps the accumulator",
                near(eval("10<onlynotif>&false;</onlynotif><add> 5 </add>").toNumber(), 15.0f));
     }
 
@@ -1196,15 +1205,15 @@ bool MenuXmlTests::runAllTests() {
                         record("xboxhint token is false on touch", eval("&xboxhint;").toBool() == false);
                         record("xbox as operator operand", eval("<and>&xbox;</and>").toBool() == false);
                         record("not xbox is true on touch", eval("<not>&xbox;</not>").toBool() == true);
-                        // Gated layout: sub/add on <onlyif>&xbox;</onlyif> skip on touch.
-                        record("onlyif xbox skips next op",
-                               near(eval("10<onlyif>&xbox;</onlyif><add> 5 </add>").toNumber(), 10.0f));
+                        // Gated layout: the console-only <add> loses its seed on touch.
+                        record("onlyif xbox zeroes the accumulator on touch",
+                               near(eval("10<onlyif>&xbox;</onlyif><add> 5 </add>").toNumber(), 5.0f));
 
                         // The flag also flips the tokens to true.
                         ctx.is_console = true;
                         record("xbox token is true on console", eval("&xbox;").toBool() == true);
                         record("xenon token is true on console", eval("&xenon;").toBool() == true);
-                        record("onlyif xbox keeps next op on console",
+                        record("onlyif xbox keeps the accumulator on console",
                                near(eval("10<onlyif>&xbox;</onlyif><add> 5 </add>").toNumber(), 15.0f));
 
                         // Button glyph tokens carry the button name for hint display.

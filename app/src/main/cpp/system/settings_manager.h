@@ -22,19 +22,34 @@ struct AudioVolumeSettings {
 };
 
 /**
+ * @brief fDifficultyDamageMultiplier (GMST slot 0xB37B88). The EXE ships 10.0,
+ * but Oblivion.esm overlays 5.0 when it loads, so the shipped game runs at 5.0.
+ */
+constexpr float DIFFICULTY_DAMAGE_MULTIPLIER = 5.0f;
+
+/**
  * @brief Convert the 0..100 difficulty slider into the multiplier applied to
  * damage the player receives.
  *
- * RE §30.2.3 confirms the slider value (fDifficultyMinValue 0.0 ..
- * fDifficultyMaxValue 100.0, default 50.0) is handed to the combat calculation
- * as-is, but the exact arithmetic inside the original combat routine is not yet
- * documented. The curve below reproduces Oblivion's observable behaviour: at the
- * default 50 the multiplier is 1.0, and it grows/shrinks exponentially so the
- * extremes sit a factor of six away from neutral.
+ * RE §50.1 (correcting §33.1.3 / §49.3). FUN_005E2560 keeps the slider
+ * normalised to d in [-1,+1] (default 0, i.e. slider 50) and evaluates
+ * x = d * fDifficultyDamageMultiplier, then
+ *     f = d > 0 ? x + 1 : d < 0 ? 1 / (1 - x) : 1
+ * Both sides are continuous at d = 0 and the extremes are exact inverses:
+ * slider 100 receives x6 and slider 0 receives x1/6.
  *
- * TODO(re): replace with the exact expression once the combat routine is read.
+ * The previous pow(6, (d - 50) / 50) approximation only agreed at the three
+ * points d = 0/50/100; at slider 25 it returned 3.50x where the engine returns
+ * 0.286x.
  */
 float difficultyDamageMultiplier(int difficulty);
+
+/**
+ * @brief Multiplier applied to damage the player deals: the reciprocal of
+ * difficultyDamageMultiplier(). FUN_005E2560 divides by f when the player is
+ * the attacker (RE §50.1).
+ */
+float difficultyDealtDamageMultiplier(int difficulty);
 
 /**
  * @brief Gameplay options: difficulty slider plus the six On/Off toggles.

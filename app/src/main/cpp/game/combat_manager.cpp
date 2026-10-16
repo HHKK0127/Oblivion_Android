@@ -1,4 +1,5 @@
 #include "combat_manager.h"
+#include "player.h"
 #include "spell_manager.h"
 #include "../audio/audio_manager.h"
 #include "../engine/imperial_weave.h"
@@ -700,6 +701,8 @@ void CombatManager::playerAttack(uint32_t playerEntityId, uint32_t targetNpcId, 
     }
     playerStatus.weaponDamage = weapon.baseDamage;
     float damage = calculateDamage(playerStatus, target->status, weapon);
+    // Difficulty scales the damage the player deals by 1/f (RE §50.1).
+    damage *= Player::getDealtDamageScale();
 
     // Critical hit
     if (rollCritical(weapon.criticalChance)) {
