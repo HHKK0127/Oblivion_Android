@@ -569,6 +569,10 @@ class GameRenderer : GLSurfaceView.Renderer {
         external fun nativeOnKeyPress(key: Int)
         external fun nativeExecuteConsoleCommand(command: String)
 
+    // Debug console soft-keyboard bridge (see ConsoleInputBridge)
+    external fun nativeOnConsoleKeyPress(key: Int): Boolean
+    external fun nativeIsGameConsoleVisible(): Boolean
+
     // Exit request check
     external fun nativeIsExitRequested(): Boolean
 

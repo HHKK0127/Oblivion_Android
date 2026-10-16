@@ -11,6 +11,27 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!--
+        Debug console command line. Native GameConsole draws the panel itself, so
+        this field is only the Android-side buffer that receives IME input and
+        submits the finished line. ConsoleInputBridge toggles its visibility: it
+        must be VISIBLE (alpha 0, 1x1) while the console is open because the IME
+        will not attach to a GONE view.
+    -->
+    <EditText
+        android:id="@+id/console_input_sink"
+        android:layout_width="1dp"
+        android:layout_height="1dp"
+        android:alpha="0"
+        android:background="@android:color/transparent"
+        android:inputType="textNoSuggestions|textVisiblePassword"
+        android:imeOptions="actionDone|flagNoFullscreen"
+        android:importantForAutofill="no"
+        android:maxLines="1"
+        android:privateImeOptions="nm"
+        android:textColor="@android:color/transparent"
+        android:visibility="gone" />
+
     <!-- Debug Overlay Container -->
     <FrameLayout
         android:id="@+id/debug_overlay_container"

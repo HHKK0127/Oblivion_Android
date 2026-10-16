@@ -278,6 +278,18 @@ The current version is **0.9.10 (versionCode 910)**.
   compile is sequential and cannot use the runner's core count: the run measured 12m15s end to end,
   which left too little headroom under 15 minutes. The job runs in parallel with the APK build, so
   the longer ceiling costs no wall clock time.
+- **The debug console can now be typed into with the Android soft keyboard.** The panel is drawn by
+  the native `GameConsole`, which previously had no way to receive text, so console commands were
+  unusable on a touch-only device. A 1x1 transparent `EditText` (`console_input_sink`) now holds the
+  command line and submits the finished line through `nativeExecuteConsoleCommand` on Enter or the
+  IME action key; key-by-key forwarding is deliberately not used, so the IME's own composing text
+  and echo are what the user sees. `ConsoleInputBridge` polls `nativeIsGameConsoleVisible()` every
+  200 ms (the console can also be closed by a tap outside or by Escape, which a push signal cannot
+  observe) and keeps the field VISIBLE-but-transparent while the console is open, because the IME
+  will not attach to a `gone` view. Escape is routed to `nativeOnConsoleKeyPress`. Both edges of
+  Enter and Escape are consumed: letting the key-up fall through to the default handler ran a focus
+  search that moved focus to the debug toggle button, which silently dropped every command after
+  the first.
 
 ### Fixed
 - **The frame delta was clamped at 100 ms instead of the original's 166.666 ms, so anything below

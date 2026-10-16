@@ -939,6 +939,39 @@ Java_com_example_oblivion_GameRenderer_nativeExecuteConsoleCommand(
     console->executeCommand(cmd);
 }
 
+// Soft-keyboard bridge for the debug console.
+//
+// The command line itself lives in a Kotlin EditText (see ConsoleInputBridge),
+// so only the console state queries and the non-text keys need to reach native.
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_example_oblivion_GameRenderer_nativeOnConsoleKeyPress(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jint key) {
+    if (!g_renderer) {
+        return JNI_FALSE;
+    }
+    GameConsole* console = g_renderer->getGameConsole();
+    if (!console || !console->isVisible()) {
+        return JNI_FALSE;
+    }
+    console->onKeyPress(key);
+    return JNI_TRUE;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_example_oblivion_GameRenderer_nativeIsGameConsoleVisible(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    if (g_renderer) {
+        GameConsole* console = g_renderer->getGameConsole();
+        if (console) {
+            return console->isVisible() ? JNI_TRUE : JNI_FALSE;
+        }
+    }
+    return JNI_FALSE;
+}
+
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_example_oblivion_GameRenderer_nativeIsExitRequested(
         [[maybe_unused]] JNIEnv* env,

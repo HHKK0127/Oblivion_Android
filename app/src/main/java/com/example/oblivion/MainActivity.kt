@@ -30,6 +30,7 @@ class MainActivity : Activity() {
     private var spLoadListener: SoundPool.OnLoadCompleteListener? = null
     private var debugButtonPanel: LinearLayout? = null
     private var debugOverlayContainer: FrameLayout? = null
+    private var consoleInputBridge: ConsoleInputBridge? = null
     private var isDebugPanelVisible = false
     private var isDebugMenuOpen = false
 
@@ -174,7 +175,10 @@ class MainActivity : Activity() {
     }
 
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
-        if (event.action == android.view.KeyEvent.ACTION_DOWN && event.repeatCount == 0 &&
+        // While the debug console is open the EditText owns the keyboard, so the
+        // title-screen key forwarding must not swallow Enter/D-pad.
+        if (consoleInputBridge?.isConsoleActive != true &&
+            event.action == android.view.KeyEvent.ACTION_DOWN && event.repeatCount == 0 &&
             event.keyCode in MENU_KEY_CODES) {
             gameRenderer?.nativeOnKeyPress(event.keyCode)
             return true
@@ -337,6 +341,9 @@ class MainActivity : Activity() {
             // Setup debug buttons
             setupDebugButtons()
 
+            // Setup the debug console soft-keyboard bridge
+            setupConsoleInputBridge()
+
             // Setup game data transfer buttons
             setupDataButtons()
 
@@ -344,6 +351,22 @@ class MainActivity : Activity() {
         } catch (e: Exception) {
             Log.e(TAG, "Exception in initializeGame: ${e.message}", e)
         }
+    }
+
+    /**
+     * Wires the debug console to the Android soft keyboard. The console owns its
+     * own input buffer natively, so the command line lives in a real EditText
+     * that submits a finished line through nativeExecuteConsoleCommand.
+     */
+    private fun setupConsoleInputBridge() {
+        val input = findViewById<android.widget.EditText>(R.id.console_input_sink)
+        if (input == null) {
+            Log.w(TAG, "console_input_sink not found; soft keyboard console input disabled")
+            consoleInputBridge = null
+            return
+        }
+        consoleInputBridge = ConsoleInputBridge(this, input) { gameRenderer }
+        Log.i(TAG, "Console input bridge ready")
     }
 
     private fun setupDebugButtons() {
@@ -391,6 +414,7 @@ class MainActivity : Activity() {
             // Debug Console toggle
             findViewById<Button>(R.id.btn_debug_console)?.setOnClickListener {
                 gameRenderer?.nativeToggleDebugConsole()
+                consoleInputBridge?.refresh()
                 Log.d(TAG, "Toggled debug console")
             }
 
@@ -583,6 +607,7 @@ class MainActivity : Activity() {
         }
         // Do NOT call gameSurfaceView.onPause() - keep GL thread running
         // GLSurfaceView.onPause() kills the render thread, which prevents onSurfaceCreated
+        consoleInputBridge?.stop()
         mediaPlayer?.let {
             if (it.isPlaying) {
                 it.pause()
@@ -595,6 +620,7 @@ class MainActivity : Activity() {
         super.onResume()
         Log.i(TAG, "onResume")
         gameSurfaceView?.onResume()
+        consoleInputBridge?.start()
         // Register predictive back gesture callback (Android 13+)
         if (android.os.Build.VERSION.SDK_INT >= 33) {
             backCallback?.let {
