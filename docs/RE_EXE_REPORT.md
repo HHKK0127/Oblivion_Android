@@ -8879,3 +8879,478 @@ cmd==5 経路:
 - 入力モードレコードは stride 24 byte で実装する。
 
 ---
+
+## §51 XML 式評価器（menus\*.xml）完全仕様
+
+対象: `Oblivion.exe` 内の menu XML 式評価器。§50.7 で「移植側 `menu_xml_interpreter.cpp` の skipNext モデルは誤り」と判定した根拠を、実命令レベルで確定した。評価器は 1 関数ではなく **再帰ドライバ + 26 分岐 switch** の 2 層構造である。
+
+### §51.1 演算子トークン ID → 名前 完全対応表（確定）
+
+演算子名の文字列プールは `.rdata` の `0xA6A3xx`〜`0xA6A6F8` にあり、登録は VA `0x58A720`〜`0x58A8FC` で `push <token32>; push <name_va>; mov ecx,esi; call 0x58A0A0` を繰り返す。生バイトのパターン走査（`68 <token32> 68 <name32>`）で 28 エントリを確定した。
+
+| 登録 VA | token | 名前 | 備考 |
+|---|---|---|---|
+| 0x58A720 | 0x7E4 | abs | |
+| 0x58A731 | 0x7D2 | add | |
+| 0x58A742 | 0x7DF | and | |
+| 0x58A753 | 0x7E9 | ceil | |
+| 0x58A764 | 0x7D1 | copy | 値ソース |
+| 0x58A775 | 0x7D5 | div | |
+| 0x58A786 | 0x7DA | eq | |
+| 0x58A797 | 0x7E3 | floor | |
+| 0x58A7A8 | 0x7D8 | gt | |
+| 0x58A7B9 | 0x7D9 | gte | |
+| 0x58A7CA | 0x7E8 | log | |
+| 0x58A7DB | 0x7E7 | ln | |
+| 0x58A7EC | 0x7DC | lt | |
+| 0x58A7FD | 0x7DB | lte | |
+| 0x58A80E | 0x7DE | max | |
+| 0x58A81F | 0x7DD | min | |
+| 0x58A830 | 0x7E2 | mod | |
+| 0x58A841 | 0x7D4 | mul | |
+| 0x58A852 | 0x7D4 | mult | mul の別名（同一 token） |
+| 0x58A863 | 0x7E1 | neq | |
+| 0x58A874 | 0x7EA | not | |
+| 0x58A885 | 0x7E5 | onlyif | ゲート |
+| 0x58A896 | 0x7E6 | onlyifnot | ゲート |
+| 0x58A8A7 | 0x7E0 | or | |
+| 0x58A8B8 | 0x7D6 | rand | |
+| 0x58A8DA | 0x7D3 | sub | |
+| 0x58A8EB | 0x7E3 | trunc | floor の別名（同一 token） |
+| 0x58A8FC | 0x7D7 | user | 値ソース |
+
+- 旧来「`0x668F60`〜`0x669E80` が演算子プール」は誤り。真の位置は `.rdata` `0xA6A3xx`〜`0xA6A6F8`（**§51.1 のみで確定**）。
+- token `0x7D1`(copy) と `0x7D7`(user) は switch の範囲外（エラーパス共用）＝ **値ソース扱い**で、算術 switch には入らない。
+
+### §51.2 ディスパッチ（jump table 0x58C998）
+
+```
+0058C411  lea  eax,[ecx-0x7D2]
+0058C417  cmp  eax,0x19          ; 25 → 0x7D2..0x7EB の 26 種
+0058C41A  ja   0x58C813          ; 範囲外 = "end-of-tag marker '>'" エラー
+0058C420  jmp  dword ptr [eax*4+0x58C998]
+```
+`ecx` = 演算子トークン ID。jump table `0x58C998`（26 エントリ、4 byte LE、raw offset `0x18BD98`）:
+
+| token | 名前 | 遷移先 |
+|---|---|---|
+| 0x7D2 | add | 0x58C427 |
+| 0x7D3 | sub | 0x58C438 |
+| 0x7D4 | mul/mult | 0x58C449 |
+| 0x7D5 | div | 0x58C45A |
+| 0x7D6 | rand | 0x58C478 |
+| 0x7D7 | user | 0x58C813（エラー共用） |
+| 0x7D8 | gt | 0x58C4DD |
+| 0x7D9 | gte | 0x58C50B |
+| 0x7DA | eq | 0x58C539 |
+| 0x7DB | lte | 0x58C567 |
+| 0x7DC | lt | 0x58C595 |
+| 0x7DD | min | 0x58C5C3 |
+| 0x7DE | max | 0x58C5EB |
+| 0x7DF | and | 0x58C613 |
+| 0x7E0 | or | 0x58C651 |
+| 0x7E1 | neq | 0x58C68F |
+| 0x7E2 | mod | 0x58C6BD |
+| 0x7E3 | floor/trunc | 0x58C720 |
+| 0x7E4 | abs | 0x58C76A |
+| 0x7E5 | onlyif | 0x58C798 |
+| 0x7E6 | onlyifnot | 0x58C7B6 |
+| 0x7E7 | ln | 0x58C7D5 |
+| 0x7E8 | log | 0x58C7F4 |
+| 0x7E9 | ceil | 0x58C745 |
+| 0x7EA | not | 0x58C4B5 |
+| 0x7EB | （無名） | 0x58C827（no-op） |
+
+### §51.3 ノードレイアウトと累算器モデル（確定）
+
+評価器のノード構造（`esi` = ノード）:
+
+| off | 型 | 意味 |
+|---|---|---|
+| +0x04 | f32 | **累算器 acc**（`ebx = &node+4` が acc ポインタ） |
+| +0x08 | f32 | 第1オペランド値（`[esp+0x1C]`） |
+| +0x0C | i32 | トークン ID（`[node+0xC]` = `ebp`） |
+| +0x10 | ptr | 子ノードリンク（`[[node+0x10]+4]` が先頭） |
+| +0x14 | ptr | 次兄弟リンク |
+| +0x18 | u16 | trait ID（`movzx eax,word[esi+0x18]`） |
+
+- 演算はすべて **`acc`（=`[ebx]`）に in-place で書く** 累算器モデル。
+- 子ノードを持つ場合、評価器は子を `call 0x58BEE0`（自己再帰）で先に評価する。
+- **演算の多くは先頭で `fstp st(1); fstp st(0)`（x87 スタック掃除）を行う。**
+
+### §51.4 全 26 ケースの実命令と意味（確定）
+
+```
+add    0x58C427  fld [esp+0x1C]; fadd [ebx]; fstp [ebx]                 acc = acc + op1
+sub    0x58C438  fld [ebx]; fsub [esp+0x1C]; fstp [ebx]                acc = acc - op1
+mul    0x58C449  fld [esp+0x1C]; fmul [ebx]; fstp [ebx]                acc = acc * op1
+div    0x58C45A  0除算ガード付き                                        acc = acc / op1
+rand   0x58C478  1.0 + floor(rand/32767*max)                           32767.0=0xA3D5A8, 1.0=0xA2F928
+gt     0x58C4DD  fld [ebx]; fld [esp+0x1C]; fcompp; test ah,5; jnp      成立 1.0 / 不成立 2.0 → [ebx]
+gte    0x58C50B  test ah,0x41; jnp                                      1.0 / 2.0
+eq     0x58C539  fucompp; test ah,0x44; jnp                            1.0 / 2.0
+lte    0x58C567  test ah,1; je                                         1.0 / 2.0
+lt     0x58C595  test ah,0x41; je                                      1.0 / 2.0
+min    0x58C5C3  小さい方                                               acc = min(acc, op1)
+max    0x58C5EB  大きい方                                               acc = max(acc, op1)
+and    0x58C613  両方非ゼロで 1.0、そうでなければ 2.0                     acc = (acc && op1) ? 1.0 : 2.0
+or     0x58C651  両方ゼロで 1.0、そうでなければ 2.0                      acc = (acc || op1) ? 1.0 : 2.0（実装は反転）
+neq    0x58C68F  fucompp; test ah,0x44; jp                              acc != op1 で 1.0
+mod    0x58C6BD  abs 併用                                               acc = (abs(acc/op)-floor)*(op) + acc 相当
+floor  0x58C720  fld [esp+0x20]; fadd [ebx]; fstp [esp]; call 0x404F70  acc = floor(acc + op2)
+ceil   0x58C745  fld [esp+0x20]; fadd [ebx]; fstp [esp]; call 0x484370  acc = ceil(acc + op2)
+abs    0x58C76A  fcomp [ebx]; ...; fld [esp+0x1C]; fadd [ebx]; fabs   acc = abs(acc + op1)
+onlyif 0x58C798  x87 unordered 判定で acc 維持か 0 を選択（後述）
+onlyifnot 0x58C7B6  同構造、センチネル 1.0
+ln     0x58C7D5  fld [ebx]; ...; call 0x986B80                        acc = ln(acc)
+log    0x58C7F4  fld [ebx]; ...; call 0x986CD0                        acc = log(acc)
+not    0x58C4B5  mov [esp+0x14],1; fcomp [esp+0x1C]; test ah,0x44; jnp  op1 との比較で 1.0 / 2.0
+0x7EB  0x58C827  fstp st(1); fstp st(0)                               no-op
+```
+
+- 補助関数: `0x9828C0` / `0x982BFA` / `0x986B80`(ln) / `0x986CD0`(log) / `0x404F70`(floor/trunc) / `0x484370`(ceil) / `0x47DF80`(rand)。
+- 文字列: `0xA6AB7C` = `"end-of-tag marker '>'"`。
+- 定数: `0xA379B4` = f32 2.0、`0xA2F948` = f32 1.0、`0xA3D5A8` = f32 32767.0、`0xA2F928` = f64 1.0。
+- **比較系（gt/gte/eq/lte/lt/neq/and/or/not）は結果を `acc` に 1.0（真）/ 2.0（偽）で書き戻す。** `and`/`or` は実装が反転している点に注意（上表参照）。
+
+### §51.5 ゲート演算子 onlyif / onlyifnot（実命令）
+
+```
+onlyif    0x58C798  fcomp [esp+0x1C]
+                    fnstsw ax
+                    test ah,0x44
+                    jp   0x58C7A7
+                    fstp st(0)
+                    fld  [ebx]
+           0x58C7A7 fstp [esp+0x14]        ; 結果 = acc または 0
+onlyifnot 0x58C7B6  fld1                        ; ST0 = 1.0
+                    fcomp [esp+0x1C]
+                    test ah,0x44
+                    jp   0x58C7C9
+                    fstp st(0)
+                    fld  [ebx]
+           0x58C7C9 fstp [esp+0x14]
+```
+
+- 両者とも「**条件オペランド（`[esp+0x1C]` = node+0x08）とセンチネル定数を x87 で比較し、`unordered`（PF=1）でなければ `acc` を、unordered なら 0.0 を採用する**」構造。
+- ループ先頭で `fldz` / `fld [0xA379B4=2.0]` を積むため、この分岐は「センチネルとの ordered 比較」を判定している。
+- **移植側の「ゲートは直前の累算値 acc に作用する」というモデルはノード構造から見て正しい。** すなわち:
+  - `onlyif` は条件が真（=維持）なら `acc` をそのまま、偽なら `acc = 0`。
+  - `onlyifnot` は条件が偽（=維持）なら `acc` をそのまま、真なら `acc = 0`。
+- 未確定事項（正直に明記）: **条件の真偽を 0.0 / 2.0 のどちらのエンコーディングで保持するかは、値ソース（`&true;` / `&false;` / trait 取得）がどこで 0.0 / NaN / 2.0 を書くかに依存し、本節では実命令から確定できなかった。** main は「真=維持, 偽=ゼロ」の近似で実装し、`&false;` を 0.0 として扱う場合は onlyif が常に維持側になる点に注意（§51.6 のテスト期待値と整合させること）。
+
+### §51.6 評価器ドライバ関数 0x58BEE0
+
+- プロローグ `0x58BEE0`: `push -1; push 0x9BF8CC; mov eax,fs:[0]; ...; sub esp,0x14C`（SEH 付き、スタック 0x14C）。`0x58BF1B` `mov esi,ecx`（`esi` = ノード）。
+- ループ先頭で `fldz`（f64 0.0）/ `fld [0xA379B4=2.0]` を積み、`fld [edx+8]; fstp [esp+0x1C]` でオペランドをロード。
+- `0x58C002` `cmp ebp,0xF` / `0x58C047` `cmp ebp,0xA` — token `0x0F` / `0x0A` は演算子 switch の手前で個別処理される（構造トークン）。
+- トークン範囲判定 `0x58C063` `movzx eax,word[esi+0x18]; cmp ax,0x2710; jb 0x58C168` — trait ID `0x2710` 以上は別処理。
+- 文字列処理: `call 0x589080` / `call 0x4028D0` / `call 0x981630`（バッファ操作）。
+- `callers(0x58BEE0)` = 8 件: `0x58BECA`（自己再帰 = サブ式評価）/ `0x58CA40` / `0x58CB48` / `0x58CBCF` / `0x58CC35` / `0x58CC4A` / `0x58CD15` / `0x58CFC2`。
+- 関連: `0x58BAD0`（優先度/循環チェック、`0x58BF62` から呼出）、`0x5889F0`、`0x5896F0`、`0x58BE39` 近辺に `cmp eax,0x387` の型チェック。
+
+### §51.7 main 追加依頼 1: fDifficultyDamageMultiplier の実効値
+
+- EXE 静的既定値: `0xB37B88` = f32 10.0（loader スタブ `0x9ED790`、参照 `0x5E25B6` / `0xA1FE31`）。
+- `find_dword(0xB37B88)` = `0x5E25B6` / `0x9ED790` / `0xA1FE31`。難易度関数 `FUN_005E2560` は `0x5E25B6` でこの GMST を読む。
+- **Oblivion.esm 側で上書きされる**: `D:\Cargo\Ghidra\temp\Oblivion_Steam版\Data\Oblivion.esm` 内に同 GMST の再設定レコードが存在し、実効値は **5.0**（§50.1 で確認済み）。
+- **Android 移植向け確定値:**
+  - Oblivion.esm を必ずロードする前提（本体がそうである）ため、**実効値 5.0 を採用**する。
+  - overlay の有無で分岐する実装は不要。GMST ローダが ESM 値で上書きする挙動を再現するなら 5.0 が既定の最終値。
+  - 修正式: `const float v = (difficulty - 50.0f) / 50.0f; if (v > 0) return 1.0f + 5.0f * v; if (v < 0) return 1.0f / (1.0f - 5.0f * v); return 1.0f;`（`5.0f` は `fDifficultyDamageMultiplier * fDifficultyMaxValue` 相当。EXE 既定 10.0 を用いる場合のみ倍率が 10 になる）。
+
+### §51.8 main 追加依頼 3: menu_xml_tests.cpp の正期待値
+
+対象: `app\src\main\cpp\tests\menu_xml_tests.cpp`（全 1279 行）。
+
+累算器モデル（§51.3〜§51.5）に基づく正期待値:
+
+| 行 | テスト式 | 移植側旧期待 | 正期待（エンジン実式） |
+|---|---|---|---|
+| 325-326 | `10<onlyif>&false;</onlyif><add> 5 </add>` | 5.0 | **5.0** |
+| 328-329 | `10<onlyif>&true;</onlyif><add> 5 </add>` | 15.0 | **15.0** |
+| 331-332 | `10<onlyifnot>&true;</onlyifnot><add> 5 </add>` | 5.0 | **5.0** |
+| 335-337 | `<copy>127</copy><onlyif>&true;</onlyif><add><copy>35</copy><onlyifnot>&true;</onlyifnot></add>` | 127.0 | **127.0** |
+| 338-340 | `<copy>127</copy><onlyif>&false;</onlyif><add><copy>35</copy><onlyifnot>&false;</onlyifnot></add>` | 35.0 | **35.0** |
+| 1203-1210 | `"10<onlyif>&xbox;</onlyif><add> 5 </add>"`（touch 時） | 5.0 | **5.0** |
+
+- これらの期待値は **「ゲートは acc に作用する」モデル** と整合する。旧 skipNext モデル（後続演算子を読み飛ばす）とは結果が一致しない式を選んで検証する必要があるが、上記 6 例はいずれも acc ゲートモデルでも同じ数値になる。
+- **追加検証推奨**: skipNext と acc ゲートで結果が分岐する式、例:
+  - `"<copy>10</copy><onlyif>&false;</onlyif><mul> 3 </mul>"` → acc ゲートでは `(10→0)*3 = 0.0`、skipNext では `mul` 自体を飛ばして `10.0`。**この差が本質的な判別式。**
+  - `"<copy>10</copy><onlyif>&false;</onlyif><add> 5 </add><mul> 2 </mul>"` → acc ゲートでは `(0+5)*2 = 10.0`。
+- 注意: `&true;` / `&false;` の真偽エンコーディングが未確定（§51.5 冒頭）のため、テストでは `&true;` を「維持」、`&false;` を「ゼロ化」として扱う移植実装に合わせて期待値を固定するのが安全。
+
+### §51.9 コンソールコマンド表（再掲・確定）
+
+レコード配列基底 `0xB0BBD0` 付近、**stride 0x28（40 byte）**:
+
+| off | 内容 |
+|---|---|
+| +0x00 | id (int) |
+| +0x04 | 説明文字列 VA |
+| +0x10 | handler 関数 VA |
+| +0x14 | 既定 `0x004FDE30` |
+| +0x20 | CanonicalName |
+| +0x24 | 省略名 |
+
+flags: `0x0`=引数なし / `0x10000`=float or 単一引数 / `0x20000`=2 数値 / `0x30000`=3 数値（RGB 等）。
+確認済み id: `0x11F`=CalcPathToPoint / `0x121`=SetFog / `0x122`=SetClipDist / `0x123`=ToggleShadowVolumes / `0x12D`=BetaComment / `0x12E`=ToggleCellNode / `0x12F`=Trees / `0x130`=FOV(0x511720) / `0x131`=Verbose(0x507930) / `0x132`=ToggleGodMode(0x500D10) / `0x133`=RefreshShaders(0x50AA20) / `0x134`=ToggleScripts(0x500D50) / `0x135`=SexChange(0x515920) / `0x136`=ToggleConversations(0x507BA0) / `0x137`=ToggleFullHelp(0x500E00) / `0x138`=ShowQuestLog / `0x139`=ShowFullQuestLog / `0x13B`=CenterOnWorld / `0x13C`=ToggleGrass / `0x146`=HairTint / `0x147`=SaveGame / `0x148`=LoadGame / `0x152`=ShowRenderPasses。
+
+### §51.10 God Mode フラグ 0xB3BB06（確定）
+
+- `0xB3BB06` = God Mode フラグ（byte）。setter `0x65D810`: `mov al,[esp+4]; mov byte[0xB3BB06],al; ret`。getter `0x65D820`。
+- `callers(0x65D810)` = 2 件（`0x444853` / `0x500D1B`）、`callers(0x65D820)` = 8 件。
+- `ToggleGodMode` handler `0x500D10` = `call 0x65D820; test al,al; sete al; ... "enabled." / "disabled."`。
+- ダメージ無効化ガード: `0x65DAF5` / `0x65E300` / `0x65E3C0` / `0x65E530` / `0x65F75C` / `0x661083` / `0x662590`。
+- プレイヤー被ダメ経路のガード: `0x65FF10` = `cmp byte[0xB3BB06],0; je 0x65FF1E`（God Mode ON ならダメージ無効）。OFF なら `0x65FF30` = `call 0x5F3870; ret 0xC`。
+
+### §51.11 ヒット受信経路と HP 書込（確定）
+
+- Actor 系メイン vtable スロット:
+  - `+0x398` = `0x5EE760`（魔法/近接ヒット受信）。魔法側 `FUN_00699900`→`0x699BCA`、近接側 `FUN_005FEBF0`→`0x5FFF97`。
+  - `+0x3A8` = ダメージ適用スタブ（`0x69D990` = `xor al,al; ret`（4 byte 空スタブ）は **別スロット**。`+0x3A8` の実体は `0x6AF880` が有力）。
+  - `+0x3AC` = `FUN_005FEBF0`（メイン被弾処理）。実装 4 vtable: `0xA6E074` / `0xA6FC9C` / `0xA710F4` / `0xA73A0C`。
+- `0x005FE380`（`+0x3A8` ディスパッチ周辺）: `vt+0x198`→`0x41DF00`→`vt+0x170`→`byte[+4]==0x24`→`vt+0x388`→`jmp [edx+0x3A8]`。
+- HP 書込ヘルパ `0x00488830`: callers = 3 件（`0x0048F404` / `0x005D1F6E` / `0x005F39BE`）。
+- AV current 取得 `0x00484850`: callers = 24 件（`0x5F3933` / `0x5F3973` を含む）。
+- `0x69D990` の callers = 3 件（`0x00500C04` / `0x006979DE` / `0x00697FB1`）。
+- Player 死亡ハンドラ候補 `0x660CC0`。Actor vtable `0xA73A0C`: slot `0xA73AB0`/`0xB4`/`0xB8` に `0x0069D990` が 3 連登録。`0xA73CDC`=`0x00666820`、`0xA73CE4`=`0x0068F970`、`0xA73CF0`=`0x005F43E0`、`0xA73CF8`=`0x00666A70`。
+- プレイヤー被ダメ経路: `FUN_005F6540` の `0x5F65DD`: `ecx=[ebp+0x58]; edx=[eax+0x3AC]; push 0; push ebp; call edx`（= `FUN_005FEBF0` 呼出）。`0x5F65D6` `add dword[0xB333C0],1`。`callers(0x005F6540)` = 12 件。
+- **移植指針**: エンジン経路（AI 攻撃解決 → `vt+0x3AC` = `FUN_005FEBF0` → `vt+0xA8` 適用スタブ）を再現し、**その適用スタブから `Player::takeDamage` を呼ぶ**のが忠実。`Player::takeDamage` の直接呼出元がゼロなのはこのため。
+
+### §51.12 アーマー習熟倍率の適用対象（§45 (a) の裏付け）
+
+- `FUN_005F3870` の tail `0x5F392F` 以降で、習熟倍率（Novice 1.5 / Journeyman 0.5）が掛かった値は **HP 書込ヘルパ `0x00488830` に渡る**（`0x005F39BE` が `callers(0x00488830)` に含まれる）。
+- 併せて `0x5F3933` / `0x5F3973` が `0x00484850`（AV current 取得）を呼ぶ。
+- **結論: §45 の (a)（装着者への実 HP ダメージ）が正しい。** (b)（コンディション減少）ではない。
+- 軽装 perk 18 / 重装 perk 27、`rank >= 2` = Journeyman(0.5) / `rank == 0` = Novice(1.5)。
+
+### §51.13 難易度ダメージ倍率（再確定）
+
+- 難易度 `d ∈ [-1.0, +1.0]`（既定 0.0）。`M = fDifficultyDamageMultiplier`（EXE 既定 10.0f、ESM overlay で実効 5.0）。
+- `x = d * M`。
+  - 被ダメ倍率: `f = (d > 0) ? x + 1.0 : (d < 0) ? 1.0 / |x - 1.0| : 1.0`
+  - 与ダメ倍率 = `1.0 / f`
+- 実バイト: `0x5E25B2` `test bl,bl; je 0x5E25F5`。署名 `float FUN_005e2560(float base, Actor* p)`、`ecx = this`、`ret 8`（`0x5E25D8`）。呼出元 3 件: `0x5E5903` / `0x69A028` / `0x6A8755`。
+- `[Player+0x734]` 書込元 2 箇所: `0x5A38D4`（スライダー）/ `0x66AF7A`。
+- GMST 4 件: `fDifficultyMinValue 0xB37B70 = -1.0` / `MaxValue 0xB37B78 = 1.0` / `DefaultValue 0xB37B80 = 0.0` / `fDifficultyDamageMultiplier 0xB37B88 = 10.0`（ESM overlay で 5.0）。
+- `find_dword(0xB37B80 fDifficultyDefaultValue)` = `0x5A3A3B` / `0x9ED757` / `0xA1FE21`。
+
+### §51.14 残件（次節以降）
+
+- actor `vt+0xA8` の実体（`0x6AF880` の本体検証）— 最優先。
+- `FUN_005FEBF0` 本体後半の完全式（アーマー軽減 / スタッガー / 1発上限 / 武器負荷）。
+- 疲労 AV `0x0A` の戦闘寄与（攻撃力 / 呪文コスト / 移動速度）。
+- 魔法経路 `vt+0x398` の詳細。
+- GMST 名未確定分の一覧化。
+- ContainerMenu cmd `0x33`(51) の特定。
+- C1〜C4 audio の builder/commit 飽和矛盾。
+- SleepWaitMenu 月日数表（`0xB06700+0x10`）の使い方。
+- `onlyif` / `onlyifnot` の真偽エンコーディング（`&true;` / `&false;` がどの値で表現されるか）。
+
+---
+
+## §52 XML 式評価器 累算器モデル完全仕様（main 追加依頼 2 への回答）
+
+対象: `0x58bee0`（evaluator ドライバ）＋ `0x58C420`（switch 26 ケース）。
+ソース: Steam 版 Oblivion.exe（ImageBase 0x400000、md5 CDD2F0C5EFF198D4F26B7B5B54CE4930）実命令。
+
+### §52.1 ゲートとして作用する演算子は onlyif / onlyifnot のみ
+
+トークン ID と名前の完全対応（再掲、28 エントリ）:
+`0x7d2 add / 0x7d3 sub / 0x7d4 mul(mult) / 0x7d5 div / 0x7d6 rand / 0x7d7 user / 0x7d8 gt / 0x7d9 gte / 0x7da eq / 0x7db lte / 0x7dc lt / 0x7dd min / 0x7de max / 0x7df and / 0x7e0 or / 0x7e1 neq / 0x7e2 mod / 0x7e3 floor(trunc) / 0x7e4 abs / 0x7e5 onlyif / 0x7e6 onlyifnot / 0x7e7 ln / 0x7e8 log / 0x7e9 ceil / 0x7ea not / 0x58c827(0x7eb) no-op / 0x7d1 copy`
+
+`<and>` / `<or>` / `<not>` / 比較演算子はゲートではなく通常の値生成ノードである。`and` / `or` / `not` の結果は 1.0 または 2.0 のブール値として acc に作用するだけで、acc の維持・上書きは行わない。ゲート（acc を条件で上書きする）は `onlyif` と `onlyifnot` の 2 種のみ。
+
+### §52.2 onlyif / onlyifnot の実命令（従来報告を訂正）
+
+onlyif（トークン 0x7e5、VA 0x58C798）:
+```
+0058C798  fcomp dword ptr [esp+0x1c]     ; op1 と比較
+0058C79C  fnstsw ax
+0058C79E  test ah, 0x44
+0058C7A1  jp 0x58c7a7                    ; unordered(op1=NaN) -> 2.0 保持
+0058C7A3  fstp st(0)                     ; 非NaN: 2.0 破棄
+0058C7A5  fld dword ptr [ebx]            ; st0 = acc
+0058C7A7  fstp dword ptr [esp+0x14]
+0058C7AB  fld dword ptr [esp+0x14]
+0058C7AF  fstp dword ptr [ebx]           ; acc = st0
+```
+onlyifnot（トークン 0x7e6、VA 0x58C7B6）:
+```
+0058C7B6  fstp st(0)
+0058C7B8  fld1                            ; st0 = 1.0
+0058C7BA  fcomp dword ptr [esp+0x1c]
+0058C7BE  fnstsw ax
+0058C7C0  test ah, 0x44
+0058C7C3  jp 0x58c7c9                    ; unordered(op1=NaN) -> 1.0 保持
+0058C7C5  fstp st(0)                     ; 非NaN: 1.0 破棄
+0058C7C7  fld dword ptr [ebx]            ; st0 = acc
+0058C7C9  fstp dword ptr [esp+0x14]
+0058C7CD  fld dword ptr [esp+0x14]
+0058C7D1  fstp dword ptr [ebx]
+```
+確定セマンティクス（op1 が「条件の値」）:
+
+| 演算子 | op1 が非NaN | op1 が NaN |
+|---|---|---|
+| onlyif | acc 維持 | acc = 2.0 で上書き |
+| onlyifnot | acc 維持 | acc = 1.0 で上書き |
+
+判定は `fcomp` 後の `test ah,0x44; jp`（unordered = オペランドのいずれかが NaN）。**従来報告の「NaN -> acc = 0」は誤り。** 上書き値は FP スタックに先詰めされた定数（onlyif = `0xa379b4` の 2.0、onlyifnot = `fld1` の 1.0）であり、0 ではない。
+
+### §52.3 実データによる裏付け（container_menu.xml）
+
+`container_menu.xml` 2522 行付近の x 座標式:
+```
+<x>
+  <add src="screen()" trait="cropx"/>
+  <max src="screen()" trait="cropx"/>
+  <sub> 65 </sub>
+  <max src="screen()" trait="cropx"/>
+  <max>
+    <copy> 40 </copy>
+    <onlyifnot> &xbox; </onlyifnot>
+  </max>
+</x>
+```
+この部分式 `<max><copy>40</copy><onlyifnot>&xbox;</onlyifnot></max>` は、xbox 有効時のみ onlyifnot が acc を 1.0 に落とし、無効時は 40 を維持する。すなわち「タッチ端末では 40px の余白を確保、コンソールでは余白なし」という意図であり、§52.2 の「非NaN -> acc 維持」と一致する。`onlyifnot` を「条件が真なら値を 0 にする」と解釈するとこの式は両分岐で同じ値となり意図を説明できない。
+
+### §52.4 算術演算子の評価順と acc への作用（実命令）
+
+```
+add  0x58C427: fld[esp+0x1c](op1); fadd[ebx](acc); fstp[ebx]  => acc = op1 + acc
+sub  0x58C438: fld[ebx]; fsub[esp+0x1c]; fstp[ebx]           => acc = acc - op1
+mul  0x58C449: fld[esp+0x1c]; fmul[ebx]; fstp[ebx]           => acc = op1 * acc
+div  0x58C45A: fld[esp+0x1c]; fucom st(1); fnstsw ax;
+               test ah,0x44; jnp 0x58c829                       ; op1 == 0 なら acc 維持
+               fdivr[ebx]; fstp[ebx]                           => acc = acc / op1
+```
+- レイアウト: `node+0x04 = acc`、`node+0x08 = op1`、`node+0x0C = token`、`node+0x10 = 子`、`node+0x14 = 兄弟`、`node+0x18 = word（trait ID / 値ソース索引）`。`[ebx] = acc`、`[esp+0x1c] = op1`、`[esp+0x20] = op2`。
+- 評価は「直前の累算値」への逐次適用。複数の値を積む（`<copy>` を複数並べる等）場合も acc は 1 本の float であり、子ノード評価結果が op1 として順に畳み込まれる。
+
+### §52.5 値ソースの評価タイミング
+
+- ソース経路は `0x58C063` から。`movzx eax,word[esi+0x18]; cmp ax,0x2710; jb 0x58C168`。
+- `0x2710` 未満: trait 名ソース（`src="screen()"/"me()"/"parent()"/"player()"` など）。既定定数は `fld[0xa379b4=2.0]; fldz`。
+- `0x2710` 以上: `&true;`/`&false;`/`&generic;` 系。索引 -> 名前（`0x589080`）-> `snprintf`（`0x981630`）で末尾 `_` を切出 -> `0x983479`（名 -> index）-> `ebp=[esp+0x4c]` -> `fild` で float 化。比較既定定数 2.0。
+- ブール定数の実体: `&true; = 0xa6aad0`（値 2）、`&false; = 0xa6aad8`（値 1）、`&generic; = 0xa6aae0`（値 -1）。
+- `user` トークン（0x7d7）は `0x58C055 call 0x5896f0` のサブヘルパ、`copy`（0x7d1）は `0x58C038 call 0x5889f0` のサブヘルパ。
+- dispatch 前置（`0x58C33E`）: `cmp ecx,0x7d1; jg 0x58C411`。`0x7d1` 以下は copy / 0 / 0x23 / 0x65 を個別判定、それ以外はエラー。`0x7d2` 以上は `lea eax,[ecx-0x7d2]; cmp eax,0x19; ja 0x58C813`（範囲外は "end-of-tag marker '>'" エラー）で jump table `0x58C998` へ。
+- `0x7d7 user` は jump table 上 `0x58C813`（エラー）に落ちる。user は前置部で特別処理される。
+
+### §52.6 真偽エンコーディング対照表（移植必須）
+
+| 演算子 | 成立 / 非NaN | 不成立 / NaN |
+|---|---|---|
+| gt / gte / eq / neq / lt / lte | 1.0 | 2.0 |
+| not | 非NaN -> 1.0 | NaN -> 2.0 |
+| and | 両方非NaN -> 2.0 | いずれか NaN -> 1.0 |
+| or | いずれか非NaN -> 2.0 | 両方 NaN -> 1.0 |
+| onlyif | op1 非NaN -> acc 維持 | op1 NaN -> acc = 2.0 |
+| onlyifnot | op1 非NaN -> acc 維持 | op1 NaN -> acc = 1.0 |
+
+注意: 比較演算子は「成立 = 1.0」、`and` / `or` は「成立 = 2.0」と向きが逆転する。移植式評価器はこの非対称性を厳密に再現する必要がある。
+
+### §52.7 menu_xml_tests.cpp の期待値（main 追加依頼 3 への回答）
+
+エンジン実式（§52.2 / §52.4）に基づく再計算。`<add>` は `acc = op1 + acc` であり「op1 で置換」ではない点が重要。
+
+| 式（310-341 行） | 移植側期待 | エンジン式に基づく正値 | 差分理由 |
+|---|---|---|---|
+| `10<onlyif>&false;</onlyif><add>5</add>` | 5.0 | 7.0 | onlyif false は acc=2.0 上書き。2.0+5=7.0 |
+| `10<onlyif>&true;</onlyif><add>5</add>` | 15.0 | 15.0 | onlyif true は acc 維持。10+5=15.0 |
+| `10<onlyifnot>&true;</onlyifnot><add>5</add>` | 5.0 | 6.0 | onlyifnot true は acc=1.0 上書き。1.0+5=6.0 |
+| `<copy>127</copy><onlyif>&true;</onlyif><add><copy>35</copy><onlyifnot>&true;</onlyifnot></add>` | 127.0 | 128.0 | 内側 = 1.0（onlyifnot true 上書き）、127+1=128.0 |
+| `<copy>127</copy><onlyif>&false;</onlyif><add><copy>35</copy><onlyifnot>&false;</onlyifnot></add>` | 35.0 | 37.0 | 外側 = 2.0、内側 = 35（維持）、2.0+35=37.0 |
+
+`xbox` デバイストークン系（1180-1225 行）:
+- `10<onlyif>&xbox;</onlyif><add>5</add>` は、`&xbox;` が NaN を返す条件下でのみ acc=2.0 上書きとなる。移植側期待 5.0（touch）/ 15.0（console）は、touch 時に onlyif が acc を 0 にする前提のため誤り。正値は `&xbox;` の NaN / 非NaN 挙動を確定したうえで §52.2 の表から算出する必要がある（`&xbox;` は `0x2710` 以上のブール系経路を通り、非NaN = 2.0 上書き側か acc 維持側かで 7.0 / 15.0 に分岐）。
+- `<and>&xbox;</and>` / `<not>&xbox;</not>` は §52.6 の対照表に従う。
+
+**指摘**: これら 5（＋デバイストークン系）の合成テストは「条件で値を選択する（zeroes / keeps）」モデルを前提にしており、エンジンの sentinel 上書きモデルと乖離する。「条件成立なら値 A、不成立なら値 B」を検証したいのであれば、`container_menu.xml` の `<max><copy>40</copy><onlyifnot>&xbox;</onlyifnot></max>` 形式（実在パターン）へテストを置換することを推奨する。合成式の期待値だけを正値へ書き換えても、テストの意図（条件分岐）は依然としてエンジン挙動を検証しない。
+
+### §52.8 Android 移植向け確定値
+
+- ゲート演算子は `onlyif`（op1 NaN -> acc=2.0）と `onlyifnot`（op1 NaN -> acc=1.0）のみ。非NaN は acc 維持。0 上書きは存在しない。
+- `and`/`or`/`not`/比較はゲートではなく値生成ノード。比較は成立 1.0、`and`/`or` は成立 2.0（逆転に注意）。
+- `add = op1+acc`、`sub = acc-op1`、`mul = op1*acc`、`div = acc/op1`（op1==0 は acc 維持）。
+- `menu_xml_interpreter.cpp` の `skipNext` モデル（252-254 行）は廃止し、acc 1 本への逐次適用モデルへ書き換える。
+- ブール定数: `&true;`=2、`&false;`=1、`&generic;`=-1。
+- `menu_xml_tests.cpp` の合成 onlyif テスト 5 件は期待値を上表の正値へ修正、または実在パターンへ置換する。
+
+### §52.9 移植側の検証（出荷メニュー XML による反証）— main 追記
+
+§52.2 の上書き値と §52.5 / §52.6 のエンコーディングを、出荷済みメニュー XML 89 ファイル
+（`Data\Menus\**\*.xml`、ローカル展開先 `tmp\bsa_misc_full\menus`）の実データで検証しました。
+結論として **§52.2 の「onlyif は acc を 2.0 で上書き」は成立しない**と判断し、移植側は §50.7 準拠
+（ゲート失敗時 acc = 0）を維持します。根拠を以下に示します。
+
+#### (a) §52.2 の実命令解釈の誤り
+
+§52.2 の onlyif 命令列では `2.0` は `0058C798 fcomp dword ptr [esp+0x1c]` の**前に**積まれ、
+`fcomp` が比較と同時にそれを POP します。したがって `jp 0x58c7a7` 側で
+`fstp dword ptr [esp+0x14]` が保存するのは、比較で消費されずに残った値（§51.6 のループ先頭が
+積む `fldz` の 0.0）です。すなわち **onlyif の上書き値は 0.0** であり、`acc = 2.0` ではありません。
+これは §51.5 の記述（「onlyif は条件が真なら acc 維持、偽なら acc = 0」）と整合します。
+onlyifnot 側も `0058C7B6 fstp st(0)` で残値を捨ててから `fld1` を積む同じ構造です。
+
+#### (b) §52.6 の真偽表と §52.2 のしきい値は同時に成立しない
+
+出荷 XML のゲート形状（89 ファイル集計）:
+
+| 形状 | 件数 |
+|---|---|
+| `<onlyif src=".." trait=".."/>`（自己閉じ・trait 形） | 175 |
+| `<onlyif>` 値形（入れ子オペランドあり） | 250 |
+| うち比較/論理: `eq` 123 / `gt` 76 / `lt` 49 / `or` 14 / `neq` 5 / `gte` 5 / その他 4 | 272 |
+| `<onlyif>` リテラル: `&xbox;` 53 / `&xenon;` 3 / `&true;` 1 | 57 |
+| `<onlyifnot>` 合計 142（うち自己閉じ 121、`&xbox;` リテラル 20、値形 1） | |
+| `<onlynotif>`（自己閉じ） | 6 |
+
+**比較オペランド付きの `<onlyif>` が 250 件**で最大勢力です。§52.6 は「比較 成立 = 1.0」と
+していますが、§52.2 のしきい値（onlyif は op1 >= 2.0 で維持）と組み合わせると、
+`<onlyif><copy x/><eq>0</eq></onlyif>` は**条件が成立したときだけ acc が 0 に落ちる**（= 反転）
+ことになり、`<visible>` 系の実データと矛盾します。§52.6 の比較行を 2.0/1.0 に読み替えれば
+しきい値とは整合しますが、その場合は §52.5 の `&false;` = 1 と下記 (c) の実データが矛盾します。
+
+#### (c) `&false;` = 1 は `<visible> &false;` と `<eq> &false;` の実データに反する
+
+- `<visible> &false; </visible>` が **58 件**（例: `container_menu.xml` の
+  `<visible> <copy src="cont_icon_cont_off" trait="visible"/> <eq> &false; </eq> </visible>`）。
+  `&false;` を「真」側（1.0 または 2.0）に置くと、非表示のはずのウィジェットが描画されます。
+- `<eq> &false; </eq>` が **65 件**あり、いずれも trait の偽値との一致判定です。移植側は
+  `&false;` = 0.0 としており、ゲート・`<visible>`・`<eq>` の 3 消費者が同一エンコードで一致します。
+
+#### (d) 実在式が要求する値（§52.7 の期待値と一致しない）
+
+| 出荷式 | 要求値 | §52.7 の予測 |
+|---|---|---|
+| `container_menu.xml` `cont_select_frame_marker` の `<x>`（`<user1> 127 </user1>` = container position / `<user2> 35 </user2>` = inventory position） | 127 / 35 | 128 / 37 |
+| `prefabs/button_long.xml` `<copy> 128 </copy> <onlyifnot src="parent()" trait="user1"/>`（無効時のスプライトクロップ） | 無効 = 128 / 有効 = 0 | 無効 = 128 / 有効 = 1 |
+
+特に button_long は「無効時にクロップ原点を 0 に落とす」式であり、ゲート失敗時に 1.0 を残すと
+1px ずれた領域を切り出します。0 に落とす §50.7 モデルが意図と一致します。
+
+#### (e) §52.3 の反論について
+
+§52.3 は `<max><copy>40</copy><onlyifnot>&xbox;</onlyifnot></max>` について
+「0 上書きモデルでは両分岐が同値になり意図を説明できない」と述べていますが、§50.7 モデルでは
+タッチ（`&xbox;` 偽 = 維持）→ 40、コンソール（`&xbox;` 真 = 0 上書き）→ 0 となり
+**両分岐で異なる値**になります。余白 40px / 0px という意図は 0 上書きモデルでそのまま説明できます。
+
+#### (f) 移植側の対応（本節の結論）
+
+- ゲートは §50.7 の累算器モデルを維持します: `onlyif` は条件成立で acc 維持 / 不成立で acc = 0、
+  `onlyifnot` は逆。`menu_xml_interpreter.cpp` の `evaluateSequence()` は変更しません。
+- §51.4 / §52.4 が一致する **`div` / `mod` の 0 除算ガード（op1 == 0 なら acc 維持）を実装**しました
+  （従来は 0.0 を返していました）。
+- `menu_xml_tests.cpp` の合成 onlyif テストの期待値（5.0 / 15.0 / 5.0 / 127.0 / 35.0）は維持し、
+  出荷式に由来する回帰テスト 10 件を追加しました（`&false;` の偽値性 / `<eq> &false; </eq>` /
+  button_long のクロップ / `div`・`mod` の 0 除算）。host テストは MenuXmlTests 223/223 green です。
+- 実命令レベルでの再確認（`2.0` の積み込み位置と `fcomp` の POP、onlyifnot の残値破棄）を
+  RE 側で再取得いただけると確実です。§52.2 の表と §52.6 の比較行のどちらが誤りかを実命令から
+  一意に決められれば、以後の解釈揺れを防げます。
+
+---
+

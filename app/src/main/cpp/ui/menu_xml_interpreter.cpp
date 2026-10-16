@@ -295,8 +295,11 @@ public:
         if (name == "add") return EvalValue::makeNumber(a + b);
         if (name == "sub") return EvalValue::makeNumber(a - b);
         if (name == "mul" || name == "mult") return EvalValue::makeNumber(a * b);
-        if (name == "div") return EvalValue::makeNumber(b == 0.0f ? 0.0f : a / b);
-        if (name == "mod") return EvalValue::makeNumber(b == 0.0f ? 0.0f : std::fmod(a, b));
+        // The engine guards both divisors: a zero operand leaves the running
+        // accumulator untouched instead of collapsing it to zero
+        // (RE_EXE_REPORT 51.4 "0 division guard" / 52.4).
+        if (name == "div") return b == 0.0f ? acc : EvalValue::makeNumber(a / b);
+        if (name == "mod") return b == 0.0f ? acc : EvalValue::makeNumber(std::fmod(a, b));
         if (name == "max") return EvalValue::makeNumber(std::max(a, b));
         if (name == "min") return EvalValue::makeNumber(std::min(a, b));
         if (name == "eq") return EvalValue::makeBool(a == b);

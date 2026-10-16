@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-16T04:03:52Z",
+  "lastUpdated": "2026-10-16T06:19:47Z",
   "entries": [
     {
       "timestamp": "2026-09-16T14:58:00Z",
@@ -7993,12 +7993,347 @@
       "priority": "medium",
       "category": "reference",
       "content": "TODO entries added from RE 50: magic-damage-difficulty-scale, febf0-damage-formula, fatigue-av-implementation, gmst-table-integration, menu-stackingtype-impl, input-suppression-latches. npc-difficulty-scale description updated (dealt side now implemented). difficulty-damage-exact and xml-accumulator-model are done. RE 50.8 resolved all 2304 GMST entries (992 float / 1085 string / 227 int, slot range 0x00B33460..0x00B3B7C8); the full list lives in tmp/re/s50_gmst_full.txt, which is gitignored and must be re-derived or copied into the repo before a consumer is implemented."
+    },
+    {
+      "id": "90f05e2d-aacc-44ff-ab76-8a7d931febb0",
+      "timestamp": "2026-10-16T13:50:03.545459+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "子セッション並列解析体制を採用。3つのバックグラウンドエージェントに委譲: (1) actor vt+0xA8 実体/プレイヤー被ダメージ経路=P1最優先, (2) XML累算器モデル完全仕様+menu_xml_tests正期待値, (3) fDifficultyDamageMultiplier実効値(ESM overlay)+GMST一覧。各エージェントは tmp/re/sub_*.md に出力し docs は親が集約。",
+      "tags": [
+        "delegation",
+        "re",
+        "parallel"
+      ],
+      "compressed": false,
+      "source": "RE"
+    },
+    {
+      "id": "fd6cb9cb-3c26-461f-b986-1a37bc5dc296",
+      "timestamp": "2026-10-16T13:50:03.548463+09:00",
+      "category": "constraint",
+      "priority": "high",
+      "content": "docs/RE_EXE_REPORT.md は §51 まで追記済み。子エージェントは docs を編集禁止、tmp/re 配下のみ生成し親セッションが集約・main(9427ac74)へ送信する運用。",
+      "tags": [
+        "workflow",
+        "docs",
+        "re"
+      ],
+      "compressed": false,
+      "source": "RE"
+    },
+    {
+      "id": "ff52acf2-5e31-4234-a883-fe3e66af9f60",
+      "timestamp": "2026-10-16T13:50:03.548463+09:00",
+      "category": "reference",
+      "priority": "high",
+      "content": "環境検証完了(2026-10-16): Oblivion.exe 存在, capstone 5.0.7, pefile 2024.8.26, tmp/re 存在。session-memory.json entries=560。",
+      "tags": [
+        "env",
+        "verified"
+      ],
+      "compressed": false,
+      "source": "RE"
+    },
+    {
+      "id": "b5a2209d-a525-49c4-9d3d-8ac4227d86af",
+      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "§51 XML式評価器の実体確定: ドライバ FUN_0058bee0(値評価ループ) + トークン分岐 0x58C420 (jmp[ecx-0x7d2]*4+0x58C998, 26ケース)。ノード: +0x04=acc / +0x08=op1 / +0x0C=token / +0x10=子 / +0x14=兄弟 / +0x18=traitID。[ebx]=acc。[esp+0x1c]=op1(float), [esp+0x20]=op2。結果 int->float は [esp+0x14] 経由 (fild [esp+0x14]; fstp [ebx])。",
+      "tags": [
+        "xml",
+        "evaluator",
+        "§51"
+      ],
+      "compressed": false,
+      "source": "RE"
+    },
+    {
+      "id": "11741d55-40e5-4519-bae4-f2aa567a8933",
+      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "§51 boolean/論理演算子の acc 更新(実命令): and=両方非NaNで2.0/それ以外1.0。or=いずれか非NaNで2.0/両方NaNで1.0。not=非NaNで1.0/NaNで2.0。onlyif=op1非NaNならacc維持/NaNなら0。onlyifnot=op1==1.0ならacc維持/それ以外0。比較(gt/gte/eq/neq/lt/lte)=成立1.0/不成立2.0。注意: 真=1.0/偽=2.0 だが and/or は真偽が逆転(非対称)なので移植式評価器で厳密再現要。",
+      "tags": [
+        "xml",
+        "boolean",
+        "§51"
+      ],
+      "compressed": false,
+      "source": "RE"
+    },
+    {
+      "id": "f6fce656-28a7-4f6b-9737-6bd3f3dae9a5",
+      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "§51 算術演算子の acc 更新(実命令): add=acc+op1 / sub=acc-op1 / mul=acc*op1 / div=acc/op1(op1==0ガード) / copy=子のop1値をaccへ(traitID 0xfde=説明文/0xfe6=filename は特別扱い) / min/max / abs / ceil / floor=trunc(0x404f70) / ln(0x986b80) / log(0x986cd0) / rand(0x47df80)=1.0+floor(rand/32767*max) / mod=float剰余。",
+      "tags": [
+        "xml",
+        "arith",
+        "§51"
+      ],
+      "compressed": false,
+      "source": "RE"
+    },
+    {
+      "id": "bf816eaa-ff66-4c59-b13f-870dd8f4da1b",
+      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "§51 値ソース登録関数 FUN_0058A0A0: 引数は(name, value)の順(stdcall ret 8)。名前先頭が '&' の場合は index=0x1b 固定、レコード = index*0x10 + 0xb3b0b0、登録は call 0x6aa320。演算子/値ノード構築は call 0x589eb0。登録された値: &true;(0xa6aad0)=2 / &false;(0xa6aad8)=1 / &generic;(0xa6aae0)=-1 / left=1 / center=2 / right=4 / scale=-1 / click_past=101 / no_click_past=102 / does_not_stack=0x1778(6008) / mixed_menu=103 / prev=104 / next=105 / first=106 / last=107 / xlist=108 / xitem=109。",
+      "tags": [
+        "xml",
+        "registry",
+        "§51"
+      ],
+      "compressed": false,
+      "source": "RE"
+    },
+    {
+      "id": "43d6a8fc-1238-4db8-8a6b-c57b36b467a2",
+      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "§51 演算子名プール(0xa6a300-0xa6ab00): user/trunc/sub/rand/or/onlyifnot/onlyif/not/neq/mult/mul/mod/min/max/lte/lt/ln/log/gte/gt/floor/eq/div/copy/ceil/and/add/abs。token ID対応: 0x7d1=copy / 0x7d2=add / 0x7d3=sub / 0x7d4=mul(mult) / 0x7d5=div / 0x7d6=rand / 0x7d7=user / 0x7d8=gt / 0x7d9=gte / 0x7da=eq / 0x7db=lte / 0x7dc=lt / 0x7dd=min / 0x7de=max / 0x7df=and / 0x7e0=or / 0x7e1=neq / 0x7e2=mod / 0x7e3=floor(trunc) / 0x7e4=abs / 0x7e5=onlyif / 0x7e6=onlyifnot / 0x7e7=ln / 0x7e8=log / 0x7e9=ceil / 0x7ea=not / 0x7eb=no-op。",
+      "tags": [
+        "xml",
+        "token",
+        "§51"
+      ],
+      "compressed": false,
+      "source": "RE"
+    },
+    {
+      "id": "92250df1-ea8e-4ef8-8f6e-5a77109d9eeb",
+      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "§51 fDifficultyDamageMultiplier: EXE静的既定 f32 10.0 (0xB37B88, 参照0x5e25b6/0x9ed790/0xa1fe31)。Oblivion.esm overlay で実効 5.0。移植は 5.0 採用(Oblivion.esm 必ロード前提、分岐不要)。難易度関数 FUN_005e2560(float base, Actor* p)、ecx=this、ret 8(0x5E25D8)、呼出元 0x5E5903/0x69A028/0x6A8755。[Player+0x734] 書込元 0x5A38D4/0x66AF7A。GMST: MinValue 0xB37B70=-1.0 / MaxValue 0xB37B78=1.0 / DefaultValue 0xB37B80=0.0 / DamageMultiplier 0xB37B88=10.0。",
+      "tags": [
+        "difficulty",
+        "gmst",
+        "§51"
+      ],
+      "compressed": false,
+      "source": "RE"
+    },
+    {
+      "id": "6abf7df0-dc86-4aac-bf7c-c7ce69db9fe2",
+      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "§51 アーマー習熟倍率の適用対象は (a) 装着者への実HPダメージで確定。FUN_005f3870 の tail 0x5F392F 以降、fPerk*Armor*DamageMult の乗算結果は HP書込ヘルパ 0x00488830 に渡る(callers 0x005F39BE)。軽装 perk18 / 重装 perk27、rank>=2=Journeyman(0.5) / ==0=Novice(1.5)。GMST: fPerkLightArmorNoviceDamageMult 1.5 / fPerkHeavyArmorNoviceDamageMult 1.5 / fPerkHeavyArmorJourneymanDamageMult 0.5 / fPerkLightArmorJourneymanDamageMult 0.5。",
+      "tags": [
+        "armor",
+        "damage",
+        "§51"
+      ],
+      "compressed": false,
+      "source": "RE"
+    },
+    {
+      "id": "750eaadc-379c-446f-b865-47a994eaa3fe",
+      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "§51 Actor vt+0x3A8(+0x3AC) ダメージ適用経路: FUN_005FEBF0 = Actor vt+0x3AC。flag==1→0x6AF880、flag==0→本体。0x005FE380(+0x3A8ディスパッチ): vt+0x198→0x41df00→vt+0x170→byte[+4]==0x24→vt+0x388→jmp[edx+0x3a8]。0x00488830=HP書込 callers=3、0x00484850=GetAV current callers=24。プレイヤー被ダメ入口: FUN_005F6540 の 0x5F65DD (ecx=[ebp+0x58]; edx=[eax+0x3ac]; push 0; push ebp; call edx)、callers=12。移植指針: エンジン経路(AI攻撃解決→vt+0x3AC→vt+0xA8適用スタブ)を再現し、その適用スタブから Player::takeDamage を呼ぶ。",
+      "tags": [
+        "damage",
+        "vtable",
+        "§51"
+      ],
+      "compressed": false,
+      "source": "RE"
+    },
+    {
+      "id": "82af4f03-e34b-425f-8e74-878fbc633902",
+      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "category": "decision",
+      "priority": "high",
+      "content": "§51 God Mode フラグ 0xB3BB06: setter 0x65D810 / getter 0x65D820。ToggleGodMode handler 0x500D10。プレイヤー被ダメガード 0x65FF10 = cmp byte[0xb3bb06],0; je 0x65ff1e。OFF なら 0x65FF30 = call 0x5f3870; ret 0xc。",
+      "tags": [
+        "godmode",
+        "§51"
+      ],
+      "compressed": false,
+      "source": "RE"
+    },
+    {
+      "id": "47c605a9-fe18-47e0-92a8-a1a4ad4b3864",
+      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "category": "configuration",
+      "priority": "medium",
+      "content": "§51 難易度ダメージ倍率の移植式: 難易度 d∈[-1,+1](既定0.0)、M=fDifficultyDamageMultiplier(=5.0)、x=d*M。被ダメ f=(d>0)?x+1.0:(d<0)?1.0/|x-1.0|:1.0。与ダメ=1/f。移植 settings_manager.cpp:7-13 の v=(difficulty-50)/50 版で適用(player.cpp:52-55)、与ダメ×1/f は未実装。",
+      "tags": [
+        "difficulty",
+        "porting",
+        "§51"
+      ],
+      "compressed": false,
+      "source": "RE"
+    },
+    {
+      "id": "a578906f-46ff-4ade-9d49-8a32731b085d",
+      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "category": "reference",
+      "priority": "medium",
+      "content": "§51 コンソールコマンド表: レコード配列基底 0xB0BBD0 付近、stride 0x28。+0x00=id / +0x04=説明文字列VA / +0x10=handler / +0x14=既定0x004FDE30 / +0x20=CanonicalName / +0x24=省略名。flags: 0x0=引数なし / 0x10000=float / 0x20000=2数値 / 0x30000=3数値。確認済: 0x130=FOV(0x511720) / 0x131=Verbose(0x507930) / 0x132=ToggleGodMode(0x500D10) / 0x133=RefreshShaders(0x50AA20) / 0x134=ToggleScripts(0x500D50) / 0x135=SexChange(0x515920)。",
+      "tags": [
+        "console",
+        "§51"
+      ],
+      "compressed": false,
+      "source": "RE"
+    },
+    {
+      "id": "cd7f7ea3-9b46-4ec9-8222-79fe4a8de2e5",
+      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "category": "reference",
+      "priority": "medium",
+      "content": "§51 疲労(AV index 0x0a=Fatigue, テーブル0xB0A1A8)の戦闘影響: カーブ 0x547F00/20/40(Run)/60(Jump)、攻撃消費 0x547560、ブロック 0x547590。GMST既定: fFatigueBase=1.25 / Mult=0.5 / ReturnBase=10.0 / AttackWeaponBase=8.0 / AttackWeaponMult=0.1 / BlockSkillBase=5.0 / BlockSkillMult=-0.04 / CastBase=15.0 / RunBase=8.0 / JumpBase=4.0 / JumpMult=4.0。",
+      "tags": [
+        "fatigue",
+        "combat",
+        "§51"
+      ],
+      "compressed": false,
+      "source": "RE"
+    },
+    {
+      "id": "dbda3144-bb10-4c57-97a7-bf3747a606d2",
+      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "§51 残件(未解決): actor vt+0xA8 実体(0x6AF880, プレイヤー被ダメ実装のブロッカー, 最優先) / FUN_005FEBF0 本体後半の完全式 / GMST 名未確定分 / ContainerMenu cmd 0x33 / C1-C4 audio 矛盾 / SleepWaitMenu 月日数表(0x00B06700+0x10) / &true;&false; の index->float 変換の最終アサート。",
+      "tags": [
+        "todo",
+        "§51"
+      ],
+      "compressed": false,
+      "source": "RE"
+    },
+    {
+      "id": "8da094e5-57e8-4027-9426-51a1797e68f8",
+      "timestamp": "2026-10-16T05:54:55Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "X形のXML式評価器(0x58bee0 driver + 0x58C420 switch)の onlyif/onlyifnot セマンティクスを実命令で最終確定。従来の『NaN->acc=0』は誤り。onlyif(0x58C798): op1 が非NaNなら acc 維持、NaNなら acc を 2.0 で上書き。onlyifnot(0x58C7B6): op1 が非NaNなら acc 維持、NaNなら acc を 1.0 で上書き。判定は fcomp 後 test ah,0x44; jp(0x7a7/0x7c9)=unordered(PF/CF=0)。",
+      "tags": [
+        "xml",
+        "evaluator",
+        "onlyif",
+        "semantics",
+        "RE"
+      ],
+      "compressed": false,
+      "source": "re-session-52"
+    },
+    {
+      "id": "edb92390-78ca-491a-8a25-89b03379a50a",
+      "timestamp": "2026-10-16T05:54:55Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "XML evaluator 算術ハンドラのオペランド順を実命令で確定。add 0x58C427 = fld[op1];fadd[acc] -> acc=op1+acc。sub 0x58C438 = fld[acc];fsub[op1] -> acc=acc-op1。mul 0x58C449 = fld[op1];fmul[acc] -> acc=op1*acc。div 0x58C45A = acc/op1（op1==0 は acc 維持）。[ebx]=acc、[esp+0x1C]=op1。",
+      "tags": [
+        "xml",
+        "evaluator",
+        "arithmetic",
+        "RE"
+      ],
+      "compressed": false,
+      "source": "re-session-52"
+    },
+    {
+      "id": "1a27de47-47ca-46c6-8dd9-6de54725b4db",
+      "timestamp": "2026-10-16T05:54:55Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "XML evaluator 論理/比較の真偽エンコード確定（非対称に注意）。比較 gt/gte/eq/neq/lt/lte: 成立=1.0/不成立=2.0。not: 非NaN=1.0/NaN=2.0。and: 両方非NaN=2.0/それ以外=1.0。or: いずれか非NaN=2.0/両方NaN=1.0。ブール定数 &true;=2/&false;=1/&generic;=-1（0xa6aad0/0xa6aad8/0xa6aae0）。",
+      "tags": [
+        "xml",
+        "evaluator",
+        "boolean",
+        "RE"
+      ],
+      "compressed": false,
+      "source": "re-session-52"
+    },
+    {
+      "id": "5f6ed726-dc06-49f0-aca7-d19327b51a7f",
+      "timestamp": "2026-10-16T05:54:55Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "container_menu.xml 実例で onlyifnot のゲート作用を実データ裏付け: <max><copy>40</copy><onlyifnot>&xbox;</onlyifnot></max>。xbox 有効時 onlyifnot が acc を 1.0 に上書き、無効時は acc 維持 -> タッチ端末でのみ 40px 余白が有効になる。",
+      "tags": [
+        "xml",
+        "container_menu",
+        "onlyifnot",
+        "ground-truth"
+      ],
+      "compressed": false,
+      "source": "re-session-52"
+    },
+    {
+      "id": "6c12c549-94bb-47f3-af68-b345d01aed78",
+      "timestamp": "2026-10-16T05:54:55Z",
+      "category": "decision",
+      "priority": "medium",
+      "content": "移植側 tests/menu_xml_tests.cpp の合成 onlyif テストは『条件で選択(zeroes/keeps)』を前提にしておりエンジン実式と乖離。エンジンは sentinel(2.0/1.0)上書き方式のため、onlyif false->acc=2.0、onlyifnot true->acc=1.0 を前提に期待値の再計算が必要（310-341 の 5.0 は 7.0 の可能性）。合成ケースは実 XML パターンに置換するのが安全。",
+      "tags": [
+        "test",
+        "menu_xml_tests",
+        "correction"
+      ],
+      "compressed": false,
+      "source": "re-session-52"
+    },
+    {
+      "id": "265cc7a8-2b67-4006-9238-3b42cf5f4ad0",
+      "timestamp": "2026-10-16T06:19:47Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "XML メニュー式評価器のゲートモデルは §50.7 準拠（onlyif: 条件成立で acc 維持 / 不成立で acc=0、onlyifnot は逆）を維持する。RE §52.2/§52.5/§52.6/§52.7 の sentinel 案（onlyif 失敗時 acc=2.0、onlyifnot 失敗時 acc=1.0、&true;=2/&false;=1、比較成立=1.0、menu_xml_tests 期待値 7.0/6.0/128.0/37.0）は不採用。根拠: 出荷メニュー XML 89 ファイルの実データで <visible> &false; </visible> 58 件 / <eq> &false; </eq> 65 件が &false;=0 を要求し、prefabs/button_long.xml の <copy>128</copy><onlyifnot src=parent() trait=user1/> はゲート失敗時 0（無効時クロップ原点）、container_menu.xml cont_select_frame_marker は <user1>127</user1>/<user2>35</user2> を要求（128/37 ではない）。検証は docs/RE_EXE_REPORT.md §52.9 に記録。",
+      "tags": [
+        "menu-xml",
+        "re-52",
+        "gate-model",
+        "decision"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "3e79ac3f-12ce-4c5f-b30a-11962e2b2d9e",
+      "timestamp": "2026-10-16T06:19:47Z",
+      "category": "configuration",
+      "priority": "medium",
+      "content": "menu_xml_interpreter.cpp の div / mod は op1 == 0 のとき acc を維持する（従来は 0.0 を返していた）。RE §51.4「0除算ガード」と §52.4「op1 == 0 なら acc 維持」が一致する唯一の差分。menu_xml_tests.cpp に出荷式由来の回帰テスト 10 件を追加（&false; の偽値性 / <eq> &false; </eq> / button_long クロップ / div・mod 0 除算）。host テスト MenuXmlTests 223/223 green。",
+      "tags": [
+        "menu-xml",
+        "div-zero",
+        "host-tests"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "078f1274-3ef6-405b-b8d2-694102db2b9e",
+      "timestamp": "2026-10-16T06:19:47Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "出荷メニュー XML 89 ファイルのゲート形状集計（tmp/bsa_misc_full/menus、Data\\Menus\\**）: <onlyif> 482 件 = self-close trait 形 175 + 値形 250 + リテラル 57（&xbox; 53 / &xenon; 3 / &true; 1）。値形の入れ子オペランドは eq 123 / gt 76 / lt 49 / or 14 / neq 5 / gte 5 / sub 2 / mod 1 / not 1。<onlyifnot> 142 件（self-close 121 / &xbox; 20 / 値形 1）、<onlynotif> 6 件（すべて self-close）。比較オペランド付き <onlyif> が最大勢力のため、真偽エンコーディングは実データ検証の必須対象。",
+      "tags": [
+        "menu-xml",
+        "corpus-census",
+        "re-52"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 560,
+    "totalEntries": 584,
     "compressedCount": 81,
     "sessionCount": 40,
-    "lastUpdated": "2026-10-16T04:03:52Z"
+    "lastUpdated": "2026-10-16T06:19:47Z"
   }
 }

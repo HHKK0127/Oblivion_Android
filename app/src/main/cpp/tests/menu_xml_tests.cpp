@@ -340,6 +340,59 @@ bool MenuXmlTests::runAllTests() {
                          "<add><copy>35</copy><onlyifnot>&false;</onlyifnot></add>"), 35.0f));
     }
 
+    // --- 7b. shipped-menu corpus: token encoding and gate polarity -------------
+    //
+    // These expectations are pinned to the shipped menus rather than to a
+    // synthetic model. RE_EXE_REPORT 52 proposed an "onlyif overwrites the
+    // accumulator with the 2.0 sentinel / onlyifnot with 1.0" model, but the
+    // shipped expressions cannot be reproduced with it:
+    //   * container_menu.xml cont_select_frame_marker reads <user1> 127 </user1>
+    //     (container position) and <user2> 35 </user2> (inventory position), so
+    //     the container branch has to resolve to exactly 127, never 128.
+    //   * prefabs/button_long.xml crops the disabled sprite with
+    //     <copy> 128 </copy> <onlyifnot src="parent()" trait="user1"/>, so a
+    //     failing gate has to collapse the accumulator to 0, not to 1.0.
+    //   * <visible> &false; </visible> (58 occurrences) and
+    //     <eq> &false; </eq> (65 occurrences) require the &false; token to be
+    //     the falsy value, otherwise hidden widgets would be drawn.
+    {
+        MenuEvalContext ctx;
+        ctx.screen_width = 1280.0f;
+
+        auto evalValue = [&](const std::string& body) {
+            const std::string xml = "<menu name=\"m\"><_t>" + body + "</_t></menu>";
+            XmlNode root;
+            std::string err;
+            XmlParser::parse(xml, root, err);
+            return MenuExpressionEvaluator::evaluate(root.children[0], ctx);
+        };
+        auto eval = [&](const std::string& body) {
+            return evalValue(body).toNumber();
+        };
+
+        // Token encoding: the false token is the falsy number, the true token is
+        // truthy, so gates and renderer consumers agree on one encoding.
+        record("false token is the falsy number", near(eval("&false;"), 0.0f));
+        record("false token is falsy", evalValue("&false;").toBool() == false);
+        record("true token is truthy", evalValue("&true;").toBool() == true);
+        record("false token equals a false trait",
+               evalValue("<copy>0</copy><eq>&false;</eq>").toBool() == true);
+        record("false token does not equal a true trait",
+               evalValue("<copy>1</copy><eq>&false;</eq>").toBool() == false);
+
+        // button_long.xml: the disabled crop offset survives only while the gate
+        // passes, and collapses to zero when the button is enabled.
+        record("passing onlyifnot keeps the disabled crop offset",
+               near(eval("<copy>128</copy><onlyifnot>&false;</onlyifnot>"), 128.0f));
+        record("failing onlyifnot zeroes the disabled crop offset",
+               near(eval("<copy>128</copy><onlyifnot>&true;</onlyifnot>"), 0.0f));
+
+        // The engine guards both divisors instead of collapsing to zero.
+        record("div by zero keeps the accumulator", near(eval("10<div>0</div>"), 10.0f));
+        record("mod by zero keeps the accumulator", near(eval("10<mod>0</mod>"), 10.0f));
+        record("div by a non-zero operand divides", near(eval("10<div>4</div>"), 2.5f));
+    }
+
     // --- 8. resolve(): concrete widget values ----------------------------------
     {
         const std::string xml =
