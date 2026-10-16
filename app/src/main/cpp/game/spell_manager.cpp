@@ -356,7 +356,7 @@ bool SpellManager::castPlayerSpell(Player* player, uint32_t spellId, uint32_t ta
             LOGW("Target NPC %u not found", targetId);
             return false;
         }
-        applySpellEffect(target, *spell, playerStatus);
+        applySpellEffect(target, *spell, playerStatus, Player::getDealtDamageScale());
     }
 
     LOGI("Player cast spell: %s (%s) on %s",
@@ -437,15 +437,16 @@ bool SpellManager::consumeMana(uint32_t casterId, float amount) {
 }
 
 void SpellManager::applySpellEffect(std::shared_ptr<NPC> target, const Spell& spell,
-                                   const CharacterStatus& caster) {
+                                   const CharacterStatus& caster, float damageScale) {
     if (!target) return;
 
     for (const auto& effect : spell.effects) {
         switch (effect.type) {
             case SpellEffectType::DAMAGE: {
                 float damage = calculateSpellDamage(spell, caster, target->status);
-                                target->takeDamage(damage);
-                                break;
+                damage *= damageScale;
+                target->takeDamage(damage);
+                break;
             }
 
             case SpellEffectType::HEAL: {

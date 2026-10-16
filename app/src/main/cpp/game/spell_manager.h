@@ -62,8 +62,11 @@ public:
     bool consumeMana(uint32_t casterId, float amount);
 
     // Spell effect application
+    // damageScale multiplies the offensive damage. The player's cast passes the
+    // reciprocal difficulty multiplier, so at higher difficulty the player
+    // deals 1/f damage (RE §50.1). NPC casts keep the neutral default.
     void applySpellEffect(std::shared_ptr<NPC> target, const Spell& spell,
-                         const CharacterStatus& caster);
+                         const CharacterStatus& caster, float damageScale = 1.0f);
 
     // Queries
     std::vector<std::shared_ptr<Spell>> getNpcSpells(uint32_t npcId) const;

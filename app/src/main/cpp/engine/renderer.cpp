@@ -1376,11 +1376,14 @@ bool Renderer::initGameSystems() {
         return result;
     };
     refs.castSpellAtNearest = [this](uint32_t spellId) {
-        if (!spellManager || !combatManager) return;
+        if (!spellManager || !combatManager || !playerController) return;
+        auto player = playerController->getPlayer();
+        if (!player) return;
         auto enemy = combatManager->findNearestEnemyToPlayer(playerController->getPlayerPosition());
         if (enemy) {
-            spellManager->castPlayerSpell(nullptr, spellId, enemy->npcId);
-            LOGI("Cast spell %d at %s", spellId, enemy->name.c_str());
+            bool success = spellManager->castPlayerSpell(player.get(), spellId, enemy->npcId);
+            LOGI("Cast spell %d at %s: %s", spellId, enemy->name.c_str(),
+                 success ? "success" : "failed");
         }
     };
     refs.setSpellDamageMultiplier = [](float multiplier) {
