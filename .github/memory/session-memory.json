@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-15T19:40:00Z",
+  "lastUpdated": "2026-10-16T04:03:52Z",
   "entries": [
     {
       "timestamp": "2026-09-16T14:58:00Z",
@@ -7912,12 +7912,93 @@
       "priority": "high",
       "category": "analysis",
       "content": "§49 を docs\\RE_EXE_REPORT.md に追記 (便1 依頼A/B/C/2/3/4-1/4-2 回答, 657,326 bytes)。フェード開閉確定: ノード生成は FUN_00584300 唯一 (0x14B: +0=source, +4=current初期0.0, +8=duration, +c=prev, +10=next; MM 0xb3a6e0+0x130)。呼出元7件= 開き FUN_00584740 (state=2, ゲート visible==2.0, 完了で visible=1.0/alpha 0/Blend 0, 親復帰 0x1772==2.0) / 閉じ FUN_00584390 (state=8, 完了で state=1/visible=2.0/alpha 1.0/Blend 1.0[arm時]) / 再構築 switch FUN_00587550 0x587550 (state=8, 呼出元1件 0x5866DC) / 別系統 FUN_00588a70。current は常に 0→1 前進 (逆再生なし)。位相 [+0x24]: 1=アイドル, 2=開き, 4=開き完了直後, 8=閉じ。Blend Value=0xb42d50 (arm 0xb42d54, Pause 0x3f3/Message 0x3e9 系のみ書込)。§37.6 の FUN_00584740「実際に閉じる」は「開き」に修正。依頼B=(a) HP 実ダメージ (FUN_005f3870)。依頼2=FUN_005febf0 に習熟4種直接参照なし。依頼4-1=FUN_006ad030/6aa1a0 は音楽系音量適用 (6 site 同一 this, 5系統前提は誤り)。依頼4-2=FUN_0066F420 構造解析 (Player メソッド, 0xB3BD00 管理, タグ 0x47445553 一致→スクリプトイベント, autosave 呼出, [Player+0x760/764] 解放)。難易度の実命令式 (x=d*10; d==0→base; x<=0→x+1; x>0→1/|x-1|) と実機 2.280 の数値整合は §50 継続。"
+    },
+    {
+      "timestamp": "2026-10-16T04:03:52Z",
+      "tags": [
+        "re",
+        "combat",
+        "difficulty",
+        "s50"
+      ],
+      "id": "3120053a-133b-4598-844c-69030696bb99",
+      "compressed": false,
+      "priority": "high",
+      "category": "decision",
+      "content": "RE 50.1 (authoritative): the engine difficulty field d is normalised to [-1,+1] (default 0); the UI percentage is (d+1)*50, which maps 1:1 onto the port's 0..100 slider. Received-damage factor f = d>0 ? 1+5d : d<0 ? 1/(1-5d) : 1 with M = fDifficultyDamageMultiplier (EXE default 10.0, Oblivion.esm overlay effective 5.0). Damage dealt by the player is 1/f. The old approximation pow(6,(d-50)/50) was removed from settings_manager.cpp; it only matched at d = 0/50/100. Implemented as SettingsManager::difficultyDamageMultiplier()/difficultyDealtDamageMultiplier(), applied in Player::takeDamage (received) and CombatManager::playerAttack (dealt via Player::getDealtDamageScale()). Verified independently by tmp/difficulty_probe.cpp: 8/8 cases PASS, slider 73 -> received 3.300 / dealt 0.303."
+    },
+    {
+      "timestamp": "2026-10-16T04:03:52Z",
+      "tags": [
+        "re",
+        "ui",
+        "menu-xml",
+        "s50"
+      ],
+      "id": "94d232f1-4083-482f-bfa4-c142e47d9905",
+      "compressed": false,
+      "priority": "high",
+      "category": "decision",
+      "content": "RE 50.7 (authoritative): Oblivion menu XML expressions use an accumulator model, not skip-next. <onlyif cond> sets acc = cond ? acc : 0 and <onlyifnot cond> (alias <onlynotif>) sets acc = cond ? 0 : acc; the gate acts on the accumulated value so far. app/src/main/cpp/ui/menu_xml_interpreter.cpp evaluateSequence() was rewritten accordingly and tests/menu_xml_tests.cpp expectations updated (MenuXmlTests 213/213 green). Decisive evidence: container_menu.xml cont_select_frame_marker evaluates to 127/35 (skip-next gave the wrong 162/127)."
+    },
+    {
+      "timestamp": "2026-10-16T04:03:52Z",
+      "tags": [
+        "git",
+        "hygiene",
+        "ghidra-mcp"
+      ],
+      "id": "13d1d7fb-f960-489e-ae0b-ed9a729728d5",
+      "compressed": false,
+      "priority": "high",
+      "category": "constraint",
+      "content": "The Copilot app auto-save commit b022b5d0 ('Save uncommitted changes', author your-name) removed the /ghidra-mcp/ lines from .gitignore and recorded ghidra-mcp as a gitlink (160000 commit cf8b12db...). ghidra-mcp/ is an independent local RE tool checkout, not project source, and must never be tracked; there is no .gitmodules. Fixed in 51643145 by restoring /ghidra-mcp/ and running git rm --cached ghidra-mcp. Lesson: periodically run git log / git show --stat because app auto-save commits can break repository rules."
+    },
+    {
+      "timestamp": "2026-10-16T04:03:52Z",
+      "tags": [
+        "host-tests",
+        "tooling",
+        "known-issue"
+      ],
+      "id": "9842a9bf-2530-4603-af0e-f406af1ab2bf",
+      "compressed": false,
+      "priority": "medium",
+      "category": "reference",
+      "content": "tools/host_tests/run_host_tests_msvc.ps1 prints 'Host tests failed (exit ).' even on success because $runExit = if ($timedOut) { 1 } else { $proc.ExitCode } evaluates to $null when Start-Process -PassThru does not populate ExitCode, and $null -ne 0 is true. The runner's own '=== HOST RUNNER: ALL GREEN ===' line is the trustworthy signal; 78 translation units currently compile and all suites pass. Not fixed here because another session had uncommitted edits to that file."
+    },
+    {
+      "timestamp": "2026-10-16T04:03:52Z",
+      "tags": [
+        "combat",
+        "gap",
+        "s50",
+        "s51"
+      ],
+      "id": "0fc7c85c-597a-40a4-91c8-cf1c7e9c86cc",
+      "compressed": false,
+      "priority": "high",
+      "category": "constraint",
+      "content": "RE 50.11 porting gaps still open: (1) Player::takeDamage has ZERO callers, so there is currently no NPC -> player damage path at all (the engine routes it through FUN_005F6540 and finally actor vt+0xA8, whose real override class is pending RE 51); (2) the difficulty dealt factor 1/f is applied only in CombatManager::playerAttack, not to magic (SpellManager::applySpellEffect has no player/caster identity) or archery; (3) the input-mode record stride must be 0x18 (24 bytes) but no input-mode implementation exists in the port yet; (4) fGlobalTimeMultiplier (RE 43, default 1.0) is not multiplied into dt in jni_bridge.cpp - a no-op at the default value."
+    },
+    {
+      "timestamp": "2026-10-16T04:03:52Z",
+      "tags": [
+        "todo",
+        "re",
+        "s50"
+      ],
+      "id": "0b97b9f5-1d22-463f-8fb0-17133283eb41",
+      "compressed": false,
+      "priority": "medium",
+      "category": "reference",
+      "content": "TODO entries added from RE 50: magic-damage-difficulty-scale, febf0-damage-formula, fatigue-av-implementation, gmst-table-integration, menu-stackingtype-impl, input-suppression-latches. npc-difficulty-scale description updated (dealt side now implemented). difficulty-damage-exact and xml-accumulator-model are done. RE 50.8 resolved all 2304 GMST entries (992 float / 1085 string / 227 int, slot range 0x00B33460..0x00B3B7C8); the full list lives in tmp/re/s50_gmst_full.txt, which is gitignored and must be re-derived or copied into the repo before a consumer is implemented."
     }
   ],
   "metadata": {
-    "totalEntries": 554,
+    "totalEntries": 560,
     "compressedCount": 81,
     "sessionCount": 40,
-    "lastUpdated": "2026-10-15T19:40:00Z"
+    "lastUpdated": "2026-10-16T04:03:52Z"
   }
 }
