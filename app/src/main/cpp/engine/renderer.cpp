@@ -597,6 +597,10 @@ bool Renderer::initGameSystems() {
         LOGI("UIFloatingText initialized successfully");
     }
 
+    // Initialize spoken-dialogue subtitles (HUDSubtitleMenu)
+    subtitles = std::make_unique<SubtitleSystem>();
+    LOGI("SubtitleSystem initialized successfully");
+
     // Initialize Animation Subscriber
     LOGI("Creating AnimationSubscriber...");
     animSubscriber = std::make_unique<animation::AnimationSubscriber>();
@@ -3903,6 +3907,15 @@ bool Renderer::openDialogueWithNpc(uint32_t npcFormID) {
             if (!topic) {
                 return;
             }
+
+            // HUDSubtitleMenu: the spoken line is mirrored as a subtitle. The original
+            // emits this from the response-line path (0x0057ACC0), gated by
+            // bGeneralSubtitles; the port emits it on topic selection, which is the
+            // point where the same line is played here.
+            if (subtitles && subtitlesEnabled_ && !topic->responseText.empty()) {
+                subtitles->show(topic->responseText);
+            }
+
             const std::string voicePath =
                 voiceSoundDatabase->resolveVoicePath(topic->infoFormID,
                                                      topic->soundResponseNumber);
@@ -4450,6 +4463,11 @@ void Renderer::render(float deltaTime) {
         floatingText->update(deltaTime);
     }
 
+    // Update spoken-dialogue subtitles
+    if (subtitles) {
+        subtitles->update(deltaTime);
+    }
+
     // Update Animation Subscriber
     if (animSubscriber) {
         animSubscriber->updateNpcAnimations(deltaTime);
@@ -4926,6 +4944,13 @@ void Renderer::render(float deltaTime) {
     // Render Floating Combat Text
     if (floatingText) {
         floatingText->render();
+    }
+
+    // Render spoken-dialogue subtitles (HUDSubtitleMenu; not gated behind menus,
+    // matching the original which draws it over the HUD)
+    if (subtitles) {
+        subtitles->render(textRenderer.get(), static_cast<int>(screenWidth),
+                          static_cast<int>(screenHeight));
     }
 
     // Frame rate control - enforce target FPS
@@ -7789,14 +7814,15 @@ void Renderer::handleOptionsCategoryRequest(OptionsUI::Category category) {
 
 void Renderer::applyGameplaySettings(const GameplaySettings& settings) {
     crosshairEnabled = settings.crosshair;
+    subtitlesEnabled_ = settings.generalSubtitles;
     Player::setDifficultyScale(difficultyDamageMultiplier(settings.difficulty));
-    // bGeneralSubtitles / bDialogueSubtitles and the three autosave toggles have
-    // no consumer yet: subtitle overlay rendering and the rest/wait/travel
-    // actions are not implemented. The values are persisted so they take effect
-    // as soon as those features exist.
-    LOGI("Gameplay settings applied: difficulty=%d (x%.3f) crosshair=%d",
+    // bDialogueSubtitles (menu UI element visibility) and the three autosave
+    // toggles still have no consumer: the rest/wait/travel actions are not
+    // implemented. The values are persisted so they take effect as soon as
+    // those features exist.
+    LOGI("Gameplay settings applied: difficulty=%d (x%.3f) crosshair=%d subtitles=%d",
          settings.difficulty, Player::getDifficultyScale(),
-         settings.crosshair ? 1 : 0);
+         settings.crosshair ? 1 : 0, settings.generalSubtitles ? 1 : 0);
 }
 
 void Renderer::pumpAudioOptions() {

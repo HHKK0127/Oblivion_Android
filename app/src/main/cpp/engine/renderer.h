@@ -74,6 +74,7 @@
 #include "../ui/ui_active_effects.h"
 #include "../ui/ui_dialogue.h"
 #include "../ui/ui_book_reader.h"
+#include "../ui/subtitle_system.h"
 #include "../animation/animation_subscriber.h"
 #include "../audio/audio_subscriber.h"
 #include "../character/face_expression_system.h"
@@ -193,6 +194,8 @@ private:
     bool hudVisible = true;
     // bCrossHair: when off, the crosshair is not drawn (also hidden behind menus).
     bool crosshairEnabled = true;
+    // bGeneralSubtitles: when off, spoken dialogue lines are not shown as subtitles.
+    bool subtitlesEnabled_ = true;
 
         // Lip-sync playback (Phase 65): face morph weights driven by .lip data.
         facegen::FaceExpressionSystem faceExpressionSystem_;
@@ -208,6 +211,9 @@ private:
 
     // Floating combat text
     std::unique_ptr<UIFloatingText> floatingText;
+
+    // Spoken-dialogue subtitles (HUDSubtitleMenu)
+    std::unique_ptr<SubtitleSystem> subtitles;
 
     // Animation subscriber for NPC animations
     std::unique_ptr<animation::AnimationSubscriber> animSubscriber;

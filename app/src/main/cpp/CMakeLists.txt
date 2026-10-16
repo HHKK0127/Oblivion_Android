@@ -186,11 +186,13 @@ add_library(native-lib SHARED
     ui/ui_character_creation.cpp
     ui/ui_pause_menu.cpp
     ui/ui_message_box.cpp
+    ui/text_wrap.cpp
     ui/ui_toast.cpp
     ui/ui_quick_slot_bar.cpp
     ui/ui_hud_status_display.cpp
     ui/ui_hud_compass.cpp
     ui/ui_floating_text.cpp
+    ui/subtitle_system.cpp
     ui/ui_target_info.cpp
     ui/ui_action_prompt.cpp
     ui/ui_active_effects.cpp
