@@ -934,10 +934,30 @@ bool Renderer::initGameSystems() {
         // Learn spell not directly available
     };
     refs.castSpellOnTarget = [this](uint32_t spellId, uint32_t targetId) {
-        if (spellManager) spellManager->castSpell(1, spellId, targetId);
+        // Route through the player path: castSpell() resolves casterId 1 as an
+        // NpcManager id (1000-based) and always failed. targetId 0 self-casts.
+        if (!spellManager || !playerController) return;
+        auto player = playerController->getPlayer();
+        if (!player) return;
+        bool ok = spellManager->castPlayerSpell(player.get(), spellId, targetId);
+        LOGI("console castspell %u -> %u: %s", spellId, targetId, ok ? "ok" : "failed");
     };
     refs.equipSpell = [this](uint32_t id) {
-        if (spellManager) spellManager->equipSpellToNpc(1, id);
+        // Same dead path as castSpellOnTarget: npc id 1 does not exist.
+        // Equip on the player instead (same pattern as quest teaching above).
+        if (!playerController) return;
+        auto player = playerController->getPlayer();
+        if (!player) return;
+        if (std::find(player->knownSpells.begin(), player->knownSpells.end(), id) ==
+            player->knownSpells.end()) {
+            player->knownSpells.push_back(id);
+        }
+        if (std::find(player->equippedSpells.begin(), player->equippedSpells.end(), id) ==
+            player->equippedSpells.end()) {
+            player->equippedSpells.push_back(id);
+        }
+        LOGI("console equipspell %u on player (known=%zu equipped=%zu)", id,
+             player->knownSpells.size(), player->equippedSpells.size());
     };
     refs.listSpells = []() -> std::string {
         return "Spells available";
