@@ -7924,6 +7924,10 @@ void Renderer::applyGameplaySettings(const GameplaySettings& settings) {
     crosshairEnabled = settings.crosshair;
     subtitlesEnabled_ = settings.generalSubtitles;
     Player::setDifficultyScale(difficultyDamageMultiplier(settings.difficulty));
+    if (crosshair) {
+        // bDisableDynamicCrosshair: inverted into the consumer's enable flag.
+        crosshair->setDynamicEnabled(!settings.disableDynamicCrosshair);
+    }
     // bDialogueSubtitles (menu UI element visibility) and the three autosave
     // toggles still have no consumer: the rest/wait/travel actions are not
     // implemented. The values are persisted so they take effect as soon as

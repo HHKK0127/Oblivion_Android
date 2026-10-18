@@ -49,11 +49,22 @@ public:
     void setThickness(float thickness) { crosshairThickness = thickness; }
     float getThickness() const { return crosshairThickness; }
 
+    // Dynamic crosshair (bDisableDynamicCrosshair). While enabled the crosshair
+    // opens with aim spread via setSpread(); disabled keeps it static.
+    void setDynamicEnabled(bool enabled) { dynamicEnabled = enabled; }
+    bool isDynamicEnabled() const { return dynamicEnabled; }
+
+    // Aim spread [0..1+]: grows gap and size. Ignored while dynamic is disabled.
+    void setSpread(float spread) { aimSpread = spread; }
+    float getSpread() const { return aimSpread; }
+
 private:
     Style style = Style::CROSS_DOT;
     float crosshairSize = 20.0f;
     float crosshairGap = 4.0f;
     float crosshairThickness = 2.0f;
+    bool dynamicEnabled = true;
+    float aimSpread = 0.0f;
     glm::vec4 crosshairColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.8f);
 
     // Center position (screen center)

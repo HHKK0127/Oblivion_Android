@@ -60,8 +60,11 @@ void Crosshair::renderDot() {
 }
 
 void Crosshair::renderCross() {
-    float halfSize = crosshairSize / 2.0f;
-    float gap = crosshairGap;
+    // Dynamic crosshair: spread (aim dispersion) widens the gap and grows the
+    // arms. With dynamic disabled the crosshair stays at its base geometry.
+    const float spread = dynamicEnabled ? aimSpread : 0.0f;
+    float halfSize = crosshairSize / 2.0f * (1.0f + spread);
+    float gap = crosshairGap * (1.0f + spread);
     float thickness = crosshairThickness;
 
     // Vertical line (top)
