@@ -7,6 +7,7 @@
 #include <vector>
 #include "engine/renderer.h"
 #include "system/display_modes.h"
+#include "system/settings_manager.h"
 #include "ui/viewer_3d.h"
 #include "video/bink_video_player.h"
 #include "video/video_decoder_jni.h"
@@ -249,6 +250,9 @@ Java_com_example_oblivion_GameRenderer_nativeRenderFrame(
         }
         g_lastFrameTime = now;
         g_hasLastFrameTime = true;
+
+        // RE §54.3: apply fGlobalTimeMultiplier to deltaTime
+        deltaTime *= GLOBAL_TIME_MULTIPLIER;
 
         renderer->render(deltaTime);
     } else {

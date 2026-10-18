@@ -142,9 +142,20 @@ public:
     // === State Query ===
     VirtualControllerState getState() const;
 
+    // Release every tracked pointer and clear all latched input (sticks,
+    // buttons, D-pad, triggers). Called when the overlay is hidden - menu
+    // opened, controller toggled off, launcher/title - because the matching
+    // UP events will never arrive through the gated touch path, which would
+    // otherwise leave a stick or button stuck down.
+    void cancelTouches();
+
     // === Configuration ===
     void set_config(const VirtualControllerConfig& config);
     const VirtualControllerConfig& get_config() const { return config_; }
+
+    // Screen size change: mark the layout stale so the next update()
+    // recomputes the control positions for the new resolution.
+    void onScreenResize(int width, int height) override;
 
     // === Convenience ===
     void set_text_renderer(TextRenderer* renderer) { text_renderer_ = renderer; }

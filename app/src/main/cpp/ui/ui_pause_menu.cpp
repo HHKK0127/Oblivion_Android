@@ -42,9 +42,11 @@ const glm::vec4 kPauseText(51.0f / 255.0f, 79.0f / 255.0f, 142.0f / 255.0f, 1.0f
 // strings()._return / _save / _load / _options / _quit, in XML listindex order.
 const char* const kItemLabels[ITEM_COUNT] = {"Return", "Save", "Load", "Options", "Quit"};
 
-void drawIfLoaded(GLuint tex, float x, float y, float w, float h, int sw, int sh) {
-    if (tex != 0) {
-        UIDrawHelper::drawTexturedQuad(x, y, w, h, tex, glm::vec4(1.0f), sw, sh);
+void drawIfLoaded(GLuint tex, float x, float y, float w, float h, int sw, int sh,
+                  float alpha) {
+    if (tex != 0 && alpha > 0.0f) {
+        UIDrawHelper::drawTexturedQuad(x, y, w, h, tex, glm::vec4(1.0f, 1.0f, 1.0f, alpha),
+                                       sw, sh);
     }
 }
 
@@ -67,7 +69,7 @@ private:
 
 UIPauseMenu::UIPauseMenu()
     : textRenderer(nullptr), screenWidth(1920), screenHeight(1080),
-      visible(false), focusIndex(0), hasSelection(false),
+      visible(false), fadeAlpha(1.0f), focusIndex(0), hasSelection(false),
       pendingSelection(Item::RETURN),
       bgCenterTexture(0), bgEdgeTopTexture(0), bgEdgeBottomTexture(0),
       bgEdgeLeftTexture(0), bgEdgeRightTexture(0),
@@ -130,6 +132,10 @@ void UIPauseMenu::cleanup() {
 void UIPauseMenu::setScreenSize(int width, int height) {
     screenWidth = width;
     screenHeight = height;
+}
+
+void UIPauseMenu::setFadeAlpha(float alpha) {
+    fadeAlpha = std::clamp(alpha, 0.0f, 1.0f);
 }
 
 void UIPauseMenu::open() {
@@ -232,7 +238,7 @@ void UIPauseMenu::renderBorder(const Rect& b) {
                               bgEdgeLeftTexture, bgEdgeRightTexture,  bgCornerTLTexture,
                               bgCornerTRTexture, bgCornerBLTexture,   bgCornerBRTexture};
     UIDrawHelper::drawGenericBackground(slices, b.x, b.y, b.w, b.h, screenWidth,
-                                        screenHeight);
+                                        screenHeight, fadeAlpha);
 }
 
 void UIPauseMenu::renderButton(int index) {
@@ -243,19 +249,21 @@ void UIPauseMenu::renderButton(int index) {
         // button_floating spans the full rect width at y + 3; button_end caps the
         // right edge with an 8px overlap.
         drawIfLoaded(selectionFullTexture, r.x, r.y + SELECTION_OFFSET_Y, r.w, BUTTON_HEIGHT,
-                     screenWidth, screenHeight);
+                     screenWidth, screenHeight, fadeAlpha);
         drawIfLoaded(selectionCutTexture,
                      r.x + r.w + SELECTION_CAP_GAP - SELECTION_MIN_WIDTH,
                      r.y + SELECTION_OFFSET_Y, SELECTION_MIN_WIDTH, BUTTON_HEIGHT,
-                     screenWidth, screenHeight);
+                     screenWidth, screenHeight, fadeAlpha);
     }
 
     if (textRenderer) {
         const std::string label = kItemLabels[index];
         const float tw = textRenderer->getTextWidth(label, LABEL_SCALE);
         const float th = textRenderer->getTextHeight(LABEL_SCALE);
+        glm::vec4 color = focused ? kFocusedText : kIdleText;
+        color.w *= fadeAlpha;
         textRenderer->renderText(label, r.x + (r.w - tw) * 0.5f, r.y + (BUTTON_HEIGHT - th) * 0.5f,
-                                 focused ? kFocusedText : kIdleText, LABEL_SCALE);
+                                 color, LABEL_SCALE);
     }
 }
 
@@ -268,10 +276,11 @@ void UIPauseMenu::render() {
     glDisable(GL_DEPTH_TEST);
 
     // The XML root carries alpha 0 and an explorefade of 0.25: the world behind
-    // is faded out while the pause menu owns the screen.
+    // is faded out while the pause menu owns the screen. The whole thing rides
+    // the RE 48 fade alpha so open/close blends with the world behind it.
     UIDrawHelper::drawColoredQuad(0.0f, 0.0f, static_cast<float>(screenWidth),
                                   static_cast<float>(screenHeight),
-                                  glm::vec4(0.0f, 0.0f, 0.0f, DIM_ALPHA),
+                                  glm::vec4(0.0f, 0.0f, 0.0f, DIM_ALPHA * fadeAlpha),
                                   screenWidth, screenHeight);
 
     const Rect body = bodyRect();
@@ -293,13 +302,16 @@ void UIPauseMenu::render() {
         const float tw = textRenderer->getTextWidth(paused, LABEL_SCALE);
 
         drawIfLoaded(decorLeftTexture, body.x + PAUSE_DECOR_INSET, body.y + PAUSE_DECOR_Y,
-                     PAUSE_DECOR_WIDTH, PAUSE_DECOR_HEIGHT, screenWidth, screenHeight);
+                     PAUSE_DECOR_WIDTH, PAUSE_DECOR_HEIGHT, screenWidth, screenHeight,
+                     fadeAlpha);
         drawIfLoaded(decorRightTexture,
                      body.x + BODY_WIDTH - PAUSE_DECOR_INSET - PAUSE_DECOR_WIDTH,
                      body.y + PAUSE_DECOR_Y, PAUSE_DECOR_WIDTH, PAUSE_DECOR_HEIGHT,
-                     screenWidth, screenHeight);
+                     screenWidth, screenHeight, fadeAlpha);
+        glm::vec4 pauseColor = kPauseText;
+        pauseColor.w *= fadeAlpha;
         textRenderer->renderText(paused, body.x + (BODY_WIDTH - tw) * 0.5f, body.y + PAUSE_TEXT_Y,
-                                 kPauseText, LABEL_SCALE);
+                                 pauseColor, LABEL_SCALE);
     }
 
     {

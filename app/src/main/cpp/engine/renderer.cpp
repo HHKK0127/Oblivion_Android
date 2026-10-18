@@ -34,6 +34,9 @@
 // 4096 units, so this keeps roughly the 3x3 neighbourhood plus margin.
 static const float NPC_MESH_STREAM_RADIUS = 6000.0f;
 
+// RE 48: MenuFadeSystem node id for the pause menu (original PauseMenu 0x3f5).
+static const char* const kPauseMenuFadeKey = "pause";
+
 Renderer::Renderer()
     : showLauncher(true), showTitleScreen(false), shouldExit(false),
       screenWidth(1080), screenHeight(1920),
@@ -1655,60 +1658,18 @@ bool Renderer::initGameSystems() {
     // "activate" action. This is what makes the registered XTEL pairs reachable
     // without a UI: `usedoor` in the console.
     refs.useNearestDoor = [this]() -> std::string {
-        if (!worldManager) return "World Manager not available";
-        auto* doorMgr = worldManager->getDoorManager();
-        if (!doorMgr) return "Door Manager not available";
+        std::string message;
+        activateNearestDoor(0.0f, message);
+        return message;
+    };
 
-        auto currentCell = worldManager->getCurrentCell();
-        if (!currentCell) return "No current cell";
-
-        // Interior door positions are cell relative, so doors of different
-        // interiors share a coordinate space. Restricting the search to the
-        // current cell's FormID is what keeps the lookup unambiguous.
-        const auto candidates = doorMgr->getDoorsInCell(currentCell->tesFormID);
-        if (candidates.empty()) {
-            return "No doors registered in cell '" + currentCell->cellName + "'";
-        }
-
-        const glm::vec3 playerPos = worldManager->getPlayerPosition();
-        const Door* door = nullptr;
-        float bestSq = std::numeric_limits<float>::max();
-        for (const Door* candidate : candidates) {
-            if (!candidate) continue;
-            const float sq = glm::dot(candidate->position - playerPos,
-                                      candidate->position - playerPos);
-            if (sq < bestSq) {
-                bestSq = sq;
-                door = candidate;
-            }
-        }
-        if (!door) return "No doors registered in this cell";
-
-        const uint32_t doorId = door->doorId;
-        const std::string name = door->name;
-        const std::string destination = door->destinationCellName.empty()
-                                            ? formIDToHex(door->destinationCell)
-                                            : door->destinationCellName;
-        if (!doorMgr->useDoor(doorId)) {
-            return "Door transition failed: " + name + " -> " + destination;
-        }
-
-        // An interior destination places its geometry lazily on the first frame
-        // after the switch, exactly as teleportinterior does; the player
-        // controller has to be moved too, since it drives the camera.
-        if (playerController) {
-            playerController->setPosition(worldManager->getPlayerPosition());
-        }
-        auto landed = worldManager->getCurrentCell();
-        const std::string landedName =
-            landed ? (landed->cellName.empty() ? landed->editorID : landed->cellName)
-                   : std::string("?");
-        if (worldManager->isPlayerIndoors()) {
-            const size_t placed = ensureInteriorObjectsPlaced();
-            return "Used door '" + name + "' -> " + landedName + " (interior, " +
-                   std::to_string(placed) + " objects placed)";
-        }
-        return "Used door '" + name + "' -> " + landedName + " (exterior)";
+    // Virtual controller overlay on/off, driven by the console `vc` command.
+    // -1 toggles, 0 disables, 1 enables.
+    refs.setVirtualControllerState = [this](int state) -> std::string {
+        if (!virtualController) return "Virtual controller not available";
+        setVirtualControllerEnabled(state < 0 ? !virtualControllerEnabled : state != 0);
+        return std::string("Virtual controller ") +
+               (virtualControllerEnabled ? "enabled" : "disabled");
     };
 
     refs.saveGameSlot = [this](uint32_t slot) {
@@ -1761,6 +1722,14 @@ bool Renderer::initGameSystems() {
     };
     refs.getTargetFPS = [this]() -> int {
         return getTargetFPS();
+    };
+
+    // RE 48: menu open/close fade duration (menufade trait, 0.25 s default).
+    refs.setMenuFade = [this](float seconds) {
+        menuFade.setDefaultDuration(seconds);
+    };
+    refs.getMenuFade = [this]() -> float {
+        return menuFade.defaultDuration();
     };
 
     // Phase 65: Extended Debug callbacks
@@ -1919,6 +1888,61 @@ bool Renderer::initGameSystems() {
     };
     refs.toggleLogAutoScroll = [this]() {
         if (debugHUD) debugHUD->toggleLogAutoScroll();
+    };
+
+    // Script debugger callbacks (DBG_SCRIPT tab). scriptManager is created
+    // later in initialize(), so every callback resolves it at call time.
+    refs.scriptList = [this]() -> std::string {
+        if (!scriptManager) return "ScriptManager not available";
+        return scriptManager->debugListScripts();
+    };
+    refs.scriptShow = [this](int index) -> std::string {
+        if (!scriptManager) return "ScriptManager not available";
+        return scriptManager->debugScriptInfo(index);
+    };
+    refs.scriptDisasm = [this](int index, uint32_t start, int count) -> std::string {
+        if (!scriptManager) return "ScriptManager not available";
+        return scriptManager->debugDisasm(index, start, count);
+    };
+    refs.scriptStep = [this](int index) -> std::string {
+        if (!scriptManager) return "ScriptManager not available";
+        return scriptManager->debugStepScript(index);
+    };
+    refs.scriptResume = [this](int index) -> std::string {
+        if (!scriptManager) return "ScriptManager not available";
+        return scriptManager->debugResumeScript(index);
+    };
+    refs.scriptBreakList = [this]() -> std::string {
+        if (!scriptManager) return "ScriptManager not available";
+        return scriptManager->debugListBreakpoints();
+    };
+    refs.scriptBreakClear = [this]() -> std::string {
+        if (!scriptManager) return "ScriptManager not available";
+        return scriptManager->debugClearBreakpoints();
+    };
+    refs.scriptBreakToggle = [this](int index, uint32_t offset) -> std::string {
+        if (!scriptManager) return "ScriptManager not available";
+        return scriptManager->debugToggleBreakpoint(index, offset);
+    };
+    refs.scriptVars = [this](int index) -> std::string {
+        if (!scriptManager) return "ScriptManager not available";
+        return scriptManager->debugScriptVariables(index);
+    };
+    refs.scriptRun = [this](uint32_t formID, uint32_t selfRef) -> std::string {
+        if (!scriptManager) return "ScriptManager not available";
+        return scriptManager->debugRunScript(formID, selfRef);
+    };
+    refs.scriptGlobals = [this]() -> std::string {
+        if (!scriptManager) return "ScriptManager not available";
+        return scriptManager->debugListGlobals();
+    };
+    refs.scriptGetGlobal = [this](uint32_t formID) -> std::string {
+        if (!scriptManager) return "ScriptManager not available";
+        return scriptManager->debugGetGlobal(formID);
+    };
+    refs.scriptSetGlobal = [this](uint32_t formID, const std::string& value) -> std::string {
+        if (!scriptManager) return "ScriptManager not available";
+        return scriptManager->debugSetGlobal(formID, value);
     };
 
     gameConsole->setGameSystemRefs(refs);
@@ -4200,6 +4224,10 @@ void Renderer::render(float deltaTime) {
                 textRenderer->processPendingFontRequest();
             }
 
+    // RE 48: advance the menu fade nodes. A completed close hides its menu and
+    // runs the pending action (for example the pause menu's Quit) from here.
+    menuFade.update(deltaTime);
+
     // Bring the pause menu back once a sub-menu opened from it has closed. Done
     // once per frame so every close path (touch, back key, key press) is covered.
     syncPauseMenuLifetime();
@@ -4264,15 +4292,74 @@ void Renderer::render(float deltaTime) {
         return;
     }
 
-    // Set joystick input before Imperial Weave update.
-    // RE §30.1 path (3): while a menu owns the screen no world input reaches the
-    // player, so a neutral stick is fed instead of the (hidden) virtual stick.
-    if (playerController && joystick) {
-        if (anyMenuOpen()) {
+    // Feed the player's movement / look input once per frame before the
+    // Imperial Weave update. RE §30.1 path (3): while a menu owns the screen
+    // (or the title screen is up) no world input reaches the player, so a
+    // neutral stick is fed instead - and the virtual controller has any
+    // latched touch cancelled, because the matching UP event will never be
+    // delivered through the gated touch path and the stick would otherwise
+    // keep the player moving after the menu closes.
+    if (playerController) {
+        if (anyMenuOpen() || showTitleScreen) {
             playerController->setJoystickInput(0.0f, 0.0f);
-        } else {
+            playerController->setLookInput(0.0f, 0.0f);
+            playerController->setSprinting(false);
+            if (virtualController) {
+                virtualController->cancelTouches();
+                vcPrevButtons.reset();
+            }
+        } else if (virtualController && virtualControllerEnabled) {
+            // The Phase 36 overlay is the active touch control scheme: read its
+            // latched state here, once per frame, instead of only on touch
+            // events. The old event-time feed lost to the legacy UIJoystick,
+            // which overwrites setJoystickInput() on every frame it exists.
+            const VirtualControllerState vcState = virtualController->getState();
+
+            // Continuous axes.
+            playerController->setJoystickInput(vcState.left_stick.x, vcState.left_stick.y);
+            // Camera look: right stick, with the D-pad as a digital nudge.
+            playerController->setLookInput(vcState.right_stick.x + vcState.dpad.x,
+                                           vcState.right_stick.y + vcState.dpad.y);
+            // L is a held trigger: sprint while it is down.
+            playerController->setSprinting(
+                vcState.is_button_pressed(VirtualControllerButton::L));
+
+            // One-shot buttons, edge-triggered so a held button does not repeat.
+            const auto pressed_edge = [this, &vcState](VirtualControllerButton btn) {
+                const int idx = static_cast<int>(btn);
+                return vcState.buttons[idx] && !vcPrevButtons[idx];
+            };
+            if (pressed_edge(VirtualControllerButton::A)) {
+                playerController->requestJump();          // A - jump
+            }
+            if (pressed_edge(VirtualControllerButton::B) ||
+                pressed_edge(VirtualControllerButton::R)) {
+                playerController->attack();               // B / R - attack
+            }
+            if (pressed_edge(VirtualControllerButton::Y)) {
+                playerController->toggleCombatStance();   // Y - combat stance
+            }
+            if (pressed_edge(VirtualControllerButton::X)) {
+                // X - activate: nearest door within reach, else pick up an item.
+                std::string doorMessage;
+                if (activateNearestDoor(3.5f, doorMessage)) {
+                    LOGI("VC X: %s", doorMessage.c_str());
+                } else if (!playerController->tryPickup()) {
+                    LOGD("VC X: nothing to activate (%s)", doorMessage.c_str());
+                }
+            }
+            if (pressed_edge(VirtualControllerButton::START)) {
+                openPauseMenu();                          // Start - pause menu
+            }
+            if (pressed_edge(VirtualControllerButton::SELECT)) {
+                toggleMap();                              // Select - map
+            }
+            vcPrevButtons = vcState.buttons;
+        } else if (joystick) {
+            // Legacy on-screen stick (Touch Screen control scheme).
             glm::vec2 input = joystick->getInputValue();
             playerController->setJoystickInput(input.x, input.y);
+            playerController->setLookInput(0.0f, 0.0f);
         }
     }
 
@@ -4441,6 +4528,8 @@ void Renderer::render(float deltaTime) {
             settingsUI->render();
         }
         if (uiPauseMenu && uiPauseMenu->isVisible()) {
+            // RE 48: steady state is fully opaque; a running fade overrides it.
+            uiPauseMenu->setFadeAlpha(menuFade.getAlpha(kPauseMenuFadeKey, true));
             uiPauseMenu->render();
         }
         if (uiMessageBox && uiMessageBox->isVisible()) {
@@ -4834,6 +4923,8 @@ void Renderer::render(float deltaTime) {
 
     // Pause menu sits below its own sub-menus (Save/Load/Options) but above the world.
     if (uiPauseMenu && uiPauseMenu->isVisible()) {
+        // RE 48: steady state is fully opaque; a running fade overrides it.
+        uiPauseMenu->setFadeAlpha(menuFade.getAlpha(kPauseMenuFadeKey, true));
         uiPauseMenu->render();
     }
 
@@ -4881,8 +4972,13 @@ void Renderer::render(float deltaTime) {
         uiSystem->render();
     }
 
-    // Render Virtual Controller (game overlay)
-    if (virtualController && virtualControllerEnabled && !showLauncher && !showTitleScreen && !saveLoadOpen) {
+    // Render Virtual Controller (game overlay). Hidden while any menu owns the
+    // screen - the same gate that neutralizes its input. While it is the active
+    // scheme the legacy Phase 9 stick is kept hidden so the two do not stack
+    // on the same screen corner.
+    if (virtualController && virtualControllerEnabled && !showLauncher && !showTitleScreen &&
+        !saveLoadOpen && !anyMenuOpen()) {
+        if (joystick) joystick->setVisible(false);
         virtualController->update(deltaTime);
         virtualController->render();
     }
@@ -7170,39 +7266,6 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
         touchStates.erase(pointerId);
     }
 
-    // Virtual Controller handles touch when enabled and game is active
-    if (virtualController && virtualControllerEnabled && !showLauncher && !showTitleScreen) {
-        bool vcHandled = false;
-        if (action == 0 || action == 5) { // DOWN
-            vcHandled = virtualController->onTouchDown(x, y, pointerId);
-        } else if (action == 1 || action == 6) { // UP
-            vcHandled = virtualController->onTouchUp(x, y, pointerId);
-        } else if (action == 2) { // MOVE
-            vcHandled = virtualController->onTouchMove(x, y, dx, dy, pointerId);
-        }
-        if (vcHandled) {
-            // Virtual Controller consumed the touch - update player input
-            if (playerController) {
-                VirtualControllerState vcState = virtualController->getState();
-                playerController->setJoystickInput(vcState.left_stick.x, vcState.left_stick.y);
-
-                // Handle button presses
-                if (vcState.is_button_pressed(VirtualControllerButton::A)) {
-                    // A button - Jump
-                    playerController->requestJump();
-                }
-                if (vcState.is_button_pressed(VirtualControllerButton::B)) {
-                    // B button - Attack
-                    playerController->attack();
-                }
-                if (vcState.is_button_pressed(VirtualControllerButton::Y)) {
-                    // Y button - Toggle combat stance
-                    playerController->toggleCombatStance();
-                }
-            }
-        }
-    }
-
     // MessageMenu (0x3e9) is modal and drawn above every other overlay, so it has to
     // consume touch before the DebugMenu / GameConsole that are drawn underneath.
     if (uiMessageBox && uiMessageBox->isVisible()) {
@@ -7246,6 +7309,27 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
             }
         }
         return;
+    }
+
+    // Virtual Controller: the on-screen gamepad owns its hit areas during
+    // normal gameplay. Modal panels are excluded by the anyMenuOpen() gate, and
+    // the MessageMenu / DebugMenu / GameConsole / dialogue branches above
+    // return before this point, so their touches are never stolen. No input is
+    // applied here - the per-frame feed in the update path latches it once per
+    // frame; this block only tracks the pointers and consumes the touches.
+    if (virtualController && virtualControllerEnabled && !showLauncher && !showTitleScreen &&
+        !anyMenuOpen()) {
+        bool vcHandled = false;
+        if (action == 0 || action == 5) { // DOWN
+            vcHandled = virtualController->onTouchDown(x, y, pointerId);
+        } else if (action == 1 || action == 6) { // UP
+            vcHandled = virtualController->onTouchUp(x, y, pointerId);
+        } else if (action == 2) { // MOVE
+            vcHandled = virtualController->onTouchMove(x, y, dx, dy, pointerId);
+        }
+        if (vcHandled) {
+            return;
+        }
     }
 
     // Phase 9: UISystem handles all actions
@@ -7337,8 +7421,12 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
     // Only process the remaining legacy UI elements on ACTION_DOWN (0 or 5)
     if (is_touch_down) {
         if (uiPauseMenu && uiPauseMenu->isVisible()) {
-            uiPauseMenu->onTouchEvent(x, y);
-            pumpPauseMenu();
+            // RE 48: swallow taps while the open/close fade runs; the node gates
+            // input exactly like the original's visible == 2.0 check (48.4).
+            if (pauseMenuInteractive()) {
+                uiPauseMenu->onTouchEvent(x, y);
+                pumpPauseMenu();
+            }
             return;
         }
 
@@ -7669,7 +7757,22 @@ void Renderer::toggleGameConsole() {
 }
 
 void Renderer::toggleVirtualController() {
-    virtualControllerEnabled = !virtualControllerEnabled;
+    setVirtualControllerEnabled(!virtualControllerEnabled);
+}
+
+void Renderer::setVirtualControllerEnabled(bool enabled) {
+    virtualControllerEnabled = enabled;
+    // Switching schemes mid-touch: release everything so no stick or button is
+    // latched across the switch, and drop the edge-detection history.
+    if (virtualController) {
+        virtualController->cancelTouches();
+    }
+    vcPrevButtons.reset();
+    // The legacy Phase 9 stick is only shown when the virtual controller is
+    // not the active scheme (it is also hidden while menus are open).
+    if (joystick && !showLauncher && !showTitleScreen) {
+        joystick->setVisible(!enabled);
+    }
     LOGI("Virtual Controller %s", virtualControllerEnabled ? "enabled" : "disabled");
 }
 
@@ -7762,6 +7865,11 @@ bool Renderer::handleOptionsKey(int keyCode) {
         return handled;
     }
     if (uiPauseMenu && uiPauseMenu->isVisible()) {
+        // RE 48: keys are swallowed during the open/close fade, mirroring the
+        // touch path.
+        if (!pauseMenuInteractive()) {
+            return true;
+        }
         const bool handled = uiPauseMenu->onKeyPress(keyCode);
         pumpPauseMenu();
         return handled;
@@ -7967,9 +8075,17 @@ void Renderer::pumpControlsOptions() {
     if (!controlsOptionsUI) {
         return;
     }
-    // Values are kept in ControlsOptionsUI; consumers (camera sensitivity, invert Y,
-    // stick mapping) are not wired yet.
-    controlsOptionsUI->consumeChanged();
+    // Camera sensitivity / invert Y / swap axes are kept in ControlsOptionsUI;
+    // those consumers are not wired yet. The device selector is: index 1 is the
+    // Phase 36 virtual controller overlay, while Touch Screen (0) and Gamepad
+    // (2) leave it off and fall back to the legacy stick / a physical pad.
+    if (controlsOptionsUI->consumeChanged()) {
+        const bool wantVirtualController =
+            controlsOptionsUI->settings().device_index == 1;
+        if (wantVirtualController != virtualControllerEnabled) {
+            setVirtualControllerEnabled(wantVirtualController);
+        }
+    }
 
     if (controlsOptionsUI->shouldReturnToOptions()) {
         controlsOptionsUI->resetReturnFlag();
@@ -7997,6 +8113,46 @@ void Renderer::loadUiFonts() {
     textRenderer->setActiveFont(FontType::KingthingsRegular);
 }
 
+void Renderer::openPauseMenu() {
+    if (!uiPauseMenu) {
+        return;
+    }
+    // Already open and not mid-close: leave the current state untouched.
+    if (uiPauseMenu->isVisible() && !menuFade.isTransitioning(kPauseMenuFadeKey)) {
+        return;
+    }
+    uiPauseMenu->open();
+    menuFade.beginOpen(kPauseMenuFadeKey);
+    LOGI("Pause menu: fade open (%.3f s)", menuFade.defaultDuration());
+}
+
+void Renderer::closePauseMenu(std::function<void()> onCloseComplete) {
+    if (!uiPauseMenu || !uiPauseMenu->isVisible()) {
+        if (onCloseComplete) {
+            onCloseComplete();
+        }
+        return;
+    }
+    // The menu stays visible while it fades out; hiding it - and running the
+    // pending action - happens when the fade completes (RE 48: the original
+    // keeps the menu up until the node reaches progress 1.0).
+    menuFade.beginClose(kPauseMenuFadeKey, menuFade.defaultDuration(),
+                        [this, onCloseComplete = std::move(onCloseComplete)]() {
+        if (uiPauseMenu) {
+            uiPauseMenu->close();
+        }
+        LOGI("Pause menu: fade close complete");
+        if (onCloseComplete) {
+            onCloseComplete();
+        }
+    });
+}
+
+bool Renderer::pauseMenuInteractive() const {
+    return uiPauseMenu && uiPauseMenu->isVisible() &&
+           !menuFade.isTransitioning(kPauseMenuFadeKey);
+}
+
 void Renderer::pumpPauseMenu() {
     if (!uiPauseMenu || !uiPauseMenu->hasPendingSelection()) {
         return;
@@ -8005,13 +8161,13 @@ void Renderer::pumpPauseMenu() {
     const UIPauseMenu::Item item = uiPauseMenu->consumeSelection();
     switch (item) {
         case UIPauseMenu::Item::RETURN:
-            uiPauseMenu->close();
+            closePauseMenu();
             LOGI("Pause menu: Return to game");
             break;
 
         case UIPauseMenu::Item::SAVE:
         case UIPauseMenu::Item::LOAD:
-            uiPauseMenu->close();
+            closePauseMenu();
             if (saveLoadUI) {
                 // The pause menu comes back once SaveLoadUI closes.
                 pauseMenuBehindSubmenu = true;
@@ -8023,7 +8179,7 @@ void Renderer::pumpPauseMenu() {
             break;
 
         case UIPauseMenu::Item::OPTIONS:
-            uiPauseMenu->close();
+            closePauseMenu();
             if (optionsUI) {
                 // open(true) keeps the "Paused" banner: OptionsMenu.user0 == 2.0f
                 // is the original's "PauseMenu is behind me" flag (RE 30.4).
@@ -8034,8 +8190,8 @@ void Renderer::pumpPauseMenu() {
             break;
 
         case UIPauseMenu::Item::QUIT:
-            uiPauseMenu->close();
-            quitFromPauseMenu = true;
+            // Quit only lands once the fade-out has fully played (RE 48).
+            closePauseMenu([this]() { quitFromPauseMenu = true; });
             LOGI("Pause menu: Quit requested");
             break;
     }
@@ -8089,7 +8245,7 @@ void Renderer::syncPauseMenuLifetime() {
     }
 
     pauseMenuBehindSubmenu = false;
-    uiPauseMenu->open();
+    openPauseMenu();
     LOGI("Pause menu: restored after sub-menu");
 }
 
@@ -8117,7 +8273,7 @@ bool Renderer::anyMenuOpen() const {
 }
 
 bool Renderer::handleBackKey() {
-        // Priority: DebugMenu > DebugConsole > GameConsole > Title > Launcher > Exit dialog
+        // Priority: DebugMenu > GameConsole > Title > Launcher > Exit dialog
 
         // 0. MessageMenu (0x3e9) is modal and is drawn above every other overlay.
         if (uiMessageBox && uiMessageBox->isVisible()) {
@@ -8134,7 +8290,7 @@ bool Renderer::handleBackKey() {
             return true;
         }
 
-        // 2. Close DebugConsole if open
+        // 2. Close GameConsole if open
         if (gameConsole && gameConsole->isVisible()) {
             gameConsole->toggle();
             LOGI("handleBackKey: Closed GameConsole");
@@ -8184,6 +8340,11 @@ bool Renderer::handleBackKey() {
             return true;
         }
         if (uiPauseMenu && uiPauseMenu->isVisible()) {
+            if (!pauseMenuInteractive()) {
+                // RE 48: don't stack a close on top of a running fade.
+                LOGI("handleBackKey: Pause menu fade in progress - consumed");
+                return true;
+            }
             uiPauseMenu->handleBack();  // pause_return_button
             pumpPauseMenu();
             LOGI("handleBackKey: Closed UIPauseMenu");
@@ -8246,7 +8407,7 @@ bool Renderer::handleBackKey() {
         //    Quitting to the launcher is now the pause menu's Quit item, so the
         //    destination is unchanged - it just costs one extra confirmation tap.
         if (uiPauseMenu) {
-            uiPauseMenu->open();
+            openPauseMenu();
             LOGI("handleBackKey: Opened pause menu");
             return true;
         }
@@ -8266,6 +8427,79 @@ bool Renderer::handleBackKey() {
         for (auto& btn : quickSlotButtons) {
             if (btn) btn->setVisible(false);
         }
+    }
+
+    // Phase 65 / virtual controller: the in-game "activate" action. Walks
+    // through the door nearest the player. maxDistance > 0 restricts the
+    // search radius (returns false when no door lies within it); 0 keeps the
+    // console's unrestricted behavior. The success report is the same string
+    // the `usedoor` console command prints.
+    bool Renderer::activateNearestDoor(float maxDistance, std::string& message) {
+        if (!worldManager) { message = "World Manager not available"; return false; }
+        auto* doorMgr = worldManager->getDoorManager();
+        if (!doorMgr) { message = "Door Manager not available"; return false; }
+
+        auto currentCell = worldManager->getCurrentCell();
+        if (!currentCell) { message = "No current cell"; return false; }
+
+        // Interior door positions are cell relative, so doors of different
+        // interiors share a coordinate space. Restricting the search to the
+        // current cell's FormID is what keeps the lookup unambiguous.
+        const auto candidates = doorMgr->getDoorsInCell(currentCell->tesFormID);
+        if (candidates.empty()) {
+            message = "No doors registered in cell '" + currentCell->cellName + "'";
+            return false;
+        }
+
+        const glm::vec3 playerPos = worldManager->getPlayerPosition();
+        const float bestLimitSq = (maxDistance > 0.0f)
+                                      ? maxDistance * maxDistance
+                                      : std::numeric_limits<float>::max();
+        const Door* door = nullptr;
+        float bestSq = bestLimitSq;
+        for (const Door* candidate : candidates) {
+            if (!candidate) continue;
+            const float sq = glm::dot(candidate->position - playerPos,
+                                      candidate->position - playerPos);
+            if (sq < bestSq) {
+                bestSq = sq;
+                door = candidate;
+            }
+        }
+        if (!door) {
+            message = (maxDistance > 0.0f) ? "No door within reach"
+                                           : "No doors registered in this cell";
+            return false;
+        }
+
+        const uint32_t doorId = door->doorId;
+        const std::string name = door->name;
+        const std::string destination = door->destinationCellName.empty()
+                                            ? formIDToHex(door->destinationCell)
+                                            : door->destinationCellName;
+        if (!doorMgr->useDoor(doorId)) {
+            message = "Door transition failed: " + name + " -> " + destination;
+            return false;
+        }
+
+        // An interior destination places its geometry lazily on the first frame
+        // after the switch, exactly as teleportinterior does; the player
+        // controller has to be moved too, since it drives the camera.
+        if (playerController) {
+            playerController->setPosition(worldManager->getPlayerPosition());
+        }
+        auto landed = worldManager->getCurrentCell();
+        const std::string landedName =
+            landed ? (landed->cellName.empty() ? landed->editorID : landed->cellName)
+                   : std::string("?");
+        if (worldManager->isPlayerIndoors()) {
+            const size_t placed = ensureInteriorObjectsPlaced();
+            message = "Used door '" + name + "' -> " + landedName + " (interior, " +
+                      std::to_string(placed) + " objects placed)";
+        } else {
+            message = "Used door '" + name + "' -> " + landedName + " (exterior)";
+        }
+        return true;
     }
 
     void Renderer::toggleNpcDebugVisualizer() {

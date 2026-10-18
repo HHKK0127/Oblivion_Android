@@ -63,6 +63,7 @@ public:
     // Local variable access
     void setLocal(uint16_t index, const ScriptValue& value);
     ScriptValue getLocal(uint16_t index) const;
+    size_t getLocalCount() const { return locals_.size(); }
 
     // Program counter
     uint32_t getPC() const { return pc_; }

@@ -30,6 +30,26 @@ public:
     // Get function name from ID
     static const char* getFunctionName(uint16_t funcID);
 
+    // Offset of the instruction that follows the one at offset. Returns size
+    // when the offset is at or past the end, and never moves backwards, so a
+    // caller that walks the stream always terminates.
+    static uint32_t nextInstructionOffset(const uint8_t* bytecode, size_t size, uint32_t offset);
+
+    // Start offsets of every instruction in the bytecode, capped with a safety
+    // limit for malformed streams.
+    static std::vector<uint32_t> instructionOffsets(const uint8_t* bytecode, size_t size);
+
+    // Disassemble up to maxInstructions starting at startOffset. The line at
+    // markerOffset is prefixed with ">> " so a debugger view can flag the PC.
+    // Pass SCRIPT_DISASM_NO_MARKER to disable the marker.
+    static constexpr uint32_t NO_MARKER = 0xFFFFFFFFu;
+    static std::string disassembleRange(const uint8_t* bytecode, size_t size,
+                                        uint32_t startOffset, int maxInstructions,
+                                        uint32_t markerOffset);
+
+    // Format a value the way the disassembler's variable listing does.
+    static std::string formatValue(const ScriptValue& value);
+
 private:
     // Format argument data as hex string
     static std::string formatArgs(const uint8_t* data, uint16_t length);

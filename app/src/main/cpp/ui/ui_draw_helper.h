@@ -54,7 +54,7 @@ public:
      */
     static void drawGenericBackground(const GLuint slices[9],
                                       float x, float y, float w, float h,
-                                      int screenW, int screenH);
+                                      int screenW, int screenH, float alpha = 1.0f);
 
     /**
      * @brief Draw border (4-edge quad)

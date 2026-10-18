@@ -20,6 +20,36 @@ std::string toHex8(uint32_t value) {
     return std::string(buf);
 }
 
+// Parses a decimal or 0x-prefixed hex unsigned number.
+bool parseU32Token(const std::string& raw, uint32_t& out) {
+    try {
+        size_t consumed = 0;
+        const int base = (raw.rfind("0x", 0) == 0 || raw.rfind("0X", 0) == 0) ? 16 : 10;
+        const unsigned long long value = std::stoull(raw, &consumed, base);
+        if (consumed != raw.size() || value > 0xFFFFFFFFull) {
+            return false;
+        }
+        out = static_cast<uint32_t>(value);
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
+bool parseIntToken(const std::string& raw, int& out) {
+    try {
+        size_t consumed = 0;
+        const int value = std::stoi(raw, &consumed, 10);
+        if (consumed != raw.size()) {
+            return false;
+        }
+        out = value;
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
 } // namespace
 
 GameConsole::GameConsole()
@@ -201,6 +231,7 @@ void GameConsole::registerBuiltinCommands() {
     registerCommand("noclip", "Toggle noclip mode", [this](const std::vector<std::string>& args) { cmdNoclip(args); });
     registerCommand("fps", "Toggle FPS display", [this](const std::vector<std::string>& args) { cmdFPS(args); });
     registerCommand("setfpscap", "Set frame rate cap: setfpscap <15-120>", [this](const std::vector<std::string>& args) { cmdSetFpsCap(args); });
+    registerCommand("menufade", "Menu fade duration: menufade <0.001-10>", [this](const std::vector<std::string>& args) { cmdMenuFade(args); });
     registerCommand("time", "Show current game time", [this](const std::vector<std::string>& args) { cmdTime(args); });
     registerCommand("pos", "Show current position", [this](const std::vector<std::string>& args) { cmdPos(args); });
     registerCommand("stats", "Show player stats", [this](const std::vector<std::string>& args) { cmdStats(args); });
@@ -570,6 +601,7 @@ void GameConsole::registerBuiltinCommands() {
     registerCommand("failquest", "Fail quest: failquest <questId>", [this](const std::vector<std::string>& args) { cmdFailQuest(args); });
     registerCommand("listquests", "List all quests", [this](const std::vector<std::string>& args) { cmdListQuests(args); });
     registerCommand("updateobj", "Update objective: updateobj <questId> <objId> <progress>", [this](const std::vector<std::string>& args) { cmdUpdateObjective(args); });
+    registerCommand("setstage", "Set quest lifecycle stage: setstage <questId> <0-4> [0=unchanged 1=accept 2=progress 3=complete 4=fail]", [this](const std::vector<std::string>& args) { cmdSetStage(args); });
 
     // === NPC commands ===
     registerCommand("spawnat", "Spawn NPC at position: spawnat <name> <x> <y> <z>", [this](const std::vector<std::string>& args) { cmdSpawnAt(args); });
@@ -863,6 +895,7 @@ void GameConsole::registerBuiltinCommands() {
     registerCommand("closemenu", "Close current menu", [this](const std::vector<std::string>& args) { cmdCloseMenu(args); });
     registerCommand("message", "Show MessageMenu: message <text>[|option1|option2]", [this](const std::vector<std::string>& args) { cmdMessage(args); });
     registerCommand("debugmenu", "Toggle debug menu", [this](const std::vector<std::string>& args) { cmdDebugMenu(args); });
+    registerCommand("vc", "Toggle/set the virtual controller: vc [on|off]", [this](const std::vector<std::string>& args) { cmdVirtualController(args); });
 
     // Phase 65: Extended Debug Commands
     registerCommand("wireframe", "Toggle wireframe rendering", [this](const std::vector<std::string>&) {
@@ -1130,6 +1163,157 @@ void GameConsole::registerBuiltinCommands() {
         if (gameRefs.toggleLogAutoScroll) gameRefs.toggleLogAutoScroll();
         print("Log auto-scroll toggled");
     });
+
+    // === Script debugger commands (DBG_SCRIPT tab) ===
+    registerCommand("scriptlist", "List active script instances", [this](const std::vector<std::string>&) {
+        if (!gameRefs.scriptList) { print("Script debugger not connected"); return; }
+        const std::string result = gameRefs.scriptList();
+        print(result);
+        LOGI_CONSOLE("%s", result.c_str());
+    });
+    registerCommand("scriptshow", "Show script state and code at PC: scriptshow [index]", [this](const std::vector<std::string>& args) {
+        if (!gameRefs.scriptShow) { print("Script debugger not connected"); return; }
+        int index = -1;
+        if (args.size() >= 2 && !parseIntToken(args[1], index)) {
+            print("Usage: scriptshow [index]");
+            return;
+        }
+        const std::string result = gameRefs.scriptShow(index);
+        print(result);
+        LOGI_CONSOLE("%s", result.c_str());
+    });
+    registerCommand("scriptdisasm", "Disassemble script: scriptdisasm [index] [start|pc] [count]", [this](const std::vector<std::string>& args) {
+        if (!gameRefs.scriptDisasm) { print("Script debugger not connected"); return; }
+        int index = -1;
+        uint32_t start = 0xFFFFFFFFu;  // Current PC
+        int count = 0;                 // Default window
+        if (args.size() >= 2 && !parseIntToken(args[1], index)) {
+            print("Usage: scriptdisasm [index] [start|pc] [count]");
+            return;
+        }
+        if (args.size() >= 3 && args[2] != "pc" && !parseU32Token(args[2], start)) {
+            print("Usage: scriptdisasm [index] [start|pc] [count]");
+            return;
+        }
+        if (args.size() >= 4 && !parseIntToken(args[3], count)) {
+            print("Usage: scriptdisasm [index] [start|pc] [count]");
+            return;
+        }
+        const std::string result = gameRefs.scriptDisasm(index, start, count);
+        print(result);
+        LOGI_CONSOLE("%s", result.c_str());
+    });
+    registerCommand("scriptstep", "Execute one instruction: scriptstep [index]", [this](const std::vector<std::string>& args) {
+        if (!gameRefs.scriptStep) { print("Script debugger not connected"); return; }
+        int index = -1;
+        if (args.size() >= 2 && !parseIntToken(args[1], index)) {
+            print("Usage: scriptstep [index]");
+            return;
+        }
+        const std::string result = gameRefs.scriptStep(index);
+        print(result);
+        LOGI_CONSOLE("%s", result.c_str());
+    });
+    registerCommand("scriptresume", "Resume a paused script: scriptresume [index]", [this](const std::vector<std::string>& args) {
+        if (!gameRefs.scriptResume) { print("Script debugger not connected"); return; }
+        int index = -1;
+        if (args.size() >= 2 && !parseIntToken(args[1], index)) {
+            print("Usage: scriptresume [index]");
+            return;
+        }
+        const std::string result = gameRefs.scriptResume(index);
+        print(result);
+        LOGI_CONSOLE("%s", result.c_str());
+    });
+    registerCommand("scriptbreak", "Breakpoints: scriptbreak <offset> | <index> <offset> | list | clear", [this](const std::vector<std::string>& args) {
+        if (!gameRefs.scriptBreakList || !gameRefs.scriptBreakClear || !gameRefs.scriptBreakToggle) {
+            print("Script debugger not connected");
+            return;
+        }
+        if (args.size() >= 2 && (args[1] == "list" || args[1] == "clear")) {
+            const std::string result = args[1] == "list" ? gameRefs.scriptBreakList()
+                                                         : gameRefs.scriptBreakClear();
+            print(result);
+            LOGI_CONSOLE("%s", result.c_str());
+            return;
+        }
+
+        int index = -1;
+        uint32_t offset = 0;
+        if (args.size() == 2) {
+            if (!parseU32Token(args[1], offset)) {
+                print("Usage: scriptbreak <offset> | <index> <offset> | list | clear");
+                return;
+            }
+        } else if (args.size() >= 3) {
+            if (!parseIntToken(args[1], index) || !parseU32Token(args[2], offset)) {
+                print("Usage: scriptbreak <offset> | <index> <offset> | list | clear");
+                return;
+            }
+        } else {
+            print("Usage: scriptbreak <offset> | <index> <offset> | list | clear");
+            return;
+        }
+        const std::string result = gameRefs.scriptBreakToggle(index, offset);
+        print(result);
+        LOGI_CONSOLE("%s", result.c_str());
+    });
+    registerCommand("scriptvars", "Show locals and stack: scriptvars [index]", [this](const std::vector<std::string>& args) {
+        if (!gameRefs.scriptVars) { print("Script debugger not connected"); return; }
+        int index = -1;
+        if (args.size() >= 2 && !parseIntToken(args[1], index)) {
+            print("Usage: scriptvars [index]");
+            return;
+        }
+        const std::string result = gameRefs.scriptVars(index);
+        print(result);
+        LOGI_CONSOLE("%s", result.c_str());
+    });
+    registerCommand("scriptrun", "Start a loaded script: scriptrun <formID> [selfRefFormID]", [this](const std::vector<std::string>& args) {
+        if (!gameRefs.scriptRun) { print("Script debugger not connected"); return; }
+        if (args.size() < 2) {
+            print("Usage: scriptrun <formID> [selfRefFormID]");
+            return;
+        }
+        uint32_t formID = 0;
+        uint32_t selfRef = 0;
+        if (!parseU32Token(args[1], formID) ||
+            (args.size() >= 3 && !parseU32Token(args[2], selfRef))) {
+            print("Usage: scriptrun <formID> [selfRefFormID]");
+            return;
+        }
+        const std::string result = gameRefs.scriptRun(formID, selfRef);
+        print(result);
+        LOGI_CONSOLE("%s", result.c_str());
+    });
+    registerCommand("scriptglobals", "List script global variables", [this](const std::vector<std::string>&) {
+        if (!gameRefs.scriptGlobals) { print("Script debugger not connected"); return; }
+        const std::string result = gameRefs.scriptGlobals();
+        print(result);
+        LOGI_CONSOLE("%s", result.c_str());
+    });
+    registerCommand("getglobal", "Show a global variable: getglobal <formID>", [this](const std::vector<std::string>& args) {
+        if (!gameRefs.scriptGetGlobal) { print("Script debugger not connected"); return; }
+        uint32_t formID = 0;
+        if (args.size() < 2 || !parseU32Token(args[1], formID)) {
+            print("Usage: getglobal <formID>");
+            return;
+        }
+        const std::string result = gameRefs.scriptGetGlobal(formID);
+        print(result);
+        LOGI_CONSOLE("%s", result.c_str());
+    });
+    registerCommand("setglobal", "Set a global variable: setglobal <formID> <value>", [this](const std::vector<std::string>& args) {
+        if (!gameRefs.scriptSetGlobal) { print("Script debugger not connected"); return; }
+        uint32_t formID = 0;
+        if (args.size() < 3 || !parseU32Token(args[1], formID)) {
+            print("Usage: setglobal <formID> <value>");
+            return;
+        }
+        const std::string result = gameRefs.scriptSetGlobal(formID, args[2]);
+        print(result);
+        LOGI_CONSOLE("%s", result.c_str());
+    });
 }
 
 void GameConsole::handleConsoleTouch(float x, float y, int action) {
@@ -1338,6 +1522,44 @@ void GameConsole::cmdSetFpsCap(const std::vector<std::string>& args) {
     gameRefs.setTargetFPS(fps);
     appendOutput("FPS cap set to " + std::to_string(fps));
     LOGI_CONSOLE("FPS cap set to %d", fps);
+}
+
+void GameConsole::cmdMenuFade(const std::vector<std::string>& args) {
+    if (args.size() < 2) {
+        if (gameRefs.getMenuFade) {
+            char buf[32];
+            std::snprintf(buf, sizeof(buf), "%.3f", gameRefs.getMenuFade());
+            appendOutput("Menu fade duration: " + std::string(buf) + " s");
+        }
+        appendOutput("Usage: menufade <0.001-10>");
+        return;
+    }
+
+    float seconds = 0.0f;
+    try {
+        seconds = std::stof(args[1]);
+    } catch (...) {
+        appendOutput("Invalid duration: " + args[1]);
+        return;
+    }
+
+    if (seconds < 0.001f || seconds > 10.0f) {
+        char buf[64];
+        std::snprintf(buf, sizeof(buf), "Duration out of range (0.001-10): %.3f", seconds);
+        appendOutput(buf);
+        return;
+    }
+
+    if (!gameRefs.setMenuFade) {
+        appendOutput("Menu fade not available");
+        return;
+    }
+
+    gameRefs.setMenuFade(seconds);
+    char buf[64];
+    std::snprintf(buf, sizeof(buf), "Menu fade duration set to %.3f s", seconds);
+    appendOutput(buf);
+    LOGI_CONSOLE("Menu fade duration set to %.3f s", seconds);
 }
 
 void GameConsole::cmdTime(const std::vector<std::string>& args) {
@@ -1859,6 +2081,50 @@ void GameConsole::cmdUpdateObjective(const std::vector<std::string>& args) {
     }
 }
 
+void GameConsole::cmdSetStage(const std::vector<std::string>& args) {
+    if (args.size() < 3) {
+        appendOutput("Usage: setstage <questId> <stage>");
+        appendOutput("  Stage 1 = ACCEPTED, 2 = IN_PROGRESS, 3 = COMPLETED, 4 = FAILED");
+        return;
+    }
+    try {
+        uint32_t questId = static_cast<uint32_t>(std::stoi(args[1]));
+        int stage = std::stoi(args[2]);
+        switch (stage) {
+            case 1:
+            case 2:
+                if (gameRefs.acceptQuest) {
+                    gameRefs.acceptQuest(questId);
+                    appendOutput("Quest " + std::to_string(questId) + " stage set to ACCEPTED");
+                } else {
+                    appendOutput("Quest system not connected");
+                }
+                break;
+            case 3:
+                if (gameRefs.completeQuest) {
+                    gameRefs.completeQuest(questId);
+                    appendOutput("Quest " + std::to_string(questId) + " stage set to COMPLETED");
+                } else {
+                    appendOutput("Quest system not connected");
+                }
+                break;
+            case 4:
+                if (gameRefs.failQuest) {
+                    gameRefs.failQuest(questId);
+                    appendOutput("Quest " + std::to_string(questId) + " stage set to FAILED");
+                } else {
+                    appendOutput("Quest system not connected");
+                }
+                break;
+            default:
+                appendOutput("Invalid stage " + std::to_string(stage) + " (1-4)");
+                break;
+        }
+    } catch (...) {
+        appendOutput("Invalid args. Use: setstage <questId> <stage>");
+    }
+}
+
 // ============================================================
 // NPC Commands
 // ============================================================
@@ -2291,5 +2557,29 @@ void GameConsole::cmdDebugMenu(const std::vector<std::string>& args) {
         appendOutput("Debug menu toggled");
     } else {
         appendOutput("Debug menu not connected");
+    }
+}
+
+void GameConsole::cmdVirtualController(const std::vector<std::string>& args) {
+    // No argument (or "toggle") flips the current state; on/off set it.
+    int state = -1;
+    if (args.size() >= 2) {
+        const std::string arg = args[1];
+        if (arg == "on" || arg == "1" || arg == "enable" || arg == "true") {
+            state = 1;
+        } else if (arg == "off" || arg == "0" || arg == "disable" || arg == "false") {
+            state = 0;
+        } else if (arg == "toggle") {
+            state = -1;
+        } else {
+            appendOutput("Usage: vc [on|off]");
+            return;
+        }
+    }
+
+    if (gameRefs.setVirtualControllerState) {
+        appendOutput(gameRefs.setVirtualControllerState(state));
+    } else {
+        appendOutput("Virtual controller not connected");
     }
 }

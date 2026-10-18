@@ -35,6 +35,10 @@ public:
     void close();
     bool isVisible() const { return visible; }
 
+    // RE 48: fade alpha applied to the whole menu (0 hidden .. 1 opaque). The
+    // renderer drives this from MenuFadeSystem while the open/close fade runs.
+    void setFadeAlpha(float alpha);
+
     void render();
     void onTouchEvent(float x, float y);
     // Key codes match the other menus: 19 UP, 20 DOWN, 23/66 Enter, 4 Back.
@@ -63,6 +67,7 @@ private:
     int screenWidth;
     int screenHeight;
     bool visible;
+    float fadeAlpha;
     int focusIndex;
 
     bool hasSelection;

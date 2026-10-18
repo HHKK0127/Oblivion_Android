@@ -51,14 +51,93 @@ std::string ScriptDisasm::disassemble(const ScriptData& script) {
         uint16_t argLen;
         std::memcpy(&rawOp, script.bytecode.data() + offset, 2);
         std::memcpy(&argLen, script.bytecode.data() + offset + 2, 2);
-        const uint32_t instruction_size = rawOp == 0x001C ? 4u : 4u + argLen;
-        offset += instruction_size;
 
         // Safety check
         if (rawOp != 0x001C && argLen > 1024) {
             oss << "; ERROR: suspicious arg length, stopping disassembly\n";
             break;
         }
+
+        offset = nextInstructionOffset(script.bytecode.data(), script.bytecode.size(), offset);
+    }
+
+    return oss.str();
+}
+
+uint32_t ScriptDisasm::nextInstructionOffset(const uint8_t* bytecode, size_t size, uint32_t offset) {
+    if (offset + 4 > size) {
+        return static_cast<uint32_t>(size);
+    }
+
+    uint16_t rawOp;
+    uint16_t argLen;
+    std::memcpy(&rawOp, bytecode + offset, 2);
+    std::memcpy(&argLen, bytecode + offset + 2, 2);
+
+    const uint32_t instSize = rawOp == 0x001C ? 4u : 4u + argLen;
+    const uint32_t next = offset + instSize;
+    return next > size ? static_cast<uint32_t>(size) : next;
+}
+
+std::vector<uint32_t> ScriptDisasm::instructionOffsets(const uint8_t* bytecode, size_t size) {
+    std::vector<uint32_t> offsets;
+    if (bytecode == nullptr || size == 0) {
+        return offsets;
+    }
+
+    uint32_t offset = 0;
+    while (offset < size) {
+        offsets.push_back(offset);
+
+        uint16_t argLen = 0;
+        if (offset + 4 <= size) {
+            std::memcpy(&argLen, bytecode + offset + 2, 2);
+        }
+        if (argLen > 1024) {
+            break;
+        }
+
+        const uint32_t next = nextInstructionOffset(bytecode, size, offset);
+        if (next <= offset) {
+            break;
+        }
+        offset = next;
+    }
+    return offsets;
+}
+
+std::string ScriptDisasm::disassembleRange(const uint8_t* bytecode, size_t size,
+                                           uint32_t startOffset, int maxInstructions,
+                                           uint32_t markerOffset) {
+    std::ostringstream oss;
+    if (bytecode == nullptr || startOffset >= size || maxInstructions <= 0) {
+        return oss.str();
+    }
+
+    std::vector<uint32_t> offsets = instructionOffsets(bytecode, size);
+    if (offsets.empty()) {
+        return oss.str();
+    }
+
+    // Align forward to the first instruction boundary at or after the start.
+    size_t index = 0;
+    while (index < offsets.size() && offsets[index] < startOffset) {
+        ++index;
+    }
+    if (index >= offsets.size()) {
+        return oss.str();
+    }
+
+    int printed = 0;
+    for (; index < offsets.size() && printed < maxInstructions; ++index, ++printed) {
+        const uint32_t offset = offsets[index];
+        oss << (offset == markerOffset ? ">> " : "   ");
+        oss << std::setw(4) << std::setfill('0') << std::hex << offset << ": ";
+        oss << disassembleInstruction(bytecode, size, offset);
+        if (offset == markerOffset) {
+            oss << "   <== current";
+        }
+        oss << "\n";
     }
 
     return oss.str();
@@ -353,6 +432,26 @@ const char* ScriptDisasm::getFunctionName(uint16_t funcID) {
         case FunctionID::SetAlert: return "SetAlert";
         default: return "Unknown";
     }
+}
+
+std::string ScriptDisasm::formatValue(const ScriptValue& value) {
+    std::ostringstream oss;
+    switch (value.type) {
+        case ScriptValue::Type::Integer:
+            oss << value.intVal << " (int)";
+            break;
+        case ScriptValue::Type::Float:
+            oss << std::fixed << std::setprecision(3) << value.floatVal << " (float)";
+            break;
+        case ScriptValue::Type::String:
+            oss << "\"" << value.strVal << "\" (string)";
+            break;
+        case ScriptValue::Type::Ref:
+            oss << "0x" << std::hex << std::setw(8) << std::setfill('0')
+                << value.refVal << " (ref)";
+            break;
+    }
+    return oss.str();
 }
 
 std::string ScriptDisasm::formatArgs(const uint8_t* data, uint16_t length) {

@@ -28,6 +28,74 @@ struct AudioVolumeSettings {
 constexpr float DIFFICULTY_DAMAGE_MULTIPLIER = 5.0f;
 
 /**
+ * @brief fGlobalTimeMultiplier (GMST slot 0xB06704, "fGlobalTimeMultiplier:General").
+ *
+ * The EXE registers 1.0. Its only real consumer is the game clock at 0x47D170,
+ * which multiplies the elapsed seconds before folding them into the time of day
+ * (0x47D249 `fmul [0xB06704]`). RE §54.3: it is NOT a frame-delta multiplier -
+ * scaling dt would run every subsystem 30x too fast - and it is a different
+ * mechanism from the TimeScale setting (config object index 0x3A, default 30.0),
+ * which only drives the SkyWeatherSystem clock and the wait/rest fast-forward.
+ */
+constexpr float GLOBAL_TIME_MULTIPLIER = 1.0f;
+
+/**
+ * @brief fAIMinGreetingDistance (GMST slot 0x00B36AD8), default 150.0.
+ *
+ * The distance a spoken line can be heard over. Subtitles are emitted at
+ * 0x0057ACC0 when the matching toggle is on AND the listener is within this
+ * distance times 1 (0x4D92BB / 0x5F72A8) or times 2 (0x62A247 / 0x62AE3C),
+ * further scaled by the subtitle distance multiplier [0xA30634] (RE §47.3).
+ */
+constexpr float AI_MIN_GREETING_DISTANCE = 150.0f;
+
+/**
+ * @brief fPerkLightArmorNoviceDamageMult / fPerkHeavyArmorNoviceDamageMult
+ * (slots 0x00B374F0 / 0x00B374F8), both 1.5.
+ *
+ * RE §45.2: the Novice tier of an armor mastery perk scales the damage the
+ * armored actor takes by 1.5.
+ */
+constexpr float ARMOR_PERK_NOVICE_DAMAGE_MULT = 1.5f;
+
+/**
+ * @brief fPerkHeavyArmorJourneymanDamageMult / fPerkLightArmorJourneymanDamageMult
+ * (slots 0x00B37500 / 0x00B37508), both 0.5.
+ *
+ * RE §45.2: the Journeyman tier (and every tier above it) scales the damage the
+ * armored actor takes by 0.5.
+ */
+constexpr float ARMOR_PERK_JOURNEYMAN_DAMAGE_MULT = 0.5f;
+
+/**
+ * @brief Oblivion armor mastery tier for a skill value: 0 Novice (0-24),
+ * 1 Apprentice (25-49), 2 Journeyman (50-74), 3 Expert (75-99), 4 Master (100+).
+ */
+inline int armorMasteryRank(float skill) {
+    if (skill <= 0.0f) return 0;
+    const int rank = static_cast<int>(skill) / 25;
+    return rank > 4 ? 4 : rank;
+}
+
+/**
+ * @brief Damage multiplier an armored actor's armor mastery perk applies to
+ * incoming spell / reflected damage (RE §45.2, confirmed by §54.1 to be absent
+ * from the melee and bow path FUN_005FEBF0).
+ *
+ * FUN_005f3870 reads only four GMST slots and picks between them with
+ *     rank >= 2 -> Journeyman 0.5 / rank == 1 -> 1.0 / rank == 0 -> Novice 1.5
+ * The heavy and light trees hold identical values, so the armor type worn only
+ * selects which skill feeds `rank` - it cannot change the result. `armorSkill`
+ * is therefore the rank of the armor skill the actor actually uses.
+ */
+inline float armorPerkDamageMultiplier(float armorSkill) {
+    const int rank = armorMasteryRank(armorSkill);
+    if (rank >= 2) return ARMOR_PERK_JOURNEYMAN_DAMAGE_MULT;
+    if (rank == 0) return ARMOR_PERK_NOVICE_DAMAGE_MULT;
+    return 1.0f;
+}
+
+/**
  * @brief Convert the 0..100 difficulty slider into the multiplier applied to
  * damage the player receives.
  *
@@ -67,6 +135,11 @@ struct GameplaySettings {
     // shown. It gates the extra autosave when a cell transition crosses the
     // interior/exterior boundary (RE §47.4).
     bool saveOnInteriorExteriorSwitch = true;
+    // bDisableDynamicCrosshair (0x00B13238, default 0). The shipped default is
+    // off. RE §47.1 lists it as the eighth GamePlay toggle; gameplay_menu.xml has
+    // no row for it, so like bSaveOnInteriorExteriorSwitch it is an
+    // Oblivion.ini-only setting: persisted, never shown.
+    bool disableDynamicCrosshair = false;
 };
 
 /**

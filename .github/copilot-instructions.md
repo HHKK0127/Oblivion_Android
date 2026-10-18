@@ -71,6 +71,8 @@ app/src/main/cpp/
 - `ASSET_GUIDE.md` - アセット統合ガイド
 - `AUDIO_SYSTEM.md` - オーディオシステム
 - `DEVELOPMENT_HISTORY.md` - 開発履歴
+- `RE_EXE_REPORT.md` - RE解析の主レポート（Oblivion.exe 解析 §1〜§55。RE 関連の質問はまずこのファイルを参照）
+- `RE_ANALYSIS_ROADMAP.md` - RE完全解析ロードマップ（全解析完了までの恒久タスクと方針。KPI 表・フェーズ管理）
 
 ## 一時ファイル・スクリーンショット
 
@@ -105,6 +107,14 @@ adb logcat -s OblivionEngine             # ログ確認
 - すべてのオリジナル機能はオプション強化なしで動作必須
 - オプション機能は独立したテストカバレッジが必要
 - Android 9+でのデバイステスト必須
+
+### RE解析方針
+- RE 解析は `docs/RE_ANALYSIS_ROADMAP.md` に従って継続する。完成の定義 (L1〜L3) の達成まで全対象の解析を進め、§ 完了ごとに `docs/RE_EXE_REPORT.md` と KPI 表を更新する
+- 生データは `tmp/re/`、永続文書は `docs/`。git commit はユーザーの明示承諾があるまで禁止
+- RE 関連の質問・実装時は、まず `docs/RE_EXE_REPORT.md` を読む（正典）。内容の矛盾時は §55 補遺 → §50 の優先順で解決する
+- 便2 (B1〜B13 / C1〜C6 / A5 / A6) の最終レポートは `tmp/re/s50_*.md`（11 本: a5/dmg/input/magic_stack/gmst/container/audio/sleep_events/menus_a6/menus_c6/b13_plan）。証跡は `tmp/re/s50_*.txt` / `*.py`、共有ヘルパーは `tmp/re/re_util.py`（変更禁止）
+- `tmp/` は `.gitignore` 対象のため、GitHub Web / クラウド Copilot から参照できるのはコミット済みの `docs/` と `.github/` のみ（VS Code ローカルでは `tmp/re/` も直接参照可能）
+- RE 完了記録は `.github/memory/session-memory.json`（id: re-s50-batch2-complete-20261017）。未確定残件一覧は `docs/RE_EXE_REPORT.md` §55.8
 
 ## 代理AI連携ワークフロー
 

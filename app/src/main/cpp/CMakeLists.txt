@@ -52,7 +52,6 @@ add_library(native-lib SHARED
     engine/input_router.cpp
     engine/game_loop_coordinator.cpp
     engine/scene_renderer.cpp
-    engine/debug_console.cpp
     engine/performance_profiler.cpp
     ui/spell_selection_panel.cpp
     audio/audio_subscriber.cpp
@@ -214,6 +213,9 @@ add_library(native-lib SHARED
     # Phase 43: UI/UX Final Adjustments
     ui/touch_gesture_handler.cpp
     ui/menu_transition_manager.cpp
+
+    # RE 48: menu open/close fade (MenuManager fade node list)
+    ui/menu_fade_system.cpp
     ui/hud_layout.cpp
     ui/control_scheme_manager.cpp
     ui/accessibility_manager.cpp

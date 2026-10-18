@@ -42,6 +42,8 @@ public:
     // Input Handling
     void onTouchInput(float deltaX, float deltaY);  // Drag movement
     void setJoystickInput(float x, float y);        // Joystick movement (x, y normalized)
+    void setLookInput(float x, float y);            // Right-stick / D-pad look (-1..1, applied per frame)
+    bool tryPickup();                               // Interact: pick up the nearest item
     void onKeyboardInput(int key, bool isPressed);  // WASD + Space
     void setSprinting(bool sprint);
 
@@ -89,6 +91,7 @@ private:
     // Input State
     bool keysPressed[256] = {};  // WASD, Space tracking
     glm::vec2 joystickInput = glm::vec2(0.0f, 0.0f); // Virtual joystick input
+    glm::vec2 lookInput = glm::vec2(0.0f, 0.0f);     // Right-stick / D-pad look input
     bool isSprinting = false;
 
     // Movement Calculation

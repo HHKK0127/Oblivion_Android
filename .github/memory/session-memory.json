@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-16T06:19:47Z",
+  "lastUpdated": "2026-10-18T07:13:19Z",
   "entries": [
     {
       "timestamp": "2026-09-16T14:58:00Z",
@@ -5391,7 +5391,7 @@
     },
     {
       "id": "d88426a3-3e28-46d7-9c53-497aeb657f2b",
-      "timestamp": "2026-10-05T15:21:58.444965+09:00",
+      "timestamp": "2026-10-05T15:21:58.444965Z",
       "category": "decision",
       "priority": "high",
       "content": "UI : Amenus and menus80 (texture0 )menus50 menus 8 =1024px 262144(: 2048x64 UI) =PNG(TextureLoader stb_image PNG ) menus8029 menus (29 )loading_background.png and icons/icon_*7 BSA",
@@ -5452,7 +5452,7 @@
     },
     {
       "id": "menu-xml-m1m2-complete-20261005",
-      "timestamp": "2026-10-05T17:53:59.894963+09:00",
+      "timestamp": "2026-10-05T17:53:59.894963Z",
       "category": "decision",
       "priority": "high",
       "content": "impl-menu-xml-interpreter M1(xml_parser.cpp)+M2(menu_xml_interpreter.cpp): (1)evaluateSequence (0) from , floor/ceil acc (2)evaluateNode 10<sub>4</sub> node.text and children (3)mult mul applyOperator add (4)kTraits cropy/pagecount/clicked/mouseover/child_count/childcount add(trait from )MenuXmlTests 59/59 PASS, ALL GREENM3(buildWidget/fillResolved+locus/zoomconversion/transform)designdocs/MENU_XML_INTERPRETER_DESIGN.md(§6.2implementation, §7, §9)docs/README.md",
@@ -5469,7 +5469,7 @@
     },
     {
       "id": "menu-xml-m3-complete-20261006",
-      "timestamp": "2026-10-06T11:00:16.629497+09:00",
+      "timestamp": "2026-10-06T11:00:16.629497Z",
       "category": "decision",
       "priority": "high",
       "content": "impl-menu-xml-m3 (menuXML M3: buildMenuDef/resolveMenu MenuDef->ResolvedWidget/ResolvedMenuconversion/transform, include§5.6, templates§3.6, lenient§3.7, locus/zoom§5.4.1): (1)locus layout (x/y from /inventory_menu.xml locusx=28/165/304/443/578 loading_menu.xml screenlocus+x=0) (2)zoom valuevalue=fill_rect(texture_scale )=zoom/100 zoom_scale (3)text menuEvalContext.text_size justify (4)lenient: adopt( open_stack trait children)+( )adopt 3 strict (5) analysis =adopt (6) lenient=EOF strict=errorverification: MenuXmlTests 142/142 PASS MENUS 60/FRAGMENTS 25/EMPTY 4/PARSE_FAIL 0/EXPAND_FAIL 0/WIDGETS 203/ALL 2651/INCLUDES 0ALL GREEN:app:externalNativeBuildDebugdesignv0.2updateMenuUiBuilder M4",
@@ -5535,7 +5535,7 @@
     },
     {
       "id": "font-mojibake-default-lang-en-20261011",
-      "timestamp": "2026-10-11T16:50:58.768519+09:00",
+      "timestamp": "2026-10-11T16:50:58.768519Z",
       "category": "decision",
       "priority": "high",
       "content": "Text mojibake root cause: SettingsManager defaulted currentLanguage to ja (constructor + resetToDefaults), forcing Japanese mode every cold start (no settings file). JPWiki Japanese strings then rendered with Latin-only Kingthings font. Fix: default language changed to en. In-game ja/en toggle preserved for when Japanese rendering is implemented.",
@@ -5549,7 +5549,7 @@
     },
     {
       "id": "6efcb8b3-5324-48e9-b96a-4fc1af595899",
-      "timestamp": "2026/10/11 17:09:05",
+      "timestamp": "2026-10-11T17:09:05Z",
       "category": "decision",
       "priority": "high",
       "content": "JPwiki mod (D:\\Cargo\\Other\\Oblivion\\JPwiki) surveyed: contains JPWikiMod_Vanilla.esp / JPWikiMod_Vanilla+SI.esp / JPBooks_Merged.esp (translation text data only), obja.dll + obja_config.exe + TES4_12416_JaPatch_015.EXE (Windows process-hook DLL patcher), Oblivion.exe.bak/.OLD. NO Japanese font assets (.fnt/.png/.ttf/.dds) included anywhere. Japanese display works on PC via obja.dll hooking Windows system fonts (MS Gothic class). For Android: translate text already extracted to jpwiki_localization.tsv; Japanese font must come from an external source (not from game/JPwiki assets).",
@@ -5563,7 +5563,7 @@
     },
     {
       "id": "log-noise-cycle4-20261011",
-      "timestamp": "2026-10-11T19:33:58.825346+09:00",
+      "timestamp": "2026-10-11T19:33:58.825346Z",
       "category": "decision",
       "priority": "medium",
       "content": "Log noise reduction cycle 4 complete: startup log 1335 -> 1323 lines (50s boot). Removed 4 duplicate status-effect LOGI lines in npc_manager.cpp addStatusEffect (paralyzed/invisible/attribute fortified/summoned; spell_manager.cpp already had same). Play-loop noise essentially depleted; remaining multi-occurrence items are Android system internals (CCodec/MediaCodec), env-specific BSA-not-found x20 (external data path unset in emulator), NIFParser normal fallback 'no block of this type' (6-10 lines), TitleScreen layout rebuild logs (11 lines, size-change triggered), shader recompile x6 (one per program type = normal init). Convergence judged: log reduction essentially done.",
@@ -5577,7 +5577,7 @@
     },
     {
       "id": "log-mojibake-rootcause-20261011",
-      "timestamp": "2026-10-11T19:33:58.825346+09:00",
+      "timestamp": "2026-10-11T19:33:58.825346Z",
       "category": "decision",
       "priority": "high",
       "content": "Log mojibake root cause CONFIRMED NOT app-side: log file bytes are valid UTF-8 (e.g. menu label 'continue' renders as bytes e7 b6 9a e3 81 91 e3 82 8b), zero U+FFFD replacement chars in file. Garbled text seen is Windows console/text-editor interpreting UTF-8 bytes as CP932. Fix for viewing: chcp 65001 or UTF-8 editor. Screen rendering is correct (user confirmed). Keyboard namespace: adb logcat outputs UTF-8; do NOT decode with errors='replace' in Python when analyzing.",
@@ -5592,7 +5592,7 @@
     },
     {
       "id": "02af2256-bde3-42a0-a352-81dd61c2db59",
-      "timestamp": "2026-10-11T19:34:57.525339+09:00",
+      "timestamp": "2026-10-11T19:34:57.525339Z",
       "category": "reference",
       "priority": "high",
       "content": "INI reader identified. General template FUN_004a8800 (read)/FUN_004a85f0 (write) use type tags resolved by FUN_004a78d0: b=0(bool) c=1(char) h=2(int8) i=3(int) u=4(uint) f=5(float) S/s=6(string) r=7(RGB) a=8(RGBA). SECTION:KEY split FUN_004a8430/004a8480. Manager build FUN_00404a00 calls [Controls]-only FUN_00404540(load)/FUN_00404400(save) which handle 0x1d keys as %08X. _DAT_00b07bf4 holds '.\\\\Oblivion.ini'. Uses GetPrivateProfileStringA(EXT:0x32)/WritePrivateProfileStringA(EXT:0x31).",
@@ -5605,7 +5605,7 @@
     },
     {
       "id": "38d41c31-34d2-403d-8716-990ac987a1c5",
-      "timestamp": "2026-10-11T19:34:57.525339+09:00",
+      "timestamp": "2026-10-11T19:34:57.525339Z",
       "category": "reference",
       "priority": "high",
       "content": "PTR_DAT_00b152b0 = 44-ptr table (0x00b152b0) of per-package-type condition-judgment dword tables in 0x00b150d4-0x00b152a8. Indexed PTR[type=pkg+0x18], inner [subtype=vtable+0x180 result], compare ==const. AiPackage_IsEatType5: type 0x3 and table[subtype]==5. FUN_005f1b50 uses ==0x2b(43). Static limit: full subtype-value mapping needs PACK runtime/DEFAULT data.",
@@ -5619,7 +5619,7 @@
     },
     {
       "id": "faad0d28-1585-4638-8774-126596d1a145",
-      "timestamp": "2026-10-11T19:41:18.128856+09:00",
+      "timestamp": "2026-10-11T19:41:18.128856Z",
       "category": "reference",
       "priority": "high",
       "content": "Oblivion EXE vtable 0xA6743C(0.9): 59slot functionpointerarray +0x00DC=GetSaveSize / +0x00E0=SaveGame / +0x00E4=LoadGame 3+0x00E8=LoadGamepointer( )+0x0010=scalar deleting destructor+0x00B4=class: Alarm(0x0F)vtable 0xA6EF94=BOLB sizecalculation+BlackSave/LoadDialogue(0x12)vtable 0xA7151C=+0xE8 (pointer0x48/5C/60 id resolve)Trespass(0x11)vtable 0xA747BC=+0xB4+0xE8cord: tmp/re_factory_vtable.md",
@@ -5665,7 +5665,7 @@
     },
     {
       "id": "e194cb6e-0dde-4121-bd1f-83542e290a20",
-      "timestamp": "2026-10-11T20:28:52.30542",
+      "timestamp": "2026-10-11T20:28:52.30542Z",
       "category": "reference",
       "priority": "high",
       "content": "DLCShiveringIsles.esp は 85B の TES4 スタブ（CNAM=nmcdyer, MAST=Oblivion.esm）でレコード0件。Steam版では Shivering Isles 本体レコードは Oblivion.esm マスターに内包。SI esp の個別解析は不要。",
@@ -5681,7 +5681,7 @@
     },
     {
       "id": "1fb00bbf-3c36-4979-b3b1-40e8f738fbb3",
-      "timestamp": "2026-10-11T11:50:19.4241426Z",
+      "timestamp": "2026-10-11T11:50:19.424142Z",
       "category": "constraint",
       "priority": "high",
       "content": "Oblivion INFO EDID structure: DATA→QSTI→NAME→TRDT→NAM1/NAM2→CTDA→SCHR… mp3 {prefix} INFO EDID DIAL/ ms14_ms14returnhome, dark17following_greeting",
@@ -5695,7 +5695,7 @@
     },
     {
       "id": "428092d4-91e6-4ee6-9397-09057c4afc39",
-      "timestamp": "2026-10-11T11:50:19.4359179Z",
+      "timestamp": "2026-10-11T11:50:19.435917Z",
       "category": "constraint",
       "priority": "high",
       "content": "Oblivion mp3 n INFO DIAL: INFO 0000566f TRDT=8 _9.mp3 n<=TRDT 481 Android voice_sound_db {formID:08x}_{n} {prefix}",
@@ -5709,7 +5709,7 @@
     },
     {
       "id": "re-ai-readers-globals-20261011",
-      "timestamp": "2026-10-11T22:16:26.226269+09:00",
+      "timestamp": "2026-10-11T22:16:26.226269Z",
       "category": "reference",
       "priority": "low",
       "content": "Oblivion Steam analysis: 0xB3A13C/0xB3A144 AIconfiguration INIconfigurationhandle(Settingobject)readerfunction value configuration(INI) from 0x9F9A20 (FUN_00419a70=setting map register, _atexit@0x981FB4 destructor): Energy/Confidence/Aggression/Speechcraft/Sneak/Security(0xB3A124-0xB3A15C, display Skill/Trait)Android configuration : tmp/re_ai_readers_globals.md",
@@ -6063,7 +6063,7 @@
     },
     {
       "id": "rea-tool-constraint-20261014",
-      "timestamp": "2026-10-13T11:51:50.150196",
+      "timestamp": "2026-10-13T11:51:50.150196Z",
       "category": "constraint",
       "priority": "high",
       "content": "REA (rea-agents 6.4.0) is configured and functional on Windows for Oblivion.exe: GHIDRA_INSTALL_DIR=C:\\Users\\hiroki.kogarumai\\.copilot\\chats\\2026-10-09\\improved-waffle-2dbf7451\\ghidra_12.1.4_PUBLIC and JAVA_HOME=C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.12.101-hotspot (both set via setx; requires restarts of REA/MCP). rea doctor all-green. REA CLI (node ...\\npm-cache\\_npx\\af752b90495482d7\\node_modules\\rea-agents\\scripts\\rea.mjs) works: rea analyze Oblivion.exe -> 21467 procedures / 14185 strings; rea search returned the chargen error string at 0xa6cb64 (identical to headless Ghidra 0x00a6cb64). LIMITATIONS: (1) every REA call re-imports and re-analyzes from scratch because the Ghidra program/temp project is ephemeral (import_mode ephemeral-source-immutable) - ~5 min per call for this 7.9MB PE; (2) --snapshot is only a small (~7.5KB) metadata envelope and does NOT speed up subsequent calls (measured 297s); (3) REA cannot open an existing persistent Ghidra project (.gpr) - 'truncated or unsupported binary header'; (4) therefore MCP rea-* deep-analysis tools always time out (MCP error -32001) since the client cancels the in-flight analysis and cancels discard the ephemeral DB. CONCLUSION: for this project keep using the fast persistent headless Ghidra toolkit (project D:\\Cargo\\Ghidra\\Oblivion, -noanalysis -process, seconds per script); use REA CLI only for occasional (~5min) cross-validation. REA MCP tools are effectively unusable for Oblivion.exe.",
@@ -6097,7 +6097,7 @@
     },
     {
       "id": "85d4c6f9-a2c6-4586-8ffb-0fc81e95bfdc",
-      "timestamp": "2026-10-13T12:45:01.564782",
+      "timestamp": "2026-10-13T12:45:01.564782Z",
       "category": "reference",
       "priority": "high",
       "content": "Oblivion.exe メニュー固有 \"vtable ペア\" の正体 = MSVC RTTI TypeDescriptor (0x1c バイト: {vftable,+0x04=0,+0x08=mangled \".?AV<class>@@\"})。vtable ではない。FUN_009832e6 (0x9832e6) = MSVC __RTDynamicCast(obj, offset, srcCOL, dstTD, throwFlag)。各メニューハンドラはこれを2回呼ぶ: (1) Tile(0xb13240)→TileMenu(0xb13a74)、 (2) Menu基底(0xb0a018)→具象Menuクラス。メニュー具象ディスクリプタは 0xb13240-0xb147d8 に連続配置。Options=0xb143ec/FUN_005bd680, Load=0xb14178/FUN_005aea60, Credits=0xb13fa8/FUN_0059d680, MainMenu=0xb13f90, DialogMenu=0xb0a02c, HUDMainMenu=0xb0a064。PersuasionMenu(0xb13384)とSpellMakingMenu(0xb1477c)は直接ハンドラ無し(親メニュー配下)。全ハンドラ⇔クラス対応表は docs/RE_EXE_REPORT.md §23。新スクリプト D:\\Cargo\\Ghidra\\scripts\\RttiCastTargets.java (PUSH命令からペア探索) と TypeDescDump.java (範囲内 \".?AV\" 列挙)。",
@@ -6124,7 +6124,7 @@
         "xml"
       ],
       "id": "03f10ce7-3645-4dac-b0d0-0ce561cb0a9a",
-      "timestamp": "2026-10-13T13:09:31.868872",
+      "timestamp": "2026-10-13T13:09:31.868872Z",
       "compressed": false
     },
     {
@@ -6139,12 +6139,12 @@
         "xml"
       ],
       "id": "3a9ae9b8-578b-409b-98d4-1fc391eae0c5",
-      "timestamp": "2026-10-13T13:09:31.868872",
+      "timestamp": "2026-10-13T13:09:31.868872Z",
       "compressed": false
     },
     {
       "id": "860d04da-ce2d-4065-947b-38d6a3489911",
-      "timestamp": "2026-10-13T15:29:27.040062",
+      "timestamp": "2026-10-13T15:29:27.040062Z",
       "category": "reference",
       "priority": "high",
       "content": "RE_EXE_REPORT.md §25 = Save/Load screen LAYOUT (XML static analysis, no Ghidra). Sources: tmp\\bsa_misc\\menus\\options\\save_menu.xml + load_menu.xml + prefabs vertical_scroll.xml/focus_box.xml/button_long.xml/generic_background.xml. Common skeleton: stackingtype no_click_past, alpha0, explorefade/menufade 0.25, locus, _item_height=82; save has user0=true (existing-save highlight); background = generic_background.xml (save: plain 1020x614; load: level_up_background.dds). save_list=clipwindow rect id5 h=_item_height*6=492 w=420 x20 y58; save_scroll_bar id3 (include vertical_scroll.xml) x=parent.width-me.width/2+10 y20 depth20; save_list_pane id9 h=childcount*_item_height y=(0-save_scroll_bar.user7)*_item_height; center_line=loading_save_center_fold.dds 70xparent.height zoom124; Picture_background id6=loading_save_wide_frame.dds 458x262 zoom116 x=parent.width/2+30 y64; Picture id6=shared_empty_large.dds zoom177 (save) / zoom176 + cropy=max(0,0-(bg.height-user0)/256*bg.height*1.8) (load); return button id1 (button_long.xml) save y=parent.height-me.height-20, LOAD y=parent.height-me.height/2+270 (intentional diff). Scrollbar input save: user1..user6=4 user8=6; load adds user9=0. Row template save_game_template->rect SAVES: depth5 height=82 width=parent.width-15 visible=(me.y>=0 AND me.y+20<parent.height) repeatvertical, user0=listindex user1=imagefilename user2=savename user3=SaveGameName, xscroll=listindex-ceil(user8/2)+1; load template y=me.user0*height, NO culling. Row value injection = FUN_005ae6d0 (§22.7) fmt '%s %i - %s\\n%s: %s', traits 0xfae=user0 slot#, 0xfa8=listindex=slot+0x65, 0xff0=list marker; folder scan = FUN_0045d450 (§22.6) *.ess, 0x160-byte TESFile-derived obj + 0x20000 buffer. ALL textures confirmed extracted as PNG in tmp\\extracted_menus_full\\menus\\ (100/80/50 tiers): loading__loading_save_lines(512x512), loading__loading_save_wide_frame(512x256), loading__loading_save_center_fold(64x512), loading__loading_save_normal_frame(512x512), level_up__level_up_background(1024x1024), shared__shared_empty_large(256x256), shared__all_general_scrollbar(64x128), icons__icon_xbox_x_large(64x64, only 100 tier), focus__focus_center_x4(4x4). IMPORTANT: the earlier '5 missing textures' concern was a MISREAD - tmp\\bsa_textures_title is only a PARTIAL title-asset extraction (29 files); save/load art lives in tmp\\extracted_menus_full. Menu strings: _delete=' Delete ', _return=' Return ', _savemenuinstructions=' Choose New Save or existing save to overwrite. Shift-click to delete. ', _loadmenuinstructions=' Choose a save game to load. Shift-click to delete. '. RTTI: SaveMenu=0x00b14744 (FUN_005d39a0/0x005d33b5/0x005d3b8d), LoadgameMenu=0x00b14178 (FUN_005aea60). Android: save/load screens NOT yet ported in app\\src\\main\\cpp\\ui\\.",
@@ -6162,7 +6162,7 @@
     },
     {
       "id": "re-ess-format-20261013",
-      "timestamp": "2026-10-13T16:12:48.8511940+09:00",
+      "timestamp": "2026-10-13T16:12:48.851194Z",
       "category": "reference",
       "priority": "high",
       "content": "RE §27: .essヘッダマジック=TES4SAVEGAME(12B,@0x00a38fa0)。version byte=iRam00b33b00+0x7c(+0x70/0x71)。header_field_reader(0x0045d5f0)フィールド順: ver>0x37:u32 / u8長+文字列(param3) / ver>=0x34:u16(param4) / u8長+文字列(param5,氏名) / u32(param6) / ver>0x1c:u32 / ver>0x37:16B4dword(param7) / 0x70確保構造(varray,iVar16*iVar5*3B,ver<0x2eで+0x24skip)。versionゲート閾値0x1c/0x2e/0x34/0x37/0x38/0x51/0x52。ver>=0x52で+0x94に16B,+0xa4に4B。data_reader_open@0x0045f2e0=パス構築+バックアップ自動削除(len10,.bak)+削除+間接ジャンプ(モード0..3)。ess_file_obj_load@0x0058cf40は.ess本体パーサでなくスクリプトVMオペコード分岐(20..60連番,0xbba/0xfe6/0xfde/0xfa2比較)。",
@@ -6177,7 +6177,7 @@
     },
     {
       "id": "re-save-slot-object-layout-20261013",
-      "timestamp": "2026-10-13T16:12:48.8511940+09:00",
+      "timestamp": "2026-10-13T16:12:48.851194Z",
       "category": "reference",
       "priority": "high",
       "content": "RE §27: セーブスロットオブジェクト0x160バイト固定。vtable=&UNK_00a39094(==ctorの&UNK_00a3636c,関数列:0x00430a90/0x007481c0/0x004307f0/0x0042ff80/0x00430010/0x00430ba0/0x0042fe80/0x00430240)。レイアウト: +0x00 vtable,+0x04/0x08 fptr,+0x0c type,+0x10..1c=0,+0x20 param3(0=load/1=save),+0x24 bool,+0x28..38 init(+0x30=-1),+0x3c name[0x104=260B strcpy],+0x140..150=0,+0x154 clear byte,+0x15c dword。リストヘッド=param_1+0x6c,挿入はfunc_0x00416650比較器付き二重リンクリスト。パス=lstrcpyA(0xb3f280)+lstrcatA(0x00b05564)+&UNK_00a3a884(*.ess)→FindFirstFileA/FindNextFileA列挙。表示名sprintf &UNK_00a3a88c=%s%s%s.ess。ctor@0x00430970確保はlocal 0x108バッファ+0x20000フラグ。表示fmt: 再生時間%02i:%02i:%02i, 名前%s %i。",
@@ -6192,7 +6192,7 @@
     },
     {
       "id": "8d770e33-defa-4eb7-8e8e-c32a6eb95796",
-      "timestamp": "2026-10-13T16:27:51.831971",
+      "timestamp": "2026-10-13T16:27:51.831971Z",
       "category": "reference",
       "priority": "high",
       "content": "RE_EXE_REPORT.md §28: Oblivion.exe メニュー vtable 全53件を RTTI スキャンで確定。実メニュークラス50 + 補助コンテナ(NiTList系3) + 基底Menu。スロット規則: [0]dtor [1]scalar-dtor [2]FUN_0060cf60既定スタブ [3]init [6][7]FUN_00890b90 [11]固有ハンドラ(既定FUN_0060d0a0) [12]FUN_006fe080 [13]共通dtor [14]FUN_00725da0。ベース例: Menu=00a696dc(15) OptionsMenu=00a6cfac(15) GenericMenu=00a6bd9c(15) MessageMenu=00a6ce5c(15) HUDMainMenu=00a6bee4(15) DialogMenu=00a6b88c(15) RaceSexMenu=00a6d38c(15) ClassMenu=00a6b49c(15) SaveMenu=00a6d624(31) LoadgameMenu=00a6c6bc(15) QuickKeysMenu=00a6d1f4(23) TextEditMenu=00a6a04c(35) VideoMenu=00a6a09c(15)。SaveMenuとSigilStoneMenuは行オブジェクト基底([0]/[3]系 FUN_005d4880/FUN_005d5470/FUN_005d4260)を共有。GenericMenu[3]=FUN_005a3d80(設定21項目0xfae..0xfc2をグローバル0xb3b2e0へ)。解析手法: D:\\Cargo\\Ghidra\\scripts\\MenuVtables.java を analyzeHeadless.bat(D:\\Cargo\\ghidra_12.1.2_PUBLIC_20260605\\...\\support\\) で -process -noanalysis。",
@@ -6206,7 +6206,7 @@
       "compressed": false
     },
     {
-      "timestamp": "2026-10-13T16:41:44.249559",
+      "timestamp": "2026-10-13T16:41:44.249559Z",
       "tags": [
         "re",
         "menu",
@@ -6222,7 +6222,7 @@
       "content": "RE §29: 残メニュー関数6件は当該プログラムに実在し正常に逆コンパイル可能。以前の「size=1＝存在しない」判定は誤り。原因＝ログ整形フィルタが Ghidra の 'INFO <Script>.java> ' プレフィックス付き行のみ残し、複数行の C 本文を落としていたため。size=1 はプロジェクトが関数ボディを保持していないだけで、デコンパイラは生バイトから生成する。証跡＝tmp\\fam_out3_clean.txt(2713行、マーカー 2=FUN_005a68c0/42=005a6de0/445=0059f010/661=0059f640/1031=005cc200/2617=005976b0)。"
     },
     {
-      "timestamp": "2026-10-13T16:41:44.249559",
+      "timestamp": "2026-10-13T16:41:44.249559Z",
       "tags": [
         "re",
         "hud",
@@ -6236,7 +6236,7 @@
       "content": "RE §29: HUDMainMenu[11] FUN_005a6de0 は *piRam00b333c4(PlayerCharacter vtable) の +0x174/+0x1e0/+0x198/+0x19d から座標・向き・名前を取得し func_0x0058ceb0(id,value) で HUD 要素を設定。要素ID=0xfa1/0xfa7/0xfab/0xfae/0xfb0/0xfb3/0xfb4/0xfb7/0xfb8/0xfb9/0xfba。"
     },
     {
-      "timestamp": "2026-10-13T16:41:44.249559",
+      "timestamp": "2026-10-13T16:41:44.249559Z",
       "tags": [
         "re",
         "menu",
@@ -6250,7 +6250,7 @@
       "content": "RE §29: メニューID定数確定: 0x3ec=HUDMainMenu取得対象, 0x3f1=DialogMenu表示中(0x3f0/0x404/0x40b/0x40d/0x419もダイアログ/コンソール系), 0x41b=ClassMenu, 0xfdd=DialogMenuが開くメニュー, 0xfde=テキストボックス要素ID。ClassMenu[11] FUN_005976b0 は this[0x16] の選択インデックス switch(1..3=属性説明, 4=説明文字列, 5=クラス作成確認)。"
     },
     {
-      "timestamp": "2026-10-13T16:41:44.249559",
+      "timestamp": "2026-10-13T16:41:44.249559Z",
       "tags": [
         "re",
         "dialog",
@@ -6264,7 +6264,7 @@
       "content": "RE §29: DialogMenu[3] FUN_0059f010 はボタンIDスイッチ。id>99=テキスト入力(0xfde, +0x22 と uRam00b3b294 更新), 4=再構築, 7=0xfddを開く, 8/9/0xd/0x10=選択実行(uRam00b131f8に1/2/3/4), 3/10=遷移。DialogMenu[11] FUN_0059f640 は現在メニューIDがダイアログ系ならスキップ、+0x6c(フェードタイマ)/+0x68 から fRam00b13fcc(0..1)を算出。RaceSexMenu[3] FUN_005cc200=chargen初期化 1586行。"
     },
     {
-      "timestamp": "2026-10-13T16:41:44.249559",
+      "timestamp": "2026-10-13T16:41:44.249559Z",
       "tags": [
         "re",
         "save",
@@ -6288,7 +6288,7 @@
       ],
       "content": "Controls menu (ui/controls_options_ui.h/.cpp, 666x580, two pages) is implemented and wired into renderer.cpp at 11 sites (setScreenSize, initialize, title render, main render + saveLoadOpen, touch dispatch, cleanup, handleOptionsKey, handleOptionsCategoryRequest CONTROLS branch, pumpControlsOptions, handleBackKey) plus renderer.h declaration. Build EXIT=0. Verified on emulator-5554: Options>Controls opens, page 2 device name at DEVICE_TEXT_Y and six rows at 66.7px pitch (main.h/6), Return returns to Options, BACK closes Options, no GL errors.",
       "id": "cb708244-b114-4bc8-947f-5be90e57e1b8",
-      "timestamp": "2026-10-13T19:20:10.760046",
+      "timestamp": "2026-10-13T19:20:10.760046Z",
       "compressed": false
     },
     {
@@ -6302,7 +6302,7 @@
       ],
       "content": "controls_options_ui.cpp introduced the first glScissor use in the codebase via a ScissorScope RAII helper: it converts a top-left-origin rect to GL's bottom-left origin as screen_h-(y+h), enables GL_SCISSOR_TEST, and restores the previous scissor box and enable state in its destructor. UIDrawHelper's ortho uses top-left origin, so any future list clipping should reuse this helper.",
       "id": "fb309f53-9c95-4c20-9a24-1f732a3e93fa",
-      "timestamp": "2026-10-13T19:20:10.760046",
+      "timestamp": "2026-10-13T19:20:10.760046Z",
       "compressed": false
     },
     {
@@ -6315,7 +6315,7 @@
       ],
       "content": "Known Controls menu deviations from the original: (1) the 18 page-2 binding rows are code-generated defaults in the port (the original builds them from code too, so RE confirmation would be needed to match exactly); (2) device names {\"Touch Screen\",\"Virtual Joystick\",\"Gamepad\"} are port-specific - the original sets the label from code; (3) the actual key-assignment flow for a row is not implemented; (4) ControlsOptionsUI::Settings owns sensitivity/invert_y/swap_axes/device_index and no consumer reads them yet.",
       "id": "3050be50-297d-4c06-b508-b59568874384",
-      "timestamp": "2026-10-13T19:20:10.760046",
+      "timestamp": "2026-10-13T19:20:10.760046Z",
       "compressed": false
     },
     {
@@ -6328,12 +6328,12 @@
       ],
       "content": "CHANGELOG.md [Unreleased]/Added now documents the whole Options family (options_ui, gameplay_options_ui, video_options_ui, video_display_ui, audio_options_ui, controls_options_ui) and the authentic strings.xml sourcing. plan.md has no Options-menu section - the Options family is tracked in the session todo list instead (controls-menu/video-menu now done).",
       "id": "9196a3c8-2ae1-43e8-8991-683ad1fe1d09",
-      "timestamp": "2026-10-13T19:20:10.760046",
+      "timestamp": "2026-10-13T19:20:10.760046Z",
       "compressed": false
     },
     {
       "id": "ed9fa8de-05c6-47d7-97ed-eba5cbfa4e4f",
-      "timestamp": "2026-10-13T20:04:30.874213",
+      "timestamp": "2026-10-13T20:04:30.874213Z",
       "category": "decision",
       "priority": "high",
       "content": "Renderer::handleTouch must dispatch slider-owning option panels (gameplayOptionsUI, videoOptionsUI, controlsOptionsUI, audioOptionsUI) outside the DOWN-only guard. They need ACTION_MOVE/ACTION_UP, otherwise onTouchMove/onTouchUp are unreachable and the handle cannot be dragged. DOWN-only panels (saveLoadUI, videoDisplayUI, optionsUI, settingsUI, inventoryUI, questUI) stay inside the guard.",
@@ -6347,7 +6347,7 @@
     },
     {
       "id": "0f496cf5-fe5e-4cf7-8190-ea2ec9eb19ab",
-      "timestamp": "2026-10-13T20:04:30.874213",
+      "timestamp": "2026-10-13T20:04:30.874213Z",
       "category": "constraint",
       "priority": "high",
       "content": "Touch coordinates are identity-mapped: GL y == screenshot y, view 1920x1110 on emulator-5554 (physical 1920x1200, y>=1110 is a white system bar). A swipe must START INSIDE the slider handle rect; starting on the track triggers the +-0.10 jump instead, which looks like reversed movement. Self-calibrating test: start = handle_x0 + 19.",
@@ -6360,7 +6360,7 @@
     },
     {
       "id": "b0bb48b5-94e2-4b0f-abf6-b056784a158c",
-      "timestamp": "2026-10-13T20:04:30.874213",
+      "timestamp": "2026-10-13T20:04:30.874213Z",
       "category": "reference",
       "priority": "medium",
       "content": "Slider handle x0 = 759.5 + 361 * sens for the Controls sensitivity slider (LINE_WIDTH 400, HANDLE_WIDTH 39, line.x 760). Handle template crop: v27.png rows 396-431, cols 940-979; valid match ssd <= 30, ssd > 3000 means wrong screen.",
@@ -6373,7 +6373,7 @@
     },
     {
       "id": "540efc87-e60a-4e30-b1fa-0a4705e9cb3a",
-      "timestamp": "2026-10-13T20:04:30.874213",
+      "timestamp": "2026-10-13T20:04:30.874213Z",
       "category": "decision",
       "priority": "medium",
       "content": "Controls menu page-2 Return matches the original controls_menu.xml: the page-2 Return (id 1) is the generic Return button and exits to Options, while the Android BACK key returns to page 1. Both behaviours are kept; no deviation from retail.",
@@ -6386,7 +6386,7 @@
     },
     {
       "id": "acff9779-a022-4b46-8d19-391bf24af99c",
-      "timestamp": "2026-10-14T12:46:44.188383",
+      "timestamp": "2026-10-14T12:46:44.188383Z",
       "category": "decision",
       "priority": "high",
       "content": "RE_EXE_REPORT.md §30 追加解析依頼の解析完了（main c35e... へ返信済み）。§30.1 依頼1: メニュー入力抑制は単一でなく6経路合成。正本=アクティブメニュー配列 0x00b13974/件数 0x00b13978/上限 0x00b1397a、表示中フラグ 0x00b3a6d4。6経路=(1)0x00b3a6d4!=0 (2)入力モード配列 0xb12dc8/0xb12dd0/0xb12dd4(stride24B,+0x0c duration,+0x10 handler,+0x14 progress) (3)最前面[+0x24]=1/8ブロック (4)LoadingMenu(0x3ef)早期return (5)FUN_0057f170 dt==0全skip (6)FUN_00679a70 物理skip。ポーズ判定 FUN_0040fda0(0x00b33434=0x103)。メニューAPI FUN_00589b70 get / FUN_005898f0 front / FUN_00582160 MenuManager。移植: is_any_menu_open()=0x00b3a6d4!=0。§30.2 依頼2: audio 実音量=FUN_006aa1a0: clamp(slider,0,1)^2 * master([ECX+0xb8])。線形でなく二乗カーブ。bit0!=0 かつ <0.005(0x00a34ba0) で無音 -10000。中心 FUN_006ad030(1081insns) が6回呼ぶ。記述子テーブル 0x00b1617c(+4=0x00b16180,8B) 13キー。5系統 master/music/effects/voice/footstep。gameplay: 難易度 min0 max100 default50, トグル6(FUN_005a3540)=DialogueSubtitles/GeneralSubtitles/CrossHair/SaveOnRest/SaveOnWait/SaveOnTravel。§30.3 依頼3: 重要訂正 - fResolution(0x00b45fe4) は画面解像度でなく テクスチャ解像度比。FUN_007e0ed0/FUN_00499ef0 が fResolution=1.0/texRes(128|256)=0.0078125|0.00390625。EnumDisplaySettings/Devices は import 不在(212件)。フォーマット文字列 %d x %d(0xa6cf2c)等は .text 参照0。bIgnoreResolutionCheck(0xa3d524) 4参照は全て RTTI/vftable。§30.4 依頼4: フェード登録 FUN_00584300/進行 FUN_00583c30, ノード20B(+0x0 id,+0x4 current,+0x8 duration), current+=dt([0x00b33e9c]), >=1.0 除去。explorefade/menufade 0.25=duration。FUN_00579cf0 の FUN_00588bd0(0xfae)==2.0f(0x00a379b4) 分岐 -> true FUN_005bc8b0 / false FUN_005bcc00。OptionsMenu.user0==2.0f が背面 PauseMenu 有無の正本。user field 0xfae/0xfaf/0xfb1。§30.5 依頼5(途中): メニュー XML 実体は tmp\\bsa_misc\\menus\\ (extracted_menus_full は PNG のみ)。全メニュー ID 0x3e9〜0x41b。trait image0x386 rect0x385 text0x387 nif0x388 menu0x389 window0x38b template0x3e7。次回 Container->QuickKeys->LevelUp の widget 表。§30.6 未確定: (1)audio 5系統の対応順序 (2)FUN_0066f420 全文 (3)widget 表。",
@@ -6404,7 +6404,7 @@
     },
     {
       "id": "68fe780f-0fbf-4915-951f-d0fc1eae5cc7",
-      "timestamp": "2026-10-14T12:56:22.998979",
+      "timestamp": "2026-10-14T12:56:22.998979Z",
       "category": "reference",
       "priority": "high",
       "content": "RE_EXE_REPORT.md §31 追記完了（依頼5 widget 単位レイアウト表）。対象5メニューとID: ContainerMenu=0x3f0, QuickKeysMenu=0x416, LevelUpMenu=0x403, RechargeMenu=0x419, RepairMenu=0x40b。共通: ルート alpha=0/locus=true/x=y=0/menufade=0.25、先頭に不可視 FocusBox (QuickKeys/LevelUp は無し)、Container/LevelUp/Recharge/Repair は stackingtype=no_click_past、QuickKeys は does_not_stack。リスト行は例外なく y=me().listindex。行送り Container=81px, Repair=80px, Recharge=user3(可変), LevelUp=67px。列x: Container name80/cost418/weight496/damage556/health616、LevelUp icon40/text130/value380/multiplier480。スクロールバー: Container id11, Recharge id4, Repair id5 (LevelUp なし)。trait user1..4 は §24.9/§25.5 プレハブと同一。user フィールド用途: ContainerMenu user0=ページ/見出し活性, user6=所持金, user7=inv/cont, user9=NPC取引, user11=NPC名, user12=NPC資金, user13=現重量, user14=最大重量, user25=ソート矢印; QuickKeys user2=paper背景, user3=numbers背景; LevelUp user1=multiplier可視, user2=multiplier文字列, user3=value, user4=picture filename(属性図), user5=属性説明; Recharge user0=info/ソウル欄表示, user2=infoテキスト, user3=行高, user4=コスト, user6=個数表示; Repair user0=背景種別(装甲/汎用)・列罫線可視, user8=行可視/高さ。行テンプレの子は parent().userN を参照、sibling(name) は同行の兄弟座標。§30.5/§30.6-4 は解消済みに更新。未着手の残り未文書化メニュー: LockPick/Message/Quantity/Negotiate/Persuasion/Training/SleepWait/Book/Scroll/chargen系/HUD系。素材XMLは tmp\\bsa_misc\\menus\\、抽出は tmp\\r30_menuparse.py --md。レポート全3885行。",
@@ -6423,7 +6423,7 @@
     },
     {
       "id": "512455a4-6a14-4300-a252-370bb2c9ec5a",
-      "timestamp": "2026-10-14T13:58:20.793146",
+      "timestamp": "2026-10-14T13:58:20.793146Z",
       "category": "decision",
       "priority": "high",
       "content": "RE §30/§31 の設定反映は実機で往復検証済み (2026-10-14, emulator-5554)。(1) 保存: GameplayOptionsUI のトグルを tap すると Renderer::pumpGameplayOptions が発火し 'Gameplay settings applied: ...' を LOGI 出力、settings.txt に GAMEPLAY_*/AUDIO_* 15 キーが書き出される。(2) 読み込み: settings.txt を difficulty=73/crosshair=0/master=0.50/voice=0.20 に差し替えて再起動すると起動ログが 'difficulty=73 (x2.280) crosshair=0' / 'master=0.50 ... voice=0.20' を出力 = 読み込みと適用の両方が機能。難易度倍率は pow(6,(d-50)/50) で 73 -> 2.280。",
@@ -6438,7 +6438,7 @@
     },
     {
       "id": "480192b2-9054-4243-996e-0f5b0860eba1",
-      "timestamp": "2026-10-14T13:58:20.793146",
+      "timestamp": "2026-10-14T13:58:20.793146Z",
       "category": "reference",
       "priority": "medium",
       "content": "実機タッチ検証の座標系: Renderer の screenWidth/Height は 1920x1110 (touch scale=1.000 view=(1920,1110))、GL y == screencap y。screencap は 1920x1200 RGBA なので crop((0,0,1920,1110)) 必須。GameplayOptionsUI の bodyRect() は screenHeight 1110 で y=291。ラベル左端 x は OCR 実測 ~580 (blockX=677.5-L/2 より L~190)、行間 52。難易度スライダーのトラック/矢印は y=324..361 (安全域)、トグルは各行 line.y+188 付近 y=467..531 (row3 Crosshair)、Return/Defaults ボタンは y~755 以降なのでタップ時は y<=531 に限定すれば誤操作しない。x=1000..1180 の範囲がトグルに当たる。",
@@ -6452,7 +6452,7 @@
     },
     {
       "id": "404bca22-79fa-4a14-ac9f-60739e5f4c93",
-      "timestamp": "2026-10-14T14:18:37.695910",
+      "timestamp": "2026-10-14T14:18:37.695910Z",
       "category": "decision",
       "priority": "high",
       "content": "セーブヘッダを format v3 に拡張し、セーブ一覧の Lv とプレイ時間を実データ化した。SaveHeader は 64 バイトのレガシープレフィックスの後に playerLevel(uint32) と playTimeSeconds(uint32) を追加した 72 バイト。save_format::readSaveHeader(istream&, SaveHeader&) が先頭 64 バイトだけ読んでから formatVersion>=3 のときだけ残り 8 バイトを読むので、v1/v2 の既存セーブもそのままロードできる（CURRENT_VERSION=3, MIN_SUPPORTED_VERSION=1, LEGACY_HEADER_SIZE=64, static_assert(sizeof(SaveHeader)==72)）。SaveManager は update(dt) でplayTimeSeconds_ を毎フレーム加算（dt は 1.0 秒でクランプ、端数は playTimeAccumulator_ に繰り越し）し、readFromFile() で header.playTimeSeconds から復元、writeToFile() で header に書き戻す（プレイヤーレベルは playerController_->getPlayer()->playerLevel から取得）。SaveSlotManager::renameSlot() の最小サイズ判定は LEGACY_HEADER_SIZE に変更（slotName はオフセット 32..63 なのでレガシーでも安全）。SaveLoadUI は行に「名前 / Lv N / %02u:%02u:%02u」を表示し、プレビュー下の詳細欄にも Lv とプレイ時間を出す（RE_EXE_REPORT §27 の一覧表示仕様に準拠）。ペイロードは v2 と同一なので loadedFormatVersion_ >= 2 の分岐は変更不要。",
@@ -6467,7 +6467,7 @@
     },
     {
       "id": "d6119b31-f7f9-4f4a-82c6-3906ef0fedbe",
-      "timestamp": "2026-10-14T14:46:17.800713",
+      "timestamp": "2026-10-14T14:46:17.800713Z",
       "category": "decision",
       "priority": "high",
       "content": "RE_EXE_REPORT.md §32 追記完了（依頼5 残ファミリーの widget 単位レイアウト）。§31.7 の直後、docs 総行数 5323。構成: 32.0 読み方(11列: Widget|type|id|nest|x|y|w|h|visible|depth|content)、32.1 Message/prompt(Messagemenu/QuestAddedMenu/SkillPerkMenu/GenericTestMenu)、32.2 クラフト・ダイアログ(Dialog/TextEdit/SpellMaking/SpellPurchase/Enchantment/EffectSetting/Alchemy/SigilStone/Persuasion)、32.3 chargen(BirthSign/Class/RaceSex/Skills)、32.4 HUD・in-game(HUDMain/HUDInfo/HUDReticle/HUDSubtitle/Inventory/Magic/MagicPopup/Map/Stats/player_model/HUDSafeZone)、32.5 Loading×3/Breath、32.6 NOT USED 4件、32.7 prefabs 単体パース不可、32.8 移植向け確定値。重複回避: QuickKeysMenu=§31.3、ClassMenu=§32.3 を正（class_menu.xml と chargen\\class_menu.xml は同一メニュー）。",
@@ -6482,7 +6482,7 @@
     },
     {
       "id": "268dabb9-11f2-4139-9e97-24e799b6b1fc",
-      "timestamp": "2026-10-14T14:46:17.800713",
+      "timestamp": "2026-10-14T14:46:17.800713Z",
       "category": "decision",
       "priority": "high",
       "content": "RE §32.8 移植向け確定値: (1) 各メニュー識別は ID ではなく XML ルート名で行う（メニュー登録 ID の全割当は未解決）。確定 ID のみ: MessageMenu=0x3e9, ContainerMenu=0x3f0, AudioMenu=0x3f9, VideoMenu=0x3fa, VideoDisplayMenu=0x3fb, GameplayMenu=0x3fc, LevelUpMenu=0x403, RepairMenu=0x40b, QuickKeysMenu=0x416, RechargeMenu=0x419。残りは FUN_00582160(MenuManager ctor) のメニュー配列(正本 0x00b13974/件数 0x00b13978)全走査で確定予定。(2) 座標式は §24.2 の式言語と同一 → パーサ共通化可。(3) HUD 系4メニューは常時オーバーレイ、visible は userN 実行時切替。(4) in-game 系5メニューの行スクロールは §31.7 と同じ行 y = index*lineHeight - scrollOffset。",
@@ -6497,7 +6497,7 @@
     },
     {
       "id": "4964b100-34c8-43b5-9c2c-0fe3a4a88799",
-      "timestamp": "2026-10-14T14:46:17.800713",
+      "timestamp": "2026-10-14T14:46:17.800713Z",
       "category": "reference",
       "priority": "high",
       "content": "RE §32 パーサ完成: tmp\\r30_menuparse.py に _balance_tags（自己終了 br/include/ref/img、逆方向不整合の閉じタグ破棄）、load_xml（DOCTYPE/コメント除去、実体→名前、不正タグ名正規化、strring→string）、parse_root（fromstring 失敗時 _balance_tags 再試行）、md_table（g() None 安全化）、--md ループ（例外時 NOT PARSABLE スタブ）を実装。全64ファイル再検証 OK64/BAD25(prefab22+実体なし3)。パース不能4ファイルは内容コメントのみ(45〜47B): scroll_menu.xml, birthsign_menu.xml, chargen\\attributes_menu.xml, chargen\\specilization_menu.xml。素材: tmp\\r32_tables_raw.md(1301行/40ブロック)、tmp\\r32_assemble.py(GROUP 32.4=[17..25,27,28])。表データ行のパイプ数は11列+両端=12個（前回検証スクリプトは誤判定）。",
@@ -6521,7 +6521,7 @@
         "original-assets"
       ],
       "id": "069cd969-4b71-41e7-a13a-2cc69da59347",
-      "timestamp": "2026-10-14T14:55:35.672377",
+      "timestamp": "2026-10-14T14:55:35.672377Z",
       "compressed": false
     },
     {
@@ -6536,7 +6536,7 @@
         "re-30.1.9"
       ],
       "id": "35544ad2-4b1e-4a2f-a14e-4c4365fe64a4",
-      "timestamp": "2026-10-14T14:55:35.672377",
+      "timestamp": "2026-10-14T14:55:35.672377Z",
       "compressed": false
     },
     {
@@ -6551,7 +6551,7 @@
         "re-30.1"
       ],
       "id": "eb1ec832-f99b-4329-ae79-b524e70ce593",
-      "timestamp": "2026-10-14T14:55:35.672377",
+      "timestamp": "2026-10-14T14:55:35.672377Z",
       "compressed": false
     },
     {
@@ -6566,7 +6566,7 @@
         "bugfix"
       ],
       "id": "a10b3e9c-2f69-4d56-894d-97502f586a0e",
-      "timestamp": "2026-10-14T06:35:50.663660",
+      "timestamp": "2026-10-14T06:35:50.663660Z",
       "compressed": false
     },
     {
@@ -6579,7 +6579,7 @@
         "performance"
       ],
       "id": "cfd17464-b95d-4b64-b5f4-80c8db31d49e",
-      "timestamp": "2026-10-14T06:35:50.663660",
+      "timestamp": "2026-10-14T06:35:50.663660Z",
       "compressed": false
     },
     {
@@ -6593,12 +6593,12 @@
         "known-issue"
       ],
       "id": "f54883ce-4801-4a76-801f-bc9725ccf3fa",
-      "timestamp": "2026-10-14T06:35:50.663660",
+      "timestamp": "2026-10-14T06:35:50.663660Z",
       "compressed": false
     },
     {
       "id": "cb5efa06-be70-45ff-85ad-273787d97241",
-      "timestamp": "2026-10-14T16:37:33.383885",
+      "timestamp": "2026-10-14T16:37:33.383885Z",
       "category": "decision",
       "priority": "high",
       "content": "難易度ダメージ倍率の実式は FUN_005E2560。x = Player+0x734 * fDifficultyDamageMultiplier(既定10.0)。playerDiff<=0 なら x+=1.0、x==1.0 で無補正、他は 1/|x-1|。攻撃者=Player なら除算、被攻撃者=Player なら乗算。Android 暫定 pow(6,(d-50)/50) は誤り。",
@@ -6611,7 +6611,7 @@
     },
     {
       "id": "1a08c5b0-b9e1-402a-90c6-83ffeb71cde4",
-      "timestamp": "2026-10-14T16:37:33.383885",
+      "timestamp": "2026-10-14T16:37:33.383885Z",
       "category": "decision",
       "priority": "high",
       "content": "NPC→プレイヤーダメージ経路: FUN_005FEBF0(vtable+0x3ac)→FUN_005E46C0(+0x2d4)→FUN_00488AA0→FUN_005E2BE0(AV減算)→FUN_006034B0(死判定, +0x3b8, HP<_DAT_00a2f948)。プレイヤー HP = Actor AV index 8。",
@@ -6624,7 +6624,7 @@
     },
     {
       "id": "065c3b1b-dfac-4fdd-a2d2-f9d471f6230f",
-      "timestamp": "2026-10-14T16:37:33.383885",
+      "timestamp": "2026-10-14T16:37:33.383885Z",
       "category": "decision",
       "priority": "high",
       "content": "近接ダメージ合成 FUN_00547070 = fVar2*fVar1*fVar3*fVar4*fVar5*param_7。技能項/防具項は 0..100 clamp 後 ×0.01。疲労倍率 FUN_00547f00 = _DAT_00b37530-(1-f)*_DAT_00b37538。AI は FUN_00547140。",
@@ -6637,7 +6637,7 @@
     },
     {
       "id": "92636e69-6c83-42db-a607-56b98847b9bf",
-      "timestamp": "2026-10-14T16:37:33.383885",
+      "timestamp": "2026-10-14T16:37:33.383885Z",
       "category": "reference",
       "priority": "medium",
       "content": "grant: fade ノード20B=[0]fade_id [1]current [2]duration [3]prev [4]next。生成 FUN_00584300, fade_id算出 FUN_005898f0, trait 0xfdb/0xfdc, duration 0.25, 閉じ時逆再生 FUN_00588a70。表示中フラグ 0x00b3a6d4。",
@@ -6650,7 +6650,7 @@
     },
     {
       "id": "c871514a-9d5c-425e-98ae-948ad5d07f35",
-      "timestamp": "2026-10-14T16:37:33.383885",
+      "timestamp": "2026-10-14T16:37:33.383885Z",
       "category": "reference",
       "priority": "high",
       "content": "grant: bSaveOnRest(0x00b13218)/bSaveOnWait(0x00b13220) の消費者は FUN_005D6A80 (SleepWaitMenu vtable 0x00a6d7c4 [3], Ghidra未認識)。オートセーブ発行 = FUN_00466B70(0x00b33b00)。bSaveOnTravel(0x00b13228) は FUN_0066F420 先頭/FUN_004B7B40 末尾。",
@@ -6663,7 +6663,7 @@
     },
     {
       "id": "87f81f82-c135-4808-b4c9-3aadc2b4e865",
-      "timestamp": "2026-10-14T16:37:33.383885",
+      "timestamp": "2026-10-14T16:37:33.383885Z",
       "category": "reference",
       "priority": "medium",
       "content": "audio 5系統対応順: master→[+0xb8], voice→FUN_006aa1a0, effect→[+0xc4], foot→[+0xbc], music→[+0xc0]。FUN_006aa1a0 = clamp(0,1)→master乗算→dB時 log10(v^2*master)*2000。",
@@ -6675,7 +6675,7 @@
     },
     {
       "id": "686a0f77-b098-470a-8f7e-bcf7f8ec29a2",
-      "timestamp": "2026-10-14T19:39:44.031236",
+      "timestamp": "2026-10-14T19:39:44.031236Z",
       "category": "reference",
       "priority": "high",
       "content": "§34 メニュー登録 ID 全割当。MenuManager ctor FUN_00582160 が構築する配列 0x00b13974 に登録される全 48 メニューの ID(vtable slot13 getID)↔XML ルート名を確定。ID 域 0x3e9..0x41b(51スロット/48使用)、真の欠番は 0x405/0x407/0x409/0x41a の4個のみ。0x3ee は strings.xml ローダ(FUN_00586000)に割当済み。TileMenu のみ 0x38b で範囲外(タイル基底)。",
@@ -6690,7 +6690,7 @@
     },
     {
       "id": "ce618d9a-b611-42f5-864f-582acd27aaef",
-      "timestamp": "2026-10-14T19:39:44.031236",
+      "timestamp": "2026-10-14T19:39:44.031236Z",
       "category": "reference",
       "priority": "high",
       "content": "§34 登録コンテナ 0x00b13970 = C++ 動的配列。+0x4=配列ポインタ(絶対 0x00b13974,要素4B)、+0x8=size(ushort)、+0xa=capacity(ushort,絶対 0x00b1397a,初期1)、+0xc=非null数(short)。FUN_004e4a10=resize、FUN_0042bb90=要素アクセサ、FUN_00589b70(id)=ID→vtable getter。",
@@ -6704,7 +6704,7 @@
     },
     {
       "id": "d37eafc7-15ba-42f5-bde5-de8d39b1ed59",
-      "timestamp": "2026-10-14T19:39:44.031236",
+      "timestamp": "2026-10-14T19:39:44.031236Z",
       "category": "reference",
       "priority": "high",
       "content": "§34 重要確定: VideoDisplayMenu(0x3fb) は専用 XML を持たない。EXE の Data\\Menus\\ 文字列 50 件に video_display 系は無く、video_menu.xml の派生パネル。XML パスは大文字小文字混在(CharGen/Chargen, Dialog/dialog)なので移植側は case-insensitive で解決すること。",
@@ -6718,7 +6718,7 @@
     },
     {
       "id": "dc6a27d0-d8cb-4cf0-b69b-50b594983ad9",
-      "timestamp": "2026-10-14T23:33:59.973909",
+      "timestamp": "2026-10-14T23:33:59.973909Z",
       "category": "decision",
       "priority": "high",
       "content": "InventoryMenu rebuilt from Main\\inventory_menu.xml + prefabs vertical_scroll.xml / focus_box.xml (RE 31 / 32.4). UIInventoryPanel derives scale+origin from onScreenResize() (XML: y = screen.height - me.height + 3, x centred) so Renderer no longer calls setSize()/setPosition(). Draw order: background pair -> tabs -> extra data -> top header -> rows -> scroll bar. Row pitch 81px (rowTopFor - scrollOffset); columns name 80 / cost 418 / weight 491 / damage 551 / health 612. Pages all/weapons/apparel/alchemy/misc via kPageSections. Scroll bar atlas crops from all_general_scrollbar.png (top cropy=0, marker cropy=32, bottom cropy=98, rail cropx=32), user2 = visible-5, user8 = 5. Committed 8eff9cf2.",
@@ -6733,7 +6733,7 @@
     },
     {
       "id": "c1eec352-1dd9-4e36-9cb0-569e0a63f4f0",
-      "timestamp": "2026-10-14T23:33:59.973909",
+      "timestamp": "2026-10-14T23:33:59.973909Z",
       "category": "constraint",
       "priority": "high",
       "content": "OPEN ITEM for user review: the working tree carries a revert of the pause-menu fade feature from 698bd541 (ui_pause_menu.h/.cpp lose fadeProgress/isFading()/open(bool)/close(bool)/update(dt); renderer.cpp drops the update()+isFading() calls; CHANGELOG.md loses the fade bullet; .gitignore loses /ghidra-mcp/; session-memory loses the fade decision entry). Per the user's instruction this revert was deliberately LEFT UNSTAGED and is NOT part of commit 8eff9cf2. HEAD 8eff9cf2 still contains the fade feature, so the working tree and HEAD disagree by exactly that revert. Recover with `git checkout HEAD -- <file>` or commit the revert, once the user decides.",
@@ -6871,7 +6871,7 @@
     },
     {
       "id": "fc9b76ef-633d-4ff5-ad00-177298db36d4",
-      "timestamp": "2026-10-15T10:31:39.133507",
+      "timestamp": "2026-10-15T10:31:39.133507Z",
       "category": "reference",
       "priority": "high",
       "content": "RE §36: video_display 解像度リストは XML でなく実行時列挙。IDirect3D9 COM vtable の GetAdapterModeCount/EnumAdapterModes 使用(EnumDisplaySettings 不使用)。フィルタ=(w,h)重複除去 かつ w*h>=0x4B000(307200、640x480 は等号通過)。アダプタ 0 のみ。初期選択=現在解像度一致、無ければ先頭。解像度変更は次回起動適用(設定グローバルのみ書換、再起動ダイアログ sVideoChange+sOk を出して閉じる)。ワイド判定 h*4<w*3→_widescreen サフィックスのテキスト。VideoDisplayMenu.slot[3] プリセット=800x600/1080x607/1024x768/1280x607/1280x720。Android は Display.getSupportedModes() を同条件でフィルタ＋昇順ソートで代替可。D3D9 ライフサイクル再現不要。",
@@ -6885,7 +6885,7 @@
     },
     {
       "id": "607a4aba-87a5-4abd-9fdb-d5a0a5c84ccf",
-      "timestamp": "2026-10-15T10:31:39.133507",
+      "timestamp": "2026-10-15T10:31:39.133507Z",
       "category": "reference",
       "priority": "high",
       "content": "RE §37: メニューフェードは対象オブジェクトごとの current/duration ペア(20B ノード, +0x4=current, +0x8=duration 秒)。毎フレーム current+=deltaTime、ratio=current/duration、ratio>=1.0 でノード破棄。イージング無し(リニア)。閉じる時も current=0 の新規ノード追加で逆再生は存在しない(§33.3 の逆再生記述は誤り、§37.11 で訂正済み)。duration は XML の menufade/explorefade 属性そのまま、フォールバック 0.25 秒、loading の 0.0 はフェード無し。全画面黒クアッドはエンジン側に無く、暗転描画は消費者側で alpha=current/duration。",
@@ -6899,7 +6899,7 @@
     },
     {
       "id": "8483f489-b12b-402f-aea6-eb858155527d",
-      "timestamp": "2026-10-15T10:31:39.133507",
+      "timestamp": "2026-10-15T10:31:39.133507Z",
       "category": "reference",
       "priority": "high",
       "content": "RE §37: メニュー表示中判定の正本は MenuManager+0x9c(現在メニュー、非 null=表示中)。+0x98 は直前メニュー。補助フラグ DAT_00b3a6d4(byte) の byte 比較は 0x00572ee2 / 0x005a586b / 0x00679a75 の 3 箇所。入力抑制はメニュー表示中に ACTION_MOVE をゲーム側へ渡す前に落とす実装で一致(camera-rotates-under-menu の解)。フェード付きクローズは ID 0x3ff/0x3fe/0x3ea/0x3eb の 4 つのみ、他は即時。trait 0xfa5 の 4 値ゲート(6006/6007/102.0/103.0)はエンジン内部登録都合で移植不要。",
@@ -7382,7 +7382,7 @@
     },
     {
       "id": "bde6d64a-bc25-4196-983f-68e1113d469f",
-      "timestamp": "2026-10-15T13:21:19.701063",
+      "timestamp": "2026-10-15T13:21:19.701063Z",
       "category": "reference",
       "priority": "medium",
       "content": "§43.4 完了: 0x00B33E88 は RTTI 型記述子レコード（+0x00 型名 ptr 0x00A3D0E0=\"BSTempNode\" / +0x04 基底記述子 0x00B3FAB0、登録 FUN_009DC280、判定 0x0047CD60 の IsKindOf ループ、getter 0x0043F520）→ 移植不要。0x00B33E98（Timer+0x08）は 0x009DC2B2 の FST 1 件のみで読み出し 0 件の未使用メンバ → 保持不要。0x00403BE0 = AV null なら 0x00B35464 を 0 クリアして返す getter（=未定義 AV は 0.0f）、0x00403BC0 = [ECX+4] の先頭文字 'S' 判定付き解放ヘルパ。",
@@ -7397,7 +7397,7 @@
     },
     {
       "id": "822fb41f-39fc-4da9-b854-2a3999ebd3cf",
-      "timestamp": "2026-10-15T13:21:19.701063",
+      "timestamp": "2026-10-15T13:21:19.701063Z",
       "category": "reference",
       "priority": "medium",
       "content": "§44 追記完了（docs\\RE_EXE_REPORT.md 見出し 7934 行目、総行数 7978）。CRT 数値ヘルパ: 0x004842F0=truncf（float→int→float 切捨て。0x00484850 の HP% は truncf(値*100)）/ 0x00484370=ceilf（trunc 後、小数部が正なら +1.0。当初の trunk+floor 補正説は誤り）/ 0x00484310=[ecx+8]=[ecx+0xC]=_DAT_00a30634(-1.0f) / 0x00985A00=__ftol2(SSE2 版、非 SSE2 は 0x00993E48 へフォールバック) / 0x009828C0=double→int。フラグアクセサ: 0x00468FF0(index,check)=16bit word[obj+4] のビットテスト（check!=0 && index==1 && bit0 で強制 0）/ 0x00469020=set/clear / 0x00469050=bit6|bit7|bit8 述語。0x00468FF0 の呼出は 87 箇所 → §41.2.4 の 0xd は word[+4] の bit13。所有クラス vtable=0x00A3B7A8（4 エントリ、直後に \"Unable to find container object (%08X) on owner object\" 群）。",
@@ -7413,7 +7413,7 @@
     },
     {
       "id": "59c411e3-7b8f-4cd6-ad0d-ea8d09ec4338",
-      "timestamp": "2026-10-15T13:21:19.701063",
+      "timestamp": "2026-10-15T13:21:19.701063Z",
       "category": "decision",
       "priority": "medium",
       "content": "§44 の Android 移植向け確定値: 丸めは std::trunc/std::ceil/(int) へ置換（独自丸め不要、FPU 丸めモード依存なし）。FUN_00468ff0(0xd,0) 依存の死亡前提条件は移植では再現不要（HP<1 クランプで死亡は再現済み）。§41.7 の未確定 2 項目（FUN_004842f0 の挙動 / 種別 0xd）は §44 で解消。",
@@ -7427,7 +7427,7 @@
     },
     {
       "id": "abd6b485-5aa4-421a-a4cb-7f1ae2cbbebf",
-      "timestamp": "2026-10-15T13:28:21.775184",
+      "timestamp": "2026-10-15T13:28:21.775184Z",
       "category": "reference",
       "priority": "high",
       "content": "§45: §41.1/§41.2 の訂正。FUN_005f3870 の被ダメージ係数は 0x00B35464 ではなくアーマー習熟ダメージ倍率 GMST 4 種 (0xB374F0=fPerkLightArmorNoviceDamageMult 1.5 / 0xB374F8=fPerkHeavyArmorNoviceDamageMult 1.5 / 0xB37500=fPerkHeavyArmorJourneymanDamageMult 0.5 / 0xB37508=fPerkLightArmorJourneymanDamageMult 0.5)。 登録スタブ 0x9EB290/0x9EB2C0/0x9EB2F0/0x9EB320（0x20B 間隔、CALL 0x0041BAE0 + CALL 0x00981FB4）。 隣接 0x9EB350=fPerkJumpFatigueExpertMult(0xB37510)。",
@@ -7442,7 +7442,7 @@
     },
     {
       "id": "c1757229-09b7-4b0b-b318-4a2a83b9f494",
-      "timestamp": "2026-10-15T13:28:21.775184",
+      "timestamp": "2026-10-15T13:28:21.775184Z",
       "category": "reference",
       "priority": "high",
       "content": "§45: 0x00B35464 は「値ポインタが null/範囲外 → 0.0f」の受皿スロットで、係数ではない。バイト列 d9 1d 64 54 b3 00 は 全 8 件（0x403C0D/0x404E3E/0x4AEBC0/0x4AEC0D/0x5A06EF/0x5A0736/0x5A2BB4/0x5A2BFF）、すべて直前が FLDZ で 0.0f を捨てるだけ。 書き込み元関数は存在しない（§41.7 の残課題を解消）。0x004AEBE0 = index→float 表引き getter（0xB07F44 + index*16、範囲 1..0x14）。",
@@ -7455,7 +7455,7 @@
     },
     {
       "id": "60250844-1e0a-4591-a9f7-590b2d8b3941",
-      "timestamp": "2026-10-15T13:28:21.775184",
+      "timestamp": "2026-10-15T13:28:21.775184Z",
       "category": "reference",
       "priority": "high",
       "content": "§45: FUN_005f3870 の分岐（実命令）。arg1=対象/arg2=ベースダメージ/arg3=char。対象 null・ダメージ0・item[+4]!=0x14・char!=0 は 0x5F392F（係数 1.0 の tail）。heavy=(byte[item+0x6a]>>7)&1 @0x004B4C70。 heavy=1: FUN_005f23b0(actor,0x12=HeavyArmor) が 2以上→0xB37500 / 0→0xB374F8 / 1→1.0。 heavy=0: FUN_005f23b0(actor,0x1b=LightArmor) が 2以上→0xB37508 / 0→0xB374F0 / 1→1.0。 0x5F3920: getter(0x403C00)→FLD[eax]→FMUL ベースダメージ。0x5F392F: HP=FUN_00484850(対象,0)-ダメージ、<1.0 は 0.0 クランプ。",
@@ -7468,7 +7468,7 @@
     },
     {
       "id": "2bc45735-4fe3-4493-b204-d847b398110f",
-      "timestamp": "2026-10-15T13:28:21.775184",
+      "timestamp": "2026-10-15T13:28:21.775184Z",
       "category": "decision",
       "priority": "high",
       "content": "Android 移植: 呪文・反射ダメージ式の係数はアーマー習熟 GMST（Novice 1.5 / Journeyman 0.5 / それ以外 1.0）で実装。0x00B35464 は移植不要（値が無い場合は 0.0f 扱い）。",
@@ -7550,7 +7550,7 @@
         "Oblivion"
       ],
       "id": "92a14927-f3f8-4c75-a8ac-d1f99ab60afd",
-      "timestamp": "2026-10-15T13:53:06.734488",
+      "timestamp": "2026-10-15T13:53:06.734488Z",
       "compressed": false
     },
     {
@@ -7564,7 +7564,7 @@
         "Oblivion"
       ],
       "id": "278967b9-b8dd-448c-ad88-57a29dc49023",
-      "timestamp": "2026-10-15T13:53:06.734488",
+      "timestamp": "2026-10-15T13:53:06.734488Z",
       "compressed": false
     },
     {
@@ -7578,12 +7578,12 @@
         "Oblivion"
       ],
       "id": "5f5ee63c-e6ef-4b9b-82cf-8b83afb515e9",
-      "timestamp": "2026-10-15T13:53:06.734488",
+      "timestamp": "2026-10-15T13:53:06.734488Z",
       "compressed": false
     },
     {
       "id": "968f638b-4a90-4662-8d5e-8dab9337935a",
-      "timestamp": "2026-10-15T14:12:11.213790",
+      "timestamp": "2026-10-15T14:12:11.213790Z",
       "category": "reference",
       "priority": "high",
       "content": "Oblivion RE §48 メニューフェード確定: menufade=GetTrait(0x0FDB), explorefade=0x0FDC(0xFDBが0のときのフォールバック)。フェードスロット配列0x00B12DC0, stride 0x18, 3スロット(実データ): slot0=LetterBox.dds(+0=1), slot1=Black.dds(+0=1), slot2=Black.dds(+0=0)。フィールド: +0x04=テクスチャ名(Data\\Textures\\Menus\\Faders\\%s, 0xA688F0), +0x08=enabled(u8), +0x0C=scale, +0x10=texture obj, +0x14=current, +0x18=duration。更新FUN_00572F60: current += dt(線形), alpha=currentでFUN_004A2A90(tex,current)が全画面クアッド描画。閉じも逆再生なし(同duration)。MenuManager=[0x00B3A6E0], +0x130に20Bノード(+0=対象,+4=current,+8=duration,+0xC=prev,+0x10=next)のフェード要求リスト。FUN_00584300生成/0x583C30更新(dt加算,ratio>=1で削除)/0x584390閉じ(0xFDB→0なら0xFDC)。FaderNode名: 0xA688B0=FaderNodeLight, 0xA688C0='FaderNode Above Menus', 0xA688D8='FaderNode Below Menus', 生成関数先頭0x005730B0, 呼び出し0x57EE3D/0x57F13C, push1=Above/push0=Below。",
@@ -7910,7 +7910,7 @@
       "id": "44784c3f-d7b8-4a39-997c-1a65bf3f1ac5",
       "compressed": false,
       "priority": "high",
-      "category": "analysis",
+      "category": "reference",
       "content": "§49 を docs\\RE_EXE_REPORT.md に追記 (便1 依頼A/B/C/2/3/4-1/4-2 回答, 657,326 bytes)。フェード開閉確定: ノード生成は FUN_00584300 唯一 (0x14B: +0=source, +4=current初期0.0, +8=duration, +c=prev, +10=next; MM 0xb3a6e0+0x130)。呼出元7件= 開き FUN_00584740 (state=2, ゲート visible==2.0, 完了で visible=1.0/alpha 0/Blend 0, 親復帰 0x1772==2.0) / 閉じ FUN_00584390 (state=8, 完了で state=1/visible=2.0/alpha 1.0/Blend 1.0[arm時]) / 再構築 switch FUN_00587550 0x587550 (state=8, 呼出元1件 0x5866DC) / 別系統 FUN_00588a70。current は常に 0→1 前進 (逆再生なし)。位相 [+0x24]: 1=アイドル, 2=開き, 4=開き完了直後, 8=閉じ。Blend Value=0xb42d50 (arm 0xb42d54, Pause 0x3f3/Message 0x3e9 系のみ書込)。§37.6 の FUN_00584740「実際に閉じる」は「開き」に修正。依頼B=(a) HP 実ダメージ (FUN_005f3870)。依頼2=FUN_005febf0 に習熟4種直接参照なし。依頼4-1=FUN_006ad030/6aa1a0 は音楽系音量適用 (6 site 同一 this, 5系統前提は誤り)。依頼4-2=FUN_0066F420 構造解析 (Player メソッド, 0xB3BD00 管理, タグ 0x47445553 一致→スクリプトイベント, autosave 呼出, [Player+0x760/764] 解放)。難易度の実命令式 (x=d*10; d==0→base; x<=0→x+1; x>0→1/|x-1|) と実機 2.280 の数値整合は §50 継続。"
     },
     {
@@ -7996,7 +7996,7 @@
     },
     {
       "id": "90f05e2d-aacc-44ff-ab76-8a7d931febb0",
-      "timestamp": "2026-10-16T13:50:03.545459+09:00",
+      "timestamp": "2026-10-16T13:50:03.545459Z",
       "category": "decision",
       "priority": "high",
       "content": "子セッション並列解析体制を採用。3つのバックグラウンドエージェントに委譲: (1) actor vt+0xA8 実体/プレイヤー被ダメージ経路=P1最優先, (2) XML累算器モデル完全仕様+menu_xml_tests正期待値, (3) fDifficultyDamageMultiplier実効値(ESM overlay)+GMST一覧。各エージェントは tmp/re/sub_*.md に出力し docs は親が集約。",
@@ -8010,7 +8010,7 @@
     },
     {
       "id": "fd6cb9cb-3c26-461f-b986-1a37bc5dc296",
-      "timestamp": "2026-10-16T13:50:03.548463+09:00",
+      "timestamp": "2026-10-16T13:50:03.548463Z",
       "category": "constraint",
       "priority": "high",
       "content": "docs/RE_EXE_REPORT.md は §51 まで追記済み。子エージェントは docs を編集禁止、tmp/re 配下のみ生成し親セッションが集約・main(9427ac74)へ送信する運用。",
@@ -8024,7 +8024,7 @@
     },
     {
       "id": "ff52acf2-5e31-4234-a883-fe3e66af9f60",
-      "timestamp": "2026-10-16T13:50:03.548463+09:00",
+      "timestamp": "2026-10-16T13:50:03.548463Z",
       "category": "reference",
       "priority": "high",
       "content": "環境検証完了(2026-10-16): Oblivion.exe 存在, capstone 5.0.7, pefile 2024.8.26, tmp/re 存在。session-memory.json entries=560。",
@@ -8037,7 +8037,7 @@
     },
     {
       "id": "b5a2209d-a525-49c4-9d3d-8ac4227d86af",
-      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "timestamp": "2026-10-16T14:43:03.562473Z",
       "category": "decision",
       "priority": "high",
       "content": "§51 XML式評価器の実体確定: ドライバ FUN_0058bee0(値評価ループ) + トークン分岐 0x58C420 (jmp[ecx-0x7d2]*4+0x58C998, 26ケース)。ノード: +0x04=acc / +0x08=op1 / +0x0C=token / +0x10=子 / +0x14=兄弟 / +0x18=traitID。[ebx]=acc。[esp+0x1c]=op1(float), [esp+0x20]=op2。結果 int->float は [esp+0x14] 経由 (fild [esp+0x14]; fstp [ebx])。",
@@ -8051,7 +8051,7 @@
     },
     {
       "id": "11741d55-40e5-4519-bae4-f2aa567a8933",
-      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "timestamp": "2026-10-16T14:43:03.562473Z",
       "category": "decision",
       "priority": "high",
       "content": "§51 boolean/論理演算子の acc 更新(実命令): and=両方非NaNで2.0/それ以外1.0。or=いずれか非NaNで2.0/両方NaNで1.0。not=非NaNで1.0/NaNで2.0。onlyif=op1非NaNならacc維持/NaNなら0。onlyifnot=op1==1.0ならacc維持/それ以外0。比較(gt/gte/eq/neq/lt/lte)=成立1.0/不成立2.0。注意: 真=1.0/偽=2.0 だが and/or は真偽が逆転(非対称)なので移植式評価器で厳密再現要。",
@@ -8065,7 +8065,7 @@
     },
     {
       "id": "f6fce656-28a7-4f6b-9737-6bd3f3dae9a5",
-      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "timestamp": "2026-10-16T14:43:03.562473Z",
       "category": "decision",
       "priority": "high",
       "content": "§51 算術演算子の acc 更新(実命令): add=acc+op1 / sub=acc-op1 / mul=acc*op1 / div=acc/op1(op1==0ガード) / copy=子のop1値をaccへ(traitID 0xfde=説明文/0xfe6=filename は特別扱い) / min/max / abs / ceil / floor=trunc(0x404f70) / ln(0x986b80) / log(0x986cd0) / rand(0x47df80)=1.0+floor(rand/32767*max) / mod=float剰余。",
@@ -8079,7 +8079,7 @@
     },
     {
       "id": "bf816eaa-ff66-4c59-b13f-870dd8f4da1b",
-      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "timestamp": "2026-10-16T14:43:03.562473Z",
       "category": "decision",
       "priority": "high",
       "content": "§51 値ソース登録関数 FUN_0058A0A0: 引数は(name, value)の順(stdcall ret 8)。名前先頭が '&' の場合は index=0x1b 固定、レコード = index*0x10 + 0xb3b0b0、登録は call 0x6aa320。演算子/値ノード構築は call 0x589eb0。登録された値: &true;(0xa6aad0)=2 / &false;(0xa6aad8)=1 / &generic;(0xa6aae0)=-1 / left=1 / center=2 / right=4 / scale=-1 / click_past=101 / no_click_past=102 / does_not_stack=0x1778(6008) / mixed_menu=103 / prev=104 / next=105 / first=106 / last=107 / xlist=108 / xitem=109。",
@@ -8093,7 +8093,7 @@
     },
     {
       "id": "43d6a8fc-1238-4db8-8a6b-c57b36b467a2",
-      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "timestamp": "2026-10-16T14:43:03.562473Z",
       "category": "decision",
       "priority": "high",
       "content": "§51 演算子名プール(0xa6a300-0xa6ab00): user/trunc/sub/rand/or/onlyifnot/onlyif/not/neq/mult/mul/mod/min/max/lte/lt/ln/log/gte/gt/floor/eq/div/copy/ceil/and/add/abs。token ID対応: 0x7d1=copy / 0x7d2=add / 0x7d3=sub / 0x7d4=mul(mult) / 0x7d5=div / 0x7d6=rand / 0x7d7=user / 0x7d8=gt / 0x7d9=gte / 0x7da=eq / 0x7db=lte / 0x7dc=lt / 0x7dd=min / 0x7de=max / 0x7df=and / 0x7e0=or / 0x7e1=neq / 0x7e2=mod / 0x7e3=floor(trunc) / 0x7e4=abs / 0x7e5=onlyif / 0x7e6=onlyifnot / 0x7e7=ln / 0x7e8=log / 0x7e9=ceil / 0x7ea=not / 0x7eb=no-op。",
@@ -8107,7 +8107,7 @@
     },
     {
       "id": "92250df1-ea8e-4ef8-8f6e-5a77109d9eeb",
-      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "timestamp": "2026-10-16T14:43:03.562473Z",
       "category": "decision",
       "priority": "high",
       "content": "§51 fDifficultyDamageMultiplier: EXE静的既定 f32 10.0 (0xB37B88, 参照0x5e25b6/0x9ed790/0xa1fe31)。Oblivion.esm overlay で実効 5.0。移植は 5.0 採用(Oblivion.esm 必ロード前提、分岐不要)。難易度関数 FUN_005e2560(float base, Actor* p)、ecx=this、ret 8(0x5E25D8)、呼出元 0x5E5903/0x69A028/0x6A8755。[Player+0x734] 書込元 0x5A38D4/0x66AF7A。GMST: MinValue 0xB37B70=-1.0 / MaxValue 0xB37B78=1.0 / DefaultValue 0xB37B80=0.0 / DamageMultiplier 0xB37B88=10.0。",
@@ -8121,7 +8121,7 @@
     },
     {
       "id": "6abf7df0-dc86-4aac-bf7c-c7ce69db9fe2",
-      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "timestamp": "2026-10-16T14:43:03.562473Z",
       "category": "decision",
       "priority": "high",
       "content": "§51 アーマー習熟倍率の適用対象は (a) 装着者への実HPダメージで確定。FUN_005f3870 の tail 0x5F392F 以降、fPerk*Armor*DamageMult の乗算結果は HP書込ヘルパ 0x00488830 に渡る(callers 0x005F39BE)。軽装 perk18 / 重装 perk27、rank>=2=Journeyman(0.5) / ==0=Novice(1.5)。GMST: fPerkLightArmorNoviceDamageMult 1.5 / fPerkHeavyArmorNoviceDamageMult 1.5 / fPerkHeavyArmorJourneymanDamageMult 0.5 / fPerkLightArmorJourneymanDamageMult 0.5。",
@@ -8135,7 +8135,7 @@
     },
     {
       "id": "750eaadc-379c-446f-b865-47a994eaa3fe",
-      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "timestamp": "2026-10-16T14:43:03.562473Z",
       "category": "decision",
       "priority": "high",
       "content": "§51 Actor vt+0x3A8(+0x3AC) ダメージ適用経路: FUN_005FEBF0 = Actor vt+0x3AC。flag==1→0x6AF880、flag==0→本体。0x005FE380(+0x3A8ディスパッチ): vt+0x198→0x41df00→vt+0x170→byte[+4]==0x24→vt+0x388→jmp[edx+0x3a8]。0x00488830=HP書込 callers=3、0x00484850=GetAV current callers=24。プレイヤー被ダメ入口: FUN_005F6540 の 0x5F65DD (ecx=[ebp+0x58]; edx=[eax+0x3ac]; push 0; push ebp; call edx)、callers=12。移植指針: エンジン経路(AI攻撃解決→vt+0x3AC→vt+0xA8適用スタブ)を再現し、その適用スタブから Player::takeDamage を呼ぶ。",
@@ -8149,7 +8149,7 @@
     },
     {
       "id": "82af4f03-e34b-425f-8e74-878fbc633902",
-      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "timestamp": "2026-10-16T14:43:03.562473Z",
       "category": "decision",
       "priority": "high",
       "content": "§51 God Mode フラグ 0xB3BB06: setter 0x65D810 / getter 0x65D820。ToggleGodMode handler 0x500D10。プレイヤー被ダメガード 0x65FF10 = cmp byte[0xb3bb06],0; je 0x65ff1e。OFF なら 0x65FF30 = call 0x5f3870; ret 0xc。",
@@ -8162,7 +8162,7 @@
     },
     {
       "id": "47c605a9-fe18-47e0-92a8-a1a4ad4b3864",
-      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "timestamp": "2026-10-16T14:43:03.562473Z",
       "category": "configuration",
       "priority": "medium",
       "content": "§51 難易度ダメージ倍率の移植式: 難易度 d∈[-1,+1](既定0.0)、M=fDifficultyDamageMultiplier(=5.0)、x=d*M。被ダメ f=(d>0)?x+1.0:(d<0)?1.0/|x-1.0|:1.0。与ダメ=1/f。移植 settings_manager.cpp:7-13 の v=(difficulty-50)/50 版で適用(player.cpp:52-55)、与ダメ×1/f は未実装。",
@@ -8176,7 +8176,7 @@
     },
     {
       "id": "a578906f-46ff-4ade-9d49-8a32731b085d",
-      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "timestamp": "2026-10-16T14:43:03.562473Z",
       "category": "reference",
       "priority": "medium",
       "content": "§51 コンソールコマンド表: レコード配列基底 0xB0BBD0 付近、stride 0x28。+0x00=id / +0x04=説明文字列VA / +0x10=handler / +0x14=既定0x004FDE30 / +0x20=CanonicalName / +0x24=省略名。flags: 0x0=引数なし / 0x10000=float / 0x20000=2数値 / 0x30000=3数値。確認済: 0x130=FOV(0x511720) / 0x131=Verbose(0x507930) / 0x132=ToggleGodMode(0x500D10) / 0x133=RefreshShaders(0x50AA20) / 0x134=ToggleScripts(0x500D50) / 0x135=SexChange(0x515920)。",
@@ -8189,7 +8189,7 @@
     },
     {
       "id": "cd7f7ea3-9b46-4ec9-8222-79fe4a8de2e5",
-      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "timestamp": "2026-10-16T14:43:03.562473Z",
       "category": "reference",
       "priority": "medium",
       "content": "§51 疲労(AV index 0x0a=Fatigue, テーブル0xB0A1A8)の戦闘影響: カーブ 0x547F00/20/40(Run)/60(Jump)、攻撃消費 0x547560、ブロック 0x547590。GMST既定: fFatigueBase=1.25 / Mult=0.5 / ReturnBase=10.0 / AttackWeaponBase=8.0 / AttackWeaponMult=0.1 / BlockSkillBase=5.0 / BlockSkillMult=-0.04 / CastBase=15.0 / RunBase=8.0 / JumpBase=4.0 / JumpMult=4.0。",
@@ -8203,7 +8203,7 @@
     },
     {
       "id": "dbda3144-bb10-4c57-97a7-bf3747a606d2",
-      "timestamp": "2026-10-16T14:43:03.562473+09:00",
+      "timestamp": "2026-10-16T14:43:03.562473Z",
       "category": "constraint",
       "priority": "medium",
       "content": "§51 残件(未解決): actor vt+0xA8 実体(0x6AF880, プレイヤー被ダメ実装のブロッカー, 最優先) / FUN_005FEBF0 本体後半の完全式 / GMST 名未確定分 / ContainerMenu cmd 0x33 / C1-C4 audio 矛盾 / SleepWaitMenu 月日数表(0x00B06700+0x10) / &true;&false; の index->float 変換の最終アサート。",
@@ -8328,12 +8328,112 @@
         "re-52"
       ],
       "compressed": false
+    },
+    {
+      "id": "gmst-constants-add-20261018",
+      "timestamp": "2026-10-18T07:13:19Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "GMST constants added to settings_manager.h/cpp: GLOBAL_TIME_MULTIPLIER=1.0f (dt multiply only, separate from TimeScale), AI_MIN_GREETING_DISTANCE=150.0f (subtitle distance), ARMOR_PERK_NOVICE_DAMAGE_MULT=1.5f / ARMOR_PERK_JOURNEYMAN_DAMAGE_MULT=0.5f (spell/reflect only, melee/bow=1.0x), armorMasteryRank()/armorPerkDamageMultiplier() inline helpers, GameplaySettings.disableDynamicCrosshair (8th GamePlay bool).",
+      "tags": [
+        "gmst",
+        "settings-manager",
+        "re-section54",
+        "re-section47",
+        "re-section45"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "re-verification-cell-texture-20261018",
+      "timestamp": "2026-10-18T07:13:19Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "RE verification results: (1) Cell loading is synchronous in EXE (CreateThread=0) -> port is also synchronous, no fix needed. (2) Texture cache: EXE uses simple cap check -> port uses TextureCachePool(LRU)+AssetManager+FaceGenCache (superior), no fix needed.",
+      "tags": [
+        "re",
+        "verification",
+        "cell-load",
+        "texture-cache"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "re-onlyif-confirmed-20261018",
+      "timestamp": "2026-10-18T07:13:19Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "RE section 52.9 confirmed: onlyif fcomp -> jp side fldz=0.0. Section 52.2 'NaN->2.0' retracted. Section 50.7 skipNext model removal is correct direction.",
+      "tags": [
+        "re",
+        "onlyif",
+        "xml-interpreter",
+        "section52"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "pending-todos-61-20261018",
+      "timestamp": "2026-10-18T07:13:19Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "61 pending/in_progress TODOs in database. settings-manager-gmst-re is in_progress. Key remaining: gmst-fglobaltimemultiplier-dt (jni_bridge.cpp wiring), complex-scene-throttle (2/3 frame throttle), armor-perk-damage-mult (spell_manager.cpp), gameplay-settings-consumers (disableDynamicCrosshair wiring), npc-difficulty-scale (combat_manager.cpp dealt damage 1/f).",
+      "tags": [
+        "todos",
+        "pending",
+        "next-steps"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "gmst-fglobaltimemultiplier-dt-done-20261018",
+      "timestamp": "2026-10-18T08:02:24Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "gmst-fglobaltimemultiplier-dt COMPLETED (2026-10-18, by opencode handover from main session 9427ac74). jni_bridge.cpp nativeRenderFrame now applies fGlobalTimeMultiplier per RE section 54.3: added #include \"system/settings_manager.h\" (line 9) and `deltaTime *= GLOBAL_TIME_MULTIPLIER;` (8-space indent, after g_hasLastFrameTime=true, before renderer->render). GLOBAL_TIME_MULTIPLIER=1.0f already defined in settings_manager.h (constexpr, dt-multiply only, separate from TimeScale). diff verified clean. NOT YET COMMITTED — part of the large uncommitted working tree on master. Note: the original Copilot edit loop corrupted jni_bridge.cpp twice (indent mismatch); final state was restored via git checkout and re-applied cleanly.",
+      "tags": [
+        "gmst",
+        "jni-bridge",
+        "settings-manager",
+        "re-section54",
+        "completed",
+        "handover"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "uncommitted-worktree-snapshot-20261018",
+      "timestamp": "2026-10-18T08:02:24Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "UNCOMMITTED WORKTREE SNAPSHOT (master, 2026-10-18, taken by opencode during handover from main 9427ac74): 35 files, +3180/-739 vs last commit 2031e53d (2026-10-16 17:29). Components: (1) Script VM system: script_manager.cpp +515, script_vm.cpp +58, script_disasm.cpp +103, script_vm_tests.cpp +180; (2) Menu fade: new ui/menu_fade_system.cpp/h + tests/menu_fade_tests.cpp/h; (3) Game console: ui/game_console.cpp +290 replacing deleted engine/debug_console.cpp/h; (4) Renderer: engine/renderer.cpp +452, renderer.h +20; (5) GMST constants: system/settings_manager.h +73 (GLOBAL_TIME_MULTIPLIER, AI_MIN_GREETING_DISTANCE, ARMOR_PERK_*_DAMAGE_MULT); (6) RE report: docs/RE_EXE_REPORT.md +1145; (7) jni_bridge.cpp +4 (fGlobalTimeMultiplier wiring, see gmst-fglobaltimemultiplier-dt-done-20261018); (8) player_controller, virtual_controller, ui_pause_menu, ui_draw_helper changes; (9) host_tests runner updates. NEXT ACTION for any session: verify host tests (tools/host_tests/run_host_tests_msvc.ps1) then commit in logical chunks.",
+      "tags": [
+        "worktree",
+        "uncommitted",
+        "handover",
+        "commit-pending"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "opencode-handover-main-9427ac74-20261018",
+      "timestamp": "2026-10-18T08:02:24Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "OPENCODE HANDOVER from Copilot main session 9427ac74 (2026-10-18). Copilot process (PID 26804) exited; lock file remains but session is inactive. Last Copilot action: GMST fGlobalTimeMultiplier wiring in jni_bridge.cpp (completed, see gmst-fglobaltimemultiplier-dt-done-20261018). Copilot's final message asked 'next task?'. Remaining TODO key items (from pending-todos-61 entry, minus the completed gmst item): complex-scene-throttle (2/3 frame throttle), armor-perk-damage-mult (apply ARMOR_PERK_* constants to spell_manager.cpp), gameplay-settings-consumers (disableDynamicCrosshair wiring), npc-difficulty-scale (combat_manager.cpp dealt damage 1/f). RE side: see tmp/re/TODO_re49.md sections F-S for open RE items; docs/RE_ANALYSIS_ROADMAP.md for phase plan.",
+      "tags": [
+        "handover",
+        "opencode",
+        "session-9427ac74",
+        "todos"
+      ],
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 584,
+    "totalEntries": 591,
     "compressedCount": 81,
     "sessionCount": 40,
-    "lastUpdated": "2026-10-16T06:19:47Z"
+    "lastUpdated": "2026-10-18T08:02:24Z"
   }
 }

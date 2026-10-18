@@ -155,6 +155,10 @@ public:
         std::function<void(int)> setTargetFPS;
         std::function<int()> getTargetFPS;
 
+        // Menu fade (RE 48): default duration in seconds (0.001-10).
+        std::function<void(float)> setMenuFade;
+        std::function<float()> getMenuFade;
+
         // UI
         std::function<void(const std::string&)> openMenu;
         std::function<void()> closeMenu;
@@ -282,6 +286,9 @@ public:
         // Phase 65: activate the door nearest to the player (cell transition).
         std::function<std::string()> useNearestDoor;
 
+        // Virtual controller overlay. -1 = toggle, 0 = disable, 1 = enable.
+        std::function<std::string(int)> setVirtualControllerState;
+
         // Logs
         std::function<void(const std::string&)> setLogLevel;
         std::function<void()> clearLogs;
@@ -289,6 +296,23 @@ public:
         std::function<std::string()> getLogStats;
         std::function<void(const std::string&)> searchLogs;
         std::function<void()> toggleLogAutoScroll;
+
+        // Script debugger (DBG_SCRIPT tab). Index -1 selects the script that
+        // the last script command addressed; for scriptDisasm, start offset
+        // 0xFFFFFFFF means "current PC" and count <= 0 means the default size.
+        std::function<std::string()> scriptList;
+        std::function<std::string(int)> scriptShow;
+        std::function<std::string(int, uint32_t, int)> scriptDisasm;
+        std::function<std::string(int)> scriptStep;
+        std::function<std::string(int)> scriptResume;
+        std::function<std::string()> scriptBreakList;
+        std::function<std::string()> scriptBreakClear;
+        std::function<std::string(int, uint32_t)> scriptBreakToggle;
+        std::function<std::string(int)> scriptVars;
+        std::function<std::string(uint32_t, uint32_t)> scriptRun;
+        std::function<std::string()> scriptGlobals;
+        std::function<std::string(uint32_t)> scriptGetGlobal;
+        std::function<std::string(uint32_t, const std::string&)> scriptSetGlobal;
     };
 
     void setGameSystemRefs(const GameSystemRefs& refs) { gameRefs = refs; }
@@ -361,6 +385,7 @@ private:
     void cmdNoclip(const std::vector<std::string>& args);
     void cmdFPS(const std::vector<std::string>& args);
     void cmdSetFpsCap(const std::vector<std::string>& args);
+    void cmdMenuFade(const std::vector<std::string>& args);
     void cmdTime(const std::vector<std::string>& args);
     void cmdPos(const std::vector<std::string>& args);
     void cmdStats(const std::vector<std::string>& args);
@@ -406,6 +431,7 @@ private:
     void cmdFailQuest(const std::vector<std::string>& args);
     void cmdListQuests(const std::vector<std::string>& args);
     void cmdUpdateObjective(const std::vector<std::string>& args);
+    void cmdSetStage(const std::vector<std::string>& args);
 
     // NPC commands
     void cmdSpawnAt(const std::vector<std::string>& args);
@@ -443,6 +469,7 @@ private:
     void cmdCloseMenu(const std::vector<std::string>& args);
     void cmdMessage(const std::vector<std::string>& args);
     void cmdDebugMenu(const std::vector<std::string>& args);
+    void cmdVirtualController(const std::vector<std::string>& args);
 
     // Sound commands
     void cmdPlayBgm(const std::vector<std::string>& args);

@@ -40,6 +40,7 @@ private:
     void testOpcodes();
     void testScriptFunctions();
     void testScriptManager();
+    void testScriptDebugger();
     void testNativeScdaDecoder();
     void testNativeScdaVm();
     void testNativeScdaBridge();

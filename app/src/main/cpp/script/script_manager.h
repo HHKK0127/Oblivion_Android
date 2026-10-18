@@ -51,6 +51,7 @@ struct ActiveScript {
     bool isInlineScript = false;
     ExecutionContext context;            // Execution state
     bool waitingForFrame = false;       // True if hit frame budget last tick
+    bool paused = false;                // True while stopped on a breakpoint
     float waitTimer = 0.0f;             // For Wait() function
 };
 
@@ -110,6 +111,25 @@ public:
     ScriptValue getGlobalVariable(uint32_t formID) const;
     void setGlobalVariable(uint32_t formID, const ScriptValue& value);
 
+    // ========================================================================
+    // Debugger interface (game console / DBG_SCRIPT tab)
+    // Every method returns human-readable text and never throws. Script
+    // selection is tracked so index -1 means "the selected script".
+    // ========================================================================
+    std::string debugListScripts() const;
+    std::string debugScriptInfo(int index);
+    std::string debugDisasm(int index, uint32_t startOffset, int count);
+    std::string debugStepScript(int index);
+    std::string debugResumeScript(int index);
+    std::string debugToggleBreakpoint(int index, uint32_t offset);
+    std::string debugListBreakpoints() const;
+    std::string debugClearBreakpoints();
+    std::string debugScriptVariables(int index);
+    std::string debugListGlobals() const;
+    std::string debugGetGlobal(uint32_t formID) const;
+    std::string debugSetGlobal(uint32_t formID, const std::string& valueText);
+    std::string debugRunScript(uint32_t formID, uint32_t selfRefFormID);
+
 private:
     // Script storage (FormID -> ScriptData)
     std::unordered_map<uint32_t, ScriptData> scripts_;
@@ -136,6 +156,19 @@ private:
     ActiveScript* findActiveScript(uint32_t scriptFormID, uint32_t selfRefFormID);
     bool isInlineScriptRunning(const InlineScriptKey& key, uint32_t selfRefFormID) const;
     void releaseInlineScript(const ActiveScript& active);
+
+    // Debugger helpers
+    int debugSelectedScript_ = -1;
+    // Resolves -1 (selected) / explicit index. Returns -1 when no scripts
+    // exist, -2 when an explicit index is out of range, else the index.
+    int resolveDebugIndex(int index);
+    void clampDebugSelection();
+    static std::string describeScriptState(const ActiveScript& active);
+    static std::string describeActiveScript(size_t index, const ActiveScript& active);
+    std::string formatDisasmWindow(const ScriptData& script, uint32_t pc,
+                                   int before, int after) const;
+    std::string formatFault(const ActiveScript& active) const;
+    std::string applyDebugStep(ActiveScript& active, size_t index, bool resume);
 };
 
 } // namespace script

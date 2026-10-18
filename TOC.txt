@@ -1,0 +1,581 @@
+Oblivion Steam版 リバースエンジニアリングレポート：Oblivion.exe（メニューXMLパーサー）
+  1. 概要
+  2. PEヘッダ（新規解明）
+  3. トークンテーブル（FUN_0058a1c0）
+    3.1 組込メニューID（type の値、0x3e9〜0x41b）
+    3.2 タイル属性トークン（trait 名→ID、0xfa1〜0xffe）
+    3.3 特殊タイル演算子トークン（0x1389〜0x138f）
+    3.4 式演算子トークン（0x7d1〜0x7eb）
+    3.5 その他属性
+  4. トークン変換（FUN_00588ef0）
+  5. XMLパーサー（FUN_0058cf40）
+    属性ストレージ（FUN_0058b220 / FUN_0058ca00）
+  6. メニューコンソール（FUN_00586000）
+  7. Android版 M4 との照合
+  8. スクリプト
+    8.1 スクリプトコンパイラ（FUN_004ff710）
+      begin コマンドの処理
+      set コマンドの処理
+      if 系の処理
+    8.2 begin ブロックタイプテーブル（DAT_00b0af48 / 31エントリ・40バイト刻み）
+    8.3 関数/コマンドテーブル（PTR_DAT_00b0b420 / 131エントリ・40バイト刻み）
+    8.4 ブロックパラメータ解析（FUN_004fde30 = StandardCompile）
+      パラメータ定義テーブルの実データ（8.2 の +0x14 が指す配列）
+    8.5 InfixToPostfix 変換器（FUN_004f4080）— 解読済み
+    8.6 MessageBox/スクリプト関数テーブル（0x1000〜0x1170、369エントリ）— 解読済み
+    8.7 ジャンプ解決・機密ブロック照合 — 解読済み
+      FUN_004fd370 — begin/end ブロック照合（begin コマンドから呼ばれる）
+      FUN_004fd430 — if/then/else/endif ジャンプ解決（if コマンドから呼ばれる）
+    8.8 エラーメッセージ出力関数（FUN_004fce30）— 解読済み
+    8.9 下位層関数の解読
+  9. 式評価器 Expression::Eval（FUN_004f3620）
+    9.1 全体構造
+    9.2 トークナイザ（FUN_004f3320）と演算子テーブル（DAT_00b0a12d）
+    9.3 エラー処理（FUN_004f3300）
+    9.4 M4（menu_xml_interpreter.cpp）との照合結果
+  10. 候補解析の結果
+    10.1 trait文字列の解放関数（FUN_0058a020）
+    10.2 onlyif / all of について
+    10.3 子タイル生成（FUN_0058cc60 / FUN_0058cb70）
+    10.4 残課題
+  11. シェーダーパッケージ（Data\Shaders\shaderpackage001〜019.sdp）
+    11.1 概要
+    11.2 エントリ形式（逆解析）
+    11.3 同名シェーダーの差異
+    11.4 主要な定数（CTAB より）
+    11.5 Android 版との照合（未実施・次の作業）
+    11.6 結論
+  12. Oblivion_default.ini の解析
+    12.1 Android 移植で影響が大きい項目
+    12.2 所見
+    12.3 未確認
+  13. ボイス音声 BSA の解析
+    13.1 Android 側の現状
+    13.2 音声再生システム（EXE 内部・直接調査 2026-10）
+    13.3 lip（口形同期）フォーマット — 完全解読済み（2026-10）
+    13.3 ボイス mp3 と INFO の全数照合（完了 2026-10）
+    13.3b 次の候補
+  14. ESM / DLC BSA / ムービーの解析
+    14.1 Oblivion.esm（264.6 MiB）のレコード集計
+    14.2 DLC と Knights の BSA（v103）
+    14.3 ムービー（Data\Video\*.bik）
+    14.4 未検証事項
+  15. エフェクト/パーティクルとクレジットの解析
+    15.1 EFSH（エフェクトシェーダー）レコード
+    15.2 Android 側との対応
+    15.3 クレジット（Data\Credits.txt）
+    15.4 未検証事項
+    15.5 EFSH DATA 224 バイトのデコード（xEdit 定義で検証済み）
+  16. ESM world icon extraction (ICON = Clutter\...)
+  17. NPC AI（プロセス／パッケージ）— 2026-10-10 追記
+    17.0 AI プロセス本体と RE カバレッジ（確定・2026-10-10）
+    17.1 AI手続き種別テーブル（0xB12988、33エントリ）
+    17.2 データレイアウト
+    17.3 パッケージ選択チェーン（検証済み）
+    17.4 レベル別リスト管理
+    17.5 種別専用ハンドラ
+    17.6 種別バイト比較サイト
+    17.7 種別名テーブルの参照元（表示コード）
+    17.8 パッケージ実行モデル（検証済み・2026-10-11）
+    17.9 未解決事項
+  18. ESM PACK / PKDT の実形式（検証済み）
+    18.1 レコード走査手順
+    18.2 PACK レコードのサブレコード頻度
+    18.3 PKDT の実レイアウト（2 形式）
+    18.4 型バイト位置の統計的確定
+    18.5 型値と EXE の 33 エントリ表との一致
+    18.6 Android 実装との差分（要修正）
+    18.7 EXE 側 PKDT ローダー（実測で確定）
+    18.8 検証スクリプト
+    17.10 戦闘システム（Combat AI）— 2026-10-11 追記
+    17.11 物理ダメージ計算式（確定）— 2026-10-11 追記
+      17.11.1 ダメージ式 `Combat_CalcMeleeDamage`（0x547070）
+      17.11.2 グローバル設定変数のアドレス対応（確定）
+      17.11.3 補助関数
+      17.11.4 呼び出し元
+      17.11.5 AI 攻撃選択フロー
+      17.11.6 ダメージ適用チェーン（HP 減算経路・確定）— 2026-10-?? 追記
+      17.11.7 GetActorValue 実値読み出し最奥の特定 — 2026-10-11 追記
+      17.11.8 re-magic-object 完結（機能確定）— 2026-10-11 追記
+      18. RE 解析フェーズ総括 — 2026-10-11 追記
+  19. Constant-setter call sites in FUN_0080d110 (partial, in progress)
+  20. MSVC RTTI vtable 全体スキャンと 0x4d9b40 共有 getter の同定（確定 2026-10-12）
+    20.1 方法
+    20.2 結果
+    20.3 判定
+    20.4 未解決（動的トレース待ち）
+  21. 新規ゲーム開始フローとキャラクタ生成（確定 2026-10-13）
+    21.1 タイトルメニューのボタン処理
+    21.2 New Game ハンドラ FUN_005b5df0（0x005b5df0）
+    21.3 ワールドロード FUN_0066eaf0 とフラグ消費
+    21.4 キャラクタ生成の開始 FUN_0057b7e0（0x0057b7e0）
+    21.5 キャラ生成ウィザード（ステップマシン）
+    21.6 メニューディスパッチャ FUN_00587550（参考）
+    21.7 Android 移植への示唆
+  22. Options / Load / Credits メニュー処理の詳細（確定 2026-10-14）
+    22.1 共通のメニュー生成パターン
+    22.2 各ハンドラの固有処理
+      Options（FUN_005bd680）
+      Load（FUN_005aea60(param_1)）
+      Credits（FUN_0059d680）
+    22.3 Credits.txt スクロール構築 FUN_0059d030（0x0059d030）
+    22.4 ルート登録 FUN_00584880（0x00584880）
+    22.5 XBox セーブ変換 FUN_0045e6a0（0x0045e6a0）
+    22.6 セーブフォルダ走査 FUN_0045d450（0x0045d450）
+    22.7 セーブスロット表示行生成 FUN_005ae6d0（0x005ae6d0）
+    22.8 深度再計算 FUN_00584980（0x00584980）
+    22.9 名前検索 FUN_00589930（0x00589930）
+    22.10 trait アクセサ（確定）
+    22.11 メニュー関連補助関数一覧（追記）
+    22.12 シングルトン一覧（確定）
+    22.13 Android 移植への示唆
+  23. メニュー固有「vtable ペア」の正体（MSVC RTTI TypeDescriptor）
+    23.1 各ハンドラの先頭で起きていること
+    23.2 FUN_009832e6 = MSVC `__RTDynamicCast`
+    23.3 TypeDescriptor レコードの形式（確定）
+    23.4 メニュー RTTI TypeDescriptor 一覧（0x00b13240 - 0x00b147d8）
+    23.5 ハンドラ ⇔ 具象メニュークラス対応表（確定）
+    23.6 Android 移植への示唆
+    23.7 本章で新規追加した解析スクリプト
+  24. Options メニューファミリーのレイアウト（XML 静的解析）
+    24.1 対象ファイルと抽出結果
+    24.2 共通骨格（全子画面で同一）
+    24.3 options_menu.xml（トップ）
+    24.4 audio_menu.xml
+    24.5 gameplay_menu.xml
+    24.6 video_menu.xml（スクロールリスト方式）
+    24.7 video_display_menu.xml
+    24.8 controls_menu.xml（2 ページ + スクロールリスト）
+    24.9 スクロールバー プレハブの trait 仕様（確定）
+    24.10 テクスチャ対応表（全て抽出済みを確認）
+    24.11 Android 移植への示唆
+  25. セーブ・ロード メニューのレイアウト（XML 静的解析）
+    25.1 対象ファイルと抽出結果
+    25.2 共通骨格
+    25.3 save_menu.xml
+    25.4 load_menu.xml（save との相違点）
+    25.5 スクロールバー プレハブ vertical_scroll.xml
+    25.6 focus_box プレハブ
+    25.7 スロット行テンプレートと実行時生成（§22.6/§22.7 連携）
+    25.8 テクスチャ対応表（全て抽出済みを確認）
+    25.9 Android 移植への示唆
+  26. video_menu（VideoMenu, 900×600）のレイアウト（XML 静的解析）
+    26.1 メニューメタ
+    26.3 背景と main_rect の実寸
+    26.4 縦スクロールバー
+    26.5 行リスト（27 行）
+    26.6 コントロールの共通ジオメトリ
+    26.7 フッター
+    26.8 hair_detail は無効化されている（重要）
+    26.9 Android 移植向け確定値（まとめ）
+  27. セーブスロットオブジェクト（0x160 構造体）と .ess セーブフォーマット（逆コンパイル）
+    27.1 セーブスロットオブジェクト（0x160 バイト）のレイアウト
+    27.2 .ess ファイルのヘッダ（data_reader_size / header_field_reader）
+    27.3 セーブスロットの表示/保存まわりで判明した文字列定数
+    27.4 注意：ess_file_obj_load(0x0058cf40) は .ess 本体パーサではない
+    27.5 Android 移植向け確定値
+  28. メニュー vtable 全列挙と未文書化メニューファミリー（逆コンパイル / RTTI、確定 2026-10-16）
+    28.1 手法
+    28.2 vtable スロット規則（全メニュー共通）
+    28.3 実メニュー vtable 一覧（ベースアドレス / スロット数 / 主要スロット関数）
+    28.4 スロット 15 以降を持つ拡張メニュー
+    28.5 未文書化メニューファミリーの役割（逆コンパイル所見）
+    28.6 Android 移植向けメモ
+  29. 残メニュー関数 6 件の詳細逆コンパイル（確定 2026-10-16）
+    29.1 手法と注意（`size=1` は誤検知だった）
+    29.2 HUDMainMenu
+    29.3 DialogMenu
+    29.4 RaceSexMenu（chargen）
+    29.5 ClassMenu（chargen）
+    29.6 メニュー ID 定数（本章で確定したもの）
+    29.7 Android 移植向けメモ
+30. 追加解析依頼（メニュー入力抑制 / 設定値の消費者 / 解像度 / フェード / 未文書化メニュー）
+  30.1 依頼1: メニュー表示中のワールド入力（特にカメラ回転）の抑制
+    30.1.1 結論（要約）
+    30.1.2 メインループ `FUN_00579cf0`（毎フレーム、219 insns）
+    30.1.3 入力動作モード別ゲート `FUN_00572ec0(mode, flag)`
+    30.1.4 ワールド/カメラ更新 `FUN_0057f170(a, b, c)`
+    30.1.5 物理更新 `FUN_00679a70`
+    30.1.6 入力 update consumer `FUN_00440af0`
+    30.1.7 最前面メニューの入力ブロック
+    30.1.8 メニュー API / 正本（確定）
+    30.1.9 ポーズ中 / 探索中メニューの扱いの差
+    Android 移植向け確定値（依頼1）
+  30.2 依頼2: オプション設定値の「消費者」
+    30.2.1 audio: 実音量の算出式（確定）
+    30.2.2 audio: チャンネルグループ対応（確定）
+    30.2.3 gameplay: 難易度とトグル（確定）
+    30.2.4 gameplay: 設定 UI → 実挙動の消費者（確定）
+    Android 移植向け確定値（依頼2）
+  30.3 依頼3: video_display の解像度リスト生成 — 前提の訂正
+    30.3.1 重要な訂正
+    30.3.2 解像度リストの生成元
+    30.3.3 VideoRes / user3 / user4
+    Android 移植向け確定値（依頼3）
+  30.4 依頼4: メニュー開閉時のポーズ / フェード遷移
+    30.4.1 フェード登録 / 進行（確定）
+    30.4.2 ゲーム時刻停止（ポーズ）
+    30.4.3 OptionsMenu.user0 と ESC / 戻るキー制御
+    Android 移植向け確定値（依頼4）
+  30.5 依頼5: 未文書化メニューの XML レイアウト素材（低優先・途中）
+    30.5.1 素材の実在パス（確定）
+    30.5.2 全メニュー ID マッピング（確定・再掲）
+    Android 移植向け確定値（依頼5）
+  30.6 未確定事項（main へ申し送り）
+    30.7 追加確定事項（audio 音量 consumer 経路・完全確定）
+      30.7.1 audio_menu.xml スライダー ↔ 音量フィールド（確定・三者一致）
+      30.7.2 apply（`FUN_00595a20`）の書き込み内容
+      30.7.3 MessageMenu の 2 経路（§30.4.3 訂正の詳細）
+  31. 未文書化メニュー ウィジェット単位レイアウト（依頼5 対応）
+    31.1 共通事項と読み方
+    31.2 ContainerMenu (`container_menu.xml`)
+      31.2.1 コンテナ リスト行テンプレート（`cont_item_template`）
+      31.2.2 カテゴリ見出し（`cont_headers_top` 配下 + 各行テンプレート）
+    31.3 QuickKeysMenu (`quickkeys_menu.xml`)
+    31.4 LevelUpMenu (`levelup_menu.xml`)
+    31.5 RechargeMenu (`recharge_menu.xml`)
+    31.6 RepairMenu (`repair_menu.xml`)
+    31.7 Android 移植向け確定値（依頼5 総括）
+  32. 未文書化メニュー ウィジェット単位レイアウト（残ファミリー／依頼5 追加分）
+    32.0 読み方と列の意味
+    32.1 Message / prompt 系メニュー
+      Messagemenu (`message_menu.xml`)
+      QuestAddedMenu (`quest_added.xml`)
+      SkillPerkMenu (`skill_perk.xml`)
+      GenericTestMenu (`test_menu.xml`)
+    32.2 クラフト / ダイアログ系メニュー
+      DialogMenu (`dialog_menu.xml`)
+      TextEditMenu (`texteditmenu.xml`)
+      SpellMakingMenu (`spellmaking.xml`)
+      SpellPurchaseMenu (`spell_purchase.xml`)
+      EnchantmentMenu (`enchantment.xml`)
+      EffectSettingMenu (`enchantmentsetting_menu.xml`)
+      AlchemyMenu (`alchemy.xml`)
+      SigilStoneMenu (`sigilstone.xml`)
+      PersuasionMenu (`persuasion_menu.xml`)
+    32.3 キャラクター生成系メニュー
+      BirthSignMenu (`birthsign_menu.xml`)
+      ClassMenu (`class_menu.xml`)
+      RaceSexMenu (`race_sex_menu.xml`)
+      SkillsMenu (`skills_menu.xml`)
+    32.4 HUD / 主要 in-game 系メニュー
+      HUDMainMenu (`hud_main_menu.xml`)
+      HUDInfoMenu (`hud_info_menu.xml`)
+      HUDReticle (`hud_reticle.xml`)
+      HUDSubtitleMenu (`hud_subtitle_menu.xml`)
+      InventoryMenu (`inventory_menu.xml`)
+      MagicMenu (`magic_menu.xml`)
+      MagicPopupMenu (`magic_popup_menu.xml`)
+      MapMenu (`map_menu.xml`)
+      StatsMenu (`stats_menu.xml`)
+      player_model (`player_model.xml`)
+      HUDSafeZone (`safe_zone.xml`)
+    32.5 ロード / その他
+      LoadingMenu (`loading_menu.xml`)
+      LoadingMenu (`loading_ingame_menu.xml`)
+      LoadingMenu (`loading_bar_ingame_menu.xml`)
+      BreathMenu (`breath_meter_menu.xml`)
+    32.6 NOT USED / 実体なしファイル（パース不能）
+    32.7 prefabs / 単体パース不可ファイル
+    32.8 Android 移植向け確定値（依頼5 追加分）
+  33. main 依頼分の追加解析（NPC ダメージ経路 / メニュー登録 ID / フェード / audio 残 / 設定消費者）
+    33.1 依頼1: NPC からプレイヤーへのダメージ計算経路
+      33.1.1 近接ダメージ入口と適用チェーン
+      33.1.2 ダメージ式（近接・AI・スキル・疲労・防具）
+      33.1.3 難易度倍率（確定式）
+      33.1.4 魔法・遠距離
+      33.1.5 Android 移植向け確定値
+    33.2 依頼2: メニュー登録 ID の全割当
+    33.3 依頼3: メニュー開閉フェードの実装値
+      Android 移植向け確定値
+    33.4 依頼4: §30.6 の残 2 点
+      33.4.1 audio チャンネル 5 系統と `FUN_006aa1a0` の対応順序
+      33.4.2 `FUN_0066F420`（2410B）全文精読
+    33.5 依頼5: 字幕・オートセーブの消費者（完全確定）
+      Android 移植向け確定値
+    33.6 Android 移植向け確定値（本章まとめ）
+  §34 メニュー登録 ID の全割当（依頼2 完了）
+    34.1 登録コンテナの実体
+    34.2 ID 空間
+    34.3 全メニュー対応表（確定値）
+    34.4 Data\Menus\ XML 文字列（EXE 内 50 件、VA 付き）
+    34.5 Android 移植向け確定値
+  §35 ファストトラベル実行経路とメッセージ確認ダイアログ（依頼2 補完）
+    35.1 呼び出しチェーン全体（確定）
+    35.2 `FUN_005b8dc0`（509B）= マーカーヒット判定と実行
+    35.3 `FUN_0066f420`（2410B）= ファストトラベル実行本体
+    35.4 MessageMenu 確認ダイアログの仕組み
+    35.5 ローカライズ文言グローバル（全 9 件・実バイト確定）
+    35.6 Android 移植向け確定値
+  §36 video_display 解像度リスト生成の完全仕様（依頼3・A3）
+    36.1 結論
+    36.2 Direct3D9 シングルトン
+    36.3 列挙ループ（`FUN_005deb80` 冒頭）
+    36.4 リスト構造（`NiTList<VideoRes>`）
+    36.5 テキスト生成とワイドスクリーン判定
+    36.6 固定解像度スイッチ（`FUN_005ddb70`, VideoDisplayMenu slot[3]）
+    36.7 Android 移植向け確定値
+    36.8 関連関数一覧（A3）
+  §37 メニュー開閉フェードと入力抑制の実装詳細（A4）
+    37.1 `explorefade` と `menufade` の使い分け
+    37.2 フェードノードのレイアウトと追加（`FUN_00584300`）
+    37.3 フェード更新本体（`FUN_00583c30`）
+    37.4 フェードノードの除去（`FUN_00583cf0`）
+    37.5 メニューの有効化（`FUN_00584880`）と trait `0xfa5` のゲート
+    37.6 メニューを閉じるときのフェード
+    37.7 現在ルートメニュー取得とオフセット集計
+    37.8 メニュー表示状態のフィールドと参照箇所
+    37.9 フェード関連の定数（実値一覧）
+      `_DAT_00b33e9c` の性質（Python バイト走査で確定）
+    37.10 関連関数の詳細（A4 補足）
+    37.11 §33.3 の訂正（`FUN_00588a70`）
+    37.12 Android 移植向け確定値（§37）
+    37.13 未確定事項（§37）
+  §38 メニュー ctor / dtor 実 VA 一括同定（A5）
+    38.1 手法
+    38.2 全メニュー vtable -> ctor / dtor 対応表
+    38.3 判定規則の検証（既知 22 関数との一致）
+    38.4 特殊ケース
+    38.5 dtor の共通構造（全メニュー）
+    38.6 Android 移植向け確定値
+  §39 未文書化メニューのレイアウト（A7: Container / QuickKeys / LevelUp）
+    39.1 ContainerMenu（container_menu.xml）
+      39.1.1 menu 変数（初期値）
+      39.1.2 主要ウィジェット（確定値）
+      39.1.3 タブヘッダ（2 系統 + 8 カテゴリヘッダ）
+      39.1.4 リスト行テンプレート（cont_item_template → cont_item）
+      39.1.5 Android 移植向け確定値（ContainerMenu）
+    39.2 QuickKeysMenu（quickkeys_menu.xml）
+      39.2.1 menu 属性
+      39.2.2 主要ウィジェット（確定値）
+      39.2.3 8 スロットの座標（中心からの -w/2, -h/2 オフセット）
+      39.2.4 Android 移植向け確定値（QuickKeysMenu）
+    39.3 LevelUpMenu（levelup_menu.xml）
+      39.3.1 menu 属性・変数
+      39.3.2 主要ウィジェット（確定値）
+      39.3.3 リスト行テンプレート（levelup_template → levelup_item）
+      39.3.4 Android 移植向け確定値（LevelUpMenu）
+    39.4 未確認・残課題（A7）
+  §40 ControlsMenu（0x3fd）ページ2 キー割当の確定値
+    40.1 メニューレベル trait（menu 直下）
+    40.2 PAGE 1（52〜383 行）確定値
+    40.3 PAGE 2（392〜756 行）確定値
+      40.3.1 DEVICE セクション（399〜513 行）
+      40.3.2 MAIN RECT セクション（518〜657 行）
+      40.3.3 ボタンセクション（662〜717 行）
+      40.3.4 INSTRUCTIONS（719〜759 行）
+    40.4 controls_template（762〜868 行）キー行テンプレート
+    40.5 キー割当リスト生成（FUN_0059ba40, 832B）
+    40.6 デバイス切替ロジック
+      FUN_0059b640(int param_1, byte param_2)（45B, __cdecl, RET 0x8）
+      FUN_0059b920(int this)（88B, __fastcall, ECX=this）— デバイス順送り
+      FUN_0059b980(int this)（93B, __fastcall）— デバイス逆送り
+      FUN_0059c3f0(int param_1, int param_2)（482B, __thiscall, RET 0x4）
+    40.7 コマンドハンドラ switch 表（FUN_0059c5e0, 630B）
+    40.8 ControlsMenu フィールドオフセット表（ctor FUN_005874a0）
+    40.9 Android 移植向け確定値
+    40.10 残課題（A6 以降）
+  §41 NPC → プレイヤーのダメージ計算経路（§33.1 の補強・詳細化）
+    41.1 AC（アクター）値アクセスの実体 — 未文書化の中核 3 関数
+      41.1.1 `FUN_00484850` — HP 取得
+      41.1.2 `FUN_00488830` — HP 書込（被弾タイマーリスト管理）
+      41.1.3 `FUN_00403c00` — null 安全な値ポインタ getter（旧称: ダメージ係数 getter は誤り。§45 参照）
+    41.2 呪文・反射ダメージ経路 `FUN_005f3870`（新規・アセンブラ裏取り済み）
+      41.2.1 入口ガードと抵抗力チェック
+      41.2.2 ダメージ確定 → HP 減算（命令列）
+      41.2.3 デバッグログ
+      41.2.4 HP 書込と死亡判定
+    41.3 近接経路 `FUN_005febf0` の適用順序（§33.1 の整理）
+    41.4 難易度倍率 `FUN_005e2560`（§33.1.3 の再確認と Android 実装値の訂正）
+    41.5 魔法・遠距離の入口（§33.1.4 の補強）
+    41.6 Android 移植向け確定値（§41 のまとめ）
+    41.7 残課題（§41）
+  §42 低優先追加解析：Timer オブジェクト・AV フォールバック・コントロールキー割当表
+    42.1 【最重要訂正】PE セクション raw→VA delta（pefile で実測）
+    42.2 DAT_00b399d0 = コントロールキー割当テーブル（29 要素、要素サイズ 0x38）
+    42.3 0x00b33e9c の書き込み元 = Timer オブジェクトのフレームデルタ時間
+      42.3.1 静的初期化関数の発見（CRT init テーブル）
+      42.3.2 FUN_009DC280 = RTTI 型記述子の登録（Timer ではない）
+      42.3.3 FUN_009DC2A0 = Timer::Reset（0x00b33e9c を含むブロックの初期化）
+      42.3.4 Timer::Update @ 0x0047D170（完全デコード、1 引数 stdcall / ECX=this）
+      42.3.5 メインループでの利用（0x0040D8A0）
+      42.3.6 Timer オブジェクトレイアウト（this = 0x00B33E90）
+      42.3.7 Timer::Update の呼び出し元（9 件）
+    42.4 DAT_00b35464 = 未定義 AV 用のフォールバック float（書き込み元確定）
+    42.5 Android 移植向け確定値
+    42.6 残課題（本節で未解決）
+  §43 0x00B06704 = GMST fGlobalTimeMultiplier（dt 乗算係数の正体）
+    43.1 定数の所属
+    43.2 起動時の登録経路
+    43.3 Android 移植向け確定値
+    43.4 §42.6 の残 2 点の解消
+  §44 低優先補完：CRT 数値ヘルパとフラグアクセサ（§41.7 残項目の解消）
+    44.1 CRT 数値変換ヘルパ（§41.7 の `FUN_004842f0` 未確定項目の解消）
+    44.2 フラグアクセサ（§41.7 の `FUN_00468ff0(0xd,0)` 項目の解消）
+    44.3 Android 移植向け確定値（本章まとめ）
+  §45 §41.1 / §41.2 の訂正：被ダメージ倍率は「アーマー習熟 GMST」であり DAT_00b35464 は係数ではない
+    45.1 結論
+    45.2 同定した GMST（アーマー習熟ダメージ倍率）
+    45.3 `FUN_005f3870` の分岐（実命令で確定）
+    45.4 同じ「0.0 fallback」を共有する隣接関数
+    45.5 Android 移植向け確定値（本章まとめ）
+  §46 §41.7 残課題の解消：AV index 名テーブル・GMST オブジェクト構造・0x00B3B908
+    46.1 AV index → 名前 の正典テーブル（0x00B0A1A8、73 要素）
+    46.2 0x004055E0 の正体（GMST エントリのデストラクタ）
+    46.3 0x00B3B908 = bVerboseMessages（コンソールトグル）
+    46.4 §41.7 残課題の更新
+    46.5 Android 移植向け確定値
+  §47 GamePlay 設定ディスクリプタ表の確定と §33.5 の字幕グローバル訂正
+    47.1 ディスクリプタ表レイアウト（実バイト確定）
+    47.2 §33.5 の訂正
+    47.3 消費者一覧（確定・アドレス付き）
+    47.4 字幕発行 API と距離ゲート
+    47.5 オートセーブ経路（確定）
+    47.6 rest / wait / travel の各条件
+    47.7 Android 移植向け確定値
+  §48 メニュー開閉フェードの実装値（依頼3 応答・§37 の補強）
+    48.1 結論（Android 移植向け確定値）
+    48.2 フェードスロット配列（3 スロット・実データ確認済み）
+    48.3 メニュー単位のフェード要求リスト（MenuManager+0x130）
+    48.4 FaderNode（描画 Z 順）
+    48.5 Android 移植への適用
+  §49 便1 回答: フェード開閉の確定 / 難易度式 / ダメージ経路 / audio / FUN_0066F420
+    49.0 解析基盤（VA 変換の訂正・確定）
+    49.1 依頼4-1（audio）: FUN_006ad030 / FUN_006aa1a0
+    49.2 依頼4-2: FUN_0066F420（Player メソッド、691 命令）構造解析
+    49.3 依頼C: 難易度式の再確認（§41-4 / §45）
+    49.4 依頼B: アーマー習熟倍率の適用先 — 確定 (a) HP 実ダメージ
+    49.5 依頼2: FUN_005febf0（近接 12 段）への習熟適用
+    49.6 依頼A・依頼3: メニューフェード「開く側」の確定とノード生成分類（本セッションで確定）
+      49.6.1 ノード生成の唯一のコンストラクタ FUN_00584300
+      49.6.2 閉じ: FUN_00584390
+      49.6.3 開き: FUN_00584740
+      49.6.4 再構築 switch: FUN_00587550（docs §37.6 の「0x587560」= 先頭 0x587550）
+      49.6.5 進行と完了の位相機械（FUN_00583f40、MenuManager フェード更新ループ）
+      49.6.6 依頼A への直接回答
+      49.6.7 依頼3 残（stackingtype / alpha=0 / locus=true）
+    49.7 未確定・§50 送り
+  §50 Opencode 解析統合（便2 B1〜B13 / C1〜C6 / A6）
+    §50.0 経緯
+    §50.1 難易度ダメージ倍率（訂正: §41.4 / §49.3）
+    §50.2 ダメージ計算式（近接・B4 / 疲労・B5）
+    §50.3 プレイヤー被ダメージ経路（B1）
+    §50.4 Actor vtable+0x398（魔法/近接ヒット受信、B6）と stackingtype（B7）
+    §50.5 メニュー開閉時の入力抑制（B11 / B9）と ControlsMenu INSTRUCTIONS（B8）
+    §50.6 ContainerMenu エンジン側（B2 / B3 / B13）
+    §50.7 container_menu.xml 式（A6）
+    §50.8 GMST 全数解析（B10）
+    §50.9 SleepWaitMenu 確定処理（B12）
+    §50.10 VideoDisplayMenu（C6）
+    §50.11 移植側への留意（重要）
+  §51 XML 式評価器（menus\*.xml）完全仕様
+    §51.1 演算子トークン ID → 名前 完全対応表（確定）
+    §51.2 ディスパッチ（jump table 0x58C998）
+    §51.3 ノードレイアウトと累算器モデル（確定）
+    §51.4 全 26 ケースの実命令と意味（確定）
+    §51.5 ゲート演算子 onlyif / onlyifnot（実命令）
+    §51.6 評価器ドライバ関数 0x58BEE0
+    §51.7 main 追加依頼 1: fDifficultyDamageMultiplier の実効値
+    §51.8 main 追加依頼 3: menu_xml_tests.cpp の正期待値
+    §51.9 コンソールコマンド表（再掲・確定）
+    §51.10 God Mode フラグ 0xB3BB06（確定）
+    §51.11 ヒット受信経路と HP 書込（確定）
+    §51.12 アーマー習熟倍率の適用対象（§45 (a) の裏付け）
+    §51.13 難易度ダメージ倍率（再確定）
+    §51.14 残件（次節以降）
+  §52 XML 式評価器 累算器モデル完全仕様（main 追加依頼 2 への回答）
+    §52.1 ゲートとして作用する演算子は onlyif / onlyifnot のみ
+    §52.2 onlyif / onlyifnot の実命令（従来報告を訂正）
+    §52.3 実データによる裏付け（container_menu.xml）
+    §52.4 算術演算子の評価順と acc への作用（実命令）
+    §52.5 値ソースの評価タイミング
+    §52.6 真偽エンコーディング対照表（移植必須）
+    §52.7 menu_xml_tests.cpp の期待値（main 追加依頼 3 への回答）
+    §52.8 Android 移植向け確定値
+    §52.9 移植側の検証（出荷メニュー XML による反証）— main 追記
+      (a) §52.2 の実命令解釈の誤り
+      (b) §52.6 の真偽表と §52.2 のしきい値は同時に成立しない
+      (c) `&false;` = 1 は `<visible> &false;` と `<eq> &false;` の実データに反する
+      (d) 実在式が要求する値（§52.7 の期待値と一致しない）
+      (e) §52.3 の反論について
+      (f) 移植側の対応（本節の結論）
+  §54. main 追加依頼3件（近接経路のアーマー習熟倍率 / FUN_00889810 / TimeScale と fGlobalTimeMultiplier）
+    §54.1 近接・弓経路にアーマー習熟ダメージ倍率は存在しない（確定）
+    §54.2 FUN_00889810 の実体（ラッチで更新間隔を切り替える時間ステップ更新）
+    §54.3 TimeScale と fGlobalTimeMultiplier は完全に別機構（確定）
+    §54.4 Android 移植向け確定値
+  §55 便2 最終レポート統合補遺（2026-10-17） — §50 / §51.14 残件の解消
+    §55.1 音響 C1〜C4 の解消（§51.14「builder/commit 飽和矛盾」ほか）— s50_audio.md
+    §55.2 SleepWaitMenu 完全化（§50.9 補完・§51.14「月日数表」解消）— s50_sleep_events.md / s50_slp_b12.txt
+    §55.3 C5 解消（FUN_0066F420 / 'SUDG'）— s50_slp_c5.txt
+    §55.4 ContainerMenu 完全化（§50.6 未解決の解消）— s50_container.md / s50_cont_b2.txt / s50_cont_b3.txt
+    §55.5 VideoDisplayMenu（§50.10 未確定の解消）— s50_menus_c6.md
+    §55.6 GMST 追補（§51.14「GMST 名未確定分の一覧化」解消）— s50_gmst.md / s50_gmst_full.txt
+    §55.7 A6 補足 — s50_menus_a6.md
+    §55.8 残件リスト更新（§51.14 からの差分）
+  §56 残件6テーマ最終解析 統合（2026-10-17）— 戦闘FEBF0 / 音響 / Sleep/Jail / menu式 / Container / GMSTローダ
+    §56.1 戦闘テール — FUN_005FEBF0 全解読と Fatigue/KD/KB の定量式 ? s56_combat_residual.md
+    §56.2 音響残件 — フェード型 3/7/8・region 型値・music 状態機械 ? s56_audio_residual.md
+    §56.3 Sleep/Jail 完全化 — 「双子」の解決と menu 起動ファミリ ? s56_sleep_tail.md
+    §56.4 menu XML 式評価器 — onlyif 真偽と裸表記の確定 ? s56_xml_onlyif.md
+    §56.5 ContainerMenu 全オープン経路 ? s56_container_residual.md
+    §56.6 GMST ローダ — ESM 値の実行時適用を確定（v2、旧「幽霊差分」撤回）? s56_gmst_loader.md
+    §56.7 訂正一覧（本節による既存記述の更新）
+    §56.8 残件（Wave 3 後の統合リスト）
+    §56.9 証跡（すべて `tmp\re\`）
+  §57 Phase 1 Wave 4a 統合（2026-10-17）— 戦闘 / 魔法 / 疲労・死亡 / スクリプト VM / 経済
+    §57.0 位置づけと表記
+    §57.1 戦闘 (`s57_combat_full.md`, 1-1)
+    §57.2 魔法 (`s57_magic.md`, 1-2) — **部分完了**
+    §57.3 疲労・死亡 (`s57_fatigue_death.md`, 1-3)
+    §57.4 スクリプト VM (`s57_script_vm.md` / `s57_script_vm_table.txt`, 1-6)
+    §57.5 経済・所持品 (`s57_economy.md`, 1-9)
+    §57.6 §57 による既存記述の訂正一覧
+    §57.7 Phase 1 の残と次の一手
+    §57.8 証跡 (すべて `tmp\re\`)
+    §57.9 Wave 4a 残件追補（第2次、2026-10-17）
+      戦闘追補 (`s57_combat_full.md` §14)
+      魔法追補 (`s57_magic.md` 節 8〜11)
+      疲労・死亡追補 (`s57_fatigue_death.md`)
+      スクリプト VM 追補 (`s57_script_vm.md` §6)
+      経済追補 (`s57_economy.md` 第2次節)
+      §57.9.1 追加訂正一覧
+      §57.9.2 残件サマリ (Wave 4a 第2次後)
+  §58 Phase 1 Wave 4b 統合（2026-10-17）— AI / クエスト・対話 / セーブ・ロード / キャラ生成 / 錬金・修理等
+    §58.0 表記
+    §58.1 AI (`s58_ai.md`, 1-4)
+    §58.2 クエスト・対話 (`s58_quest.md` + `s58_qst_condtable.txt`, 1-5)
+    §58.3 セーブ・ロード (`s58_save.md`, 1-7)
+    §58.4 キャラクタ生成・レベルアップ (`s58_chargen.md`, 1-8)
+    §58.5 錬金・修理・ソウルトラップ等 (`s58_craft.md`, 1-10)
+    §58.6 §58 による訂正一覧
+    §58.7 Phase 1 の残件サマリ (Wave 4a + 4b)
+    §58.8 証跡 (すべて `tmp\re\`)
+  §59 Phase 1 Wave 5 統合（2026-10-17）— 高優先残件の消化
+    §59.0 表記
+    §59.1 戦闘 (`s57_combat_full.md` §15, 1-1)
+    §59.2 魔法 (`s57_magic.md` 節 12〜18, 1-2)
+    §59.3 スクリプト VM (`s57_script_vm.md` Wave 5 追補, 1-6)
+    §59.4 キャラクタ生成・レベルアップ (`s58_chargen.md` Wave 5 追補, 1-8)
+    §59.5 経済・所持品 (`s57_economy.md` Wave 5 追補, 1-9)
+    §59.6 §59 による訂正一覧
+    §59.7 Phase 1 残件サマリ (Wave 5 後)
+    §59.8 証跡 (すべて `tmp\re\`)
+    §59.9 KD / KB 実装の再検証（§59.1 の精密化・ユーザー指摘による）
+  §60 Phase 2 Wave 6a 統合（2026-10-17）— オーディオ / 入力 / CRT・乱数 / ファイル I/O
+    §60.0 表記
+    §60.1 オーディオエンジン (`s60_audio.md`, 2-4)
+    §60.2 入力系 (`s60_input.md`, 2-5)
+    §60.3 CRT / 数値ヘルパ / 乱数 (`s60_crt.md`, 2-6)
+    §60.4 ファイル I/O・INI パス解決 (`s60_io.md`, 2-7)
+    §60.5 §60 による訂正一覧
+    §60.6 Phase 2 の残件 (Wave 6a)
+    §60.7 証跡 (すべて `tmp\re\`)
+  §61 Phase 2 Wave 6b 統合（2026-10-17）— レンダラ / Havok 物理 / アセットストリーミング
+    §61.0 表記
+    §61.1 レンダラ (`s61_render.md`, 2-1)
+    §61.2 Havok 物理 (`s61_havok.md`, 2-2)
+    §61.3 アセットストリーミング (`s61_stream.md`, 2-3)
+    §61.4 §61 による訂正一覧
+    §61.5 Phase 2 残件サマリ
+    §61.6 証跡 (すべて `tmp\re\`)

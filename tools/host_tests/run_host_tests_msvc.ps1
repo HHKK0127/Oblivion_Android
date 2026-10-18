@@ -213,10 +213,16 @@ $clFlags += $defines
 $clFlags += $forcedIncludes
 $clFlags += $includeFlags
 
+# cmd.exe caps a command line at 8191 characters and the translation unit list
+# crosses that as the suites grow; hand cl.exe a response file instead
+# (cl expands @file in place into its argument list).
+$rspPath = Join-Path $objDir 'host_tests_msvc.rsp'
+@($clFlags + $sources) | Set-Content -LiteralPath $rspPath -Encoding ascii
+
 $buildCmd = @(
     "call `"$vcvars`" >nul 2>nul",
     "cd /d `"$repoRoot`"",
-    "cl $($clFlags -join ' ') $($sources -join ' ') /Fe:`"$exePath`" /link /DEBUG /INCREMENTAL:NO `"$($zlib.Lib)`""
+    "cl @`"$rspPath`" /Fe:`"$exePath`" /link /DEBUG /INCREMENTAL:NO `"$($zlib.Lib)`""
 ) -join ' && '
 
 Write-Host "Compiling $($sources.Count) translation units with MSVC$(if ($NoAsan) { '' } else { ' + AddressSanitizer' })..."

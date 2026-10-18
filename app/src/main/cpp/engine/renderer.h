@@ -25,6 +25,7 @@
 #include "../ui/video_display_ui.h"
 #include "../ui/controls_options_ui.h"
 #include "../ui/ui_pause_menu.h"
+#include "../ui/menu_fade_system.h"
 #include "../ui/ui_message_box.h"
 #include "../ui/game_console.h"
 #include "../ui/debug_menu.h"
@@ -132,6 +133,8 @@ private:
     std::unique_ptr<VideoDisplayUI> videoDisplayUI;
     std::unique_ptr<ControlsOptionsUI> controlsOptionsUI;
     std::unique_ptr<UIPauseMenu> uiPauseMenu;
+    // RE 48: per-menu open/close fade nodes (original MenuManager+0x130 list).
+    MenuFadeSystem menuFade;
     std::unique_ptr<UIMessageBox> uiMessageBox;
     std::unique_ptr<GameConsole> gameConsole;
     std::unique_ptr<DebugMenu> debugMenu;
@@ -181,6 +184,9 @@ private:
     // Virtual Controller (multi-touch gamepad overlay)
     std::shared_ptr<VirtualController> virtualController;
     bool virtualControllerEnabled = true;
+    // Previous frame's virtual-controller buttons, for one-shot edge detection
+    // in the per-frame input feed.
+    std::bitset<12> vcPrevButtons;
 
     // HUD System
     std::unique_ptr<HUDRenderer> hudRenderer;
@@ -383,6 +389,7 @@ public:
     // Virtual Controller
     VirtualController* getVirtualController() { return virtualController.get(); }
     void toggleVirtualController();
+    void setVirtualControllerEnabled(bool enabled);
     bool isVirtualControllerEnabled() const { return virtualControllerEnabled; }
 
     // True while any full-screen menu owns the input focus. Mirrors the
@@ -428,6 +435,13 @@ public:
     void applyResolutionSelection(int index);
     void pumpControlsOptions();
     void pumpPauseMenu();
+
+    // RE 48: pause menu fade wiring (MenuFadeSystem "pause" node). open() /
+    // close() go through the fade; closePauseMenu hides the menu - and runs
+    // onCloseComplete - only once the fade-out has finished.
+    void openPauseMenu();
+    void closePauseMenu(std::function<void()> onCloseComplete = nullptr);
+    bool pauseMenuInteractive() const;
     void pumpMessageBox();
     // Uploads every Oblivion font face the shipped menus can reference. Render
     // thread only (allocates GL textures); call once the context is current.
@@ -578,6 +592,12 @@ private:
     // door REFR's XTEL link to its target door reference and registers the
     // resolved pair with DoorManager. Returns the number of doors registered.
     size_t registerEsmDoors();
+
+    // Phase 65 / virtual controller: the in-game "activate" action. Walks
+    // through the door nearest the player and reports the result in message.
+    // maxDistance > 0 restricts the search radius and returns false when no
+    // door lies within it; 0 keeps the console's unrestricted behavior.
+    bool activateNearestDoor(float maxDistance, std::string& message);
 
         // Phase 65: exterior static-object world (REFR -> MODL -> NIF)
         void renderStaticObjects();

@@ -6,6 +6,9 @@
 constexpr float WALK_SPEED = 5.0f;
 constexpr float SPRINT_SPEED = 8.0f;
 constexpr float ROTATION_SENSITIVITY = 0.01f;
+// Full-deflection look rates for the virtual controller's right stick / D-pad.
+constexpr float LOOK_YAW_SPEED = 2.4f;    // rad/s (~137 deg/s)
+constexpr float LOOK_PITCH_SPEED = 1.6f;  // rad/s
 
 PlayerController::PlayerController()
     : player(nullptr), worldManager(nullptr), inventoryManager(nullptr),
@@ -98,6 +101,16 @@ void PlayerController::update(float deltaTime) {
         }
     }
 
+    // Apply the continuous look input (virtual controller right stick / D-pad)
+    // as rotation rates. The sign convention matches onTouchInput(): +x yaws
+    // right, +y pitches down.
+    if (lookInput.x != 0.0f || lookInput.y != 0.0f) {
+        player->rotation.y += lookInput.x * LOOK_YAW_SPEED * deltaTime;
+        player->rotation.x += lookInput.y * LOOK_PITCH_SPEED * deltaTime;
+        if (player->rotation.x > 89.0f) player->rotation.x = 89.0f;
+        if (player->rotation.x < -89.0f) player->rotation.x = -89.0f;
+    }
+
     // Variable-rate updates (animation, rendering)
     updateAnimState(deltaTime);
     applyAnimToSkeleton(deltaTime);
@@ -156,14 +169,8 @@ void PlayerController::onKeyboardInput(int key, bool isPressed) {
         }
     }
     else if (key == 'E' || key == 'e') {  // E = Pickup Item
-        if (isPressed && worldManager && inventoryManager) {
-            // Find nearest pickupable item
-            auto nearbyItem = worldManager->getNearbyPickupItem(player->position, 3.0f);
-            if (nearbyItem) {
-                // Add to inventory
-                worldManager->pickupWorldItem(nearbyItem->worldItemId);
-                LOGI("Picked up item: %s", nearbyItem->itemName.c_str());
-            }
+        if (isPressed) {
+            tryPickup();
         }
     }
 }
@@ -184,6 +191,24 @@ void PlayerController::setSprinting(bool sprint) {
 void PlayerController::setJoystickInput(float x, float y) {
     joystickInput.x = x;
     joystickInput.y = y;
+}
+
+void PlayerController::setLookInput(float x, float y) {
+    lookInput.x = x;
+    lookInput.y = y;
+}
+
+bool PlayerController::tryPickup() {
+    if (!player || !worldManager || !inventoryManager) return false;
+
+    // Find nearest pickupable item
+    auto nearbyItem = worldManager->getNearbyPickupItem(player->position, 3.0f);
+    if (!nearbyItem) return false;
+
+    // Add to inventory
+    worldManager->pickupWorldItem(nearbyItem->worldItemId);
+    LOGI("Picked up item: %s", nearbyItem->itemName.c_str());
+    return true;
 }
 
 glm::vec3 PlayerController::calculateMovementVector() {

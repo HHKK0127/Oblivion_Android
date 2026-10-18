@@ -173,12 +173,38 @@ void VirtualController::render() {
 
 void VirtualController::cleanup() {
     VC_LOGI("VirtualController cleanup");
+    cancelTouches();
+}
+
+void VirtualController::cancelTouches() {
+    left_stick_value_ = glm::vec2(0.0f);
+    left_knob_pos_ = glm::vec2(get_left_joystick_center_x(), get_left_joystick_center_y());
     left_stick_pointer_id_ = -1;
+
+    right_stick_value_ = glm::vec2(0.0f);
+    right_knob_pos_ = glm::vec2(get_right_joystick_center_x(), get_right_joystick_center_y());
     right_stick_pointer_id_ = -1;
+
+    dpad_value_ = glm::vec2(0.0f);
     dpad_pointer_id_ = -1;
+    dpad_active_direction_ = -1;
+
+    button_pressed_.fill(false);
     button_pointer_ids_.fill(-1);
+    button_press_timers_.fill(0.0f);
+
+    trigger_pressed_.fill(false);
     trigger_pointer_ids_.fill(-1);
+    trigger_press_timers_.fill(0.0f);
+
+    start_select_pressed_.fill(false);
     start_select_pointer_ids_.fill(-1);
+    start_select_press_timers_.fill(0.0f);
+}
+
+void VirtualController::onScreenResize(int width, int height) {
+    UIComponent::onScreenResize(width, height);
+    layout_dirty_ = true;
 }
 
 // =============================================================================
@@ -207,24 +233,10 @@ bool VirtualController::onEvent(const UIEvent& event) {
 bool VirtualController::onTouchDown(float x, float y, int pointerId) {
     if (!isVisible() || !isEnabled()) return false;
 
-    // Check left joystick
-    if (hit_test_left_joystick(x, y) && left_stick_pointer_id_ == -1) {
-        left_stick_pointer_id_ = pointerId;
-        update_joystick(left_stick_value_, left_knob_pos_,
-                        get_left_joystick_center_x(), get_left_joystick_center_y(), x, y);
-        VC_LOGD("Left joystick DOWN: pointer=%d", pointerId);
-        return true;
-    }
-
-    // Check right joystick
-    if (hit_test_right_joystick(x, y) && right_stick_pointer_id_ == -1) {
-        right_stick_pointer_id_ = pointerId;
-        update_joystick(right_stick_value_, right_knob_pos_,
-                        get_right_joystick_center_x(), get_right_joystick_center_y(), x, y);
-        VC_LOGD("Right joystick DOWN: pointer=%d", pointerId);
-        return true;
-    }
-
+    // Hit-test order: the small controls first, then the joysticks. The A
+    // button sits inside the right joystick's (expanded) hit circle and the
+    // D-pad's lower arm overlaps the left joystick's, so testing the sticks
+    // first would swallow taps meant for the buttons.
     // Check action buttons (A=0, B=1, X=2, Y=3)
     for (int i = 0; i < 4; ++i) {
         if (hit_test_button(i, x, y) && button_pointer_ids_[i] == -1) {
@@ -270,6 +282,24 @@ bool VirtualController::onTouchDown(float x, float y, int pointerId) {
             VC_LOGD("Start/Select %d DOWN: pointer=%d", i, pointerId);
             return true;
         }
+    }
+
+    // Check left joystick
+    if (hit_test_left_joystick(x, y) && left_stick_pointer_id_ == -1) {
+        left_stick_pointer_id_ = pointerId;
+        update_joystick(left_stick_value_, left_knob_pos_,
+                        get_left_joystick_center_x(), get_left_joystick_center_y(), x, y);
+        VC_LOGD("Left joystick DOWN: pointer=%d", pointerId);
+        return true;
+    }
+
+    // Check right joystick
+    if (hit_test_right_joystick(x, y) && right_stick_pointer_id_ == -1) {
+        right_stick_pointer_id_ = pointerId;
+        update_joystick(right_stick_value_, right_knob_pos_,
+                        get_right_joystick_center_x(), get_right_joystick_center_y(), x, y);
+        VC_LOGD("Right joystick DOWN: pointer=%d", pointerId);
+        return true;
     }
 
     return false;
@@ -729,15 +759,16 @@ void VirtualController::render_action_buttons() const {
         float cy = get_button_center_y(i);
         float r = config_.button_radius;
 
-        // Apply press scale
+        // Apply press scale. The timer runs 0 -> press_anim_duration while the
+        // button is held and back to 0 after release, so a single curve serves
+        // both directions: the button eases down to button_pressed_scale and
+        // relaxes back to full size.
         float timer = button_press_timers_[i];
         float press_t = (config_.press_anim_duration > 0.0f)
                         ? timer / config_.press_anim_duration : 0.0f;
         press_t = std::min(press_t, 1.0f);
 
-        float scale = button_pressed_[i]
-            ? (1.0f - press_t * (1.0f - config_.button_pressed_scale))
-            : (1.0f - (1.0f - press_t) * (1.0f - config_.button_pressed_scale));
+        float scale = 1.0f - press_t * (1.0f - config_.button_pressed_scale);
 
         float display_r = r * scale;
 

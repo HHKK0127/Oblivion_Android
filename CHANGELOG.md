@@ -278,6 +278,20 @@ The current version is **0.9.10 (versionCode 910)**.
   compile is sequential and cannot use the runner's core count: the run measured 12m15s end to end,
   which left too little headroom under 15 minutes. The job runs in parallel with the APK build, so
   the longer ceiling costs no wall clock time.
+
+- **The Phase 36 virtual controller is now a complete, selectable input scheme.** Its inputs were
+  wired end to end: the right stick and D-pad drive camera look through
+  `PlayerController::setLookInput()` (full deflection 2.4 rad/s yaw, 1.6 rad/s pitch, pitch clamped
+  to +/-89 deg), L sprints while held, and the one-shot buttons map to A = jump, B / R = attack, Y =
+  combat stance, Start = pause menu, Select = map, X = activate - `Renderer::activateNearestDoor(3.5f)`
+  walks through the nearest door in reach and falls back to `PlayerController::tryPickup()` when
+  there is none. The state is read once per frame from the latched touch state, which is what makes
+  it survive the legacy `UIJoystick`'s per-frame `setJoystickInput()` overwrite (the old event-time
+  feed lost every frame). `toggleVirtualController()` is no longer dead code: a `vc [on|off]` console
+  command and the Controls options device selector (Virtual Joystick = index 1, consumed from
+  `ControlsOptionsUI::consumeChanged()`) drive a new `setVirtualControllerEnabled()`, which also
+  swaps the legacy stick's visibility. The `usedoor` console command now shares the same
+  `activateNearestDoor()` implementation.
 - **The debug console can now be typed into with the Android soft keyboard.** The panel is drawn by
   the native `GameConsole`, which previously had no way to receive text, so console commands were
   unusable on a touch-only device. A 1x1 transparent `EditText` (`console_input_sink`) now holds the
@@ -292,6 +306,19 @@ The current version is **0.9.10 (versionCode 910)**.
   the first.
 
 ### Fixed
+- **The virtual controller's A button was unreachable, its press animation ran backwards, its
+  layout went stale after a rotation, and its input stuck when a menu opened mid-touch.** The right
+  stick's hit circle was tested before the buttons and shadowed A entirely (the hit-test order is
+  now buttons -> D-pad -> triggers -> Start/Select -> left stick -> right stick). Pressed buttons
+  shrank instead of growing, because the press scale lerped past the target; it is now a single
+  curve from 1.0 to `button_pressed_scale`. The class had no `onScreenResize()` override, so the
+  layout kept the pre-rotation size - it now marks the layout dirty. And when a menu opened while a
+  stick or button was held, the UP event never arrived because menus gate the touch path, so the
+  player kept moving after the menu closed: the per-frame input feed now neutralizes the stick,
+  cancels any latched touch and clears the edge-detection history whenever the title screen or a
+  menu owns the screen. Its touch routing also moved below the MessageMenu / DebugMenu / GameConsole
+  / dialogue branches, so those can no longer be stolen, and its drawing is gated by the same
+  `anyMenuOpen()` condition as its input.
 - **The frame delta was clamped at 100 ms instead of the original's 166.666 ms, so anything below
   10 FPS ran in slow motion.** RE `§42.3.4` disassembled `Timer::Update` (`0x0047D170`): it stores
   the raw millisecond tick delta, clamps it against `166.666f`, then scales to seconds and applies

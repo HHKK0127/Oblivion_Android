@@ -1713,11 +1713,15 @@ void DebugMenu::createAllTabContents() {
     {
         TabContent content;
         std::vector<std::pair<std::string, std::string>> items = {
+            {"List Scripts", "scriptlist"},
             {"Show Script", "scriptshow"},
+            {"Disasm", "scriptdisasm"},
+            {"Variables", "scriptvars"},
             {"Step VM", "scriptstep"},
             {"Break", "scriptbreak"},
             {"Resume", "scriptresume"},
             {"Run File", "scriptrun"},
+            {"Globals", "scriptglobals"},
         };
         for (const auto& item : items) {
             Button btn;

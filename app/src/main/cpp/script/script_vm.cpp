@@ -1,4 +1,5 @@
 #include "script_vm.h"
+#include <algorithm>
 #include <cstring>
 #include <cmath>
 #include <sstream>
@@ -24,6 +25,11 @@ VMResult ScriptVM::execute(ExecutionContext& ctx, int maxInstructions) {
     ctx.resetInstructionCount();
 
     while (ctx.isRunning() && ctx.getInstructionCount() < maxInstructions) {
+        // The breakpoint stop happens before the instruction runs, so the PC
+        // still points at the breakpoint when control returns to the debugger.
+        if (!breakpoints_.empty() && isBreakpointHit(ctx)) {
+            return VMResult::Breakpoint;
+        }
         VMResult result = step(ctx);
         if (result != VMResult::Success) {
             return result;
@@ -38,6 +44,54 @@ VMResult ScriptVM::execute(ExecutionContext& ctx, int maxInstructions) {
 }
 
 // ============================================================================
+// Breakpoints
+// ============================================================================
+
+bool ScriptVM::isBreakpointHit(const ExecutionContext& ctx) const {
+    const ScriptData* script = ctx.getScript();
+    const uint32_t pc = ctx.getPC();
+    for (const ScriptBreakpoint& bp : breakpoints_) {
+        if (bp.script == script && bp.offset == pc) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void ScriptVM::setBreakpoint(const ScriptData* script, uint32_t offset, bool enabled) {
+    if (!script) {
+        return;
+    }
+    auto it = std::find_if(breakpoints_.begin(), breakpoints_.end(),
+        [&](const ScriptBreakpoint& bp) {
+            return bp.script == script && bp.offset == offset;
+        });
+    if (enabled) {
+        if (it == breakpoints_.end()) {
+            breakpoints_.push_back({script, offset});
+        }
+    } else if (it != breakpoints_.end()) {
+        breakpoints_.erase(it);
+    }
+}
+
+bool ScriptVM::hasBreakpoint(const ScriptData* script, uint32_t offset) const {
+    for (const ScriptBreakpoint& bp : breakpoints_) {
+        if (bp.script == script && bp.offset == offset) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void ScriptVM::removeBreakpointsFor(const ScriptData* script) {
+    breakpoints_.erase(
+        std::remove_if(breakpoints_.begin(), breakpoints_.end(),
+            [&](const ScriptBreakpoint& bp) { return bp.script == script; }),
+        breakpoints_.end());
+}
+
+// ============================================================================
 // Single instruction step
 // ============================================================================
 
@@ -45,6 +99,10 @@ VMResult ScriptVM::step(ExecutionContext& ctx) {
     if (!ctx.isRunning()) {
         return VMResult::NotRunning;
     }
+
+    // Record where this instruction starts so an error can be reported
+    // with its faulting PC even when the message alone has no offset.
+    lastErrorPC_ = ctx.getPC();
 
     // Bounds check
     if (ctx.getPC() >= ctx.getBytecodeSize()) {

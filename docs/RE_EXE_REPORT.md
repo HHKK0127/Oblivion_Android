@@ -9354,3 +9354,1148 @@ onlyifnot 側も `0058C7B6 fstp st(0)` で残値を捨ててから `fld1` を積
 
 ---
 
+## §54. main 追加依頼3件（近接経路のアーマー習熟倍率 / FUN_00889810 / TimeScale と fGlobalTimeMultiplier）
+
+対象: `Oblivion.exe`（ImageBase 0x400000, len 7,898,624, md5 CDD2F0C5EFF198D4F26B7B5B54CE4930）。
+静的解析: pefile + capstone。VA は RVA+0x400000。
+
+### §54.1 近接・弓経路にアーマー習熟ダメージ倍率は存在しない（確定）
+
+- 4 スロットの GMST 名を平文で回収（§45 の内容を確定）:
+  | VA | GMST 名 | 値 |
+  |---|---|---|
+  | 0x00B374F0 | fPerkLightArmorNoviceDamageMult | 1.5 |
+  | 0x00B374F8 | fPerkHeavyArmorNoviceDamageMult | 1.5 |
+  | 0x00B37500 | fPerkHeavyArmorJourneymanDamageMult | 0.5 |
+  | 0x00B37508 | fPerkLightArmorJourneymanDamageMult | 0.5 |
+  （隣接 0x00B37510 = fPerkJumpFatigueExpertMult）
+- dword 参照（`struct.pack("<I",VA)` の raw 検索）は各スロット **3 件のみ**:
+  1. FUN_005f3870 本体（呪文・反射経路の倍率適用）
+  2. setter スタブ（GMST 自動登録の書込）
+  3. getter スタブ
+- **近接・弓のダメージ計算本体 FUN_005FEBF0（Actor vt+0x3AC）内に、これら 4 スロットへの参照は 0 件。**
+  したがって近接・弓ダメージにアーマー習熟（重装/軽装 × Novice/Journeyman）によるダメージ倍率は掛からない。
+- 近接・弓は倍率 1.0 相当で、§45 の tail（0x5F392F 合流、HP 実ダメージ）と同経路に合流する。
+- 補足: FUN_005f23b0 の第 2 引数の有効範囲は 0x0C〜0x20 のレンジチェックであり、
+  §46 の AV 正典テーブル（技能 index 0x0c 起点、0x12=HeavyArmor / 0x1b=LightArmor）と一致。
+  FUN_005f23b0 は **AV 値取得関数**とする理解で正しい。
+- （§45 の倍率適用対象の再確認も同じ事実で確定: 4 倍率は HP への実ダメージに作用。
+
+### §54.2 FUN_00889810 の実体（ラッチで更新間隔を切り替える時間ステップ更新）
+
+- 唯一の caller: 0x40D8C2（`movzx ecx,[0xb333b8]; call 0x889810` の直後）。
+  引数は `dt_game = [0xb33e9c]`（ゲーム時計オブジェクト 0xB33E90 の +0x0C = ゲーム時刻進行量）と
+  `[0xb333b8]`（SetSceneIsComplex ラッチ）。
+- 0x40DBCB で毎フレーム末尾に `mov [0xb333b8],bl`（0 クリア）＝ラッチは 1 フレーム限りの一時フラグ。
+- FUN_00889810 の実命令（要旨）:
+  - ラッチ値から更新間隔を決定: ラッチ≠0 で `ecx=2`、ラッチ=0 で `ecx=3`
+    （0x889850 付近 `neg cl; sbb ecx,ecx; add ecx,3` の同型）。
+  - 累算 dt（0x00B2E2E0）に dt_game を加算し、ecx フレームに 1 回だけ内部時間を進める
+    （n 回に 1 回更新）。
+  - 使用定数: 0x00B2E2E8 = 1/60、0x00B2E2EC = 0.032、0x00B2E2F0 = 0.05、
+    0x00A3D14C = 166.6667、0x00A95CA8 = 1/120。
+  - 出力先: 0x00BA790C / 0x00BA7914 / 0x00BA7918。
+- 解釈: 「複雑シーンかどうか（SetSceneIsComplex）」で、特定サブシステムの更新周期を
+  2 フレームに 1 回 / 3 フレームに 1 回へ落とす LOD 的な間引き。
+  移植では「複雑シーン時は該当更新を 2 フレームに 1 回、通常時は 3 フレームに 1 回」を再現すればよい。
+- 未回収: この関数が参照する GMST の名称（移植影響は小）。値は上記定数で確定。
+
+### §54.3 TimeScale と fGlobalTimeMultiplier は完全に別機構（確定）
+
+- ゲーム時計本体 0x47D170（実 caller はリロケート探索で 3 件に確定: 0x40D8AB / 0x5AD327 / 0x5AD9C2。
+  いずれも `push GetTickCount(); mov ecx,<clock obj>; call 0x47D170` 形式）。
+  - `edx = tick - [ecx+0x14]`（経過 ms）、`fmul [0xa30e40]`(=0.001, ms→秒)
+    → 日数 [ecx+0x10]、時刻 [ecx+0xc]。
+  - **0x47D247 `fmul [0xb06704]`（= fGlobalTimeMultiplier）→ 0x47D24D `fstp [ecx+0xc]`。**
+- fGlobalTimeMultiplier: スロット 0x00B06704（float、既定 1.0、名 "&CfGlobalTimeMultiplier:General"）。
+  dword xref は 4 件のみ:
+  1. 0x47D249 乗算（**唯一の実消費**）
+  2. 0x9AF431 デストラクタ（`mov ecx,0xb06704; jmp 0x403bc0`）
+  3. 0x9DC2F1 登録初期化
+  4. 0xA18691 登録初期化
+- TimeScale: 設定オブジェクト **index 0x3A**、登録ルーチン 0x44CA60〜0x44CACB
+  （`push 1; push 0x3a; call 0x46c300` → vtable+0xD8 で名 0x00A37CCC を設定 →
+  `fld [0x00A37CC8](=30.0); fstp [esi+0x24]`）。
+  値は **設定オブジェクト自身の +0x24 にインライン保持**され、
+  取得はゲッター 0x46B250 → 値アクセサ 0x402BD0（`[obj+0xc]`→`[+0x24]` の float、失敗時 12.0）。
+- TimeScale の消費側（0x659145 / 0x64450E 等）は取得値を `call 0x6599b0`
+  （OverlayMenu vtable+0x28 アクセサ、失敗時 -1.0）と `fcomp` で**比較**に使うのみ。
+  → **dt に乗算する箇所は存在しない。**
+- 結論:
+  - フレームごとの時間進行倍率は **fGlobalTimeMultiplier（0x00B06704）のみ**。
+  - TimeScale は別系統（待機/休憩の早送り・ゲーム内時計表示・オーバーレイ判定用）であり、
+    物理・アニメの dt には作用しない。
+  - 移植側で「timescale=30」を全 dt に掛ける実装は誤り。
+- 関連登録（同系統、時間系グローバル 0x44C8A0〜0x44CB40）:
+  | index | 名 | 既定値 |
+  |---|---|---|
+  | 0x38 | GameHour | 12.0 (0x00A2F918) |
+  | 0x39 | GameDaysPassed | 1.0 |
+  | 0x3A | TimeScale | 30.0 (0x00A37CC8) |
+  登録は `call 0x46c300`、名前設定は vtable+0xD8、既定値書込は `fstp [esi+0x24]`。
+
+### §54.4 Android 移植向け確定値
+
+- 近接・弓ダメージにアーマー習熟倍率を**掛けない**（倍率 1.0）。4 倍率は呪文・反射（FUN_005f3870）のみ。
+- 複雑シーン時は FUN_00889810 相当の更新を 2 フレームに 1 回、通常時は 3 フレームに 1 回。
+- dt への時間倍率は **fGlobalTimeMultiplier（既定 1.0）のみ**。TimeScale（既定 30.0）を dt に掛けない。
+  TimeScale は SkyWeatherSystem の別時計／待機・休憩の早送りにのみ使用する。
+- GMST 名（平文）: fPerkLightArmorNoviceDamageMult / fPerkHeavyArmorNoviceDamageMult /
+  fPerkHeavyArmorJourneymanDamageMult / fPerkLightArmorJourneymanDamageMult /
+  fPerkJumpFatigueExpertMult / fGlobalTimeMultiplier。
+
+---
+
+## §55 便2 最終レポート統合補遺（2026-10-17） — §50 / §51.14 残件の解消
+
+本章は、`tmp\re\` に 2026-10-17 に揃った便2 最終レポート群（`s50_gmst.md` / `s50_container.md` / `s50_audio.md` / `s50_sleep_events.md` / `s50_menus_a6.md` / `s50_menus_c6.md` / `s50_b13_plan.md` / `s50_dmg.md` / `s50_input.md` / `s50_magic_stack.md` / `s50_a5.md`）と証跡（`s50_*.txt` / `s50_*.py`）に基づき、先に統合した §50（生ダンプ時点）および §51.14 の残件リストを解消・上書きする差分である。§50 の記述と矛盾する場合は本章を優先する。§50.0 の「B2/B3/B10/B12/C 系は最終 md 未作成」は本章追記時点で解消済み（全テーマの md が揃った）。
+
+### §55.1 音響 C1〜C4 の解消（§51.14「builder/commit 飽和矛盾」ほか）— s50_audio.md
+
+- Audio 設定メニュー = ページ型 `FUN_5952F0` → **0x3F9**。builder `FUN_595380` のスロット→フィールド対応 [確定]: 1=Master(+0x28) / 3=Voice(+0x30) / 5=Effects(+0x38) / 7=Foot(+0x40) / 9=Music(+0x48)。commit `FUN_595a20` は**奇数 index のみ走査 = スライダー5本** [確定]（C1 解消）。スライダー trait: 0xFAF=min 0.0 / 0xFB0=max 100.0 / 0xFB2=刻み 25.0 / 0xFB3=初期位置（vol×100 → `0x9828C0` 整数化。0..100 log 表示、内部 0..1 リニア [推定]）。
+- 既定値（値+名前ポインタ 8B 組）[確定]: bSoundEnabled=1 / bMusicEnabled=1 / fMainMenuMusicVolume=0.6 / fDefaultMasterVolume=1.0 / fDefaultFootVolume=0.8 / fDefaultMusicVolume=0.3 / fDefaultEffectsVolume=0.8 / fDefaultVoiceVolume=0.8。ctor は [0xB8]/[0xBC]/[0xC0]/[0xC4]/[0x2F0]/[0x2F8] へ設定、[0x2F4]=0。
+- `FUN_6acd10` = 曲切替予約。**実引数は arg1（曲ID）のみで、arg2/arg3 は本体で一切参照されない** [確定]（C2 解消。呼出側の 0 と 1.0f は vestigial）。曲ID: 0=explore / 1=public / 2=dungeon / 4=battle / 0xFFFF=停止。全 11 呼出サイト（0x46340C battle / StreamMusic 5 種 / 0x6136CF / 0x613776 停止 / 0x6AD0F1 / 0x6AD6F2 / 0x6AD950）。
+- `[0x2F4]` = 切替/フェード開始時にキャプチャした目標音量 [確定]（C3 解消。書込 ctor / 0x6ACD67 / 0x6AD002、読出 0x6AD5EF）。
+- フェード: `[0x2EC]=+1700ms`、t=(now-start)/1700、vol=(t-0.5)×2×[0x2F8]、完了条件 [0x2F0]≥[0x2F4]。**通常ランプは ±0.02/tick（[0xA73E80] を f64 として fsub/fadd）+ |差分|<0.02（[0xA57604]）でスナップ [確定]** — §49（8457 行付近）の「±2.0 = [0xa73e80]」は誤読 [訂正]。
+- `FUN_6ae860` = **AudioManager::Update** [確定]（C4 解消）。戻り値は常に 0、呼出元 5 件（0x40DBB4 / 0x524FA4 / 0x52509B / 0x5CEB5C / 0x601AEF）。sound map [0x300] / キュー [0x320] / フェードリスト [0x308]（型 3/7/8）/ リスナー更新 / 3D 距離カリング。**音量系の書込はすべて `FUN_6ad030`（music director）経由** [確定]。
+- `FUN_509610` = StreamMusic（opcode 0x104E、登録 0xB0D4F0）→ 予約 `FUN_6acd10` のみ。文字列: 'random'→rand%4 / 'explore'→0 / 'public'→1 / 'dungeon'→2 / 'battle'→4 / 不明→停止系 0x6AB160。
+- dB 書込 `FUN_6aa1a0`: vol→0..1 clamp、flag≠0 で [0x2F8]+[0x2F0] 同時更新、[0xB3C0EC]≠0 で fMainMenuMusicVolume 置換、vol²×Master²、<0.01→-10000mB（無音）、それ以外 2000·log10 → vtable+0x1C。
+- 未確定: 0x9828C0/0x986CD0 の厳密仕様、フェード型 7/8 の in/out 割当、region 音楽選択 `FUN_6AE0A0` の型値（0x1011/0x1101/0x1102）。
+
+### §55.2 SleepWaitMenu 完全化（§50.9 補完・§51.14「月日数表」解消）— s50_sleep_events.md / s50_slp_b12.txt
+
+- 起動: (A) ベッド等 Activate 0x672D63 → wait モード（push 0）/ (B) スクリプト 0x4AEA1C → sleep モード（push 1）/ (C) 0x57B560（fun C）。共通ラッパー 0x57B420（ctx trait 0xFAE==2.0 前提、menu 0x3F4 を閉じて 0x5D6D20 へ）。
+- `0x5D6D20` ShowSleepWaitMenu: `sleep_wait_menu.xml`（0xA69AB4、root id 0x3F4、失敗文言 "Sleep Menu Creation Failed..." 0xA6D810）。スライダー id3: min 1.0 / max 24.0 / jump 6.0 / 初期値 0xB14778。wait→user0=1.0、sleep→user0=2.0。日時表示 id8/id9（trait 0xFDE）。
+- `0x5D6A80` confirm（event 5）[確定]: hours=int(user7=0xFB5)、0xB3B730←0xB14778←hours、player+0x590=hours、player+0x594=[esi+0x4C]、0xB3B724=1.0（毎秒タイマー）、0xB3B728=1。
+- per-frame `0x5D7090`（menu 0x3F4 表示中）: 0xB3B724 を毎実秒減算 → 満了毎に `0x65F770(player)` = ゲーム内 1 時間。0x65F770: 3600/timescale 実秒、[0xB14E4C]==0 中は AI/回復省略、player+0x590--、[player+0x594]≠0→+0x6A8++ / ==0→+0x6AC++。終了 = [player+0x590]==0 または キー 0x10 → 0x5D6A10 で閉じる。
+- **月日数表 `0xB06710` = 12×u16 {31,28,31,30,31,30,31,31,30,31,30,31}（閏なし）[確定]**。日付計算は DOY `0x47D2B0` / DOY→年月日 `0x47D330`、u32 読みで隣接 u16 ペア化に注意（s50_slp_b12.txt 4 節）。→ §51.14 残件解消。
+- close `0x5D6A10` → dtor 0x5D6960 → [0xB3B72A]=1 → メインループ 0x40DF10 が 0x440AF0 / 0x434020 / 0x5732D0 で復帰。[0xB3B72C]≠0 なら 0x679A70 で整合。
+- レベルアップ [確定]: ベッド睡眠完走（sleep モード && [player+0x1DC] && !中断 && [0xB14E88]=bInstantLevelUp:GamePlay==0）→ [0xB3A6D1]=1 → 0x5822EE → `0x5ACE20`（levelup_menu.xml、menu 0x403）。bInstantLevelUp=1 は即時経路 0x671C36。
+- オートセーブ: 0xB13218 (bSaveOnRest) / 0xB13220 (bSaveOnWait) / 0xB13228 (bSaveOnTravel、FUN_0066F420 側) — §33.4.2 の対応表と一致。
+- jail 早送り 0x670700（日数×24h 一括、上限 10 日、ラッパー 0x671600）[推定]。
+- 状態変数: 0xB14778 / 0xB3B724〜0xB3B72C / 0xB3B730 / player+0x590 / +0x594 / +0x6A8 / +0x6AC / 0xB14E4C / 0xB14E88 / 0xB3A6D1（詳細は s50_sleep_events.md 2 節）。
+- 未確定（更新）: menu 0x3F5 / 0x5BDA90（class 0xB132FC = PauseMenu）、fun D 0x57B600、双子 0x670B00 との役割分担、0x5056F9 の所属。
+
+### §55.3 C5 解消（FUN_0066F420 / 'SUDG'）— s50_slp_c5.txt
+
+- `0x47445553` = リトルエンディアン "SUDG" = **MGEF コード Sun Damage（太陽ダメージ）** [確定]。`0x66FCD1`〜`0x66FCE8` で 'SUDG' 一致 → `dynamic_cast<SunDamageEffect*>`（RTTI 0xB14914 = ?AVActiveEffect@@ / 0xB14FF8 = ?AVSunDamageEffect@@、vftable 0xAA3E80）→ 成功時 `[effect+0x3D]=1` [確定]。
+- `0x9832E6` = MSVC `___RTDynamicCast`（§23.2 と同一。本件では 'SUDG' 用途の実例を確定）。双子 0x670AF0-0x670D7x に同等ループ（0x670C3A / 0x670C62）。MGEF 定義側: 0x417A42（'Sun Damage' @0xA33A18、school 2）/ bool 判定 0x9FED86 → [0xB3C0E8]。
+- `FUN_0066F420` の正体 = **ゲーム状態のセーブ/ロード/切替系クリーンアップ + オートセーブ [部分確定]**（決定打文字列なし）。head: [0xB13228]≠0 → 0x466B70 autosave、player+0x12C=1。tail: player+0x12C=0 → 0x679A70。呼出元ラッパー 0x5B8F5B（UI 4 連クローズ後）。
+- 残: 起動契機（セーブ/ロード/新規の別）の断定 [未確定]。`[effect+0x3D]` の意味は「発動中/再適用マーク」相当 [推定]。
+
+### §55.4 ContainerMenu 完全化（§50.6 未解決の解消）— s50_container.md / s50_cont_b2.txt / s50_cont_b3.txt
+
+- **cmd 0x33(51) = 行アクティベート [確定]**（§51.14 残件解消）: (1) form==Gold（0xB35EC8）→ 即実行、(2) count < 閾値（0xB38688）→ 即実行、(3) それ以外 → 数量ダイアログ `0x5C05D0`（&0xB13E94、cmd=51）。移動実行: 単品 dest.vt+0x100 / 複数 0x59B227 経路。結果 float → 0xB3B27C（画面更新用）。
+- 窃盗: open 時 0x59A244-0x59A2B2 で [0xB3B279] を設定。窃盗時は転送コア内 `0x4935F0-0x49366E` で **ExtraData 0x27（owner）** を付与。Owner get/set/clear = 0x41E7B0 / 0x423660 / 0x41F600。所有権チェック 0x4DB6B0 / 0x4DE770。
+- 転送コア `FUN_00492E70`: `ret 0x14`・5 引数（list, container, player, 0, 0, theft flag）[確定]。TakeAll(32) = 0x41DF50 が真のエントリのみ 0x4876C0 → 0x492E70 一括 → ftol 0xB3B27C → 0x607B90 → sound 0x1D → [0xB3B278]=1 → refresh。
+- リスト構築: REFR ExtraData 0x1A = インベントリリスト（0x485E00）。refresh `0x5982A0`: 価値 0x470520 / 名前 0x488DF0 / 個数 entry+4（0x4B2460）。ソートは [+0x60]（列 0-6 + 方向 bit7）+ 0x5992C0。
+- 開閉: open（ファクトリ case 0x3F0 → `FUN_00599EE0(container,0,1,0)`）→ [0xB3BAD4]=container、Trait 初期化 0xFAF〜0xFC1; close は転送戻しの合計破棄 → sound → [0xB3BAD4]=0。
+- モードフラグ +0x61 [推定-強]: 0=商人（Haggle 有効、cmd51 は商人フロー 0x59ABD7）/ 非0=通常コンテナ（TakeAll 可視 user8、窃盗評価あり）。引数由来は静的に解決不能。
+- B3 解消: `FUN_0059BD80` = **ControlsMenu vtable[11] のキーリバインド入力キャプチャ** [確定]（0x58CEB0=SetTraitF / 0x58CED0=SetTraitStr は共通 UI 基盤）。
+- B13: ランタイム .data ダンプ手順書 `s50_b13_plan.md`（P0 シングルトン: 0xB333C4 / 0xB3BAD4 / 0xB35EC8 / 0xB33B00 / 0xB3A6E0 ほか、P1: 0xB3B279 / 0xB3B27C / 0xB13E94 / 0xB38688 閾値、P2 文字列、P3 0xB32C00〜0xB39FFF 一括）。**実行はユーザー操作（Cheat Engine / WinDbg）待ち**。
+- 残: +0x61 の引数由来、0xB38688 閾値の実値（B13 対象）、金アイコン挙動、XML id 12 の役割、窃盗規則の厳密化（0x4DE770/0x4DE880）。
+
+### §55.5 VideoDisplayMenu（§50.10 未確定の解消）— s50_menus_c6.md
+
+- 実体は単一ファイル `menus\options\video_display_menu.xml`（include なし）。BSA 展開ツリーとリポジトリ内コピーで **SHA256 `DE9BB53F39FEAA2C70DB6FF949E4C20F6E7E75DE6A9B82394416BE6DD3320CD5` 一致** [確定]。`options\video_menu.xml` は VideoMenu（0x3FA）本体で別物。
+- 構成（208 行）: `<menu name="VideoDisplayMenu">` → background id1（24 行、520x680、Menus\Shared\main_page_5.dds）/ display_text id2（34 行、RGB 117,59,33 alpha 200、x40 y60、wrapwidth parent-50）/ return_button id3（158 行、190x50、x=315 y=520、cont_button_long_off.dds）/ first〜fifth_text id4-8（y=120/160/200/240/280、40 間隔）。
+- 解像度 5 行の `<string>` は XML 側プレースホルダ（" - 800 x 600" 〜 " - 1280 x 960"）。実行時にコード（vtable 0xA6DCCC）が選択状態込みで更新（§36 と整合）。
+
+### §55.6 GMST 追補（§51.14「GMST 名未確定分の一覧化」解消）— s50_gmst.md / s50_gmst_full.txt
+
+- 全 2304 件（f 992 / s 1085 / i 227。static 2056 / dyn 248）の名前・スロット・既定値・refs を `s50_gmst_full.txt`（392KB）に完全収録。registrar 0x41BAE0（992）/ 0x419A70（1312）、登録マップ 0xB35574。
+- §49.3 の「Selector functions 0xA1FDF0-0xA1FE30」= **終了時破棄 thunk**（0x981FB4 へ登録 → Setting デストラクタ 0x4055E0 へ jmp）[確定]。値アクセスは消費者がスロット VA を直接読む。
+- §50.2 / §50.3 で名未確定だった GMST の名称解決 [確定]: `0xB36F50`=fCombatSpeakHitChance（0.35、消費 0x600478）/ `0xB36F58`=fCombatSpeakHitThreshold（0.10、消費 0x60044D）/ `0xB36CB8`=fDetectionSneakLightMod（0.0、消費 0x5464EC）/ `0xB36F80/88/90`=fKnockdownAgilBase/Mult, fKnockdownDamageBase / `0xB36EA8/B0`=fArmorRatingConditionBase/Mult / `0xB373E0`=fMoveRunAthleticsMult（1.0）。※ §50.2 の「致命判定」呼称は消費サイトが fCombatSpeakHit* と一致するため用途ラベル再検討対象 [未確定]。
+- 動的 248 件の内訳: sKB* 約 190 / fEnchant*Limit 5（15/25/40/60/85）/ sDevice* 3 ほか。store グローバル 0xB39534 以降。
+- ESM 突合: GMST 382 レコード中 **378 名前一致 / 226 値相違**（代表例は s50_gmst.md §9）。EXE 未登録は fRegionGenTex* 4 件のみ。難易度 4 件は 0xB37B70/78/80/88（DamageMultiplier は EXE 10.0 → ESM 上書き 5.0）。
+- §43.2 の `CALL 0x004000E0` は `0x4040E0` の誤記 [訂正]（named-setting B コレクション 0xB07BF0 側の登録ヘルパ、call site 637 件）。
+- b 型 GMST は EXE/ESM とも不在（b* は B コレクション側 — §54.3 と整合）。
+
+### §55.7 A6 補足 — s50_menus_a6.md
+
+- カテゴリヘッダ `_text` の x=130 / y=35 は全 9 カテゴリ（book/keys/stones/misc + weapon/apparel/apparatus/potions/ingr）でリテラル [確定]。
+- QuickKeysMenu: `quick_key_1..8_image`（id 8..15）の filename は XML 初期値空 [確定]。設定は更新関数 `0x5C1B80` 内 0x5C1C80-0x5C1D18: RTTI `?AVSpellItem@@`（0xB03800）/ `?AVTESBipedModelForm@@`（0xB036DC）cast（0x9832E6）→ leaf → `sprintf("%s\\%s\\%s","Menus","Icons",leaf)` → trait 0xfe6 を 0x58CED0 で設定 [確定]。ctor FUN_005C0B50 は filename を設定しない。
+- u16〜u19 ↔ books/keys/stones/misc の対応（コード書込元）は未確定だが、移植は XML 式そのままで可（§52 累算器モデル）。
+- 式評価は §51/§52 の累算器モデルで確定済み（marker.x = user7 ? 127 : 35、left=14、right=231）。
+
+### §55.8 残件リスト更新（§51.14 からの差分）
+
+- 解消: C1〜C4（§55.1）/ SleepWait 月日数表（§55.2）/ C5 イベント種別（§55.3、部分確定）/ ContainerMenu cmd 0x33（§55.4）/ VideoDisplayMenu XML（§55.5）/ GMST 名一覧（§55.6）/ stackingtype 詳細（§50.4 済）。
+- 継続・新規: actor vt+0xA8（§51.11 では +0x3A8）適用スタブの実体確定（0x6AF880 本体）/ FUN_005FEBF0 後半（アーマー軽減・スタッガー・1 発上限）/ 疲労の戦闘寄与定量 / menu 0x3F5・0x5BDA90 / 0x57B600 / 0x670B00 双子分担 / audio 細部（0x9828C0・0x986CD0、フェード型 7/8）/ onlyif 真偽エンコーディング（§51.5）/ ESM 226 値相違のローダ経路 / B13 実機ダンプ（ユーザー操作）。
+- 証跡・再現: 各 md 末尾の手順 + `tmp\re\re_util.py`。生ログは `tmp\re\s50_*` 一式（300 ファイル超）。
+
+---
+
+## §56 残件6テーマ最終解析 統合（2026-10-17）— 戦闘FEBF0 / 音響 / Sleep/Jail / menu式 / Container / GMSTローダ
+
+本節は 2026-10-17 の子セッション群（Wave 3）による残件最終解析 6 本を統合したものである。一次成果の全文・証跡・スクリプトは `tmp\re\` の各 md と `s56_*` 群（md 6 本 + txt/py 多数）にあり、本節は要点と既存記述の訂正を示す。§55 までの記述と矛盾する場合は本節（および各 md）を優先する。
+
+### §56.1 戦闘テール — FUN_005FEBF0 全解読と Fatigue/KD/KB の定量式 ? s56_combat_residual.md
+
+- 全体像 [確定]: FUN_005FEBF0 = 戦闘ヒット解決本体。呼出規約 this(ecx)=edi=攻撃側 Actor / arg1=int フラグ / arg2=esi=被害側 Actor / arg3=REF(武器) / ret 0xc。被害側適用は末尾 `esi.vt+0x3A8(edi, 0)` → 0x5FE380(this=被害, attacker=edi, 0) で閉じる。双子関数 0x5EDEC0 = Actor vt+0x3B0。
+- KD 抽選 (0x60024F〜0x60028E) [確定]: `v0 = ftol([esp+0x5c])`（0x9828C0）、`x1 = 0x5F4880(esi, v0)`、`res7 = esi.vt+0x284(7, x1)`（AV7=Luck 経由）、`res3 = esi.vt+0x284(3, x1)`（AV3=Agility 経由）→ `call 0x5475D0`（cdecl 4 引数、caller 後始末 `add esp,0x10`）→ `[esp+0x17]` = KD フラグ。
+- 自動 KD [確定 0x600248]: `[esp+0x3c]==0.0` かつ Fatigue(AV 0xA) ≤ 0 のとき KD フラグ=1。
+- マークスマン Perk [確定 refs]: スキル rank≥3 かつ `rand()%100 < iPerkMarksmanKnockdownChance(0xB37240=5)`（ref 0x60032D）→ KD。rank==4 かつ `rand()%100 < iPerkMarksmanParalyzeChance(0xB37248=5)`（ref 0x60034F）→ パラライズ優先（KD フラグ=0）。
+- 死亡/Health 比 [確定 0x6003F0]: vec3 コピー → `[ebx].vt+0x2F0(esi)` → **KD フラグ=0 クリア**。`esi.vt+0x284(8)`（AV8=Health）比 = ダメージ([esp+0x18])/Health([esp+0x40])。
+- スピーク / スタッガー [確定]: `0x5FC090(edi, esi, [esp+0x64])`（スピーク可否, ret 8）→ 実行 `(esi==0xB333C4 ? Player : esi).vt+0x308(edi, 1, 1)`。スタッガー = `[esp+0x17]!=0 && esi.vt+0x19C()==0 && 0x6131D0(esi, edi, 0)`。スピーク抽選 GMST: fCombatSpeakHitThreshold(0xB36F58=0.10) ref 0x60044D / fCombatSpeakHitChance(0xB36F50=0.35) ref 0x600478。
+- アーマー軽減 [確定/一部推定]: `0x547260(...)` で AR 系数、`factor = min(AR/100, fArmorRatingMax=1.0 @0xB36EA0)`、`damage *= (1−factor)`。
+- パワーアタック / ブロック反撃 [確定 0x5FFF40]: `bl=[esp+0x74]`（パワーアタック）。HandToHand(AV 0x11) rank≥2 → 直行、rank<2 は 4 ゲート後 Block(AV 0xF) rank≥2 で `rand%100 ≤ iPerkHandToHandBlockRecoilChance(0xB37250=25)` → `0x5F4F00(edi)`（ブロック反撃）。続く `esi.vt+0x398(...)` = 0x5EE760 = ブロックダメージ適用 [推定]。
+- 終端チェーン (0x600528〜0x6005E7) [確定]: (1) `0x7EB010(1)`; (2) ebp=[esi+0x58]（被害プロセス）; (3) ブロック成立時 `[esi+0x58].vt+0x44C(entry)`（HighProcess 実体 0x651D60 = `[proc+0x164]` 効果マスク再計算、`mask & arg2 != 0` bool, ret 8）→ `0x679340(0xB3BD00, 8, esi)`（bhkWorld 系キュー）; (4) `esi.vt+0x3A8(edi, 0)` = 0x5FE380 被害適用; (5) 0x6005C0〜0x6005E7 ループ: `[edi+0x58].vt+0xEC(1)` 武器 REF → `[+8]` → `byte[+0x90]` = weaponType → `0x6AF880(edi, 0.0f, 0.0f, 0, weaponType, −1, −1, 0, 0)`（9 引数直呼び）→ loop。
+- 0x600379〜0x6003F0: 武器アニメ種別判定（`0x4FBF90` 文字列コピー + fstrcmp → `0x470720`→`0x51AA00`、無し=0xFF）、`[esp+0x1f]` 等へ。`0x5F1910(this, int av)` = AV int 化ヘルパー（内部 0x5EAD00 → float → ftol、ret 4）。
+- 0x5F4880 [確定本文/用途推定]: `(v!=0 ? GetAV(0xA=Fatigue)/v : 1.0)` = 疲労比供給。KD の x1。
+- Fatigue 式 [確定]:
+  - 攻撃コスト 0x547560: `cost = dmg×fFatigueAttackWeaponMult(0.1) + fFatigueAttackWeaponBase(8)`; パワーアタックで `×fPowerAttackFatiguePenalty(5)`。弓/杖（武器アニメ 4/5）は 0 扱い（呼出元 0x5E405E）。
+  - ブロックコスト 0x547590: `cost = skill×fFatigueBlockSkillMult(−0.04) + fFatigueBlockSkillBase(5) + x×fFatigueBlockMult(1.0) + fFatigueBlockBase(0)`（呼出元 0x5F5C46）。
+  - カーブ 0x547F00: `fFatigueBase(1.25) − (1−x)×fFatigueMult(0.5)`。0x547F20/40/60 = Return/Run/Jump 系。GMST は 0xB36FD8〜0xB36FF8 / 0xB37530〜0xB37568。
+  - 適用 FUN_004F3870（唯一本体、caller 0x65FF30）: arg3(byte) を必ず 0 クリア、`newVal = current − x` clamp、≤0 で死亡。アーマー Perk 係数: rank≥2 ×0.5（fPerk*Journeyman 0xB37500/08）、rank==0 ×1.5（fPerk*Novice 0xB374F0/F8）。
+- KD 式 0x5475D0 [確定]（(a1,a2,x,dmgInt) 4 引数）: `D = clamp(a1 + a2×fActorLuckSkillMult(0.4) + iActorLuckSkillBase(−20), 0, 100)`（0xB37388/0xB37390）; `P = 0x547F00(x) × D`; `T = dmgInt×fKnockdownDamageMult(−3.0) + fKnockdownDamageBase(0.0)`; `chance = min(T/P, fKnockdownChance(0.25))`; `roll = (0x47DF80(0) % 100)/100.0`; 成立 = `roll ≤ chance`（FPU 分岐分類済み）。dmgInt は負値（疲労減量系）前提 [推定]（正だと chance 負で常に不成立）。
+- KB 式 0x547690 [確定]: `KB = (dmgInt×fKnockbackDamageMult(10) + fKnockbackDamageBase(50)) × (fKnockbackAgilBase(1.0) + fKnockbackAgilMult(−0.008) × (D/fCurve(x)))`。呼出元 0x50EB5F / 0x5FFFE2。fKnockbackForceMax=512 @0xB36FC8（0xB36FA8〜C8）。
+- vt スロット整合 [確定]（§51.11 の +0x3A8 適用スタブ問題の解消）:
+  | クラス | +0xA8 | +0x3A8 | +0x3AC | +0x3B0 |
+  |---|---|---|---|---|
+  | Actor | 0x69D990（no-op, 18 vtable 共有） | 0x5FE380（被弾適用） | 0x5FEBF0（本体） | 0x5EDEC0（双子） |
+  | Base/LowProcess 既定 | 0x60D010（no-op ret 0x10） | 0x68F970（no-op ret 4） | 0x60D080（=100.0f） | — |
+  | HighProcess (vt=0xA71814) | 0x631BE0（4引数レコードファクトリ ret 0x10） | 0x6349D0（1引数 setter: [proc+0x184] 代入） | 0x655FE0（攻撃キュー評価→min(acc×100,100) [推定: 攻撃力評価値 0..100]） | 0x631C50（1引数検索） |
+  | MiddleHighProcess (vt=0xA72964) | 0x69D990 | 0x6349D0 | 0x655FE0 | 0x631C50 |
+- 0x6AF880 [確定]: **vtable に一切存在しない**（全走査 0 件）。E8 直呼び 9 箇所（0x5F06E8, 0x5F0726, 0x5F9DC3, 0x5F9DF6, 0x5FCD1D, 0x5FEC95, 0x5FFB89, 0x5FFCE5, 0x5FFD61）のスタンドアロン 9 引数「武器影響ヘルパー」。→ **「vt+0xA8 / vt+0x3A8 と 0x6AF880 の不一致」はこれで解消**。
+- 残件 [未確定]: 0x655FE0 の用途（評価値）は推定 / 0x600581 の +0x44C 呼出引数数（push 8 が arg2 の最有力解釈、実測は push eax 1 個）/ 0x5475D0 の dmgInt 符号 / 0x5F4880 第 1 引数規約 / 0x5F1910/0x5EAD00 の丸め仕様 / F6540 境界（0x5F6617 に fDetectionNightEyeBonus 0xB37A50=3.0 → 0x5F6600 以降は検出系の可能性）/ FEBF0 ローカル [esp+0x3c/0x5c/0x64/0x74/0x1e/0x1f/0x20] の書込元 / FEBF0 内 ebx 同定 / 0x5FCBxx-0x5FCEB0 受信者 / 推定名のみの関数群（0x5F4F00, 0x5F4E10, 0x5FC2B0, 0x5FC090, 0x6131D0, 0x5F0EE0, 0x5EE760）。
+
+### §56.2 音響残件 — フェード型 3/7/8・region 型値・music 状態機械 ? s56_audio_residual.md
+
+- 数値ヘルパ [確定]: `0x9828C0 = _ftol2`（f64→int32 ゼロ方向切り捨て; SSE2 は cvttsd2si、x87 は fistp+制御語 0x0C00、範囲外 0x80000000。GT フラグ [0xBAABE0]）。`0x9828DC = _ftol2_sse`（cvttsd2si 直接）。`0x986CD0 = log10`（fldlg2+fyl2x; SSE2 は 0x9970F0 へ分岐; GT [0xBAABDC]）。
+- log10 呼出全数（音響域 5 箇所）[確定]: 0x58C802 / 0x6AA253（mB 変換）/ 0x6AEC06（型8）/ 0x6AECF0（型7）/ 0x6B6FC3（距離減衰 0x6B6F40 内）。下限クランプ `[0xA785E8]=1e-5`。
+- フェードリスト [AM+0x308] 構造 [確定]: オブジェクト {+0=vtable, +4=head}、ノード 20B {+0=next, +4=link, +8=payload}、payload ctor 0x6AA590 = `{+0=int type, +4=int formID, +8=int startTick, +0xC=int endTick, +0x10=float 0.0}`。
+- 生成 API FUN_6AB8D0(AM, formID, fadeOut, durationMs) [確定]: `bSoundEnabled([0xB16178])==0` なら 0。`end = now([0xB33EA0]) + ms`; `type = fadeOut!=0 ? 7 : 8`。生成サイト: 0x6AF105/0x6AF1??/0x6AF553（region fade-in 5000ms, 型8）/ 0x6AF3C4（region 離脱 fade-out 5000ms, 型7）/ 0x6AC554（全停止 FUN_6AC210, sec×1000）/ 0x6ACB59・0x6ACB92（型3）。
+- 型 8 = フェードイン [確定 0x6AEB58]: 対象を [AM+0x300] から検索、未再生なら `[sound+0x46]=0x2710`（-100dB）+開始。途中 `elapsed = 1−(end−now)/(end−start)` で `v = trunc(−2000×log10(elapsed))` → clamp ≤10000 → `0x6A90C0(sound, v)`。完了で `[sound+0x46]=0`+ノード破棄。
+- 型 7 = フェードアウト [確定 0x6AEC7E]: `ratio = (end−now)/(end−start)` で `v = trunc(−2000×log10(ratio))` → clamp ≤10000。`now≥end` または `[sound+0x46]≥0x2710` で `0x6B6AC0`（停止=DMO Stop+SetPosition(0)）+ノード破棄。
+- 型 3 = 発音予約 [確定 0x6AED41]: 生成元 FUN_6ACAB0（`or [sound],0x200`; payload {3,id,start,0,0}; start は `[AM+0xA6]!=0` で now+arg2 / ==0 で −arg2）。呼出元 thunk 0x6B71F0 → 外部 0x59860D / 0x5F77AC / 0x5F77FE [推定: 水中関連]。処理: 負 start を絶対化 → start−20ms まで待機 → 対象取得 → `|diff|>45ms/125ms` で **"Voice was off by %i milliseconds, attempting to correct"（0xA771F4, 0x40FEC0）** + 位置補正（GetCurrentPosition vtable+0x10 → SetPosition vtable+0x34）。`[AM+0xA5]`（水中）≠0 で type&0x1000 → 無音化、`fUnderwaterFrequencyDelta([0xB161B8])` で周波数再設定（0x6B6B20 vtable+0x44）。最後 `~0x200` 解除 → `0x6B6E60(sound, type&0x10)`、`type&4` → `|=0x100`。one-shot。
+- FUN_6AC210 = StopAllSounds(fadeSeconds) [推定名]: `[AM+0x304]`（第 2 のサウンド map）全走査 → `fadeSeconds>0.1` なら型 7 でフェード停止、≤0.1 は即時停止。
+- FUN_6AE0A0(AM, formID, type, byteFlag) [確定]: `[AM+0x300]` 既存 & byteFlag==0 → 既存返し。新規は `0x4473F0` で TESSound 取得 → `[form+0x3C]&0x10` なら type|=0x10 → `"data\sound\"+name` 構築 → `0x6AC610(AM, out, path, type, formID)` → `0x6B6DC0` 生成。wrapper 初期化: 音量 1.0、min/max 距離 = form[+0x38]×5 / form[+0x39]×100。
+- 型値 [確定(機械的)]: 0x1011 = region 2D アンビエント（bit 0x1000|0x10|1、`[entry+0x3C]&0x40` かつ `&0x10`、再生中は型8 5000ms で持続）/ 0x1101・0x1102 = region 3D 音（bit 0x100|1/2、`&0x40` の有無で使い分け）/ 0x101・0x102 = NPC 通常 / 0x121・0x21 = 0x20 系 / 0x12 = 2D 単発 / 0x4102・0x410A = Magic 系（0x4000 カウンタ）。
+- **region 音（0x1011/0x1101/0x1102）は music 状態フィールド [0x2E8]〜[0x2FC] を一切触らない** [確定]。region 楽曲切替は別経路（0x6AEEC4 以降 → 0x4CAD00 → FUN_6ACD10 / FUN_6AD030 内再発行）。
+- music 状態機械 [確定] フィールド: AM+0x2E8=開始時刻 / +0x2EC=開始+1700ms / +0x2F0=現在音量(適用値) / +0x2F4=目標音量([2F8] のキャプチャ) / +0x2F8=設定音量 / +0x2FC=保留曲 ID / +0xB0=現在曲 ID / +0xDC=状態ビット(0=ロード済,1=DM 再生中,2=?,3=切替待ち pending,4=フェードイン進行) / +0xC8=region 走査 500ms スロットル / +0xA5=水中フラグ / +0x1E4=現セグメント名 / +0x74=DM Performance。
+- FUN_6AA1A0(vol, save) [確定]: vol を [0,1] clamp → save で [2F8]=[2F0]=vol → `[0xB3C0EC]!=0` なら vol=[0xB16188]=0.6 → ×master[AM+0xB8] → `[0xDC]&1==0` なら return → `v²<0.01` で `−10000mB`、他 `mB = trunc(2000×log10(v²))` → DM vtable+0x1C。
+- FUN_6ACD10 = 曲開始/切替 [確定(構造)]: [2E8]=now / [2EC]=now+1700。再生中の同 ID は return、異 ID は [2FC]=id・[2F4]=[2F8]・bit3 立て。未再生は即ロード（SetSearchDirectory→LoadObjectFromFile vtable+0x34→[0x1E4]、bit1、0xB0=id、0x6AB420 開始）。
+- FUN_6AD030 = 毎フレーム楽曲ディレクタ [確定]: bit3 pending は `[2F0] ≤ 0.05` まで減衰待機 → 切替。bit0 無し & 条件成立で region 楽曲起動（0x6ECC80/0x44A270/0x4CAD00 → FUN_6ACD10(id,0,1.0)）。定常ランプ: `diff=| [2F8]−[2F0] |`、`diff < 0.02f`（0xA57604）→ 即 snap、他は **±0.02/tick**（0xA73E80 = 0.02 f64）→ 0x6AD91B commit → 0x6AA1A0([2F0],0)。末尾 `[0xDC]&0x1A==0` なら現曲再発行（0x6AD950）。
+- ハンドラ共通ヘルパ [確定]: 0x6B6AF0=再生中判定(GetStatus bit0, +0x24) / 0x6B6AC0=停止(+0x48,+0x34) / 0x6B67E0=[ecx+0x50] getter / 0x6B6B90=GetFrequencyRatio(+0x20) / 0x6B6B20=SetFrequency(+0x44) / 0x6B6E60=再生/停止制御(+0x34,+0x30) / 0x6B6F20=音量適用(+0x3c clamp→master→mB) / 0x6A90C0=attenuation `[sound+0x46]`（0=フル, 0x2710=−100dB）設定。
+- グローバル [確定]: [0xB33398]+0x24=AudioManager（296 refs）/ 0xB3C0F0・0xB3C214=AM ポインタ / [0xB33EA0]=ゲーム時刻 ms / [0xB3C0EC]≠0 で楽曲音量 0.6 固定 / [0xB3C210]/[0xB3C20C]=生成カウンタ / [0xB16188]=0.6 / [0xB16190]=1.0 / [0xB161B8]=fUnderwaterFrequencyDelta=0.0 / [0xB161D8]=フェード秒 4.0（0..10 clamp）。
+- 残件 [未確定]: AM+0xA6 の絶対/相対分岐の正確な意味 / FUN_6AD030 序盤 0x6AD030-0x6AD260 の bit2 周辺 / FUN_6ACD10 第 2 引数（観測 0 固定）と (2×[2F0]−1)×[2F8] カーブ遷移 / type bit 0x20 の意味（0x21/0x121 のみ）/ [0xA785E8]=1e-5 クランプ適用箇所の最終確認 / 0x65A9C6・0x65AC82 の 4 push 型呼出 / FUN_6AC210 正式名と呼出元一覧。
+
+### §56.3 Sleep/Jail 完全化 — 「双子」の解決と menu 起動ファミリ ? s56_sleep_tail.md
+
+- 旧「双子 0x670AF0」問題の解決 [確定]: **0x670AF0 は関数先頭ではない**。0x670AEC `call 0x42B430`（E8 3F A9 DB FF）の命令途中であり、旧セッションの misaligned 逆アセンブルが起源。真の関数は 0x670700-0x670C95（ret 0x670C95 + int3）。E8 走査: [0x670600,0x670CA0) への呼出 0 件、0x670700 への唯一の入口は **0x671600 の jmp**。
+- menu 起動ファミリ（共通ガード `0x582160(0,1)` → [0xB3A6E0][+0x1C]/[+0x68] 非0 → trait 0xFAE==2.0 → 対象メニュー未存在時のみ起動）[確定]:
+  | 関数 | 対象メニュー | 遷移先 | 呼出元 |
+  |---|---|---|---|
+  | A 0x57B420 | 0x3F4 SleepWaitMenu | 0x5D6D20 ShowSleepWaitMenu | 0x4AEA28（§5 監獄ハンドラ内）, 0x672D6F |
+  | B 0x57B4C0 | 0x3F4 | 0x5D6A10（クローズ） | [推定] |
+  | C 0x57B560 | 0x3F5 PauseMenu | 0x5BDA90 | 0x580CF2, 0x583834 |
+  | D 0x57B600 | 0x3F5 | 0x5BDCD0 | 0x57CCA3 のみ |
+  | E 0x57B6A0 | 0x3F6 LockPickMenu | 0x5AF440 | 0x5AF440 先頭 GetMenuByID(0x3F6) 確認 |
+  | F 0x57B740 | 0x402 BookMenu | 0x5962C0 | 0x5962C0 先頭 GetMenuByID(0x402) 確認 |
+- 0x5BDCD0 = **PauseMenu 再表示（1 秒待ち・通知付き）** [確定]: ワンショットフラグ [0xB3B740] を 0x5DDCD0 で消費 → 通知 `0x579C10([0xB38C00],...)` → **timeGetTime ループで 1000ms 待機**（[0xA280D0] 関数ポインタ）→ `0x4EBAE0(1)` → GetMenuByID(0x3F5) → tile trait `0x58CEB0(menu,0x1772,2.0)` → `jmp 0x584740`（表示）。呼出元 3: 0x58381D（再表示）, 0x5BDEE1（ハンドラ case3）, 0x5BDFD2。
+- 0x5BDA90 = PauseMenu を XML からロードして表示（pause_menu.xml 0xA6988C）[確定]: メニュー列の trait 0xFA5==6008.0 検査 → 既存 0x3F5 close → `0x590420(ui, 0xA6988C)` → vt+0x34==0x3F5 検証 → **UI サウンド 0x57DE50(2)** → 必須フィールド 5 検査（欠落 "..." エラー）→ trait 0xFAB 設定。呼出元: 0x6738B3（[0xB33B00]・フェード [0xB15018] を扱う遷移系 [推定]）+ jmp C。
+- 0x3F5 = PauseMenu [確定]（RTTI 0xB132FC `.?AVPauseMenu@@`）。イベントハンドラ 0x5BDE70（ret 8）switch: case3→0x5BDCD0 / case5→0x5BD9F0 / case4→0x5BD9F0+0x5D39A0 / case7→+0x5BD680 / case8→msgbox `0x579C10([0xB38C98], cb=0x5BDDE0, ...)`。callback 0x5BDDE0: ui コマンド 2 → LoadingMenu 進捗+ `[0xB33398][1]=1`; 3 → tile フラグ+ `[0xB33398][0]=1` [推定-強: セーブ/ロード確認系]。
+- **0x66F420 = 睡眠/待機の実行（Sleep/Wait executor）** [確定-強]（**§55.3 の「セーブ/ロード切替クリーンアップ」説を訂正**）: guard player vt+0x25C → `[0xB13228]!=0` で autosave `0x466B70([0xB33B00])` → `[player+0x12C]=1`（ビジー）+ベッド/アニメ処理 → 時間計算: GameSetting `0x46B250(0x3A)`（TimeScale）→ `fdivr [0xA2F938]` → `fmul [ebp+0x24]` → `0x9828C0` round → **`[esi+0x590]` = hours**、**`[esi+0x594] = 0`**（睡眠 0 / jail 1）→ LoadingMenu 進捗 0x578E90 → ループ（0x57B950 進捗 + 時間前進 + justice 更新群 0x677EC0/0x674200/0x673E90/0x673C10 + 0x5F2530/0x5F25F0/0x5F2720(player, 2.0)）→ ドア/参照処理 → **`0x66F370(player, refPos, playerPos, ...)` 配置** → 起床処理（0x5E6D70, vt+0x304, 0x602050; 非ベッド時 `0x57ACC0([0xB38B50],0,1,...)`）→ **SUDG クリアループ** → 末尾 `[player+0x12C]=0`, 0x679A70(0xB3BD00), vt+0x2EC, free [esi+0x764]/[esi+0x760]。唯一の呼出元ラッパー 0x5B8F5B-0x5B8FBC。
+- **0x670700 = 刑期執行（Serve Jail Time）** [確定-強]（0x670700-0x670C95）: `days=[esi+0x608]` → **`hours = days×24` → [esi+0x590]** / **[esi+0x594]=1** / `[esi+0x658] += days`。`while [esi+0x590]>0: 0x65F770(player)`（1h ずつ前進）。**10 日キャップ**（0x6707E8: `days=min(days,10)`）。日数ループ: `rand()%21` → idx<12 なら +`rand()%10` → idx∈[12,32)、`skill=0x446AF0([0xB33A98], 0x565C50(2,idx))` が ≤1 ならスキップ、idx∈{0x1E,0x1F} は +1 / 他は −1、`[esi+0x608]--`。後半: 牢屋ドア解放 → **`0x66EAF0(player, pos)` で jail マーカーへ teleport（0x670B2D）** → 向き反転（vt+0x250 × −1.0 [0xA3D360] → vt+0x254）→ メッセージループ: idx 0xC..0x20 の delta 非 0 を `0x565C50(2,idx)` で集め、**sprintf `"%s %s %s %s by %d.\n"`（0xA73E60）** → `0x579C10([0xB38CF0], buf, 1, 0, ...)` 表示（[0xB383A8]=増加語 / [0xB383B0]=減少語、実行時初期化）→ **SUDG クリアループ**（§55.3 の Sun Damage dynamic_cast 0x9832E6 部分は jail/sleep 共通クリアループとして本関数でも確定）。
+- 対照表 [確定]:
+  | 項目 | 0x66F420（Sleep/Wait） | 0x670700（Jail） |
+  |---|---|---|
+  | hours 源 | GameSetting TimeScale（0x46B250(0x3A)） | days×24（[player+0x608]） |
+  | [player+0x594] | 0（0x66F7DF） | 1（0x670738） |
+  | autosave | [0xB13228] ガードで 0x466B70 | なし |
+  | 進捗 UI | LoadingMenu 0x578E90/0x57B950 | なし |
+  | スキル変動 | なし | ランダム劣化ループ（最大10日分）+ メッセージ |
+  | 移動 | 0x66F370 でベッド配置 | 0x66EAF0 で jail マーカーへ teleport |
+  | 起動 | ラッパー 0x5B8F5B → E8 | msgbox OK（command=1）→ 0x671600 → jmp |
+- 0x671600 = msgbox OK コールバック [確定]: ui コマンド消費（1=OK）→ `jmp 0x670700`。find_dword = 0x4AE979（0x579C10([0xB38B30], 0x671600, 1, ...) の第 2 引数）。
+- ベッド/監獄ハンドラ 0x4AE8C0 [確定: 先頭・主要分岐]（`sub esp,0x10; push esi; push edi`、ret 0x14）: arg1 を Actor cast → `vt+0x18C(actor)!=0` → 0x4AEB0F 分岐（未解析）→ 位置系 → `byte[esp+0x16]>=0xA` → 0x4AEAA8 分岐（未解析）→ `0x65DA50(actor) && player[0x610]==0` → serve-time msgbox（cb 0x671600）→ それ以外 `0x6605A0`/`0x4D8B90`/`0x6773B0`(jailSys)/`0x4DB6B0`/`0x4DE770` → 不可なら sNoWaitInJail 系 msgbox → 可なら `0x676EE0` → **`0x57B420(1)` = ShowSleepWaitMenu 起動（0x4AEA28）**。find_dword = 0xA41DE8（ディスパッチ表エントリ [推定]）。
+- 0x670CA0(player, bool) = jail enter/exit [確定-強]: arg==0: 向き反転 → `0x675D50(0xB3BD00, esi, 0)` → `[esi+0x12C]=1` → `0x65FDA0(esi)` → `0x675E90`。arg!=0: `[esi+0x12C]=0` → 復元 → `0x66EAF0(player,pos)`（0x670F26）→ `0x6765F0(0xB3BD00, [0xB3BAD0], 0, 0)`。呼出元: 0x50B600（push 0, "Go to jail" 確認 cb [推定-強]）/ 0x5822BD（push 1）。
+- 0x6701B0 [確定-強]: exit 系復元（[esi+0x12C]=0, [esi+0x738]=0, clear [esi+0x608]/[0xB3BAD4]/[0xB3BAD0], [esi+0x610]=0, [esi+0x200]=1, 最終的に [esi+0x608] を float 計算値から復元）→ ロード時の刑期復元 [推定-強]。呼出元 0x5822A0（push 1）。
+- 0x5056F0 = **スクリプト関数 "AdvancePCLevel"（別名 "AdvLevel"）の実装** [確定]: `cmp [0xB333C4],0` → `call 0x5ACE20`（LevelUpMenu menu 0x403, levelup_menu.xml 0xA69B88）→ `mov al,1; ret`。E8 呼出元なし、参照はデータテーブル 0xB0EA20 のエントリのみ。0x5ACE20 の E8 呼出元 3: 0x5056F9（本関数）/ 0x5822F5（[esi+0x110] 変化時）/ 0x671C36（[ebx+0x1DC] と [0xB14E88] ガード）。
+- スクリプト関数テーブル構造 [確定]: 0xB0E980 から **0x28 バイト間隔**: `{ name*, alias*, id(u32), help*, flags(u32), struct*(u32), impl*(code), dispatcher(0x4FDE30), helper*(code/0), 0 }`。dispatcher 0x4FDE30 = 全エントリ共通 VM トランポリン（sub esp,0x230 + SEH）。例: "AdvancePCSkill"/"AdvSkill"→0x50D020（0xB0E9E0）/ "AdvancePCLevel"/"AdvLevel"→0x5056F0（0xB0EA08, impl ポインタ @0xB0EA20）/ "HasMagicEffect"→0x505710+helper 0x4F8300（0xB0EA30、デバッグ文字列 "Has Magic Effect >> %0.2f" 0xA49570 で実証）/ "GetDoorDefaultOpen"→0x5057D0+0x4F57A0 / "SetDoorDefaultOpen"→0x50C430。
+- 0x65F770 = **「1 時間進める」ヘルパー** [確定-強]: `0x6AC3D0([0xB33398]+0x24)`, `0x699DA0(player+0x5C)`, `0x4029D0([0xB332E0])` の時間値を `fdivr [0xA2F938]` して `0x673B00` get → fadd → `0x673B10` set。その後 [0xB14E4C] ゲート下で justice 系更新（0x677EC0/0x674200/0x673E90/0x673C10）。
+- その他 [確定]: 0x671620（player 更新）内 0x67168D → `0x6768C0`（jail ドア近接チェック、player[0x115]）。0x66EAF0 teleport 出現 3: 0x670B2D（jail 執行）/ 0x670F26（exit）/ 0x67108F（未特定）。
+- 残件 [未確定]: [0xB383A8]/[0xB383B0]（実行時初期化、静的解決不可）/ 0x670CA0 終端（0x670F4x）と 0x67108F の所属 / 0x4AE8C0 未読分岐（0x4AEAA8, 0x4AEB0F, 0x4AEA3A/5F/84）と 0xA41DE8 表全体 / 0x6738B3 の関数名 / [0xB13228]（bSaveOnTravel 系）の意味（refs 11）/ "no teleport on the interior jail marker" 系文字列（0xA73DF0）の参照コード / 0x4FAE80 の完全仕様 / [0xB14E88]・[ebx+0x1DC] の正体。
+
+### §56.4 menu XML 式評価器 — onlyif 真偽と裸表記の確定 ? s56_xml_onlyif.md
+
+- 真理値エンコーディング [確定]: **真 = 2.0f / 偽 = 1.0f**（定数 0xA379B4=2.0、1.0 は fld1）。論理演算: and 0x58C613 / or 0x58C651 / not 0x58C4B5（op1==2.0→1.0、他・NaN→2.0）/ neq 0x58C68F / eq 0x58C539 / gt 0x58C4DD / gte 0x58C50B / lt 0x58C595 / lte 0x58C567。登録値: `&true;`=2, `&false;`=1, `&generic;`=−1（0x58A230-0x58A2A0）。
+- **onlyif 0x58C798** [確定]: `fcomp op1` → `test ah,0x44; jp` で分岐 — **op1 == 2.0f のときのみ acc 維持、それ以外（1.0・5.0・NaN 等すべて）は acc := 0.0**。
+- **onlyifnot 0x58C7B6** [確定]: **op1 == 1.0f のときのみ acc 維持、それ以外は acc := 0.0**。NaN は fcomp の unordered で `jp` 成立 → 0.0 上書き。
+- 訂正 [重要]: **§51.4/§52.6 の「成立 1.0 / 不成立 2.0」は反転で誤り（正: 真=2.0/偽=1.0）**。§51.5 の「unordered 判定」も誤り（jp は「等しくない」= op1≠2.0 で 0 上書き）。§52.2 の「NaN → 2.0/1.0 上書き」も誤り（**上書き値は常に 0.0**）。§52.9(a)「偽で 0.0 上書き」は正。
+- 評価器モデル [確定]: 本体 0x58BEE0（thiscall, ecx=node）。ループ先頭 0x58C31D/0x58BFB4 で必ず ST0=2.0/ST1=0.0 再設定。dispatch 0x58C33E→0x58C411（jump table 0x58C998、token−0x7D2 が 0..0x19）。ノード: +4=acc / +8=子評価値 / +0xC=token / +0x10,+0x14=兄弟チェーン / +0x18=ID。
+- 演算子 ID [確定]: copy=0x7D1 / add=0x7D2 / sub=0x7D3 / mul=0x7D4 / div=0x7D5 / rand=0x7D6 / user=0x7D7（ハンドラなし,"Unknown action enumeration" ログのみ）/ gt=0x7D8 / gte=0x7D9 / eq=0x7DA / lte=0x7DB / lt=0x7DC / min=0x7DD / max=0x7DE / and=0x7DF / or=0x7E0 / neq=0x7E1 / mod=0x7E2 / floor=trunc=0x7E3 / abs=0x7E4 / **onlyif=0x7E5 / onlyifnot=0x7E6** / ln=0x7E7 / log=0x7E8 / ceil=0x7E9 / not=0x7EA / ref=0x7EB。キーワード登録列 0x58A6F0-0x58A960。
+- 実使用 [確定]: `<add><copy>40</copy><onlyif>&xbox;</onlyif></add>`（class_menu.xml:429）→ PC（&xbox;=1.0）で 0、Xbox（2.0）で 40。<xdefault> + onlyifnot は PC=1/Xbox=0（dialog_menu.xml:523）。
+- 裸表記 stackingtype [確定+推定]: 登録は完全形のみ（`"&no_click_past;"`(0xA6AA8C)=102 @0x58A233 / `"&does_not_stack;"`=6008 / `"&mixed_menu;"`=0x67 / `&xbox;`=1 / `&xenon;`=1）。EXE に裸 `"no_click_past"` 文字列は存在しない（ヒットは 0xA6AA8D の 1 文字目のみ）。名前レジストリは**初字バケット式**（挿入 0x58A0A0、'&'→bucket 27、英字→1..26、'_'→第 2 コンテナ 0xB13BC4、配列 0xB3B0B0 28×16、要素 {+0=値,+8=名前}）。裸名 "no_click_past"（bucket 14）は登録に存在せず**名前解決失敗** [確定]。**実効値 0（stackingtype 無指定と同値）と推定** [推定]（解決失敗時は値 0 ノードとして評価、メニュー読込失敗の形跡なし）。
+- コーパス [確定]: menus 全 89 XML 中 53 ファイルが stackingtype 使用、**裸形はちょうど 4 ファイル 4 箇所**: birthsign_menu.xml:3（no_click_past）/ ingredient_select_menu.xml:3（no_click_past）/ hud_main_menu(2).xml:3（does_not_stack）/ copy of main_menu.xml:3（no_click_past）。他は全て完全形。
+- 移植指針: **裸形は PC と同じく 0 として扱う**のが正。移植先で「& 無しでも受ける」拡張をすると PC と挙動が変わる（hud_main_menu(2).xml は does_not_stack=6008 を期待していた形跡）。
+- VideoDisplayMenu: **本 Wave では未着手**（任意タスク）。既知: vtable 0xA6DCCC、生成 case 0x3FB、`&VideoDisplayMenu;` 文字列 0xA6A7B0。
+- 残件 [未確定]: `&token` → float の最終搬送路（ID≥0x2710 パス 0x58C063 → 0x589080 → memset 0x981630 → '_' 走査コピー → 0x983479 atoi までは判明、&xbox; がこのパスかの断定は保留。onlyif 結論には影響なし）/ 未解決トークン時のエラーログ or 0 ノード生成のどちらか / ln/log（0x7E7/0x7E8）の call 先同定、floor の [esp+0x20] の意味 / '_' 始まり第 2 コンテナ 0xB13BC4 の用途詳細。
+
+### §56.5 ContainerMenu 全オープン経路 ? s56_container_residual.md
+
+- 正規経路は単一ペア [確定]: ガード付きラッパ **0x57A8D0** → 合格時 `jmp 0x599EE0`（tail-call, 引数素通し）、不合格 `xor eax,eax; ret`。オープン本体 **0x599EE0**（menu 0x3F0 = ContainerMenu、XML `Data\Menus\container_menu.xml` @0xA69BA4）。
+- F_57A8D0 ガード [確定]: `0x582160(0,1)`（UI マネージャ [0xB3A6E0] 取得; ctor 0x5802B0）→ `[[0xB3A6E0]+0x1C]!=0` → `[[0xB3A6E0]+0x68]!=0` → **`GetTrait([+0x68], "user0"(0xFAE)) == 2.0` 厳密一致**（不等・NaN は fail）。
+- ライブ呼出元 4 [確定]: 0x59F2A1（`([esi+0x60],1,1,0)` Barter 起動, Player+0x124=1）/ 0x51D749（`(ebx,0,1,0)` F_51D600 末尾, Player ガード, "Merchant does not have enough gold." 0xA60E6C）/ 0x4B6A5F（`(edi,0,1,0)` F_4B6150 末尾, this==Player のみ）/ 0x524E94（`(eax,0,0,1)` アクティベート系）。デッド: 0x587722 → 0x599EE0 のみ。
+- 同一ガード共有の兄弟ラッパ [確定]: 0x57A940 → TrainingMenu(0x404) / 0x57A9B0 → SkillMenu(0x408)（`0x5D6390(0,3)`）/ 0x57AA20 → ClassMenu(0x406) / 0x57B7E0 → close 0x40C 系（FindMenu(0x40C) Destroy + player+0x68 + 0xB3BD00 リセット + 0x5CA010(1)）。
+- F_599EE0 フロー [確定]: (1) 先頭サウンド: formType 0x17/0x23/0x24 で `0x46B280("DRSBodyOpen" 0xA6B678)` → RTTI cast TESForm→TESSound → `0x6AE0A0(AM, formID, 0x121, 0)`; (2) FindMenu(0x3F0) 存在時 Destroy; (3) UI 取得 0x582160 + `[0xB3B27A]=0`; (4) 同一対象分岐: `[0xB3BAD4]`（現在開いているコンテナ）と比較 → **同一なら `0x492E70(Player 全転送, theft)` + sound 0x1D + メッセージ [0xB38B10] → return 0（全取得高速経路 [推定]）**; (5) 新規: `0x590420([esi+0x68], 0xA69BA4)` XML 生成 → vt+0x34==0x3F0 検証 → Tile/TileMenu + Menu/ContainerMenu cast（0xB13240/0xB13A74/0xB0A018/0xB13254）→ **必須 5 タイル non-null 検査**（NG "Container Menu Creation Failed... Are your menu and art resources up to date?" 0xA6B628）; (6) **バージョン互換: GetTrait("stacking"=0xFA5) vs f32 6006.0 (0xA69770) / f64 102.0 (0xA69778)** 一致時 SetTrait(0xFAB, [esp+0x14]); (7) trait 初期化: user1-4(0xFAF-0xFB2)=−2.0 / user5,6=0.0 / user7,8,9(0xFB5-0xFB7)=2.0; (8) 窃盗フラグ [0xB3B279]; (9) mode 初期化: `user8=1.0`(a4!=0), `user9=1.0`(loot), barter は user8=1.0 + NPC 付帯処理（0x448F40, Player+0x124=1, 0x52ED50(5,1), TESNPC cast, 0x6AC3D0, vt+0xDC）で user9 スキップ; `user7 = ([+0x64]!=0) ? 2.0 : 1.0` — **2.0=可視/1.0=不可視（loot で Haggle 非表示、barter で TakeAll 非表示）[推定→高確]**; (10) [0xB3BAD4] 保存。
+- 窃盗判定 [確定: 分岐構造]: (A) loot のみ: `vt+0x190(target)` && `0x4D7F80`(type 0x23) && `vt+0x198(0)==0` → 窃盗=1 [推定: 生きた NPC スリ]。 (B) 全 mode: `0x4DB6B0(target)`（owner）非0 && `0x4DE770(target, Player, 1)==0` && `vt+0x190==0` → 窃盗=1 [推定: 所有者ありからの窃取]。フラグは転送 0x492E70・行アクティベート・TakeAll へ供給。
+- slot[3] ハンドラ（0x59A400, 0x597B10 から `slot[3](menu, [0xB3B284], [0xB3B280])`, ret 8）[確定] ボタン id: 1-5=タブ直接 / **7,8**=前/次タブ（ftol 0x9828C0, 1..5 wrap, sound 6）/ **32**=TakeAll（`0x492E70(Player 全転送, theft)`, ftol→[0xB3B27C], `[0xB3B7D0]>0` で 0x607B90, sound 0x1D, [0xB3B278]=1）/ **33**=Exit（trait "alpha"=0xFA7=255.0, sound 2）/ **34**=Haggle（`0x422DC0(tile+0x44)` → `0x5BD080(&値, tile, 1)` NegotiateMenu）/ **42(0x2A)/43(0x2B)**=側切替（+0x64 トグル, sound 0xE, user7=1.0/2.0, user9=−9999999.0 リセット）/ **51(0x33)**=行アクティベート（Player 側=装備/使用 0x4D88F0; Container 側=取得: Gold(0xB35EC8) 即時 / count<[0xB38688] 即時 / 他は数量ダイアログ `0x5C05D0`; エラー時 "Merchant does not have enough gold."）。
+- 転送コア **0x492E70(src, dst, theft, 0, 0)**（ret 0x14）/ グローバル: 0xB3B278/279/27A/27C（TakeAll/窃盗系）, 0xB3B280/84（slot[3] 引数）, 0xB13E94（数量, −1=未選択）, 0xB38688（数量閾値）, 0xB35EC8（Gold form）, 0xB3BAD4（現在コンテナ）。
+- PlayUISound = **0x57DE50(id 1..0x23, jump table 0x57E0C0)** [確定]。使用例: 2=exit, 6=tab, 0xE=側切替, 0x1D=take。
+- userN トレイト ID 表 [確定—バイトレベル]: **userN = 0xFAE + N**（"user0"=0xFAE @0xA6A3C0 … "user13"=0xFBB @0xA6A358、以降同型 user25=0xFC7）。同ブロック: "stacking"=0xFA5 / "string"=0xFDE / "target"=0xFC9 / "tile"=0xFCF / "alpha"=0xFA7 / "name"=0xBBA / "src"=0xBBB / "trait"=0xBBC / "value"=0xBB9 / "animation"=0xFEC。XML 側意味: user0=タブ index / user5=個数 / user6=gold / user7=側表示(1.0=player/2.0=container) / user8=TakeAll 可 / user9=Haggle 可 / user12=barter gold / user25=金アイコン。0xFAB = 版数チェック通過時の時刻書込 [推定]。
+- 残件 [未確定]: 同一対象再オープン分岐の実機確認 / runtime メッセージ form 群（[0xB38B10], [0xB38568] 等）/ `+0x63`(a4) 特殊フロー 0x59ABEA-0x59AC6F / ガードの user0==2.0 の意味 / 0x422DC0/0x41E210 の float 内容 / 0x57ACC0（メッセージ表示）の正体 / id 0xFDF/0xFEB/0xFEA/0xFE9/0xFCC の名前文字列 5 件。
+
+### §56.6 GMST ローダ — ESM 値の実行時適用を確定（v2、旧「幽霊差分」撤回）? s56_gmst_loader.md
+
+- **結論 [確定]: ESM の GMST レコードは実行時に Setting 値へ書き込まれる。** 経路: レコード処理 0x44DCF0 → 型 3(GMST) は byte table **0x44E6DC[2]=01** → ケース **0x44E326** → EDID を manager **0xB35468** vtable slot9 **0x4A8040** へ → map **0xB35574**(=[0xB35468]+0x10C) を Find(editorID) → entry → slot4 **0x4A7D60** → kind 別書込。
+- 書込詳細 [確定]: float(kind5)/int(kind3) は `0x4510E0` = `0x450C20(file, entry, 4)` が subrecord DATA 4B を **entry+0 へ直接読込**。string(kind6) は `0x4A7980` がヒープ複合ブロック再構築（細部 未確定）。kind 判定 `0x4A78D0(name[0])` = **editorID の接頭字で決まる**: 'f'→k5 FLOAT / 'i'→k3 INT / 'S','s'→k6 STRING / 他→k9 書込なし。
+- entry = **8B 静的オブジェクト {value@+0, name@+4}**。起動スタブ（0x9D9xxx-0x9E9xxx）が registrar `0x41BAE0`(float) / `0x419A70`(int/str) で全 Setting を生成し map 0xB35574 に登録。ESM は**同じ entry の +0 を上書き**（registrar 再呼出なし）。
+- manager 0xB35468 vtable 0xA4049C [確定]: slot4 0x4A7D60（entry 書込）/ slot9 0x4A8040（ロード設定）ほか。vtable は実行時書込（スタブ 0x9E06C5）。
+- 読み側共有 [確定]: GetGS **0x513FC0**（kind3 `fild dword [entry]` / kind5 `fld dword [entry]`）、SetGS **0x514100**（kind3 `0x983479` atoi→mov / kind5 `0x985FB2` strtod→fstp）。ゲーム本体は slot アドレス直接参照: 例 **0x5E25B4 `fmul [0xB37B88]`**（戦闘）。
+- 実証例 [確定]: fDifficultyDamageMultiplier 0xB37B88 — スタブ 0x9ED780 が **10.0** で初期化 → ESM の 5.0 で上書き → 戦闘 0x5E25B4 が fmul → **ユーザー実機の難易度最大 6 倍観測と整合（M=5.0 が効いている）**。difficulty 4 スロット: 0xB37B70 MinValue −1.0 / 0xB37B78 MaxValue 1.0 / 0xB37B80 DefaultValue 0.0 / 0xB37B88 DamageMultiplier。
+- 書込系統の全数（v2）: (a) registrar（起動時既定値）/ (b) SetGS（コンソール・スクリプト）/ (c) エンジン リセット 0x4D568D（fSeenDataUpdateRadius 専用 2048.0）/ (d) null ダミー 0x403C06 / **(e) ESM GMST ロード [本発見]** の 5 系統。旧「4 系統のみ」は欠落。
+- 「226 値相違」の機序 [確定]: 静的差分は**ロード後に ESM 値で置換される**。「実行時に到達しない幽霊差分」という旧 v1 結論は**撤回**。見落とし理由: (i) 書込先は map 値から実行時決定で即値 store が無い、(ii) slot 参照スキャンに映らない（汎用リーダ 0x450C20 内）。
+- 記述子テーブル [確定]: 0xB05E00〜0xB06143 = 69 entries × 12B {id@+0, name_ptr@+4, sig@+8}（GMST=3）。0x46AF70(sig)→idx キャッシュ 0xB33C1C/20。スロット実体 1794 個一覧 = `tmp\re\s56_gmst_18_slotlist.txt`。
+- dynamic 248（sKB* 等）も同経路で map 登録・同名 GMST で上書き [推定]。load order: 後ロードの ESM が最終 [推定]。
+- 残件 [未確定/限界]: string kind 0x4A7980 の複合ブロック再構築の厳密仕様 / 0x44FEA0（subrecord 進行）の正確な意味（advance/skip）。
+
+### §56.7 訂正一覧（本節による既存記述の更新）
+
+| 箇所 | 旧記述 | 訂正 |
+|---|---|---|
+| §55.3 | FUN_0066F420 = セーブ/ロード/切替クリーンアップ [部分確定] | **0x66F420 = 睡眠/待機実行**（[確定-強]）。SUDG クリアループ部分のみ従来通り有効（jail 0x670700 と共通コード）。引用の「0x670AF0-0x670D7x」は misaligned（正: 0x670700-0x670C95） |
+| §55.2 残件 | menu 0x3F5 / 0x5BDA90 / 0x57B600 / 呼出 0x670B00 との未解析 | 全て解消（§56.3）。0x3F5=PauseMenu [確定]、0x670700=jail 執行 [確定-強] |
+| §51.14 残件 | 「ツイン 0x670AF0」 | 誤読。実体 0x670700（jail）+ 0x66F420（sleep/wait） |
+| §51.4 / §52.6 | onlyif 成立 1.0 / 不成立 2.0 | **反転で誤り。真=2.0 / 偽=1.0** |
+| §51.5 | unordered 判定 | 誤り。`jp` は「等しくない」判定で op1≠2.0（NaN 含む）→ **0.0 上書き** |
+| §52.2 | NaN → 2.0/1.0 上書き | 誤り。**上書きは常に 0.0** |
+| §51.11 | Actor vt+0x3A8 適用スタブの不一致 | 解消（§56.1）。+0x3A8=0x5FE380、0x6AF880 は vtable 非所属の 9 引数関数 |
+| §55.6 / §50 GMST | 226 値相違（静的差分のまま） | ESM ロードで置換されると確定（§56.6）。旧「幽霊差分」撤回 |
+| §55.4 | ContainerMenu cmd 0x33 数量経路 [確定] | 維持。全経路・handler id・userN 表は §56.5 で全数化 |
+
+### §56.8 残件（Wave 3 後の統合リスト）
+
+- 戦闘: §56.1 末尾の 10 項目（0x655FE0 用途の最終確認、dmgInt 符号、ローカル書込元、関数名未確定群など）。
+- 音響: §56.2 末尾の 7 項目（AM+0xA6、0x65A9C6/0x65AC82、FUN_6AC210 呼出元など）。
+- Sleep/Jail: §56.3 末尾の 8 項目（[0xB383A8/B0]、0x4AE8C0 未読分岐、[0xB13228] 意味など）。
+- menu 式: §56.4 末尾の 4 項目（&token 搬送路の断定、ln/log、0xB13BC4、VideoDisplay 実行時更新＝未着手）。
+- Container: §56.5 末尾の 8 項目（同一再オープン実機確認、runtime メッセージ form 等）。
+- GMST: §56.6 末尾の 2 項目（string kind 詳細、0x44FEA0）。
+- B13 実機 .data ダンプ（0xB38688 閾値等の実値確認）は引き続き**ユーザー実行待ち**（手順: `tmp\re\s50_b13_plan.md`）。
+
+### §56.9 証跡（すべて `tmp\re\`）
+
+- 一次 md: `s56_combat_residual.md` / `s56_audio_residual.md` / `s56_sleep_tail.md` / `s56_xml_onlyif.md` / `s56_container_residual.md` / `s56_gmst_loader.md`
+- combat: `s56_combat_evidence.txt`（4014 行）, `s56_combat_2..9_out.txt`, `s56_combat_1..9.py`, `s50_gmst_full.txt`（GMST 全件 3 列目=スロット VA）, `s50_mag_6_out.txt`（vtable→名前逆引き）
+- audio: `s56_audio_evidence.txt`〜`evidence8.txt`, `s56_audio_1..8.py`, `s50_aud_c1..c4b.txt`
+- sleep: `s56_sleep_tail_evidence.txt`, `s56_1_d*.txt`, `s56_2_twins_raw*.txt`, `s56_3_5056f9_raw.txt`, `s56_cleanup_raw.txt`, `s56_table_raw.txt`, `s56_verify*.txt`, `s56_sleep_*.py`
+- xml: `s56_xml_1..15.txt` + `s56_xml_*.py`（`s53_onlyif_exact.txt`, `s53_loop.txt`, `s52_dispatch.txt` 再検証）
+- container: `s56_container_1..28.py`, `s56_t1_final1..8.txt`, `s56_t1_vt.txt`, `s56_t1_names.txt`, `s56_t1_live.txt`, `s56_t1_wrappers.txt`, `s50_cont_b2.txt`
+- gmst: `s56_gmst_verify1..15.txt`, `s56_gmst_1..20_final.txt`, `s56_gmst_18_slotlist.txt`（1794 スロット）, `s56_gmst_evidence.txt`
+
+## §57 Phase 1 Wave 4a 統合（2026-10-17）— 戦闘 / 魔法 / 疲労・死亡 / スクリプト VM / 経済
+
+**ステータス: 部分完了。** 5 テーマすべて成果 md あり。ただし魔法は主要経路が未解読、他 4 テーマも未確定残件あり。Phase 1 (§51〜§60) の完了判定はしていない。ロードマップ 1-1 / 1-2 / 1-3 / 1-6 / 1-9 は [~] (部分) とする。
+
+### §57.0 位置づけと表記
+- 表記: [確定] = 逆アセンブリ直接確認 / [推定] = 論理推定 / [未確定] = 未解決。
+- 各 md は `tmp\re\` に保存。本節は要点と訂正のみ。詳細は各 md を参照。
+
+### §57.1 戦闘 (`s57_combat_full.md`, 1-1)
+- FUN_005FEBF0 は thiscall [確定]: this = 攻撃側、arg1 = bool、arg2 = 対象 (null 可)、arg3 = 武器 REF (null 可)、ret 0xC。直接 E8 呼出は 0 件で、Actor vtable +0x3AC に登録 [確定]。
+- 0x5F1910 = floor(AV) [確定]。0x5F4880 = thiscall・引数なし・ret 0 [確定]。§56.1 の「fatigue 比率」記述は訂正。
+- KD 比率 = T / (AgilBase + AgilMult·P)。既定値 (0 / 1) では T/P に一致 [確定]。chance = min(ratio, 0.25)、成立は roll ≤ chance [確定]。
+- fKnockdownDamageMult = −3.0 のため KD 成立には dmgInt < 0 が必要 [確定]。dmgInt の生成経路 (0x5FEDEA と 0x5FF5A2 のどちらか) は [未確定]。
+- ブロック値 = min(curve(x)·(0.01·D·SkillMult + SkillBase)·M, 0.75)、M は 0.5 / 0.25 / 1.0 [確定]。被ダメージは dmg *= (1 − value) [確定]。
+- ブロック反撃 0x5F4F00 は rand%100 ≤ 25 (iPerkHandToHandBlockRecoilChance) で発動 (0x5FFF4D) [確定]。
+- パワーアタック方向ボーナス 3.0 / 4.0 は 0x546BA0 内で参照 [確定]。
+- 0x5FC090 = Disarm 判定 (旧「スピーク」は訂正) [推定]。0x655FE0 = HighProcess の 0..100 スコア (消費側は 0xF6540) [推定]。
+- 弓: fArrowSpeedMult (0x5FD375)、チャージ (0x5FD27F / 0x5FD291)、射程 (0x61439D / 0x6143A7) を参照 [確定]。式の完全復元は [未確定]。
+- fCritical* は GMST に存在しない [確定]。fDamageSneakAttackMult (4.0) は直接参照 0 件 [確定]。
+- 未確定 10 件 (攻撃起点関数 0x5FCB80 / 0x60A840、dmgInt 経路、スニーク倍率の呼出経路、弓ダメージが FEBF0 を通るか、矢の重力・射程減衰式、武器速度の EXE 側経路、罠、ブロック成立ゲート、0x5F0EE0 / 0x5EE760 内部、AV コードの ESM 突合)。
+- **移植差分**: `app\src\main\cpp\game\combat_manager.cpp` の固定値 (ブロック ×0.3、クリティカル 5% / ×2.0、攻撃速度) は EXE 由来の根拠を確認できず。仕様確定まで差分として扱う。
+
+### §57.2 魔法 (`s57_magic.md`, 1-2) — **部分完了**
+- Actor vtable の配線 [確定]: +0x2D4 = 0x5E46C0、+0x398 = 0x5EE760、+0x3A8 = 0x5FE380。
+- 0x5EE760 の [ebp+0xC] は 100.0 で上限クランプ [確定] (s50_magic_stack.md と一致)。
+- 疲労消費: 0x548B30 = 0.25·x [確定]、キャスト時 0x548DA0 = 15.0 (fFatigueCastMult = 0.0 のため定数) [確定]。
+- 術者スキル係数 = 0.10 + 1.20·(1 − Skill/100) (GMST 0xB37DE8 / 0xB37DF0) [確定 (式)]。
+- 呪文段階 0 = Novice (<25)、1 = Apprentice、2 = Journeyman、3 = Expert、4 = Master (≥100) [確定]。
+- 効果項目アクセサ: 大きさ 0x413320 (flag bit8 で 0)、持続 0x413370 (bit9)、面積 0x4133C0 (bit7) [確定]。
+- コスト指数項に fMagicCostScale = 1.25 (0xB38270) を使用 [推定]。マジカ回復 (0.75 + 0.02·N)·(y/100) (0x548D60) [推定]。
+- 爆発: 0x699900 (爆発ヒット適用) の呼出元 4 箇所 [確定]、補助 0x548CD0 の呼出元 2 箇所 [確定]。
+- **未解読 (残件 7)**: 詠唱入口 (プレイヤー / NPC) と詠唱状態管理、上位合成式 (0x69A7F0 近傍 等)、Resist → Reflect → Absorb の順序と式、エンチャントのチャージ減算、MGEF ディスパッチ表、ActiveEffect 毎フレーム更新、射出物の飛翔・衝突本体。
+- 次の一手: 0x5FE380 の耐性系 GMST (0xB37E50 / 0xB37E60) 参照箇所から。
+
+### §57.3 疲労・死亡 (`s57_fatigue_death.md`, 1-3)
+**既存記述の訂正 (重要):**
+- 「Actor vtable 0xA71814」は誤り。0xA71814 = HighProcess、Actor = 0xA6E074 [確定]。
+- §56.1 / 旧 s56 の「FUN_004F3870 = 疲労ダメージ適用」は誤り。0x5F3870 は HP 適用経路で疲労 AV を参照しない [確定]。0x4F3870 は逆アセンブル空で VA 誤記の可能性 [未確定]。
+
+**確定内容:**
+- 死亡処理 vt+0x2C8 = 0x5FC440 (Actor / Character / Creature 共通)、PC は 0x660CC0 [確定]。HighProcess 0x631B50 はフラグ更新のみ [確定]。
+- 死亡判定は 0x5F3870 (vt+0x2C4、HP 適用) が担い、残存値 ≤ 0 のとき this.vt+0x2C8 を呼ぶ。この経路は NPC のみ [確定]。
+- 蘇生: opcode 0x108C (exec 0x510150) → vt+0x20C = 0x5F6020。Health を最大値へ、旧 HighProcess を破棄、0x90 バイトの新規 proc を確保 [確定]。
+- 疲労回復 0x5F2720 = (fFatigueReturnBase + Mult·End)·dt = (10 + 0·End)·dt [式形確定]。
+- 走行 0x5FAAE0 (vt+0x368): 8 + 0·ratio に athletics 帯係数 (1.0 / 0.75 / 0.5 / 0.25 / 0.0) を乗じる [確定]。跳躍 PC vt+0x228 (0x671620): 4 + 4x [確定]。
+- 攻撃消費 0.1·dmg + 8 (power で ×5)、ブロック消費 −0.04·skill + 5 + x [確定]。
+- KD: FEBF0 で生成。疲労 AV ≤ 0 かつ param 0 なら自動 KD、それ以外は 0x5475D0 のロール [確定]。スタッガーは同フラグに加え正面 20° 判定 (0x6131D0) と非 busy を要求 [確定]。
+- fFatigueSwim* は GMST に存在しない [確定]。水泳疲労式は [未確定]。
+
+**残件 13 件 (R1〜R13)**: 優先度高は R6 (蘇生の状態復元完全リストと vt+0x2A4 の符号規約)、R7 (KD の最終適用と回復)。その他 OnDeath 発火箇所 (R1)、PC 死亡の呼出元 (R2)、KillActor 本体 0x6005F0 (R5)、疲労 0 の行動制限網羅 (R9)。仮想スロット経由の呼出元は callers() で捕捉不可のため網羅していない。
+
+**移植差分**: `fnResurrect` (script_functions.cpp:974) はログのみのスタブ。疲労は `player.cpp` の固定レートで GMST 式と不一致。
+
+### §57.4 スクリプト VM (`s57_script_vm.md` / `s57_script_vm_table.txt`, 1-6)
+**§56.3 の訂正:**
+- スクリプト関数テーブルの基底は **0xB0AF48** (stride 0x28) [確定]。§56.3 の「0xB0E980 起点・0x28B stride」は誤り。0xB0E980 は格子外で、entry 372 の impl フィールドに過ぎない [確定]。
+- 有効エントリ 532 件 [確定] (ブロック型 31、コンソール帯 131、境界 sentinel 1 = 0xB10268 (id 0x1171)、関数帯 369)。
+- 0x4FDE30 はランタイム dispatcher ではなく **コンパイラ側のコマンド別エミッタ** (opcode u16 を出力バッファへ書く) [確定]。「VM トランポリン」命名は誤り。
+- 141 opcode のうち 131 件 (≥ 0x100) は表と結合可能 [確定]。0x0010〜0x001E は制御 opcode、0x00〜0x1E はブロック型 ID (引数) で、誤結合しない。
+
+**確定・推定:**
+- ランタイム候補: 0x516835 (参照解決、エラー文字列 "Unknown reference object ... Execution of script ... stopped.") [確定]。0x516DF6 (式評価 0x4F3620 呼出、MessageBox / Message 特別扱い、`call [entry+0x18]` で impl 呼出) [確定]。
+- イベント名 ↔ ID は 0x00〜0x1E のブロック型表で確定 [確定]。送出元・キュー・SetEventHandler 相当は [未確定] (exe に該当文字列なし)。
+- GMST `fQuestScriptDelayTime` (0xA4A07C) は存在し、参照元は GMST 要素 0xB09E2C のみ [確定]。`fQuestScriptDuration` と RunScript 相当は exe に存在しない [確定]。
+- 0x1C は docs のジャンプ終端記述と矛盾し、参照接頭辞の可能性が高い [推定]。
+
+**残件 10 件**: 高 = 制御 opcode の switch 所在 (R1)、イベント送出 site とキュー (R2)、実 bytecode サンプル再採取 (R7)。中 = RunScript 相当の開始 API (R3)、fQuestScriptDelayTime 読取 site (R4)、fQuestScriptDuration の表現 (R5)、0x1C の意味 (R6)、0x516DF6 後半 (R8)。低 = param descriptor (R9)、0x4FAD43 (R10)。
+
+**移植差分**: `script_opcodes.h` の enum は独自空間 (0x0000〜0x0097) で SCDA 空間と不一致。表の id を `native_scda_vm` 登録 API に渡す方針を推奨。
+**信頼性注意**: 旧 `s57_svm_4` (一部逆アセンブル不整合) と `s57_svm_5` (`scda_cache.pkl` 不在で bytecode サンプル未取得) は使用不可。
+
+### §57.5 経済・所持品 (`s57_economy.md`, 1-9)
+- 買値 0x5481C0 = 0.01·(300 − 9.9·sqrt(200 − min(x,100)) − 1.5·trunc((y−50)/10)) [確定 (式形)]。
+- 売値 0x548240 = 0.01·(5·sqrt(200 − min(x,100)) − 10 + 1.5·trunc((y−50)/10)) [確定 (式形)]。
+- 交渉 0x548130: t = (a2 − a1 + 100)/10 − 0.55·a4 + 0.5·trunc((a3 − 10)/10)、真は t ≥ 0 (a4 == 0 は常に真) [確定]。
+- 処分係数 0x5489E0: x > 0 なら 0.01·x、それ以外 −1.0 [確定]。
+- 犯罪ゴールド 0x606143: steal は value·0.5、他は定数 (pickpocket 25 / trespass 5 / attack 40 / murder 1000 / horse 25) [確定]。
+- 態度変化 0x605F60: flag ≠ 0 は定数、flag == 0 は AV(0x24)/100 比例。steal と horse は ·(−0.5) [確定]。
+- 罰金 0x676EE0 はグローバル犯罪記録 0xB3BD00 に対して呼ばれる [確定]。
+- 所持品リスト 0x4D6D40: formType 0x17 → base+0x24、0x23 / 0x24 → base+0x44 [確定]。
+- ContainerMenu handler id 0xFDF / 0xFEB / 0xFEA / 0xFE9 / 0xFCC の名称は文字列 VA からの推定 (shiftclicked / returnvalue / repeathorizontal / repeatvertical / red)。1:1 配置は未確認 [推定]。
+- 所有権 (0x4DB6B0 / 0x4DE770)、窃盗フラグ (A)/(B)、取引範囲判定 0x5E9A60 は命令レベルで確認済み、意味名は [推定]。
+- **注意**: 価格式の 0.01 倍と戻り値の掛け先 (基礎価値) は [未確定]。単体テストで境界値を固定するまで移植に採用しない。
+- **残件 14 件** (md §7 参照)。主要: 罰金額の最終式 (R1)、目撃距離 (R2)、態度式の入力意味 (R3)、AV 0x24 の名前 (R4)、extra node オフセット不一致 0x422E20 (+8) / 0x422DC0 (+0xC) (R5)、Barter メニュー ID 0x3F1 (R7)、ゴールド加減算・重量・ドロップ関数 (R11)、盗品 fence 拒否分岐 (R13)。
+- 「同一対象での ContainerMenu 再オープン挙動」は実機確認項目のため解析対象外 (残件として明記)。
+- 移植先 `inventory/`, `game/`, `quest/` は実在。`game/crime/` は未存在 (新設候補)。
+
+### §57.6 §57 による既存記述の訂正一覧
+| 対象 | 旧記述 | 訂正 |
+|---|---|---|
+| §56.3 / スクリプト表 | 基底 0xB0E980、stride 0x28B | 基底 0xB0AF48、stride 0x28、532 件 [確定] |
+| §56.3 / 0x4FDE30 | VM トランポリン | コンパイラ側エミッタ [確定] |
+| §56.1 / §57.3 | FUN_004F3870 = 疲労ダメージ適用 | 0x5F3870 は HP 経路。疲労 AV 非参照 [確定] |
+| §57.3 | Actor vt 0xA71814 | 0xA71814 = HighProcess、Actor = 0xA6E074 [確定] |
+| §56.1 | KD 比率 fatigue 記述 | floor(AV) 経由の T/(AgilBase+AgilMult·P) [確定] |
+| 移植 combat_manager.cpp | 固定値 (ブロック ×0.3 等) | EXE 根拠なし。差分扱い |
+
+### §57.7 Phase 1 の残と次の一手
+- 1-2 魔法: 詠唱入口・Resist 順序・MGEF ディスパッチ表が最優先。
+- 1-6 スクリプト VM: 制御 opcode の switch 所在とイベント送出 site が最優先。
+- 1-3 疲労・死亡: R6 (蘇生の状態復元) と R7 (KD 最終適用) が最優先。
+- 1-1 戦闘: dmgInt 生成経路 (KD 成立に直結) が最優先。
+- 1-9 経済: 罰金式と目撃判定 (R1 / R2)。
+- 未着手: 1-4 AI / 1-5 クエスト / 1-7 セーブ / 1-8 キャラ生成 / 1-10 残スキル (Wave 4b)。
+
+### §57.8 証跡 (すべて `tmp\re\`)
+- 解析 md: `s57_combat_full.md` / `s57_magic.md` / `s57_fatigue_death.md` / `s57_script_vm.md` / `s57_economy.md`
+- 全数テーブル: `s57_script_vm_table.txt` (532 件)
+- 戦闘: `s57_combatf_1..6_out.txt` / 魔法: `s57_magic_*` (cost block 注釈 `1a`, xref `1b`) / 疲労: `s57_fd_1..9_out.txt` / スクリプト VM: `s57_svm_1,2,3,6,7,8_*.txt` / 経済: `s57_eco_1..7_*.txt`
+- 計画: `s57_phase1_plan.md`
+- 注: 旧 `s57_svm_4` / `s57_svm_5`、`s57_fd_2`(disp32 生走査は誤検出多数) は採用せず。
+
+### §57.9 Wave 4a 残件追補（第2次、2026-10-17）
+
+各 md に第2次節を追記済み。要点と訂正のみ以下にまとめる。
+
+#### 戦闘追補 (`s57_combat_full.md` §14)
+- KB 0x547690 の完全式 [確定]: `D = clamp(Agility + 0.4*Luck - 20, 0, 100)`、`Q = D / curve(x)`、`Tk = dmgInt*10 + 50`、`force = Tk*(1 - 0.008*Q)` (GMST refs 0x5476C3 / 0x5476E1)。KD は `curve(x)*D` (乗算) だが KB は `D/curve(x)` (除算) で **curve の向きが逆** [確定]。
+- KB 呼出区間 0x5FFF52〜0x6000B4 を全行確定 [確定]: ゲートは `target vt+0x284(4)` (Speed) > 0。引数は `(Agility = vt+0x284(3), Luck = vt+0x284(7), x = 0x5F4880(target), dmgInt = trunc([esp+0x5c]))`。force は `fKnockbackForceMax (0xB36FC8 = 512)` でクランプ。適用は 0x65A2C0 (物理ボディ取得 [推定]) → 0x8907A0 (インパルス適用 [推定]、`fKnockbackTime = 1.0` @0xB36FD0, ref 0x600096)。
+- `[esp+0x5c]` の書込は 0x5FEDEA と 0x5FF5A2 の 2 箇所のみ [確定]。KB/KD 直前の有効書込は 0x5FF5A2 で `[esp+0x18]` (損傷累算値) を複写する。0x9828C0 = float→int 切捨て [確定]。
+- KD (0x5475D0) と KB (0x547690) は同一引数で、同一呼出内で **KB が先・KD が後** [確定]。KD ロールは `esi == [0xB333C4]` (Player) のときのみ到達 [確定]。
+- 残: **dmgInt の符号規約** (KB は正値、KD は負値を要求し、同一値が共有される) が未解決 (高)。他は攻撃起点関数 0x5FCB80 / 0x60A840、スニーク倍率、弓ダメージ経路、矢重力式、罠、0x65A2C0 / 0x8907A0 内部。
+
+#### 魔法追補 (`s57_magic.md` 節 8〜11)
+- 3 関数の順序と配置 [確定]: Actor 系セカンダリ vtable 基底 **0xA6DFF4** (RTTI `.?AVActor@@`) の +0x20 = 0x5E5240 (耐性)、+0x24 = 0x5E54A0 (吸収)、+0x28 = 0x5E5520 (反射)。
+- 耐性 0x5E5240: 耐性 AV = 0x40 (ResistMagic)、魔法種別 == 5 なら 0x43。係数は `0x548AD0 = (a/100)*(1 - b/100)` [確定 (式)]。
+- 吸収 0x5E54A0: `rand()%100 < GetAV(0x34 = SpellAbsorbChance)` で成立。反射フラグ時は `chance * fReflectedAbsorbChanceReduction` (0xB38290 = 0.5)。成立時 `vt+0x2A4(9, 量, 0)` = AddMagicka [確定]。
+- 反射 0x5E5520: MagicItem 取得 (0x9832E6)・自身除外の後 `rand()%100 < GetAV(0x35 = SpellReflectChance)` [確定]。
+- **訂正** [確定]: 0x5FE380 (Actor vt+0x3A8) は魔法耐性処理ではなく犯罪/友好射撃/ディスポジション処理 ("CHRM")。0x5EE760 (vt+0x398) はインパクト/ラグドール ("Hit At %s")。魔法耐性は上記 3 関数 (§50.4 / §56.1 の「vt+0x398 = 魔法ヒット受信経路」は訂正)。
+- 耐性系 GMST `fMagicResist*` (0xB37E48〜0xB37E60) は出荷版で未参照 = 未使用 [確定]。耐性は AV ベース。
+- AbsorbEffect: サイズ 0x4C、ctor 0x68CD90、生成 0x68D030。ActiveEffect 基底 ctor 0x68D7A0 [確定]。0x5E2BE0 = Actor vt+0x2A4 = ActorValue 変更 [確定]。
+- マジカ回復 0x548D60 の呼出元は 0x5F26D8 / 0x5FAE06 (GetAV(0x39 StuntedMagicka) ゲート) [確定]。
+- 残 7 件。耐性/吸収/反射の「呼出順序」は上位「魔法効果適用」関数の特定で決着する見込み (次の一手: 0x68D9F0 (MagicItem 判定、callers 12) の呼出元を辿る)。
+
+#### 疲労・死亡追補 (`s57_fatigue_death.md`)
+- R6 符号規約 [確定]: `Actor.vt+0x2A4 → proc.vt+0x288 → 0x6588A0 → 0x65CA60` は AV モディファイアリストへの**加算** (正 = 実効 AV 増加)。
+- R6 [確定]: av == 0x0A (Fatigue) の負値のみ `vt+0x278()` でゲート。基本実装 0x977C50 は `mov al,1; ret` の常時 true スタブ。av == 8 では `vt+0x3B8` (Health 変化通知) も呼ぶ。
+- R6 [確定]: 蘇生は Health を `0x5F1910(8) - vt+0x288(8)` の加算で最大へ戻し、旧 proc を破棄して 0x90 バイトの新 HighProcess を確保。続く 0x65AD00 分類 (-1/0/1/2/3) → `vt+0x1A4` / 0x1B0 / 0x1AC / 0x673A90 に分岐。
+- R7 [確定]: KD の最終適用は `[victim+0x58].vt+0x2F0` = HighProcess **0x654420** (呼出 0x600409)。条件は KD フラグ AND `[esp+0x1f]` AND Speed (AV4) > 0。Marksman Perk (0xB37240) / パラライズ切替 (0xB37248、0x41B880 + 0x69AF30) も同区画。
+- R7 [確定]: KB は別経路 (0x547690 + 方向ベクトル、0x5FFF52〜0x6000AF)。被害側ヒット適用は `esi.vt+0x398` (0x5EE760)。
+- R2 [確定]: PC 死亡スロット 0x660CC0 の呼出元は 0x5AB872 (関数 0x5AB800)。`[actor+0x58].vt+0x2C8` 経由は HighProcess のフラグ設定 (0x631B50) で死亡ではない。
+- R1 部分 [確定]: OnDeath は opcode 0x0A、exec 0x504150、テーブル 0xB0B0D8。発火 dispatch 自体は未特定。
+- R9 [確定]: `push 0x0A` → GetAV 呼出の全 18 件は UI 表示と回復関数のみ。疲労 0 で行動を禁止する専用ゲートは検出されず。
+- 水泳 [推定]: `fFatigueSwim*` は GMST に存在せず、移動疲労 0x5FAAE0 の走行コストは `vt+0x330` (移動種別) 分岐合流後に計算され、水泳も同一式。
+- 残 15 件 (R1〜R15)。解決 R2 / R6 / R7、部分 R1 / R5 / R9。優先は R15 (KD 回復タイマ 0x654420 本体) と R4 (0x5F3870 の残存値と死亡ゲート)。
+
+#### スクリプト VM 追補 (`s57_script_vm.md` §6)
+- R1 解決 [確定]: 制御 opcode switch は 0x516B63〜0x516B76。二段テーブル = クラステーブル 0x517320 (opcode 0x10〜0x1E の 15 バイト) → ジャンプテーブル 0x517300 (8 クラス)。
+  - opcode → handler: 0x15 → 0x516B7D / 0x16 → 0x516E9F / 0x17 → 0x516FCE / 0x18 → 0x516EBE / 0x19 → 0x517007 / 0x1E → 0x517028 / 0x11・0x1C・0x1D → 0x5172D3 (即 return) / 0x12・0x13・0x14・0x1A・0x1B → 0x517036 (既定)。
+- 既定 0x517036 = `GetCommandByID(opcode)` → opcode ≥ 0x1F (0x100 / 0x1000 帯) は ID 検索で dispatch [確定]。
+- begin (0x10) = ブロック/イベント dispatch: 直後のブロック型 ID を読み `0xB0AF48 + id*0x28` の impl (+0x18) を call (flags +0x10 を判定) [確定]。impl(+0x18) はブロック型テーブルからのみ参照され各 1 件 [確定]。
+- opcode は引数 `[esp+0x764]` で渡る。runtime 文実行関数の SEH プロローグは 0x5169C2 [確定]。
+- **訂正** [確定]: 0x1C / 0x1D は runtime では no-op (class 0 → 即 return)。§56.3 の「0x1C = ジャンプ終端」説は誤りの公算大。0x12〜0x14 / 0x1A / 0x1B は実 bytecode に出現しない未使用 opcode [推定]。
+- 0x15 (set) ハンドラは `cmp 0x47('G') / 0x72('r')` → 0x4FA9C0 → 0x4F32E0 → 0x4F3620 で参照解決 + 式評価 [推定]。
+- 残 9 件。高 = R2 イベント送出 site とキュー、R7 実 bytecode 再採取。
+
+#### 経済追補 (`s57_economy.md` 第2次節)
+- R5 解決 [確定]: extra node は +4 = type / +8 = next / +0xC = 値。0x422DC0 は +0xC を読む。0x422E20 は unlink/remove でリンク +8 を操作するのみ → 旧「+8/+0xC 不一致」は別フィールドで矛盾なし。0x41E2D0 は前ノード返し、0x7616D0 は恒等関数。
+- R1 前進 [確定]: 0x676EE0 は金額を計算せず犯罪的オブジェクトの `vt+0x8C(1)` へ委譲。犯罪ゴールド 0x606140 の kind → 値 (0x606155 / 0x6061B3 / 0x6061C1 / 0x606189 / 0x6061A5 / 0x606197) を確定、callers 6 箇所。0x6061F0 / 0x677010 は罰金でなく保存/サイズ系 [推定]。
+- R2 [確定]: `iCrimeAlarmRecDistance` = 10000 の比較本体 (距離 ≤ 10000 採用)、0x4D7E90 (FLT_MAX 既定)、0x6773B0 (2000 / 3000 + 態度)、0x6605A0 (1500 で観測リスト剪定)。範囲は 1500 / 2000・3000 / 10000 の 3 系統。
+- 0xB3BD00 = 0x676EE0 の this (list A = +0x68、list B = +0、node {+0 = obj, +4 = next}) [確定]。
+- 残 14 件 → 解決 R5、前進 R1 / R2 / R12、未解決 9 (R3 / R4 / R6 / R7 / R9 / R10 / R11 / R13 / R14)、解析対象外 R8。価格式 0x5481C0 / 0x548240 の 0.01 倍と掛け先は未確定のまま (次の一手: callers 0x5E11A0 / 0x5E1200 の逆アセンブル)。
+
+#### §57.9.1 追加訂正一覧
+| 対象 | 旧記述 | 訂正 |
+|---|---|---|
+| §50.4 / §56.1 (B6) | Actor vt+0x398 = 0x5EE760 が魔法経路 | 0x5EE760 = インパクト/ラグドール。魔法耐性/吸収/反射は vtable 0xA6DFF4 の +0x20/+0x24/+0x28 (0x5E5240 / 0x5E54A0 / 0x5E5520) [確定] |
+| §56.1 | 0x5FE380 = 魔法/近接ヒット受信 | 0x5FE380 = 犯罪/友好射撃/ディスポジション (CHRM) [確定] |
+| §56.3 | 0x1C = ジャンプ終端 | runtime では no-op [確定] |
+| §57.1 | KB は方向ベクトル経路 | KB 式は `D/curve(x)` で KD と curve の向きが逆 [確定] |
+
+#### §57.9.2 残件サマリ (Wave 4a 第2次後)
+- 戦闘 10 (高 4) / 魔法 7 / 疲労・死亡 15 (解決 3、部分 3) / スクリプト VM 9 (R1 解決) / 経済 14 (解決 1、前進 3)。
+- 各 md の残件節に次の一手を記載済み。Phase 1 の完了判定は Wave 4b と残件消化の後。
+
+## §58 Phase 1 Wave 4b 統合（2026-10-17）— AI / クエスト・対話 / セーブ・ロード / キャラ生成 / 錬金・修理等
+
+**ステータス: 部分完了。** 5 テーマすべて成果 md あり。各テーマに未確定残件あり。ロードマップ 1-4 / 1-5 / 1-7 / 1-8 / 1-10 を [~] (部分) とする。これで Phase 1 の全 10 項目が部分解析済みになる。DoD (実装対応先と検証方法の併記) は各 md の「移植対応先」節で暫定充足、残件消化は未了。
+
+### §58.0 表記
+- [確定] = 逆アセンブリ直接確認 / [推定] = 論理推定 / [未確定] = 未解決。詳細は各 md (`tmp\re\`) を参照。
+
+### §58.1 AI (`s58_ai.md`, 1-4)
+- AI パッケージ種別名テーブルは **0xB12988** (33 件) [確定]。ファクトリ → 型 id を SetType 呼出元の実定数で確定 (0x19 / 0x1a / 0x1d / 0x1e / 0x1f / 0x05 / 0x06 / 0x11 / 0x13 等) [確定]。ディスパッチャ 0x463EC0。
+- パッケージ選択 0x569020 は「リスト走査 → フラグ述語 → スケジュール → CTDA」の順で最初の一致を返す。明示的な優先度フィールドは無い [確定]。
+- スケジュール比較 0x568EB0、時計 0xB332E0 [確定]。
+- CTDA 評価器 = 0x56A510 (リスト) → 0x56AC50 (1 件) → 0x56A3B0 (比較 0..5)、条件関数表 0xB0C8E0 [確定]。※ 0xB0C8E0 = 0xB0C8C0 + 0x20 で、§58.2 の関数帯基底 + entry+0x20 と整合 [推定 (整合)]。
+- AI 設定ローダ 0x4A9A00 は GMST 既定値をアクター AI 設定構造体へ焼き込む [確定]。
+- 逃走信頼度 0x546CC0 = conf + (1 − 体力比)·fAIFleeHealthMult (0xB36D30) [確定 (式形)]。逃走/降伏カウントに iAIFleeMaxHitCount (0xB36D48) / iAIYieldMaxHitCount (0xB36D78) [確定]。
+- 検知値 0x5F6540 + 状態分類 0x640900 が fSneakSeenMin / NoticedMin / LostMin / UnseenMin で 4 状態を判定 [確定]。隠密内部式 0x5463F0 が fDetectionSneakLightMod (0xB36CB8 @0x5464EC) を参照 [確定]。
+- モラール専用 GMST は存在しない [確定]。
+- 残 11 件: 種別 id 0x02/03/04/07/08/09/0a/0b/0e のファクトリ未検出、種別固有の毎フレーム処理 (vtable 差分スロット)、条件関数表の厳密レイアウトと id↔名称、スケジュール構造 pkg+0x2c のフィールド意味、flee ハンドラ先頭 VA、検知式の完全形。
+- 注: 移動 (pathing/NAVM) は Phase 2/3 スコープ。既存 `esm_reader` の AI 解析は実形式と不一致 (§18.6) で、本節との接続が必要。
+
+### §58.2 クエスト・対話 (`s58_quest.md` + `s58_qst_condtable.txt`, 1-5)
+- **重要**: 条件関数テーブルは独立していない。CTDA の関数 index (item+0x08 の u16) はスクリプト関数テーブルの**関数帯** (基底 **0xB0C8C0**、stride 0x28、id = 0x1000 + index) を直接指す [確定]。※ §57.4 の 532 件テーブル (基底 0xB0AF48) の entry 163〜531 が関数帯 (369 件) に対応する。
+- 条件関数ポインタは **entry+0x20** (s57 の「helper」列)。非 0 の **169 件** が条件対応 [確定]。全数は `s58_qst_condtable.txt`。
+- 評価器は AI と同一: リスト 0x56A510 / 単一 0x56AC50 / 比較 0x56A3B0 [確定]。演算子 0..5 = ==, !=, >, >=, <, <= [確定]。フラグ byte: bit0 = OR、bit1 = 参照入替、bit2 = 比較値が TESGlobal* (値は global+0x24) [確定]。
+- QUST: SetStage 0x529AC0 → fragment 0x52B080 → 0x52B0C0 [確定]。GetStage = byte[quest+0x5c]、start/stop = 0x529820 (bit0)、complete = 0x529840 (bit1) [確定]。
+- DIAL/INFO: Info 条件は INFO オブジェクト +0x18 の条件リスト (0x530830 → 0x56A510)、選択ループ 0x52F110 [確定]。レコード型 index: DIAL = 0x39 / INFO = 0x3A / QUST = 0x3B [確定]。
+- 説得 (Speechcraft): 4 セクター角度判定 0x5BE700 (しきい値 135 / 225)、反応値 0x5BE780、bribe / disposition 0x5BE950 / 0x5BED80、係数適用 0x5BFA00 [確定]。
+- SetObjective スクリプト関数は不存在 [確定] (Oblivion 仕様どおり。目標は QUST レコード側 = Phase 3)。
+- 残 8 件 (高 1): INFO 選択の優先度/ランダム抽選 (TCLR) (R1)、voice/字幕選択コード (R2)、パラメータ記述子レイアウト (R3)、DIAL DATA フラグ (R4)、greeting/farewell 選択 (R5)、QUST bit2 と ESM DATA の対応 (R6)、fragment VM 投入 (R7)、f24 ビット (R8)。
+- 語彙補正: s57 の「entry+0x20 = helper」は条件系では条件評価関数ポインタ。`re_util.disasm_range` は命令境界で途切れるため quest 側は自前ロバスト逆アセンブラを使用。
+
+### §58.3 セーブ・ロード (`s58_save.md`, 1-7)
+- save manager は単一グローバル **[0xB33B00]**。セーブ実行 0x465130、ロード実行 0x465860 [確定]。
+- セーブ呼出元: quicksave 0x466AD0、autosave 0x466B70、通常 0x5D3230、コンソール SaveGame 0x5023D0 [確定]。
+- ファイル名 = dir(0xB3F280) + sep(0xB05564) + name + ".ess"、書式 `"%s%s%s.ess"` (0xA3A88C) [確定]。
+- `.ess` ヘッダ [確定]: magic 12B `"TES4SAVEGAME"` + 版数 2B (`00 7d`) + GUID 16B + u32。以後は §27.2 の version ゲート。
+- 現行バージョン byte = **0x7d (125)** (+0x7c) [確定]。ロード時 0x7e はエラー、> 0x7d は警告 (0xA3B450) [確定]。
+- zlib **1.2.1 を静的リンク** (PE インポートに zlib 無し) [確定]。圧縮データの物理位置は [未確定]。
+- LoadMenu 0x5AEA60 (menu 0x40E)、行選択 0x5AE1D6 → 0x465860 で復元 [確定]。LoadingMenu 0x578E90 (開) / 0x57B950 (進捗) の呼出元を全列挙 [確定]。
+- autosave に fAutosave* GMST は存在しない [確定]。`bSaveOnRest` / `bSaveOnWait` / `bSaveOnTravel` / `bSaveOnInteriorExteriorSwitch` (既定 1) で制御 [確定]。
+- quicksave / quickload = 入力アクション `"QuickSave"` / `"QuickLoad"`、0x672F27 / 0x672F41 で dispatch [確定]。
+- 残 8 件: `.ess` 本体の圧縮位置、change form / global / quest / cell / AI の完全バイナリ境界 (実 `.ess` 未取得で突合不可)、保存対象リスト [this] の生成元、0x403520 の actionId↔既定キー対応、sleep が bSaveOnTravel を読む理由、0xB05BA4 の設定元、0x40D540 の局面、`.bak` 世代管理。
+- **実 `.ess` サンプルがワークスペース/BSA 展開先に存在しない**ため実データ突合は未実施 (該当箇所は [推定])。B13 と併せてサンプル取得が望ましい。
+
+### §58.4 キャラクタ生成・レベルアップ (`s58_chargen.md`, 1-8)
+- スキル上昇本体 **0x668070** (this = player、skill form、flag、flag)。メジャー判定 0x5E3320 → 0x51C090(class, avIdx)、メジャー時のみ `[player+0x184]++` [確定]。
+- スクリプト関数 `AdvancePCSkill` / `ModPCSkill` = 0x50D020、`AdvancePCLevel` / `AdvLevel` = 0x5056F0 [確定]。
+- レベルアップ保留: `[player+0x184] >= iLevelUpSkillCount (0xB37618 = 10)` → `[player+0x1DC] = 1`。閾値判定は 0x668234 / 0x50D20F [確定]。
+- LevelUpMenu 起動 0x5ACE20 (menu 0x403、levelup_menu.xml 0xA69B88)。呼出元 0x5056F9 / 0x5822F5 (睡眠完走) / 0x671C36 [確定]。
+- 確定 → 0x5AC730 → 0x5AC6A0 (選択収集) → **0x66C3E0 ApplyLevelUp** (属性加算 + GetLevel+1 + `[+0x184] -= 10` + カウンタリセット) [確定]。
+- 属性ボーナス = 0x664A20 = 0x5480A0(count)。テーブル iLevelUp01..10Mult = 2,2,2,2,3,3,3,4,4,5 [確定]。式: 0 → +1 / 1〜4 → +2 / 5〜7 → +3 / 8〜9 → +4 / ≥10 → +5。適用 0x668440 [確定]。
+- 属性別カウンタ `[player+0x5B4][attr]` (0x6648D0 ++ / 0x664970 読)。10 到達ごとに 0x65FB30 が再生成 [確定]。
+- スキル上限 100 [確定]。ランク閾値 GMST iSkill{Apprentice, Journeyman, Expert, Master}Min = 25 / 50 / 75 / 100 @0xB3A4F8〜0xB3A510 [確定]。
+- chargen 初期値 **0x5222D0** (SetClass 0x50C6E0 / RaceSex 0x5C2790 から): メジャー = +25.0、非メジャー = ×0.1 + 5.0、属性は種族値 + 一次/二次 + 5.0 [確定]。
+- メニュー起動ラッパ: 0x57A9B0 → SkillsMenu (0x408)、0x57AA20 → ClassMenu (0x406)、0x57B7E0 → RaceSex (0x40C)、0x57A940 → Training (0x404)。chargen スクリプト impl: ShowClassMenu 0x505810 / ShowRaceMenu 0x505850 / ShowBirthSignMenu 0x505870 / SetInChargen 0x5032D0 [確定]。
+- 0x565BE0 / 0x565C50 = AV 添字のグループ変換器 (offset {0, 8, 0xC, 0x21, 0x25, 0x28, 0x2A})。スキル = group2 (0xC〜0x20) [確定]。
+- 残 8 件 (最優先: birthsign の能力付与経路 — 0x405 の実起動コードと birthsign_menu.xml 文字列が無く、選択 UI と付与関数が未特定)、ShowBirthSignMenu → SkillsMenu (0x408) の命名/実体不一致、スキル「進捗 → 実 +1」境界、レベルの明示上限 (なし)、0x5822F5 呼出元関数の全体、[+0x5B4] ライフサイクル順序、0x5D6390 mode3 の全レイアウト、NPC/PC 分岐フラグ。
+
+### §58.5 錬金・修理・ソウルトラップ等 (`s58_craft.md`, 1-10)
+- **訂正**: 「AlchemyMenu = 0x3F1」は誤り。**0x3F1 = DialogMenu、AlchemyMenu = 0x410** [確定]。
+- AlchemyMenu 起動 0x593810、イベントハンドラ 0x595080。Create = event 14 → 0x594CA0 [確定]。
+- 錬金スキル = GetAV(0x13)。すり鉢補正式 = `0.25·skill + 装置品質` (0x548400)。**失敗ロールは無い** [確定]。
+- ポーション価格 = 値 × fPotionGoldValueMult (1.0) (0x594C04)。TF1〜T3 係数 GMST を列挙 [確定]。
+- RepairMenu = 0x40B / 起動 0x5D2070。修理量 = `3.0·Armorer + 0.1·Strength` (0x5482F0)、コスト ×0.9、ハンマー破損式 0x548330 [確定]。
+- SoulTrap 捕獲 = 0x6A4DF0 (sSoulCaptured @0x6A4EBB、`[player+0x680]++`) [確定]。魂レベル表: 0x4BC020 (名前) / 0x4BC074 (値: 250 / 500 / 1000 / 2000 / 3000) [確定]。
+- RechargeMenu = 0x419 / 開 0x5CE840 / 適用 0x5CF030、コスト `(a − b)·2.0` (0x5483E0) [確定]。
+- EnchantmentMenu = 0x412 / 開 0x5A1EC0 / 生成 0x5A2D30。fSigilStoneUseFactor = 1.0、fEnchant*Limit = 15 / 25 / 40 / 60 / 85 [確定]。
+- 毒塗布経路 = InventoryMenu 0x5FB34C → 0x66A490 [確定]。LockPick = 0x3F6 / 開 0x5AF440。説得 = 0x40A (別系統) [確定]。
+- 残 9 件: potion 効果式の完全合成、0x594F00 の共有理由、毒の実適用 cb 0x666890、0x6A4DF0 の gem 選択、自動チャージ入口、fEnchant*Limit 消費箇所、SpellMaking 起動関数、LockPick 成否式、sPotionFailed 未使用の最終確認。
+- 注: 生 E8 走査が 0 件でも vtable/間接呼出の関数がある (0x6A4DF0、0x5D7600)。0x548xxx の小関数群は魔法コスト (s57) と共用。
+
+### §58.6 §58 による訂正一覧
+| 対象 | 旧記述 | 訂正 |
+|---|---|---|
+| メニュー ID | AlchemyMenu = 0x3F1 | 0x3F1 = DialogMenu、AlchemyMenu = 0x410 [確定] |
+| §57.4 / 条件表 | 条件関数テーブルは独立 | 関数帯 (基底 0xB0C8C0、id = 0x1000 + index) を指し、条件関数 = entry+0x20 [確定] |
+| §57.4 語彙 | entry+0x20 = helper | 条件系では条件評価関数ポインタ [確定] |
+| AI 条件表 | (新規) | 0xB0C8E0 = 0xB0C8C0 + 0x20 で整合 [推定] |
+| 実装メモ | esm_reader の AI 解析 | 実形式と不一致 (§18.6)。§58.1 と接続が必要 |
+
+### §58.7 Phase 1 の残件サマリ (Wave 4a + 4b)
+- Wave 4a: 戦闘 10 / 魔法 7 / 疲労・死亡 15 / スクリプト VM 9 / 経済 14。
+- Wave 4b: AI 11 / クエスト・対話 8 / セーブ・ロード 8 / キャラ生成 8 / 錬金・修理等 9。
+- 計 99 件。うち解決済みは各 md の残件節を参照。Phase 1 の DoD 充足 (実装対応先 + 検証方法) は各 md の「移植対応先」節に記載済みだが、残件消化と実機検証 (B13) が未了。
+- 実機確認として有用: 実 `.ess` サンプル (セーブ解析の突合)、ContainerMenu 再オープン挙動、難易度式の移植修正。
+
+### §58.8 証跡 (すべて `tmp\re\`)
+- 解析 md: `s58_ai.md` / `s58_quest.md` / `s58_save.md` / `s58_chargen.md` / `s58_craft.md`
+- 全数テーブル: `s58_qst_condtable.txt` (条件関数 169 件)
+- 証跡: `s58_ai_1..7_*.txt` / `s58_qst_1..6_*.txt` / `s58_save_1..11_*.txt` / `s58_cg_1..12_*.txt` / `s58_craft_1..10_*.txt`
+
+## §59 Phase 1 Wave 5 統合（2026-10-17）— 高優先残件の消化
+
+**ステータス: 部分完了 (Phase 1 の高優先残件はほぼ消化)。** 各テーマ md の末尾に「Wave 5 追補」節を追記済み。Phase 1 残件の総数は概算 80 件まで減少 (中・低優先が中心)。1-7 (セーブ) のバイナリ突合は実 `.ess` サンプル不在のため保留。
+
+### §59.0 表記
+- [確定] = 逆アセンブリ直接確認 / [推定] = 論理推定 / [未確定] = 未解決。詳細は各 md (`tmp\re\`) を参照。
+
+### §59.1 戦闘 (`s57_combat_full.md` §15, 1-1)
+- **dmgInt の符号規約 (高優先) 解決** [確定]: `[esp+0x5c]` の書込元 2 箇所 (0x5FEDEA の z 差 / 0x5FF5A2 の無変換複写) に符号反転は無い。`[esp+0x18]` は 0x484F80 由来で全乗算因子が非負、かつ `edi.vt+0x2C4` = 0x5F3870 (HP 適用、dmg ≤ 0 で即 return) へ渡る → **dmgInt は常に非負**。
+- 帰結 [確定]: KB (0x547690) は正値で成立する。一方 KD の 0x5475D0 は `T = dmg·(−3.0) < 0` を要求するため、**通常ヒットでは成立しない (実質デッドコード)**。実際の KD は疲労切れ自動 KD と Marksman Perk のみ。→ **移植仕様の判断が必要** (挙動再現か省略か)。
+- 攻撃起点 [確定]: 0x5FC890 (vtable 間接、Actor/Character/Creature/PC) と 0x60A640 (E8 ← 0x60DB38)。両関数の中間 0x5FCB80 / 0x60A840 から FEBF0 へ到達。
+- スニーク倍率 [確定]: `fDamageSneakAttackMult` (4.0) は未使用。実体は **0x5477F0** が `fPerkSneakAttack{Melee,Marksman}*` 表から AV 0x1F (Sneak) ランクで選択する。
+- 弓 [確定]: 投射物は 0x484F80 を再利用 (投射物側 caller 0x60CA4C / 0x60CA60)。速度は 0x60C960 が fArrowSpeedMult / fArrowWeakSpeed を適用。
+- 罠 [確定]: 0x608965 / 0x69F8DE が投射物種別 (flags & 0x3F == 14) で fProjectileKnockMultTrap = 0.05 を選択。
+- **方法論メモ (重要)**: コードは GMST のスロット VA を float 直読みする (起動時初期化)。静的ファイル上のスロット VA は既定値と一致しないため、既定値の照合は既定値テーブル側アドレス (例 fKnockdownDamageMult = −3.0 @0xA57B08) で行う。
+- 残: 中 4 (矢の重力・射程減衰式、罠ダメージ本体、武器速度、ブロック成立条件) / 低 2 (0x5F0EE0・0x5EE760 内部、AV 対応表) + 派生小残件 (スニーク倍率の乗算点、0x60DB38 の呼出元、投射物専用命中経路の有無)。
+
+### §59.2 魔法 (`s57_magic.md` 節 12〜18, 1-2)
+- **vtable の正体** [確定]: 耐性/吸収/反射は「Actor セカンダリ vtable」ではなく、**Actor+0x68 の MagicTarget サブオブジェクト vtable 0xA6DFF4** (COL 0xAC3204、offset 0x68)。スロット +0x20 / +0x24 / +0x28 = 0x5E5240 / 0x5E54A0 / 0x5E5520 (全スロット確定)。
+- 吸収 0x5E54A0 の**第 4 引数 flag = 1 は反射由来** [確定]: 反射 0x5E5520 は成立時に反射先 MagicTarget の vt+0x24 (吸収) を flag=1 付きで呼び、chance を `fReflectedAbsorbChanceReduction` (0xB38290) = 0.5 倍する (§57 の [推定] を [確定] 化)。
+- 型記述子 [確定]: 0xB03070 = Actor / 0xB0320C = AlchemyItem / 0xB03280 = MagicItem / 0xB0373C = IngredientItem / 0xB03834 = MagicCaster。0x9832E6 は型付き FormLookup。反射は `(Actor|MagicCaster)`、耐性は `(Alchemy|Magic)` で引く。
+- 耐性 0x5E5240 の全体構造と早期終了条件、`0x548AD0 = (a/100)·(1 − b/100)` を確定 [確定]。
+- 呼出順序 [確定/一部]: vtable 順 = 耐性 → 吸収 → 反射、および反射 → 吸収の入れ子まで確定。外側の適用順は上位適用関数が `[reg+0x68]` 基点で観測できないため [未確定] (次の一手: 間接呼出 `mov reg,[vt]; call reg` の 0x694xxx〜0x69Fxxx 帯の総当たり)。
+- MGEF → クラス [部分]: クラス vtable 群の共通尾部とクラス固有生成スロット (+0x04 = クローン) を確定。生成ファクトリ候補 0x68ED40 を発見。
+- 否定的確定 [確定]: 3 関数は仮想関数で直接呼出 0。`call [reg+0x20/24/28]` 形式は 0x50〜0x80 帯に不在。`[reg+0x68]` 基点の複数スロット同時呼出も不在。
+- 残 7 (未確定 4 / 部分 3)。
+
+### §59.3 スクリプト VM (`s57_script_vm.md` Wave 5 追補, 1-6)
+- **R2 解決 (イベント送出)**: キュー実体 = **ScriptEventList** (vtable 0xA49DA4、ctor 0x4FBAA0)。投入 0x4FBF90 → 0x4FB580 (form ノード +4 に bit を OR)、判定 0x4FB5F0、実行 0x4FBE00 / 0x4F9EC0 [確定]。
+- **イベントビット表** [確定]: OnAdd = 0x1 / OnEquip = 0x2 / OnDrop = 0x4 / OnUnequip = 0x8 / OnDeath = 0x10 / OnMurder = 0x20 / OnKnockout = 0x40 / OnHit = 0x80 / OnHitWith = 0x100 / OnPackageStart = 0x200 / OnPackageDone = 0x400 / OnPackageChange = 0x800 / OnLoad = 0x1000 / OnReset = 0x80000000。
+- 送出 site **77 件**を列挙 [確定]。主要発火元: OnDeath 0x5EA000 / OnHit 0x5EE468・0x5FF626 / OnDrop 0x4D878B / OnEquip 0x5FAEF1 / OnAdd 0x4D8738 / OnLoad 0x4422E5。
+- OnActivate (id 0x02) のみ別機構 [推定-強]: impl 0x503F90 は 0x4FB5F0 ではなく 0x4D8260 / 0x4D82E0 で `obj+0x44` のフラグビットを直接 test/set する。
+- **R7 解決 (bytecode)**: 静的データ源 **`Oblivion3.esm`** から SCDA を直接抽出し **2,393 / 2,393 完走** (807,893 B / 65,628 命令) [確定]。命令形式は `[u16 op][u16 argLen][argLen]`。
+- **R6 解決**: **0x001C は長さ無しの固定 4 バイト** `[u16 op][u16 refSlot]` (参照スロット接頭辞)。§57 の「argLen 1..37」は mis-parse で、その値は参照スロット番号だった [確定]。
+- **R4 解決**: GMST 値スロットは **0xB09E28** (5.0f、`fQuestScriptDelayTime:MAIN`)。読取 site 0x4FBCB2 / 0x4FBD3D / 0x4FBE7E / 0x4FBEDD (ランナー 0x4FBB60 / 0x4FBE00 内) [確定]。§57 の「要素 0xB09E2C」は誤り。
+- R3 部分解決 (実用上充足) [確定]: VMSingleton 0x516970、新フレーム 0x517810、RunScript ラッパ 0x4F9F00 / 0x4F9F30 / 0x4F9F60、起動 0x4F9EC0、イベント実行 0x4FBE00、参照解決系文実行 0x516835。
+- 方法論メモ: `scda_cache.pkl` の代替として **ESM 静的データ直読**が有効 (実行時バッファ不要、再現可能)。
+- 残 4 (中 2: R5・R8 / 低 2: R9・R10)。
+
+### §59.4 キャラクタ生成・レベルアップ (`s58_chargen.md` Wave 5 追補, 1-8)
+- **命名/実体不一致の解消** [確定]: **menu 0x408 (skills_menu.xml) の mode 3 = 星座ピッカー**。0x5D6390 mode 3 は BSSimpleList `[0xB33A98]+0x8C` (星座フォーム列) を列挙し、`player vt+0x268 = GetBirthSign` と一致する行を既定選択する (0x5D67B7〜)。`ShowBirthSignMenu → 0x57A9B0 → 0x5D6390(0,3)` は正しい。
+- **menu 0x405 (BirthSignMenu) は名前登録のみ** [確定] (0x58A0A0 レジストリ、`push 0x405` は 0x58A5FF の 1 件のみ)。EXE に `birthsign_menu.xml` の絶対パス文字列は存在しない (chargen XML は skills / race_sex / class の 3 件のみ)、生成関数なし。星座フォームは formType = 0x11。
+- スキル進捗 → 実 +1 ブレーカ [確定]: **0x668B30** が `[+0x130+local] += amount` し、閾値 0x65FAD0 到達で 0x668070(form,0,dl) を呼ぶ。0x668070 は arg2 == 0 で進捗を閾値分消費して実 +1。他呼出元: 0x66A3D0 (強制 +1) / 0x4B5720 (教本系) / 0x66C200 (ロード・chargen 適用)。
+- `[player+0x5B4]` = **BSSimpleList** [確定]: 0x6648D0 (++) / 0x664970 (読) は遅延生成。0x65FB30 が 10 到達ごとに区間リセット、0x65FBB0 がクリア。**ApplyLevelUp 0x66C3E0 は属性ボーナス適用 (0x668440) の後に 0x65FBB0 でクリア**し、その後 `[+0x184] -= 10` → `[+0x5BC] = 0` → `[+0x1DC]`。
+- VM: `AddSpell` = 0x514950 / `RemoveSpell` = 0x510B90 (生 E8 呼出元 0、VM 専用) [確定]。`GetIsPlayerBirthsign` helper = 0x4F8370。
+- 残 6 (最優先: 星座能力 (spell/ability) の付与処理 VA — 選択は `player+0x590` に保存される所まで確定、付与本体は未特定。候補: chargen 確定系 0x5D7090 (`[0xB3A6D1]=1`)、0x5D6D20 / 0x5D70C3 (`player+0x590` 参照)。次の手: actor vt+0x2DC (AddSpell 同系) 経路か ESM chargen クエスト側)。
+
+### §59.5 経済・所持品 (`s57_economy.md` Wave 5 追補, 1-9)
+- **価格経路の完全化** [確定]: 基礎価値 V → `coef(有効交渉スキル, disposition) ± 0.01·[Player+0x11C]` → `× V` → `round(0x484370)`。乗算箇所は 0x488F49 (買) / 0x4890EC (売)。ラッパ先頭: **0x5E11A0 = sell / 0x5E1200 = buy / 0x5E1100 = haggle**。`0x547B90` = 有効スキル (`clamp(skill + 0.4·Luck − 20, 0, 100)`)。BarterMenu は `coef × 100` を百分率表示。
+  - 0.01 は係数式 0x5481C0 / 0x548240 の内部 (R6 解決)。残は `[Player+0x11C]` の名称と vt+0x224 / vt+0x284 の index 対応のみ。
+- **R1 前提を訂正** [確定]: 0x676EE0 は罰金額を計算しない (犯罪的オブジェクトの登録処理)。`vt+0x8C` = 0x65AA60 (3 クラス共通、登録/解除)。実式は `0x606140 (kind 別額) × 0x5234A0 (最大倍率) → [esi+0xC]->vt+0x254(fine)`。
+- R2 整理 [確定]: 1500 = 0x6605A0 (アクター観測摘除) / 2000・3000 = 0x6773B0 (犯罪記録、interior/exterior) / 10000 = iCrimeAlarmRecDistance (登録ループ)。
+- R11 [確定]: 専用ゴールド加減算関数は無く、Gold form アイテム転送で処理 (転送 0x492E70 / 0x5E4A00 → 0x487930、個数ゲッタ 0x4B2460)。
+- R13 [確定]: cmd 51 の `vt+0x78` 拒否分岐と Gold form 比較分岐を確認。
+- 残: 未解決 6 (R3・R4・R7・R9・R10・R14) + 一部前進 3 (R11 の重量・ドロップ関数、R12、R13) + 対象外 1 (R8)。重量集計・ドロップ関数は未特定。
+
+### §59.6 §59 による訂正一覧
+| 対象 | 旧記述 | 訂正 |
+|---|---|---|
+| §57.4 (R6) | 0x001C = ジャンプ終端 / argLen 1..37 | 0x001C は長さ無し固定 4 バイト `[u16 op][u16 refSlot]`。旧 argLen 値は参照スロット番号の mis-parse [確定] |
+| §57.4 (§4.3) | fQuestScriptDelayTime の要素 = 0xB09E2C | 値スロット 0xB09E28、読取 site 0x4FBCB2 / 0x4FBD3D / 0x4FBE7E / 0x4FBEDD [確定] |
+| §56.1 / §57.1 | KD 0x5475D0 は通常ヒットで成立 | dmgInt は常に非負 → KD ロールは実質デッドコード。実 KD は疲労切れ自動 KD + Marksman Perk [確定] |
+| §57.5 (§2-2 / §3-5) | 0x676EE0 = 罰金処理、vt+0x8C が金額算術 | 0x676EE0 = 犯罪的オブジェクト登録。金額は 0x606140 × 0x5234A0 → [esi+0xC]->vt+0x254(fine) [確定] |
+| §58.4 | menu 0x405 = BirthSignMenu の起動 | 0x405 は名前登録のみ。実体は menu 0x408 の mode 3 = 星座ピッカー [確定] |
+| §57.2 | Actor セカンダリ vtable | Actor+0x68 の MagicTarget サブオブジェクト vtable 0xA6DFF4 (offset 0x68) [確定] |
+| 方法論 | GMST スロット VA で既定値を読む | 既定値は既定値テーブル側 (例 0xA57B08) で照合。コードはスロット VA を起動時初期化後に読む |
+
+### §59.7 Phase 1 残件サマリ (Wave 5 後)
+- 戦闘 6 (中 4 / 低 2 + 派生) / 魔法 7 / 疲労・死亡 15 / SVM 4 / 経済 9 / AI 11 / クエスト・対話 8 / セーブ 8 (実 `.ess` 待ち) / キャラ生成 6 / 錬金・修理等 9。
+- 概算合計 ~83 件。高優先はほぼ消化済みで、残りは中・低優先が中心。
+- 移植判断が必要な項目: KD 0x5475D0 の実質デッドコード化への対応、実 `.ess` サンプル取得、ContainerMenu 再オープン挙動、難易度式の移植修正。
+
+### §59.8 証跡 (すべて `tmp\re\`)
+- 追補先 md: `s57_combat_full.md` §15 / `s57_magic.md` 節 12〜18 / `s57_script_vm.md` Wave 5 追補 / `s58_chargen.md` Wave 5 追補 / `s57_economy.md` Wave 5 追補
+- 証跡: `s59_combat_1..4_*.txt` / `s59_magic_rra_raw.txt`, `s59_magic_vt_td_xref.txt`, `s59_magic_effectdispatch.txt` / `s59_svm_r2*.txt`, `s59_svm_r7*.txt`, `s59_svm_r3_start.txt` / `s59_cg_1..14_*` / `s59_eco_1..12_*.txt`
+- SCDA 全数 (ESM 直読): 2,393 スクリプト / 807,893 B (証跡内)
+
+### §59.9 KD / KB 実装の再検証（§59.1 の精密化・ユーザー指摘による）
+
+ユーザーの指摘を受け 0x5475D0 (KD) / 0x547690 (KB) を再検証した。GMST 名・既定値・参照 site は B10 全数表 (`s50_gmst_full.txt`) と一致した。
+
+| GMST | スロット VA | 既定値 | 参照 site |
+|---|---|---|---|
+| fKnockdownDamageMult | 0xB36F98 | −3.0 | 0x547609 (KD) |
+| fKnockdownDamageBase | 0xB36F90 | 0.0 | 0x54760F |
+| fKnockdownAgilMult | 0xB36F88 | 1.0 | 0x54761D |
+| fKnockdownAgilBase | 0xB36F80 | 0.0 | 0x547627 |
+| fKnockdownChance | 0xB36FA0 | 0.25 | 0x54763D |
+| fKnockbackDamageMult | 0xB36FC0 | 10.0 | 0x5476C3 (KB) |
+| fKnockbackDamageBase | 0xB36FB8 | 50.0 | 0x5476C9 |
+| fKnockbackAgilMult | 0xB36FB0 | −0.008 | 0x5476D7 |
+| fKnockbackAgilBase | 0xB36FA8 | 1.0 | 0x5476E1 |
+| fKnockbackForceMax | 0xB36FC8 | 512.0 | 0x600014 / 0x60002D |
+
+共通部品 [確定]:
+- `curve(x)` = 0x547F00 = `fFatigueBase (0xB37530 = 1.25) − (1 − x)·fFatigueMult (0xB37538 = 0.5)`。引数 x は疲労比 `0x5F4880(victim)`。
+- `eff(A, B)` = 0x547B90 = `clamp(A + B·0.4 − 20, 0, 100)`。KD/KB では (Agility, Luck) を渡す。
+- `C = curve(x)·eff(Agility, Luck)`
+
+数式 [確定]:
+- **KD** 0x5475D0: `chance = min( (fKnockdownDamageMult·dmg + fKnockdownDamageBase) / (fKnockdownAgilMult·C + fKnockdownAgilBase), fKnockdownChance )` = `min(−3·dmg / C, 0.25)`。成立は `(rand()%100)/100 ≤ chance`。
+- **KB** 0x547690: `force = (fKnockbackDamageMult·dmg + fKnockbackDamageBase)·(fKnockbackAgilMult·(eff/C) + fKnockbackAgilBase)` = `(10·dmg + 50)·(1 − 0.008·eff/C)`。fKnockbackForceMax (512.0) でクランプ。
+
+**到達性の精密化 (§59.1 の「実質デッドコード」を置換)** [確定]:
+- 分子 = `−3·dmg`。`trunc(damage) ≥ 1` の通常ヒットでは chance < 0 → 判定は `(rand%100)/100 ≤ chance` で常に偽 → **KD は到達不能**。
+- `trunc(damage) == 0` (端数ダメージ、または完全軽減で 0) なら chance = 0 となり、成立するのは `rand()%100 == 0` のときのみ → **約 1% で KD**。
+- `trunc(damage) < 0` は通常のダメージ経路では発生しない (0x484F80 由来、全乗算因子が非負) [確定]。
+- したがって正しい表現は「**damage の整数部が 1 以上では到達不能、整数部が 0 のときのみ約 1% で成立**」。「デッドコード」は不正確な断定だった。
+- 加えて KD ロールに到達するには 0x600218 の `[esp+0x3c] == 0.0` ゲート通過が必要で、疲労 ≤ 0 の自動 KD はロールを経由しない (0x600248 → 0x60028E) [確定]。
+- 移植方針 (更新): 通常ヒットで KD が起きない挙動を再現するのが安全。mod による fKnockdownDamageMult 変更に備えるなら式ごと実装する。
+
+dmg の出所 [確定]: `[esp+0x5c]` ← 0x5FF5A2 で `[esp+0x18]` を複写。直前に 0x5FF57C〜0x5FF58E で `[esp+0x18] *= (1 − n/100)` (n = 1..0x62) の軽減スケールが掛かる。damage は 0x484F80 由来。
+
+証跡: `tmp\re\s59_kd_verify.txt` (callers と本体) / `tmp\re\s59_kd_verify2.txt` (curve・eff・KB 本体) / `s50_gmst_full.txt` (GMST 名・既定値・refs)。
+
+## §60 Phase 2 Wave 6a 統合（2026-10-17）— オーディオ / 入力 / CRT・乱数 / ファイル I/O
+
+**ステータス: 部分完了。** Phase 2 (エンジン系) の第 1 弾。ロードマップ 2-4 / 2-5 / 2-6 / 2-7 を [~]。番号は報告書の連番に従い §60 以降とし、ロードマップの「Phase 2 → §61〜§70」表記を「§60〜」に改める。
+
+### §60.0 表記
+- [確定] = 逆アセンブリ直接確認 / [推定] = 論理推定 / [未確定] = 未解決。詳細は各 md (`tmp\re\`) を参照。
+
+### §60.1 オーディオエンジン (`s60_audio.md`, 2-4)
+- 2 系統 [確定]: **DirectShow** (`.mp3` ストリーム、`CoCreateInstance(CLSID_FilterGraph)`、AM+0x70 = IGraphBuilder、AM+0x74 = IBasicAudio) と **DirectSound8** (`.wav`・声、DSOUND ord#11)。DirectMusic は不使用。
+- **訂正 (§56.2)** [確定]: AM+0xA6 = bAudioActive。予約 start は `A6 != 0 → 相対 (−arg2)` / `A6 == 0 → 絶対 (now + arg2)`。旧記述は逆だった。
+- **訂正 (§56.2)** [確定]: FUN_6AD030 に type bit2 (0x4) テストは無い (bit1 (0x2) と bit3+4 (0x18) のみ)。
+- **訂正 (§50 C3)** [確定]: `[0xB161D8]` は「フェード秒」ではなく **fDSoundRolloffFactor = 4.0** (DS3D リスナーへ適用)。
+- 楽曲フェード窓 = **1700ms**。立ち上がりは `(2t − 1)·[2F8]` (後半 850ms 線形)、定常ランプ ±0.02/tick、`diff < 0.02` でスナップ。
+- 音量は **5 スライダー** (Master / Voice / Effects / Foot / Music)、既定 1.0 / 0.8 / 0.8 / 0.8 / 0.3。commit = FUN_595A20。カテゴリ写像は type bit2 = Voice / bit3 = Foot。
+- mB 変換 = `trunc(2000·log10(max(v, 1e-5)))`、クランプ [−10000, 0]。`[0xA785E8]` = 1e-5 は FUN_6B6F20 の 1 箇所のみ。
+- 0x65A9C6 / 0x65AC82 は FUN_6AE0A0 の 3D エミッタ wrapper (0x65A970 / 0x65AC50) からの呼出。FUN_6AC210 (StopAllSounds) の呼出元 6 件。
+- 3D [確定]: min = `form[+0x38]×5`、max = `form[+0x39]×100`、rolloff = 4.0、リスナー = IDirectSound3DListener (0x279AFA84)。**EAX / リバーブ / 明示ドップラーは無し**。字幕は音量を持たず GamePlay 真偽値。
+- 残 7 件 (AM+0xDC bit2、type bit 0x20 の意味、フェード変数同定、min/max スロット対応 vt+0x40/44、0x6AB420 GetState、ctor FLT_MAX、DS3D パラメータ無しの最終確認)。
+
+### §60.2 入力系 (`s60_input.md`, 2-5)
+- **DirectInput8 単一 API** [確定] (DirectInput8Create のみ。XInput 未インポート)。device 0 = keyboard / 1 = mouse / 2 = gamepad。
+- アクション = **29 件 (ID 0〜28)** + 特殊 3 件 (29 = Esc / 30 = grave / 31 = SysRq)。ID = 名前テーブル index。名前テーブル **0xB02BB8** (29 件)。
+- キー割当 = `inputMgr+0x1B7E` の **byte[3][29] (stride 0x1D、0xFF = 未割当)**。
+- 既定キーは **FUN_00403960 (ResetBindings) にハードコード**で、同梱 `Oblivion_default.ini [Controls]` と完全一致 [確定]。→ 依頼時の「0x403520 = actionId↔既定キー対応表」は不正確。**0x403520 は実行時バインディング照会** (call 95、mode = held / edge / changed) で、アクション判定の唯一入口。
+- 保存/ロード = `[Controls]` に `Name=%08X` (keyboard << 16 | mouse << 8 | gamepad)。save = 0x404400 / load = 0x404540。
+- 予約キー {Esc, grave, 0xB7, 1-8, F1-F4} はリバインド不可 (0x403F50 / 0x403B80)。
+- 入力経路 [確定]: DirectInput poll 0x4046A0 → 状態配列 +0x18F4 / +0x19F4 → 0x403520 → ワールド/メニュー分配。QuickSave = F5 / QuickLoad = F9 (§58.3 と整合)。
+- 入力抑制 = **破棄ラッチ 0xB3A6D4** + **inputMgr 有効ビット ([this]&1)** の 2 系統 (ReleaseAll 0x404010)。
+- 残 6 件 (ID 30 grave の実呼出経路、ゲームパッド物理ボタン対応、mode 意味の厳密化、+0x1BD5 の 8 方向レイアウト、0x9F6000 先頭 init、方向既定値)。
+
+### §60.3 CRT / 数値ヘルパ / 乱数 (`s60_crt.md`, 2-6)
+- **決着** [確定]: `0x9828C0` = CRT **`_ftol2` でゼロ方向切り捨て** (cvttsd2si)。「__ftol = 四捨五入」は誤り。→ §57 の各所の解釈をこの定義で読む。
+- 丸め系 [確定]: `0x404F70 = floorf` / `0x484370 = ceilf` / `0x4842F0 = truncf` / `0x4843B0 = round 相当 (half-up = floor(x + 0.5))`。
+- 数学関数 [確定]: `0x985B70 = pow` / `0x986CD0 = log10` / `0x986B80 = ln` / `0x982C30 = sqrt` / `0x982BFA = fmod`。
+- 乱数 [確定]: **`0x9859DD = MSVC rand()`** (LCG 214013 / 2531011、`(state >> 16) & 0x7FFF`、RAND_MAX = 32767)、`0x9859D0 = srand`、`0x985994 = time seed`。`0x47DF80 = Rand(seed)` ラッパ (seed = 0 で time 遅延 seed)、`0x47DFD0 = rand_range`、`0x47FB70 = 確率 bool`。**単一グローバルストリーム** (per-thread seed = ptd+0x14)。
+- 値域変換パターン: `%100` / `%N` / `/32767` / `1 + floor(rand/32767·max)` / `min + rand·(max−min)/32767`。
+- 境界 [確定]: NaN は評価器で unordered 分岐 (onlyif → 偽、例外なし)。ftol 範囲外 → INT_MIN。整数オーバーフロー保護なし (div/mod の 0 除算ガードのみ)。
+- **移植注意** [確定]: 移植版は `std::mt19937` / `std::rand` を使用中のため乱数列が不一致 → **MSVC LCG (0x9859DD) へ置換必須**。`round` は half-up であり C++ `std::round` (half-away) は負値で不一致。経済の買経路は 0x488F58 = ceilf、別経路は 0x489399 = round(0x4843B0) が混在 (§57.5 の「round」表記の内訳)。
+- 残 6 件。
+
+### §60.4 ファイル I/O・INI パス解決 (`s60_io.md`, 2-7)
+- INI [確定]: Common API 直叩き + Setting クラス (`name:Section` 記述子) 経由。**読 0x4A8800 / 書 0x4A85F0** (jump table 0x4A8AE4 / 0x4A87D4、最大 9 型)。キー一覧 **36 セクション / 615 キー**を機械抽出 (`s60_io_ini_keys.txt`)。§12.3 の「INI リーダー未特定」を解消。
+- ini 基準 dir 決定 [確定]: 0x40DF80 が `.\Oblivion.ini` の `[General] bUseMyGamesDirectory` を読み、1 なら SHGetFolderPathA で `My Games\Oblivion\` → **0xB3F280**、第 2 dir **0xB3F178** (Plugins.txt / BlendSettings 用)。初回起動で `Oblivion_default.ini` → `Oblivion.ini` を CopyFileA 生成。ログ (Warnings / ProgramFlow / ProgrammerOutput / StackTrace) を 0x494480 系で生成・削除。
+- Controls [確定]: **29 キー名配列 0xB02BB8** (Forward..Grab) + セクション "Controls"、値は DIK 3 バイト `%08X` (§60.2 と整合)。
+- BSA [確定]: BSArchive (vtable 0xA35D74、マジック "BSA"、版 ≤ 0x67 = 103)、ローダ 0x42EE80。master archive ロード **0x42F610** が sArchiveList (既定 6 本の順序) で優先度順に読込み、`%sPlugins.txt` (0xB3F178) を生成。プラグインロード順 = **Plugins.txt 行順** (読込 0x404B00、`#` コメント無視、0x447C50 解決 → 0x44FAD0 有効化)。
+- Data パス = FileFinder (`FileFinder Paths` / `sBasePath`、"Data" 設定 0x40E682)。設置パス = レジストリ `Software\Bethesda Softworks\Oblivion` (0x40E6C0)。
+- ファイル層 [確定]: IAT 直叩き (CreateFileA 8 箇所、whole-file read 0x448E20、BSFile スクリプトクラス 0x430BA0)。zlib は埋込 1.2.1 (§58.3 と整合)。
+- エラー処理: ini 欠落 → 既定コピー、BSA 不正 → フラグ、マスター版不一致 → Warnings.txt、CD 無し → MessageBoxA。
+- 残 7 件。
+
+### §60.5 §60 による訂正一覧
+| 対象 | 旧記述 | 訂正 |
+|---|---|---|
+| §56.2 | AM+0xA6 の予約 start の絶対/相対 | `A6 != 0 → 相対 (−arg2)` / `A6 == 0 → 絶対 (now + arg2)`。旧は逆 [確定] |
+| §56.2 | FUN_6AD030 序盤の type bit2 テスト | 存在しない (bit1 と bit3+4 のみ) [確定] |
+| §50 (C3) | `[0xB161D8]` = フェード秒 | fDSoundRolloffFactor = 4.0 (DS3D リスナー) [確定] |
+| §57 各所 | 0x9828C0 の丸めの混同 | `_ftol2` = ゼロ方向切り捨て。round 相当は 0x4843B0 (half-up) [確定] |
+| 依頼前提 | 0x403520 = actionId↔既定キー表 | 0x403520 は実行時照会。既定は 0x403960 + Oblivion_default.ini [確定] |
+| §12.3 | INI リーダー関数未特定 | 読 0x4A8800 / 書 0x4A85F0 + Setting クラス。キー 615 件を抽出 [確定] |
+| 移植側 | RNG = std::mt19937 | MSVC LCG (0x9859DD) と不一致 → 置換必須 [確定] |
+
+### §60.6 Phase 2 の残件 (Wave 6a)
+- 2-4 音響 7 / 2-5 入力 6 / 2-6 CRT 6 / 2-7 I/O 7 = **26 件**。各 md の残件節を参照。
+- 未着手: 2-1 レンダラ / 2-2 Havok 物理 / 2-3 アセットストリーミング (Wave 6b)。
+
+### §60.7 証跡 (すべて `tmp\re\`)
+- md: `s60_audio.md` / `s60_input.md` / `s60_crt.md` / `s60_io.md`
+- 全数: `s60_input_actions.txt` (29 + 特殊 3) / `s60_io_ini_keys.txt` (615 キー)
+- 証跡: `s60_audio_*` (9) / `s60_input_*` (10) / `s60_crt_*` (8) / `s60_io_*` (9)
+
+## §61 Phase 2 Wave 6b 統合（2026-10-17）— レンダラ / Havok 物理 / アセットストリーミング
+
+**ステータス: 部分完了。** Phase 2 全 7 項目が部分解析済み。残件は各 md の残件節を参照。
+
+### §61.0 表記
+[確定] / [推定] / [未確定]。詳細は各 md (`tmp\re\`) を参照。
+
+### §61.1 レンダラ (`s61_render.md`, 2-1)
+- D3D9 動的ロード経路 [確定]: 0x761DF0 (Direct3DCreate9) / 0x763DE0 (CreateDevice)。グローバル 0xB42154 (ID3D9)、0xB42160 (IDevice9)。
+- D3D9 vtable 呼出 16 種をマッピング [確定]: Clear(121 件), BeginScene(115), EndScene(21), Present(8), DrawPrim(6), SetRenderState(7) 等。
+- シェーダパッケージ: `"shaderpackage%03i.sdp"` (0xA91658) で 001〜019 の 19 ファイル [確定]。
+- BSShader クラス [確定]: BSShaderAccumulator (RTTI 0xA8CCC0)、BSShaderManager (0xA8F240)。
+- D3DX9_27 全 IAT 関数 26 エントリを特定 [確定] (コンパイル、テクスチャ作成、数値計算)。
+- BeginScene(115) >> EndScene(21) の非対称性 → マルチパスレンダリング構造を示唆。
+- SetLight の vtable 直接呼出は 0 件 [確定] → 固定関数パイプライン利用を示唆。
+- 残 6 件 (SetLight 機構、DrawIndexedPrimitive 経路、シェーダハンドルテーブル、天候ロード、Portal/DMap、Occlusion)。
+
+### §61.2 Havok 物理 (`s61_havok.md`, 2-2)
+- Havok 4.0 系 [確定] (hknp 名前空間無し)。55+ の bhk 型が static initializer 0x88B2A0 で登録。
+- 0x679340 = bhkWorld queue (body → world 追加)。ecx = 0xB3BD00 (Havok コンテキスト)。callers = 死亡/KO 経路 (2 件) [確定]。
+- 0x8907A0 = impulse apply。5 callers (KB 経路、KD 状態機械、CharacterProxy 速度) [確定]。
+- Havok グローバル [確定]: 型マネージャ @ 0xB3FB80、コンテキストシングルトン @ 0xB3BD00。
+- キャラクター状態 FSM 6 状態 [確定]: OnGround / InAir / Jumping / Flying / Projectile / Swimming。
+- 移植マッピング [確定]: `physics/` は基本機能を Jolt で実装済み。不足はインパルス適用 (AddImpulse)、Body 追加キュー、CharacterState FSM (CharacterVirtual 代替可) の 3 点。
+- 残 8 件 (bhkWorld step/生成、RayCast pick 経路、衝突フィルタ、ラグドール constraint)。
+
+### §61.3 アセットストリーミング (`s61_stream.md`, 2-3)
+- セル範囲決定関数 0x5AFE00 [確定]: プレイヤーレベルから SceneGraph 負荷境界を 9 段階で設定。
+- フォーム型 0x3C (Cell) 処理 [確定]: 0x5209A7 (セル構築)、0x58D126 (ESM 読込)、0x5D9C89 (親 World リンク)。
+- テクスチャロード経路 0x760D80 [確定-強]: DDS/DXT1-5 検出、BSA reader 0x42C8E0 経由、キャッシュ 0xB4205C / 0xB42060。※移植時は D3DXCreateTexture 置換とキャッシュ管理の再実装が必須。
+- NiNode Pool [確定]: 0x40E5D5 で 3 サイズ (0x1F4 / 0x100 / 0x108)、0xB02020 プール管理。※Android カスタムアロケータに直接写像可能。
+- LoadingMenu [確定]: 0x578E90 (開) / 0x57B950 (進捗) / 0x9F25C0 (文字列 "Loading area...")。§58.3 と連携。
+- スレッディング: セルロード専用スレッド無し [推定]。bUseThreadedParticleSystem / Morpher / TempEffects は効果用。ローディングは同期的。
+- GridsToLoad / uGridDistantCount [未確定]: INI/ESM GMST 経路だがコード・.data にポインタ無し。
+- 残 6 件 (GridsToLoad 参照経路、テクスチャキャッシュ 0xB4205C 完全意味、NiNode ツリー NIF 組立経路、thread 実使用箇所)。
+
+### §61.4 §61 による訂正一覧
+| 対象 | 旧記述 | 訂正 |
+|---|---|---|
+| Pey No | (新規) なし | — |
+
+### §61.5 Phase 2 残件サマリ
+- 2-1 レンダラ 6 / 2-2 Havok 8 / 2-3 ストリーミング 6 / 2-4 音響 7 / 2-5 入力 6 / 2-6 CRT 6 / 2-7 I/O 7 = **46 件**。
+
+### §61.6 証跡 (すべて `tmp\re\`)
+- md: `s61_render.md` / `s61_havok.md` / `s61_stream.md`
+- 証跡: `s61_gfx_*` (imports / vtable_calls / .py) / `s61_havok_1..5_*.txt` / `s61_stream_a1..c7_*.txt`
+
+---
+
+## §62 Wave 8 — レンダリングパイプライン (`s80_render_pipeline.md`)
+
+### §62.0 概要
+レンダリングの3層アーキテクチャを確定: Game Code (NiNode) → BSShaderAccumulator → DeviceWrapper → IDirect3DDevice9。
+
+### §62.1 DeviceWrapper (0xBA7D98)
+D3D9 デバイスをラップするゲーム内クラス。実 D3Dデバイスは `[wrapper + 0x50]`。
+
+| vt offset | メソッド | 呼出件数 |
+|---|---|---|
+| +0x10 | CreateSurface | 408 |
+| +0x14 | ReleaseSurface | 281 |
+| +0x24 | Clear | 121 |
+| +0x28 | BeginScene | 115 |
+| +0x2C | EndScene | 21 |
+| +0x30 | Present | 8 |
+| +0x4C | SetTransform (0x8A9E20) | 2 callers |
+
+SurfaceWrapper vtable 3種 (Main=0xA979A8, Shadow=0xA97A20/0xA97A98)。
+
+### §62.2 BSShaderAccumulator (RTTI 0xA8CCC0)
+Main class accumulating visible geometry → draw dispatch。デバッグ文字列: `"fra"` (FreezeRenderAccumulation), `"RenderAccumulation"`。
+
+### §62.3 シェーダシステム
+**品質レベル** (HLSL パスから):
+- `lighting\1x\` — SM2 (基本)
+- `lighting\2x\` — SM2拡張 (高品質)
+- `lighting\3x\SM3` — SM3 (超高品質、48変種残)
+
+**シェーダ種類**: SkyShader / WaterShader / WaterShaderDisplacement / WaterShaderHeightMap / ShadowLightShader / LightShader / Lighting30Shader / ShadowSceneNode。
+
+**名前付き定数** (D3DXConstantTable):
+`WorldTranspose`, `ViewTranspose`, `ProjectionTranspose`, `WorldViewProjTranspose`, `LightPos[0-3]`, `LightDir[0-3]`, `LightColor[0-3]`, `TransformBase`, `TransformBump`, `ShadowProjTransform` 等。
+
+### §62.4 レンダーパス
+| パス | 説明 |
+|---|---|
+| Main Scene | 主シーン (BeginScene 最多) |
+| Shadow | ShadowSceneNode, 専用表面 0xF0, SM3DepthMap |
+| Water | WaterShader, reflection/refraction/displacement |
+| Sky | SkyShader, sky_quad.v.hlsl (fullscreen quad) |
+| Grass | DrawShaderGrass |
+| UI/Menus | 別領域 |
+
+### §62.5 最大の発見: DrawIndexedPrimitive 直接呼出 = 0件
+D3D9 vtable+0x78 (DrawIndexedPrimitive) を全コードスキャンした結果、**直接呼出がゼロ**。SetLight (vtable+0xE4) も 0件。DrawPrimitive (vtable+0x74) は 7件確認。
+
+**解釈**: DrawIndexedPrimitive は何らかのラッパー関数経由。描画コールは D3D vtable を直接叩かず、中間関数を通す。B13 実機トレース必須。
+
+**D3DX9_27 静的 import (IAT: 0xA28358〜0xA283B8)**:
+D3DXCompileShaderFromFileA, D3DXGetShaderConstantTable, D3DXCreateTexture, D3DXCreateCubeTextureFromFileInMem, D3DXMatrixInverse/Multiply/Transpose, D3DXVec3Normalize, D3DXVec3TransformCoord/Normal, D3DXLoadSurfaceFromSurface 等。
+
+### §62.6 移植対応 (D3D9→Vulkan/GLES)
+| D3D9 | Android代替 |
+|---|---|
+| IDirect3DDevice9 | VkDevice / EGL context |
+| IDirect3DSurface9 | VkImage / VkFramebuffer |
+| D3DXCompileShaderFromFile | 事前コンパイル GLSL |
+| D3DXConstantTable | GLSL uniform 直接対応 |
+
+---
+
+## §63 Wave 8 — コンソールコマンド + プロセススケジューラ (`s80_console_scheduler.md`)
+
+### §63.0 概要
+コンソールコマンドは 3階層テーブル (517エントリ) で dispatch。HighProcess スケジューラは 4優先度キュー管理。
+
+### §63.1 コンソール dispatch (0x4FCA70)
+3階層を順次 `stricmp` (0x98262D) で走査:
+
+| テーブル | 内容 | エントリ数 |
+|---|---|---|
+| Table 1 (0xB0A2C8) | Script Keywords | 16 |
+| Table 2 (0xB0C8C0) | Script Functions | 370 |
+| Table 3 (0xB0B420) | Console Commands | 131 |
+
+エントリ構造: 0x28 バイト (long_name + short_name + flags + help + arg_flags + handler_ptr)。`"ADD NEW CONSOLE COMMANDS BEFORE THIS ONE!!!"` が終端センチネル。
+
+### §63.2 コンソールコマンド一覧 (131件、Table 3)
+| # | コマンド | 正式名 | Handler VA | 引数 |
+|---|---|---|---|---|
+| 1 | TST | Show | 0x502210 | 0x100 |
+| 2 | SV | ShowVars | 0x5097A0 | 0x101 |
+| ... | ... | ... | ... | ... |
+| 17 | TGM | ToggleGodMode | 0x500D10 | 0x132 |
+| 28 | COC | CenterOnCell | 0x5083C0 | 0x11B |
+| 29 | SetGS | SetGameSetting | 0x514100 | 0x11C |
+| 49 | FOV | SetCameraFOV | 0x511720 | 0x130 |
+| 60 | COW | CenterOnWorld | 0x5085D0 | 0x13B |
+| 72 | save | SaveGame | 0x5023D0 | 0x147 |
+| 73 | load | LoadGame | 0x502500 | 0x148 |
+| 101 | qqq | QuitGame | 0x5077E0 | 0x164 |
+| 111 | tfc | ToggleFlyCam | 0x5013E0 | 0x16E |
+| 131 | CFG | ClearFaceGenModelData | 0x506E90 | 0x182 |
+
+全131件の対応表は `tmp\re\s80_console_scheduler.md` に完全記載。
+
+**引数パース**: スペース区切り、括弧対応 `0x4FCB90`、カンマ空白skip `0x4FCBD0`。`player`/`target` 変数対応。
+
+**重要なスクリプト関数 (Table 2, 370件) からも console 経由で呼べる**: `getav`, `modav`, `forceav`, `setav`, `additem`, `removeitem`, `placeatme`, `moveto`, `kill`, `resurrect`, `unlock`, `lock`, `setscale`, `setlevel`, `advlevel` 等。
+
+### §63.3 HighProcess スケジューラ
+**VTable**: 0xA71814 (16メソッド)。フィールド: +0x14 speed, +0x18 パックフラグ (subtype[0:9], priority[9:13], level[13:19])。
+
+**4優先度キュー** (0xB3BD00 管理):
+| レベル | トグルコマンド | フラグアドレス |
+|---|---|---|
+| High | THIGHPROCESS (0x5013F0) | 0xB3BDA0 |
+| Middle High | TMHIGHPROCESS (0x5014C0) | 0xB3BDA2 |
+| Middle Low | TMLOWPROCESS (0x501480) | 0xB3BDA3 |
+| Low | TLOWPROCESS (0x501440) | 0xB3BDA1 |
+
+**Update ループ** `0x675880`: 有効な各レベルの linked list を反復 → `ShouldRun` チェック → `Update(dt)`。毎フレーム `0x5012D8` から呼ばれる。
+
+---
+
+## §64 Wave 8 — パーティクル / 起動シーケンス / フレームタイミング (`s80_particle_startup_loop.md`)
+
+### §64.0 概要
+NiParticleSystem 全49 modifier カタログ、Borland CRT 起動順序、Timer::Update 完全式を確定。
+
+### §64.1 パーティクルシステム (NiParticleSystem)
+**継承連鎖**: NiParticleSystem → NiParticles → NiGeometry → NiRenderable → NiObjectNET → NiObject。
+
+**NiPSysModifier 49種全カタログ** (全て `.rdata` 文字列対応):
+- エミッタ: BoxEmitter / SphereEmitter / CylinderEmitter / MeshEmitter / VolumeEmitter
+- 物理: GravityModifier / DragModifier / BombModifier / AirFieldModifier / TurbulenceFieldModifier / VortexFieldModifier / RadialFieldModifier / GravityFieldModifier / DragFieldModifier
+- ライフサイクル: AgeDeathModifier / SpawnModifier / GrowFadeModifier / RotationModifier / PositionModifier
+- 衝突: PlanarCollider / SphericalCollider / ColliderManager
+- 色: ColorModifier / BoundUpdateModifier / MeshUpdateModifier
+- コントローラ: EmitterCtlr / UpdateCtlr / ModifierActiveCtlr / 各種ModifierCtlr
+
+**パーティクル描画**: Point sprites + HLSL (`particle.v.hlsl` / `particle.p.hlsl`) を D3DX 実行時コンパイル。`ParticleShader` 登録 0xA11620。`bUseThreadedParticleSystem` INI (0xA31434)。
+
+### §64.2 起動シーケンス
+**Borland C++ Builder** バイナリ (MSVC ではない)。EP: `0xBAF2ED`。
+
+| フェーズ | 内容 | VA |
+|---|---|---|
+| 0: CRT | Borland exception table (0xBB1204, 217 DWORD) コピー | 0xBAF2ED |
+| 1: WinMain | Timer生成, RegisterClass, CreateWindowEx, ShowWindow | 0x494950 |
+| 2: D3D9作成 | Direct3DCreate9 → CreateDevice | 0x498F00 |
+| 3: コンテンツ読込 | INI, ESM, BSA, MENU XML, Havok, Audio, Input, Shader | — |
+| 4: メッセージループ | PeekMessage → Translate → Dispatch | 0x494B10 |
+| 5: フレームループ | PerFrameUpdate (0x40D800) | — |
+
+**メッセージループ構造** (0x494B10〜0x494B67): PeekMessageA で全メッセージを消費 → ゲームフレーム実行。OS メッセージを優先する標準ゲームループ。
+
+**WinMain → フレームループ**: WinMain 中でサブシステム初期化 → 最後にメッセージループ → 各フレームで PerFrameUpdate (0x40D800) を呼ぶ。
+
+### §64.3 フレームタイミング — Timer::Update (0x47D170) 完全式
+```
+dt_raw = (QPC_now - QPC_last) - accumulated_elapsed
+if dt_raw <= 0: return 0 (paused)
+if dt_raw == 0: dt_raw = 1 (最小 1 tick)
+dt_float = dt_raw * 0.001 (倍精度, 0xA30E40)
+if dt_raw > 166: dt_raw = 166 (最大 clamp)
+dt_final = dt_float × fGlobalTimeMultiplier (0xB06704, 1.0f default)
+```
+
+**定数**:
+| VA | 値 | 役割 |
+|---|---|---|
+| 0xA30E40 | 0.001 (倍精度) | QPC ticks → 秒変換 |
+| 0xA3D14C | 166.66667f | 最大フレーム時間 clamp |
+| 0xB06704 | 1.0f | fGlobalTimeMultiplier |
+
+**FPS制限**: なし。可能な限り高速動作。dt 上限 clamp (166 ticks ≈ 6ms ≈ 166 FPS相当) のみ。
+
+### §64.4 PerFrameUpdate シーケンス (0x40D800)
+```
+ 1. FrameBegin (0x578F60)
+ 2. DisplayCheck (0x889A30)
+ 3. BeginFrame (0x498F00)
+ 4. frame_counter++ (0xB02C54)
+ 5. GetTickCount / QPC
+ 6. Timer::Update(dt)
+ 7. UI::Update(dt) (0x889810)
+ 8. Input::Update() (0x4046A0)
+ 9. WorldTick (0x433590)
+10. フレームタイミング変数更新
+11. Havok / Physics (0x7C1F50)
+12. MenuUpdate (0x57AB70) + キー状態
+13. Animation::Update(dt) (0x4029E0)
+14. World::Update(dt) (0x440400)
+15. Render::Frame() (0x6AE860)
+16. EndFrame / Present (0x674A20)
+```
+
+**キー Global Variables**:
+| VA | 型 | 説明 |
+|---|---|---|
+| 0xB33E90 | Timer | グローバルタイマ |
+| 0xB33E9C | float | Timer::fDeltaTime (dt) |
+| 0xB02C54 | int | フレームカウンタ |
+| 0xB06704 | float | fGlobalTimeMultiplier |
+| 0xB39DB0 | int | 直前の QPC delta |
+| 0xB333A0 | ptr | World オブジェクト |
+| 0xB333B8 | byte | フルスクリーンフラグ |
+
+### §64.5 証跡 (すべて `tmp\re\`)
+- md: `s80_render_pipeline.md` (452行) / `s80_console_scheduler.md` (485行) / `s80_particle_startup_loop.md` (518行)
+
+---
+
+## §65 Wave 8b — 最終残件一掃 (`s81_*`)
+
+### §65.0 概要
+D3D9描画ラッパー / HavokContext pending全50分類 / ストリーミング / 音響 / CRT / I/O の全残件を解決。
+
+### §65.1 D3D9 DrawIndexedPrimitive ラッパー (`s81_draw_wrapper.md`)
+**最大の発見: DrawIndexedPrimitive 直接呼出 = 0件 (確定)**
+
+| 調査方法 | 結果 |
+|---|---|
+| vtable+0x78 ModRM CALL走査 | 0件 |
+| DeviceWrapper `[this+0x50]` → vtable 走査 | 0件 |
+| DIP UP variant (vtable+0x7C/0x80) | 0件 |
+
+**D3D9ロード方式**: `LoadLibraryA("D3D9.DLL")` → `GetProcAddress("Direct3DCreate9")` — IAT非存在。
+
+**DeviceWrapper 既知メソッド** (0xBA7D98):
+| vt offset | メソッド | 呼出数 |
+|---|---|---|
+| +0x24 | Clear | 132 |
+| +0x28 | BeginScene | 115 |
+| +0x2C | EndScene | 21 |
+| +0x30 | Present | 10 |
+| +0x4C | SetTransform (0x8A9E20) | 1 |
+| +0x58 | SetRenderState | 6 |
+| +0x60 | SetSamplerState | 7 |
+| +0x64 | SetTexture | 5 |
+| +0x74 | DrawPrimitive (表面管理のみ) | 7 |
+
+**DeviceWrapper 非ラップ (呼出0件)**:
+SetVertexShader, SetPixelShader, SetStreamSource, SetIndices, SetVertexDecl, **DrawIndexedPrimitive**, SetLight。
+
+**7つのDrawPrimitive呼出**: すべて表面管理関数 0x8CBC60 に集中 (レンダーターゲットフリップ/影/表面作成)。メインシーン描画ではない。
+
+**DIPの正体 (仮説)**:
+1. **BSShader内部関数ポインタテーブル** — D3Dデバイスvtableエントリを初期化時に内部配列にコピー、`call [table+index*4]` で呼出
+2. **D3DX9 Effect framework** — ID3DXEffect::BeginPass/EndPass が内部でDIPを呼出 (D3DX9.DLL内部)
+
+**移植戦略**: D3D9 proxy DLL が最も確実 (全DIP呼出をインターセプト)。
+
+### §65.2 HavokContext pending全50分類 (`s81_havok_context_pending.md`)
+全50メソッドを9サブカテゴリに完全分類:
+
+| カテゴリ | 件数 | 説明 |
+|---|---|---|
+| Pending Queue B (ctx+0x48) push/pop | 8 | 遅延操作キューBのpush(4) / pop(4) |
+| Pending Queue A (ctx+0x40) check/timer | 4 | 遅延操作キューAの状態確認・タイマ統合 |
+| Pending Linked List (ctx+0x58) walk | 8 | 遅延操作リストの走査・検索・削除 |
+| Sub-object A (ctx+0x68) init/walk/dispatch/op | 21 | サブオブジェクトAの初期化・巡回・ルーティング |
+| Slot Array (ctx+0x28) search | 3 | スロット配列検索 |
+| Tag management | 2 | Havokタグ管理 |
+| Context validation | 3 | コンテキスト検証・後処理 |
+| Debug/SEH | 2 | デバッグ・SEH |
+| Sub-object B abnormal | 1 | 異常系処理 |
+
+**重要**: 50件のいずれも collide(0x89D820), castRay(0x8A2650), hkWorld_queue(0x679340) を呼ばない — 純粋に内部コンテキスト管理。stepDelta は既分類の42件側に存在。
+
+### §65.3 ストリーミング残件 (`s81_stream_audio_crt_io.md` Task A)
+| 項目 | 状態 | 結果 |
+|---|---|---|
+| GridsToLoad参照経路 | RESOLVED | Setting class経由。実支配はSceneGraph境界システム0x5AFE00 (プレイヤーレベル→9段階) |
+| Texture cache 0xB4205C/60 | RESOLVED | 5C=current, 60=limit。3書込/3読出完全特定 |
+| Cell load thread | RESOLVED | CreateThread 0件 → セルロードは同期的。タスクスケジューラ0x98208B (700+ sites) が代用 |
+| LOD blend | PARTIAL | LODManager/LODQuad/LODShaderProperty特定。正確なブレンドコードは未トレース |
+
+### §65.4 音響残件 (`s81_stream_audio_crt_io.md` Task B)
+| 項目 | 状態 | 結果 |
+|---|---|---|
+| AM+0xDC bit2 | RESOLVED | DirectShow "seek pending" フラグ。put_CurrentPosition(0) 制御 |
+| type bit 0x20 | RESOLVED | 使い捨てUI/アクティベーションサウンド (bit0と併用 0x21) |
+| Fade変数 [2E8/2EC/2F0/2F4/2F8] | RESOLVED | 各オフセットの読出/書込VA完全特定 |
+| vt+0x40/44 | RESOLVED | +0x44=SetMinDistance, +0x40=SetMaxDistance (0x6B6C60で確認) |
+| FLT_MAX | RESOLVED | リスナー初期位置センチネル (AM ctor 0x6ABEA7) |
+
+### §65.5 CRT残件 (`s81_stream_audio_crt_io.md` Task C)
+| 項目 | 状態 | 結果 |
+|---|---|---|
+| sin/cos SSE変種 | RESOLVED | SSE単精度なし。CRT double dispatcher経由 + 52 fsincos inline |
+| hypot | PARTIAL | 0x9860F0 = asin (atari2(sqrt(1-x^2),x))。hypot本体は未発見 |
+| exp/tan/atan | PARTIAL | exp core 0x994A80 (fyl2x+fldl2e+fscale)。tan/atan dispatcher未マッピング |
+| srand呼出元 | RESOLVED | 13 sites: Rand()ラッパー10 + 明示的3 (0x6F6A2B, 0x7A47C4, 0x7C4FE4) |
+| 価格ceil/round | RESOLVED | 買取=ceilf(0x484370) @0x488F58, 売却=roundf(floor(x+0.5)) @0x489399 |
+
+### §65.6 I/O残件 (`s81_stream_audio_crt_io.md` Task D)
+| 項目 | 状態 | 結果 |
+|---|---|---|
+| FileFinder | RESOLVED | FindFirstFileA 19 sites, FindNextFileA 6 sites |
+| CSIDL 0x1C | RESOLVED | CSIDL_LOCAL_APPDATA → 0xB3F178。CSIDL_PERSONAL=5 → 0xB3F280 |
+| Setting 9型 | RESOLVED | Reader 0x4A8AE4 / Writer 0x4A87D4 完全解読 (型0-8すべて対応) |
+| Drive scan | RESOLVED | CD-ROM検出 0x404940 → [0xB33394] フラグ。起動時コピー保護チェック |
+
+### §65.7 静的解析 最終ステータス
+- §50〜§65 完了 (10,704行, FUN 631+, 約860KB)
+- 全数テーブル 9本 (GMST 2304 / VM 532 / 条件169 / 入力29+3 / INI 615 / Havok 33 / NIF 237 / ESM 64 / MGEF 79)
+- 最終残LOD blend / hypot / tan/atan は PARTIAL (移植に非必須)
+- **唯一のブロッカー**: B13実機 .data ダンプ (Havok instance vtable / stepDelta slot / ContainerMenu再オープン挙動)
+
+### §65.8 証跡 (すべて `tmp\re\`)
+- md: `s81_draw_wrapper.md` (343行) / `s81_havok_context_pending.md` (651行) / `s81_stream_audio_crt_io.md` (305行)

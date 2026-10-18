@@ -121,6 +121,8 @@ void SettingsManager::saveSettings() {
     file << "GAMEPLAY_SAVE_ON_TRAVEL=" << (gameplay.saveOnTravel ? "1" : "0") << "\n";
     file << "GAMEPLAY_SAVE_ON_INT_EXT_SWITCH="
          << (gameplay.saveOnInteriorExteriorSwitch ? "1" : "0") << "\n";
+    file << "GAMEPLAY_DISABLE_DYNAMIC_CROSSHAIR="
+         << (gameplay.disableDynamicCrosshair ? "1" : "0") << "\n";
     file << "VIDEO_RESOLUTION_INDEX=" << video.resolution_index << "\n";
 
     file.close();
@@ -201,6 +203,8 @@ void SettingsManager::loadOptionSetting(const std::string& key, const std::strin
         gameplay.saveOnTravel = (value == "1");
     } else if (key == "GAMEPLAY_SAVE_ON_INT_EXT_SWITCH") {
         gameplay.saveOnInteriorExteriorSwitch = (value == "1");
+    } else if (key == "GAMEPLAY_DISABLE_DYNAMIC_CROSSHAIR") {
+        gameplay.disableDynamicCrosshair = (value == "1");
     } else if (key == "GAMEPLAY_DIFFICULTY") {
         try {
             int level = std::stoi(value);

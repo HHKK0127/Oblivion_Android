@@ -1361,6 +1361,185 @@ void ScriptVMTests::testScriptManager() {
 }
 
 // ============================================
+// Debugger (breakpoints, stepping, inspection)
+// ============================================
+void ScriptVMTests::testScriptDebugger() {
+    TEST_LOGI("--- Testing ScriptVM debugger ---");
+
+    // Test 1: a breakpoint stops before its instruction executes
+    {
+        const float start = getTimeMs38();
+        ScriptVM vm;
+        ExecutionContext ctx;
+        bool ok = true;
+
+        // PUSH_INT 10, PUSH_INT 20, ADD (offset 16), STOP (offset 20)
+        ScriptData script;
+        script.bytecode = {
+            0x12, 0x00, 0x04, 0x00, 0x0A, 0x00, 0x00, 0x00,
+            0x12, 0x00, 0x04, 0x00, 0x14, 0x00, 0x00, 0x00,
+            0x01, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00
+        };
+
+        vm.setBreakpoint(&script, 16, true);
+        ctx.init(&script);
+        ctx.setRunning(true);
+
+        const VMResult hit = vm.execute(ctx);
+        ok = ok && hit == VMResult::Breakpoint;
+        ok = ok && ctx.getPC() == 16;
+        ok = ok && ctx.stackSize() == 2;  // ADD did not run
+
+        vm.clearBreakpoints();
+        const VMResult finished = vm.execute(ctx);
+        ok = ok && finished == VMResult::Success;
+        ok = ok && ctx.popStack().intVal == 30;
+
+        record("ScriptVM debugger: breakpoint", ok,
+               "Stop before the breakpoint instruction, resume cleanly",
+               getTimeMs38() - start);
+    }
+
+    // Test 2: instruction walk and PC-marked range disassembly
+    {
+        const float start = getTimeMs38();
+        ScriptData script;
+        script.bytecode = {
+            0x1C, 0x00, 0x08, 0x00,                          // SCDA marker
+            0x12, 0x00, 0x04, 0x00, 0x2A, 0x00, 0x00, 0x00,  // PUSH_INT 42
+            0x00, 0x00, 0x00, 0x00                           // STOP
+        };
+
+        const std::vector<uint32_t> offsets =
+            ScriptDisasm::instructionOffsets(script.bytecode.data(), script.bytecode.size());
+        bool ok = offsets.size() == 3 &&
+                  offsets[0] == 0 && offsets[1] == 4 && offsets[2] == 12;
+
+        const uint32_t next = ScriptDisasm::nextInstructionOffset(
+            script.bytecode.data(), script.bytecode.size(), 0);
+        ok = ok && next == 4;
+
+        const std::string view = ScriptDisasm::disassembleRange(
+            script.bytecode.data(), script.bytecode.size(), 4, 16, 4);
+        ok = ok && view.find(">> 0004: PUSH_INT 42") != std::string::npos;
+        ok = ok && view.find("STOP") != std::string::npos;
+        ok = ok && view.find("SCDA_MARKER") == std::string::npos;
+
+        record("ScriptDisasm: instruction walk", ok,
+               "Marker length word and PC-marked range output", getTimeMs38() - start);
+    }
+
+    // Test 3: breakpoint -> paused -> step -> resume -> completion
+    {
+        const float start = getTimeMs38();
+        ScriptManager mgr;
+        mgr.init(nullptr, nullptr, nullptr, nullptr);
+
+        ScriptData script;
+        script.formID = 0x0100BEEF;
+        script.editorID = "DebugTarget";
+        script.bytecode = {
+            0x12, 0x00, 0x04, 0x00, 0x05, 0x00, 0x00, 0x00,
+            0x12, 0x00, 0x04, 0x00, 0x07, 0x00, 0x00, 0x00,
+            0x01, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00
+        };
+        mgr.addScript(script);
+        const int started = mgr.startScript(script.formID, 0x14);
+        bool ok = started == 0;
+
+        const std::string set = mgr.debugToggleBreakpoint(0, 16);
+        ok = ok && set.find("Breakpoint set") != std::string::npos;
+
+        mgr.update(0.016f);
+        ok = ok && mgr.getActiveScriptCount() == 1;
+        ok = ok && mgr.debugListScripts().find("paused") != std::string::npos;
+        ok = ok && mgr.debugScriptInfo(0).find("<== current") != std::string::npos;
+
+        const std::string step = mgr.debugStepScript(0);
+        ok = ok && step.find("Stepped [0] 0x0010") != std::string::npos;
+        ok = ok && step.find("ADD") != std::string::npos;
+
+        const std::string resumed = mgr.debugResumeScript(0);
+        ok = ok && resumed.find("Resumed [0]") != std::string::npos;
+        ok = ok && resumed.find("script completed") != std::string::npos;
+        ok = ok && mgr.getActiveScriptCount() == 0;
+
+        record("ScriptManager debugger: break -> step -> resume", ok,
+               "Pause on breakpoint, single-step, resume past it", getTimeMs38() - start);
+    }
+
+    // Test 4: variable and global inspection
+    {
+        const float start = getTimeMs38();
+        ScriptManager mgr;
+        mgr.init(nullptr, nullptr, nullptr, nullptr);
+
+        ScriptData script;
+        script.formID = 0x0100CAFE;
+        script.editorID = "VarTarget";
+        script.lastVarIndex = 1;
+        ScriptVariable counter;
+        counter.index = 0;
+        counter.name = "counter";
+        counter.type = ScriptValue::Type::Integer;
+        script.variables.push_back(counter);
+        script.bytecode = {0x00, 0x00, 0x00, 0x00};
+        mgr.addScript(script);
+        mgr.startScript(script.formID, 0x14);
+
+        const std::string vars = mgr.debugScriptVariables(0);
+        bool ok = vars.find("[0] counter = 0 (int)") != std::string::npos;
+        ok = ok && vars.find("[1] (unnamed)") != std::string::npos;
+
+        ok = ok && mgr.debugSetGlobal(0x100, "7").find("= 7 (int)") != std::string::npos;
+        ok = ok && mgr.debugSetGlobal(0x101, "2.5").find("(float)") != std::string::npos;
+        ok = ok && mgr.debugGetGlobal(0x100).find("= 7") != std::string::npos;
+        ok = ok && mgr.debugGetGlobal(0x999).find("not set") != std::string::npos;
+        ok = ok && mgr.debugSetGlobal(0x100, "abc").find("Invalid value") != std::string::npos;
+        ok = ok && mgr.debugListGlobals().find("0x00000101") != std::string::npos;
+
+        record("ScriptManager debugger: vars/globals", ok,
+               "Named locals, global get/set and validation", getTimeMs38() - start);
+    }
+
+    // Test 5: fault PC and script run command
+    {
+        const float start = getTimeMs38();
+        ScriptVM vm;
+        ExecutionContext ctx;
+        ScriptData script;
+        script.bytecode = {0x01, 0x00, 0x00, 0x00};  // ADD on an empty stack
+        ctx.init(&script);
+        ctx.setRunning(true);
+
+        const VMResult result = vm.execute(ctx);
+        bool ok = result == VMResult::Error;
+        ok = ok && vm.getLastErrorPC() == 0;
+        ok = ok && vm.getLastError().find("underflow") != std::string::npos;
+
+        ScriptManager mgr;
+        mgr.init(nullptr, nullptr, nullptr, nullptr);
+        ScriptData runnable;
+        runnable.formID = 0x0100F00D;
+        runnable.editorID = "Runnable";
+        runnable.bytecode = {0x00, 0x00, 0x00, 0x00};
+        mgr.addScript(runnable);
+
+        ok = ok && mgr.debugRunScript(0x0100DEAD, 0).find("not loaded") != std::string::npos;
+        ok = ok && mgr.debugRunScript(0x0100F00D, 0x14).find("Started [0]") != std::string::npos;
+        ok = ok && mgr.debugRunScript(0x0100F00D, 0x14).find("already running") != std::string::npos;
+        mgr.update(0.0f);
+        ok = ok && mgr.getActiveScriptCount() == 0;
+
+        record("ScriptVM debugger: fault PC and run", ok,
+               "Error PC points at the faulting instruction; scriptrun guards",
+               getTimeMs38() - start);
+    }
+}
+
+// ============================================
 // Native SCDA decoder
 // ============================================
 namespace {
@@ -3546,6 +3725,7 @@ bool ScriptVMTests::runAllTests() {
     testOpcodes();
     testScriptFunctions();
     testScriptManager();
+    testScriptDebugger();
     testNativeScdaDecoder();
     testNativeScdaVm();
     testNativeScdaBridge();

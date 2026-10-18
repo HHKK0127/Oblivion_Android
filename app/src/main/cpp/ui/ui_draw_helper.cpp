@@ -451,8 +451,8 @@ constexpr float kGenericRightAxis = 51.0f;   // right tiles: bevel + 6 px shadow
 
 void UIDrawHelper::drawGenericBackground(const GLuint slices[9],
                                          float x, float y, float w, float h,
-                                         int screenW, int screenH) {
-    const glm::vec4 white(1.0f);
+                                         int screenW, int screenH, float alpha) {
+    const glm::vec4 white(1.0f, 1.0f, 1.0f, alpha);
     const float solid = kGenericBorder;
     const float solidU = kGenericSolidAxis / kGenericTileAxis;
     const float bottomV = kGenericBottomAxis / kGenericTileAxis;
