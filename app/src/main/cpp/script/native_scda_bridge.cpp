@@ -44,6 +44,7 @@ constexpr NativeFunctionMapping kNativeFunctionMappings[] = {
     {0x10EC, FunctionID::SetGhost},
     {0x10F1, FunctionID::SetUnconscious},
     {0x1133, FunctionID::SetLevel},
+    {0x115D, FunctionID::SetSceneIsComplex},
 };
 
 // Converts one decoded token into a ScriptValue. A variable token names a slot

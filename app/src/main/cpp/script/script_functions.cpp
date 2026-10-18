@@ -11,6 +11,7 @@
 #include "../game/npc_manager.h"
 #include "../game/inventory_manager.h"
 #include "../game/player.h"
+#include "../system/scene_time_throttle.h"
 
 #define SF_LOG_TAG "ScriptFunctions"
 #ifdef ENABLE_DEBUG_LOGS
@@ -271,6 +272,7 @@ const char* ScriptFunctions::getFunctionName(FunctionID funcID) const {
         case FunctionID::GetIsUsedItem: return "GetIsUsedItem";
         case FunctionID::GetIsUsedItemType: return "GetIsUsedItemType";
         case FunctionID::SetAlert: return "SetAlert";
+        case FunctionID::SetSceneIsComplex: return "SetSceneIsComplex";
         default: return "Unknown";
     }
 }
@@ -592,6 +594,8 @@ void ScriptFunctions::registerTier5Functions() {
         std::bind(&ScriptFunctions::fnGetIsUsedItemType, this, _1, _2);
     handlers_[static_cast<uint16_t>(FunctionID::SetAlert)] =
         std::bind(&ScriptFunctions::fnSetAlert, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::SetSceneIsComplex)] =
+        std::bind(&ScriptFunctions::fnSetSceneIsComplex, this, _1, _2);
 }
 
 // ============================================================================
@@ -2392,6 +2396,24 @@ FunctionResult ScriptFunctions::fnSetAlert(ExecutionContext& ctx, const std::vec
     } else {
         actor.npc->setAIState(AIState::COMBAT);
     }
+
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(1);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnSetSceneIsComplex(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.empty()) {
+        result.errorMessage = "SetSceneIsComplex requires 1 argument (flag)";
+        return result;
+    }
+
+    // RE 50.5: the native stores (arg1 != 0) into the one-frame latch. The
+    // flag is the last argument so both bridge shapes work: with a reference
+    // selector prepended by nativeTokensToArguments the value still ends the
+    // list.
+    SceneTimeThrottle::set_scene_is_complex(args.back().toInt() != 0);
 
     result.success = true;
     result.returnValue = ScriptValue::makeInt(1);

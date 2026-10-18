@@ -242,6 +242,7 @@ private:
     FunctionResult fnGetIsUsedItem(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
     FunctionResult fnGetIsUsedItemType(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
     FunctionResult fnSetAlert(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnSetSceneIsComplex(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
 };
 
 } // namespace script

@@ -329,6 +329,10 @@ enum class FunctionID : uint16_t {
     GetIsUsedItem          = 0x0095,
     GetIsUsedItemType      = 0x0096,
     SetAlert               = 0x0097,
+
+    // Engine bridge (RE 50.5): native 0x115D latches the complex-scene
+    // update throttle consumed by SceneTimeThrottle.
+    SetSceneIsComplex      = 0x0098,
 };
 
 // ============================================================================

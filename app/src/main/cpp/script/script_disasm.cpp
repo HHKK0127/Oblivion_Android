@@ -430,6 +430,7 @@ const char* ScriptDisasm::getFunctionName(uint16_t funcID) {
         case FunctionID::GetIsUsedItem: return "GetIsUsedItem";
         case FunctionID::GetIsUsedItemType: return "GetIsUsedItemType";
         case FunctionID::SetAlert: return "SetAlert";
+        case FunctionID::SetSceneIsComplex: return "SetSceneIsComplex";
         default: return "Unknown";
     }
 }
