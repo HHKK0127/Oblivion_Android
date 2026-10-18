@@ -1,3 +1,4 @@
+#include "../system/settings_manager.h"
 #include "spell_manager.h"
 #include "../audio/audio_manager.h"
 #include <algorithm>
@@ -445,6 +446,18 @@ void SpellManager::applySpellEffect(std::shared_ptr<NPC> target, const Spell& sp
             case SpellEffectType::DAMAGE: {
                 float damage = calculateSpellDamage(spell, caster, target->status);
                 damage *= damageScale;
+                // RE §45.3 selects the skill by the worn heavy/light flag and
+                // skips when no armor is worn; the port tracks neither, so it
+                // approximates with the tracked armor skill (absent/0 -> x1.0).
+                const auto& skills = target->status.skills;
+                const auto heavy = skills.find("Heavy Armor");
+                const auto light = skills.find("Light Armor");
+                const float heavySkill = (heavy != skills.end()) ? heavy->second : 0.0f;
+                const float lightSkill = (light != skills.end()) ? light->second : 0.0f;
+                const float armorSkill = std::max(heavySkill, lightSkill);
+                if (armorSkill > 0.0f) {
+                    damage *= armorPerkDamageMultiplier(armorSkill);
+                }
                 target->takeDamage(damage);
                 break;
             }
