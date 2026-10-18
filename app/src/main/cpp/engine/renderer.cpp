@@ -5036,6 +5036,31 @@ void Renderer::render(float deltaTime) {
             hudRenderer->update(deltaTime);
             hudRenderer->render();
         }
+        // Crosshair spread driver (approximation pending RE of the retail
+        // dynamic-crosshair trait 0xFAF consumer; see session memory followup).
+        // Piecewise map of horizontal speed onto spread 0..1
+        // (idle=0, walk/run 5.0 m/s=0.5, sprint 8.0 m/s=1.0; WALK_SPEED/
+        // SPRINT_SPEED live in player_controller.cpp). Bow-draw input does not
+        // exist in the port yet and is a future driver input.
+        if (crosshair && playerController) {
+            auto player = playerController->getPlayer();
+            if (player) {
+                const float hSpeed = std::hypot(player->velocity.x, player->velocity.z);
+                float target = 0.0f;
+                if (hSpeed > 0.3f) {
+                    if (hSpeed < 5.0f) {
+                        target = 0.5f * (hSpeed - 0.3f) / (5.0f - 0.3f);
+                    } else if (hSpeed < 8.0f) {
+                        target = 0.5f + 0.5f * (hSpeed - 5.0f) / 3.0f;
+                    } else {
+                        target = 1.0f;
+                    }
+                }
+                const float prev = crosshair->getSpread();
+                const float alpha = std::min(1.0f, deltaTime * 8.0f);
+                crosshair->setSpread(prev + (target - prev) * alpha);
+            }
+        }
         if (crosshair && crosshairEnabled && !anyMenuOpen()) {
             crosshair->render();
         }
