@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-18T07:13:19Z",
+  "lastUpdated": "2026-10-18T12:24:58Z",
   "entries": [
     {
       "timestamp": "2026-09-16T14:58:00Z",
@@ -8426,6 +8426,35 @@
         "opencode",
         "session-9427ac74",
         "todos"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "opencode-a-batch4-commits-done-20261018",
+      "timestamp": "2026-10-18T11:10:09Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "OPENCODE subagent batch (4 tasks) implemented, verified and committed as 4 commits on top of 8bdc6e97/dca100d2: e5e60eb7 game: armor mastery perk multiplier in spell_manager.applySpellEffect (Heavy/Light Armor skill max, absent skill -> x1.0, RE 45.3 approximation since worn-armor flags are not tracked); 29dbb4f1 engine: SceneTimeThrottle singleton (new system/scene_time_throttle.h) called from nativeRenderFrame after GLOBAL_TIME_MULTIPLIER, 2nd/3rd-frame latch per RE 54.2, setter+outputs exposed but script cmd 0x115D SetSceneIsComplex NOT wired (needs script_opcodes.h/script_disasm.cpp/native_scda_bridge.cpp/script_functions) and no consumer of the three outputs yet; 194dd6a0 ui: Crosshair dynamic-enabled + aim-spread API, renderer.applyGameplaySettings drives setDynamicEnabled(!disableDynamicCrosshair); spread driver (weapon accuracy/bow draw) still missing so spread stays 0; 9736df57 game: playerCastSpell now runs mana+applySpellEffect inline with Player::getDealtDamageScale() instead of neutral-scale NPC castSpell (zero callers today; NPC cast sound not played by inline path; received-damage factor f still blocked on actor vt+0xA8 RE analysis). Verified: host tests ALL GREEN (direct exe exit 0) + gradle assembleDebug BUILD SUCCESSFUL. LEFTOVERS: console castspell (renderer.cpp ~937, castSpell(1,...) casterId out of NPC-ID range = dead path; castspellatenemy already scaled via castPlayerSpell); rest/wait/travel autosave flags blocked on SleepWaitMenu TODO. NOTE: a PARALLEL session is editing Japanese font rendering in the same worktree (ui/text_renderer.*, ui/ui_book_reader.cpp, app/src/main/assets/fonts/* 4 files) left UNCOMMITTED on purpose. Branch is 6 commits ahead of origin/master, push not performed.",
+      "tags": [
+        "subagent-batch",
+        "commits",
+        "verification",
+        "handover"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "opencode-a-castspell-spread-driver-20261018",
+      "timestamp": "2026-10-18T12:24:58Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "OPENCODE session batch (choice 3: quick approximation + RE later), IMPLEMENTED BUT UNVERIFIED/UNCOMMITTED: 1) renderer.cpp refs.castSpellOnTarget now routes to SpellManager::castPlayerSpell(player.get(), spellId, targetId) (was castSpell(1,...) dead path; targetId 0 = self-cast so debug-menu castspell 1 0 works; NPC ids get Player::getDealtDamageScale); 2) renderer.cpp refs.equipSpell now pushes id into Player knownSpells+equippedSpells with std::find dedup (was equipSpellToNpc(1, id) dead path; debug-menu Equip Fire/equipspell 1 becomes functional and appears in magic menu); 3) crosshair spread driver added in Renderer::render right before crosshair->render(): piecewise horizontal-speed map (deadzone 0.3, walk 5.0 m/s -> 0.5, sprint 8.0 m/s -> 1.0, WALK_SPEED/SPRINT_SPEED from player_controller.cpp) with smoothing alpha=clamp(dt*8,0,1), approximation pending RE; bow-draw input does not exist in the port yet. RE FOLLOWUP (Ghidra, Oblivion.exe, this session): retail dynamic crosshair = FUN_005a8710 fade/alpha driver (traits 0xFB0/0xFB6, mode+FUN_005e0550 gated, bCrossHair=0x00B13210) + FUN_005a8c90 per-frame gating (dialogue modes 7/10 hide, vtable+0x334 target checks, sets trait 0xFAF=2.0 via dynamic_cast-helper FUN_009832e6 else reset path FUN_005a8bc0 sets 0xFAF=1.0/0xFB2/0xFB3/0xFAE); bDisableDynamicCrosshair 0x00B13238 sole xref = 0x5A8C90 entry (RE_EXE_REPORT L8298). NO weapon-accuracy spread formula found in EXE; trait 0xFAF consumer is menu-script side and NOT yet traced - trace it to validate or replace the speed approximation. ALSO still unverified: cmd 0x115D SetSceneIsComplex wiring (5 script files, committed-to-worktree earlier). AWAITING USER: host tests + gradlew assembleDebug, then 3 commits (0x115D / console spells / spread driver); push still not performed. Parallel font WIP (text_renderer.*, ui_book_reader.cpp, assets/fonts/* 4 files) must stay untouched.",
+      "tags": [
+        "leftovers",
+        "crosshair",
+        "console",
+        "re-followup",
+        "unverified"
       ],
       "compressed": false
     }
