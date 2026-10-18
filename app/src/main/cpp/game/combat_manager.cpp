@@ -736,9 +736,25 @@ void CombatManager::playerAttack(uint32_t playerEntityId, uint32_t targetNpcId, 
 }
 
 void CombatManager::playerCastSpell(uint32_t playerEntityId, uint32_t spellId, uint32_t targetNpcId) {
-    if (!spellManager) return;
+    if (!spellManager || !npcManager) return;
 
-    spellManager->castSpell(playerEntityId, spellId, targetNpcId);
+    // The NPC-based castSpell() applies the neutral damage scale, so a player
+    // cast cannot delegate to it; run the mana/effect steps here instead.
+    auto caster = npcManager->getNPC(playerEntityId);
+    auto target = npcManager->getNPC(targetNpcId);
+    auto spell = spellManager->getSpell(spellId);
+    if (!caster || !target || !spell) {
+        LOGW("Player cast failed: caster/target/spell missing (%u/%u/%u)",
+             playerEntityId, targetNpcId, spellId);
+        return;
+    }
+    if (!spell->isAvailable(caster->status.currentMana) ||
+        !spellManager->consumeMana(playerEntityId, spell->manaCost)) {
+        return;
+    }
+    // Difficulty scales the damage the player deals by 1/f (RE §50.1).
+    spellManager->applySpellEffect(target, *spell, caster->status,
+                                   Player::getDealtDamageScale());
 
     LOGI("Player casts spell %u on target %u", spellId, targetNpcId);
 }
