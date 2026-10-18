@@ -7,6 +7,7 @@
 #include <vector>
 #include "engine/renderer.h"
 #include "system/display_modes.h"
+#include "system/scene_time_throttle.h"
 #include "system/settings_manager.h"
 #include "ui/viewer_3d.h"
 #include "video/bink_video_player.h"
@@ -253,6 +254,12 @@ Java_com_example_oblivion_GameRenderer_nativeRenderFrame(
 
         // RE §54.3: apply fGlobalTimeMultiplier to deltaTime
         deltaTime *= GLOBAL_TIME_MULTIPLIER;
+
+        // RE §54.2: FUN_00889810 runs right after Timer::Update in
+        // PerFrameUpdate (RE §64.4 steps 6-7). It accumulates dt_game and
+        // advances the internal time every 2nd/3rd frame per the
+        // SetSceneIsComplex latch, then clears the latch (EXE 0x40DBB9-0x40DBCB).
+        SceneTimeThrottle::instance().frame_update(deltaTime);
 
         renderer->render(deltaTime);
     } else {
