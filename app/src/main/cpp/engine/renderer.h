@@ -606,6 +606,11 @@ private:
     size_t ensureInteriorObjectsPlaced();
     void anchorPlayerToInteriorCell(const std::vector<InteriorObjectPlacement>& placements);
 
+    // Phase 66: interior actor (ACHR/ACRE) placement, called once per interior
+    // cell on first entry so NPCs are present indoors.
+    size_t ensureInteriorActorsPlaced();
+    std::unordered_set<uint32_t> interiorActorsPlacedCells_;
+
     // Phase 65: door transitions. Walks the ESM reference list, follows each
     // door REFR's XTEL link to its target door reference and registers the
     // resolved pair with DoorManager. Returns the number of doors registered.

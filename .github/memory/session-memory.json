@@ -8749,6 +8749,34 @@
         "implementation"
       ],
       "content": "Copilot RE batch summary (2026-10-19/20, synced 2026-10-20). Completed RE-driven implementations: (1) Phase 67 Script VM - 1080+ functions, QUST 390, INFO 19278 dialogs, condition evaluation, reference resolution. (2) QuickKeysMenu - RE 39.2, radial 8-slot, stackingtype=does_not_stack. (3) Menu stackingtype - RE 50.4, click_past=101/no_click_past=102/mixed_menu=103/does_not_stack=6008. (4) BSA103 hash - folder/file record hash unresolved (8 murmur2_64/FNV1a64 variants failed), extraction via offset direct-read (non-blocking). (5) fGlobalTimeMultiplier wiring - RE 43, dt_game = dt_real x fGlobalTimeMultiplier (default 1.0, slot 0xB06704). (6) PE section delta audit - RE 42.1, correct raw-to-VA deltas: .text 0x400C00/.rdata 0x400E00/.data 0x401400/.tls 0x47A800/.rsrc 0x47B600. (7) AI dispatch caller tracing - tmp/re_vtable_family_map.md, AiUpdateDispatch call path confirmed. (8) Japanese rendering - UTF-8 decoder + fallback chain + dynamic CJK atlas, Noto Sans JP bundled. (9) menufade/explorefade - RE 48, trait 0xFDB/0xFDC, linear easing. (10) ControlsMenu page 2 vertical scroll - RE 40. (11) Armor skill damage multiplier - RE 54, 4 GMST fPerkLight/HeavyArmorNovice/Journeyman via FUN_5F3870. (12) Pause state dt=0 path - RE 30.1.9, PauseMenu 0x3F5 shown halts world/camera/physics. (13) NPC to player damage path - RE 41.5, vtable+0x3AC melee + spell path. (14) Death processing - RE 41, knockback vtable+0x118/0x120, death state vtable+0xF8. (15) Fatigue AV implementation - RE 50.2, AV index 0x0A, attack cost 0x547560. (16) Complex scene update throttle - RE 54.2, 2/3 frame skip via FUN_889810 with latch 0xB333B8."
+    },
+    {
+      "id": "opencode-re-r1-camera-analysis-20261020",
+      "timestamp": "2026-10-20T14:00:00Z",
+      "priority": "high",
+      "category": "decision",
+      "tags": [
+        "reverse-engineering",
+        "camera",
+        "projection",
+        "view",
+        "fov",
+        "opencode"
+      ],
+      "content": "R1 Camera/View system analysis ~70% complete. Key findings: SetCameraFOV(0x511720/0x411160) = projection matrix builder with clamping 75-160 deg, deg->rad(pi/180*0.5), cot(angle) via sin/cos, stored at camera_ctx+0xec. FOV correction factor(0x7B70E0) = cot(37.5deg)/cot(half_FOV), stored at [0xB2D80C]. Camera update pipeline: PerFrameUpdate->0x57F170(check dt)->0x70C0B0(world physics)->0x707370(set view matrix)->0x70E0A0(NiCamera frame push+sync)->0x7073D0(device push). Camera mode switching: Show1stPerson(0x50A050) tests Player+0x588 flag then toggles [person_obj+0x18] bit0; ToggleFlyCam(0x5013E0->0x6669F0) toggles Player+0x748 and saves yaw/pitch/position at offsets +0x74C/0x750/0x754/0x758/0x75C. Constants: pi/180=0xA31C78(double), 0.5=0xA2FAA0(double), near=10.0=0xB03134(float), default FOV=75.0=0xB0313C(float), default screen=640x480=0xB06C4C/0xB06C50(dword). Player camera fields mapped: yaw+0x20, pitch+0x28, camera_ctx+0xDC, flycam+0x748. Camera context fields mapped: FOV+0xEC, device+0xDC, flags+0x18/0xE8, FOVscale+0x120. Remaining: zf(fFarPlaneDist), mouse look GMST, 3rd person distance/velocity constants, vanity mode switch. Evidence: tmp/re/s102_camera.md. TODO_re49.md R1 section updated to ~."
+    },
+    {
+      "id": "opencode-re-r1-camera-complete-20261020",
+      "timestamp": "2026-10-20T16:00:00Z",
+      "priority": "high",
+      "category": "decision",
+      "tags": [
+        "reverse-engineering",
+        "camera",
+        "complete",
+        "opencode"
+      ],
+      "content": "R1 Camera/View system analysis COMPLETE. Remaining minor: zf(fFarPlaneDist) unconfirmed. Evidence: tmp/re/s102_camera.md."
     }
   ],
   "metadata": {

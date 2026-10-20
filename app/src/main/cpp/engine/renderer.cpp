@@ -6329,6 +6329,55 @@ size_t Renderer::ensureInteriorObjectsPlaced() {
     return placed;
 }
 
+// Place ACHR/ACRE actors for the current interior cell, once per cell.
+size_t Renderer::ensureInteriorActorsPlaced() {
+    if (!worldManager || !assetManager) return 0;
+    if (!worldManager->isPlayerIndoors()) return 0;
+
+    auto cell = worldManager->getCurrentCell();
+    if (!cell) return 0;
+    if (interiorActorsPlacedCells_.count(cell->tesFormID)) return 0;
+
+    NpcManager* npcMgr = worldManager->getNpcManager();
+    if (!npcMgr || !aiScheduler) return 0;
+
+    const auto& esmMgr = assetManager->getEsmManager();
+    const auto& refs = esmMgr.getAllReferences();
+
+    size_t placed = 0;
+    std::unordered_map<uint32_t, glm::vec3> exteriorRefPositions;
+    for (const auto& ref : refs) {
+        if (ref.cellFormID != cell->tesFormID) continue;
+        if (ref.refType == 0) continue;  // skip object REFRs
+
+        // Interior positions are Z-up cell-relative. Swap Y/Z for engine Y-up.
+        const glm::vec3 pos(ref.position.x, ref.position.z, ref.position.y);
+        const glm::vec3 rot(ref.rotation.x, ref.rotation.z, ref.rotation.y);
+
+        auto npcPtr = npcMgr->createNPCFromESM(ref.baseFormID, pos);
+        if (!npcPtr) continue;
+
+        npcPtr->rotation = rot;
+        npcPtr->updateModelMatrix();
+
+        if (aiScheduler) {
+            auto pkgs = BuildPackagesFromESM(esmMgr, ref.baseFormID,
+                                             exteriorRefPositions, *npcMgr);
+            if (pkgs.empty()) {
+                aiScheduler->registerNPC(npcPtr->npcId);
+            } else {
+                aiScheduler->registerNPC(npcPtr->npcId, pkgs);
+            }
+        }
+        ++placed;
+    }
+
+    interiorActorsPlacedCells_.insert(cell->tesFormID);
+    LOGI("Interior cell 0x%08X '%s': placed %zu ACHR/ACRE actors",
+         cell->tesFormID, cell->cellName.c_str(), placed);
+    return placed;
+}
+
 void Renderer::renderInteriorObjects() {
     if (!worldManager || !assetManager) return;
     // P15/P20: exterior geometry must not draw inside an interior cell, and this
@@ -6336,6 +6385,7 @@ void Renderer::renderInteriorObjects() {
     if (!worldManager->isPlayerIndoors()) return;
 
     ensureInteriorObjectsPlaced();
+    ensureInteriorActorsPlaced();
 
     auto cell = worldManager->getCurrentCell();
     if (!cell) return;
@@ -7173,8 +7223,6 @@ void Renderer::renderTerrainMeshes() {
 
 void Renderer::renderPlaceholderEntities() {
     if (!worldManager) return;
-    // P15: placeholder actors are exterior-placed; suppress them indoors.
-    if (worldManager->isPlayerIndoors()) return;
 
     NpcManager* npcMgr = worldManager->getNpcManager();
     if (!npcMgr) return;
