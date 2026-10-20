@@ -1,5 +1,18 @@
 # GitHub Copilot Custom Instructions
 
+## セッションメモリの共有（GitHub Copilot ↔ opencode）
+
+本プロジェクトのセッション記憶の正本は **`.github/memory/session-memory.json`**。GitHub Copilot と opencode の両ツールがこの 1 ファイルを読み書きし、知識を共有する。
+
+- **作業開始時**: 全件読まず、まず grep で関連語（機能名・ID・日付）を検索して該当エントリだけ読む。未確定事項・過去の決定・RE 結果はここが正本
+- **参照例**: RE 完了記録 id `re-s50-batch2-complete-20261017`、RE の生データは `tmp/re/`、永続文書は `docs/RE_EXE_REPORT.md`（§55 補遺 → §50 の優先で矛盾解消）
+- **追記手順**（Copilot 自身もここに記憶を書ける）:
+  1. `entries` 配列の末尾に `{ "id", "timestamp"(ISO8601Z), "priority"(high|medium|low), "category", "tags"[], "content" }` を append
+  2. `id` は `<tool>-<topic>-<yyyymmdd>` 形式（例: `copilot-<topic>-20261019`、`opencode-b-<topic>-20261019`）
+  3. `metadata.totalEntries` と `metadata.lastUpdated`、`lastUpdated`(トップレベル) を更新
+- **構造**: `{ version, lastUpdated, entries[606], metadata }`。`compressed: true` は要約済みエントリ
+- **同系統のファイル**: Copilot のタスク管理 TODO は `.copilot/session-state/9427ac74-*/session.db`（`todos` テーブル）。opencode 側と互換にするため `title` 先頭へ `[copilot:ID]` タグを付ける運用
+
 ## プロジェクト概要
 
 **Oblivion Android** - The Elder Scrolls IV: Oblivion の完全ネイティブAndroid移植

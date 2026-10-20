@@ -697,8 +697,6 @@ bool SaveManager::quickLoad() {
 // ============================================================================
 
 void SaveManager::update(float deltaTime) {
-    autoSave_.update(deltaTime);
-
     // Accumulate play time for the save-list readout. Clamp the step so a stall
     // or a resumed app does not inflate the total.
     if (deltaTime > 0.0f) {

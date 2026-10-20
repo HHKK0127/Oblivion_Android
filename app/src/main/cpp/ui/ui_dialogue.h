@@ -5,13 +5,14 @@
 #include "../game/dialogue.h"
 #include <memory>
 #include <functional>
+#include <unordered_map>
+#include <GLES3/gl3.h>
 
 /**
  * @brief NPC dialogue UI
  *
- * Phase 10: Oblivion-style NPC conversation screen.
- * Displays NPC portrait area, greeting text, conversation topic list,
- * and NPC response text on parchment panel.
+ * Phase 10 + p68: Oblivion-style NPC conversation screen with
+ * BSA-original textures.
  */
 class UIDialogue : public UIPanel {
 public:
@@ -27,13 +28,9 @@ public:
     void openDialogue(std::shared_ptr<Dialogue> dialogue);
     void closeDialogue();
 
-    // Programmatic topic selection (mirrors the touch path so console-driven
-    // verification exercises the same voice playback callback).
+    // Programmatic topic selection
     void selectTopic(int index);
 
-    // True only while a conversation is actually loaded. Visibility alone is not
-    // enough: the panel is hidden until openDialogue() and must not be treated as
-    // an open conversation before that.
     bool hasDialogue() const { return currentDialogue != nullptr; }
 
     void update(float deltaTime) override;
@@ -42,7 +39,6 @@ public:
 
     void setScreenSize(int w, int h) { screenWidth = w; screenHeight = h; }
 
-    // Callback when player selects a topic
     void setOnTopicSelected(TopicCallback cb) { onTopicSelected = cb; }
 
 private:
@@ -56,7 +52,6 @@ private:
     int screenWidth  = 1080;
     int screenHeight = 1920;
 
-    // Animation: response text fade-in
     float responseAlpha = 0.0f;
     bool  responseVisible = false;
 
@@ -64,10 +59,24 @@ private:
     static constexpr float TOPIC_ROW_GAP = 3.0f;
     static constexpr int   MAX_TOPICS    = 6;
 
+    // ── Texture management (p68) ──
+    struct TextureCache {
+        std::unordered_map<std::string, GLuint> map;
+        GLuint get(const std::string& key) const;
+    };
+    TextureCache texCache;
+
+    void preloadTextures();
+    GLuint loadTex(const std::string& partialPath);
+    GLuint loadMenuTex(const std::string& name);  // "menus/" + name + ".png"
+    GLuint loadInventoryTex(const std::string& name); // "inventory/" + name + ".png"
+
+    // ── Rendering ──
     void renderNPCPortrait();
     void renderGreeting();
     void renderResponse();
     void renderTopicList();
+    void renderGenericBackground(float x, float y, float w, float h, float alpha = 1.0f);
 
     int  hitTestTopicRow(float x, float y) const;
 

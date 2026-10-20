@@ -3,6 +3,9 @@
 #include "script_vm.h"
 #include "script_context.h"
 #include "script_functions.h"
+#include "native_scda_vm.h"
+#include "native_scda_bridge.h"
+#include "native_scda_decoder.h"
 #include <unordered_map>
 #include <vector>
 #include <memory>
@@ -49,10 +52,15 @@ struct ActiveScript {
     InlineScriptKey inlineKey;
     int32_t inlineScriptIndex = -1;
     bool isInlineScript = false;
-    ExecutionContext context;            // Execution state
+    ExecutionContext context;            // Execution state for synthetic VM
     bool waitingForFrame = false;       // True if hit frame budget last tick
     bool paused = false;                // True while stopped on a breakpoint
     float waitTimer = 0.0f;             // For Wait() function
+    // Native SCDA VM state. Valid when nativeProgram is non-null.
+    const NativeDecodeResult* nativeProgram = nullptr;
+    NativeVariableStore nativeVarStore;
+    bool nativeRunning = false;
+    bool nativeFrameBudget = false;
 };
 
 // ============================================================================
@@ -145,6 +153,11 @@ private:
     ScriptVM vm_;
     ScriptFunctions functions_;
 
+    // Native SCDA VM for compiled quest/object scripts
+    NativeScdaVm nativeVm_;
+    std::unordered_map<uint32_t, NativeDecodeResult> nativePrograms_; // scriptFormID -> decoded program
+    NativeDecodeResult decodeNativeScda(const ScriptData& script);
+
     // Game system pointers
     QuestManager* questManager_ = nullptr;
     QuestFlowController* questFlowController_ = nullptr;
@@ -169,6 +182,10 @@ private:
                                    int before, int after) const;
     std::string formatFault(const ActiveScript& active) const;
     std::string applyDebugStep(ActiveScript& active, size_t index, bool resume);
+
+    // Native SCDA execution helpers
+    void runSyntheticScript(ActiveScript& active, int index);
+    void runNativeScript(ActiveScript& active, int index);
 };
 
 } // namespace script

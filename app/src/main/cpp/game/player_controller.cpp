@@ -2,6 +2,9 @@
 #include <glm/glm.hpp>
 #include <cmath>
 #include "../physics/physics_manager.h"
+#include "../physics/physics_material.h"
+#include "../audio/audio_manager.h"
+#include "fatigue_system.h"
 
 constexpr float WALK_SPEED = 5.0f;
 constexpr float SPRINT_SPEED = 8.0f;
@@ -9,6 +12,10 @@ constexpr float ROTATION_SENSITIVITY = 0.01f;
 // Full-deflection look rates for the virtual controller's right stick / D-pad.
 constexpr float LOOK_YAW_SPEED = 2.4f;    // rad/s (~137 deg/s)
 constexpr float LOOK_PITCH_SPEED = 1.6f;  // rad/s
+// Horizontal distance between footfalls. Tuned so a walk cadence (~1.5 steps/s
+// at WALK_SPEED) sounds natural; running shortens the interval via the scale.
+constexpr float FOOTSTEP_STRIDE_WALK = 1.5f;
+constexpr float FOOTSTEP_STRIDE_RUN = 2.4f;
 
 PlayerController::PlayerController()
     : player(nullptr), worldManager(nullptr), inventoryManager(nullptr),
@@ -114,6 +121,7 @@ void PlayerController::update(float deltaTime) {
     // Variable-rate updates (animation, rendering)
     updateAnimState(deltaTime);
     applyAnimToSkeleton(deltaTime);
+    updateFootsteps(deltaTime);
 
     // Cell transition check
     checkCellTransition();
@@ -424,6 +432,44 @@ void PlayerController::updateAnimState(float deltaTime) {
     }
 }
 
+// Accumulate horizontal distance walked and emit a footstep through the
+// AudioManager Footstep channel on each stride. Only grounded locomotion
+// (WALK / RUN) produces steps; idling, jumping and attacking do not.
+void PlayerController::updateFootsteps(float /* deltaTime */) {
+    if (!player) return;
+
+    const bool grounded = charController ? charController->isGrounded()
+                                         : player->isOnGround;
+    const bool locomoting =
+        (animState == PlayerAnimState::WALK || animState == PlayerAnimState::RUN);
+    if (!grounded || !locomoting) {
+        footstepDistance = 0.0f;
+        return;
+    }
+
+    // Stride scales with speed so running produces more frequent steps.
+    const float stride = FOOTSTEP_STRIDE_WALK +
+                         (FOOTSTEP_STRIDE_RUN - FOOTSTEP_STRIDE_WALK) *
+                         (currentSpeed > WALK_SPEED
+                              ? (currentSpeed - WALK_SPEED) /
+                                    (SPRINT_SPEED - WALK_SPEED)
+                              : 0.0f);
+
+    footstepDistance += currentSpeed * 0.016f;  // approximated per-frame advance
+    if (footstepDistance < stride) return;
+    footstepDistance = 0.0f;
+
+    if (!g_audioManager) return;
+
+    // Resolve the surface footstep key from the material database and play it
+    // on the dedicated Footstep channel (INI default 0.3).
+    oblivion::PhysicsMaterial* mat =
+            oblivion::PhysicsMaterialDatabase::getInstance().get(footstepSurface);
+        std::string key = mat ? mat->getSound(oblivion::SurfaceSoundEvent::FOOTSTEP) : "";
+    if (key.empty()) key = "footstep_default";
+    g_audioManager->playFootstep(key, player->position);
+}
+
 const char* PlayerController::getAnimStateName() const {
     switch (animState) {
         case PlayerAnimState::IDLE: return "IDLE";
@@ -550,6 +596,11 @@ void PlayerController::updatePhysics(float deltaTime) {
 
     // Jump
     if (jumpRequested && physics.isCharacterGrounded(physicsCharacter)) {
+        // Jump fatigue cost (0x671620): 4 + 4x, x = current fatigue ratio.
+        // This path sets the Jolt velocity directly instead of calling
+        // Player::applyJump(), so the cost is paid here as well.
+        const float x = oblivion::fatigue::ratio(player->stamina, player->maxStamina);
+        player->reduceStamina(oblivion::fatigue::jumpCost(x));
         JPH::Vec3 vel = physicsCharacter->GetLinearVelocity();
         vel.SetY(jumpForce);
         physicsCharacter->SetLinearVelocity(vel);

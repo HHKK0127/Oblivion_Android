@@ -123,6 +123,7 @@ private:
     NpcManager* npcManager;
     class SpellManager* spellManager;
     class CheatManager* cheatManager;
+    class Player* player = nullptr;  // non-owning, set by the renderer after PlayerController init
     oblivion::NavMeshManager* navMeshManager;
     class weave::EventBus* eventBus = nullptr;  // Imperial Weave EventBus
     std::unordered_map<uint32_t, CombatInstance> activeCombats;
@@ -161,8 +162,12 @@ public:
     // Damage calculation
     float calculateDamage(const CharacterStatus& attacker, const CharacterStatus& defender,
                          const WeaponProperties& weapon);
-    float getDefenderDamageMitigation(const CharacterStatus& defender);
-    void applyDamage(std::shared_ptr<NPC> target, float damage);
+    // Multiplicative armor reduction factor in [0, 1] (see
+    // game/combat_formulas.h; damage *= 1 - factor).
+    float getDefenderArmorFactor(const CharacterStatus& defender);
+    // hitDirection feeds the death knockback (RE_EXE_REPORT 41.2.4).
+    void applyDamage(std::shared_ptr<NPC> target, float damage,
+                     const glm::vec3& hitDirection = glm::vec3(0.0f));
     void applyHeal(std::shared_ptr<NPC> target, float amount);
 
     // Weapon system
@@ -194,6 +199,12 @@ public:
     // Find nearest enemy to player
     std::shared_ptr<NPC> findNearestEnemyToPlayer(const glm::vec3& playerPos, float detectionRadius = 30.0f);
     void playerCastSpell(uint32_t playerEntityId, uint32_t spellId, uint32_t targetNpcId);
+
+    // NPC -> player attacks (received-damage path; difficulty factor f is
+    // applied inside Player::takeDamage, RE_EXE_REPORT 51.13)
+    void setPlayer(class Player* p) { player = p; }
+    void npcAttackPlayer(std::shared_ptr<NPC> attacker);
+    void npcCastSpellOnPlayer(std::shared_ptr<NPC> caster, uint32_t spellId);
 
     // Event system (Imperial Weave integration)
     void emitCombatEvent(const CombatEvent& event);

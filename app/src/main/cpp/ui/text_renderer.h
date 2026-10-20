@@ -6,9 +6,10 @@
 #include <glm/glm.hpp>
 #include <GLES3/gl3.h>
 #include <android/asset_manager.h>
-// stb_truetype is used for bundled TTF faces (Roboto + Noto Sans JP). The
-// implementation is compiled once in text_renderer.cpp via STB_TRUETYPE_IMPLEMENTATION;
-// including the header here only exposes the fontinfo struct needed by the CJK atlas.
+// stb_truetype is used for bundled TTF faces (Kingthings Petrock Light + the
+// SAIMOJI/TKaisho CJK faces). The implementation is compiled once in
+// text_renderer.cpp via STB_TRUETYPE_IMPLEMENTATION; including the header here
+// only exposes the fontinfo struct needed by the CJK atlas.
 #include "../include/stb_truetype.h"
 
 /**
@@ -64,6 +65,12 @@ public:
     void processPendingFontRequest();
     FontType getActiveFont() const { return activeFont; }
     const char* getFontTypeName(FontType type) const;
+
+    // Selects the CJK face used for Japanese text. Off: SAIMOJI (default, all UI).
+    // On: TKaisho kaisho, used while a book panel is open; codepoints TKaisho
+    // lacks fall back to SAIMOJI. Safe to call from the render thread.
+    void setBookStyle(bool enabled) { bookStyle_ = enabled; }
+    bool isBookStyle() const { return bookStyle_; }
 
     // Readability tuning for Oblivion .fnt fonts.
     // The original atlases carry soft, low-contrast coverage values; the contrast
@@ -138,8 +145,9 @@ private:
         std::map<unsigned int, Glyph> glyphCache;
     };
 
-        // CJK glyph cached in a dynamic page atlas (Noto Sans JP). The glyph is baked as
-        // an alpha coverage bitmap at FONT_SIZE; UVs point into the page that holds it.
+        // CJK glyph cached in a dynamic page atlas (SAIMOJI by default, TKaisho in book
+        // style). The glyph is baked as an alpha coverage bitmap at FONT_SIZE; UVs
+        // point into the page that holds it.
         struct CjkGlyph {
             float u0, v0, u1, v1;    // UV rectangle in the page atlas
             float advanceX;           // Horizontal advance in atlas pixels
@@ -186,14 +194,23 @@ private:
     // Font data
     FontData* fontData;
 
-        // CJK font (bundled Noto Sans JP) and its dynamic page atlases. Oblivion ships no
-        // CJK face at all, so any Japanese text falls back to this bundled TTF. Glyphs are
-        // rasterized lazily on first use and cached; pages are created on demand.
+        // CJK fonts (bundled SAIMOJI + TKaisho) and their dynamic page atlases.
+        // Oblivion ships no CJK face at all, so any Japanese text falls back to these
+        // bundled TTFs. Glyphs are rasterized lazily on first use and cached; pages
+        // are created on demand. Both faces share cjkPages_ (the atlas is generic
+        // coverage) but keep separate glyph caches so the two never mix UVs.
         unsigned char* cjkFontData_ = nullptr;
         stbtt_fontinfo cjkFontInfo_;
         bool cjkFontReady_ = false;
         float cjkFontScale_ = 0.0f;
         std::map<unsigned int, CjkGlyph> cjkGlyphs_;
+        // TKaisho kaisho face, active only while bookStyle_ is set (book panels).
+        unsigned char* cjkBookFontData_ = nullptr;
+        stbtt_fontinfo cjkBookFontInfo_;
+        bool cjkBookFontReady_ = false;
+        float cjkBookFontScale_ = 0.0f;
+        std::map<unsigned int, CjkGlyph> cjkBookGlyphs_;
+        bool bookStyle_ = false;
         std::vector<CjkAtlasPage> cjkPages_;
 
     // Android AssetManager (for font loading)
@@ -253,10 +270,18 @@ private:
                 void drawRobotoText(const std::string& text, float x, float y,
                                     const glm::vec4& color, float scale);
 
-                // CJK (Japanese) support.
-                bool loadCjkFontFromAssets(const std::string& filename);
+                // CJK (Japanese) support. Loads one bundled face into the given
+                // info/scale pair; resolves a TTC collection to its first face.
+                bool loadCjkFontFromAssets(const std::string& filename,
+                                           stbtt_fontinfo* outInfo,
+                                           unsigned char** outData, float* outScale);
         // Rasterizes the codepoint into a page atlas on first use and caches it.
         const CjkGlyph* getCjkGlyph(unsigned int codepoint);
+        // Shared rasterize+pack path for one face; cache is passed in so the primary
+        // and book faces keep independent glyph entries.
+        const CjkGlyph* getCjkGlyphForFace(unsigned int codepoint,
+                                           const stbtt_fontinfo& info, float scale,
+                                           std::map<unsigned int, CjkGlyph>& cache);
         // Advance width without rasterizing; safe on the const getTextWidth path.
         float getCjkAdvance(unsigned int codepoint, float scale) const;
         GLuint createCjkAtlasTexture();

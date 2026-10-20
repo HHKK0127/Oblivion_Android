@@ -52,8 +52,8 @@ struct Player {
     uint8_t gender = 0;  // 0=Male, 1=Female
 
     // Stamina Management
-    float staminaDrainRate = 25.0f;      // Stamina drained per second while sprinting
-    float staminaRecoveryRate = 15.0f;   // Stamina recovered per second while idle
+    // Fatigue drain/recovery rates are driven by the GMST formulas in
+    // game/fatigue_system.h (RE §50.2), not by fixed constants here.
     bool canSprint = true;               // Can only sprint if stamina > 0
 
     // Inventory

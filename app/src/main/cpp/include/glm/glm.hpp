@@ -29,6 +29,7 @@ struct vec3 {
     float x, y, z;
     vec3() : x(0), y(0), z(0) {}
     vec3(float x, float y, float z) : x(x), y(y), z(z) {}
+        vec3(float s) : x(s), y(s), z(s) {}
 
     vec3 operator+(const vec3& v) const { return vec3(x + v.x, y + v.y, z + v.z); }
     vec3 operator-(const vec3& v) const { return vec3(x - v.x, y - v.y, z - v.z); }

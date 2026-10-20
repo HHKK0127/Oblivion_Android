@@ -75,6 +75,12 @@
 #include "../ui/ui_active_effects.h"
 #include "../ui/ui_dialogue.h"
 #include "../ui/ui_book_reader.h"
+#include "../ui/ui_container_menu.h"
+#include "../ui/ui_sleep_wait_menu.h"
+#include "../ui/ui_level_up_menu.h"
+#include "../ui/ui_quick_keys_menu.h"
+#include "../ui/fast_travel_controller.h"
+#include "../ui/ui_character_creation.h"
 #include "../ui/subtitle_system.h"
 #include "../animation/animation_subscriber.h"
 #include "../audio/audio_subscriber.h"
@@ -197,11 +203,23 @@ private:
     std::unique_ptr<UIActiveEffects> activeEffects;
     std::unique_ptr<UIDialogue> dialogueUI;
     std::unique_ptr<UIBookReader> bookReaderUI;
+    std::unique_ptr<UIContainerMenu> containerMenuUI;
+    std::unique_ptr<UISleepWaitMenu> sleepWaitMenuUI;
+    std::unique_ptr<UILevelUpMenu> levelUpMenuUI;
+    std::unique_ptr<UIQuickKeysMenu> quickKeysMenuUI;
+    std::unique_ptr<FastTravelController> fastTravelController;
+    std::unique_ptr<UICharacterCreation> characterCreationUI;
+    bool showCharacterCreation = false;
     bool hudVisible = true;
     // bCrossHair: when off, the crosshair is not drawn (also hidden behind menus).
     bool crosshairEnabled = true;
     // bGeneralSubtitles: when off, spoken dialogue lines are not shown as subtitles.
     bool subtitlesEnabled_ = true;
+    // bDialogueSubtitles: when off, dialogue-response subtitles are not shown.
+    // RE_EXE_REPORT 47.3 gates the dialogue/message UI elements with this flag
+    // while 47.4 gates subtitle emission with bGeneralSubtitles; the port emits
+    // subtitles from a single path, so both gates apply there.
+    bool dialogueSubtitlesEnabled_ = true;
 
         // Lip-sync playback (Phase 65): face morph weights driven by .lip data.
         facegen::FaceExpressionSystem faceExpressionSystem_;

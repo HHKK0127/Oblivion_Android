@@ -1,5 +1,6 @@
 #include "../system/settings_manager.h"
 #include "spell_manager.h"
+#include "fatigue_system.h"
 #include "../audio/audio_manager.h"
 #include <algorithm>
 #include <cmath>
@@ -260,6 +261,12 @@ bool SpellManager::castSpell(uint32_t casterId, uint32_t spellId, uint32_t targe
         return false;
     }
 
+    // Cast fatigue cost (0x548DA0): fFatigueCastBase (15). The spell's own
+    // magicka cost does not enter the fatigue formula (Mult term is 0).
+    caster->status.stamina = oblivion::fatigue::clampValue(
+        caster->status.stamina - oblivion::fatigue::castCost(spell->manaCost),
+        caster->status.maxStamina);
+
     // Apply spell effects
     applySpellEffect(target, *spell, caster->status);
 
@@ -308,6 +315,10 @@ bool SpellManager::castPlayerSpell(Player* player, uint32_t spellId, uint32_t ta
     player->magicka -= spell->manaCost;
     LOGI("Player consumed %.1f mana for spell %s (remaining: %.1f)",
          spell->manaCost, spell->name.c_str(), player->magicka);
+
+    // Cast fatigue cost (0x548DA0): flat fFatigueCastBase (15), same as the
+    // NPC path.
+    player->reduceStamina(oblivion::fatigue::castCost(spell->manaCost));
 
     // Build a temporary CharacterStatus from Player for damage calculation
     CharacterStatus playerStatus;

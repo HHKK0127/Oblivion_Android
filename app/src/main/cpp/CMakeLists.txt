@@ -171,11 +171,15 @@ add_library(native-lib SHARED
     ui/controls_options_ui.cpp
     ui/ui_component.cpp
     ui/ui_system.cpp
+    ui/ui_menu_stack.cpp
     ui/ui_panel.cpp
     ui/ui_button.cpp
     ui/ui_draw_helper.cpp
     ui/ui_map_panel.cpp
     ui/ui_inventory_panel.cpp
+    ui/ui_container_menu.cpp
+    ui/item_icons.cpp
+    ui/ui_sleep_wait_menu.cpp
     ui/ui_character_sheet.cpp
     ui/ui_spellbook.cpp
     ui/ui_quest_log.cpp
@@ -184,10 +188,13 @@ add_library(native-lib SHARED
     ui/ui_shop.cpp
     ui/ui_character_creation.cpp
     ui/ui_pause_menu.cpp
+    ui/ui_level_up_menu.cpp
     ui/ui_message_box.cpp
+    ui/fast_travel_controller.cpp
     ui/text_wrap.cpp
     ui/ui_toast.cpp
     ui/ui_quick_slot_bar.cpp
+    ui/ui_quick_keys_menu.cpp
     ui/ui_hud_status_display.cpp
     ui/ui_hud_compass.cpp
     ui/ui_floating_text.cpp
@@ -295,6 +302,21 @@ add_library(native-lib SHARED
 
         # Tests (Phase 65: LIP decode)
         tests/lip_sync_decode_tests.cpp
+
+    # Tests (Phase 45: Container Menu)
+    tests/container_menu_tests.cpp
+
+    # Tests (Phase 45: SleepWait Menu)
+    tests/sleep_wait_menu_tests.cpp
+
+    # Tests (Menu Stack)
+    tests/menu_stack_tests.cpp
+
+    # Tests (QuickKeys Menu)
+    tests/quick_keys_menu_tests.cpp
+
+    # Tests (Level Up Menu)
+    tests/level_up_menu_tests.cpp
 
     # Physics System (Phase 36 - Jolt Physics)
     physics/physics_manager.cpp

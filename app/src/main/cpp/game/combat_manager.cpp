@@ -1,6 +1,8 @@
 #include "combat_manager.h"
 #include "player.h"
 #include "spell_manager.h"
+#include "fatigue_system.h"
+#include "combat_formulas.h"
 #include "../audio/audio_manager.h"
 #include "../engine/imperial_weave.h"
 #include <algorithm>
@@ -240,9 +242,29 @@ void CombatManager::update(float deltaTime) {
                                               combat.defender->status,
                                               combat.attackerWeapon);
 
-                // Apply block reduction
+                // Apply block reduction (0x5474A0, RE_EXE_REPORT §56.1 /
+                // s57_combat_full.md §3.1). This replaces the old fixed
+                // 0.3 factor with the EXE's computed block amount.
                 if (blocked) {
-                    damage *= 0.3f;
+                    const CharacterStatus& def = combat.defender->status;
+                    const auto blockIt = def.skills.find("Block");
+                    const float blockSkill =
+                        (blockIt != def.skills.end()) ? blockIt->second : 0.0f;
+                    const auto luckIt = def.attributes.find("Luck");
+                    const float luck =
+                        (luckIt != def.attributes.end()) ? luckIt->second : 0.0f;
+                    // equippedWeaponId 0 falls back to a default sword for
+                    // attacking (see npcAttackPlayer); for the block style the
+                    // original distinguishes weapon / hand-to-hand via the
+                    // defender's weapon REF being present, so id 0 reads as
+                    // the hand-to-hand term.
+                    const bool hasWeapon = combat.defender->status.equippedWeaponId != 0;
+                    const float reduction = oblivion::combat::blockAmount(
+                        blockSkill, luck,
+                        oblivion::fatigue::ratio(def.stamina, def.maxStamina),
+                        /*isWeaponBlock=*/hasWeapon,
+                        /*isHandToHand=*/!hasWeapon);
+                    damage *= (1.0f - reduction);
                     emitCombatEvent(createCombatEvent(
                         CombatEvent::Type::BLOCK,
                         defenderId,
@@ -282,7 +304,26 @@ void CombatManager::update(float deltaTime) {
                     glm::vec3 hitPos = (combat.attacker->position + combat.defender->position) * 0.5f;
                     createHitbox(hitPos, glm::vec3(0.5f, 0.5f, 0.5f), damage, combat.attacker->npcId);
 
-                    applyDamage(combat.defender, damage);
+                    // Knockback direction: defender pushed away from the
+                    // attacker, horizontal only (Y up axis).
+                    glm::vec3 hitDir = combat.defender->position - combat.attacker->position;
+                    hitDir.y = 0.0f;
+
+                    // febf0 段8: reflect damage. Defender's ReflectDamage AV
+                    // (0x3b) may bounce a fraction back to the attacker.
+                    // Player-reflector exclusion is internal to the formula.
+                    const float reflected = oblivion::combat::applyReflectDamage(
+                        damage, combat.defender->status, combat.attacker->status,
+                        /*attackerIsPlayer=*/false);
+                    if (reflected > 0.0f) {
+                        combat.attacker->takeDamage(reflected);
+                    }
+
+                    applyDamage(combat.defender, damage, hitDir);
+
+                    // febf0 段12: speak/stagger check on defender
+                    oblivion::combat::applyHealthRatioEffects(damage,
+                        combat.defender->status);
 
                     emitCombatEvent(createCombatEvent(
                         CombatEvent::Type::ATTACK_HIT,
@@ -325,6 +366,33 @@ void CombatManager::update(float deltaTime) {
     // End dead combats
     for (uint32_t defenderId : endedCombats) {
         endCombat(defenderId);
+    }
+
+    // NPC -> player melee attacks (slice): hostile NPCs strike the player on a
+    // fixed cooldown while within range. Approach/pursuit of the player and
+    // ESM AIDT-driven hostility are future work. Player::takeDamage applies
+    // the difficulty received factor f (RE_EXE_REPORT 51.13).
+    if (player && npcManager) {
+        glm::vec3 ppos = worldManager ? worldManager->getPlayerPosition() : glm::vec3(0.0f);
+        constexpr float kPlayerAttackRange = 3.0f;
+        for (const auto& npc : npcManager->getAllNPCs()) {
+            if (!npc || !npc->hostileToPlayer || !npc->status.isAlive()) continue;
+            npc->playerAttackTimer -= deltaTime;
+            float dx = npc->position.x - ppos.x;
+            float dz = npc->position.z - ppos.z;
+            if (dx * dx + dz * dz > kPlayerAttackRange * kPlayerAttackRange) continue;
+            if (npc->playerAttackTimer > 0.0f) continue;
+            npc->playerAttackTimer = DAMAGE_CALCULATION_COOLDOWN;
+
+            // NPC -> player magic attacks: select a combat spell, cast on player.
+            // If the NPC has a spell and is in range, it casts instead of melee.
+            uint32_t selectedSpell = npc->selectSpellForCombat();
+            if (selectedSpell != 0 && spellManager) {
+                npcCastSpellOnPlayer(npc, selectedSpell);
+            } else {
+                npcAttackPlayer(npc);
+            }
+        }
     }
 }
 
@@ -405,14 +473,25 @@ float CombatManager::calculateDamage(const CharacterStatus& attacker,
     // Skill multiplier
     float skillMultiplier = 1.0f;
 
-    // Armor mitigation
-    float armorMitigation = 0.0f;
-    if (!weapon.ignoresArmor) {
-        armorMitigation = getDefenderDamageMitigation(defender);
-    }
+    // Fatigue damage multiplier (RE §17.11.1 Combat_CalcMeleeDamage chain):
+    // fatigueRatio scales the whole offensive product via the 0x547F00 curve.
+    // Exactly-full fatigue contributes 1.0 (no bonus); only sub-full fatigue
+    // receives the curve value.
+    const float fatigueRatio =
+        oblivion::fatigue::ratio(attacker.stamina, attacker.maxStamina);
+    const float fatigueMultiplier = oblivion::fatigue::meleeDamageMult(fatigueRatio);
+
+    // Armor reduction (RE_EXE_REPORT §56.1 / s57_combat_full.md): the original
+    // multiplies the running damage product by (1 - min(AR/100, 1.0)) at
+    // 0x5FF7B5 / 0x5FF908, instead of subtracting a flat term.
+    const bool applyArmor = !weapon.ignoresArmor;
 
     // Calculate final damage
-    float totalDamage = (baseDamage + attributeBonus) * skillMultiplier - armorMitigation;
+    float totalDamage =
+        (baseDamage + attributeBonus) * skillMultiplier * fatigueMultiplier;
+    if (applyArmor) {
+        totalDamage *= (1.0f - oblivion::combat::armorFactor(defender.armorRating));
+    }
 
     // Ensure minimum damage
     if (totalDamage < 1.0f) {
@@ -422,28 +501,24 @@ float CombatManager::calculateDamage(const CharacterStatus& attacker,
     return totalDamage;
 }
 
-float CombatManager::getDefenderDamageMitigation(const CharacterStatus& defender) {
-    float mitigation = defender.armorRating * 0.5f;
-    return mitigation;
+float CombatManager::getDefenderArmorFactor(const CharacterStatus& defender) {
+    return oblivion::combat::armorFactor(defender.armorRating);
 }
 
-void CombatManager::applyDamage(std::shared_ptr<NPC> target, float damage) {
+void CombatManager::applyDamage(std::shared_ptr<NPC> target, float damage,
+                                 const glm::vec3& hitDirection) {
     if (!target) return;
 
-    target->takeDamage(damage);
+    target->takeDamage(damage, hitDirection);
 
-    // Trigger hit reaction animation on target
-    target->triggerHitReaction();
+    if (target->status.isAlive()) {
+        // Trigger hit reaction animation on target; on death NPC::onDeath
+        // already selected the DEATH animation instead.
+        target->triggerHitReaction();
+    }
 
     if (g_audioManager && damage > 0) {
         g_audioManager->playSound("magic/spell_hit");
-    }
-
-    if (!target->status.isAlive()) {
-        // Trigger death animation
-        target->triggerDeath();
-        LOGI("NPC defeated: %s (HP: %.1f -> 0)", target->name.c_str(),
-             target->status.maxHealth);
     }
 }
 
@@ -647,7 +722,14 @@ bool CombatManager::attemptBlock(std::shared_ptr<NPC> defender, float incomingDa
     float blockChance = defender->status.getAttributeBonus("Endurance") * 0.01f;
     blockChance = std::min(blockChance, 0.30f); // Max 30% block chance
 
-    return rollCritical(blockChance);
+    if (!rollCritical(blockChance)) return false;
+
+    // Block fatigue cost (0x547590): 5 + incomingDamage·1.0 + BlockSkill·(-0.04).
+    // NPC skill map has no "Block" entry yet, so the skill term stays 0.
+    const float cost = oblivion::fatigue::blockCost(/*blockSkill=*/0.0f, incomingDamage);
+    defender->status.stamina = oblivion::fatigue::clampValue(
+        defender->status.stamina - cost, defender->status.maxStamina);
+    return true;
 }
 
 bool CombatManager::attemptDodge(std::shared_ptr<NPC> defender) {
@@ -700,6 +782,13 @@ void CombatManager::playerAttack(uint32_t playerEntityId, uint32_t targetNpcId, 
         playerStatus = playerNpc->status;
     }
     playerStatus.weaponDamage = weapon.baseDamage;
+    // Keep the attacker fatigue in sync with the live Player pool so the
+    // damage-multiplier curve (0x547F00) reads the same value the attack and
+    // sprint drains write to. The NPC-id-1 placeholder above does not track it.
+    if (player) {
+        playerStatus.stamina = player->stamina;
+        playerStatus.maxStamina = player->maxStamina;
+    }
     float damage = calculateDamage(playerStatus, target->status, weapon);
     // Difficulty scales the damage the player deals by 1/f (RE §50.1).
     damage *= Player::getDealtDamageScale();
@@ -721,7 +810,27 @@ void CombatManager::playerAttack(uint32_t playerEntityId, uint32_t targetNpcId, 
         ));
     }
 
+    // febf0 段8: reflect damage. When the NPC defender has ReflectDamage AV
+    // (0x3b), part of the player's damage bounces back. Player-reflector
+    // exclusion: the formula skips when the attacker is the player (always
+    // true in this path).
+    const float reflected = oblivion::combat::applyReflectDamage(
+        damage, target->status, playerStatus,
+        /*attackerIsPlayer=*/true);
+
     applyDamage(target, damage);
+
+    // febf0 段12: speak/stagger check
+    oblivion::combat::applyHealthRatioEffects(damage, target->status);
+
+    // Attack fatigue cost (0x547560): 8 + 0.1·damage for melee, zero for
+    // bows and staves (weapon anim 4/5 are 0-cost in the original). Drains
+    // the real Player stamina pool that updateStamina() recovers.
+    if (player && !weapon.isRanged && weapon.type != WeaponType::STAFF) {
+        const float cost =
+            oblivion::fatigue::attackCost(damage, /*isPowerAttack=*/false);
+        player->reduceStamina(cost);
+    }
 
     emitCombatEvent(createCombatEvent(
         CombatEvent::Type::ATTACK_HIT,
@@ -733,6 +842,105 @@ void CombatManager::playerAttack(uint32_t playerEntityId, uint32_t targetNpcId, 
     ));
 
     LOGI("Player attacks %s for %.1f damage", target->name.c_str(), damage);
+}
+
+void CombatManager::npcAttackPlayer(std::shared_ptr<NPC> attacker) {
+    if (!attacker || !player) return;
+
+    // Per-NPC weapon lookup falls back to the default one-hand sword when the
+    // id was never registered (same fallback initiateCombat() uses today).
+    WeaponProperties weapon = getWeaponProperties(attacker->status.equippedWeaponId);
+
+    // Build the defender status from the real Player; the NPC id 1 placeholder
+    // used by playerAttack() never resolves to anything. armorRating is zeroed
+    // because EquipmentEffectSystem (which would fill real player armor) has
+    // its initialize call commented out in the renderer (renderer.cpp:2423),
+    // so the armor factor inside calculateDamage() stays 0 (factor 0 -> the
+    // multiplicative armor term contributes no reduction) for now.
+    CharacterStatus defender{};
+    defender.currentHealth = player->health;
+    defender.maxHealth = player->maxHealth;
+    defender.level = player->playerLevel;
+    defender.armorRating = 0.0f;
+
+    float damage = calculateDamage(attacker->status, defender, weapon);
+    // Difficulty received factor f is applied here (RE_EXE_REPORT 51.13:
+    // f = (d>0) ? d*M+1 : (d<0) ? 1/|d*M-1| : 1, and takeDamage multiplies
+    // by it before the clamp).
+    player->takeDamage(damage);
+
+    // NPC attack fatigue cost (0x547560): same formula the player pays.
+    // Bows and staves are 0-cost (weapon anim 4/5).
+    if (!weapon.isRanged && weapon.type != WeaponType::STAFF) {
+        const float cost =
+            oblivion::fatigue::attackCost(damage, /*isPowerAttack=*/false);
+        attacker->status.stamina = oblivion::fatigue::clampValue(
+            attacker->status.stamina - cost, attacker->status.maxStamina);
+    }
+
+    constexpr uint32_t kPlayerEntityId = 1;  // ATK button convention
+    emitCombatEvent(createCombatEvent(
+        CombatEvent::Type::ATTACK_HIT,
+        attacker->npcId,
+        kPlayerEntityId,
+        damage,
+        attacker->position,
+        weapon.type
+    ));
+    LOGI("NPC %s hits player for %.1f damage (player HP %.1f)",
+         attacker->name.c_str(), damage, player->health);
+}
+
+void CombatManager::npcCastSpellOnPlayer(std::shared_ptr<NPC> caster, uint32_t spellId) {
+    if (!spellManager || !player) return;
+
+    auto spell = spellManager->getSpell(spellId);
+    if (!spell || !spell->isAvailable(caster->status.currentMana)) return;
+
+    if (!spellManager->consumeMana(caster->npcId, spell->manaCost)) return;
+
+    // Cast fatigue cost
+    caster->status.stamina = oblivion::fatigue::clampValue(
+        caster->status.stamina - oblivion::fatigue::castCost(spell->manaCost),
+        caster->status.maxStamina);
+
+    // Apply spell effects directly to player, with difficulty scale f.
+    // RE §50.1: NPC dealt-damage uses f (Player::getDifficultyScale).
+    // Player::takeDamage does NOT re-multiply (it applies f on its own intake).
+    const float difficultyScale = Player::getDifficultyScale();
+
+    // Build defender stats from player for damage calculation
+    CharacterStatus playerStatus;
+    playerStatus.currentHealth = player->health;
+    playerStatus.maxHealth = player->maxHealth;
+    playerStatus.level = player->playerLevel;
+
+    for (const auto& effect : spell->effects) {
+        switch (effect.type) {
+            case SpellEffectType::DAMAGE: {
+                float dmg = spellManager->calculateSpellDamage(*spell, caster->status, playerStatus);
+                dmg *= difficultyScale;
+                player->takeDamage(dmg);
+                break;
+            }
+            case SpellEffectType::HEAL:
+                player->health += effect.magnitude;
+                if (player->health > player->maxHealth) player->health = player->maxHealth;
+                break;
+            case SpellEffectType::RESTORE_MANA:
+                player->magicka += effect.magnitude;
+                if (player->magicka > player->maxMagicka) player->magicka = player->maxMagicka;
+                break;
+            case SpellEffectType::RESTORE_STAMINA:
+                player->reduceStamina(-effect.magnitude);
+                break;
+            default:
+                break;
+        }
+    }
+
+    LOGI("NPC %s casts spell %u on player (HP %.1f)",
+         caster->name.c_str(), spellId, player->health);
 }
 
 void CombatManager::playerCastSpell(uint32_t playerEntityId, uint32_t spellId, uint32_t targetNpcId) {

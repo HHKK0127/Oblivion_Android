@@ -7,6 +7,7 @@
 #include <glm/glm.hpp>
 #include <android/log.h>
 #include "ui_component.h"
+#include "ui_menu_stack.h"
 
 #define UI_SYSTEM_LOG_TAG "UISystem"
 #define SYS_LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, UI_SYSTEM_LOG_TAG, __VA_ARGS__)
@@ -147,6 +148,11 @@ public:
      */
     size_t getComponentCount() const;
 
+    // === Menu Stack ===
+
+    MenuStack& getMenuStack() { return menuStack_; }
+    const MenuStack& getMenuStack() const { return menuStack_; }
+
 private:
     // Component management by layer (key: layer, value: components)
     std::map<int, std::vector<std::shared_ptr<UIComponent>>> layers;
@@ -165,6 +171,9 @@ private:
     int screenHeight;
 
     bool initialized;
+
+    // Menu stacking state
+    MenuStack menuStack_;
 
     // Event delivery helper (front layer priority)
     bool dispatchEvent(const UIEvent& event);

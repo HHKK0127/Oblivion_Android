@@ -303,6 +303,20 @@ public:
                        const glm::vec3& position = glm::vec3(0.0f, 0.0f, 0.0f));
 
     /**
+     * @brief Play a footstep sound through the Footstep channel.
+     *
+     * Routes through the footVolume slider (INI default 0.3) instead of the SE
+     * slider, mirroring the original's per-category volume mapping. When the
+     * requested surface key has no registered definition it falls back to
+     * "footstep_default", so an unknown surface still produces an audible step.
+     * @param key Sound key defined in JSON (e.g. "footstep_metal")
+     * @param position 3D position of the footfall (listener position if omitted)
+     * @return Source ID (0 on failure or when no footstep audio is registered)
+     */
+    uint32_t playFootstep(const std::string& key,
+                          const glm::vec3& position = glm::vec3(0.0f, 0.0f, 0.0f));
+
+    /**
      * @brief Play BGM by definition key
      * @param key BGM key defined in JSON
      * @param fadeIn Fade in time

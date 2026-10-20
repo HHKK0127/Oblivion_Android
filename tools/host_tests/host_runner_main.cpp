@@ -15,6 +15,8 @@
 #include "tests/mesh_builder_tests.h"
 #include "tests/menu_xml_tests.h"
 #include "tests/menu_fade_tests.h"
+#include "tests/fatigue_system_tests.h"
+#include "tests/combat_formulas_tests.h"
 
 // Print a suite summary and report whether it passed.
 static void runSuite(const char* name, bool ok, const std::string& summary, int& failed) {
@@ -94,6 +96,16 @@ int main() {
         MenuFadeTests t;
         const bool ok = t.runAllTests();
         runSuite("MenuFadeTests", ok, t.getSummary(), failed);
+    }
+    {
+        FatigueSystemTests t;
+        const bool ok = t.runAllTests();
+        runSuite("FatigueSystemTests", ok, t.getSummary(), failed);
+    }
+    {
+        CombatFormulasTests t;
+        const bool ok = t.runAllTests();
+        runSuite("CombatFormulasTests", ok, t.getSummary(), failed);
     }
     {
         // Real Oblivion assets are not redistributable; the suite skips itself when

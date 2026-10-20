@@ -90,6 +90,8 @@ SOURCES=(
   app/src/main/cpp/tests/mesh_builder_tests.cpp
   app/src/main/cpp/tests/menu_xml_tests.cpp
   app/src/main/cpp/tests/menu_fade_tests.cpp
+  app/src/main/cpp/tests/fatigue_system_tests.cpp
+  app/src/main/cpp/tests/combat_formulas_tests.cpp
   app/src/main/cpp/ui/xml_parser.cpp
   app/src/main/cpp/ui/menu_xml_interpreter.cpp
   app/src/main/cpp/ui/menu_ui_builder.cpp

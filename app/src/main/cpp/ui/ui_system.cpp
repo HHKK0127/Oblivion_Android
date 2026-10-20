@@ -207,6 +207,14 @@ bool UISystem::dispatchEvent(const UIEvent& event) {
 
     // Dispatch to front-most layers first
     for (auto it = layersCopy.rbegin(); it != layersCopy.rend(); ++it) {
+        const int layer = it->first;
+
+        // If a NoClickPast menu above this layer blocks input, skip this layer.
+        if (menuStack_.isInputBlocked(layer)) {
+            LOGI("  - layer %d: input blocked by NoClickPast menu above", layer);
+            continue;
+        }
+
         auto& components = it->second;
         // Iterate in reverse for front-to-back within same layer
         for (auto compIt = components.rbegin(); compIt != components.rend(); ++compIt) {

@@ -43,8 +43,11 @@ public:
     void update(float deltaTime);
     void render();
 
-    // Execute a command string
-    void executeCommand(const std::string& command);
+    // Execute a command string. Returns true when the command name is
+    // registered (the handler ran, or threw - still a known command), false
+    // for an empty / unknown command. Callers use this to report failures
+    // instead of assuming success (debug menu feedback).
+    bool executeCommand(const std::string& command);
 
     // Add output line
     void print(const std::string& message);

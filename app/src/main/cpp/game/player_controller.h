@@ -8,6 +8,7 @@
 #include "../animation/animation_player.h"
 #include "../engine/imperial_weave.h"
 #include "../physics/physics_manager.h"
+#include "../physics/physics_material.h"
 #include <memory>
 #include <android/log.h>
 
@@ -147,6 +148,12 @@ private:
 
     // Phase 31: Update animation state with hysteresis
     void updateAnimState(float deltaTime);
+
+    // Footstep playback: accumulate horizontal distance walked and emit a
+    // footstep through the AudioManager Footstep channel on each stride.
+    void updateFootsteps(float deltaTime);
+    float footstepDistance = 0.0f;       // horizontal distance since last step
+    oblivion::MaterialType footstepSurface = oblivion::MaterialType::DIRT;  // TODO: drive from terrain LTEX
 
     // Phase 31: Apply animation transforms to skeleton
     void applyAnimToSkeleton(float deltaTime);

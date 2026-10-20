@@ -41,7 +41,6 @@ GameLoopCoordinator::~GameLoopCoordinator() {
 bool GameLoopCoordinator::initialize() {
     imperialWeave_ = &weave::ImperialWeave::instance();
     frameCount_ = 0;
-    autoSaveTimer_ = 0.0f;
     LOGI("GameLoopCoordinator initialized");
     return true;
 }
@@ -279,17 +278,13 @@ void GameLoopCoordinator::phaseAudio(float dt) {
 }
 
 void GameLoopCoordinator::phaseAutoSave(float dt) {
-    if (!saveManager_) return;
-
-    autoSaveTimer_ += dt;
-    if (autoSaveTimer_ >= autoSaveInterval_) {
-        autoSaveTimer_ = 0.0f;
-        LOGI("Auto-save triggered at frame %lu", (unsigned long)frameCount_);
-        saveManager_->getAutoSave().triggerAutoSave();
+    (void)dt;
+    // Event-only mode: no time-based auto-save.
+    // SaveManager handles its own event-driven updates (triggered from
+    // renderer.cpp, quest system, travel, rest, level-up, etc.).
+    if (saveManager_) {
+        saveManager_->update(dt);
     }
-
-    // Let SaveManager handle its own auto-save timing too
-    saveManager_->update(dt);
 }
 
 void GameLoopCoordinator::phaseRender(float dt) {

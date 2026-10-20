@@ -28,6 +28,10 @@
     "ui/quest_update":  { "file": "ui/ui_questupdate.wav", "type": "se", "volume": 0.9, "loop": false, "3d": false },
     "ui/notification":  { "file": "ui/ui_message.wav", "type": "se", "volume": 0.8, "loop": false, "3d": false },
 
+    "footstep_default": { "file": "fst/wood/fst_wood_01.wav", "type": "se", "volume": 0.6, "loop": false, "3d": true },
+    "footstep_metal":   { "file": "fst/metal/fst_metal_01.wav", "type": "se", "volume": 0.7, "loop": false, "3d": true },
+    "footstep_wood":    { "file": "fst/wood/fst_wood_02.wav", "type": "se", "volume": 0.6, "loop": false, "3d": true },
+
     "default":             { "file": "Explore/atmosphere_01.mp3", "type": "bgm", "volume": 0.7, "loop": true },
     "music/battle_01":     { "file": "Battle/battle_01.mp3", "type": "bgm", "volume": 0.7, "loop": true },
     "music/battle_02":     { "file": "Battle/battle_02.mp3", "type": "bgm", "volume": 0.7, "loop": true },

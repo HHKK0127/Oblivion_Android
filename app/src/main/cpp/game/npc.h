@@ -68,7 +68,9 @@ struct CharacterStatus {
         CharacterStatus();
         void initialize(float baseHealth, float baseMana, uint32_t level);
         bool isAlive() const { return currentHealth > 0.0f; }
-        void takeDamage(float amount);
+        // Returns true when the HP write landed at 0 (death), mirroring the
+        // return 1/0 of FUN_00488830's caller (RE_EXE_REPORT 41.2.4).
+        bool takeDamage(float amount);
         void heal(float amount);
         float getAttributeBonus(const std::string& attr) const;
 
@@ -111,6 +113,15 @@ struct NPC {
     bool inCombat;
     std::shared_ptr<NPC> combatTarget;  // Current combat opponent
     float combatEngagementTime;
+    bool hostileToPlayer = false;    // Aggro'd against the player (console aggro/calm)
+    float playerAttackTimer = 0.0f;  // Cooldown timer for attacks against the player
+
+    // Death handling (RE_EXE_REPORT 41.2.4)
+    bool deadState = false;              // Death state flag (actor vt+0xf8)
+    glm::vec3 knockbackDirection{0.0f};  // Death knockback direction (vt+0x118/0x120)
+    float knockbackTimer = 0.0f;         // Remaining knockback slide time
+    static constexpr float KNOCKBACK_DURATION = 0.35f;
+    static constexpr float KNOCKBACK_SPEED = 6.0f;
 
     // Animation State (for Imperial Weave integration)
     enum class AnimState : uint8_t {
@@ -145,7 +156,12 @@ struct NPC {
     ~NPC();
 
     void update(float deltaTime);
-    void takeDamage(float amount);
+    // hitDirection: knockback direction from the attacker; only consumed when
+    // death occurs (RE_EXE_REPORT 41.2.4, vt+0x118/0x120).
+    void takeDamage(float amount, const glm::vec3& hitDirection = glm::vec3(0.0f));
+    // Central death pipeline (original: actor vt+0x2c8 -> FUN_004dc000).
+    void onDeath(const glm::vec3& hitDirection = glm::vec3(0.0f));
+    bool isDeadState() const { return deadState; }
     void heal(float amount);
     float getAttackPower() const;
     bool canAttack() const;

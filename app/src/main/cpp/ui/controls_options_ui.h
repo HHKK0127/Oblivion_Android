@@ -131,6 +131,8 @@ private:
     int focus_ = P1_SENSITIVITY;   // page 1 slot
     int page2_focus_ = 0;          // 0 = device, 1..N = rows, N+1 = defaults, N+2 = return
     int scroll_row_ = 0;
+    bool remapping_ = false;       // waiting for a key press to remap
+    int remapping_row_ = -1;       // row index being remapped (-1 = none)
 
     float label_height_ = 28.0f;
     float sensitivity_label_width_ = 0.0f;

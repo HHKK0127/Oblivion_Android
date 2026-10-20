@@ -93,9 +93,6 @@ public:
     const PhaseTiming* getPhaseTimings() const { return phaseTimings_; }
     int getPhaseTimingCount() const { return PHASE_COUNT; }
 
-    // Auto-save interval (seconds)
-    void setAutoSaveInterval(float seconds) { autoSaveInterval_ = seconds; }
-
 private:
     static constexpr int PHASE_COUNT = 12;
 
@@ -121,8 +118,6 @@ private:
 
     // Frame state
     uint64_t frameCount_ = 0;
-    float autoSaveTimer_ = 0.0f;
-    float autoSaveInterval_ = 300.0f; // 5 minutes default
 
     // Phase timing
     PhaseTiming phaseTimings_[PHASE_COUNT];

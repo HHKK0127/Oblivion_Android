@@ -1,5 +1,6 @@
 #include "script_manager.h"
 #include "script_disasm.h"
+#include "native_scda_decoder.h"
 #include <algorithm>
 #include <cstddef>
 #include <cstdio>
@@ -30,6 +31,10 @@ std::string hexOffset(uint32_t value) {
 
 ScriptManager::ScriptManager() {
     vm_.setFunctions(&functions_);
+    // Register the native SCDA-to-FunctionID bridge so native compiled scripts
+    // can call the same game logic functions the synthetic VM uses.
+    const size_t nBridged = registerNativeFunctionBridge(nativeVm_, functions_);
+    SCM_LOGI("Native SCDA bridge: %zu function mappings registered", nBridged);
 }
 
 void ScriptManager::init(
@@ -60,9 +65,20 @@ void ScriptManager::loadScripts(const std::vector<ScriptData>& scripts) {
     }
     SCM_LOGI("Loaded %zu scripts", scripts.size());
 }
-
 void ScriptManager::addScript(const ScriptData& script) {
     scripts_[script.formID] = script;
+
+    // Decode SCDA bytecode into a native program if present. The native VM
+    // runs scripts that the compiler compiled; the synthetic VM handles the
+    // rest (game-mode scripts, inline quest scripts compiled to the synthetic
+    // encoding, and scripts that have only SCTX source but no SCDA).
+    if (!script.bytecode.empty() && nativePrograms_.find(script.formID) == nativePrograms_.end()) {
+        auto result = decodeNativeScda(script);
+        if (result.success) {
+            nativePrograms_[script.formID] = std::move(result);
+        }
+    }
+
     SCM_LOGD("Added script 0x%08X: %s (type=%d, bytecode=%zu bytes)",
              script.formID, script.editorID.c_str(),
              static_cast<int>(script.scriptType),
@@ -96,6 +112,14 @@ int ScriptManager::startScript(uint32_t scriptFormID, uint32_t selfRefFormID, ui
     active.context.setTargetRef(targetRefFormID);
     active.waitingForFrame = false;
     active.waitTimer = 0.0f;
+
+    // Link native SCDA program if available
+    auto nativeIt = nativePrograms_.find(scriptFormID);
+    if (nativeIt != nativePrograms_.end()) {
+        active.nativeProgram = &nativeIt->second;
+        active.nativeRunning = true;
+        active.nativeFrameBudget = false;
+    }
 
     activeScripts_.push_back(std::move(active));
 
@@ -207,54 +231,120 @@ void ScriptManager::update(float deltaTime) {
             active.waitTimer = 0.0f;
         }
 
-        // Execute script
-        VMResult result = vm_.execute(active.context);
-
-        switch (result) {
-            case VMResult::Success:
-                // Script completed (STOP opcode reached)
-                SCM_LOGD("Script 0x%08X completed on 0x%08X",
-                         active.scriptFormID, active.selfRefFormID);
-                releaseInlineScript(active);
-                activeScripts_.erase(activeScripts_.begin() + i);
-                break;
-
-            case VMResult::FrameBudget:
-                // Script will continue next frame
-                active.waitingForFrame = true;
-                break;
-
-            case VMResult::Breakpoint:
-                // The instruction at the breakpoint did not run; PC still
-                // points at it so the debugger can inspect before stepping.
-                active.paused = true;
-                active.waitingForFrame = false;
-                SCM_LOGI("Script 0x%08X on 0x%08X hit breakpoint at PC=0x%X (paused)",
-                         active.scriptFormID, active.selfRefFormID,
-                         active.context.getPC());
-                break;
-
-            case VMResult::Error: {
-                const std::string fault = formatFault(active);
-                std::istringstream lines(fault);
-                std::string line;
-                while (std::getline(lines, line)) {
-                    SCM_LOGE("%s", line.c_str());
-                }
-                releaseInlineScript(active);
-                activeScripts_.erase(activeScripts_.begin() + i);
-                break;
-            }
-
-            case VMResult::NotRunning:
-                // Shouldn't happen, but remove it
-                releaseInlineScript(active);
-                activeScripts_.erase(activeScripts_.begin() + i);
-                break;
+        // Execute script: native SCDA VM for compiled scripts, synthetic VM
+        // for scripts in the Opcode/FunctionID encoding.
+        if (active.nativeProgram) {
+            runNativeScript(active, i);
+        } else {
+            runSyntheticScript(active, i);
         }
     }
 
     clampDebugSelection();
+}
+
+void ScriptManager::runSyntheticScript(ActiveScript& active, int index) {
+    VMResult result = vm_.execute(active.context);
+
+    switch (result) {
+        case VMResult::Success:
+            SCM_LOGD("Script 0x%08X completed on 0x%08X",
+                     active.scriptFormID, active.selfRefFormID);
+            releaseInlineScript(active);
+            activeScripts_.erase(activeScripts_.begin() + index);
+            break;
+
+        case VMResult::FrameBudget:
+            active.waitingForFrame = true;
+            break;
+
+        case VMResult::Breakpoint:
+            active.paused = true;
+            active.waitingForFrame = false;
+            SCM_LOGI("Script 0x%08X on 0x%08X hit breakpoint at PC=0x%X (paused)",
+                     active.scriptFormID, active.selfRefFormID,
+                     active.context.getPC());
+            break;
+
+        case VMResult::Error: {
+            const std::string fault = formatFault(active);
+            std::istringstream lines(fault);
+            std::string line;
+            while (std::getline(lines, line)) {
+                SCM_LOGE("%s", line.c_str());
+            }
+            releaseInlineScript(active);
+            activeScripts_.erase(activeScripts_.begin() + index);
+            break;
+        }
+
+        case VMResult::NotRunning:
+            releaseInlineScript(active);
+            activeScripts_.erase(activeScripts_.begin() + index);
+            break;
+    }
+}
+
+void ScriptManager::runNativeScript(ActiveScript& active, int index) {
+    constexpr int kMaxNativeInstructions = 10000;
+
+    NativeVmResult result;
+    if (active.nativeFrameBudget) {
+        // Resume a previously budgeted run
+        active.nativeVarStore = nativeVm_.variables();
+        result = nativeVm_.resume(kMaxNativeInstructions);
+    } else {
+        // First run: share variable store, run the gamemode block (type 0)
+        nativeVm_.variables() = active.nativeVarStore;
+        result = nativeVm_.run(*active.nativeProgram, 0,
+                               active.selfRefFormID,
+                               active.context.getTargetRef(),
+                               kMaxNativeInstructions);
+    }
+
+    // Capture variable store after run so script state persists
+    active.nativeVarStore = nativeVm_.variables();
+
+    switch (result) {
+        case NativeVmResult::Success:
+            SCM_LOGD("Native script 0x%08X completed on 0x%08X",
+                     active.scriptFormID, active.selfRefFormID);
+            releaseInlineScript(active);
+            activeScripts_.erase(activeScripts_.begin() + index);
+            break;
+
+        case NativeVmResult::FrameBudget:
+            active.nativeFrameBudget = true;
+            active.waitingForFrame = true;
+            break;
+
+        case NativeVmResult::Error:
+            SCM_LOGE("Native script 0x%08X on 0x%08X error at offset 0x%X: %s",
+                     active.scriptFormID, active.selfRefFormID,
+                     nativeVm_.getLastErrorOffset(),
+                     nativeVm_.getLastError().c_str());
+            releaseInlineScript(active);
+            activeScripts_.erase(activeScripts_.begin() + index);
+            break;
+
+        case NativeVmResult::NotRunning:
+            releaseInlineScript(active);
+            activeScripts_.erase(activeScripts_.begin() + index);
+            break;
+    }
+}
+
+NativeDecodeResult ScriptManager::decodeNativeScda(const ScriptData& script) {
+    if (script.bytecode.empty()) {
+        return {};
+    }
+    NativeDecodeResult result = oblivion::script::decodeNativeScda(script.bytecode);
+    if (!result.success) {
+        SCM_LOGW("Failed to decode SCDA for script 0x%08X '%s' at offset 0x%X",
+                 script.formID, script.editorID.c_str(),
+                 result.errorOffset);
+    }
+    return result;
 }
 
 // ============================================================================

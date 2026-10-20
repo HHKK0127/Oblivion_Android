@@ -1,34 +1,66 @@
 #include "ui_dialogue.h"
-#include "placeholder_assets.h"
 #include "ui_draw_helper.h"
+#include "../engine/texture_loader.h"
 #include <GLES3/gl3.h>
 #include <cstdio>
 #include <algorithm>
 
+static const char* kTexSelectionFull   = "dialog__dialog_selection_full";
+static const char* kTexSelectionCut    = "dialog__dialog_selection_cut";
+
+static const char* kBgKeys[9] = {
+    "genericbackground__center_background",
+    "genericbackground__edge_top",
+    "genericbackground__edge_bottom",
+    "genericbackground__edge_left",
+    "genericbackground__edge_right",
+    "genericbackground__top_left_corner",
+    "genericbackground__top_right_corner",
+    "genericbackground__bottom_left_corner",
+    "genericbackground__bottom_right_corner",
+};
+
 UIDialogue::UIDialogue(const std::string& title)
     : UIPanel(title.empty() ? "Dialogue" : title) {
-    // Dark parchment — more dramatic than inventory/quest panels
-    setBackgroundColor(glm::vec4(
-        PlaceholderAssets::Colors::PARCHMENT_DARK.x * 0.7f,
-        PlaceholderAssets::Colors::PARCHMENT_DARK.y * 0.6f,
-        PlaceholderAssets::Colors::PARCHMENT_DARK.z * 0.5f, 0.97f));
-    setBorderColor(glm::vec4(
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.x,
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.y,
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT.z, 1.0f));
-    setBorderWidth(3.0f);
-    setTitleBarColor(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));  // hidden — portrait takes its place
     setCloseButtonVisible(true);
-    setDraggable(false);  // Oblivion dialogue is fixed
-    // UIComponent starts visible, but a dialogue panel must not exist on screen
-    // (or swallow input) until openDialogue() is called.
+    setDraggable(false);
     setVisible(false);
 }
 
 bool UIDialogue::initialize(TextRenderer* tr) {
     if (!tr) return false;
     textRenderer = tr;
+    preloadTextures();
     return UIPanel::initialize();
+}
+
+void UIDialogue::preloadTextures() {
+    for (int i = 0; i < 9; ++i) loadMenuTex(kBgKeys[i]);
+    loadMenuTex(kTexSelectionFull);
+    loadMenuTex(kTexSelectionCut);
+}
+
+GLuint UIDialogue::loadTex(const std::string& partialPath) {
+    auto it = texCache.map.find(partialPath);
+    if (it != texCache.map.end()) return it->second;
+    std::string full = "textures/ui/" + partialPath;
+    if (full.size() < 4 || full.substr(full.size() - 4) != ".png")
+        full += ".png";
+    GLuint id = TextureLoader::loadTextureFromAsset(full);
+    texCache.map[partialPath] = id;
+    return id;
+}
+
+GLuint UIDialogue::loadMenuTex(const std::string& name) {
+    return loadTex("menus/" + name);
+}
+
+void UIDialogue::renderGenericBackground(float x, float y, float w, float h, float alpha) {
+    GLuint slices[9];
+    for (int i = 0; i < 9; ++i)
+        slices[i] = texCache.map[std::string("menus/") + kBgKeys[i]];
+    UIDrawHelper::drawGenericBackground(slices, x, y, w, h,
+                                        screenWidth, screenHeight, alpha);
 }
 
 void UIDialogue::openDialogue(std::shared_ptr<Dialogue> dlg) {
@@ -52,95 +84,71 @@ void UIDialogue::closeDialogue() {
 
 void UIDialogue::selectTopic(int index) {
     if (!currentDialogue) return;
-    if (index < 0 || index >= static_cast<int>(currentDialogue->topics.size())) return;
-
+    if (index < 0 || index >= (int)currentDialogue->topics.size()) return;
     currentDialogue->selectTopic(index);
     responseVisible = true;
     responseAlpha = 0.0f;
-    if (onTopicSelected) {
+    if (onTopicSelected)
         onTopicSelected(currentDialogue->topics[index].topicId);
-    }
 }
 
 void UIDialogue::update(float deltaTime) {
     UIPanel::update(deltaTime);
-
-    // Fade-in animation for response text
-    if (responseVisible && responseAlpha < 1.0f) {
+    if (responseVisible && responseAlpha < 1.0f)
         responseAlpha = std::min(1.0f, responseAlpha + deltaTime * 3.0f);
-    } else if (!responseVisible && responseAlpha > 0.0f) {
+    else if (!responseVisible && responseAlpha > 0.0f)
         responseAlpha = std::max(0.0f, responseAlpha - deltaTime * 4.0f);
-    }
 }
 
 bool UIDialogue::onTouchDown(float x, float y, int pointerId) {
     if (!isVisible() || !isEnabled()) return false;
-
-    if (isInsideCloseButton(x, y)) {
-        closeDialogue();
-        return true;
-    }
-
+    if (isInsideCloseButton(x, y)) { closeDialogue(); return true; }
     if (!currentDialogue) return false;
-
-    // Topic row tap
     int row = hitTestTopicRow(x, y);
     if (row >= 0) {
         int topicIdx = scrollOffset + row;
         if (topicIdx < (int)currentDialogue->topics.size()) {
             currentDialogue->selectTopic(topicIdx);
             responseVisible = true;
-            responseAlpha   = 0.0f;  // start fade-in
+            responseAlpha = 0.0f;
             if (onTopicSelected)
                 onTopicSelected(currentDialogue->topics[topicIdx].topicId);
             return true;
         }
     }
-
-    return true;  // consume all touches while open
+    return true;
 }
 
 void UIDialogue::render() {
     if (!isVisible() || !currentDialogue) return;
-
     GLboolean depthTestEnabled;
     glGetBooleanv(GL_DEPTH_TEST, &depthTestEnabled);
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    UIPanel::render();
-
+    glm::vec2 cp = getContentPosition();
+    glm::vec2 cs = getContentSize();
+    renderGenericBackground(cp.x, cp.y, cs.x, cs.y);
     renderNPCPortrait();
     renderGreeting();
     renderResponse();
     renderTopicList();
-
     if (depthTestEnabled) glEnable(GL_DEPTH_TEST);
 }
-
-// ─── rendering sections ────────────────────────────────────────────────────────
 
 void UIDialogue::renderNPCPortrait() {
     glm::vec2 cp = getContentPosition();
     float pw = getPortraitW();
-    float ph = pw * 1.2f;  // tall-ish portrait
-
-    // Portrait frame — gold bordered dark background
-    PlaceholderAssets::drawPanel(cp.x, cp.y, pw, ph,
-        PlaceholderAssets::Colors::DARK_GRAY,
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
-
-    // Placeholder silhouette (brown square inside)
-    float pad = pw * 0.1f;
-    PlaceholderAssets::drawSolidRect(cp.x + pad, cp.y + pad, pw - pad * 2.0f, ph - pad * 2.0f,
-        PlaceholderAssets::Colors::BROWN_ACCENT, 0.6f);
-
-    // NPC name below portrait
+    float ph = pw * 1.2f;
+    GLuint selTex = texCache.map[std::string("menus/") + kTexSelectionFull];
+    if (selTex != 0) {
+        UIDrawHelper::drawTexturedQuad(cp.x, cp.y, pw, ph, selTex,
+                                       glm::vec4(1.0f), screenWidth, screenHeight);
+    }
     if (textRenderer && currentDialogue) {
         textRenderer->renderText(currentDialogue->npcName,
             cp.x, cp.y + ph + 4.0f,
-            glm::vec3(PlaceholderAssets::Colors::GOLD_HIGHLIGHT), 0.75f);
+            glm::vec3(0.85f, 0.65f, 0.13f), 0.75f);
     }
 }
 
@@ -151,121 +159,106 @@ void UIDialogue::renderGreeting() {
     float tx = cp.x + pw + 10.0f;
     float ty = getGreetingY();
     float maxW = getContentSize().x - pw - 14.0f;
-
-    // Greeting area background
-    PlaceholderAssets::drawPanel(tx, ty - 4.0f, maxW, 56.0f,
-        glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT) * 0.85f,
-        PlaceholderAssets::Colors::BROWN_ACCENT);
-
-    // Greeting text (truncate to two lines)
-    std::string greet = currentDialogue->greeting;
-    textRenderer->renderText(greet, tx + 6.0f, ty,
+    GLuint cutTex = texCache.map[std::string("menus/") + kTexSelectionCut];
+    if (cutTex != 0) {
+        UIDrawHelper::drawTexturedQuad(tx, ty - 4.0f, maxW, 56.0f, cutTex,
+                                       glm::vec4(1.0f), screenWidth, screenHeight);
+    }
+    textRenderer->renderText(currentDialogue->greeting, tx + 6.0f, ty,
         glm::vec3(0.1f, 0.08f, 0.06f), 0.72f);
 }
 
 void UIDialogue::renderResponse() {
-    if (!responseVisible || responseAlpha <= 0.0f) return;
-    if (!textRenderer || !currentDialogue) return;
-
-    auto* topic = currentDialogue->getSelectedTopic();
+    if (!responseVisible || responseAlpha <= 0.0f || !textRenderer || !currentDialogue)
+        return;
+    DialogueTopic* topic = currentDialogue->getSelectedTopic();
     if (!topic || topic->responseText.empty()) return;
-
     glm::vec2 cp = getContentPosition();
     float pw = getPortraitW();
     float tx = cp.x + pw + 10.0f;
     float ty = getResponseY();
     float maxW = getContentSize().x - pw - 14.0f;
-
-    // Response area — slightly different shade
-    glm::vec4 bgCol(
-        PlaceholderAssets::Colors::PARCHMENT_LIGHT.x * 0.8f,
-        PlaceholderAssets::Colors::PARCHMENT_LIGHT.y * 0.78f,
-        PlaceholderAssets::Colors::PARCHMENT_LIGHT.z * 0.65f,
-        responseAlpha * 0.9f);
-    UIDrawHelper::drawColoredQuad(tx, ty - 4.0f, maxW, 70.0f, bgCol,
-        screenWidth, screenHeight);
-    UIDrawHelper::drawBorder(tx, ty - 4.0f, maxW, 70.0f, 1.5f,
-        glm::vec4(PlaceholderAssets::Colors::BROWN_ACCENT.x, PlaceholderAssets::Colors::BROWN_ACCENT.y, PlaceholderAssets::Colors::BROWN_ACCENT.z, responseAlpha),
-        screenWidth, screenHeight);
-
+    GLuint selTex = texCache.map[std::string("menus/") + kTexSelectionFull];
+    if (selTex != 0) {
+        UIDrawHelper::drawTexturedQuad(tx, ty - 4.0f, maxW, 70.0f, selTex,
+                                       glm::vec4(1.0f, 1.0f, 1.0f, responseAlpha * 0.85f),
+                                       screenWidth, screenHeight);
+    }
     textRenderer->renderText(topic->responseText, tx + 6.0f, ty,
-        glm::vec3(0.15f, 0.1f, 0.08f) * (1.0f / responseAlpha),
-        0.68f);
+        glm::vec3(0.15f, 0.1f, 0.08f), 0.68f);
 }
 
 void UIDialogue::renderTopicList() {
     if (!textRenderer || !currentDialogue) return;
     glm::vec2 cp = getContentPosition();
-    float pw = getPortraitW();
-    float tx = cp.x;
     float ty = getTopicListY();
     float rowW = getContentSize().x;
 
-    // Topics header
-    PlaceholderAssets::drawPanel(tx, ty, rowW, 18.0f,
-        PlaceholderAssets::Colors::BROWN_ACCENT,
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
-    textRenderer->renderText("Topics",
-        tx + 6.0f, ty + 2.0f,
-        glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT), 0.65f);
+    {
+        GLuint selTex = texCache.map[std::string("menus/") + kTexSelectionCut];
+        if (selTex != 0) {
+            UIDrawHelper::drawTexturedQuad(cp.x, ty, rowW, 18.0f, selTex,
+                                           glm::vec4(1.0f), screenWidth, screenHeight);
+        }
+        textRenderer->renderText("Topics", cp.x + 6.0f, ty + 2.0f,
+            glm::vec3(0.85f, 0.65f, 0.13f), 0.65f);
+    }
     ty += 20.0f;
 
-    int count = static_cast<int>(currentDialogue->topics.size());
+    int count = (int)currentDialogue->topics.size();
     int visEnd = std::min(scrollOffset + MAX_TOPICS, count);
 
     for (int i = scrollOffset; i < visEnd; ++i) {
-        const auto& topic = currentDialogue->topics[i];
+        const DialogueTopic& topic = currentDialogue->topics[i];
         bool sel = (i == currentDialogue->selectedTopicIndex);
+        float ry = ty + (float)(i - scrollOffset) * (TOPIC_ROW_H + TOPIC_ROW_GAP);
 
-        glm::vec3 bg = sel
-            ? glm::vec3(PlaceholderAssets::Colors::PARCHMENT_DARK)
-            : glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT) * 0.88f;
-        glm::vec3 border = sel
-            ? glm::vec3(PlaceholderAssets::Colors::GOLD_HIGHLIGHT)
-            : glm::vec3(PlaceholderAssets::Colors::BROWN_ACCENT) * 0.7f;
+        GLuint tex = texCache.map[std::string("menus/") +
+            (sel ? kTexSelectionFull : kTexSelectionCut)];
+        if (tex != 0) {
+            glm::vec4 tint = sel
+                ? glm::vec4(0.55f, 0.45f, 0.33f, 1.0f)
+                : glm::vec4(0.68f, 0.58f, 0.48f, 0.85f);
+            UIDrawHelper::drawTexturedQuad(cp.x, ry, rowW, TOPIC_ROW_H, tex, tint,
+                                           screenWidth, screenHeight);
+        }
 
-        float ry = ty + (i - scrollOffset) * (TOPIC_ROW_H + TOPIC_ROW_GAP);
-        PlaceholderAssets::drawPanel(tx, ry, rowW, TOPIC_ROW_H, bg, border);
-
-        // Quest topic indicator
         if (topic.isQuest) {
-            PlaceholderAssets::drawSolidRect(tx, ry, 5.0f, TOPIC_ROW_H,
-                glm::vec3(PlaceholderAssets::Colors::GOLD_HIGHLIGHT), 1.0f);
+            UIDrawHelper::drawColoredQuad(cp.x, ry, 5.0f, TOPIC_ROW_H,
+                                          glm::vec4(0.85f, 0.65f, 0.13f, 1.0f),
+                                          screenWidth, screenHeight);
         }
 
         textRenderer->renderText(topic.topicText,
-            tx + 10.0f, ry + 10.0f,
-            sel ? glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT)
-                : glm::vec3(0.1f, 0.1f, 0.1f),
+            cp.x + 52.0f, ry + 8.0f,
+            sel ? glm::vec3(0.85f, 0.65f, 0.13f) : glm::vec3(0.1f, 0.1f, 0.1f),
             0.75f);
     }
 
-    // Goodbye button at bottom
-    float byY = ty + MAX_TOPICS * (TOPIC_ROW_H + TOPIC_ROW_GAP) + 6.0f;
-    PlaceholderAssets::drawPanel(tx, byY, 120.0f, 30.0f,
-        PlaceholderAssets::Colors::BROWN_ACCENT,
-        PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
-    textRenderer->renderText("Goodbye",
-        tx + 6.0f, byY + 6.0f,
-        glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT), 0.75f);
+    float byY = ty + (float)MAX_TOPICS * (TOPIC_ROW_H + TOPIC_ROW_GAP) + 6.0f;
+    {
+        GLuint selTex = texCache.map[std::string("menus/") + kTexSelectionCut];
+        if (selTex != 0) {
+            UIDrawHelper::drawTexturedQuad(cp.x, byY, 120.0f, 30.0f, selTex,
+                                           glm::vec4(0.55f, 0.45f, 0.33f, 1.0f),
+                                           screenWidth, screenHeight);
+        }
+    }
+    textRenderer->renderText("Goodbye", cp.x + 6.0f, byY + 6.0f,
+        glm::vec3(0.85f, 0.85f, 0.85f), 0.75f);
 }
-
-// ─── hit testing ──────────────────────────────────────────────────────────────
 
 int UIDialogue::hitTestTopicRow(float x, float y) const {
     glm::vec2 cp = getContentPosition();
     float rowW = getContentSize().x;
-    float ty = getTopicListY() + 20.0f;  // below header
-
+    float ty = getTopicListY() + 20.0f;
     for (int i = 0; i < MAX_TOPICS; ++i) {
-        float ry = ty + i * (TOPIC_ROW_H + TOPIC_ROW_GAP);
+        float ry = ty + (float)i * (TOPIC_ROW_H + TOPIC_ROW_GAP);
         if (x >= cp.x && x <= cp.x + rowW && y >= ry && y <= ry + TOPIC_ROW_H)
             return i;
     }
     return -1;
 }
-
-// ─── layout helpers ───────────────────────────────────────────────────────────
 
 float UIDialogue::getPortraitW() const {
     return std::min(120.0f, getContentSize().x * 0.28f);
@@ -282,5 +275,5 @@ float UIDialogue::getResponseY() const {
 float UIDialogue::getTopicListY() const {
     glm::vec2 cp = getContentPosition();
     float pw = getPortraitW();
-    return cp.y + pw * 1.2f + 16.0f + 14.0f;  // below portrait + name
+    return cp.y + pw * 1.2f + 16.0f + 14.0f;
 }

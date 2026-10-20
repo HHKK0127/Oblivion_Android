@@ -5,20 +5,12 @@
 #include "../game/quest_manager.h"
 #include <memory>
 #include <vector>
+#include <unordered_map>
+#include <GLES3/gl3.h>
 
-/**
- * @brief Quest log UI (graphical version)
- *
- * Phase 10: Oblivion-style quest log. Displays active/completed quest list and
- * quest details (objectives/rewards) on parchment panel.
- */
 class UIQuestLog : public UIPanel {
 public:
-    enum class QuestFilter {
-        ALL = 0,
-        ACTIVE = 1,
-        COMPLETED = 2
-    };
+    enum class QuestFilter { ALL = 0, ACTIVE = 1, COMPLETED = 2 };
 
     explicit UIQuestLog(const std::string& title = "Quest Log");
     ~UIQuestLog() override = default;
@@ -36,7 +28,7 @@ private:
     QuestManager* questManager = nullptr;
     TextRenderer* textRenderer = nullptr;
 
-    int screenWidth  = 1080;
+    int screenWidth = 1080;
     int screenHeight = 1920;
 
     QuestFilter currentFilter = QuestFilter::ACTIVE;
@@ -45,9 +37,17 @@ private:
 
     std::vector<std::shared_ptr<Quest>> displayedQuests;
 
-    static constexpr float ROW_H   = 52.0f;
+    static constexpr float ROW_H = 52.0f;
     static constexpr float ROW_GAP = 4.0f;
-    static constexpr int   MAX_VISIBLE = 7;
+    static constexpr int MAX_VISIBLE = 7;
+
+    // p68: texture cache
+    std::unordered_map<std::string, GLuint> texCache;
+    GLuint loadTex(const std::string& partialPath);
+    GLuint loadMenuTex(const std::string& name);
+    GLuint tex(const std::string& key) const;
+    void preloadTextures();
+    void renderGenericBackground(float x, float y, float w, float h, float alpha = 1.0f);
 
     void renderFilterTabs();
     void renderQuestList();

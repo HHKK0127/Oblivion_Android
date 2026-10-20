@@ -405,17 +405,30 @@ void DebugMenu::executeButtonCommand(Button& btn) {
 
     if (!console) {
         LOGI_DEBUG("Console not available");
+        feedbackText = "Console not available";
+        feedbackTimer = 3.0f;
+        feedbackColor = glm::vec3(0.9f, 0.3f, 0.3f);  // Red
         return;
     }
-    console->executeCommand(btn.command);
     btn.pressTimer = 0.2f; // Visual feedback
 
-    // Show feedback in DebugMenu
-    feedbackText = "Executed: " + btn.command;
-    feedbackTimer = 3.0f;  // Show for 3 seconds
-    feedbackColor = glm::vec3(0.4f, 0.9f, 0.4f);  // Green
+    // The console reports whether the command name is registered; never claim
+    // success for an unregistered one (its own buffer echoes "Unknown
+    // command: ...").
+    const bool executed = console->executeCommand(btn.command);
 
-    LOGI_DEBUG("Executed: %s", btn.command.c_str());
+    // Show feedback in DebugMenu
+    if (executed) {
+        feedbackText = "Executed: " + btn.command;
+        feedbackTimer = 3.0f;  // Show for 3 seconds
+        feedbackColor = glm::vec3(0.4f, 0.9f, 0.4f);  // Green
+        LOGI_DEBUG("Executed: %s", btn.command.c_str());
+    } else {
+        feedbackText = "Unknown command: " + btn.command;
+        feedbackTimer = 3.0f;  // Show for 3 seconds
+        feedbackColor = glm::vec3(0.9f, 0.3f, 0.3f);  // Red
+        LOGI_DEBUG("Unknown command: %s", btn.command.c_str());
+    }
 }
 
 int DebugMenu::findTabIndex(const Button* btn) const {

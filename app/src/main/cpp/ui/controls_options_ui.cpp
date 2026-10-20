@@ -117,25 +117,29 @@ constexpr const char* kStrLook = "Look";
 constexpr const char* kStrDefaults = "Defaults";
 constexpr const char* kStrControls = "Controls";
 constexpr const char* kStrReturn = "Return";
+constexpr const char* kStrInstructions =
+    "Tap the button or key you want mapped to this action.";
 
 // Device names are code-set in the original (ControlsMenu.user5).
 const char* const kDeviceNames[] = {"Touch Screen", "Virtual Joystick", "Gamepad"};
 constexpr int DEVICE_COUNT = 3;
 
-// Row contents are generated in code by the original (controls_list_pane).
+// Row contents follow the original DAT_00b399d0 table order (§42.2) filtered by
+// FUN_0059b670: idx 0..0x10 (17 entries) + 0x1a/0x1b/0x1c (3 entries) = 20 rows.
+// Excluded: idx 0x11..0x19 (Quick1..Quicksave) and 0x1d (terminator).
 const char* const kRowLabels[] = {
-    "Move Forward:", "Move Backward:", "Move Left:", "Move Right:",
-    "Activate:", "Jump:", "Sneak:", "Run:",
-    "Ready/Sheathe Weapon:", "Cast Spell:", "Block:", "Attack:",
-    "Toggle POV:", "Wait:", "Journal:", "Quick Menu:",
-    "Take All:", "Toggle Always Run:",
+    "Back:", "Slider Left:", "Slider Right:", "Use:",
+    "Activate:", "Block:", "Cast:", "Ready Item:",
+    "Crouch/Sneak:", "Run:", "Toggle Always Run:", "Auto Move:",
+    "Jump:", "Toggle POV:", "Menu Mode:", "Rest Menu:",
+    "Quick Menu:", "Quick Load:", "Grab:", "Ready Weapon:",
 };
 const char* const kRowBindings[] = {
-    "Up", "Down", "Left", "Right",
-    "Center", "A", "L1", "L3",
-    "R1", "R2", "L2", "Y",
-    "R3", "Back", "X", "B",
-    "Select", "Start",
+    "Back", "L-Stick L", "L-Stick R", "A",
+    "Center", "L2", "R2", "R1",
+    "L1", "L3", "Start", "Up",
+    "A", "R3", "X", "Back",
+    "B", "Select", "R1", "Y",
 };
 constexpr int ROW_COUNT = static_cast<int>(sizeof(kRowLabels) / sizeof(kRowLabels[0]));
 
@@ -150,6 +154,32 @@ constexpr int KEY_BUTTON_Y = 100;
 constexpr int KEY_BUTTON_L1 = 102;
 constexpr int KEY_BUTTON_R1 = 103;
 constexpr int KEY_ENTER = 66;
+
+// Key name lookup for remapping display.
+const char* keyName(int keyCode) {
+    switch (keyCode) {
+        case 4: return "Back";
+        case 19: return "Up";
+        case 20: return "Down";
+        case 21: return "Left";
+        case 22: return "Right";
+        case 23: return "Center";
+        case 66: return "Enter";
+        case 67: return "A";
+        case 96: return "B";
+        case 97: return "X";
+        case 98: return "Y";
+        case 99: return "L1";
+        case 100: return "R1";
+        case 101: return "L2";
+        case 102: return "R2";
+        case 103: return "L3";
+        case 104: return "R3";
+        case 105: return "Select";
+        case 106: return "Start";
+        default: return "Key";
+    }
+}
 
 void drawIfLoaded(GLuint tex, float x, float y, float w, float h, int sw, int sh) {
     if (tex != 0) {
@@ -597,8 +627,11 @@ void ControlsOptionsUI::activateFocus() {
     if (page2_focus_ == 0) {
         adjustDevice(1);
     } else if (page2_focus_ <= row_count) {
-        // Binding rows open the assignment flow in the original; the Android
-        // port keeps the default binding, so only the selection moves.
+        // Enter remapping mode: wait for next key press
+        remapping_ = true;
+        remapping_row_ = page2_focus_ - 1;
+        LOGI("ControlsOptionsUI: remapping row %d (%s)", remapping_row_,
+             rows_[remapping_row_].label.c_str());
     } else if (page2_focus_ == row_count + 1) {
         applyDefaults();
     } else {
@@ -612,6 +645,13 @@ void ControlsOptionsUI::activateFocus() {
 bool ControlsOptionsUI::onTouchDown(float x, float y) {
     if (!visible_) {
         return false;
+    }
+
+    // Remapping in progress: any tap cancels it without changing binding
+    if (remapping_) {
+        remapping_ = false;
+        remapping_row_ = -1;
+        return true;
     }
 
     if (page_ == 1) {
@@ -743,6 +783,18 @@ bool ControlsOptionsUI::onTouchUp() {
 bool ControlsOptionsUI::onKeyPress(int key_code) {
     if (!visible_) {
         return false;
+    }
+
+    // Remapping mode: next key press assigns the binding
+    if (remapping_) {
+        if (remapping_row_ >= 0 && remapping_row_ < static_cast<int>(rows_.size())) {
+            rows_[remapping_row_].binding = keyName(key_code);
+            changed_ = true;
+            LOGI("ControlsOptionsUI: row %d remapped to key %d", remapping_row_, key_code);
+        }
+        remapping_ = false;
+        remapping_row_ = -1;
+        return true;
     }
 
     switch (key_code) {
@@ -986,29 +1038,40 @@ void ControlsOptionsUI::renderPage2() {
         drawIfLoaded(tex_scrollbar_marker_, marker.x, marker.y, marker.w, marker.h, sw, sh);
     }
 
-    // Bottom row: "Defaults" and "Return" -----------------------------------
+    // Bottom row: "Defaults" and "Return", or INSTRUCTIONS when remapping.
     {
         FontScope font(text_renderer_, LABEL_FONT);
-        const Rect defaults = longButtonRect(0);
-        const int defaults_index = static_cast<int>(rows_.size()) + 1;
-        const bool defaults_focused = (page2_focus_ == defaults_index);
-        drawIfLoaded(defaults_focused ? tex_button_on_ : tex_button_off_,
-                     defaults.x, defaults.y, defaults.w, defaults.h, sw, sh);
-        const float dtw = text_renderer_->getTextWidth(kStrDefaults, LABEL_SCALE);
-        const float dth = text_renderer_->getTextHeight(LABEL_SCALE);
-        text_renderer_->renderText(kStrDefaults, defaults.x + (defaults.w - dtw) * 0.5f,
-                                   defaults.y + (defaults.h - dth) * 0.5f,
-                                   defaults_focused ? kTextColor : kIdleText, LABEL_SCALE);
+        if (remapping_) {
+            // RE §40.3.4 / §50.5: show INSTRUCTIONS text when selecting a binding.
+            const float iw = text_renderer_->getTextWidth(kStrInstructions, LABEL_SCALE);
+            const float ih = text_renderer_->getTextHeight(LABEL_SCALE);
+            const float ix = main.x + (main.w - iw) * 0.5f;
+            const Rect defaults = longButtonRect(0);
+            text_renderer_->renderText(kStrInstructions, ix,
+                                       defaults.y + (defaults.h - ih) * 0.5f,
+                                       kTextColor, LABEL_SCALE);
+        } else {
+            const Rect defaults = longButtonRect(0);
+            const int defaults_index = static_cast<int>(rows_.size()) + 1;
+            const bool defaults_focused = (page2_focus_ == defaults_index);
+            drawIfLoaded(defaults_focused ? tex_button_on_ : tex_button_off_,
+                         defaults.x, defaults.y, defaults.w, defaults.h, sw, sh);
+            const float dtw = text_renderer_->getTextWidth(kStrDefaults, LABEL_SCALE);
+            const float dth = text_renderer_->getTextHeight(LABEL_SCALE);
+            text_renderer_->renderText(kStrDefaults, defaults.x + (defaults.w - dtw) * 0.5f,
+                                       defaults.y + (defaults.h - dth) * 0.5f,
+                                       defaults_focused ? kTextColor : kIdleText, LABEL_SCALE);
 
-        const Rect ret = longButtonRect(1);
-        const bool ret_focused = (page2_focus_ == static_cast<int>(rows_.size()) + 2);
-        drawIfLoaded(ret_focused ? tex_button_on_ : tex_button_off_,
-                     ret.x, ret.y, ret.w, ret.h, sw, sh);
-        const float rtw = text_renderer_->getTextWidth(kStrReturn, LABEL_SCALE);
-        const float rth = text_renderer_->getTextHeight(LABEL_SCALE);
-        text_renderer_->renderText(kStrReturn, ret.x + (ret.w - rtw) * 0.5f,
-                                   ret.y + (ret.h - rth) * 0.5f,
-                                   ret_focused ? kTextColor : kIdleText, LABEL_SCALE);
+            const Rect ret = longButtonRect(1);
+            const bool ret_focused = (page2_focus_ == static_cast<int>(rows_.size()) + 2);
+            drawIfLoaded(ret_focused ? tex_button_on_ : tex_button_off_,
+                         ret.x, ret.y, ret.w, ret.h, sw, sh);
+            const float rtw = text_renderer_->getTextWidth(kStrReturn, LABEL_SCALE);
+            const float rth = text_renderer_->getTextHeight(LABEL_SCALE);
+            text_renderer_->renderText(kStrReturn, ret.x + (ret.w - rtw) * 0.5f,
+                                       ret.y + (ret.h - rth) * 0.5f,
+                                       ret_focused ? kTextColor : kIdleText, LABEL_SCALE);
+        }
     }
 }
 

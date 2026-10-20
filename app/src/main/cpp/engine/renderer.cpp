@@ -196,6 +196,19 @@ void Renderer::resize(unsigned int width, unsigned int height) {
         bookReaderUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
     }
 
+    if (containerMenuUI) {
+        containerMenuUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    }
+    if (sleepWaitMenuUI) {
+        sleepWaitMenuUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    }
+    if (levelUpMenuUI) {
+        levelUpMenuUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    }
+    if (quickKeysMenuUI) {
+        quickKeysMenuUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    }
+
     // Update RetroFilter resolution
     if (retroFilter) {
         retroFilter->setNativeResolution(screenWidth, screenHeight);
@@ -738,6 +751,90 @@ bool Renderer::initGameSystems() {
         LOGI("UIBookReader initialized successfully");
     }
 
+    // Initialize Container Menu (Phase 9 / p68)
+    LOGI("Creating ContainerMenu...");
+    containerMenuUI = std::make_unique<UIContainerMenu>();
+    if (!containerMenuUI->initialize(textRenderer.get())) {
+        LOGE("Failed to initialize UIContainerMenu");
+    } else {
+        containerMenuUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        LOGI("UIContainerMenu initialized successfully");
+    }
+
+    // Initialize Sleep/Wait Menu (Phase 9)
+    LOGI("Creating SleepWaitMenu...");
+    sleepWaitMenuUI = std::make_unique<UISleepWaitMenu>();
+    if (!sleepWaitMenuUI->initialize(textRenderer.get())) {
+        LOGE("Failed to initialize UISleepWaitMenu");
+    } else {
+        sleepWaitMenuUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        LOGI("UISleepWaitMenu initialized successfully");
+    }
+
+    // Initialize Level Up Menu (Phase 9)
+    LOGI("Creating LevelUpMenu...");
+    levelUpMenuUI = std::make_unique<UILevelUpMenu>();
+    if (!levelUpMenuUI->initialize(textRenderer.get())) {
+        LOGE("Failed to initialize UILevelUpMenu");
+    } else {
+        levelUpMenuUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        LOGI("UILevelUpMenu initialized successfully");
+    }
+
+    // Initialize Quick Keys Menu (Phase 9)
+    LOGI("Creating QuickKeysMenu...");
+    quickKeysMenuUI = std::make_unique<UIQuickKeysMenu>();
+    if (!quickKeysMenuUI->initialize(textRenderer.get())) {
+        LOGE("Failed to initialize UIQuickKeysMenu");
+    } else {
+        quickKeysMenuUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        LOGI("UIQuickKeysMenu initialized successfully");
+    }
+
+    // Initialize Fast Travel Controller (Phase 9)
+    LOGI("Creating FastTravelController...");
+    fastTravelController = std::make_unique<FastTravelController>();
+    LOGI("FastTravelController created");
+
+    // Initialize Character Creation UI (wired after title screen init)
+    LOGI("Creating CharacterCreation...");
+    characterCreationUI = std::make_unique<UICharacterCreation>();
+    if (!characterCreationUI->initialize(textRenderer.get())) {
+        LOGE("Failed to initialize UICharacterCreation");
+    } else {
+        characterCreationUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        characterCreationUI->setESMManager(&assetManager->getEsmManager());
+        characterCreationUI->setOnConfirm([this](const CharacterStatus& character) {
+            showCharacterCreation = false;
+            // Rename player, apply stats
+            if (playerController && playerController->getPlayer()) {
+                Player* player = playerController->getPlayer().get();
+                player->name = "Adventurer"; // character creation passes name via status
+                player->maxHealth = character.maxHealth;
+                player->health = character.currentHealth;
+                player->maxMagicka = character.maxMana;
+                player->magicka = character.currentMana;
+                player->maxStamina = character.maxStamina;
+                player->stamina = character.stamina;
+                player->playerLevel = 1;
+                // Apply attributes
+                for (const auto& [key, val] : character.attributes) {
+                    if (key == "Strength") player->attributes.Strength = static_cast<int>(val);
+                    else if (key == "Intelligence") player->attributes.Intelligence = static_cast<int>(val);
+                    else if (key == "Willpower") player->attributes.Willpower = static_cast<int>(val);
+                    else if (key == "Agility") player->attributes.Agility = static_cast<int>(val);
+                    else if (key == "Speed") player->attributes.Speed = static_cast<int>(val);
+                    else if (key == "Endurance") player->attributes.Endurance = static_cast<int>(val);
+                    else if (key == "Personality") player->attributes.Personality = static_cast<int>(val);
+                    else if (key == "Luck") player->attributes.Luck = static_cast<int>(val);
+                }
+            }
+            // Start game
+            startGame();
+        });
+        LOGI("UICharacterCreation initialized successfully");
+    }
+
     // Initialize Debug HUD
     LOGI("Creating DebugHUD...");
     debugHUD = std::make_unique<DebugHUD>();
@@ -996,14 +1093,21 @@ bool Renderer::initGameSystems() {
         (void)state;
         // AI state not directly settable
     };
-    refs.setNpcAggression = [](uint32_t id, float val) {
-        (void)id;
-        (void)val;
-        // Aggression not directly settable
+    refs.setNpcAggression = [this](uint32_t id, float val) {
+        if (!npcManager) return;
+        auto npc = npcManager->getNPC(id);
+        if (!npc) return;
+        // Aggression >= 50 marks the NPC hostile to the player; the combat
+        // loop in CombatManager::update() then runs its attacks (slice: no
+        // approach yet, ESM AIDT wiring is future work).
+        npc->hostileToPlayer = val >= 50.0f;
+        LOGI("NPC %u hostileToPlayer=%d (aggression %.0f)",
+             id, npc->hostileToPlayer ? 1 : 0, val);
     };
-    refs.calmNpc = [](uint32_t id) {
-        (void)id;
-        // Calm not directly settable
+    refs.calmNpc = [this](uint32_t id) {
+        if (!npcManager) return;
+        auto npc = npcManager->getNPC(id);
+        if (npc) npc->hostileToPlayer = false;
     };
     refs.listNpcs = [this]() -> std::string {
         if (npcManager) return "NPCs: " + std::to_string(npcManager->getNPCCount());
@@ -2094,6 +2198,9 @@ bool Renderer::initGameSystems() {
         return false;
     }
     LOGI("PlayerController initialized successfully");
+    // CombatManager needs the Player for the NPC -> player damage path; it is
+    // created inside the PlayerController constructor above.
+    combatManager->setPlayer(playerController->getPlayer().get());
 
     // Phase 31: Initialize WorldLoader
     LOGI("Creating WorldLoader...");
@@ -3954,9 +4061,12 @@ bool Renderer::openDialogueWithNpc(uint32_t npcFormID) {
 
             // HUDSubtitleMenu: the spoken line is mirrored as a subtitle. The original
             // emits this from the response-line path (0x0057ACC0), gated by
-            // bGeneralSubtitles; the port emits it on topic selection, which is the
-            // point where the same line is played here.
-            if (subtitles && subtitlesEnabled_ && !topic->responseText.empty()) {
+            // bGeneralSubtitles (emission, RE_EXE_REPORT 47.4); the dialogue/menu
+            // element presence is gated by bDialogueSubtitles (47.3). The port
+            // emits it on topic selection, which is the point where the same line
+            // is played here, so both flags gate the single path.
+            if (subtitles && subtitlesEnabled_ && dialogueSubtitlesEnabled_ &&
+                !topic->responseText.empty()) {
                 subtitles->show(topic->responseText);
             }
 
@@ -4497,17 +4607,11 @@ void Renderer::render(float deltaTime) {
 
         if (titleScreen->isGameStarted()) {
             showTitleScreen = false;
-            LOGI("Game started! Setting buttons visible. joystick=%p attack=%p block=%p castSpell=%p",
-                 joystick.get(), attackButton.get(), blockButton.get(), castSpellButton.get());
-            // Show combat buttons when game starts
-            if (joystick) { joystick->setVisible(true); LOGI("Joystick set visible: %d", joystick->isVisible() ? 1 : 0); }
-            if (attackButton) { attackButton->setVisible(true); LOGI("ATK button set visible: %d", attackButton->isVisible() ? 1 : 0); }
-            if (blockButton) { blockButton->setVisible(true); LOGI("BLK button set visible: %d", blockButton->isVisible() ? 1 : 0); }
-            if (castSpellButton) { castSpellButton->setVisible(true); LOGI("MAG button set visible: %d", castSpellButton->isVisible() ? 1 : 0); }
-            for (auto& btn : quickSlotButtons) {
-                if (btn) btn->setVisible(true);
+            showCharacterCreation = true;
+            if (characterCreationUI) {
+                characterCreationUI->open();
             }
-            LOGI("Title screen closed, starting main game");
+            LOGI("Game started! Opening character creation.");
         }
         // Render DebugMenu/GameConsole overlays on top of title screen too
         if (debugMenu) {
@@ -4552,9 +4656,16 @@ void Renderer::render(float deltaTime) {
             uiPauseMenu->setFadeAlpha(menuFade.getAlpha(kPauseMenuFadeKey, true));
             uiPauseMenu->render();
         }
-        if (uiMessageBox && uiMessageBox->isVisible()) {
+if (uiMessageBox && uiMessageBox->isVisible()) {
             uiMessageBox->render();
         }
+
+        // Character creation overlay on top of title screen
+        if (showCharacterCreation && characterCreationUI && characterCreationUI->isVisible()) {
+            characterCreationUI->update(deltaTime);
+            characterCreationUI->render();
+        }
+
         // Skip frame rate control for quick return
         if (performanceMonitor) {
             performanceMonitor->endFrame();
@@ -5079,6 +5190,25 @@ void Renderer::render(float deltaTime) {
         if (bookReaderUI && bookReaderUI->isVisible()) {
             bookReaderUI->update(deltaTime);
             bookReaderUI->render();
+        }
+        if (containerMenuUI && containerMenuUI->isVisible()) {
+            containerMenuUI->update(deltaTime);
+            containerMenuUI->render();
+        }
+        if (sleepWaitMenuUI && sleepWaitMenuUI->isVisible()) {
+            sleepWaitMenuUI->update(deltaTime);
+            sleepWaitMenuUI->render();
+        }
+        if (levelUpMenuUI && levelUpMenuUI->isVisible()) {
+            levelUpMenuUI->update(deltaTime);
+            levelUpMenuUI->render();
+        }
+        if (quickKeysMenuUI && quickKeysMenuUI->isVisible()) {
+            quickKeysMenuUI->update(deltaTime);
+            quickKeysMenuUI->render();
+        }
+        if (fastTravelController && fastTravelController->isTravelInProgress()) {
+            fastTravelController->update(deltaTime);
         }
     }
 
@@ -7341,6 +7471,40 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
         return;
     }
 
+    if (characterCreationUI && characterCreationUI->isVisible()) {
+        if (action == 0 || action == 5) {
+            characterCreationUI->onTouchDown(x, y, pointerId);
+        }
+        return;
+    }
+
+    // Modal panels: ContainerMenu, SleepWaitMenu, LevelUpMenu, QuickKeysMenu,
+    // FastTravel, Dialogue — ordered by general-to-specific.
+    if (containerMenuUI && containerMenuUI->isVisible()) {
+        if (action == 0 || action == 5) {
+            containerMenuUI->onTouchEvent(x, y);
+        }
+        return;
+    }
+    if (sleepWaitMenuUI && sleepWaitMenuUI->isVisible()) {
+        if (action == 0 || action == 5) {
+            sleepWaitMenuUI->onTouchEvent(x, y);
+        }
+        return;
+    }
+    if (levelUpMenuUI && levelUpMenuUI->isVisible()) {
+        if (action == 0 || action == 5) {
+            levelUpMenuUI->onTouchEvent(x, y);
+        }
+        return;
+    }
+    if (quickKeysMenuUI && quickKeysMenuUI->isVisible()) {
+        if (action == 0 || action == 5) {
+            quickKeysMenuUI->onTouchEvent(x, y);
+        }
+        return;
+    }
+
     // Dialogue is modal while open. The panel is not part of UISystem, so its
     // touches have to be routed here or topic rows and the close button would be
     // unreachable.
@@ -7869,6 +8033,31 @@ void Renderer::startGame() {
     for (auto& btn : quickSlotButtons) {
         if (btn) btn->setVisible(true);
     }
+
+    // Starter gear
+    if (inventoryManager) {
+        inventoryManager->playerAddItem(Item(1, "Iron Sword", ItemType::WEAPON, 12.5f, 100, 1), 1);
+        inventoryManager->playerAddItem(Item(201, "Health Potion", ItemType::POTION, 0.5f, 20, 99), 3);
+        inventoryManager->playerAddItem(Item(401, "Gold Coin", ItemType::MISC, 0.01f, 1, 999), 100);
+    }
+
+    // Starter quest: Welcome to Cyrodiil
+    if (questManager) {
+        uint32_t qid = questManager->createQuest(0, "Welcome to Cyrodiil",
+            "You have escaped the Imperial Prison. Find your way to the city.");
+        questManager->addObjective(qid, "Explore the surrounding area", 1);
+        questManager->acceptQuest(qid);
+    }
+
+    // Welcome message
+    if (uiMessageBox) {
+        uiMessageBox->open(
+            "You awaken in the wilderness near the Imperial City.\n\n"
+            "A new adventure awaits. Use the joystick to move, "
+            "and the attack button to fight.",
+            {"OK"}, [](int) {});
+    }
+
     LOGI("startGame: Game world should now be visible");
 }
 
@@ -7968,18 +8157,20 @@ void Renderer::handleOptionsCategoryRequest(OptionsUI::Category category) {
 void Renderer::applyGameplaySettings(const GameplaySettings& settings) {
     crosshairEnabled = settings.crosshair;
     subtitlesEnabled_ = settings.generalSubtitles;
+    dialogueSubtitlesEnabled_ = settings.dialogueSubtitles;
     Player::setDifficultyScale(difficultyDamageMultiplier(settings.difficulty));
     if (crosshair) {
         // bDisableDynamicCrosshair: inverted into the consumer's enable flag.
         crosshair->setDynamicEnabled(!settings.disableDynamicCrosshair);
     }
-    // bDialogueSubtitles (menu UI element visibility) and the three autosave
-    // toggles still have no consumer: the rest/wait/travel actions are not
-    // implemented. The values are persisted so they take effect as soon as
-    // those features exist.
-    LOGI("Gameplay settings applied: difficulty=%d (x%.3f) crosshair=%d subtitles=%d",
+    // Of the autosave toggles only bSaveOnTravel / bSaveOnInteriorExteriorSwitch
+    // have a consumer (the DoorManager cell-transition callback); bSaveOnRest /
+    // bSaveOnWait are consumed by the SleepWaitMenu update handler in the
+    // original and stay unused until the rest/wait flow exists.
+    LOGI("Gameplay settings applied: difficulty=%d (x%.3f) crosshair=%d subtitles=%d/%d",
          settings.difficulty, Player::getDifficultyScale(),
-         settings.crosshair ? 1 : 0, settings.generalSubtitles ? 1 : 0);
+         settings.crosshair ? 1 : 0, settings.generalSubtitles ? 1 : 0,
+         settings.dialogueSubtitles ? 1 : 0);
 }
 
 void Renderer::pumpAudioOptions() {
@@ -8415,6 +8606,26 @@ bool Renderer::handleBackKey() {
         if (mapUI && mapUI->isVisible()) {
             mapUI->setVisible(false);
             LOGI("handleBackKey: Closed MapUI");
+            return true;
+        }
+        if (containerMenuUI && containerMenuUI->isVisible()) {
+            containerMenuUI->close();
+            LOGI("handleBackKey: Closed ContainerMenu");
+            return true;
+        }
+        if (sleepWaitMenuUI && sleepWaitMenuUI->isVisible()) {
+            sleepWaitMenuUI->handleBack();
+            LOGI("handleBackKey: Closed SleepWaitMenu");
+            return true;
+        }
+        if (levelUpMenuUI && levelUpMenuUI->isVisible()) {
+            levelUpMenuUI->close();
+            LOGI("handleBackKey: Closed LevelUpMenu");
+            return true;
+        }
+        if (quickKeysMenuUI && quickKeysMenuUI->isVisible()) {
+            quickKeysMenuUI->handleBack();
+            LOGI("handleBackKey: Closed QuickKeysMenu");
             return true;
         }
         if (questUI && questUI->getVisibility()) {

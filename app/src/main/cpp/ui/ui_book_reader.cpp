@@ -120,6 +120,7 @@ void UIBookReader::openBook(const std::string& title, const std::string& body) {
     currentPage = 0;
     paginate(stripMarkup(body));
     setVisible(true);
+    if (textRenderer) textRenderer->setBookStyle(true);
 }
 
 void UIBookReader::closeBook() {
@@ -127,6 +128,7 @@ void UIBookReader::closeBook() {
     pages.clear();
     bookTitle.clear();
     currentPage = 0;
+    if (textRenderer) textRenderer->setBookStyle(false);
     if (onClose) onClose();
 }
 

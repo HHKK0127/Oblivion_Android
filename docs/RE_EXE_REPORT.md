@@ -10499,3 +10499,157 @@ SetVertexShader, SetPixelShader, SetStreamSource, SetIndices, SetVertexDecl, **D
 
 ### §65.8 証跡 (すべて `tmp\re\`)
 - md: `s81_draw_wrapper.md` (343行) / `s81_havok_context_pending.md` (651行) / `s81_stream_audio_crt_io.md` (305行)
+
+## §66 魔法パイプライン深掘り 統合（2026-10-20）— Wave 1 (M1-M8) + Wave 2 (M9-M15)
+
+### §66.0 概要
+
+魔法システム全体を EXE 逆アセンブリで深掘りし、パイプライン全体を特定した。§57.2 (Wave 4a) で部分完了だった魔法解析を Wave 1 (M1-M8) + Wave 2 (M9-M15) で完結。
+
+- Wave 1 (2026-10-19): M1-M8 完了 — パイプライン骨格・耐性/吸収/反射・詠唱・ActiveEffect・エンチャント・飛翔体
+- Wave 2 (2026-10-20): M9-M15 完了 — ハンドラ実体・適用本体・コスト・配送・Poison・AI選択・残小物
+
+証跡: `tmp\re\s90`〜`s98_magic_m*.md` (9ファイル)
+
+### §66.1 パイプライン全体（確定）
+
+```
+Actor::Cast (vt+0x2D4=0x5E46C0)
+  → コストチェック (0x4849C0, 固定値、スキル割引なし)
+  → MagicCaster::deliverEffect (0x69BEC0)
+      → vt+0x1c() bool で分岐:
+          false → ターゲット直接解決 (touch/self)
+          true  → 0x69AF30 飛翔体生成 (bolt/ball/spray/fog)
+  → MagicTarget::dispatch (0x6A2CF0)
+      → skip チェック (arg2.vt+0x20, SEFF vt+0x1c)
+      → Reflect (vt+0x28, 0x5E5520)
+      → Absorb (vt+0x24, 0x5E54A0)
+      → MagicTarget::applyEffect (0x6A27F0)
+          → 耐性 factor (vt+0x20, 0x5E5240)
+          → ActiveEffect 生成 (magicSource.vt+0x04)
+          → 0x68E170 で magnitude/duration スケール
+          → vt+0x08 リスト挿入 → vt+0x10 アクティブ化
+```
+
+### §66.2 耐性/吸収/反射（M1/M4, s90, s91）
+
+| 項目 | VA | 結果 |
+|---|---|---|
+| Resist factor | 0x5E5240 | `(1−F1/100)×(1−F2/100)`. F1=ResistMagic(64)/ResistPoison(67), F2=MGEF+0x68 |
+| Absorb | 0x5E54A0 | AV52(SpellAbsorbChance) d100. 成功→Magicka回復 (vt+0x2a4 push 9) |
+| Reflect | 0x5E5520 | AV53(SpellReflectChance) d100. 成功→攻撃者の吸収経由 |
+| Armor bypass | 0x68D9F0 | byte[formType+4] ∈ {0x14=ARMO, 0x16=CLOT} → 耐性無効 |
+
+AV名表 @0xB0A1A8 (73エントリ)。AV64=ResistMagic, AV67=ResistPoison 確定。
+
+### §66.3 MGEF ハンドラ表（M3/M9, s91, s92）
+
+登録テーブル @0x9FEA90 から 23 エントリ + 線形 if-chain で 9 コード (計 32)。
+
+主要ハンドラ VA (vt+0x38 = per-frame tick):
+
+| コード | ハンドラ VA | 分類 |
+|---|---|---|
+| CALM | 0x691B90 | A群 AI心理 |
+| FRNZ | 0x693CC0 | A群 AI心理 |
+| TURN | 0x6A80D0 | A群 AI心理 |
+| INVI | 0x6A4E30 | B群 状態フラグ |
+| PARA | 0x6A6440 | B群 状態フラグ |
+| LOCK | 0x6A58D0 | C群 対象操作 |
+| OPEN | 0x6A6240 | C群 対象操作 |
+| DIAR | 0x6A4620 | C群 対象操作 |
+| STRP | 0x6A7A80 | C群 対象操作 |
+| DTCT | 0x6A4860 | D群 物理環境 |
+| DARK | 0x6A4400 | D群 物理環境 |
+| SUDG | 0x6A7C00 | D群 物理環境 |
+| TELE | 0x6A7E40 | D群 物理環境 |
+| REAN | 0x6A6DC0 | D群 物理環境 |
+
+共通ヘルパ: getInnerCaster 0x6A1D70 / getTargetActor 0x699050 / baseTick 0x6A86F0。
+
+### §66.4 適用本体（M10, s93）
+
+| 項目 | VA | 結果 |
+|---|---|---|
+| applyEffect | 0x6A27F0 | factor→canApply→armor path→factory→scale→list insert→activate |
+| removeDuplicates | 0x6A1F70 | [+0x11]==0 && [+0x08]==magicItem && [+0x24]==source && [+0x30]==form && MGEF match |
+| markRemoved | 0x68EA10 | [+0x11]=1, arg≠0 → update(0.0) |
+| MagicItem type | vt+0x18 | 1=Spell, 4=ScriptEffect, 5=Poison, 7=Alchemy, 8=Ingredient |
+
+MagicTarget リスト: vt+0x08 → node {+0x00=ActiveEffect*, +0x04=next}。
+
+### §66.5 詠唱コスト（M11, s94）
+
+**Oblivion の呪文コストは固定値。実行時の学校スキル割引なし。**
+
+| 項目 | VA | 結果 |
+|---|---|---|
+| getCost | 0x4849C0 | word[TESSpellItem+8] を float 化。bit slot 0x2E で上書き可 |
+| 減算 | 0x488AA0 | cost ≤ magicka → 0x41EE90 で slot 0x2E 書込 |
+| bit slot | 0x41E210 | [ecx+8..+0x13] (12B=96bit) テスト + [+0xc] アクセス |
+
+### §66.6 配送トリガ（M12, s95）
+
+| 項目 | VA | 結果 |
+|---|---|---|
+| deliverEffect | 0x69BEC0 | vt+0x1c() bool で touch/self vs projectile 分岐 |
+| 飛翔体生成 | 0x69AF30 | [esi+8]=4 (発射中)、vt+0x20 で target 解決 |
+| 状態値 | [esi+8] | 3=準備中 / 4=発射中 / 7=完了 |
+
+### §66.7 Poison on-strike（M13, s96）
+
+| 項目 | VA | 結果 |
+|---|---|---|
+| on-strike 効果適用 | 0x69BA90 | [weapon+0xc] effect list、[edi+0x10]==2 が on-strike |
+| ActiveEffect 生成 | 0x69AC50 | effect list 走査 → 0x68E170 で magnitude スケール |
+
+### §66.8 AI 呪文選択（M14, s97）
+
+| 項目 | VA | 結果 |
+|---|---|---|
+| スコア計算 | 0x5E5690 | AI 行動フラグ (bit 0x800/0x2000/0x400) → 攻撃/防衛/中立 |
+| ランク合成 | 0x51A9B0 | `(type<<4 + school)<<8 + cost` |
+| 配送実行 | 0x60B7C0 | [ebx+0x78]=caster, [ebx+0x7c]=target, [ebx+0x80]=alt |
+
+### §66.9 残小物（M15, s98）
+
+| 項目 | 結果 |
+|---|---|
+| 0x68E170 flags 0x180 | scale-invariant (magnitude 不変) [確定] |
+| dispatcher arg2.vt+0x20() | "already applied / invalid source" チェック [確定] |
+| SEFF | dispatcher 内 "SEFF" コード検出 → arg2.vt+0x1c() skip |
+| MGEF+0x68 ESM 書込元 | 未特定 (ESM 仕様書参照で実装可) |
+
+### §66.10 Android 移植向け確定値
+
+```cpp
+// 1. Spell cost = fixed (no runtime school discount)
+float getSpellCost(const SpellItem& s) { return static_cast<float>(s.baseCost); }
+
+// 2. Resist factor
+float resistFactor = (1.0f - f1/100.0f) * (1.0f - f2/100.0f);
+
+// 3. Absorb/Reflect
+if (d100() < target.getAV(SPELL_ABSORB_CHANCE)) absorbMana();
+if (d100() < target.getAV(SPELL_REFLECT_CHANCE)) reflect();
+
+// 4. Dispatcher skip
+if (arg2.vt+0x20()) return;  // already applied / invalid
+
+// 5. Magnitude scaling
+if ((mgef.flags & 0x180) == 0x180) return;  // scale-invariant
+if (mgef.flags & 0x100) duration *= factor; else magnitude *= factor;
+```
+
+### §66.11 残課題
+
+1. Alchemy crafting (INGR→ALCH) 関数 — メニュー UI 内、未特定
+2. Enchanting creation 関数 — メニュー UI 内、未特定
+3. SEFF スクリプト VM 実行経路 (0x6A83D0 以降)
+4. MGEF+0x68 の ESM パーサ書き込み箇所
+5. AI スコア最終評価 0x51AE20 の float 計算式
+
+### §66.12 証跡 (すべて `tmp\re\`)
+
+- md: `s90_magic_m1_m2_pipeline.md` / `s91_magic_m3_mgef_dispatch.md` / `s92_magic_m9_handlers.md` / `s93_magic_m10_apply.md` / `s94_magic_m11_cost.md` / `s95_magic_m12_delivery.md` / `s96_magic_m13_alchemy_poison.md` / `s97_magic_m14_ai_spell.md` / `s98_magic_m15_misc.md`
+- TODO: `TODO_magic.md` (正本) / `TODO_re49.md` T節 (同期)

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-18T12:24:58Z",
+  "lastUpdated": "2026-10-20T11:00:00Z",
   "entries": [
     {
       "timestamp": "2026-09-16T14:58:00Z",
@@ -8457,12 +8457,304 @@
         "unverified"
       ],
       "compressed": false
+    },
+    {
+      "id": "opencode-b-player-damage-intake-death-path-20261018",
+      "timestamp": "2026-10-18T13:21:26Z",
+      "category": "development",
+      "priority": "high",
+      "content": "Batch 2026-10-18 (session 9427ac74): two Copilot todos implemented, UNVERIFIED per user '検証はステイでいいので作成を続けて' (no host tests / gradle / commit / push until instructed). (1) player-damage-intake: CombatManager::npcAttackPlayer(attacker) builds defender CharacterStatus from real Player (armorRating forced 0 - EquipmentEffectSystem init commented out renderer.cpp:2423), calculateDamage -> Player::takeDamage (difficulty received f applied inside, RE 51.13). CombatManager::update runs hostile attack loop: NPC::hostileToPlayer flag + playerAttackTimer cooldown DAMAGE_CALCULATION_COOLDOWN=1.0s, range 3m flat, no approach/AIDT yet (future work). Trigger: refs.setNpcAggression (val>=50 -> hostile, renderer.cpp:999 lambda [this]) / refs.calmNpc. combatManager->setPlayer(playerController->getPlayer().get()) after PlayerController init (renderer.cpp:2101+). Player entity id for events = 1 (ATK button convention). (2) death-handling-path (RE 41.2.4): CharacterStatus::takeDamage now returns bool died; clamp rule <1.0 -> 0.0 exactly (was <0). NPC::takeDamage(amount, hitDirection={}) -> onDeath central pipeline (deadState gate = vt+0xf8, triggerDeath anim, aiState IDLE, exitCombat, knockback dir from vt+0x118/0x120, player excluded param_1 != DAT_00b333c4, no reflect path in port yet). NPC::update slides corpse along knockbackDirection (KNOCKBACK_DURATION=0.35s, KNOCKBACK_SPEED=6.0, linear decay) - cell.cpp:100 updates dead NPCs. NPC::heal refuses when deadState (no casual reanimation). CombatManager::applyDamage(target, damage, hitDirection={}) threads attacker->defender horizontal dir from combat loop; hit reaction only when still alive. Player::takeDamage clamp <1.0 -> 0.0 + LOGW one-shot on transition (player.cpp, added android log macros; NO player death screen yet - separate future feature). phase45/48 test expectations re-checked by reading: compatible. Pending: verification + commit for renderer.cpp/combat_manager.h/.cpp/npc.h/.cpp/player.cpp; ahead 10 push also waits. Next candidates: complex-scene-throttle (0x115D latch consumer RE 54.2), menu-fade-trait-impl (RE 48), input-suppression-latches (RE 50.5).",
+      "tags": [
+        "combat",
+        "npc-damage",
+        "death-handling",
+        "difficulty-f",
+        "re-41",
+        "unverified",
+        "todaysession"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "opencode-b-footstep-playback-path-20261018",
+      "timestamp": "2026-10-18T14:40:00Z",
+      "category": "development",
+      "priority": "medium",
+      "content": "Batch 2026-10-18 (session 9427ac74): footstep-playback-path implemented, UNVERIFIED per user '検証はステイでいいので作成を続けて'. AudioManager::playFootstep(key, position) (audio_manager.h:316 / audio_manager.cpp:1076): soundDefs lookup -> fallback 'footstep_default' -> playSEOnChannel(clipId, position, def.volume, footVolume). footVolume initial 1.0 -> 0.3 (INI footstep channel default; RE 60.1 lists 0.8 for Foot channel - task text took precedence). setFootVolume rewritten to previous-value compare pattern (same as setSEVolume). sound_definitions.json + footstep_default (fst/wood/fst_wood_01, vol .6) / footstep_metal (fst/metal/fst_metal_01, .7) / footstep_wood (fst/wood/fst_wood_02, .6), 3d:true. PlayerController: updateFootsteps(float) + footstepDistance + footstepSurface=MaterialType::DIRT (TODO terrain LTEX), called from update() after updateAnimState (player_controller.cpp:123); grounded WALK/RUN only, stride FOOTSTEP_STRIDE_WALK=1.5 / RUN=2.4 scaled by speed; PhysicsMaterialDatabase resolves material -> key, DIRT->'footstep_dirt' missing in JSON -> falls back to wood. Audio sources on disk: only metal(5)/wood(2)/dodge(2) extracted from BSA; other surfaces pending. NOTE: this memory entry was lost once to a parallel-session overwrite (file reported 582 -> now 594 entries without it) - re-appended here."
+    },
+    {
+      "id": "opencode-b-fatigue-av-implementation-20261018",
+      "timestamp": "2026-10-18T15:30:00Z",
+      "category": "development",
+      "priority": "high",
+      "content": "Batch 2026-10-18 (session 9427ac74): fatigue-av-implementation implemented, UNVERIFIED per user '検証はステイでいいので作成を続けて' (no host tests / gradle / commit / push until instructed). New game/fatigue_system.h (header-only, namespace oblivion::fatigue): 16 GMST defaults as inline constexpr (kFatigueBase 1.25 / kFatigueMult 0.5 / kReturnBase 10 / kAttackWeaponBase 8 + Mult .1 / kPowerAttackPenalty 5 / kBlockSkillBase 5 + Mult -.04 / kBlockMult 1 / kCastBase 15 / kRunBase 8 / kJumpBase 4 + Mult 4 ...) each annotated with its EXE address; functions ratio (0x5F4880), damageMult (0x547F00), meleeDamageMult (exact-1.0 quirk -> 1.0), recoverPerSecond (0x5F2720 flat 10/s), attackCost (0x547560), blockCost (0x547590), castCost (0x548DA0 flat 15), runAthleticsBand + runCostPerSecond (0x5FAAE0, bands 1.0/.75/.5/.25/0 at 0-19/20-39/40-59/60-79/80+), jumpCost (0x671620 = 4+4x), clampValue. Wiring: Player::updateStamina now run-drains runCostPerSecond(skills.Athletics) while sprinting and recovers recoverPerSecond(attributes.End) while idle (fixed staminaDrainRate 25 / staminaRecoveryRate 15 fields REMOVED from player.h); CombatManager::calculateDamage multiplies offensive product by meleeDamageMult(ratio(attacker.stamina, max)) before armor subtraction; playerAttack drains player->reduceStamina(attackCost) for melee only and syncs playerStatus.stamina/maxStamina from live Player first (NPC id-1 placeholder does not track it); npcAttackPlayer drains attacker->status.stamina via clampValue; attemptBlock (success branch) drains defender blockCost(0.0 skill - NPC skill map has no 'Block', incomingDamage); jump cost in BOTH paths: Player::applyJump (keyboard) and PlayerController::updatePhysics Jolt branch (touch, sets velocity directly); SpellManager::castSpell drains caster->status.stamina and castPlayerSpell drains player->reduceStamina with castCost (flat 15) after mana consumption. Bows AND staves skip attack cost (weapon anim 4/5 = 0-cost; note STAFF has isRanged=false in getDefaultWeapon, so type != WeaponType::STAFF check added explicitly). Not ported (documented in header comment): stage buckets 0x56A300 (no consumer), auto-KD at AV<=0 (0x600248, waits on RE R7 KD apply/recover). Tests: tests/fatigue_system_tests.h/.cpp (FatigueSystemTests class, 11 groups / GMST pinning / curves / costs / bands / integration spot checks), registered in tools/host_tests/run_host_tests.sh SOURCES + host_runner_main.cpp (include + suite call). GMST live table wiring remains the separate gmst-table-integration task."
+    },
+    {
+      "id": "opencode-b-handover-queue-triage-20261018",
+      "timestamp": "2026-10-18T16:00:00Z",
+      "category": "development",
+      "priority": "medium",
+      "content": "Batch 2026-10-18 (session 9427ac74): handover queue (opencode-handover-main-9427ac74-20261018) triage. (1) complex-scene-throttle: already implemented (commit 29dbb4f1), no action. (2) armor-perk-damage-mult: ALREADY DONE - committed e5e60eb7 'game: apply the armor mastery perk multiplier to spell damage'; settings_manager.h armorMasteryRank (skill/25 tiers matching GMST iSkill*Min 25/50/75/100) + armorPerkDamageMultiplier (rank>=2 x0.5 / rank==0 x1.5 / rank==1 x1.0) called from spell_manager.cpp:470 damage branch. Reflect path: port has NO damage-reflect system at all (only AV index name ReflectDamage=0x3b in dialogue_filter_engine.cpp) so nothing to wire; near/archery stay x1.0 per RE (zero xrefs in FUN_005FEBF0). Caveat: NPC skill maps only carry Blade/Blunt/Magic/Restoration keys (npc.cpp:52-55) so armor skill lookups currently miss -> multiplier is effectively x1.0 until NPC armor skills exist (approximation documented in the code comment). (3) gameplay-settings-consumers: implemented this batch. (4) npc-difficulty-scale: effectively done - dealt 1/f in playerAttack + magic paths (magic-damage-difficulty-scale done) and received f inside Player::takeDamage (player-damage-intake done); desc was stale. Handover queue fully consumed."
+    },
+    {
+      "id": "opencode-b-gameplay-settings-consumers-20261018",
+      "timestamp": "2026-10-18T16:10:00Z",
+      "category": "development",
+      "priority": "medium",
+      "content": "Batch 2026-10-18 (session 9427ac74): gameplay-settings-consumers implemented, UNVERIFIED per user '検証はステイでいいので作成を続けて'. Was the last unconsumed gameplay setting: added Renderer::dialogueSubtitlesEnabled_ (renderer.h, RE_EXE_REPORT 47.3/47.4 annotation), assigned in applyGameplaySettings from settings.dialogueSubtitles, and gated the HUDSubtitleMenu emit path (renderer.cpp topic-selection subtitle) on BOTH subtitlesEnabled_ (bGeneralSubtitles, emission gate) and dialogueSubtitlesEnabled_ (bDialogueSubtitles, dialogue UI element presence) since the port has a single subtitle path; stale comment + LOGI updated to list only saveOnRest/saveOnWait as consumer-less (they are consumed by the SleepWaitMenu handler 0x5D6A80 in the original - blocked on sleep-wait-menu-impl). Consumer status now: difficulty -> Player::setDifficultyScale, generalSubtitles/dialogueSubtitles -> subtitle gate, crosshair -> crosshairEnabled (renderer:5074), disableDynamicCrosshair -> crosshair->setDynamicEnabled inverted, saveOnTravel + saveOnInteriorExteriorSwitch -> DoorManager cell-transition autosave (renderer:2192-2193); saveOnRest/saveOnWait blocked. Settings commit path pumpGameplayOptions already propagated dialogueSubtitles, so no change needed there."
+    },
+    {
+      "id": "opencode-b-febf0-damage-formula-p1-20261018",
+      "timestamp": "2026-10-18T16:45:00Z",
+      "category": "development",
+      "priority": "high",
+      "content": "Batch 2026-10-18 (session 9427ac74): febf0-damage-formula batch 1 implemented, UNVERIFIED per user '検証はステイでいいので作成を続けて'. New header game/combat_formulas.h (header-only, namespace oblivion::combat) ports the confirmed FUN_005FEBF0 fragments from RE_EXE_REPORT 56.1 + tmp/re/s57_combat_full.md 3.1/13: kBlockReduceSkillBase/Mult (fBlockSkillBase 0 / Mult 1.0 - NOT the fFatigueBlock* cost family in fatigue_system.h), kBlockMax 0.75, kBlockAmountWeapon 0.5, kBlockAmountHandToHand 0.25, kArmorRatingMax 1.0; luckAdjustedSkill (0x547B90 clamp(skill+0.4*luck-20, 0,100), raw AV inputs); blockAmount (0x5474A0: D->base 0.01*D->M selection->min(curve(x)*base*M,0.75), curve = fatigue::damageMult 0x547F00); armorFactor (min(AR/100, 1.0)). Wiring: calculateDamage armor changed from subtracting armorRating*0.5 to multiplying by (1 - armorFactor) per the confirmed (1-ARMOR) accumulators 0x5FF7B5/0x5FF908; getDefenderDamageMitigation renamed to getDefenderArmorFactor (single call site); NPC defender block reduction in update() replaced the fixed damage *= 0.3 with blockAmount (defender skills['Block'] / attributes['Luck'] raw reads, fatigue ratio, equippedWeaponId 0 mapped to the hand-to-hand M term - note attack fallback sword means id 0 NPCs attack with a sword but block H2H-style). NOTE: EXE feeds the curve x = 0x5F4880 raw/floor(Fatigue) (stays ~1.0, meaning [推定] s57 C2); port deliberately feeds the real residual ratio instead. NOT ported (listed in header comment): sneak perk multiplier 0x5477F0, power-attack 0x546BA0, KD/KB rolls (0x5475D0 real KD paths are auto-fatigue-0 + marksman perks per s57 15.2), per-hit cap, reflect (port has no reflect system), body tail weighting. Legacy criticalChance/attackSpeed kept untouched - RE found no EXE counterparts (s57 5/6.2/13 says do not delete before a spec decision). Tests: tests/combat_formulas_tests.h/.cpp (CombatFormulasTests: GMST pins, luck-adjusted clamps, the s57 13 RE pins 0.625/0.3125/0.15625, block cap, armor cap, multiply-order spot checks) registered in run_host_tests.sh SOURCES + host_runner_main.cpp. Batch 2 candidates: sneak/KD/KB, PA multiplier."
+    },
+    {
+      "id": "opencode-b-febf0-damage-formula-p2-20261019",
+      "timestamp": "2026-10-19T09:30:00Z",
+      "category": "development",
+      "priority": "high",
+      "content": "Batch 2026-10-19 (session 9427ac74): febf0-damage-formula batch 2, UNVERIFIED (verification stays on hold per user). Added to game/combat_formulas.h: (1) perkSneakAttackMult(weaponType, sneakRank) mirrors 0x5477F0 - IMPORTANT: the raw disassembly (tmp/re/s59_combat_4_out.txt lines 249-342) corrects the s57 prose: weaponType in {-1,0,2} selects the MELEE table (al=1 path), NOT 1.0; weaponType==5 selects the Marksman table (al=0); any other weaponType early-returns 1.0 (fld1 stays on ST0); rank>4 (unsigned ja) or rank<0 returns 1.0. GMST defaults from s50_gmst_full.txt 769-778: Melee {4.0,6,6,6,6}, Marksman {6.0,8,8,8,8}; fDamageSneakAttackMult(4.0) is never read by the EXE. (2) knockbackForce(damage, agility, luck, fatigueRatio) mirrors 0x547690: D=luckAdjustedSkill, Q=D/curve(x) (inverse direction vs KD's curve*D), Tk=damage*10+50, force=Tk*(1-0.008*Q), plus minKnockbackForce for the caller-side clamp at 0x600013 (fKnockbackForceMax=512; the EXE clamps at the caller, not inside the function). New GMST constants kKnockbackDamageMult/Base/AgilBase/AgilMult/ForceMax. Tests: 14 sneak cases + 8 knockback cases added to CombatFormulasTests. NOT ported, documented in the header with RE status: PA multiplier 0x546BA0 (direction GMSTs confirmed Stand 4.0 / Side-Back-Forward 3.0 / bonus 3.0, perk switches 0x16-0x1a, but the port has no power-attack input - every attackCost call passes isPowerAttack=false); damage-based KD roll 0x5475D0 (chance=min(-3*dmg/P, 0.25) on an always-non-negative dmgInt - never fires on normal hits, ~1% only when trunc(damage)==0 per s59; real KD paths are defender-fatigue<=0 at 0x600248 and the Marksman perk rolls at 0x60032D/0x60034F, all requiring a knockdown state machine the port lacks); KB application (EXE uses a Havok impulse with fKnockbackTime=1.0, port only has a fixed-speed death slide - living-KB wiring deferred); sneak multiplier wiring (FEBF0 gates it on a successful sneak attack and the port has no sneak state - script IsSneaking opcode is a stub returning 0); per-hit cap / reflect / body tail weighting remain EXE-unresolved."
+    },
+    {
+      "id": "opencode-b-pause-dt-zero-triage-20261019",
+      "timestamp": "2026-10-19T11:00:00Z",
+      "category": "development",
+      "priority": "high",
+      "content": "Batch 2026-10-19 (session 9427ac74): pause-dt-zero triage result = ALREADY IMPLEMENTED, no code change needed. RE_EXE_REPORT.md 30.1.9 three-stage input pause: (1) any menu open skips physics/AI (EXE 0x00b3a6d4) - port: renderer.cpp:4425-4428 setMenuOpen(anyMenuOpen()); (2) topmost [+0x24] input block - handled by the UI input layer; (3) pause-family menus freeze dt (PauseMenu 0x3f5) while non-pause menus (Options etc.) keep dt running with explorefade 0.25 - port: renderer.cpp:4427 setPaused(uiPauseMenu && uiPauseMenu->isVisible()) (non-pause menus therefore keep dt, matching RE). World dt wiring: imperial_weave.cpp:233-236 computes worldDt = paused_ ? 0.0f : deltaTime with the 30.1.9 comment, then :242-252 routes worldDt to 9 phases (WorldUpdate, AiUpdate, Animation, JoltPhysics, PhysicsSync, Combat, Quest, Script) while PlayerUpdate/Inventory/Spell keep real deltaTime; setPaused/isPaused/paused_ live at imperial_weave.h:314-315,352. UI menu body is ui/ui_pause_menu.h class UIPauseMenu."
+    },
+    {
+      "id": "opencode-b-gmst-table-integration-p1-20261019",
+      "timestamp": "2026-10-19T11:15:00Z",
+      "category": "development",
+      "priority": "high",
+      "content": "Batch 2026-10-19 (session 9427ac74): gmst-table-integration batch 1, UNVERIFIED (verification stays on hold per user). New app/src/main/cpp/game/gmst_defaults.h: repo-side source of truth for every float GMST the port consumes, copied from tmp/re/s50_gmst_full.txt (gitignored) per the TODO note 're-derive or copy the needed subset'. 38 entries = 16 fatigue keys + 22 combat keys (fArmorRatingMax, fBlockSkillBase/Mult, fBlockMax, fBlockAmountWeaponMult, fBlockAmountHandToHandMult, 6 fKnockback* incl unwired fKnockbackTime, 10 fPerkSneakAttackMelee/Marksman{Rank}Mult); each row keeps the ESM slot VA (0xB3xxxx). API: constexpr equal/hasKey/get over inline constexpr Entry kEntries[]; get() returns a 0.0f sentinel on a miss, kept out of compiled constants by static_assert(hasKey) at every consumer. fatigue_system.h (16 constants) and combat_formulas.h (11 constants + the 10 perkSneakAttackMult switch literals) are now direct gmst::get(key) table references - no independent numbers left in those headers; measured values are unchanged and still match the RE defaults the existing tests pin. Runtime override from a loaded ESM/MOD (ESMManager::findGameSetting(editorID) at esm_reader.cpp:4215, keys are editor IDs) is NOT wired yet - documented as falling back to gmst::get, to land with the first consumer needing live values; AssetManager::getEsmManager() (asset_manager.h:66) is the access path (findGameSetting currently has zero callers). Tests: CombatFormulasTests section 8 added (entry count 38, hasKey probes, unknown-key 0.0 sentinel, kFatigueBase/kArmorRatingMax pinned against table values)."
+    },
+    {
+      "id": "opencode-b-debug-menu-unknown-cmd-20261019",
+      "timestamp": "2026-10-19T13:00:00Z",
+      "category": "development",
+      "priority": "high",
+      "content": "Batch 2026-10-19 (session 9427ac74): debug-menu-command-registry part 1, UNVERIFIED. Fixed the 'UI lies' core: GameConsole::executeCommand (ui/game_console.h:47, game_console.cpp:176) now returns bool (true = command name registered, false = empty/unknown; handler exceptions still count as known), and DebugMenu::executeButtonCommand (ui/debug_menu.cpp:406+) branches feedback on it: green 'Executed: <cmd>' only on success, red 'Unknown command: <cmd>' on failure, red 'Console not available' when the console pointer is missing (was silent before). console->executeCommand callers in jni_bridge.cpp:950 / debug_menu slider paths / game_console.cpp:1369 ignore the bool (legal, unchanged behaviour). Static diff of button commands vs registered commands: 222 button commands = 6 handled locally (textureviewer/modelviewer/worldviewer/viewer3d/dumpstate/startgame) + 150 registered + 66 UNREGISTERED (viewer-family buttons: pick*, ai*, anim*, questshow/complete/fail/stage/flags, itemshow/edit/add/remove, hot*, light*, mem*, dialogshow/topics/choices/history/reset, input*, audiobrowse/play/stop/wave, phys*, slot*, nav*, timeshow/set, aggro*, statsshow/attr/skills/mods). Reproduce with AppData\\Local\\Temp\\opencode\\diff_debug_commands.py. Part 2 (implement vs delete those 66) is a policy decision left for the user."
+    },
+    {
+      "id": "opencode-b-input-latches-triage-20261019",
+      "timestamp": "2026-10-19T13:15:00Z",
+      "category": "development",
+      "priority": "high",
+      "content": "Batch 2026-10-19 (session 9427ac74): input-suppression-latches triage result = every implementable part already exists; the remainder has no port-side consumer yet. (1) 0xB333B8 SetSceneIsComplex latch: implemented in system/scene_time_throttle.h (setter fnSetSceneIsComplex at script_functions.cpp:2405, opcode 0x115D native_scda_bridge.cpp:47, one-frame clear in frame_update, jni_bridge.cpp:261 comment). (2) 0xB3A6D4 menu teardown/displayed gate: wired as the 'menu displayed' gate at renderer.cpp:4424, renderer.h:401, imperial_weave.h:305, ui_inventory_panel.h:45; the FUN_00679A70 world/physics skip (read at 0x679A75) is already done per CHANGELOG.md:161. The other two EXE reads have no port equivalent needed: 0x572EE2 forces input-mode release (the port has no input-mode records - see TODO input-mode-stride-24) and 0x5A586B delays UI object destruction (the port's menus destroy immediately, no deferred-destruction model). (3) fMagicTrackingLimit=3.0 / fMagicTrackingLimitComplex=1.0 (0xB380F8/0xB38100, s50_input.md:43-44) gate projectile tracking limits 3->1 while the latch is set, but the port's spell model is explicit-target castSpell(caster, spell, target) in spell_manager.h:52 - there is no projectile/tracking list to limit, so consumption waits on a projectile system. (4) 0xB3A6E0 UI menu manager singleton: port manages menus its own way (not a gap)."
+    },
+    {
+      "id": "opencode-b-autosave-research-20261019",
+      "timestamp": "2026-10-19T13:30:00Z",
+      "category": "development",
+      "priority": "high",
+      "content": "Batch 2026-10-19 (session 9427ac74): autosave-event-only research (decision pending, not implemented). RE facts: the original has NO time-based autosave - all autosaves funnel through FUN_00466b70(0x00b33b00) called from only two places: (a) rest/wait confirm in the SleepWaitMenu update handler gated on bSaveOnRest(0xB13218)/bSaveOnWait(0xB13220) (RE 33.5 disasm: if (rest-flag && bSaveOnRest) || bSaveOnWait then CALL 0x00466b70), (b) fast travel execution head gated on bSaveOnTravel(0xB13228) (RE 33.4.2/35.3) plus the cell-transition path (bSaveOnTravel gating noted around door.cpp:234). Port state: GameLoopCoordinator::phaseAutoSave (game_loop_coordinator.cpp:281-288) fires triggerAutoSave() every autoSaveInterval_=300s (h:125), AutoSave has DEFAULT_INTERVAL=300s + MIN_INTERVAL=30s guard (save_system/auto_save.h:20-23,54) - neither exists in the original. Open decision for the user: move to event-only (delete the timer path; keep door/fast-travel triggers; MIN_INTERVAL skip explains 'second door in a row saves nothing') vs keep the timer as a port convenience. Rest/wait trigger lands with the SleepWaitMenu implementation (sleep-wait-menu-impl TODO)."
+    },
+    {
+      "id": "opencode-b-audio-setters-triage-20261019",
+      "timestamp": "2026-10-19T13:40:00Z",
+      "category": "development",
+      "priority": "medium",
+      "content": "Batch 2026-10-19 (session 9427ac74): audio-voice-footstep-setters triage = already implemented, no code change. Voice: setVoiceVolume/getVoiceVolume committed (audio_manager.cpp:528 re-applies to the live source; playVoice routes through playSEOnChannel(..., voiceVolume) at :466-467; wiring landed in 3459212c 'Wire option settings to their consumers'). Footstep: setFootVolume now re-applies to live sources and playFootstep(key, pos) routes via the footVolume channel (INI default 0.3) with footstep_default fallback - these are in the UNCOMMITTED footstep-playback-path batch of this session (audio_manager.cpp +36/-3 uncommitted)."
+    },
+    {
+      "timestamp": "2026-10-19T15:00:00Z",
+      "tags": [
+        "memory",
+        "copilot",
+        "opencode",
+        "sharing",
+        "workflow"
+      ],
+      "id": "opencode-b-copilot-memory-share-20261019",
+      "compressed": false,
+      "priority": "high",
+      "category": "architecture",
+      "content": "Shared memory mechanism between GitHub Copilot and opencode established (2026-10-19). Single source of truth: .github/memory/session-memory.json (repo-local so BOTH tools can read/write; cloud Copilot can only see committed docs/ and .github/). Mechanism written into .github/copilot-instructions.md new section 'セッションメモリの共有': grep-first before reading, entry schema {id,timestamp,priority,category,tags,content}, id convention <tool>-<topic>-<yyyymmdd>, append to entries[] and bump metadata.totalEntries/lastUpdated. Copilot may now write memories here too (id prefix 'copilot-'). Shared TODO list: Copilot todos at .copilot/session-state/9427ac74-*/session.db were exported into opencode todowrite with [copilot:ID] tags via %TEMP%\\opencode\\export_copilot_todos.py (re-run to resync). Copilot todo fixes same day: armor-perk-damage-mult and gmst-table-integration-dt-note -> done, gameplay-subtitles-autosave note appended (done 104 / in_progress 6 / pending 44)."
+    },
+    {
+      "id": "opencode-b-bsa-hash-20261019",
+      "timestamp": "2026-10-19T17:30:00Z",
+      "priority": "high",
+      "category": "development",
+      "tags": [
+        "bsa",
+        "hash",
+        "reverse-engineering",
+        "oblivion"
+      ],
+      "content": "Batch 2026-10-19 (session 9427ac74): bsa103-hash-identify RESOLVED - BSA v103 u64 hash algorithm fully recovered from Oblivion.exe. hash32 (EXE 0x6FA040): h = h*0x1003F + tolower(c) mod 2^32. build (EXE 0x6FA080): lo32 sig = [last, penult (0 if len<=2), len, first] bytes; hi32 = (len>3 ? hash32(name+1, (len-3)&0xFF) : 0) + (extra ? hash32(extra) : 0); extension tweak table 0xB25374 ['', '.NIF', '.KF', '.DDS', '.WAV'] case-insensitive, index k adds out[3]+=(k&0xFC)<<5, out[0]+=(k&0xFE)<<6, out[1]+=(k<<7)&0xFF. folder_hash = build(name, NULL) (trailing backslash stripped, empty -> '.'); file_hash = _splitpath -> build(fname, ext). Query: 0x42E85A strips leading backslash and Data-prefix -> 0x6FA1B0 split -> 0x6FA2D0 modes 0=file/1=folder/2=raw -> lookup 0x42CE40 / 0x42D000 (u64 two-dword binary search, cmp fn 0x42BC10). Verified 100%: folders 1621/1621, files 147629/147629 across all 17 Steam BSAs. Prior murmur2_64/FNV1a64 8-variant attempts failed (algorithm is custom multiply-add). Docs: tmp/re/s76_file_hash_analysis.md, tmp/re/s76_hash_verify.py; s76_bsa_v104.md issues 1/4 marked RESOLVED."
+    },
+    {
+      "id": "opencode-b-gmst-override-wiring-20261019",
+      "timestamp": "2026-10-19T20:30:00Z",
+      "priority": "high",
+      "category": "development",
+      "tags": [
+        "gmst",
+        "esm",
+        "override",
+        "thread-safety",
+        "oblivion"
+      ],
+      "content": "Batch 2026-10-19 (session 9427ac74): gmst-table-integration batch 3 - ESM runtime override wiring completed. gmst::setOverride/clearOverrides/hasOverride/getLive added to gmst_defaults.h with atomic release/acquire ordering (thread-safe for worker-thread parse concurrent with render reads). Published from AssetManager ESM load paths (loadEsm, parseEsmFromMemory). Gameplay functions in combat_formulas.h and fatigue_system.h converted from constexpr k* constants to gmst::getLive() at point-of-use. k* constants kept as compile-time default pins for tests. Test section 9 added (override roundtrip + function reflection). Remaining: other-sections GMST consumption expansion."
+    },
+    {
+      "id": "opencode-b-gmst-time-20261019",
+      "timestamp": "2026-10-19T22:00:00Z",
+      "priority": "high",
+      "category": "development",
+      "tags": [
+        "gmst",
+        "time",
+        "delta",
+        "fglobaltimemultiplier"
+      ],
+      "content": "Batch 2026-10-19 (session 9427ac74): gmst-fglobaltimemultiplier-dt resolved. Added fGlobalTimeMultiplier (default 1.0f) to gmst_defaults.h kEntries. jni_bridge.cpp: deltaTime multiplier changed from hardcoded GLOBAL_TIME_MULTIPLIER to gmst::getLive('fGlobalTimeMultiplier') for runtime ESM override support. settings_manager.h constant kept with documentation note about EXE path mismatch (RE 54.3: in original EXE this scales game clock, not frame delta). Test section 8 count: 38->39. Part of story-progression-path Phase 0 clean-up."
+    },
+    {
+      "id": "opencode-b-sleepwait-menu-20261020",
+      "timestamp": "2026-10-20T00:30:00Z",
+      "priority": "high",
+      "category": "development",
+      "tags": [
+        "sleepwait",
+        "menu",
+        "ui",
+        "story-progression",
+        "oblivion"
+      ],
+      "content": "Batch 2026-10-19/20 (session 9427ac74): SleepWaitMenu implemented. Dual-mode sleep/wait menu with hour slider (1-24), date/time display, fast-forward loop (SkyWeatherSystem integration), accept/cancel. Part of story-progression-path Phase 1. Integration into renderer deferred due to parallel session ownership."
+    },
+    {
+      "id": "opencode-b-controls-key-order-20261020",
+      "timestamp": "2026-10-20T02:00:00Z",
+      "priority": "high",
+      "category": "development",
+      "tags": [
+        "controls",
+        "menu",
+        "key-list",
+        "remapping",
+        "oblivion"
+      ],
+      "content": "Batch 2026-10-20 (session 9427ac74): controls-key-list-order resolved. Updated kRowLabels and kRowBindings to RE DAT_00b399d0/FUN_0059b670 20-row spec. Added INSTRUCTIONS text display during remapping. Added row remapping mode (activate->press key->assign). Part of story-progression-path Phase 1."
+    },
+    {
+      "id": "opencode-b-stackingtype-20261020",
+      "timestamp": "2026-10-20T03:00:00Z",
+      "priority": "high",
+      "category": "development",
+      "tags": [
+        "menu",
+        "stackingtype",
+        "uicomponent",
+        "input-blocking",
+        "oblivion"
+      ],
+      "content": "Batch 2026-10-20 (session 9427ac74): menu-stackingtype-impl completed. StackingType enum + MenuStack class + UISystem integration (dispatchEvent skips blocked layers). Backward compatible. Phase 1 complete: ContainerMenu + SleepWaitMenu + controls-key-list-order + menu-stackingtype."
+    },
+    {
+      "id": "opencode-b-levelup-menu-20261020",
+      "timestamp": "2026-10-20T04:00:00Z",
+      "priority": "high",
+      "category": "development",
+      "tags": [
+        "levelup",
+        "menu",
+        "attribute",
+        "oblivion"
+      ],
+      "content": "Batch 2026-10-20 (session 9427ac74): LevelUpMenu implemented. 3-attribute selection with bonus calculation (iLevelUp01..10Mult table). Generic background, title, attribute rows, picture area, exit button. Part of story-progression-path Phase 2."
+    },
+    {
+      "id": "opencode-b-fasttravel-20261020",
+      "timestamp": "2026-10-20T05:00:00Z",
+      "priority": "medium",
+      "category": "development",
+      "tags": [
+        "fast-travel",
+        "oblivion"
+      ],
+      "content": "Batch 2026-10-20 (session 9427ac74): FastTravelConfirm controller (fast_travel_controller.h/cpp) MessageBox Yes/No + travel execution chain. Integration deferred to renderer ownership."
+    },
+    {
+      "id": "opencode-b-npc-difficulty-20261020",
+      "timestamp": "2026-10-20T06:00:00Z",
+      "priority": "high",
+      "category": "development",
+      "tags": [
+        "npc",
+        "difficulty",
+        "magic",
+        "combat",
+        "oblivion"
+      ],
+      "content": "Batch 2026-10-20 (session 9427ac74): npc-difficulty-scale RESOLVED - the NPC->player magic damage path was entirely missing (castSpell with targetId=0 returned early). Added CombatManager::npcCastSpellOnPlayer() with direct effect application and difficulty scale f. Hostile NPC loop now selects spell (if available) or melee against player. No spell_manager.cpp changes needed (it was owned by parallel session). combat_manager.h/cpp only."
+    },
+    {
+      "id": "opencode-b-quickkeys-20261020",
+      "timestamp": "2026-10-20T08:00:00Z",
+      "priority": "high",
+      "category": "development",
+      "tags": [
+        "quickkeys",
+        "menu",
+        "radial",
+        "oblivion"
+      ],
+      "content": "Batch 2026-10-20 (session 9427ac74): QuickKeysMenu implemented. Radial 8-slot menu with RE-spec positions. Angle-based touch/DPAD key selection with paper background. Part of story-progression-path Phase 4."
+    },
+    {
+      "id": "opencode-b-p67-native-scda-20261020",
+      "timestamp": "2026-10-20T11:00:00Z",
+      "priority": "high",
+      "category": "development",
+      "tags": [
+        "script-vm",
+        "native-scda",
+        "quest",
+        "dialogue",
+        "oblivion"
+      ],
+      "content": "Batch 2026-10-20 (session 9427ac74): p67-script-vm Native SCDA VM wired. ScriptManager now decodes SCDA on load, runs native VM in update loop, persists variable stores across frames. Bridge connects 30+ native opcodes to ScriptFunctions handlers. Quest/dialogue scripts now execute."
+    },
+    {
+      "id": "opencode-re-phase1-residual-complete-20261020",
+      "timestamp": "2026-10-20T12:00:00Z",
+      "priority": "high",
+      "category": "decision",
+      "tags": [
+        "reverse-engineering",
+        "phase1",
+        "combat",
+        "economy",
+        "quest",
+        "ai",
+        "opencode"
+      ],
+      "content": "Phase 1 residual analysis COMPLETE (2026-10-20, opencode session). All 7 major sections resolved: F1 combat (0x5F4880 fatigue ratio, 0x5FC090 weapon skill, 0x6131D0 distance calc, 0x5E0EE0 formID getter, 0x4D6D40 weapon/armor check), F6 GMST (0x4A7980 string append, 0x44FEA0 save buffer write), G3 fatigue/death (0x4B4C70 equip check bit7, 0x654420 knockdown apply), G5/I5 economy (0x5FAB80 pricing function, 0x56A300 merchant type classification, 0x547F40 price ratio linear transform, 0x403C00 GMST pointer deref 377 callers), H1 AI (0xB12988 AI package type names 20 entries, 0x640900 detection update, 0x6605A0 player detection, 0x55E000 array/hash lookup 308 callers), H2 quest (0x569020 INFO selection main, 0x5672A0 INFO condition evaluation 33 types, 0x567C00 INFO type evaluation 11 types, 0x568EB0 condition comparison with tolerance, 0x56A510 priority determination core), H4 chargen (0x5222D0 init with vampire check). Actor vtable additional slots: vt+0x168/174/184/198/278/284/288/2D0. Pricing formula: price = base x ((m x ratio + b) x type_coef), ratio = player_mercantile / merchant_strength. New analysis candidates T2-1..T2-12 added to TODO_re49.md. Evidence files: s99_phase1_residual_analysis.md, s100_economy_pricing.md, s101_quest_info_selection.md."
+    },
+    {
+      "id": "copilot-re-batch-20261019-20-20261020",
+      "timestamp": "2026-10-20T12:05:00Z",
+      "priority": "high",
+      "category": "decision",
+      "tags": [
+        "reverse-engineering",
+        "copilot",
+        "batch",
+        "implementation"
+      ],
+      "content": "Copilot RE batch summary (2026-10-19/20, synced 2026-10-20). Completed RE-driven implementations: (1) Phase 67 Script VM - 1080+ functions, QUST 390, INFO 19278 dialogs, condition evaluation, reference resolution. (2) QuickKeysMenu - RE 39.2, radial 8-slot, stackingtype=does_not_stack. (3) Menu stackingtype - RE 50.4, click_past=101/no_click_past=102/mixed_menu=103/does_not_stack=6008. (4) BSA103 hash - folder/file record hash unresolved (8 murmur2_64/FNV1a64 variants failed), extraction via offset direct-read (non-blocking). (5) fGlobalTimeMultiplier wiring - RE 43, dt_game = dt_real x fGlobalTimeMultiplier (default 1.0, slot 0xB06704). (6) PE section delta audit - RE 42.1, correct raw-to-VA deltas: .text 0x400C00/.rdata 0x400E00/.data 0x401400/.tls 0x47A800/.rsrc 0x47B600. (7) AI dispatch caller tracing - tmp/re_vtable_family_map.md, AiUpdateDispatch call path confirmed. (8) Japanese rendering - UTF-8 decoder + fallback chain + dynamic CJK atlas, Noto Sans JP bundled. (9) menufade/explorefade - RE 48, trait 0xFDB/0xFDC, linear easing. (10) ControlsMenu page 2 vertical scroll - RE 40. (11) Armor skill damage multiplier - RE 54, 4 GMST fPerkLight/HeavyArmorNovice/Journeyman via FUN_5F3870. (12) Pause state dt=0 path - RE 30.1.9, PauseMenu 0x3F5 shown halts world/camera/physics. (13) NPC to player damage path - RE 41.5, vtable+0x3AC melee + spell path. (14) Death processing - RE 41, knockback vtable+0x118/0x120, death state vtable+0xF8. (15) Fatigue AV implementation - RE 50.2, AV index 0x0A, attack cost 0x547560. (16) Complex scene update throttle - RE 54.2, 2/3 frame skip via FUN_889810 with latch 0xB333B8."
     }
   ],
   "metadata": {
-    "totalEntries": 591,
+    "totalEntries": 618,
     "compressedCount": 81,
     "sessionCount": 40,
-    "lastUpdated": "2026-10-18T08:02:24Z"
+    "lastUpdated": "2026-10-20T11:00:00Z"
   }
 }

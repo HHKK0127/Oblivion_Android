@@ -190,7 +190,7 @@ bool TextRenderer::initialize(AAssetManager* assetMgr) {
     // Load font and create texture atlas
     // On failure, create texture atlas to avoid crash
     // Keep the font in app assets so text is available on clean installs.
-    if (!loadFontFromAssets("Roboto-Regular.ttf")) {
+    if (!loadFontFromAssets("fonts/KingthingsPetrockLight.ttf")) {
         LOGW("Font loading failed, using fallback");
     }
 
@@ -199,10 +199,20 @@ bool TextRenderer::initialize(AAssetManager* assetMgr) {
         return false;
     }
 
-        // Bundled CJK fallback: the game's original fonts are Latin-only, so any Japanese
-        // text falls back to this face. Failure is non-fatal: Latin still renders.
-        if (!loadCjkFontFromAssets("fonts/NotoSansJP-Regular.ttf")) {
-            LOGW("CJK font (Noto Sans JP) unavailable; Japanese text will advance as spaces");
+        // Bundled CJK faces: the game's original fonts are Latin-only, so any Japanese
+        // text falls back to SAIMOJI (all UI), with TKaisho kaisho used inside book
+        // panels (setBookStyle). Failure is non-fatal: Latin still renders.
+        if (loadCjkFontFromAssets("fonts/SAIMOJI_Hokkyoku.ttf",
+                                  &cjkFontInfo_, &cjkFontData_, &cjkFontScale_)) {
+            cjkFontReady_ = true;
+        } else {
+            LOGW("CJK font (SAIMOJI) unavailable; Japanese text will advance as spaces");
+        }
+        if (loadCjkFontFromAssets("fonts/TKaisho-GT01.ttc",
+                                  &cjkBookFontInfo_, &cjkBookFontData_, &cjkBookFontScale_)) {
+            cjkBookFontReady_ = true;
+        } else {
+            LOGW("Book style font (TKaisho) unavailable; books fall back to SAIMOJI");
         }
 
         LOGI("TextRenderer initialized successfully");
@@ -1215,8 +1225,9 @@ void TextRenderer::cleanup() {
         fontData = nullptr;
     }
 
-    // Cleanup CJK page atlases and the bundled JP font
+    // Cleanup CJK page atlases and the bundled JP fonts
     cjkGlyphs_.clear();
+    cjkBookGlyphs_.clear();
     for (CjkAtlasPage& page : cjkPages_) {
         if (page.textureId != 0) {
             glDeleteTextures(1, &page.textureId);
@@ -1228,7 +1239,13 @@ void TextRenderer::cleanup() {
         delete[] cjkFontData_;
         cjkFontData_ = nullptr;
     }
+    if (cjkBookFontData_ != nullptr) {
+        delete[] cjkBookFontData_;
+        cjkBookFontData_ = nullptr;
+    }
     cjkFontReady_ = false;
+    cjkBookFontReady_ = false;
+    bookStyle_ = false;
 
     LOGD("TextRenderer cleaned up");
 }
@@ -1261,10 +1278,12 @@ void TextRenderer::renderDebugQuad() {
     glUseProgram(0);
 }
 
-    // Loads the bundled Noto Sans JP TTF into memory and initializes stb_truetype
-    // against it. The variable TTF resolves to its default Regular instance, which
-    // is our UI weight. Caller must own a GL context for getCjkGlyph later.
-    bool TextRenderer::loadCjkFontFromAssets(const std::string& filename) {
+    // Loads a bundled CJK TTF (or the first face of a TTC collection) into memory
+    // and initializes stb_truetype against it. Caller must own a GL context for
+    // getCjkGlyph later.
+    bool TextRenderer::loadCjkFontFromAssets(const std::string& filename,
+                                             stbtt_fontinfo* outInfo,
+                                             unsigned char** outData, float* outScale) {
         if (!assetManager) {
             LOGE("AssetManager is null, cannot load CJK font");
             return false;
@@ -1292,15 +1311,16 @@ void TextRenderer::renderDebugQuad() {
             return false;
         }
 
-        if (!stbtt_InitFont(&cjkFontInfo_, buffer, 0)) {
+        // Plain TTFs return offset 0; a .ttc collection resolves to its first face.
+        int fontOffset = stbtt_GetFontOffsetForIndex(buffer, 0);
+        if (fontOffset < 0 || !stbtt_InitFont(outInfo, buffer, fontOffset)) {
             LOGE("Failed to initialize stb_truetype for %s", filename.c_str());
             delete[] buffer;
             return false;
         }
 
-        cjkFontData_ = buffer;
-        cjkFontScale_ = stbtt_ScaleForPixelHeight(&cjkFontInfo_, (float)FONT_SIZE);
-        cjkFontReady_ = true;
+        *outData = buffer;
+        *outScale = stbtt_ScaleForPixelHeight(outInfo, (float)FONT_SIZE);
         LOGI("CJK font loaded: %s (%ld bytes)", filename.c_str(), (long)size);
         return true;
     }
@@ -1308,24 +1328,37 @@ void TextRenderer::renderDebugQuad() {
     // Rasterizes the codepoint into the first free slot of the current page atlas,
     // caching the packed CjkGlyph. Blank glyphs (space, control chars) cache their
     // advance only, so they are never re-rasterized during shaping.
+    // Book style rasterizes from TKaisho; codepoints TKaisho lacks fall back to the
+    // SAIMOJI primary face so a book page never loses a character.
     const TextRenderer::CjkGlyph* TextRenderer::getCjkGlyph(unsigned int codepoint) {
         if (!cjkFontReady_) {
             return nullptr;
         }
-        auto it = cjkGlyphs_.find(codepoint);
-        if (it != cjkGlyphs_.end()) {
+        if (bookStyle_ && cjkBookFontReady_ &&
+            stbtt_FindGlyphIndex(&cjkBookFontInfo_, (int)codepoint) != 0) {
+            return getCjkGlyphForFace(codepoint, cjkBookFontInfo_, cjkBookFontScale_,
+                                      cjkBookGlyphs_);
+        }
+        return getCjkGlyphForFace(codepoint, cjkFontInfo_, cjkFontScale_, cjkGlyphs_);
+    }
+
+    const TextRenderer::CjkGlyph* TextRenderer::getCjkGlyphForFace(
+            unsigned int codepoint, const stbtt_fontinfo& info, float scale,
+            std::map<unsigned int, CjkGlyph>& cache) {
+        auto it = cache.find(codepoint);
+        if (it != cache.end()) {
             return &it->second;
         }
 
         int advancePx = 0, lsb = 0;
-        stbtt_GetCodepointHMetrics(&cjkFontInfo_, (int)codepoint, &advancePx, &lsb);
+        stbtt_GetCodepointHMetrics(&info, (int)codepoint, &advancePx, &lsb);
 
         int w = 0, h = 0, xoff = 0, yoff = 0;
-        unsigned char* bitmap = stbtt_GetCodepointBitmap(&cjkFontInfo_, cjkFontScale_, cjkFontScale_,
+        unsigned char* bitmap = stbtt_GetCodepointBitmap(&info, scale, scale,
                                                          (int)codepoint, &w, &h, &xoff, &yoff);
 
         CjkGlyph glyph;
-        glyph.advanceX = (float)advancePx * cjkFontScale_;
+        glyph.advanceX = (float)advancePx * scale;
         glyph.bearingX = (float)xoff;
         glyph.bearingY = (float)yoff;
         glyph.width = (float)w;
@@ -1372,7 +1405,7 @@ void TextRenderer::renderDebugQuad() {
 
         STBTT_free(bitmap, nullptr);
 
-        return &cjkGlyphs_.emplace(codepoint, glyph).first->second;
+        return &cache.emplace(codepoint, glyph).first->second;
     }
 
     // Advance width without rasterizing; used by getTextWidth, which must not touch
@@ -1382,13 +1415,20 @@ void TextRenderer::renderDebugQuad() {
         if (!cjkFontReady_) {
             return 0.0f;
         }
-        auto it = cjkGlyphs_.find(codepoint);
-        if (it != cjkGlyphs_.end()) {
+        // Book style measures TKaisho when it covers the codepoint, matching
+        // getCjkGlyph, so a shaped line and its measured width agree.
+        const bool useBook = bookStyle_ && cjkBookFontReady_ &&
+            stbtt_FindGlyphIndex(&cjkBookFontInfo_, (int)codepoint) != 0;
+        const auto& cache = useBook ? cjkBookGlyphs_ : cjkGlyphs_;
+        auto it = cache.find(codepoint);
+        if (it != cache.end()) {
             return it->second.advanceX * scale;
         }
+        const stbtt_fontinfo& info = useBook ? cjkBookFontInfo_ : cjkFontInfo_;
+        const float faceScale = useBook ? cjkBookFontScale_ : cjkFontScale_;
         int advancePx = 0, lsb = 0;
-        stbtt_GetCodepointHMetrics(&cjkFontInfo_, (int)codepoint, &advancePx, &lsb);
-        return (float)advancePx * cjkFontScale_ * scale;
+        stbtt_GetCodepointHMetrics(&info, (int)codepoint, &advancePx, &lsb);
+        return (float)advancePx * faceScale * scale;
     }
 
     // Allocates a cleared GL_R8 page atlas. Glyphs are uploaded later with

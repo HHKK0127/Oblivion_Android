@@ -173,14 +173,14 @@ void GameConsole::render() {
     textRenderer->renderText("Type 'help' for commands. Tap outside to close.", margin, consoleHeight - lineH * 0.5f, hintColor, fontSize * 0.8f);
 }
 
-void GameConsole::executeCommand(const std::string& command) {
-    if (command.empty()) return;
+bool GameConsole::executeCommand(const std::string& command) {
+    if (command.empty()) return false;
 
     addToHistory(command);
     appendOutput("> " + command);
 
     std::vector<std::string> args = tokenize(command);
-    if (args.empty()) return;
+    if (args.empty()) return false;
 
     std::string cmdName = args[0];
     std::transform(cmdName.begin(), cmdName.end(), cmdName.begin(), ::tolower);
@@ -196,11 +196,12 @@ void GameConsole::executeCommand(const std::string& command) {
                     appendOutput("Command error: " + std::string(e.what()));
                 }
             }
-            return;
+            return true;
         }
     }
 
     appendOutput("Unknown command: " + cmdName + ". Type 'help' for available commands.");
+    return false;
 }
 
 void GameConsole::print(const std::string& message) {

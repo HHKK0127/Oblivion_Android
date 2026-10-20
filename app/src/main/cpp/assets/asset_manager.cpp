@@ -1,6 +1,7 @@
 #include "asset_manager.h"
 #include "asset_path_resolver.h"
 #include "mesh_builder.h"
+#include "../game/gmst_defaults.h"
 #include <android/log.h>
 #include <algorithm>
 #include <fstream>
@@ -123,9 +124,30 @@ void AssetManager::closeAllArchives() {
 // ESM Plugin Loading
 // ============================================================================
 
+// After each successful ESM/plugin parse, publish float GMST overrides so
+// gameplay code sees the loaded values through gmst::getLive(). This runs
+// on the same thread as the parse (worker or main), and the atomic
+// release/acquire pattern in gmst::setOverride makes it safe for concurrent
+// readers on the render thread.
+static void publishGmstOverrides(const oblivion::ESMManager& esm) {
+    int nOverride = 0;
+    constexpr std::size_t N = oblivion::gmst::kEntryCount;
+    for (std::size_t i = 0; i < N; ++i) {
+        const char* key = oblivion::gmst::kEntries[i].key;
+        const oblivion::GameSettingData* s = esm.findGameSetting(key);
+        if (s && s->valueType == 'f') {
+            oblivion::gmst::setOverride(key, s->numericValue);
+            ++nOverride;
+        }
+    }
+    LOGD("GMST overrides published: %d / %zu (float)", nOverride, N);
+}
+
 bool AssetManager::loadEsm(const std::string& esmPath) {
     LOGD("Loading ESM/ESP plugin: %s", esmPath.c_str());
-    return m_esmManager.loadPlugin(esmPath);
+    const bool ok = m_esmManager.loadPlugin(esmPath);
+    if (ok) publishGmstOverrides(m_esmManager);
+    return ok;
 }
 
 bool AssetManager::extractEsmFromArchive(const std::string& esmName,
@@ -179,7 +201,9 @@ bool AssetManager::parseEsmFromMemory(const std::string& esmName,
     if (data.empty()) {
         return false;
     }
-    return m_esmManager.loadPluginFromMemory(esmName, data.data(), data.size());
+    const bool ok = m_esmManager.loadPluginFromMemory(esmName, data.data(), data.size());
+    if (ok) publishGmstOverrides(m_esmManager);
+    return ok;
 }
 
 bool AssetManager::loadEsmFromArchive(const std::string& esmName) {

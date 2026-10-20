@@ -30,7 +30,7 @@ AudioManager::AudioManager()
       currentBGMSourceId(0), currentBGMClipId(0),
       bgmVolume(1.0f), bgmFadeTarget(1.0f), bgmFadeRate(0.0f),
       bgmFading(false),
-      masterVolume(1.0f), seVolume(1.0f), voiceVolume(1.0f), footVolume(1.0f) {
+      masterVolume(1.0f), seVolume(1.0f), voiceVolume(1.0f), footVolume(0.3f) {
     LOGD("AudioManager constructed");
 }
 
@@ -542,10 +542,20 @@ void AudioManager::setVoiceVolume(float volume) {
 }
 
 void AudioManager::setFootVolume(float volume) {
+    const float previous = footVolume;
     footVolume = clampf(volume, 0.0f, 1.0f);
 
-    // No footstep playback path exists yet; the channel value is retained so
-    // surface footstep sounds pick it up once they are wired to AudioManager.
+    // Re-apply to live footstep sources, identified by the channel value they
+    // were started with (same approach as setSEVolume).
+    for (auto& pair : sources) {
+        if (pair.second && pair.first != currentBGMSourceId &&
+            pair.second->channelVolume == previous) {
+            pair.second->channelVolume = footVolume;
+            pair.second->setVolume(pair.second->baseVolume *
+                                   channelGain(footVolume, masterVolume));
+        }
+    }
+
     LOGD("Footstep volume set: %.2f", footVolume);
 }
 
@@ -1061,6 +1071,29 @@ uint32_t AudioManager::playSound(const std::string& key, const glm::vec3& positi
     }
 
     return playSE(def.clipId, position, def.volume);
+}
+
+uint32_t AudioManager::playFootstep(const std::string& key,
+                                    const glm::vec3& position) {
+    // Resolve the surface key, falling back to the generic footstep so an
+    // unknown material still produces an audible step (matches the original's
+    // category-based routing where footsteps always hit the Foot channel).
+    auto it = soundDefs.find(key);
+    if (it == soundDefs.end()) {
+        it = soundDefs.find("footstep_default");
+        if (it == soundDefs.end()) {
+            LOGW("Footstep key not found (no default): %s", key.c_str());
+            return 0;
+        }
+    }
+
+    const SoundDef& def = it->second;
+    if (def.clipId == 0) {
+        LOGW("Footstep clip not loaded: %s", key.c_str());
+        return 0;
+    }
+
+    return playSEOnChannel(def.clipId, position, def.volume, footVolume);
 }
 
 bool AudioManager::playMusic(const std::string& key, float fadeIn) {

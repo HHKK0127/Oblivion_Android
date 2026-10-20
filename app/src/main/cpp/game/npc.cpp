@@ -55,10 +55,13 @@ void CharacterStatus::initialize(float baseHealth, float baseMana, uint32_t leve
     skills["Restoration"] = 30.0f + level * 3;
 }
 
-void CharacterStatus::takeDamage(float amount) {
-    if (amount < 0) return;
+bool CharacterStatus::takeDamage(float amount) {
+    if (amount < 0) return false;
     currentHealth -= amount;
-    if (currentHealth < 0) currentHealth = 0;
+    // RE_EXE_REPORT 41.2.4: the HP write clamps anything below 1.0 to
+    // exactly 0.0, and the caller treats that landing as death.
+    if (currentHealth < 1.0f) currentHealth = 0.0f;
+    return currentHealth == 0.0f;
 }
 
 void CharacterStatus::heal(float amount) {
@@ -123,7 +126,9 @@ NPC::NPC(uint32_t id, const std::string& n)
       pathReachThreshold(0.5f),
       lastDamageTime(0.0f),
       inCombat(false),
-      combatEngagementTime(0.0f) {
+      combatEngagementTime(0.0f),
+      hostileToPlayer(false),
+      playerAttackTimer(0.0f) {
 
     // Initialize status
     status.initialize(100.0f, 50.0f, 1);
@@ -135,6 +140,19 @@ NPC::~NPC() {
 }
 
 void NPC::update(float deltaTime) {
+    // Death knockback slide (RE_EXE_REPORT 41.2.4, vt+0x118/0x120): runs
+    // even after death because a corpse gets no other motion (no ragdoll);
+    // speed decays linearly with the remaining timer.
+    if (knockbackTimer > 0.0f) {
+        knockbackTimer -= deltaTime;
+        if (knockbackTimer < 0.0f) knockbackTimer = 0.0f;
+        float len = glm::length(knockbackDirection);
+        if (len > 1e-4f) {
+            float speed = KNOCKBACK_SPEED * (knockbackTimer / KNOCKBACK_DURATION);
+            position += (knockbackDirection / len) * speed * deltaTime;
+        }
+    }
+
     switch (aiState) {
         case AIState::IDLE:
             // Just stand there
@@ -243,20 +261,42 @@ void NPC::update(float deltaTime) {
     updateModelMatrix();
 }
 
-void NPC::takeDamage(float amount) {
-    status.takeDamage(amount);
+void NPC::takeDamage(float amount, const glm::vec3& hitDirection) {
+    bool died = status.takeDamage(amount);
     lastDamageTime = 0.0f;  // Reset damage timer
 
-    if (!status.isAlive()) {
-        LOGI("NPC defeated: ID=%u, Name=%s", npcId, name.c_str());
-        aiState = AIState::IDLE;
-        if (inCombat) {
-            exitCombat();
-        }
+    if (died) {
+        // Central death pipeline so melee, spell, bleed and console-kill
+        // paths all reach it (RE_EXE_REPORT 41.2.4, vt+0x2c8 -> FUN_004dc000).
+        onDeath(hitDirection);
+    }
+}
+
+void NPC::onDeath(const glm::vec3& hitDirection) {
+    if (deadState) return;  // Death-state gate (vt+0xf8 equivalent)
+    deadState = true;
+    LOGI("NPC defeated: ID=%u, Name=%s", npcId, name.c_str());
+
+    // Death knockback (RE_EXE_REPORT 41.2.4: vt+0x118 when iVar9==0 /
+    // vt+0x120 when iVar9!=0, direction from FUN_00711440). The original
+    // only computes it for non-player actors (param_1 != DAT_00b333c4), so
+    // the player is excluded; the port has no reflect-damage path yet.
+    if (glm::dot(hitDirection, hitDirection) > 0.0f) {
+        knockbackDirection = hitDirection;
+        knockbackTimer = KNOCKBACK_DURATION;
+    }
+
+    triggerDeath();  // AnimState::DEATH
+    aiState = AIState::IDLE;
+    if (inCombat) {
+        exitCombat();
     }
 }
 
 void NPC::heal(float amount) {
+    // A corpse does not come back by normal healing (reanimation is a
+    // separate mechanic); keeping deadState and HP consistent.
+    if (deadState) return;
     status.heal(amount);
 }
 

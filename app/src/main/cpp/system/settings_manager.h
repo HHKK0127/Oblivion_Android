@@ -36,6 +36,11 @@ constexpr float DIFFICULTY_DAMAGE_MULTIPLIER = 5.0f;
  * scaling dt would run every subsystem 30x too fast - and it is a different
  * mechanism from the TimeScale setting (config object index 0x3A, default 30.0),
  * which only drives the SkyWeatherSystem clock and the wait/rest fast-forward.
+ *
+ * NOTE: the port's jni_bridge.cpp reads this from gmst::getLive() at ESM load
+ * time and stores an unused constant here. If the EXE path is correct (game
+ * clock only, not frame delta), this constant should be removed and the jni
+ * bridge restored to the identity 1.0f.
  */
 constexpr float GLOBAL_TIME_MULTIPLIER = 1.0f;
 

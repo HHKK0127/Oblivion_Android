@@ -43,6 +43,26 @@ $exePath = Join-Path $outDir 'host_tests_msvc.exe'
 $buildLog = Join-Path $outDir 'msvc_build.log'
 $shellScript = Join-Path $PSScriptRoot 'run_host_tests.sh'
 
+# Writing a log must never fail the run: on Windows a stale compiler or shell
+# process can hold the file open, and the build result matters more than the log.
+function Write-LogFile {
+    param([string]$Path, [object[]]$Content)
+
+    for ($attempt = 1; $attempt -le 5; $attempt++) {
+        try {
+            $Content | Set-Content -LiteralPath $Path -Encoding UTF8 -ErrorAction Stop
+            return
+        }
+        catch {
+            if ($attempt -eq 5) {
+                Write-Warning "Could not write '$Path': $($_.Exception.Message)"
+                return
+            }
+            Start-Sleep -Milliseconds 500
+        }
+    }
+}
+
 # ---------------------------------------------------------------------------
 # Locate Visual Studio and the x64 native build environment.
 # ---------------------------------------------------------------------------
@@ -228,7 +248,7 @@ $buildCmd = @(
 Write-Host "Compiling $($sources.Count) translation units with MSVC$(if ($NoAsan) { '' } else { ' + AddressSanitizer' })..."
 $buildOutput = & $env:ComSpec /c $buildCmd 2>&1
 $buildExit = $LASTEXITCODE
-$buildOutput | Set-Content -LiteralPath $buildLog -Encoding UTF8
+Write-LogFile -Path $buildLog -Content $buildOutput
 
 if ($ShowBuildOutput) {
     $buildOutput | ForEach-Object { Write-Host $_ }
@@ -294,7 +314,9 @@ $proc = Start-Process -FilePath $env:ComSpec -ArgumentList '/c', $runScript -NoN
 $timedOut = -not $proc.WaitForExit($RunTimeoutSeconds * 1000)
 $runExit = if ($timedOut) { 1 } else { $proc.ExitCode }
 if ($timedOut) {
-    Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+    # /T is required: the wrapper cmd is not the process that wedges, so stopping
+    # it alone would leave the test binary running and holding the log.
+    & taskkill /PID $proc.Id /T /F 2>&1 | Out-Null
 }
 if (Test-Path $runLog) {
     Get-Content $runLog

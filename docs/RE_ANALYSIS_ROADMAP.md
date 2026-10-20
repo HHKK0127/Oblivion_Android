@@ -91,7 +91,7 @@
 移植挙動の正しさに直結する領域。B バッチ完了後の本命。
 
 - [~] 1-1: 戦闘パイプライン完全化 — 命中判定 / ブロック / 弓 / 罠 / クリティカル、武器速度（FEBF0 テール・Fatigue・KD/KB は §56.1 で確定済み 2026-10-17）。Wave 5: dmgInt 非負 → KD ロールは damage 整数部 0 のみ約 1% で成立 (§59.9)、スニーク/弓/罠の実体を確定
-- [~] 1-2: 魔法システム — 呪文詠唱経路 (vtable +0x398)、コスト計算、Enchantment、MGEF 全効果タイプ。Wave 5: MagicTarget vtable 0xA6DFF4 と耐性/吸収/反射の式を確定 (残: 外側適用順・MGEF 表)
+- [~] 1-2: 魔法システム — Wave 1+2 完了 (2026-10-20, §66)。パイプライン全体 (Cast→delivery→dispatch→Reflect/Absorb→apply→ActiveEffect)、MGEF 32 コード全ハンドラ VA、コスト固定値 (スキル割引なし)、Poison on-strike、AI 呪文選択を確定。残: Alchemy/Enchanting crafting 関数、SEFF VM、MGEF+0x68 ESM 書込元 (§66.11)
 - [~] 1-3: 疲労・スタミナ・死亡処理 — 死亡 vtable +0x2c8、ノックダウン、蘇生（Fatigue 式・自動 KD は §56.1 で確定）
 - [~] 1-4: AI 詳細 — 種別名表 0xB12988 (33 件)、パッケージ選択 0x569020、検知 4 状態は確定。残 11 件 (§58.1)
 - [~] 1-5: クエスト・対話 — 条件関数 169 件 (0xB0C8C0 関数帯 +0x20)、QUST/INFO/説得は確定。残 8 件 (§58.2)
@@ -246,3 +246,4 @@
 - 2026-10-17: **Phase 1 Wave 5 (§59) 完了** — 高優先残件を子セッション 5 本で消化。戦闘 (dmgInt 非負 → KD ロールは damage 整数部 0 のみ約 1% で成立 (§59.9)、スニーク/弓/罠の実体)、魔法 (MagicTarget vtable 0xA6DFF4)、SVM (ScriptEventList + イベントビット表 + SCDA 2,393 全数)、キャラ生成 (星座ピッカー = menu 0x408 mode 3)、経済 (価格経路とラッパ) を確定。訂正 6 件 (§59.6)。
 - 2026-10-17: **§59.9 (KD 再検証)** — KD の「デッドコード」断定を精密化 (damage 整数部 0 のときのみ約 1% 成立)。**Phase 2 Wave 6a (§60) 完了** — オーディオ (DirectShow + DirectSound8)、入力 (DirectInput8 / 29 アクション)、CRT・乱数 (_ftol2 = trunc、MSVC LCG)、ファイル I/O (INI 615 キー、BSA、Plugins.txt) を子セッション 4 本で解析。訂正 7 件 (§60.5)。
 - 2026-10-17: **Phase 2 Wave 6b (§61) 完了** — レンダラ (D3D9 vtable / BSShader / 19 shaderpackage)、Havok 物理 (bhk 55+ 型 / FSM 6 状態 / 移植マッピング)、アセットストリーミング (セル範囲 9 段階 / テクスチャロード / NiNode Pool) を子セッション 3 本で解析。Phase 2 全 7 項目 [~]。
+- 2026-10-20: **Phase 1 魔法 Wave 1+2 完了 (§66)** — 魔法パイプライン全体を逆アセンブリで深掘り。M1-M8 (Wave 1, 2026-10-19): パイプライン骨格 (Cast→delivery→dispatch→Reflect/Absorb→apply)、耐性/吸収/反射の式、コスト固定値 (スキル割引なし)、ActiveEffect 更新、エンチャント減算、飛翔体。M9-M15 (Wave 2, 2026-10-20): MGEF 32 コード全ハンドラ VA、適用本体 0x6A27F0、配送トリガ、Poison on-strike、AI 呪文選択、残小物。証跡: s90〜s98_magic_m*.md (9ファイル)。残: Alchemy/Enchanting crafting、SEFF VM、MGEF+0x68 ESM 書込元。

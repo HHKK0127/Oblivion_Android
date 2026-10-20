@@ -1,0 +1,29 @@
+Bundled font notices (attribution required for redistribution)
+==============================================================
+
+This app bundles three font files under app/src/main/assets/fonts/.
+Their provenance and terms are reproduced below.
+
+1) SAIMOJI_Hokkyoku.ttf - "SAIMOJIフォント極 ver1.03"
+   Author: はぐれにゃんちゅう (週刊ぬるぬる通信)
+   Terms (from the author's readme):
+     - Free for personal and commercial use, including embedding in games.
+     - Selling or commercial redistribution of the font FILE itself is not allowed.
+   Distributed with OBJP_EasyInstaller (Oblivion Japanese Patch toolkit).
+
+2) TKaisho-GT01.ttc - "T-Kaisho(GT)" (faces: TKaisho-GT01, TPKaisho-GT01)
+   T-Font (C) TRON Forum - https://www.tron.org
+   Terms (from TKaisho-GT01.txt, "Tフォント利用規定"):
+     - May be used for display, printing and related work, commercial or not.
+     - Redistribution is free when unmodified and non-commercial, provided the
+       source and credit notice are included. THIS FILE is that notice.
+     - Modification for private use is allowed; redistribution of modified
+       data requires contacting TRON Forum.
+
+3) KingthingsPetrockLight.ttf - "Kingthings Petrock Light"
+   Author: Kevin King - www.kingthingsfonts.co.uk
+   Terms (from kingthingsEULA.txt):
+     - Free to use for any purpose.
+     - The original font file (.TTF) must not be changed.
+
+These fonts are provided as-is, without warranty.
