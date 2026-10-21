@@ -2422,6 +2422,139 @@ void ScriptVMTests::testNativeScdaDecoder() {
                getTimeMs38() - start);
     }
 
+    // Test 17b: the five names the command-position vote settled are backed by
+    // the measured payloads. Each opcode's count equals its source keyword
+    // count in every record that emits it, and the payload shape agrees with
+    // the source argument: a bare command has no payload, a numeric argument
+    // is [1][n], and a reference argument is [1][<r>].
+    {
+        const float start = getTimeMs38();
+
+        // 0x1145 RefreshTopicList: bare command, empty payload (rec 908 x2,
+        // 1047, 1274).
+        std::vector<uint8_t> refresh;
+        appendInstruction(refresh, 0x1145, {});
+        const NativeDecodeResult refreshResult = decodeNativeScda(refresh);
+        const bool refreshOk = refreshResult.success &&
+                               refreshResult.instructions.size() == 1 &&
+                               refreshResult.instructions[0].payloadLength == 0;
+
+        // 0x1111 EnableFastTravel: [1][n] (rec 320 "EnableFastTravel 0",
+        // rec 2412 x2 with 0 and 1). The argument is a 5 byte integer token.
+        std::vector<uint8_t> fastTravel;
+        appendU16(fastTravel, 1);
+        fastTravel.push_back('n');
+        appendU32(fastTravel, 0);
+        std::vector<uint8_t> fastTravelCode;
+        appendInstruction(fastTravelCode, 0x1111, fastTravel);
+        const NativeDecodeResult fastTravelResult = decodeNativeScda(fastTravelCode);
+        const bool fastTravelOk = fastTravelResult.success &&
+                                  fastTravelResult.instructions.size() == 1 &&
+                                  !fastTravelResult.instructions[0].framingFailed &&
+                                  fastTravelResult.instructions[0].tokens.size() == 1 &&
+                                  fastTravelResult.instructions[0].tokens[0].kind ==
+                                      NativeTokenKind::Integer;
+
+        // 0x116C SetPlayerInSEWorld: [1][n] (rec 442 "setPlayerInSEWorld 0").
+        std::vector<uint8_t> seWorld;
+        appendU16(seWorld, 1);
+        seWorld.push_back('n');
+        appendU32(seWorld, 0);
+        std::vector<uint8_t> seWorldCode;
+        appendInstruction(seWorldCode, 0x116C, seWorld);
+        const NativeDecodeResult seWorldResult = decodeNativeScda(seWorldCode);
+        const bool seWorldOk = seWorldResult.success &&
+                               seWorldResult.instructions.size() == 1 &&
+                               !seWorldResult.instructions[0].framingFailed &&
+                               seWorldResult.instructions[0].tokens.size() == 1 &&
+                               seWorldResult.instructions[0].tokens[0].kind ==
+                                   NativeTokenKind::Integer;
+
+        // 0x115C SendTrespassAlarm: [1][<r>] (rec 523 "sendTrespassAlarm
+        // player", rec 800).
+        std::vector<uint8_t> trespass;
+        appendU16(trespass, 1);
+        trespass.push_back('r');
+        appendU16(trespass, 1);
+        std::vector<uint8_t> trespassCode;
+        appendInstruction(trespassCode, 0x115C, trespass);
+        const NativeDecodeResult trespassResult = decodeNativeScda(trespassCode);
+        const bool trespassOk = trespassResult.success &&
+                                trespassResult.instructions.size() == 1 &&
+                                trespassResult.instructions[0].tokens.size() == 1 &&
+                                trespassResult.instructions[0].tokens[0].kind ==
+                                    NativeTokenKind::Variable &&
+                                trespassResult.instructions[0].tokens[0].typeChar == 'r';
+
+        // 0x10F0 SetClass: [1][<r>] (rec 658
+        // "SEFelasSarandasRef.setClass SEOrderPriestClass", rec 2492).
+        std::vector<uint8_t> setClass;
+        appendU16(setClass, 1);
+        setClass.push_back('r');
+        appendU16(setClass, 7);
+        std::vector<uint8_t> setClassCode;
+        appendInstruction(setClassCode, 0x10F0, setClass);
+        const NativeDecodeResult setClassResult = decodeNativeScda(setClassCode);
+        const bool setClassOk = setClassResult.success &&
+                                setClassResult.instructions.size() == 1 &&
+                                setClassResult.instructions[0].tokens.size() == 1 &&
+                                setClassResult.instructions[0].tokens[0].kind ==
+                                    NativeTokenKind::Variable &&
+                                setClassResult.instructions[0].tokens[0].typeChar == 'r';
+
+        const bool ok = refreshOk && fastTravelOk && seWorldOk && trespassOk &&
+                        setClassOk;
+        record("NativeScda: elimination names", ok,
+               "The five vote-settled names carry the payload shape their source argument implies",
+               getTimeMs38() - start);
+    }
+
+    // Test 17c: the nine opcode slots that no script in Oblivion3.esm emits are
+    // named from the authoritative function table. Eight of them never appear
+    // in any SCDA stream, so only the name can be checked; 0x10F5 ForceFlee is
+    // emitted once (ParadiseGrotto01, "forceflee ParadiseGrotto01,
+    // MQ15ResurrectPad3") and its payload is [u16 8][u16 2][<r>][<r>], which
+    // matches the two reference arguments the source line passes.
+    {
+        const float start = getTimeMs38();
+        const bool namesOk =
+            getNativeOpcodeName(0x10E1) == "GetPersuasionNumber" &&
+            getNativeOpcodeName(0x10E2) == "VampireFeed" &&
+            getNativeOpcodeName(0x10E4) == "GetIsClassDefault" &&
+            getNativeOpcodeName(0x10E5) == "GetClassDefaultMatch" &&
+            getNativeOpcodeName(0x10E6) == "GetInCellParam" &&
+            getNativeOpcodeName(0x10F2) == "GetUnconscious" &&
+            getNativeOpcodeName(0x10F5) == "ForceFlee" &&
+            getNativeOpcodeName(0x10F6) == "GetIsUsedItem" &&
+            getNativeOpcodeName(0x10F7) == "GetIsUsedItemType";
+
+        // 0x10F5 ForceFlee: [u16 2][<r>][<r>], the measured payload of the
+        // single record that emits it (length word 8 = 2 + 3 + 3).
+        std::vector<uint8_t> forceFlee;
+        appendU16(forceFlee, 2);
+        forceFlee.push_back('r');
+        appendU16(forceFlee, 1);
+        forceFlee.push_back('r');
+        appendU16(forceFlee, 2);
+        std::vector<uint8_t> forceFleeCode;
+        appendInstruction(forceFleeCode, 0x10F5, forceFlee);
+        const NativeDecodeResult forceFleeResult = decodeNativeScda(forceFleeCode);
+        const bool forceFleeOk = forceFleeResult.success &&
+                                 forceFleeResult.instructions.size() == 1 &&
+                                 !forceFleeResult.instructions[0].framingFailed &&
+                                 forceFleeResult.instructions[0].tokens.size() == 2 &&
+                                 forceFleeResult.instructions[0].tokens[0].kind ==
+                                     NativeTokenKind::Variable &&
+                                 forceFleeResult.instructions[0].tokens[0].typeChar == 'r' &&
+                                 forceFleeResult.instructions[0].tokens[1].kind ==
+                                     NativeTokenKind::Variable &&
+                                 forceFleeResult.instructions[0].tokens[1].typeChar == 'r';
+
+        record("NativeScda: unused slot names", namesOk && forceFleeOk,
+               "The nine unemitted opcode slots resolve and ForceFlee carries its two reference arguments",
+               getTimeMs38() - start);
+    }
+
     // Test 18: the remote Set form, taken from SEHaskillSummonQuestScript.
     // The payload is [0x72][u16 refSlot][type][u16 remoteVarIndex][u16 elen][expr]
     // and the remote variable index belongs to the target script's SLSD table.

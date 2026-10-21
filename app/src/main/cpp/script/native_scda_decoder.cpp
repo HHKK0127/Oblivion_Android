@@ -701,7 +701,12 @@ std::string getNativeOpcodeName(uint16_t opcode) {
         case 0x10DE: return "CloseOblivionGate";
         case 0x10DF: return "IsSpellTarget";
         case 0x10E0: return "GetIsPlayerBirthsign";
+        case 0x10E1: return "GetPersuasionNumber";
+        case 0x10E2: return "VampireFeed";
         case 0x10E3: return "GetPCIsSex";
+        case 0x10E4: return "GetIsClassDefault";
+        case 0x10E5: return "GetClassDefaultMatch";
+        case 0x10E6: return "GetInCellParam";
         case 0x10E7: return "SetInChargen";
         case 0x10E8: return "GetCombatTarget";
         case 0x10EA: return "ShowSpellmaking";
@@ -711,8 +716,12 @@ std::string getNativeOpcodeName(uint16_t opcode) {
         case 0x10EF: return "UnequipItem";
         case 0x10F0: return "SetClass";
         case 0x10F1: return "SetUnconscious";
+        case 0x10F2: return "GetUnconscious";
         case 0x10F3: return "SetRestrained";
         case 0x10F4: return "GetRestrained";
+        case 0x10F5: return "ForceFlee";
+        case 0x10F6: return "GetIsUsedItem";
+        case 0x10F7: return "GetIsUsedItemType";
         case 0x10F8: return "ModPCFame";
         case 0x10F9: return "GetPCFame";
         case 0x10FA: return "ModPCInfamy";
