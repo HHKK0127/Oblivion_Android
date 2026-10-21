@@ -134,6 +134,7 @@ add_library(native-lib SHARED
     # UI Systems
     ui/title_screen.cpp
     ui/launcher_screen.cpp
+        ui/loading_screen.cpp
     ui/quest_ui.cpp
     ui/inventory_ui.cpp
     ui/text_renderer.cpp

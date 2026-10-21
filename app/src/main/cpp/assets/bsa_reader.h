@@ -144,9 +144,13 @@ private:
     // Name table strings (for building full paths)
     std::vector<std::string> m_nameTable;
 
-    // Status
-    bool m_isOpen;
-    bool m_parsed;
+        // Hash-based file lookup table: hash → BSAFileEntry*
+        // Built after parseFolderRecords() + readNameTable() for O(1) findFile().
+        std::unordered_map<uint64_t, const BSAFileEntry*> m_fileHashIndex;
+
+        // Status
+        bool m_isOpen;
+        bool m_parsed;
 
     // Path prefix for folder/file lookups
     static constexpr size_t ZLIB_CHUNK_SIZE = 16384;

@@ -74,6 +74,18 @@ public:
     bool extractEsmFromArchive(const std::string& esmName, std::vector<uint8_t>& out) const;
     bool parseEsmFromMemory(const std::string& esmName, const std::vector<uint8_t>& data);
 
+        // Plugins.txt support: load the active plugin list from a plugins.txt file.
+        // The file format is one plugin filename per line; lines starting with '#' or '*'
+        // are treated as comments. Returns the number of plugins loaded.
+        int loadPluginsFile(const std::string& pluginsTxtPath);
+
+        // Load plugins from a vector of filenames (in load order).
+        int loadPluginsFromList(const std::vector<std::string>& pluginNames);
+
+        // Scan the data directory for .esp/.esm files and return their filenames.
+        // This is used by the launcher to populate the Data Files list.
+        std::vector<std::string> scanDataFiles() const;
+
     // Getters
     std::shared_ptr<NIFParser> getNifParser() { return nifParser; }
     std::shared_ptr<DDSLoader> getDdsLoader() { return ddsLoader; }
@@ -81,6 +93,13 @@ public:
         BSArchive* getArchive(size_t index) const {
             return (index < m_archives.size()) ? m_archives[index].get() : nullptr;
         }
+                // Get the list of loaded archive file paths (for BSA priority management)
+                    std::vector<std::string> getArchivePaths() const;
+
+                    // Reorder BSA archives so that archives belonging to later-loaded plugins
+                    // are searched first (higher priority). The pluginLoadOrder is the list of
+                    // plugin filenames in the order they were loaded (last = highest priority).
+                    void reorderArchivesByPluginOrder(const std::vector<std::string>& pluginLoadOrder);
 
     // Set game data path (for direct file access fallback)
     void setDataPath(const std::string& dataPath) { m_dataPath = dataPath; }

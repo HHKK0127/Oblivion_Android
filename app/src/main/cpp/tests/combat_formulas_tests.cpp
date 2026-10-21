@@ -4,6 +4,7 @@
 
 #include "../game/combat_formulas.h"
 
+#include <cstdio>
 #include <cmath>
 
 namespace {
@@ -21,6 +22,9 @@ bool near(float a, float b) {
 void CombatFormulasTests::record(const std::string& name, bool passed,
                                  const std::string& msg) {
     results.push_back({name, passed, msg});
+    std::printf("[%s] %s", passed ? "PASS" : "FAIL", name.c_str());
+    if (!msg.empty()) std::printf(" - %s", msg.c_str());
+    std::printf("\n");
 }
 
 bool CombatFormulasTests::near(float a, float b, float eps) {
@@ -177,11 +181,12 @@ bool CombatFormulasTests::runAllTests() {
     // --- 8. gmst_defaults table (gmst-table-integration repo subset) ---------
     {
         namespace g = oblivion::gmst;
-        // 16 fatigue + 1 time/timing + 22 combat keys = 39 entries.
+        // 16 fatigue + 1 time/timing + 24 combat keys (incl. fKnockbackTime
+        // + fCombatSpeakHitThreshold/fCombatSpeakHitChance) = 41 entries.
         // static_assert guards in fatigue_system.h / combat_formulas.h
         // already fail compilation on a missing key; these checks pin the
         // table itself.
-        record("gmst table has 39 entries", g::kEntryCount == 39);
+        record("gmst table has 41 entries", g::kEntryCount == 41);
         record("gmst has fFatigueBase", g::hasKey("fFatigueBase"));
         record("gmst has fBlockMax", g::hasKey("fBlockMax"));
         record("gmst has fKnockbackForceMax", g::hasKey("fKnockbackForceMax"));

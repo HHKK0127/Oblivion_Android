@@ -16,3 +16,67 @@
 #ifndef S_ISREG
 #define S_ISREG(mode) (((mode) & _S_IFMT) == _S_IFREG)
 #endif
+
+// Windows dirent shim for asset_manager.cpp (which uses opendir/readdir).
+// MSVC does not ship <dirent.h>; this minimal implementation wraps the
+// Win32 FindFirstFile/FindNextFile API.
+// We also redirect #include <dirent.h> to this header by defining a sentinel
+// before the system include path can be searched.
+#ifndef _WIN32_DIRENT_H
+#define _WIN32_DIRENT_H
+
+// Intercept #include <dirent.h> — MSVC has no such header, so we provide
+// our own. The /FI force-include of this file ensures the sentinel is
+// defined before any TU tries to include <dirent.h>.
+#include <windows.h>
+// Windows.h defines 'near' as an empty macro, which breaks identifiers used
+// as function names (e.g. test helper `near()`). Undefine it here.
+// Note: 'far' is deliberately NOT undefined because zlib's zconf.h maps
+// FAR -> far on MSVC and relies on the empty-macro expansion.
+#undef near
+#include <cstring>
+#include <string>
+
+struct dirent {
+    char d_name[260];
+};
+
+struct DIR {
+    HANDLE handle;
+    WIN32_FIND_DATAA findData;
+    dirent entry;
+    bool first;
+};
+
+static inline DIR* opendir(const char* path) {
+    DIR* dir = new DIR();
+    std::string pattern = std::string(path) + "\\*";
+    dir->handle = FindFirstFileA(pattern.c_str(), &dir->findData);
+    if (dir->handle == INVALID_HANDLE_VALUE) {
+        delete dir;
+        return nullptr;
+    }
+    dir->first = true;
+    return dir;
+}
+
+static inline dirent* readdir(DIR* dir) {
+    if (dir->first) {
+        dir->first = false;
+    } else {
+        if (!FindNextFileA(dir->handle, &dir->findData)) {
+            return nullptr;
+        }
+    }
+    std::strncpy(dir->entry.d_name, dir->findData.cFileName, sizeof(dir->entry.d_name) - 1);
+    dir->entry.d_name[sizeof(dir->entry.d_name) - 1] = '\0';
+    return &dir->entry;
+}
+
+static inline int closedir(DIR* dir) {
+    FindClose(dir->handle);
+    delete dir;
+    return 0;
+}
+
+#endif // _WIN32_DIRENT_H

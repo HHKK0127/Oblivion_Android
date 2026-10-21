@@ -27,9 +27,9 @@ static constexpr uint32_t OB_HEADER_VERSION = 0x67;
 // ============================================================================
 
 BSArchive::BSArchive()
-    : m_isOpen(false)
-    , m_parsed(false)
-    , m_nameBlockOffset(0) {
+    : m_nameBlockOffset(0)
+    , m_isOpen(false)
+    , m_parsed(false) {
     std::memset(&m_header, 0, sizeof(m_header));
 }
 
@@ -107,6 +107,7 @@ void BSArchive::close() {
     m_files.clear();
     m_folderNames.clear();
     m_nameTable.clear();
+    m_fileHashIndex.clear();
     m_nameBlockOffset = 0;
     std::memset(&m_header, 0, sizeof(m_header));
     m_filePath.clear();
@@ -134,9 +135,17 @@ bool BSArchive::parseArchive() {
         return false;
     }
 
-    m_parsed = true;
-    LOGD("BSA parsed successfully: %zu files indexed", m_files.size());
-    return true;
+    // Build hash-based file lookup index for O(1) findFile().
+        m_fileHashIndex.clear();
+        m_fileHashIndex.reserve(m_files.size());
+        for (const auto& entry : m_files) {
+            m_fileHashIndex[entry.hash] = &entry;
+        }
+
+        m_parsed = true;
+        LOGD("BSA parsed successfully: %zu files indexed, %zu in hash index",
+             m_files.size(), m_fileHashIndex.size());
+        return true;
 }
 
 bool BSArchive::parseFolderRecords() {
@@ -478,6 +487,89 @@ bool BSArchive::decompressZLib(const uint8_t* input, size_t inputSize,
 }
 
 // ============================================================================
+// BSA Hash Functions (RE from Oblivion.exe 0x6FA040 / 0x6FA080)
+//
+// These implement the exact hash algorithm the game uses to index files
+// inside BSA archives. See docs/BSA_HASH_ALGORITHM.md for full details.
+// ============================================================================
+
+static uint32_t hash32(const char* s, uint8_t n) {
+    uint32_t h = 0;
+    for (uint8_t i = 0; i < n; ++i) {
+        unsigned char c = static_cast<unsigned char>(s[i]);
+        h = h * 0x1003F + (c >= 'A' && c <= 'Z' ? c + 0x20 : c);
+    }
+    return h;
+}
+
+// Build a 64-bit BSA hash from a name and optional extension.
+// When extra is nullptr, no extension tweak is applied (folder hash mode).
+static uint64_t buildHash(const char* name, const char* extra) {
+    size_t n = strlen(name);
+    uint8_t out[32] = {};
+
+    out[0] = (n > 0) ? static_cast<uint8_t>(name[n - 1] | 0x20) : 0;
+    out[1] = (n > 2) ? static_cast<uint8_t>(name[n - 2] | 0x20) : 0;
+    out[2] = n & 0xFF;
+    out[3] = (n > 0) ? static_cast<uint8_t>(name[0] | 0x20) : 0;
+
+    uint32_t h = 0;
+    if (n > 3) {
+        h = hash32(name + 1, static_cast<uint8_t>((n - 3) & 0xFF));
+    }
+    if (extra) {
+        h += hash32(extra, static_cast<uint8_t>(strlen(extra) & 0xFF));
+    }
+
+    // Extension tweak table
+    int k = 0;
+    if (extra) {
+        // Case-insensitive extension comparison
+        const char* e = extra;
+        if (e[0] == '.') {
+            if ((e[1] == 'n' || e[1] == 'N') && (e[2] == 'i' || e[2] == 'I') && (e[3] == 'f' || e[3] == 'F') && e[4] == 0) k = 1;
+            else if ((e[1] == 'k' || e[1] == 'K') && (e[2] == 'f' || e[2] == 'F') && e[3] == 0) k = 2;
+            else if ((e[1] == 'd' || e[1] == 'D') && (e[2] == 'd' || e[2] == 'D') && (e[3] == 's' || e[3] == 'S') && e[4] == 0) k = 3;
+            else if ((e[1] == 'w' || e[1] == 'W') && (e[2] == 'a' || e[2] == 'A') && (e[3] == 'v' || e[3] == 'V') && e[4] == 0) k = 4;
+        }
+    }
+
+    out[3] = static_cast<uint8_t>(out[3] + ((k & 0xFC) << 5));
+    out[0] = static_cast<uint8_t>(out[0] + ((k & 0xFE) << 6));
+    out[1] = static_cast<uint8_t>(out[1] + ((k << 7) & 0xFF));
+
+    return static_cast<uint64_t>(out[0])
+         | (static_cast<uint64_t>(out[1]) << 8)
+         | (static_cast<uint64_t>(out[2]) << 16)
+         | (static_cast<uint64_t>(out[3]) << 24)
+         | (static_cast<uint64_t>(h) << 32);
+}
+
+// Compute the BSA file hash for a path like "meshes\\armor\\daedric_helm.nif".
+// The hash is computed from the base name and extension only (not the folder).
+static uint64_t computeFileHash(const std::string& path) {
+    // Find the last separator to isolate the file name
+    size_t sep = path.find_last_of("\\/");
+    size_t dot = path.find_last_of('.');
+    std::string fname, ext;
+
+    if (sep != std::string::npos) {
+        fname = path.substr(sep + 1);
+    } else {
+        fname = path;
+    }
+
+    if (dot != std::string::npos && dot > sep) {
+            // dot is relative to the full path; adjust to be relative to fname
+            size_t localDot = dot - sep - 1;
+            ext = fname.substr(localDot);
+            fname = fname.substr(0, localDot);
+        }
+
+    return buildHash(fname.c_str(), ext.empty() ? nullptr : ext.c_str());
+}
+
+// ============================================================================
 // File Lookup
 // ============================================================================
 
@@ -494,10 +586,15 @@ std::vector<const BSAFileEntry*> BSArchive::findFilesByPrefix(const std::string&
 }
 
 const BSAFileEntry* BSArchive::findFile(const std::string& path) const {
+    // Fast path: compute the BSA hash and look up in the hash index.
     const std::string normalizedPath = normalizeLookupPath(path);
-    for (const auto& entry : m_files) {
-        if (entry.lookupPath == normalizedPath) {
-            return &entry;
+    const uint64_t hash = computeFileHash(normalizedPath);
+    auto it = m_fileHashIndex.find(hash);
+    if (it != m_fileHashIndex.end()) {
+        // Verify the match by comparing the full lookup path to avoid
+        // false positives from hash collisions (extremely unlikely in practice).
+        if (it->second->lookupPath == normalizedPath) {
+            return it->second;
         }
     }
     return nullptr;

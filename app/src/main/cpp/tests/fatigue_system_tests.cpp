@@ -4,6 +4,7 @@
 
 #include "../game/fatigue_system.h"
 
+#include <cstdio>
 #include <cmath>
 
 namespace {
@@ -20,6 +21,9 @@ bool near(float a, float b) {
 void FatigueSystemTests::record(const std::string& name, bool passed,
                                 const std::string& msg) {
     results.push_back({name, passed, msg});
+    std::printf("[%s] %s", passed ? "PASS" : "FAIL", name.c_str());
+    if (!msg.empty()) std::printf(" - %s", msg.c_str());
+    std::printf("\n");
 }
 
 bool FatigueSystemTests::near(float a, float b, float eps) {
@@ -104,7 +108,7 @@ bool FatigueSystemTests::runAllTests() {
         record("attackCost(dmg 10, normal) == 9.0", near(f::attackCost(10.0f, false), 9.0f));
         record("attackCost(dmg 10, power) == 45.0 (x5)", near(f::attackCost(10.0f, true), 45.0f));
         record("attackCost(dmg 0, normal) == 8.0 (base only)", near(f::attackCost(0.0f, false), 8.0f));
-        record("attackCost(dmg 20, power) == 130.0", near(f::attackCost(20.0f, true), 130.0f));
+        record("attackCost(dmg 20, power) == 50.0", near(f::attackCost(20.0f, true), 50.0f));
     }
 
     // --- 6. Block cost (0x547590) --------------------------------------------

@@ -4,6 +4,7 @@
 #include "../system/settings_manager.h"
 #include "../localization/localization_manager.h"
 #include "../engine/renderer.h"
+#include "../assets/asset_manager.h"
 #include "ui_draw_helper.h"
 #include <GLES3/gl3.h>
 #include <algorithm>
@@ -22,11 +23,13 @@ LauncherScreen::~LauncherScreen() {
 }
 
 void LauncherScreen::initialize(LocalizationManager* lm, TextRenderer* tr,
-                                SettingsManager* sm, Renderer* rend) {
+                                SettingsManager* sm, Renderer* rend,
+                                AssetManager* am) {
     localizationManager = lm;
     textRenderer = tr;
     settingsManager = sm;
     renderer = rend;
+    assetManager = am;
 
     selectedIndex = 0;
     fadeInAlpha = 0.0f;
@@ -485,17 +488,27 @@ void LauncherScreen::renderDataFiles() {
 
     // Initialize plugin list once
     if (!pluginsInitialized) {
-        plugins = {
-            {"Oblivion.esm", true},
-            {"Oblivion - Meshes.bsa", true},
-            {"Oblivion - Textures.bsa", true},
-            {"Oblivion - Sounds.bsa", true},
-            {"Oblivion - Voices1.bsa", true},
-            {"Oblivion - Voices2.bsa", true},
-            {"Oblivion - Misc.bsa", true},
-        };
-        pluginsInitialized = true;
-    }
+            plugins.clear();
+
+            // Scan data directory for available .esm/.esp files
+            if (assetManager) {
+                std::vector<std::string> dataFiles = assetManager->scanDataFiles();
+                for (const auto& f : dataFiles) {
+                    // Oblivion.esm is always enabled; others default to disabled
+                    bool enabled = (f == "Oblivion.esm");
+                    plugins.push_back({f, enabled});
+                }
+            }
+
+            // Fallback: if scan returned nothing, show at least Oblivion.esm
+            if (plugins.empty()) {
+                plugins = {
+                    {"Oblivion.esm", true},
+                };
+            }
+
+            pluginsInitialized = true;
+        }
 
     if (!dataFilesPanel) {
         dataFilesPanel = std::make_shared<UIPanel>("DataFilesPanel");
@@ -515,7 +528,7 @@ void LauncherScreen::renderDataFiles() {
         // remains inside the panel instead of overlapping the footer.
         float titleY = std::max(34.0f, panelH * 0.08f);
         float itemGap = std::max(3.0f, panelH * 0.006f);
-        float itemH = std::clamp((panelH - 190.0f - itemGap * 5.0f) / 6.0f,
+        float itemH = std::clamp((panelH - 190.0f - itemGap * std::max(plugins.size(), size_t(1)) * 0.8f) / std::max(plugins.size(), size_t(1)),
                                  32.0f, 45.0f);
         float listY = titleY + itemH + 8.0f;
 

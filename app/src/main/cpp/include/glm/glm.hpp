@@ -85,14 +85,14 @@ struct mat4 {
 };
 
 // Utility functions
-inline mat4 perspective(float fov, float aspect, float near, float far) {
+inline mat4 perspective(float fov, float aspect, float zNear, float zFar) {
     mat4 result;
     float f = 1.0f / std::tan(fov / 2.0f);
     result.data[0][0] = f / aspect;
     result.data[1][1] = f;
-    result.data[2][2] = (far + near) / (near - far);
+    result.data[2][2] = (zFar + zNear) / (zNear - zFar);
     result.data[2][3] = -1.0f;
-    result.data[3][2] = (2.0f * far * near) / (near - far);
+    result.data[3][2] = (2.0f * zFar * zNear) / (zNear - zFar);
     result.data[3][3] = 0.0f;
     return result;
 }
@@ -149,14 +149,14 @@ inline mat4 translate(const mat4& m, const vec3& v) {
     return result;
 }
 
-inline mat4 ortho(float left, float right, float bottom, float top, float near, float far) {
+inline mat4 ortho(float left, float right, float bottom, float top, float zNear, float zFar) {
     mat4 result;
     result.data[0][0] = 2.0f / (right - left);
     result.data[1][1] = 2.0f / (top - bottom);
-    result.data[2][2] = -2.0f / (far - near);
+    result.data[2][2] = -2.0f / (zFar - zNear);
     result.data[3][0] = -(right + left) / (right - left);
     result.data[3][1] = -(top + bottom) / (top - bottom);
-    result.data[3][2] = -(far + near) / (far - near);
+    result.data[3][2] = -(zFar + zNear) / (zFar - zNear);
     result.data[3][3] = 1.0f;
     return result;
 }

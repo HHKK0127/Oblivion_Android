@@ -212,11 +212,41 @@ bool ESMFile::open(const std::string& filePath) {
     headerIdx.compressed = (header.flags & REC_FLAG_COMPRESSED) != 0;
     m_recordIndex.push_back(headerIdx);
 
-    // Seek to end of TES4 record data
-    // TES4 record: 20-byte header + dataSize bytes of sub-records
-    file.seekg(20 + header.dataSize, std::ios::beg);
-    LOGD("TES4 header parsed. RecSize=%u, seekTo=%llu, actualPos=%llu",
-         header.dataSize, (unsigned long long)(20 + header.dataSize), (unsigned long long)file.tellg());
+        // Parse TES4 header subrecords to extract MAST (master file list)
+        // The TES4 data area contains: HEDR, CNAM, SNAM, MAST+DATA pairs, etc.
+        {
+            // Save current position, rewind to start of TES4 data
+            std::streampos savedPos = file.tellg();
+            file.seekg(20, std::ios::beg); // 20-byte record header
+
+            uint32_t remaining = header.dataSize;
+            while (remaining >= 8) {
+                SubRecord sub;
+                if (!readSubRecord(file, sub)) break;
+                if (sub.size() > remaining) break;
+                remaining -= (8 + (uint32_t)sub.size());
+
+                if (std::memcmp(sub.tag, "MAST", 4) == 0) {
+                    // MAST: null-terminated master filename
+                    std::string masterName(reinterpret_cast<const char*>(sub.data.data()),
+                                           sub.data.size());
+                    // Trim trailing nulls
+                    while (!masterName.empty() && masterName.back() == '\0')
+                        masterName.pop_back();
+                    if (!masterName.empty()) {
+                        m_masters.push_back(masterName);
+                        LOGD("  Master: %s", masterName.c_str());
+                    }
+                }
+                // Skip DATA (master size) subrecord — not needed for load order
+            }
+
+            // Restore position (end of TES4 data)
+            file.seekg(savedPos);
+        }
+
+        LOGD("TES4 header parsed. RecSize=%u, masters=%zu",
+             header.dataSize, m_masters.size());
 
     // Build index of all records in the file
     // Use a stack to track GRUP nesting and boundaries
@@ -3253,8 +3283,27 @@ bool ESMFile::parseFromMemory(const std::string& name, const uint8_t* data, size
     }
     
     LOGD("TES4 header parsed, formID=0x%08X, flags=0x%08X", header.formID, header.flags);
-    
-    // Parse remaining records
+
+        // Parse TES4 subrecords from memory to extract MAST list
+        {
+            const uint8_t* subPos = pos;
+            const uint8_t* subEnd = subPos + header.dataSize;
+            while (subPos + 8 <= subEnd) {
+                SubRecord sub;
+                if (!readSubRecordMem(subPos, subEnd, sub)) break;
+                if (std::memcmp(sub.tag, "MAST", 4) == 0) {
+                    std::string masterName(reinterpret_cast<const char*>(sub.data.data()),
+                                           sub.data.size());
+                    while (!masterName.empty() && masterName.back() == '\0')
+                        masterName.pop_back();
+                    if (!masterName.empty())
+                        m_masters.push_back(masterName);
+                }
+            }
+            LOGD("  Masters from memory: %zu", m_masters.size());
+        }
+
+        // Parse remaining records
     while (pos < end) {
         if (pos + 4 > end) break;
         
@@ -3492,8 +3541,118 @@ size_t ESMFile::resolveAIPackageReferences(
     return resolved;
 }
 
-// ============================================================================
-// ESMManager implementation
+    void ESMFile::remapFormIDs(uint32_t baseIndex) {
+        if (baseIndex == 0) return;  // Plugin 0 (Oblivion.esm) keeps its original FormIDs
+        const uint32_t base = baseIndex << 24;
+
+        auto remap = [base](uint32_t& id) {
+            if (id != 0) id = base | (id & 0x00FFFFFF);
+        };
+
+        // Remap every record type that carries a formID
+        for (auto& cell : m_cells)          remap(cell.formID);
+        for (auto& npc : m_npcs)            remap(npc.formID);
+        for (auto& creature : m_creatures)  remap(creature.formID);
+        for (auto& weapon : m_weapons)      remap(weapon.formID);
+        for (auto& armor : m_armors)        remap(armor.formID);
+        for (auto& spell : m_spells)        remap(spell.formID);
+        for (auto& ench : m_enchantments)   remap(ench.formID);
+        for (auto& effect : m_magicEffects) remap(effect.formID);
+        for (auto& skill : m_skills)        remap(skill.formID);
+        for (auto& birthsign : m_birthsigns) remap(birthsign.formID);
+        for (auto& container : m_containers) remap(container.formID);
+        for (auto& light : m_lights)        remap(light.formID);
+        for (auto& sound : m_sounds)        remap(sound.formID);
+        for (auto& tree : m_trees)          remap(tree.formID);
+        for (auto& flora : m_floras)        remap(flora.formID);
+        for (auto& activator : m_activators) remap(activator.formID);
+        for (auto& apparatus : m_apparatuses) remap(apparatus.formID);
+        for (auto& eyes : m_eyes)           remap(eyes.formID);
+        for (auto& hair : m_hairs)          remap(hair.formID);
+        for (auto& climate : m_climates)    remap(climate.formID);
+        for (auto& region : m_regions)      remap(region.formID);
+        for (auto& staticObj : m_statics)   remap(staticObj.formID);
+        for (auto& leveledList : m_leveledLists) remap(leveledList.formID);
+        for (auto& navMesh : m_navMeshes)   remap(navMesh.formID);
+        for (auto& book : m_books)          remap(book.formID);
+        for (auto& faction : m_factions)    remap(faction.formID);
+        for (auto& race : m_races)          remap(race.formID);
+        for (auto& cls : m_classes)         remap(cls.formID);
+        for (auto& clothing : m_clothing)   remap(clothing.formID);
+        for (auto& ingredient : m_ingredients) remap(ingredient.formID);
+        for (auto& alchemy : m_alchemy)     remap(alchemy.formID);
+        for (auto& miscItem : m_miscItems)  remap(miscItem.formID);
+        for (auto& road : m_roads)          remap(road.formID);
+        for (auto& door : m_doors)          remap(door.formID);
+        for (auto& pkg : m_packages)        remap(pkg.formID);
+        for (auto& pathGrid : m_pathGrids)  remap(pathGrid.formID);
+        for (auto& idleAnim : m_idleAnimations) remap(idleAnim.formID);
+        for (auto& key : m_keys)            remap(key.formID);
+        for (auto& ammo : m_ammo)           remap(ammo.formID);
+        for (auto& sigilStone : m_sigilStones) remap(sigilStone.formID);
+        for (auto& soulGem : m_soulGems)    remap(soulGem.formID);
+        for (auto& furniture : m_furniture) remap(furniture.formID);
+        for (auto& landTex : m_landscapeTextures) remap(landTex.formID);
+        for (auto& grass : m_grass)         remap(grass.formID);
+        for (auto& water : m_waters)        remap(water.formID);
+        for (auto& weather : m_weathers)    remap(weather.formID);
+        for (auto& combatStyle : m_combatStyles) remap(combatStyle.formID);
+        for (auto& loadScreen : m_loadScreens) remap(loadScreen.formID);
+        for (auto& effectShader : m_effectShaders) remap(effectShader.formID);
+        for (auto& animObj : m_animationObjects) remap(animObj.formID);
+        for (auto& subspace : m_subspaces)  remap(subspace.formID);
+
+        // Remap reference formIDs (REFR records)
+        for (auto& ref : m_references) {
+            remap(ref.formID);
+            remap(ref.baseFormID);
+            remap(ref.cellFormID);
+        }
+
+        // Remap quest formIDs and their stage/info references
+        for (auto& quest : m_quests) {
+            remap(quest.formID);
+                    for (auto& stage : quest.questRecord.stages) {
+                for (auto& obj : quest.questRecord.objectives) {
+                    remap(obj.targetFormID);
+                }
+            }
+        }
+
+        // Remap dialog formIDs and their info references
+        for (auto& dialog : m_dialogs) {
+            remap(dialog.formID);
+            for (auto& info : dialog.infos) {
+                remap(info.formID);
+                remap(info.dialFormID);
+            }
+        }
+
+        // Remap terrain formIDs
+        for (auto& terrain : m_terrains)    remap(terrain.formID);
+
+        // Remap world formIDs
+        for (auto& world : m_worlds)        remap(world.formID);
+
+        // Remap global variable formIDs
+        for (auto& gvar : m_globalVariables) remap(gvar.formID);
+
+        // Remap game setting formIDs
+        for (auto& gst : m_gameSettings)    remap(gst.formID);
+
+        // Remap reference-level PKID package formIDs on NPC_/CREA records
+        for (auto& npc : m_npcs) {
+            for (auto& pkg : npc.aiPackages) remap(pkg.formID);
+        }
+        for (auto& creature : m_creatures) {
+            for (auto& pkg : creature.aiPackages) remap(pkg.formID);
+        }
+
+        LOGD("FormIDs remapped for %s: base=0x%06X", m_fileName.c_str(), base);
+    }
+
+    // ============================================================================
+    // ESMManager implementation
 // ============================================================================
 bool ESMManager::loadPlugin(const std::string& esmPath) {
     auto file = std::make_unique<ESMFile>();
@@ -3514,10 +3673,120 @@ bool ESMManager::loadPluginFromMemory(const std::string& name, const uint8_t* da
         LOGE("Failed to load plugin from memory: %s", name.c_str());
         return false;
     }
-    m_files.push_back(std::move(file));
+    file->remapFormIDs(static_cast<uint32_t>(m_files.size()));
+        m_files.push_back(std::move(file));
+        rebuildIndices();
+        LOGD("Plugin loaded from memory. Total: %zu", m_files.size());
+        return true;
+    }
+
+    int ESMManager::loadPluginWithMasters(const std::string& esmPath) {
+    // Extract filename from path
+    std::string filename = esmPath;
+    size_t sep = esmPath.find_last_of("/\\");
+    if (sep != std::string::npos) filename = esmPath.substr(sep + 1);
+
+    // Check if already loaded
+    for (const auto& f : m_files) {
+        if (f->getFileName() == filename) {
+            LOGD("Plugin already loaded: %s", filename.c_str());
+            return 0;
+        }
+    }
+
+    // First, load the plugin to get its TES4 header (including MAST list)
+    auto file = std::make_unique<ESMFile>();
+    if (!file->open(esmPath)) {
+        LOGE("Failed to load plugin: %s", esmPath.c_str());
+        return -1;
+    }
+
+    // Recursively load masters first
+    int loaded = 0;
+    const std::string dataPath = esmPath.substr(0, esmPath.find_last_of("/\\") + 1);
+    for (const auto& master : file->getMasters()) {
+        // Skip Oblivion.esm — it's always loaded first by the launcher
+        if (master == "Oblivion.esm" || master == "OBLIVION.ESM") continue;
+
+        // Check if master is already loaded
+        bool alreadyLoaded = false;
+        for (const auto& f : m_files) {
+            if (f->getFileName() == master) {
+                alreadyLoaded = true;
+                break;
+            }
+        }
+        if (alreadyLoaded) continue;
+
+        std::string masterPath = dataPath + master;
+        int result = loadPluginWithMasters(masterPath);
+        if (result < 0) {
+            LOGW("Failed to load master %s for %s", master.c_str(), filename.c_str());
+            continue;
+        }
+        loaded += result;
+    }
+
+    // Now add the plugin itself — remap its FormIDs first so that the
+        // load-order index (bits 24-31) is baked in before rebuildIndices().
+        file->remapFormIDs(static_cast<uint32_t>(m_files.size()));
+        m_files.push_back(std::move(file));
+    m_pluginLoadOrder.push_back(filename);
+    loaded++;
+
     rebuildIndices();
-    LOGD("Plugin loaded from memory. Total: %zu", m_files.size());
-    return true;
+    LOGD("Plugin with masters loaded: %s (loaded %d files total)", filename.c_str(), loaded);
+    return loaded;
+}
+
+int ESMManager::loadPluginsFromList(const std::vector<std::string>& pluginNames) {
+    int loaded = 0;
+    for (const auto& name : pluginNames) {
+        if (name.empty()) continue;
+        // Skip comments
+        if (name[0] == '#') continue;
+        // Skip '*' prefix (used by some launchers to mark active plugins)
+        std::string cleanName = name;
+        if (cleanName[0] == '*') cleanName = cleanName.substr(1);
+        // Trim whitespace
+        while (!cleanName.empty() && (cleanName[0] == ' ' || cleanName[0] == '\t'))
+            cleanName = cleanName.substr(1);
+        while (!cleanName.empty() && (cleanName.back() == ' ' || cleanName.back() == '\t' ||
+               cleanName.back() == '\r' || cleanName.back() == '\n'))
+            cleanName.pop_back();
+        if (cleanName.empty()) continue;
+
+        // Check if already loaded
+        bool alreadyLoaded = false;
+        for (const auto& f : m_files) {
+            if (f->getFileName() == cleanName) {
+                alreadyLoaded = true;
+                break;
+            }
+        }
+        if (alreadyLoaded) {
+            LOGD("Plugin already loaded (from list): %s", cleanName.c_str());
+            continue;
+        }
+
+        // Resolve path: search in data path
+        std::string pluginPath;
+        if (!m_dataPath.empty())
+            pluginPath = m_dataPath + "/" + cleanName;
+        else
+            pluginPath = cleanName;
+
+        int result = loadPluginWithMasters(pluginPath);
+        if (result > 0) loaded += result;
+    }
+    LOGI("Loaded %d plugins from list (%zu requested)", loaded, pluginNames.size());
+    return loaded;
+}
+
+const std::vector<std::string>& ESMManager::getPluginMasters(size_t fileIndex) const {
+    static const std::vector<std::string> empty;
+    if (fileIndex >= m_files.size()) return empty;
+    return m_files[fileIndex]->getMasters();
 }
 
 void ESMManager::cleanup() {

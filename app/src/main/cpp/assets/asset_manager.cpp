@@ -4,6 +4,8 @@
 #include "../game/gmst_defaults.h"
 #include <android/log.h>
 #include <algorithm>
+#include <cctype>
+#include <dirent.h>
 #include <fstream>
 #include <sstream>
 
@@ -216,6 +218,134 @@ bool AssetManager::loadEsmFromArchive(const std::string& esmName) {
     }
     return parseEsmFromMemory(esmName, data);
 }
+
+    int AssetManager::loadPluginsFile(const std::string& pluginsTxtPath) {
+        LOGD("Loading plugins.txt: %s", pluginsTxtPath.c_str());
+        std::ifstream file(pluginsTxtPath);
+        if (!file.is_open()) {
+            LOGW("plugins.txt not found at %s, using default Oblivion.esm only",
+                 pluginsTxtPath.c_str());
+            // Default: just load Oblivion.esm
+            if (!m_dataPath.empty()) {
+                loadEsm(m_dataPath + "/Oblivion.esm");
+            }
+            return 0;
+        }
+
+        std::vector<std::string> pluginNames;
+        std::string line;
+        while (std::getline(file, line)) {
+            // Trim whitespace
+            auto trimStart = line.find_first_not_of(" \t\r\n");
+            if (trimStart == std::string::npos) continue;
+            auto trimEnd = line.find_last_not_of(" \t\r\n");
+            std::string trimmed = line.substr(trimStart, trimEnd - trimStart + 1);
+
+            // Skip comments
+            if (trimmed.empty() || trimmed[0] == '#') continue;
+
+            // Strip '*' prefix (used by some launchers to mark active plugins)
+            if (trimmed[0] == '*') trimmed = trimmed.substr(1);
+            // Trim again after stripping prefix
+            trimStart = trimmed.find_first_not_of(" \t");
+            if (trimStart != std::string::npos)
+                trimmed = trimmed.substr(trimStart);
+
+            if (trimmed.empty()) continue;
+            pluginNames.push_back(trimmed);
+        }
+        file.close();
+
+        LOGD("plugins.txt: %zu entries", pluginNames.size());
+        return loadPluginsFromList(pluginNames);
+    }
+
+    int AssetManager::loadPluginsFromList(const std::vector<std::string>& pluginNames) {
+        // Set data path on ESMManager for master resolution
+        m_esmManager.setDataPath(m_dataPath);
+
+        int loaded = m_esmManager.loadPluginsFromList(pluginNames);
+        if (loaded > 0) {
+            publishGmstOverrides(m_esmManager);
+        }
+        return loaded;
+    }
+
+    std::vector<std::string> AssetManager::getArchivePaths() const {
+        std::vector<std::string> paths;
+        paths.reserve(m_archives.size());
+        for (const auto& archive : m_archives) {
+            paths.push_back(archive->getFilePath());
+        }
+        return paths;
+    }
+
+        void AssetManager::reorderArchivesByPluginOrder(const std::vector<std::string>& pluginLoadOrder) {
+            if (m_archives.size() <= 1) return;
+
+            // Build a set of BSA filenames that correspond to each plugin.
+            // Convention: a plugin "SomeMod.esp" has a BSA "SomeMod.bsa".
+            std::unordered_set<std::string> pluginBsaNames;
+            for (const auto& plugin : pluginLoadOrder) {
+                std::string bsaName = plugin;
+                size_t dot = bsaName.rfind('.');
+                if (dot != std::string::npos) {
+                    bsaName = bsaName.substr(0, dot) + ".bsa";
+                }
+                // Normalise to lowercase for comparison
+                std::transform(bsaName.begin(), bsaName.end(), bsaName.begin(), ::tolower);
+                pluginBsaNames.insert(bsaName);
+            }
+
+            // Stable partition: archives whose BSA name matches a plugin in the load
+            // order are moved to the front, preserving their relative order so that
+            // later-loaded plugins' BSAs end up earlier in the search order.
+            // (loadFileData searches in reverse, so earlier in the vector = higher priority.)
+            std::stable_partition(m_archives.begin(), m_archives.end(),
+                [&pluginBsaNames](const std::unique_ptr<BSArchive>& archive) {
+                    std::string name = archive->getFilePath();
+                    size_t sep = name.find_last_of("/\\");
+                    if (sep != std::string::npos) name = name.substr(sep + 1);
+                    std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+                    return pluginBsaNames.count(name) > 0;
+                });
+
+            LOGD("BSA archives reordered by plugin priority (%zu archives)", m_archives.size());
+        }
+
+    std::vector<std::string> AssetManager::scanDataFiles() const {
+        std::vector<std::string> files;
+        if (m_dataPath.empty()) return files;
+
+        // Use platform-specific directory listing
+        // On Android, we scan the assets directory or data path
+        DIR* dir = opendir(m_dataPath.c_str());
+        if (!dir) {
+            LOGW("Cannot scan data directory: %s", m_dataPath.c_str());
+            return files;
+        }
+
+        struct dirent* entry;
+        while ((entry = readdir(dir)) != nullptr) {
+            std::string name(entry->d_name);
+            // Skip hidden files and directories
+            if (name.empty() || name[0] == '.') continue;
+
+            // Check for .esm and .esp extensions
+            size_t dot = name.rfind('.');
+            if (dot == std::string::npos) continue;
+            std::string ext = name.substr(dot);
+            std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+            if (ext == ".esm" || ext == ".esp") {
+                files.push_back(name);
+            }
+        }
+        closedir(dir);
+
+        std::sort(files.begin(), files.end());
+        LOGD("Data files scan: found %zu plugins", files.size());
+        return files;
+    }
 
 // ============================================================================
 // BSA File Lookup

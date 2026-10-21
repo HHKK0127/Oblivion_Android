@@ -74,7 +74,14 @@ if (-not (Test-Path $vswhere)) {
 
 $vsPath = & $vswhere -products '*' -latest -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
 if (-not $vsPath) {
-    throw 'No Visual Studio installation with the MSVC x64 toolset was found.'
+    # Fallback: VS 18 (2026) Professional at the well-known path
+    $fallback = 'C:\Program Files\Microsoft Visual Studio\18\Professional'
+    if (Test-Path (Join-Path $fallback 'VC\Auxiliary\Build\vcvars64.bat')) {
+        $vsPath = $fallback
+        Write-Host "vswhere returned no results; using fallback path '$fallback'"
+    } else {
+        throw 'No Visual Studio installation with the MSVC x64 toolset was found.'
+    }
 }
 $vsPath = $vsPath.Trim()
 
@@ -204,6 +211,9 @@ function Get-Zlib {
 
 $zlib = Get-Zlib
 $includeFlags += "/I$($zlib.Include)"
+
+# Add stubs directory for MSVC-only headers (e.g. dirent.h)
+$includeFlags += "/I$(Join-Path $PSScriptRoot 'stubs')"
 
 # ---------------------------------------------------------------------------
 # Compile and link.

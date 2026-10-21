@@ -46,6 +46,18 @@
 
 #include "fatigue_system.h"
 #include "gmst_defaults.h"
+#include "npc.h"
+
+// Android log stub for host builds (MSVC/g++ without NDK)
+#ifndef ANDROID_LOG_DEBUG
+#define ANDROID_LOG_DEBUG 3
+#include <cstdio>
+#define __android_log_print(prio, tag, ...) do { \
+    std::fprintf(stderr, "[%s] ", tag);          \
+    std::fprintf(stderr, __VA_ARGS__);           \
+    std::fputc('\n', stderr);                    \
+} while (0)
+#endif
 #include <cstdlib>
 
 namespace oblivion {

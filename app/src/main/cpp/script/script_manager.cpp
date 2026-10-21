@@ -72,12 +72,21 @@ void ScriptManager::addScript(const ScriptData& script) {
     // runs scripts that the compiler compiled; the synthetic VM handles the
     // rest (game-mode scripts, inline quest scripts compiled to the synthetic
     // encoding, and scripts that have only SCTX source but no SCDA).
-    if (!script.bytecode.empty() && nativePrograms_.find(script.formID) == nativePrograms_.end()) {
-        auto result = decodeNativeScda(script);
-        if (result.success) {
-            nativePrograms_[script.formID] = std::move(result);
+        // Native SCDA always starts with a MARKER (0x001C) or PROLOGUE (0x001D)
+        // opcode; synthetic bytecode (PUSH_INT=0x12 etc.) must never be decoded
+        // as native, otherwise the debugger breakpoint/step/resume path breaks.
+        if (!script.bytecode.empty() && nativePrograms_.find(script.formID) == nativePrograms_.end()) {
+            const bool isNativeFormat = script.bytecode.size() >= 2 &&
+                (script.bytecode[0] == 0x1C || script.bytecode[0] == 0x1D ||
+                 (script.bytecode[0] == 0x00 && script.bytecode[1] == 0x1C) ||
+                 (script.bytecode[0] == 0x00 && script.bytecode[1] == 0x1D));
+            if (isNativeFormat) {
+                auto result = decodeNativeScda(script);
+                if (result.success) {
+                    nativePrograms_[script.formID] = std::move(result);
+                }
+            }
         }
-    }
 
     SCM_LOGD("Added script 0x%08X: %s (type=%d, bytecode=%zu bytes)",
              script.formID, script.editorID.c_str(),

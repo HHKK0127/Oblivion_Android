@@ -5,6 +5,7 @@
 #include "imperial_weave.h"
 #include "gl_check.h"
 #include "../ui/ui_draw_helper.h"
+#include "../ui/loading_screen.h"
 #include "../assets/bsa_reader.h"
 #include "../inventory/item_factory.h"
 #include "../physics/physics_manager.h"
@@ -28,6 +29,7 @@
 
 #include <thread>
 #include <chrono>
+#include <fstream>
 
 // Maximum distance (game units) from the player at which NPC meshes are
 // streamed in and placeholder entities are drawn. One exterior cell spans
@@ -454,6 +456,11 @@ void Renderer::resize(unsigned int width, unsigned int height) {
         LOGI("TitleScreen screen size updated to: %ux%u", screenWidth, screenHeight);
     }
 
+        // Update LoadingScreen layout
+        if (loadingScreen) {
+            loadingScreen->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        }
+
     // Update QuestUI layout
     if (questUI) {
         questUI->setScreenSize(screenWidth, screenHeight);
@@ -768,8 +775,22 @@ bool Renderer::initGameSystems() {
         LOGE("Failed to initialize UISleepWaitMenu");
     } else {
         sleepWaitMenuUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
-        LOGI("UISleepWaitMenu initialized successfully");
-    }
+            // Wire autosave on sleep/wait confirm, gated on bSaveOnRest / bSaveOnWait
+            // (RE §47.4: original autosave fires on SleepWaitMenu confirm).
+            sleepWaitMenuUI->setOnConfirmCallback(
+                [this]() {
+                    if (!saveManager || !settingsManager) return;
+                    const GameplaySettings& opts = settingsManager->gameplaySettings();
+                    if (sleepWaitMenuUI->isSleepMode()) {
+                        if (!opts.saveOnRest) return;
+                        saveManager->getAutoSave().triggerEventSave("rest");
+                    } else {
+                        if (!opts.saveOnWait) return;
+                        saveManager->getAutoSave().triggerEventSave("wait");
+                    }
+                });
+            LOGI("UISleepWaitMenu initialized successfully");
+        }
 
     // Initialize Level Up Menu (Phase 9)
     LOGI("Creating LevelUpMenu...");
@@ -2607,14 +2628,37 @@ bool Renderer::initGameSystems() {
     // Initialize Launcher Screen (displayed before title screen)
     launcherScreen = std::make_unique<LauncherScreen>();
     launcherScreen->initialize(localizationManager.get(), textRenderer.get(),
-                               settingsManager.get(), this);
+                                   settingsManager.get(), this, assetManager.get());
     launcherScreen->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
 
     // Launcher callbacks
     launcherScreen->setOnPlayCallback([this]() {
         LOGI("Launcher Play clicked - transitioning to title screen");
-        showLauncher = false;
-        showTitleScreen = true;
+
+            // Load enabled plugins from the launcher's Data Files list
+            if (assetManager && launcherScreen) {
+                std::vector<std::string> enabledPlugins;
+                const auto& plugins = launcherScreen->getPlugins();
+                for (const auto& p : plugins) {
+                    if (p.enabled) {
+                        enabledPlugins.push_back(p.name);
+                    }
+                }
+                if (!enabledPlugins.empty()) {
+                    LOGI("Loading %zu enabled plugins from launcher...", enabledPlugins.size());
+                    assetManager->loadPluginsFromList(enabledPlugins);
+
+                                    // Reorder BSA archives so that later-loaded plugins' BSAs
+                                    // are searched first (higher priority for asset resolution).
+                                    const auto& loadOrder = assetManager->getEsmManager().getPluginLoadOrder();
+                                    if (!loadOrder.empty()) {
+                                        assetManager->reorderArchivesByPluginOrder(loadOrder);
+                                    }
+                                }
+            }
+
+            showLauncher = false;
+            showTitleScreen = true;
         // Initialize title screen
         if (titleScreen) {
             titleScreen->initialize(localizationManager.get(), textRenderer.get());
@@ -2634,7 +2678,13 @@ bool Renderer::initGameSystems() {
 
     LOGI("LauncherScreen initialized");
 
-    // Initialize Title Screen
+        // Initialize Loading Screen (used during game data / world transitions)
+        loadingScreen = std::make_unique<LoadingScreen>();
+        loadingScreen->initialize(localizationManager.get(), textRenderer.get());
+        loadingScreen->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        LOGI("LoadingScreen initialized");
+
+        // Initialize Title Screen
     titleScreen = std::make_unique<TitleScreen>();
     titleScreen->initialize(localizationManager.get(), textRenderer.get());
     // Auto-load Oblivion fonts for title screen
@@ -2948,13 +2998,33 @@ void Renderer::loadBSAArchives() {
     LOGI("Loaded %d / %zu BSA archives", loadedCount,
          sizeof(bsaArchives) / sizeof(bsaArchives[0]));
 
-    // Load ESM game data. Extracting the plugin bytes stays on this thread because
-    // BSArchive owns a single stream and is not thread safe, but the parse itself is
-    // CPU bound (several seconds for Oblivion.esm), so it runs on a worker thread
-    // while the launcher/title screen is already drawing. render() re-checks
-    // ensureScenarioBuilt() every frame, so the world is built from real game data as
-    // soon as the worker flips gameDataLoadAttempted.
-    LOGI("Loading ESM game data...");
+        // Try loading plugins from plugins.txt for proper mod load order.
+        // When plugins.txt exists, it defines the full plugin list including Oblivion.esm
+        // and all active mods. Fall back to Oblivion.esm-only from BSA if not found.
+        {
+            const std::string pluginsTxtPath = assetManager->getDataPath() + "/plugins.txt";
+            std::ifstream testFile(pluginsTxtPath);
+            if (testFile.good()) {
+                testFile.close();
+                LOGI("plugins.txt found, loading plugins from list...");
+                const int loaded = assetManager->loadPluginsFile(pluginsTxtPath);
+                if (loaded > 0) {
+                    LOGI("Loaded %d plugins from plugins.txt", loaded);
+                }
+                gameDataLoadAttempted.store(true, std::memory_order_release);
+                ensureScenarioBuilt();
+                return;
+            }
+        }
+
+        // Fall back: load Oblivion.esm from BSA archive (no plugins.txt available).
+        // Extracting the plugin bytes stays on this thread because BSArchive owns a
+        // single stream and is not thread safe, but the parse itself is CPU bound
+        // (several seconds for Oblivion.esm), so it runs on a worker thread while the
+        // launcher/title screen is already drawing. render() re-checks
+        // ensureScenarioBuilt() every frame, so the world is built from real game data
+        // as soon as the worker flips gameDataLoadAttempted.
+        LOGI("Loading ESM game data (fallback, no plugins.txt)...");
     std::vector<uint8_t> esmBytes;
     if (!assetManager->extractEsmFromArchive("Oblivion.esm", esmBytes)) {
         LOGW("  [--] Oblivion.esm not found (will test without ESM data)");
@@ -2965,7 +3035,13 @@ void Renderer::loadBSAArchives() {
 
     LOGI("  [OK] Extracted Oblivion.esm (%zu bytes)", esmBytes.size());
 
-    // initialize() is idempotent, and calling it here also covers
+        // Show loading screen during the async ESM parse
+        if (loadingScreen) {
+            loadingScreen->show("Loading game data...");
+            loadingScreen->setProgress(0.1f);
+        }
+
+        // initialize() is idempotent, and calling it here also covers
     // nativeSetDataPath() arriving before init(), so the pool is always live by the
     // time a parse is submitted.
     if (!asyncTaskMgr_.initialize(2)) {
@@ -2997,11 +3073,14 @@ void Renderer::loadBSAArchives() {
         }
         // Release: the render thread sees the records and builds the world next frame.
         gameDataLoadAttempted.store(true, std::memory_order_release);
-    });
 
-    // Game data load is still in flight, so this only records the intent to build.
-    ensureScenarioBuilt();
-}
+                // Hide loading screen on the render thread next frame
+                // (loadingScreen is not thread-safe, so we defer the hide)
+            });
+
+            // Game data load is still in flight, so this only records the intent to build.
+            ensureScenarioBuilt();
+        }
 
 void Renderer::ensureScenarioBuilt() {
     if (scenarioBuilt) {
@@ -4332,6 +4411,13 @@ void Renderer::render(float deltaTime) {
     // scenario is built from game data at the end of loadBSAArchives().
     ensureScenarioBuilt();
 
+        // Auto-hide loading screen once the world scenario is built
+        if (loadingScreen && loadingScreen->isVisible() && scenarioBuilt) {
+            loadingScreen->setProgress(1.0f);
+            loadingScreen->hide();
+            LOGI("LoadingScreen auto-hidden (scenario built)");
+        }
+
         // Phase 65: advance face-lip animation each frame. When a dialogue lip is
             // playing, Update() produces per-frame morph weights consumed later by the
             // (deferred) face render path and exposed to the debug HUD.
@@ -4422,7 +4508,24 @@ void Renderer::render(float deltaTime) {
         return;
     }
 
-    // Feed the player's movement / look input once per frame before the
+            // Loading screen: render during game data / world transitions
+            if (loadingScreen && loadingScreen->isVisible()) {
+                loadingScreen->update(deltaTime);
+                loadingScreen->render();
+                if (debugMenu) {
+                    debugMenu->update(deltaTime);
+                    if (debugMenu->isVisible()) {
+                        debugMenu->render();
+                    }
+                }
+                if (gameConsole && gameConsole->isVisible()) {
+                    gameConsole->render();
+                }
+                if (performanceMonitor) performanceMonitor->endFrame();
+                return;
+            }
+
+            // Feed the player's movement / look input once per frame before the
     // Imperial Weave update. RE §30.1 path (3): while a menu owns the screen
     // (or the title screen is up) no world input reaches the player, so a
     // neutral stick is fed instead - and the virtual controller has any
@@ -4599,7 +4702,8 @@ void Renderer::render(float deltaTime) {
             showTitleScreen = false;
             showLauncher = true;
             if (launcherScreen) {
-                launcherScreen->initialize(localizationManager.get(), textRenderer.get());
+                launcherScreen->initialize(localizationManager.get(), textRenderer.get(),
+                                settingsManager.get(), this, assetManager.get());
                 launcherScreen->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
             }
             LOGI("Title screen Quit - returning to launcher");
@@ -8212,10 +8316,9 @@ void Renderer::applyGameplaySettings(const GameplaySettings& settings) {
         crosshair->setDynamicEnabled(!settings.disableDynamicCrosshair);
     }
     // Of the autosave toggles only bSaveOnTravel / bSaveOnInteriorExteriorSwitch
-    // have a consumer (the DoorManager cell-transition callback); bSaveOnRest /
-    // bSaveOnWait are consumed by the SleepWaitMenu update handler in the
-    // original and stay unused until the rest/wait flow exists.
-    LOGI("Gameplay settings applied: difficulty=%d (x%.3f) crosshair=%d subtitles=%d/%d",
+        // have a consumer (the DoorManager cell-transition callback); bSaveOnRest /
+        // bSaveOnWait are consumed by the SleepWaitMenu confirm callback above.
+        LOGI("Gameplay settings applied: difficulty=%d (x%.3f) crosshair=%d subtitles=%d/%d",
          settings.difficulty, Player::getDifficultyScale(),
          settings.crosshair ? 1 : 0, settings.generalSubtitles ? 1 : 0,
          settings.dialogueSubtitles ? 1 : 0);

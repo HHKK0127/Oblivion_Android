@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <memory>
 #include <array>
@@ -12,6 +12,7 @@
 #include "async_task_manager.h"
 #include "../ui/title_screen.h"
 #include "../ui/launcher_screen.h"
+#include "../ui/loading_screen.h"
 #include "../ui/quest_ui.h"
 #include "../ui/text_renderer.h"
 #include "../ui/debug_hud.h"
@@ -120,12 +121,14 @@ extern std::string g_pendingDataPath;
 
 // Forward declarations
 class ProfilerDashboard;
+class LoadingScreen;
 
 class Renderer {
 private:
     // UI Systems
     std::unique_ptr<LauncherScreen> launcherScreen;
     std::unique_ptr<TitleScreen> titleScreen;
+        std::unique_ptr<LoadingScreen> loadingScreen;
     std::unique_ptr<QuestUI> questUI;
     std::unique_ptr<InventoryUI> inventoryUI;
     std::unique_ptr<TextRenderer> textRenderer;
@@ -347,6 +350,7 @@ public:
     WorldManager* getWorldManager() { return worldManager.get(); }
     LauncherScreen* getLauncherScreen() { return launcherScreen.get(); }
     TitleScreen* getTitleScreen() { return titleScreen.get(); }
+        LoadingScreen* getLoadingScreen() { return loadingScreen.get(); }
     QuestUI* getQuestUI() { return questUI.get(); }
     TextRenderer* getTextRenderer() { return textRenderer.get(); }
     DebugHUD* getDebugHUD() { return debugHUD.get(); }
@@ -391,6 +395,20 @@ public:
     bool isTitleScreenActive() const { return showTitleScreen; }
     bool isExitRequested() const { return shouldExit; }
     UISystem* getUISystem() { return uiSystem.get(); }
+
+    // Loading screen convenience
+    void showLoadingScreen(const std::string& message = "Loading") {
+        if (loadingScreen) loadingScreen->show(message);
+    }
+    void hideLoadingScreen() {
+        if (loadingScreen) loadingScreen->hide();
+    }
+    void setLoadingProgress(float p) {
+        if (loadingScreen) loadingScreen->setProgress(p);
+    }
+    void setLoadingMessage(const std::string& msg) {
+        if (loadingScreen) loadingScreen->setMessage(msg);
+    }
 
     // Phase 9.1: Map System
     map::MapSystem* getMapSystem() { return mapSystem.get(); }

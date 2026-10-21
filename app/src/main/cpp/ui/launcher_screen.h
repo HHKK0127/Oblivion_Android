@@ -17,6 +17,7 @@
 class TextRenderer;
 class SettingsManager;
 class Renderer;
+class AssetManager;
 
 enum class LauncherState {
     MAIN,           // Main launcher
@@ -40,6 +41,7 @@ private:
     TextRenderer* textRenderer = nullptr;
     SettingsManager* settingsManager = nullptr;
     Renderer* renderer = nullptr;
+        AssetManager* assetManager = nullptr;
 
     // UI
     std::shared_ptr<UIPanel> mainPanel;
@@ -100,7 +102,8 @@ public:
     ~LauncherScreen();
 
     void initialize(LocalizationManager* lm, TextRenderer* tr,
-                    SettingsManager* sm = nullptr, Renderer* rend = nullptr);
+                        SettingsManager* sm = nullptr, Renderer* rend = nullptr,
+                        AssetManager* am = nullptr);
     void update(float deltaTime);
     void render();
     void onTouchEvent(float x, float y, int action);
@@ -113,6 +116,7 @@ public:
     bool isTransitioning() const { return state == LauncherState::TRANSITIONING; }
     LauncherState getState() const { return state; }
     float getDisplayTimer() const { return displayTimer; }
+        const std::vector<PluginInfo>& getPlugins() const { return plugins; }
 
 private:
     void buildMainMenu();

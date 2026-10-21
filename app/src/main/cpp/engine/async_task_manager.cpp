@@ -154,8 +154,10 @@ void AsyncTaskManager::waitForAll(std::chrono::milliseconds timeout) {
             return;
         }
 
-        std::unique_lock<std::mutex> lock(queueMutex_);
-        completionCondition_.wait_for(lock, std::chrono::milliseconds(100));
+        // Do not hold queueMutex_ while sleeping: worker threads need it to pop
+        // the next task from the queue. Holding it here would deadlock when all
+        // workers finish their current task and block trying to pop the next one.
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 }
 

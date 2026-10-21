@@ -1315,6 +1315,108 @@ void GameConsole::registerBuiltinCommands() {
         print(result);
         LOGI_CONSOLE("%s", result.c_str());
     });
+
+    // === Phase 64: Debug Tool Tab stubs (not yet implemented) ===
+
+    // DBG_PICKER: Picker + Teleport
+    registerCommand("pick", "Pick mode: pick", [this](const std::vector<std::string>&) { print("pick: not yet implemented"); });
+    registerCommand("pickfollow", "Follow picked NPC: pickfollow", [this](const std::vector<std::string>&) { print("pickfollow: not yet implemented"); });
+    registerCommand("pickinfo", "Show picked entity info: pickinfo", [this](const std::vector<std::string>&) { print("pickinfo: not yet implemented"); });
+
+    // DBG_AI: AI State Viewer
+    registerCommand("aishow", "Show AI state: aishow", [this](const std::vector<std::string>&) { print("aishow: not yet implemented"); });
+    registerCommand("aistep", "Step NPC AI: aistep", [this](const std::vector<std::string>&) { print("aistep: not yet implemented"); });
+    registerCommand("ailist", "List AI states: ailist", [this](const std::vector<std::string>&) { print("ailist: not yet implemented"); });
+    registerCommand("aireset", "Reset AI: aireset", [this](const std::vector<std::string>&) { print("aireset: not yet implemented"); });
+
+    // DBG_ANIM: Animation Scrubber
+    registerCommand("animshow", "Show animation state: animshow", [this](const std::vector<std::string>&) { print("animshow: not yet implemented"); });
+    registerCommand("animplay", "Play/pause animation: animplay", [this](const std::vector<std::string>&) { print("animplay: not yet implemented"); });
+    registerCommand("animstep", "Step animation: animstep <delta>", [this](const std::vector<std::string>&) { print("animstep: not yet implemented"); });
+    registerCommand("animreset", "Reset animation: animreset", [this](const std::vector<std::string>&) { print("animreset: not yet implemented"); });
+
+    // DBG_QUEST: Quest Debugger
+    registerCommand("questshow", "Show quest state: questshow", [this](const std::vector<std::string>&) { print("questshow: not yet implemented"); });
+    registerCommand("questcomplete", "Complete quest: questcomplete", [this](const std::vector<std::string>&) { print("questcomplete: not yet implemented"); });
+    registerCommand("questfail", "Fail quest: questfail", [this](const std::vector<std::string>&) { print("questfail: not yet implemented"); });
+    registerCommand("queststage", "Set quest stage: queststage", [this](const std::vector<std::string>&) { print("queststage: not yet implemented"); });
+    registerCommand("questflags", "Show quest flags: questflags", [this](const std::vector<std::string>&) { print("questflags: not yet implemented"); });
+
+    // DBG_ITEM: Item Editor
+    registerCommand("itemshow", "Show item data: itemshow", [this](const std::vector<std::string>&) { print("itemshow: not yet implemented"); });
+    registerCommand("itemedit", "Edit item: itemedit", [this](const std::vector<std::string>&) { print("itemedit: not yet implemented"); });
+    registerCommand("itemadd", "Add item: itemadd", [this](const std::vector<std::string>&) { print("itemadd: not yet implemented"); });
+    registerCommand("itemremove", "Remove item: itemremove", [this](const std::vector<std::string>&) { print("itemremove: not yet implemented"); });
+
+    // DBG_HOTRELOAD: Hot Reload
+    registerCommand("hotreload", "Hot reload assets: hotreload", [this](const std::vector<std::string>&) { print("hotreload: not yet implemented"); });
+    registerCommand("hotwatchon", "Enable hot watch: hotwatchon", [this](const std::vector<std::string>&) { print("hotwatchon: not yet implemented"); });
+    registerCommand("hotwatchoff", "Disable hot watch: hotwatchoff", [this](const std::vector<std::string>&) { print("hotwatchoff: not yet implemented"); });
+    registerCommand("hotreloadlog", "Show hot reload log: hotreloadlog", [this](const std::vector<std::string>&) { print("hotreloadlog: not yet implemented"); });
+
+    // DBG_LIGHT: Lighting Control
+    registerCommand("lightshow", "Show lighting state: lightshow", [this](const std::vector<std::string>&) { print("lightshow: not yet implemented"); });
+    registerCommand("lightreset", "Reset lighting: lightreset", [this](const std::vector<std::string>&) { print("lightreset: not yet implemented"); });
+    registerCommand("lightambient", "Toggle ambient light: lightambient", [this](const std::vector<std::string>&) { print("lightambient: not yet implemented"); });
+    registerCommand("lightshadow", "Toggle shadow: lightshadow", [this](const std::vector<std::string>&) { print("lightshadow: not yet implemented"); });
+
+    // DBG_MEM: Memory Trace
+    registerCommand("memshow", "Show memory state: memshow", [this](const std::vector<std::string>&) { print("memshow: not yet implemented"); });
+    registerCommand("memdump", "Dump memory: memdump", [this](const std::vector<std::string>&) { print("memdump: not yet implemented"); });
+    registerCommand("memdiff", "Memory diff: memdiff", [this](const std::vector<std::string>&) { print("memdiff: not yet implemented"); });
+    registerCommand("memreset", "Reset memory trace: memreset", [this](const std::vector<std::string>&) { print("memreset: not yet implemented"); });
+
+    // DBG_DIALOG: Dialogue Debugger
+    registerCommand("dialogshow", "Show dialogue state: dialogshow", [this](const std::vector<std::string>&) { print("dialogshow: not yet implemented"); });
+    registerCommand("dialogtopics", "Show dialogue topics: dialogtopics", [this](const std::vector<std::string>&) { print("dialogtopics: not yet implemented"); });
+    registerCommand("dialogchoices", "Show dialogue choices: dialogchoices", [this](const std::vector<std::string>&) { print("dialogchoices: not yet implemented"); });
+    registerCommand("dialoghistory", "Show dialogue history: dialoghistory", [this](const std::vector<std::string>&) { print("dialoghistory: not yet implemented"); });
+    registerCommand("dialogreset", "Reset dialogue debugger: dialogreset", [this](const std::vector<std::string>&) { print("dialogreset: not yet implemented"); });
+
+    // DBG_INPUT: Input Visualizer
+    registerCommand("inputshow", "Show input state: inputshow", [this](const std::vector<std::string>&) { print("inputshow: not yet implemented"); });
+    registerCommand("inputtrail", "Toggle input trail: inputtrail", [this](const std::vector<std::string>&) { print("inputtrail: not yet implemented"); });
+    registerCommand("inputpad", "Show pad map: inputpad", [this](const std::vector<std::string>&) { print("inputpad: not yet implemented"); });
+    registerCommand("inputclear", "Clear input visualizer: inputclear", [this](const std::vector<std::string>&) { print("inputclear: not yet implemented"); });
+
+    // DBG_AUDIO: Audio Browser
+    registerCommand("audiobrowse", "Browse audio: audiobrowse", [this](const std::vector<std::string>&) { print("audiobrowse: not yet implemented"); });
+    registerCommand("audioplay", "Play audio: audioplay", [this](const std::vector<std::string>&) { print("audioplay: not yet implemented"); });
+    registerCommand("audiostop", "Stop audio: audiostop", [this](const std::vector<std::string>&) { print("audiostop: not yet implemented"); });
+    registerCommand("audiowave", "Show waveform: audiowave", [this](const std::vector<std::string>&) { print("audiowave: not yet implemented"); });
+
+    // DBG_PHYS: Physics Tool
+    registerCommand("physshow", "Show physics state: physshow", [this](const std::vector<std::string>&) { print("physshow: not yet implemented"); });
+    registerCommand("physforce", "Apply force: physforce", [this](const std::vector<std::string>&) { print("physforce: not yet implemented"); });
+    registerCommand("physimpulse", "Apply impulse: physimpulse", [this](const std::vector<std::string>&) { print("physimpulse: not yet implemented"); });
+    registerCommand("physreset", "Reset physics: physreset", [this](const std::vector<std::string>&) { print("physreset: not yet implemented"); });
+
+    // DBG_SLOT: Save Slot Viewer
+    registerCommand("slotshow", "Show save slots: slotshow", [this](const std::vector<std::string>&) { print("slotshow: not yet implemented"); });
+    registerCommand("slotcompare", "Compare save slots: slotcompare", [this](const std::vector<std::string>&) { print("slotcompare: not yet implemented"); });
+    registerCommand("slotdelete", "Delete save slot: slotdelete", [this](const std::vector<std::string>&) { print("slotdelete: not yet implemented"); });
+
+    // DBG_NAV: Navmesh Viewer
+    registerCommand("navshow", "Show navmesh: navshow", [this](const std::vector<std::string>&) { print("navshow: not yet implemented"); });
+    registerCommand("navpath", "Show nav path: navpath", [this](const std::vector<std::string>&) { print("navpath: not yet implemented"); });
+    registerCommand("navzones", "Show nav zones: navzones", [this](const std::vector<std::string>&) { print("navzones: not yet implemented"); });
+    registerCommand("navportals", "Show nav portals: navportals", [this](const std::vector<std::string>&) { print("navportals: not yet implemented"); });
+
+    // DBG_TIME: Time & Weather Control
+    registerCommand("timeshow", "Show time state: timeshow", [this](const std::vector<std::string>&) { print("timeshow: not yet implemented"); });
+    registerCommand("timeset", "Set time of day: timeset <hour>", [this](const std::vector<std::string>&) { print("timeset: not yet implemented"); });
+
+    // DBG_AGGRO: Aggro HUD
+    registerCommand("aggroshow", "Show aggro state: aggroshow", [this](const std::vector<std::string>&) { print("aggroshow: not yet implemented"); });
+    registerCommand("aggrotarget", "Set aggro target: aggrotarget", [this](const std::vector<std::string>&) { print("aggrotarget: not yet implemented"); });
+    registerCommand("aggroclear", "Clear aggro: aggroclear", [this](const std::vector<std::string>&) { print("aggroclear: not yet implemented"); });
+    registerCommand("aggroenemies", "List aggro enemies: aggroenemies", [this](const std::vector<std::string>&) { print("aggroenemies: not yet implemented"); });
+
+    // DBG_STATS: Player Stats Panel
+    registerCommand("statsshow", "Show player stats panel: statsshow", [this](const std::vector<std::string>&) { print("statsshow: not yet implemented"); });
+    registerCommand("statsattr", "Show attributes: statsattr", [this](const std::vector<std::string>&) { print("statsattr: not yet implemented"); });
+    registerCommand("statsskills", "Show skills: statsskills", [this](const std::vector<std::string>&) { print("statsskills: not yet implemented"); });
+    registerCommand("statsmods", "Show modifiers: statsmods", [this](const std::vector<std::string>&) { print("statsmods: not yet implemented"); });
 }
 
 void GameConsole::handleConsoleTouch(float x, float y, int action) {

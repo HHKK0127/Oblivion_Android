@@ -1199,6 +1199,11 @@ public:
         const std::string& getFileName() const { return m_fileName; }
         bool isMaster() const { return m_isMaster; }
 
+                // Masters list from TES4 header MAST subrecords
+                const std::vector<std::string>& getMasters() const { return m_masters; }
+                void setMasters(const std::vector<std::string>& masters) { m_masters = masters; }
+                void addMaster(const std::string& master) { m_masters.push_back(master); }
+
         // Data integrity verification
         struct VerificationResult {
             bool valid = true;
@@ -1233,10 +1238,20 @@ public:
         size_t resolveAIPackageReferences(
             const std::unordered_map<uint32_t, const AIPackageData*>* external = nullptr);
 
+                // Remap all FormIDs in this file by OR-ing (baseIndex << 24) into each
+                // record's formID. This implements the standard Oblivion load-order
+                // FormID scheme where bits 24-31 encode the 0-based plugin index.
+                // Must be called after all records are decoded and before the file is
+                // added to the ESMManager's file list.
+                void remapFormIDs(uint32_t baseIndex);
+
 private:
     std::string m_fileName;
     std::string m_filePath;  // Full path for lazy loading
     bool m_isMaster = false;
+
+        // Masters list parsed from TES4 header MAST subrecords
+        std::vector<std::string> m_masters;
 
     // Index of all records (offset-based, for lazy loading)
     std::vector<RecordIndex> m_recordIndex;
@@ -1408,6 +1423,38 @@ public:
     // Load order: masters first, then the addon file
     bool loadPlugin(const std::string& esmPath);
         bool loadPluginFromMemory(const std::string& name, const uint8_t* data, size_t dataSize);
+
+        // Set the data path for resolving plugin filenames to full paths.
+        void setDataPath(const std::string& path) { m_dataPath = path; }
+        const std::string& getDataPath() const { return m_dataPath; }
+
+        // Load a plugin and all its masters (from TES4 header MAST list) first.
+        // Returns the number of master files that were loaded (0 if none needed).
+        // Masters are loaded recursively so that a plugin's entire dependency
+        // chain is satisfied before the plugin itself is parsed.
+        int loadPluginWithMasters(const std::string& esmPath);
+
+        // Load plugins from a plugins.txt-style list in load order.
+        // Each line is a plugin filename; lines starting with '#' or '*' are
+        // treated as comments (the '*' prefix used by some launchers is ignored).
+        // Empty lines are skipped. Returns the number of plugins loaded.
+        int loadPluginsFromList(const std::vector<std::string>& pluginNames);
+
+        // Get the list of loaded plugin filenames in load order.
+        const std::vector<std::string>& getPluginLoadOrder() const { return m_pluginLoadOrder; }
+
+                // Get the FormID base (high byte) for a plugin by its file index.
+                // In Oblivion, FormID bits 24-31 encode the 0-based load order index.
+                // Plugin 0 (Oblivion.esm) has base 0x00, plugin 1 has base 0x01, etc.
+                uint32_t getPluginFormIDBase(size_t fileIndex) const {
+                    return static_cast<uint32_t>(fileIndex) << 24;
+                }
+
+                // Extract the plugin index (bits 24-31) from a FormID.
+                uint32_t getPluginIndexFromFormID(uint32_t formID) const {
+                    return (formID >> 24) & 0xFF;
+                }
+
         void cleanup();
 
         // Query helpers
@@ -1566,8 +1613,16 @@ public:
 
     size_t getPluginCount() const { return m_files.size(); }
 
-private:
-    std::vector<std::unique_ptr<ESMFile>> m_files;
+        // Get the masters list for a loaded plugin by index.
+        // Returns empty vector if the plugin has no masters or index is out of range.
+        const std::vector<std::string>& getPluginMasters(size_t fileIndex) const;
+
+    private:
+        // Track loaded plugin filenames in load order (for plugins.txt support)
+        std::vector<std::string> m_pluginLoadOrder;
+            // Data path for resolving plugin filenames to full paths
+            std::string m_dataPath;
+        std::vector<std::unique_ptr<ESMFile>> m_files;
     std::unordered_map<uint32_t, size_t> m_npcIndex;  // formID -> file index
     std::unordered_map<uint32_t, size_t> m_creatureIndex;
     std::unordered_map<uint32_t, size_t> m_cellIndex;
