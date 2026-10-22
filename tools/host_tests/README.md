@@ -17,6 +17,7 @@ The runner builds one binary that executes every wired suite in order:
 | `Phase48IntegrationTest` | `tests/phase48_integration_test.cpp` | 7 | `StateManager` / `InputRouter` / `GameLoopCoordinator` / world / cell transition / combat / quest / save integration |
 | `Phase30IntegrationTest` | `tests/phase30_integration_test.cpp` | 1 (skip) | NIF/animation/collision asset pipeline; skips itself when real Oblivion assets are absent (see below) |
 | `Phase69PersistenceTests` | `tests/phase69_persistence_tests.cpp` | 30 | Container persistence: `SaveManager` CNTR section, the lazy-materialisation buffer (`applyPendingContainerState`) and the carry-forward case where a save happens before the player ever opened the container |
+| `PluginListTests` | `tests/plugin_list_tests.cpp` | 23 | `plugins.txt` grammar and load order: `#` comments, the `*` active marker, BOM/CR/blank trimming, case-insensitive duplicate rejection, plain-list-means-all-active, serialise round trip and the Oblivion.esm / masters / plugins ordering |
 
 The runner prints each suite's `getSummary()` and exits with status 1 if any
 suite fails.

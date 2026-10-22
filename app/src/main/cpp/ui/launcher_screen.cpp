@@ -5,10 +5,29 @@
 #include "../localization/localization_manager.h"
 #include "../engine/renderer.h"
 #include "../assets/asset_manager.h"
+#include "../assets/plugin_list.h"
 #include "ui_draw_helper.h"
 #include <GLES3/gl3.h>
 #include <algorithm>
+#include <cctype>
 #include <cmath>
+#include <unordered_set>
+
+namespace {
+
+// Plugin filenames are compared case-insensitively, matching how the data
+// directory resolves them.
+std::string lowerPluginName(const std::string& name) {
+    std::string lowered;
+    lowered.reserve(name.size());
+    for (char c : name) {
+        lowered.push_back(static_cast<char>(
+            std::tolower(static_cast<unsigned char>(c))));
+    }
+    return lowered;
+}
+
+}  // namespace
 
 LauncherScreen::LauncherScreen()
     : state(LauncherState::MAIN),
@@ -480,6 +499,19 @@ void LauncherScreen::renderOptions() {
 // ============================================================================
 // Data Files screen (plugin management)
 // ============================================================================
+void LauncherScreen::persistPluginSelection() {
+    if (!assetManager || assetManager->getDataPath().empty()) return;
+
+    std::vector<oblivion::PluginListEntry> entries;
+    entries.reserve(plugins.size());
+    for (const auto& plugin : plugins) {
+        entries.push_back({plugin.name, plugin.enabled});
+    }
+
+    const std::string path = assetManager->getDataPath() + "/plugins.txt";
+    assetManager->savePluginsFile(path, entries);
+}
+
 void LauncherScreen::renderDataFiles() {
     glClearColor(COLOR_DARK_BG.x, COLOR_DARK_BG.y, COLOR_DARK_BG.z, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -490,17 +522,31 @@ void LauncherScreen::renderDataFiles() {
     if (!pluginsInitialized) {
             plugins.clear();
 
-            // Scan data directory for available .esm/.esp files
+            // The active plugins come first, in the order plugins.txt described
+            // them, so the list reflects the user's real install and load order
+            // instead of a fixed set.
+            std::unordered_set<std::string> seen;
             if (assetManager) {
-                std::vector<std::string> dataFiles = assetManager->scanDataFiles();
-                for (const auto& f : dataFiles) {
-                    // Oblivion.esm is always enabled; others default to disabled
-                    bool enabled = (f == "Oblivion.esm");
+                for (const auto& name : assetManager->getEsmManager().getPluginLoadOrder()) {
+                    if (name.empty()) continue;
+                    if (!seen.insert(lowerPluginName(name)).second) continue;
+                    plugins.push_back({name, true});
+                }
+            }
+
+            // Then every other plugin the data directory offers, disabled until
+            // the user enables it. Oblivion.esm is the one exception: the game
+            // cannot start without it.
+            if (assetManager) {
+                for (const auto& f : assetManager->scanDataFiles()) {
+                    const std::string lowered = lowerPluginName(f);
+                    if (!seen.insert(lowered).second) continue;
+                    const bool enabled = (lowered == "oblivion.esm");
                     plugins.push_back({f, enabled});
                 }
             }
 
-            // Fallback: if scan returned nothing, show at least Oblivion.esm
+            // Fallback: if nothing was found, show at least Oblivion.esm
             if (plugins.empty()) {
                 plugins = {
                     {"Oblivion.esm", true},
@@ -551,13 +597,24 @@ void LauncherScreen::renderDataFiles() {
             // Toggle plugin enabled state using member variable
             size_t idx = i;
             pluginBtn->setOnClick([this, idx]() {
-                if (idx < plugins.size()) {
-                    plugins[idx].enabled = !plugins[idx].enabled;
-                    LOGI("Plugin %s: %s", plugins[idx].name.c_str(),
-                         plugins[idx].enabled ? "enabled" : "disabled");
-                    // Rebuild panel to update labels
-                    dataFilesPanel.reset();
+                if (idx >= plugins.size()) return;
+
+                // Oblivion.esm is the master the engine loads first and the game
+                // cannot start without it, so the retail launcher does not let it
+                // be switched off either. Keeping it on also guarantees the saved
+                // plugins.txt always carries at least one marker, which is what
+                // tells the reader the file records enabled state.
+                if (lowerPluginName(plugins[idx].name) == "oblivion.esm") {
+                    LOGI("Oblivion.esm is always active and cannot be disabled");
+                    return;
                 }
+
+                plugins[idx].enabled = !plugins[idx].enabled;
+                LOGI("Plugin %s: %s", plugins[idx].name.c_str(),
+                     plugins[idx].enabled ? "enabled" : "disabled");
+                persistPluginSelection();
+                // Rebuild panel to update labels
+                dataFilesPanel.reset();
             });
 
             dataFilesPanel->addChild(pluginBtn);
@@ -568,7 +625,7 @@ void LauncherScreen::renderDataFiles() {
         // (Using button as text container since we don't have standalone text in panels)
         auto infoBtn = std::make_shared<UIButton>("DataFilesInfo");
         infoBtn->initialize();
-        infoBtn->setLabel("Toggle plugins to enable/disable. Changes apply on next launch.");
+        infoBtn->setLabel("Toggle plugins to enable/disable (Oblivion.esm is always active). Changes apply on next launch.");
         infoBtn->setTextRenderer(textRenderer);
         infoBtn->setSize(panelW - 40.0f, 35.0f);
         infoBtn->setLabelScale(0.7f);

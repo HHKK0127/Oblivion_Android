@@ -135,6 +135,11 @@ private:
     void renderSupport();
     void renderFadeToGame();
 
+    // Writes the current Data Files selection to <dataPath>/plugins.txt, the same
+    // file the engine reads on the next launch. Changes therefore take effect on
+    // restart, matching the retail launcher.
+    void persistPluginSelection();
+
     void renderBackground();
     void renderLogo();
 };

@@ -608,6 +608,27 @@ Java_com_example_oblivion_GameRenderer_nativeRunPhase69PersistenceTests(
 }
 
 // ============================================
+// Phase 70: plugins.txt Grammar / Load Order Test Runner
+// ============================================
+#include "tests/plugin_list_tests.h"
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_example_oblivion_GameRenderer_nativeRunPluginListTests(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    LOGI("=== Plugin List Test START ===");
+
+    PluginListTests test;
+    bool allPassed = test.runAllTests();
+
+    std::string summary = test.getSummary();
+    LOGI("=== Plugin List Test END: %s ===",
+         allPassed ? "ALL PASSED" : "SOME FAILED");
+
+    return env->NewStringUTF(summary.c_str());
+}
+
+// ============================================
 // Phase 52: FaceGen System Initialization
 // ============================================
 #include "character/face_gen_morpher.h"

@@ -4,6 +4,7 @@
 #include "dds_loader.h"
 #include "bsa_reader.h"
 #include "esm_reader.h"
+#include "plugin_list.h"
 #include "../geometry/mesh.h"
 #include "../geometry/material.h"
 #include <memory>
@@ -75,15 +76,24 @@ public:
     bool parseEsmFromMemory(const std::string& esmName, const std::vector<uint8_t>& data);
 
         // Plugins.txt support: load the active plugin list from a plugins.txt file.
-        // The file format is one plugin filename per line; lines starting with '#' or '*'
-        // are treated as comments. Returns the number of plugins loaded.
+        // The file format is one plugin filename per line; lines starting with '#' are
+        // comments and a leading '*' marks an active plugin. Returns the number of
+        // plugins loaded. See assets/plugin_list.h for the full grammar.
         int loadPluginsFile(const std::string& pluginsTxtPath);
 
         // Load plugins from a vector of filenames (in load order).
         int loadPluginsFromList(const std::vector<std::string>& pluginNames);
 
-        // Scan the data directory for .esp/.esm files and return their filenames.
-        // This is used by the launcher to populate the Data Files list.
+        // Write a plugin selection back to plugins.txt so the launcher's Data Files
+        // screen survives a restart. Entries are written in the order given, with a
+        // '*' in front of every active one. Returns false when the file cannot be
+        // opened for writing (for example when the data path is read only).
+        bool savePluginsFile(const std::string& pluginsTxtPath,
+                             const std::vector<oblivion::PluginListEntry>& entries) const;
+
+        // Scan the data directory for .esp/.esm files and return their filenames in
+        // retail load order (Oblivion.esm, then the remaining masters, then the
+        // plugins). This is used by the launcher to populate the Data Files list.
         std::vector<std::string> scanDataFiles() const;
 
     // Getters

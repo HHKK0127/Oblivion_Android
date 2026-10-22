@@ -532,6 +532,9 @@ class GameRenderer : GLSurfaceView.Renderer {
     // Phase 69: container persistence (save/load round trip)
     external fun nativeRunPhase69PersistenceTests(): String
 
+    // Phase 70: plugins.txt grammar and load order
+    external fun nativeRunPluginListTests(): String
+
     /**
      * Runs every native test suite and returns a combined summary.
      *
@@ -546,7 +549,8 @@ class GameRenderer : GLSurfaceView.Renderer {
             "Phase 48 Integration" to { nativeRunPhase48Tests() },
             "Phase 48 Stress" to { nativeRunPhase48StressTests() },
             "Phase 38 Script VM" to { nativeRunScriptVmTests() },
-            "Phase 69 Persistence" to { nativeRunPhase69PersistenceTests() }
+            "Phase 69 Persistence" to { nativeRunPhase69PersistenceTests() },
+            "Plugin List" to { nativeRunPluginListTests() }
         )
         for ((name, run) in suites) {
             try {

@@ -276,6 +276,7 @@ add_library(native-lib SHARED
     assets/asset_manager.cpp
     assets/bsa_reader.cpp
     assets/esm_reader.cpp
+    assets/plugin_list.cpp
 
     # Phase 46: Asset Pipeline
     assets/texture_manager.cpp
@@ -321,6 +322,9 @@ add_library(native-lib SHARED
 
     # Tests (Phase 69: container persistence)
     tests/phase69_persistence_tests.cpp
+
+    # Tests (Phase 70: plugins.txt grammar and load order)
+    tests/plugin_list_tests.cpp
 
     # Physics System (Phase 36 - Jolt Physics)
     physics/physics_manager.cpp

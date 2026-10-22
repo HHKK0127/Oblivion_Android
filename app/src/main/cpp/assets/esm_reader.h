@@ -1442,6 +1442,11 @@ public:
         int loadPluginsFromList(const std::vector<std::string>& pluginNames);
 
         // Get the list of loaded plugin filenames in load order.
+        // Only plugins that went through loadPluginWithMasters() are recorded, so
+        // Oblivion.esm is deliberately absent: it is the base file the caller
+        // loads first (via loadPlugin()) and every master chain skips it. Callers
+        // that need the full picture (the launcher's Data Files screen) add the
+        // base file from the data directory scan themselves.
         const std::vector<std::string>& getPluginLoadOrder() const { return m_pluginLoadOrder; }
 
                 // Get the FormID base (high byte) for a plugin by its file index.

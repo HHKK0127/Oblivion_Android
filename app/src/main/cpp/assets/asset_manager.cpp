@@ -232,32 +232,35 @@ bool AssetManager::loadEsmFromArchive(const std::string& esmName) {
             return 0;
         }
 
-        std::vector<std::string> pluginNames;
-        std::string line;
-        while (std::getline(file, line)) {
-            // Trim whitespace
-            auto trimStart = line.find_first_not_of(" \t\r\n");
-            if (trimStart == std::string::npos) continue;
-            auto trimEnd = line.find_last_not_of(" \t\r\n");
-            std::string trimmed = line.substr(trimStart, trimEnd - trimStart + 1);
-
-            // Skip comments
-            if (trimmed.empty() || trimmed[0] == '#') continue;
-
-            // Strip '*' prefix (used by some launchers to mark active plugins)
-            if (trimmed[0] == '*') trimmed = trimmed.substr(1);
-            // Trim again after stripping prefix
-            trimStart = trimmed.find_first_not_of(" \t");
-            if (trimStart != std::string::npos)
-                trimmed = trimmed.substr(trimStart);
-
-            if (trimmed.empty()) continue;
-            pluginNames.push_back(trimmed);
-        }
+        std::ostringstream buffer;
+        buffer << file.rdbuf();
         file.close();
 
-        LOGD("plugins.txt: %zu entries", pluginNames.size());
+        const auto entries = oblivion::parsePluginList(buffer.str());
+        const auto pluginNames = oblivion::activePluginNames(entries);
+        LOGD("plugins.txt: %zu entries, %zu active", entries.size(), pluginNames.size());
         return loadPluginsFromList(pluginNames);
+    }
+
+    bool AssetManager::savePluginsFile(
+            const std::string& pluginsTxtPath,
+            const std::vector<oblivion::PluginListEntry>& entries) const {
+        std::ofstream file(pluginsTxtPath, std::ios::trunc);
+        if (!file.is_open()) {
+            LOGW("Cannot write plugins.txt at %s (data path read only?)",
+                 pluginsTxtPath.c_str());
+            return false;
+        }
+        file << oblivion::serializePluginList(entries);
+        const bool ok = file.good();
+        file.close();
+        if (ok) {
+            LOGI("plugins.txt written: %s (%zu entries)", pluginsTxtPath.c_str(),
+                 entries.size());
+        } else {
+            LOGW("Failed to write plugins.txt at %s", pluginsTxtPath.c_str());
+        }
+        return ok;
     }
 
     int AssetManager::loadPluginsFromList(const std::vector<std::string>& pluginNames) {
@@ -342,7 +345,21 @@ bool AssetManager::loadEsmFromArchive(const std::string& esmName) {
         }
         closedir(dir);
 
-        std::sort(files.begin(), files.end());
+        // Retail load order: Oblivion.esm, then the remaining masters, then the
+        // plugins, alphabetical inside each group so the list is stable between runs.
+        std::vector<oblivion::PluginListEntry> entries;
+        entries.reserve(files.size());
+        for (const auto& name : files) {
+            entries.push_back({name, true});
+        }
+        oblivion::sortPluginLoadOrder(entries);
+
+        files.clear();
+        files.reserve(entries.size());
+        for (const auto& entry : entries) {
+            files.push_back(entry.name);
+        }
+
         LOGD("Data files scan: found %zu plugins", files.size());
         return files;
     }
