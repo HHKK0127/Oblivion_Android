@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-21T16:00:00Z",
+  "lastUpdated": "2026-10-22T05:59:19Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -320,7 +320,7 @@
         "phase66",
         "world-loader"
       ],
-      "compressed": false
+      "compressed": true
     },
     {
       "id": "legal-risk-decompiled-sources-20260921",
@@ -592,14 +592,14 @@
       "timestamp": "2026-09-22T12:51:50Z",
       "category": "constraint",
       "priority": "high",
-      "content": "tol40 RGB(117,59,33) 40 **background and **debugdisplay t7.png tol40=22,744px ta.png 10,154px 2.2 background RGB(104,88,72) |104-117|=13 / |88-59|=29 / |72-33|=39 40 background and AA and tol40 background and",
+      "content": "[MERGED] tol40 RGB(117,59,33) 40 **background and **debugdisplay t7.png tol40=22,744px ta.png 10,154px 2.2 background RGB(104,88,72) |104-117|=13 / |88-59|=29 / |72-33|=39 40 background and AA and tol40 background and",
       "tags": [
+        "tol40",
         "measurement",
         "pitfall",
-        "tol40",
         "ui"
       ],
-      "compressed": false
+      "compressed": true
     },
     {
       "id": "d40a2382-3c87-45fa-b56b-362c199526ba",
@@ -707,7 +707,7 @@
     {
       "category": "constraint",
       "priority": "high",
-      "content": "tol40 RGB(117,59,33) 40 **background and **debugdisplay t7.png tol40=22,744px ta.png 10,154px 2.2 tol20 0background RGB(104,88,72) |104-117|=13 / |88-59|=29 / |72-33|=39 40 background and AA and tol40 background and tol20 and",
+      "content": "[DUPLICATE of entry 42] tol40 RGB(117,59,33) 40 **background and **debugdisplay t7.p",
       "tags": [
         "measurement",
         "pitfall",
@@ -716,7 +716,7 @@
       ],
       "id": "aab6834f-11da-44aa-b90f-78a4a727422f",
       "timestamp": "2026-09-24T08:40:05Z",
-      "compressed": false
+      "compressed": true
     },
     {
       "id": "6c03ec27-41a4-4d3b-bd8d-0bbe3251eb82",
@@ -1449,7 +1449,7 @@
         "hash",
         "open-question"
       ],
-      "compressed": false
+      "compressed": true
     },
     {
       "id": "phase64-debug-tools-20260917",
@@ -3757,7 +3757,7 @@
         "decision",
         "hud"
       ],
-      "compressed": false
+      "compressed": true
     },
     {
       "id": "db4efa39-5749-488c-875f-ef19f4dc9368",
@@ -3770,7 +3770,7 @@
         "logging",
         "ui"
       ],
-      "compressed": false
+      "compressed": true
     },
     {
       "category": "decision",
@@ -3783,7 +3783,7 @@
       ],
       "id": "cfd17464-b95d-4b64-b5f4-80c8db31d49e",
       "timestamp": "2026-10-14T06:35:50.663660Z",
-      "compressed": false
+      "compressed": true
     },
     {
       "id": "opencode-b-player-damage-intake-death-path-20261018",
@@ -4030,7 +4030,7 @@
         "esm",
         "steam"
       ],
-      "compressed": false
+      "compressed": true
     },
     {
       "id": "oblivion-data-sources-20260919",
@@ -4044,7 +4044,7 @@
         "oblivion",
         "paths"
       ],
-      "compressed": false
+      "compressed": true
     },
     {
       "id": "video-file-location-20260920",
@@ -4057,7 +4057,7 @@
         "log-tag",
         "video"
       ],
-      "compressed": false
+      "compressed": true
     },
     {
       "id": "597191e1-a769-48b3-9de2-13e046c830f5",
@@ -4069,7 +4069,7 @@
         "renderer",
         "text-renderer"
       ],
-      "compressed": false
+      "compressed": true
     },
     {
       "id": "bsa-content-inventory-20260921",
@@ -6193,7 +6193,7 @@
         "update"
       ],
       "id": "readme-update-20260916",
-      "compressed": false,
+      "compressed": true,
       "priority": "medium",
       "category": "reference",
       "content": "README.md updated to reflect current project status (2026-09-16). Changes: (1) Bug fix count 25+ -> 30+. (2) English status updated to Phase 63 / v1.0.0 / Release Build. (3) Japanese status updated to Phase 57 / v1.0.0. (4) Last updated date -> 2026-09-16. (5) Added [FIX] Recent Improvements section (English+Japanese) covering UI bug fixes (TextRenderer shader error checking, UIPanel TOUCH_MOVE drag, UIComponent blend state save/restore, TitleScreen touch delta fix, GameSurfaceView ACTION_CANCEL), layout fixes (AndroidManifest theme, debug button repositioning), and code quality (Japanese comment translation 40+ files). (6) Feature list extended with Phase 57 entry. (7) Next phase updated to Phase 58."
@@ -6751,7 +6751,7 @@
         "re-exe",
         "settings"
       ],
-      "compressed": false
+      "compressed": true
     },
     {
       "category": "reference",
@@ -6764,7 +6764,7 @@
         "oblivion",
         "re-exe"
       ],
-      "compressed": false,
+      "compressed": true,
       "id": "32cfd01ca1dd4531b39ca95a632e4d27"
     },
     {
@@ -6778,10 +6778,10 @@
         "commit",
         "status"
       ],
-      "compressed": false
+      "compressed": true
     },
     {
-      "compressed": false,
+      "compressed": true,
       "category": "reference",
       "priority": "low",
       "tags": [
@@ -8097,25 +8097,73 @@
     },
     {
       "id": "copilot-p68-esm-data-integration-20261021",
-            "timestamp": "2026-10-22T03:00:00Z",
+      "timestamp": "2026-10-22T03:00:00Z",
       "category": "implementation",
       "priority": "high",
-                  "content": "Phase 68 ESM data integration completed. InventoryManager::loadItemsFromESM loads 7 ESM categories (WEAP/ARMO/ALCH/INGR/CLOT/BOOK/MISC) into itemDatabase via FormID keys. CombatManager::loadWeaponsFromESM maps ESM weapon types and overrides baseDamage from ESM damage values. WeaponData::weaponType field added. EnchantingSystem::loadEnchantmentsFromESM loads 1,694 ENCH records, maps MGEF editorID codes to MagicEffect enum, maps ESM enchantType to EnchantmentType enum. CrimeReputationSystem::loadFactionsFromESM resolves 6 major factions from ESM FACT records by editorID (ImperialLegion, FightersGuild, MagesGuild, ThievesGuild, DarkBrotherhood, Blades) with fallback to known FormIDs. Hardcoded faction IDs (0x00001-0x00006) replaced with real ESM FormIDs. Reputation modification uses ESM faction editorID for lawful/unlawful classification. All wired into Renderer::onGameDataLoaded(). Build verified (assembleDebug). plan.md updated. Remaining: Merchant ESM data integration.",
+      "content": "Phase 68 ESM data integration completed. InventoryManager::loadItemsFromESM loads 7 ESM categories (WEAP/ARMO/ALCH/INGR/CLOT/BOOK/MISC) into itemDatabase via FormID keys. CombatManager::loadWeaponsFromESM maps ESM weapon types and overrides baseDamage from ESM damage values. WeaponData::weaponType field added. EnchantingSystem::loadEnchantmentsFromESM loads 1,694 ENCH records, maps MGEF editorID codes to MagicEffect enum, maps ESM enchantType to EnchantmentType enum. CrimeReputationSystem::loadFactionsFromESM resolves 6 major factions from ESM FACT records by editorID (ImperialLegion, FightersGuild, MagesGuild, ThievesGuild, DarkBrotherhood, Blades) with fallback to known FormIDs. Hardcoded faction IDs (0x00001-0x00006) replaced with real ESM FormIDs. Reputation modification uses ESM faction editorID for lawful/unlawful classification. All wired into Renderer::onGameDataLoaded(). Build verified (assembleDebug). plan.md updated. Remaining: Merchant ESM data integration.",
       "tags": [
         "phase-68",
         "esm",
         "inventory",
         "combat",
-              "enchanting",
+        "enchanting",
         "game-systems"
       ],
+      "compressed": false
+    },
+    {
+      "id": "copilot-p68-crime-reputation-esm-20261022",
+      "timestamp": "2026-10-22T03:00:00Z",
+      "priority": "high",
+      "category": "decision",
+      "tags": [
+        "phase-68",
+        "esm-integration",
+        "crime-reputation",
+        "faction"
+      ],
+      "content": "Phase 68 CrimeReputationSystem ESM integration complete. Replaced hardcoded faction IDs (0x00001-0x00006) with real ESM FACT FormIDs via editorID lookup (ImperialLegion=0x1BD6C, FightersGuild=0x1BD6D, MagesGuild=0x1BD6E, ThievesGuild=0x1BD6F, DarkBrotherhood=0x1BD70, Blades=0x1BD71). loadFactionsFromESM() wired into Renderer::onGameDataLoaded(). Build verified (3 ABI, BUILD SUCCESSFUL). Merchant ESM data deferred to Phase 66 NPC decode completion. Next: Phase 69 save/load persistence.",
+      "compressed": false
+    },
+    {
+      "id": "opencode-b-batch8-craft-race-faction-world-quest-crime-scriptvm-report-20261022",
+      "timestamp": "2026-10-22T09:00:00Z",
+      "priority": "high",
+      "category": "re",
+      "tags": [
+        "opencode",
+        "crafting",
+        "race-class",
+        "faction",
+        "worldmap",
+        "quest",
+        "crime",
+        "scriptvm",
+        "report"
+      ],
+      "content": "Batch 8 completed: 8 parallel areas. Crafting: Alchemy(0x593810)/Enchantment(0x5A1EC0)/Repair(0x5D2070)/Recharge(0x5CE840)/Spellmaking menus. Race/Class/Birthsign: chargen flow 0x5222D0 stats calc. Faction: FACR struct, reaction table, rank system, disposition 0x5EAB40, GetPCFaction* at 0x4F8140-0x4F8260. World map: menu 0x3FF, FastTravel Teleport 0x66F420, markers 0x518F00. Quest: QUST struct ~0xA8B, SetStage 0x502C40->0x4F4BC0, stages->log/complete/script->reward. Crime detail: theft/murder/assault/trespass detection, bounty calc, GuardArrest AI, jail. Script VM: 495 MISS handlers extracted via capstone from binary (520 impl addrs, 10 annotated). Handler pattern: push ecx->call 0x4FAE80->test/jne->ret. Top priority: SetStage, Evp, Enable. DB: 351 funcs total. Full analysis complete."
+    },
+    {
+      "id": "copilot-phase69-persistence-20261022",
+      "timestamp": "2026-10-22T05:59:19Z",
+      "priority": "high",
+      "category": "implementation",
+      "tags": [
+        "phase69",
+        "persistence",
+        "save-load",
+        "container",
+        "script-globals",
+        "quest-state"
+      ],
+      "content": "Phase 69 (Persistence) implemented by Copilot session 9427ac74. save_format_version.h CURRENT_VERSION raised to 4 (v3 = SCRP script globals, v4 = CNTR containers). save_manager.cpp now serializes/restores QSTS (completed quests), SCRP (ScriptManager globals via oblivion::script::ScriptValue) and CNTR (container lock flag + InventorySlot list). Namespacing gotcha: ScriptValue/ScriptManager live in namespace oblivion::script; save_manager.cpp is at global scope so full qualification is mandatory (build error 'unknown type name ScriptValue' at save_manager.cpp L271/667/668). WorldManager gained a container registry (registerContainer/unregisterContainer/getAllContainers/getContainerByFormID) backed by containers_ keyed on FormID; registerContainer rejects FormID 0. Container gained formID/getFormID/setFormID/clearItems(); populateFromESM(esm, baseFormID) builds the inventory from the CONT record and sets formID. Renderer::activateNearestContainer(maxDistance, message) materialises the nearest CONTAINER REFR (refType==0) in the current cell on first use, registers it with WorldManager, and opens UIContainerMenu; identity uses the REFR FormID (best->formID) because it is unique per placement. Containers present in a save but not yet materialised are buffered in SaveManager::pendingContainers_ (std::unordered_map<uint32_t, PendingContainerState>) and applied by SaveManager::applyPendingContainerState(container) on first open; saveGame() also carries forward still-buffered containers so an unopened container is not dropped by a save/load round trip. Virtual controller X button order is now door -> container -> pickup; anyMenuOpen() includes containerMenuUI so world input is blocked while the container menu is visible. Still open: REF change state (needs .ess analysis, docs/RE_EXE_REPORT.md), and on-device save/load round-trip verification of container contents.",
       "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 579,
-    "compressedCount": 106,
+    "totalEntries": 580,
+    "compressedCount": 117,
     "sessionCount": 40,
-    "lastUpdated": "2026-10-22T03:00:00Z"
+    "lastUpdated": "2026-10-22T05:59:19Z"
   }
 }
