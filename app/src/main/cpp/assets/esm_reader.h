@@ -275,6 +275,7 @@ struct WeaponData {
     uint32_t weight = 5;
     uint32_t health = 100;
     uint32_t enchantID = 0;
+    uint16_t weaponType = 0;  // 0=ShortBlade, 1=LongBlade, 2=Blunt1H, 3=Blunt2H, 4=Blade2H, 5=Bow, 6=Staff
 };
 
 struct QuestData {

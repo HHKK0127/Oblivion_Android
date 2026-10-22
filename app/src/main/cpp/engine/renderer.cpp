@@ -3012,8 +3012,9 @@ void Renderer::loadBSAArchives() {
                     LOGI("Loaded %d plugins from plugins.txt", loaded);
                 }
                 gameDataLoadAttempted.store(true, std::memory_order_release);
-                ensureScenarioBuilt();
-                return;
+                                onGameDataLoaded();
+                                ensureScenarioBuilt();
+                                return;
             }
         }
 
@@ -3029,7 +3030,8 @@ void Renderer::loadBSAArchives() {
     if (!assetManager->extractEsmFromArchive("Oblivion.esm", esmBytes)) {
         LOGW("  [--] Oblivion.esm not found (will test without ESM data)");
         gameDataLoadAttempted.store(true, std::memory_order_release);
-        ensureScenarioBuilt();
+                onGameDataLoaded();
+                ensureScenarioBuilt();
         return;
     }
 
@@ -3051,7 +3053,8 @@ void Renderer::loadBSAArchives() {
             logEsmRecordCounts(assetManager.get());
         }
         gameDataLoadAttempted.store(true, std::memory_order_release);
-        ensureScenarioBuilt();
+                onGameDataLoaded();
+                ensureScenarioBuilt();
         return;
     }
     asyncTasksReady = true;
@@ -3082,6 +3085,16 @@ void Renderer::loadBSAArchives() {
             ensureScenarioBuilt();
         }
 
+void Renderer::onGameDataLoaded() {
+    // Load game systems from ESM data (called after ESM parse completes)
+    if (inventoryManager && assetManager) {
+        inventoryManager->loadItemsFromESM(assetManager->getEsmManager());
+    }
+    if (combatManager && assetManager) {
+        combatManager->loadWeaponsFromESM(assetManager->getEsmManager());
+    }
+}
+
 void Renderer::ensureScenarioBuilt() {
     if (scenarioBuilt) {
         return;
@@ -3103,7 +3116,13 @@ void Renderer::ensureScenarioBuilt() {
     scenarioBuildDeferred = false;
 
     scenarioBuilt = true;
-    createTestScenario();
+
+        // Load game systems from ESM data (render thread, after ESM parse completes)
+        if (gameDataLoadAttempted) {
+            onGameDataLoaded();
+        }
+
+        createTestScenario();
 }
 
     // ============================================================================

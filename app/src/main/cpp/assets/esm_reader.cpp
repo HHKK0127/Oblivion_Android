@@ -1029,11 +1029,13 @@ void ESMFile::decodeWeapon(const ESMRecord& rec) {
 
     auto* data = rec.findSubRecord("DATA");
     if (data && data->size() >= 16) {
-        // Skip 2 bytes (type), read damage at byte 2
-        wpn.damage = readU16(data->data.data() + 2);
-        // Read value at byte 12
-        wpn.value = readU32(data->data.data() + 12);
-    } else {
+            // Byte 0-1: weapon type (0=ShortBlade, 1=LongBlade, 2=Blunt1H, 3=Blunt2H, 4=Blade2H, 5=Bow, 6=Staff)
+            wpn.weaponType = readU16(data->data.data());
+            // Byte 2-3: damage
+            wpn.damage = readU16(data->data.data() + 2);
+            // Byte 12-15: value
+            wpn.value = readU32(data->data.data() + 12);
+        } else {
         auto* data2 = rec.findSubRecord("DNAM");
         if (data2 && data2->size() >= 8) {
             wpn.damage = readU16(data2->data.data());

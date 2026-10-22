@@ -579,6 +579,7 @@ private:
     void initLocalization();
 public:
     void loadBSAArchives();
+    void onGameDataLoaded();
 private:
     bool initGameSystems();
     void createTestScenario();

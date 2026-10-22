@@ -4,6 +4,7 @@
 #include "npc_manager.h"
 #include "navmesh_manager.h"
 #include "../world/world_manager.h"
+#include "../assets/esm_reader.h"
 #include <unordered_map>
 #include <memory>
 #include <android/log.h>
@@ -174,6 +175,9 @@ public:
     void registerWeapon(uint32_t weaponId, const WeaponProperties& props);
     WeaponProperties getWeaponProperties(uint32_t weaponId) const;
     WeaponProperties getDefaultWeapon(WeaponType type) const;
+
+        // Load weapons from ESM data
+        void loadWeaponsFromESM(const oblivion::ESMManager& esmMgr);
 
     // Hitbox system
     void createHitbox(const glm::vec3& position, const glm::vec3& halfExtents,

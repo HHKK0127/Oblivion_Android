@@ -1,5 +1,12 @@
 #include "inventory_manager.h"
 
+// Map ESM weapon type to ItemType
+static ItemType esmWeaponTypeToItemType(uint16_t esmType) {
+    // All weapons map to WEAPON type; sub-type is preserved in name/usage
+    (void)esmType;
+    return ItemType::WEAPON;
+}
+
 InventoryManager::InventoryManager() {
     LOGD("InventoryManager created");
 }
@@ -110,3 +117,94 @@ void InventoryManager::createTestItems() {
 
     LOGI("Test items added to player inventory (including 2 books)");
 }
+
+    void InventoryManager::loadItemsFromESM(const oblivion::ESMManager& esmMgr) {
+        size_t totalLoaded = 0;
+
+        // Load weapons
+        const auto& weapons = esmMgr.getAllWeapons();
+        for (const auto& w : weapons) {
+            if (w.formID == 0) continue;
+            if (itemDatabase.count(w.formID) != 0) continue;
+            Item item(w.formID, w.fullName.empty() ? w.editorID : w.fullName,
+                      ItemType::WEAPON, static_cast<float>(w.weight), w.value, 1);
+            item.description = w.editorID;
+            registerItem(item);
+            ++totalLoaded;
+        }
+
+        // Load armor
+        const auto& armors = esmMgr.getAllArmors();
+        for (const auto& a : armors) {
+            if (a.formID == 0) continue;
+            if (itemDatabase.count(a.formID) != 0) continue;
+            Item item(a.formID, a.fullName.empty() ? a.editorID : a.fullName,
+                      ItemType::ARMOR, a.weight, a.value, 1);
+            item.description = a.editorID;
+            registerItem(item);
+            ++totalLoaded;
+        }
+
+        // Load potions (alchemy)
+        const auto& alchemy = esmMgr.getAllAlchemy();
+        for (const auto& a : alchemy) {
+            if (a.formID == 0) continue;
+            if (itemDatabase.count(a.formID) != 0) continue;
+            Item item(a.formID, a.fullName.empty() ? a.editorID : a.fullName,
+                      ItemType::POTION, a.weight, a.value, 99);
+            item.description = a.editorID;
+            registerItem(item);
+            ++totalLoaded;
+        }
+
+        // Load ingredients
+        const auto& ingredients = esmMgr.getAllIngredients();
+        for (const auto& ing : ingredients) {
+            if (ing.formID == 0) continue;
+            if (itemDatabase.count(ing.formID) != 0) continue;
+            Item item(ing.formID, ing.fullName.empty() ? ing.editorID : ing.fullName,
+                      ItemType::INGREDIENT, ing.weight, ing.value, 99);
+            item.description = ing.editorID;
+            registerItem(item);
+            ++totalLoaded;
+        }
+
+        // Load clothing
+        const auto& clothing = esmMgr.getAllClothing();
+        for (const auto& c : clothing) {
+            if (c.formID == 0) continue;
+            if (itemDatabase.count(c.formID) != 0) continue;
+            Item item(c.formID, c.fullName.empty() ? c.editorID : c.fullName,
+                      ItemType::CLOTHING, c.weight, c.value, 1);
+            item.description = c.editorID;
+            registerItem(item);
+            ++totalLoaded;
+        }
+
+        // Load books
+        const auto& books = esmMgr.getAllBooks();
+        for (const auto& b : books) {
+            if (b.formID == 0) continue;
+            if (itemDatabase.count(b.formID) != 0) continue;
+            Item item(b.formID, b.fullName.empty() ? b.editorID : b.fullName,
+                      ItemType::BOOK, b.weight, b.value, 1);
+            item.description = b.editorID;
+            registerItem(item);
+            ++totalLoaded;
+        }
+
+        // Load misc items
+        const auto& misc = esmMgr.getAllMiscItems();
+        for (const auto& m : misc) {
+            if (m.formID == 0) continue;
+            if (itemDatabase.count(m.formID) != 0) continue;
+            Item item(m.formID, m.fullName.empty() ? m.editorID : m.fullName,
+                      ItemType::MISC, m.weight, m.value, 999);
+            item.description = m.editorID;
+            registerItem(item);
+            ++totalLoaded;
+        }
+
+        LOGI("InventoryManager: Loaded %zu items from ESM data (total database: %zu)",
+             totalLoaded, itemDatabase.size());
+    }

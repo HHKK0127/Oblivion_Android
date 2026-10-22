@@ -1,6 +1,7 @@
 #pragma once
 
 #include "inventory.h"
+#include "../assets/esm_reader.h"
 #include <memory>
 #include <unordered_map>
 #include <android/log.h>
@@ -36,6 +37,9 @@ public:
 
     // Test Items
     void createTestItems();
+
+        // Load items from ESM data (replaces test items with real game data)
+        void loadItemsFromESM(const oblivion::ESMManager& esmMgr);
 
 private:
     std::shared_ptr<Inventory> playerInventory;

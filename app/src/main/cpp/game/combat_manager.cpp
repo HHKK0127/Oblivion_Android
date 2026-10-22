@@ -648,8 +648,43 @@ WeaponProperties CombatManager::getDefaultWeapon(WeaponType type) const {
     return props;
 }
 
-// ============================================================================
-// Hitbox system
+    // Map ESM weapon type (0-6) to WeaponType enum
+    static WeaponType esmWeaponTypeToWeaponType(uint16_t esmType) {
+        switch (esmType) {
+            case 0: return WeaponType::DAGGER;         // ShortBlade
+            case 1: return WeaponType::SWORD_ONE_HAND; // LongBlade
+            case 2: return WeaponType::MACE_ONE_HAND;  // Blunt1H
+            case 3: return WeaponType::MACE_TWO_HAND;  // Blunt2H
+            case 4: return WeaponType::SWORD_TWO_HAND; // Blade2H
+            case 5: return WeaponType::BOW;            // Bow
+            case 6: return WeaponType::STAFF;          // Staff
+            default: return WeaponType::SWORD_ONE_HAND;
+        }
+    }
+
+    void CombatManager::loadWeaponsFromESM(const oblivion::ESMManager& esmMgr) {
+        const auto& weapons = esmMgr.getAllWeapons();
+        size_t loaded = 0;
+
+        for (const auto& w : weapons) {
+            if (w.formID == 0) continue;
+            if (weaponDatabase.count(w.formID) != 0) continue;
+
+            WeaponType wt = esmWeaponTypeToWeaponType(w.weaponType);
+            WeaponProperties props = getDefaultWeapon(wt);
+            // Override base damage with ESM value
+            props.baseDamage = static_cast<float>(w.damage);
+
+            registerWeapon(w.formID, props);
+            ++loaded;
+        }
+
+        LOGI("CombatManager: Loaded %zu weapons from ESM data (total database: %zu)",
+             loaded, weaponDatabase.size());
+    }
+
+    // ============================================================================
+    // Hitbox system
 // ============================================================================
 
 void CombatManager::createHitbox(const glm::vec3& position, const glm::vec3& halfExtents,
