@@ -25,7 +25,12 @@ bool UICharacterCreation::initialize(TextRenderer* tr) {
     if (!tr) return false;
     textRenderer = tr;
     initializeDefaultCharacter();
-    return UIPanel::initialize();
+    if (!UIPanel::initialize()) return false;
+    // UIComponent defaults to visible; the panel is only shown by open(). Left
+    // visible it would be an invisible modal that swallows every touch event
+    // in Renderer::onTouchEvent and keep anyMenuOpen() permanently true.
+    setVisible(false);
+    return true;
 }
 
 void UICharacterCreation::initializeDefaultCharacter() {

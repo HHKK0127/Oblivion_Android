@@ -112,7 +112,11 @@ UIBookReader::UIBookReader(const std::string& title)
 bool UIBookReader::initialize(TextRenderer* tr) {
     if (!tr) return false;
     textRenderer = tr;
-    return UIPanel::initialize();
+    if (!UIPanel::initialize()) return false;
+    // UIComponent defaults to visible; openBook() shows the panel. Left visible
+    // it would swallow touches and keep Renderer::anyMenuOpen() always true.
+    setVisible(false);
+    return true;
 }
 
 void UIBookReader::openBook(const std::string& title, const std::string& body) {

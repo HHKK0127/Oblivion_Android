@@ -7656,7 +7656,9 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
         return;
     }
 
-    if (characterCreationUI && characterCreationUI->isVisible()) {
+    // Mirror the render gate (showCharacterCreation && isVisible()) so the panel
+    // cannot swallow touches while the character creation flow is not active.
+    if (showCharacterCreation && characterCreationUI && characterCreationUI->isVisible()) {
         if (action == 0 || action == 5) {
             characterCreationUI->onTouchDown(x, y, pointerId);
         }
