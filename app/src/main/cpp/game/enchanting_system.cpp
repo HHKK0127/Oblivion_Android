@@ -6,6 +6,60 @@
 
 namespace game {
 
+// Map a 4-character MGEF editorID code to our MagicEffect enum.
+// Oblivion identifies magic effects by their editorID (e.g. FIDG = Fire Damage).
+static MagicEffect mgefCodeToMagicEffect(const std::string& code) {
+    if (code.size() != 4) return MagicEffect::FORTIFY_HEALTH;
+    // Damage effects
+    if (code == "FIDG") return MagicEffect::FIRE_DAMAGE;
+    if (code == "FRDG") return MagicEffect::FROST_DAMAGE;
+    if (code == "SHDG") return MagicEffect::SHOCK_DAMAGE;
+    // Resist effects
+    if (code == "RESF") return MagicEffect::RESIST_FIRE;
+        if (code == "RESI") return MagicEffect::RESIST_FROST;
+    if (code == "RESS") return MagicEffect::RESIST_SHOCK;
+    if (code == "RESM") return MagicEffect::RESIST_MAGIC;
+    if (code == "RESD") return MagicEffect::RESIST_DISEASE;
+        if (code == "RESN") return MagicEffect::RESIST_POISON;
+    // Fortify attribute
+    if (code == "FOHE") return MagicEffect::FORTIFY_HEALTH;
+    if (code == "FOSP") return MagicEffect::FORTIFY_MAGICKA;
+    if (code == "FOST") return MagicEffect::FORTIFY_STAMINA;
+        if (code == "FOAT") return MagicEffect::FORTIFY_STRENGTH;
+    if (code == "FOIN") return MagicEffect::FORTIFY_INTELLIGENCE;
+    if (code == "FOWI") return MagicEffect::FORTIFY_WILLPOWER;
+    if (code == "FOAG") return MagicEffect::FORTIFY_AGILITY;
+    if (code == "FOSD") return MagicEffect::FORTIFY_SPEED;
+    if (code == "FOEN") return MagicEffect::FORTIFY_ENDURANCE;
+    if (code == "FOPE") return MagicEffect::FORTIFY_PERSONALITY;
+    if (code == "FOLU") return MagicEffect::FORTIFY_LUCK;
+    if (code == "FOAR") return MagicEffect::FORTIFY_ARMOR;
+    if (code == "FOAT") return MagicEffect::FORTIFY_ATTACK;
+    // Utility
+    if (code == "SOUL") return MagicEffect::SOUL_TRAP;
+    if (code == "TELE") return MagicEffect::TELEKINESIS;
+    if (code == "WABR") return MagicEffect::WATER_BREATHING;
+    if (code == "WAWA") return MagicEffect::WATER_WALKING;
+    if (code == "NIEY") return MagicEffect::NIGHT_EYE;
+    if (code == "CHML") return MagicEffect::CHAMELEON;
+    if (code == "INVI") return MagicEffect::INVISIBILITY;
+    if (code == "LIGH") return MagicEffect::LIGHT;
+    if (code == "FEAT") return MagicEffect::FEATHER;
+    if (code == "DETE") return MagicEffect::DETECT_LIFE;
+    return MagicEffect::FORTIFY_HEALTH;
+}
+
+// Map ESM enchantType to our EnchantmentType enum.
+static EnchantmentType esmEnchantTypeToEnum(uint32_t et) {
+    switch (et) {
+        case 0: return EnchantmentType::CAST_ONCE;       // scroll
+        case 1: return EnchantmentType::CAST_ON_USE;     // staff
+        case 2: return EnchantmentType::CAST_ON_STRIKE;  // weapon
+        case 3: return EnchantmentType::CONSTANT_EFFECT; // apparel
+        default: return EnchantmentType::CAST_ONCE;
+    }
+}
+
 void EnchantingSystem::initialize() {
     if (initialized) {
         LOGW("EnchantingSystem already initialized");
@@ -19,6 +73,51 @@ void EnchantingSystem::initialize() {
     
     initialized = true;
     LOGI("=== EnchantingSystem Initialized ===");
+}
+
+void EnchantingSystem::loadEnchantmentsFromESM(const oblivion::ESMManager& esmMgr) {
+    const auto& esmEnchants = esmMgr.getAllEnchantments();
+    size_t loaded = 0;
+
+    for (const auto& e : esmEnchants) {
+        if (e.formID == 0) continue;
+        if (enchantments_.count(e.formID) != 0) continue;
+
+        Enchantment ench;
+        ench.id = e.formID;
+        ench.name = e.fullName.empty() ? e.editorID : e.fullName;
+        ench.type = esmEnchantTypeToEnum(e.enchantType);
+        ench.charges = e.chargeAmount;
+        ench.enchantCost = static_cast<float>(e.enchantCost);
+
+        // Use the first effect's data
+        if (!e.effectCodes.empty()) {
+            ench.effect = mgefCodeToMagicEffect(e.effectCodes[0]);
+        }
+        if (!e.effectMagnitudes.empty()) {
+            ench.magnitude = e.effectMagnitudes[0];
+        }
+        if (!e.effectDurations.empty()) {
+            ench.duration = e.effectDurations[0];
+        }
+
+        ench.currentCharges = ench.charges;
+        enchantments_[e.formID] = ench;
+        ++loaded;
+
+        if (loaded <= 10) {
+            LOGI("  Enchant[%zu]: 0x%08X '%s' type=%u charges=%u cost=%u",
+                 loaded, e.formID, ench.name.c_str(),
+                 e.enchantType, e.chargeAmount, e.enchantCost);
+        }
+    }
+
+    LOGI("EnchantingSystem: Loaded %zu enchantments from ESM data", loaded);
+}
+
+const Enchantment* EnchantingSystem::findEnchantment(uint32_t formID) const {
+    auto it = enchantments_.find(formID);
+    return (it != enchantments_.end()) ? &it->second : nullptr;
 }
 
 void EnchantingSystem::shutdown() {

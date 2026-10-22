@@ -3093,6 +3093,9 @@ void Renderer::onGameDataLoaded() {
     if (combatManager && assetManager) {
         combatManager->loadWeaponsFromESM(assetManager->getEsmManager());
     }
+    if (enchantingSystem && assetManager) {
+        enchantingSystem->loadEnchantmentsFromESM(assetManager->getEsmManager());
+    }
 }
 
 void Renderer::ensureScenarioBuilt() {

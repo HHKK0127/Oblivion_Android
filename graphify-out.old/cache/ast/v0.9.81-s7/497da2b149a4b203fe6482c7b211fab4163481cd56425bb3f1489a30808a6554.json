@@ -1,1 +1,0 @@
-{"nodes": [{"id": "$graphify-root$_third_party_joltphysics_jolt_physics_collision_collectfacesmode_h", "label": "CollectFacesMode.h", "file_type": "code", "source_file": "third_party/JoltPhysics/Jolt/Physics/Collision/CollectFacesMode.h", "source_location": "L1"}], "edges": [], "raw_calls": [], "parse_errors": {"first_error_line": 10, "multiline_error": false}}

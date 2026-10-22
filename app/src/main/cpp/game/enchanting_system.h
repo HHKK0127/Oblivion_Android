@@ -1,9 +1,11 @@
 #pragma once
 
 #include "../inventory/item_base.h"
+#include "../assets/esm_reader.h"
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include <functional>
 #include <android/log.h>
 
@@ -118,15 +120,20 @@ public:
     void shutdown();
     void update(float deltaTime);
     
-    // Enchanting
-    bool canEnchant(const inventory::Item& item) const;
-    bool enchantItem(inventory::Item& item, const Enchantment& enchant, const SoulGem& soulGem);
-    bool rechargeItem(inventory::Item& item, const SoulGem& soulGem);
+        // Load enchantments from ESM data
+        void loadEnchantmentsFromESM(const oblivion::ESMManager& esmMgr);
     
-    // Enchantment queries
-    Enchantment createEnchantment(MagicEffect effect, float magnitude, uint32_t duration, EnchantmentType type) const;
-    float getEnchantCost(const Enchantment& enchant) const;
-    uint32_t getRechargeAmount(const SoulGem& soulGem) const;
+        // Enchanting
+        bool canEnchant(const inventory::Item& item) const;
+        bool enchantItem(inventory::Item& item, const Enchantment& enchant, const SoulGem& soulGem);
+        bool rechargeItem(inventory::Item& item, const SoulGem& soulGem);
+    
+        // Enchantment queries
+        Enchantment createEnchantment(MagicEffect effect, float magnitude, uint32_t duration, EnchantmentType type) const;
+        const Enchantment* findEnchantment(uint32_t formID) const;
+        const std::unordered_map<uint32_t, Enchantment>& getAllEnchantments() const { return enchantments_; }
+        float getEnchantCost(const Enchantment& enchant) const;
+        uint32_t getRechargeAmount(const SoulGem& soulGem) const;
     
     // Soul gem management
     SoulGem createSoulGem(SoulGemSize size, bool withSoul = false) const;
@@ -159,6 +166,9 @@ private:
     // State
     bool initialized = false;
     uint32_t enchantSkill = 0;
+    
+        // ESM-loaded enchantments (formID -> Enchantment)
+        std::unordered_map<uint32_t, Enchantment> enchantments_;
     
     // Enchantment costs
     static constexpr float BASE_ENCHANT_COST = 10.0f;

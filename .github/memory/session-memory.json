@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-21T15:00:00Z",
+  "lastUpdated": "2026-10-21T16:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -8100,22 +8100,22 @@
       "timestamp": "2026-10-21T15:00:00Z",
       "category": "implementation",
       "priority": "high",
-      "content": "Phase 68 ESM data integration completed. InventoryManager::loadItemsFromESM loads 7 ESM categories (WEAP/ARMO/ALCH/INGR/CLOT/BOOK/MISC) into itemDatabase via FormID keys. CombatManager::loadWeaponsFromESM maps ESM weapon types (ShortBlade→DAGGER, LongBlade→SWORD_ONE_HAND, Blunt1H→MACE_ONE_HAND, Blunt2H→MACE_TWO_HAND, Blade2H→SWORD_TWO_HAND, Bow→BOW, Staff→STAFF) and overrides baseDamage from ESM damage values. WeaponData::weaponType field added to esm_reader.h. Renderer::onGameDataLoaded() wired into ensureScenarioBuilt() for safe render-thread invocation after ESM load. Build verified (assembleDebug). plan.md Phase 68 status updated to Done.",
+            "content": "Phase 68 ESM data integration completed. InventoryManager::loadItemsFromESM loads 7 ESM categories (WEAP/ARMO/ALCH/INGR/CLOT/BOOK/MISC) into itemDatabase via FormID keys. CombatManager::loadWeaponsFromESM maps ESM weapon types and overrides baseDamage from ESM damage values. WeaponData::weaponType field added. EnchantingSystem::loadEnchantmentsFromESM loads 1,694 ENCH records, maps MGEF editorID codes to MagicEffect enum, maps ESM enchantType to EnchantmentType enum. All wired into Renderer::onGameDataLoaded(). Build verified (assembleDebug). plan.md updated. Remaining: CrimeReputationSystem (hardcoded faction IDs), Merchant (no ESM data).",
       "tags": [
         "phase-68",
         "esm",
         "inventory",
         "combat",
-        "weapon-data",
+              "enchanting",
         "game-systems"
       ],
       "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 577,
+    "totalEntries": 578,
     "compressedCount": 106,
     "sessionCount": 40,
-    "lastUpdated": "2026-10-21T12:00:00Z"
+    "lastUpdated": "2026-10-21T16:00:00Z"
   }
 }
