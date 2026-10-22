@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-22T09:38:56Z",
+  "lastUpdated": "2026-10-22T10:05:36Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -9046,12 +9046,27 @@
         "concurrency"
       ],
       "content": "Ledger repair (2026-10-22): 61 entries that had been dropped between 74ec9ad9 (622 entries) and HEAD (582) were restored from git 74ec9ad9 and re-appended, bringing the ledger back to 643 entries. Evidence of the loss: commit bfb986dd (\"Save uncommitted changes\") contains a truncated, invalid session-memory.json (8290 lines, JSON parse error) plus a session-memory.json.bak snapshot; 0 of the 61 ids were present in 7b11356e or later. Cause: two writers (Copilot and opencode) rewrite this single file with no locking or merge, so a lost update silently drops entries. Restored entries keep their original ids and timestamps; a copy of the pre-restore file is in tmp/session-memory.pre-restore.json (git-ignored). Rule: re-read the file immediately before every write and append-only, never rewrite from an in-memory snapshot."
+    },
+    {
+      "id": "copilot-launcher-touch-and-phase70-20261022",
+      "timestamp": "2026-10-22T10:05:36Z",
+      "priority": "high",
+      "category": "implementation",
+      "tags": [
+        "launcher",
+        "touch",
+        "phase70",
+        "plugins.txt",
+        "verification",
+        "commit"
+      ],
+      "content": "Launcher touch fix and Phase 70 write path verified and pushed (2026-10-22).\n(1) Root cause of the launcher being untouchable: UIComponent defaults to visible, so UICharacterCreation and UIBookReader were live modals from construction - they consumed every touch in Renderer::onTouchEvent and kept anyMenuOpen() permanently true, disabling crosshair, HUD, combat buttons, virtual controller and player input. Both now call setVisible(false) in initialize() and are shown by open()/openBook(), matching UIDialogue. The character creation touch gate now mirrors the render gate (showCharacterCreation && isVisible()) at renderer.cpp onTouchEvent.\n(2) Phase 70 write path landed: assets/plugin_list.{h,cpp} owns the plugins.txt grammar (one name per line, hash comments, a leading asterisk as the active marker, BOM/CR/blank trim, case-insensitive duplicate rejection, and the rule that a marker-free file means every listed plugin is active) plus serializePluginList(), activePluginNames() and sortPluginLoadOrder() (Oblivion.esm, then other masters, then plugins, case-insensitive, stable). AssetManager::savePluginsFile() writes it back, scanDataFiles() returns load order, and LauncherScreen::persistPluginSelection() saves on every toggle with Oblivion.esm pinned active.\n(3) Verification: ./gradlew assembleDebug BUILD SUCCESSFUL (7m30s) and the host runner is ALL GREEN with PluginListTests 23/23. Commits 3ae583fb, cb4e426a, abf0a32b, 5732b73a, f00a215c pushed to origin/master.\nStill open: no device was attached (adb devices empty), so the on-device toggle round trip through filesDir/data/plugins.txt and the launcher touch regression check are unverified."
     }
   ],
   "metadata": {
-    "totalEntries": 644,
+    "totalEntries": 645,
     "compressedCount": 121,
     "sessionCount": 40,
-    "lastUpdated": "2026-10-22T09:38:56Z"
+    "lastUpdated": "2026-10-22T10:05:36Z"
   }
 }
