@@ -3096,6 +3096,11 @@ void Renderer::onGameDataLoaded() {
     if (enchantingSystem && assetManager) {
         enchantingSystem->loadEnchantmentsFromESM(assetManager->getEsmManager());
     }
+    // Load faction data for crime/reputation system
+        if (assetManager) {
+            game::CrimeReputationSystem::getInstance().loadFactionsFromESM(
+                &assetManager->getEsmManager());
+        }
 }
 
 void Renderer::ensureScenarioBuilt() {

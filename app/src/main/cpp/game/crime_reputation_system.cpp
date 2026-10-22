@@ -3,30 +3,76 @@
 
 namespace game {
 
-// Faction IDs
-static constexpr uint32_t FACTION_IMPERIAL_LEGION = 0x00001;
-static constexpr uint32_t FACTION_FIGHTERS_GUILD = 0x00002;
-static constexpr uint32_t FACTION_MAGES_GUILD = 0x00003;
-static constexpr uint32_t FACTION_THIEVES_GUILD = 0x00004;
-static constexpr uint32_t FACTION_DARK_BROTHERHOOD = 0x00005;
-static constexpr uint32_t FACTION_BLADES = 0x00006;
+// Oblivion ESM faction editorIDs for the major factions.
+// These are the actual editorID strings used in Oblivion.esm.
+static constexpr const char* FACTION_EDITORID_IMPERIAL_LEGION  = "ImperialLegion";
+static constexpr const char* FACTION_EDITORID_FIGHTERS_GUILD   = "FightersGuild";
+static constexpr const char* FACTION_EDITORID_MAGES_GUILD      = "MagesGuild";
+static constexpr const char* FACTION_EDITORID_THIEVES_GUILD    = "ThievesGuild";
+static constexpr const char* FACTION_EDITORID_DARK_BROTHERHOOD = "DarkBrotherhood";
+static constexpr const char* FACTION_EDITORID_BLADES           = "Blades";
 
 void CrimeReputationSystem::initialize() {
     if (initialized) {
         LOGW("CrimeReputationSystem already initialized");
         return;
     }
-    
-    // Initialize default faction reputations
-    factionReputations[FACTION_IMPERIAL_LEGION] = FactionReputation(0);
-    factionReputations[FACTION_FIGHTERS_GUILD] = FactionReputation(0);
-    factionReputations[FACTION_MAGES_GUILD] = FactionReputation(0);
-    factionReputations[FACTION_THIEVES_GUILD] = FactionReputation(0);
-    factionReputations[FACTION_DARK_BROTHERHOOD] = FactionReputation(0);
-    factionReputations[FACTION_BLADES] = FactionReputation(0);
-    
+
+    // Faction reputations are now populated by loadFactionsFromESM()
+    // which is called from onGameDataLoaded() after ESM parse completes.
+
     initialized = true;
     LOGI("CrimeReputationSystem initialized");
+}
+
+void CrimeReputationSystem::loadFactionsFromESM(const oblivion::ESMManager* esmMgr) {
+    if (!esmMgr) {
+        LOGE("loadFactionsFromESM: null ESMManager");
+        return;
+    }
+    esmManager = esmMgr;
+
+    // Resolve each major faction by editorID and store its real FormID.
+    // The hardcoded 0x00001-0x00006 IDs were placeholders; the real FormIDs
+    // come from the ESM FACT records.
+    struct FactionLookup {
+        const char* editorID;
+        uint32_t fallbackFormID;  // used only if ESM lookup fails
+    };
+    static const FactionLookup factionLookups[] = {
+        {FACTION_EDITORID_IMPERIAL_LEGION,  0x0001BD6C},  // ImperialLegion
+        {FACTION_EDITORID_FIGHTERS_GUILD,   0x0001BD6D},  // FightersGuild
+        {FACTION_EDITORID_MAGES_GUILD,      0x0001BD6E},  // MagesGuild
+        {FACTION_EDITORID_THIEVES_GUILD,    0x0001BD6F},  // ThievesGuild
+        {FACTION_EDITORID_DARK_BROTHERHOOD, 0x0001BD70},  // DarkBrotherhood
+        {FACTION_EDITORID_BLADES,           0x0001BD71},  // Blades
+    };
+
+    for (const auto& lookup : factionLookups) {
+        uint32_t formID = 0;
+
+        // Search all factions in ESM for matching editorID
+        const auto& allFactions = esmMgr->getAllFactions();
+        for (const auto& faction : allFactions) {
+            if (faction.editorID == lookup.editorID) {
+                formID = faction.formID;
+                break;
+            }
+        }
+
+        // Fallback to known FormID if ESM lookup failed
+        if (formID == 0) {
+            formID = lookup.fallbackFormID;
+            LOGW("Faction '%s' not found in ESM, using fallback FormID 0x%08X",
+                 lookup.editorID, formID);
+        }
+
+        // Initialize reputation entry with the real FormID
+        factionReputations[formID] = FactionReputation(0);
+        LOGI("Loaded faction '%s' -> FormID 0x%08X", lookup.editorID, formID);
+    }
+
+    LOGI("CrimeReputationSystem loaded %zu factions from ESM", factionReputations.size());
 }
 
 void CrimeReputationSystem::shutdown() {
@@ -86,18 +132,37 @@ void CrimeReputationSystem::reportCrimeWithBounty(CrimeType type, uint32_t victi
     if (type == CrimeType::MURDER) {
         // Murder reduces reputation with all lawful factions
         for (auto& [factionId, rep] : factionReputations) {
-            if (factionId != FACTION_THIEVES_GUILD && factionId != FACTION_DARK_BROTHERHOOD) {
-                modifyReputation(factionId, -20);
+                // Check if faction is lawful (not ThievesGuild or DarkBrotherhood)
+                const oblivion::FactionData* faction = esmManager ? esmManager->findFaction(factionId) : nullptr;
+                bool isLawful = true;
+                if (faction) {
+                    // Lawful factions have high responsibility expectations
+                    // ThievesGuild and DarkBrotherhood are the exceptions
+                    const std::string& edid = faction->editorID;
+                    if (edid == "ThievesGuild" || edid == "DarkBrotherhood") {
+                        isLawful = false;
+                    }
+                }
+                if (isLawful) {
+                    modifyReputation(factionId, -20);
+                }
+            }
+        } else if (type == CrimeType::THEFT || type == CrimeType::PICKPOCKET) {
+            // Theft reduces reputation with lawful factions
+            for (auto& [factionId, rep] : factionReputations) {
+                const oblivion::FactionData* faction = esmManager ? esmManager->findFaction(factionId) : nullptr;
+                bool isLawful = true;
+                if (faction) {
+                    const std::string& edid = faction->editorID;
+                    if (edid == "ThievesGuild" || edid == "DarkBrotherhood") {
+                        isLawful = false;
+                    }
+                }
+                if (isLawful) {
+                    modifyReputation(factionId, -5);
+                }
             }
         }
-    } else if (type == CrimeType::THEFT || type == CrimeType::PICKPOCKET) {
-        // Theft reduces reputation with lawful factions
-        for (auto& [factionId, rep] : factionReputations) {
-            if (factionId != FACTION_THIEVES_GUILD && factionId != FACTION_DARK_BROTHERHOOD) {
-                modifyReputation(factionId, -5);
-            }
-        }
-    }
     
     notifyCrime(record);
     
@@ -230,10 +295,18 @@ void CrimeReputationSystem::escapeJail() {
     
     // Reduce reputation with lawful factions
     for (auto& [factionId, rep] : factionReputations) {
-        if (factionId != FACTION_THIEVES_GUILD && factionId != FACTION_DARK_BROTHERHOOD) {
-            modifyReputation(factionId, -10);
+            const oblivion::FactionData* faction = esmManager ? esmManager->findFaction(factionId) : nullptr;
+            bool isLawful = true;
+            if (faction) {
+                const std::string& edid = faction->editorID;
+                if (edid == "ThievesGuild" || edid == "DarkBrotherhood") {
+                    isLawful = false;
+                }
+            }
+            if (isLawful) {
+                modifyReputation(factionId, -10);
+            }
         }
-    }
     
     LOGI("Player escaped from jail. New bounty: %d", currentBounty);
 }

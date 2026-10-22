@@ -7,6 +7,8 @@
 #include <functional>
 #include <android/log.h>
 
+#include "../assets/esm_reader.h"
+
 #undef LOG_TAG
 #undef LOGD
 #undef LOGI
@@ -108,8 +110,9 @@ public:
     
     // Initialization
     void initialize();
-    void shutdown();
-    void update(float deltaTime);
+        void loadFactionsFromESM(const oblivion::ESMManager* esmMgr);
+        void shutdown();
+        void update(float deltaTime);
     
     // Crime reporting
     void reportCrime(CrimeType type, uint32_t victimId, uint32_t witnessCount = 1);
@@ -164,9 +167,12 @@ private:
     bool inJail = false;
     uint32_t jailTimeRemaining = 0;
     float jailTimer = 0.0f;
-    
-    // Faction data
-    std::unordered_map<uint32_t, FactionReputation> factionReputations;
+
+        // ESM manager reference (for faction lookups)
+        const oblivion::ESMManager* esmManager = nullptr;
+
+        // Faction data
+        std::unordered_map<uint32_t, FactionReputation> factionReputations;
     
     // Crime history
     std::vector<CrimeRecord> crimeHistory;
