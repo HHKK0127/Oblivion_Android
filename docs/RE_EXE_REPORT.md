@@ -9547,7 +9547,7 @@ onlyifnot 側も `0058C7B6 fstp st(0)` で残値を捨ててから `fld1` を積
   - 攻撃コスト 0x547560: `cost = dmg×fFatigueAttackWeaponMult(0.1) + fFatigueAttackWeaponBase(8)`; パワーアタックで `×fPowerAttackFatiguePenalty(5)`。弓/杖（武器アニメ 4/5）は 0 扱い（呼出元 0x5E405E）。
   - ブロックコスト 0x547590: `cost = skill×fFatigueBlockSkillMult(−0.04) + fFatigueBlockSkillBase(5) + x×fFatigueBlockMult(1.0) + fFatigueBlockBase(0)`（呼出元 0x5F5C46）。
   - カーブ 0x547F00: `fFatigueBase(1.25) − (1−x)×fFatigueMult(0.5)`。0x547F20/40/60 = Return/Run/Jump 系。GMST は 0xB36FD8〜0xB36FF8 / 0xB37530〜0xB37568。
-  - 適用 FUN_004F3870（唯一本体、caller 0x65FF30）: arg3(byte) を必ず 0 クリア、`newVal = current − x` clamp、≤0 で死亡。アーマー Perk 係数: rank≥2 ×0.5（fPerk*Journeyman 0xB37500/08）、rank==0 ×1.5（fPerk*Novice 0xB374F0/F8）。
+  - 適用 Actor.vt+0x2C4 = 0x5F3870（唯一本体、caller 0x65FF30）: arg3(byte) を必ず 0 クリア、newVal = current - x clamp、leq 0 で死亡。アーマー Perk 係数: rank≥2 ×0.5（fPerk*Journeyman 0xB37500/08）、rank==0 ×1.5（fPerk*Novice 0xB374F0/F8）。【2026-10-22 訂正: 旧表記 FUN_004F3870 は VA 誤記。正しくは 0x5F3870 (Actor.vt+0x2C4) HP適用経路】
 - KD 式 0x5475D0 [確定]（(a1,a2,x,dmgInt) 4 引数）: `D = clamp(a1 + a2×fActorLuckSkillMult(0.4) + iActorLuckSkillBase(−20), 0, 100)`（0xB37388/0xB37390）; `P = 0x547F00(x) × D`; `T = dmgInt×fKnockdownDamageMult(−3.0) + fKnockdownDamageBase(0.0)`; `chance = min(T/P, fKnockdownChance(0.25))`; `roll = (0x47DF80(0) % 100)/100.0`; 成立 = `roll ≤ chance`（FPU 分岐分類済み）。dmgInt は負値（疲労減量系）前提 [推定]（正だと chance 負で常に不成立）。
 - KB 式 0x547690 [確定]: `KB = (dmgInt×fKnockbackDamageMult(10) + fKnockbackDamageBase(50)) × (fKnockbackAgilBase(1.0) + fKnockbackAgilMult(−0.008) × (D/fCurve(x)))`。呼出元 0x50EB5F / 0x5FFFE2。fKnockbackForceMax=512 @0xB36FC8（0xB36FA8〜C8）。
 - vt スロット整合 [確定]（§51.11 の +0x3A8 適用スタブ問題の解消）:
@@ -9881,11 +9881,11 @@ onlyifnot 側も `0058C7B6 fstp st(0)` で残値を捨ててから `fld1` を積
 - AI パッケージ種別名テーブルは **0xB12988** (33 件) [確定]。ファクトリ → 型 id を SetType 呼出元の実定数で確定 (0x19 / 0x1a / 0x1d / 0x1e / 0x1f / 0x05 / 0x06 / 0x11 / 0x13 等) [確定]。ディスパッチャ 0x463EC0。
 - パッケージ選択 0x569020 は「リスト走査 → フラグ述語 → スケジュール → CTDA」の順で最初の一致を返す。明示的な優先度フィールドは無い [確定]。
 - スケジュール比較 0x568EB0、時計 0xB332E0 [確定]。
-- CTDA 評価器 = 0x56A510 (リスト) → 0x56AC50 (1 件) → 0x56A3B0 (比較 0..5)、条件関数表 0xB0C8E0 [確定]。※ 0xB0C8E0 = 0xB0C8C0 + 0x20 で、§58.2 の関数帯基底 + entry+0x20 と整合 [推定 (整合)]。
+- CTDA 評価器 = 0x56A510 (リスト) → 0x56AC50 (1 件) → 0x56A3B0 (比較 0..5)、条件関数表 0xB0C8E0 [確定]。※ 0xB0C8E0 = 0xB0C8C0 + 0x20 で、§58.2 の関数帯基底 + entry+0x20 と整合 [確定]。
 - AI 設定ローダ 0x4A9A00 は GMST 既定値をアクター AI 設定構造体へ焼き込む [確定]。
 - 逃走信頼度 0x546CC0 = conf + (1 − 体力比)·fAIFleeHealthMult (0xB36D30) [確定 (式形)]。逃走/降伏カウントに iAIFleeMaxHitCount (0xB36D48) / iAIYieldMaxHitCount (0xB36D78) [確定]。
 - 検知値 0x5F6540 + 状態分類 0x640900 が fSneakSeenMin / NoticedMin / LostMin / UnseenMin で 4 状態を判定 [確定]。隠密内部式 0x5463F0 が fDetectionSneakLightMod (0xB36CB8 @0x5464EC) を参照 [確定]。
-- モラール専用 GMST は存在しない [確定]。
+- モラール専用 GMST は存在しない [確定]（0x569020 が PackageSelect_Main であることと整合）。
 - 残 11 件: 種別 id 0x02/03/04/07/08/09/0a/0b/0e のファクトリ未検出、種別固有の毎フレーム処理 (vtable 差分スロット)、条件関数表の厳密レイアウトと id↔名称、スケジュール構造 pkg+0x2c のフィールド意味、flee ハンドラ先頭 VA、検知式の完全形。
 - 注: 移動 (pathing/NAVM) は Phase 2/3 スコープ。既存 `esm_reader` の AI 解析は実形式と不一致 (§18.6) で、本節との接続が必要。
 
