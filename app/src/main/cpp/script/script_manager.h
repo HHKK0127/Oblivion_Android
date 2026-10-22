@@ -119,6 +119,11 @@ public:
     ScriptValue getGlobalVariable(uint32_t formID) const;
     void setGlobalVariable(uint32_t formID, const ScriptValue& value);
 
+    // All global variables (FormID -> value), for save/load persistence
+    const std::unordered_map<uint32_t, ScriptValue>& getAllGlobalVariables() const {
+        return globalVariables_;
+    }
+
     // ========================================================================
     // Debugger interface (game console / DBG_SCRIPT tab)
     // Every method returns human-readable text and never throws. Script

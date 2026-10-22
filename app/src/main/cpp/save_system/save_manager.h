@@ -3,11 +3,13 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include <cstdint>
 #include <memory>
 #include <glm/glm.hpp>
 #include "../game/npc.h"
 #include "../game/quest.h"
+#include "../game/item.h"
 #include "serializable.h"
 #include "save_format_version.h"
 #include "save_slot_manager.h"
@@ -26,7 +28,21 @@ class InventoryManager;
 class SpellManager;
 class QuestManager;
 class WorldManager;
+class Container;
 namespace oblivion { namespace script { class ScriptManager; } }
+
+/**
+ * @brief Phase 69: container contents captured by a loadGame() call.
+ *
+ * Containers are materialised lazily the first time the player opens them, so
+ * a load cannot restore them directly. Instead loadGame() records the saved
+ * contents here and applyPendingContainerState() hands them over when the
+ * container is finally created.
+ */
+struct PendingContainerState {
+    bool locked = false;
+    std::vector<InventoryItem> items;
+};
 
 /**
  * @brief Inventory slot data - Serializable item information
@@ -106,6 +122,11 @@ public:
     bool captureGameState(GameState& state);
     bool restoreGameState(const GameState& state);
 
+    // Phase 69: hand the contents captured for this container by the most recent
+    // loadGame() to the freshly materialised container. Returns false when the
+    // container was not part of that save, so the caller populates from the ESM.
+    bool applyPendingContainerState(const std::shared_ptr<Container>& container);
+
 private:
     // System pointers (non-owning)
     PlayerController* playerController_ = nullptr;
@@ -128,6 +149,10 @@ private:
 
     // Fractional carry so sub-second frame steps are not lost.
     float playTimeAccumulator_ = 0.0f;
+
+    // Phase 69: container contents read by the last loadGame(), keyed by the
+    // container's persistence FormID. Consumed by applyPendingContainerState().
+    std::unordered_map<uint32_t, PendingContainerState> pendingContainers_;
 
     // Base directory
     std::string getBaseDir() const;

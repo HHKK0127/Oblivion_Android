@@ -26,7 +26,9 @@ constexpr uint32_t MAGIC_NUMBER = 0x4F424C56;
 // v2: player magicka/maxMagicka appended to the PLYR block (after maxHealth)
 // v3: playerLevel + playTimeSeconds appended to the 64-byte header (see
 //     LEGACY_HEADER_SIZE); the payload is unchanged from v2
-constexpr uint32_t CURRENT_VERSION = 3;
+// v4: SCRP payload holds script global variables and a new CNTR section
+//     (persisted container inventories) is appended after SCRP
+constexpr uint32_t CURRENT_VERSION = 4;
 
 // Minimum supported version (for backward compatibility)
 constexpr uint32_t MIN_SUPPORTED_VERSION = 1;

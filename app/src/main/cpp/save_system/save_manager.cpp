@@ -4,7 +4,9 @@
 #include "../game/spell_manager.h"
 #include "../game/quest_manager.h"
 #include "../world/world_manager.h"
+#include "../game/container.h"
 #include "../script/script_manager.h"
+#include "../script/script_opcodes.h"
 #include <fstream>
 #include <algorithm>
 #include <sstream>
@@ -13,6 +15,7 @@
 #include <ctime>
 #include <chrono>
 #include <filesystem>
+#include <unordered_set>
 #include <android/log.h>
 
 namespace fs = std::filesystem;
@@ -266,8 +269,79 @@ bool SaveManager::saveGame(uint32_t slotIndex, const std::string& slotName) {
         {
             // Always write section body so the byte layout matches loadGame(),
             // which reads every section unconditionally.
-            writer.writeUint32(0);  // Will be populated when script globals are accessible
-            LOGD("Serialized script state");
+            static const std::unordered_map<uint32_t, oblivion::script::ScriptValue> emptyGlobals;
+            const auto& globals = scriptManager_
+                ? scriptManager_->getAllGlobalVariables()
+                : emptyGlobals;
+            writer.writeUint32(static_cast<uint32_t>(globals.size()));
+            for (const auto& kv : globals) {
+                writer.writeUint32(kv.first);
+                writer.writeUint8(static_cast<uint8_t>(kv.second.type));
+                writer.writeInt32(kv.second.intVal);
+                writer.writeFloat(kv.second.floatVal);
+                writer.writeString(kv.second.strVal);
+                writer.writeUint32(kv.second.refVal);
+            }
+            LOGD("Serialized %zu script globals", globals.size());
+        }
+
+        // Serialize containers (v4+): persisted inventories keyed by ESM FormID
+        writer.writeUint32(0x434E5452);  // "CNTR" marker
+        {
+            // Always write section body so the byte layout matches loadGame(),
+            // which reads every section unconditionally.
+            static const std::unordered_map<uint32_t, std::shared_ptr<Container>> emptyContainers;
+            const auto& containers = worldManager_
+                ? worldManager_->getAllContainers()
+                : emptyContainers;
+
+            // Containers read by the last load but never materialised this
+            // session only exist in pendingContainers_. Carry them forward so a
+            // save/load round trip does not silently drop their contents.
+            std::unordered_set<uint32_t> written;
+            size_t validCount = 0;
+            for (const auto& kv : containers) {
+                if (kv.second) ++validCount;
+            }
+            for (const auto& kv : pendingContainers_) {
+                if (containers.find(kv.first) == containers.end()) ++validCount;
+            }
+
+            writer.writeUint32(static_cast<uint32_t>(validCount));
+            for (const auto& kv : containers) {
+                const auto& container = kv.second;
+                if (!container) continue;
+                written.insert(kv.first);
+
+                writer.writeUint32(kv.first);
+                writer.writeBool(container->isLocked());
+
+                const auto& items = container->getItems();
+                writer.writeUint32(static_cast<uint32_t>(items.size()));
+                for (const auto& invItem : items) {
+                    writer.writeUint32(invItem.item.itemId);
+                    writer.writeUint32(invItem.quantity);
+                    writer.writeString(invItem.item.name);
+                    writer.writeUint8(static_cast<uint8_t>(invItem.item.type));
+                    writer.writeFloat(invItem.item.weight);
+                    writer.writeUint32(invItem.item.value);
+                }
+            }
+            for (const auto& kv : pendingContainers_) {
+                if (written.count(kv.first)) continue;
+                writer.writeUint32(kv.first);
+                writer.writeBool(kv.second.locked);
+                writer.writeUint32(static_cast<uint32_t>(kv.second.items.size()));
+                for (const auto& invItem : kv.second.items) {
+                    writer.writeUint32(invItem.item.itemId);
+                    writer.writeUint32(invItem.quantity);
+                    writer.writeString(invItem.item.name);
+                    writer.writeUint8(static_cast<uint8_t>(invItem.item.type));
+                    writer.writeFloat(invItem.item.weight);
+                    writer.writeUint32(invItem.item.value);
+                }
+            }
+            LOGD("Serialized %zu containers", validCount);
         }
 
         // Write to file
@@ -294,6 +368,15 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
         }
 
         BinaryReader reader(payload.data(), payload.size());
+
+        // Drop container contents buffered by a previous load so a stale entry
+        // cannot be applied to a container in this session.
+        pendingContainers_.clear();
+
+        // Quick-slot spell IDs and the old->new spell ID remap are captured while
+        // the PLYR/SPLL sections are read and applied once every spell exists.
+        uint32_t savedQuickSlots[Player::QUICK_SLOT_COUNT] = {0};
+        std::unordered_map<uint32_t, uint32_t> spellIdRemap;
 
         // Deserialize PlayerController
         uint32_t plyrMarker = reader.readUint32();
@@ -352,9 +435,8 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
                 player->sprintSpeed = reader.readFloat();
 
                 // Quick-slot spell IDs (restored after spells are loaded)
-                uint32_t quickSlotIds[Player::QUICK_SLOT_COUNT];
                 for (int i = 0; i < Player::QUICK_SLOT_COUNT; ++i) {
-                    quickSlotIds[i] = reader.readUint32();
+                    savedQuickSlots[i] = reader.readUint32();
                 }
 
                 // Player controller state
@@ -432,8 +514,8 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
                 uint32_t newId = 0;
                 if (spellManager_) {
                     newId = spellManager_->createSpell(name, name, school, manaCost, baseDamage);
+                    spellIdRemap[spellId] = newId;
                 }
-                (void)spellId;
 
                 // Effects
                 uint32_t effectCount = reader.readUint32();
@@ -455,6 +537,24 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
                 }
             }
             LOGD("Loaded %u spells", spellCount);
+
+            // Reapply quick-slot assignments now that every spell has been recreated
+            if (playerController_ && spellManager_) {
+                auto player = playerController_->getPlayer();
+                if (player) {
+                    for (int i = 0; i < Player::QUICK_SLOT_COUNT; ++i) {
+                        if (savedQuickSlots[i] == 0) {
+                            player->quickSlotSpells[i].reset();
+                            continue;
+                        }
+                        auto it = spellIdRemap.find(savedQuickSlots[i]);
+                        if (it != spellIdRemap.end()) {
+                            player->quickSlotSpells[i] = spellManager_->getSpell(it->second);
+                        }
+                    }
+                    LOGD("Restored quick slots from save");
+                }
+            }
         }
 
         // Deserialize QuestManager
@@ -526,7 +626,20 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
                 std::string title = reader.readString();
                 QuestState state = static_cast<QuestState>(reader.readUint8());
                 uint32_t timeCompleted = reader.readUint32();
-                (void)questId; (void)giverNpcId; (void)title; (void)state; (void)timeCompleted;
+                (void)questId;
+                (void)state;
+
+                // Recreate the completed quest so the journal keeps its history
+                if (questManager_) {
+                    uint32_t newQuestId = questManager_->createQuest(giverNpcId, title, "");
+                    if (newQuestId != 0) {
+                        questManager_->completeQuest(newQuestId);
+                        auto quest = questManager_->getQuest(newQuestId);
+                        if (quest) {
+                            quest->timeCompleted = timeCompleted;
+                        }
+                    }
+                }
             }
 
             LOGD("Loaded %u active, %u completed quests", activeCount, completedCount);
@@ -578,8 +691,66 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
         {
             // Always read section data to maintain reader position
             uint32_t globalCount = reader.readUint32();
-            (void)globalCount;
-            LOGD("Loaded script state");
+            for (uint32_t i = 0; i < globalCount; ++i) {
+                uint32_t formID = reader.readUint32();
+                oblivion::script::ScriptValue value;
+                value.type = static_cast<oblivion::script::ScriptValue::Type>(reader.readUint8());
+                value.intVal = reader.readInt32();
+                value.floatVal = reader.readFloat();
+                value.strVal = reader.readString();
+                value.refVal = reader.readUint32();
+                if (scriptManager_) {
+                    scriptManager_->setGlobalVariable(formID, value);
+                }
+            }
+            LOGD("Loaded %u script globals", globalCount);
+        }
+
+        // Deserialize containers (v4+ only; older saves end after SCRP)
+        if (loadedFormatVersion_ >= 4) {
+            uint32_t cntrMarker = reader.readUint32();
+            if (cntrMarker != 0x434E5452) {
+                LOGE("Save file corrupted: expected CNTR marker, got 0x%08X at pos %zu", cntrMarker, reader.getPosition() - 4);
+                return false;
+            }
+            uint32_t containerCount = reader.readUint32();
+            for (uint32_t i = 0; i < containerCount; ++i) {
+                uint32_t formID = reader.readUint32();
+                bool locked = reader.readBool();
+                uint32_t itemCount = reader.readUint32();
+
+                // Containers are created lazily on first interaction, so the
+                // registry is usually still empty here. Buffer the contents and
+                // let applyPendingContainerState() deliver them when the
+                // container is finally materialised.
+                PendingContainerState state;
+                state.locked = locked;
+                state.items.reserve(itemCount);
+
+                for (uint32_t j = 0; j < itemCount; ++j) {
+                    InventoryItem invItem;
+                    invItem.item.itemId = reader.readUint32();
+                    invItem.quantity = reader.readUint32();
+                    invItem.item.name = reader.readString();
+                    invItem.item.type = static_cast<ItemType>(reader.readUint8());
+                    invItem.item.weight = reader.readFloat();
+                    invItem.item.value = reader.readUint32();
+                    if (invItem.quantity > 0 && invItem.item.itemId > 0) {
+                        state.items.push_back(std::move(invItem));
+                    }
+                }
+
+                pendingContainers_[formID] = std::move(state);
+
+                // A container may already exist (e.g. an explicit re-load after
+                // the player opened it this session); apply immediately then.
+                if (worldManager_) {
+                    auto existing = worldManager_->getContainerByFormID(formID);
+                    if (existing) applyPendingContainerState(existing);
+                }
+            }
+            LOGD("Loaded %u containers (%zu buffered)", containerCount,
+                 pendingContainers_.size());
         }
 
         LOGI("Game loaded from slot %u", slotIndex);
@@ -588,6 +759,25 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
         LOGE("Load error: %s", e.what());
         return false;
     }
+}
+
+bool SaveManager::applyPendingContainerState(const std::shared_ptr<Container>& container) {
+    if (!container) return false;
+
+    auto it = pendingContainers_.find(container->getFormID());
+    if (it == pendingContainers_.end()) return false;
+
+    container->setLocked(it->second.locked);
+    container->clearItems();
+    for (const auto& invItem : it->second.items) {
+        container->addItem(invItem);
+    }
+
+    LOGD("Applied saved contents to container 0x%08X (%zu items)",
+         container->getFormID(), container->getItemCount());
+
+    pendingContainers_.erase(it);
+    return true;
 }
 
 // ============================================================================

@@ -18,6 +18,7 @@ Container::Container(std::shared_ptr<WorldObject> worldObj)
     : Interactable(ObjectType::CONTAINER, worldObj),
       containerState(ContainerState::CLOSED),
       locked(false),
+      formID(0),
       totalWeight(0.0f),
       capacity(100.0f),  // Default capacity 100 units
       openScale(1.0f),
@@ -247,6 +248,8 @@ void Container::populateFromESM(const oblivion::ESMManager& esm, uint32_t contai
         addItem(invItem);
     }
 
+    formID = containerFormID;
+
     LOGI("Container populated from ESM: formID=0x%08X, items=%zu, capacity=%.1f",
-         containerFormID, items.size(), capacity);
+             containerFormID, items.size(), capacity);
 }

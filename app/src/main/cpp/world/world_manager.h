@@ -16,6 +16,7 @@ class AssetManager;
 class CellLoader;
 class CellTransitionManager;
 class DoorManager;
+class Container;
 
 #define LOG_TAG_WORLD "WorldManager"
 #define LOGD_WORLD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG_WORLD, __VA_ARGS__)
@@ -221,6 +222,32 @@ public:
         return worldItems;
     }
 
+    // ========================================================================
+    // Container Registry (Phase 69: persistence)
+    // ========================================================================
+
+    /**
+     * @brief Register a container for save/load tracking
+     */
+    void registerContainer(std::shared_ptr<Container> container);
+
+    /**
+     * @brief Unregister a container
+     */
+    void unregisterContainer(uint32_t formID);
+
+    /**
+     * @brief Get all tracked containers
+     */
+    const std::unordered_map<uint32_t, std::shared_ptr<Container>>& getAllContainers() const {
+        return containers_;
+    }
+
+    /**
+     * @brief Get a container by its ESM FormID
+     */
+    std::shared_ptr<Container> getContainerByFormID(uint32_t formID) const;
+
 private:
     // ========================================================================
     // Member Variables
@@ -274,6 +301,9 @@ private:
 
     // World Items
     std::vector<std::shared_ptr<WorldItem>> worldItems;
+
+    // Container registry (Phase 69: persistence)
+    std::unordered_map<uint32_t, std::shared_ptr<Container>> containers_;
 
     // ========================================================================
     // Private Methods

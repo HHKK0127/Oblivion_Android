@@ -2,6 +2,7 @@
 #include "cell_loader.h"
 #include "cell_transition_manager.h"
 #include "door.h"
+#include "../game/container.h"
 #include "../game/npc_manager.h"
 #include "../assets/asset_manager.h"
 #include <cmath>
@@ -21,6 +22,34 @@ WorldManager::WorldManager()
 
 WorldManager::~WorldManager() {
     cleanup();
+}
+
+// ============================================================================
+// Container Registry (Phase 69: persistence)
+// ============================================================================
+
+void WorldManager::registerContainer(std::shared_ptr<Container> container) {
+    if (!container) return;
+    uint32_t id = container->getFormID();
+    if (id != 0) {
+        containers_[id] = container;
+        LOGD_WORLD("Container registered: formID=0x%08X", id);
+    }
+}
+
+void WorldManager::unregisterContainer(uint32_t formID) {
+    if (formID != 0) {
+        containers_.erase(formID);
+        LOGD_WORLD("Container unregistered: formID=0x%08X", formID);
+    }
+}
+
+std::shared_ptr<Container> WorldManager::getContainerByFormID(uint32_t formID) const {
+    auto it = containers_.find(formID);
+    if (it != containers_.end()) {
+        return it->second;
+    }
+    return nullptr;
 }
 
 // ============================================================================

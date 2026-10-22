@@ -641,6 +641,12 @@ private:
     // door lies within it; 0 keeps the console's unrestricted behavior.
     bool activateNearestDoor(float maxDistance, std::string& message);
 
+    // Phase 69: the container counterpart of activateNearestDoor. Materialises
+    // the container REFR nearest the player (populating its inventory from the
+    // CONT record on first use), registers it with WorldManager so the save
+    // system persists its contents, and opens the container menu.
+    bool activateNearestContainer(float maxDistance, std::string& message);
+
         // Phase 65: exterior static-object world (REFR -> MODL -> NIF)
         void renderStaticObjects();
     };

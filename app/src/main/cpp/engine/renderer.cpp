@@ -12,6 +12,7 @@
 #include "../world/game_state_report.h"
 #include "../system/display_modes.h"
 #include "../world/door.h"
+#include "../game/container.h"
 #include "../world/distant_lod/distant_lod_manager.h"
 // #include "../jni_audio_bridge.h"  // Deferred - requires Java MainActivity
 
@@ -4600,12 +4601,17 @@ void Renderer::render(float deltaTime) {
                 playerController->toggleCombatStance();   // Y - combat stance
             }
             if (pressed_edge(VirtualControllerButton::X)) {
-                // X - activate: nearest door within reach, else pick up an item.
+                // X - activate: nearest door within reach, then nearest
+                // container, else pick up an item.
                 std::string doorMessage;
+                std::string containerMessage;
                 if (activateNearestDoor(3.5f, doorMessage)) {
                     LOGI("VC X: %s", doorMessage.c_str());
+                } else if (activateNearestContainer(3.5f, containerMessage)) {
+                    LOGI("VC X: %s", containerMessage.c_str());
                 } else if (!playerController->tryPickup()) {
-                    LOGD("VC X: nothing to activate (%s)", doorMessage.c_str());
+                    LOGD("VC X: nothing to activate (%s; %s)",
+                         doorMessage.c_str(), containerMessage.c_str());
                 }
             }
             if (pressed_edge(VirtualControllerButton::START)) {
@@ -8687,6 +8693,7 @@ bool Renderer::anyMenuOpen() const {
     if (mapUI && mapUI->isVisible()) return true;
     if (dialogueUI && dialogueUI->isVisible()) return true;
     if (bookReaderUI && bookReaderUI->isVisible()) return true;
+    if (containerMenuUI && containerMenuUI->isVisible()) return true;
     return false;
 }
 
@@ -8937,6 +8944,89 @@ bool Renderer::handleBackKey() {
         } else {
             message = "Used door '" + name + "' -> " + landedName + " (exterior)";
         }
+        return true;
+    }
+
+    // Phase 69: the in-game "activate" action for containers. Mirrors
+    // activateNearestDoor: walk the ESM reference list for the current cell,
+    // keep the container REFR nearest the player, materialise it on first use
+    // and hand it to the container menu. The REFR FormID is the persistence
+    // identity because several instances can share one CONT base record.
+    bool Renderer::activateNearestContainer(float maxDistance, std::string& message) {
+        if (!worldManager || !assetManager || !objectPlacer) {
+            message = "World not ready";
+            return false;
+        }
+        auto cell = worldManager->getCurrentCell();
+        if (!cell) { message = "No current cell"; return false; }
+        if (!containerMenuUI) { message = "Container menu unavailable"; return false; }
+
+        const auto& esmMgr = assetManager->getEsmManager();
+        const glm::vec3 playerPos = worldManager->getPlayerPosition();
+        const float bestLimitSq = (maxDistance > 0.0f)
+                                      ? maxDistance * maxDistance
+                                      : std::numeric_limits<float>::max();
+
+        const oblivion::ReferenceData* best = nullptr;
+        float bestSq = bestLimitSq;
+        for (const auto& ref : esmMgr.getAllReferences()) {
+            if (ref.cellFormID != cell->tesFormID) continue;
+            if (ref.refType != 0) continue;  // objects only (REFR), not actors
+            if (objectPlacer->resolveObjectType(ref.baseFormID, esmMgr) !=
+                ObjectPlacer::ObjectType::CONTAINER) {
+                continue;
+            }
+            // Interior ESM positions are Z-up; the engine world is Y-up.
+            const glm::vec3 pos(ref.position.x, ref.position.z, ref.position.y);
+            const float sq = glm::dot(pos - playerPos, pos - playerPos);
+            if (sq < bestSq) {
+                bestSq = sq;
+                best = &ref;
+            }
+        }
+
+        if (!best) { message = "No container within reach"; return false; }
+
+        auto container = worldManager->getContainerByFormID(best->formID);
+        if (!container) {
+            auto worldObj = std::make_shared<WorldObject>();
+            worldObj->objectId = best->formID;
+            worldObj->objectName = objectPlacer->resolveObjectName(
+                best->baseFormID, ObjectPlacer::ObjectType::CONTAINER, esmMgr);
+            worldObj->modelPath = objectPlacer->resolveModelPath(
+                best->baseFormID, ObjectPlacer::ObjectType::CONTAINER, esmMgr);
+            worldObj->position = glm::vec3(best->position.x, best->position.z,
+                                           best->position.y);
+            worldObj->rotation = glm::vec3(best->rotation.x, best->rotation.z,
+                                           best->rotation.y);
+            worldObj->scale = best->scale > 0.0f ? best->scale : 1.0f;
+            worldObj->isStatic = true;
+            worldObj->isInteractable = true;
+
+            container = std::make_shared<Container>(worldObj);
+            container->setFormID(best->formID);  // REFR FormID = unique identity
+            // Prefer the contents captured by the last load; fall back to the
+            // ESM CONT record for containers the save did not cover.
+            if (!saveManager || !saveManager->applyPendingContainerState(container)) {
+                container->populateFromESM(esmMgr, best->baseFormID);
+            }
+            worldManager->registerContainer(container);
+        }
+
+        const std::string name = container->getWorldObject()
+                                     ? container->getWorldObject()->objectName
+                                     : std::string("Container");
+        if (container->isLocked()) {
+            message = "Locked: " + name;
+            return true;
+        }
+
+        Player* player = playerController ? playerController->getPlayer().get() : nullptr;
+        if (!player) { message = "Player unavailable"; return false; }
+
+        containerMenuUI->open(container, player);
+        message = "Opened '" + name + "' (" +
+                  std::to_string(container->getItemCount()) + " items)";
         return true;
     }
 

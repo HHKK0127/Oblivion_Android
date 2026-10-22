@@ -32,6 +32,7 @@ public:
     // Inventory management
     void addItem(const InventoryItem& item);
     bool removeItem(uint32_t itemId, uint32_t quantity = 1);
+    void clearItems() { items.clear(); totalWeight = 0.0f; }
     const std::vector<InventoryItem>& getItems() const { return items; }
     size_t getItemCount() const { return items.size(); }
     float getTotalWeight() const { return totalWeight; }
@@ -48,6 +49,10 @@ public:
     // ESM Integration
     void populateFromESM(const oblivion::ESMManager& esm, uint32_t containerFormID);
 
+    // Stable identifier for save/load (ESM FormID, 0 = runtime-only)
+    uint32_t getFormID() const { return formID; }
+    void setFormID(uint32_t id) { formID = id; }
+
     // Animation properties
     float getOpenScale() const { return openScale; }
     void setOpenScale(float scale) { openScale = scale; }
@@ -60,6 +65,7 @@ public:
 private:
     ContainerState containerState;
     bool locked;
+    uint32_t formID;  // ESM FormID for save/load identity
     std::vector<InventoryItem> items;
     float totalWeight;
     float capacity;  // Maximum weight capacity
