@@ -7,11 +7,23 @@
 - **作業開始時**: 全件読まず、まず grep で関連語（機能名・ID・日付）を検索して該当エントリだけ読む。未確定事項・過去の決定・RE 結果はここが正本
 - **参照例**: RE 完了記録 id `re-s50-batch2-complete-20261017`、RE の生データは `tmp/re/`、永続文書は `docs/RE_EXE_REPORT.md`（§55 補遺 → §50 の優先で矛盾解消）
 - **追記手順**（Copilot 自身もここに記憶を書ける）:
-  1. `entries` 配列の末尾に `{ "id", "timestamp"(ISO8601Z), "priority"(high|medium|low), "category", "tags"[], "content" }` を append
-  2. `id` は `<tool>-<topic>-<yyyymmdd>` 形式（例: `copilot-<topic>-20261019`、`opencode-b-<topic>-20261019`）
-  3. `metadata.totalEntries` と `metadata.lastUpdated`、`lastUpdated`(トップレベル) を更新
-- **構造**: `{ version, lastUpdated, entries[606], metadata }`。`compressed: true` は要約済みエントリ
+  1. 書き込みの直前に**必ずファイルを再読込**する（メモリ上のスナップショットを丸ごと書き戻さない。書き戻すと他ツールの追記が消える）
+  2. `entries` 配列の末尾に `{ "id", "timestamp"(ISO8601Z), "priority"(high|medium|low), "category", "tags"[], "content" }` を append
+  3. `id` は `<tool>-<topic>-<yyyymmdd>` 形式（例: `copilot-<topic>-20261019`、`opencode-b-<topic>-20261019`）
+  4. `metadata.totalEntries`・`metadata.compressedCount`・`metadata.lastUpdated`、`lastUpdated`(トップレベル) を更新
+  5. `python tools/validate_memory_ledger.py` で検証（JSON 妥当性・ID 重複・件数整合・必須フィールド）。エラーがあればコミットしない
+- **構造**: `{ version, lastUpdated, entries[N], metadata }`。`N` は実ファイルの件数（2026-10-22 時点で 644）。`compressed: true` は要約済みエントリ
+- **過去のデータ損失**: 2026-10-22 のコミット `bfb986dd` で台帳が 8,290 行で途切れた不正 JSON になり、61 件が消失した。`74ec9ad9`（622 件）から復元済みで、詳細は台帳 id `copilot-memory-restore-20261022`。破損スナップショット `.github/memory/session-memory.json.bak` は Git 追跡下に残っている（削除は未実施）
 - **同系統のファイル**: Copilot のタスク管理 TODO は `.copilot/session-state/9427ac74-*/session.db`（`todos` テーブル）。opencode 側と互換にするため `title` 先頭へ `[copilot:ID]` タグを付ける運用
+
+### Supermemory の位置づけ（派生・読み取り専用の検索層）
+
+- **正本は上記のローカル台帳**。Supermemory はそこから一方向に複製された検索層であり、**Supermemory を正本にしてはならない**（Supermemory 側だけを更新しても opencode / Copilot には伝わらない）
+- **同期コマンド**: `python tools/sync_memory_to_supermemory.py`（`--dry-run` で差分のみ確認、`--namespace` でスペース指定）。台帳の**追記（`to push`）と訂正（`to update`）の両方**を検出して反映する冪等な収束同期なので、台帳を編集した後は何度実行しても安全。差分が 0 になれば一致
+- **冪等キー**: 各メモリの `metadata.entryId`（= 台帳エントリの `id`）。`content` は逐語コピー、`metadata` に `category` / `priority` / `recordedAt` / `source` / `ledger` / `compressed` / `tags` を保持
+- **API キー**: `~/.copilot/mcp-config.json` の `mcpServers.supermemory.headers.Authorization` を第一候補とし、環境変数 `SUPERMEMORY_API_KEY` は第二候補。各候補を実際に認証させて通ったものを使う。**キーの値はコミットしない**
+- **書き込み経路**: 逐語保存には REST `POST https://api.supermemory.ai/v4/memories` を使う（document ingestion は LLM 抽出が入り否定条件が落ちるため不可）。MCP ツールの `add_memory` は LLM 経由の要約が入るので台帳の複製には使わない
+- **背景**: 2026-10-22 の全件突合でローカル 580 件に対し Supermemory 側は 412 件・逐語一致 0 件だった。台帳を捨てると 2026-10-21 以前の 537 件と制約・決定の根拠が失われるため、正本はローカルに固定した（詳細は台帳 id `copilot-supermemory-sync-policy-20261022`）
 
 ## プロジェクト概要
 

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-22T06:58:00Z",
+  "lastUpdated": "2026-10-22T09:38:56Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -3807,56 +3807,64 @@
       "timestamp": "2026-10-18T15:30:00Z",
       "category": "development",
       "priority": "high",
-      "content": "Batch 2026-10-18 (session 9427ac74): fatigue-av-implementation implemented, UNVERIFIED per user '検証はステイでいいので作成を続けて' (no host tests / gradle / commit / push until instructed). New game/fatigue_system.h (header-only, namespace oblivion::fatigue): 16 GMST defaults as inline constexpr (kFatigueBase 1.25 / kFatigueMult 0.5 / kReturnBase 10 / kAttackWeaponBase 8 + Mult .1 / kPowerAttackPenalty 5 / kBlockSkillBase 5 + Mult -.04 / kBlockMult 1 / kCastBase 15 / kRunBase 8 / kJumpBase 4 + Mult 4 ...) each annotated with its EXE address; functions ratio (0x5F4880), damageMult (0x547F00), meleeDamageMult (exact-1.0 quirk -> 1.0), recoverPerSecond (0x5F2720 flat 10/s), attackCost (0x547560), blockCost (0x547590), castCost (0x548DA0 flat 15), runAthleticsBand + runCostPerSecond (0x5FAAE0, bands 1.0/.75/.5/.25/0 at 0-19/20-39/40-59/60-79/80+), jumpCost (0x671620 = 4+4x), clampValue. Wiring: Player::updateStamina now run-drains runCostPerSecond(skills.Athletics) while sprinting and recovers recoverPerSecond(attributes.End) while idle (fixed staminaDrainRate 25 / staminaRecoveryRate 15 fields REMOVED from player.h); CombatManager::calculateDamage multiplies offensive product by meleeDamageMult(ratio(attacker.stamina, max)) before armor subtraction; playerAttack drains player->reduceStamina(attackCost) for melee only and syncs playerStatus.stamina/maxStamina from live Player first (NPC id-1 placeholder does not track it); npcAttackPlayer drains attacker->status.stamina via clampValue; attemptBlock (success branch) drains defender blockCost(0.0 skill - NPC skill map has no 'Block', incomingDamage); jump cost in BOTH paths: Player::applyJump (keyboard) and PlayerController::updatePhysics Jolt branch (touch, sets velocity directly); SpellManager::castSpell drains caster->status.stamina and castPlayerSpell drains player->reduceStamina with castCost (flat 15) after mana consumption. Bows AND staves skip attack cost (weapon anim 4/5 = 0-cost; note STAFF has isRanged=false in getDefaultWeapon, so type != WeaponType::STAFF check added explicitly). Not ported (documented in header comment): stage buckets 0x56A300 (no consumer), auto-KD at AV<=0 (0x600248, waits on RE R7 KD apply/recover). Tests: tests/fatigue_system_tests.h/.cpp (FatigueSystemTests class, 11 groups / GMST pinning / curves / costs / bands / integration spot checks), registered in tools/host_tests/run_host_tests.sh SOURCES + host_runner_main.cpp (include + suite call). GMST live table wiring remains the separate gmst-table-integration task."
+      "content": "Batch 2026-10-18 (session 9427ac74): fatigue-av-implementation implemented, UNVERIFIED per user '検証はステイでいいので作成を続けて' (no host tests / gradle / commit / push until instructed). New game/fatigue_system.h (header-only, namespace oblivion::fatigue): 16 GMST defaults as inline constexpr (kFatigueBase 1.25 / kFatigueMult 0.5 / kReturnBase 10 / kAttackWeaponBase 8 + Mult .1 / kPowerAttackPenalty 5 / kBlockSkillBase 5 + Mult -.04 / kBlockMult 1 / kCastBase 15 / kRunBase 8 / kJumpBase 4 + Mult 4 ...) each annotated with its EXE address; functions ratio (0x5F4880), damageMult (0x547F00), meleeDamageMult (exact-1.0 quirk -> 1.0), recoverPerSecond (0x5F2720 flat 10/s), attackCost (0x547560), blockCost (0x547590), castCost (0x548DA0 flat 15), runAthleticsBand + runCostPerSecond (0x5FAAE0, bands 1.0/.75/.5/.25/0 at 0-19/20-39/40-59/60-79/80+), jumpCost (0x671620 = 4+4x), clampValue. Wiring: Player::updateStamina now run-drains runCostPerSecond(skills.Athletics) while sprinting and recovers recoverPerSecond(attributes.End) while idle (fixed staminaDrainRate 25 / staminaRecoveryRate 15 fields REMOVED from player.h); CombatManager::calculateDamage multiplies offensive product by meleeDamageMult(ratio(attacker.stamina, max)) before armor subtraction; playerAttack drains player->reduceStamina(attackCost) for melee only and syncs playerStatus.stamina/maxStamina from live Player first (NPC id-1 placeholder does not track it); npcAttackPlayer drains attacker->status.stamina via clampValue; attemptBlock (success branch) drains defender blockCost(0.0 skill - NPC skill map has no 'Block', incomingDamage); jump cost in BOTH paths: Player::applyJump (keyboard) and PlayerController::updatePhysics Jolt branch (touch, sets velocity directly); SpellManager::castSpell drains caster->status.stamina and castPlayerSpell drains player->reduceStamina with castCost (flat 15) after mana consumption. Bows AND staves skip attack cost (weapon anim 4/5 = 0-cost; note STAFF has isRanged=false in getDefaultWeapon, so type != WeaponType::STAFF check added explicitly). Not ported (documented in header comment): stage buckets 0x56A300 (no consumer), auto-KD at AV<=0 (0x600248, waits on RE R7 KD apply/recover). Tests: tests/fatigue_system_tests.h/.cpp (FatigueSystemTests class, 11 groups / GMST pinning / curves / costs / bands / integration spot checks), registered in tools/host_tests/run_host_tests.sh SOURCES + host_runner_main.cpp (include + suite call). GMST live table wiring remains the separate gmst-table-integration task.",
+      "tags": []
     },
     {
       "id": "opencode-b-febf0-damage-formula-p1-20261018",
       "timestamp": "2026-10-18T16:45:00Z",
       "category": "development",
       "priority": "high",
-      "content": "Batch 2026-10-18 (session 9427ac74): febf0-damage-formula batch 1 implemented, UNVERIFIED per user '検証はステイでいいので作成を続けて'. New header game/combat_formulas.h (header-only, namespace oblivion::combat) ports the confirmed FUN_005FEBF0 fragments from RE_EXE_REPORT 56.1 + tmp/re/s57_combat_full.md 3.1/13: kBlockReduceSkillBase/Mult (fBlockSkillBase 0 / Mult 1.0 - NOT the fFatigueBlock* cost family in fatigue_system.h), kBlockMax 0.75, kBlockAmountWeapon 0.5, kBlockAmountHandToHand 0.25, kArmorRatingMax 1.0; luckAdjustedSkill (0x547B90 clamp(skill+0.4*luck-20, 0,100), raw AV inputs); blockAmount (0x5474A0: D->base 0.01*D->M selection->min(curve(x)*base*M,0.75), curve = fatigue::damageMult 0x547F00); armorFactor (min(AR/100, 1.0)). Wiring: calculateDamage armor changed from subtracting armorRating*0.5 to multiplying by (1 - armorFactor) per the confirmed (1-ARMOR) accumulators 0x5FF7B5/0x5FF908; getDefenderDamageMitigation renamed to getDefenderArmorFactor (single call site); NPC defender block reduction in update() replaced the fixed damage *= 0.3 with blockAmount (defender skills['Block'] / attributes['Luck'] raw reads, fatigue ratio, equippedWeaponId 0 mapped to the hand-to-hand M term - note attack fallback sword means id 0 NPCs attack with a sword but block H2H-style). NOTE: EXE feeds the curve x = 0x5F4880 raw/floor(Fatigue) (stays ~1.0, meaning [推定] s57 C2); port deliberately feeds the real residual ratio instead. NOT ported (listed in header comment): sneak perk multiplier 0x5477F0, power-attack 0x546BA0, KD/KB rolls (0x5475D0 real KD paths are auto-fatigue-0 + marksman perks per s57 15.2), per-hit cap, reflect (port has no reflect system), body tail weighting. Legacy criticalChance/attackSpeed kept untouched - RE found no EXE counterparts (s57 5/6.2/13 says do not delete before a spec decision). Tests: tests/combat_formulas_tests.h/.cpp (CombatFormulasTests: GMST pins, luck-adjusted clamps, the s57 13 RE pins 0.625/0.3125/0.15625, block cap, armor cap, multiply-order spot checks) registered in run_host_tests.sh SOURCES + host_runner_main.cpp. Batch 2 candidates: sneak/KD/KB, PA multiplier."
+      "content": "Batch 2026-10-18 (session 9427ac74): febf0-damage-formula batch 1 implemented, UNVERIFIED per user '検証はステイでいいので作成を続けて'. New header game/combat_formulas.h (header-only, namespace oblivion::combat) ports the confirmed FUN_005FEBF0 fragments from RE_EXE_REPORT 56.1 + tmp/re/s57_combat_full.md 3.1/13: kBlockReduceSkillBase/Mult (fBlockSkillBase 0 / Mult 1.0 - NOT the fFatigueBlock* cost family in fatigue_system.h), kBlockMax 0.75, kBlockAmountWeapon 0.5, kBlockAmountHandToHand 0.25, kArmorRatingMax 1.0; luckAdjustedSkill (0x547B90 clamp(skill+0.4*luck-20, 0,100), raw AV inputs); blockAmount (0x5474A0: D->base 0.01*D->M selection->min(curve(x)*base*M,0.75), curve = fatigue::damageMult 0x547F00); armorFactor (min(AR/100, 1.0)). Wiring: calculateDamage armor changed from subtracting armorRating*0.5 to multiplying by (1 - armorFactor) per the confirmed (1-ARMOR) accumulators 0x5FF7B5/0x5FF908; getDefenderDamageMitigation renamed to getDefenderArmorFactor (single call site); NPC defender block reduction in update() replaced the fixed damage *= 0.3 with blockAmount (defender skills['Block'] / attributes['Luck'] raw reads, fatigue ratio, equippedWeaponId 0 mapped to the hand-to-hand M term - note attack fallback sword means id 0 NPCs attack with a sword but block H2H-style). NOTE: EXE feeds the curve x = 0x5F4880 raw/floor(Fatigue) (stays ~1.0, meaning [推定] s57 C2); port deliberately feeds the real residual ratio instead. NOT ported (listed in header comment): sneak perk multiplier 0x5477F0, power-attack 0x546BA0, KD/KB rolls (0x5475D0 real KD paths are auto-fatigue-0 + marksman perks per s57 15.2), per-hit cap, reflect (port has no reflect system), body tail weighting. Legacy criticalChance/attackSpeed kept untouched - RE found no EXE counterparts (s57 5/6.2/13 says do not delete before a spec decision). Tests: tests/combat_formulas_tests.h/.cpp (CombatFormulasTests: GMST pins, luck-adjusted clamps, the s57 13 RE pins 0.625/0.3125/0.15625, block cap, armor cap, multiply-order spot checks) registered in run_host_tests.sh SOURCES + host_runner_main.cpp. Batch 2 candidates: sneak/KD/KB, PA multiplier.",
+      "tags": []
     },
     {
       "id": "opencode-b-febf0-damage-formula-p2-20261019",
       "timestamp": "2026-10-19T09:30:00Z",
       "category": "development",
       "priority": "high",
-      "content": "Batch 2026-10-19 (session 9427ac74): febf0-damage-formula batch 2, UNVERIFIED (verification stays on hold per user). Added to game/combat_formulas.h: (1) perkSneakAttackMult(weaponType, sneakRank) mirrors 0x5477F0 - IMPORTANT: the raw disassembly (tmp/re/s59_combat_4_out.txt lines 249-342) corrects the s57 prose: weaponType in {-1,0,2} selects the MELEE table (al=1 path), NOT 1.0; weaponType==5 selects the Marksman table (al=0); any other weaponType early-returns 1.0 (fld1 stays on ST0); rank>4 (unsigned ja) or rank<0 returns 1.0. GMST defaults from s50_gmst_full.txt 769-778: Melee {4.0,6,6,6,6}, Marksman {6.0,8,8,8,8}; fDamageSneakAttackMult(4.0) is never read by the EXE. (2) knockbackForce(damage, agility, luck, fatigueRatio) mirrors 0x547690: D=luckAdjustedSkill, Q=D/curve(x) (inverse direction vs KD's curve*D), Tk=damage*10+50, force=Tk*(1-0.008*Q), plus minKnockbackForce for the caller-side clamp at 0x600013 (fKnockbackForceMax=512; the EXE clamps at the caller, not inside the function). New GMST constants kKnockbackDamageMult/Base/AgilBase/AgilMult/ForceMax. Tests: 14 sneak cases + 8 knockback cases added to CombatFormulasTests. NOT ported, documented in the header with RE status: PA multiplier 0x546BA0 (direction GMSTs confirmed Stand 4.0 / Side-Back-Forward 3.0 / bonus 3.0, perk switches 0x16-0x1a, but the port has no power-attack input - every attackCost call passes isPowerAttack=false); damage-based KD roll 0x5475D0 (chance=min(-3*dmg/P, 0.25) on an always-non-negative dmgInt - never fires on normal hits, ~1% only when trunc(damage)==0 per s59; real KD paths are defender-fatigue<=0 at 0x600248 and the Marksman perk rolls at 0x60032D/0x60034F, all requiring a knockdown state machine the port lacks); KB application (EXE uses a Havok impulse with fKnockbackTime=1.0, port only has a fixed-speed death slide - living-KB wiring deferred); sneak multiplier wiring (FEBF0 gates it on a successful sneak attack and the port has no sneak state - script IsSneaking opcode is a stub returning 0); per-hit cap / reflect / body tail weighting remain EXE-unresolved."
+      "content": "Batch 2026-10-19 (session 9427ac74): febf0-damage-formula batch 2, UNVERIFIED (verification stays on hold per user). Added to game/combat_formulas.h: (1) perkSneakAttackMult(weaponType, sneakRank) mirrors 0x5477F0 - IMPORTANT: the raw disassembly (tmp/re/s59_combat_4_out.txt lines 249-342) corrects the s57 prose: weaponType in {-1,0,2} selects the MELEE table (al=1 path), NOT 1.0; weaponType==5 selects the Marksman table (al=0); any other weaponType early-returns 1.0 (fld1 stays on ST0); rank>4 (unsigned ja) or rank<0 returns 1.0. GMST defaults from s50_gmst_full.txt 769-778: Melee {4.0,6,6,6,6}, Marksman {6.0,8,8,8,8}; fDamageSneakAttackMult(4.0) is never read by the EXE. (2) knockbackForce(damage, agility, luck, fatigueRatio) mirrors 0x547690: D=luckAdjustedSkill, Q=D/curve(x) (inverse direction vs KD's curve*D), Tk=damage*10+50, force=Tk*(1-0.008*Q), plus minKnockbackForce for the caller-side clamp at 0x600013 (fKnockbackForceMax=512; the EXE clamps at the caller, not inside the function). New GMST constants kKnockbackDamageMult/Base/AgilBase/AgilMult/ForceMax. Tests: 14 sneak cases + 8 knockback cases added to CombatFormulasTests. NOT ported, documented in the header with RE status: PA multiplier 0x546BA0 (direction GMSTs confirmed Stand 4.0 / Side-Back-Forward 3.0 / bonus 3.0, perk switches 0x16-0x1a, but the port has no power-attack input - every attackCost call passes isPowerAttack=false); damage-based KD roll 0x5475D0 (chance=min(-3*dmg/P, 0.25) on an always-non-negative dmgInt - never fires on normal hits, ~1% only when trunc(damage)==0 per s59; real KD paths are defender-fatigue<=0 at 0x600248 and the Marksman perk rolls at 0x60032D/0x60034F, all requiring a knockdown state machine the port lacks); KB application (EXE uses a Havok impulse with fKnockbackTime=1.0, port only has a fixed-speed death slide - living-KB wiring deferred); sneak multiplier wiring (FEBF0 gates it on a successful sneak attack and the port has no sneak state - script IsSneaking opcode is a stub returning 0); per-hit cap / reflect / body tail weighting remain EXE-unresolved.",
+      "tags": []
     },
     {
       "id": "opencode-b-pause-dt-zero-triage-20261019",
       "timestamp": "2026-10-19T11:00:00Z",
       "category": "development",
       "priority": "high",
-      "content": "Batch 2026-10-19 (session 9427ac74): pause-dt-zero triage result = ALREADY IMPLEMENTED, no code change needed. RE_EXE_REPORT.md 30.1.9 three-stage input pause: (1) any menu open skips physics/AI (EXE 0x00b3a6d4) - port: renderer.cpp:4425-4428 setMenuOpen(anyMenuOpen()); (2) topmost [+0x24] input block - handled by the UI input layer; (3) pause-family menus freeze dt (PauseMenu 0x3f5) while non-pause menus (Options etc.) keep dt running with explorefade 0.25 - port: renderer.cpp:4427 setPaused(uiPauseMenu && uiPauseMenu->isVisible()) (non-pause menus therefore keep dt, matching RE). World dt wiring: imperial_weave.cpp:233-236 computes worldDt = paused_ ? 0.0f : deltaTime with the 30.1.9 comment, then :242-252 routes worldDt to 9 phases (WorldUpdate, AiUpdate, Animation, JoltPhysics, PhysicsSync, Combat, Quest, Script) while PlayerUpdate/Inventory/Spell keep real deltaTime; setPaused/isPaused/paused_ live at imperial_weave.h:314-315,352. UI menu body is ui/ui_pause_menu.h class UIPauseMenu."
+      "content": "Batch 2026-10-19 (session 9427ac74): pause-dt-zero triage result = ALREADY IMPLEMENTED, no code change needed. RE_EXE_REPORT.md 30.1.9 three-stage input pause: (1) any menu open skips physics/AI (EXE 0x00b3a6d4) - port: renderer.cpp:4425-4428 setMenuOpen(anyMenuOpen()); (2) topmost [+0x24] input block - handled by the UI input layer; (3) pause-family menus freeze dt (PauseMenu 0x3f5) while non-pause menus (Options etc.) keep dt running with explorefade 0.25 - port: renderer.cpp:4427 setPaused(uiPauseMenu && uiPauseMenu->isVisible()) (non-pause menus therefore keep dt, matching RE). World dt wiring: imperial_weave.cpp:233-236 computes worldDt = paused_ ? 0.0f : deltaTime with the 30.1.9 comment, then :242-252 routes worldDt to 9 phases (WorldUpdate, AiUpdate, Animation, JoltPhysics, PhysicsSync, Combat, Quest, Script) while PlayerUpdate/Inventory/Spell keep real deltaTime; setPaused/isPaused/paused_ live at imperial_weave.h:314-315,352. UI menu body is ui/ui_pause_menu.h class UIPauseMenu.",
+      "tags": []
     },
     {
       "id": "opencode-b-gmst-table-integration-p1-20261019",
       "timestamp": "2026-10-19T11:15:00Z",
       "category": "development",
       "priority": "high",
-      "content": "Batch 2026-10-19 (session 9427ac74): gmst-table-integration batch 1, UNVERIFIED (verification stays on hold per user). New app/src/main/cpp/game/gmst_defaults.h: repo-side source of truth for every float GMST the port consumes, copied from tmp/re/s50_gmst_full.txt (gitignored) per the TODO note 're-derive or copy the needed subset'. 38 entries = 16 fatigue keys + 22 combat keys (fArmorRatingMax, fBlockSkillBase/Mult, fBlockMax, fBlockAmountWeaponMult, fBlockAmountHandToHandMult, 6 fKnockback* incl unwired fKnockbackTime, 10 fPerkSneakAttackMelee/Marksman{Rank}Mult); each row keeps the ESM slot VA (0xB3xxxx). API: constexpr equal/hasKey/get over inline constexpr Entry kEntries[]; get() returns a 0.0f sentinel on a miss, kept out of compiled constants by static_assert(hasKey) at every consumer. fatigue_system.h (16 constants) and combat_formulas.h (11 constants + the 10 perkSneakAttackMult switch literals) are now direct gmst::get(key) table references - no independent numbers left in those headers; measured values are unchanged and still match the RE defaults the existing tests pin. Runtime override from a loaded ESM/MOD (ESMManager::findGameSetting(editorID) at esm_reader.cpp:4215, keys are editor IDs) is NOT wired yet - documented as falling back to gmst::get, to land with the first consumer needing live values; AssetManager::getEsmManager() (asset_manager.h:66) is the access path (findGameSetting currently has zero callers). Tests: CombatFormulasTests section 8 added (entry count 38, hasKey probes, unknown-key 0.0 sentinel, kFatigueBase/kArmorRatingMax pinned against table values)."
+      "content": "Batch 2026-10-19 (session 9427ac74): gmst-table-integration batch 1, UNVERIFIED (verification stays on hold per user). New app/src/main/cpp/game/gmst_defaults.h: repo-side source of truth for every float GMST the port consumes, copied from tmp/re/s50_gmst_full.txt (gitignored) per the TODO note 're-derive or copy the needed subset'. 38 entries = 16 fatigue keys + 22 combat keys (fArmorRatingMax, fBlockSkillBase/Mult, fBlockMax, fBlockAmountWeaponMult, fBlockAmountHandToHandMult, 6 fKnockback* incl unwired fKnockbackTime, 10 fPerkSneakAttackMelee/Marksman{Rank}Mult); each row keeps the ESM slot VA (0xB3xxxx). API: constexpr equal/hasKey/get over inline constexpr Entry kEntries[]; get() returns a 0.0f sentinel on a miss, kept out of compiled constants by static_assert(hasKey) at every consumer. fatigue_system.h (16 constants) and combat_formulas.h (11 constants + the 10 perkSneakAttackMult switch literals) are now direct gmst::get(key) table references - no independent numbers left in those headers; measured values are unchanged and still match the RE defaults the existing tests pin. Runtime override from a loaded ESM/MOD (ESMManager::findGameSetting(editorID) at esm_reader.cpp:4215, keys are editor IDs) is NOT wired yet - documented as falling back to gmst::get, to land with the first consumer needing live values; AssetManager::getEsmManager() (asset_manager.h:66) is the access path (findGameSetting currently has zero callers). Tests: CombatFormulasTests section 8 added (entry count 38, hasKey probes, unknown-key 0.0 sentinel, kFatigueBase/kArmorRatingMax pinned against table values).",
+      "tags": []
     },
     {
       "id": "opencode-b-debug-menu-unknown-cmd-20261019",
       "timestamp": "2026-10-19T13:00:00Z",
       "category": "development",
       "priority": "high",
-      "content": "Batch 2026-10-19 (session 9427ac74): debug-menu-command-registry part 1, UNVERIFIED. Fixed the 'UI lies' core: GameConsole::executeCommand (ui/game_console.h:47, game_console.cpp:176) now returns bool (true = command name registered, false = empty/unknown; handler exceptions still count as known), and DebugMenu::executeButtonCommand (ui/debug_menu.cpp:406+) branches feedback on it: green 'Executed: <cmd>' only on success, red 'Unknown command: <cmd>' on failure, red 'Console not available' when the console pointer is missing (was silent before). console->executeCommand callers in jni_bridge.cpp:950 / debug_menu slider paths / game_console.cpp:1369 ignore the bool (legal, unchanged behaviour). Static diff of button commands vs registered commands: 222 button commands = 6 handled locally (textureviewer/modelviewer/worldviewer/viewer3d/dumpstate/startgame) + 150 registered + 66 UNREGISTERED (viewer-family buttons: pick*, ai*, anim*, questshow/complete/fail/stage/flags, itemshow/edit/add/remove, hot*, light*, mem*, dialogshow/topics/choices/history/reset, input*, audiobrowse/play/stop/wave, phys*, slot*, nav*, timeshow/set, aggro*, statsshow/attr/skills/mods). Reproduce with AppData\\Local\\Temp\\opencode\\diff_debug_commands.py. Part 2 (implement vs delete those 66) is a policy decision left for the user."
+      "content": "Batch 2026-10-19 (session 9427ac74): debug-menu-command-registry part 1, UNVERIFIED. Fixed the 'UI lies' core: GameConsole::executeCommand (ui/game_console.h:47, game_console.cpp:176) now returns bool (true = command name registered, false = empty/unknown; handler exceptions still count as known), and DebugMenu::executeButtonCommand (ui/debug_menu.cpp:406+) branches feedback on it: green 'Executed: <cmd>' only on success, red 'Unknown command: <cmd>' on failure, red 'Console not available' when the console pointer is missing (was silent before). console->executeCommand callers in jni_bridge.cpp:950 / debug_menu slider paths / game_console.cpp:1369 ignore the bool (legal, unchanged behaviour). Static diff of button commands vs registered commands: 222 button commands = 6 handled locally (textureviewer/modelviewer/worldviewer/viewer3d/dumpstate/startgame) + 150 registered + 66 UNREGISTERED (viewer-family buttons: pick*, ai*, anim*, questshow/complete/fail/stage/flags, itemshow/edit/add/remove, hot*, light*, mem*, dialogshow/topics/choices/history/reset, input*, audiobrowse/play/stop/wave, phys*, slot*, nav*, timeshow/set, aggro*, statsshow/attr/skills/mods). Reproduce with AppData\\Local\\Temp\\opencode\\diff_debug_commands.py. Part 2 (implement vs delete those 66) is a policy decision left for the user.",
+      "tags": []
     },
     {
       "id": "opencode-b-input-latches-triage-20261019",
       "timestamp": "2026-10-19T13:15:00Z",
       "category": "development",
       "priority": "high",
-      "content": "Batch 2026-10-19 (session 9427ac74): input-suppression-latches triage result = every implementable part already exists; the remainder has no port-side consumer yet. (1) 0xB333B8 SetSceneIsComplex latch: implemented in system/scene_time_throttle.h (setter fnSetSceneIsComplex at script_functions.cpp:2405, opcode 0x115D native_scda_bridge.cpp:47, one-frame clear in frame_update, jni_bridge.cpp:261 comment). (2) 0xB3A6D4 menu teardown/displayed gate: wired as the 'menu displayed' gate at renderer.cpp:4424, renderer.h:401, imperial_weave.h:305, ui_inventory_panel.h:45; the FUN_00679A70 world/physics skip (read at 0x679A75) is already done per CHANGELOG.md:161. The other two EXE reads have no port equivalent needed: 0x572EE2 forces input-mode release (the port has no input-mode records - see TODO input-mode-stride-24) and 0x5A586B delays UI object destruction (the port's menus destroy immediately, no deferred-destruction model). (3) fMagicTrackingLimit=3.0 / fMagicTrackingLimitComplex=1.0 (0xB380F8/0xB38100, s50_input.md:43-44) gate projectile tracking limits 3->1 while the latch is set, but the port's spell model is explicit-target castSpell(caster, spell, target) in spell_manager.h:52 - there is no projectile/tracking list to limit, so consumption waits on a projectile system. (4) 0xB3A6E0 UI menu manager singleton: port manages menus its own way (not a gap)."
+      "content": "Batch 2026-10-19 (session 9427ac74): input-suppression-latches triage result = every implementable part already exists; the remainder has no port-side consumer yet. (1) 0xB333B8 SetSceneIsComplex latch: implemented in system/scene_time_throttle.h (setter fnSetSceneIsComplex at script_functions.cpp:2405, opcode 0x115D native_scda_bridge.cpp:47, one-frame clear in frame_update, jni_bridge.cpp:261 comment). (2) 0xB3A6D4 menu teardown/displayed gate: wired as the 'menu displayed' gate at renderer.cpp:4424, renderer.h:401, imperial_weave.h:305, ui_inventory_panel.h:45; the FUN_00679A70 world/physics skip (read at 0x679A75) is already done per CHANGELOG.md:161. The other two EXE reads have no port equivalent needed: 0x572EE2 forces input-mode release (the port has no input-mode records - see TODO input-mode-stride-24) and 0x5A586B delays UI object destruction (the port's menus destroy immediately, no deferred-destruction model). (3) fMagicTrackingLimit=3.0 / fMagicTrackingLimitComplex=1.0 (0xB380F8/0xB38100, s50_input.md:43-44) gate projectile tracking limits 3->1 while the latch is set, but the port's spell model is explicit-target castSpell(caster, spell, target) in spell_manager.h:52 - there is no projectile/tracking list to limit, so consumption waits on a projectile system. (4) 0xB3A6E0 UI menu manager singleton: port manages menus its own way (not a gap).",
+      "tags": []
     },
     {
       "id": "opencode-b-autosave-research-20261019",
       "timestamp": "2026-10-19T13:30:00Z",
       "category": "development",
       "priority": "high",
-      "content": "Batch 2026-10-19 (session 9427ac74): autosave-event-only research (decision pending, not implemented). RE facts: the original has NO time-based autosave - all autosaves funnel through FUN_00466b70(0x00b33b00) called from only two places: (a) rest/wait confirm in the SleepWaitMenu update handler gated on bSaveOnRest(0xB13218)/bSaveOnWait(0xB13220) (RE 33.5 disasm: if (rest-flag && bSaveOnRest) || bSaveOnWait then CALL 0x00466b70), (b) fast travel execution head gated on bSaveOnTravel(0xB13228) (RE 33.4.2/35.3) plus the cell-transition path (bSaveOnTravel gating noted around door.cpp:234). Port state: GameLoopCoordinator::phaseAutoSave (game_loop_coordinator.cpp:281-288) fires triggerAutoSave() every autoSaveInterval_=300s (h:125), AutoSave has DEFAULT_INTERVAL=300s + MIN_INTERVAL=30s guard (save_system/auto_save.h:20-23,54) - neither exists in the original. Open decision for the user: move to event-only (delete the timer path; keep door/fast-travel triggers; MIN_INTERVAL skip explains 'second door in a row saves nothing') vs keep the timer as a port convenience. Rest/wait trigger lands with the SleepWaitMenu implementation (sleep-wait-menu-impl TODO)."
+      "content": "Batch 2026-10-19 (session 9427ac74): autosave-event-only research (decision pending, not implemented). RE facts: the original has NO time-based autosave - all autosaves funnel through FUN_00466b70(0x00b33b00) called from only two places: (a) rest/wait confirm in the SleepWaitMenu update handler gated on bSaveOnRest(0xB13218)/bSaveOnWait(0xB13220) (RE 33.5 disasm: if (rest-flag && bSaveOnRest) || bSaveOnWait then CALL 0x00466b70), (b) fast travel execution head gated on bSaveOnTravel(0xB13228) (RE 33.4.2/35.3) plus the cell-transition path (bSaveOnTravel gating noted around door.cpp:234). Port state: GameLoopCoordinator::phaseAutoSave (game_loop_coordinator.cpp:281-288) fires triggerAutoSave() every autoSaveInterval_=300s (h:125), AutoSave has DEFAULT_INTERVAL=300s + MIN_INTERVAL=30s guard (save_system/auto_save.h:20-23,54) - neither exists in the original. Open decision for the user: move to event-only (delete the timer path; keep door/fast-travel triggers; MIN_INTERVAL skip explains 'second door in a row saves nothing') vs keep the timer as a port convenience. Rest/wait trigger lands with the SleepWaitMenu implementation (sleep-wait-menu-impl TODO).",
+      "tags": []
     },
     {
       "id": "opencode-b-bsa-hash-20261019",
@@ -8189,12 +8197,861 @@
       ],
       "content": "Phase 69 container persistence is now covered by the host test suite (2026-10-22, Copilot session 9427ac74). New app/src/main/cpp/tests/phase69_persistence_tests.cpp/.h -> class Phase69PersistenceTests (30 assertions on a green run), wired into tools/host_tests/host_runner_main.cpp. It uses save slots 90/91 (kSlotA/kSlotB) so a developer's real saves are never touched, and removeSlot() cleans them up at the start and end. Four cases: (1) materialised round trip - chest with two items and locked=true through saveGame -> loadGame -> applyPendingContainerState; (2) empty container still writes and reloads as empty and unlocked; (3) carry-forward - a save taken while the container was never materialised must keep the buffered pendingContainers_ entry; (4) the pending buffer is consumed by the first applyPendingContainerState() and an unknown FormID returns false. IMPORTANT ROOT CAUSE FOUND: the Phase 69 commit (957319e8) had silently broken the host suite. save_manager.cpp calls Container::addItem/clearItems/setLocked, but game/container.cpp and game/interactable.cpp were absent from tools/host_tests/run_host_tests.sh SOURCES, so the single g++ invocation failed with 'ld.exe: save_manager.cpp: undefined reference to Container::addItem(InventorySlot const&)'. MinGW/PE resolves every symbol in every translation unit and --gc-sections cannot remove undefined references, so a stale SOURCES list fails the link rather than a test. Fix: added game/container.cpp, game/interactable.cpp and tests/phase69_persistence_tests.cpp to SOURCES (now 83 translation units, was 80). Also corrected the stale '.github/workflows/android.yml' comment from '53 translation units' to 83 and documented the new suite plus the mid-layer dependency rule in tools/host_tests/README.md. Rule to remember: a leaf header may be stubbed, but any mid-layer .cpp whose symbols a wired suite (or a manager in SOURCES) reaches must be listed for real.",
       "compressed": false
+    },
+    {
+      "id": "bsa-extraction-structure-20260919",
+      "timestamp": "2026-09-19T17:30:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "BSA extraction data structure (D:\\Cargo\\Other\\Oblivion\\BSA\\bsa_Extraction\\): distantlod=LOD meshes, facegen=face generation, fonts=font files, menus=UI menus (XML: chargen/dialog/generic/main/message/options/prefabs), meshes=3D models (NIF: architecture/armor/characters/clothes/clutter/creatures/dungeons/effects/landscape/plants/rocks/sky/trees/weapons), sound=audio files (WAV).",
+      "tags": [
+        "audio",
+        "bsa",
+        "extraction",
+        "mesh",
+        "ui"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "ecedcfb0-84dc-451b-9490-894d0e88e106",
+      "timestamp": "2026-09-22T08:05:15Z",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "renderer.cpp bug found by session 964d16fb and fixed at 17:04:07: the title-screen block early-returns at renderer.cpp:3053 (\"Skip game rendering while title screen is active\") BEFORE the overlay pass that renders saveLoadUI / settingsUI. Selecting Continue / Load / Options opened SaveLoadUI (log said \"SaveLoadUI opened in LOAD mode with 12 slots\", visible=true) but nothing was drawn, and the invisible SaveLoadUI swallowed every later tap - the menu looked frozen. Fix: renderer.cpp:3041-3050 now draws saveLoadUI / settingsUI with a visibility check just before the return. Verify on device.",
+      "tags": [
+        "bug",
+        "overlay",
+        "renderer",
+        "save-load-ui",
+        "ui"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "38e9b2c2-57d3-4fd2-9101-3587317caacc",
+      "timestamp": "2026-09-22T08:38:04Z",
+      "category": "decision",
+      "priority": "medium",
+      "content": "Non-selected menu ink stays the declared RGB(117,59,33) even though the darkest video frames drop it to 2.83:1. Rationale: the original Oblivion parchment menu is medium brown on parchment (~3.9:1) by design, the user asked for the original look, and the concurrent geometry session uses the XML colour as reference truth. Future legibility work should therefore target the background (scrim behind the menu band) or an outlined/haloed glyph pass, not the text constant.",
+      "tags": [
+        "contrast",
+        "decision",
+        "font",
+        "ink-decision-964d16fb",
+        "ui"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "4985896b-53d8-4696-afc8-5e85ba13bd23",
+      "timestamp": "2026-09-22T08:38:04Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Title-screen background doubt (unresolved, 18:3x): after KEYCODE_BACK closed the load screen, six screenshots taken 4 s apart were byte-identical (38,163 B each) showing meanL 65.3 with one bright 16:9-ish block (x350-1440, y67-675) and no gold - while logcat kept printing 'Title screen active (frame NNN)' with the frame counter advancing. A byte-identical capture set means the composited title screen is not visibly animating in that state, so the video background may have stopped or finished looping. Not investigated further because the geometry session owns title background rendering in this shared worktree.",
+      "tags": [
+        "background",
+        "bg-doubt-964d16fb",
+        "ui",
+        "unresolved",
+        "video"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "d54b7cdd-2a78-4551-b1ec-9ce5df024914",
+      "timestamp": "2026-09-22T09:16:47Z",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "TitleScreen comparison normalisation trap: the app's coordinate space uses screenHeight=1017 (content area); screenshots are 1920x1080 and y1017+ is the Android navigation bar (mean RGB(0,0,0)). Always compare full[0:1017] resized to 640x360. Dividing by 1080 shifts vertical positions by 63*360/1080 = 21px and produced the false 'menu is 49px too high' claim from session 964d16fb.",
+      "tags": [
+        "gotcha",
+        "measurement",
+        "ui"
+      ],
+      "compressed": false
+    },
+    {
+      "priority": "medium",
+      "category": "constraint",
+      "content": "SCREENSHOT FALSE POSITIVES - retracted (session f5aa54cb, 2026-09-22 20:47). (1) The 'black band at y1017-1079' is NOT a SaveLoadUI bug: fully-black rows 1017-1079 (52 rows) appear identically in the title screenshot ver1.png. It is the area outside the GL surface (device height 1080 vs render view height 1017). (2) 'SaveLoadUI is frozen, 1 pixel changed in 3 s' is NOT a bug: save_load_ui.cpp:73 draws save_load_bg.png full-screen when bgTexture != 0, so the background video is hidden by design; two consecutive screenshots are byte-identical (2267368 B) because the screen is static. ALWAYS check for a fully-black row range before blaming an overlay, and compare against the title screenshot.",
+      "compressed": false,
+      "timestamp": "2026-09-22T11:48:02Z",
+      "tags": [
+        "false-positive",
+        "gl-viewport",
+        "measurement",
+        "screenshot"
+      ],
+      "id": "d63e9c12-7f40-4ead-b9f5-8c2a3e4d0b63"
+    },
+    {
+      "id": "b43e4167-bd45-42ac-86dd-f348672a88cc",
+      "timestamp": "2026-09-22T12:41:35Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "`screencap` and 20 3 MD5 logcat updateTexImage=60/s `adb shell monkey -p com.example.oblivion -c android.intent.category.LAUNCHER 1` and v1/v2 MD5 and verification 2 verification",
+      "tags": [
+        "emulator",
+        "pitfall",
+        "screenshot"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "d9f4d6f5-5942-4d59-a192-4afcde926aad",
+      "timestamp": "2026-09-22T12:53:01Z",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "titlescreen : `adb shell screencap -p /sdcard/x.png` -> `adb pull` `adb exec-out screencap` ** 2 MD5 comparison ** and monkey and comparison `full[0:1017]` y1017 background `|pixel - RGB(117,59,33)|max <= 20` y760-850 / x400-1600 **warning: `adb shell input tap 74 74` screen debugtoggle `btn_debug_toggle`36dp, x26..121/y26..121, alpha 0.7 display 50% + 260dp debug ** background toggle image (1) menu ink tol20 0(2) content p50 60 160-167(3) maximum 255 243 3",
+      "tags": [
+        "measurement",
+        "pitfall",
+        "screenshot",
+        "ui"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "fcc0974c-1433-49c3-9297-a54215889f6f",
+      "timestamp": "2026-09-22T12:53:01Z",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "tol40 background and background RGB(104,88,72) |104-117|=13 / |88-59|=29 / |72-33|=39 40 background and : debug t7 tol40 = 22744 ta 10154 2.2tol40 background comparison tol20",
+      "tags": [
+        "measurement",
+        "pitfall",
+        "screenshot",
+        "threshold"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "de26e40d-3f79-4c04-a6e9-d98abf79b5d8",
+      "timestamp": "2026-09-22T12:53:01Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "verificationf5aa54cb : menu ink tol20 8126 -> 7543 = -7.2% 6.903 -> 6.396px = -0.507px -6.7% / -0.45pxt1/t2 -6.5% and",
+      "tags": [
+        "measurement",
+        "ui",
+        "verification"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "0baa1649-c968-4861-a4fc-db5d90b74c31",
+      "timestamp": "2026-09-22T19:41:48Z",
+      "category": "constraint",
+      "priority": "medium",
+      "content": ": titlescreen and and np.corrcoef : titlescreen t1.png and corr +0.9144nexuslauncher home1.png and corr +0.9984 title and -0.157debug menu ink tol20 = 0 content p50 60 maximum 255 3",
+      "tags": [
+        "measurement",
+        "pitfall",
+        "screenshot",
+        "verification"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "190a5de9-6eb5-4f67-a74f-8634a553e2d9",
+      "timestamp": "2026-09-22T19:44:18Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "titlescreen Special Edition delete/remove + menu 3 APK verification 20:58 / 22:47:14 / 04:41:03 SE tol20/tol40 = 0/0 3 menu tol20 = 7548-7561 tol20 = 6.381-6.448 px RGB(117,59,33)±3 = 6699-6705menu x = 437-1481constant MENU_CAP_HEIGHT_RATIO=0.025f / MENU_OUTLINE_WIDTH=0.45f / MENU_OUTLINE_ALPHA=0.85f / PRESS_KEY_TOP_RATIO=0.513frenderSubtitle delete/remove",
+      "tags": [
+        "measurement",
+        "regression",
+        "ui",
+        "verification"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "e23ff479-9fcf-4378-94a2-057024cbf9f6",
+      "timestamp": "2026-09-23T03:08:26Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": ": launcher_screen.cpp:41-47 launcher_bg.png / oblivion_logo_large.png / btn_stone.png / btn_stone_hover.png assets logoTexture==0 return rendering UI/////HUD placeholder_assets.cpp constant and rendering menus/*.xml + .dds UI Phase 68step7-phase68",
+      "tags": [
+        "assets",
+        "roadmap",
+        "ui"
+      ],
+      "compressed": false
+    },
+    {
+      "category": "reference",
+      "priority": "medium",
+      "content": "Host test harness (tools/host_tests/run_host_tests.sh) is verified green on Linux, which is what CI runs (2026-09-25, session 964d16fb). Measured on WSL Ubuntu-24.04 with g++ 13.3.0: exit 0 in 8m05s, ScriptVMTests 22/22, Phase45UnitTests 40/40, Phase48StressTest 5/5, Phase48IntegrationTest 7/7, Phase30IntegrationTest 1/1 (self-skipped, no assets). Windows/MinGW measured 9m42s and 12m15s for the same tree, so the 30 minute CI ceiling has real headroom. CI-readiness check performed: all 53 SOURCES entries exist on disk, are tracked by git, and are present in the HEAD tree, so a fresh checkout can build the harness. .gitignore covers host_saves/; the harness leaves no other untracked output.",
+      "tags": [
+        "ci",
+        "host-tests",
+        "verification",
+        "wsl"
+      ],
+      "compressed": false,
+      "id": "fc14610c-c80d-49f2-9e91-588d78cad38d",
+      "timestamp": "2026-09-24T05:18:33Z"
+    },
+    {
+      "id": "7672469c-40ed-4ee8-8e5c-a015493c4a05",
+      "timestamp": "2026-09-25T06:11:50Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "P7 warning cleanup patterns: unused-lambda-capture [this]->[] only when this unused; unused-parameter use /*name*/ in defs and (void)name; in lambdas; mismatched-tags NPC is struct; inconsistent-missing-override add override; RAND_MAX -> static_cast<float>(RAND_MAX); sign-compare -> static_cast<int>(vec.size()). Vendored glm.hpp warning intentionally skipped.",
+      "tags": [
+        "build",
+        "phase66",
+        "warnings"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "63c5fae6-5751-4d3e-a22b-5590530ab932",
+      "timestamp": "2026-09-25T12:05:47Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "plan.md updated and pushed (commit 6a9293dd, 2026-09-25): Phase 65 row and Current Status now record water (WATR, b7222f25) and the weather-driven sky dome (13d9f905) as landed and build-verified but NOT yet re-measured on the device. Open weather items: drive SkyWeatherSystem from the 37 real WTHR records (NAM0 = 10 colour fields x 4 times of day (160 B, field-major; see the NAM0 field-major entry, corrected 2026-09-26)) instead of hard-coded presets; connect getAmbientColor/getFogDistance/sun light to world lighting and fog; gate the sky dome on exterior cells so interiors get no sky. Native build verified green: .\\gradlew :app:externalNativeBuildDebug BUILD SUCCESSFUL in 11s.",
+      "tags": [
+        "phase65",
+        "plan",
+        "water",
+        "weather"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "bd3cfd5d-9d78-4f64-9d42-5ea3cb6ee673",
+      "timestamp": "2026-09-25T13:22:52Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Issue plan for the Phase 65/66 weather/water/sky-dome problems written to C:/Users/hiroki.kogarumai/.copilot/session-state/9427ac74-c35e-4e3d-b47e-79c1c4621727/files/ISSUE_PLAN.md and tracked as 7 todos (p1..p7). Priority order: P1 device-verify sky dome + water (highest, unverified), P2 drive SkyWeatherSystem from the 37 real WTHR records (NAM0 4x40B BGRA sky colours, FNAM fog near/far, HNAM, DATA windSpeed) + CLMT weatherTypes[16] selection, P3 connect fog/ambient/sun light, P4 gate sky dome on CellType::EXTERIOR, P5 verify the WATR Deep Color offset (assumed float 12-14), P6 resolve the parallel-session uncommitted changes (nif_parser, launcher_screen, renderer), P7 reduce the 66 renderer.cpp warnings. Deps: p2<-p1, p3<-p2, p4<-p1. Milestones: M-A (P1,P4,P5) drawing correct, M-B (P2,P3) real weather data, M-C (P6,P7) cleanup.",
+      "tags": [
+        "issues",
+        "phase65",
+        "phase66",
+        "plan",
+        "water",
+        "weather"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "5fd93851-8c5b-420e-b85e-e6d5f411a0e9",
+      "timestamp": "2026-09-26T01:30:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "master is 16 commits ahead of origin/master aabb9dd7 and unpushed; git ls-remote origin refs/heads/master confirms the remote is still aabb9dd7 (checked 2026-09-26).",
+      "tags": [
+        "git",
+        "master",
+        "push"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "85ce447d-6bb3-4dee-96d6-00bd739398eb",
+      "timestamp": "2026-09-26T02:30:00Z",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "The master worktree is NOT clean as of 2026-09-26, and the plan's earlier \"working tree is clean\" statement was corrected the same day: session 9427ac74 holds uncommitted edits to app/src/main/java/com/example/oblivion/MainActivity.kt (+22) and app/src/main/res/layout/activity_main.xml (+40) - four P19 lighting A/B debug buttons driving settime 12 / settime 0 / setweather clear / setweather storm, which duplicate the existing buttons in ui/debug_menu.cpp:1348-1359 and the commands registered in ui/game_console.cpp:632-634. Neither path is one of the three the WS-B merge rewrites (CMakeLists.txt, engine/renderer.cpp, tools/host_tests/run_host_tests.sh), so the merge gate stays open, but those two files must never be swept into this session's commits.",
+      "tags": [
+        "9427ac74",
+        "git",
+        "merge-gate",
+        "ownership",
+        "worktree"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "b3449cd5-6c6c-42d6-b856-91e9831303f2",
+      "timestamp": "2026-09-26T02:30:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Merge/tip state measured 2026-09-26 (third confirmation, supersedes the 0453aaaa / 7f9729c6 reading): master is 202b7a87 and origin/master is aabb9dd7 (unpushed); WS-B branch tip 3aa7a4e9 is 35 commits ahead of the merge base b3529e8a and 62 behind master; git merge-tree --write-tree master hhkk0127-script-vm-expansion exits 0 with merged root tree d0a33446. The root tree moved from 7f9729c6 because both sides advanced, not because a conflict appeared. The only remaining gate before the merge is the user's approval for moving master; the branch owner still owes its rebase-and-re-verify pass. Note git rev-parse --short fails with \"fatal: Needed a single revision\" when several refs are passed at once - resolve refs one at a time.",
+      "tags": [
+        "git",
+        "master",
+        "merge",
+        "user-approval",
+        "ws-b"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "8a4f15bb-d93d-4e06-b473-46294db2a7a3",
+      "timestamp": "2026-09-26T12:40:31Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Phase 66 P8-P15 all complete (2026-09-26). P8 WATR short-DATA colour decode; P13 weather linear ramp (0eaf9c62); P14 WATR reflection colour in water shader (76a53d3c); P15 interior cell entry + exterior render suppression (1577c7a0). Remaining from the 2nd plan: P9-P12 (quality infra), folded into the 3rd plan as P21.",
+      "tags": [
+        "issue-plan",
+        "p15",
+        "phase66"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "5004d0d7-e20c-4cd4-9405-d49484f0c857",
+      "timestamp": "2026-09-26T12:40:31Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "3rd issue plan (P16-P22) added to ISSUE_PLAN.md after the P15 device verification: P16 gamestate dump command (highest value, kills misdiagnosis), P17 stop the title video player once the game starts (GameRenderer.kt:409 logs 'Title video: updateTexImage=21/s' forever because it only checks titleVideoSurfaceTexture != null), P18 title menu hit-test offset, P19 daytime sun/ambient still too dark (terrain (25,32,25) at 16:24), P20 interior REFR/NIF geometry rendering, P21 logcat ring buffer + log file output, P22 faster world load and auto-start.",
+      "tags": [
+        "issue-plan",
+        "phase67",
+        "planning"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "313dc3a8-ad42-435c-83ee-a915b5110e83",
+      "timestamp": "2026-09-26T12:40:31Z",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "The emulator logcat ring buffer only holds roughly 20 seconds, so decisive logs are lost during multi-step verification. Set 'adb logcat -G 16M' before a session, and clear with 'adb logcat -c' immediately before the action under test. Terrain and water logs are throttled to every 120 frames (~5-6s at 21 fps), so a 10-12s observation window is the reliable sampling period.",
+      "tags": [
+        "adb",
+        "emulator",
+        "logcat",
+        "verification"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "3f33b023-0c62-4e74-960c-d1b31e625b24",
+      "timestamp": "2026-09-26T14:36:08Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "WTHR NAM0 colour block is FIELD-MAJOR, not time-major (2026-09-26, fixed by authoritative source not inference). NAM0 = 160 B = 10 colour fields x 4 times of day: word i belongs to field i//4 and slot i%4 (0 Sunrise, 1 Day, 2 Sunset, 3 Night); field f occupies words f*4..f*4+3, time-of-day is the inner dimension. Authority: xEdit TES5Edit/TES5Edit @ 9fb016884bec138ea6c7b872cec831537d464c3e - Core/wbDefinitionsTES4.pas:3583 wbRecord(WTHR) includes wbWeatherColors; Core/wbDefinitionsCommon.pas:9707 wbWeatherColors = wbStruct(NAM0, [10 x wbWeatherTimeOfDay]); :8609 wbWeatherTimeOfDay = wbStruct(name, [Sunrise, Day, Sunset, Night]) each wbByteColors; :6962 wbByteColors = Red(u8), Green(u8), Blue(u8), wbUnused(1). TES4 field names: 0 Sky-Upper, 1 Fog, 2 Clouds-Lower, 3 Ambient, 4 Sunlight, 5 Sun, 6 Stars, 7 Sky-Lower, 8 Horizon, 9 Clouds-Upper (TES5 renames 1 Fog Near/2 Unused/9 Effect Lighting - use TES4 names). Landed reading wrong in two places: assets/esm_reader.cpp:2899-2912 loops block*40 (time-major) and assets/esm_reader.h:942-963 defines WeatherSkyColors sky[4]. Measured on Clear (0x00038eee): sky[0].upperSky = w0 = Sky-Upper/Sunrise (only field right by accident), sky[0].clouds = w3 = Sky-Upper/Night = (0,3,13) black clouds, sky[1].upperSky = w10 = Clouds-Lower/Sunset = (109,101,133) consumed as the Day set, sky[1].fog = w11 = (4,12,23), sky[2].upperSky = w20 = Sun/Sunrise = (104,65,55), sky[3] starts at w30 = Sky-Lower/Sunset. WS-C in-flight Phase 66 P19 inherits this: SkyTimeSet[4] / skyCurve_[type][4] and setProvided[s] = (set.upperSky != 0) are time-set shaped, need field-level redesign (per-field entry, per-field defined check); preset.sky.zenith comes from sky[SKY_DAY].upperSky = (109,101,133) for Clear. Corrections sent to WS-C (30cbb1e4) 2026-09-26. Keep: new time blending, timeScale_/3600 fix, updateSkyFromTimeOfDay() calls.",
+      "tags": [
+        "esm-reader",
+        "field-major",
+        "nam0",
+        "weather",
+        "wthr"
+      ],
+      "compressed": true
+    },
+    {
+      "id": "b5220c1c-8c07-4bcc-a18e-e7ca458fbe39",
+      "timestamp": "2026-09-26T14:36:08Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "WTHR probe of record: use probe_wthr_fieldmajor.py -> wthr_fieldmajor.txt (37 records x 10 fields x 4 slots, RGB, field-major). It supersedes the deleted time-major probe (probe_wthr.py / wthr_table.txt / wthr_fields.txt / wthr_runs.txt). It reads the cached primary data wthr_nam0.json ([{editorID, formID, nam0:[40 uint32]}]) so the 277 MB ESM does not need re-reading, and it self-checks: records=37 reserved-nonzero=0/1480 fully-invariant=6. Python gotcha: a %-format string containing i%4 must escape it as i%%4 or it raises ValueError unsupported format character.",
+      "tags": [
+        "probe",
+        "session-state",
+        "tooling",
+        "wthr"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "merge-gate-remeasured-20260926-e5c16845",
+      "timestamp": "2026-09-26T14:54:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Merge/tip state re-measured 2026-09-26 at master e5c16845 (supersedes 005c384d and b3449cd5 readings): WS-B branch hhkk0127-script-vm-expansion tip = 8efc03b6 ('Name the expression side function ids and add two opcode aliases', implements queue items 4+5 - the 198-expression-fid name table and getgs/scaonactor aliases), 36 commits ahead of merge base b3529e8a, 66 behind master; master 23 commits ahead of origin/master aabb9dd7, unpushed. git merge-tree --write-tree master hhkk0127-script-vm-expansion exits 0 with merged root tree 722ac914 - the hash moves with every master commit (merged tree contains master's tree), so exit 0 is the claim and the hash is only a receipt. master..branch == b3529e8a..branch == 36 proves master carries no cherry-pick from the branch (clean side branch). Merge gate now exactly three dirty rewritten paths, measured by intersecting git status --porcelain with the 32 paths of git diff --name-only master...hhkk0127-script-vm-expansion: assets/esm_reader.cpp (+51/-171 vs merged tree), assets/esm_reader.h (+34/-37), engine/renderer.cpp (+34/-36). CMakeLists.txt and tools/host_tests/run_host_tests.sh dropped out of the gate when session 9427ac74 landed 9e1fd406. All three gate paths sit inside the seven-path set attributed to WS-C's in-flight Phase 66 P19 increment (the renderer.cpp diff is weather/timescale/timeofday console wiring + sky-clock report + deleted duplicate skyWeatherSystem->update, NOT the P16 GameStateReport format which is committed as 9e1fd406). Gate closes when WS-C commits its increment; moving master still needs user approval.",
+      "tags": [
+        "branch-state",
+        "merge-gate",
+        "plan-verification",
+        "ws-b",
+        "ws-c"
+      ],
+      "compressed": true
+    },
+    {
+      "id": "merge-gate-master-worktree-20260927-b8d1e4f7",
+      "timestamp": "2026-09-26T15:20:00Z",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "Merge gate for master = INTERSECTION of the master worktree's git status --porcelain with git diff --name-only master...hhkk0127-script-vm-expansion (32 paths), not a remembered file list and not a branch-side worktree's status. Measured at master HEAD dfa09d7a (2026-09-26, C:\\Users\\hiroki.kogarumai\\Oblivion_Android): 13 modified, 0 untracked; intersection = exactly three WS-C-owned paths - assets/esm_reader.cpp (+17/-15), assets/esm_reader.h (+27/-11), engine/renderer.cpp (+32/-17) - so git merge is refused until session 30cbb1e4 commits them. Other ten dirty paths (CHANGELOG.md, ui/game_console.cpp, ui/title_screen.cpp, java/.../MainActivity.kt, res/layout/activity_main.xml, java/.../GameRenderer.kt, world/world_manager.{cpp,h}, engine/sky_weather_system.h, tests/weather_transition_tests.cpp) are not rewritten by the merge and do not block it; CMakeLists.txt and run_host_tests.sh rewritten but clean since 9e1fd406. Four untracked game_state_report/gamestate_report_tests paths gone (committed as 9e1fd406). merge-tree exit 0. Branch 36 ahead of base b3529e8a, 68 behind master. Four worktrees: master@dfa09d7a, hhkk0127-script-vm-expansion@8efc03b6, hhkk0127-oblivion-android-completion-plan@5dfaa88b, hhkk0127-virtual-controller (prunable, no commit). WS-B's report of master HEAD 3ef1a678 with 9M+4U was stale (3ef1a678 is an ancestor of master). Attribution settled by the working tree, not memory: WS-C first read the remaining renderer.cpp diff as session 9427ac74's gamestate work and declined to commit it, but git diff shows the Phase 66 P19 weather/clock fix (real SkyWeatherSystem calls behind refs.setWeather/setTimeScale/setTimeOfDay, report repointed at sky clock, duplicate skyWeatherSystem->update deleted) plus the WTHR NAM0 field-major decode in esm_reader.{cpp,h}, and the gamestate hunk (+44/-2, getWorldInfo lambda) is already inside 9e1fd406 - compare the tree against `git log -1 -- <path>` before claiming/declining a diff. WS-C re-asserted gamestate at master HEAD f1878660 (3 behind live) quoting +42/-2, exactly the stat 9e1fd406 recorded for renderer.cpp (44 changed = 42 added + 2 removed) - a committed diff read as pending. Proof gamestate is out: `git show HEAD:.../engine/renderer.cpp` contains game_state_report.h include at line 11 and getWorldInfo/getWorldInfoDetailed lambdas at 993/1491. Re-confirmed at 441d075d: 13 dirty, 0 untracked, same three gate paths, merge-tree exit 0. Remaining renderer.cpp hunks: @@ -978,11 +978,21 @@, @@ -1022,2 +1032,8 @@, @@ -3529,4 +3545,3 @@. The two readings reconcile by time, not fact: WS-C's +42/-2 was genuinely the live diff at f1878660 (23:00:14); the gamestate session committed that hunk eight minutes later as 9e1fd406 (23:08:59); the P19 hunks are what remained. A reading can be correct when taken and wrong when re-used - re-measure instead of re-arbitrating the same number. Independent attribution: local session_files shows 30cbb1e4 as the only recent editor of engine/sky_weather_system.h in the master worktree (23:42, after 9e1fd406). Five sessions share the master worktree (964d16fb, 30cbb1e4, 9427ac74, f5aa54cb, fe7f23f7), so a clean status is a snapshot and must be quoted with its revision: 9427ac74 reported it empty at 9e1fd406 (23:08:59) and it held 13 dirty again by fbc813ca (00:15).",
+      "tags": [
+        "attribution",
+        "coordination",
+        "git",
+        "merge-gate",
+        "verification",
+        "worktree",
+        "ws-b",
+        "ws-c"
+      ],
+      "compressed": true
+    },
+    {
+      "id": "1fa6afd5-62ad-4a34-8933-037a9824a242",
+      "timestamp": "2026-09-26T15:49:02Z",
+      "category": "decision",
+      "priority": "high",
+      "content": "Phase 66 P19 device verification found the real root cause of slow-motion gameplay: jni_bridge.cpp nativeRenderFrame passed the constant 0.0167f (60 fps) to Renderer::render(), so the simulation advanced one 60 Hz frame per RENDERED frame. Measured on the emulator (16-19 fps): gamestate reported time=12:00 and 60 real seconds later time=12:09, where timescale 30 demands 12:30 - about 32% of real time. Because the same deltaTime is forwarded to ImperialWeave, every dt-driven phase was affected (animation, AI, physics, combat, video decode, sun orbit). FIX: measure the interval with std::chrono::steady_clock, clamp to kMaxDelta = 0.1f (about a 10 fps floor) so a long cell load or a background return cannot teleport the world, fall back to 1/60 s on the first frame, and clear the marker in nativeCleanup and in the nativeInitEngine resume path.",
+      "tags": [
+        "delta-time",
+        "frame-pacing",
+        "jni-bridge",
+        "p19",
+        "phase66",
+        "root-cause"
+      ],
+      "compressed": true
+    },
+    {
+      "id": "e3fe9513-2e81-4a44-82b3-52aaac34cb19",
+      "timestamp": "2026-09-26T15:49:02Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "Phase 66 P19 device A/B result (2026-09-27, emulator 1920x1080, density 420). Day vs night via the debug panel buttons: sky (44.2,60.4,54.1) -> (8.0,13.6,12.0) delta -36/-47/-42, mid (48.3,56.7,32.4) -> (16.6,16.8,11.0) delta -32/-40/-21, ground (45.0,53.8,34.0) -> (14.5,15.9,13.4) delta -31/-38/-21. Both sky and terrain change clearly, so the P19 acceptance condition is met. Weather clear vs storm changes the sky only (-12.8/-21.6/-20.9); mid and ground are unchanged, so the terrain-side weather effects (fog, cloud shadow) are still unimplemented (problem N2). The comparison tool is files/ab_time.py.",
+      "tags": [
+        "a-b-test",
+        "device-verification",
+        "p19",
+        "phase66",
+        "sky",
+        "weather"
+      ],
+      "compressed": false
+    },
+    {
+      "category": "configuration",
+      "priority": "medium",
+      "content": "Door-transition verification 2026-09-27: bash tools/host_tests/run_host_tests.sh = ALL GREEN (0 suite(s) failed), HOSTEXIT=0 (InteriorCellTests 47/47, GameStateReportTests 30/30, AssetPathTests 19/19, XtelDecodeTests 15/15, Phase30IntegrationTest self-skips without OBLIVION_ASSET_BASE); gradlew assembleDebug = BUILD SUCCESSFUL with libnative-lib.so relinked for arm64-v8a / armeabi-v7a / x86_64. The host runner does NOT compile engine/renderer.cpp, so assembleDebug is the only gate that sees registerEsmDoors() - and the on-device transition is still unmeasured.",
+      "tags": [
+        "build",
+        "doors",
+        "host-tests",
+        "verification"
+      ],
+      "id": "ae09e5dc-fa63-442e-9203-c0cbfd51fed6",
+      "timestamp": "2026-09-27T11:40:00Z",
+      "compressed": false
+    },
+    {
+      "id": "2f4dbdfb-691d-446a-8f1d-b5f82586fd24",
+      "timestamp": "2026-09-27T23:46:22Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "ISSUE_PLAN.md (session-state 9427ac74 files/, git-untracked) updated 2026-09-27: P20 row set to , 3rd-plan header notes P17-P19/P21-P22 remaining, P20 section documents implementation + device A/B (559 meshes, 84.4% stone wall, 0.0% clear colour, screenshots/p20_interior_rendered.png).",
+      "tags": [
+        "docs",
+        "issue-plan",
+        "p20"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "p66-log-timing-4f535343",
+      "timestamp": "2026-10-02T01:15:00Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "Emulator verification timing: ESM parse ~18s + async load, Phase 31 (world entity load) completes ~66s after app launch and ~100s after New Game tap (658,872). Fetch logcat at 95-110s for Phase 31 logs. Emulator may need restart if adb loses device (Pixel_API34 AVD).",
+      "tags": [
+        "emulator",
+        "logcat",
+        "phase66",
+        "verification"
+      ],
+      "compressed": false
+    },
+    {
+      "category": "reference",
+      "priority": "medium",
+      "timestamp": "2026-10-04T15:37:20Z",
+      "content": "buildverification: .\\gradlew.bat :app:externalNativeBuildDebug (C++ 2) / :app:assembleDebug (APK)aapt C:\\Users\\hiroki.kogarumai\\AppData\\Local\\Android\\Sdk\\build-tools\\ adb C:\\Users\\hiroki.kogarumai\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.execurrent verification",
+      "tags": [
+        "build",
+        "tooling",
+        "verification"
+      ],
+      "compressed": false,
+      "id": "b3f05000-ea69-47e2-b41c-3609e36adb69"
+    },
+    {
+      "id": "re-lip-sync-structure",
+      "timestamp": "2026-10-11T23:00:00Z",
+      "priority": "medium",
+      "category": "reference",
+      "content": "Oblivion Steam RE: LIP file contains 16 morph weight values per timeslice. FUN_00779ab0 parses LIP file, maps to blend shapes (Base, A, I, U, E, O, W, Smile, etc). Android LIP loader implemented in lip_sync.cpp (stage 1). FaceFX not supported (stage 2 pending: GPU morph weight renderer integration). LIP file name auto-derived from WAV path.",
+      "tags": [
+        "audio",
+        "facefx",
+        "lip-sync",
+        "morph",
+        "re-exe",
+        "steam-exe"
+      ],
+      "compressed": false
+    },
+    {
+      "timestamp": "2026-10-13T16:41:44.249559Z",
+      "tags": [
+        "re",
+        "dialog",
+        "chargen",
+        "s29"
+      ],
+      "id": "re-s29-435",
+      "compressed": false,
+      "priority": "medium",
+      "category": "reference",
+      "content": "RE §29: DialogMenu[3] FUN_0059f010 はボタンIDスイッチ。id>99=テキスト入力(0xfde, +0x22 と uRam00b3b294 更新), 4=再構築, 7=0xfddを開く, 8/9/0xd/0x10=選択実行(uRam00b131f8に1/2/3/4), 3/10=遷移。DialogMenu[11] FUN_0059f640 は現在メニューIDがダイアログ系ならスキップ、+0x6c(フェードタイマ)/+0x68 から fRam00b13fcc(0..1)を算出。RaceSexMenu[3] FUN_005cc200=chargen初期化 1586行。"
+    },
+    {
+      "category": "constraint",
+      "priority": "medium",
+      "content": "既知の不整合（未修正）: TextRenderer::getTextHeight() は FONT_SIZE(32)*scale を返すが、Oblivion フォントの実 fontSize は 22〜57。getTextCapHeight() には atlas.fontSize/22.0f の補正があるが getTextHeight() には無い。getTextHeight() の呼び出しは約 25 箇所（options / audio / video / gameplay / controls / debug_menu / menu_ui_instantiator / title_screen / ui_pause_menu）に及び、変更すると全オプション画面のラベル行送りが動くため単独の検証パスが必要。ポーズメニューの Paused 位置は XML 意図どおり（body y+20、実測 y=375..397）なので実害なし。",
+      "tags": [
+        "font",
+        "text-renderer",
+        "layout",
+        "known-issue"
+      ],
+      "id": "f54883ce-4801-4a76-801f-bc9725ccf3fa",
+      "timestamp": "2026-10-14T06:35:50.663660Z",
+      "compressed": false
+    },
+    {
+      "id": "480192b2-9054-4243-996e-0f5b0860eba1",
+      "timestamp": "2026-10-14T13:58:20.793146Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "実機タッチ検証の座標系: Renderer の screenWidth/Height は 1920x1110 (touch scale=1.000 view=(1920,1110))、GL y == screencap y。screencap は 1920x1200 RGBA なので crop((0,0,1920,1110)) 必須。GameplayOptionsUI の bodyRect() は screenHeight 1110 で y=291。ラベル左端 x は OCR 実測 ~580 (blockX=677.5-L/2 より L~190)、行間 52。難易度スライダーのトラック/矢印は y=324..361 (安全域)、トグルは各行 line.y+188 付近 y=467..531 (row3 Crosshair)、Return/Defaults ボタンは y~755 以降なのでタップ時は y<=531 に限定すれば誤操作しない。x=1000..1180 の範囲がトグルに当たる。",
+      "tags": [
+        "ui",
+        "verification",
+        "coordinates",
+        "gameplay-options"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "92636e69-6c83-42db-a607-56b98847b9bf",
+      "timestamp": "2026-10-14T16:37:33.383885Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "grant: fade ノード20B=[0]fade_id [1]current [2]duration [3]prev [4]next。生成 FUN_00584300, fade_id算出 FUN_005898f0, trait 0xfdb/0xfdc, duration 0.25, 閉じ時逆再生 FUN_00588a70。表示中フラグ 0x00b3a6d4。",
+      "tags": [
+        "re",
+        "menu",
+        "fade"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "87f81f82-c135-4808-b4c9-3aadc2b4e865",
+      "timestamp": "2026-10-14T16:37:33.383885Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "audio 5系統対応順: master→[+0xb8], voice→FUN_006aa1a0, effect→[+0xc4], foot→[+0xbc], music→[+0xc0]。FUN_006aa1a0 = clamp(0,1)→master乗算→dB時 log10(v^2*master)*2000。",
+      "tags": [
+        "re",
+        "audio"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "93c8b288-b34e-4281-a828-c9fbc3a6f27d",
+      "timestamp": "2026-10-15T03:36:35Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "AV index 判明分: 0=体力/3=魔法/7=攻撃力/8=HP最大/0xf=疲労/0x10=速度/0x11=レベル/0x3b=反射/0x41=武器種別。Actor vtable: +0x2c0 HP更新通知/+0x2c8 死亡/+0x2d4 ダメージ効果FUN_005e46c0/+0x3ac ダメージ入口FUN_005febf0。",
+      "tags": [
+        "re",
+        "vtable",
+        "av-index"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "3134ea37-b877-402c-b55f-42c1363c2dfc",
+      "timestamp": "2026-10-15T03:36:35Z",
+      "category": "constraint",
+      "priority": "medium",
+      "content": "§41 の残課題: DAT_00b35464 書き込み元未特定 / FUN_004842f0 挙動未確定 / FUN_00468ff0(0xd,0) の種別0xd 意味未確定 / 0x00b3b908 設定元未確定。",
+      "tags": [
+        "re",
+        "todo",
+        "unknown"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "992f622e-a291-47c8-9621-3691335c6082",
+      "timestamp": "2026-10-15T03:36:35Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "§41 を main セッション(9427ac74-c35e-4e3d-b47e-79c1c4621727)へ要約送信済み。",
+      "tags": [
+        "re",
+        "main",
+        "report"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "68ad9304-03f3-4c93-8508-afbe139357b3",
+      "timestamp": "2026-10-15T04:04:46Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "0x00B33E9C = フレームデルタ時間(秒,timescale 乗算後)。絶対 FSTP は 0x009DC2BC の 1 件のみ(Reset)、通常は FSTP [ECX+0xC]。FLD は 74 件、getter float Timer::GetDeltaTime() @0x004052A0(直後 0x004052A7 は FLDZ;RET)。Timer::Update 呼び出し元 9 件: 0x0040616A/0x004061AB/0x0040D8A7/0x0040EACE/0x00494A14/0x00494E5A/0x004E15D0/0x004E18C2/0x009DC2B6。",
+      "tags": [
+        "RE",
+        "Timer",
+        "§42"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "2982cf7d-7f02-4ed7-a027-b077210ed8da",
+      "timestamp": "2026-10-15T04:04:46Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "DAT_00b35464 = 未定義 AV 用フォールバック float。FSTP は 8 件のみ(0x00403C0D/0x00404E3E/0x004AEBC0/0x004AEC0D/0x005A06EF/0x005A0736/0x005A2BB4/0x005A2BFF)。パターン: MOV EAX,[EAX*4+0x00B39530]; null なら FLDZ; MOV EBP,0x00B35464; FSTP [0x00B35464]; FLD [EBP]。0x00B39530 は AV 定義ポインタ配列で実行時充填(ファイル上は全0)。移植では「未定義 AV は 0.0f」で等価。",
+      "tags": [
+        "RE",
+        "AV",
+        "§42"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "71289bf2-afba-443b-916e-a940e55153d8",
+      "timestamp": "2026-10-15T04:04:46Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "DAT_00b399d0 = コントロールキー割当テーブル 29 要素(要素 0x38)。順序: 0 Back/1 Sldleft/2 Sldright/3 Use/4 Activate/5 Block/6 Cast/7 Rdyitem/8 Crouch/9 Run/10 Togglerun/11 Automove/12 Jump/13 Togglepov/14 Menumode/15 Restmenu/16 Quickmenu/17-24 Quick1-8/25 Quicksave/26 Quickload/27 Grab/28 終端。格納 VA は 0x009F609B から 0x38 間隔。移植は行順のみ一致させ独自テーブルで可。",
+      "tags": [
+        "RE",
+        "Controls",
+        "§42"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "fdc84331-8de6-4156-9d95-f4a2941846da",
+      "timestamp": "2026-10-15T04:08:55Z",
+      "category": "decision",
+      "priority": "medium",
+      "content": "§43 を docs/RE_EXE_REPORT.md に追記(7830 行目〜、総行数 7887)。§42 も追記済み(7583 行目〜)。§42+§43 を main へ送信済み。残未解決は 0x00B33E88 の {型名, 付随 const} ペアの用途と 0x00B33E98 書き込み元のみ(実装には不要)。",
+      "tags": [
+        "RE",
+        "docs",
+        "main",
+        "§43"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "07168602-c8ee-4a4d-b05d-bb95421f2509",
+      "timestamp": "2026-10-15T04:10:58Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "OptionsUI in pause mode (optionsUI->open(true)) renders the SAME 240x400 generic_background panel geometry as PauseMenu, so screenshots of both look alike. Confirm state via logcat: 'Pause menu: opened OptionsUI in pause mode' on open, 'OptionsUI: Options: Return' + 'handleBackKey: Closed OptionsUI' + 'Pause menu: restored after sub-menu' on Back.",
+      "tags": [
+        "ui",
+        "optionsui",
+        "verified"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "c47d103b-c6f2-42fe-8e38-21ade95fe5b4",
+      "timestamp": "2026-10-15T04:10:58Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "PauseMenu button hit points (x fixed at 960, GL surface height 1110): Return y=461, Save y=525, Load y=589, Options y=653, Quit y=717. Values derived from ui_pause_menu.cpp bodyRect/bodyTop (BODY_HEIGHT=400, BUTTON_HEIGHT=64, ITEM_COUNT=5) and confirmed on-device.",
+      "tags": [
+        "ui",
+        "pausemenu",
+        "coords"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "a4e557b4-4524-4f8e-a850-d17bf37e9195",
+      "timestamp": "2026-10-15T04:36:29Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "§46 を docs\\RE_EXE_REPORT.md に追記（見出し 8091 行目）。内容: AV index 名テーブル 0x00B0A1A8、0x004055E0 の正体、0x00B3B908 = bVerboseMessages。§41.7 の残課題 3 件（AV index 4 / 0xf の意味、0x00b3b908 設定元、0x004055e0）を解消。main セッションへ §45 と §46 を送信済み。",
+      "tags": [
+        "RE",
+        "§46",
+        "残課題",
+        "main送信"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "3ce3a812-e05e-4f2a-a5bc-b99023b1478b",
+      "timestamp": "2026-10-15T05:31:47Z",
+      "category": "decision",
+      "priority": "medium",
+      "content": "Sent main->RE follow-up request for 3 items: (1) §41-4 difficulty multiplier unit/write sites/instruction listing plus a 3-point runtime measurement of FUN_005e2560; (2) whether the §45 armor-perk GMST multipliers also apply to the melee path FUN_005febf0 and at which of the 12 stages (subtract vs multiply matters for the port); (3) §48 fade timing - open-side duration source (0xFDB vs 0xFDC), whether fade nodes are created on open, close, or both, and whether stackingtype/alpha=0 menus fade too.",
+      "tags": [
+        "re",
+        "combat",
+        "fade",
+        "request"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "bde6d64a-bc25-4196-983f-68e1113d469f",
+      "timestamp": "2026-10-15T13:21:19.701063Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "§43.4 完了: 0x00B33E88 は RTTI 型記述子レコード（+0x00 型名 ptr 0x00A3D0E0=\"BSTempNode\" / +0x04 基底記述子 0x00B3FAB0、登録 FUN_009DC280、判定 0x0047CD60 の IsKindOf ループ、getter 0x0043F520）→ 移植不要。0x00B33E98（Timer+0x08）は 0x009DC2B2 の FST 1 件のみで読み出し 0 件の未使用メンバ → 保持不要。0x00403BE0 = AV null なら 0x00B35464 を 0 クリアして返す getter（=未定義 AV は 0.0f）、0x00403BC0 = [ECX+4] の先頭文字 'S' 判定付き解放ヘルパ。",
+      "tags": [
+        "RE",
+        "§43",
+        "RTTI",
+        "AV",
+        "移植不要"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "822fb41f-39fc-4da9-b854-2a3999ebd3cf",
+      "timestamp": "2026-10-15T13:21:19.701063Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "§44 追記完了（docs\\RE_EXE_REPORT.md 見出し 7934 行目、総行数 7978）。CRT 数値ヘルパ: 0x004842F0=truncf（float→int→float 切捨て。0x00484850 の HP% は truncf(値*100)）/ 0x00484370=ceilf（trunc 後、小数部が正なら +1.0。当初の trunk+floor 補正説は誤り）/ 0x00484310=[ecx+8]=[ecx+0xC]=_DAT_00a30634(-1.0f) / 0x00985A00=__ftol2(SSE2 版、非 SSE2 は 0x00993E48 へフォールバック) / 0x009828C0=double→int。フラグアクセサ: 0x00468FF0(index,check)=16bit word[obj+4] のビットテスト（check!=0 && index==1 && bit0 で強制 0）/ 0x00469020=set/clear / 0x00469050=bit6|bit7|bit8 述語。0x00468FF0 の呼出は 87 箇所 → §41.2.4 の 0xd は word[+4] の bit13。所有クラス vtable=0x00A3B7A8（4 エントリ、直後に \"Unable to find container object (%08X) on owner object\" 群）。",
+      "tags": [
+        "RE",
+        "§44",
+        "CRT",
+        "フラグ",
+        "truncf",
+        "ceilf"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "59c411e3-7b8f-4cd6-ad0d-ea8d09ec4338",
+      "timestamp": "2026-10-15T13:21:19.701063Z",
+      "category": "decision",
+      "priority": "medium",
+      "content": "§44 の Android 移植向け確定値: 丸めは std::trunc/std::ceil/(int) へ置換（独自丸め不要、FPU 丸めモード依存なし）。FUN_00468ff0(0xd,0) 依存の死亡前提条件は移植では再現不要（HP<1 クランプで死亡は再現済み）。§41.7 の未確定 2 項目（FUN_004842f0 の挙動 / 種別 0xd）は §44 で解消。",
+      "tags": [
+        "RE",
+        "§44",
+        "移植向け",
+        "§41.7"
+      ],
+      "compressed": false
+    },
+    {
+      "category": "reference",
+      "priority": "medium",
+      "content": "RE §47: 字幕発行は 0x0057ACC0 に集約。距離ゲートは fAIMinGreetingDistance(0x00B36AD8, 既定150.0) の1倍/2倍。字幕距離倍率は [0xA30634]。bGeneralSubtitles(0xB13208) の消費者=0x004D92BB/0x005F72A8/0x00626B4D/0x0062A247/0x0062AE3C。",
+      "tags": [
+        "RE",
+        "§47",
+        "subtitle",
+        "Oblivion"
+      ],
+      "id": "5f5ee63c-e6ef-4b9b-82cf-8b83afb515e9",
+      "timestamp": "2026-10-15T13:53:06.734488Z",
+      "compressed": false
+    },
+    {
+      "timestamp": "2026-10-15T17:05:00Z",
+      "tags": [
+        "build",
+        "gradle",
+        "verification",
+        "tooling"
+      ],
+      "id": "b5b2dea6-36ef-407e-b6e6-171cc84d764f",
+      "compressed": false,
+      "priority": "medium",
+      "category": "reference",
+      "content": "Build staleness trap: app/.cxx/Debug/<hash>/<abi>/CMakeFiles/native-lib.dir/engine/renderer.cpp.o timestamps reveal whether an edit landed inside a running build. Editing during a gradle build compiled arm64-v8a BEFORE the edit while armeabi-v7a/x86_64 got it AFTER - a silently half-stale APK. Always compare the .o mtime per ABI against the source mtime (or just rebuild) after editing during a build. Incremental rebuild of the 3 ABIs took 2m24s vs 6m50s cold-ish."
+    },
+    {
+      "timestamp": "2026-10-16T04:03:52Z",
+      "tags": [
+        "todo",
+        "re",
+        "s50"
+      ],
+      "id": "0b97b9f5-1d22-463f-8fb0-17133283eb41",
+      "compressed": false,
+      "priority": "medium",
+      "category": "reference",
+      "content": "TODO entries added from RE 50: magic-damage-difficulty-scale, febf0-damage-formula, fatigue-av-implementation, gmst-table-integration, menu-stackingtype-impl, input-suppression-latches. npc-difficulty-scale description updated (dealt side now implemented). difficulty-damage-exact and xml-accumulator-model are done. RE 50.8 resolved all 2304 GMST entries (992 float / 1085 string / 227 int, slot range 0x00B33460..0x00B3B7C8); the full list lives in tmp/re/s50_gmst_full.txt, which is gitignored and must be re-derived or copied into the repo before a consumer is implemented."
+    },
+    {
+      "id": "a578906f-46ff-4ade-9d49-8a32731b085d",
+      "timestamp": "2026-10-16T14:43:03.562473Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "§51 コンソールコマンド表: レコード配列基底 0xB0BBD0 付近、stride 0x28。+0x00=id / +0x04=説明文字列VA / +0x10=handler / +0x14=既定0x004FDE30 / +0x20=CanonicalName / +0x24=省略名。flags: 0x0=引数なし / 0x10000=float / 0x20000=2数値 / 0x30000=3数値。確認済: 0x130=FOV(0x511720) / 0x131=Verbose(0x507930) / 0x132=ToggleGodMode(0x500D10) / 0x133=RefreshShaders(0x50AA20) / 0x134=ToggleScripts(0x500D50) / 0x135=SexChange(0x515920)。",
+      "tags": [
+        "console",
+        "§51"
+      ],
+      "compressed": false,
+      "source": "RE"
+    },
+    {
+      "id": "pending-todos-61-20261018",
+      "timestamp": "2026-10-18T07:13:19Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "61 pending/in_progress TODOs in database. settings-manager-gmst-re is in_progress. Key remaining: gmst-fglobaltimemultiplier-dt (jni_bridge.cpp wiring), complex-scene-throttle (2/3 frame throttle), armor-perk-damage-mult (spell_manager.cpp), gameplay-settings-consumers (disableDynamicCrosshair wiring), npc-difficulty-scale (combat_manager.cpp dealt damage 1/f).",
+      "tags": [
+        "todos",
+        "pending",
+        "next-steps"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "opencode-b-handover-queue-triage-20261018",
+      "timestamp": "2026-10-18T16:00:00Z",
+      "category": "development",
+      "priority": "medium",
+      "content": "Batch 2026-10-18 (session 9427ac74): handover queue (opencode-handover-main-9427ac74-20261018) triage. (1) complex-scene-throttle: already implemented (commit 29dbb4f1), no action. (2) armor-perk-damage-mult: ALREADY DONE - committed e5e60eb7 'game: apply the armor mastery perk multiplier to spell damage'; settings_manager.h armorMasteryRank (skill/25 tiers matching GMST iSkill*Min 25/50/75/100) + armorPerkDamageMultiplier (rank>=2 x0.5 / rank==0 x1.5 / rank==1 x1.0) called from spell_manager.cpp:470 damage branch. Reflect path: port has NO damage-reflect system at all (only AV index name ReflectDamage=0x3b in dialogue_filter_engine.cpp) so nothing to wire; near/archery stay x1.0 per RE (zero xrefs in FUN_005FEBF0). Caveat: NPC skill maps only carry Blade/Blunt/Magic/Restoration keys (npc.cpp:52-55) so armor skill lookups currently miss -> multiplier is effectively x1.0 until NPC armor skills exist (approximation documented in the code comment). (3) gameplay-settings-consumers: implemented this batch. (4) npc-difficulty-scale: effectively done - dealt 1/f in playerAttack + magic paths (magic-damage-difficulty-scale done) and received f inside Player::takeDamage (player-damage-intake done); desc was stale. Handover queue fully consumed.",
+      "tags": []
+    },
+    {
+      "id": "opencode-b-gameplay-settings-consumers-20261018",
+      "timestamp": "2026-10-18T16:10:00Z",
+      "category": "development",
+      "priority": "medium",
+      "content": "Batch 2026-10-18 (session 9427ac74): gameplay-settings-consumers implemented, UNVERIFIED per user '検証はステイでいいので作成を続けて'. Was the last unconsumed gameplay setting: added Renderer::dialogueSubtitlesEnabled_ (renderer.h, RE_EXE_REPORT 47.3/47.4 annotation), assigned in applyGameplaySettings from settings.dialogueSubtitles, and gated the HUDSubtitleMenu emit path (renderer.cpp topic-selection subtitle) on BOTH subtitlesEnabled_ (bGeneralSubtitles, emission gate) and dialogueSubtitlesEnabled_ (bDialogueSubtitles, dialogue UI element presence) since the port has a single subtitle path; stale comment + LOGI updated to list only saveOnRest/saveOnWait as consumer-less (they are consumed by the SleepWaitMenu handler 0x5D6A80 in the original - blocked on sleep-wait-menu-impl). Consumer status now: difficulty -> Player::setDifficultyScale, generalSubtitles/dialogueSubtitles -> subtitle gate, crosshair -> crosshairEnabled (renderer:5074), disableDynamicCrosshair -> crosshair->setDynamicEnabled inverted, saveOnTravel + saveOnInteriorExteriorSwitch -> DoorManager cell-transition autosave (renderer:2192-2193); saveOnRest/saveOnWait blocked. Settings commit path pumpGameplayOptions already propagated dialogueSubtitles, so no change needed there.",
+      "tags": []
+    },
+    {
+      "id": "opencode-b-audio-setters-triage-20261019",
+      "timestamp": "2026-10-19T13:40:00Z",
+      "category": "development",
+      "priority": "medium",
+      "content": "Batch 2026-10-19 (session 9427ac74): audio-voice-footstep-setters triage = already implemented, no code change. Voice: setVoiceVolume/getVoiceVolume committed (audio_manager.cpp:528 re-applies to the live source; playVoice routes through playSEOnChannel(..., voiceVolume) at :466-467; wiring landed in 3459212c 'Wire option settings to their consumers'). Footstep: setFootVolume now re-applies to live sources and playFootstep(key, pos) routes via the footVolume channel (INI default 0.3) with footstep_default fallback - these are in the UNCOMMITTED footstep-playback-path batch of this session (audio_manager.cpp +36/-3 uncommitted).",
+      "tags": []
+    },
+    {
+      "id": "copilot-memory-restore-20261022",
+      "timestamp": "2026-10-22T09:38:28Z",
+      "priority": "high",
+      "category": "decision",
+      "tags": [
+        "memory",
+        "ledger",
+        "data-loss",
+        "restore",
+        "concurrency"
+      ],
+      "content": "Ledger repair (2026-10-22): 61 entries that had been dropped between 74ec9ad9 (622 entries) and HEAD (582) were restored from git 74ec9ad9 and re-appended, bringing the ledger back to 643 entries. Evidence of the loss: commit bfb986dd (\"Save uncommitted changes\") contains a truncated, invalid session-memory.json (8290 lines, JSON parse error) plus a session-memory.json.bak snapshot; 0 of the 61 ids were present in 7b11356e or later. Cause: two writers (Copilot and opencode) rewrite this single file with no locking or merge, so a lost update silently drops entries. Restored entries keep their original ids and timestamps; a copy of the pre-restore file is in tmp/session-memory.pre-restore.json (git-ignored). Rule: re-read the file immediately before every write and append-only, never rewrite from an in-memory snapshot."
     }
   ],
   "metadata": {
-    "totalEntries": 582,
-    "compressedCount": 117,
+    "totalEntries": 644,
+    "compressedCount": 121,
     "sessionCount": 40,
-    "lastUpdated": "2026-10-22T07:02:28Z"
+    "lastUpdated": "2026-10-22T09:38:56Z"
   }
 }
