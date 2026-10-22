@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-22T05:59:19Z",
+  "lastUpdated": "2026-10-22T06:58:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -8158,12 +8158,43 @@
       ],
       "content": "Phase 69 (Persistence) implemented by Copilot session 9427ac74. save_format_version.h CURRENT_VERSION raised to 4 (v3 = SCRP script globals, v4 = CNTR containers). save_manager.cpp now serializes/restores QSTS (completed quests), SCRP (ScriptManager globals via oblivion::script::ScriptValue) and CNTR (container lock flag + InventorySlot list). Namespacing gotcha: ScriptValue/ScriptManager live in namespace oblivion::script; save_manager.cpp is at global scope so full qualification is mandatory (build error 'unknown type name ScriptValue' at save_manager.cpp L271/667/668). WorldManager gained a container registry (registerContainer/unregisterContainer/getAllContainers/getContainerByFormID) backed by containers_ keyed on FormID; registerContainer rejects FormID 0. Container gained formID/getFormID/setFormID/clearItems(); populateFromESM(esm, baseFormID) builds the inventory from the CONT record and sets formID. Renderer::activateNearestContainer(maxDistance, message) materialises the nearest CONTAINER REFR (refType==0) in the current cell on first use, registers it with WorldManager, and opens UIContainerMenu; identity uses the REFR FormID (best->formID) because it is unique per placement. Containers present in a save but not yet materialised are buffered in SaveManager::pendingContainers_ (std::unordered_map<uint32_t, PendingContainerState>) and applied by SaveManager::applyPendingContainerState(container) on first open; saveGame() also carries forward still-buffered containers so an unopened container is not dropped by a save/load round trip. Virtual controller X button order is now door -> container -> pickup; anyMenuOpen() includes containerMenuUI so world input is blocked while the container menu is visible. Still open: REF change state (needs .ess analysis, docs/RE_EXE_REPORT.md), and on-device save/load round-trip verification of container contents.",
       "compressed": false
+    },
+    {
+      "id": "copilot-supermemory-sync-policy-20261022",
+      "timestamp": "2026-10-22T06:47:40Z",
+      "priority": "high",
+      "category": "decision",
+      "tags": [
+        "memory",
+        "supermemory",
+        "sync",
+        "search-layer",
+        "session-memory"
+      ],
+      "content": "Supermemory sync policy settled (2026-10-22): .github/memory/session-memory.json stays the single canonical ledger; Supermemory is a derived search layer fed one-way local -> Supermemory. Rationale from a full 580-entry vs 412-memory reconciliation: making Supermemory the sole canonical source would drop (a) 537 entries older than 2026-10-21 that Supermemory never saw, (b) constraints and decision rationale (250 of 285 constraint/decision entries have no Supermemory counterpart, and Supermemory rewrites content with an LLM so negation conditions are lost), and (c) priority/category/tags plus git-diff auditability. Backfill executed: all 580 entries pushed verbatim via POST https://api.supermemory.ai/v4/memories (100 per request, 6 batches, no LLM extraction) into space opencode_project_470935b226aa5f24, which now holds 992 memories (412 pre-existing + 580). Every pushed memory carries metadata {entryId, category, priority, recordedAt, source, ledger, compressed, tags} so the originating entry is recoverable by filtering on metadata.entryId. Repeatable incremental sync: python tools/sync_memory_to_supermemory.py [--dry-run]; it enumerates existing entryId values via POST /v4/memories/list and pushes only missing entries, so it is idempotent and safe to re-run after appending to the ledger. The API key is read from ~/.copilot/mcp-config.json (mcpServers.supermemory.headers.Authorization) with the SUPERMEMORY_API_KEY environment variable as fallback; the script validates each candidate with a live request so a stale value cannot break the sync. Correction (2026-10-22): an earlier note claimed the user-level variable held a non-working value, but the user-level variable actually holds the same working key as the config (SHA-256 match) and only the already-running app process carried a stale 22-character inherited value, so nothing was deleted. Still open: the 37 Supermemory documents covering the 2026-10-21/22 RE batch (crime/weather/water/PGRD/LockPick/Animation/ScriptVM-MISS/Rendering/Chargen/Craft/MapMenu) are not yet merged into docs/RE_EXE_REPORT.md, which stops at section 66 (last commit 2026-10-20).",
+      "compressed": false
+    },
+    {
+      "id": "copilot-phase69-host-tests-20261022",
+      "timestamp": "2026-10-22T06:58:00Z",
+      "priority": "high",
+      "category": "implementation",
+      "tags": [
+        "phase69",
+        "persistence",
+        "host-tests",
+        "container",
+        "save-load",
+        "linker"
+      ],
+      "content": "Phase 69 container persistence is now covered by the host test suite (2026-10-22, Copilot session 9427ac74). New app/src/main/cpp/tests/phase69_persistence_tests.cpp/.h -> class Phase69PersistenceTests (30 assertions on a green run), wired into tools/host_tests/host_runner_main.cpp. It uses save slots 90/91 (kSlotA/kSlotB) so a developer's real saves are never touched, and removeSlot() cleans them up at the start and end. Four cases: (1) materialised round trip - chest with two items and locked=true through saveGame -> loadGame -> applyPendingContainerState; (2) empty container still writes and reloads as empty and unlocked; (3) carry-forward - a save taken while the container was never materialised must keep the buffered pendingContainers_ entry; (4) the pending buffer is consumed by the first applyPendingContainerState() and an unknown FormID returns false. IMPORTANT ROOT CAUSE FOUND: the Phase 69 commit (957319e8) had silently broken the host suite. save_manager.cpp calls Container::addItem/clearItems/setLocked, but game/container.cpp and game/interactable.cpp were absent from tools/host_tests/run_host_tests.sh SOURCES, so the single g++ invocation failed with 'ld.exe: save_manager.cpp: undefined reference to Container::addItem(InventorySlot const&)'. MinGW/PE resolves every symbol in every translation unit and --gc-sections cannot remove undefined references, so a stale SOURCES list fails the link rather than a test. Fix: added game/container.cpp, game/interactable.cpp and tests/phase69_persistence_tests.cpp to SOURCES (now 83 translation units, was 80). Also corrected the stale '.github/workflows/android.yml' comment from '53 translation units' to 83 and documented the new suite plus the mid-layer dependency rule in tools/host_tests/README.md. Rule to remember: a leaf header may be stubbed, but any mid-layer .cpp whose symbols a wired suite (or a manager in SOURCES) reaches must be listed for real.",
+      "compressed": false
     }
   ],
   "metadata": {
-    "totalEntries": 580,
+    "totalEntries": 582,
     "compressedCount": 117,
     "sessionCount": 40,
-    "lastUpdated": "2026-10-22T05:59:19Z"
+    "lastUpdated": "2026-10-22T07:02:28Z"
   }
 }

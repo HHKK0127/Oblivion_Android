@@ -587,6 +587,27 @@ Java_com_example_oblivion_GameRenderer_nativeRunScriptVmTests(
 }
 
 // ============================================
+// Phase 69: Container Persistence Test Runner
+// ============================================
+#include "tests/phase69_persistence_tests.h"
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_example_oblivion_GameRenderer_nativeRunPhase69PersistenceTests(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    LOGI("=== Phase 69 Persistence Test START ===");
+
+    Phase69PersistenceTests test;
+    bool allPassed = test.runAllTests();
+
+    std::string summary = test.getSummary();
+    LOGI("=== Phase 69 Persistence Test END: %s ===",
+         allPassed ? "ALL PASSED" : "SOME FAILED");
+
+    return env->NewStringUTF(summary.c_str());
+}
+
+// ============================================
 // Phase 52: FaceGen System Initialization
 // ============================================
 #include "character/face_gen_morpher.h"

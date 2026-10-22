@@ -529,6 +529,9 @@ class GameRenderer : GLSurfaceView.Renderer {
     // Phase 38: Script VM unit tests
     external fun nativeRunScriptVmTests(): String
 
+    // Phase 69: container persistence (save/load round trip)
+    external fun nativeRunPhase69PersistenceTests(): String
+
     /**
      * Runs every native test suite and returns a combined summary.
      *
@@ -542,7 +545,8 @@ class GameRenderer : GLSurfaceView.Renderer {
             "Phase 45 Unit" to { nativeRunPhase45Test() },
             "Phase 48 Integration" to { nativeRunPhase48Tests() },
             "Phase 48 Stress" to { nativeRunPhase48StressTests() },
-            "Phase 38 Script VM" to { nativeRunScriptVmTests() }
+            "Phase 38 Script VM" to { nativeRunScriptVmTests() },
+            "Phase 69 Persistence" to { nativeRunPhase69PersistenceTests() }
         )
         for ((name, run) in suites) {
             try {

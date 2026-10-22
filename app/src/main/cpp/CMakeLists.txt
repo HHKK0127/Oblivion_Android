@@ -319,6 +319,9 @@ add_library(native-lib SHARED
     # Tests (Level Up Menu)
     tests/level_up_menu_tests.cpp
 
+    # Tests (Phase 69: container persistence)
+    tests/phase69_persistence_tests.cpp
+
     # Physics System (Phase 36 - Jolt Physics)
     physics/physics_manager.cpp
 
