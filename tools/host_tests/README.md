@@ -16,6 +16,7 @@ The runner builds one binary that executes every wired suite in order:
 | `Phase48StressTest` | `tests/phase48_stress_test.cpp` | 5 | Concurrent task, object pool, cache, `EventBus` and `NpcManager` stress |
 | `Phase48IntegrationTest` | `tests/phase48_integration_test.cpp` | 7 | `StateManager` / `InputRouter` / `GameLoopCoordinator` / world / cell transition / combat / quest / save integration |
 | `Phase30IntegrationTest` | `tests/phase30_integration_test.cpp` | 1 (skip) | NIF/animation/collision asset pipeline; skips itself when real Oblivion assets are absent (see below) |
+| `Phase69PersistenceTests` | `tests/phase69_persistence_tests.cpp` | 30 | Container persistence: `SaveManager` CNTR section, the lazy-materialisation buffer (`applyPendingContainerState`) and the carry-forward case where a save happens before the player ever opened the container |
 
 The runner prints each suite's `getSummary()` and exits with status 1 if any
 suite fails.
@@ -200,6 +201,14 @@ example - `npc_manager.cpp` (`fileExists`) and `audio_manager.cpp`
 `geometry/material.cpp` and `engine/shader.cpp` are all in `SOURCES`. Do not
 conclude a closure is satisfied from an `nm` pass alone; a filtered `nm` list
 hides C++ mangled names easily. Verify by actually linking.
+
+`game/container.cpp` and `game/interactable.cpp` are the same story on the
+Phase 69 side: `save_manager.cpp` calls `Container::addItem` / `clearItems` /
+`setLocked` and `WorldManager` stores `std::shared_ptr<Container>`, so the
+moment the CNTR section existed the link broke without them
+(`undefined reference to Container::addItem(InventorySlot const&)`).
+`Phase69PersistenceTests` asserts through the real `Container`, so both are
+listed for their assertions too - do not replace either with a stub.
 
 Stubs are only acceptable for *leaf* dependencies, i.e. things with no host
 implementation at all: the NDK/JNI APIs (`stubs/`, `host_stub_syms.cpp`), GLES
