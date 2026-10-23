@@ -81,6 +81,27 @@ public:
     int getCurrentPage() const { return currentPage; }
     int getTotalPages() const { return totalPages; }
 
+    // --- Percentile frame time analysis (inspired by GTA V COverviewScreenFPS) ---
+    // A rolling window of NUM_SAMPLES frame times is sorted once it fills up, then each
+    // percentile picks the value at its own position in that sorted window. The picked
+    // value feeds a small moving average (NUM_PERCENTILE_SAMPLES) that is halved whenever
+    // it fills up, so recent frames carry more weight than older ones.
+    static constexpr int NUM_PERCENTILES = 8;
+    static constexpr int NUM_SAMPLES = 100;
+    static constexpr int NUM_PERCENTILE_SAMPLES = 10;
+
+    /** Number of percentile slots (50, 66, 75, 80, 90, 95, 98, 99). */
+    static int getPercentileCount() { return NUM_PERCENTILES; }
+    /** Percentile value of a slot, e.g. 99 for the 99th percentile. */
+    static int getPercentileValue(int index);
+    /** Smoothed frame time in milliseconds for a percentile slot, or 0 when unpopulated. */
+    float getPercentileFrameTimeMs(int index) const;
+    /** Slot whose average frame time is closest to the most recent frame. */
+    int getCurrentPercentileIndex() const { return lastPercentile; }
+
+    /** Drops all percentile history so it starts sampling again from scratch. */
+    void resetPercentiles();
+
 private:
     TextRenderer* textRenderer;
     AudioManager* audioManager;
@@ -109,6 +130,51 @@ private:
     static constexpr int FPS_HISTORY_SIZE = 60;
     std::array<float, FPS_HISTORY_SIZE> fpsHistory;
     int fpsHistoryIndex;
+
+    // Frames counted inside the current UPDATE_INTERVAL window (used for the FPS average)
+    int framesInWindow;
+
+    // Percentile frame time analysis
+    static const int percentileValues[NUM_PERCENTILES];
+
+    // One percentile slot: a short moving average over the values picked from the sorted window
+    struct PercentileSample {
+        float values[NUM_PERCENTILE_SAMPLES];
+        int count;
+        float sum;
+
+        void reset() {
+            count = 0;
+            sum = 0.0f;
+        }
+        void add(float value) {
+            if (count < NUM_PERCENTILE_SAMPLES) {
+                values[count] = value;
+                sum += value;
+                ++count;
+            }
+        }
+        // Keeps every other sample and restarts the sum, biasing the average towards recent frames
+        void halve() {
+            const int newCount = count / 2;
+            float newSum = 0.0f;
+            for (int i = 0; i < newCount; ++i) {
+                values[i] = values[i * 2];
+                newSum += values[i];
+            }
+            count = newCount;
+            sum = newSum;
+        }
+        float mean() const { return count > 0 ? sum / static_cast<float>(count) : 0.0f; }
+    };
+
+    std::array<PercentileSample, NUM_PERCENTILES> percentileSamples;
+    std::array<float, NUM_SAMPLES> timeStepHistory;
+    int timeStepCount;
+    int lastPercentile;
+
+    void updatePercentiles(float currentFrameTimeMs);
+    void renderPercentileSection(float& xPos, float& yPos, float lineHeight, float textScale);
 
     // Frame time breakdown
     float cpuTimeMs;

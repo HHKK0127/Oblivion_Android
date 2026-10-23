@@ -5,6 +5,7 @@
 #include "imperial_weave.h"
 #include "gl_check.h"
 #include "../ui/ui_draw_helper.h"
+#include "../ui/debug_draw.h"
 #include "../ui/loading_screen.h"
 #include "../assets/bsa_reader.h"
 #include "../inventory/item_factory.h"
@@ -1901,6 +1902,9 @@ bool Renderer::initGameSystems() {
     refs.debugHudPrevPage = [this]() {
         if (debugHUD) debugHUD->prevPage();
     };
+    refs.resetFrameTimePercentiles = [this]() {
+        if (debugHUD) debugHUD->resetPercentiles();
+    };
     refs.toggleDebugLog = [this]() {
         if (debugHUD) {
             debugHUD->setLogVisible(!debugHUD->isLogVisible());
@@ -2120,6 +2124,18 @@ bool Renderer::initGameSystems() {
         return false;
     }
     LOGI("PerformanceGraph initialized successfully");
+
+    // Initialize DebugDraw
+    LOGI("Creating DebugDraw...");
+    debugDraw = std::make_unique<DebugDraw>();
+    if (!debugDraw->initialize()) {
+        LOGE("Failed to initialize DebugDraw");
+        return false;
+    }
+    LOGI("DebugDraw initialized successfully");
+
+    // Let the NPC visualizer draw world-space markers through DebugDraw
+    npcDebugVisualizer->setDebugDraw(debugDraw.get());
 
     // Initialize Settings UI
     LOGI("Creating SettingsUI...");
@@ -5188,6 +5204,17 @@ if (uiMessageBox && uiMessageBox->isVisible()) {
     if (performanceGraph) {
         performanceGraph->render();
     }
+    if (debugDraw) {
+        // Use the camera for view/proj matrices.
+        glm::mat4 viewMatrix;
+        glm::mat4 projMatrix;
+        const float aspect = static_cast<float>(screenWidth) / static_cast<float>(screenHeight);
+        if (camera) {
+            viewMatrix = camera->getViewMatrix();
+            projMatrix = camera->getProjectionMatrix(aspect);
+        }
+        debugDraw->render(viewMatrix, projMatrix, screenWidth, screenHeight);
+    }
 
     // Pause menu sits below its own sub-menus (Save/Load/Options) but above the world.
     if (uiPauseMenu && uiPauseMenu->isVisible()) {
@@ -7974,6 +8001,10 @@ void Renderer::cleanup() {
 
     if (performanceGraph) {
         performanceGraph->cleanup();
+    }
+
+    if (debugDraw) {
+        debugDraw->shutdown();
     }
 
     if (settingsUI) {

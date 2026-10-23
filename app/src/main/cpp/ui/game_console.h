@@ -179,6 +179,7 @@ public:
         std::function<void()> toggleTouchTrail;
         std::function<void()> debugHudNextPage;
         std::function<void()> debugHudPrevPage;
+        std::function<void()> resetFrameTimePercentiles;
         std::function<void()> toggleDebugLog;
 
         // Sound

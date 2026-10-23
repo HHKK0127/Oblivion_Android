@@ -942,6 +942,14 @@ void GameConsole::registerBuiltinCommands() {
             print("Debug HUD not available");
         }
     });
+    registerCommand("percentilereset", "Reset frame time percentile samples", [this](const std::vector<std::string>&) {
+        if (gameRefs.resetFrameTimePercentiles) {
+            gameRefs.resetFrameTimePercentiles();
+            print("Frame time percentiles: samples reset");
+        } else {
+            print("Debug HUD not available");
+        }
+    });
     registerCommand("debuglog", "Toggle in-game log overlay", [this](const std::vector<std::string>&) {
         if (gameRefs.toggleDebugLog) gameRefs.toggleDebugLog();
         print("Debug log overlay toggled");

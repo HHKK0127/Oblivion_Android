@@ -162,6 +162,7 @@ add_library(native-lib SHARED
     ui/npc_debug_visualizer.cpp
     ui/world_debug_info.cpp
     ui/performance_graph.cpp
+    ui/debug_draw.cpp
     ui/settings_ui.cpp
     ui/save_load_ui.cpp
     ui/options_ui.cpp

@@ -19,12 +19,17 @@ DebugHUD::DebugHUD()
       fps(0.0f), frameTimeMs(0.0f), avgFrameTimeMs(0.0f),
       minFrameTimeMs(std::numeric_limits<float>::max()), maxFrameTimeMs(0.0f),
       frameCount(0), timeSinceLastUpdate(0.0f), timeSinceLastReset(0.0f),
-      fpsHistoryIndex(0),
+      fpsHistoryIndex(0), framesInWindow(0),
+      timeStepCount(0), lastPercentile(0),
       cpuTimeMs(0.0f), gpuTimeMs(0.0f), waitTimeMs(0.0f),
       drawCallCount(0), vertexCount(0), triangleCount(0),
       textureMemoryBytes(0), loadedTextureCount(0),
       nativeHeapBytes(0), javaHeapBytes(0) {
     fpsHistory.fill(0.0f);
+    timeStepHistory.fill(0.0f);
+    for (auto& sample : percentileSamples) {
+        sample.reset();
+    }
     phaseTimesUs.fill(0.0f);
     LOGD("DebugHUD created");
 }
@@ -51,6 +56,7 @@ void DebugHUD::update(float deltaTime) {
     // Accurate average: track sum and count for the current window
     // Using incremental average with frame counter (reset periodically)
     frameCount++;
+    framesInWindow++;
     if (frameCount == 1) {
         avgFrameTimeMs = frameTimeMs;
     } else {
@@ -61,18 +67,22 @@ void DebugHUD::update(float deltaTime) {
     minFrameTimeMs = std::min(minFrameTimeMs, frameTimeMs);
     maxFrameTimeMs = std::max(maxFrameTimeMs, frameTimeMs);
 
+    // Percentile analysis of the frame time history
+    updatePercentiles(frameTimeMs);
+
     timeSinceLastUpdate += deltaTime;
     timeSinceLastReset += deltaTime;
 
     // Periodic update for FPS display (every UPDATE_INTERVAL)
     if (timeSinceLastUpdate >= UPDATE_INTERVAL) {
         if (timeSinceLastUpdate > 0.0f) {
-            // Use actual frame count over the time window for accurate FPS
-            fps = static_cast<float>(frameCount) / timeSinceLastUpdate;
+            // Use the frame count over this window only, not since the last reset
+            fps = static_cast<float>(framesInWindow) / timeSinceLastUpdate;
         }
         fpsHistory[fpsHistoryIndex % FPS_HISTORY_SIZE] = fps;
         fpsHistoryIndex++;
         timeSinceLastUpdate = 0.0f;
+        framesInWindow = 0;
     }
 
     // Periodic reset of min/max/avg (every RESET_INTERVAL)
@@ -91,6 +101,61 @@ void DebugHUD::setFrameTimeBreakdown(float cpu, float gpu, float wait) {
     cpuTimeMs = cpu;
     gpuTimeMs = gpu;
     waitTimeMs = wait;
+}
+
+// --- Percentile frame time analysis ---
+
+// Percentiles tracked, mirroring GTA V's COverviewScreenFPS table
+const int DebugHUD::percentileValues[DebugHUD::NUM_PERCENTILES] = { 50, 66, 75, 80, 90, 95, 98, 99 };
+
+int DebugHUD::getPercentileValue(int index) {
+    if (index < 0 || index >= NUM_PERCENTILES) return 0;
+    return percentileValues[index];
+}
+
+float DebugHUD::getPercentileFrameTimeMs(int index) const {
+    if (index < 0 || index >= NUM_PERCENTILES) return 0.0f;
+    return percentileSamples[index].mean();
+}
+
+void DebugHUD::resetPercentiles() {
+    for (auto& sample : percentileSamples) {
+        sample.reset();
+    }
+    timeStepHistory.fill(0.0f);
+    timeStepCount = 0;
+    lastPercentile = 0;
+}
+
+void DebugHUD::updatePercentiles(float currentFrameTimeMs) {
+    // Highlight the percentile the current frame falls into
+    float leastDifference = std::numeric_limits<float>::max();
+    for (int i = 0; i < NUM_PERCENTILES; ++i) {
+        const float difference = std::abs(currentFrameTimeMs - percentileSamples[i].mean());
+        if (difference < leastDifference) {
+            lastPercentile = i;
+            leastDifference = difference;
+        }
+    }
+
+    // Collect frame times until the window is full, then sample the sorted window
+    timeStepHistory[timeStepCount++] = currentFrameTimeMs;
+    if (timeStepCount < NUM_SAMPLES) return;
+
+    std::sort(timeStepHistory.begin(), timeStepHistory.end());
+
+    for (int i = 0; i < NUM_PERCENTILES; ++i) {
+        if (percentileSamples[i].count == NUM_PERCENTILE_SAMPLES) {
+            percentileSamples[i].halve();
+        }
+
+        // Position of this percentile inside the sorted window
+        int index = static_cast<int>((percentileValues[i] / 100.0f) * NUM_SAMPLES + 0.5f) - 1;
+        index = std::max(0, std::min(index, NUM_SAMPLES - 1));
+        percentileSamples[i].add(timeStepHistory[index]);
+    }
+
+    timeStepCount = 0;
 }
 
 void DebugHUD::setPhaseTime(int idx, float us) {
@@ -297,6 +362,9 @@ void DebugHUD::renderPerformancePage(float& xPos, float& yPos, float lineHeight,
         yPos += graphH + 4.0f;
     }
 
+    // Frame time percentiles
+    renderPercentileSection(xPos, yPos, lineHeight, textScale);
+
     // Rendering stats
     {
         std::stringstream ss;
@@ -452,6 +520,48 @@ void DebugHUD::renderFrameTimeBar(float x, float y, float /*width*/, float /*hei
     std::stringstream ss;
     ss << "CPU:" << cpuPct << "% GPU:" << gpuPct << "% Wait:" << waitPct << "%";
     textRenderer->renderText(ss.str(), x, y, glm::vec3(1.0f, 1.0f, 1.0f), 0.8f);
+}
+
+void DebugHUD::renderPercentileSection(float& xPos, float& yPos, float lineHeight, float textScale) {
+    glm::vec3 white(1.0f, 1.0f, 1.0f);
+    glm::vec3 green(0.0f, 1.0f, 0.0f);
+    glm::vec3 yellow(1.0f, 1.0f, 0.0f);
+    glm::vec3 red(1.0f, 0.3f, 0.3f);
+    glm::vec3 gray(0.5f, 0.5f, 0.5f);
+
+    textRenderer->renderText("TIME STEP PERCENTILES", xPos, yPos, white, textScale * 0.8f);
+    yPos += lineHeight;
+
+    // Nothing measured yet
+    if (percentileSamples[0].count == 0) {
+        std::stringstream ss;
+        ss << "sampling " << timeStepCount << "/" << NUM_SAMPLES << " frames...";
+        textRenderer->renderText(ss.str(), xPos, yPos, gray, textScale * 0.8f);
+        yPos += lineHeight;
+        return;
+    }
+
+    for (int i = 0; i < NUM_PERCENTILES; ++i) {
+        const float meanMs = percentileSamples[i].mean();
+        if (meanMs <= 0.0f) continue;
+
+        // Colour by the FPS implied by this percentile, using the same thresholds as the FPS line
+        const float impliedFps = 1000.0f / meanMs;
+        glm::vec3 color = (impliedFps >= 55.0f) ? green
+                        : (impliedFps >= 30.0f) ? yellow : red;
+        if (i == lastPercentile) color = white;  // Current frame time falls into this slot
+
+        // One block per millisecond, capped so the line stays readable
+        int blocks = static_cast<int>(meanMs);
+        if (blocks > 16) blocks = 16;
+        std::string bar(static_cast<size_t>(blocks), '#');
+
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(2)
+           << std::setw(3) << percentileValues[i] << "%  " << meanMs << "ms " << bar;
+        textRenderer->renderText(ss.str(), xPos, yPos, color, textScale * 0.8f);
+        yPos += lineHeight * 0.9f;
+    }
 }
 
 void DebugHUD::renderLogOverlay() {

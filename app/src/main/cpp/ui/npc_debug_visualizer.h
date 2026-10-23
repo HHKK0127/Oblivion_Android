@@ -6,6 +6,7 @@
 
 class TextRenderer;
 class NpcManager;
+class DebugDraw;
 
 /**
  * @brief NPC Debug Visualization System
@@ -16,6 +17,7 @@ class NpcManager;
  * - NPC ID and name
  * - Distance from player
  * - Combat state indicators
+ * - World-space markers (bounding boxes and player-to-NPC links) via DebugDraw
  */
 class NpcDebugVisualizer {
 public:
@@ -31,6 +33,9 @@ public:
 
     void setPlayerPosition(const glm::vec3& pos) { playerPos = pos; }
 
+    // Optional 3D debug drawing backend; when null, only the text overlay is drawn
+    void setDebugDraw(DebugDraw* dd) { debugDraw = dd; }
+
     void update(float deltaTime);
     void render();
 
@@ -40,11 +45,13 @@ public:
     void setShowNames(bool show) { showNames = show; }
     void setShowDistance(bool show) { showDistance = show; }
     void setShowIDs(bool show) { showIDs = show; }
+    void setShowWorldMarkers(bool show) { showWorldMarkers = show; }
     void setMaxDistance(float dist) { maxDistance = dist; }
 
 private:
     TextRenderer* textRenderer;
     NpcManager* npcManager;
+    DebugDraw* debugDraw;
     bool visible;
     bool initialized;
 
@@ -57,6 +64,7 @@ private:
     bool showNames;
     bool showDistance;
     bool showIDs;
+    bool showWorldMarkers;
 
     int screenWidth;
     int screenHeight;
@@ -73,5 +81,6 @@ private:
 
     void renderHPBar(float x, float y, float width, float height, float currentHP, float maxHP);
     void renderNpcInfo(const NpcDebugInfo& info, float x, float y, float scale);
+    void renderWorldMarkers(const NpcDebugInfo& info);
     std::string getAIStateName(int state) const;
 };

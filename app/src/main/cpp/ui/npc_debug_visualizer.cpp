@@ -1,5 +1,6 @@
 #include "npc_debug_visualizer.h"
 #include "text_renderer.h"
+#include "debug_draw.h"
 #include "../game/npc_manager.h"
 #include "../game/npc.h"
 #include <GLES3/gl3.h>
@@ -10,9 +11,11 @@
 #define LOGD_NPC_DBG(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG_NPC_DBG, __VA_ARGS__)
 
 NpcDebugVisualizer::NpcDebugVisualizer()
-    : textRenderer(nullptr), npcManager(nullptr), visible(false), initialized(false),
+    : textRenderer(nullptr), npcManager(nullptr), debugDraw(nullptr),
+      visible(false), initialized(false),
       playerPos(0.0f, 0.0f, 0.0f), maxDistance(50.0f),
       showHPBars(true), showAIState(true), showNames(true), showDistance(true), showIDs(true),
+      showWorldMarkers(true),
       screenWidth(1080), screenHeight(1920) {
 }
 
@@ -61,7 +64,9 @@ void NpcDebugVisualizer::render() {
     textRenderer->renderText("NPC DEBUG", 10.0f * scale, lineH * 1.5f, headerColor, 0.7f * scale);
 
     int count = 0;
+    int drawnLabels = 0;
     float y = lineH * 3.0f;
+    const float textBottomLimit = screenHeight - lineH * 2.0f;
 
     for (const auto& npc : allNpcs) {
         if (!npc) continue;
@@ -83,12 +88,17 @@ void NpcDebugVisualizer::render() {
         info.distance = distance;
         info.aiState = getAIStateName(static_cast<int>(npc->aiState));
 
+        // World-space markers stay visible even once the text list runs off screen
+        renderWorldMarkers(info);
+
         // Render NPC info
-        renderNpcInfo(info, 10.0f * scale, y, scale);
-        y += lineH * 3.5f; // Space for HP bar + text
+        if (y <= textBottomLimit) {
+            renderNpcInfo(info, 10.0f * scale, y, scale);
+            y += lineH * 3.5f; // Space for HP bar + text
+            drawnLabels++;
+        }
 
         count++;
-        if (y > screenHeight - lineH * 2.0f) break; // Stop if off screen
     }
 
     // Summary
@@ -96,6 +106,39 @@ void NpcDebugVisualizer::render() {
     char buf[128];
     snprintf(buf, sizeof(buf), "NPCs in range: %d / %zu", count, allNpcs.size());
     textRenderer->renderText(buf, 10.0f * scale, screenHeight - lineH * 2.0f, summaryColor, fontSize);
+
+    if (count > drawnLabels) {
+        snprintf(buf, sizeof(buf), "(%d labels hidden, world markers shown)", count - drawnLabels);
+        textRenderer->renderText(buf, 10.0f * scale, screenHeight - lineH, summaryColor, fontSize * 0.8f);
+    }
+}
+
+void NpcDebugVisualizer::renderWorldMarkers(const NpcDebugInfo& info) {
+    if (!showWorldMarkers || !debugDraw || !debugDraw->isEnabled()) return;
+
+    // Colour by distance so close NPCs stand out from distant ones
+    glm::vec4 color;
+    if (info.distance < 10.0f) {
+        color = glm::vec4(0.2f, 1.0f, 0.3f, 1.0f);
+    } else if (info.distance < 25.0f) {
+        color = glm::vec4(1.0f, 1.0f, 0.2f, 1.0f);
+    } else {
+        color = glm::vec4(1.0f, 0.4f, 0.3f, 1.0f);
+    }
+
+    // Body box; primitives are re-submitted every frame so they live exactly one frame
+    const glm::vec3 bodyMin(info.position.x - 0.4f, info.position.y - 0.05f, info.position.z - 0.4f);
+    const glm::vec3 bodyMax(info.position.x + 0.4f, info.position.y + 1.8f, info.position.z + 0.4f);
+    debugDraw->boxAABB(bodyMin, bodyMax, color, 0);
+
+    // Line of sight from the player's head to the NPC's head
+    const glm::vec3 playerHead(playerPos.x, playerPos.y + 1.6f, playerPos.z);
+    const glm::vec3 npcHead(info.position.x, info.position.y + 1.7f, info.position.z);
+    debugDraw->line(playerHead, npcHead, color, 0);
+
+    // Marker at the NPC's feet
+    debugDraw->cross(glm::vec3(info.position.x, info.position.y + 0.05f, info.position.z),
+                     0.35f, color, 0);
 }
 
 void NpcDebugVisualizer::renderHPBar(float x, float y, float width, float height, float currentHP, float maxHP) {

@@ -46,6 +46,12 @@
 | [DEVELOPMENT_HISTORY.md](DEVELOPMENT_HISTORY.md) | 開発履歴（全フェーズ） | 全員 |
 | [../plan.md](../plan.md) | 実装計画（Phase 9〜72、正典） | PM、リードエンジニア |
 
+### 参考資料（外部エンジン調査）
+
+| ファイル | 内容 | 対象者 |
+|---------|------|--------|
+| [GTA_V_SOURCE_REVIEW.md](GTA_V_SOURCE_REVIEW.md) | GTA V (RAGE) ソース調査と Oblivion Android への移植可能性分析（第 17 章: デバッグシステム比較・移植実施内容） | 実装エンジニア |
+
 ---
 
 ## ドキュメント読了順序
