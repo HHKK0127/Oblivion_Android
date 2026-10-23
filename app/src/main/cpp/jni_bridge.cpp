@@ -629,6 +629,27 @@ Java_com_example_oblivion_GameRenderer_nativeRunPluginListTests(
 }
 
 // ============================================
+// Phase 70: FormID Index Remapping Test Runner
+// ============================================
+#include "tests/formid_index_tests.h"
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_example_oblivion_GameRenderer_nativeRunFormIDIndexTests(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    LOGI("=== FormID Index Test START ===");
+
+    FormIDIndexTests test;
+    bool allPassed = test.runAllTests();
+
+    std::string summary = test.getSummary();
+    LOGI("=== FormID Index Test END: %s ===",
+         allPassed ? "ALL PASSED" : "SOME FAILED");
+
+    return env->NewStringUTF(summary.c_str());
+}
+
+// ============================================
 // Phase 52: FaceGen System Initialization
 // ============================================
 #include "character/face_gen_morpher.h"

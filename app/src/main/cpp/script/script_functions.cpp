@@ -11,6 +11,9 @@
 #include "../game/npc_manager.h"
 #include "../game/inventory_manager.h"
 #include "../game/player.h"
+#include "../game/crime_reputation_system.h"
+#include "../audio/audio_manager.h"
+#include "../assets/esm_reader.h"
 #include "../system/scene_time_throttle.h"
 
 #define SF_LOG_TAG "ScriptFunctions"
@@ -90,13 +93,15 @@ void ScriptFunctions::init(
     WorldManager* worldMgr,
     NpcManager* npcMgr,
     InventoryManager* invMgr,
-    QuestFlowController* questFlowController
+    QuestFlowController* questFlowController,
+    const ESMManager* esmManager
 ) {
     questManager_ = questMgr;
     questFlowController_ = questFlowController;
     worldManager_ = worldMgr;
     npcManager_ = npcMgr;
     inventoryManager_ = invMgr;
+    esmManager_ = esmManager;
 }
 
 FunctionResult ScriptFunctions::execute(
@@ -273,6 +278,12 @@ const char* ScriptFunctions::getFunctionName(FunctionID funcID) const {
         case FunctionID::GetIsUsedItemType: return "GetIsUsedItemType";
         case FunctionID::SetAlert: return "SetAlert";
         case FunctionID::SetSceneIsComplex: return "SetSceneIsComplex";
+        case FunctionID::Evp: return "Evp";
+        case FunctionID::PlaySound: return "PlaySound";
+        case FunctionID::ModCrimeGold: return "ModCrimeGold";
+        case FunctionID::SetCrimeGold: return "SetCrimeGold";
+        case FunctionID::KillActor: return "KillActor";
+        case FunctionID::ResurrectActor: return "ResurrectActor";
         default: return "Unknown";
     }
 }
@@ -549,6 +560,23 @@ void ScriptFunctions::registerTier3Functions() {
         std::bind(&ScriptFunctions::fnGetDead, this, _1, _2);
     handlers_[static_cast<uint16_t>(FunctionID::GetStageDone)] =
         std::bind(&ScriptFunctions::fnGetStageDone, this, _1, _2);
+
+    // RE_EXE_REPORT 68: quest, package, sound, crime and actor-lifecycle
+    // opcodes that the original only exposes through the native dispatcher.
+    handlers_[static_cast<uint16_t>(FunctionID::StopQuest)] =
+        std::bind(&ScriptFunctions::fnStopQuest, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::Evp)] =
+        std::bind(&ScriptFunctions::fnEvp, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::PlaySound)] =
+        std::bind(&ScriptFunctions::fnPlaySound, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::ModCrimeGold)] =
+        std::bind(&ScriptFunctions::fnModCrimeGold, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::SetCrimeGold)] =
+        std::bind(&ScriptFunctions::fnSetCrimeGold, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::KillActor)] =
+        std::bind(&ScriptFunctions::fnKillActor, this, _1, _2);
+    handlers_[static_cast<uint16_t>(FunctionID::ResurrectActor)] =
+        std::bind(&ScriptFunctions::fnResurrectActor, this, _1, _2);
 }
 
 void ScriptFunctions::registerTier5Functions() {
@@ -1951,6 +1979,213 @@ FunctionResult ScriptFunctions::fnGetDead(
         ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
     return fnIsDead(ctx, args);
 }
+
+// ============================================================================
+// RE_EXE_REPORT 68 - FunctionID handlers ported from the native dispatcher
+// ============================================================================
+
+FunctionResult ScriptFunctions::fnStopQuest(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    (void)ctx;
+    if (args.empty()) {
+        result.errorMessage = "StopQuest requires 1 argument (questFormID)";
+        return result;
+    }
+    if (!questFlowController_) {
+        result.errorMessage = "StopQuest requires an initialized QuestFlowController";
+        return result;
+    }
+
+    // RE 68.2: native 0x502D80 takes the quest out of the running set without
+    // touching its completion flag, so a later StartQuest can run it again.
+    const uint32_t questFormID = static_cast<uint32_t>(args[0].toInt());
+    result.success = questFlowController_->stopQuest(questFormID);
+    result.returnValue = ScriptValue::makeInt(result.success ? 1 : 0);
+    if (!result.success) {
+        result.errorMessage = "StopQuest failed for quest 0x" + std::to_string(questFormID);
+    }
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnEvp(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    (void)args;
+
+    // RE 68.2: native 0x50AF90 forwards to PackageSelect_Main (0x569020), which
+    // re-runs package selection for the actor. The port has no separate package
+    // record, so the re-evaluation is expressed by releasing the actor to the
+    // idle state the AI machine selects a package from. An actor that is
+    // fighting keeps its combat package.
+    const ScriptActor actor = resolve_script_actor(
+        questFlowController_, npcManager_, ctx.getSelfRef());
+    if (!actor.npc) {
+        result.errorMessage = "Evp is only available for NPC references";
+        return result;
+    }
+
+    if (actor.npc->aiState != AIState::COMBAT) {
+        actor.npc->setAIState(AIState::IDLE);
+    }
+
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(1);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnPlaySound(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    if (args.empty()) {
+        result.errorMessage = "PlaySound requires 1 argument (soundFormID)";
+        return result;
+    }
+
+    // The bridge prepends the reference, so the SOUN FormID is always last.
+    const uint32_t soundFormID = static_cast<uint32_t>(args.back().toInt());
+
+    // RE 68.2: native 0x509490 runs SoundCreate (0x6AE0A0) -> SoundPlay
+    // (0x6B7190) -> SetActive (0x6B73E0) on the SOUN record. The port resolves
+    // the SOUN FNAM path and plays it through the 3D sound-effect channel.
+    if (!esmManager_) {
+        result.errorMessage = "PlaySound requires an initialized ESMManager";
+        return result;
+    }
+    if (!g_audioManager) {
+        result.errorMessage = "PlaySound requires an initialized AudioManager";
+        return result;
+    }
+
+    const SoundData* sound = esmManager_->findSound(soundFormID);
+    if (!sound || sound->soundPath.empty()) {
+        result.errorMessage = "PlaySound could not resolve sound 0x" +
+                              std::to_string(soundFormID);
+        return result;
+    }
+
+    auto cached = soundClips_.find(soundFormID);
+    uint32_t clipId = 0;
+    if (cached != soundClips_.end()) {
+        clipId = cached->second;
+    } else {
+        clipId = g_audioManager->loadClip(sound->soundPath, 1, false);
+        if (clipId == 0) {
+            result.errorMessage = "PlaySound could not load '" + sound->soundPath + "'";
+            return result;
+        }
+        soundClips_[soundFormID] = clipId;
+    }
+
+    glm::vec3 position(0.0f);
+    const ScriptActor actor = resolve_script_actor(
+        questFlowController_, npcManager_, ctx.getSelfRef());
+    const glm::vec3* actorPosition = actor.getPosition();
+    if (actorPosition) {
+        position = *actorPosition;
+    }
+
+    g_audioManager->playSE(clipId, position, 1.0f);
+
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(1);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnModCrimeGold(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    (void)ctx;
+    if (args.empty()) {
+        result.errorMessage = "ModCrimeGold requires 1 argument (delta)";
+        return result;
+    }
+
+    // RE 68.2: native 0x504D00 reads the actor crime-gold field (Actor.vt+0x254),
+    // adds the argument (converted int -> float by fild) and stores it back. The
+    // port keeps a single bounty, which is the value the guard response reads.
+    auto& crime = game::CrimeReputationSystem::getInstance();
+    crime.setBounty(crime.getBounty() + args.back().toInt());
+
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(crime.getBounty());
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnSetCrimeGold(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    (void)ctx;
+    if (args.empty()) {
+        result.errorMessage = "SetCrimeGold requires 1 argument (gold)";
+        return result;
+    }
+
+    // RE 68.2: native 0x50B4A0 stores the argument into the actor crime-gold
+    // field. setBounty clamps negative values to zero.
+    auto& crime = game::CrimeReputationSystem::getInstance();
+    crime.setBounty(args.back().toInt());
+
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(crime.getBounty());
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnKillActor(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    (void)args;
+
+    // RE 68.2: native 0x501960 resolves the actor through RTTI (0xB03070) and
+    // calls Actor::Kill (0x6005F0); a failed cast still reports success.
+    if (ctx.getSelfRef() == 0) {
+        result.errorMessage = "KillActor requires a reference";
+        return result;
+    }
+    if (ctx.getSelfRef() == PLAYER_FORM_ID) {
+        result.errorMessage = "KillActor cannot kill the player";
+        return result;
+    }
+
+    auto npc = get_script_npc(npcManager_, ctx.getSelfRef());
+    if (!npc) {
+        result.errorMessage = "KillActor could not resolve actor reference";
+        return result;
+    }
+
+    // Routed through takeDamage so the central death pipeline runs (knockback,
+    // anim state, combat exit) instead of setting the flag directly.
+    if (!npc->isDeadState()) {
+        npc->takeDamage(npc->status.currentHealth + 1.0f);
+    }
+
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(1);
+    return result;
+}
+
+FunctionResult ScriptFunctions::fnResurrectActor(ExecutionContext& ctx, const std::vector<ScriptValue>& args) {
+    FunctionResult result;
+    (void)args;
+
+    // RE 68.2: native 0x510150 calls Actor.vt+0x20C, which clears the death
+    // state and restores health without re-running the death pipeline.
+    if (ctx.getSelfRef() == 0) {
+        result.errorMessage = "ResurrectActor requires a reference";
+        return result;
+    }
+    if (ctx.getSelfRef() == PLAYER_FORM_ID) {
+        result.errorMessage = "ResurrectActor cannot resurrect the player";
+        return result;
+    }
+
+    auto npc = get_script_npc(npcManager_, ctx.getSelfRef());
+    if (!npc) {
+        result.errorMessage = "ResurrectActor could not resolve actor reference";
+        return result;
+    }
+
+    npc->resurrect();
+
+    result.success = true;
+    result.returnValue = ScriptValue::makeInt(1);
+    return result;
+}
+
 
 FunctionResult ScriptFunctions::fnGetStageDone(
         ExecutionContext& ctx, const std::vector<ScriptValue>& args) {

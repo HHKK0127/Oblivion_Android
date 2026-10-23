@@ -8445,6 +8445,131 @@ FUN_00465130(esi, "autosave", 0, 0);
 - 呼出元走査は生バイト E8 走査（`va+5+rel==target`）。capstone 逆アセンブル走査は
   命令境界がずれて空を返す穴があるため、呼出元の全数列挙には生 E8 走査を使うこと。
 
+#### 49.0.1 【総括】0x400-low 訂正キャンペーンと呼出しリスト再生成（2026-10-22〜23）
+
+本報告書および `tmp\re\` の narrative に残っていたアドレス系統エラー（**0x400-low**）を
+一括訂正し、Script VM 台帳の「外部呼出」列を全行再生成した。本節はワークストリーム全体の
+総括であり、詳細証跡は `tmp\re\v3_audit_report.md` / `tmp\re\v4v9_unresolved_report.md` /
+`tmp\re\v5_ghidra_gaps_report.md` を参照。
+
+**1. マッピング ground truth（PE ヘッダ実測・形式計算のみ）**
+
+| Section | VirtualAddress | VirtualSize | PointerToRawData | SizeOfRawData |
+|---------|---------------|-------------|-----------------|---------------|
+| .text | 0x1000 | 0x626C39 | 0x400 | 0x626E00 |
+| .rdata | 0x628000 | 0xD98D2 | 0x627200 | 0xD9A00 |
+| .data | 0x702000 | 0xA9C1C | 0x700C00 | 0x30C00 |
+| .tls | 0x7AC000 | 0x1B9 | 0x731800 | 0x200 |
+| .rsrc | 0x7AD000 | 0x166C | 0x731A00 | 0x1800 |
+| .bind | 0x7AF000 | 0x56000 | 0x733200 | 0x55400 |
+
+- ImageBase `0x400000`、.text 画像範囲 **`0x401000`〜`0xA27C39`**
+- **`VA = 0x400C00 + file_off`** ⟺ `file_off = 0x400 + (VA − 0x401000)`
+- 歴史的バグ: 一部スクリプトが PointerToRawData を **0x800** と誤加算 → 記録アドレスが
+  **0x400 低い**（例: 真値 `0x504050` が `0x503C50` として記録）
+- **セルフテスト4件（解析前に必ず実施）**: `bytes@0x504050`=`518b4c24188b5424` /
+  `bytes@0x4FB580`=`578b7908` / `string@0xA7035C`=`.\AI\CombatController.cpp` /
+  オペコードテーブル（基底 `0xB0AF48`, stride `0x28`, 532件）の opid `0x0015` impl=`0x504560`
+
+**2. 訂正キャンペーン実績**
+
+- narrative `.md` 約35ファイル・**約3,156箇所以上**を +0x400 訂正（`.bak`〜`.bak7`）
+- 呼出しリストオラクル検証: **LOW 925 → 3**、CORRECT 537 → 3,057
+- 既知の誤り訂正: **「`0x401B00`=malloc / `0x401B20`=free」は 0x400-low で誤り**
+  → 正しくは **`0x401F00`**（malloc ラッパ、E8 呼出 **4,826**）/ **`0x401F20`**
+  （free、E8 呼出 **7,530**、heap mgr `0xB02020`）。過去に[確定]とされた値も V3 で監査済み。
+
+**3. 呼出しリスト列の再生成（V1、2026-10-23）**
+
+- 旧抽出規則（判明）: 窓 `[impl+0x400, impl+0x400+size)` を生 E8 byte 走査で頭5件とし、
+  記録値をさらに **−0x400** していた → **行の意味（このハンドラの呼び出し）が不正確**
+- 新規則: オペコードテーブル由来の **impl**（マッピング非依存の絶対アドレス）から
+  capstone リニア解析（`int3` または `ret`+`0xCC` で終端、in-.text 直接 E8 の頭5件）
+- 実績: **997行**再生成（`tmp\re\svm_495_miss_addrs.md` 474行 + 本報告書 523行）、
+  impl 不整合 0、行数維持（504 / 11,629 改行）、バックアップ **`.bak8`**
+- 検証: doc == GT(capstone) **100.0%**（479/479, 529/529）、旧誤窓内容との一致 <1%
+- 意味面の妥当性: OnStartCombat → `0x4FAE80`(引数デコード) + `0x4FB5F0`(TestMask) 等で整合
+- 残ノイズ1行（opid `0x1078` の `0x24cd158d`）は `purelist`（6桁hex）ガードにより
+  再生成から除外されていたため個別に解明・修正（**`.bak9`**）。全1,010行スキャンで
+  **画像外アドレス0件 / 8桁hex0件 / GT不一致0件**
+
+**4. 追加所見**
+
+- 台帳は **530行 = 480 distinct opid + 50件の重複**（top-50 節と全件節の2系統）。
+  impl は両系統で一致。
+- 呼出しリストが空の20 opid は **K1 スタブ8 / K2 間接呼出のみ1 / K3 空0 /
+  K4 完全インライン11** に分類。impl **`0x977C50`**（`b0 01 c3` = `mov al,1; ret`、
+  CC前置、E8呼出103件）を **7 opid** が共有（TestCode / BeginTrace / ShowNameMenu /
+  TrapUpdate / AddAchievement / Start・DumpMasterFileSeekData）。
+- **Ghidra デコンパイルのギャップ**: オペコードテーブル非ゼロ impl **527件中 362件が
+  FUN_* ラベルとして存在しない**（プロローグhex・CC前置・前後ラベルの対応表は
+  `tmp\re\v5_ghidra_gaps_report.md`）。台帳 impl とデコンパイル本文の突合時は要注意。
+- **V3 監査結論**: 過去の[確定]値に新規の 0x400-low は **0件**（17候補すべてが
+  ジャンプ先・呼出元・`push` オペランド・シンコール・範囲端の文脈誤読だった）。
+  判定ルールの教訓は    `tmp\re\v3_audit_report.md` §4。
+
+#### 49.0.2 【判定ルール】「正しい中断アドレス」と「0x400-low」の区別（weak / strong）
+
+TODO_re49 の **V6**。スキャンで抽出された未許可候補（TODO 記載で 3,012 件）を
+**関数先頭の誤り（0x400-low）** と **正当な非関数先頭アドレス** に振り分ける基準を明文化する。
+本ルールは +0x400 補正の**適用可否判定**に使う。証跡: `tmp\re\v3_audit_report.md`。
+
+**Step 1: 主張の種類を特定する（これが最優先）**
+
+| 主張の種類 | 判定 |
+|---|---|
+| 「関数エントリ / ハンドラ実装 / 呼出先関数」 | +0x400 補正の**対象になり得る** |
+| **命令アドレス**（デコンパイルの分岐先・case ラベル・出現サイト） | **補正しない** |
+| **範囲端**（例「ctor は `0x68C000`-`0x695000` に集中」） | **補正しない**（範囲境界は関数先頭である必要なし） |
+| **概略位置**（「`(0x697280 area)`」等、area/一帯と明記） | **補正しない**（実呼出サイトで裏取り） |
+| **ダンプ/走査開始位置**（例 `0x4AE900` = `0x4AE8C0` 関数内） | **補正しない** |
+| シンコール / シンボリック定数 / vtable オフセット参照 | **補正しない** |
+
+> 出所が `docs\Oblivion_decompiled.c` の**命令行**（`FUN_*` の定義ではなく本文中の分岐・
+> ラベル）である限り、それは**厳密な命令アドレス**であり、関数先頭でなくても正しい。
+
+**Step 2: strong 証拠（補正してよい）— 2つ以上が独立に成立した場合のみ**
+
+| # | strong 証拠 | 実測例 |
+|---|---|---|
+| S1 | `a+0x400` が **マッピング非依存の GT 集合**に属する（オペコードテーブル impl 532件 / GT E8 ターゲット集合 / **`.rdata`・`.data` からの imm32 参照**）で、`a` は属さない | Actor vtable `0xA6DFF4+0x20` = `0x5E5240` |
+| S2 | `a` の先頭バイトが**命令境界として破綻**し（mid-instruction）、`a+0x400` が教科書的プロローグ（`51 8b 4c 24 ..` / `83 ec ..` / SEH `6a ff 68 .. 64 a1 ..`） | `0x401B00`(garbage) vs `0x401F00` |
+| S3 | `e8(a)==0` **かつ** `e8(a+0x400)≥3`（＝`0x401B00`: 0 vs **4,826**、`0x401B20`: 0 vs **7,530**） | オラクル実測 |
+| S4 | 記録元スクリプトが既知の誤り生成系（**rawptr 0x800** の加算、生 E8 byte 走査の窓ずれ `impl+0x400`） | opid `0x1078` の `0x24cd158d` |
+
+**Step 3: weak 証拠（単独では判定不可・補正根拠に使えない）**
+
+| weak 指標 | なぜ弱いか（実測） |
+|---|---|
+| `e8(a)==0` | 仮想関数・シンコール・スタブ・`mov al,1;ret` は呼出0が正常（V9 で K1=8/K4=11 件） |
+| `cc×4` 前置が無い | int3 パディングが **1〜3 バイト**の関数境界を落とす（`0x693FDC = 5e 59 c3 cc` → `0x693FE0` は正当な関数先頭） |
+| `.text` 内の imm32 参照数 | 命令境界ずれの誤デコード由来が多数（初版ヒューリスティックは 49 LOW / 8,878 AMBIG で失敗） |
+| 「0x100 アライメントでない」 | 関数先頭にアライメント保証はない |
+| `a+0x400` だけが関数先頭に見える | `a` 自体が正当な命令アドレスのこともある（下記例） |
+
+**Step 4: 実測で確認した2例（主張の出所が判定を決める）**
+
+| アドレス | 実測 | 結論 |
+|---|---|---|
+| `0x67108F` | 生バイト `e8 5c da ff ff` = **`call 0x66EAF0`**（正しい命令）。E8 呼出 **0** 件、直前4バイト `48 08 8b cf`（非 cc）。一方 `+0x400` = `0x67148F` は `06 8b 90 70 01 00 00`（`push es` ＝ mid-instruction 崩壊） | **`a` が正、+0x400 すると壊れる** → 補正しない |
+| `0xA126A6` | `a` も `a+0x400` も教科書的プロローグを**どちらも持たない**（`c8 81 a9 00` = `enter` / `00 89 44 24 10` = 崩壊）。E8 呼出とも 0 | プロローグ判定では**決まらない** → 出所（デコンパイル命令行）が正 |
+
+**Step 5: 決定手順（テンプレート）**
+
+1. 主張の種類を特定 → 非「関数エントリ」なら**補正せず終了**
+2. 関数エントリなら strong を評価（S1〜S4）。**独立に2つ以上**成立するか
+3. **変更前に必ず、その位置の実命令を読む**（`jmp a` / `push a` / `call [a]` が在れば `a` が正しい）
+4. strong 2つ以上成立 ＋ `a` が mid-instruction なら +0x400（または GT から再導出）を適用
+5. 適用後は行数・CRLF・BOM 不変を assert し `.bak` を取る
+6. 表のような**回帰コーパス**（V3 の17件）でルールを再検証する
+
+**回帰コーパス（V3 で全件「誤検出＝ドキュメント正」と確定した17件）**:
+`0x597540`（`jmp` 先）/ `0x8B9500`（呼出元）/ `0x8B97A0`（`push` オペランド）/ `0x9ED790`
+/ `0x4AE990`（vt+0x354）/ `0x9FAF40`・`0x9FB000`・`0x9FB060`・`0x9FB0C0`・`0x9FB120`・
+`0x9FB180`・`0x9FB1E0`（シンコール7件）/ `0x693FE0`・`0x6A6890`（MGEF 表21件の均質性）/
+`0x4AE900`（関数内ダンプ位置）/ `0x695000`（範囲端）/ `0x697280`（area 概略、実呼出は
+`0x69730A` = +0x8A）。
+
 ### 49.1 依頼4-1（audio）: FUN_006ad030 / FUN_006aa1a0
 
 - `FUN_006ad030`（0x6ad030-0x6ade00、1080 命令）= audio オブジェクト（this）の音量適用更新。
@@ -9563,7 +9688,7 @@ onlyifnot 側も `0058C7B6 fstp st(0)` で残値を捨ててから `fld1` を積
 ### §56.2 音響残件 — フェード型 3/7/8・region 型値・music 状態機械 ? s56_audio_residual.md
 
 - 数値ヘルパ [確定]: `0x9828C0 = _ftol2`（f64→int32 ゼロ方向切り捨て; SSE2 は cvttsd2si、x87 は fistp+制御語 0x0C00、範囲外 0x80000000。GT フラグ [0xBAABE0]）。`0x9828DC = _ftol2_sse`（cvttsd2si 直接）。`0x986CD0 = log10`（fldlg2+fyl2x; SSE2 は 0x9970F0 へ分岐; GT [0xBAABDC]）。
-- log10 呼出全数（音響域 5 箇所）[確定]: 0x58C802 / 0x6AA253（mB 変換）/ 0x6AEC06（型8）/ 0x6AECF0（型7）/ 0x6B6FC3（距離減衰 0x6B6F40 内）。下限クランプ `[0xA785E8]=1e-5`。
+- log10 呼出全数（音響域 5 箇所）[確定]: 0x58C802 / 0x6AA253（mB 変換）/ 0x6AEC06（型8）/ 0x6AECF0（型7）/ 0x6B6FC3（距離減衰 0x6B7340 内）。下限クランプ `[0xA785E8]=1e-5`。
 - フェードリスト [AM+0x308] 構造 [確定]: オブジェクト {+0=vtable, +4=head}、ノード 20B {+0=next, +4=link, +8=payload}、payload ctor 0x6AA590 = `{+0=int type, +4=int formID, +8=int startTick, +0xC=int endTick, +0x10=float 0.0}`。
 - 生成 API FUN_6AB8D0(AM, formID, fadeOut, durationMs) [確定]: `bSoundEnabled([0xB16178])==0` なら 0。`end = now([0xB33EA0]) + ms`; `type = fadeOut!=0 ? 7 : 8`。生成サイト: 0x6AF105/0x6AF1??/0x6AF553（region fade-in 5000ms, 型8）/ 0x6AF3C4（region 離脱 fade-out 5000ms, 型7）/ 0x6AC554（全停止 FUN_6AC210, sec×1000）/ 0x6ACB59・0x6ACB92（型3）。
 - 型 8 = フェードイン [確定 0x6AEB58]: 対象を [AM+0x300] から検索、未再生なら `[sound+0x46]=0x2710`（-100dB）+開始。途中 `elapsed = 1−(end−now)/(end−start)` で `v = trunc(−2000×log10(elapsed))` → clamp ≤10000 → `0x6A90C0(sound, v)`。完了で `[sound+0x46]=0`+ノード破棄。
@@ -10008,7 +10133,7 @@ onlyifnot 側も `0058C7B6 fstp st(0)` で残値を捨ててから `fld1` を積
 - 残 6 (最優先: 星座能力 (spell/ability) の付与処理 VA — 選択は `player+0x590` に保存される所まで確定、付与本体は未特定。候補: chargen 確定系 0x5D7090 (`[0xB3A6D1]=1`)、0x5D6D20 / 0x5D70C3 (`player+0x590` 参照)。次の手: actor vt+0x2DC (AddSpell 同系) 経路か ESM chargen クエスト側)。
 
 ### §59.5 経済・所持品 (`s57_economy.md` Wave 5 追補, 1-9)
-- **価格経路の完全化** [確定]: 基礎価値 V → `coef(有効交渉スキル, disposition) ± 0.01·[Player+0x11C]` → `× V` → `round(0x484370)`。乗算箇所は 0x488F49 (買) / 0x4890EC (売)。ラッパ先頭: **0x5E11A0 = sell / 0x5E1200 = buy / 0x5E1100 = haggle**。`0x547B90` = 有効スキル (`clamp(skill + 0.4·Luck − 20, 0, 100)`)。BarterMenu は `coef × 100` を百分率表示。
+- **価格経路の完全化** [確定]: 基礎価値 V → `coef(有効交渉スキル, disposition) ± 0.01·[Player+0x11C]` → `× V` → `round(0x484370)`。乗算箇所は 0x488F49 (買) / 0x4890EC (売)。ラッパ先頭: **0x5E11A0 = sell / 0x5E1200 = buy / 0x5E1500 = haggle**。`0x547B90` = 有効スキル (`clamp(skill + 0.4·Luck − 20, 0, 100)`)。BarterMenu は `coef × 100` を百分率表示。
   - 0.01 は係数式 0x5481C0 / 0x548240 の内部 (R6 解決)。残は `[Player+0x11C]` の名称と vt+0x224 / vt+0x284 の index 対応のみ。
 - **R1 前提を訂正** [確定]: 0x676EE0 は罰金額を計算しない (犯罪的オブジェクトの登録処理)。`vt+0x8C` = 0x65AA60 (3 クラス共通、登録/解除)。実式は `0x606140 (kind 別額) × 0x5234A0 (最大倍率) → [esi+0xC]->vt+0x254(fine)`。
 - R2 整理 [確定]: 1500 = 0x6605A0 (アクター観測摘除) / 2000・3000 = 0x6773B0 (犯罪記録、interior/exterior) / 10000 = iCrimeAlarmRecDistance (登録ループ)。
@@ -10338,10 +10463,10 @@ NiParticleSystem 全49 modifier カタログ、Borland CRT 起動順序、Timer:
 | 1: WinMain | Timer生成, RegisterClass, CreateWindowEx, ShowWindow | 0x494950 |
 | 2: D3D9作成 | Direct3DCreate9 → CreateDevice | 0x498F00 |
 | 3: コンテンツ読込 | INI, ESM, BSA, MENU XML, Havok, Audio, Input, Shader | — |
-| 4: メッセージループ | PeekMessage → Translate → Dispatch | 0x494B10 |
+| 4: メッセージループ | PeekMessage → Translate → Dispatch | 0x494F10 |
 | 5: フレームループ | PerFrameUpdate (0x40D800) | — |
 
-**メッセージループ構造** (0x494B10〜0x494B67): PeekMessageA で全メッセージを消費 → ゲームフレーム実行。OS メッセージを優先する標準ゲームループ。
+**メッセージループ構造** (0x494F10〜0x494B67): PeekMessageA で全メッセージを消費 → ゲームフレーム実行。OS メッセージを優先する標準ゲームループ。
 
 **WinMain → フレームループ**: WinMain 中でサブシステム初期化 → 最後にメッセージループ → 各フレームで PerFrameUpdate (0x40D800) を呼ぶ。
 
@@ -10653,3 +10778,977 @@ if (mgef.flags & 0x100) duration *= factor; else magnitude *= factor;
 
 - md: `s90_magic_m1_m2_pipeline.md` / `s91_magic_m3_mgef_dispatch.md` / `s92_magic_m9_handlers.md` / `s93_magic_m10_apply.md` / `s94_magic_m11_cost.md` / `s95_magic_m12_delivery.md` / `s96_magic_m13_alchemy_poison.md` / `s97_magic_m14_ai_spell.md` / `s98_magic_m15_misc.md`
 - TODO: `TODO_magic.md` (正本) / `TODO_re49.md` T節 (同期)
+
+---
+
+## §67 Script VM MISS ハンドラ台帳（480 件）（2026-10-22）
+
+### §67.0 概要
+
+Android版 Script VM の移植率を定量化するため、`Oblivion.exe` の Script VM 関数テーブルを全数走査し、Android版で未実装のハンドラ（MISS）を **480 件** 特定・台帳化した。`tmp/re/annotate_db.json` に登録済みの 367 関数は除外している。
+
+- 対象: Script VM 関数テーブル `0xB0AF48`（532 エントリ、stride 0x28）
+- 判定: 各エントリの実装関数を capstone で逆アセンブルし、共通シグネチャ（gate `0x4FAE80` 呼出）を確認
+- 頻度: SCDA スキャン実測値（`tmp/re/copilot_archive/scda_opcode_table_out.txt`）
+- 本節の原表: `tmp/re/svm_495_miss_addrs.md`
+
+### §67.1 情報源 [確定]
+
+| 項目 | 値 |
+|---|---|
+| VM 関数テーブル | 0xB0AF48 |
+| エントリ数 | 532 |
+| stride | 0x28 |
+| gate / trampoline | 0x4FAE80 |
+| opcode 名の出典 | `tmp/re/s57_svm_8_opcode_table.txt`（141 function opcodes）+ block-type 0x00〜0x1E |
+| 頻度の出典 | `tmp/re/copilot_archive/scda_opcode_table_out.txt`（SCDA 実測） |
+| 除外済み | `tmp/re/annotate_db.json` 既登録 367 funcs |
+| MISS 件数 | 480 |
+| opcode 範囲 | 0x0000 〜 0x1170 |
+
+### §67.2 ハンドラ共通シグネチャ [確定]
+
+```asm
+push ecx              ; return slot
+mov  ecx,[esp+N]      ; args
+lea  eax,[esp+4]      ; out ptr
+call 0x004FAE80       ; trampoline/gate
+test al,al / jne      ; gate check
+... (actual op) ...
+mov al,1 / ret        ; return true
+```
+
+- 480 ハンドラの実装サイズは **153B〜160B** に収まり、全件が同一の prologue / epilogue を持つ定型関数である [確定]。
+- gate `0x4FAE80` は引数デコードと out ポインタ設定を担う共通 trampoline。移植側では `native_scda_bridge.cpp` の引数解決 1 箇所に集約できる。
+- gate が false を返した場合のみ `xor al,al / ret` で早期復帰する（戻り値 true/false の二値）。
+- 469 / 480 件が 1 つ以上の外部関数を呼出しており、ハンドラ本体は「gate → 実処理 1〜5 呼出 → `mov al,1`」の薄いラッパである。
+
+### §67.3 内訳 [確定]
+
+| 区分 | 件数 | 備考 |
+|---|---|---|
+| block-type（opcode < 0x100） | 29 | イベントブロック（OnLoad / OnStartCombat 等） |
+| 中間域（0x100〜0xFFF） | 124 | 条件・式系 |
+| command-type（≥ 0x1000） | 327 | スクリプトコマンド |
+| 合計 | 480 | |
+
+頻度が実測されているのは 112 件（合計 46,104 回）。残り 368 件は SCDA スキャンで未観測のため頻度欄が `-` である。
+
+| 頻度帯 | 件数 |
+|---|---|
+| ≥ 1,000 | 7 |
+| ≥ 100 | 27 |
+| ≥ 10 | 66 |
+| < 10 | 46 |
+
+### §67.4 頻度上位 50 件 [確定]
+
+| rank | OpID | 名称 | Impl Addr | Size | Freq | Gate | 外部呼出 (先頭5) |
+|------|------|------|-----------|------|------|------|------------------|
+| 1 | 0x0015 | OnLoad | 0x00504560 | 159B | 12098 | - | 0x4fb5f0 |
+| 2 | 0x0019 | OnStartCombat | 0x005041D0 | 159B | 10530 | - | 0x4fae80, 0x4fb5f0 |
+| 3 | 0x001C | OnActorEquip | 0x00503E10 | 157B | 5647 | - | 0x4fae80, 0x4fb5f0 |
+| 4 | 0x0010 | OnPackageDone | 0x00504460 | 159B | 4344 | - | 0x4fae80, 0x4fb5f0 |
+| 5 | 0x001D | OnActorUnequip | 0x00503E90 | 159B | 2321 | - | 0x4fae80, 0x4fb5f0 |
+| 6 | 0x0011 | ScriptEffectStart | 0x005022F0 | 160B | 2023 | - | |
+| 7 | 0x0018 | OnTrigger | 0x00504660 | 160B | 1986 | - | 0x4fae80, 0x4fb5f0 |
+| 8 | 0x0017 | OnSell | 0x00503D90 | 160B | 953 | - | 0x4fae80, 0x4fb5f0 |
+| 9 | 0x101D | RemoveSpell | 0x00510B90 | 157B | 580 | - | 0x4fae80, 0x9832e6, 0x4da2a0, 0x579b60, 0x4da2a0 |
+| 10 | 0x1000 | MessageBox | 0x00513280 | 156B | 482 | - | 0x4fae80, 0x981630, 0x4fab20, 0x402e30, 0x984bcf |
+| 11 | 0x109E | MoveToMarker | 0x00512870 | 160B | 463 | - | 0x4fae80, 0x512540 |
+| 12 | 0x1052 | RemoveItem | 0x00513810 | 155B | 374 | - | 0x4FAE80, 0x9832E6, 0x41E6F0, 0x487760, 0x9832E6 |
+| 13 | 0x101C | AddSpell | 0x00514950 | 160B | 260 | - | 0x4fae80, 0x9832e6, 0x4da2a0, 0x579b60, 0x402e30 |
+| 14 | 0x1033 | Say | 0x005118D0 | 158B | 240 | - | 0x4fae80, 0x9832e6, 0x9832e6, 0x4db260, 0x6c5420 |
+| 15 | 0x1059 | Message | 0x00513600 | 158B | 230 | - | 0x4fae80, 0x981630, 0x4fab20, 0x402e30, 0x57acc0 |
+| 16 | 0x1097 | AddScriptPackage | 0x005123A0 | 160B | 212 | - | 0x4fae80, 0x9832e6, 0x5e6b40, 0x4fbf90, 0x4fbf90 |
+| 17 | 0x1016 | StartCombat | 0x00514660 | 159B | 186 | - | 0x4fae80, 0x9832e6, 0x5e6b40, 0x4da2a0, 0x4a7a60 |
+| 18 | 0x1034 | SayTo | 0x00511AB0 | 159B | 169 | - | 0x4fae80, 0x9832e6, 0x9832e6, 0x401f00, 0x401f00 |
+| 19 | 0x1056 | StartConversation | 0x0050AE10 | 159B | 160 | - | 0x4FAE80, 0x9832E6, 0x9832E6, 0x5660A0, 0x4268B0 |
+| 20 | 0x1123 | PlayMagicShaderVisuals | 0x00505FE0 | 157B | 148 | - | 0x4FAE80, 0x6ECC80, 0x43F8C0, 0x401F00, 0x6A0980 |
+| 21 | 0x1064 | PickIdle | 0x00511FA0 | 156B | 146 | - | 0x9832e6, 0x521450, 0x472ea0, 0x520200, 0x477db0 |
+| 22 | 0x112B | DisableLinkedPathPoints | 0x005062D0 | 157B | 130 | - | 0x4e51f0 |
+| 23 | 0x1146 | Reset3DState | 0x0050E320 | 155B | 125 | - | 0x4da4f0, 0x4212e0 |
+| 24 | 0x1053 | ModDisposition | 0x00503A50 | 157B | 120 | - | 0x4fae80, 0x9832e6, 0x4f4e20 |
+| 25 | 0x105A | SetAlert | 0x00503BC0 | 159B | 105 | - | 0x4fae80, 0x9832e6, 0x5e0e10 |
+| 26 | 0x10EE | EquipItem | 0x005162B0 | 159B | 105 | - | 0x4fae80, 0x9832e6, 0x41e6f0, 0x485e80, 0x41df10 |
+| 27 | 0x1124 | PlayMagicEffectVisuals | 0x00512CA0 | 155B | 104 | - | 0x4fae80, 0x6ecc80, 0x43f8c0, 0x986000, 0x986300 |
+| 28 | 0x1025 | PlaceAtMe | 0x00514B50 | 153B | 97 | - | 0x4fae80, 0x47df80, 0x986300, 0x986000, 0x469690 |
+| 29 | 0x112A | EnableLinkedPathPoints | 0x005062B0 | 160B | 97 | - | 0x4e51f0 |
+| 30 | 0x1117 | SetOwnership | 0x005075A0 | 157B | 96 | - | 0x4FAE80, 0x423660 |
+| 31 | 0x1017 | StopCombat | 0x00501D30 | 158B | 93 | - | 0x9832e6 |
+| 32 | 0x1125 | StopMagicShaderVisuals | 0x005061B0 | 156B | 90 | - | 0x4fae80, 0x678e70, 0x4da2a0, 0x4da2a0, 0x579b60 |
+| 33 | 0x105C | Look | 0x0050AFD0 | 159B | 87 | - | 0x4fae80, 0x9832e6, 0x423970 |
+| 34 | 0x10EC | SetGhost | 0x00505A30 | 159B | 75 | - | 0x4fae80, 0x9832e6, 0x5e8ec0, 0x579b60 |
+| 35 | 0x10CC | SetDestroyed | 0x00505680 | 160B | 68 | - | 0x4FAE80, 0x46AA50, 0x46AA50 |
+| 36 | 0x108C | ResurrectActor | 0x00510150 | 159B | 63 | - | 0x9832e6, 0x4fae80 |
+| 37 | 0x1061 | DisablePlayerControls | 0x005047F0 | 160B | 60 | - | 0x663070, 0x4F7470 |
+| 38 | 0x10DD | SetOpenState | 0x0050C560 | 156B | 58 | - | 0x4fae80, 0x4de660, 0x4dd260, 0x4d90d0, 0x4212f0 |
+| 39 | 0x1058 | AddTopic | 0x00503B60 | 160B | 57 | - | 0x4fae80, 0x669690 |
+| 40 | 0x1060 | EnablePlayerControls | 0x005047E0 | 160B | 57 | - | 0x663070, 0x663070, 0x4F7470 |
+| 41 | 0x10B2 | PlaySound3D | 0x00509520 | 160B | 53 | - | 0x4fae80, 0x6ae0a0, 0x6b7360, 0x6ac3e0, 0x6b7190 |
+| 42 | 0x1003 | SetEssential | 0x0050B780 | 159B | 47 | - | 0x4fae80 |
+| 43 | 0x1101 | StopCombatAlarmOnActor | 0x00501D80 | 158B | 44 | - | 0x9832e6, 0x675d50 |
+| 44 | 0x112D | ForceWeather | 0x00500D90 | 160B | 43 | - | 0x4FAE80, 0x542EA0, 0x542260 |
+| 45 | 0x1142 | Dispel | 0x00502140 | 160B | 40 | - | 0x4fae80, 0x9832e6, 0x6a1f70, 0x414f80 |
+| 46 | 0x10A8 | SetFactionReaction | 0x00503810 | 160B | 36 | - | 0x4fae80, 0x51f0c0 |
+| 47 | 0x1144 | TriggerHitShader | 0x00506450 | 160B | 36 | - | 0x4FAE80, 0x7EB080 |
+| 48 | 0x1129 | SetActorAlpha | 0x0050D680 | 158B | 35 | - | 0x4fae80, 0x5ee1b0 |
+| 49 | 0x105D | StopLook | 0x0050B070 | 159B | 29 | - | 0x9832e6, 0x423970 |
+| 50 | 0x1104 | SetWeather | 0x00507AE0 | 160B | 29 | - | 0x4fae80, 0x542ea0, 0x53fb60, 0x542260 |
+
+### §67.5 移植優先度への示唆 [推定]
+
+- 頻度上位はイベント系が独占する（OnLoad 12,098 / OnStartCombat 10,530 / OnActorEquip 5,647 / OnPackageDone 4,344 / OnActorUnequip 2,321 / ScriptEffectStart 2,023 / OnTrigger 1,986）。スクリプトのコマンド実行より先に**イベント発火経路**を実装するほうが実効カバレッジが高い。
+- コマンド系の上位は RemoveSpell 580 / MessageBox 482 / MoveToMarker 463 / RemoveItem 374 / AddSpell 260 / Say 240 / Message 230。
+- 外部呼出の最多は `0x4FAE80`（引数デコード）と `0x4FB5F0`（イベント・コンテナ照合、§69.2）。個々のハンドラ実装より先にこの 2 関数の移植が効く。
+- `Gate` 列は本エクスポートでは全件 `-`（未計測）。共通シグネチャに gate 呼出が含まれることは ASM で確認済み [確定]。
+
+### §67.6 全 480 件（付録）[確定]
+
+| rank | OpID | 名称 | Impl Addr | Size | Freq | Gate | 外部呼出 (先頭5) |
+|------|------|------|-----------|------|------|------|------------------|
+| 1 | 0x0015 | OnLoad | 0x00504560 | 159B | 12098 | - | 0x4fb5f0 |
+| 2 | 0x0019 | OnStartCombat | 0x005041D0 | 159B | 10530 | - | 0x4fae80, 0x4fb5f0 |
+| 3 | 0x001C | OnActorEquip | 0x00503E10 | 157B | 5647 | - | 0x4fae80, 0x4fb5f0 |
+| 4 | 0x0010 | OnPackageDone | 0x00504460 | 159B | 4344 | - | 0x4fae80, 0x4fb5f0 |
+| 5 | 0x001D | OnActorUnequip | 0x00503E90 | 159B | 2321 | - | 0x4fae80, 0x4fb5f0 |
+| 6 | 0x0011 | ScriptEffectStart | 0x005022F0 | 160B | 2023 | - | |
+| 7 | 0x0018 | OnTrigger | 0x00504660 | 160B | 1986 | - | 0x4fae80, 0x4fb5f0 |
+| 8 | 0x0017 | OnSell | 0x00503D90 | 160B | 953 | - | 0x4fae80, 0x4fb5f0 |
+| 9 | 0x101D | RemoveSpell | 0x00510B90 | 157B | 580 | - | 0x4fae80, 0x9832e6, 0x4da2a0, 0x579b60, 0x4da2a0 |
+| 10 | 0x1000 | MessageBox | 0x00513280 | 156B | 482 | - | 0x4fae80, 0x981630, 0x4fab20, 0x402e30, 0x984bcf |
+| 11 | 0x109E | MoveToMarker | 0x00512870 | 160B | 463 | - | 0x4fae80, 0x512540 |
+| 12 | 0x1052 | RemoveItem | 0x00513810 | 155B | 374 | - | 0x4FAE80, 0x9832E6, 0x41E6F0, 0x487760, 0x9832E6 |
+| 13 | 0x101C | AddSpell | 0x00514950 | 160B | 260 | - | 0x4fae80, 0x9832e6, 0x4da2a0, 0x579b60, 0x402e30 |
+| 14 | 0x1033 | Say | 0x005118D0 | 158B | 240 | - | 0x4fae80, 0x9832e6, 0x9832e6, 0x4db260, 0x6c5420 |
+| 15 | 0x1059 | Message | 0x00513600 | 158B | 230 | - | 0x4fae80, 0x981630, 0x4fab20, 0x402e30, 0x57acc0 |
+| 16 | 0x1097 | AddScriptPackage | 0x005123A0 | 160B | 212 | - | 0x4fae80, 0x9832e6, 0x5e6b40, 0x4fbf90, 0x4fbf90 |
+| 17 | 0x1016 | StartCombat | 0x00514660 | 159B | 186 | - | 0x4fae80, 0x9832e6, 0x5e6b40, 0x4da2a0, 0x4a7a60 |
+| 18 | 0x1034 | SayTo | 0x00511AB0 | 159B | 169 | - | 0x4fae80, 0x9832e6, 0x9832e6, 0x401f00, 0x401f00 |
+| 19 | 0x1056 | StartConversation | 0x0050AE10 | 159B | 160 | - | 0x4FAE80, 0x9832E6, 0x9832E6, 0x5660A0, 0x4268B0 |
+| 20 | 0x1123 | PlayMagicShaderVisuals | 0x00505FE0 | 157B | 148 | - | 0x4FAE80, 0x6ECC80, 0x43F8C0, 0x401F00, 0x6A0980 |
+| 21 | 0x1064 | PickIdle | 0x00511FA0 | 156B | 146 | - | 0x9832e6, 0x521450, 0x472ea0, 0x520200, 0x477db0 |
+| 22 | 0x112B | DisableLinkedPathPoints | 0x005062D0 | 157B | 130 | - | 0x4e51f0 |
+| 23 | 0x1146 | Reset3DState | 0x0050E320 | 155B | 125 | - | 0x4da4f0, 0x4212e0 |
+| 24 | 0x1053 | ModDisposition | 0x00503A50 | 157B | 120 | - | 0x4fae80, 0x9832e6, 0x4f4e20 |
+| 25 | 0x105A | SetAlert | 0x00503BC0 | 159B | 105 | - | 0x4fae80, 0x9832e6, 0x5e0e10 |
+| 26 | 0x10EE | EquipItem | 0x005162B0 | 159B | 105 | - | 0x4fae80, 0x9832e6, 0x41e6f0, 0x485e80, 0x41df10 |
+| 27 | 0x1124 | PlayMagicEffectVisuals | 0x00512CA0 | 155B | 104 | - | 0x4fae80, 0x6ecc80, 0x43f8c0, 0x986000, 0x986300 |
+| 28 | 0x1025 | PlaceAtMe | 0x00514B50 | 153B | 97 | - | 0x4fae80, 0x47df80, 0x986300, 0x986000, 0x469690 |
+| 29 | 0x112A | EnableLinkedPathPoints | 0x005062B0 | 160B | 97 | - | 0x4e51f0 |
+| 30 | 0x1117 | SetOwnership | 0x005075A0 | 157B | 96 | - | 0x4FAE80, 0x423660 |
+| 31 | 0x1017 | StopCombat | 0x00501D30 | 158B | 93 | - | 0x9832e6 |
+| 32 | 0x1125 | StopMagicShaderVisuals | 0x005061B0 | 156B | 90 | - | 0x4fae80, 0x678e70, 0x4da2a0, 0x4da2a0, 0x579b60 |
+| 33 | 0x105C | Look | 0x0050AFD0 | 159B | 87 | - | 0x4fae80, 0x9832e6, 0x423970 |
+| 34 | 0x10EC | SetGhost | 0x00505A30 | 159B | 75 | - | 0x4fae80, 0x9832e6, 0x5e8ec0, 0x579b60 |
+| 35 | 0x10CC | SetDestroyed | 0x00505680 | 160B | 68 | - | 0x4FAE80, 0x46AA50, 0x46AA50 |
+| 36 | 0x108C | ResurrectActor | 0x00510150 | 159B | 63 | - | 0x9832e6, 0x4fae80 |
+| 37 | 0x1061 | DisablePlayerControls | 0x005047F0 | 160B | 60 | - | 0x663070, 0x4F7470 |
+| 38 | 0x10DD | SetOpenState | 0x0050C560 | 156B | 58 | - | 0x4fae80, 0x4de660, 0x4dd260, 0x4d90d0, 0x4212f0 |
+| 39 | 0x1058 | AddTopic | 0x00503B60 | 160B | 57 | - | 0x4fae80, 0x669690 |
+| 40 | 0x1060 | EnablePlayerControls | 0x005047E0 | 160B | 57 | - | 0x663070, 0x663070, 0x4F7470 |
+| 41 | 0x10B2 | PlaySound3D | 0x00509520 | 160B | 53 | - | 0x4fae80, 0x6ae0a0, 0x6b7360, 0x6ac3e0, 0x6b7190 |
+| 42 | 0x1003 | SetEssential | 0x0050B780 | 159B | 47 | - | 0x4fae80 |
+| 43 | 0x1101 | StopCombatAlarmOnActor | 0x00501D80 | 158B | 44 | - | 0x9832e6, 0x675d50 |
+| 44 | 0x112D | ForceWeather | 0x00500D90 | 160B | 43 | - | 0x4FAE80, 0x542EA0, 0x542260 |
+| 45 | 0x1142 | Dispel | 0x00502140 | 160B | 40 | - | 0x4fae80, 0x9832e6, 0x6a1f70, 0x414f80 |
+| 46 | 0x10A8 | SetFactionReaction | 0x00503810 | 160B | 36 | - | 0x4fae80, 0x51f0c0 |
+| 47 | 0x1144 | TriggerHitShader | 0x00506450 | 160B | 36 | - | 0x4FAE80, 0x7EB080 |
+| 48 | 0x1129 | SetActorAlpha | 0x0050D680 | 158B | 35 | - | 0x4fae80, 0x5ee1b0 |
+| 49 | 0x105D | StopLook | 0x0050B070 | 159B | 29 | - | 0x9832e6, 0x423970 |
+| 50 | 0x1104 | SetWeather | 0x00507AE0 | 160B | 29 | - | 0x4fae80, 0x542ea0, 0x53fb60, 0x542260 |
+| 51 | 0x10F3 | SetRestrained | 0x00505B70 | 159B | 27 | - | 0x4fae80, 0x9832e6, 0x5e8e60, 0x5e02b0, 0x5e8e60 |
+| 52 | 0x1151 | SetIgnoreFriendlyHits | 0x00506750 | 155B | 27 | - | 0x4fae80, 0x46ab20 |
+| 53 | 0x10C2 | SetPCExpelled | 0x0050BB70 | 156B | 26 | - | 0x4FAE80, 0x6ECC80, 0x4CA970, 0x675D50, 0x67F0A0 |
+| 54 | 0x110E | ForceActorValue | 0x00501890 | 160B | 26 | - | 0x4FAE80, 0x9832E6 |
+| 55 | 0x10F1 | SetUnconscious | 0x00505AC0 | 160B | 25 | - | 0x4fae80, 0x9832e6, 0x5e8e30, 0x5e02b0, 0x5e8e30 |
+| 56 | 0x10F8 | ModPCFame | 0x0050C980 | 157B | 21 | - | 0x4fae80, 0x579b60 |
+| 57 | 0x10B1 | SetCombatStyle | 0x00505250 | 160B | 18 | - | 0x4fae80, 0x9832e6, 0x5e0fb0 |
+| 58 | 0x10BB | SetCellPublicFlag | 0x005031A0 | 158B | 18 | - | 0x4fae80, 0x4c9840 |
+| 59 | 0x1158 | ReleaseWeatherOverride | 0x00507B90 | 158B | 17 | - | 0x542EA0 |
+| 60 | 0x10AD | RemoveAllItems | 0x005074F0 | 160B | 16 | - | 0x4FAE80, 0x41E6F0, 0x492E70, 0x665260 |
+| 61 | 0x10C0 | CloseCurrentOblivionGate | 0x00515D20 | 160B | 16 | - | 0x4fae80, 0x4d8e40, 0x4d7630, 0x42b470, 0x42b460 |
+| 62 | 0x113C | SetScale | 0x005093B0 | 157B | 15 | - | 0x4FAE80, 0x4DB520, 0x9832E6, 0x65A2C0 |
+| 63 | 0x1055 | ShowMap | 0x0050AD00 | 158B | 13 | - | 0x4fae80, 0x4d7730, 0x4d7730, 0x42b310, 0x4d7730 |
+| 64 | 0x110F | ModPCSkill | 0x0050D020 | 160B | 13 | - | 0x4fae80, 0x565c50, 0x446af0, 0x5f23b0, 0x65fa90 |
+| 65 | 0x10C4 | SetPCFactionMurder | 0x0050BD80 | 160B | 10 | - | 0x4FAE80, 0x4FAE80, 0x4FAE80, 0x4FAE80, 0x4D8360 |
+| 66 | 0x1150 | ResetHealth | 0x005028F0 | 157B | 10 | - | 0x5f1910 |
+| 67 | 0x1004 | Rotate | 0x00510620 | 160B | 9 | - | 0x4fae80, 0x4d8a10, 0x4d89f0, 0x4d89d0, 0x4d7af0 |
+| 68 | 0x115D | SetSceneIsComplex | 0x0050E9D0 | 160B | 9 | - | 0x4fae80 |
+| 69 | 0x1137 | ModPCMiscStat | 0x0050D740 | 158B | 8 | - | 0x4FAE80 |
+| 70 | 0x116E | PushActorAway | 0x0050EAB0 | 160B | 8 | - | 0x4fae80, 0x5f4880, 0x547690 |
+| 71 | 0x1170 | ClearOwnership | 0x00507620 | 158B | 8 | - | 0x41F600 |
+| 72 | 0x1007 | SetPos | 0x00508FC0 | 160B | 7 | - | 0x4fae80, 0x4d8a30, 0x9832e6, 0x65a2c0, 0x88d370 |
+| 73 | 0x1098 | RemoveScriptPackage | 0x0050B6A0 | 160B | 7 | - | 0x9832e6, 0x5e03a0, 0x4fbf90 |
+| 74 | 0x10A5 | RemoveMe | 0x00500450 | 155B | 7 | - | 0x4FAE80, 0x9832E6, 0x4D8880, 0x5E02E0, 0x485E00 |
+| 75 | 0x10EF | UnequipItem | 0x005164C0 | 158B | 7 | - | 0x4fae80, 0x9832e6, 0x5e02e0, 0x485e00, 0x485fa0 |
+| 76 | 0x10C6 | SetPCFactionSteal | 0x0050BE00 | 158B | 6 | - | 0x4FAE80, 0x4FAE80, 0x4FAE80, 0x4D8360, 0x4D8360 |
+| 77 | 0x110D | SetQuestObject | 0x005052D0 | 160B | 6 | - | 0x4fae80 |
+| 78 | 0x1156 | SetRigidBodyMass | 0x005131F0 | 158B | 6 | - | 0x4fae80, 0x88bbe0 |
+| 79 | 0x10AE | WakeUpPC | 0x0050B700 | 157B | 5 | - | 0x4fae80, 0x57b4c0 |
+| 80 | 0x10D1 | SetForceRun | 0x0050C290 | 156B | 5 | - | 0x9832e6, 0x4fae80, 0x579b60 |
+| 81 | 0x114E | SetShowQuestItems | 0x0050AA40 | 160B | 5 | - | 0x4fae80 |
+| 82 | 0x116F | SetActorsAI | 0x00506DE0 | 159B | 5 | - | 0x4fae80, 0x9832e6, 0x4da2a0, 0x579b60 |
+| 83 | 0x1009 | SetAngle | 0x00509110 | 157B | 4 | - | 0x4fae80, 0x4d8a10, 0x4d89f0, 0x4d89d0, 0x4d7af0 |
+| 84 | 0x10D3 | SetForceSneak | 0x0050C390 | 160B | 4 | - | 0x9832e6, 0x4fae80, 0x579b60 |
+| 85 | 0x1145 | RefreshTopicList | 0x005064A0 | 160B | 4 | - | 0x59f970 |
+| 86 | 0x114D | EssentialDeathReload | 0x005071D0 | 160B | 4 | - | 0x4fae80, 0x9811e2, 0x579c10, 0x9811e2 |
+| 87 | 0x116B | PurgeCellBuffers | 0x00500C60 | 159B | 4 | - | 0x442630, 0x43fc20, 0x404c60 |
+| 88 | 0x116C | SetPlayerInSEWorld | 0x0050EA30 | 158B | 4 | - | 0x4fae80, 0x579b60 |
+| 89 | 0x10D8 | SetDoorDefaultOpen | 0x0050C430 | 160B | 3 | - | 0x4fae80, 0x4d8260, 0x4d8270, 0x4d82e0, 0x4d8260 |
+| 90 | 0x1159 | SetAllReachable | 0x005012F0 | 159B | 3 | - | 0x4fae80 |
+| 91 | 0x1164 | ShowDialogSubtitles | 0x005007D0 | 159B | 3 | - | 0x4FAE80 |
+| 92 | 0x1165 | ForceCloseOblivionGate | 0x005160D0 | 158B | 3 | - | 0x4fae80, 0x9832e6, 0x4b6cf0, 0x4d7630, 0x42b470 |
+| 93 | 0x10B7 | Wait | 0x0050B810 | 160B | 2 | - | 0x4FAE80, 0x9832E6, 0x5E03A0, 0x41FB20, 0x4DA2A0 |
+| 94 | 0x10C8 | SetPCFactionAttack | 0x0050BE80 | 159B | 2 | - | 0x4FAE80, 0x4FAE80, 0x4D8360, 0x4D8360, 0x4F9FB0 |
+| 95 | 0x10FC | SetPCFame | 0x0050CA10 | 159B | 2 | - | 0x4fae80, 0x579b60 |
+| 96 | 0x10FD | SetPCInfamy | 0x0050CB20 | 157B | 2 | - | 0x4fae80, 0x579b60 |
+| 97 | 0x111C | SetActorFullName | 0x00512BB0 | 157B | 2 | - | 0x9832e6, 0x4fae80, 0x5e02e0, 0x4028d0, 0x5e02e0 |
+| 98 | 0x1122 | SetPackDuration | 0x0050D5E0 | 156B | 2 | - | 0x9832e6, 0x4fae80, 0x579b60 |
+| 99 | 0x1134 | ResetFallDamageTimer | 0x0050CFB0 | 158B | 2 | - | 0x9832e6, 0x65a2c0, 0x65a2c0, 0x579b60 |
+| 100 | 0x1141 | SetNoRumors | 0x0050D7B0 | 158B | 2 | - | 0x4FAE80, 0x9832E6, 0x5E02E0, 0x4209C0, 0x420920 |
+| 101 | 0x115A | SetAllVisible | 0x00501340 | 160B | 2 | - | 0x4fae80 |
+| 102 | 0x115C | SendTrespassAlarm | 0x00506AF0 | 159B | 2 | - | 0x4fae80, 0x9832e6 |
+| 103 | 0x115E | Autosave | 0x0050A3E0 | 160B | 2 | - | 0x466B70 |
+| 104 | 0x1057 | Drop | 0x00500650 | 157B | 1 | - | 0x4FAE80 |
+| 105 | 0x10A9 | ModFactionReaction | 0x005038A0 | 155B | 1 | - | 0x4fae80, 0x51f0f0 |
+| 106 | 0x10EA | ShowSpellMaking | 0x00505890 | 160B | 1 | - | 0x5D86C0 |
+| 107 | 0x10EB | ShowEnchantment | 0x005058B0 | 160B | 1 | - | 0x5A1EC0 |
+| 108 | 0x10F0 | SetClass | 0x0050C6E0 | 158B | 1 | - | 0x4FAE80, 0x9832E6, 0x9832E6, 0x5222D0 |
+| 109 | 0x1111 | EnableFastTravel | 0x0050D460 | 160B | 1 | - | 0x4FAE80 |
+| 110 | 0x1126 | StopMagicEffectVisuals | 0x00512FA0 | 160B | 1 | - | 0x4fae80, 0x678f50, 0x4da2a0, 0x4da2a0, 0x579b60 |
+| 111 | 0x1155 | SetItemValue | 0x00506810 | 160B | 1 | - | 0x4FAE80, 0x9832E6, 0x4703C0, 0x4DA2A0, 0x579B60 |
+| 112 | 0x1168 | DeleteFullActorCopy | 0x0050A340 | 160B | 1 | - | 0x446b80, 0x446b80, 0x449d20 |
+| 113 | 0x0000 | GameMode | 0x005022D0 | 157B | - | - | 0x578f60 |
+| 114 | 0x0001 | MenuMode | 0x00502270 | 157B | - | - | 0x4fae80, 0x4f4570 |
+| 115 | 0x0002 | OnActivate | 0x00503F90 | 160B | - | - | 0x4fae80, 0x4d8260, 0x4d82e0, 0x4d82e0 |
+| 116 | 0x0003 | OnAdd | 0x00503D10 | 157B | - | - | 0x4fae80, 0x4fb5f0 |
+| 117 | 0x0004 | OnEquip | 0x00503E10 | 157B | - | - | 0x4fae80, 0x4fb5f0 |
+| 118 | 0x0005 | OnUnequip | 0x00503E90 | 159B | - | - | 0x4fae80, 0x4fb5f0 |
+| 119 | 0x0006 | OnDrop | 0x00503F10 | 158B | - | - | 0x4fae80, 0x4fb5f0 |
+| 120 | 0x0007 | OnYield | 0x00504010 | 160B | - | - | 0x4fae80 |
+| 121 | 0x0008 | OnHit | 0x00504050 | 159B | - | - | 0x4fae80, 0x4fb5f0 |
+| 122 | 0x0009 | OnHitWith | 0x005040D0 | 160B | - | - | 0x4fae80, 0x4fb5f0 |
+| 123 | 0x000A | OnDeath | 0x00504150 | 159B | - | - | 0x4fae80, 0x4fb5f0 |
+| 124 | 0x000B | OnMurder | 0x00504250 | 159B | - | - | 0x4fae80, 0x4fb5f0 |
+| 125 | 0x000C | OnKnockout | 0x005042D0 | 159B | - | - | 0x4fb5f0 |
+| 126 | 0x000D | OnAlarm | 0x00504310 | 160B | - | - | 0x4fae80, 0x4fb5f0, 0x4fae80, 0x4fb5f0 |
+| 127 | 0x000E | OnAlarmVictim | 0x0050B3E0 | 159B | - | - | 0x4fae80, 0x507010, 0x4fb5f0 |
+| 128 | 0x000F | OnPackageStart | 0x005043E0 | 160B | - | - | 0x4fae80, 0x4fb5f0 |
+| 129 | 0x0012 | ScriptEffectFinish | 0x00502320 | 160B | - | - | |
+| 130 | 0x0013 | ScriptEffectUpdate | 0x0050A120 | 160B | - | - | |
+| 131 | 0x0014 | OnPackageChange | 0x005044E0 | 159B | - | - | 0x4fae80, 0x4fb5f0 |
+| 132 | 0x001A | OnTriggerActor | 0x005046E0 | 159B | - | - | 0x4fae80, 0x4fb5f0 |
+| 133 | 0x001B | OnTriggerMob | 0x00504760 | 159B | - | - | 0x4FAE80, 0x4FB5F0 |
+| 134 | 0x0100 | Op0100 | 0x00502210 | 157B | - | - | 0x4fae80, 0x579b60 |
+| 135 | 0x0101 | Op0101 | 0x005097A0 | 159B | - | - | 0x4D7240, 0x4D7240, 0x4D7250, 0x579B60, 0x4FA1B0 |
+| 136 | 0x0102 | Op0102 | 0x00509B30 | 157B | - | - | 0x4FAE80, 0x579B60, 0x579B60, 0x579B60, 0x529750 |
+| 137 | 0x0103 | Op0103 | 0x00509D10 | 160B | - | - | 0x529750, 0x579B60 |
+| 138 | 0x0104 | Op0104 | 0x00500770 | 160B | - | - | 0x579b60, 0x676b40, 0x579b60 |
+| 139 | 0x0105 | Op0105 | 0x00500F60 | 154B | - | - | 0x5798f0 |
+| 140 | 0x0106 | Op0106 | 0x005011F0 | 157B | - | - | 0x4FAE80, 0x9832E6, 0x4DA2A0, 0x579B60, 0x579B60 |
+| 141 | 0x0107 | Op0107 | 0x00500E30 | 159B | - | - | 0x440510 |
+| 142 | 0x0108 | Op0108 | 0x00500E40 | 160B | - | - | 0x440510 |
+| 143 | 0x0109 | Op0109 | 0x00507C60 | 160B | - | - | 0x440530, 0x579b60 |
+| 144 | 0x010A | Op010A | 0x00507CB0 | 158B | - | - | 0x4c9820, 0x543bb0, 0x579b60 |
+| 145 | 0x010B | Op010B | 0x00507DC0 | 159B | - | - | 0x55F7E0, 0x55F7E0, 0x55F7E0, 0x55F7E0, 0x55F7E0 |
+| 146 | 0x010C | Op010C | 0x0050FCA0 | 159B | - | - | 0x707530, 0x579B60 |
+| 147 | 0x010D | Op010D | 0x00507D30 | 159B | - | - | 0x46A9C0, 0x4DA2A0, 0x579B60, 0x4447F0, 0x579B60 |
+| 148 | 0x010E | Op010E | 0x00501000 | 159B | - | - | 0x57C200, 0x5792E0, 0x579B60 |
+| 149 | 0x010F | Op010F | 0x00500F10 | 160B | - | - | 0x5797e0, 0x579b60 |
+| 150 | 0x0110 | Op0110 | 0x0050FD10 | 157B | - | - | 0x494F30, 0x401F20, 0x4DA2A0, 0x401F00, 0x496CB0 |
+| 151 | 0x0111 | Op0111 | 0x00507BD0 | 158B | - | - | 0x579B60 |
+| 152 | 0x0112 | Op0112 | 0x00509D70 | 160B | - | - | 0x9832e6, 0x579b60, 0x659a00, 0x659a00, 0x579b60 |
+| 153 | 0x0113 | Op0113 | 0x0050A050 | 160B | - | - | 0x660110, 0x579b60, 0x660110, 0x660110, 0x579b60 |
+| 154 | 0x0114 | Op0114 | 0x00501540 | 160B | - | - | 0x579b60, 0x579b60, 0x579b60, 0x579b60, 0x579b60 |
+| 155 | 0x0115 | Op0115 | 0x00501650 | 158B | - | - | 0x4e7d10 |
+| 156 | 0x0116 | Op0116 | 0x00501660 | 157B | - | - | 0x683be0 |
+| 157 | 0x0118 | Op0118 | 0x005101E0 | 159B | - | - | 0x4fae80, 0x7b4890, 0x7b4890, 0x7b4890, 0x7b4890 |
+| 158 | 0x0119 | Op0119 | 0x00508240 | 158B | - | - | 0x43F270, 0x4EF7E0, 0x4E9F40, 0x579B60, 0x43F270 |
+| 159 | 0x011A | Op011A | 0x00501A60 | 158B | - | - | |
+| 160 | 0x011B | Op011B | 0x005083C0 | 160B | - | - | 0x4fae80, 0x9811e2, 0x585c10, 0x5859c0, 0x582160 |
+| 161 | 0x011C | Op011C | 0x00514100 | 157B | - | - | 0x4fae80, 0x55e000, 0x4a78d0, 0x4a7980, 0x985fb2 |
+| 162 | 0x011D | Op011D | 0x005143C0 | 157B | - | - | 0x4fae80, 0x50ec30, 0x4a78d0, 0x983479, 0x985fb2 |
+| 163 | 0x011E | Op011E | 0x00514230 | 158B | - | - | 0x4fae80, 0x50ec30, 0x4a78d0, 0x403be0, 0x579b60 |
+| 164 | 0x011F | Op011F | 0x005084A0 | 160B | - | - | 0x4fae80, 0x43f270, 0x4be5a0, 0x4bd980, 0x4efe80 |
+| 165 | 0x0120 | Op0120 | 0x00510C70 | 158B | - | - | 0x67d760, 0x67eb60, 0x68c040, 0x67e3d0, 0x68c740 |
+| 166 | 0x0122 | Op0122 | 0x005087C0 | 160B | - | - | 0x4fae80, 0x943410, 0x4fae80, 0x7b4830 |
+| 167 | 0x0123 | Op0123 | 0x00510480 | 160B | - | - | 0x4fae80, 0x70c190 |
+| 168 | 0x0124 | Op0124 | 0x005087A0 | 159B | - | - | |
+| 169 | 0x0125 | Op0125 | 0x00508860 | 160B | - | - | 0x4fae80, 0x7b4830 |
+| 170 | 0x0126 | Op0126 | 0x005010E0 | 160B | - | - | 0x579B60 |
+| 171 | 0x0127 | Op0127 | 0x005013F0 | 160B | - | - | 0x579b60, 0x675880 |
+| 172 | 0x0128 | Op0128 | 0x00501440 | 158B | - | - | 0x579b60 |
+| 173 | 0x0129 | Op0129 | 0x00501480 | 156B | - | - | 0x579b60 |
+| 174 | 0x012A | Op012A | 0x005014C0 | 160B | - | - | 0x579b60 |
+| 175 | 0x012B | Op012B | 0x00501500 | 160B | - | - | 0x579b60 |
+| 176 | 0x012C | Op012C | 0x00513C90 | 155B | - | - | 0x4FAE80, 0x9832E6, 0x659A00, 0x402E30, 0x5F7310 |
+| 177 | 0x012D | Op012D | 0x0050A400 | 160B | - | - | 0x983BE0, 0x4FAE80, 0x98208B, 0x46B680, 0x46B680 |
+| 178 | 0x012E | Op012E | 0x0050A8A0 | 155B | - | - | 0x4fae80, 0x442a30, 0x579b60, 0x579b60 |
+| 179 | 0x012F | Op012F | 0x0050A9A0 | 160B | - | - | 0x55f7e0, 0x55f7e0, 0x55f7e0, 0x579b60 |
+| 180 | 0x0131 | Op0131 | 0x00507930 | 160B | - | - | 0x579B60 |
+| 181 | 0x0132 | Op0132 | 0x00500D10 | 159B | - | - | 0x65D820, 0x65D810, 0x65D820, 0x579B60 |
+| 182 | 0x0133 | Op0133 | 0x0050AA20 | 157B | - | - | 0x7b81a0, 0x4fae80 |
+| 183 | 0x0134 | Op0134 | 0x00500D50 | 160B | - | - | 0x4F9FA0, 0x4F9F90, 0x4F9FA0, 0x579B60 |
+| 184 | 0x0135 | Op0135 | 0x00515920 | 160B | - | - | 0x5e32d0, 0x5e1df0, 0x7016a0, 0x7016a0, 0x405ce0 |
+| 185 | 0x0136 | Op0136 | 0x00507BA0 | 160B | - | - | 0x579B60 |
+| 186 | 0x0137 | Op0137 | 0x00500E00 | 160B | - | - | 0x5793B0, 0x579400, 0x579B60 |
+| 187 | 0x0138 | Op0138 | 0x005120A0 | 160B | - | - | 0x4fae80, 0x52a8a0, 0x981630, 0x52af40, 0x982e90 |
+| 188 | 0x0139 | Op0139 | 0x00512220 | 156B | - | - | 0x4fae80, 0x52a8a0, 0x981630, 0x52af40, 0x982e90 |
+| 189 | 0x013A | Op013A | 0x00515330 | 160B | - | - | 0x4fae80, 0x4a7a60, 0x98208b, 0x98208b, 0x98208b |
+| 190 | 0x013B | Op013B | 0x005085D0 | 157B | - | - | 0x4fae80, 0x4be5a0, 0x4bd980, 0x4efe80, 0x4f1630 |
+| 191 | 0x013C | Op013C | 0x0050EC90 | 156B | - | - | 0x7c4d90, 0x579b60, 0x4ebda0, 0x579b60 |
+| 192 | 0x013D | Op013D | 0x00505120 | 157B | - | - | 0x4fae80, 0x9811e2 |
+| 193 | 0x013E | Op013E | 0x00513BB0 | 159B | - | - | 0x579b60, 0x9811e2 |
+| 194 | 0x013F | Op013F | 0x00507A00 | 157B | - | - | 0x579B60 |
+| 195 | 0x0140 | Op0140 | 0x00510580 | 158B | - | - | 0x440560, 0x6ecc80, 0x4d3b10 |
+| 196 | 0x0142 | Op0142 | 0x00507800 | 157B | - | - | 0x4fae80, 0x4d6670, 0x4f1a60, 0x6ecc80, 0x44ee00 |
+| 197 | 0x0143 | Op0143 | 0x00507740 | 159B | - | - | 0x579B60 |
+| 198 | 0x0144 | Op0144 | 0x005007A0 | 158B | - | - | 0x676B40, 0x579B60 |
+| 199 | 0x0146 | Op0146 | 0x00508B80 | 160B | - | - | 0x4fae80 |
+| 200 | 0x0147 | Op0147 | 0x005023D0 | 160B | - | - | 0x4fae80, 0x982ec0, 0x465130, 0x579b60, 0x9811e2 |
+| 201 | 0x0148 | Op0148 | 0x00502500 | 160B | - | - | 0x4fae80, 0x982ec0, 0x465860, 0x579b60, 0x9811e2 |
+| 202 | 0x0149 | Op0149 | 0x00507960 | 159B | - | - | 0x4FAE80, 0x445DF0, 0x579B60, 0x579B60 |
+| 203 | 0x014A | Op014A | 0x00500E60 | 157B | - | - | 0x4FAE80, 0x9811E2, 0x444740, 0x9811E2 |
+| 204 | 0x014B | Op014B | 0x00507A30 | 158B | - | - | 0x542EA0, 0x46B680, 0x4520F0, 0x451A40, 0x451920 |
+| 205 | 0x014C | Op014C | 0x00507A90 | 160B | - | - | 0x542ea0, 0x46b680, 0x4520f0, 0x451a40, 0x451920 |
+| 206 | 0x014D | Op014D | 0x0050ED50 | 155B | - | - | 0x401f00, 0x70b780, 0x4e70b0, 0x405680, 0x6ecc80 |
+| 207 | 0x014E | Op014E | 0x0050EF90 | 154B | - | - | 0x4fae80, 0x401f00, 0x70b780, 0x411f00, 0x4d8b90 |
+| 208 | 0x014F | Op014F | 0x00512910 | 157B | - | - | 0x4fae80, 0x65d830, 0x579b60, 0x52b440, 0x512540 |
+| 209 | 0x0150 | Op0150 | 0x005007C0 | 160B | - | - | 0x676D90 |
+| 210 | 0x0151 | Op0151 | 0x005007D0 | 159B | - | - | 0x4FAE80 |
+| 211 | 0x0152 | Op0152 | 0x00500820 | 160B | - | - | |
+| 212 | 0x0153 | Op0153 | 0x00500830 | 155B | - | - | 0x579B60 |
+| 213 | 0x0154 | Op0154 | 0x00500860 | 159B | - | - | 0x579B60 |
+| 214 | 0x0155 | Op0155 | 0x00500890 | 159B | - | - | 0x4fae80, 0x9840e0, 0x579b60, 0x9811e2 |
+| 215 | 0x0156 | Op0156 | 0x005009E0 | 155B | - | - | 0x4FAE80, 0x579B60, 0x9811E2 |
+| 216 | 0x0157 | Op0157 | 0x00500F70 | 159B | - | - | 0x4fae80, 0x579b60 |
+| 217 | 0x0159 | Op0159 | 0x00507FF0 | 157B | - | - | 0x4FAE80, 0x9832E6, 0x7D92C0, 0x7D92C0, 0x7D92C0 |
+| 218 | 0x015A | Op015A | 0x00508180 | 157B | - | - | |
+| 219 | 0x015B | Op015B | 0x00507C00 | 159B | - | - | 0x9832e6, 0x65a2c0, 0x894940, 0x894940 |
+| 220 | 0x015C | Op015C | 0x00508340 | 158B | - | - | 0x9832E6, 0x41F070, 0x4DA2A0, 0x4DA2A0, 0x579B60 |
+| 221 | 0x015D | Op015D | 0x00503C60 | 155B | - | - | 0x4fae80 |
+| 222 | 0x015E | Op015E | 0x0050B0C0 | 157B | - | - | 0x4fae80 |
+| 223 | 0x015F | Op015F | 0x00511C10 | 157B | - | - | 0x401F00, 0x401F00, 0x401080, 0x401F00, 0x401F00 |
+| 224 | 0x0160 | Op0160 | 0x0050B210 | 156B | - | - | 0x579b60, 0x579b60, 0x579b60, 0x579b60, 0x579b60 |
+| 225 | 0x0161 | Op0161 | 0x00503CE0 | 155B | - | - | |
+| 226 | 0x0162 | Op0162 | 0x00500C90 | 160B | - | - | 0x4533F0, 0x45A530, 0x464440, 0x459870, 0x45A530 |
+| 227 | 0x0163 | Op0163 | 0x00500AE0 | 159B | - | - | 0x4FAE80, 0x9840E0, 0x69D990, 0x579B60, 0x9811E2 |
+| 228 | 0x0164 | Op0164 | 0x005077E0 | 160B | - | - | 0x579b60 |
+| 229 | 0x0165 | Op0165 | 0x00513B60 | 156B | - | - | |
+| 230 | 0x0166 | Op0166 | 0x005081F0 | 158B | - | - | 0x4fae80 |
+| 231 | 0x0167 | Op0167 | 0x005081B0 | 158B | - | - | 0x579b60 |
+| 232 | 0x0168 | Op0168 | 0x00501040 | 159B | - | - | 0x4FAE80 |
+| 233 | 0x0169 | Op0169 | 0x00500890 | 159B | - | - | 0x4fae80, 0x9840e0, 0x579b60, 0x9811e2 |
+| 234 | 0x016A | Op016A | 0x0050D860 | 159B | - | - | 0x579B60, 0x499E20, 0x49A8B0, 0x579B60, 0x49E280 |
+| 235 | 0x016B | Op016B | 0x0050D8C0 | 159B | - | - | |
+| 236 | 0x016C | Op016C | 0x00500780 | 159B | - | - | 0x676B40, 0x579B60 |
+| 237 | 0x016D | Op016D | 0x00508300 | 160B | - | - | 0x579B60 |
+| 238 | 0x016E | Op016E | 0x005013E0 | 155B | - | - | 0x6669f0 |
+| 239 | 0x016F | Op016F | 0x0050D8E0 | 159B | - | - | 0x4FAE80, 0x9811E2, 0x98262D, 0x7E1710, 0x579B60 |
+| 240 | 0x0170 | Op0170 | 0x0050E250 | 156B | - | - | 0x4FAE80 |
+| 241 | 0x0171 | Op0171 | 0x005065B0 | 160B | - | - | 0x4fae80 |
+| 242 | 0x0172 | Op0172 | 0x00506680 | 154B | - | - | 0x4FAE80 |
+| 243 | 0x0174 | Op0174 | 0x005068C0 | 160B | - | - | 0x4FAE80, 0x444840 |
+| 244 | 0x0175 | Op0175 | 0x0050E5A0 | 157B | - | - | 0x529820, 0x579b60 |
+| 245 | 0x0176 | Op0176 | 0x0050E600 | 160B | - | - | 0x4f9fa0, 0x4f9f90, 0x52b080, 0x4f9f90, 0x579b60 |
+| 246 | 0x0177 | Op0177 | 0x00506920 | 160B | - | - | 0x4FAE80, 0x68F970, 0x579B60 |
+| 247 | 0x0178 | Op0178 | 0x00506990 | 157B | - | - | 0x579B60 |
+| 248 | 0x0179 | Op0179 | 0x0050E6A0 | 159B | - | - | 0x7B8200, 0x55E2A0, 0x482150, 0x4D06C0, 0x4D1130 |
+| 249 | 0x017A | Op017A | 0x0050E950 | 157B | - | - | 0x4fae80 |
+| 250 | 0x017B | Op017B | 0x005069D0 | 160B | - | - | 0x4fae80, 0x401210, 0x579b60, 0x401170, 0x401210 |
+| 251 | 0x017C | Op017C | 0x00506AD0 | 159B | - | - | 0x7c02e0 |
+| 252 | 0x017D | Op017D | 0x00506B80 | 158B | - | - | 0x4fae80, 0x579b60, 0x579b60 |
+| 253 | 0x017E | Op017E | 0x00506C80 | 160B | - | - | 0x4d8b90, 0x6ecc80, 0x4cbbf0, 0x4d6670, 0x4ef2a0 |
+| 254 | 0x017F | Op017F | 0x00508980 | 160B | - | - | 0x4fae80 |
+| 255 | 0x0180 | Op0180 | 0x00508A20 | 160B | - | - | 0x4fae80, 0x9811e2, 0x447c50, 0x4507d0, 0x579b60 |
+| 256 | 0x0181 | Op0181 | 0x00514500 | 160B | - | - | 0x4fae80, 0x402e30, 0x4028d0, 0x57c370, 0x402e30 |
+| 257 | 0x0182 | Op0182 | 0x00506E90 | 158B | - | - | 0x579b60, 0x442630, 0x43fc20, 0x404c60, 0x54fe90 |
+| 258 | 0x1001 | Op1001 | 0x005003F0 | 160B | - | - | 0x4FAE80, 0x4F43C0 |
+| 259 | 0x1005 | Op1005 | 0x00502390 | 157B | - | - | 0x4f4760 |
+| 260 | 0x1006 | Op1006 | 0x00501A80 | 154B | - | - | 0x4fae80, 0x4f4410 |
+| 261 | 0x1008 | Op1008 | 0x00501B40 | 159B | - | - | 0x4fae80, 0x4f8890 |
+| 262 | 0x100A | Op100A | 0x00501AE0 | 160B | - | - | 0x4fae80, 0x4f4490 |
+| 263 | 0x100B | Op100B | 0x00501BA0 | 160B | - | - | 0x4fae80, 0x4f4500 |
+| 264 | 0x100C | Op100C | 0x00501C20 | 160B | - | - | 0x4f6010 |
+| 265 | 0x100E | Op100E | 0x00501670 | 159B | - | - | 0x4fae80, 0x4f6060 |
+| 266 | 0x1011 | Op1011 | 0x00509220 | 160B | - | - | 0x70fd30, 0x7100a0, 0x70fd80, 0x7100a0, 0x70fdd0 |
+| 267 | 0x1012 | Op1012 | 0x00501C00 | 160B | - | - | 0x4f46e0 |
+| 268 | 0x1014 | Op1014 | 0x00501C40 | 160B | - | - | 0x4fae80, 0x477b60 |
+| 269 | 0x1015 | Op1015 | 0x00501CF0 | 159B | - | - | 0x4706d0 |
+| 270 | 0x1018 | Op1018 | 0x00501E20 | 160B | - | - | 0x4F4720 |
+| 271 | 0x101B | Op101B | 0x00501EF0 | 160B | - | - | 0x4fae80, 0x4f9120 |
+| 272 | 0x1020 | Op1020 | 0x00503210 | 160B | - | - | 0x4fae80, 0x4f6cf0 |
+| 273 | 0x1023 | Op1023 | 0x00502370 | 160B | - | - | 0x4f60e0 |
+| 274 | 0x1024 | Op1024 | 0x00502270 | 157B | - | - | 0x4fae80, 0x4f4570 |
+| 275 | 0x1027 | Op1027 | 0x00502630 | 154B | - | - | 0x4f4800 |
+| 276 | 0x1028 | Op1028 | 0x00502650 | 158B | - | - | 0x4f4830 |
+| 277 | 0x1029 | Op1029 | 0x00502670 | 158B | - | - | 0x4f6150 |
+| 278 | 0x102A | Op102A | 0x00502690 | 157B | - | - | 0x4fae80, 0x4f61a0 |
+| 279 | 0x102B | Op102B | 0x005026F0 | 158B | - | - | 0x4fae80, 0x4f62a0 |
+| 280 | 0x102C | Op102C | 0x00502750 | 158B | - | - | 0x4fae80, 0x4f6350 |
+| 281 | 0x102D | Op102D | 0x00502810 | 160B | - | - | 0x4fae80, 0x4f6400 |
+| 282 | 0x102E | Op102E | 0x00502870 | 158B | - | - | 0x4f4890 |
+| 283 | 0x102F | Op102F | 0x00502890 | 160B | - | - | 0x4fae80, 0x4f48f0 |
+| 284 | 0x1030 | Op1030 | 0x005029C0 | 160B | - | - | 0x4f4a00 |
+| 285 | 0x1031 | Op1031 | 0x005029E0 | 156B | - | - | 0x4f4a80 |
+| 286 | 0x1032 | Op1032 | 0x00502B00 | 154B | - | - | 0x4f4b10 |
+| 287 | 0x1038 | Op1038 | 0x00502B80 | 158B | - | - | 0x4fae80, 0x4f67a0 |
+| 288 | 0x103C | Op103C | 0x00502E20 | 158B | - | - | 0x4fae80, 0x4f67e0 |
+| 289 | 0x103D | Op103D | 0x00502E90 | 160B | - | - | 0x4f4c10 |
+| 290 | 0x103E | Op103E | 0x00502EF0 | 160B | - | - | 0x4f69d0 |
+| 291 | 0x103F | Op103F | 0x00502FD0 | 160B | - | - | 0x4f4c80 |
+| 292 | 0x1040 | Op1040 | 0x00502FF0 | 160B | - | - | 0x4f6b00 |
+| 293 | 0x1041 | Op1041 | 0x005023B0 | 160B | - | - | 0x4f47b0 |
+| 294 | 0x1042 | Op1042 | 0x00503010 | 158B | - | - | 0x4fae80, 0x4f6b50 |
+| 295 | 0x1043 | Op1043 | 0x00503070 | 158B | - | - | 0x4fae80, 0x4f6d70 |
+| 296 | 0x1044 | Op1044 | 0x00503270 | 160B | - | - | 0x4fae80, 0x4f6ec0 |
+| 297 | 0x1045 | Op1045 | 0x00503330 | 157B | - | - | 0x4fae80, 0x4f6f40 |
+| 298 | 0x1046 | Op1046 | 0x00503390 | 159B | - | - | 0x4fae80, 0x4f6fc0 |
+| 299 | 0x1047 | Op1047 | 0x00503410 | 160B | - | - | 0x4fae80, 0x4f70c0 |
+| 300 | 0x1048 | Op1048 | 0x005035F0 | 153B | - | - | 0x4fae80, 0x4f4ce0 |
+| 301 | 0x1049 | Op1049 | 0x005037B0 | 158B | - | - | 0x4fae80, 0x4f7280 |
+| 302 | 0x104A | Op104A | 0x00503930 | 160B | - | - | 0x4fae80, 0x4f7330 |
+| 303 | 0x104B | Op104B | 0x00502F10 | 157B | - | - | 0x4f6a20 |
+| 304 | 0x104C | Op104C | 0x00503990 | 158B | - | - | 0x4fae80, 0x4f4e20 |
+| 305 | 0x104D | Op104D | 0x005039F0 | 160B | - | - | 0x4f4ef0 |
+| 306 | 0x104E | Op104E | 0x00509610 | 159B | - | - | 0x4FAE80, 0x47DF80, 0x6ACD10, 0x6ACD10, 0x6ACD10 |
+| 307 | 0x1050 | Op1050 | 0x00503A10 | 158B | - | - | 0x4f4f50 |
+| 308 | 0x1051 | Op1051 | 0x00503A30 | 160B | - | - | 0x4f4fb0 |
+| 309 | 0x1054 | Op1054 | 0x00503B00 | 160B | - | - | 0x4fae80, 0x4f5010 |
+| 310 | 0x105B | Op105B | 0x00503C40 | 159B | - | - | 0x4f5060 |
+| 311 | 0x105F | Op105F | 0x00501DD0 | 160B | - | - | 0x9832E6, 0x61DA10, 0x4F4720 |
+| 312 | 0x1062 | Op1062 | 0x00504800 | 160B | - | - | 0x4F7470 |
+| 313 | 0x1063 | Op1063 | 0x00504820 | 160B | - | - | 0x4FAE80, 0x4F74B0 |
+| 314 | 0x1065 | Op1065 | 0x00504890 | 159B | - | - | 0x4f50c0 |
+| 315 | 0x1066 | Op1066 | 0x005048B0 | 159B | - | - | 0x4f75f0 |
+| 316 | 0x1067 | Op1067 | 0x005048D0 | 156B | - | - | 0x4f7650 |
+| 317 | 0x1068 | Op1068 | 0x005048F0 | 159B | - | - | 0x4f5120 |
+| 318 | 0x1069 | Op1069 | 0x005006E0 | 160B | - | - | 0x4fae80, 0x4d8360, 0x579b60 |
+| 319 | 0x106A | Op106A | 0x00504910 | 160B | - | - | 0x4F8970 |
+| 320 | 0x106B | Op106B | 0x00504950 | 156B | - | - | 0x4F76B0 |
+| 321 | 0x106C | Op106C | 0x00504970 | 160B | - | - | 0x4F7750 |
+| 322 | 0x106D | Op106D | 0x00504990 | 160B | - | - | 0x4F7800 |
+| 323 | 0x106E | Op106E | 0x005049B0 | 160B | - | - | 0x4f78b0 |
+| 324 | 0x106F | Op106F | 0x005049D0 | 160B | - | - | 0x4f5180 |
+| 325 | 0x1070 | Op1070 | 0x005049F0 | 160B | - | - | 0x4f51e0 |
+| 326 | 0x1074 | Op1074 | 0x00504CE0 | 157B | - | - | 0x4f5230 |
+| 327 | 0x1077 | Op1077 | 0x00504BB0 | 159B | - | - | 0x4FAE80, 0x9832E6, 0x675C40 |
+| 328 | 0x1078 | Op1078 | 0x00508C30 | 160B | - | - | 0x4fae80, 0x4efe80, 0x4be5a0, 0x4bd980, 0x4f1630 |
+| 329 | 0x1079 | Op1079 | 0x00508E20 | 156B | - | - | 0x4fae80, 0x6ecc80, 0x66eaf0, 0x665260, 0x4d8a30 |
+| 330 | 0x107A | Op107A | 0x00504C60 | 157B | - | - | 0x4FAE80, 0x4F7AF0 |
+| 331 | 0x107B | Op107B | 0x0050B590 | 158B | - | - | 0x9832e6, 0x589b70, 0x5898f0, 0x9832e6, 0x670ca0 |
+| 332 | 0x107C | Op107C | 0x00504DB0 | 160B | - | - | 0x9832e6 |
+| 333 | 0x107D | Op107D | 0x00504E10 | 160B | - | - | 0x4f7b90 |
+| 334 | 0x107E | Op107E | 0x0050B620 | 160B | - | - | 0x9832e6, 0x589b70, 0x5898f0, 0x9832e6, 0x6701b0 |
+| 335 | 0x107F | Op107F | 0x00504E30 | 160B | - | - | 0x4f5290 |
+| 336 | 0x1080 | Op1080 | 0x005019E0 | 160B | - | - | 0x4f4640 |
+| 337 | 0x1081 | Op1081 | 0x00503470 | 160B | - | - | 0x4fae80, 0x4f6ec0 |
+| 338 | 0x1082 | Op1082 | 0x005034D0 | 160B | - | - | 0x4fae80, 0x4f6f40 |
+| 339 | 0x1083 | Op1083 | 0x00503530 | 160B | - | - | 0x4fae80, 0x4f6fc0 |
+| 340 | 0x1084 | Op1084 | 0x00503590 | 160B | - | - | 0x4fae80, 0x4f70c0 |
+| 341 | 0x1085 | Op1085 | 0x005027B0 | 158B | - | - | 0x4f61a0 |
+| 342 | 0x1086 | Op1086 | 0x005027D0 | 158B | - | - | 0x4f62a0 |
+| 343 | 0x1087 | Op1087 | 0x005027F0 | 160B | - | - | 0x4f6350 |
+| 344 | 0x1088 | Op1088 | 0x00503750 | 154B | - | - | 0x4fae80, 0x4f7220 |
+| 345 | 0x108A | Op108A | 0x0050AC40 | 159B | - | - | 0x4fae80, 0x9832e6, 0x5e02e0, 0x5e02e0, 0x467670 |
+| 346 | 0x108D | Op108D | 0x00504E50 | 159B | - | - | 0x4f5310 |
+| 347 | 0x108E | Op108E | 0x00504E70 | 157B | - | - | 0x4f4690 |
+| 348 | 0x108F | Op108F | 0x00504E90 | 159B | - | - | 0x4f7c00 |
+| 349 | 0x1090 | Op1090 | 0x00504EB0 | 160B | - | - | 0x4f7ef0 |
+| 350 | 0x1091 | Op1091 | 0x00504ED0 | 157B | - | - | 0x4f5370 |
+| 351 | 0x1092 | Op1092 | 0x00504EF0 | 160B | - | - | 0x4f53d0 |
+| 352 | 0x1093 | Op1093 | 0x00502F30 | 157B | - | - | 0x4f7f50 |
+| 353 | 0x1094 | Op1094 | 0x00502F50 | 160B | - | - | 0x4f6a70 |
+| 354 | 0x1095 | Op1095 | 0x00502F70 | 160B | - | - | 0x4fae80, 0x4f6ab0 |
+| 355 | 0x1096 | Op1096 | 0x00504F10 | 8B | - | - | 0x4f5440 |
+| 356 | 0x1099 | Op1099 | 0x00504F30 | 160B | - | - | 0x4f8a50 |
+| 357 | 0x109A | Op109A | 0x00504F50 | 159B | - | - | 0x4f54a0 |
+| 358 | 0x109B | Op109B | 0x00504F70 | 159B | - | - | 0x4e26f0, 0x707610, 0x707980, 0x707370, 0x579b60 |
+| 359 | 0x109C | Op109C | 0x00505020 | 160B | - | - | 0x4DE1C0, 0x579B60 |
+| 360 | 0x109D | Op109D | 0x00505090 | 158B | - | - | 0x4f5520 |
+| 361 | 0x109F | Op109F | 0x00502A00 | 158B | - | - | 0x4f64e0 |
+| 362 | 0x10A0 | Op10A0 | 0x00502A20 | 158B | - | - | 0x4f65b0 |
+| 363 | 0x10A1 | Op10A1 | 0x005050B0 | 158B | - | - | 0x4fae80, 0x4f7fa0 |
+| 364 | 0x10A2 | Op10A2 | 0x00502A40 | 158B | - | - | 0x4fae80, 0x4f6640 |
+| 365 | 0x10A3 | Op10A3 | 0x00502AA0 | 158B | - | - | 0x4fae80, 0x4f66a0 |
+| 366 | 0x10A4 | Op10A4 | 0x00501760 | 160B | - | - | 0x4fae80, 0x9832e6, 0x65a2c0, 0x894bd0 |
+| 367 | 0x10A6 | Op10A6 | 0x005005F0 | 156B | - | - | 0x665260 |
+| 368 | 0x10A7 | Op10A7 | 0x00511800 | 156B | - | - | 0x4fae80, 0x51f0b0, 0x579b60 |
+| 369 | 0x10AA | Op10AA | 0x005051D0 | 158B | - | - | 0x4f5570 |
+| 370 | 0x10AB | Op10AB | 0x005051F0 | 158B | - | - | 0x4f55c0 |
+| 371 | 0x10AC | Op10AC | 0x00502B20 | 158B | - | - | 0x4fae80, 0x4f4b10 |
+| 372 | 0x10AF | Op10AF | 0x00505210 | 154B | - | - | 0x4f8050 |
+| 373 | 0x10B0 | Op10B0 | 0x00505230 | 160B | - | - | 0x4f5600 |
+| 374 | 0x10B3 | Op10B3 | 0x005129E0 | 155B | - | - | 0x4fae80, 0x9832e6, 0x9832e6, 0x664700, 0x664700 |
+| 375 | 0x10B4 | Op10B4 | 0x00505350 | 157B | - | - | 0x4fae80, 0x4f5650 |
+| 376 | 0x10B5 | Op10B5 | 0x005053D0 | 160B | - | - | 0x9832E6, 0x6760D0, 0x4DA2A0, 0x579B60, 0x4DA2A0 |
+| 377 | 0x10B6 | Op10B6 | 0x00502960 | 160B | - | - | 0x4fae80, 0x4f4980 |
+| 378 | 0x10B8 | Op10B8 | 0x0050B920 | 160B | - | - | 0x4fae80, 0x9832e6, 0x5e03a0, 0x41fb20, 0x4da2a0 |
+| 379 | 0x10B9 | Op10B9 | 0x005053B0 | 160B | - | - | 0x4F56D0 |
+| 380 | 0x10BA | Op10BA | 0x00502350 | 160B | - | - | |
+| 381 | 0x10BC | Op10BC | 0x0050BAA0 | 160B | - | - | |
+| 382 | 0x10BD | Op10BD | 0x0050BAC0 | 158B | - | - | 0x4fae80 |
+| 383 | 0x10BE | Op10BE | 0x00505460 | 154B | - | - | 0x4f80a0 |
+| 384 | 0x10BF | Op10BF | 0x0050BB20 | 158B | - | - | 0x4fae80, 0x4fae80, 0x6ecc80, 0x4ca970, 0x675d50 |
+| 385 | 0x10C1 | Op10C1 | 0x00505480 | 158B | - | - | 0x4fae80, 0x4f80e0 |
+| 386 | 0x10C3 | Op10C3 | 0x005054E0 | 158B | - | - | 0x4fae80, 0x4f8140 |
+| 387 | 0x10C7 | Op10C7 | 0x005055A0 | 158B | - | - | 0x4fae80, 0x4f8200 |
+| 388 | 0x10CA | Op10CA | 0x0050BF00 | 158B | - | - | 0x4FAE80, 0x4D8360, 0x4D8360, 0x4F9FB0, 0x579B60 |
+| 389 | 0x10CB | Op10CB | 0x00505660 | 160B | - | - | 0x4F82C0 |
+| 390 | 0x10CD | Op10CD | 0x0050BF80 | 159B | - | - | 0x4D8360, 0x4D8360, 0x4F9FB0, 0x579B60 |
+| 391 | 0x10CE | Op10CE | 0x0050BFF0 | 159B | - | - | 0x4DB4A0, 0x469520, 0x4F9FB0, 0x579B60 |
+| 392 | 0x10CF | Op10CF | 0x0050C160 | 160B | - | - | 0x4f9fb0, 0x579b60 |
+| 393 | 0x10D0 | Op10D0 | 0x0050C230 | 160B | - | - | 0x9832e6, 0x579b60 |
+| 394 | 0x10D2 | Op10D2 | 0x0050C330 | 156B | - | - | 0x9832e6, 0x579b60 |
+| 395 | 0x10D4 | Op10D4 | 0x0050D020 | 160B | - | - | 0x4fae80, 0x565c50, 0x446af0, 0x5f23b0, 0x65fa90 |
+| 396 | 0x10D5 | Op10D5 | 0x005056F0 | 157B | - | - | 0x5ace20 |
+| 397 | 0x10D6 | Op10D6 | 0x00505710 | 160B | - | - | 0x4fae80, 0x4f8300 |
+| 398 | 0x10D7 | Op10D7 | 0x005057D0 | 158B | - | - | 0x4f57a0, 0x579b60 |
+| 399 | 0x10DE | Op10DE | 0x00515EF0 | 159B | - | - | 0x4fae80, 0x9832e6, 0x4b6cf0, 0x4d7630, 0x42b470 |
+| 400 | 0x10DF | Op10DF | 0x00505770 | 158B | - | - | 0x4fae80, 0x4f5730 |
+| 401 | 0x10E0 | Op10E0 | 0x005058D0 | 160B | - | - | 0x4FAE80, 0x4F8370 |
+| 402 | 0x10E1 | Op10E1 | 0x00505930 | 160B | - | - | 0x4f57d0 |
+| 403 | 0x10E2 | Op10E2 | 0x0050C620 | 160B | - | - | 0x4FAE80, 0x9832E6, 0x5E0F30 |
+| 404 | 0x10E3 | Op10E3 | 0x00505970 | 160B | - | - | 0x4f5810 |
+| 405 | 0x10E4 | Op10E4 | 0x00505990 | 160B | - | - | 0x4fae80, 0x4f83d0 |
+| 406 | 0x10E5 | Op10E5 | 0x005059F0 | 159B | - | - | 0x4f5880 |
+| 407 | 0x10E6 | Op10E6 | 0x005030D0 | 157B | - | - | 0x4fae80, 0x4f6d70 |
+| 408 | 0x10E7 | Op10E7 | 0x005032D0 | 157B | - | - | 0x4fae80, 0x65d620, 0x65d620, 0x4fae80, 0x4f6f40 |
+| 409 | 0x10E8 | Op10E8 | 0x0050C070 | 157B | - | - | 0x9832e6, 0x4f9fb0, 0x579b60 |
+| 410 | 0x10E9 | Op10E9 | 0x0050C0F0 | 154B | - | - | 0x9832E6, 0x5E2E00, 0x4F9FB0, 0x579B60 |
+| 411 | 0x10ED | Op10ED | 0x00505A10 | 159B | - | - | 0x4f5900 |
+| 412 | 0x10F4 | Op10F4 | 0x00505C00 | 159B | - | - | 0x4f73f0 |
+| 413 | 0x10F5 | Op10F5 | 0x0050C790 | 158B | - | - | 0x4FAE80, 0x9832E6, 0x6135F0, 0x6210D0, 0x9832E6 |
+| 414 | 0x10F6 | Op10F6 | 0x00503650 | 159B | - | - | 0x4fae80, 0x4f4d50 |
+| 415 | 0x10F7 | Op10F7 | 0x005036B0 | 158B | - | - | 0x4fae80, 0x4f71d0 |
+| 416 | 0x10F9 | Op10F9 | 0x00505C20 | 160B | - | - | 0x4f5960 |
+| 417 | 0x10FA | Op10FA | 0x0050CA90 | 157B | - | - | 0x4fae80, 0x579b60 |
+| 418 | 0x10FB | Op10FB | 0x00505C40 | 153B | - | - | 0x4f59b0 |
+| 419 | 0x10FE | Op10FE | 0x005033F0 | 159B | - | - | 0x4f7030 |
+| 420 | 0x10FF | Op10FF | 0x00505C60 | 159B | - | - | 0x4f5a00 |
+| 421 | 0x1100 | Op1100 | 0x00513FC0 | 160B | - | - | 0x4fae80, 0x55e000, 0x4a78d0, 0x579b60, 0x579b60 |
+| 422 | 0x1102 | Op1102 | 0x00503710 | 156B | - | - | 0x4f4da0 |
+| 423 | 0x1103 | Op1103 | 0x00503730 | 158B | - | - | 0x4f4de0 |
+| 424 | 0x1105 | Op1105 | 0x0050C8D0 | 159B | - | - | 0x4FAE80, 0x9832E6, 0x61D5B0 |
+| 425 | 0x1106 | Op1106 | 0x00505C80 | 159B | - | - | 0x9832e6, 0x4fae80, 0x5faa70, 0x579b60 |
+| 426 | 0x1107 | Op1107 | 0x0050CBC0 | 154B | - | - | 0x9832E6, 0x9832E6, 0x4FAE80, 0x4672D0, 0x579B60 |
+| 427 | 0x1108 | Op1108 | 0x00505D10 | 160B | - | - | 0x4F5A80 |
+| 428 | 0x1109 | Op1109 | 0x00505D90 | 160B | - | - | 0x4f5ae0 |
+| 429 | 0x110A | Op110A | 0x00502EB0 | 157B | - | - | 0x4f68f0 |
+| 430 | 0x110B | Op110B | 0x00502ED0 | 160B | - | - | 0x4f6960 |
+| 431 | 0x1110 | Op1110 | 0x0050D3E0 | 158B | - | - | 0x4fae80, 0x5f1910, 0x65d1e0 |
+| 432 | 0x1112 | Op1112 | 0x00505DB0 | 159B | - | - | 0x4F84F0 |
+| 433 | 0x1113 | Op1113 | 0x0050C1C0 | 160B | - | - | 0x4d7990, 0x4d7990, 0x4f9fb0, 0x579b60 |
+| 434 | 0x1114 | Op1114 | 0x0050D4C0 | 158B | - | - | 0x4fae80, 0x6a9b40, 0x6a8d00, 0x40d4d0, 0x432860 |
+| 435 | 0x1115 | Op1115 | 0x00501A00 | 160B | - | - | 0x4fae80, 0x4f45d0 |
+| 436 | 0x1116 | Op1116 | 0x00500570 | 157B | - | - | 0x4FAE80, 0x4F8AD0 |
+| 437 | 0x1118 | Op1118 | 0x00505DD0 | 157B | - | - | 0x4FAE80, 0x4F8B90 |
+| 438 | 0x1119 | Op1119 | 0x00505E60 | 158B | - | - | 0x4fae80, 0x4caa10 |
+| 439 | 0x111A | Op111A | 0x00505EE0 | 158B | - | - | 0x4f8c20 |
+| 440 | 0x111D | Op111D | 0x00504930 | 160B | - | - | 0x4F89E0 |
+| 441 | 0x111E | Op111E | 0x00505F20 | 158B | - | - | 0x4f8cf0 |
+| 442 | 0x111F | Op111F | 0x00505F40 | 160B | - | - | 0x4f8db0 |
+| 443 | 0x1120 | Op1120 | 0x00505F60 | 160B | - | - | 0x4fae80, 0x4f8e70 |
+| 444 | 0x1121 | Op1121 | 0x00505FC0 | 158B | - | - | 0x4F8F30 |
+| 445 | 0x1127 | Op1127 | 0x00506260 | 160B | - | - | 0x4fae80, 0x4ca9c0, 0x4e51f0 |
+| 446 | 0x1128 | Op1128 | 0x00510A90 | 160B | - | - | 0x4706e0, 0x405790, 0x405790, 0x560920, 0x579b60 |
+| 447 | 0x112C | Op112C | 0x005062F0 | 160B | - | - | 0x4f9010 |
+| 448 | 0x112E | Op112E | 0x00501120 | 157B | - | - | 0x9832E6, 0x4DA2A0, 0x579B60 |
+| 449 | 0x112F | Op112F | 0x00501180 | 160B | - | - | 0x9832E6, 0x4DA2A0, 0x579B60 |
+| 450 | 0x1130 | Op1130 | 0x0050CC80 | 159B | - | - | 0x9832E6, 0x4FAE80, 0x41F420, 0x41E980, 0x579B60 |
+| 451 | 0x1131 | Op1131 | 0x00505D50 | 155B | - | - | 0x4F8420 |
+| 452 | 0x1132 | Op1132 | 0x00505D70 | 158B | - | - | 0x4F8480 |
+| 453 | 0x1133 | Op1133 | 0x0050CD30 | 159B | - | - | 0x9832e6, 0x5e02e0, 0x4fae80, 0x65d4a0, 0x65d4c0 |
+| 454 | 0x1135 | Op1135 | 0x00505D30 | 159B | - | - | 0x4F5D80 |
+| 455 | 0x1136 | Op1136 | 0x00503140 | 160B | - | - | 0x4fae80, 0x4f6e50 |
+| 456 | 0x1138 | Op1138 | 0x00506310 | 160B | - | - | 0x4fae80, 0x4f8590 |
+| 457 | 0x1139 | Op1139 | 0x00506370 | 160B | - | - | 0x4F5B30 |
+| 458 | 0x113A | Op113A | 0x00506390 | 157B | - | - | 0x4F5BB0 |
+| 459 | 0x113B | Op113B | 0x00505950 | 160B | - | - | 0x4f57f0 |
+| 460 | 0x113E | Op113E | 0x005063B0 | 160B | - | - | 0x4F85E0 |
+| 461 | 0x113F | Op113F | 0x00508700 | 158B | - | - | 0x4FAE80, 0x673A50, 0x7616D0, 0x9832E6, 0x6005F0 |
+| 462 | 0x1140 | Op1140 | 0x005063D0 | 156B | - | - | 0x4F5C50, 0x579B60 |
+| 463 | 0x1143 | Op1143 | 0x00506410 | 159B | - | - | 0x4F5C90, 0x579B60 |
+| 464 | 0x1147 | Op1147 | 0x005064B0 | 160B | - | - | 0x4f5cb0, 0x579b60 |
+| 465 | 0x1148 | Op1148 | 0x005021E0 | 158B | - | - | 0x9832E6, 0x6A2190, 0x4FAE80, 0x579B60 |
+| 466 | 0x1149 | Op1149 | 0x00506570 | 160B | - | - | 0x4F5D60, 0x579B60 |
+| 467 | 0x114B | Op114B | 0x00507470 | 159B | - | - | 0x4fae80, 0x41e6f0, 0x48da00 |
+| 468 | 0x114C | Op114C | 0x00506530 | 160B | - | - | 0x4F86A0, 0x579B60 |
+| 469 | 0x114F | Op114F | 0x0050AAA0 | 155B | - | - | 0x4fae80, 0x9832e6, 0x9832e6, 0x4677f0, 0x467270 |
+| 470 | 0x1152 | Op1152 | 0x005067C0 | 160B | - | - | 0x4F8720, 0x579B60 |
+| 471 | 0x1153 | Op1153 | 0x005064F0 | 160B | - | - | 0x4F5D20, 0x579B60 |
+| 472 | 0x1157 | Op1157 | 0x0050FF70 | 158B | - | - | 0x401f00, 0x579b60, 0x579b60, 0x579b60 |
+| 473 | 0x1161 | Op1161 | 0x00506D00 | 160B | - | - | 0x4f5e30, 0x579b60 |
+| 474 | 0x1162 | Op1162 | 0x00506CC0 | 158B | - | - | 0x4f5df0, 0x579b60 |
+| 475 | 0x1163 | Op1163 | 0x00513090 | 158B | - | - | 0x4fae80, 0x434820, 0x43b420, 0x4bddc0 |
+| 476 | 0x1166 | Op1166 | 0x00506D40 | 157B | - | - | 0x4f5e60, 0x579b60 |
+| 477 | 0x1167 | Op1167 | 0x00511570 | 157B | - | - | 0x5e02e0, 0x447df0, 0x9832e6, 0x5f1910, 0x519c50 |
+| 478 | 0x1169 | Op1169 | 0x00506D80 | 157B | - | - | 0x4f8740, 0x579b60 |
+| 479 | 0x116A | Op116A | 0x00505F00 | 158B | - | - | 0x4f8630 |
+| 480 | 0x116D | Op116D | 0x00506DC0 | 160B | - | - | 0x4f87f0 |
+
+### §67.7 残課題
+
+1. 頻度未計測の 368 件について SCDA スキャン対象を拡大し頻度を実測する
+2. block-type 29 件のイベント発火元（`0x4FB5F0` の呼出側）の特定
+3. `0x100〜0xFFF` 中間域 124 件（条件・式系）の分類
+
+### §67.8 証跡
+
+- 原表: `tmp/re/svm_495_miss_addrs.md`（480 行、頻度降順）
+- opcode 表: `tmp/re/s57_svm_8_opcode_table.txt`
+- 注釈 DB: `tmp/re/annotate_db.json`（functions 368 / structs 7）
+
+---
+
+## §68 Script VM FunctionID 追加仕様（7 件）（2026-10-22）
+
+### §68.0 概要
+
+§67 の MISS 480 件のうち、**スクリプトコマンドとして完結し既存ハンドラと衝突しない 7 件**について、opcode → FunctionID → impl VA → 実装手順までを確定した。Android版 `script_opcodes.h` / `script_functions.cpp` / `script_functions.h` / `script_disasm.cpp` / `native_scda_bridge.cpp` への反映仕様を示す。
+
+### §68.1 欠落一覧 [確定]
+
+| FunctionID | opcode | enum | name | bridge | handler | 備考 |
+|---|---|---|---|---|---|---|
+| StopQuest | 0x1037 | あり 0x007A | あり | あり | **なし** | enum/name/bridge のみ |
+| Evp | 0x105E | なし | あり | なし | なし | 全欠落 |
+| PlaySound | 0x1026 | なし | あり | なし | なし | 全欠落 |
+| ModCrimeGold | 0x1076 | なし | あり | なし | なし | 全欠落 |
+| SetCrimeGold | 0x1075 | なし | なし | なし | なし | 全欠落 |
+| KillActor | 0x108B | なし | なし | なし | なし | 全欠落 |
+| ResurrectActor | 0x108C | なし | なし | なし | なし | 既存 Resurrect (0x0015) とは別物 |
+
+新規 FunctionID は 0x009A〜0x009F の 6 件を割り当てる。`native_scda_decoder.cpp` は全 7 opcode の名前を返却済み、`native_scda_bridge.cpp:33` に `{0x1037, FunctionID::StopQuest}` が既存。
+
+### §68.2 各 FunctionID 設計 [確定]
+
+#### §68.2.1 StopQuest（0x1037 → FunctionID 0x007A）
+
+| 項目 | 値 |
+|---|---|
+| 引数 | `[1][questRef]`（argLen 5 固定） |
+| impl VA | 0x502D80 |
+| struct | 0xAA20（quest reference） |
+| flags | 0x00010000（no ref / modify） |
+| SCDA 頻度 | 48 |
+| 難易度 | trivial（約 15 行） |
+
+handler のみ未実装。`quest->stop()` を呼び、running フラグを落として active quest リストから外す。`registerTier3Functions()` に 1 行追加。
+
+#### §68.2.2 Evp / EvaluatePackage（0x105E → FunctionID 0x009A）
+
+| 項目 | 値 |
+|---|---|
+| 引数 | `[1][ref]`（argLen 0 または 5） |
+| impl VA | 0x50AF90 |
+| dispatch | 0x4FDE30 |
+| SCDA 頻度 | 558（高頻度） |
+| 難易度 | trivial（約 10 行） |
+
+```asm
+0x50AF90: push ecx
+0x50AF91: push 0x00b152b0        ; PTR_DAT - AI package type table
+0x50AF96: mov ecx, [esp+0x14]    ; ref arg
+0x50AFA0: push eax
+0x50AFA1: lea eax, [esp+0xc]
+0x50AFA5: push eax
+0x50AFA6: call 0x4FAE80          ; gate
+0x50AFAB: test al, al
+0x50AFAD: jne 0x50AFB4
+0x50AFAF: xor al, al
+0x50AFB1: ret
+0x50AFB4: call 0x569020          ; PackageSelect_Main
+0x50AFB9: mov al, 1
+0x50AFBB: ret
+```
+
+実体は `0x569020`（PackageSelect_Main）の呼出のみ。`actor->evaluatePackage()` 相当。
+
+#### §68.2.3 PlaySound（0x1026 → FunctionID 0x009B）
+
+| 項目 | 値 |
+|---|---|
+| 引数 | `[1][soundRef]`（argLen 5 固定） |
+| impl VA | 0x509490 |
+| dispatch | 0x4FDE30 |
+| struct | 0xA9E4（sound reference） |
+| flags | 0x00010000（no ref / modify） |
+| SCDA 頻度 | 111 |
+| 難易度 | medium（約 40 行、サウンドシステム統合が必要） |
+
+```asm
+0x509490: push ecx
+0x509491: mov ecx, [esp+0xc]     ; sound ref
+0x509495: push eax
+0x509496: lea eax, [esp+8]
+0x50949A: push eax
+0x50949B: call 0x4FAE80
+0x5094A0: test al, al
+0x5094A2: jne 0x5094A9
+0x5094A4: xor al, al
+0x5094A6: ret
+0x5094A9: call 0x6AE0A0          ; SoundCreate
+0x5094AE: call 0x6B7190          ; SoundPlay
+0x5094B3: call 0x6B73E0          ; SetActive
+0x5094B8: mov al, 1
+0x5094BA: ret
+```
+
+3 段（生成 → 再生 → アクティブ化）を踏む唯一の medium 案件。移植側は `AudioManager` に 1 本の `playSound(formID)` を用意して 3 段を内包させる。
+
+#### §68.2.4 ModCrimeGold（0x1076 → FunctionID 0x009C）
+
+| 項目 | 値 |
+|---|---|
+| 引数 | `[1][ref][delta]`（argLen 5 / 7 / 8） |
+| impl VA | 0x504D00 |
+| dispatch | 0x4FDE30 |
+| struct | 0xA6CC（ref + float） |
+| flags | 0x00010000 |
+| SCDA 頻度 | 15 |
+| 難易度 | trivial（約 35 行） |
+
+```asm
+0x504D00: push ecx
+0x504D01: fild dword [esp+0x14]  ; load delta as int
+0x504D05: mov ecx, [esp+0x10]    ; ref
+0x504D09: push eax
+0x504D0A: lea eax, [esp+8]
+0x504D0E: push eax
+0x504D0F: call 0x4FAE80
+0x504D14: test al, al
+0x504D16: jne 0x504D1D
+0x504D18: xor al, al
+0x504D1A: ret
+0x504D1D: call [eax+0x254]       ; Actor.vt+0x254 = ModCrimeGold
+0x504D23: mov al, 1
+0x504D25: ret
+```
+
+delta は `fild` で整数→float 変換される。実体は `Actor` の vtable スロット **+0x254**。
+
+#### §68.2.5 SetCrimeGold（0x1075 → FunctionID 0x009D）
+
+| 項目 | 値 |
+|---|---|
+| 引数 | `[1][ref][gold]`（argLen 5 / 7） |
+| impl VA | 0x50B4A0 |
+| dispatch | 0x4FDE30 |
+| struct | 0xA6CC |
+| flags | 0x00010000 |
+| SCDA 頻度 | 9 |
+| 難易度 | trivial（約 30 行） |
+
+ModCrimeGold と同系。差分加算ではなく直接設定。
+
+#### §68.2.6 KillActor（0x108B → FunctionID 0x009E）
+
+| 項目 | 値 |
+|---|---|
+| 引数 | `[1][targetRef]`（argLen 2 / 5） |
+| impl VA | 0x501960 |
+| dispatch | 0x4FDE30 |
+| struct | 0xABAC（ref） |
+| flags | 0x00010001（ref required） |
+| SCDA 頻度 | 121 |
+| 難易度 | trivial（約 25 行） |
+
+```asm
+0x501960: push ecx
+0x501961: mov ecx, [esp+0xc]
+0x501965: push eax
+0x501966: lea eax, [esp+8]
+0x50196A: push eax
+0x50196B: call 0x4FAE80
+0x501970: test al, al
+0x501972: jne 0x501979
+0x501974: xor al, al
+0x501976: ret
+0x501979: call 0x9832E6          ; RTDynamicCast (resolve ref)
+0x50197E: test eax, eax
+0x501D80: je 0x50198C
+0x501982: push 0
+0x501984: push 0
+0x501986: mov ecx, eax
+0x501988: call 0x6005F0          ; Actor::Kill
+0x50198D: mov al, 1
+0x50198F: ret
+```
+
+`0x9832E6` は `RTDynamicCast`（`0xB03070` = Actor RTTI）。キャスト失敗時は `al=1` を返す（無言成功）点に注意 [確定]。
+
+#### §68.2.7 ResurrectActor（0x108C → FunctionID 0x009F）
+
+| 項目 | 値 |
+|---|---|
+| 引数 | `[1][targetRef]`（argLen 2 / 7） |
+| impl VA | 0x510150 |
+| dispatch | 0x4FDE30 |
+| struct | 0xA6D8 |
+| flags | 0x00010001 |
+| SCDA 頻度 | 63 |
+| 難易度 | trivial（約 25 行） |
+
+```asm
+0x510150: push ecx
+0x510151: mov ecx, [esp+0xc]
+0x510155: push eax
+0x510156: lea eax, [esp+8]
+0x51015A: push eax
+0x51015B: call 0x4FAE80
+0x510160: test al, al
+0x510162: jne 0x510169
+0x510164: xor al, al
+0x510166: ret
+0x510169: call [eax+0x20C]       ; Actor.vt+0x20C = Resurrect
+0x51016F: mov al, 1
+0x510171: ret
+```
+
+**既存 Resurrect（0x0015）との違い** [確定]: 0x0015 は旧実装で HighProcess 再生成を含む。0x108C は新実装で `Actor` vtable スロット **+0x20C** を呼ぶだけ。移植側では別 FunctionID として扱う。
+
+### §68.3 実装順序 [推定]
+
+| Phase | FunctionID | opcode | 難易度 | 行数 | 備考 |
+|---|---|---|---|---|---|
+| P1 | StopQuest | 0x1037 | trivial | 約 15 | enum / bridge あり、handler 追加のみ |
+| P1 | Evp | 0x105E | trivial | 約 10 | 呼出のみ、頻度 558 で最も効果が高い |
+| P1 | KillActor | 0x108B | trivial | 約 25 | `Actor::Kill` 0x6005F0 呼出 |
+| P1 | ResurrectActor | 0x108C | trivial | 約 25 | `Actor.vt+0x20C` 呼出 |
+| P2 | ModCrimeGold | 0x1076 | trivial | 約 35 | `Actor.vt+0x254` |
+| P2 | SetCrimeGold | 0x1075 | trivial | 約 30 | crimeGold 直接設定 |
+| P2 | PlaySound | 0x1026 | medium | 約 40 | AudioManager 統合が必要 |
+
+### §68.4 変更ファイル一覧
+
+1. `script_opcodes.h` — FunctionID enum に 6 件追加（0x009A〜0x009F）
+2. `script_functions.cpp` — `fnXxx` 実装 + `registerTier3Functions()` に 7 件追加
+3. `script_functions.h` — `fnXxx` 宣言
+4. `script_disasm.cpp` — `getFunctionName` に 7 件追加
+5. `native_scda_bridge.cpp` — opcode → FunctionID マッピング 6 件追加（StopQuest は既存）
+
+### §68.5 検証項目
+
+| FunctionID | 検証内容 |
+|---|---|
+| StopQuest | クエスト開始 → StopQuest → `GetQuestRunning == false` |
+| Evp | NPC に package 付与 → Evp → package 再選択 |
+| PlaySound | SoundFormID 指定 → 再生 |
+| ModCrimeGold | bounty 加算 → guard 警戒開始 |
+| KillActor | NPC 指定 → 死亡 → ragdoll 発火 |
+| ResurrectActor | 死亡 NPC 指定 → 復活 → HP 全回復 |
+
+### §68.6 証跡
+
+- 仕様書: `tmp/re/functionid_design_spec.md`
+- ASM 証跡: `tmp/re/s69_scda_b_2_handlers.txt`（capstone detail mode）
+- opcode 表: `tmp/re/s57_svm_8_opcode_table.txt`
+
+---
+
+## §69 リスト / イベント・コンテナ構造と `+0x40` 所有オブジェクト（2026-10-22）
+
+### §69.0 概要
+
+Script VM のイベント管理とスクリプトオブジェクトのリスト操作を支える 2 系統のコンテナ構造を確定した。従来「同一オブジェクト内の同一構造」と解釈していたが、**汎用リスト・コンテナ（`this+0x40`）とイベント・コンテナ（`this+0x08`）は別構造**である [確定]。
+
+### §69.1 リスト操作の全容 [確定]
+
+| 操作 | VA | コンテナ offset | 直接 callers | 備考 |
+|---|---|---|---|---|
+| Push | 0x446CB0 | +0x00 / +0x04 | 347 | 汎用リスト挿入 |
+| Pop | 0x6135F0 | +0x40 | 234 | 汎用リスト取出 |
+| Search | 0x613640 | +0x40 | - | `node->data->id == search_id` で探索 |
+| Event Add | 0x4FB510 | +0x08 | 1 | `0x4FB5F0` からのみ呼ばれる |
+| Event Check | 0x4FB5F0 | +0x08 | 22 | form ID 照合の連結リスト走査 |
+| Event Cleanup | 0x4FA020 | +0x08 | - | 全ノード + データを free |
+
+#### コンテナ・レイアウト（`this+0x40`）[確定]
+
+| offset | フィールド | 型 |
+|---|---|---|
+| +0x00 | top_data | DataNode* |
+| +0x04 | next_node | ListNode* |
+
+#### list pop（0x6135F0）のアルゴリズム [確定]
+
+1. `container = this + 0x40`
+2. `container == NULL` または `container->next == NULL && container->top == NULL` → NULL を返す
+3. `container->top != NULL` → `container->top->data` を返す
+4. `top == NULL` の場合 → `node = container->next` を unlink（`container->next = node->next`）し、`top = node->data` を復元、`free(node)`（`0x401F20`）してループ
+
+#### 訂正 [確定]
+
+`0x613605` / `0x61E5D9` は**独立関数ではない**（前者は `0x6135F0` の関数本体内部、後者はより大きな関数の内部。直接 callers 0 件、`.rdata` vtable 参照 0 件）。既存解析に独立関数として扱った箇所があれば訂正を要する。
+
+### §69.2 イベント・コンテナと NodeData [確定]
+
+| 項目 | 値 |
+|---|---|
+| NodeData サイズ | 8 バイト |
+| NodeData +0x00 | node_id（uint32） |
+| NodeData +0x04 | mask_bits（uint32） |
+| EventContainer +0x00 | top_data（DataNode*） |
+| EventContainer +0x04 | next_node（ListNode*） |
+| cleanup_event_list | 0x4FA020 |
+
+- `cleanup_event_list`（0x4FA020）は各イベントノードとそのデータを free し、コンテナを free してポインタを NULL にする [確定]。
+- イベントノードは**個別には free されない**。script object の破棄、または `cleanup_event_list` まで残る [確定]。
+- `0x4FB510` は node_id を取る event node add で、呼出元は `0x4FB5F0` のみ [確定]。
+- `0x4FB5F0` は form ID を照合する連結リスト走査で、新規時のみ `0x4FB510` を呼ぶ [確定]。
+- `0x446CB0` は 347 callers の汎用リスト挿入で、`0x4FB510` もこれを使ってノードを挿入する [確定]。
+
+### §69.3 `+0x40` コンテナの所有オブジェクト [未確定]（WIP）
+
+汎用リスト・コンテナ（`this+0x40`）を所有するオブジェクトは、**`TESObjectREFR` の vtable スロット +0x330 の戻り値**である可能性が高い [推定]。
+
+呼出パターン（`@0x50C41A`）:
+
+```asm
+mov edx, [esi]
+mov eax, [edx+0x330]
+mov ecx, esi
+call eax
+```
+
+| 呼出元 | 関数 | 内容 |
+|---|---|---|
+| 0x50C430 | 0x50C390（スクリプト経路） | `0x4FAE80` で引数デコード後、`esi` と player `0xB333C4` を比較、`[esi+0x58]` の base form を確認、`vt+0x330(esi) -> edi`、`list_pop(edi)` = `0x6135F0`、続けて `0x6210D0(edi, popped)` を呼ぶ |
+| 0x5E6217 | 0x5E61B0（直接 callers 0 件 → 仮想関数） | グローバル `0xB3A6B0` を `0x572EA0`（float 比較）で読み、`vt+0x334(push 1)`、`vt+0x330(esi)` の順に呼ぶ |
+
+- `vt+0x330` は「所有オブジェクトを返す getter」で、`vt+0x334` は対になる設定側スロットと推定される [推定]。
+- `0x6210D0` は pop した要素を消費する側の関数で、本体未解析 [未確定]。
+
+### §69.4 逆コンパイル・カバレッジギャップ [確定]
+
+`docs/Oblivion_decompiled.c`（29 MB、commit `f83632f9` で追跡）には以下が**収録されていない**:
+
+- `FUN_006210d0` / `FUN_006135f0` / `FUN_00613640`
+- `FUN_0050c390` / `FUN_005e61b0`
+- `FUN_006162d0` / `FUN_00616190`
+
+64KB バケット単位の `FUN_` 参照被覆率は部分的なもので、`0x61xxxx` は 1,123 refs、`0x62xxxx` は 378 refs にとどまる。このため当該領域は **capstone による生 PE 手動逆アセンブル**（`va2off` + E8 byte 走査）で代替している。Ghidra MCP は本セッション時点で未接続（`list_instances` が空）。
+
+**次の一手**: Ghidra プロジェクト（`D:\Cargo\Ghidra\Oblivion.rep`）を起動し、`0x61xxxx` / `0x62xxxx` / `0x50Cxxx` / `0x5E5xxx` 帯を再逆コンパイルして `Oblivion_decompiled.c` を再生成する。
+
+### §69.5 残課題
+
+1. `+0x40` コンテナ所有クラスの確定（`vt+0x330` の実装関数の特定）
+2. flags フィールドの意味（0x00010000 / 0x00010001）
+3. `0x446CB0` 呼出元 347 件の分類
+4. コンパイラ・ハンドラ系 4 エントリ
+5. `field_20` / `field_24` の意味
+6. vtable 照合（`vt+0x330` / `vt+0x334` の実装）
+7. `[esi+0x59]` カウンタ
+8. Opcode 0x100+ のカテゴリ分類
+9. 162 expression-getter 関数
+10. イベントビット設定箇所
+11. 残り 327 command-type ハンドラ（§67 の MISS 480 と同一集合の部分）
+
+### §69.6 証跡
+
+- `tmp/re/annotate_db.json`（functions 368 / structs 7）
+- `tmp/re/svm_495_miss_addrs.md`
+- 解析スクリプト: `%TEMP%\opencode\analyze_pop_final.py` / `analyze_container_owner.py` / `analyze_owner5.py` / `analyze_vt330b.py`（セッション作業領域のため非保全）

@@ -123,6 +123,10 @@ public:
     bool activateQuest(uint32_t questFormID);
     bool completeQuest(uint32_t questFormID);
     bool failQuest(uint32_t questFormID);
+    // RE_EXE_REPORT 68.2 (native StopQuest 0x502D80): takes a running quest
+    // out of the active set without completing or failing it, so a later
+    // activateQuest can run it again.
+    bool stopQuest(uint32_t questFormID);
 
     // Stage management
     bool advanceStage(uint32_t questFormID, int32_t newStage);

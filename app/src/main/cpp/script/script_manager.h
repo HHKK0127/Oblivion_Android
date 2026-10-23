@@ -77,7 +77,8 @@ public:
         WorldManager* worldMgr,
         NpcManager* npcMgr,
         InventoryManager* invMgr,
-        QuestFlowController* questFlowController = nullptr
+        QuestFlowController* questFlowController = nullptr,
+        const ESMManager* esmManager = nullptr
     );
 
     // Load scripts from parsed ESM data

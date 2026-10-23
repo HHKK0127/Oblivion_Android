@@ -236,12 +236,16 @@ std::vector<const LodMeshData*> DistantLodManager::getVisibleLodMeshes(
     for (const auto& pair : lodMeshes_) {
         const LodMeshData& mesh = pair.second;
 
-        // Distance check
+        // Distance check. LOD meshes are large (an original block LOD mesh
+        // spans 32 cells, ~131072 units), so the distance to the bounding
+        // sphere surface decides visibility - a center-based test would cull
+        // the very block the camera is standing on.
         float dx = mesh.center.x - cameraPos.x;
         float dz = mesh.center.z - cameraPos.z;
         float dist = std::sqrt(dx * dx + dz * dz);
+        const float surfaceDistance = std::max(0.0f, dist - mesh.radius);
 
-        if (dist > viewDistance) {
+        if (surfaceDistance > viewDistance) {
             stats.culledMeshes++;
             continue;
         }
@@ -301,13 +305,12 @@ void DistantLodManager::render(Renderer* renderer, const glm::mat4& viewProj) {
     if (locCameraPos_ >= 0) {
         glUniform3f(locCameraPos_, cameraPos.x, cameraPos.y, cameraPos.z);
     }
-    if (locFadeParams_ >= 0) {
-        glUniform4f(locFadeParams_, config.fadeStartDistance, config.fadeEndDistance,
-                    0.0f, 0.0f);
-    }
     if (locFogParams_ >= 0) {
         glUniform4f(locFogParams_, config.fogDensity, config.fogStart,
                     0.55f, 0.65f);  // Fog color (sky blue-gray)
+    }
+    if (locUseTexture_ >= 0) {
+        glUniform1f(locUseTexture_, 0.0f);  // meshes opt in below
     }
 
     // Identity model matrix for world-space meshes
@@ -327,29 +330,61 @@ void DistantLodManager::render(Renderer* renderer, const glm::mat4& viewProj) {
 
         const LodMeshData& mesh = *meshPtr;
 
-        // Calculate distance-based alpha
-        float dx = mesh.center.x - cameraPos.x;
-        float dz = mesh.center.z - cameraPos.z;
-        float dist = std::sqrt(dx * dx + dz * dz);
-        float alpha = 1.0f - std::max(0.0f, std::min(1.0f,
-            (dist - config.fadeStartDistance) /
-            std::max(1.0f, config.fadeEndDistance - config.fadeStartDistance)));
+        // Sheer distance-based alpha. An original block LOD mesh spans 32 cells,
+        // so a fade driven by its center would fade out the whole landscape; it
+        // stays fully opaque and hands over via the near fade instead.
+        float alpha = 1.0f;
+        if (!mesh.blockLod) {
+            float dx = mesh.center.x - cameraPos.x;
+            float dz = mesh.center.z - cameraPos.z;
+            float dist = std::sqrt(dx * dx + dz * dz);
+            alpha = 1.0f - std::max(0.0f, std::min(1.0f,
+                (dist - config.fadeStartDistance) /
+                std::max(1.0f, config.fadeEndDistance - config.fadeStartDistance)));
+        }
 
         if (locAlpha_ >= 0) {
             glUniform1f(locAlpha_, alpha);
         }
 
-        // Bind texture if available
-        if (mesh.textureId && locTexture_ >= 0) {
+        // Fade range per mesh: generated terrain LOD meshes fade out with
+        // distance, block LOD meshes disable the far fade (they reach far beyond
+        // it) and use the near fade so the dense terrain wins up close.
+        if (locFadeParams_ >= 0) {
+            if (mesh.blockLod) {
+                glUniform4f(locFadeParams_, 0.0f, 0.0f,
+                            config.nearFadeStartDistance, config.nearFadeEndDistance);
+            } else {
+                glUniform4f(locFadeParams_, config.fadeStartDistance,
+                            config.fadeEndDistance, 0.0f, 0.0f);
+            }
+        }
+
+        // Bind the mesh texture, or clear the binding when the mesh has none so
+        // it cannot sample whatever the previous mesh left bound.
+        if (locTexture_ >= 0) {
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, mesh.textureId);
             glUniform1i(locTexture_, 0);
+        }
+        if (locUseTexture_ >= 0) {
+            glUniform1f(locUseTexture_, mesh.textureId != 0 ? 1.0f : 0.0f);
+        }
+
+        // A block LOD mesh blends over the dense terrain, so it must not write
+        // depth - otherwise it would occlude the actors and sky drawn later.
+        if (mesh.blockLod) {
+            glDepthMask(GL_FALSE);
         }
 
         // Draw mesh
         glBindVertexArray(mesh.vao);
         glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh.indices.size()),
                        GL_UNSIGNED_SHORT, nullptr);
+
+        if (mesh.blockLod) {
+            glDepthMask(GL_TRUE);
+        }
     }
 
     glBindVertexArray(0);
@@ -485,6 +520,10 @@ void DistantLodManager::renderHorizonRing(const glm::mat4& viewProj,
                                             const glm::vec3& cameraPos) {
     if (!horizonGenerated_ || !horizonData_.gpuUploaded) return;
 
+    // Phase 50 placeholder horizon: a synthetic ring of "mountains" drawn in the
+    // fog colour. It is superseded by the original block LOD meshes
+    // (OriginalLodProvider), which use the shipped landscape data, but it is
+    // kept as the fallback for worldspaces that have no original LOD.
     // Use horizon shader (same program, different uniform setup)
     // We reuse the same shader program but with identity model matrix
     glUseProgram(shaderProgram_);
@@ -499,6 +538,12 @@ void DistantLodManager::renderHorizonRing(const glm::mat4& viewProj,
     if (locAlpha_ >= 0) {
         glUniform1f(locAlpha_, 1.0f);
     }
+    // Same fade range the generated terrain LOD meshes use, so the ring keeps
+    // its historical appearance. The near fade stays off (w <= z).
+    if (locFadeParams_ >= 0) {
+        glUniform4f(locFadeParams_, config.fadeStartDistance, config.fadeEndDistance,
+                    0.0f, 0.0f);
+    }
 
     // Identity model matrix
     glm::mat4 identity;
@@ -507,10 +552,14 @@ void DistantLodManager::renderHorizonRing(const glm::mat4& viewProj,
                            reinterpret_cast<const float*>(&identity));
     }
 
-    // Disable texture for horizon
+    // Disable texture for horizon: the ring has no texcoords, so it must use its
+    // vertex colours rather than sampling an unbound texture.
     if (locTexture_ >= 0) {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, 0);
+    }
+    if (locUseTexture_ >= 0) {
+        glUniform1f(locUseTexture_, 0.0f);
     }
 
     glEnable(GL_BLEND);
@@ -765,6 +814,7 @@ bool DistantLodManager::compileShader() {
     locFogParams_ = glGetUniformLocation(shaderProgram_, "uFogParams");
     locCameraPos_ = glGetUniformLocation(shaderProgram_, "uCameraPos");
     locAlpha_ = glGetUniformLocation(shaderProgram_, "uAlpha");
+    locUseTexture_ = glGetUniformLocation(shaderProgram_, "uUseTexture");
 
     shaderCompiled_ = true;
     LOGI_DLOD("Distant LOD shader compiled and linked successfully");
@@ -784,6 +834,7 @@ void DistantLodManager::deleteShader() {
     locFogParams_ = -1;
     locCameraPos_ = -1;
     locAlpha_ = -1;
+    locUseTexture_ = -1;
 }
 
 // ============================================================================

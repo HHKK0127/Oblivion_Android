@@ -15,6 +15,10 @@
 #include "../script/native_scda_bridge.h"
 #include "../quest/quest_flow_controller.h"
 #include "../game/inventory_manager.h"
+#include "../game/npc.h"
+#include "../game/npc_manager.h"
+#include "../game/quest_manager.h"
+#include "../game/crime_reputation_system.h"
 #include "../assets/esm_reader.h"
 
 #include <chrono>
@@ -853,6 +857,178 @@ void ScriptVMTests::testScriptFunctions() {
 
         record("ScriptFunctions: Tier 5 used item", ok,
                "GetIsUsedItem compares the activation target", getTimeMs38() - start);
+    }
+
+    // Test 2g: RE 68 command registration and native name agreement. These
+    // commands only exist behind the native SCDA dispatcher, so the synthetic
+    // FunctionID space and the decoder have to agree on the exact names the
+    // bridge forwards.
+    {
+        float start = getTimeMs38();
+        ScriptFunctions funcs;
+        bool ok = true;
+
+        funcs.init(nullptr, nullptr, nullptr, nullptr);
+
+        ok = ok && funcs.hasFunction(FunctionID::StopQuest);
+        ok = ok && funcs.hasFunction(FunctionID::Evp);
+        ok = ok && funcs.hasFunction(FunctionID::PlaySound);
+        ok = ok && funcs.hasFunction(FunctionID::ModCrimeGold);
+        ok = ok && funcs.hasFunction(FunctionID::SetCrimeGold);
+        ok = ok && funcs.hasFunction(FunctionID::KillActor);
+        ok = ok && funcs.hasFunction(FunctionID::ResurrectActor);
+
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::StopQuest), "StopQuest") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::Evp), "Evp") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::PlaySound), "PlaySound") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::ModCrimeGold), "ModCrimeGold") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::SetCrimeGold), "SetCrimeGold") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::KillActor), "KillActor") == 0);
+        ok = ok && (std::strcmp(funcs.getFunctionName(FunctionID::ResurrectActor), "ResurrectActor") == 0);
+
+        ok = ok && getNativeOpcodeName(0x1037) == "StopQuest";
+        ok = ok && getNativeOpcodeName(0x105E) == "Evp";
+        ok = ok && getNativeOpcodeName(0x1026) == "PlaySound";
+        ok = ok && getNativeOpcodeName(0x1076) == "ModCrimeGold";
+        ok = ok && getNativeOpcodeName(0x1075) == "SetCrimeGold";
+        ok = ok && getNativeOpcodeName(0x108B) == "KillActor";
+        ok = ok && getNativeOpcodeName(0x108C) == "ResurrectActor";
+
+        record("ScriptFunctions: RE 68 registration", ok,
+               "Quest, package, sound, crime and lifecycle commands resolve under their native names",
+               getTimeMs38() - start);
+    }
+
+    // Test 2h: StopQuest takes the quest out of the running set without
+    // completing it, so GetQuestStarted flips back to 0 and the same quest can
+    // be started again afterwards.
+    {
+        float start = getTimeMs38();
+        QuestFlowController questFlowController;
+        ScriptFunctions funcs;
+        ExecutionContext ctx;
+        QuestRecord questRecord;
+        bool ok = true;
+
+        questRecord.formID = 0x0100ABCF;
+        questRecord.fullName = "Script VM StopQuest";
+        questRecord.stages.push_back({10});
+        questFlowController.registerQuest(questRecord);
+        funcs.init(nullptr, nullptr, nullptr, nullptr, &questFlowController);
+
+        const std::vector<ScriptValue> questArgs = {ScriptValue::makeRef(questRecord.formID)};
+
+        FunctionResult stopResult = funcs.execute(FunctionID::StopQuest, ctx, questArgs);
+        ok = ok && !stopResult.success;
+
+        FunctionResult startResult = funcs.execute(FunctionID::StartQuest, ctx, questArgs);
+        FunctionResult startedResult = funcs.execute(FunctionID::GetQuestStarted, ctx, questArgs);
+        ok = ok && startResult.success && startResult.returnValue.intVal == 1;
+        ok = ok && startedResult.success && startedResult.returnValue.intVal == 1;
+
+        stopResult = funcs.execute(FunctionID::StopQuest, ctx, questArgs);
+        ok = ok && stopResult.success && stopResult.returnValue.intVal == 1;
+
+        startedResult = funcs.execute(FunctionID::GetQuestStarted, ctx, questArgs);
+        ok = ok && startedResult.success && startedResult.returnValue.intVal == 0;
+        ok = ok && questFlowController.getQuestState(questRecord.formID) == QuestFlowState::REGISTERED;
+
+        // A stopped quest is not completed, so it can run again.
+        stopResult = funcs.execute(FunctionID::StopQuest, ctx, questArgs);
+        ok = ok && !stopResult.success;
+
+        startResult = funcs.execute(FunctionID::StartQuest, ctx, questArgs);
+        ok = ok && startResult.success;
+        ok = ok && questFlowController.getQuestState(questRecord.formID) == QuestFlowState::ACTIVE;
+
+        record("ScriptFunctions: StopQuest round trip", ok,
+               "StopQuest deactivates without completing and allows reactivation",
+               getTimeMs38() - start);
+    }
+
+    // Test 2i: Evp re-runs package selection, KillActor drives the death
+    // pipeline and ResurrectActor restores health without re-running it.
+    {
+        float start = getTimeMs38();
+        NpcManager npcManager;
+        ScriptFunctions funcs;
+        ExecutionContext ctx;
+
+        funcs.init(nullptr, nullptr, &npcManager, nullptr);
+
+        auto npc = npcManager.createNPC("RE 68 Actor", glm::vec3(0.0f, 0.0f, 0.0f));
+        bool ok = npc != nullptr;
+        if (!ok) {
+            record("ScriptFunctions: RE 68 actor lifecycle", false,
+                   "createNPC returned null", getTimeMs38() - start);
+        } else {
+            npc->status.maxHealth = 100.0f;
+            npc->status.currentHealth = 100.0f;
+            ctx.setSelfRef(npc->npcId);
+
+            // An idle actor is released to idle, a fighting actor keeps its
+            // combat package.
+            npc->aiState = AIState::IDLE;
+            FunctionResult r = funcs.execute(FunctionID::Evp, ctx, {});
+            ok = ok && r.success && r.returnValue.intVal == 1 && npc->aiState == AIState::IDLE;
+
+            npc->aiState = AIState::COMBAT;
+            r = funcs.execute(FunctionID::Evp, ctx, {});
+            ok = ok && r.success && npc->aiState == AIState::COMBAT;
+            npc->aiState = AIState::IDLE;
+
+            r = funcs.execute(FunctionID::KillActor, ctx, {});
+            ok = ok && r.success && npc->isDeadState() && npc->status.currentHealth <= 0.0f;
+
+            r = funcs.execute(FunctionID::ResurrectActor, ctx, {});
+            ok = ok && r.success && !npc->isDeadState();
+            ok = ok && npc->status.currentHealth == npc->status.maxHealth;
+            ok = ok && npc->aiState == AIState::IDLE;
+
+            // Neither command may be applied to the player reference.
+            ctx.setSelfRef(0x00000014);
+            r = funcs.execute(FunctionID::KillActor, ctx, {});
+            ok = ok && !r.success;
+            r = funcs.execute(FunctionID::ResurrectActor, ctx, {});
+            ok = ok && !r.success;
+            ctx.setSelfRef(0);
+
+            record("ScriptFunctions: RE 68 actor lifecycle", ok,
+                   "Evp keeps combat, KillActor kills and ResurrectActor restores health",
+                   getTimeMs38() - start);
+        }
+    }
+
+    // Test 2j: crime gold round trip. CrimeReputationSystem is a singleton, so
+    // the previous bounty is restored before the test returns.
+    {
+        float start = getTimeMs38();
+        ScriptFunctions funcs;
+        ExecutionContext ctx;
+        auto& crime = game::CrimeReputationSystem::getInstance();
+        const int32_t savedBounty = crime.getBounty();
+        bool ok = true;
+
+        funcs.init(nullptr, nullptr, nullptr, nullptr);
+
+        FunctionResult r = funcs.execute(FunctionID::SetCrimeGold, ctx, {ScriptValue::makeInt(500)});
+        ok = ok && r.success && r.returnValue.intVal == 500 && crime.getBounty() == 500;
+
+        r = funcs.execute(FunctionID::ModCrimeGold, ctx, {ScriptValue::makeInt(-200)});
+        ok = ok && r.success && r.returnValue.intVal == 300 && crime.getBounty() == 300;
+
+        // A negative total is clamped to zero by the crime system.
+        r = funcs.execute(FunctionID::SetCrimeGold, ctx, {ScriptValue::makeInt(-50)});
+        ok = ok && r.success && r.returnValue.intVal == 0 && crime.getBounty() == 0;
+
+        r = funcs.execute(FunctionID::ModCrimeGold, ctx, {ScriptValue::makeInt(0)});
+        ok = ok && r.success && r.returnValue.intVal == 0;
+
+        crime.setBounty(savedBounty);
+
+        record("ScriptFunctions: crime gold round trip", ok,
+               "SetCrimeGold and ModCrimeGold read back through the bounty",
+               getTimeMs38() - start);
     }
 
     // Test 3: Unknown function handling

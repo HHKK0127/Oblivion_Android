@@ -300,6 +300,22 @@ void NPC::heal(float amount) {
     status.heal(amount);
 }
 
+void NPC::resurrect() {
+    // RE_EXE_REPORT 68.2: the original clears the death state and restores
+    // health without running the death pipeline again, so the knockback
+    // slide and the death animation are reset as well.
+    deadState = false;
+    knockbackTimer = 0.0f;
+    knockbackDirection = glm::vec3(0.0f);
+    status.currentHealth = status.maxHealth;
+    if (animState == AnimState::DEATH) {
+        animState = AnimState::IDLE;
+    }
+    animTimer = 0.0f;
+    aiState = AIState::IDLE;
+    LOGI("NPC resurrected: ID=%u, Name=%s", npcId, name.c_str());
+}
+
 // ============================================================================
 // Animation State Management
 // ============================================================================

@@ -268,6 +268,32 @@ bool QuestFlowController::failQuest(uint32_t questFormID) {
     return true;
 }
 
+bool QuestFlowController::stopQuest(uint32_t questFormID) {
+    auto it = quests_.find(questFormID);
+    if (it == quests_.end()) {
+        LOGW("Quest 0x%08X not registered", questFormID);
+        return false;
+    }
+
+    auto& entry = it->second;
+    if (entry.state != QuestFlowState::ACTIVE) {
+        LOGW("Quest 0x%08X not active, cannot stop", questFormID);
+        return false;
+    }
+
+    // Stop in QuestManager
+    if (questManager_) {
+        questManager_->stopQuest(questFormID);
+    }
+
+    // REGISTERED is the known-but-not-running state activateQuest starts from.
+    changeState(questFormID, QuestFlowState::REGISTERED);
+
+    LOGI("Quest stopped: FormID=0x%08X, Name=%s",
+         questFormID, entry.record.fullName.c_str());
+    return true;
+}
+
 // ============================================================================
 // Stage Management
 // ============================================================================

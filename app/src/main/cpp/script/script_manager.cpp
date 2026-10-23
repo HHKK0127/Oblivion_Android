@@ -42,7 +42,8 @@ void ScriptManager::init(
     WorldManager* worldMgr,
     NpcManager* npcMgr,
     InventoryManager* invMgr,
-    QuestFlowController* questFlowController
+    QuestFlowController* questFlowController,
+    const ESMManager* esmManager
 ) {
     questManager_ = questMgr;
     questFlowController_ = questFlowController;
@@ -50,7 +51,7 @@ void ScriptManager::init(
     npcManager_ = npcMgr;
     inventoryManager_ = invMgr;
 
-    functions_.init(questMgr, worldMgr, npcMgr, invMgr, questFlowController);
+    functions_.init(questMgr, worldMgr, npcMgr, invMgr, questFlowController, esmManager);
 
     SCM_LOGI("ScriptManager initialized");
 }

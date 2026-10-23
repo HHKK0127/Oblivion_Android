@@ -1,6 +1,6 @@
 # Oblivion RE 完全解析ロードマップ
 
-**最終更新**: 2026-10-17
+**最終更新**: 2026-10-22
 **目的**: Oblivion_Android 移植のためのリバースエンジニアリング (RE) を «全解析完了» まで継続するための恒久タスク一覧。
 **関連**: [RE_EXE_REPORT.md](RE_EXE_REPORT.md) (主レポート) / `tmp/re/TODO_re49.md` (現行引継ぎ) / [../plan.md](../plan.md) (移植計画)
 
@@ -16,11 +16,12 @@
 
 ---
 
-## 2. 現状スナップショット (2026-10-17)
+## 2. 現状スナップショット (2026-10-22)
 
 | 項目 | 現状 |
 |---|---|
-| RE_EXE_REPORT.md | §1〜§61 / 10194 行 / 631 FUN 参照を文書化 (約 2.8%) |
+| RE_EXE_REPORT.md | §1〜§69 / 11629 行 / 683 FUN 参照を文書化 (約 3.1%) |
+| 直近の追記 | §67〜§69 (2026-10-22): Script VM MISS 480 台帳 / FunctionID 追加仕様 7 件 / リスト・イベント・コンテナ構造 |
 | 進行中 | Phase 2 Wave 6b 完了 (§61、2026-10-17)。Phase 2 全 7 項目が部分解析済み。残件 46 件 |
 | 未着手 | Phase 1 以降 (§51〜§70 / Phase 3〜7)。B13 実機 .data ダンプのみユーザー実行待ち |
 | Ghidra | `D:\Cargo\Ghidra\Oblivion.rep` (最終 2026-10-13)、カスタムスクリプト約 80 本 |
@@ -98,7 +99,7 @@
 - [~] 1-6: スクリプト VM — opcode 完全表、イベント送出全種 (※ 0x9832e6 は ___RTDynamicCast でありイベント送信ではない — C5/§55.3 訂正)。Wave 5: イベントビット表と送出 77 件、SCDA 2,393 全数パースを確定
 - [~] 1-7: セーブ/ロード — manager 0xB33B00、save 0x465130 / load 0x465860、.ess 版数 0x7d、bSaveOn* は確定。残 8 件 (§58.3)
 - [~] 1-8: キャラクタ生成・レベルアップ — スキル上昇 0x668070、ApplyLevelUp 0x66C3E0、属性ボーナス表は確定。残 8 件、birthsign 付与が最優先 (§58.4)。Wave 5: 星座ピッカーは menu 0x408 mode 3、AddSpell 0x514950 を確定 (残: 付与本体)
-- [~] 1-9: 経済・所持品 — 商人、家、盗み判定（ContainerMenu 全経路・窃盗判定は §56.5 で確定）。Wave 5: 価格経路とラッパ (0x5E11A0/0x5E1200/0x5E1100) を確定、0x676EE0 = 登録処理に訂正
+- [~] 1-9: 経済・所持品 — 商人、家、盗み判定（ContainerMenu 全経路・窃盗判定は §56.5 で確定）。Wave 5: 価格経路とラッパ (0x5E11A0/0x5E1200/0x5E1500) を確定、0x676EE0 = 登録処理に訂正
 - [~] 1-10: 錬金・修理・ソウルトラップ等 — 各メニュー ID と修理量式、魂レベル表、SoulTrap を確定。残 9 件 (§58.5)
 
 **DoD**: 各項目に実装対応先 (C++ ファイル) と検証方法を併記して §51〜§60 を完成。
@@ -197,16 +198,21 @@
 
 § 完了ごとに本表を更新する。
 
-| 指標 | 現状 (2026-10-17) | 目標 |
+| 指標 | 現状 (2026-10-23) | 目標 |
 |---|---|---|
 | EXE 関数トリアージ率 | 未計測 | 100% (Phase 5) |
-| 文書化関数 (tier A) | 631 (FUN 参照ユニーク) | 移植関連 + エンジン主要の全数 |
-| RE_EXE_REPORT § 数 | 61 (§50〜§61 追加済み、§53 欠番) | 継続 (§100 以上) |
+| 文書化関数 (tier A) | 683 (FUN 参照ユニーク) | 移植関連 + エンジン主要の全数 |
+| RE_EXE_REPORT § 数 | 69 (§50〜§69 追加済み、§53 欠番) | 継続 (§100 以上) |
+| Script VM ハンドラ | MISS 480 を台帳化 (§67)、移植済み 0 | 480/480 |
+| Script VM FunctionID | 欠落 7 件を仕様化 (§68)、実装済み 0 | 7/7 |
 | ESM レコードタイプ | 部分 (数種) | 全 ~50 種 |
 | シェーダ変種 | 176/224 | 224/224 |
 | BSA / NIF / KF 形式 | 部分 | 全形式 |
 | 補助バイナリ | 0 | 一次解析完了 |
 | 移植トレーサビリティ | 暗黙 | 表で 100% |
+| 0x400-low 誤アドレス | **0 件** (V3 監査: 131ファイル/16,081件、17候補は全件誤検出) | 0 件 |
+| 呼出しリスト GT 一致率 | **100%** (1,010/1,010 行、ノイズ0件) | 100% |
+| Ghidra デコンパイルギャップ | impl 527件中 **362件** 欠落 (対応表 `tmp/re/v5_ghidra_gaps_report.md`) | 0 件 |
 
 ---
 
@@ -247,3 +253,6 @@
 - 2026-10-17: **§59.9 (KD 再検証)** — KD の「デッドコード」断定を精密化 (damage 整数部 0 のときのみ約 1% 成立)。**Phase 2 Wave 6a (§60) 完了** — オーディオ (DirectShow + DirectSound8)、入力 (DirectInput8 / 29 アクション)、CRT・乱数 (_ftol2 = trunc、MSVC LCG)、ファイル I/O (INI 615 キー、BSA、Plugins.txt) を子セッション 4 本で解析。訂正 7 件 (§60.5)。
 - 2026-10-17: **Phase 2 Wave 6b (§61) 完了** — レンダラ (D3D9 vtable / BSShader / 19 shaderpackage)、Havok 物理 (bhk 55+ 型 / FSM 6 状態 / 移植マッピング)、アセットストリーミング (セル範囲 9 段階 / テクスチャロード / NiNode Pool) を子セッション 3 本で解析。Phase 2 全 7 項目 [~]。
 - 2026-10-20: **Phase 1 魔法 Wave 1+2 完了 (§66)** — 魔法パイプライン全体を逆アセンブリで深掘り。M1-M8 (Wave 1, 2026-10-19): パイプライン骨格 (Cast→delivery→dispatch→Reflect/Absorb→apply)、耐性/吸収/反射の式、コスト固定値 (スキル割引なし)、ActiveEffect 更新、エンチャント減算、飛翔体。M9-M15 (Wave 2, 2026-10-20): MGEF 32 コード全ハンドラ VA、適用本体 0x6A27F0、配送トリガ、Poison on-strike、AI 呪文選択、残小物。証跡: s90〜s98_magic_m*.md (9ファイル)。残: Alchemy/Enchanting crafting、SEFF VM、MGEF+0x68 ESM 書込元。
+- 2026-10-22: **§67〜§69 追記 (opencode 解析成果の統合)** — §67 Script VM MISS ハンドラ台帳 480 件 (VM 関数テーブル 0xB0AF48 / 532 エントリ / stride 0x28、gate 0x4FAE80、実装サイズ 153B〜160B の定型関数、block-type 29 / 中間域 124 / command-type 327、頻度実測 112 件)。§68 Script VM FunctionID 追加仕様 7 件 (StopQuest 0x1037 / Evp 0x105E / PlaySound 0x1026 / ModCrimeGold 0x1076 / SetCrimeGold 0x1075 / KillActor 0x108B / ResurrectActor 0x108C、新規 enum 0x009A〜0x009F)。§69 リスト/イベント・コンテナ構造 (Push 0x446CB0 / Pop 0x6135F0 / Search 0x613640 / Event Add 0x4FB510 / Check 0x4FB5F0 / Cleanup 0x4FA020、NodeData 8B、`+0x40` 所有 = TESObjectREFR vt+0x330 [推定])。訂正: `0x613605` / `0x61E5D9` は独立関数ではない。KPI 更新 (683 FUN / 11,629 行 / §69)。
+
+- 2026-10-23: **0x400-low 訂正キャンペーン完遂 + 台帳再生成 (§49.0.1)** — マッピング ground truth (`.text` 0x401000〜0xA27C39 / `VA=0x400C00+file_off`) を確定し、narrative 約35ファイル・約3,156箇所を +0x400 訂正 (`.bak`〜`.bak7`)、オラクル LOW 925→3。呼出しリスト列はオペコードテーブル由来の impl から capstone で **997行再生成** (`.bak8`、doc==GT 100%)。残ノイズ1行 (opid 0x1078) は窓先頭 impl+0x400 の境界ずれ + 0x400-low の2層原因と解明し修正 (`.bak9`) → 全1,010行でノイズ0件。**V3 過去確定値監査は新規 0x400-low 0件**。V9 は空欄20 opid を K1スタブ8/K2間接1/K3空0/K4インライン11 に分類 (impl 0x977C50 を7 opid が共有)。V5 は FUN_* 20,465件を抽出し impl 527件中362件のデコンパイル欠落を表化。V2 総括を RE_EXE_REPORT §49.0.1 へ追記。報告書: `tmp/re/v3_audit_report.md` / `tmp/re/v4v9_unresolved_report.md` / `tmp/re/v5_ghidra_gaps_report.md`。KPI 更新 (RE_EXE_REPORT 11,755 行 / 0x400-low 0件 / GT 100%)。

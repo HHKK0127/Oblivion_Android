@@ -38,6 +38,17 @@ struct LodMeshData {
     glm::vec3 center = glm::vec3(0.0f, 0.0f, 0.0f);  // Bounding sphere center
     float radius = 0.0f;               // Bounding sphere radius
 
+    // True when this mesh is a whole-landscape LOD block taken from the
+    // original game data (meshes\landscape\lod\*.nif). Such a block spans
+    // 32 cells (131072 units) and therefore:
+    //  - always uses alpha 1.0 (the center-distance fade would erase it),
+    //  - disables the far fade (its extent far exceeds fadeEndDistance),
+    //  - enables the near fade so the dense terrain drawn underneath wins
+    //    close to the player,
+    //  - does not write depth, so it never occludes the geometry, actors and
+    //    sky that are drawn after it.
+    bool blockLod = false;
+
     // GL buffer handles (managed by DistantLodManager)
     uint32_t vbo = 0;
     uint32_t ibo = 0;
@@ -56,6 +67,11 @@ struct DistantLodConfig {
     float horizonDistance = 4096.0f;    // Horizon ring radius
     float fadeStartDistance = 1024.0f;   // Distance where alpha fade begins
     float fadeEndDistance = 2048.0f;     // Distance where mesh is fully transparent
+    // Near fade, applied only to original block LOD meshes ({@code blockLod}).
+    // Fully transparent until nearFadeStartDistance, fully opaque at
+    // nearFadeEndDistance. Values with end <= start disable the near fade.
+    float nearFadeStartDistance = 4096.0f;
+    float nearFadeEndDistance = 8192.0f;
     float fogDensity = 0.0015f;         // Fog density factor
     float fogStart = 512.0f;            // Fog start distance
     int maxLodMeshes = 256;             // Maximum number of LOD meshes to track
@@ -222,6 +238,7 @@ private:
     int locFogParams_ = -1;
     int locCameraPos_ = -1;
     int locAlpha_ = -1;
+    int locUseTexture_ = -1;
 
     // ========================================================================
     // Private Methods

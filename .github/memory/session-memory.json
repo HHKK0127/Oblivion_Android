@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-22T10:05:36Z",
+  "lastUpdated": "2026-10-23T01:05:24Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -9061,12 +9061,378 @@
         "commit"
       ],
       "content": "Launcher touch fix and Phase 70 write path verified and pushed (2026-10-22).\n(1) Root cause of the launcher being untouchable: UIComponent defaults to visible, so UICharacterCreation and UIBookReader were live modals from construction - they consumed every touch in Renderer::onTouchEvent and kept anyMenuOpen() permanently true, disabling crosshair, HUD, combat buttons, virtual controller and player input. Both now call setVisible(false) in initialize() and are shown by open()/openBook(), matching UIDialogue. The character creation touch gate now mirrors the render gate (showCharacterCreation && isVisible()) at renderer.cpp onTouchEvent.\n(2) Phase 70 write path landed: assets/plugin_list.{h,cpp} owns the plugins.txt grammar (one name per line, hash comments, a leading asterisk as the active marker, BOM/CR/blank trim, case-insensitive duplicate rejection, and the rule that a marker-free file means every listed plugin is active) plus serializePluginList(), activePluginNames() and sortPluginLoadOrder() (Oblivion.esm, then other masters, then plugins, case-insensitive, stable). AssetManager::savePluginsFile() writes it back, scanDataFiles() returns load order, and LauncherScreen::persistPluginSelection() saves on every toggle with Oblivion.esm pinned active.\n(3) Verification: ./gradlew assembleDebug BUILD SUCCESSFUL (7m30s) and the host runner is ALL GREEN with PluginListTests 23/23. Commits 3ae583fb, cb4e426a, abf0a32b, 5732b73a, f00a215c pushed to origin/master.\nStill open: no device was attached (adb devices empty), so the on-device toggle round trip through filesDir/data/plugins.txt and the launcher touch regression check are unverified."
+    },
+    {
+      "id": "59ccb077-2982-4363-8a03-34d6de3b41db",
+      "timestamp": "2026-10-22T10:52:11Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "[RE] Generic list operations (2026-10-22). 0x6131F0 = generic list POP (thiscall, container at this+0x40, 234 direct callers): returns container->top->data; if top==NULL uses node=container->next, unlinks (container->next=node->next), restores top=node->data, free(node)=0x401B20, loops. 0x613240 = list search (this+0x40): walks list, returns node->data where node->data->id == search_id, else NULL. Container structure at this+0x40 = {+0x00 top_data, +0x04 next_node}. 0x613205 / 0x61E5D9 are NOT standalone functions (mid-body of 0x6131F0 / larger funcs; 0 direct callers, 0 .rdata vtable refs). List ops table: Push 0x4468B0 (+0x00/+0x04, 347 callers) | Pop 0x6131F0 (+0x40, 234) | Search 0x613240 (+0x40) | Event Add 0x4FB110 (+0x08) | Event Check 0x4FB1F0 (+0x08, 22) | Event Cleanup 0x4F9C20 (+0x08). Event container (+0x08) and generic list container (+0x40) are DIFFERENT members.",
+      "tags": [
+        "re",
+        "oblivion",
+        "list",
+        "0x6131F0",
+        "script-vm"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "4fbe74a6-abda-474f-804d-0b78296c1bcf",
+      "timestamp": "2026-10-22T10:52:11Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "[RE][WIP] +0x40 list container owner investigation (2026-10-22). The object owning the +0x40 generic list container is the return value of TESObjectREFR vt+0x330 (call pattern @0x50C41A: mov edx,[esi]; mov eax,[edx+0x330]; mov ecx,esi; call eax). Caller 0x50C430 (func 0x50C390, script path): after 0x4FAA80 arg decode, compares esi vs player 0xB333C4, checks [esi+0x58] base form, vt+0x330(esi)->edi, list_pop(edi)=0x6131F0, then 0x620CD0(edi, popped). Caller 0x5E5E17 (func 0x5E5DB0, 0 direct callers -> virtual): reads global 0xB3A6B0 via 0x572AA0 (float cmp), vt+0x334(push 1), vt+0x330(esi), [esi+0xB0]==5 check, pops, compares with player. Owner method 0x620CD0 accesses +0x40 (container), +0x6c (==7 check), +0x3c; loops nodes calling 0x615ED0(this,node->data); calls 0x615D90(this,0,0,0.0f,0.0f,arg). Owner class still UNRESOLVED: static vtable reconstruction failed (runs-of-.text-ptr scan; ctor 'mov [ecx],VT' stores; lea eax,[reg+0x40];ret; mov eax,[ecx+0x58];ret@+0x170 all noisy/misaligned). Next: disassemble 0x615ED0/0x615D90, enumerate callers of 0x620CD0.",
+      "tags": [
+        "re",
+        "oblivion",
+        "vtable",
+        "container",
+        "0x620CD0",
+        "wip"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "a1afc1d4-5f41-4199-997b-93c753bad04e",
+      "timestamp": "2026-10-22T10:52:11Z",
+      "category": "reference",
+      "priority": "medium",
+      "content": "[RE] Decompile coverage gap (2026-10-22): docs/Oblivion_decompiled.c does NOT contain FUN_00620cd0 / FUN_006131f0 / FUN_00613240 / FUN_0050c390 / FUN_005e5db0 / FUN_00615ed0 / FUN_00615d90 by name. Per-64KB FUN_ coverage is partial (0x61xxxx 1123 refs, 0x62xxxx 378 refs) -> use capstone (manual PE parse) for these addresses. Ghidra MCP still unavailable (ghidra-mcp_list_instances returned empty).",
+      "tags": [
+        "re",
+        "oblivion",
+        "decompile",
+        "gap",
+        "capstone"
+      ],
+      "compressed": false
+    },
+    {
+      "id": "49b3f1b3-b72f-4f0c-b222-36386fba2735",
+      "timestamp": "2026-10-22T10:52:11Z",
+      "category": "reference",
+      "priority": "high",
+      "content": "[RE][TODO] New task added 2026-10-22: '+0x40コンテナの所有オブジェクト特定' (high) - identify the class owning the +0x40 generic list container (return of TESObjectREFR vt+0x330). Pending TODOs after this session: flagsフィールド意味解明 (0x00010000/0x00010001), 0x4468B0呼び出し元分類 (347), コンパイラハンドラ差異 (4エントリ), field_20/field_24, vtable絞り込み, [esi+0x59]カウンター, Opcode 0x100+カテゴリ分類, 162 expression-getter分類, イベントビット設定箇所, 残り327 command-typeハンドラ.",
+      "tags": [
+        "re",
+        "oblivion",
+        "todo",
+        "task-list"
+      ],
+      "compressed": false
+    },
+    {
+      "timestamp": "2026-10-17T04:50:00Z",
+      "tags": [
+        "re",
+        "analysis",
+        "phase0",
+        "report",
+        "batch2",
+        "oblivion-exe"
+      ],
+      "id": "re-s50-batch2-complete-20261017",
+      "compressed": false,
+      "priority": "high",
+      "category": "reference",
+      "content": "Phase 0 (RE batch 2, Oblivion.exe v1.2.0416) completed 2026-10-17 via opencode child sessions: A5/A6 + B1-B13 + C1-C6 all analyzed. Final reports in tmp/re/s50_*.md (a5, dmg, input, magic_stack, gmst, container, audio, sleep_events, menus_a6, menus_c6, b13_plan). Integrated into docs/RE_EXE_REPORT.md: §50 (2026-10-16, main session) + new §55 supplement (2026-10-17, opencode session) resolving §50/§51.14 residuals: audio C1-C4 (commit FUN_595a20 scans odd indices = 5 sliders; FUN_006acd10 arg2/3 unreferenced; [0x2F4] fade target capture; FUN_6ae860=AudioManager::Update; ramp ±0.02/tick correcting §49's ±2.0 misread); SleepWaitMenu full flow + month table 0xB06710={31,28,...,31}; C5 resolved ('SUDG'=SunDamage MGEF, 0x9832E6=__RTDynamicCast, FUN_0066F420=save/load/switch cleanup [partial]); ContainerMenu cmd 51 resolved (theft ExtraData 0x27, transfer core FUN_00492E70, mode flag +0x61); VideoDisplayMenu XML SHA256 DE9BB53F...0CD5; GMST all 2304 resolved (fCombatSpeakHitChance 0xB36F50 etc.; 0xA1FDF0-A1FE30 = teardown thunks not selectors). RE_EXE_REPORT now 733,100 B / 9,527 lines / 629 unique FUN refs. TODO_re49.md all items closed except B13 (runtime .data dump, user action on Windows; plan in s50_b13_plan.md). Roadmap Phase 0 marked complete, KPI updated (roadmap_55.py). Note: §53 absent/skipped; §50-§54 owned by parallel 'main' session, opencode appended §55 instead of editing. Next: roadmap Phase 1 (§51-§60 arena) — combat pipeline, magic, AI, quest/dialog, script VM.",
+      "mergedFrom": "~/.config/opencode/memory/session-memory.json",
+      "mergedAt": "2026-10-23T01:05:24Z"
+    },
+    {
+      "timestamp": "2026-10-17T06:00:00Z",
+      "tags": [
+        "re",
+        "analysis",
+        "wave3",
+        "report",
+        "section56",
+        "oblivion-exe"
+      ],
+      "id": "re-s56-wave3-complete-20261017",
+      "compressed": false,
+      "priority": "high",
+      "category": "reference",
+      "content": "Wave 3 (RE final residuals, Oblivion.exe v1.2.0416) completed 2026-10-17 via 6 opencode child sessions; integrated into docs/RE_EXE_REPORT.md as new section 56 (report now 772,103 B / 9,696 lines / 630 unique FUN refs). Details+evidence in tmp/re/s56_*.md and s56_*.txt/py. Key results: combat - FUN_005FEBF0 tail fully decoded (call conv this=attacker/arg2=victim/ret 0xc; KD 0x5475D0: chance=min(dmgInt*(-3)/D/C, 0.25), D=clamp(agi+0.4*luck-20,0,100); KB 0x547690; fatigue: attack 0x547560 (0.1*dmg+8, power x5), block 0x547590 (5-0.04*skill), curve 0x547F00; fatigue<=0 auto-KD; marksman perks 0xB37240/0xB37248=5; block recoil iPerkHandToHandBlockRecoilChance 0xB37250=25; vt slots reconciled: Actor+0x3A8=0x5FE380, +0x3AC=0x5FEBF0; HighProcess(vt 0xA71814)+0xA8=0x631BE0/+0x3A8=0x6349D0/+0x3AC=0x655FE0; 0x6AF880=standalone 9-arg, not in any vtable). audio - 0x9828C0=_ftol2, 0x9828DC=_ftol2_sse, 0x986CD0=log10; fade node types 7=out/8=in (v=trunc(-2000*log10(...)), clamp 10000), type 3=voice-reserve (underwater, msg 0xA771F4), generator FUN_6AB8D0, payload ctor 0x6AA590; region types 0x1011/0x1101/0x1102 independent of music [0x2F4]; music fields [2E8..2F8], [0xDC] bits, ramp 0.02/tick, 0x6AA1A0 mB=2000*log10(v^2) else -10000. sleep/jail - 0x670AF0 was a misaligned misread; real funcs: 0x66F420=sleep/wait executor (CORRECTS section 55.3 'save/load cleanup'), 0x670700=serve jail (days*24h, cap 10 days, skill decay msg 0xA73E60, teleport 0x66EAF0); SUDG clear loop common to both; menu family 0x57B420(A)/0x57B560(C)/0x57B600(D)/0x57B6A0(E)/0x57B740(F); 0x3F5=PauseMenu, 0x5BDA90=show via pause_menu.xml, 0x5BDCD0=redisplay w/ 1000ms wait; 0x5056F0='AdvancePCLevel' script fn (table 0xB0E980, 0x28B stride, dispatcher 0x4FDE30); 0x65F770=advance 1 hour; jail handler 0x4AE8C0, jail enter/exit 0x670CA0. xml menu - truth=2.0/1.0 (CORRECTS section 51.4/52.6 inversion; NaN->0.0 corrects 51.5/52.2); onlyif 0x58C798 keeps acc iff op==2.0 else 0.0; bare stackingtype tokens (4 corpus files) resolve to nothing => effective 0. container - open pair F_57A8D0 guard([0xB3A6E0]+0x1C/+0x68 nonzero, GetTrait user0==2.0) -> F_599EE0; live callers 4: 0x59F2A1/0x51D749/0x4B6A5F/0x524E94, dead 0x587722; userN=0xFAE+N fully confirmed; slot3 handler ids 7/8,32,33,34,42/43,51; stacking version check 6006.0/102.0; siblings Training(0x404)/Skill(0x408)/Class(0x406). GMST loader v2 - ESM GMST values ARE applied at load: 0x44DCF0 type3 -> case 0x44E326 (byte table 0x44E6DC[2]=01) -> manager 0xB35468 vtable slot9 0x4A8040 -> map 0xB35574 Find -> entry -> slot4 0x4A7D60 write via 0x4510E0/0x4A7980; retracts old 'ghost diff'; fDifficultyDamageMultiplier stub 10.0 -> ESM 5.0 -> matches in-game 6x; 5 write systems total. Errata consolidated in section 56.7; remaining unknowns in section 56.8 (per-theme lists) plus B13 runtime .data dump still user-action. TODO_re49.md updated with section E; roadmap KPI updated (56 / 630 FUN / 9,696 lines).",
+      "mergedFrom": "~/.config/opencode/memory/session-memory.json",
+      "mergedAt": "2026-10-23T01:05:24Z"
+    },
+    {
+      "timestamp": "2026-10-17T18:30:00Z",
+      "tags": [
+        "re",
+        "analysis",
+        "phase1",
+        "wave4a",
+        "section57",
+        "oblivion-exe"
+      ],
+      "id": "re-s57-phase1-wave4a-partial-20261017",
+      "compressed": false,
+      "priority": "high",
+      "category": "reference",
+      "content": "Phase 1 Wave 4a (Oblivion.exe v1.2.0416) integrated as RE_EXE_REPORT section 57, PARTIAL (2026-10-17). 5 child sessions: combat (FUN_005FEBF0 thiscall, KD ratio T/(AgilBase+AgilMult*P), chance min(ratio,0.25), fKnockdownDamageMult -3 so dmgInt<0 needed, block value min(curve*(0.01*D*SkillMult+SkillBase)*M,0.75), recoil 0x5F4F00 at 25%; 10 open), magic (PARTIAL: vt +0x2D4=0x5E46C0 +0x398=0x5EE760 +0x3A8=0x5FE380; spell tier 0..4; cost skill factor 0.10+1.20*(1-Skill/100); 7 open incl cast entry, Resist order, MGEF dispatch), fatigue/death (corrections: Actor vtable is 0xA6E074, 0xA71814 is HighProcess; FUN_004F3870 claim wrong, 0x5F3870 is HP path; death vt+0x2C8=0x5FC440, PC 0x660CC0; resurrect opcode 0x108C exec 0x510150; 13 open), script VM (correction: table base 0xB0AF48 stride 0x28, 532 entries, sentinel 0xB10268; 0x4FDE30 is compiler-side emitter not runtime dispatcher; 141 opcodes, 131 joined; fQuestScriptDelayTime at 0xA4A07C; 10 open; old s57_svm_4/5 unreliable), economy (buy 0x5481C0 / sell 0x548240 / barter test 0x548130 / disposition 0x5489E0 / crime gold 0x606143 / attitude 0x605F60 / fine 0x676EE0 on global 0xB3BD00; price base scaling unresolved, do not port before unit tests; 14 open). Port diffs noted: combat_manager.cpp fixed values unsupported by EXE, player.cpp fatigue fixed rate, fnResurrect stub, script_opcodes.h enum space mismatch. Files: tmp/re/s57_*.md, s57_script_vm_table.txt, s57_section.md; TODO_re49.md section G.",
+      "mergedFrom": "~/.config/opencode/memory/session-memory.json",
+      "mergedAt": "2026-10-23T01:05:24Z"
+    },
+    {
+      "timestamp": "2026-10-17T19:00:00Z",
+      "tags": [
+        "re",
+        "analysis",
+        "phase1",
+        "wave4a",
+        "section57",
+        "residuals",
+        "oblivion-exe"
+      ],
+      "id": "re-s57-wave4a-residuals-20261017",
+      "compressed": false,
+      "priority": "high",
+      "category": "reference",
+      "content": "Phase 1 Wave 4a residual pass (2nd) integrated as RE_EXE_REPORT section 57.9 (2026-10-17). Magic: vtable 0xA6DFF4 (RTTI .?AVActor@@) +0x20=0x5E5240 resist (AV 0x40, or 0x43 when magic type==5; factor 0x548AD0=(a/100)*(1-b/100)), +0x24=0x5E54A0 absorb (rand%100 < GetAV(0x34 SpellAbsorbChance); reflect flag scales chance by fReflectedAbsorbChanceReduction 0xB38290=0.5; success -> vt+0x2A4(9,amt,0)=AddMagicka 0x5E2BE0), +0x28=0x5E5520 reflect (rand%100 < GetAV(0x35 SpellReflectChance)). CORRECTIONS: 0x5FE380 (Actor vt+0x3A8) is crime/friendly-fire/disposition (CHRM), 0x5EE760 (vt+0x398) is impact/ragdoll (Hit At %s) - not magic paths; fMagicResist* GMSTs (0xB37E48-60) unused in shipped build. Script VM: control-opcode switch at 0x516B63-0x516B76 with class table 0x517320 (15 bytes, opcodes 0x10-0x1E) -> jump table 0x517300 (8 classes); handlers 0x15->0x516B7D, 0x16->0x516E9F, 0x17->0x516FCE, 0x18->0x516EBE, 0x19->0x517007, 0x1E->0x517028, 0x11/0x1C/0x1D->0x5172D3 (return), 0x12-0x14/0x1A/0x1B->0x517036 default = GetCommandByID; begin (0x10) dispatches block type via 0xB0AF48+id*0x28 impl(+0x18); opcode passed as arg [esp+0x764]; 0x1C/0x1D are runtime no-ops (corrects section 56.3). Combat: KB 0x547690 formula D=clamp(Agility+0.4*Luck-20,0,100), Q=D/curve(x), force=(dmgInt*10+50)*(1-0.008*Q), clamp fKnockbackForceMax 0xB36FC8=512, applied 0x65A2C0 -> 0x8907A0 with fKnockbackTime 1.0; note KD uses curve(x)*D (multiply) while KB divides -> opposite curve direction; [esp+0x5c] written only at 0x5FEDEA and 0x5FF5A2; KB runs before KD in same call; dmgInt sign convention still unresolved. Fatigue/death: R6 sign convention (vt+0x2A4 -> proc+0x288 -> 0x6588A0 -> 0x65CA60 adds to AV modifier list); resurrect restores Health to max via 0x5F1910(8)-vt+0x288(8), fresh 0x90-byte HighProcess; KD commit at [victim+0x58].vt+0x2F0 = 0x654420 (cond: KD flag AND [esp+0x1f] AND Speed>0); PC death 0x660CC0 called from 0x5AB872 (fn 0x5AB800); OnDeath opcode 0x0A exec 0x504150 table 0xB0B0D8; no dedicated fatigue-0 action gate. Economy: extra node +4=type/+8=next/+0xC=value (resolves 0x422E20 vs 0x422DC0); 0x676EE0 delegates to object's vt+0x8C(1); crime gold 0x606140 kind->value sites confirmed; witness ranges 1500 / 2000,3000 / iCrimeAlarmRecDistance 10000; 0xB3BD00 is the crime list root for 0x676EE0. Price scaling (0.01 factor application) still unresolved. Files: tmp/re/s57_*.md (2nd-pass sections), s57_svm_9/10, s57_combatf_8*, s57_eco_9*; TODO_re49.md G1-G5 updated, G9 added.",
+      "mergedFrom": "~/.config/opencode/memory/session-memory.json",
+      "mergedAt": "2026-10-23T01:05:24Z"
+    },
+    {
+      "timestamp": "2026-10-17T19:40:00Z",
+      "tags": [
+        "re",
+        "analysis",
+        "phase1",
+        "wave4b",
+        "section58",
+        "oblivion-exe"
+      ],
+      "id": "re-s58-phase1-wave4b-20261017",
+      "compressed": false,
+      "priority": "high",
+      "category": "reference",
+      "content": "Phase 1 Wave 4b integrated as RE_EXE_REPORT section 58, PARTIAL (2026-10-17). All 10 Phase 1 items now [~]. AI: package type-name table 0xB12988 (33 entries), factory->type id constants via SetType callers (0x19/0x1a/0x1d/0x1e/0x1f/0x05/0x06/0x11/0x13), selection 0x569020 (no explicit priority; list scan -> flag -> schedule -> CTDA), schedule compare 0x568EB0, CTDA evaluator 0x56A510/0x56AC50/0x56A3B0, AI settings loader 0x4A9A00, flee confidence 0x546CC0 = conf + (1-healthRatio)*fAIFleeHealthMult 0xB36D30, flee/yield counts iAIFleeMaxHitCount 0xB36D48 / iAIYieldMaxHitCount 0xB36D78, detection 0x5F6540 + 0x640900 4 states (fSneakSeenMin/NoticedMin/LostMin/UnseenMin), sneak inner 0x5463F0 refs fDetectionSneakLightMod 0xB36CB8; no morale-specific GMST. 11 open. Quest/dialogue: CTDA function index is NOT an independent table - it indexes the script-function band (base 0xB0C8C0, stride 0x28, id = 0x1000 + index = entries 163..531 of the 532-entry table at 0xB0AF48); condition fn pointer = entry+0x20; 169 condition functions (full dump tmp/re/s58_qst_condtable.txt); operands 0..5 ==,!=,>,>=,<,<=; flags bit0=OR bit1=swap bit2=TESGlobal comp value (global+0x24); SetStage 0x529AC0 -> fragment 0x52B080, GetStage byte[quest+0x5c], start/stop 0x529820, complete 0x529840; INFO conditions at +0x18 (0x530830 -> 0x56A510), select loop 0x52F110; record type index DIAL 0x39 / INFO 0x3A / QUST 0x3B; persuasion sector test 0x5BE700 (135/225 deg), reaction 0x5BE780, bribe 0x5BE950, disposition 0x5BED80, factor 0x5BFA00; no SetObjective script fn. 8 open. Save/load: save manager global [0xB33B00]; save exec 0x465130, load exec 0x465860; callers quicksave 0x466AD0, autosave 0x466B70, normal 0x5D3230, console SaveGame 0x5023D0; filename dir(0xB3F280)+sep(0xB05564)+name+\".ess\" fmt 0xA3A88C; .ess header magic 'TES4SAVEGAME' 12B + version u16 (00 7d) + GUID 16B + u32; current version byte 0x7d (125) at +0x7c, 0x7e = error, >0x7d = warning 0xA3B450; zlib 1.2.1 statically linked (no PE import), compression offset unresolved; LoadMenu 0x5AEA60 (menu 0x40E); autosave has no fAutosave* GMST - controlled by bSaveOnRest/Wait/Travel/InteriorExteriorSwitch (default 1); quicksave/load input actions QuickSave/QuickLoad at 0x672F27/0x672F41; no .ess sample available in workspace so binary layout matching is pending. 8 open. CharGen/levelup: skill advance 0x668070 (major check 0x5E3320 -> 0x51C090(class,avIdx); major only increments [player+0x184]); AdvancePCSkill/ModPCSkill 0x50D020, AdvancePCLevel/AdvLevel 0x5056F0; pending when [+0x184] >= iLevelUpSkillCount 0xB37618=10 -> [+0x1DC]=1; LevelUpMenu 0x5ACE20 (menu 0x403) callers 0x5056F9/0x5822F5/0x671C36; commit 0x5AC730/0x5AC6A0 -> ApplyLevelUp 0x66C3E0; attribute bonus 0x664A20 -> 0x5480A0(count), table iLevelUp01..10Mult = 2,2,2,2,3,3,3,4,4,5 => 0->+1 / 1-4->+2 / 5-7->+3 / 8-9->+4 / >=10->+5, apply 0x668440; per-attribute counter [player+0x5B4][attr] (0x6648D0/0x664970), regenerated by 0x65FB30; skill cap 100, rank threshold GMSTs iSkill*Min = 25/50/75/100 at 0xB3A4F8..0xB3A510; chargen init 0x5222D0 (major +25.0, non-major x0.1+5.0); menu wrappers 0x57A9B0 SkillsMenu(0x408), 0x57AA20 ClassMenu(0x406), 0x57B7E0 RaceSex(0x40C), 0x57A940 Training(0x404); chargen script impls ShowClassMenu 0x505810 / ShowRaceMenu 0x505850 / ShowBirthSignMenu 0x505870 / SetInChargen 0x5032D0; 0x565BE0/0x565C50 AV index group converters (skill = group2 0xC-0x20). 8 open, top = birthsign ability grant path. Crafting: CORRECTION AlchemyMenu = 0x410 (0x3F1 is DialogMenu); AlchemyMenu open 0x593810 handler 0x595080 create event 14 -> 0x594CA0; alchemy skill GetAV(0x13), mortar factor 0.25*skill+apparatus (0x548400), no failure roll; potion price = value*fPotionGoldValueMult(1.0) 0x594C04; RepairMenu 0x40B / open 0x5D2070, repair amount 3.0*Armorer+0.1*Strength (0x5482F0), cost x0.9, hammer wear 0x548330; SoulTrap capture 0x6A4DF0 (sSoulCaptured 0x6A4EBB, [player+0x680]++); soul level table 0x4BC020 names / 0x4BC074 values 250/500/1000/2000/3000; RechargeMenu 0x419 / open 0x5CE840 / apply 0x5CF030 cost (a-b)*2.0 0x5483E0; EnchantmentMenu 0x412 / open 0x5A1EC0 / create 0x5A2D30, fSigilStoneUseFactor 1.0, fEnchant*Limit 15/25/40/60/85; poison apply InventoryMenu 0x5FB34C -> 0x66A490; LockPick 0x3F6 / open 0x5AF440; persuasion 0x40A. 9 open. Residual totals: Wave 4a 55 (combat 10 / magic 7 / fatigue 15 / SVM 9 / economy 14) + Wave 4b 44 (AI 11 / quest 8 / save 8 / chargen 8 / craft 9) = 99. Files: tmp/re/s58_*.md, s58_qst_condtable.txt, s58_section.md; TODO_re49.md section H; roadmap 1-4/1-5/1-7/1-8/1-10 -> [~].",
+      "mergedFrom": "~/.config/opencode/memory/session-memory.json",
+      "mergedAt": "2026-10-23T01:05:24Z"
+    },
+    {
+      "timestamp": "2026-10-17T20:20:00Z",
+      "tags": [
+        "re",
+        "analysis",
+        "phase1",
+        "wave5",
+        "section59",
+        "oblivion-exe"
+      ],
+      "id": "re-s59-phase1-wave5-20261017",
+      "compressed": false,
+      "priority": "high",
+      "category": "reference",
+      "content": "Phase 1 Wave 5 (high-priority residuals) integrated as RE_EXE_REPORT section 59 (2026-10-17). Combat: dmgInt is always non-negative ([esp+0x18] from 0x484F80, all multiply factors non-negative; writers 0x5FEDEA z-diff and 0x5FF5A2 raw copy have no sign flip) => KD 0x5475D0 requires T=dmg*(-3)<0 so it is effectively dead code for normal hits; real KD = fatigue-0 auto + Marksman perk only (port spec decision needed). Attack origination 0x5FC890 (vtable indirect Actor/Character/Creature/PC) and 0x60A640 (E8 from 0x60DB38) both reach FEBF0 via 0x5FCB80/0x60A840. Sneak multiplier: fDamageSneakAttackMult (4.0) unused; actual is 0x5477F0 selecting fPerkSneakAttack{Melee,Marksman}* by AV 0x1F (Sneak) rank. Bow projectile reuses 0x484F80 (callers 0x60CA4C/0x60CA60), speed 0x60C960 (fArrowSpeedMult/fArrowWeakSpeed). Trap: 0x608965/0x69F8DE select fProjectileKnockMultTrap 0.05 when projectile flags&0x3F==14. Method: GMST default values live in a separate default table (e.g. fKnockdownDamageMult -3.0 at 0xA57B08) - slot VAs are initialized at startup. Magic: resist/absorb/reflect are on Actor+0x68 MagicTarget sub-object vtable 0xA6DFF4 (COL 0xAC3204, offset 0x68), slots +0x20/+0x24/+0x28 = 0x5E5240/0x5E54A0/0x5E5520. Absorb 4th arg flag=1 means reflected; reflect 0x5E5520 calls target absorb with flag=1 and scales chance by fReflectedAbsorbChanceReduction 0xB38290=0.5 (was [推定], now [確定]). Type descriptors: 0xB03070 Actor, 0xB0320C AlchemyItem, 0xB03280 MagicItem, 0xB0373C IngredientItem, 0xB03834 MagicCaster. Order: vtable order resist->absorb->reflect plus reflect->absorb nesting; outer apply order still open (next: indirect-call scan of 0x694xxx-0x69Fxxx). MGEF class factory candidate 0x68ED40. 7 open. Script VM: ScriptEventList vtable 0xA49DA4, ctor 0x4FBAA0, insert 0x4FBF90 -> 0x4FB580 (ORs bit into form node +4), test 0x4FB5F0, exec 0x4FBE00/0x4F9EC0. Event bits: OnAdd 1, OnEquip 2, OnDrop 4, OnUnequip 8, OnDeath 0x10, OnMurder 0x20, OnKnockout 0x40, OnHit 0x80, OnHitWith 0x100, OnPackageStart 0x200, OnPackageDone 0x400, OnPackageChange 0x800, OnLoad 0x1000, OnReset 0x80000000; 77 send sites (OnDeath 0x5EA000, OnHit 0x5EE468/0x5FF626, OnDrop 0x4D878B, OnEquip 0x5FAEF1, OnAdd 0x4D8738, OnLoad 0x4422E5). OnActivate (0x02) uses a separate mechanism (impl 0x503F90 tests obj+0x44 bits via 0x4D8260/0x4D82E0). SCDA parsed directly from Oblivion3.esm: 2393/2393 scripts, 807,893 B, 65,628 instructions, format [u16 op][u16 argLen][argLen]. 0x001C is a length-less fixed 4-byte [u16 op][u16 refSlot] (reference slot prefix) - the old 'argLen 1..37' was a mis-parse. fQuestScriptDelayTime value slot 0xB09E28 (5.0f), read sites 0x4FBCB2/0x4FBD3D/0x4FBE7E/0x4FBEDD (old 0xB09E2C wrong). R3 partial: VMSingleton 0x516970, new frame 0x517810, RunScript wrappers 0x4F9F00/30/60, start 0x4F9EC0. ESM static read replaces scda_cache.pkl. 4 open. CharGen: menu 0x408 (skills_menu.xml) mode 3 is the birthsign picker (0x5D6390 mode3 enumerates [0xB33A98]+0x8C birthsign forms, default-selects the row matching player vt+0x268 GetBirthSign at 0x5D67B7); menu 0x405 is name-registration only (registry 0x58A0A0, push 0x405 only at 0x58A5FF), no birthsign_menu.xml; birthsign form formType 0x11. Skill progress->+1 breaker 0x668B30 ([+0x130+local] += amount, threshold 0x65FAD0 -> 0x668070(form,0,dl)); other callers 0x66A3D0 (forced), 0x4B5720 (books), 0x66C200 (load/chargen). [player+0x5B4] is a BSSimpleList (0x6648D0 inc / 0x664970 read, 0x65FB30 per-range reset at 10, 0x65FBB0 clear); ApplyLevelUp 0x66C3E0 applies bonus 0x668440 then clears via 0x65FBB0 then [+0x184]-=10 -> [+0x5BC]=0 -> [+0x1DC]. AddSpell 0x514950 / RemoveSpell 0x510B90 (VM only). 6 open, top = birthsign ability grant body (selection stored to player+0x590). Economy: price path base value V -> coef(effective haggle skill, disposition) +/- 0.01*[Player+0x11C] -> *V -> round(0x484370); multiply at 0x488F49 (buy) / 0x4890EC (sell); wrappers 0x5E11A0 sell / 0x5E1200 buy / 0x5E1100 haggle; 0x547B90 = clamp(skill+0.4*Luck-20,0,100). CORRECTION: 0x676EE0 does not compute fines (it is crime-object registration); fine = 0x606140(kind) * 0x5234A0(max mult) -> [esi+0xC]->vt+0x254(fine); vt+0x8C = 0x65AA60. Witness ranges: 1500=0x6605A0, 2000/3000=0x6773B0, 10000=iCrimeAlarmRecDistance. No dedicated gold add/sub (Gold form item transfer 0x492E70 / 0x5E4A00 -> 0x487930; count getter 0x4B2460). 6 unresolved. Files: tmp/re/s59_*.txt, s59_section.md; theme md appendices (s57_combat_full.md §15, s57_magic.md 12-18, s57_script_vm.md, s58_chargen.md, s57_economy.md); TODO_re49.md section I; roadmap Phase 1 notes + KPI (§59).",
+      "mergedFrom": "~/.config/opencode/memory/session-memory.json",
+      "mergedAt": "2026-10-23T01:05:24Z"
+    },
+    {
+      "timestamp": "2026-10-17T20:50:00Z",
+      "tags": [
+        "re",
+        "analysis",
+        "phase1",
+        "section59",
+        "verification",
+        "oblivion-exe"
+      ],
+      "id": "re-s59-9-kd-reverify-20261017",
+      "compressed": false,
+      "priority": "high",
+      "category": "error-solution",
+      "content": "Correction of the KD 'dead code' claim (RE_EXE_REPORT section 59.9). B10 GMST table: fKnockdownDamageMult 0xB36F98 = -3.0 (ref 0x547609), fKnockdownDamageBase 0xB36F90 = 0.0, fKnockdownAgilMult 0xB36F88 = 1.0, fKnockdownAgilBase 0xB36F80 = 0.0, fKnockdownChance 0xB36FA0 = 0.25; fKnockbackDamageMult 0xB36FC0 = 10.0, fKnockbackDamageBase 0xB36FB8 = 50.0, fKnockbackAgilMult 0xB36FB0 = -0.008, fKnockbackAgilBase 0xB36FA8 = 1.0, fKnockbackForceMax 0xB36FC8 = 512.0. curve(x) 0x547F00 = fFatigueBase 0xB37530 (1.25) - (1-x)*fFatigueMult 0xB37538 (0.5); eff(A,B) 0x547B90 = clamp(A + B*0.4 - 20, 0, 100) with (Agility, Luck); C = curve*eff; x = fatigue ratio 0x5F4880(victim). KD 0x5475D0: chance = min((-3*dmg)/C, 0.25); KB 0x547690: force = (10*dmg + 50)*(1 - 0.008*eff/C) clamped 512. Reachability: trunc(damage) >= 1 => chance < 0 => KD unreachable; trunc(damage) == 0 => chance = 0 => KD only when rand()%100 == 0 (~1%); roll also requires the [esp+0x3c] == 0.0 gate at 0x600218; fatigue<=0 auto-KD bypasses the roll. Evidence: tmp/re/s59_kd_verify.txt, s59_kd_verify2.txt, s50_gmst_full.txt.",
+      "mergedFrom": "~/.config/opencode/memory/session-memory.json",
+      "mergedAt": "2026-10-23T01:05:24Z"
+    },
+    {
+      "timestamp": "2026-10-17T21:20:00Z",
+      "tags": [
+        "re",
+        "analysis",
+        "phase2",
+        "wave6a",
+        "section60",
+        "oblivion-exe"
+      ],
+      "id": "re-s60-phase2-wave6a-20261017",
+      "compressed": false,
+      "priority": "high",
+      "category": "reference",
+      "content": "Phase 2 Wave 6a (engine) as RE_EXE_REPORT section 60, PARTIAL (2026-10-17). Audio: DirectShow for .mp3 (CLSID_FilterGraph, AM+0x70 IGraphBuilder, AM+0x74 IBasicAudio) + DirectSound8 for .wav/voice (ord#11); no DirectMusic. CORRECTIONS: AM+0xA6 = bAudioActive and reserved-start semantics reversed in 56.2 (A6 != 0 -> relative -arg2, A6 == 0 -> absolute now+arg2); FUN_6AD030 has no type bit2 test (bit1, bit3+4 only); [0xB161D8] = fDSoundRolloffFactor 4.0 not fade seconds. Fade window 1700ms; ramp (2t-1)*[2F8] over last 850ms; +/-0.02/tick; snap if diff<0.02. 5 volume sliders (Master/Voice/Effects/Foot/Music = 1.0/0.8/0.8/0.8/0.3, commit FUN_595A20, category bits type bit2=Voice bit3=Foot). mB = trunc(2000*log10(max(v,1e-5))) clamped [-10000,0]; [0xA785E8]=1e-5 only in FUN_6B6F20. 3D min=form[+0x38]*5, max=form[+0x39]*100, rolloff 4.0, listener IDirectSound3DListener 0x279AFA84; no EAX/reverb/doppler. 7 open. Input: DirectInput8 only (no XInput); 29 actions (0-28) + 3 special (29 Esc, 30 grave, 31 SysRq); name table 0xB02BB8; bindings inputMgr+0x1B7E byte[3][29] stride 0x1D (0xFF unbound); defaults hardcoded in FUN_00403960 matching Oblivion_default.ini [Controls]; 0x403520 is the runtime query (95 calls, held/edge/changed) not the defaults table; save/load [Controls] Name=%08X (0x404400/0x404540); reserved Esc/grave/0xB7/1-8/F1-F4; path poll 0x4046A0 -> +0x18F4/+0x19F4 -> 0x403520; QuickSave F5 / QuickLoad F9; suppression latch 0xB3A6D4 + inputMgr bit, ReleaseAll 0x404010. 6 open. CRT/RNG: 0x9828C0 = _ftol2 truncation toward zero; rounding 0x404F70 floorf, 0x484370 ceilf, 0x4842F0 truncf, 0x4843B0 round=floor(x+0.5) half-up; math 0x985B70 pow, 0x986CD0 log10, 0x986B80 ln, 0x982C30 sqrt, 0x982BFA fmod; RNG 0x9859DD MSVC rand (LCG 214013/2531011, (state>>16)&0x7FFF, RAND_MAX 32767), srand 0x9859D0, seed 0x985994; 0x47DF80 Rand(seed), 0x47DFD0 rand_range, 0x47FB70 chance bool; single global stream (per-thread seed ptd+0x14). Ports must replace std::mt19937 with the MSVC LCG; round is half-up so std::round differs for negatives; economy buy uses ceilf 0x488F58, other path uses 0x489399 round(0x4843B0). 6 open. File I/O: INI read 0x4A8800 / write 0x4A85F0 via Setting class (name:Section, jump tables 0x4A8AE4/0x4A87D4, up to 9 types); 615 keys / 36 sections in tmp/re/s60_io_ini_keys.txt; ini base dir 0x40DF80 reads [General] bUseMyGamesDirectory then SHGetFolderPathA -> My Games\\Oblivion -> 0xB3F280, second dir 0xB3F178; first run copies Oblivion_default.ini -> Oblivion.ini; logs 0x494480; Controls 29 name array 0xB02BB8; BSA BSArchive vtable 0xA35D74 magic 'BSA' version <= 0x67 (103), loader 0x42EE80, master load 0x42F610 via sArchiveList generating %sPlugins.txt; plugin order = Plugins.txt line order (read 0x404B00, '#' ignored, resolve 0x447C50 -> enable 0x44FAD0); Data path FileFinder 0x40E682; install path registry Software\\Bethesda Softworks\\Oblivion 0x40E6C0; IAT file layer (CreateFileA 8 sites, whole-file read 0x448E20, BSFile 0x430BA0); embedded zlib 1.2.1. 7 open. Files: tmp/re/s60_*.md, s60_input_actions.txt, s60_io_ini_keys.txt, s60_section.md; TODO_re49.md section J; roadmap 2-4..2-7 -> [~], Phase 2 range now section 60+.",
+      "mergedFrom": "~/.config/opencode/memory/session-memory.json",
+      "mergedAt": "2026-10-23T01:05:24Z"
+    },
+    {
+      "timestamp": "2026-10-17T21:50:00Z",
+      "tags": [
+        "re",
+        "analysis",
+        "phase2",
+        "wave6b",
+        "section61",
+        "oblivion-exe"
+      ],
+      "id": "re-s61-phase2-wave6b-20261017",
+      "compressed": false,
+      "priority": "high",
+      "category": "reference",
+      "content": "Phase 2 Wave 6b (renderer, Havok physics, asset streaming) integrated as RE_EXE_REPORT section 61 (2026-10-17). Renderer: D3D9 dynamically loaded (Direct3DCreate9 0x761DF0 / CreateDevice 0x763DE0, globals 0xB42154/0xB42160). 16 D3D9 vtable call types mapped (Clear 121, BeginScene 115, EndScene 21, Present 8, DrawPrim 6, SetRenderState 7). Shader packages: shaderpackage%03i.sdp 001-019 (0xA91658). BSShaderAccumulator (RTTI 0xA8CCC0), BSShaderManager (0xA8F240). D3DX9_27 all 26 IAT entries identified. BeginScene(115) >> EndScene(21) suggests multi-pass rendering. SetLight vtable direct calls 0 -> fixed-function pipeline usage. 6 open. Havok: version 4.0 (no hknp namespace). 55+ bhk types registered via static initializer 0x88B2A0. 0x679340 = bhkWorld queue (body->world add), ecx=0xB3BD00 (Havok context), 2 callers (death/KO paths). 0x8907A0 = impulse apply, 5 callers (KB, KD FSM, CharacterProxy velocity). Character FSM: 6 states (OnGround/InAir/Jumping/Flying/Projectile/Swimming). Port mapping: physics/ has basic Jolt implementation; gaps = impulse apply, body add queue, CharStateFSM. 8 open. Streaming: cell range fn 0x5AFE00 (9 levels). Texture load 0x760D80 (DDS/DXT1-5 detection + BSA reader 0x42C8E0 + cache 0xB4205C). NiNode Pool 0x40E5D5 (3 sizes 0x1F4/0x100/0x108, base 0xB02020). LoadingMenu 0x578E90/0x57B950/0x9F25C0. No dedicated cell-load thread. GridsToLoad path unresolved (no pointer in code/data). 6 open. Phase 2 total residuals across all 7 items: 46. Files: tmp/re/s61_*.md, s61_section.md; TODO_re49.md section K; roadmap Phase 2 all [~].",
+      "mergedFrom": "~/.config/opencode/memory/session-memory.json",
+      "mergedAt": "2026-10-23T01:05:24Z"
+    },
+    {
+      "id": "magic-re-wave1-complete-20261019",
+      "timestamp": "2026-10-19T21:00:00Z",
+      "category": "decision",
+      "priority": "high",
+      "compressed": false,
+      "tags": [
+        "magic",
+        "re",
+        "oblivion",
+        "reverse-engineering"
+      ],
+      "content": "Magic system RE Wave 1 complete (M1-M4 full). Dispatcher 0x6A2CF0 order: Reflect->Absorb->Apply(Resist). Resist formula: factor=(1-F1/100)*(1-F2/100) where F1=target.AV[ResistMagic(64)/ResistPoison(67)], F2=MGEF+0x68 override (ResistFire=61 etc). K=100.0 @0xA309F0. Absorb: d100 vs AV52(SpellAbsorbChance), Reflect: d100 vs AV53(SpellReflectChance). AV name table @0xB0A1A8 73 entries read via dialogue_filter_engine. 0x68D9F0 -> byte[[ActiveEffect+0x30]+4] in {ARMO=0x14, CLOT=0x16} -> bypass resist. M3: 23 MGEF codes registered via 0x68DA10 table at 0x9FEA90. ActiveEffect fields mapped: +0x30=TESForm*, +0x28=type etc. M5 partially entered (Actor::Hit 0x5EE760 vt+0x398, 900+ lines). All findings in tmp/re/s90_magic_m1_m2_pipeline.md, s91_magic_m3_mgef_dispatch.md.",
+      "mergedFrom": "~/.config/opencode/memory/session-memory.json",
+      "mergedAt": "2026-10-23T01:05:24Z"
+    },
+    {
+      "id": "magic-re-wave2-complete-20261020",
+      "timestamp": "2026-10-20T12:00:00Z",
+      "category": "decision",
+      "priority": "high",
+      "compressed": false,
+      "tags": [
+        "magic",
+        "re",
+        "oblivion",
+        "reverse-engineering"
+      ],
+      "content": "Magic system RE Wave 2 complete (M9-M15). M9: all 23 MGEF handler vtables + vt+0x38 tick resolved; helpers getInnerCaster 0x6A1D70 / getTargetActor 0x699050 / baseTick 0x6A86F0. M10: applyEffect 0x6A27F0 flow (factory->scale->insert->activate); removeDuplicates 0x6A1F70; markRemoved 0x68EA10. M11: spell cost is FIXED (TESSpellItem word[+8]), no runtime school discount; getCost 0x4849C0, deduct 0x488AA0, bit-slot accessor 0x41E210. M12: delivery trigger 0x69BEC0 branches touch/self vs projectile (0x69AF30) via vt+0x1c bool; state [esi+8] 3=prep/4=fired/7=done. M13: poison on-strike via 0x69BA90 (weapon+0xc effect list, [edi+0x10]==2) -> 0x69AC50 ActiveEffect gen; Alchemy/Enchanting crafting functions in menu UI not yet found. M14: AI spell scoring 0x5E5690 (action flags bit 0x800/0x2000/0x400 = aggressive/defensive/neutral), rank pack 0x51A9B0 ((type<<4+school)<<8+cost), delivery 0x60B7C0. M15: 0x68E170 flags&0x180==0x180 -> scale-invariant; dispatcher arg2.vt+0x20() = already-applied/invalid-source skip check; SEFF code 0x46464553 detected in dispatcher -> arg2.vt+0x1c() skip. Integrated into RE_EXE_REPORT.md section 66. Evidence: s90-s98_magic_m*.md (9 files). Remaining: Alchemy/Enchanting crafting, SEFF VM, MGEF+0x68 ESM loader writer.",
+      "mergedFrom": "~/.config/opencode/memory/session-memory.json",
+      "mergedAt": "2026-10-23T01:05:24Z"
+    },
+    {
+      "id": "re-copilot-sync-20261020",
+      "timestamp": "2026-10-20T12:10:00Z",
+      "priority": "medium",
+      "category": "decision",
+      "tags": [
+        "reverse-engineering",
+        "sync",
+        "copilot",
+        "opencode"
+      ],
+      "content": "RE session sync completed (2026-10-20). Project memory (.github/memory/session-memory.json) updated with: (1) opencode-re-phase1-residual-complete-20261020 - Phase 1 residual analysis (F1/F6/G3/G5/H1/H2/H4) with evidence files s99/s100/s101. (2) copilot-re-batch-20261019-20-20261020 - Copilot RE batch summary (16 items including Phase 67 Script VM, QuickKeysMenu, menu stackingtype, BSA103 hash, fGlobalTimeMultiplier, PE section audit, AI dispatch, Japanese rendering, menufade, ControlsMenu, armor skill, pause state, NPC damage path, death processing, Fatigue AV, complex scene throttle). Copilot active RE todos: gmst-table-integration (in_progress), screen-scale-decision (pending), font-jp-verify (pending), title-screen-remaining-decisions (pending). Sync mechanism: shared project memory at .github/memory/session-memory.json.",
+      "mergedFrom": "~/.config/opencode/memory/session-memory.json",
+      "mergedAt": "2026-10-23T01:05:24Z"
+    },
+    {
+      "id": "re-r1-complete-20261020",
+      "timestamp": "2026-10-20T16:00:00Z",
+      "priority": "medium",
+      "category": "decision",
+      "tags": [
+        "reverse-engineering",
+        "camera",
+        "complete"
+      ],
+      "content": "R1 Camera/View system analysis complete. 0x657003=mouse look, 0x70FDD0=yaw matrix, 0x6FAEE0=pitch clamp. Project memory synced.",
+      "mergedFrom": "~/.config/opencode/memory/session-memory.json",
+      "mergedAt": "2026-10-23T01:05:24Z"
+    },
+    {
+      "id": "opencode-batch3-dialogue-havok-magic-struct-20261021",
+      "date": "2026-10-21",
+      "title": "Oblivion batch 3: dialogue INFO resolved, Havok step chain, struct fields, magic M1-M15 all confirmed",
+      "content": "4 parallel sessions completed. (1) Dialogue INFO selection FOUND at 0x52F830 Dialogue_CreateConversation (NEW CONVERSATION CREATED log). Recursive topic/INFO resolver 0x52F010 Topic_Resolve (param+0x28 linked list, rand()%count+1 selection). Condition gate 0x530830 Topic_CanUse - shared 0x56A510 ConditionList_Evaluate. 0x59ED30=DialogueMenu_Open, 0x59E680=DialogueMenu_BuildTopicList. Old 0x569020 claim = TESPackage selection, not dialogue. (2) Havok stepDelta chain CONFIRMED: 4 TtSimulate (0x8D66F0/0x8D7F80/0x8D9B80/0x8E0500) + LtIntegrate 0x8D6E40 writes hkStepInfo to world+0x160. 0x678510 FixedStep_Accumulator runs on cell-load only, NOT connected to Havok sim loop. (3) Actor/HighProcess struct fully mapped: +0xB0 death state, +0x162 hit flag, +0x58 HighProcess ptr, +0x68 MagicTarget, +0x0C flags. HighProcess: +0x11C knockdown FSM, +0x294/0x298 AV cache, +0x1E early-return flag, +0x68 package list. Vtable: vt+0x198=0x5E33B0 IsDead, vt+0x278=ModAV gate, vt+0x2C0=AVRecalc, vt+0x3B4=0x5F5B70 DamageAbsorb, vt+0x3B8=0x6034B0 HealthCheck. (4) Magic M1-M15 ALL CONFIRMED. M3 dispatch table=0x9FEA90 23 entries via 0x68DA10 EffectSettingCollection_RegisterEffect. M6 ActiveEffect update=0x68E670 ActiveEffect::update(deltaTime). Projectile path: 0x69AF30->0x6992F0->0x6990B0 trampoline->0x6A2CF0->0x699900 OnImpact->vt+0x398=Actor::Hit. DB: 141 named functions. s58_quest.md corrected banner. s99 banner updated. TODO_re49.md H2/I2/G3/K2 rows updated.",
+      "tags": [
+        "re",
+        "oblivion",
+        "dialogue",
+        "havok",
+        "struct",
+        "magic",
+        "crosscheck",
+        "annotate"
+      ],
+      "timestamp": "2026-10-21T00:00:00Z",
+      "priority": "medium",
+      "category": "imported",
+      "mergedFrom": "~/.config/opencode/memory/session-memory.json",
+      "mergedAt": "2026-10-23T01:05:24Z",
+      "mergedNotes": [
+        "timestamp derived from the entry date",
+        "priority defaulted to medium",
+        "category defaulted to imported"
+      ]
+    },
+    {
+      "id": "opencode-decompile-crosscheck-20261021",
+      "date": "2026-10-21",
+      "title": "Oblivion decompile cross-check: 8 parallel sessions, 117 named funcs, major misidentifications corrected",
+      "content": "docs/Oblivion_decompiled.c (Ghidra full decompile, 20465 funcs) became primary RE source; annotate.py + annotate_db.json (117 named functions, CameraContext/Player/Actor/HighProcess struct fields). MAJOR CORRECTIONS vs capstone docs: (1) Economy: 0x5FAB80 is NOT price calc - running-fatigue perk block in FatigueUpdate_Main 0x5FAAE0; real pricing = BarterBuyFactor 0x5481C0 / BarterSellFactor 0x548240 + LuckAdjustedSkill 0x547B90. 0x56A300=SkillRank_Classify not merchant type. 0x5E07D0=FatigueDrain_Clamp not negative-price handler. (2) Quest: 0x569020 is AI TESPackage selection NOT dialogue INFO; 0x56A510=ConditionList_Evaluate (table 0xB0C8C0 x169, stride 0x28); 0x4D78E0=XMarker resolve. True dialogue INFO selection location unknown - new investigation required. (3) Combat: 0x5FCB80 is mid-code of HighProcess::Update 0x5FCAB0 (action dispatch JPT 0x5FE2E4); 0x6131D0=hit cone check (fCombatHitConeAngle 20deg); 0x6156C0=target resolve; 0x41DF00=+0xC bit5 flag; 0x5477F0=sneak mult with 10 GMSTs. (4) Camera: mouse look 0x657003 mis-attributed - true apply 0x652A20 + pitch 0x4DB9D0; 0x6FAEE0=angle wrap [0,2pi)+fixed-point not clamp. (5) AV/death: 0x628B20=AVChangeNotify not getter; real GetAV=0x5EAD00, ModAV=0x5E2BE0->0x65CA60 (flag0 clamp <=0); 0x62CA80=HighProcess target-eval AI not IsDead; real IsDead=0x5E33B0. Death pipeline fully mapped: 0x5FEBF0->0x5F5B70->0x5E2BE0->0x6034B0->Kill 0x6005F0->Ragdoll 0x5FA320->SetDeathState(2) 0x5E6680. s99 vtable table was HighProcess 0xA71814 not Actor. (6) Magic: dispatcher 0x6A2CF0 order reflect(0x5E5520)->absorb(0x5E54A0)->apply(0x6A27F0) mutually exclusive; Actor::Hit 0x5EE760 confirmed; MGEF+0x68=DATA+0x10 (reader 0x416100); absorb magicka=max(1,round(cost 0x548B50)) with dead skill branch. (7) Havok: stepDelta best candidate 0x8D6E40 (LtIntegrate); 0x674550 mode=3=pending-op queue CONFIRMED; 0x8A2650 NOT castRay (equality comparator); 0x679340=pending queue select/commit. TODO_re49.md rows F1/G1/G2/G3/G5/H2/I2/K2/R1 updated; correction banners in s100/s101/s102/s99. tmp/ is gitignored (local-only working docs). Git: f83632f9.",
+      "tags": [
+        "re",
+        "oblivion",
+        "decompile",
+        "crosscheck",
+        "combat",
+        "economy",
+        "quest",
+        "magic",
+        "havok",
+        "camera",
+        "av",
+        "death"
+      ],
+      "timestamp": "2026-10-21T00:00:00Z",
+      "priority": "medium",
+      "category": "imported",
+      "mergedFrom": "~/.config/opencode/memory/session-memory.json",
+      "mergedAt": "2026-10-23T01:05:24Z",
+      "mergedNotes": [
+        "timestamp derived from the entry date",
+        "priority defaulted to medium",
+        "category defaulted to imported"
+      ]
+    },
+    {
+      "id": "opencode-tasksimulate-struct-20261021",
+      "date": "2026-10-21",
+      "title": "TtSimulate chain resolved, struct fields registered (144 funcs)",
+      "content": "TtSimulate chain fully mapped: v1(0x8D66F0)/v2(0x8D7F80)/v3(0x8D9B80)/v4(0x8E0500) all via vtable slot0 dispatch (vtable vecs: 0xA96A7C/0xA96AF8/0xA96B24/0xA9A5E0). 0x8DFFB0 stepDispatch refcount-branch: first entry->stepEntry(0x8DFB70: inline LtIntegrate+collide+phaseSM), re-entry->stepPhaseSM(0x8DF6B0: case0=singleObj case4=narrowphase case5/6=GJK). 0x678510 FixedStep_Accumulator NOT connected to Havok sim loop (cell-load only). EngineFrame (top-level caller) still unknown. Struct fields: Actor(8), HighProcess(7), hkWorld(8), hkStepInfo(5)=25 total registered. DB: 144 named funcs. Pending: EngineFrame caller, timestep origin, dialogue port spec, RE_EXE_REPORT update, Wave3 magic.",
+      "tags": [
+        "re",
+        "oblivion",
+        "havok",
+        "ttsimulate",
+        "struct",
+        "annotate"
+      ],
+      "timestamp": "2026-10-21T00:00:00Z",
+      "priority": "medium",
+      "category": "imported",
+      "mergedFrom": "~/.config/opencode/memory/session-memory.json",
+      "mergedAt": "2026-10-23T01:05:24Z",
+      "mergedNotes": [
+        "timestamp derived from the entry date",
+        "priority defaulted to medium",
+        "category defaulted to imported"
+      ]
     }
   ],
   "metadata": {
-    "totalEntries": 645,
+    "totalEntries": 665,
     "compressedCount": 121,
     "sessionCount": 40,
-    "lastUpdated": "2026-10-22T10:05:36Z"
+    "lastUpdated": "2026-10-23T01:05:24Z",
+    "entry_count": 665,
+    "last_updated": "2026-10-22"
   }
 }

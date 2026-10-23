@@ -34,6 +34,13 @@
 // Note: 'far' is deliberately NOT undefined because zlib's zconf.h maps
 // FAR -> far on MSVC and relies on the empty-macro expansion.
 #undef near
+
+// WinBase.h defines IGNORE as 0 (the console ctrl handler signal), which
+// rewrites `IGNORE = 0` in game/crime_reputation_system.h's GuardResponse
+// enum into `0 = 0` and collapses the whole header. The host suites never
+// use the Win32 signal constants, so drop the macro. Engine sources stay
+// toolchain-neutral; the shim absorbs the collision.
+#undef IGNORE
 #include <cstring>
 #include <string>
 

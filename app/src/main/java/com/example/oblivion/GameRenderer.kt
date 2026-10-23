@@ -535,6 +535,9 @@ class GameRenderer : GLSurfaceView.Renderer {
     // Phase 70: plugins.txt grammar and load order
     external fun nativeRunPluginListTests(): String
 
+    // Phase 70: FormID index remapping (plugin index space to load order)
+    external fun nativeRunFormIDIndexTests(): String
+
     /**
      * Runs every native test suite and returns a combined summary.
      *
@@ -550,7 +553,8 @@ class GameRenderer : GLSurfaceView.Renderer {
             "Phase 48 Stress" to { nativeRunPhase48StressTests() },
             "Phase 38 Script VM" to { nativeRunScriptVmTests() },
             "Phase 69 Persistence" to { nativeRunPhase69PersistenceTests() },
-            "Plugin List" to { nativeRunPluginListTests() }
+            "Plugin List" to { nativeRunPluginListTests() },
+            "FormID Index" to { nativeRunFormIDIndexTests() }
         )
         for ((name, run) in suites) {
             try {

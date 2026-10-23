@@ -122,6 +122,7 @@ extern std::string g_pendingDataPath;
 // Forward declarations
 class ProfilerDashboard;
 class LoadingScreen;
+class DebugDraw;
 
 class Renderer {
 private:
@@ -150,6 +151,7 @@ private:
     std::unique_ptr<NpcDebugVisualizer> npcDebugVisualizer;
     std::unique_ptr<WorldDebugInfo> worldDebugInfo;
     std::unique_ptr<PerformanceGraph> performanceGraph;
+    std::unique_ptr<DebugDraw> debugDraw;
     std::unique_ptr<ProfilerDashboard> profilerDashboard;
 
     // Settings
@@ -360,6 +362,7 @@ public:
     NpcDebugVisualizer* getNpcDebugVisualizer() { return npcDebugVisualizer.get(); }
     WorldDebugInfo* getWorldDebugInfo() { return worldDebugInfo.get(); }
     PerformanceGraph* getPerformanceGraph() { return performanceGraph.get(); }
+    DebugDraw* getDebugDraw() { return debugDraw.get(); }
     SaveLoadUI* getSaveLoadUI() { return saveLoadUI.get(); }
     SettingsManager* getSettingsManager() { return settingsManager.get(); }
     PerformanceMonitor* getPerformanceMonitor() { return performanceMonitor.get(); }

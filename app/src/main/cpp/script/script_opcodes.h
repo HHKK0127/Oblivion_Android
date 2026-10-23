@@ -333,6 +333,17 @@ enum class FunctionID : uint16_t {
     // Engine bridge (RE 50.5): native 0x115D latches the complex-scene
     // update throttle consumed by SceneTimeThrottle.
     SetSceneIsComplex      = 0x0098,
+
+    // RE_EXE_REPORT 68: opcodes the original exposes only through the
+    // native SCDA dispatcher. They are declared here so the synthetic
+    // FunctionID space matches the native opcode names the bridge
+    // validates against.
+    Evp                    = 0x009A,   // 0x105E EvaluatePackage
+    PlaySound              = 0x009B,   // 0x1026 PlaySound
+    ModCrimeGold           = 0x009C,   // 0x1076 ModCrimeGold
+    SetCrimeGold           = 0x009D,   // 0x1075 SetCrimeGold
+    KillActor              = 0x009E,   // 0x108B KillActor
+    ResurrectActor         = 0x009F,   // 0x108C ResurrectActor
 };
 
 // ============================================================================

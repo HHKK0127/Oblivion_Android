@@ -43,6 +43,9 @@ public:
     bool acceptQuest(uint32_t questId);
     bool completeQuest(uint32_t questId);
     bool failQuest(uint32_t questId);
+    // Takes a running quest out of the active set without completing or
+    // failing it (RE_EXE_REPORT 68.2, native StopQuest 0x502D80).
+    bool stopQuest(uint32_t questId);
 
     std::shared_ptr<Quest> getQuest(uint32_t questId) const;
     std::vector<std::shared_ptr<Quest>> getQuestsByNpc(uint32_t npcId) const;

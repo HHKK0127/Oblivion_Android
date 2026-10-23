@@ -19,6 +19,7 @@
 #include "tests/combat_formulas_tests.h"
 #include "tests/phase69_persistence_tests.h"
 #include "tests/plugin_list_tests.h"
+#include "tests/formid_index_tests.h"
 
 // Print a suite summary and report whether it passed.
 static void runSuite(const char* name, bool ok, const std::string& summary, int& failed) {
@@ -118,6 +119,11 @@ int main() {
         PluginListTests t;
         const bool ok = t.runAllTests();
         runSuite("PluginListTests", ok, t.getSummary(), failed);
+    }
+    {
+        FormIDIndexTests t;
+        const bool ok = t.runAllTests();
+        runSuite("FormIDIndexTests", ok, t.getSummary(), failed);
     }
     {
         // Real Oblivion assets are not redistributable; the suite skips itself when

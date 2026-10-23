@@ -1,4 +1,5 @@
 #include "esm_reader.h"
+#include "formid_index.h"
 #include <algorithm>
 #include <cctype>
 #include <fstream>
@@ -3543,13 +3544,8 @@ size_t ESMFile::resolveAIPackageReferences(
     return resolved;
 }
 
-    void ESMFile::remapFormIDs(uint32_t baseIndex) {
-        if (baseIndex == 0) return;  // Plugin 0 (Oblivion.esm) keeps its original FormIDs
-        const uint32_t base = baseIndex << 24;
-
-        auto remap = [base](uint32_t& id) {
-            if (id != 0) id = base | (id & 0x00FFFFFF);
-        };
+    void ESMFile::remapFormIDs(const std::vector<uint32_t>& indexMap) {
+        auto remap = [&indexMap](uint32_t& id) { id = rebaseFormID(id, indexMap); };
 
         // Remap every record type that carries a formID
         for (auto& cell : m_cells)          remap(cell.formID);
@@ -3650,7 +3646,7 @@ size_t ESMFile::resolveAIPackageReferences(
             for (auto& pkg : creature.aiPackages) remap(pkg.formID);
         }
 
-        LOGD("FormIDs remapped for %s: base=0x%06X", m_fileName.c_str(), base);
+        LOGD("FormIDs remapped for %s: %zu index(es)", m_fileName.c_str(), indexMap.size());
     }
 
     // ============================================================================
@@ -3662,6 +3658,11 @@ bool ESMManager::loadPlugin(const std::string& esmPath) {
         LOGE("Failed to load plugin: %s", esmPath.c_str());
         return false;
     }
+    // Oblivion.esm has no masters and takes index 0, so this is a no-op for the
+    // base file; any other file loaded through this path is translated the same
+    // way as the master-aware path.
+    file->remapFormIDs(
+        buildFormIDIndexMapFor(file->getFileName(), file->getMasters()));
     m_files.push_back(std::move(file));
     rebuildIndices();
     LOGD("Plugin loaded. Total: %zu", m_files.size());
@@ -3675,7 +3676,7 @@ bool ESMManager::loadPluginFromMemory(const std::string& name, const uint8_t* da
         LOGE("Failed to load plugin from memory: %s", name.c_str());
         return false;
     }
-    file->remapFormIDs(static_cast<uint32_t>(m_files.size()));
+    file->remapFormIDs(buildFormIDIndexMapFor(name, file->getMasters()));
         m_files.push_back(std::move(file));
         rebuildIndices();
         LOGD("Plugin loaded from memory. Total: %zu", m_files.size());
@@ -3690,7 +3691,7 @@ bool ESMManager::loadPluginFromMemory(const std::string& name, const uint8_t* da
 
     // Check if already loaded
     for (const auto& f : m_files) {
-        if (f->getFileName() == filename) {
+        if (pluginNameEquals(f->getFileName(), filename)) {
             LOGD("Plugin already loaded: %s", filename.c_str());
             return 0;
         }
@@ -3708,12 +3709,12 @@ bool ESMManager::loadPluginFromMemory(const std::string& name, const uint8_t* da
     const std::string dataPath = esmPath.substr(0, esmPath.find_last_of("/\\") + 1);
     for (const auto& master : file->getMasters()) {
         // Skip Oblivion.esm — it's always loaded first by the launcher
-        if (master == "Oblivion.esm" || master == "OBLIVION.ESM") continue;
+        if (pluginNameEquals(master, kBasePluginFileName)) continue;
 
         // Check if master is already loaded
         bool alreadyLoaded = false;
         for (const auto& f : m_files) {
-            if (f->getFileName() == master) {
+            if (pluginNameEquals(f->getFileName(), master)) {
                 alreadyLoaded = true;
                 break;
             }
@@ -3729,9 +3730,9 @@ bool ESMManager::loadPluginFromMemory(const std::string& name, const uint8_t* da
         loaded += result;
     }
 
-    // Now add the plugin itself — remap its FormIDs first so that the
+    // Now add the plugin itself — translate its FormIDs first so that the
         // load-order index (bits 24-31) is baked in before rebuildIndices().
-        file->remapFormIDs(static_cast<uint32_t>(m_files.size()));
+        file->remapFormIDs(buildFormIDIndexMapFor(filename, file->getMasters()));
         m_files.push_back(std::move(file));
     m_pluginLoadOrder.push_back(filename);
     loaded++;
@@ -3761,7 +3762,7 @@ int ESMManager::loadPluginsFromList(const std::vector<std::string>& pluginNames)
         // Check if already loaded
         bool alreadyLoaded = false;
         for (const auto& f : m_files) {
-            if (f->getFileName() == cleanName) {
+            if (pluginNameEquals(f->getFileName(), cleanName)) {
                 alreadyLoaded = true;
                 break;
             }
@@ -3789,6 +3790,26 @@ const std::vector<std::string>& ESMManager::getPluginMasters(size_t fileIndex) c
     static const std::vector<std::string> empty;
     if (fileIndex >= m_files.size()) return empty;
     return m_files[fileIndex]->getMasters();
+}
+
+std::vector<uint32_t> ESMManager::buildFormIDIndexMapFor(
+    const std::string& pluginName, const std::vector<std::string>& masters) const {
+    std::vector<std::string> loadedNames;
+    loadedNames.reserve(m_files.size());
+    for (const auto& file : m_files) loadedNames.push_back(file->getFileName());
+
+    // The plugin itself takes the next free slot, which is where it is about to
+    // be pushed.
+    const std::vector<uint32_t> indexMap =
+        buildFormIDIndexMap(masters, loadedNames, static_cast<uint32_t>(m_files.size()));
+
+    for (size_t i = 0; i < masters.size(); i++) {
+        if (indexMap[i] == kUnresolvedFormIDIndex) {
+            LOGW("%s: master not loaded, its FormIDs keep index %zu: %s",
+                 pluginName.c_str(), i, masters[i].c_str());
+        }
+    }
+    return indexMap;
 }
 
 void ESMManager::cleanup() {

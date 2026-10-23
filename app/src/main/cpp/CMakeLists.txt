@@ -278,6 +278,7 @@ add_library(native-lib SHARED
     assets/bsa_reader.cpp
     assets/esm_reader.cpp
     assets/plugin_list.cpp
+    assets/formid_index.cpp
 
     # Phase 46: Asset Pipeline
     assets/texture_manager.cpp
@@ -326,6 +327,9 @@ add_library(native-lib SHARED
 
     # Tests (Phase 70: plugins.txt grammar and load order)
     tests/plugin_list_tests.cpp
+
+    # Tests (Phase 70: FormID index remapping)
+    tests/formid_index_tests.cpp
 
     # Physics System (Phase 36 - Jolt Physics)
     physics/physics_manager.cpp

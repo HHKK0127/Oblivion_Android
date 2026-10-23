@@ -39,12 +39,18 @@ constexpr NativeFunctionMapping kNativeFunctionMappings[] = {
     {0x1072, FunctionID::Lock},
     {0x1073, FunctionID::Unlock},
     {0x1089, FunctionID::SetFactionRank},
-    {0x108C, FunctionID::Resurrect},
+    {0x108C, FunctionID::ResurrectActor},
     {0x109E, FunctionID::MoveTo},
     {0x10EC, FunctionID::SetGhost},
     {0x10F1, FunctionID::SetUnconscious},
     {0x1133, FunctionID::SetLevel},
     {0x115D, FunctionID::SetSceneIsComplex},
+    // RE_EXE_REPORT 68 additions. StopQuest (0x1037) is already mapped above.
+    {0x105E, FunctionID::Evp},
+    {0x1026, FunctionID::PlaySound},
+    {0x1076, FunctionID::ModCrimeGold},
+    {0x1075, FunctionID::SetCrimeGold},
+    {0x108B, FunctionID::KillActor},
 };
 
 // Converts one decoded token into a ScriptValue. A variable token names a slot

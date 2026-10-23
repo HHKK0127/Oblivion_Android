@@ -24,6 +24,17 @@ void Quest::fail() {
     }
 }
 
+void Quest::stop() {
+    // Returning to PENDING puts the quest back in the pool it was accepted
+    // from, so StartQuest can run it again; objectives go back to pending
+    // rather than failed, which is what separates stop() from fail().
+    state = QuestState::PENDING;
+    for (auto& obj : objectives) {
+        obj.state = QuestObjectiveState::PENDING;
+    }
+    timeAccepted = 0;
+}
+
 void Quest::updateObjective(uint32_t objectiveId, uint32_t progress) {
     for (auto& obj : objectives) {
         if (obj.objectiveId == objectiveId) {
@@ -219,6 +230,32 @@ bool QuestManager::failQuest(uint32_t questId) {
     }
 
     LOGI("Quest failed: ID=%u, Title=%s", questId, quest->title.c_str());
+    return true;
+}
+
+bool QuestManager::stopQuest(uint32_t questId) {
+    auto it = quests.find(questId);
+    if (it == quests.end()) {
+        LOGW("Quest ID %u not found", questId);
+        return false;
+    }
+
+    auto quest = it->second;
+    if (quest->state == QuestState::COMPLETED || quest->state == QuestState::FAILED) {
+        LOGW("Quest %u has already ended", questId);
+        return false;
+    }
+
+    auto activeIt = std::find(activeQuests.begin(), activeQuests.end(), questId);
+    if (activeIt == activeQuests.end()) {
+        LOGW("Quest %u is not running", questId);
+        return false;
+    }
+
+    activeQuests.erase(activeIt);
+    quest->stop();
+
+    LOGI("Quest stopped: ID=%u, Title=%s", questId, quest->title.c_str());
     return true;
 }
 

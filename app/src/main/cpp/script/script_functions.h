@@ -20,6 +20,9 @@ class NpcManager;
 class InventoryManager;
 
 namespace oblivion {
+
+class ESMManager;
+
 namespace script {
 
 // ============================================================================
@@ -53,7 +56,8 @@ public:
         WorldManager* worldMgr,
         NpcManager* npcMgr,
         InventoryManager* invMgr,
-        QuestFlowController* questFlowController = nullptr
+        QuestFlowController* questFlowController = nullptr,
+        const ESMManager* esmManager = nullptr
     );
 
     // Execute a function by ID
@@ -76,6 +80,12 @@ private:
     WorldManager* worldManager_ = nullptr;
     NpcManager* npcManager_ = nullptr;
     InventoryManager* inventoryManager_ = nullptr;
+    // SOUN record lookup for PlaySound (RE_EXE_REPORT 68.2, 0x509490).
+    const ESMManager* esmManager_ = nullptr;
+
+    // SOUN FormID -> AudioManager clip id. loadClip assigns a fresh id on
+    // every call, so the mapping has to be cached to avoid leaking clips.
+    std::unordered_map<uint32_t, uint32_t> soundClips_;
 
     // Function registry
     std::unordered_map<uint16_t, FunctionHandler> handlers_;
@@ -216,6 +226,15 @@ private:
     FunctionResult fnIsQuestStageDone(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
     FunctionResult fnGetQuestCompleted(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
     FunctionResult fnGetQuestStarted(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+
+    // --- RE_EXE_REPORT 68 function implementations (native dispatcher port) ---
+    FunctionResult fnStopQuest(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnEvp(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnPlaySound(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnModCrimeGold(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnSetCrimeGold(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnKillActor(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
+    FunctionResult fnResurrectActor(ExecutionContext& ctx, const std::vector<ScriptValue>& args);
 
     // --- Tier 4 function implementations ---
     FunctionResult fnGetDead(ExecutionContext& ctx, const std::vector<ScriptValue>& args);

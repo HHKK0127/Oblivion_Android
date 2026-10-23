@@ -73,6 +73,7 @@ struct Quest {
     void accept();
     void complete();
     void fail();
+    void stop();
     void updateObjective(uint32_t objectiveId, uint32_t progress);
     bool allObjectivesCompleted() const;
     uint32_t getCompletedObjectiveCount() const;

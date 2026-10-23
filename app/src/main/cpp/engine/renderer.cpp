@@ -2480,7 +2480,8 @@ bool Renderer::initGameSystems() {
         worldManager.get(),
         npcManager.get(),
         inventoryManager.get(),
-        questFlowController.get());
+        questFlowController.get(),
+        assetManager ? &assetManager->getEsmManager() : nullptr);
     LOGI("ScriptManager initialized successfully");
 
         // Initialize Phase 36 Jolt Physics

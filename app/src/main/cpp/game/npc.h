@@ -163,6 +163,9 @@ struct NPC {
     void onDeath(const glm::vec3& hitDirection = glm::vec3(0.0f));
     bool isDeadState() const { return deadState; }
     void heal(float amount);
+    // Restores a dead actor to full health (RE_EXE_REPORT 68.2, actor
+    // vt+0x20C). Normal healing refuses to touch a corpse.
+    void resurrect();
     float getAttackPower() const;
     bool canAttack() const;
     void enterCombat(std::shared_ptr<NPC> opponent);

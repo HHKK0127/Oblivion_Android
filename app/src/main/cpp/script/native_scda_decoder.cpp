@@ -644,8 +644,8 @@ std::string getNativeOpcodeName(uint16_t opcode) {
         case 0x1083: return "CureForVampirism";
         case 0x1088: return "GetIsReference";
         case 0x1089: return "SetFactionRank";
-        case 0x108B: return "Kill";
-        case 0x108C: return "Resurrect";
+        case 0x108B: return "KillActor";
+        case 0x108C: return "ResurrectActor";
         case 0x108D: return "IsTalking";
         case 0x108F: return "GetCurrentAIProcedure";
         case 0x1095: return "GetIsCurrentWeather";

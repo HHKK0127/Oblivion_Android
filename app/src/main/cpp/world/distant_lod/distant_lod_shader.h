@@ -42,23 +42,35 @@ in float vDistance;
 in vec3 vWorldPos;
 
 uniform sampler2D uTexture;
-uniform vec4 uFadeParams;    // x=startDist, y=endDist, z=unused, w=unused
+uniform vec4 uFadeParams;    // x=far fade start, y=far fade end, z=near fade start, w=near fade end
 uniform vec4 uFogParams;     // x=density, y=startDist, z=fogR, w=fogG
 uniform float uAlpha;        // Global alpha multiplier
+uniform float uUseTexture;   // 1.0 to sample uTexture, 0.0 to use the vertex colour only
 
 out vec4 fragColor;
 
 void main() {
-    // Sample texture
-    vec4 texColor = texture(uTexture, vTexCoord);
+    // Sample texture. Meshes without a texture (generated terrain LOD, horizon
+    // ring) use their vertex colour; sampling a texture unit with no texture
+    // bound is undefined and would leak the previously bound texture.
+    vec4 baseColor = (uUseTexture > 0.5) ? texture(uTexture, vTexCoord) * vColor : vColor;
 
-    // Mix with vertex color for terrain tinting
-    vec4 baseColor = texColor * vColor;
+    // Far fade: linear alpha falloff with distance. Disabled when the range is
+    // empty (end <= start), which is how whole-landscape block LOD meshes opt
+    // out - their extent reaches far beyond any useful fade end.
+    float fadeFactor = 1.0;
+    if (uFadeParams.y > uFadeParams.x) {
+        float fadeStart = uFadeParams.x;
+        float fadeEnd = uFadeParams.y;
+        fadeFactor = 1.0 - clamp((vDistance - fadeStart) / max(fadeEnd - fadeStart, 1.0), 0.0, 1.0);
+    }
 
-    // Distance fade: linear alpha falloff
-    float fadeStart = uFadeParams.x;
-    float fadeEnd = uFadeParams.y;
-    float fadeFactor = 1.0 - clamp((vDistance - fadeStart) / max(fadeEnd - fadeStart, 1.0), 0.0, 1.0);
+    // Near fade: ramps a mesh in once the camera is far enough, so a coarse
+    // mesh overlapping high-detail geometry does not show through as a shell.
+    // Disabled when the range is empty (w <= z).
+    if (uFadeParams.w > uFadeParams.z) {
+        fadeFactor *= clamp((vDistance - uFadeParams.z) / max(uFadeParams.w - uFadeParams.z, 1.0), 0.0, 1.0);
+    }
 
     // Fog: exponential distance fog
     float fogDensity = uFogParams.x;

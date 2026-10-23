@@ -1239,12 +1239,14 @@ public:
         size_t resolveAIPackageReferences(
             const std::unordered_map<uint32_t, const AIPackageData*>* external = nullptr);
 
-                // Remap all FormIDs in this file by OR-ing (baseIndex << 24) into each
-                // record's formID. This implements the standard Oblivion load-order
-                // FormID scheme where bits 24-31 encode the 0-based plugin index.
+                // Translate this file's FormIDs from its own MAST-relative index
+                // space into the manager's load-order space (see
+                // assets/formid_index.h). The map comes from
+                // ESMManager::buildFormIDIndexMapFor(); an identity map, as used
+                // for Oblivion.esm, leaves every FormID untouched.
                 // Must be called after all records are decoded and before the file is
                 // added to the ESMManager's file list.
-                void remapFormIDs(uint32_t baseIndex);
+                void remapFormIDs(const std::vector<uint32_t>& indexMap);
 
 private:
     std::string m_fileName;
@@ -1690,6 +1692,13 @@ public:
         std::unordered_map<uint32_t, size_t> m_subspaceIndex;
 
     void rebuildIndices();
+
+        // Index map that translates `masters` (a plugin's MAST list, in file
+        // order) into load-order indices for the files loaded so far, with the
+        // next free index appended as the plugin's own. Masters that are not
+        // loaded are reported and marked unresolved. See assets/formid_index.h.
+        std::vector<uint32_t> buildFormIDIndexMapFor(const std::string& pluginName,
+                                                     const std::vector<std::string>& masters) const;
 };
 
 } // namespace oblivion
