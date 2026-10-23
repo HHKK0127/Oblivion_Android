@@ -94,6 +94,9 @@ add_library(native-lib SHARED
     world/distant_lod/distant_lod_manager.cpp
     world/distant_lod/distant_lod_horizon.cpp
 
+    # Phase 65: original landscape LOD blocks (meshes\landscape\lod)
+    world/distant_lod/original_lod_provider.cpp
+
     # Game Systems
     game/npc.cpp
     game/npc_manager.cpp

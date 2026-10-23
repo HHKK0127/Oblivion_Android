@@ -29,7 +29,7 @@ class Renderer;
 // ============================================================================
 
 struct LodMeshData {
-    std::vector<float> vertices;        // x,y,z, u,v, r,g,b,a per vertex (stride=8)
+    std::vector<float> vertices;        // x,y,z, u,v, r,g,b per vertex (stride=8)
     std::vector<uint16_t> indices;      // Triangle indices
     uint32_t textureId = 0;             // GL texture handle
     int lodLevel = 0;                   // 0=highest detail, increasing = lower detail
@@ -72,8 +72,12 @@ struct DistantLodConfig {
     // nearFadeEndDistance. Values with end <= start disable the near fade.
     float nearFadeStartDistance = 4096.0f;
     float nearFadeEndDistance = 8192.0f;
-    float fogDensity = 0.0015f;         // Fog density factor
-    float fogStart = 512.0f;            // Fog start distance
+    // Placeholder fog used until the renderer pushes the real weather values
+    // through setFog(). They mirror the fallback the terrain pass uses when no
+    // weather system is present (visibility 20000, near = 0.35 * far).
+    float fogColor[3] = {0.2f, 0.2f, 0.2f};
+    float fogRangeNear = 7000.0f;
+    float fogRangeFar = 20000.0f;
     int maxLodMeshes = 256;             // Maximum number of LOD meshes to track
     int downsampleFactor = 4;           // Heightmap downsample factor (65 -> ~16)
 };
@@ -175,6 +179,24 @@ public:
     void setConfig(const DistantLodConfig& cfg) { config = cfg; }
     const DistantLodConfig& getConfig() const { return config; }
 
+    // Push the current weather fog so the LOD pass matches the terrain, water
+    // and static-object passes. fogNear/fogFar is a linear ramp in world units
+    // (the renderer passes visibility * 0.35 and visibility).
+    void setFog(float r, float g, float b, float fogNear, float fogFar) {
+        config.fogColor[0] = r;
+        config.fogColor[1] = g;
+        config.fogColor[2] = b;
+        config.fogRangeNear = fogNear;
+        config.fogRangeFar = fogFar;
+    }
+
+    // The Phase 50 horizon ring is a placeholder for terrain beyond the LOD ring.
+    // Both real LOD sources now reach the far plane and are drawn in the same
+    // radius, so the renderer disables the placeholder. Defaults to enabled to
+    // keep the Phase 50 configuration meaningful on its own.
+    void setHorizonRingEnabled(bool enabled) { horizonRingEnabled_ = enabled; }
+    bool isHorizonRingEnabled() const { return horizonRingEnabled_; }
+
     // ========================================================================
     // Statistics
     // ========================================================================
@@ -221,6 +243,7 @@ private:
     // Horizon ring
     HorizonData horizonData_;
     bool horizonGenerated_ = false;
+    bool horizonRingEnabled_ = true;
 
     // Frustum planes (6: left, right, top, bottom, near, far)
     DistantFrustumPlane frustumPlanes_[6];
@@ -235,7 +258,8 @@ private:
     int locModel_ = -1;
     int locTexture_ = -1;
     int locFadeParams_ = -1;
-    int locFogParams_ = -1;
+    int locFogColor_ = -1;
+    int locFogRange_ = -1;
     int locCameraPos_ = -1;
     int locAlpha_ = -1;
     int locUseTexture_ = -1;

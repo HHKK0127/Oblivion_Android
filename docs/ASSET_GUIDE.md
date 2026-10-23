@@ -121,6 +121,18 @@ bsa_Extraction/
 起動時 OP は `IntroVideoActivity.kt` の `CLIP_SEQUENCE` によりオリジナルと同一順序で再生される:
 Bethesda Softworks HD720p（`bethesda_logo.mp4`）→ 2K Games（`2k_games_logo.mp4`）→ Game Studios（`game_studios_logo.mp4`）→ Oblivion Legal（`oblivion_legal.mp4`）。その後、タイトル画面へ遷移し、`GameRenderer.kt` が『OBLIVION』タイトルロゴ（`oblivion_iv_logo.mp4`、1 回だけ再生）→ 背景ループ（`map_loop.mp4`、1% の確率で `credits_menu.mp4`）の流れで再生する。`oblivion_intro.mp4` は New Game 時の導入シネマティックであり、このシーケンスには含まれない。未配置のクリップは自動スキップされるため、動画ファイルは個別に追加可能。
 
+### BSA 直読みアセット（抽出不要）
+
+遠距離 LOD（Phase 65）のメッシュとテクスチャは `app/src/main/assets/` へ抽出せず、`AssetManager::loadFileData()` / `loadDDSTexture()` が BSA から直接読む。`OriginalLodProvider` が担当する。
+
+| アセット | BSA 内パス | 参照元 |
+|---------|-----------|--------|
+| 地形 LOD メッシュ（100 NIF） | `meshes\landscape\lod\<formID>.<bx>.<by>.32.nif` | `original_lod_provider.cpp` `registerBlock()` → `NIFParser` |
+| 地形 LOD カラーテクスチャ（200 DDS） | `textures\landscapelod\generated\<formID>.<bx>.<by>.32.dds` | `original_lod_provider.cpp` `registerBlock()` → `AssetManager::loadDDSTexture()` |
+| 地形 LOD 法線テクスチャ | `textures\landscapelod\generated\<formID>.<bx>.<by>.32_fn.dds` | 未使用（メモリ削減のため。`OriginalLodProvider` はインデックス構築時に除外する） |
+
+ファイル名は `<formID>.<blockX>.<blockY>.32.nif` 形式で、`blockX` / `blockY` はセル単位（32 の倍数）の符号付き 10 進数で、0 だけ `00` と表記する（例: `60.00.00.32.nif`、`60.-32.64.32.nif`）。Tamriel（formID 60）は bx/by ∈ {−96, −64, −32, 0, 32, 64} の 36 ブロック、他の worldspace は 4 ブロックずつ。テクスチャは NIF と 1:1 で対応し、すべて 1024×1024 DXT1（mips=11）。
+
 UI 既定フォントは `renderer.cpp` が `KingthingsRegular` をロードして `setActiveFont()` するため、Oblivion 原本フォントになる。`Roboto` スロットは `loadOblivionFont()` 内で Daedric にフォールバックする（`// Roboto placeholder`）。
 
 ### 復元手順（`.gitignore` 対象の動画・テクスチャ）

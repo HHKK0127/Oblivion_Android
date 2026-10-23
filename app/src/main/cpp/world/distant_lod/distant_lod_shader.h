@@ -43,7 +43,8 @@ in vec3 vWorldPos;
 
 uniform sampler2D uTexture;
 uniform vec4 uFadeParams;    // x=far fade start, y=far fade end, z=near fade start, w=near fade end
-uniform vec4 uFogParams;     // x=density, y=startDist, z=fogR, w=fogG
+uniform vec3 uFogColor;      // Weather fog colour, same one the terrain/water/statics use
+uniform vec2 uFogRange;      // x=near, y=far: the linear fog ramp of the weather
 uniform float uAlpha;        // Global alpha multiplier
 uniform float uUseTexture;   // 1.0 to sample uTexture, 0.0 to use the vertex colour only
 
@@ -72,14 +73,14 @@ void main() {
         fadeFactor *= clamp((vDistance - uFadeParams.z) / max(uFadeParams.w - uFadeParams.z, 1.0), 0.0, 1.0);
     }
 
-    // Fog: exponential distance fog
-    float fogDensity = uFogParams.x;
-    float fogStart = uFogParams.y;
-    float fogFactor = 1.0 - clamp(exp(-fogDensity * max(vDistance - fogStart, 0.0)), 0.0, 1.0);
-    vec3 fogColor = vec3(uFogParams.z, uFogParams.w, 0.85);
+    // Fog: the same linear ramp and the same colour as the terrain, water and
+    // static-object passes, so the LOD blocks blend into the horizon those
+    // passes already produce instead of ending on a differently tinted seam.
+    float fogFactor = clamp((vDistance - uFogRange.x) / max(uFogRange.y - uFogRange.x, 1.0),
+                            0.0, 1.0);
 
     // Apply fog to base color
-    vec3 finalColor = mix(baseColor.rgb, fogColor, fogFactor);
+    vec3 finalColor = mix(baseColor.rgb, uFogColor, fogFactor);
 
     // Apply distance fade and global alpha
     float finalAlpha = baseColor.a * fadeFactor * uAlpha;

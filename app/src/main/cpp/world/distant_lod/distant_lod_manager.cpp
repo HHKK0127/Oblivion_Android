@@ -125,7 +125,7 @@ LodMeshData DistantLodManager::generateLodFromLand(const std::vector<float>& hei
     float cellSize = static_cast<float>(CELL_SIZE);
     float step = cellSize / static_cast<float>(targetSize - 1);
 
-    // Generate vertices: position (x,y,z), texcoord (u,v), color (r,g,b,a)
+    // Generate vertices: position (x,y,z), texcoord (u,v), color (r,g,b)
     int vertCount = targetSize * targetSize;
     mesh.vertices.reserve(static_cast<size_t>(vertCount) * 8);
 
@@ -162,11 +162,10 @@ LodMeshData DistantLodManager::generateLodFromLand(const std::vector<float>& hei
             mesh.vertices.push_back(u);
             mesh.vertices.push_back(v);
 
-            // Color (with full alpha)
+            // Color (the 8 float layout reserves red, green and blue only)
             mesh.vertices.push_back(r);
             mesh.vertices.push_back(g);
             mesh.vertices.push_back(b);
-            mesh.vertices.push_back(1.0f);
         }
     }
 
@@ -245,7 +244,12 @@ std::vector<const LodMeshData*> DistantLodManager::getVisibleLodMeshes(
         float dist = std::sqrt(dx * dx + dz * dz);
         const float surfaceDistance = std::max(0.0f, dist - mesh.radius);
 
-        if (surfaceDistance > viewDistance) {
+        // Original block LOD meshes are exempt from the distance test: their
+        // extent covers millions of units, so the surface of the sphere can
+        // legitimately sit beyond maxDistance even though the block covers the
+        // visible region. Which blocks to stream is decided by
+        // OriginalLodProvider from the camera coverage box, not here.
+        if (!mesh.blockLod && surfaceDistance > viewDistance) {
             stats.culledMeshes++;
             continue;
         }
@@ -292,7 +296,7 @@ void DistantLodManager::render(Renderer* renderer, const glm::mat4& viewProj) {
     // Get visible meshes
     auto visibleMeshes = getVisibleLodMeshes(cameraPos, config.maxDistance);
 
-    if (visibleMeshes.empty() && !horizonGenerated_) return;
+    if (visibleMeshes.empty() && !(horizonGenerated_ && horizonRingEnabled_)) return;
 
     // Use LOD shader
     glUseProgram(shaderProgram_);
@@ -305,9 +309,12 @@ void DistantLodManager::render(Renderer* renderer, const glm::mat4& viewProj) {
     if (locCameraPos_ >= 0) {
         glUniform3f(locCameraPos_, cameraPos.x, cameraPos.y, cameraPos.z);
     }
-    if (locFogParams_ >= 0) {
-        glUniform4f(locFogParams_, config.fogDensity, config.fogStart,
-                    0.55f, 0.65f);  // Fog color (sky blue-gray)
+    if (locFogColor_ >= 0) {
+        glUniform3f(locFogColor_, config.fogColor[0], config.fogColor[1],
+                    config.fogColor[2]);
+    }
+    if (locFogRange_ >= 0) {
+        glUniform2f(locFogRange_, config.fogRangeNear, config.fogRangeFar);
     }
     if (locUseTexture_ >= 0) {
         glUniform1f(locUseTexture_, 0.0f);  // meshes opt in below
@@ -390,8 +397,11 @@ void DistantLodManager::render(Renderer* renderer, const glm::mat4& viewProj) {
     glBindVertexArray(0);
     glDisable(GL_BLEND);
 
-    // Render horizon ring
-    renderHorizonRing(viewProj, cameraPos);
+    // Render horizon ring (Phase 50 placeholder; the renderer turns it off once
+    // real landscape LOD reaches the far plane)
+    if (horizonRingEnabled_) {
+        renderHorizonRing(viewProj, cameraPos);
+    }
 }
 
 // ============================================================================
@@ -676,8 +686,11 @@ void DistantLodManager::uploadMeshToGpu(LodMeshData& mesh) {
                           reinterpret_cast<void*>(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    // Color (location 2): 4 floats at offset 5
-    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
+    // Color (location 2): 3 floats at offset 5. The layout is 8 floats per
+    // vertex (x,y,z, u,v, r,g,b), so a 4-component colour read here would pull
+    // the alpha out of the next vertex's x. The shader declares aColor as vec4
+    // and the missing component defaults to 1.0.
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
                           reinterpret_cast<void*>(5 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
@@ -811,7 +824,8 @@ bool DistantLodManager::compileShader() {
     locModel_ = glGetUniformLocation(shaderProgram_, "uModel");
     locTexture_ = glGetUniformLocation(shaderProgram_, "uTexture");
     locFadeParams_ = glGetUniformLocation(shaderProgram_, "uFadeParams");
-    locFogParams_ = glGetUniformLocation(shaderProgram_, "uFogParams");
+    locFogColor_ = glGetUniformLocation(shaderProgram_, "uFogColor");
+    locFogRange_ = glGetUniformLocation(shaderProgram_, "uFogRange");
     locCameraPos_ = glGetUniformLocation(shaderProgram_, "uCameraPos");
     locAlpha_ = glGetUniformLocation(shaderProgram_, "uAlpha");
     locUseTexture_ = glGetUniformLocation(shaderProgram_, "uUseTexture");
@@ -831,7 +845,8 @@ void DistantLodManager::deleteShader() {
     locModel_ = -1;
     locTexture_ = -1;
     locFadeParams_ = -1;
-    locFogParams_ = -1;
+    locFogColor_ = -1;
+    locFogRange_ = -1;
     locCameraPos_ = -1;
     locAlpha_ = -1;
     locUseTexture_ = -1;
