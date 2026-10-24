@@ -8562,6 +8562,7 @@ TODO_re49 の **V6**。スキャンで抽出された未許可候補（TODO 記�
 4. strong 2つ以上成立 ＋ `a` が mid-instruction なら +0x400（または GT から再導出）を適用
 5. 適用後は行数・CRLF・BOM 不変を assert し `.bak` を取る
 6. 表のような**回帰コーパス**（V3 の17件）でルールを再検証する
+7. **Ghidra ラベルの照合は必ず lowercased で行う。** デコンパイルのラベルは`FUN_00503c60` のように **hex 部分が小文字**で出力されるため、`FUN_%08X` 形式（大文字）と直接比較すると一致せず**偽陰性**になる。本ワークストリームでもP3判定 / V10 join / V11 refs の**3箇所**で同一バグを踏んだ。機械可読の突合可否表は `tmp\re\v10_impl_decompile_join.csv`（527行: opid/name/impl/in_decompile/fun_label/**decompile_line**/cc_prefix/prologue16/前後FUN/gap_kind/note）を参照。
 
 **回帰コーパス（V3 で全件「誤検出＝ドキュメント正」と確定した17件）**:
 `0x597540`（`jmp` 先）/ `0x8B9500`（呼出元）/ `0x8B97A0`（`push` オペランド）/ `0x9ED790`
@@ -10787,6 +10788,8 @@ if (mgef.flags & 0x100) duration *= factor; else magnitude *= factor;
 
 Android版 Script VM の移植率を定量化するため、`Oblivion.exe` の Script VM 関数テーブルを全数走査し、Android版で未実装のハンドラ（MISS）を **480 件** 特定・台帳化した。`tmp/re/annotate_db.json` に登録済みの 367 関数は除外している。
 
+非掲載関係の内訳（2026-10-24 V15 監査）: MISS 480 = テーブル impl≠0 527 − annotate_db 登録 25 − 共有スタブ impl `0x977C50` 7 − 理由未特定 15（`impl==0` の 5 件は母数外）。**非掲載 opid 全体は 52 件**（詳細は `tmp\re\v15_v20_v22_ledger_audit.md` §3）。
+
 - 対象: Script VM 関数テーブル `0xB0AF48`（532 エントリ、stride 0x28）
 - 判定: 各エントリの実装関数を capstone で逆アセンブルし、共通シグネチャ（gate `0x4FAE80` 呼出）を確認
 - 頻度: SCDA スキャン実測値（`tmp/re/copilot_archive/scda_opcode_table_out.txt`）
@@ -10803,7 +10806,7 @@ Android版 Script VM の移植率を定量化するため、`Oblivion.exe` の S
 | opcode 名の出典 | `tmp/re/s57_svm_8_opcode_table.txt`（141 function opcodes）+ block-type 0x00〜0x1E |
 | 頻度の出典 | `tmp/re/copilot_archive/scda_opcode_table_out.txt`（SCDA 実測） |
 | 除外済み | `tmp/re/annotate_db.json` 既登録 367 funcs |
-| MISS 件数 | 480 |
+| MISS 件数 | 480 ※テーブル非掲載 52 opid あり（impl=0: 5 / annotate_db: 25 / 共有スタブ: 7 / 未特定: 15。V15 監査 2026-10-24） |
 | opcode 範囲 | 0x0000 〜 0x1170 |
 
 ### §67.2 ハンドラ共通シグネチャ [確定]
@@ -10819,6 +10822,15 @@ mov al,1 / ret        ; return true
 ```
 
 - 480 ハンドラの実装サイズは **153B〜160B** に収まり、全件が同一の prologue / epilogue を持つ定型関数である [確定]。
+  - **訂正 (2026-10-23, V14)**: 上の [確定] は**台帳の Size 列の値を写しただけ**であり、
+    **実関数長とは一致しない**。impl から capstone 線形デコード（`int3` または `ret`+`0xCC` 終端、
+    上限 0x800）で実測したところ、**480 行中 Size と一致したのは 1 行のみ**、
+    実体長は **38B〜1,423B+** に分散した（例: `opid 0x0011` Size 160B / 実測 **38B**、
+    `opid 0x0015` 160B / **52B**、`opid 0x1000` 156B / **1,423B**、`opid 0x109E` 160B / **159B**）。
+    Size 列は「160B 前後のスキャン窓長」的な値と見られ、**prologue/epilogue が全件同一**という
+    断定も、短いハンドラ（18B のフラグ反転型）が存在するため成立しない。
+    **呼出しリスト列の抽出には影響しない**（抽出は Size 列ではなく `int3`/`ret`+`0xCC` 終端規則）。
+    本節の「定型関数」という構造的特徴（gate `0x4FAE80` → 実処理 → `mov al,1`）自体は有効。
 - gate `0x4FAE80` は引数デコードと out ポインタ設定を担う共通 trampoline。移植側では `native_scda_bridge.cpp` の引数解決 1 箇所に集約できる。
 - gate が false を返した場合のみ `xor al,al / ret` で早期復帰する（戻り値 true/false の二値）。
 - 469 / 480 件が 1 つ以上の外部関数を呼出しており、ハンドラ本体は「gate → 実処理 1〜5 呼出 → `mov al,1`」の薄いラッパである。
@@ -10842,6 +10854,7 @@ mov al,1 / ret        ; return true
 | < 10 | 46 |
 
 ### §67.4 頻度上位 50 件 [確定]
+※本表の50行は §67.6 の同一 opid 行の**再掲**（値差異なし）。§67 内の台帳表は **530 行 = 480 ユニーク + 50 重複**（V22 検証 2026-10-24）。
 
 | rank | OpID | 名称 | Impl Addr | Size | Freq | Gate | 外部呼出 (先頭5) |
 |------|------|------|-----------|------|------|------|------------------|
@@ -11388,6 +11401,23 @@ mov al,1 / ret        ; return true
 | 479 | 0x116A | Op116A | 0x00505F00 | 158B | - | - | 0x4f8630 |
 | 480 | 0x116D | Op116D | 0x00506DC0 | 160B | - | - | 0x4f87f0 |
 
+### §67.6.1 台帳 impl とデコンパイル本文の突合可否（2026-10-23 追記）
+
+本節の台帳 impl（480 opid / 527 非ゼロ impl）を `docs\Oblivion_decompiled.c` の `FUN_*` 定義と突合する際は、**まず `tmp\re\v10_impl_decompile_join.csv`（527行）で可否を確認**すること。
+
+| 区分 | 件数 | 意味 |
+|---|---|---|
+| `in_decompile=yes` | **165** | デコンパイル本文と突合可能（`decompile_line` 列に行番号あり） |
+| `in_decompile=no` + `cc_prefix=yes` | **260** | 関数先頭（int3 前置）は実在するが `FUN_` 未生成＝**Ghidra 完全欠落**（**V10 旧分類: CC前置≥4 閾値**）／ V61: NO_FUNCTION 260/260 |
+| `in_decompile=no` + `cc_prefix=no` | **102** | int3 境界なし＝前関数に吸収の可能性（**V10 旧分類: CC前置≥4 閾値**）／ V61: NO_FUNCTION 102/102 |
+
+⚠️ Ghidra ラベルは **hex 部分が小文字**（`FUN_00503c60`）で出力されるため、照合は必ず **lowercased** で行うこと（大文字小文字の不一致は本セッションで3回偽陰性を起こした）。
+※上表 260/102 は **V10 旧分類（CC前置≥4 閾値）**。推奨サブ分類は **319/43（V5・CC前置≥2 閾値）**。**「362」の集合自体は V5/V10 で impl 単位により完全一致**（差は cc×2〜3 の59件の小分類閾値のみ）。統一定義＝「ギャップ = テーブル由来 impl≠0（527）のうち decompiled.c に `FUN_` 定義が無いもの = 362」（出典 `tmp/re/v15_v20_v22_ledger_audit.md` §4、2026-10-24）。
+
+**V61 実測（2026-10-24）**: 新解析の関数総数 **21,240** に対し `docs\Oblivion_decompiled.c`（1,066,496行）の lowercased `FUN_` 定義は **20,465**（`thunk_FUN_` 87 を含め 20,552、`FUN_` トークン全体 20,558、定義なし参照のみ6件）。差は **+775 / +688**。上表260件（`ghidra_missing`）は **V5 の cc前置≥4 セットと完全一致**（257ユニークVA・対称差0）。`absorbed_suspect` 102件は「V5=欠落（cc2〜3）59件」＋「V5=吸収（cc≤1）43件」の合算であり、**この59件のみ V5/V10 で小分類が逆**。**新解析では362件すべて `contained=0`** のため、`absorbed_suspect` の「前関数に統合されている」という機構説は V61 では 0/102 で観測されず＝**吸収説の弱化・再検討材料**（ただし前関数自体の新解析での存在有無は未照会のため決定的否定ではない）。
+
+Ghidra 本体は `C:\Users\hiroki.kogarumai\.copilot\chats\2026-10-09\improved-waffle-2dbf7451\ghidra_12.1.4_PUBLIC`（**12.1.4 PUBLIC** / Java21）で利用可能となり、2026-10-24 19:38:29–19:44:52 に `analyzeHeadless` を完走した（分析353秒・自己申告352秒、`Analysis succeeded` / `Post-analysis succeeded` / `Save succeeded` / `Import succeeded` の4点取得、ERROR 0件・WARN 11件）。ギャップ362件の再ラベル化検証は**実施済み**で、**362/362 が `NO_FUNCTION`（`defined=0` / `contained=0`、`containing_name` 全行空）**＝新旧どちらの自動解析でも関数化されない（出典 `%TEMP%\opencode\gap_scan.csv`、V61）。旧記述「Ghidra 本体不在・未実施（TODO V23）」は**失効**。
+
 ### §67.7 残課題
 
 1. 頻度未計測の 368 件について SCDA スキャン対象を拡大し頻度を実測する
@@ -11400,13 +11430,51 @@ mov al,1 / ret        ; return true
 - opcode 表: `tmp/re/s57_svm_8_opcode_table.txt`
 - 注釈 DB: `tmp/re/annotate_db.json`（functions 368 / structs 7）
 
+### §67.9 台帳非掲載 52 opid（V15 監査 2026-10-24）
+
+テーブル 532 エントリ（opid 重複0）− 台帳ユニーク 480 = **非掲載 52 件**。逆方向（台帳にあってテーブルに無い）は 0 件。背景の「8件」は V9 報告の部分集合（直接E8ゼロ20件のうち非掲載だった8件）の取り違えであり、**全体差集合は 52 件**。
+
+| 理由 | 件数 | 根拠（要点） |
+|---|---|---|
+| impl == 0（ハンドラ実体なし・哨兵等） | **5** | 0x0183 / 0x1019 / 0x101A / 0x1035 / 0x104F |
+| annotate_db 登録済み（§67.0 の除外規則） | **25** | impl VA が annotate_db functions キーと一致。台帳480件との重複0＝除外規則は正しく機能 |
+| 共有スタブ impl `0x977C50`（`mov al,1; ret`、V9 K1） | **7** | 0x0141 / 0x0173 / 0x10DC / 0x110C / 0x114A / 0x115F / 0x1160 |
+| **理由未特定（UNDET）** | **15** | 下表 |
+| 合計 | **52** | |
+
+理由未特定15件（opid / idx / name / impl / V5・V10 判定）:
+
+| opid | idx | name | impl | V5 | V10 | 備考 |
+|---|---|---|---|---|---|---|
+| 0x0016 | 22 | OnMagicEffectHit | 0x005045E0 | 欠落(cc×8) | ghidra_missing | block-type。SCDA頻度10,480で台帳なら rank2 なのに不掲載 |
+| 0x001E | 30 | OnReset | 0x005045A0 | 欠落(cc×8) | ghidra_missing | block-type |
+| 0x0117 | 54 | PickRefByID | 0x00513E90 | present | present | decompiled に FUN_ 定義あり |
+| 0x0158 | 119 | SetTargetRefraction | 0x00507E60 | present | present | 同上 |
+| 0x101F | 194 | GetButtonPressed | 0x005072B0 | 欠落(cc×8) | ghidra_missing | V9 K4 で分析済み |
+| 0x10C5 | 360 | GetPCFactionSteal | 0x00505540 | present | present | |
+| 0x10C9 | 364 | GetPCFactionSubmitAuthority | 0x00505600 | present | present | |
+| 0x10D9 | 380 | ShowClassMenu | 0x00505810 | 吸収 | absorbed_suspect | V5/V10 一致 |
+| 0x10DA | 381 | ShowRaceMenu | 0x00505850 | 欠落(cc×8) | ghidra_missing | |
+| 0x10DB | 382 | ShowBirthSignMenu | 0x00505870 | 欠落(cc×8) | ghidra_missing | |
+| 0x10F2 | 405 | GetUnconscious | 0x00505B50 | 欠落(cc×6) | ghidra_missing | |
+| 0x111B | 446 | SetCellFullName | 0x00512AE0 | 欠落(cc×8) | ghidra_missing | |
+| 0x113D | 480 | ModScale | 0x00501E40 | 欠落(cc×8) | ghidra_missing | |
+| 0x1154 | 503 | SetActorRefraction | 0x0050E340 | present | present | |
+| 0x115B | 510 | SetNoAvoidance | 0x00501390 | 吸収 | absorbed_suspect | V5/V10 一致 |
+
+- impl VA は全て範囲内（0x501390〜0x513E90）。cc 前置の有無・gate 呼出の有無では分類不能（cc=1〜15 に分散、gate あり9/なし6、台帳側にも gate なしハンドラ12件）。
+- Android 側（`script_functions.cpp` / `native_scda_bridge.cpp` / `script_opcodes.h`）にも15件の実装・マッピングは**無い**。
+- 台帳生成スクリププト未残存のため生成規則の盲点と推定（**未確定**）。V9 の未解決項「台帳非掲載8 opid」は本監査で 7件（スタブ）＋1件（0x101F＝UNDET15 内包）に分解でき、**残る未解決は UNDET15**。
+
+- 監査の全文: `tmp/re/v15_v20_v22_ledger_audit.md`（V15/V20/V22 併設）
+
 ---
 
 ## §68 Script VM FunctionID 追加仕様（7 件）（2026-10-22）
 
 ### §68.0 概要
 
-§67 の MISS 480 件のうち、**スクリプトコマンドとして完結し既存ハンドラと衝突しない 7 件**について、opcode → FunctionID → impl VA → 実装手順までを確定した。Android版 `script_opcodes.h` / `script_functions.cpp` / `script_functions.h` / `script_disasm.cpp` / `native_scda_bridge.cpp` への反映仕様を示す。
+§67 の MISS 480 件のうち、**スクリプトコマンドとして完結し既存ハンドラと衝突しない 7 件**について、opcode → FunctionID → impl VA → 実装手順までを確定した。Android版 `script_opcodes.h` / `script_functions.cpp` / `script_functions.h` / `script_disasm.cpp` / `native_scda_bridge.cpp` への反映仕様を示す。 ※（2026-10-24 V15 監査の注記）この7件のうち**6件（0x1026/0x1037/0x105E/0x1075/0x1076/0x108B）は annotate_db 登録済みのため §67 台帳（MISS 480）には非掲載**、台帳掲載は 0x108C のみ — §68 はテーブル全体（532 エントリ）を母数としている。
 
 ### §68.1 欠落一覧 [確定]
 
@@ -11731,7 +11799,7 @@ call eax
 
 64KB バケット単位の `FUN_` 参照被覆率は部分的なもので、`0x61xxxx` は 1,123 refs、`0x62xxxx` は 378 refs にとどまる。このため当該領域は **capstone による生 PE 手動逆アセンブル**（`va2off` + E8 byte 走査）で代替している。Ghidra MCP は本セッション時点で未接続（`list_instances` が空）。
 
-**次の一手**: Ghidra プロジェクト（`D:\Cargo\Ghidra\Oblivion.rep`）を起動し、`0x61xxxx` / `0x62xxxx` / `0x50Cxxx` / `0x5E5xxx` 帯を再逆コンパイルして `Oblivion_decompiled.c` を再生成する。
+**次の一手**: Ghidra プロジェクトを起動し、`0x61xxxx` / `0x62xxxx` / `0x50Cxxx` / `0x5E5xxx` 帯を再逆コンパイルして `Oblivion_decompiled.c` を再生成する。※Ghidra 本体は 2026-10-24 に **12.1.4 PUBLIC** が導入済み（`analyzeHeadless` 完走実績あり、§67.6.1 V61 実測参照）。プロジェクトは新規 `D:\Cargo\Ghidra\temp\ghidra_projects\OblivionRe` を使用する。
 
 ### §69.5 残課題
 
@@ -11752,3 +11820,457 @@ call eax
 - `tmp/re/annotate_db.json`（functions 368 / structs 7）
 - `tmp/re/svm_495_miss_addrs.md`
 - 解析スクリプト: `%TEMP%\opencode\analyze_pop_final.py` / `analyze_container_owner.py` / `analyze_owner5.py` / `analyze_vt330b.py`（セッション作業領域のため非保全）
+
+## §70 opencode 解析ノート v60〜v76 の統合（2026-10-24）
+
+### §70.1 対象と検証状態
+
+`tmp/re/v60`〜`v76` の 12 本（2026-10-24 22:31〜23:54 生成、計約 208 KB）を全文レビューし本節へ統合した。各ノートの自己申告検証は下表のとおり。
+
+| ノート | 主要主題 | 検証 |
+|---|---|---|
+| v60 | ESM GMST 専用キーと `sSpecialization` | 4/4 PASS |
+| v61 | Ghidra headless 再解析とギャップ 362 件 | 実測（§70.3） |
+| v62 | V59 残件（`sHandToHandIcon` / class・race description） | 4/4 PASS |
+| v63 | GMST map の vtable 帰属 | 4/4 PASS |
+| v64 | §7 残件（Water 実行時キー / BlendSettings / GameSettings） | 4/4 PASS |
+| v66・v68 | decoder/gate `0x4FAE80` と `0x66C580`、EVMP 516 の否定 | 実測 |
+| v67・v74 | Supermemory API の実測制約 | 実測 |
+| v69 | Show1stPerson リンク（opcode `0x113`） | 4/4 PASS |
+| v72 | `0xB333C4` グローバル状態オブジェクト | 4/4 PASS |
+| v75a | displacement 数・FunctionID・tick 関数 | PASS |
+| v75b | SetStage 単位・Topic_Resolve | 4/4 PASS |
+| v76 | 7 ハブのデータ関係マップ | 7/7 hub |
+| v77 | オペコード表の実測（entry verify / id layout / field usage） | 実測（§70.4） |
+| v79 | ギャップ 357 VA の吸収仮説検証 | 実測（§70.12） |
+| v80・v81 | 薄片 101 件の `+0x18` 照合と正典表生成 | 101/101 一致（§70.12・§70.13） |
+| v81b〜v81d | 移植ヘッダ ⟷ 正典表の突合と SCDA マーカー裏取り | 156 件分類 + 12 値裏取り（§70.14） |
+
+以降 `[確定]` はバイナリ証拠あり、`[要再導出]` は現行 doc と矛盾し未決着。v77・v79〜v81 の 5 本は 2026-10-25 に追加レビューした。v81b〜v81d は移植ヘッダとの突合専用の枝番（§70.14）で、opencode 側の V80〜V83 とは別系統。
+
+### §70.2 GMST / GameSettings（V60・V63・V64）[確定]
+
+- ESM GMST グループは **382 レコード = 378 登録済み + 4 未登録**。未登録は `fRegionGenTex*` の 4 件のみ。§63 章の「ESM 専用 5 件」は本値で置換する（§9636 と一致）。
+- `sSpecialization` は**登録されている**。文字列 `0xA5E194`、push `0x9F0D55`、thunk `0x9F0D50`、registrar `FUN_00419A70`、map `0xB35574`、registrar テーブル `0xA28860..0xA2D184`（4,682 スロット）の slot 1623。
+- GMST map オブジェクトは BSS `0xB35468` の `+0x10C` に埋め込み。実行時 vtable は **`0xA40454`**（`0xA403A8` / `0xA403F0` は構築途上の基底・中間 vtable）。string hash = `FUN_004A80A0`、compare = `0x584D10`、insert = `0x412D30`、lookup = `0x55E000`、`+0x10` は ownership（`ownsKey`）。
+- 実行時キー `fAlpha:Water`（`0x49D546`、既定 `0.5`）と `uSurfaceTextureSize:Water`（`0x49DD72`、既定 `128`）は**遅延 1 回登録**。
+- BlendSettings は `0xB11A24` の **62 エントリ**（stride 8、float 14 / string 48）、CRT initializer は `0xA29084`。
+- GameSettings の最終 vtable は `0xA4049C`。ESM EDID 経路は slot `+0x24 = 0x4A8040` のみを呼ぶ。`0x412E20`（Add）に実行時 caller なし。INI Dump `0x4A8B10` は **caller なし**（V51 の「不明な caller」を否定）。
+- V62: `sHandToHandIcon` はキー `0xA3D064` / オブジェクト `0xB33D84`。直接読み `0x478890` / `0x5A6A57` / `0x5A6D55` は HUD 武器アイコン初期化・フォールバック・H2H 比較であり map lookup ではない。8 件の attribute `s*Description` は登録されるが未読。class description（`sCombatDescription` / `sMagicDescription` / `sStealthDescription`）と `sRaceDescription` は BSS オブジェクトから直接読み。テーブルB `0xB12868` index 40〜71 は getter `FUN_00565CC0` のみが読む。13 エントリは静的直接読者が存在しない。
+
+### §70.3 Ghidra headless 再解析（V61）[確定]
+
+§67.6.1 へ反映済み。要点のみ再掲する。
+
+- **Ghidra 12.1.4 PUBLIC**（Java21）を `C:\Users\hiroki.kogarumai\.copilot\chats\2026-10-09\improved-waffle-2dbf7451\ghidra_12.1.4_PUBLIC` に導入。`analyzeHeadless` は 2026-10-24 19:38:29〜19:44:52 に完走（分析353秒、`Import`/`Post-analysis`/`Save`/`Analysis succeeded` の 4 点、ERROR 0 / WARN 11）。
+- 対象は `D:\Cargo\Ghidra\temp\OblivionStandalone.exe`（SHA256 `A8F31384…C2B7DC6` = Steam 版 `Oblivion.exe` と一致）。プロジェクトは新規 `D:\Cargo\Ghidra\temp\ghidra_projects\OblivionRe`。
+- 関数総数 **21,240**。ギャップ **362 件すべて `NO_FUNCTION`**（defined=0 / contained=0 / containing_name 全行空）。cc バンド別 cc≥4=260 / cc2〜3=59 / cc≤1=43 で全バンド NO_FUNCTION。260 は V5 の cc前置≥4 集合と対称差 0。362 行 = 357 ユニーク VA（重複5: `0x503e10` / `0x503e90` / `0x50d020` / `0x5007d0` / `0x500890`）。
+- 「前関数に吸収」機構説は **0/102 で観測されず弱化**（前関数側の新解析での存在照会は未実施のため決定的否定ではない）。
+- `docs/Oblivion_decompiled.c` の lowercased `FUN_` 定義は **20,465**（`thunk_FUN_` 87 を含め 20,552、`FUN_` トークン 20,558、定義なし参照のみ 6 件）。差 **+775 / +688** → 追加生成余地はこの規模。
+- TODO V23（Ghidra 本体入手）は**クローズ**。ただし導入先がチャット作業領域配下のため、安定パス（`D:\Cargo\Ghidra\` 等）へ移設することを推奨する。
+
+### §70.4 スクリプト opcode 表と dispatcher（V66・V68・V76・V77・V80・V83・V84）[確定]
+
+- 正しい decoder/gate は **`0x4FAE80`**（`0x4FAA80` は境界でない近傍関数）。`0x4FAE80` は 514 命令のスクリプト引数デコーダ・評価器。
+- `0x66C580` は `this+0x588` の真偽 setter（要求バイトの反転を格納し、旧値==要求値かを返す）であり linked-list processor ではない。
+- **「EVMP 516」は Supermemory の外部ノートにのみ由来し、リポジトリ成果物に裏付けがない。** EXE の実測テーブルサイズは **532**。以後、根拠として扱わない。
+- オペコードテーブルは `0xB0AF48`、**532 エントリ × 0x28**、範囲 `[0xB0AF48,0xB10268)`。全 532 件を `pe.get_offset_from_rva()` 経由で直接読み出して確定したレイアウト:
+
+| オフセット | 型 | 意味 | 実測 |
+|---|---|---|---|
+| `+0x00` | dword ptr | 長名（コンソール/ドキュメント名） | **532/532 が名前文字列**（`GameMode` / `MenuMode` / `MessageBox` / `SetStage` …） |
+| `+0x04` | dword ptr | 短名（別名。空文字列は共有 ptr `0xA2F7EC`） | 実別名 **176 件**（`S1ST` 0x113 / `resurrect` 0x108C / `pcb` 0x116B …）、空文字列 **356 件**、0 は 0 件 |
+| `+0x08` | dword | **オペコード id** | 532 件すべて相違・狭義単調増加 |
+| `+0x0C` | dword ptr | 説明文（ヘルプ） | 非空 **132 件**・空文字列 **399 件**（うち 389 は共有 `0xA2F7EC`）・0 は idx 162 のみ |
+| `+0x10` | byte | フラグ A（begin ブロック適法性） | `1` が **272 件**・`0` が 260 件。`FUN_004ff710` L198214 で参照（§(V83) 参照） |
+| `+0x11` | byte | 未使用 | **全 532 件 0**。旧「フラグ B = `0x00`/`0x01`/`0x02`」は V83 全数計測で再現せず失効 |
+| `+0x12` | word | **引数の個数** | 0→251 / 1→195 / 2→65 / 3→12 / 4→5 / 5→3 / 6→1 |
+| `+0x14` | dword ptr | **引数記述子配列 ptr**（`.data` プール `0xB0A11C`〜`0xB0AF3C`、12 B レコード `{name ptr, type 0x00-0x25, optional}` が `+0x12` 個連続） | **281/532**（`+0x12 > 0` と完全一致・例外 0）・94 ユニーク先頭・`.text`/`.rdata` 落ち 0 件 |
+| `+0x18` | dword ptr | **実装（ハンドラ）関数** | 527/532・515 ユニーク |
+| `+0x1C` | dword ptr | **共有 dispatcher / 実行器** | `0x4FDE30`=528、`0x500130`=2（0x1000・0x114D）、`0x500150`=1（0x1059）、0=1（0x183） |
+| `+0x20` | dword ptr | **条件関数（CTDA 対応）** | **169/532**（166 ユニーク） |
+| `+0x24` | dword | 小フラグ | `0x100` / `0x1`（19/532） |
+
+- オペコード id は 3 帯域: `0x00-0x1E`（block/イベント 31 件、`0x0000 GameMode` 〜 `0x001E`）/ `0x100-0x183`（コマンド 132 件、`0x0100` 〜 `0x0183`）/ `0x1000-0x1170`（スクリプト関数 369 件、`0x1000` 〜 `0x1170`）。狭義単調増加のため **id → idx は二分探索可**（`op ≤ 0x1E` → idx = op、`0x100-0x183` → idx = op − 0xE1、`op ≥ 0x1000` → idx = op − 0xF5D）。
+- 実測逆アセンブル（`0x4FF880`〜`0x4FF9BE`、テーブル基底の即値出現は `.text` 内でこの **1 箇所のみ**）: `lea eax,[ebx+0xb0af48]` → `cmp byte ptr [eax+0x10],0` → `mov edx,[eax+0x14]` → `movzx edx, word ptr [eax+0x12]` → `mov ebx,[eax+0x1c]` → `call ebx`（`0x4FF9B9 ffd3`）。
+- 全 532 件の正典表は **`docs/SCRIPT_OPCODE_TABLE.md`**（V81 で生成）。コマンド名 → オペコード id → ハンドラの逆引きが可能になった。
+- `FUN_004FDE30` は Hub6。**E8 caller 0** で、テーブルの `+0x1C` dispatcher 項に 528/532 エントリが格納される。gate アドレス `0x4FAE80` は正しい。
+- 特殊 entry: idx 162（`0x0183`）の長名は **`ADD NEW CONSOLE COMMANDS BEFORE THIS ONE!!!`** で全フィールド 0 の終端センチネル。`0x1019 UnusedFunction1` / `0x101A UnusedFunction2` / `0x1035 GetScriptVariable` / `0x104F GetQuestVariable` の 5 件は `+0x18`=0（パースのみ・実装なし）。
+- 同一ハンドラを共有する別名オペコードが 7 組（例: `0x5007D0` = `ShowSubtitle` 0x0151 / `ShowDialogSubtitles` 0x1164、`0x503E10` = `OnEquip` 0x0004 / `OnActorEquip` 0x001C、`0x50D020` = `AdvancePCSkill` 0x10D4 / `ModPCSkill` 0x110F）。**V5 表の「重複 5 VA」はテーブル誤りではなく実在の別名共有である**（§70.13）。
+
+#### (V83) 表の列の実体 — 全 532 件の raw PE 再計測（`+0x10` のパック構造と `+0x14` = 引数記述子）
+- 証跡: `tmp/re/v83_col14_meaning.md`（生成器は `%TEMP%\opencode\v83_col14*.py`、いずれも Git 管理外）。手法は `tmp/re/probe_harness.py`（selftest 4/4 PASS）による raw PE 読み取りのみで、Ghidra 非依存・`.data` の VA − `0x401400` 規約に準拠。
+- **`+0x10` は単一フィールドではない**。4 バイトのパック: byte0 = フラグ A（272 件が `1`）/ byte1 = **未使用（全 532 件 `0`）** / u16 `+0x12` = 引数個数（`0:251 / 1:195 / 2:65 / 3:12 / 4:5 / 5:3 / 6:1`、総スロット **402**）。u32 として読んだ「nonzero = 408」は byte0 フラグ（272）と argn>0（281）の**和集合**（重複 45）であり、計測値としては正しいが単一フィールドではない。u32 distinct は 11 種のみ（`0x1`×127 / `0x10001`×103 / `0x10000`×92 / `0x20000`×34 … 最大 `0x50001`）で、ポインタ相当（≥ `0x400000`）は 0 件。
+- `+0x18`（実装、527/532）と同様に `+0x14` も `.text` へ落ちる値は 0 件（281 件すべて `.data`、値域 `0xB0A11C`〜`0xB0AF30`）。したがって「alternate handler」説は棄却される。
+- **`+0x14` が指す先は 12 バイトの記述子レコード** `{ const char* name /* .rdata */; u32 type /* 0x00-0x25 = 38 種 */; u32 optional /* 0 or 1 */ }` で、これが引数個数ぶん連続する（全 281 エントリで `argn * 12` バイト分すべて有効な名前 ptr、検証 0 例外）。記述子プールは表基底直下の `[0xB0A11C, 0xB0AF48)` = 0xE2C バイト。共有が多く、実体レコードは **179 ユニーク**（例: `0xB0A6CC` = `{Integer, 1, 0}` を 42 コマンドが共用 / `0xB0ABAC` = `{Actor (optional), 6, 1}` を OnHit・OnActivate・OnDeath・OnStartCombat 等 12 件が共用 / `0xB0A11C` = `{String, 0, 0}` を MessageBox・Message・EssentialDeathReload 等 13 件が共用）。
+- **型コード 38 種の目録**（使用頻度の高い順）: `0x00` String/Filename / `0x01` Integer / `0x02` Float / `0x03`・`0x15` ObjectID / `0x04` ObjectReferenceID / `0x05` Actor Value / `0x06` Actor・Criminal・Victim / `0x07` Spell Item / `0x08` Axis / `0x09` Cell / `0x0A` Animation Group / `0x0B` Magic Item / `0x0C` Sound / `0x0D` Topic / `0x0E` Quest / `0x0F` Race / `0x10` Class / `0x11` Faction / `0x12` Sex / `0x13` Global / `0x14` Furniture / `0x16` Variable Name / `0x17` Stage / `0x18` Map Marker / `0x19` Actor Base / `0x1A` Container / `0x1B` WorldSpace / `0x1C` Crime Type / `0x1D` Package / `0x1E` Combat Style / `0x1F` Magic Effect / `0x20` Birthsign / `0x21` Form Type / `0x22` Weather ID / `0x23` NPC / `0x24` Owner / `0x25` Effect Shader ID。
+- `optional` フラグ: 179 レコード中 **52 件が 1**。うち 41 件は名前自体が `(optional)` / `(Optional)` を含む（`Integer (Optional)`×15 / `Float (Optional)`×10 等）。残り 11 件（`ObjectID` / `ObjectReferenceID` / `Emotion` / `EmotionValue` / `String` / `Count` / `Distance` 等）は名前に表記がなくても `1`。
+- **消費者（決定的証拠）**: スクリプトコンパイラ `FUN_004ff710`（`0x4FF710`、`docs/Oblivion_decompiled.c` L198134〜198254 の begin ブロック処理）が L198214 で entry の `+0x10` byte0 をテストし、L198215〜198229 で `argdesc = entry+0x14` / `argn = entry+0x12` / `dispatcher = entry+0x1C` を取り出して `(*dispatcher)(argn, argdesc, &argbuf, ctx)` を呼ぶ。すなわち共有 dispatcher **`0x4FDE30`（528/532）が記述子列に従って引数をデコード・検証する**。これは `0x4FF880`〜`0x4FF9BE` の実測逆アセンブル（`lea eax,[ebx+0xb0af48]` → `cmp byte ptr [eax+0x10],0` → `mov edx,[eax+0x14]` → `movzx edx, word ptr [eax+0x12]` → `mov ebx,[eax+0x1c]` → `call ebx`）と同一箇所である。
+- 旧 GT「`+0x14` = OnHit / OnActivate の 2 件のみポインタ」の誤りの由来: この 2 件は同一記述子 `0xB0ABAC` を共有しているだけで、著名イベント 2 件のみを標本にした**サンプリングの偶然**である。V76 の entry54 ダンプが `+0x14 = 0xB0A7EC` を「名前ポインタ」と読んだのも誤読で、実際は `{ObjectReferenceID, 4, 0}` の記述子レコード（`PickRefByID` の引数と整合）。
+
+### §70.5 Show1stPerson とグローバル状態 `0xB333C4`（V69・V72）[確定]
+
+- console コマンド名 → `FUN_004FCA70` → **opcode `0x113`** → テーブル `0xB0B718` の `+0x18` → handler **`0x50A050`**。dispatcher は `0x4FDE30`。
+- `0x50A050` は `[DAT_00B333C4 の指す先 + 0x588]` に 0/1 を書き、`FUN_00660110` 経由で 1st/3rd 人称ノードの表示を切替える。`FUN_005097A0` 内部ブロック説、`FUN_0066C580` が S1ST setter という説は**否定**。
+- `DAT_00B333C4` は **0x804 バイト（2,052 B / 513 dword）のヒープオブジェクトへのポインタ変数**。ctor は `FUN_0066A740`、確保 caller は `FUN_00406360` / `FUN_00464440`、グローバル書込みはバイナリ上 3 箇所のみ。バイトオフセット `+0x116` / `+0x588` / `+0x738` が既知。動的配列域は `+0x200..+0x56C`。decompiled の `DAT[0x162]` はバイト `+0x588` を指す。バイナリ参照 2,663 site / 791 関数。
+
+### §70.6 会話 Topic_Resolve と FunctionID（V75a・V75b）[確定]
+
+- `FUN_0052F010` は `[0x52F010,0x52F330)` の **`Topic_Resolve`**。候補フィルタ、priority stop、deferred candidates、再帰ガード、選択は `rand() % count + 1`。従来の「ラベル不在」「rand 無し」は抽出・逆アセンブル側の誤り。
+- `SetStage`（`0x1039`）の件数は**命令数**（SCPT 1,391、SCPT+QUST+INFO = 3,479 / 86,916 = 4.00%、内訳 1,391 + 388 + 1,700）。件数の単位を混同しないこと。
+- displacement 数は `+0x284` = **344**、`+0x288` = **126**（stack 38 / 25、memory-indirect 0）。
+- `0x6744B0` / `0x67B300` は**関数先頭でない内部アドレス**。実関数は `FUN_00674200`（tick/update）と `FUN_0067B320`（リスト削除）であり OnHit トリガではない。`FUN_00668440` は属性ごとの level-up 再計算（`FUN_0066C3E0` が 3 回呼ぶ）。`FUN_00522760` は無関係な category-6 get/set。
+- Android FunctionID `0x9A..0x9F` のハンドラは **6 件**（`0x99` は空）。Phase 68 で「7 番目」としていたものは `StopQuest = 0x7A` である。
+- `FUN_0058A0A0` のトークン登録は `_` 前置名 → vector 挿入 `FUN_0042D800`、その他（`&` を含む）→ list 挿入 `FUN_006AA320`。
+
+### §70.7 シェーダ・D3D・INI ハブ（V76）[確定]
+
+| ハブ | 実体 | 根拠 |
+|---|---|---|
+| H1 | opcode 表 `0xB0AF48` | 532 × 0x28（§70.4） |
+| H2 | GMST map `0xB35574` と vtable `0xA40454` | **同一オブジェクト** |
+| H3 | シェーダテーブルクラスタ `0xB42EC0` / `0xB42F48` / `0xB43070` | writer `FUN_007B4290`、GPU 検出 `FUN_007B45F0`、teardown `FUN_007B7250` |
+| H4 | `0xB42154` | `IDirect3D9*`（`FUN_00761DF0` L606519 = `Direct3DCreate9(0x20)`） |
+| H5 | `0xB333C4` | §70.5 |
+| H6 | `FUN_004FDE30` | E8 caller 0、`+0x1C` 項へ 528/532 |
+| H7 | INI vtables `0xA403A8` / `0xA403F0` | 構築途上の基底・中間 |
+
+cross-link が確認された組み合わせ: `b42f48→b42ec0`、`b43070→b42ec0`、`b42154→b43070`、`b333c4↔b42f48`（10 関数）、`b333c4↔b43070`（`FUN_006A6DE0` で 3/3）、map 実装共有。**否定**された組み合わせ: GMST map ↔ INI chain `0x44DCF0`、GMST map ↔ シェーダ初期化。
+
+### §70.8 矛盾と要再導出（1 件解決 / 1 件未決着）
+
+1. `[解決]` ~~**オペコード表のフィールドオフセット**~~。V76 は `+0x18` / `+0x1C`、現行 doc は `+0x20`（11348 付近・11523・11784、`docs\RE_ANALYSIS_ROADMAP.md` 256）と記述し、一見矛盾していた。§69 残課題 5「`field_20` / `field_24` の意味」と同一論点。
+   - **結論: 矛盾ではなく別フィールド。両方が正しい。訂正不要。**
+   - 根拠: 正しい VA→ファイルオフセット変換（`pe.get_offset_from_rva()`）で 532 件全数を読了した結果、`+0x18` = 実装（handler、527/532・515 ユニーク）、`+0x1C` = 共有 dispatcher（`0x4FDE30` が 528/532）、`+0x20` = **条件関数ポインタで 169/532**（166 ユニーク、`0x4FA880` / `0x4FAAA6` / `0x4FADBA` 等が `[reg+0x18]` / `[reg+0x1c]` を読む）、`+0x24` = 小フラグ 19/532。
+   - **`+0x20` の 169 件は `docs\RE_EXE_REPORT.md` 10020 行の「169 件」と完全一致**した。V76 の「`+0x20` / `+0x24` は sampled entry で 0」は調査した entry が idx 0〜5（`0x0000`〜`0x0005` 帯）に限られ、その帯域は実際に `+0x20`=0 のため生じたサンプリング誤りである。
+   - 実測ソース: `tmp/re/v77d_opcode_id_layout.py` / `v77e_field_usage.py` / `v80_gap_opcode_xref.py`、生成表 `docs/SCRIPT_OPCODE_TABLE.md`。
+2. **V76 ハーネスの既知バグ 2 件**（解析ツール側。doc の値には未波及と判断）。
+   - `rd()` は `.rdata` 終端 `0xB01A00` と `.data` 開始 `0xB02000` の 0x600 ギャップをまたぐ読みでデータ側を 0x600 シフトする。site `0x513E90` の格納先は `0xB0B1D0` ではなく **`0xB0B7D0`**。
+   - `dec_index` は `decompiled.c` ヘッダの全関数を含まない（`FUN_00513E90` / `FUN_00514660` 欠落）。
+3. `docs\RE_ANALYSIS_ROADMAP.md` 255 行の履歴行に「MGEF 32 コード」の残骸が残る（同 2026-10-23 行で 145 MGEF へ訂正済み）。履歴上の記述のため実害は小さい。
+4. 「EVMP 516」はリポジトリ外の記述にのみ由来する（§70.4）。以後は根拠として扱わない。
+5. SetStage の単位に関する陳腐化主張は `tmp\re\contradictions_TU_verify_20261024.md:55` にのみ存在し、現行 doc には無い。§70.6 の命令数が正。
+6. V63 の vtable 訂正は `tmp/re` 内の V55/V57 文書に対するものであり、現行 doc に該当記述は無い。
+
+### §70.9 Android 移植への実装タスク
+
+1. **GMST ローダのパリティ**: `sSpecialization` の登録・オーバーライド可、`fRegionGenTex*` 4 件は無視、378 キーの ESM オーバーライド意味論を維持。
+2. **設定マップのモデル分離**: GMST 文字列キーマップを INI・BlendSettings・GameSettings から分離。`0xA40454` 系（hash `0x4A80A0` / compare `0x584D10`）の挙動を模す。Water 実行時キー `fAlpha:Water=0.5` / `uSurfaceTextureSize:Water=128`、BlendSettings 62 既定値（float 14 / string 48）。
+3. **GameSettings / ESM EDID 経路**: `0x4A8040` 相当の EDID lookup を実装。INI Dump は no-op で可。
+4. **グローバル状態構造**: `0xB333C4` 相当の 0x804 バイト型付き状態オブジェクト。`+0x116` / `+0x588` / `+0x738` を正規化し、動的配列域 `+0x200..+0x56C` を保持。
+5. **Show1stPerson 挙動**: `+0x588` の論理状態と 1st/3rd 人称モデル可視性の切替。汎用 `0x66C580` 経由にしない。
+6. **会話選択**: `Topic_Resolve` 相当（候補フィルタ、priority stop、deferred candidates、再帰ガード、`rand()%count+1`）。
+7. **オペコード表のオフセット監査**: 済（§70.8-1 で `[解決]`）。`script_opcodes.h` 側は `+0x18` = handler / `+0x1C` = dispatcher / `+0x20` = 条件関数として実装してよい。正典表は `docs/SCRIPT_OPCODE_TABLE.md`。
+8. **欠落 SCDA ハンドラ 362 件**: 済（§70.12）。ギャップ 362 行は欠落ハンドラではなく Ghidra のラベル境界未検出であり、細片 101 件すべてがオペコード表 `+0x18` の実在ハンドラであることを V80 で確認。実装は `docs/SCRIPT_OPCODE_TABLE.md` のテーブル駆動で行う。
+9. **シェーダ / D3D capability 関係**: `B42154 → B43070 → B42EC0` の明示的マッピングと teardown / refcount 挙動を再現。
+10. **SetStage 国勢調査**: ツール・ドキュメントでは命令頻度（3,479）として扱う。
+11. **トークン登録**: `_` 前置は vector 挿入、その他は linked-list 挿入。
+
+### §70.10 未解決疑問点（主要）
+
+`0xA28860..0xA2D184` 初期化配列を走査する起動コード / `0x981FB4`・`0x981F78` の役割 / attribute `s*Description` 8 件が ESM で置換されるか / `FUN_00478780` のオブジェクト型 / AV コード名テーブル `0xB0A1A8` の消費者 / `0x66C580` の caller 数 21 vs 22 / `+0x588` の全意味 / `0xB333C4` が指す 0x804 オブジェクトの型 / 動的配列 `+0x200..+0x56C` の充填者 / decompiled L324692 の欠落 SSA store / バイナリのみの 195 関数 / アロケータ `0x401F00` の正体 / console resolver から `+0x18` handler までの完全 dispatch 経路（`0x4FF9B9` の初期化経路が `+0x18` を読むか `+0x1C` dispatcher 内か）/ 補助配列 `+0x14`（引数記述子・281 件）と `+0x0C`（説明文・531 件）の役割 / フラグ `+0x10`・`+0x11` の意味 / `FUN_00674200` が tick するサブシステム / `Topic_Resolve` の候補ビット意味（`cand+0x25` bit1・bit5、`this+8` bit5）/ `0x446CB0`・`0x46CB60`・`FUN_0047DF80` の型と意味 / `DAT_00B36510` の所有経路 / `FUN_00498340` の `B43070=0/1` の意味 / COM 系シングルトン `0xB43104` / `0xB43108` / `0xB4310C` / `0xB43110` / `0xB42754` の正体 / GMST map の teardown 順序 / `FUN_007B4010` の埋め込みマップ内容 / `PickRefByID` が GMST map を 2 回参照する理由 / §70.8-2 のハーネス修正 / Supermemory の「EVMP 516」の外部検証。
+
+### §70.11 証跡
+
+- 一次資料: `tmp/re/v60_esm_only_keys.md` / `v61_headless_relabel.md` / `v62_v59_residuals.md` / `v63_settings_vtable_attribution.md` / `v64_section7_remaining.md` / `v66_v68_findings.md` / `v67_v74_memory_api_findings.md` / `v69_show1stperson_link.md` / `v72_global_b333c4_map.md` / `v75a_findings.md` / `v75b_findings.md` / `v76_data_relationship_map.md` / `v77b_opcode_entry_verify.txt` / `v77d_opcode_id_layout.txt` / `v77e_field_usage.txt` / `v79_absorbed_tracking.md` / `v80_gap_opcode_xref.txt`（すべて `tmp/` のため Git 管理外）
+- 生成物: `docs/SCRIPT_OPCODE_TABLE.md`（532 エントリ・597 行。生成器は `tmp/re/v81_gen_opcode_table.py`）
+- V61 生データ: `%TEMP%\opencode\gap_scan.csv`（セッション作業領域のため非保全）
+- 関連既存節: §67.6.1（V61 実測を反映済み）、§69.4（次の一手）
+
+### §70.12 V79 吸収仮説の検証（V79・V80）
+
+**背景**: V61/V70 で「362 行のギャップ = 357 ユニーク VA」が `NO_FUNCTION` / 強制 createFunction 対象として残った。このギャップが既存関数へ吸収された偽の断片（`absorbed_suspect`）かどうかを V79 が検証した。
+
+**仮説と判定（V79）**
+
+- 対象 362 行 / 357 ユニーク VA。分類規則（サイズ閾値 L≈120 / ≈200 字 + exec 文補正、優先順 1〜8）で 3 分類:
+  - class1（full-body / small-with-cf / straightline）= **256 件（71.7%）**、L の min/med/max = 165 / 574 / 4222
+  - class2（tiny / call+return forwarder / skeleton-dup-thin / residual-thin）= **98 件（27.5%）**、内訳は forwarder 73 / tiny 22 / residual-thin 3
+  - class3（trivial-garbage）= **3 件（0.8%）**
+- クロス表（呼出し回数 cc と class の関係）: cc≥2（314 件）→ class1 223 / class2 89 / class3 2。cc<2（43 件）→ class1 33 / class2 9 / class3 1。**χ² = 0.611、p ≈ 0.43 → 有意な相関なし**。
+- 本文の完全一致（`exact_dup`）は **0 組**。骨格重複は 13 組 / 115 件（最大 47 件族、全て class2、呼出先 helper は一件ずつ別）。
+- **判定: `absorbed_suspect` 仮説は不成立**。319 件の薄片指標は「吸収の証拠」ではなく、cc 前置は Ghidra のラベル境界検出可否のシグナルにすぎない。
+- 別の事実: class2 + class3 の 101 件は全て `0x00500770`–`0x0050D8C0` に集中する。
+
+**V80 による裏取り（本節の決着）**
+
+薄片 101 件をオペコード表 `0xB0AF48` のフィールドと機械照合した（`tmp/re/v80_gap_opcode_xref.py`）。
+
+- **101 / 101 が `+0x18`（実装ハンドラ）に一致**（`+0x1C` = 0 / `+0x20` = 0）。薄片は孤立断片でもデータ誤解釈でもなく、**実在のオペコードハンドラ**である。
+- class3 の 3 件の正体: `0x00500820` = op `0x0152 ShowRenderPasses`、`0x00501A60` = op `0x011A ToggleGrassUpdate`、`0x005087A0` = op `0x0124 ToggleShadowVolumes`（いずれもコンソールのトグルコマンド）。V79 §6-2 を決着。
+- V5 表の重複 5 VA の正体: **テーブル誤りではなく別名オペコードがハンドラを共有している**。`0x005007D0` = `ShowSubtitle`(0x0151) / `ShowDialogSubtitles`(0x1164)、`0x00500890` = `OutputMemContexts`(0x0155) / `ResetMemContexts`(0x0169)、`0x00503E10` = `OnEquip`(0x0004) / `OnActorEquip`(0x001C)、`0x00503E90` = `OnUnequip`(0x0005) / `OnActorUnequip`(0x001D)、`0x0050D020` = `AdvancePCSkill`(0x10D4) / `ModPCSkill`(0x110F)。V79 §6-6 を決着。
+- 帯域 `0x500770`–`0x50D8C0`（約 0xD150 バイト）に全 532 オペコードのうち **445 ハンドラ（distinct 439） = 84%** が集中する。薄片の集中帯はこの「オペコードハンドラ領域」と同一。V79 §6-4 を定量確定。
+- 表中で `+0x00`（長名）を持つ entry は **532 / 532**。名前の無いハンドラは存在しない。
+
+**V79 が提示した V5 表への反映案（5 件・未適用）**
+
+1. `absorbed_suspect` の分類命名を事実記述へ改称する。
+2. `absorbed_suspect` 欄へ V79 の判定結果を追記する。
+3. V5 §3.1 表に `class` 列を追加する。
+4. §6.1 の P3 追跡へ「cc<2 の 76.7% が class1」を追記する。
+5. class3 の 3 件へ注記（`ShowRenderPasses` / `ToggleGrassUpdate` / `ToggleShadowVolumes`）を付す。
+
+**V79 の残課題（8 項目）**
+
+1. ギャップ外の 21,240 関数との本文・骨格重複照合。
+2. class3 3 件のバイナリ確認 — **済（本節 V80）**。
+3. 境界判例（residual-thin 3 件 + L≥200 の class2 6 件 = `0x005022D0`・`0x00502370`・`0x00502390`・`0x005023B0`・`0x00504010`・`0x0050BAA0`）。とくに `0x005022D0`（`GameMode`）は L=207 でも実質 3 文であり、**サイズ閾値単独では誤判定する**。
+4. フォワーダ族の呼出先マップ（`0x4F4xxx` / `0x4F6xxx` 系）。
+5. cc 前置値の出典（`probe_harness.rd()` の −0x600 シフトの既知バグに注意）。
+6. V5 表の重複 5 件の原因 — **済（本節 V80 = 別名オペコードのハンドラ共有）**。
+7. サイズ指標の微差（`decomp_chars` と本文長 L）。
+8. （スコープ外）`gap_kind = absorbed_suspect`（102 件 = cc≤3）との呼称衝突。
+
+代表例: `0x00504050`（`OnHit` = op `0x0008`）は `FUN_004FAE80` を呼ぶゲート（§70.3 の `0x4FAE80` と同一）。`0x00506E90` は `"Clearing Facegen Model Data"` を出力するコンソールコマンド。
+
+### §70.13 スクリプトオペコード表（正典・V81）
+
+`0xB0AF48` の 532 エントリを実測して `docs/SCRIPT_OPCODE_TABLE.md` を生成した。レイアウトは §70.4 の 12 フィールド表が正。
+
+- 内訳: ハンドラ 515 ユニーク / 条件関数 169 / 実装なし 5 件 / 別名共有 7 組。
+- **id → idx**: `op ≤ 0x1E` → idx = op、`0x100-0x183` → idx = op − 0xE1、`op ≥ 0x1000` → idx = op − 0xF5D（狭義単調増加のため二分探索可）。
+- 例外 dispatcher: `0x1000`・`0x114D` が `0x500130`、`0x1059` が `0x500150`（残り 528 は `0x4FDE30`）。
+- 終端 entry: idx 162 `0x0183` の長名は `ADD NEW CONSOLE COMMANDS BEFORE THIS ONE!!!`（全フィールド 0 のセンチネル）。
+- 実装なし 5 件: `0x0183`（センチネル）/ `0x1019 UnusedFunction1` / `0x101A UnusedFunction2` / `0x1035 GetScriptVariable` / `0x104F GetQuestVariable`。
+- 逆引き（コマンド名 → opcode → ハンドラ）が可能なため、Phase 68 のスクリプト関数実装は本表を直接リソースにできる。
+
+#### (V84) 引数コンパイラ `0x4FDE30` の型分岐 — 38 型コード → 2 ファミリ → 9 経路 [確定]
+
+- 証跡: `tmp/re/v84a_argtype_parity.py`（PE 直読み + capstone）/ `tmp/re/v84a_run2.txt` / `tmp/re/v84b_switch.txt`。Ghidra は**未接続**（`list_instances` が空）で、REA の `analyze_function` は本 PE でタイムアウトするため、`capstone` による直接逆アセンブルで計測した。
+- `+0x1C` の共有 dispatcher `0x4FDE30` は 528/532 エントリに格納され、そのエラー文字列が `ScriptCompiler::StandardCompile` を名乗る。したがって同関数は **`StandardCompile` の引数コンパイラ**（記述子の型コードをコンパイル時の形式へ落とす役）である。
+- 記述子プールの再走査（V84a）: 名前非空を必須条件にすると候補 **192 / 消費 179 / 未消費 13 / グリッド外 0**（V83 の「179 消費」と一致）。未消費 13 のうち `int` / `scn` / `ref` の 3 件は型情報テーブル等の拾い上げによる**偽陽性寄り**で、残り 10 件（`Integer (Optional)` / `Actor` / `Topic` / `Sound` / `ObjectReferenceID` / `Float`×4 / `Form Type (OPTIONAL)`）は**予備枠**。
+- **スイッチ前文**（`0x4FDF7C`〜`0x4FDFA0`、実測）: `mov cl,[esp+0x22c]` / `mov eax,[ebp]`（記述子の型コード）/ `cmp byte ptr [eax*8 + 0xB0A54D],0` / `je 0x4FE88B`（alt ファミリ）/ `add eax,-3` / `cmp eax,0x22` / `ja 0x4FED7E` / `jmp dword ptr [eax*4 + 0x4FEEAC]`。
+- **型情報テーブル `0xB0A548`**（8 B × 38、記述子プール `[0xB0A11C,0xB0AF48)` の内側）: `{ u32 type_code; u8 fieldA; u8 fieldB; u8 pad2 }`。`fieldB` が**ファミリセレクタ**（`1` = main 27 型 / `0` = alt 11 型）。`fieldA==1` は **3 型のみ**（`0x01` Integer / `0x02` Float / `0x17` Stage）。すなわち記述子プールは**均質な 12 B 配列ではなく**、12 B 記述子 + 8 B 型情報テーブル等の混在領域である（V84a の偽陽性の主因）。
+- main テーブル `0x4FEEAC` は **35 エントリ**（index = type − 3、型 `0x03`〜`0x25`）。`0x4FEEAC + 35*4 = 0x4FEF38` で alt テーブルと**アドレスが連続**するため、テーブル長は `cmp eax,0x22` の上限から決める。35 スロット中 **8 スロットが `0x4FED7E`**（main に来てはいけない型のトラップ）で、その 8 型は `fieldB==0` の範囲内 8 型と**完全一致** → **38 = 3（type<3）+ 27（main）+ 8（範囲内 alt）**。
+- alt 経路 `0x4FE88B`: `cmp eax,0x21` / `ja 0x4FEE86` / `movzx eax,byte ptr [eax + 0x4FEF5C]`（**38 B のバイト分配テーブル**）/ `jmp dword ptr [eax*4 + 0x4FEF38]`（有効 9 エントリ）。
+- **main 27 型は一様**。27 ハンドラすべてが記述子を直接書かず、`call 0x9832E6`（フォーム検索）と `call 0x4FCE30`（`Unknown variable '%s' for parameter %s.`）へ委譲する。すなわち main ファミリのコンパイル結果は**型に依らず同一形式**（フォーム参照）。型固有の情報はエラー文のみ: `Invalid inventory object`(`0x03`) / `Invalid container reference`(`0x04`) / `Invalid spell item`(`0x07`) / `Invalid interior cell`(`0x09`) / `Invalid magic item`(`0x0B`) / `Invalid sound`(`0x0C`) / `Invalid topic`(`0x0D`) / `Invalid info`(`0x0E`) / `Invalid race`(`0x0F`) / `Invalid class`(`0x10`) / `Invalid faction`(`0x11`) / `Invalid global`(`0x13`) / `Invalid furniture object`(`0x14`) / `Invalid object`(`0x15`) / `Invalid actor base`(`0x19`) / `Invalid worldspace`(`0x1B`) / `Invalid package`(`0x1D`) / `Invalid combat style`(`0x1E`) / `Invalid effect setting`(`0x1F`) / `Invalid birthsign`(`0x20`) / `Invalid weather`(`0x22`) / `Invalid NPC`(`0x23`) / `Invalid owner`(`0x24`) / `Invalid actor value`(`0x25`)。
+- `0x04` / `0x06` / `0x18` / `0x1A` の 4 型は同一ハンドラ `0x4FDFFF` を共有（ObjectReferenceID / Actor / Map Marker / Container で共通のフォーム検証）。`0x03` は `0x4FDFA7`。
+
+| # | 型コード | 引数型名 | alt ハンドラ | 実測したコンパイル結果 |
+|---|---|---|---|---|
+| 0 | `0x00` `0x25` | String / Filename, Effect Shader ID | `0x4FE8A2` | `mov word ptr [ecx+esi+0x20C],di` → `add [esi+0x40C],2` → `call 0x9812C0`（**文字列 → u16 インデックス**） |
+| 1 | `0x01` `0x02` `0x17` | Integer, Float, Stage | `0x4FE8DE` | `cmp cl,0x47` / `mov byte ptr [esi+ecx+0x20C],0x47`（**リテラル型タグ付きのインライン数値**。`0x47`='G'） |
+| 2 | `0x05` | Actor Value | `0x4FEA21` | `mov eax,[edi*4+0xB0A1A8]` → `call 0x98262D`（**列挙テーブル参照**） |
+| 3 | `0x08` | Axis | `0x4FEABF` | `call 0x98664D` → `cmp al,0x58('X')` / `0x59('Y')` → `call 0x98262D`（**軸文字 X/Y/Z**） |
+| 4 | `0x0A` | Animation Group | `0x4FEB55` | `mov edi,0xB102E0` → `call 0x98262D`（列挙テーブル参照） |
+| 5 | `0x12` | Sex | `0x4FEAF6` | `mov edx,[0xB10BC4]` → `call 0x98262D`（列挙テーブル参照） |
+| 6 | `0x1C` | Crime Type | `0x4FEA81` | `call 0x47D550` → `call 0x983468` |
+| 7 | `0x21` | Form Type | `0x4FEBC8` | `mov edx,[edi*4+0xB081D0]` → `call 0x98262D`（列挙テーブル参照） |
+| 8 | `0x16` | Variable Name | `0x4FEE86` | **未実装**: `Param type '%d' unimplemented in ScriptCompiler::StandardCompile.` |
+
+- `0x4FEF5C` の範囲外値（`184` → 型 `0x24`、`204` → 型 `0x22`/`0x23`）も存在するが、これらは `fieldB==1` のため alt 経路には到達しない。
+- **38 型 ↔ 移植側 `NativeTokenKind` 9 種**（`app/src/main/cpp/script/native_scda_decoder.h`）: alt 9 経路の**数**が移植側 9 種と一致し、idx 1 が書く `0x47`='G' は移植側 `isVariableTypeChar`（`f/s/r/l/G`）に含まれる。写像は **main 27 型（フォーム参照系）→ 同一形式 / `0x01` `0x02` `0x17` → `Integer`・`Double` / `0x00` `0x25` → `String` / `0x08` → `Axis` / `0x16` → バニラ実装なし**。移植側 `Variable` は `f/s/r/l/G` の型文字 + u16 という**別文法**（宣言済み変数の参照）で成立しており、コンパイラの "Variable Name" 引数型とは別物である。`+0x20C` に書かれる幅・先頭文字の**全量**は呼出し先（`0x9812C0` 等）に委譲される部分があり、多対一の詳細は [推定]。
+
+
+### §70.14 移植ヘッダ ⟷ 正典オペコード表の突合（`v81-opcode-table-integrate`）
+
+対象: `app/src/main/cpp/script/script_opcodes.h`（13,241 B / 371 行、3 enum）。
+手段: **名前ベース突合**。ヘッダ 171〜172 行が「FunctionID は合成 VM コール ID。native SCDA 値から remap してはならない」と明記しているため数値突合は不可。
+証跡: `tmp/re/v81b_h_to_table_xref.py` / `tmp/re/v81c_h_to_table_map.py`（成果物 TSV は `tmp/re/v81c_h_to_table_map.map.tsv`）/ `tmp/re/v81d_scda_marker_evidence.py`。
+
+#### (1) `Opcode`（87〜143 行、0x0000〜0x1000）= 突合対象外 [確定]
+VM 固有のスタック/コール符号化（STOP 0x0000 / ADD 0x0001 / … / CALL 0x1000）。EXE のオペコード表とは**別空間**であり、対応を取る必要はない。
+
+#### (2) `NativeScdaOpcode`（153〜166 行・12 値）= 全 12 値が実測で裏付けられる [確定]
+- 正典表と同名で一致（6 値）: `Activate 0x100D` / `SetActorValue 0x100F`（正典の短名は `SetAV`）/ `PlayGroup 0x1013` / `Cast 0x101E` / `SetStage 0x1039` / `MoveTo 0x109E`（正典の長名は `MoveToMarker`、短名 `MoveTo`）。
+- `Stop 0x0011` / `Marker 0x001C` / `Prologue 0x001D` は正典表に同名 entry が無いが、**SCDA 国勢調査で裏付けが取れた**。当初「名前不一致」に見えたのは**空間の混同**だった。
+
+| ヘッダ値 | SCDA での役割 | 出現数 | 根拠 |
+|---|---|---|---|
+| `Stop = 0x0011` | ブロック終端（STOP / end） | 4,344 | `0x0010` Begin と**完全同数**（1 ブロック = Begin 1 + End 1） |
+| `Marker = 0x001C` | 参照スロット接頭辞（固定 4 B `[u16 op][u16 refSlot]`、refSlot は 1-based） | 5,647 | 直後は参照省略系（`Enable 0x1021`=520 / `Activate 0x100D`=519 / `RemoveSpell 0x101D`=361 …）。§57.5 R6・§59.3 R6 と一致 |
+| `Prologue = 0x001D` | スクリプト先頭のプロローグ（SCPT のみ出現） | 2,393 | **スクリプト数と同数**、全サンプルで `+0000` 位置 |
+
+国勢調査は 2,393 スクリプト / 65,628 命令 / 807,893 B の全数走査（§59.3 R7、証跡 `tmp/re/s59_svm_r7_bytecode.txt`）。
+
+- **正典表の 0x0000〜0x001E 行はブロック型 ID**（`0x0010 Begin` の第 1 引数）であり、同名 opcode ではない。§57.4 の注記が正。したがって正典表の `0x0011 ScriptEffectStart` / `0x001C OnActorEquip` / `0x001D OnActorUnequip` とヘッダの Stop / Marker / Prologue は**衝突ではなく別用途**である。[確定]
+- ブロック型 ID の国勢調査（2,393 スクリプト）: GameMode 0x00=1332 / MenuMode 0x01=42 / OnActivate 0x02=891 / OnAdd 0x03=102 / OnEquip 0x04=41 / OnUnequip 0x05=23 / OnDrop 0x06=8 / OnHit 0x08=82 / OnHitWith 0x09=31 / OnDeath 0x0A=441 / OnAlarm 0x0D=32 / OnPackageStart 0x0F=61 / OnPackageDone 0x10=307 / ScriptEffectStart 0x11=84 / ScriptEffectFinish 0x12=57 / ScriptEffectUpdate 0x13=35 / OnPackageChange 0x14=89 / OnLoad 0x15=208 / OnMagicEffectHit 0x16=44 / OnSell 0x17=2 / OnTrigger 0x18=151 / OnStartCombat 0x19=29 / OnTriggerActor 0x1A=31 / OnTriggerMob 0x1B=5 / OnActorEquip 0x1C=1 / OnReset 0x1E=215。**0x1D（OnActorUnequip）はブロック型としてバニラで 0 回**。
+- 制御 opcode の対応（`tmp/re/s69_scda_a.md` §2・[確定]）: Begin 0x0010 / End 0x0011 / Set 0x0015 / If 0x0016 / Else 0x0017 / ElseIf 0x0018 / EndIf 0x0019 / 0x001A・0x001B 未使用 / SetCallRef 0x001C / Prologue 0x001D / Return 0x001E。
+- **帰結: ヘッダの修正は不要。** 代わりに正典表（`.md`）側で「0x0000〜0x001E はブロック型 ID」を明示する必要がある（`docs/SCRIPT_OPCODE_TABLE.md` に `### 0x0000〜0x001E 帯の注意（ブロック型 ID）` 節として追記済み）。[済]
+
+#### (3) `FunctionID`（173〜347 行・156 件）= 正典表との名前対応
+正規化（英数小文字化）後の分類: **EXACT 85 / CAND 32 / ABSENT 39 of 156**。正典 532 件のうち **448 件はヘッダから未参照**。
+成果物 `tmp/re/v81c_h_to_table_map.map.tsv`（`functionid` / `fid` / `status` / `canonical` の 156 行、Git 管理外）は **Phase 68 の FunctionID → native opcode 対応表の下地**。
+
+ヘッダのコメント中の native 名ヒントは **7 / 7 件すべて正典と一致**（`0x115D SetSceneIsComplex` / `0x105E EvaluatePackage` / `0x1026 PlaySound` / `0x1076 ModCrimeGold` / `0x1075 SetCrimeGold` / `0x108B KillActor` / `0x108C ResurrectActor`）。
+
+EXACT 以外の主な対応（原典に実在・突合済み）:
+
+| ヘッダ名 | fid | 原典 opcode | 原典 長名 |
+|---|---|---|---|
+| `IsUnconscious` | 0x0047 | 0x10F2 | `GetUnconscious` |
+| `IsAlerted` | 0x004A | 0x105B | `GetIsAlerted` |
+| `IsCreature` | 0x004C | 0x1040 | `GetIsCreature` |
+| `GetSex` / `GetRace` / `GetClass` | 0x0032〜34 | 0x1046 / 0x1045 / 0x1044 | `GetIsSex` / `GetIsRace` / `GetIsClass` |
+| `IsInFaction` | 0x0037 | 0x1047 | `GetInFaction` |
+| `IsDetected` | 0x0060 | 0x102D | `GetDetected` |
+| `GetFame` / `GetInfamy` | 0x0057〜58 | 0x10F9 / 0x10FB | `GetPCFame` / `GetPCInfamy` |
+| `GetPosX/Y/Z` | 0x0088〜8A | 0x1006 | `GetPos` |
+| `SetPosX/Y/Z` | 0x008B〜8D | 0x1007 | `SetPos` |
+| `Evp` | 0x009A | 0x105E | `evp`（小文字） |
+| `SetSceneIsComplex` | 0x0098 | 0x115D | `SetSceneIsComplex` |
+
+ABSENT 39 件の切り分け（当初の暫定記載。→ **(4) 節で確定**。正典表のトークン検索で `0xNNNN` 以外の出現が 0）:
+- **バニラ原典にトークンが存在しない** = ヘッダ独自名または概念名: `IsHumanoid` / `GetPCLevel` / `GetPCCell` / `GetRegion` / `GetRelationship` / `SetRelationship` / `IsInjured` / `GetEnteringLocation` / `IsInExterior` / `GetSpell` / `GetSpellCount` / `GetNthSpell` / `IsImmobile` / `SetImmobile` / `IsInvulnerable` / `SetInvulnerable` / `IsPlayerTeammate` / `GetPlayerSkill` / `GetPCCount` / `GetPCLocation` / `SetObjectiveCompleted` / `GetObjectiveCompleted` / `IsQuestStageDone` / `GetQuestCompleted` ほか（`Humanoid` / `Region` / `Relationship` / `Injured` / `Immobile` / `Invulnerable` / `Teammate` / `PlayerSkill` / `PCCount` / `PCLocation` / `ObjectiveCompleted` / `QuestCompleted` は正典表に 0 件）。
+- 原典の近縁コマンドは存在する（`GetQuestCompleted` → `0x1038 GetQuestRunning` は別概念 / `SetObjectiveCompleted` → `0x0176 caqs` はデバッグ一括完了）。→ **(4) 節で確定**: 登録名の有無にかかわらず表示名のみの差異で、機能的影響はない。
+
+#### (4) ABSENT 39 件の帰属確定（`v82-absent-fid-classify`）
+3 系統の一次証拠で確定した。証跡: `tmp/re/v82_absent_fid_classify.txt` / `tmp/re/v82b_absent_boundary.txt` / `tmp/re/v82c_absent_related_names.txt`（生成器は同名 `.py`。いずれも Git 管理外）。
+
+##### (4-1) 証拠 1: EXE に登録名として存在しない
+- 正典表の登録長名 532 件は EXE 内に ASCII 文字列として実在する。EXACT 85 件のうち 83 件（98%）が EXE 内に文字列を持つ（CAND 8/32 = 25%、ABSENT 5/39 = 13%）。出現ファイルオフセット範囲は `0x62EC2C .. 0x714CED`（532 箇所、1 名 1 箇所）。UTF-16LE は全 0 件 — EXE の識別名は ASCII のみ。
+- ABSENT 39 件を単語境界つきで検索すると REGISTERED は実質 0 件。ヒットした 5 件はすべて部分文字列アーティファクト（`IsCreature`⊂`GetIsCreature` / `IsGhost`⊂`GetIsGhost` / `IsAlerted`⊂`GetIsAlerted` / `Random`⊂`GetRandomPercent` と説明文 / `GetValue` は表の名前領域外 `0x6A3B97`・`0x70000D`）。正典表に `IsCreature` 等の登録名は存在しない。
+- 陽性対照: `GetPCFame` / `GetPCInfamy` / `SetStage` / `GetStage` / `GetClass` はヒット、`GetFame` / `GetSex` / `IsHumanoid` / `SetHealth` / `IsLocked` / `GetOwner` / `HasSpell` / `IsDetected` / `IsInFaction` / `GetRelationship` / `IsInjured` は非ヒット。
+- 手法上の注意: 単純な `data.count(name)` は部分文字列を数えるため偽陽性になる。単語境界判定が必須。
+
+##### (4-2) 証拠 2: 正典表 532 件の登録長名と完全一致が 0 件
+- ALT_EXACT 0 / ALT_STEM 6 / HAS_CAND 13 / STR_ONLY 0 / ABSENT_ALL 20（`tmp/re/v82_absent_fid_classify.txt`）。
+- すなわち ABSENT 39 件は「同名の別帯域実装」ではない。
+
+##### (4-3) 証拠 3: 移植コードでは表示名 switch のみ
+- 移植側 1,652 ファイルの全数走査で ABSENT 39 件は 39 件すべて利用されているが、出現箇所は `app/src/main/cpp/script/script_disasm.cpp`（約 300〜410 行）と `app/src/main/cpp/script/script_functions.cpp`（約 155〜254 行）の 2 ファイルのみで、いずれも `switch (FunctionID) { case FunctionID::IsLocked: return "IsLocked"; ... }` 形式のディスアセンブラ表示名表（2 箇所に重複）。`GetValue` は 130 箇所あるが大半は無関係な C++ メソッド名。
+- **fid 値の解決・dispatch・条件評価には一切関与しない**（dispatch は数値 `FunctionID` で行われる）。したがって機能的影響はない。
+- `FunctionID` は `script_opcodes.h` 171〜172 行が明記するとおり合成 VM コール ID であり、native SCDA 値からの remap は禁止。表示名の不一致は是正不要。
+
+##### (4-4) 正典表との関係分類（`v82c`）
+単語境界つき検索 + 登録長名の真部分文字列 + 接頭辞を剥がした語幹一致の 3 条件で分類（`tmp/re/v82b_absent_boundary.txt` / `tmp/re/v82c_absent_related_names.txt`）。
+
+| 分類 | 件数 | 意味 |
+|---|---|---|
+| EXACT_TABLE | 0 | 登録長名と完全一致 |
+| SUBSTR_TABLE | 4 | 登録長名の真部分文字列（`Random`⊂`GetRandomPercent` / `IsGhost`⊂`GetIsGhost` / `IsAlerted`⊂`GetIsAlerted` / `IsCreature`⊂`GetIsCreature`） |
+| RELATED | 18 | 接頭辞を剥がした語幹が登録長名に含まれる（登録名と異なる同一機能名の候補） |
+| UNRELATED | 17 | 正典表に一切関係する登録名がない |
+
+RELATED 18 件の確度は一様ではない。
+- 高（登録名が機能的に同一）: `IsLocked`→`GetLocked 0x1005` / `IsDead`→`GetDead 0x102E` / `GetSex`→`GetIsSex 0x1046` / `GetRace`→`GetIsRace 0x1045` / `IsInFaction`→`GetInFaction 0x1047` / `IsUnconscious`→`GetUnconscious 0x10F2` / `IsDetected`→`GetDetected 0x102D` / `GetFame`→`GetPCFame 0x10F9` / `GetPCLevel`→`GetLevel 0x1050` / `GetOwner`→`IsOwner 0x1116` / `IsOpen`→`GetOpenState 0x109D`。
+- 中（近縁だが同一と断定しない）: `SetHealth`→`ResetHealth 0x1150`（実装は `0x100F SetActorValue` 経由が本命の可能性）/ `GetValue`→`GetActorValue 0x100E` 系 / `GetSpell`・`GetNthSpell`→`AddSpell 0x101C`・`RemoveSpell 0x101D` 系（取得系の登録名なし）。
+- 低（キーワード一致のみ・アーティファクト）: `GetRace` の `BeginTrace 0x0173` 一致（`race`⊂`Trace`）/ `GetPCCell`→`CenterOnCell` 系（`cell` 一致）/ `GetPCCount`→`GetItemCount 0x102F` / `HasSpell`→spell 系。
+- UNRELATED 17 件: `GetWeight` / `IsHumanoid` / `GetRegion` / `GetRelationship` / `SetRelationship` / `IsInjured` / `GetEnteringLocation` / `IsInExterior` / `GetSpellCount` / `IsImmobile` / `SetImmobile` / `IsInvulnerable` / `GetPCLocation` / `IsPCLocation` / `SetObjectiveCompleted` / `GetObjectiveCompleted` / `IsQuestStageDone`。正典表 532 件を `Objective` / `Immobile` / `Invulnerable` / `Weight` / `Relationship` / `Region` / `Location` / `Humanoid` / `Injured` / `Exterior` で検索しても 0 件（`Quest` は表示系コマンド `ShowQuestVars 0x0102` 等のみ、`Open` は `GetOpenState` 系のみ、`Spell` は `AddSpell` / `RemoveSpell` / `IsSpellTarget` 系のみ）。
+
+##### (4-5) 結論
+- ABSENT 39 件は「バニラ原典のオペコード表に名前が登録されていないスクリプト関数名」である。由来は OBSE / CS wiki 系の mod 関数名（`GetSpellCount` / `GetNthSpell` / `SetObjectiveCompleted` / `IsInvulnerable` 等はバニラ未登録）と、移植側の表示名（`GetWeight` / `IsHumanoid` 等）に分かれる。
+- いずれも表示専用のラベルであり、`script_disasm.cpp` と `script_functions.cpp` の 2 箇所の文字列にしか現れない。fid・dispatch・条件評価に影響しないため機能的欠陥ではない。
+- **是正不要**。`FunctionID` は合成 VM コール ID であり、正典表の名前へ remap することは禁止されている。
+- 残る区別（UNRELATED 17 件が「バニラ未登録」か「移植側の独自拡張」か）は Phase 68 で FunctionID → 実装セマンティクスを確定する際に併せて決める。
+
+残務（Phase 68 の dispatch 結線前）:
+1. 済: ABSENT 39 件の帰属を確定（2026-10-25。→ (4) 節）。表示名のみの差異であり、機能的影響はない。
+2. 済: `docs/SCRIPT_OPCODE_TABLE.md` の 0x0000〜0x001E 行へ「ブロック型 ID」注記を追加（2026-10-25。`### 0x0000〜0x001E 帯の注意（ブロック型 ID）` 節。掲載値は `tmp/re/s59_svm_r7_bytecode.txt` と一致確認済み）。
+3. `tmp/re/v81c_h_to_table_map.map.tsv` を Android 側の対応表（テスト資産）として取り込むかは設計判断。
+
+`[確定]`（本節の新規分）: `Opcode` は別空間 / `NativeScdaOpcode` 12 値はすべて実測裏付け / 正典表 0x0000〜0x001E はブロック型 ID。
+`[未確定]`: `+0x10` byte0（フラグ A）の**コンソール帯での意味**（`0x100` 帯 8/132・`0x1000` 帯 235/369 が 1。イベント帯 31 件中 29 が 1 で `0` は GameMode / MenuMode のみ）は未完全確定（§(V83)）。ABSENT 39 件のうち UNRELATED 17 件が「バニラ未登録」か「移植側の独自拡張」かの区別は Phase 68 のセマンティクス確定時に決める（機能的影響なし）。
+
+### §70.15 引用数上位グローバル 15 件の同定（V80 Part B・2026-10-25）[検証済]
+
+対象: `tmp/re/v76_data_relationship_map.md` Part B の未解析高参照グローバル 15 件。原資料は opencode の `tmp/re/v80_partB_globals.md`（2026-10-25、13,837 B / 138 行、Git 管理外）。
+手法: ① `docs/Oblivion_decompiled.c` 全文走査（`0xVA` / `DAT_00VA`、行→関数帰属は dec_index 20,465 件の二分探索） ② **.text 直接 imm32 スキャン** + capstone で命令帰属し store/load を分類 ③ E8 rel32 呼出し辺（宛先が既知関数先頭のもののみ採用）。
+
+#### (1) 独立再現検証（本セッション実測）[確定]
+15 件全ての `.text` imm32 出現数を、PE 実体をバイト単位で直接計数して再現した。**15/15 完全一致**（手法は `.text`（VA 0x401000、const 0x400C00）の raw バイト列におけるリトルエンディアン 4 バイト出現数。他セクションは全件 0。例外なし）。
+`0xB43110`=262 / `0xB02E24`=231 / `0xB43104`=159 / `0xB42CDD`=157 / `0xB4310C`=100 / `0xB39B80`=97 / `0xB43108`=96 / `0xB3FD64`=83 / `0xB35C24`=81 / `0xB430DC`=79 / `0xB430F0`=75 / `0xB42EB8`=70 / `0xB39E04`=70 / `0xB42E8C`=61 / `0xB42754`=10。
+監査結果: V80 Part B の imm32 列は再生可能な定義（純粋なバイト出現数）であり、統計の信頼度は十分。refs 列（decompiled 出現回数）は `docs/Oblivion_decompiled.c` がこのチェックアウトに現存しないため未再現（原資料の記載を保留）。
+
+#### (2) 15 件の判定表（抜粋）
+| VA | imm32 | 型仮説 | 主要 writer | 判定 |
+|---|---|---|---|---|
+| `0xB43110` | 262 | refcounted obj ptr（+0 vtable / +4 refcount） | FUN_007B8990 (0x7BA022；shader init 本体) / clear: FUN_007B7250・ラベルなし 0x7B8530 | 仮説 |
+| `0xB4310C` | 100 | refcounted obj ptr | FUN_00441850 (0x441884；InterlockedDecrement→vtable[0] release→addref) / clear: fun_004425d0 他 | 仮説 |
+| `0xB43108` | 96 | refcounted obj ptr | FUN_0055E340 (0x55E374；唯一 caller = FUN_0055FDF0、`*(B39E04+4)` を渡す) | 仮説 |
+| `0xB43104` | 159 | refcounted obj ptr（デバイス/レンダラ風） | FUN_00406950 (0x406A56；`B43104 = *(0xB350D8)` +addref) | 仮説（高） |
+| `0xB02E24` | 231 | **int 値（INI 設定ノード value）** | ランタイム絶対 store = **0 件**。初期値 0x0A（.data）、INI パーサがノードポインタ経由で書き換え。登録: FUN_009D9500 → FUN_004040E0 (this=0xB07BF0) | **確定** |
+| `0xB42CDD` | 157 | byte フラグ | FUN_007ABE30(=0) / FUN_007ACF40(=1) / FUN_007AD270(=bl) | 仮説（高） |
+| `0xB42754` | 10 | **レンダラ実体 obj ptr** | FUN_00772060 (0x772066；唯一 setter) / clear: FUN_00779010 → FUN_00772060(0) | **確定（高）** |
+| `0xB42E8C` | 61 | code ptr（シェーダエラー callback） | 既定 0x405150 を FUN_0040D4D0 が set / 一時差替: FUN_0050AA20 (RefreshShaders) → 0x50AA10 | **確定** |
+| `0xB39B80` | 97 | 大型 obj ptr（0xDBC B、遅延生成） | FUN_00553550: `malloc(0xDBC) → FUN_00553140()`、失敗時 0 | 仮説（高） |
+| `0xB430DC` | 79 | refcounted obj ptr | FUN_007B8990 (0x7B966E) / clear: FUN_007B7250 他 | 仮説 |
+| `0xB430F0` | 75 | refcounted obj ptr | FUN_007B8990 (0x7B9752、DC と同時 set) | 仮説 |
+| `0xB3FD64` | 83 | LONG カウンタ | 直接 store **0 件**。InterlockedIncrement/Decrement のみ（ctor/dtor 83 組） | 仮説（高） |
+| `0xB42EB8` | 70 | obj ptr（エフェクト/パラメータブロック） | FUN_007A9820 (=param_1、同時に 0xB42E90=param_2) | 仮説 |
+| `0xB35C24` | 81 | refcounted obj ptr（現在設定チェーン） | FUN_004D5600（三つ組 0xB3F9A8/AC/B0 を構築）。**FUN_004D5600 自体は E8/imm32/データ参照とも 0 件 = 到達経路不明** | 仮説（writer 不明点付き） |
+| `0xB39E04` | 70 | obj ptr（+0=フィールド / +4=インタフェス） | factory FUN_0055E850 / writer fun_0055F750・fun_0055FCB0・fun_0055FDF0 | 仮説 |
+
+annotate_db（368 関数）との突合: 名前付きは少数のみ — `fun_0045fda0 = Load_ProcessChangeRecords`、`fun_008014e0 = Shader_CompileVertex` / `fun_00801c90 = Shader_CompilePixel`。
+opcode テーブル経由の同定が有効：**`0xB0BC30` = entry82 `RefreshShaders`/`refshaders` (opid 0x133) の `+0x18` = FUN_0050AA20**、**`0xB0FE70` = entry506 `ShowViewerStrings`/`svs` (opid 0x1157) の `+0x18` = FUN_0050FF70**。これは §70.4 の `+0x18` ハンドラ対応を実例で起揚する。
+
+#### (3) `0xB43104/108/10C/110` — 「1 オブジェクトのフィールド」仮説は**棄却** [確定]
+4 スロットは BSS に物理連続するだけの**独立 refcounted singleton** である。根拠:
+1. **独立 setter 4 本**: FUN_00406950（初期化）/ FUN_0055E340（樹木系）/ FUN_00441850（設定系）/ FUN_007B8990（シェーダ init）。同一関数が複数スロットを set する例は無い。
+2. **独立 release ヘルパ 4 本**: FUN_00A27160/00A27490/00A274C0/00A27340。構造体なら refcount は 1 つはず。
+3. **refcount は各スロットの指し先に存在**: `InterlockedDecrement(DAT_00b4310c + 1)` は変数自身+4 ではなく「ポインタの値+4」 = 指し先オブジェクトの refcount を叩く。
+4. **base+disp 相互参照 0 件**: `[0xB43104+4]` 形式の命令は .text に存在しない（全 site が絶対アドレス単体）。
+5. 複数を同居触る関数は「束を扱う読手」のみ: FUN_007E8E10（108→10C→110 の順に NiPointer assign/release）/ **FUN_00873E50 系 26 関数**（同一引数を 110/108/10C の 3 つと順に比較）/ FUN_0055F550（108 と 10C を連続 release）。これは論理的な束であって物理構造体ではない。
+付隨: 同一 BSS 帯 `0xB430D4..0xB43110` に `0xB430D4`（110 のキャッシュ）/ `0xB430EC` / `0xB430DC` / `0xB430F0` も並び、**すべてシェーダ初期化 FUN_007B8990 / teardown FUN_007B7250 / リセット 0x7B8530 の 3 本で管理**される。
+
+#### (4) FUN ラベルなしの実在関数 `0x7B8530` を検出 [確定]
+FUN_007B84E0 の ret (0x7B8522) 後、int3 パディング 13 B を挟んで `0x7B8530` に **FUN ラベルなしの独立関数**（prologue `push ebx/ebp`、引数 bool、`0xB42EBC=0` クリア、B430DC/B430F0/B43110/B43104/B42EB8 を順に release し 0 化、ret at 0x7B890A）がある。E8 呼出しは **FUN_00497B20 の 1 件のみ**。役割 = **シェーダ系シングルトン一括リセット**。
+Ghidra / decompiled.c のいずれにも本文がなく、§70.12 (V79) で議論した「FUN ラベル未生成の実在関数」の実例となる。
+→ 同種の関数の**全数列挙は §70.16 で完了**（Ghidra FunctionManager 台帳 21,597 件との差分方式、高信頼 A 節 214 件）。
+
+#### (5) `0xB42754` = レンダラ実体説（証拠鎖）[確定追加]
+`FUN_00498340`（RendererInfo.txt 出力 / ATIMGPUD.dll・NVCPL.dll LoadLibrary / シェーダフラグ 0xB43070）→ `FUN_0076BD40` (0x498519) → 先頭で `DAT_00B42154 = Direct3DCreate9(0x20)` → 0x76BDDA `FUN_0076A1C0`（15 引数）→ 0x76A76A `FUN_00778F60` → **`FUN_00772060(renderer)` で `0xB42754` SET**。同年で `0xB42758 = *(renderer+0x8AC)`（描画ステート群）・`0xB428A8 = shader program factory`。clear は `FUN_0076B5D0 → FUN_00779010 → FUN_00772060(0)`。
+指し先のフィールド: +0x000 vtable（+0x54 で能力ビット &8/&4）/ +0x280 refcounted 子オブジェクト→0xB42750 / +0x8AC 描画ステート群（vtable +0xC8/0xD0/0xE0/0x104）→0xB42758・0xB42834 / +0x8B8 別 obj ptr / **+0xA00..+0xA3C = 4x4 float 行列**（fun_00771830、ビュー/プロジェクション変換）。
+結論: **D3D9 device + ビュー行列 + 描画ステートを保持するレンダラ/カメラ複合体**。v76 の「renderer object?」仮説を確定（高）へ格上げ。
+
+#### (6) 残不明点（未確定のまま保留）
+1. **`0xB350D8`**（B43104 の供給元）: imm32 33 site（ 0x4061C3 / 0x4104EA / 0x41178D / 0x4816E1 他）。writer 未同定。
+2. **`FUN_004D5600`（B35C24 setter）の到達経路**: E8 呼出し 0 件、全セクション imm32 参照 0 件。デッドコードまたは未検出の間接経路。
+3. **B4310C と `ShowViewerStrings` (opid 0x1157)**: FUN_0050FF70 が FUN_00441850 経由で B4310C を set する意味論（ビューア表示がなぜ設定系 singleton を差し替えるのか）未解明。
+4. **FUN ラベルなし関数の系統**: `0x7B8530` / `0x50AA20` / `0x405150` の 3 例。「ret → int3 パディング → 次の prologue」を全 .text で走査すれば同種が増える見込み（§70.12 のギャップ分類と接続可能）。
+→ **§70.16 で解決（本項はクローズ）**: 台帳差分方式で UNLABELED 10,175 を列挙し、うち E8 呼出し先である高信頼 214 件を確定。ただし 3 例のうち `0x50AA20` は台帳に `FUN_0050aa20` として**存在**し、FunctionManager 基準で真に未登録なのは `0x7B8530` と `0x405150` の 2 例である（本節 (4) の「FUN ラベルなし」は decompiled 本文での見え方に基づく記述）。
+5. **`0xB39E04` の厴密クラス名**: CanopyShadow.dds から樹木系と推定するがフィールド構造の完全な解釈は未了。
+6. **`0xB430DC` と `0xB430F0` のペア意味論**: 同一 puVar6 を両方に set するが、同一値 alias か別値か未確定。
+
+#### (7) 次タスク案（原資料 §6 の抜粋）
+| 優先 | 内容 | 接続先 |
+|---|---|---|
+| 高 | `0xB350D8` の writer 追跡と B43104/B42754 との三角関係の復元 | §70.7（V76 シェーダ/D3D ハブ） |
+| **済** | FUN ラベルなし関数の全数列挙（ret+int3 境界検出） | **§70.16**（V85〜V88、UNLABELED 10,175 / 高信頼 214 件） |
+| 中 | `0xB07BF0` INI 設定リストの全ノード走査→Oblivion.ini 既定値テーブル復元 | §70.2（GMST）・Android INI 既定値 |
+| 中 | `RefreshShaders` (opid 0x133) → FUN_007B81A0 のシェーダ再生成経路 | §70.7・エラー報告系 |
+| 中 | `0xB42754` vtable 全スロット同定（+0x54/0xC8/0xD0/0xE0/0x104） | Renderer 節 |
+
+(本節の新規確定): `0xB42754` = レンダラ実体 / `0xB42E8C` = シェーダエラー callback / `0xB02E24` = INI 設定ノード int 値 / `0xB43104/108/10C/110` は 4 つの独立 singleton（構造体説棄却）/ `0x7B8530` は FUN ラベルなし実在関数。
+(未確定): 上記 (6) の 6 件。
+
+### §70.16 FUN ラベルなし関数の全数列挙（V85〜V88・2026-10-25）[検証済]
+
+対象: §70.15 (6)-4 の残不明点「FUN ラベルなし関数の系統」と §70.15 (7) の高優先タスク。本節で**列挙手法を確立し全数を出力**した。
+ground truth: opencode の Ghidra 解析成果物 `%TEMP%\opencode\func_list_new.txt`（477,294 B / **21,597 行** / 形式 `<addr>,<name>` 例 `00401000,FUN_00401000` / 2026-10-24 23:59）。件数は §70.12 の V73 突合（`tmp/re/v73_func_list_diff.md`: Ghidra 21,597 / decompiled ヘッダ 20,465 / dec_index 19,593 / decompiled-only 0）の 21,597 と一致する。
+本セッションの解析対象は `D:\Cargo\Ghidra\temp\OblivionStandalone.exe`（7,898,624 B / ImageBase 0x400000 / `.text` VA 0x401000・raw 0x400・size 6,450,233）。**アドレス体系の整合は probe 5 件で確認**（`0x50AA20` → `FUN_0050aa20` 一致、`0x7B84E0` / `0x497B20` 一致、`0x7B8530` / `0x405150` は欠落）。全数の同一性確認は未実施のため、台帳と PE の対応は「実測 5/5 で矛盾なし」の水準である。
+
+#### (1) 手法（境界走査 → capstone 検証 → 台帳差分 → 参照分類）[確定]
+1. **境界候補**: `.text` 全域で `0xCC` ラン（長さ 1〜31）を検出し、その直前が terminator（`c3` / `c2 iw` / `eb rel8` / `e9 rel32` / `ff 25 abs` / `ff e0-e7` / `iret` / `hlt` / `0f 0b`）である位置の直後を候補にする。
+2. **capstone 検証**: 候補から最大 600 B 逆アセンブルし、`int3` / `ud2` / `hlt` / `iret` / invalid に遭遇したら棄却、`ret` / `jmp` 到達かつ命令数 >= 3 のものだけ採用する。**条件分岐で打ち切ってはならない**（`0x7B8530` は冒頭が `0f 84` のため初版実装では取りこぼした）。
+3. **台帳差分**: 1・2 を通過したアドレスが Ghidra 台帳 21,597 件に開始点として存在しないものを **UNLABELED** とする。
+4. **参照分類**: A = E8 rel32 の宛先になっている（能動証拠あり）/ B = imm32 絶対参照のみ / C = 無参照。
+
+実測: 境界候補 **33,098** → capstone 通過 **26,782** → **UNLABELED 10,175**（A **214** / B **9,809** / C **152**）。
+既知 3 例の再判定: `0x7B8530` = 台帳なし・境界 OK・E8 OK / `0x405150` = 台帳なし・境界 OK・E8 なし（B クラス。§70.15 (2) のとおり `0xB42E8C` の既定値としてデータ登録される callback）/ `0x50AA20` = **台帳に `FUN_0050aa20` として存在**。
+
+#### (2) 高信頼 214 件（A 節: 境界 OK かつ E8 呼出し先）[確定]
+- 214 件のうち **88 件は imm32 絶対ポインタ参照も持つ**（E8 呼出しとデータ登録の両方がある = vtable / callback 兼用の実関数）。
+- 直後の Ghidra 関数開始点までの距離: 最小 **16 B** / 中央 **144 B** / 最大 **5,824 B**。内訳 `<=0x10`: 3 / `<=0x40`: 65 / `<=0x100`: 147 / `<=0x400`: 199 / `>0x400`: 15。
+- したがって大半は **「直後の Ghidra 関数の手前に置かれた小さな実関数を、Ghidra が前の関数本体へ飲み込んだ」**構造であり、`0x7B8530` と同一機序である。位置分類（`tmp/re/v87_region_class.txt`）でも gap 10,171 / interior 4 / beyond 0 と、候補が Ghidra 開始点の直後 16 B 以内にほぼ無いことを確認した。
+- 代表例（`tmp/re/v88_e8_called_evidence.txt`）: `0x004040A0`（prev `0x404010` / next `0x4040E0` / 19 命令 / caller `0x40C18A`）/ `0x0040C1B0`（**prev-next 本体 18,240 B に飲み込まれた例** / caller `0x40E88E`）/ `0x0040DF80`（本体 8,560 B / caller `0x98780E`）/ `0x00410D10` と `0x00410E40`（prev next が同一 = 1 本体に 2 候補が併存）。
+- 証跡: `tmp/re/v86_unlabeled_scan.txt` A 節（214 行、E8 呼出しサイト付き）/ `tmp/re/v88_e8_called_evidence.txt`（prev・next の Ghidra 開始点 / 本体サイズ / 命令数 / caller）。
+
+#### (3) B 節 9,809 件の扱い [保留]
+imm32 絶対参照のみで E8 呼出しのない候補。参照回数は中央値 **1**（9,020 件が 1 回のみ、10 回以上は 102 件）であり、jump table / ポインタ表が指す「関数内部アドレス」を大量に含む。**関数開始点の証明にはならないため確定リストには含めない**。ただし `0x405150` 型（データ登録される callback）はこの節に落ちるため、個別確認の母集団として保持する。
+
+#### (4) 限界（重要）[確定]
+境界規則は Ghidra 開始点の **16,607 / 21,597 = 76.9%** しか回収しない。したがって
+- 「台帳に無い = 関数でない」とは言えない（境界が `ret + 0xCC` でない関数は候補に上がらない）。
+- 「候補に上がった = 関数である」も capstone 通過だけでは未証明（データ中の `ret` バイト列を拾い得る）。
+A 節 214 件は E8 呼出しという能動証拠を持つため確定として扱えるが、B / C 節は個別検証が必要である。
+
+#### (5) 残作業
+1. A 節 214 件のうち「同一 Ghidra 本体内部のブロック（別関数ではなく内部ラベル）」との選別（`0x00410D10` / `0x00410E40` 型の切り分け）。
+2. 境界規則の拡張（パディングなしで隣接する関数 / `jmp` 直結の thunk）による再現率 76.9% の改善。
+3. `0x7B8530` を Ghidra プロジェクト側で関数として認識させる作業（移植実装には不要。解析ドキュメントの完全性のみに寄与）。
+
+証跡（いずれも Git 管理外）: `tmp/re/v85_unlabeled_funcs.py`（prologue 走査方式。候補 18,947 で選別力不足のため不採用）/ `v86_unlabeled_diff.py` / `v86_unlabeled_scan.txt` / `v87_region_class.py` / `v87_region_class.txt` / `v88_e8_called_evidence.py` / `v88_e8_called_evidence.txt` / `v89_summary.py` / `v89_summary.txt`。
+
+(本節の新規確定): ラベルなし関数の列挙手法（`ret + 0xCC` 境界 → capstone 検証 → 台帳 21,597 差分 → E8 分類）と高信頼 **214 件**。既知 3 例のうち真の FunctionManager 未登録は `0x7B8530` / `0x405150` の 2 例。
+(未確定): 再現率 76.9% の改善、A 節 214 件の内部ラベル選別、`0x50AA20` が decompiled 本文でヘッダを出さない理由（V73 の非 FUN 特殊名 775 件と同根と推定）。
