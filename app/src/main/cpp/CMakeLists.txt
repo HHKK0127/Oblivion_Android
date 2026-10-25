@@ -334,6 +334,12 @@ add_library(native-lib SHARED
     # Tests (Phase 70: FormID index remapping)
     tests/formid_index_tests.cpp
 
+    # Tests (Phase 65: original landscape LOD block invariants)
+    tests/lod_block_tests.cpp
+
+    # Tests (Phase 65: MGEF effect-code table invariants)
+    tests/enchanting_system_tests.cpp
+
     # Physics System (Phase 36 - Jolt Physics)
     physics/physics_manager.cpp
 

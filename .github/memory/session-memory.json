@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-23T01:05:24Z",
+  "lastUpdated": "2026-10-24T20:15:40Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -9425,14 +9425,79 @@
         "priority defaulted to medium",
         "category defaulted to imported"
       ]
+    },
+    {
+      "id": "opencode-w1-mgef-conjuration-formidlinks-correction-20261024",
+      "timestamp": "2026-10-24T18:51:36Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "correction",
+        "w-axis",
+        "esm",
+        "mgef",
+        "conjuration",
+        "formid",
+        "3c4ce418",
+        "2026-10-24"
+      ],
+      "content": "W軸訂正 W1 (2026-10-24, 台帳↔Supermemory 突合 第六軸): 台帳 3c4ce418 (2026-09-21, tags:confirmed) の「ALL 62 Conjuration MGEFs are FormID links」は誤り。実測 tmp/re/v35_mgef_code_table.csv: school==1 は62件、actor_value>100 のFormIDリンクは60件、リンクなしは REAN(Reanimate, av=0) と TURN(Turn Undead, av=0) の2件のみ (>200閾値でも60、非Conjurationのav最大=70 で>100閾値は妥当)。3c4ce418 は自ら「av=0=special/generic」と定義しながら ALL 62 と主張し内部矛盾。Supermemory 側の 60/62 (pbjwoNwhNwzJKXqaNtmom6 / 3U6BcS5wrbguYEiQD2Pqfh / tdj1JydcyhsyyPBDgN1LnH / 68992b10fd2627b0360e1d) が正。旧3c4ce418の confirmed タグは本項について無効。検証: check_w1_mgef.py + W軸監査第六軸W1 (opencode 2026-10-24)。"
+    },    {
+      "id": "opencode-w2-free-0x401f20-correction-20261024",
+      "timestamp": "2026-10-24T18:51:36Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "correction",
+        "w-axis",
+        "re",
+        "free",
+        "malloc",
+        "0x400-low",
+        "0x401F20",
+        "59ccb077",
+        "2026-10-24"
+      ],
+      "content": "W軸訂正 W2 (2026-10-24, 台帳↔Supermemory 突合 第六軸 + EXE裁定): 台帳 59ccb077 (2026-10-22) の「free(node)=0x401B20」は誤り (+0x400-low)。真値は 0x401F20、malloc対は 0x401F00。EXE disasm 直接裁定 (監査はD:\\ 未マウントで検証不能だったが当方はアクセス可): 0x401F20 = mov eax,[esp+4]; test eax,eax; je; push eax; mov ecx,0xB02020 (heap manager); call 0x401d40; ret の教科書的 free ラッパ、decompiled L1122 に FUN_00401f20 定義あり。0x401B20 = 関数ではなく別関数の末尾 (pop edi/ebx/esi; ret 8、FUNラベル・bare-hex参照とも0件)。台帳内矛盾も併存: 2d08d9a9 (2026-10-15) は既に 0x401f20 で正。構造的原因 = +0x400訂正キャンペーン (10-23完了, Supermemory/docs反映済) が正本台帳へ未回流。Supermemory 側訂正宣言 (6ba6b9b9100c3e11bec03e / ULkmRmJFDMQcxoXhT12pjN / MmBjwxY8ShQsasMdPKrCMX / EAYz5LgY43t62JThmv4v6M) が正。検証: check_w2_free.py (W軸監査第六軸W2, opencode 2026-10-24)。"
+    },    {
+      "id": "opencode-w3-phase65-label-correction-20261024",
+      "timestamp": "2026-10-24T18:51:36Z",
+      "priority": "medium",
+      "category": "reference",
+      "tags": [
+        "correction",
+        "w-axis",
+        "phase65",
+        "phase66",
+        "plan",
+        "label-drift",
+        "8af7bdaf",
+        "2026-10-24"
+      ],
+      "content": "W軸訂正 W3 (2026-10-24, 台帳↔Supermemory 突合 第六軸): Phase ラベル/ステータスドリフト。(a) 台帳 8af7bdaf (2026-09-24, tag:phase66) は sky dome コミット 13d9f905 を「Phase 66」と記録するが、plan.md:881 と台帳 63c5fae6 (2026-09-25, tag:phase65) の「Phase 65」が正 (plan.md ground truth: weather/sky dome=Phase65行、Phase66=Characters and AI=Pending)。1fa6afd5 (09-26, tag:phase66) の deltaTime/P19 作業も同種のラベル揺れ。8af7bdaf 本体は append-only 規約 (2026-10-22 の61件消失事故以来のルール) により改変せず本エントリで訂正。(b) Supermemory の10-21「Phase 65 code complete (terrain/water/weather/sky dome/LOD/interior REFR/door transitions 全実装)」宣言 (d354f78ebe6ece0e87aa9f / u294Gk4Ywzo5ZCPiV4zzcy 等) は premature: Phase 65 LOD 実装コミット 17c3de23 は 2026-10-23 18:17 着地 (宣言の2日後)。plan.md:881 Status=\"In progress\" が正当、行末に landscape LOD landed (2026-10-23, 17c3de23) 済 = plan.md 側は既に更新済で変更不要。残る未完了 = object LOD 対 (meshes\\distantlod\\*.lod 10,810 / *.cmp 55, ローダ未実装) とデバイス検証 → Phase 65 は In progress のまま。Phase70 の SM completed(5wsjAgwW3sYzecGq45zwij) vs plan.md:886 In progress は弱不一致で 過大主張しない (監査注記どおり)。検証: git 17c3de23 + plan.md:881/886 + Supermemory検索 (W軸監査第六軸W3, opencode 2026-10-24)。"
+    },
+    {
+      "id": "opencode-sync-idempotency-broken-20261024",
+      "timestamp": "2026-10-24T20:15:40Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "supermemory",
+        "sync",
+        "idempotency",
+        "guard",
+        "tools",
+        "2026-10-24"
+      ],
+      "content": "【実行禁止ガード (2026-10-24, W軸修正適用時 discovered)】tools/sync_memory_to_supermemory.py は 冪等キー metadata.entryId が Supermemory 側で失効しているため現状実行禁止。全スキャン実測 (diag_fullscan.py): SM 空間 namespace=opencode_project_470935b226aa5f24 は totalItems=672、うち entryId を持つは21件のみで全て copilot-* 直接push分、**台帳由来 entryId=0件（台帳668件すべて \"missing\"）**。dry-run は already=0 / to push=668 を返し、そのまま実行すると668件が重複pushされる。原因候補: (a) SM 推論処理での metadata 欺落 (memoryEntries の81/100 が entryId 欠落、isInference フィールド存在) (b) 10-22バックアップ分の forget/置換 (992→672)。W軸訂正3件 (W1 mgef 60/62 / W2 free=0x401F20 / W3 phase65ラベル) 適用時は本ガードにより同期を保留し、SM 側反映は MCP supermemory add で直接実施した (E2hRTTcHhczd2gs6tEmfaP)。復旧要件: ①entryId 欠落メモリの同定または再push方針決定 ②sync スクリプトに known==0 ∧ ledger>100 の abort ガード追加 (→ TODO V84)。検証: diag_sync_list.py / diag_entryid_match.py / diag_fullscan.py (2026-10-24, opencode)。"
     }
   ],
   "metadata": {
-    "totalEntries": 665,
+    "totalEntries": 669,
     "compressedCount": 121,
     "sessionCount": 40,
-    "lastUpdated": "2026-10-23T01:05:24Z",
-    "entry_count": 665,
-    "last_updated": "2026-10-22"
+    "lastUpdated": "2026-10-24T20:15:40Z",
+    "entry_count": 669,
+    "last_updated": "2026-10-24"
   }
 }

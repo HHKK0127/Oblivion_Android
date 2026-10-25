@@ -2,82 +2,18 @@
 
 #include <algorithm>
 #include <cmath>
-#include <exception>
 #include <string>
 #include <vector>
 
 #include "../../assets/asset_manager.h"
 #include "../../assets/nif_parser.h"
 #include "../../assets/nif_types.h"
-#include "../world_data.h"
 #include "distant_lod_manager.h"
 
 namespace {
 
 constexpr const char* kMeshPrefix = "meshes\\landscape\\lod\\";
 constexpr const char* kTexturePrefix = "textures\\landscapelod\\generated\\";
-
-// Strict integer parse: the whole token has to be numeric, so a stray file such
-// as "60x.00.00.32.nif" is rejected instead of silently parsed as 60.
-bool parseIntStrict(const std::string& text, long& out) {
-    if (text.empty()) {
-        return false;
-    }
-    size_t consumed = 0;
-    try {
-        out = std::stol(text, &consumed);
-    } catch (const std::exception&) {
-        return false;
-    }
-    return consumed == text.size();
-}
-
-// The retail naming is "<formID>.<blockX>.<blockY>.32.<ext>" with the block
-// coordinates written as plain signed decimals, except that zero is stored as
-// "00" (the shipped files are e.g. "60.00.00.32.nif", "60.-32.64.32.nif").
-bool parseBlockName(const std::string& path, uint32_t worldspaceFormID,
-                    int32_t& outBlockX, int32_t& outBlockY) {
-    const size_t separator = path.find_last_of("\\/");
-    const std::string name =
-        (separator == std::string::npos) ? path : path.substr(separator + 1);
-
-    std::vector<std::string> parts;
-    size_t start = 0;
-    while (true) {
-        const size_t dot = name.find('.', start);
-        if (dot == std::string::npos) {
-            parts.push_back(name.substr(start));
-            break;
-        }
-        parts.push_back(name.substr(start, dot - start));
-        start = dot + 1;
-    }
-    if (parts.size() != 5) {
-        return false;
-    }
-
-    long formID = 0;
-    long blockX = 0;
-    long blockY = 0;
-    long blockCells = 0;
-    if (!parseIntStrict(parts[0], formID) ||
-        !parseIntStrict(parts[1], blockX) ||
-        !parseIntStrict(parts[2], blockY) ||
-        !parseIntStrict(parts[3], blockCells)) {
-        return false;
-    }
-    if (formID <= 0 || static_cast<uint32_t>(formID) != worldspaceFormID) {
-        return false;
-    }
-    // Only the 32 cell block size shipped by the game is handled.
-    if (blockCells != OriginalLodProvider::BLOCK_CELLS) {
-        return false;
-    }
-
-    outBlockX = static_cast<int32_t>(blockX);
-    outBlockY = static_cast<int32_t>(blockY);
-    return true;
-}
 
 // Strips the extension and the "_fn" suffix of a normal map so the stem can be
 // matched against the mesh name.
@@ -92,16 +28,6 @@ std::string textureStem(const std::string& path) {
         stem.erase(dot);
     }
     return stem;
-}
-
-// Rounds a cell coordinate down to the block that contains it. C++ integer
-// division truncates towards zero, which would be wrong for negative cells.
-int32_t floorToBlock(int32_t cell) {
-    const int32_t block = OriginalLodProvider::BLOCK_CELLS;
-    if (cell >= 0) {
-        return (cell / block) * block;
-    }
-    return -(((-cell) + block - 1) / block) * block;
 }
 
 }  // namespace
@@ -149,7 +75,7 @@ const OriginalLodProvider::WorldspaceIndex* OriginalLodProvider::getOrBuildIndex
     for (const std::string& path : assetManager->findFiles(kMeshPrefix)) {
         int32_t blockX = 0;
         int32_t blockY = 0;
-        if (!parseBlockName(path, worldspaceFormID, blockX, blockY)) {
+        if (!lod_block::parseBlockName(path, worldspaceFormID, blockX, blockY)) {
             continue;
         }
         index.blocks[blockKey(blockX, blockY)].mesh = path;
@@ -165,7 +91,7 @@ const OriginalLodProvider::WorldspaceIndex* OriginalLodProvider::getOrBuildIndex
 
         int32_t blockX = 0;
         int32_t blockY = 0;
-        if (!parseBlockName(path, worldspaceFormID, blockX, blockY)) {
+        if (!lod_block::parseBlockName(path, worldspaceFormID, blockX, blockY)) {
             continue;
         }
         index.blocks[blockKey(blockX, blockY)].texture = path;
@@ -209,22 +135,33 @@ bool OriginalLodProvider::registerBlock(AssetManager* assetManager,
     }
 
     const std::vector<NIFGeometry> geometries = parser->extractAllGeometry();
-    if (geometries.empty()) {
-        LOGW_DLOD("Original LOD block held no geometry: %s", paths.mesh.c_str());
-        return false;
-    }
+    const std::string meshId = "origblk_" + std::to_string(worldspaceFormID) + "_" +
+                               std::to_string(blockX) + "_" + std::to_string(blockY);
 
-    size_t totalVertices = 0;
-    size_t totalIndices = 0;
-    for (const NIFGeometry& geometry : geometries) {
-        totalVertices += geometry.vertices.size();
-        totalIndices += geometry.triangles.size() * 3;
-    }
-    // The LOD shader path uses 16 bit indices.
-    if (totalVertices == 0 || totalVertices > 65535 || totalIndices == 0) {
-        LOGW_DLOD("Original LOD block has an unsupported vertex count (%zu): %s",
-                  totalVertices, paths.mesh.c_str());
+    lod_block::BlockMeshData packed;
+    const lod_block::BlockMeshStatus status =
+        lod_block::buildBlockMesh(geometries, blockX, blockY, packed);
+    if (status != lod_block::BlockMeshStatus::Ok) {
+        switch (status) {
+            case lod_block::BlockMeshStatus::EmptyGeometry:
+                LOGW_DLOD("Original LOD block held no geometry: %s", paths.mesh.c_str());
+                break;
+            case lod_block::BlockMeshStatus::VertexCountUnsupported:
+                LOGW_DLOD("Original LOD block has an unsupported vertex count (%zu): %s",
+                          packed.vertexCount, paths.mesh.c_str());
+                break;
+            case lod_block::BlockMeshStatus::NoUsableTriangles:
+                LOGW_DLOD("Original LOD block produced no triangles: %s",
+                          paths.mesh.c_str());
+                break;
+            case lod_block::BlockMeshStatus::Ok:
+                break;
+        }
         return false;
+    }
+    if (packed.skippedTriangles > 0) {
+        LOGW_DLOD("Original LOD block %d,%d dropped %zu out of range triangles: %s",
+                  blockX, blockY, packed.skippedTriangles, paths.mesh.c_str());
     }
 
     LodMeshData mesh;
@@ -232,52 +169,8 @@ bool OriginalLodProvider::registerBlock(AssetManager* assetManager,
     mesh.lodLevel = 0;
     mesh.cellX = blockX;
     mesh.cellY = blockY;
-    mesh.vertices.reserve(totalVertices * 8);
-    mesh.indices.reserve(totalIndices);
-
-    // The shipped blocks are already in block local space: X and Y sweep
-    // 0..131072 (one block) and Z is the height, so the transform of the parsed
-    // node is identity and only the block origin and the Z-up to Y-up swap are
-    // needed. The UVs match the colour map as stored, without a V flip.
-    const float blockOriginX = static_cast<float>(blockX) * static_cast<float>(CELL_SIZE);
-    const float blockOriginZ = static_cast<float>(blockY) * static_cast<float>(CELL_SIZE);
-
-    for (const NIFGeometry& geometry : geometries) {
-        const size_t vertexCount = geometry.vertices.size();
-        const uint16_t baseIndex = static_cast<uint16_t>(mesh.vertices.size() / 8);
-
-        for (size_t i = 0; i < vertexCount; ++i) {
-            const NIFVector3& position = geometry.vertices[i];
-            mesh.vertices.push_back(blockOriginX + position.x);
-            mesh.vertices.push_back(position.z);
-            mesh.vertices.push_back(blockOriginZ + position.y);
-
-            const glm::vec2 uv = (i < geometry.texCoords.size())
-                                     ? geometry.texCoords[i]
-                                     : glm::vec2(0.0f, 0.0f);
-            mesh.vertices.push_back(uv.x);
-            mesh.vertices.push_back(uv.y);
-
-            mesh.vertices.push_back(1.0f);
-            mesh.vertices.push_back(1.0f);
-            mesh.vertices.push_back(1.0f);
-        }
-
-        for (const NIFTriangle& triangle : geometry.triangles) {
-            if (triangle.v0 >= vertexCount || triangle.v1 >= vertexCount ||
-                triangle.v2 >= vertexCount) {
-                continue;
-            }
-            mesh.indices.push_back(static_cast<uint16_t>(baseIndex + triangle.v0));
-            mesh.indices.push_back(static_cast<uint16_t>(baseIndex + triangle.v1));
-            mesh.indices.push_back(static_cast<uint16_t>(baseIndex + triangle.v2));
-        }
-    }
-
-    if (mesh.indices.empty()) {
-        LOGW_DLOD("Original LOD block produced no triangles: %s", paths.mesh.c_str());
-        return false;
-    }
+    mesh.vertices = std::move(packed.vertices);
+    mesh.indices = std::move(packed.indices);
 
     std::shared_ptr<Material> texture;
     if (!paths.texture.empty()) {
@@ -295,8 +188,6 @@ bool OriginalLodProvider::registerBlock(AssetManager* assetManager,
         }
     }
 
-    const std::string meshId = "origblk_" + std::to_string(worldspaceFormID) + "_" +
-                               std::to_string(blockX) + "_" + std::to_string(blockY);
     DistantLodManager::instance().registerLodMesh(meshId, mesh);
 
     ActiveBlock active;
@@ -306,7 +197,7 @@ bool OriginalLodProvider::registerBlock(AssetManager* assetManager,
     ++registeredBlocks_;
 
     LOGI_DLOD("Original LOD block %d,%d registered (%zu verts, %zu tris, tex=%u)",
-              blockX, blockY, totalVertices, totalIndices, mesh.textureId);
+              blockX, blockY, packed.vertexCount, mesh.indices.size(), mesh.textureId);
     return true;
 }
 
@@ -347,14 +238,14 @@ int OriginalLodProvider::update(AssetManager* assetManager,
 
     // Blocks overlapping the coverage box. The player sits inside one block, so
     // this resolves to at most 2x2 blocks for a coverage of 20000 units.
-    const int32_t minBlockX = floorToBlock(static_cast<int32_t>(
-        std::floor((playerPos.x - coverageDistance) / static_cast<float>(CELL_SIZE))));
-    const int32_t maxBlockX = floorToBlock(static_cast<int32_t>(
-        std::floor((playerPos.x + coverageDistance) / static_cast<float>(CELL_SIZE))));
-    const int32_t minBlockY = floorToBlock(static_cast<int32_t>(
-        std::floor((playerPos.z - coverageDistance) / static_cast<float>(CELL_SIZE))));
-    const int32_t maxBlockY = floorToBlock(static_cast<int32_t>(
-        std::floor((playerPos.z + coverageDistance) / static_cast<float>(CELL_SIZE))));
+    const int32_t minBlockX = lod_block::floorToBlock(static_cast<int32_t>(
+        std::floor((playerPos.x - coverageDistance) / lod_block::kCellSize)));
+    const int32_t maxBlockX = lod_block::floorToBlock(static_cast<int32_t>(
+        std::floor((playerPos.x + coverageDistance) / lod_block::kCellSize)));
+    const int32_t minBlockY = lod_block::floorToBlock(static_cast<int32_t>(
+        std::floor((playerPos.z - coverageDistance) / lod_block::kCellSize)));
+    const int32_t maxBlockY = lod_block::floorToBlock(static_cast<int32_t>(
+        std::floor((playerPos.z + coverageDistance) / lod_block::kCellSize)));
 
     std::unordered_set<uint64_t> needed;
     for (int32_t blockY = minBlockY; blockY <= maxBlockY; blockY += BLOCK_CELLS) {

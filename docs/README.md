@@ -46,6 +46,14 @@
 | [DEVELOPMENT_HISTORY.md](DEVELOPMENT_HISTORY.md) | 開発履歴（全フェーズ） | 全員 |
 | [../plan.md](../plan.md) | 実装計画（Phase 9〜72、正典） | PM、リードエンジニア |
 
+### リバースエンジニアリング（正典）
+
+| ファイル | 内容 | 対象者 |
+|---------|------|--------|
+| [RE_EXE_REPORT.md](RE_EXE_REPORT.md) | Oblivion.exe 解析の主レポート（§1〜§70） | 実装エンジニア |
+| [RE_ANALYSIS_ROADMAP.md](RE_ANALYSIS_ROADMAP.md) | RE 完全解析ロードマップ（完了定義 L1〜L3、KPI 表） | PM、実装エンジニア |
+| [SCRIPT_OPCODE_TABLE.md](SCRIPT_OPCODE_TABLE.md) | スクリプト オペコード表 532 件の正典表（`0xB0AF48` 実測） | 実装エンジニア |
+
 ### 参考資料（外部エンジン調査）
 
 | ファイル | 内容 | 対象者 |

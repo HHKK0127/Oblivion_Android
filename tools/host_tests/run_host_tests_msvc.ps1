@@ -320,7 +320,16 @@ Set-Content -Path $runScript -Encoding ASCII -Value @(
     'exit /b %ERRORLEVEL%'
 )
 
-$proc = Start-Process -FilePath $env:ComSpec -ArgumentList '/c', $runScript -NoNewWindow -PassThru
+# The process is built by hand rather than with Start-Process -PassThru: without
+# -Wait, Windows PowerShell 5.1 hands back an object whose ExitCode reads as
+# empty, which would report every green run as a failure.
+$psi = New-Object System.Diagnostics.ProcessStartInfo
+$psi.FileName = $env:ComSpec
+$psi.Arguments = "/c `"$runScript`""
+$psi.UseShellExecute = $false
+$proc = New-Object System.Diagnostics.Process
+$proc.StartInfo = $psi
+$null = $proc.Start()
 $timedOut = -not $proc.WaitForExit($RunTimeoutSeconds * 1000)
 $runExit = if ($timedOut) { 1 } else { $proc.ExitCode }
 if ($timedOut) {

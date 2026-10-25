@@ -95,6 +95,8 @@ SOURCES=(
   app/src/main/cpp/tests/phase69_persistence_tests.cpp
   app/src/main/cpp/tests/plugin_list_tests.cpp
   app/src/main/cpp/tests/formid_index_tests.cpp
+  app/src/main/cpp/tests/lod_block_tests.cpp
+  app/src/main/cpp/tests/enchanting_system_tests.cpp
   app/src/main/cpp/ui/xml_parser.cpp
   app/src/main/cpp/ui/menu_xml_interpreter.cpp
   app/src/main/cpp/ui/menu_ui_builder.cpp
@@ -112,6 +114,7 @@ SOURCES=(
   app/src/main/cpp/game/spell_manager.cpp
   app/src/main/cpp/game/navmesh_manager.cpp
   app/src/main/cpp/game/crime_reputation_system.cpp
+  app/src/main/cpp/game/enchanting_system.cpp
   app/src/main/cpp/assets/esm_reader.cpp
   app/src/main/cpp/assets/asset_manager.cpp
   app/src/main/cpp/assets/plugin_list.cpp

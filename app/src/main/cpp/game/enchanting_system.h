@@ -32,40 +32,133 @@ enum class EnchantmentType : uint8_t {
     COUNT
 };
 
-// Magic effects that can be enchanted
+// Magic effect families that can be enchanted.
+//
+// Oblivion identifies a magic effect with the 4-character editorID of its MGEF
+// record (FIDG = Fire Damage). Several codes share one family because the game
+// resolves the concrete target through the effect's actorValue instead of
+// through the code itself: a single FOAT (Fortify Attribute) covers all eight
+// attributes and a single DGAT covers all of them for damage. The commented
+// code next to each member is one authoritative example measured in
+// Oblivion.esm; every MGEF code in the game maps to exactly one member (see
+// EnchantingSystem::magicEffectFromCode() in enchanting_system.cpp, whose
+// coverage is checked by EnchantingSystemTests).
 enum class MagicEffect : uint8_t {
-    FORTIFY_HEALTH = 0,
-    FORTIFY_MAGICKA,
-    FORTIFY_STAMINA,
-    FORTIFY_STRENGTH,
-    FORTIFY_INTELLIGENCE,
-    FORTIFY_WILLPOWER,
-    FORTIFY_AGILITY,
-    FORTIFY_SPEED,
-    FORTIFY_ENDURANCE,
-    FORTIFY_PERSONALITY,
-    FORTIFY_LUCK,
-    FORTIFY_ARMOR,
-    FORTIFY_ATTACK,
-    RESIST_FIRE,
-    RESIST_FROST,
-    RESIST_SHOCK,
-    RESIST_MAGIC,
-    RESIST_DISEASE,
-    RESIST_POISON,
-    FIRE_DAMAGE,
-    FROST_DAMAGE,
-    SHOCK_DAMAGE,
-    SOUL_TRAP,
-    TELEKINESIS,
-    WATER_BREATHING,
-    WATER_WALKING,
-    NIGHT_EYE,
-    CHAMELEON,
-    INVISIBILITY,
-    LIGHT,
-    FEATHER,
-    DETECT_LIFE,
+    UNKNOWN = 0,                    // code absent from Oblivion.esm
+
+    // Fortify (Restoration)
+    FORTIFY_ATTRIBUTE,              // FOAT, actorValue selects the attribute
+    FORTIFY_SKILL,                  // FOSK, actorValue selects the skill
+    FORTIFY_HEALTH,                 // FOHE
+    FORTIFY_MAGICKA,                // FOSP
+    FORTIFY_FATIGUE,                // FOFA
+    FORTIFY_MAGICKA_MULTIPLIER,     // FOMM
+
+    // Restore and cure (Restoration)
+    RESTORE_ATTRIBUTE,              // REAT
+    RESTORE_HEALTH,                 // REHE
+    RESTORE_MAGICKA,                // RESP
+    RESTORE_FATIGUE,                // REFA
+    CURE_DISEASE,                   // CUDI
+    CURE_PARALYSIS,                 // CUPA
+    CURE_POISON,                    // CUPO
+
+    // Absorb (Restoration)
+    ABSORB_ATTRIBUTE,               // ABAT
+    ABSORB_SKILL,                   // ABSK
+    ABSORB_HEALTH,                  // ABHE
+    ABSORB_MAGICKA,                 // ABSP
+    ABSORB_FATIGUE,                 // ABFA
+
+    // Drain (Destruction)
+    DRAIN_ATTRIBUTE,                // DRAT
+    DRAIN_SKILL,                    // DRSK
+    DRAIN_HEALTH,                   // DRHE
+    DRAIN_MAGICKA,                  // DRSP
+    DRAIN_FATIGUE,                  // DRFA
+
+    // Damage (Destruction)
+    DAMAGE_ATTRIBUTE,               // DGAT
+    DAMAGE_HEALTH,                  // DGHE
+    DAMAGE_MAGICKA,                 // DGSP
+    DAMAGE_FATIGUE,                 // DGFA
+    FIRE_DAMAGE,                    // FIDG
+    FROST_DAMAGE,                   // FRDG
+    SHOCK_DAMAGE,                   // SHDG
+    SUN_DAMAGE,                     // SUDG
+    DISINTEGRATE_ARMOR,             // DIAR
+    DISINTEGRATE_WEAPON,            // DIWE
+
+    // Shield (Alteration)
+    SHIELD,                         // SHLD
+    FIRE_SHIELD,                    // FISH
+    FROST_SHIELD,                   // FRSH
+    SHOCK_SHIELD,                   // LISH
+
+    // Resist (Restoration)
+    RESIST_FIRE,                    // RSFI
+    RESIST_FROST,                   // RSFR
+    RESIST_SHOCK,                   // RSSH
+    RESIST_MAGIC,                   // RSMA
+    RESIST_DISEASE,                 // RSDI
+    RESIST_POISON,                  // RSPO
+    RESIST_PARALYSIS,               // RSPA
+    RESIST_NORMAL_WEAPONS,          // RSNW
+
+    // Weakness (Destruction)
+    WEAKNESS_FIRE,                  // WKFI
+    WEAKNESS_FROST,                 // WKFR
+    WEAKNESS_SHOCK,                 // WKSH
+    WEAKNESS_MAGIC,                 // WKMA
+    WEAKNESS_DISEASE,               // WKDI
+    WEAKNESS_POISON,                // WKPO
+    WEAKNESS_NORMAL_WEAPONS,        // WKNW
+
+    // Mysticism
+    DISPEL,                         // DSPL
+    SPELL_ABSORPTION,               // SABS
+    REFLECT_SPELL,                  // RFLC
+    REFLECT_DAMAGE,                 // REDG
+    SOUL_TRAP,                      // STRP
+    TELEKINESIS,                    // TELE
+    DETECT_LIFE,                    // DTCT
+
+    // Illusion
+    CALM,                           // CALM
+    FRENZY,                         // FRNZ
+    DEMORALIZE,                     // DEMO
+    RALLY,                          // RALY
+    CHARM,                          // CHRM
+    COMMAND_CREATURE,               // COCR
+    COMMAND_HUMANOID,               // COHU
+    PARALYZE,                       // PARA
+    SILENCE,                        // SLNC
+    INVISIBILITY,                   // INVI
+    CHAMELEON,                      // CHML
+    NIGHT_EYE,                      // NEYE
+    LIGHT,                          // LGHT
+
+    // Alteration
+    BURDEN,                         // BRDN
+    FEATHER,                        // FTHR
+    WATER_BREATHING,                // WABR
+    WATER_WALKING,                  // WAWA
+    OPEN,                           // OPEN
+    LOCK,                           // LOCK
+    STUNTED_MAGICKA,                // STMA
+
+    // Conjuration
+    TURN_UNDEAD,                    // TURN
+    BOUND_ITEM,                     // BABO..BASH, BWAX..BWSW, BW01..BW08
+    SUMMON,                         // MYTH, MYHL, Z001..Z019, ZCLA..ZZOM
+    REANIMATE,                      // REAN
+
+    // Other
+    SCRIPT_EFFECT,                  // SEFF
+    VAMPIRISM,                      // VAMP
+    POISON_INFO,                    // POSN (internal, never a cast effect)
+    DARKNESS,                       // DARK (DO NOT USE - Darkness, never cast)
+
     COUNT
 };
 
@@ -74,7 +167,11 @@ struct Enchantment {
     uint32_t id = 0;
     std::string name;
     EnchantmentType type = EnchantmentType::CAST_ONCE;
-    MagicEffect effect = MagicEffect::FORTIFY_HEALTH;
+    MagicEffect effect = MagicEffect::UNKNOWN;
+    // EFIT actorValue of the effect above. Codes such as FOAT (Fortify
+    // Attribute) and FOSK (Fortify Skill) carry the concrete attribute/skill
+    // index here, so the target cannot be recovered from `effect` alone.
+    uint32_t actorValue = 0;
     float magnitude = 0.0f;
     uint32_t duration = 0;          // 0 for constant effect
     uint32_t charges = 0;           // Max charges
@@ -147,6 +244,11 @@ public:
     // Effects
     float getEffectMagnitude(MagicEffect effect, float baseMagnitude, uint32_t skill) const;
     uint32_t getEffectDuration(MagicEffect effect, uint32_t baseDuration, uint32_t skill) const;
+
+    // Effect code translation. Static so that callers holding only a raw MGEF
+    // editorID code (and the host tests) can resolve it without an instance.
+    static MagicEffect magicEffectFromCode(const std::string& code);
+    static const char* magicEffectName(MagicEffect effect);
     
     // Callbacks
     void setEnchantCallback(EnchantCallback callback) { onEnchant = callback; }

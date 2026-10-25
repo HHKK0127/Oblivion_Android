@@ -19,6 +19,8 @@ The runner builds one binary that executes every wired suite in order:
 | `Phase69PersistenceTests` | `tests/phase69_persistence_tests.cpp` | 30 | Container persistence: `SaveManager` CNTR section, the lazy-materialisation buffer (`applyPendingContainerState`) and the carry-forward case where a save happens before the player ever opened the container |
 | `PluginListTests` | `tests/plugin_list_tests.cpp` | 23 | `plugins.txt` grammar and load order: `#` comments, the `*` active marker, BOM/CR/blank trimming, case-insensitive duplicate rejection, plain-list-means-all-active, serialise round trip and the Oblivion.esm / masters / plugins ordering |
 | `FormIDIndexTests` | `tests/formid_index_tests.cpp` | 15 | FormID index translation from a plugin's MAST-relative space into load order: the base file's identity map, masters resolving to their real load position, a plugin's own index, reordered masters, unresolved masters, out-of-range indices, case-insensitive master names and preservation of the low 24 bits |
+| `LodBlockTests` | `tests/lod_block_tests.cpp` | 10 (7 asset) | The shipped landscape LOD blocks through the same `lod_block_rules.h` helpers `original_lod_provider.cpp` uses: the `<formID>.<blockX>.<blockY>.32.<ext>` grammar, negative block flooring, the 8-float vertex packing and index rebasing, the rejection paths (empty geometry, > 65535 vertices, no usable triangles, stray indices dropped) and, over real blocks, vertex/index bounds, one UV per vertex, UV range, block-local placement and the 1,1,1 colour; skips the asset half when no blocks are found |
+| `EnchantingSystemTests` | `tests/enchanting_system_tests.cpp` | 11 | The MGEF effect tables against the measured Oblivion data (145 codes -> 88 families, the 21 fabricated codes that must fall back to `UNKNOWN`, malformed input) and the public enchanting arithmetic (defaults, `createEnchantment`, the magnitude/duration/cost formulas, the skill bonus, and `loadEnchantmentsFromESM` over a synthetic plugin); fixture tables live in `tests/enchanting_system_mgef_tables.inc`, generated from the measured CSV, not from the implementation |
 
 The runner prints each suite's `getSummary()` and exits with status 1 if any
 suite fails.
@@ -39,6 +41,30 @@ OBLIVION_ASSET_BASE=/path/to/Oblivion/Data bash tools/host_tests/run_host_tests.
 
 No test assertion is weakened by the gate: every test is left intact and runs
 unchanged as soon as assets are present.
+
+`LodBlockTests` needs the pre-baked landscape blocks
+(`meshes\landscape\lod\<formID>.<blockX>.<blockY>.32.nif`), which are absent for
+the same reason. It looks for them in `OBLIVION_LOD_NIF_DIR` when that is set (a
+flat directory holding the extracted block NIFs), otherwise in
+`<OBLIVION_ASSET_BASE>/meshes/landscape/lod`, and finally directly in
+`OBLIVION_ASSET_BASE`; `OBLIVION_LOD_BLOCK_LIMIT` caps how many blocks are read
+(default 100, spread evenly over the whole landscape). With no block found it
+records one `SKIP_Assets_Unavailable` entry and passes, so the grammar and
+packing cases - which need no assets - still run on CI:
+
+```sh
+OBLIVION_LOD_NIF_DIR=/path/to/lod-nifs bash tools/host_tests/run_host_tests.sh
+```
+
+Parsing a hundred blocks is the slowest suite in the run (tens of seconds
+uninstrumented, minutes under ASan). `run_host_tests_msvc.ps1` stops the binary
+after `-RunTimeoutSeconds` (default 300) and reports the partial output, so
+raise it for a full asset-backed LOD run:
+
+```powershell
+$env:OBLIVION_LOD_NIF_DIR = "C:\path\to\lod-nifs"
+powershell -File tools/host_tests/run_host_tests_msvc.ps1 -RunTimeoutSeconds 1800
+```
 
 ### Resolved: `AsyncTaskManager` completion ordering
 
@@ -155,6 +181,24 @@ powershell -File tools/host_tests/run_host_tests_msvc.ps1 -NoAsan
 # Print the whole compiler output instead of only errors and the summary:
 powershell -File tools/host_tests/run_host_tests_msvc.ps1 -ShowBuildOutput
 ```
+
+### Known limitation: ASan plus an in-process AV hook stalls `Phase45UnitTests`
+
+On a machine where an antivirus injects a monitoring module into every process
+(`tmmon64.dll` on the development box), the instrumented run can wedge in
+`Phase45UnitTests::~Phase45UnitTests()`: the destructor calls
+`AsyncTaskManager::cleanup()`, whose `std::thread::join()` never returns. Two
+minidumps pin the main thread in `msvcp140`'s `_Thrd_join` ->
+`WaitForSingleObjectEx` while the worker stack holds only loader frames
+(`ntdll`, `kernel32`, `ucrtbase`, `clang_rt.asan_dynamic-x86_64.dll`, the AV
+module) and none from this binary, which is the shape of a `DLL_THREAD_ATTACH`
+loader-lock deadlock between ASan's thread hook and the AV hook. This is an
+environment limitation, not a suite defect: `AsyncTaskManager` is sound
+(`stop_` is atomic, the wait predicate is evaluated under `queueMutex_`,
+`cleanup()` is idempotent), and `-NoAsan` runs the identical 89 translation
+units and every suite to `ALL GREEN` in a few minutes. If an ASan run stops
+after `Phase45UnitTests`, add the repo and asset directories to the AV
+exclusion list or use `-NoAsan`.
 
 The runner finds Visual Studio through `vswhere.exe`, parses `INCLUDES`,
 `DEFINES` and `SOURCES` out of `run_host_tests.sh` (so the two runners cannot

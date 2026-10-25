@@ -365,8 +365,13 @@ struct SpellData {
     uint32_t effectType = 0;  // legacy: derived effect category (see SpellEffectType)
     // Oblivion stores EFID as the 4-character MGEF editorID code, not a formID.
     std::vector<std::string> effectCodes;
+    // EFIT actorValue of each effect, in the same order as effectCodes.
+    // Codes such as FOAT (Fortify Attribute) and FOSK (Fortify Skill) select
+    // the concrete attribute/skill through this value.
+    std::vector<uint32_t> effectActorValues;
     // Resolved from the first MGEF referenced by this spell (6 = unknown/unresolved).
     uint32_t school = 6;
+    // actorValue of the first effect (0 when the spell has no effect).
     uint32_t actorValue = 0;
 };
 
@@ -386,6 +391,10 @@ struct EnchantmentData {
     std::vector<uint32_t> effectDurations;
     // Oblivion stores EFID as the 4-character MGEF editorID code, not a formID.
     std::vector<std::string> effectCodes;
+    // EFIT actorValue of each effect, in the same order as effectCodes.
+    // Codes such as FOAT (Fortify Attribute) and FOSK (Fortify Skill) select
+    // the concrete attribute/skill through this value.
+    std::vector<uint32_t> effectActorValues;
 };
 
 /// Magic Effect (MGEF) record

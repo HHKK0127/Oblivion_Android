@@ -20,6 +20,8 @@
 #include "tests/phase69_persistence_tests.h"
 #include "tests/plugin_list_tests.h"
 #include "tests/formid_index_tests.h"
+#include "tests/lod_block_tests.h"
+#include "tests/enchanting_system_tests.h"
 
 // Print a suite summary and report whether it passed.
 static void runSuite(const char* name, bool ok, const std::string& summary, int& failed) {
@@ -126,12 +128,25 @@ int main() {
         runSuite("FormIDIndexTests", ok, t.getSummary(), failed);
     }
     {
+        EnchantingSystemTests t;
+        const bool ok = t.runAllTests();
+        runSuite("EnchantingSystemTests", ok, t.getSummary(), failed);
+    }
+    {
         // Real Oblivion assets are not redistributable; the suite skips itself when
         // OBLIVION_ASSET_BASE does not point at an asset tree containing the test NIFs.
         const char* assetBase = std::getenv("OBLIVION_ASSET_BASE");
         Phase30IntegrationTest t;
         const bool ok = t.runAllTests(assetBase != nullptr ? assetBase : "");
         runSuite("Phase30IntegrationTest", ok, t.getSummary(), failed);
+    }
+    {
+        // Needs the extracted meshes\landscape\lod blocks; without them (see
+        // OBLIVION_LOD_NIF_DIR) the suite records a SKIP entry and passes.
+        const char* assetBase = std::getenv("OBLIVION_ASSET_BASE");
+        LodBlockTests t;
+        const bool ok = t.runAllTests(assetBase != nullptr ? assetBase : "");
+        runSuite("LodBlockTests", ok, t.getSummary(), failed);
     }
     std::printf("\n=== HOST RUNNER: %s (%d suite(s) failed) ===\n", failed ? "FAILED" : "ALL GREEN", failed);
     return failed != 0 ? 1 : 0;

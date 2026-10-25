@@ -35,6 +35,12 @@
 - **書き込み経路**: 逐語保存には REST `POST https://api.supermemory.ai/v4/memories` を使う（document ingestion は LLM 抽出が入り否定条件が落ちるため不可）。MCP ツールの `add_memory` は LLM 経由の要約が入るので台帳の複製には使わない
 - **背景**: 2026-10-22 の全件突合でローカル 580 件に対し Supermemory 側は 412 件・逐語一致 0 件だった。台帳を捨てると 2026-10-21 以前の 537 件と制約・決定の根拠が失われるため、正本はローカルに固定した（詳細は台帳 id `copilot-supermemory-sync-policy-20261022`）。**2026-10-22 のユーザー指示で Copilot 側の書き込み先のみ Supermemory へ変更したが、上記の制約は未解決のまま残る**
 
+## Git 操作ポリシー（厳守）
+
+- **commit / push はユーザーの明示指示があるときのみ実行する**。定期・自動での commit / push は禁止（2026-10-23 ユーザー指示「プッシュの指示はこちらでします」「プッシュしてしまったのは仕方ないので次回から厳守してください」）
+- コミット対象に `docs/RE_EXE_REPORT.md` を含める場合は、下記 RE 解析方針の「git commit はユーザーの明示承諾があるまで禁止」に従い、事前承諾を取る
+- push 済みの内容を取り消す場合は `git push --force-with-lease` が必要になる。共有ブランチのため、影響を説明してユーザー確認を得てから実行する
+
 ## プロジェクト概要
 
 **Oblivion Android** - The Elder Scrolls IV: Oblivion の完全ネイティブAndroid移植

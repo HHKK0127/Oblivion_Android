@@ -10,6 +10,12 @@ copy already in the target space and only pushes entries that are missing, or
 re-pushes entries whose content drifted after a ledger edit. It can therefore be
 re-run safely at any time (e.g. after appending or correcting entries).
 
+Safety rail: if not a single ledger entry is recognized by its idempotency key
+(metadata.entryId) and the ledger is larger than 100 entries, a real run aborts
+with exit code 2 instead of duplicating the whole ledger (see ledger guard entry
+'opencode-sync-idempotency-broken-20261024'; analysis in
+tmp/re/v84_sync_idempotency.md).
+
 Usage:
     python tools/sync_memory_to_supermemory.py            # push/refresh entries
     python tools/sync_memory_to_supermemory.py --dry-run  # report only
@@ -186,6 +192,15 @@ def main() -> int:
     print("already in Supermemory: %d" % (len(entries) - len(missing)))
     print("to push: %d" % len(missing))
     print("to update: %d" % len(drifted))
+    if len(missing) == len(entries) and len(entries) > 100:
+        if args.dry_run:
+            print("WARNING: idempotency key missing — a real run would push all %d entries; run is BLOCKED by the guard" % len(entries))
+        else:
+            print("ERROR: idempotency key missing: 0 of %d ledger entries were found in Supermemory" % len(entries))
+            print("       (recognized ledger ids=0, space entryIds=%d, to push=%d). Running now would push the whole ledger as duplicates." % (len(known), len(missing)))
+            print("       See the ledger guard entry 'opencode-sync-idempotency-broken-20261024' in .github/memory/session-memory.json")
+            print("       and the recovery plan in tmp/re/v84_sync_idempotency.md. Refusing to push anything.")
+            return 2
     if args.dry_run or not (missing or drifted):
         return 0
 

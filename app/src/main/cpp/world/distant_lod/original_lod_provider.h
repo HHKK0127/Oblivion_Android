@@ -8,6 +8,8 @@
 
 #include <glm/glm.hpp>
 
+#include "lod_block_rules.h"
+
 class AssetManager;
 class Material;
 
@@ -39,7 +41,7 @@ public:
     static OriginalLodProvider& instance();
 
     // Original blocks are 32 x 32 cells wide, in cells.
-    static constexpr int32_t BLOCK_CELLS = 32;
+    static constexpr int32_t BLOCK_CELLS = lod_block::kBlockCells;
 
     // Register every shipped LOD block overlapping
     // [playerPos - coverageDistance, playerPos + coverageDistance] and drop the
