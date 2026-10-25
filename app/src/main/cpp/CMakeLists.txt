@@ -252,6 +252,10 @@ add_library(native-lib SHARED
     system/debug_system.cpp
     system/display_modes.cpp
 
+    # INI reader and authentic Oblivion.ini defaults (Phase 66)
+    system/oblivion_ini.cpp
+    system/oblivion_ini_defaults.cpp
+
     # Localization
     localization/localization_manager.cpp
 
