@@ -8,80 +8,24 @@
 // ("Meshes\Dungeons\Misc\TrigZone01.NIF"). Every asset lookup therefore has to
 // try the type-folder spelling as well, otherwise interior cells resolve zero
 // meshes and the world silently renders as clear colour.
+//
+// The expansion itself lives in Rust (oblivion-re-tools, crates/assets-core)
+// behind the assets_ffi C ABI. These declarations are unchanged from the original
+// header-only implementation so existing callers keep working.
 
-#include <algorithm>
-#include <cctype>
 #include <string>
 #include <vector>
 
 // Type folders that sit directly under Data\ and therefore appear as the first
-// path segment of every BSA entry.
-inline const std::vector<std::string>& assetRootFolders() {
-    static const std::vector<std::string> kRoots = {
-        "meshes", "textures", "sound", "menus", "music", "fonts", "shaders", "video", "trees"
-    };
-    return kRoots;
-}
+// path segment of every BSA entry, in lookup-priority order.
+const std::vector<std::string>& assetRootFolders();
 
 // Expand a game path into the spellings that can resolve, most likely first.
-// `normalized` must already have backslashes converted to '/'.
-inline std::vector<std::string> buildAssetPathCandidates(const std::string& normalized) {
-    std::vector<std::string> candidates;
-    candidates.push_back(normalized);
+// `normalized` must already have backslashes converted to '/'. An already-rooted
+// path yields exactly one candidate.
+//
+// Returns the original spelling alone when the ABI refuses the call: a lookup that
+// only tries what the caller asked for can still hit a loose file, while a wrong
+// candidate list would send the resolver after paths that cannot exist.
+std::vector<std::string> buildAssetPathCandidates(const std::string& normalized);
 
-    // Some ESM records spell a model path with a leading separator
-    // ("/TreeSugarMapleYoungSU.spt"). Left in place the first segment is empty,
-    // which matches no type folder, and every prefixed spelling then carries a
-    // double separator ("trees//TreeSugarMapleYoungSU.spt") that no BSA entry or
-    // loose file has, so all 22 SpeedTree models in the corpus failed to resolve.
-    const size_t firstNonSlash = normalized.find_first_not_of('/');
-    const std::string path = (firstNonSlash == std::string::npos)
-                                 ? std::string()
-                                 : normalized.substr(firstNonSlash);
-    if (path.empty()) {
-        return candidates;
-    }
-    if (path != normalized) {
-        candidates.push_back(path);
-    }
-
-    const std::vector<std::string>& roots = assetRootFolders();
-
-    // Folder roots and extensions are matched case-insensitively: ESM records
-    // are inconsistent about it ("TrigZone01.NIF" vs "trigzone01.nif").
-    std::string firstSegment = path.substr(0, path.find('/'));
-    std::transform(firstSegment.begin(), firstSegment.end(), firstSegment.begin(),
-                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    if (std::find(roots.begin(), roots.end(), firstSegment) != roots.end()) {
-        return candidates;  // Already carries its type folder.
-    }
-
-    // Extension-specific root first, then the remaining roots as a safety net
-    // for assets whose extension does not reveal where they live.
-    std::vector<std::string> ordered;
-    const size_t dot = path.rfind('.');
-    std::string ext = (dot == std::string::npos) ? std::string() : path.substr(dot);
-    std::transform(ext.begin(), ext.end(), ext.begin(),
-                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    if (ext == ".nif" || ext == ".kf" || ext == ".kfa") {
-        ordered.emplace_back("meshes");
-    } else if (ext == ".dds" || ext == ".tga" || ext == ".bmp") {
-        ordered.emplace_back("textures");
-    } else if (ext == ".wav" || ext == ".mp3" || ext == ".ogg") {
-        ordered.emplace_back("sound");
-    } else if (ext == ".xml" || ext == ".txt" || ext == ".html" || ext == ".fnt") {
-        ordered.emplace_back("menus");
-    } else if (ext == ".spt") {
-        ordered.emplace_back("trees");
-    }
-    for (const auto& root : roots) {
-        if (std::find(ordered.begin(), ordered.end(), root) == ordered.end()) {
-            ordered.emplace_back(root);
-        }
-    }
-
-    for (const auto& root : ordered) {
-        candidates.push_back(root + "/" + path);
-    }
-    return candidates;
-}

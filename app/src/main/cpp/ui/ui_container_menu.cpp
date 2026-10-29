@@ -4,7 +4,8 @@
 #include "ui_draw_helper.h"
 #include "../engine/texture_loader.h"
 #include "../game/container.h"
-#include "../game/player.h"
+#include "../game/inventory.h"
+#include "../game/item_catalog.h"
 
 #include <array>
 
@@ -117,6 +118,7 @@ constexpr float kBottomBarH = 100.0f;
 
 constexpr float kWeightDisplayX = 920.0f;
 constexpr float kWeightDisplayY = 560.0f;
+constexpr float kStatusLineY = 700.0f;
 
 constexpr float kSelectionFrameW = 620.0f;
 constexpr float kSelectionFrameH = 86.0f;
@@ -131,6 +133,7 @@ const glm::vec4 kButtonBg(0.2f, 0.2f, 0.35f, 0.5f);
 const glm::vec4 kButtonHoverBg(0.3f, 0.4f, 0.7f, 0.6f);
 const glm::vec4 kPaneBg(0.0f, 0.0f, 0.0f, 0.35f);
 const glm::vec4 kPaneHeaderBg(0.1f, 0.1f, 0.2f, 0.5f);
+const glm::vec4 kStatusTextColor(0.65f, 0.13f, 0.13f, 1.0f);
 
 constexpr FontType kNameFont = FontType::KingthingsRegular;
 constexpr FontType kSmallFont = FontType::TahomaBoldSmall;
@@ -210,7 +213,7 @@ const char* UIContainerMenu::kGenericBgKeys[9] = {
 
 UIContainerMenu::UIContainerMenu()
     : textRenderer_(nullptr), screenWidth_(1280), screenHeight_(960),
-      visible_(false), fadeAlpha_(1.0f), container_(nullptr), player_(nullptr),
+      visible_(false), fadeAlpha_(1.0f), container_(nullptr), playerInventory_(nullptr),
       selectedContainerRow_(-1), selectedPlayerRow_(-1), activeTab_(0),
       activePane_(Pane::CONTAINER), scrollOffsetContainer_(0), scrollOffsetPlayer_(0),
       scaleX_(1.0f), scaleY_(1.0f) {
@@ -236,13 +239,15 @@ void UIContainerMenu::cleanup() {
     textRenderer_ = nullptr;
     visible_ = false;
     container_.reset();
-    player_ = nullptr;
+    playerInventory_ = nullptr;
+    statusMessage_.clear();
 }
 
-void UIContainerMenu::open(std::shared_ptr<Container> container, Player* player) {
-    if (!container || !player) return;
+void UIContainerMenu::open(std::shared_ptr<Container> container, Inventory* playerInventory) {
+    if (!container || !playerInventory) return;
     container_ = std::move(container);
-    player_ = player;
+    playerInventory_ = playerInventory;
+    statusMessage_.clear();
     visible_ = true;
     fadeAlpha_ = 1.0f;
     activeTab_ = 0;
@@ -260,7 +265,8 @@ void UIContainerMenu::open(std::shared_ptr<Container> container, Player* player)
 void UIContainerMenu::close() {
     visible_ = false;
     container_.reset();
-    player_ = nullptr;
+    playerInventory_ = nullptr;
+    statusMessage_.clear();
     LOGD("ContainerMenu closed");
 }
 
@@ -383,6 +389,7 @@ void UIContainerMenu::rebuildContainerList() {
         ItemEntry entry;
         entry.itemId = slot.item.itemId;
         entry.name = slot.item.name;
+        entry.type = slot.item.type;
         entry.weight = slot.item.weight;
         entry.value = slot.item.value;
         entry.quantity = slot.quantity;
@@ -395,14 +402,19 @@ void UIContainerMenu::rebuildContainerList() {
 
 void UIContainerMenu::rebuildPlayerList() {
     playerItems_.clear();
-    if (!player_) return;
+    if (!playerInventory_) return;
 
-    for (size_t i = 0; i < player_->inventory.size(); ++i) {
-        const InventorySlot& slot = player_->inventory[i];
+    // The pack is a fixed 60 row grid, so every row is visited and the empty
+    // ones (holes left by a removal) are skipped. sourceIndex stays the grid
+    // index so deposit can address the slot again.
+    const std::vector<InventorySlot>& slots = playerInventory_->getAllSlots();
+    for (size_t i = 0; i < slots.size(); ++i) {
+        const InventorySlot& slot = slots[i];
         if (slot.isEmpty()) continue;
         ItemEntry entry;
         entry.itemId = slot.item.itemId;
         entry.name = slot.item.name;
+        entry.type = slot.item.type;
         entry.weight = slot.item.weight;
         entry.value = slot.item.value;
         entry.quantity = slot.quantity;
@@ -435,17 +447,35 @@ void UIContainerMenu::rebuildFilteredLists() {
 }
 
 void UIContainerMenu::takeItem(size_t containerIndex) {
-    if (!container_ || !player_) return;
+    if (!container_ || !playerInventory_) return;
     if (containerIndex >= containerItems_.size()) return;
 
-    const ItemEntry& entry = containerItems_[containerIndex];
-    if (!container_->removeItem(entry.itemId, entry.quantity)) return;
+    const ItemEntry entry = containerItems_[containerIndex];
+    statusMessage_.clear();
 
-    InventorySlot slot;
-    slot.item = Item(entry.itemId, entry.name, static_cast<ItemType>(entry.category),
-                     entry.weight, entry.value);
-    slot.quantity = entry.quantity;
-    player_->inventory.push_back(slot);
+    // Take into the pack first so a refusal leaves the container untouched. The
+    // pack is the single source of truth for weight, so addPlayerItem is the
+    // only place that can refuse the move.
+    game::ItemInfo info;
+    info.formID = entry.itemId;
+    info.name = entry.name;
+    info.type = entry.type;
+    info.weight = entry.weight;
+    info.value = static_cast<int32_t>(entry.value);
+    info.resolved = true;
+    if (!game::addPlayerItem(*playerInventory_, info,
+                             static_cast<int32_t>(entry.quantity))) {
+        statusMessage_ = "You cannot carry that much";
+        return;
+    }
+
+    if (!container_->removeItem(entry.itemId, entry.quantity)) {
+        game::removePlayerItem(*playerInventory_, entry.itemId, entry.quantity);
+        return;
+    }
+
+    const std::string takenName = entry.name;
+    const uint32_t takenQuantity = entry.quantity;
 
     rebuildContainerList();
     rebuildPlayerList();
@@ -453,23 +483,28 @@ void UIContainerMenu::takeItem(size_t containerIndex) {
     selectedContainerRow_ = -1;
     scrollOffsetContainer_ = 0;
 
-    LOGD("Took item '%s' x%u from container", entry.name.c_str(), entry.quantity);
+    LOGD("Took item '%s' x%u from container", takenName.c_str(), takenQuantity);
 }
 
 void UIContainerMenu::depositItem(size_t playerIndex) {
-    if (!container_ || !player_) return;
+    if (!container_ || !playerInventory_) return;
     if (playerIndex >= playerItems_.size()) return;
 
-    const ItemEntry& entry = playerItems_[playerIndex];
-    if (entry.sourceIndex >= player_->inventory.size()) return;
+    const ItemEntry entry = playerItems_[playerIndex];
+    if (entry.sourceIndex >= Inventory::MAX_SLOTS) return;
 
-    InventorySlot slot = player_->inventory[entry.sourceIndex];
+    const InventorySlot& slot = playerInventory_->getSlot(entry.sourceIndex);
     if (slot.isEmpty()) return;
-    if (!container_->canAddItem(slot)) return;
+    if (!container_->canAddItem(slot)) {
+        statusMessage_ = "The container cannot hold that";
+        return;
+    }
 
-    container_->addItem(slot);
-    player_->inventory.erase(player_->inventory.begin() +
-                            static_cast<ptrdiff_t>(entry.sourceIndex));
+    InventorySlot moved = slot;
+    if (!playerInventory_->removeItem(slot.item.itemId, slot.quantity)) return;
+
+    container_->addItem(moved);
+    statusMessage_.clear();
 
     rebuildContainerList();
     rebuildPlayerList();
@@ -481,9 +516,11 @@ void UIContainerMenu::depositItem(size_t playerIndex) {
 }
 
 void UIContainerMenu::takeAll() {
-    if (!container_ || !player_) return;
+    if (!container_ || !playerInventory_) return;
     while (!containerItems_.empty()) {
+        const size_t before = containerItems_.size();
         takeItem(0);
+        if (containerItems_.size() >= before) break;
     }
     LOGD("Took all items from container");
 }
@@ -661,6 +698,7 @@ void UIContainerMenu::render() {
     drawWeightDisplay();
     drawTabs();
     drawButtons();
+    drawStatusLine();
 
     if (depthWasEnabled) {
         glEnable(GL_DEPTH_TEST);
@@ -1003,6 +1041,33 @@ void UIContainerMenu::drawWeightDisplay() {
     color.w *= fadeAlpha_;
     const float textX = absX + (weightIcon != 0 ? 20.0f * sx : 0.0f);
     textRenderer_->renderText(buf, textX, absY, color, sy);
+
+    if (playerInventory_ == nullptr) return;
+
+    // The pack owns the carried weight, so show both sides of the trade here.
+    // Without it a take that was refused for encumbrance looked like a bug.
+    char packBuf[96];
+    std::snprintf(packBuf, sizeof(packBuf), "You: %.1f / %.1f kg",
+                  playerInventory_->getTotalWeight(),
+                  static_cast<float>(Inventory::MAX_WEIGHT));
+    textRenderer_->renderText(packBuf, absX, absY + 18.0f * sy, color, sy);
+}
+
+void UIContainerMenu::drawStatusLine() {
+    if (statusMessage_.empty() || !textRenderer_) return;
+
+    const float sx = scaleX();
+    const float sy = scaleY();
+    const float ox = originX();
+    const float oy = originY();
+
+    const float absX = ox + kWeightDisplayX * sx;
+    const float absY = oy + kStatusLineY * sy;
+
+    FontScope font(textRenderer_, kSmallFont);
+    glm::vec4 color = kStatusTextColor;
+    color.w *= fadeAlpha_;
+    textRenderer_->renderText(statusMessage_, absX, absY, color, sy);
 }
 
 GLuint UIContainerMenu::loadTexture(const std::string& path) {

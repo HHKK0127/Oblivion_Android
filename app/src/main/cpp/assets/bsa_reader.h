@@ -3,30 +3,25 @@
 #include <cstdint>
 #include <string>
 #include <vector>
-#include <memory>
-#include <unordered_map>
-#include <fstream>
 
 // ============================================================================
 // BSA Archive Reader for Oblivion (TES4) .bsa files
 //
-// Original implementation written for this project. The on-disk format is
-// documented publicly by UESP ("Oblivion Mod:BSA File Format"); this reader
-// is an independent C++ implementation of that specification.
-// BSA Header Magic: 0x00415342 ("BSA\0")
-// Oblivion Version: 0x67
+// This class is a thin C++ front end over the Rust `bsa-core` crate, reached
+// through the `bsa-ffi` C ABI (see bsa_ffi.h). All parsing, hashing, path
+// normalization and ZLib inflation live on the Rust side; this file only keeps
+// the object-oriented surface the rest of the engine calls, and caches the
+// parsed index so the accessors can return references and pointers into stable
+// storage.
+//
+// The on-disk format is documented publicly by UESP ("Oblivion Mod:BSA File
+// Format"). BSA header magic: 0x00415342 ("BSA\0"). Oblivion version: 0x67.
 // ============================================================================
 
 // Archive flags bit masks (see UESP "Oblivion Mod:BSA File Format")
 constexpr uint32_t BSA_FLAG_HAS_FOLDERNAMES     = 0x00000001;  // directory names are stored
 constexpr uint32_t BSA_FLAG_HAS_FILENAMES       = 0x00000002;  // file names are stored
 constexpr uint32_t BSA_FLAG_COMPRESSED          = 0x00000004;  // files compressed by default
-
-// The top two bits of the file size field are flags, not part of the size.
-// Bit 30 inverts the archive's default compression state for that entry;
-// bit 31 is reserved by the game.
-constexpr uint32_t BSA_SIZE_COMPRESS_TOGGLE     = 0x40000000;
-constexpr uint32_t BSA_SIZE_MASK                = 0x3FFFFFFF;
 
 struct BSAHeader {
     uint32_t magic;                 // 0x00415342 ("BSA\0")
@@ -38,18 +33,6 @@ struct BSAHeader {
     uint32_t folderNameLength;      // Total length of folder name strings
     uint32_t fileNameLength;        // Total length of file name strings
     uint32_t fileFlags;             // File flags
-};
-
-struct BSAFolderRecord {
-    uint64_t hash;                  // Folder name hash
-    uint32_t fileCount;             // Number of files in this folder
-    uint32_t offset;                // Offset to folder name string (in string pool)
-};
-
-struct BSAFileRecord {
-    uint64_t hash;                  // File name hash
-    uint32_t size;                  // File size (bit 30 = compression toggle)
-    uint32_t offset;                // Offset to file data in archive
 };
 
 struct BSAFileEntry {
@@ -73,6 +56,10 @@ class BSArchive {
 public:
     BSArchive();
     ~BSArchive();
+
+    // A handle is owned, so copying would free it twice.
+    BSArchive(const BSArchive&) = delete;
+    BSArchive& operator=(const BSArchive&) = delete;
 
     // Open a BSA file, parse header and build file index
     bool open(const std::string& filePath);
@@ -111,47 +98,29 @@ public:
     bool isCompressed() const { return (m_header.archiveFlags & BSA_FLAG_COMPRESSED) != 0; }
 
 private:
-    // Parse the BSA structure after header is read
-    bool parseArchive();
+    // Copy the header and the full entry list out of the Rust archive, so the
+    // accessors above can hand out references and pointers. Called after every
+    // open attempt, including a failed one, because a parse that stopped early
+    // still leaves a partial index to inspect.
+    bool syncCache();
 
-    // Read folder records and their file entries
-    bool parseFolderRecords();
+    // Map an entry the caller got from this archive back to its index in the
+    // Rust archive, falling back to an identity match if it came from elsewhere.
+    size_t indexOf(const BSAFileEntry& entry) const;
 
-    // Read the name table at end of header region
-    bool readNameTable();
+    // Shared body of the two extract calls, since only the C ABI function differs.
+    bool extract(bool decompress, const BSAFileEntry& entry, std::vector<uint8_t>& output);
 
-    // Decompress ZLib data
-    bool decompressZLib(const uint8_t* input, size_t inputSize,
-                        std::vector<uint8_t>& output, size_t uncompressedSize) const;
-
-    // File stream
-    std::ifstream m_stream;
+    // Opaque bsa-ffi handle (bsa_create() / bsa_destroy()).
+    void* m_handle;
     std::string m_filePath;
 
     // Header
     BSAHeader m_header;
 
-    // Parsed data
-    std::vector<BSAFolderRecord> m_folders;
+    // Parsed data, refreshed by syncCache()
     std::vector<BSAFileEntry> m_files;
 
-    // Folder name strings, indexed by folder record index
-    std::vector<std::string> m_folderNames;
-
-    // Absolute offset of the file name block (which follows all folder blocks)
-    uint32_t m_nameBlockOffset;
-
-    // Name table strings (for building full paths)
-    std::vector<std::string> m_nameTable;
-
-        // Hash-based file lookup table: hash → BSAFileEntry*
-        // Built after parseFolderRecords() + readNameTable() for O(1) findFile().
-        std::unordered_map<uint64_t, const BSAFileEntry*> m_fileHashIndex;
-
-        // Status
-        bool m_isOpen;
-        bool m_parsed;
-
-    // Path prefix for folder/file lookups
-    static constexpr size_t ZLIB_CHUNK_SIZE = 16384;
+    // Status
+    bool m_isOpen;
 };

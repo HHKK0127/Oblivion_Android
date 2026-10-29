@@ -4,6 +4,8 @@
 
 This document describes the architecture and design patterns used in the Oblivion Android native port. The codebase follows a **Manager Pattern** with clear separation of concerns across rendering, game logic, UI, and system layers.
 
+The native side is mostly C++17, but the pure-logic asset and plugin functions run in Rust behind a small C ABI - see [Native Code Split: C++ and Rust](#native-code-split-c-and-rust) for where the line sits and why.
+
 ## Layer Architecture
 
 ### 1. Android Framework Layer (Java/Kotlin)
@@ -119,6 +121,88 @@ bool initialize();  // One-time setup
 void update(float deltaTime);  // Per-frame logic
 void cleanup();  // Resource deallocation
 ```
+
+## Native Code Split: C++ and Rust
+
+Most of the native code is C++17, but the parts that are pure functions of their inputs are
+implemented in Rust and reached through small C ABIs - two stateless ones and one stateful. Those
+parts are the ESM FormID translation, the plugin list, the Data-folder path expansion, the NIF
+geometry merge and the BSA archive reader.
+
+The dividing line is impurity, not size:
+
+| Stays C++ | Moved to Rust |
+| --- | --- |
+| OpenGL ES objects, shaders, the render loop | Record parsing over an in-memory buffer |
+| Jolt Physics bodies and character controllers | String, path and extension rules |
+| `AAssetManager`, `MediaCodec`, JNI entry points | FormID index building and rebasing |
+| `std::ifstream` I/O, zlib inflate, threads | Vertex / index merge and rebase arithmetic |
+| | BSA folder / file tables, both hashes, deflate inflate |
+
+A function moves only when it allocates nothing the caller must own, keeps no state between calls and
+touches no platform handle. `assets/esm_reader.cpp` shows the other side of the rule: an `esm-parser`
+crate exists in the Rust workspace and is used for host-side verification, but the device still runs
+the C++ reader because the parse is interleaved with `std::ifstream`, zlib and the record types the
+rest of the engine consumes. The BSA reader is the exception that proves it: it owns a file handle
+and a materialised index, so it moves only by turning the state into an opaque handle that Rust owns
+and C++ borrows.
+
+```
+assets/formid_index.cpp ──┐
+assets/plugin_list.cpp  ──┴──► plugin_ffi.h ──► libplugin_ffi.a (plugin-parser)
+assets/asset_path_resolver.cpp ──┐
+assets/mesh_builder.cpp        ──┴──► assets_ffi.h ──► libassets_ffi.a (assets-core)
+assets/bsa_reader.cpp ────────────────► bsa_ffi.h ───► libbsa_ffi.a (bsa-core)
+```
+
+Each C++ file keeps its original header and is now a shim: callers are unchanged, and the only
+contract between the two languages is the header in
+`oblivion-re-tools/crates/*-ffi/include/`.
+
+### ABI conventions
+
+- Every function returns an error code (`0` ok, `-1` invalid argument, `-7` caught panic, `-8` buffer
+  too small) and reports diagnostics through `*_last_error_code` / `*_last_error_message`.
+- Nothing allocates for the caller. Output is described by a pointer plus a **capacity**, and a
+  capacity that is too small returns `-8` **without writing**, so the two-pass pattern is "ask for the
+  lengths, allocate, call again".
+- A capacity is always in the unit the caller was told to allocate. `afl_merge_geometry` packs 11
+  floats per vertex, so its `vertex_capacity` is a float count; passing a vertex count is rejected
+  rather than trusted.
+- Panics never cross the boundary - each entry point wraps the Rust call so an unwind becomes `-7`.
+- `bsa_ffi` is the one stateful ABI. `bsa_create()` returns an opaque handle that Rust owns and C++
+  borrows; the shim never frees it on the C++ side except through `bsa_destroy()`, which its
+  destructor calls. Any search entry point (`bsa_find_files_by_prefix` / `_by_extension`) lends a
+  scratch index array that stays valid only until the next search, so the shim converts the indices
+  to `BSAFileEntry` pointers immediately instead of holding them.
+
+### Build wiring
+
+`app/src/main/cpp/CMakeLists.txt` runs `cargo ndk` once per ABI in a single custom command that
+produces all three archives, then imports them as `IMPORTED STATIC` targets and links them into
+`native-lib`. `OBLIVION_RUST_DIR` (default: a sibling `oblivion-re-tools` checkout) and
+`OBLIVION_RUST_OFFLINE` are cache variables, and `app/build.gradle` forwards the matching
+`-Poblivion.rust.dir` / `-Poblivion.rust.offline` Gradle properties. `rustc` and `rustdoc` are pinned
+to the proxies next to `cargo`, because a standalone host-only toolchain earlier on `PATH` otherwise
+wins and the build fails on a missing Android target. The mapping is verified end to end by linking
+`libnative-lib.so` for all three ABIs (`arm64-v8a`, `armeabi-v7a`, `x86_64`) and confirming that all
+19 `bsa_*` symbols are defined in each shared object.
+
+### Testing the boundary
+
+Behaviour is pinned by a host oracle: the original C++ implementation and the Rust one run over the
+same inputs and every output field is compared, using the unmodified C++ test suites as the
+assertions (89 checks across the FormID index, plugin list, asset path and mesh builder suites). The
+C ABI itself has a separate C11 harness for what the oracle cannot see - NULL handling,
+`BUFFER_TOO_SMALL` leaving the buffer untouched, and error-code numbering.
+
+The BSA reader cannot use those suites, because its assertions are about real archives rather than
+constructed inputs, so it gets a dump differ instead: one driver linked once to the original
+`bsa_reader.cpp` and once to the shim prints a record per public-API call with a leading token, and
+the two dumps are compared line by line. Over four shipped archives (10,981 lines) the entry tables,
+headers, extracted bytes and both search orders match exactly; the only differences are `findFile`
+results, which is where the port fixed two hashing bugs in the original
+(`plan.md#rust-migration-of-pure-logic-layers-2026-10-26`).
 
 ## Component Integration
 

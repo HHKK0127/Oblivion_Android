@@ -97,6 +97,10 @@ SOURCES=(
   app/src/main/cpp/tests/formid_index_tests.cpp
   app/src/main/cpp/tests/lod_block_tests.cpp
   app/src/main/cpp/tests/enchanting_system_tests.cpp
+  app/src/main/cpp/tests/oblivion_ini_tests.cpp
+  app/src/main/cpp/tests/settings_manager_tests.cpp
+  app/src/main/cpp/tests/merchant_tests.cpp
+  app/src/main/cpp/tests/merchant_persistence_tests.cpp
   app/src/main/cpp/ui/xml_parser.cpp
   app/src/main/cpp/ui/menu_xml_interpreter.cpp
   app/src/main/cpp/ui/menu_ui_builder.cpp
@@ -163,6 +167,13 @@ SOURCES=(
   app/src/main/cpp/world/cell_transition_manager.cpp
   app/src/main/cpp/game/interactable.cpp
   app/src/main/cpp/game/container.cpp
+  app/src/main/cpp/game/merchant.cpp
+  app/src/main/cpp/game/merchant_factory.cpp
+  app/src/main/cpp/game/barter.cpp
+  app/src/main/cpp/game/item_catalog.cpp
+  app/src/main/cpp/system/settings_manager.cpp
+  app/src/main/cpp/system/oblivion_ini.cpp
+  app/src/main/cpp/system/oblivion_ini_defaults.cpp
 )
 
 echo "::group::Build host tests"

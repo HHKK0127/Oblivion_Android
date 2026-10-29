@@ -8,7 +8,7 @@
 
 ## English
 
-An in-progress native Android port of The Elder Scrolls IV: Oblivion, built entirely in C++ using OpenGL ES 3.0 and the Android NDK.
+An in-progress native Android port of The Elder Scrolls IV: Oblivion, built in C++17 with OpenGL ES 3.0 and the Android NDK, with the pure-logic asset and plugin layers implemented in Rust behind a C ABI.
 
 **v0.9.10 (versionCode 910) — Phase 64 complete, all 20 missing ESM record types decoded and verified against the real Oblivion.esm. Phase 65 (full world rendering) is next.**
 
@@ -83,10 +83,10 @@ development tags, not release versions.
 #### Architecture
 | Item | Specification |
 | --- | --- |
-| **Language** | C++17 (120,000+ lines) |
+| **Language** | C++17 (120,000+ lines), plus Rust for the pure-logic asset / plugin layers |
 | **Graphics API** | OpenGL ES 3.0 |
 | **Physics** | Jolt Physics (Phase 36) |
-| **Build System** | CMake + Gradle |
+| **Build System** | CMake + Gradle (+ cargo-ndk for the Rust static libraries) |
 | **NDK Version** | r26.1 |
 | **Target API** | 29+ |
 
@@ -245,10 +245,19 @@ ATK button → PlayerController.attack()
 sdkmanager "ndk;26.1.10909125"
 sdkmanager "cmake;3.16.0"
 
+# Rust toolchain plus the Android targets, used for the plugin / asset static libraries
+rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
+cargo install cargo-ndk
+
 # Clone repository
 git clone https://github.com/oblivion-android/oblivion-android.git
 cd oblivion-android
 ```
+
+The Rust sources live in a separate `oblivion-re-tools` checkout. CMake expects it as a sibling
+directory and builds it with `cargo ndk`; pass
+`-Poblivion.rust.dir=<path>` / `-Poblivion.rust.offline=true` (Gradle properties) if your checkout sits
+elsewhere or the build machine has no network. See [plan.md](plan.md#rust-migration-of-pure-logic-layers-2026-10-26).
 
 #### Build Release APK
 ```bash
@@ -303,7 +312,9 @@ Access from title screen:
    - **RetroFilter Effects**: Pixelation, scanlines, color reduction, CRT distortion, film grain
    - **Back**: Return to main menu
 
-Settings are automatically saved to persistent storage.
+Settings you change in a menu are saved to persistent storage; options no menu covers come from
+the game's own `Oblivion.ini` in the data directory, and a value read from that file keeps
+applying until a menu overrides it.
 
 #### Debug HUD Display
 When **Debug Mode: ON**, real-time display:
@@ -385,7 +396,7 @@ oblivion-android/
 │   │   │                     SettingsUI, SaveLoadUI, UIPanel, UIButton)
 │   │   ├── audio/           (AudioManager, Audio3D, JNI bridge, Sound Definitions)
 │   │   ├── save_system/     (SaveManager, game state persistence)
-│   │   ├── system/          (SettingsManager - persistent settings)
+│   │   ├── system/          (SettingsManager, OblivionIni - settings layers)
 │   │   ├── assets/          (BSA Reader, ESM Parser, Asset Loading)
 │   │   ├── profiling/       (Performance Monitoring)
 │   │   ├── localization/    (Language system)
@@ -820,7 +831,9 @@ adb install -r app/build/outputs/apk/release/app-release.apk
    - **レトロフィルター**: ピクセル化・スキャンライン・色数制限・CRT歪み・フィルムグレイン
    - **戻る**: メインメニューに戻る
 
-設定は自動的に永続ストレージに保存されます。
+メニューで変更した設定は自動的に永続ストレージに保存されます。メニューに無い項目はデータ
+ディレクトリのゲーム自身の `Oblivion.ini` から読み込まれ、メニューで上書きするまでその値が
+有効です。
 
 #### デバッグHUD表示
 **デバッグモード: ON** のとき、リアルタイムで表示:
@@ -902,7 +915,7 @@ oblivion-android/
 │   │   │                     設定UI、セーブ/ロードUI、パネル、ボタン
 │   │   ├── audio/           オーディオマネージャー、3Dオーディオ、JNIブリッジ、サウンド定義
 │   │   ├── save_system/     セーブマネージャー、ゲーム状態の永続化
-│   │   ├── system/          設定マネージャー（永続設定）
+│   │   ├── system/          設定マネージャー、Oblivion.ini リーダー
 │   │   ├── assets/          BSAリーダー、ESMパーサー、アセット読み込み
 │   │   ├── profiling/       パフォーマンス監視
 │   │   ├── localization/    言語システム

@@ -28,6 +28,172 @@ target_compile_definitions(Jolt PRIVATE
 )
 
 # ============================================================================
+# Rust components (oblivion-re-tools workspace)
+#
+# The FormID load-order translation in assets/formid_index.cpp, the plugin list
+# handling in assets/plugin_list.cpp, the Data-folder path expansion in
+# assets/asset_path_resolver.cpp, the multi-shape merge in
+# assets/mesh_builder.cpp and the BSA archive reader in assets/bsa_reader.cpp
+# are shims over three C ABIs (plugin_ffi, assets_ffi and bsa_ffi).
+# The implementations live in the sibling Rust workspace, built here through
+# cargo-ndk. Point OBLIVION_RUST_DIR at a checkout that is not a sibling of this
+# repository, and set OBLIVION_RUST_OFFLINE to keep cargo from reaching the
+# network.
+# ============================================================================
+set(OBLIVION_RUST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../oblivion-re-tools"
+    CACHE PATH "Path to the oblivion-re-tools Rust workspace")
+set(OBLIVION_RUST_OFFLINE OFF CACHE BOOL "Run cargo with --offline")
+
+if(NOT EXISTS "${OBLIVION_RUST_DIR}/Cargo.toml")
+    message(FATAL_ERROR
+        "No Cargo.toml in OBLIVION_RUST_DIR (${OBLIVION_RUST_DIR}). "
+        "Pass -DOBLIVION_RUST_DIR=<path to the oblivion-re-tools checkout>.")
+endif()
+
+if(ANDROID_ABI STREQUAL "arm64-v8a")
+    set(OBLIVION_RUST_TRIPLE aarch64-linux-android)
+elseif(ANDROID_ABI STREQUAL "armeabi-v7a")
+    set(OBLIVION_RUST_TRIPLE armv7-linux-androideabi)
+elseif(ANDROID_ABI STREQUAL "x86_64")
+    set(OBLIVION_RUST_TRIPLE x86_64-linux-android)
+elseif(ANDROID_ABI STREQUAL "x86")
+    set(OBLIVION_RUST_TRIPLE i686-linux-android)
+else()
+    message(FATAL_ERROR "No Rust target known for ANDROID_ABI=${ANDROID_ABI}")
+endif()
+
+set(OBLIVION_RUST_API_LEVEL 25)
+if(ANDROID_PLATFORM MATCHES "^android-([0-9]+)$")
+    set(OBLIVION_RUST_API_LEVEL ${CMAKE_MATCH_1})
+elseif(DEFINED CMAKE_SYSTEM_VERSION)
+    set(OBLIVION_RUST_API_LEVEL ${CMAKE_SYSTEM_VERSION})
+endif()
+
+if(DEFINED CMAKE_ANDROID_NDK)
+    set(OBLIVION_RUST_NDK "${CMAKE_ANDROID_NDK}")
+else()
+    set(OBLIVION_RUST_NDK "${ANDROID_NDK}")
+endif()
+
+# A shared target directory would be mixed with host builds, whose artifacts are
+# not valid for Android. Keep the CMake-driven builds separate.
+set(OBLIVION_RUST_TARGET_DIR "${OBLIVION_RUST_DIR}/target/cmake")
+set(OBLIVION_RUST_ARCHIVE
+    "${OBLIVION_RUST_TARGET_DIR}/${OBLIVION_RUST_TRIPLE}/release/libplugin_ffi.a")
+set(OBLIVION_RUST_ASSETS_ARCHIVE
+    "${OBLIVION_RUST_TARGET_DIR}/${OBLIVION_RUST_TRIPLE}/release/libassets_ffi.a")
+set(OBLIVION_RUST_BSA_ARCHIVE
+    "${OBLIVION_RUST_TARGET_DIR}/${OBLIVION_RUST_TRIPLE}/release/libbsa_ffi.a")
+
+# Prefer the rustup toolchain over whatever cargo is first in PATH: a standalone
+# Rust install typically carries host targets only.
+find_program(OBLIVION_CARGO NAMES cargo cargo.exe
+    HINTS "$ENV{USERPROFILE}/.cargo/bin" "$ENV{CARGO_HOME}/bin" "$ENV{HOME}/.cargo/bin")
+if(NOT OBLIVION_CARGO)
+    message(FATAL_ERROR "cargo was not found. Pass -DOBLIVION_CARGO=<path to cargo>.")
+endif()
+
+# cargo-ndk is required: it supplies the per-ABI linker wrapper that rustc needs
+# on Windows, where the NDK ships clang as a .cmd file. It refuses to be started
+# directly, so it is reached through "cargo ndk" with its directory on PATH.
+find_program(OBLIVION_CARGO_NDK NAMES cargo-ndk cargo-ndk.exe
+    HINTS "$ENV{USERPROFILE}/.cargo/bin" "$ENV{CARGO_HOME}/bin" "$ENV{HOME}/.cargo/bin")
+if(NOT OBLIVION_CARGO_NDK)
+    message(FATAL_ERROR
+        "cargo-ndk was not found. Install it with \"cargo install cargo-ndk\", or pass "
+        "-DOBLIVION_CARGO_NDK=<path>.")
+endif()
+
+if(CMAKE_HOST_WIN32)
+    set(_oblivion_path_separator ";")
+else()
+    set(_oblivion_path_separator ":")
+endif()
+get_filename_component(_oblivion_cargo_ndk_dir "${OBLIVION_CARGO_NDK}" DIRECTORY)
+set(_oblivion_rust_path "${_oblivion_cargo_ndk_dir}${_oblivion_path_separator}$ENV{PATH}")
+# An unescaped ";" inside a COMMAND argument is split back into several arguments
+# by CMake, which would hand cmake -E env a truncated PATH.
+string(REPLACE ";" "$<SEMICOLON>" _oblivion_rust_path "${_oblivion_rust_path}")
+
+# cargo looks up "rustc" on PATH when RUSTC is unset, which on this machine finds a
+# standalone host-only toolchain before the rustup proxy. Pin both to the proxy
+# next to cargo so the selected toolchain is the one that owns the Android targets.
+set(_oblivion_rust_env
+    "ANDROID_NDK_HOME=${OBLIVION_RUST_NDK}"
+    "ANDROID_NDK_ROOT=${OBLIVION_RUST_NDK}"
+    "CARGO=${OBLIVION_CARGO}"
+    "CARGO_TARGET_DIR=${OBLIVION_RUST_TARGET_DIR}"
+    "PATH=${_oblivion_rust_path}")
+get_filename_component(_oblivion_cargo_dir "${OBLIVION_CARGO}" DIRECTORY)
+foreach(_oblivion_proxy IN ITEMS rustc rustdoc)
+    foreach(_oblivion_suffix IN ITEMS "" ".exe")
+        set(_oblivion_proxy_path "${_oblivion_cargo_dir}/${_oblivion_proxy}${_oblivion_suffix}")
+        if(EXISTS "${_oblivion_proxy_path}")
+            string(TOUPPER "${_oblivion_proxy}" _oblivion_proxy_var)
+            list(APPEND _oblivion_rust_env "${_oblivion_proxy_var}=${_oblivion_proxy_path}")
+            break()
+        endif()
+    endforeach()
+endforeach()
+
+set(_oblivion_rust_cargo_args build --release -p plugin-ffi -p assets-ffi -p bsa-ffi)
+if(OBLIVION_RUST_OFFLINE)
+    list(APPEND _oblivion_rust_cargo_args --offline)
+endif()
+
+file(GLOB_RECURSE OBLIVION_RUST_SOURCES CONFIGURE_DEPENDS
+    "${OBLIVION_RUST_DIR}/Cargo.toml"
+    "${OBLIVION_RUST_DIR}/Cargo.lock"
+    "${OBLIVION_RUST_DIR}/crates/plugin-parser/Cargo.toml"
+    "${OBLIVION_RUST_DIR}/crates/plugin-parser/src/*.rs"
+    "${OBLIVION_RUST_DIR}/crates/plugin-ffi/Cargo.toml"
+    "${OBLIVION_RUST_DIR}/crates/plugin-ffi/src/*.rs"
+    "${OBLIVION_RUST_DIR}/crates/assets-core/Cargo.toml"
+    "${OBLIVION_RUST_DIR}/crates/assets-core/src/*.rs"
+    "${OBLIVION_RUST_DIR}/crates/assets-ffi/Cargo.toml"
+    "${OBLIVION_RUST_DIR}/crates/assets-ffi/src/*.rs"
+    "${OBLIVION_RUST_DIR}/crates/bsa-core/Cargo.toml"
+    "${OBLIVION_RUST_DIR}/crates/bsa-core/src/*.rs"
+    "${OBLIVION_RUST_DIR}/crates/bsa-ffi/Cargo.toml"
+    "${OBLIVION_RUST_DIR}/crates/bsa-ffi/src/*.rs")
+
+# One cargo invocation produces all three static libraries, so the archives are
+# outputs of a single command: building them separately would run the workspace
+# build several times and let the invocations race on the same target directory.
+add_custom_command(
+    OUTPUT "${OBLIVION_RUST_ARCHIVE}" "${OBLIVION_RUST_ASSETS_ARCHIVE}"
+           "${OBLIVION_RUST_BSA_ARCHIVE}"
+    COMMAND ${CMAKE_COMMAND} -E env
+            ${_oblivion_rust_env}
+            "${OBLIVION_CARGO}" ndk -t ${ANDROID_ABI} --platform ${OBLIVION_RUST_API_LEVEL}
+            ${_oblivion_rust_cargo_args}
+    WORKING_DIRECTORY "${OBLIVION_RUST_DIR}"
+    DEPENDS ${OBLIVION_RUST_SOURCES}
+    COMMENT "Building plugin-ffi, assets-ffi and bsa-ffi for ${ANDROID_ABI} (Rust)"
+    VERBATIM)
+
+add_custom_target(oblivion_rust_ffi
+    DEPENDS "${OBLIVION_RUST_ARCHIVE}" "${OBLIVION_RUST_ASSETS_ARCHIVE}"
+            "${OBLIVION_RUST_BSA_ARCHIVE}")
+
+add_library(plugin_ffi STATIC IMPORTED GLOBAL)
+set_target_properties(plugin_ffi PROPERTIES
+    IMPORTED_LOCATION "${OBLIVION_RUST_ARCHIVE}")
+add_dependencies(plugin_ffi oblivion_rust_ffi)
+
+add_library(assets_ffi STATIC IMPORTED GLOBAL)
+set_target_properties(assets_ffi PROPERTIES
+    IMPORTED_LOCATION "${OBLIVION_RUST_ASSETS_ARCHIVE}")
+add_dependencies(assets_ffi oblivion_rust_ffi)
+
+add_library(bsa_ffi STATIC IMPORTED GLOBAL)
+set_target_properties(bsa_ffi PROPERTIES
+    IMPORTED_LOCATION "${OBLIVION_RUST_BSA_ARCHIVE}")
+add_dependencies(bsa_ffi oblivion_rust_ffi)
+
+message(STATUS "Rust: plugin-ffi, assets-ffi and bsa-ffi from ${OBLIVION_RUST_DIR} (${ANDROID_ABI}, API ${OBLIVION_RUST_API_LEVEL})")
+
+# ============================================================================
 
 # Add main library
 add_library(native-lib SHARED
@@ -118,6 +284,9 @@ add_library(native-lib SHARED
     game/container.cpp
     game/interaction_manager.cpp
     game/merchant.cpp
+    game/merchant_factory.cpp
+    game/barter.cpp
+    game/item_catalog.cpp
 
     # Player & Movement (Phase 3+)
     game/player.cpp
@@ -279,6 +448,7 @@ add_library(native-lib SHARED
     # Asset System
     assets/nif_parser.cpp
     assets/nif_block_type_map.cpp
+    assets/asset_path_resolver.cpp
     assets/mesh_builder.cpp
     assets/dds_loader.cpp
     assets/asset_manager.cpp
@@ -420,6 +590,9 @@ target_include_directories(native-lib PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/character
     ${CMAKE_CURRENT_SOURCE_DIR}/video
     ${CMAKE_CURRENT_SOURCE_DIR}/system
+    ${OBLIVION_RUST_DIR}/crates/plugin-ffi/include
+    ${OBLIVION_RUST_DIR}/crates/assets-ffi/include
+    ${OBLIVION_RUST_DIR}/crates/bsa-ffi/include
 )
 
 # Find OpenAL-Soft (optional for now)
@@ -440,11 +613,14 @@ endif()
 # Link Android native libraries
 target_link_libraries(native-lib
     Jolt
+    plugin_ffi  # Rust: FormID index translation and plugin list (oblivion-re-tools)
+    assets_ffi  # Rust: Data-folder path expansion and NIF geometry merge
+    bsa_ffi     # Rust: BSA archive parsing, hashing lookup and ZLib inflation
     android
     EGL
     GLESv3
     log
-    z  # Android's built-in libz for BSA ZLib decompression
+    z  # Android's built-in libz, still used by assets/esm_reader.cpp
 )
 
 # Link OpenAL if found

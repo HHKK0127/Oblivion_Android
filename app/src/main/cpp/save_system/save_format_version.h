@@ -28,7 +28,9 @@ constexpr uint32_t MAGIC_NUMBER = 0x4F424C56;
 //     LEGACY_HEADER_SIZE); the payload is unchanged from v2
 // v4: SCRP payload holds script global variables and a new CNTR section
 //     (persisted container inventories) is appended after SCRP
-constexpr uint32_t CURRENT_VERSION = 4;
+// v5: MERC section (persisted merchant purses and shop stock) is appended
+//     after CNTR
+constexpr uint32_t CURRENT_VERSION = 5;
 
 // Minimum supported version (for backward compatibility)
 constexpr uint32_t MIN_SUPPORTED_VERSION = 1;

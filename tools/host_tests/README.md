@@ -15,15 +15,50 @@ The runner builds one binary that executes every wired suite in order:
 | `Phase45UnitTests` | `tests/phase45_unit_tests.cpp` | 41 | Combat/spell/NPC/dialogue/quest/save units plus `MemoryPool`, `AsyncTaskManager`, `CacheManager` |
 | `Phase48StressTest` | `tests/phase48_stress_test.cpp` | 5 | Concurrent task, object pool, cache, `EventBus` and `NpcManager` stress |
 | `Phase48IntegrationTest` | `tests/phase48_integration_test.cpp` | 7 | `StateManager` / `InputRouter` / `GameLoopCoordinator` / world / cell transition / combat / quest / save integration |
-| `Phase30IntegrationTest` | `tests/phase30_integration_test.cpp` | 1 (skip) | NIF/animation/collision asset pipeline; skips itself when real Oblivion assets are absent (see below) |
+| `WatrDecodeTests` | `tests/watr_decode_tests.cpp` | 11 | WATR record decoding from a synthetic ESM: the TES4 header, a WATR GRUP holding a full 102-byte `DefaultWater` DATA block plus two short records (42 / 2 bytes) that must inherit the default colours |
+| `XtelDecodeTests` | `tests/xtel_decode_tests.cpp` | 15 | XTEL (door intercept target) decoding: the type-6 cell-children GRUP label becomes each REFR's `parentFormID`, a full 28-byte XTEL resolves to its target door, and a missing or truncated block is ignored |
+| `WeatherTransitionTests` | `tests/weather_transition_tests.cpp` | 14 | `SkyWeatherSystem` driven through a scripted transition at a fixed 60 Hz step: the ramp is linear in time rather than the geometric decay the pre-P13 code produced |
+| `InteriorCellTests` | `tests/interior_cell_tests.cpp` | 47 | `WorldManager::enterInteriorCell`, the `teleportinterior` command's entry point: an interior cell is registered, keyed by FormID instead of a grid coordinate, marked INTERIOR and made current, and re-entering the same FormID reuses it |
+| `GameStateReportTests` | `tests/gamestate_report_tests.cpp` | 30 | `GameStateReport` line format behind the `gamestate` console command, including the interior case where `grid` must not be printed |
+| `AssetPathTests` | `tests/asset_path_tests.cpp` | 24 | `asset_path_resolver.h`: the expansion rules that bridge an ESM model path (`Dungeons\Misc\TrigZone01.NIF`) and its BSA spelling (`Meshes\...`) |
+| `MeshBuilderTests` | `tests/mesh_builder_tests.cpp` | 27 | `mesh_builder.h` NIF geometry merge: every `NiTriShape` / `NiTriStrips` contributes, indices are rebased onto the merged vertex array, missing attributes fall back to the `Vertex` default, and unusable geometry is skipped instead of producing out-of-range indices |
+| `MenuXmlTests` | `tests/menu_xml_tests.cpp` | 223 | The two-stage menu pipeline (`buildMenuDef()` then `resolve()`), pinned to the real `book_menu.xml` expressions: the `_pagenum` accumulator, the `mult` operator, the x controller traits and the `&xbox;` entity style |
+| `MenuFadeTests` | `tests/menu_fade_tests.cpp` | 40 | `menu_fade_system.h`, the port of the original fade node list (RE_EXE_REPORT.md 48.3 / 49.6): linear one-shot fades, the 0.001 s duration floor, replace-by-source, auto-removal at progress 1.0 and the per-menu steady-state alpha |
+| `FatigueSystemTests` | `tests/fatigue_system_tests.cpp` | 59 | `game/fatigue_system.h`, the port of the Fatigue AV (0x0A) formulas from RE_EXE_REPORT.md 50.2 / 56.1 / 57.3: the GMST defaults and the exact curve / cost shapes, including the `Combat_CalcMeleeDamage` "exactly full fatigue contributes 1.0" quirk |
+| `CombatFormulasTests` | `tests/combat_formulas_tests.cpp` | 72 | `game/combat_formulas.h`, the FUN_005FEBF0 fragments confirmed in RE_EXE_REPORT.md 56.1 (Block 50 / Luck 50 / x 1.0 -> block amount 0.625, weapon block 0.3125, hand-to-hand block 0.15625) |
 | `Phase69PersistenceTests` | `tests/phase69_persistence_tests.cpp` | 30 | Container persistence: `SaveManager` CNTR section, the lazy-materialisation buffer (`applyPendingContainerState`) and the carry-forward case where a save happens before the player ever opened the container |
 | `PluginListTests` | `tests/plugin_list_tests.cpp` | 23 | `plugins.txt` grammar and load order: `#` comments, the `*` active marker, BOM/CR/blank trimming, case-insensitive duplicate rejection, plain-list-means-all-active, serialise round trip and the Oblivion.esm / masters / plugins ordering |
 | `FormIDIndexTests` | `tests/formid_index_tests.cpp` | 15 | FormID index translation from a plugin's MAST-relative space into load order: the base file's identity map, masters resolving to their real load position, a plugin's own index, reordered masters, unresolved masters, out-of-range indices, case-insensitive master names and preservation of the low 24 bits |
 | `LodBlockTests` | `tests/lod_block_tests.cpp` | 10 (7 asset) | The shipped landscape LOD blocks through the same `lod_block_rules.h` helpers `original_lod_provider.cpp` uses: the `<formID>.<blockX>.<blockY>.32.<ext>` grammar, negative block flooring, the 8-float vertex packing and index rebasing, the rejection paths (empty geometry, > 65535 vertices, no usable triangles, stray indices dropped) and, over real blocks, vertex/index bounds, one UV per vertex, UV range, block-local placement and the 1,1,1 colour; skips the asset half when no blocks are found |
 | `EnchantingSystemTests` | `tests/enchanting_system_tests.cpp` | 11 | The MGEF effect tables against the measured Oblivion data (145 codes -> 88 families, the 21 fabricated codes that must fall back to `UNKNOWN`, malformed input) and the public enchanting arithmetic (defaults, `createEnchantment`, the magnitude/duration/cost formulas, the skill bonus, and `loadEnchantmentsFromESM` over a synthetic plugin); fixture tables live in `tests/enchanting_system_mgef_tables.inc`, generated from the measured CSV, not from the implementation |
+| `OblivionIniTests` | `tests/oblivion_ini_tests.cpp` | 153 | `system/oblivion_ini.h`: the merged default table (entry count, the type/provenance breakdown, and the `[HAVOK]` vs `[Havok]` ordering the binary search depends on) plus the parser and resolver semantics (the first occurrence of a duplicate key wins, only whole-line comments are skipped, an empty value is legal) |
+| `SettingsManagerTests` | `tests/settings_manager_tests.cpp` | 68 | `system/settings_manager.h` layering: `settings.txt` outranks Oblivion.ini, which outranks the shipped defaults, and `saveSettings()` rewrites only the keys an in-game menu actually changed |
+| `MerchantTests` | `tests/merchant_tests.cpp` | 122 | Merchant generation and barter over a synthetic ESM: NPC / CNTO decoding with zero-count rows dropped, `CNAM` class FormID resolution including the cross-plugin link, the `itemIdFromFormID` / `formIDFromItemId` round trip, `resolveItemInfo` fallbacks, `npcIsMerchant` and `buildMerchantFromNpc` stock rules, the buy / sell arithmetic with the mercantile clamp, a purse split across several Gold slots and the FormID merge that keeps a FormID on one row, `tradeGold`, and the refusal reasons |
+| `MerchantPersistenceTests` | `tests/merchant_persistence_tests.cpp` | 39 | The MERC section of the binary save: the v5 round trip of purse plus stock (all nine `MerchantItem` fields), plugin stock replacing rather than merging, one-shot consumption of the pending buffer, the load-time apply into a live registry, sold-out rows dropped, the carry-forward case and v4 compatibility (a MERC-less payload is ignored) |
+| `Phase30IntegrationTest` | `tests/phase30_integration_test.cpp` | 1 (skip) | NIF/animation/collision asset pipeline; skips itself when real Oblivion assets are absent (see below) |
 
 The runner prints each suite's `getSummary()` and exits with status 1 if any
 suite fails.
+
+### Known issue: the Rust `plugin_ffi` shim is not wired into the host build (2026-10-26)
+
+`assets/plugin_list.cpp` and `assets/formid_index.cpp` no longer carry the
+`plugins.txt` / FormID logic themselves: they are thin shims over the Rust
+`plugin_ffi` crate (`#include "plugin_ffi.h"` plus the `plg_*` C ABI), which
+`app/src/main/cpp/CMakeLists.txt` builds for Android with `cargo ndk` out of
+`OBLIVION_RUST_DIR` (default `<repo>/../../../../../oblivion-re-tools`).
+
+Neither host runner passes that include directory or links a host build of the
+crate yet, so both stop on those two translation units - MSVC reports
+`fatal error C1083: cannot open include file: 'plugin_ffi.h'`, and the Linux
+`g++` run fails the same way - and because the runner is a single binary, that
+compile failure blocks every suite, not only `PluginListTests` and
+`FormIDIndexTests`. Build the Android target for those two suites until the
+runners are updated. The fix is to add `-I<crate>/crates/plugin-ffi/include`
+to `INCLUDES` (and the MSVC equivalent) and link the host static library
+(`<crate>/target/<triple>/release/libplugin_ffi.a` or the MSVC `.lib`), which
+also needs a host build of the crate for the compiler in use. Delete this note
+once both runners build the shim.
 
 ### Asset-dependent suites
 

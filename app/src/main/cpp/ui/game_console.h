@@ -290,6 +290,11 @@ public:
         // Phase 65: activate the door nearest to the player (cell transition).
         std::function<std::string()> useNearestDoor;
 
+        // Phase 68: list the spawned merchants, and open the trade screen for
+        // the nearest merchant regardless of distance.
+        std::function<std::string()> listMerchants;
+        std::function<std::string()> useNearestMerchant;
+
         // Virtual controller overlay. -1 = toggle, 0 = disable, 1 = enable.
         std::function<std::string(int)> setVirtualControllerState;
 

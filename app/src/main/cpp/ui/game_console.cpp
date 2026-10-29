@@ -531,6 +531,27 @@ void GameConsole::registerBuiltinCommands() {
         }
     });
 
+    registerCommand("merchants", "List spawned merchants", [this](const std::vector<std::string>&) {
+        if (gameRefs.listMerchants) {
+            const std::string result = gameRefs.listMerchants();
+            print(result);
+            LOGI_CONSOLE("%s", result.c_str());
+        } else {
+            print("World Manager not available");
+        }
+    });
+    registerCommand("useshop", "Trade with the nearest merchant", [this](const std::vector<std::string>&) {
+        if (gameRefs.useNearestMerchant) {
+            const std::string result = gameRefs.useNearestMerchant();
+            print(result);
+            // Mirrored to logcat so capture scripts can read the outcome
+            // without screenshotting the on-screen console.
+            LOGI_CONSOLE("%s", result.c_str());
+        } else {
+            print("Shop menu not available");
+        }
+    });
+
     // === Magic commands ===
     registerCommand("learnspell", "Learn spell: learnspell <spellId>", [this](const std::vector<std::string>& args) { cmdLearnSpell(args); });
     registerCommand("castspell", "Cast spell on target: castspell <spellId> <targetId>", [this](const std::vector<std::string>& args) { cmdCastSpell(args); });

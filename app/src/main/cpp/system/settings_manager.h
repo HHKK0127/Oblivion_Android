@@ -1,5 +1,6 @@
 #pragma once
 
+#include <set>
 #include <string>
 #include <android/log.h>
 
@@ -11,14 +12,19 @@
 
 /**
  * @brief Audio channel volumes, one per AudioMenu slider (Oblivion_default.ini
- * [Audio] fDefault*Volume). The engine applies gain = value^2 * master.
+ * [Audio] fDefault*Volume, mirrored in system/oblivion_ini_defaults.cpp). The
+ * engine applies gain = value^2 * master.
+ *
+ * The five values here are the shipped ones verbatim: master 1.0000, voice
+ * 0.8000, effects 0.8000, foot 0.8000, music 0.3000. Only music is quiet in the
+ * original - the other four start loud.
  */
 struct AudioVolumeSettings {
-    float master = 0.8f;   // fDefaultMasterVolume
-    float voice = 0.0f;    // fDefaultVoiceVolume
-    float effect = 0.8f;   // fDefaultEffectsVolume
-    float foot = 0.3f;     // fDefaultFootVolume
-    float music = 0.8f;    // fDefaultMusicVolume
+    float master = 1.0f;   // fDefaultMasterVolume 1.0000
+    float voice = 0.8f;    // fDefaultVoiceVolume  0.8000
+    float effect = 0.8f;   // fDefaultEffectsVolume 0.8000
+    float foot = 0.8f;     // fDefaultFootVolume   0.8000
+    float music = 0.3f;    // fDefaultMusicVolume  0.3000
 };
 
 /**
@@ -126,12 +132,17 @@ float difficultyDealtDamageMultiplier(int difficulty);
 
 /**
  * @brief Gameplay options: difficulty slider plus the six On/Off toggles.
+ *
+ * Every default below is the shipped Oblivion_default.ini [GamePlay] value, with
+ * the compiled-in registry answering for the keys the file omits
+ * (`bSaveOnInteriorExteriorSwitch`). Note bGeneralSubtitles ships as 0: a fresh
+ * installation shows dialogue subtitles but not the general ones.
  */
 struct GameplaySettings {
-    int difficulty = 50;            // fDifficultyMinValue..MaxValue = 0..100
-    bool generalSubtitles = true;   // bGeneralSubtitles
-    bool dialogueSubtitles = true;  // bDialogueSubtitles
-    bool crosshair = true;          // bCrossHair
+    int difficulty = 50;            // iDifficultyLevel = 50
+    bool generalSubtitles = false;  // bGeneralSubtitles = 0
+    bool dialogueSubtitles = true;  // bDialogueSubtitles = 1
+    bool crosshair = true;          // bCrossHair = 1
     bool saveOnRest = true;         // bSaveOnRest
     bool saveOnWait = true;         // bSaveOnWait
     bool saveOnTravel = true;       // bSaveOnTravel
@@ -162,11 +173,33 @@ struct VideoSettings {
 /**
  * @brief Game settings management system
  * Manages various game settings (language, debug mode, etc.)
+ *
+ * Values layer the way the original layers them:
+ *
+ *   settings.txt (the port's own file, rewritten whenever an option changes)
+ *     > Oblivion.ini (a file the player drops next to the game data, as on PC)
+ *       > the shipped defaults baked into resetToDefaults()
+ *
+ * saveSettings() only rewrites the keys this file already owns, and initialize()
+ * only fills the remaining ones from Oblivion.ini. The two together mean an INI
+ * the player edits keeps answering for every option the in-game menus have never
+ * touched, instead of being shadowed the first time a slider moves.
  */
 class SettingsManager {
 public:
-    SettingsManager();
+    /**
+     * @brief @param settingsFilePath Overrides where settings.txt is read and
+     * written. The default (empty) is the real per-app path; host tests pass a
+     * scratch file so they never touch a device path.
+     */
+    explicit SettingsManager(const std::string& settingsFilePath = std::string());
     ~SettingsManager();
+
+    /**
+     * @brief Folder holding the game data. Oblivion.ini is looked up here, the
+     * same way plugins.txt is. Set it before initialize() to have the INI read.
+     */
+    void setDataPath(const std::string& path);
 
     /**
      * @brief Initialize settings
@@ -260,12 +293,26 @@ private:
     AudioVolumeSettings audioSettings;
     GameplaySettings gameplay;
     VideoSettings video;
+    std::string dataPath;
+
+    // Keys settings.txt has supplied (or a setter has changed). saveSettings()
+    // rewrites only these and initialize() leaves them out of the Oblivion.ini
+    // pass, which is what gives the file its priority.
+    std::set<std::string> ownedOptionKeys;
 
     // File path
     std::string getSettingsFilePath() const;
 
+    // Non-empty only when a test injected a scratch settings.txt path.
+    std::string settingsFilePathOverride;
+
     // Apply one "KEY=VALUE" line for the AUDIO_* / GAMEPLAY_* / VIDEO_* option keys.
-    void loadOptionSetting(const std::string& key, const std::string& value);
+    // Returns true when the key was recognised and its value accepted.
+    bool loadOptionSetting(const std::string& key, const std::string& value);
+
+    // Fill every option settings.txt did not own from <dataPath>/Oblivion.ini,
+    // falling back to the merged default table for keys the file omits.
+    void loadOblivionIni();
 
     static constexpr const char* LOG_TAG = "SettingsManager";
     #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)

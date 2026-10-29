@@ -10,6 +10,7 @@
 #include "../game/npc.h"
 #include "../game/quest.h"
 #include "../game/item.h"
+#include "../game/merchant.h"
 #include "serializable.h"
 #include "save_format_version.h"
 #include "save_slot_manager.h"
@@ -42,6 +43,19 @@ namespace oblivion { namespace script { class ScriptManager; } }
 struct PendingContainerState {
     bool locked = false;
     std::vector<InventoryItem> items;
+};
+
+/**
+ * @brief Phase 69: merchant purse and stock captured by a loadGame() call.
+ *
+ * Merchants, like containers, are materialised lazily from the NPC record the
+ * first time the player opens a shop, so a load buffers their state here and
+ * applyPendingMerchantState() hands it over at that point. Without this a
+ * save/load round trip reset every purse and restocked from the plugin.
+ */
+struct PendingMerchantState {
+    float shopGold = 0.0f;
+    std::vector<MerchantItem> items;
 };
 
 /**
@@ -89,6 +103,12 @@ public:
     void setQuestManager(QuestManager* qm) { questManager_ = qm; }
     void setWorldManager(WorldManager* wm) { worldManager_ = wm; }
     void setScriptManager(oblivion::script::ScriptManager* sm) { scriptManager_ = sm; }
+    // Merchant registry (FormID -> merchant) owned by the renderer. Non-owning,
+    // same lifetime contract as the other setXxx() pointers.
+    void setMerchantRegistry(
+        std::unordered_map<uint32_t, std::shared_ptr<Merchant>>* registry) {
+        merchantRegistry_ = registry;
+    }
 
     // Save/Load operations (binary format)
     bool saveGame(uint32_t slotIndex, const std::string& slotName = "");
@@ -127,6 +147,11 @@ public:
     // container was not part of that save, so the caller populates from the ESM.
     bool applyPendingContainerState(const std::shared_ptr<Container>& container);
 
+    // Phase 69: hand the purse and stock captured for this merchant by the most
+    // recent loadGame() to the freshly materialised merchant. Returns false when
+    // the merchant was not part of that save, so the caller keeps the ESM stock.
+    bool applyPendingMerchantState(const std::shared_ptr<Merchant>& merchant);
+
 private:
     // System pointers (non-owning)
     PlayerController* playerController_ = nullptr;
@@ -135,6 +160,7 @@ private:
     QuestManager* questManager_ = nullptr;
     WorldManager* worldManager_ = nullptr;
     oblivion::script::ScriptManager* scriptManager_ = nullptr;
+    std::unordered_map<uint32_t, std::shared_ptr<Merchant>>* merchantRegistry_ = nullptr;
 
     // Sub-systems
     SaveSlotManager slotManager_;
@@ -153,6 +179,10 @@ private:
     // Phase 69: container contents read by the last loadGame(), keyed by the
     // container's persistence FormID. Consumed by applyPendingContainerState().
     std::unordered_map<uint32_t, PendingContainerState> pendingContainers_;
+
+    // Phase 69: merchant purses and stock read by the last loadGame(), keyed by
+    // the merchant NPC's FormID. Consumed by applyPendingMerchantState().
+    std::unordered_map<uint32_t, PendingMerchantState> pendingMerchants_;
 
     // Base directory
     std::string getBaseDir() const;

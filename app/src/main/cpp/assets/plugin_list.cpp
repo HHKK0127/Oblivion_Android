@@ -1,153 +1,194 @@
 #include "plugin_list.h"
 
-#include <algorithm>
-#include <cctype>
-#include <unordered_set>
-
 #include <android/log.h>
+
+#include "plugin_ffi.h"
 
 #define LOG_TAG "PluginList"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+
+// This file is a shim: the grammar and the load-order rules live in Rust
+// (oblivion-re-tools, crates/plugin-parser) behind the plugin_ffi C ABI, and the
+// signatures here are unchanged so existing callers keep working.
+//
+// Every call degrades towards an empty result rather than a wrong one. Parsing
+// and active-selection report nothing when the ABI refuses the call,
+// serialisation returns "", and a failed sort leaves the entries in the order it
+// found them. Writing a half-validated list back over the user's plugins.txt, or
+// loading plugins in an order the engine did not ask for, is the worse failure.
 
 namespace oblivion {
 
 namespace {
 
-const char* kOblivionEsm = "oblivion.esm";
+// The C ABI takes parallel arrays of NUL-terminated names and active flags. The
+// pointers refer to the caller's strings, so they stay valid as long as the
+// caller's vector does.
+struct PluginArrays {
+    std::vector<const char*> names;
+    std::vector<int> activeFlags;
+};
 
-std::string toLower(const std::string& value) {
-    std::string lowered;
-    lowered.reserve(value.size());
-    for (char c : value) {
-        lowered.push_back(static_cast<char>(
-            std::tolower(static_cast<unsigned char>(c))));
+PluginArrays collectPluginArrays(const std::vector<PluginListEntry>& entries) {
+    PluginArrays arrays;
+    arrays.names.reserve(entries.size());
+    arrays.activeFlags.reserve(entries.size());
+    for (const PluginListEntry& entry : entries) {
+        arrays.names.push_back(entry.name.c_str());
+        arrays.activeFlags.push_back(entry.active ? 1 : 0);
     }
-    return lowered;
+    return arrays;
 }
 
-bool isBlank(char c) {
-    return c == ' ' || c == '\t' || c == '\r' || c == '\n';
-}
-
-// Removes leading and trailing blanks. Also drops a UTF-8 BOM that a Windows
-// editor may have left at the start of the file.
-std::string trim(const std::string& value) {
-    size_t begin = 0;
-    if (value.size() >= 3 &&
-        static_cast<unsigned char>(value[0]) == 0xEF &&
-        static_cast<unsigned char>(value[1]) == 0xBB &&
-        static_cast<unsigned char>(value[2]) == 0xBF) {
-        begin = 3;
+// Only reachable when the FFI call itself fails, which a live std::string cannot
+// cause; it keeps the classifier total instead of misleadingly reporting false.
+bool endsWithEsm(const std::string& name) {
+    if (name.size() < 4) return false;
+    static const char kExtension[] = ".esm";
+    const size_t begin = name.size() - 4;
+    for (size_t i = 0; i < 4; ++i) {
+        const unsigned char c = static_cast<unsigned char>(name[begin + i]);
+        const char lowered =
+            (c >= 'A' && c <= 'Z') ? static_cast<char>(c - 'A' + 'a') : static_cast<char>(c);
+        if (lowered != kExtension[i]) return false;
     }
-    while (begin < value.size() && isBlank(value[begin])) begin++;
-    size_t end = value.size();
-    while (end > begin && isBlank(value[end - 1])) end--;
-    return value.substr(begin, end - begin);
-}
-
-std::vector<std::string> splitLines(const std::string& contents) {
-    std::vector<std::string> lines;
-    std::string current;
-    for (char c : contents) {
-        if (c == '\n') {
-            lines.push_back(current);
-            current.clear();
-        } else {
-            current.push_back(c);
-        }
-    }
-    if (!current.empty()) lines.push_back(current);
-    return lines;
+    return true;
 }
 
 }  // namespace
 
 bool isMasterFileName(const std::string& name) {
-    if (name.size() < 4) return false;
-    const std::string ext = toLower(name.substr(name.size() - 4));
-    return ext == ".esm";
+    int isMaster = 0;
+    const int status = plg_is_master_file_name(name.c_str(), &isMaster);
+    if (status != PLG_OK) {
+        LOGD("plg_is_master_file_name failed with %d, testing the extension here", status);
+        return endsWithEsm(name);
+    }
+    return isMaster != 0;
 }
 
 std::vector<PluginListEntry> parsePluginList(const std::string& contents) {
-    struct RawLine {
-        std::string name;
-        bool marked;
-    };
+    std::vector<PluginListEntry> entries;
+    // The entries only carry offsets into `contents`, so a NULL buffer with a
+    // length of 0 is still a valid empty parse.
+    const char* data = contents.empty() ? nullptr : contents.data();
 
-    std::vector<RawLine> lines;
-    std::unordered_set<std::string> seen;
-    bool fileUsesMarkers = false;
+    size_t count = 0;
+    int status = plg_parse_plugin_list(data, contents.size(), nullptr, 0, &count);
+    if (status != PLG_OK) {
+        LOGD("plg_parse_plugin_list length query failed with %d, no plugin is read", status);
+        return entries;
+    }
+    if (count == 0) return entries;
 
-    for (const std::string& raw : splitLines(contents)) {
-        std::string line = trim(raw);
-        if (line.empty() || line[0] == '#') continue;
-
-        bool marked = false;
-        if (line[0] == '*') {
-            marked = true;
-            fileUsesMarkers = true;
-            line = trim(line.substr(1));
-        }
-        if (line.empty()) continue;
-
-        // Filenames are case-insensitive on the platforms Oblivion ships for,
-        // so a repeated plugin spelled differently is still a duplicate.
-        if (!seen.insert(toLower(line)).second) {
-            LOGD("Ignoring duplicate plugin entry: %s", line.c_str());
-            continue;
-        }
-
-        lines.push_back({line, marked});
+    std::vector<plg_plugin_list_entry> raw(count);
+    status = plg_parse_plugin_list(data, contents.size(), raw.data(), raw.size(), &count);
+    if (status != PLG_OK) {
+        LOGD("plg_parse_plugin_list failed with %d, no plugin is read", status);
+        return entries;
     }
 
-    std::vector<PluginListEntry> entries;
-    entries.reserve(lines.size());
-    for (const auto& line : lines) {
+    entries.reserve(count);
+    for (size_t i = 0; i < count; ++i) {
+        // The offsets come from the same buffer, but nothing may make the copy
+        // read past the string the caller handed over.
+        if (raw[i].name_offset > contents.size() ||
+            raw[i].name_length > contents.size() - raw[i].name_offset) {
+            LOGD("entry %zu points outside the file, dropping it", i);
+            continue;
+        }
         PluginListEntry entry;
-        entry.name = line.name;
-        // Without any marker in the file every listed plugin is active, which is
-        // how the retail launcher writes it.
-        entry.active = fileUsesMarkers ? line.marked : true;
+        entry.name.assign(contents, raw[i].name_offset, raw[i].name_length);
+        entry.active = raw[i].active != 0;
         entries.push_back(std::move(entry));
     }
     return entries;
 }
 
 std::string serializePluginList(const std::vector<PluginListEntry>& entries) {
-    std::string out;
-    for (const auto& entry : entries) {
-        if (entry.name.empty()) continue;
-        if (entry.active) out.push_back('*');
-        out += entry.name;
-        out.push_back('\n');
+    const PluginArrays arrays = collectPluginArrays(entries);
+    const char* const* names = arrays.names.empty() ? nullptr : arrays.names.data();
+    const int* flags = arrays.activeFlags.empty() ? nullptr : arrays.activeFlags.data();
+
+    size_t length = 0;
+    int status = plg_serialize_plugin_list(names, flags, arrays.names.size(), nullptr, 0, &length);
+    if (status != PLG_OK) {
+        LOGD("plg_serialize_plugin_list length query failed with %d, nothing is written", status);
+        return std::string();
     }
+    std::string out(length, '\0');
+    if (length == 0) return out;
+
+    status = plg_serialize_plugin_list(names, flags, arrays.names.size(), out.data(), out.size(),
+                                       &length);
+    if (status != PLG_OK) {
+        LOGD("plg_serialize_plugin_list failed with %d, nothing is written", status);
+        return std::string();
+    }
+    // The result is raw file text, not a C string: only the reported length counts.
+    out.resize(length);
     return out;
 }
 
 std::vector<std::string> activePluginNames(const std::vector<PluginListEntry>& entries) {
-    std::vector<std::string> names;
-    names.reserve(entries.size());
-    for (const auto& entry : entries) {
-        if (entry.active && !entry.name.empty()) names.push_back(entry.name);
+    const PluginArrays arrays = collectPluginArrays(entries);
+    const char* const* names = arrays.names.empty() ? nullptr : arrays.names.data();
+    const int* flags = arrays.activeFlags.empty() ? nullptr : arrays.activeFlags.data();
+
+    size_t count = 0;
+    int status = plg_active_plugin_indices(names, flags, arrays.names.size(), nullptr, 0, &count);
+    if (status != PLG_OK) {
+        LOGD("plg_active_plugin_indices length query failed with %d, no plugin is listed", status);
+        return std::vector<std::string>();
     }
-    return names;
+
+    std::vector<std::string> activeNames;
+    if (count == 0) return activeNames;
+
+    std::vector<size_t> indices(count);
+    status = plg_active_plugin_indices(names, flags, arrays.names.size(), indices.data(),
+                                       indices.size(), &count);
+    if (status != PLG_OK) {
+        LOGD("plg_active_plugin_indices failed with %d, no plugin is listed", status);
+        return activeNames;
+    }
+
+    activeNames.reserve(count);
+    for (size_t i = 0; i < count; ++i) {
+        if (indices[i] >= entries.size()) {
+            LOGD("active index %zu is out of range, dropping it", indices[i]);
+            continue;
+        }
+        activeNames.push_back(entries[indices[i]].name);
+    }
+    return activeNames;
 }
 
 void sortPluginLoadOrder(std::vector<PluginListEntry>& entries) {
-    auto rank = [](const PluginListEntry& entry) {
-        const std::string lowered = toLower(entry.name);
-        if (lowered == kOblivionEsm) return 0;
-        if (isMasterFileName(entry.name)) return 1;
-        return 2;
-    };
+    const PluginArrays arrays = collectPluginArrays(entries);
+    const size_t count = arrays.names.size();
 
-    std::stable_sort(entries.begin(), entries.end(),
-                     [&rank](const PluginListEntry& lhs, const PluginListEntry& rhs) {
-                         const int lhsRank = rank(lhs);
-                         const int rhsRank = rank(rhs);
-                         if (lhsRank != rhsRank) return lhsRank < rhsRank;
-                         return toLower(lhs.name) < toLower(rhs.name);
-                     });
+    std::vector<size_t> order(count);
+    size_t written = 0;
+    const int status =
+        plg_sort_plugin_load_order(arrays.names.data(), count, order.data(), order.size(), &written);
+    if (status != PLG_OK) {
+        LOGD("plg_sort_plugin_load_order failed with %d, the order is left alone", status);
+        return;
+    }
+
+    // The permutation is applied to a copy and only swapped in once every index
+    // checked out, so a rejected call cannot half-reorder the caller's vector.
+    std::vector<PluginListEntry> sorted;
+    sorted.reserve(written);
+    for (size_t i = 0; i < written; ++i) {
+        if (order[i] >= count) {
+            LOGD("load order index %zu is out of range, the order is left alone", order[i]);
+            return;
+        }
+        sorted.push_back(entries[order[i]]);
+    }
+    entries.swap(sorted);
 }
 
 }  // namespace oblivion

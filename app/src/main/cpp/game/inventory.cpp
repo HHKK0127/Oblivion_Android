@@ -33,21 +33,19 @@ bool Inventory::addItem(const Item& item, uint32_t quantity) {
         return false;
     }
 
-    // Try to stack if item is stackable
-    if (item.stackSize > 1) {
-        int existingSlot = findSlotWithItem(item.itemId);
-        if (existingSlot >= 0) {
-            auto& slot = slots[existingSlot];
-            uint32_t space = item.stackSize - slot.quantity;
-            if (space > 0) {
-                uint32_t toAdd = std::min(quantity, space);
-                slot.quantity += toAdd;
-                totalWeight += item.weight * toAdd;
-                LOGD("Added %d x %s to slot %d (total: %d)",
-                     toAdd, item.name.c_str(), existingSlot, slot.quantity);
-                return true;
-            }
-        }
+    // One row per base item FormID. The ESM reader exposes no per-record
+    // stackability flag, so merging by FormID is the only rule the game data
+    // supports, and it keeps a FormID that used to be pushed twice (a container
+    // take, a barter payout) spendable as a single row.
+    int existingSlot = findSlotWithItem(item.itemId);
+    if (existingSlot >= 0) {
+        auto& slot = slots[existingSlot];
+        slot.quantity += quantity;
+        slot.item.stackSize = slot.quantity;
+        totalWeight += item.weight * quantity;
+        LOGD("Added %d x %s to slot %d (total: %d)",
+             quantity, item.name.c_str(), existingSlot, slot.quantity);
+        return true;
     }
 
     // Find empty slot
@@ -86,6 +84,10 @@ bool Inventory::removeItem(uint32_t itemId, uint32_t quantity) {
 
     if (slot.quantity == 0) {
         slot.item = Item();  // Clear slot
+    } else {
+        // Keep the row metadata in step with the held count, the same invariant
+        // addItem maintains.
+        slot.item.stackSize = slot.quantity;
     }
 
     LOGD("Removed %d x item %u from slot %d", quantity, itemId, slotIdx);

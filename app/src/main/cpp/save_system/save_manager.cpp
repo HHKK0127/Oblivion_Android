@@ -344,6 +344,69 @@ bool SaveManager::saveGame(uint32_t slotIndex, const std::string& slotName) {
             LOGD("Serialized %zu containers", validCount);
         }
 
+        // Serialize merchants (v5+): purses and stock keyed by NPC FormID
+        writer.writeUint32(0x4D455243);  // "MERC" marker
+        {
+            // Same contract as CNTR: the body is always written so the byte
+            // layout matches loadGame(), which reads it for v5 files only.
+            static const std::unordered_map<uint32_t, std::shared_ptr<Merchant>>
+                emptyMerchants;
+            const auto& merchants = merchantRegistry_ ? *merchantRegistry_
+                                                      : emptyMerchants;
+
+            // Merchants are materialised lazily from the NPC record, and those
+            // read by the last load but never traded with this session only
+            // exist in pendingMerchants_. Carry both forward so a save/load
+            // round trip does not reset a purse or restock a shop.
+            std::unordered_set<uint32_t> written;
+            size_t validCount = 0;
+            for (const auto& kv : merchants) {
+                if (kv.second) ++validCount;
+            }
+            for (const auto& kv : pendingMerchants_) {
+                auto it = merchants.find(kv.first);
+                if (it == merchants.end() || !it->second) ++validCount;
+            }
+
+            // Rows with no stock left are dropped: removeItem() erases them, so
+            // the saved shape must match the live one.
+            const auto writeStock = [&writer](const std::vector<MerchantItem>& items) {
+                size_t count = 0;
+                for (const auto& item : items) {
+                    if (item.quantity > 0) ++count;
+                }
+                writer.writeUint32(static_cast<uint32_t>(count));
+                for (const auto& item : items) {
+                    if (item.quantity <= 0) continue;
+                    writer.writeString(item.itemId);
+                    writer.writeString(item.itemName);
+                    writer.writeFloat(item.buyPrice);
+                    writer.writeFloat(item.sellPrice);
+                    writer.writeInt32(item.quantity);
+                    writer.writeUint8(static_cast<uint8_t>(item.category));
+                    writer.writeString(item.description);
+                    writer.writeFloat(item.weight);
+                    writer.writeInt32(item.baseValue);
+                }
+            };
+
+            writer.writeUint32(static_cast<uint32_t>(validCount));
+            for (const auto& kv : merchants) {
+                if (!kv.second) continue;
+                written.insert(kv.first);
+                writer.writeUint32(kv.first);
+                writer.writeFloat(kv.second->getGold());
+                writeStock(kv.second->getInventory());
+            }
+            for (const auto& kv : pendingMerchants_) {
+                if (written.count(kv.first)) continue;
+                writer.writeUint32(kv.first);
+                writer.writeFloat(kv.second.shopGold);
+                writeStock(kv.second.items);
+            }
+            LOGD("Serialized %zu merchants", validCount);
+        }
+
         // Write to file
         std::string name = slotName.empty() ? ("Slot " + std::to_string(slotIndex)) : slotName;
         bool success = writeToFile(slotIndex, name, writer.getBuffer());
@@ -372,6 +435,8 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
         // Drop container contents buffered by a previous load so a stale entry
         // cannot be applied to a container in this session.
         pendingContainers_.clear();
+        // Same for merchant purses and stock.
+        pendingMerchants_.clear();
 
         // Quick-slot spell IDs and the old->new spell ID remap are captured while
         // the PLYR/SPLL sections are read and applied once every spell exists.
@@ -753,6 +818,56 @@ bool SaveManager::loadGame(uint32_t slotIndex) {
                  pendingContainers_.size());
         }
 
+        // Deserialize merchants (v5+ only; older saves end after CNTR)
+        if (loadedFormatVersion_ >= 5) {
+            uint32_t mercMarker = reader.readUint32();
+            if (mercMarker != 0x4D455243) {
+                LOGE("Save file corrupted: expected MERC marker, got 0x%08X at pos %zu", mercMarker, reader.getPosition() - 4);
+                return false;
+            }
+            uint32_t merchantCount = reader.readUint32();
+            for (uint32_t i = 0; i < merchantCount; ++i) {
+                uint32_t npcFormID = reader.readUint32();
+                float shopGold = reader.readFloat();
+                uint32_t itemCount = reader.readUint32();
+
+                // Merchants are materialised the first time the player opens
+                // their shop, so the registry is usually empty here. Buffer the
+                // purse and stock and let applyPendingMerchantState() deliver
+                // them when the merchant is finally created.
+                PendingMerchantState state;
+                state.shopGold = shopGold;
+                state.items.reserve(itemCount);
+
+                for (uint32_t j = 0; j < itemCount; ++j) {
+                    MerchantItem item("", "", 0.0f, 0.0f, 0, ItemType::MISC);
+                    item.itemId = reader.readString();
+                    item.itemName = reader.readString();
+                    item.buyPrice = reader.readFloat();
+                    item.sellPrice = reader.readFloat();
+                    item.quantity = reader.readInt32();
+                    item.category = static_cast<ItemType>(reader.readUint8());
+                    item.description = reader.readString();
+                    item.weight = reader.readFloat();
+                    item.baseValue = reader.readInt32();
+                    if (item.quantity > 0) state.items.push_back(std::move(item));
+                }
+
+                pendingMerchants_[npcFormID] = std::move(state);
+
+                // A merchant may already exist (e.g. an explicit re-load after
+                // the player traded this session); apply immediately then.
+                if (merchantRegistry_) {
+                    auto existing = merchantRegistry_->find(npcFormID);
+                    if (existing != merchantRegistry_->end() && existing->second) {
+                        applyPendingMerchantState(existing->second);
+                    }
+                }
+            }
+            LOGD("Loaded %u merchants (%zu buffered)", merchantCount,
+                 pendingMerchants_.size());
+        }
+
         LOGI("Game loaded from slot %u", slotIndex);
         return true;
     } catch (const std::exception& e) {
@@ -777,6 +892,28 @@ bool SaveManager::applyPendingContainerState(const std::shared_ptr<Container>& c
          container->getFormID(), container->getItemCount());
 
     pendingContainers_.erase(it);
+    return true;
+}
+
+bool SaveManager::applyPendingMerchantState(const std::shared_ptr<Merchant>& merchant) {
+    if (!merchant) return false;
+
+    auto it = pendingMerchants_.find(merchant->getNpcId());
+    if (it == pendingMerchants_.end()) return false;
+
+    merchant->setGold(it->second.shopGold);
+    // The merchant starts from plugin stock, so replace rather than merge:
+    // otherwise sold rows would come back and the stock would inflate on
+    // every load.
+    merchant->clearStock();
+    for (const auto& item : it->second.items) {
+        merchant->addItem(item);
+    }
+
+    LOGD("Applied saved purse and stock to merchant 0x%08X (%zu items)",
+         merchant->getNpcId(), merchant->getInventory().size());
+
+    pendingMerchants_.erase(it);
     return true;
 }
 

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-24T20:15:40Z",
+  "lastUpdated": "2026-10-25T10:51:39Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -9442,7 +9442,8 @@
         "2026-10-24"
       ],
       "content": "W軸訂正 W1 (2026-10-24, 台帳↔Supermemory 突合 第六軸): 台帳 3c4ce418 (2026-09-21, tags:confirmed) の「ALL 62 Conjuration MGEFs are FormID links」は誤り。実測 tmp/re/v35_mgef_code_table.csv: school==1 は62件、actor_value>100 のFormIDリンクは60件、リンクなしは REAN(Reanimate, av=0) と TURN(Turn Undead, av=0) の2件のみ (>200閾値でも60、非Conjurationのav最大=70 で>100閾値は妥当)。3c4ce418 は自ら「av=0=special/generic」と定義しながら ALL 62 と主張し内部矛盾。Supermemory 側の 60/62 (pbjwoNwhNwzJKXqaNtmom6 / 3U6BcS5wrbguYEiQD2Pqfh / tdj1JydcyhsyyPBDgN1LnH / 68992b10fd2627b0360e1d) が正。旧3c4ce418の confirmed タグは本項について無効。検証: check_w1_mgef.py + W軸監査第六軸W1 (opencode 2026-10-24)。"
-    },    {
+    },
+    {
       "id": "opencode-w2-free-0x401f20-correction-20261024",
       "timestamp": "2026-10-24T18:51:36Z",
       "priority": "high",
@@ -9459,7 +9460,8 @@
         "2026-10-24"
       ],
       "content": "W軸訂正 W2 (2026-10-24, 台帳↔Supermemory 突合 第六軸 + EXE裁定): 台帳 59ccb077 (2026-10-22) の「free(node)=0x401B20」は誤り (+0x400-low)。真値は 0x401F20、malloc対は 0x401F00。EXE disasm 直接裁定 (監査はD:\\ 未マウントで検証不能だったが当方はアクセス可): 0x401F20 = mov eax,[esp+4]; test eax,eax; je; push eax; mov ecx,0xB02020 (heap manager); call 0x401d40; ret の教科書的 free ラッパ、decompiled L1122 に FUN_00401f20 定義あり。0x401B20 = 関数ではなく別関数の末尾 (pop edi/ebx/esi; ret 8、FUNラベル・bare-hex参照とも0件)。台帳内矛盾も併存: 2d08d9a9 (2026-10-15) は既に 0x401f20 で正。構造的原因 = +0x400訂正キャンペーン (10-23完了, Supermemory/docs反映済) が正本台帳へ未回流。Supermemory 側訂正宣言 (6ba6b9b9100c3e11bec03e / ULkmRmJFDMQcxoXhT12pjN / MmBjwxY8ShQsasMdPKrCMX / EAYz5LgY43t62JThmv4v6M) が正。検証: check_w2_free.py (W軸監査第六軸W2, opencode 2026-10-24)。"
-    },    {
+    },
+    {
       "id": "opencode-w3-phase65-label-correction-20261024",
       "timestamp": "2026-10-24T18:51:36Z",
       "priority": "medium",
@@ -9490,14 +9492,30 @@
         "2026-10-24"
       ],
       "content": "【実行禁止ガード (2026-10-24, W軸修正適用時 discovered)】tools/sync_memory_to_supermemory.py は 冪等キー metadata.entryId が Supermemory 側で失効しているため現状実行禁止。全スキャン実測 (diag_fullscan.py): SM 空間 namespace=opencode_project_470935b226aa5f24 は totalItems=672、うち entryId を持つは21件のみで全て copilot-* 直接push分、**台帳由来 entryId=0件（台帳668件すべて \"missing\"）**。dry-run は already=0 / to push=668 を返し、そのまま実行すると668件が重複pushされる。原因候補: (a) SM 推論処理での metadata 欺落 (memoryEntries の81/100 が entryId 欠落、isInference フィールド存在) (b) 10-22バックアップ分の forget/置換 (992→672)。W軸訂正3件 (W1 mgef 60/62 / W2 free=0x401F20 / W3 phase65ラベル) 適用時は本ガードにより同期を保留し、SM 側反映は MCP supermemory add で直接実施した (E2hRTTcHhczd2gs6tEmfaP)。復旧要件: ①entryId 欠落メモリの同定または再push方針決定 ②sync スクリプトに known==0 ∧ ledger>100 の abort ガード追加 (→ TODO V84)。検証: diag_sync_list.py / diag_entryid_match.py / diag_fullscan.py (2026-10-24, opencode)。"
+    },
+    {
+      "id": "opencode-report-corrections-v98-v108-20261025",
+      "timestamp": "2026-10-25T10:51:39Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "correction",
+        "re",
+        "report",
+        "oblivion",
+        "v98-v108",
+        "round-verify",
+        "2026-10-25"
+      ],
+      "content": "RE_EXE_REPORT.md への訂正反映 (2026-10-25, opencode, ユーザー承認後)。セッションB残件11件 V98〜V108 全完走 (TODO_re49.md 292行 / V-rows 41 / done 40 / open=V31 のみ / round_verify ALL OK / .bak24〜.bak27) に伴い、正本9箇所を .bak15 バックアップ付きで修正 (12,303→12,319行, CRLF維持): (1) §67.3 中間域ラベル「条件・式系」→「コンソールコマンド帯 (0x100–0x183)」(V105: 条件系 +0x20≠0 の169件はすべて0x1000帯、コンソール帯0件)。(2) §70.4 の同表現 (行11425) も併記訂正。(3) §23.4 「TypeDescriptor は .rdata 内」→「.data 内」(V103: RTTI全走査で TypeDescriptor 1,547件はすべて .data、.rdata は0件、COL のみ .rdata。0x00b13240 も .data VA 0xB02000–0xB32C00 帯)。(4) §70.4 +0x0C desc 非空「132件・空399件」→「142件・空389件」(V105 + 本セッション独立再計測: nonempty=142 / shared 0xA2F7EC=389 / zero=1 / 計532。旧値は10件を空と誤分類)。(5) §69.3 を [未確定](WIP)→[確定] に更新、所有クラスを TESObjectREFR 誤り→CombatController 正 (vtable 0xA70A14/60slot/0x1C0, +0x40 は8Bコンテナ ptr, 生成 FUN_0x61BB60 / 解放 FUN_0x61C130, vt+0x330/0x334 は206slot超9クラスのみ・実装 0x5E6190 等)。(6) 同 §69.3 の呼出パターン根拠 @0x50C41A は文字列出力と訂正 (正 = 0x50C81C→0x50C830, FUN_0050C790 内で TESObjectREFR→Actor dynamic_cast)。(7) §69.4 「未収録7件」→ 未収録は FUN_0050c390 / FUN_005e61b0 の2件のみ (残5件は収録済: FUN_006135f0=L379749 refs212 / 00613640=L379782 / 006210d0=L388963 / 006162d0=L381902 / 00616190=L381844)。(8) §69.5 残課題11件に「全11件解決」注記と成果物対応表 (b08/b03/b04/b05/b06/b07/b01/b09/b10/b11/b12) を追加。本セッションでの重大訂正4件: ①PUSH は 0x446CB0=347 が正・0x4468B0=0件 (b04、台帳の typo 判定は誤りだった点も訂正) ②0x504050=add[esi+0x59],ebx は非整列バイト誤読で +0x59 カウンタは存在しない (b01) ③セッションB要約の 0x4FB110/0x4FB1F0 は +0x400 未訂正 → 正 0x4FB510/0x4FB5F0 (10-23 の+0x400訂正キャンペーンが10-19要約に未反映) ④同要約のイベントマスク表は全件誤り (正は §59.3 の14件+本調査8件)。成果物は tmp/re/ に11本 (計 664,068B)、ハンドオーバ資料 tmp/re/handover_20261025/ (40ファイル)。Supermemory: Pi1omL1a6bMjCdgrEjjtka (V90-97), cU4jTJgnTRJi2Zuc1vdaBD (V98-108)。制約継続: tools/sync_memory_to_supermemory.py 実行禁止 (guard有効)、pilot再push=保留、台帳 append-only。検証: round_verify.py → ALL OK / probe_harness selftest 4/4 PASS (各サブエージェント)。"
     }
   ],
   "metadata": {
-    "totalEntries": 669,
+    "totalEntries": 670,
     "compressedCount": 121,
     "sessionCount": 40,
-    "lastUpdated": "2026-10-24T20:15:40Z",
-    "entry_count": 669,
-    "last_updated": "2026-10-24"
+    "lastUpdated": "2026-10-25T10:51:39Z",
+    "entry_count": 670,
+    "last_updated": "2026-10-25"
   }
 }

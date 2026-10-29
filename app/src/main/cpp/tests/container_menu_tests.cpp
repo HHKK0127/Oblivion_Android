@@ -1,8 +1,10 @@
 #include "container_menu_tests.h"
 #include "../ui/ui_container_menu.h"
 #include "../game/container.h"
-#include "../game/player.h"
+#include "../game/inventory.h"
 #include "../game/item.h"
+// Container is built from a WorldObject, which container.h only forward declares.
+#include "../world/world_data.h"
 
 #include <cmath>
 #include <memory>
@@ -13,6 +15,16 @@ constexpr float kEps = 1e-4f;
 
 bool near(float a, float b) {
     return std::fabs(a - b) < kEps;
+}
+
+// Number of occupied rows, i.e. what the old std::vector<InventoryItem> size()
+// used to report before the pack became a fixed 60 row grid.
+size_t occupiedRows(const Inventory& pack) {
+    size_t n = 0;
+    for (const InventorySlot& slot : pack.getAllSlots()) {
+        if (!slot.isEmpty()) ++n;
+    }
+    return n;
 }
 
 std::shared_ptr<Container> makeTestContainer() {
@@ -43,21 +55,13 @@ std::shared_ptr<Container> makeTestContainer() {
     return container;
 }
 
-Player* makeTestPlayer() {
-    auto player = new Player();
-    player->initialize(glm::vec3(0.0f));
+std::unique_ptr<Inventory> makeTestInventory() {
+    auto pack = std::make_unique<Inventory>();
 
-    InventorySlot armor;
-    armor.item = Item(10, "Iron Cuirass", ItemType::ARMOR, 25.0f, 200, 1);
-    armor.quantity = 1;
-    player->inventory.push_back(armor);
+    pack->addItem(Item(10, "Iron Cuirass", ItemType::ARMOR, 25.0f, 200, 1), 1);
+    pack->addItem(Item(11, "Gold Coin", ItemType::MISC, 0.01f, 1, 100), 50);
 
-    InventorySlot gold;
-    gold.item = Item(11, "Gold Coin", ItemType::MISC, 0.01f, 1, 100);
-    gold.quantity = 50;
-    player->inventory.push_back(gold);
-
-    return player;
+    return pack;
 }
 
 } // namespace
@@ -125,38 +129,43 @@ bool ContainerMenuTests::runAllTests() {
     {
         UIContainerMenu menu;
         record("starts invisible", !menu.isVisible());
-        record("starts with no player", menu.getPlayer() == nullptr);
+        record("starts with no player inventory", menu.getPlayerInventory() == nullptr);
         record("starts with no container", menu.getContainer() == nullptr);
+        record("starts with empty status message", menu.getStatusMessage().empty());
     }
 
     // --- 4. Take item from container to player ---
     {
         auto container = makeTestContainer();
-        std::unique_ptr<Player> player(makeTestPlayer());
+        auto pack = makeTestInventory();
 
         UIContainerMenu menu;
-        menu.open(container, player.get());
+        menu.open(container, pack.get());
 
         record("menu visible after open", menu.isVisible());
         record("container set after open", menu.getContainer() == container);
-        record("player set after open", menu.getPlayer() == player.get());
+        record("inventory set after open", menu.getPlayerInventory() == pack.get());
         record("container has 4 items", container->getItemCount() == 4);
-        record("player has 2 items", player->inventory.size() == 2);
+        record("player has 2 rows", occupiedRows(*pack) == 2);
 
         menu.takeItem(0);
 
         record("container has 3 items after take", container->getItemCount() == 3);
-        record("player has 3 items after take", player->inventory.size() == 3);
+        record("player has 3 rows after take", occupiedRows(*pack) == 3);
+        record("Iron Sword carried after take", pack->getItemQuantity(1) == 1);
+        record("no status message after a successful take", menu.getStatusMessage().empty());
 
-        // Verify the taken item is in player inventory
-        bool foundIronSword = false;
-        for (const auto& slot : player->inventory) {
-            if (slot.item.name == "Iron Sword") {
-                foundIronSword = true;
+        // Verify the taken item kept its real ItemType instead of being derived
+        // from the list category (WEAPON=0 vs category 1 mismatch made a taken
+        // weapon land in the pack as ARMOR).
+        bool swordIsWeapon = false;
+        for (const InventorySlot& slot : pack->getAllSlots()) {
+            if (slot.item.itemId == 1) {
+                swordIsWeapon = slot.item.type == ItemType::WEAPON;
                 break;
             }
         }
-        record("Iron Sword found in player inventory after take", foundIronSword);
+        record("Iron Sword kept ItemType::WEAPON in the pack", swordIsWeapon);
 
         menu.close();
         record("menu invisible after close", !menu.isVisible());
@@ -165,55 +174,48 @@ bool ContainerMenuTests::runAllTests() {
     // --- 5. Deposit item from player to container ---
     {
         auto container = makeTestContainer();
-        std::unique_ptr<Player> player(makeTestPlayer());
+        auto pack = makeTestInventory();
         float initialWeight = container->getTotalWeight();
 
         UIContainerMenu menu;
-        menu.open(container, player.get());
+        menu.open(container, pack.get());
 
         size_t initialContainerCount = container->getItemCount();
-        size_t initialPlayerCount = player->inventory.size();
+        size_t initialPlayerCount = occupiedRows(*pack);
 
-        menu.depositItem(1); // Gold Coin is at index 1 in playerItems
+        menu.depositItem(1); // Gold Coin is at row 1 in playerItems
 
         record("container count increased after deposit",
                container->getItemCount() == initialContainerCount + 1);
-        record("player count decreased after deposit",
-               player->inventory.size() == initialPlayerCount - 1);
+        record("player row count decreased after deposit",
+               occupiedRows(*pack) == initialPlayerCount - 1);
         record("container weight increased after deposit",
                container->getTotalWeight() > initialWeight);
-
-        bool goldFound = false;
-        for (const auto& slot : player->inventory) {
-            if (slot.item.name == "Gold Coin") {
-                goldFound = true;
-                break;
-            }
-        }
-        record("Gold Coin removed from player after deposit", !goldFound);
+        record("Gold Coin removed from the pack after deposit",
+               pack->getItemQuantity(11) == 0);
     }
 
     // --- 6. Take All ---
     {
         auto container = makeTestContainer();
-        std::unique_ptr<Player> player(makeTestPlayer());
+        auto pack = makeTestInventory();
 
         UIContainerMenu menu;
-        menu.open(container, player.get());
+        menu.open(container, pack.get());
 
         menu.takeAll();
 
         record("container empty after takeAll", container->getItemCount() == 0);
-        record("all items moved to player", player->inventory.size() == 6);
+        record("all items moved to the pack", occupiedRows(*pack) == 6);
     }
 
     // --- 7. Back button closes menu ---
     {
         auto container = makeTestContainer();
-        std::unique_ptr<Player> player(makeTestPlayer());
+        auto pack = makeTestInventory();
 
         UIContainerMenu menu;
-        menu.open(container, player.get());
+        menu.open(container, pack.get());
         record("menu open before back", menu.isVisible());
 
         bool handled = menu.handleBack();

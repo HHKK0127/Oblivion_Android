@@ -6,11 +6,11 @@
 #include <glm/glm.hpp>
 #include <GLES3/gl3.h>
 #include <unordered_map>
+#include "../game/item.h"
 
 class TextRenderer;
 class Container;
-
-struct Player;
+class Inventory;
 
 class UIContainerMenu {
 public:
@@ -20,7 +20,7 @@ public:
     bool initialize(TextRenderer* renderer);
     void cleanup();
 
-    void open(std::shared_ptr<Container> container, Player* player);
+    void open(std::shared_ptr<Container> container, Inventory* playerInventory);
     void close();
     bool isVisible() const { return visible_; }
 
@@ -42,8 +42,14 @@ public:
     static const char* categoryLabel(int category);
     static int categoryForTab(int tab);
 
-    Player* getPlayer() const { return player_; }
+    // The traded pack is the grid Inventory that owns the player items, so the
+    // take/deposit paths, the weight readout and the save file share one store.
+    Inventory* getPlayerInventory() const { return playerInventory_; }
     std::shared_ptr<Container> getContainer() const { return container_; }
+
+    // Why the last take/deposit was refused, empty when it succeeded or when no
+    // attempt has been made yet.
+    const std::string& getStatusMessage() const { return statusMessage_; }
 
 private:
     enum class Pane {
@@ -114,6 +120,9 @@ private:
     struct ItemEntry {
         uint32_t itemId;
         std::string name;
+        // Real ItemType, kept alongside the display category so a taken item
+        // re-enters the pack with the type it was read from the ESM with.
+        ItemType type;
         float weight;
         uint32_t value;
         uint32_t quantity;
@@ -145,6 +154,7 @@ private:
     void drawTabs();
     void drawButtons();
     void drawWeightDisplay();
+    void drawStatusLine();
     void drawSelectionFrame(float x, float y, float w, float h);
 
     GLuint loadTexture(const std::string& path);
@@ -162,7 +172,8 @@ private:
     float fadeAlpha_;
 
     std::shared_ptr<Container> container_;
-    Player* player_;
+    Inventory* playerInventory_;
+    std::string statusMessage_;
 
     std::vector<ItemEntry> containerItems_;
     std::vector<ItemEntry> playerItems_;

@@ -77,6 +77,7 @@
 #include "../ui/ui_dialogue.h"
 #include "../ui/ui_book_reader.h"
 #include "../ui/ui_container_menu.h"
+#include "../ui/ui_shop.h"
 #include "../ui/ui_sleep_wait_menu.h"
 #include "../ui/ui_level_up_menu.h"
 #include "../ui/ui_quick_keys_menu.h"
@@ -209,6 +210,11 @@ private:
     std::unique_ptr<UIDialogue> dialogueUI;
     std::unique_ptr<UIBookReader> bookReaderUI;
     std::unique_ptr<UIContainerMenu> containerMenuUI;
+    std::unique_ptr<UIShop> shopUI;
+    // Phase 68: a merchant is rebuilt from its NPC_ CNTO list on demand, so the
+    // purse and the shelf would reset every time the shop is reopened unless the
+    // built instance is kept. One entry per merchant NPC_ base FormID.
+    std::unordered_map<uint32_t, std::shared_ptr<Merchant>> merchantCache;
     std::unique_ptr<UISleepWaitMenu> sleepWaitMenuUI;
     std::unique_ptr<UILevelUpMenu> levelUpMenuUI;
     std::unique_ptr<UIQuickKeysMenu> quickKeysMenuUI;
@@ -649,6 +655,13 @@ private:
     // CONT record on first use), registers it with WorldManager so the save
     // system persists its contents, and opens the container menu.
     bool activateNearestContainer(float maxDistance, std::string& message);
+
+    // Phase 68: the merchant counterpart of activateNearestContainer. Places a
+    // live merchant NPC in the world rather than a REFR, so it picks the nearest
+    // NPC whose base record carries a CNTO Gold stock, builds (or reuses) its
+    // merchant view and opens the trade screen. Returns false when no merchant
+    // shopkeeper is within reach.
+    bool activateNearestMerchant(float maxDistance, std::string& message);
 
         // Phase 65: exterior static-object world (REFR -> MODL -> NIF)
         void renderStaticObjects();

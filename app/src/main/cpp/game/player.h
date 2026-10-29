@@ -56,9 +56,9 @@ struct Player {
     // game/fatigue_system.h (RE §50.2), not by fixed constants here.
     bool canSprint = true;               // Can only sprint if stamina > 0
 
-    // Inventory
-    uint32_t inventorySlots = 60;  // Oblivion standard
-    std::vector<InventoryItem> inventory;
+    // Inventory lives in the global Inventory owned by InventoryManager; see
+    // game/inventory.h. Player no longer keeps a second copy, so every screen
+    // that shows or spends carried items reads the same store.
 
     // Skills & Attributes (Oblivion-style)
     uint32_t playerLevel = 1;

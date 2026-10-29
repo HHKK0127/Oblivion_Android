@@ -30,7 +30,10 @@ AudioManager::AudioManager()
       currentBGMSourceId(0), currentBGMClipId(0),
       bgmVolume(1.0f), bgmFadeTarget(1.0f), bgmFadeRate(0.0f),
       bgmFading(false),
-      masterVolume(1.0f), seVolume(1.0f), voiceVolume(1.0f), footVolume(0.3f) {
+      masterVolume(1.0f), seVolume(0.8f), voiceVolume(0.8f), footVolume(0.8f) {
+    // Placeholders until SettingsManager hands over the saved sliders; they are
+    // the shipped [Audio] values (fDefaultMasterVolume 1.0, fDefaultEffectsVolume
+    // 0.8, fDefaultVoiceVolume 0.8, fDefaultFootVolume 0.8).
     LOGD("AudioManager constructed");
 }
 

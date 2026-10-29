@@ -16,6 +16,118 @@ The current version is **0.9.10 (versionCode 910)**.
 ## [Unreleased]
 
 ### Added
+- **The BSA archive reader now runs in Rust, and the port fixed two hashing bugs in the original.**
+  `assets/bsa_reader.cpp` is a thin shim over `bsa_ffi.h` (`bsa_*`, 19 functions backed by a state
+  handle) and `assets/bsa_reader.h` keeps its public API unchanged, including the deleted copy
+  constructor, so no caller changed. `bsa-core` parses the folder / file record tables, builds both
+  hashes, resolves paths and inflates compressed entries with `flate2` (`miniz_oxide`), which drops
+  the `<zlib.h>` dependency from this file - `z` is still linked because `assets/esm_reader.cpp`
+  uses it. Two bugs the oracle found in the original: `buildHash` lowercased the first four bytes
+  with a blanket `| 0x20` instead of the A-Z-only rule the 32-bit hash used in the same file, so
+  `_`, `[`, `\`, `]` and `^` were corrupted and `findFile()` failed for those names, and
+  `computeFileHash` split the extension only when a separator preceded the dot, so a bare
+  `helm.nif` never got a separate name and extension. Fixing both raises the number of paths
+  `findFile()` resolves from 9/65 to 61/65 on ThievesDen, 98/115 to 105/115 on Oblivion - Misc,
+  39/388 to 305/388 on BattlehornCastle and 2,337/3,017 to 2,628/3,017 on ShiveringIsles - Meshes.
+  Verified with 38 crate tests, a C11 harness against four real archives, and a differential oracle
+  that dumps every public API call from both implementations:
+  across the four archives (10,981 lines) the only differences are `findFile` results, and every one
+  of them is the fix above or a genuine BSA hash collision that both implementations resolve to the
+  same wrong entry. `assets/bsa_reader.cpp` compiles clean under `-Wall -Wextra` for `arm64-v8a`,
+  `armeabi-v7a` and `x86_64`, and `libnative-lib.so` links with all 19 `bsa_*` symbols on
+  `arm64-v8a`, `armeabi-v7a` and `x86_64`. See `plan.md#rust-migration-of-pure-logic-layers-2026-10-26`.
+- **The FormID index, the plugin list, the Data-folder path resolver and the NIF geometry merge now
+  run in Rust on all three ABIs.** They are pure functions of their arguments, so each C++ file
+  became a thin shim over a small C ABI (`plugin_ffi.h`, `assets_ffi.h`) while its header and every
+  caller stayed unchanged: `assets/formid_index.cpp` and `assets/plugin_list.cpp` forward to
+  `plugin-parser`, and `assets/asset_path_resolver.cpp` and `assets/mesh_builder.cpp` forward to
+  `assets-core` in the `oblivion-re-tools` workspace. Nothing that owns a GL object, a Jolt body, an
+  Android framework handle or a file descriptor moved, and `assets/esm_reader.cpp` is still the
+  device implementation because it mixes the parse with `std::ifstream`, zlib and the C++ record
+  types. `CMakeLists.txt` builds both crates with `cargo ndk` in one custom command per ABI and
+  imports the archives as `IMPORTED STATIC` targets, with `OBLIVION_RUST_DIR` / `OBLIVION_RUST_OFFLINE`
+  cache variables and the matching `-Poblivion.rust.dir` / `-Poblivion.rust.offline` Gradle
+  properties for a checkout that is not a sibling. Verified by a host oracle that runs the original
+  C++ and the Rust side over the same inputs: 89 assertions across four suites (FormID index 15,
+  plugin list 23, asset path 24, mesh builder 27) plus 28 crate tests and a C11 harness for the ABI
+  contracts, and `cargo ndk` builds `arm64-v8a`, `armeabi-v7a` and `x86_64`. A capacity-unit bug fell
+  out of the port - `afl_merge_geometry` compared the caller's vertex *capacity* against the vertex
+  count while the header documents a *float* count, so a caller sizing the buffer in vertices passed
+  validation and was then overrun by an 11x write; the check now multiplies by the stride and the
+  harness asserts the vertex-count spelling is rejected without writing. See
+  `plan.md#rust-migration-of-pure-logic-layers-2026-10-26`.
+- **A shop's purse and stock survive a save and reload (save format v5).** `SaveManager`
+  serialises every merchant it has materialised - keyed by NPC FormID, with the purse and each row's
+  `itemId`, name, buy / sell price, quantity, category, description, weight and base value - behind
+  a `MERC` marker, and restores them by clearing the ESM-derived starting stock
+  (`Merchant::clearStock()`) before applying the saved rows, so a shop the player emptied stays
+  empty and a purse they drained stays drained. Merchants read from the plugin but never traded with
+  are carried forward too, because they only live in the pending table until the trade screen is
+  opened for them. Rows with no stock left are not written, matching `removeItem()`, which erases
+  them; quantity `0` therefore never revives as a sellable row. Files written before v5 still load -
+  the block is read only when the header says v5 or later - and a v5 file with its header rewritten
+  to 4 is still readable.
+- **`tests/merchant_persistence_tests.cpp` covers the save path with 39 checks.** A v5 round trip,
+  the version gate that keeps a v4 file from reading the new block, an emptied shop staying empty
+  after reload, the carry-forward of a merchant that was never traded with, the purse and the stock
+  of each trade surviving the reload, and the guard that `applyPendingMerchantState()` is consumed
+  once rather than re-applied.
+- **The trade screen can be opened from the console for on-device checks.** `merchants` lists the
+  spawned NPCs `Renderer` recognises as merchants together with their distance, and `useshop` opens
+  the trade screen for the nearest one from any distance, so the UI can be reached without first
+  walking to a shop. Both mirror their result to logcat, `Back` dismisses the console while the
+  trade screen underneath stays open, and `Merchants` / `Use Shop` were added to the debug menu's
+  World tab for touch-only devices.
+- **Merchants trade out of the original's own `NPC_` record instead of a hand-written shop.**
+  `game::buildMerchantFromNpc()` rebuilds a shop from the `CNTO` list the plugin ships, so the stock,
+  each row's quantity and the purse are the values Oblivion itself uses, and `game::item_catalog`
+  resolves every `CNTO` FormID to a name, weight, value and type. The vanilla merchant flag is not
+  reverse engineered yet, so a merchant is recognised by carrying Gold in `CNTO`
+  (`game::npcIsMerchant()`), and that Gold entry becomes the purse rather than a sellable row.
+- **`game::buyFromMerchant()` / `game::sellToMerchant()` (`game/barter.{h,cpp}`) are the only place
+  that moves goods and coin.** Buying adds the cost to the shop's purse and selling subtracts the
+  earnings, matching the original's direction, and both are validated first (quantity, gold on hand,
+  the player actually owning what is sold, room in the inventory) so a rejected trade leaves both
+  inventories untouched.
+- **`UIShop` (`ui/ui_shop.{h,cpp}`) is the trade screen, and `Renderer` now owns it.** A Merchant tab
+  and an Inventory tab, row selection, a quantity stepper clamped to what the player holds, and the
+  gold totals of both sides. The virtual controller's X button opens it when the nearest actor
+  within 3.5 m is a merchant - after doors and containers, before pick-up - Back closes it, and one
+  `Merchant` is cached per `FormID` so a session's trades stay consistent across openings. Shop
+  state is saved with the game (see the save format v5 entry above); a shop that was never traded
+  with starts from the plugin's own values.
+- **`tests/merchant_tests.cpp` covers the new layer with 122 checks.** Pricing in both directions,
+  insufficient funds, a full inventory, selling onto a row the shop already stocks, and the purse
+  direction of each trade. The suite runs in the native host runner. The later checks are
+  regressions for the purse, price and refusal-reporting defects listed under Fixed: a purse held in
+  several Gold slots, the quote the screen shows against the coin the trade actually moves, the
+  guard band around `game::tradeGold()`, and every refusal carrying a reason. The suite also pins the
+  `CNAM` class decoding against a synthetic plugin - a `CLAS` record emitted after the actors that
+  reference it, an editor-id-only class, a `CNAM` that is not 4 bytes, a reference with no class
+  record at all, and the cross-plugin link that resolves a class the plugin itself does not ship.
+- **The option stack now reads the game's own `Oblivion.ini`, in the original's precedence
+  (RE `§12`, `§60.4`).** `oblivion::OblivionIni` (`system/oblivion_ini.{h,cpp}`) parses the
+  retail format - `[Section]` headers, `key=value`, `;` and `#` comments, CRLF / LF / CR line
+  endings, keys that appear before any section, and an optional UTF-8 BOM - and reports which
+  layer answered every lookup: `ValueSource::kFile` when the value came from the file and
+  `kDefault` when it fell back. The fallback table is not a hand-copied literal:
+  `system/oblivion_ini_defaults.{h,cpp}` is generated from the executable's own `Oblivion.ini`
+  registry (`0x00B07BF0`, 572 nodes) merged with the shipped `Oblivion_default.ini` (490 entries
+  over 35 sections) - 657 entries in all, with the shipped file winning wherever the two
+  disagree, because that file is what the engine copies into a real installation.
+  - `SettingsManager` merges three layers in the original's order: keys the player changed in a
+    menu (`settings.txt`) win, then `Oblivion.ini`, then the defaults. `saveSettings()` now writes
+    only the keys the player actually touched, because writing every key on the first change would
+    make `settings.txt` shadow the ini forever and the file would stop being read.
+  - Values taken from `Oblivion.ini` are deliberately not marked as player-owned, so editing the
+    ini keeps taking effect on the next start until that key is overridden in a menu.
+  - The ini is looked up as `<dataPath>/Oblivion.ini`, beside `plugins.txt`. `§60.4` shows the
+    original reading `.\Oblivion.ini` and switching to `My Games\Oblivion\` when
+    `[General] bUseMyGamesDirectory` is `1`; an Android install has neither, so the data directory
+    stands in for both.
+  - `tests/settings_manager_tests.cpp` pins the precedence down with 68 checks over 11 scenarios,
+    including "a key overridden in a menu is written alone and the ini still answers for
+    everything else" and "an out-of-range ini value is rejected".
 - **Committing a resolution in the `VideoDisplayMenu` list panel now applies it the way the
   original does (RE `§36.5`).** The panel used to treat "the cursor moved" and "the user chose
   this mode" as the same thing, so backing out with the cursor somewhere else silently changed
@@ -153,8 +265,8 @@ The current version is **0.9.10 (versionCode 910)**.
     so `playVoice` can route through the voice channel, and `AudioSource` gained
     `channelVolume` (the owning channel's slider) beside `baseVolume` (the raw per-instance
     volume) so a master change can rescale without losing either.
-  - **The AudioMenu defaults were wrong and are now the game's INI values**: master `0.8`,
-    music `0.8`, effect `0.8`, voice `0.0`, footstep `0.3` (`fDefaultMasterVolume`,
+  - **The AudioMenu defaults were wrong and are now the game's INI values**: master `1.0`,
+    music `0.3`, effects `0.8`, voice `0.8`, foot `0.8` (`fDefaultMasterVolume`,
     `fDefaultMusicVolume`, `fDefaultEffectsVolume`, `fDefaultVoiceVolume`, `fDefaultFootVolume`).
 - **Physics and AI now stop while a menu is open.** `ImperialWeave` gained
   `setMenuOpen()`/`isMenuOpen()` and its AI, physics-sync and Jolt phases return early when it is
@@ -306,6 +418,78 @@ The current version is **0.9.10 (versionCode 910)**.
   the first.
 
 ### Fixed
+- **An NPC's class name was read from the wrong shape, so the class line of every actor was garbage.**
+  `NPC_`'s `CNAM` is a 4-byte `CLAS` FormID - the project's own `character/face_gen_data.h` records
+  `TAG_CNAM` as "class" - but `decodeNPC()` handed it to `getString()`, which returned the raw
+  FormID bytes as a NUL-terminated string. `NPCData` now carries `classFormID` beside the display
+  name, `ESMFile::resolveClassReferences()` maps it to the class record's `FULL` name (falling back
+  to `EDID`), and `ESMManager::rebuildIndices()` links the reference across plugins in a second pass,
+  the same way spells and AI packages are already linked. A `CNAM` whose size is not 4 keeps the old
+  string reading, so nothing that treated the field as text regresses, and `NpcManager` still falls
+  back to the NPC's `EDID` when no class record is present.
+  - RE note: whether an actor is a merchant is still unproven. The retail `CLAS` service bitmask and
+    `ACBS` layout are unresolved (`docs/RE_ANALYSIS_ROADMAP.md`), so `game::npcIsMerchant()` keeps
+    using "carries Gold in `CNTO`" as a stand-in and the class name is currently display-only.
+- **A shop's purse and stock were thrown away on every load, so a reloaded game restocked a shop the
+  player had emptied and refilled a purse they had drained.** `SaveManager` now writes the merchant
+  table behind a `MERC` marker in save format v5 and restores it on load - see the v5 entry under
+  Added. The starting stock derived from the plugin is cleared with `Merchant::clearStock()` before
+  the saved rows are applied, so the two cannot merge into a double-stocked shop.
+- **The carry limit was written twice at two different values, so the inventory grid and the rest of
+  the game disagreed about when the player was overloaded.** `game::Inventory::MAX_WEIGHT` capped at
+  100 kg while `inventory::InventoryGrid`, the grid the inventory UI actually enforces, capped at
+  150 kg - so a weight the HUD accepted could be refused elsewhere. `150.0f` now lives once in
+  `game/encumbrance.h` as `game::MAX_CARRY_WEIGHT_KG`, and `game::Inventory`,
+  `inventory::InventoryGrid`, `inventory::InventoryCoordinator` and `Renderer`'s grid all read it.
+  150 kg is the value the live UI has always used, so no existing gameplay changes.
+  - RE note: the retail limit scales with Strength (`150 + 5 x Strength`,
+    `max-encumbrance-calc`). The Strength term is deliberately not modelled because adding it would
+    rebalance encumbrance beyond this fix.
+- **The player's items lived in two inventories, so the shop, a container and the inventory screen
+  could disagree about what the player held.** The trade layer read `Player::inventory` while the
+  container menu, the inventory panel and the barter primitives read the store owned by
+  `InventoryManager` (`InventoryManager::getPlayerInventory()`), and the carry limit was measured
+  against whichever copy happened to be asked - so a container withdrawal could add a row the other
+  side never saw, and an item a legacy save had spread over several rows was listed once per row with
+  per-row counts that did not add up to what the player really held. There is now exactly one player
+  inventory: `game::Inventory`, reached only through `InventoryManager::getPlayerInventory()`.
+  `Player` no longer keeps a second copy, `Renderer` hands that one `Inventory` to
+  `UIShop::openShop()`, `UIContainerMenu::open()` and the inventory screens, and
+  `game::buyFromMerchant()` / `game::sellToMerchant()` take it by reference. `Inventory::addItem()`
+  merges by FormID on insert, and the save reader adds every stored row through it, so a file whose
+  rows are already split reads back as one row per FormID; `Inventory::removeItem()` empties the row
+  it drains instead of shifting the rows after it. The listing, the quote and the trade therefore all
+  see the same total. The container path that used to create the split rows is covered by its own
+  entry below.
+- **A purse held in more than one Gold slot could not be paid from, and the goods could not be
+  removed from it.** `game::removePlayerItem()` only ever looked at the first slot whose FormID
+  matched, so once a container withdrawal had split the player's Gold into several stacks a purchase
+  beyond the first stack's size failed as if the player were poor - and the removal that follows a
+  successful payment left the total wrong. The function now reads and writes the single player
+  inventory through `game::Inventory::removeItem()` (`game::countPlayerItem()` counts the same
+  store), and because `Inventory::addItem()` merges by FormID on insert a FormID cannot occupy two
+  rows, so the amount quoted, the amount paid and the amount removed are always one number. Buying,
+  selling and every other caller of the two functions go through the corrected path.
+- **The trade screen quoted a different price from the one the trade charged, so a row it showed as
+  costing 0 gp did nothing when tapped.** `UIShop` rounded its displayed totals with its own
+  arithmetic while `game::buyFromMerchant()` billed through `barter.cpp`'s private rounding, so a
+  cheap row (or a rounding difference) could show a total the transaction panel would not honour.
+  The rounding now lives in one place, `game::tradeGold()` in `game/barter.{h,cpp}`, and both the
+  displayed total and the charge use it. With a single implementation the panel can no longer print
+  a total of 0: a row with no price now reads `(Not for sale)` in the list and `No price` in the
+  panel, and the purchase is refused with a reason instead of doing nothing.
+- **A refused trade returned silently, leaving the player to guess why nothing happened.** Every
+  rejection in `game::buyFromMerchant()` / `game::sellToMerchant()` now fills `BarterResult::reason`
+  with what went wrong - nothing selected, the merchant does not stock that, not enough stock, not
+  for sale, cannot afford it, the payment or the hand-over did not go through, Gold is the currency
+  and cannot be sold, not carrying that many, worth nothing, the merchant cannot afford it - and
+  `UIShop` prints it in red below the transaction panel. A successful trade clears the line, so the
+  message always belongs to the trade just attempted. The panel grew from 80 px to 90 px to hold it.
+- **Withdrawing Gold from a container left one inventory slot per withdrawal.** `ContainerMenu`'s
+  `takeItem()` pushed a new `InventoryItem` straight onto the player's list, so three separate
+  withdrawals of Gold left three stacks of it. It now goes through `game::addPlayerItem()`, which
+  merges into an existing matching slot; this removes the split-purse case at its source rather than
+  only coping with it at payment time.
 - **The virtual controller's A button was unreachable, its press animation ran backwards, its
   layout went stale after a rotation, and its input stuck when a menu opened mid-touch.** The right
   stick's hit circle was tested before the buttons and shadowed A entirely (the hit-test order is

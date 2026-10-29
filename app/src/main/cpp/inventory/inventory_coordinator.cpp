@@ -10,7 +10,7 @@
 namespace inventory {
 
 InventoryCoordinator::InventoryCoordinator()
-    : gridInventory(std::make_unique<InventoryGrid>(150.0f)),
+    : gridInventory(std::make_unique<InventoryGrid>(game::MAX_CARRY_WEIGHT_KG)),
       equipmentMgr(std::make_unique<EquipmentManager>()) {
     LOGD("InventoryCoordinator created");
 }

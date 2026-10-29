@@ -22,6 +22,10 @@
 #include "tests/formid_index_tests.h"
 #include "tests/lod_block_tests.h"
 #include "tests/enchanting_system_tests.h"
+#include "tests/oblivion_ini_tests.h"
+#include "tests/settings_manager_tests.h"
+#include "tests/merchant_tests.h"
+#include "tests/merchant_persistence_tests.h"
 
 // Print a suite summary and report whether it passed.
 static void runSuite(const char* name, bool ok, const std::string& summary, int& failed) {
@@ -131,6 +135,37 @@ int main() {
         EnchantingSystemTests t;
         const bool ok = t.runAllTests();
         runSuite("EnchantingSystemTests", ok, t.getSummary(), failed);
+    }
+    {
+        // Pure string parsing against the compiled-in Oblivion.ini defaults; no
+        // game assets or device state are needed.
+        OblivionIniTests t;
+        const bool ok = t.runAllTests();
+        runSuite("OblivionIniTests", ok, t.getSummary(), failed);
+    }
+    {
+        // Layering of settings.txt (owned keys) over Oblivion.ini over shipped
+        // defaults. Writes only into the gitignored tmp/ scratch tree, and removes
+        // it again when every check passes.
+        SettingsManagerTests t;
+        const bool ok = t.runAllTests();
+        runSuite("SettingsManagerTests", ok, t.getSummary(), failed);
+    }
+    {
+        // Merchant layer: item catalog, ESM CNTO stock, barter arithmetic and the
+        // player inventory helpers. Everything runs against a small synthetic ESM
+        // built in memory, so no Oblivion assets are needed.
+        MerchantTests t;
+        const bool ok = t.runAllTests();
+        runSuite("MerchantTests", ok, t.getSummary(), failed);
+    }
+    {
+        // MERC save section: a shopkeeper's purse and stock survive a save/load
+        // round trip instead of resetting to the plugin defaults. Uses two
+        // scratch slots (92/93) and no Oblivion assets.
+        MerchantPersistenceTests t;
+        const bool ok = t.runAllTests();
+        runSuite("MerchantPersistenceTests", ok, t.getSummary(), failed);
     }
     {
         // Real Oblivion assets are not redistributable; the suite skips itself when

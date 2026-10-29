@@ -1,5 +1,6 @@
 #pragma once
 
+#include "encumbrance.h"
 #include "item.h"
 #include <vector>
 #include <memory>
@@ -11,7 +12,7 @@ public:
     static constexpr uint32_t GRID_COLUMNS = 10;
     static constexpr uint32_t GRID_ROWS = 6;
     static constexpr uint32_t MAX_SLOTS = GRID_COLUMNS * GRID_ROWS;  // 60
-    static constexpr float MAX_WEIGHT = 100.0f;  // kg
+    static constexpr float MAX_WEIGHT = game::MAX_CARRY_WEIGHT_KG;  // kg
 
     Inventory();
     ~Inventory();

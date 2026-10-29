@@ -935,7 +935,17 @@ void ESMFile::decodeNPC(const ESMRecord& rec) {
     npc.fullName = rec.getString("FULL");
     npc.race = rec.getString("RNAM");  // Race name from string table
     npc.raceID = rec.getFormID("RNAM");
-    npc.className = rec.getString("CNAM");
+
+    // CNAM is the actor's class. The retail master file stores it as a 4-byte
+    // CLAS formID, so reading it as a string yields non-printable bytes; only
+    // fall back to the string form when the subrecord is not exactly one
+    // formID wide (hand-edited or third-party records).
+    auto* cnam = rec.findSubRecord("CNAM");
+    if (cnam && cnam->size() == 4) {
+        npc.classFormID = readU32(cnam->data.data());
+    } else {
+        npc.className = rec.getString("CNAM");
+    }
 
     auto* acbs = rec.findSubRecord("ACBS");
     if (acbs && acbs->size() >= 16) {
@@ -969,6 +979,19 @@ void ESMFile::decodeNPC(const ESMRecord& rec) {
             AIPackageData pkg;
             pkg.formID = readU32(sub.data.data() + off);
             if (pkg.formID != 0) npc.aiPackages.push_back(std::move(pkg));
+        }
+    }
+
+    // CNTO: one base item FormID (u32) plus a signed count (i32) per entry.
+    // The same layout is used by CONT records; the count may legitimately be
+    // negative when a record removes stock from a template.
+    for (const auto& sub : rec.subRecords) {
+        if (std::memcmp(sub.tag, "CNTO", 4) != 0 || sub.size() < 8) continue;
+        NPCData::NPCItem entry;
+        entry.itemFormID = readU32(sub.data.data());
+        std::memcpy(&entry.count, sub.data.data() + 4, 4);
+        if (entry.itemFormID != 0 && entry.count != 0) {
+            npc.items.push_back(entry);
         }
     }
 
@@ -3369,6 +3392,7 @@ bool ESMFile::parseFromMemory(const std::string& name, const uint8_t* data, size
     resolveWaterColorFallbacks();
     resolveMagicReferences();
     resolveAIPackageReferences();
+    resolveClassReferences();
 
     return true;
 }
@@ -3556,6 +3580,43 @@ size_t ESMFile::resolveAIPackageReferences(
     return resolved;
 }
 
+size_t ESMFile::resolveClassReferences(
+    const std::unordered_map<uint32_t, std::string>* external) {
+    std::unordered_map<uint32_t, const ClassData*> classByFormID;
+    classByFormID.reserve(m_classes.size() * 2);
+    for (const auto& clas : m_classes) {
+        if (clas.formID != 0) classByFormID.emplace(clas.formID, &clas);
+    }
+
+    size_t resolved = 0;
+    size_t unresolved = 0;
+    for (auto& npc : m_npcs) {
+        if (npc.classFormID == 0) continue;
+        const std::string* name = nullptr;
+        auto it = classByFormID.find(npc.classFormID);
+        if (it != classByFormID.end()) {
+            const ClassData& clas = *it->second;
+            name = clas.fullName.empty() ? &clas.editorID : &clas.fullName;
+        } else if (external) {
+            auto ext = external->find(npc.classFormID);
+            if (ext != external->end()) name = &ext->second;
+        }
+        if (!name || name->empty()) {
+            ++unresolved;
+            continue;
+        }
+        npc.className = *name;
+        ++resolved;
+    }
+
+    if (resolved > 0 || unresolved > 0) {
+        LOGI("Class references resolved for %s: %zu links (%zu unresolved), "
+             "%zu classes available",
+             m_fileName.c_str(), resolved, unresolved, m_classes.size());
+    }
+    return resolved;
+}
+
     void ESMFile::remapFormIDs(const std::vector<uint32_t>& indexMap) {
         auto remap = [&indexMap](uint32_t& id) { id = rebaseFormID(id, indexMap); };
 
@@ -3650,8 +3711,10 @@ size_t ESMFile::resolveAIPackageReferences(
         // Remap game setting formIDs
         for (auto& gst : m_gameSettings)    remap(gst.formID);
 
-        // Remap reference-level PKID package formIDs on NPC_/CREA records
+        // Remap reference-level PKID package formIDs and the CNAM class formID
+        // on NPC_/CREA records
         for (auto& npc : m_npcs) {
+            remap(npc.classFormID);
             for (auto& pkg : npc.aiPackages) remap(pkg.formID);
         }
         for (auto& creature : m_creatures) {
@@ -4134,6 +4197,31 @@ void ESMManager::rebuildIndices() {
             }
             if (resolved > 0) {
                 LOGI("AI packages linked across plugins: %zu", resolved);
+            }
+        }
+    }
+
+    // Second pass: resolve CNAM class links that point at CLAS records living
+    // in another plugin (e.g. a DLC actor using a class defined in
+    // Oblivion.esm). The class formIDs of every file are already in the
+    // manager's load-order space at this point.
+    {
+        std::unordered_map<uint32_t, std::string> classNamesByFormID;
+        for (const auto& file : m_files) {
+            for (const auto& clas : file->getClasses()) {
+                if (clas.formID == 0) continue;
+                classNamesByFormID.emplace(
+                    clas.formID,
+                    clas.fullName.empty() ? clas.editorID : clas.fullName);
+            }
+        }
+        if (!classNamesByFormID.empty()) {
+            size_t resolved = 0;
+            for (auto& file : m_files) {
+                resolved += file->resolveClassReferences(&classNamesByFormID);
+            }
+            if (resolved > 0) {
+                LOGI("Classes linked across plugins: %zu", resolved);
             }
         }
     }

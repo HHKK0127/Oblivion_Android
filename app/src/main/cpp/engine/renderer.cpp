@@ -14,6 +14,8 @@
 #include "../system/display_modes.h"
 #include "../world/door.h"
 #include "../game/container.h"
+#include "../game/encumbrance.h"
+#include "../game/merchant_factory.h"
 #include "../world/distant_lod/distant_lod_manager.h"
 #include "../world/distant_lod/original_lod_provider.h"
 // #include "../jni_audio_bridge.h"  // Deferred - requires Java MainActivity
@@ -28,6 +30,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include <thread>
@@ -46,6 +49,43 @@ static const float kDistantLodFarPlane = 20000.0f;
 
 // RE 48: MenuFadeSystem node id for the pause menu (original PauseMenu 0x3f5).
 static const char* const kPauseMenuFadeKey = "pause";
+
+namespace {
+
+// Spawned merchants the player could trade with, nearest first, each paired
+// with the squared distance to the player. Both the in-game activate action
+// and the console listing read this, so they cannot disagree about which NPCs
+// count as merchants.
+//
+// Merchants are live actors, so they are looked up among the spawned NPCs
+// instead of the ESM REFR list: the spawned position is the one the player
+// actually sees rather than the raw placement record.
+std::vector<std::pair<std::shared_ptr<NPC>, float>> collectSpawnedMerchants(
+    WorldManager* worldManager, AssetManager* assetManager,
+    const glm::vec3& playerPos) {
+    std::vector<std::pair<std::shared_ptr<NPC>, float>> found;
+    if (!worldManager || !assetManager) return found;
+    NpcManager* npcMgr = worldManager->getNpcManager();
+    if (!npcMgr) return found;
+    const auto& esmMgr = assetManager->getEsmManager();
+
+    for (const auto& npc : npcMgr->getAllNPCs()) {
+        if (!npc || npc->formID == 0) continue;  // procedural NPC, no NPC_ record
+        if (npc->isDeadState()) continue;
+        if (!game::npcIsMerchant(esmMgr, npc->formID)) continue;
+        const glm::vec3 delta = npc->position - playerPos;
+        found.emplace_back(npc, glm::dot(delta, delta));
+    }
+
+    std::sort(found.begin(), found.end(),
+              [](const std::pair<std::shared_ptr<NPC>, float>& a,
+                 const std::pair<std::shared_ptr<NPC>, float>& b) {
+                  return a.second < b.second;
+              });
+    return found;
+}
+
+}  // namespace
 
 Renderer::Renderer()
     : showLauncher(true), showTitleScreen(false), shouldExit(false),
@@ -208,6 +248,9 @@ void Renderer::resize(unsigned int width, unsigned int height) {
 
     if (containerMenuUI) {
         containerMenuUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    }
+    if (shopUI) {
+        shopUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
     }
     if (sleepWaitMenuUI) {
         sleepWaitMenuUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
@@ -565,6 +608,11 @@ bool Renderer::initGameSystems() {
     // Initialize Settings Manager
     LOGI("Creating SettingsManager...");
     settingsManager = std::make_unique<SettingsManager>();
+    // Oblivion.ini lives next to the game data, the same way plugins.txt does.
+    // The path is already known here (the runtime hands it over before init).
+    if (!g_pendingDataPath.empty()) {
+        settingsManager->setDataPath(g_pendingDataPath);
+    }
     if (!settingsManager->initialize()) {
         LOGE("Failed to initialize SettingsManager");
         return false;
@@ -774,6 +822,16 @@ bool Renderer::initGameSystems() {
     } else {
         containerMenuUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
         LOGI("UIContainerMenu initialized successfully");
+    }
+
+    // Initialize Shop Menu (Phase 11 / p68)
+    LOGI("Creating ShopMenu...");
+    shopUI = std::make_unique<UIShop>();
+    if (!shopUI->initialize(textRenderer.get())) {
+        LOGE("Failed to initialize UIShop");
+    } else {
+        shopUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        LOGI("UIShop initialized successfully");
     }
 
     // Initialize Sleep/Wait Menu (Phase 9)
@@ -1816,6 +1874,40 @@ bool Renderer::initGameSystems() {
         return message;
     };
 
+    // Phase 68: the trade screen behind console commands. `merchants` lists
+    // the NPCs the renderer counts as merchants and `useshop` opens the trade
+    // screen for the nearest one from any distance, so the UI can be checked
+    // without first walking to a shop.
+    refs.listMerchants = [this]() -> std::string {
+        if (!worldManager || !assetManager) return "World Manager not available";
+        if (!shopUI) return "Shop menu not available";
+        const auto merchants = collectSpawnedMerchants(
+            worldManager.get(), assetManager.get(), worldManager->getPlayerPosition());
+        std::string result = "=== Merchants (" + std::to_string(merchants.size()) +
+                             " spawned) ===\n";
+        size_t shown = 0;
+        for (const auto& entry : merchants) {
+            if (shown >= 12) break;
+            const NPC* npc = entry.first.get();
+            const std::string name = (npc && !npc->name.empty()) ? npc->name
+                                                                 : std::string("(unnamed)");
+            result += "  " + name + " (" +
+                      formIDToHex(npc ? npc->formID : 0) + ") at " +
+                      std::to_string(static_cast<int>(std::sqrt(entry.second))) +
+                      " units\n";
+            ++shown;
+        }
+        if (merchants.size() > shown) {
+            result += "  ... " + std::to_string(merchants.size() - shown) + " more\n";
+        }
+        return result;
+    };
+    refs.useNearestMerchant = [this]() -> std::string {
+        std::string message;
+        activateNearestMerchant(0.0f, message);
+        return message;
+    };
+
     // Virtual controller overlay on/off, driven by the console `vc` command.
     // -1 toggles, 0 disables, 1 enables.
     refs.setVirtualControllerState = [this](int state) -> std::string {
@@ -2318,6 +2410,9 @@ bool Renderer::initGameSystems() {
         if (spellManager) saveManager->setSpellManager(spellManager.get());
         if (questManager) saveManager->setQuestManager(questManager.get());
         if (worldManager) saveManager->setWorldManager(worldManager.get());
+        // Merchants are materialised lazily, so the save system needs the cache
+        // to restore purses and stock into merchants created after a load.
+        saveManager->setMerchantRegistry(&merchantCache);
     }
 
     // Autosave on cell transition (RE_EXE_REPORT §47.4). The original fires one
@@ -2563,8 +2658,8 @@ bool Renderer::initGameSystems() {
 
     // Initialize Phase 9.2 Inventory System
     LOGI("Creating InventoryGrid...");
-    inventoryGrid = std::make_unique<inventory::InventoryGrid>(150.0f);
-    LOGI("InventoryGrid initialized (max weight 150.0f)");
+    inventoryGrid = std::make_unique<inventory::InventoryGrid>(game::MAX_CARRY_WEIGHT_KG);
+    LOGI("InventoryGrid initialized (max weight %.1f kg)", game::MAX_CARRY_WEIGHT_KG);
 
     equipmentManager = std::make_unique<inventory::EquipmentManager>();
     LOGI("EquipmentManager initialized");
@@ -4625,16 +4720,20 @@ void Renderer::render(float deltaTime) {
             }
             if (pressed_edge(VirtualControllerButton::X)) {
                 // X - activate: nearest door within reach, then nearest
-                // container, else pick up an item.
+                // container, then a merchant shopkeeper, else pick up an item.
                 std::string doorMessage;
                 std::string containerMessage;
+                std::string merchantMessage;
                 if (activateNearestDoor(3.5f, doorMessage)) {
                     LOGI("VC X: %s", doorMessage.c_str());
                 } else if (activateNearestContainer(3.5f, containerMessage)) {
                     LOGI("VC X: %s", containerMessage.c_str());
+                } else if (activateNearestMerchant(3.5f, merchantMessage)) {
+                    LOGI("VC X: %s", merchantMessage.c_str());
                 } else if (!playerController->tryPickup()) {
-                    LOGD("VC X: nothing to activate (%s; %s)",
-                         doorMessage.c_str(), containerMessage.c_str());
+                    LOGD("VC X: nothing to activate (%s; %s; %s)",
+                         doorMessage.c_str(), containerMessage.c_str(),
+                         merchantMessage.c_str());
                 }
             }
             if (pressed_edge(VirtualControllerButton::START)) {
@@ -5365,6 +5464,10 @@ if (uiMessageBox && uiMessageBox->isVisible()) {
         if (containerMenuUI && containerMenuUI->isVisible()) {
             containerMenuUI->update(deltaTime);
             containerMenuUI->render();
+        }
+        if (shopUI && shopUI->isVisible()) {
+            shopUI->update(deltaTime);
+            shopUI->render();
         }
         if (sleepWaitMenuUI && sleepWaitMenuUI->isVisible()) {
             sleepWaitMenuUI->update(deltaTime);
@@ -7748,11 +7851,17 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
         return;
     }
 
-    // Modal panels: ContainerMenu, SleepWaitMenu, LevelUpMenu, QuickKeysMenu,
+    // Modal panels: ContainerMenu, Shop, SleepWaitMenu, LevelUpMenu, QuickKeysMenu,
     // FastTravel, Dialogue — ordered by general-to-specific.
     if (containerMenuUI && containerMenuUI->isVisible()) {
         if (action == 0 || action == 5) {
             containerMenuUI->onTouchEvent(x, y);
+        }
+        return;
+    }
+    if (shopUI && shopUI->isVisible()) {
+        if (action == 0 || action == 5) {
+            shopUI->onTouchDown(x, y, pointerId);
         }
         return;
     }
@@ -8787,6 +8896,7 @@ bool Renderer::anyMenuOpen() const {
     if (dialogueUI && dialogueUI->isVisible()) return true;
     if (bookReaderUI && bookReaderUI->isVisible()) return true;
     if (containerMenuUI && containerMenuUI->isVisible()) return true;
+    if (shopUI && shopUI->isVisible()) return true;
     return false;
 }
 
@@ -8889,6 +8999,11 @@ bool Renderer::handleBackKey() {
         if (containerMenuUI && containerMenuUI->isVisible()) {
             containerMenuUI->close();
             LOGI("handleBackKey: Closed ContainerMenu");
+            return true;
+        }
+        if (shopUI && shopUI->isVisible()) {
+            shopUI->closeShop();
+            LOGI("handleBackKey: Closed ShopMenu");
             return true;
         }
         if (sleepWaitMenuUI && sleepWaitMenuUI->isVisible()) {
@@ -9117,9 +9232,68 @@ bool Renderer::handleBackKey() {
         Player* player = playerController ? playerController->getPlayer().get() : nullptr;
         if (!player) { message = "Player unavailable"; return false; }
 
-        containerMenuUI->open(container, player);
+        Inventory* pack = inventoryManager ? inventoryManager->getPlayerInventory().get() : nullptr;
+        if (!pack) { message = "Inventory unavailable"; return false; }
+
+        containerMenuUI->open(container, pack);
         message = "Opened '" + name + "' (" +
                   std::to_string(container->getItemCount()) + " items)";
+        return true;
+    }
+
+    bool Renderer::activateNearestMerchant(float maxDistance, std::string& message) {
+        if (!worldManager || !assetManager) {
+            message = "World not ready";
+            return false;
+        }
+        if (!shopUI) { message = "Shop menu unavailable"; return false; }
+
+        const auto& esmMgr = assetManager->getEsmManager();
+        const glm::vec3 playerPos = worldManager->getPlayerPosition();
+        const float bestLimitSq = (maxDistance > 0.0f)
+                                      ? maxDistance * maxDistance
+                                      : std::numeric_limits<float>::max();
+
+        // Merchants are live actors, so they are looked up among the spawned
+        // NPCs instead of the ESM REFR list: the spawned position is the one
+        // the player actually sees rather than the raw placement record.
+        std::shared_ptr<NPC> best;
+        float bestSq = bestLimitSq;
+        for (const auto& entry : collectSpawnedMerchants(worldManager.get(),
+                                                        assetManager.get(), playerPos)) {
+            if (entry.second >= bestSq) break;  // nearest first
+            bestSq = entry.second;
+            best = entry.first;
+        }
+
+        if (!best) { message = "No merchant within reach"; return false; }
+
+        // The stock and purse live in the NPC_ record, so one shared Merchant
+        // per FormID keeps trades within a session consistent.
+        std::shared_ptr<Merchant> merchant;
+        auto cached = merchantCache.find(best->formID);
+        if (cached != merchantCache.end()) {
+            merchant = cached->second;
+        } else {
+            merchant = game::buildMerchantFromNpc(esmMgr, best->formID);
+            if (!merchant) { message = "Merchant data unavailable"; return false; }
+            merchantCache.emplace(best->formID, merchant);
+            // Replace the ESM-derived purse and stock when the last load had a
+            // record for this merchant. No-op for merchants never saved.
+            if (saveManager) saveManager->applyPendingMerchantState(merchant);
+        }
+
+        Player* player = playerController ? playerController->getPlayer().get() : nullptr;
+        if (!player) { message = "Player unavailable"; return false; }
+
+        Inventory* pack = inventoryManager ? inventoryManager->getPlayerInventory().get() : nullptr;
+        if (!pack) { message = "Inventory unavailable"; return false; }
+
+        const std::string name = merchant->getShopName();
+        shopUI->setTitle(name);
+        shopUI->openShop(merchant, player, pack);
+        message = "Trading with '" + name + "' (" +
+                  std::to_string(merchant->getInventory().size()) + " items)";
         return true;
     }
 

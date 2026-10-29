@@ -57,8 +57,8 @@ public:
     /// no keys, in which case every lookup falls back to the default table.
     bool load_file(const std::string& path);
 
-    /// True when the INI file itself mentions the key. Covers all three
-    /// resolution steps, so a key written into the wrong section still counts.
+    /// True when the INI file itself mentions the key, in the section asked for
+    /// or - when both exact steps missed - by key name alone.
     bool has_file_entry(const char* section, const char* key) const;
 
     /// Which layer answers for this key. Use it to log or display where a value
@@ -116,9 +116,11 @@ public:
     std::size_t last_duplicate_line() const;
 
     /// When enabled (the default), a key that neither layer knows exactly is
-    /// searched for by key name alone. This reaches the three compiled-in keys
-    /// whose name literal omits the section, and it keeps a user's entry usable
-    /// when it was written into a different section than the engine expects.
+    /// searched for by key name alone. This is what reaches the three compiled-in
+    /// keys whose registry entry has no section, and it makes an entry usable when
+    /// a user wrote it into a section the engine does not expect. It never
+    /// overrides an exact match: a copy of a key in the wrong section is ignored
+    /// while the key in its own section keeps answering.
     void set_key_only_fallback(bool enabled);
     bool key_only_fallback() const;
 

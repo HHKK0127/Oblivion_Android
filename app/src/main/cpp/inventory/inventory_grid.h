@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../game/encumbrance.h"
 #include "item_base.h"
 #include <vector>
 #include <memory>
@@ -25,7 +26,7 @@ public:
     static constexpr uint32_t ROWS    = 6;
     static constexpr uint32_t MAX_SLOTS = COLUMNS * ROWS; // 60
 
-    explicit InventoryGrid(float maxWeight = 150.0f);
+    explicit InventoryGrid(float maxWeight = game::MAX_CARRY_WEIGHT_KG);
     ~InventoryGrid() = default;
 
     // Core operations

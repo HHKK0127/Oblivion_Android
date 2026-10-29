@@ -1381,6 +1381,9 @@ void DebugMenu::createAllTabContents() {
             {"Cell Details", "celldetails 0 0"},
             {"World Items", "worlditems"},
             {"Door Info", "doorinfo"},
+            // Phase 68: trade debug
+            {"Merchants", "merchants"},
+            {"Use Shop", "useshop"},
             {"Teleport 0,0", "teleportcell 0 0"},
             {"Teleport 1,0", "teleportcell 1 0"},
             {"Teleport 0,1", "teleportcell 0 1"},

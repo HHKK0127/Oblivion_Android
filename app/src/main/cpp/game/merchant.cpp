@@ -38,44 +38,46 @@ void Merchant::removeItem(const std::string& itemId, int32_t quantity) {
 }
 
 MerchantItem* Merchant::findItem(const std::string& itemId) {
+    return const_cast<MerchantItem*>(static_cast<const Merchant*>(this)->findItem(itemId));
+}
+
+const MerchantItem* Merchant::findItem(const std::string& itemId) const {
     auto it = std::find_if(inventory_.begin(), inventory_.end(),
-                          [&itemId](MerchantItem& item) {
+                          [&itemId](const MerchantItem& item) {
                               return item.itemId == itemId;
                           });
 
     return (it != inventory_.end()) ? &(*it) : nullptr;
 }
 
-float Merchant::calculateBuyPrice(const std::string& itemId, float playerCharisma) const {
-    auto item = std::find_if(inventory_.begin(), inventory_.end(),
-                            [&itemId](const MerchantItem& i) {
-                                return i.itemId == itemId;
-                            });
+float Merchant::buyPriceForValue(float baseValue, float playerCharisma) {
+    // Charisma bonus (max 20% discount)
+    const float charismaBonus = std::clamp(playerCharisma / 100.0f, 0.0f, 0.2f);
+    return baseValue * (1.0f - charismaBonus);
+}
 
-    if (item == inventory_.end()) {
+float Merchant::sellPriceForValue(float baseValue, float playerCharisma) {
+    // Charisma bonus (max 20% increase)
+    const float charismaBonus = std::clamp(playerCharisma / 100.0f, 0.0f, 0.2f);
+    return baseValue * kProvisionalSellRatio * (1.0f + charismaBonus);
+}
+
+float Merchant::calculateBuyPrice(const std::string& itemId, float playerCharisma) const {
+    const MerchantItem* item = findItem(itemId);
+
+    if (item == nullptr) {
         return 0.0f;
     }
 
-    // Charisma bonus (max 20% discount)
-    float charismaBonus = std::clamp(playerCharisma / 100.0f, 0.0f, 0.2f);
-    float priceMultiplier = 1.0f - charismaBonus;
-
-    return item->buyPrice * priceMultiplier;
+    return buyPriceForValue(item->buyPrice, playerCharisma);
 }
 
 float Merchant::calculateSellPrice(const std::string& itemId, float playerCharisma) const {
-    auto item = std::find_if(inventory_.begin(), inventory_.end(),
-                            [&itemId](const MerchantItem& i) {
-                                return i.itemId == itemId;
-                            });
+    const MerchantItem* item = findItem(itemId);
 
-    if (item == inventory_.end()) {
+    if (item == nullptr) {
         return 0.0f;
     }
 
-    // Charisma bonus (max 20% increase)
-    float charismaBonus = std::clamp(playerCharisma / 100.0f, 0.0f, 0.2f);
-    float priceMultiplier = 1.0f + charismaBonus;
-
-    return item->sellPrice * priceMultiplier;
+    return sellPriceForValue(item->sellPrice, playerCharisma);
 }

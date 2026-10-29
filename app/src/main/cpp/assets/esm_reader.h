@@ -224,6 +224,13 @@ struct NPCData {
     std::string fullName;
     std::string race;
     uint32_t raceID = 0;
+    // CNAM carries the actor's class as a 4-byte CLAS formID in the retail
+    // master file (see character/face_gen_data.h, TAG_CNAM "class"). The
+    // formID is kept here and turned into the display name below by
+    // ESMFile::resolveClassReferences(), which needs the CLAS records to be
+    // decoded first; className therefore holds the resolved name, not the raw
+    // subrecord bytes.
+    uint32_t classFormID = 0;
     std::string className;
     uint8_t level = 1;
         bool isFemale = false;  // ACBS flags bit 0 (0x00000001)
@@ -244,6 +251,15 @@ struct NPCData {
     // package FormID per entry; the largest NPC_ record in the retail master
     // file carries 60 of them.
     std::vector<AIPackageData> aiPackages;
+
+    // Inventory entries carried by the CNTO subrecords (one base item FormID
+    // plus a signed count each). Shopkeepers keep their barter stock and their
+    // purse here, so a NPC_ that owns item 0x0000000F (Gold) can trade.
+    struct NPCItem {
+        uint32_t itemFormID = 0;
+        int32_t count = 0;
+    };
+    std::vector<NPCItem> items;
 };
 
 /// Creature (CREA) record
@@ -1247,6 +1263,16 @@ public:
         // The optional map supplies formID lookups owned by other files.
         size_t resolveAIPackageReferences(
             const std::unordered_map<uint32_t, const AIPackageData*>* external = nullptr);
+
+        // Turn the CLAS formID captured on each NPC_ CNAM subrecord into the
+        // class display name. Must run after all records are decoded because
+        // CLAS records generally appear after the actors that reference them.
+        // Returns the number of actors whose class was named; actors pointing
+        // at a class that is not present are left with an empty className so
+        // callers can fall back to the editorID. The optional map supplies
+        // formID->name lookups owned by other files.
+        size_t resolveClassReferences(
+            const std::unordered_map<uint32_t, std::string>* external = nullptr);
 
                 // Translate this file's FormIDs from its own MAST-relative index
                 // space into the manager's load-order space (see

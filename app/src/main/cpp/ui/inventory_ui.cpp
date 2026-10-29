@@ -126,7 +126,7 @@ void InventoryUI::renderItemInfo() {
 
 void InventoryUI::renderWeightInfo() {
     float totalWeight = inventory->getTotalWeight();
-    float maxWeight = 100.0f;
+    float maxWeight = Inventory::MAX_WEIGHT;
     float y = GRID_START_Y + 320.0f;
 
     std::string weightStr = "Weight: " + std::to_string((int)totalWeight) +

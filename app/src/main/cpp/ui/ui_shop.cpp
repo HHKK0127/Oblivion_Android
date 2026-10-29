@@ -1,6 +1,10 @@
 #include "ui_shop.h"
 #include "placeholder_assets.h"
 #include "ui_draw_helper.h"
+#include "../game/barter.h"
+#include "../game/inventory.h"
+#include "../game/item_catalog.h"
+#include "../game/player.h"
 #include <GLES3/gl3.h>
 #include <cstdio>
 #include <algorithm>
@@ -28,17 +32,25 @@ bool UIShop::initialize(TextRenderer* tr) {
     return UIPanel::initialize();
 }
 
-void UIShop::openShop(std::shared_ptr<Merchant> merchant) {
+void UIShop::openShop(std::shared_ptr<Merchant> merchant, Player* player,
+                      Inventory* playerInventory) {
     currentMerchant = merchant;
+    if (player != nullptr) player_ = player;
+    if (playerInventory != nullptr) playerInventory_ = playerInventory;
     currentTab = MERCHANT_INVENTORY;
     selectedItemIndex = -1;
     scrollOffset = 0;
     merchantQuantity = 1;
+    lastRefusal_.clear();
     setVisible(true);
 }
 
 void UIShop::closeShop() {
     currentMerchant = nullptr;
+    selectedItemIndex = -1;
+    scrollOffset = 0;
+    merchantQuantity = 1;
+    lastRefusal_.clear();
     setVisible(false);
 }
 
@@ -46,7 +58,102 @@ void UIShop::update(float deltaTime) {
     UIPanel::update(deltaTime);
 }
 
+float UIShop::getPlayerGold() const {
+    if (playerInventory_ != nullptr) {
+        return static_cast<float>(game::playerGold(*playerInventory_));
+    }
+    return playerGold_;
+}
+
+float UIShop::getMerchantGold() const {
+    if (!currentMerchant) return 0.0f;
+    return currentMerchant->getGold();
+}
+
+float UIShop::playerMercantile() const {
+    if (player_ == nullptr) return 0.0f;
+    return static_cast<float>(player_->skills.Mercantile);
+}
+
+// Rows are derived on demand instead of cached: the stock, the purse and the
+// inventory all change on trade, so a cache would need invalidating in every
+// path that calls into game/barter.
+std::vector<UIShop::Row> UIShop::buildRows() const {
+    std::vector<Row> rows;
+    if (!currentMerchant) return rows;
+
+    const float mercantile = playerMercantile();
+
+    if (currentTab == MERCHANT_INVENTORY) {
+        for (const MerchantItem& item : currentMerchant->getInventory()) {
+            if (item.quantity <= 0) continue;
+            Row row;
+            row.formID = game::formIDFromItemId(item.itemId);
+            row.itemId = item.itemId;
+            row.name = item.itemName;
+            row.quantity = item.quantity;
+            row.unitPrice = currentMerchant->calculateBuyPrice(item.itemId, mercantile);
+            rows.push_back(row);
+        }
+        return rows;
+    }
+
+    if (playerInventory_ == nullptr) return rows;
+    for (const InventorySlot& slot : playerInventory_->getAllSlots()) {
+        // The pack is a fixed 60 row grid, so empty rows are holes, not items.
+        if (slot.isEmpty()) continue;
+        if (slot.item.itemId == game::kGoldFormID) continue;  // Currency is never sold
+        Row row;
+        row.formID = slot.item.itemId;
+        row.itemId = game::itemIdFromFormID(slot.item.itemId);
+        row.name = slot.item.name.empty() ? row.itemId : slot.item.name;
+        row.quantity = static_cast<int>(slot.quantity);
+        row.unitPrice = Merchant::sellPriceForValue(static_cast<float>(slot.item.value), mercantile);
+        rows.push_back(row);
+    }
+    return rows;
+}
+
+int UIShop::clampedQuantity() const {
+    const std::vector<Row> rows = buildRows();
+    if (selectedItemIndex < 0 || selectedItemIndex >= static_cast<int>(rows.size())) return 1;
+    const int held = rows[selectedItemIndex].quantity;
+    if (held <= 0) return 1;
+    return std::min(std::max(merchantQuantity, 1), held);
+}
+
+bool UIShop::executeTrade(bool isBuy) {
+    // Both directions move gold through the player, so read-only mode cannot
+    // trade at all.
+    if (!currentMerchant || playerInventory_ == nullptr) return false;
+
+    const std::vector<Row> rows = buildRows();
+    if (selectedItemIndex < 0 || selectedItemIndex >= static_cast<int>(rows.size())) return false;
+
+    const Row& row = rows[selectedItemIndex];
+    const int count = clampedQuantity();
+    const float mercantile = playerMercantile();
+
+    const game::BarterResult result = isBuy
+        ? game::buyFromMerchant(*playerInventory_, *currentMerchant, row.itemId, count, mercantile)
+        : game::sellToMerchant(*playerInventory_, *currentMerchant, row.formID, count, mercantile);
+
+    // Report the refusal instead of swallowing it: a tapped Buy/Sell that
+    // silently does nothing looks like a broken screen.
+    lastRefusal_ = result.reason;
+    if (!result.ok) return false;
+
+    if (onTransaction) onTransaction(row.itemId, count, isBuy);
+
+    // The traded row may be gone, so drop the selection rather than pointing at
+    // whatever row moved up into its place.
+    selectedItemIndex = -1;
+    merchantQuantity = 1;
+    return true;
+}
+
 bool UIShop::onTouchDown(float x, float y, int pointerId) {
+    (void)pointerId;
     if (!isVisible() || !isEnabled()) return false;
 
     if (isInsideCloseButton(x, y)) {
@@ -62,62 +169,65 @@ bool UIShop::onTouchDown(float x, float y, int pointerId) {
         currentTab = static_cast<Tab>(tabIdx);
         selectedItemIndex = -1;
         scrollOffset = 0;
+        merchantQuantity = 1;
+        lastRefusal_.clear();
         return true;
     }
 
-    // Scroll
+    const int rowCount = static_cast<int>(buildRows().size());
+    const int maxScroll = std::max(0, rowCount - MAX_VISIBLE);
+
     if (hitTestScrollUp(x, y)) {
         scrollOffset = std::max(0, scrollOffset - 1);
         return true;
     }
     if (hitTestScrollDown(x, y)) {
-        const auto& items = currentTab == MERCHANT_INVENTORY
-                              ? currentMerchant->getInventory()
-                              : std::vector<MerchantItem>();
-        int maxScroll = std::max(0, (int)items.size() - MAX_VISIBLE);
         scrollOffset = std::min(scrollOffset + 1, maxScroll);
         return true;
     }
+    // The list shrank (a trade consumed a row) and kept the offset out of range.
+    if (scrollOffset > maxScroll) scrollOffset = maxScroll;
 
     // Item selection
     int row = hitTestItemRow(x, y);
     if (row >= 0) {
-        selectedItemIndex = scrollOffset + row;
-        return true;
-    }
-
-    // Buy/Sell button
-    if (currentTab == MERCHANT_INVENTORY && hitTestBuyButton(x, y)) {
-        if (selectedItemIndex >= 0) {
-            const auto& items = currentMerchant->getInventory();
-            if (selectedItemIndex < (int)items.size()) {
-                const auto& item = items[selectedItemIndex];
-                float price = currentMerchant->calculateBuyPrice(item.itemId);
-                if (playerGold_ >= price && item.quantity > 0) {
-                    if (onTransaction) {
-                        onTransaction(item.itemId, merchantQuantity, true);
-                    }
-                    playerGold_ -= price * merchantQuantity;
-                    merchantQuantity = 1;
-                }
+        const int index = scrollOffset + row;
+        if (index < rowCount) {
+            if (index != selectedItemIndex) {
+                merchantQuantity = 1;
+                // The refusal belonged to the row that was selected before.
+                lastRefusal_.clear();
             }
+            selectedItemIndex = index;
         }
         return true;
     }
 
-    if (currentTab == PLAYER_INVENTORY && hitTestSellButton(x, y)) {
-        // Selling from player inventory - transfers item to shop
-        LOGI("Sell button pressed - selling item from player inventory");
-        return true;
+    // Quantity +/- buttons act on the selected row only
+    if (selectedItemIndex >= 0) {
+        if (hitTestDecreaseQty(x, y)) {
+            merchantQuantity = std::max(1, merchantQuantity - 1);
+            lastRefusal_.clear();
+            return true;
+        }
+        if (hitTestIncreaseQty(x, y)) {
+            const std::vector<Row> rows = buildRows();
+            if (selectedItemIndex < static_cast<int>(rows.size())) {
+                const int held = std::max(1, rows[selectedItemIndex].quantity);
+                merchantQuantity = std::min(merchantQuantity + 1, held);
+            }
+            lastRefusal_.clear();
+            return true;
+        }
     }
 
-    // Quantity increase/decrease button
-    if (hitTestIncreaseQty(x, y)) {
-        merchantQuantity = std::min(merchantQuantity + 1, 99);
+    // Buy/Sell button
+    if (currentTab == MERCHANT_INVENTORY && hitTestBuyButton(x, y)) {
+        executeTrade(true);
         return true;
     }
-    if (hitTestDecreaseQty(x, y)) {
-        merchantQuantity = std::max(merchantQuantity - 1, 1);
+    if (currentTab == PLAYER_INVENTORY && hitTestSellButton(x, y)) {
+        executeTrade(false);
         return true;
     }
 
@@ -138,7 +248,6 @@ void UIShop::render() {
     renderTabButtons();
     renderItemList();
     renderTransactionPanel();
-    renderScrollButtons();
 
     if (depthTestEnabled) glEnable(GL_DEPTH_TEST);
 }
@@ -178,9 +287,11 @@ void UIShop::renderItemList() {
     glm::vec2 cp = getContentPosition();
     float ty = getItemListY();
 
-    const auto& items = currentMerchant->getInventory();
-    int itemCount = (int)items.size();
-    int visEnd = std::min(scrollOffset + MAX_VISIBLE, itemCount);
+    const std::vector<Row> rows = buildRows();
+    const int rowCount = static_cast<int>(rows.size());
+    const int maxScroll = std::max(0, rowCount - MAX_VISIBLE);
+    if (scrollOffset > maxScroll) scrollOffset = maxScroll;
+    const int visEnd = std::min(scrollOffset + MAX_VISIBLE, rowCount);
 
     // Item list header
     PlaceholderAssets::drawPanel(cp.x, ty, getContentSize().x, 20.0f,
@@ -189,11 +300,20 @@ void UIShop::renderItemList() {
     textRenderer->renderText(currentTab == MERCHANT_INVENTORY ? "Merchant Items" : "Your Items",
         cp.x + 6.0f, ty + 2.0f,
         glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT), 0.65f);
+    renderScrollButtons();
     ty += 22.0f;
+
+    if (rowCount == 0) {
+        textRenderer->renderText(currentTab == MERCHANT_INVENTORY ? "This merchant has nothing to sell"
+                                                                  : "You are carrying nothing to sell",
+            cp.x + 10.0f, ty + 14.0f,
+            glm::vec3(0.3f, 0.3f, 0.3f), 0.65f);
+        return;
+    }
 
     // Render items
     for (int i = scrollOffset; i < visEnd; ++i) {
-        const auto& item = items[i];
+        const Row& row = rows[i];
         bool sel = (i == selectedItemIndex);
 
         glm::vec3 bg = sel
@@ -206,11 +326,17 @@ void UIShop::renderItemList() {
         float ry = ty + (i - scrollOffset) * (ITEM_ROW_H + ITEM_ROW_GAP);
         PlaceholderAssets::drawPanel(cp.x, ry, getContentSize().x, ITEM_ROW_H, bg, border);
 
-        // Item name and price
-        float price = currentMerchant->calculateBuyPrice(item.itemId);
-        char priceStr[64];
-        snprintf(priceStr, sizeof(priceStr), "%s (%.0fgp) [%d]",
-                 item.itemName.c_str(), price, item.quantity);
+        // The unit price shown in the list always matches what a trade charges,
+        // and a row the trade path would refuse says so instead of printing a
+        // price that cannot be paid.
+        char priceStr[128];
+        if (game::tradeGold(row.unitPrice, 1) > 0) {
+            snprintf(priceStr, sizeof(priceStr), "%s  (%.0fgp)  x%d",
+                     row.name.c_str(), row.unitPrice, row.quantity);
+        } else {
+            snprintf(priceStr, sizeof(priceStr), "%s  (Not for sale)  x%d",
+                     row.name.c_str(), row.quantity);
+        }
 
         textRenderer->renderText(priceStr,
             cp.x + 10.0f, ry + 14.0f,
@@ -225,7 +351,8 @@ void UIShop::renderTransactionPanel() {
     glm::vec2 cp = getContentPosition();
     float py = getTransactionPanelY();
     float panelW = getContentSize().x;
-    float panelH = 80.0f;
+    float panelH = 90.0f;
+    const bool buying = (currentTab == MERCHANT_INVENTORY);
 
     // Transaction panel background
     PlaceholderAssets::drawPanel(cp.x, py, panelW, panelH,
@@ -239,25 +366,35 @@ void UIShop::renderTransactionPanel() {
         return;
     }
 
-    const auto& items = currentMerchant->getInventory();
-    if (selectedItemIndex >= (int)items.size()) return;
+    const std::vector<Row> rows = buildRows();
+    if (selectedItemIndex >= static_cast<int>(rows.size())) return;
 
-    const auto& item = items[selectedItemIndex];
-    float price = currentMerchant->calculateBuyPrice(item.itemId);
+    const Row& row = rows[selectedItemIndex];
+    const int quantity = clampedQuantity();
+    // Priced with the same function the trade itself uses, so the total on
+    // screen is exactly the gold that will change hands.
+    const bool priced = game::tradeGold(row.unitPrice, 1) > 0;
+    const int32_t total = priced ? game::tradeGold(row.unitPrice, quantity) : 0;
 
     // Display selected item info
-    char infoStr[128];
-    snprintf(infoStr, sizeof(infoStr), "%s: %.0fgp each | Qty: %d",
-             item.itemName.c_str(), price, merchantQuantity);
+    char infoStr[160];
+    snprintf(infoStr, sizeof(infoStr), "%s: %.0fgp each | Qty: %d | Total: %dgp",
+             row.name.c_str(), row.unitPrice, quantity, static_cast<int>(total));
     textRenderer->renderText(infoStr,
         cp.x + 6.0f, py + 6.0f,
         glm::vec3(0.1f, 0.08f, 0.06f), 0.65f);
 
     // Player gold
-    char goldStr[64];
-    snprintf(goldStr, sizeof(goldStr), "Your Gold: %.0f", playerGold_);
+    char goldStr[128];
+    snprintf(goldStr, sizeof(goldStr), "Your Gold: %.0f", getPlayerGold());
     textRenderer->renderText(goldStr,
         cp.x + 6.0f, py + 26.0f,
+        glm::vec3(0.3f, 0.25f, 0.1f), 0.65f);
+
+    char merchantGoldStr[128];
+    snprintf(merchantGoldStr, sizeof(merchantGoldStr), "Merchant Gold: %.0f", getMerchantGold());
+    textRenderer->renderText(merchantGoldStr,
+        cp.x + 150.0f, py + 26.0f,
         glm::vec3(0.3f, 0.25f, 0.1f), 0.65f);
 
     // Quantity +/- buttons
@@ -269,7 +406,7 @@ void UIShop::renderTransactionPanel() {
         glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT), 0.7f);
 
     char qtyStr[16];
-    snprintf(qtyStr, sizeof(qtyStr), "%d", merchantQuantity);
+    snprintf(qtyStr, sizeof(qtyStr), "%d", quantity);
     textRenderer->renderText(qtyStr,
         cp.x + 52.0f, py + 50.0f,
         glm::vec3(0.1f, 0.08f, 0.06f), 0.7f);
@@ -281,26 +418,56 @@ void UIShop::renderTransactionPanel() {
         cp.x + 100.0f, py + 50.0f,
         glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT), 0.7f);
 
-    // Buy/Sell buttons
-    glm::vec4 buyButtonColor = (playerGold_ >= price * merchantQuantity)
-                                ? glm::vec4(PlaceholderAssets::Colors::GOLD_HIGHLIGHT.x, PlaceholderAssets::Colors::GOLD_HIGHLIGHT.y, PlaceholderAssets::Colors::GOLD_HIGHLIGHT.z, 1.0f)
-                                : glm::vec4(0.5f, 0.5f, 0.5f, 0.7f);
-    UIDrawHelper::drawColoredQuad(cp.x + panelW - 130.0f, py + 45.0f, 55.0f, 24.0f, buyButtonColor,
+    // The action button of the active tab; the other direction belongs to the
+    // other tab, so it is not offered here. A row with no price has no button,
+    // because tapping one could never do anything.
+    const bool affordable = priced && (buying ? (getPlayerGold() >= static_cast<float>(total))
+                                              : (getMerchantGold() >= static_cast<float>(total)));
+    glm::vec4 actionColor = affordable
+        ? glm::vec4(PlaceholderAssets::Colors::GOLD_HIGHLIGHT.x,
+                    PlaceholderAssets::Colors::GOLD_HIGHLIGHT.y,
+                    PlaceholderAssets::Colors::GOLD_HIGHLIGHT.z, 1.0f)
+        : glm::vec4(0.5f, 0.5f, 0.5f, 0.7f);
+    const float buttonX = cp.x + panelW - 70.0f;
+    UIDrawHelper::drawColoredQuad(buttonX, py + 45.0f, 55.0f, 24.0f, actionColor,
         screenWidth, screenHeight);
-    textRenderer->renderText("Buy",
-        cp.x + panelW - 115.0f, py + 50.0f,
+
+    char actionStr[32];
+    snprintf(actionStr, sizeof(actionStr), priced ? (buying ? "Buy" : "Sell") : "No price");
+    textRenderer->renderText(actionStr,
+        buttonX + 8.0f, py + 50.0f,
         glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT), 0.65f);
 
-    UIDrawHelper::drawColoredQuad(cp.x + panelW - 70.0f, py + 45.0f, 55.0f, 24.0f,
-        glm::vec4(PlaceholderAssets::Colors::BROWN_ACCENT.x, PlaceholderAssets::Colors::BROWN_ACCENT.y, PlaceholderAssets::Colors::BROWN_ACCENT.z, 0.8f),
-        screenWidth, screenHeight);
-    textRenderer->renderText("Sell",
-        cp.x + panelW - 55.0f, py + 50.0f,
-        glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT), 0.65f);
+    // The refusal game/barter reported for the last attempt. Without it a
+    // rejected trade would look like a dead button.
+    if (!lastRefusal_.empty()) {
+        textRenderer->renderText(lastRefusal_,
+            cp.x + 6.0f, py + 72.0f,
+            glm::vec3(0.55f, 0.15f, 0.12f), 0.6f);
+    }
 }
 
 void UIShop::renderScrollButtons() {
-    // Scroll buttons (simplified)
+    if (!textRenderer) return;
+    const ScrollRects r = scrollButtons();
+    const int rowCount = static_cast<int>(buildRows().size());
+
+    const bool canUp = scrollOffset > 0;
+    const bool canDown = scrollOffset + MAX_VISIBLE < rowCount;
+
+    glm::vec3 border = glm::vec3(PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
+    glm::vec3 upColor = canUp ? glm::vec3(PlaceholderAssets::Colors::BROWN_ACCENT)
+                              : glm::vec3(0.35f, 0.32f, 0.28f);
+    glm::vec3 downColor = canDown ? glm::vec3(PlaceholderAssets::Colors::BROWN_ACCENT)
+                                  : glm::vec3(0.35f, 0.32f, 0.28f);
+
+    PlaceholderAssets::drawPanel(r.upX, r.upY, SCROLL_BTN_W, SCROLL_BTN_H, upColor, border);
+    textRenderer->renderText("^", r.upX + 12.0f, r.upY + 1.0f,
+        glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT), 0.6f);
+
+    PlaceholderAssets::drawPanel(r.downX, r.downY, SCROLL_BTN_W, SCROLL_BTN_H, downColor, border);
+    textRenderer->renderText("v", r.downX + 12.0f, r.downY + 1.0f,
+        glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT), 0.6f);
 }
 
 // ─── hit testing ──────────────────────────────────────────────────────────────
@@ -334,37 +501,30 @@ int UIShop::hitTestItemRow(float x, float y) const {
     return -1;
 }
 
+UIShop::ScrollRects UIShop::scrollButtons() const {
+    ScrollRects r;
+    glm::vec2 cp = getContentPosition();
+    const float headerRight = cp.x + getContentSize().x;
+    r.upX = headerRight - (SCROLL_BTN_W * 2.0f + 8.0f);
+    r.downX = headerRight - (SCROLL_BTN_W + 4.0f);
+    r.upY = getItemListY() + 1.0f;
+    r.downY = r.upY;
+    return r;
+}
+
 bool UIShop::hitTestScrollUp(float x, float y) const {
-    // Scroll up button (top right of inventory panel)
-    float scrollX = 0.85f;
-    float scrollY = 0.15f;
-    float scrollW = 0.05f;
-    float scrollH = 0.04f;
-    return (x >= scrollX && x <= scrollX + scrollW &&
-            y >= scrollY && y <= scrollY + scrollH);
+    const ScrollRects r = scrollButtons();
+    return x >= r.upX && x <= r.upX + SCROLL_BTN_W &&
+           y >= r.upY && y <= r.upY + SCROLL_BTN_H;
 }
 
 bool UIShop::hitTestScrollDown(float x, float y) const {
-    // Scroll down button (bottom right of inventory panel)
-    float scrollX = 0.85f;
-    float scrollY = 0.75f;
-    float scrollW = 0.05f;
-    float scrollH = 0.04f;
-    return (x >= scrollX && x <= scrollX + scrollW &&
-            y >= scrollY && y <= scrollY + scrollH);
+    const ScrollRects r = scrollButtons();
+    return x >= r.downX && x <= r.downX + SCROLL_BTN_W &&
+           y >= r.downY && y <= r.downY + SCROLL_BTN_H;
 }
 
 bool UIShop::hitTestBuyButton(float x, float y) const {
-    glm::vec2 cp = getContentPosition();
-    float py = getTransactionPanelY();
-    float buttonX = cp.x + getContentSize().x - 130.0f;
-    float buttonY = py + 45.0f;
-
-    return x >= buttonX && x <= buttonX + 55.0f &&
-           y >= buttonY && y <= buttonY + 24.0f;
-}
-
-bool UIShop::hitTestSellButton(float x, float y) const {
     glm::vec2 cp = getContentPosition();
     float py = getTransactionPanelY();
     float buttonX = cp.x + getContentSize().x - 70.0f;
@@ -372,6 +532,10 @@ bool UIShop::hitTestSellButton(float x, float y) const {
 
     return x >= buttonX && x <= buttonX + 55.0f &&
            y >= buttonY && y <= buttonY + 24.0f;
+}
+
+bool UIShop::hitTestSellButton(float x, float y) const {
+    return hitTestBuyButton(x, y);
 }
 
 bool UIShop::hitTestIncreaseQty(float x, float y) const {

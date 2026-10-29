@@ -6,6 +6,7 @@
 
 #include <chrono>
 #include <cmath>
+#include <cstdio>
 #include <string>
 
 using oblivion::OblivionIni;
@@ -49,6 +50,9 @@ const std::string kSample =
 void OblivionIniTests::record(const std::string& name, bool passed,
                               const std::string& msg, float ms) {
     results.push_back({name, passed, msg, ms});
+    std::printf("[OblivionIniTests] %s %s", passed ? "PASS" : "FAIL", name.c_str());
+    if (!msg.empty()) std::printf(" - %s", msg.c_str());
+    std::printf(" (%.1f ms)\n", ms);
 }
 
 int OblivionIniTests::getPassCount() const {
@@ -76,23 +80,35 @@ bool OblivionIniTests::runAllTests() {
     results.clear();
     const auto t0 = std::chrono::high_resolution_clock::now();
 
+    // Each check is timed from the previous one so the log carries a duration
+    // like every other suite's.
+    auto last = std::chrono::high_resolution_clock::now();
+    const auto elapsed = [&]() {
+        const auto now = std::chrono::high_resolution_clock::now();
+        const float ms = static_cast<float>(
+            std::chrono::duration<double, std::milli>(now - last).count());
+        last = now;
+        return ms;
+    };
     const auto check = [&](const std::string& name, bool ok,
                            const std::string& msg = std::string()) {
-        record(name, ok, msg);
+        record(name, ok, msg, elapsed());
     };
     const auto check_int = [&](const std::string& name, long long got, long long want) {
         record(name, got == want,
-               "got " + std::to_string(got) + ", want " + std::to_string(want));
+               "got " + std::to_string(got) + ", want " + std::to_string(want),
+               elapsed());
     };
     const auto check_str = [&](const std::string& name, const std::string& got,
                                const std::string& want) {
-        record(name, got == want, "got \"" + got + "\", want \"" + want + "\"");
+        record(name, got == want, "got \"" + got + "\", want \"" + want + "\"",
+               elapsed());
     };
     const auto check_real = [&](const std::string& name, double got, double want) {
         record(name, std::fabs(got - want) < 1e-6,
-               "got " + std::to_string(got) + ", want " + std::to_string(want));
+               "got " + std::to_string(got) + ", want " + std::to_string(want),
+               elapsed());
     };
-
     // ------------------------------------------------------------------
     // 1. The merged default table: size and composition.
     // ------------------------------------------------------------------
@@ -222,9 +238,13 @@ bool OblivionIniTests::runAllTests() {
               defaults::find("HAVOK", "iHavokSkipFrameCountTEST") != nullptr);
         check("find([Havok] ...) reaches a file-spelled entry",
               defaults::find("Havok", "iUpdateType") != nullptr);
-        check("find([PathFinding] ...) reaches a registry-spelled entry",
-              defaults::find("PathFinding", "fPathMinCarriedItemDistance") != nullptr ||
-                  defaults::find("PathFinding", "iPathMaxCarriedItems") != nullptr);
+        // The table itself mixes both spellings: the shipped file wrote
+        // [Pathfinding], the registry [PathFinding]. Sorting has to fold the case
+        // or one of the two halves becomes unreachable.
+        check("find([PathFinding] ...) reaches a file-spelled entry",
+              defaults::find("PathFinding", "bSmoothPaths") != nullptr);
+        check("find([Pathfinding] ...) reaches a registry-spelled entry",
+              defaults::find("Pathfinding", "bUseBackgroundPathing") != nullptr);
 
         check("find([Archive] sArchiveList) is String",
               archive != nullptr && archive->type == defaults::IniValueType::kString);
@@ -393,32 +413,49 @@ bool OblivionIniTests::runAllTests() {
         check("shipped bGeneralSubtitles is off", !ini.get_bool("GamePlay", "bGeneralSubtitles"));
     }
 
-    // Key-only fallback: a user's key written into the wrong section, and the
-    // compiled-in keys that have no section at all.
+    // Key-only fallback. It runs only after both exact steps have failed, so it
+    // reaches the compiled-in keys whose registry entry carries no section at
+    // all. A key the table knows by section keeps the table's answer even when
+    // the file also wrote a copy into a different section.
     {
         OblivionIni ini;
         ini.load_from_string("[General]\niSize W=1024\n");
-        check("a misplaced file key is still found",
-              ini.source_of("Display", "iSize W") == OblivionIni::ValueSource::kFile);
-        check_int("the misplaced key keeps its file value",
-                  ini.get_int("Display", "iSize W"), 1024);
+        check("a key the table knows by section keeps the table's answer",
+              ini.source_of("Display", "iSize W") == OblivionIni::ValueSource::kDefault);
+        check_int("a misplaced copy does not override the table",
+                  ini.get_int("Display", "iSize W"), 640);
+        check("the misplaced copy is still visible in its own section",
+              ini.source_of("General", "iSize W") == OblivionIni::ValueSource::kFile);
+    }
+
+    // A section-less default written into any section at all.
+    {
+        OblivionIni ini;
+        ini.load_from_string("[General]\niLastHDRSetting=7\n");
+        check("a misplaced section-less key answers from the file",
+              ini.source_of("Display", "iLastHDRSetting") == OblivionIni::ValueSource::kFile);
+        check_int("the file value beats the section-less default",
+                  ini.get_int("Display", "iLastHDRSetting"), 7);
         check("has_file_entry() covers the key-only step",
-              ini.has_file_entry("Display", "iSize W"));
+              ini.has_file_entry("Display", "iLastHDRSetting"));
 
         ini.set_key_only_fallback(false);
-        check("with the fallback off the file value is not used",
-              ini.source_of("Display", "iSize W") == OblivionIni::ValueSource::kDefault);
-        check_int("with the fallback off the table value answers",
-                  ini.get_int("Display", "iSize W"), 640);
-        ini.set_key_only_fallback(true);
+        check_int("the fallback flag round-trips", ini.key_only_fallback() ? 1 : 0, 0);
+        check("with the fallback off the key is unknown",
+              ini.source_of("Display", "iLastHDRSetting") == OblivionIni::ValueSource::kNone);
+        check_int("with the fallback off the caller's fallback answers",
+                  ini.get_int("Display", "iLastHDRSetting", -999), -999);
+    }
 
+    // No file at all: the section-less default is still reachable.
+    {
+        OblivionIni ini;
         check("a section-less default is reachable by key alone",
               ini.get_int("Display", "iLastHDRSetting", -999) == -1);
         ini.set_key_only_fallback(false);
         check("a section-less default is unreachable without the fallback",
               !ini.has_value("Display", "iLastHDRSetting"));
-        check_int("the fallback flag round-trips",
-                  ini.key_only_fallback() ? 1 : 0, 0);
+        ini.set_key_only_fallback(true);
     }
 
     // ------------------------------------------------------------------
