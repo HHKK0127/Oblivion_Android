@@ -33,8 +33,10 @@ target_compile_definitions(Jolt PRIVATE
 # The FormID load-order translation in assets/formid_index.cpp, the plugin list
 # handling in assets/plugin_list.cpp, the Data-folder path expansion in
 # assets/asset_path_resolver.cpp, the multi-shape merge in
-# assets/mesh_builder.cpp and the BSA archive reader in assets/bsa_reader.cpp
-# are shims over three C ABIs (plugin_ffi, assets_ffi and bsa_ffi).
+# assets/mesh_builder.cpp, the BSA archive reader in assets/bsa_reader.cpp,
+# the NIF mesh parser in assets/nif_parser.cpp
+# and the DDS texture loader in assets/dds_loader.cpp
+# are shims over five C ABIs (plugin_ffi, assets_ffi, bsa_ffi, nif_ffi and dds_ffi).
 # The implementations live in the sibling Rust workspace, built here through
 # cargo-ndk. Point OBLIVION_RUST_DIR at a checkout that is not a sibling of this
 # repository, and set OBLIVION_RUST_OFFLINE to keep cargo from reaching the
@@ -84,6 +86,10 @@ set(OBLIVION_RUST_ASSETS_ARCHIVE
     "${OBLIVION_RUST_TARGET_DIR}/${OBLIVION_RUST_TRIPLE}/release/libassets_ffi.a")
 set(OBLIVION_RUST_BSA_ARCHIVE
     "${OBLIVION_RUST_TARGET_DIR}/${OBLIVION_RUST_TRIPLE}/release/libbsa_ffi.a")
+set(OBLIVION_RUST_NIF_ARCHIVE
+    "${OBLIVION_RUST_TARGET_DIR}/${OBLIVION_RUST_TRIPLE}/release/libnif_ffi.a")
+set(OBLIVION_RUST_DDS_ARCHIVE
+    "${OBLIVION_RUST_TARGET_DIR}/${OBLIVION_RUST_TRIPLE}/release/libdds_ffi.a")
 
 # Prefer the rustup toolchain over whatever cargo is first in PATH: a standalone
 # Rust install typically carries host targets only.
@@ -136,7 +142,7 @@ foreach(_oblivion_proxy IN ITEMS rustc rustdoc)
     endforeach()
 endforeach()
 
-set(_oblivion_rust_cargo_args build --release -p plugin-ffi -p assets-ffi -p bsa-ffi)
+set(_oblivion_rust_cargo_args build --release -p plugin-ffi -p assets-ffi -p bsa-ffi -p nif-ffi -p dds-ffi)
 if(OBLIVION_RUST_OFFLINE)
     list(APPEND _oblivion_rust_cargo_args --offline)
 endif()
@@ -155,26 +161,36 @@ file(GLOB_RECURSE OBLIVION_RUST_SOURCES CONFIGURE_DEPENDS
     "${OBLIVION_RUST_DIR}/crates/bsa-core/Cargo.toml"
     "${OBLIVION_RUST_DIR}/crates/bsa-core/src/*.rs"
     "${OBLIVION_RUST_DIR}/crates/bsa-ffi/Cargo.toml"
-    "${OBLIVION_RUST_DIR}/crates/bsa-ffi/src/*.rs")
+    "${OBLIVION_RUST_DIR}/crates/bsa-ffi/src/*.rs"
+    "${OBLIVION_RUST_DIR}/crates/nif-core/Cargo.toml"
+    "${OBLIVION_RUST_DIR}/crates/nif-core/src/*.rs"
+    "${OBLIVION_RUST_DIR}/crates/nif-ffi/Cargo.toml"
+    "${OBLIVION_RUST_DIR}/crates/nif-ffi/src/*.rs"
+    "${OBLIVION_RUST_DIR}/crates/dds-core/Cargo.toml"
+    "${OBLIVION_RUST_DIR}/crates/dds-core/src/*.rs"
+    "${OBLIVION_RUST_DIR}/crates/dds-ffi/Cargo.toml"
+    "${OBLIVION_RUST_DIR}/crates/dds-ffi/src/*.rs")
 
-# One cargo invocation produces all three static libraries, so the archives are
+# One cargo invocation produces all five static libraries, so the archives are
 # outputs of a single command: building them separately would run the workspace
 # build several times and let the invocations race on the same target directory.
 add_custom_command(
     OUTPUT "${OBLIVION_RUST_ARCHIVE}" "${OBLIVION_RUST_ASSETS_ARCHIVE}"
-           "${OBLIVION_RUST_BSA_ARCHIVE}"
+           "${OBLIVION_RUST_BSA_ARCHIVE}" "${OBLIVION_RUST_NIF_ARCHIVE}"
+           "${OBLIVION_RUST_DDS_ARCHIVE}"
     COMMAND ${CMAKE_COMMAND} -E env
             ${_oblivion_rust_env}
             "${OBLIVION_CARGO}" ndk -t ${ANDROID_ABI} --platform ${OBLIVION_RUST_API_LEVEL}
             ${_oblivion_rust_cargo_args}
     WORKING_DIRECTORY "${OBLIVION_RUST_DIR}"
     DEPENDS ${OBLIVION_RUST_SOURCES}
-    COMMENT "Building plugin-ffi, assets-ffi and bsa-ffi for ${ANDROID_ABI} (Rust)"
+    COMMENT "Building plugin-ffi, assets-ffi, bsa-ffi, nif-ffi and dds-ffi for ${ANDROID_ABI} (Rust)"
     VERBATIM)
 
 add_custom_target(oblivion_rust_ffi
     DEPENDS "${OBLIVION_RUST_ARCHIVE}" "${OBLIVION_RUST_ASSETS_ARCHIVE}"
-            "${OBLIVION_RUST_BSA_ARCHIVE}")
+            "${OBLIVION_RUST_BSA_ARCHIVE}" "${OBLIVION_RUST_NIF_ARCHIVE}"
+            "${OBLIVION_RUST_DDS_ARCHIVE}")
 
 add_library(plugin_ffi STATIC IMPORTED GLOBAL)
 set_target_properties(plugin_ffi PROPERTIES
@@ -191,7 +207,17 @@ set_target_properties(bsa_ffi PROPERTIES
     IMPORTED_LOCATION "${OBLIVION_RUST_BSA_ARCHIVE}")
 add_dependencies(bsa_ffi oblivion_rust_ffi)
 
-message(STATUS "Rust: plugin-ffi, assets-ffi and bsa-ffi from ${OBLIVION_RUST_DIR} (${ANDROID_ABI}, API ${OBLIVION_RUST_API_LEVEL})")
+add_library(nif_ffi STATIC IMPORTED GLOBAL)
+set_target_properties(nif_ffi PROPERTIES
+    IMPORTED_LOCATION "${OBLIVION_RUST_NIF_ARCHIVE}")
+add_dependencies(nif_ffi oblivion_rust_ffi)
+
+add_library(dds_ffi STATIC IMPORTED GLOBAL)
+set_target_properties(dds_ffi PROPERTIES
+    IMPORTED_LOCATION "${OBLIVION_RUST_DDS_ARCHIVE}")
+add_dependencies(dds_ffi oblivion_rust_ffi)
+
+message(STATUS "Rust: plugin-ffi, assets-ffi, bsa-ffi, nif-ffi and dds-ffi from ${OBLIVION_RUST_DIR} (${ANDROID_ABI}, API ${OBLIVION_RUST_API_LEVEL})")
 
 # ============================================================================
 
@@ -593,6 +619,8 @@ target_include_directories(native-lib PRIVATE
     ${OBLIVION_RUST_DIR}/crates/plugin-ffi/include
     ${OBLIVION_RUST_DIR}/crates/assets-ffi/include
     ${OBLIVION_RUST_DIR}/crates/bsa-ffi/include
+    ${OBLIVION_RUST_DIR}/crates/nif-ffi/include
+    ${OBLIVION_RUST_DIR}/crates/dds-ffi/include
 )
 
 # Find OpenAL-Soft (optional for now)
@@ -616,6 +644,8 @@ target_link_libraries(native-lib
     plugin_ffi  # Rust: FormID index translation and plugin list (oblivion-re-tools)
     assets_ffi  # Rust: Data-folder path expansion and NIF geometry merge
     bsa_ffi     # Rust: BSA archive parsing, hashing lookup and ZLib inflation
+    nif_ffi     # Rust: NIF mesh parsing backing the NIFParser shim (oblivion-re-tools)
+    dds_ffi     # Rust: DDS texture loading backing the DDSLoader shim (oblivion-re-tools)
     android
     EGL
     GLESv3

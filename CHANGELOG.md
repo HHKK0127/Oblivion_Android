@@ -16,6 +16,41 @@ The current version is **0.9.10 (versionCode 910)**.
 ## [Unreleased]
 
 ### Added
+- **The DDS texture reader now runs in Rust, and a differential oracle over a 13-file corpus found
+  no behaviour change on the paths that matter.** `assets/dds_loader.cpp` is a thin shim over
+  `dds_ffi.h` (`dds_*`, backed by an opaque handle) and `assets/dds_loader.h` keeps its public API
+  unchanged (`loadFile`, `decompressTexture`); the shim carries a `void* m_handle` member and the
+  `DDSTexture` layout is untouched. `dds-core` in `oblivion-re-tools` parses the header (including
+  the raw 124-byte header for byte-exact passthrough), then decodes DXT1/2/3/5 and RXGB blocks and
+  unpacks uncompressed pixels. The oracle (`tmp/dds_oracle/`, not in Git) links one common driver
+  against the original and against the shim, dumps every field as deterministic text and diffs the
+  two: **11 of 13 files match exactly** (DXT1/3/5/RXGB and uncompressed happy paths plus the
+  `bad_magic` / `truncated_header` error paths). The two diffs are dead-path leftovers - on
+  `missing_dims` the original memcpy's the raw header before the dimension-flag check fails while
+  Rust leaves it zeroed, and on `empty_payload` the original resize-then-fails while Rust errors
+  before filling; `asset_manager.cpp` checks `loadFile` / `decompressTexture`'s return value and
+  returns `nullptr` on failure, so neither leftover field is ever read. Two shim bugs surfaced and
+  were fixed during the port: `dds_last_error`'s `int` required-length return was being passed
+  straight to `%s` (an invalid-pointer AV crash, now routed through a `last_error_text` helper that
+    copies into a 512-byte buffer), and the shim was setting `textureType = TEXTURE2D` where the
+  original left it unset, which nothing outside the old file read anyway. `dds-core` carries 7 crate
+  tests, and `libnative-lib.so` links with the `dds_*` symbols present on `arm64-v8a`, `armeabi-v7a`
+  and `x86_64`. See `plan.md#rust-migration-of-pure-logic-layers-2026-10-26`.
+- **The NIF mesh parser now runs in Rust, and a differential oracle over 100 real meshes found no
+  behaviour change.** `assets/nif_parser.cpp` shrank from 4,091 lines to a shim of about 520 lines
+  over `nif_ffi.h` (`nif_*`, 27 functions backed by an opaque handle) and `assets/nif_parser.h`
+  keeps its public API unchanged (`parseFile`, `getHeader`, `getNodes`, `extractAllGeometry`,
+  `getNodeByName`, `hasBlockType`, `getBlockTypeName`); the block-walker API is inert because
+  nothing outside the old file called it. `nif-core` in `oblivion-re-tools` parses the header, the
+  node tree, geometry (vertices, normals, colours, UVs, triangles, bounds, transform), skins and
+  controllers. The oracle (`tmp/nif_oracle/`, not in Git) links one common driver against the
+  original and against the shim, dumps every public call as deterministic text - floats as `%a`,
+  arrays as FNV-1a hashes for bit-exact comparison - and diffs the two: **all 100 meshes under
+  `tmp/re/lodnif/` match with zero differences.** One intentional gap: the shim leaves `NiNode`
+  transforms at identity because the FFI does not carry them, and `Skeleton::buildFromNIF` reads
+  only `name` and `parentIndex`, so nothing regresses. `libnative-lib.so` links with all 27 `nif_*`
+  symbols present on `arm64-v8a`, `armeabi-v7a` and `x86_64`. See
+  `plan.md#rust-migration-of-pure-logic-layers-2026-10-26`.
 - **The BSA archive reader now runs in Rust, and the port fixed two hashing bugs in the original.**
   `assets/bsa_reader.cpp` is a thin shim over `bsa_ffi.h` (`bsa_*`, 19 functions backed by a state
   handle) and `assets/bsa_reader.h` keeps its public API unchanged, including the deleted copy

@@ -125,9 +125,9 @@ void cleanup();  // Resource deallocation
 ## Native Code Split: C++ and Rust
 
 Most of the native code is C++17, but the parts that are pure functions of their inputs are
-implemented in Rust and reached through small C ABIs - two stateless ones and one stateful. Those
+implemented in Rust and reached through small C ABIs - two stateless ones and three stateful. Those
 parts are the ESM FormID translation, the plugin list, the Data-folder path expansion, the NIF
-geometry merge and the BSA archive reader.
+geometry merge, the BSA archive reader, the NIF mesh parser and the DDS texture reader.
 
 The dividing line is impurity, not size:
 
@@ -138,6 +138,8 @@ The dividing line is impurity, not size:
 | `AAssetManager`, `MediaCodec`, JNI entry points | FormID index building and rebasing |
 | `std::ifstream` I/O, zlib inflate, threads | Vertex / index merge and rebase arithmetic |
 | | BSA folder / file tables, both hashes, deflate inflate |
+| | NIF header / node tree / geometry / skin / controller parsing |
+| | DDS header parse and DXT / uncompressed decode |
 
 A function moves only when it allocates nothing the caller must own, keeps no state between calls and
 touches no platform handle. `assets/esm_reader.cpp` shows the other side of the rule: an `esm-parser`
@@ -153,6 +155,8 @@ assets/plugin_list.cpp  ──┴──► plugin_ffi.h ──► libplugin_ffi.
 assets/asset_path_resolver.cpp ──┐
 assets/mesh_builder.cpp        ──┴──► assets_ffi.h ──► libassets_ffi.a (assets-core)
 assets/bsa_reader.cpp ────────────────► bsa_ffi.h ───► libbsa_ffi.a (bsa-core)
+assets/nif_parser.cpp ─────────────────► nif_ffi.h ───► libnif_ffi.a (nif-core)
+assets/dds_loader.cpp ─────────────────► dds_ffi.h ───► libdds_ffi.a (dds-core)
 ```
 
 Each C++ file keeps its original header and is now a shim: callers are unchanged, and the only
@@ -170,11 +174,12 @@ contract between the two languages is the header in
   floats per vertex, so its `vertex_capacity` is a float count; passing a vertex count is rejected
   rather than trusted.
 - Panics never cross the boundary - each entry point wraps the Rust call so an unwind becomes `-7`.
-- `bsa_ffi` is the one stateful ABI. `bsa_create()` returns an opaque handle that Rust owns and C++
-  borrows; the shim never frees it on the C++ side except through `bsa_destroy()`, which its
-  destructor calls. Any search entry point (`bsa_find_files_by_prefix` / `_by_extension`) lends a
-  scratch index array that stays valid only until the next search, so the shim converts the indices
-  to `BSAFileEntry` pointers immediately instead of holding them.
+- `bsa_ffi`, `nif_ffi` and `dds_ffi` are the stateful ABIs. Each `*_create()` returns an opaque handle
+  that Rust owns and C++ borrows; the shim never frees it on the C++ side except through
+  `*_destroy()`, which its destructor calls. Any search entry point
+  (`bsa_find_files_by_prefix` / `_by_extension`)
+  lends a scratch index array that stays valid only until the next search, so the shim converts the
+  indices to `BSAFileEntry` pointers immediately instead of holding them.
 
 ### Build wiring
 
@@ -186,7 +191,7 @@ produces all three archives, then imports them as `IMPORTED STATIC` targets and 
 to the proxies next to `cargo`, because a standalone host-only toolchain earlier on `PATH` otherwise
 wins and the build fails on a missing Android target. The mapping is verified end to end by linking
 `libnative-lib.so` for all three ABIs (`arm64-v8a`, `armeabi-v7a`, `x86_64`) and confirming that all
-19 `bsa_*` symbols are defined in each shared object.
+19 `bsa_*`, all 27 `nif_*` and all 13 `dds_*` symbols are defined in each shared object.
 
 ### Testing the boundary
 
@@ -203,6 +208,24 @@ the two dumps are compared line by line. Over four shipped archives (10,981 line
 headers, extracted bytes and both search orders match exactly; the only differences are `findFile`
 results, which is where the port fixed two hashing bugs in the original
 (`plan.md#rust-migration-of-pure-logic-layers-2026-10-26`).
+
+The NIF parser is checked the same way: a driver dumps the header, the node tree and every
+geometry's counts, raw-byte hashes and transforms from both implementations, and all 100 meshes in
+`tmp/re/lodnif/` match with zero differing lines. The dump prints floats as `%a` and hashes byte
+arrays with FNV-1a so the comparison is bit exact; the shim's one intentional gap is each `NiNode`'s
+own transform (the FFI does not carry it), which no caller reads.
+
+The DDS loader follows the dump-differ pattern too: a driver linked once to the original
+`dds_loader.cpp` and once to the shim dumps every output field over a 13-file corpus
+(`tmp/dds_oracle/corpus/`), and 11 of 13 files match exactly. The two differences are benign
+dead-path cases - `missing_dims` (the original keeps a raw header that fails the flag check, the
+Rust parse errors before saving it) and `empty_payload` (both fail the decompress with no output
+data) - and `asset_manager.cpp` rejects both failures before returning anything, so neither state
+escapes. The port also fixed two shim bugs found on the way: `dds_last_error` was passing a NULL
+buffer to `%s` (crash) and a `textureType` assignment that the original never made was removed for
+fidelity. `dds-core` carries 7 crate tests, and the `dds_*` symbols are confirmed in the linked
+`libnative-lib.so` for all three ABIs - 13 defined symbols, matching the 13 prototypes in
+`dds_ffi.h`.
 
 ## Component Integration
 

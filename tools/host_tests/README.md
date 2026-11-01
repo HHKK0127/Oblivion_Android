@@ -40,25 +40,26 @@ The runner builds one binary that executes every wired suite in order:
 The runner prints each suite's `getSummary()` and exits with status 1 if any
 suite fails.
 
-### Known issue: the Rust `plugin_ffi` shim is not wired into the host build (2026-10-26)
+### Known issue: the MSVC host runner does not build the Rust FFI shims (updated 2026-11-01)
 
-`assets/plugin_list.cpp` and `assets/formid_index.cpp` no longer carry the
-`plugins.txt` / FormID logic themselves: they are thin shims over the Rust
-`plugin_ffi` crate (`#include "plugin_ffi.h"` plus the `plg_*` C ABI), which
+`assets/plugin_list.cpp`, `assets/formid_index.cpp`, `assets/asset_path_resolver.cpp`,
+`assets/mesh_builder.cpp`, `assets/bsa_reader.cpp`, `assets/nif_parser.cpp` and
+`assets/dds_loader.cpp` no longer carry their parsing logic themselves: they are
+thin shims over the Rust `plugin_ffi` / `assets_ffi` / `bsa_ffi` / `nif_ffi` /
+`dds_ffi` crates (`#include "*_ffi.h"` plus the C ABI), which
 `app/src/main/cpp/CMakeLists.txt` builds for Android with `cargo ndk` out of
 `OBLIVION_RUST_DIR` (default `<repo>/../../../../../oblivion-re-tools`).
 
-Neither host runner passes that include directory or links a host build of the
-crate yet, so both stop on those two translation units - MSVC reports
-`fatal error C1083: cannot open include file: 'plugin_ffi.h'`, and the Linux
-`g++` run fails the same way - and because the runner is a single binary, that
-compile failure blocks every suite, not only `PluginListTests` and
-`FormIDIndexTests`. Build the Android target for those two suites until the
-runners are updated. The fix is to add `-I<crate>/crates/plugin-ffi/include`
-to `INCLUDES` (and the MSVC equivalent) and link the host static library
-(`<crate>/target/<triple>/release/libplugin_ffi.a` or the MSVC `.lib`), which
-also needs a host build of the crate for the compiler in use. Delete this note
-once both runners build the shim.
+`run_host_tests.sh` (bash: Git Bash / Linux / CI) is wired: it defaults
+`OBLIVION_RUST_DIR` to the sibling checkout, adds `-I<crate>/crates/*-ffi/include`
+for the five crates and links the host-triple `lib*_ffi.a` archives it finds.
+`run_host_tests_msvc.ps1` is still not wired: it stops at the first shim
+(`fatal error C1083: cannot open include file: 'plugin_ffi.h'`), and because the
+runner is a single binary, that compile failure blocks every suite. Until the
+MSVC runner is updated, run the suites through `run_host_tests.sh`. The fix
+mirrors the bash runner: pass the five `-I` flags and link the host `.lib`
+archives built for MSVC. Delete this note once the MSVC runner builds the shims
+too.
 
 ### Asset-dependent suites
 

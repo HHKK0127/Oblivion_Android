@@ -120,6 +120,7 @@ public:
 private:
     DDSHeader header;
     DDSTexture texture;
+    void* m_handle;
 
     // Helper methods
     bool readHeader(std::ifstream& file);
