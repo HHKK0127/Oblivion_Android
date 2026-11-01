@@ -21,3 +21,5 @@ These rules are loaded by opencode before loop work.
 - For L2+ changes, dispatch a verifier sub-agent after implementation.
 - Run the project's documented tests before proposing a fix.
 - Record test evidence in `STATE.md`.
+
+When a repository's documentation and its existing code disagree, follow the conventions used in the existing code, and in your final reply point out each inconsistency you found between the documentation and the code.

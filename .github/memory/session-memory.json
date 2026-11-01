@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-25T10:51:39Z",
+  "lastUpdated": "2026-10-31T14:14:07Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -9508,14 +9508,323 @@
         "2026-10-25"
       ],
       "content": "RE_EXE_REPORT.md への訂正反映 (2026-10-25, opencode, ユーザー承認後)。セッションB残件11件 V98〜V108 全完走 (TODO_re49.md 292行 / V-rows 41 / done 40 / open=V31 のみ / round_verify ALL OK / .bak24〜.bak27) に伴い、正本9箇所を .bak15 バックアップ付きで修正 (12,303→12,319行, CRLF維持): (1) §67.3 中間域ラベル「条件・式系」→「コンソールコマンド帯 (0x100–0x183)」(V105: 条件系 +0x20≠0 の169件はすべて0x1000帯、コンソール帯0件)。(2) §70.4 の同表現 (行11425) も併記訂正。(3) §23.4 「TypeDescriptor は .rdata 内」→「.data 内」(V103: RTTI全走査で TypeDescriptor 1,547件はすべて .data、.rdata は0件、COL のみ .rdata。0x00b13240 も .data VA 0xB02000–0xB32C00 帯)。(4) §70.4 +0x0C desc 非空「132件・空399件」→「142件・空389件」(V105 + 本セッション独立再計測: nonempty=142 / shared 0xA2F7EC=389 / zero=1 / 計532。旧値は10件を空と誤分類)。(5) §69.3 を [未確定](WIP)→[確定] に更新、所有クラスを TESObjectREFR 誤り→CombatController 正 (vtable 0xA70A14/60slot/0x1C0, +0x40 は8Bコンテナ ptr, 生成 FUN_0x61BB60 / 解放 FUN_0x61C130, vt+0x330/0x334 は206slot超9クラスのみ・実装 0x5E6190 等)。(6) 同 §69.3 の呼出パターン根拠 @0x50C41A は文字列出力と訂正 (正 = 0x50C81C→0x50C830, FUN_0050C790 内で TESObjectREFR→Actor dynamic_cast)。(7) §69.4 「未収録7件」→ 未収録は FUN_0050c390 / FUN_005e61b0 の2件のみ (残5件は収録済: FUN_006135f0=L379749 refs212 / 00613640=L379782 / 006210d0=L388963 / 006162d0=L381902 / 00616190=L381844)。(8) §69.5 残課題11件に「全11件解決」注記と成果物対応表 (b08/b03/b04/b05/b06/b07/b01/b09/b10/b11/b12) を追加。本セッションでの重大訂正4件: ①PUSH は 0x446CB0=347 が正・0x4468B0=0件 (b04、台帳の typo 判定は誤りだった点も訂正) ②0x504050=add[esi+0x59],ebx は非整列バイト誤読で +0x59 カウンタは存在しない (b01) ③セッションB要約の 0x4FB110/0x4FB1F0 は +0x400 未訂正 → 正 0x4FB510/0x4FB5F0 (10-23 の+0x400訂正キャンペーンが10-19要約に未反映) ④同要約のイベントマスク表は全件誤り (正は §59.3 の14件+本調査8件)。成果物は tmp/re/ に11本 (計 664,068B)、ハンドオーバ資料 tmp/re/handover_20261025/ (40ファイル)。Supermemory: Pi1omL1a6bMjCdgrEjjtka (V90-97), cU4jTJgnTRJi2Zuc1vdaBD (V98-108)。制約継続: tools/sync_memory_to_supermemory.py 実行禁止 (guard有効)、pilot再push=保留、台帳 append-only。検証: round_verify.py → ALL OK / probe_harness selftest 4/4 PASS (各サブエージェント)。"
+    },
+    {
+      "timestamp": "2026-10-29T08:06:34Z",
+      "id": "opencode-relcheck-round2-20261029",
+      "compressed": false,
+      "priority": "high",
+      "category": "re",
+      "tags": [
+        "oblivion",
+        "re",
+        "cross-check",
+        "relcheck",
+        "2026-10-29",
+        "opencode"
+      ],
+      "content": "解析データ間の関係性 第2弾 横断照合 (2026-10-29, opencode L1 セッション、子セッション3本と並列実施)。成果物は tmp/re/relcheck_20261029/ の6ファイル: rel1_ini_type_agreement.md(7,800B) / rel2_opcode3way.md(16,622B) / rel3_reference_drift.md(26,599B) / rel4_graphify_join.md(14,746B) / rel5_ledger_freshness.md(5,486B) / rel6_gmst3way.md(6,898B)。主要実測: (a) INI 既定値は RE(tmp/re/v91_ini_defaults.csv)⇔移植(oblivion_ini_defaults.cpp)で キー結合556・セクション一致556/556=100%・型一致555/556=99.82%。唯一の型差 rDebugTextColor (RE=0xFFFBE9FF packed color, 移植=\"255,251,233\") はバイト順で4者不整合 (RE値は RRGGBBAA 解釈が移植文字列と一致、oblivion_ini.cpp:550 実装は AARRGGBB、同コメントは AABBGGRR、oblivion_ini_tests は 0x00RRGGBB を支持)。get_color の本番呼び出しは0件(テストのみ)=潜在的。移植側のみ84キー(Controls 33/ShockBolt 14/Absorb 12 等、ShockBolt と Absorb は RE 側にセクション自体が無い)、RE側のみ39キー(ボーン名 sLHand/sSpine1 等・fLowRot 等)は移植未反映。(b) 正本 RE_EXE_REPORT.md + RE_ANALYSIS_ROADMAP.md のパス参照171件中リンク切れ12件(7.02%、擬似除外で実質4.09%、真dangling 3件 = %TEMP%\\opencode\\analyze_pop_final.py / tmp/re/probe_harness.py(handover 配下にのみ生存) / tmp/re/wbDefinitionsTES4.pas)。handover_20261025 は41件中26件MD5一致で陳腐化36.6%(scripts7・ledgers3・session要約2 は live に実体なし)、live の top-level *.md 263件中173件(65.8%)が正本未参照の孤児。(c) graphify graph.json は HEAD 19fafb7f と同期(遅延0コミット・4分後に再構築)、FUN ノード9,734 は台帳 tmp/re/cache/named_funcs.txt(21,489ユニーク名)の45.3%・VA整合9,734/9,734=100%(ラベルは FUN_<VA>() 形式で () 除去必須)。欠落は decompiled.c L983,600 以降の抽出上限(後半3,200定義が0収録)。EXE⇔移植の構造エッジは0本(共有近傍0・共有コミュニティ0・888本の跨ぎは uint 型名衝突)、唯一の接続は RE ドキュメント経由の INFERRED 0.95 で4節点のみ。詳細は各レポート参照。"
+    },
+    {
+      "timestamp": "2026-10-29T08:06:34Z",
+      "id": "opencode-ledger-staleness-repair-20261029",
+      "compressed": false,
+      "priority": "high",
+      "category": "status",
+      "tags": [
+        "memory",
+        "ledger",
+        "staleness",
+        "repair",
+        "2026-10-29",
+        "opencode"
+      ],
+      "content": "台帳鮮度の実測と是正 (2026-10-29, REL5: tmp/re/relcheck_20261029/rel5_ledger_freshness.md)。本追記以前の最終エントリは 2026-10-25T10:51:39Z で、10-26/27/28/29 の追記が0件のまま4日経過していた。同期間に tmp/re では125ファイルが更新され(TODO_re49.md 173,134B@10-29 13:58、GT_CHEATSHEET.md@10-28、v189/v190/v191 等)、正本 docs/RE_EXE_REPORT.md も 10-28 11:39 に改訂。Supermemory の可視最新は 2026-10-26T21:40(V138) で 10-27 以降は検索ヒット0。→ 本エントリ群(opencode-relcheck-round2-20261029 / opencode-v170-v172-duplicate-incident-20261029 / opencode-rel2-opcode-corrections-20261029 / opencode-gmst-esm3way-20261029)で opencode 側の10-26〜10-29分を補填。残課題: RE セッション(ses_e8f260663ffeBxgd24Gocmcl72 / ses_e9ccb3190ffeDPSxT2BsblKHKr) が V116〜V192 相当で書いた成果の台帳反映は未実施。正本側(RE_EXE_REPORT/GT)への反映は V168【要承認】バッチまたは次回ユーザーレポートで判断。台帳の参照パス実在検査: 67ユニーク中 実在しないのは実質2件(docs/PHASE9_PLAN.md は plan.md 統合で設計削除・歴史として許容、tools/adb.execurrent は誤記・要訂正)、グロブ表記 s57_*.md 等は実在ファミリ(s5*.md 35/s6*.md 30/s5*.txt 519/mipmap-* 7、sub_*.md のみ0件=要確認)。最多参照は plan.md 27 / docs/RE_EXE_REPORT.md 22 / tools/host_tests 20。"
+    },
+    {
+      "timestamp": "2026-10-29T08:06:34Z",
+      "id": "opencode-v170-v172-duplicate-incident-20261029",
+      "compressed": false,
+      "priority": "high",
+      "category": "error-solution",
+      "tags": [
+        "incident",
+        "duplicate",
+        "recovery",
+        "2026-10-29",
+        "opencode",
+        "v170",
+        "v172"
+      ],
+      "content": "V170/V172 重複起動事故と復元 (2026-10-29, opencode L1)。opencode の handover 共有メッセージ送信で停止中の ReverseEngineering セッション ses_e8f260663ffeBxgd24Gocmcl72 が、別セッション ses_e9ccb3190ffeDPSxT2BsblKHKr が 07:37 に起票し 07:48(答 V170)/12:00:04(V172) に完走済みの V170/V172 を 11:48:49/11:49:13 に再ディスパッチし二重作成。被害: tmp/re/v182_asset_integration.md は ACTIVE 側の 11:52:33 write(PLACEHOLDER) で A側完成版26,322B が648B に上書き破壊 → A側サブセッション ses_e7b56e693ffei5eOYgus3nLdZ5 の write(seq263)+edit×4(seq274/285/296/307) をメッセージから再生し tmp/re/v182_asset_integration.A_completed_0748.md (26,322B・バイト一致) へ復元。tmp/re/v184_engine_small_residuals.md は 12:37:44 に 35,936→43,151B へ更新されたが A版244行中243行を保持した継承版(追記は手法/入力・結論3行・残点・自己検証・移植示唆の+26行、欠落1行は証跡表記の置換のみ)で、A版も tmp/re/v184_engine_small_residuals.A_completed_1200.md (35,936B・バイト一致) に保存。対策: 子セッション2件へ警告送信 → V170 は12:36受領し既存2ファイル・TODOに不触を遵守し独自分のみ v182_duplicate_override_note.md(7,443B) に保存、V172 は13:12受領・13:14 succeeded で v184_dup_verification.md(5,084B) のみ新規保存(selftest 4/4・内部整合30/30・A版引用値と全30項目一致)。親セッションへは保留依頼を user メッセージ2件(14:02)で配信し TODO_re49.md / docs/RE_EXE_REPORT.md / 台帳の編集を次回ユーザーレポートまで保留させた(2件は opencode run の再試行分=重複配信)。教訓: handover 共有は相手のループを再開させ、成果物の二重作成と上書き競合を招く。以後の送信は『対象タスク完走済』の明記と重複確認を必須とする。"
+    },
+    {
+      "timestamp": "2026-10-29T08:06:34Z",
+      "id": "opencode-rel2-opcode-corrections-20261029",
+      "compressed": false,
+      "priority": "high",
+      "category": "re",
+      "tags": [
+        "oblivion",
+        "re",
+        "opcode",
+        "correction-pending",
+        "2026-10-29",
+        "rel2"
+      ],
+      "content": "オペコード3点照合 (REL2: tmp/re/relcheck_20261029/rel2_opcode3way.md) の新規検出と是正候補。以下はすべて未反映で L2/ユーザー承認待ち。(1) port getNativeOpcodeName の表示名3件が GT と乖離: opid 0x1083 は port=CureForVampirism / 正=GetPCIsSex(idx294)、0x10E3 は port=GetPCIsSex / 正=HasVampireFed(idx390)(1コマずれ)、0x1132 は port=ANGA / 正=IsActorUsingATorch(idx469)。dispatch への影響なし(数値ディスパッチ・ブリッジ37行に該当なし)だが script_vm_tests.cpp:2424 が誤名を assert し誤りを恒久化。(2) FunctionID 156件中155実装・未登録は AddTopic 0x0081 の1件のみ → ブリッジ行 {0x1058, FunctionID::AddTopic} も hasFunction ゲートでスキップされ SCDA の AddTopic 命令が未処理。(3) SetActorValue(NativeScdaOpcode 0x100F) はハンドラ fnSetAV 登録済だが、ブリッジの名前一致ルール(port \"SetActorValue\" ≠ FunctionID \"SetAV\") により未接続 = 命名差が機能ギャップ化した唯一の箇所。(4) 正本 §70.14 の『NativeScdaOpcode 12値』は誤記で実体9値(git 全リビジョン9値・証跡 tmp/re/v81b_h_to_table_xref.txt も9行)。(5) GT 自体は健全: opcode_table.json は cache/README の全自己検証値と一致(533行/opid重複0/impl527/dispatcher例外3+1/cond169/argflag19/argdesc281/argn分布/flagA272/alias176/desc142)、正典表 docs/SCRIPT_OPCODE_TABLE.md 532行の idx/opid/name/alias 不一致0、§70.14 の分類 EXACT85/CAND32/ABSENT39 は tmp/re/v81c_h_to_table_map.map.tsv と差0で完全再現、ブリッジ37行は全行正典一致。(6) 数値衝突28件(FunctionID 0x0001-0x001D 帯 ⟷ 正典ブロック型 ID 帯)は static_cast<FunctionID>(0x..) による暗黙変換が0件で隔離済み=現状実害なし。"
+    },
+    {
+      "timestamp": "2026-10-29T08:06:34Z",
+      "id": "opencode-gmst-esm3way-20261029",
+      "compressed": false,
+      "priority": "high",
+      "category": "re",
+      "tags": [
+        "oblivion",
+        "re",
+        "gmst",
+        "esm",
+        "2026-10-29",
+        "rel6"
+      ],
+      "content": "GMST 3層照合 (REL6: tmp/re/relcheck_20261029/rel6_gmst3way.md)。層: EXE 登録既定値 tmp/re/s50_gmst_full.txt = 2,304件(f992/i227/s1085、static slot 2,056 + DYN(heap) 248) / 実ファイル oblivion_esm_pull/Oblivion3.esm (277,504,985B) の GMST = 382件(f243/i31/s108、plan.md の GMST=382 と一致) / 移植 app/src/main/cpp/game/gmst_defaults.h = 41件。結合: s50∩ESM=378・ESM固有4件(fRegionGenTexGenMatch/NotMatch, fRegionGenTexPlacedMatch/NotMatch)・s50固有1,926、両方に在る378のうち値が異なるのが226件(60%)=EXE内蔵既定値はほぼフォールバック的存在。移植は s50 に40/41(欠落は fGlobalTimeMultiplier のみ・s50/ESM 両方に不在、VA 00B06704 は GMST スロット帯 0xB36xxx/0xB37xxx 外 = GLOB候補[推定・要確認])で 値一致40/40・VAコメント一致40/40。ESM には20/41 のみ在り、ESM値と異なる13件: fFatigueBase 1.25→1.0 / fFatigueAttackWeaponBase 8→7 / fFatigueBlockSkillBase 5→20 / fFatigueBlockSkillMult -0.04→0 / fFatigueCastBase 15→1 / fFatigueJumpBase 4→30 / fFatigueJumpMult 4→0 / fCombatSpeakHitChance 0.35→0.20 / fPerkSneakAttackMarksmanNovice 6→2・Apprentice/Journeyman/Expert/Master 8→3。影響評価: 運行時経路は全て gmst::getLive() で ESM 値を採用(fatigue_system.h L69-130 / combat_formulas.h L125-253 / asset_manager.cpp L130 の出版パス)→ 実プレイは実データと整合し実害なし。gmst::get() の constexpr 定数(kFatigueBase/kJumpBase/kBlockReduceSkillBase/kArmorRatingMax)の参照はテストのみで本番0件。技術的注意: この ESM のレコードヘッダは20バイト・サブレコード長は u16(想定24B/u32 で歩くと全382件失敗)、277MB を mmap で find すると実質ハングし bytes 一括読込なら0.1秒。残課題: fGlobalTimeMultiplier の実体同定 / ESM 未登録21キーの裏付け / constexpr を本番利用する場合の方針(getLive 統一か ESM 値更新か)。"
+    },
+    {
+      "timestamp": "2026-10-29T13:36:08Z",
+      "tags": [
+        "oblivion",
+        "re",
+        "gmst",
+        "correction",
+        "2026-10-29",
+        "opencode",
+        "opencode-gmst-esm3way-20261029"
+      ],
+      "id": "opencode-gmst-esm3way-correction-fglobaltime-20261029",
+      "compressed": false,
+      "priority": "high",
+      "category": "re",
+      "content": "訂正 (2026-10-29, opencode, append-only): opencode-gmst-esm3way-20261029 の一部記述を訂正する。【誤り】同エントリの『fGlobalTimeMultiplier は s50/ESM 両方に不在、VA 00B06704 は GMST スロット帯外 = GLOB候補[推定]』。【正しい事実(すべて実測)】(1) Oblivion.exe (7,898,624B) をバイト走査すると当該キーは 1 箇所のみ存在し、文字列は fGlobalTimeMultiplier:General @file 0x63C350 (OblivionLauncher.exe は0件)。Oblivion.esm (277,504,985B) には文字列自体が0件。(2) 正本 docs/RE_EXE_REPORT.md §43 (L7856-7911) が既に確定済み: 0x00B06704 = 1.0f (timescale既定値)、実体文字列 0x00A3D150 = \"fGlobalTimeMultiplier:General\"、GMST 名は \"<設定名>:<セクション名>\" 形式、0x00B06704 の直接書き込み命令は .text に無し (PUSH 0x00b06704 @ 0x009dc2f0 の参照のみ)。§54.3 で TimeScale とは別機構と確定。→ fGlobalTimeMultiplier は GLOB ではなく EXE 実在の GMST。(3) tmp/re/s50_gmst_full.txt (2,304件) に無い理由は s50 が bare editor-ID 名のみを抽出対象としたためで、s50 の網羅性は 2,304 + 1 件 (Key:Section 形式の混在名が他にもあるかは未調査=新規残課題)。(4) 移植側は正しい: gmst_defaults.h:60 {\"fGlobalTimeMultiplier\", 1.0f}, // 0xB06704 が EXE 値セルと一致、かつ oblivion_ini_defaults.cpp:444 に INI 既定値として並存 {\"General\",\"fGlobalTimeMultiplier\",\"1.0000\",kFloat,0x03} = GMST/INI 双系統、settings_manager.h:37 のコメントとも整合。(5) 運行時: jni_bridge.cpp:258 の gmst::getLive() は ESM に該当 GMST が無いため上書きされず恒常的に静的 1.0f を返す。ESM 経由で時間を変えたい場合この経路では不可 = 時間倍率変更の正規経路 (TimeScale 側) の移植要否が次課題。成果物訂正: tmp/re/relcheck_20261029/rel6_gmst3way.md §6 (2026-10-29 追記・後日計測が優先の規約に従い原文残置)。検証スクリプト: %TEMP%\\opencode\\rel7_globaltime.py / rel7b_exe_search.py。"
+    },
+    {
+      "timestamp": "2026-10-30T03:42:18Z",
+      "tags": [
+        "oblivion",
+        "re",
+        "opcode",
+        "fix",
+        "rel2",
+        "2026-10-30",
+        "opencode",
+        "opencode-rel2-opcode-corrections-20261029"
+      ],
+      "id": "opencode-rel2-namefix-applied-20261030",
+      "compressed": false,
+      "priority": "high",
+      "category": "implementation",
+      "content": "[適用・検証済] REL2 の port 表示名3件＋テスト1行を 2026-10-30 に人間承認((a)案)のうえ適用。L2 範囲はこの4行に限定。変更: app/src/main/cpp/script/native_scda_decoder.cpp L644 0x1083 \"CureForVampirism\"→\"GetPCIsSex\" / L706 0x10E3 \"GetPCIsSex\"→\"HasVampireFed\" / L763 0x1132 \"ANGA\"→\"IsActorUsingATorch\"、および app/src/main/cpp/tests/script_vm_tests.cpp L2424 の assert を getNativeOpcodeName(0x10E3)==\"HasVampireFed\" に更新。根拠(GT): tmp/re/cache/opcode_table.json の idx294 GetPCIsSex(0x1083) / idx390 HasVampireFed(0x10E3) / idx469 IsActorUsingATorch(0x1132)。逆に \"CureForVampirism\" と \"ANGA\" は GT 532件に不在(検証 %TEMP%\\opencode\\rel2_gt_verify.py)。検証(%TEMP%\\opencode\\rel2_verify.sh, Git Bash + mingw g++ 16.2, リポジトリ無改変): (1) script_vm_tests.cpp が -fsyntax-only で SYNTAX_OK、(2) native_scda_decoder.cpp が COMPILE_OK、(3) 挙動チェック10件 = 修正3件 + 対照7件(GetPCIsRace/VampireFeed/SetLevel/AddTopic/SetActorValue/SetStage/MoveTo) が RESULT: ALL OK (exit 0)、旧誤文字列が返らないことも確認。残る未反映(次レポート扱い): AddTopic 未実装(FunctionID 156中155・fnAddTopic 無し)、SetActorValue ブリッジ未接続(validateNativeFunctionMappings の名前完全一致ルール native_scda_bridge.cpp L108 が障壁)、正本 §70.14 の 12値→9値訂正は RE セッション(ses_e8f260663ffeBxgd24Gocmcl72)へ連託。既存障害の特定: tools/host_tests/run_host_tests.sh はローカルで assets_ffi.h 不在によりビルド不能 = 2026-10-26 の Rust 移行後に同スクリプトへ include パスが未追加。実ヘッダは C:\\Users\\hiroki.kogarumai\\oblivion-re-tools\\crates\\{assets,bsa,plugin,esm,nif}-ffi\\include\\ に実在(兄弟チェックアウト = OBLIVION_RUST_DIR 既定)。STATE.md の CI host test 失敗は別原因(msvc_compat.h → windows.h)。CPLUS_INCLUDE_PATH 指定でフル suite を追試中(結果は次エントリ)。"
+    },
+    {
+      "timestamp": "2026-10-30T04:52:37Z",
+      "tags": [
+        "oblivion",
+        "host-tests",
+        "verification",
+        "ci",
+        "rel2",
+        "2026-10-30",
+        "opencode",
+        "opencode-rel2-namefix-applied-20261030"
+      ],
+      "id": "opencode-host-tests-all-green-20261030",
+      "compressed": false,
+      "priority": "high",
+      "category": "status",
+      "content": "ホストテスト全スイート成功 (2026-10-30, opencode): rel2 の表示名修正4行に対する回帰検証として tools/host_tests/run_host_tests.sh を Git Bash + mingw g++ 16.2 で実行し、**=== HOST RUNNER: ALL GREEN (0 suite(s) failed) ===** (25スイート全て PASSED: ScriptVMTests / Phase45UnitTests / Phase48StressTest / Phase48IntegrationTest / WatrDecode / XtelDecode / WeatherTransition / InteriorCell / GameStateReport / AssetPath / MeshBuilder / MenuXml / MenuFade / FatigueSystem / CombatFormulas / Phase69Persistence / PluginList / FormIDIndex / EnchantingSystem / OblivionIni / SettingsManager / Merchant / MerchantPersistence / Phase30Integration / LodBlock)。ScriptVMTests 内の変更対象である \"NativeScda: expression function names\" (script_vm_tests.cpp L2424) は PASS。ただし初回実行は失敗し、run_host_tests.sh に 2026-10-26 の Rust 移行後からの既存欠陥が4件あることを特定した: (1) Rust FFI の include パス未追加 (assets_ffi.h が存在せず fatal error)、(2) 新規 app/src/main/cpp/assets/asset_path_resolver.cpp が SOURCES 未登録 (buildAssetPathCandidates/assetRootFolders の undefined)、(3) ホスト用 Rust 静的ライブラリ lib{assets,bsa,plugin,esm,nif}_ffi.a が未リンク (実体は C:\\Users\\hiroki.kogarumai\\oblivion-re-tools\\target\\gnu\\x86_64-pc-windows-gnu\\release\\ = OBLIVION_RUST_DIR 既定の兄弟チェックアウト)、(4) Rust std が要する -lws2_32 -lntdll -luserenv -lbcrypt -ladvapi32 -lshell32 -lole32 が未指定。修正はリポジトリ無改変で %TEMP%\\opencode\\run_host_tests_patched.sh にのみ適用 (cd 固定 + include 5行 + SOURCES 1行 + .a 5本 + Windows lib 7本)。本体 run_host_tests.sh への反映は L2 承認待ち (提案内容は本エントリ記載の4点そのもの)。STATE.md の CI host test 失敗 (msvc_compat.h → windows.h) は別原因のため本件と区別すること。ログ: %TEMP%\\opencode\\host_tests_rel2_r4.log。"
+    },
+    {
+      "timestamp": "2026-10-30T06:19:20Z",
+      "tags": [
+        "oblivion",
+        "host-tests",
+        "rust-migration",
+        "handoff",
+        "rel2",
+        "rel3",
+        "2026-10-30",
+        "opencode",
+        "opencode-host-tests-all-green-20261030"
+      ],
+      "id": "opencode-hostrunner-fix-and-handoff-done-20261030",
+      "compressed": false,
+      "priority": "high",
+      "category": "implementation",
+      "content": "(1) tools/host_tests/run_host_tests.sh 本体へ Rust 移行対応を L2承認のうえ適用し、**本体実行で ALL GREEN（25スイート全PASSED・`NativeScda: expression function names` 含む ScriptVMTests PASSED）** を確認 (2026-10-30)。差分 +85行・削除0・bash -n 通過・ログ %TEMP%\\opencode\\host_tests_real_final3.log。修正内容: (a) Rust FFI include 5本を追加 (RUST_DIR=${OBLIVION_RUST_DIR:-$(cd .. && pwd)/oblivion-re-tools} で環境変数上書き可・既定は兄弟チェックアウト)、(b) 新規 app/src/main/cpp/assets/asset_path_resolver.cpp を SOURCES へ追加 (buildAssetPathCandidates/assetRootFolders の undefined 解消)、(c) ホスト用 Rust アーカイブをリンク (Android CMake と同基準の必須3本 assets/bsa/plugin が1ディレクトリに齐全することを have_rust_archives() で判定、esm/nif は在れば追加)、(d) Windows 系ライブラリ -lws2_32 -lntdll -luserenv -lbcrypt -ladvapi32 -lshell32 -lole32 を uname -s の MINGW/MSYS/CYGWIN のみに条件付け (Linux CI を壊さない)、(e) 三つ組検出は rustc -vV + 非ログインシェル向けプローブ ($HOME/.cargo/bin, /c/ProgramData/scoop/shims, /usr/local/cargo/bin)、見つからない場合は android/cmake/deps を除外した find で3本齐全ディレクトリを選択、(f) 見つからない場合は専用エラーで案内。検証過程の失敗3回: 初回=assets_ffi.h 不在 (既存欠陥そのもの)、2回目=非ログイン bash の PATH に rustc が無く三つ組未検出、3回目=find が先に esm/nif 欠落の target/gnu/release を選び cannot find libesm_ffi.a → 上記 (e)(c) で是正。(2) (甲) docs 連託の到達を確認: セッションA (ses_e9ccb3190ffeDPSxT2BsblKHKr) に 2026-10-30 14:56:37 に user メッセージとして配信され、14:56:47 に「連託(人間承認済み)を受け領しました」と応答、.bak+行番号再検証+変更行レポートの条件を受諾して対象行 (RE_EXE_REPORT L12095/L12183, ROADMAP L125, REPORT L11923) を特定・編集に着手。試行5回の内訳=①当方のパス誤り ②稼働中親 ses_e8f260663ffeBxgd24Gocmcl72 が 12:28 から interrupted でハング (自CLI PID49072 を停止・未配信確定) ③npm シムの StandardOutputEncoding エラー ④同 \"not a valid application\" エラー → 原因は npm の bin/opencode.exe が 229B の postinstall未実行スタブで、node postinstall.mjs 実行により 254,943,112B の実体へ修復 ⑤ECONNRESET (配信後の切断、DB照合で到達を確認)。稼働中親は 14:43 時点で本連託のキーワードを5回言及 (内容認識) しているが state は interrupted のまま (UI 再開は人間作業)。未コミット: 台帳本ファイル / 表示名4行 / run_host_tests.sh +85行 / STATE.md (ループ側) / .bak4件。"
+    },
+    {
+      "id": "opencode-re-v116-v142-batch-20261031",
+      "timestamp": "2026-10-31T10:05:00Z",
+      "priority": "high",
+      "category": "re",
+      "tags": [
+        "oblivion",
+        "re",
+        "backfill",
+        "v116-v142",
+        "2026-10-31",
+        "opencode"
+      ],
+      "content": "RE セッション成果の台帳バックフィル第1弾 (V116-V142 並行解析バッチ27件・2026-10-26〜10-27分)。一次ソース: tmp/re/TODO_re49.md serial 114-142 (全件 [x] 完了)。範囲 = V116 (tmp/re/b20_impl_5071d0.md 19,900B) から V142 (tmp/re/v142_s7010_residuals.md 20,765B)。主要成果: (a) Steam DRM/.bind 複号ブートストラップ解読 (v126_bind_crt_bootstrap.md: 0xD9 dwords 複写・鍵 0x72c99b67 起点のバイトコピー/XOR、CRT startup 接続は steamdrm jmp eax tail-jump で確定、docs §35.5 訂正素材化)。(b) ラベルなし関数第3カテゴリ (Cat-3) の定義 = 10,261件 (v127_labelless_cat3.md)、gap 内複数ブロック10/10 件で独立性判定。(c) 全 21,597 関数の4層ハッシュ重複照合 (v133_full_dup_scan.md 53,550B: 25秒/330MB、dec_index 20,465+名前付き767+本文なし365 で台帳21,597を検証、コピペ候補≥15命令=12組24件、gap↔gap外跨りは BA2組のみ)。(d) GT 不整合5件の訂正確定 (V121/V153 系: +8=フォーム同化ヘルパで GetFormID ではない / 0xA0 / 0x2D0 / 0x36C=可変・永続化 process 状態バイト / 0x190=IsActor)。(e) E8 新規66件の確定絞り込み (v140_e8_66_finalization.md 34,019B) と v90 系残点束の解消 (v128_winmain_tail 41,251B / v129_shader_slot 40,347B・[state+0xFF8]=renderer[+0x280] 同一確定 / v130_ini_residuals 38,766B・6残点全解明 / v131_impl18_arrival 31,844B / v132_exception_dispatcher 30,701B / v134_forwarder 27,131B / v135_tree 32,167B)。(f) b 系残点束 (v137 4点全解明 / v138_b16_alarm 45,168B / v139_b17_table2 53,131B / v141_b19_quest 29,226B)。(g) §70.10 残2件解消 (v142: s*Description 8件は GMST 置換されるが読者0件、FUN_00478780=Character装備アタッチブロック 0x154B)。docs/GT 本体への適用は行わずドラフト留め (V136 §70.16(4c) ドラフト 19,571B 等)。本エントリにより rel5 で未記録と指摘された V116 相当分の台帳欠落を補填。"
+    },
+    {
+      "id": "opencode-re-v143-v167-batch-20261031",
+      "timestamp": "2026-10-31T10:05:00Z",
+      "priority": "high",
+      "category": "re",
+      "tags": [
+        "oblivion",
+        "re",
+        "backfill",
+        "gt-apply",
+        "read-ptr-bug",
+        "2026-10-31",
+        "opencode"
+      ],
+      "content": "RE セッション成果の台帳バックフィル第2弾 (V143-V167 反映・台帳統合・バグ訂正バッチ25件・2026-10-27〜10-29分)。(a) GT/正本反映バッチ2件が適用済み — V143: GT_CHEATSHEET.md 8操作 (§4.1 新設=訂正5行+8、§2 に 0x5072B0 追補、§5 訂正履歴等) + docs 6操作 (§17.2 +8 4値化、§41.3 訂正5行挿入，+0xF8 行訂正)、適用ログ tmp/re/v168_v143_apply_log.md 14,148B、docs .bak17 / GT .bak_apply1、round_verify ALL OK、docs 12,352行 CRLF 維持。V144: 訂正束14+1件を30操作で一括適用 (§35.5 atexit 訂正，§70.15(6) V137 クローズ行，§59.3 mask 訂正，§70.16(4c) 27行挿入 + b系23操作)、適用ログ tmp/re/v167_v144_apply_log.md 20,988B、bak16。(b) ラベル/台帳 6層統合テーブル構築 (V145: tmp/re/v155_label_ledger_union.md + CSV 1,507,687B / 31,905行、%TEMP% 版と SHA256 完全一致、V140 新規66件のうち55収録/11未収録を全件裁定、名前付きヘッダ 767/659 が正で 684 の持主は v90 と裁定)。(c) read_ptr() セクション定数バグ (V155【最優先】): v140 系5本 (b/c/d/e/f2) に限定と実測、call-origin 222→150・未知22→3=IAT・P3 58,935→58,989 等10項目が変動するも A41/B15/C8 flip 0・GT ゼロ損失で結論・判定は不変 (tmp/re/v165_v140_recompute.md 20,801B)。v155/v133/v127/cache は非影響。(d) C++例外 funclet 帯 (0x9A9D50 起点 189KB) の EH 台帳化 (V156: FuncInfo 2,663個 (try付90) から unwind 7,915 / catch 144 / seh_thunk 2,657、0x980EA4 の正体=___CxxFrameHandler3 と確定し v156 の _UnwindNestedFrames 説を訂正、.text push-imm32 登録経路 4,387サイト/2,657 thunk 新発見、CSV 10,742行)。(e) 台帳追記粒度の統合裁定 (V157: 実EHエントリ 10,716 粒度・adopt 10,572 を推奨、region開始点665/全10,742 は却下、追記候補 CSV 10,870行/1.4MB、人間判断 H1-H7)。(f) GT slot 語義の確定 — V158 で A-D 4件全確定 (+0x170=GetBaseForm、+0x164=GetParentCell、+0xEC=GetScale 系統別、+0x2C0=系統別3語義。tmp/re/v171_gt_candidates.md 37,863B、GT §4.1.1 確定4行+docs §41.3 訂正4行はドラフト=要承認)。(g) 残点束の大量解消: v157_runtime 53,236B / v158_slot_opcode_map 48,921B / v159_renderer 39,777B (15件全裁定) / v160_ini_log 40,290B (12点裁定) / v161_quest_extra 53,037B (16点全裁定) / v162_gap 30,209B (保留6件全解除・P3 未知22件=.rdata 0xA28088-0xA28258 の関数ポインタ表帰属で特定0) / v164_esm_gate_spec 43,494B / v174_gap_residuals2 26,724B (.CRT$XCU 7,402エントリを4型分類+台帳化候補1,199件CSV) / v175_v144_skips 19,301B / v176_esm_gate_spec2 28,673B (N1-N9 裁定・Freq列 tail incl GT 採用で2行更新) / v177_gt_slot_residuals2 42,473B (EDL extra 0x14=ExtraStartingPosition 確定、0x2D0=StartItemAction 確定) / v178_runtime_residuals3 34,701B / v179_csv_crosscheck 13,313B (EH×v170 の128行差を完全同定・実矛盾0)。V168【要承認】台帳反映バッチ (Ghidra 関数台帳 func_list_new 相当・v170 CSV+v174 1,199、H1-H7 裁定待ち) は未着手のまま次ラウンドへ。本 session-memory.json とは別の台帳が対象。"
+    },
+    {
+      "id": "opencode-re-v169-v190-bundles-20261031",
+      "timestamp": "2026-10-31T10:05:00Z",
+      "priority": "high",
+      "category": "re",
+      "tags": [
+        "oblivion",
+        "re",
+        "backfill",
+        "residual-bundles",
+        "2026-10-31",
+        "opencode"
+      ],
+      "content": "RE セッション成果の台帳バックフィル第3弾 (V169-V190 残点束バッチ22件完了・2026-10-29〜10-30分、V188 は 10-31 完了確認。serial 169-190、V191/V192 は未着手)。v180 letter-row 棚卸しから起票された8束 (束A=V169〜束H=V176) と、その残点を回収する命名/残点束 (V177-V190)。(a) 束A ESM 統合 (tmp/re/v181_esm_integration.md 32,064B): Q1 content_inventory 1,167,017件/85,079GRUP/64種/0error、Q2 84 worldspaces/14,770 cells+WNAM 階層、Q3 LAND 31,823/REFR 1,025,617/zlib 41,789件100%解凍、Q4 SCDA 141 opcodes Σ63,235+§67.6未登録29opid を明記、Q5 MGEF 145件/EFID 150種、Q6 WATR 23件。docs/RE_ESM_REPORT.md 転記は要承認でドラフト留め。(b) 束B アセット統合 (v182 26,322B): BSA 17本 v103/v104 拒否・bias 17/17=100%・hash folders1,621/files147,629 100%検証、NIF 20.0.0.4/user 2817/BSVER 11 を17実アセット byte 検証、DXT1 1024x1024 実デコード成功、XTEL 4,397 (相互リンク4,396) +DOOR 501。(c) 束C レンダラ/ストリーミング (v183 42,763B): SetLight=D3D API 完全不使用で NiDX9RenderState キャッシュ層 (inner=[state+0xFF8]=renderer+0x280=IDirect3DDevice9 互換 COM) が代替と確定、s61 vtable 表は系統的誤認と訂正、BSShaderPPLightingProperty vtable 0xA91384/42スロット、LOD=DistantLOD HLSL キャッシュ4種、メモリプール拡張点 [+0xB02020+0x54] が移植要点。(d) 束D 音響/入力/CRT (v184 35,884B・19項目18解明): 曲カーブ X=t=clamp((now-0x2E8)/1700)、type bit0x20=2D UI 使い捨て音、grave 経路=DIK0x29 edge、パッド=POV 4500セクタ、+0x1BD5 は write-only 1byte で8方向説を訂正。(e) 束E §56 ゲームプレイ (v185 33,297B・19項目17解明): [0xB383A8/B0]=sSkillIncreased/Decreased、&token=ID<0x2710パス+名前レジストリ、VideoDisplayMenu=command0x5DDB70。(f) 束F Havok (v186 30,028B): 0x8A2650=等値比較子で castRay 誤同定を訂正、本経路=bhkWorld slot[34]→hkWorldRayCaster→slot[14] castRay→0x8BA470、回避FSM 8状態名前表 0xB15728 全文取得。(g) 束G アニメ (v187 17,231B) / 束H 魔法 Wave3 (v188 24,473B): AlchemyMenu ハンドラ=vt+0x0C FUN_00595080、SEFF 経路を「0x6A83D0以降」から ScriptRunner::Run FUN_00517330 へ訂正、毒=二重塗布拒否+single-use+期限 0x68E670。(h) 残点/命名束: v189 32,854B (台帳未登録29 opid=scda141−§67.6 定義・Σ17,131=27.09%・上位 0x0016 OnMagicEffectHit 10,480)、v190 35,639B (inner 生成=FUN_0076A1C0 CreateDevice、DIP=+0x148/DP=+0x144 を静的同定し v183 の検出不能を撤回)、v191 31,596B (20/20 全解明・verify 37/37)、v192 24,448B (親 inline 完成)、v193 19,359B、v195 22,480B (slot218 の実入力=グローバル [0xB3BCF0] 時間系 float と確定)、v196 16,051B、v197 19,766B、v198 21,834B、v199 22,407B、v200 25,226B (2026-10-30)、v201 23,186B (+0x10 初回書手=FUN_004FF710@0x4FFB0C、base+0x58 bit7=base-disabled guard bit、bit22=エフェクト判定バイパス、slot[6]値4=SpellItem。REL2 表示名3件 (0x1083/0x10E3/0x1132+script_vm_tests L2424) の二重修正なしを確認)、v202 22,706B (2026-10-30)、v203 29,676B (2026-10-30)。"
+    },
+    {
+      "id": "opencode-re-v167-letter-audit-20261031",
+      "timestamp": "2026-10-31T10:05:00Z",
+      "priority": "medium",
+      "category": "re",
+      "tags": [
+        "oblivion",
+        "re",
+        "backfill",
+        "letter-rows",
+        "v180",
+        "2026-10-31",
+        "opencode"
+      ],
+      "content": "V167 letter-row 55件棚卸し (2026-10-29, tmp/re/v180_letter_rows_audit.md 38,528B)。TODO_re49.md に 2026-10-17 起票以来無接触だった `- [ ]` 箇条書き55件 (F2-F8/G6-G8/H6-H7/I6-I7/J5-J6/N2-N7/O1-O6/P1-P5/Q1-Q12/R2-R5/W3-1..7) を全数読解し分類: (a) 解決/包含済み21件 (s81 が O2/O3/O5/O6 を消化、s68_n2 が HavokContext vtable 不在を確定、s69 が P1 92メソッド、s75/s76 が R3/R4/R5 等) / (b) 人間待ち9件 / (c) 未着手25件 → 5-8束への圧縮を提案し、本ラウンドで V169-V176 (束A ESM統合/束B アセット統合/束C レンダラ/束D 音響入力CRT/束E §56 ゲームプレイ/束F Havok RayCast-Pathing/束G アニメ/束H 魔法Wave3) として起票 (工数計 9.5-13人日、詳細は各束の完了行と成果物 v181-v188)。ロードマップ接続: 束C→Phase2・束A→Phase3・束B→Phase4・束E→Phase1§56・束H→1-2残件。KPI影響: シェーダ 224/224 は残48が原作未実装で再定義要、Q4 残29opid が VM KPI 未登録分。人間判断6件 (N2 矛盾裁定・R3 KPI 再定義・G7/H6 docs 反映・L2群適用・Q7/Q8 解禁・21件の [x] 化要否) が残る。"
+    },
+    {
+      "id": "opencode-re-docs-entrust-9value-20261031",
+      "timestamp": "2026-10-31T10:05:00Z",
+      "priority": "high",
+      "category": "re",
+      "tags": [
+        "oblivion",
+        "re",
+        "backfill",
+        "docs",
+        "handoff",
+        "rel3",
+        "2026-10-31",
+        "opencode"
+      ],
+      "content": "正本改訂連託の記録 (2026-10-30)。(1) docs/RE_EXE_REPORT.md §70.14 の「NativeScdaOpcode 12値」誤記 (実体は9値・git 全リビジョン9値・証跡 tmp/re/v81b_h_to_table_xref.txt 9行、rel2 三点照合で確定) の訂正を RE セッション (ses_e8f260663ffeBxgd24Gocmcl72) へ連託。連託は 2026-10-30 14:56:37 にセッションA (ses_e9ccb3190ffeDPSxT2BsblKHKr) へ user メッセージとして配信され 14:56:47 に受領、「.bak+行番号再検証+変更行レポート」の条件を受諾、対象行 (RE_EXE_REPORT L12095/L12183, ROADMAP L125, REPORT L11923) を特定して編集に着手 (到達確認の経緯は台帳 opencode-hostrunner-fix-and-handoff-done-20261030)。§70.14 適用の完了確認は本追記時点で未取得 = 次回ユーザーレポートで確認要。(2) rel3 (tmp/re/relcheck_20261029/rel3_reference_drift.md §1-C) の必須2件 A-1/A-2 は 2026-10-30 に適用済み・起票不要 (tmp/re/TODO_re49.md V201 出典注記)。残る擬似リンク切れ5件 (RE_EXE_REPORT L10643 s90〜s98 / L11849 v60〜v76 / ROADMAP L267 v82*.{py,txt}) は V201 として起票済み。真の dangling 3件 (%TEMP%\\opencode\\analyze_pop_final.py / tmp/re/probe_harness.py / tmp/re/wbDefinitionsTES4.pas) と予定未作成4件 (RE_ESM/ASSET_REPORT 等) は rel3 §1-C で確定し、実質リンク切れ率=7/171=4.09%。"
+    },
+    {
+      "id": "opencode-re-backfill-status-20261031",
+      "timestamp": "2026-10-31T10:05:00Z",
+      "priority": "medium",
+      "category": "status",
+      "tags": [
+        "oblivion",
+        "re",
+        "backfill",
+        "status",
+        "2026-10-31",
+        "opencode"
+      ],
+      "content": "RE 側台帳バックフィル完了時の現況サマリ (2026-10-31 時点。本追記6エントリで V116-V190 相当の 2026-10-26〜10-30 分を記録済み)。残課題: (1) V168【要承認】Ghidra 関数台帳反映バッチ — v170 CSV (10,870行) + v174 xcu (1,199件)、人間判断 H1-H7 (catch 144 昇格・帯域一括追記・Cat-3 mass・共有FI 253 等) 待ち。対象は Ghidra 側関数台帳であり本 session-memory.json とは別物。(2) V191 (process 細部束→v204) / V192 (havok/INI 命名束→v205) は未着手 (並行セッション停滞、2026-10-31 確認)。(3) V193 AddTopic ハンドラ実装 [PORT] は L2=人間承認が要る (起票のみ・未承認のまま着手禁止)。(4) 正本側: 擬似リンク切れ5件の整形式化 V201・正本未参照の孤児成果物173件 (65.8%) の統合方針 V203 は未着手。(5) Supermemory への反映は V204 別タスク (tools/sync_memory_to_supermemory.py は V84 ガード有効で本タスクでは実行禁止)。(6) GT/docs へ反映待ちのドラフト: v171 の GT §4.1.1 確定4行+docs §41.3 訂正4行、v177 の GT ドラフト4点、v181/v182 の docs 転記ドラフト、v201 の訂正素材 (表示名3件は opencode 側で適用済み・二重修正なし確認済)。"
+    },
+    {
+      "id": "opencode-x1-rust-migration-n1n5-unrecorded-20261031",
+      "timestamp": "2026-10-31T12:00:00Z",
+      "priority": "medium",
+      "category": "correction",
+      "tags": [
+        "oblivion",
+        "re",
+        "rust",
+        "memory",
+        "freshness",
+        "2026-10-31",
+        "opencode"
+      ],
+      "content": "鮮度訂正 X1 (2026-10-31, 矛盾監査 第7軸): Rust 移行の実績 STATE.md 記録分 (2026-10-29/30) が本台帳に未記録だった。STATE.md 'L2 Runs' に記録済みの内容: N1 nif-core (header/object-array/block-body walker 移植, cargo test 16 passed), N2 geometry decode (parseGeometryBlocks 等7関数, 21 passed), N3-geo nif-ffi + C++ shim + CMake (C ABI harness 全アサーション通過, 444行のC++削除, worktree Z:\\Users\\hiroki.kogarumai\\wt\\oblivion-nif-ffi@19fafb7f), N4 real-mesh differential oracle (50 retail meshes / 2,462 records bit-exact PASS), N5 stage1+2 skin/collision readers (nif-core→nif-ffi→C++ shim→oracle SKIN/COL, 2,462 records bit-exact, オラクルが実バグ2件検出: BoneData skin-transform order / partial rigid-body delivery)。残件: N5b (animation Wave2 + phase30 parity)・N6 docs パス・native-lib リンク未実行。本エントリは矛盾ではなく未記録の補記 (第7軸検出 X1)。作業本体はコミット前 (no commits anywhere)。"
+    },
+    {
+      "id": "opencode-x2-fglobaltime-esm-stale-note-20261031",
+      "timestamp": "2026-10-31T12:00:00Z",
+      "priority": "low",
+      "category": "correction",
+      "tags": [
+        "oblivion",
+        "re",
+        "gmst",
+        "freshness",
+        "2026-10-31",
+        "opencode"
+      ],
+      "content": "鮮度訂正 X2 (2026-10-31, 矛盾監査 第7軸): fGlobalTimeMultiplier に関する台帳 10-19 時点の『ESM override support』記述は実効性を失った。10-29 の gmst-esm3way 訂正で確定した通り: Oblivion.esm に fGlobalTimeMultiplier キーは存在せず、本移植では恒常的に静的 1.0f (jni_bridge.cpp:258 で gmst::getLive() を読むが既定値1.0 のまま)。ESM 経由のゲーム時間変更は本経路では不可。TimeScale 経路の移植要否は未決。旧記述 (0fc7c85c / copilot-re-batch-20261019-20 系) は当時の文脈として残すが、現在の実装状態は本エントリの記載を正とする (第7軸検出 X2)。"
+    },
+    {
+      "id": "opencode-correction-adb-execurrent-20261031",
+      "timestamp": "2026-10-31T14:14:07Z",
+      "priority": "low",
+      "category": "correction",
+      "tags": [
+        "oblivion",
+        "memory-ledger",
+        "correction",
+        "adb",
+        "2026-10-31",
+        "opencode"
+      ],
+      "content": "訂正 (2026-10-31, V214 台帳参照訂正): 旧記載 tools/adb.execurrent は実体なし（誤記）。正: adb 本体は C:\\Users\\hiroki.kogarumai\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb(.exe)（2026-10-31 に Test-Path で実在確認済み）。元文言「...Sdk\\platform-tools\\adb.execurrent verification」は「\\adb」+「current verification（実機検証）」が融合した破損と判定。tools/ 配下に adb 関連ファイルは存在しない。元エントリID: b3f05000-ea69-47e2-b41c-3609e36adb69（2026-10-04 buildverification、append-only のため原文は改変しない）。出典: tmp/re/relcheck_20261029/rel5_ledger_freshness.md §4-2。"
+    },
+    {
+      "id": "opencode-correction-phase9plan-merged-20261031",
+      "timestamp": "2026-10-31T14:14:07Z",
+      "priority": "low",
+      "category": "correction",
+      "tags": [
+        "oblivion",
+        "memory-ledger",
+        "correction",
+        "plan",
+        "phase9",
+        "2026-10-31",
+        "opencode"
+      ],
+      "content": "訂正 (2026-10-31, V214 台帳参照訂正): docs/PHASE9_PLAN.md 参照は「統合済み」。2026-09-27 のコミット b4446bf7 で Phase 9 計画（423行）が plan.md の Phase 9 節へ統合されファイルは削除済み。plan.md 冒頭に \"The Phase 9 plan that used to live in docs/PHASE9_PLAN.md was merged into the Phase 9 section below on 2026-09-27, and that file was deleted; no other plan document supersedes this one\" と明記。以後の参照は plan.md Phase 9 節が正。台帳内の当該参照は歴史記録として許容、現在形での参照は不可。元エントリID: 0fc5cbf9-ae2f-4456-9dfe-57dc66834e24（2026-09-27 merge gate、当該エントリ自体が統合・削除を記録済み）。出典: tmp/re/relcheck_20261029/rel5_ledger_freshness.md §4-1。"
     }
   ],
   "metadata": {
-    "totalEntries": 670,
+    "totalEntries": 689,
     "compressedCount": 121,
     "sessionCount": 40,
-    "lastUpdated": "2026-10-25T10:51:39Z",
-    "entry_count": 670,
-    "last_updated": "2026-10-25"
+    "lastUpdated": "2026-10-31T14:14:07Z",
+    "entry_count": 689,
+    "last_updated": "2026-10-31"
   }
 }
