@@ -2421,7 +2421,7 @@ void ScriptVMTests::testNativeScdaDecoder() {
                         getNativeOpcodeName(0x1100) == "GetGameSetting" &&
                         getNativeOpcodeName(0x1076) == "ModCrimeGold" &&
                         getNativeOpcodeName(0x1135) == "IsXBox" &&
-                        getNativeOpcodeName(0x10E3) == "GetPCIsSex" &&
+                        getNativeOpcodeName(0x10E3) == "HasVampireFed" &&
                         getNativeOpcodeName(0x10FC) == "SetPCFame" &&
                         getNativeOpcodeName(0x10FD) == "SetPCInfamy" &&
                         getNativeOpcodeName(0x115B) == "SetNoAvoidance";

@@ -641,7 +641,7 @@ std::string getNativeOpcodeName(uint16_t opcode) {
         case 0x1077: return "GetCrimeKnown";
         case 0x107D: return "IsGuard";
         case 0x1082: return "GetPCIsRace";
-        case 0x1083: return "CureForVampirism";
+        case 0x1083: return "GetPCIsSex";
         case 0x1088: return "GetIsReference";
         case 0x1089: return "SetFactionRank";
         case 0x108B: return "KillActor";
@@ -703,7 +703,7 @@ std::string getNativeOpcodeName(uint16_t opcode) {
         case 0x10E0: return "GetIsPlayerBirthsign";
         case 0x10E1: return "GetPersuasionNumber";
         case 0x10E2: return "VampireFeed";
-        case 0x10E3: return "GetPCIsSex";
+        case 0x10E3: return "HasVampireFed";
         case 0x10E4: return "GetIsClassDefault";
         case 0x10E5: return "GetClassDefaultMatch";
         case 0x10E6: return "GetInCellParam";
@@ -760,7 +760,7 @@ std::string getNativeOpcodeName(uint16_t opcode) {
         case 0x112B: return "DisableLinkedPathPoints";
         case 0x112C: return "IsInInterior";
         case 0x112D: return "ForceWeather";
-        case 0x1132: return "ANGA";
+        case 0x1132: return "IsActorUsingATorch";
         case 0x1133: return "SetLevel";
         case 0x1134: return "ResetFallDamageTimer";
         case 0x1135: return "IsXBox";
