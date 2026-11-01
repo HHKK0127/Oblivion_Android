@@ -11865,7 +11865,7 @@ call eax
 | v77 | オペコード表の実測（entry verify / id layout / field usage） | 実測（§70.4） |
 | v79 | ギャップ 357 VA の吸収仮説検証 | 実測（§70.12） |
 | v80・v81 | 薄片 101 件の `+0x18` 照合と正典表生成 | 101/101 一致（§70.12・§70.13） |
-| v81b〜v81d | 移植ヘッダ ⟷ 正典表の突合と SCDA マーカー裏取り | 156 件分類 + 12 値裏取り（§70.14） |
+| v81b〜v81d | 移植ヘッダ ⟷ 正典表の突合と SCDA マーカー裏取り | 156 件分類 + 9 値裏取り（§70.14） |
 
 以降 `[確定]` はバイナリ証拠あり、`[要再導出]` は現行 doc と矛盾し未決着。v77・v79〜v81 の 5 本は 2026-10-25 に追加レビューした。v81b〜v81d は移植ヘッダとの突合専用の枝番（§70.14）で、opencode 側の V80〜V83 とは別系統。
 
@@ -11920,7 +11920,7 @@ call eax
 - 同一ハンドラを共有する別名オペコードが 7 組（例: `0x5007D0` = `ShowSubtitle` 0x0151 / `ShowDialogSubtitles` 0x1164、`0x503E10` = `OnEquip` 0x0004 / `OnActorEquip` 0x001C、`0x50D020` = `AdvancePCSkill` 0x10D4 / `ModPCSkill` 0x110F）。**V5 表の「重複 5 VA」はテーブル誤りではなく実在の別名共有である**（§70.13）。
 
 #### (V83) 表の列の実体 — 全 532 件の raw PE 再計測（`+0x10` のパック構造と `+0x14` = 引数記述子）
-- 証跡: `tmp/re/v83_col14_meaning.md`（生成器は `%TEMP%\opencode\v83_col14*.py`、いずれも Git 管理外）。手法は `tmp/re/probe_harness.py`（selftest 4/4 PASS）による raw PE 読み取りのみで、Ghidra 非依存・`.data` の VA − `0x401400` 規約に準拠。
+- 証跡: `tmp/re/v83_col14_meaning.md`（生成器は `%TEMP%\opencode\v83_col14*.py`、いずれも Git 管理外）。手法は `tmp/re/handover_20261025/scripts/probe_harness.py`（同物が `%TEMP%\opencode\probe_harness.py`。selftest 4/4 PASS）による raw PE 読み取りのみで、Ghidra 非依存・`.data` の VA − `0x401400` 規約に準拠。
 - **`+0x10` は単一フィールドではない**。4 バイトのパック: byte0 = フラグ A（272 件が `1`）/ byte1 = **未使用（全 532 件 `0`）** / u16 `+0x12` = 引数個数（`0:251 / 1:195 / 2:65 / 3:12 / 4:5 / 5:3 / 6:1`、総スロット **402**）。u32 として読んだ「nonzero = 408」は byte0 フラグ（272）と argn>0（281）の**和集合**（重複 45）であり、計測値としては正しいが単一フィールドではない。u32 distinct は 11 種のみ（`0x1`×127 / `0x10001`×103 / `0x10000`×92 / `0x20000`×34 … 最大 `0x50001`）で、ポインタ相当（≥ `0x400000`）は 0 件。
 - `+0x18`（実装、527/532）と同様に `+0x14` も `.text` へ落ちる値は 0 件（281 件すべて `.data`、値域 `0xB0A11C`〜`0xB0AF30`）。したがって「alternate handler」説は棄却される。
 - **`+0x14` が指す先は 12 バイトの記述子レコード** `{ const char* name /* .rdata */; u32 type /* 0x00-0x25 = 38 種 */; u32 optional /* 0 or 1 */ }` で、これが引数個数ぶん連続する（全 281 エントリで `argn * 12` バイト分すべて有効な名前 ptr、検証 0 例外）。記述子プールは表基底直下の `[0xB0A11C, 0xB0AF48)` = 0xE2C バイト。共有が多く、実体レコードは **179 ユニーク**（例: `0xB0A6CC` = `{Integer, 1, 0}` を 42 コマンドが共用 / `0xB0ABAC` = `{Actor (optional), 6, 1}` を OnHit・OnActivate・OnDeath・OnStartCombat 等 12 件が共用 / `0xB0A11C` = `{String, 0, 0}` を MessageBox・Message・EssentialDeathReload 等 13 件が共用）。
@@ -12092,9 +12092,9 @@ attribute `s*Description` 8 件が ESM で置換されるか / `FUN_00478780` �
 #### (1) `Opcode`（87〜143 行、0x0000〜0x1000）= 突合対象外 [確定]
 VM 固有のスタック/コール符号化（STOP 0x0000 / ADD 0x0001 / … / CALL 0x1000）。EXE のオペコード表とは**別空間**であり、対応を取る必要はない。
 
-#### (2) `NativeScdaOpcode`（153〜166 行・12 値）= 全 12 値が実測で裏付けられる [確定]
+#### (2) `NativeScdaOpcode`（153〜166 行・9 値）= 全 9 値が実測で裏付けられる [確定]
 - 正典表と同名で一致（6 値）: `Activate 0x100D` / `SetActorValue 0x100F`（正典の短名は `SetAV`）/ `PlayGroup 0x1013` / `Cast 0x101E` / `SetStage 0x1039` / `MoveTo 0x109E`（正典の長名は `MoveToMarker`、短名 `MoveTo`）。
-- `Stop 0x0011` / `Marker 0x001C` / `Prologue 0x001D` は正典表に同名 entry が無いが、**SCDA 国勢調査で裏付けが取れた**。当初「名前不一致」に見えたのは**空間の混同**だった。
+- `Stop 0x0011` / `Marker 0x001C` / `Prologue 0x001D` は正典表に同名 entry が無いが、**SCDA 国勢調査で裏付けが取れた**。当初「名前不一致」に見えたのは**空間の混同**だった。【訂正 2026-10-30（連託・人間承認済み・セッションA適用）】旧「12 値」は誤記で実体は **9 値**（同名6 = Activate/SetActorValue/PlayGroup/Cast/SetStage/MoveTo + Stop 0x0011/Marker 0x001C/Prologue 0x001D 3）。根拠: `script_opcodes.h` L153-166 の enum 9 値（本セッションで自前再確認）・git 全リビジョン（8e63f592→…→89f399bf）で 9 値維持・`tmp/re/v81b_h_to_table_xref.txt` A)節 9 行。連託元の事前状態は `RE_EXE_REPORT.md.bak18` に保存済み。
 
 | ヘッダ値 | SCDA での役割 | 出現数 | 根拠 |
 |---|---|---|---|
@@ -12180,7 +12180,7 @@ RELATED 18 件の確度は一様ではない。
 2. 済: `docs/SCRIPT_OPCODE_TABLE.md` の 0x0000〜0x001E 行へ「ブロック型 ID」注記を追加（2026-10-25。`### 0x0000〜0x001E 帯の注意（ブロック型 ID）` 節。掲載値は `tmp/re/s59_svm_r7_bytecode.txt` と一致確認済み）。
 3. `tmp/re/v81c_h_to_table_map.map.tsv` を Android 側の対応表（テスト資産）として取り込むかは設計判断。
 
-`[確定]`（本節の新規分）: `Opcode` は別空間 / `NativeScdaOpcode` 12 値はすべて実測裏付け / 正典表 0x0000〜0x001E はブロック型 ID。
+`[確定]`（本節の新規分）: `Opcode` は別空間 / `NativeScdaOpcode` 9 値はすべて実測裏付け / 正典表 0x0000〜0x001E はブロック型 ID。
 `[未確定]`: `+0x10` byte0（フラグ A）の**コンソール帯での意味**（`0x100` 帯 8/132・`0x1000` 帯 235/369 が 1。イベント帯 31 件中 29 が 1 で `0` は GameMode / MenuMode のみ）は未完全確定（§(V83)）。ABSENT 39 件のうち UNRELATED 17 件が「バニラ未登録」か「移植側の独自拡張」かの区別は Phase 68 のセマンティクス確定時に決める（機能的影響なし）。
 
 ### §70.15 引用数上位グローバル 15 件の同定（V80 Part B・2026-10-25）[検証済]
