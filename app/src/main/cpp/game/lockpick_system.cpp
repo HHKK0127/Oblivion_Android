@@ -1,5 +1,6 @@
 #include "lockpick_system.h"
 #include <algorithm>
+#include "../util/msvc_lcg.h"
 
 namespace game {
 
@@ -197,15 +198,15 @@ void LockpickSystem::initializeTumblers() {
         Tumbler& tumbler = currentLock.tumblers[i];
         
         // Randomize sweet spot position
-        float sweetSpotCenter = dist(rng) * (1.0f - sweetSpotSize);
+        float sweetSpotCenter = oblivion::rng::rand() / 32767.0f * (1.0f - sweetSpotSize);
         tumbler.sweetSpotMin = sweetSpotCenter;
         tumbler.sweetSpotMax = sweetSpotCenter + sweetSpotSize;
         
         // Set speed (varies slightly per tumbler)
-        tumbler.speed = tumblerSpeed * (0.8f + dist(rng) * 0.4f);
+        tumbler.speed = tumblerSpeed * (0.8f + oblivion::rng::rand() / 32767.0f * 0.4f);
         
         // Start at random position
-        tumbler.position = dist(rng);
+        tumbler.position = oblivion::rng::rand() / 32767.0f;
         tumbler.isSet = false;
         tumbler.isMoving = true;
     }

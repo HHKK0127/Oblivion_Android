@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <ctime>
+#include "../util/msvc_lcg.h"
 
 NpcManager::NpcManager() : nextNpcId(1000) {
     LOGD("NpcManager created");
@@ -349,7 +350,7 @@ std::shared_ptr<NPC> NpcManager::spawnFromLeveledList(uint32_t leveledListFormID
 
     // ChanceNone: probability (0-100) that nothing spawns
     if (lvlc->chanceNone > 0) {
-        int roll = std::rand() % 100;
+        int roll = oblivion::rng::rand_range(0, 99);
         if (roll < lvlc->chanceNone) {
             LOGD("spawnFromLeveledList: ChanceNone=%u, roll=%d — nothing spawned", lvlc->chanceNone, roll);
             return nullptr;
@@ -371,7 +372,7 @@ std::shared_ptr<NPC> NpcManager::spawnFromLeveledList(uint32_t leveledListFormID
     }
 
     // Pick a random eligible entry
-    const oblivion::LeveledListEntry* chosen = eligible[std::rand() % eligible.size()];
+    const oblivion::LeveledListEntry* chosen = eligible[oblivion::rng::rand_range(0, static_cast<int>(eligible.size()) - 1)];
 
     // If the referenced formID is itself a leveled list, recurse
     const oblivion::LeveledListData* nestedList = m_esm->findLeveledList(chosen->referencedFormID);

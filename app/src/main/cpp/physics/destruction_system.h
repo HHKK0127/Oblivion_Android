@@ -11,6 +11,7 @@
 #include <cmath>
 #include <android/log.h>
 #include "physics_material.h"
+#include "../util/msvc_lcg.h"
 
 #define OBLIVION_DESTROY_LOG_TAG "OblivionDestructionSystem"
 #define OBLIVION_DESTROY_LOGI(...) __android_log_print(ANDROID_LOG_INFO, OBLIVION_DESTROY_LOG_TAG, __VA_ARGS__)
@@ -24,7 +25,7 @@ namespace detail {
 // Lightweight random helpers, replacing glm::gtc/random.hpp which is not
 // part of the bundled glm subset in this project.
 inline float randomFloat(float minVal, float maxVal) {
-    float t = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX);
+    float t = static_cast<float>(oblivion::rng::rand()) / static_cast<float>(oblivion::rng::kRandMax);
     return minVal + t * (maxVal - minVal);
 }
 

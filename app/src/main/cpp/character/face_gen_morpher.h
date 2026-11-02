@@ -16,7 +16,6 @@
 
 // Forward declarations
 class MeshLoader;
-class AssetTextureManager;
 
 // ============================================================================
 // Phase 52: FaceGen Morpher
@@ -191,7 +190,7 @@ public:
     static FaceGenMorpher& instance();
 
     // Lifecycle
-    bool initialize(MeshLoader* meshLoader, AssetTextureManager* texCache);
+    bool initialize(MeshLoader* meshLoader);
     void cleanup();
     bool isInitialized() const { return initialized_; }
 
@@ -305,7 +304,6 @@ private:
 
     // External dependencies
     MeshLoader* meshLoader_ = nullptr;
-    AssetTextureManager* texCache_ = nullptr;
 
     // Base face mesh data
     std::vector<MeshVertex> baseVertices_;

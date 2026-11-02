@@ -93,6 +93,9 @@ public:
     // Advance time
     void advanceTime(float hours);
 
+    // Set time scale (real-time to game-time multiplier, console settimescale)
+    void setTimeScale(float scale);
+
     // Statistics
     size_t getRegisteredNPCCount() const { return npcPackages.size(); }
 
@@ -111,7 +114,7 @@ private:
 
     // Game time (0.0 - 24.0, wraps)
     float gameHour = 8.0f;  // Start at 8:00 AM
-    float timeScale = 1.0f; // Real-time to game-time multiplier
+    float timeScale = 30.0f;  // Real-time to game-time multiplier
 
     // NPC package stacks
     std::unordered_map<uint32_t, PackageStack> npcPackages;

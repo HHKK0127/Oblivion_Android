@@ -125,9 +125,10 @@ void cleanup();  // Resource deallocation
 ## Native Code Split: C++ and Rust
 
 Most of the native code is C++17, but the parts that are pure functions of their inputs are
-implemented in Rust and reached through small C ABIs - two stateless ones and three stateful. Those
+implemented in Rust and reached through small C ABIs - two stateless ones and four stateful. Those
 parts are the ESM FormID translation, the plugin list, the Data-folder path expansion, the NIF
-geometry merge, the BSA archive reader, the NIF mesh parser and the DDS texture reader.
+geometry merge, the BSA archive reader, the NIF mesh parser, the DDS texture reader and the
+ESM/ESP plugin reader.
 
 The dividing line is impurity, not size:
 
@@ -136,18 +137,19 @@ The dividing line is impurity, not size:
 | OpenGL ES objects, shaders, the render loop | Record parsing over an in-memory buffer |
 | Jolt Physics bodies and character controllers | String, path and extension rules |
 | `AAssetManager`, `MediaCodec`, JNI entry points | FormID index building and rebasing |
-| `std::ifstream` I/O, zlib inflate, threads | Vertex / index merge and rebase arithmetic |
+| `std::ifstream` I/O (BSA open path only), threads | Vertex / index merge and rebase arithmetic |
 | | BSA folder / file tables, both hashes, deflate inflate |
 | | NIF header / node tree / geometry / skin / controller parsing |
 | | DDS header parse and DXT / uncompressed decode |
+| | ESM/ESP record-header, subrecord and GRUP parse (flate2 inflate) |
 
 A function moves only when it allocates nothing the caller must own, keeps no state between calls and
-touches no platform handle. `assets/esm_reader.cpp` shows the other side of the rule: an `esm-parser`
-crate exists in the Rust workspace and is used for host-side verification, but the device still runs
-the C++ reader because the parse is interleaved with `std::ifstream`, zlib and the record types the
-rest of the engine consumes. The BSA reader is the exception that proves it: it owns a file handle
-and a materialised index, so it moves only by turning the state into an opaque handle that Rust owns
-and C++ borrows.
+touches no platform handle. `assets/esm_reader.cpp` was the longest-standing counterexample - an
+`esm-parser` crate existed in the Rust workspace while the device ran the C++ reader because the
+parse was interleaved with `std::ifstream`, zlib and the record types the rest of the engine
+consumes. It migrated the same way the BSA reader did: the parse and the zlib inflate (`flate2`)
+live behind the opaque `EsmPlugin` handle Rust owns, and the `ESMRecord` / `SubRecord` structs the
+rest of the engine consumes are materialised on the C++ side of the shim.
 
 ```
 assets/formid_index.cpp ──┐
@@ -157,6 +159,7 @@ assets/mesh_builder.cpp        ──┴──► assets_ffi.h ──► libasse
 assets/bsa_reader.cpp ────────────────► bsa_ffi.h ───► libbsa_ffi.a (bsa-core)
 assets/nif_parser.cpp ─────────────────► nif_ffi.h ───► libnif_ffi.a (nif-core)
 assets/dds_loader.cpp ─────────────────► dds_ffi.h ───► libdds_ffi.a (dds-core)
+assets/esm_reader.cpp ─────────────────► esm_ffi.h ───► libesm_ffi.a (esm-parser)
 ```
 
 Each C++ file keeps its original header and is now a shim: callers are unchanged, and the only
@@ -174,9 +177,10 @@ contract between the two languages is the header in
   floats per vertex, so its `vertex_capacity` is a float count; passing a vertex count is rejected
   rather than trusted.
 - Panics never cross the boundary - each entry point wraps the Rust call so an unwind becomes `-7`.
-- `bsa_ffi`, `nif_ffi` and `dds_ffi` are the stateful ABIs. Each `*_create()` returns an opaque handle
+- `bsa_ffi`, `nif_ffi`, `dds_ffi` and `esm_ffi` are the stateful ABIs. Each `*_create()` (or
+  `esm_plugin_open`) returns an opaque handle
   that Rust owns and C++ borrows; the shim never frees it on the C++ side except through
-  `*_destroy()`, which its destructor calls. Any search entry point
+  `*_destroy()` (or `esm_plugin_free`), which its destructor calls. Any search entry point
   (`bsa_find_files_by_prefix` / `_by_extension`)
   lends a scratch index array that stays valid only until the next search, so the shim converts the
   indices to `BSAFileEntry` pointers immediately instead of holding them.
@@ -191,7 +195,7 @@ produces all three archives, then imports them as `IMPORTED STATIC` targets and 
 to the proxies next to `cargo`, because a standalone host-only toolchain earlier on `PATH` otherwise
 wins and the build fails on a missing Android target. The mapping is verified end to end by linking
 `libnative-lib.so` for all three ABIs (`arm64-v8a`, `armeabi-v7a`, `x86_64`) and confirming that all
-19 `bsa_*`, all 27 `nif_*` and all 13 `dds_*` symbols are defined in each shared object.
+19 `bsa_*`, all 27 `nif_*`, all 13 `dds_*` and all `esm_*` symbols are defined in each shared object. Phase 3 then closed its last candidate as a deletion rather than a port: `assets/texture_manager.{h,cpp}` (`AssetTextureManager`, 23 public methods with zero callers - its DXT decoders duplicated `dds-core`, its GL atlas / LRU eviction / mipmap logic duplicated the `textureCache` `AssetManager` already owns) and `assets/texture_compressor.{h,cpp}` (`TextureCompressor`, never listed in `CMakeLists.txt`) were removed together with the unused `FaceGenMorpher::initialize` parameter and the only `TextureFormat` consumer outside the file. The live path - `AssetManager::loadDDSTexture` -> BSA -> temp file -> `DDSLoader` (`dds-core`) -> GPU upload - is untouched, and both classes are absent from all three `libnative-lib.so` (llvm-nm: 0 symbols) while the shims stay at `dds_*` 16, `nif_*` 61, `esm_*` 72, `bsa_*` 45.
 
 ### Testing the boundary
 

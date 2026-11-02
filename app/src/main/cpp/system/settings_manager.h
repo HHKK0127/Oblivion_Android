@@ -34,23 +34,6 @@ struct AudioVolumeSettings {
 constexpr float DIFFICULTY_DAMAGE_MULTIPLIER = 5.0f;
 
 /**
- * @brief fGlobalTimeMultiplier (GMST slot 0xB06704, "fGlobalTimeMultiplier:General").
- *
- * The EXE registers 1.0. Its only real consumer is the game clock at 0x47D170,
- * which multiplies the elapsed seconds before folding them into the time of day
- * (0x47D249 `fmul [0xB06704]`). RE §54.3: it is NOT a frame-delta multiplier -
- * scaling dt would run every subsystem 30x too fast - and it is a different
- * mechanism from the TimeScale setting (config object index 0x3A, default 30.0),
- * which only drives the SkyWeatherSystem clock and the wait/rest fast-forward.
- *
- * NOTE: the port's jni_bridge.cpp reads this from gmst::getLive() at ESM load
- * time and stores an unused constant here. If the EXE path is correct (game
- * clock only, not frame delta), this constant should be removed and the jni
- * bridge restored to the identity 1.0f.
- */
-constexpr float GLOBAL_TIME_MULTIPLIER = 1.0f;
-
-/**
  * @brief fAIMinGreetingDistance (GMST slot 0x00B36AD8), default 150.0.
  *
  * The distance a spoken line can be heard over. Subtitles are emitted at

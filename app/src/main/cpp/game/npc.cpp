@@ -3,7 +3,7 @@
 #include <android/log.h>
 #include <cmath>
 #include <algorithm>
-#include <random>
+#include "../util/msvc_lcg.h"
 
 #define LOG_TAG "NPC"
 #ifdef ENABLE_DEBUG_LOGS
@@ -161,8 +161,8 @@ void NPC::update(float deltaTime) {
         case AIState::WANDER:
             // Random wandering - move in random direction
             {
-                int dx = (rand() % 3) - 1;  // -1, 0, or 1
-                int dz = (rand() % 3) - 1;
+                int dx = oblivion::rng::rand_range(0, 2) - 1;  // -1, 0, or 1
+                int dz = oblivion::rng::rand_range(0, 2) - 1;
                 position.x += dx * 0.01f;
                 position.z += dz * 0.01f;
             }

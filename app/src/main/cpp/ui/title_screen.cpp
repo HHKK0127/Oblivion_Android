@@ -7,6 +7,7 @@
 #include <GLES2/gl2ext.h>
 #include <algorithm>
 #include <cmath>
+#include "../util/msvc_lcg.h"
 
 // Re-define LOG_TAG after includes to override audio LOG_TAG
 #undef LOG_TAG
@@ -174,15 +175,21 @@ void TitleScreen::setScreenSize(int w, int h) {
 
 void TitleScreen::initParticles() {
     if (particlesInitialized) return;
-    srand(42);
+    // Particles stay deterministic: the same seed is fed to the shared MSVC
+    // stream so the layout matches the original CRT sequence.
+    oblivion::rng::srand(42u);
+    const float kInvRandMax = 1.0f / static_cast<float>(oblivion::rng::kRandMax);
+    auto next01 = [kInvRandMax]() {
+        return static_cast<float>(oblivion::rng::rand()) * kInvRandMax;
+    };
     for (int i = 0; i < MAX_PARTICLES; ++i) {
-        particles[i].x = static_cast<float>(rand()) / RAND_MAX;
-        particles[i].y = static_cast<float>(rand()) / RAND_MAX;
-        particles[i].size = 0.8f + (static_cast<float>(rand()) / RAND_MAX) * 2.0f;
-        particles[i].alpha = 0.08f + (static_cast<float>(rand()) / RAND_MAX) * 0.25f;
-        particles[i].driftX = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 0.0003f;
-        particles[i].driftY = -0.0002f - (static_cast<float>(rand()) / RAND_MAX) * 0.0003f;
-        particles[i].phase = static_cast<float>(rand()) / RAND_MAX * 6.283f;
+        particles[i].x = next01();
+        particles[i].y = next01();
+        particles[i].size = 0.8f + next01() * 2.0f;
+        particles[i].alpha = 0.08f + next01() * 0.25f;
+        particles[i].driftX = (next01() - 0.5f) * 0.0003f;
+        particles[i].driftY = -0.0002f - next01() * 0.0003f;
+        particles[i].phase = next01() * 6.283f;
     }
     particlesInitialized = true;
 }

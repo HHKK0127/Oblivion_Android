@@ -121,7 +121,7 @@ FaceGenMorpher::~FaceGenMorpher() {
 // Lifecycle
 // ============================================================================
 
-bool FaceGenMorpher::initialize(MeshLoader* meshLoader, AssetTextureManager* texCache) {
+bool FaceGenMorpher::initialize(MeshLoader* meshLoader) {
     std::lock_guard<std::mutex> lock(mutex_);
 
     if (initialized_) {
@@ -130,7 +130,6 @@ bool FaceGenMorpher::initialize(MeshLoader* meshLoader, AssetTextureManager* tex
     }
 
     meshLoader_ = meshLoader;
-    texCache_ = texCache;
 
     // Initialize cache
     if (!cache_.initialize()) {
@@ -169,7 +168,6 @@ void FaceGenMorpher::cleanup() {
     baseMeshLoaded_ = false;
 
     meshLoader_ = nullptr;
-    texCache_ = nullptr;
 
     initialized_ = false;
     LOGI_FG("FaceGenMorpher cleaned up");

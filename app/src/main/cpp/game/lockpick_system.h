@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <functional>
-#include <random>
 #include <vector>
 #include <android/log.h>
 
@@ -180,9 +179,7 @@ private:
     float getTumblerSpeed() const;
     uint32_t getTumblerCount() const;
     
-    // Random number generation
-    std::mt19937 rng{std::random_device{}()};
-    std::uniform_real_distribution<float> dist{0.0f, 1.0f};
+    // Random numbers come from the shared MSVC-compatible stream (j6).
     
     // Callbacks
     LockpickCallback onLockpickResult;

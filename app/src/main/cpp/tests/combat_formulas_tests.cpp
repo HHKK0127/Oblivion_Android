@@ -181,12 +181,12 @@ bool CombatFormulasTests::runAllTests() {
     // --- 8. gmst_defaults table (gmst-table-integration repo subset) ---------
     {
         namespace g = oblivion::gmst;
-        // 16 fatigue + 1 time/timing + 24 combat keys (incl. fKnockbackTime
-        // + fCombatSpeakHitThreshold/fCombatSpeakHitChance) = 41 entries.
+        // 16 fatigue + 24 combat keys (incl. fKnockbackTime
+        // + fCombatSpeakHitThreshold/fCombatSpeakHitChance) = 40 entries.
         // static_assert guards in fatigue_system.h / combat_formulas.h
         // already fail compilation on a missing key; these checks pin the
         // table itself.
-        record("gmst table has 41 entries", g::kEntryCount == 41);
+        record("gmst table has 40 entries", g::kEntryCount == 40);
         record("gmst has fFatigueBase", g::hasKey("fFatigueBase"));
         record("gmst has fBlockMax", g::hasKey("fBlockMax"));
         record("gmst has fKnockbackForceMax", g::hasKey("fKnockbackForceMax"));

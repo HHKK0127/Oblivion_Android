@@ -7,17 +7,7 @@
 #include "../engine/imperial_weave.h"
 #include <algorithm>
 #include <cmath>
-#include <random>
-
-// ============================================================================
-// Random number generator for combat rolls (function-local static to avoid
-// static initialization order issues across translation units)
-// ============================================================================
-static std::mt19937& getRng() {
-    static std::random_device rd;
-    static std::mt19937 rng(rd());
-    return rng;
-}
+#include "../util/msvc_lcg.h"
 
 // ============================================================================
 // Helper: CombatEvent type to string
@@ -728,8 +718,8 @@ bool CombatManager::checkHitboxCollision(const Hitbox& hitbox, std::shared_ptr<N
 // ============================================================================
 
 bool CombatManager::rollCritical(float criticalChance) const {
-    std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-    return dist(getRng()) < criticalChance;
+    // RE: MSVC rand() LCG + inclusive <= (FUN_0047FB70 semantics).
+    return oblivion::rng::rand_bool(criticalChance);
 }
 
 float CombatManager::applyCriticalDamage(float damage, float criticalMultiplier) const {

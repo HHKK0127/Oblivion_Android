@@ -2,7 +2,6 @@
 
 #include <vector>
 #include <cstdint>
-#include <random>
 #include "../assets/esm_reader.h"
 
 namespace oblivion {
@@ -53,7 +52,6 @@ public:
 
 private:
     const ESMManager* esmManager = nullptr;
-    mutable std::mt19937 rng;
 
     /**
      * @brief Get a random integer in range [min, max]

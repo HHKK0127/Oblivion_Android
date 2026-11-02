@@ -1,4 +1,4 @@
-# Build and run the native C++ host test suites with MSVC (x64) and AddressSanitizer.
+﻿# Build and run the native C++ host test suites with MSVC (x64) and AddressSanitizer.
 #
 # This is the local-Windows counterpart of run_host_tests.sh (which stays the CI
 # path and keeps using g++). It exists for two reasons the MinGW runner cannot
@@ -114,10 +114,130 @@ function Get-BashArrayTokens {
 
 $shellText = Get-Content -LiteralPath $shellScript -Raw
 
+# ---------------------------------------------------------------------------
+# Rust FFI: the pure-logic asset/bsa/plugin/esm/nif/dds layers are Rust behind
+# a C ABI (OBLIVION_RUST_DIR). The suites need their headers to compile and
+# MSVC-built static libs to link. The shell runner uses the MinGW lib*.a
+# archives, which the MSVC linker cannot consume, so this runner looks for
+# *.lib instead. Mirrors the RUST_DIR block of run_host_tests.sh.
+# ---------------------------------------------------------------------------
+
+$RUST_DIR = $env:OBLIVION_RUST_DIR
+if (-not $RUST_DIR) {
+    $RUST_DIR = Join-Path (Split-Path $repoRoot -Parent) 'oblivion-re-tools'
+}
+
+function Get-RustHostTriple {
+    if ($env:OBLIVION_RUST_HOST_TRIPLE) { return $env:OBLIVION_RUST_HOST_TRIPLE }
+    $candidates = @()
+    $rustcCmd = Get-Command rustc -ErrorAction SilentlyContinue
+    if ($rustcCmd) { $candidates += $rustcCmd.Source }
+    $candidates += (Join-Path $env:USERPROFILE '.cargo\bin\rustc.exe')
+    $candidates += (Join-Path $env:ProgramData 'scoop\shims\rustc.exe')
+    foreach ($candidate in $candidates) {
+        if ($candidate -and (Test-Path $candidate)) {
+            $line = & $candidate -vV 2>$null | Where-Object { $_ -like 'host: *' } | Select-Object -First 1
+            if ($line) { return ($line -replace '^host:\s*', '').Trim() }
+        }
+    }
+    return ''
+}
+$RUST_HOST_TRIPLE = Get-RustHostTriple
+
+# A candidate directory only counts when it carries the same three archives
+# the Android link needs (CMakeLists.txt), in MSVC form.
+function Test-RustMsvcLibs {
+    param([string]$Dir)
+    if (-not $Dir -or -not (Test-Path $Dir)) { return $false }
+    foreach ($name in @('assets_ffi.lib', 'bsa_ffi.lib', 'plugin_ffi.lib')) {
+        if (-not (Test-Path (Join-Path $Dir $name))) { return $false }
+    }
+    return $true
+}
+
+function Find-RustLibDir {
+    $candidates = @()
+    if ($RUST_HOST_TRIPLE) {
+        $candidates += (Join-Path $RUST_DIR "target\$RUST_HOST_TRIPLE\release")
+    }
+    $candidates += (Join-Path $RUST_DIR 'target\release')
+    foreach ($candidate in $candidates) {
+        if (Test-RustMsvcLibs $candidate) { return $candidate }
+    }
+    # Fall back to a search that skips the cross builds (android/cmake) and the
+    # intermediate deps/ copies, the way the shell script does for lib*.a.
+    $targetRoot = Join-Path $RUST_DIR 'target'
+    if (-not (Test-Path $targetRoot)) { return '' }
+    $found = Get-ChildItem -Path $targetRoot -Recurse -Filter 'assets_ffi.lib' -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.FullName -notmatch '\\(android|cmake|deps)\\' -and $_.FullName -notmatch '\\(aarch64|armv7)-' -and $_.FullName -notmatch 'linux-android' }
+    foreach ($item in $found) {
+        if (Test-RustMsvcLibs $item.DirectoryName) { return $item.DirectoryName }
+    }
+    return ''
+}
+
+if (-not (Test-Path (Join-Path $RUST_DIR 'crates\assets-ffi\include\assets_ffi.h'))) {
+    throw "Rust FFI が見つかりません: '$RUST_DIR' に crates/*/include のヘッダがありません。OBLIVION_RUST_DIR を設定してください。"
+}
+
+$RUST_LIB_DIR = Find-RustLibDir
+if (-not $RUST_LIB_DIR) {
+    # Mirror Get-Zlib: acquire the dependency instead of failing the first run.
+    $cargoCmd = Get-Command cargo -ErrorAction SilentlyContinue
+    if ($cargoCmd) {
+        Write-Host 'Rust FFI の MSVC 静的ライブラリ (*.lib) が無いため cargo build --release を実行します...'
+        $cargoArgs = @(
+            'build', '--release', '--manifest-path', (Join-Path $RUST_DIR 'Cargo.toml'),
+            '-p', 'assets-ffi', '-p', 'bsa-ffi', '-p', 'dds-ffi',
+            '-p', 'esm-ffi', '-p', 'nif-ffi', '-p', 'plugin-ffi'
+        )
+        $previousEap = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        $cargoOutput = & $cargoCmd.Source @cargoArgs 2>&1
+        $cargoExit = $LASTEXITCODE
+        $ErrorActionPreference = $previousEap
+        $cargoOutput | Select-Object -Last 15 | ForEach-Object { Write-Host $_ }
+        if ($cargoExit -ne 0) {
+            throw "cargo build --release が失敗しました (exit $cargoExit)。'$RUST_DIR' で手動実行してください。"
+        }
+        $RUST_LIB_DIR = Find-RustLibDir
+    }
+}
+if (-not $RUST_LIB_DIR) {
+    throw "Rust FFI の MSVC 静的ライブラリが見つかりません: '$RUST_DIR'。'cargo build --release' を実行するか OBLIVION_RUST_DIR を設定してください。"
+}
+Write-Host "Rust FFI lib dir: $RUST_LIB_DIR"
+
+# The archives must follow the objects that reference them (link order, as in
+# the shell script). A missing esm lib would fail the link, so check it up
+# front; nif/dds stay optional at discovery time exactly like the shell script.
+$rustLibPaths = @()
+foreach ($name in @('assets_ffi.lib', 'bsa_ffi.lib', 'plugin_ffi.lib', 'esm_ffi.lib')) {
+    $libPath = Join-Path $RUST_LIB_DIR $name
+    if (-not (Test-Path $libPath)) { throw "Rust 静的ライブラリが不足しています: $libPath" }
+    $rustLibPaths += $libPath
+}
+foreach ($name in @('nif_ffi.lib', 'dds_ffi.lib')) {
+    $libPath = Join-Path $RUST_LIB_DIR $name
+    if (Test-Path $libPath) { $rustLibPaths += $libPath }
+}
+
+# Rust's std drags these in on Windows; the shell script adds the same set as
+# -l flags on its MinGW link line.
+$rustExtraLibs = @('ws2_32.lib', 'ntdll.lib', 'userenv.lib', 'bcrypt.lib', 'advapi32.lib', 'shell32.lib', 'ole32.lib')
+
 $includeFlags = @()
 foreach ($token in (Get-BashArrayTokens -Text $shellText -Name 'INCLUDES')) {
-    if ($token.StartsWith('-I')) {
-        $includeFlags += "/I$(Join-Path $repoRoot $token.Substring(2))"
+    if (-not $token.StartsWith('-I')) { continue }
+    # Some entries are quoted bash variables, e.g. -I"$RUST_DIR/crates/...":
+    # drop the quotes, expand $RUST_DIR, and keep absolute paths absolute
+    # instead of anchoring them under the repo root.
+    $includePath = $token.Substring(2).Trim('"').Replace('$RUST_DIR', $RUST_DIR)
+    if ([IO.Path]::IsPathRooted($includePath)) {
+        $includeFlags += "/I$includePath"
+    }
+    else {
+        $includeFlags += "/I$(Join-Path $repoRoot $includePath)"
     }
 }
 
@@ -252,7 +372,7 @@ $rspPath = Join-Path $objDir 'host_tests_msvc.rsp'
 $buildCmd = @(
     "call `"$vcvars`" >nul 2>nul",
     "cd /d `"$repoRoot`"",
-    "cl @`"$rspPath`" /Fe:`"$exePath`" /link /DEBUG /INCREMENTAL:NO `"$($zlib.Lib)`""
+    "cl @`"$rspPath`" /Fe:`"$exePath`" /link /DEBUG /INCREMENTAL:NO $($rustLibPaths -join ' ') $($rustExtraLibs -join ' ') `"$($zlib.Lib)`""
 ) -join ' && '
 
 Write-Host "Compiling $($sources.Count) translation units with MSVC$(if ($NoAsan) { '' } else { ' + AddressSanitizer' })..."

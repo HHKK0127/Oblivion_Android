@@ -7,7 +7,7 @@
 #include <mutex>
 #include <cmath>
 #include <algorithm>
-#include <random>
+#include "../util/msvc_lcg.h"
 #include <android/log.h>
 
 #define LOG_TAG_PS "ParticleSystem"
@@ -140,7 +140,6 @@ public:
     explicit ParticleEmitter(const EmitterConfig& config)
         : config_(config) {
         particles_.resize(config.maxParticles);
-        rng_.seed(std::random_device{}());
     }
 
     void update(float dt) {
@@ -255,7 +254,6 @@ private:
     float age_ = 0.0f;
     float emissionAccum_ = 0.0f;
     uint32_t aliveCount_ = 0;
-    std::mt19937 rng_;
 
     void emitOne() {
         // Find dead particle
@@ -363,8 +361,8 @@ private:
     }
 
     float randomRange(float min, float max) {
-        std::uniform_real_distribution<float> dist(min, max);
-        return dist(rng_);
+        return min + (max - min) * (static_cast<float>(oblivion::rng::rand()) /
+                                    static_cast<float>(oblivion::rng::kRandMax));
     }
 };
 

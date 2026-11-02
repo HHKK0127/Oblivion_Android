@@ -7,7 +7,8 @@
 #include <cstring>
 #include <cmath>
 #include <limits>
-#include <zlib.h>
+#include "esm_ffi.h"
+#include "../util/msvc_lcg.h"
 #include <android/log.h>
 
 #undef LOG_TAG
@@ -171,374 +172,148 @@ static void logWaterCensus(uint32_t withWater, uint32_t noWaterSentinel,
          withWater + noWaterSentinel + noXclw);
 }
 
+namespace {
+
+// Phase 2 decode filter: keep in sync with the original open() behaviour so
+// only the record types the game actually consumes are decoded.
+bool should_decode_record_type(const char recType[4]) {
+    static const char* const kDecodeTypes[] = {
+        "CELL", "NPC_", "CREA", "WEAP", "QUST", "DIAL", "INFO", "REFR", "ACHR",
+        "ACRE", "LAND", "WRLD", "SPEL", "ENCH", "MGEF", "SKIL", "BSGN", "CONT",
+        "LIGH", "STAT", "SOUN", "TREE", "FLOR", "ACTI", "APPA", "EYES", "HAIR",
+        "CLMT", "REGN", "LVLI", "LVLC", "LVSP", "LVLN", "NAVM", "ARMO", "BOOK",
+        "FACT", "RACE", "CLAS", "CLOT", "INGR", "ALCH", "MISC", "ROAD", "SCPT",
+        "GMST", "GLOB", "DOOR", "PACK", "PGRD", "IDLE", "KEYM", "AMMO", "SGST",
+        "SLGM", "FURN", "LTEX", "GRAS", "WATR", "WTHR", "CSTY", "LSCR", "EFSH",
+        "ANIO", "SBSP",
+    };
+    for (const char* t : kDecodeTypes) {
+        if (std::memcmp(recType, t, 4) == 0) return true;
+    }
+    return false;
+}
+
+// Materialize an FFI payload view into the legacy ESMRecord layout the ~60
+// decodeXXX() helpers consume. Subrecord data is copied out of the handle.
+void materialize_record(const RecordIndex& idx, const EsmPayload* payload, ESMRecord& rec) {
+    std::memcpy(rec.recType, idx.recType, 4);
+    rec.dataSize = idx.dataSize;
+    rec.flags = idx.flags;
+    rec.formID = idx.formID;
+    rec.parentFormID = idx.parentFormID;
+    rec.worldspaceFormID = idx.worldspaceFormID;
+
+    const size_t subCount = esm_payload_subrecord_count(payload);
+    rec.subRecords.reserve(subCount);
+    for (size_t i = 0; i < subCount; ++i) {
+        EsmSubRecordView view;
+        std::memset(&view, 0, sizeof(view));
+        if (esm_payload_subrecord_at(payload, i, &view) != ESM_OK) continue;
+        SubRecord sub;
+        std::memcpy(sub.tag, view.tag, 4);
+        sub.data.assign(view.data, view.data + view.size);
+        rec.subRecords.push_back(std::move(sub));
+    }
+}
+
+}  // namespace
+
 bool ESMFile::open(const std::string& filePath) {
     m_filePath = filePath;
-    std::ifstream file(filePath, std::ios::binary);
-    if (!file.is_open()) {
-        LOGE("Failed to open ESM file: %s", filePath.c_str());
+
+    // Container-level parsing (record index, subrecord splitting, zlib inflate)
+    // lives in the Rust esm-parser behind the esm-ffi C ABI. This C++ layer only
+    // materializes decoded payloads into the existing ESM*Data vectors.
+    EsmPlugin* plugin = esm_plugin_open(filePath.c_str());
+    if (!plugin) {
+        LOGE("Failed to open ESM file: %s (code=%d)", filePath.c_str(), esm_last_error_code());
         return false;
     }
 
-    // Extract file name
-    size_t sep = filePath.find_last_of("/\\");
-    m_fileName = (sep != std::string::npos) ? filePath.substr(sep + 1) : filePath;
-
-    size_t ext = m_fileName.rfind('.');
-    m_isMaster = (ext != std::string::npos &&
-                  (m_fileName.substr(ext) == ".esm" ||
-                   m_fileName.substr(ext) == ".ESM"));
+    {
+        char nameBuf[512];
+        if (esm_plugin_file_name(plugin, nameBuf, sizeof(nameBuf)) > 0) {
+            m_fileName = nameBuf;
+        } else {
+            size_t sep = filePath.find_last_of("/\\");
+            m_fileName = (sep != std::string::npos) ? filePath.substr(sep + 1) : filePath;
+        }
+    }
+    m_isMaster = esm_plugin_is_master(plugin) != 0;
 
     LOGD("Opening ESM file: %s (master=%s)", m_fileName.c_str(), m_isMaster ? "yes" : "no");
 
-    // Phase 1: Build index of all records (just headers + offsets, no data loading)
-    // This is memory-efficient: only stores ~32 bytes per record instead of full data
-    ESMRecord header;
-    if (!readRecordHeader(file, header)) {
-        LOGE("Failed to read TES4 header in %s", filePath.c_str());
-        return false;
-    }
-
-    if (std::memcmp(header.recType, "TES4", 4) != 0) {
-        LOGE("Invalid ESM file: expected TES4 header, got %.4s", header.recType);
-        return false;
-    }
-
-    // Index the TES4 header
-    RecordIndex headerIdx;
-    std::memcpy(headerIdx.recType, "TES4", 4);
-    headerIdx.formID = header.formID;
-    headerIdx.flags = header.flags;
-    headerIdx.dataSize = header.dataSize;
-    headerIdx.fileOffset = 0;
-    headerIdx.compressed = (header.flags & REC_FLAG_COMPRESSED) != 0;
-    m_recordIndex.push_back(headerIdx);
-
-        // Parse TES4 header subrecords to extract MAST (master file list)
-        // The TES4 data area contains: HEDR, CNAM, SNAM, MAST+DATA pairs, etc.
-        {
-            // Save current position, rewind to start of TES4 data
-            std::streampos savedPos = file.tellg();
-            file.seekg(20, std::ios::beg); // 20-byte record header
-
-            uint32_t remaining = header.dataSize;
-            while (remaining >= 8) {
-                SubRecord sub;
-                if (!readSubRecord(file, sub)) break;
-                if (sub.size() > remaining) break;
-                remaining -= (8 + (uint32_t)sub.size());
-
-                if (std::memcmp(sub.tag, "MAST", 4) == 0) {
-                    // MAST: null-terminated master filename
-                    std::string masterName(reinterpret_cast<const char*>(sub.data.data()),
-                                           sub.data.size());
-                    // Trim trailing nulls
-                    while (!masterName.empty() && masterName.back() == '\0')
-                        masterName.pop_back();
-                    if (!masterName.empty()) {
-                        m_masters.push_back(masterName);
-                        LOGD("  Master: %s", masterName.c_str());
-                    }
-                }
-                // Skip DATA (master size) subrecord — not needed for load order
-            }
-
-            // Restore position (end of TES4 data)
-            file.seekg(savedPos);
+    size_t masterCount = esm_plugin_master_count(plugin);
+    for (size_t i = 0; i < masterCount; ++i) {
+        char masterName[512];
+        if (esm_plugin_master_at(plugin, i, masterName, sizeof(masterName)) > 0 &&
+            masterName[0] != '\0') {
+            m_masters.push_back(masterName);
+            LOGD("  Master: %s", masterName);
         }
+    }
+    LOGD("TES4 header parsed. masters=%zu", m_masters.size());
 
-        LOGD("TES4 header parsed. RecSize=%u, masters=%zu",
-             header.dataSize, m_masters.size());
-
-    // Build index of all records in the file
-    // Use a stack to track GRUP nesting and boundaries
-    int recordCount = 0;
-    int compressedCount = 0;
-    int grupCount = 0;
-    
-    // Stack of GRUP end offsets (absolute file positions)
-    std::vector<uint64_t> groupEndStack;
-    // Parallel stack of (groupLabel, groupType) so records can be attributed to
-    // their owning cell. LAND/PGRD/REFR records carry no cell FormID.
-    std::vector<std::pair<uint32_t, uint32_t>> groupInfoStack;
-    
-    while (file && file.peek() != EOF) {
-        uint64_t currentPos = file.tellg();
-        
-        // Pop expired GRUP levels
-                while (!groupEndStack.empty() && currentPos >= groupEndStack.back()) {
-                    groupEndStack.pop_back();
-                    if (!groupInfoStack.empty()) groupInfoStack.pop_back();
-                }
-        
-        // Read 4-byte tag WITHOUT seekback to avoid position drift
-        char tag[4];
-        file.read(tag, 4);
-        if (file.gcount() < 4) break;
-        currentPos = currentPos;  // tag starts at original currentPos
-
-        if (recordCount < 5 || grupCount < 5) {
-            LOGD("  tag at offset %llu: '%c%c%c%c' hex=0x%02X%02X%02X%02X",
-                 (unsigned long long)currentPos,
-                 tag[0], tag[1], tag[2], tag[3],
-                 (uint8_t)tag[0], (uint8_t)tag[1], (uint8_t)tag[2], (uint8_t)tag[3]);
+    // Phase 1: index every record header. Payloads stay inside the FFI handle.
+    const size_t recordCount = esm_plugin_record_count(plugin);
+    m_recordIndex.reserve(recordCount);
+    for (size_t i = 0; i < recordCount; ++i) {
+        EsmRecordInfo info;
+        std::memset(&info, 0, sizeof(info));
+        if (esm_plugin_record_info_at(plugin, i, &info) != ESM_OK) {
+            LOGE("Failed to read record %zu header in %s (code=%d)",
+                 i, filePath.c_str(), esm_last_error_code());
+            esm_plugin_free(plugin);
+            return false;
         }
-
-        if (tag[0] == 'G' && tag[1] == 'R' && tag[2] == 'U' && tag[3] == 'P') {
-            // GRUP: already read recType(4). Read remaining 12 bytes: groupSize+groupLabel+groupType
-            uint32_t groupSize, groupLabel, groupType;
-            file.read(reinterpret_cast<char*>(&groupSize), 4);
-            file.read(reinterpret_cast<char*>(&groupLabel), 4);
-            file.read(reinterpret_cast<char*>(&groupType), 4);
-            // Skip stamp(2) + unknown(2) = 4 bytes
-            file.seekg(4, std::ios::cur);
-            // Now at currentPos + 20 ✓
-            
-            uint64_t grupStart = currentPos;
-            uint64_t grupEnd = grupStart + groupSize;
-            groupEndStack.push_back(grupEnd);
-            groupInfoStack.push_back({groupLabel, groupType});
-            grupCount++;
-            if (grupCount <= 8) {
-                LOGD("  GRUP[%d] start=%llu end=%llu size=%u type=%u label=0x%08X stack=%zu pos=%llu",
-                     grupCount, (unsigned long long)grupStart, (unsigned long long)grupEnd,
-                     groupSize, groupType, groupLabel, groupEndStack.size(), (unsigned long long)file.tellg());
-            }
-        } else {
-            // Record: already read tag(4). Read remaining 16 bytes: rawSize+flags+formID+version+unknown
-            // Oblivion ESM record header is 20 bytes total (tag+size+flags+formID+version+unknown)
-            uint32_t rawSize, flags, formID;
-            uint16_t version, unknown16;
-            file.read(reinterpret_cast<char*>(&rawSize), 4);
-            file.read(reinterpret_cast<char*>(&flags), 4);
-            file.read(reinterpret_cast<char*>(&formID), 4);
-            file.read(reinterpret_cast<char*>(&version), 2);
-            file.read(reinterpret_cast<char*>(&unknown16), 2);
-            if (file.gcount() < 2) break;
-
-            uint32_t dataSize = rawSize;
-            bool compressed = (flags & REC_FLAG_COMPRESSED) != 0;
-            uint64_t dataOffset = file.tellg();
-            uint32_t decompSize = 0;
-
-            if (compressed && dataSize >= 4) {
-                // Read decompressed size (first 4 bytes of record data)
-                file.read(reinterpret_cast<char*>(&decompSize), 4);
-                // Skip to end of this record's data using absolute seek
-                uint64_t nextRecord = dataOffset + dataSize;
-                file.seekg(nextRecord, std::ios::beg);
-            } else {
-                // Skip non-compressed record data using absolute seek
-                uint64_t nextRecord = dataOffset + dataSize;
-                file.seekg(nextRecord, std::ios::beg);
-            }
-
-            uint64_t afterData = file.tellg();
-            
-            RecordIndex idx;
-            std::memcpy(idx.recType, tag, 4);
-            idx.formID = formID;
-            idx.flags = flags;
-            idx.dataSize = dataSize;
-            idx.fileOffset = dataOffset;
-            idx.compressed = compressed;
-            idx.decompSize = decompSize;
-            // Attribute the record to its owning cell when it sits inside a
-            // cell-children GRUP (type 6). The GRUP label is the cell FormID.
-            for (size_t g = groupInfoStack.size(); g-- > 0;) {
-                if (groupInfoStack[g].second == 6) {
-                    idx.parentFormID = groupInfoStack[g].first;
-                    break;
-                }
-            }
-            // Track the owning worldspace from the nearest WorldChildren GRUP
-            // (type 1); its label is the WRLD FormID. CELL records carry no WRLD
-            // subrecord, so this is the only way to group cells per worldspace.
-            for (size_t g = groupInfoStack.size(); g-- > 0;) {
-                if (groupInfoStack[g].second == 1) {
-                    idx.worldspaceFormID = groupInfoStack[g].first;
-                    break;
-                }
-            }
-            m_recordIndex.push_back(idx);
-
-            if (formID != 0) {
-                m_formIDIndex[formID] = m_recordIndex.size() - 1;
-            }
-
-            recordCount++;
-            if (compressed) compressedCount++;
-            
-            if (recordCount <= 10) {
-                LOGD("  REC[%d]: %.4s formID=0x%08X size=%u comp=%d dataOff=%llu afterData=%llu",
-                     recordCount, tag, formID, dataSize, compressed ? 1 : 0,
-                     (unsigned long long)dataOffset, (unsigned long long)afterData);
-                // Hex dump first 16 bytes of record header for debugging
-                char hexDump[49];
-                for (int h = 0; h < 4; h++) sprintf(hexDump + h*3, "%02X ", (uint8_t)tag[h]);
-                hexDump[12] = 0;
-                LOGD("    header hex: %s rawSize=0x%08X flags=0x%08X formID=0x%08X",
-                     hexDump, rawSize, flags, formID);
-            }
+        RecordIndex idx;
+        std::memcpy(idx.recType, info.rec_type, 4);
+        idx.formID = info.form_id;
+        idx.flags = info.flags;
+        idx.dataSize = info.data_size;
+        idx.fileOffset = info.file_offset;
+        idx.compressed = info.compressed != 0;
+        idx.decompSize = info.decomp_size;
+        idx.parentFormID = info.parent_form_id;
+        idx.worldspaceFormID = info.worldspace_form_id;
+        m_recordIndex.push_back(idx);
+        if (info.form_id != 0) {
+            m_formIDIndex[info.form_id] = m_recordIndex.size() - 1;
         }
     }
 
-    LOGD("ESM index built: %d records, %d compressed", recordCount, compressedCount);
+    m_grupCount = static_cast<uint32_t>(esm_plugin_group_count(plugin));
+    LOGD("ESM index built: %zu records, %zu compressed, %u GRUPs",
+         recordCount, esm_plugin_compressed_count(plugin), m_grupCount);
 
-    // Phase 2: Decode only essential records (NPC_, CELL, WEAP, etc.)
-    // Load and decode on-demand, one at a time, to keep memory usage low
+    // Phase 2: decode only essential records (NPC_, CELL, WEAP, etc.)
     int decodedCount = 0;
-    for (size_t i = 0; i < m_recordIndex.size(); i++) {
-        const auto& idx = m_recordIndex[i];
-        // Skip records we don't need to decode
-        if (std::memcmp(idx.recType, "TES4", 4) == 0) continue;
-        if (std::memcmp(idx.recType, "GRUP", 4) == 0) continue;
+    for (size_t i = 0; i < recordCount; ++i) {
+        const RecordIndex& idx = m_recordIndex[i];
+        if (!should_decode_record_type(idx.recType)) continue;
 
-        // Only decode record types we care about
-        bool shouldDecode = false;
-        if (std::memcmp(idx.recType, "CELL", 4) == 0 ||
-            std::memcmp(idx.recType, "NPC_", 4) == 0 ||
-            std::memcmp(idx.recType, "CREA", 4) == 0 ||
-            std::memcmp(idx.recType, "WEAP", 4) == 0 ||
-            std::memcmp(idx.recType, "QUST", 4) == 0 ||
-            std::memcmp(idx.recType, "DIAL", 4) == 0 ||
-            std::memcmp(idx.recType, "INFO", 4) == 0 ||
-            std::memcmp(idx.recType, "REFR", 4) == 0 ||
-            std::memcmp(idx.recType, "ACHR", 4) == 0 ||
-            std::memcmp(idx.recType, "ACRE", 4) == 0 ||
-            std::memcmp(idx.recType, "LAND", 4) == 0 ||
-            std::memcmp(idx.recType, "WRLD", 4) == 0 ||
-            std::memcmp(idx.recType, "SPEL", 4) == 0 ||
-            std::memcmp(idx.recType, "ENCH", 4) == 0 ||
-            std::memcmp(idx.recType, "MGEF", 4) == 0 ||
-            std::memcmp(idx.recType, "SKIL", 4) == 0 ||
-            std::memcmp(idx.recType, "BSGN", 4) == 0 ||
-            std::memcmp(idx.recType, "CONT", 4) == 0 ||
-            std::memcmp(idx.recType, "LIGH", 4) == 0 ||
-            std::memcmp(idx.recType, "STAT", 4) == 0 ||
-            std::memcmp(idx.recType, "SOUN", 4) == 0 ||
-            std::memcmp(idx.recType, "TREE", 4) == 0 ||
-            std::memcmp(idx.recType, "FLOR", 4) == 0 ||
-            std::memcmp(idx.recType, "ACTI", 4) == 0 ||
-            std::memcmp(idx.recType, "APPA", 4) == 0 ||
-            std::memcmp(idx.recType, "EYES", 4) == 0 ||
-            std::memcmp(idx.recType, "HAIR", 4) == 0 ||
-            std::memcmp(idx.recType, "CLMT", 4) == 0 ||
-            std::memcmp(idx.recType, "REGN", 4) == 0 ||
-            std::memcmp(idx.recType, "LVLI", 4) == 0 ||
-            std::memcmp(idx.recType, "LVLC", 4) == 0 ||
-            std::memcmp(idx.recType, "LVSP", 4) == 0 ||
-            std::memcmp(idx.recType, "LVLN", 4) == 0 ||
-            std::memcmp(idx.recType, "NAVM", 4) == 0 ||
-            std::memcmp(idx.recType, "ARMO", 4) == 0 ||
-            std::memcmp(idx.recType, "BOOK", 4) == 0 ||
-            std::memcmp(idx.recType, "FACT", 4) == 0 ||
-            std::memcmp(idx.recType, "RACE", 4) == 0 ||
-            std::memcmp(idx.recType, "CLAS", 4) == 0 ||
-            std::memcmp(idx.recType, "CLOT", 4) == 0 ||
-            std::memcmp(idx.recType, "INGR", 4) == 0 ||
-            std::memcmp(idx.recType, "ALCH", 4) == 0 ||
-            std::memcmp(idx.recType, "MISC", 4) == 0 ||
-            std::memcmp(idx.recType, "ROAD", 4) == 0 ||
-            std::memcmp(idx.recType, "SCPT", 4) == 0 ||
-            std::memcmp(idx.recType, "GMST", 4) == 0 ||
-            std::memcmp(idx.recType, "GLOB", 4) == 0 ||
-            std::memcmp(idx.recType, "DOOR", 4) == 0 ||
-            std::memcmp(idx.recType, "PACK", 4) == 0 ||
-            std::memcmp(idx.recType, "PGRD", 4) == 0 ||
-            std::memcmp(idx.recType, "IDLE", 4) == 0 ||
-            std::memcmp(idx.recType, "KEYM", 4) == 0 ||
-            std::memcmp(idx.recType, "AMMO", 4) == 0 ||
-            std::memcmp(idx.recType, "SGST", 4) == 0 ||
-            std::memcmp(idx.recType, "SLGM", 4) == 0 ||
-            std::memcmp(idx.recType, "FURN", 4) == 0 ||
-            std::memcmp(idx.recType, "LTEX", 4) == 0 ||
-            std::memcmp(idx.recType, "GRAS", 4) == 0 ||
-            std::memcmp(idx.recType, "WATR", 4) == 0 ||
-            std::memcmp(idx.recType, "WTHR", 4) == 0 ||
-            std::memcmp(idx.recType, "CSTY", 4) == 0 ||
-            std::memcmp(idx.recType, "LSCR", 4) == 0 ||
-            std::memcmp(idx.recType, "EFSH", 4) == 0 ||
-            std::memcmp(idx.recType, "ANIO", 4) == 0 ||
-            std::memcmp(idx.recType, "SBSP", 4) == 0) {
-            shouldDecode = true;
+        EsmPayload* payload = esm_plugin_decode_record_at(plugin, i);
+        if (!payload) {
+            LOGE("Failed to decode record %.4s #%zu in %s (code=%d)",
+                 idx.recType, i, filePath.c_str(), esm_last_error_code());
+            continue;
         }
 
-        if (!shouldDecode) continue;
-
-        // Load this record's data from file
         ESMRecord rec;
-        std::memcpy(rec.recType, idx.recType, 4);
-        rec.dataSize = idx.dataSize;
-        rec.flags = idx.flags;
-        rec.formID = idx.formID;
-        rec.parentFormID = idx.parentFormID;
-        rec.worldspaceFormID = idx.worldspaceFormID;
-
-        file.seekg(idx.fileOffset);
-        if (idx.compressed) {
-            // Read compressed data
-            uint32_t compSize = idx.dataSize - 4;
-            std::vector<uint8_t> compressedData(compSize);
-            file.seekg(4, std::ios::cur);  // Skip decompSize (already read)
-            file.read(reinterpret_cast<char*>(compressedData.data()), compSize);
-
-            // Decompress
-            std::vector<uint8_t> decompressed(idx.decompSize);
-            z_stream strm = {};
-            // Oblivion stores record payloads as zlib streams (78 9C header).
-            inflateInit2(&strm, 15 + 32);
-            strm.next_in = compressedData.data();
-            strm.avail_in = compSize;
-            strm.next_out = decompressed.data();
-            strm.avail_out = idx.decompSize;
-            int ret = inflate(&strm, Z_FINISH);
-            inflateEnd(&strm);
-
-            if (ret != Z_STREAM_END) {
-                LOGE("Decompression failed for record %.4s formID=0x%08X (zlib error %d)",
-                     idx.recType, idx.formID, ret);
-                continue;
-            }
-
-            // Parse subrecords from decompressed data
-            size_t offset = 0;
-            while (offset < decompressed.size()) {
-                SubRecord sub;
-                if (offset + 6 > decompressed.size()) break;
-                std::memcpy(sub.tag, decompressed.data() + offset, 4);
-                uint16_t subSize;
-                std::memcpy(&subSize, decompressed.data() + offset + 4, 2);
-                uint32_t subDataSize = subSize & 0xFFFF;
-                offset += 6;
-                if (offset + subDataSize > decompressed.size()) break;
-                sub.data.resize(subDataSize);
-                std::memcpy(sub.data.data(), decompressed.data() + offset, subDataSize);
-                offset += subDataSize;
-                rec.subRecords.push_back(std::move(sub));
-            }
-        } else {
-            // Read non-compressed subrecords directly
-            uint32_t bytesRead = 0;
-            while (bytesRead < idx.dataSize) {
-                SubRecord sub;
-                if (!readSubRecord(file, sub)) break;
-                rec.subRecords.push_back(std::move(sub));
-                bytesRead = static_cast<uint32_t>(file.tellg()) - idx.fileOffset;
-            }
-        }
+        materialize_record(idx, payload, rec);
+        esm_payload_free(payload);
 
         decodeRecord(rec);
         decodedCount++;
-
-        // Clear subrecords after decoding to free memory
-        rec.subRecords.clear();
-
         if (decodedCount % 5000 == 0) {
             LOGD("  Decoded %d records...", decodedCount);
         }
     }
 
-    file.close();
+    // The FFI handle owns the whole file bytes; release them now that
+    // everything is materialized so the 277MB peak does not linger.
+    esm_plugin_free(plugin);
+
     LOGD("ESM file parsed: %zu cells, %zu NPCs, %zu weapons, %zu quests, %zu dialogs, "
          "%zu refs, %zu terrains",
          m_cells.size(), m_npcs.size(), m_weapons.size(), m_quests.size(), m_dialogs.size(),
@@ -583,153 +358,6 @@ bool ESMFile::open(const std::string& filePath) {
                    m_exteriorCellsNoXclw);
 
     resolveMagicReferences();
-
-    return true;
-}
-
-bool ESMFile::readRecordHeader(std::ifstream& file, ESMRecord& rec) {
-    file.read(reinterpret_cast<char*>(&rec.recType), 4);
-    if (file.gcount() < 4) return false;
-
-    uint32_t rawSize;
-    uint16_t version, unknown16;
-    file.read(reinterpret_cast<char*>(&rawSize), 4);  // dataSize
-    file.read(reinterpret_cast<char*>(&rec.flags), 4);
-    file.read(reinterpret_cast<char*>(&rec.formID), 4);
-    file.read(reinterpret_cast<char*>(&version), 2);
-    file.read(reinterpret_cast<char*>(&unknown16), 2);
-
-    if (std::memcmp(rec.recType, "GRUP", 4) == 0) {
-        // GRUP has a different structure — this shouldn't be called for GRUPs
-        LOGE("readRecordHeader called on GRUP (%.4s), unexpected", rec.recType);
-        return false;
-    }
-
-    bool compressed = (rec.flags & REC_FLAG_COMPRESSED) != 0;
-    rec.dataSize = rawSize;
-
-    LOGD("  RECORD: %.4s size=%u flags=0x%08X formID=0x%08X %s",
-         rec.recType, rec.dataSize, rec.flags, rec.formID,
-         compressed ? "(compressed)" : "");
-
-    uint32_t recordsDataStart = static_cast<uint32_t>(file.tellg());
-
-    if (compressed) {
-        // Read compressed block: 4 bytes decompressed size + zlib stream
-        uint32_t decompSize;
-        file.read(reinterpret_cast<char*>(&decompSize), 4);
-
-        // Remaining bytes in the record = compressed zlib data
-        uint32_t compSize = rec.dataSize - 4;
-        std::vector<uint8_t> compressedData(compSize);
-        file.read(reinterpret_cast<char*>(compressedData.data()), compSize);
-
-        // Decompress
-        std::vector<uint8_t> decompressed(decompSize);
-        z_stream strm = {};
-        // Oblivion stores record payloads as zlib streams (78 9C header).
-        inflateInit2(&strm, 15 + 32);
-        strm.next_in = compressedData.data();
-        strm.avail_in = compSize;
-        strm.next_out = decompressed.data();
-        strm.avail_out = decompSize;
-        int ret = inflate(&strm, Z_FINISH);
-        inflateEnd(&strm);
-
-        if (ret != Z_STREAM_END) {
-            LOGE("Decompression failed for record %.4s (zlib error %d)", rec.recType, ret);
-            return false;
-        }
-
-        // Parse subrecords from decompressed data
-        std::vector<uint8_t> buf = std::move(decompressed);
-        size_t offset = 0;
-        while (offset < buf.size()) {
-            SubRecord sub;
-            if (offset + 8 > buf.size()) break;
-            std::memcpy(sub.tag, buf.data() + offset, 4);
-            uint16_t subSize;
-            std::memcpy(&subSize, buf.data() + offset + 4, 2);
-            uint32_t subDataSize = subSize & 0xFFFF;
-            offset += 6;
-            if (offset + subDataSize > buf.size()) {
-                LOGE("Subrecord data exceeds buffer");
-                break;
-            }
-            sub.data.resize(subDataSize);
-            std::memcpy(sub.data.data(), buf.data() + offset, subDataSize);
-            offset += subDataSize;
-            rec.subRecords.push_back(std::move(sub));
-        }
-    } else {
-        // Parse subrecords directly from file
-        uint32_t bytesRead = 0;
-        while (bytesRead < rec.dataSize) {
-            SubRecord sub;
-            if (!readSubRecord(file, sub)) {
-                LOGE("Failed to read subrecord");
-                break;
-            }
-            rec.subRecords.push_back(std::move(sub));
-            bytesRead = static_cast<uint32_t>(file.tellg()) - recordsDataStart;
-        }
-    }
-
-    return true;
-}
-
-bool ESMFile::readSubRecord(std::ifstream& file, SubRecord& sub) {
-    file.read(sub.tag, 4);
-    if (file.gcount() < 4) return false;
-
-    uint16_t subSize;
-    file.read(reinterpret_cast<char*>(&subSize), 2);
-    if (file.gcount() < 2) return false;
-
-    uint32_t dataSize = subSize & 0xFFFF;  // Some records have upper bytes used for flags
-    sub.data.resize(dataSize);
-
-    if (dataSize > 0) {
-        file.read(reinterpret_cast<char*>(sub.data.data()), dataSize);
-        if (static_cast<uint32_t>(file.gcount()) < dataSize) return false;
-    }
-
-    return true;
-}
-
-bool ESMFile::readGroup(std::ifstream& file, GroupType groupType, uint32_t groupSize) {
-    uint32_t start = static_cast<uint32_t>(file.tellg());
-    uint32_t bytesRead = 0;
-    int recordCount = 0;
-
-    while (bytesRead < groupSize && file && file.peek() != EOF) {
-        char peekTag[4];
-        file.read(peekTag, 4);
-        file.seekg(-4, std::ios::cur);
-
-        if (peekTag[0] == 'G' && peekTag[1] == 'R' && peekTag[2] == 'U' && peekTag[3] == 'P') {
-            // Nested GRUP
-            GroupHeader gh;
-            file.read(reinterpret_cast<char*>(&gh), sizeof(gh));
-
-            if (!readGroup(file, static_cast<GroupType>(gh.groupType),
-                           gh.groupSize - sizeof(gh))) {
-                return false;
-            }
-            bytesRead = static_cast<uint32_t>(file.tellg()) - start;
-        } else {
-            // Regular record
-            ESMRecord rec;
-            if (!readRecordHeader(file, rec)) {
-                LOGE("Failed to read record inside GRUP at offset %u", bytesRead);
-                break;
-            }
-
-            decodeRecord(rec);
-            recordCount++;
-            bytesRead = static_cast<uint32_t>(file.tellg()) - start;
-        }
-    }
 
     return true;
 }
@@ -3152,228 +2780,89 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
         m_subspaces.push_back(std::move(sbsp));
     }
 
-bool ESMFile::readRecordHeaderMem(const uint8_t*& pos, const uint8_t* end, ESMRecord& rec) {
-    if (pos + 20 > end) return false;
-    
-    std::memcpy(rec.recType, pos, 4); pos += 4;
-    
-    uint32_t rawSize;
-    std::memcpy(&rawSize, pos, 4); pos += 4;
-    std::memcpy(&rec.flags, pos, 4); pos += 4;
-    std::memcpy(&rec.formID, pos, 4); pos += 4;
-    // Records carry a 2 byte version and a 2 byte unknown field after the form ID,
-    // so the header is 20 bytes. Skipping only 16 desynchronises every following
-    // read and the whole file decodes to nothing.
-    pos += 4;
-    
-    if (std::memcmp(rec.recType, "GRUP", 4) == 0) {
-        LOGE("readRecordHeaderMem called on GRUP");
-        return false;
-    }
-    
-    bool compressed = (rec.flags & REC_FLAG_COMPRESSED) != 0;
-    rec.dataSize = rawSize & 0x00FFFFFF;
-    
-    // If compressed, decompress into subRecords vector
-    if (compressed) {
-        if (pos + 4 > end) return false;
-        uint32_t decompSize;
-        std::memcpy(&decompSize, pos, 4); pos += 4;
-        
-        uint32_t compSize = rec.dataSize - 4;
-        if (pos + compSize > end) return false;
-        
-        // Decompress
-        z_stream strm;
-        std::memset(&strm, 0, sizeof(strm));
-        strm.next_in = const_cast<uint8_t*>(pos);
-        strm.avail_in = compSize;
-        
-        std::vector<uint8_t> decompBuf(decompSize);
-        strm.next_out = decompBuf.data();
-        strm.avail_out = decompSize;
-        
-        int ret = inflateInit(&strm);
-        if (ret != Z_OK) {
-            LOGE("inflateInit failed: %d", ret);
-            return false;
-        }
-        ret = inflate(&strm, Z_FINISH);
-        if (ret != Z_STREAM_END) {
-            LOGE("inflate failed: %d", ret);
-            inflateEnd(&strm);
-            return false;
-        }
-        inflateEnd(&strm);
-        
-        pos += compSize;
-        
-        // Parse decompressed data as subrecords
-        const uint8_t* subPos = decompBuf.data();
-        const uint8_t* subEnd = subPos + decompSize;
-        while (subPos < subEnd) {
-            SubRecord sub;
-            if (!readSubRecordMem(subPos, subEnd, sub)) break;
-            rec.subRecords.push_back(std::move(sub));
-        }
-    } else {
-        // Uncompressed: parse subrecords directly
-        const uint8_t* subPos = pos;
-        const uint8_t* subEnd = pos + rec.dataSize;
-        if (subEnd > end) subEnd = end;
-        while (subPos < subEnd) {
-            SubRecord sub;
-            if (!readSubRecordMem(subPos, subEnd, sub)) break;
-            rec.subRecords.push_back(std::move(sub));
-        }
-        pos = subEnd;
-    }
-    
-    return true;
-}
-
-bool ESMFile::readSubRecordMem(const uint8_t*& pos, const uint8_t* end, SubRecord& sub) {
-    if (pos + 6 > end) return false;
-    
-    std::memcpy(sub.tag, pos, 4); pos += 4;
-    
-    uint16_t size;
-    std::memcpy(&size, pos, 2); pos += 2;
-    uint16_t realSize = size & 0xFFFF;
-    
-    if (pos + realSize > end) return false;
-    
-    sub.data.assign(pos, pos + realSize);
-    pos += realSize;
-    
-    return true;
-}
-
-// GRUP header on disk is tag(4) + groupSize(4) + label(4) + groupType(4) + stamp(2) + unknown(2).
-// GroupHeader models only the first 16 bytes, so the trailing 4 must be skipped explicitly.
-static constexpr uint32_t GRUP_HEADER_SIZE = 20;
-
-bool ESMFile::readGroupMem(const uint8_t*& pos, const uint8_t* end, GroupType groupType, uint32_t groupSize) {
-    if (pos + groupSize > end) {
-        LOGE("readGroupMem: group size exceeds buffer");
-        return false;
-    }
-    
-    const uint8_t* groupEnd = pos + groupSize;
-        ++m_grupCount;
-    
-    while (pos < groupEnd) {
-        if (pos + 4 > groupEnd) break;
-        
-        char peekTag[4];
-        std::memcpy(peekTag, pos, 4);
-        
-        if (peekTag[0] == 'G' && peekTag[1] == 'R' && peekTag[2] == 'U' && peekTag[3] == 'P') {
-            // Nested GRUP
-            GroupHeader gh;
-            std::memcpy(&gh, pos, sizeof(gh)); pos += GRUP_HEADER_SIZE;
-            if (gh.groupSize < GRUP_HEADER_SIZE) break;
-            
-            uint32_t childSize = gh.groupSize - GRUP_HEADER_SIZE;
-            uint32_t savedCell = m_currentCellFormID;
-            uint32_t savedWorld = m_currentWorldspaceFormID;
-            if (gh.groupType == 6) m_currentCellFormID = gh.groupLabel;
-            if (gh.groupType == 1) m_currentWorldspaceFormID = gh.groupLabel;
-            readGroupMem(pos, groupEnd, static_cast<GroupType>(gh.groupType), childSize);
-            m_currentCellFormID = savedCell;
-            m_currentWorldspaceFormID = savedWorld;
-        } else {
-            // Regular record
-            ESMRecord rec;
-            if (!readRecordHeaderMem(pos, groupEnd, rec)) break;
-            rec.parentFormID = m_currentCellFormID;
-            rec.worldspaceFormID = m_currentWorldspaceFormID;
-            decodeRecord(rec);
-        }
-    }
-    
-    return true;
-}
-
 bool ESMFile::parseFromMemory(const std::string& name, const uint8_t* data, size_t dataSize) {
     m_fileName = name;
     size_t ext = m_fileName.rfind('.');
     m_isMaster = (ext != std::string::npos &&
                   (m_fileName.substr(ext) == ".esm" ||
                    m_fileName.substr(ext) == ".ESM"));
-    
+
     LOGD("Parsing ESM from memory: %s (master=%s, %zu bytes)",
          m_fileName.c_str(), m_isMaster ? "yes" : "no", dataSize);
-    
-    const uint8_t* pos = data;
-    const uint8_t* end = data + dataSize;
-    
-    // Read TES4 header
-    ESMRecord header;
-    if (!readRecordHeaderMem(pos, end, header)) {
-        LOGE("Failed to read TES4 header from memory");
+
+    // The FFI handle borrows the caller's buffer; it stays valid until
+    // esm_plugin_free below.
+    EsmPlugin* plugin = esm_plugin_parse_memory(name.c_str(), data, dataSize);
+    if (!plugin) {
+        LOGE("Invalid ESM from memory: %s (code=%d)", name.c_str(), esm_last_error_code());
         return false;
     }
-    
-    if (std::memcmp(header.recType, "TES4", 4) != 0) {
-        LOGE("Invalid ESM from memory: expected TES4, got %.4s", header.recType);
-        return false;
-    }
-    
-    LOGD("TES4 header parsed, formID=0x%08X, flags=0x%08X", header.formID, header.flags);
 
-        // Parse TES4 subrecords from memory to extract MAST list
-        {
-            const uint8_t* subPos = pos;
-            const uint8_t* subEnd = subPos + header.dataSize;
-            while (subPos + 8 <= subEnd) {
-                SubRecord sub;
-                if (!readSubRecordMem(subPos, subEnd, sub)) break;
-                if (std::memcmp(sub.tag, "MAST", 4) == 0) {
-                    std::string masterName(reinterpret_cast<const char*>(sub.data.data()),
-                                           sub.data.size());
-                    while (!masterName.empty() && masterName.back() == '\0')
-                        masterName.pop_back();
-                    if (!masterName.empty())
-                        m_masters.push_back(masterName);
-                }
-            }
-            LOGD("  Masters from memory: %zu", m_masters.size());
-        }
-
-        // Parse remaining records
-    while (pos < end) {
-        if (pos + 4 > end) break;
-        
-        char peekTag[4];
-        std::memcpy(peekTag, pos, 4);
-        
-        if (peekTag[0] == 'G' && peekTag[1] == 'R' && peekTag[2] == 'U' && peekTag[3] == 'P') {
-            GroupHeader gh;
-            std::memcpy(&gh, pos, sizeof(gh)); pos += GRUP_HEADER_SIZE;
-            if (gh.groupSize < GRUP_HEADER_SIZE) break;
-            
-            uint32_t childSize = gh.groupSize - GRUP_HEADER_SIZE;
-            uint32_t savedCell = m_currentCellFormID;
-            if (gh.groupType == 6) m_currentCellFormID = gh.groupLabel;
-            readGroupMem(pos, end, static_cast<GroupType>(gh.groupType), childSize);
-            m_currentCellFormID = savedCell;
-        } else {
-            ESMRecord rec;
-            if (!readRecordHeaderMem(pos, end, rec)) break;
-            rec.parentFormID = m_currentCellFormID;
-            decodeRecord(rec);
+    size_t masterCount = esm_plugin_master_count(plugin);
+    for (size_t i = 0; i < masterCount; ++i) {
+        char masterName[512];
+        if (esm_plugin_master_at(plugin, i, masterName, sizeof(masterName)) > 0 &&
+            masterName[0] != '\0') {
+            m_masters.push_back(masterName);
         }
     }
-    
+    LOGD("  Masters from memory: %zu", m_masters.size());
+
+    // Index every record header (same layout as open()).
+    const size_t recordCount = esm_plugin_record_count(plugin);
+    m_recordIndex.reserve(recordCount);
+    for (size_t i = 0; i < recordCount; ++i) {
+        EsmRecordInfo info;
+        std::memset(&info, 0, sizeof(info));
+        if (esm_plugin_record_info_at(plugin, i, &info) != ESM_OK) {
+            LOGE("Failed to read record %zu header from memory (code=%d)",
+                 i, esm_last_error_code());
+            esm_plugin_free(plugin);
+            return false;
+        }
+        RecordIndex idx;
+        std::memcpy(idx.recType, info.rec_type, 4);
+        idx.formID = info.form_id;
+        idx.flags = info.flags;
+        idx.dataSize = info.data_size;
+        idx.fileOffset = info.file_offset;
+        idx.compressed = info.compressed != 0;
+        idx.decompSize = info.decomp_size;
+        idx.parentFormID = info.parent_form_id;
+        idx.worldspaceFormID = info.worldspace_form_id;
+        m_recordIndex.push_back(idx);
+        if (info.form_id != 0) {
+            m_formIDIndex[info.form_id] = m_recordIndex.size() - 1;
+        }
+    }
+
+    m_grupCount = static_cast<uint32_t>(esm_plugin_group_count(plugin));
+
+    // The memory path historically decodes every record without the file
+    // path's type filter; keep that behaviour for parity.
+    for (size_t i = 0; i < recordCount; ++i) {
+        const RecordIndex& idx = m_recordIndex[i];
+        EsmPayload* payload = esm_plugin_decode_record_at(plugin, i);
+        if (!payload) {
+            LOGE("Failed to decode record %.4s #%zu from memory (code=%d)",
+                 idx.recType, i, esm_last_error_code());
+            continue;
+        }
+        ESMRecord rec;
+        materialize_record(idx, payload, rec);
+        esm_payload_free(payload);
+        decodeRecord(rec);
+    }
+    esm_plugin_free(plugin);
+
     LOGD("ESM parsed from memory: %zu cells, %zu NPCs, %zu weapons, %zu quests, %zu dialogs (%u GRUPs)",
-             m_cells.size(), m_npcs.size(), m_weapons.size(), m_quests.size(), m_dialogs.size(), m_grupCount);
-        LOGD("ESM primary records: SCPT=%zu SPEL=%zu ENCH=%zu LVLI=%zu NAVM=%zu ARMO=%zu BOOK=%zu "
-             "FACT=%zu RACE=%zu CLAS=%zu CLOT=%zu INGR=%zu ALCH=%zu MISC=%zu WRLD=%zu ROAD=%zu",
-             m_scripts.size(), m_spells.size(), m_enchantments.size(), m_leveledLists.size(),
-             m_navMeshes.size(), m_armors.size(), m_books.size(), m_factions.size(),
-             m_races.size(), m_classes.size(), m_clothing.size(), m_ingredients.size(),
-             m_alchemy.size(), m_miscItems.size(), m_worlds.size(), m_roads.size());
+         m_cells.size(), m_npcs.size(), m_weapons.size(), m_quests.size(), m_dialogs.size(), m_grupCount);
+    LOGD("ESM primary records: SCPT=%zu SPEL=%zu ENCH=%zu LVLI=%zu NAVM=%zu ARMO=%zu BOOK=%zu "
+         "FACT=%zu RACE=%zu CLAS=%zu CLOT=%zu INGR=%zu ALCH=%zu MISC=%zu WRLD=%zu ROAD=%zu",
+         m_scripts.size(), m_spells.size(), m_enchantments.size(), m_leveledLists.size(),
+         m_navMeshes.size(), m_armors.size(), m_books.size(), m_factions.size(),
+         m_races.size(), m_classes.size(), m_clothing.size(), m_ingredients.size(),
+         m_alchemy.size(), m_miscItems.size(), m_worlds.size(), m_roads.size());
     LOGD("ESM secondary types: GMST=%zu GLOB=%zu DOOR=%zu PACK=%zu PGRD=%zu IDLE=%zu "
          "KEYM=%zu AMMO=%zu SGST=%zu SLGM=%zu FURN=%zu LTEX=%zu GRAS=%zu WATR=%zu "
          "WTHR=%zu CSTY=%zu LSCR=%zu EFSH=%zu ANIO=%zu SBSP=%zu",
@@ -4818,7 +4307,7 @@ std::vector<std::pair<uint32_t, uint16_t>> ESMManager::resolveLeveledList(uint32
 
     // ChanceNone: random chance that nothing is spawned
     if (list->chanceNone > 0) {
-        uint8_t roll = static_cast<uint8_t>(rand() % 100);
+        uint8_t roll = static_cast<uint8_t>(oblivion::rng::rand_range(0, 99));
         if (roll < list->chanceNone) {
             return result;  // Nothing selected
         }

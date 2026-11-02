@@ -1,4 +1,5 @@
 #include "loot_generator.h"
+#include "../util/msvc_lcg.h"
 #include <android/log.h>
 
 #define LOG_TAG "LootGenerator"
@@ -13,7 +14,7 @@
 
 namespace oblivion {
 
-LootGenerator::LootGenerator() : rng(std::random_device{}()) {
+LootGenerator::LootGenerator() {
 }
 
 LootGenerator::~LootGenerator() {
@@ -98,8 +99,7 @@ std::vector<std::pair<uint32_t, uint16_t>> LootGenerator::generateEnemyDrop(
 
 int LootGenerator::randomInt(int min, int max) const {
     if (min >= max) return min;
-    std::uniform_int_distribution<int> dist(min, max);
-    return dist(rng);
+    return oblivion::rng::rand_range(min, max);
 }
 
 } // namespace oblivion

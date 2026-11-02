@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-31T14:14:07Z",
+  "lastUpdated": "2026-11-01T16:58:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -9817,14 +9817,28 @@
         "opencode"
       ],
       "content": "訂正 (2026-10-31, V214 台帳参照訂正): docs/PHASE9_PLAN.md 参照は「統合済み」。2026-09-27 のコミット b4446bf7 で Phase 9 計画（423行）が plan.md の Phase 9 節へ統合されファイルは削除済み。plan.md 冒頭に \"The Phase 9 plan that used to live in docs/PHASE9_PLAN.md was merged into the Phase 9 section below on 2026-09-27, and that file was deleted; no other plan document supersedes this one\" と明記。以後の参照は plan.md Phase 9 節が正。台帳内の当該参照は歴史記録として許容、現在形での参照は不可。元エントリID: 0fc5cbf9-ae2f-4456-9dfe-57dc66834e24（2026-09-27 merge gate、当該エントリ自体が統合・削除を記録済み）。出典: tmp/re/relcheck_20261029/rel5_ledger_freshness.md §4-1。"
+    },    {
+      "id": "opencode-x1-freshness-n5b-animation-20261101",
+      "timestamp": "2026-11-01T16:58:00Z",
+      "priority": "low",
+      "category": "correction",
+      "tags": [
+        "oblivion",
+        "re",
+        "rust",
+        "freshness",
+        "2026-11-01",
+        "opencode"
+      ],
+      "content": "鮮度訂正 X1 追補 (2026-11-01, TODO serial 213 連託処理): X1 エントリ opencode-x1-rust-migration-n1n5-unrecorded-20261031 の残件「N5b (animation Wave2 + phase30 parity)」は部分陷色化。2026-11-01 調査で animation readers は既実装を確認（残りは keyframe/resolve + walker C ABI 移行）。STATE.md 2026-11-01 サンプル (Last run: N5b/N6 investigated, approved checks green: workspace tests + nif-ffi C ABI harness) と整合。N6 docs パス・native-lib リンク未実行は従来どおり有効。根拠: tmp/re/handoff_20261101_contradiction_audit10.md §(2)。"
     }
   ],
   "metadata": {
-    "totalEntries": 689,
+    "totalEntries": 690,
     "compressedCount": 121,
     "sessionCount": 40,
-    "lastUpdated": "2026-10-31T14:14:07Z",
-    "entry_count": 689,
-    "last_updated": "2026-10-31"
+    "lastUpdated": "2026-11-01T16:58:00Z",
+    "entry_count": 690,
+    "last_updated": "2026-11-01"
   }
 }

@@ -6,7 +6,6 @@
 #include <chrono>
 #include <vector>
 #include "engine/renderer.h"
-#include "game/gmst_defaults.h"
 #include "system/display_modes.h"
 #include "system/scene_time_throttle.h"
 #include "ui/viewer_3d.h"
@@ -252,10 +251,12 @@ Java_com_example_oblivion_GameRenderer_nativeRenderFrame(
         g_lastFrameTime = now;
         g_hasLastFrameTime = true;
 
-        // RE 54.3: apply fGlobalTimeMultiplier to deltaTime (from ESM GMST,
-        // defaults to 1.0f when no ESM is loaded). This replaces the former
-        // hardcoded GLOBAL_TIME_MULTIPLIER in settings_manager.h.
-        deltaTime *= oblivion::gmst::getLive("fGlobalTimeMultiplier");
+        // RE 54.3 (v230 3-2): fGlobalTimeMultiplier must not scale frame
+        // delta. The EXE folds it only into the game clock at 0x47D170 (INI
+        // node 0xB06704, not a GMST), and it is a distinct mechanism from
+        // TimeScale, which only drives the SkyWeatherSystem clock. Scaling dt
+        // here would run every subsystem by the multiplier rate. The former
+        // frame-dt multiply via gmst::getLive() was removed accordingly.
 
         // RE §54.2: FUN_00889810 runs right after Timer::Update in
         // PerFrameUpdate (RE §64.4 steps 6-7). It accumulates dt_game and
@@ -661,7 +662,7 @@ Java_com_example_oblivion_GameRenderer_nativeInitFaceGen(
     LOGI("=== nativeInitFaceGen called ===");
 
     auto& faceGen = facegen::FaceGenMorpher::instance();
-    bool result = faceGen.initialize(nullptr, nullptr);
+    bool result = faceGen.initialize(nullptr);
 
     if (result) {
         LOGI("FaceGenMorpher initialized successfully");

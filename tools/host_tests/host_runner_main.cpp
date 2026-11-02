@@ -17,6 +17,7 @@
 #include "tests/menu_fade_tests.h"
 #include "tests/fatigue_system_tests.h"
 #include "tests/combat_formulas_tests.h"
+#include "tests/msvc_lcg_tests.h"
 #include "tests/phase69_persistence_tests.h"
 #include "tests/plugin_list_tests.h"
 #include "tests/formid_index_tests.h"
@@ -115,6 +116,11 @@ int main() {
         CombatFormulasTests t;
         const bool ok = t.runAllTests();
         runSuite("CombatFormulasTests", ok, t.getSummary(), failed);
+    }
+    {
+        MsvcLcgTests t;
+        const bool ok = t.runAllTests();
+        runSuite("MsvcLcgTests", ok, t.getSummary(), failed);
     }
     {
         Phase69PersistenceTests t;

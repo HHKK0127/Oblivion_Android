@@ -31,6 +31,7 @@
   - [Current Status (measured on emulator)](#current-status-measured-on-emulator)
   - [Verified build history](#verified-build-history-2026-09-23-to-2026-09-27)
 - [Rust migration of pure-logic layers (2026-10-26)](#rust-migration-of-pure-logic-layers-2026-10-26)
+- [RE-derived port residuals (2026-11-01)](#re-derived-port-residuals-2026-11-01)
 
 ---
 
@@ -1524,7 +1525,7 @@ Everything in this section was measured on the current APK, on the emulator, unl
 
 ## Rust migration of pure-logic layers (2026-10-26)
 
-**Status: in progress; eight call sites are already served by Rust on all three ABIs.** This section
+**Status: in progress; nine call sites are already served by Rust on all three ABIs.** This section
 records why part of the native code is being rewritten in Rust, exactly which code moved, and how the
 new code is gated, so that a later change can tell a migration increment from a behaviour change.
 
@@ -1542,10 +1543,10 @@ adopted this as an explicit override of the divider above. The impurity exclusio
 code that owns a GL object, a Jolt body or an Android framework handle - an FFI hop on that path
 buys nothing - but code that was kept in C++ only because parsing was mixed with I/O, zlib or C++
 record types now moves to Rust, with that state carried behind an opaque handle exactly the way
-`bsa_reader` and `nif_parser` already do it. The example in the paragraph above is therefore no
-longer an exclusion but the next target: `assets/esm_reader.cpp` migrates with zlib going to
-`flate2` (as `bsa-core` already proves), the `std::ifstream` staying on the C++ side of the shim,
-and the record types materialised by the shim like `syncCache()` does for NIF.
+`bsa_reader` and `nif_parser` already do it. The example in the paragraph above was the next target
+and has now migrated: `assets/esm_reader.cpp` reads the file behind an opaque `EsmPlugin` handle with
+zlib replaced by `flate2`, the record types materialised by the shim the way `syncCache()` does for
+NIF, and `z` dropped from the link line with it.
 
 **What is migrated, and what each C++ file became.** The implementations live in a sibling workspace
 (`oblivion-re-tools`) and are reached through five small C ABIs; the C++ side keeps its original
@@ -1609,7 +1610,8 @@ A stateless C ABI cannot describe an archive, so `bsa-ffi` returns an opaque han
 `bsa_extract_decompressed`, and three lookup entry points whose scratch index array is valid only
 until the next search. `bsa-core` holds the parsing, both hashes, path normalisation and the inflate;
 `flate2` with `miniz_oxide` replaces the zlib call, so `bsa_reader.cpp` no longer includes
-`<zlib.h>`. `z` stays in the link line because `assets/esm_reader.cpp` still uses it.
+`<zlib.h>`. `z` then left the link line entirely when `assets/esm_reader.cpp` migrated, so no C++
+translation unit in the tree includes `<zlib.h>` any more.
 
 **Two hashing bugs in the original fell out of the differential oracle, not the test suite.**
 `buildHash` lowercased the first four bytes with a blanket `| 0x20` while the 32-bit hash two
@@ -1662,10 +1664,131 @@ geometry transform (which the FFI does carry) matches in the oracle.
 **Status.** nif_parser brings Phase 3 to six of the `assets` files. `libnative-lib.so` links with
 all 27 `nif_*` symbols present on `arm64-v8a`, `armeabi-v7a` and `x86_64` (the oracle built both
 sides with MinGW g++ on the host, with `<android/log.h>` stubbed so the log output goes to stderr
-and stdout stays comparable). The remaining Phase 3 candidate is the DDS/texture path.
+and stdout stays comparable).
+
+**`assets/esm_reader.cpp` was migrated next, and it is the third stateful shim.**
+`esm-ffi` exposes an `EsmPlugin` handle over the whole file: `esm_plugin_open` owns the file bytes,
+`esm_plugin_parse_memory` borrows a caller buffer, and the record side is `esm_plugin_record_info_at`
+/ `master_at` / `group_count` / `should_decode_record_type` / `decode_record_at` / `materialize_record`
+over borrowed `EsmSubRecordView` payloads. `ESMFile::open()` and `parseFromMemory()` forward to those
+calls and keep their end-of-load log output and post-processing (`resolveWaterColorFallbacks`,
+`resolveMagicReferences`, `resolveAIPackageReferences`, `resolveClassReferences`) verbatim, so no
+caller and no decodeXXX function changed; only the record *header and subrecord* parse moved.
+`flate2` replaces zlib on the compressed-record path, which drops the last `<zlib.h>` include from
+the tree and takes `z` out of the link line, and the 277 MB `Oblivion.esm` is released by
+`esm_plugin_free` as soon as the index and the decoded records are materialised - the same
+ownership rule `bsa_reader` and `nif_parser` follow.
 
 **A rule this shim added to the earlier capacity-unit one.** A stateful handle means "the symbol is
 in the `.so`" proves nothing, so for these files the oracle dump is part of the acceptance, not an
 extra. The shim also taught two format traps worth writing down: a `size_t` return printed with `%u`
 in a `LOGW` is undefined behaviour with varargs, and a two-pass length query that allocates the
 returned `needed` rather than `needed - 1` is always one byte over.
+
+**Differential oracle result (`tmp/esm_oracle/`, `compare.ps1`, exit 0).** Both sides - the original
+`ESMFile` and the shim over `esm-ffi` - were built as host executables from the same driver and run
+over ten real plugins in both modes (`file` = `open()`, `mem` = `parseFromMemory()`), comparing every
+index entry, node and geometry field by FNV-1a-64 hash. Aggregate: **20 pairs, 9 identical, 11
+different.** All eleven differences are the original's, not the shim's.
+
+* `mem` mode differs on **all 8 memory-loaded plugins, 64 differing lines, and every one is the
+  original's `parseFromMemory()` returning an empty master list** while the plugin still loads its
+  records. The Rust path populates masters identically in `file` and `mem` (the MAST scan in
+  `Plugin::parse` is shared by both back-ends), so the shim is the correct one here and `file ≡ mem`
+  holds for it.
+* `file` mode differs on **two** plugins (`DLCMehrunesRazor`, `Knights`, 33 / 34 lines). Both are
+  the original failing to populate records on the file path - on `Knights` the original's dump shows
+  every `CELL`/`NPC_`/`REFR`/`LAND` count at zero while the shim extracts them (`CELL 132`, `NPC_ 76`,
+  `REFR 7058`, `LAND 61`). The eight other `file` pairs, including the 277 MB `Oblivion.esm`
+  (`CELL 35494`, `REFR 1029280`), are byte-identical, so the original's index-then-decode path is
+  otherwise sound and the shim matches it exactly.
+
+The conclusion this oracle pins down: the shim is not the source of any divergence, and the two
+`file` differences plus every `mem` difference are pre-existing bugs in the original that the Rust
+reimplementation fixes. The remaining `open()` work - the `ESMFile` side that forwards to the
+handle - is unchanged, so no caller and no `decodeXXX` function is affected by these fixes.
+
+**Phase 3 is complete - the DDS/texture path closed as a deletion, not a port (2026-10-28).**
+The last candidate was surveyed rather than migrated, because there was nothing left to migrate.
+`assets/dds_loader.cpp` - the only live DDS reader - had already moved to `dds-core` (it is in the
+phase table above), so what remained under the texture path was two files with zero live callers:
+`assets/texture_manager.{h,cpp}` (`AssetTextureManager`, 23 public methods, none called from outside
+the file - its DXT1/3/5 decoders duplicated what `dds-core` now does in Rust, and its GL atlas /
+LRU eviction / mipmap generation duplicated the `textureCache` that `AssetManager` already owns and
+prunes) and `assets/texture_compressor.{h,cpp}` (`TextureCompressor`, 10 methods, not even listed
+in `CMakeLists.txt`, so it was never compiled). Both were removed together with their dependency
+edges: `FaceGenMorpher::initialize` dropped its unused `AssetTextureManager*` parameter (the
+`texCache_` member it stored was written but never read) and its `jni_bridge.cpp` call site went
+from two arguments to one, and `texture_viewer.cpp`'s `getFormatName(TextureFormat)` - the only
+`TextureFormat` consumer outside the deleted file - went with it, taking the
+`#include "../assets/texture_manager.h"` out of `texture_viewer.h`. The
+`assets/texture_manager.cpp` line left the Phase 46 CMake block. After the edits a grep for
+`AssetTextureManager|texture_manager.h|TextureCompressor|texture_compressor|texCache_` under
+`app/src/main/cpp` returns zero matches. The live texture path is untouched by construction:
+`AssetManager::loadDDSTexture` still goes BSA -> temp file -> `DDSLoader` (`dds-core`) -> GPU
+upload, with `AssetManager`'s own `textureCache` / `CacheEntry` / `pruneCache` doing the caching,
+and nothing that path reads was edited. All three ABIs link `native-lib` (`[34/34]`, exit 0, the
+cargo-ndk Rust crates rebuilt through the CMake custom command) with `AssetTextureManager` and
+`TextureCompressor` at **0** defined symbols while the shims stay put - `dds_*` 16, `nif_*` 61,
+`esm_*` 72, `bsa_*` 45 on each of `arm64-v8a`, `armeabi-v7a` and `x86_64` (llvm-nm, `-D`). Phase 3
+therefore ends with every `assets` file that has a live C++ body either ported to a Rust crate
+behind its C ABI or deleted, and no behaviour change on any path that runs.
+
+---
+
+## RE-derived port residuals (2026-11-01)
+
+**Status: five [PORT] decisions and cleanups recorded from the 2026-11-01 reverse-engineering
+session's relationship residuals (source of record: `tmp/re/v230_relationship_residuals.md` §5).**
+Each entry states the engine fact, what the port currently does, and the decision that is owed; the
+matching ai-todo numbers are #25-#29. This section follows the file's append-only rule: when a
+decision is made it is recorded here as a new paragraph naming the entry it settles, and the entry
+below is left in place.
+
+| ai-todo | Priority | Item |
+| --- | --- | --- |
+| #25 | medium | AI clock and `setTimeScale` are not connected |
+| #27 | medium | `gmst_defaults` 41-key coverage scope [PORT] |
+| #28 | medium | Ability / Disease / Power behaviour and the VAMP/POSN -> DAMAGE rounding [PORT] |
+| #29 | low | `fGlobalTimeMultiplier` frame-dt multiply is a mechanism mismatch |
+| #26 | low | `find_by_key` comment correction + unused `SpellData::spellType` |
+
+- **AI clock vs `setTimeScale` (#25).** The engine has one `TESGlobal` TimeScale that feeds
+  `sky_weather_system`, `ai_scheduler` and the console together; in the port the console setter
+  reaches `SkyWeatherSystem` only, so sleep/wait acceleration never follows a `SetGameTimeScale`
+  console command. The fix is to connect `setTimeScale` into `ai_scheduler` and settle
+  `ai_scheduler.h:114`'s unused `timeScale` member (use it or delete it).
+- **`gmst_defaults` coverage (#27).** The merge semantics are engine-identical (later wins, no
+  insert, key set unchanged - oracle-verified in v230 §1), but the port carries 41 float keys
+  against the engine's 2,304 (1.8 % coverage). Which key groups become live through `getLive` is a
+  product [PORT] decision; the chosen scope is recorded here when it is made.
+- **Ability / Disease / Power and VAMP/POSN (#28).** The port's `SpellEffectType` is 8 kinds (the
+  9-kind claim was retracted in v229) and the MGEF -> effect mapping matches on the four-char
+  official names. What is absent is the per-kind behaviour of Ability(4) / Disease(1) / Power(2,3)
+  and the VAMP/POSN -> DAMAGE rounding; the fourcc cross-check (MGEF 208/409/600) is still
+  outstanding. Implement the behaviours or record them as an accepted approximation - a [PORT]
+  decision.
+- **`fGlobalTimeMultiplier` frame-dt multiply (#29).** `jni_bridge.cpp:255-258` multiplies the
+  frame delta by a global that has no engine-side equivalent. It is constantly 1.0 today so nothing
+  moves, but any external writer would make game speed frame-rate dependent. Decision: delete the
+  multiply, or give it an engine-style propagation path. Low priority.
+- **Comment and dead-member cleanup (#26).** `find_by_key()`'s header comment says it does not
+  fall back while the implementation does (3 of 4 sites agree; the `sBasePath` absence is dead-Reg
+  follow-through with no live effect) - correct the comment to match the code. `SpellData::spellType`
+  is unused; decide whether it becomes the connection point for the Ability/Disease/Power work in
+  #28 or is removed with it.
+
+- **Implemented 2026-10-30 (#26, #29).** Both low-priority v230 residuals are resolved. For #29 the frame-dt multiply was deleted:
+  jni_bridge.cpp's multiply block is replaced by an evidence comment citing RE 54.3 (v230 3-2), the now-unused gmst include was
+  dropped, GLOBAL_TIME_MULTIPLIER was removed from settings_manager.h, and the fGlobalTimeMultiplier time/timing entries were
+  removed from gmst_defaults.h (kEntryCount 41 -> 40, with combat_formulas_tests.cpp updated in step). The INI-derived default in
+  oblivion_ini_defaults.cpp is intentionally kept: it is an INI default, not a live GMST. For #26 the find_by_key() header comment now
+  matches the implementation (linear scan, first match wins, falls back to defaults), and SpellData::spellType is kept with a comment
+  marking it as the connection point for the #28 Ability/Disease/Power work. Verified by run_host_tests.sh (ALL GREEN, 0 suites failed).
+  run_host_tests_msvc.ps1 still fails with C1083 on the Rust FFI headers - a pre-existing runner gap: it never gained the Rust include and
+  archive handling that run_host_tests.sh has; the Git Bash script is the supported path.
+  Android-side compilation of the edited jni_bridge.cpp was additionally verified via externalNativeBuildDebug (BUILD SUCCESSFUL, 2026-10-30); host tests do not cover jni_bridge.cpp.
+
+- **Decided 2026-11-01 (#27).** The coverage scope stays at the consumer-driven 40 float keys; there is no bulk expansion toward the engine's 2,304 GMST entries. A key enters kEntries together with the subsystem that reads it through getLive (fatigue family first, then combat, then combat-speak/stagger), guarded by the existing static_assert pins; expanding ahead of a consumer would add atomic override cells and merge surface with no reader, so future keys are added one family at a time as each magic/stealth/acrobatics system is ported. Every current key is actively consumed except fKnockbackTime, which stays as a reserved impulse-time entry. The count question is settled with it: the live table is 40 entries (kEntryCount is sizeof-derived), because fGlobalTimeMultiplier is an INI node (General, default 1.0000, engine node 0xB06704), not a GMST, and its frame-dt multiply was removed with #29 - the v230 §1 claim of fGlobalTimeMultiplier sitting in kEntries and the §3 claim that jni_bridge.cpp:255-258 calls getLive are both stale. Evidence: gmst_defaults.h kEntries (40 entries), getLive call-site audit (41 matches: 22 in combat_formulas.h, 16 in fatigue_system.h, 3 comments, 1 test), jni_bridge.cpp:245-275, oblivion_ini_defaults.cpp:444.
+- **Decided 2026-11-01 (#28).** Two parts. (1) The fourcc cross-check is complete: all 45 mapped codes (30 DAMAGE, 5 HEAL, 3 RESTORE_MANA, 2 RESTORE_STAMINA, PARA, INVI) were verified against the CS Wiki official Magic Effects List and every code matches its official name. VAMP (Vampirism) -> DAMAGE is accepted as an approximation - the vampirism effect's combat manifestation is health drain - and POSN (Poison Info) -> DAMAGE is consistent because poison is damage-based; FOMM and POSN are backend/italic codes and remain damage-class in combat math. (2) The per-kind behaviour of Ability(4) / Disease(1) / Power(2,3) is recorded as an accepted approximation: the current MGEF -> SpellEffectType mapping already applies magnitude and duration correctly, which is what gameplay feels, while the magic-type lifecycle behaviours (disease spread between actors, once-per-day power cooldown, permanent passive ability) are deferred to the phase that ports the full magic system. SpellData::spellType stays as the connection point from #26 and will carry the MagicType when that work starts. Evidence: v230 §2-2/§2-3 mapping tables, spell_manager.cpp:27-95 (mgefToEffectType), spell.h SpellEffectType (8 kinds), cs.uesp.net/wiki/Magic_Effects_List cross-check.
+- **Recorded 2026-11-02 (v241 §3-3 [PORT] implication).** Reproducing Oblivion's .ess save game requires only the two-form dispatch of slot19 (GetSaveSize, vtable +0x4C) and slot20 (SaveGame, +0x50), together with the header, ZLib compression, and TESFile flush that surround them. slot8/SaveEditedForm and slot11 are GECK-only code paths that are unreachable in the retail executable (no GECK code is shipped), so they need no port work. The v239 §2-6 three-stage description (slot8 bit14 guard -> slot9 payload -> buffer flush) belongs to the TESFile plugin-writeout family and is a different system from the .ess body (slot19/20); the two must not be conflated when SaveManager gains .ess support. Open residual N-24 (medium): the per-form implementation matrix behind FUN_00465130 (TESObjectCELL 0x4D1EB0/0x4D2020, TESForm base 0x46AC50/0x46B5E0, and other form-type overrides) has not been enumerated yet - that enumeration is RE-side work tracked under the home TODO ledger (#46) and is the prerequisite for rewriting the v239 §2-6 [PORT] note around slot19/20. N-25 (low, FUN_00518000 call context), N-26 (low, FUN_004CBC20 capstone vs decompiled mismatch), and N-27 (low, FUN_005D3230 console save path) remain open on the RE side. Evidence: v241 §3-3.

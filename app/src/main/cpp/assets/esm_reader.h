@@ -369,7 +369,11 @@ struct SpellData {
     uint32_t formID = 0;
     std::string editorID;
     std::string fullName;
-    uint8_t spellType = 0;       // 0=spell, 1=disease, 2=power, 3=lesser, 4=ability, 5=poison
+    // SPIT type (UESP spec): 0=spell, 1=disease, 2=power, 3=lesser, 4=ability,
+    // 5=poison. Parsed and stored but intentionally unconsumed until typed
+    // Ability/Disease/Power behavior is implemented (RE v230 2-3) - the
+    // connection point for that work.
+    uint8_t spellType = 0;
     uint32_t cost = 0;
     uint8_t level = 0;           // 0=novice .. 4=master
     uint32_t flags = 0;

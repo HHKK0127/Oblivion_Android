@@ -53,8 +53,10 @@ const IniDefaultEntry* find(const char* section, const char* key);
 
 /// Key-only fallback for the three compiled-in nodes whose name literal carries
 /// no section (iLastHDRSetting, iDetectionHighNumPicks,
-/// fLowPerfCombatantVoiceDistance). Returns null when the key is not a
-/// section-less entry. Defined in oblivion_ini.cpp.
+/// fLowPerfCombatantVoiceDistance). Scans every default entry and returns the
+/// first case-insensitive key match regardless of section, mirroring the
+/// engine ReadOne MAIN-section normalization (v218). Returns null when the key
+/// matches nothing. Defined in oblivion_ini.cpp.
 const IniDefaultEntry* find_by_key(const char* key);
 
 }  // namespace ini_defaults

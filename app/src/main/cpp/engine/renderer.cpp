@@ -18,6 +18,7 @@
 #include "../game/merchant_factory.h"
 #include "../world/distant_lod/distant_lod_manager.h"
 #include "../world/distant_lod/original_lod_provider.h"
+#include "../util/msvc_lcg.h"
 // #include "../jni_audio_bridge.h"  // Deferred - requires Java MainActivity
 
 #include <glm/glm.hpp>
@@ -1262,7 +1263,10 @@ bool Renderer::initGameSystems() {
     refs.setTimeScale = [this](float s) {
         // Phase 66 P19: this was a no-op stub, so the console's "settimescale"
         // reported success while the 30x clock kept running unchanged.
+        // Drive the sky clock and the AI scheduler clock together so the
+        // AI day/night packages stay in sync with the rendered sky.
         if (skyWeatherSystem) skyWeatherSystem->setTimeScale(s);
+        if (aiScheduler) aiScheduler->setTimeScale(s);
     };
     refs.setTimeOfDay = [this](float h) {
         // Phase 66 P19: "settime" was also a no-op stub, which left every
@@ -5763,7 +5767,7 @@ std::string Renderer::pickRandomBgmTrack(const std::string& category) {
         }
     }
     if (candidates.empty()) return "";
-    const int idx = rand() % static_cast<int>(candidates.size());
+    const int idx = oblivion::rng::rand_range(0, static_cast<int>(candidates.size()) - 1);
     return candidates[idx];
 }
 #endif

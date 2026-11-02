@@ -5,7 +5,6 @@
 #include <GLES3/gl3.h>
 #include <glm/glm.hpp>
 #include "text_renderer.h"
-#include "../assets/texture_manager.h"
 
 class AssetManager;
 
@@ -80,6 +79,5 @@ private:
     void renderTextureList();
     void renderSelectedTexture();
     std::string formatMemorySize(size_t bytes) const;
-    std::string getFormatName(TextureFormat fmt) const;
     float getScale() const;
 };

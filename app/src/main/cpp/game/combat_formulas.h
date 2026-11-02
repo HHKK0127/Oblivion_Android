@@ -59,6 +59,7 @@
 } while (0)
 #endif
 #include <cstdlib>
+#include "../util/msvc_lcg.h"
 
 namespace oblivion {
 namespace combat {
@@ -252,8 +253,8 @@ inline void applyHealthRatioEffects(float damage,
     const float threshold = gmst::getLive("fCombatSpeakHitThreshold");
     const float chance = gmst::getLive("fCombatSpeakHitChance");
     if (damage > target.maxHealth * threshold) {
-        const float roll = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX);
-        if (roll < chance) {
+        // RE: rand_bool uses inclusive <= (FUN_0047FB70 semantics).
+        if (oblivion::rng::rand_bool(chance)) {
             // Speak line trigger (audio hook stub)
             __android_log_print(ANDROID_LOG_DEBUG, "CombatFormulas",
                 "Speak line triggered (damage=%.1f, threshold=%.2f*%.1f=%.1f)",

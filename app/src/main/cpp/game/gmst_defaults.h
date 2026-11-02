@@ -56,9 +56,6 @@ inline constexpr Entry kEntries[] = {
     {"fFatigueJumpBase", 4.0f},              // 0xB37560
     {"fFatigueJumpMult", 4.0f},              // 0xB37568 (x ratio)
 
-    // --- time / timing (RE §54.3) ---
-    {"fGlobalTimeMultiplier", 1.0f},           // 0xB06704
-
     // --- combat_formulas.h consumers (RE §56.1 / §14 / §15) ---
     {"fArmorRatingMax", 1.0f},               // 0xB36EA0
     {"fBlockSkillBase", 0.0f},               // 0xB36EE8

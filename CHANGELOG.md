@@ -16,6 +16,30 @@ The current version is **0.9.10 (versionCode 910)**.
 ## [Unreleased]
 
 ### Added
+- **The ESM/ESP plugin reader now runs in Rust behind the same `ESMFile` API.**
+  `assets/esm_reader.cpp`'s `open()` and `parseFromMemory()` are shims over `esm_ffi.h` (`esm_*`,
+  backed by an opaque `EsmPlugin` handle): Rust reads and indexes the plugin (record headers,
+  subrecords, GRUP nesting, compressed-record inflate via `flate2`), and the shim materialises the
+  index and the decoded records into the original `ESMFile` state (`RecordIndex`, `m_formIDIndex`,
+  `m_masters`, `m_grupCount`) and the `ESMRecord` / `SubRecord` structs every caller consumes, so
+  the ~60 `decodeXXX` record-type functions and all 33 call sites are unchanged. The file's old
+  `readRecordHeader` / `readSubRecord` / `readGroup` / zlib code is gone (-512 lines), which drops
+  the last `<zlib.h>` include from the tree and takes `z` out of the link line. The `EsmPlugin`
+  handle owns the 277 MB `Oblivion.esm` bytes and is released by `esm_plugin_free` right after
+  materialisation, the same ownership rule the BSA / NIF / DDS shims follow. Verified by a host
+  differential oracle (`tmp/esm_oracle/`, not in Git) that links the original parser and the new
+  shim behind one driver and diffs header, record and payload dumps (FNV-1a hashes over the raw
+  bytes) over ten real plugins in both modes (`file` = `open()`, `mem` = `parseFromMemory()`). The
+  run is 20 pairs / 9 identical / 11 different, and every one of the eleven is the original's: all
+  eight `mem` pairs differ only because the original's `parseFromMemory()` returns an empty master
+  list, and the two `file` pairs (`DLCMehrunesRazor`, `Knights`) differ only because the original
+  fails to populate records on the file path - on `Knights` the original reads zero `CELL`/`NPC_`/
+  `REFR`/`LAND` where the shim extracts `CELL 132` / `NPC_ 76` / `REFR 7058` / `LAND 61`. The other
+  eight `file` pairs, including the 277 MB `Oblivion.esm` (`CELL 35494`, `REFR 1029280`), are
+  byte-identical, so the shim matches the original exactly wherever the original is correct and
+  fixes it where it is not. All three ABIs link `libesm_ffi.a` and
+  `libnative-lib.so` carries the `esm_*` symbols. See
+  `plan.md#rust-migration-of-pure-logic-layers-2026-10-26`.
 - **The DDS texture reader now runs in Rust, and a differential oracle over a 13-file corpus found
   no behaviour change on the paths that matter.** `assets/dds_loader.cpp` is a thin shim over
   `dds_ffi.h` (`dds_*`, backed by an opaque handle) and `assets/dds_loader.h` keeps its public API
@@ -56,8 +80,8 @@ The current version is **0.9.10 (versionCode 910)**.
   handle) and `assets/bsa_reader.h` keeps its public API unchanged, including the deleted copy
   constructor, so no caller changed. `bsa-core` parses the folder / file record tables, builds both
   hashes, resolves paths and inflates compressed entries with `flate2` (`miniz_oxide`), which drops
-  the `<zlib.h>` dependency from this file - `z` is still linked because `assets/esm_reader.cpp`
-  uses it. Two bugs the oracle found in the original: `buildHash` lowercased the first four bytes
+  the `<zlib.h>` dependency from this file - `z` is still linked here because
+  `assets/esm_reader.cpp` uses it (since replaced by `flate2` as well, so `z` is gone entirely). Two bugs the oracle found in the original: `buildHash` lowercased the first four bytes
   with a blanket `| 0x20` instead of the A-Z-only rule the 32-bit hash used in the same file, so
   `_`, `[`, `\`, `]` and `^` were corrupted and `findFile()` failed for those names, and
   `computeFileHash` split the extension only when a separator preceded the dot, so a bare
@@ -77,9 +101,9 @@ The current version is **0.9.10 (versionCode 910)**.
   caller stayed unchanged: `assets/formid_index.cpp` and `assets/plugin_list.cpp` forward to
   `plugin-parser`, and `assets/asset_path_resolver.cpp` and `assets/mesh_builder.cpp` forward to
   `assets-core` in the `oblivion-re-tools` workspace. Nothing that owns a GL object, a Jolt body, an
-  Android framework handle or a file descriptor moved, and `assets/esm_reader.cpp` is still the
-  device implementation because it mixes the parse with `std::ifstream`, zlib and the C++ record
-  types. `CMakeLists.txt` builds both crates with `cargo ndk` in one custom command per ABI and
+  Android framework handle or a file descriptor moved, and `assets/esm_reader.cpp` - once cited as
+  the counterexample because it mixes the parse with `std::ifstream`, zlib and the C++ record
+  types - has since migrated too. `CMakeLists.txt` builds both crates with `cargo ndk` in one custom command per ABI and
   imports the archives as `IMPORTED STATIC` targets, with `OBLIVION_RUST_DIR` / `OBLIVION_RUST_OFFLINE`
   cache variables and the matching `-Poblivion.rust.dir` / `-Poblivion.rust.offline` Gradle
   properties for a checkout that is not a sibling. Verified by a host oracle that runs the original
@@ -826,6 +850,22 @@ The current version is **0.9.10 (versionCode 910)**.
   the subtitle, so no asset change was needed. "Press any key to continue" keeps its previous
   position through the new fixed `PRESS_KEY_TOP_RATIO = 0.513f`, which stores the effective
   521.7 px / 1017 px anchor the subtitle used to define.
+- **Two dead texture-pipeline classes, removed instead of ported (Rust migration Phase 3)**:
+  `assets/texture_manager.{h,cpp}` (`AssetTextureManager`, 23 public methods with zero callers
+  outside the file - its DXT1/3/5 decoders duplicated the Rust `dds-core` crate, and its GL atlas /
+  LRU eviction / mipmap generation duplicated the `textureCache` that `AssetManager` already owns
+  and prunes) and `assets/texture_compressor.{h,cpp}` (`TextureCompressor`, 10 methods, never
+  listed in `CMakeLists.txt` at all, so it was never compiled). Their dependency edges went with
+  them: `FaceGenMorpher::initialize` lost the unused `AssetTextureManager*` parameter (stored in
+  `texCache_`, written but never read) and its `jni_bridge.cpp` call site now passes one argument,
+  and `texture_viewer.cpp`'s `getFormatName(TextureFormat)` - the only `TextureFormat` consumer
+  outside the deleted file - is gone with its `texture_manager.h` include. A grep for
+  `AssetTextureManager|texture_manager.h|TextureCompressor|texture_compressor|texCache_` under
+  `app/src/main/cpp` returns zero matches. The live texture path is unchanged by construction:
+  `AssetManager::loadDDSTexture` still goes BSA -> temp file -> `DDSLoader` (`dds-core`) -> GPU
+  upload, with `AssetManager`'s own `textureCache` / `pruneCache` doing the caching. All three ABIs
+  link `native-lib` (`[34/34]`, exit 0) with both classes at 0 defined symbols and the Rust shims
+  intact (`dds_*` 16 / `nif_*` 61 / `esm_*` 72 / `bsa_*` 45 on each ABI, llvm-nm).
 
 ### Fixed
 - **Title menu legibility (Oblivion face)**: the six title-menu labels are now stamped with an

@@ -241,17 +241,6 @@ std::string TextureViewer::formatMemorySize(size_t bytes) const {
     return ss.str();
 }
 
-std::string TextureViewer::getFormatName(TextureFormat fmt) const {
-    switch (fmt) {
-        case TextureFormat::RGBA8: return "RGBA8";
-        case TextureFormat::RGB8: return "RGB8";
-        case TextureFormat::DXT1: return "DXT1";
-        case TextureFormat::DXT3: return "DXT3";
-        case TextureFormat::DXT5: return "DXT5";
-        default: return "Unknown";
-    }
-}
-
 float TextureViewer::getScale() const {
     float minDim = static_cast<float>(std::min(screenWidth, screenHeight));
     float scale = minDim / 1080.0f;

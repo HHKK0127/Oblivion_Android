@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <iterator>
+#include "../util/msvc_lcg.h"
 #include <map>
 #include <set>
 
@@ -201,7 +202,8 @@ public:
             const int n = static_cast<int>(unaryOperand(node, ctx, depth).toNumber());
             if (n < 1) return EvalValue::makeNumber(0.0f);
             if (n == 1) return EvalValue::makeNumber(1.0f);
-            return EvalValue::makeNumber(static_cast<float>(std::rand() % n + 1));
+            return EvalValue::makeNumber(
+                static_cast<float>(oblivion::rng::rand_range(0, n - 1) + 1));
         }
         return evaluateContent(node, ctx, depth);
     }

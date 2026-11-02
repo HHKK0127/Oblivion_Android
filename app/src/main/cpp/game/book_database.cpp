@@ -1,6 +1,7 @@
 #include "book_database.h"
 #include <cstdlib>
 #include <android/log.h>
+#include "../util/msvc_lcg.h"
 
 #define LOG_TAG "BookDatabase"
 #ifdef ENABLE_DEBUG_LOGS
@@ -109,7 +110,7 @@ uint32_t BookDatabase::getRandomBookId() const {
         return 0;
     }
     auto ids = getAllBookIds();
-    uint32_t randomId = ids[rand() % ids.size()];
+    uint32_t randomId = ids[oblivion::rng::rand_range(0, static_cast<int>(ids.size()) - 1)];
     LOGD("Random book selected: %u", randomId);
     return randomId;
 }

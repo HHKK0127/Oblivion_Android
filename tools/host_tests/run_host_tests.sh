@@ -167,6 +167,8 @@ SOURCES=(
   app/src/main/cpp/tests/menu_fade_tests.cpp
   app/src/main/cpp/tests/fatigue_system_tests.cpp
   app/src/main/cpp/tests/combat_formulas_tests.cpp
+  app/src/main/cpp/util/msvc_lcg.cpp
+  app/src/main/cpp/tests/msvc_lcg_tests.cpp
   app/src/main/cpp/tests/phase69_persistence_tests.cpp
   app/src/main/cpp/tests/plugin_list_tests.cpp
   app/src/main/cpp/tests/formid_index_tests.cpp
@@ -260,11 +262,11 @@ RUST_LIBS=(
   "$RUST_LIB_DIR/libassets_ffi.a"
   "$RUST_LIB_DIR/libbsa_ffi.a"
   "$RUST_LIB_DIR/libplugin_ffi.a"
+  "$RUST_LIB_DIR/libesm_ffi.a"    # esm_reader.cpp is an ESMFile shim over esm_ffi.h
 )
-# esm is optional (no host TU includes esm_ffi.h); nif/dds are linked the same
-# way for symmetry, though their shims are in SOURCES, so a build directory
-# missing libnif_ffi.a / libdds_ffi.a will fail at link.
-for _opt in "$RUST_LIB_DIR/libesm_ffi.a" "$RUST_LIB_DIR/libnif_ffi.a" "$RUST_LIB_DIR/libdds_ffi.a"; do
+# nif/dds are linked the same way for symmetry; their shims are in SOURCES, so a
+# build directory missing libnif_ffi.a / libdds_ffi.a will fail at link.
+for _opt in "$RUST_LIB_DIR/libnif_ffi.a" "$RUST_LIB_DIR/libdds_ffi.a"; do
   if [ -f "$_opt" ]; then
     RUST_LIBS+=("$_opt")
   fi

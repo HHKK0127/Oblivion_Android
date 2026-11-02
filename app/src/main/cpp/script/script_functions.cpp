@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include "../util/msvc_lcg.h"
 #include <android/log.h>
 
 // Forward declarations for game systems
@@ -997,7 +998,7 @@ FunctionResult ScriptFunctions::fnRandom(ExecutionContext& ctx, const std::vecto
         return result;
     }
     float maxVal = args[0].toFloat();
-    float randomVal = (static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX)) * maxVal;
+    float randomVal = (static_cast<float>(oblivion::rng::rand()) / static_cast<float>(oblivion::rng::kRandMax)) * maxVal;
     result.success = true;
     result.returnValue = ScriptValue::makeFloat(randomVal);
     return result;

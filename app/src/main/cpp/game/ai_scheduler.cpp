@@ -10,6 +10,7 @@
 #include <cmath>
 #include <algorithm>
 #include <cstdlib>
+#include "../util/msvc_lcg.h"
 
 namespace ai {
 
@@ -140,6 +141,14 @@ void AIScheduler::clearCombat(uint32_t npcId) {
     LOGD("NPC %u cleared combat packages", npcId);
 }
 
+void AIScheduler::setTimeScale(float scale) {
+    // Clamp to non-negative, matching SkyWeatherSystem's setter.
+    // This keeps the AI clock in sync with the console `settimescale`
+    // command and the sky/weather clock (single TESGlobal drives both
+    // in the original engine).
+    timeScale = std::max(0.0f, scale);
+}
+
 // ============================================================================
 // Main Update Loop
 // ============================================================================
@@ -148,10 +157,10 @@ void AIScheduler::update(float deltaTime) {
     if (!npcManager) return;
 
     // Advance game time
-    // In Oblivion, 1 real minute = 30 game minutes (timeScale = 30)
-    // So 1 real second = 0.5 game minutes = 1/120 game hours
-    constexpr float DEFAULT_TIME_SCALE = 30.0f; // 30x speed
-    gameHour += (deltaTime * DEFAULT_TIME_SCALE) / 3600.0f;
+    // Default timeScale is 30: in Oblivion, 1 real minute = 30 game
+    // minutes, so 1 real second = 1/120 game hours. The value is now
+    // driven by the console `settimescale` command via setTimeScale().
+    gameHour += (deltaTime * timeScale) / 3600.0f;
     while (gameHour >= 24.0f) gameHour -= 24.0f;
     while (gameHour < 0.0f) gameHour += 24.0f;
 
@@ -547,7 +556,7 @@ void AIScheduler::executeSandBox(uint32_t npcId, NPC* npc, AIPackage& pkg, float
 
     // 70% chance to wander, 30% idle
     if (!state.movingToTarget) {
-        if ((std::rand() % 100) < 70) {
+        if (oblivion::rng::rand_range(0, 99) < 70) {
             state.moveTarget = getRandomPosition(npc->position, pkg.data.sandboxRadius);
             state.movingToTarget = true;
         } else {
@@ -601,7 +610,7 @@ void AIScheduler::executeFlee(uint32_t npcId, NPC* npc, AIPackage& pkg, float de
         fleeDir.z /= len;
     } else {
         // Random direction if at threat position
-        float angle = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX) * 6.2831853f;
+        float angle = oblivion::rng::rand() / 32767.0f * 6.2831853f;
         fleeDir.x = std::cos(angle);
         fleeDir.z = std::sin(angle);
     }
@@ -662,8 +671,8 @@ bool AIScheduler::hasReached(const NPC* npc, const glm::vec3& target, float thre
 }
 
 glm::vec3 AIScheduler::getRandomPosition(const glm::vec3& center, float radius) const {
-    float angle = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX) * 6.2831853f;
-    float r = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX) * radius;
+    float angle = oblivion::rng::rand() / 32767.0f * 6.2831853f;
+    float r = oblivion::rng::rand() / 32767.0f * radius;
     return glm::vec3(
         center.x + std::cos(angle) * r,
         center.y,
