@@ -1,6 +1,6 @@
 # Oblivion Android - In-progress Native Port
 
-![Status](https://img.shields.io/badge/status-Phase%2064-brightgreen)
+![Status](https://img.shields.io/badge/status-Phase%2065%2B%20in%20progress-brightgreen)
 ![Version](https://img.shields.io/badge/version-0.9.10-blue)
 ![Android](https://img.shields.io/badge/android-10%2B-green)
 
@@ -10,7 +10,7 @@
 
 An in-progress native Android port of The Elder Scrolls IV: Oblivion, built in C++17 with OpenGL ES 3.0 and the Android NDK, with the pure-logic asset and plugin layers implemented in Rust behind a C ABI.
 
-**v0.9.10 (versionCode 910) — Phase 64 complete, all 20 missing ESM record types decoded and verified against the real Oblivion.esm. Phase 65 (full world rendering) is next.**
+**v0.9.10 (versionCode 910) — Phase 64 complete (all 20 missing ESM record types decoded and verified against the real Oblivion.esm). Phase 65 (full world rendering) is in progress, Phase 68 (ESM-driven game systems and GUI) is complete, and the pure-logic asset and plugin layers are being migrated to Rust (Phases 1-3 done).**
 
 The app version is defined in exactly one place: `app/build.gradle` (`versionName` / `versionCode`).
 Version labels that appear next to phase numbers in the Development Phases table below are historical
@@ -65,6 +65,13 @@ development tags, not release versions.
 - [FEAT] **NEW**: Engine Polish - frame budget, memory defrag, shader cache (Phase 55)
 - [FEAT] **NEW**: Gamebryo Complete - Particle, PostProcess, Water, SkyWeather, SceneGraph, Material (Phase 56)
 - [FEAT] **NEW**: ESM Real Data Pipeline - all 20 secondary record types decoded and verified against real Oblivion.esm (Phase 64)
+- [FEAT] **NEW**: Full world rendering - terrain mesh with LTEX/VTXT layer blending, WATR-driven water material, WTHR-driven sky dome, door transitions (XTEL), interior REFR NIF geometry, and the shipped landscape LOD blocks read from the BSAs (Phase 65, in progress)
+- [FEAT] **NEW**: ESM data integration for game systems - inventory, weapons, enchantments and factions resolved to real ESM records and FormIDs (Phase 68)
+- [FEAT] **NEW**: Merchant trade - shops built from the original `NPC_` `CNTO` stock and purse, `UIShop` barter screen, `merchants` / `useshop` console commands (Phase 68)
+- [FEAT] **NEW**: Save format v5 - container contents, quest state, script globals and merchant purse/stock (`MERC`) persisted (Phase 69, in progress)
+- [FEAT] **NEW**: Mods and load order - `plugins.txt` parse/serialise/order, FormID index remapping, `Oblivion.ini` settings layer, Data Files launcher screen (Phase 70, in progress)
+- [FEAT] **NEW**: Rust migration - FormID index, plugin list, asset path resolver, mesh builder and the BSA / NIF / DDS readers running in Rust behind a C ABI (2026-10/11)
+- [FEAT] **NEW**: DebugDraw3D line rendering and percentile frame-time stats in the debug HUD
 
 ---
 
@@ -452,6 +459,12 @@ oblivion-android/
 | Phase 62 | Foundation | [x] Complete | Unify Gradle definitions, version consistency (single source of truth in build.gradle), remove Kotlin DSL conflicts, connect test suites, legal audit |
 | Phase 63 | Performance Foundation | [x] Complete | Batch TextRenderer (glyph atlas + instancing), remove per-frame LOGI, cache glGetProgramiv, merge draw calls |
 | Phase 64 | Real Data Pipeline | [x] Complete | Decode all 20 missing ESM record types (ACHR, ACRE, PGRD, GMST, LTEX, WATR, AMMO, GLOB, FURN, IDLE, LSCR, SGST, EFSH, SLGM, CSTY, ...), fix BSA v103 folder table, verified on emulator against real Oblivion.esm, build success on 4 ABIs |
+| Phase 65 | Full World Rendering | [~] In Progress | Terrain mesh + LTEX/VTXT layer blending, WATR water material, WTHR sky dome, door transitions (XTEL), interior REFR NIF geometry, landscape LOD blocks from the shipped BSAs (object LOD and on-device verification remain) |
+| Phase 66 | Characters and AI | [ ] Pending | ACHR/ACRE placement, NPC_/CREA decode, skeleton/animation (KF), PACK, PGRD pathfinding, face generation, lip sync (skeleton + animation readers already byte-exact on the corpus) |
+| Phase 67 | Full Script VM Compatibility | [~] In Progress | SCDA instruction format byte-verified (2,393/2,393 blocks walk to an exact end), opcode table re-derived from the real ESM; native SCDA decoder/VM branch awaiting merge |
+| Phase 68 | Game Systems and GUI | [x] Complete | ESM-driven inventory, weapons, enchantments and factions with real FormIDs; merchant shops from `NPC_` `CNTO`, `UIShop` barter screen, single shared player inventory |
+| Phase 69 | Persistence | [~] In Progress | Save format v5 - container contents, quest state, script globals, merchant `MERC` block, loading-screen progress bar |
+| Phase 70 | Mods and Load Order | [~] In Progress | `plugins.txt` parse/serialise/order, FormID index remapping, `Oblivion.ini` settings layer, Data Files launcher screen |
 | Phase 37 (v1.2.0) | Script VM | [x] Complete | Oblivion VM bytecode interpreter (47 opcodes), 118 game functions (Tier 1+2), ScriptManager, ExecutionContext, disassembler |
 | Phase 38 (v1.3.0) | Script VM Testing | [x] Complete | 20 unit tests (ExecutionContext, ScriptVM, Opcodes, ScriptFunctions, ScriptManager), build verification |
 | Phase 39 (v1.4.0) | Quest Flow System | [x] Complete | QuestFlowController, QuestStageManager, QuestObjectiveTracker, QuestRewards, QuestRecord parsing |
@@ -541,6 +554,42 @@ See [docs/README.md](docs/README.md) for complete documentation.
 - [BUILD] Gradle unification & version consistency - Phase 62 (Complete)
 - [PERF] TextRenderer glyph batching - Phase 63 (Complete)
 - [DATA] ESM real data pipeline (all 20 secondary record types) - Phase 64 (Complete)
+- [WORLD] Full world rendering (terrain LOD, water, sky, doors, interior geometry) - Phase 65 (In progress)
+- [DATA] Merchant trade from real `NPC_` records - Phase 68 (Complete)
+- [SAVE] Container / quest / script-global persistence (save format v5) - Phase 69 (In progress)
+- [MODS] `plugins.txt` load order + FormID remapping + `Oblivion.ini` layer - Phase 70 (In progress)
+- [BUILD] Rust migration of the pure-logic layers (Phases 1-3 done; `esm_reader.cpp` is next) - ongoing
+
+---
+
+### [FIX] Recent Improvements (2026-10 / 2026-11)
+
+#### Rust Migration of Pure-Logic Layers
+- **FormID index, plugin list, asset path resolver and mesh builder** - ported to Rust (`plugin-parser`, `assets-core` crates) behind a small C ABI; the C++ files became thin shims with their headers and callers unchanged, verified by 89 host differential assertions + 28 crate tests on all three ABIs
+- **BSA archive reader** - ported to Rust (`bsa-core`, 19 FFI functions); the port found and fixed two hashing bugs (blanket lowercase corrupting `_ [ \ ] ^`, extension split requiring a preceding separator), raising `findFile()` resolution on real archives (e.g. 2,337/3,017 -> 2,628/3,017 on ShiveringIsles - Meshes)
+- **NIF mesh parser** - ported to Rust (`nif-core`, 27 FFI functions); `nif_parser.cpp` shrank from 4,091 lines to a ~520-line shim, verified byte-exact on 100 real meshes via a differential oracle
+- **DDS texture reader** - ported to Rust (`dds-core`, 13 FFI functions); verified on a 13-file corpus with no behaviour change on the paths that matter
+- Policy (2026-11-01): Rust for all pure (impure-free) logic; `esm_reader.cpp` is the next target. Host tests: 122+ checks, all green
+
+#### Game Systems (Phase 68)
+- **Merchant trade from real ESM data** - shops built from the original `NPC_` `CNTO` list (stock, per-row quantity, purse) via `game::buildMerchantFromNpc()`; `game::item_catalog` resolves every `CNTO` FormID; `UIShop` trade screen opens with the virtual controller X button near a merchant; `merchants` / `useshop` console commands and debug-menu buttons added
+- **Barter validation** - `game::buyFromMerchant()` / `game::sellToMerchant()` are the only path that moves goods and coin; 122 host checks pin pricing, purse direction and refusal reasons
+- **ESM systems integration** - `InventoryManager::loadItemsFromESM`, `CombatManager::loadWeaponsFromESM`, `EnchantingSystem::loadEnchantmentsFromESM`; factions resolved from real FACT records (hardcoded FormIDs replaced)
+- **Single inventory** - `InventoryManager::getPlayerInventory()` is the sole store; `Inventory::addItem()` merges by FormID, `removeItem()` leaves drained rows empty
+
+#### World Rendering (Phase 65)
+- **Landscape LOD** - shipped LOD blocks read straight from `Oblivion - Meshes.bsa` / `Oblivion - Textures - Compressed.bsa` (100 NIFs + 200 DXT1 DDS), geometry verified with zero bad indices/UVs/placements; terrain fog + near-fade applied, HorizonRing kept as fallback
+
+#### Persistence (Phase 69)
+- **Save format v5** - container contents, quest state, script globals and merchant purse/stock (`MERC` block) persisted; `tests/merchant_persistence_tests.cpp` (39 checks)
+
+#### Performance and Debugging
+- **DebugDraw3D** - line rendering for grid, bounds, paths and contacts
+- **Frame-time percentiles** - debug HUD reports p50/p90/p99 frame times alongside average
+
+#### Launcher Fixes
+- **Touch input during startup animations** - taps no longer dropped while animations run
+- **plugins.txt persistence** - plugin selection survives the Launcher Play path
 
 ---
 
@@ -596,6 +645,7 @@ Found a bug? Please:
 
 #### Core Technologies
 - C++17
+- Rust (cargo-ndk; pure-logic asset / plugin layers)
 - Android NDK r26.1
 - OpenGL ES 3.0
 - CMake 3.16+
@@ -658,12 +708,12 @@ Proprietary - Experimental Port
 
 ---
 
-**Status**: Phase 64 Complete (v0.9.10) — All 20 missing ESM record types decoded and verified against the real Oblivion.esm
-**Last Updated**: 2026-09-21
+**Status**: Phase 65 in progress, Phase 68 complete (v0.9.10) — ESM-driven game systems and merchant trade landed; pure-logic asset/plugin layers migrating to Rust (Phases 1-3 done)
+**Last Updated**: 2026-11-01
 **Version**: 0.9.10 (versionCode 910)
-**Features**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD, ESM Data Integration (40 record types), NpcManager ESM, Container ESM, Player RACE/CLAS/BSGN, Status Effects, NAVM Pathfinding, DIAL/INFO Dialogue, REFR Placement, Spell Effects (8 types), Alchemy, Book Reader, Faction Manager, Loot Generator, NIF Skeleton/Skinning, Animation System, Collision Detection, Integration Tests (Phase 30), WorldEntity + WorldLoader + PlayerController Integration (Phase 31), Imperial Weave EventBus + 12-phase coordinator, AnimationSubscriber, AudioSubscriber, SpellSelectionPanel (Phase 32), Dedicated Combat Sounds, NPC Spatial Audio (Phase 33), Weapon-Type Sound Routing, Quick-Slot Spells (Phase 34), Radiant AI System (Phase 35), Jolt Physics Integration (Phase 36), Distant LOD (Phase 50), SpeedTree Vegetation (Phase 51), FaceGen (Phase 52), Bink Video (Phase 53), Imperial Weave v4.0 (Phase 54), Engine Polish (Phase 55), Gamebryo Complete: Particle/PostProcess/Water/SkyWeather/SceneGraph/Material (Phase 56), UI Bug Fixes & Comment Translation (Phase 57), Gradle Unification & Version Consistency (Phase 62), TextRenderer Glyph Batching (Phase 63), ESM Real Data Pipeline - all 20 secondary record types decoded (Phase 64)
+**Features**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD, ESM Data Integration (40 record types), NpcManager ESM, Container ESM, Player RACE/CLAS/BSGN, Status Effects, NAVM Pathfinding, DIAL/INFO Dialogue, REFR Placement, Spell Effects (8 types), Alchemy, Book Reader, Faction Manager, Loot Generator, NIF Skeleton/Skinning, Animation System, Collision Detection, Integration Tests (Phase 30), WorldEntity + WorldLoader + PlayerController Integration (Phase 31), Imperial Weave EventBus + 12-phase coordinator, AnimationSubscriber, AudioSubscriber, SpellSelectionPanel (Phase 32), Dedicated Combat Sounds, NPC Spatial Audio (Phase 33), Weapon-Type Sound Routing, Quick-Slot Spells (Phase 34), Radiant AI System (Phase 35), Jolt Physics Integration (Phase 36), Distant LOD (Phase 50), SpeedTree Vegetation (Phase 51), FaceGen (Phase 52), Bink Video (Phase 53), Imperial Weave v4.0 (Phase 54), Engine Polish (Phase 55), Gamebryo Complete: Particle/PostProcess/Water/SkyWeather/SceneGraph/Material (Phase 56), UI Bug Fixes & Comment Translation (Phase 57), Gradle Unification & Version Consistency (Phase 62), TextRenderer Glyph Batching (Phase 63), ESM Real Data Pipeline - all 20 secondary record types decoded (Phase 64), Landscape LOD from shipped BSAs (Phase 65), ESM Game Systems Integration & Merchant Trade (Phase 68), Save Format v5 - containers, quest state, script globals, merchants (Phase 69), plugins.txt Load Order & FormID Remapping (Phase 70), Rust Pure-Logic Layers (BSA/NIF/DDS readers, FormID index, plugin list, asset paths, mesh builder)
 
-**Next**: Phase 65 - Full World Rendering (terrain mesh + LTEX blending, cell streaming, door transitions)
+**Next**: Phase 65 remainder (object LOD `.lod`/`.cmp` loader + on-device verification), Phase 66 (characters and AI), Phase 70 (mods and load order)
 
 ---
 
@@ -673,9 +723,9 @@ Proprietary - Experimental Port
 
 ## 日本語
 
-The Elder Scrolls IV: Oblivion の進行中のネイティブ Android 移植版です。C++ で一から構築され、OpenGL ES 3.0 と Android NDK を使用しています。
+The Elder Scrolls IV: Oblivion の進行中のネイティブ Android 移植版です。C++17 と OpenGL ES 3.0、Android NDK で構築され、純粋ロジックのアセット/プラグイン層は Rust で C ABI 経由に実装しています。
 
-**v0.9.10 (versionCode 910) — Phase 64 完了、20種の不足していたESMレコードタイプをすべてデコードし、実機のOblivion.esmで検証済み。次は Phase 65 (フルワールドレンダリング) です。**
+**v0.9.10 (versionCode 910) — Phase 64 完了（20種の不足していたESMレコードタイプをすべてデコードし、実機のOblivion.esmで検証済み）。Phase 65 (フルワールドレンダリング) は進行中、Phase 68 (ESMデータ駆動のゲームシステムとGUI) は完了、純粋ロジック層のRust移行が進行中（Phase 1-3 完了）です。**
 
 アプリのバージョンは `app/build.gradle`（`versionName` / `versionCode`）の 1 箇所のみで定義します。
 以下の開発フェーズ表でフェーズ番号の隣に付いているバージョン表記は開発時の履歴タグであり、リリース版数ではありません。
@@ -729,6 +779,13 @@ The Elder Scrolls IV: Oblivion の進行中のネイティブ Android 移植版�
 - [FEAT] **新機能**: エンジンポリッシュ - フレームバジェット、メモリデフラグ、シェーダーキャッシュ (Phase 55)
 - [FEAT] **新機能**: Gamebryo完成 - パーティクル、ポストプロセス、水、天候、シーングラフ、マテリアル (Phase 56)
 - [FEAT] **新機能**: ESM実データパイプライン - 20種の不足レコードタイプを全デコードし、実機Oblivion.esmで検証 (Phase 64)
+- [FEAT] **新機能**: フルワールドレンダリング - LTEX/VTXTレイヤーブレンド付き地形メッシュ、WATR由来の水マテリアル、WTHR由来のスカイドーム、ドア遷移（XTEL）、屋内REFR NIFジオメトリ、同梱BSAからのランドスケープLODブロック (Phase 65, 進行中)
+- [FEAT] **新機能**: ゲームシステムのESMデータ統合 - インベントリ・武器・エンチャント・派閥を実ESMレコードとFormIDで解決 (Phase 68)
+- [FEAT] **新機能**: 商店取引 - 元の `NPC_` `CNTO` リスト（在庫・数量・所持金）から構築した商店、`UIShop` 取引画面、`merchants` / `useshop` コンソールコマンド (Phase 68)
+- [FEAT] **新機能**: セーブフォーマットv5 - コンテナ内容・クエスト状態・スクリプトグローバル・商店の所持金/在庫（`MERC` ブロック）を永続化 (Phase 69, 進行中)
+- [FEAT] **新機能**: モッドとロード順 - `plugins.txt` の解析/保存/整列、FormIDインデックス再マッピング、`Oblivion.ini` 設定レイヤー、データファイルランチャー画面 (Phase 70, 進行中)
+- [FEAT] **新機能**: Rust移行 - FormIDインデックス、プラグインリスト、アセットパス解決、メッシュビルダー、BSA/NIF/DDSリーダーを C ABI 経由の Rust に移植 (2026-10/11)
+- [FEAT] **新機能**: DebugDraw3Dライン描画と、デバッグHUDのパーセンタイル（p50/p90/p99）フレームタイム表示
 
 ---
 
@@ -747,10 +804,10 @@ The Elder Scrolls IV: Oblivion の進行中のネイティブ Android 移植版�
 #### アーキテクチャ
 | 項目 | 仕様 |
 | --- | --- |
-| **言語** | C++17（120,000行以上） |
+| **言語** | C++17（120,000行以上）＋純粋ロジックのアセット/プラグイン層はRust |
 | **グラフィックスAPI** | OpenGL ES 3.0 |
 | **物理エンジン** | Jolt Physics (Phase 36) |
-| **ビルドシステム** | CMake + Gradle |
+| **ビルドシステム** | CMake + Gradle（＋Rust静的ライブラリ用の cargo-ndk） |
 | **NDKバージョン** | r26.1 |
 | **ターゲットAPI** | API 29以上 |
 
@@ -773,10 +830,19 @@ The Elder Scrolls IV: Oblivion の進行中のネイティブ Android 移植版�
 sdkmanager "ndk;26.1.10909125"
 sdkmanager "cmake;3.16.0"
 
+# RustツールチェーンとAndroidターゲット（プラグイン/アセットの静的ライブラリ用）
+rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
+cargo install cargo-ndk
+
 # リポジトリのクローン
 git clone https://github.com/oblivion-android/oblivion-android.git
 cd oblivion-android
 ```
+
+Rustソースは別リポジトリの `oblivion-re-tools` にあります。CMakeはサブディレクトリとして期待し
+`cargo ndk` でビルドします。チェックアウトが別の場所にある場合やビルドマシンにネットワークが
+ない場合は、Gradleプロパティ `-Poblivion.rust.dir=<path>` / `-Poblivion.rust.offline=true` を
+指定してください。詳細は [plan.md](plan.md#rust-migration-of-pure-logic-layers-2026-10-26) を参照。
 
 #### リリースAPKのビルド
 ```bash
@@ -967,6 +1033,12 @@ oblivion-android/
 | Phase 62 | Foundation | [x] 完了 | Gradle定義の統合、バージョン一貫性（build.gradleを唯一の情報源に）、Kotlin DSL競合の除去、テストスイート接続、法的監査 |
 | Phase 63 | Performance Foundation | [x] 完了 | TextRendererのバッチ処理（グリフアトラス＋インスタンシング）、毎フレームのLOGI削除、glGetProgramivキャッシュ、描画コール結合 |
 | Phase 64 | 実データパイプライン | [x] 完了 | 20種の不足ESMレコードタイプを全デコード（ACHR、ACRE、PGRD、GMST、LTEX、WATR、AMMO、GLOB、FURN、IDLE、LSCR、SGST、EFSH、SLGM、CSTY他）、BSA v103フォルダテーブル修正、エミュレータで実Oblivion.esm検証、4 ABIでビルド成功 |
+| Phase 65 | フルワールドレンダリング | [~] 進行中 | LTEX/VTXTレイヤーブレンド付き地形メッシュ、WATR由来の水マテリアル、WTHR由来のスカイドーム、ドア遷移（XTEL）、屋内REFR NIFジオメトリ、同梱BSAからのランドスケープLODブロック。残件: オブジェクトLOD（`.lod`/`.cmp`）ローダーと実機検証 |
+| Phase 66 | キャラクターとAI | [ ] 保留 | 走るアニメーション、NPCの攻撃、装備表示、AI状態遷移。資産側は準備完了、ゲームロジックの追加待ち |
+| Phase 67 | スクリプトVM拡張 | [~] 進行中 | `hhkk0127-script-vm-expansion` ブランチは完全な実装済み（2,393 SCDAオペコード、2,393/2,393バイト一致で検証済み）。未マージのネイティブSCDA分岐とのブロック解除待ち |
+| Phase 68 | ESMデータ駆動ゲームシステム | [x] 完了 | ゲームの状態の唯一の実装はESMデータ。インベントリ（`InventoryManager::loadItemsFromESM`）、武器（`CombatManager::loadWeaponsFromESM`）、エンチャント（`EnchantingSystem::loadEnchantmentsFromESM`）、派閥（FACTレコードから解決）。ハードコードFormIDはすべて置換済み。商店は元の `NPC_` `CNTO` リストから構築され、`UIShop` 取引画面、`merchants` / `useshop` コンソールコマンド、単一インベントリ |
+| Phase 69 | セーブフォーマットv5 | [~] 進行中 | コンテナ内容、クエスト状態、スクリプトグローバル、商店の所持金/在庫（`MERC` ブロック）を永続化。`tests/merchant_persistence_tests.cpp`（39チェック） |
+| Phase 70 | モッドとロード順 | [~] 進行中 | `plugins.txt` の解析/保存/整列、FormIDインデックス再マッピング、`Oblivion.ini` 設定レイヤー（settings.txt > Oblivion.ini > 既定値）、データファイルランチャー画面 |
 | Phase 37 (v1.2.0) | スクリプトVM | [x] 完了 | Oblivion VMバイトコードインタプリタ（47オプコード）、118ゲーム関数（Tier 1+2）、ScriptManager、ExecutionContext、逆アセンブラ |
 
 ---
@@ -1043,6 +1115,42 @@ oblivion-android/
 - [BUILD] Gradle統合＆バージョン一貫性 - Phase 62（完了）
 - [PERF] TextRendererグリフバッチ処理 - Phase 63（完了）
 - [DATA] ESM実データパイプライン（20種の不足レコードタイプ全デコード） - Phase 64（完了）
+- [DATA] フルワールドレンダリング（地形・水・空・ドア遷移・屋内ジオメトリ・LOD） - Phase 65（進行中）
+- [DATA] ゲームシステムのESMデータ統合と商店取引（インベントリ・武器・エンチャント・派閥・商店） - Phase 68（完了）
+- [DATA] セーブフォーマットv5（コンテナ・クエスト・スクリプトグローバル・商店） - Phase 69（進行中）
+- [DATA] モッドとロード順（plugins.txt・FormID再マッピング・Oblivion.ini設定レイヤー） - Phase 70（進行中）
+- [DATA] 純粋ロジック層のRust移行（FormIDインデックス、プラグインリスト、アセットパス、メッシュビルダー、BSA/NIF/DDSリーダー） - 2026-10/11（Phase 1-3 完了、継続中）
+
+---
+
+### [FIX] 最近の改善 (2026-10 / 2026-11)
+
+#### 純粋ロジック層のRust移行
+- **FormIDインデックス、プラグインリスト、アセットパス解決、メッシュビルダー** - 小さいC ABI経由でRust（`plugin-parser`、`assets-core` クレート）に移植。C++側はヘッダーと呼び出し元を変えずに薄いシムとなり、89件のホスト差分テスト＋3 ABIで28件のクレートテストで検証
+- **BSAアーカイブリーダー** - Rust（`bsa-core`、19 FFI関数）に移植。移植により2件のハッシュバグ（`_ [ \ ] ^` を潰す一括小文字化、区切り文字を要求する拡張子分割）が発見・修正され、実アーカイブの `findFile()` 解決数が向上（例: ShiveringIsles - Meshes で 2,337/3,017 → 2,628/3,017）
+- **NIFメッシュパーサー** - Rust（`nif-core`、27 FFI関数）に移植。`nif_parser.cpp` は4,091行から約520行のシムに縮小し、差分オラクルで100件の実メッシュでバイト一致を検証
+- **DDSテクスチャリーダー** - Rust（`dds-core`、13 FFI関数）に移植。13件のコーパスで検証し、主要パスの挙動変化なし
+- 方針（2026-11-01）: 純粋（副作用なし）ロジックはすべてRustへ。次は `esm_reader.cpp`。ホストテストは122件以上すべて成功
+
+#### ゲームシステム（Phase 68）
+- **実ESMデータからの商店取引** - 元の `NPC_` `CNTO` リスト（在庫、行ごとの数量、所持金）から `game::buildMerchantFromNpc()` で商店を構築。`game::item_catalog` が全 `CNTO` FormIDを解決。`UIShop` 取引画面は商人の近くで仮想コントローラーのXボタンで起動。`merchants` / `useshop` コンソールコマンドとデバッグメニューボタンを追加
+- **バーター検証** - 財貨と金の移動は `game::buyFromMerchant()` / `game::sellToMerchant()` のみ。122件のホストテストで価格設定、所持金の向き、拒否理由を固定
+- **ESMシステム統合** - `InventoryManager::loadItemsFromESM`、`CombatManager::loadWeaponsFromESM`、`EnchantingSystem::loadEnchantmentsFromESM`。派閥は実FACTレコードから解決（ハードコードFormIDをすべて置換）
+- **単一インベントリ** - `InventoryManager::getPlayerInventory()` が唯一のストア。`Inventory::addItem()` はFormID単位でマージし、`removeItem()` は枯渇した行を空のままにする
+
+#### ワールドレンダリング（Phase 65）
+- **ランドスケープLOD** - 同梱のLODブロックを `Oblivion - Meshes.bsa` / `Oblivion - Textures - Compressed.bsa` から直接読み込み（NIF 100件＋DXT1 DDS 200件）。ジオメトリは不正インデックス・UV・配置ゼロで検証。地形フォグとニアフェードを適用し、HorizonRingはフォールバックとして維持
+
+#### 永続化（Phase 69）
+- **セーブフォーマットv5** - コンテナ内容、クエスト状態、スクリプトグローバル、商人の所持金/在庫（`MERC` ブロック）を永続化。`tests/merchant_persistence_tests.cpp`（39チェック）
+
+#### パフォーマンスとデバッグ
+- **DebugDraw3D** - グリッド、バウンディング、パス、接触用のライン描画
+- **フレームタイムパーセンタイル** - デバッグHUDが平均に加えて p50/p90/p99 のフレームタイムを表示
+
+#### ランチャー修正
+- **起動アニメーション中のタッチ入力** - アニメーション実行中でもタップがドロップされなくなった
+- **plugins.txt の永続化** - プラグイン選択がランチャーのプレイ経路をまたいで維持される
 
 ---
 
@@ -1098,6 +1206,7 @@ oblivion-android/
 
 #### コア技術
 - C++17
+- Rust（cargo-ndk、純粋ロジックのアセット/プラグイン層）
 - Android NDK r26.1
 - OpenGL ES 3.0
 - CMake 3.16+
@@ -1160,11 +1269,11 @@ oblivion-android/
 
 ---
 
-**状態**: Phase 64 完了 (v0.9.10) - 20種の不足していたESMレコードタイプをすべてデコードし、実機Oblivion.esmで検証済み
+**状態**: Phase 65 進行中、Phase 68 完了 (v0.9.10) - ESMデータ駆動のゲームシステムと商店取引が完了。純粋ロジックのアセット/プラグイン層はRust移行中（Phase 1-3 完了）
 
-**最終更新**: 2026-09-21
+**最終更新**: 2026-11-01
 **バージョン**: 0.9.10 (versionCode 910)
 
-**機能**: グラフィカルUI、テクスチャパネル＆ボタン、効果音、セーブ/ロードUI、OpenAL 3Dオーディオ、レトロフィルター効果、強化デバッグHUD、ESMデータ統合（40種レコード）、NPCマネージャーESM、コンテナESM、プレイヤーRACE/CLAS/BSGN、ステータス効果、NAVMパスファインディング、DIAL/INFO会話、REFR配置、呪文エフェクト（8種）、錬金術、書籍リーダー、派閥マネージャー、ルートジェネレーター、NIFスケルトン/スキニング、アニメーションシステム、衝突判定、統合テスト（Phase 30）、WorldEntity＋WorldLoader＋PlayerController統合（Phase 31）、Imperial Weave EventBus＋12フェーズコーディネーター、AnimationSubscriber、AudioSubscriber、SpellSelectionPanel（Phase 32）、専用コンバットサウンド、NPC空間オーディオ（Phase 33）、武器タイプサウンドルーティング、クイックスロット呪文（Phase 34）、Radiant AIシステム（Phase 35）、Jolt Physics統合（Phase 36）、Distant LOD（Phase 50）、SpeedTree植生（Phase 51）、FaceGen（Phase 52）、Binkビデオ（Phase 53）、Imperial Weave v4.0（Phase 54）、エンジンポリッシュ（Phase 55）、Gamebryo完成：パーティクル/ポストプロセス/水/天候/シーングラフ/マテリアル（Phase 56）、UIバグ修正＆コメント翻訳（Phase 57）、Gradle統合＆バージョン一貫性（Phase 62）、TextRendererグリフバッチ処理（Phase 63）、ESM実データパイプライン - 20種の不足レコードタイプを全デコード（Phase 64）
+**機能**: グラフィカルUI、テクスチャパネル＆ボタン、効果音、セーブ/ロードUI、OpenAL 3Dオーディオ、レトロフィルター効果、強化デバッグHUD、ESMデータ統合（40種レコード）、NPCマネージャーESM、コンテナESM、プレイヤーRACE/CLAS/BSGN、ステータス効果、NAVMパスファインディング、DIAL/INFO会話、REFR配置、呪文エフェクト（8種）、錬金術、書籍リーダー、派閥マネージャー、ルートジェネレーター、NIFスケルトン/スキニング、アニメーションシステム、衝突判定、統合テスト（Phase 30）、WorldEntity＋WorldLoader＋PlayerController統合（Phase 31）、Imperial Weave EventBus＋12フェーズコーディネーター、AnimationSubscriber、AudioSubscriber、SpellSelectionPanel（Phase 32）、専用コンバットサウンド、NPC空間オーディオ（Phase 33）、武器タイプサウンドルーティング、クイックスロット呪文（Phase 34）、Radiant AIシステム（Phase 35）、Jolt Physics統合（Phase 36）、Distant LOD（Phase 50）、SpeedTree植生（Phase 51）、FaceGen（Phase 52）、Binkビデオ（Phase 53）、Imperial Weave v4.0（Phase 54）、エンジンポリッシュ（Phase 55）、Gamebryo完成：パーティクル/ポストプロセス/水/天候/シーングラフ/マテリアル（Phase 56）、UIバグ修正＆コメント翻訳（Phase 57）、Gradle統合＆バージョン一貫性（Phase 62）、TextRendererグリフバッチ処理（Phase 63）、ESM実データパイプライン - 20種の不足レコードタイプを全デコード（Phase 64）、フルワールドレンダリング - LTEX/VTXT地形・水・空・ドア遷移・屋内ジオメトリ・LOD（Phase 65）、ESMゲームシステム統合＆商店取引（Phase 68）、セーブフォーマットv5 - コンテナ・クエスト・スクリプトグローバル・商店（Phase 69）、plugins.txtロード順＆FormID再マッピング（Phase 70）、Rust純粋ロジック層 - BSA/NIF/DDSリーダー・FormIDインデックス・プラグインリスト・アセットパス・メッシュビルダー
 
-**次回**: Phase 65 - フルワールドレンダリング（地形メッシュ＋LTEXブレンド、セルストリーミング、ドア遷移）
+**次回**: Phase 65 の残件（オブジェクトLOD `.lod`/`.cmp` ローダー＋実機検証）、Phase 66（キャラクターとAI）、Phase 70（モッドとロード順）
