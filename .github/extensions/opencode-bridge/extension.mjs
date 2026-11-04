@@ -11,11 +11,8 @@
 //   - OpenCode command template "copilot" sends data to this bridge
 
 import { joinSession } from "@github/copilot-sdk/extension";
-import { execFile, spawn } from "node:child_process";
-import { promisify } from "node:util";
+import { spawn } from "node:child_process";
 import { createServer } from "node:http";
-
-const execFileAsync = promisify(execFile);
 
 // ── Configuration ────────────────────────────────────────────────────────────
 
@@ -40,15 +37,64 @@ async function runOpenCode(message, options = {}) {
     if (options.format === "json") args.push("--format", "json");
     if (options.model) args.push("--model", options.model);
 
-    const { stdout, stderr } = await execFileAsync(OPENCODE_EXE, args, {
-        timeout: options.timeout || 180000,
-        maxBuffer: 20 * 1024 * 1024,
-        encoding: "utf8",
-        windowsHide: true,
-        shell: false,
-    });
+    return new Promise((resolve, reject) => {
+        const child = spawn(OPENCODE_EXE, args, {
+            stdio: ["ignore", "pipe", "pipe"],
+            windowsHide: true,
+            shell: false,
+        });
+        const maxBuffer = 20 * 1024 * 1024;
+        const timeout = options.timeout || 180000;
+        let stdout = "";
+        let stderr = "";
+        let settled = false;
 
-    return { stdout, stderr: stderr || "" };
+        const fail = (error) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            reject(error);
+        };
+
+        const append = (current, chunk) => {
+            const next = current + chunk;
+            if (Buffer.byteLength(next, "utf8") > maxBuffer) {
+                child.kill();
+                fail(new Error("OpenCode output exceeded the 20 MiB limit"));
+                return current;
+            }
+            return next;
+        };
+
+        const timer = setTimeout(() => {
+            child.kill();
+            fail(new Error(`OpenCode timed out after ${timeout} ms`));
+        }, timeout);
+
+        child.stdout.setEncoding("utf8");
+        child.stderr.setEncoding("utf8");
+        child.stdout.on("data", (chunk) => {
+            stdout = append(stdout, chunk);
+        });
+        child.stderr.on("data", (chunk) => {
+            stderr = append(stderr, chunk);
+        });
+        child.on("error", fail);
+        child.on("close", (code, signal) => {
+            if (settled) return;
+            clearTimeout(timer);
+            if (code === 0) {
+                settled = true;
+                resolve({ stdout, stderr });
+                return;
+            }
+
+            const detail = stderr.trim();
+            fail(new Error(
+                `OpenCode exited with code ${code ?? "null"}${signal ? ` (${signal})` : ""}${detail ? `: ${detail}` : ""}`,
+            ));
+        });
+    });
 }
 
 // ── OpenCode ACP Server ──────────────────────────────────────────────────────
