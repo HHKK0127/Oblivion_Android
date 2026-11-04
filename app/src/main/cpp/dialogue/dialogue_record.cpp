@@ -247,26 +247,27 @@ DialogueCondition DialogueRecordParser::parseCTDA(const SubRecord& sub) {
     DialogueCondition cond;
     if (sub.data.size() < 20) return cond;
 
-    // CTDA format (Oblivion):
-    // Byte 0: runOnType (0=Subject, 1=Target, 2=Reference, 3=Combat Target)
+    // CTDA format (Oblivion, 0x14 bytes on disk):
+    // Byte 0: flag bitfield
+    //   bit0: OR-into-next-group
+    //   bit1: swap run-on target (player instead of NPC subject)
+    //   bit2: comparison value is a TESGlobal formID
+    //   bits5-7: comparison op (0=Equal 1=NotEqual 2=GT 3=GE 4=LT 5=LE)
     // Bytes 1-3: padding
-    // Bytes 4-7: comparison value (float)
+    // Bytes 4-7: comparison value (float; TESGlobal formID when bit2 set)
     // Bytes 8-9: function index (uint16)
     // Bytes 10-11: padding
     // Bytes 12-15: param1 (uint32)
     // Bytes 16-19: param2 (uint32)
-    // Byte 20: operator (0=Equal, 1=NotEqual, 2=GT, 3=GE, 4=LT, 5=LE)
-    // Bytes 21-23: padding
 
-    cond.runOnType = sub.data[0];
+    const uint8_t flag = sub.data[0];
+    cond.op = static_cast<ConditionOp>(flag >> 5);
+    // Swap bit selects the player as the run-on target; otherwise the NPC subject.
+    cond.runOnType = (flag & 0x02) ? 1 : 0;
     std::memcpy(&cond.comparisonValue, sub.data.data() + 4, 4);
     std::memcpy(&cond.functionIndex, sub.data.data() + 8, 2);
     std::memcpy(&cond.param1, sub.data.data() + 12, 4);
     std::memcpy(&cond.param2, sub.data.data() + 16, 4);
-
-    if (sub.data.size() >= 21) {
-        cond.op = static_cast<ConditionOp>(sub.data[20]);
-    }
 
     return cond;
 }

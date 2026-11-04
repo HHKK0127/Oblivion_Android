@@ -9575,6 +9575,109 @@ onlyifnot 側も `0058C7B6 fstp st(0)` で残値を捨ててから `fld1` を積
   fPerkHeavyArmorJourneymanDamageMult / fPerkLightArmorJourneymanDamageMult /
   fPerkJumpFatigueExpertMult / fGlobalTimeMultiplier。
 
+### §54.8 DistantLOD — オブジェクト LOD（.lod / .cmp）
+
+解析対象: Oblivion.exe v1.2.0416 (Steam) / 実素材 `distantlod` コーパス 921 件 + 1 件。
+詳細証拠・全数走査: `tmp/re/v255_object_lod_structure.md`（関数表・命令 VA 全記録）、
+`tmp/re/v255_lod_records.csv`（レコード 3,202 行台帳）、`tmp/re/v255_field_census.txt`、
+`tmp/re/v258_object_lod_residuals.md`（残点訂正。本節は v258 の訂正 4 件を反映済み）。
+
+#### ファイル形式（.lod）— [確定]
+
+- パーサ = `FUN_004D16D0`（VA 0x4D16D0、唯一の .lod ファイル読取り関数。
+  呼出し鎖: `0x483D60`→`0x4BD430`(DistantLODLoaderTask ctor)→`0x4BCC60`(Task::Run)→`0x4F1990`→`0x4D16D0`）。
+- 構成（リーダブル/リトルエンディアン、seek なしの逐次読取り `0x4D1734..0x4D1912`）:
+
+  | 構造 | フィールド | 証拠 |
+  |---|---|---|
+  | ヘッダ | `u32 count`（読取り件数上限） | `0x4D1754` 4B 読取・`0x4D177A` ループ境界 |
+  | レコード (count 個、**可変長 = 8+28n**) | `u32 formId`（TESObjectSTAT 限定） | `0x4D179B`、`0x4D1800 cmp [form+4],0x1E` |
+  |  | `u32 n`（インスタンス数、実測 1..11） | `0x4D17EE`、配列 resize `0x4D1860..0x4D188F` |
+  |  | `float3 pos[n]`（ワールド絶対座標） | `0x4D18B9` read 12n → entry+0x14 |
+  |  | `float3 rot[n]`（[2] のみ非ゼロ・yaw。下記注） | `0x4D18E4` read 12n → entry+0x04 |
+  |  | `float scale[n]`（50.2..136.0 実測） | `0x4D190C` read 4n → entry+0x24 |
+
+- rot フィールドの訂正（v258 件4）: rot[0]/[1] はコーパス全 3,202 レコードで常に 0、[2] のみ非ゼロ
+  （0, ±π/4..±π の 45° 倍数系・ラジアン）。**yaw = rot[i][2]（Z 軸回転）** での組立を推奨 [推定→推奨]、
+  slot0/1 は無視可。slot 配置の確定根拠は ESM 側ビルダ `0x4D43F0` @ `0x4D46F9..0x4D4755` が
+  同一クラスへ対称書き込みしていること。最終行列組立関数は未確定 = 新残点 **V-258-4a**
+  （仮説: NiNode::Update 経由 0x70xxxx クラスバンド・vft `0xA7E38C` の `[8]..[12]`）。
+  なお v255 §1.4 の ×0.5→fistp 量子化は pos の方（セルグリッド 0.5 単位）で、rot/scale は無変換 float [確定]。
+- 1 ファイル = **1 セル**（`DistantLOD\<worldspace>_<cellX>_<cellY>.lod`、str 0xA45B58 /
+  タスク名 0xA45A98）。ブロック(32×32)単位の入れ子は存在しない [確定]。
+- ジオメトリ（頂点/インデックス/NIF 断片）は含まない。fourcc 0/921 件。
+  参照は FormID のみで、NIF は TESObjectSTAT 側のモデル（ESM の MODL 経路）[確定]。
+- コーパス整合: 89% は count で EOF に到達。11%（101 件）は count 後もレコード形式の末尾バイト列が残る
+  （エンジン読取範囲外・`0x4D177A` の上限命令で確定）。移植実装は EOF 歩行採用を推奨（下記移植実装仕様 2）。
+
+#### .cmp（ワールドスペース索引）— [確定]
+
+- ローダ = `FUN_004F28B0`（`Data\DistantLOD\%s.cmp` str 0xA483EC・site 0x4F2904）。
+  圧縮なし。**u32 配列**キー集合（size/4−1 個）→ NiTMap `mgr+0xC8`
+  （find `0x4D6760`/insert `0x452570`）+ **末尾 u32 = kind マスク** → `mgr+0xDC`
+  （消費者 `0x4EF2D0`: `return (mgr+0xDC & kind) != 0`）。
+- **pack 規約（訂正）**: **X = hi16（movsx=signed）/ Y = lo16（movzx=unsigned）**
+  （ローダ `0x4F2972..0x4F2984`・読手 `0x4F0DA0`）。v255 本文の `(uint16 cellX | int16 cellY<<16)` は
+  x/y スワップ誤り [確定]。正規約では v255 の「40/41・(6,11) 孤児」残点は消え、
+  **41/41 キーが既存 `seworld_<x>_<y>.lod` に一致**。
+- key 集合の実体意味（訂正）: **.cmp = ランドマーク（稀少 STAT）セルのホワイトリスト** [確定]。
+  「存在索引」説は不成立（.lod 921 本中 41 本のみ）。key セルには exclusive formId 26・rot 非ゼロが偏在し、
+  分布は 2 ブロブ: {X∈9..12, Y∈2..6} 15 件 / {X∈-14..-8, Y∈-6..0} 26 件。
+- trailer マスクの意味: **bit0 = kind1（近窓）許可・bit1 = kind2（遠方帯）許可・bit2 = Landscape LOD 有効**。
+  seworld.cmp の末尾値 = 7（全有効）。ws-mgr ctor `0x4F2A10` が既定で `+0xDC = 7` を書くため、
+  **.cmp 不在時は全許可**。kind 発火: kind1 = 窓内・kind4 = 新規要求・kind2 = 遠方帯エッジ降格/stale 掃除/
+  設定変換（後述 gateA/B による 1⇔2 降格）。**.cmp 照合は kind2 のときのみ**
+  （`0x484023→0x484036 call 0x4F0DA0`、ctor 内では `0x4BD4C7→0x4BD4D5`）。
+- **移植指針: .cmp を読まず全セル許可でエンジン等価** [確定]。忠実実装する場合も kind2 = 遠方帯
+  ホワイトリスト＋trailer bit2（Landscape LOD フラグ）のみで足りる。
+- **worldspace ごとに 1 ファイル**（base BSA=55 本 = worldspace 数、SI=1 本）[確定]。
+
+#### INI / グローバル — [確定]
+
+- `DistantLODLoaderTask` の生成条件: `byte [0xB09DB0] != 0`（.data 既定値 **1**、サイト `0x4BD553`/`0x4F19A4`）。
+  有効時にのみファイル open（`0x4BD58A [0xB33A04]→vft+4`）と `.lod` パース（`0x4F19BF call 0x4D16D0`）。
+  無効時 `0x4F1990` は ESM 内 **DistantRefLOD**（record type 0x30/0x31・subrecord NAME/DATA/XLOD/XSLC を
+  `0x4D43F0`/`0x4D8440` が列挙）経路へ分岐 — .lod ファイルとは別系統 [確定]。
+- `fFadeDistance:DistantLOD`（適用点確定・v258 件3）: グローバル = `0xB06AB0`（12288.0f・name ptr `0xB06AB4`）。
+  適用点 = `FUN_004838F0`（distant グリッド mgr 再構築）— `0x483A5D fld [B06AB0]`→`0x483A65 fsubp` で
+  `[B34410] = [B34414] − fFadeDistance`、`0xB2C334/338` = fade near/far 境界。距離基準 `[B34414]` =
+  uGridsToLoad (5) + uGridDistantCount (25) 系。描画側唯一の外部消費者は `FUN_00810F90` @
+  `0x811100 push 0xB2C334`。**裁定: 描画距離そのものではなく、distant 窓外周からのフェード帯幅**。
+  パーサ/ストリーミングには影響せず、LOD 描画のフェード計算専用 [確定・命令]。
+- gateA/B（v258 件3）: `0xB09AE8` / `0xB09AF0` = video settings ID 9/10 の裏バイト（既定 1/1・リセット
+  `0x5DFF36/3D`・書手 `FUN_005DF160`）。発火ゲート = `0x483DD4/DDD` — 両ゼロで要求ループ即 return
+  （`0x483DE4 je 0x48429A`）。**kind2 は A 必須・kind1 は B 必須**。A = distant 帯（kind2）ON/OFF、
+  B = 近窓（kind1）ON/OFF [推定]。UI ラベル名・スライダー離散化は [未確定]。
+  依頼文の「`0x4F0E70` の B09AE8/AF0」は命令実在なし = 誤り補正 [確定]。
+- `iDistantLODGroupWidth:DistantLOD`（str 0xA8D308・INI レコード .data 0xB2C360・既定 8=0xB2C35C）の
+  実消費者（v258 件2）= `FUN_007B3BE0`（**Landscape** DistantLOD NIF グループローダ）@ `0x7B3C05` 帯。
+  セル÷8→ブロックキー（`0x7B3C28/36 idiv`→再パック→`0x7B3C57 call 0x7B2AA0`、マップ `0xB2C33C`）。
+  オブジェクト LOD とは無関係で Landscape LOD 専用設定。LOD パーサ系参照 0 は再確認済み。
+  **移植の object LOD ローダに GroupWidth は不要** [確定]。
+
+#### 供給経路 — [確定]
+
+- BSA v103 索引実走査: `Oblivion - Meshes.bsa`(flags 0x787) に `distantlod/` **.lod 9,889 + .cmp 55**、
+  `DLCShiveringIsles - Meshes.bsa`(0x703) に **.lod 921（seworld 920 + tamriel 1）+ .cmp 1**。他 BSA に該当ゼロ。
+  loose 配置不要（本環境 Data 直下に DistantLOD ディレクトリなし）。
+- **`meshes\distantlod\` という経路は実在しない**（folder 名は `distantlod`。依頼文の前提は誤り）。
+- エンジン論理パス: `.lod` = `DistantLOD\%s_%i_%i.lod`（0xA45B58、アーカイブマネージャ経由 open `0x4BD58A`）、
+  `.cmp` = `Data\DistantLOD\%s.cmp`（0xA483EC、`0x431690` 経由 open）。
+
+#### 移植実装仕様（要約）— 詳細は `tmp/re/v255_object_lod_structure.md` §8
+
+1. 読み込み単位: 1 セル 1 ファイル全体（40..1072B）。遅延/ブロック分割不要。
+2. レコード走査: `count` はエンジン境界だが 11% で末尾に追加レコードがあるため、移植は
+   **EOF 歩行＋（8+28n 整合・formId 妥当性）検証で全件採用**を推奨。
+3. メモリ表現: `ObjectLodEntry{formId, vector<inst{pos,zRot,scale}>}`。既存 `ActiveBlock`/ランドスケープ LOD の
+   仕組みとは別体系（`OriginalLodProvider` 系はパス解決・失敗抑止のみ流用可）。
+4. 描画: formId → TESObjectSTAT の通常 NIF（移植側 ESM リーダで解決）をインスタンス変換で複製。
+   .lod 内にジオメトリなし。回転は yaw = rot[2]（Z 軸）。
+5. フォールバック: ファイル/フォーム解決失敗はレコード（またはセル）破棄で継続。エンジンも
+   open 失敗時にタスク生成を中止するだけでクラッシュ経路なし（`0x4BD59B`）。
+6. `.cmp` は読まない設計で可（全セル許可でエンジン等価）。`iDistantLODGroupWidth` は Landscape LOD
+   専用なので object LOD ローダでは実装不要。
+
 ---
 
 ## §55 便2 最終レポート統合補遺（2026-10-17） — §50 / §51.14 残件の解消
@@ -9908,7 +10011,7 @@ onlyifnot 側も `0058C7B6 fstp st(0)` で残値を捨ててから `fld1` を積
 - 所持品リスト 0x4D6D40: formType 0x17 → base+0x24、0x23 / 0x24 → base+0x44 [確定]。
 - ContainerMenu handler id 0xFDF / 0xFEB / 0xFEA / 0xFE9 / 0xFCC の名称は文字列 VA からの推定 (shiftclicked / returnvalue / repeathorizontal / repeatvertical / red)。1:1 配置は未確認 [推定]。
 - 所有権 (0x4DB6B0 / 0x4DE770)、窃盗フラグ (A)/(B)、取引範囲判定 0x5E9A60 は命令レベルで確認済み、意味名は [推定]。
-- **注意**: 価格式の 0.01 倍と戻り値の掛け先 (基礎価値) は [未確定]。単体テストで境界値を固定するまで移植に採用しない。
+- **確定**: 価格式の 0.01 倍と戻り値の掛け先 (基礎価値 V) は FUN_00488e50 のディスアセンブリで確定 (乗算 0x488F49 買 / 0x4890EC 売、§59.5)。境界値は `tests/barter_price_tests.cpp` の既知値 12 テストで固定済み (ホストスイート ALL GREEN) → 移植採用可。
 - **残件 14 件** (md §7 参照)。主要: 罰金額の最終式 (R1)、目撃距離 (R2)、態度式の入力意味 (R3)、AV 0x24 の名前 (R4)、extra node オフセット不一致 0x422E20 (+8) / 0x422DC0 (+0xC) (R5)、Barter メニュー ID 0x3F1 (R7)、ゴールド加減算・重量・ドロップ関数 (R11)、盗品 fence 拒否分岐 (R13)。
 - 「同一対象での ContainerMenu 再オープン挙動」は実機確認項目のため解析対象外 (残件として明記)。
 - 移植先 `inventory/`, `game/`, `quest/` は実在。`game/crime/` は未存在 (新設候補)。
@@ -10139,8 +10242,11 @@ onlyifnot 側も `0058C7B6 fstp st(0)` で残値を捨ててから `fld1` を積
 - 残 6 (最優先: 星座能力 (spell/ability) の付与処理 VA — 選択は `player+0x590` に保存される所まで確定、付与本体は未特定。候補: chargen 確定系 0x5D7090 (`[0xB3A6D1]=1`)、0x5D6D20 / 0x5D70C3 (`player+0x590` 参照)。次の手: actor vt+0x2DC (AddSpell 同系) 経路か ESM chargen クエスト側)。
 
 ### §59.5 経済・所持品 (`s57_economy.md` Wave 5 追補, 1-9)
-- **価格経路の完全化** [確定]: 基礎価値 V → `coef(有効交渉スキル, disposition) ± 0.01·[Player+0x11C]` → `× V` → `round(0x484370)`。乗算箇所は 0x488F49 (買) / 0x4890EC (売)。ラッパ先頭: **0x5E11A0 = sell / 0x5E1200 = buy / 0x5E1500 = haggle**。`0x547B90` = 有効スキル (`clamp(skill + 0.4·Luck − 20, 0, 100)`)。BarterMenu は `coef × 100` を百分率表示。
+- **価格経路の完全化** [確定]: 基礎価値 V → `coef(有効交渉スキル, disposition) ± 0.01·[Player+0x11C]` → `× V` → `ceilf(0x484370)`。乗算箇所は 0x488F49 (買) / 0x4890EC (売)、ceil 呼出は 0x488F58 (買) / 0x489136 (売) — いずれも FUN_00488e50 内 (範囲 0x488E50–0x4891BF。Ghidra のリスト順はアドレス順でなく、0x4890EC は同一関数内。逆エッジ `jmp 0x488EF0` で確認)。ラッパ先頭: **0x5E11A0 = sell / 0x5E1200 = buy / 0x5E1500 = haggle**。`0x547B90` = 有効スキル (`clamp(skill + 0.4·Luck − 20, 0, 100)`)。BarterMenu は `coef × 100` を百分率表示。
   - 0.01 は係数式 0x5481C0 / 0x548240 の内部 (R6 解決)。残は `[Player+0x11C]` の名称と vt+0x224 / vt+0x284 の index 対応のみ。
+  - 買は基礎価値で床 (ceil < base なら price = base)、売は基礎価値で天井 (ceil > base なら price = base)。プレイヤー Barter > 3 なら両分岐とも price = base に上書き (@0x488F75– / 0x489153–、call 0x5F23B0 index 0x1D)。
+  - 盗品割引はプレイヤー Barter < 1 のときのみ適用 (ゲート @0x4890FC): ceil 前に price · pct · 0.01 (@0x48911C / 0x489122)。pct < 0 (非盗品) は素通し (FUN_00484850 のセンチネル、v264 件2)。
+  - 売は FUN_005FAA70 (@0x48916F) で商人ゴールドにサイレントクランプ (エラー無し)。
 - **R1 前提を訂正** [確定]: 0x676EE0 は罰金額を計算しない (犯罪的オブジェクトの登録処理)。`vt+0x8C` = 0x65AA60 (3 クラス共通、登録/解除)。実式は `0x606140 (kind 別額) × 0x5234A0 (最大倍率) → [esi+0xC]->vt+0x254(fine)`。
 - R2 整理 [確定]: 1500 = 0x6605A0 (アクター観測摘除) / 2000・3000 = 0x6773B0 (犯罪記録、interior/exterior) / 10000 = iCrimeAlarmRecDistance (登録ループ)。
 - R11 [確定]: 専用ゴールド加減算関数は無く、Gold form アイテム転送で処理 (転送 0x492E70 / 0x5E4A00 → 0x487930、個数ゲッタ 0x4B2460)。
@@ -10243,7 +10349,7 @@ dmg の出所 [確定]: `[esp+0x5c]` ← 0x5FF5A2 で `[esp+0x18]` を複写。�
 - 乱数 [確定]: **`0x9859DD = MSVC rand()`** (LCG 214013 / 2531011、`(state >> 16) & 0x7FFF`、RAND_MAX = 32767)、`0x9859D0 = srand`、`0x985994 = time seed`。`0x47DF80 = Rand(seed)` ラッパ (seed = 0 で time 遅延 seed)、`0x47DFD0 = rand_range`、`0x47FB70 = 確率 bool`。**単一グローバルストリーム** (per-thread seed = ptd+0x14)。
 - 値域変換パターン: `%100` / `%N` / `/32767` / `1 + floor(rand/32767·max)` / `min + rand·(max−min)/32767`。
 - 境界 [確定]: NaN は評価器で unordered 分岐 (onlyif → 偽、例外なし)。ftol 範囲外 → INT_MIN。整数オーバーフロー保護なし (div/mod の 0 除算ガードのみ)。
-- **移植注意** [確定]: 移植版は `std::mt19937` / `std::rand` を使用中のため乱数列が不一致 → **MSVC LCG (0x9859DD) へ置換必須**。`round` は half-up であり C++ `std::round` (half-away) は負値で不一致。経済の買経路は 0x488F58 = ceilf、別経路は 0x489399 = round(0x4843B0) が混在 (§57.5 の「round」表記の内訳)。
+- **移植注意** [確定]: 移植版は `std::mt19937` / `std::rand` を使用中のため乱数列が不一致 → **MSVC LCG (0x9859DD) へ置換必須**。`round` は half-up であり C++ `std::round` (half-away) は負値で不一致。取引経路 (FUN_00488e50) は買/売とも ceilf(0x484370) (買 @0x488F58 / 売 @0x489136)。0x489399 = round(0x4843B0, half-up) は別経路 FUN_004891c0 (開始 0x4891C0) のもので、FUN_00488e50 内に該当呼出は無い (§57.5 の「round」表記の内訳、ディスアセンブリ tmp/re/s59_eco_3_usesites.txt で確定)。
 - 残 6 件。
 
 ### §60.4 ファイル I/O・INI パス解決 (`s60_io.md`, 2-7)
@@ -10612,7 +10718,7 @@ SetVertexShader, SetPixelShader, SetStreamSource, SetIndices, SetVertexDecl, **D
 | hypot | PARTIAL | 0x9860F0 = asin (atari2(sqrt(1-x^2),x))。hypot本体は未発見 |
 | exp/tan/atan | PARTIAL | exp core 0x994A80 (fyl2x+fldl2e+fscale)。tan/atan dispatcher未マッピング |
 | srand呼出元 | RESOLVED | 13 sites: Rand()ラッパー10 + 明示的3 (0x6F6A2B, 0x7A47C4, 0x7C4FE4) |
-| 価格ceil/round | RESOLVED | 買取=ceilf(0x484370) @0x488F58, 売却=roundf(floor(x+0.5)) @0x489399 |
+| 価格ceil/round | RESOLVED | 買取=ceilf(0x484370) @0x488F58, 売却=ceilf(0x484370) @0x489136 (いずれも FUN_00488e50 内)。@0x489399 の half-up round は別経路 FUN_004891c0 |
 
 ### §65.6 I/O残件 (`s81_stream_audio_crt_io.md` Task D)
 | 項目 | 状態 | 結果 |
@@ -12349,3 +12455,99 @@ V81 §7-7 の残点 7 に挙がった無名 gap 関数の新实例 10 件（I1�
 
 (本節の新規確定): ラベルなし関数の列挙手法（`ret + 0xCC` 境界 → capstone 検証 → 台帳 21,597 差分 → E8 分類）と高信頼 **214 件**。既知 3 例のうち真の FunctionManager 未登録は `0x7B8530` / `0x405150` の 2 例。派生 B（V95b / V96）で現行規則の再現率と弱点を実測し（再現 89.8% / 主因は `adjacent` 帯 / `adjacent` 追加で 97.3%）、規則に依存しない E8 全列挙から**外部 call を持つ新規エントリ 51 件**を確定した（新規候補 66 件 = GAP 54 / MID-INSN 12、うち宿主内からのみ call される 15 件は Ghidra のラベル扱いが妥当）。
 (未確定): `adjacent` 拡張時に増える偽陽性の抑制（E8 併用時は精度 97.7% / 再現 60.8%）、A 節 214 件のうちサイト検証を通らない 64 件の原因、同一 gap に複数候補が並ぶ構造（33 gap / 最大 22 件）の解釈、`0x50AA20` が decompiled 本文でヘッダを出さない理由（V73 の非 FUN 特殊名 775 件と同根と推定）。
+
+## 71. opencode v60〜v69 統合（v260〜v269 レポート群・2026-11-03/04）
+
+opencode「ReverseEngineering」セッションへの依頼バンドル（`tmp/re/handoff_20261103_re_request_bundle.md`、依頼4件・優先度 1>3>4>2）と、その後続の LOD/Havok/バウンティ残件解析（v265〜v269）の確定事項を統合する。生データ・証跡はすべて `tmp/re/`（Git 管理外）。
+
+### (1) 依頼バンドル（v260〜v264）の到達点
+
+| 依頼 | 主題 | レポート | 判定 |
+|---|---|---|---|
+| 1 | オブジェクト LOD 生成チェーン | `v260_*`（composer/consumer/flush/RTTI、`lod_matrix_consumer.md` 21,943B） | **確定** — 消費者チェーン（FUN_004d23a0 等）とマトリクス消費を解明。移植側 `renderDistantObjectLod` 配線の根拠 |
+| 3 | クラス/サービス フラグ | `v261_clas_service_flags.md`（17,886B） | 部分確定 |
+| 2 | 動画設定 ID ラベル | `v263_video_settings_labels.md`（7,817B） | **確定** — ID 9 = Distant Land、ID 10 = Self Shadows（GMST 文字列 0x1107E / 0x11081 / 0x1199B）。移植側 UI ラベルの正典 |
+| 4 | バンブル残件 | `v262_barter_pricing.md`（25,714B）+ `v264_bundle_residuals.md`（28,173B）+ `v264_port_saveslot_residuals6.md`（23,519B） | **確定** — §62 の買値/売値公式・端数（ceilf）・盗品率（FUN_00484850）を独立再検証で確認。売値の merchant gold cap（`0x48916F` での静默キャップ）を再確認 |
+
+### (2) v265〜v269 の確定事項
+
+- **v265（`v265_opcode_gt_names14.md`、52,408B）**: formType テーブル `0x00..0x44`（69 エントリ）、LOCK-STRENGTH の GMST `0xB03E1C`、vt[0xE8] = MagicItem 家族（ALCH/INGR は `0x4129C0`、他は `0x68F970` の no-op）、MGEF フラグが 32bit 化されている件。
+- **v266（`v266_object_lod_residuals2.md`、19,664B）**:
+  - 件1: LOD バンドグリッド 55 件の残件整理。
+  - **件2（BSA 圧縮 XOR 規則）[確定]**: ファイルレコード f1 の bit30 と BSA ヘッダフラグ bit2（`0x4`）の**排他的論理和**で圧縮有無を決める（`圧縮 = f1.bit30 XOR (hdr.flags & 0x4)`）。展開後サイズは `f1 & 0x3FFFFFFF`。逆汇编 `0x42E0F3`（`shr edx,2`）/ `0x42E0F6`（`shr eax,0x1e`）/ `0x42E0F9`（`xor dl,al`）と `0x42E125/161`（`and esi,0x3FFFFFFF`）で確認。全 17 BSA・147,629 ファイルで照合一致率 **100.00%**（36 件の不一致はゼロバイト 35 件と非圧縮 WAV 1 件の検査ヒューリスティック起因）。v258 の「25bit」は値域観察であってマスクではない。
+  - **移植実装との照合（2026-11-04）**: `oblivion-re-tools/crates/bsa-core` の Rust 実装（`format.rs` の `FLAG_COMPRESSED=0x4` / `SIZE_COMPRESS_TOGGLE=0x4000_0000` / `SIZE_MASK=0x3FFF_FFFF`、`lib.rs` の `compressed = header.is_compressed() ^ (record.size & TOGGLE != 0)`・`size = record.size & MASK`）が v266 の確定規則と**完全一致**していることを両方向（コード→規則／規則→コード）で検証済み。C++ シム `bsa_reader.cpp` は FFI 経由でこの結果をそのまま伝播しており、**コード変更不要**。
+- **v267（`v267_process_havok_residuals14.md`、65,612B）**: Havok プロセス残件 14 件の解析（v259 Havok バンドルの後続）。
+- **v268（`v268_opcode_gt_names15.md`、2,634B）**: opcode/GT 名前引き続き（小規模）。
+- **v269（`v269_lod_havok_bundle.md`、45,680B）**: LOD + Havok のバンドル統合レポート。
+
+### (3) v266 件2 の移植側影響（スレッド補遺）
+
+- §50 の「XOR 規則なし」/ §67・v258 の「25bit マスク」記述は、v266 の disasm 実測で**XOR 規則あり・30bit マスク**に訂正済み（本節 (2) が最新正典）。
+- 移植側の BSA 読み取りは Rust バックエンド（bsa-core / bsa-ffi）に委譲済みで、FFI 経由の `compressed` / `real_size` が正典規則と一致。`Oscars.bsa` 等の bit30 反転例（ヘッダ 0x703 で一部ファイルのみ zlib）も Rust 側 XOR 実装で自動的に正确处理される。
+- 残る低優先点: Rust 展開パスが `offset+4` から deflate ストリームを読む前提（v266 の「u32 展開後サイズ + deflate」と整合）— 実データで展開成功しているため動作上問題なし。将来 BSA 展開を触るときに sanity check 程度で確認。
+
+証跡（Git 管理外）: `tmp/re/v260_*` / `v261_clas_service_flags.md` / `v262_barter_pricing.md` / `v263_video_settings_labels.md` / `v264_bundle_residuals.md` / `v264_port_saveslot_residuals6.md` / `v265_opcode_gt_names14.md` / `v266_object_lod_residuals2.md` / `v267_process_havok_residuals14.md` / `v268_opcode_gt_names15.md` / `v269_lod_havok_bundle.md`。Rust 側は `oblivion-re-tools`（読み取りのみ、変更なし）。
+
+(本節の新規確定): BSA 圧縮 XOR 規則の 100% 実データ検証と、移植 Rust 実装（bsa-core）が正典規則に一致していることの両方向照合。動画設定 ID 9/10 のラベル正典。依頼バンドル 4 件のうち 3 件確定・1 件部分確定。
+(未確定): v261 の部分確定分（クラス/サービス フラグの残論点）、v267 の Havok 残件 14 件のうち移植影響の切り分け、v269 バンドルの細目反映。
+
+## 72. opencode v53〜v59 束（v253/v257/v258/v259 レポート・2026-11-03・round81 反映）
+
+opencode 台帳 row 246/249/250/251（依頼 v53/v57/v58/v59 相当）で生成された 4 レポート（v253・v257・v258・v259）を round81 抽出により確定反映した。生データ・証跡はすべて `tmp/re/`（Git 管理外）。判定マーカーは原文の表記（[確定]/【解明】/部分解明/不存在証明/確認できず）を保持する。
+
+### (1) 判定表
+
+| レポート | 主題 | 判定 | サイズ |
+|---|---|---|---|
+| `v253_port_saveslot_residuals5.md` | セーブスロット残点（R-1/R-2/R-3）＋ v248 訂正ドラフト2件 | **R-1/R-2/R-3 解明**（selftest ALL PASS） | 28,168B |
+| `v257_opcode_gt_names13.md` | opcode/GMST 残点7件（v256 §7 の残点） | **項目1〜6 確定**、項目7 は BOOK 照合確定・MGEF bit24 確認できず | 48,413B |
+| `v258_object_lod_residuals.md`（＋ `v258_docs_re_exe_report_draft2.md`） | オブジェクト LOD 残点5件 | **件1〜5 確定**（UI ラベル2件は v263 で解決済み） | 23,360B（＋9,481B） |
+| `v259_process_havok_residuals13.md` | Havok プロセス/ディスパッチ残点（§1〜§5） | **§1/§3/§5 解明**、§2/§4 部分解明（selftest 4/4 PASS） | 48,477B |
+
+### (2) 正典事項
+
+- **v253 R-1（NiTMapBase ノードプールの slot5/6）**: ノードは 12B の {next, key, data}。グローバルフリーリスト `[0xB33EAC]`、CS `0xB33F00`、補充は 2048 ノード一括 `new(0xC*0x800)`。Insert（`0x452710`）は slot1 hash → slot2 keyeq → 未登録時 `0x45274B mov edx,[eax+0x14]` / `0x452750 call edx` で slot5 を呼び、返値＝新規ノード。slot3 が setter（ret 0xC）。デストラクタ（`0x7C2A40`）は slot4 cleanup（POD では no-op）→ `0x7C2A79 mov edx,[eax+0x18]` / `0x7C2A7F call edx` で slot6 を呼ぶ。Find（`0x4527A0`）は slot1/2 のみ。slot5 thunk `0x4F0F60`、slot6 thunk `0x4B2ED0`。プール割当 `0x44D810`／回収 `0x44D880`。7スロット意味名: [0]dtor / [1]hash / [2]keyeq / [3]set_key_data / [4]cleanup_node / [5]allocate_node / [6]deallocate_node。静的オブジェクト `0xB13948`/`0xB1395C` への Insert/dtor は R6025 abort を招く。
+- **v253 R-2（103.0/102.0 しきいと 0xFA5/0xFAB）**: `103.0d@0xA69768`、`102.0d@0xA69778`。`0xFA5`(4005)/`0xFAB`(4011) は TileMenu+0x18 の設定パラメータツリーの u16 キー。ゲッター `0x588BD0`（呼出19箇所、不在時 fldz）、セッター `0x58CEB0`（1767箇所）。`0x591C50` の分岐は val≤102.0 で書込・val>103.0/NaN でスキップ → 実質「書込 ⟺ val≤103.0」。書込経路 `0x591CEB` は [edi+0x20]=ID → [edi+0x14] へミラー → push 0xfab → SetAt(ebx−0x3E9,&esi)。`0x584980` は slot13 の ID=0x400 窓の子範囲 max→int→下限10.0 クランプ→+100.0 で px 寸法。移植は省略可。
+- **v253 R-3（console save/load の param_4）**: save `0x5023D0` の out slot = esp0−0x310、load `0x502500` = esp0−0x30C。`save foo` → param_4=0、`save foo 5` → 1。消費は非ゼロ性のみ。QA 経路3種: TestAllCells は 1 固定プッシュ（唯一の無条件経路）、console は条件付き、quicksave/autosave/SaveMenu は常に 0。
+- **v257 項目1（formType の書込元）**: `0x451210` が [form+4]=GetFormTypeByFourcc（`0x46AF70`）を冪等書込。formType レジストリは `0xB05E04`（69項・stride 0xC、`0xB05E08..0xB06144`）。初期化は TESForm base ctor `0x46C460`@`0x46C49A` の one-shot。書込一生: base ctor で 0 → type ctor がハードコード（MGEF 0xC@`0x416544`、LIGH 0x1A）→ fresh 時に冪等再書込。mod index 説は棄却。
+- **v257 項目2（GMST シングルトン）**: GameSettingCollection シングルトン `0xB35468`（obj size 0x190、.CRT 初期化子 `0x9E06B0`、完成 vtable `0xA4049C`、dtor thunk `0xA1AA00`→atexit）。67項 dispatch 表（0→TES4 `0x44DE35` … 14→default `0x44E5A5`。case1=GMST@`0x44E326`: EDID→buf→call [0xB35468+0x24] SetString、form 生成なし）。
+- **v257 項目3〜7**: 項目3=vt[0x90] dirty リスト登録・bit0 消費者はガード自身のみ。項目4=HUDInfoMenu RTTI・DOOR 列全文・v256 へ訂正1件。項目5=無 vtable 0xDC struct・帯は AnimSequenceBase/BSAnimGroupSequence 系 RTTI・v256 のカメラオフセット推定は棄却。項目6=ALCH/INGR vt[0xE8]・RTTI 2件・dispatch 8窓。項目7=BOOK 系は照合済み確定、MGEF bit24 は未取得（確認できず）。
+- **v258 件3（fFadeDistance の裁定）**: `0xB06AB0` = 12288.0f = fFadeDistance。適用点 `0x4838F0`: 55×55 セルグリッド、[B34410]=[B34414]−fFadeDistance、B2C334/338=fade near/far。裁定は「描画距離そのもの」ではなく「distant 窓外周からのフェード帯幅」[確定・命令]。gateA/B=`0xB09AE8`/`0xB09AF0`（video settings ID 9/10 の裏バイト、既定 1/1）。全参照: `0x483DD4` 発火ゲート、`0x5DFC55..` 適用 dispatch、`0x5DFF36` リセット、`0x9E33C0` INI 自動保存登録。
+- **v258 件4（.lod 回転の意味）**: パーサ `0x4D16D0` は float3#1→pos[+0x14]、float3#2→rot[+0x04]、float#3→scale[+0x24]。corpus 3,202 レコードで rot[0]/[1] は常に 0、rot[2] のみ非ゼロ（45° 倍数系）→ yaw=rot[i][2] [推定→推奨]。最終行列組立関数は未特定。
+- **v258 件5（file record）**: 16B = {u64 nameHash, u32 f1, u32 f2}。f2=オフセット（鎖が厳密成立）、f1=保存サイズ＋上位ビット。ペイロード=u32 展開後サイズ+zlib（`78 9C`）: SI 922/922、BASE 9,944/9,944。per-file bit30 と圧縮の相関なし [確定]（→ §71(2) の v266 XOR 正典に置換済み。下記(3)参照）。
+- **v259 §1（SPHERE 確定と RECTANGLE 不存在証明）**: SPHERE 専用 ctor `0x958590`・vt `0xAA3718`・m_type=1 はレジスタ書込 `mov ecx,1→mov[eax+0x54],ecx`@`0x9585A8`（v254 の C7 即値走査の漏れ）。生成 e8={0x94A6A4,0x94A763} のみ（node4 dispatcher `0x94A630` cmd4/cmd11）。RECTANGLE は ctor/vt 全イメージ 0 件・名表 `0xB305C4` 参照 0 で不存在証明。geometry family 署名列挙は基底+9型で完全一致（`0xA9B2F4` 基底、PLANE 8/CYL 9/BOX 3/CAPSULE 2/SEMICIRCLE 6/CONE 5/CONVEX 7/AABB 4/SPHERE 1）。
+- **v259 §2（+0x28 の listener 系）**: +0x28 part は ST/CR→hkEntityListener（基底 `0xA46684`=RTTI `.?AVhkEntityListener@@`、派生 `0xA9D404`/`0xA9D4F4`）、Ph→hkPhantomListener（`0xA56320`、派生 `0xA9D6D4`）。入口 `0x4CA2A0` は変更通知ディスパッチャ（slot1,slot2 順呼）。同一 slot[3] を持つゲーム側 vt 全13。added/removed 2通知は 5.1 の entityChanged 相当 [推定]。+0x20=Q 経由抽象2槽（`0xAA2B9C` purecall×2→既定 `0xA9D250`）、「エンティティ照会 interface」[固有名未確定]。+0x2C=基底 `0xA9D2B4`、参照元19件=process ctor 帯、シグネチャは hkProcess getConsumableCommands/consumeCommand 同一形、「表示コマンド源 interface」[固有名未確定]。RTTI 教訓: TD+8=名インライン文字列、VS6 COL={0,off,0,TD,CHD}、Visualize/Havok TU の vt は COL なし。
+- **v259 §3（14 表の正体）**: `0xAA2B10..0xAA2B44` の14表は hkDebugDisplayHandler 具象実装 vt（死テーブル: imm32 refs=.text 2件=dtor 自己復元のみ、ctor 存在せず）。slot 対応: [1]addGeometry（ret 0x10・4.0 は shapeIdHint 無し）/[5]updateCamera/[11]sendMemStatsDump=cmd 0xF ✓/[12]holdImmediate=cmd 0xB ✓/[13]D2 本体。MI=D2 `0x948510` 復元列 [+8]→[+0]=`0xA45E5C`=RefObj+0/handler+8。生実装=ctor `0x9477B0` の 4.0 サーバオブジェクト（自前 3 part vt `0xAA2A04`/`0xAA29EC`/`0xAA29B8`、handler 部 `0xAA2984`={dtor,pure×12}、registerProcess "DebugDisplay"@`0x94780C`→[0xBA9508]）。hkProcessHandler 抽象 `0xAA2B58`={空dtor,pure×6}=5.1 と一致。
+- **v259 §4（[0xBA840C] と node2/node4）**: 保持者は ctor `0x9187A0` の 4-part MI（0xA9D230/handler 0xA9D214/process 0xA9D1FC、alloc 0x50 tag 0x32、生成主はゲーム帯 `0x8CA9B4` の bhkWorldM 系）。getter `0x918950` のみ・書込み手 0=常時 0→5.1 hkServerProcessHandler getProcessTag「always just 0」と完全一致 [確定（相当名）]。node2=8B・vt `0xA98234`・[0xBA803C]、create `0x8BB530` tag 0x15、隣接 `0x8BB020`=hkSystem 接続/切断、直後データ=スタックトレース TU。node4=0x1C B・実 vt 2 slot のみ（訂正3）、死性（slotptr 読手 0）。
+- **v259 §5（registerProcess 17点）**: 全表確定（静的形=push createfn→push name→call `0x947C50`→mov[tag],eax）。1 WorldMemory `0xBA8410` … 16 DebugDisplay(self)@`0x94780C` `0xBA9508`、17 DebugDisplay(静的)@`0x947900` 同一グローバル。tag グローバル16個は v251 §6 と完全一致。突合結論: 「17=16+1」ではなく「17 呼び出し=16 グローバル（DebugDisplay 二重登録）＋別枠静的 m_tag `0xBA840C`（未登録）」。
+
+### (3) 既存節への訂正・優先関係
+
+- v253 訂正A: v250 §1-3 の「代替 ID 補正」は誤。正しくは「しきいゲート付き param 4011 書込＋ID の +0x14 ミラー」。
+- v253 訂正B: v250 §3-3/§2-1・v248 §3-4 の「param_4=1」は誤。正しくは「第2引数非ゼロ Integer 時 1」。
+- v258 訂正: v255 の pos/rot スワップは誤（41/41 一致で実証。量子化は pos 側）、`0x7B3A40` の誤読、§7 の圧縮ビット連想は無効、依頼文の `0x4F0E70` は誤り（補正済み）。
+- v258 件5 の「per-file bit30 と圧縮の相関なし」は §71(2) の v266 XOR 正典（圧縮 = f1.bit30 XOR (hdr.flags & 0x4)、展開後サイズ = f1 & 0x3FFFFFFF）に置換済み。bit30 は単独では意味を持たず、XOR で圧縮判定になる。
+- v258 の gateA/B UI ラベル [未確定] は v263 で解決済み（ID9=Distant Land、ID10=Self Shadows）。
+- v259 の訂正ドラフト7件は v254/v251 へ反映対象（SPHERE 実在/RECTANGLE 不存在証明、node4 vt は 2 slot のみ、[0xBA840C] 保持者=hkServerProcessHandler 相当、14表=hkDebugDisplayHandler 具象死テーブル、+0x28=hkEntityListener/hkPhantomListener、v251 §6 の17点詳細追加）。
+- v259 は v267（Havok 残件14、65,612B・§71 参照）の先行レポート。Havok 系の最新正典は v267 が優先。
+
+### (4) Android 移植側写像
+
+- v253 R-1: slot5/6 = ノードプール割当/回収フック2本（new/delete で置換可）。意味名のみ確定、実装不要。
+- v253 R-2: 「type 4002 登録後、param4005≤103.0 なら param4011←max(窓1024子範囲,10)+100」の後処理1本。移植では省略可。
+- v253 R-3: console save/load は「argc=2、2番目 optional Integer、非ゼロで詳細診断表有効」。
+- v258 件1: .cmp マスク=7 同然 → 「全セル許可」でエンジン等価。
+- v258 件2: ActiveBlock=セル座標÷8→ブロックキー。オブジェクト LOD に GroupWidth は不要。
+- v258 件4: yaw=rot[i][2]（X/Y は常に 0）。
+- v258 件5: loose は無圧縮/BSA magic 判定/フィルタ不要（圧縮判定は v266 XOR 規則へ訂正反映済み）。
+- v259: 写像なし（Havok/Visualize 純 RE。移植影響は v267 側で切り分け）。
+
+残点: v253 の R-2b/R-4/R-5（低）。v258 の V-258-4a（中・具現化の最終消費者未特定）と V-258-1a/3a/5a（低・1a は v263、5a は v266 で解消済み）。v259 新規残点6件（中1=`0x9187A0` の +0x24 サブオブジェクト/`0x8B0E10`/`0x947EE0`/`0x947FA0` の機能。低5=14表[13]重複セル、+0x20/+0x2C の固有名、node2 隣接メソッド、`0xAA2B4C/54` の帰属、bhkWorldM init 帯 `0x8CA900` 全文脈）。
+
+証跡: `tmp/re/v253_port_saveslot_residuals5.md` / `tmp/re/v257_opcode_gt_names13.md` / `tmp/re/v258_object_lod_residuals.md` / `tmp/re/v258_docs_re_exe_report_draft2.md` / `tmp/re/v259_process_havok_residuals13.md` と `tmp/re/v259_i*.py` / `*.txt` 証跡（Git 管理外）。
+
+(本節の新規確定): NiTMapBase 7スロット意味名、GMST dispatch 67項と `0xB35468` シングルトン、fFadeDistance=12288.0f@`0xB06AB0` のフェード帯幅裁定、.lod rot=Z軸yaw のみ、hkDisplay 9クラス完全表＋SPHERE、registerProcess 17点=16グローバル＋DebugDisplay 二重登録＋別枠 m_tag。
+
+(未確定): v257 項目7 の MGEF bit24、v258 V-258-4a、v259 残点6件（+0x20/+0x2C の固有名を含む）。
+
+表記ゆれ: v257 のタイトルは「殘点」（繁体字）、他は「残点」。判定マーカーは原文保持（v257 [確定]、v253/v259 【解明】/部分解明/不存在証明/確認できず）。

@@ -194,7 +194,7 @@ def main() -> int:
     print("to update: %d" % len(drifted))
     if len(missing) == len(entries) and len(entries) > 100:
         if args.dry_run:
-            print("WARNING: idempotency key missing — a real run would push all %d entries; run is BLOCKED by the guard" % len(entries))
+            print("WARNING: idempotency key missing - a real run would push all %d entries; run is BLOCKED by the guard" % len(entries))
         else:
             print("ERROR: idempotency key missing: 0 of %d ledger entries were found in Supermemory" % len(entries))
             print("       (recognized ledger ids=0, space entryIds=%d, to push=%d). Running now would push the whole ledger as duplicates." % (len(known), len(missing)))

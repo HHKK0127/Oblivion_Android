@@ -18,6 +18,7 @@
 #include "../game/merchant_factory.h"
 #include "../world/distant_lod/distant_lod_manager.h"
 #include "../world/distant_lod/original_lod_provider.h"
+#include "../world/distant_lod/original_object_lod_provider.h"
 #include "../util/msvc_lcg.h"
 // #include "../jni_audio_bridge.h"  // Deferred - requires Java MainActivity
 
@@ -6145,6 +6146,7 @@ void Renderer::renderDistantLod() {
 
     const glm::mat4 viewProj = projMatrix * viewMatrix;
     lod.render(this, viewProj);
+    renderDistantObjectLod(viewProj);
 }
 
     // Phase 65: keep the distant LOD populated.
@@ -6175,6 +6177,17 @@ void Renderer::updateDistantLodMeshes() {
     const int originalBlocks = original.update(assetManager.get(),
                                                worldManager->getCurrentWorldspace(),
                                                playerPos, kDistantLodFarPlane);
+
+    // Shipped object LOD (.lod files next to the landscape blocks): statics
+    // referenced by RE-parsed FORM records, streamed per cell around the
+    // player. Drawing is deferred (instances exposed via activeCells()), so
+    // this only builds the cell index and must not affect the landscape
+    // fallback decision below.
+    OriginalObjectLodProvider::instance().update(
+        assetManager.get(),
+        assetManager ? &assetManager->getEsmManager() : nullptr,
+        worldManager->getCurrentWorldspace(),
+        playerPos, kDistantLodFarPlane);
 
     // Cells of the fallback ring, tracked so that switching between the two
     // sources unregisters the meshes of the one that is no longer used.
@@ -7068,6 +7081,178 @@ void Renderer::renderStaticObjects() {
     if ((staticLogCounter++ % 300) == 0) {
         LOGI("Static: placed=%zu, meshes=%zu, drawn=%zu, cache=%zu (pending=%zu, missing=%zu, radius=%.0f)",
              placed, meshes, drawn, cache, pending, missing, NPC_MESH_STREAM_RADIUS);
+    }
+}
+
+// Phase 65: draw pass for the object-LOD provider's replicated statics.
+// Mirrors renderStaticObjects(), but the instances come from
+// OriginalObjectLodProvider (.lod cells) and carry raw Z-up world-absolute
+// transforms, so the interior axis fix is applied to the whole placement.
+// v260 §4 [確定]: the shipping engine composes M = T(pos)·S(scale) only —
+// the .lod rotation slot is load/save metadata that the draw pass never
+// consumes, so yaw is intentionally ignored here for engine fidelity.
+void Renderer::renderDistantObjectLod(const glm::mat4& viewProj) {
+    auto& provider = OriginalObjectLodProvider::instance();
+    const auto& cells = provider.activeCells();
+    if (cells.empty() || !assetManager) {
+        return;
+    }
+
+    static GLuint objLodShader = 0;
+    static bool objLodShaderInit = false;
+    if (!objLodShaderInit) {
+        objLodShaderInit = true;
+        GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+        glShaderSource(vs, 1, &interiorVertexSrc, nullptr);
+        glCompileShader(vs);
+        GLint ok = 0;
+        glGetShaderiv(vs, GL_COMPILE_STATUS, &ok);
+        if (!ok) {
+            char buf[512];
+            glGetShaderInfoLog(vs, sizeof(buf), nullptr, buf);
+            LOGE("ObjLod vertex shader error: %s", buf);
+            glDeleteShader(vs);
+            return;
+        }
+        GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+        glShaderSource(fs, 1, &interiorFragmentSrc, nullptr);
+        glCompileShader(fs);
+        glGetShaderiv(fs, GL_COMPILE_STATUS, &ok);
+        if (!ok) {
+            char buf[512];
+            glGetShaderInfoLog(fs, sizeof(buf), nullptr, buf);
+            LOGE("ObjLod fragment shader error: %s", buf);
+            glDeleteShader(vs);
+            glDeleteShader(fs);
+            return;
+        }
+        objLodShader = glCreateProgram();
+        glAttachShader(objLodShader, vs);
+        glAttachShader(objLodShader, fs);
+        glLinkProgram(objLodShader);
+        glGetProgramiv(objLodShader, GL_LINK_STATUS, &ok);
+        if (!ok) {
+            char buf[512];
+            glGetProgramInfoLog(objLodShader, sizeof(buf), nullptr, buf);
+            LOGE("ObjLod shader link error: %s", buf);
+            glDeleteProgram(objLodShader);
+            objLodShader = 0;
+            glDeleteShader(vs);
+            glDeleteShader(fs);
+            return;
+        }
+        glDeleteShader(vs);
+        glDeleteShader(fs);
+        LOGI("ObjLod shader compiled successfully");
+    }
+    if (!objLodShader) {
+        return;
+    }
+
+    // Lighting and fog come from the sky weather system, same as the other
+    // exterior passes.
+    float sunX = 0.5f, sunY = 1.0f, sunZ = 0.3f;
+    float ambR = 0.3f, ambG = 0.3f, ambB = 0.3f;
+    float fogR = 0.2f, fogG = 0.2f, fogB = 0.2f;
+    float fogFar = 20000.0f;
+    if (skyWeatherSystem) {
+        skyWeatherSystem->getSunDirection(sunX, sunY, sunZ);
+        skyWeatherSystem->getAmbientColor(ambR, ambG, ambB);
+        skyWeatherSystem->getFogColor(fogR, fogG, fogB);
+        fogFar = skyWeatherSystem->getFogDistance();
+    }
+
+    glm::vec3 playerPos(0.0f, 0.0f, 0.0f);
+    if (playerController) {
+        playerPos = playerController->getPlayerPosition();
+    }
+
+    size_t drawn = 0;
+    size_t pending = 0;
+    size_t missing = 0;
+
+    glUseProgram(objLodShader);
+    const GLint locMVP = glGetUniformLocation(objLodShader, "uMVP");
+    const GLint locModel = glGetUniformLocation(objLodShader, "uModel");
+    const GLint locColor = glGetUniformLocation(objLodShader, "uColor");
+    const GLint locLight = glGetUniformLocation(objLodShader, "uLightDir");
+    glUniform3f(locLight, sunX, sunY, sunZ);
+    glUniform1f(glGetUniformLocation(objLodShader, "uFogEnabled"), 1.0f);
+    glUniform3f(glGetUniformLocation(objLodShader, "uFogColor"), fogR, fogG, fogB);
+    glUniform2f(glGetUniformLocation(objLodShader, "uFogRange"), fogFar * 0.35f, fogFar);
+    glUniform3f(glGetUniformLocation(objLodShader, "uCameraPos"),
+                playerPos.x, playerPos.y + PH_CAMERA_HEIGHT, playerPos.z + PH_CAMERA_DIST);
+
+    // The provider exposes model paths only, so resolve and cache the meshes
+    // here. Paths that cannot be loaded are memoised to avoid hammering the
+    // BSA lookup every frame.
+    static std::unordered_map<std::string, std::shared_ptr<Mesh>> meshCache;
+    static std::unordered_set<std::string> unresolvedObjLodMeshes;
+
+    for (const auto& cellEntry : cells) {
+        for (const auto& inst : cellEntry.second) {
+            if (inst.modelPath.empty()) {
+                continue;
+            }
+            auto it = meshCache.find(inst.modelPath);
+            if (it == meshCache.end() &&
+                unresolvedObjLodMeshes.count(inst.modelPath) == 0 &&
+                !assetManager->isMeshKnownMissing(inst.modelPath)) {
+                std::shared_ptr<Mesh> mesh = assetManager->loadNifMesh(inst.modelPath);
+                if (mesh) {
+                    it = meshCache.emplace(inst.modelPath, mesh).first;
+                } else {
+                    unresolvedObjLodMeshes.insert(inst.modelPath);
+                    ++missing;
+                    continue;
+                }
+            }
+            if (it == meshCache.end()) {
+                ++pending;
+                continue;
+            }
+            const std::shared_ptr<Mesh>& mesh = it->second;
+            if (!mesh || !mesh->isReady() || mesh->getVAO() == 0) {
+                ++pending;
+                continue;
+            }
+
+            // .lod records carry raw Z-up world-absolute placement (unlike
+            // REFR statics, which are pre-converted), so fix the axis on the
+            // whole transform. The engine applies position and uniform scale
+            // only (v260 §4 確定): the rot slot is never consumed at draw
+            // time, so inst.yaw is deliberately not applied here.
+            glm::mat4 model = glm::translate(glm::mat4(), inst.position);
+            model = interiorAxisFix() * model;
+            const float s = inst.scale > 0.0f ? inst.scale : 1.0f;
+            if (s != 1.0f) {
+                // Uniform scale commutes with the axis fix, so scaling the
+                // 3x3 block after composition is safe.
+                for (int c = 0; c < 3; c++) {
+                    for (int row = 0; row < 3; row++) {
+                        model.data[c][row] *= s;
+                    }
+                }
+            }
+
+            const glm::mat4 mvp = viewProj * model;
+            glUniformMatrix4fv(locMVP, 1, GL_FALSE, mvp.value_ptr());
+            glUniformMatrix4fv(locModel, 1, GL_FALSE, model.value_ptr());
+            const float color[4] = {ambR * 0.62f, ambG * 0.62f, ambB * 0.62f, 1.0f};
+            glUniform4fv(locColor, 1, color);
+            glBindVertexArray(mesh->getVAO());
+            glDrawElements(GL_TRIANGLES, mesh->getIndexCount(), GL_UNSIGNED_INT, nullptr);
+            glBindVertexArray(0);
+            ++drawn;
+        }
+    }
+
+    glUseProgram(0);
+
+    static int objLodLogCounter = 0;
+    if ((objLodLogCounter++ % 300) == 0) {
+        LOGI("ObjLod: drawn=%zu, pending=%zu, missing=%zu, cells=%zu",
+             drawn, pending, missing, cells.size());
     }
 }
 
@@ -8102,6 +8287,7 @@ void Renderer::cleanup() {
     // Phase 65: release the original landscape LOD blocks and their DDS textures
     // while the GL context is still current.
     OriginalLodProvider::instance().reset();
+    OriginalObjectLodProvider::instance().reset();
 
     // Imperial Weave: shutdown integration layer
     if (imperialWeaveInitialized) {

@@ -250,10 +250,6 @@ bool DialogueFilterEngine::evaluateCondition(const DialogueCondition& cond) cons
             return evaluateGetStage(cond);
         case ConditionFunction::GetQuestRunning:
             return evaluateGetQuestRunning(cond);
-        case ConditionFunction::GetQuestCompleted:
-            return evaluateGetQuestCompleted(cond);
-        case ConditionFunction::GetRelationshipRank:
-            return evaluateGetRelationshipRank(cond);
         case ConditionFunction::GetDisposition:
             return evaluateGetDisposition(cond);
         case ConditionFunction::SameFaction:
@@ -384,21 +380,6 @@ bool DialogueFilterEngine::evaluateGetQuestRunning(const DialogueCondition& cond
     return cond.evaluate(isRunning ? 1.0f : 0.0f);
 }
 
-bool DialogueFilterEngine::evaluateGetQuestCompleted(const DialogueCondition& cond) const {
-    uint32_t questFormID = cond.param1;
-    // Check if quest stage indicates completion (stage >= 100 typically means done)
-    auto it = playerCtx.questStages.find(questFormID);
-    if (it != playerCtx.questStages.end()) {
-        return cond.evaluate(it->second >= 100 ? 1.0f : 0.0f);
-    }
-    return cond.evaluate(0.0f);
-}
-
-bool DialogueFilterEngine::evaluateGetRelationshipRank(const DialogueCondition& cond) const {
-    // Use disposition as proxy for relationship rank
-    int32_t rank = (npcCtx.disposition - 50) / 10; // Map 0-100 to -5 to 5
-    return cond.evaluate(static_cast<float>(rank));
-}
 
 bool DialogueFilterEngine::evaluateGetDisposition(const DialogueCondition& cond) const {
     return cond.evaluate(static_cast<float>(npcCtx.disposition));

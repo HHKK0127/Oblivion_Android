@@ -8,7 +8,7 @@
 //
 // Key behaviors:
 //   - 24h time-based package selection (sleep at night, work during day)
-//   - Priority-based package interruption
+//   - First-match package selection (RE canon 0x569020 list scan)
 //   - Smooth transitions between packages
 //   - Integration with NavMesh pathfinding
 // ============================================================================
@@ -115,6 +115,7 @@ private:
     // Game time (0.0 - 24.0, wraps)
     float gameHour = 8.0f;  // Start at 8:00 AM
     float timeScale = 30.0f;  // Real-time to game-time multiplier
+    uint32_t daysElapsed = 0;  // Midnight-wraps counter; day-of-week = % 7
 
     // NPC package stacks
     std::unordered_map<uint32_t, PackageStack> npcPackages;

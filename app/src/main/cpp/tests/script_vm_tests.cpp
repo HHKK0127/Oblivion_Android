@@ -1507,14 +1507,17 @@ void ScriptVMTests::testScriptManager() {
         trdt[15] = 0xCD;
         addSub("TRDT", trdt);
         addSub("QSTI", u32le(0x0000ABCD));
-        // CTDA: GetFactionRank (45) >= 3 against faction 0x0000BEEF.
-        std::vector<uint8_t> ctda(24, 0x00);
-        ctda[0] = 45;
-        ctda[2] = 0x00;
+        // CTDA: GetFactionRank (73) >= 3 against faction 0x0000BEEF.
+        // Real 0x14-byte on-disk layout: flag@0 (op3 GreaterEqual = 3<<5),
+        // float@4, u16 function index@8, param1@12, param2@16.
+        std::vector<uint8_t> ctda(20, 0x00);
+        ctda[0] = 0x60;
         const float rank = 3.0f;
         std::memcpy(ctda.data() + 4, &rank, 4);
+        const uint16_t factionRankFunction = 73;
+        std::memcpy(ctda.data() + 8, &factionRankFunction, 2);
         const uint32_t factionFormID = 0x0000BEEF;
-        std::memcpy(ctda.data() + 8, &factionFormID, 4);
+        std::memcpy(ctda.data() + 12, &factionFormID, 4);
         addSub("CTDA", ctda);
 
         InfoData info;

@@ -31,15 +31,13 @@ void PackageStack::removePackagesByType(PackageType type) {
 }
 
 AIPackage* PackageStack::getActivePackage() {
-    // Return the highest priority package whose conditions are met
+    // Canonical first-match scan (0x569020): the first package whose
+    // conditions evaluated to met wins. No fallback — an empty result means
+    // no eligible package and the scheduler idles the NPC.
     for (auto& pkg : packages) {
         if (pkg.conditionsMet) {
             return &pkg;
         }
-    }
-    // Fallback: return first package if none have been evaluated yet
-    if (!packages.empty()) {
-        return &packages[0];
     }
     return nullptr;
 }
@@ -50,20 +48,37 @@ const AIPackage* PackageStack::getActivePackage() const {
             return &pkg;
         }
     }
-    if (!packages.empty()) {
-        return &packages[0];
-    }
     return nullptr;
 }
 
-void PackageStack::evaluate(float hourOfDay, const glm::vec3& npcPos,
-                             uint32_t npcCellID,
-                             float healthPct, float magickaPct, float staminaPct) {
-    // BUG FIX: Actually evaluate conditions for each package
-    // The active package is the highest priority one whose conditions are met
+void PackageStack::evaluate(const PackageEvalContext& ctx) {
+    // Canonical selection chain per 0x569020: flag predicates -> schedule
+    // (day-of-week then [start, start+duration) time window) -> CTDA list.
+    // The scan returns the FIRST eligible package; the priority field is a
+    // port-only ordering aid (see header comment).
     for (auto& pkg : packages) {
-        pkg.conditionsMet = pkg.conditions.evaluate(hourOfDay, npcPos, npcCellID,
-                                                     healthPct, magickaPct, staminaPct);
+        bool met = pkg.conditions.evaluate(ctx.hourOfDay, ctx.npcPosition,
+                                           ctx.npcCellID, ctx.healthPercent,
+                                           ctx.magickaPercent,
+                                           ctx.staminaPercent);
+        if (met && pkg.schedule.enabled &&
+            !pkg.schedule.matches(ctx.hourOfDay, ctx.dayOfWeek)) {
+            met = false;
+        }
+        if (met && !pkg.ctdaConditions.empty()) {
+            if (ctx.runtime) {
+                const game::EvalResult res =
+                    game::evaluate_list(&pkg.ctdaConditions, ctx.runAs,
+                                        ctx.compareTarget, *ctx.runtime);
+                // Skip (unsupported condition function) is treated as pass:
+                // documented deviation until the full condition-function
+                // bridge lands, so unknown predicates never hard-block AI.
+                met = res.passed || res.skip;
+            }
+            // ctx.runtime == nullptr: game-state bridge pending; the CTDA
+            // list is ignored (package passes on its other predicates).
+        }
+        pkg.conditionsMet = met;
     }
 }
 

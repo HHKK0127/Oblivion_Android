@@ -161,8 +161,14 @@ void AIScheduler::update(float deltaTime) {
     // minutes, so 1 real second = 1/120 game hours. The value is now
     // driven by the console `settimescale` command via setTimeScale().
     gameHour += (deltaTime * timeScale) / 3600.0f;
-    while (gameHour >= 24.0f) gameHour -= 24.0f;
-    while (gameHour < 0.0f) gameHour += 24.0f;
+    while (gameHour >= 24.0f) {
+        gameHour -= 24.0f;
+        ++daysElapsed;  // Midnight wrap advances the day counter for schedules.
+    }
+    while (gameHour < 0.0f) {
+        gameHour += 24.0f;
+        if (daysElapsed > 0) --daysElapsed;
+    }
 
     // Update each registered NPC
     for (auto& [npcId, stack] : npcPackages) {
@@ -187,8 +193,21 @@ void AIScheduler::updateNPC(uint32_t npcId, NPC* npc, float deltaTime) {
     float magickaPct = npc->status.currentMana / std::max(npc->status.maxMana, 1.0f);
     float staminaPct = npc->status.stamina / std::max(npc->status.maxStamina, 1.0f);
 
-    // Evaluate package conditions
-    stack.evaluate(gameHour, npc->position, 0, healthPct, magickaPct, staminaPct);
+    // Evaluate the canonical selection chain (flags -> schedule -> CTDA).
+    PackageEvalContext ctx;
+    ctx.hourOfDay = gameHour;
+    ctx.dayOfWeek = static_cast<uint8_t>(daysElapsed % 7);
+    ctx.npcPosition = npc->position;
+    ctx.npcCellID = 0;
+    ctx.healthPercent = healthPct;
+    ctx.magickaPercent = magickaPct;
+    ctx.staminaPercent = staminaPct;
+    ctx.runAs = npcId;
+    ctx.compareTarget = 0;
+    // CTDA runtime bridge pending: a nullptr runtime passes packages that
+    // carry condition lists (see PackageStack::evaluate).
+    ctx.runtime = nullptr;
+    stack.evaluate(ctx);
 
     // Get active package
     AIPackage* activePkg = stack.getActivePackage();

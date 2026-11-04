@@ -3,9 +3,13 @@
 // ============================================================================
 // Phase 35: Radiant AI — Package System
 // ============================================================================
-// In Oblivion, each NPC has a stack of AI packages that determine their
-// behavior. The scheduler evaluates conditions each frame and activates
-// the highest-priority eligible package.
+// In Oblivion, each NPC has a list of AI packages that determine their
+// behavior. The engine scans the list each frame and activates the FIRST
+// package whose conditions pass (canonical PackageSelect_Main, 0x569020:
+// flag predicates -> schedule day/time window -> CTDA condition list).
+// The original has no explicit priority field; this port keeps a priority
+// value only to order the scanned list (documented deviation that
+// preserves the debugger overlay ordering).
 //
 // Package types mirror original Oblivion:
 //   Eat, Sleep, Wander, Travel, Patrol, Follow, Escort, Guard,
@@ -14,14 +18,18 @@
 // Each package has:
 //   - Type-specific data (target, location, duration, etc.)
 //   - Conditions (time of day, health %, proximity, etc.)
-//   - Priority (higher overrides lower)
+//   - Schedule (day-of-week mask + [start, start+duration) time window)
+//   - CTDA condition list (game::ConditionItem, via condition_system)
+//   - Priority (port-only field that orders the scanned list)
 // ============================================================================
 
 #include <string>
 #include <vector>
 #include <cstdint>
+#include <cmath>
 #include <functional>
 #include <glm/glm.hpp>
+#include "condition_system.h"
 
 // Forward declarations
 struct NPC;
@@ -130,6 +138,37 @@ struct PackageConditions {
 };
 
 // ============================================================================
+// Package Schedule — canonical day-of-week + time window (0x567C00 / 0x568EB0)
+// ============================================================================
+// The original package schedule matches the day of week with a bit mask, then
+// tests the game hour against the half-open window [start, start + duration)
+// modulo 24.0 (constant 24.0 at 0xA675E4), wrapping past midnight.
+struct PackageSchedule {
+    bool enabled = false;
+    float startHour = 0.0f;       // 0-24
+    float durationHours = 0.0f;   // window length; may wrap midnight
+    uint8_t dayMask = 0x7F;       // bit n set = package valid on day n (0-6)
+
+    bool matches(float hourOfDay, uint8_t dayOfWeek) const {
+        if (!enabled) return true;
+        if (dayOfWeek > 6) return false;
+        if ((dayMask & (1u << dayOfWeek)) == 0) return false;
+        if (durationHours <= 0.0f) return false;
+        if (durationHours >= 24.0f) return true;
+        float start = std::fmod(startHour, 24.0f);
+        if (start < 0.0f) start += 24.0f;
+        float end = std::fmod(start + durationHours, 24.0f);
+        float h = std::fmod(hourOfDay, 24.0f);
+        if (h < 0.0f) h += 24.0f;
+        if (start < end) {
+            return h >= start && h < end;
+        }
+        // Window wraps midnight (e.g. start 22h, duration 4h).
+        return h >= start || h < end;
+    }
+};
+
+// ============================================================================
 // Package Data — type-specific parameters
 // ============================================================================
 struct PackageData {
@@ -181,9 +220,12 @@ struct PackageData {
 struct AIPackage {
     uint32_t packageId = 0;       // Unique ID
     PackageType type = PackageType::NONE;
-    uint8_t priority = 50;        // 0-100, higher = more important
+    uint8_t priority = 50;        // Port-only: orders the scanned list
     PackageConditions conditions;
+    PackageSchedule schedule;     // Canonical day/time window
     PackageData data;
+    // Canonical CTDA condition list attached to the package.
+    std::vector<game::ConditionItem> ctdaConditions;
 
     // State tracking
     bool active = false;
@@ -198,6 +240,22 @@ struct AIPackage {
         elapsed = 0.0f;
         currentPatrolIndex = 0;
     }
+};
+
+// ============================================================================
+// Package Evaluation Context — inputs for one selection pass
+// ============================================================================
+struct PackageEvalContext {
+    float hourOfDay = 12.0f;
+    uint8_t dayOfWeek = 0;        // 0-6
+    glm::vec3 npcPosition{};
+    uint32_t npcCellID = 0;
+    float healthPercent = 1.0f;
+    float magickaPercent = 0.0f;
+    float staminaPercent = 0.0f;
+    uint32_t runAs = 0;           // FormID the package runs as (CTDA subject)
+    uint32_t compareTarget = 0;   // CTDA comparison target (0 = none)
+    game::ConditionRuntime* runtime = nullptr;  // CTDA bridge (null = pending)
 };
 
 // ============================================================================
@@ -216,14 +274,13 @@ public:
     // Remove all packages of a type
     void removePackagesByType(PackageType type);
 
-    // Get the currently active (highest priority eligible) package
+    // Get the first package whose conditions are met (canonical scan)
     AIPackage* getActivePackage();
     const AIPackage* getActivePackage() const;
 
-    // Evaluate conditions and update active package
-    void evaluate(float hourOfDay, const glm::vec3& npcPos,
-                  uint32_t npcCellID,
-                  float healthPct, float magickaPct, float staminaPct);
+    // Evaluate the canonical selection chain: flag predicates -> schedule
+    // -> CTDA condition list (0x569020 first-match scan).
+    void evaluate(const PackageEvalContext& ctx);
 
     // Clear all packages
     void clear() { packages.clear(); }

@@ -82,8 +82,6 @@ std::vector<UIShop::Row> UIShop::buildRows() const {
     std::vector<Row> rows;
     if (!currentMerchant) return rows;
 
-    const float mercantile = playerMercantile();
-
     if (currentTab == MERCHANT_INVENTORY) {
         for (const MerchantItem& item : currentMerchant->getInventory()) {
             if (item.quantity <= 0) continue;
@@ -92,7 +90,7 @@ std::vector<UIShop::Row> UIShop::buildRows() const {
             row.itemId = item.itemId;
             row.name = item.itemName;
             row.quantity = item.quantity;
-            row.unitPrice = currentMerchant->calculateBuyPrice(item.itemId, mercantile);
+            row.unitPrice = currentMerchant->calculateBuyPrice(item.itemId);
             rows.push_back(row);
         }
         return rows;
@@ -108,7 +106,12 @@ std::vector<UIShop::Row> UIShop::buildRows() const {
         row.itemId = game::itemIdFromFormID(slot.item.itemId);
         row.name = slot.item.name.empty() ? row.itemId : slot.item.name;
         row.quantity = static_cast<int>(slot.quantity);
-        row.unitPrice = Merchant::sellPriceForValue(static_cast<float>(slot.item.value), mercantile);
+        // Canonical pricing uses the merchant's effective Barter skill and the
+        // merchant's disposition toward the player, not the player's own
+        // Mercantile skill (see FUN_00488e50 / FUN_005E11A0 / FUN_005E1200).
+        row.unitPrice = Merchant::sellPriceForValue(
+            static_cast<float>(slot.item.value), currentMerchant->effectiveBarterSkill(),
+            currentMerchant->getDisposition());
         rows.push_back(row);
     }
     return rows;
@@ -132,11 +135,12 @@ bool UIShop::executeTrade(bool isBuy) {
 
     const Row& row = rows[selectedItemIndex];
     const int count = clampedQuantity();
-    const float mercantile = playerMercantile();
 
+    // No haggle slider exists in this UI yet, so the offset stays at zero,
+    // matching the original's default [player+0x11C] value.
     const game::BarterResult result = isBuy
-        ? game::buyFromMerchant(*playerInventory_, *currentMerchant, row.itemId, count, mercantile)
-        : game::sellToMerchant(*playerInventory_, *currentMerchant, row.formID, count, mercantile);
+        ? game::buyFromMerchant(*playerInventory_, *currentMerchant, row.itemId, count)
+        : game::sellToMerchant(*playerInventory_, *currentMerchant, row.formID, count);
 
     // Report the refusal instead of swallowing it: a tapped Buy/Sell that
     // silently does nothing looks like a broken screen.

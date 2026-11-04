@@ -54,17 +54,24 @@ public:
     const MerchantItem* findItem(const std::string& itemId) const;
     const std::vector<MerchantItem>& getInventory() const { return inventory_; }
 
-    // Trade price calculation (considering merchant/player charisma, etc.)
-    float calculateBuyPrice(const std::string& itemId, float playerCharisma = 0.0f) const;
-    float calculateSellPrice(const std::string& itemId, float playerCharisma = 0.0f) const;
+    // Trade price calculation using the barter model reverse engineered from
+    // Oblivion.exe (docs/RE_EXE_REPORT.md §57.5 / §59.5, price path
+    // FUN_00488e50). haggleOffset is the player's haggle-slider percent
+    // (0..100, whole numbers; it lowers buy prices and raises sell prices).
+    // stolenPercent is the stolen-goods value percent from
+    // FUN_00484850(item, 1); the -1.0 default means the goods are not stolen.
+    float calculateBuyPrice(const std::string& itemId, float haggleOffset = 0.0f) const;
+    float calculateSellPrice(const std::string& itemId, float haggleOffset = 0.0f,
+                             float stolenPercent = -1.0f) const;
 
     // Value-based variants, used for items the merchant does not stock yet
-    // (every player sale). Provisional: the barter formula of Oblivion.exe is
-    // not reverse engineered yet, so buying costs the full value and selling
-    // returns kProvisionalSellRatio of it. Replace both once RE lands.
-    static constexpr float kProvisionalSellRatio = 0.4f;
-    static float buyPriceForValue(float baseValue, float playerCharisma = 0.0f);
-    static float sellPriceForValue(float baseValue, float playerCharisma = 0.0f);
+    // (every player sale). Defaults describe a merchant with no barter skill,
+    // neutral disposition and no haggle, matching the vanilla floor case.
+    static float buyPriceForValue(float baseValue, float merchantEffectiveSkill = 0.0f,
+                                  int32_t disposition = 50, float haggleOffset = 0.0f);
+    static float sellPriceForValue(float baseValue, float merchantEffectiveSkill = 0.0f,
+                                   int32_t disposition = 50, float haggleOffset = 0.0f,
+                                   float stolenPercent = -1.0f);
 
     // Getters
     uint32_t getNpcId() const { return npcId_; }
@@ -75,10 +82,27 @@ public:
     void addGold(float amount) { shopGold_ += amount; }
     void removeGold(float amount) { shopGold_ = std::max(0.0f, shopGold_ - amount); }
 
+    // Barter inputs. The buy/sell coefficients key off the merchant's
+    // Barter-skill actor value (confirmed in the price path), and disposition
+    // enters through fBarterDispositionMod. The defaults mirror a vanilla
+    // commoner: no barter training and a neutral attitude.
+    float getBarterSkill() const { return barterSkill_; }
+    float getBarterLuck() const { return barterLuck_; }
+    int32_t getDisposition() const { return disposition_; }
+    void setBarterSkill(float skill) { barterSkill_ = skill; }
+    void setBarterLuck(float luck) { barterLuck_ = luck; }
+    void setDisposition(int32_t disposition) { disposition_ = disposition; }
+
+    // clamp(skill + 0.4 * Luck - 20, 0, 100), from FUN_00547B90.
+    float effectiveBarterSkill() const;
+
 private:
     uint32_t npcId_;
     std::string shopName_;
     std::string shopType_;        // "General Goods", "Weapons", "Magic", etc.
     std::vector<MerchantItem> inventory_;
     float shopGold_;              // Merchant's cash
+    float barterSkill_ = 0.0f;    // Merchant Barter actor value
+    float barterLuck_ = 50.0f;    // Merchant Luck actor value
+    int32_t disposition_ = 50;    // Merchant disposition toward the player
 };

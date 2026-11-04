@@ -15,23 +15,25 @@ bool StageConditionEvaluator::evaluate(const QuestCondition& cond,
                                         NpcManager* npcMgr,
                                         WorldManager* worldMgr,
                                         InventoryManager* invMgr) {
+    // Function indices are the real CTDA condition table indices
+    // (docs/RE_EXE_REPORT.md section 58.1), not the old dense list.
     switch (cond.functionIndex) {
-        case 29: // GetQuestRunning
+        case 56: // GetQuestRunning
             return evalGetQuestRunning(cond, questMgr);
-        case 30: // GetStage
+        case 58: // GetStage
             return evalGetStage(cond, questFormID, questMgr);
-        case 31: // GetStageDone
+        case 59: // GetStageDone
             return evalGetStageDone(cond, questFormID, questMgr);
-        case 23: // GetDead
+        case 46: // GetDead
             return evalGetDead(cond, npcMgr);
-        case 24: // GetItemCount
+        case 47: // GetItemCount
             return evalGetItemCount(cond, invMgr);
-        case 39: // GetInCell
+        case 67: // GetInCell
             return evalGetInCell(cond, worldMgr);
-        case 0:  // GetDistance
+        case 1:  // GetDistance
             return evalGetDistance(cond, worldMgr);
-        case 78: // GetQuestCompleted
-            return evalGetQuestCompleted(cond, questMgr);
+        // GetQuestCompleted is absent from the real condition function table;
+        // evalGetQuestCompleted is retained for reference but not dispatched.
         default:
             LOGD("Unhandled condition function: %u (%s)",
                  cond.functionIndex, QuestCondition::getFunctionName(cond.functionIndex));

@@ -173,11 +173,19 @@ SOURCES=(
   app/src/main/cpp/tests/plugin_list_tests.cpp
   app/src/main/cpp/tests/formid_index_tests.cpp
   app/src/main/cpp/tests/lod_block_tests.cpp
+  app/src/main/cpp/tests/object_lod_tests.cpp
   app/src/main/cpp/tests/enchanting_system_tests.cpp
   app/src/main/cpp/tests/oblivion_ini_tests.cpp
   app/src/main/cpp/tests/settings_manager_tests.cpp
   app/src/main/cpp/tests/merchant_tests.cpp
   app/src/main/cpp/tests/merchant_persistence_tests.cpp
+  app/src/main/cpp/tests/condition_tests.cpp
+  app/src/main/cpp/game/condition_system.cpp
+  app/src/main/cpp/tests/ai_package_tests.cpp
+  app/src/main/cpp/game/ai_package.cpp
+  app/src/main/cpp/tests/barter_price_tests.cpp
+  app/src/main/cpp/tests/blend_settings_tests.cpp
+  app/src/main/cpp/system/blend_settings.cpp
   app/src/main/cpp/ui/xml_parser.cpp
   app/src/main/cpp/ui/menu_xml_interpreter.cpp
   app/src/main/cpp/ui/menu_ui_builder.cpp

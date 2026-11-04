@@ -1,4 +1,5 @@
 #include "merchant.h"
+#include "barter.h"
 #include <algorithm>
 #include <cmath>
 
@@ -50,34 +51,62 @@ const MerchantItem* Merchant::findItem(const std::string& itemId) const {
     return (it != inventory_.end()) ? &(*it) : nullptr;
 }
 
-float Merchant::buyPriceForValue(float baseValue, float playerCharisma) {
-    // Charisma bonus (max 20% discount)
-    const float charismaBonus = std::clamp(playerCharisma / 100.0f, 0.0f, 0.2f);
-    return baseValue * (1.0f - charismaBonus);
+float Merchant::effectiveBarterSkill() const {
+    return game::barterEffectiveSkill(barterSkill_, barterLuck_);
 }
 
-float Merchant::sellPriceForValue(float baseValue, float playerCharisma) {
-    // Charisma bonus (max 20% increase)
-    const float charismaBonus = std::clamp(playerCharisma / 100.0f, 0.0f, 0.2f);
-    return baseValue * kProvisionalSellRatio * (1.0f + charismaBonus);
+float Merchant::buyPriceForValue(float baseValue, float merchantEffectiveSkill,
+                                 int32_t disposition, float haggleOffset) {
+    if (baseValue <= 0.0f) {
+        return 0.0f;
+    }
+
+    // Price path FUN_00488e50 buy branch: the merchant coefficient is lowered
+    // by the haggle slider, the product is rounded up (ceilf), and the base
+    // value acts as the floor the player can never be charged less than.
+    const float coef = game::barterBuyCoefficient(merchantEffectiveSkill, disposition) -
+                       game::kBarterHaggleScale * haggleOffset;
+    const float price = game::barterRoundPrice(coef * baseValue);
+    return std::max(price, baseValue);
 }
 
-float Merchant::calculateBuyPrice(const std::string& itemId, float playerCharisma) const {
+float Merchant::sellPriceForValue(float baseValue, float merchantEffectiveSkill,
+                                  int32_t disposition, float haggleOffset,
+                                  float stolenPercent) {
+    if (baseValue <= 0.0f) {
+        return 0.0f;
+    }
+
+    // FUN_00488e50 sell branch: multiply, then apply the stolen-goods discount
+    // as a raw float (the percent already carries its own floor), then ceil,
+    // then cap at the base value saved before the multiply.
+    const float coef = game::barterSellCoefficient(merchantEffectiveSkill, disposition) +
+                       game::kBarterHaggleScale * haggleOffset;
+    float raw = coef * baseValue;
+    raw = game::barterApplyStolenDiscount(raw, stolenPercent);
+    const float price = game::barterRoundPrice(raw);
+    return std::min(price, baseValue);
+}
+
+float Merchant::calculateBuyPrice(const std::string& itemId, float haggleOffset) const {
     const MerchantItem* item = findItem(itemId);
 
     if (item == nullptr) {
         return 0.0f;
     }
 
-    return buyPriceForValue(item->buyPrice, playerCharisma);
+    const float value = item->baseValue > 0 ? static_cast<float>(item->baseValue) : item->buyPrice;
+    return buyPriceForValue(value, effectiveBarterSkill(), disposition_, haggleOffset);
 }
 
-float Merchant::calculateSellPrice(const std::string& itemId, float playerCharisma) const {
+float Merchant::calculateSellPrice(const std::string& itemId, float haggleOffset,
+                                   float stolenPercent) const {
     const MerchantItem* item = findItem(itemId);
 
     if (item == nullptr) {
         return 0.0f;
     }
 
-    return sellPriceForValue(item->sellPrice, playerCharisma);
+    const float value = item->baseValue > 0 ? static_cast<float>(item->baseValue) : item->sellPrice;
+    return sellPriceForValue(value, effectiveBarterSkill(), disposition_, haggleOffset, stolenPercent);
 }

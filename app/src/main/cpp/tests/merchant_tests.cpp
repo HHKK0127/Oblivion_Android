@@ -408,7 +408,7 @@ bool MerchantTests::runAllTests() {
     const MerchantItem* appleRow = stockedShop->findItem(kAppleId);
     record("MerchantStockKeepsRecordData",
            appleRow != nullptr && appleRow->itemName == "Test Apple" &&
-               nearlyEqual(appleRow->buyPrice, 5.0f) && nearlyEqual(appleRow->sellPrice, 2.0f) &&
+               nearlyEqual(appleRow->buyPrice, 5.0f) && nearlyEqual(appleRow->sellPrice, 4.0f) &&
                appleRow->quantity == 3 && appleRow->category == ItemType::MISC &&
                nearlyEqual(appleRow->weight, 0.5f) && appleRow->baseValue == 5,
            appleRow ? "apple row carries EDID/FULL and DATA" : "apple row missing");
@@ -443,12 +443,12 @@ bool MerchantTests::runAllTests() {
                occupiedRows(buyer) == 1 && game::playerGold(buyer) == 1000,
                "gold=" + std::to_string(game::playerGold(buyer)));
 
-        // apple: value 5, no discount -> 10 gold for two.
+        // apple: value 5, canonical buy coefficient ~1.6 -> ceil(7.9996) = 8 per unit.
         const game::BarterResult buy2 = game::buyFromMerchant(buyer, *buyShop, kAppleId, 2, 0.0f);
-        record("BuySucceeds", buy2.ok && buy2.gold == 10, "gold=" + std::to_string(buy2.gold));
-        record("BuyDebitsPlayerPurse", game::playerGold(buyer) == 990,
+        record("BuySucceeds", buy2.ok && buy2.gold == 16, "gold=" + std::to_string(buy2.gold));
+        record("BuyDebitsPlayerPurse", game::playerGold(buyer) == 984,
                std::to_string(game::playerGold(buyer)));
-        record("BuyCreditsMerchantPurse", nearlyEqual(buyShop->getGold(), 260.0f),
+        record("BuyCreditsMerchantPurse", nearlyEqual(buyShop->getGold(), 266.0f),
                std::to_string(buyShop->getGold()));
 
         // The purchased stack must keep the record weight and value, otherwise a
@@ -467,7 +467,7 @@ bool MerchantTests::runAllTests() {
 
         const game::BarterResult buyLast =
             game::buyFromMerchant(buyer, *buyShop, kAppleId, 1, 0.0f);
-        record("BuyLastUnitSucceeds", buyLast.ok && buyLast.gold == 5,
+        record("BuyLastUnitSucceeds", buyLast.ok && buyLast.gold == 8,
                "gold=" + std::to_string(buyLast.gold));
         record("BuyLastUnitDropsStockRow", buyShop->findItem(kAppleId) == nullptr, "row removed");
         record("BuyLastUnitAddsToPlayer", game::countPlayerItem(buyer, kApple) == 3,
@@ -479,30 +479,30 @@ bool MerchantTests::runAllTests() {
 
         const game::BarterResult unknown =
             game::buyFromMerchant(buyer, *buyShop, "0000DEAD", 1, 0.0f);
-        record("BuyRejectedForUnknownItemId", !unknown.ok && game::playerGold(buyer) == 985,
+        record("BuyRejectedForUnknownItemId", !unknown.ok && game::playerGold(buyer) == 976,
                std::to_string(game::playerGold(buyer)));
 
         const game::BarterResult zeroCount =
             game::buyFromMerchant(buyer, *buyShop, kGemId, 0, 0.0f);
-        record("BuyRejectedForZeroCount", !zeroCount.ok && game::playerGold(buyer) == 985,
+        record("BuyRejectedForZeroCount", !zeroCount.ok && game::playerGold(buyer) == 976,
                std::to_string(game::playerGold(buyer)));
 
-        // gem: value 250, mercantile 100 discounts by the 20 percent cap -> 200.
+        // gem: value 250; a 100 point haggle offset cannot drop the buy below base.
         const game::BarterResult discounted =
             game::buyFromMerchant(buyer, *buyShop, kGemId, 1, 100.0f);
-        record("BuyAppliesMercantileDiscount", discounted.ok && discounted.gold == 200,
+        record("BuyHaggleOffsetFloorsAtBaseValue", discounted.ok && discounted.gold == 250,
                "gold=" + std::to_string(discounted.gold));
-        record("BuyDiscountDebitsPlayerPurse", game::playerGold(buyer) == 785,
+        record("BuyDiscountDebitsPlayerPurse", game::playerGold(buyer) == 726,
                std::to_string(game::playerGold(buyer)));
     }
 
-    // A stale mercantile input must never beat the cap.
+    // No haggle offset can push a buy below the item's base value.
     std::shared_ptr<Merchant> clampShop = buildShop(esm, kNpcStocked);
     if (clampShop) {
         const float lowMercantile = clampShop->calculateBuyPrice(kGemId, 100.0f);
         const float hugeMercantile = clampShop->calculateBuyPrice(kGemId, 500.0f);
-        record("BuyClampsMercantileAtTwentyPercent",
-               nearlyEqual(lowMercantile, 200.0f) && nearlyEqual(hugeMercantile, lowMercantile),
+        record("BuyHaggleNeverDropsBelowBaseValue",
+               nearlyEqual(lowMercantile, 250.0f) && nearlyEqual(hugeMercantile, lowMercantile),
                "100 -> " + std::to_string(lowMercantile) + ", 500 -> " +
                    std::to_string(hugeMercantile));
     }
@@ -526,10 +526,10 @@ bool MerchantTests::runAllTests() {
     // succeed (a purse spread over two slots used to break the payment path).
     {
         Inventory buyer;
-        game::addPlayerItem(buyer, game::goldItemInfo(), 4);
-        game::addPlayerItem(buyer, game::goldItemInfo(), 6);
+        game::addPlayerItem(buyer, game::goldItemInfo(), 8);
+        game::addPlayerItem(buyer, game::goldItemInfo(), 8);
         record("PurseMergesAcrossDeposits",
-               occupiedRows(buyer) == 1 && game::playerGold(buyer) == 10,
+               occupiedRows(buyer) == 1 && game::playerGold(buyer) == 16,
                "rows=" + std::to_string(occupiedRows(buyer)));
 
         std::shared_ptr<Merchant> splitShop = buildShop(esm, kNpcStocked);
@@ -563,7 +563,7 @@ bool MerchantTests::runAllTests() {
         if (quoteShop && quoteRow != nullptr) {
             Inventory quoted;
             seedGold(quoted, 50);
-            const int32_t quotedTotal = game::tradeGold(quoteRow->buyPrice, 2);
+            const int32_t quotedTotal = game::tradeGold(quoteShop->calculateBuyPrice(kAppleId), 2);
             const game::BarterResult bought =
                 game::buyFromMerchant(quoted, *quoteShop, kAppleId, 2, 0.0f);
             record("TradeGoldMatchesBuyCharge", bought.ok && bought.gold == quotedTotal,
@@ -635,7 +635,7 @@ bool MerchantTests::runAllTests() {
                plainShop->getInventory().empty() && nearlyEqual(plainShop->getGold(), 5000.0f),
            plainShop ? plainShop->getShopName() : "null");
 
-    // Whole stack: purse 10 + one apple (value 5) sells for round(5 * 0.4) = 2.
+    // Whole stack: purse 10 + one apple (value 5) sells for ceil(5 * 0.60710678) = 4.
     {
         Inventory seller;
         seedGold(seller, 10);
@@ -644,14 +644,14 @@ bool MerchantTests::runAllTests() {
         if (shop) {
             const game::BarterResult sold =
                 game::sellToMerchant(seller, *shop, kApple, 1, 0.0f);
-            record("SellWholeStackSucceeds", sold.ok && sold.gold == 2,
+            record("SellWholeStackSucceeds", sold.ok && sold.gold == 4,
                    "gold=" + std::to_string(sold.gold));
-            record("SellCreditsPlayerPurse", game::playerGold(seller) == 12,
+            record("SellCreditsPlayerPurse", game::playerGold(seller) == 14,
                    std::to_string(game::playerGold(seller)));
             record("SellDropsEmptiedSlot",
                    occupiedRows(seller) == 1 && game::countPlayerItem(seller, kApple) == 0,
                    "rows=" + std::to_string(occupiedRows(seller)));
-            record("SellDebitsMerchantPurse", nearlyEqual(shop->getGold(), 4998.0f),
+            record("SellDebitsMerchantPurse", nearlyEqual(shop->getGold(), 4996.0f),
                    std::to_string(shop->getGold()));
 
             // The shelf row has to be rebuilt from the sold stack, not from a
@@ -664,14 +664,14 @@ bool MerchantTests::runAllTests() {
                    row ? "row rebuilt from the sold stack" : "row missing");
             record("SoldRowCostsBuyerFullValue",
                    row != nullptr && nearlyEqual(row->buyPrice, 5.0f) &&
-                       nearlyEqual(row->sellPrice, 2.0f),
+                   nearlyEqual(row->sellPrice, 4.0f),
                    row ? "buy=" + std::to_string(row->buyPrice) + " sell=" +
                              std::to_string(row->sellPrice)
                        : "row missing");
         }
     }
 
-    // Partial stack: purse 10 + three apples, sell two for round(2 * 2) = 4.
+    // Partial stack: purse 10 + three apples, sell two for 2 * 4 = 8.
     {
         Inventory seller;
         seedGold(seller, 10);
@@ -680,14 +680,14 @@ bool MerchantTests::runAllTests() {
         if (shop) {
             const game::BarterResult sold =
                 game::sellToMerchant(seller, *shop, kApple, 2, 0.0f);
-            record("SellPartOfStackSucceeds", sold.ok && sold.gold == 4,
+            record("SellPartOfStackSucceeds", sold.ok && sold.gold == 8,
                    "gold=" + std::to_string(sold.gold));
             const InventorySlot* left = findPlayerSlot(seller, kApple);
             record("SellPartOfStackKeepsRemainder",
                    left != nullptr && left->quantity == 1 && left->item.stackSize == 1 &&
                        occupiedRows(seller) == 2,
                    left ? "left=" + std::to_string(left->quantity) : "slot missing");
-            record("SellPartOfStackCreditsPurse", game::playerGold(seller) == 14,
+            record("SellPartOfStackCreditsPurse", game::playerGold(seller) == 18,
                    std::to_string(game::playerGold(seller)));
         }
     }
@@ -703,9 +703,9 @@ bool MerchantTests::runAllTests() {
                 game::sellToMerchant(seller, *shop, kApple, 2, 0.0f);
             const MerchantItem* row = shop->findItem(kAppleId);
             record("SellMergesIntoStockedRow",
-                   sold.ok && sold.gold == 4 && row != nullptr && row->quantity == 5 &&
+                   sold.ok && sold.gold == 8 && row != nullptr && row->quantity == 5 &&
                        nearlyEqual(row->buyPrice, 5.0f) && nearlyEqual(row->weight, 0.5f) &&
-                       nearlyEqual(shop->getGold(), 246.0f),
+                       nearlyEqual(shop->getGold(), 242.0f),
                    row ? "qty=" + std::to_string(row->quantity) + " purse=" +
                              std::to_string(shop->getGold())
                        : "row missing");
@@ -749,7 +749,7 @@ bool MerchantTests::runAllTests() {
             const game::BarterResult sold =
                 game::sellToMerchant(seller, *shop, kApple, 1, 0.0f);
             record("SellRejectedByBrokeMerchant", !sold.ok && sold.gold == 0,
-                   "purse 1, price 2");
+                   "purse 1, price 4");
             record("SellRejectionKeepsMerchantPurse", nearlyEqual(shop->getGold(), 1.0f),
                    std::to_string(shop->getGold()));
             record("SellRejectionKeepsPlayerItem", game::countPlayerItem(seller, kApple) == 1,
@@ -757,7 +757,7 @@ bool MerchantTests::runAllTests() {
         }
     }
 
-    // Provisional pricing until the barter formula of Oblivion.exe is known.
+    // Canonical sell pricing per Oblivion.exe FUN_00488e50 (see RE_EXE_REPORT.md section 57.5).
     {
         Inventory seller;
         seedGold(seller, 10);
@@ -766,7 +766,7 @@ bool MerchantTests::runAllTests() {
         if (shop) {
             const game::BarterResult sold =
                 game::sellToMerchant(seller, *shop, kGem, 1, 0.0f);
-            record("SellUsesProvisionalRatio", sold.ok && sold.gold == 100,
+            record("SellUsesCanonicalFormula", sold.ok && sold.gold == 152,
                    "gold=" + std::to_string(sold.gold));
         }
     }
@@ -779,17 +779,17 @@ bool MerchantTests::runAllTests() {
             const game::BarterResult sold =
                 game::sellToMerchant(seller, *shop, kGem, 1, 100.0f);
             record("SellAppliesMercantileBonus",
-                   sold.ok && sold.gold == 120 && game::playerGold(seller) == 130,
+                       sold.ok && sold.gold == 250 && game::playerGold(seller) == 260,
                    "gold=" + std::to_string(sold.gold));
         }
     }
     record("SellPriceClampsMercantile",
-           nearlyEqual(Merchant::sellPriceForValue(250.0f, 100.0f), 120.0f) &&
-               nearlyEqual(Merchant::sellPriceForValue(250.0f, 900.0f), 120.0f),
-           "250 @ 100 and @ 900 both 120");
+           nearlyEqual(Merchant::sellPriceForValue(250.0f, 100.0f), 100.0f) &&
+               nearlyEqual(Merchant::sellPriceForValue(250.0f, 900.0f), 100.0f),
+           "250 @ 100 and @ 900 both 100");
 
     {
-        // value 1 * 0.4 rounds to 0, so the sale must still pay one coin.
+        // ceil(0.6071 * 1) leaves one coin, so the sale must still pay one coin.
         Inventory seller;
         seedGold(seller, 10);
         game::addPlayerItem(seller, absentInfo, 1);
@@ -814,12 +814,12 @@ bool MerchantTests::runAllTests() {
             const game::BarterResult bought =
                 game::buyFromMerchant(trader, *shop, kAppleId, 1, 0.0f);
             record("RoundTripTradesSucceed",
-                   sold.ok && sold.gold == 2 && bought.ok && bought.gold == 5,
+                   sold.ok && sold.gold == 4 && bought.ok && bought.gold == 8,
                    "sold for " + std::to_string(sold.gold) + ", bought for " +
                        std::to_string(bought.gold));
-            record("RoundTripPlayerPurseNet", game::playerGold(trader) == 97,
+            record("RoundTripPlayerPurseNet", game::playerGold(trader) == 96,
                    std::to_string(game::playerGold(trader)));
-            record("RoundTripMerchantPurseNet", nearlyEqual(shop->getGold(), 5003.0f),
+            record("RoundTripMerchantPurseNet", nearlyEqual(shop->getGold(), 5004.0f),
                    std::to_string(shop->getGold()));
 
             const InventorySlot* back = findPlayerSlot(trader, kApple);

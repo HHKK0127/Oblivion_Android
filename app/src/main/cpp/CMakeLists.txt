@@ -300,11 +300,15 @@ add_library(native-lib SHARED
     # Phase 65: original landscape LOD blocks (meshes\landscape\lod)
     world/distant_lod/original_lod_provider.cpp
 
+    # Original object LOD (distantlod\*.lod instance records)
+    world/distant_lod/original_object_lod_provider.cpp
+
     # Game Systems
     game/npc.cpp
     game/npc_manager.cpp
     game/combat_manager.cpp
     game/quest_manager.cpp
+    game/condition_system.cpp
     game/spell_manager.cpp
     game/navmesh_manager.cpp
     game/ai_package.cpp
@@ -462,6 +466,9 @@ add_library(native-lib SHARED
     system/oblivion_ini.cpp
     system/oblivion_ini_defaults.cpp
 
+    # Vanilla BSBlendSettings default table (62 entries, v64 §2)
+    system/blend_settings.cpp
+
     # Localization
     localization/localization_manager.cpp
 
@@ -546,6 +553,9 @@ add_library(native-lib SHARED
 
     # Tests (Phase 65: original landscape LOD block invariants)
     tests/lod_block_tests.cpp
+
+    # Tests (object LOD .lod parser invariants)
+    tests/object_lod_tests.cpp
 
     # Tests (Phase 65: MGEF effect-code table invariants)
     tests/enchanting_system_tests.cpp

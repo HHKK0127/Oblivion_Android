@@ -1,4 +1,5 @@
 #include "quest_record.h"
+#include "../game/condition_system.h"
 #include <cstring>
 #include <algorithm>
 
@@ -6,92 +7,17 @@
 // QuestCondition - condition function name lookup
 // ============================================================================
 
-const char* QuestCondition::getFunctionName(uint8_t index) {
-    // Oblivion condition function table (subset)
-    static const char* names[] = {
-        "GetDistance",           // 0
-        "GetLocked",             // 1
-        "GetPos",                // 2
-        "GetAngle",              // 3
-        "GetStartingPos",        // 4
-        "GetStartingAngle",      // 5
-        "GetSecondsPassed",      // 6
-        "GetActorValue",         // 7
-        "GetCurrentTime",        // 8
-        "GetScale",              // 9
-        "IsMoving",              // 10
-        "IsTurning",             // 11
-        "GetLineOfSight",        // 12
-        "GetInSameCell",         // 13
-        "GetDisabled",           // 14
-        "MenuMode",              // 15
-        "GetDisease",            // 16
-        "GetVampire",            // 17
-        "GetClothingValue",      // 18
-        "SameFaction",           // 19
-        "SameRace",              // 20
-        "SameSex",               // 21
-        "GetDetected",           // 22
-        "GetDead",               // 23
-        "GetItemCount",          // 24
-        "GetGold",               // 25
-        "GetSleeping",           // 26
-        "GetTalkedToPC",         // 27
-        "GetScriptVariable",     // 28
-        "GetQuestRunning",       // 29
-        "GetStage",              // 30
-        "GetStageDone",          // 31
-        "GetFactionRankDifference", // 32
-        "GetAlarmed",            // 33
-        "IsRaining",             // 34
-        "GetAttacked",           // 35
-        "GetIsCreature",         // 36
-        "GetLockLevel",          // 37
-        "GetShouldAttack",       // 38
-        "GetInCell",             // 39
-        "GetIsClass",            // 40
-        "GetIsRace",             // 41
-        "GetIsSex",              // 42
-        "GetInFaction",          // 43
-        "GetIsID",               // 44
-        "GetFactionRank",        // 45
-        "GetGlobalValue",        // 46
-        "IsSnowing",             // 47
-        "GetRandomPercent",      // 48
-        "GetQuestVariable",      // 49
-        "GetLevel",              // 50
-        "GetArmorRating",        // 51
-        "GetDeadCount",          // 52
-        "GetIsAlerted",          // 53
-        "GetPlayerControlsDisabled", // 54
-        "GetHeadingAngle",       // 55
-        "IsWeaponOut",           // 56
-        "IsTorchOut",            // 57
-        "IsShieldOut",           // 58
-        "IsFacingUp",            // 59
-        "GetInZone",             // 60
-        "HasMagicEffect",        // 61
-        "GetDefaultOpen",        // 62
-        "IsAnimPlaying",         // 63
-        "GetInSameQuest",        // 64
-        "GetPCIsClass",          // 65
-        "GetPCIsRace",           // 66
-        "GetPCIsSex",            // 67
-        "GetPCInFaction",        // 68
-        "GetPCIsID",             // 69
-        "GetPCFactionRank",      // 70
-        "IsPlayerActionActive",  // 71
-        "GetIsUsedItem",         // 72
-        "GetIsReferenceType",    // 73
-        "IsPlayerLastHit",       // 74
-        "IsPlayerActionLast",    // 75
-        "GetIsCreatureType",     // 76
-        "GetInCurrentCell",      // 77
-        "GetQuestCompleted",     // 78
-    };
-    static constexpr size_t count = sizeof(names) / sizeof(names[0]);
-    if (index < count) return names[index];
-    return "Unknown";
+const char* QuestCondition::getFunctionName(uint16_t index) {
+    // Names come from the real CTDA condition function table
+    // (docs/RE_EXE_REPORT.md section 58.1). Table entries are space-padded
+    // to a fixed width, so trailing spaces are trimmed before returning.
+    const game::CondFuncEntry* entry = game::find_cond_function(index);
+    if (!entry) return "Unknown";
+    static std::string buffer;
+    size_t len = std::strlen(entry->name);
+    while (len > 0 && entry->name[len - 1] == ' ') --len;
+    buffer.assign(entry->name, len);
+    return buffer.c_str();
 }
 
 // ============================================================================
@@ -149,8 +75,8 @@ std::vector<const QuestObjectiveEntry*> QuestRecord::getObjectivesForStage(int32
         }
         // Check if any condition references GetStage with matching value
         for (const auto& cond : obj.conditions) {
-            // GetStage (30) or GetStageDone (31) conditions
-            if (cond.functionIndex == 30 || cond.functionIndex == 31) {
+            // GetStage (58) or GetStageDone (59) conditions
+            if (cond.functionIndex == 58 || cond.functionIndex == 59) {
                 if (static_cast<int32_t>(cond.comparisonValue) == stageIndex) {
                     result.push_back(&obj);
                     break;
@@ -379,13 +305,14 @@ bool QuestRecordParser::parseCondition(const uint8_t* data, size_t size,
                                         QuestCondition& outCondition) {
     if (!data || size < CONDITION_SIZE) return false;
 
-    outCondition.functionIndex = data[0];
-    outCondition.flags = data[1];
-    outCondition.comparisonOp = data[2];
-    outCondition.padding = data[3];
+    // Real CTDA layout (0x14 bytes): flag byte @0 (bits5-7 = comparison op),
+    // float compare value @4, u16 function index @8, param1 @12, param2 @16.
+    outCondition.flags = data[0];
+    outCondition.comparisonOp = outCondition.flags >> 5;
     std::memcpy(&outCondition.comparisonValue, data + 4, 4);
-    std::memcpy(&outCondition.param1, data + 8, 4);
-    std::memcpy(&outCondition.param2, data + 12, 4);
+    std::memcpy(&outCondition.functionIndex, data + 8, 2);
+    std::memcpy(&outCondition.param1, data + 12, 4);
+    std::memcpy(&outCondition.param2, data + 16, 4);
 
     return true;
 }

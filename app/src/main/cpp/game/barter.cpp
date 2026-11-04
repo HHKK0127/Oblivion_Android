@@ -1,5 +1,6 @@
 #include "barter.h"
 
+#include <algorithm>
 #include <cmath>
 
 #include "item_catalog.h"
@@ -27,9 +28,56 @@ int32_t tradeGold(float unitPrice, int32_t count) {
     return static_cast<int32_t>(rounded);
 }
 
+float barterEffectiveSkill(float skill, float luck) {
+    return std::clamp(skill + 0.4f * luck - 20.0f, 0.0f, 100.0f);
+}
+
+float barterBuyCoefficient(float merchantEffectiveSkill, int32_t disposition) {
+    const float capped = std::min(merchantEffectiveSkill, 100.0f);
+    const int32_t dispositionTerm = (disposition - 50) / 10;  // truncates toward zero
+    return kBarterHaggleScale *
+           (kBarterBuyBase - kBarterBuyMult * std::sqrt(200.0f - capped) -
+            kBarterDispositionMod * static_cast<float>(dispositionTerm));
+}
+
+float barterSellCoefficient(float merchantEffectiveSkill, int32_t disposition) {
+    const float capped = std::min(merchantEffectiveSkill, 100.0f);
+    const int32_t dispositionTerm = (disposition - 50) / 10;  // truncates toward zero
+    return kBarterHaggleScale *
+           (kBarterSellMult * std::sqrt(200.0f - capped) + kBarterSellBase +
+            kBarterDispositionMod * static_cast<float>(dispositionTerm));
+}
+
+float barterRoundPrice(float price) {
+    return std::ceil(price);
+}
+
+bool barterHaggleAccepts(float playerEffectiveSkill, float merchantEffectiveSkill,
+                         int32_t disposition, float slider) {
+    if (slider == 0.0f) {
+        return true;
+    }
+    // The original receives both skills as integers, so fractional parts are
+    // dropped before the difference is taken.
+    const int playerSkill = static_cast<int>(playerEffectiveSkill);
+    const int merchantSkill = static_cast<int>(merchantEffectiveSkill);
+    const float chance = static_cast<float>(merchantSkill - playerSkill + 100) / 10.0f -
+                         kBarterHaggleAcceptBase * slider +
+                         kBarterHaggleDispositionMult *
+                             static_cast<float>((disposition - 10) / 10);
+    return chance >= 0.0f;
+}
+
+float barterApplyStolenDiscount(float price, float percent) {
+    if (percent < 0.0f) {
+        return price;  // -1.0 sentinel: goods are not stolen
+    }
+    return price * percent * kBarterHaggleScale;
+}
+
 BarterResult buyFromMerchant(Inventory& inventory, Merchant& merchant,
                              const std::string& itemId, int32_t count,
-                             float playerMercantile) {
+                             float haggleOffset) {
     BarterResult result;
     if (count <= 0 || itemId.empty()) {
         result.reason = "Nothing is selected to buy";
@@ -46,7 +94,7 @@ BarterResult buyFromMerchant(Inventory& inventory, Merchant& merchant,
         return result;
     }
 
-    const int32_t cost = tradeGold(merchant.calculateBuyPrice(itemId, playerMercantile), count);
+    const int32_t cost = tradeGold(merchant.calculateBuyPrice(itemId, haggleOffset), count);
     if (cost <= 0) {
         result.reason = "That item is not for sale";
         return result;
@@ -86,7 +134,7 @@ BarterResult buyFromMerchant(Inventory& inventory, Merchant& merchant,
 
 BarterResult sellToMerchant(Inventory& inventory, Merchant& merchant,
                             uint32_t itemFormID, int32_t count,
-                            float playerMercantile) {
+                            float haggleOffset, float stolenPercent) {
     BarterResult result;
     if (count <= 0 || itemFormID == 0) {
         result.reason = "Nothing is selected to sell";
@@ -110,8 +158,9 @@ BarterResult sellToMerchant(Inventory& inventory, Merchant& merchant,
 
     // An item the merchant does not stock yet is priced from the record value of
     // the stack being sold rather than from a shelf row.
-    const float unitPrice =
-        Merchant::sellPriceForValue(static_cast<float>(sold->value), playerMercantile);
+    const float unitPrice = Merchant::sellPriceForValue(
+        static_cast<float>(sold->value), merchant.effectiveBarterSkill(),
+        merchant.getDisposition(), haggleOffset, stolenPercent);
     const int32_t earned = tradeGold(unitPrice, count);
     if (earned <= 0) {
         result.reason = "That item is worth nothing";

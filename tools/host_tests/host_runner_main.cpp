@@ -22,11 +22,16 @@
 #include "tests/plugin_list_tests.h"
 #include "tests/formid_index_tests.h"
 #include "tests/lod_block_tests.h"
+#include "tests/object_lod_tests.h"
 #include "tests/enchanting_system_tests.h"
 #include "tests/oblivion_ini_tests.h"
 #include "tests/settings_manager_tests.h"
 #include "tests/merchant_tests.h"
 #include "tests/merchant_persistence_tests.h"
+#include "tests/condition_tests.h"
+#include "tests/ai_package_tests.h"
+#include "tests/barter_price_tests.h"
+#include "tests/blend_settings_tests.h"
 
 // Print a suite summary and report whether it passed.
 static void runSuite(const char* name, bool ok, const std::string& summary, int& failed) {
@@ -189,6 +194,42 @@ int main() {
         const bool ok = t.runAllTests(assetBase != nullptr ? assetBase : "");
         runSuite("LodBlockTests", ok, t.getSummary(), failed);
     }
+    {
+        // Synthetic .lod parser invariants (v255 layout, EOF-walk rules); no
+        // extracted assets needed.
+        ObjectLodTests t;
+        const bool ok = t.runAllTests();
+        runSuite("ObjectLodTests", ok, t.getSummary(), failed);
+    }
+    {
+        // CTDA condition evaluator (v258 port): comparison matrix, OR-group
+        // state machine, operand routing, table metadata.
+        ConditionTests t;
+        const bool ok = t.runAllTests();
+        runSuite("ConditionTests", ok, t.getSummary(), failed);
+    }
+    {
+        // AI package first-match selection chain (RE canon 0x569020 port):
+        // schedule windows, day mask, CTDA acceptance rules.
+        AiPackageTests t;
+        const bool ok = t.runAllTests();
+        runSuite("AiPackageTests", ok, t.getSummary(), failed);
+    }
+
+        {
+        // Canonical RE-based barter pricing known-values (barter_price_tests.cpp).
+        BarterPriceTests t;
+        const bool ok = t.runAllTests();
+        runSuite("BarterPriceTests", ok, t.getSummary(), failed);
+        }
+
+        {
+        // Vanilla BSBlendSettings default table, 62 entries (blend_settings_tests.cpp).
+        oblivion::blend_settings::BlendSettingsTests t;
+        const bool ok = t.runAllTests();
+        runSuite("BlendSettingsTests", ok, t.getSummary(), failed);
+        }
+
     std::printf("\n=== HOST RUNNER: %s (%d suite(s) failed) ===\n", failed ? "FAILED" : "ALL GREEN", failed);
     return failed != 0 ? 1 : 0;
 }

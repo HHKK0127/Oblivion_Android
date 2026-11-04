@@ -48,16 +48,19 @@ enum class StageFlag : uint8_t {
 // ============================================================================
 // Quest Condition (CTDA subrecord)
 // ============================================================================
+// Real CTDA layout (0x14 bytes on disk), per docs/RE_EXE_REPORT.md §58.1:
+// +0x00 flag byte (bit0 OR, bit1 swap, bit2 global, bits5-7 comparison op),
+// +0x04 float compare value (raw bits; TESGlobal formID when bit2 is set),
+// +0x08 u16 condition function index, +0x0C param1, +0x10 param2.
 struct QuestCondition {
-    uint8_t functionIndex = 0;
-    uint8_t flags = 0;
-    uint8_t comparisonOp = 0;
-    uint8_t padding = 0;
+    uint16_t functionIndex = 0;
+    uint8_t flags = 0;        // raw CTDA flag byte
+    uint8_t comparisonOp = 0; // flags >> 5 (0..5: == != > >= < <=)
     float comparisonValue = 0.0f;
     uint32_t param1 = 0;
     uint32_t param2 = 0;
 
-    static const char* getFunctionName(uint8_t index);
+    static const char* getFunctionName(uint16_t index);
 };
 
 // ============================================================================
@@ -182,5 +185,5 @@ public:
 
 private:
     static constexpr size_t MIN_QUEST_DATA_SIZE = 2;
-    static constexpr size_t CONDITION_SIZE = 24;
+    static constexpr size_t CONDITION_SIZE = 20;  // real on-disk CTDA payload size (0x14)
 };

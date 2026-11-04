@@ -158,8 +158,6 @@ private:
     bool evaluateGetActorValue(const DialogueCondition& cond) const;
     bool evaluateGetStage(const DialogueCondition& cond) const;
     bool evaluateGetQuestRunning(const DialogueCondition& cond) const;
-    bool evaluateGetQuestCompleted(const DialogueCondition& cond) const;
-    bool evaluateGetRelationshipRank(const DialogueCondition& cond) const;
     bool evaluateGetDisposition(const DialogueCondition& cond) const;
     bool evaluateSameFaction(const DialogueCondition& cond) const;
     bool evaluateSameRace(const DialogueCondition& cond) const;

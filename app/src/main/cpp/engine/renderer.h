@@ -625,6 +625,11 @@ private:
     // Phase 50: distant LOD backdrop (DistantLodManager horizon ring)
     void renderDistantLod();
 
+    // Phase 65: draw pass for the replicated statics resolved by
+    // OriginalObjectLodProvider from shipped .lod cells (NIF meshes such as
+    // towers and ruins that the terrain-only LOD backdrop cannot cover).
+    void renderDistantObjectLod(const glm::mat4& viewProj);
+
         // Phase 65: generate and register distant LOD meshes for the ring of cells
         // around the player that sits between the active 3x3 block and maxDistance.
         void updateDistantLodMeshes();

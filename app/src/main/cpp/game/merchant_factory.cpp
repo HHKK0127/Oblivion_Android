@@ -7,8 +7,8 @@ namespace game {
 
 namespace {
 
-// Prices derive from the record value through the provisional Merchant formula,
-// because the barter math of Oblivion.exe is not reverse engineered yet.
+// Prices derive from the record value through the reverse-engineered Merchant
+// formula (docs/RE_EXE_REPORT.md §57.5, FUN_00488e50).
 void addStock(Merchant& merchant, const oblivion::ESMManager& esm,
               uint32_t itemFormID, int32_t count) {
     if (itemFormID == 0 || itemFormID == kGoldFormID || count <= 0) return;
