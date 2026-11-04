@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-01T16:58:00Z",
+  "lastUpdated": "2026-11-04T05:40:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -9817,7 +9817,8 @@
         "opencode"
       ],
       "content": "訂正 (2026-10-31, V214 台帳参照訂正): docs/PHASE9_PLAN.md 参照は「統合済み」。2026-09-27 のコミット b4446bf7 で Phase 9 計画（423行）が plan.md の Phase 9 節へ統合されファイルは削除済み。plan.md 冒頭に \"The Phase 9 plan that used to live in docs/PHASE9_PLAN.md was merged into the Phase 9 section below on 2026-09-27, and that file was deleted; no other plan document supersedes this one\" と明記。以後の参照は plan.md Phase 9 節が正。台帳内の当該参照は歴史記録として許容、現在形での参照は不可。元エントリID: 0fc5cbf9-ae2f-4456-9dfe-57dc66834e24（2026-09-27 merge gate、当該エントリ自体が統合・削除を記録済み）。出典: tmp/re/relcheck_20261029/rel5_ledger_freshness.md §4-1。"
-    },    {
+    },
+    {
       "id": "opencode-x1-freshness-n5b-animation-20261101",
       "timestamp": "2026-11-01T16:58:00Z",
       "priority": "low",
@@ -9831,14 +9832,44 @@
         "opencode"
       ],
       "content": "鮮度訂正 X1 追補 (2026-11-01, TODO serial 213 連託処理): X1 エントリ opencode-x1-rust-migration-n1n5-unrecorded-20261031 の残件「N5b (animation Wave2 + phase30 parity)」は部分陷色化。2026-11-01 調査で animation readers は既実装を確認（残りは keyframe/resolve + walker C ABI 移行）。STATE.md 2026-11-01 サンプル (Last run: N5b/N6 investigated, approved checks green: workspace tests + nif-ffi C ABI harness) と整合。N6 docs パス・native-lib リンク未実行は従来どおり有効。根拠: tmp/re/handoff_20261101_contradiction_audit10.md §(2)。"
+    },
+    {
+      "id": "re-copilot-bundle4-delivered-20261104",
+      "timestamp": "2026-11-04T05:40:00Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "re",
+        "copilot",
+        "lod",
+        "barter",
+        "2026-11-04",
+        "opencode"
+      ],
+      "content": "RE 依頼バンドル v1（tmp/re/handoff_20261103_re_request_bundle.md・優先 1>3>4>2）4/4 納品完了。依頼1=v260_lod_matrix_consumer.md 確定: consumer 0x4BCEF0→TESObjectSTAT vft+0x11C=0x4BAA80、出荷エンジンは yaw を合成せず M=T(pos)·S(scale) のみ（rot 読取0・D3DXMatrix* は IAT ゼロ・バインド=0xB2C33C ブロックグループ append・+0xB0/+0xB6=NiNode children ptr/子数）。依頼3=v261_clas_service_flags.md 確定（前提否定）: CLAS にサービス/商人ビットは存在しない（サブレコード=EDID/FULL/DESC/ICON/DATA のみ、DATA 0x34B は属性1/2・スキル7語・Guard bit1・Autocalcs bit0・skill index のみ）。原版商人判定=会話テーマ(TOPC/INFO)＋3層ランタイム（GetOffersServicesNow=opid 0x10FF・財布=ACBS 由来 word[TESNPC+0x30]≠CNTO 金）。port の CNTO-gold ヒューリスティック（merchant_factory.cpp npcIsMerchant L31-38）は誤陽性（山賊/市民）/誤陰性両発生の確定。[PORT] 修正ドラフト同載。依頼4=v262_barter_pricing.md 確定: sk=clamp(Luck+Mercantile×0.4−20,0,100)、売=0.01×(sqrt(200−max(sk,100))×5−10+1.5×((disp−50)/10))（既定0.40×・FUN_00548240）、買=0.01×(300−sqrt×9.9−1.5×((disp−50)/10))（既定2.01×・FUN_005481C0）、haggle±1%（cap fBarterHaggleMax40%・実体=UI スライダーでエンジンに +=/ハードクランプなし・v264 で補強）、Speechcraft 直接係数なし・Disposition±1.5%/10pt・商人 flag/PER なし・kProvisionalSellRatio=0.4f は disp=50 限定の偶然値。stolen 補正は ×2.0 でなく ×0.01（q[0xA3B150]=double 0.01・v262 誤りは v264 で訂正）。差分表9項目+[PORT] ドラフト。依頼2=v263_video_settings_labels.md 確定: 3 ポインタは UI ラベルでなく INI キー（fTreeLODDefault:LOD 等・.data 0xB14800 テーブル）。ラベル原文=_objectlod 'Object Fade:'・_distantlod 'Distant Land:'・_self_shadows 'Self Shadows:'（menus/strings.xml）。settings ID 9/10=Distant Land/Self Shadows ボタンで Object Fade は ID18/19（移植 UI 命名の誤り回避）。補助=V260→v264_bundle_residuals.md（10/10・[0xB14800]=INI キー登録/解除、0xB33A1C=汎用 mgr）。docs 追記ドラフト v255/v258_docs_re_exe_report_draft*.md は承認待ち（docs 本体未編集）。台帳 tmp/re/TODO_re49.md serial248-268 完了（round82-86・bak113-117・total154/done146/open8：残り V267=serial267 のみ稼働中）。"
+    },
+    {
+      "id": "re-process-incidents-graphify-20261104",
+      "timestamp": "2026-11-04T05:40:00Z",
+      "priority": "low",
+      "category": "process-note",
+      "tags": [
+        "opencode",
+        "process",
+        "graphify",
+        "ai-todo",
+        "2026-11-04"
+      ],
+      "content": "プロセスメモ（2026-11-03〜04）。(1) subagent 起動が散発的に 'Upstream request failed: Upstream response was not valid JSON' で失敗（V261 計7回・V265 計4回・V264 2回・V252/V268 各1回。再試行で全完遂、恒久障害ではない）。(2) graphify --update 実施中: AST 128 code 変更（5,763 nodes/11,785 edges 再生成）＋docs 63 件を 6 chunk で意味抽出（1-5 完了・6 稼働）。画像 1,667 件（app/src 配下 PNG）は今回 vision 抽出を延期し manifest 未スタンプ（次回 --update で再キュー）。既存 graph.json は 11-04 09:30 ビルド 48,072 nodes/122,812 edges。(3) ai-todo 台帳整理: 完了 68 件をアーカイブ。#50〜#54（v247 重複スタブ）は #49（serial240=同一作業）完遂の補完として close、5 件は要 human review 扱い（自動アーカイブ不可）として Recently Completed に滞留。(4) STATE.md は repo AGENTS.md どおりラウンド後に追記（bak4 まで）。docs/RE_EXE_REPORT.md は 11-03〜04 に他セッション（Copilot 側）が +103/+99 行編集（当セッションは未編集・ドラフトのみ）。"
     }
   ],
   "metadata": {
-    "totalEntries": 690,
+    "totalEntries": 692,
     "compressedCount": 121,
-    "sessionCount": 40,
-    "lastUpdated": "2026-11-01T16:58:00Z",
-    "entry_count": 690,
-    "last_updated": "2026-11-01"
+    "sessionCount": 41,
+    "lastUpdated": "2026-11-04T05:40:00Z",
+    "entry_count": 692,
+    "last_updated": "2026-11-04"
   }
 }

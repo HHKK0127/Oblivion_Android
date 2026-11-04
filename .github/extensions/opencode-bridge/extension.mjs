@@ -43,7 +43,9 @@ async function runOpenCode(message, options = {}) {
     const { stdout, stderr } = await execFileAsync(OPENCODE_EXE, args, {
         timeout: options.timeout || 180000,
         maxBuffer: 20 * 1024 * 1024,
-        shell: process.platform === "win32",
+        encoding: "utf8",
+        windowsHide: true,
+        shell: false,
     });
 
     return { stdout, stderr: stderr || "" };
@@ -59,7 +61,8 @@ function startAcpServer(port = ACP_PORT) {
         cwd: PROJECT_DIR,
         stdio: ["ignore", "pipe", "pipe"],
         detached: false,
-        shell: process.platform === "win32",
+        windowsHide: true,
+        shell: false,
     });
 
     acpServerProcess.on("exit", (code) => { acpServerProcess = null; });

@@ -8,7 +8,7 @@
 // from .rdata (shared pool "1.0, 1.0" @0xA56770; typo "1.0f, 1.0" @0xA56A08).
 // ============================================================================
 
-#include "system/blend_settings.h"
+#include "blend_settings.h"
 
 #include <cstring>
 #include <cstdlib>
