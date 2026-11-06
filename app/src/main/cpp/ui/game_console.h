@@ -158,6 +158,12 @@ public:
         std::function<void(int)> setTargetFPS;
         std::function<int()> getTargetFPS;
 
+        // Camera view mode (RE 70.5 Show1stPerson, opcode 0x113 -> flag @DAT+0x588).
+        // 1 = first-person, 0 = third-person (default). Show3rdPerson is a
+        // port-side convenience command (not in the canon console table).
+        std::function<void(int)> setViewMode;
+        std::function<int()> getViewMode;
+
         // Menu fade (RE 48): default duration in seconds (0.001-10).
         std::function<void(float)> setMenuFade;
         std::function<float()> getMenuFade;

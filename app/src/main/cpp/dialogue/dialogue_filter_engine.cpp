@@ -1,4 +1,5 @@
 #include "dialogue_filter_engine.h"
+#include "topic_resolver.h"
 #include <algorithm>
 #include <cstring>
 
@@ -192,15 +193,33 @@ const DialogueNode* DialogueFilterEngine::selectBestResponseForTopic(
     auto nodes = tree.getNodesForTopic(topicFormID);
     if (nodes.empty()) return nullptr;
 
-    std::vector<FilterResult> results;
-    for (const auto* node : nodes) {
-        FilterResult result = evaluateNode(*node);
-        if (result.passed) {
-            results.push_back(result);
-        }
+    // Topic_Resolve parity (FUN_0052F010): scan in priority order; the first
+    // usable non-alternate node wins immediately, alternate nodes go to a
+    // deferred lottery pool, and a priority-stop node aborts the scan.
+    std::vector<const DialogueNode*> ordered = nodes;
+    std::stable_sort(ordered.begin(), ordered.end(),
+                     [](const DialogueNode* a, const DialogueNode* b) {
+                         return a->priority > b->priority;
+                     });
+
+    std::vector<TopicCandidate> candidates;
+    candidates.reserve(ordered.size());
+    for (const auto* node : ordered) {
+        TopicCandidate candidate;
+        candidate.formID = node->infoFormID;
+        candidate.canUse = evaluateNode(*node).passed;
+        candidate.alternate = node->alternate;
+        candidate.priorityStop = node->priorityStop;
+        candidates.push_back(candidate);
     }
 
-    return selectBestResponse(results);
+    TopicResolveInput input;
+    input.candidates = std::move(candidates);
+
+    TopicResolver resolver;
+    const TopicResolveResult result = resolver.resolve(input);
+    if (result.selectedIndex < 0) return nullptr;
+    return ordered[result.selectedIndex];
 }
 
 const DialogueNode* DialogueFilterEngine::selectGreeting(const DialogueTree& tree) const {

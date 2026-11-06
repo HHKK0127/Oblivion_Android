@@ -579,6 +579,9 @@ void ESMFile::decodeNPC(const ESMRecord& rec) {
     if (acbs && acbs->size() >= 16) {
             npc.isFemale = (acbs->data[0] & 0x01) != 0;  // ACBS flags bit 0 = Female
             npc.level = acbs->data[4];  // Level is byte 4 (0-indexed)
+            // ACBS+0x08 word = barter gold (v261); non-zero marks a
+            // trade-capable NPC used by merchant determination.
+            npc.barterGold = readU16(acbs->data.data() + 8);
         }
 
     npc.health = static_cast<uint32_t>(10 * npc.level + 50);
@@ -2247,7 +2250,14 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
             if (gmst.valueType == 's') {
                 gmst.stringValue = rec.getString("DATA");
             } else if (data->size() >= 4) {
-                gmst.numericValue = readF32(data->data.data());
+                // GMST DATA holds one value whose type follows the EDID prefix.
+                // 31 'i' records exist in Oblivion.esm (RE V60); reading their
+                // int32 bits as float would yield garbage (e.g. 15 -> 2.1e-44).
+                if (gmst.valueType == 'i' || gmst.valueType == 'u') {
+                    gmst.numericValue = static_cast<float>(readI32(data->data.data()));
+                } else {
+                    gmst.numericValue = readF32(data->data.data());
+                }
             }
         }
 

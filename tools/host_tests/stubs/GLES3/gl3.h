@@ -55,6 +55,10 @@ typedef void GLvoid;
 #define GL_COMPILE_STATUS 0x8B81
 #define GL_LINK_STATUS 0x8B82
 #define GL_INFO_LOG_LENGTH 0x8B84
+#define GL_EXTENSIONS 0x1F03
+#define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT 0x83F1
+#define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT 0x83F2
+#define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT 0x83F3
 
 // Function entry points are provided as no-ops by tools/host_tests/host_gl_stubs.cpp.
 // They exist so that non-rendering suites can link sources that upload GPU buffers
@@ -78,6 +82,9 @@ void glGenerateMipmap(GLenum target);
 void glGetIntegerv(GLenum pname, GLint* data);
 void glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width,
                   GLsizei height, GLint border, GLenum format, GLenum type, const void* pixels);
+void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalformat, GLsizei width,
+                            GLsizei height, GLint border, GLsizei imageSize, const void* data);
+const unsigned char* glGetString(GLenum name);
 void glTexParameteri(GLenum target, GLenum pname, GLint param);
 void glVertexAttribIPointer(GLuint index, GLint size, GLenum type, GLsizei stride,
                             const void* pointer);

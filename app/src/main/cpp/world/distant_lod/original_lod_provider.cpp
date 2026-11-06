@@ -266,6 +266,13 @@ int OriginalLodProvider::update(AssetManager* assetManager,
         }
     }
 
+    // Frame-sliced registration: at most kMaxBlockRegistrationsPerFrame new
+    // blocks are loaded per call, nearest first, so entering a new worldspace
+    // does not stall the frame with a burst of NIF parses and texture
+    // uploads. The remaining blocks stream in on subsequent calls. A failed
+    // load counts against the budget because its cost was already paid.
+    std::vector<uint64_t> pending;
+    pending.reserve(needed.size());
     for (uint64_t key : needed) {
         if (activeBlocks_.find(key) != activeBlocks_.end()) {
             continue;
@@ -273,6 +280,32 @@ int OriginalLodProvider::update(AssetManager* assetManager,
         if (failedBlocks_.find(key) != failedBlocks_.end()) {
             continue;
         }
+        if (index->blocks.find(key) != index->blocks.end()) {
+            pending.push_back(key);
+        }
+    }
+
+    const float cellSize = static_cast<float>(lod_block::kCellSize);
+    const float blockCenterOffset =
+        0.5f * static_cast<float>(BLOCK_CELLS) * cellSize;
+    std::sort(pending.begin(), pending.end(), [&](uint64_t a, uint64_t b) {
+        const float ax = static_cast<float>(blockKeyX(a)) * cellSize + blockCenterOffset -
+                         playerPos.x;
+        const float az = static_cast<float>(blockKeyY(a)) * cellSize + blockCenterOffset -
+                         playerPos.z;
+        const float bx = static_cast<float>(blockKeyX(b)) * cellSize + blockCenterOffset -
+                         playerPos.x;
+        const float bz = static_cast<float>(blockKeyY(b)) * cellSize + blockCenterOffset -
+                         playerPos.z;
+        return ax * ax + az * az < bx * bx + bz * bz;
+    });
+
+    int registrations = 0;
+    for (uint64_t key : pending) {
+        if (registrations >= kMaxBlockRegistrationsPerFrame) {
+            break;
+        }
+        ++registrations;
         const auto pathIt = index->blocks.find(key);
         if (pathIt == index->blocks.end()) {
             continue;

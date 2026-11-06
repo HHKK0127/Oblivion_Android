@@ -16,6 +16,7 @@
 #include "../game/container.h"
 #include "../game/encumbrance.h"
 #include "../game/merchant_factory.h"
+#include "../game/player_character_state.h"
 #include "../world/distant_lod/distant_lod_manager.h"
 #include "../world/distant_lod/original_lod_provider.h"
 #include "../world/distant_lod/original_object_lod_provider.h"
@@ -1980,6 +1981,22 @@ bool Renderer::initGameSystems() {
     };
     refs.getMenuFade = [this]() -> float {
         return menuFade.defaultDuration();
+    };
+
+    // RE 70.5: Show1stPerson/Show3rdPerson view mode toggle. The Win32 handler
+    // at 0x50A050 writes 0/1 to DAT_00B333C4 -> +0x588; 1 = first person,
+    // 0 = third person (default). The flag lives in PlayerCharacterGlobal.
+    refs.setViewMode = [](int mode) {
+        game::PlayerCharacterState* pcs = game::PlayerCharacterGlobal::create();
+        if (pcs) {
+            pcs->viewStateFlag588 = static_cast<uint8_t>(mode != 0 ? 1 : 0);
+        }
+    };
+    refs.getViewMode = []() -> int {
+        if (!game::PlayerCharacterGlobal::isValid()) {
+            return 0;
+        }
+        return static_cast<int>(game::PlayerCharacterGlobal::get()->viewStateFlag588);
     };
 
     // Phase 65: Extended Debug callbacks
@@ -5559,6 +5576,38 @@ if (uiMessageBox && uiMessageBox->isVisible()) {
 static const float PH_CAMERA_HEIGHT = 60.0f;
 static const float PH_CAMERA_DIST = -120.0f;
 
+// Show1stPerson / Show3rdPerson camera mode (RE_EXE_REPORT.md §70.5).
+// The console command writes PlayerCharacterState::viewStateFlag588
+// (EXE offset 0x588 of the DAT_00B333C4 block); non-zero selects the
+// first-person eye rig. Rotation components are in degrees (see
+// ui_hud_compass.h setPlayerRotation), so the forward vector wraps
+// yaw/pitch through radians() before the trig calls.
+static bool playerFirstPersonView() {
+    return game::PlayerCharacterGlobal::isValid() &&
+           game::PlayerCharacterGlobal::get()->viewStateFlag588 != 0;
+}
+
+static glm::vec3 playerCameraEye(const glm::vec3& playerPos) {
+    if (playerFirstPersonView()) {
+        // Eye at head height, no third-person offset.
+        return glm::vec3(playerPos.x, playerPos.y + PH_CAMERA_HEIGHT, playerPos.z);
+    }
+    return playerPos + glm::vec3(0.0f, PH_CAMERA_HEIGHT, PH_CAMERA_DIST);
+}
+
+static glm::mat4 playerCameraView(const glm::vec3& playerPos, const glm::vec3& playerRot) {
+    const glm::vec3 eye = playerCameraEye(playerPos);
+    const glm::vec3 up(0.0f, 1.0f, 0.0f);
+    if (playerFirstPersonView()) {
+        const float a = glm::radians(playerRot.y);
+        const float p = glm::radians(playerRot.x);
+        const glm::vec3 forward(std::sin(a) * std::cos(p), -std::sin(p),
+                                -std::cos(a) * std::cos(p));
+        return glm::lookAt(eye, eye + forward * 1000.0f, up);
+    }
+    return glm::lookAt(eye, playerPos, up);
+}
+
 // Simple icosphere vertices for placeholder sphere rendering
 static const float ICOSAHEDRON_VERTS[] = {
     // 12 vertices of an icosahedron
@@ -5908,9 +5957,8 @@ void Renderer::renderWater() {
     glm::mat4 projMatrix;
     const float aspect = static_cast<float>(screenWidth) / static_cast<float>(screenHeight);
     if (playerController) {
-        const glm::vec3 target = playerController->getPlayerPosition();
-        const glm::vec3 eye = target + glm::vec3(0.0f, PH_CAMERA_HEIGHT, PH_CAMERA_DIST);
-        viewMatrix = glm::lookAt(eye, target, glm::vec3(0.0f, 1.0f, 0.0f));
+        viewMatrix = playerCameraView(playerController->getPlayerPosition(),
+                                      playerController->getPlayerRotation());
         projMatrix = glm::perspective(glm::radians(60.0f), aspect, 10.0f, 20000.0f);
     } else if (camera) {
         viewMatrix = camera->getViewMatrix();
@@ -5921,7 +5969,7 @@ void Renderer::renderWater() {
 
     const glm::mat4 viewProj = projMatrix * viewMatrix;
     const glm::vec3 cameraPos = playerController
-        ? playerController->getPlayerPosition() + glm::vec3(0.0f, PH_CAMERA_HEIGHT, PH_CAMERA_DIST)
+        ? playerCameraEye(playerController->getPlayerPosition())
         : glm::vec3(0.0f, 0.0f, 0.0f);
 
     // Water planes are built lazily per cell and evicted with the terrain mesh.
@@ -6132,9 +6180,8 @@ void Renderer::renderDistantLod() {
     glm::mat4 projMatrix;
     const float aspect = static_cast<float>(screenWidth) / static_cast<float>(screenHeight);
     if (playerController) {
-        const glm::vec3 target = playerController->getPlayerPosition();
-        const glm::vec3 eye = target + glm::vec3(0.0f, PH_CAMERA_HEIGHT, PH_CAMERA_DIST);
-        viewMatrix = glm::lookAt(eye, target, glm::vec3(0.0f, 1.0f, 0.0f));
+        viewMatrix = playerCameraView(playerController->getPlayerPosition(),
+                                      playerController->getPlayerRotation());
         projMatrix = glm::perspective(glm::radians(60.0f), aspect, 10.0f,
                                       kDistantLodFarPlane);
     } else if (camera) {
@@ -6394,9 +6441,8 @@ void Renderer::renderSkyDome() {
     glm::mat4 projMatrix;
     const float aspect = static_cast<float>(screenWidth) / static_cast<float>(screenHeight);
     if (playerController) {
-        const glm::vec3 target = playerController->getPlayerPosition();
-        const glm::vec3 eye = target + glm::vec3(0.0f, PH_CAMERA_HEIGHT, PH_CAMERA_DIST);
-        viewMatrix = glm::lookAt(eye, target, glm::vec3(0.0f, 1.0f, 0.0f));
+        viewMatrix = playerCameraView(playerController->getPlayerPosition(),
+                                      playerController->getPlayerRotation());
         projMatrix = glm::perspective(glm::radians(60.0f), aspect, 10.0f, 20000.0f);
     } else if (camera) {
         viewMatrix = camera->getViewMatrix();
@@ -6793,8 +6839,7 @@ void Renderer::renderInteriorObjects() {
     if (playerController) {
         glm::vec3 target = playerController->getPlayerPosition();
         cameraTarget = target;
-        glm::vec3 eye = target + glm::vec3(0.0f, PH_CAMERA_HEIGHT, PH_CAMERA_DIST);
-        viewMatrix = glm::lookAt(eye, target, glm::vec3(0.0f, 1.0f, 0.0f));
+        viewMatrix = playerCameraView(target, playerController->getPlayerRotation());
         projMatrix = glm::perspective(glm::radians(60.0f), aspect, 10.0f, 20000.0f);
     } else if (camera) {
         viewMatrix = camera->getViewMatrix();
@@ -6960,9 +7005,8 @@ void Renderer::renderStaticObjects() {
     glm::mat4 projMatrix = glm::mat4();
     const float aspect = static_cast<float>(screenWidth) / static_cast<float>(screenHeight);
     if (playerController) {
-        const glm::vec3 target = playerController->getPlayerPosition();
-        const glm::vec3 eye = target + glm::vec3(0.0f, PH_CAMERA_HEIGHT, PH_CAMERA_DIST);
-        viewMatrix = glm::lookAt(eye, target, glm::vec3(0.0f, 1.0f, 0.0f));
+        viewMatrix = playerCameraView(playerController->getPlayerPosition(),
+                                      playerController->getPlayerRotation());
         projMatrix = glm::perspective(glm::radians(60.0f), aspect, 10.0f, 20000.0f);
     } else if (camera) {
         viewMatrix = camera->getViewMatrix();
@@ -7006,8 +7050,9 @@ void Renderer::renderStaticObjects() {
         glUniform1f(glGetUniformLocation(staticShader, "uFogEnabled"), 1.0f);
         glUniform3f(glGetUniformLocation(staticShader, "uFogColor"), fogR, fogG, fogB);
         glUniform2f(glGetUniformLocation(staticShader, "uFogRange"), fogFar * 0.35f, fogFar);
+        const glm::vec3 staticCamEye = playerCameraEye(playerPos);
         glUniform3f(glGetUniformLocation(staticShader, "uCameraPos"),
-                    playerPos.x, playerPos.y + PH_CAMERA_HEIGHT, playerPos.z + PH_CAMERA_DIST);
+                    staticCamEye.x, staticCamEye.y, staticCamEye.z);
 
     static std::unordered_set<std::string> unresolvedStaticMeshes;
 
@@ -7180,8 +7225,9 @@ void Renderer::renderDistantObjectLod(const glm::mat4& viewProj) {
     glUniform1f(glGetUniformLocation(objLodShader, "uFogEnabled"), 1.0f);
     glUniform3f(glGetUniformLocation(objLodShader, "uFogColor"), fogR, fogG, fogB);
     glUniform2f(glGetUniformLocation(objLodShader, "uFogRange"), fogFar * 0.35f, fogFar);
+    const glm::vec3 objLodCamEye = playerCameraEye(playerPos);
     glUniform3f(glGetUniformLocation(objLodShader, "uCameraPos"),
-                playerPos.x, playerPos.y + PH_CAMERA_HEIGHT, playerPos.z + PH_CAMERA_DIST);
+                objLodCamEye.x, objLodCamEye.y, objLodCamEye.z);
 
     // The provider exposes model paths only, so resolve and cache the meshes
     // here. Paths that cannot be loaded are memoised to avoid hammering the
@@ -7596,9 +7642,8 @@ void Renderer::renderTerrainMeshes() {
     const float aspect = static_cast<float>(screenWidth) / static_cast<float>(screenHeight);
     if (playerController) {
         // Same framing as the placeholder pass so terrain and entities agree.
-        const glm::vec3 target = playerController->getPlayerPosition();
-        const glm::vec3 eye = target + glm::vec3(0.0f, PH_CAMERA_HEIGHT, PH_CAMERA_DIST);
-        viewMatrix = glm::lookAt(eye, target, glm::vec3(0.0f, 1.0f, 0.0f));
+        viewMatrix = playerCameraView(playerController->getPlayerPosition(),
+                                      playerController->getPlayerRotation());
         projMatrix = glm::perspective(glm::radians(60.0f), aspect, 10.0f, 20000.0f);
     } else if (camera) {
         viewMatrix = camera->getViewMatrix();
@@ -7627,7 +7672,7 @@ void Renderer::renderTerrainMeshes() {
     glUniform3f(glGetUniformLocation(terrainShader, "uFogColor"), fogR, fogG, fogB);
     glUniform2f(glGetUniformLocation(terrainShader, "uFogRange"), fogFar * 0.35f, fogFar);
     const glm::vec3 terrainEye = playerController
-        ? (playerController->getPlayerPosition() + glm::vec3(0.0f, PH_CAMERA_HEIGHT, PH_CAMERA_DIST))
+        ? playerCameraEye(playerController->getPlayerPosition())
         : glm::vec3(0.0f, 0.0f, 0.0f);
     glUniform3f(glGetUniformLocation(terrainShader, "uCameraPos"), terrainEye.x, terrainEye.y, terrainEye.z);
     glUniformMatrix4fv(glGetUniformLocation(terrainShader, "uMVP"),
@@ -7843,9 +7888,10 @@ void Renderer::renderPlaceholderEntities() {
             // Log player and camera state for diagnostics
             if (phVerbose && playerController) {
                 auto& pp = playerController->getPlayerPosition();
+                const glm::vec3 phCamEye = playerCameraEye(pp);
                 LOGI("renderPlaceholderEntities: playerPos=(%.1f, %.1f, %.1f), phCamEye=(%.1f, %.1f, %.1f), phCamTarget=(%.1f, %.1f, %.1f)",
                      pp.x, pp.y, pp.z,
-                     pp.x, pp.y + PH_CAMERA_HEIGHT, pp.z + PH_CAMERA_DIST,
+                     phCamEye.x, phCamEye.y, phCamEye.z,
                      pp.x, pp.y, pp.z);
             }
 
@@ -7898,9 +7944,8 @@ void Renderer::renderPlaceholderEntities() {
         if (playerController) {
             // Use the player as the look-at target so the placeholders are framed
             // around the player regardless of the underlying camera state.
-            glm::vec3 target = playerController->getPlayerPosition();
-            glm::vec3 eye = target + glm::vec3(0.0f, PH_CAMERA_HEIGHT, PH_CAMERA_DIST);
-            viewMatrix = glm::lookAt(eye, target, glm::vec3(0.0f, 1.0f, 0.0f));
+            viewMatrix = playerCameraView(playerController->getPlayerPosition(),
+                                          playerController->getPlayerRotation());
             projMatrix = glm::perspective(glm::radians(60.0f),
                 static_cast<float>(screenWidth) / static_cast<float>(screenHeight),
                 10.0f, 20000.0f);

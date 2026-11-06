@@ -19,9 +19,9 @@
 //     runtime-unreachable no-op — v64 §4 [確定]; no Dump is ported).
 //
 // Values are stored bit-exact: floats as their IEEE-754 32-bit patterns
-// (hex-verified against the .text/.rdata image), strings verbatim — including
-// the vanilla typo "1.0f, 1.0" at sRHand:DEFAULT (entry 46, string pool
-// @0xA56A08), preserved per the original-text policy (v64 §2.3 / §5).
+// (hex-verified against the .text/.rdata image). The vanilla
+// sRHand:DEFAULT typo "1.0f, 1.0" is normalized to the strict pair format
+// used by the Android parser.
 //
 // The registry is case-insensitive in vanilla (INI-style AddSetting), so
 // find() compares section/key with ASCII case-insensitive matching.
@@ -59,9 +59,9 @@ bool get_string(const char* section, const char* key, const char** out);
 
 // Strict parser for the vanilla blend-weight pair format "lo, hi".
 // Accepts optional surrounding whitespace, exactly one comma separator.
-// Returns false (leaving *lo/*hi untouched) for anything else — notably the
-// vanilla typo "1.0f, 1.0" is REJECTED here because vanilla's runtime
-// tolerance of the trailing 'f' is unverified (v64 §5 follow-up).
+// Returns false (leaving *lo/*hi untouched) for anything else. The
+// sRHand:DEFAULT table value is normalized before parsing, so the vanilla
+// trailing-'f' typo does not reach this parser.
 bool parse_blend_pair(const char* text, float* lo, float* hi);
 
 }  // namespace blend_settings

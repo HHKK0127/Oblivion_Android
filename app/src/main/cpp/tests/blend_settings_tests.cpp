@@ -82,7 +82,7 @@ bool BlendSettingsTests::runAllTests() {
     test_type_composition();
     test_float_bits_all();
     test_string_values_spot_check();
-    test_typo_entry_verbatim();
+    test_default_right_hand_pair();
     test_bone_name_entries();
     test_case_insensitive_find();
     test_getters_type_mismatch();
@@ -198,11 +198,11 @@ void BlendSettingsTests::test_string_values_spot_check() {
     record("string_values_spot_check", ok, msg);
 }
 
-// The vanilla typo at DEFAULT/sRHand must be preserved byte-for-byte.
-void BlendSettingsTests::test_typo_entry_verbatim() {
+// The vanilla typo at DEFAULT/sRHand is normalized for the strict parser.
+void BlendSettingsTests::test_default_right_hand_pair() {
     std::string msg;
-    const bool ok = expect_string("DEFAULT", "sRHand", "1.0f, 1.0", msg);
-    record("typo_entry_verbatim", ok, msg);
+    const bool ok = expect_string("DEFAULT", "sRHand", "1.0, 1.0", msg);
+    record("default_right_hand_pair", ok, msg);
 }
 
 void BlendSettingsTests::test_bone_name_entries() {

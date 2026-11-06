@@ -5,7 +5,7 @@
 // tmp/re/v64_section7_remaining.md §2 [確定]:
 //   * entry count and section/key composition (HIT/QUADHIT/DEFAULT),
 //   * bit-exact float payloads for every float entry,
-//   * verbatim string payloads including the vanilla typo "1.0f, 1.0",
+//   * normalized string payloads, including the corrected sRHand:DEFAULT pair,
 //   * case-insensitive lookup (vanilla INI-style registry semantics),
 //   * strict "lo, hi" parser acceptance/rejection.
 // ============================================================================
@@ -47,7 +47,7 @@ private:
     void test_type_composition();
     void test_float_bits_all();
     void test_string_values_spot_check();
-    void test_typo_entry_verbatim();
+    void test_default_right_hand_pair();
     void test_bone_name_entries();
     void test_case_insensitive_find();
     void test_getters_type_mismatch();

@@ -32,6 +32,13 @@
 #include "tests/ai_package_tests.h"
 #include "tests/barter_price_tests.h"
 #include "tests/blend_settings_tests.h"
+#include "tests/gmst_string_tests.h"
+#include "tests/script_fn_tests.h"
+#include "tests/topic_resolve_tests.h"
+#include "tests/player_character_state_tests.h"
+#include "tests/dds_upload_tests.h"
+#include "tests/fader_slot_array_tests.h"
+#include "tests/input_router_tests.h"
 
 // Print a suite summary and report whether it passed.
 static void runSuite(const char* name, bool ok, const std::string& summary, int& failed) {
@@ -111,6 +118,16 @@ int main() {
         MenuFadeTests t;
         const bool ok = t.runAllTests();
         runSuite("MenuFadeTests", ok, t.getSummary(), failed);
+    }
+    {
+        FaderSlotArrayTests t;
+        const bool ok = t.runAllTests();
+        runSuite("FaderSlotArrayTests", ok, t.getSummary(), failed);
+    }
+    {
+        InputRouterTests t;
+        const bool ok = t.runAllTests();
+        runSuite("InputRouterTests", ok, t.getSummary(), failed);
     }
     {
         FatigueSystemTests t;
@@ -230,6 +247,41 @@ int main() {
         runSuite("BlendSettingsTests", ok, t.getSummary(), failed);
         }
 
-    std::printf("\n=== HOST RUNNER: %s (%d suite(s) failed) ===\n", failed ? "FAILED" : "ALL GREEN", failed);
+        {
+        // GMST loader parity: string layer + EXE-unregistered key checks (gmst_string_tests.cpp).
+        oblivion::gmst_string::GmstStringTests t;
+        const bool ok = t.runAllTests();
+        runSuite("GmstStringTests", ok, t.getSummary(), failed);
+        }
+
+        {
+        // Phase 68 script handlers: Evp/PlaySound/CrimeGold/Kill/Resurrect (script_fn_tests.cpp).
+        oblivion::script_fn::ScriptFnTests t;
+        const bool ok = t.runAllTests();
+        runSuite("ScriptFnTests", ok, t.getSummary(), failed);
+        }
+
+        {
+        // Topic_Resolve parity: scan/lottery/priority-stop/recursion branch (topic_resolve_tests.cpp).
+        oblivion::dialogue::TopicResolveTests t;
+        const bool ok = t.runAllTests();
+        runSuite("TopicResolveTests", ok, t.getSummary(), failed);
+        }
+
+        {
+        // V72 global-state DAT_00B333C4 parity: layout/ctor-init/band accessors (player_character_state_tests.cpp).
+        game::PlayerCharacterStateTests t;
+        const bool ok = t.runAllTests();
+        runSuite("PlayerCharacterStateTests", ok, t.getSummary(), failed);
+        }
+        {
+            // Synthetic DXT1 fixture: parser payload parity and the host fallback
+            // when no S3TC extension is advertised by the GL stub.
+            DdsUploadTests t;
+            const bool ok = t.runAllTests();
+            runSuite("DdsUploadTests", ok, t.getSummary(), failed);
+        }
+
+        std::printf("\n=== HOST RUNNER: %s (%d suite(s) failed) ===\n", failed ? "FAILED" : "ALL GREEN", failed);
     return failed != 0 ? 1 : 0;
 }

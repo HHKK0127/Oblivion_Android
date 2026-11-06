@@ -234,6 +234,11 @@ struct NPCData {
     std::string className;
     uint8_t level = 1;
         bool isFemale = false;  // ACBS flags bit 0 (0x00000001)
+    // ACBS+0x08 word: barter gold. The engine raw-copies the 0x10-byte ACBS
+    // block into TESNPC and GetBarterGold reads the word at NPC+0x30 (v261,
+    // FUN_00527E40@0x52836D / FUN_005FAA70). Non-zero marks a trade-capable
+    // NPC (Construction Set "Barter Gold" field).
+    uint16_t barterGold = 0;
     uint32_t factionID = 0;
     uint32_t health = 50;
     uint32_t stamina = 50;
@@ -715,10 +720,10 @@ struct ClassData {
     std::string fullName;              // FULL name
     std::string description;           // DESC subrecord
     uint8_t specialization = 0;        // 0=Combat, 1=Mysticism, 2=Stealth
-    uint32_t primaryAttribute1 = 0;     // PRAT subrecord (2 uint32_t)
-    uint32_t primaryAttribute2 = 0;
-    uint8_t majorSkills[7] = {0};       // 7 skill FormIDs (lower bits)
-    uint8_t flags = 0;
+    uint32_t primaryAttribute1 = 0;     // CLASS DATA subrecord +0x08 (not PRAT)
+    uint32_t primaryAttribute2 = 0;     // CLASS DATA subrecord +0x0C
+    uint8_t majorSkills[7] = {0};       // CLASS DATA subrecord +0x0C..0x28 skill ids
+    uint8_t flags = 0;                  // DATA flags: bit0 autocalcs, bit1 guard (no merchant bit, v261)
 };
 
 /// Placed object/NPC reference in the world

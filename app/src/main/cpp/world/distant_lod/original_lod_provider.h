@@ -43,9 +43,20 @@ public:
     // Original blocks are 32 x 32 cells wide, in cells.
     static constexpr int32_t BLOCK_CELLS = lod_block::kBlockCells;
 
-    // Register every shipped LOD block overlapping
+    // Frame budget for block registration. Loading one block means a full
+    // NIF parse + texture decode + GL upload on the render thread, so the
+    // per-frame cost of entering a new worldspace is bounded to this many
+    // blocks; the rest stream in on subsequent frames. Worker threads are
+    // not an option: the NIF parser is shared and AssetManager has no
+    // internal locking.
+    static constexpr int kMaxBlockRegistrationsPerFrame = 1;
+
+    // Register the shipped LOD blocks overlapping
     // [playerPos - coverageDistance, playerPos + coverageDistance] and drop the
-    // ones that fell out of range. Returns the number of active blocks.
+    // ones that fell out of range. Registration is frame-sliced: at most
+    // kMaxBlockRegistrationsPerFrame new blocks are loaded per call, nearest
+    // first, and the rest stream in on subsequent calls. Returns the number of
+    // active blocks.
     //
     // worldspaceFormID is the WRLD form ID (Tamriel = 60); interior cells (0)
     // and worldspaces without shipped LOD keep the caller on its fallback path

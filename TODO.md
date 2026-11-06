@@ -2,9 +2,15 @@
 
 ## Tasks
 
+- [ ] **#73** B-2（解析・小）: v308 由来の小残点 2 件 — ①0x5723E0 flush 経路（ロガー ch1 no-op 判定の残る経路の最終裁定）②0xA37B78/0xA52A98 の全文未確定（'See Warnings.txt…' 系メッセージ帯の実文言）。※B-3: v309 受領後の新規残点は v309 統合時 Review で起票（本タスクには含めない）。帯: 0x494000-0x496000 + メッセージ文字列帯。成果物は v310/v311 候補へ `#low` `#oblivion` `#re`
+
+- [ ] **#72** B-1（解析・EXE静的可）: 80 ラベル ↔ 保存側 v283 dispatch の双方向突合表 — v304 追補B の帰結（formatter=ロード診断専用 FUN_00453A90 / 保存=v283 dispatch）に対し、v304 の 87 行・一意 80 ラベル全てに保存側分岐が対応するかの網羅性突合が未作成。移植 delta 台帳の完全性検証に直結。手法: まず artifact 間突合（v304 ラベル表 × v283/v299/v300 の保存 dispatch 仕様 × v305 CHANGE_* 67 件）で表を作り、EXE スポット検証は v309 帯（0x45D000-0x466000＝保存 dispatch 0x465860 帯と重複）を避け v309 完了後、または非重複帯のみ。成果物 tmp/re/v310_*.md 候補。対応漏れラベル・対応過剰分岐を [確定]/[未対応] で表化 `#low` `#oblivion` `#re`
+
+- [ ] **#71** A: v308 統合処理（#69 完了後の親側パイプライン）: 台帳 row289 起票 [x]（v308_warnings_residuals.md 5,451B・矛盾裁定= v301 誤り/v306 正・object+0x3C=セーブパス欄で Warnings.txt 別経路）＋ bak145 → round_verify ALL OK → #69 へ統合 note（サブエージェントによる #69 直操作=契約抵触の検証記録込み）→ STATE.md run log (l) → supermemory 登録 `#inprogress` `#oblivion` `#re`
+
 - [ ] **#70** 次束B（低優先）: v307 残点11件のヘッダ I/O 続編 — ①FUN_004302B0（read 実装）内部経路（[this+0x148] 更新・ReadFile 分岐）②下位層 FUN_00747E20(seek)/FUN_00747F40(write)/read 相当の所属同定（静的 CRT? zlib gz*?）③FUN_0045DE30 の完全解析（0xB02F9C RTTI+0x9832E6 バンド正体・呼び手 0x4627E1）④FUN_0045E6A0（0xD000 第2経路・呼び手 0x5AEB8B/0x5D3AAA）と 'CON ' コンテナ経路の関係⑤帯外 version ゲート候補のオブジェクト同定（FUN_45FC60/462B20/465860）⑥書出 size 式 0x24+len+len+thumb とヘッダ 38B の 2B 差の解釈⑦v305 raw579 パターン仕様の復元（299/327/451/23 変異で不一致）⑧FUN_464AB0 GetLocalTime 直前日数浮動小数の使途⑨new(0x154) vs new(0x160) のクラス差 0xC⑩FUN_45F2E0 mode0..3 全経路⑪FUN_45D390 呼び手 0x4E11A2 の文脈。成果物は tmp/re/v309_*.md 候補。帯: 0x45D-0x466+0x747Exx+zlib。推測パーサ・移植コード追加禁止 `#inprogress` `#low` `#oblivion` `#re`
 
-- [x] **#69** 次束A完了: v308でv306 warnings経路残点を裁定。caller1の`object+0x3C`はセーブオブジェクトのパス欄で、`FUN_0045ADC0`はその値へ`.txt`を付加するwhat-changed writer。`%s%s%s.ess`/`Saves\\`生成帯との照合により`Warnings.txt`とは別経路と判定（slot名の動的実値のみ未観測）。`0xA3D9BC`の唯一xref `0x4944BC`は`FUN_00494480` path getter内であり、v301の`FUN_004941A0`帰属はCC/関数境界を跨いだ誤判定。logger chainのch1は`0x4943A0` no-op、`FUN_00494730`のWarnings書出し直接callも0件。残りは`0x5723E0` flushと`0xA37B78/0xA52A98`全文の未確定のみ。成果物: `tmp/re/v308_warnings_residuals.md`。推測パーサ・移植コード・正典編集なし。 #re #oblivion
+- [x] **#69** 次束A完了: v308でv306 warnings経路残点を裁定。caller1の`object+0x3C`はセーブオブジェクトのパス欄で、`FUN_0045ADC0`はその値へ`.txt`を付加するwhat-changed writer。`%s%s%s.ess`/`Saves\\`生成帯との照合により`Warnings.txt`とは別経路と判定（slot名の動的実値のみ未観測）。`0xA3D9BC`の唯一xref `0x4944BC`は`FUN_00494480` path getter内であり、v301の`FUN_004941A0`帰属はCC/関数境界を跨いだ誤判定。logger chainのch1は`0x4943A0` no-op、`FUN_00494730`のWarnings書出し直接callも0件。残りは`0x5723E0` flushと`0xA37B78/0xA52A98`全文の未確定のみ。成果物: `tmp/re/v308_warnings_residuals.md`。推測パーサ・移植コード・正典編集なし。 #re #oblivion (2026-11-06)
 
 - [x] **#68** V287: v305 残点10件のヘッダ I/O・圧縮束（次束・サブエージェント lane Z 候補）: ①FUN_45DA30 役割（読取 FUN_45DBC0 との分担・XFER ロギング帯と推定）②'CON '(0xA3A954) 4B 分岐の意図（0x78 dword/seek 0xD000 との関係・GOG/Steam 判定候補）③COMP/DECOMP マジック組立 site（imm32 不在確定→バイト逐書/.data 4B 定数/FUN_46B2C0 内比較のいずれか）④0x52 ゲートで読む +0x94 の16B/+0xA4 の4B と既知ヘッダフィールド（作成日時/ロード画面数）の対応 ⑤全 .text の cmp byte [reg+0x7c],imm8 整列検証（band 外 version 型ゲート網羅・raw 579件の検証）⑥ストリーム vtable +4/+8/+0xC の read/write/seek 割当（FUN_4520C0/FUN_4522E0 帯から）⑦FUN_004501F0 の圧縮チャンクループ境界（0x10000/[esi+0x244]&0x40000）⑧FUN_00984166 引数順と CRT 名（memcmp）⑨0x45DD83 の 4B フィールド位置（[0xB33C14]/[0xB33C18]）⑩FUN_464910+FUN_465130 のセーブファイル名生成（[0xA2F920] 除算定数=秒→日時換算候補）。成果物 tmp/re/v307_*.md。帯境界: v306(0x45A-45C 警告帯)と非重複、本件=0x45D-0x465+ZLIB。推測パーサ・移植コード追加は禁止 `#oblivion` `#re` (2026-11-06)
   > 【2026-11-06 22:20 統合完了】v307_saveheader_residuals.md 受領（31,797B/242行・完了通知は再起動で紛失も直接検証で完全性確認→通知受領と両立）。台帳 row288 起票 [x]（bak144・round_verify ALL OK total=174/done=169/open=5）。主判定 [確定]8/[部分]1/[負]1（残点10件）、サブ判定 52件中 [確定]34。核心: ①FUN_0045DA30=非関数帯・実体 FUN_45D920（0x9832E6 バンド正体=FUN_45DE30）②'CON ' 分岐=origin 比較 0/1/2 の3岐（[0xA853D0]=0x78 は誤り・実値0）③COMP/DECOMP マジック=負証拠（raw/u32/mov byte/mov word/.data 定数全不通=この EXE にチャンクマジックは存在せず .ess 圧縮は zlib ストリームのみ）④+0x94=GetSystemTime 16B SYSTEMTIME 作成日時・+0xA4=u32 version125・0x45DD83=offset34 4B（値は読取内未使用）⑤全 .text [reg+0x7c] ゲート 299 件全境界検証 0 棄却（v305 の raw579 は再現不能=訂正）⑥vtable +4=read(thunk 430050→FUN_4302B0)/+8=write(430070→FUN_430030→下位0x747F40)/+0xC=seek([0xA36378]=FUN_42FF80・origin 0/1/2=SEEK_SET/CUR/END 3岐)⑧FUN_00984166=strncmp 引数順確定（CRT 名は負）⑨FUN_464910=ファイル名生成でなくプラグイン/スレッド検査系。v305 訂正7件を v305 §6 に反映。新規残点11件（低優先・次束候補）。docs 候補+2。
@@ -180,9 +186,14 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 21:related-to:24
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-06 23:01:59
+**ai-todo** | Last Updated: 2026-11-06 23:21:07

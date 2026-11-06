@@ -233,6 +233,24 @@ void GameConsole::registerBuiltinCommands() {
     registerCommand("fps", "Toggle FPS display", [this](const std::vector<std::string>& args) { cmdFPS(args); });
     registerCommand("setfpscap", "Set frame rate cap: setfpscap <15-120>", [this](const std::vector<std::string>& args) { cmdSetFpsCap(args); });
     registerCommand("menufade", "Menu fade duration: menufade <0.001-10>", [this](const std::vector<std::string>& args) { cmdMenuFade(args); });
+    registerCommand("show1stperson", "Switch to first-person camera view", [this](const std::vector<std::string>& args) {
+        (void)args;
+        if (!gameRefs.setViewMode) {
+            appendOutput("View mode not available");
+            return;
+        }
+        gameRefs.setViewMode(1);
+        appendOutput("First-person view enabled");
+    });
+    registerCommand("show3rdperson", "Switch to third-person camera view", [this](const std::vector<std::string>& args) {
+        (void)args;
+        if (!gameRefs.setViewMode) {
+            appendOutput("View mode not available");
+            return;
+        }
+        gameRefs.setViewMode(0);
+        appendOutput("Third-person view enabled");
+    });
     registerCommand("time", "Show current game time", [this](const std::vector<std::string>& args) { cmdTime(args); });
     registerCommand("pos", "Show current position", [this](const std::vector<std::string>& args) { cmdPos(args); });
     registerCommand("stats", "Show player stats", [this](const std::vector<std::string>& args) { cmdStats(args); });

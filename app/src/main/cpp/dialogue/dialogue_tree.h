@@ -77,6 +77,10 @@ struct DialogueNode {
     // Script to execute on selection
     uint32_t resultScriptFormID = 0;
 
+    // Topic_Resolve (FUN_0052F010) selection flags, native [cand+0x25]
+    bool alternate = false;           // bit1: deferred/alternate candidate (lottery pool)
+    bool priorityStop = false;        // bit5: priority stop (aborts topic scan)
+
     // Topic links (TCLT)
     std::vector<TopicLink> topicLinks;
 

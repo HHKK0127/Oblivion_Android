@@ -31,10 +31,12 @@ bool npcIsMerchant(const oblivion::ESMManager& esm, uint32_t npcFormID) {
     const oblivion::NPCData* npc = esm.findNPC(npcFormID);
     if (npc == nullptr) return false;
 
-    for (const oblivion::NPCData::NPCItem& entry : npc->items) {
-        if (entry.itemFormID == kGoldFormID && entry.count > 0) return true;
-    }
-    return false;
+    // Trade-capable NPCs carry a non-zero ACBS barter gold (v261). The
+    // original also gates topics through INFO OfferServices, but DIAL has no
+    // parsed NPC-owner FormID and the INFO bit writer is unallocated, so the
+    // topic gate stays deferred and barterGold is the primary merchant test.
+    // The old CNTO-gold-purse heuristic mis-classified bandits as merchants.
+    return npc->barterGold > 0;
 }
 
 std::shared_ptr<Merchant> buildMerchantFromNpc(const oblivion::ESMManager& esm,
@@ -54,9 +56,14 @@ std::shared_ptr<Merchant> buildMerchantFromNpc(const oblivion::ESMManager& esm,
         addStock(*merchant, esm, entry.itemFormID, entry.count);
     }
 
-    // The constructor starts every shop at 5000 gold, so an authored CNTO purse
-    // replaces that default instead of adding to it.
-    if (gold > 0) {
+    // The constructor starts every shop at 5000 gold, so the authored barter
+    // gold replaces that default instead of adding to it. Fall back to the
+    // CNTO purse sum when barterGold is zero: the two pools diverge in the
+    // original (v261), but a record with only a purse still needs funds to
+    // trade with.
+    if (npc->barterGold > 0) {
+        merchant->setGold(static_cast<float>(npc->barterGold));
+    } else if (gold > 0) {
         merchant->setGold(static_cast<float>(gold));
     }
     return merchant;

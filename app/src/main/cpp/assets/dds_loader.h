@@ -114,6 +114,11 @@ public:
     // Upload to OpenGL
     unsigned int uploadToGPU();
 
+    // Upload the raw S3TC payload directly with glCompressedTexImage2D (no
+    // RGBA8 conversion). Returns 0 when the format/extension/data is not
+    // eligible so the caller can fall back to decompressTexture()+uploadToGPU().
+    unsigned int uploadCompressedToGPU();
+
     // Cleanup
     void cleanup();
 

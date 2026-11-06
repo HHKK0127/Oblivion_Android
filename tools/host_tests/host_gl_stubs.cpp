@@ -25,6 +25,8 @@ void glGenVertexArrays(GLsizei, GLuint*) {}
 void glGenerateMipmap(GLenum) {}
 void glGetIntegerv(GLenum, GLint*) {}
 void glTexImage2D(GLenum, GLint, GLint, GLsizei, GLsizei, GLint, GLenum, GLenum, const void*) {}
+void glCompressedTexImage2D(GLenum, GLint, GLenum, GLsizei, GLsizei, GLint, GLsizei, const void*) {}
+const unsigned char* glGetString(GLenum) { return nullptr; }
 void glTexParameteri(GLenum, GLenum, GLint) {}
 void glVertexAttribIPointer(GLuint, GLint, GLenum, GLsizei, const void*) {}
 void glVertexAttribPointer(GLuint, GLint, GLenum, GLboolean, GLsizei, const void*) {}

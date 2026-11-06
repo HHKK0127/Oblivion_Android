@@ -438,6 +438,8 @@ add_library(native-lib SHARED
 
     # RE 48: menu open/close fade (MenuManager fade node list)
     ui/menu_fade_system.cpp
+    # RE 48.2: full-screen fader slot array (fader array @0x00B12DC0)
+    ui/fader_slot_array.cpp
     ui/hud_layout.cpp
     ui/control_scheme_manager.cpp
     ui/accessibility_manager.cpp
@@ -588,6 +590,8 @@ add_library(native-lib SHARED
     dialogue/dialogue_history.cpp
     dialogue/dialogue_integration.cpp
         dialogue/voice_sound_db.cpp
+    dialogue/topic_resolver.cpp
+    game/player_character_state.cpp
 
     # Phase 52: FaceGen System
     character/face_gen_morpher.cpp

@@ -165,6 +165,8 @@ SOURCES=(
   app/src/main/cpp/tests/mesh_builder_tests.cpp
   app/src/main/cpp/tests/menu_xml_tests.cpp
   app/src/main/cpp/tests/menu_fade_tests.cpp
+  app/src/main/cpp/tests/fader_slot_array_tests.cpp
+  app/src/main/cpp/tests/input_router_tests.cpp
   app/src/main/cpp/tests/fatigue_system_tests.cpp
   app/src/main/cpp/tests/combat_formulas_tests.cpp
   app/src/main/cpp/util/msvc_lcg.cpp
@@ -186,10 +188,18 @@ SOURCES=(
   app/src/main/cpp/tests/barter_price_tests.cpp
   app/src/main/cpp/tests/blend_settings_tests.cpp
   app/src/main/cpp/system/blend_settings.cpp
+  app/src/main/cpp/tests/gmst_string_tests.cpp
+  app/src/main/cpp/tests/script_fn_tests.cpp
+  app/src/main/cpp/tests/topic_resolve_tests.cpp
+  app/src/main/cpp/dialogue/topic_resolver.cpp
+  app/src/main/cpp/tests/player_character_state_tests.cpp
+  app/src/main/cpp/tests/dds_upload_tests.cpp
+  app/src/main/cpp/game/player_character_state.cpp
   app/src/main/cpp/ui/xml_parser.cpp
   app/src/main/cpp/ui/menu_xml_interpreter.cpp
   app/src/main/cpp/ui/menu_ui_builder.cpp
   app/src/main/cpp/ui/menu_fade_system.cpp
+  app/src/main/cpp/ui/fader_slot_array.cpp
   app/src/main/cpp/quest/quest_flow_controller.cpp
   app/src/main/cpp/localization/localization_manager.cpp
   app/src/main/cpp/quest/quest_stage_manager.cpp
@@ -219,6 +229,7 @@ SOURCES=(
   app/src/main/cpp/engine/cache_manager.cpp
   app/src/main/cpp/engine/event_bus.cpp
   app/src/main/cpp/engine/state_manager.cpp
+  app/src/main/cpp/engine/input_router.cpp
   app/src/main/cpp/save_system/save_manager.cpp
   app/src/main/cpp/save_system/save_slot_manager.cpp
   app/src/main/cpp/script/script_context.cpp

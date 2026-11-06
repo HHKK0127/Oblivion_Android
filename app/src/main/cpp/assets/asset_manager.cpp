@@ -126,11 +126,17 @@ void AssetManager::closeAllArchives() {
 // ESM Plugin Loading
 // ============================================================================
 
-// After each successful ESM/plugin parse, publish float GMST overrides so
-// gameplay code sees the loaded values through gmst::getLive(). This runs
-// on the same thread as the parse (worker or main), and the atomic
-// release/acquire pattern in gmst::setOverride makes it safe for concurrent
-// readers on the render thread.
+// After each successful ESM/plugin parse, publish GMST overrides so gameplay
+// code sees the loaded values through gmst::getLive()/getStringLive(). This
+// runs on the same thread as the parse (worker or main), and the atomic
+// release/acquire pattern in gmst::setOverride()/setStringOverride() makes it
+// safe for concurrent readers on the render thread.
+//
+// Parity note (RE V60): the EXE GMST handler looks the EDID up in the
+// registered map and IGNORES a miss - it never inserts - so iterating our
+// tracked tables (driver-table style) reproduces the load-time behavior
+// exactly. The four ESM-only fRegionGenTex* keys are absent from the EXE and
+// intentionally not tracked here.
 static void publishGmstOverrides(const oblivion::ESMManager& esm) {
     int nOverride = 0;
     constexpr std::size_t N = oblivion::gmst::kEntryCount;
@@ -142,7 +148,18 @@ static void publishGmstOverrides(const oblivion::ESMManager& esm) {
             ++nOverride;
         }
     }
-    LOGD("GMST overrides published: %d / %zu (float)", nOverride, N);
+    int nStringOverride = 0;
+    constexpr std::size_t NS = oblivion::gmst::kStringEntryCount;
+    for (std::size_t i = 0; i < NS; ++i) {
+        const char* key = oblivion::gmst::kStringEntries[i].key;
+        const oblivion::GameSettingData* s = esm.findGameSetting(key);
+        if (s && s->valueType == 's') {
+            oblivion::gmst::setStringOverride(key, s->stringValue.c_str());
+            ++nStringOverride;
+        }
+    }
+    LOGD("GMST overrides published: %d / %zu (float), %d / %zu (string)",
+         nOverride, N, nStringOverride, NS);
 }
 
 bool AssetManager::loadEsm(const std::string& esmPath) {
@@ -594,14 +611,21 @@ std::shared_ptr<Material> AssetManager::loadDDSTexture(const std::string& ddsPat
         return nullptr;
     }
 
-    if (!ddsLoader->decompressTexture()) {
-        LOGE("Failed to decompress DDS texture: %s", ddsPath.c_str());
-        if (usedTempFile) std::remove(loadPath.c_str());
-        return nullptr;
+    // Prefer a direct compressed upload: it keeps the GPU/CPU footprint at the
+    // S3TC payload size instead of an RGBA8 blow-up. Falls back to the
+    // decompress path when the format or the driver does not support S3TC.
+    unsigned int texId = ddsLoader->uploadCompressedToGPU();
+    const bool compressed = (texId != 0);
+    if (!compressed) {
+        if (!ddsLoader->decompressTexture()) {
+            LOGE("Failed to decompress DDS texture: %s", ddsPath.c_str());
+            if (usedTempFile) std::remove(loadPath.c_str());
+            return nullptr;
+        }
+        texId = ddsLoader->uploadToGPU();
     }
 
     auto material = std::make_shared<Material>();
-    unsigned int texId = ddsLoader->uploadToGPU();
     if (texId != 0) {
         material->setTexture(texId);
         LOGD("Texture uploaded: ID=%u", texId);
@@ -615,7 +639,9 @@ std::shared_ptr<Material> AssetManager::loadDDSTexture(const std::string& ddsPat
     CacheEntry entry;
     entry.asset = material;
     const auto& ddsTexture = ddsLoader->getTexture();
-    entry.sizeBytes = ddsTexture.width * ddsTexture.height * 4;
+    entry.sizeBytes = compressed
+        ? ddsTexture.compressedData.size()
+        : static_cast<size_t>(ddsTexture.width) * ddsTexture.height * 4;
     entry.lastAccessTime = 0.0f;
     textureCache[ddsPath] = entry;
     currentCacheSize += entry.sizeBytes;

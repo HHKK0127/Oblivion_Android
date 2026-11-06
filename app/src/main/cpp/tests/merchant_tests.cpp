@@ -29,6 +29,8 @@ constexpr uint32_t kNpcClassed = 0x00001003;
 constexpr uint32_t kNpcEdidOnlyClass = 0x00001004;
 constexpr uint32_t kNpcLegacyCnam = 0x00001005;
 constexpr uint32_t kNpcMissingClass = 0x00001006;
+constexpr uint32_t kNpcBarterGold = 0x00001007;
+constexpr uint32_t kNpcPurseOnly = 0x00001008;
 constexpr uint32_t kNpcExternalClass = 0x00005000;
 constexpr uint32_t kWarriorClass = 0x00004000;
 constexpr uint32_t kEdidOnlyClass = 0x00004001;
@@ -110,6 +112,15 @@ std::vector<uint8_t> cntoPayload(uint32_t itemFormID, int32_t count) {
     return payload;
 }
 
+// ACBS is decoded from a 0x10-byte body; the uint16 at +0x08 is the barter
+// gold (v261). The remaining fields stay zero so level/flags are inert.
+std::vector<uint8_t> acbsPayload(uint16_t barterGold) {
+    std::vector<uint8_t> payload(16, 0);
+    payload[8] = static_cast<uint8_t>(barterGold & 0xFF);
+    payload[9] = static_cast<uint8_t>(barterGold >> 8);
+    return payload;
+}
+
 std::vector<uint8_t> miscDataPayload(uint32_t value, float weight) {
     std::vector<uint8_t> payload;
     putU32(payload, value);
@@ -119,11 +130,13 @@ std::vector<uint8_t> miscDataPayload(uint32_t value, float weight) {
 
 std::vector<uint8_t> npcPayload(const std::string& editorID, const std::string& fullName,
                                 const std::vector<CntoEntry>& stock,
-                                const std::vector<uint8_t>* cnam = nullptr) {
+                                const std::vector<uint8_t>* cnam = nullptr,
+                                const std::vector<uint8_t>* acbs = nullptr) {
     std::vector<uint8_t> payload;
     putSub(payload, "EDID", textPayload(editorID));
     if (!fullName.empty()) putSub(payload, "FULL", textPayload(fullName));
     if (cnam) putSub(payload, "CNAM", *cnam);
+    if (acbs) putSub(payload, "ACBS", *acbs);
     for (const CntoEntry& entry : stock) {
         putSub(payload, "CNTO", cntoPayload(entry.itemFormID, entry.count));
     }
@@ -152,12 +165,27 @@ std::vector<uint8_t> buildSyntheticEsm() {
     // Records are emitted in stream order: the TES4 header first, then the bare
     // top level records the parser decodes without a GRUP wrapper.
     std::vector<uint8_t> records;
+    // v261: merchant determination reads the ACBS barter gold word, not the
+    // CNTO gold purse. The stocked trader carries 250 barter gold so the
+    // detection, purse, and buy tests keep exercising a real merchant.
+    const std::vector<uint8_t> stockedAcbs = acbsPayload(250);
+    const std::vector<uint8_t> barterAcbs = acbsPayload(120);
     putRecord(records, "NPC_", kNpcStocked,
               npcPayload("TestMerchant", "Collected Goods",
-                         {{game::kGoldFormID, 250}, {kApple, 3}, {kGem, 1}, {kAbsent, 2}}));
+                         {{game::kGoldFormID, 250}, {kApple, 3}, {kGem, 1}, {kAbsent, 2}},
+                         nullptr, &stockedAcbs));
     putRecord(records, "NPC_", kNpcZeroGold,
               npcPayload("EdidOnlyTrader", "", {{game::kGoldFormID, 0}, {kApple, 1}}));
     putRecord(records, "NPC_", kNpcNoStock, npcPayload("EmptyTrader", "", {}));
+    // Barter gold alone opens trade even with a bigger CNTO purse; the shop
+    // gold uses the ACBS word (120) instead of the CNTO gold count (250).
+    putRecord(records, "NPC_", kNpcBarterGold,
+              npcPayload("BarterGoldTrader", "", {{game::kGoldFormID, 250}, {kApple, 1}},
+                         nullptr, &barterAcbs));
+    // A bandit-style NPC with a CNTO gold purse but no ACBS word is NOT a
+    // merchant (v261: the old CNTO heuristic produced these false positives).
+    putRecord(records, "NPC_", kNpcPurseOnly,
+              npcPayload("PurseOnlyBandit", "", {{game::kGoldFormID, 250}}));
 
     // CNAM is the class formID; the CLAS records are emitted after the actors
     // on purpose, because resolution only runs after the whole file is decoded.
@@ -267,7 +295,7 @@ bool MerchantTests::runAllTests() {
     record("ParseSyntheticEsm", parsed, parsed ? "ESMFile::parseFromMemory ok" : "parse failed");
     if (!parsed) return getFailCount() == 0;
 
-    record("AllNpcRecordsDecoded", file.getNPCs().size() == 7,
+    record("AllNpcRecordsDecoded", file.getNPCs().size() == 9,
            "npcs=" + std::to_string(file.getNPCs().size()));
 
     oblivion::ESMManager esm;
@@ -282,6 +310,14 @@ bool MerchantTests::runAllTests() {
            stockedNpc ? stockedNpc->fullName : "npc missing");
     record("NpcCntoStockDecoded", stockedNpc != nullptr && stockedNpc->items.size() == 4,
            stockedNpc ? "cnto=" + std::to_string(stockedNpc->items.size()) : "npc missing");
+
+    // v261: ACBS+0x8 barter gold word must decode into NPCData::barterGold.
+    const oblivion::NPCData* barterGoldNpc = esm.findNPC(kNpcBarterGold);
+    const oblivion::NPCData* purseOnlyNpc = esm.findNPC(kNpcPurseOnly);
+    record("NpcBarterGoldDecoded",
+           barterGoldNpc != nullptr && barterGoldNpc->barterGold == 120 &&
+               purseOnlyNpc != nullptr && purseOnlyNpc->barterGold == 0,
+           barterGoldNpc ? std::to_string(barterGoldNpc->barterGold) : "npc missing");
 
     const oblivion::NPCData* zeroGoldNpc = esm.findNPC(kNpcZeroGold);
     record("NpcCntoZeroCountDropped", zeroGoldNpc != nullptr && zeroGoldNpc->items.size() == 1,
@@ -388,8 +424,10 @@ bool MerchantTests::runAllTests() {
            "formID=0 -> no item");
 
     // ---- merchant detection and construction ----
-    record("NpcIsMerchantWithGoldPurse", game::npcIsMerchant(esm, kNpcStocked), "CNTO Gold 250");
-    record("NpcIsNotMerchantWithoutGold", !game::npcIsMerchant(esm, kNpcZeroGold), "CNTO Gold 0");
+    record("NpcIsMerchantWithBarterGold", game::npcIsMerchant(esm, kNpcStocked), "ACBS barterGold 250");
+    record("NpcIsNotMerchantWithoutGold", !game::npcIsMerchant(esm, kNpcZeroGold), "CNTO Gold 0, no ACBS");
+    record("NpcIsMerchantWhenBarterGoldOnly", game::npcIsMerchant(esm, kNpcBarterGold), "ACBS barterGold 120");
+    record("NpcIsNotMerchantWithCntoPurseOnly", !game::npcIsMerchant(esm, kNpcPurseOnly), "bandit CNTO 250, no ACBS");
     record("NpcIsNotMerchantWhenAbsent", !game::npcIsMerchant(esm, kUnknownFormID), "0x0000BEEF");
     record("MissingNpcBuildsNothing", buildShop(esm, kUnknownFormID) == nullptr, "0x0000BEEF -> null");
 
@@ -399,8 +437,20 @@ bool MerchantTests::runAllTests() {
 
     record("MerchantShopNamePrefersFullName", stockedShop->getShopName() == "Collected Goods",
            stockedShop->getShopName());
-    record("MerchantPurseFromCnto", nearlyEqual(stockedShop->getGold(), 250.0f),
+    record("MerchantPurseFromBarterGold", nearlyEqual(stockedShop->getGold(), 250.0f),
            std::to_string(stockedShop->getGold()));
+
+    // v261: the ACBS barter gold word wins over any CNTO gold sum...
+    std::shared_ptr<Merchant> barterShop = buildShop(esm, kNpcBarterGold);
+    record("MerchantPursePrefersBarterGold",
+           barterShop != nullptr && nearlyEqual(barterShop->getGold(), 120.0f),
+           barterShop ? std::to_string(barterShop->getGold()) : "shop missing");
+
+    // ...and the CNTO gold sum is only a fallback when barterGold is zero.
+    std::shared_ptr<Merchant> purseOnlyShop = buildShop(esm, kNpcPurseOnly);
+    record("MerchantPurseFallsBackToCnto",
+           purseOnlyShop != nullptr && nearlyEqual(purseOnlyShop->getGold(), 250.0f),
+           purseOnlyShop ? std::to_string(purseOnlyShop->getGold()) : "shop missing");
     record("MerchantStockIsCntoMinusGold",
            stockedShop->getInventory().size() == 3 && stockedShop->findItem(kGoldId) == nullptr,
            "rows=" + std::to_string(stockedShop->getInventory().size()));

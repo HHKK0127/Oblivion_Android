@@ -26,6 +26,10 @@
 
 #include <atomic>
 #include <cstddef>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <vector>
 
 namespace oblivion {
 namespace gmst {
@@ -171,6 +175,138 @@ inline float getLive(const char* key) {
         return g_overrides[i].value.load(std::memory_order_relaxed);
     }
     return get(key);
+}
+
+// --- string GMSTs -----------------------------------------------------------
+// Parity source: tmp/re/v60_esm_only_keys.md (V60 canon).
+//
+// Oblivion.esm carries 382 GMST records (243 'f' / 108 's' / 31 'i'). The EXE
+// registers 378 of them; only the four fRegionGenTex* keys
+// (PlacedNotMatch/PlacedMatch/GenNotMatch/GenMatch) are absent from the
+// binary - they are Construction Set world-building settings. The EXE GMST
+// handler (record dispatch 0x44E326 -> slot 9 call 0x4A8040) performs an
+// EDID lookup and IGNORES a miss (it never inserts), so those four records
+// are silently dropped at load. We reproduce that by not registering them:
+// hasKey()/hasStringKey() stay false and the loader lookup misses too.
+//
+// The EXE default strings live in the static-init registration thunks
+// (e.g. sSpecialization: key VA 0xA5E194, default VA 0xA5E1A8, registrar
+// FUN_00419A70, slot map 0xB38640). The ESM DATA subrecord overwrites the
+// entry value at load, which is what setStringOverride() models below.
+//
+// This table holds only the string keys the port consumes today; extend it
+// with the measured default + ESM value pair when a new consumer appears.
+struct StringEntry {
+    const char* key;
+    const char* value;  // EXE-registered default (registration thunk)
+};
+
+inline constexpr StringEntry kStringEntries[] = {
+    {"sSpecialization",
+     "You will gain +10 in all specialization skills. "
+     "Those skills will also increase faster."},  // EXE 0xA5E1A8
+};
+
+inline constexpr std::size_t kStringEntryCount =
+    sizeof(kStringEntries) / sizeof(kStringEntries[0]);
+
+constexpr bool equalS(const char* a, const char* b) {
+    while (*a && *a == *b) {
+        ++a;
+        ++b;
+    }
+    return *a == *b;
+}
+
+constexpr bool hasStringKey(const char* key) {
+    for (const StringEntry& e : kStringEntries) {
+        if (equalS(e.key, key)) return true;
+    }
+    return false;
+}
+
+// Returns the EXE default for key, or an empty string when missing.
+constexpr const char* getString(const char* key) {
+    for (const StringEntry& e : kStringEntries) {
+        if (equalS(e.key, key)) return e.value;
+    }
+    return "";
+}
+
+constexpr std::size_t stringIndexOf(const char* key) {
+    std::size_t i = 0;
+    for (const StringEntry& e : kStringEntries) {
+        if (equalS(e.key, key)) return i;
+        ++i;
+    }
+    return kStringEntryCount;
+}
+
+// String override cells: an atomic pointer published with release ordering,
+// readers acquire-load it. The payload strings live in a heap arena kept
+// alive for the process lifetime (replace() only destroys the cell's own
+// previous string, never one a reader could still hold - the new pointer is
+// stored before the old string is freed, and getStringLive() returns a
+// pointer into the current arena string only while it is the published one).
+struct StringOverrideCell {
+    std::atomic<const char*> ptr{nullptr};
+    std::unique_ptr<std::string> payload;
+
+    void replace(const char* value) {
+        auto next = std::make_unique<std::string>(value);
+        // Publish first so no reader can observe a null ptr for a set cell.
+        ptr.store(next->c_str(), std::memory_order_release);
+        payload = std::move(next);  // destroys the previous string last
+    }
+
+    void reset() {
+        ptr.store(nullptr, std::memory_order_release);
+        payload.reset();
+    }
+};
+
+inline StringOverrideCell g_string_overrides[kStringEntryCount];
+inline std::mutex g_string_override_mutex;
+
+// Publisher side (loader thread). Unknown keys are ignored, matching the
+// EXE lookup-only semantics.
+inline void setStringOverride(const char* key, const char* value) {
+    const std::size_t i = stringIndexOf(key);
+    if (i == kStringEntryCount) return;
+    std::lock_guard<std::mutex> lock(g_string_override_mutex);
+    g_string_overrides[i].replace(value);
+}
+
+inline void clearStringOverride(const char* key) {
+    const std::size_t i = stringIndexOf(key);
+    if (i == kStringEntryCount) return;
+    std::lock_guard<std::mutex> lock(g_string_override_mutex);
+    g_string_overrides[i].reset();
+}
+
+inline void clearStringOverrides() {
+    std::lock_guard<std::mutex> lock(g_string_override_mutex);
+    for (std::size_t i = 0; i < kStringEntryCount; ++i) {
+        g_string_overrides[i].reset();
+    }
+}
+
+inline bool hasStringOverride(const char* key) {
+    const std::size_t i = stringIndexOf(key);
+    return i != kStringEntryCount
+        && g_string_overrides[i].ptr.load(std::memory_order_acquire) != nullptr;
+}
+
+// Runtime lookup: ESM/MOD value when published, the EXE default otherwise.
+// Unknown keys mirror getString()'s empty-string sentinel. The returned
+// pointer stays valid until the next setStringOverride()/clearString...()
+// for the same key; single-threaded load-then-read gameplay usage (the
+// ESM is parsed before any consumer runs) is always safe.
+inline const char* getStringLive(const char* key) {
+    const std::size_t i = stringIndexOf(key);
+    if (i == kStringEntryCount) return "";
+    const char* p = g_string_overrides[i].ptr.load(std::memory_order_acquire);
+    return p ? p : getString(key);
 }
 
 }  // namespace gmst

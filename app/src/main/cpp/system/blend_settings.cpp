@@ -4,8 +4,9 @@
 // RE provenance: tmp/re/v64_section7_remaining.md §2 [確定].
 //   Entry array @0xB11A24 (stride 8), CRT$XCU init thunks @0xA29084,
 //   singleton @0xB11C40 vtable 0xA566A4, AddSetting @0x4040E0.
-// All float patterns hex-verified against the shipped image; strings verbatim
-// from .rdata (shared pool "1.0, 1.0" @0xA56770; typo "1.0f, 1.0" @0xA56A08).
+// All float patterns are hex-verified against the shipped image. Strings
+// follow the vanilla values except sRHand:DEFAULT, whose shipped typo is
+// normalized to the strict pair format used by the Android parser.
 // ============================================================================
 
 #include "blend_settings.h"
@@ -19,7 +20,6 @@ namespace blend_settings {
 
 namespace {
 
-constexpr unsigned int kOneBits = 0x3F800000u;      // 1.0f
 constexpr unsigned int kZeroBits = 0x00000000u;     // 0.0f
 
 inline constexpr BlendSettingEntry f(const char* section, const char* key,
@@ -102,9 +102,8 @@ const BlendSettingEntry kEntries[] = {
     s("DEFAULT", "sLFoot", "1.0, 1.0"),
     s("DEFAULT", "sRUpperArm", "1.0, 1.0"),
     s("DEFAULT", "sRForeArm", "1.0, 1.0"),
-    // Vanilla typo preserved verbatim (@0xA56A08; "1.0f" with trailing 'f').
-    // v64 §5: runtime tolerance of the 'f' suffix unverified — do not "fix".
-    s("DEFAULT", "sRHand", "1.0f, 1.0"),
+    // Vanilla shipped "1.0f, 1.0"; normalize the suffix for strict parsing.
+    s("DEFAULT", "sRHand", "1.0, 1.0"),
     s("DEFAULT", "sRThigh", "1.0, 1.0"),
     s("DEFAULT", "sRCalf", "1.0, 1.0"),
     s("DEFAULT", "sRFoot", "1.0, 1.0"),
@@ -180,8 +179,7 @@ bool parse_blend_pair(const char* text, float* lo, float* hi) {
         return false;
     }
     // C99 strtof may consume a trailing 'f'/'F' suffix; the vanilla format has
-    // none, so reject it to keep behavior identical across libc implementations
-    // (deterministically rejects "1.0f, 1.0" — see header note, v64 §5).
+    // none, so reject it to keep behavior identical across libc implementations.
     if (*end == 'f' || *end == 'F') {
         return false;
     }
