@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-04T05:40:00Z",
+  "lastUpdated": "2026-11-05T00:30:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -9862,14 +9862,48 @@
         "2026-11-04"
       ],
       "content": "プロセスメモ（2026-11-03〜04）。(1) subagent 起動が散発的に 'Upstream request failed: Upstream response was not valid JSON' で失敗（V261 計7回・V265 計4回・V264 2回・V252/V268 各1回。再試行で全完遂、恒久障害ではない）。(2) graphify --update 実施中: AST 128 code 変更（5,763 nodes/11,785 edges 再生成）＋docs 63 件を 6 chunk で意味抽出（1-5 完了・6 稼働）。画像 1,667 件（app/src 配下 PNG）は今回 vision 抽出を延期し manifest 未スタンプ（次回 --update で再キュー）。既存 graph.json は 11-04 09:30 ビルド 48,072 nodes/122,812 edges。(3) ai-todo 台帳整理: 完了 68 件をアーカイブ。#50〜#54（v247 重複スタブ）は #49（serial240=同一作業）完遂の補完として close、5 件は要 human review 扱い（自動アーカイブ不可）として Recently Completed に滞留。(4) STATE.md は repo AGENTS.md どおりラウンド後に追記（bak4 まで）。docs/RE_EXE_REPORT.md は 11-03〜04 に他セッション（Copilot 側）が +103/+99 行編集（当セッションは未編集・ドラフトのみ）。"
+    },
+    {
+      "id": "re-copilot-bundle5-graphify-recheck-20261104",
+      "timestamp": "2026-11-04T11:00:00Z",
+      "priority": "medium",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "re",
+        "copilot",
+        "slg",
+        "barter",
+        "graphify",
+        "2026-11-04",
+        "opencode"
+      ],
+      "content": "graphify --update 完遂＋Copilot バンドル後続（serial268〜273）納品。graphify: AST 128 files→5,763n/11,785e、docs 63件 chunk 抽出（63/63全読・coverage partial 0）→本グラフ 48,709n/122,919e、tmp/re サイド 80ファイル=1,209n を統合（re_graph:: ns 除去+dedup）し最終 **49,914n/124,584e/1,316communities・health OK・labels 572継承**。graph.html/GRAPH_REPORT/cost 更新、画像1,667件は今回 vision 抽出デフォールト（manifest 未スタンプで次回 --update 再キュー、tmp/re 352件中 80件分のみ反映）。V268（v275 3/3確定: [0xB06C74]=bFull Screen:Display storage・INI ローダ=FUN_004A8800 indirect write・int→float=read側 fild@0x58D336/fstp@0x589FDF・template999=Instantiate FUN_00585410 再生成型68呼主）。V269（v276 6/6: INI ドライバ=FUN_004A85A0@0x40E747/0x513C52・型番号 0x14/0x19=action 要素/属性形・TileTemplateItem RTTI 3実在・qword[0xB06148]=NiTPointerMap ±1 台帳の境界錯視・TESSaveLoadGame=非ポリモーフィック単例、メソッド不動点150、+0xB0..0x1BC=完全死窓）。V270（v277 ブリッジ地図 5領域: barter 差分=①sqrt 引数 min→**max**②sk 合成=**Luck+Merc×0.4−20**（port は skill+0.4Luck）③丸め=**ceil が正しい、v262/v264 の『floor FUN_00484370』表記は誤称**④財布=min クランプ（port は拒否）⑤tier/steal 欠落、商人=ACBS 財布＋会話テーマ一括改动が前提（CNTO gold は誤陽性/誤陰性両発生）、object LOD=Phase 68 で実装済のため前提文陳腐化、GMST/Script VM 側残=§67.6 付録29行・ScriptEventList 22ハンドラ・effectType 0代入）。V271（v278 2/2: +0x48 書込=[確定負]（跨関数候補5件全部別クラス）、**集計器 g9 バグ3件発見で v276 足場を訂正**: +0x44 は write-only でなく書込6点/3関数・読取17点/12関数、0x1FFFF000/0x60000000=サイズ上限でなく**属性グループマスク台帳**（A=bit12..28+bit7/B=bit29..30、FUN_004535A0=CheckFlags 経由で extra 0x1F/0x21/0x23/0x35 の分岐駆動、0x7FFFF000 は静的 producer ゼロ））。V272（v279 docs §57.5/§59.5 数式訂正ドラフト＋テスト照合）はサブエージェント起動が 'Upstream response was not valid JSON' を11/04 に3連続失敗して**保留**（中間物3本 %TEMP% 残存・同じ指示書で再投入可）。V273（v280 属性 bit 和訳束）起票済。台帳 TODO_re49.md: total=159 done=151 open=8（bak122・round_verify ALL OK）。実装侧向け差し替え順序注記（v277）: sqrt max 化と barter_price_tests 期待値差替は同一セッション必須（テストが誤式を固定化しているため）、ACBS barterGold と会話テーマ判定は一括、docs 数式誤記の訂正は port 修正より先でないと再迷走する。"
+    },
+    {
+      "id": "re-slg-chain-and-barter-retraction-20261105",
+      "timestamp": "2026-11-05T00:30:00Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "re",
+        "copilot",
+        "barter",
+        "slg",
+        "retraction",
+        "2026-11-05",
+        "opencode"
+      ],
+      "content": "【重要・撤回】v277_re_port_bridge_map.md §1 の sk 合成の主張（『原版=Luck+Merc×0.4−20、port が skill+0.4Luck で誤り』）は v279 の独立追試で**誤りと判明**（0x547B90 の ×0.4 は GetAV(7)=Luck 側＝原版 **sk=trunc(clamp(Mercantile+0.4×Luck−20,0,100))**、AV 名表 0xB0A1A8・Ghidra L243881 と三重一致）。**docs L10245 と port（barter.cpp L31-33・テスト L100-116）は既に正しい**ため、v277 が提案した sk 引数再配置＋テスト L100-116 差替（W1）は**実施しないこと**（実施すると port を壊す）。barter で本当に必要な修正は P1=min→max（docs L10004/10005 も同2行のみ誤記・H1 承認待ち）と P2=財布 min クランプ、P3=tier/stolen ゲート＋ESM 配線、P4=命名。丸めは ceilf が正（v262/v264 の floor 表記は誤称、docs は訂正済み）。GMST 値は slot+0（name=slot+4、0x41BAE0）で提示アドレス群 +4 ズレ。haggle 供給元は 0x5E10F0（docs L10245 の 0x5E1500 は float getter ラッパで誤り、可否式 0x548130 の呼出 0x5E1187 が閉塞証拠）。【SLG チェーン納品 v280-v283】TESSaveLoadGame=非ポリモーフィック単例[0xB33B00]。+0x44=open 時属性グループ台帳（A=0x1FFFF000=bit12..28+bit7/B=0x60000000=bit29..30・生成 FUN_0045F180 他3・消費17site で extra 除去分岐、bit↔extra 対応=FUN_00425650 RemoveExtra 表: bit12↔0x46/b18↔0x20/b20↔0x32/b24↔0x4B/b25↔0x4A/b28↔0x35/b7↔0x3D 他）。属性セット先 vtbl+0x60=TESObjectREFR 0x4E0580/CELL 0x4D2690/Actor 0x5F85E0（ファイル/NiFile 説は棄却）。変更ノード P={next,formID,ChangeData*} は ChangesMap 二重バッファ（積込み唯一=FUN_00452C20・SLG ラッパ4関数経由、解放=0x4648C0 vtbl+0x1C→スワップ、FUN_0045C7A0=DeleteForm）。extra 型 ID 15/15 復元（0x12=ExtraScript/0x21=ExtraRunOncePacks/0x59=ExtraInfoGeneralTopic 他）。bit5=[file+0x244] 由来の Initially Disabled 系[推定]（Disable 経路 FUN_004E4690=bit11+SetModel(0)+音無効4D9310 と逐字同型、検査窓 0x4D44E0、対照 band 'CHANGE_REFR_DISABLE_STATE' は file bit30 側と切り分け）。[0xB33A1C]=**ModelLoader** 単例（'ModelLoader still has %d NIF files.'）、[0xB33A10]=**IOManager**（RTTI TD 実証・BSTaskManager 基底）、FUN_004466F0=TES::~TES（破棄11段 site 付き）。tail 保存フレーム=<u16 len><type '0'..'3'><sub 0x5B gate>＋payload（_SIGNATURE 無し・幅 0x24/0x1C/0x2C）。0x7FFFF000=静的 producer ゼロ（cmp 17点のみ）。台帳 TODO_re49: total=163 done=156 open=7（bak125-126・ALL OK）、残作業=V277（tail+3 語義・0x80000008 変換先・低）、docs 反映候補は H1＋v281/v282/v283 計15点として承認ゲート滞留。"
     }
   ],
   "metadata": {
-    "totalEntries": 692,
+    "totalEntries": 694,
     "compressedCount": 121,
-    "sessionCount": 41,
-    "lastUpdated": "2026-11-04T05:40:00Z",
-    "entry_count": 692,
-    "last_updated": "2026-11-04"
+    "sessionCount": 43,
+    "lastUpdated": "2026-11-05T00:30:00Z",
+    "entry_count": 694,
+    "last_updated": "2026-11-05"
   }
 }
