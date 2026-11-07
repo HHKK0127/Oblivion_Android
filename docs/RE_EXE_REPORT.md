@@ -516,7 +516,7 @@ void FUN_004fce30(int param_1, char *format, ...)
 | `FUN_004a7a60` | → `FUN_004941a0(1, fmt, va)` | エラーレベル1の汎用ログ出力 |
 | `FUN_00579b60` | → `FUN_00585c10(1)` → `FUN_00585c90` | コンソールパネルへのメッセージ追加 |
 
-- **FUN_004941a0（汎用ログエミッタ）**: `DAT_00b34d90` を関数ポインタテーブルとみなし、レベル `param_1` で分岐してハンドラを呼ぶ（case 0 = 通常、case 1 = 標準ログ(+4)、case 2〜9 = 特化ハンドラ。+0/+4/+8/+0xc/+0x10/+0x14/+0x18/+0x1c/+0x20 の9個）。出力前に末尾に改行 `\r\n` を自動付加
+- **FUN_004941a0（汎用ログエミッタ）**: `DAT_00b34d90` を関数ポインタテーブルとみなし、レベル `param_1` で分岐してハンドラを呼ぶ（case 0 = 通常、case 1 = 標準ログ(+4)、case 2〜9 = 特化ハンドラ。+0/+4/+8/+0xc/+0x10/+0x14/+0x18/+0x1c/+0x20 の9個）。出力前に末尾に改行 `\n` を自動付加
 - **FUN_00585c90（コンソールメッセージ追加）**: `param_1`=コンソールobj、`param_2`=fmt。`FUN_00574a80` で行分割した文字列を、メッセージ構造体をヒープ生成して単方向リンクリスト末尾に追加。`DAT_00b13984` がキュー上限（超過時 `FUN_00585ac0` で先頭から削除）、`+0x2c`/`+0x10` で件数管理
 - **FUN_00582160 / FUN_00585c10**: どちらもパネル/コンソールのシングルトンを `FUN_00401f00(tag)` で遅延生成するガード。`DAT_00b3a6e0`（メインコンソール）と `DAT_00b3a6fc`（メッセージパネル）
 
@@ -2773,7 +2773,7 @@ visible = (me.y >= 0) AND (me.y + me.height <= parent.height) AND NOT xbox
 | +0x28..0x38 | 0x11B | 初期化（+0x30 = -1 / 0xffffffff） |
 | **+0x3c** | 0x104 | **name[260]**（strcpy、キャラ名） |
 | +0x140..0x150 | 0x11B | 0 初期化 |
-| +0x154 | 1 | クリアバイト（index 0x55 の byte 位置） |
+| +0x154 | 1 | 派生セーブスロット側で 0 初期化される byte（意味は未確定） |
 | +0x15c | 4 | dword |
 | **= 0x160** | | **1 スロット合計** |
 
@@ -2817,6 +2817,28 @@ visible = (me.y >= 0) AND (me.y + me.height <= parent.height) AND NOT xbox
   0x51(81) / 0x52(82)。Steam 版は 0x50 代が想定。
 - 読み終了後 `param_1+0x14 = 0`。
 
+#### 27.2.1 セーブストリームの下位層とヘッダ I/O（v309）
+
+`FUN_00430050` の read thunk は `(dst, size)` の 2 引数だけを
+`FUN_004302B0` に転送する。`FUN_004302B0` は FILE* が未オープンなら
+`FUN_0042FE80` で遅延 open し、下位の `FUN_00747E80` を呼び、
+戻り値の読取バイト数を `[this+0x148]` に加算する。`ReadFile` の IAT
+呼出しはこの経路に存在せず、thunk の out/flag 引数も read 本体には到達しない
+[確定]。
+
+下位層は zlib `gz*` や Win32 ファイル API ではなく、静的リンク CRT stdio
+と自前バッファを組み合わせたストリーム層である [確定]。
+
+| 関数 | 役割 |
+|---|---|
+| `FUN_00747E80` | read（`fread` 相当） |
+| `FUN_00747E20` | seek（`fseek` 相当） |
+| `FUN_00747F40` | write（`fwrite` 相当） |
+| `FUN_00747D30` | flush |
+| `FUN_0042FE80` | `rb`/`r+b` 等を選択する open |
+
+CRT は PE の DLL import ではなく静的リンクされている [確定]。
+
 ### 27.3 セーブスロットの表示/保存まわりで判明した文字列定数
 
 | アドレス | 内容 |
@@ -2847,6 +2869,30 @@ visible = (me.y >= 0) AND (me.y + me.height <= parent.height) AND NOT xbox
 - バージョン byte はヘッダ冒頭付近（+0x70/0x71、グローバル +0x7c）で、
   表示名の再構築には version ゲート（0x34 / 0x37 / 0x38 / 0x52）を尊重する。
 - 再生時間は `%02i:%02i:%02i`、表示名は `%s %i` / `Save %i - %s - ...` 系で整形。
+
+### 27.6 v309 追補：保存処理・一覧生成・派生経路
+
+- `FUN_0045F2E0` は mode 0〜3 のジャンプテーブルを持つ。mode 0 は
+  `.ess` 名生成、ディレクトリ作成、`.bak` ローテーション、書モードの
+  `new(0x154)` を行う。mode 1 は読モードの `new(0x154)`、mode 2 は
+  既存オブジェクトの再 open、mode 3 は既存オブジェクトの再利用である
+  [確定]。
+- `new(0x154)` は基底ストリーム用、`new(0x160)` は
+  `FUN_0045D450` が生成してリスト登録するセーブスロット用である。
+  後者は vtable を `0xA39094` に差し替え、`+0x154` を 0 初期化する。
+  `+0x154..+0x15F` の残り 11 バイトと byte の意味は未確定である。
+- `FUN_0045D450` が `*.ess` を列挙してセーブスロット一覧を生成する。
+  旧資料で一覧生成と扱っていた `FUN_0045D390` は、実際には
+  `SaveQueuedAttachedAnimation` の対象判定・保存経路である [確定]。
+- `FUN_0045E6A0` は `XBoxSaves\*.*` を列挙し、`0xD000` へ無条件 seek
+  する独立経路である。`FUN_0045DBC0` の `CON ` 検出経路とは別であり、
+  両者を同一分岐として扱ってはならない [確定]。
+- version gate の比較対象は全サイトで SaveGame シングルトン
+  `[0xB33B00]+0x7c` である。確認された閾値には 0x21、0x25、0x27、
+  0x34、0x38、0x53、0x5B、0x5E、0x79 がある [確定]。
+- `FUN_00464AB0` の size は size フィールド直後（offset 38）から末尾までの
+  残長であり、`0x24 + len1 + len2 + thumb` と一致する。38B ヘッダとの差は
+  比較対象が異なることによる偽問題である [確定]。
 
 ## 28. メニュー vtable 全列挙と未文書化メニューファミリー（逆コンパイル / RTTI、確定 2026-10-16）
 
@@ -9758,7 +9804,128 @@ onlyifnot 側も `0058C7B6 fstp st(0)` で残値を捨ててから `fld1` を積
 - 継続・新規: actor vt+0xA8（§51.11 では +0x3A8）適用スタブの実体確定（0x6AF880 本体）/ FUN_005FEBF0 後半（アーマー軽減・スタッガー・1 発上限）/ 疲労の戦闘寄与定量 / menu 0x3F5・0x5BDA90 / 0x57B600 / 0x670B00 双子分担 / audio 細部（0x9828C0・0x986CD0、フェード型 7/8）/ onlyif 真偽エンコーディング（§51.5）/ ESM 226 値相違のローダ経路 / B13 実機ダンプ（ユーザー操作）。
 - 証跡・再現: 各 md 末尾の手順 + `tmp\re\re_util.py`。生ログは `tmp\re\s50_*` 一式（300 ファイル超）。
 
+### §55.9 v309 セーブヘッダ I/O 追補（2026-11-07）
+
+`tmp/re/v309_saveheader_followup.md`（425 行、probe 13 本）の統合により、
+v307 のセーブヘッダ I/O 残点 11 件を命令証拠ベースで裁定した。
+
+- `FUN_004302B0` の read 経路、`[this+0x148]` の加算、ReadFile 不在、
+  out/flag 非到達を確定した。
+- `0x747E20`/`0x747F40`/`0x747E80` は静的 CRT stdio と自前バッファ層に
+  属し、zlib `gz*` および Win32 直叩きではないことを確定した。
+- `FUN_0045DE30` は created base objects の検証・保存経路、
+  `FUN_0045E6A0` は XBoxSaves 列挙と `0xD000` 無条件 seek の独立経路、
+  `FUN_0045D450` はセーブ一覧生成、`FUN_0045D390` は
+  SaveQueuedAttachedAnimation 経路であることを確定した。
+- version gate の対象を `[0xB33B00]+0x7c` に統一し、書出し size の
+  `0x24` と 38B ヘッダの差が偽問題であることを確定した。
+- v305 の raw 579 パターンは opcode `0x3C` の raw パターンとして復元した。
+
+残る項目は `+0x154` byte、counter 初期化、name 読取順、2つの名前取得関数、
+XBoxSaves 側 ctor 分岐、`FUN_004E0F80`/`FUN_0045D220` の詳細、
+once-init の所属などであり、推測実装は行わない。実 `.ess` が未取得のため、
+size の動的照合も未実施である。
+
+
+### §55.10 v313 Save/Load 残点追補（2026-11-07）
+
+`tmp/re/v313_save_ess_boundary_followup.md`（51,732 B、453 行、probe 14 本）の統合。
+実 `.ess` はワークスペース、テンポラリ、ユーザープロファイル、D:、Documents/My Games、
+Steam インストール先、BSA 展開先、および `TES4SAVEGAME` のバイナリ検索で発見されなかった
+[確定]。したがってヘッダ実長、実フィールド境界、圧縮物理位置、change form 境界、
+name/thumb 実データ照合の動的5項目は未実施であり、静的証拠からバイナリ境界を推測しない。
+
+- セーブスロット `+0x154` は FILETIME 更新時刻キャッシュの valid flag [確定]。
+  `FUN_0045D450` の初期化と `FUN_00459450`（`0x459450`、FindFirstFileA / ftLastWriteTime
+  の3-way比較）の5参照で確定し、v309 の「dtor」帰属を訂正する。整列挿入は
+  `FUN_00416650` が担当する [確定]（一次成果 §3 項目2、§6-1）。
+- `+0x88` counter は `FUN_0045B300`（SaveGame ctor）で0初期化され、
+  `FUN_00464320` がファイル名連番 `0x459570` とヘッダ offset 38 の最大値に1を加える
+  [確定]。通常保存では書出し側で増加するが、dry/real 2パスの実行時挙動は未確定。
+- `FUN_00465130` の mode は本体 `0x4651AB` の `xor edi,edi` により恒0 [確定]。
+  `FUN_0045D5F0` は `ret 0x28` の10引数で、counter、2つの名前、レベル、時間、
+  SYSTEMTIME、thumb tail の順に読み取る [確定/部分確定]。thumb tail の実データ一致は
+  サンプル不在のため未確定。
+- 名前取得は `0x4DA2A0` の TESFullName 系、`0x4DE8D0` の名前風 getter、
+  `0x5E1FD0`→`0x4677F0` のレベル表示経路に分離される [確定]。
+- `FUN_0045E6A0` は ctor 2経路を持ち、XBox 側の読取経路で `0xD000` seek、`.ess` 側は
+  即時 open となる [確定]。`0xA9000/0xAA000` と `0x4000/0x2000` の命令上の値は確定するが、
+  CON チャンクの実レイアウト解釈は未確定。
+- `FUN_0045D220` は `FUN_0045D390`（AttachedAnimation）と対になる
+  SaveQueuedHavokData 経路まで確定し、`FUN_004E0F80` は BSX/REF 文字列と
+  Interlocked を含む構造・呼出元までの部分確定に留める。
+- once-init は `0x401000` の KERNEL32 `InitializeCriticalSection` ラッパと、
+  `0x981FB4` の `atexit` 経路（削除側トランポリン `0xA17B60`）を確定した。
+
+v313 の残件は、dry/real counter 挙動、`FUN_004E0F80` の各枝、`[0xB333C4]` の型名、
+thumb tail のロード側受け先、`FUN_00459570` の引数契約、`0x452330` ガード、
+`FUN_0045B300` の未表示フィールド、name1/name2 の表示意味、旧版ゲート下の実挙動、
+`0x416650` 呼出元の比較関数カタログ、seek 値の実レイアウト解釈の11件である
+[未確定/部分確定]。実 `.ess` またはB13実機ダンプが得られるまで、これらを実装仕様へ昇格しない。
+
 ---
+
+### §55.11 v316 v313残件追補（2026-11-07）
+
+`tmp/re/v316_v313_residuals.md`（49,357 B、547 行、probe 16 本）の統合。
+v313 §7 の新規残件11項を指定帯内で再検証した。全 probe は EXIT=0、再実行時の
+MD5差分は0であり、実 `.ess` は引き続き不在のため動的照合は実施していない。
+
+- `FUN_00465130` の継続条件は `dry || FUN_00452330() || name=="autosave"` [部分確定]。
+  `FUN_00452330` はプレイヤー状態と menu ID `{0, 3, 0x3F5, 0x40F}` による述語で、
+  `dry` が短絡先行する。`0x452330` の関数頭は off-by-pad 第6例である。
+- `[0xB333C4]` は RTTI の `.?AVPlayerCharacter@@` に解決される [確定]。
+  vtable `0xA73A0C`、COL `0xAC3D80`、TypeDescriptor `0xB080A4` の連鎖と
+  3箇所の store を確認した。
+- `FUN_0045D5F0` の caller は4件に訂正する [確定]。ロード側 `FUN_00465860` は
+  第10引数を0で渡すため thumb を読まず、thumb を読むのは `FUN_004610F0` のみである。
+- `FUN_004E0F80` は `TESObjectREFR::SetModel` 相当で、`[this+0x3C]` を差し替える
+  15系統の分岐を持つ [部分確定]。補助呼出しの正式名は未同定である。
+- セーブ名の書式は
+  `Save <counter> - <name1> - <name2>, Level <level>, Playing Time <HH>.<MM>.<SS>`
+  [確定]。禁止文字の置換と重複時の ` #%d` 付加も確認した。
+- counter は `FUN_00464AB0` の1呼出しにつき +1 のみで、dry/real の呼出しは排他
+  [部分確定]。dry 発火経路を示す `0x200` 操作が静的に見つからず、2パス実行の有無は未確定。
+- 旧版 F7 は `0x4301A0` 経由の `FindFirstFileA`、FILETIME変換、
+  `SystemTimeToTzSpecificLocalTime` による16B時刻値 [確定]。比較関数は16件を特定した。
+- `FUN_0045E6A0` の seek は初回 `SEEK_SET(0xD000)`、以降 `SEEK_CUR(0x4000/0x2000)`
+  [部分確定]。実ファイル上のチャンク意味は `.ess` 取得まで未確定である。
+
+新規残件は11件（`#84`）として管理し、実 `.ess` または実機確認を要する項目を分離した。
+未確定事項は実装仕様へ昇格しない。
+
+### §55.12 v317 v315残点追補（2026-11-07）
+
+`tmp/re/v317_v315_residuals.md`（52,471 B、421 行、probe 12 本）の統合。
+v315 §3 の N1-N9 を指定帯で再走査した。判定は [確定]7（N1/N2/N3/N6/N7/N8/N9）、
+[部分確定]2（N4/N5）。全 probe は EXIT=0で、初回 selftest の差分5件は内容一致を
+確認したうえで、続く2回の再実行で MD5差分0を確認した。実 `.ess` は不在である。
+
+- `FUN_00465130` は quicksave caller `0x672F36` から `this=[0xB33B00]` で呼ばれる
+  SAVEオーケストレータ [確定]。`open(mode=0)`、ヘッダ、12B書出しを行い、
+  `pass2` の唯一の caller は `0x4651C3` で保存直前に実行される。従来の
+  「LoadGame pass2」という呼称は誤りとして訂正する。
+- 保存ライタ自身による changeFlags bit3 の直接操作は0件 [確定]。file bit3 は、
+  tail非0時の pass2 skip 後の直接書出し、または tail==0時の `0x4535A0` 経由
+  （CELLは入力を通し、非CELLは `0x5F0310` で再合成）の2経路でのみ現れる。
+  bit3単独 entry は pass2 で削除され、書出されない [部分確定]。
+- 保存側の bit7 分岐は0件 [確定]。実在する formatter 第3ゲートは
+  `0x458771` の `CHANGE_ACTOR_BASE_FULLNAME`（form type `0x23/0x24`）で、
+  formatter の `jns` 件数は3から4へ訂正する。`SaveGame+0x18` の bit7 は
+  `0x463966-0x4639A9` の一時ラッチとして扱われる [部分確定]。
+- N8 の tail再発行式は、旧 tail から `0x1C` byte、bit31時は `0x2C` byteを除去し、
+  bit23時のみ4B keyを挿入する形で alloc と一致する [確定]。除去領域の実データの意味は
+  `.ess` 照合まで未確定である。
+- N9 の型ゲートは form type `{0x32,0x33}` 入口から bit29→22→21→20→19→18
+  （Trespass）へ連鎖する [確定]。同じ bit18 は form type `0x31` では
+  `CHANGE_DOOR_OPEN_DEFAULT_STATE` を意味する二義的フラグである。
+- `0x459950/0x459990` は `[+0x74]/[+0x78]` の payload参照ID解決ヘルパ、
+  `0x5F0310` は vtable `+0x4C` getter を使う述語構造まで確定したが、
+  正式名称は未同定 [部分確定]。
+
+新規残件は11件（`#85`）として管理する。tail delta の実データ、保存レコード `+9` byte、
+`FUN_0045BB30` の副作用、`0x463700`/`0x460BC0` の bit7ラッチ、各 helper の正式名は、
+実 `.ess` または追加の限定静解析が必要である。推測で実装仕様へ昇格しない。
 
 ## §56 残件6テーマ最終解析 統合（2026-10-17）— 戦闘FEBF0 / 音響 / Sleep/Jail / menu式 / Container / GMSTローダ
 
@@ -10140,12 +10307,30 @@ onlyifnot 側も `0058C7B6 fstp st(0)` で残値を捨ててから `fld1` を積
 - ファイル名 = dir(0xB3F280) + sep(0xB05564) + name + ".ess"、書式 `"%s%s%s.ess"` (0xA3A88C) [確定]。
 - `.ess` ヘッダ [確定]: magic 12B `"TES4SAVEGAME"` + 版数 2B (`00 7d`) + GUID 16B + u32。以後は §27.2 の version ゲート。
 - 現行バージョン byte = **0x7d (125)** (+0x7c) [確定]。ロード時 0x7e はエラー、> 0x7d は警告 (0xA3B450) [確定]。
-- zlib **1.2.1 を静的リンク** (PE インポートに zlib 無し) [確定]。圧縮データの物理位置は [未確定]。
+- zlib **1.2.1 を静的リンク** (PE インポートに zlib 無し) [確定]。
+  ただしセーブストリームの下位 I/O は zlib `gz*` ではなく、静的リンク CRT
+  stdio（`fopen`/`fseek`/`fread`/`fwrite`）と自前バッファ層
+  (`FUN_00747D30`/`FUN_00747E20`/`FUN_00747E80`/`FUN_00747F40`) である
+  [確定]。圧縮データの物理位置は [未確定]。
+- `FUN_004302B0` は FILE* の遅延 open 後に `FUN_00747E80` を呼び、
+  読取バイト数を `[this+0x148]` に加算する。`ReadFile` 経路および
+  thunk の out/flag は本体に到達しない [確定]。
+- `FUN_0045D450` は `*.ess` を列挙して 0x160B のセーブスロット一覧を生成し、
+  `FUN_0045D390` は一覧生成ではなく attached animation 保存チェックである
+  [確定]。
+- `FUN_0045E6A0` の `XBoxSaves\*.*` 列挙と `0xD000` seek は、
+  `FUN_0045DBC0` の `CON ` 検出経路とは独立している [確定]。
+- `FUN_00464AB0` のヘッダ size は offset 38 から末尾までの残長
+  (`0x24 + len1 + len2 + thumb`) であり、38B ヘッダとの差は偽問題である
+  [確定]。日数 float はゲーム内時間を 24 で割って生成される。
 - LoadMenu 0x5AEA60 (menu 0x40E)、行選択 0x5AE1D6 → 0x465860 で復元 [確定]。LoadingMenu 0x578E90 (開) / 0x57B950 (進捗) の呼出元を全列挙 [確定]。
 - autosave に fAutosave* GMST は存在しない [確定]。`bSaveOnRest` / `bSaveOnWait` / `bSaveOnTravel` / `bSaveOnInteriorExteriorSwitch` (既定 1) で制御 [確定]。
 - quicksave / quickload = 入力アクション `"QuickSave"` / `"QuickLoad"`、0x672F27 / 0x672F41 で dispatch [確定]。
-- 残 8 件: `.ess` 本体の圧縮位置、change form / global / quest / cell / AI の完全バイナリ境界 (実 `.ess` 未取得で突合不可)、保存対象リスト [this] の生成元、0x403520 の actionId↔既定キー対応、sleep が bSaveOnTravel を読む理由、0xB05BA4 の設定元、0x40D540 の局面、`.bak` 世代管理。
-- **実 `.ess` サンプルがワークスペース/BSA 展開先に存在しない**ため実データ突合は未実施 (該当箇所は [推定])。B13 と併せてサンプル取得が望ましい。
+- v313 により、`+0x154`、`+0x88` 初期化、`FUN_00465130` mode、`FUN_0045D5F0` の10引数読取順、
+  名前取得経路、XBoxSaves 側 ctor 分岐、`FUN_0045D220` の対関係、once-init の所属は
+  §55.10 の命令証拠で更新された。残件は §55.10 の11件へ再分類した。
+- **実 `.ess` サンプルが存在しない**ため、圧縮位置・実フィールド境界・change form 等の動的照合は
+  未実施のままである。該当箇所を静的確定へ拡張せず、B13 と実サンプル取得後に再評価する。
 
 ### §58.4 キャラクタ生成・レベルアップ (`s58_chargen.md`, 1-8)
 - スキル上昇本体 **0x668070** (this = player、skill form、flag、flag)。メジャー判定 0x5E3320 → 0x51C090(class, avIdx)、メジャー時のみ `[player+0x184]++` [確定]。

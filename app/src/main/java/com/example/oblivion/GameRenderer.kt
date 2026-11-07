@@ -478,17 +478,17 @@ class GameRenderer : GLSurfaceView.Renderer {
                 frameCount++
 
                 // Retry BinkVideoPlayer init if it failed in onSurfaceChanged (with rate limiting)
-                            if (!binkVideoInitialized && !binkVideoInitFailed) {
+                if (!binkVideoInitialized && !binkVideoInitFailed) {
                     initBinkVideo()
                 }
 
                 val currentTime = System.currentTimeMillis()
-                                if (currentTime - lastLogTime >= 1000) {
-                                    titleVideoFrameCount = 0
-                                    titleVideoCallbackCount = 0
-                                    frameCount = 0
-                                    lastLogTime = currentTime
-                                }
+                if (currentTime - lastLogTime >= 1000) {
+                    titleVideoFrameCount = 0
+                    titleVideoCallbackCount = 0
+                    frameCount = 0
+                    lastLogTime = currentTime
+                }
             } else {
                 if (frameCount == 0) {
                     Log.e(TAG, "CRITICAL: onDrawFrame called but nativeEngineHandle is 0 - native initialization never completed")
