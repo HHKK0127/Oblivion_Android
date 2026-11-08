@@ -6,7 +6,7 @@
 
 - [ ] **#106** 次束R（低優先）: v327 新規残件 6 件（#91 統合時に起票・出典: v327 §9・R5 は docs 反映として #66 へ分離済み）— ①R1: インライン slot(1,1) 読みの全数走査（40 indexer 中 const(1,1) は 0x49A77A の1件のみと判明・残の不確実性 §2-3 の解消）②R2: 帯外 FUN_007dc9a0 系と INI『DepthOffset』表行（0xB45EEC/EF0 書手の帯外側・带外照会の許容範囲を確認してから）③R3: 実行時ゲート遷移の観測（crash-run 未実行[確定]の観測拡張＝実行環境待ち＝#82 経路と分離）④R4: NULL スロットの直接経路（vtable+0x1C 間接 caller＝slot 投入なしで NULL を読む経路の有無）⑤R6: L2 パッチ Design C（callee 側 jecxz）の前提検証3件（Design A 採用候補との比較・**実装・適用は L2 承認後のみ**）⑥R7: v324 の range 数基準差（v327 と v324 で数え上げ基準が異なる箇所の突合）。帯: 本 lane 専有（0x49A000-0x49B000/0x40D000-0x445000/0x4C0000-0x4E0000）＋帯外照会は浅層。**成果物番号= tmp/re/v331+（v321-v330 予約済のため）**。教訓継承（off-by-pad 7例・CCラン不足誤答6例・rule v3）・5段階・クリーンルーム・Numba 使用可（pip 完了していれば @njit・未完了なら numpy ベクトル化を第一候補） `#low` `#oblivion` `#re`
 
-- [ ] **#105** 【自動・中優先】キャラクター作成の重複入力検証: 同一フレームまたは短時間のCreate/Cancel二重タップで、状態遷移・効果音・ゲーム開始が一度だけ発生することをエミュレータのログと画面で確認する。未確認のため#95から分離し、仕様不明の属性/スキル増減は対象外とする。完了条件: 二重入力の再現座標、ログ件数、最終画面、クラッシュスキャン結果を`STATE.md`に記録する。 `#android` `#character-creation` `#input`
+- [x] **#105** 【自動・中優先】キャラクター作成の重複入力検証: 同一フレームまたは短時間のCreate/Cancel二重タップで、状態遷移・効果音・ゲーム開始が一度だけ発生することをエミュレータのログと画面で確認する。未確認のため#95から分離し、仕様不明の属性/スキル増減は対象外とする。完了条件: 二重入力の再現座標、ログ件数、最終画面、クラッシュスキャン結果を`STATE.md`に記録する。 `#android` `#character-creation` `#input` (2026-11-08)
 
 - [ ] **#104** 【自動・中優先】検証済みマイルストーンのコミット運用: 実装・テスト・レビューが完了した単位で、差分、秘密情報、対象範囲、`git diff --check`を確認してからコミットする。失敗中の変更、未レビュー変更、`docs/RE_EXE_REPORT.md`を含む変更は自動コミットしない。完了条件: コミット単位と検証結果を `STATE.md` に記録する。push/mergeは対象外。 `#git` `#process`
 
@@ -16,7 +16,7 @@
 
 - [ ] **#101** 【人間判断待ち・高優先】キャラクター作成仕様の確定: オリジナルのNAME/RACE/ATTRIBUTES/SKILLS/APPEARANCE各画面について、正式な表示名、入力方式、増減規則、確定条件、キャンセル時の状態復元を解析セッションの証拠で裁定する。推測実装は禁止。未知構造は解析依頼へ送る。完了条件: 解析成果物と採用/保留判断が `STATE.md` と `plan.md` に記録される。 `#analysis-request` `#needs-approval` `#oblivion`
 
-- [ ] **#100** 【自動・高優先】Android製品フローの回帰検証: `assembleDebug` → APK install → Pixel_API34 clean launch → Continue/New/Cancel/Create → logcat crash scan → screenshot確認を一連で実行し、タイトルからゲームワールドまでの成功条件を固定する。完了条件: 実行ログ、スクリーンショット、失敗時の再現手順を `STATE.md` に記録し、SIGSEGV/Fatal signalなしを確認する。 `#android` `#regression`
+- [x] **#100** 【自動・高優先】Android製品フローの回帰検証: `assembleDebug` → APK install → Pixel_API34 clean launch → Continue/New/Cancel/Create → logcat crash scan → screenshot確認を一連で実行し、タイトルからゲームワールドまでの成功条件を固定する。完了条件: 実行ログ、スクリーンショット、失敗時の再現手順を `STATE.md` に記録し、SIGSEGV/Fatal signalなしを確認する。 `#android` `#regression` (2026-11-08)
 
 - [ ] **#99** 【自動・高優先】キャラクター作成後のゲーム状態検証: Create後にプレイヤー名、選択種族、属性、スキル、カメラ、HUD、移動入力が実ゲーム状態へ反映されるか確認し、欠落箇所を最小修正する。元データ構造が不明な箇所は実装せず解析依頼へ分離する。完了条件: Create後の状態をログまたは画面証拠で確認し、未確認項目を明示する。 `#android` `#character-creation`
 
@@ -38,7 +38,7 @@
 - [x] **#91** 次束N（低優先）: v324 クラッシュ解析の新規残件 7 件（#88 統合時に起票・出典: v324 §6）— 主: ①FUN_0049a200 の詳細（二重ループの中身・docs 签名 void(void) は this/ECX 欠落＝訂正対象）②slot(1,1) entry[0] を読む他 caller 経路の完全性（92 サイト/56 関数のうち深帯 28 の残り）③FrameUpdate 系 FUN_004441A0 の投入タイミング定量（危険帯フレーム数の特定）④0xB45EEC/0xB45EF0 ゲートの意味（4本全 0＝未成功コードの正体）⑤ESI=0x30009990/EBX=0x30009A20 のアドレス系解析（ヒープ非在・画像外）⑥pid39788(14:17:37) の事象未記載との突合（4本目の経緯）⑦L2 修正案 0x49A781 ガードの正式パッチ設計（提案のみ・実装は L2 承認後）。帯: 0x4C0000-0x4E0000+0x49A000-0x49B000+0x40D000-0x445000 ほか・v318/v316 帯は浅層。**成果物番号= tmp/re/v327+（v321-v326 予約済のため）**。教訓継承（off-by-pad7/find_head5/rule v3）・5段階・クリーンルーム `#low` `#oblivion` `#re` (2026-11-08)
   > 【2026-11-08 統合完了】v327_v324_residuals_ruling.md 受領（35,738B/288行・probe18本・逸脱なし）→ 台帳 row306 起票 [x]（V306 表題・bak161・round_verify ALL OK total=192/done=187/open=5）。判定: 主判定[確定]3/[部分確定]4（副次に推定6・未確定4）。核心: ①FUN_0049a200 [確定]（ECX=this 0x49A22D受領・docs void(void) L123202 訂正・5 caller 全て[World+0x54]）②const(1,1) window読み=40 indexer中1件のみ(0x49A77A→0x49A783+Y=0x49A79B)で非ガード・他39はガード付き [部分確定]＝無検査箇所はこの1つを裏付け ③FUN_00444340=1 pass 全25スロット同期投入・危険帯=初回成功passまで(有効≤1F/アイドル無期限)＝v324 §4-4「数フレーム」を補正 C1 ④0xB45EEC/EF0=BSS 4-dword配列・値=cell座標×0x1000 float・crash-run未実行[確定] ⑤ESI/EBX=幾何検算全True(base=0x30009960)・4本ダンプ range不在[確定] ⑥pid39788=Windowsイベントログ EventID1000が4件(14:17:33含む)独立確認＝親3事象記録は不完全[確定] ⑦L2パッチ設計=Design A(窓12B+cave13B@0x49A8A3)採用候補・B=pad不足で非採用・C=jecxz前提検証3件待ち（未適用・L2承認待ち）。Numba=不可(未インストール)→numpy ベクトル化で代替実使用。新規残件R1-R4,R6,R7→#95(v331+)・R5(docs3件)は#66で消化。
 
-- [ ] **#90** 次束M（低優先）: #84 採用外部報告（v322_v316_v320_next_bundle_I.md §4）由来の残件 6 件 — ①dry bit9 の間接 setter と実行時発火条件（静的0件は確定済・間接/実行時初期化が残）②[0xB38720] の初期化元（書き手の静的特定＝未着手の救済余地）③FUN_004610F0 の受け先型と thumbnail writer との対応 ④'BSX'/'REF' 対象の RTTI・vtable（0x6FF9C0/0x6FFAC0 先）⑤0x5D8FD0 の比較対象フィールド正式意味 ⑥menu ID {0,3,0x3F5,0x40F} の表示名（帯外型名/メニュー XML 帯照会）。※seek 項は訂正で消滅済み。帯: v316/v318 自帯＋照会（v324 深帯 0x4C-0x4E は浅層のみ）。**成果物番号= tmp/re/v326+（v321-v325 予約済のため）**。教訓継承（off-by-pad 7/find_head 5/rule v3）・5段階・ess 不在前提（動的可項目は #82/#85 経路で分離） `#low` `#oblivion` `#re`
+- [ ] **#90** 次束M（低優先）: #84 採用外部報告（v322_v316_v320_next_bundle_I.md §4）由来の残件 6 件 — ①dry bit9 の間接 setter と実行時発火条件（静的0件は確定済・間接/実行時初期化が残）②[0xB38720] の初期化元（書き手の静的特定＝未着手の救済余地）③FUN_004610F0 の受け先型と thumbnail writer との対応 ④'BSX'/'REF' 対象の RTTI・vtable（0x6FF9C0/0x6FFAC0 先）⑤0x5D8FD0 の比較対象フィールド正式意味 ⑥menu ID {0,3,0x3F5,0x40F} の表示名（帯外型名/メニュー XML 帯照会）。※seek 項は訂正で消滅済み。帯: v316/v318 自帯＋照会（v324 深帯 0x4C-0x4E は浅層のみ）。**成果物番号= tmp/re/v326+（v321-v325 予約済のため）**。教訓継承（off-by-pad 7/find_head 5/rule v3）・5段階・ess 不在前提（動的可項目は #82/#85 経路で分離） `#inprogress` `#low` `#oblivion` `#re`
 
 - [x] **#89** 次束L（低優先）: v318 新規残件 6 件（#83 統合時に起票・出典: v318 §6）— ①[未確定] 0x447050 の al=0 条件（F7/F8 深層・vtable[+0x1C] 戻り値のクラス別定義・移植に必要な『失敗の定義』の最終部分）②[未確定] 間接 call 595 中 49 件の解決不可分＋vtable slot 先の実体（静的限定・動的要）③[部分確定] rule v3 の帯内 sweep 全数検証（56 差分中 11 検証済・残 45、特に v3>old 8 件の裏取り）④[未確定] FUN_005169A0 の正式役割名と ecx(index) 供給元 ⑤[未確定] 0x44DCF0 型スイッチの型名対応（型1..0x43→0x44E6DC→15 ケースのレコード型名・帯外型名テーブル照会）⑥[未確定] dt 単位=秒の動的確認（2-6 の[推定]解消）。帯: v318 自帯（0x404000-0x406000/0x44F000-0x452000/0x51B000-0x51C000/0x570000-0x574000/0x500000-0x504000）＋照会帯。**成果物番号= tmp/re/v325+（v321-v324 は外部/親予約で使用済・2026-11-07 確定）**。off-by-pad 7例+find_head 誤答5例+rule v3 の教訓継承・5段階・クリーンルーム `#low` `#oblivion` `#re` (2026-11-08)
   > 【2026-11-07 統合完了】v325_v318_residuals.md 受領（40,084B/288行・probe18+再実行2・selftest MD5一致）→ 台帳 row305 起票 [x]（V305 表題・bak160・round_verify ALL OK total=191/done=186/open=5）。判定: [確定]3/[部分確定]2/[推定]1/[未確定]0 — v318 時点の[未確定]3件を全て格上げ。核心: ①0x447050 al=0=slot7読手69全数census（型ゲート46 mismatches=0・無ゲート21は型起因なし・残はreader内部失敗のxor帰属）[部分確定] ②49件=45 IAT+1 member+3（1=impl列既知）・PlayerCharacter 13 site解決 [部分確定] ③rule v3 sweep=56/56証拠帰属（27+23+early-ret 6/6）・ラベル16/16 [確定]＝v318「残45件」を全数消化 ④FUN_005169A0=index bytecode word+ScriptRunner::Run文言fn・正式名はimm参照0件で[推定] ⑤型名対応=0xB05E00表t=0..68全一致・67型→15case全分類・docs交差3/3 [確定] ⑥dt単位=秒=GetTickCount(ms)×0.001×1.0の静的代数閉合 [確定]（v318[推定]解消）。v318本体の不整合2件をv325 §4-Bで非削除訂正（内訳50/6 vs prose48/8・thunkのadd esp,0x10欠落）。新規残件6→#94（v330+）。
@@ -308,6 +308,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -324,4 +329,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-08 16:19:57
+**ai-todo** | Last Updated: 2026-11-08 16:24:38

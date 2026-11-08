@@ -129,6 +129,65 @@ Creation and therefore provides no duplicate-input verdict.
   remains open; retry with a screenshot-confirmed New coordinate before making
   any behavioral claim.
 
+## 2026-11-08 — #105 duplicate-input verification completed
+
+- Reached Character Creation from a screenshot-confirmed title screen at
+  1920x1200 and used the visible Create/Cancel button coordinates.
+- Cancel double-tap: two DOWN/UP input pairs were delivered at
+  `(1578,972)` with a short interval. The modal closed once and the final
+  screen was the gameplay HUD; the second tap did not reopen or duplicate the
+  transition. Evidence: `tmp/loop105_double_cancel_valid.log` and
+  `screenshots/loop105_double_cancel_valid.png`.
+- Create double-tap: two DOWN/UP input pairs were delivered at `(1465,972)`
+  with a short interval. The game entered the post-creation tutorial dialog
+  once. The log contains one `ui/ui_questnew.wav` load/queue/play sequence and
+  no duplicate character-start transition. Evidence:
+  `tmp/loop105_double_create_valid.log` and
+  `screenshots/loop105_double_create_valid.png`.
+- Crash scan for both trials found no `SIGSEGV`, `Fatal signal`, or
+  `FATAL EXCEPTION`. No input-guard source change was made because the
+  observed runtime already prevented a duplicate state transition and the
+  original duplicate-input contract is not otherwise specified.
+- #105 is complete. Remaining UI/character-creation behavior questions stay
+  isolated in #96, #97, #99, and #101.
+
+## 2026-11-08 — New Game start-flow investigation
+
+- Reproduced the reported behavior after a clean launch through
+  `IntroVideoActivity`: title New -> Character Creation -> Create reaches
+  `Renderer::startGame()` and displays the outdoor world.
+- The apparent "game does not start" state is the intentional modal tutorial
+  message opened by `startGame()`. While it is visible, input is correctly
+  routed to the message box and gameplay input is blocked. Tapping the visible
+  `OK` at `(950,705)` dismisses it and reveals the active HUD.
+- The Create log confirms one `startGame()` call, one
+  `Welcome to Cyrodiil` quest creation, one `ui/ui_questnew.wav` playback, and
+  no `SIGSEGV`, `Fatal signal`, or `FATAL EXCEPTION`.
+- After dismissal, a joystick swipe from `(160,900)` to `(300,900)` delivered
+  the expected native DOWN/MOVE/UP sequence and the gameplay HUD remained
+  active. Evidence: `screenshots/loop99_tutorial_dialog.png`,
+  `screenshots/loop99_after_tutorial.png`, `screenshots/loop99_before_move.png`,
+  `screenshots/loop99_after_move.png`, `tmp/loop99_create_ok.log`, and
+  `tmp/loop99_move.log`.
+- No source change was made because the observed flow already starts the game
+  and the modal matches the intended tutorial gate. The remaining #99 work is
+  verifying that the character name, race, attributes, and skills are
+  propagated into the live player state without guessing unresolved original
+  rules.
+
+## 2026-11-08 — #100 Android product-flow regression completed
+
+- `:app:externalNativeBuildDebug` and `:app:assembleDebug` succeeded for all
+  configured ABIs. The APK installed successfully on `Pixel_API34`.
+- Clean emulator evidence covers the original intro videos, title screen,
+  Continue -> Load Game, New -> Character Creation -> Cancel, and
+  New -> Character Creation -> Create -> tutorial dismissal -> gameplay.
+- No `SIGSEGV`, `Fatal signal`, or `FATAL EXCEPTION` was found in the
+  collected logs. Evidence is stored under `screenshots/loop100_*` and
+  `tmp/loop100_*.log`.
+- #100 is complete. Visual placeholder quality and unresolved character
+  creation semantics remain tracked separately in #96, #97, #99, and #101.
+
 Last run: 2026-11-05 (a) — RE loop: V261-V277 landed (v268-v286), V277 done in-session after dispatch outages; barter sk-claim retracted (v279), SLG chain closed (v280-v286). Ledger 164/157/7 (bak128, ALL OK). V278 running. L2; README + STATE.md only for this run.
 
 ## High Priority (loop is acting or waiting on human)
