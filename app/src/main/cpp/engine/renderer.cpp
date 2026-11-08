@@ -5,6 +5,7 @@
 #include "imperial_weave.h"
 #include "gl_check.h"
 #include "../ui/ui_draw_helper.h"
+#include "../ui/placeholder_assets.h"
 #include "../ui/debug_draw.h"
 #include "../ui/loading_screen.h"
 #include "../assets/bsa_reader.h"
@@ -204,6 +205,8 @@ void Renderer::resize(unsigned int width, unsigned int height) {
     } else {
         LOGW("WARNING: TextRenderer is NULL in resize()! Dimensions not updated!");
     }
+    PlaceholderAssets::setScreenSize(static_cast<int>(screenWidth),
+                                     static_cast<int>(screenHeight));
 
     // Update DebugMenu screen size
     if (debugMenu) {
@@ -893,7 +896,11 @@ bool Renderer::initGameSystems() {
         LOGE("Failed to initialize UICharacterCreation");
     } else {
         characterCreationUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
-        characterCreationUI->setESMManager(&assetManager->getEsmManager());
+        if (assetManager) {
+            characterCreationUI->setESMManager(&assetManager->getEsmManager());
+        } else {
+            LOGW("CharacterCreation: AssetManager is not ready; ESM will be wired before New Game");
+        }
         characterCreationUI->setOnConfirm([this](const CharacterStatus& character) {
             showCharacterCreation = false;
             // Rename player, apply stats
@@ -4887,9 +4894,20 @@ void Renderer::render(float deltaTime) {
         }
 
         if (titleScreen->isGameStarted()) {
+            // ESM parsing may still be running while the title screen is
+            // already visible. Character creation reads the parsed records,
+            // so do not enter it until the worker has published a complete
+            // data set on the render thread.
+            if (!assetManager ||
+                !gameDataLoadAttempted.load(std::memory_order_acquire)) {
+                titleScreen->resetGameStarted();
+                LOGI("New Game deferred until asset and ESM loading completes");
+                return;
+            }
             showTitleScreen = false;
             showCharacterCreation = true;
             if (characterCreationUI) {
+                characterCreationUI->setESMManager(&assetManager->getEsmManager());
                 characterCreationUI->open();
             }
             LOGI("Game started! Opening character creation.");
@@ -5388,7 +5406,9 @@ if (uiMessageBox && uiMessageBox->isVisible()) {
                               (gameplayOptionsUI && gameplayOptionsUI->isVisible()) ||
                               (videoOptionsUI && videoOptionsUI->isVisible()) ||
                               (videoDisplayUI && videoDisplayUI->isVisible()) ||
-                              (controlsOptionsUI && controlsOptionsUI->isVisible());
+                              (controlsOptionsUI && controlsOptionsUI->isVisible()) ||
+                              (showCharacterCreation && characterCreationUI &&
+                               characterCreationUI->isVisible());
 
     // Render Phase 9 UI Framework components (overlays on top of existing UI)
     if (uiSystem && !saveLoadOpen) {
@@ -5518,6 +5538,14 @@ if (uiMessageBox && uiMessageBox->isVisible()) {
     if (subtitles) {
         subtitles->render(textRenderer.get(), static_cast<int>(screenWidth),
                           static_cast<int>(screenHeight));
+    }
+
+    // Character creation is opened after the world is initialized, so it must
+    // be rendered in the gameplay pass rather than only in the title-screen
+    // pass. Keep it as the front-most modal overlay while it owns input.
+    if (showCharacterCreation && characterCreationUI && characterCreationUI->isVisible()) {
+        characterCreationUI->update(deltaTime);
+        characterCreationUI->render();
     }
 
     // Frame rate control - enforce target FPS
@@ -8076,6 +8104,14 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
         return;
     }
 
+    // The title screen owns the full surface while it is active. Route it before
+    // the legacy gameplay panels below; several panels are visible by default and
+    // would otherwise consume a title-menu tap without rendering any visible UI.
+    if (showTitleScreen && titleScreen) {
+        titleScreen->onTouchEvent(x, y, action);
+        return;
+    }
+
     // Mirror the render gate (showCharacterCreation && isVisible()) so the panel
     // cannot swallow touches while the character creation flow is not active.
     if (showCharacterCreation && characterCreationUI && characterCreationUI->isVisible()) {
@@ -8290,12 +8326,6 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
     // Launcher handles touch when active
     if (showLauncher && launcherScreen) {
         launcherScreen->onTouchEvent(x, y, action);
-        return;
-    }
-
-    // TitleScreen handles all touch actions (DOWN, UP, MOVE) for button click callbacks
-    if (showTitleScreen && titleScreen) {
-        titleScreen->onTouchEvent(x, y, action);
         return;
     }
 
@@ -9123,6 +9153,8 @@ bool Renderer::anyMenuOpen() const {
     if (videoDisplayUI && videoDisplayUI->isVisible()) return true;
     if (controlsOptionsUI && controlsOptionsUI->isVisible()) return true;
     if (settingsUI && settingsUI->isVisible()) return true;
+    if (showCharacterCreation && characterCreationUI &&
+        characterCreationUI->isVisible()) return true;
     if (saveLoadUI && saveLoadUI->isVisible()) return true;
     if (questUI && questUI->getVisibility()) return true;
     if (inventoryUI && inventoryUI->isVisible()) return true;

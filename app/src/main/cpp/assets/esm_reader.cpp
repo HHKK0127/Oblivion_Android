@@ -4625,6 +4625,12 @@ const std::vector<RaceData>& ESMManager::getAllRaces() const {
         static std::vector<RaceData> empty;
         return empty;
     }
+    if (!m_files.back()) {
+        LOGE("ESMManager::getAllRaces: last plugin entry is null (plugins=%zu)",
+             m_files.size());
+        static std::vector<RaceData> empty;
+        return empty;
+    }
     return m_files.back()->getRaces();
 }
 

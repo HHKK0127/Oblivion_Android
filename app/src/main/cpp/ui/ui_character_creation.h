@@ -31,7 +31,16 @@ public:
     bool onTouchDown(float x, float y, int pointerId) override;
     void render() override;
 
-    void setScreenSize(int w, int h) { screenWidth = w; screenHeight = h; }
+    void setScreenSize(int w, int h) {
+        screenWidth = w;
+        screenHeight = h;
+
+        const float panelWidth = static_cast<float>(w) * 0.72f;
+        const float panelHeight = static_cast<float>(h) * 0.82f;
+        setSize(panelWidth, panelHeight);
+        setPosition((static_cast<float>(w) - panelWidth) * 0.5f,
+                    (static_cast<float>(h) - panelHeight) * 0.5f);
+    }
 
     // Callback when character creation is confirmed
     void setOnConfirm(ConfirmCallback cb) { onConfirm = cb; }

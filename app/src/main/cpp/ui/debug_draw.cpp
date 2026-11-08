@@ -14,8 +14,7 @@
 // Shader sources (GLES 3.0)
 // ---------------------------------------------------------------------------
 
-static const char* kVS3D = R"glsl(
-#version 300 es
+static const char* kVS3D = R"glsl(#version 300 es
 precision mediump float;
 layout(location = 0) in vec3 aPos;
 layout(location = 1) in vec4 aColor;
@@ -29,8 +28,7 @@ void main() {
 }
 )glsl";
 
-static const char* kFS3D = R"glsl(
-#version 300 es
+static const char* kFS3D = R"glsl(#version 300 es
 precision mediump float;
 in vec4 vColor;
 out vec4 fragColor;
@@ -39,8 +37,7 @@ void main() {
 }
 )glsl";
 
-static const char* kVS2D = R"glsl(
-#version 300 es
+static const char* kVS2D = R"glsl(#version 300 es
 precision mediump float;
 layout(location = 0) in vec2 aPos;
 layout(location = 1) in vec4 aColor;
@@ -54,8 +51,7 @@ void main() {
 }
 )glsl";
 
-static const char* kFS2D = R"glsl(
-#version 300 es
+static const char* kFS2D = R"glsl(#version 300 es
 precision mediump float;
 in vec4 vColor;
 out vec4 fragColor;

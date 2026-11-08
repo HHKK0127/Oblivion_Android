@@ -13,6 +13,11 @@
  */
 namespace PlaceholderAssets {
 
+    /**
+     * @brief Update the pixel viewport used by placeholder drawing helpers.
+     */
+    void setScreenSize(int width, int height);
+
     // ========================================
     // Color palette definition (parchment style)
     // ========================================

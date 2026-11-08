@@ -384,24 +384,26 @@ void UICharacterCreation::renderConfirmCancelButtons() {
     if (!textRenderer) return;
     glm::vec2 cp = getContentPosition();
     float by = getConfirmButtonY();
-    float buttonW = 80.0f;
+    float buttonW = 105.0f;
     float buttonH = 32.0f;
-    float spacing = 20.0f;
+    float spacing = 16.0f;
+    float cancelX = cp.x + getContentSize().x - buttonW;
+    float confirmX = cancelX - spacing - buttonW;
 
     // Confirm button
-    PlaceholderAssets::drawPanel(cp.x + getContentSize().x - 180.0f, by, buttonW, buttonH,
+    PlaceholderAssets::drawPanel(confirmX, by, buttonW, buttonH,
         PlaceholderAssets::Colors::GOLD_HIGHLIGHT,
         glm::vec3(PlaceholderAssets::Colors::GOLD_HIGHLIGHT));
     textRenderer->renderText("Create",
-        cp.x + getContentSize().x - 170.0f, by + 6.0f,
+        confirmX + 18.0f, by + 6.0f,
         glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT), 0.65f);
 
     // Cancel button
-    PlaceholderAssets::drawPanel(cp.x + getContentSize().x - 85.0f, by, buttonW, buttonH,
+    PlaceholderAssets::drawPanel(cancelX, by, buttonW, buttonH,
         PlaceholderAssets::Colors::BROWN_ACCENT,
         glm::vec3(PlaceholderAssets::Colors::GOLD_HIGHLIGHT));
     textRenderer->renderText("Cancel",
-        cp.x + getContentSize().x - 75.0f, by + 6.0f,
+        cancelX + 17.0f, by + 6.0f,
         glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT), 0.65f);
 }
 
@@ -425,20 +427,20 @@ int UICharacterCreation::hitTestTabButton(float x, float y) const {
 bool UICharacterCreation::hitTestConfirmButton(float x, float y) const {
     glm::vec2 cp = getContentPosition();
     float by = getConfirmButtonY();
-    float buttonX = cp.x + getContentSize().x - 180.0f;
+    float buttonX = cp.x + getContentSize().x - 226.0f;
     float buttonY = by;
 
-    return x >= buttonX && x <= buttonX + 80.0f &&
+    return x >= buttonX && x <= buttonX + 105.0f &&
            y >= buttonY && y <= buttonY + 32.0f;
 }
 
 bool UICharacterCreation::hitTestCancelButton(float x, float y) const {
     glm::vec2 cp = getContentPosition();
     float by = getConfirmButtonY();
-    float buttonX = cp.x + getContentSize().x - 85.0f;
+    float buttonX = cp.x + getContentSize().x - 105.0f;
     float buttonY = by;
 
-    return x >= buttonX && x <= buttonX + 80.0f &&
+    return x >= buttonX && x <= buttonX + 105.0f &&
            y >= buttonY && y <= buttonY + 32.0f;
 }
 
@@ -583,8 +585,17 @@ void UICharacterCreation::loadRacesFromESM() {
     if (!esmManager) return;
 
     // Get all races from ESM
-    for (const auto& race : esmManager->getAllRaces()) {
-        availableRaces_.push_back(race);
+    const auto& races = esmManager->getAllRaces();
+    for (const auto& race : races) {
+        if (race.fullName.empty() && race.editorID.empty()) {
+            continue;
+        }
+
+        oblivion::RaceData displayRace = race;
+        if (displayRace.fullName.empty()) {
+            displayRace.fullName = displayRace.editorID;
+        }
+        availableRaces_.push_back(std::move(displayRace));
     }
 
     if (!availableRaces_.empty()) {

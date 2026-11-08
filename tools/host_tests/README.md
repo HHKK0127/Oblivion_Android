@@ -173,6 +173,8 @@ only in the steady state. The suite count went from 40 to 41 with this case.
 - `msvc_compat.h` — force-included (`/FI`) by the MSVC runner only. Supplies the
   `S_ISDIR` / `S_ISREG` macros that g++ gets from `<sys/stat.h>` and MSVC does
   not define.
+- `stubs/dirent.h` — selects the Win32 `dirent` shim only for MSVC; Linux and
+  MinGW builds defer to the platform's native `<dirent.h>`.
 
 ## Usage (local)
 

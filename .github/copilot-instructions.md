@@ -1,5 +1,15 @@
 # GitHub Copilot Custom Instructions
 
+## GitHub Copilot loop settings
+
+The GitHub Copilot-specific loop policy is defined in
+[`.github/copilot-loop-settings.md`](copilot-loop-settings.md). Follow that
+file for L1/L2 transitions, stop conditions, verification, change limits, and
+Git safety. It also defines the original-structure rule, TODO review process,
+Supermemory/Graphify relationship, periodic recovery, and milestone commit
+policy. The OpenCode loop files (`AGENTS.md`, `loop-constraints.md`, and
+`loop-budget.md`) are not Copilot's execution policy.
+
 ## セッションメモリの共有（GitHub Copilot ↔ opencode）
 
 本プロジェクトのセッション記憶の**正本は `.github/memory/session-memory.json` の 1 本**（プロジェクト共有台帳）。**Supermemory** は Copilot 側の書き込み先として併存する。
@@ -35,9 +45,10 @@
 - **書き込み経路**: 逐語保存には REST `POST https://api.supermemory.ai/v4/memories` を使う（document ingestion は LLM 抽出が入り否定条件が落ちるため不可）。MCP ツールの `add_memory` は LLM 経由の要約が入るので台帳の複製には使わない
 - **背景**: 2026-10-22 の全件突合でローカル 580 件に対し Supermemory 側は 412 件・逐語一致 0 件だった。台帳を捨てると 2026-10-21 以前の 537 件と制約・決定の根拠が失われるため、正本はローカルに固定した（詳細は台帳 id `copilot-supermemory-sync-policy-20261022`）。**2026-10-22 のユーザー指示で Copilot 側の書き込み先のみ Supermemory へ変更したが、上記の制約は未解決のまま残る**
 
-## Git 操作ポリシー（厳守）
+## Git 操作ポリシー
 
-- **commit / push はユーザーの明示指示があるときのみ実行する**。定期・自動での commit / push は禁止（2026-10-23 ユーザー指示「プッシュの指示はこちらでします」「プッシュしてしまったのは仕方ないので次回から厳守してください」）
+- **検証済みマイルストーン単位の定期コミットは、今回のユーザー指示により許可する**。差分レビュー、秘密情報検査、テスト確認、対象範囲確認を完了してから実行する
+- **push / merge / force-update は引き続きユーザーの明示指示が必要**
 - コミット対象に `docs/RE_EXE_REPORT.md` を含める場合は、下記 RE 解析方針の「git commit はユーザーの明示承諾があるまで禁止」に従い、事前承諾を取る
 - push 済みの内容を取り消す場合は `git push --force-with-lease` が必要になる。共有ブランチのため、影響を説明してユーザー確認を得てから実行する
 

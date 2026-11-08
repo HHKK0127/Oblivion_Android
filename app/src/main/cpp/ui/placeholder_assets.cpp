@@ -57,6 +57,10 @@ namespace PlaceholderAssets {
         g_screenHeight = height;
     }
 
+    void setScreenSize(int width, int height) {
+        updateScreenSize(std::max(1, width), std::max(1, height));
+    }
+
     // ========================================
     // Basic drawing functions
     // ========================================

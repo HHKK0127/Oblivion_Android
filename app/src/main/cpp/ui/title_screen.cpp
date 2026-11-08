@@ -1057,15 +1057,31 @@ void TitleScreen::onTouchEvent(float x, float y, int action) {
                 LOGI("Menu touch DOWN at (%.1f, %.1f), panel pos=(%.1f, %.1f), panel size=(%.1f, %.1f)",
                      x, y, menuPanel->getPosition().x, menuPanel->getPosition().y,
                      menuPanel->getSize().x, menuPanel->getSize().y);
-                menuPanel->onTouchDown(x, y, 0);
+                for (size_t i = 0; i < menuButtons.size(); ++i) {
+                    const bool hit = menuButtons[i]->contains(x, y);
+                    menuButtons[i]->setHovered(hit);
+                    if (hit) {
+                        selectedIndex = static_cast<int>(i);
+                    }
+                }
             } else if (action == 1) {
-                menuPanel->onTouchUp(x, y, 0);
+                int releasedIndex = -1;
+                for (size_t i = 0; i < menuButtons.size(); ++i) {
+                    const bool hit = menuButtons[i]->contains(x, y);
+                    menuButtons[i]->setHovered(hit);
+                    if (hit) {
+                        releasedIndex = static_cast<int>(i);
+                    }
+                }
+                if (releasedIndex == selectedIndex && releasedIndex >= 0) {
+                    handleMenuSelection();
+                }
             } else if (action == 2) {
-                float dx = x - lastTouchX;
-                float dy = y - lastTouchY;
                 lastTouchX = x;
                 lastTouchY = y;
-                menuPanel->onTouchMove(x, y, dx, dy, 0);
+                for (auto& button : menuButtons) {
+                    button->setHovered(button->contains(x, y));
+                }
             }
         }
     } else if (state == TitleScreenState::CREDITS) {

@@ -369,6 +369,7 @@ public:
     }
 
     bool isGameStarted() const { return gameStarted; }
+    void resetGameStarted() { gameStarted = false; }
     bool isSettingsRequested() const { return settingsRequested; }
     void resetSettingsRequest() { settingsRequested = false; }
     bool isLoadGameRequested() const { return loadGameRequested; }

@@ -277,6 +277,9 @@ echo "::group::Build host tests"
 # Rust archives must follow the objects that reference them (link order).
 # Rust's std drags in winsock/ntdll/userenv symbols on a MinGW host only, so
 # keep those out of the Linux CI link line.
+# Host tests are a correctness gate, not a performance artifact.  This is one
+# deliberately large translation unit; -O2 makes local and CI compilation
+# needlessly long without improving the assertions being executed.
 RUST_LIBS=(
   "$RUST_LIB_DIR/libassets_ffi.a"
   "$RUST_LIB_DIR/libbsa_ffi.a"
@@ -296,7 +299,7 @@ case "$(uname -s)" in
     EXTRA_LIBS=(-lws2_32 -lntdll -luserenv -lbcrypt -ladvapi32 -lshell32 -lole32)
     ;;
 esac
-g++ -std=c++17 -O2 -ffunction-sections -fdata-sections \
+g++ -std=c++17 -O0 -ffunction-sections -fdata-sections \
     "${DEFINES[@]}" "${INCLUDES[@]}" "${SOURCES[@]}" \
     "${RUST_LIBS[@]}" ${EXTRA_LIBS[@]+"${EXTRA_LIBS[@]}"} \
     -Wl,--gc-sections -o "$BIN" -lz
