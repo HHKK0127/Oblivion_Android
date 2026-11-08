@@ -188,6 +188,25 @@ Creation and therefore provides no duplicate-input verdict.
 - #100 is complete. Visual placeholder quality and unresolved character
   creation semantics remain tracked separately in #96, #97, #99, and #101.
 
+## 2026-11-08 — Loop recovery verification
+
+- Resumed from the compressed session summary without repeating completed
+  implementation work.
+- Recovery checks performed in order: read the latest `STATE.md` section,
+  inspected all outstanding Android/character-creation TODOs, checked
+  `git status`, reviewed the latest movement evidence, and inspected the
+  relevant input/update code path.
+- The first unfinished executable item remains #99. Its current boundary is
+  explicit: native joystick DOWN/MOVE/UP delivery is proven, but player
+  position/camera displacement is not proven because `loop99_move.log` has no
+  before/after position samples and the screenshots differ only minimally.
+- No source change was made during recovery. The next verification must add
+  direct runtime evidence for player position or camera movement before any
+  movement fix is attempted.
+- #103 is complete for this recovery scenario. Future resumptions should use
+  the same checklist and continue at #99 rather than replaying #95, #100, or
+  #105.
+
 Last run: 2026-11-05 (a) — RE loop: V261-V277 landed (v268-v286), V277 done in-session after dispatch outages; barter sk-claim retracted (v279), SLG chain closed (v280-v286). Ledger 164/157/7 (bak128, ALL OK). V278 running. L2; README + STATE.md only for this run.
 
 ## High Priority (loop is acting or waiting on human)
