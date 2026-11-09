@@ -1,0 +1,9 @@
+[package]
+name = "dds-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "DDS texture parser and DXT/uncompressed decoder (header parse, BC1/2/3, mask unpack)"
+
+[dependencies]
+thiserror.workspace = true

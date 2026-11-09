@@ -1,0 +1,13 @@
+[package]
+name = "plugin-ffi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "C ABI for plugin-parser, so the C++ Android layer can rebase FormIDs through Rust"
+
+[lib]
+name = "plugin_ffi"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[dependencies]
+plugin-parser = { path = "../plugin-parser" }

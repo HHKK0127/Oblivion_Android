@@ -1,0 +1,13 @@
+[package]
+name = "vm-handlers"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Oblivion Script VM handler recovery via capstone (362 MISS functions, trampoline 0x4FAE80 / dispatcher 0x4FDE30)"
+
+[dependencies]
+capstone.workspace = true
+pelite.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true

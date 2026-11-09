@@ -1,0 +1,10 @@
+[package]
+name = "ess-parser"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Oblivion .ess SaveGame parser (SaveGame 0x465130 / LoadGame 0x465860 layout)"
+
+[dependencies]
+serde.workspace = true
+thiserror.workspace = true

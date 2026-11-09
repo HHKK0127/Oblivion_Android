@@ -1,0 +1,13 @@
+[package]
+name = "assets-ffi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "C ABI for assets-core, so the C++ Android asset layer can resolve paths and merge geometry through Rust"
+
+[lib]
+name = "assets_ffi"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[dependencies]
+assets-core = { path = "../assets-core" }

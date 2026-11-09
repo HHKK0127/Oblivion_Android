@@ -1,0 +1,8 @@
+[package]
+name = "nif-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Gamebryo/NetImmerse NIF container parser (header, object array, block walker)"
+
+[dependencies]

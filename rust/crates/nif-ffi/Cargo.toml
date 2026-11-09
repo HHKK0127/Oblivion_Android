@@ -1,0 +1,13 @@
+[package]
+name = "nif-ffi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "C ABI for nif-core, so the C++ NIFParser shim can decode meshes through Rust"
+
+[lib]
+name = "nif_ffi"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[dependencies]
+nif-core = { path = "../nif-core" }

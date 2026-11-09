@@ -1,0 +1,3726 @@
+{
+ "table_va": "0xb0c8d8",
+ "table_rva": "0x70c8d8",
+ "entry_size": 40,
+ "base_opcode": 4096,
+ "count": 531,
+ "entries": [
+  {
+   "index": 0,
+   "opcode": 4096,
+   "entry_va": "0xb0c8d8",
+   "handler": "0x513280",
+   "valid": true
+  },
+  {
+   "index": 1,
+   "opcode": 4097,
+   "entry_va": "0xb0c900",
+   "handler": "0x5003f0",
+   "valid": true
+  },
+  {
+   "index": 2,
+   "opcode": 4098,
+   "entry_va": "0xb0c928",
+   "handler": "0x507320",
+   "valid": true
+  },
+  {
+   "index": 3,
+   "opcode": 4099,
+   "entry_va": "0xb0c950",
+   "handler": "0x50b780",
+   "valid": true
+  },
+  {
+   "index": 4,
+   "opcode": 4100,
+   "entry_va": "0xb0c978",
+   "handler": "0x510620",
+   "valid": true
+  },
+  {
+   "index": 5,
+   "opcode": 4101,
+   "entry_va": "0xb0c9a0",
+   "handler": "0x502390",
+   "valid": true
+  },
+  {
+   "index": 6,
+   "opcode": 4102,
+   "entry_va": "0xb0c9c8",
+   "handler": "0x501a80",
+   "valid": true
+  },
+  {
+   "index": 7,
+   "opcode": 4103,
+   "entry_va": "0xb0c9f0",
+   "handler": "0x508fc0",
+   "valid": true
+  },
+  {
+   "index": 8,
+   "opcode": 4104,
+   "entry_va": "0xb0ca18",
+   "handler": "0x501b40",
+   "valid": true
+  },
+  {
+   "index": 9,
+   "opcode": 4105,
+   "entry_va": "0xb0ca40",
+   "handler": "0x509110",
+   "valid": true
+  },
+  {
+   "index": 10,
+   "opcode": 4106,
+   "entry_va": "0xb0ca68",
+   "handler": "0x501ae0",
+   "valid": true
+  },
+  {
+   "index": 11,
+   "opcode": 4107,
+   "entry_va": "0xb0ca90",
+   "handler": "0x501ba0",
+   "valid": true
+  },
+  {
+   "index": 12,
+   "opcode": 4108,
+   "entry_va": "0xb0cab8",
+   "handler": "0x501c20",
+   "valid": true
+  },
+  {
+   "index": 13,
+   "opcode": 4109,
+   "entry_va": "0xb0cae0",
+   "handler": "0x507650",
+   "valid": true
+  },
+  {
+   "index": 14,
+   "opcode": 4110,
+   "entry_va": "0xb0cb08",
+   "handler": "0x501670",
+   "valid": true
+  },
+  {
+   "index": 15,
+   "opcode": 4111,
+   "entry_va": "0xb0cb30",
+   "handler": "0x5016d0",
+   "valid": true
+  },
+  {
+   "index": 16,
+   "opcode": 4112,
+   "entry_va": "0xb0cb58",
+   "handler": "0x5017e0",
+   "valid": true
+  },
+  {
+   "index": 17,
+   "opcode": 4113,
+   "entry_va": "0xb0cb80",
+   "handler": "0x509220",
+   "valid": true
+  },
+  {
+   "index": 18,
+   "opcode": 4114,
+   "entry_va": "0xb0cba8",
+   "handler": "0x501c00",
+   "valid": true
+  },
+  {
+   "index": 19,
+   "opcode": 4115,
+   "entry_va": "0xb0cbd0",
+   "handler": "0x5107a0",
+   "valid": true
+  },
+  {
+   "index": 20,
+   "opcode": 4116,
+   "entry_va": "0xb0cbf8",
+   "handler": "0x501c40",
+   "valid": true
+  },
+  {
+   "index": 21,
+   "opcode": 4117,
+   "entry_va": "0xb0cc20",
+   "handler": "0x501cf0",
+   "valid": true
+  },
+  {
+   "index": 22,
+   "opcode": 4118,
+   "entry_va": "0xb0cc48",
+   "handler": "0x514660",
+   "valid": true
+  },
+  {
+   "index": 23,
+   "opcode": 4119,
+   "entry_va": "0xb0cc70",
+   "handler": "0x501d30",
+   "valid": true
+  },
+  {
+   "index": 24,
+   "opcode": 4120,
+   "entry_va": "0xb0cc98",
+   "handler": "0x501e20",
+   "valid": true
+  },
+  {
+   "index": 25,
+   "opcode": 4121,
+   "entry_va": "0xb0ccc0",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 26,
+   "opcode": 4122,
+   "entry_va": "0xb0cce8",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 27,
+   "opcode": 4123,
+   "entry_va": "0xb0cd10",
+   "handler": "0x501ef0",
+   "valid": true
+  },
+  {
+   "index": 28,
+   "opcode": 4124,
+   "entry_va": "0xb0cd38",
+   "handler": "0x514950",
+   "valid": true
+  },
+  {
+   "index": 29,
+   "opcode": 4125,
+   "entry_va": "0xb0cd60",
+   "handler": "0x510b90",
+   "valid": true
+  },
+  {
+   "index": 30,
+   "opcode": 4126,
+   "entry_va": "0xb0cd88",
+   "handler": "0x501f50",
+   "valid": true
+  },
+  {
+   "index": 31,
+   "opcode": 4127,
+   "entry_va": "0xb0cdb0",
+   "handler": "0x5072b0",
+   "valid": true
+  },
+  {
+   "index": 32,
+   "opcode": 4128,
+   "entry_va": "0xb0cdd8",
+   "handler": "0x503210",
+   "valid": true
+  },
+  {
+   "index": 33,
+   "opcode": 4129,
+   "entry_va": "0xb0ce00",
+   "handler": "0x50a150",
+   "valid": true
+  },
+  {
+   "index": 34,
+   "opcode": 4130,
+   "entry_va": "0xb0ce28",
+   "handler": "0x50a240",
+   "valid": true
+  },
+  {
+   "index": 35,
+   "opcode": 4131,
+   "entry_va": "0xb0ce50",
+   "handler": "0x502370",
+   "valid": true
+  },
+  {
+   "index": 36,
+   "opcode": 4132,
+   "entry_va": "0xb0ce78",
+   "handler": "0x502270",
+   "valid": true
+  },
+  {
+   "index": 37,
+   "opcode": 4133,
+   "entry_va": "0xb0cea0",
+   "handler": "0x514b50",
+   "valid": true
+  },
+  {
+   "index": 38,
+   "opcode": 4134,
+   "entry_va": "0xb0cec8",
+   "handler": "0x509490",
+   "valid": true
+  },
+  {
+   "index": 39,
+   "opcode": 4135,
+   "entry_va": "0xb0cef0",
+   "handler": "0x502630",
+   "valid": true
+  },
+  {
+   "index": 40,
+   "opcode": 4136,
+   "entry_va": "0xb0cf18",
+   "handler": "0x502650",
+   "valid": true
+  },
+  {
+   "index": 41,
+   "opcode": 4137,
+   "entry_va": "0xb0cf40",
+   "handler": "0x502670",
+   "valid": true
+  },
+  {
+   "index": 42,
+   "opcode": 4138,
+   "entry_va": "0xb0cf68",
+   "handler": "0x502690",
+   "valid": true
+  },
+  {
+   "index": 43,
+   "opcode": 4139,
+   "entry_va": "0xb0cf90",
+   "handler": "0x5026f0",
+   "valid": true
+  },
+  {
+   "index": 44,
+   "opcode": 4140,
+   "entry_va": "0xb0cfb8",
+   "handler": "0x502750",
+   "valid": true
+  },
+  {
+   "index": 45,
+   "opcode": 4141,
+   "entry_va": "0xb0cfe0",
+   "handler": "0x502810",
+   "valid": true
+  },
+  {
+   "index": 46,
+   "opcode": 4142,
+   "entry_va": "0xb0d008",
+   "handler": "0x502870",
+   "valid": true
+  },
+  {
+   "index": 47,
+   "opcode": 4143,
+   "entry_va": "0xb0d030",
+   "handler": "0x502890",
+   "valid": true
+  },
+  {
+   "index": 48,
+   "opcode": 4144,
+   "entry_va": "0xb0d058",
+   "handler": "0x5029c0",
+   "valid": true
+  },
+  {
+   "index": 49,
+   "opcode": 4145,
+   "entry_va": "0xb0d080",
+   "handler": "0x5029e0",
+   "valid": true
+  },
+  {
+   "index": 50,
+   "opcode": 4146,
+   "entry_va": "0xb0d0a8",
+   "handler": "0x502b00",
+   "valid": true
+  },
+  {
+   "index": 51,
+   "opcode": 4147,
+   "entry_va": "0xb0d0d0",
+   "handler": "0x5118d0",
+   "valid": true
+  },
+  {
+   "index": 52,
+   "opcode": 4148,
+   "entry_va": "0xb0d0f8",
+   "handler": "0x511ab0",
+   "valid": true
+  },
+  {
+   "index": 53,
+   "opcode": 4149,
+   "entry_va": "0xb0d120",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 54,
+   "opcode": 4150,
+   "entry_va": "0xb0d148",
+   "handler": "0x502d30",
+   "valid": true
+  },
+  {
+   "index": 55,
+   "opcode": 4151,
+   "entry_va": "0xb0d170",
+   "handler": "0x502d80",
+   "valid": true
+  },
+  {
+   "index": 56,
+   "opcode": 4152,
+   "entry_va": "0xb0d198",
+   "handler": "0x502b80",
+   "valid": true
+  },
+  {
+   "index": 57,
+   "opcode": 4153,
+   "entry_va": "0xb0d1c0",
+   "handler": "0x502cb0",
+   "valid": true
+  },
+  {
+   "index": 58,
+   "opcode": 4154,
+   "entry_va": "0xb0d1e8",
+   "handler": "0x502be0",
+   "valid": true
+  },
+  {
+   "index": 59,
+   "opcode": 4155,
+   "entry_va": "0xb0d210",
+   "handler": "0x502c40",
+   "valid": true
+  },
+  {
+   "index": 60,
+   "opcode": 4156,
+   "entry_va": "0xb0d238",
+   "handler": "0x502e20",
+   "valid": true
+  },
+  {
+   "index": 61,
+   "opcode": 4157,
+   "entry_va": "0xb0d260",
+   "handler": "0x502e90",
+   "valid": true
+  },
+  {
+   "index": 62,
+   "opcode": 4158,
+   "entry_va": "0xb0d288",
+   "handler": "0x502ef0",
+   "valid": true
+  },
+  {
+   "index": 63,
+   "opcode": 4159,
+   "entry_va": "0xb0d2b0",
+   "handler": "0x502fd0",
+   "valid": true
+  },
+  {
+   "index": 64,
+   "opcode": 4160,
+   "entry_va": "0xb0d2d8",
+   "handler": "0x502ff0",
+   "valid": true
+  },
+  {
+   "index": 65,
+   "opcode": 4161,
+   "entry_va": "0xb0d300",
+   "handler": "0x5023b0",
+   "valid": true
+  },
+  {
+   "index": 66,
+   "opcode": 4162,
+   "entry_va": "0xb0d328",
+   "handler": "0x503010",
+   "valid": true
+  },
+  {
+   "index": 67,
+   "opcode": 4163,
+   "entry_va": "0xb0d350",
+   "handler": "0x503070",
+   "valid": true
+  },
+  {
+   "index": 68,
+   "opcode": 4164,
+   "entry_va": "0xb0d378",
+   "handler": "0x503270",
+   "valid": true
+  },
+  {
+   "index": 69,
+   "opcode": 4165,
+   "entry_va": "0xb0d3a0",
+   "handler": "0x503330",
+   "valid": true
+  },
+  {
+   "index": 70,
+   "opcode": 4166,
+   "entry_va": "0xb0d3c8",
+   "handler": "0x503390",
+   "valid": true
+  },
+  {
+   "index": 71,
+   "opcode": 4167,
+   "entry_va": "0xb0d3f0",
+   "handler": "0x503410",
+   "valid": true
+  },
+  {
+   "index": 72,
+   "opcode": 4168,
+   "entry_va": "0xb0d418",
+   "handler": "0x5035f0",
+   "valid": true
+  },
+  {
+   "index": 73,
+   "opcode": 4169,
+   "entry_va": "0xb0d440",
+   "handler": "0x5037b0",
+   "valid": true
+  },
+  {
+   "index": 74,
+   "opcode": 4170,
+   "entry_va": "0xb0d468",
+   "handler": "0x503930",
+   "valid": true
+  },
+  {
+   "index": 75,
+   "opcode": 4171,
+   "entry_va": "0xb0d490",
+   "handler": "0x502f10",
+   "valid": true
+  },
+  {
+   "index": 76,
+   "opcode": 4172,
+   "entry_va": "0xb0d4b8",
+   "handler": "0x503990",
+   "valid": true
+  },
+  {
+   "index": 77,
+   "opcode": 4173,
+   "entry_va": "0xb0d4e0",
+   "handler": "0x5039f0",
+   "valid": true
+  },
+  {
+   "index": 78,
+   "opcode": 4174,
+   "entry_va": "0xb0d508",
+   "handler": "0x509610",
+   "valid": true
+  },
+  {
+   "index": 79,
+   "opcode": 4175,
+   "entry_va": "0xb0d530",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 80,
+   "opcode": 4176,
+   "entry_va": "0xb0d558",
+   "handler": "0x503a10",
+   "valid": true
+  },
+  {
+   "index": 81,
+   "opcode": 4177,
+   "entry_va": "0xb0d580",
+   "handler": "0x503a30",
+   "valid": true
+  },
+  {
+   "index": 82,
+   "opcode": 4178,
+   "entry_va": "0xb0d5a8",
+   "handler": "0x513810",
+   "valid": true
+  },
+  {
+   "index": 83,
+   "opcode": 4179,
+   "entry_va": "0xb0d5d0",
+   "handler": "0x503a50",
+   "valid": true
+  },
+  {
+   "index": 84,
+   "opcode": 4180,
+   "entry_va": "0xb0d5f8",
+   "handler": "0x503b00",
+   "valid": true
+  },
+  {
+   "index": 85,
+   "opcode": 4181,
+   "entry_va": "0xb0d620",
+   "handler": "0x50ad00",
+   "valid": true
+  },
+  {
+   "index": 86,
+   "opcode": 4182,
+   "entry_va": "0xb0d648",
+   "handler": "0x50ae10",
+   "valid": true
+  },
+  {
+   "index": 87,
+   "opcode": 4183,
+   "entry_va": "0xb0d670",
+   "handler": "0x500650",
+   "valid": true
+  },
+  {
+   "index": 88,
+   "opcode": 4184,
+   "entry_va": "0xb0d698",
+   "handler": "0x503b60",
+   "valid": true
+  },
+  {
+   "index": 89,
+   "opcode": 4185,
+   "entry_va": "0xb0d6c0",
+   "handler": "0x513600",
+   "valid": true
+  },
+  {
+   "index": 90,
+   "opcode": 4186,
+   "entry_va": "0xb0d6e8",
+   "handler": "0x503bc0",
+   "valid": true
+  },
+  {
+   "index": 91,
+   "opcode": 4187,
+   "entry_va": "0xb0d710",
+   "handler": "0x503c40",
+   "valid": true
+  },
+  {
+   "index": 92,
+   "opcode": 4188,
+   "entry_va": "0xb0d738",
+   "handler": "0x50afd0",
+   "valid": true
+  },
+  {
+   "index": 93,
+   "opcode": 4189,
+   "entry_va": "0xb0d760",
+   "handler": "0x50b070",
+   "valid": true
+  },
+  {
+   "index": 94,
+   "opcode": 4190,
+   "entry_va": "0xb0d788",
+   "handler": "0x50af90",
+   "valid": true
+  },
+  {
+   "index": 95,
+   "opcode": 4191,
+   "entry_va": "0xb0d7b0",
+   "handler": "0x501dd0",
+   "valid": true
+  },
+  {
+   "index": 96,
+   "opcode": 4192,
+   "entry_va": "0xb0d7d8",
+   "handler": "0x5047e0",
+   "valid": true
+  },
+  {
+   "index": 97,
+   "opcode": 4193,
+   "entry_va": "0xb0d800",
+   "handler": "0x5047f0",
+   "valid": true
+  },
+  {
+   "index": 98,
+   "opcode": 4194,
+   "entry_va": "0xb0d828",
+   "handler": "0x504800",
+   "valid": true
+  },
+  {
+   "index": 99,
+   "opcode": 4195,
+   "entry_va": "0xb0d850",
+   "handler": "0x504820",
+   "valid": true
+  },
+  {
+   "index": 100,
+   "opcode": 4196,
+   "entry_va": "0xb0d878",
+   "handler": "0x511fa0",
+   "valid": true
+  },
+  {
+   "index": 101,
+   "opcode": 4197,
+   "entry_va": "0xb0d8a0",
+   "handler": "0x504890",
+   "valid": true
+  },
+  {
+   "index": 102,
+   "opcode": 4198,
+   "entry_va": "0xb0d8c8",
+   "handler": "0x5048b0",
+   "valid": true
+  },
+  {
+   "index": 103,
+   "opcode": 4199,
+   "entry_va": "0xb0d8f0",
+   "handler": "0x5048d0",
+   "valid": true
+  },
+  {
+   "index": 104,
+   "opcode": 4200,
+   "entry_va": "0xb0d918",
+   "handler": "0x5048f0",
+   "valid": true
+  },
+  {
+   "index": 105,
+   "opcode": 4201,
+   "entry_va": "0xb0d940",
+   "handler": "0x5006e0",
+   "valid": true
+  },
+  {
+   "index": 106,
+   "opcode": 4202,
+   "entry_va": "0xb0d968",
+   "handler": "0x504910",
+   "valid": true
+  },
+  {
+   "index": 107,
+   "opcode": 4203,
+   "entry_va": "0xb0d990",
+   "handler": "0x504950",
+   "valid": true
+  },
+  {
+   "index": 108,
+   "opcode": 4204,
+   "entry_va": "0xb0d9b8",
+   "handler": "0x504970",
+   "valid": true
+  },
+  {
+   "index": 109,
+   "opcode": 4205,
+   "entry_va": "0xb0d9e0",
+   "handler": "0x504990",
+   "valid": true
+  },
+  {
+   "index": 110,
+   "opcode": 4206,
+   "entry_va": "0xb0da08",
+   "handler": "0x5049b0",
+   "valid": true
+  },
+  {
+   "index": 111,
+   "opcode": 4207,
+   "entry_va": "0xb0da30",
+   "handler": "0x5049d0",
+   "valid": true
+  },
+  {
+   "index": 112,
+   "opcode": 4208,
+   "entry_va": "0xb0da58",
+   "handler": "0x5049f0",
+   "valid": true
+  },
+  {
+   "index": 113,
+   "opcode": 4209,
+   "entry_va": "0xb0da80",
+   "handler": "0x502dd0",
+   "valid": true
+  },
+  {
+   "index": 114,
+   "opcode": 4210,
+   "entry_va": "0xb0daa8",
+   "handler": "0x504a10",
+   "valid": true
+  },
+  {
+   "index": 115,
+   "opcode": 4211,
+   "entry_va": "0xb0dad0",
+   "handler": "0x504b00",
+   "valid": true
+  },
+  {
+   "index": 116,
+   "opcode": 4212,
+   "entry_va": "0xb0daf8",
+   "handler": "0x504ce0",
+   "valid": true
+  },
+  {
+   "index": 117,
+   "opcode": 4213,
+   "entry_va": "0xb0db20",
+   "handler": "0x50b4a0",
+   "valid": true
+  },
+  {
+   "index": 118,
+   "opcode": 4214,
+   "entry_va": "0xb0db48",
+   "handler": "0x504d00",
+   "valid": true
+  },
+  {
+   "index": 119,
+   "opcode": 4215,
+   "entry_va": "0xb0db70",
+   "handler": "0x504bb0",
+   "valid": true
+  },
+  {
+   "index": 120,
+   "opcode": 4216,
+   "entry_va": "0xb0db98",
+   "handler": "0x508c30",
+   "valid": true
+  },
+  {
+   "index": 121,
+   "opcode": 4217,
+   "entry_va": "0xb0dbc0",
+   "handler": "0x508e20",
+   "valid": true
+  },
+  {
+   "index": 122,
+   "opcode": 4218,
+   "entry_va": "0xb0dbe8",
+   "handler": "0x504c60",
+   "valid": true
+  },
+  {
+   "index": 123,
+   "opcode": 4219,
+   "entry_va": "0xb0dc10",
+   "handler": "0x50b590",
+   "valid": true
+  },
+  {
+   "index": 124,
+   "opcode": 4220,
+   "entry_va": "0xb0dc38",
+   "handler": "0x504db0",
+   "valid": true
+  },
+  {
+   "index": 125,
+   "opcode": 4221,
+   "entry_va": "0xb0dc60",
+   "handler": "0x504e10",
+   "valid": true
+  },
+  {
+   "index": 126,
+   "opcode": 4222,
+   "entry_va": "0xb0dc88",
+   "handler": "0x50b620",
+   "valid": true
+  },
+  {
+   "index": 127,
+   "opcode": 4223,
+   "entry_va": "0xb0dcb0",
+   "handler": "0x504e30",
+   "valid": true
+  },
+  {
+   "index": 128,
+   "opcode": 4224,
+   "entry_va": "0xb0dcd8",
+   "handler": "0x5019e0",
+   "valid": true
+  },
+  {
+   "index": 129,
+   "opcode": 4225,
+   "entry_va": "0xb0dd00",
+   "handler": "0x503470",
+   "valid": true
+  },
+  {
+   "index": 130,
+   "opcode": 4226,
+   "entry_va": "0xb0dd28",
+   "handler": "0x5034d0",
+   "valid": true
+  },
+  {
+   "index": 131,
+   "opcode": 4227,
+   "entry_va": "0xb0dd50",
+   "handler": "0x503530",
+   "valid": true
+  },
+  {
+   "index": 132,
+   "opcode": 4228,
+   "entry_va": "0xb0dd78",
+   "handler": "0x503590",
+   "valid": true
+  },
+  {
+   "index": 133,
+   "opcode": 4229,
+   "entry_va": "0xb0dda0",
+   "handler": "0x5027b0",
+   "valid": true
+  },
+  {
+   "index": 134,
+   "opcode": 4230,
+   "entry_va": "0xb0ddc8",
+   "handler": "0x5027d0",
+   "valid": true
+  },
+  {
+   "index": 135,
+   "opcode": 4231,
+   "entry_va": "0xb0ddf0",
+   "handler": "0x5027f0",
+   "valid": true
+  },
+  {
+   "index": 136,
+   "opcode": 4232,
+   "entry_va": "0xb0de18",
+   "handler": "0x503750",
+   "valid": true
+  },
+  {
+   "index": 137,
+   "opcode": 4233,
+   "entry_va": "0xb0de40",
+   "handler": "0x50ab80",
+   "valid": true
+  },
+  {
+   "index": 138,
+   "opcode": 4234,
+   "entry_va": "0xb0de68",
+   "handler": "0x50ac40",
+   "valid": true
+  },
+  {
+   "index": 139,
+   "opcode": 4235,
+   "entry_va": "0xb0de90",
+   "handler": "0x501960",
+   "valid": true
+  },
+  {
+   "index": 140,
+   "opcode": 4236,
+   "entry_va": "0xb0deb8",
+   "handler": "0x510150",
+   "valid": true
+  },
+  {
+   "index": 141,
+   "opcode": 4237,
+   "entry_va": "0xb0dee0",
+   "handler": "0x504e50",
+   "valid": true
+  },
+  {
+   "index": 142,
+   "opcode": 4238,
+   "entry_va": "0xb0df08",
+   "handler": "0x504e70",
+   "valid": true
+  },
+  {
+   "index": 143,
+   "opcode": 4239,
+   "entry_va": "0xb0df30",
+   "handler": "0x504e90",
+   "valid": true
+  },
+  {
+   "index": 144,
+   "opcode": 4240,
+   "entry_va": "0xb0df58",
+   "handler": "0x504eb0",
+   "valid": true
+  },
+  {
+   "index": 145,
+   "opcode": 4241,
+   "entry_va": "0xb0df80",
+   "handler": "0x504ed0",
+   "valid": true
+  },
+  {
+   "index": 146,
+   "opcode": 4242,
+   "entry_va": "0xb0dfa8",
+   "handler": "0x504ef0",
+   "valid": true
+  },
+  {
+   "index": 147,
+   "opcode": 4243,
+   "entry_va": "0xb0dfd0",
+   "handler": "0x502f30",
+   "valid": true
+  },
+  {
+   "index": 148,
+   "opcode": 4244,
+   "entry_va": "0xb0dff8",
+   "handler": "0x502f50",
+   "valid": true
+  },
+  {
+   "index": 149,
+   "opcode": 4245,
+   "entry_va": "0xb0e020",
+   "handler": "0x502f70",
+   "valid": true
+  },
+  {
+   "index": 150,
+   "opcode": 4246,
+   "entry_va": "0xb0e048",
+   "handler": "0x504f10",
+   "valid": true
+  },
+  {
+   "index": 151,
+   "opcode": 4247,
+   "entry_va": "0xb0e070",
+   "handler": "0x5123a0",
+   "valid": true
+  },
+  {
+   "index": 152,
+   "opcode": 4248,
+   "entry_va": "0xb0e098",
+   "handler": "0x50b6a0",
+   "valid": true
+  },
+  {
+   "index": 153,
+   "opcode": 4249,
+   "entry_va": "0xb0e0c0",
+   "handler": "0x504f30",
+   "valid": true
+  },
+  {
+   "index": 154,
+   "opcode": 4250,
+   "entry_va": "0xb0e0e8",
+   "handler": "0x504f50",
+   "valid": true
+  },
+  {
+   "index": 155,
+   "opcode": 4251,
+   "entry_va": "0xb0e110",
+   "handler": "0x504f70",
+   "valid": true
+  },
+  {
+   "index": 156,
+   "opcode": 4252,
+   "entry_va": "0xb0e138",
+   "handler": "0x505020",
+   "valid": true
+  },
+  {
+   "index": 157,
+   "opcode": 4253,
+   "entry_va": "0xb0e160",
+   "handler": "0x505090",
+   "valid": true
+  },
+  {
+   "index": 158,
+   "opcode": 4254,
+   "entry_va": "0xb0e188",
+   "handler": "0x512870",
+   "valid": true
+  },
+  {
+   "index": 159,
+   "opcode": 4255,
+   "entry_va": "0xb0e1b0",
+   "handler": "0x502a00",
+   "valid": true
+  },
+  {
+   "index": 160,
+   "opcode": 4256,
+   "entry_va": "0xb0e1d8",
+   "handler": "0x502a20",
+   "valid": true
+  },
+  {
+   "index": 161,
+   "opcode": 4257,
+   "entry_va": "0xb0e200",
+   "handler": "0x5050b0",
+   "valid": true
+  },
+  {
+   "index": 162,
+   "opcode": 4258,
+   "entry_va": "0xb0e228",
+   "handler": "0x502a40",
+   "valid": true
+  },
+  {
+   "index": 163,
+   "opcode": 4259,
+   "entry_va": "0xb0e250",
+   "handler": "0x502aa0",
+   "valid": true
+  },
+  {
+   "index": 164,
+   "opcode": 4260,
+   "entry_va": "0xb0e278",
+   "handler": "0x501760",
+   "valid": true
+  },
+  {
+   "index": 165,
+   "opcode": 4261,
+   "entry_va": "0xb0e2a0",
+   "handler": "0x500450",
+   "valid": true
+  },
+  {
+   "index": 166,
+   "opcode": 4262,
+   "entry_va": "0xb0e2c8",
+   "handler": "0x5005f0",
+   "valid": true
+  },
+  {
+   "index": 167,
+   "opcode": 4263,
+   "entry_va": "0xb0e2f0",
+   "handler": "0x511800",
+   "valid": true
+  },
+  {
+   "index": 168,
+   "opcode": 4264,
+   "entry_va": "0xb0e318",
+   "handler": "0x503810",
+   "valid": true
+  },
+  {
+   "index": 169,
+   "opcode": 4265,
+   "entry_va": "0xb0e340",
+   "handler": "0x5038a0",
+   "valid": true
+  },
+  {
+   "index": 170,
+   "opcode": 4266,
+   "entry_va": "0xb0e368",
+   "handler": "0x5051d0",
+   "valid": true
+  },
+  {
+   "index": 171,
+   "opcode": 4267,
+   "entry_va": "0xb0e390",
+   "handler": "0x5051f0",
+   "valid": true
+  },
+  {
+   "index": 172,
+   "opcode": 4268,
+   "entry_va": "0xb0e3b8",
+   "handler": "0x502b20",
+   "valid": true
+  },
+  {
+   "index": 173,
+   "opcode": 4269,
+   "entry_va": "0xb0e3e0",
+   "handler": "0x5074f0",
+   "valid": true
+  },
+  {
+   "index": 174,
+   "opcode": 4270,
+   "entry_va": "0xb0e408",
+   "handler": "0x50b700",
+   "valid": true
+  },
+  {
+   "index": 175,
+   "opcode": 4271,
+   "entry_va": "0xb0e430",
+   "handler": "0x505210",
+   "valid": true
+  },
+  {
+   "index": 176,
+   "opcode": 4272,
+   "entry_va": "0xb0e458",
+   "handler": "0x505230",
+   "valid": true
+  },
+  {
+   "index": 177,
+   "opcode": 4273,
+   "entry_va": "0xb0e480",
+   "handler": "0x505250",
+   "valid": true
+  },
+  {
+   "index": 178,
+   "opcode": 4274,
+   "entry_va": "0xb0e4a8",
+   "handler": "0x509520",
+   "valid": true
+  },
+  {
+   "index": 179,
+   "opcode": 4275,
+   "entry_va": "0xb0e4d0",
+   "handler": "0x5129e0",
+   "valid": true
+  },
+  {
+   "index": 180,
+   "opcode": 4276,
+   "entry_va": "0xb0e4f8",
+   "handler": "0x505350",
+   "valid": true
+  },
+  {
+   "index": 181,
+   "opcode": 4277,
+   "entry_va": "0xb0e520",
+   "handler": "0x5053d0",
+   "valid": true
+  },
+  {
+   "index": 182,
+   "opcode": 4278,
+   "entry_va": "0xb0e548",
+   "handler": "0x502960",
+   "valid": true
+  },
+  {
+   "index": 183,
+   "opcode": 4279,
+   "entry_va": "0xb0e570",
+   "handler": "0x50b810",
+   "valid": true
+  },
+  {
+   "index": 184,
+   "opcode": 4280,
+   "entry_va": "0xb0e598",
+   "handler": "0x50b920",
+   "valid": true
+  },
+  {
+   "index": 185,
+   "opcode": 4281,
+   "entry_va": "0xb0e5c0",
+   "handler": "0x5053b0",
+   "valid": true
+  },
+  {
+   "index": 186,
+   "opcode": 4282,
+   "entry_va": "0xb0e5e8",
+   "handler": "0x502350",
+   "valid": true
+  },
+  {
+   "index": 187,
+   "opcode": 4283,
+   "entry_va": "0xb0e610",
+   "handler": "0x5031a0",
+   "valid": true
+  },
+  {
+   "index": 188,
+   "opcode": 4284,
+   "entry_va": "0xb0e638",
+   "handler": "0x50baa0",
+   "valid": true
+  },
+  {
+   "index": 189,
+   "opcode": 4285,
+   "entry_va": "0xb0e660",
+   "handler": "0x50bac0",
+   "valid": true
+  },
+  {
+   "index": 190,
+   "opcode": 4286,
+   "entry_va": "0xb0e688",
+   "handler": "0x505460",
+   "valid": true
+  },
+  {
+   "index": 191,
+   "opcode": 4287,
+   "entry_va": "0xb0e6b0",
+   "handler": "0x50bb20",
+   "valid": true
+  },
+  {
+   "index": 192,
+   "opcode": 4288,
+   "entry_va": "0xb0e6d8",
+   "handler": "0x515d20",
+   "valid": true
+  },
+  {
+   "index": 193,
+   "opcode": 4289,
+   "entry_va": "0xb0e700",
+   "handler": "0x505480",
+   "valid": true
+  },
+  {
+   "index": 194,
+   "opcode": 4290,
+   "entry_va": "0xb0e728",
+   "handler": "0x50bb70",
+   "valid": true
+  },
+  {
+   "index": 195,
+   "opcode": 4291,
+   "entry_va": "0xb0e750",
+   "handler": "0x5054e0",
+   "valid": true
+  },
+  {
+   "index": 196,
+   "opcode": 4292,
+   "entry_va": "0xb0e778",
+   "handler": "0x50bd80",
+   "valid": true
+  },
+  {
+   "index": 197,
+   "opcode": 4293,
+   "entry_va": "0xb0e7a0",
+   "handler": "0x505540",
+   "valid": true
+  },
+  {
+   "index": 198,
+   "opcode": 4294,
+   "entry_va": "0xb0e7c8",
+   "handler": "0x50be00",
+   "valid": true
+  },
+  {
+   "index": 199,
+   "opcode": 4295,
+   "entry_va": "0xb0e7f0",
+   "handler": "0x5055a0",
+   "valid": true
+  },
+  {
+   "index": 200,
+   "opcode": 4296,
+   "entry_va": "0xb0e818",
+   "handler": "0x50be80",
+   "valid": true
+  },
+  {
+   "index": 201,
+   "opcode": 4297,
+   "entry_va": "0xb0e840",
+   "handler": "0x505600",
+   "valid": true
+  },
+  {
+   "index": 202,
+   "opcode": 4298,
+   "entry_va": "0xb0e868",
+   "handler": "0x50bf00",
+   "valid": true
+  },
+  {
+   "index": 203,
+   "opcode": 4299,
+   "entry_va": "0xb0e890",
+   "handler": "0x505660",
+   "valid": true
+  },
+  {
+   "index": 204,
+   "opcode": 4300,
+   "entry_va": "0xb0e8b8",
+   "handler": "0x505680",
+   "valid": true
+  },
+  {
+   "index": 205,
+   "opcode": 4301,
+   "entry_va": "0xb0e8e0",
+   "handler": "0x50bf80",
+   "valid": true
+  },
+  {
+   "index": 206,
+   "opcode": 4302,
+   "entry_va": "0xb0e908",
+   "handler": "0x50bff0",
+   "valid": true
+  },
+  {
+   "index": 207,
+   "opcode": 4303,
+   "entry_va": "0xb0e930",
+   "handler": "0x50c160",
+   "valid": true
+  },
+  {
+   "index": 208,
+   "opcode": 4304,
+   "entry_va": "0xb0e958",
+   "handler": "0x50c230",
+   "valid": true
+  },
+  {
+   "index": 209,
+   "opcode": 4305,
+   "entry_va": "0xb0e980",
+   "handler": "0x50c290",
+   "valid": true
+  },
+  {
+   "index": 210,
+   "opcode": 4306,
+   "entry_va": "0xb0e9a8",
+   "handler": "0x50c330",
+   "valid": true
+  },
+  {
+   "index": 211,
+   "opcode": 4307,
+   "entry_va": "0xb0e9d0",
+   "handler": "0x50c390",
+   "valid": true
+  },
+  {
+   "index": 212,
+   "opcode": 4308,
+   "entry_va": "0xb0e9f8",
+   "handler": "0x50d020",
+   "valid": true
+  },
+  {
+   "index": 213,
+   "opcode": 4309,
+   "entry_va": "0xb0ea20",
+   "handler": "0x5056f0",
+   "valid": true
+  },
+  {
+   "index": 214,
+   "opcode": 4310,
+   "entry_va": "0xb0ea48",
+   "handler": "0x505710",
+   "valid": true
+  },
+  {
+   "index": 215,
+   "opcode": 4311,
+   "entry_va": "0xb0ea70",
+   "handler": "0x5057d0",
+   "valid": true
+  },
+  {
+   "index": 216,
+   "opcode": 4312,
+   "entry_va": "0xb0ea98",
+   "handler": "0x50c430",
+   "valid": true
+  },
+  {
+   "index": 217,
+   "opcode": 4313,
+   "entry_va": "0xb0eac0",
+   "handler": "0x505810",
+   "valid": true
+  },
+  {
+   "index": 218,
+   "opcode": 4314,
+   "entry_va": "0xb0eae8",
+   "handler": "0x505850",
+   "valid": true
+  },
+  {
+   "index": 219,
+   "opcode": 4315,
+   "entry_va": "0xb0eb10",
+   "handler": "0x505870",
+   "valid": true
+  },
+  {
+   "index": 220,
+   "opcode": 4316,
+   "entry_va": "0xb0eb38",
+   "handler": "0x977c50",
+   "valid": true
+  },
+  {
+   "index": 221,
+   "opcode": 4317,
+   "entry_va": "0xb0eb60",
+   "handler": "0x50c560",
+   "valid": true
+  },
+  {
+   "index": 222,
+   "opcode": 4318,
+   "entry_va": "0xb0eb88",
+   "handler": "0x515ef0",
+   "valid": true
+  },
+  {
+   "index": 223,
+   "opcode": 4319,
+   "entry_va": "0xb0ebb0",
+   "handler": "0x505770",
+   "valid": true
+  },
+  {
+   "index": 224,
+   "opcode": 4320,
+   "entry_va": "0xb0ebd8",
+   "handler": "0x5058d0",
+   "valid": true
+  },
+  {
+   "index": 225,
+   "opcode": 4321,
+   "entry_va": "0xb0ec00",
+   "handler": "0x505930",
+   "valid": true
+  },
+  {
+   "index": 226,
+   "opcode": 4322,
+   "entry_va": "0xb0ec28",
+   "handler": "0x50c620",
+   "valid": true
+  },
+  {
+   "index": 227,
+   "opcode": 4323,
+   "entry_va": "0xb0ec50",
+   "handler": "0x505970",
+   "valid": true
+  },
+  {
+   "index": 228,
+   "opcode": 4324,
+   "entry_va": "0xb0ec78",
+   "handler": "0x505990",
+   "valid": true
+  },
+  {
+   "index": 229,
+   "opcode": 4325,
+   "entry_va": "0xb0eca0",
+   "handler": "0x5059f0",
+   "valid": true
+  },
+  {
+   "index": 230,
+   "opcode": 4326,
+   "entry_va": "0xb0ecc8",
+   "handler": "0x5030d0",
+   "valid": true
+  },
+  {
+   "index": 231,
+   "opcode": 4327,
+   "entry_va": "0xb0ecf0",
+   "handler": "0x5032d0",
+   "valid": true
+  },
+  {
+   "index": 232,
+   "opcode": 4328,
+   "entry_va": "0xb0ed18",
+   "handler": "0x50c070",
+   "valid": true
+  },
+  {
+   "index": 233,
+   "opcode": 4329,
+   "entry_va": "0xb0ed40",
+   "handler": "0x50c0f0",
+   "valid": true
+  },
+  {
+   "index": 234,
+   "opcode": 4330,
+   "entry_va": "0xb0ed68",
+   "handler": "0x505890",
+   "valid": true
+  },
+  {
+   "index": 235,
+   "opcode": 4331,
+   "entry_va": "0xb0ed90",
+   "handler": "0x5058b0",
+   "valid": true
+  },
+  {
+   "index": 236,
+   "opcode": 4332,
+   "entry_va": "0xb0edb8",
+   "handler": "0x505a30",
+   "valid": true
+  },
+  {
+   "index": 237,
+   "opcode": 4333,
+   "entry_va": "0xb0ede0",
+   "handler": "0x505a10",
+   "valid": true
+  },
+  {
+   "index": 238,
+   "opcode": 4334,
+   "entry_va": "0xb0ee08",
+   "handler": "0x5162b0",
+   "valid": true
+  },
+  {
+   "index": 239,
+   "opcode": 4335,
+   "entry_va": "0xb0ee30",
+   "handler": "0x5164c0",
+   "valid": true
+  },
+  {
+   "index": 240,
+   "opcode": 4336,
+   "entry_va": "0xb0ee58",
+   "handler": "0x50c6e0",
+   "valid": true
+  },
+  {
+   "index": 241,
+   "opcode": 4337,
+   "entry_va": "0xb0ee80",
+   "handler": "0x505ac0",
+   "valid": true
+  },
+  {
+   "index": 242,
+   "opcode": 4338,
+   "entry_va": "0xb0eea8",
+   "handler": "0x505b50",
+   "valid": true
+  },
+  {
+   "index": 243,
+   "opcode": 4339,
+   "entry_va": "0xb0eed0",
+   "handler": "0x505b70",
+   "valid": true
+  },
+  {
+   "index": 244,
+   "opcode": 4340,
+   "entry_va": "0xb0eef8",
+   "handler": "0x505c00",
+   "valid": true
+  },
+  {
+   "index": 245,
+   "opcode": 4341,
+   "entry_va": "0xb0ef20",
+   "handler": "0x50c790",
+   "valid": true
+  },
+  {
+   "index": 246,
+   "opcode": 4342,
+   "entry_va": "0xb0ef48",
+   "handler": "0x503650",
+   "valid": true
+  },
+  {
+   "index": 247,
+   "opcode": 4343,
+   "entry_va": "0xb0ef70",
+   "handler": "0x5036b0",
+   "valid": true
+  },
+  {
+   "index": 248,
+   "opcode": 4344,
+   "entry_va": "0xb0ef98",
+   "handler": "0x50c980",
+   "valid": true
+  },
+  {
+   "index": 249,
+   "opcode": 4345,
+   "entry_va": "0xb0efc0",
+   "handler": "0x505c20",
+   "valid": true
+  },
+  {
+   "index": 250,
+   "opcode": 4346,
+   "entry_va": "0xb0efe8",
+   "handler": "0x50ca90",
+   "valid": true
+  },
+  {
+   "index": 251,
+   "opcode": 4347,
+   "entry_va": "0xb0f010",
+   "handler": "0x505c40",
+   "valid": true
+  },
+  {
+   "index": 252,
+   "opcode": 4348,
+   "entry_va": "0xb0f038",
+   "handler": "0x50ca10",
+   "valid": true
+  },
+  {
+   "index": 253,
+   "opcode": 4349,
+   "entry_va": "0xb0f060",
+   "handler": "0x50cb20",
+   "valid": true
+  },
+  {
+   "index": 254,
+   "opcode": 4350,
+   "entry_va": "0xb0f088",
+   "handler": "0x5033f0",
+   "valid": true
+  },
+  {
+   "index": 255,
+   "opcode": 4351,
+   "entry_va": "0xb0f0b0",
+   "handler": "0x505c60",
+   "valid": true
+  },
+  {
+   "index": 256,
+   "opcode": 4352,
+   "entry_va": "0xb0f0d8",
+   "handler": "0x513fc0",
+   "valid": true
+  },
+  {
+   "index": 257,
+   "opcode": 4353,
+   "entry_va": "0xb0f100",
+   "handler": "0x501d80",
+   "valid": true
+  },
+  {
+   "index": 258,
+   "opcode": 4354,
+   "entry_va": "0xb0f128",
+   "handler": "0x503710",
+   "valid": true
+  },
+  {
+   "index": 259,
+   "opcode": 4355,
+   "entry_va": "0xb0f150",
+   "handler": "0x503730",
+   "valid": true
+  },
+  {
+   "index": 260,
+   "opcode": 4356,
+   "entry_va": "0xb0f178",
+   "handler": "0x507ae0",
+   "valid": true
+  },
+  {
+   "index": 261,
+   "opcode": 4357,
+   "entry_va": "0xb0f1a0",
+   "handler": "0x50c8d0",
+   "valid": true
+  },
+  {
+   "index": 262,
+   "opcode": 4358,
+   "entry_va": "0xb0f1c8",
+   "handler": "0x505c80",
+   "valid": true
+  },
+  {
+   "index": 263,
+   "opcode": 4359,
+   "entry_va": "0xb0f1f0",
+   "handler": "0x50cbc0",
+   "valid": true
+  },
+  {
+   "index": 264,
+   "opcode": 4360,
+   "entry_va": "0xb0f218",
+   "handler": "0x505d10",
+   "valid": true
+  },
+  {
+   "index": 265,
+   "opcode": 4361,
+   "entry_va": "0xb0f240",
+   "handler": "0x505d90",
+   "valid": true
+  },
+  {
+   "index": 266,
+   "opcode": 4362,
+   "entry_va": "0xb0f268",
+   "handler": "0x502eb0",
+   "valid": true
+  },
+  {
+   "index": 267,
+   "opcode": 4363,
+   "entry_va": "0xb0f290",
+   "handler": "0x502ed0",
+   "valid": true
+  },
+  {
+   "index": 268,
+   "opcode": 4364,
+   "entry_va": "0xb0f2b8",
+   "handler": "0x977c50",
+   "valid": true
+  },
+  {
+   "index": 269,
+   "opcode": 4365,
+   "entry_va": "0xb0f2e0",
+   "handler": "0x5052d0",
+   "valid": true
+  },
+  {
+   "index": 270,
+   "opcode": 4366,
+   "entry_va": "0xb0f308",
+   "handler": "0x501890",
+   "valid": true
+  },
+  {
+   "index": 271,
+   "opcode": 4367,
+   "entry_va": "0xb0f330",
+   "handler": "0x50d020",
+   "valid": true
+  },
+  {
+   "index": 272,
+   "opcode": 4368,
+   "entry_va": "0xb0f358",
+   "handler": "0x50d3e0",
+   "valid": true
+  },
+  {
+   "index": 273,
+   "opcode": 4369,
+   "entry_va": "0xb0f380",
+   "handler": "0x50d460",
+   "valid": true
+  },
+  {
+   "index": 274,
+   "opcode": 4370,
+   "entry_va": "0xb0f3a8",
+   "handler": "0x505db0",
+   "valid": true
+  },
+  {
+   "index": 275,
+   "opcode": 4371,
+   "entry_va": "0xb0f3d0",
+   "handler": "0x50c1c0",
+   "valid": true
+  },
+  {
+   "index": 276,
+   "opcode": 4372,
+   "entry_va": "0xb0f3f8",
+   "handler": "0x50d4c0",
+   "valid": true
+  },
+  {
+   "index": 277,
+   "opcode": 4373,
+   "entry_va": "0xb0f420",
+   "handler": "0x501a00",
+   "valid": true
+  },
+  {
+   "index": 278,
+   "opcode": 4374,
+   "entry_va": "0xb0f448",
+   "handler": "0x500570",
+   "valid": true
+  },
+  {
+   "index": 279,
+   "opcode": 4375,
+   "entry_va": "0xb0f470",
+   "handler": "0x5075a0",
+   "valid": true
+  },
+  {
+   "index": 280,
+   "opcode": 4376,
+   "entry_va": "0xb0f498",
+   "handler": "0x505dd0",
+   "valid": true
+  },
+  {
+   "index": 281,
+   "opcode": 4377,
+   "entry_va": "0xb0f4c0",
+   "handler": "0x505e60",
+   "valid": true
+  },
+  {
+   "index": 282,
+   "opcode": 4378,
+   "entry_va": "0xb0f4e8",
+   "handler": "0x505ee0",
+   "valid": true
+  },
+  {
+   "index": 283,
+   "opcode": 4379,
+   "entry_va": "0xb0f510",
+   "handler": "0x512ae0",
+   "valid": true
+  },
+  {
+   "index": 284,
+   "opcode": 4380,
+   "entry_va": "0xb0f538",
+   "handler": "0x512bb0",
+   "valid": true
+  },
+  {
+   "index": 285,
+   "opcode": 4381,
+   "entry_va": "0xb0f560",
+   "handler": "0x504930",
+   "valid": true
+  },
+  {
+   "index": 286,
+   "opcode": 4382,
+   "entry_va": "0xb0f588",
+   "handler": "0x505f20",
+   "valid": true
+  },
+  {
+   "index": 287,
+   "opcode": 4383,
+   "entry_va": "0xb0f5b0",
+   "handler": "0x505f40",
+   "valid": true
+  },
+  {
+   "index": 288,
+   "opcode": 4384,
+   "entry_va": "0xb0f5d8",
+   "handler": "0x505f60",
+   "valid": true
+  },
+  {
+   "index": 289,
+   "opcode": 4385,
+   "entry_va": "0xb0f600",
+   "handler": "0x505fc0",
+   "valid": true
+  },
+  {
+   "index": 290,
+   "opcode": 4386,
+   "entry_va": "0xb0f628",
+   "handler": "0x50d5e0",
+   "valid": true
+  },
+  {
+   "index": 291,
+   "opcode": 4387,
+   "entry_va": "0xb0f650",
+   "handler": "0x505fe0",
+   "valid": true
+  },
+  {
+   "index": 292,
+   "opcode": 4388,
+   "entry_va": "0xb0f678",
+   "handler": "0x512ca0",
+   "valid": true
+  },
+  {
+   "index": 293,
+   "opcode": 4389,
+   "entry_va": "0xb0f6a0",
+   "handler": "0x5061b0",
+   "valid": true
+  },
+  {
+   "index": 294,
+   "opcode": 4390,
+   "entry_va": "0xb0f6c8",
+   "handler": "0x512fa0",
+   "valid": true
+  },
+  {
+   "index": 295,
+   "opcode": 4391,
+   "entry_va": "0xb0f6f0",
+   "handler": "0x506260",
+   "valid": true
+  },
+  {
+   "index": 296,
+   "opcode": 4392,
+   "entry_va": "0xb0f718",
+   "handler": "0x510a90",
+   "valid": true
+  },
+  {
+   "index": 297,
+   "opcode": 4393,
+   "entry_va": "0xb0f740",
+   "handler": "0x50d680",
+   "valid": true
+  },
+  {
+   "index": 298,
+   "opcode": 4394,
+   "entry_va": "0xb0f768",
+   "handler": "0x5062b0",
+   "valid": true
+  },
+  {
+   "index": 299,
+   "opcode": 4395,
+   "entry_va": "0xb0f790",
+   "handler": "0x5062d0",
+   "valid": true
+  },
+  {
+   "index": 300,
+   "opcode": 4396,
+   "entry_va": "0xb0f7b8",
+   "handler": "0x5062f0",
+   "valid": true
+  },
+  {
+   "index": 301,
+   "opcode": 4397,
+   "entry_va": "0xb0f7e0",
+   "handler": "0x500d90",
+   "valid": true
+  },
+  {
+   "index": 302,
+   "opcode": 4398,
+   "entry_va": "0xb0f808",
+   "handler": "0x501120",
+   "valid": true
+  },
+  {
+   "index": 303,
+   "opcode": 4399,
+   "entry_va": "0xb0f830",
+   "handler": "0x501180",
+   "valid": true
+  },
+  {
+   "index": 304,
+   "opcode": 4400,
+   "entry_va": "0xb0f858",
+   "handler": "0x50cc80",
+   "valid": true
+  },
+  {
+   "index": 305,
+   "opcode": 4401,
+   "entry_va": "0xb0f880",
+   "handler": "0x505d50",
+   "valid": true
+  },
+  {
+   "index": 306,
+   "opcode": 4402,
+   "entry_va": "0xb0f8a8",
+   "handler": "0x505d70",
+   "valid": true
+  },
+  {
+   "index": 307,
+   "opcode": 4403,
+   "entry_va": "0xb0f8d0",
+   "handler": "0x50cd30",
+   "valid": true
+  },
+  {
+   "index": 308,
+   "opcode": 4404,
+   "entry_va": "0xb0f8f8",
+   "handler": "0x50cfb0",
+   "valid": true
+  },
+  {
+   "index": 309,
+   "opcode": 4405,
+   "entry_va": "0xb0f920",
+   "handler": "0x505d30",
+   "valid": true
+  },
+  {
+   "index": 310,
+   "opcode": 4406,
+   "entry_va": "0xb0f948",
+   "handler": "0x503140",
+   "valid": true
+  },
+  {
+   "index": 311,
+   "opcode": 4407,
+   "entry_va": "0xb0f970",
+   "handler": "0x50d740",
+   "valid": true
+  },
+  {
+   "index": 312,
+   "opcode": 4408,
+   "entry_va": "0xb0f998",
+   "handler": "0x506310",
+   "valid": true
+  },
+  {
+   "index": 313,
+   "opcode": 4409,
+   "entry_va": "0xb0f9c0",
+   "handler": "0x506370",
+   "valid": true
+  },
+  {
+   "index": 314,
+   "opcode": 4410,
+   "entry_va": "0xb0f9e8",
+   "handler": "0x506390",
+   "valid": true
+  },
+  {
+   "index": 315,
+   "opcode": 4411,
+   "entry_va": "0xb0fa10",
+   "handler": "0x505950",
+   "valid": true
+  },
+  {
+   "index": 316,
+   "opcode": 4412,
+   "entry_va": "0xb0fa38",
+   "handler": "0x5093b0",
+   "valid": true
+  },
+  {
+   "index": 317,
+   "opcode": 4413,
+   "entry_va": "0xb0fa60",
+   "handler": "0x501e40",
+   "valid": true
+  },
+  {
+   "index": 318,
+   "opcode": 4414,
+   "entry_va": "0xb0fa88",
+   "handler": "0x5063b0",
+   "valid": true
+  },
+  {
+   "index": 319,
+   "opcode": 4415,
+   "entry_va": "0xb0fab0",
+   "handler": "0x508700",
+   "valid": true
+  },
+  {
+   "index": 320,
+   "opcode": 4416,
+   "entry_va": "0xb0fad8",
+   "handler": "0x5063d0",
+   "valid": true
+  },
+  {
+   "index": 321,
+   "opcode": 4417,
+   "entry_va": "0xb0fb00",
+   "handler": "0x50d7b0",
+   "valid": true
+  },
+  {
+   "index": 322,
+   "opcode": 4418,
+   "entry_va": "0xb0fb28",
+   "handler": "0x502140",
+   "valid": true
+  },
+  {
+   "index": 323,
+   "opcode": 4419,
+   "entry_va": "0xb0fb50",
+   "handler": "0x506410",
+   "valid": true
+  },
+  {
+   "index": 324,
+   "opcode": 4420,
+   "entry_va": "0xb0fb78",
+   "handler": "0x506450",
+   "valid": true
+  },
+  {
+   "index": 325,
+   "opcode": 4421,
+   "entry_va": "0xb0fba0",
+   "handler": "0x5064a0",
+   "valid": true
+  },
+  {
+   "index": 326,
+   "opcode": 4422,
+   "entry_va": "0xb0fbc8",
+   "handler": "0x50e320",
+   "valid": true
+  },
+  {
+   "index": 327,
+   "opcode": 4423,
+   "entry_va": "0xb0fbf0",
+   "handler": "0x5064b0",
+   "valid": true
+  },
+  {
+   "index": 328,
+   "opcode": 4424,
+   "entry_va": "0xb0fc18",
+   "handler": "0x5021e0",
+   "valid": true
+  },
+  {
+   "index": 329,
+   "opcode": 4425,
+   "entry_va": "0xb0fc40",
+   "handler": "0x506570",
+   "valid": true
+  },
+  {
+   "index": 330,
+   "opcode": 4426,
+   "entry_va": "0xb0fc68",
+   "handler": "0x977c50",
+   "valid": true
+  },
+  {
+   "index": 331,
+   "opcode": 4427,
+   "entry_va": "0xb0fc90",
+   "handler": "0x507470",
+   "valid": true
+  },
+  {
+   "index": 332,
+   "opcode": 4428,
+   "entry_va": "0xb0fcb8",
+   "handler": "0x506530",
+   "valid": true
+  },
+  {
+   "index": 333,
+   "opcode": 4429,
+   "entry_va": "0xb0fce0",
+   "handler": "0x5071d0",
+   "valid": true
+  },
+  {
+   "index": 334,
+   "opcode": 4430,
+   "entry_va": "0xb0fd08",
+   "handler": "0x50aa40",
+   "valid": true
+  },
+  {
+   "index": 335,
+   "opcode": 4431,
+   "entry_va": "0xb0fd30",
+   "handler": "0x50aaa0",
+   "valid": true
+  },
+  {
+   "index": 336,
+   "opcode": 4432,
+   "entry_va": "0xb0fd58",
+   "handler": "0x5028f0",
+   "valid": true
+  },
+  {
+   "index": 337,
+   "opcode": 4433,
+   "entry_va": "0xb0fd80",
+   "handler": "0x506750",
+   "valid": true
+  },
+  {
+   "index": 338,
+   "opcode": 4434,
+   "entry_va": "0xb0fda8",
+   "handler": "0x5067c0",
+   "valid": true
+  },
+  {
+   "index": 339,
+   "opcode": 4435,
+   "entry_va": "0xb0fdd0",
+   "handler": "0x5064f0",
+   "valid": true
+  },
+  {
+   "index": 340,
+   "opcode": 4436,
+   "entry_va": "0xb0fdf8",
+   "handler": "0x50e340",
+   "valid": true
+  },
+  {
+   "index": 341,
+   "opcode": 4437,
+   "entry_va": "0xb0fe20",
+   "handler": "0x506810",
+   "valid": true
+  },
+  {
+   "index": 342,
+   "opcode": 4438,
+   "entry_va": "0xb0fe48",
+   "handler": "0x5131f0",
+   "valid": true
+  },
+  {
+   "index": 343,
+   "opcode": 4439,
+   "entry_va": "0xb0fe70",
+   "handler": "0x50ff70",
+   "valid": true
+  },
+  {
+   "index": 344,
+   "opcode": 4440,
+   "entry_va": "0xb0fe98",
+   "handler": "0x507b90",
+   "valid": true
+  },
+  {
+   "index": 345,
+   "opcode": 4441,
+   "entry_va": "0xb0fec0",
+   "handler": "0x5012f0",
+   "valid": true
+  },
+  {
+   "index": 346,
+   "opcode": 4442,
+   "entry_va": "0xb0fee8",
+   "handler": "0x501340",
+   "valid": true
+  },
+  {
+   "index": 347,
+   "opcode": 4443,
+   "entry_va": "0xb0ff10",
+   "handler": "0x501390",
+   "valid": true
+  },
+  {
+   "index": 348,
+   "opcode": 4444,
+   "entry_va": "0xb0ff38",
+   "handler": "0x506af0",
+   "valid": true
+  },
+  {
+   "index": 349,
+   "opcode": 4445,
+   "entry_va": "0xb0ff60",
+   "handler": "0x50e9d0",
+   "valid": true
+  },
+  {
+   "index": 350,
+   "opcode": 4446,
+   "entry_va": "0xb0ff88",
+   "handler": "0x50a3e0",
+   "valid": true
+  },
+  {
+   "index": 351,
+   "opcode": 4447,
+   "entry_va": "0xb0ffb0",
+   "handler": "0x977c50",
+   "valid": true
+  },
+  {
+   "index": 352,
+   "opcode": 4448,
+   "entry_va": "0xb0ffd8",
+   "handler": "0x977c50",
+   "valid": true
+  },
+  {
+   "index": 353,
+   "opcode": 4449,
+   "entry_va": "0xb10000",
+   "handler": "0x506d00",
+   "valid": true
+  },
+  {
+   "index": 354,
+   "opcode": 4450,
+   "entry_va": "0xb10028",
+   "handler": "0x506cc0",
+   "valid": true
+  },
+  {
+   "index": 355,
+   "opcode": 4451,
+   "entry_va": "0xb10050",
+   "handler": "0x513090",
+   "valid": true
+  },
+  {
+   "index": 356,
+   "opcode": 4452,
+   "entry_va": "0xb10078",
+   "handler": "0x5007d0",
+   "valid": true
+  },
+  {
+   "index": 357,
+   "opcode": 4453,
+   "entry_va": "0xb100a0",
+   "handler": "0x5160d0",
+   "valid": true
+  },
+  {
+   "index": 358,
+   "opcode": 4454,
+   "entry_va": "0xb100c8",
+   "handler": "0x506d40",
+   "valid": true
+  },
+  {
+   "index": 359,
+   "opcode": 4455,
+   "entry_va": "0xb100f0",
+   "handler": "0x511570",
+   "valid": true
+  },
+  {
+   "index": 360,
+   "opcode": 4456,
+   "entry_va": "0xb10118",
+   "handler": "0x50a340",
+   "valid": true
+  },
+  {
+   "index": 361,
+   "opcode": 4457,
+   "entry_va": "0xb10140",
+   "handler": "0x506d80",
+   "valid": true
+  },
+  {
+   "index": 362,
+   "opcode": 4458,
+   "entry_va": "0xb10168",
+   "handler": "0x505f00",
+   "valid": true
+  },
+  {
+   "index": 363,
+   "opcode": 4459,
+   "entry_va": "0xb10190",
+   "handler": "0x500c60",
+   "valid": true
+  },
+  {
+   "index": 364,
+   "opcode": 4460,
+   "entry_va": "0xb101b8",
+   "handler": "0x50ea30",
+   "valid": true
+  },
+  {
+   "index": 365,
+   "opcode": 4461,
+   "entry_va": "0xb101e0",
+   "handler": "0x506dc0",
+   "valid": true
+  },
+  {
+   "index": 366,
+   "opcode": 4462,
+   "entry_va": "0xb10208",
+   "handler": "0x50eab0",
+   "valid": true
+  },
+  {
+   "index": 367,
+   "opcode": 4463,
+   "entry_va": "0xb10230",
+   "handler": "0x506de0",
+   "valid": true
+  },
+  {
+   "index": 368,
+   "opcode": 4464,
+   "entry_va": "0xb10258",
+   "handler": "0x507620",
+   "valid": true
+  },
+  {
+   "index": 369,
+   "opcode": 4465,
+   "entry_va": "0xb10280",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 370,
+   "opcode": 4466,
+   "entry_va": "0xb102a8",
+   "handler": "0xa5260c",
+   "valid": false
+  },
+  {
+   "index": 371,
+   "opcode": 4467,
+   "entry_va": "0xb102d0",
+   "handler": "0xa529a8",
+   "valid": false
+  },
+  {
+   "index": 372,
+   "opcode": 4468,
+   "entry_va": "0xb102f8",
+   "handler": "0xffffffff",
+   "valid": false
+  },
+  {
+   "index": 373,
+   "opcode": 4469,
+   "entry_va": "0xb10320",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 374,
+   "opcode": 4470,
+   "entry_va": "0xb10348",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 375,
+   "opcode": 4471,
+   "entry_va": "0xb10370",
+   "handler": "0xa5297c",
+   "valid": false
+  },
+  {
+   "index": 376,
+   "opcode": 4472,
+   "entry_va": "0xb10398",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 377,
+   "opcode": 4473,
+   "entry_va": "0xb103c0",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 378,
+   "opcode": 4474,
+   "entry_va": "0xb103e8",
+   "handler": "0x1",
+   "valid": false
+  },
+  {
+   "index": 379,
+   "opcode": 4475,
+   "entry_va": "0xb10410",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 380,
+   "opcode": 4476,
+   "entry_va": "0xb10438",
+   "handler": "0x1",
+   "valid": false
+  },
+  {
+   "index": 381,
+   "opcode": 4477,
+   "entry_va": "0xb10460",
+   "handler": "0xffffffff",
+   "valid": false
+  },
+  {
+   "index": 382,
+   "opcode": 4478,
+   "entry_va": "0xb10488",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 383,
+   "opcode": 4479,
+   "entry_va": "0xb104b0",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 384,
+   "opcode": 4480,
+   "entry_va": "0xb104d8",
+   "handler": "0xa52904",
+   "valid": false
+  },
+  {
+   "index": 385,
+   "opcode": 4481,
+   "entry_va": "0xb10500",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 386,
+   "opcode": 4482,
+   "entry_va": "0xb10528",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 387,
+   "opcode": 4483,
+   "entry_va": "0xb10550",
+   "handler": "0x2",
+   "valid": false
+  },
+  {
+   "index": 388,
+   "opcode": 4484,
+   "entry_va": "0xb10578",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 389,
+   "opcode": 4485,
+   "entry_va": "0xb105a0",
+   "handler": "0x1",
+   "valid": false
+  },
+  {
+   "index": 390,
+   "opcode": 4486,
+   "entry_va": "0xb105c8",
+   "handler": "0x2",
+   "valid": false
+  },
+  {
+   "index": 391,
+   "opcode": 4487,
+   "entry_va": "0xb105f0",
+   "handler": "0x3",
+   "valid": false
+  },
+  {
+   "index": 392,
+   "opcode": 4488,
+   "entry_va": "0xb10618",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 393,
+   "opcode": 4489,
+   "entry_va": "0xb10640",
+   "handler": "0xa52890",
+   "valid": false
+  },
+  {
+   "index": 394,
+   "opcode": 4490,
+   "entry_va": "0xb10668",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 395,
+   "opcode": 4491,
+   "entry_va": "0xb10690",
+   "handler": "0x3",
+   "valid": false
+  },
+  {
+   "index": 396,
+   "opcode": 4492,
+   "entry_va": "0xb106b8",
+   "handler": "0x1",
+   "valid": false
+  },
+  {
+   "index": 397,
+   "opcode": 4493,
+   "entry_va": "0xb106e0",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 398,
+   "opcode": 4494,
+   "entry_va": "0xb10708",
+   "handler": "0x1",
+   "valid": false
+  },
+  {
+   "index": 399,
+   "opcode": 4495,
+   "entry_va": "0xb10730",
+   "handler": "0xffffffff",
+   "valid": false
+  },
+  {
+   "index": 400,
+   "opcode": 4496,
+   "entry_va": "0xb10758",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 401,
+   "opcode": 4497,
+   "entry_va": "0xb10780",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 402,
+   "opcode": 4498,
+   "entry_va": "0xb107a8",
+   "handler": "0xa52820",
+   "valid": false
+  },
+  {
+   "index": 403,
+   "opcode": 4499,
+   "entry_va": "0xb107d0",
+   "handler": "0x1",
+   "valid": false
+  },
+  {
+   "index": 404,
+   "opcode": 4500,
+   "entry_va": "0xb107f8",
+   "handler": "0x1",
+   "valid": false
+  },
+  {
+   "index": 405,
+   "opcode": 4501,
+   "entry_va": "0xb10820",
+   "handler": "0x5",
+   "valid": false
+  },
+  {
+   "index": 406,
+   "opcode": 4502,
+   "entry_va": "0xb10848",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 407,
+   "opcode": 4503,
+   "entry_va": "0xb10870",
+   "handler": "0x1",
+   "valid": false
+  },
+  {
+   "index": 408,
+   "opcode": 4504,
+   "entry_va": "0xb10898",
+   "handler": "0xffffffff",
+   "valid": false
+  },
+  {
+   "index": 409,
+   "opcode": 4505,
+   "entry_va": "0xb108c0",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 410,
+   "opcode": 4506,
+   "entry_va": "0xb108e8",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 411,
+   "opcode": 4507,
+   "entry_va": "0xb10910",
+   "handler": "0xa527b0",
+   "valid": false
+  },
+  {
+   "index": 412,
+   "opcode": 4508,
+   "entry_va": "0xb10938",
+   "handler": "0xa5260c",
+   "valid": false
+  },
+  {
+   "index": 413,
+   "opcode": 4509,
+   "entry_va": "0xb10960",
+   "handler": "0xa2f7ec",
+   "valid": false
+  },
+  {
+   "index": 414,
+   "opcode": 4510,
+   "entry_va": "0xb10988",
+   "handler": "0xa2f7ec",
+   "valid": false
+  },
+  {
+   "index": 415,
+   "opcode": 4511,
+   "entry_va": "0xb109b0",
+   "handler": "0xa5272c",
+   "valid": false
+  },
+  {
+   "index": 416,
+   "opcode": 4512,
+   "entry_va": "0xb109d8",
+   "handler": "0xa5260c",
+   "valid": false
+  },
+  {
+   "index": 417,
+   "opcode": 4513,
+   "entry_va": "0xb10a00",
+   "handler": "0xaa3e80",
+   "valid": false
+  },
+  {
+   "index": 418,
+   "opcode": 4514,
+   "entry_va": "0xb10a28",
+   "handler": "0x61657243",
+   "valid": false
+  },
+  {
+   "index": 419,
+   "opcode": 4515,
+   "entry_va": "0xb10a50",
+   "handler": "0xaa3e80",
+   "valid": false
+  },
+  {
+   "index": 420,
+   "opcode": 4516,
+   "entry_va": "0xb10a78",
+   "handler": "0x56413f2e",
+   "valid": false
+  },
+  {
+   "index": 421,
+   "opcode": 4517,
+   "entry_va": "0xb10aa0",
+   "handler": "0x40544f4f",
+   "valid": false
+  },
+  {
+   "index": 422,
+   "opcode": 4518,
+   "entry_va": "0xb10ac8",
+   "handler": "0x56413f2e",
+   "valid": false
+  },
+  {
+   "index": 423,
+   "opcode": 4519,
+   "entry_va": "0xb10af0",
+   "handler": "0xaa3e80",
+   "valid": false
+  },
+  {
+   "index": 424,
+   "opcode": 4520,
+   "entry_va": "0xb10b18",
+   "handler": "0x70614d54",
+   "valid": false
+  },
+  {
+   "index": 425,
+   "opcode": 4521,
+   "entry_va": "0xb10b40",
+   "handler": "0x4f525f4d",
+   "valid": false
+  },
+  {
+   "index": 426,
+   "opcode": 4522,
+   "entry_va": "0xb10b68",
+   "handler": "0x69736e65",
+   "valid": false
+  },
+  {
+   "index": 427,
+   "opcode": 4523,
+   "entry_va": "0xb10b90",
+   "handler": "0xaa3e80",
+   "valid": false
+  },
+  {
+   "index": 428,
+   "opcode": 4524,
+   "entry_va": "0xb10bb8",
+   "handler": "0x544f4f52",
+   "valid": false
+  },
+  {
+   "index": 429,
+   "opcode": 4525,
+   "entry_va": "0xb10be0",
+   "handler": "0x50407961",
+   "valid": false
+  },
+  {
+   "index": 430,
+   "opcode": 4526,
+   "entry_va": "0xb10c08",
+   "handler": "0x72724154",
+   "valid": false
+  },
+  {
+   "index": 431,
+   "opcode": 4527,
+   "entry_va": "0xb10c30",
+   "handler": "0x72724154",
+   "valid": false
+  },
+  {
+   "index": 432,
+   "opcode": 4528,
+   "entry_va": "0xb10c58",
+   "handler": "0x694e243f",
+   "valid": false
+  },
+  {
+   "index": 433,
+   "opcode": 4529,
+   "entry_va": "0xb10c80",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 434,
+   "opcode": 4530,
+   "entry_va": "0xb10ca8",
+   "handler": "0xa5478c",
+   "valid": false
+  },
+  {
+   "index": 435,
+   "opcode": 4531,
+   "entry_va": "0xb10cd0",
+   "handler": "0xa546fc",
+   "valid": false
+  },
+  {
+   "index": 436,
+   "opcode": 4532,
+   "entry_va": "0xb10cf8",
+   "handler": "0xa545cc",
+   "valid": false
+  },
+  {
+   "index": 437,
+   "opcode": 4533,
+   "entry_va": "0xb10d20",
+   "handler": "0xa544b8",
+   "valid": false
+  },
+  {
+   "index": 438,
+   "opcode": 4534,
+   "entry_va": "0xb10d48",
+   "handler": "0xa54e10",
+   "valid": false
+  },
+  {
+   "index": 439,
+   "opcode": 4535,
+   "entry_va": "0xb10d70",
+   "handler": "0xa54e90",
+   "valid": false
+  },
+  {
+   "index": 440,
+   "opcode": 4536,
+   "entry_va": "0xb10d98",
+   "handler": "0xb364f8",
+   "valid": false
+  },
+  {
+   "index": 441,
+   "opcode": 4537,
+   "entry_va": "0xb10dc0",
+   "handler": "0xa5261c",
+   "valid": false
+  },
+  {
+   "index": 442,
+   "opcode": 4538,
+   "entry_va": "0xb10de8",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 443,
+   "opcode": 4539,
+   "entry_va": "0xb10e10",
+   "handler": "0xd5",
+   "valid": false
+  },
+  {
+   "index": 444,
+   "opcode": 4540,
+   "entry_va": "0xb10e38",
+   "handler": "0xa5260c",
+   "valid": false
+  },
+  {
+   "index": 445,
+   "opcode": 4541,
+   "entry_va": "0xb10e60",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 446,
+   "opcode": 4542,
+   "entry_va": "0xb10e88",
+   "handler": "0xe3",
+   "valid": false
+  },
+  {
+   "index": 447,
+   "opcode": 4543,
+   "entry_va": "0xb10eb0",
+   "handler": "0xa553e4",
+   "valid": false
+  },
+  {
+   "index": 448,
+   "opcode": 4544,
+   "entry_va": "0xb10ed8",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 449,
+   "opcode": 4545,
+   "entry_va": "0xb10f00",
+   "handler": "0xf1",
+   "valid": false
+  },
+  {
+   "index": 450,
+   "opcode": 4546,
+   "entry_va": "0xb10f28",
+   "handler": "0xa55348",
+   "valid": false
+  },
+  {
+   "index": 451,
+   "opcode": 4547,
+   "entry_va": "0xb10f50",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 452,
+   "opcode": 4548,
+   "entry_va": "0xb10f78",
+   "handler": "0xfb",
+   "valid": false
+  },
+  {
+   "index": 453,
+   "opcode": 4549,
+   "entry_va": "0xb10fa0",
+   "handler": "0xa552bc",
+   "valid": false
+  },
+  {
+   "index": 454,
+   "opcode": 4550,
+   "entry_va": "0xb10fc8",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 455,
+   "opcode": 4551,
+   "entry_va": "0xb10ff0",
+   "handler": "0xab",
+   "valid": false
+  },
+  {
+   "index": 456,
+   "opcode": 4552,
+   "entry_va": "0xb11018",
+   "handler": "0xa55228",
+   "valid": false
+  },
+  {
+   "index": 457,
+   "opcode": 4553,
+   "entry_va": "0xb11040",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 458,
+   "opcode": 4554,
+   "entry_va": "0xb11068",
+   "handler": "0xb5",
+   "valid": false
+  },
+  {
+   "index": 459,
+   "opcode": 4555,
+   "entry_va": "0xb11090",
+   "handler": "0xa551a8",
+   "valid": false
+  },
+  {
+   "index": 460,
+   "opcode": 4556,
+   "entry_va": "0xb110b8",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 461,
+   "opcode": 4557,
+   "entry_va": "0xb110e0",
+   "handler": "0x106",
+   "valid": false
+  },
+  {
+   "index": 462,
+   "opcode": 4558,
+   "entry_va": "0xb11108",
+   "handler": "0xe",
+   "valid": false
+  },
+  {
+   "index": 463,
+   "opcode": 4559,
+   "entry_va": "0xb11130",
+   "handler": "0xa55124",
+   "valid": false
+  },
+  {
+   "index": 464,
+   "opcode": 4560,
+   "entry_va": "0xb11158",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 465,
+   "opcode": 4561,
+   "entry_va": "0xb11180",
+   "handler": "0x117",
+   "valid": false
+  },
+  {
+   "index": 466,
+   "opcode": 4562,
+   "entry_va": "0xb111a8",
+   "handler": "0xa550a4",
+   "valid": false
+  },
+  {
+   "index": 467,
+   "opcode": 4563,
+   "entry_va": "0xb111d0",
+   "handler": "0xb10dac",
+   "valid": false
+  },
+  {
+   "index": 468,
+   "opcode": 4564,
+   "entry_va": "0xb111f8",
+   "handler": "0x49636970",
+   "valid": false
+  },
+  {
+   "index": 469,
+   "opcode": 4565,
+   "entry_va": "0xb11220",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 470,
+   "opcode": 4566,
+   "entry_va": "0xb11248",
+   "handler": "0x64436b68",
+   "valid": false
+  },
+  {
+   "index": 471,
+   "opcode": 4567,
+   "entry_va": "0xb11270",
+   "handler": "0x646c726f",
+   "valid": false
+  },
+  {
+   "index": 472,
+   "opcode": 4568,
+   "entry_va": "0xb11298",
+   "handler": "0x70616853",
+   "valid": false
+  },
+  {
+   "index": 473,
+   "opcode": 4569,
+   "entry_va": "0xb112c0",
+   "handler": "0xaa3e80",
+   "valid": false
+  },
+  {
+   "index": 474,
+   "opcode": 4570,
+   "entry_va": "0xb112e8",
+   "handler": "0x536b6862",
+   "valid": false
+  },
+  {
+   "index": 475,
+   "opcode": 4571,
+   "entry_va": "0xb11310",
+   "handler": "0x61685365",
+   "valid": false
+  },
+  {
+   "index": 476,
+   "opcode": 4572,
+   "entry_va": "0xb11338",
+   "handler": "0x40406570",
+   "valid": false
+  },
+  {
+   "index": 477,
+   "opcode": 4573,
+   "entry_va": "0xb11360",
+   "handler": "0x404072",
+   "valid": true
+  },
+  {
+   "index": 478,
+   "opcode": 4574,
+   "entry_va": "0xb11388",
+   "handler": "0x426b6862",
+   "valid": false
+  },
+  {
+   "index": 479,
+   "opcode": 4575,
+   "entry_va": "0xb113b0",
+   "handler": "0x656c706d",
+   "valid": false
+  },
+  {
+   "index": 480,
+   "opcode": 4576,
+   "entry_va": "0xb113d8",
+   "handler": "0x56413f2e",
+   "valid": false
+  },
+  {
+   "index": 481,
+   "opcode": 4577,
+   "entry_va": "0xb11400",
+   "handler": "0x4e6b6862",
+   "valid": false
+  },
+  {
+   "index": 482,
+   "opcode": 4578,
+   "entry_va": "0xb11428",
+   "handler": "0x73696c6c",
+   "valid": false
+  },
+  {
+   "index": 483,
+   "opcode": 4579,
+   "entry_va": "0xb11450",
+   "handler": "0x694e243f",
+   "valid": false
+  },
+  {
+   "index": 484,
+   "opcode": 4580,
+   "entry_va": "0xb11478",
+   "handler": "0x56413f2e",
+   "valid": false
+  },
+  {
+   "index": 485,
+   "opcode": 4581,
+   "entry_va": "0xb114a0",
+   "handler": "0x4040",
+   "valid": false
+  },
+  {
+   "index": 486,
+   "opcode": 4582,
+   "entry_va": "0xb114c8",
+   "handler": "0x7274536b",
+   "valid": false
+  },
+  {
+   "index": 487,
+   "opcode": 4583,
+   "entry_va": "0xb114f0",
+   "handler": "0x6d616572",
+   "valid": false
+  },
+  {
+   "index": 488,
+   "opcode": 4584,
+   "entry_va": "0xb11518",
+   "handler": "0x40407265",
+   "valid": false
+  },
+  {
+   "index": 489,
+   "opcode": 4585,
+   "entry_va": "0xb11540",
+   "handler": "0x72656461",
+   "valid": false
+  },
+  {
+   "index": 490,
+   "opcode": 4586,
+   "entry_va": "0xb11568",
+   "handler": "0x72657469",
+   "valid": false
+  },
+  {
+   "index": 491,
+   "opcode": 4587,
+   "entry_va": "0xb11590",
+   "handler": "0x4040726f",
+   "valid": false
+  },
+  {
+   "index": 492,
+   "opcode": 4588,
+   "entry_va": "0xb115b8",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 493,
+   "opcode": 4589,
+   "entry_va": "0xb115e0",
+   "handler": "0x6f766148",
+   "valid": false
+  },
+  {
+   "index": 494,
+   "opcode": 4590,
+   "entry_va": "0xb11608",
+   "handler": "0x7274536b",
+   "valid": false
+  },
+  {
+   "index": 495,
+   "opcode": 4591,
+   "entry_va": "0xb11630",
+   "handler": "0x4040726f",
+   "valid": false
+  },
+  {
+   "index": 496,
+   "opcode": 4592,
+   "entry_va": "0xb11658",
+   "handler": "0x43746948",
+   "valid": false
+  },
+  {
+   "index": 497,
+   "opcode": 4593,
+   "entry_va": "0xb11680",
+   "handler": "0x6c6c6f43",
+   "valid": false
+  },
+  {
+   "index": 498,
+   "opcode": 4594,
+   "entry_va": "0xb116a8",
+   "handler": "0x6e657473",
+   "valid": false
+  },
+  {
+   "index": 499,
+   "opcode": 4595,
+   "entry_va": "0xb116d0",
+   "handler": "0x6e657473",
+   "valid": false
+  },
+  {
+   "index": 500,
+   "opcode": 4596,
+   "entry_va": "0xb116f8",
+   "handler": "0x3f800000",
+   "valid": false
+  },
+  {
+   "index": 501,
+   "opcode": 4597,
+   "entry_va": "0xb11720",
+   "handler": "0x40400000",
+   "valid": false
+  },
+  {
+   "index": 502,
+   "opcode": 4598,
+   "entry_va": "0xb11748",
+   "handler": "0x3fc00000",
+   "valid": false
+  },
+  {
+   "index": 503,
+   "opcode": 4599,
+   "entry_va": "0xb11770",
+   "handler": "0x3fc00000",
+   "valid": false
+  },
+  {
+   "index": 504,
+   "opcode": 4600,
+   "entry_va": "0xb11798",
+   "handler": "0x3f000000",
+   "valid": false
+  },
+  {
+   "index": 505,
+   "opcode": 4601,
+   "entry_va": "0xb117c0",
+   "handler": "0x3f400000",
+   "valid": false
+  },
+  {
+   "index": 506,
+   "opcode": 4602,
+   "entry_va": "0xb117e8",
+   "handler": "0x56413f2e",
+   "valid": false
+  },
+  {
+   "index": 507,
+   "opcode": 4603,
+   "entry_va": "0xb11810",
+   "handler": "0x68506b68",
+   "valid": false
+  },
+  {
+   "index": 508,
+   "opcode": 4604,
+   "entry_va": "0xb11838",
+   "handler": "0x65747369",
+   "valid": false
+  },
+  {
+   "index": 509,
+   "opcode": 4605,
+   "entry_va": "0xb11860",
+   "handler": "0x40",
+   "valid": false
+  },
+  {
+   "index": 510,
+   "opcode": 4606,
+   "entry_va": "0xb11888",
+   "handler": "0x4040",
+   "valid": false
+  },
+  {
+   "index": 511,
+   "opcode": 4607,
+   "entry_va": "0xb118b0",
+   "handler": null,
+   "valid": false
+  },
+  {
+   "index": 512,
+   "opcode": 4608,
+   "entry_va": "0xb118d8",
+   "handler": "0x3e99999a",
+   "valid": false
+  },
+  {
+   "index": 513,
+   "opcode": 4609,
+   "entry_va": "0xb11900",
+   "handler": "0x726f7463",
+   "valid": false
+  },
+  {
+   "index": 514,
+   "opcode": 4610,
+   "entry_va": "0xb11928",
+   "handler": "0xaa3e80",
+   "valid": false
+  },
+  {
+   "index": 515,
+   "opcode": 4611,
+   "entry_va": "0xb11950",
+   "handler": "0x56413f2e",
+   "valid": false
+  },
+  {
+   "index": 516,
+   "opcode": 4612,
+   "entry_va": "0xb11978",
+   "handler": "0x436b6862",
+   "valid": false
+  },
+  {
+   "index": 517,
+   "opcode": 4613,
+   "entry_va": "0xb119a0",
+   "handler": "0x4365676e",
+   "valid": false
+  },
+  {
+   "index": 518,
+   "opcode": 4614,
+   "entry_va": "0xb119c8",
+   "handler": "0x4040",
+   "valid": false
+  },
+  {
+   "index": 519,
+   "opcode": 4615,
+   "entry_va": "0xb119f0",
+   "handler": "0x40",
+   "valid": false
+  },
+  {
+   "index": 520,
+   "opcode": 4616,
+   "entry_va": "0xb11a18",
+   "handler": "0x666e6943",
+   "valid": false
+  },
+  {
+   "index": 521,
+   "opcode": 4617,
+   "entry_va": "0xb11a40",
+   "handler": "0xa5670c",
+   "valid": false
+  },
+  {
+   "index": 522,
+   "opcode": 4618,
+   "entry_va": "0xb11a68",
+   "handler": "0xa56750",
+   "valid": false
+  },
+  {
+   "index": 523,
+   "opcode": 4619,
+   "entry_va": "0xb11a90",
+   "handler": "0xa567b4",
+   "valid": false
+  },
+  {
+   "index": 524,
+   "opcode": 4620,
+   "entry_va": "0xb11ab8",
+   "handler": "0xa56810",
+   "valid": false
+  },
+  {
+   "index": 525,
+   "opcode": 4621,
+   "entry_va": "0xb11ae0",
+   "handler": "0xa5686c",
+   "valid": false
+  },
+  {
+   "index": 526,
+   "opcode": 4622,
+   "entry_va": "0xb11b08",
+   "handler": "0xa568c4",
+   "valid": false
+  },
+  {
+   "index": 527,
+   "opcode": 4623,
+   "entry_va": "0xb11b30",
+   "handler": "0xa56928",
+   "valid": false
+  },
+  {
+   "index": 528,
+   "opcode": 4624,
+   "entry_va": "0xb11b58",
+   "handler": "0xa56978",
+   "valid": false
+  },
+  {
+   "index": 529,
+   "opcode": 4625,
+   "entry_va": "0xb11b80",
+   "handler": "0xa569d0",
+   "valid": false
+  },
+  {
+   "index": 530,
+   "opcode": 4626,
+   "entry_va": "0xb11ba8",
+   "handler": "0xa56a34",
+   "valid": false
+  }
+ ]
+}

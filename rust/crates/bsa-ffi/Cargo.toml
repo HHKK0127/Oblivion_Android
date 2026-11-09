@@ -1,0 +1,13 @@
+[package]
+name = "bsa-ffi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "C ABI for bsa-core, so the C++ BSArchive wrapper can read Bethesda archives through Rust"
+
+[lib]
+name = "bsa_ffi"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[dependencies]
+bsa-core = { path = "../bsa-core" }

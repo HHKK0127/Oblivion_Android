@@ -1,0 +1,8 @@
+[package]
+name = "plugin-parser"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Oblivion plugin load-order handling: the plugins.txt grammar and FormID translation into load-order space"
+
+[dependencies]

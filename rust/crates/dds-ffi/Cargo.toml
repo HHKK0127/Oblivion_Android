@@ -1,0 +1,13 @@
+[package]
+name = "dds-ffi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "C ABI for dds-core, so the C++ DDSLoader shim can parse and decode textures through Rust"
+
+[lib]
+name = "dds_ffi"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[dependencies]
+dds-core = { path = "../dds-core" }

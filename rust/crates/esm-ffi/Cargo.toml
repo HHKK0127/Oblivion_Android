@@ -1,0 +1,16 @@
+[package]
+name = "esm-ffi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "C ABI for esm-parser, so the C++ Android layer can index Oblivion ESM/ESP plugins from Rust"
+
+[lib]
+name = "esm_ffi"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[dependencies]
+esm-parser = { path = "../esm-parser" }
+
+[dev-dependencies]
+flate2.workspace = true

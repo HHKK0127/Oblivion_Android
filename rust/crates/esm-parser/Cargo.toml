@@ -1,0 +1,11 @@
+[package]
+name = "esm-parser"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Oblivion ESM record parser (MGEF, Race, Class, BirthSign, WTHR, CLMT, etc.)"
+
+[dependencies]
+flate2.workspace = true
+serde.workspace = true
+thiserror.workspace = true

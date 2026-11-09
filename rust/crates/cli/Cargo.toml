@@ -1,0 +1,18 @@
+[package]
+name = "cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Unified CLI for Oblivion RE tools"
+
+[[bin]]
+name = "oblivion-re"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+ess-parser = { path = "../ess-parser" }
+esm-parser = { path = "../esm-parser" }
+vm-handlers = { path = "../vm-handlers" }
+serde_json.workspace = true

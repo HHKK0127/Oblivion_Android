@@ -28,7 +28,7 @@ target_compile_definitions(Jolt PRIVATE
 )
 
 # ============================================================================
-# Rust components (oblivion-re-tools workspace)
+# Rust components (vendored Rust workspace: repo-local rust/, since 2026-11-09)
 #
 # The FormID load-order translation in assets/formid_index.cpp, the plugin list
 # handling in assets/plugin_list.cpp, the Data-folder path expansion in
@@ -37,19 +37,20 @@ target_compile_definitions(Jolt PRIVATE
 # the NIF mesh parser in assets/nif_parser.cpp
 # and the DDS texture loader in assets/dds_loader.cpp
 # are shims over five C ABIs (plugin_ffi, assets_ffi, bsa_ffi, nif_ffi and dds_ffi).
-# The implementations live in the sibling Rust workspace, built here through
-# cargo-ndk. Point OBLIVION_RUST_DIR at a checkout that is not a sibling of this
-# repository, and set OBLIVION_RUST_OFFLINE to keep cargo from reaching the
-# network.
+# The implementations live in the Rust workspace vendored under rust/ at the
+# repository root, built here through cargo-ndk. Point OBLIVION_RUST_DIR at a
+# different checkout if needed, and set OBLIVION_RUST_OFFLINE to keep cargo from
+# reaching the network.
 # ============================================================================
-set(OBLIVION_RUST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../oblivion-re-tools"
-    CACHE PATH "Path to the oblivion-re-tools Rust workspace")
+set(OBLIVION_RUST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../../rust"
+    CACHE PATH "Path to the Rust workspace (vendored rust/ by default)")
 set(OBLIVION_RUST_OFFLINE OFF CACHE BOOL "Run cargo with --offline")
 
 if(NOT EXISTS "${OBLIVION_RUST_DIR}/Cargo.toml")
     message(FATAL_ERROR
         "No Cargo.toml in OBLIVION_RUST_DIR (${OBLIVION_RUST_DIR}). "
-        "Pass -DOBLIVION_RUST_DIR=<path to the oblivion-re-tools checkout>.")
+        "The workspace should live at the repo-root rust/ directory; "
+        "pass -DOBLIVION_RUST_DIR=<path to a Rust workspace checkout> to override.")
 endif()
 
 if(ANDROID_ABI STREQUAL "arm64-v8a")
@@ -669,12 +670,12 @@ endif()
 # Link Android native libraries
 target_link_libraries(native-lib
     Jolt
-    plugin_ffi  # Rust: FormID index translation and plugin list (oblivion-re-tools)
+    plugin_ffi  # Rust: FormID index translation and plugin list (rust/ workspace)
     assets_ffi  # Rust: Data-folder path expansion and NIF geometry merge
     bsa_ffi     # Rust: BSA archive parsing, hashing lookup and ZLib inflation
-    nif_ffi     # Rust: NIF mesh parsing backing the NIFParser shim (oblivion-re-tools)
-    dds_ffi     # Rust: DDS texture loading backing the DDSLoader shim (oblivion-re-tools)
-    esm_ffi    # Rust: ESM/ESP plugin parsing backing the ESMFile shim (oblivion-re-tools)
+    nif_ffi     # Rust: NIF mesh parsing backing the NIFParser shim (rust/ workspace)
+    dds_ffi     # Rust: DDS texture loading backing the DDSLoader shim (rust/ workspace)
+    esm_ffi    # Rust: ESM/ESP plugin parsing backing the ESMFile shim (rust/ workspace)
     android
     EGL
     GLESv3

@@ -125,3 +125,6 @@ graphify-out/
 
 # Local reverse-engineering tooling checkout (not project source)
 /ghidra-mcp/
+
+# Vendored Rust workspace: build output stays local (source under rust/).
+rust/target/

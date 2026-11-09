@@ -1,0 +1,11 @@
+[package]
+name = "assets-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Oblivion Data-folder path expansion and NIF geometry merging, with no device or renderer dependency"
+
+[lib]
+name = "assets_core"
+
+[dependencies]

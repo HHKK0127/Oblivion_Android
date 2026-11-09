@@ -1,0 +1,9 @@
+[package]
+name = "bsa-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Oblivion .bsa archive reader (header, folder/file records, name table, zlib extraction)"
+
+[dependencies]
+flate2.workspace = true
