@@ -70,6 +70,20 @@ jobs:
           yes | sdkmanager --licenses > /dev/null || true
           sdkmanager --install "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;26.1.10909125" "cmake;3.22.1"
 
+      # Since the 2026-11-09 vendoring the five C ABI Rust crates behind the
+      # native shims live in-repo under rust/, and CMake builds them through
+      # cargo-ndk. Without a Rust toolchain + cargo-ndk the build fails at
+      # configure with "cargo-ndk was not found" (run 42594828435). The target
+      # list matches OBLIVION_RUST_TRIPLE in app/src/main/cpp/CMakeLists.txt
+      # (arm64-v8a / armeabi-v7a / x86_64 are the ABIs this project builds).
+      - name: Set up Rust (Android targets)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android, armv7-linux-androideabi, x86_64-linux-android
+
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk --locked
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
@@ -124,6 +138,18 @@ jobs:
       # runner image happening to ship them.
       - name: Ensure zlib development headers
         run: sudo apt-get install -y --no-install-recommends zlib1g-dev
+
+      # run_host_tests.sh compiles against the FFI headers vendored under
+      # rust/crates/*/include and links the host-triple archives, but it only
+      # *searches* for archives - it never builds them. Build the six ffi
+      # crates in release mode first so the script finds them under
+      # rust/target/release.
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Rust FFI host archives
+        working-directory: rust
+        run: cargo build --release -p assets-ffi -p bsa-ffi -p plugin-ffi -p esm-ffi -p nif-ffi -p dds-ffi
 
       - name: Run native host tests
         run: bash tools/host_tests/run_host_tests.sh
