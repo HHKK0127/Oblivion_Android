@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-05T00:30:00Z",
+  "lastUpdated": "2026-11-09T09:04:16Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -9896,14 +9896,232 @@
         "opencode"
       ],
       "content": "【重要・撤回】v277_re_port_bridge_map.md §1 の sk 合成の主張（『原版=Luck+Merc×0.4−20、port が skill+0.4Luck で誤り』）は v279 の独立追試で**誤りと判明**（0x547B90 の ×0.4 は GetAV(7)=Luck 側＝原版 **sk=trunc(clamp(Mercantile+0.4×Luck−20,0,100))**、AV 名表 0xB0A1A8・Ghidra L243881 と三重一致）。**docs L10245 と port（barter.cpp L31-33・テスト L100-116）は既に正しい**ため、v277 が提案した sk 引数再配置＋テスト L100-116 差替（W1）は**実施しないこと**（実施すると port を壊す）。barter で本当に必要な修正は P1=min→max（docs L10004/10005 も同2行のみ誤記・H1 承認待ち）と P2=財布 min クランプ、P3=tier/stolen ゲート＋ESM 配線、P4=命名。丸めは ceilf が正（v262/v264 の floor 表記は誤称、docs は訂正済み）。GMST 値は slot+0（name=slot+4、0x41BAE0）で提示アドレス群 +4 ズレ。haggle 供給元は 0x5E10F0（docs L10245 の 0x5E1500 は float getter ラッパで誤り、可否式 0x548130 の呼出 0x5E1187 が閉塞証拠）。【SLG チェーン納品 v280-v283】TESSaveLoadGame=非ポリモーフィック単例[0xB33B00]。+0x44=open 時属性グループ台帳（A=0x1FFFF000=bit12..28+bit7/B=0x60000000=bit29..30・生成 FUN_0045F180 他3・消費17site で extra 除去分岐、bit↔extra 対応=FUN_00425650 RemoveExtra 表: bit12↔0x46/b18↔0x20/b20↔0x32/b24↔0x4B/b25↔0x4A/b28↔0x35/b7↔0x3D 他）。属性セット先 vtbl+0x60=TESObjectREFR 0x4E0580/CELL 0x4D2690/Actor 0x5F85E0（ファイル/NiFile 説は棄却）。変更ノード P={next,formID,ChangeData*} は ChangesMap 二重バッファ（積込み唯一=FUN_00452C20・SLG ラッパ4関数経由、解放=0x4648C0 vtbl+0x1C→スワップ、FUN_0045C7A0=DeleteForm）。extra 型 ID 15/15 復元（0x12=ExtraScript/0x21=ExtraRunOncePacks/0x59=ExtraInfoGeneralTopic 他）。bit5=[file+0x244] 由来の Initially Disabled 系[推定]（Disable 経路 FUN_004E4690=bit11+SetModel(0)+音無効4D9310 と逐字同型、検査窓 0x4D44E0、対照 band 'CHANGE_REFR_DISABLE_STATE' は file bit30 側と切り分け）。[0xB33A1C]=**ModelLoader** 単例（'ModelLoader still has %d NIF files.'）、[0xB33A10]=**IOManager**（RTTI TD 実証・BSTaskManager 基底）、FUN_004466F0=TES::~TES（破棄11段 site 付き）。tail 保存フレーム=<u16 len><type '0'..'3'><sub 0x5B gate>＋payload（_SIGNATURE 無し・幅 0x24/0x1C/0x2C）。0x7FFFF000=静的 producer ゼロ（cmp 17点のみ）。台帳 TODO_re49: total=163 done=156 open=7（bak125-126・ALL OK）、残作業=V277（tail+3 語義・0x80000008 変換先・低）、docs 反映候補は H1＋v281/v282/v283 計15点として承認ゲート滞留。"
+    },
+    {
+      "id": "v326-2026-11-08",
+      "timestamp": "2026-11-08T18:30:00Z",
+      "priority": "high",
+      "category": "learned-pattern",
+      "tags": [
+        "oblivion",
+        "re",
+        "v326",
+        "ai-todo-down",
+        "numba",
+        "docs-bak"
+      ],
+      "content": "#90(v326) 統合完了（2026-11-08・run log (ag)・親直接解析）: 台帳 row307 [x]・bak162・round_verify 193/188/5。判定 [確定]1(項目4 RTTI: .?AVBSXFlags@@ TD@0xB253D4 vftable ptr 0xAA3E80 / .?AVTESObjectREFR@@ TD@0xB03054)/[部分確定]5。核心: dry bit9=6階層網羅の打ち止め宣言（dword定数RMW 0件[確定負]・0x9847D6/0x9997F0=x87例外SE sentinel棄却・word 0x200=ハンドルflags棄却・新規bit10対 0x5439CE/0x5439E7（fn 0x5437C0・caller 0x4633AE・条件[+0x7C]<0x69）＝bit9(0x200)/bit10(0x400)混同注意；[0xB38720]=sMenuDisplayLevelString/Level 対→ctor 0x419A70＋linkedList 0xB35574；FUN_004610F0 callers 2件完全（0x5AE34F Load/0x5D312F Save・arg10非NULL=thumb読）；0x5D8FD0 全体初読取（[0xB3B734]bit7方向・case0名strcmp/[+0x24]vtable[0]比較・3-way）；0x3F5=PauseMenu/0x40F=SaveMenu確定＋名称fn 0x589B70=[[0xB13974]+(id-0x3E9)*4]（ID空間0x3E9..0x41B=docs59表一致）、getter 0x57CF60最大ID/0x57CFA0 slot[0]。残件6→#108（v333+）。運用: サブ起動が外側モデルの Free usage limit で不可→親直接実行（ユーザー承認）。ai-todo/supermemory MCP ともサーバ再起動後未登録→#90完了/#108起票は TODO.md 直接fallback（bak %TEMP%\\opencode\\TODO.md.bak-v326・復帰後 accept_tamper 対象）、メモリはこの台帳へ。numba 0.68.1 インストール完了・@njit動作確認済（capstone束では未使用判定）。docs整理: .bak12件すべて現行版に対し独自内容あり（日付行除き4-31行差）→差分ゼロのみ削除条件で0件削除・docs無変更。次キュー: #92(v328)→#85残（サブ不可なら親直行）。"
+    },
+    {
+      "id": "v328-2026-11-08",
+      "timestamp": "2026-11-08T22:10:00Z",
+      "priority": "high",
+      "category": "architecture",
+      "tags": [
+        "oblivion",
+        "re",
+        "v328",
+        "ess",
+        "pass2",
+        "phase-b"
+      ],
+      "content": "#92(v328) Phase B 12件 静的裁定 統合完了（2026-11-08・run log (ah)）: 台帳 row308 [x]・bak163・round_verify 194/189/5 ALL OK。成果物 v328_ess_phaseB_ruling.md（33,865B/208行・probe19本全EXIT=0・v328_17.out欠落は本文転記で注記）。判定 [確定(命令)]6（P1,P2,P4,P5,P10,P11）/[部分確定]6。核心: P1=12Bヘッダは n=0xC 単一read（0x465C90）でv320申し送り 4+6+2分割説は[確定負]に訂正・0x4662F0=44B rep movsd 台帳再構成（新規）・P2=v283 frameは in-memory tail専用→書出時 +4/+9/+10 分解（0x465365-0x465419）で v320 §6-9 実測差の機構確定・P4=pass2歩行ゲート bit27（0x4617C8）で v317 N1は文脈限定と訂正（反例187+1,679件解消）・P5=FUN_45DBC0 は size を返却（0x45DE08・esp完全追跡）→v307残点4否定・P10=UTC(+0x94・初回ゲート)とlocal(F7・毎書)の機能分離・P11=Δ=0x1C/0x2C/0x24=created位置ブロック（sar>>12→55E000 find→再接続専用）・P12=RGB/BGRは静的原理不可宣言。v320 §7-1 残件12への影響マッピング §8（残=name2語彙とfooter 8Bのみ）。新規残件10→#109（v334+予約）。#92完了/#109起票は TODO.md 直接fallback（ai-todo MCP 不通継続・bak TODO.md.bak-v328・accept_tamper 対象）。次=#85 stage2（親直行可）。"
+    },
+    {
+      "id": "audit-2026-11-08-night",
+      "timestamp": "2026-11-08T22:45:00Z",
+      "priority": "medium",
+      "category": "learned-pattern",
+      "tags": [
+        "oblivion",
+        "re",
+        "ai-todo",
+        "graphify",
+        "supermemory",
+        "mcp"
+      ],
+      "content": "2026-11-08 深夜監査（run log (ai)）: ai-todo MCP 復帰（v3.0.2）→ accept_tamper でフォールバック編集（#90/#92 完了+#108/#109 起票）を同期済み・lint clean・active=#99.1（他セッション）のみ。supermemory: search 1回成功後にプラグイン入れ替えで forget 不可 → 陳腐化エントリ2件（y5BCQPCfUWVL7pQhYzLc8d=loop stopped after v312 は誤り・実際は v328 まで統合 194/189/5／KrbCRSJU7qGy9EYfTgpAqY=16成果物 v304-v315 は v304-v328 に拡大）は **ai-todo #110** で追跡（復帰後に forget+訂正 add）。Graphify: 別セッションが 16:26 に再ビルド（48,834ノード・db31e275）したが v323-v328 は NOT registered のまま＝.gitignore:53 /tmp/ 原因で tmp/re は原理的永久未登録・グラフ内 RE は docs/RE_EXE_REPORT 由来のみ＝RE↔移植エッジが新知見欠落（#107=人間承認ゲート/#66=docs反映と連動・note 追記済み）。教訓: MCP ツールはサーバ再起動で脱落→再登録されることがあり、カatalog 変更通知時は accept_tamper/lint で台帳同期を確認するのが復旧手順。次着手可: #85 stage2（親直行）または backlog #93(v329)/#94(v330)/#106(v331)/#108(v333)/#109(v334)。"
+    },
+    {
+      "id": "v329-93-close-2026-11-09",
+      "timestamp": "2026-11-09T05:14:34Z",
+      "priority": "medium",
+      "category": "architecture",
+      "tags": [
+        "oblivion",
+        "re",
+        "v329",
+        "re49",
+        "loadgame",
+        "numbering"
+      ],
+      "content": "#93(v329)クローズ・台帳row311(V311)/bak166/round_verify ALL OK(197/192/5)。正典判定: head(0x465C94)=0x465860=LoadGame fn本体。esp差なし—arg6枠は mov [esp+0x30],ebx(=1) のpush前書込・6枠=add esp,0x18厳密一致・出力=[esp+0x34]読戻formID(Player 0xFEFFFFFF)。reader [ebp+0x40] ctor=0x45F0F0(callers=2 0x465204/0x465A6A, dtor 0x4530A0)。bit7 clear imm形は全.textで0x4445B5/0x4CDA79の2件のみ・bit0/11/18は0x465AE4-AE9-AF3/0x465B91-B97-BA5の条件付きset/clearペア。cannot save(0xA3AF68)=fn0x462280@0x46239D・callers=1(0x4652C1)→load側0x465B12経路では保存分岐不発。head(0x44F058)=0x44EE00自己再帰retry。head(0x4CDA22)=0x4CD960(Removing ownership data…)。%i=u16(452250(edi,8)−orig)+vtbl[+0x4c](8)・'Havok Moved(%i)'@0xA39AC0・#48ゲート0x455553接続。採番衝突: 外部レーンが v337(#108)/v338(#93重複・v329が上書き)/v339(#112)使用済→次回予約はv340+ (#113修正済)。v337/v338/v339は親突合統合待ち。"
+    },
+    {
+      "id": "v337-339-intake-2026-11-09",
+      "timestamp": "2026-11-09T05:38:38Z",
+      "priority": "medium",
+      "category": "error-solution",
+      "tags": [
+        "oblivion",
+        "re",
+        "v337",
+        "v338",
+        "v339",
+        "re49",
+        "parent-intake"
+      ],
+      "content": "2026-11-09 親突合統合（run log (am)・台帳 row312-314/bak167/round_verify 200-195-5 ALL OK）: 外部レーンが #108=v337(16,101B/195行)・#93重複=v338(14,763B/198行)・#112=v339(13,684B/216行) をクローズ済。v337 は無修正継承（+0x7C の[未確定]は v338 §5.1 の byte census で 'save format version byte' [部分確定] へ親採用）。v338 の #93レーン判定は v329 が上書き（#89完了で v318帯深可が前提変更）: head(0x44F058)=0x44EE00・0x659BE0本体・esp arg6枠・head(0x4CDA22)=0x4CD960 とも [確定]。v338 新事実採用: §2.9 機能記述昇格(45BB30/4DD4B0/4D8A10/4D8A30/5F0310・正式名は確定負維持)・§3.1 trailer6B=[u32 size=2][u16 count=0](#112①close)・§4.3 452DF0規約[確定](#111残1件close)・§5.3 辞書検索側[確定]。v339: item1/2/6 [確定]・item3/4 [部分確定]（[0xB333A0]=TES singleton・player=[0xB333C4]・旧NavMesh/playerRefラベル棄却）・item5待記=#82ゲート。親inline訂正2件(非削除): 0x462290 は direct store ではなく read(mov ecx,[eax+0x8c0])→local→vtbl[edi+8] 出力（v329_E6・v339 §6 'sink' が正典）。dir[0]上流(+0x8C0生成)は[未確定]継続。v338 §2.5 の bit7書込候補 0x4639A9 は本レーン未観測→#113 note で検証委任。採番: v337-339 使用済→#113 は v340+ へ訂正済。教訓: 外部成果物の動詞語法(writer/sink)は命令列で照合してから台帳化する（v327 row306 の訂正系譜と同型）。"
+    },
+    {
+      "id": "opencode-shopmenu-input-fix-20261109",
+      "timestamp": "2026-11-09T06:26:27Z",
+      "priority": "high",
+      "category": "error-solution",
+      "tags": [
+        "android",
+        "character-creation",
+        "shopmenu",
+        "virtual-controller"
+      ],
+      "content": "Oblivion Android #99.1: UIShopはUIPanel既定visible=trueのためmerchant未設定でもanyMenuOpenと入力ルーティングを占有していた。ui_shop.cppのUIShop::initialize()後にsetVisible(false)を追加し、openShop/closeShopの通常フローを維持。Pixel_API34で正しいVirtualController座標(178,850)のLeft joystick DOWN/UP、ワールド領域差分140,229px、クラッシュ0件を確認。初回(160,900)はVirtualController範囲外、(178,777)はD-pad重複。修正は専用worktree、mainへのmergeは未実施。"
+    },
+    {
+      "id": "opencode-re-analysis-bundle-v338-v339-20261109",
+      "timestamp": "2026-11-09T06:26:27Z",
+      "priority": "high",
+      "category": "learned-pattern",
+      "tags": [
+        "reverse-engineering",
+        "read-only",
+        "v338",
+        "v339",
+        "v340"
+      ],
+      "content": "RE解析はオリジナルEXE/ESM/.ess/解析原本と移植側ソースを読み取り専用で扱う。v338+の統合で、trailer 6Bは[u32 size=2][u16 count=0]、452DF0のtail==0/pass2呼出規約は同一、BSX/REFのTD同定、B333A0=TES singleton、FUN_004302B0はCRT stdio+自前buffer read層などを確定または部分確定。save#2、RGB/BGR、dry bit9/bit10、Delta0x1Cなどは#82の人間/実機ゲート待ちで推測確定しない。"
+    },
+    {
+      "id": "opencode-todo-sidebar-mcp-separation-20261109",
+      "timestamp": "2026-11-09T06:26:27Z",
+      "priority": "high",
+      "category": "configuration",
+      "tags": [
+        "opencode",
+        "ai-todo",
+        "sidebar",
+        "mcp"
+      ],
+      "content": "OpenCodeのai-todo MCPとサイドバーのopencode-todolistは別管理。ai-todoは正本TODO.md/.ai-todo/state/TODO.mdを管理し、サイドバーは現在セッションのtodowriteリストだけを表示する。正本とMCPの#113は一致していても、todowriteを別途ミラーしなければサイドバーは空になり得る。ai-todo MCPはプロジェクトroot明示のlocal server設定を追加したが、C:\\Chamberなど複数セッション接続とevent stream stalled/ECONNRESET/503/499が表示不安定要因。"
+    },
+    {
+      "id": "opencode-original-data-readonly-20261109",
+      "timestamp": "2026-11-09T06:26:27Z",
+      "priority": "high",
+      "category": "constraint",
+      "tags": [
+        "oblivion",
+        "reverse-engineering",
+        "read-only"
+      ],
+      "content": "ユーザー制約: オリジナルのデータ・EXE・ESM・.ess検体・解析原本は変更しない。解析は読み取り専用で実施し、推測による意味付けや原本へのパッチを行わない。移植側ソース変更は、オリジナル側の仕様/データ構造が証拠で確定し、L2実装範囲が明確になった場合に限定する。"
+    },
+    {
+      "id": "todo-sync-2026-11-09",
+      "timestamp": "2026-11-09T06:43:58Z",
+      "priority": "medium",
+      "category": "user-preference",
+      "tags": [
+        "oblivion",
+        "re",
+        "todo",
+        "accept-tamper",
+        "intake-pending"
+      ],
+      "content": "2026-11-09 TODO同期ラウンド（run log (ao)・ユーザー依頼）: ai-todo accept_tamper で外部変更を追認（#106=外部 v331(11,526B/13:57)でclose・#94=外部 v330(12,429B/14:12)でclose・#113=#inprogress 外部着手・v340成果物未出現のため本レーンは非干渉）。TODO.md 実測: #114 open 最新-top・#110/#106/#94 [x]・active 単独=#113。親統合待ち（次ラウンド行）: v331→row315(V315)/#106、v330→row316(V316)/#94 — inline訂正方式・bak168・round_verify必須。この旨は #94/#106 の note Registered済み。supermemory ツールは catalog 不安定期に unavailable→正典ファイル台帳が代替。"
+    },
+    {
+      "id": "intake-r2-2026-11-09",
+      "timestamp": "2026-11-09T06:58:25Z",
+      "priority": "medium",
+      "category": "architecture",
+      "tags": [
+        "oblivion",
+        "re",
+        "v330",
+        "v331",
+        "v336",
+        "re49",
+        "parent-intake",
+        "s2-correction"
+      ],
+      "content": "2026-11-09 親突合ラウンド2（run log (ap)・台帳 row315-317/bak168/round_verify 203-198-5 ALL OK）: v331(#106)/v330(#94) 加え **v336(#111) も未統合と判明し 3 件同時統合**。全件全文突合、自レーン窓(E6/row310/309/306/305)と矛盾なし。正典訂正: row309 S2『0x459AF7 mov ebx,[esp+0x98]=arg2 mode』→ **ebx=arg1(form/object ID)、mode=[esp+0xA8]**（出所 v336 §4.1・v330 §8.2 採用・push収支再検証済・旧記載併記）。v336 新規確定: 45ADC0=.txt 直接書込で Warnings.txt 経路でない[確定負]・0xB03038=.?AVTESObjectCELL@@[確定]・0x459AF0 mode0/1 消費全表(12/2/4/6/36/44/28/4B)。v331: DepthOffset=+0x30 slot10・4要素・&DAT_00B45EE4[確定]・帯内[reg+0x30]形 0件=bounded negative(capstone全文・C-6準守)・range実測792/814/813/952(v324概数『814〜980』は基準復元不能)。v330: 非IAT静的残 2件(0x6B6D2D/0x4FBC4C・#91帯深可)、FUN_005169A0=推定維持(改名禁止)、dt=秒静的確定、67型15case確定。新起票 #115 次束Q2/R2(6件・v342+予約)。docs候補3件→#66。動的/#82側は記録のみ。"
+    },
+    {
+      "id": "supermemory-policy-2026-11-09",
+      "timestamp": "2026-11-09T07:25:39Z",
+      "priority": "high",
+      "category": "preference",
+      "tags": [
+        "oblivion",
+        "supermemory",
+        "policy",
+        "user-approved"
+      ],
+      "content": "Supermemory 運用方針（2026-11-09 ユーザー承認・本セッションの提案3点＋小整理運用）: ①登録は日本語原文の簡潔形を継続（add は原文そのまま保存と実証済）。②検証・参照は search の原文を正とし、クラウド生成の英語化 list/profile プロジェクションは判断に使用しない（意味化け実例: disp8→dispatch-8、'load 経路で保存分岐不発'→'missing load path'）。③正典はファイル台帳（本 JSON＋STATE.md/TODO.md）、supermemory は検索ミラーの二重構成を維持。④プロファイル古語行は #110 後続の小整理方式で対応（検索→全文字ID検証→forget、単一正本行を保持。本日 5 行整理: 旧座標(160,900)・#113 active 重複2・#109 started・自前キュースナップショット無効化分）。プラグイン supermemory.json に翻訳スイッチは無く設定変更不要。"
+    },
+    {
+      "id": "v342-115-close-2026-11-09",
+      "timestamp": "2026-11-09T08:43:56Z",
+      "priority": "medium",
+      "category": "architecture",
+      "tags": [
+        "oblivion",
+        "re",
+        "v342",
+        "re49",
+        "factory",
+        "rule-v3"
+      ],
+      "content": "2026-11-09 #115 次束Q2/R2 完了（v342・row318/bak169/round_verify 204-199-5 ALL OK・run log (aq)）。正典裁定: ①0x447050 全文で al=slot7 直返 [確定(命令)]、21 reader xor=ARG24/FAIL5/UNK3、n=0 群に tail-jmp thunk3（#117 へ）。②killed-by-call2 件は vtable 仮想呼び（[[this+0x54]].vtbl+0x40 / this vtbl+0xD4）＝命令形確定・実先#82。③E9/EB 拡張則=16/16 非回帰・0x4637C0 のみ救済・tier A（callers>0）69 件（0x4511C0=73 他）→ rule v3 採用可 [確定（検証セット水準）]（re_util 変更禁止＝文書のみ）。④訂正 C-1/C-2: v325_01d『TESIcon 0xA320A4 集約10型』は this/sub-object 混載で **MAIN 集約は 7 型**（MGEF/APPA/BOOK/LIGH/MISC/WEAP/AMMO）、INGR/ALCH/QUST は各自 MAIN（0xA33F5C/0xA3217C/0xA541EC）＋sub に 0xA320A4。TESFlora の ASCII slot7=0x63696E61 は **0xA41C40 が FlagInfo データ（+0x10 'ITMpOrganic'）**だった誤特定、真の vftable=**0xA41B1C（+0x1C=0x4AE0A0）**。⑤#106 帯 capstone 全文で [reg+0x30] plain0＋*8+0x30 併存0（帯内窓読み不在 bounded→full）。⑥vtbl+0x1C 直接 call/jmp=179 サイト機械 census、**482170 の obj=0 分岐は self slot7 のみで obj を deref せず（C-4: クラッシュ経路でない）**。手法教訓: factory JPT stub の最初 call=operator new（ctor は new 以外の最後 call・窓 0x48 必須）／無変位 vptr 書は ecx-map で this/sub 分離（v325_01d の混載機序を再現確認）。並行レーン採番衝突: 新残件起票が #116→**#117** に繰越（#116=BG レーン次束X・v340/v341 残件6+2）、成果物予約 v343+→**v344+**。教訓: 起票前に show_task/list で直近 ID と予約表を再確認（BG レーンの ai-todo root 事故（fix-ai-todo-sidebar worktree 誤登録→session_move 後再起票）の続報として、MCP 書込前に root 確認）。"
+    },
+    {
+      "id": "v340-v341-parent-merge-2026-11-09",
+      "timestamp": "2026-11-09T08:57:48Z",
+      "priority": "medium",
+      "category": "architecture",
+      "tags": [
+        "oblivion",
+        "re",
+        "v340",
+        "v341",
+        "re49",
+        "parent-merge",
+        "BSFile",
+        "RTTI"
+      ],
+      "content": "2026-11-09 親突合統合: BG レーン成果物 v340(#113・次束P2)/v341(#114・次束W) を RE 台帳 row319/320 へ統合（bak170・round_verify ALL OK rows 31..320・206/201/5・STATE (ar)）。ai-todo: #113 は BG 側 [x] 維持＋note、#114 note→complete。正典裁定（v340・主7件 [確定]7/7）: 0x45F2E0 戻りクラス=BSFile（TD 0xB044E0・[esi+4]=read slot 0x430050）・JPT 0x45F790=4 エントリ（mode0=書新規 flag1/.bak・mode1=new flag0+明示 open=LoadGame 0x465923・mode2=既存 ebx・mode3=pass-through）。[ebp+0x40]=LoadFormHeader 登録表＝NiTPointerMap<u8,BSSimpleList<LoadFormHeader>*>（0x25 は type ではなくバケット容量 n・C-1 訂正／reader=BSFile と別系統・C-3）。[edi+8]=write スロット 0x430070 で read/write 双判別完・0x4652C1 所属=0x465130=SaveGame 本体。bit16 ペア 0x45CC0B/34・0x45DDC9/F5=[0xB33B00]+0x18 bit16・call 0x579CF0（UI モーダル）直前 set→直後 clear。0x444340 head 確定・bit7=[0xB33B00]+0x18 の fn 内ラッチ保存→復元。0x4CD960=TESObjectCELL vftable 0xA469D4 slot+0x6C 仮想呼び（実 site 列挙=#106 委任）。IAT [0xA2808C]=GetCurrentThreadId（GetTickCount/TimeBase 仮説 [確定負]・C-2）・bit0/bit18=スレッド ID 一致/不一致ミラー（helper 0x45A500 callers=118／0x45A530・GST call 全数 166）。正典裁定（v341）: [0xB3BD00] 正式名と 679xxx container/要素型名=**待記宣言クローズ**（画像 .data 全ゼロ・絶対参照 324/324 が mov ecx,imm のみ・RTTI 全走査 1,700 枚で context vtable 0 枚=88 関数全て非仮想・共有 no-op 0x68F970(callers 83) に帰属力なし=[確定負]×3。必要証拠=B13 実行時 vptr 1語→COL→TD=#82）。メニュー名表本体=**NiTArray<Tile*>**（vptr 0xA69680→TD 0xB13620 直読）・[0xB1397A](this+0xA u16) の唯一書手=0x587B74/92 の push 0x33→call 0x4E4A10（one-shot [0xB3A708]・絶対書込 0 件 [確定負]）。0x65C620 callers=E8 854+E9 11=**865**（≈655 は DTOR/atexit thunk 群 0xA1643A..0xA2712A）・本体は**単方向リスト除去/解放**（v337「追加 helper」語訂正・row312 inline）。0x9FBA90/A24950=CRT _onexit 終了時クリーンアップ窓（登録窓ではない・性質訂正）。docs 不整合1件記録（RE_EXE_REPORT §3.1「59メニュー」vs 容量 0x33=51・無編集）。手法教訓: ①絶対参照 census は書込形（C7 05/89 0D/66 系）を形別に分離して報告（mov ecx,imm だけの 324 件は「書手不在」の証拠にならない=形別内訳必須）②RTTI 全走査は COL sig==0→TD .?AV 条件で vtable 1,700 枚を機械列挙可能③共有 no-op スタブ（ret 4・多 vtable スロット共有）に型帰属力なし④capstone 窓は fn head から整列リニア（途中 VA 開始は空/混同列・v329 C-6 再発）。次レーン状態: #116（次束X・v340 残6+v341 待記2・BG 所有 active）に非干渉。本レーン次=#117（次束Y・v344+・静的5件）。supermemory tool 未復帰継続（v342/v340/v341 分は追登録キュー）。"
+    },
+    {
+      "id": "ticket-118-static-residuals-2026-11-09",
+      "timestamp": "2026-11-09T09:04:16Z",
+      "priority": "medium",
+      "category": "task",
+      "tags": [
+        "oblivion",
+        "re",
+        "v341",
+        "todo",
+        "re49"
+      ],
+      "content": "2026-11-09 TODO 起票ラウンド（STATE (as)）: **v341 §5 待記表のうち静的到達可 3 件を #118 次束Z として起票**（成果物 v345+ 予約・v343=#116/v344=#117 と連番確認の上、max pending=#117 を検証し BG と衝突なし）。#118 の範囲: ①59名登録順・文字列供給元・slot 充填元（Tile TD 0xB13240 imm32 参照 59 サイト 0x586C6A..0x5DD544＋NiTArray<Tile*> insert 0x42BB90 の this=0xB13970 呼び手 census・B139xx 浅層留保は解除宣言・#106 帯非深追い）②帯外 push 側 0x6765F0/0x678D30 の new サイズ＋vptr 書込照会＝679xxx 型名の静的縮小（v341 の『別起票扱い』経路）③0x4E4A10/0x42BB90/0x65C620 正式 fn 名＋0xB13970 宣言元。#82 note 更新: [0xB3BD00] 正式名の必要証拠は**起動後 .data 0xB3BD00 先頭 dword 1 語（vptr→COL→TD は画像内で静的引証可）**のみまで縮小。#63 note 更新: ダンプ優先度=vptr 1 語 > table1/table2 全文。教訓: 待記宣言クローズの際は『必要証拠の最小単位』まで分解して起票/note に落とすと、実機ゲートの依頼が 4 バイト取得まで简约化できる。"
     }
   ],
   "metadata": {
-    "totalEntries": 694,
+    "totalEntries": 709,
     "compressedCount": 121,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-05T00:30:00Z",
-    "entry_count": 694,
-    "last_updated": "2026-11-05"
+    "lastUpdated": "2026-11-09T09:04:16Z",
+    "entry_count": 709,
+    "last_updated": "2026-11-09T09:04:16Z"
   }
 }

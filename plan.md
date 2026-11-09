@@ -908,6 +908,7 @@ With parallelization (rendering and Script VM split between developers), 45-60 w
 | **M17: Persistence** | 69 | Save system | Save/load fully functional |
 | **M18: Mod Support** | 70 | Load order | .esp files apply in load order |
 | **M19: Release** | 71-72 | Product ready | A1-A8 all satisfied |
+| **M20: Rust-first core** | cross-cutting (62-72) | Produce the pure-logic layers in Rust (in-repo `rust/` workspace) | Crates pass `cargo test --offline --workspace` (176/31 suites on 2026-11-05); the five C ABIs stay green against the device shims; migration backlog #45 closed (N5b animation keyframe/resolve + walker C ABI, N6 docs paths, native-lib link) |
 
 ### Risk Factors (Phase 62-72)
 
@@ -1529,6 +1530,18 @@ Everything in this section was measured on the current APK, on the emulator, unl
 records why part of the native code is being rewritten in Rust, exactly which code moved, and how the
 new code is gated, so that a later change can tell a migration increment from a behaviour change.
 
+**Lane switch (2026-11-09): production now happens on the Rust side.** By user decision the active
+implementation lane moved to producing Rust code in the 15-crate cargo workspace (`ess-parser`, `esm-parser`, `esm-ffi`, `plugin-parser`, `plugin-ffi`,
+`assets-core`, `assets-ffi`, `bsa-core`, `bsa-ffi`, `nif-core`, `nif-ffi`, `dds-core`, `dds-ffi`,
+`vm-handlers`, `cli`), **vendored into this repository as `rust/` on 2026-11-09** (previously the
+sibling checkout `oblivion-re-tools`; merged into `master` on 2026-11-09 as `c2653460` — fast-forward,
+after `cargo test --offline --workspace` measured 176 passed / 31 suites / 0 failed at the new
+location). The C++ device tree keeps its shims unchanged; new
+pure-logic work is written as crate code first and exposed through the small C ABIs afterwards. The
+open backlog for this lane is ai-todo **#45** (N5b = animation keyframe/resolve + walker C ABI for
+phase-30 parity, N6 = docs paths, native-lib link); `cargo test --offline --workspace` last measured
+176 passed / 31 suites (2026-11-05) and the nif-ffi C ABI check is green.
+
 **The dividing line is impurity, not size.** Code moves only when it is a pure function of its
 arguments - parsers over an in-memory buffer, string and path rules, index translation, geometry
 merge. Everything that owns a GL object, a Jolt body, an Android framework handle, a thread or a
@@ -1548,8 +1561,9 @@ and has now migrated: `assets/esm_reader.cpp` reads the file behind an opaque `E
 zlib replaced by `flate2`, the record types materialised by the shim the way `syncCache()` does for
 NIF, and `z` dropped from the link line with it.
 
-**What is migrated, and what each C++ file became.** The implementations live in a sibling workspace
-(`oblivion-re-tools`) and are reached through five small C ABIs; the C++ side keeps its original
+**What is migrated, and what each C++ file became.** The implementations live in the vendored Rust
+workspace (`rust/` at the repository root; formerly the sibling `oblivion-re-tools` checkout) and are
+reached through five small C ABIs; the C++ side keeps its original
 headers, so no caller changed.
 
 | C++ file | Now | Rust crate |
@@ -1584,8 +1598,8 @@ C ABI has its own C11 harness that checks the contracts the oracle cannot see - 
 
 **Build integration.** `app/src/main/cpp/CMakeLists.txt` builds both crates with `cargo ndk` in one
 custom command that produces `libplugin_ffi.a` and `libassets_ffi.a` per ABI, then imports them as
-`IMPORTED STATIC` targets. Two knobs exist because the workspace is not vendored: `OBLIVION_RUST_DIR`
-defaults to the sibling checkout and `OBLIVION_RUST_OFFLINE` runs cargo with `--offline`. The Rust
+`IMPORTED STATIC` targets. The workspace is vendored under `rust/` since 2026-11-09; `OBLIVION_RUST_DIR`
+defaults to that directory and `OBLIVION_RUST_OFFLINE` runs cargo with `--offline`. The Rust
 sources are globbed with `CONFIGURE_DEPENDS`, so a change under either crate triggers a rebuild.
 `rustc` and `rustdoc` are pinned to the proxies next to `cargo` because a standalone host-only
 toolchain earlier on `PATH` otherwise wins and fails with a target mismatch.

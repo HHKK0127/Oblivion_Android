@@ -386,6 +386,11 @@ MediaPlayer.start()
 | M8-1: オーディオ基盤 | Phase 8 | 2026-04-18 | [DONE] |
 | M8-2: JNI Audio Bridge | Phase 8 | 2026-04-18 | [DONE] |
 | M9-1: 最終統合 | Phase 9 | - | [WIP] |
+| M-Rust1: 純ロジック層 Rust移行（plugin/assets/dds + bsa/nif ハンドル化） | Phase 46-61 | 2026-10-26 | [DONE] |
+| M-Rust2: esm_reader Rust移行（esm-parser/esm-ffi・オラクル20ペア＝原実装バグ11件をRust側が修正） | Phase 62-72 | 2026-11-02 | [DONE] |
+| M-Rust3: 開発レーンをRust本生産に切替（旧oblivion-re-tools・15クレート） | Phase 62-72 | 2026-11-09 | [DONE] |
+| M-Rust3b: Rustワークスペースの仓库内受入（`rust/`・CMakeLists/hostスクリプト既定パス化・masterへfast-forwardマージ c2653460・検証176/31 green） | Phase 62-72 | 2026-11-09 | [DONE] |
+| M-Rust4: Rust移行残件（#45: N5b animation keyframe/resolve+walker C ABI・N6 docs・native-lib link） | Phase 62-72 | - | [WIP] |
 
 ---
 

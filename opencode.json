@@ -28,5 +28,20 @@
         "edit": "deny"
       }
     }
+  },
+  "mcp": {
+    "servers": {
+      "ai-todo": {
+        "type": "local",
+        "command": [
+          "C:\\Users\\hiroki.kogarumai\\.local\\bin\\ai-todo.exe",
+          "--root",
+          "C:\\Users\\hiroki.kogarumai\\Oblivion_Android",
+          "serve"
+        ],
+        "disabled": false,
+        "codemode": true
+      }
+    }
   }
 }

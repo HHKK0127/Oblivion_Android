@@ -828,6 +828,17 @@ The current version is **0.9.10 (versionCode 910)**.
   `std::strcmp`. The function implementation itself was correct.
 
 ### Changed
+- **Development lane switched to Rust-side production (2026-11-09)**: by user decision, new pure-logic
+  implementation is written in the 15-crate cargo workspace instead of extending the C++ tree; the
+  existing shims and the five C ABIs are unchanged. **The workspace was vendored into this repository
+  as `rust/` the same day** (previously the sibling `oblivion-re-tools` checkout), so its sources now
+  carry the repo's commit history and the CI checkout gap noted for host tests disappears at the
+  source level. The vendoring landed on branch `rust-in-repo` (workspace + CMakeLists /
+  run_host_tests.sh default-path changes + `rust/target/` ignore) and was **merged into `master`
+  by user approval on 2026-11-09** (fast-forward, `c2653460`; no push performed). The
+  migration backlog is ai-todo **#45** (animation keyframe/resolve + walker C ABI for phase-30 parity,
+  docs paths, native-lib link). Milestone tables in `plan.md` (M20) and
+  `docs/DEVELOPMENT_HISTORY.md` (M-Rust1-4) updated accordingly.
 - **`EventBus` moved into its own translation unit**: its 7 out-of-line definitions were moved
   verbatim from `engine/imperial_weave.cpp` into a new `engine/event_bus.cpp` (registered in
   `app/src/main/cpp/CMakeLists.txt`) so the event system can be linked without the renderer, video
