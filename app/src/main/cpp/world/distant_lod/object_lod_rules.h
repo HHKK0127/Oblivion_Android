@@ -36,6 +36,7 @@
 #include <cstdint>
 #include <cstring>
 #include <exception>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -201,9 +202,20 @@ inline bool parseCellName(const std::string& path,
     try {
         size_t usedX = 0;
         size_t usedY = 0;
-        const long x = std::stol(xText, &usedX);
-        const long y = std::stol(yText, &usedY);
+        // stoll + explicit int32 bounds, not stol: std::stol's overflow
+        // behaviour is platform-dependent (long is 32-bit on Windows,
+        // 64-bit on Linux), so an out-of-range field only threw on
+        // Windows. Rejection of values outside int32 must hold on every
+        // host; values beyond int64 still throw and are rejected below.
+        const long long x = std::stoll(xText, &usedX);
+        const long long y = std::stoll(yText, &usedY);
         if (usedX != xText.size() || usedY != yText.size()) {
+            return false;
+        }
+        if (x < static_cast<long long>(std::numeric_limits<int32_t>::min()) ||
+            x > static_cast<long long>(std::numeric_limits<int32_t>::max()) ||
+            y < static_cast<long long>(std::numeric_limits<int32_t>::min()) ||
+            y > static_cast<long long>(std::numeric_limits<int32_t>::max())) {
             return false;
         }
         cellX = static_cast<int32_t>(x);
