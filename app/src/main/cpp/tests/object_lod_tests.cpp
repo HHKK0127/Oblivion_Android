@@ -362,6 +362,7 @@ void ObjectLodTests::testCellNameGrammar() {
         {"Tamriel_63_-8.lod", "Tamriel", 63, -8},
         {"DistantLOD/Tamriel_1_2.LOD", "Tamriel", 1, 2},
         {"distantlod/se_world_3_4.lod", "se_world", 3, 4},
+        {"Tamriel_2147483647_-2147483648.lod", "Tamriel", 2147483647, -2147483648},  // int32 extremes
     };
 
     bool pass = true;
@@ -394,6 +395,9 @@ void ObjectLodTests::testCellNameRejections() {
         "",                     // empty path
         "Tamriel_1_.lod",       // empty y field
         "Tamriel_99999999999_0.lod",  // out of int32 range
+        "Tamriel_2147483648_0.lod",   // INT32_MAX + 1
+        "Tamriel_-2147483649_0.lod",  // INT32_MIN - 1
+        "Tamriel_99999999999999999999_0.lod",  // beyond int64: stoll throws
     };
 
     bool pass = true;
