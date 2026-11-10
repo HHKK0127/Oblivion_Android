@@ -1318,6 +1318,256 @@ impl<'a> BlockReader<'a> {
             text_keys.push(TextKey { time, value });
         }
     }
+
+    /// The first keyframe data block of the file.
+    ///
+    /// Oblivion's .kf streams carry this body under the name
+    /// `NiTransformData` and the .nif streams under `NiKeyframeData` — the
+    /// walker dispatches both names to the same layout, so this returns
+    /// whichever of the two appears first in file order.
+    pub(crate) fn parse_keyframe_data(&mut self) -> Option<KeyframeData> {
+        let mut candidates = self.find_blocks_of_type("NiKeyframeData");
+        candidates.extend(self.find_blocks_of_type("NiTransformData"));
+        let index = *candidates.iter().min()?;
+        self.parse_keyframe_data_at(index)
+    }
+
+    /// The keyframe data block at `index`, field for field against the
+    /// walker's `skip_keyframe_data` — the same measurement that puts every
+    /// later block at its offset, so a reader that consumed a different
+    /// number of bytes would desynchronise from the file it just walked.
+    ///
+    /// The retail .kf streams sampled from `Oblivion - Meshes.bsa` keep each
+    /// key's value next to its time (the walker's sizes were verified against
+    /// them), which is what this reads; the values the engine patches into
+    /// its key arrays after `Load` returns are its own bookkeeping, not a
+    /// second stream.
+    pub(crate) fn parse_keyframe_data_at(&mut self, index: u32) -> Option<KeyframeData> {
+        let offset = self.locate(index)?;
+        self.r.set_pos(offset);
+
+        // NiKeyframeData layout (version 20.0.0.4): Num Rotation Keys |
+        // Rotation Type (only with keys) | QuatKeys — none for rotation
+        // type 4 — | [Order, rotation type 4 at or below 10.1.0.0 only] |
+        // 3× float Euler channels (rotation type 4) | Translations | Scales.
+        let rotation_key_count = self.r.u32();
+        if self.r.has_error() {
+            return None;
+        }
+        let mut rotation_type = 0;
+        if rotation_key_count != 0 {
+            rotation_type = self.r.u32();
+            if self.r.has_error() {
+                return None;
+            }
+        }
+
+        // Rotation type 4 stores no quaternions at all; the three Euler
+        // channels read below carry the rotation instead.
+        let rotation_keys = if rotation_type == 4 {
+            Vec::new()
+        } else {
+            self.read_quaternion_keys(rotation_key_count, rotation_type)?
+        };
+
+        let mut rotation_order = 0;
+        let mut xyz_rotations = [
+            FloatKeyGroup::default(),
+            FloatKeyGroup::default(),
+            FloatKeyGroup::default(),
+        ];
+        if rotation_type == 4 {
+            if self.header.version <= 0x0A01_0000 {
+                rotation_order = self.r.u32();
+                if self.r.has_error() {
+                    return None;
+                }
+            }
+            for channel in xyz_rotations.iter_mut() {
+                *channel = self.read_float_key_group()?;
+            }
+        }
+        let translations = self.read_vector3_key_group()?;
+        let scales = self.read_float_key_group()?;
+        if self.r.has_error() {
+            return None;
+        }
+
+        Some(KeyframeData {
+            rotation_type,
+            rotation_keys,
+            rotation_order,
+            xyz_rotations,
+            translations,
+            scales,
+        })
+    }
+
+    /// A KeyGroup opening — `skip_key_group`'s counterpart: Num Keys, then
+    /// the Interpolation only when the group has keys (a zero-length group
+    /// leaves it unread, which is the empty array that follows in the file).
+    /// The keys themselves are the caller's, with their own stride guard.
+    fn read_key_group_head(&mut self) -> Option<(u32, u32)> {
+        let num_keys = self.r.u32();
+        if self.r.has_error() {
+            return None;
+        }
+        let mut interpolation = 0;
+        if num_keys != 0 {
+            interpolation = self.r.u32();
+            if self.r.has_error() {
+                return None;
+            }
+        }
+        Some((num_keys, interpolation))
+    }
+
+    /// The `parse_text_keys` bound applied to a key array: a count whose
+    /// stride does not fit the bytes that remain fails the read rather than
+    /// resizing a vector straight from the file. On any file the walker
+    /// measured the keys fit and the guard never fires.
+    fn keys_fit(&mut self, count: u32, stride: usize) -> bool {
+        let remaining = self.r.len().saturating_sub(self.r.pos());
+        if (count as usize).saturating_mul(stride) > remaining {
+            self.r.set_error();
+            return false;
+        }
+        true
+    }
+
+    /// `skip_quat_keys`: Time | Quaternion Value, plus the 12-byte TBC triple
+    /// rotation type 3 appends. Rotation type 4 reads no quaternions at all —
+    /// the caller stops before this is reached.
+    fn read_quaternion_keys(
+        &mut self,
+        count: u32,
+        rotation_type: u32,
+    ) -> Option<Vec<QuaternionKey>> {
+        let stride = 20 + usize::from(rotation_type == 3) * 12;
+        if !self.keys_fit(count, stride) {
+            return None;
+        }
+        let mut keys = Vec::with_capacity(count as usize);
+        for _ in 0..count {
+            let time = self.r.f32();
+            let value = Vector4 {
+                x: self.r.f32(),
+                y: self.r.f32(),
+                z: self.r.f32(),
+                w: self.r.f32(),
+            };
+            let mut tbc = [0.0; 3];
+            if rotation_type == 3 {
+                for component in tbc.iter_mut() {
+                    *component = self.r.f32();
+                }
+            }
+            keys.push(QuaternionKey { time, value, tbc });
+        }
+        if self.r.has_error() {
+            return None;
+        }
+        Some(keys)
+    }
+
+    /// One float KeyGroup: interpolation 2 adds a forward/backward tangent
+    /// pair to every key, 3 the TBC triple — the same `arg` the walker hands
+    /// to `skip_keys`.
+    fn read_float_key_group(&mut self) -> Option<FloatKeyGroup> {
+        let (num_keys, interpolation) = self.read_key_group_head()?;
+        let stride = 8 + usize::from(interpolation == 2) * 8
+            + usize::from(interpolation == 3) * 12;
+        if !self.keys_fit(num_keys, stride) {
+            return None;
+        }
+        let mut keys = Vec::with_capacity(num_keys as usize);
+        for _ in 0..num_keys {
+            let time = self.r.f32();
+            let value = self.r.f32();
+            let mut forward_tangent = 0.0;
+            let mut backward_tangent = 0.0;
+            if interpolation == 2 {
+                forward_tangent = self.r.f32();
+                backward_tangent = self.r.f32();
+            }
+            let mut tbc = [0.0; 3];
+            if interpolation == 3 {
+                for component in tbc.iter_mut() {
+                    *component = self.r.f32();
+                }
+            }
+            keys.push(FloatKey {
+                time,
+                value,
+                forward_tangent,
+                backward_tangent,
+                tbc,
+            });
+        }
+        if self.r.has_error() {
+            return None;
+        }
+        Some(FloatKeyGroup {
+            interpolation,
+            keys,
+        })
+    }
+
+    /// The Translations KeyGroup — identical to [`read_float_key_group`](Self::
+    /// read_float_key_group) with a 12-byte value, as `skip_keys` measures for
+    /// the "Vector3" type (a tangent pair there is two vectors, the TBC stays
+    /// twelve bytes).
+    fn read_vector3_key_group(&mut self) -> Option<Vector3KeyGroup> {
+        let (num_keys, interpolation) = self.read_key_group_head()?;
+        let stride = 16 + usize::from(interpolation == 2) * 24
+            + usize::from(interpolation == 3) * 12;
+        if !self.keys_fit(num_keys, stride) {
+            return None;
+        }
+        let mut keys = Vec::with_capacity(num_keys as usize);
+        for _ in 0..num_keys {
+            let time = self.r.f32();
+            let value = Vector3 {
+                x: self.r.f32(),
+                y: self.r.f32(),
+                z: self.r.f32(),
+            };
+            let mut forward_tangent = Vector3::default();
+            let mut backward_tangent = Vector3::default();
+            if interpolation == 2 {
+                forward_tangent = Vector3 {
+                    x: self.r.f32(),
+                    y: self.r.f32(),
+                    z: self.r.f32(),
+                };
+                backward_tangent = Vector3 {
+                    x: self.r.f32(),
+                    y: self.r.f32(),
+                    z: self.r.f32(),
+                };
+            }
+            let mut tbc = [0.0; 3];
+            if interpolation == 3 {
+                for component in tbc.iter_mut() {
+                    *component = self.r.f32();
+                }
+            }
+            keys.push(Vector3Key {
+                time,
+                value,
+                forward_tangent,
+                backward_tangent,
+                tbc,
+            });
+        }
+        if self.r.has_error() {
+            return None;
+        }
+        Some(Vector3KeyGroup {
+            interpolation,
+            keys,
+        })
+    }
 }
 
 /// One text key of a `NiTextKeyExtraData` block: a timestamp and the value.
@@ -1476,4 +1726,71 @@ impl Default for AnimationKeyframe {
             backward_tangent: Vector4::default(),
         }
     }
+}
+
+/// One key of a float channel. `skip_keys` reads Time | Value, then a
+/// forward/backward tangent pair when the group's interpolation is 2 and a
+/// 12-byte TBC triple when it is 3; the fields an interpolation does not
+/// carry stay at their defaults, which is what keeps a channel with mixed
+/// history readable without a variant per key.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct FloatKey {
+    pub time: f32,
+    pub value: f32,
+    pub forward_tangent: f32,
+    pub backward_tangent: f32,
+    pub tbc: [f32; 3],
+}
+
+/// One key of the Translations channel: the same record as a [`FloatKey`]
+/// with a 12-byte value and two 12-byte tangent vectors (the TBC stays three
+/// floats whatever the channel width, exactly as the walker measures it).
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Vector3Key {
+    pub time: f32,
+    pub value: Vector3,
+    pub forward_tangent: Vector3,
+    pub backward_tangent: Vector3,
+    pub tbc: [f32; 3],
+}
+
+/// One rotation key. Only rotation type 3 appends the TBC triple; for the
+/// other types it stays zero, as the reader never consumed those bytes.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct QuaternionKey {
+    pub time: f32,
+    pub value: Vector4,
+    pub tbc: [f32; 3],
+}
+
+/// One float KeyGroup: the interpolation the file carries (zero for an empty
+/// group, whose Interpolation the original leaves unread) and its keys.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct FloatKeyGroup {
+    pub interpolation: u32,
+    pub keys: Vec<FloatKey>,
+}
+
+/// The Translations KeyGroup.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Vector3KeyGroup {
+    pub interpolation: u32,
+    pub keys: Vec<Vector3Key>,
+}
+
+/// One parsed keyframe data block — `NiKeyframeData` on the .nif streams,
+/// `NiTransformData` on the .kf streams, one layout shared by both names.
+///
+/// Rotation type 4 replaces the quaternion array with the three Euler
+/// channels in [`xyz_rotations`](Self::xyz_rotations); below 10.1.0.1 the
+/// file also orders them with [`rotation_order`](Self::rotation_order),
+/// which retail Oblivion never carries.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct KeyframeData {
+    pub rotation_type: u32,
+    pub rotation_keys: Vec<QuaternionKey>,
+    pub rotation_order: u32,
+    pub xyz_rotations: [FloatKeyGroup; 3],
+    pub translations: Vector3KeyGroup,
+    pub scales: FloatKeyGroup,
 }

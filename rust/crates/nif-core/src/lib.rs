@@ -30,8 +30,9 @@ mod walk;
 
 pub use block::{
     AnimationClip, AnimationKeyframe, BoneData, CollisionObject, CollisionShape, ControllerManager,
-    ControllerSequence, KeyframeController, PackedWeight, Partition, RigidBodyInfo, RigidBodyRead,
-    ShapeType, SkinData, SkinInstance, SkinPartition, TextKey, VertexWeight,
+    ControllerSequence, FloatKey, FloatKeyGroup, KeyframeController, KeyframeData, PackedWeight,
+    Partition, QuaternionKey, RigidBodyInfo, RigidBodyRead, ShapeType, SkinData, SkinInstance,
+    SkinPartition, TextKey, Vector3Key, Vector3KeyGroup, VertexWeight,
 };
 
 use std::fmt;
@@ -513,6 +514,14 @@ impl NifParser {
     pub fn parse_controller_sequence(&self) -> Option<ControllerSequence> {
         block::BlockReader::new(&self.data, &self.header, &self.walk, &self.nodes)
             .parse_controller_sequence()
+    }
+
+    /// The first keyframe data block of the file, whichever of the two names
+    /// it carries: `NiKeyframeData` on the .nif streams, `NiTransformData`
+    /// on the .kf streams the retail animations ship.
+    pub fn parse_keyframe_data(&self) -> Option<KeyframeData> {
+        block::BlockReader::new(&self.data, &self.header, &self.walk, &self.nodes)
+            .parse_keyframe_data()
     }
 
     /// Block count of the object array.
@@ -1932,6 +1941,233 @@ mod tests {
             body.extend_from_slice(&sized(value));
         }
         body
+    }
+
+    /// NiKeyframeData body of the quaternion shape: the rotation cluster,
+    /// then the Translations and Scales channels at interpolation 1 when they
+    /// carry keys (the bare count when they do not, which leaves their
+    /// interpolation unread).
+    fn keyframe_data_body(
+        rotation_type: u32,
+        quats: &[(f32, [f32; 4])],
+        translations: &[(f32, [f32; 3])],
+        scales: &[(f32, f32)],
+    ) -> Vec<u8> {
+        let mut body = Vec::new();
+        push_u32(&mut body, quats.len() as u32);
+        if !quats.is_empty() {
+            push_u32(&mut body, rotation_type);
+        }
+        for (time, value) in quats {
+            push_f32(&mut body, *time);
+            for component in value {
+                push_f32(&mut body, *component);
+            }
+        }
+        push_u32(&mut body, translations.len() as u32);
+        if !translations.is_empty() {
+            push_u32(&mut body, 1); // interpolation
+            for (time, value) in translations {
+                push_f32(&mut body, *time);
+                for component in value {
+                    push_f32(&mut body, *component);
+                }
+            }
+        }
+        push_u32(&mut body, scales.len() as u32);
+        if !scales.is_empty() {
+            push_u32(&mut body, 1); // interpolation
+            for (time, value) in scales {
+                push_f32(&mut body, *time);
+                push_f32(&mut body, *value);
+            }
+        }
+        body
+    }
+
+    #[test]
+    fn keyframe_data_reads_quaternion_rotation_and_channels() {
+        let header = gamebryo_header(
+            "Gamebryo File Format, Version 20.0.0.4",
+            0x1400_0004,
+            11,
+            11,
+            &["NiNode", "NiKeyframeData"],
+            &[0, 1],
+        );
+        let mut built = Built::with_header(header);
+        built.block(ninode_table("Root"));
+        built.block(keyframe_data_body(
+            1,
+            &[(0.5, [0.0, 0.0, 0.0, 1.0]), (1.0, [0.0, 0.0, 0.5, 0.5])],
+            &[(0.25, [1.0, 2.0, 3.0])],
+            &[],
+        ));
+        let (bytes, ranges) = built.trailer(&[0]);
+
+        let parser = parse(&bytes);
+        assert!(parser.are_blocks_walked(), "{}", parser.walk_error());
+        // The reader must consume exactly the body the walker measured —
+        // that measurement is what places every later block in the file.
+        assert_eq!(
+            (parser.block_body_offset(1), parser.block_body_end(1)),
+            ranges[1]
+        );
+
+        let data = parser
+            .parse_keyframe_data()
+            .expect("the keyframe data block is in the file");
+        assert_eq!(data.rotation_type, 1);
+        assert_eq!(data.rotation_keys.len(), 2);
+        assert_eq!(data.rotation_keys[0].time, 0.5);
+        assert_eq!(
+            data.rotation_keys[0].value,
+            Vector4 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+                w: 1.0
+            }
+        );
+        // Rotation type 1 carries no TBC bytes: the triple stays at defaults.
+        assert_eq!(data.rotation_keys[1].tbc, [0.0; 3]);
+        assert_eq!(data.translations.interpolation, 1);
+        assert_eq!(data.translations.keys.len(), 1);
+        assert_eq!(data.translations.keys[0].time, 0.25);
+        assert_eq!(
+            data.translations.keys[0].value,
+            Vector3 {
+                x: 1.0,
+                y: 2.0,
+                z: 3.0
+            }
+        );
+        // The empty Scales group leaves its interpolation unread.
+        assert_eq!(data.scales.interpolation, 0);
+        assert!(data.scales.keys.is_empty());
+    }
+
+    #[test]
+    fn keyframe_data_rotation_type_4_switches_to_euler_channels() {
+        // The retail .kf streams carry whole-skeleton rotations as three
+        // float channels, tangent- or TBC-interpolated — the shape the
+        // goblin sample's NiTransformData blocks store. 20.0.0.4 files hold
+        // no Euler order word.
+        let header = gamebryo_header(
+            "Gamebryo File Format, Version 20.0.0.4",
+            0x1400_0004,
+            11,
+            11,
+            &["NiNode", "NiTransformData"],
+            &[0, 1],
+        );
+        let mut body = Vec::new();
+        push_u32(&mut body, 1); // Num Rotation Keys, counted but not stored
+        push_u32(&mut body, 4); // Rotation Type
+        // Channel 0: one tangent-interpolated key.
+        push_u32(&mut body, 1);
+        push_u32(&mut body, 2);
+        push_f32(&mut body, 0.25); // time
+        push_f32(&mut body, 0.5); // value
+        push_f32(&mut body, 0.125); // forward tangent
+        push_f32(&mut body, 0.75); // backward tangent
+        // Channel 1: one TBC-interpolated key.
+        push_u32(&mut body, 1);
+        push_u32(&mut body, 3);
+        push_f32(&mut body, 0.5);
+        push_f32(&mut body, 0.75);
+        for value in [1.0, 2.0, 3.0] {
+            push_f32(&mut body, value); // TBC triple
+        }
+        // Channel 2, Translations and Scales: empty groups.
+        push_u32(&mut body, 0);
+        push_u32(&mut body, 0);
+        push_u32(&mut body, 0);
+        let mut built = Built::with_header(header);
+        built.block(ninode_table("Root"));
+        built.block(body);
+        let (bytes, ranges) = built.trailer(&[0]);
+
+        let parser = parse(&bytes);
+        assert!(parser.are_blocks_walked(), "{}", parser.walk_error());
+        assert_eq!(
+            (parser.block_body_offset(1), parser.block_body_end(1)),
+            ranges[1]
+        );
+
+        let data = parser
+            .parse_keyframe_data()
+            .expect("rotation type 4 body");
+        assert!(data.rotation_keys.is_empty()); // type 4 reads no quaternions
+        assert_eq!(data.rotation_order, 0); // absent at 20.0.0.4
+        assert_eq!(data.xyz_rotations[0].interpolation, 2);
+        assert_eq!(data.xyz_rotations[0].keys[0].time, 0.25);
+        assert_eq!(data.xyz_rotations[0].keys[0].value, 0.5);
+        assert_eq!(data.xyz_rotations[0].keys[0].forward_tangent, 0.125);
+        assert_eq!(data.xyz_rotations[0].keys[0].backward_tangent, 0.75);
+        assert_eq!(data.xyz_rotations[1].interpolation, 3);
+        assert_eq!(data.xyz_rotations[1].keys[0].tbc, [1.0, 2.0, 3.0]);
+        assert!(data.xyz_rotations[2].keys.is_empty());
+        assert!(data.translations.keys.is_empty());
+        assert!(data.scales.keys.is_empty());
+    }
+
+    #[test]
+    fn keyframe_data_rotation_type_3_appends_tbc_to_quaternion_keys() {
+        let header = gamebryo_header(
+            "Gamebryo File Format, Version 20.0.0.4",
+            0x1400_0004,
+            11,
+            11,
+            &["NiNode", "NiKeyframeData"],
+            &[0, 1],
+        );
+        let mut body = Vec::new();
+        push_u32(&mut body, 1);
+        push_u32(&mut body, 3); // rotation type
+        push_f32(&mut body, 0.5); // time
+        for value in [0.0, 0.0, 0.0, 1.0] {
+            push_f32(&mut body, value); // quaternion
+        }
+        for value in [0.25, 0.5, 0.75] {
+            push_f32(&mut body, value); // TBC triple
+        }
+        push_u32(&mut body, 0); // Translations
+        push_u32(&mut body, 0); // Scales
+        let mut built = Built::with_header(header);
+        built.block(ninode_table("Root"));
+        built.block(body);
+        let (bytes, _) = built.trailer(&[0]);
+
+        let parser = parse(&bytes);
+        let data = parser
+            .parse_keyframe_data()
+            .expect("rotation type 3 body");
+        assert_eq!(data.rotation_keys[0].tbc, [0.25, 0.5, 0.75]);
+    }
+
+    #[test]
+    fn parse_keyframe_data_picks_the_earlier_of_the_two_names() {
+        // Both keyframe data names in one file: file order wins, exactly as
+        // `seek_to_block_of_type` picks the first block of a single type.
+        let header = gamebryo_header(
+            "Gamebryo File Format, Version 20.0.0.4",
+            0x1400_0004,
+            11,
+            11,
+            &["NiNode", "NiTransformData", "NiKeyframeData"],
+            &[0, 1, 2],
+        );
+        let mut built = Built::with_header(header);
+        built.block(ninode_table("Root"));
+        built.block(keyframe_data_body(1, &[(7.5, [0.0, 0.0, 0.0, 1.0])], &[], &[]));
+        built.block(keyframe_data_body(1, &[(9.5, [0.0, 0.0, 0.0, 1.0])], &[], &[]));
+        let (bytes, _) = built.trailer(&[0]);
+
+        let parser = parse(&bytes);
+        assert!(parser.are_blocks_walked(), "{}", parser.walk_error());
+        let data = parser.parse_keyframe_data().expect("a data block exists");
+        assert_eq!(data.rotation_keys[0].time, 7.5);
     }
 
     #[test]
