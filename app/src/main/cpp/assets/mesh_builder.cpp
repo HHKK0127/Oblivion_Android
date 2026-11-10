@@ -29,7 +29,12 @@ static_assert(sizeof(Vertex) == AFL_VERTEX_FLOATS * sizeof(float),
 
 // One geometry flattened into the plain runs the C ABI reads. NIFVector3 and
 // NIFVector4 are 3- and 4-float records, so this copy keeps the call independent
-// of their exact layout and drops the unused w channel of the colours.
+// of their exact layout. Colours keep their w channel: assets_ffi.h declares the
+// `colors` run as float quadruples and the merge borrows it as `[[f32; 4]]` -
+// flattening to triples would make every element past the first read shifted
+// data and run off the end of the buffer on a fully coloured mesh. The w
+// channel is dropped where it is unused: merge_geometry writes the 11-float
+// vertex without it.
 //
 // The ABI counts elements, not floats (a position is one vertex, not three
 // floats), so each run keeps its element count next to its flattened storage.
@@ -73,11 +78,12 @@ GeometryBuffers flattenGeometry(const NIFGeometry& geometry) {
     }
 
     buffers.colorCount = geometry.colors.size();
-    buffers.colors.reserve(buffers.colorCount * 3);
+    buffers.colors.reserve(buffers.colorCount * 4);
     for (const NIFVector4& color : geometry.colors) {
         buffers.colors.push_back(color.x);
         buffers.colors.push_back(color.y);
         buffers.colors.push_back(color.z);
+        buffers.colors.push_back(color.w);
     }
 
     buffers.triangleCount = geometry.triangles.size();

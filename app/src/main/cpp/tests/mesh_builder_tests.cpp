@@ -165,7 +165,12 @@ bool MeshBuilderTests::runAllTests() {
         geometry.normals.push_back(NIFVector3(1.0f, 0.0f, 0.0f));
         geometry.texCoords.push_back(glm::vec2(0.25f, 0.75f));
         geometry.texCoords.push_back(glm::vec2(0.5f, 0.5f));
-        geometry.colors.push_back(NIFVector4(0.1f, 0.2f, 0.3f, 1.0f));
+        // Two colours on three vertices: the stride the ABI promises
+        // (quadruples) is only observable from the second element on, and a
+        // flattened triple per colour shifts every later read - which is what
+        // segfaulted on a fully coloured retail head mesh.
+        geometry.colors.push_back(NIFVector4(0.1f, 0.2f, 0.3f, 0.9f));
+        geometry.colors.push_back(NIFVector4(0.4f, 0.5f, 0.6f, 0.8f));
 
         const oblivion::MergedMeshData merged = oblivion::mergeGeometry({geometry});
 
@@ -175,6 +180,11 @@ bool MeshBuilderTests::runAllTests() {
                sameVec2(merged.vertices[0].texCoord, glm::vec2(0.25f, 0.75f)));
         record("colours are copied when present",
                sameVec3(merged.vertices[0].color, glm::vec3(0.1f, 0.2f, 0.3f)));
+        record("each colour element is read at its own stride",
+               sameVec3(merged.vertices[1].color, glm::vec3(0.4f, 0.5f, 0.6f)),
+               "vertex1 colour=(" + std::to_string(merged.vertices[1].color.x) + "," +
+               std::to_string(merged.vertices[1].color.y) + "," +
+               std::to_string(merged.vertices[1].color.z) + ")");
         // A short attribute array falls back per vertex, not per geometry.
         record("a short attribute array falls back per vertex",
                sameVec2(merged.vertices[2].texCoord, Vertex().texCoord) &&
