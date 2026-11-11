@@ -925,6 +925,43 @@ bool Renderer::initGameSystems() {
                     else if (key == "Personality") player->attributes.Personality = static_cast<int>(val);
                     else if (key == "Luck") player->attributes.Luck = static_cast<int>(val);
                 }
+                // Apply skills. Player::Skills carries one int per canonical
+                // skill (AV indices 0x0c..0x20, RE_EXE_REPORT 46.1); each
+                // creation-screen name binds explicitly to its field below.
+                struct SkillBinding { const char* name; int Player::Skills::* field; };
+                static constexpr SkillBinding kSkillBindings[] = {
+                    {"Armorer", &Player::Skills::Armorer},
+                    {"Athletics", &Player::Skills::Athletics},
+                    {"Blade", &Player::Skills::Blade},
+                    {"Block", &Player::Skills::Block},
+                    {"Blunt", &Player::Skills::Blunt},
+                    {"Hand-to-Hand", &Player::Skills::HandToHand},
+                    {"Heavy Armor", &Player::Skills::HeavyArmor},
+                    {"Alchemy", &Player::Skills::Alchemy},
+                    {"Alteration", &Player::Skills::Alteration},
+                    {"Conjuration", &Player::Skills::Conjuration},
+                    {"Destruction", &Player::Skills::Destruction},
+                    {"Illusion", &Player::Skills::Illusion},
+                    {"Mysticism", &Player::Skills::Mysticism},
+                    {"Restoration", &Player::Skills::Restoration},
+                    {"Acrobatics", &Player::Skills::Acrobatics},
+                    {"Light Armor", &Player::Skills::LightArmor},
+                    {"Marksman", &Player::Skills::Marksman},
+                    {"Mercantile", &Player::Skills::Mercantile},
+                    {"Security", &Player::Skills::Security},
+                    {"Sneak", &Player::Skills::Sneak},
+                    {"Speechcraft", &Player::Skills::Speechcraft},
+                };
+                int skillsBound = 0;
+                for (const auto& binding : kSkillBindings) {
+                    auto it = character.skills.find(binding.name);
+                    if (it != character.skills.end()) {
+                        player->skills.*(binding.field) = static_cast<int>(it->second);
+                        ++skillsBound;
+                    }
+                }
+                LOGI("Character creation applied: skills -> player (%d/21, Blade=%d Speechcraft=%d)",
+                     skillsBound, player->skills.Blade, player->skills.Speechcraft);
             }
             // Start game
             startGame();
