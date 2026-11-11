@@ -187,12 +187,14 @@ void UICharacterSheet::renderSkillsTab() {
         glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT), 0.7f);
     y += 22.0f;
 
-    // Oblivion skill set
+    // Canonical 21-skill set in AV index order 0x0c..0x20 (RE_EXE_REPORT §46.1,
+    // name table at 0x00B0A1A8), shared with UICharacterCreation::SKILL_NAMES.
     const char* skillOrder[] = {
-        "Blade","Blunt","Hand-to-Hand","Block","Armorer","Athletics",
-        "Heavy Armor","Destruction","Conjuration","Mysticism",
-        "Restoration","Illusion","Alteration","Alchemy",
-        "Light Armor","Marksman","Mercantile","Security","Sneak","Acrobatics"
+        "Armorer","Athletics","Blade","Block","Blunt",
+        "Hand-to-Hand","Heavy Armor","Alchemy","Alteration","Conjuration",
+        "Destruction","Illusion","Mysticism","Restoration",
+        "Acrobatics","Light Armor","Marksman","Mercantile",
+        "Security","Sneak","Speechcraft"
     };
 
     for (const char* skill : skillOrder) {
