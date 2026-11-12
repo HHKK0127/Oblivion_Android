@@ -34,7 +34,7 @@ bool UICharacterCreation::initialize(TextRenderer* tr) {
 }
 
 void UICharacterCreation::initializeDefaultCharacter() {
-    // createdCharacter_.name = "Adventurer";
+    createdCharacter_.name = "Adventurer";
     // createdCharacter_.level = 1;
     createdCharacter_.currentHealth = 100;
     createdCharacter_.maxHealth = 100;
@@ -88,7 +88,7 @@ bool UICharacterCreation::onTouchDown(float x, float y, int pointerId) {
 
     // Confirm/Cancel buttons
     if (hitTestConfirmButton(x, y)) {
-        // createdCharacter_.name = playerName_;
+        createdCharacter_.name = playerName_;
         if (onConfirm) {
             onConfirm(createdCharacter_);
         }
@@ -577,7 +577,7 @@ void UICharacterCreation::ensureValidCharacter() {
     if (playerName_.empty()) {
         playerName_ = "Adventurer";
     }
-    // createdCharacter_.name = playerName_;
+    createdCharacter_.name = playerName_;
 }
 
 void UICharacterCreation::loadRacesFromESM() {

@@ -20,6 +20,10 @@ enum class AIState {
 };
 
 struct CharacterStatus {
+    // Character creation identity. Kept in the shared status object so the
+    // confirmed name is available to the player-state handoff.
+    std::string name;
+
     // Core Vitals
     float currentHealth;
     float maxHealth;
