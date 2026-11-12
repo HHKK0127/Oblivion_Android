@@ -439,6 +439,68 @@ typedef struct nif_controller_manager {
     const nif_controller_sequence *sequences;
 } nif_controller_manager;
 
+/* One key of a float channel: time and value first, then the tangent pair
+ * the group's interpolation carries and the TBC triple; the fields an
+ * interpolation does not use are zero. 28 bytes. */
+typedef struct nif_float_key {
+    float time;
+    float value;
+    float forward_tangent;
+    float backward_tangent;
+    float tbc[3];
+} nif_float_key;
+
+/* One key of the Translations channel: the float record with a 12-byte value
+ * and 12-byte tangent vectors. 52 bytes. */
+typedef struct nif_vector3_key {
+    float time;
+    float value[3];
+    float forward_tangent[3];
+    float backward_tangent[3];
+    float tbc[3];
+} nif_vector3_key;
+
+/* One rotation key: only rotation type 3 appends the TBC triple, the other
+ * types leave it zero. 32 bytes. */
+typedef struct nif_quaternion_key {
+    float time;
+    float value[4];
+    float tbc[3];
+} nif_quaternion_key;
+
+/* A float KeyGroup: the interpolation the file carries (zero for an empty
+ * group, whose Interpolation the original leaves unread) and the keys behind
+ * it. 16 bytes on 64-bit, 12 on 32-bit. */
+typedef struct nif_float_key_group {
+    uint32_t interpolation;
+    uint32_t key_count;
+    const nif_float_key *keys;
+} nif_float_key_group;
+
+/* The Translations KeyGroup. Same sizes as the float group. */
+typedef struct nif_vector3_key_group {
+    uint32_t interpolation;
+    uint32_t key_count;
+    const nif_vector3_key *keys;
+} nif_vector3_key_group;
+
+/* The first keyframe data block of the file — NiKeyframeData on .nif
+ * streams, NiTransformData on the .kf streams retail animations ship, one
+ * layout shared by both names. Rotation type 4 replaces rotation_keys with
+ * the three xyz_rotations Euler channels; rotation_order is only read below
+ * 10.1.0.1, which retail Oblivion never carries. 104 bytes on 64-bit, 76 on
+ * 32-bit. Every pointer borrows from the handle's key arrays, and a zero
+ * count makes its pointer meaningless whatever its value. */
+typedef struct nif_keyframe_data {
+    uint32_t rotation_type;
+    uint32_t rotation_order;
+    uint32_t rotation_key_count;
+    const nif_quaternion_key *rotation_keys;
+    nif_float_key_group xyz_rotations[3];
+    nif_vector3_key_group translations;
+    nif_float_key_group scales;
+} nif_keyframe_data;
+
 /* Animation layout checks against the Rust definitions. */
 #if UINTPTR_MAX == 0xFFFFFFFFFFFFFFFFull
 NIF_FFI_STATIC_ASSERT(sizeof(nif_text_key) == 16, nif_ffi_text_key_size);
@@ -452,6 +514,15 @@ NIF_FFI_STATIC_ASSERT(offsetof(nif_controller_sequence, controller_manager_index
 NIF_FFI_STATIC_ASSERT(sizeof(nif_controller_manager) == 24, nif_ffi_manager_size);
 NIF_FFI_STATIC_ASSERT(offsetof(nif_controller_manager, sequences) == 16,
                       nif_ffi_manager_sequences_offset);
+NIF_FFI_STATIC_ASSERT(sizeof(nif_float_key) == 28, nif_ffi_float_key_size);
+NIF_FFI_STATIC_ASSERT(sizeof(nif_vector3_key) == 52, nif_ffi_vector3_key_size);
+NIF_FFI_STATIC_ASSERT(sizeof(nif_quaternion_key) == 32, nif_ffi_quaternion_key_size);
+NIF_FFI_STATIC_ASSERT(sizeof(nif_float_key_group) == 16, nif_ffi_float_group_size);
+NIF_FFI_STATIC_ASSERT(sizeof(nif_keyframe_data) == 104, nif_ffi_keyframe_size);
+NIF_FFI_STATIC_ASSERT(offsetof(nif_keyframe_data, rotation_keys) == 16,
+                      nif_ffi_keyframe_rotation_keys_offset);
+NIF_FFI_STATIC_ASSERT(offsetof(nif_keyframe_data, translations) == 72,
+                      nif_ffi_keyframe_translations_offset);
 #else
 NIF_FFI_STATIC_ASSERT(sizeof(nif_text_key) == 8, nif_ffi_text_key_size);
 NIF_FFI_STATIC_ASSERT(offsetof(nif_text_key, value) == 4, nif_ffi_text_key_value_offset);
@@ -464,6 +535,15 @@ NIF_FFI_STATIC_ASSERT(offsetof(nif_controller_sequence, controller_manager_index
 NIF_FFI_STATIC_ASSERT(sizeof(nif_controller_manager) == 20, nif_ffi_manager_size);
 NIF_FFI_STATIC_ASSERT(offsetof(nif_controller_manager, sequences) == 16,
                       nif_ffi_manager_sequences_offset);
+NIF_FFI_STATIC_ASSERT(sizeof(nif_float_key) == 28, nif_ffi_float_key_size);
+NIF_FFI_STATIC_ASSERT(sizeof(nif_vector3_key) == 52, nif_ffi_vector3_key_size);
+NIF_FFI_STATIC_ASSERT(sizeof(nif_quaternion_key) == 32, nif_ffi_quaternion_key_size);
+NIF_FFI_STATIC_ASSERT(sizeof(nif_float_key_group) == 12, nif_ffi_float_group_size);
+NIF_FFI_STATIC_ASSERT(sizeof(nif_keyframe_data) == 76, nif_ffi_keyframe_size);
+NIF_FFI_STATIC_ASSERT(offsetof(nif_keyframe_data, rotation_keys) == 12,
+                      nif_ffi_keyframe_rotation_keys_offset);
+NIF_FFI_STATIC_ASSERT(offsetof(nif_keyframe_data, translations) == 52,
+                      nif_ffi_keyframe_translations_offset);
 #endif
 
 /* Fills `out` with the first NiControllerManager of the file, or
@@ -477,6 +557,14 @@ int nif_parse_controller_manager(void *handle, nif_controller_manager *out);
 /* Fills `out` with the first NiControllerSequence of the file, without the
  * manager around it, under the same rules. */
 int nif_parse_controller_sequence(void *handle, nif_controller_sequence *out);
+
+/* Fills `out` with the first keyframe data block of the file, whichever of
+ * the two names it carries (NiKeyframeData / NiTransformData), or
+ * NIF_ERROR_NO_BLOCK when the file holds none or it could not be read. On
+ * failure the out record is left untouched. Its pointers borrow from the
+ * handle's key arrays, so a caller copies what it needs before parsing
+ * again. */
+int nif_parse_keyframe_data(void *handle, nif_keyframe_data *out);
 
 /* ---------------------------------------------------------------------------
  * Scene nodes and header

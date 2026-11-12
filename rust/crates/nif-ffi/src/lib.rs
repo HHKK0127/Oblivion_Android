@@ -29,8 +29,9 @@ use std::ffi::{c_char, c_int, CStr};
 use std::panic::catch_unwind;
 
 use nif_core::{
-    CollisionObject, CollisionShape, ControllerSequence, Geometry, Matrix3x3, NifError, NifParser,
-    RigidBodyInfo, SkinData, SkinInstance, SkinPartition, Transform,
+    CollisionObject, CollisionShape, ControllerSequence, FloatKey, Geometry, KeyframeData,
+    Matrix3x3, NifError, NifParser, RigidBodyInfo, SkinData, SkinInstance, SkinPartition,
+    Transform,
 };
 
 /// The call succeeded.
@@ -496,6 +497,109 @@ const _: () = assert!(
 );
 const _: () = assert!(offset_of!(NifControllerManager, sequences) == 16);
 
+/// One key of a float channel, mirroring `FloatKey`: time and value first,
+/// then the tangent pair the interpolation carries and the TBC triple, in
+/// the fields an interpolation does not use the reader leaves at zero.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct NifFloatKey {
+    pub time: f32,
+    pub value: f32,
+    pub forward_tangent: f32,
+    pub backward_tangent: f32,
+    pub tbc: [f32; 3],
+}
+
+/// One key of the Translations channel, mirroring `Vector3Key`.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct NifVector3Key {
+    pub time: f32,
+    pub value: nif_core::Vector3,
+    pub forward_tangent: nif_core::Vector3,
+    pub backward_tangent: nif_core::Vector3,
+    pub tbc: [f32; 3],
+}
+
+/// One rotation key, mirroring `QuaternionKey`: only rotation type 3 appends
+/// the TBC triple, the other types leave it zero.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct NifQuaternionKey {
+    pub time: f32,
+    pub value: nif_core::Vector4,
+    pub tbc: [f32; 3],
+}
+
+/// A float KeyGroup: the interpolation the file carries (zero for an empty
+/// group) and the keys behind it.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct NifFloatKeyGroup {
+    pub interpolation: u32,
+    pub key_count: u32,
+    pub keys: *const NifFloatKey,
+}
+
+/// The Translations KeyGroup.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct NifVector3KeyGroup {
+    pub interpolation: u32,
+    pub key_count: u32,
+    pub keys: *const NifVector3Key,
+}
+
+/// The first keyframe data block of the file — `NiKeyframeData` on .nif
+/// streams, `NiTransformData` on the .kf streams retail animations ship, one
+/// layout shared by both names. Rotation type 4 replaces `rotation_keys` with
+/// the three `xyz_rotations` Euler channels; `rotation_order` is only read
+/// below 10.1.0.1, which retail Oblivion never carries. Every pointer borrows
+/// from the handle's key arrays (see [`nif_parse_keyframe_data`]).
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct NifKeyframeData {
+    pub rotation_type: u32,
+    pub rotation_order: u32,
+    pub rotation_key_count: u32,
+    pub rotation_keys: *const NifQuaternionKey,
+    pub xyz_rotations: [NifFloatKeyGroup; 3],
+    pub translations: NifVector3KeyGroup,
+    pub scales: NifFloatKeyGroup,
+}
+
+const _: () = assert!(size_of::<NifFloatKey>() == 28);
+const _: () = assert!(size_of::<NifVector3Key>() == 52);
+const _: () = assert!(size_of::<NifQuaternionKey>() == 32);
+const _: () = assert!(
+    size_of::<NifFloatKeyGroup>()
+        == match size_of::<*const u8>() {
+            8 => 16,
+            _ => 12,
+        }
+);
+const _: () = assert!(
+    size_of::<NifKeyframeData>()
+        == match size_of::<*const u8>() {
+            8 => 104,
+            _ => 76,
+        }
+);
+const _: () = assert!(
+    offset_of!(NifKeyframeData, rotation_keys)
+        == match size_of::<*const u8>() {
+            8 => 16,
+            _ => 12,
+        }
+);
+const _: () = assert!(
+    offset_of!(NifKeyframeData, translations)
+        == match size_of::<*const u8>() {
+            8 => 72,
+            _ => 52,
+        }
+);
+
 /// What a handle points at: a magic marker in front of the parser itself, plus
 /// the last parsed skin/collision/animation blocks — their records borrow out
 /// of these fields, so they must outlive the caller's copy.
@@ -523,6 +627,11 @@ pub struct Handle {
     controller_text_keys: Vec<NifTextKey>,
     /// NUL-terminated copies of every animation string the records expose.
     controller_strings: Vec<Vec<u8>>,
+    /// POD mirrors of the last parsed keyframe data block: the key arrays its
+    /// record's pointers borrow from.
+    keyframe_rotation_keys: Vec<NifQuaternionKey>,
+    keyframe_float_keys: Vec<NifFloatKey>,
+    keyframe_vector3_keys: Vec<NifVector3Key>,
 }
 
 /// Marker written into a live handle, so a stale or wrong pointer fails the
@@ -804,6 +913,9 @@ pub extern "C" fn nif_create() -> *mut Handle {
             controller_blocks: Vec::new(),
             controller_text_keys: Vec::new(),
             controller_strings: Vec::new(),
+            keyframe_rotation_keys: Vec::new(),
+            keyframe_float_keys: Vec::new(),
+            keyframe_vector3_keys: Vec::new(),
         });
         Box::into_raw(handle)
     })
@@ -1444,6 +1556,125 @@ fn store_controller_data(borrowed: &mut Handle, sequences: &[ControllerSequence]
     borrowed.controller_blocks = blocks;
     borrowed.controller_text_keys = text_keys;
     borrowed.controller_sequences = records;
+}
+
+/// One float key copied into its POD form.
+fn float_key(key: &FloatKey) -> NifFloatKey {
+    NifFloatKey {
+        time: key.time,
+        value: key.value,
+        forward_tangent: key.forward_tangent,
+        backward_tangent: key.backward_tangent,
+        tbc: key.tbc,
+    }
+}
+
+/// Build the POD mirror of one `KeyframeData` and move its key arrays onto
+/// the handle. The xyz channels and the scales share one float-key arena so a
+/// group is a start offset plus a count; the ranges are resolved before the
+/// vectors move, and moving a vector does not move its buffer, so every
+/// pointer taken here stays valid — the same rule [`store_controller_data`]
+/// follows for its sequences.
+fn store_keyframe_data(borrowed: &mut Handle, parsed: &KeyframeData) -> NifKeyframeData {
+    let rotation_keys: Vec<NifQuaternionKey> = parsed
+        .rotation_keys
+        .iter()
+        .map(|key| NifQuaternionKey {
+            time: key.time,
+            value: key.value,
+            tbc: key.tbc,
+        })
+        .collect();
+
+    // Arena of xyz keys first, then the scales; slot 3 is the scales range.
+    let mut float_keys: Vec<NifFloatKey> = Vec::new();
+    let mut ranges: [(usize, usize); 4] = [(0, 0); 4];
+    for (slot, group) in parsed.xyz_rotations.iter().enumerate() {
+        let start = float_keys.len();
+        float_keys.extend(group.keys.iter().map(float_key));
+        ranges[slot] = (start, float_keys.len() - start);
+    }
+    let scale_start = float_keys.len();
+    float_keys.extend(parsed.scales.keys.iter().map(float_key));
+    ranges[3] = (scale_start, float_keys.len() - scale_start);
+
+    let vector3_keys: Vec<NifVector3Key> = parsed
+        .translations
+        .keys
+        .iter()
+        .map(|key| NifVector3Key {
+            time: key.time,
+            value: key.value,
+            forward_tangent: key.forward_tangent,
+            backward_tangent: key.backward_tangent,
+            tbc: key.tbc,
+        })
+        .collect();
+
+    let float_group = |group: &nif_core::FloatKeyGroup, range: (usize, usize)| NifFloatKeyGroup {
+        interpolation: group.interpolation,
+        key_count: range.1 as u32,
+        keys: unsafe { float_keys.as_ptr().add(range.0) },
+    };
+    let xyz_rotations = [
+        float_group(&parsed.xyz_rotations[0], ranges[0]),
+        float_group(&parsed.xyz_rotations[1], ranges[1]),
+        float_group(&parsed.xyz_rotations[2], ranges[2]),
+    ];
+    let translations = NifVector3KeyGroup {
+        interpolation: parsed.translations.interpolation,
+        key_count: vector3_keys.len() as u32,
+        keys: vector3_keys.as_ptr(),
+    };
+    let scales = float_group(&parsed.scales, ranges[3]);
+
+    // Moving the vectors into the handle keeps their buffers in place, so the
+    // pointers assembled above survive.
+    borrowed.keyframe_rotation_keys = rotation_keys;
+    borrowed.keyframe_float_keys = float_keys;
+    borrowed.keyframe_vector3_keys = vector3_keys;
+
+    NifKeyframeData {
+        rotation_type: parsed.rotation_type,
+        rotation_order: parsed.rotation_order,
+        rotation_key_count: parsed.rotation_keys.len() as u32,
+        rotation_keys: borrowed.keyframe_rotation_keys.as_ptr(),
+        xyz_rotations,
+        translations,
+        scales,
+    }
+}
+
+/// Fills `out` with the first keyframe data block of the file, whichever of
+/// the two names it carries: `NiKeyframeData` on .nif streams and
+/// `NiTransformData` on the .kf streams retail animations ship. Rotation type
+/// 4 leaves `rotation_key_count` zero and puts the keys in the three
+/// `xyz_rotations` channels instead. An empty group carries a zero count,
+/// so its pointer must not be dereferenced whatever it points at — the same
+/// rule the header states for every count-prefixed array. That matches the
+/// original's read order: count first, then the keys.
+///
+/// # Safety
+/// `handle` must satisfy [`nif_create`]'s contract; `out` must be NULL or one
+/// writable, correctly aligned record.
+#[no_mangle]
+pub unsafe extern "C" fn nif_parse_keyframe_data(
+    handle: *mut Handle,
+    out: *mut NifKeyframeData,
+) -> c_int {
+    guard(NIF_ERROR_INVALID_ARGUMENT, handle, |borrowed| {
+        let out = match out_record(borrowed, out, "keyframe data") {
+            Ok(out) => out,
+            Err(code) => return code,
+        };
+        let parsed = match borrowed.parser.parse_keyframe_data() {
+            Some(parsed) => parsed,
+            None => return no_block(borrowed, "NiKeyframeData/NiTransformData"),
+        };
+        let record = store_keyframe_data(borrowed, &parsed);
+        *out = record;
+        succeed(borrowed)
+    })
 }
 
 /// Fills `out` with the first `NiControllerManager` of the file.

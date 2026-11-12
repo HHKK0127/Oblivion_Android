@@ -401,6 +401,7 @@ static void check_animation_abi(void)
     void *handle = nif_create();
     nif_controller_manager manager;
     nif_controller_sequence sequence;
+    nif_keyframe_data keyframe;
 
     CHECK(handle != NULL);
 
@@ -414,6 +415,10 @@ static void check_animation_abi(void)
     CHECK(offsetof(nif_controller_sequence, controller_manager_index) == 32);
     CHECK(sizeof(nif_controller_manager) == 24);
     CHECK(offsetof(nif_controller_manager, sequences) == 16);
+    CHECK(sizeof(nif_float_key_group) == 16);
+    CHECK(sizeof(nif_keyframe_data) == 104);
+    CHECK(offsetof(nif_keyframe_data, rotation_keys) == 16);
+    CHECK(offsetof(nif_keyframe_data, translations) == 72);
 #else
     CHECK(sizeof(nif_text_key) == 8);
     CHECK(offsetof(nif_text_key, value) == 4);
@@ -421,7 +426,14 @@ static void check_animation_abi(void)
     CHECK(offsetof(nif_controller_sequence, controller_manager_index) == 16);
     CHECK(sizeof(nif_controller_manager) == 20);
     CHECK(offsetof(nif_controller_manager, sequences) == 16);
+    CHECK(sizeof(nif_float_key_group) == 12);
+    CHECK(sizeof(nif_keyframe_data) == 76);
+    CHECK(offsetof(nif_keyframe_data, rotation_keys) == 12);
+    CHECK(offsetof(nif_keyframe_data, translations) == 52);
 #endif
+    CHECK(sizeof(nif_float_key) == 28);
+    CHECK(sizeof(nif_vector3_key) == 52);
+    CHECK(sizeof(nif_quaternion_key) == 32);
 
     /* NULL and misaligned out-records are rejected before anything is read. */
     CHECK(nif_parse_controller_manager(handle, NULL) == NIF_ERROR_INVALID_ARGUMENT);
@@ -429,10 +441,15 @@ static void check_animation_abi(void)
     CHECK(nif_parse_controller_manager(
               handle, (nif_controller_manager *)((char *)&manager + 1)) ==
           NIF_ERROR_INVALID_ARGUMENT);
+    CHECK(nif_parse_keyframe_data(handle, NULL) == NIF_ERROR_INVALID_ARGUMENT);
+    CHECK(nif_parse_keyframe_data(
+              handle, (nif_keyframe_data *)((char *)&keyframe + 1)) ==
+          NIF_ERROR_INVALID_ARGUMENT);
 
     /* The fixture carries no animation blocks. */
     CHECK(nif_parse_controller_manager(handle, &manager) == NIF_ERROR_NO_BLOCK);
     CHECK(nif_parse_controller_sequence(handle, &sequence) == NIF_ERROR_NO_BLOCK);
+    CHECK(nif_parse_keyframe_data(handle, &keyframe) == NIF_ERROR_NO_BLOCK);
     CHECK(nif_last_error(handle)[0] != '\0');
 
     nif_destroy(handle);
