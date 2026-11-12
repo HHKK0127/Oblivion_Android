@@ -29,7 +29,13 @@ UIShop::UIShop(const std::string& title)
 bool UIShop::initialize(TextRenderer* tr) {
     if (!tr) return false;
     textRenderer = tr;
-    return UIPanel::initialize();
+    if (!UIPanel::initialize()) return false;
+
+    // A shop is opened only through openShop().  UIPanel initializes visible
+    // by default, which would make an empty shop act as a modal input owner
+    // before any merchant has been selected.
+    setVisible(false);
+    return true;
 }
 
 void UIShop::openShop(std::shared_ptr<Merchant> merchant, Player* player,

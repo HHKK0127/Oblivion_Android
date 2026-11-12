@@ -9268,6 +9268,18 @@ bool Renderer::handleBackKey() {
             return false;
         }
 
+        // 3aa. Character creation mirrors its render gate. With the gameplay
+        //      panels below genuinely hidden (an empty UIShop no longer counts
+        //      as open), falling through during creation would reach the
+        //      pause-menu/exit branches and change mid-flow behavior. The
+        //      original RaceSexMenu back/cancel behavior is pending the RE
+        //      ruling (#130), so consume the key without changing state.
+        if (showCharacterCreation && characterCreationUI &&
+            characterCreationUI->isVisible()) {
+            LOGI("handleBackKey: Character creation - back consumed (cancel behavior pending RE #130)");
+            return true;
+        }
+
         // 3b. In-game overlays. In the original, ESC closes the topmost active
         //     menu (0x00b3a6d4 != 0); it never stacks a new menu on top of one.
         if (uiInventoryPanel && uiInventoryPanel->isVisible()) {
