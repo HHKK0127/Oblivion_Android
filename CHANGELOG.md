@@ -828,6 +828,7 @@ The current version is **0.9.10 (versionCode 910)**.
   `std::strcmp`. The function implementation itself was correct.
 
 ### Changed
+- **Rust workspace fully reflected in docs; native-lib link verified (2026-11-10)**: README (EN/JP paragraphs and both project trees), `docs/ARCHITECTURE.md` (FFI header path and the `OBLIVION_RUST_DIR` default) now describe the vendored `rust/` workspace instead of the former sibling checkout, and the repository `AGENTS.md` gained a "Rust workspace (vendored)" section with the `cargo test --offline --workspace` gate (176/31). The #45 "native-lib link pending" note is closed by measurement: the arm64 `libnative-lib.so` carries the `esm_*`, `nif_*`, `dds_*`, `bsa_*`, `plugin_*` and `assets_*` symbols, matching the six `IMPORTED STATIC` targets in `CMakeLists.txt`.
 - **Development lane switched to Rust-side production (2026-11-09)**: by user decision, new pure-logic
   implementation is written in the 15-crate cargo workspace instead of extending the C++ tree; the
   existing shims and the five C ABIs are unchanged. **The workspace was vendored into this repository

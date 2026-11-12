@@ -261,10 +261,10 @@ git clone https://github.com/oblivion-android/oblivion-android.git
 cd oblivion-android
 ```
 
-The Rust sources live in a separate `oblivion-re-tools` checkout. CMake expects it as a sibling
-directory and builds it with `cargo ndk`; pass
-`-Poblivion.rust.dir=<path>` / `-Poblivion.rust.offline=true` (Gradle properties) if your checkout sits
-elsewhere or the build machine has no network. See [plan.md](plan.md#rust-migration-of-pure-logic-layers-2026-10-26).
+The Rust sources live in this repository under `rust/` (vendored from the former sibling
+`oblivion-re-tools` checkout on 2026-11-09). CMake builds it with `cargo ndk`; pass
+`-Poblivion.rust.dir=<path>` / `-Poblivion.rust.offline=true` (Gradle properties) if you
+keep the workspace elsewhere or the build machine has no network. See [plan.md](plan.md#rust-migration-of-pure-logic-layers-2026-10-26).
 
 #### Build Release APK
 ```bash
@@ -411,6 +411,10 @@ oblivion-android/
 │   │   ├── jni_bridge.cpp   (Java ↔ C++ Interface)
 │   │   └── CMakeLists.txt   (Build Config)
 │   └── res/                 (Resources, Strings)
+├── rust/                    (Vendored Rust workspace - 15 crates behind the five C ABIs:
+│   │                         ess-parser, esm-parser/esm-ffi, plugin-parser/plugin-ffi,
+│   │                         assets-core/assets-ffi, bsa-core/bsa-ffi, nif-core/nif-ffi,
+│   │                         dds-core/dds-ffi, vm-handlers, cli; rust/target/ is ignored)
 ├── docs/                    (Phase plans, asset integration plans)
 ├── CHANGELOG.md
 ├── Handbook.md
@@ -839,10 +843,11 @@ git clone https://github.com/oblivion-android/oblivion-android.git
 cd oblivion-android
 ```
 
-Rustソースは別リポジトリの `oblivion-re-tools` にあります。CMakeはサブディレクトリとして期待し
-`cargo ndk` でビルドします。チェックアウトが別の場所にある場合やビルドマシンにネットワークが
-ない場合は、Gradleプロパティ `-Poblivion.rust.dir=<path>` / `-Poblivion.rust.offline=true` を
-指定してください。詳細は [plan.md](plan.md#rust-migration-of-pure-logic-layers-2026-10-26) を参照。
+Rustソースはこのリポジトリの `rust/` に統合されています（2026-11-09 に旧姉妹ディレクトリ
+`oblivion-re-tools` からベンダー化）。CMakeは `cargo ndk` でビルドします。ワークスペースを
+別の場所に置く場合やビルドマシンにネットワークがない場合は、Gradleプロパティ
+`-Poblivion.rust.dir=<path>` / `-Poblivion.rust.offline=true` を指定してください。詳細は
+[plan.md](plan.md#rust-migration-of-pure-logic-layers-2026-10-26) を参照。
 
 #### リリースAPKのビルド
 ```bash
@@ -989,6 +994,11 @@ oblivion-android/
 │   │   ├── jni_bridge.cpp   Java ↔ C++ インターフェース
 │   │   └── CMakeLists.txt   ビルド設定
 │   └── res/                 リソース、文字列
+├── rust/                    ベンダー化済みRustワークスペース（C ABI裏側の5系統を担う15クレート:
+│   │                         ess-parser、esm-parser/esm-ffi、plugin-parser/plugin-ffi、
+│   │                         assets-core/assets-ffi、bsa-core/bsa-ffi、nif-core/nif-ffi、
+│   │                         dds-core/dds-ffi、vm-handlers、cli。ビルド生成物 rust/target/ は
+│   │                         gitignore）
 ├── docs/                    フェーズ計画、アセット統合計画
 ├── CHANGELOG.md
 ├── Handbook.md

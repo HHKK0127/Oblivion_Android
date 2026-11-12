@@ -50,7 +50,16 @@ app/src/main/assets/textures/ui/oblivion_crest.png
 
 # Repo-root scratch area for temporary files (build logs, UI dumps, local
 # APK output). Local-only; never uploaded.
-/tmp/
+# Exception (2026-11-10, human ruling #64): the Graphify RE corpus must be able
+# to scan tmp/re ruling artifacts. Only v*.md rulings are re-included; everything
+# else in the scratch area (ledger, .bakNNN copies, n5b_samples binaries, probe
+# scripts) stays ignored. Note: a bare `/tmp/` exclusion can never be re-included
+# by negation (git does not descend into excluded directories), so the exclusion
+# uses the content form `/tmp/*` plus the re-include chain below.
+/tmp/*
+!/tmp/re/
+/tmp/re/*
+!/tmp/re/v*.md
 
 # Keystore (sensitive)
 *.keystore

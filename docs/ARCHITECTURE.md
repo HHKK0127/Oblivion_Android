@@ -164,7 +164,7 @@ assets/esm_reader.cpp ─────────────────► esm
 
 Each C++ file keeps its original header and is now a shim: callers are unchanged, and the only
 contract between the two languages is the header in
-`oblivion-re-tools/crates/*-ffi/include/`.
+`rust/crates/*-ffi/include/`.
 
 ### ABI conventions
 
@@ -189,7 +189,8 @@ contract between the two languages is the header in
 
 `app/src/main/cpp/CMakeLists.txt` runs `cargo ndk` once per ABI in a single custom command that
 produces all three archives, then imports them as `IMPORTED STATIC` targets and links them into
-`native-lib`. `OBLIVION_RUST_DIR` (default: a sibling `oblivion-re-tools` checkout) and
+`native-lib`. `OBLIVION_RUST_DIR` (default: the vendored `rust/` workspace at the repository
+root) and
 `OBLIVION_RUST_OFFLINE` are cache variables, and `app/build.gradle` forwards the matching
 `-Poblivion.rust.dir` / `-Poblivion.rust.offline` Gradle properties. `rustc` and `rustdoc` are pinned
 to the proxies next to `cargo`, because a standalone host-only toolchain earlier on `PATH` otherwise

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-09T09:04:16Z",
+  "lastUpdated": "2026-11-12T02:03:14Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -3223,7 +3223,8 @@
         "ai",
         "opencode"
       ],
-      "content": "Phase 1 residual analysis COMPLETE (2026-10-20, opencode session). All 7 major sections resolved: F1 combat (0x5F4880 fatigue ratio, 0x5FC090 weapon skill, 0x6131D0 distance calc, 0x5E0EE0 formID getter, 0x4D6D40 weapon/armor check), F6 GMST (0x4A7980 string append, 0x44FEA0 save buffer write), G3 fatigue/death (0x4B4C70 equip check bit7, 0x654420 knockdown apply), G5/I5 economy (0x5FAB80 pricing function, 0x56A300 merchant type classification, 0x547F40 price ratio linear transform, 0x403C00 GMST pointer deref 377 callers), H1 AI (0xB12988 AI package type names 20 entries, 0x640900 detection update, 0x6605A0 player detection, 0x55E000 array/hash lookup 308 callers), H2 quest (0x569020 INFO selection main, 0x5672A0 INFO condition evaluation 33 types, 0x567C00 INFO type evaluation 11 types, 0x568EB0 condition comparison with tolerance, 0x56A510 priority determination core), H4 chargen (0x5222D0 init with vampire check). Actor vtable additional slots: vt+0x168/174/184/198/278/284/288/2D0. Pricing formula: price = base x ((m x ratio + b) x type_coef), ratio = player_mercantile / merchant_strength. New analysis candidates T2-1..T2-12 added to TODO_re49.md. Evidence files: s99_phase1_residual_analysis.md, s100_economy_pricing.md, s101_quest_info_selection.md."
+      "content": "Phase 1 residual analysis COMPLETE (2026-10-20, opencode session). All 7 major sections resolved: F1 combat (0x5F4880 fatigue ratio, 0x5FC090 weapon skill, 0x6131D0 distance calc, 0x5E0EE0 formID getter, 0x4D6D40 weapon/armor check), F6 GMST (0x4A7980 string append, 0x44FEA0 save buffer write), G3 fatigue/death (0x4B4C70 equip check bit7, 0x654420 knockdown apply), G5/I5 economy (0x5FAB80 pricing function, 0x56A300 merchant type classification, 0x547F40 price ratio linear transform, 0x403C00 GMST pointer deref 377 callers), H1 AI (0xB12988 AI package type names 20 entries, 0x640900 detection update, 0x6605A0 player detection, 0x55E000 array/hash lookup 308 callers), H2 quest (0x569020 INFO selection main, 0x5672A0 INFO condition evaluation 33 types, 0x567C00 INFO type evaluation 11 types, 0x568EB0 condition comparison with tolerance, 0x56A510 priority determination core), H4 chargen (0x5222D0 init with vampire check). Actor vtable additional slots: vt+0x168/174/184/198/278/284/288/2D0. Pricing formula: price = base x ((m x ratio + b) x type_coef), ratio = player_mercantile / merchant_strength. New analysis candidates T2-1..T2-12 added to TODO_re49.md. Evidence files: s99_phase1_residual_analysis.md, s100_economy_pricing.md, s101_quest_info_selection.md.",
+      "compressed": false
     },
     {
       "id": "copilot-re-batch-20261019-20-20261020",
@@ -3236,7 +3237,8 @@
         "batch",
         "implementation"
       ],
-      "content": "Copilot RE batch summary (2026-10-19/20, synced 2026-10-20). Completed RE-driven implementations: (1) Phase 67 Script VM - 1080+ functions, QUST 390, INFO 19278 dialogs, condition evaluation, reference resolution. (2) QuickKeysMenu - RE 39.2, radial 8-slot, stackingtype=does_not_stack. (3) Menu stackingtype - RE 50.4, click_past=101/no_click_past=102/mixed_menu=103/does_not_stack=6008. (4) BSA103 hash - folder/file record hash unresolved (8 murmur2_64/FNV1a64 variants failed), extraction via offset direct-read (non-blocking). (5) fGlobalTimeMultiplier wiring - RE 43, dt_game = dt_real x fGlobalTimeMultiplier (default 1.0, slot 0xB06704). (6) PE section delta audit - RE 42.1, correct raw-to-VA deltas: .text 0x400C00/.rdata 0x400E00/.data 0x401400/.tls 0x47A800/.rsrc 0x47B600. (7) AI dispatch caller tracing - tmp/re_vtable_family_map.md, AiUpdateDispatch call path confirmed. (8) Japanese rendering - UTF-8 decoder + fallback chain + dynamic CJK atlas, Noto Sans JP bundled. (9) menufade/explorefade - RE 48, trait 0xFDB/0xFDC, linear easing. (10) ControlsMenu page 2 vertical scroll - RE 40. (11) Armor skill damage multiplier - RE 54, 4 GMST fPerkLight/HeavyArmorNovice/Journeyman via FUN_5F3870. (12) Pause state dt=0 path - RE 30.1.9, PauseMenu 0x3F5 shown halts world/camera/physics. (13) NPC to player damage path - RE 41.5, vtable+0x3AC melee + spell path. (14) Death processing - RE 41, knockback vtable+0x118/0x120, death state vtable+0xF8. (15) Fatigue AV implementation - RE 50.2, AV index 0x0A, attack cost 0x547560. (16) Complex scene update throttle - RE 54.2, 2/3 frame skip via FUN_889810 with latch 0xB333B8."
+      "content": "Copilot RE batch summary (2026-10-19/20, synced 2026-10-20). Completed RE-driven implementations: (1) Phase 67 Script VM - 1080+ functions, QUST 390, INFO 19278 dialogs, condition evaluation, reference resolution. (2) QuickKeysMenu - RE 39.2, radial 8-slot, stackingtype=does_not_stack. (3) Menu stackingtype - RE 50.4, click_past=101/no_click_past=102/mixed_menu=103/does_not_stack=6008. (4) BSA103 hash - folder/file record hash unresolved (8 murmur2_64/FNV1a64 variants failed), extraction via offset direct-read (non-blocking). (5) fGlobalTimeMultiplier wiring - RE 43, dt_game = dt_real x fGlobalTimeMultiplier (default 1.0, slot 0xB06704). (6) PE section delta audit - RE 42.1, correct raw-to-VA deltas: .text 0x400C00/.rdata 0x400E00/.data 0x401400/.tls 0x47A800/.rsrc 0x47B600. (7) AI dispatch caller tracing - tmp/re_vtable_family_map.md, AiUpdateDispatch call path confirmed. (8) Japanese rendering - UTF-8 decoder + fallback chain + dynamic CJK atlas, Noto Sans JP bundled. (9) menufade/explorefade - RE 48, trait 0xFDB/0xFDC, linear easing. (10) ControlsMenu page 2 vertical scroll - RE 40. (11) Armor skill damage multiplier - RE 54, 4 GMST fPerkLight/HeavyArmorNovice/Journeyman via FUN_5F3870. (12) Pause state dt=0 path - RE 30.1.9, PauseMenu 0x3F5 shown halts world/camera/physics. (13) NPC to player damage path - RE 41.5, vtable+0x3AC melee + spell path. (14) Death processing - RE 41, knockback vtable+0x118/0x120, death state vtable+0xF8. (15) Fatigue AV implementation - RE 50.2, AV index 0x0A, attack cost 0x547560. (16) Complex scene update throttle - RE 54.2, 2/3 frame skip via FUN_889810 with latch 0xB333B8.",
+      "compressed": false
     },
     {
       "id": "opencode-re-r1-camera-analysis-20261020",
@@ -3251,7 +3253,8 @@
         "fov",
         "opencode"
       ],
-      "content": "R1 Camera/View system analysis ~70% complete. Key findings: SetCameraFOV(0x511720/0x411160) = projection matrix builder with clamping 75-160 deg, deg->rad(pi/180*0.5), cot(angle) via sin/cos, stored at camera_ctx+0xec. FOV correction factor(0x7B70E0) = cot(37.5deg)/cot(half_FOV), stored at [0xB2D80C]. Camera update pipeline: PerFrameUpdate->0x57F170(check dt)->0x70C0B0(world physics)->0x707370(set view matrix)->0x70E0A0(NiCamera frame push+sync)->0x7073D0(device push). Camera mode switching: Show1stPerson(0x50A050) tests Player+0x588 flag then toggles [person_obj+0x18] bit0; ToggleFlyCam(0x5013E0->0x6669F0) toggles Player+0x748 and saves yaw/pitch/position at offsets +0x74C/0x750/0x754/0x758/0x75C. Constants: pi/180=0xA31C78(double), 0.5=0xA2FAA0(double), near=10.0=0xB03134(float), default FOV=75.0=0xB0313C(float), default screen=640x480=0xB06C4C/0xB06C50(dword). Player camera fields mapped: yaw+0x20, pitch+0x28, camera_ctx+0xDC, flycam+0x748. Camera context fields mapped: FOV+0xEC, device+0xDC, flags+0x18/0xE8, FOVscale+0x120. Remaining: zf(fFarPlaneDist), mouse look GMST, 3rd person distance/velocity constants, vanity mode switch. Evidence: tmp/re/s102_camera.md. TODO_re49.md R1 section updated to ~."
+      "content": "R1 Camera/View system analysis ~70% complete. Key findings: SetCameraFOV(0x511720/0x411160) = projection matrix builder with clamping 75-160 deg, deg->rad(pi/180*0.5), cot(angle) via sin/cos, stored at camera_ctx+0xec. FOV correction factor(0x7B70E0) = cot(37.5deg)/cot(half_FOV), stored at [0xB2D80C]. Camera update pipeline: PerFrameUpdate->0x57F170(check dt)->0x70C0B0(world physics)->0x707370(set view matrix)->0x70E0A0(NiCamera frame push+sync)->0x7073D0(device push). Camera mode switching: Show1stPerson(0x50A050) tests Player+0x588 flag then toggles [person_obj+0x18] bit0; ToggleFlyCam(0x5013E0->0x6669F0) toggles Player+0x748 and saves yaw/pitch/position at offsets +0x74C/0x750/0x754/0x758/0x75C. Constants: pi/180=0xA31C78(double), 0.5=0xA2FAA0(double), near=10.0=0xB03134(float), default FOV=75.0=0xB0313C(float), default screen=640x480=0xB06C4C/0xB06C50(dword). Player camera fields mapped: yaw+0x20, pitch+0x28, camera_ctx+0xDC, flycam+0x748. Camera context fields mapped: FOV+0xEC, device+0xDC, flags+0x18/0xE8, FOVscale+0x120. Remaining: zf(fFarPlaneDist), mouse look GMST, 3rd person distance/velocity constants, vanity mode switch. Evidence: tmp/re/s102_camera.md. TODO_re49.md R1 section updated to ~.",
+      "compressed": false
     },
     {
       "id": "opencode-re-r1-camera-complete-20261020",
@@ -3264,7 +3267,8 @@
         "complete",
         "opencode"
       ],
-      "content": "R1 Camera/View system analysis COMPLETE. Remaining minor: zf(fFarPlaneDist) unconfirmed. Evidence: tmp/re/s102_camera.md."
+      "content": "R1 Camera/View system analysis COMPLETE. Remaining minor: zf(fFarPlaneDist) unconfirmed. Evidence: tmp/re/s102_camera.md.",
+      "compressed": false
     },
     {
       "id": "opencode-verification-complete-20261021",
@@ -3808,7 +3812,8 @@
       "category": "development",
       "priority": "high",
       "content": "Batch 2026-10-18 (session 9427ac74): fatigue-av-implementation implemented, UNVERIFIED per user '検証はステイでいいので作成を続けて' (no host tests / gradle / commit / push until instructed). New game/fatigue_system.h (header-only, namespace oblivion::fatigue): 16 GMST defaults as inline constexpr (kFatigueBase 1.25 / kFatigueMult 0.5 / kReturnBase 10 / kAttackWeaponBase 8 + Mult .1 / kPowerAttackPenalty 5 / kBlockSkillBase 5 + Mult -.04 / kBlockMult 1 / kCastBase 15 / kRunBase 8 / kJumpBase 4 + Mult 4 ...) each annotated with its EXE address; functions ratio (0x5F4880), damageMult (0x547F00), meleeDamageMult (exact-1.0 quirk -> 1.0), recoverPerSecond (0x5F2720 flat 10/s), attackCost (0x547560), blockCost (0x547590), castCost (0x548DA0 flat 15), runAthleticsBand + runCostPerSecond (0x5FAAE0, bands 1.0/.75/.5/.25/0 at 0-19/20-39/40-59/60-79/80+), jumpCost (0x671620 = 4+4x), clampValue. Wiring: Player::updateStamina now run-drains runCostPerSecond(skills.Athletics) while sprinting and recovers recoverPerSecond(attributes.End) while idle (fixed staminaDrainRate 25 / staminaRecoveryRate 15 fields REMOVED from player.h); CombatManager::calculateDamage multiplies offensive product by meleeDamageMult(ratio(attacker.stamina, max)) before armor subtraction; playerAttack drains player->reduceStamina(attackCost) for melee only and syncs playerStatus.stamina/maxStamina from live Player first (NPC id-1 placeholder does not track it); npcAttackPlayer drains attacker->status.stamina via clampValue; attemptBlock (success branch) drains defender blockCost(0.0 skill - NPC skill map has no 'Block', incomingDamage); jump cost in BOTH paths: Player::applyJump (keyboard) and PlayerController::updatePhysics Jolt branch (touch, sets velocity directly); SpellManager::castSpell drains caster->status.stamina and castPlayerSpell drains player->reduceStamina with castCost (flat 15) after mana consumption. Bows AND staves skip attack cost (weapon anim 4/5 = 0-cost; note STAFF has isRanged=false in getDefaultWeapon, so type != WeaponType::STAFF check added explicitly). Not ported (documented in header comment): stage buckets 0x56A300 (no consumer), auto-KD at AV<=0 (0x600248, waits on RE R7 KD apply/recover). Tests: tests/fatigue_system_tests.h/.cpp (FatigueSystemTests class, 11 groups / GMST pinning / curves / costs / bands / integration spot checks), registered in tools/host_tests/run_host_tests.sh SOURCES + host_runner_main.cpp (include + suite call). GMST live table wiring remains the separate gmst-table-integration task.",
-      "tags": []
+      "tags": [],
+      "compressed": false
     },
     {
       "id": "opencode-b-febf0-damage-formula-p1-20261018",
@@ -3816,7 +3821,8 @@
       "category": "development",
       "priority": "high",
       "content": "Batch 2026-10-18 (session 9427ac74): febf0-damage-formula batch 1 implemented, UNVERIFIED per user '検証はステイでいいので作成を続けて'. New header game/combat_formulas.h (header-only, namespace oblivion::combat) ports the confirmed FUN_005FEBF0 fragments from RE_EXE_REPORT 56.1 + tmp/re/s57_combat_full.md 3.1/13: kBlockReduceSkillBase/Mult (fBlockSkillBase 0 / Mult 1.0 - NOT the fFatigueBlock* cost family in fatigue_system.h), kBlockMax 0.75, kBlockAmountWeapon 0.5, kBlockAmountHandToHand 0.25, kArmorRatingMax 1.0; luckAdjustedSkill (0x547B90 clamp(skill+0.4*luck-20, 0,100), raw AV inputs); blockAmount (0x5474A0: D->base 0.01*D->M selection->min(curve(x)*base*M,0.75), curve = fatigue::damageMult 0x547F00); armorFactor (min(AR/100, 1.0)). Wiring: calculateDamage armor changed from subtracting armorRating*0.5 to multiplying by (1 - armorFactor) per the confirmed (1-ARMOR) accumulators 0x5FF7B5/0x5FF908; getDefenderDamageMitigation renamed to getDefenderArmorFactor (single call site); NPC defender block reduction in update() replaced the fixed damage *= 0.3 with blockAmount (defender skills['Block'] / attributes['Luck'] raw reads, fatigue ratio, equippedWeaponId 0 mapped to the hand-to-hand M term - note attack fallback sword means id 0 NPCs attack with a sword but block H2H-style). NOTE: EXE feeds the curve x = 0x5F4880 raw/floor(Fatigue) (stays ~1.0, meaning [推定] s57 C2); port deliberately feeds the real residual ratio instead. NOT ported (listed in header comment): sneak perk multiplier 0x5477F0, power-attack 0x546BA0, KD/KB rolls (0x5475D0 real KD paths are auto-fatigue-0 + marksman perks per s57 15.2), per-hit cap, reflect (port has no reflect system), body tail weighting. Legacy criticalChance/attackSpeed kept untouched - RE found no EXE counterparts (s57 5/6.2/13 says do not delete before a spec decision). Tests: tests/combat_formulas_tests.h/.cpp (CombatFormulasTests: GMST pins, luck-adjusted clamps, the s57 13 RE pins 0.625/0.3125/0.15625, block cap, armor cap, multiply-order spot checks) registered in run_host_tests.sh SOURCES + host_runner_main.cpp. Batch 2 candidates: sneak/KD/KB, PA multiplier.",
-      "tags": []
+      "tags": [],
+      "compressed": false
     },
     {
       "id": "opencode-b-febf0-damage-formula-p2-20261019",
@@ -3824,7 +3830,8 @@
       "category": "development",
       "priority": "high",
       "content": "Batch 2026-10-19 (session 9427ac74): febf0-damage-formula batch 2, UNVERIFIED (verification stays on hold per user). Added to game/combat_formulas.h: (1) perkSneakAttackMult(weaponType, sneakRank) mirrors 0x5477F0 - IMPORTANT: the raw disassembly (tmp/re/s59_combat_4_out.txt lines 249-342) corrects the s57 prose: weaponType in {-1,0,2} selects the MELEE table (al=1 path), NOT 1.0; weaponType==5 selects the Marksman table (al=0); any other weaponType early-returns 1.0 (fld1 stays on ST0); rank>4 (unsigned ja) or rank<0 returns 1.0. GMST defaults from s50_gmst_full.txt 769-778: Melee {4.0,6,6,6,6}, Marksman {6.0,8,8,8,8}; fDamageSneakAttackMult(4.0) is never read by the EXE. (2) knockbackForce(damage, agility, luck, fatigueRatio) mirrors 0x547690: D=luckAdjustedSkill, Q=D/curve(x) (inverse direction vs KD's curve*D), Tk=damage*10+50, force=Tk*(1-0.008*Q), plus minKnockbackForce for the caller-side clamp at 0x600013 (fKnockbackForceMax=512; the EXE clamps at the caller, not inside the function). New GMST constants kKnockbackDamageMult/Base/AgilBase/AgilMult/ForceMax. Tests: 14 sneak cases + 8 knockback cases added to CombatFormulasTests. NOT ported, documented in the header with RE status: PA multiplier 0x546BA0 (direction GMSTs confirmed Stand 4.0 / Side-Back-Forward 3.0 / bonus 3.0, perk switches 0x16-0x1a, but the port has no power-attack input - every attackCost call passes isPowerAttack=false); damage-based KD roll 0x5475D0 (chance=min(-3*dmg/P, 0.25) on an always-non-negative dmgInt - never fires on normal hits, ~1% only when trunc(damage)==0 per s59; real KD paths are defender-fatigue<=0 at 0x600248 and the Marksman perk rolls at 0x60032D/0x60034F, all requiring a knockdown state machine the port lacks); KB application (EXE uses a Havok impulse with fKnockbackTime=1.0, port only has a fixed-speed death slide - living-KB wiring deferred); sneak multiplier wiring (FEBF0 gates it on a successful sneak attack and the port has no sneak state - script IsSneaking opcode is a stub returning 0); per-hit cap / reflect / body tail weighting remain EXE-unresolved.",
-      "tags": []
+      "tags": [],
+      "compressed": false
     },
     {
       "id": "opencode-b-pause-dt-zero-triage-20261019",
@@ -3832,7 +3839,8 @@
       "category": "development",
       "priority": "high",
       "content": "Batch 2026-10-19 (session 9427ac74): pause-dt-zero triage result = ALREADY IMPLEMENTED, no code change needed. RE_EXE_REPORT.md 30.1.9 three-stage input pause: (1) any menu open skips physics/AI (EXE 0x00b3a6d4) - port: renderer.cpp:4425-4428 setMenuOpen(anyMenuOpen()); (2) topmost [+0x24] input block - handled by the UI input layer; (3) pause-family menus freeze dt (PauseMenu 0x3f5) while non-pause menus (Options etc.) keep dt running with explorefade 0.25 - port: renderer.cpp:4427 setPaused(uiPauseMenu && uiPauseMenu->isVisible()) (non-pause menus therefore keep dt, matching RE). World dt wiring: imperial_weave.cpp:233-236 computes worldDt = paused_ ? 0.0f : deltaTime with the 30.1.9 comment, then :242-252 routes worldDt to 9 phases (WorldUpdate, AiUpdate, Animation, JoltPhysics, PhysicsSync, Combat, Quest, Script) while PlayerUpdate/Inventory/Spell keep real deltaTime; setPaused/isPaused/paused_ live at imperial_weave.h:314-315,352. UI menu body is ui/ui_pause_menu.h class UIPauseMenu.",
-      "tags": []
+      "tags": [],
+      "compressed": false
     },
     {
       "id": "opencode-b-gmst-table-integration-p1-20261019",
@@ -3840,7 +3848,8 @@
       "category": "development",
       "priority": "high",
       "content": "Batch 2026-10-19 (session 9427ac74): gmst-table-integration batch 1, UNVERIFIED (verification stays on hold per user). New app/src/main/cpp/game/gmst_defaults.h: repo-side source of truth for every float GMST the port consumes, copied from tmp/re/s50_gmst_full.txt (gitignored) per the TODO note 're-derive or copy the needed subset'. 38 entries = 16 fatigue keys + 22 combat keys (fArmorRatingMax, fBlockSkillBase/Mult, fBlockMax, fBlockAmountWeaponMult, fBlockAmountHandToHandMult, 6 fKnockback* incl unwired fKnockbackTime, 10 fPerkSneakAttackMelee/Marksman{Rank}Mult); each row keeps the ESM slot VA (0xB3xxxx). API: constexpr equal/hasKey/get over inline constexpr Entry kEntries[]; get() returns a 0.0f sentinel on a miss, kept out of compiled constants by static_assert(hasKey) at every consumer. fatigue_system.h (16 constants) and combat_formulas.h (11 constants + the 10 perkSneakAttackMult switch literals) are now direct gmst::get(key) table references - no independent numbers left in those headers; measured values are unchanged and still match the RE defaults the existing tests pin. Runtime override from a loaded ESM/MOD (ESMManager::findGameSetting(editorID) at esm_reader.cpp:4215, keys are editor IDs) is NOT wired yet - documented as falling back to gmst::get, to land with the first consumer needing live values; AssetManager::getEsmManager() (asset_manager.h:66) is the access path (findGameSetting currently has zero callers). Tests: CombatFormulasTests section 8 added (entry count 38, hasKey probes, unknown-key 0.0 sentinel, kFatigueBase/kArmorRatingMax pinned against table values).",
-      "tags": []
+      "tags": [],
+      "compressed": false
     },
     {
       "id": "opencode-b-debug-menu-unknown-cmd-20261019",
@@ -3848,7 +3857,8 @@
       "category": "development",
       "priority": "high",
       "content": "Batch 2026-10-19 (session 9427ac74): debug-menu-command-registry part 1, UNVERIFIED. Fixed the 'UI lies' core: GameConsole::executeCommand (ui/game_console.h:47, game_console.cpp:176) now returns bool (true = command name registered, false = empty/unknown; handler exceptions still count as known), and DebugMenu::executeButtonCommand (ui/debug_menu.cpp:406+) branches feedback on it: green 'Executed: <cmd>' only on success, red 'Unknown command: <cmd>' on failure, red 'Console not available' when the console pointer is missing (was silent before). console->executeCommand callers in jni_bridge.cpp:950 / debug_menu slider paths / game_console.cpp:1369 ignore the bool (legal, unchanged behaviour). Static diff of button commands vs registered commands: 222 button commands = 6 handled locally (textureviewer/modelviewer/worldviewer/viewer3d/dumpstate/startgame) + 150 registered + 66 UNREGISTERED (viewer-family buttons: pick*, ai*, anim*, questshow/complete/fail/stage/flags, itemshow/edit/add/remove, hot*, light*, mem*, dialogshow/topics/choices/history/reset, input*, audiobrowse/play/stop/wave, phys*, slot*, nav*, timeshow/set, aggro*, statsshow/attr/skills/mods). Reproduce with AppData\\Local\\Temp\\opencode\\diff_debug_commands.py. Part 2 (implement vs delete those 66) is a policy decision left for the user.",
-      "tags": []
+      "tags": [],
+      "compressed": false
     },
     {
       "id": "opencode-b-input-latches-triage-20261019",
@@ -3856,7 +3866,8 @@
       "category": "development",
       "priority": "high",
       "content": "Batch 2026-10-19 (session 9427ac74): input-suppression-latches triage result = every implementable part already exists; the remainder has no port-side consumer yet. (1) 0xB333B8 SetSceneIsComplex latch: implemented in system/scene_time_throttle.h (setter fnSetSceneIsComplex at script_functions.cpp:2405, opcode 0x115D native_scda_bridge.cpp:47, one-frame clear in frame_update, jni_bridge.cpp:261 comment). (2) 0xB3A6D4 menu teardown/displayed gate: wired as the 'menu displayed' gate at renderer.cpp:4424, renderer.h:401, imperial_weave.h:305, ui_inventory_panel.h:45; the FUN_00679A70 world/physics skip (read at 0x679A75) is already done per CHANGELOG.md:161. The other two EXE reads have no port equivalent needed: 0x572EE2 forces input-mode release (the port has no input-mode records - see TODO input-mode-stride-24) and 0x5A586B delays UI object destruction (the port's menus destroy immediately, no deferred-destruction model). (3) fMagicTrackingLimit=3.0 / fMagicTrackingLimitComplex=1.0 (0xB380F8/0xB38100, s50_input.md:43-44) gate projectile tracking limits 3->1 while the latch is set, but the port's spell model is explicit-target castSpell(caster, spell, target) in spell_manager.h:52 - there is no projectile/tracking list to limit, so consumption waits on a projectile system. (4) 0xB3A6E0 UI menu manager singleton: port manages menus its own way (not a gap).",
-      "tags": []
+      "tags": [],
+      "compressed": false
     },
     {
       "id": "opencode-b-autosave-research-20261019",
@@ -3864,7 +3875,8 @@
       "category": "development",
       "priority": "high",
       "content": "Batch 2026-10-19 (session 9427ac74): autosave-event-only research (decision pending, not implemented). RE facts: the original has NO time-based autosave - all autosaves funnel through FUN_00466b70(0x00b33b00) called from only two places: (a) rest/wait confirm in the SleepWaitMenu update handler gated on bSaveOnRest(0xB13218)/bSaveOnWait(0xB13220) (RE 33.5 disasm: if (rest-flag && bSaveOnRest) || bSaveOnWait then CALL 0x00466b70), (b) fast travel execution head gated on bSaveOnTravel(0xB13228) (RE 33.4.2/35.3) plus the cell-transition path (bSaveOnTravel gating noted around door.cpp:234). Port state: GameLoopCoordinator::phaseAutoSave (game_loop_coordinator.cpp:281-288) fires triggerAutoSave() every autoSaveInterval_=300s (h:125), AutoSave has DEFAULT_INTERVAL=300s + MIN_INTERVAL=30s guard (save_system/auto_save.h:20-23,54) - neither exists in the original. Open decision for the user: move to event-only (delete the timer path; keep door/fast-travel triggers; MIN_INTERVAL skip explains 'second door in a row saves nothing') vs keep the timer as a port convenience. Rest/wait trigger lands with the SleepWaitMenu implementation (sleep-wait-menu-impl TODO).",
-      "tags": []
+      "tags": [],
+      "compressed": false
     },
     {
       "id": "opencode-b-bsa-hash-20261019",
@@ -3877,7 +3889,8 @@
         "reverse-engineering",
         "oblivion"
       ],
-      "content": "Batch 2026-10-19 (session 9427ac74): bsa103-hash-identify RESOLVED - BSA v103 u64 hash algorithm fully recovered from Oblivion.exe. hash32 (EXE 0x6FA040): h = h*0x1003F + tolower(c) mod 2^32. build (EXE 0x6FA080): lo32 sig = [last, penult (0 if len<=2), len, first] bytes; hi32 = (len>3 ? hash32(name+1, (len-3)&0xFF) : 0) + (extra ? hash32(extra) : 0); extension tweak table 0xB25374 ['', '.NIF', '.KF', '.DDS', '.WAV'] case-insensitive, index k adds out[3]+=(k&0xFC)<<5, out[0]+=(k&0xFE)<<6, out[1]+=(k<<7)&0xFF. folder_hash = build(name, NULL) (trailing backslash stripped, empty -> '.'); file_hash = _splitpath -> build(fname, ext). Query: 0x42E85A strips leading backslash and Data-prefix -> 0x6FA1B0 split -> 0x6FA2D0 modes 0=file/1=folder/2=raw -> lookup 0x42CE40 / 0x42D000 (u64 two-dword binary search, cmp fn 0x42BC10). Verified 100%: folders 1621/1621, files 147629/147629 across all 17 Steam BSAs. Prior murmur2_64/FNV1a64 8-variant attempts failed (algorithm is custom multiply-add). Docs: tmp/re/s76_file_hash_analysis.md, tmp/re/s76_hash_verify.py; s76_bsa_v104.md issues 1/4 marked RESOLVED."
+      "content": "Batch 2026-10-19 (session 9427ac74): bsa103-hash-identify RESOLVED - BSA v103 u64 hash algorithm fully recovered from Oblivion.exe. hash32 (EXE 0x6FA040): h = h*0x1003F + tolower(c) mod 2^32. build (EXE 0x6FA080): lo32 sig = [last, penult (0 if len<=2), len, first] bytes; hi32 = (len>3 ? hash32(name+1, (len-3)&0xFF) : 0) + (extra ? hash32(extra) : 0); extension tweak table 0xB25374 ['', '.NIF', '.KF', '.DDS', '.WAV'] case-insensitive, index k adds out[3]+=(k&0xFC)<<5, out[0]+=(k&0xFE)<<6, out[1]+=(k<<7)&0xFF. folder_hash = build(name, NULL) (trailing backslash stripped, empty -> '.'); file_hash = _splitpath -> build(fname, ext). Query: 0x42E85A strips leading backslash and Data-prefix -> 0x6FA1B0 split -> 0x6FA2D0 modes 0=file/1=folder/2=raw -> lookup 0x42CE40 / 0x42D000 (u64 two-dword binary search, cmp fn 0x42BC10). Verified 100%: folders 1621/1621, files 147629/147629 across all 17 Steam BSAs. Prior murmur2_64/FNV1a64 8-variant attempts failed (algorithm is custom multiply-add). Docs: tmp/re/s76_file_hash_analysis.md, tmp/re/s76_hash_verify.py; s76_bsa_v104.md issues 1/4 marked RESOLVED.",
+      "compressed": false
     },
     {
       "id": "opencode-b-gmst-override-wiring-20261019",
@@ -3891,7 +3904,8 @@
         "thread-safety",
         "oblivion"
       ],
-      "content": "Batch 2026-10-19 (session 9427ac74): gmst-table-integration batch 3 - ESM runtime override wiring completed. gmst::setOverride/clearOverrides/hasOverride/getLive added to gmst_defaults.h with atomic release/acquire ordering (thread-safe for worker-thread parse concurrent with render reads). Published from AssetManager ESM load paths (loadEsm, parseEsmFromMemory). Gameplay functions in combat_formulas.h and fatigue_system.h converted from constexpr k* constants to gmst::getLive() at point-of-use. k* constants kept as compile-time default pins for tests. Test section 9 added (override roundtrip + function reflection). Remaining: other-sections GMST consumption expansion."
+      "content": "Batch 2026-10-19 (session 9427ac74): gmst-table-integration batch 3 - ESM runtime override wiring completed. gmst::setOverride/clearOverrides/hasOverride/getLive added to gmst_defaults.h with atomic release/acquire ordering (thread-safe for worker-thread parse concurrent with render reads). Published from AssetManager ESM load paths (loadEsm, parseEsmFromMemory). Gameplay functions in combat_formulas.h and fatigue_system.h converted from constexpr k* constants to gmst::getLive() at point-of-use. k* constants kept as compile-time default pins for tests. Test section 9 added (override roundtrip + function reflection). Remaining: other-sections GMST consumption expansion.",
+      "compressed": false
     },
     {
       "id": "opencode-b-gmst-time-20261019",
@@ -3904,7 +3918,8 @@
         "delta",
         "fglobaltimemultiplier"
       ],
-      "content": "Batch 2026-10-19 (session 9427ac74): gmst-fglobaltimemultiplier-dt resolved. Added fGlobalTimeMultiplier (default 1.0f) to gmst_defaults.h kEntries. jni_bridge.cpp: deltaTime multiplier changed from hardcoded GLOBAL_TIME_MULTIPLIER to gmst::getLive('fGlobalTimeMultiplier') for runtime ESM override support. settings_manager.h constant kept with documentation note about EXE path mismatch (RE 54.3: in original EXE this scales game clock, not frame delta). Test section 8 count: 38->39. Part of story-progression-path Phase 0 clean-up."
+      "content": "Batch 2026-10-19 (session 9427ac74): gmst-fglobaltimemultiplier-dt resolved. Added fGlobalTimeMultiplier (default 1.0f) to gmst_defaults.h kEntries. jni_bridge.cpp: deltaTime multiplier changed from hardcoded GLOBAL_TIME_MULTIPLIER to gmst::getLive('fGlobalTimeMultiplier') for runtime ESM override support. settings_manager.h constant kept with documentation note about EXE path mismatch (RE 54.3: in original EXE this scales game clock, not frame delta). Test section 8 count: 38->39. Part of story-progression-path Phase 0 clean-up.",
+      "compressed": false
     },
     {
       "id": "opencode-b-sleepwait-menu-20261020",
@@ -3918,7 +3933,8 @@
         "story-progression",
         "oblivion"
       ],
-      "content": "Batch 2026-10-19/20 (session 9427ac74): SleepWaitMenu implemented. Dual-mode sleep/wait menu with hour slider (1-24), date/time display, fast-forward loop (SkyWeatherSystem integration), accept/cancel. Part of story-progression-path Phase 1. Integration into renderer deferred due to parallel session ownership."
+      "content": "Batch 2026-10-19/20 (session 9427ac74): SleepWaitMenu implemented. Dual-mode sleep/wait menu with hour slider (1-24), date/time display, fast-forward loop (SkyWeatherSystem integration), accept/cancel. Part of story-progression-path Phase 1. Integration into renderer deferred due to parallel session ownership.",
+      "compressed": false
     },
     {
       "id": "opencode-b-controls-key-order-20261020",
@@ -3932,7 +3948,8 @@
         "remapping",
         "oblivion"
       ],
-      "content": "Batch 2026-10-20 (session 9427ac74): controls-key-list-order resolved. Updated kRowLabels and kRowBindings to RE DAT_00b399d0/FUN_0059b670 20-row spec. Added INSTRUCTIONS text display during remapping. Added row remapping mode (activate->press key->assign). Part of story-progression-path Phase 1."
+      "content": "Batch 2026-10-20 (session 9427ac74): controls-key-list-order resolved. Updated kRowLabels and kRowBindings to RE DAT_00b399d0/FUN_0059b670 20-row spec. Added INSTRUCTIONS text display during remapping. Added row remapping mode (activate->press key->assign). Part of story-progression-path Phase 1.",
+      "compressed": false
     },
     {
       "id": "opencode-b-stackingtype-20261020",
@@ -3946,7 +3963,8 @@
         "input-blocking",
         "oblivion"
       ],
-      "content": "Batch 2026-10-20 (session 9427ac74): menu-stackingtype-impl completed. StackingType enum + MenuStack class + UISystem integration (dispatchEvent skips blocked layers). Backward compatible. Phase 1 complete: ContainerMenu + SleepWaitMenu + controls-key-list-order + menu-stackingtype."
+      "content": "Batch 2026-10-20 (session 9427ac74): menu-stackingtype-impl completed. StackingType enum + MenuStack class + UISystem integration (dispatchEvent skips blocked layers). Backward compatible. Phase 1 complete: ContainerMenu + SleepWaitMenu + controls-key-list-order + menu-stackingtype.",
+      "compressed": false
     },
     {
       "id": "opencode-b-levelup-menu-20261020",
@@ -3959,7 +3977,8 @@
         "attribute",
         "oblivion"
       ],
-      "content": "Batch 2026-10-20 (session 9427ac74): LevelUpMenu implemented. 3-attribute selection with bonus calculation (iLevelUp01..10Mult table). Generic background, title, attribute rows, picture area, exit button. Part of story-progression-path Phase 2."
+      "content": "Batch 2026-10-20 (session 9427ac74): LevelUpMenu implemented. 3-attribute selection with bonus calculation (iLevelUp01..10Mult table). Generic background, title, attribute rows, picture area, exit button. Part of story-progression-path Phase 2.",
+      "compressed": false
     },
     {
       "id": "opencode-b-npc-difficulty-20261020",
@@ -3973,7 +3992,8 @@
         "combat",
         "oblivion"
       ],
-      "content": "Batch 2026-10-20 (session 9427ac74): npc-difficulty-scale RESOLVED - the NPC->player magic damage path was entirely missing (castSpell with targetId=0 returned early). Added CombatManager::npcCastSpellOnPlayer() with direct effect application and difficulty scale f. Hostile NPC loop now selects spell (if available) or melee against player. No spell_manager.cpp changes needed (it was owned by parallel session). combat_manager.h/cpp only."
+      "content": "Batch 2026-10-20 (session 9427ac74): npc-difficulty-scale RESOLVED - the NPC->player magic damage path was entirely missing (castSpell with targetId=0 returned early). Added CombatManager::npcCastSpellOnPlayer() with direct effect application and difficulty scale f. Hostile NPC loop now selects spell (if available) or melee against player. No spell_manager.cpp changes needed (it was owned by parallel session). combat_manager.h/cpp only.",
+      "compressed": false
     },
     {
       "id": "opencode-b-quickkeys-20261020",
@@ -3986,7 +4006,8 @@
         "radial",
         "oblivion"
       ],
-      "content": "Batch 2026-10-20 (session 9427ac74): QuickKeysMenu implemented. Radial 8-slot menu with RE-spec positions. Angle-based touch/DPAD key selection with paper background. Part of story-progression-path Phase 4."
+      "content": "Batch 2026-10-20 (session 9427ac74): QuickKeysMenu implemented. Radial 8-slot menu with RE-spec positions. Angle-based touch/DPAD key selection with paper background. Part of story-progression-path Phase 4.",
+      "compressed": false
     },
     {
       "id": "opencode-b-p67-native-scda-20261020",
@@ -4000,7 +4021,8 @@
         "dialogue",
         "oblivion"
       ],
-      "content": "Batch 2026-10-20 (session 9427ac74): p67-script-vm Native SCDA VM wired. ScriptManager now decodes SCDA on load, runs native VM in update loop, persists variable stores across frames. Bridge connects 30+ native opcodes to ScriptFunctions handlers. Quest/dialogue scripts now execute."
+      "content": "Batch 2026-10-20 (session 9427ac74): p67-script-vm Native SCDA VM wired. ScriptManager now decodes SCDA on load, runs native VM in update loop, persists variable stores across frames. Bridge connects 30+ native opcodes to ScriptFunctions handlers. Quest/dialogue scripts now execute.",
+      "compressed": false
     },
     {
       "id": "opencode-b-fasttravel-20261020",
@@ -4011,7 +4033,8 @@
         "fast-travel",
         "oblivion"
       ],
-      "content": "Batch 2026-10-20 (session 9427ac74): FastTravelConfirm controller (fast_travel_controller.h/cpp) MessageBox Yes/No + travel execution chain. Integration deferred to renderer ownership."
+      "content": "Batch 2026-10-20 (session 9427ac74): FastTravelConfirm controller (fast_travel_controller.h/cpp) MessageBox Yes/No + travel execution chain. Integration deferred to renderer ownership.",
+      "compressed": false
     },
     {
       "id": "opencode-b-footstep-playback-path-20261018",
@@ -8004,7 +8027,8 @@
         "annotate",
         "g2-g5-h2"
       ],
-      "content": "Batch 1 decompile cross-check: 8 parallel sessions, 141 named funcs, major misidentifications corrected. Economy: 0x5FAB80=not price (fatigue perk), real pricing=0x5481C0/0x548240+0x547B90. Quest: 0x569020=not dialogue INFO (AI package), true dialogue system=0x52F830 Dialogue_CreateConversation (topic+0x28 linked list, rand()%%count+1 selection). Combat: 0x5FCB80=not attack start (mid of HighProcess::Update). Camera: mouse look misattributed. AV/death: 0x628B20=AVChangeNotify not getter, 0x62CA80=not IsDead (target eval AI), real IsDead=0x5E33B0. Death pipeline fully mapped. Magic: dispatcher 0x6A2CF0 order reflect->absorb->apply. Havok: stepDelta=0x8D6E40 LtIntegrate. s100/s101/s102/s99/s58 correction banners added. annotate_db.json: 141 funcs, Actor/HighProcess/hkWorld/hkStepInfo struct fields 25."
+      "content": "Batch 1 decompile cross-check: 8 parallel sessions, 141 named funcs, major misidentifications corrected. Economy: 0x5FAB80=not price (fatigue perk), real pricing=0x5481C0/0x548240+0x547B90. Quest: 0x569020=not dialogue INFO (AI package), true dialogue system=0x52F830 Dialogue_CreateConversation (topic+0x28 linked list, rand()%%count+1 selection). Combat: 0x5FCB80=not attack start (mid of HighProcess::Update). Camera: mouse look misattributed. AV/death: 0x628B20=AVChangeNotify not getter, 0x62CA80=not IsDead (target eval AI), real IsDead=0x5E33B0. Death pipeline fully mapped. Magic: dispatcher 0x6A2CF0 order reflect->absorb->apply. Havok: stepDelta=0x8D6E40 LtIntegrate. s100/s101/s102/s99/s58 correction banners added. annotate_db.json: 141 funcs, Actor/HighProcess/hkWorld/hkStepInfo struct fields 25.",
+      "compressed": false
     },
     {
       "id": "opencode-b-tasksimulate-struct-20261021",
@@ -8018,7 +8042,8 @@
         "opencode",
         "annotate"
       ],
-      "content": "TtSimulate chain fully mapped: 4 variants v1(0x8D66F0)/v2(0x8D7F80)/v3(0x8D9B80)/v4(0x8E0500) all via vtable slot0 dispatch (vtable bases 0xA96A7C/0xA96AF8/0xA96B24/0xA9A5E0). 0x8DFFB0 stepDispatch refcount-branch: first->stepEntry(0x8DFB70: inline LtIntegrate+collide+stepPhaseSM), re-entry->stepPhaseSM(0x8DF6B0 case0=singleObj case4=narrowphase case5/6=GJK). 0x678510 FixedStep_Accumulator NOT connected to Havok sim loop (cell-load only). Actor struct fields: vtable 0x00, flags 0x0C, death_progress 0x1E, hp_ptr 0x58, sub_vt 0x5C, magic_target 0x68, death_state 0xB0, hit_flag 0x162. HighProcess: vtable 0x00, early_return 0x1E, ai_target 0x2C, package_list 0x68, kd_fsm 0x11C, av_cache_val 0x294, av_cache_type 0x298. DB: 144 funcs. Remaining: EngineFrame caller (top of TtSimulate chain), timestep origin, RE_EXE_REPORT.md update, Wave3 magic."
+      "content": "TtSimulate chain fully mapped: 4 variants v1(0x8D66F0)/v2(0x8D7F80)/v3(0x8D9B80)/v4(0x8E0500) all via vtable slot0 dispatch (vtable bases 0xA96A7C/0xA96AF8/0xA96B24/0xA9A5E0). 0x8DFFB0 stepDispatch refcount-branch: first->stepEntry(0x8DFB70: inline LtIntegrate+collide+stepPhaseSM), re-entry->stepPhaseSM(0x8DF6B0 case0=singleObj case4=narrowphase case5/6=GJK). 0x678510 FixedStep_Accumulator NOT connected to Havok sim loop (cell-load only). Actor struct fields: vtable 0x00, flags 0x0C, death_progress 0x1E, hp_ptr 0x58, sub_vt 0x5C, magic_target 0x68, death_state 0xB0, hit_flag 0x162. HighProcess: vtable 0x00, early_return 0x1E, ai_target 0x2C, package_list 0x68, kd_fsm 0x11C, av_cache_val 0x294, av_cache_type 0x298. DB: 144 funcs. Remaining: EngineFrame caller (top of TtSimulate chain), timestep origin, RE_EXE_REPORT.md update, Wave3 magic.",
+      "compressed": false
     },
     {
       "id": "copilot-p68-ui-original-assets-20261021",
@@ -8101,7 +8126,8 @@
         "levelup",
         "perk"
       ],
-      "content": "AI package system fully mapped: 33 procType factories (Wander 0x6765F0, Follow 0x631EC0, Combat 0x61BB60, Dialogue 0x60EEE0). Execution: 0x468670 dispatch->0x569020 selection->0x63BA30 behavior dispatch. PACK struct 0x200B. Skill/LevelUp system: progress[21] at Player+0x130, threshold formula rand()*fSkillUseBase*(major?mult:1). LevelUp when majorSkillCount >= 10. Attribute +1 to +5, Luck=+1 fixed. Perk triggers skill_perk.xml on rank change. DB: 197 named funcs. 11 analysis areas completed."
+      "content": "AI package system fully mapped: 33 procType factories (Wander 0x6765F0, Follow 0x631EC0, Combat 0x61BB60, Dialogue 0x60EEE0). Execution: 0x468670 dispatch->0x569020 selection->0x63BA30 behavior dispatch. PACK struct 0x200B. Skill/LevelUp system: progress[21] at Player+0x130, threshold formula rand()*fSkillUseBase*(major?mult:1). LevelUp when majorSkillCount >= 10. Attribute +1 to +5, Luck=+1 fixed. Perk triggers skill_perk.xml on rank change. DB: 197 named funcs. 11 analysis areas completed.",
+      "compressed": false
     },
     {
       "id": "copilot-p68-esm-data-integration-20261021",
@@ -8149,7 +8175,8 @@
         "scriptvm",
         "report"
       ],
-      "content": "Batch 8 completed: 8 parallel areas. Crafting: Alchemy(0x593810)/Enchantment(0x5A1EC0)/Repair(0x5D2070)/Recharge(0x5CE840)/Spellmaking menus. Race/Class/Birthsign: chargen flow 0x5222D0 stats calc. Faction: FACR struct, reaction table, rank system, disposition 0x5EAB40, GetPCFaction* at 0x4F8140-0x4F8260. World map: menu 0x3FF, FastTravel Teleport 0x66F420, markers 0x518F00. Quest: QUST struct ~0xA8B, SetStage 0x502C40->0x4F4BC0, stages->log/complete/script->reward. Crime detail: theft/murder/assault/trespass detection, bounty calc, GuardArrest AI, jail. Script VM: 495 MISS handlers extracted via capstone from binary (520 impl addrs, 10 annotated). Handler pattern: push ecx->call 0x4FAE80->test/jne->ret. Top priority: SetStage, Evp, Enable. DB: 351 funcs total. Full analysis complete."
+      "content": "Batch 8 completed: 8 parallel areas. Crafting: Alchemy(0x593810)/Enchantment(0x5A1EC0)/Repair(0x5D2070)/Recharge(0x5CE840)/Spellmaking menus. Race/Class/Birthsign: chargen flow 0x5222D0 stats calc. Faction: FACR struct, reaction table, rank system, disposition 0x5EAB40, GetPCFaction* at 0x4F8140-0x4F8260. World map: menu 0x3FF, FastTravel Teleport 0x66F420, markers 0x518F00. Quest: QUST struct ~0xA8B, SetStage 0x502C40->0x4F4BC0, stages->log/complete/script->reward. Crime detail: theft/murder/assault/trespass detection, bounty calc, GuardArrest AI, jail. Script VM: 495 MISS handlers extracted via capstone from binary (520 impl addrs, 10 annotated). Handler pattern: push ecx->call 0x4FAE80->test/jne->ret. Top priority: SetStage, Evp, Enable. DB: 351 funcs total. Full analysis complete.",
+      "compressed": false
     },
     {
       "id": "copilot-phase69-persistence-20261022",
@@ -8795,13 +8822,13 @@
       "timestamp": "2026-10-15T04:04:46Z",
       "category": "reference",
       "priority": "medium",
-      "content": "0x00B33E9C = フレームデルタ時間(秒,timescale 乗算後)。絶対 FSTP は 0x009DC2BC の 1 件のみ(Reset)、通常は FSTP [ECX+0xC]。FLD は 74 件、getter float Timer::GetDeltaTime() @0x004052A0(直後 0x004052A7 は FLDZ;RET)。Timer::Update 呼び出し元 9 件: 0x0040616A/0x004061AB/0x0040D8A7/0x0040EACE/0x00494A14/0x00494E5A/0x004E15D0/0x004E18C2/0x009DC2B6。",
+      "content": "0x00B33E9C = フレームデルタ時間(秒,timescale 乗算後)。FLD は 74 件、getter float Timer::GetDeltaTime() @0x004052A0(直後 0x004052A7 は FLDZ;RET)。Timer::Update 呼び出し元 9 件: 0x0040616A/0x004061AB/0x0040D8A7/0x0040EACE/0x00494A14/0x00494E5A/0x004E15D0/0x004E18C2/0x009DC2B6。（他文は正典反映済・詳細は STATE.md/tmp/re 参照）",
       "tags": [
         "RE",
         "Timer",
         "§42"
       ],
-      "compressed": false
+      "compressed": true
     },
     {
       "id": "2982cf7d-7f02-4ed7-a027-b077210ed8da",
@@ -9015,7 +9042,8 @@
       "category": "development",
       "priority": "medium",
       "content": "Batch 2026-10-18 (session 9427ac74): handover queue (opencode-handover-main-9427ac74-20261018) triage. (1) complex-scene-throttle: already implemented (commit 29dbb4f1), no action. (2) armor-perk-damage-mult: ALREADY DONE - committed e5e60eb7 'game: apply the armor mastery perk multiplier to spell damage'; settings_manager.h armorMasteryRank (skill/25 tiers matching GMST iSkill*Min 25/50/75/100) + armorPerkDamageMultiplier (rank>=2 x0.5 / rank==0 x1.5 / rank==1 x1.0) called from spell_manager.cpp:470 damage branch. Reflect path: port has NO damage-reflect system at all (only AV index name ReflectDamage=0x3b in dialogue_filter_engine.cpp) so nothing to wire; near/archery stay x1.0 per RE (zero xrefs in FUN_005FEBF0). Caveat: NPC skill maps only carry Blade/Blunt/Magic/Restoration keys (npc.cpp:52-55) so armor skill lookups currently miss -> multiplier is effectively x1.0 until NPC armor skills exist (approximation documented in the code comment). (3) gameplay-settings-consumers: implemented this batch. (4) npc-difficulty-scale: effectively done - dealt 1/f in playerAttack + magic paths (magic-damage-difficulty-scale done) and received f inside Player::takeDamage (player-damage-intake done); desc was stale. Handover queue fully consumed.",
-      "tags": []
+      "tags": [],
+      "compressed": false
     },
     {
       "id": "opencode-b-gameplay-settings-consumers-20261018",
@@ -9023,7 +9051,8 @@
       "category": "development",
       "priority": "medium",
       "content": "Batch 2026-10-18 (session 9427ac74): gameplay-settings-consumers implemented, UNVERIFIED per user '検証はステイでいいので作成を続けて'. Was the last unconsumed gameplay setting: added Renderer::dialogueSubtitlesEnabled_ (renderer.h, RE_EXE_REPORT 47.3/47.4 annotation), assigned in applyGameplaySettings from settings.dialogueSubtitles, and gated the HUDSubtitleMenu emit path (renderer.cpp topic-selection subtitle) on BOTH subtitlesEnabled_ (bGeneralSubtitles, emission gate) and dialogueSubtitlesEnabled_ (bDialogueSubtitles, dialogue UI element presence) since the port has a single subtitle path; stale comment + LOGI updated to list only saveOnRest/saveOnWait as consumer-less (they are consumed by the SleepWaitMenu handler 0x5D6A80 in the original - blocked on sleep-wait-menu-impl). Consumer status now: difficulty -> Player::setDifficultyScale, generalSubtitles/dialogueSubtitles -> subtitle gate, crosshair -> crosshairEnabled (renderer:5074), disableDynamicCrosshair -> crosshair->setDynamicEnabled inverted, saveOnTravel + saveOnInteriorExteriorSwitch -> DoorManager cell-transition autosave (renderer:2192-2193); saveOnRest/saveOnWait blocked. Settings commit path pumpGameplayOptions already propagated dialogueSubtitles, so no change needed there.",
-      "tags": []
+      "tags": [],
+      "compressed": false
     },
     {
       "id": "opencode-b-audio-setters-triage-20261019",
@@ -9031,7 +9060,8 @@
       "category": "development",
       "priority": "medium",
       "content": "Batch 2026-10-19 (session 9427ac74): audio-voice-footstep-setters triage = already implemented, no code change. Voice: setVoiceVolume/getVoiceVolume committed (audio_manager.cpp:528 re-applies to the live source; playVoice routes through playSEOnChannel(..., voiceVolume) at :466-467; wiring landed in 3459212c 'Wire option settings to their consumers'). Footstep: setFootVolume now re-applies to live sources and playFootstep(key, pos) routes via the footVolume channel (INI default 0.3) with footstep_default fallback - these are in the UNCOMMITTED footstep-playback-path batch of this session (audio_manager.cpp +36/-3 uncommitted).",
-      "tags": []
+      "tags": [],
+      "compressed": false
     },
     {
       "id": "copilot-memory-restore-20261022",
@@ -9045,7 +9075,8 @@
         "restore",
         "concurrency"
       ],
-      "content": "Ledger repair (2026-10-22): 61 entries that had been dropped between 74ec9ad9 (622 entries) and HEAD (582) were restored from git 74ec9ad9 and re-appended, bringing the ledger back to 643 entries. Evidence of the loss: commit bfb986dd (\"Save uncommitted changes\") contains a truncated, invalid session-memory.json (8290 lines, JSON parse error) plus a session-memory.json.bak snapshot; 0 of the 61 ids were present in 7b11356e or later. Cause: two writers (Copilot and opencode) rewrite this single file with no locking or merge, so a lost update silently drops entries. Restored entries keep their original ids and timestamps; a copy of the pre-restore file is in tmp/session-memory.pre-restore.json (git-ignored). Rule: re-read the file immediately before every write and append-only, never rewrite from an in-memory snapshot."
+      "content": "Ledger repair (2026-10-22): 61 entries that had been dropped between 74ec9ad9 (622 entries) and HEAD (582) were restored from git 74ec9ad9 and re-appended, bringing the ledger back to 643 entries. Evidence of the loss: commit bfb986dd (\"Save uncommitted changes\") contains a truncated, invalid session-memory.json (8290 lines, JSON parse error) plus a session-memory.json.bak snapshot; 0 of the 61 ids were present in 7b11356e or later. Cause: two writers (Copilot and opencode) rewrite this single file with no locking or merge, so a lost update silently drops entries. Restored entries keep their original ids and timestamps; a copy of the pre-restore file is in tmp/session-memory.pre-restore.json (git-ignored). Rule: re-read the file immediately before every write and append-only, never rewrite from an in-memory snapshot.",
+      "compressed": false
     },
     {
       "id": "copilot-launcher-touch-and-phase70-20261022",
@@ -9060,7 +9091,8 @@
         "verification",
         "commit"
       ],
-      "content": "Launcher touch fix and Phase 70 write path verified and pushed (2026-10-22).\n(1) Root cause of the launcher being untouchable: UIComponent defaults to visible, so UICharacterCreation and UIBookReader were live modals from construction - they consumed every touch in Renderer::onTouchEvent and kept anyMenuOpen() permanently true, disabling crosshair, HUD, combat buttons, virtual controller and player input. Both now call setVisible(false) in initialize() and are shown by open()/openBook(), matching UIDialogue. The character creation touch gate now mirrors the render gate (showCharacterCreation && isVisible()) at renderer.cpp onTouchEvent.\n(2) Phase 70 write path landed: assets/plugin_list.{h,cpp} owns the plugins.txt grammar (one name per line, hash comments, a leading asterisk as the active marker, BOM/CR/blank trim, case-insensitive duplicate rejection, and the rule that a marker-free file means every listed plugin is active) plus serializePluginList(), activePluginNames() and sortPluginLoadOrder() (Oblivion.esm, then other masters, then plugins, case-insensitive, stable). AssetManager::savePluginsFile() writes it back, scanDataFiles() returns load order, and LauncherScreen::persistPluginSelection() saves on every toggle with Oblivion.esm pinned active.\n(3) Verification: ./gradlew assembleDebug BUILD SUCCESSFUL (7m30s) and the host runner is ALL GREEN with PluginListTests 23/23. Commits 3ae583fb, cb4e426a, abf0a32b, 5732b73a, f00a215c pushed to origin/master.\nStill open: no device was attached (adb devices empty), so the on-device toggle round trip through filesDir/data/plugins.txt and the launcher touch regression check are unverified."
+      "content": "Launcher touch fix and Phase 70 write path verified and pushed (2026-10-22).\n(1) Root cause of the launcher being untouchable: UIComponent defaults to visible, so UICharacterCreation and UIBookReader were live modals from construction - they consumed every touch in Renderer::onTouchEvent and kept anyMenuOpen() permanently true, disabling crosshair, HUD, combat buttons, virtual controller and player input. Both now call setVisible(false) in initialize() and are shown by open()/openBook(), matching UIDialogue. The character creation touch gate now mirrors the render gate (showCharacterCreation && isVisible()) at renderer.cpp onTouchEvent.\n(2) Phase 70 write path landed: assets/plugin_list.{h,cpp} owns the plugins.txt grammar (one name per line, hash comments, a leading asterisk as the active marker, BOM/CR/blank trim, case-insensitive duplicate rejection, and the rule that a marker-free file means every listed plugin is active) plus serializePluginList(), activePluginNames() and sortPluginLoadOrder() (Oblivion.esm, then other masters, then plugins, case-insensitive, stable). AssetManager::savePluginsFile() writes it back, scanDataFiles() returns load order, and LauncherScreen::persistPluginSelection() saves on every toggle with Oblivion.esm pinned active.\n(3) Verification: ./gradlew assembleDebug BUILD SUCCESSFUL (7m30s) and the host runner is ALL GREEN with PluginListTests 23/23. Commits 3ae583fb, cb4e426a, abf0a32b, 5732b73a, f00a215c pushed to origin/master.\nStill open: no device was attached (adb devices empty), so the on-device toggle round trip through filesDir/data/plugins.txt and the launcher touch regression check are unverified.",
+      "compressed": false
     },
     {
       "id": "59ccb077-2982-4363-8a03-34d6de3b41db",
@@ -9330,7 +9362,8 @@
       ],
       "content": "RE session sync completed (2026-10-20). Project memory (.github/memory/session-memory.json) updated with: (1) opencode-re-phase1-residual-complete-20261020 - Phase 1 residual analysis (F1/F6/G3/G5/H1/H2/H4) with evidence files s99/s100/s101. (2) copilot-re-batch-20261019-20-20261020 - Copilot RE batch summary (16 items including Phase 67 Script VM, QuickKeysMenu, menu stackingtype, BSA103 hash, fGlobalTimeMultiplier, PE section audit, AI dispatch, Japanese rendering, menufade, ControlsMenu, armor skill, pause state, NPC damage path, death processing, Fatigue AV, complex scene throttle). Copilot active RE todos: gmst-table-integration (in_progress), screen-scale-decision (pending), font-jp-verify (pending), title-screen-remaining-decisions (pending). Sync mechanism: shared project memory at .github/memory/session-memory.json.",
       "mergedFrom": "~/.config/opencode/memory/session-memory.json",
-      "mergedAt": "2026-10-23T01:05:24Z"
+      "mergedAt": "2026-10-23T01:05:24Z",
+      "compressed": false
     },
     {
       "id": "re-r1-complete-20261020",
@@ -9344,7 +9377,8 @@
       ],
       "content": "R1 Camera/View system analysis complete. 0x657003=mouse look, 0x70FDD0=yaw matrix, 0x6FAEE0=pitch clamp. Project memory synced.",
       "mergedFrom": "~/.config/opencode/memory/session-memory.json",
-      "mergedAt": "2026-10-23T01:05:24Z"
+      "mergedAt": "2026-10-23T01:05:24Z",
+      "compressed": false
     },
     {
       "id": "opencode-batch3-dialogue-havok-magic-struct-20261021",
@@ -9370,7 +9404,8 @@
         "timestamp derived from the entry date",
         "priority defaulted to medium",
         "category defaulted to imported"
-      ]
+      ],
+      "compressed": false
     },
     {
       "id": "opencode-decompile-crosscheck-20261021",
@@ -9400,7 +9435,8 @@
         "timestamp derived from the entry date",
         "priority defaulted to medium",
         "category defaulted to imported"
-      ]
+      ],
+      "compressed": false
     },
     {
       "id": "opencode-tasksimulate-struct-20261021",
@@ -9424,7 +9460,8 @@
         "timestamp derived from the entry date",
         "priority defaulted to medium",
         "category defaulted to imported"
-      ]
+      ],
+      "compressed": false
     },
     {
       "id": "opencode-w1-mgef-conjuration-formidlinks-correction-20261024",
@@ -9441,7 +9478,8 @@
         "3c4ce418",
         "2026-10-24"
       ],
-      "content": "W軸訂正 W1 (2026-10-24, 台帳↔Supermemory 突合 第六軸): 台帳 3c4ce418 (2026-09-21, tags:confirmed) の「ALL 62 Conjuration MGEFs are FormID links」は誤り。実測 tmp/re/v35_mgef_code_table.csv: school==1 は62件、actor_value>100 のFormIDリンクは60件、リンクなしは REAN(Reanimate, av=0) と TURN(Turn Undead, av=0) の2件のみ (>200閾値でも60、非Conjurationのav最大=70 で>100閾値は妥当)。3c4ce418 は自ら「av=0=special/generic」と定義しながら ALL 62 と主張し内部矛盾。Supermemory 側の 60/62 (pbjwoNwhNwzJKXqaNtmom6 / 3U6BcS5wrbguYEiQD2Pqfh / tdj1JydcyhsyyPBDgN1LnH / 68992b10fd2627b0360e1d) が正。旧3c4ce418の confirmed タグは本項について無効。検証: check_w1_mgef.py + W軸監査第六軸W1 (opencode 2026-10-24)。"
+      "content": "W軸訂正 W1 (2026-10-24, 台帳↔Supermemory 突合 第六軸): 台帳 3c4ce418 (2026-09-21, tags:confirmed) の「ALL 62 Conjuration MGEFs are FormID links」は誤り。実測 tmp/re/v35_mgef_code_table.csv: school==1 は62件、actor_value>100 のFormIDリンクは60件、リンクなしは REAN(Reanimate, av=0) と TURN(Turn Undead, av=0) の2件のみ (>200閾値でも60、非Conjurationのav最大=70 で>100閾値は妥当)。3c4ce418 は自ら「av=0=special/generic」と定義しながら ALL 62 と主張し内部矛盾。Supermemory 側の 60/62 (pbjwoNwhNwzJKXqaNtmom6 / 3U6BcS5wrbguYEiQD2Pqfh / tdj1JydcyhsyyPBDgN1LnH / 68992b10fd2627b0360e1d) が正。旧3c4ce418の confirmed タグは本項について無効。検証: check_w1_mgef.py + W軸監査第六軸W1 (opencode 2026-10-24)。",
+      "compressed": false
     },
     {
       "id": "opencode-w2-free-0x401f20-correction-20261024",
@@ -9459,7 +9497,8 @@
         "59ccb077",
         "2026-10-24"
       ],
-      "content": "W軸訂正 W2 (2026-10-24, 台帳↔Supermemory 突合 第六軸 + EXE裁定): 台帳 59ccb077 (2026-10-22) の「free(node)=0x401B20」は誤り (+0x400-low)。真値は 0x401F20、malloc対は 0x401F00。EXE disasm 直接裁定 (監査はD:\\ 未マウントで検証不能だったが当方はアクセス可): 0x401F20 = mov eax,[esp+4]; test eax,eax; je; push eax; mov ecx,0xB02020 (heap manager); call 0x401d40; ret の教科書的 free ラッパ、decompiled L1122 に FUN_00401f20 定義あり。0x401B20 = 関数ではなく別関数の末尾 (pop edi/ebx/esi; ret 8、FUNラベル・bare-hex参照とも0件)。台帳内矛盾も併存: 2d08d9a9 (2026-10-15) は既に 0x401f20 で正。構造的原因 = +0x400訂正キャンペーン (10-23完了, Supermemory/docs反映済) が正本台帳へ未回流。Supermemory 側訂正宣言 (6ba6b9b9100c3e11bec03e / ULkmRmJFDMQcxoXhT12pjN / MmBjwxY8ShQsasMdPKrCMX / EAYz5LgY43t62JThmv4v6M) が正。検証: check_w2_free.py (W軸監査第六軸W2, opencode 2026-10-24)。"
+      "content": "W軸訂正 W2 (2026-10-24, 台帳↔Supermemory 突合 第六軸 + EXE裁定): 台帳 59ccb077 (2026-10-22) の「free(node)=0x401B20」は誤り (+0x400-low)。真値は 0x401F20、malloc対は 0x401F00。EXE disasm 直接裁定 (監査はD:\\ 未マウントで検証不能だったが当方はアクセス可): 0x401F20 = mov eax,[esp+4]; test eax,eax; je; push eax; mov ecx,0xB02020 (heap manager); call 0x401d40; ret の教科書的 free ラッパ、decompiled L1122 に FUN_00401f20 定義あり。0x401B20 = 関数ではなく別関数の末尾 (pop edi/ebx/esi; ret 8、FUNラベル・bare-hex参照とも0件)。台帳内矛盾も併存: 2d08d9a9 (2026-10-15) は既に 0x401f20 で正。構造的原因 = +0x400訂正キャンペーン (10-23完了, Supermemory/docs反映済) が正本台帳へ未回流。Supermemory 側訂正宣言 (6ba6b9b9100c3e11bec03e / ULkmRmJFDMQcxoXhT12pjN / MmBjwxY8ShQsasMdPKrCMX / EAYz5LgY43t62JThmv4v6M) が正。検証: check_w2_free.py (W軸監査第六軸W2, opencode 2026-10-24)。",
+      "compressed": false
     },
     {
       "id": "opencode-w3-phase65-label-correction-20261024",
@@ -9476,7 +9515,8 @@
         "8af7bdaf",
         "2026-10-24"
       ],
-      "content": "W軸訂正 W3 (2026-10-24, 台帳↔Supermemory 突合 第六軸): Phase ラベル/ステータスドリフト。(a) 台帳 8af7bdaf (2026-09-24, tag:phase66) は sky dome コミット 13d9f905 を「Phase 66」と記録するが、plan.md:881 と台帳 63c5fae6 (2026-09-25, tag:phase65) の「Phase 65」が正 (plan.md ground truth: weather/sky dome=Phase65行、Phase66=Characters and AI=Pending)。1fa6afd5 (09-26, tag:phase66) の deltaTime/P19 作業も同種のラベル揺れ。8af7bdaf 本体は append-only 規約 (2026-10-22 の61件消失事故以来のルール) により改変せず本エントリで訂正。(b) Supermemory の10-21「Phase 65 code complete (terrain/water/weather/sky dome/LOD/interior REFR/door transitions 全実装)」宣言 (d354f78ebe6ece0e87aa9f / u294Gk4Ywzo5ZCPiV4zzcy 等) は premature: Phase 65 LOD 実装コミット 17c3de23 は 2026-10-23 18:17 着地 (宣言の2日後)。plan.md:881 Status=\"In progress\" が正当、行末に landscape LOD landed (2026-10-23, 17c3de23) 済 = plan.md 側は既に更新済で変更不要。残る未完了 = object LOD 対 (meshes\\distantlod\\*.lod 10,810 / *.cmp 55, ローダ未実装) とデバイス検証 → Phase 65 は In progress のまま。Phase70 の SM completed(5wsjAgwW3sYzecGq45zwij) vs plan.md:886 In progress は弱不一致で 過大主張しない (監査注記どおり)。検証: git 17c3de23 + plan.md:881/886 + Supermemory検索 (W軸監査第六軸W3, opencode 2026-10-24)。"
+      "content": "W軸訂正 W3 (2026-10-24, 台帳↔Supermemory 突合 第六軸): Phase ラベル/ステータスドリフト。(a) 台帳 8af7bdaf (2026-09-24, tag:phase66) は sky dome コミット 13d9f905 を「Phase 66」と記録するが、plan.md:881 と台帳 63c5fae6 (2026-09-25, tag:phase65) の「Phase 65」が正 (plan.md ground truth: weather/sky dome=Phase65行、Phase66=Characters and AI=Pending)。1fa6afd5 (09-26, tag:phase66) の deltaTime/P19 作業も同種のラベル揺れ。8af7bdaf 本体は append-only 規約 (2026-10-22 の61件消失事故以来のルール) により改変せず本エントリで訂正。(b) Supermemory の10-21「Phase 65 code complete (terrain/water/weather/sky dome/LOD/interior REFR/door transitions 全実装)」宣言 (d354f78ebe6ece0e87aa9f / u294Gk4Ywzo5ZCPiV4zzcy 等) は premature: Phase 65 LOD 実装コミット 17c3de23 は 2026-10-23 18:17 着地 (宣言の2日後)。plan.md:881 Status=\"In progress\" が正当、行末に landscape LOD landed (2026-10-23, 17c3de23) 済 = plan.md 側は既に更新済で変更不要。残る未完了 = object LOD 対 (meshes\\distantlod\\*.lod 10,810 / *.cmp 55, ローダ未実装) とデバイス検証 → Phase 65 は In progress のまま。Phase70 の SM completed(5wsjAgwW3sYzecGq45zwij) vs plan.md:886 In progress は弱不一致で 過大主張しない (監査注記どおり)。検証: git 17c3de23 + plan.md:881/886 + Supermemory検索 (W軸監査第六軸W3, opencode 2026-10-24)。",
+      "compressed": false
     },
     {
       "id": "opencode-sync-idempotency-broken-20261024",
@@ -9491,7 +9531,8 @@
         "tools",
         "2026-10-24"
       ],
-      "content": "【実行禁止ガード (2026-10-24, W軸修正適用時 discovered)】tools/sync_memory_to_supermemory.py は 冪等キー metadata.entryId が Supermemory 側で失効しているため現状実行禁止。全スキャン実測 (diag_fullscan.py): SM 空間 namespace=opencode_project_470935b226aa5f24 は totalItems=672、うち entryId を持つは21件のみで全て copilot-* 直接push分、**台帳由来 entryId=0件（台帳668件すべて \"missing\"）**。dry-run は already=0 / to push=668 を返し、そのまま実行すると668件が重複pushされる。原因候補: (a) SM 推論処理での metadata 欺落 (memoryEntries の81/100 が entryId 欠落、isInference フィールド存在) (b) 10-22バックアップ分の forget/置換 (992→672)。W軸訂正3件 (W1 mgef 60/62 / W2 free=0x401F20 / W3 phase65ラベル) 適用時は本ガードにより同期を保留し、SM 側反映は MCP supermemory add で直接実施した (E2hRTTcHhczd2gs6tEmfaP)。復旧要件: ①entryId 欠落メモリの同定または再push方針決定 ②sync スクリプトに known==0 ∧ ledger>100 の abort ガード追加 (→ TODO V84)。検証: diag_sync_list.py / diag_entryid_match.py / diag_fullscan.py (2026-10-24, opencode)。"
+      "content": "【実行禁止ガード (2026-10-24, W軸修正適用時 discovered)】tools/sync_memory_to_supermemory.py は 冪等キー metadata.entryId が Supermemory 側で失効しているため現状実行禁止。全スキャン実測 (diag_fullscan.py): SM 空間 namespace=opencode_project_470935b226aa5f24 は totalItems=672、うち entryId を持つは21件のみで全て copilot-* 直接push分、**台帳由来 entryId=0件（台帳668件すべて \"missing\"）**。dry-run は already=0 / to push=668 を返し、そのまま実行すると668件が重複pushされる。原因候補: (a) SM 推論処理での metadata 欺落 (memoryEntries の81/100 が entryId 欠落、isInference フィールド存在) (b) 10-22バックアップ分の forget/置換 (992→672)。W軸訂正3件 (W1 mgef 60/62 / W2 free=0x401F20 / W3 phase65ラベル) 適用時は本ガードにより同期を保留し、SM 側反映は MCP supermemory add で直接実施した (E2hRTTcHhczd2gs6tEmfaP)。復旧要件: ①entryId 欠落メモリの同定または再push方針決定 ②sync スクリプトに known==0 ∧ ledger>100 の abort ガード追加 (→ TODO V84)。検証: diag_sync_list.py / diag_entryid_match.py / diag_fullscan.py (2026-10-24, opencode)。",
+      "compressed": false
     },
     {
       "id": "opencode-report-corrections-v98-v108-20261025",
@@ -9507,7 +9548,8 @@
         "round-verify",
         "2026-10-25"
       ],
-      "content": "RE_EXE_REPORT.md への訂正反映 (2026-10-25, opencode, ユーザー承認後)。セッションB残件11件 V98〜V108 全完走 (TODO_re49.md 292行 / V-rows 41 / done 40 / open=V31 のみ / round_verify ALL OK / .bak24〜.bak27) に伴い、正本9箇所を .bak15 バックアップ付きで修正 (12,303→12,319行, CRLF維持): (1) §67.3 中間域ラベル「条件・式系」→「コンソールコマンド帯 (0x100–0x183)」(V105: 条件系 +0x20≠0 の169件はすべて0x1000帯、コンソール帯0件)。(2) §70.4 の同表現 (行11425) も併記訂正。(3) §23.4 「TypeDescriptor は .rdata 内」→「.data 内」(V103: RTTI全走査で TypeDescriptor 1,547件はすべて .data、.rdata は0件、COL のみ .rdata。0x00b13240 も .data VA 0xB02000–0xB32C00 帯)。(4) §70.4 +0x0C desc 非空「132件・空399件」→「142件・空389件」(V105 + 本セッション独立再計測: nonempty=142 / shared 0xA2F7EC=389 / zero=1 / 計532。旧値は10件を空と誤分類)。(5) §69.3 を [未確定](WIP)→[確定] に更新、所有クラスを TESObjectREFR 誤り→CombatController 正 (vtable 0xA70A14/60slot/0x1C0, +0x40 は8Bコンテナ ptr, 生成 FUN_0x61BB60 / 解放 FUN_0x61C130, vt+0x330/0x334 は206slot超9クラスのみ・実装 0x5E6190 等)。(6) 同 §69.3 の呼出パターン根拠 @0x50C41A は文字列出力と訂正 (正 = 0x50C81C→0x50C830, FUN_0050C790 内で TESObjectREFR→Actor dynamic_cast)。(7) §69.4 「未収録7件」→ 未収録は FUN_0050c390 / FUN_005e61b0 の2件のみ (残5件は収録済: FUN_006135f0=L379749 refs212 / 00613640=L379782 / 006210d0=L388963 / 006162d0=L381902 / 00616190=L381844)。(8) §69.5 残課題11件に「全11件解決」注記と成果物対応表 (b08/b03/b04/b05/b06/b07/b01/b09/b10/b11/b12) を追加。本セッションでの重大訂正4件: ①PUSH は 0x446CB0=347 が正・0x4468B0=0件 (b04、台帳の typo 判定は誤りだった点も訂正) ②0x504050=add[esi+0x59],ebx は非整列バイト誤読で +0x59 カウンタは存在しない (b01) ③セッションB要約の 0x4FB110/0x4FB1F0 は +0x400 未訂正 → 正 0x4FB510/0x4FB5F0 (10-23 の+0x400訂正キャンペーンが10-19要約に未反映) ④同要約のイベントマスク表は全件誤り (正は §59.3 の14件+本調査8件)。成果物は tmp/re/ に11本 (計 664,068B)、ハンドオーバ資料 tmp/re/handover_20261025/ (40ファイル)。Supermemory: Pi1omL1a6bMjCdgrEjjtka (V90-97), cU4jTJgnTRJi2Zuc1vdaBD (V98-108)。制約継続: tools/sync_memory_to_supermemory.py 実行禁止 (guard有効)、pilot再push=保留、台帳 append-only。検証: round_verify.py → ALL OK / probe_harness selftest 4/4 PASS (各サブエージェント)。"
+      "content": "RE_EXE_REPORT.md への訂正反映 (2026-10-25, opencode, ユーザー承認後)。セッションB残件11件 V98〜V108 全完走 (TODO_re49.md 292行 / V-rows 41 / done 40 / open=V31 のみ / round_verify ALL OK / .bak24〜.bak27) に伴い、正本9箇所を .bak15 バックアップ付きで修正 (12,303→12,319行, CRLF維持): (1) §67.3 中間域ラベル「条件・式系」→「コンソールコマンド帯 (0x100–0x183)」(V105: 条件系 +0x20≠0 の169件はすべて0x1000帯、コンソール帯0件)。(2) §70.4 の同表現 (行11425) も併記訂正。(3) §23.4 「TypeDescriptor は .rdata 内」→「.data 内」(V103: RTTI全走査で TypeDescriptor 1,547件はすべて .data、.rdata は0件、COL のみ .rdata。0x00b13240 も .data VA 0xB02000–0xB32C00 帯)。(4) §70.4 +0x0C desc 非空「132件・空399件」→「142件・空389件」(V105 + 本セッション独立再計測: nonempty=142 / shared 0xA2F7EC=389 / zero=1 / 計532。旧値は10件を空と誤分類)。(5) §69.3 を [未確定](WIP)→[確定] に更新、所有クラスを TESObjectREFR 誤り→CombatController 正 (vtable 0xA70A14/60slot/0x1C0, +0x40 は8Bコンテナ ptr, 生成 FUN_0x61BB60 / 解放 FUN_0x61C130, vt+0x330/0x334 は206slot超9クラスのみ・実装 0x5E6190 等)。(6) 同 §69.3 の呼出パターン根拠 @0x50C41A は文字列出力と訂正 (正 = 0x50C81C→0x50C830, FUN_0050C790 内で TESObjectREFR→Actor dynamic_cast)。(7) §69.4 「未収録7件」→ 未収録は FUN_0050c390 / FUN_005e61b0 の2件のみ (残5件は収録済: FUN_006135f0=L379749 refs212 / 00613640=L379782 / 006210d0=L388963 / 006162d0=L381902 / 00616190=L381844)。(8) §69.5 残課題11件に「全11件解決」注記と成果物対応表 (b08/b03/b04/b05/b06/b07/b01/b09/b10/b11/b12) を追加。本セッションでの重大訂正4件: ①PUSH は 0x446CB0=347 が正・0x4468B0=0件 (b04、台帳の typo 判定は誤りだった点も訂正) ②0x504050=add[esi+0x59],ebx は非整列バイト誤読で +0x59 カウンタは存在しない (b01) ③セッションB要約の 0x4FB110/0x4FB1F0 は +0x400 未訂正 → 正 0x4FB510/0x4FB5F0 (10-23 の+0x400訂正キャンペーンが10-19要約に未反映) ④同要約のイベントマスク表は全件誤り (正は §59.3 の14件+本調査8件)。成果物は tmp/re/ に11本 (計 664,068B)、ハンドオーバ資料 tmp/re/handover_20261025/ (40ファイル)。Supermemory: Pi1omL1a6bMjCdgrEjjtka (V90-97), cU4jTJgnTRJi2Zuc1vdaBD (V98-108)。制約継続: tools/sync_memory_to_supermemory.py 実行禁止 (guard有効)、pilot再push=保留、台帳 append-only。検証: round_verify.py → ALL OK / probe_harness selftest 4/4 PASS (各サブエージェント)。",
+      "compressed": false
     },
     {
       "timestamp": "2026-10-29T08:06:34Z",
@@ -9675,7 +9717,8 @@
         "2026-10-31",
         "opencode"
       ],
-      "content": "RE セッション成果の台帳バックフィル第1弾 (V116-V142 並行解析バッチ27件・2026-10-26〜10-27分)。一次ソース: tmp/re/TODO_re49.md serial 114-142 (全件 [x] 完了)。範囲 = V116 (tmp/re/b20_impl_5071d0.md 19,900B) から V142 (tmp/re/v142_s7010_residuals.md 20,765B)。主要成果: (a) Steam DRM/.bind 複号ブートストラップ解読 (v126_bind_crt_bootstrap.md: 0xD9 dwords 複写・鍵 0x72c99b67 起点のバイトコピー/XOR、CRT startup 接続は steamdrm jmp eax tail-jump で確定、docs §35.5 訂正素材化)。(b) ラベルなし関数第3カテゴリ (Cat-3) の定義 = 10,261件 (v127_labelless_cat3.md)、gap 内複数ブロック10/10 件で独立性判定。(c) 全 21,597 関数の4層ハッシュ重複照合 (v133_full_dup_scan.md 53,550B: 25秒/330MB、dec_index 20,465+名前付き767+本文なし365 で台帳21,597を検証、コピペ候補≥15命令=12組24件、gap↔gap外跨りは BA2組のみ)。(d) GT 不整合5件の訂正確定 (V121/V153 系: +8=フォーム同化ヘルパで GetFormID ではない / 0xA0 / 0x2D0 / 0x36C=可変・永続化 process 状態バイト / 0x190=IsActor)。(e) E8 新規66件の確定絞り込み (v140_e8_66_finalization.md 34,019B) と v90 系残点束の解消 (v128_winmain_tail 41,251B / v129_shader_slot 40,347B・[state+0xFF8]=renderer[+0x280] 同一確定 / v130_ini_residuals 38,766B・6残点全解明 / v131_impl18_arrival 31,844B / v132_exception_dispatcher 30,701B / v134_forwarder 27,131B / v135_tree 32,167B)。(f) b 系残点束 (v137 4点全解明 / v138_b16_alarm 45,168B / v139_b17_table2 53,131B / v141_b19_quest 29,226B)。(g) §70.10 残2件解消 (v142: s*Description 8件は GMST 置換されるが読者0件、FUN_00478780=Character装備アタッチブロック 0x154B)。docs/GT 本体への適用は行わずドラフト留め (V136 §70.16(4c) ドラフト 19,571B 等)。本エントリにより rel5 で未記録と指摘された V116 相当分の台帳欠落を補填。"
+      "content": "RE セッション成果の台帳バックフィル第1弾 (V116-V142 並行解析バッチ27件・2026-10-26〜10-27分)。一次ソース: tmp/re/TODO_re49.md serial 114-142 (全件 [x] 完了)。範囲 = V116 (tmp/re/b20_impl_5071d0.md 19,900B) から V142 (tmp/re/v142_s7010_residuals.md 20,765B)。主要成果: (a) Steam DRM/.bind 複号ブートストラップ解読 (v126_bind_crt_bootstrap.md: 0xD9 dwords 複写・鍵 0x72c99b67 起点のバイトコピー/XOR、CRT startup 接続は steamdrm jmp eax tail-jump で確定、docs §35.5 訂正素材化)。(b) ラベルなし関数第3カテゴリ (Cat-3) の定義 = 10,261件 (v127_labelless_cat3.md)、gap 内複数ブロック10/10 件で独立性判定。(c) 全 21,597 関数の4層ハッシュ重複照合 (v133_full_dup_scan.md 53,550B: 25秒/330MB、dec_index 20,465+名前付き767+本文なし365 で台帳21,597を検証、コピペ候補≥15命令=12組24件、gap↔gap外跨りは BA2組のみ)。(d) GT 不整合5件の訂正確定 (V121/V153 系: +8=フォーム同化ヘルパで GetFormID ではない / 0xA0 / 0x2D0 / 0x36C=可変・永続化 process 状態バイト / 0x190=IsActor)。(e) E8 新規66件の確定絞り込み (v140_e8_66_finalization.md 34,019B) と v90 系残点束の解消 (v128_winmain_tail 41,251B / v129_shader_slot 40,347B・[state+0xFF8]=renderer[+0x280] 同一確定 / v130_ini_residuals 38,766B・6残点全解明 / v131_impl18_arrival 31,844B / v132_exception_dispatcher 30,701B / v134_forwarder 27,131B / v135_tree 32,167B)。(f) b 系残点束 (v137 4点全解明 / v138_b16_alarm 45,168B / v139_b17_table2 53,131B / v141_b19_quest 29,226B)。(g) §70.10 残2件解消 (v142: s*Description 8件は GMST 置換されるが読者0件、FUN_00478780=Character装備アタッチブロック 0x154B)。docs/GT 本体への適用は行わずドラフト留め (V136 §70.16(4c) ドラフト 19,571B 等)。本エントリにより rel5 で未記録と指摘された V116 相当分の台帳欠落を補填。",
+      "compressed": false
     },
     {
       "id": "opencode-re-v143-v167-batch-20261031",
@@ -9691,7 +9734,8 @@
         "2026-10-31",
         "opencode"
       ],
-      "content": "RE セッション成果の台帳バックフィル第2弾 (V143-V167 反映・台帳統合・バグ訂正バッチ25件・2026-10-27〜10-29分)。(a) GT/正本反映バッチ2件が適用済み — V143: GT_CHEATSHEET.md 8操作 (§4.1 新設=訂正5行+8、§2 に 0x5072B0 追補、§5 訂正履歴等) + docs 6操作 (§17.2 +8 4値化、§41.3 訂正5行挿入，+0xF8 行訂正)、適用ログ tmp/re/v168_v143_apply_log.md 14,148B、docs .bak17 / GT .bak_apply1、round_verify ALL OK、docs 12,352行 CRLF 維持。V144: 訂正束14+1件を30操作で一括適用 (§35.5 atexit 訂正，§70.15(6) V137 クローズ行，§59.3 mask 訂正，§70.16(4c) 27行挿入 + b系23操作)、適用ログ tmp/re/v167_v144_apply_log.md 20,988B、bak16。(b) ラベル/台帳 6層統合テーブル構築 (V145: tmp/re/v155_label_ledger_union.md + CSV 1,507,687B / 31,905行、%TEMP% 版と SHA256 完全一致、V140 新規66件のうち55収録/11未収録を全件裁定、名前付きヘッダ 767/659 が正で 684 の持主は v90 と裁定)。(c) read_ptr() セクション定数バグ (V155【最優先】): v140 系5本 (b/c/d/e/f2) に限定と実測、call-origin 222→150・未知22→3=IAT・P3 58,935→58,989 等10項目が変動するも A41/B15/C8 flip 0・GT ゼロ損失で結論・判定は不変 (tmp/re/v165_v140_recompute.md 20,801B)。v155/v133/v127/cache は非影響。(d) C++例外 funclet 帯 (0x9A9D50 起点 189KB) の EH 台帳化 (V156: FuncInfo 2,663個 (try付90) から unwind 7,915 / catch 144 / seh_thunk 2,657、0x980EA4 の正体=___CxxFrameHandler3 と確定し v156 の _UnwindNestedFrames 説を訂正、.text push-imm32 登録経路 4,387サイト/2,657 thunk 新発見、CSV 10,742行)。(e) 台帳追記粒度の統合裁定 (V157: 実EHエントリ 10,716 粒度・adopt 10,572 を推奨、region開始点665/全10,742 は却下、追記候補 CSV 10,870行/1.4MB、人間判断 H1-H7)。(f) GT slot 語義の確定 — V158 で A-D 4件全確定 (+0x170=GetBaseForm、+0x164=GetParentCell、+0xEC=GetScale 系統別、+0x2C0=系統別3語義。tmp/re/v171_gt_candidates.md 37,863B、GT §4.1.1 確定4行+docs §41.3 訂正4行はドラフト=要承認)。(g) 残点束の大量解消: v157_runtime 53,236B / v158_slot_opcode_map 48,921B / v159_renderer 39,777B (15件全裁定) / v160_ini_log 40,290B (12点裁定) / v161_quest_extra 53,037B (16点全裁定) / v162_gap 30,209B (保留6件全解除・P3 未知22件=.rdata 0xA28088-0xA28258 の関数ポインタ表帰属で特定0) / v164_esm_gate_spec 43,494B / v174_gap_residuals2 26,724B (.CRT$XCU 7,402エントリを4型分類+台帳化候補1,199件CSV) / v175_v144_skips 19,301B / v176_esm_gate_spec2 28,673B (N1-N9 裁定・Freq列 tail incl GT 採用で2行更新) / v177_gt_slot_residuals2 42,473B (EDL extra 0x14=ExtraStartingPosition 確定、0x2D0=StartItemAction 確定) / v178_runtime_residuals3 34,701B / v179_csv_crosscheck 13,313B (EH×v170 の128行差を完全同定・実矛盾0)。V168【要承認】台帳反映バッチ (Ghidra 関数台帳 func_list_new 相当・v170 CSV+v174 1,199、H1-H7 裁定待ち) は未着手のまま次ラウンドへ。本 session-memory.json とは別の台帳が対象。"
+      "content": "RE セッション成果の台帳バックフィル第2弾 (V143-V167 反映・台帳統合・バグ訂正バッチ25件・2026-10-27〜10-29分)。(a) GT/正本反映バッチ2件が適用済み — V143: GT_CHEATSHEET.md 8操作 (§4.1 新設=訂正5行+8、§2 に 0x5072B0 追補、§5 訂正履歴等) + docs 6操作 (§17.2 +8 4値化、§41.3 訂正5行挿入，+0xF8 行訂正)、適用ログ tmp/re/v168_v143_apply_log.md 14,148B、docs .bak17 / GT .bak_apply1、round_verify ALL OK、docs 12,352行 CRLF 維持。V144: 訂正束14+1件を30操作で一括適用 (§35.5 atexit 訂正，§70.15(6) V137 クローズ行，§59.3 mask 訂正，§70.16(4c) 27行挿入 + b系23操作)、適用ログ tmp/re/v167_v144_apply_log.md 20,988B、bak16。(b) ラベル/台帳 6層統合テーブル構築 (V145: tmp/re/v155_label_ledger_union.md + CSV 1,507,687B / 31,905行、%TEMP% 版と SHA256 完全一致、V140 新規66件のうち55収録/11未収録を全件裁定、名前付きヘッダ 767/659 が正で 684 の持主は v90 と裁定)。(c) read_ptr() セクション定数バグ (V155【最優先】): v140 系5本 (b/c/d/e/f2) に限定と実測、call-origin 222→150・未知22→3=IAT・P3 58,935→58,989 等10項目が変動するも A41/B15/C8 flip 0・GT ゼロ損失で結論・判定は不変 (tmp/re/v165_v140_recompute.md 20,801B)。v155/v133/v127/cache は非影響。(d) C++例外 funclet 帯 (0x9A9D50 起点 189KB) の EH 台帳化 (V156: FuncInfo 2,663個 (try付90) から unwind 7,915 / catch 144 / seh_thunk 2,657、0x980EA4 の正体=___CxxFrameHandler3 と確定し v156 の _UnwindNestedFrames 説を訂正、.text push-imm32 登録経路 4,387サイト/2,657 thunk 新発見、CSV 10,742行)。(e) 台帳追記粒度の統合裁定 (V157: 実EHエントリ 10,716 粒度・adopt 10,572 を推奨、region開始点665/全10,742 は却下、追記候補 CSV 10,870行/1.4MB、人間判断 H1-H7)。(f) GT slot 語義の確定 — V158 で A-D 4件全確定 (+0x170=GetBaseForm、+0x164=GetParentCell、+0xEC=GetScale 系統別、+0x2C0=系統別3語義。tmp/re/v171_gt_candidates.md 37,863B、GT §4.1.1 確定4行+docs §41.3 訂正4行はドラフト=要承認)。(g) 残点束の大量解消: v157_runtime 53,236B / v158_slot_opcode_map 48,921B / v159_renderer 39,777B (15件全裁定) / v160_ini_log 40,290B (12点裁定) / v161_quest_extra 53,037B (16点全裁定) / v162_gap 30,209B (保留6件全解除・P3 未知22件=.rdata 0xA28088-0xA28258 の関数ポインタ表帰属で特定0) / v164_esm_gate_spec 43,494B / v174_gap_residuals2 26,724B (.CRT$XCU 7,402エントリを4型分類+台帳化候補1,199件CSV) / v175_v144_skips 19,301B / v176_esm_gate_spec2 28,673B (N1-N9 裁定・Freq列 tail incl GT 採用で2行更新) / v177_gt_slot_residuals2 42,473B (EDL extra 0x14=ExtraStartingPosition 確定、0x2D0=StartItemAction 確定) / v178_runtime_residuals3 34,701B / v179_csv_crosscheck 13,313B (EH×v170 の128行差を完全同定・実矛盾0)。V168【要承認】台帳反映バッチ (Ghidra 関数台帳 func_list_new 相当・v170 CSV+v174 1,199、H1-H7 裁定待ち) は未着手のまま次ラウンドへ。本 session-memory.json とは別の台帳が対象。",
+      "compressed": false
     },
     {
       "id": "opencode-re-v169-v190-bundles-20261031",
@@ -9706,7 +9750,8 @@
         "2026-10-31",
         "opencode"
       ],
-      "content": "RE セッション成果の台帳バックフィル第3弾 (V169-V190 残点束バッチ22件完了・2026-10-29〜10-30分、V188 は 10-31 完了確認。serial 169-190、V191/V192 は未着手)。v180 letter-row 棚卸しから起票された8束 (束A=V169〜束H=V176) と、その残点を回収する命名/残点束 (V177-V190)。(a) 束A ESM 統合 (tmp/re/v181_esm_integration.md 32,064B): Q1 content_inventory 1,167,017件/85,079GRUP/64種/0error、Q2 84 worldspaces/14,770 cells+WNAM 階層、Q3 LAND 31,823/REFR 1,025,617/zlib 41,789件100%解凍、Q4 SCDA 141 opcodes Σ63,235+§67.6未登録29opid を明記、Q5 MGEF 145件/EFID 150種、Q6 WATR 23件。docs/RE_ESM_REPORT.md 転記は要承認でドラフト留め。(b) 束B アセット統合 (v182 26,322B): BSA 17本 v103/v104 拒否・bias 17/17=100%・hash folders1,621/files147,629 100%検証、NIF 20.0.0.4/user 2817/BSVER 11 を17実アセット byte 検証、DXT1 1024x1024 実デコード成功、XTEL 4,397 (相互リンク4,396) +DOOR 501。(c) 束C レンダラ/ストリーミング (v183 42,763B): SetLight=D3D API 完全不使用で NiDX9RenderState キャッシュ層 (inner=[state+0xFF8]=renderer+0x280=IDirect3DDevice9 互換 COM) が代替と確定、s61 vtable 表は系統的誤認と訂正、BSShaderPPLightingProperty vtable 0xA91384/42スロット、LOD=DistantLOD HLSL キャッシュ4種、メモリプール拡張点 [+0xB02020+0x54] が移植要点。(d) 束D 音響/入力/CRT (v184 35,884B・19項目18解明): 曲カーブ X=t=clamp((now-0x2E8)/1700)、type bit0x20=2D UI 使い捨て音、grave 経路=DIK0x29 edge、パッド=POV 4500セクタ、+0x1BD5 は write-only 1byte で8方向説を訂正。(e) 束E §56 ゲームプレイ (v185 33,297B・19項目17解明): [0xB383A8/B0]=sSkillIncreased/Decreased、&token=ID<0x2710パス+名前レジストリ、VideoDisplayMenu=command0x5DDB70。(f) 束F Havok (v186 30,028B): 0x8A2650=等値比較子で castRay 誤同定を訂正、本経路=bhkWorld slot[34]→hkWorldRayCaster→slot[14] castRay→0x8BA470、回避FSM 8状態名前表 0xB15728 全文取得。(g) 束G アニメ (v187 17,231B) / 束H 魔法 Wave3 (v188 24,473B): AlchemyMenu ハンドラ=vt+0x0C FUN_00595080、SEFF 経路を「0x6A83D0以降」から ScriptRunner::Run FUN_00517330 へ訂正、毒=二重塗布拒否+single-use+期限 0x68E670。(h) 残点/命名束: v189 32,854B (台帳未登録29 opid=scda141−§67.6 定義・Σ17,131=27.09%・上位 0x0016 OnMagicEffectHit 10,480)、v190 35,639B (inner 生成=FUN_0076A1C0 CreateDevice、DIP=+0x148/DP=+0x144 を静的同定し v183 の検出不能を撤回)、v191 31,596B (20/20 全解明・verify 37/37)、v192 24,448B (親 inline 完成)、v193 19,359B、v195 22,480B (slot218 の実入力=グローバル [0xB3BCF0] 時間系 float と確定)、v196 16,051B、v197 19,766B、v198 21,834B、v199 22,407B、v200 25,226B (2026-10-30)、v201 23,186B (+0x10 初回書手=FUN_004FF710@0x4FFB0C、base+0x58 bit7=base-disabled guard bit、bit22=エフェクト判定バイパス、slot[6]値4=SpellItem。REL2 表示名3件 (0x1083/0x10E3/0x1132+script_vm_tests L2424) の二重修正なしを確認)、v202 22,706B (2026-10-30)、v203 29,676B (2026-10-30)。"
+      "content": "RE セッション成果の台帳バックフィル第3弾 (V169-V190 残点束バッチ22件完了・2026-10-29〜10-30分、V188 は 10-31 完了確認。serial 169-190、V191/V192 は未着手)。v180 letter-row 棚卸しから起票された8束 (束A=V169〜束H=V176) と、その残点を回収する命名/残点束 (V177-V190)。(a) 束A ESM 統合 (tmp/re/v181_esm_integration.md 32,064B): Q1 content_inventory 1,167,017件/85,079GRUP/64種/0error、Q2 84 worldspaces/14,770 cells+WNAM 階層、Q3 LAND 31,823/REFR 1,025,617/zlib 41,789件100%解凍、Q4 SCDA 141 opcodes Σ63,235+§67.6未登録29opid を明記、Q5 MGEF 145件/EFID 150種、Q6 WATR 23件。docs/RE_ESM_REPORT.md 転記は要承認でドラフト留め。(b) 束B アセット統合 (v182 26,322B): BSA 17本 v103/v104 拒否・bias 17/17=100%・hash folders1,621/files147,629 100%検証、NIF 20.0.0.4/user 2817/BSVER 11 を17実アセット byte 検証、DXT1 1024x1024 実デコード成功、XTEL 4,397 (相互リンク4,396) +DOOR 501。(c) 束C レンダラ/ストリーミング (v183 42,763B): SetLight=D3D API 完全不使用で NiDX9RenderState キャッシュ層 (inner=[state+0xFF8]=renderer+0x280=IDirect3DDevice9 互換 COM) が代替と確定、s61 vtable 表は系統的誤認と訂正、BSShaderPPLightingProperty vtable 0xA91384/42スロット、LOD=DistantLOD HLSL キャッシュ4種、メモリプール拡張点 [+0xB02020+0x54] が移植要点。(d) 束D 音響/入力/CRT (v184 35,884B・19項目18解明): 曲カーブ X=t=clamp((now-0x2E8)/1700)、type bit0x20=2D UI 使い捨て音、grave 経路=DIK0x29 edge、パッド=POV 4500セクタ、+0x1BD5 は write-only 1byte で8方向説を訂正。(e) 束E §56 ゲームプレイ (v185 33,297B・19項目17解明): [0xB383A8/B0]=sSkillIncreased/Decreased、&token=ID<0x2710パス+名前レジストリ、VideoDisplayMenu=command0x5DDB70。(f) 束F Havok (v186 30,028B): 0x8A2650=等値比較子で castRay 誤同定を訂正、本経路=bhkWorld slot[34]→hkWorldRayCaster→slot[14] castRay→0x8BA470、回避FSM 8状態名前表 0xB15728 全文取得。(g) 束G アニメ (v187 17,231B) / 束H 魔法 Wave3 (v188 24,473B): AlchemyMenu ハンドラ=vt+0x0C FUN_00595080、SEFF 経路を「0x6A83D0以降」から ScriptRunner::Run FUN_00517330 へ訂正、毒=二重塗布拒否+single-use+期限 0x68E670。(h) 残点/命名束: v189 32,854B (台帳未登録29 opid=scda141−§67.6 定義・Σ17,131=27.09%・上位 0x0016 OnMagicEffectHit 10,480)、v190 35,639B (inner 生成=FUN_0076A1C0 CreateDevice、DIP=+0x148/DP=+0x144 を静的同定し v183 の検出不能を撤回)、v191 31,596B (20/20 全解明・verify 37/37)、v192 24,448B (親 inline 完成)、v193 19,359B、v195 22,480B (slot218 の実入力=グローバル [0xB3BCF0] 時間系 float と確定)、v196 16,051B、v197 19,766B、v198 21,834B、v199 22,407B、v200 25,226B (2026-10-30)、v201 23,186B (+0x10 初回書手=FUN_004FF710@0x4FFB0C、base+0x58 bit7=base-disabled guard bit、bit22=エフェクト判定バイパス、slot[6]値4=SpellItem。REL2 表示名3件 (0x1083/0x10E3/0x1132+script_vm_tests L2424) の二重修正なしを確認)、v202 22,706B (2026-10-30)、v203 29,676B (2026-10-30)。",
+      "compressed": false
     },
     {
       "id": "opencode-re-v167-letter-audit-20261031",
@@ -9722,7 +9767,8 @@
         "2026-10-31",
         "opencode"
       ],
-      "content": "V167 letter-row 55件棚卸し (2026-10-29, tmp/re/v180_letter_rows_audit.md 38,528B)。TODO_re49.md に 2026-10-17 起票以来無接触だった `- [ ]` 箇条書き55件 (F2-F8/G6-G8/H6-H7/I6-I7/J5-J6/N2-N7/O1-O6/P1-P5/Q1-Q12/R2-R5/W3-1..7) を全数読解し分類: (a) 解決/包含済み21件 (s81 が O2/O3/O5/O6 を消化、s68_n2 が HavokContext vtable 不在を確定、s69 が P1 92メソッド、s75/s76 が R3/R4/R5 等) / (b) 人間待ち9件 / (c) 未着手25件 → 5-8束への圧縮を提案し、本ラウンドで V169-V176 (束A ESM統合/束B アセット統合/束C レンダラ/束D 音響入力CRT/束E §56 ゲームプレイ/束F Havok RayCast-Pathing/束G アニメ/束H 魔法Wave3) として起票 (工数計 9.5-13人日、詳細は各束の完了行と成果物 v181-v188)。ロードマップ接続: 束C→Phase2・束A→Phase3・束B→Phase4・束E→Phase1§56・束H→1-2残件。KPI影響: シェーダ 224/224 は残48が原作未実装で再定義要、Q4 残29opid が VM KPI 未登録分。人間判断6件 (N2 矛盾裁定・R3 KPI 再定義・G7/H6 docs 反映・L2群適用・Q7/Q8 解禁・21件の [x] 化要否) が残る。"
+      "content": "V167 letter-row 55件棚卸し (2026-10-29, tmp/re/v180_letter_rows_audit.md 38,528B)。TODO_re49.md に 2026-10-17 起票以来無接触だった `- [ ]` 箇条書き55件 (F2-F8/G6-G8/H6-H7/I6-I7/J5-J6/N2-N7/O1-O6/P1-P5/Q1-Q12/R2-R5/W3-1..7) を全数読解し分類: (a) 解決/包含済み21件 (s81 が O2/O3/O5/O6 を消化、s68_n2 が HavokContext vtable 不在を確定、s69 が P1 92メソッド、s75/s76 が R3/R4/R5 等) / (b) 人間待ち9件 / (c) 未着手25件 → 5-8束への圧縮を提案し、本ラウンドで V169-V176 (束A ESM統合/束B アセット統合/束C レンダラ/束D 音響入力CRT/束E §56 ゲームプレイ/束F Havok RayCast-Pathing/束G アニメ/束H 魔法Wave3) として起票 (工数計 9.5-13人日、詳細は各束の完了行と成果物 v181-v188)。KPI影響: シェーダ 224/224 は残48が原作未実装で再定義要、Q4 残29opid が VM KPI 未登録分。人間判断6件 (N2 矛盾裁定・R3 KPI 再定義・G7/H6 docs 反映・L2群適用・Q7/Q8 解禁・21件の [x] 化要否) が残る。（他文は正典反映済のため圧縮: STATE.md/tmp/re 参照）",
+      "compressed": true
     },
     {
       "id": "opencode-re-docs-entrust-9value-20261031",
@@ -9739,7 +9785,8 @@
         "2026-10-31",
         "opencode"
       ],
-      "content": "正本改訂連託の記録 (2026-10-30)。(1) docs/RE_EXE_REPORT.md §70.14 の「NativeScdaOpcode 12値」誤記 (実体は9値・git 全リビジョン9値・証跡 tmp/re/v81b_h_to_table_xref.txt 9行、rel2 三点照合で確定) の訂正を RE セッション (ses_e8f260663ffeBxgd24Gocmcl72) へ連託。連託は 2026-10-30 14:56:37 にセッションA (ses_e9ccb3190ffeDPSxT2BsblKHKr) へ user メッセージとして配信され 14:56:47 に受領、「.bak+行番号再検証+変更行レポート」の条件を受諾、対象行 (RE_EXE_REPORT L12095/L12183, ROADMAP L125, REPORT L11923) を特定して編集に着手 (到達確認の経緯は台帳 opencode-hostrunner-fix-and-handoff-done-20261030)。§70.14 適用の完了確認は本追記時点で未取得 = 次回ユーザーレポートで確認要。(2) rel3 (tmp/re/relcheck_20261029/rel3_reference_drift.md §1-C) の必須2件 A-1/A-2 は 2026-10-30 に適用済み・起票不要 (tmp/re/TODO_re49.md V201 出典注記)。残る擬似リンク切れ5件 (RE_EXE_REPORT L10643 s90〜s98 / L11849 v60〜v76 / ROADMAP L267 v82*.{py,txt}) は V201 として起票済み。真の dangling 3件 (%TEMP%\\opencode\\analyze_pop_final.py / tmp/re/probe_harness.py / tmp/re/wbDefinitionsTES4.pas) と予定未作成4件 (RE_ESM/ASSET_REPORT 等) は rel3 §1-C で確定し、実質リンク切れ率=7/171=4.09%。"
+      "content": "正本改訂連託の記録 (2026-10-30)。(1) docs/RE_EXE_REPORT.md §70.14 の「NativeScdaOpcode 12値」誤記 (実体は9値・git 全リビジョン9値・証跡 tmp/re/v81b_h_to_table_xref.txt 9行、rel2 三点照合で確定) の訂正を RE セッション (ses_e8f260663ffeBxgd24Gocmcl72) へ連託。連託は 2026-10-30 14:56:37 にセッションA (ses_e9ccb3190ffeDPSxT2BsblKHKr) へ user メッセージとして配信され 14:56:47 に受領、「.bak+行番号再検証+変更行レポート」の条件を受諾、対象行 (RE_EXE_REPORT L12095/L12183, ROADMAP L125, REPORT L11923) を特定して編集に着手 (到達確認の経緯は台帳 opencode-hostrunner-fix-and-handoff-done-20261030)。§70.14 適用の完了確認は本追記時点で未取得 = 次回ユーザーレポートで確認要。(2) rel3 (tmp/re/relcheck_20261029/rel3_reference_drift.md §1-C) の必須2件 A-1/A-2 は 2026-10-30 に適用済み・起票不要 (tmp/re/TODO_re49.md V201 出典注記)。残る擬似リンク切れ5件 (RE_EXE_REPORT L10643 s90〜s98 / L11849 v60〜v76 / ROADMAP L267 v82*.{py,txt}) は V201 として起票済み。真の dangling 3件 (%TEMP%\\opencode\\analyze_pop_final.py / tmp/re/probe_harness.py / tmp/re/wbDefinitionsTES4.pas) と予定未作成4件 (RE_ESM/ASSET_REPORT 等) は rel3 §1-C で確定し、実質リンク切れ率=7/171=4.09%。",
+      "compressed": false
     },
     {
       "id": "opencode-re-backfill-status-20261031",
@@ -9754,7 +9801,8 @@
         "2026-10-31",
         "opencode"
       ],
-      "content": "RE 側台帳バックフィル完了時の現況サマリ (2026-10-31 時点。本追記6エントリで V116-V190 相当の 2026-10-26〜10-30 分を記録済み)。残課題: (1) V168【要承認】Ghidra 関数台帳反映バッチ — v170 CSV (10,870行) + v174 xcu (1,199件)、人間判断 H1-H7 (catch 144 昇格・帯域一括追記・Cat-3 mass・共有FI 253 等) 待ち。対象は Ghidra 側関数台帳であり本 session-memory.json とは別物。(2) V191 (process 細部束→v204) / V192 (havok/INI 命名束→v205) は未着手 (並行セッション停滞、2026-10-31 確認)。(3) V193 AddTopic ハンドラ実装 [PORT] は L2=人間承認が要る (起票のみ・未承認のまま着手禁止)。(4) 正本側: 擬似リンク切れ5件の整形式化 V201・正本未参照の孤児成果物173件 (65.8%) の統合方針 V203 は未着手。(5) Supermemory への反映は V204 別タスク (tools/sync_memory_to_supermemory.py は V84 ガード有効で本タスクでは実行禁止)。(6) GT/docs へ反映待ちのドラフト: v171 の GT §4.1.1 確定4行+docs §41.3 訂正4行、v177 の GT ドラフト4点、v181/v182 の docs 転記ドラフト、v201 の訂正素材 (表示名3件は opencode 側で適用済み・二重修正なし確認済)。"
+      "content": "RE 側台帳バックフィル完了時の現況サマリ (2026-10-31 時点。本追記6エントリで V116-V190 相当の 2026-10-26〜10-30 分を記録済み)。残課題: (1) V168【要承認】Ghidra 関数台帳反映バッチ — v170 CSV (10,870行) + v174 xcu (1,199件)、人間判断 H1-H7 (catch 144 昇格・帯域一括追記・Cat-3 mass・共有FI 253 等) 待ち。対象は Ghidra 側関数台帳であり本 session-memory.json とは別物。(2) V191 (process 細部束→v204) / V192 (havok/INI 命名束→v205) は未着手 (並行セッション停滞、2026-10-31 確認)。(3) V193 AddTopic ハンドラ実装 [PORT] は L2=人間承認が要る (起票のみ・未承認のまま着手禁止)。(4) 正本側: 擬似リンク切れ5件の整形式化 V201・正本未参照の孤児成果物173件 (65.8%) の統合方針 V203 は未着手。(5) Supermemory への反映は V204 別タスク (tools/sync_memory_to_supermemory.py は V84 ガード有効で本タスクでは実行禁止)。(6) GT/docs へ反映待ちのドラフト: v171 の GT §4.1.1 確定4行+docs §41.3 訂正4行、v177 の GT ドラフト4点、v181/v182 の docs 転記ドラフト、v201 の訂正素材 (表示名3件は opencode 側で適用済み・二重修正なし確認済)。",
+      "compressed": false
     },
     {
       "id": "opencode-x1-rust-migration-n1n5-unrecorded-20261031",
@@ -9770,7 +9818,8 @@
         "2026-10-31",
         "opencode"
       ],
-      "content": "鮮度訂正 X1 (2026-10-31, 矛盾監査 第7軸): Rust 移行の実績 STATE.md 記録分 (2026-10-29/30) が本台帳に未記録だった。STATE.md 'L2 Runs' に記録済みの内容: N1 nif-core (header/object-array/block-body walker 移植, cargo test 16 passed), N2 geometry decode (parseGeometryBlocks 等7関数, 21 passed), N3-geo nif-ffi + C++ shim + CMake (C ABI harness 全アサーション通過, 444行のC++削除, worktree Z:\\Users\\hiroki.kogarumai\\wt\\oblivion-nif-ffi@19fafb7f), N4 real-mesh differential oracle (50 retail meshes / 2,462 records bit-exact PASS), N5 stage1+2 skin/collision readers (nif-core→nif-ffi→C++ shim→oracle SKIN/COL, 2,462 records bit-exact, オラクルが実バグ2件検出: BoneData skin-transform order / partial rigid-body delivery)。残件: N5b (animation Wave2 + phase30 parity)・N6 docs パス・native-lib リンク未実行。本エントリは矛盾ではなく未記録の補記 (第7軸検出 X1)。作業本体はコミット前 (no commits anywhere)。"
+      "content": "鮮度訂正 X1 (2026-10-31, 矛盾監査 第7軸): Rust 移行の実績 STATE.md 記録分 (2026-10-29/30) が本台帳に未記録だった。STATE.md 'L2 Runs' に記録済みの内容: N1 nif-core (header/object-array/block-body walker 移植, cargo test 16 passed), N2 geometry decode (parseGeometryBlocks 等7関数, 21 passed), N3-geo nif-ffi + C++ shim + CMake (C ABI harness 全アサーション通過, 444行のC++削除, worktree Z:\\Users\\hiroki.kogarumai\\wt\\oblivion-nif-ffi@19fafb7f), N4 real-mesh differential oracle (50 retail meshes / 2,462 records bit-exact PASS), N5 stage1+2 skin/collision readers (nif-core→nif-ffi→C++ shim→oracle SKIN/COL, 2,462 records bit-exact, オラクルが実バグ2件検出: BoneData skin-transform order / partial rigid-body delivery)。残件: N5b (animation Wave2 + phase30 parity)・N6 docs パス・native-lib リンク未実行。本エントリは矛盾ではなく未記録の補記 (第7軸検出 X1)。作業本体はコミット前 (no commits anywhere)。",
+      "compressed": false
     },
     {
       "id": "opencode-x2-fglobaltime-esm-stale-note-20261031",
@@ -9785,7 +9834,8 @@
         "2026-10-31",
         "opencode"
       ],
-      "content": "鮮度訂正 X2 (2026-10-31, 矛盾監査 第7軸): fGlobalTimeMultiplier に関する台帳 10-19 時点の『ESM override support』記述は実効性を失った。10-29 の gmst-esm3way 訂正で確定した通り: Oblivion.esm に fGlobalTimeMultiplier キーは存在せず、本移植では恒常的に静的 1.0f (jni_bridge.cpp:258 で gmst::getLive() を読むが既定値1.0 のまま)。ESM 経由のゲーム時間変更は本経路では不可。TimeScale 経路の移植要否は未決。旧記述 (0fc7c85c / copilot-re-batch-20261019-20 系) は当時の文脈として残すが、現在の実装状態は本エントリの記載を正とする (第7軸検出 X2)。"
+      "content": "鮮度訂正 X2 (2026-10-31, 矛盾監査 第7軸): fGlobalTimeMultiplier に関する台帳 10-19 時点の『ESM override support』記述は実効性を失った。10-29 の gmst-esm3way 訂正で確定した通り: Oblivion.esm に fGlobalTimeMultiplier キーは存在せず、本移植では恒常的に静的 1.0f (jni_bridge.cpp:258 で gmst::getLive() を読むが既定値1.0 のまま)。ESM 経由のゲーム時間変更は本経路では不可。TimeScale 経路の移植要否は未決。旧記述 (0fc7c85c / copilot-re-batch-20261019-20 系) は当時の文脈として残すが、現在の実装状態は本エントリの記載を正とする (第7軸検出 X2)。",
+      "compressed": false
     },
     {
       "id": "opencode-correction-adb-execurrent-20261031",
@@ -9800,7 +9850,8 @@
         "2026-10-31",
         "opencode"
       ],
-      "content": "訂正 (2026-10-31, V214 台帳参照訂正): 旧記載 tools/adb.execurrent は実体なし（誤記）。正: adb 本体は C:\\Users\\hiroki.kogarumai\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb(.exe)（2026-10-31 に Test-Path で実在確認済み）。元文言「...Sdk\\platform-tools\\adb.execurrent verification」は「\\adb」+「current verification（実機検証）」が融合した破損と判定。tools/ 配下に adb 関連ファイルは存在しない。元エントリID: b3f05000-ea69-47e2-b41c-3609e36adb69（2026-10-04 buildverification、append-only のため原文は改変しない）。出典: tmp/re/relcheck_20261029/rel5_ledger_freshness.md §4-2。"
+      "content": "訂正 (2026-10-31, V214 台帳参照訂正): 旧記載 tools/adb.execurrent は実体なし（誤記）。正: adb 本体は C:\\Users\\hiroki.kogarumai\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb(.exe)（2026-10-31 に Test-Path で実在確認済み）。元文言「...Sdk\\platform-tools\\adb.execurrent verification」は「\\adb」+「current verification（実機検証）」が融合した破損と判定。tools/ 配下に adb 関連ファイルは存在しない。元エントリID: b3f05000-ea69-47e2-b41c-3609e36adb69（2026-10-04 buildverification、append-only のため原文は改変しない）。出典: tmp/re/relcheck_20261029/rel5_ledger_freshness.md §4-2。",
+      "compressed": false
     },
     {
       "id": "opencode-correction-phase9plan-merged-20261031",
@@ -9816,7 +9867,8 @@
         "2026-10-31",
         "opencode"
       ],
-      "content": "訂正 (2026-10-31, V214 台帳参照訂正): docs/PHASE9_PLAN.md 参照は「統合済み」。2026-09-27 のコミット b4446bf7 で Phase 9 計画（423行）が plan.md の Phase 9 節へ統合されファイルは削除済み。plan.md 冒頭に \"The Phase 9 plan that used to live in docs/PHASE9_PLAN.md was merged into the Phase 9 section below on 2026-09-27, and that file was deleted; no other plan document supersedes this one\" と明記。以後の参照は plan.md Phase 9 節が正。台帳内の当該参照は歴史記録として許容、現在形での参照は不可。元エントリID: 0fc5cbf9-ae2f-4456-9dfe-57dc66834e24（2026-09-27 merge gate、当該エントリ自体が統合・削除を記録済み）。出典: tmp/re/relcheck_20261029/rel5_ledger_freshness.md §4-1。"
+      "content": "訂正 (2026-10-31, V214 台帳参照訂正): docs/PHASE9_PLAN.md 参照は「統合済み」。2026-09-27 のコミット b4446bf7 で Phase 9 計画（423行）が plan.md の Phase 9 節へ統合されファイルは削除済み。plan.md 冒頭に \"The Phase 9 plan that used to live in docs/PHASE9_PLAN.md was merged into the Phase 9 section below on 2026-09-27, and that file was deleted; no other plan document supersedes this one\" と明記。以後の参照は plan.md Phase 9 節が正。台帳内の当該参照は歴史記録として許容、現在形での参照は不可。元エントリID: 0fc5cbf9-ae2f-4456-9dfe-57dc66834e24（2026-09-27 merge gate、当該エントリ自体が統合・削除を記録済み）。出典: tmp/re/relcheck_20261029/rel5_ledger_freshness.md §4-1。",
+      "compressed": false
     },
     {
       "id": "opencode-x1-freshness-n5b-animation-20261101",
@@ -9831,7 +9883,8 @@
         "2026-11-01",
         "opencode"
       ],
-      "content": "鮮度訂正 X1 追補 (2026-11-01, TODO serial 213 連託処理): X1 エントリ opencode-x1-rust-migration-n1n5-unrecorded-20261031 の残件「N5b (animation Wave2 + phase30 parity)」は部分陷色化。2026-11-01 調査で animation readers は既実装を確認（残りは keyframe/resolve + walker C ABI 移行）。STATE.md 2026-11-01 サンプル (Last run: N5b/N6 investigated, approved checks green: workspace tests + nif-ffi C ABI harness) と整合。N6 docs パス・native-lib リンク未実行は従来どおり有効。根拠: tmp/re/handoff_20261101_contradiction_audit10.md §(2)。"
+      "content": "鮮度訂正 X1 追補 (2026-11-01, TODO serial 213 連託処理): X1 エントリ opencode-x1-rust-migration-n1n5-unrecorded-20261031 の残件「N5b (animation Wave2 + phase30 parity)」は部分陷色化。2026-11-01 調査で animation readers は既実装を確認（残りは keyframe/resolve + walker C ABI 移行）。STATE.md 2026-11-01 サンプル (Last run: N5b/N6 investigated, approved checks green: workspace tests + nif-ffi C ABI harness) と整合。N6 docs パス・native-lib リンク未実行は従来どおり有効。根拠: tmp/re/handoff_20261101_contradiction_audit10.md §(2)。",
+      "compressed": false
     },
     {
       "id": "re-copilot-bundle4-delivered-20261104",
@@ -9847,7 +9900,8 @@
         "2026-11-04",
         "opencode"
       ],
-      "content": "RE 依頼バンドル v1（tmp/re/handoff_20261103_re_request_bundle.md・優先 1>3>4>2）4/4 納品完了。依頼1=v260_lod_matrix_consumer.md 確定: consumer 0x4BCEF0→TESObjectSTAT vft+0x11C=0x4BAA80、出荷エンジンは yaw を合成せず M=T(pos)·S(scale) のみ（rot 読取0・D3DXMatrix* は IAT ゼロ・バインド=0xB2C33C ブロックグループ append・+0xB0/+0xB6=NiNode children ptr/子数）。依頼3=v261_clas_service_flags.md 確定（前提否定）: CLAS にサービス/商人ビットは存在しない（サブレコード=EDID/FULL/DESC/ICON/DATA のみ、DATA 0x34B は属性1/2・スキル7語・Guard bit1・Autocalcs bit0・skill index のみ）。原版商人判定=会話テーマ(TOPC/INFO)＋3層ランタイム（GetOffersServicesNow=opid 0x10FF・財布=ACBS 由来 word[TESNPC+0x30]≠CNTO 金）。port の CNTO-gold ヒューリスティック（merchant_factory.cpp npcIsMerchant L31-38）は誤陽性（山賊/市民）/誤陰性両発生の確定。[PORT] 修正ドラフト同載。依頼4=v262_barter_pricing.md 確定: sk=clamp(Luck+Mercantile×0.4−20,0,100)、売=0.01×(sqrt(200−max(sk,100))×5−10+1.5×((disp−50)/10))（既定0.40×・FUN_00548240）、買=0.01×(300−sqrt×9.9−1.5×((disp−50)/10))（既定2.01×・FUN_005481C0）、haggle±1%（cap fBarterHaggleMax40%・実体=UI スライダーでエンジンに +=/ハードクランプなし・v264 で補強）、Speechcraft 直接係数なし・Disposition±1.5%/10pt・商人 flag/PER なし・kProvisionalSellRatio=0.4f は disp=50 限定の偶然値。stolen 補正は ×2.0 でなく ×0.01（q[0xA3B150]=double 0.01・v262 誤りは v264 で訂正）。差分表9項目+[PORT] ドラフト。依頼2=v263_video_settings_labels.md 確定: 3 ポインタは UI ラベルでなく INI キー（fTreeLODDefault:LOD 等・.data 0xB14800 テーブル）。ラベル原文=_objectlod 'Object Fade:'・_distantlod 'Distant Land:'・_self_shadows 'Self Shadows:'（menus/strings.xml）。settings ID 9/10=Distant Land/Self Shadows ボタンで Object Fade は ID18/19（移植 UI 命名の誤り回避）。補助=V260→v264_bundle_residuals.md（10/10・[0xB14800]=INI キー登録/解除、0xB33A1C=汎用 mgr）。docs 追記ドラフト v255/v258_docs_re_exe_report_draft*.md は承認待ち（docs 本体未編集）。台帳 tmp/re/TODO_re49.md serial248-268 完了（round82-86・bak113-117・total154/done146/open8：残り V267=serial267 のみ稼働中）。"
+      "content": "RE 依頼バンドル v1（tmp/re/handoff_20261103_re_request_bundle.md・優先 1>3>4>2）4/4 納品完了。依頼1=v260_lod_matrix_consumer.md 確定: consumer 0x4BCEF0→TESObjectSTAT vft+0x11C=0x4BAA80、出荷エンジンは yaw を合成せず M=T(pos)·S(scale) のみ（rot 読取0・D3DXMatrix* は IAT ゼロ・バインド=0xB2C33C ブロックグループ append・+0xB0/+0xB6=NiNode children ptr/子数）。依頼3=v261_clas_service_flags.md 確定（前提否定）: CLAS にサービス/商人ビットは存在しない（サブレコード=EDID/FULL/DESC/ICON/DATA のみ、DATA 0x34B は属性1/2・スキル7語・Guard bit1・Autocalcs bit0・skill index のみ）。原版商人判定=会話テーマ(TOPC/INFO)＋3層ランタイム（GetOffersServicesNow=opid 0x10FF・財布=ACBS 由来 word[TESNPC+0x30]≠CNTO 金）。port の CNTO-gold ヒューリスティック（merchant_factory.cpp npcIsMerchant L31-38）は誤陽性（山賊/市民）/誤陰性両発生の確定。[PORT] 修正ドラフト同載。依頼4=v262_barter_pricing.md 確定: sk=clamp(Luck+Mercantile×0.4−20,0,100)、売=0.01×(sqrt(200−max(sk,100))×5−10+1.5×((disp−50)/10))（既定0.40×・FUN_00548240）、買=0.01×(300−sqrt×9.9−1.5×((disp−50)/10))（既定2.01×・FUN_005481C0）、haggle±1%（cap fBarterHaggleMax40%・実体=UI スライダーでエンジンに +=/ハードクランプなし・v264 で補強）、Speechcraft 直接係数なし・Disposition±1.5%/10pt・商人 flag/PER なし・kProvisionalSellRatio=0.4f は disp=50 限定の偶然値。stolen 補正は ×2.0 でなく ×0.01（q[0xA3B150]=double 0.01・v262 誤りは v264 で訂正）。差分表9項目+[PORT] ドラフト。依頼2=v263_video_settings_labels.md 確定: 3 ポインタは UI ラベルでなく INI キー（fTreeLODDefault:LOD 等・.data 0xB14800 テーブル）。ラベル原文=_objectlod 'Object Fade:'・_distantlod 'Distant Land:'・_self_shadows 'Self Shadows:'（menus/strings.xml）。settings ID 9/10=Distant Land/Self Shadows ボタンで Object Fade は ID18/19（移植 UI 命名の誤り回避）。補助=V260→v264_bundle_residuals.md（10/10・[0xB14800]=INI キー登録/解除、0xB33A1C=汎用 mgr）。docs 追記ドラフト v255/v258_docs_re_exe_report_draft*.md は承認待ち（docs 本体未編集）。台帳 tmp/re/TODO_re49.md serial248-268 完了（round82-86・bak113-117・total154/done146/open8：残り V267=serial267 のみ稼働中）。",
+      "compressed": false
     },
     {
       "id": "re-process-incidents-graphify-20261104",
@@ -9861,7 +9915,8 @@
         "ai-todo",
         "2026-11-04"
       ],
-      "content": "プロセスメモ（2026-11-03〜04）。(1) subagent 起動が散発的に 'Upstream request failed: Upstream response was not valid JSON' で失敗（V261 計7回・V265 計4回・V264 2回・V252/V268 各1回。再試行で全完遂、恒久障害ではない）。(2) graphify --update 実施中: AST 128 code 変更（5,763 nodes/11,785 edges 再生成）＋docs 63 件を 6 chunk で意味抽出（1-5 完了・6 稼働）。画像 1,667 件（app/src 配下 PNG）は今回 vision 抽出を延期し manifest 未スタンプ（次回 --update で再キュー）。既存 graph.json は 11-04 09:30 ビルド 48,072 nodes/122,812 edges。(3) ai-todo 台帳整理: 完了 68 件をアーカイブ。#50〜#54（v247 重複スタブ）は #49（serial240=同一作業）完遂の補完として close、5 件は要 human review 扱い（自動アーカイブ不可）として Recently Completed に滞留。(4) STATE.md は repo AGENTS.md どおりラウンド後に追記（bak4 まで）。docs/RE_EXE_REPORT.md は 11-03〜04 に他セッション（Copilot 側）が +103/+99 行編集（当セッションは未編集・ドラフトのみ）。"
+      "content": "プロセスメモ（2026-11-03〜04）。(1) subagent 起動が散発的に 'Upstream request failed: Upstream response was not valid JSON' で失敗（V261 計7回・V265 計4回・V264 2回・V252/V268 各1回。再試行で全完遂、恒久障害ではない）。(2) graphify --update 実施中: AST 128 code 変更（5,763 nodes/11,785 edges 再生成）＋docs 63 件を 6 chunk で意味抽出（1-5 完了・6 稼働）。画像 1,667 件（app/src 配下 PNG）は今回 vision 抽出を延期し manifest 未スタンプ（次回 --update で再キュー）。既存 graph.json は 11-04 09:30 ビルド 48,072 nodes/122,812 edges。(3) ai-todo 台帳整理: 完了 68 件をアーカイブ。#50〜#54（v247 重複スタブ）は #49（serial240=同一作業）完遂の補完として close、5 件は要 human review 扱い（自動アーカイブ不可）として Recently Completed に滞留。(4) STATE.md は repo AGENTS.md どおりラウンド後に追記（bak4 まで）。docs/RE_EXE_REPORT.md は 11-03〜04 に他セッション（Copilot 側）が +103/+99 行編集（当セッションは未編集・ドラフトのみ）。",
+      "compressed": false
     },
     {
       "id": "re-copilot-bundle5-graphify-recheck-20261104",
@@ -9878,7 +9933,8 @@
         "2026-11-04",
         "opencode"
       ],
-      "content": "graphify --update 完遂＋Copilot バンドル後続（serial268〜273）納品。graphify: AST 128 files→5,763n/11,785e、docs 63件 chunk 抽出（63/63全読・coverage partial 0）→本グラフ 48,709n/122,919e、tmp/re サイド 80ファイル=1,209n を統合（re_graph:: ns 除去+dedup）し最終 **49,914n/124,584e/1,316communities・health OK・labels 572継承**。graph.html/GRAPH_REPORT/cost 更新、画像1,667件は今回 vision 抽出デフォールト（manifest 未スタンプで次回 --update 再キュー、tmp/re 352件中 80件分のみ反映）。V268（v275 3/3確定: [0xB06C74]=bFull Screen:Display storage・INI ローダ=FUN_004A8800 indirect write・int→float=read側 fild@0x58D336/fstp@0x589FDF・template999=Instantiate FUN_00585410 再生成型68呼主）。V269（v276 6/6: INI ドライバ=FUN_004A85A0@0x40E747/0x513C52・型番号 0x14/0x19=action 要素/属性形・TileTemplateItem RTTI 3実在・qword[0xB06148]=NiTPointerMap ±1 台帳の境界錯視・TESSaveLoadGame=非ポリモーフィック単例、メソッド不動点150、+0xB0..0x1BC=完全死窓）。V270（v277 ブリッジ地図 5領域: barter 差分=①sqrt 引数 min→**max**②sk 合成=**Luck+Merc×0.4−20**（port は skill+0.4Luck）③丸め=**ceil が正しい、v262/v264 の『floor FUN_00484370』表記は誤称**④財布=min クランプ（port は拒否）⑤tier/steal 欠落、商人=ACBS 財布＋会話テーマ一括改动が前提（CNTO gold は誤陽性/誤陰性両発生）、object LOD=Phase 68 で実装済のため前提文陳腐化、GMST/Script VM 側残=§67.6 付録29行・ScriptEventList 22ハンドラ・effectType 0代入）。V271（v278 2/2: +0x48 書込=[確定負]（跨関数候補5件全部別クラス）、**集計器 g9 バグ3件発見で v276 足場を訂正**: +0x44 は write-only でなく書込6点/3関数・読取17点/12関数、0x1FFFF000/0x60000000=サイズ上限でなく**属性グループマスク台帳**（A=bit12..28+bit7/B=bit29..30、FUN_004535A0=CheckFlags 経由で extra 0x1F/0x21/0x23/0x35 の分岐駆動、0x7FFFF000 は静的 producer ゼロ））。V272（v279 docs §57.5/§59.5 数式訂正ドラフト＋テスト照合）はサブエージェント起動が 'Upstream response was not valid JSON' を11/04 に3連続失敗して**保留**（中間物3本 %TEMP% 残存・同じ指示書で再投入可）。V273（v280 属性 bit 和訳束）起票済。台帳 TODO_re49.md: total=159 done=151 open=8（bak122・round_verify ALL OK）。実装侧向け差し替え順序注記（v277）: sqrt max 化と barter_price_tests 期待値差替は同一セッション必須（テストが誤式を固定化しているため）、ACBS barterGold と会話テーマ判定は一括、docs 数式誤記の訂正は port 修正より先でないと再迷走する。"
+      "content": "graphify --update 完遂＋Copilot バンドル後続（serial268〜273）納品。graphify: AST 128 files→5,763n/11,785e、docs 63件 chunk 抽出（63/63全読・coverage partial 0）→本グラフ 48,709n/122,919e、tmp/re サイド 80ファイル=1,209n を統合（re_graph:: ns 除去+dedup）し最終 **49,914n/124,584e/1,316communities・health OK・labels 572継承**。graph.html/GRAPH_REPORT/cost 更新、画像1,667件は今回 vision 抽出デフォールト（manifest 未スタンプで次回 --update 再キュー、tmp/re 352件中 80件分のみ反映）。V268（v275 3/3確定: [0xB06C74]=bFull Screen:Display storage・INI ローダ=FUN_004A8800 indirect write・int→float=read側 fild@0x58D336/fstp@0x589FDF・template999=Instantiate FUN_00585410 再生成型68呼主）。V269（v276 6/6: INI ドライバ=FUN_004A85A0@0x40E747/0x513C52・型番号 0x14/0x19=action 要素/属性形・TileTemplateItem RTTI 3実在・qword[0xB06148]=NiTPointerMap ±1 台帳の境界錯視・TESSaveLoadGame=非ポリモーフィック単例、メソッド不動点150、+0xB0..0x1BC=完全死窓）。V270（v277 ブリッジ地図 5領域: barter 差分=①sqrt 引数 min→**max**②sk 合成=**Luck+Merc×0.4−20**（port は skill+0.4Luck）③丸め=**ceil が正しい、v262/v264 の『floor FUN_00484370』表記は誤称**④財布=min クランプ（port は拒否）⑤tier/steal 欠落、商人=ACBS 財布＋会話テーマ一括改动が前提（CNTO gold は誤陽性/誤陰性両発生）、object LOD=Phase 68 で実装済のため前提文陳腐化、GMST/Script VM 側残=§67.6 付録29行・ScriptEventList 22ハンドラ・effectType 0代入）。V271（v278 2/2: +0x48 書込=[確定負]（跨関数候補5件全部別クラス）、**集計器 g9 バグ3件発見で v276 足場を訂正**: +0x44 は write-only でなく書込6点/3関数・読取17点/12関数、0x1FFFF000/0x60000000=サイズ上限でなく**属性グループマスク台帳**（A=bit12..28+bit7/B=bit29..30、FUN_004535A0=CheckFlags 経由で extra 0x1F/0x21/0x23/0x35 の分岐駆動、0x7FFFF000 は静的 producer ゼロ））。V272（v279 docs §57.5/§59.5 数式訂正ドラフト＋テスト照合）はサブエージェント起動が 'Upstream response was not valid JSON' を11/04 に3連続失敗して**保留**（中間物3本 %TEMP% 残存・同じ指示書で再投入可）。V273（v280 属性 bit 和訳束）起票済。台帳 TODO_re49.md: total=159 done=151 open=8（bak122・round_verify ALL OK）。実装侧向け差し替え順序注記（v277）: sqrt max 化と barter_price_tests 期待値差替は同一セッション必須（テストが誤式を固定化しているため）、ACBS barterGold と会話テーマ判定は一括、docs 数式誤記の訂正は port 修正より先でないと再迷走する。",
+      "compressed": false
     },
     {
       "id": "re-slg-chain-and-barter-retraction-20261105",
@@ -9895,7 +9951,8 @@
         "2026-11-05",
         "opencode"
       ],
-      "content": "【重要・撤回】v277_re_port_bridge_map.md §1 の sk 合成の主張（『原版=Luck+Merc×0.4−20、port が skill+0.4Luck で誤り』）は v279 の独立追試で**誤りと判明**（0x547B90 の ×0.4 は GetAV(7)=Luck 側＝原版 **sk=trunc(clamp(Mercantile+0.4×Luck−20,0,100))**、AV 名表 0xB0A1A8・Ghidra L243881 と三重一致）。**docs L10245 と port（barter.cpp L31-33・テスト L100-116）は既に正しい**ため、v277 が提案した sk 引数再配置＋テスト L100-116 差替（W1）は**実施しないこと**（実施すると port を壊す）。barter で本当に必要な修正は P1=min→max（docs L10004/10005 も同2行のみ誤記・H1 承認待ち）と P2=財布 min クランプ、P3=tier/stolen ゲート＋ESM 配線、P4=命名。丸めは ceilf が正（v262/v264 の floor 表記は誤称、docs は訂正済み）。GMST 値は slot+0（name=slot+4、0x41BAE0）で提示アドレス群 +4 ズレ。haggle 供給元は 0x5E10F0（docs L10245 の 0x5E1500 は float getter ラッパで誤り、可否式 0x548130 の呼出 0x5E1187 が閉塞証拠）。【SLG チェーン納品 v280-v283】TESSaveLoadGame=非ポリモーフィック単例[0xB33B00]。+0x44=open 時属性グループ台帳（A=0x1FFFF000=bit12..28+bit7/B=0x60000000=bit29..30・生成 FUN_0045F180 他3・消費17site で extra 除去分岐、bit↔extra 対応=FUN_00425650 RemoveExtra 表: bit12↔0x46/b18↔0x20/b20↔0x32/b24↔0x4B/b25↔0x4A/b28↔0x35/b7↔0x3D 他）。属性セット先 vtbl+0x60=TESObjectREFR 0x4E0580/CELL 0x4D2690/Actor 0x5F85E0（ファイル/NiFile 説は棄却）。変更ノード P={next,formID,ChangeData*} は ChangesMap 二重バッファ（積込み唯一=FUN_00452C20・SLG ラッパ4関数経由、解放=0x4648C0 vtbl+0x1C→スワップ、FUN_0045C7A0=DeleteForm）。extra 型 ID 15/15 復元（0x12=ExtraScript/0x21=ExtraRunOncePacks/0x59=ExtraInfoGeneralTopic 他）。bit5=[file+0x244] 由来の Initially Disabled 系[推定]（Disable 経路 FUN_004E4690=bit11+SetModel(0)+音無効4D9310 と逐字同型、検査窓 0x4D44E0、対照 band 'CHANGE_REFR_DISABLE_STATE' は file bit30 側と切り分け）。[0xB33A1C]=**ModelLoader** 単例（'ModelLoader still has %d NIF files.'）、[0xB33A10]=**IOManager**（RTTI TD 実証・BSTaskManager 基底）、FUN_004466F0=TES::~TES（破棄11段 site 付き）。tail 保存フレーム=<u16 len><type '0'..'3'><sub 0x5B gate>＋payload（_SIGNATURE 無し・幅 0x24/0x1C/0x2C）。0x7FFFF000=静的 producer ゼロ（cmp 17点のみ）。台帳 TODO_re49: total=163 done=156 open=7（bak125-126・ALL OK）、残作業=V277（tail+3 語義・0x80000008 変換先・低）、docs 反映候補は H1＋v281/v282/v283 計15点として承認ゲート滞留。"
+      "content": "【重要・撤回】v277_re_port_bridge_map.md §1 の sk 合成の主張（『原版=Luck+Merc×0.4−20、port が skill+0.4Luck で誤り』）は v279 の独立追試で**誤りと判明**（0x547B90 の ×0.4 は GetAV(7)=Luck 側＝原版 **sk=trunc(clamp(Mercantile+0.4×Luck−20,0,100))**、AV 名表 0xB0A1A8・Ghidra L243881 と三重一致）。**docs L10245 と port（barter.cpp L31-33・テスト L100-116）は既に正しい**ため、v277 が提案した sk 引数再配置＋テスト L100-116 差替（W1）は**実施しないこと**（実施すると port を壊す）。barter で本当に必要な修正は P1=min→max（docs L10004/10005 も同2行のみ誤記・H1 承認待ち）と P2=財布 min クランプ、P3=tier/stolen ゲート＋ESM 配線、P4=命名。丸めは ceilf が正（v262/v264 の floor 表記は誤称、docs は訂正済み）。GMST 値は slot+0（name=slot+4、0x41BAE0）で提示アドレス群 +4 ズレ。haggle 供給元は 0x5E10F0（docs L10245 の 0x5E1500 は float getter ラッパで誤り、可否式 0x548130 の呼出 0x5E1187 が閉塞証拠）。【SLG チェーン納品 v280-v283】TESSaveLoadGame=非ポリモーフィック単例[0xB33B00]。+0x44=open 時属性グループ台帳（A=0x1FFFF000=bit12..28+bit7/B=0x60000000=bit29..30・生成 FUN_0045F180 他3・消費17site で extra 除去分岐、bit↔extra 対応=FUN_00425650 RemoveExtra 表: bit12↔0x46/b18↔0x20/b20↔0x32/b24↔0x4B/b25↔0x4A/b28↔0x35/b7↔0x3D 他）。属性セット先 vtbl+0x60=TESObjectREFR 0x4E0580/CELL 0x4D2690/Actor 0x5F85E0（ファイル/NiFile 説は棄却）。変更ノード P={next,formID,ChangeData*} は ChangesMap 二重バッファ（積込み唯一=FUN_00452C20・SLG ラッパ4関数経由、解放=0x4648C0 vtbl+0x1C→スワップ、FUN_0045C7A0=DeleteForm）。extra 型 ID 15/15 復元（0x12=ExtraScript/0x21=ExtraRunOncePacks/0x59=ExtraInfoGeneralTopic 他）。bit5=[file+0x244] 由来の Initially Disabled 系[推定]（Disable 経路 FUN_004E4690=bit11+SetModel(0)+音無効4D9310 と逐字同型、検査窓 0x4D44E0、対照 band 'CHANGE_REFR_DISABLE_STATE' は file bit30 側と切り分け）。[0xB33A1C]=**ModelLoader** 単例（'ModelLoader still has %d NIF files.'）、[0xB33A10]=**IOManager**（RTTI TD 実証・BSTaskManager 基底）、FUN_004466F0=TES::~TES（破棄11段 site 付き）。tail 保存フレーム=<u16 len><type '0'..'3'><sub 0x5B gate>＋payload（_SIGNATURE 無し・幅 0x24/0x1C/0x2C）。0x7FFFF000=静的 producer ゼロ（cmp 17点のみ）。台帳 TODO_re49: total=163 done=156 open=7（bak125-126・ALL OK）、残作業=V277（tail+3 語義・0x80000008 変換先・低）、docs 反映候補は H1＋v281/v282/v283 計15点として承認ゲート滞留。",
+      "compressed": false
     },
     {
       "id": "v326-2026-11-08",
@@ -9910,7 +9967,8 @@
         "numba",
         "docs-bak"
       ],
-      "content": "#90(v326) 統合完了（2026-11-08・run log (ag)・親直接解析）: 台帳 row307 [x]・bak162・round_verify 193/188/5。判定 [確定]1(項目4 RTTI: .?AVBSXFlags@@ TD@0xB253D4 vftable ptr 0xAA3E80 / .?AVTESObjectREFR@@ TD@0xB03054)/[部分確定]5。核心: dry bit9=6階層網羅の打ち止め宣言（dword定数RMW 0件[確定負]・0x9847D6/0x9997F0=x87例外SE sentinel棄却・word 0x200=ハンドルflags棄却・新規bit10対 0x5439CE/0x5439E7（fn 0x5437C0・caller 0x4633AE・条件[+0x7C]<0x69）＝bit9(0x200)/bit10(0x400)混同注意；[0xB38720]=sMenuDisplayLevelString/Level 対→ctor 0x419A70＋linkedList 0xB35574；FUN_004610F0 callers 2件完全（0x5AE34F Load/0x5D312F Save・arg10非NULL=thumb読）；0x5D8FD0 全体初読取（[0xB3B734]bit7方向・case0名strcmp/[+0x24]vtable[0]比較・3-way）；0x3F5=PauseMenu/0x40F=SaveMenu確定＋名称fn 0x589B70=[[0xB13974]+(id-0x3E9)*4]（ID空間0x3E9..0x41B=docs59表一致）、getter 0x57CF60最大ID/0x57CFA0 slot[0]。残件6→#108（v333+）。運用: サブ起動が外側モデルの Free usage limit で不可→親直接実行（ユーザー承認）。ai-todo/supermemory MCP ともサーバ再起動後未登録→#90完了/#108起票は TODO.md 直接fallback（bak %TEMP%\\opencode\\TODO.md.bak-v326・復帰後 accept_tamper 対象）、メモリはこの台帳へ。numba 0.68.1 インストール完了・@njit動作確認済（capstone束では未使用判定）。docs整理: .bak12件すべて現行版に対し独自内容あり（日付行除き4-31行差）→差分ゼロのみ削除条件で0件削除・docs無変更。次キュー: #92(v328)→#85残（サブ不可なら親直行）。"
+      "content": "#90(v326) 統合完了（2026-11-08・run log (ag)・親直接解析）: 台帳 row307 [x]・bak162・round_verify 193/188/5。判定 [確定]1(項目4 RTTI: .?AVBSXFlags@@ TD@0xB253D4 vftable ptr 0xAA3E80 / .?AVTESObjectREFR@@ TD@0xB03054)/[部分確定]5。核心: dry bit9=6階層網羅の打ち止め宣言（dword定数RMW 0件[確定負]・0x9847D6/0x9997F0=x87例外SE sentinel棄却・word 0x200=ハンドルflags棄却・新規bit10対 0x5439CE/0x5439E7（fn 0x5437C0・caller 0x4633AE・条件[+0x7C]<0x69）＝bit9(0x200)/bit10(0x400)混同注意；[0xB38720]=sMenuDisplayLevelString/Level 対→ctor 0x419A70＋linkedList 0xB35574；FUN_004610F0 callers 2件完全（0x5AE34F Load/0x5D312F Save・arg10非NULL=thumb読）；0x5D8FD0 全体初読取（[0xB3B734]bit7方向・case0名strcmp/[+0x24]vtable[0]比較・3-way）；0x3F5=PauseMenu/0x40F=SaveMenu確定＋名称fn 0x589B70=[[0xB13974]+(id-0x3E9)*4]（ID空間0x3E9..0x41B=docs59表一致）、getter 0x57CF60最大ID/0x57CFA0 slot[0]。残件6→#108（v333+）。運用: サブ起動が外側モデルの Free usage limit で不可→親直接実行（ユーザー承認）。ai-todo/supermemory MCP ともサーバ再起動後未登録→#90完了/#108起票は TODO.md 直接fallback（bak %TEMP%\\opencode\\TODO.md.bak-v326・復帰後 accept_tamper 対象）、メモリはこの台帳へ。numba 0.68.1 インストール完了・@njit動作確認済（capstone束では未使用判定）。docs整理: .bak12件すべて現行版に対し独自内容あり（日付行除き4-31行差）→差分ゼロのみ削除条件で0件削除・docs無変更。次キュー: #92(v328)→#85残（サブ不可なら親直行）。",
+      "compressed": false
     },
     {
       "id": "v328-2026-11-08",
@@ -9925,7 +9983,8 @@
         "pass2",
         "phase-b"
       ],
-      "content": "#92(v328) Phase B 12件 静的裁定 統合完了（2026-11-08・run log (ah)）: 台帳 row308 [x]・bak163・round_verify 194/189/5 ALL OK。成果物 v328_ess_phaseB_ruling.md（33,865B/208行・probe19本全EXIT=0・v328_17.out欠落は本文転記で注記）。判定 [確定(命令)]6（P1,P2,P4,P5,P10,P11）/[部分確定]6。核心: P1=12Bヘッダは n=0xC 単一read（0x465C90）でv320申し送り 4+6+2分割説は[確定負]に訂正・0x4662F0=44B rep movsd 台帳再構成（新規）・P2=v283 frameは in-memory tail専用→書出時 +4/+9/+10 分解（0x465365-0x465419）で v320 §6-9 実測差の機構確定・P4=pass2歩行ゲート bit27（0x4617C8）で v317 N1は文脈限定と訂正（反例187+1,679件解消）・P5=FUN_45DBC0 は size を返却（0x45DE08・esp完全追跡）→v307残点4否定・P10=UTC(+0x94・初回ゲート)とlocal(F7・毎書)の機能分離・P11=Δ=0x1C/0x2C/0x24=created位置ブロック（sar>>12→55E000 find→再接続専用）・P12=RGB/BGRは静的原理不可宣言。v320 §7-1 残件12への影響マッピング §8（残=name2語彙とfooter 8Bのみ）。新規残件10→#109（v334+予約）。#92完了/#109起票は TODO.md 直接fallback（ai-todo MCP 不通継続・bak TODO.md.bak-v328・accept_tamper 対象）。次=#85 stage2（親直行可）。"
+      "content": "#92(v328) Phase B 12件 静的裁定 統合完了（2026-11-08・run log (ah)）: 台帳 row308 [x]・bak163・round_verify 194/189/5 ALL OK。成果物 v328_ess_phaseB_ruling.md（33,865B/208行・probe19本全EXIT=0・v328_17.out欠落は本文転記で注記）。判定 [確定(命令)]6（P1,P2,P4,P5,P10,P11）/[部分確定]6。核心: P1=12Bヘッダは n=0xC 単一read（0x465C90）でv320申し送り 4+6+2分割説は[確定負]に訂正・0x4662F0=44B rep movsd 台帳再構成（新規）・P2=v283 frameは in-memory tail専用→書出時 +4/+9/+10 分解（0x465365-0x465419）で v320 §6-9 実測差の機構確定・P4=pass2歩行ゲート bit27（0x4617C8）で v317 N1は文脈限定と訂正（反例187+1,679件解消）・P5=FUN_45DBC0 は size を返却（0x45DE08・esp完全追跡）→v307残点4否定・P10=UTC(+0x94・初回ゲート)とlocal(F7・毎書)の機能分離・P11=Δ=0x1C/0x2C/0x24=created位置ブロック（sar>>12→55E000 find→再接続専用）・P12=RGB/BGRは静的原理不可宣言。v320 §7-1 残件12への影響マッピング §8（残=name2語彙とfooter 8Bのみ）。新規残件10→#109（v334+予約）。#92完了/#109起票は TODO.md 直接fallback（ai-todo MCP 不通継続・bak TODO.md.bak-v328・accept_tamper 対象）。次=#85 stage2（親直行可）。",
+      "compressed": false
     },
     {
       "id": "audit-2026-11-08-night",
@@ -9940,7 +9999,8 @@
         "supermemory",
         "mcp"
       ],
-      "content": "2026-11-08 深夜監査（run log (ai)）: ai-todo MCP 復帰（v3.0.2）→ accept_tamper でフォールバック編集（#90/#92 完了+#108/#109 起票）を同期済み・lint clean・active=#99.1（他セッション）のみ。supermemory: search 1回成功後にプラグイン入れ替えで forget 不可 → 陳腐化エントリ2件（y5BCQPCfUWVL7pQhYzLc8d=loop stopped after v312 は誤り・実際は v328 まで統合 194/189/5／KrbCRSJU7qGy9EYfTgpAqY=16成果物 v304-v315 は v304-v328 に拡大）は **ai-todo #110** で追跡（復帰後に forget+訂正 add）。Graphify: 別セッションが 16:26 に再ビルド（48,834ノード・db31e275）したが v323-v328 は NOT registered のまま＝.gitignore:53 /tmp/ 原因で tmp/re は原理的永久未登録・グラフ内 RE は docs/RE_EXE_REPORT 由来のみ＝RE↔移植エッジが新知見欠落（#107=人間承認ゲート/#66=docs反映と連動・note 追記済み）。教訓: MCP ツールはサーバ再起動で脱落→再登録されることがあり、カatalog 変更通知時は accept_tamper/lint で台帳同期を確認するのが復旧手順。次着手可: #85 stage2（親直行）または backlog #93(v329)/#94(v330)/#106(v331)/#108(v333)/#109(v334)。"
+      "content": "2026-11-08 深夜監査（run log (ai)）: ai-todo MCP 復帰（v3.0.2）→ accept_tamper でフォールバック編集（#90/#92 完了+#108/#109 起票）を同期済み・lint clean・active=#99.1（他セッション）のみ。supermemory: search 1回成功後にプラグイン入れ替えで forget 不可 → 陳腐化エントリ2件（y5BCQPCfUWVL7pQhYzLc8d=loop stopped after v312 は誤り・実際は v328 まで統合 194/189/5／KrbCRSJU7qGy9EYfTgpAqY=16成果物 v304-v315 は v304-v328 に拡大）は **ai-todo #110** で追跡（復帰後に forget+訂正 add）。Graphify: 別セッションが 16:26 に再ビルド（48,834ノード・db31e275）したが v323-v328 は NOT registered のまま＝.gitignore:53 /tmp/ 原因で tmp/re は原理的永久未登録・グラフ内 RE は docs/RE_EXE_REPORT 由来のみ＝RE↔移植エッジが新知見欠落（#107=人間承認ゲート/#66=docs反映と連動・note 追記済み）。教訓: MCP ツールはサーバ再起動で脱落→再登録されることがあり、カatalog 変更通知時は accept_tamper/lint で台帳同期を確認するのが復旧手順。次着手可: #85 stage2（親直行）または backlog #93(v329)/#94(v330)/#106(v331)/#108(v333)/#109(v334)。",
+      "compressed": false
     },
     {
       "id": "v329-93-close-2026-11-09",
@@ -9955,7 +10015,8 @@
         "loadgame",
         "numbering"
       ],
-      "content": "#93(v329)クローズ・台帳row311(V311)/bak166/round_verify ALL OK(197/192/5)。正典判定: head(0x465C94)=0x465860=LoadGame fn本体。esp差なし—arg6枠は mov [esp+0x30],ebx(=1) のpush前書込・6枠=add esp,0x18厳密一致・出力=[esp+0x34]読戻formID(Player 0xFEFFFFFF)。reader [ebp+0x40] ctor=0x45F0F0(callers=2 0x465204/0x465A6A, dtor 0x4530A0)。bit7 clear imm形は全.textで0x4445B5/0x4CDA79の2件のみ・bit0/11/18は0x465AE4-AE9-AF3/0x465B91-B97-BA5の条件付きset/clearペア。cannot save(0xA3AF68)=fn0x462280@0x46239D・callers=1(0x4652C1)→load側0x465B12経路では保存分岐不発。head(0x44F058)=0x44EE00自己再帰retry。head(0x4CDA22)=0x4CD960(Removing ownership data…)。%i=u16(452250(edi,8)−orig)+vtbl[+0x4c](8)・'Havok Moved(%i)'@0xA39AC0・#48ゲート0x455553接続。採番衝突: 外部レーンが v337(#108)/v338(#93重複・v329が上書き)/v339(#112)使用済→次回予約はv340+ (#113修正済)。v337/v338/v339は親突合統合待ち。"
+      "content": "#93(v329)クローズ・台帳row311(V311)/bak166/round_verify ALL OK(197/192/5)。正典判定: head(0x465C94)=0x465860=LoadGame fn本体。esp差なし—arg6枠は mov [esp+0x30],ebx(=1) のpush前書込・6枠=add esp,0x18厳密一致・出力=[esp+0x34]読戻formID(Player 0xFEFFFFFF)。reader [ebp+0x40] ctor=0x45F0F0(callers=2 0x465204/0x465A6A, dtor 0x4530A0)。bit7 clear imm形は全.textで0x4445B5/0x4CDA79の2件のみ・bit0/11/18は0x465AE4-AE9-AF3/0x465B91-B97-BA5の条件付きset/clearペア。cannot save(0xA3AF68)=fn0x462280@0x46239D・callers=1(0x4652C1)→load側0x465B12経路では保存分岐不発。head(0x44F058)=0x44EE00自己再帰retry。head(0x4CDA22)=0x4CD960(Removing ownership data…)。%i=u16(452250(edi,8)−orig)+vtbl[+0x4c](8)・'Havok Moved(%i)'@0xA39AC0・#48ゲート0x455553接続。採番衝突: 外部レーンが v337(#108)/v338(#93重複・v329が上書き)/v339(#112)使用済→次回予約はv340+ (#113修正済)。v337/v338/v339は親突合統合待ち。",
+      "compressed": false
     },
     {
       "id": "v337-339-intake-2026-11-09",
@@ -9971,7 +10032,8 @@
         "re49",
         "parent-intake"
       ],
-      "content": "2026-11-09 親突合統合（run log (am)・台帳 row312-314/bak167/round_verify 200-195-5 ALL OK）: 外部レーンが #108=v337(16,101B/195行)・#93重複=v338(14,763B/198行)・#112=v339(13,684B/216行) をクローズ済。v337 は無修正継承（+0x7C の[未確定]は v338 §5.1 の byte census で 'save format version byte' [部分確定] へ親採用）。v338 の #93レーン判定は v329 が上書き（#89完了で v318帯深可が前提変更）: head(0x44F058)=0x44EE00・0x659BE0本体・esp arg6枠・head(0x4CDA22)=0x4CD960 とも [確定]。v338 新事実採用: §2.9 機能記述昇格(45BB30/4DD4B0/4D8A10/4D8A30/5F0310・正式名は確定負維持)・§3.1 trailer6B=[u32 size=2][u16 count=0](#112①close)・§4.3 452DF0規約[確定](#111残1件close)・§5.3 辞書検索側[確定]。v339: item1/2/6 [確定]・item3/4 [部分確定]（[0xB333A0]=TES singleton・player=[0xB333C4]・旧NavMesh/playerRefラベル棄却）・item5待記=#82ゲート。親inline訂正2件(非削除): 0x462290 は direct store ではなく read(mov ecx,[eax+0x8c0])→local→vtbl[edi+8] 出力（v329_E6・v339 §6 'sink' が正典）。dir[0]上流(+0x8C0生成)は[未確定]継続。v338 §2.5 の bit7書込候補 0x4639A9 は本レーン未観測→#113 note で検証委任。採番: v337-339 使用済→#113 は v340+ へ訂正済。教訓: 外部成果物の動詞語法(writer/sink)は命令列で照合してから台帳化する（v327 row306 の訂正系譜と同型）。"
+      "content": "2026-11-09 親突合統合（run log (am)・台帳 row312-314/bak167/round_verify 200-195-5 ALL OK）: 外部レーンが #108=v337(16,101B/195行)・#93重複=v338(14,763B/198行)・#112=v339(13,684B/216行) をクローズ済。v337 は無修正継承（+0x7C の[未確定]は v338 §5.1 の byte census で 'save format version byte' [部分確定] へ親採用）。v338 の #93レーン判定は v329 が上書き（#89完了で v318帯深可が前提変更）: head(0x44F058)=0x44EE00・0x659BE0本体・esp arg6枠・head(0x4CDA22)=0x4CD960 とも [確定]。v338 新事実採用: §2.9 機能記述昇格(45BB30/4DD4B0/4D8A10/4D8A30/5F0310・正式名は確定負維持)・§3.1 trailer6B=[u32 size=2][u16 count=0](#112①close)・§4.3 452DF0規約[確定](#111残1件close)・§5.3 辞書検索側[確定]。v339: item1/2/6 [確定]・item3/4 [部分確定]（[0xB333A0]=TES singleton・player=[0xB333C4]・旧NavMesh/playerRefラベル棄却）・item5待記=#82ゲート。親inline訂正2件(非削除): 0x462290 は direct store ではなく read(mov ecx,[eax+0x8c0])→local→vtbl[edi+8] 出力（v329_E6・v339 §6 'sink' が正典）。dir[0]上流(+0x8C0生成)は[未確定]継続。v338 §2.5 の bit7書込候補 0x4639A9 は本レーン未観測→#113 note で検証委任。採番: v337-339 使用済→#113 は v340+ へ訂正済。教訓: 外部成果物の動詞語法(writer/sink)は命令列で照合してから台帳化する（v327 row306 の訂正系譜と同型）。",
+      "compressed": false
     },
     {
       "id": "opencode-shopmenu-input-fix-20261109",
@@ -9984,7 +10046,8 @@
         "shopmenu",
         "virtual-controller"
       ],
-      "content": "Oblivion Android #99.1: UIShopはUIPanel既定visible=trueのためmerchant未設定でもanyMenuOpenと入力ルーティングを占有していた。ui_shop.cppのUIShop::initialize()後にsetVisible(false)を追加し、openShop/closeShopの通常フローを維持。Pixel_API34で正しいVirtualController座標(178,850)のLeft joystick DOWN/UP、ワールド領域差分140,229px、クラッシュ0件を確認。初回(160,900)はVirtualController範囲外、(178,777)はD-pad重複。修正は専用worktree、mainへのmergeは未実施。"
+      "content": "Oblivion Android #99.1: UIShopはUIPanel既定visible=trueのためmerchant未設定でもanyMenuOpenと入力ルーティングを占有していた。ui_shop.cppのUIShop::initialize()後にsetVisible(false)を追加し、openShop/closeShopの通常フローを維持。Pixel_API34で正しいVirtualController座標(178,850)のLeft joystick DOWN/UP、ワールド領域差分140,229px、クラッシュ0件を確認。初回(160,900)はVirtualController範囲外、(178,777)はD-pad重複。修正は専用worktree、mainへのmergeは未実施。",
+      "compressed": false
     },
     {
       "id": "opencode-re-analysis-bundle-v338-v339-20261109",
@@ -9998,7 +10061,8 @@
         "v339",
         "v340"
       ],
-      "content": "RE解析はオリジナルEXE/ESM/.ess/解析原本と移植側ソースを読み取り専用で扱う。v338+の統合で、trailer 6Bは[u32 size=2][u16 count=0]、452DF0のtail==0/pass2呼出規約は同一、BSX/REFのTD同定、B333A0=TES singleton、FUN_004302B0はCRT stdio+自前buffer read層などを確定または部分確定。save#2、RGB/BGR、dry bit9/bit10、Delta0x1Cなどは#82の人間/実機ゲート待ちで推測確定しない。"
+      "content": "RE解析はオリジナルEXE/ESM/.ess/解析原本と移植側ソースを読み取り専用で扱う。v338+の統合で、trailer 6Bは[u32 size=2][u16 count=0]、452DF0のtail==0/pass2呼出規約は同一、BSX/REFのTD同定、B333A0=TES singleton、FUN_004302B0はCRT stdio+自前buffer read層などを確定または部分確定。save#2、RGB/BGR、dry bit9/bit10、Delta0x1Cなどは#82の人間/実機ゲート待ちで推測確定しない。",
+      "compressed": false
     },
     {
       "id": "opencode-todo-sidebar-mcp-separation-20261109",
@@ -10011,7 +10075,8 @@
         "sidebar",
         "mcp"
       ],
-      "content": "OpenCodeのai-todo MCPとサイドバーのopencode-todolistは別管理。ai-todoは正本TODO.md/.ai-todo/state/TODO.mdを管理し、サイドバーは現在セッションのtodowriteリストだけを表示する。正本とMCPの#113は一致していても、todowriteを別途ミラーしなければサイドバーは空になり得る。ai-todo MCPはプロジェクトroot明示のlocal server設定を追加したが、C:\\Chamberなど複数セッション接続とevent stream stalled/ECONNRESET/503/499が表示不安定要因。"
+      "content": "OpenCodeのai-todo MCPとサイドバーのopencode-todolistは別管理。ai-todoは正本TODO.md/.ai-todo/state/TODO.mdを管理し、サイドバーは現在セッションのtodowriteリストだけを表示する。正本とMCPの#113は一致していても、todowriteを別途ミラーしなければサイドバーは空になり得る。ai-todo MCPはプロジェクトroot明示のlocal server設定を追加したが、C:\\Chamberなど複数セッション接続とevent stream stalled/ECONNRESET/503/499が表示不安定要因。",
+      "compressed": false
     },
     {
       "id": "opencode-original-data-readonly-20261109",
@@ -10023,7 +10088,8 @@
         "reverse-engineering",
         "read-only"
       ],
-      "content": "ユーザー制約: オリジナルのデータ・EXE・ESM・.ess検体・解析原本は変更しない。解析は読み取り専用で実施し、推測による意味付けや原本へのパッチを行わない。移植側ソース変更は、オリジナル側の仕様/データ構造が証拠で確定し、L2実装範囲が明確になった場合に限定する。"
+      "content": "ユーザー制約: オリジナルのデータ・EXE・ESM・.ess検体・解析原本は変更しない。解析は読み取り専用で実施し、推測による意味付けや原本へのパッチを行わない。移植側ソース変更は、オリジナル側の仕様/データ構造が証拠で確定し、L2実装範囲が明確になった場合に限定する。",
+      "compressed": false
     },
     {
       "id": "todo-sync-2026-11-09",
@@ -10037,7 +10103,8 @@
         "accept-tamper",
         "intake-pending"
       ],
-      "content": "2026-11-09 TODO同期ラウンド（run log (ao)・ユーザー依頼）: ai-todo accept_tamper で外部変更を追認（#106=外部 v331(11,526B/13:57)でclose・#94=外部 v330(12,429B/14:12)でclose・#113=#inprogress 外部着手・v340成果物未出現のため本レーンは非干渉）。TODO.md 実測: #114 open 最新-top・#110/#106/#94 [x]・active 単独=#113。親統合待ち（次ラウンド行）: v331→row315(V315)/#106、v330→row316(V316)/#94 — inline訂正方式・bak168・round_verify必須。この旨は #94/#106 の note Registered済み。supermemory ツールは catalog 不安定期に unavailable→正典ファイル台帳が代替。"
+      "content": "2026-11-09 TODO同期ラウンド（run log (ao)・ユーザー依頼）: ai-todo accept_tamper で外部変更を追認（#106=外部 v331(11,526B/13:57)でclose・#94=外部 v330(12,429B/14:12)でclose・#113=#inprogress 外部着手・v340成果物未出現のため本レーンは非干渉）。TODO.md 実測: #114 open 最新-top・#110/#106/#94 [x]・active 単独=#113。親統合待ち（次ラウンド行）: v331→row315(V315)/#106、v330→row316(V316)/#94 — inline訂正方式・bak168・round_verify必須。この旨は #94/#106 の note Registered済み。supermemory ツールは catalog 不安定期に unavailable→正典ファイル台帳が代替。",
+      "compressed": false
     },
     {
       "id": "intake-r2-2026-11-09",
@@ -10054,7 +10121,8 @@
         "parent-intake",
         "s2-correction"
       ],
-      "content": "2026-11-09 親突合ラウンド2（run log (ap)・台帳 row315-317/bak168/round_verify 203-198-5 ALL OK）: v331(#106)/v330(#94) 加え **v336(#111) も未統合と判明し 3 件同時統合**。全件全文突合、自レーン窓(E6/row310/309/306/305)と矛盾なし。正典訂正: row309 S2『0x459AF7 mov ebx,[esp+0x98]=arg2 mode』→ **ebx=arg1(form/object ID)、mode=[esp+0xA8]**（出所 v336 §4.1・v330 §8.2 採用・push収支再検証済・旧記載併記）。v336 新規確定: 45ADC0=.txt 直接書込で Warnings.txt 経路でない[確定負]・0xB03038=.?AVTESObjectCELL@@[確定]・0x459AF0 mode0/1 消費全表(12/2/4/6/36/44/28/4B)。v331: DepthOffset=+0x30 slot10・4要素・&DAT_00B45EE4[確定]・帯内[reg+0x30]形 0件=bounded negative(capstone全文・C-6準守)・range実測792/814/813/952(v324概数『814〜980』は基準復元不能)。v330: 非IAT静的残 2件(0x6B6D2D/0x4FBC4C・#91帯深可)、FUN_005169A0=推定維持(改名禁止)、dt=秒静的確定、67型15case確定。新起票 #115 次束Q2/R2(6件・v342+予約)。docs候補3件→#66。動的/#82側は記録のみ。"
+      "content": "2026-11-09 親突合ラウンド2（run log (ap)・台帳 row315-317/bak168/round_verify 203-198-5 ALL OK）: v331(#106)/v330(#94) 加え **v336(#111) も未統合と判明し 3 件同時統合**。全件全文突合、自レーン窓(E6/row310/309/306/305)と矛盾なし。正典訂正: row309 S2『0x459AF7 mov ebx,[esp+0x98]=arg2 mode』→ **ebx=arg1(form/object ID)、mode=[esp+0xA8]**（出所 v336 §4.1・v330 §8.2 採用・push収支再検証済・旧記載併記）。v336 新規確定: 45ADC0=.txt 直接書込で Warnings.txt 経路でない[確定負]・0xB03038=.?AVTESObjectCELL@@[確定]・0x459AF0 mode0/1 消費全表(12/2/4/6/36/44/28/4B)。v331: DepthOffset=+0x30 slot10・4要素・&DAT_00B45EE4[確定]・帯内[reg+0x30]形 0件=bounded negative(capstone全文・C-6準守)・range実測792/814/813/952(v324概数『814〜980』は基準復元不能)。v330: 非IAT静的残 2件(0x6B6D2D/0x4FBC4C・#91帯深可)、FUN_005169A0=推定維持(改名禁止)、dt=秒静的確定、67型15case確定。新起票 #115 次束Q2/R2(6件・v342+予約)。docs候補3件→#66。動的/#82側は記録のみ。",
+      "compressed": false
     },
     {
       "id": "supermemory-policy-2026-11-09",
@@ -10067,7 +10135,8 @@
         "policy",
         "user-approved"
       ],
-      "content": "Supermemory 運用方針（2026-11-09 ユーザー承認・本セッションの提案3点＋小整理運用）: ①登録は日本語原文の簡潔形を継続（add は原文そのまま保存と実証済）。②検証・参照は search の原文を正とし、クラウド生成の英語化 list/profile プロジェクションは判断に使用しない（意味化け実例: disp8→dispatch-8、'load 経路で保存分岐不発'→'missing load path'）。③正典はファイル台帳（本 JSON＋STATE.md/TODO.md）、supermemory は検索ミラーの二重構成を維持。④プロファイル古語行は #110 後続の小整理方式で対応（検索→全文字ID検証→forget、単一正本行を保持。本日 5 行整理: 旧座標(160,900)・#113 active 重複2・#109 started・自前キュースナップショット無効化分）。プラグイン supermemory.json に翻訳スイッチは無く設定変更不要。"
+      "content": "Supermemory 運用方針（2026-11-09 ユーザー承認・本セッションの提案3点＋小整理運用）: ①登録は日本語原文の簡潔形を継続（add は原文そのまま保存と実証済）。②検証・参照は search の原文を正とし、クラウド生成の英語化 list/profile プロジェクションは判断に使用しない（意味化け実例: disp8→dispatch-8、'load 経路で保存分岐不発'→'missing load path'）。③正典はファイル台帳（本 JSON＋STATE.md/TODO.md）、supermemory は検索ミラーの二重構成を維持。④プロファイル古語行は #110 後続の小整理方式で対応（検索→全文字ID検証→forget、単一正本行を保持。本日 5 行整理: 旧座標(160,900)・#113 active 重複2・#109 started・自前キュースナップショット無効化分）。プラグイン supermemory.json に翻訳スイッチは無く設定変更不要。",
+      "compressed": false
     },
     {
       "id": "v342-115-close-2026-11-09",
@@ -10082,7 +10151,8 @@
         "factory",
         "rule-v3"
       ],
-      "content": "2026-11-09 #115 次束Q2/R2 完了（v342・row318/bak169/round_verify 204-199-5 ALL OK・run log (aq)）。正典裁定: ①0x447050 全文で al=slot7 直返 [確定(命令)]、21 reader xor=ARG24/FAIL5/UNK3、n=0 群に tail-jmp thunk3（#117 へ）。②killed-by-call2 件は vtable 仮想呼び（[[this+0x54]].vtbl+0x40 / this vtbl+0xD4）＝命令形確定・実先#82。③E9/EB 拡張則=16/16 非回帰・0x4637C0 のみ救済・tier A（callers>0）69 件（0x4511C0=73 他）→ rule v3 採用可 [確定（検証セット水準）]（re_util 変更禁止＝文書のみ）。④訂正 C-1/C-2: v325_01d『TESIcon 0xA320A4 集約10型』は this/sub-object 混載で **MAIN 集約は 7 型**（MGEF/APPA/BOOK/LIGH/MISC/WEAP/AMMO）、INGR/ALCH/QUST は各自 MAIN（0xA33F5C/0xA3217C/0xA541EC）＋sub に 0xA320A4。TESFlora の ASCII slot7=0x63696E61 は **0xA41C40 が FlagInfo データ（+0x10 'ITMpOrganic'）**だった誤特定、真の vftable=**0xA41B1C（+0x1C=0x4AE0A0）**。⑤#106 帯 capstone 全文で [reg+0x30] plain0＋*8+0x30 併存0（帯内窓読み不在 bounded→full）。⑥vtbl+0x1C 直接 call/jmp=179 サイト機械 census、**482170 の obj=0 分岐は self slot7 のみで obj を deref せず（C-4: クラッシュ経路でない）**。手法教訓: factory JPT stub の最初 call=operator new（ctor は new 以外の最後 call・窓 0x48 必須）／無変位 vptr 書は ecx-map で this/sub 分離（v325_01d の混載機序を再現確認）。並行レーン採番衝突: 新残件起票が #116→**#117** に繰越（#116=BG レーン次束X・v340/v341 残件6+2）、成果物予約 v343+→**v344+**。教訓: 起票前に show_task/list で直近 ID と予約表を再確認（BG レーンの ai-todo root 事故（fix-ai-todo-sidebar worktree 誤登録→session_move 後再起票）の続報として、MCP 書込前に root 確認）。"
+      "content": "2026-11-09 #115 次束Q2/R2 完了（v342・row318/bak169/round_verify 204-199-5 ALL OK・run log (aq)）。正典裁定: ①0x447050 全文で al=slot7 直返 [確定(命令)]、21 reader xor=ARG24/FAIL5/UNK3、n=0 群に tail-jmp thunk3（#117 へ）。②killed-by-call2 件は vtable 仮想呼び（[[this+0x54]].vtbl+0x40 / this vtbl+0xD4）＝命令形確定・実先#82。③E9/EB 拡張則=16/16 非回帰・0x4637C0 のみ救済・tier A（callers>0）69 件（0x4511C0=73 他）→ rule v3 採用可 [確定（検証セット水準）]（re_util 変更禁止＝文書のみ）。④訂正 C-1/C-2: v325_01d『TESIcon 0xA320A4 集約10型』は this/sub-object 混載で **MAIN 集約は 7 型**（MGEF/APPA/BOOK/LIGH/MISC/WEAP/AMMO）、INGR/ALCH/QUST は各自 MAIN（0xA33F5C/0xA3217C/0xA541EC）＋sub に 0xA320A4。TESFlora の ASCII slot7=0x63696E61 は **0xA41C40 が FlagInfo データ（+0x10 'ITMpOrganic'）**だった誤特定、真の vftable=**0xA41B1C（+0x1C=0x4AE0A0）**。⑤#106 帯 capstone 全文で [reg+0x30] plain0＋*8+0x30 併存0（帯内窓読み不在 bounded→full）。⑥vtbl+0x1C 直接 call/jmp=179 サイト機械 census、**482170 の obj=0 分岐は self slot7 のみで obj を deref せず（C-4: クラッシュ経路でない）**。手法教訓: factory JPT stub の最初 call=operator new（ctor は new 以外の最後 call・窓 0x48 必須）／無変位 vptr 書は ecx-map で this/sub 分離（v325_01d の混載機序を再現確認）。並行レーン採番衝突: 新残件起票が #116→**#117** に繰越（#116=BG レーン次束X・v340/v341 残件6+2）、成果物予約 v343+→**v344+**。教訓: 起票前に show_task/list で直近 ID と予約表を再確認（BG レーンの ai-todo root 事故（fix-ai-todo-sidebar worktree 誤登録→session_move 後再起票）の続報として、MCP 書込前に root 確認）。",
+      "compressed": false
     },
     {
       "id": "v340-v341-parent-merge-2026-11-09",
@@ -10099,7 +10169,8 @@
         "BSFile",
         "RTTI"
       ],
-      "content": "2026-11-09 親突合統合: BG レーン成果物 v340(#113・次束P2)/v341(#114・次束W) を RE 台帳 row319/320 へ統合（bak170・round_verify ALL OK rows 31..320・206/201/5・STATE (ar)）。ai-todo: #113 は BG 側 [x] 維持＋note、#114 note→complete。正典裁定（v340・主7件 [確定]7/7）: 0x45F2E0 戻りクラス=BSFile（TD 0xB044E0・[esi+4]=read slot 0x430050）・JPT 0x45F790=4 エントリ（mode0=書新規 flag1/.bak・mode1=new flag0+明示 open=LoadGame 0x465923・mode2=既存 ebx・mode3=pass-through）。[ebp+0x40]=LoadFormHeader 登録表＝NiTPointerMap<u8,BSSimpleList<LoadFormHeader>*>（0x25 は type ではなくバケット容量 n・C-1 訂正／reader=BSFile と別系統・C-3）。[edi+8]=write スロット 0x430070 で read/write 双判別完・0x4652C1 所属=0x465130=SaveGame 本体。bit16 ペア 0x45CC0B/34・0x45DDC9/F5=[0xB33B00]+0x18 bit16・call 0x579CF0（UI モーダル）直前 set→直後 clear。0x444340 head 確定・bit7=[0xB33B00]+0x18 の fn 内ラッチ保存→復元。0x4CD960=TESObjectCELL vftable 0xA469D4 slot+0x6C 仮想呼び（実 site 列挙=#106 委任）。IAT [0xA2808C]=GetCurrentThreadId（GetTickCount/TimeBase 仮説 [確定負]・C-2）・bit0/bit18=スレッド ID 一致/不一致ミラー（helper 0x45A500 callers=118／0x45A530・GST call 全数 166）。正典裁定（v341）: [0xB3BD00] 正式名と 679xxx container/要素型名=**待記宣言クローズ**（画像 .data 全ゼロ・絶対参照 324/324 が mov ecx,imm のみ・RTTI 全走査 1,700 枚で context vtable 0 枚=88 関数全て非仮想・共有 no-op 0x68F970(callers 83) に帰属力なし=[確定負]×3。必要証拠=B13 実行時 vptr 1語→COL→TD=#82）。メニュー名表本体=**NiTArray<Tile*>**（vptr 0xA69680→TD 0xB13620 直読）・[0xB1397A](this+0xA u16) の唯一書手=0x587B74/92 の push 0x33→call 0x4E4A10（one-shot [0xB3A708]・絶対書込 0 件 [確定負]）。0x65C620 callers=E8 854+E9 11=**865**（≈655 は DTOR/atexit thunk 群 0xA1643A..0xA2712A）・本体は**単方向リスト除去/解放**（v337「追加 helper」語訂正・row312 inline）。0x9FBA90/A24950=CRT _onexit 終了時クリーンアップ窓（登録窓ではない・性質訂正）。docs 不整合1件記録（RE_EXE_REPORT §3.1「59メニュー」vs 容量 0x33=51・無編集）。手法教訓: ①絶対参照 census は書込形（C7 05/89 0D/66 系）を形別に分離して報告（mov ecx,imm だけの 324 件は「書手不在」の証拠にならない=形別内訳必須）②RTTI 全走査は COL sig==0→TD .?AV 条件で vtable 1,700 枚を機械列挙可能③共有 no-op スタブ（ret 4・多 vtable スロット共有）に型帰属力なし④capstone 窓は fn head から整列リニア（途中 VA 開始は空/混同列・v329 C-6 再発）。次レーン状態: #116（次束X・v340 残6+v341 待記2・BG 所有 active）に非干渉。本レーン次=#117（次束Y・v344+・静的5件）。supermemory tool 未復帰継続（v342/v340/v341 分は追登録キュー）。"
+      "content": "2026-11-09 親突合統合: BG レーン成果物 v340(#113・次束P2)/v341(#114・次束W) を RE 台帳 row319/320 へ統合（bak170・round_verify ALL OK rows 31..320・206/201/5・STATE (ar)）。ai-todo: #113 は BG 側 [x] 維持＋note、#114 note→complete。正典裁定（v340・主7件 [確定]7/7）: 0x45F2E0 戻りクラス=BSFile（TD 0xB044E0・[esi+4]=read slot 0x430050）・JPT 0x45F790=4 エントリ（mode0=書新規 flag1/.bak・mode1=new flag0+明示 open=LoadGame 0x465923・mode2=既存 ebx・mode3=pass-through）。[ebp+0x40]=LoadFormHeader 登録表＝NiTPointerMap<u8,BSSimpleList<LoadFormHeader>*>（0x25 は type ではなくバケット容量 n・C-1 訂正／reader=BSFile と別系統・C-3）。[edi+8]=write スロット 0x430070 で read/write 双判別完・0x4652C1 所属=0x465130=SaveGame 本体。bit16 ペア 0x45CC0B/34・0x45DDC9/F5=[0xB33B00]+0x18 bit16・call 0x579CF0（UI モーダル）直前 set→直後 clear。0x444340 head 確定・bit7=[0xB33B00]+0x18 の fn 内ラッチ保存→復元。0x4CD960=TESObjectCELL vftable 0xA469D4 slot+0x6C 仮想呼び（実 site 列挙=#106 委任）。IAT [0xA2808C]=GetCurrentThreadId（GetTickCount/TimeBase 仮説 [確定負]・C-2）・bit0/bit18=スレッド ID 一致/不一致ミラー（helper 0x45A500 callers=118／0x45A530・GST call 全数 166）。正典裁定（v341）: [0xB3BD00] 正式名と 679xxx container/要素型名=**待記宣言クローズ**（画像 .data 全ゼロ・絶対参照 324/324 が mov ecx,imm のみ・RTTI 全走査 1,700 枚で context vtable 0 枚=88 関数全て非仮想・共有 no-op 0x68F970(callers 83) に帰属力なし=[確定負]×3。必要証拠=B13 実行時 vptr 1語→COL→TD=#82）。メニュー名表本体=**NiTArray<Tile*>**（vptr 0xA69680→TD 0xB13620 直読）・[0xB1397A](this+0xA u16) の唯一書手=0x587B74/92 の push 0x33→call 0x4E4A10（one-shot [0xB3A708]・絶対書込 0 件 [確定負]）。0x65C620 callers=E8 854+E9 11=**865**（≈655 は DTOR/atexit thunk 群 0xA1643A..0xA2712A）・本体は**単方向リスト除去/解放**（v337「追加 helper」語訂正・row312 inline）。0x9FBA90/A24950=CRT _onexit 終了時クリーンアップ窓（登録窓ではない・性質訂正）。docs 不整合1件記録（RE_EXE_REPORT §3.1「59メニュー」vs 容量 0x33=51・無編集）。手法教訓: ①絶対参照 census は書込形（C7 05/89 0D/66 系）を形別に分離して報告（mov ecx,imm だけの 324 件は「書手不在」の証拠にならない=形別内訳必須）②RTTI 全走査は COL sig==0→TD .?AV 条件で vtable 1,700 枚を機械列挙可能③共有 no-op スタブ（ret 4・多 vtable スロット共有）に型帰属力なし④capstone 窓は fn head から整列リニア（途中 VA 開始は空/混同列・v329 C-6 再発）。次レーン状態: #116（次束X・v340 残6+v341 待記2・BG 所有 active）に非干渉。本レーン次=#117（次束Y・v344+・静的5件）。supermemory tool 未復帰継続（v342/v340/v341 分は追登録キュー）。",
+      "compressed": false
     },
     {
       "id": "ticket-118-static-residuals-2026-11-09",
@@ -10113,15 +10184,549 @@
         "todo",
         "re49"
       ],
-      "content": "2026-11-09 TODO 起票ラウンド（STATE (as)）: **v341 §5 待記表のうち静的到達可 3 件を #118 次束Z として起票**（成果物 v345+ 予約・v343=#116/v344=#117 と連番確認の上、max pending=#117 を検証し BG と衝突なし）。#118 の範囲: ①59名登録順・文字列供給元・slot 充填元（Tile TD 0xB13240 imm32 参照 59 サイト 0x586C6A..0x5DD544＋NiTArray<Tile*> insert 0x42BB90 の this=0xB13970 呼び手 census・B139xx 浅層留保は解除宣言・#106 帯非深追い）②帯外 push 側 0x6765F0/0x678D30 の new サイズ＋vptr 書込照会＝679xxx 型名の静的縮小（v341 の『別起票扱い』経路）③0x4E4A10/0x42BB90/0x65C620 正式 fn 名＋0xB13970 宣言元。#82 note 更新: [0xB3BD00] 正式名の必要証拠は**起動後 .data 0xB3BD00 先頭 dword 1 語（vptr→COL→TD は画像内で静的引証可）**のみまで縮小。#63 note 更新: ダンプ優先度=vptr 1 語 > table1/table2 全文。教訓: 待記宣言クローズの際は『必要証拠の最小単位』まで分解して起票/note に落とすと、実機ゲートの依頼が 4 バイト取得まで简约化できる。"
+      "content": "2026-11-09 TODO 起票ラウンド（STATE (as)）: **v341 §5 待記表のうち静的到達可 3 件を #118 次束Z として起票**（成果物 v345+ 予約・v343=#116/v344=#117 と連番確認の上、max pending=#117 を検証し BG と衝突なし）。#118 の範囲: ①59名登録順・文字列供給元・slot 充填元（Tile TD 0xB13240 imm32 参照 59 サイト 0x586C6A..0x5DD544＋NiTArray<Tile*> insert 0x42BB90 の this=0xB13970 呼び手 census・B139xx 浅層留保は解除宣言・#106 帯非深追い）②帯外 push 側 0x6765F0/0x678D30 の new サイズ＋vptr 書込照会＝679xxx 型名の静的縮小（v341 の『別起票扱い』経路）③0x4E4A10/0x42BB90/0x65C620 正式 fn 名＋0xB13970 宣言元。#82 note 更新: [0xB3BD00] 正式名の必要証拠は**起動後 .data 0xB3BD00 先頭 dword 1 語（vptr→COL→TD は画像内で静的引証可）**のみまで縮小。#63 note 更新: ダンプ優先度=vptr 1 語 > table1/table2 全文。教訓: 待記宣言クローズの際は『必要証拠の最小単位』まで分解して起票/note に落とすと、実機ゲートの依頼が 4 バイト取得まで简约化できる。",
+      "compressed": false
+    },
+    {
+      "id": "mojo-rewrite-rejected-2026-11-09",
+      "timestamp": "2026-11-09T10:02:09Z",
+      "priority": "medium",
+      "category": "decision",
+      "tags": [
+        "oblivion",
+        "tooling",
+        "rust",
+        "policy",
+        "language-choice",
+        "mojo"
+      ],
+      "content": "2026-11-09 ユーザー質問への判断（ユーザーがメモリ化を明示指定）: プロジェクトの Python 群を Mojo へ書き直す必要なし。理由: (1) Python は全数がツール類=CI scripts/generate_launcher_icons.py --check / 台帳 tools/validate_memory_ledger.py・merge_memory_ledger.py / RE probe(pefile・capstone)。製品性能パス外で高速化対象が不在。(2) 性能の道は 2026-11-01 方針 C++→Rust で確定済（M-Rust/M20・rust/ 受入 c2653460）。純ロジック拡張の着地先=rust/crates（ess-parser/vm-handlers/cli）で第2言語を挟まない。(3) Mojo は 2026 時点で 1.0.0b2 ベータ、Windows ネイティブサポートが未成熟（公式=coming 案内とコミュニティ=no support/roadmap 評価が不一致）で win32 開発機と不相応。(4) pefile/capstone/Pillow/numpy 相当が Mojo エコシステムに不在→書き直しはライブラリ自作に化ける。(5) 台帳検証コマンドは AGENTS.md/copilot-instructions.md が python 固定で言語変更は検証器再認定=正典リスク。制約: 性能懸念箇所は実測してから Python 内最適化か Rust 移動で判断。RE probe は使い捨て設計ゆえ移植対象外。",
+      "compressed": false
+    },
+    {
+      "id": "v344-117-close-2026-11-09",
+      "timestamp": "2026-11-09T10:03:39Z",
+      "priority": "medium",
+      "category": "architecture",
+      "tags": [
+        "oblivion",
+        "re",
+        "v344",
+        "re49",
+        "census",
+        "rtti"
+      ],
+      "content": "2026-11-09 #117 次束Y 完了（v344_bundle_Y_ruling.md 12,989B/60行・probe v117_1..11 全 EXIT=0・row321/bak171/round_verify 207-202-5・STATE (at)）。正典裁定: ①thunk3=sub ecx,0x68 adjustor→先 0x51C710/0x51A6F0/0x525380（帰属 TESCreature 0xA53188/TESActorBase 0xA52EC0/TESNPC 0xA53D14・早期ゲート全窓0）。直接 al=0 形は 0x51C710(or eax,0xc00@0x51C9DD)と 0x51A6F0(xor al,al@0x51AAFF)のみ、0x525380 は callee 由来（0x468A40/0x5239C0/0x4D7C50 にゼロ形あり=N1）。②0xA320A4='.?AVTESIcon@@' [確定]。**訂正 C-6**: v342 の『MAIN 集約 7 型』は v115_3 fallback 誤選択（TESIcon sub-object inline 書込）で、真 MAIN=MGEF 0xA32B14(EffectSetting)/APPA 0xA43FB4/BOOK 0xA44454/LIGH 0xA4319C/MISC 0xA44CA4(slot7 0x4B9600 が v325 無ゲート21 と相互整合)/WEAP 0xA45354/AMMO 0xA4068C。③**訂正 C-7（レビュー-round）**: v342 の 179 サイト census→境界検証で **139**（40 件は `call rel32` 末尾 FF＋`push 0x1c`(6A 1C)＝FF 6A 1C 類の命令中途混入・spot-check 5/5 desync なし）。tier: this-virtual 109/呼出側 reg 23/frame 6/other 1/**global 0**（global 3 件は偽: 0xB25AC8/ACC=float1.0 ペア、[0xB36208]=_onexit 登録 slot・C-8 自己訂正）。④tier B: B+(vtable 参照)=54 採用/B-3,932 不採用/jmp follow 救済 0。拡張則採用集合=**A 69（v117_11 で 69/69 生存・偽 caller 1 のみ）∪ B+ 54=123**（re_util 凍結・文書のみ）。⑤+0x54 vptr 書込 26 サイト/17 vftables・[V+0x40] 候補 concrete 列挙（TESCreature→0x4673F0/TESNPC→0x468030/NiTArray<SkinInfo>→0x6E9410/Havok 2 件 TD なし）＝v117_6 と 5 件相互一致✓。0x6B6B90 非仮想・owner 未決=N2。0x4FBB60 callers に Script（head 0x4FBDB0・ref 0xA49E10）。手法教訓（一般化）: **opcode+modrm+disp 直接 regex census は命令境界検証が必須**（v318 find_head 教訓の census 版・v117_9 器で再現可）。**RTTI TypeDesc 直読が this/sub-object 帰属の最終審**。adjustor thunk は sub ecx,N; jmp T 形・vtable slot+0x1C 位置から class 逆引き可能（zone ref 一意性活用）。教養: 再起動をまたいだが probe/成果物/台帳は無傷（再開後に round_verify・ai-todo root 確認してから書込）。#119 起票（N1/N2/N3・v346+ 予約）。supermemory 復帰、滞留分と本ラウンドを登録。",
+      "compressed": false
+    },
+    {
+      "id": "v345-118-close-2026-11-09",
+      "timestamp": "2026-11-09T10:57:45Z",
+      "priority": "medium",
+      "category": "architecture",
+      "tags": [
+        "oblivion",
+        "re",
+        "v345",
+        "re49",
+        "nitarray",
+        "lane-coordination"
+      ],
+      "content": "2026-11-09 #118 次束Z（狭い版）完了（v345_bundle_Z_ruling.md 6,719B/41行・probe v118_1/2・row322/bak172/round_verify 208-203-5・STATE (ba)）。レーン調整: BG の #116 scope 調整注が #118 当初①（59名登録順）/②（push 側 0x6765F0/0x678D30）を #116⑦⑧ へ吸収 → #118 は 3 fn 正式名のみへ減らスコープ化（modify_task＋note、#116 へも調整 note 済み）。0xB13970 宣言元 init（0x587xxx）は #116⑧ の XML code 域追跡と共有 → #116 完了後ゲートで延期。正典裁定: 0x42BB90=**NiTArray<T> 汎用 insert/remove 系メソッド**（非仮想・callers 992 境界検証 992/992・grow 分岐 word[ecx+0xA]=idx+1・TD 実体化 52・直解 this 2 サイト全て NiTArray<Tile*>）／0x4E4A10=**NiTArray<T> 容量/サイズ設定**（1043/1043・word[esi+0xA]=arg@0x4E4A62・v341 唯一書手 push 0x33 と整合）／0x65C620=**単方向リスト除去 by value+free(0x401F20) の登録解除/dtor ヘルパ**（atexit DTOR thunk 域 0xA1643A..0xA2712A から 636 サイト実測=v341 の ≈655 推定の精緻化、本体帯 217 は `lea ecx,[mgr+N]; push ptr`・N=+0x4..+0x14C の組込み list head）／3 fn の仮想メソッド説=[確定負]（zone imm32 ref 0×3・境界検証済走査なので不在証拠として使用可）。役割名は [部分確定]、正式 C++ シンボル 3 件は**待記宣言クローズ**（外部シンボル/PDB 相当のみ=#82 系）。付随 [確定(命令)]: 0x4040E0 は非 NiTArray の単方向リスト追加（callees 0x6BB260/0x4A7A60/0x446CB0/0x98262D・3 fn を呼ばない）＝v341 §3.3 と矛盾なし。手法教訓: this=直接解決 census はレジスタ連鎖を拾えず弱（2-5/2900）・**レイアウト+RTTI テンプレ引数対応＋thunk 域 multiset が正**（v118_1→v118_2）。新残件 N4（0x65C620 の 217 サイト マネージャ型帰属・0x449xxx 未割当帯）/N5（0x6BB260/0x446CB0 identity）は #119 へ加刷済（v346+ 予約・v343=#116 BG 不変）。",
+      "compressed": false
+    },
+    {
+      "id": "v346-119-close-2026-11-09",
+      "timestamp": "2026-11-09T11:51:48Z",
+      "priority": "medium",
+      "category": "architecture",
+      "tags": [
+        "oblivion",
+        "re",
+        "v346",
+        "re49",
+        "role-split",
+        "census"
+      ],
+      "content": "2026-11-09 #119 次束AA 完了（v346_bundle_AA_ruling.md 9,335B/46行・probe v119_1/1b/2/3・row323/bak173/round_verify 209-204-5・STATE (bb)）。分担正典化（人間決定）: **main=ゲーム作製／ReverseEngineering=オリジナルデータ解析**。運用=ハンドオフ索引 tmp/re/main_handoff_analysis_index.md（living・§1 save/load・§2 factory/型・§3 コンテナ・§4 グローバル・§5 main への実機依頼一覧）。要望は ai-todo/STATE 経由。正典裁定: N1 [確定(命令)]＝int3 終端の正準本体で直接 al=0 経路は **0x468A40=1（@0x468C72・条件=8エントリスキャン尽局）/0x5239C0=0（体内 xor eax,eax×4 は全て call-kills→al は scratch/callee）/0x4D7C50=1（@0x4D7FB7・条件=slot+0x170 仮想呼びの返 object の+4 が 0x23(NPC_) でない）＝0x4D7C50 は NPC_ 述語ヘルパ**。N2 [部分]＝**Script 経路クローズ**: head 0x4FBDB0=Script vftable **0xA49DA4** slot idx27・**[0xA49DA4+0xD4]=0x4129A0（mov eax,0xa2f7ec;ret の定数 getter）**；0x6B6B90 owner は heads 3 が E8 callers 0/zone 0・1 が 0x66BFA0 のみ→#120 N2'。N3 [確定(機械・遡及)]＝**GST 166/166・callers(0x45F2E0) 8/8 生存**＝v340 census 完全堅牢。N4 [部分]＝0x65C620 本体帯 217→owner heads **160 distinct**（全 head 非仮想・TD 直結不能）、高密度 0x449FC0/0x449E20/0x449D40 が this+0x4..0xA4 の組込み list head 群を順除去（マネージャ命名=#120 N4'）。N5 [確定]＝**0x6BB260=DirectInput8Create IAT jmp スタブ**（[0xA2802C]名直読・隣 [0xA28034]=ordinal #11）／**0x446CB0=汎用 new(8) ノード割当 wrapper（callers 347）**。自己訂正 3 件（C-10a/b/c・旧併記）: a) v119_1 の callee ゼロ列挙は int3 越えで隣接リーフ fn を包含（正は本体終端必須）b) v119_1 N3a の『0/166』は site VA off-by-one 偽陰性（v119_1b が正・166/166）c) v345 の 0x4040E0→0x6BB260 候補は窓 bleed（実=0x446CB0）。教訓（ツール罠・一般化）: ①regex census の site VA は find 返り値そのもの（tva+i）で +1 しない ②fn 窓は最初の int3/ret チェーンで終端（隣接 fn の命令混入） ③callee multiset は ret 終端必須。#120 次束BB 起票済（N2'/N4'/付随・v347+ 予約）。supermemory 書込時不通→滞留。再起動 2 回を跨いだ（v119_1 write は生存・完了 probe 再実行なし）。",
+      "compressed": false
+    },
+    {
+      "id": "loop-rules-production-analysis-2026-11-09",
+      "timestamp": "2026-11-09T12:11:43Z",
+      "priority": "high",
+      "category": "decision",
+      "tags": [
+        "oblivion",
+        "loop",
+        "workflow",
+        "user-directive"
+      ],
+      "content": "2026-11-09 ユーザー指示(ループ運用ルール・タイプ5): 作製は(1)オリジナルの作りを厳守(2)並行実施(3)都度レビューで品質向上(4)ループ化、停止時は数時間後に再ループ。解析作業はReverseEngineeringセッションへ依頼してループで対応。本マシンは時刻自己スケジューラを持たないため再ループ起点=次回セッション起動/gh run watch完了通知/human再開合図。推測実装禁止と#82 runtimeゲートは不変。",
+      "compressed": false
+    },
+    {
+      "id": "lod-stol-long-width-platform-trap-2026-11-09",
+      "timestamp": "2026-11-09T23:51:14Z",
+      "priority": "medium",
+      "category": "constraint",
+      "tags": [
+        "oblivion",
+        "ci",
+        "cpp",
+        "portability",
+        "object-lod"
+      ],
+      "content": "2026-11-09 手法の欠陥教訓(type3): std::stol は long の幅が基盤で変わり Windows(32bit)=out_of_range例外→拒否、Linux(64bit)=切捨てstatic_cast→受理、と同一ソースで外部挙動が異なる。parseCellName が ObjectLodTests CellNameRejections で現実に発火（run 42614656979 linux 1 fail / windows green）。正準形: 数値境界は stoll+明示 [INT32_MIN,INT32_MAX] チェックで基盤非依存に固定、テストで極端値(MAX+1/MIN-1/int64超過/両極端受理)を CI に常設（commit 2c39db2d+9f68417c・worktree fix-lod-int32-range・verifier APPROVE・単体ハーネス 20/20 exit 0）。今後の移植実装で *_to 数値パースは同じ罠を疑うこと。",
+      "compressed": false
+    },
+    {
+      "id": "n5b-production-gate-ruled-blocked-2026-11-10",
+      "timestamp": "2026-11-10T00:03:34Z",
+      "priority": "medium",
+      "category": "decision",
+      "tags": [
+        "oblivion",
+        "rust",
+        "n5b",
+        "re-delegation",
+        "todo"
+      ],
+      "content": "2026-11-10 裁定(#45/#121): N5b=animation keyframe/resolve/walker の Rust 実装は現証拠で不可（「オリジナル厳守」担保不能）。実測: 台帳 0x597640=0hit・RE_EXE_REPORT NiKeyframeData/Controller=0hit・tmp/re 全走査 0hit。nif 側は controller_manager/sequence の parse+ABI のみ実在（ABI 27fn・walk.rs は内部限定）。◪記憶由来の 「V255 keyframe裁定」は現台帳に存在せず不採用（台帳=真相ルール）。→ ReverseEngineering 委託の #121（v348+・v347=#120 予約と整合）を起票、クローズまで N5b production ゲート継続。N5b 以外=N6 docs/native-lib link 検証は分析非依存で次増分可。CI は run 42723668391 で両ジョブ green 化済（stol/long 幅の平台依存教訓は entry 715）。",
+      "compressed": false
+    },
+    {
+      "id": "n6-docs-native-lib-verified-2026-11-10",
+      "timestamp": "2026-11-10T00:07:03Z",
+      "priority": "medium",
+      "category": "task",
+      "tags": [
+        "oblivion",
+        "rust",
+        "docs",
+        "verification"
+      ],
+      "content": "2026-11-10 #45 増分2件完了: (1) native-lib link 検証=実測で済と確認 — arm64 libnative-lib.so(11-08ビルド) のシンボル名走査で esm_plugin_open/nif_parse_memory/dds_/bsa_/plugin_/assets_ 全出現（CMakeLists 6 IMPORTED L84-94/L671-686 とも一致）、#45 の「未実行」は stale 解消。(2) N6 docs=README EN/JP 段落2・構造ツリー2(EN L414/JP L997)・ARCHITECTURE 2箇所(header path/OBLIVION_RUST_DIR default)・リポジトリAGENTS.md「Rust workspace (vendored)」節 新規（gate=cargo test --offline --workspace 176/31）。(3) 再発手法欠陥: pwsh inline python のバッククォートが `r/`t エスケープに化けてAGENTS.md 破損→write ツール+検証アサートで復旧（教訓: markdown 追記はスクリプトファイル経由）。docs は未コミット（ユーザー載せ指示待ち慣習）。",
+      "compressed": false
+    },
+    {
+      "id": "v343-receipt-121-interim-2026-11-10",
+      "timestamp": "2026-11-10T00:08:36Z",
+      "priority": "medium",
+      "category": "architecture",
+      "tags": [
+        "oblivion",
+        "re",
+        "v343",
+        "v348",
+        "n5b",
+        "re49",
+        "role-split"
+      ],
+      "content": "2026-11-10 v343 受領＋#121(N5b 裏取り)中間（STATE (bc)・round_verify 210-205-5 ALL OK）。v343(#116 BG・48,672B/201行)は兄弟親セッションが台帳 row324(V324) 統合済（重複統合はアサートで回避・#116 note にクローズ記録確認）。本レーンの残務実施: row320 へ inline 訂正=⑦要素正式名 BSTempEffect 系5派生[確定](0x679850・JPT 0x679A54)/⑧登録元=0x591C50(TileMenu vftable 0xA6AF14 slot+0x14・SetAt(menuID-0x3E9))・59名順序=静的リーチ外[確定負]最終クローズ・C-⑧(v341『0x591D24=除去』→登録)/＋#82 note=v343 §10 のランタイム6件(B3BD00・B33398・B34D90・XML ラベル・modal 7slot・メニュー順序)。#121=main 委託の N5b ゲート（分担規定后初の実案件）: 中間成果物 v348_n5b_recheck_ruling.md(6,787B/34行・probe v121_1..3)。正典: ①11 クラス vtbl/TD map 完成—NiTransformController 0xA79634(TD 0xB23E54)/NiInterpController 0xA7A16C/NiSingleInterpController 0xA7A08C/NiTimeController 0xA7EB24/NiControllerManager 0xA79804/NiControllerSequence 0xA79A34/NiKeyframeManager 0xA7B3FC/NiBoolData 0xA7C2AC/NiFloatData 0xA7A2EC/NiPosData 0xA7A624/NiRotData 0xA7AB3C。**[確定負]×2: NiKeyframeController/NiKeyframeData の RTTI TD は画像に存在せず・静的な name→create テーブルも不存在**（名文字列 0xA791F9/0xA79209 等への imm32/アラインド ptr 参照 0 件=実行時プロトタイプ登録型）。③委托想定座標 0x5A3520 は**命令途中**（C-7 系再発）＝実 head 0x5A3460(UI float 補間・Tile 0xFB6/0xFB1)/0x5A3540(メニュー Main(1020) resolve・v331 getter 0x589B70 経由・virtual slot0/+0x34)で**NIF resolver ではない**。⑤tmp/re/lodnif=101 ファイル・**controller ブロック 0**（アニメ付きサンプル不在）。∴②キーフレーム配列レイアウト（count 前置き/interpolation/stride）=[未確定]維持→**#45 N5b の該当実装は保留（推測移植禁止指示）**、#121 open 継続（台帳 row 化は完遂時・v348 は中間＝次 bundle v349+）。main への要求=アニメ付き NIF 1 本（.kf か Actor .nif）→ 提供後は R1（Data 群 Load slot の read 列静的同定）＋サンプル突合＋tmp/nif_oracle 比較でクローズ計画。rust/crates/nif-core の Keyframe 語は仮説実装として記録のみ（rust/ 無編集・新 AGENTS §Rust: cargo test --offline --workspace ゲート／oracle 無しで parse 挙動を動かさない）。教訓: 名前解決が静的表でなく実行時登録のクラス群は、vtbl/TD map＋Load slot 命令窓（読み列）でのみレイアウト確定可能／命令境界検証教訓(C-7)は『委托された座標』の検証でも有効（0x5A3520 が化け物だった件）。supermemory は継続不通（v345/v346/v348+本件の 4 ラウンド分が滞留キュー）。",
+      "compressed": false
+    },
+    {
+      "id": "v348-sec5-121-half2-2026-11-10",
+      "timestamp": "2026-11-10T00:11:53Z",
+      "priority": "medium",
+      "category": "architecture",
+      "tags": [
+        "oblivion",
+        "re",
+        "v348",
+        "n5b",
+        "keyframe"
+      ],
+      "content": "2026-11-10 #121 第2ハーフ（v348 §5 自己追記・probe v121_4・STATE (bd)・#121 open 継続）。正典: ctor チェーン= NiTransformController 0x6C3E50→NiSingleInterpController 0x6CE1D0（+0x3C=target 初期 0）→NiInterpController 0x6D04E0（`and word[+8],0xFFDF`）→NiTimeController 0x715990(SEH)・NiControllerSequence 0x6C6550(+0x1C=1.0f/+8..0x18=0)。**Data 群共通レイアウト [確定(命令)]: count=[obj+0xC]・interpolation kind=[obj+0x10]・dispatch=[kind*4+0xB3D2F8]（.data 関数ポインタ表）・妥当性 byte[kind+0xB3D3F4]**（Float/Pos/Rot の slot7+ getter 完全同型＝共通基底傍証・getter 引数 obj の +0x21C/+0x220 は target 側）。②=[未確定]→**[部分確定]** 昇格（time 配列/value 配列の読み順・count 前置きは NiKeyframeData 本体 vptr 未同定のため残＝アニメ付き NIF サンプル同一ゲート）。教訓: **vtbl imm32 ref から出た head の E8 callers=0 は『未発見』でなく virtual-entry 型の印**（Float/Bool ctor callers 0 が該当・vtable slot 実装）。採番: v348=中間（自己追記方式・番号据置）／完遂時 row 化＋クローズ成果物は v349+／#120=v347 空きのまま。supermemory 滞留キュー: v345/v346/v348/本件（復帰時一括）。",
+      "compressed": false
+    },
+    {
+      "id": "v347-120-close-2026-11-10",
+      "timestamp": "2026-11-10T00:19:39Z",
+      "priority": "medium",
+      "category": "architecture",
+      "tags": [
+        "oblivion",
+        "re",
+        "v347",
+        "re49",
+        "census",
+        "registry"
+      ],
+      "content": "2026-11-10 #120 次束BB 完了（v347_bundle_BB_ruling.md 6,033B/32行・probe v120_1..3・row325/bak175/round_verify 211-206-5・STATE (be)）。裁定=3 件とも [部分確定]＋静的経路尽くの**待記宣言クローズ**、[確定負]=『この群に静的呼出/静的名前解決経路は存在しない』、**新規残件なし（次束起票要らず）**。N2': 0x6B6B90 連鎖の host=0x66BB80（`call 0x5E06C0;test al`→`push 0;mov ecx,esi;call 0x6AE720`）だが 0x66BB80 と直接 callers 3 heads（0x6AB570/0x6AB720/0x6AED70）は E8/E9/push/mov-imm/アラインドデータ参照 **全 0**（0x6AED70=デコード空・head 性なし注記）→ 実行時コールバック登録限定・owner 名前=#82。0xB16178=静的 0・C605/8805 0・disp32 読 29。N4': 0x65C620 cluster 6 heads（0x449D40/E20/FC0/44A470/44A630/44AC20）全参照形 census 全 0×6＝実行時登録 field 毎 teardown fn。**teardown 形 [確定(命令)]**: `call 0x9832E6(0,name_g,cat_g,0,eax)`→`push eax; lea ecx,[esi+0x34/0x3c…]; call 0x65C620; ret 4`＝名前付きレジストリ lookup→value 除去。name/cat グローバル（0xB05434/0xB0541C/0xB0532C/0xB02F9C）は**実行時構築 std::string**（静的 dword=0xAA3E80 共通プレースホルダ）→ 名前/クラスとも静的不能（#82）。付随: Script 経路再確認（0x4FBDB0→0xA49E10→vftable 0xA49DA4 '.?AVScript@@' slot27・[+0xD4]=0x4129A0=`mov eax,0xa2f7ec;ret` 空槽 getter）。0x52B0C0/0x531290=レジスタ連鎖 this・**[0xB36530] 静的 0xFFFFF2E0=非 vptr** → 実行時型待記。収穫: 0xA6991C='Data\\Menus\\Options\\gameplay_menu.xml'（v348 §5 の 0x5A3540=Main(1020) resolve の semantic 裏付け）。教訓: **全参照形（E8/E9/imm32/アラインド dword）×全セクションの negative census が揃って初めて『静的到達不能』を宣言できる**（単一形の 0 件は不在証拠化禁止の一歩手前）。レーン状態: #121 は stop-open（main のアニメ付き NIF サンプル待ち）。本レーンの open 作業はサンプル/実機ゲート（#82/#63・#107/#64）のみ＝次アクションは R1 静的押し上げか main サンプル受領対応。supermemory 滞留 5 ラウンド（v345/v346/v348/v348§5/本件）。",
+      "compressed": false
+    },
+    {
+      "id": "v348-sec6-121-r1-2026-11-10",
+      "timestamp": "2026-11-10T00:25:18Z",
+      "priority": "medium",
+      "category": "architecture",
+      "tags": [
+        "oblivion",
+        "re",
+        "v348",
+        "n5b",
+        "keyframe"
+      ],
+      "content": "2026-11-10 #121 R1 決定的 dump（v348 §6 自己追記・probe v121_5・STATE (bf)・#121 再開 active）。正典: **0x6D3BD0=キーフレーム blob→NiKeyframeData 変換＋NiTransformController attach パイプライン [確定(命令)]**—型 walk(0x700010・[ctx+0x30]・型名 [0xB3D91C] 照合=vtbl+4 GetTypeName)→無ければ new(0x40)+ctor 0x6C3E50→0x6D3B40 attach；コンテナ new(0x44)+0x6DFB70・[edi+0x10]=[ctx+0x40]・**[edi+0xC] u16 bit0=[ctx+0x3C]&1/bit1-2=kind packed**；元 blob=目標 [vtbl+0x80](0) の返り+0x2C、3 出力 getter **0x6D3AA0: countA=word[+0xA]/ptrA=dword[+0x14]/mode=byte[+0x1D]**（第 2 配列 countB=word[+0xC]・0x6D2990/0x6D3AF0/0x6D3830/0x6E1AC0）。要素=24B レコード(new 0x18・vptr 0xA7A624・+8/+C/+10=0・byte+14=0)、路 A コンテナ new 0x20+0x6DA160。訂正（旧併記）: **0x6D39E0 は ctor でなく (count,A,B) SetData 系（ret 0xC）**—v121_4『ctor』表記差し替え。要素比較 0x6D8D70={+8,+0xC,+0x14 byte}（§5 のコンテナ測定義 +0xC/+0x10 とは対象違い明記）。②=[部分確定→レイアウト表確定]。**残 1 段=0x6D4379（唯一 caller）親窓の stream read 列**＝次ハーフ第 1 標的（これで読み順確定の見込み、lodnif=0 制約はサンプル突合用に残る）。教訓: 『唯一 caller を辿る』だけで Load 系の本体に到達できた事例（factory テーブル不在のクラスでも ctor-xref 経由で変換パイプラインが引ける）。supermemory 滞留 6 ラウンド目（v345/v346/v348/§5/§6・#120 分・本件）。",
+      "compressed": false
+    },
+    {
+      "id": "kf-samples-handoff-121-2026-11-10",
+      "timestamp": "2026-11-10T00:47:35Z",
+      "priority": "medium",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "n5b",
+        "samples",
+        "todo-121",
+        "byo-data"
+      ],
+      "content": "2026-11-10 #121 サンプル handoff 完了: Oblivion - Meshes.bsa（D:\\Cargo\\Other\\Oblivion\\Oblivion_DISC版\\Oblivion\\Data・読取のみ）に .kf=1843/8032nif/9889lod census 実測 → tmp/re/n5b_samples/ へ5本確定抽出（全 NiControllerSequence 含む、goblin specialidle_dodge は NiFloatData 付き=R1 stride 実測用。magic=Gamebryo File 検証済・sha256は#121ノート）。loose .kf は両インストールに無い。v348 の『lodnif に controller 0』と併せ、RE レーンの R1（Load slot 同定）/R2（prefix 表）が次の完了条件、v349+ で②④確定→N5b 実装ゲート解除の見込み。sample dir は gitignore 域（BYO データ）。",
+      "compressed": false
+    },
+    {
+      "id": "v349-121-n5b-close-2026-11-10",
+      "timestamp": "2026-11-10T01:28:33Z",
+      "priority": "medium",
+      "category": "architecture",
+      "tags": [
+        "oblivion",
+        "re",
+        "v349",
+        "n5b",
+        "re49",
+        "keyframe"
+      ],
+      "content": "2026-11-10 #121 N5b 裏取り束 完遂クローズ（v349_n5b_final_ruling.md 5,423B/28行・probe v121_1..9 全 EXIT=0・台帳 row326/bak176/round_verify 212-207-5・STATE (bg)・main 委託初案件）。正典最終: **② [確定(命令)]**—NiKeyframeData 実 vftable=0xA7B0D4（ctor 0x6DFB70 の vptr 書 0x6DF0FA/0x6DFBA6）、Load=slot+0x1C=0x6DFDE0、読み順=`u16 kind→+0xC`→`u32 count→+0x10`(0x712A90)→`float[n] times→+0x14`(0x713620)→`sub→+0x18`(0x6CB990)→`8×u32 count 読+refcount スワップ(+0x38..+0x54)`（InterlockedDec/Inc=IAT 0xA2807C/78・**値配列は resize のみで充填は 0x6D4300→0x6D42D0 fixup 路**）。slot6=clone/create(new 0x44+0x6DF950 複写)。容器 A vtbl 0xA7AD5C/B vtbl 0xA7A55C（+4 refcount 共有・既定値 0xB24FC8/CC/D0=-FLT_MAX 0xFF7FFFFF 類・[0xA7C6B0]=-FLT_MAX）。① 完=11 クラス vtbl/TD map＋**型名レパは実行時 std::string**（GetTypeName 返却先 0xB3DCF0/CFBC/DF08/0xB3D91C/DBDC/DC0/DF34/F584 の静的 dword=0x21818285 類のゴミ=[確定負]。#63 ダンプ拡張で 8 語 char* 追加要求=#82 note）。③ UI resolve と確定（0x5A3460 補間/0x5A3540 Main(1020)・gameplay_menu.xml@0xA6991C）。④=②の列＋型別分岐（GetTypeName=vtbl+4 照合 3 路 0x6D3BD0/6D3EB0/6D4000＋attach 0x6D42D0）。⑤ lodnif 101/101 に controller ゼロ（アニメ NIF 1 本=検証用入力として main 要求済）。main 要約（ハンドオフ §7）: walker は count 部まで直読み・値は fixup 前提／kind dispatch 0xB3D2F8・妥当性 0xB3D3F4・attach フラグ packed（data+0xC bit0/bit1-2）。教訓（再確認）: .data 0xB3xxxx の『名前ポインタ』は deref 前に実行時 std::string を疑う（v347→v349 の二連発）。レーン状態: #121 note→complete・#82 note 追記済。本レーンの純静的 open=ゼロ（active ゼロ・残は #107(#64 承認)/#82/#63/#46/#47/#20/#101 のゲート系）。supermemory 滞留 v345..v349（不通継続）。",
+      "compressed": false
+    },
+    {
+      "id": "compact-macro-commands-2026-11-10",
+      "timestamp": "2026-11-10T01:34:17Z",
+      "priority": "medium",
+      "category": "architecture",
+      "tags": [
+        "opencode",
+        "harness",
+        "commands",
+        "compaction",
+        "macro"
+      ],
+      "content": "2026-11-10 コンテキスト圧縮マクロ導入（ユーザー依頼・グローバル設定）。新ファイル: `~/.config/opencode/commands/compact-mini.md`（軽量・非破壊の定期圧縮＝compact-mini skill を呼ぶテンプレ）と `commands/compact-deep.md`（節目の深圧縮＝compact-deep skill。圧縮前に正典台帳/STATE/memory への未反映決定事項を点検→追記してから圧縮する手順を明文化、ソース・git 禁止は L1 制約と整合）。V2 仕様: グローバルコマンドは ~/.config/opencode/commands/*.md、保存で自動リロード（/reload で強制）。罠2つ: ①コマンド名がビルトインと同名だと置換されるため `/compact` を避けた ②`opencode api get /api/command` は location がホームに固定され data:[] を返す（=登録成否の検証にこの API は使えない。ファイル実在＋docs 準拠で確認）。補足: ネイティブの自動コンパクションはデフォルト on（keep 15k tokens・buffer 15%/最少16k）。現行 opencode.jsonc に `compaction` キーなし＝デフォルト運用。調整（explicit 化や keep.tokens 増減）はユーザー承認後に実施する方針。supermemory は不通継続で本件は未追登録（滞留分 v345..v349 と一緒に復帰時一括）。",
+      "compressed": false
+    },
+    {
+      "id": "deep-compact-run-2026-11-10",
+      "timestamp": "2026-11-10T01:43:03Z",
+      "priority": "low",
+      "category": "configuration",
+      "tags": [
+        "opencode",
+        "harness",
+        "compaction",
+        "deep-compact",
+        "session"
+      ],
+      "content": "2026-11-10 deep-compact 初回実行（compact-deep skill・ユーザー手動発火）。成果物: `~/.config/opencode/memory/deep-compact-2026-11-10.md`（約7.2KB・階層圧縮＋検索索引・重要決定6件全文保持・教訓6件）。点検結果: マクロ導入は memory 反映済だが STATE.md 未反映だったため (bi) 節を追記してから圧縮（STATE 573→新節）。台帳 row は非消費維持（row327・v350 は次裁定用に空け、ハーネス件は採番対象外と規定）。削除0・重複解消0・正典は append-only。待機状態: RE キュー純静的 open ゼロ／ゲート=#64 承認・アニメ NIF・#63 ダンプ・supermemory 復帰（滞留 v345..v349＋マクロ件）。",
+      "compressed": false
+    },
+    {
+      "id": "n5b-increment1-walkrs-layout-v349-refuted-2026-11-10",
+      "timestamp": "2026-11-10T01:47:11Z",
+      "priority": "high",
+      "category": "decision",
+      "tags": [
+        "oblivion",
+        "rust",
+        "n5b",
+        "correction",
+        "todo-122",
+        "todo-45"
+      ],
+      "content": "2026-11-10 N5b増分1: nif-core block.rs に KeyframeData reader 実装（worktree n5b-keyframe-reader・未コミット）— **walk.rs の skip_keyframe_data 準拠**で実装した根拠=実測反証。v349 §2 の読み順（u16 kind→u32 count→float[n] 連続 times→sub→8×u32）は実 .kf ストリームと不一致: tmp/re/n5b_samples 5本が全ファイル walk clean、body=先頭 u32 count→(count≠0 で u32 type)→quat 20B/float 8B/vec3 16B interleaved（interp2=接線ペア、interp3/type3=TBC12B）→型4は quat 読まず euler 3ch（Order は ≤10.1.0.0 のみ）→末尾 Translations/Scales。字节精算一致: goblin blk2=48B・blk73=116B・swim blk4 euler[2,2,2]trans=87。nif-core 32 passed/0 failed（新規テスト4: quat+ch・型4・型3TBC・NiTransformDatavs NiKeyframeData 先行選択）。keys_fit ガードは parse_text_keys 慣例踏襲。→ RE 反証依頼 #122 起票（成果物 v350+・0x6DFDE0 の同定再裁定/正典昇格/単独 body）。残余=workspace test→probe 削除→branch commit→verifier（マージ/push 承認制）。",
+      "compressed": false
+    },
+    {
+      "id": "n5b-increment1-committed-6992263e-2026-11-10",
+      "timestamp": "2026-11-10T02:11:37Z",
+      "priority": "medium",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "rust",
+        "n5b",
+        "verifier",
+        "todo-45"
+      ],
+      "content": "2026-11-10 N5b増分1完了: worktree n5b-keyframe-reader @6992263e（block.rs+317/lib.rs+240、2ファイルのみ）。walk.rs skip 系と1:1の KeyframeData reader+公開API+テスト4（quat+ch/型4 euler・interp2/3/型3 TBC/二名称先行順）、keys_fitガード=parse_text_keys慣例。workspace 180 passed/0 failed（176+4）、verifier APPROVE 全8項目・独立再実行31suite緑・BYO probe 除去確認済。v349 §2 不整合は #122 委托として保持。マージ/push=承認待ち。増分2=ABI+shim+oracle+NiFloatData 系 body は v350 裁定待ち。"
+    },
+    {
+      "id": "new-flow-crash-colors-stride-fixed-2026-11-10",
+      "timestamp": "2026-11-10T03:59:54Z",
+      "priority": "high",
+      "category": "correction",
+      "tags": [
+        "oblivion",
+        "android",
+        "crash",
+        "assets-ffi",
+        "emulator",
+        "tool-pitfall"
+      ],
+      "content": "2026-11-10 NEW フロー実機検証: emu(Pixel_API34 x86_64)に 11-08 debug APK→タイトルメニュー表示→NEW(713,878)→Menu selection→1.2s で SIGSEGV(SEGV_ACCERR)。tombstone=merge_geometry←afl_merge_geometry←mergeGeometry←headhuman.nif。原因[確定]: C++ flattenGeometry が colors を 3float/要素に圧縮、正典 ABI(assets_ffi.h colors=quadruples・Rust [[f32;4]])と stride 不一致→全頂点色 mesh で越境先読み。既存 host test は単一色で盲点。修正=mesh_builder.cpp で w 保持+回帰テスト2色化(worktree fix-assets-colors-quadruple・未コミット、マージは承認制)。input 構築箇所は mesh_builder のみ=一箇所で全経路。環境教訓: scoop cargo=msvc 単体(gnu std 無/E0463)、gnu cargo rustc --crate-type staticlib は assets_ffi.lib 名の実 GNU アーカイブ(ar t 確認)→*.a リネームで run_host_tests.sh 対応可、git-bash $HOME=/c/Chamber 罠、emu は Start-Process 分離で harness 再起動に耐える、emu 縮小=QT_SCALE_FACTOR=0.5。他レーン dirty 8行(CharacterStatus.name 受渡し)は整合的だが worktree ビルド外。決定的検証=修正APK→NEW タップ→キャラ作成。"
+    },
+    {
+      "id": "colors-stride-fix-2c38cc2e-approve-and-gradle-quote-lesson-2026-11-10",
+      "timestamp": "2026-11-10T04:08:52Z",
+      "priority": "medium",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "android",
+        "assets-ffi",
+        "verifier",
+        "tool-pitfall",
+        "todo-45"
+      ],
+      "content": "2026-11-10 colors stride 修正=commit 2c38cc2e（branch fix-assets-colors-stride・worktree fix-assets-colors-quadruple）+ verifier APPROVE 全5項目（旧コードで頂点1=(0.5,0.6,越境)=決定論FAILの数学確認まで済）。nif_parser.cpp:382 の i*4 は別ABI(nif_geometry_info)で本件外。ローカル host test は環境限界（scoop cargo=msvc のみ・gnu staticlib が .lib 名）で未走行、ゲートは CI run_host_tests.sh と emu 実機。ハーネス罠: PowerShell→gradlew の -Poblivion.rust.offline=true は引用必須（非引用だとタスク名分割で Task not found 38s FAIL、教訓=プロパティは必ず括る）。再走=背景 sh_1c3a378ce。マージ/push=実機検証後のユーザー承認制。emu-5554 生存。"
+    },
+    {
+      "id": "newgame-colors-fix-verified-on-emulator-2026-11-10",
+      "timestamp": "2026-11-10T04:36:53Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "android",
+        "assets-ffi",
+        "emulator",
+        "verification",
+        "todo-45"
+      ],
+      "content": "2026-11-10 決定的検証 SUCCESS: colors quadruple 修正（commit 2c38cc2e・worktree fix-assets-colors-quadruple）でビルドした app-debug.apk(140.9MB・2m18s BUILD SUCCESSFUL・build_r2.log)を emulator-5554 へ install Success→Title screen active ~40s→tap NEW(713,878)→Menu selection: New Game→Game started! Opening character creation.→SIGSEGV なし（旧 APK はここ 1.2s で死亡）。pid 5684 は tap+8s/+33s とも生存・crash buffer 空。ログ Creating CharacterCreation→UICharacterCreation initialized successfully→TES4 header parsed→NPC mesh HeadKhajiit/HeadHuman。スカシ2枚(emu_newgame_fixed.png/emu_cc2.png)はキャラ作成パネル（Name/Race/Attributes/Skills/Appearance・Adventurer・Create/Cancel）が安定描画。判定=修正が NEW フロー crash を解消〔headhuman.nif 全頂点色経路が通った事が stride 修正の直接証左〕。host test ローカル未走行は CI 任せ。他レーン dirty 8行(CharacterStatus.name)は本ビルド外。マージ/push はユーザー承認制。"
+    },
+    {
+      "id": "graphify-refresh-107-done-64-closed-2026-11-10",
+      "timestamp": "2026-11-10T06:52:29Z",
+      "priority": "medium",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "graphify",
+        "knowledge-graph",
+        "todo-107",
+        "todo-64",
+        "tool-pitfall"
+      ],
+      "content": "2026-11-10 #64/#107 完了: .gitignore 例外（!/tmp/re/ チェーン）をユーザー裁定確認でクローズ→graphify refresh。graph.json=53,121n/131,278e/1,553comm（11-09比 +4,324n/+8,204e）、tmp/re 278ファイル/2,541ノード登録、tamper 48ノード prune で report の tamper 提及0・Surprising 上位5件クリーン。SaveManager 直接強化は未達（tmp/re↔save_system エッジ0・間接=tmp/re↔docs 9本）。中断ランの replace-on-re-extract が docs 355ノード脱落→289 semantic+795 edges を graph.json から復元し _lost_saved_semantic_nodes=0 を確認して Step4 再実行。罠: ①replace-on-re-extract は chunk 失敗時に base側ノードを消す（空 chunk 残置=中断の兆候）②Step9 前に detect/extract sidecar が消失し manifest再保存/cost が未実施（原因未特定）③graph.json の edge キーは links、extract は edges で非対称。ai-todo 完了88件をアーカイブ（open18件）。.graphify_old.json はロールバック用に保持。graphify-out は gitignore 対象。"
+    },
+    {
+      "id": "graphify-corpus-refresh-2026-11-10",
+      "timestamp": "2026-11-10T06:55:41Z",
+      "priority": "medium",
+      "category": "architecture",
+      "tags": [
+        "graphify",
+        "corpus",
+        "gitignore",
+        "harness",
+        "oblivion",
+        "re",
+        "v350-reserved"
+      ],
+      "content": "2026-11-10 #64 裁定受領（ユーザー承認: !/tmp/re/ ルート）→ #107 Graphify RE コーパス刷新 完遂（note→complete 両方）。①.gitignore L51-61: 素の /tmp/ は git 上 negation 不可のため content 形に変更 — `/tmp/*` + `!/tmp/re/` + `/tmp/re/*` + `!/tmp/re/v*.md`。git check-ignore 検証済（v*.md=非除外 exit1 / ledger・bak・n5b_samples=61行で除外）。**v*.md のみ可視化**＝台帳・bak・バイナリ・probe は不変更。②graphify-out/.graphify_build.json 新設: gitignore:true + excludes:[.ai-todo/tamper/*]（11-06 のみ→全 tamper 拡張＝同種 INFERRED ノイズ。excludes は gitignore と同一エンジン _parse_gitignore_line）。③スコープ裁定: detect 新規2,082（code119/doc296/img1667）。tmp/re v*.md は **278 ファイル全て NOT registered 実測**（タスク記載「約39本」は v289-v327 の過小記載と判明）→ docs296+code119 実行、**画像1,667（app/src テクスチャ）は RE 対象外として保留**（stamped せず次回 --update で再キュー可）。④AST 4,454n/9,664e（警告: dds_ffi.h L115 構文・19ファイル無シンボル）＋ semantic 19ch/296file→2,763n/3,900e/57h。partial 3件（STATE/TODO/.ai-todo-state の数行未読=cache partial・次回自動再試行）。chunk18 は API エラー2連発→インライン準備中にサブエージェント成功で回避。⑤build_merge: **53,121n/131,278e**（replace 3,115・source-less 21 除去・**tamper 48 ノード除去**=②の効果）。guard 検証 round2 **PASS 欠落0**（round1 FAIL は絶対/相対パス不正規化バグ＋extract 自動補正と判明）。⑥検証(#107④): tmp/re=**2,541ノード/252コミュニティ分散**・RE↔Save 直接エッジ**57本**（v193/v198/v205/v241→TESSaveLoadGame::Save/SaveGameData 等）＝ブリッジ強化確認。画像由来ノード0。⑦出力: graph.json（53,121n 全 community 付与・実ラベル）/GRAPH_REPORT（God Nodes 1位 FUN_00401f20=1685e）/graph.html 1.66MB 全更新。graphify-out は .gitignore L132-133 済=コミット対象外。cost 計測0（subagent usage 未記録=制約事項）。採番: tmp/re 成果物 .md 無し→**v 採番非消費（v350 は次裁定用に残置）**・row 非消費。変更物: .gitignore（未コミット）・graphify-out/（ignore 下）・STATE (bj)・TODO.md・memory。supermemory 不通継続で滞留（v345..v349＋マクロ件＋本件）は復帰時一括。"
+    },
+    {
+      "id": "chargen-structure-survey-v351-re-dispatch-123-2026-11-10",
+      "timestamp": "2026-11-10T11:28:07Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "chargen",
+        "re",
+        "todo-97",
+        "todo-101",
+        "todo-123",
+        "spec-finding"
+      ],
+      "content": "2026-11-10 #97 キャラクター作成構造調査=完了: 解析メモ tmp/re/v351_chargen_structure_survey.md（v350=#122 予約のため v351 採番）。4 論点: ①Appearance=部分確定 — 原本 race_sex_menu.xml（BSA 抽出 D:\\Cargo\\Other\\Oblivion\\BSA\\bsa_Extraction\\menus\\chargen\\・705行・slider id103 の trait user7=スライド対象 editorid / page=user0 構造 [確定]）＋ s77 §1.5 モーフ一覧（head5/eyes12/brows7/nose15/mouth10/beard6+髪色16×2）[確定]、page 対応表・レース別集合=[未確定]。②種族表示名=確定（ESM RACE FULL→RaceData.fullName 実装済＋原本 FUN_005CDA30 が TESRace リスト DAT_00B33A98+0x44 走査）。③選択モデル=確定（ClassMenu ウィザード step1-5=SkillsMenu mode2/1/0→TextEditMenu→確認、初期値 0x5222D0=major+25/minor×0.1+5・属性 race base+class+5・clamp100・スキル21件=RE_EXE_REPORT §46.1）。④NAME=UI 側確定（race_sex_menu.xml L47-66 id=10 target=true・TextEditMenu はクラス名専用）/エンジン保存先=未特定→#123 で RE レーン依頼（6A0A 走査は偽陽性2件・保存側=フォーム名 getter 0x4DA2A0→0x464C04 書出）。副次発見: ポート SKILL_NAMES(array<20>) が正典21件と不整合（Marksman 重複・正典外 Unarmored/Armor・欠落 Armorer/Mercantile/Security/Speechcraft・全ループ i<20）→#101 へ材料提示。別件 headroom: persistent デプロイ完了（8787・opencode.jsonc 注入・Copilot 上流実証）だが全モデル 429 quota exceeded＋huggingface.co 遮断のため kompress 素通し（ユーザー指示で停止）。"
+    },
+    {
+      "id": "loop-protocol-user-directive-2026-11-10",
+      "timestamp": "2026-11-10T11:43:25Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "loop-protocol",
+        "process",
+        "user-decision",
+        "review",
+        "dispatch"
+      ],
+      "content": "2026-11-10 ユーザー決定（恒久ルール・AGENTS.md『Loop Protocol』に反映済）: ①作製はオリジナルの作りを厳守（正典[確定]+実データ検証分のみ・推測実装禁止）②作製は並行して行う（複数レーン同時・worktree 分離維持）③都度レビュー（各実装単位の直後に verifier サブエージェントでレビュー→指摘反映→次へ）④ループ運用（手が止まったら次にできる項目へ、セッション停止時は数時間後に再開=再開時に STATE.md と ai-todo open を確認）⑤解析（RE が必要な未確定事項）は ReverseEngineering セッションへ ai-todo #RE タグで起票して委譲（例 #122/#123/#124）。推測で埋めない。"
+    },
+    {
+      "id": "v350-n5b-load-ruling-2026-11-10",
+      "timestamp": "2026-11-10T13:42:27Z",
+      "priority": "medium",
+      "category": "re",
+      "tags": [
+        "oblivion",
+        "re",
+        "n5b",
+        "keyframe",
+        "v350",
+        "re49",
+        "correction",
+        "walk-rs"
+      ],
+      "content": "2026-11-10 #122 完遂（V350 反証依頼・main 起票→RE レーン裁定）。成果物 **tmp/re/v350_n5b_load_ruling.md**（probe v350_1..8 全 EXIT=0）。①0x6DFDE0 同定再裁定[確定]: ファクトリ name→create→ctor→vptr 鎖（ペア方向は NiTransformData→0x6E1C00→vptr 0xA7B474=RTTI 一致で検証）で **0xA7B0D4=NiLookAtInterpolator**（v349 の NiKeyframeData 同定は誤り）。0x6DFDE0=LookAt::Load の **file-load 経路**（[stream+0x21C]reader・0x712A90=ResolveLink（非 count）・0x713620=ReadString（+0x14=char* 非 float[n]）・0x6CB990+0x0A01006E ゲート・3回ループ refcount swap=+0x38/3C/40 の3スロットのみ）。実行時変換側=**0x6D3BD0 確定**（new(0x44)+ctor 0x6DFB70・byte[ebp+0x3C]→u16[+0xC] bits0-2 packed＝v348§6 裏付け・ストリーム読みゼロ）。②NiKeyframeData 正体[確定負]: RTTI `.?AVNiKeyframeData@@` 0件（.?AVNi* 388 名走査）＋ファクトリが NiKeyframeData(0xA791F8)/NiTransformData(0xA79024) を**同一 create 0x6E1C00** に登録（new(0x2C)・3 KeyGroup スロット）＝**独立クラス不存在・NiTransformData へエイリアス**。walk.rs 両型共通ハンドラは EXE 設計と一致。③**walk.rs 正典昇格[確定]**: EXE 実 Load=**0x6E2180**（u32 count→u32 type→dispatch [type*4+0xB3D0B8]→count≤0xFFFF→Translations→Scales KeyGroup・テーブル4本=0xB3D0B8/0xB3D0A0/0xB3D440/0xB3D428 は .bss 実行時初期化）と指令単位1:1、main バイト精算 blk73=116・blk2=48 と算術一致。**v349 §2 訂正7件**（row327 反映）。④family 先頭読み[確定]: NiFloatData 0x6E3690/NiRotData 0x6D8F60/NiPosData 0x6D9F90/NiBoolData 0x6E8A30(+0x0A010068 ゲート) 全て u32 count 先頭、NiKeyframeManager 0x6E12C0 は別形式。⑤**main 増分1(6992263e)実測検証済→増分2(nif-ffi ABI+oracle)ゲート解除**。残点 V-350-1..6（0x6E1E90 Order 位置・テーブル初期化元・**v121 map 他エントリ再監査=中**）。教訓: func_bounds linear 過走再発（0x6DFDE0→0xE20 誤測・ret@0x6DFE8F）は v313 どおり linear 手動是正／旧 v121_1 COL walk は name VA 直接比較で0件＝**name−8（TD 構造体）補正**で22候補。probe_harness.py は %TEMP% 不存在＝v307_common 代替。台帳 row327 追加（bak177）・round_verify ALL OK（213/208/open5）・STATE (bq)・#122 note→complete。v 採番 v350 消費（v351=main #97 メモと重複なし）。新規 RE 依頼: #123（RaceSexMenu id=10 保存先・v352+）と #124（page/user0 対応表・レース別スライダー）が main から着地＝次候補。docs/GT 反映は #47/#20 一括待ち（L1）。"
+    },
+    {
+      "id": "skill-list-canonical-21-fix-ee6e51b0-2026-11-11",
+      "timestamp": "2026-11-11T00:57:47Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "chargen",
+        "canonical",
+        "review",
+        "emu",
+        "todo-125"
+      ],
+      "content": "2026-11-11 作製ループ第1弾=スキル一覧の正典21件化（ai-todo #125 完了）。旧 SKILL_NAMES(20件) の欠陥=Marksman 重複・正典外 Unarmored/Armor・欠落 Armorer/Mercantile/Security/Speechcraft・全境界 i<20、キャラシート skillOrder[] は Speechcraft 欠落。RE_EXE_REPORT §46.1（0x00B0A1A8 の AV 0x0c..0x20）に従い21件・AV順へ統一＋境界6箇所を SKILL_NAMES.size() 化（残2ガード放置 Speechcraft トグル不可の新規不全を verifier が検出→REJECT→修正→APPROVE）。成果: branch fix-skill-names-canonical / commit ee6e51b0（3 files +23/-17・git diff --check 0）。検証: assembleDebug SUCCESS 12m3s（worktree の local.properties 欠落=main から補完が初回失敗原因）＋emu 目視=Skills タブ21行全描画・Create/Cancel と重ならず・クラッシュなし（証跡 %TEMP%\\opencode\\emu_skills_tab.png）。host test は UI リスト対象なし＝CI+emu がゲート。push は承認制で未実施（マージ候補順: 2c38cc2e → 6992263e → ee6e51b0）。RE 依頼 #123（NAME 保存先）/#124（page 対応表・スライダー集合）起票済み。"
+    },
+    {
+      "id": "chargen-create-flow-verified-99-done-2026-11-11",
+      "timestamp": "2026-11-11T02:16:27Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "chargen",
+        "emu",
+        "todo-99",
+        "todo-126",
+        "todo-127",
+        "gap-found"
+      ],
+      "content": "2026-11-11 #99 Create 後の状態検証=完了（クリーン再実行で確定）。確認6件: Create→startGame()→Quest ID=1002 Welcome to Cyrodiil(accept)+starter gear+welcome box、種族選択で即 Applied race bonuses(Khajiit)、HUD HP100/100·Mp50/50·St100/100（vitals 転送一致）、カメラ=スワイプ応答、移動=ジャグジー前進（ミニマップマーカー移動）、クリーン実行では Create→約6秒でパネル消去。クラッシュなし。欠落5件を明示して分割: #126（skills 未転送/race 未保持/name ハードコード renderer.cpp L912＝main tree の未コミット CharacterStatus.name 受渡しと競合回避が最優先）/#127（UICharacterSheet が全インスタンス化なし＝数値表示不能）/A=カスタム名入力は adb input text 非対応で未確認。未再現現象: 初回ランで Create 後パネルが約40分残存＋不可視の welcome box が modal で全タッチ吸収（renderer.cpp L8079）→クリーン再実行では解消・原因未特定（描画/入力ゲートが同条件なのに不一致＝説明未了・要観察）。証跡: %TEMP%\\opencode の15 PNG（r2_* タイムライン含む）＋emu_skills_review1.ps1/emu_create_timeline.ps1。adb は PATH 欠落＝SDK\\platform-tools の明示パスで解決。"
+    },
+    {
+      "id": "v352-racsex-name-flow-2026-11-11",
+      "timestamp": "2026-11-11T04:55:00Z",
+      "priority": "medium",
+      "category": "re",
+      "tags": [
+        "oblivion",
+        "re",
+        "chargen",
+        "racsexmenu",
+        "v352",
+        "re49",
+        "name",
+        "tesfullname"
+      ],
+      "content": "2026-11-11 #123 完遂（RaceSexMenu 名前入力 race_name/id=10 のエンジン側保存先特定・main 起票→RE レーン裁定）。成果物 **tmp/re/v352_race_sex_name_flow.md**（probe v352_1..34 全 EXIT=0）。①RaceSexMenu[確定]: RTTI TD 0xB13348→COL 0xAC2AF4→**vtable 0xA6D38C**（15 slots・slot13=mov eax,0x40C GetMenuID・b07 行1198 一致）。②id=10[確定]: **SetElement slot01 0x5C26D0**（stdcall ret8）が `id==0x0A→[this+0x30]`=race_name 要素／`id==0x5A(90)→[this+0x3C]`=Done（id 1/2/20/21 も格納先つき）→消費=主ハンドラ **0x5CC200**（slot03）。id=10 分岐 0x5CC8A3→**0x5C2730**（内蔵 editor [this+0x8EC] を race_name 要素位置 0xFD3/0xFD4 へ配置）→0x5C30C0。UI保存先[確定]: プロパティ **0xFDE(u16 4062)=共通表示文字列**（set 0x58CED0 stdcall ret8／get 0x588C10 ret4・node+0x18=id・未存在=0xA2F7EC）。**TextEditMenu(0x41B) は ClassMenu 専用**（0x5DCF20 caller=0x5977FE の1件のみ＝v351 §4.1 再確認）→**name 入力は RaceSexMenu 内蔵 editor**。③engine保存先[確定(命令)]: **0x5C30C0** が editor 文字列→①[race_name 要素]へ 0xFDE set（UI反映）②**g_thePlayer→vfunc+0x170()→結果の +0xA4 へ 0x4028D0（文字列 Set・std ret8・{+0:char*,+4:u16,+6:u16}・557呼び出し）で書出**。callers 3件（0x5C3DF4=slot12／**0x5CC272=通知のたび=リアルタイム書出**／0x5CC8B5=id10）。入力 obj 同一性[確定]: PlayerCharacter vtable **0xA73A0C slot92(+0x170)=0x4D9B40 'mov eax,[ecx+0x1C]; ret'**（Character 基底 0xA6FC9C 同値）＝getter **0x4DA2A0**（[player+0x1C]→dynamic_cast→[+4] char*・空=0xA2F7EC）の入力と完全一致。**TESFullName={+4: char* name, +8: u16 len}[確定]**（対 length getter 0x4D9890：0xFFFF なら strlen）→**+0xA4=TESFullName+4=name とレイアウト完全整合**。判定: **[character obj+0xA4] が engine 保存先 [推定]**（dynamic_cast 戻り 0xA0 のみ実行時計算=残点 V-352-1）。負の証拠: 0x9832E6（**dynamic_cast 相当**・cdecl5引数 obj,0,pTDBase,pTDDerived,0・TD 名 0xB02F9C=TESForm/0xB03298=TESFullName）全1819サイトの store 付き169件=ESM 構築系のみ／SetName 形式70候補 chargen 0件／**+0xA4 アクセス360件（ModRM mod=01/02・SIB 修正版）で chargen の lea+文字列Set は 0x5C30C0 の1件のみ＝chargen の engine 書出は 0x5C30C0 経由のみ[確定]**。④Done(id90)[確定]: 0x5CC277 cmp ebx,0x5A→**0x5C3110（key→members: 0xB38F70→[this+0x40]/0xB38F78→[+0x44]/0xB38F88→[+0x48]）**→0xFAE float 比較→jnp 0x5CCA77=**name 検証**（strlen→**strcmp vs [0xB39440]**／空白／空→0x579C10 エラー通知）→成功時は g_thePlayer→0x5E32F0（[vfunc+0x170()]+0xE8→+0x18→+4=race 名）の先頭文字**母音判定**→sprintf→**メッセージのみ（Done 帯の engine 書出0件）**→0x5CD9C5 epilogue（vfunc+0x154=0x6600F0→0x7C5E70）。表示同期 engine→UI[確定]: 0x5CBBE0 band＝0x4DA2A0→**0xB3B4D0 キャッシュ**（'Bendu Olo'=0xA6D3E8 比較）→[0xB39440]→race_name 0xFDE set。**0xB39440[部分確定]**: .bss・.text xref4件=読2+thunk2（0xA22FA0: mov ecx,0xB39440; jmp 0x4055E0）＝**実行時書込サイト不在[確定負]**（書き手=V-352-2）。副次: 0x438DB0=[editor+0x18] getter／0x5DBB00=engine→UI 反映 fn／0x46A5F0 は name setter 非該当（callers=ESM1件）。残点 **V-352-1..6**（+0xA0 埋め込みの静的証明=中・0xB39440 書き手=中）。【main への報告】**v351 §4.2 を[確定(命令)]へ更新可**／port createdCharacter_.name の原典=**TESFullName.name**／name は**リアルタイム書出（Done を待たない）**＝#101 への材料。台帳 row328 追加（bak178）・round_verify ALL OK（214/209/open5）・#123 note→complete・STATE (bu)。v 採番 v352 消費（次=v353）。次候補: #124（RaceSexMenu page/user0 対応表・レース別スライダー）＝本レーンの機構知識が活きる。"
+    },
+    {
+      "id": "title-menu-verified-98-done-2026-11-11",
+      "timestamp": "2026-11-11T05:16:47Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "title-screen",
+        "emu",
+        "todo-98",
+        "todo-132",
+        "todo-133",
+        "re-dispatch"
+      ],
+      "content": "2026-11-11 #98 タイトルメニュー全項目の emu 検証=完了（6項目✅・クラッシュ0・pid 継続）。座標 y=874: Continue523/New713/Load867/Options1055/Credits1264/Exit1441。Continue/Load=SaveLoadUI LOAD 12slots、Options=Return/GamePlay/Video/Audio/Controls パネル、Credits=CREDITS 画面（Tap anywhere to return）、Exit=2回目で Menu selection: Exit→LauncherScreen initialized→in-app launcher へ（kill せず）。問題2件を #132 へ分割: F1=back(keyevent4) 後の表示不整合（s98_options_back が credits タップ1秒前に CREDITS 画面＝back が credits を開いたか撮影競合／credits 後は Options が残る＝open-close・z-order・back 処理の不整合疑い）、F2=Credits 中の Exit タップが 'Credits dismissed' に消費（不可視/背面オーバーレイのタッチ消費＝チェック対象該当）。RE 依頼: #133（①stats_menu.xml102,783B の構造→#127 正典材料 ②原本 Credits 本文の供給元＝credits_menu.xml は背景+空 clipwindow のみ）＋#123 にスコープ拡張ノート（Done id90 のコミット対象に種族/性別保存先＝#126-C・ポート Player に race フィールドなし）。環境教訓: emu は -no-snapshot 冷起動が安定（snapshot 起動・再起動直後は5554 番が listen せずハング）。証跡 %TEMP%\\opencode\\s98_*.png11枚＋run98.log。#98 complete・open=21件。"
+    },
+    {
+      "id": "todo-archive96-re3-confirmed-126b-committed-2026-11-11",
+      "timestamp": "2026-11-11T06:03:37Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-archive",
+        "re-dispatch",
+        "todo-122",
+        "todo-123",
+        "todo-124",
+        "todo-134",
+        "todo-126",
+        "chargen"
+      ],
+      "content": "2026-11-11 ai-todo アーカイブ: 完了96件を Archived へ移動（TODO.md 直検 Tasks[x]=0/Archived[x]=96/open=21）。RE レーン3件の成果物確認=全件完遂: #122=v350_n5b_load_ruling.md（0x6DFDE0=NiLookAtInterpolator file-load・NiKeyframeData=確定負独立クラス不存在・walk.rs 正典[確定]昇格・.keyf family 確定→main 増分2 nif-ffi ABI+oracle ゲート解除・#45 に note 追加）、#123=v352_chargen_name_ruling.md+v352_race_sex_name_flow.md（name 保存先[確定] g_thePlayer→vfunc+0x170→obj+0xA4=TESFullName.name・リアルタイム書出・Done 帯 engine 書出0件）、#124=v353_chargen_page_ruling.md（page=pane clone id[確定]・21 pane 表化・race/sex でスライダー集合不変）。ギャップ: #123 のスコープ拡張=種族/性別保存先が未反映（v353 L63 の 0x5CDA30 は UI 表示側のみ）→フォロー RE 依頼 #134 起票（3経路切り分け・成果物 v355+・#126-C ブロッカー）。#126-B 完了: APK ビルド成功（147MB）→emu 検証 PASS=「Character creation applied: skills -> player (17/21, Blade=15 Speechcraft=10)」（Blade 既定10→15 で転送実証・クラッシュ0・Create 後 startGame+quest1002+HUD vitals 正常・17/21 は base 単体の既知アーティファクトで ee6e51b0 マージ後 21/21）→verifier APPROVE 全5 PASS→commit b1222bd9（branch fix-chargen-skills-transfer・renderer.cpp のみ +37・push 未）。残: #126-C=race 保持は #134 RE 待ち、A=name は main 未コミット3ファイルで解消済。環境教訓: ai-todo list_tasks は status=open でも [x] を返す＝アーカイブ確認は TODO.md セクション位置で／サーバ再起動で ai-todo MCP 切断→todowrite フォールバック、復帰後に TODO.md へ #126 note と #134 を反映すること。"
+    },
+    {
+      "id": "v353-racsex-page-slider-2026-11-12",
+      "timestamp": "2026-11-11T17:07:03Z",
+      "priority": "medium",
+      "category": "re",
+      "tags": [
+        "oblivion",
+        "re",
+        "chargen",
+        "racsexmenu",
+        "v353",
+        "re49",
+        "page",
+        "slider",
+        "facgen"
+      ],
+      "content": "2026-11-12 #124 完遂（RaceSexMenu page(user0) 対応表＋レース/性別スライダー集合・main 起票→RE レーン裁定）。成果物 **tmp/re/v353_racsex_page_slider.md**（probe v353_1..18 全 EXIT=0）。①page 対応表[確定(命令)]: **user0=プロパティ 0xFAE(4014)**（trait 登録バンド 0x58AC40 から全表: string=0xFDE/target=0xFC9/tile=0xFCF/user0..20=0xFAE..0xFC2/user5=0xFB3/user7=0xFB5/user13=0xFBB）。**page=pane の element id**（pane 生成 fn 0x5C4340 が fild(id)→set 0xFAE・-1 なら [0xB3B5D4] clone カウンタ採番）。表示=XML visible: me().user0==RaceSexMenu.user0（初期0）。**pane は fn 0x5CA010（RaceSexMenu 初期化）で21個生成**＋各 pane にスライダー/BUTTON 対応表（E8 全走査の機械抽出＝成果物 §3）。②スライダー集合決定[確定(命令)] 2段階: 静的=0x5CA010 が pane ごとに固定 idx 群（slider fn 0x5C93F0: set 0xFB0=ラベル/0xFB4=user6/0xFB5=user7=editor id/0xFB6=user8・[this+idx*4+0x94] 登録・arg4=1 系は 0x5C6860（g_thePlayer+0x170 由来）分岐）／動的=**fn 0x5C34D0**（callers 0x5C4BD2/0x5C5312/0x5C7049）が g_thePlayer→vfunc+0x170()→[+0x1C8]→**0x51FE90 predicate（byte[+0x48] bit3・4命令）**で true→RGB element へ **user13(0xFBB)=1.0**／false→**user0(page)=5,6,7 切替**。制御対象=グローバル **[0xB38FC0]='sRed'/[0xB38FC8]='sGreen'/[0xB38FD0]='sBlue'**（初期化 thunk 0x9F693A/95A/97A＋リテラル 0xA629F8/04/14）。element 取得 **0x5C3440=0x5C3110（key→members 表）経由＝v352 §5 の表が element 取得も兼ねる**。③INI 対応[確定(命令)]: **スライダー定義テーブル=初期化 thunk 帯 0x9F6B10..0x9F74F0 の (表示ラベル, editor id 'sXxx', slot n) 3点セット全抽出（chargen 系 n=0..123）**: 見出し n=-7..-1（Nose/General(Skin)/sSkin/Beard/Eyebrows/Mouth(Lips)/Lips）→モーフ n=0..84（sFacebrow/sBrowRidge*/sCheekbones*/sChin*/sEyes*/sForehead*/sJaw*/sMouth*/sNose*＝v351 §1.2 の INI 名と完全一致）→テクスチャ色 n=85..87（sEyesTex/sNoseTex/sColor）→髪色 n=88..119（sHairColor0-15/iHairColor00-15）→**メッセージ n=120..123（sNoNameCharacter='You must first enter a valid name.'/sEnterName/sResetFace/sRandomizeFace＝v352 §5 と接続）**。格納 0xB39070+n*8（.bss std::string・書込は初期化 thunk のみ=確定負）。**兄弟レーン統合（重要）**: main が 2026-11-11 に同 #124 を **tmp/re/v353_chargen_page_ruling.md（probe v353_1..9）** で裁定済と判明→**突合＝矛盾なし・整合**（page=pane clone id＝element id と同義／21 pane／集合不変・変化=user13／兄弟 0x5C3574 群＝本 fn 0x5C34D0 内 user13 set と同一）。付加価値=trait id 全表／スライダー n=0..123 全量（兄弟[未確定2]に部分対応）／predicate＋RGB 制御（兄弟[未確定1]に部分対応）。兄弟の pane 名ラベル付き page 表は詳細＝両成果物を併読。証跡毀損: probe v353_1..9 は本レーンの v353_1..18 で上書き（%TEMP% の v353_1..9 現存せず）。残点 **V-353-1..6**（+0x48 bit3 の意味=中・page 実値の実行時依存=中・group0/1 切り分け=中・idx→n 写像=中・表外 trait 名=低）。台帳 row329 追加（bak179・統合注記付き）・round_verify ALL OK（215/210/open5）・#124 note→complete・STATE (bv)。v 採番 v353 消費（次=v354=#128 束①）。RE レーン open: #128（静的残件5束・v354+）／#134（種族/性別保存先・v355+・#126-C ブロッカー）／#130（Cancel/Back 挙動）。"
+    },
+    {
+      "id": "132-done-name-plumbing-push5-2026-11-12",
+      "timestamp": "2026-11-12T01:52:24Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-132",
+        "todo-126",
+        "todo-135",
+        "title-screen",
+        "push",
+        "re-dispatch"
+      ],
+      "content": "2026-11-12 #132 タイトルオーバーレイ開閉修正=完了（全ゲート通過）。根因=①不可視 ShopMenu（UIComponent デフォルト visible=true）が handleBackKey の in-game overlay 段で back を奪い title 分岐に到達不可→Credits 残存、②Credits 解除コード TitleScreen::onKeyPress(4) は存在するが Android back は MENU_KEY_CODES（DPAD4種）外で nativeOnKeyPress 到達不可のデッド経路。修正=title 分岐を 3b より前の 3a へ移動＋CREDITS 時に onKeyPress(4) を呼んで consume（非 CREDITS は return false 維持）。verifier APPROVE 全5 PASS→commit 58c236a4（branch fix-title-overlay-back・renderer.cpp +19/-5）→emu 検証 PASS（Credits→back で 'handleBackKey: Closed Credits'＋'Credits dismissed'、Exit タップが1回目で 'Menu selection: Exit' 即発火、crash none）。仕様正否は RE #135 起票（原本 CreditsMenu 解除トリガー＋title back/ESC 挙動・v355+）。main tree name 差分3ファイル=verifier REJECT→:91 解除の最小修正→再 APPROVE（配管専用）→commit 31ed4ee6（master・既知ギャップ2件をメッセージ明記: NAME 入力経路未実装/ensureValidCharacter 未呼出し）。push 5ブランチ（ユーザー承認・ssh GIT_SSH_COMMAND=id_ed25519 明示で解決）: 2c38cc2e/6992263e/ee6e51b0/b1222bd9/58c236a4。master マージと 31ed4ee6 push は承認待ち。付随: #99.1 の ui_shop.cpp 修正が fix-shopmenu-input worktree に未コミット残存で master 不在（#129 と同一根因・整理要）。emu 教訓: adb daemon 再起動直後は package サービス未起動で install 失敗→service check package 待機が正。"
+    },
+    {
+      "id": "v354-v350-residuals-2026-11-12",
+      "timestamp": "2026-11-12T02:03:14Z",
+      "priority": "medium",
+      "category": "re",
+      "tags": [
+        "oblivion",
+        "re",
+        "n5b",
+        "keyframe",
+        "v354",
+        "re49",
+        "correction",
+        "residuals"
+      ],
+      "content": "2026-11-12 #128 束① 完遂（v350 残点6件 V-350-1..6・main 起票→RE レーン裁定・タスクは inprogress 維持）。成果物 **tmp/re/v354_v350_residuals_ruling.md**（probe v354_1..6 全 EXIT=0）。V-350-1[確定]: 0x6E1E90=KeyGroup0(rot) setter・**Order=u16 は [NiTransformData+8]**・type=[+0x10]/data=[+0x20]/flag=[+0x1C]・**type==4 のときのみ call 0x6BE490＝Order データ [+0x30/34/38] の3スロットを [type*4+0xB3D2C8] で解放**・兄弟 setter 0x6E1F00/0x6E1F60（KeyGroup1/2）と3本対・呼び出し元 Load 内 0x6E223B。V-350-2[確定]: **初期化 fn 3本（0x6BC260 once=[0xB3C2D8]／0x6BD530 once=[0xB3C3A0]／0x6BB5xx）＝once フラグ付き lazy init**・初期値=**0x6F7070（xor eax,eax; ret＝no-op reader）**と 0x60D0A0（警告）・**テーブルは4本ではなく10本超の系統**（新規: 0xB3D2F8/0xB3D2E0=KeyGroup reader・0xB3D2C8=解放・0xB3D100/0xB3D488=NiBool・0xB3D340・型別 flag byte 0xB3D3F4/EE/E8/06）。V-350-3[確定＋v350 訂正]: **0x6D42D0/4300=RTTI チェーン走査（dynamic_cast 相当）** — vfunc+4 で TD 取得→cmp eax,0xB3FA80→不一致で [TD+4] ループ・**0xB3FA80=RTTI TypeDescriptor**（0x707D70 ゲッタ・登録 thunk 0xA09BExx が型名 0xA7E0B4/0xA7E1A4/0xA7E440/0xA7E5D4/0xA7F968 を TD へ紐付け・0x560920=チェーン走査関数）→**v350 §1.5 の『型別ランタイム変換 dispatcher』記述は誤り＝訂正**。V-350-4[確定]: 0x6CB990（LookAt サブレコード）=0x709430＋0xC(0x715420)→u32→[+0x1C]→**cmp [stream+0xD8],0x0A01006E; jae 0x6CBA80（=即 ret 4）＝≥ で追加読なし／< のときのみ bool1B 読×3**（各 0 なら -定数 0xA7DEB4 を float store）→[+0]/[+0x10]/[+0x1C]・隣接 0x6CBA90=Save 系/0x6CBAD0=IsEqual 系。V-350-5[確定]: NiBoolData 0x6E8A30=count(u32)→**≥0x0A010068 のとき u32 1個追加読（type 再指定）**→flag [type+0xB3D406]→dispatch 0xB3D100/0xB3D488→**0x6E88C0（KeyGroup setter: [+0x8]=count/[+0xC]=data/[+0x10]=type/[+0x14]=flag）**・**walk.rs L1653 skip_key_group('byte') と整合**。V-350-6[確定]: **v121 の11 クラス vtbl/TD map を b07 索引と突合し vtable 全10件一致**（Load=slot+0x1C も slots 範囲内）→**NiKeyframeData 1件のみ誤り（v350 訂正済）で他9件は正**（独立2経路の結果一致）。新規残点 V-354-1..4（低）: 型別 reader 登録元の全列挙／u32 Order→u16 キャッシュ切り詰め／0x6D4300 以降の全型分岐／0xA7DEB4 定数値。【main への報告】v350 §6 は全件クローズ可（1件は v350 訂正）／**walk.rs 変更不要**／テーブル群一覧は N5b 系で再利用可／RTTI 訂正は docs/GT 反映時に #47/#20 へ。台帳 row330 追加（bak180）・round_verify ALL OK（216/211/open5）・#128 束① note（complete せず）・STATE (bw)。v 採番 v354 消費（次=v355=#134/#135）。次: #128 束④（#106 R4 indirect vtable clear）→②（#109 pass2 tail==0/Δ=0x1C）→③（#93 帯内正式名称5件）→⑤（未同定 BSS/NiDX9Renderer）。"
     }
   ],
   "metadata": {
-    "totalEntries": 709,
-    "compressedCount": 121,
+    "totalEntries": 743,
+    "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-09T09:04:16Z",
-    "entry_count": 709,
-    "last_updated": "2026-11-09T09:04:16Z"
+    "lastUpdated": "2026-11-12T02:03:14Z",
+    "entry_count": 743,
+    "last_updated": "2026-11-12T02:03:14Z"
   }
 }
