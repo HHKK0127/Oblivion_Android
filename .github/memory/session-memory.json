@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-12T02:34:28Z",
+  "lastUpdated": "2026-11-12T03:36:29Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -10734,14 +10734,27 @@
         "re49"
       ],
       "content": "2026-11-12 RE レーン コミット **32292331**（master・push 未実行・ユーザー明示指示で L1 の git コミット禁止を解除・#104 条件で実施）。内容=296ファイル +68,999/−495: ①**tmp/re/v*.md 285件（Graphify RE コーパス）を .gitignore #64 承認分（/tmp/* + !/tmp/re/ + !/tmp/re/v*.md）で初追加**（v3〜v354 の全 ruling。v350/v352/v353/v354=本レーン、v353_chargen_page_ruling/v352_chargen_name_ruling=兄弟レーン分含む）②STATE.md (bq)-(bw)（#122/#123/#124/#128 束① の記録）③.github/memory/session-memory.json（v350/v352/v353/v354 エントリ＝登録時 743件）④.ai-todo/state/TODO.md＋根 TODO.md（#122/#123/#124 note+complete・#128 束① note）⑤docs（README/CHANGELOG/ARCHITECTURE/AGENTS＝Rust workspace vendor 反映・CHANGELOG の verified by measurement 済み変更）⑥.gitignore（#64 承認分）。検証: git diff --cached --check=0（**既存 v*.md 42件を機械 whitespace 修正**＝EOF 空行/行末スペースのみ・内容不変）／秘密情報ファイル無し／docs/RE_EXE_REPORT.md 本体は非変更（tmp/re/v255・v258 の draft のみ）。**supermemory は不通継続**（MCP カタログ不在・search でも再確認 2026-11-12）→ **本台帳（session-memory.json）が唯一の永続メモリ**。滞留登録リスト（復旧時に supermemory add へ転記）: v345..v349／コンテキスト圧縮マクロ件／graphify コーパス刷新件／v350 N5b 裁定／v352 NAME 保存先／v353 page+スライダー／v354 残点束／本コミット 32292331。次: #128 束④（#106 R4 indirect vtable clear）→②（#109）→③（#93）→⑤。v 採番 次=v355（#134/#135 が予約）。"
+    },
+    {
+      "id": "push-9f68417c-d69172ca-2026-11-12",
+      "timestamp": "2026-11-12T03:36:29Z",
+      "priority": "medium",
+      "category": "process",
+      "tags": [
+        "oblivion",
+        "git",
+        "push",
+        "master"
+      ],
+      "content": "2026-11-12 **master push 完了（ユーザー承認）**: `git push origin master` → **`9f68417c..d69172ca`（5本）**。内訳: 31ed4ee6（chargen name 配管・main 先行分）／32292331（**RE コーパス 285件＋STATE/memory/TODO/docs**・+68,999/−495）／93df7776（STATE 記録）／2f780332（memory 台帳 744件）／d69172ca（ai-todo 同期）。検証: fetch 後 `origin/master = d69172ca`＝**HEAD と一致・ahead/behind なし**。origin は **HTTPS**（fetch で認証確認後に push・SSH key 明示は不要）。運用メモ: ①`git push` 前は `git fetch origin` で origin/master ref を最新化しないと `git log origin/master..HEAD` が空表示（ref 未更新の罠）②index.lock 衝突は兄弟レーン/ graphify hook の一時競合＝**5秒×6回のリトライで解消**（lock 強制削除はしない）③whitespace は `git diff --check` の指摘分のみ機械修正（既存 v*.md 42件・内容不変）。CI（GitHub Actions）は push をトリガーするため次回 run の確認が残件。"
     }
   ],
   "metadata": {
-    "totalEntries": 744,
+    "totalEntries": 745,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-12T02:34:28Z",
-    "entry_count": 744,
-    "last_updated": "2026-11-12T02:34:28Z"
+    "lastUpdated": "2026-11-12T03:36:29Z",
+    "entry_count": 745,
+    "last_updated": "2026-11-12T03:36:29Z"
   }
 }
