@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-12T02:03:14Z",
+  "lastUpdated": "2026-11-12T02:34:28Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -10719,14 +10719,29 @@
         "residuals"
       ],
       "content": "2026-11-12 #128 束① 完遂（v350 残点6件 V-350-1..6・main 起票→RE レーン裁定・タスクは inprogress 維持）。成果物 **tmp/re/v354_v350_residuals_ruling.md**（probe v354_1..6 全 EXIT=0）。V-350-1[確定]: 0x6E1E90=KeyGroup0(rot) setter・**Order=u16 は [NiTransformData+8]**・type=[+0x10]/data=[+0x20]/flag=[+0x1C]・**type==4 のときのみ call 0x6BE490＝Order データ [+0x30/34/38] の3スロットを [type*4+0xB3D2C8] で解放**・兄弟 setter 0x6E1F00/0x6E1F60（KeyGroup1/2）と3本対・呼び出し元 Load 内 0x6E223B。V-350-2[確定]: **初期化 fn 3本（0x6BC260 once=[0xB3C2D8]／0x6BD530 once=[0xB3C3A0]／0x6BB5xx）＝once フラグ付き lazy init**・初期値=**0x6F7070（xor eax,eax; ret＝no-op reader）**と 0x60D0A0（警告）・**テーブルは4本ではなく10本超の系統**（新規: 0xB3D2F8/0xB3D2E0=KeyGroup reader・0xB3D2C8=解放・0xB3D100/0xB3D488=NiBool・0xB3D340・型別 flag byte 0xB3D3F4/EE/E8/06）。V-350-3[確定＋v350 訂正]: **0x6D42D0/4300=RTTI チェーン走査（dynamic_cast 相当）** — vfunc+4 で TD 取得→cmp eax,0xB3FA80→不一致で [TD+4] ループ・**0xB3FA80=RTTI TypeDescriptor**（0x707D70 ゲッタ・登録 thunk 0xA09BExx が型名 0xA7E0B4/0xA7E1A4/0xA7E440/0xA7E5D4/0xA7F968 を TD へ紐付け・0x560920=チェーン走査関数）→**v350 §1.5 の『型別ランタイム変換 dispatcher』記述は誤り＝訂正**。V-350-4[確定]: 0x6CB990（LookAt サブレコード）=0x709430＋0xC(0x715420)→u32→[+0x1C]→**cmp [stream+0xD8],0x0A01006E; jae 0x6CBA80（=即 ret 4）＝≥ で追加読なし／< のときのみ bool1B 読×3**（各 0 なら -定数 0xA7DEB4 を float store）→[+0]/[+0x10]/[+0x1C]・隣接 0x6CBA90=Save 系/0x6CBAD0=IsEqual 系。V-350-5[確定]: NiBoolData 0x6E8A30=count(u32)→**≥0x0A010068 のとき u32 1個追加読（type 再指定）**→flag [type+0xB3D406]→dispatch 0xB3D100/0xB3D488→**0x6E88C0（KeyGroup setter: [+0x8]=count/[+0xC]=data/[+0x10]=type/[+0x14]=flag）**・**walk.rs L1653 skip_key_group('byte') と整合**。V-350-6[確定]: **v121 の11 クラス vtbl/TD map を b07 索引と突合し vtable 全10件一致**（Load=slot+0x1C も slots 範囲内）→**NiKeyframeData 1件のみ誤り（v350 訂正済）で他9件は正**（独立2経路の結果一致）。新規残点 V-354-1..4（低）: 型別 reader 登録元の全列挙／u32 Order→u16 キャッシュ切り詰め／0x6D4300 以降の全型分岐／0xA7DEB4 定数値。【main への報告】v350 §6 は全件クローズ可（1件は v350 訂正）／**walk.rs 変更不要**／テーブル群一覧は N5b 系で再利用可／RTTI 訂正は docs/GT 反映時に #47/#20 へ。台帳 row330 追加（bak180）・round_verify ALL OK（216/211/open5）・#128 束① note（complete せず）・STATE (bw)。v 採番 v354 消費（次=v355=#134/#135）。次: #128 束④（#106 R4 indirect vtable clear）→②（#109 pass2 tail==0/Δ=0x1C）→③（#93 帯内正式名称5件）→⑤（未同定 BSS/NiDX9Renderer）。"
+    },
+    {
+      "id": "commit-32292331-re-corpus-2026-11-12",
+      "timestamp": "2026-11-12T02:34:28Z",
+      "priority": "medium",
+      "category": "process",
+      "tags": [
+        "oblivion",
+        "git",
+        "commit",
+        "graphify",
+        "memory",
+        "re49"
+      ],
+      "content": "2026-11-12 RE レーン コミット **32292331**（master・push 未実行・ユーザー明示指示で L1 の git コミット禁止を解除・#104 条件で実施）。内容=296ファイル +68,999/−495: ①**tmp/re/v*.md 285件（Graphify RE コーパス）を .gitignore #64 承認分（/tmp/* + !/tmp/re/ + !/tmp/re/v*.md）で初追加**（v3〜v354 の全 ruling。v350/v352/v353/v354=本レーン、v353_chargen_page_ruling/v352_chargen_name_ruling=兄弟レーン分含む）②STATE.md (bq)-(bw)（#122/#123/#124/#128 束① の記録）③.github/memory/session-memory.json（v350/v352/v353/v354 エントリ＝登録時 743件）④.ai-todo/state/TODO.md＋根 TODO.md（#122/#123/#124 note+complete・#128 束① note）⑤docs（README/CHANGELOG/ARCHITECTURE/AGENTS＝Rust workspace vendor 反映・CHANGELOG の verified by measurement 済み変更）⑥.gitignore（#64 承認分）。検証: git diff --cached --check=0（**既存 v*.md 42件を機械 whitespace 修正**＝EOF 空行/行末スペースのみ・内容不変）／秘密情報ファイル無し／docs/RE_EXE_REPORT.md 本体は非変更（tmp/re/v255・v258 の draft のみ）。**supermemory は不通継続**（MCP カタログ不在・search でも再確認 2026-11-12）→ **本台帳（session-memory.json）が唯一の永続メモリ**。滞留登録リスト（復旧時に supermemory add へ転記）: v345..v349／コンテキスト圧縮マクロ件／graphify コーパス刷新件／v350 N5b 裁定／v352 NAME 保存先／v353 page+スライダー／v354 残点束／本コミット 32292331。次: #128 束④（#106 R4 indirect vtable clear）→②（#109）→③（#93）→⑤。v 採番 次=v355（#134/#135 が予約）。"
     }
   ],
   "metadata": {
-    "totalEntries": 743,
+    "totalEntries": 744,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-12T02:03:14Z",
-    "entry_count": 743,
-    "last_updated": "2026-11-12T02:03:14Z"
+    "lastUpdated": "2026-11-12T02:34:28Z",
+    "entry_count": 744,
+    "last_updated": "2026-11-12T02:34:28Z"
   }
 }
