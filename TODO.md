@@ -26,7 +26,7 @@
 
 - [ ] **#130** 【RE レーン依頼】原本の RaceSexMenu Cancel/Back 挙動と main menu Exit の正しい遷移の特定: ①現ポートの作成パネル Cancel は `hitTestCancelButton → close()` のみでタイトルに戻らず游戏中に残留（ui_character_creation.cpp L98-101）②タイトル Exit はアプリ内 Launcher へ遷移してプロセス存続（`Title screen Quit - returning to launcher`）だが原本 Oblivion の Exit はアプリ終了のはず。原本準拠の正否を [確定] で裁定する材料を RE 成果物（tmp/re v354+）で返す。関連: #98（emu 実測）/ #101（仕様裁定）/ #128（採番競合の確認要） `#RE` `#chargen` `#oblivion`
 
-- [ ] **#129** 【作製】キャラ作成パネル表示中の Back キーが不可視の ShopMenu に消費される不具合の修正: emu 実測で NEW→作成パネル表示中に keyevent 4 を送ると `Renderer: handleBackKey: Closed ShopMenu` のみでパネルは閉じず（=戻る操作不能）、以降も Back が ShopMenu 対象となり続ける。#99 の E（不可視 UI によるイベント消費）と同系統。修正方針: handleBackKey の分岐順を見直し、visible 判定が実際の描画状態と一致するようにする（推測実装禁止・verifier レビュー必須）。証拠: %TEMP%\opencode\t98_11_new2.png / t98_12_back_at_chargen.png と logcat。関連: #98（検証元）/ #99（E 欠落） `#android` `#chargen` `#fix` `#oblivion`
+- [ ] **#129** 【作製】キャラ作成パネル表示中の Back キーが不可視の ShopMenu に消費される不具合の修正: emu 実測で NEW→作成パネル表示中に keyevent 4 を送ると `Renderer: handleBackKey: Closed ShopMenu` のみでパネルは閉じず（=戻る操作不能）、以降も Back が ShopMenu 対象となり続ける。#99 の E（不可視 UI によるイベント消費）と同系統。修正方針: handleBackKey の分岐順を見直し、visible 判定が実際の描画状態と一致するようにする（推測実装禁止・verifier レビュー必須）。証拠: %TEMP%\opencode\t98_11_new2.png / t98_12_back_at_chargen.png と logcat。関連: #98（検証元）/ #99（E 欠落） `#android` `#chargen` `#fix` `#inprogress` `#oblivion`
 
 - [ ] **#128** 【RE レーン依頼・静的残件5束】main レーンの棚卸し（2026-11-11・STATE.md/TODO.md/RE実働ログ突合）で、RE 能力で追えるのに未起票だった残件を一括委譲する。①v350 残点6件（V-350-1..6）: 0x6E1E90 の Order 位置／dispatch テーブル4本（0xB3D0B8・0xB3D0A0・0xB3D440・0xB3D428）の初期化元／v121 map 他エントリ再監査（STATE.md L670 で「=中」中断）＝成果物 tmp/re/v350_n5b_load_ruling.md 記載済だが ai-todo 未起票で RE レーン未通知の可能性大 ②#109（v334）静的残り2件: pass2 の tail==0 分岐後の entry 処理／Δ=0x1C のロード側直接対応（未確定5件のうち +0x94 凍結挙動と thumb RGB/BGR は複数 .ess 検体依存＝#82 のため対象外） ③#93（v338_plus_residuals_ruling.md）帯内正式名称5件: FUN_00463700 正式名／0x44F058 帯の正式境界・名称／0x5BA629 の上位文脈／0x659BE0 本体の意味／bit7 SIB 形式と v316 の 530 件カタログ対応（帯外解析制限つきの浅層留保分・帯外が許可される本レーンでのみ再挑戦可） ④#106（v331）R4: indirect vtable clear 経路＝NULL スロット直接経路（R3=#82 委任・R6=L2 承認依存とは別に純粋な未確定） ⑤未同定 BSS と NiDX9Renderer 個別スロット名（v283-v288 成果物精査で保留指定・STATE.md L345・最低優先）。制約（恒常・逸脱禁止）: 原本 EXE/ESM/.ess/解析原本は読み取り専用／移植側ソース変更なし／推測で確定扱いにしない（[確定]/[部分確定]/[未確定]/[確定負]）／#82 の人間・実機ゲートは着手禁止＝待記のみ／成果物採番 v354+（v350=#122・v351=#97・v352+=#123・v353+=#124 で消費済/予約済）。優先順: 現行 #123 → #124 → 本依頼の ①→④→②→③→⑤。完了時は成果物名・判定内訳・残した未確定を note に記載してから complete。関連: #122 / #109 / #93 / #106 / #82（除外条件） `#RE` `#inprogress` `#oblivion` `#serial`
   > 【束① 完遂 2026-11-12】v350 残点6件（V-350-1..6）をすべて裁定。成果物: tmp/re/v354_v350_residuals_ruling.md（probe v354_1..6 全 EXIT=0・%TEMP%\opencode）。判定内訳: V-350-1 [確定]=0x6E1E90 は KeyGroup0 setter・Order=u16 は [NiTransformData+8]・type==4 のときのみ 0x6BE490 が Order データ3スロット([+0x30/34/38])を 0xB3D2C8 経由で解放。V-350-2 [確定]=初期化 fn 3本（0x6BC260/0x6BD530/0x6BB5xx・once フラグ付き lazy init）・初期値=0x6F7070（xor eax,eax; ret＝no-op reader）と 0x60D0A0（警告）・テーブルは10本超の系統（0xB3D2F8/E0/C8/0xB3D100/0xB3D488/0xB3D340 等を新規列挙）。V-350-3 [確定＋v350 訂正]=0x6D42D0/4300 は RTTI チェーン走査（dynamic_cast 相当）・0xB3FA80=RTTI TypeDescriptor（0x707D70 ゲッタ・登録 thunk 0xA09BExx）・v350 §1.5 の『型別分岐 dispatcher』記述は誤り→訂正。V-350-4 [確定]=0x6CB990 は u32→[+0x1C]→<0x0A01006E のとき bool1B読×3（各0なら -0xA7DEB4 を float store）→[+0]/[+0x10]/[+0x1C]、≥ なら jae 0x6CBA80=即 ret（追加読なし）。V-350-5 [確定]=NiBoolData 0x6E8A30 は ≥0x0A010068 のとき u32 1個追加読（type 再指定）→0x6E88C0（[+0x8]=count/[+0xC]=data/[+0x10]=type/[+0x14]=flag）、walk.rs L1653 skip_key_group('byte') と整合。V-350-6 [確定]=v121 の11 クラス vtbl/TD map を b07 索引と突合し vtable 全10件一致（Load=slot+0x1C も slots 範囲内）→ NiKeyframeData 1件のみ誤りで他9件は正。新規残点: V-354-1..4（型別 reader 登録元の全列挙/u32→u16 Order 切り詰め/0x6D4300 以降の全型分岐/0xA7DEB4 定数値＝いずれも低）。main への報告: v350 §6 は全件クローズ可（1件は v350 訂正）／walk.rs 変更不要（整合）／テーブル群一覧は N5b 系で再利用可／RTTI 訂正は docs/GT 反映時に #47/#20 へ。台帳 row330 追加（bak180）・round_verify ALL OK（216/211/open5）。v 採番 v354 消費（次=v355=#134）。【残束】④#106 R4（indirect vtable clear 経路）→②#109（pass2 tail==0 分岐・Δ=0x1C）→③#93（帯内正式名称5件）→⑤未同定 BSS/NiDX9Renderer（最低優先）。束②〜⑤の完了後に complete。
@@ -755,6 +755,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -778,4 +783,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-12 10:58:39
+**ai-todo** | Last Updated: 2026-11-12 11:40:53
