@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-12T03:36:29Z",
+  "lastUpdated": "2026-11-13T03:01:25Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -10747,14 +10747,92 @@
         "master"
       ],
       "content": "2026-11-12 **master push 完了（ユーザー承認）**: `git push origin master` → **`9f68417c..d69172ca`（5本）**。内訳: 31ed4ee6（chargen name 配管・main 先行分）／32292331（**RE コーパス 285件＋STATE/memory/TODO/docs**・+68,999/−495）／93df7776（STATE 記録）／2f780332（memory 台帳 744件）／d69172ca（ai-todo 同期）。検証: fetch 後 `origin/master = d69172ca`＝**HEAD と一致・ahead/behind なし**。origin は **HTTPS**（fetch で認証確認後に push・SSH key 明示は不要）。運用メモ: ①`git push` 前は `git fetch origin` で origin/master ref を最新化しないと `git log origin/master..HEAD` が空表示（ref 未更新の罠）②index.lock 衝突は兄弟レーン/ graphify hook の一時競合＝**5秒×6回のリトライで解消**（lock 強制削除はしない）③whitespace は `git diff --check` の指摘分のみ機械修正（既存 v*.md 42件・内容不変）。CI（GitHub Actions）は push をトリガーするため次回 run の確認が残件。"
+    },
+    {
+      "id": "129-done-shopmenu-visible-2026-11-12",
+      "timestamp": "2026-11-12T04:53:11Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-129",
+        "todo-99",
+        "chargen",
+        "back-key",
+        "uishop"
+      ],
+      "content": "2026-11-12 #129 完了: キャラ作成中の Back が不可視 ShopMenu に消費される不具合を修正。根因=UIComponent デフォルト visible=true のままの UIShop が唯一の初期可視パネルで、handleBackKey 3b 段で back を奪い作成中バック操作不能＋起動直後から anyMenuOpen()==true 誤作動(VC/ジョイスティック/weave/クロスヘア/タッチ吸収)を引き起こしていた。修正=①UIShop::initialize で setVisible(false)(#99.1 搁置修正の正式 land) ②renderer 新 3aa 分岐で作成中 back を状態変更せず消費(原本 RaceSexMenu 挙動は RE #130 裁定待ちと明記・推測実装せず)。verifier APPROVE 全5 PASS→commit f3a39eef(branch fix-shopmenu-visible・base 58c236a4・2ファイル +19/-1)→emu 検証 PASS(作成中 back x3 で 'Closed ShopMenu' 消滅・'back consumed (cancel behavior pending RE #130)' x3・スクリーンショットでパネル残存確認・crash none・pid 生存)。証跡 %TEMP%\\opencode\\s129_*.png・emu_129_verify.ps1。"
+    },
+    {
+      "id": "45-n5b-unitA-keyframe-ffi-2026-11-12",
+      "timestamp": "2026-11-12T08:59:16Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-45",
+        "n5b",
+        "rust",
+        "c-abi",
+        "permissions"
+      ],
+      "content": "2026-11-12 #45 N5b増分2 単位A完了: nif_parse_keyframe_data C ABI 新設（nif-ffi lib.rs +234/nif_ffi.h +87/c_abi_check.c +17）。NiKeyframeData/NiTransformData 共用、v350裁定[確定]の読み順準拠、Rust/Cヘッダ/c_abi_check レイアウト三方一致(104/76B・28/52/32B)。verifier APPROVE 8/8（ポインタ move 前後安全・error path controller 契約同一・C++ shim は統合未裁定で inert 維持）。cargo test --workspace 0 failed・MSVC cl /W4 Cハーネス all assertions passed。commit 36e03e35（branch n5b-keyframe-reader・base 6992263e・push/merge は人間承認待ち）。単位B進行中: 実.census(5本)で NiFloatData x7(goblin dodge) のみ実在→NiFloatData/NiPosData 実装対象、NiRotData(walk.rs arm なし=キー型未特定)/NiBoolData(ゲート残点)は推測禁止で対象外。nif-core parse_float_data/parse_pos_data 追加+フィクスチャ4本+実データテスト1本(goblin pass)、現状 36 passed/1 failed（pos_data walk 失敗=pos_data_body interp2 tangent 不整合の疑い）→修正後に nif-ffi 層へ。opencode.json permissions 3層設定(ask *→allow 13→deny 19件・git push deny 常時ブロック・既存 agent/mcp 無改変)。master push 訂正: origin/master=fbb3ed97 で push 済み。"
+    },
+    {
+      "id": "v355-r4-null-slot-ruling-2026-11-12",
+      "timestamp": "2026-11-12T10:43:20Z",
+      "priority": "medium",
+      "category": "analysis",
+      "tags": [
+        "oblivion",
+        "re49",
+        "reverse-engineering",
+        "v355",
+        "r4",
+        "null-slot",
+        "vtable",
+        "bundle-4"
+      ],
+      "content": "2026-11-12 RE レーン **#128 束④（#106 R4: NULL スロット直接経路）完遂** — 成果物 `tmp/re/v355_r4_null_slot_ruling.md`（probe v355_1..3 全 EXIT=0）。台帳 row331（bak181）・round_verify ALL OK（rows 31..331 / 217想定 / done 212）・ai-todo #128 に束④ note（complete せず＝束②③⑤残）。STATE (bz)。v 採番 **v355 消費（次=v356=#130/#135）**。判定: **①FUN_00482170(obj=0) の E8 到達性=[確定]不到達**（E8 rel32 逆算全走査で caller=0x444275 の1件のみ・`test esi,esi; je 0x444321` で投入前切断＋空スロット経路 0x444244 は最初が `mov eax,[esi+0xC]`=即 AV → v327[推定:困難]を確定昇格）②FUN_00482200 間接 caller=**[部分確定]**（E8=0件・u32 参照 rdata 0xA3D7B4 のみ・テーブル候補8件 xref で **0xA3D7E0 のみ hit=0x48392B/0x483ACB**＝残点 V-355-1）③**vtable+0x1C クリア経路=[確定]**（FUN_00482170 の obj==0 分岐 0x482198 と FUN_00482200 末尾が共通 `call [this.vtable+0x1C](x,y)`＝World 側へ委譲・slot 非接触。v331 §5 の「caller とルーチン未確定」解消）④寄与比=**[部分確定]**（主源=新規 World 配列（再）確保＋NULL 充填＝v324 §3-5 維持、vtable+0x1C クリアは解放経路で NULL 源ではない＝役割分離、定量比は実機ログ依存=#82）。副次確定: slot レイアウト base+(y*width+x)*8=**8B/slot**／slot.obj+0x26==6=完成状態／投入時更新 call 0x49A000／解放 call 0x4D6450。**E8 全走査3関数は v327 記載と完全一致 → v327 は改訂不要**。残点 V-355-1..4。並行: opencode.json（Oblivion_Android 直下）の permissions を3行に完全置換（* allow + git push/git reset --hard deny・V2 配列形式・JSON パース検証 OK・再起動不要＝watch 自動リロード）。次束: **束②（#109 pass2 tail==0 後の entry 処理／Δ=0x1C ロード側）** → 束③（#93 帯内正式名称5件）→ 束⑤（未同定 BSS・最低優先）。"
+    },
+    {
+      "id": "v356-pass2-tail0-loadside-2026-11-13",
+      "timestamp": "2026-11-13T02:10:37Z",
+      "priority": "medium",
+      "category": "analysis",
+      "tags": [
+        "oblivion",
+        "re49",
+        "reverse-engineering",
+        "v356",
+        "pass2",
+        "ess",
+        "bundle-2"
+      ],
+      "content": "2026-11-13 RE レーン **#128 束②（#109: pass2 tail==0 後の entry 処理／Δ=0x1C load 側＝v334 item7/item10）完遂** — 成果物 `tmp/re/v356_pass2_tail0_loadside_ruling.md`（probe v356_1..5 全 EXIT=0・頭起点整列デコード）。台帳 row332（bak182）・round_verify ALL OK（rows 31..332 / 218想定 / done 213）・ai-todo #128 に束② note（complete せず＝束③⑤残）。STATE (ca)。v 採番 **v356 消費（次=v357）**。判定: **①item7=[確定]** tail==0 経路（0x461A96 je→0x461BCC）の失敗全7点（GetForm 0/formType∉{31,32,33}/parent 0/ebp=0/GetCellX,Y 0x7FFFFFFF/55E000 失敗/(x,y) 走査尽き）はすべて **0x461E8C（次 entry）合流＝削除・無効化・flags 変更・tail 書換一切なし＝生存**。成功時のみ 0x461CAF→bit3 単独=452DF0 削除/bit3 複合=tail 再発行（sub ax,di で Δ 除去）/cleanup（v317 L158 一致）。**②[確定]（v334 前提訂正）[ebx+0x14]=0 は tail==0 経路に0件**、実在は tail≠0 の3か所（0x461BB3 配列超過/0x461BC3 created 判定/0x461DB1 再発行完了）で**削除トリガではない**。③[確定] ライタ帯 0x464800-0x465800 に [reg+0x14] 参照0件＝書出しゲートではない。452DF0 は [0xb33b00]+0x18>>0xC&1 立なら削除抑止（14 caller=v317 一致）。**④item10=[確定(静的)] load 側に 28B 固定読取なし**: 45BB00 全7 caller サイズ={4/6/0xC/**0x24**/**0x2C**/可変u16/4}＋範囲走査 push 0x1C=0件・mov ecx,7=0件（二重根拠）。**⑤[確定負] 28B の 36B 帯包含**: 36B は bit1=1∧bit2=0 のみ到達（0x465D60/0x465D68 ゲート）、created 系は到達不能。**⑥[確定] created 系=¬bit1 別経路**: bit31 立→44B 読取／消→0x4662F0→GetForm→entry bit31 時のみ rep movsd ecx,0xB で 44B 再構成（v328 P1 命令確認）。**⑦[部分確定]** 28B 不在は構造的に整合（pass2 の Δ 除去＝P11 と一致・本検体 created 系0件のため動的裏付けは #82）。副次確定: entry +0=flags/+4=tail ワード（0=tail==0）／load gate 表完全形／tail==0 成功チェーン 46B250→6ECC80→4C97F0/4C9CF0/4C9A80/4C9AA0→55E000。残点 V-356-1..4（fail entry の最終ファイル残存=中／0x46667E 可変読取=低／created 系動的裏付け=低・#82／[entry+4] 正式名=低）。次: **束③（#93: 帯内正式名称5件）** → 束⑤（未同定 BSS・最低優先）。"
+    },
+    {
+      "id": "45-n5b-increment2-unitB-2026-11-13",
+      "timestamp": "2026-11-13T03:01:25Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-45",
+        "rust",
+        "nif",
+        "re-review",
+        "mojibake-fix"
+      ],
+      "content": "2026-11-13 #45 N5b 増分2・単位B 完了（commit 6ac17623・branch n5b-keyframe-reader・base 36e03e35・5ファイル +491/-0）: NiFloatData/NiPosData の単独 body reader を nif-core と C ABI に実装。範囲は実 .kf census（meshes_extracted 全1843本）と walk.rs の dispatch arm 有無で判定し、NiFloatData=499本/NiPosData=2本/NiBoolData=16本/NiRotData=0 を実測。**意図的除外**: NiRotData（walk.rs に arm なし＝キー型未裁定）／NiBoolData（v350 が version gate を残点 V-350-5 として保留）＝推測実装禁止の適用。実装=①nif-core parse_float_data/parse_pos_data（既存 read_float_key_group/read_vector3_key_group 再利用で walker の skip_key_group/skip_keys とバイト計測一致）②nif-ffi nif_parse_float_data/nif_parse_pos_data（専用 storage float_data_keys/pos_data_keys を追加し keyframe アリーナと分離＝getter 同士が互いのポインタを無効化しない）③nif_ffi.h 宣言2件 ④c_abi_check.c の NULL/非整列/NO_BLOCK 契約テスト。検証=nif-core 39 passed/0 failed（元36→37→39）・cargo test --offline --workspace EXIT=0・MSVC cl /W4 で C ハーネス all assertions passed・git diff --check 0。verifier 1回目 REJECT（census コメントが実 corpus と食い違い NiPosData=2/NiBoolData=16 を0件と虚偽、結果 pos の実データ検証が欠落）→対応3点（コメント実数値へ訂正／retail_pos_data_reader_stays_in_range 新設＝ascension.kf で 168B=8+4×40 をバイト精算／interp3 TBC フィクスチャ新設・非ゼロ値で読込検証可能に）→ 2回目 APPROVE。同日: STATE.md 文字化け 26ルール36件を訂正（覦→視 等の字形崩れ・余分な仮名・簡体字混入）、疑似文字残0件。push/merge は人間承認待ち（git push * は opencode.json で deny）。"
     }
   ],
   "metadata": {
-    "totalEntries": 745,
+    "totalEntries": 750,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-12T03:36:29Z",
-    "entry_count": 745,
-    "last_updated": "2026-11-12T03:36:29Z"
+    "lastUpdated": "2026-11-13T03:01:25Z",
+    "entry_count": 750,
+    "last_updated": "2026-11-13T03:01:25Z"
   }
 }

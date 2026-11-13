@@ -552,7 +552,7 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 
 ## 2026-11-10 (bf) — N6 docs 増分完了・native-lib link 実測検証・AGENTS.md 破損事故と復旧
 
-- タスク4（分析非依存増分）完了: **native-lib link**=#45 の「未実行」は stale と判明 — CMakeLists は 6 ffi すべてを IMPORTED+link（L84-94/L671-686）、実測: 11-08 ビルド arm64 `libnative-lib.so`(220MB) の .dynstr 走査で `esm_plugin_open`=3・`nif_parse_memory`=3・`dds_`=87・`bsa_`=297・`plugin_`=325・`assets_`=40 のシンボル名が全て在った。**N6 docs**=README EN/JP の「別リポジトリ/姉妹」記述2件を rust/ ベンダー化反映に、EN/JP 構造ツリー2本に rust/（15クレート）追記、ARCHITECTURE.md のヘッダパス`oblivion-re-tools/crates/...`→`rust/crates/...`と`OBLIVION_RUST_DIR` default 記述を现行コードに合わせ2箇所修正、リポジトリAGENTS.mdに「Rust workspace (vendored)」節（gate= cargo test 176/31・oracle 不変則）を新設。docs/DEVELOPMENT_HISTORY の "旧oblivion-re-tools" は歴史記述なので意図的不変。
+- タスク4（分析非依存増分）完了: **native-lib link**=#45 の「未実行」は stale と判明 — CMakeLists は 6 ffi すべてを IMPORTED+link（L84-94/L671-686）、実測: 11-08 ビルド arm64 `libnative-lib.so`(220MB) の .dynstr 走査で `esm_plugin_open`=3・`nif_parse_memory`=3・`dds_`=87・`bsa_`=297・`plugin_`=325・`assets_`=40 のシンボル名が全て在った。**N6 docs**=README EN/JP の「別リポジトリ/姉妹」記述2件を rust/ ベンダー化反映に、EN/JP 構造ツリー2本に rust/（15クレート）追記、ARCHITECTURE.md のヘッダパス`oblivion-re-tools/crates/...`→`rust/crates/...`と`OBLIVION_RUST_DIR` default 記述を現行コードに合わせ2箇所修正、リポジトリAGENTS.mdに「Rust workspace (vendored)」節（gate= cargo test 176/31・oracle 不変則）を新設。docs/DEVELOPMENT_HISTORY の "旧oblivion-re-tools" は歴史記述なので意図的不変。
 - **事故（type3 ハーネス罠・復旧済）**: AGENTS.md 追記を powershell 内 inline python で行った際、バッククォートが pwsh エスケープ（`r→CR, `t→TAB 等）に解釈され破損。→ write ツールでスクリプト化して復旧（fix_agents_md.py・検証アサート4語+CR残存0）。教訓: 逆引用符/エスケープを含むファイル追記は必ず write ツール経由のファイル作成か、バックスラッシュ/バッククォート無しスクリプトに逃がす。
 - 変更物: README.md・docs/ARCHITECTURE.md・AGENTS.md・STATE.md 本節（いずれも未コミット=ユーザー指示待ちの慣習）。コード・台帳 row・既存成果物・オリジナル read-only 厳守。次: #121（RE 委託・v348+）受領まで N5b ゲート、#120 の次ラウンド吸収裁定は RE 親側。
 
@@ -580,18 +580,18 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - 本節は deep-compact skill 初回実行の記録。成果物: `~/.config/opencode/memory/deep-compact-2026-11-10.md`（階層圧縮＋検索索引）。memory 台帳は macro  entry（id=compact-macro-commands-2026-11-10）に加え deep-compact 実行ポインタ1件追記・validate 0 error。RE 台帳 row326 のまま（row327・v350 は次裁定用に残置＝本ハーネス件は採番非消費）。コード・git 無変更・L1。
 
 
-## 2026-11-10 (bi) — N5b 増分1 実装（walk.rs 準拠）＋ v349 §2 の実測反証発見・#122 委托着地
+## 2026-11-10 (bi) — N5b 増分1 実装（walk.rs 準拠）＋ v349 §2 の実測反証発見・#122 委託着地
 
 - 増分1（worktree `n5b-keyframe-reader`）: `nif-core/src/block.rs` に **KeyframeData reader** 実装 — `parse_keyframe_data`/`parse_keyframe_data_at`（NiKeyframeData と NiTransformData の**ファイル順先行**選択、quat 20B/float 8B/vec3 16B の interleaved キー、interp2=接線ペア・interp3/rot_type3=TBC12B、型4=euler 3ch+Order(≤10.1.0.0)、末尾 Translations/Scales、`keys_fit` ガード=parse_text_keys 慣例）。lib.rs に公開ラッパー+export+**テスト4本**（quat+ch/型4/型3TBC/二名称選択）。**cargo test -p nif-core = 32 passed / 0 failed**（既存28+新規4、1 ignored=probe）。
-- **正典反証（訂正級発見）**: 一時 probe（実 .kf 5本・tmp/re/n5b_samples・未コミット）で **v349 §2 の読み順（u16 kind→u32 count→連続times→sub→8×counts）が実ストリームと不一致**と実測: 先頭は u32 count、キーは time+値 interleaved、末尾 KeyGroup 2つ — **walk.rs の skip_keyframe_data と完全一致**。字节精算: goblin blk2=48B(=4+4+4+2×16+4)・blk73=116B(=8+5×20+4+4)・swim blk4=euler[2,2,2]+trans87 等、全ファイル offset 連続・walk error 0。→ main 実装は**実データ整合側の walk.rs 準拠**で実施（「正典[確定]分のみ」は本実測で充足、v349 §2 側の再裁定を待たず walk 不変）。
-- 委托: ai-todo **#122**（V350 反証依頼・成果物 tmp/re/v350+・row326=RE 側宣言に整合）起票 — ①0x6DFDE0 の同定再裁定（file-load か v348 §6 の実行時変换側か）②walk.rs レイアウトの正典昇格 or 両経路の切り分け③NiFloatData 等の単独 body 確認。#122 description に typo（「v349=v349」）とタグ重複あり→次ノートで証跡訂正転記。
+- **正典反証（訂正級発見）**: 一時 probe（実 .kf 5本・tmp/re/n5b_samples・未コミット）で **v349 §2 の読み順（u16 kind→u32 count→連続times→sub→8×counts）が実ストリームと不一致**と実測: 先頭は u32 count、キーは time+値 interleaved、末尾 KeyGroup 2つ — **walk.rs の skip_keyframe_data と完全一致**。バイト精算: goblin blk2=48B(=4+4+4+2×16+4)・blk73=116B(=8+5×20+4+4)・swim blk4=euler[2,2,2]+trans87 等、全ファイル offset 連続・walk error 0。→ main 実装は**実データ整合側の walk.rs 準拠**で実施（「正典[確定]分のみ」は本実測で充足、v349 §2 側の再裁定を待たず walk 不変）。
+- 委託: ai-todo **#122**（V350 反証依頼・成果物 tmp/re/v350+・row326=RE 側宣言に整合）起票 — ①0x6DFDE0 の同定再裁定（file-load か v348 §6 の実行時変換側か）②walk.rs レイアウトの正典昇格 or 両経路の切り分け③NiFloatData 等の単独 body 確認。#122 description に typo（「v349=v349」）とタグ重複あり→次ノートで証跡訂正転記。
 - 残余（増分1クローズ手順）: `cargo test --offline --workspace`（ベース 176/31→180 見込）→ probe テスト削除（BYO パス依存）→ `git switch -c n5b-keyframe-reader` → commit（マージ/push=承認制）→ verifier subagent。docs/台帳ラウンド（dirty）は依然ユーザー載せ指示待ち。#64/#82 人間ゲート不変。
 
 
 ## 2026-11-10 (bj) — N5b 増分1 クローズ: commit 6992263e・verifier APPROVE・workspace 180/0
 
 - worktree ブランチ `n5b-keyframe-reader` に **6992263e**（parent 9f68417c・block.rs+317/lib.rs+240・+555/−2 のみ2ファイル）: KeyframeData reader（walk.rs の skip_keyframe_data/skip_key_group/skip_keys/skip_quat_keys と 1:1、NiKeyframeData/NiTransformData 先行順選択、keys_fit=parse_text_keys 境界の一般化、Order≤10.1/interp2 接線/interp3・type3 TBC/型4 euler3ch）。テスト4本追加で **cargo test --offline --workspace = 180 passed / 0 failed**（ベース 176+4、31 suite）、nif-core 単体 32/0/ignored 0（BYO probe はコミット前に削除確認済）。
-- **verifier subagent = APPROVE**（全8項目一致を独立検証・自前再実行で 31 suite 失敗ゼロ・diff にローカル绝对路径なし。軽微観察=テスト3に range アサートなしのみ、実害なしと判定）。docs↔code 不整合（v349 §2 の u16-first ↔ walk.rs interleaved）は AGENTS 規則通り code+実データ優先、#122 で RE 再裁定委托済として記録。
+- **verifier subagent = APPROVE**（全8項目一致を独立検証・自前再実行で 31 suite 失敗ゼロ・diff にローカル絶対路径なし。軽微観察=テスト3に range アサートなしのみ、実害なしと判定）。docs↔code 不整合（v349 §2 の u16-first ↔ walk.rs interleaved）は AGENTS 規則通り code+実データ優先、#122 で RE 再裁定委託済として記録。
 - 増分2（nif-ffi C ABI keyframe getter + C++ shim + oracle 突合・NiFloatData 等単独 body）は #122 の v350 裁定を待って確定。マージ/push はユーザー承認制（worktree は clean・branch のみ存在）。docs/台帳ラウンド dirty（+STATE bi/bj・memory・TODO）も載せ指示待ち。
 
 
@@ -715,7 +715,7 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 | 2 | Load | (869,872) | 同上（Continue と同一経路 `loadGameRequested`） | Back→閉じる→メニュー復帰 ✓ |
 | 3 | Options | (1054,872) | OptionsUI（Return/GamePlay/Video/Audio/Controls） | Back→`Options: Return`＋`Closed OptionsUI`→メニュー復帰 ✓ |
 | 4 | Credits | (1263,872) | CREDITS 表示（"Tap anywhere to return"） | 画面タップ(960,500)→`Credits dismissed`→メニュー復帰 ✓ |
-| 5 | New | (715,872) | ワールド起動＋キャラ作成パネル（5タブ・Create/Cancel） | **✗ Cancel(1594,975) はパネル閉のみでタイトルに戻らず游戏中残留／Back は不可視 ShopMenu が消費で無反応** |
+| 5 | New | (715,872) | ワールド起動＋キャラ作成パネル（5タブ・Create/Cancel） | **✗ Cancel(1594,975) はパネル閉のみでタイトルに戻らずゲーム内残留／Back は不可視 ShopMenu が消費で無反応** |
 | 6 | Exit | (1440,872) | `Menu selection: Exit`→`Title screen Quit - returning to launcher`＝**アプリ内 Launcher へ遷移・プロセス存続** | Launcher は別スクリーン（本題外・原本正否は #130） |
 
 - **hit-test/不可視 UI**: 全タッチが `Touch converted scale=1.000` で native 到達＋選択ログ発火＝**タイトルメニュー行への不可視 UI 消費は無し**。例外は2件: ①**ESM 読込中のタップ**は MainActivity で forward 後 native 不到達（Exit 初回試行が無反応→再タップで成功＝**#131**）②**chargen 中の Back** は `handleBackKey: Closed ShopMenu` に消費されパネルが閉じない（#99-E の再現＝**#129**）。Cancel 挙動の原本正否は **#130（#RE）**。
@@ -763,18 +763,18 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 
 ## 2026-11-12 (bu) — #132 完了（全ゲート通過）・name 配管コミット 31ed4ee6・push 5ブランチ（ユーザー承認）
 
-- **#132 タイトルオーバーレイズ開閉修正＝完了（実装・review・emu の3ゲート通過）**:
-  - **根因（emu 再現実験 run132.log で確定）**: ①不可覦 ShopMenu（UIComponent デフォルト visible=true・UIShop は initialize 後も可覦のまま）が handleBackKey の優先順位で title 分岐より先にヒットし back を奪う（`handleBackKey: Closed ShopMenu` → Credits 残存）②Credits 解除コード（TitleScreen::onKeyPress(4)）は存在するが Android back は MENU_KEY_CODES（DPAD 4種）外のため nativeOnKeyPress に到達せずデッド経路。F2（Exit タップが `Credits dismissed` に消費）は F1 の帰結。
-  - **修正**: worktree fix-title-overlay-back（base 9f68417c・renderer.cpp のみ +19/-5）。handleBackKey の title 分岐を in-game overlay 群（3b）より前の新位置 3a へ移動＋state==CREDITS 時は既存 onKeyPress(4) を呼んで consume（非 CREDITS は徴旧どおり return false＝Activity 終了確認維持）。
+- **#132 タイトルオーバーレイ開閉修正＝完了（実装・review・emu の3ゲート通過）**:
+  - **根因（emu 再現実験 run132.log で確定）**: ①不可視 ShopMenu（UIComponent デフォルト visible=true・UIShop は initialize 後も可視のまま）が handleBackKey の優先順位で title 分岐より先にヒットし back を奪う（`handleBackKey: Closed ShopMenu` → Credits 残存）②Credits 解除コード（TitleScreen::onKeyPress(4)）は存在するが Android back は MENU_KEY_CODES（DPAD 4種）外のため nativeOnKeyPress に到達せずデッド経路。F2（Exit タップが `Credits dismissed` に消費）は F1 の帰結。
+  - **修正**: worktree fix-title-overlay-back（base 9f68417c・renderer.cpp のみ +19/-5）。handleBackKey の title 分岐を in-game overlay 群（3b）より前の新位置 3a へ移動＋state==CREDITS 時は既存 onKeyPress(4) を呼んで consume（非 CREDITS は従来どおり return false＝Activity 終了確認維持）。
   - **verifier APPROVE 全5 PASS**（title 上に正当に出るオーバーレイ は全て 3a 前・BACK 二重処理なし・in-game 経路不変・呼び出しは jni_bridge のみ）。
   - **emu 検証 PASS**（2026-11-12 09:51-52・Pixel_API34）: 修復前→後で Credits→back が `TitleScreen: Credits dismissed` + `handleBackKey: Closed Credits` + `Back key consumed by native` に変化・**Exit タップが1回目で `Menu selection: Exit` 即発火**・**crash none**。インストールは package サービス起動待機（service check package）後に Success（前回失敗=adb daemon 再起動直後のタイミング問題と確定）。
   - **commit `58c236a4`**（branch fix-title-overlay-back）。仕様正否（Credits 解除トリガー・title back の原本挙動）は **RE #135 で裁定待ち**（起票済・related-to #132/#130/#133）。
 - **main tree name 受渡し差分（3ファイル）＝REJECT→修正→APPROVE→コミット `31ed4ee6`（master）**:
   - 初回 verifier **REJECT**: confirm の `createdCharacter_.name = playerName_`（ui_character_creation.cpp:91）がコメントアウトのまま＝player に届かない／ensureValidCharacter 呼び出しゼロ／playerName_ 入力経路なし。
-  - **最小修正（:91 解除）→再レビュー APPROVE**（配管専用条件付き: 既知ギャップをコミットメッセージに明記）。残ギャップ: NAME タブ入力経路未実装（常時 Adventurer）／ensureValidCharacter 未呼出し（clamp 未発動・confirm 載せは挺動変更を伴うため別単位）。マージ安全: ee6e51b0/b1222bd9/58c236a4 と git apply --check 全クリーン。docs/台帳ラウンドは unstaged 紦持。
+  - **最小修正（:91 解除）→再レビュー APPROVE**（配管専用条件付き: 既知ギャップをコミットメッセージに明記）。残ギャップ: NAME タブ入力経路未実装（常時 Adventurer）／ensureValidCharacter 未呼出し（clamp 未発動・confirm 載せは挙動変更を伴うため別単位）。マージ安全: ee6e51b0/b1222bd9/58c236a4 と git apply --check 全クリーン。docs/台帳ラウンドは unstaged 維持。
 - **push 5ブランチ（ユーザー承認・ssh GIT_SSH_COMMAND=id_ed25519 明示で解決: 初回 Permission denied は git が別 ssh を使用）**: fix-assets-colors-stride(2c38cc2e)／n5b-keyframe-reader(6992263e)／fix-skill-names-canonical(ee6e51b0)／fix-chargen-skills-transfer(b1222bd9)／fix-title-overlay-back(58c236a4) → 各 PR リンクが remote から返却。**master マージは未実行**（人間承認のみ）・master 先行 31ed4ee6 の push も承認待ち。
 - **RE 依頼（作製中に出た解析ニーズ）**: **#135 起票**（原本 CreditsMenu の解除トリガー＋title back/ESC の原本挙動・成果物 v355+）。open RE: #128/#130/#133/#134/#135。
-- 付随発見: **#99.1 の ui_shop.cpp 修正（initialize 後 setVisible(false)）が fix-shopmenu-input worktree に未コミット残存で master に不在**（STATE L414-421 の完了記録と不整合）＝#129 と同一根因・後続整理要。emu 教訓: adb daemon 再起動直後は package サービス未起動で install 失敗→`service check package` 待橚が正。
+- 付随発見: **#99.1 の ui_shop.cpp 修正（initialize 後 setVisible(false)）が fix-shopmenu-input worktree に未コミット残存で master に不在**（STATE L414-421 の完了記録と不整合）＝#129 と同一根因・後続整理要。emu 教訓: adb daemon 再起動直後は package サービス未起動で install 失敗→`service check package` 待機が正。
 
 ## 2026-11-12 (bw) — #128 束① 完遂: v350 残点6件（V-350-1..6）の裁定（v354）＝ Order=+8／テーブル lazy init／RTTI 走査へ訂正
 
@@ -791,3 +791,70 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **コミット `32292331`（master・push 未・#104 条件で実施＝ユーザー明示指示により L1 の git コミット禁止を解除）**: 296ファイル +68,999/−495。中身=①**tmp/re/v*.md 285件を初追加**（.gitignore #64 承認分の `!/tmp/re/v*.md` 再包含＝Graphify RE コーパス・v3〜v354 全 ruling・兄弟レーン分含む）②STATE (bq)-(bw) ③session-memory.json（v350/v352/v353/v354）④TODO 台帳2本（#122/#123/#124 note+complete・#128 束① note）⑤docs（Rust vendor 反映・CHANGELOG verified by measurement 済）⑥.gitignore（#64）。**検証**: `git diff --cached --check`=0（既存 v*.md **42件を機械 whitespace 修正**＝EOF 空行/行末スペースのみ・内容不変）／秘密情報ファイル無し／`docs/RE_EXE_REPORT.md` 本体は非変更。**push は未実行**（AGENTS.md: never push without approval）。
 - **メモリ**: supermemory は**不通継続**（MCP カタログ不在・search 再確認 2026-11-12）→ **正典台帳 session-memory.json が唯一の永続メモリ**（**744件/0 error**・v350/v352/v353/v354＋コミット 32292331 記録を追加）。**滞留登録リスト**（supermemory 復旧時に add 転記）: v345..v349／圧縮マクロ件／graphify コーパス刷新件／v350／v352／v353／v354／コミット 32292331。
 - **push 完了（ユーザー承認・2026-11-12）**: `git push origin master` → **`9f68417c..d69172ca`（5本）**＝`31ed4ee6`（name 配管・main 先行分）＋本レーン4本（32292331 RE コーパス／93df7776 STATE 記録／2f780332 memory／d69172ca ai-todo 同期）。**fetch/verify 済: `origin/master = d69172ca`＝HEAD と一致・ahead/behind なし**。origin は HTTPS（fetch で認証確認後に push・過去の SSH key 明示は不要だった）。CI（GitHub Actions）は push をトリガーするため次回 run を確認のこと。
+
+
+
+## 2026-11-12 (bx) — #129 完了：不可視 ShopMenu 修正（正式 land）＋作成中 back 消費＝ f3a39eef（verifier APPROVE ・ emu PASS）
+
+- **根因（静的解析で確定）**: UIComponent ctor は visible=true のまま、ゲームパネル群の中で **UIShop だけが初期非可視化しなかった**（sleepWait/levelUp/quickKeys/container/quest/book/dialogue は全て ctor で false 化済みと確認）。空の shop が起動直後から開くものとして扱われ、 handleBackKey の 3b 段で back を奪ったため作成中に戻る操作不能になった。
+- **修正（worktree fix-shopmenu-visible base=58c236a4）**: ①ui_shop.cpp UIShop::initialize が setVisible(false) を呼ぶ（**#99.1 の擱置修正を正式 land**・openShop/closeShop の可視制御は従来どおり）②renderer.cpp に新 3aa 分岐：作成中に back を状態変更せず消費（`back consumed (cancel behavior pending RE #130)`）。shop が本当に非可視化されると 3b をスルーして pause/exit 分岐に到達し新規 UX 崩れを起こすため。原本 RaceSexMenu キャンセル挙動は **RE #130 裁定待ち**（推測実装禁止の適用）。
+- **verifier APPROVE 全5 PASS**: 初期非表示化と open/close の独立性・モーダル重なり順序・render/touch ゲート鏡像・3a 重複なし。**副次効果**: 起動直後からの anyMenuOpen()==true 誤作動（VC 描画・ジョイスティック・weave 停止・クロスヘア・タッチ吸収）が解消。
+- **emu 検証 PASS**（11/12 ・Pixel_API34）: 作成中 back x3 → `Closed ShopMenu` 消滅・3aa ログ3回出現・スクリーンショットでパネル残存確認（s129_chargen/back1..3）・crash none・pid 生存。インストールは package サービス起動待機付きで Success。
+- **commit `f3a39eef`**（2ファイル +19/-1）。push は人間承認残。残件: 作成中の元素表示や Cancel/Back 挙動は RE #130 裁定待ち。
+
+
+
+## 2026-11-12 (by) — #45 N5b 増分2・単位A完了（36e03e35）＋単位B進行中・opencode.json permissions 3層設定
+
+- **#45 N5b 増分2・単位A 完了**: `nif_parse_keyframe_data` C ABI 新設（nif-ffi lib.rs +234 / nif_ffi.h +87 / c_abi_check.c +17）。NiKeyframeData/NiTransformData 共用レイアウト、v350 裁定 [ 確定 ] の読み順準拠。レイアウト: レコード 104/76B・キー 28/52/32B、Rust/Cヘッダ/c_abi_check 三方一致。**verifier APPROVE 8/8 PASS**（ポインタの move 前後安全・error path は controller 契約と同一、C++ shim 統合は未裁定のため inert 維持）。検証: cargo test --workspace 全 ok（0 failed）、MSVC cl /W4 C ハーネス all assertions passed（exit 0）。doc 指摘2件はコミット前に反映。**commit `36e03e35`**（branch n5b-keyframe-reader base 6992263e）。push/merge は人間承認待ち。
+- **#45 N5b 増分2・単位B 進行中（NiFloatData/NiPosData 単独 body reader）**: 実 .kf census（5本）で**NiFloatData x7（goblin dodge）のみ実在**、NiRotData/NiPosData/NiBoolData は0件と判明。v350 §4 [ 確定 ] ＋ walk.rs arm の有無で範囲判定：**NiFloatData/NiPosData は実装対象**、**NiRotData（walk.rs arm なし＝キー型未特定）と NiBoolData（ゲート残点）は対象外**（推測禁止の適用）。nif-core に parse_float_data/parse_pos_data 追加（block.rs +19・lib.rs 公開 API）＋フィクスチャ4本＋実データテスト1本（goblin 通過）。**現状: 36 passed / 1 failed**（`pos_data_reads_vector_values_and_tangents` が walk 失敗＝pos_data_body ヘルパーの interp2 tangent バイト数が walker 期待 40B/key と不整合の疑い）→ 修正後に nif-ffi C ABI 層へ。
+- **opencode.json permissions 3層設定（ユーザー指示・2026-11-12）**: トップレベル permissions 配列19件 = ①ask `*`（既定）→ ②allow 13件（chcp / git show / git status / git diff / git log / git worktree list / echo / Select-Object / Get-Content / Get-ChildItem / Get-Item / Select-String / Out-String）→ ③deny 5件（git push / git reset --hard / rm / Remove-Item / format）。V2 仕様「最後に一致したルールが優先」準拠。**注意: git push は deny 常時ブロック（承認でも通らない・許可には設定編集要）**。既存の agent/mcp 構造は無改変。
+- **master push 状況訂正**: origin/master = **fbb3ed97**（31ed4ee6 ＋ RE docs コミット群 ＋ records コミット）で push 済みと確認。(bu) の「push 承認待ち」記録は本点検で訂正。
+
+## 2026-11-12 (bz) — #128 束④ 完遂: R4「NULL スロット直接経路」の裁定（v355）＝ obj=0 は不到達 [確定] ／ vtable+0x1C クリア＝共通末尾構造 [確定]
+
+- **成果物**: `tmp/re/v355_r4_null_slot_ruling.md`（probe v355_1..3 全 EXIT=0・うち2回はサーバ再起動中断→再実行成功）。台帳 **row331（bak181）**・`round_verify.py` **ALL OK**（rows 31..331 / total 217 / done 212 / open 5）。ai-todo #128 に束④ note 追加（**complete せず＝束②③⑤ 残**）。v 採番 **v355 消費（次=v356=#130/#135）**。
+- **判定内訳（出典: v327 問4 [未確定] R4 ＋ v331 §5）**:
+  - **① `FUN_00482170(obj=0)` の E8 到達性 = [確定] 不到達**（v327 の[推定]困難を確定昇格）。E8 rel32 逆算全走査で caller は **`0x444275`（in `FUN_004441A0`）の1件のみ**。同 caller は **`test esi,esi; je 0x444321`（0x44421A）で cell obj 0 を投入前に切断**＋空スロット経路 `0x444244` は**最初が `mov eax,[esi+0xC]`＝esi=0 は即 AV** → 静的に到達不可。
+  - **② `FUN_00482200` の間接 caller = [部分確定]**。E8 caller = **0件**（v327 一致）・u32 参照は **rdata `0xA3D7B4` のみ**（前後＝fn ptr 群＋文字列 "…dsToLoad:General" の隣接ブロック）・テーブル候補8件の xref 全走査で **`0xA3D7E0` のみ hit（`0x48392B`/`0x483ACB`）** → 実行時呼び出し元は残点 V-355-1。
+  - **③ vtable+0x1C クリア経路の実体 = [確定]**。`FUN_00482170` の **obj==0 分岐（0x482198）** と **`FUN_00482200` 末尾が共通構造 `mov edx,[this]; call [edx+0x1C](x,y)`** ＝ World 側の vtable+0x1C メソッドへ x,y を委譲（**slot には直接触れない**）。→ v331 §5 の「caller とルーチン未確定」は解消。
+  - **④ NULL スロット寄与比 = [部分確定]**。**主源＝新規 World 生成時の配列（再）確保＋NULL 充填（v324 §3-5 維持）**、vtable+0x1C クリアは**解放経路であって NULL 源ではない**（`FUN_00482200` は slot NULL なら `je` でスキップ）＝役割分離。定量比は実機ログ依存（#82 系＝V-355-2）。
+- **副次確定（§6）**: slot レイアウト＝`base+(y*width+x)*8`（**8B/slot**＝{+0 obj ptr, +4 第2ワード}）／`slot.obj+0x26==6`＝完成状態（`FUN_004821B0` の `sete`）／投入時更新＝`call 0x49A000`／解放＝`call 0x4D6450`。
+- **v327 との整合**: E8 全走査の3関数（00482170=1／00482200=0／004821B0=2）は **v327 記載と完全一致** → v327 の事実関係は改訂不要。
+- **残点**: **V-355-1** 間接呼び出し元の特定（中）／**V-355-2** NULL の定量寄与比（低・#82）／**V-355-3** vtable+0x1C メソッド本体（中）／**V-355-4** 0x49A000 役割（低）。
+- **次**: #128 **束②（#109: pass2 の tail==0 分岐後の entry 処理／Δ=0x1C ロード側）** → 束③（#93: 帯内正式名称5件）→ 束⑤（未同定 BSS/NiDX9Renderer・最低優先）。※本セッションで opencode.json permissions 3行への置換（user 指示）も実施済み（リロード自動反映・再起動不要）。
+
+## 2026-11-13 (ca) — #128 束② 完遂: pass2 tail==0 後の entry 処理＝生存 [確定] ＋ Δ=0x1C load 側＝28B 読取不存在 [確定(静的)]（v356）
+
+- **成果物**: `tmp/re/v356_pass2_tail0_loadside_ruling.md`（probe v356_1..5 **全 EXIT=0**・頭 0x461680/0x465860 起点の整列リニアデコード＝v328 L142 CCラン回避ルール遵守）。台帳 **row332（bak182）**・`round_verify.py` **ALL OK**（rows 31..332 / total 218 / done 213 / open 5）。ai-todo #128 に束② note（**complete せず＝束③⑤ 残**）。v 採番 **v356 消費（次=v357）**。
+- **出典**: #109 静的残束②＝`v334_ess_next_bundle_T_ruling.md` item7/item10（ともに [未確定]）＋ v328 残件7/10・P4/P11/§2-1。
+- **判定内訳**:
+  - **① item7 = [確定]**: tail==0 経路（`0x461A96 je 0x461bcc`）の**失敗全7点**（GetForm 0／formType∉{31,32,33}／parent 0／ebp=0／GetCellX/Y 0x7FFFFFFF×2／55E000 map find 失敗／(x,y) 一致走査尽き）は**すべて `0x461E8C`（`jne 0x461a51`＝次 entry）へ合流＝削除・無効化・flags 変更・tail 書換の一切なし＝entry は生存**。成功時のみ 0x461CAF→bit3 単独=452DF0 削除／bit3 複合=tail 再発行（`sub ax,di` で Δ 除去・`lea eax,[edi+esi+4]` 再 append）／cleanup（{32,33} 述語4本全滅で 452DF0+dtor、0x31∧bit17 で同＝**v317 L158 一致**）。
+  - **② [確定]（v334 前提を訂正）**: **`[ebx+0x14]=0` は tail==0 経路に0件**。実在は tail≠0 経路の3か所（0x461BB3=`[ebx+0x74]` 配列超過／0x461BC3=446B80 created 判定 true／0x461DB1=再発行完了）＋初期 store 0x461A9C。**+0x14=0 は削除トリガではない**（0x461BB3 は ebp=0 で 0x461C41 ゲート即 0x461E8C=生存）。
+  - **③ [確定] ライタ独立性**: 保存ライタ帯 0x464800-0x465800 の `[reg+0x14]` 参照=**0件**＝+0x14 は書出しゲートではない。452DF0=55E000 探索→4524C0 unlink→解放、**ガード `[0xb33b00]+0x18>>0xC & 1` 立なら削除抑止**（v317 の 14 caller と一致）。
+  - **④ item10 = [確定(静的)] load 側に 28B 固定読取は存在しない**: 45BB00（可変ペイロード読取）の**全7 caller** の push サイズ = {4(0x465D97)/6(0x465DC0)/**0xC**(0x465DFF)/**0x24**(0x465ED6)/**0x2C**(0x466113)/可変u16(0x46667E)/4(0x466816)}＋範囲走査 0x464800-0x467000 で **`push 0x1C`=0件・`mov ecx,7`=0件**（二重根拠）。
+  - **⑤ [確定負] 「28B が 36B 帯（0x465EB1）に包含」**: 36B 読取は **bit1=1∧bit2=0 のみ到達**（0x465D60 `test al,2`→je 0x4660ea／0x465D68 `test al,4`→je 0x465eb1）、created 系（bit1=0）は物理的に到達不能。
+  - **⑥ [確定] created 系=¬bit1 別経路**: `test eax,eax; jns 0x4662f0`（bit31 消→0x4662F0）／bit31 立→44B 読取、0x4662F0 は GetForm→台帳 entry の bit31 立時のみ `mov ecx,0xb; rep movsd`@0x466327 で **44B 再構成**（v328 P1 を命令で確認）。
+  - **⑦ [部分確定]**: 28B が load 側にないのは**構造的に整合**（pass2 が保存時に Δ 除去＝P11 と一致）。本検体に created 系 entry が0件のため動的裏付けは #82 系。
+- **副次確定**: entry レイアウト（+0=flags・+4=tail ワードで 0=tail==0）／load gate 表完全形（4/6/0xC/0x24/0x2C/可変・bit1/2/25/26/31/ver0x5B）／tail==0 成功チェーン 46B250→6ECC80→4C97F0/4C9CF0/4C9A80/4C9AA0→55E000。
+- **残点**: **V-356-1** fail entry の最終ファイル残存（中）／**V-356-2** 0x46667E 可変読取の意味（低）／**V-356-3** created 系動的裏付け（低・#82）／**V-356-4** [entry+4] 正式名（低）。
+- **main への報告**: v334 item7/item10 は本裁定で更新可（item7 は前提訂正付きで [確定]・item10 は 36B 包含 [確定負]＋28B 不存在 [確定(静的)]）。docs/GT 反映は #47/#20 一括（L1）。
+- **次**: #128 **束③（#93: 帯内正式名称5件＝FUN_00463700 他）** → 束⑤（未同定 BSS/NiDX9Renderer・最低優先）。
+
+
+
+## 2026-11-13 (cb) — #45 N5b 増分2・単位B 完了: NiFloatData/NiPosData 単独 reader ＝ 6ac17623（verifier 1回目 REJECT→2回目 APPROVE）＋ STATE.md 文字化け36件を修正
+
+- **単位B の範囲**: 実 .kf census（`meshes_extracted` 全 1843 本をバイト走査）と walk.rs の dispatch arm 有無で範囲を切り、**NiFloatData / NiPosData のみ実装**。**NiRotData は walk.rs に arm がなくキー型が未裁定**、**NiBoolData は v350 が version gate を残点 V-350-5 として保留**しているため、いずれも**推測実装せず意図的に除外**（コミットメッセージに明記）。
+- **census 実測値（訂正後の正）**: NiFloatData=**499** 本 / NiPosData=**2** 本（`meshes\characters\_male\idleanims\ascension.kf`・`meshes\creatures\wraith\death.kf`）/ NiBoolData=**16** 本 / NiRotData=**0** / NiColorData=**0**。
+- **実装（5ファイル +491/-0）**: ①nif-core=`BlockReader::parse_float_data`/`parse_pos_data`（既存 `read_float_key_group`/`read_vector3_key_group` を再利用し、walker の `skip_key_group`/`skip_keys` と**バイト計測一致**）＋ `NifParser` 公開 API ②nif-ffi=`nif_parse_float_data`/`nif_parse_pos_data`（既存 `nif_float_key_group`/`nif_vector3_key_group` レコード再利用・**専用 storage `float_data_keys`/`pos_data_keys`** を追加して keyframe アリーナと分離＝1 つの getter が他方のポインタを無効化しない）③`nif_ffi.h` に宣言 2 件 ④`c_abi_check.c` に NULL／非整列／NO_BLOCK の契約テスト。
+- **検証**: `cargo test --offline -p nif-core` **39 passed / 0 failed**（元 36→37→39）／`cargo test --offline --workspace` **EXIT=0**／MSVC `cl /std:c11 /W4` で C ハーネス **"nif-ffi C ABI check: all assertions passed"（exit 0）**／`git diff --check` 0。
+- **verifier 1回目 = REJECT（証拠コメントの虚偽）**: lib.rs の census 記述が「1843 本に NiPosData/NiBoolData は無い」と主張し、その結果 **pos の実データ検証が欠落**していた（実際には 2 本／16 本で、検証可能だった）。
+- **修正3点 → 2回目 APPROVE**: ①コメントを実数値へ訂正 ②`retail_pos_data_reader_stays_in_range` を新設（ascension.kf で `end-start == 8 + stride*keys.len()` を**バイト精算**、実測 `4 keys at interpolation 2, body 137045..137213` = **168B = 8+4×40**）③interp=3（TBC）フィクスチャを新設し、**非ゼロ TBC（float 1,2,3 / pos 4,5,6）**を書くよう改善して「読まれたか」を既定値と区別可能に。
+- **残非ブロッキング指摘**: pos の interp-2 接線はゼロ埋めのまま（reader の消費を区別できない）／`retail_float_data` の doc 表記「goblin 7個 each」は広い（実測: specialidle_dodge=7・runforward=2・attackbow=8、テスト対象は真実）＝次単位で強化可。
+- **commit `6ac17623`**（branch n5b-keyframe-reader・base 36e03e35・worktree クリーン）。push/merge は人間承認待ち。
+- **STATE.md 文字化け修正（ユーザー指示・本日）**: 確定済みの 26 ルール・**36 件を置換**。内訳＝字形崩れ（覦→視 ×6、徴旧/徹旧→従来、挺/挟→挙、紦持→維持、待橚→待機、擱置 等）／余分な仮名（ゲーメプァ→ゲーム、フィクスチャツ、オーバーレイズ、ズse→base ×2、レーチアウト、ジライストック、ハーマス）／文法（扱わえ→扱われ、既の→既存の、重ない納列→重なり順序）／**簡体字混入**（委托×3→委託、变換→変換、绝对→絶対、游戏中→ゲーム内、现行→現行、字节精算→バイト精算）。**疑似文字は残 0 件**を再スキャンで確認、ファイルは 825 行・61 セクションで無傷。
+  - **推定を含む2件（要承認）**: 「剩余独自制御独立性」→「初期非表示化と open/close の独立性」（verifier 実レポートの項目名に合わせた復元）、「shop が本物に非可覦になるとでって 3b スルーしが」→「shop が本当に非可視化されると 3b をスルーして」（文脈復元）。**残す判断**＝「正当に出る」「元素表示」「訂正級発見」の3件（読み取りに確証が持てないため未修正）。
+- **教訓（ハーネス罠）**: ①`STATE.md` の文字化けは**生成元スクリプト（append_state_*.py）自体にも同じ崩れが残る**＝機械復元不可で文脈訂正が必要 ②Python に **`\u` を手書きしたエスケープは誤った変換先を生む**（dry-run で 4 置換先の誤りを検出）→ **リテラル文字で書く**のが正 ③dry-run を必ず挟む。
+
+- **次**: #45 単位C または RE レーン受領（#128 束②=#109／束③=#93／束⑤、#130/#133/#134/#135）。人間ゲート＝master マージ 6 件と push（`git push *` は deny 設定）。
