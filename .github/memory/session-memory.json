@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-13T09:26:11Z",
+  "lastUpdated": "2026-11-13T09:47:40Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -10873,14 +10873,29 @@
         "task-complete"
       ],
       "content": "2026-11-13 RE レーン **#138 完遂（V-355-1/V-355-3/V-357-1）** — 成果物 `tmp/re/v359_gridcellarray_ruling.md`（probe v359_1..9 全 EXIT=0）。台帳 row335（bak185）・round_verify ALL OK（221想定/216）・ai-todo note→complete・STATE (ce)。v 採番 **v359 消費（次=v360）**。**鍵＝RTTI COL レイアウト校正（NiDX9 既知 COL 0xACC9D0 実測で pTD=+0xC）→4型名解決**: 0xA3D718=.?AVGridArray@@／0xA3D744=.?AVNiStencilProperty@@／**0xA3D79C=.?AVGridCellArray@@**／0xA3D7E0=.?AVGridDistantArray@@。**①FUN_00482200 唯一経路=[確定(機構)] GridCellArray vtable +0x18 間接 call**（E8=0・u32=rdata スロット1件・abs=0・**+0x18=0x482200 は GridCellArray 固有＝他3クラス別値**＝4方向排他証明）。call [reg+0x18] 全74件列挙・caller 候補=[部分確定] 0x906BBE/0x9073FE（残点 V-359-1=型帰属・中）。**v355 の 0xA3D7E0 xref 記述は訂正（vptr 代入）**。**②vtable+0x1C=[確定(命令+RTTI)] FUN_00482240=GridCellArray::ClearCell**（`[this+0x10][(y*width+x)*8]=0`＋`[this+0x20]=0`）。生成経路全リンク: new(0xAC)→container ctor 0x441970→GridCellArray ctor 0x483350（vptr 再スタンプ・width≥5・w²×8B）→**[esi+8]=GridCellArray\\*（ポインタ格納）**→GridDistantArray ctor 0x4838F0 同梱→**[0xB333A0]=container**。vtable 全10スロット（+0x18 release/+0x1C ClearCell/+0x20 copy/+0x24 move＝NULL 時自+0x1C fallback）。**③0x44EE00=[部分確定]** 自再入=子オブジェクト解決の再帰ループ（0x4D7630→座標 getter→predicate→0x4D6760(0xB33AC4) refcheck→self3引数）・機能=チェーン解決/リゾルバ系・**正式名=[未確定]**（文字列0・annotate_db 未登録）。副次: **[0xB333A0]=起動生成 container のポインタ**（v338 拡張）。残点 V-359-1..4。**新規 TODO 4件起票（解析中発見の新規解析対象）: #139（v356 残点・中）/ #140（NiDX9 +0x6F0 ゲート大群・中）/ #141（低残点まとめ・低）＋#138 本体**。#82 系動的依存は既存 #82 が受容。次: #139→#140→#141 または既存 RE キュー（#130/#133/#134/#135/#136）。"
+    },
+    {
+      "id": "96-b-button-label-fit-2026-11-13",
+      "timestamp": "2026-11-13T09:47:40Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-96",
+        "ui",
+        "android",
+        "chargen",
+        "re-dispatch"
+      ],
+      "content": "2026-11-13 #96 B 完了（commit f0496ddd・branch fix-chargen-buttons・base 0ef273d8・1ファイル +69/-19）: キャラ作成の Create/Cancel ラベルがパネル外へはみ出す欠陥を修正。実測=既定 fontSizeMultiplier_ 1.15（text_renderer.h:246・title_screen.cpp:567 が復元）で Create 108.46px/Cancel 106.55px が 105px パネルに収まらず、旧固定インセット(18/17px)では +21.46px/+18.55px のオーバーシュート。修正=①ボタン寸法と2つのx位置をファイル先頭の一箇所へ一元化し描画と hitTest が同一ヘルパーを読む（旧 hitTest は 105/32/226 をハードコード）②getTextWidth（drawOblivionText と同一の scale 式・同一 advance＝計測=描画）で中央揃え ③0.95 ずつスケール縮小・反復上限 kMaxShrinkSteps=48 で床なし（setter は clamp(0.5,2.0)＝text_renderer.cpp:1162 だが将来も壊れないように）。文字切り詰めは不採用（debug_menu.cpp:642 の先例あるが Create→Creat とラベルを壊すため）。ジオメトリ不変（confirm=contentW-226/cancel=contentW-105/高さ32）でタッチ箱==描画箱を維持。検証=mult 0.5-2.0 全域で右端最悪 101.00px<105px・縦 30.3px<32px。verifier=1回目 REJECT（既定1.15を見落とし mult1.0 前提で計測）→ 計測・コメント訂正＋縮小ループ追加 → 2回目 APPROVE。非阻害指摘（コメントが clamp を無制限と誤記）は docs↔code 不一致として実データ確認のうえ修正。emu PASS（11/13・Pixel_API34・BUILD SUCCESSFUL 25m56s）=install ✓／Cancel タップでパネル消滅(暗部比率0.86→0.04)／Create タップで Character creation applied: name='Adventurer' + Quest created ID=1002／crash none／pid 生存。スコープ外分離=A フォント下降取り消し（text_renderer.cpp:1050 の min(inkBottom,capBaseline) が g/p/y の下降を潰し ' をベースラインに落とす。.fnt に垂直メトリクスなし（f[2]/f[13] 全255件0.0・f[6]/f[7]/f[9]/f[10] 全件重複）、アトラスは tight box 全141字 inkbottom=h-2 かつベースライン非整列の2Dビンパックで導出不可）→ RE #136／E パネル外左上の彩色ブロック（純色で placeholder_assets.h と不一致）→ #137。RE 成果物受領5件=v355/v356/v357/v358/v359（#128 全5束完了・#138 完遂・#139-#141 起票・RE が 6e11ac11 でコミット）。#136 は RE キュー入り済、#142 はキュー記載が無かったため取りこぼし防止 note を追加。push/merge は人間承認待ち。"
     }
   ],
   "metadata": {
-    "totalEntries": 753,
+    "totalEntries": 754,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-13T09:26:11Z",
-    "entry_count": 753,
-    "last_updated": "2026-11-13T09:26:11Z"
+    "lastUpdated": "2026-11-13T09:47:40Z",
+    "entry_count": 754,
+    "last_updated": "2026-11-13T09:47:40Z"
   }
 }

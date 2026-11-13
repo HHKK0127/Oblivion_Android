@@ -905,3 +905,22 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点**: **V-359-1** `call [reg+0x18]` 74件の型帰属（**中**）／V-359-2 引数語義（低）／V-359-3 正式名（低）／V-359-4 container 残フィールド（低）。
 - **main への報告**: V-355-3 完全クローズ・V-355-1 機構確定・V-357-1 機能確定（正式名のみ残）・v355 訂正1件。docs/GT 反映候補（GridCellArray/ClearCell/RTTI pTD=+0xC 手順）は #47/#20 一括。
 - **次**: **#139（v356 残点・中）→ #140（NiDX9 +0x6F0・中）→ #141（低）**、または既存 RE キュー（#130/#133/#134/#135/#136）。コミット/push はユーザー指示で実施（本節含む row335・memory v359 が未コミット）。
+
+
+
+## 2026-11-13 (cf) — #96 B 完了: キャラ作成ボタンのラベルをパネル内に収容 ＝ f0496ddd（verifier REJECT→APPROVE・emu PASS）＋ RE 成果物5件の受領
+
+- **欠陥の実測**: 既定 `fontSizeMultiplier_ = 1.15`（`text_renderer.h:246`・`title_screen.cpp:567` がキャラ作成表示前に復元）で、`Create` = **108.46 px** / `Cancel` = **106.55 px** が **105 px** のパネルに収まらない。旧コードの固定インセット（18 / 17 px）では **+21.46 px / +18.55 px** のオーバーシュート。計測は `fonts/kingthings_regular.fnt` の実セル幅（record=codepoint−1・advance=f[11]）とレンダラ自身の式 `scale*(fontSize/22)*fontSizeMultiplier_` による。
+- **修正（1ファイル `ui_character_creation.cpp` +69/−19）**:
+  1. ボタン幅/高さ/間隔と2つの x 位置を**ファイル先頭の一箇所**へ一元化し、描画と `hitTestConfirmButton`/`hitTestCancelButton` の双方が同じヘルパーを呼ぶ（旧 hitTest は `105/32/226` をハードコードし描画側と二重管理していた）。
+  2. ラベルを `getTextWidth`（`drawOblivionText` と**同一の scale 式・同一 advance**＝計測値＝描画幅）で中央揃え。
+  3. スケールを 0.95 ずつ下げて収容。**反復回数上限 `kMaxShrinkSteps = 48` でスケール床なし** — setter は `std::clamp(mult, 0.5f, 2.0f)`（`text_renderer.cpp:1162`）で現状の到達値は有限だが、将来 clamp が外れても再発しないように。**文字切り詰めは不採用**（`debug_menu.cpp:642` の先例はあるが `Create`→`Creat` とラベルを壊すため）。
+- **ジオメトリは不変**: confirm = `contentW-226` / cancel = `contentW-105` / 高さ 32 → **タッチ箱 == 描画箱**を維持（#96 の完了条件の1項目）。
+- **検証**: mult 0.5〜2.0 全域で右端最悪 **101.00 px < 105 px**、縦最悪 30.3 px < 32 px（旧は mult1.15 で 32.7 px と既にはみ出していた）。
+- **verifier**: 1回目 **REJECT**（既定 1.15 を見落とし mult1.0 前提で計測していた）→ 計測値・コメント訂正＋縮小ループ追加 → **2回目 APPROVE**。非阻害指摘1件（コメントが clamp を「無制限」と誤記）は **docs↔code 不一致**として実データ確認のうえ修正。
+- **emu 検証 PASS**（11/13・Pixel_API34・`BUILD SUCCESSFUL in 25m56s`）: install ✓ / **Cancel タップでパネル消滅**（暗部比率 0.86→0.04）/ **Create タップで `Character creation applied: name='Adventurer'` + `Quest created: ID=1002`** / **crash buffer none** / pid 生存。※当初の Create ログ欠落は**検証スクリプトのフロー不備**（Cancel は游戏中残留の仕様なのにタイトル座標をタップしていた）が原因で、hitTest の欠陥ではなかった。
+- **スコープ外として分離した2件**: **A（フォント下降取り消し）**＝`text_renderer.cpp:1050` の `min(inkBottom, capBaseline)` が `g`/`p`/`y` の下降を潰し `'` をベースラインに落とす（`begin`→`be9in`・`your`→`Your`・`character's`→`character;s`）。`.fnt` に垂直メトリクスが無く（`f[2]`/`f[13]` は全255件 0.0、`f[6]/f[7]/f[9]/f[10]` は全件が重複値）、アトラスは **tight box（全141字で inkbottom = h−2）かつベースライン非整列の2Dビンパック**（CAPS 26字中22通りが一意）＝**幾何から導出不可** → **RE #136**。**E（パネル外左上の彩色ブロック）**＝x<260 のパネル外・実測色は純色 (255,255,255)/(255,255,0)/(0,255,255)/(255,127,0) で `placeholder_assets.h` の色と不一致 → **#137**（スコープ分離）。
+- **RE 成果物の受領（5件）**: `v355`(#128 束④) / `v356`(束②) / `v357`(束③) / `v358`(束⑤) / `v359`(#138)。**#128 全5束完了・complete**、#138 完遂、新規 #139/#140/#141 起票、RE セッションが `6e11ac11` でコミット済み。STATE に (ca)(cc)(cd)(ce) を RE 側が追記。
+- **RE 依頼の状況**: **#136 は STATE (ce) の「次」リストに明記＝キュー入り済**。**#142**（パネル/ボタン/タブの原本寸法＋下部約900px 空白の裁定）は**キュー記載が無かったため取りこぼし防止の note を追加**した。
+- **commit `f0496ddd`**（branch fix-chargen-buttons・base 0ef273d8・worktree clean）。push/merge は人間承認待ち。
+- **次**: RE #136/#142 到着待ちと並行して、**RE不要で着手可能な #96 ③（名前入力ハンドラ＝#123 で原本挙動が[確定]済）**へ。
