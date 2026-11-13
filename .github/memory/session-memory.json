@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-13T03:01:25Z",
+  "lastUpdated": "2026-11-13T09:26:11Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -10825,14 +10825,62 @@
         "mojibake-fix"
       ],
       "content": "2026-11-13 #45 N5b 増分2・単位B 完了（commit 6ac17623・branch n5b-keyframe-reader・base 36e03e35・5ファイル +491/-0）: NiFloatData/NiPosData の単独 body reader を nif-core と C ABI に実装。範囲は実 .kf census（meshes_extracted 全1843本）と walk.rs の dispatch arm 有無で判定し、NiFloatData=499本/NiPosData=2本/NiBoolData=16本/NiRotData=0 を実測。**意図的除外**: NiRotData（walk.rs に arm なし＝キー型未裁定）／NiBoolData（v350 が version gate を残点 V-350-5 として保留）＝推測実装禁止の適用。実装=①nif-core parse_float_data/parse_pos_data（既存 read_float_key_group/read_vector3_key_group 再利用で walker の skip_key_group/skip_keys とバイト計測一致）②nif-ffi nif_parse_float_data/nif_parse_pos_data（専用 storage float_data_keys/pos_data_keys を追加し keyframe アリーナと分離＝getter 同士が互いのポインタを無効化しない）③nif_ffi.h 宣言2件 ④c_abi_check.c の NULL/非整列/NO_BLOCK 契約テスト。検証=nif-core 39 passed/0 failed（元36→37→39）・cargo test --offline --workspace EXIT=0・MSVC cl /W4 で C ハーネス all assertions passed・git diff --check 0。verifier 1回目 REJECT（census コメントが実 corpus と食い違い NiPosData=2/NiBoolData=16 を0件と虚偽、結果 pos の実データ検証が欠落）→対応3点（コメント実数値へ訂正／retail_pos_data_reader_stays_in_range 新設＝ascension.kf で 168B=8+4×40 をバイト精算／interp3 TBC フィクスチャ新設・非ゼロ値で読込検証可能に）→ 2回目 APPROVE。同日: STATE.md 文字化け 26ルール36件を訂正（覦→視 等の字形崩れ・余分な仮名・簡体字混入）、疑似文字残0件。push/merge は人間承認待ち（git push * は opencode.json で deny）。"
+    },
+    {
+      "id": "v357-named5-ruling-2026-11-13",
+      "timestamp": "2026-11-13T05:32:22Z",
+      "priority": "medium",
+      "category": "analysis",
+      "tags": [
+        "oblivion",
+        "re49",
+        "reverse-engineering",
+        "v357",
+        "named-symbols",
+        "bundle-3"
+      ],
+      "content": "2026-11-13 RE レーン **#128 束③（#93: 帯内正式名称5件＝v338 §2.1-2.5・帯外解禁再挑戦）完遂** — 成果物 `tmp/re/v357_named5_ruling.md`（probe v357_1..8 最終全 EXIT=0・v357_2..5 は初回 API 誤り→修正再実行）。台帳 row333（bak183）・round_verify ALL OK（219想定/214）。ai-todo #128 束③ note（complete せず＝束⑤のみ残）。STATE (cc)。v 採番 **v357 消費（次=v358）**。判定5件: **A=FUN_00463700 正式名 [未確定] 維持**（文字列0/u32参照0 [確定負]）・機能[確定]拡張（this 付きグローバル解放チェーン約18系統・**tail 0x4F9DD0 の正体=[0xB361BC]=0/[0xB09E20]=-1/[0xB361C0]=0**・this=fn0x464440 の world 再初期化系オブジェクト）。**B=0x44F058 帯 境界 [確定] 0x44EE00..0x44F0B5**（証明: 内部 ret0件＋.text 全走査で外部転移0件。**find_head の 0x44EDE0 は v323 §4-9「CC ラン不足型」誤答が実例確定**＝真 head 0x44EE00 は CC run2 で minrun=4 不受理）・call 0x44EE00@0x44F058=自関数再入（once ガード [0xB33AD4]bit0）・名称 [未確定]。**C=0x5BA629 上位 [部分確定] FUN_0x5BA4D0**（callers4件・[0xB33A98]→0x44EE00→0x4F0620→[edi+0xC4] 鎖・0x589B70(0x3FF)・**0x58CEB0(0xFA1=4001,float)×4**・文字列0→正式名 [未確定]）。**D=0x659BE0 [確定(命令)] セーブ時バイトサイズ基礎値 getter**（u16=1+0x4E2BF0+vfunc+0x3F0・**callers3件が 0x45A170 version 述語＋add 6/0xC/4 のバイトサイズ累積**で v323「Actor 基礎値[推定]」を確定昇格・vtable 0xA73348=65スロット run index19・vtable[-1] pTD=0 で RTTI/クラス名 [確定負]）。**E=bit7 SIB/530: 直接即値型 bit7 リーダ0件（SIB 含む・readers with imm=803 中0）＝[確定負]完全化**・非スタック ALU=545（byte11/word414/dword120）vs v316 530=差15 は境界差 [部分確定]・**SIB 185件は全スタック＝フィールド[reg+0x18] は SIB 非使用 [確定(静的)]**・bit7 即値書手18件＋**新規ペア 0x4639A0/0x4639A9**・CRT word ペア 0x722B15/0x722B21/0x7AD84C。残点 V-357-1..6。main へ: v338 §2.1-2.5 全面更新可・docs/GT 反映候補（CC ラン不足型2例目・0x659BE0 意味）は #47/#20 一括。次: **束⑤（未同定 BSS/NiDX9Renderer・最低優先）＝#128 残り唯一の束**、完遂後に #128 complete。"
+    },
+    {
+      "id": "v358-bundle5-bss-nidx9-2026-11-13",
+      "timestamp": "2026-11-13T08:58:27Z",
+      "priority": "medium",
+      "category": "analysis",
+      "tags": [
+        "oblivion",
+        "re49",
+        "reverse-engineering",
+        "v358",
+        "bundle-5",
+        "bss",
+        "nidx9renderer",
+        "task-complete"
+      ],
+      "content": "2026-11-13 RE レーン **#128 束⑤（最終束）完遂＝全5束完了・ai-todo #128 complete 済** — 成果物 `tmp/re/v358_bundle5_bss_nidx9_ruling.md`（probe v358_1..8 最終全 EXIT=0・v358_1 の後方デコードバグを自己検出→v358_3 で整列走査へ作り直し）。台帳 row334（bak184）・round_verify ALL OK（220想定/215）。STATE (cd)。v 採番 **v358 消費（次=v359）**。**(a) 未同定 BSS 53/53 同定（[確定]28/[部分確定]25）**: 鍵=CRT 静的初期化定型ブロック（push dtor+名前文字列×2+ctor 0x419A70+_onexit 0x981FB4）の tight 抽出＋隣接ブロック交叉検証＋dtor thunk（jmp 0x4055E0）。**帯26本=魔法系 GMST 表示オブジェクト全数**（school6 Alteration..Restoration／type10 Spell..Wortcraft vanilla 拼字／cast4 CastOnce..Constant／range3 Self,Touch,Target／projectile4 Ball,Bolt,Spray,Fog・sMagic* ID 付き）。**v285 の「22本」は26本の計数誤記を訂正**。**帯7本=ロックレベル系**（fLeveledLockMult+ sLockLevelNameVeryEasy..Impossible）。**CRITICAL_SECTION 3本 0xB33800/0xB33B80/0xB33980 [確定(IAT)]** — PE インポート実パースでロック族正式名解決: 0x401000=InitializeCriticalSection/0x401020=Enter（mov [esp+4],ecx サンク）/0x401030=TryEnter/0x401040=Leave/**0x401050=InterlockedDecrement(refcount[+4]→0 で vtable slot0 dtor=Release 相当)**、WaitForSingleObject(0xB33434)／SetThreadPriority(0xB33438 引数ストア)。guard 名文字列はサンク上書きで IAT 不到達=vestigial。0xB33454='SceneGraph'／0xB33AC4=refcount 付き静的 obj（束③ v357 統合）／**0xB33A6C..A8C 9本=FUN_00445A10 静的状態構造体**（bounds size 0x1DE0 確認）／byte フラグ4本=挙動付き。**(b) NiDX9 vtable 98スロット/83 unique impl 全数機能分類（[確定]33/[部分確定]65）**: getter/setter は**フィールドオフセットまで [確定(命令)]**（+0x5E0 flags/+0x5D8 float 一対/+0x5DC u32 一対/+0x878/87C/894/898/A90/+0x61C+620/global 0xB42168・0xB42050）・no-op スタブ14（0x6F7070×6,0x68F970×6,0x60D0A0×2,0x60CF60×2,0x6FDFF0×2,0x700640）・member vfunc フォワーダ（+0x880/+0x8B8/+0x8AC/+0x20/+0x94・**slot67=EnterCriticalSection(&this+0x180)=埋め込み CS**・**95/96/97=+0x8D0/8C0/8E0 unlink→0x4524C0**・63=operator delete 相当）・**[this+0x6F0] ゲート大群15スロット [部分確定]**。クロス vtable: base スタブ共有数（0x6F7070=rdata 2,738 参照/0x68F970=2,329/0x60D0A0=863/0x60CF60=474）＝数百 vtable 共有基底層・NiDX9 固有 impl は他参照0＝単継承フラット・**.?AVNiRenderer@@ TD(0xB256B0) は存在も単独 NiRenderer vtable 解決0件＝層分け [確定負]**。**正式 C++ メソッド名=[未確定]**（メソッド単位 RTTI/シンボルなし [確定負]）。残点 V-358-1..6（+0x6F0 ゲート大群の実用途=中・他5件=低）。main へ: v285 残4・v287 残4 クローズ・53本はバイナリアドレス直打ち可・ロック3本は mutex 化可・NiDX9 は移植対象外（#51 判定維持）・docs/GT 反映は #47/#20 一括。**#128 全5束: 束①(v354)/束④(v355)/束②(v356)/束③(v357)/束⑤(v358) 完遂**。次=承認済み他キュー（#130/#133/#134/#135）または main 新規依頼待ち。未コミット=row334・STATE (cd)・本エントリ。"
+    },
+    {
+      "id": "v359-gridcellarray-ruling-2026-11-13",
+      "timestamp": "2026-11-13T09:26:11Z",
+      "priority": "medium",
+      "category": "analysis",
+      "tags": [
+        "oblivion",
+        "re49",
+        "reverse-engineering",
+        "v359",
+        "gridcellarray",
+        "rtti",
+        "task-complete"
+      ],
+      "content": "2026-11-13 RE レーン **#138 完遂（V-355-1/V-355-3/V-357-1）** — 成果物 `tmp/re/v359_gridcellarray_ruling.md`（probe v359_1..9 全 EXIT=0）。台帳 row335（bak185）・round_verify ALL OK（221想定/216）・ai-todo note→complete・STATE (ce)。v 採番 **v359 消費（次=v360）**。**鍵＝RTTI COL レイアウト校正（NiDX9 既知 COL 0xACC9D0 実測で pTD=+0xC）→4型名解決**: 0xA3D718=.?AVGridArray@@／0xA3D744=.?AVNiStencilProperty@@／**0xA3D79C=.?AVGridCellArray@@**／0xA3D7E0=.?AVGridDistantArray@@。**①FUN_00482200 唯一経路=[確定(機構)] GridCellArray vtable +0x18 間接 call**（E8=0・u32=rdata スロット1件・abs=0・**+0x18=0x482200 は GridCellArray 固有＝他3クラス別値**＝4方向排他証明）。call [reg+0x18] 全74件列挙・caller 候補=[部分確定] 0x906BBE/0x9073FE（残点 V-359-1=型帰属・中）。**v355 の 0xA3D7E0 xref 記述は訂正（vptr 代入）**。**②vtable+0x1C=[確定(命令+RTTI)] FUN_00482240=GridCellArray::ClearCell**（`[this+0x10][(y*width+x)*8]=0`＋`[this+0x20]=0`）。生成経路全リンク: new(0xAC)→container ctor 0x441970→GridCellArray ctor 0x483350（vptr 再スタンプ・width≥5・w²×8B）→**[esi+8]=GridCellArray\\*（ポインタ格納）**→GridDistantArray ctor 0x4838F0 同梱→**[0xB333A0]=container**。vtable 全10スロット（+0x18 release/+0x1C ClearCell/+0x20 copy/+0x24 move＝NULL 時自+0x1C fallback）。**③0x44EE00=[部分確定]** 自再入=子オブジェクト解決の再帰ループ（0x4D7630→座標 getter→predicate→0x4D6760(0xB33AC4) refcheck→self3引数）・機能=チェーン解決/リゾルバ系・**正式名=[未確定]**（文字列0・annotate_db 未登録）。副次: **[0xB333A0]=起動生成 container のポインタ**（v338 拡張）。残点 V-359-1..4。**新規 TODO 4件起票（解析中発見の新規解析対象）: #139（v356 残点・中）/ #140（NiDX9 +0x6F0 ゲート大群・中）/ #141（低残点まとめ・低）＋#138 本体**。#82 系動的依存は既存 #82 が受容。次: #139→#140→#141 または既存 RE キュー（#130/#133/#134/#135/#136）。"
     }
   ],
   "metadata": {
-    "totalEntries": 750,
+    "totalEntries": 753,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-13T03:01:25Z",
-    "entry_count": 750,
-    "last_updated": "2026-11-13T03:01:25Z"
+    "lastUpdated": "2026-11-13T09:26:11Z",
+    "entry_count": 753,
+    "last_updated": "2026-11-13T09:26:11Z"
   }
 }

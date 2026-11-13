@@ -858,3 +858,50 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓（ハーネス罠）**: ①`STATE.md` の文字化けは**生成元スクリプト（append_state_*.py）自体にも同じ崩れが残る**＝機械復元不可で文脈訂正が必要 ②Python に **`\u` を手書きしたエスケープは誤った変換先を生む**（dry-run で 4 置換先の誤りを検出）→ **リテラル文字で書く**のが正 ③dry-run を必ず挟む。
 
 - **次**: #45 単位C または RE レーン受領（#128 束②=#109／束③=#93／束⑤、#130/#133/#134/#135）。人間ゲート＝master マージ 6 件と push（`git push *` は deny 設定）。
+
+## 2026-11-13 (cc) — #128 束③ 完遂: #93 帯内正式名称5件の再裁定（v357）＝ 0x44F058 帯境界 [確定]／0x659BE0=セーブサイズ基礎値 [確定]／bit7 直接リーダ SIB 含め0件 [確定負]
+
+- **成果物**: `tmp/re/v357_named5_ruling.md`（probe **v357_1..8 最終全 EXIT=0**・v357_2..5 は初回に CsInsn タプル/capstone import/`op.mem.disp` の API 誤りで失敗→修正再実行・失败分も証跡に記録）。台帳 **row333（bak183）**・`round_verify.py` **ALL OK**（rows 31..333 / total 219 / done 214 / open 5）。ai-todo #128 に束③ note（**complete せず＝束⑤のみ残**）。v 採番 **v357 消費（次=v358）**。
+- **出典**: #93＝`v338_plus_residuals_ruling.md` §2.1-2.5（帯外解析制限つき浅層留保）を **#128 の帯外解禁**で再挑戦。
+- **判定内訳（5件）**:
+  - **A. FUN_00463700 正式名 = [未確定] 維持**（文字列0・u32参照0 [確定負]）／**機能は [確定] へ拡張**: callers=2（0x464499/0x4646D9∈fn0x464440）・this 付きグローバル解放チェーン約18系統を全列挙・**tail `jmp 0x4F9DD0` の正体＝`[0xB361BC]=0/[0xB09E20]=-1/[0xB361C0]=0` の3グローバル定数クリア（帯外ブロッカー解消）**・this=fn0x464440 の this（両 site `mov ecx,ebp`＋先頭 `mov ebp,ecx`）＝world 再初期化系オブジェクト。
+  - **B. 0x44F058 帯 = 境界 [確定] `0x44EE00..0x44F0B5`／名称 [未確定]**。証明は二重: (i) 0x44EE00→0x44F058 間 **ret 0件**（前方 jmp5・後方 jmp 0x44EFB0 ループ）(ii) **.text 全走査で領域 (0x44EE00,0x44F0B5] への外部転移（jmp/jcc/call）=0件**。**find_head の 0x44EDE0 は v323 §4-9「CC ラン不足型」誤答が実例で確定**（真 head 0x44EE00 は前関数 `ret 4`＋int3×2＝CC run2 で minrun=4 不受理）。**`call 0x44EE00`@0x44F058＝自関数再入**（once ガード `test [0xB33AD4],1 / or …,1`）。E8 callers=3（自＋0x507896＋0x5BA629）。副次: `[0xB33AC0]` refcount 減算→0 で `[0xB33AC4]`→0x7C2A40 リリース。
+  - **C. 0x5BA629 上位 = [部分確定]**: 上位＝**FUN_0x5BA4D0**（SEH・callers4件）。直接文脈 `0x6ECC80 → mov ecx,[0xB33A98] → call 0x44EE00 → 0x4F0620 → [edi+0xC4]`。全文脈: `0x589B70(0x3FF=1003∈ID 0x3E9..0x41B)` → `[edi+0x24]∈{8,1}` → **`0x58CEB0(0xFA1=4001,float)` ×4** → `[edi+0x68]` リスト walk → vtable+0x174 連鎖。文字列0 [確定負]→正式名 [未確定]。
+  - **D. 0x659BE0 本体 = [確定(命令)]「セーブ時バイトサイズ基礎値 getter」**: `u16 = 1 + 0x4E2BF0(arg) + ([this+0x58] ? vfunc+0x3F0 : 0)`。**callers3件がすべて `0x45A170` version 述語＋`add esi,6`/`add ax,0xC`+`cmp [SaveGame+0x7C],0x48/0x64` ゲート＝バイトサイズ累積文脈** → v323「Actor 基礎値 [推定]」を意味レベルで確定昇格。vtable=rdata 0xA73348（run `0xA732FC..0xA734FC`＝65スロット・index19・隣接 0x659C30/0x659C90）。**vtable[-1]=0xAC3C7C は pTD=0 → COL/RTTI なし＝クラス名 [確定負]**。
+  - **E. bit7 SIB/530対応 = [確定負]完全化＋[部分確定]**: .text 全文 **2,258,077 insn** 走査で `disp==0x18` 即値付き test/cmp/bt **803件中 bit7 相当（imm=0x80 系／bt 7）=0件 → SIB 形含め直接型リーダ不在**（v323 の SIB 除外を解消）。非スタック ALU(ops6)=**545件**（byte11/word414/dword120・imm389/reg156・bts0）vs v316 530＝**差15は境界差で未特定 [部分確定]**。**SIB 形185件はすべてスタック演算＝フィールド [reg+0x18] ALU は SIB 非使用 [確定(静的)]**。bit7 即値書手18件列挙＋**新規ペア `0x4639A0 (or 0x80)`+`0x4639A9 (and 0xffffff7f)`**（v323 は clear 側のみ認識）、CRT 帯 word ペア 0x722B15/0x722B21＋0x7AD84C。
+- **残点**: **V-357-1** 0x44EE00 正式名（中）／**V-357-2** fn0x464440 共通クラス名（低）／**V-357-3** 0x5BA4D0 名＋0x58CEB0(0xFA1,f) 意味（低）／**V-357-4** 0x659BE0 クラス名＋Actor 裏付け（低）／**V-357-5** 545vs530 差15（低）／**V-357-6** bit7 word mask 群帰属（低）。
+- **main への報告**: v338 §2.1-2.5 全面更新可（2.2 境界 [確定]・2.4 意味 [確定]・2.5 SIB 除外解消）。docs/GT 反映候補（CC ラン不足型2例目＝rule v3 補強・FUN_00659BE0 意味確定）は #47/#20 一括（L1 では docs 無編集）。
+- **次**: #128 **束⑤（未同定 BSS/NiDX9Renderer 個別スロット名・最低優先）＝本タスク残り唯一の束**。束⑤完遂後に #128 を complete。
+
+## 2026-11-13 (cd) — #128 束⑤ 完遂＝**全5束完了・#128 complete**: 未同定 BSS 53/53 同定＋NiDX9 98スロット機能分類（v358）
+
+- **成果物**: `tmp/re/v358_bundle5_bss_nidx9_ruling.md`（probe **v358_1..8 最終全 EXIT=0**・v358_1 の後方デコード順序バグを出力破綻から自己検出→v358_3 で operand 級の整列完全走査へ全面作り直し（棄却記録）・v358_7 はセクション頭 find_head 例外→修正再実行）。台帳 **row334（bak184）**・`round_verify` **ALL OK**（rows 31..334 / total 220 / done 215 / open 5）。ai-todo #128 に束⑤ note → **complete 実行（全5束完遂）**。v 採番 **v358 消費（次=v359）**。
+- **(a) 未同定 BSS 53本 = 53/53 同定（[確定]28/[部分確定]25）**:
+  - **鍵**: owner `FUN_009D9FA0` 帯が **CRT 静的初期化の定型ブロック**（`push dtor; push 名前文字列×2; mov ecx,addr; call 0x419A70(ctor); push dtor; call 0x981FB4(_onexit)`)と判明 → tight ウィンドウ＋隣接ブロック交叉検証＋dtor thunk（`mov ecx,addr; jmp 0x4055E0`）で全数抽出。
+  - **帯26本 `0xB335BC..0xB33684` ＝ 魔法系 GMST 表示オブジェクト全数** [確定(文字列)]: school6（Alteration/Conjuration/Destruction/Illusion/Mysticism/Restoration）＋type10（Spell/Ability/Disease/Lesser Power/Power/Poison/Enchantment/Potion/**Wortcraft**(vanilla 拼字)/…）＋cast 状態4（CastOnce/CastWhenStrikes/CastWhenUsed/CastConstant）＋range3（Self/Touch/Target）＋projectile4（Ball/Bolt/Spray/Fog）、各 `sMagic*` ID 付き。**v285 の「22本」は実際26本の計数誤記を訂正**（完全リストは正しい）。
+  - **帯7本 `0xB33880..0xB338B0` ＝ ロックレベル系 GMST**: fLeveledLockMult（float・ctor 0x41BAE0）＋sLockLevelNameVeryEasy..Impossible 6本。
+  - **CRITICAL_SECTION 3本 [確定(IAT)]**: `0xB33800/0xB33B80/0xB33980`（once ガード `[0xB33A00]`bit0・onexit dtor）。**PE インポートディレクトリ実パース**でロック族正式名解決: `0x401000`=`InitializeCriticalSection`/`0x401010`=`Delete`/`0x401020`=`Enter`（`mov [esp+4],ecx` サンク）/`0x401030`=`TryEnter`(bool)/`0x401040`=`Leave`/**`0x401050`=`InterlockedDecrement`（[this+4] refcount→0 で vtable slot0 へ dtor＝Release 相当）**。guard 名文字列はサンクで上書きされ IAT へ渡らない＝vestigial と精緻化。`WaitForSingleObject`(0xB33434 handle)/`SetThreadPriority`(0xB33438=引数ストア) も解決。
+  - その他: `0xB33454`='SceneGraph'（ctor 0x70E220）／byte フラグ4本（0xB333F5/41C/427/430）＝挙動付き [部分確定]／`0xB33A35`=ctor 0x749280 tail-jump／`0xB33AC4`=refcount 付き静的 obj（**束③ v357 と統合**）／**`0xB33A6C..0xB33A8C` 9本＝FUN_00445A10 の静的状態構造体**（bounds 0x445A10..0x4477F0 size 0x1DE0 が全サイト包含・dword7+byte2）。
+- **(b) NiDX9Renderer vtable 0xA88EA4 = 98スロット／83 unique impl 全数機能分類（[確定]33/[部分確定]65）**:
+  - **getter/setter はフィールドオフセットまで [確定(命令)]**: slot21 `+0x5E0` flags getter（v287 のフラグクエリ本体）／22,23 `+0x5D8` float 一対／27,28 `+0x5DC` u32 一対／31 `+0x878`／32 `+0x87C`／33 byte `+0xA90`／39 `+0x894`／40 byte `+0x898`／42,43 global `0xB42050` 一対／1 `return 0xB42168`／84 `+0x61C/+0x620` 2語 setter。
+  - **no-op/定数スタブ14スロット** [確定]: 0x6F7070×6(`xor eax,eax;ret`)／0x68F970×6(`ret 4`)／0x60D0A0×2／0x60CF60×2(`ret 8`)／0x6FDFF0×2(`mov al,1`)／0x700640(`mov eax,ecx`)。
+  - **member vfunc フォワーダ＋固有スロット** [確定(命令)]: `[this+0x880]`→vt+0x74/0x70、`[+0x8B8]`→+0x0C、`[+0x8AC]`→+0x50/48/4C/3C/40(float)、this→+0x20/+0x94、**slot67=`EnterCriticalSection(&[this+0x180])`＝埋め込み CS の Lock [確定(IAT)]**、**95/96/97=`+0x8D0/0x8C0/0x8E0` unlink→0x4524C0**、63=operator delete 相当、60=new 相当。
+  - **`[this+0x6F0]` ゲート大群15スロット**（53/54/55/77/78/80/81/82/88-94 等）＝デバイス状態 byte [部分確定]。
+  - **クロス vtable**: base スタブ共有数（0x6F7070=rdata **2,738**／0x68F970=**2,329**／0x60D0A0=**863**／0x60CF60=**474** ほか）＝数百 vtable 共有の基底層 [確定]・NiDX9 固有 impl は他参照0＝単継承フラット [確定]・**`.?AVNiRenderer@@` TD(0xB256B0) はあるが単独 NiRenderer vtable 解決0件＝層分け [確定負]**。
+  - **正式 C++ メソッド名 = [未確定]**（メソッド単位 RTTI/シンボル/名称文字列なし [確定負]・v338 規約で機能記述を正式名としない）。
+- **残点**: **V-358-1** 0xB33A35 ォブジェクトクラス（低）／**V-358-2** byte フラグ4本の命名（低）／**V-358-3** FUN_00445A10 静的状態の用途名（低）／**V-358-4** +0x6F0 ゲート大群の実用途（**中**）／**V-358-5** 正式名全般（低）／**V-358-6** slot0 dtor 語義（低）。
+- **main への報告**: v285 残点4・v287 残点4 は本裁定でクローズ（正式名のみ [未確定]）。移植示唆: 53本はバイナリアドレス直打ち可（decompiled ラベル不要）／ロック3本＝CriticalSection は Android 移植で mutex 化可／NiDX9 は #51 判定どおり移植対象外（分類表は参照のみ）。docs/GT 反映（CriticalSection 族・GMST 名）は #47/#20 一括（L1 では docs 無編集）。
+- **#128 全束完了**: 束①(v354)/束④(v355)/束②(v356)/束③(v357)/束⑤(v358)＝**全5束完遂・ai-todo complete 済**。**次**: 承認済み他キュー（#130/#133/#134/#135 等）または main の新規依頼待ち。未コミット= row334・本節・memory v358。
+
+## 2026-11-13 (ce) — #138 完遂: GridCellArray 同定＝vtable+0x1C が ClearCell [確定]＋FUN_00482200 唯一経路 [確定]（v359・新規残点4件起票 #138-#141）
+
+- **新規 TODO 起票（解析中発見の新規解析対象）**: 解析残点を棚卸しして4件追加 → **#138（中: v355/v357 残点束）**・**#139（中: v356 pass2/save ライタ残点）**・**#140（中: NiDX9 +0x6F0 ゲート大群15スロット）**・**#141（低: v354/v357/v358 低残点7件まとめ）**。#82 系の動的依存（V-355-2/V-356-3）は既存 #82 が受容のため重複起票せず。
+- **#138 完遂**: 成果物 `tmp/re/v359_gridcellarray_ruling.md`（probe **v359_1..9 全 EXIT=0**・v359_2/3/9 は pre-run の import/変数補正後）。台帳 **row335（bak185）**・`round_verify` **ALL OK**（rows 31..335 / total 221 / done 216 / open 5）。ai-todo #138 note→**complete**。v 採番 **v359 消費（次=v360）**。
+- **鍵となる発見**: **RTTI COL の pTD は +0xC**（NiDX9 既知 COL 0xACC9D0 実測で校正）→ 4型名を一挙解決: 0xA3D718=**`.?AVGridArray@@`**／0xA3D744=`.?AVNiStencilProperty@@`／**0xA3D79C=`.?AVGridCellArray@@`**／0xA3D7E0=`.?AVGridDistantArray@@`。
+- **① V-355-1 = [確定(機構)]**: `FUN_00482200` の**唯一の実行時経路＝GridCellArray vtable(0xA3D79C) +0x18 の間接 call**（E8=0／u32=rdata スロット1件／abs=0／**+0x18=0x482200 は GridCellArray 固有＝他3クラスは 0x982D85/0x718ED0/0x483630 で別値**＝4方向排他証明）。`call [reg+0x18]` 全74件列挙、個別 caller 候補=[部分確定] **0x906BBE/0x9073FE**（owner=[reg+8] 経由型・残72件は他クラス多義=残点 V-359-1）。**v355 の「0xA3D7E0 xref=callers」記述は訂正**（実体は GridDistantArray の vptr 代入）。
+- **② V-355-3 = [確定(命令+RTTI)] 完全解消**: `this`=**GridCellArray**、**vtable+0x1C ＝ `FUN_00482240` ＝ ClearCell(x,y)**（`[this+0x10][(y*width+x)*8]=0` ＋ `[this+0x20]=0`）。**生成経路全リンク**: 起動 fn 0x406360 `new(0xAC)` → **container ctor fn 0x441970**（`new`→**GridCellArray ctor 0x483350**（vptr 再スタンプ・width=[0xB06A2C]≥5・w²×8B 確保）→ **`[esi+8]=GridCellArray*`（ポインタ格納）** → `new(0x14)`→GridDistantArray ctor 0x4838F0 同梱）→ **`[0xB333A0]=container`**。使用側 `mov edx,[0xB333A0]; mov ecx,[edx+8]`（v327 tail/0x4441A0/0x4430F0/0x444C70 全共通）。**GridCellArray vtable 全10スロット確定**（+0x18 release=0x482200／+0x1C ClearCell=0x482240／+0x20 copy・+0x24 move は NULL 時に自 +0x1C fallback）。
+- **③ V-357-1 = [部分確定]**: 0x44EE00 自再入の目的＝**子オブジェクト解決の再帰ループ**（entry→0x4D7630 子取得→0x42B460/70 座標→predicate 0x4C97F0/0x4EF130→**0x4D6760(0xB33AC4) refcheck**→self 3引数再帰）。機能＝チェーン解決/リゾルバ系（List_Clear×2＋Push 0x446CB0＋12B コピー＋refcount 管理）。**正式名=[未確定] 維持**（文字列0 [確定負]・annotate_db 372件に未登録・vtable 非会員）。
+- **副次**: **`[0xB333A0]` の正体＝起動生成 container のポインタ**（v338 3.4 の部分確定を拡張）・container 布局（+8=GridCellArray\*／+0x20/+0x24=座標／+0x74=配列）。
+- **残点**: **V-359-1** `call [reg+0x18]` 74件の型帰属（**中**）／V-359-2 引数語義（低）／V-359-3 正式名（低）／V-359-4 container 残フィールド（低）。
+- **main への報告**: V-355-3 完全クローズ・V-355-1 機構確定・V-357-1 機能確定（正式名のみ残）・v355 訂正1件。docs/GT 反映候補（GridCellArray/ClearCell/RTTI pTD=+0xC 手順）は #47/#20 一括。
+- **次**: **#139（v356 残点・中）→ #140（NiDX9 +0x6F0・中）→ #141（低）**、または既存 RE キュー（#130/#133/#134/#135/#136）。コミット/push はユーザー指示で実施（本節含む row335・memory v359 が未コミット）。
