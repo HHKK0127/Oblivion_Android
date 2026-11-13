@@ -5,6 +5,27 @@
 #include <cstdio>
 #include <algorithm>
 
+// The confirm/cancel buttons are drawn by renderConfirmCancelButtons() and hit
+// tested by hitTestConfirmButton()/hitTestCancelButton(). Both sides read these
+// constants and the two helpers below, so the touch box and the drawn box come
+// from one source and cannot drift apart: the hit tests used to hardcode 105/32
+// and a 226 px offset that only matched because 105 + 16 + 105 happened to
+// equal it.
+namespace {
+constexpr float kConfirmCancelWidth = 105.0f;
+constexpr float kConfirmCancelHeight = 32.0f;
+constexpr float kConfirmCancelSpacing = 16.0f;
+
+float cancel_button_x(float contentX, float contentWidth) {
+    return contentX + contentWidth - kConfirmCancelWidth;
+}
+
+float confirm_button_x(float contentX, float contentWidth) {
+    return cancel_button_x(contentX, contentWidth)
+        - kConfirmCancelSpacing - kConfirmCancelWidth;
+}
+}  // namespace
+
 UICharacterCreation::UICharacterCreation(const std::string& title)
     : UIPanel(title.empty() ? "Character Creation" : title) {
     setBackgroundColor(glm::vec4(
@@ -384,27 +405,58 @@ void UICharacterCreation::renderConfirmCancelButtons() {
     if (!textRenderer) return;
     glm::vec2 cp = getContentPosition();
     float by = getConfirmButtonY();
-    float buttonW = 105.0f;
-    float buttonH = 32.0f;
-    float spacing = 16.0f;
-    float cancelX = cp.x + getContentSize().x - buttonW;
-    float confirmX = cancelX - spacing - buttonW;
+    float buttonW = kConfirmCancelWidth;
+    float buttonH = kConfirmCancelHeight;
+    float cancelX = cancel_button_x(cp.x, getContentSize().x);
+    float confirmX = confirm_button_x(cp.x, getContentSize().x);
+    constexpr float kLabelScale = 0.65f;
+
+    // Keep each label inside its panel. The label width is measured with the
+    // same scale and advance drawOblivionText uses, so what is measured is what
+    // is drawn -- but TextRenderer::fontSizeMultiplier_ defaults to 1.15
+    // (text_renderer.h:246) and TitleScreen restores that saved value before the
+    // creation panel opens (title_screen.cpp:515 gate, :567 restore), so the
+    // runtime widths are 108.46 px for "Create" and 106.55 px for "Cancel" on a
+    // 105 px panel. The old fixed insets made that 21.46 px and 18.55 px of
+    // overshoot; the multiplier is a user setting, so a fixed panel or a fixed
+    // scale cannot be made to fit for every value. Step the label scale down
+    // instead, which keeps the whole word (truncating, as debug_menu.cpp:642
+    // does, would turn "Create" into "Creat") and keeps the panel and the touch
+    // box at their existing size.
+    auto drawLabel = [&](const char* label, float panelX) {
+        constexpr float kInset = 4.0f;
+        // fontSizeMultiplier_ comes from the `fontsize` console command
+        // (game_console.cpp:863), which the setter clamps to [0.5, 2.0]
+        // (text_renderer.cpp:1162), so every value reachable today already
+        // fits. The loop is bounded by step count rather than by a scale floor
+        // so that widening that clamp later cannot bring the overflow back:
+        // 0.95^48 is ~0.085, far past any setting that leaves the rest of the
+        // UI readable, and the label always reaches maxWidth before that.
+        constexpr int kMaxShrinkSteps = 48;
+        const float maxWidth = buttonW - 2.0f * kInset;
+        float labelScale = kLabelScale;
+        for (int i = 0; i < kMaxShrinkSteps &&
+             textRenderer->getTextWidth(label, labelScale) > maxWidth; ++i) {
+            labelScale *= 0.95f;
+        }
+        float textW = textRenderer->getTextWidth(label, labelScale);
+        float inset = (buttonW - textW) * 0.5f;
+        if (inset < 0.0f) inset = 0.0f;   // never start left of the panel edge
+        textRenderer->renderText(label, panelX + inset, by + 6.0f,
+            glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT), labelScale);
+    };
 
     // Confirm button
     PlaceholderAssets::drawPanel(confirmX, by, buttonW, buttonH,
         PlaceholderAssets::Colors::GOLD_HIGHLIGHT,
         glm::vec3(PlaceholderAssets::Colors::GOLD_HIGHLIGHT));
-    textRenderer->renderText("Create",
-        confirmX + 18.0f, by + 6.0f,
-        glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT), 0.65f);
+    drawLabel("Create", confirmX);
 
     // Cancel button
     PlaceholderAssets::drawPanel(cancelX, by, buttonW, buttonH,
         PlaceholderAssets::Colors::BROWN_ACCENT,
         glm::vec3(PlaceholderAssets::Colors::GOLD_HIGHLIGHT));
-    textRenderer->renderText("Cancel",
-        cancelX + 17.0f, by + 6.0f,
-        glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT), 0.65f);
+    drawLabel("Cancel", cancelX);
 }
 
 // ─── hit testing ──────────────────────────────────────────────────────────────
@@ -427,21 +479,19 @@ int UICharacterCreation::hitTestTabButton(float x, float y) const {
 bool UICharacterCreation::hitTestConfirmButton(float x, float y) const {
     glm::vec2 cp = getContentPosition();
     float by = getConfirmButtonY();
-    float buttonX = cp.x + getContentSize().x - 226.0f;
-    float buttonY = by;
+    float buttonX = confirm_button_x(cp.x, getContentSize().x);
 
-    return x >= buttonX && x <= buttonX + 105.0f &&
-           y >= buttonY && y <= buttonY + 32.0f;
+    return x >= buttonX && x <= buttonX + kConfirmCancelWidth &&
+           y >= by && y <= by + kConfirmCancelHeight;
 }
 
 bool UICharacterCreation::hitTestCancelButton(float x, float y) const {
     glm::vec2 cp = getContentPosition();
     float by = getConfirmButtonY();
-    float buttonX = cp.x + getContentSize().x - 105.0f;
-    float buttonY = by;
+    float buttonX = cancel_button_x(cp.x, getContentSize().x);
 
-    return x >= buttonX && x <= buttonX + 105.0f &&
-           y >= buttonY && y <= buttonY + 32.0f;
+    return x >= buttonX && x <= buttonX + kConfirmCancelWidth &&
+           y >= by && y <= by + kConfirmCancelHeight;
 }
 
 bool UICharacterCreation::hitTestAttributeRow(float x, float y, int& outIndex) const {
