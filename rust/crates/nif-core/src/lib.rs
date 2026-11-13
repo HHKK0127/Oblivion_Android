@@ -524,6 +524,19 @@ impl NifParser {
             .parse_keyframe_data()
     }
 
+    /// The first `NiFloatData` block of the file: one float KeyGroup as the
+    /// walker reads it, empty keys for a zero count.
+    pub fn parse_float_data(&self) -> Option<FloatKeyGroup> {
+        block::BlockReader::new(&self.data, &self.header, &self.walk, &self.nodes)
+            .parse_float_data()
+    }
+
+    /// The first `NiPosData` block of the file: one Vector3 KeyGroup.
+    pub fn parse_pos_data(&self) -> Option<Vector3KeyGroup> {
+        block::BlockReader::new(&self.data, &self.header, &self.walk, &self.nodes)
+            .parse_pos_data()
+    }
+
     /// Block count of the object array.
     pub fn block_count(&self) -> u32 {
         self.header.block_type_indices.len() as u32
@@ -2168,6 +2181,355 @@ mod tests {
         assert!(parser.are_blocks_walked(), "{}", parser.walk_error());
         let data = parser.parse_keyframe_data().expect("a data block exists");
         assert_eq!(data.rotation_keys[0].time, 7.5);
+    }
+
+    /// NiFloatData body: Num Keys | [Interpolation] | Keys. Zero keys leaves
+    /// the interpolation unread, matching `skip_key_group`; interpolation 2
+    /// appends the tangent pair and 3 the TBC triple, exactly as `skip_keys`
+    /// measures them.
+    fn float_data_body(interpolation: u32, keys: &[(f32, f32)]) -> Vec<u8> {
+        let mut body = Vec::new();
+        push_u32(&mut body, keys.len() as u32);
+        if !keys.is_empty() {
+            push_u32(&mut body, interpolation);
+        }
+        for (time, value) in keys {
+            push_f32(&mut body, *time);
+            push_f32(&mut body, *value);
+            if interpolation == 2 {
+                push_f32(&mut body, 0.0); // forward tangent
+                push_f32(&mut body, 0.0); // backward tangent
+            }
+            if interpolation == 3 {
+                // Distinct values, so a test can tell a TBC the reader
+                // actually consumed from one it left at its default.
+                push_f32(&mut body, 1.0);
+                push_f32(&mut body, 2.0);
+                push_f32(&mut body, 3.0);
+            }
+        }
+        body
+    }
+
+    /// NiPosData body: the same head with a 12-byte value per key — a tangent
+    /// pair there is two vectors, the TBC stays twelve bytes.
+    fn pos_data_body(interpolation: u32, keys: &[(f32, [f32; 3])]) -> Vec<u8> {
+        let mut body = Vec::new();
+        push_u32(&mut body, keys.len() as u32);
+        if !keys.is_empty() {
+            push_u32(&mut body, interpolation);
+        }
+        for (time, value) in keys {
+            push_f32(&mut body, *time);
+            for component in value {
+                push_f32(&mut body, *component);
+            }
+            if interpolation == 2 {
+                for _ in 0..6 {
+                    push_f32(&mut body, 0.0); // forward + backward tangent
+                }
+            }
+            if interpolation == 3 {
+                // Distinct values, so a test can tell a TBC the reader
+                // actually consumed from one it left at its default.
+                push_f32(&mut body, 4.0);
+                push_f32(&mut body, 5.0);
+                push_f32(&mut body, 6.0);
+            }
+        }
+        body
+    }
+
+    #[test]
+    fn float_data_reads_interleaved_keys_and_stays_in_step_with_the_walker() {
+        let header = gamebryo_header(
+            "Gamebryo File Format, Version 20.0.0.4",
+            0x1400_0004,
+            11,
+            11,
+            &["NiNode", "NiFloatData"],
+            &[0, 1],
+        );
+        let mut built = Built::with_header(header);
+        built.block(ninode_table("Root"));
+        built.block(float_data_body(1, &[(0.0, 0.5), (1.5, -2.0)]));
+        let (bytes, ranges) = built.trailer(&[0]);
+
+        let parser = parse(&bytes);
+        assert!(parser.are_blocks_walked(), "{}", parser.walk_error());
+        // The reader must consume exactly the body the walker measured.
+        assert_eq!(
+            (parser.block_body_offset(1), parser.block_body_end(1)),
+            ranges[1]
+        );
+
+        let group = parser.parse_float_data().expect("the float block exists");
+        assert_eq!(group.interpolation, 1);
+        assert_eq!(group.keys.len(), 2);
+        assert_eq!(group.keys[0].time, 0.0);
+        assert_eq!(group.keys[0].value, 0.5);
+        assert_eq!(group.keys[1].time, 1.5);
+        assert_eq!(group.keys[1].value, -2.0);
+        // Fields an interpolation does not carry stay at their defaults.
+        assert_eq!(group.keys[0].forward_tangent, 0.0);
+        assert_eq!(group.keys[0].tbc, [0.0; 3]);
+    }
+
+    #[test]
+    fn float_data_zero_keys_skips_the_interpolation_word() {
+        let header = gamebryo_header(
+            "Gamebryo File Format, Version 20.0.0.4",
+            0x1400_0004,
+            11,
+            11,
+            &["NiNode", "NiFloatData", "NiPosData"],
+            &[0, 1, 2],
+        );
+        let mut built = Built::with_header(header);
+        built.block(ninode_table("Root"));
+        // No interpolation word follows a zero count; the next block must
+        // still land where the walker put it.
+        built.block(float_data_body(1, &[]));
+        built.block(pos_data_body(1, &[]));
+        let (bytes, ranges) = built.trailer(&[0]);
+
+        let parser = parse(&bytes);
+        assert!(parser.are_blocks_walked(), "{}", parser.walk_error());
+        assert_eq!(
+            (parser.block_body_offset(1), parser.block_body_end(1)),
+            ranges[1]
+        );
+        assert_eq!(
+            (parser.block_body_offset(2), parser.block_body_end(2)),
+            ranges[2]
+        );
+
+        let group = parser.parse_float_data().expect("the float block exists");
+        assert_eq!(group.keys.len(), 0);
+        let positions = parser.parse_pos_data().expect("the pos block exists");
+        assert_eq!(positions.keys.len(), 0);
+    }
+
+    #[test]
+    fn pos_data_reads_vector_values_and_tangents() {
+        let header = gamebryo_header(
+            "Gamebryo File Format, Version 20.0.0.4",
+            0x1400_0004,
+            11,
+            11,
+            &["NiNode", "NiPosData"],
+            &[0, 1],
+        );
+        let mut built = Built::with_header(header);
+        built.block(ninode_table("Root"));
+        built.block(pos_data_body(2, &[(0.25, [1.0, 2.0, 3.0])]));
+        let (bytes, ranges) = built.trailer(&[0]);
+
+        let parser = parse(&bytes);
+        assert!(parser.are_blocks_walked(), "{}", parser.walk_error());
+        assert_eq!(
+            (parser.block_body_offset(1), parser.block_body_end(1)),
+            ranges[1]
+        );
+
+        let group = parser.parse_pos_data().expect("the pos block exists");
+        assert_eq!(group.interpolation, 2);
+        assert_eq!(group.keys.len(), 1);
+        assert_eq!(group.keys[0].time, 0.25);
+        assert_eq!(group.keys[0].value, Vector3 { x: 1.0, y: 2.0, z: 3.0 });
+        // Interpolation 2 consumes the tangent pair the fixture wrote.
+        assert_eq!(group.keys[0].forward_tangent, Vector3::default());
+        assert_eq!(group.keys[0].backward_tangent, Vector3::default());
+        assert_eq!(group.keys[0].tbc, [0.0; 3]);
+    }
+
+    #[test]
+    fn key_data_interpolation_3_reads_the_tbc_triple() {
+        // Interpolation 3 appends twelve bytes per key rather than a tangent
+        // pair. The fixtures write known values there, so the assertions tell
+        // a consumed TBC from one left at its default, and the offset checks
+        // pin the stride against the walker.
+        let header = gamebryo_header(
+            "Gamebryo File Format, Version 20.0.0.4",
+            0x1400_0004,
+            11,
+            11,
+            &["NiNode", "NiFloatData", "NiPosData"],
+            &[0, 1, 2],
+        );
+        let mut built = Built::with_header(header);
+        built.block(ninode_table("Root"));
+        built.block(float_data_body(3, &[(0.5, -1.5)]));
+        built.block(pos_data_body(3, &[(0.75, [7.0, 8.0, 9.0])]));
+        let (bytes, ranges) = built.trailer(&[0]);
+
+        let parser = parse(&bytes);
+        assert!(parser.are_blocks_walked(), "{}", parser.walk_error());
+        assert_eq!(
+            (parser.block_body_offset(1), parser.block_body_end(1)),
+            ranges[1]
+        );
+        assert_eq!(
+            (parser.block_body_offset(2), parser.block_body_end(2)),
+            ranges[2]
+        );
+
+        let floats = parser.parse_float_data().expect("the float block exists");
+        assert_eq!(floats.interpolation, 3);
+        assert_eq!(floats.keys.len(), 1);
+        assert_eq!(floats.keys[0].value, -1.5);
+        assert_eq!(floats.keys[0].tbc, [1.0, 2.0, 3.0]);
+        // No tangent pair precedes the TBC at interpolation 3.
+        assert_eq!(floats.keys[0].forward_tangent, 0.0);
+
+        let positions = parser.parse_pos_data().expect("the pos block exists");
+        assert_eq!(positions.interpolation, 3);
+        assert_eq!(positions.keys.len(), 1);
+        assert_eq!(
+            positions.keys[0].value,
+            Vector3 { x: 7.0, y: 8.0, z: 9.0 }
+        );
+        assert_eq!(positions.keys[0].tbc, [4.0, 5.0, 6.0]);
+        assert_eq!(positions.keys[0].forward_tangent, Vector3::default());
+    }
+
+    #[test]
+    fn standalone_key_data_absent_reports_none() {
+        // A file with neither key-data family: the readers report absence
+        // instead of inventing a block, exactly like parse_keyframe_data.
+        let header = gamebryo_header(
+            "Gamebryo File Format, Version 20.0.0.4",
+            0x1400_0004,
+            11,
+            11,
+            &["NiNode", "NiKeyframeData"],
+            &[0, 1],
+        );
+        let mut built = Built::with_header(header);
+        built.block(ninode_table("Root"));
+        built.block(keyframe_data_body(1, &[(0.5, [0.0, 0.0, 0.0, 1.0])], &[], &[]));
+        let (bytes, _) = built.trailer(&[0]);
+
+        let parser = parse(&bytes);
+        assert!(parser.are_blocks_walked(), "{}", parser.walk_error());
+        assert!(parser.parse_float_data().is_none());
+        assert!(parser.parse_pos_data().is_none());
+        assert!(parser.parse_keyframe_data().is_some());
+    }
+
+    /// The retail goblin walk cycles carry seven NiFloatData blocks each —
+    /// the file where the standalone float reader meets real bytes. A census
+    /// of the 1843 shipped .kf files counts NiFloatData in 499 of them,
+    /// NiPosData in 2, NiBoolData in 16 and NiRotData in none; the pos reader
+    /// has its own retail test, and NiBoolData stays out of this unit because
+    /// v350 leaves its version gate ruled as a residual point (V-350-5).
+    /// Skipped when the extraction is not on this machine: point
+    /// `OBLIVION_MESHES` at `meshes_extracted`.
+    #[test]
+    fn retail_float_data_reader_stays_in_range() {
+        let root = std::env::var("OBLIVION_MESHES").unwrap_or_else(|_| {
+            String::from(r"C:\Users\hiroki.kogarumai\Oblivion_Android\meshes_extracted")
+        });
+        let path = format!(r"{root}\meshes\creatures\goblin\idleanims\specialidle_dodge.kf");
+        let mut parser = NifParser::new();
+        if parser.parse_file(&path).is_err() {
+            eprintln!("skipping: retail .kf not available at {path}");
+            return;
+        }
+        assert!(parser.are_blocks_walked(), "{}", parser.walk_error());
+
+        let group = parser
+            .parse_float_data()
+            .expect("the goblin walk cycle carries NiFloatData");
+        assert!(!group.keys.is_empty());
+        assert!(group.interpolation <= 3);
+        for key in &group.keys {
+            assert!(key.time.is_finite());
+            assert!(key.value.is_finite());
+            assert!(key.forward_tangent.is_finite());
+            assert!(key.backward_tangent.is_finite());
+            assert!(key.tbc.iter().all(|c| c.is_finite()));
+        }
+        // The reader consumed exactly the body the walker measured.
+        let index = parser
+            .find_blocks_of_type("NiFloatData")
+            .first()
+            .copied()
+            .expect("a float block index");
+        let (start, end) = (
+            parser.block_body_offset(index),
+            parser.block_body_end(index),
+        );
+        assert!(end > start, "the float body has bytes");
+        assert!(end <= std::fs::metadata(&path).expect("stat").len() as usize);
+        eprintln!(
+            "retail NiFloatData: {} keys at interpolation {}, body {}..{}",
+            group.keys.len(),
+            group.interpolation,
+            start,
+            end
+        );
+    }
+
+    /// The retail ascension cycle carries a NiPosData body at interpolation 2,
+    /// one of the two shipped .kf files that hold the type at all — the file
+    /// where the standalone pos reader meets real bytes, with a tangent pair
+    /// per key that the walker has to measure as well.
+    /// Skipped when the extraction is not on this machine: point
+    /// `OBLIVION_MESHES` at `meshes_extracted`.
+    #[test]
+    fn retail_pos_data_reader_stays_in_range() {
+        let root = std::env::var("OBLIVION_MESHES").unwrap_or_else(|_| {
+            String::from(r"C:\Users\hiroki.kogarumai\Oblivion_Android\meshes_extracted")
+        });
+        let path = format!(r"{root}\meshes\characters\_male\idleanims\ascension.kf");
+        let mut parser = NifParser::new();
+        if parser.parse_file(&path).is_err() {
+            eprintln!("skipping: retail .kf not available at {path}");
+            return;
+        }
+        assert!(parser.are_blocks_walked(), "{}", parser.walk_error());
+
+        let group = parser
+            .parse_pos_data()
+            .expect("the ascension cycle carries NiPosData");
+        assert!(!group.keys.is_empty());
+        assert!(group.interpolation <= 3);
+        for key in &group.keys {
+            assert!(key.time.is_finite());
+            assert!(key.value.x.is_finite());
+            assert!(key.value.y.is_finite());
+            assert!(key.value.z.is_finite());
+            assert!(key.forward_tangent.x.is_finite());
+            assert!(key.backward_tangent.x.is_finite());
+            assert!(key.tbc.iter().all(|c| c.is_finite()));
+        }
+        // The reader consumed exactly the body the walker measured: 8 bytes of
+        // head plus one stride per key, 40 for interpolation 2.
+        let index = parser
+            .find_blocks_of_type("NiPosData")
+            .first()
+            .copied()
+            .expect("a pos block index");
+        let (start, end) = (
+            parser.block_body_offset(index),
+            parser.block_body_end(index),
+        );
+        let stride = 16 + usize::from(group.interpolation == 2) * 24
+            + usize::from(group.interpolation == 3) * 12;
+        assert_eq!(
+            end - start,
+            8 + stride * group.keys.len(),
+            "the pos body is exactly the head plus one stride per key"
+        );
+        assert!(end <= std::fs::metadata(&path).expect("stat").len() as usize);
+        eprintln!(
+            "retail NiPosData: {} keys at interpolation {}, body {}..{}",
+            group.keys.len(),
+            group.interpolation,
+            start,
+            end
+        );
     }
 
     #[test]

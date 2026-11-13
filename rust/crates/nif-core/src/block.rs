@@ -1332,6 +1332,25 @@ impl<'a> BlockReader<'a> {
         self.parse_keyframe_data_at(index)
     }
 
+    /// The first `NiFloatData` block of the file.
+    ///
+    /// The walker dispatches this type to `skip_key_group("float")`, and the
+    /// v350 ruling (RE task #122) confirms the engine's `Load` (0x6E3690)
+    /// starts the same way: a u32 count that ends the read when zero, then
+    /// the interpolation word and the interleaved time+value keys.
+    pub(crate) fn parse_float_data(&mut self) -> Option<FloatKeyGroup> {
+        self.seek_to_block_of_type("NiFloatData")?;
+        self.read_float_key_group()
+    }
+
+    /// The first `NiPosData` block of the file — the walker sends it to
+    /// `skip_key_group("Vector3")`, and v350 confirms the same `Load` head
+    /// (0x6D9F90: u32 count, no extra gate).
+    pub(crate) fn parse_pos_data(&mut self) -> Option<Vector3KeyGroup> {
+        self.seek_to_block_of_type("NiPosData")?;
+        self.read_vector3_key_group()
+    }
+
     /// The keyframe data block at `index`, field for field against the
     /// walker's `skip_keyframe_data` — the same measurement that puts every
     /// later block at its offset, so a reader that consumed a different

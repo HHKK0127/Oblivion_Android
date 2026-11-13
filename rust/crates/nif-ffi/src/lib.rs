@@ -632,6 +632,11 @@ pub struct Handle {
     keyframe_rotation_keys: Vec<NifQuaternionKey>,
     keyframe_float_keys: Vec<NifFloatKey>,
     keyframe_vector3_keys: Vec<NifVector3Key>,
+    /// POD mirrors of the standalone `NiFloatData` / `NiPosData` bodies, kept
+    /// apart from the keyframe arena so one getter cannot invalidate the
+    /// other's pointers.
+    float_data_keys: Vec<NifFloatKey>,
+    pos_data_keys: Vec<NifVector3Key>,
 }
 
 /// Marker written into a live handle, so a stale or wrong pointer fails the
@@ -916,6 +921,8 @@ pub extern "C" fn nif_create() -> *mut Handle {
             keyframe_rotation_keys: Vec::new(),
             keyframe_float_keys: Vec::new(),
             keyframe_vector3_keys: Vec::new(),
+            float_data_keys: Vec::new(),
+            pos_data_keys: Vec::new(),
         });
         Box::into_raw(handle)
     })
@@ -1672,6 +1679,87 @@ pub unsafe extern "C" fn nif_parse_keyframe_data(
             None => return no_block(borrowed, "NiKeyframeData/NiTransformData"),
         };
         let record = store_keyframe_data(borrowed, &parsed);
+        *out = record;
+        succeed(borrowed)
+    })
+}
+
+/// Fills `out` with the first `NiFloatData` block of the file: one float
+/// KeyGroup, the interpolation word the file carries and the keys behind it.
+/// A zero count leaves `key_count` zero, so the pointer must not be
+/// dereferenced whatever it points at — the rule the header states for every
+/// count-prefixed array. That matches the original's read order: count first,
+/// then the interpolation, then the keys.
+///
+/// # Safety
+/// `handle` must satisfy [`nif_create`]'s contract; `out` must be NULL or one
+/// writable, correctly aligned record.
+#[no_mangle]
+pub unsafe extern "C" fn nif_parse_float_data(
+    handle: *mut Handle,
+    out: *mut NifFloatKeyGroup,
+) -> c_int {
+    guard(NIF_ERROR_INVALID_ARGUMENT, handle, |borrowed| {
+        let out = match out_record(borrowed, out, "float data") {
+            Ok(out) => out,
+            Err(code) => return code,
+        };
+        let parsed = match borrowed.parser.parse_float_data() {
+            Some(parsed) => parsed,
+            None => return no_block(borrowed, "NiFloatData"),
+        };
+        let keys: Vec<NifFloatKey> = parsed.keys.iter().map(float_key).collect();
+        let record = NifFloatKeyGroup {
+            interpolation: parsed.interpolation,
+            key_count: keys.len() as u32,
+            keys: keys.as_ptr(),
+        };
+        // Moving the vector into the handle keeps its buffer in place, so the
+        // pointer assembled above survives.
+        borrowed.float_data_keys = keys;
+        *out = record;
+        succeed(borrowed)
+    })
+}
+
+/// Fills `out` with the first `NiPosData` block of the file: one Translations
+/// KeyGroup, a 12-byte value per key with the same tangent and TBC rules the
+/// walker measures for the `"Vector3"` type.
+///
+/// # Safety
+/// `handle` must satisfy [`nif_create`]'s contract; `out` must be NULL or one
+/// writable, correctly aligned record.
+#[no_mangle]
+pub unsafe extern "C" fn nif_parse_pos_data(
+    handle: *mut Handle,
+    out: *mut NifVector3KeyGroup,
+) -> c_int {
+    guard(NIF_ERROR_INVALID_ARGUMENT, handle, |borrowed| {
+        let out = match out_record(borrowed, out, "pos data") {
+            Ok(out) => out,
+            Err(code) => return code,
+        };
+        let parsed = match borrowed.parser.parse_pos_data() {
+            Some(parsed) => parsed,
+            None => return no_block(borrowed, "NiPosData"),
+        };
+        let keys: Vec<NifVector3Key> = parsed
+            .keys
+            .iter()
+            .map(|key| NifVector3Key {
+                time: key.time,
+                value: key.value,
+                forward_tangent: key.forward_tangent,
+                backward_tangent: key.backward_tangent,
+                tbc: key.tbc,
+            })
+            .collect();
+        let record = NifVector3KeyGroup {
+            interpolation: parsed.interpolation,
+            key_count: keys.len() as u32,
+            keys: keys.as_ptr(),
+        };
+        borrowed.pos_data_keys = keys;
         *out = record;
         succeed(borrowed)
     })

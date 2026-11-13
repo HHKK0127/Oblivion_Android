@@ -402,6 +402,8 @@ static void check_animation_abi(void)
     nif_controller_manager manager;
     nif_controller_sequence sequence;
     nif_keyframe_data keyframe;
+    nif_float_key_group float_group;
+    nif_vector3_key_group pos_group;
 
     CHECK(handle != NULL);
 
@@ -445,11 +447,21 @@ static void check_animation_abi(void)
     CHECK(nif_parse_keyframe_data(
               handle, (nif_keyframe_data *)((char *)&keyframe + 1)) ==
           NIF_ERROR_INVALID_ARGUMENT);
+    CHECK(nif_parse_float_data(handle, NULL) == NIF_ERROR_INVALID_ARGUMENT);
+    CHECK(nif_parse_float_data(
+              handle, (nif_float_key_group *)((char *)&float_group + 1)) ==
+          NIF_ERROR_INVALID_ARGUMENT);
+    CHECK(nif_parse_pos_data(handle, NULL) == NIF_ERROR_INVALID_ARGUMENT);
+    CHECK(nif_parse_pos_data(
+              handle, (nif_vector3_key_group *)((char *)&pos_group + 1)) ==
+          NIF_ERROR_INVALID_ARGUMENT);
 
     /* The fixture carries no animation blocks. */
     CHECK(nif_parse_controller_manager(handle, &manager) == NIF_ERROR_NO_BLOCK);
     CHECK(nif_parse_controller_sequence(handle, &sequence) == NIF_ERROR_NO_BLOCK);
     CHECK(nif_parse_keyframe_data(handle, &keyframe) == NIF_ERROR_NO_BLOCK);
+    CHECK(nif_parse_float_data(handle, &float_group) == NIF_ERROR_NO_BLOCK);
+    CHECK(nif_parse_pos_data(handle, &pos_group) == NIF_ERROR_NO_BLOCK);
     CHECK(nif_last_error(handle)[0] != '\0');
 
     nif_destroy(handle);

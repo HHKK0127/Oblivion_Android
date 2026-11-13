@@ -566,6 +566,16 @@ int nif_parse_controller_sequence(void *handle, nif_controller_sequence *out);
  * again. */
 int nif_parse_keyframe_data(void *handle, nif_keyframe_data *out);
 
+/* Fills `out` with the first NiFloatData block of the file, or
+ * NIF_ERROR_NO_BLOCK when the file holds none or it could not be read. On
+ * failure the out record is left untouched. A zero key_count leaves the keys
+ * pointer meaningless whatever it points at. */
+int nif_parse_float_data(void *handle, nif_float_key_group *out);
+
+/* Fills `out` with the first NiPosData block of the file — the same rules as
+ * nif_parse_float_data, with a 12-byte value per key. */
+int nif_parse_pos_data(void *handle, nif_vector3_key_group *out);
+
 /* ---------------------------------------------------------------------------
  * Scene nodes and header
  * ---------------------------------------------------------------------------
