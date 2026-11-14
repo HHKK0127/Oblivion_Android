@@ -1047,6 +1047,35 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **次**: 既存 RE キュー **#142（race_sex_menu 寸法）→#136（.fnt）**。未コミット＝ row339..342・(cj)(ck)(cm)(本節)・memory v363..366・成果物 v363..v366・TODO 系（push は承認済み設定で実行可）。
 
 
+## 2026-11-14 (co) — #142 完遂: RaceSexMenu 寸法＝**ボタン 177×44@(353,676)・タブ列は原本に存在せず・パネル 560×740・行ピッチ 93px [確定]**（v367）
+
+- **成果物**: `tmp/re/v367_racesex_layout_dimensions_ruling.md`（probe **v367_1 全 EXIT=0**・`race_sex_menu.xml` 705行全読＋`button_long.xml`/`generic_background.xml` 読了・**v353 と完全整合**（page=pane id・21 pane・テンプレ名一覧））。台帳 **row343（bak193）**・`round_verify` **ALL OK**（rows 31..343 / total 229 / done 224 / open 5）。ai-todo #142 note→complete。v 採番 **v367 消費（次=v368）**。
+- **① ボタン [確定]**（port 105×32/scale0.65/2ボタン/間隔16 は**すべて原本不一致**）: 原本は **Done/Return 単一ボタン**（Back＝id90 の user5 切替・#130 Phase A 整合）＝**`button_long` 177×44 @(353, 676)**（`x=parent.w−177−30`＝右インセット30／`y=parent.h−44−20`＝下インセット20／parent＝race_background 560×740）**[確定(XML+計算)]**。ラベル＝**font1・justify center・scale 属性なし（=1.0）[確定]**。「ボタン間隔16px/contentW−226」は原本に概念なし [確定負]。
+- **② タブ列 [確定負: 原本にタブ列なし]**: XML 705行に tab 要素なし（page は `user0`＋pane `visible: me().user0==RaceSexMenu.user0` のみ）・EXE `0x5CA010` のテンプレ生成は pane/button/toggle/text/slider のみで**タブ生成なし [確定(否定側)]**。**page 導線＝ページ内 nav ボタン行（race_template_button）＋ラベルキー 'Main'/'Race'/'Hair'/'Face'（v353）** → **port の contentW/5 均等5タブは構造差（port 発明）**。
+- **③ パネル [確定]**（port 約935px＋約900px 漆黒空白は不一致）: **race_background＝560×740**（generic_background user0/1＝幅/高コメント）・`x=70` 固定・`y=(screenH−740)/2` **[確定(XML)]**。内側 **race_window＝500×558 @(30,85)** clipwindow → 垂直配分 **name y=20 → separator 400×3 @(75,75) → window 85..643 → Done 676..720 → 下端740** ＝ **下部97px は Done 帯で占有され漆黒空白は存在しない [確定]**（screenH600 では y=−70 で上端クリップ＝解像度依存 [確定(XML)]・原本の対処は残点 V-367-2）。
+- **④ 行ピッチ [確定(XML)]**: **行ピッチ 93px 全テンプレ共通**（button_layout/toggle/slider＝`y=listindex×93`・text＝`listindex×93+20` font1）。行内: **ラベル font3 @(0,0)**・**スライダーバー y=45（port の45と一致 [部分一致]）**・マーカ y=25 高64（幅 text+30 max85／marker2 104×64）・**toggle 矢印 左124×36@(0,35)／右121×36@(w−121,35)（非対称幅）**・value text wrapwidth250 中央・button text wrapwidth490 @(w/2,25)・**port の y=110 に対応する原本値なし [確定(否定側)]**。scroll: x=w−20・y=25・h=h−50・**同時表示6**・step1/jump5/max=user1−6・pane y=−scroll.user7×93。
+- **EXE 側 [確定(否定側)]: RaceSex band 内に寸法即値 push（500/558/560/740/177/44/93）＝0件 → 原本寸法はすべて XML 由来**。`0x5CA010`＝`FindMenu(0x40C)`（＝RaceSexMenu [推定高]・caller 0x57B8D9）＋ `Data\Menus\CharGen\race_sex_menu.xml` 読込（'Race/Sex Menu Creation Failed...'）＋ `GetFloat(0xFA5)→SetFloat(0xFAB)`（v366 stackingtype 分岐系）＋ **16×'%s'→`menu+0x8F4..0x92C`** ＋ テンプレラッパ（`0x5C4340`=pane→`fild(id)→SetFloat(0xFAE)`＝page=pane id [v353再掲]／`0x5C4480`=button／`0x5C4630`×4／`0x5C93F0`×6／`0x5C4800`×1）。
+- **残点 V-367-1..5**: 1=**race_pane width 式 `parent−f(childcount>6,×40)` の評価順序（DTD 不在）＝race リスト実効幅【中・port 再現に必要】**／2=screenH<740 時の原本対処【低】／3=16×'%s' スロット用途【低】／4=`0x5C4630`/`0x5C4800` のテンプレ対応【低】／5=port `getContentStartY()` 110 の原本対応値【低】。
+- **main への回答（#96 材料）**: port 差分＝①ボタン単一 177×44＠右30/下20（2ボタン・間隔なし）②タブ列は原本に存在せず（page 導線＝nav ボタン行）③パネル 740 高（935 高＋900 空白は不一致）④93 行ピッチ（45 は一致・110 は原本値なし）。docs/GT 反映は #47/#20 一括。
+- **次**: 既存 RE キュー **#136（.fnt 縦位置＝最後の1件）**。未コミット＝ row339..343・(cj)(ck)(cm)(本節)・memory v363..367・成果物 v363..v367・TODO 系（push は承認済み設定で実行可）。
+
+
+## 2026-11-14 (cp) — #136 完遂: .fnt 縦位置＝**レコードに垂直メトリクスなし[確定]・advance=f[11][確定]・縦は line/ヘッダ size 由来[部分確定]**（v368・#96 ブロッカー解消材料）
+
+- **成果物**: `tmp/re/v368_font_vertical_ruling.md`（probe **v368_1..9 全 EXIT=0** ＋実データ解析3回。**実データ⇔EXE 交叉検証**＝`new(0x3928)`=ファイル実寸・size float 5種一致・f11/f12=UV×512 一致・'!' f1=0 一致が決め手）。台帳 **row344（bak194）**・`round_verify` **ALL OK**（rows 31..344 / total 230 / done 225 / open 5）。ai-todo #136 note→complete。v 採番 **v368 消費（次=v369）**。**s76_strings.md の残件 R1（FontManager ctor/.fnt 解析関数）クローズ**。
+- **① レコード14 float [確定]6/8・f[0]/f[1]=[未確定]**: 構造＝**ヘッダ（+0x000=size float＝28/35/55/57/22 が5フォントで一意一致[確定(実データ)]・+0x004/+0x008=int1/1・+0x00C=テクスチャ名 'Kingthings_Regular_0_Lod_A'・0パディング）＋255×56B が byte 0x158(344)..0x3920（`0x37C8=255×56` 精密一致）＋8B尾＝実ファイル14632B=0x3928 が EXE `push 0x3928; call new` read-all と完全一致**。
+  - **f[3..10]=UV4コーナー**（u0=f3=f7, v0=f4=f6, u1=f5=f9, v1=f8=f10）**[確定]**／**f[11]=幅px=(u1−u0)×512 [確定(計算)]**／**★EXE emit `0x573F10` が `pos[0] += record.f[11]`（`fld [ecx+0x2c]; fadd [edx]; fstp [edx]`・ecx=arg1=record・pos は呼び出し側のペンを示す共有スタック）＝advance=f[11] [確定(命令)]** → **port の f[1] advance 否定は正しく、advance は f[11]**／f[12]=高px／f[2]=f[13]=0 恒[確定]。
+  - **f[1] は emit で不使用 [確定(否定側)]**（使用箇所＝0x57698E 以降のペン更新域が未 decode）→ **f[0]/f[1] 意味=[未確定 V-368-2]**。
+  - **EXE アドレシング `base+code×56+0x128`（0x576CDF/0x576961/0x575A91 の3箇所同一）** vs データ `0x158+(code−1)×56` の不一致＝**パーサの in-place 再配置（buffer+0x12C..0x15C/+0x84C../+0x1C6C.. への書出を実行）[確定(命令)]・再配置内容=[未確定 V-368-1]**。
+- **② 縦配置 [部分確定]**: **レコードに垂直メトリクス不在 [確定]** → line/font レベル由来: **line=`fild dword [lineObj+0x34]`（int）＋整数ペン累積 `[line+0x28]`/`[+0x2C]` [確定(命令)]**／**font=`fontObj+0x2C`（emit で X に加算）・`+0x30`＝パーサが `{buf+0x150,+0x15C,+0x188,+0x1C0,+0x1F8}` の5値から min/max 算出（fcomip+cmov）[確定(命令)]＝高さ系 min/max＝ascent/descent 候補[推定]**／**ヘッダ size float が縦計算に参加 `fild(line_int) + [buf+0](28.0) − … → fstp [esp+0x38]`（0x5768C4）[確定(命令)]・演算順/符号は stack slot 再利用（色定数と同居）のため [未確定 V-368-3]**／emit 頂点＝**24B stride（idx×24）・法線(0,0,1)=グローバル 0xB3A6C0/C4/C8 one-shot init（C8=[0xA30634]）・色定数 (33,59,117)/255=(0.1294,0.2314,0.4588)＋1.0 が layout 初期化 [確定(実測+命令)]**。
+  - **下降字 [推定高]**: 原本は**行（line）の Y 基点＋ヘッダ size でグリフを行単位配置＝ink 底をベースラインに固定しない** → 下降字は本来位置に残る。**port の `baseline_rel=min(inkbottom,capBaseline)` は原本にない独自規約＝`be9in`/`APPearance` 現象の原因**（正確な式は V-368-3/4）。
+- **③ アトラス [確定]**: **各グリフ tight UV・512×512 [確定(計算)]**（f11/f12=UVspan×512 が5種全一致）・**EXE はレコード UV を無変換で頂点化 [確定(命令)]＝均一グリッドの証拠なし [確定(否定側)]**・**テクスチャは .fnt 外部**（ファイル=ヘッダ+レコード+8B尾のみで画像バイナリなし）＋ヘッダ名 '..._Lod_A' → **外部 DDS [推定高]**（parser 内 0x70E560/0x704800 が読込 [推定]）。
+- **特定した EXE 関数（R1 クローズ）**: FontManager シングルトン **`0x576A30`**（cache `[0xB3A6BC]`・`new(0x18)`→ctor `0x576420`）／**5フォント init `0x576420`**（`0x5757A0` を path/id1..5 で5回）／FontEntry ctor **`0x5757A0`**（path strdup→[+4]・flag→parser 呼出）／**.fnt parser `0x5744E0`**（CreateFile `0x431130(path,0,0x2800,0x80)`→`new(0x3928)`→read-all `0x42C8E0`→min/max→image `0x70E560`/`0x704800`）／layout **`0x576AB0`**（line リスト走査→per-char emit）／**emit `0x573F10`**。
+- **残点 V-368-1..5**: 1=**EXE base(+0x128) とデータ(0x158) の不一致＝パーサ再配置内容【中・port の UV 取り出し実装に直結】**／2=f[0]/f[1] 意味（0x57698E 以降未 decode）【中】／3=**縦計算の演算順/符号と `[lineObj+0x34]` setter【高・#96 縦修正に必須】**／4=emit の `−f10(v1)` の意味（Y反転か）【中】／5=75.0（double `0xA68950`・`fsubr` が layout/load 両方で使用）の用途と外部テクスチャ命名規則【低】。
+- **main への回答（#96 修正方向）**: ①**advance=f[11] を採用**（f[1] 不使用）②**縦位置は行基点＋ヘッダ size 由来・ink 底固定の廃止**（下降字復帰）③**tight UV は原本どおり**。docs/GT 反映は #47/#20 一括。
+- **次**: RE キュー全5件（#130追補/#134/#135/#142/#136）完遂 → **締め（整合確認＋RE 分 push）**。未コミット＝ row339..344・(cj)(ck)(cm)(co)(本節)・memory v363..368・成果物 v363..v368・TODO 系。
+
+
 
 ## 2026-11-14 (co) — #45 N5b increment 3a 完了: walker surface C ABI 4本を nif-ffi に露出（verifier REJECT→修正→APPROVE・commit 01b6b427）
 

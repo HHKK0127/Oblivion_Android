@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-14T13:32:14Z",
+  "lastUpdated": "2026-11-14T14:55:16Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11055,14 +11055,44 @@
         "android"
       ],
       "content": "2026-11-14 #126 完了（全3項）: ②種族保持を commit 7bf40e79（fix-chargen-race-persist・4ファイル+23）で実装。正典=RE #134/v365 裁定(b)「フォーム参照として保持 [部分確定]」（menu 側 direct store 0件・Done 帯書出0件・選択時に live 適用）→ port は FormID 参照を保持（FaceGenRecord::raceFormID と命名統一）。実装=CharacterStatus/Player に raceFormID=0・confirm で applyRaceBonuses と同一ガード（空時は明示0で前回選択の漏洩遮断）・callback 転送＋LOGI。verifier APPROVE 1回目（handoff 完全性・aggregate 初期化破壊0件を全走査・v365/findRace 主張照合・コメント型名の軽微修正のみ）。emu PASS: race formID=0x0005308E（ESM 由来非ゼロ）＋quest 1002＋crash 0＋pid 生存。①skills=b1222bd9・③name=31ed4ee6+ab448803 と合わせ全3項 complete。スコープ外=セーブ永続（player->name も未保存で既存慣行と一致）・コンシューマ #127・sex 保持は別タスク。3ブランチともマージは人間ゲート待ち。付随: STATE ラベル (cn) 衝突を検出（RE レーンの #135 ラウンドが先行挿入）→ 自分の inc3a ラウンドを (co) に改名、本エントリは (cp) から採番。"
+    },
+    {
+      "id": "142-racesex-layout-dims-v367-2026-11-14",
+      "timestamp": "2026-11-14T13:42:38Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-142",
+        "racesexmenu",
+        "layout",
+        "re",
+        "v367"
+      ],
+      "content": "2026-11-14 #142 完了（v367）: RaceSexMenu レイアウト寸法を裁定。成果物 tmp/re/v367_racesex_layout_dimensions_ruling.md（probe v367_1 全 EXIT=0・race_sex_menu.xml 705行全読＋button_long/generic_background 読了・v353 と完全整合）・台帳 row343（bak193）・round_verify ALL OK（rows 31..343 / total 229 / done 224 / open 5）・STATE (co)。① ボタン=[確定]（port 105×32/scale0.65/2ボタン/間隔16 はすべて不一致）: 原本は Done/Return 単一ボタン（Back=id90 user5 切替・#130 Phase A 整合）＝button_long 177×44 @(353,676)（x=parent.w−177−30 右インセット30・y=parent.h−44−20 下インセット20・parent=560×740）[確定(XML+計算)]・ラベル=font1・center・scale属性なし（1.0）[確定]・「間隔16px/contentW−226」は原本に概念なし [確定負]。② タブ列=[確定負:原本にタブ列なし]: XML 705行に tab 要素なし（page=user0 と pane visible 条件のみ）・EXE 0x5CA010 のテンプレ生成は pane/button/toggle/text/slider のみでタブ生成なし [確定(否定側)]・page 導線=ページ内 nav ボタン行（race_template_button）＋ラベルキー 'Main'/'Race'/'Hair'/'Face'（v353）→ port の contentW/5 均等5タブは構造差（port 発明）。③ パネル=[確定]（port 約935px＋900px 漆黒空白は不一致）: race_background=560×740（generic_background user0/1=幅/高）・x=70 固定・y=(screenH−740)/2 [確定(XML)]・内側 race_window=500×558@(30,85) clipwindow → name y=20→separator 400×3@(75,75)→window 85..643→Done 676..720→下端740＝下部97px は Done 帯で占有され漆黒空白は存在しない [確定]（screenH600 では y=−70 クリップ＝解像度依存・対処未特定=残点）。④ 行ピッチ=[確定(XML)]: 行ピッチ93px 全テンプレ共通（button_layout/toggle/slider=y=listindex×93・text=listindex×93+20 font1）・行内: ラベル font3 @(0,0)・スライダーバー y=45（port の45と一致[部分一致]）・マーカ y=25高64（幅 text+30 max85/marker2 104×64）・toggle 矢印 左124×36@(0,35)/右121×36@(w−121,35)（非対称）・value text wrapwidth250 中央・button text wrapwidth490 @(w/2,25)・port の y=110 に対応する原本値なし [確定(否定側)]・scroll: x=w−20,y=25,h=h−50・同時表示6・step1/jump5/max=user1−6・pane y=−scroll.user7×93。EXE 側 [確定(否定側)]: band 内に寸法即値 push(500/558/560/740/177/44/93)=0件＝原本寸法はすべて XML 由来。0x5CA010=FindMenu(0x40C=RaceSexMenu[推定高])＋Data\\Menus\\CharGen\\race_sex_menu.xml 読込（'Race/Sex Menu Creation Failed...'）＋GetFloat(0xFA5)→SetFloat(0xFAB)＋16×'%s'→menu+0x8F4..0x92C＋テンプレラッパ（0x5C4340=pane→fild(id)→SetFloat(0xFAE)=page=pane id[v353再掲]／0x5C4480=button／0x5C4630×4／0x5C93F0×6／0x5C4800×1）。残点 V-367-1..5（1=race_pane width 式 parent−f(childcount>6,×40) の評価順序（DTD 不在）＝race リスト実効幅【中・port 再現に必要】／2=screenH<740 の原本対処【低】／3=16×'%s' スロット用途【低】／4=0x5C4630/0x5C4800 テンプレ対応【低】／5=port getContentStartY 110 の原本対応値【低】）。main への報告: port 差分=①ボタン単一177×44@右30/下20②タブ列は原本に存在せず③パネル740高④93行ピッチ（45一致/110 なし）。v 採番 v367 消費（次=v368）。"
+    },
+    {
+      "id": "136-fnt-vertical-v368-2026-11-14",
+      "timestamp": "2026-11-14T14:55:16Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-136",
+        "font",
+        "fnt",
+        "re",
+        "v368"
+      ],
+      "content": "2026-11-14 #136 完了（v368）: .fnt フォント縦位置の原理を裁定（#96 ブロッカー解消材料・s76 R1 クローズ）。成果物 tmp/re/v368_font_vertical_ruling.md（probe v368_1..9 全 EXIT=0＋実データ解析3回。実データ⇔EXE 交叉検証= new(0x3928)=ファイル実寸・size float 5種一致・f11/f12=UV×512 一致・'!' f1=0 一致 が決め手）・台帳 row344（bak194）・round_verify ALL OK（rows 31..344 / total 230 / done 225 / open 5）・STATE (cp)。① レコード=[確定]6/8・f[0]/f[1]=[未確定]: 構造=ヘッダ（+0x000=size float 28/35/55/57/22 が5種で一意一致・+0x004/8=int1/1・+0x00C=テクスチャ名 'Kingthings_Regular_0_Lod_A'・0パディング）＋255×56B が byte0x158(344)..0x3920（精密一致）＋8B尾＝実ファイル14632B=0x3928 が EXE new(0x3928) read-all と完全一致 [確定(実データ+EXE)]。f[3..10]=UV4コーナー(u0=f3=f7,v0=f4=f6,u1=f5=f9,v1=f8=f10) [確定]・f[11]=幅px=(u1−u0)×512 [確定(計算)]・★EXE emit 0x573F10 が pos[0]+=record.f11＝advance=f[11] [確定(命令)]（port の f[1] advance 否定は正・advance=f[11] と判明）・f[12]=高px・f[2]=f[13]=0 恒 [確定]・f[1] は emit で不使用 [確定(否定側)]＝使用箇所は 0x57698E 以降のペン域未 decode [未確定]。EXE アドレシング base+code×56+0x128（3箇所同一）vs データ 0x158+(code−1)×56 の不一致＝パーサの in-place 再配置 [未確定 V-368-1]。② 縦配置=[部分確定]: レコードに垂直メトリクス不在 [確定]→ line/font レベル由来: line=fild [lineObj+0x34](int)＋整数ペン累積 [line+0x28]/[+0x2C] [確定(命令)]・font=fontObj+0x2C(emit で X 加算)/+0x30(=パーサが buf+0x150/+0x15C/+0x188/+0x1C0/+0x1F8 の5値から min/max 算出 [確定(命令)]＝高さ系 min/max=ascent/descent 候補[推定])・size float が縦計算に参加 fild(line_int)+[buf+0](28.0)−… [確定(命令)]（演算順は stack 再利用あり未確定=V-368-3）・emit 頂点=24B stride・法線(0,0,1)=グローバル0xB3A6C0..C8 one-shot・色定数(33,59,117)/255 [確定]。下降字: 原本は行基点＋size で行単位配置＝ink底固定をしない [推定高]→ port の min(inkbottom,capBaseline) が独自規約で下降消滅の原因。③ アトラス=[確定]: 各グリフ tight UV・512×512 [確定(計算)]・EXE は UV を無変換で頂点化 [確定(命令)]・均一グリッド証拠なし [確定(否定側)]・外部テクスチャ（ヘッダ名..._Lod_A・.fnt に画像バイナリなし）[推定高]。R1 クローズ: FontManager シングルトン0x576A30/5フォントinit0x576420/FontEntry ctor0x5757A0/.fnt parser0x5744E0(CreateFile0x431130→new(0x3928)→read-all0x42C8E0→min/max→image0x70E560/0x704800)/layout0x576AB0/emit0x573F10 を特定 [確定(命令)]。残点 V-368-1..5（1=EXE base+0x128 とデータ0x158 の不一致＝再配置内容【中・port UV 取り出しに直結】/2=f[0]/f[1] 意味【中】/3=縦計算の演算順/符号と [lineObj+0x34] setter【高・#96 縦修正に必須】/4=emit の −f10(v1) の意味【中】/5=75.0(double 0xA68950)の用途と外部テクスチャ命名規則【低】）。main への報告: port修正方向=①advance=f[11]採用②縦は行基点＋ヘッダ size 由来（ink底固定の廃止）③tight UV は原本どおり。v 採番 v368 消費（次=v369）。"
     }
   ],
   "metadata": {
-    "totalEntries": 765,
+    "totalEntries": 767,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-14T13:32:14Z",
-    "entry_count": 765,
-    "last_updated": "2026-11-14T13:32:14Z"
+    "lastUpdated": "2026-11-14T14:55:16Z",
+    "entry_count": 767,
+    "last_updated": "2026-11-14T14:55:16Z"
   }
 }
