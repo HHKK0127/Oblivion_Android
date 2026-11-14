@@ -1608,8 +1608,12 @@ pub struct TextKey {
 ///
 /// The struct mirrors `NIFKeyframeController` because that is what the
 /// original stores these in; `target_node_index` and `clip` are left at their
-/// defaults here exactly as the original leaves them — `resolveControllerReferences()`
-/// is what fills them, and that is not part of this wave.
+/// defaults here exactly as the original leaves them while reading.
+/// [`NifParser::resolve_controller_references`] reads `target_node_index`
+/// back to fill `resolved_bone_index`, and fills `clip` from the keyframe
+/// data entry `keyframe_data_index` selects — nothing writes
+/// `target_node_index` itself (orig_src:3303-3316), which is RE task #145's
+/// open question.
 #[derive(Clone, Debug, PartialEq)]
 pub struct KeyframeController {
     pub target_node_index: u32,
@@ -1699,9 +1703,9 @@ pub struct ControllerManager {
     pub last_time: f32,
 }
 
-/// An animation clip: name, span and the keyframes inside it. The readers in
-/// this wave never fill one — `resolveControllerReferences()` does — so it
-/// travels through the ABI as its defaults.
+/// An animation clip: name, span and the keyframes inside it. The readers
+/// never fill one — [`NifParser::resolve_controller_references`] does — and
+/// no ABI record carries a clip, so it never crosses the boundary either.
 #[derive(Clone, Debug, PartialEq)]
 pub struct AnimationClip {
     pub name: String,
@@ -1812,4 +1816,71 @@ pub struct KeyframeData {
     pub xyz_rotations: [FloatKeyGroup; 3],
     pub translations: Vector3KeyGroup,
     pub scales: FloatKeyGroup,
+}
+
+impl KeyframeData {
+    /// The [`AnimationClip`] this block plays as: the port of the assembly
+    /// half of `NIFParser::parseNiKeyframeData` (orig_src/nif_parser.cpp:
+    /// 3389-3483). Rotation keys are appended as they come, translation and
+    /// scale keys merge into the first keyframe whose time is strictly within
+    /// 0.001 of theirs, the result is sorted by time and `duration` becomes
+    /// the last key's time. `name` and `frequency` stay at their defaults —
+    /// the original never writes them here — and so do the tangent fields,
+    /// which its `NIFKeyframe` never fills either.
+    ///
+    /// Rotation type 4's three xyz channels have no original counterpart in
+    /// this assembly: the original reader consumed a flat quaternion array for
+    /// every rotation type, so there is no original behaviour to mirror and
+    /// the channels stay out of the clip.
+    pub fn to_clip(&self) -> AnimationClip {
+        let mut clip = AnimationClip::default();
+
+        for key in &self.rotation_keys {
+            clip.keyframes.push(AnimationKeyframe {
+                time: key.time,
+                rotation: key.value,
+                ..AnimationKeyframe::default()
+            });
+        }
+
+        for key in &self.translations.keys {
+            match clip
+                .keyframes
+                .iter_mut()
+                .find(|kf| (kf.time - key.time).abs() < 0.001)
+            {
+                Some(existing) => existing.translation = key.value,
+                None => clip.keyframes.push(AnimationKeyframe {
+                    time: key.time,
+                    translation: key.value,
+                    ..AnimationKeyframe::default()
+                }),
+            }
+        }
+
+        for key in &self.scales.keys {
+            match clip
+                .keyframes
+                .iter_mut()
+                .find(|kf| (kf.time - key.time).abs() < 0.001)
+            {
+                Some(existing) => existing.scale = key.value,
+                None => clip.keyframes.push(AnimationKeyframe {
+                    time: key.time,
+                    scale: key.value,
+                    ..AnimationKeyframe::default()
+                }),
+            }
+        }
+
+        clip.keyframes.sort_by(|a, b| {
+            a.time
+                .partial_cmp(&b.time)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+        if let Some(last) = clip.keyframes.last() {
+            clip.duration = last.time;
+        }
+        clip
+    }
 }

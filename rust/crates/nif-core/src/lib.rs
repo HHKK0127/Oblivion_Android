@@ -655,6 +655,46 @@ impl NifParser {
     pub fn trailing_data_size(&self) -> usize {
         self.walk.trailing_data_size
     }
+
+    // -----------------------------------------------------------------
+    // Controller reference resolution
+    // -----------------------------------------------------------------
+
+    /// Fill every controlled block's resolved node index and clip, the port
+    /// of `NIFParser::resolveControllerReferences` (orig_src/nif_parser.cpp:
+    /// 3519-3543).
+    ///
+    /// `target_node_index` is checked against this file's block array: the
+    /// original indexes its `nodes` vector, which `parseObjectArray` fills for
+    /// every block (orig_src:311-319), so the original's null check cannot
+    /// fail after a parse and collapses to this bounds check. In range,
+    /// `resolved_bone_index` receives the target index verbatim — the
+    /// original casts it to `int32_t`.
+    /// `keyframe_data_index` selects from `keyframe_data`; in range the
+    /// block's clip is replaced by [`KeyframeData::to_clip`] of that entry,
+    /// out of range the block keeps the clip it had — both exactly as the
+    /// original leaves them.
+    ///
+    /// The original's controlled-block reader never writes `target_node_index`
+    /// (orig_src:3303-3316), so it resolves from its default until something
+    /// else fills it; where the original intended the real node index to come
+    /// from is RE task #145's question, not this function's.
+    pub fn resolve_controller_references(
+        &self,
+        manager: &mut ControllerManager,
+        keyframe_data: &[KeyframeData],
+    ) {
+        for sequence in &mut manager.sequences {
+            for block in &mut sequence.controlled_blocks {
+                if (block.target_node_index as usize) < self.nodes.len() {
+                    block.resolved_bone_index = block.target_node_index as i32;
+                }
+                if let Some(data) = keyframe_data.get(block.keyframe_data_index as usize) {
+                    block.clip = data.to_clip();
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -2592,7 +2632,9 @@ mod tests {
         // Seeded exactly as the original seeds them while reading.
         assert_eq!(controlled.keyframe_data_index, 7);
         assert_eq!(controlled.resolved_bone_index, -1);
-        // resolveControllerReferences() territory: untouched by this wave.
+        // Seeds only: the reader leaves them at the defaults; resolve reads
+        // target_node_index back and fills resolved_bone_index and clip —
+        // it never writes target_node_index itself.
         assert_eq!(controlled.target_node_index, 0);
         assert_eq!(controlled.clip.name, "");
         assert_eq!(controlled.clip.frequency.to_bits(), 1.0f32.to_bits());
@@ -2612,6 +2654,344 @@ mod tests {
             .parse_controller_sequence()
             .expect("the sequence block is in the file");
         assert_eq!(standalone, *sequence);
+    }
+
+    /// Four-block fixture (root, manager, sequence, text keys) shared by the
+    /// resolve tests: one parsed sequence with two controlled blocks — the
+    /// first seeded like the reader seeds it (keyframe index 7, target 0),
+    /// the second with controller 0 so both of its indices start at 0.
+    fn resolve_fixture() -> (NifParser, ControllerManager) {
+        let header = gamebryo_header(
+            "Gamebryo File Format, Version 20.0.0.5",
+            0x1400_0005,
+            11,
+            11,
+            &[
+                "NiNode",
+                "NiControllerManager",
+                "NiControllerSequence",
+                "NiTextKeyExtraData",
+            ],
+            &[0, 1, 2, 3],
+        );
+        let mut built = Built::with_header(header);
+        built.block(ninode_table("Root"));
+        built.block(controller_manager_body(&[2], 0xFFFF_FFFF));
+        built.block(controller_sequence_body_with_blocks(
+            vec![
+                controlled_block_body(3, 7, 2, 0xFFFF_FFFF, [1, 2, 3, 4, 5]),
+                controlled_block_body(4, 0, 1, 0xFFFF_FFFF, [6, 7, 8, 9, 10]),
+            ],
+            3,
+            0,
+        ));
+        built.block(text_key_body(&[(0.5, "")]));
+        let (bytes, _) = built.trailer(&[0]);
+
+        let parser = parse(&bytes);
+        assert!(parser.are_blocks_walked(), "{}", parser.walk_error());
+        // The bounds check runs against the block array: one entry per block.
+        assert_eq!(parser.nodes().len(), 4);
+        let manager = parser
+            .parse_controller_manager()
+            .expect("the manager block is in the file");
+        (parser, manager)
+    }
+
+    /// One keyframe-data entry with a rotation key at t=2 carrying a
+    /// non-default quaternion (so a dropped or zeroed rotation fails a test)
+    /// and a translation key at t=0.5, the array the resolve tests index
+    /// into.
+    fn resolve_keyframe_data() -> Vec<KeyframeData> {
+        vec![KeyframeData {
+            rotation_keys: vec![QuaternionKey {
+                time: 2.0,
+                value: Vector4 {
+                    x: 0.1,
+                    y: 0.2,
+                    z: 0.3,
+                    w: 0.9,
+                },
+                ..Default::default()
+            }],
+            translations: Vector3KeyGroup {
+                interpolation: 1,
+                keys: vec![Vector3Key {
+                    time: 0.5,
+                    value: Vector3 {
+                        x: 1.0,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                }],
+            },
+            ..Default::default()
+        }]
+    }
+
+    #[test]
+    fn resolve_controller_references_fills_in_range_references() {
+        let (parser, mut manager) = resolve_fixture();
+        {
+            let block = &mut manager.sequences[0].controlled_blocks[0];
+            // The reader left target_node_index at its default and seeded
+            // keyframe_data_index at the controller index (7); retarget both
+            // into range for this run.
+            block.target_node_index = 1;
+            block.keyframe_data_index = 0;
+        }
+
+        parser.resolve_controller_references(&mut manager, &resolve_keyframe_data());
+
+        let first = &manager.sequences[0].controlled_blocks[0];
+        assert_eq!(first.resolved_bone_index, 1);
+        assert_eq!(first.clip.name, "");
+        assert_eq!(first.clip.frequency.to_bits(), 1.0f32.to_bits());
+        assert_eq!(first.clip.duration.to_bits(), 2.0f32.to_bits());
+        assert_eq!(first.clip.keyframes.len(), 2);
+        // Sorted by time: the translation key comes first.
+        assert_eq!(first.clip.keyframes[0].time.to_bits(), 0.5f32.to_bits());
+        assert_eq!(
+            first.clip.keyframes[0].translation,
+            Vector3 {
+                x: 1.0,
+                ..Default::default()
+            }
+        );
+        assert_eq!(
+            first.clip.keyframes[0].scale.to_bits(),
+            1.0f32.to_bits() // NIFKeyframe's default scale
+        );
+        assert_eq!(first.clip.keyframes[1].time.to_bits(), 2.0f32.to_bits());
+        // The rotation key's value travels into the clip unchanged, and the
+        // translation-created keyframe keeps the default rotation.
+        assert_eq!(
+            first.clip.keyframes[1].rotation,
+            Vector4 {
+                x: 0.1,
+                y: 0.2,
+                z: 0.3,
+                w: 0.9
+            }
+        );
+        assert_eq!(first.clip.keyframes[0].rotation, Vector4::default());
+
+        // The second block starts with both indices at 0: target 0 is in
+        // range for a four-block file and keyframe index 0 selects the one
+        // entry, so resolve fills it from its seeds alone.
+        let second = &manager.sequences[0].controlled_blocks[1];
+        assert_eq!(second.resolved_bone_index, 0);
+        assert_eq!(second.clip, first.clip);
+    }
+
+    #[test]
+    fn resolve_controller_references_keeps_out_of_range_blocks_untouched() {
+        let (parser, mut manager) = resolve_fixture();
+        // A clip the resolver must not touch: preset to something that is
+        // not the default, so an implementation that resets an out-of-range
+        // clip cannot pass this test.
+        let preset = AnimationClip {
+            name: "preset".to_string(),
+            duration: 9.5,
+            ..AnimationClip::default()
+        };
+        {
+            let block = &mut manager.sequences[0].controlled_blocks[0];
+            // nodes.len() == 4, so 4 is one past the last block; the array
+            // below holds one entry, so index 1 is one past it too.
+            block.target_node_index = 4;
+            block.keyframe_data_index = 1;
+            block.clip = preset.clone();
+        }
+
+        parser.resolve_controller_references(&mut manager, &resolve_keyframe_data());
+
+        let block = &manager.sequences[0].controlled_blocks[0];
+        assert_eq!(block.resolved_bone_index, -1);
+        assert_eq!(block.clip, preset);
+
+        // The same with every index at its maximum: both lookups stay out
+        // and the preset clip survives again.
+        {
+            let block = &mut manager.sequences[0].controlled_blocks[0];
+            block.target_node_index = u32::MAX;
+            block.keyframe_data_index = u32::MAX;
+        }
+        parser.resolve_controller_references(&mut manager, &resolve_keyframe_data());
+        let block = &manager.sequences[0].controlled_blocks[0];
+        assert_eq!(block.resolved_bone_index, -1);
+        assert_eq!(block.clip, preset);
+    }
+
+    #[test]
+    fn resolve_controller_references_on_empty_inputs_is_a_no_op() {
+        let (parser, mut manager) = resolve_fixture();
+        // No keyframe data: every clip lookup misses and stays default, while
+        // the in-range node targets still resolve.
+        parser.resolve_controller_references(&mut manager, &[]);
+        let first = &manager.sequences[0].controlled_blocks[0];
+        assert_eq!(first.resolved_bone_index, 0); // default target 0 < 4
+        assert_eq!(first.clip, AnimationClip::default());
+
+        // No sequences at all: nothing to walk, nothing to panic on.
+        let mut empty = ControllerManager::default();
+        parser.resolve_controller_references(&mut empty, &resolve_keyframe_data());
+        assert!(empty.sequences.is_empty());
+    }
+
+    #[test]
+    fn keyframe_data_to_clip_merges_by_time_and_sorts() {
+        let data = KeyframeData {
+            rotation_keys: vec![
+                QuaternionKey {
+                    time: 1.0,
+                    value: Vector4 {
+                        x: 0.5,
+                        y: 0.5,
+                        z: 0.0,
+                        w: 0.7071,
+                    },
+                    ..Default::default()
+                },
+                QuaternionKey {
+                    time: 0.5,
+                    ..Default::default()
+                },
+            ],
+            translations: Vector3KeyGroup {
+                interpolation: 1,
+                keys: vec![
+                    Vector3Key {
+                        time: 0.5,
+                        value: Vector3 {
+                            x: 2.0,
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    },
+                    // Within 0.001 of the 0.5 key: merges, overwriting the
+                    // translation the earlier merge wrote, as the original's
+                    // assignment does.
+                    Vector3Key {
+                        time: 0.5005,
+                        value: Vector3 {
+                            x: 3.0,
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    },
+                    Vector3Key {
+                        time: 0.6,
+                        value: Vector3 {
+                            x: 4.0,
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    },
+                ],
+            },
+            scales: FloatKeyGroup {
+                interpolation: 1,
+                keys: vec![FloatKey {
+                    time: 0.6,
+                    value: 2.5,
+                    ..Default::default()
+                }],
+            },
+            ..Default::default()
+        };
+
+        let clip = data.to_clip();
+        // Rotation at 0.5 and 1.0, translation at 0.5 (x2 then x3), a new
+        // keyframe at 0.6 that its scale merges into: three in the end.
+        assert_eq!(clip.keyframes.len(), 3);
+        assert_eq!(clip.duration.to_bits(), 1.0f32.to_bits());
+        assert_eq!(clip.name, "");
+        assert_eq!(clip.frequency.to_bits(), 1.0f32.to_bits());
+
+        assert_eq!(clip.keyframes[0].time.to_bits(), 0.5f32.to_bits());
+        assert_eq!(
+            clip.keyframes[0].translation,
+            Vector3 {
+                x: 3.0,
+                ..Default::default()
+            }
+        );
+        assert_eq!(clip.keyframes[0].scale.to_bits(), 1.0f32.to_bits());
+
+        assert_eq!(clip.keyframes[1].time.to_bits(), 0.6f32.to_bits());
+        assert_eq!(
+            clip.keyframes[1].translation,
+            Vector3 {
+                x: 4.0,
+                ..Default::default()
+            }
+        );
+        assert_eq!(clip.keyframes[1].scale.to_bits(), 2.5f32.to_bits());
+
+        assert_eq!(clip.keyframes[2].time.to_bits(), 1.0f32.to_bits());
+        assert_eq!(clip.keyframes[2].translation, Vector3::default());
+        assert_eq!(clip.keyframes[2].scale.to_bits(), 1.0f32.to_bits());
+        // The rotation value arrives unchanged on the sorted keyframe.
+        assert_eq!(
+            clip.keyframes[2].rotation,
+            Vector4 {
+                x: 0.5,
+                y: 0.5,
+                z: 0.0,
+                w: 0.7071
+            }
+        );
+    }
+
+    #[test]
+    fn keyframe_data_to_clip_merge_epsilon_is_strict() {
+        let data = KeyframeData {
+            translations: Vector3KeyGroup {
+                interpolation: 1,
+                keys: vec![
+                    Vector3Key {
+                        time: 0.0,
+                        value: Vector3 {
+                            x: 1.0,
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    },
+                    // An exact 0.001 gap fails the original's strict
+                    // `abs(diff) < 0.001` test and stays a separate key.
+                    Vector3Key {
+                        time: 0.001,
+                        value: Vector3 {
+                            x: 2.0,
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    },
+                ],
+            },
+            ..Default::default()
+        };
+
+        let clip = data.to_clip();
+        assert_eq!(clip.keyframes.len(), 2);
+        assert_eq!(clip.duration.to_bits(), 0.001f32.to_bits());
+        assert_eq!(
+            clip.keyframes[1].translation,
+            Vector3 {
+                x: 2.0,
+                ..Default::default()
+            }
+        );
+    }
+
+    #[test]
+    fn keyframe_data_to_clip_of_empty_data_is_an_empty_clip() {
+        let clip = KeyframeData::default().to_clip();
+        assert!(clip.keyframes.is_empty());
+        assert_eq!(clip.duration.to_bits(), 0.0f32.to_bits());
+        assert_eq!(clip.name, "");
+        assert_eq!(clip.frequency.to_bits(), 1.0f32.to_bits());
     }
 
     #[test]

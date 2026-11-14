@@ -1467,8 +1467,9 @@ fn push_string(storage: &mut Vec<Vec<u8>>, text: &str) -> *const c_char {
 /// Everything is built in local vectors first and only then moved onto the
 /// handle — moving a vector does not move its buffer, so the pointers taken
 /// while building stay valid. `target_node_index` and `clip` deliberately do
-/// not cross: this wave never fills them, and `resolveControllerReferences()`
-/// (still on the C++ side) owns those fields.
+/// not cross: nif-core's `resolve_controller_references()` owns them, but
+/// neither field has crossed this ABI yet — both stay with the C++ wiring
+/// increment.
 fn store_controller_data(borrowed: &mut Handle, sequences: &[ControllerSequence]) {
     let mut strings: Vec<Vec<u8>> = Vec::new();
     let mut blocks: Vec<NifControlledBlock> = Vec::new();
