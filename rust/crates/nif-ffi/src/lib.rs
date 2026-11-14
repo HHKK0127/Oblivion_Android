@@ -2090,3 +2090,202 @@ pub unsafe extern "C" fn nif_header_block_type_name(
         }
     })
 }
+
+// ---------------------------------------------------------------------------
+// Block-body walker surface
+// ---------------------------------------------------------------------------
+
+/// Re-runs the block-body walk over the file image the handle already holds.
+///
+/// Parsing walks once; this is the entry point for a caller that changed the
+/// cursor and needs the block ranges rebuilt. [`NIF_OK`] means every block
+/// body and the trailer were measured, [`NIF_ERROR_EMPTY`] means the handle
+/// holds no file, and [`NIF_ERROR_INCOMPLETE`] means the walk stopped early —
+/// its reason is left on the handle for [`nif_last_error`]. A stopped walk is
+/// not fatal: the ranges collected up to that point are discarded by the
+/// re-run, exactly as the parse that just failed to walk discarded them, and
+/// the readers below keep refusing to answer until a walk completes.
+///
+/// # Safety
+/// `handle` must satisfy [`nif_create`]'s contract.
+#[no_mangle]
+pub unsafe extern "C" fn nif_walk_blocks(handle: *mut Handle) -> c_int {
+    guard(NIF_ERROR_INVALID_ARGUMENT, handle, |borrowed| {
+        if borrowed.parser.file_size() == 0 {
+            return fail(borrowed, NIF_ERROR_EMPTY, "no file is loaded in the handle");
+        }
+        match borrowed.parser.walk_all_blocks() {
+            Ok(()) => succeed(borrowed),
+            Err(error) => fail(borrowed, NIF_ERROR_INCOMPLETE, error),
+        }
+    })
+}
+
+/// Writes the file offset of one block body's first field — past the
+/// per-block prefix — to `out_offset`.
+///
+/// [`NIF_ERROR_INVALID_ARGUMENT`] for a NULL, misaligned or out-of-range
+/// out-parameter, and [`NIF_ERROR_NO_BLOCK`] when the index is valid but no
+/// body is addressable: the walk has not run or did not complete, which is
+/// the same refusal [`locate_block_body`](nif_core) makes.
+///
+/// # Safety
+/// `handle` must satisfy [`nif_create`]'s contract; `out_offset` must point
+/// to one writable, correctly aligned `usize`.
+#[no_mangle]
+pub unsafe extern "C" fn nif_locate_block_body(
+    handle: *mut Handle,
+    block_index: u32,
+    out_offset: *mut usize,
+) -> c_int {
+    guard(NIF_ERROR_INVALID_ARGUMENT, handle, |borrowed| {
+        if out_offset.is_null() {
+            return fail(
+                borrowed,
+                NIF_ERROR_INVALID_ARGUMENT,
+                "the offset out-parameter is NULL",
+            );
+        }
+        if (out_offset as usize) % align_of::<usize>() != 0 {
+            return fail(
+                borrowed,
+                NIF_ERROR_INVALID_ARGUMENT,
+                "the offset out-parameter is misaligned",
+            );
+        }
+        if block_index >= borrowed.parser.block_count() {
+            return fail(
+                borrowed,
+                NIF_ERROR_INVALID_ARGUMENT,
+                format!("block index {block_index} is out of range"),
+            );
+        }
+        // Bind the answer to an owned value first: the lookup borrows the
+        // parser, and the arms below need to write the message.
+        let located = borrowed.parser.locate_block_body(block_index);
+        match located {
+            Some(offset) => {
+                *out_offset = offset;
+                succeed(borrowed)
+            }
+            None => fail(
+                borrowed,
+                NIF_ERROR_NO_BLOCK,
+                format!("block {block_index} has no located body"),
+            ),
+        }
+    })
+}
+
+/// Fills `out_indices` with the object-array indices of every block whose
+/// resolved type name matches, in file order, and returns the total number
+/// of matches.
+///
+/// The return shape is the length query `nif_get_geometries` uses: a NULL
+/// `out_indices` or a zero `capacity` writes nothing and only the total
+/// comes back, and a short buffer fills `capacity` slots while still
+/// reporting the full total, so a caller can detect truncation. A handle
+/// that never held a file reports 0 matches; a handle whose object array
+/// failed to build, or a file whose walk has not completed, reports
+/// [`NIF_ERROR_NO_BLOCK`] with the reason from [`nif_last_error`], because
+/// the walker — not the header — is what the rest of the crate gates the
+/// same query on.
+///
+/// `capacity` counts `uint32_t` slots, not bytes.
+///
+/// # Safety
+/// `handle` must satisfy [`nif_create`]'s contract, `type_name` must be a
+/// readable NUL-terminated string, and when `capacity` is non-zero
+/// `out_indices` must address that many writable, correctly aligned
+/// `uint32_t` slots.
+#[no_mangle]
+pub unsafe extern "C" fn nif_find_blocks_of_type(
+    handle: *mut Handle,
+    type_name: *const c_char,
+    out_indices: *mut u32,
+    capacity: usize,
+) -> c_int {
+    guard(NIF_ERROR_INVALID_ARGUMENT, handle, |borrowed| {
+        if type_name.is_null() {
+            return fail(
+                borrowed,
+                NIF_ERROR_INVALID_ARGUMENT,
+                "the type name pointer is NULL",
+            );
+        }
+        // SAFETY: the caller guarantees a NUL-terminated string.
+        let name = match CStr::from_ptr(type_name).to_str() {
+            Ok(name) => name,
+            Err(_) => {
+                return fail(
+                    borrowed,
+                    NIF_ERROR_INVALID_ARGUMENT,
+                    "the type name is not valid UTF-8",
+                )
+            }
+        };
+        if borrowed.parser.block_count() > 0 && !borrowed.parser.are_blocks_walked() {
+            // Bind the reason to an owned value first: the lookup borrows the
+            // parser, and the arms below need to write the message.
+            let reason = borrowed.parser.walk_error().to_string();
+            return if reason.is_empty() {
+                fail(borrowed, NIF_ERROR_NO_BLOCK, "the file has not been walked")
+            } else {
+                fail(borrowed, NIF_ERROR_NO_BLOCK, reason)
+            };
+        }
+        let matches = borrowed.parser.find_blocks_of_type(name);
+        let total = matches.len();
+        if out_indices.is_null() || capacity == 0 {
+            // Length query: nothing is written, the total comes back.
+            set_message(borrowed, "");
+            return total as c_int;
+        }
+        if (out_indices as usize) % align_of::<u32>() != 0 {
+            return fail(
+                borrowed,
+                NIF_ERROR_INVALID_ARGUMENT,
+                "the block index out-parameter is misaligned",
+            );
+        }
+        let fill = total.min(capacity);
+        for (slot, index) in matches.iter().take(fill).enumerate() {
+            // SAFETY: the caller guarantees `capacity` writable slots at
+            // `out_indices`, and `slot < fill <= capacity`.
+            *out_indices.add(slot) = *index;
+        }
+        set_message(borrowed, "");
+        total as c_int
+    })
+}
+
+/// Copies one object-array block's resolved type name into `out`, snprintf
+/// style: the return is the length the text needs with its terminator, so a
+/// caller can detect truncation, and nothing is written beyond `capacity`.
+/// `block_index` indexes the object array — use
+/// [`nif_header_block_type_name`] for the header's type table instead.
+///
+/// # Safety
+/// `handle` must satisfy [`nif_create`]'s contract; `out` must be NULL or at
+/// least `capacity` writable bytes when `capacity` is non-zero.
+#[no_mangle]
+pub unsafe extern "C" fn nif_get_block_type_name(
+    handle: *mut Handle,
+    block_index: u32,
+    out: *mut c_char,
+    capacity: usize,
+) -> c_int {
+    guard(NIF_ERROR_INVALID_ARGUMENT, handle, |borrowed| {
+        if block_index >= borrowed.parser.block_count() {
+            return fail(
+                borrowed,
+                NIF_ERROR_INVALID_ARGUMENT,
+                format!("block index {block_index} is out of range"),
+            );
+        }
+        let name = borrowed.parser.block_type_name(block_index);
+        let needed = write_c_string(name.as_bytes(), out, capacity);
+        set_message(borrowed, "");
+        needed
+    })
+}

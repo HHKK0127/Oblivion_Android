@@ -587,6 +587,100 @@ static void check_nodes_and_header_abi(void)
     CHECK(nif_header_block_type_name(handle, 2, text, sizeof(text)) ==
           NIF_ERROR_INVALID_ARGUMENT);
 
+    /* Walker surface: the walk re-runs on a live handle, both fixture bodies
+     * become addressable, and the type queries answer off the object array. */
+    CHECK(nif_walk_blocks(NULL) == NIF_ERROR_INVALID_ARGUMENT);
+    CHECK(nif_walk_blocks(handle) == NIF_OK);
+
+    {
+        size_t offset = 0;
+        uint32_t indices[4];
+
+        CHECK(nif_locate_block_body(handle, 0, &offset) == NIF_OK);
+        CHECK(offset >= fixture_block_start);
+        CHECK(offset < fixture_pos);
+        CHECK(nif_locate_block_body(handle, 1, &offset) == NIF_OK);
+        CHECK(offset >= fixture_block_start);
+        CHECK(offset < fixture_pos);
+
+        /* Rejection paths: NULL, out-of-range, misaligned, NULL handle. */
+        CHECK(nif_locate_block_body(handle, 0, NULL) == NIF_ERROR_INVALID_ARGUMENT);
+        CHECK(nif_locate_block_body(handle, 2, &offset) ==
+              NIF_ERROR_INVALID_ARGUMENT);
+        CHECK(nif_locate_block_body(handle, 0, (size_t *)((char *)&offset + 1)) ==
+              NIF_ERROR_INVALID_ARGUMENT);
+        CHECK(nif_locate_block_body(NULL, 0, &offset) ==
+              NIF_ERROR_INVALID_ARGUMENT);
+
+        /* Length query first, then the fill: block 0 is the NiTriShape,
+         * block 1 the NiTriShapeData it points at. The fixture carries one
+         * block of each type, so a fill shorter than the total is not
+         * reachable here — the truncation contract is covered by
+         * nif_get_geometries, which shares the shape. */
+        CHECK(nif_find_blocks_of_type(handle, "NiTriShape", NULL, 0) == 1);
+        CHECK(nif_find_blocks_of_type(handle, "NiTriShape", indices, 4) == 1);
+        CHECK(indices[0] == 0);
+        CHECK(nif_find_blocks_of_type(handle, "NiTriShapeData", indices, 4) == 1);
+        CHECK(indices[0] == 1);
+        CHECK(nif_find_blocks_of_type(handle, "NoSuchType", indices, 4) == 0);
+
+        /* Rejection paths: NULL name, NULL handle, misaligned out-array. The
+         * capacity is in uint32_t slots, so a misaligned byte offset is
+         * rejected before anything is written. */
+        CHECK(nif_find_blocks_of_type(handle, NULL, indices, 4) ==
+              NIF_ERROR_INVALID_ARGUMENT);
+        CHECK(nif_find_blocks_of_type(NULL, "NiTriShape", indices, 4) ==
+              NIF_ERROR_INVALID_ARGUMENT);
+        CHECK(nif_find_blocks_of_type(handle, "NiTriShape",
+                                      (uint32_t *)((char *)indices + 1), 4) ==
+              NIF_ERROR_INVALID_ARGUMENT);
+
+        /* Object-array type names, snprintf style, distinct from the header
+         * table accessor checked above. */
+        CHECK(nif_get_block_type_name(handle, 0, text, sizeof(text)) == 11);
+        CHECK(strcmp(text, "NiTriShape") == 0);
+        CHECK(nif_get_block_type_name(handle, 1, text, sizeof(text)) == 15);
+        CHECK(strcmp(text, "NiTriShapeData") == 0);
+        CHECK(nif_get_block_type_name(handle, 2, text, sizeof(text)) ==
+              NIF_ERROR_INVALID_ARGUMENT);
+        CHECK(nif_get_block_type_name(NULL, 0, text, sizeof(text)) ==
+              NIF_ERROR_INVALID_ARGUMENT);
+        memset(tiny, 'Z', sizeof(tiny));
+        CHECK(nif_get_block_type_name(handle, 1, tiny, sizeof(tiny)) == 15);
+        CHECK(tiny[2] == '\0');
+        CHECK(nif_get_block_type_name(handle, 0, NULL, 0) == 11);
+    }
+
+    /* A handle with no file: the walk reports EMPTY rather than pretending it
+     * succeeded, and the type query has nothing to search. */
+    {
+        void *fresh = nif_create();
+        CHECK(fresh != NULL);
+        CHECK(nif_walk_blocks(fresh) == NIF_ERROR_EMPTY);
+        CHECK(nif_find_blocks_of_type(fresh, "NiTriShape", NULL, 0) == 0);
+        nif_destroy(fresh);
+    }
+
+    /* A file whose trailer is missing parses — a stopped walk is non-fatal —
+     * but every walk-gated accessor then refuses with the documented code:
+     * INCOMPLETE for the re-run (with the stop reason left on the handle),
+     * NO_BLOCK for the locate and type queries. The trailer is the last eight
+     * bytes: a value count word and its single zero value. */
+    {
+        void *truncated = nif_create();
+        size_t offset = 0;
+
+        CHECK(truncated != NULL);
+        CHECK(nif_parse_memory(truncated, fixture, fixture_pos - 8) == NIF_OK);
+        CHECK(nif_walk_blocks(truncated) == NIF_ERROR_INCOMPLETE);
+        CHECK(nif_last_error(truncated)[0] != '\0');
+        CHECK(nif_locate_block_body(truncated, 0, &offset) ==
+              NIF_ERROR_NO_BLOCK);
+        CHECK(nif_find_blocks_of_type(truncated, "NiTriShape", NULL, 0) ==
+              NIF_ERROR_NO_BLOCK);
+        nif_destroy(truncated);
+    }
+
     nif_destroy(handle);
 }
 

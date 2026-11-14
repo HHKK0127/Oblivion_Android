@@ -684,6 +684,37 @@ int nif_header_text(void *handle, int field, char *out, size_t capacity);
 int nif_header_block_type_name(void *handle, uint32_t type_index, char *out,
                                size_t capacity);
 
+/* Re-runs the block-body walk over the file image the handle already holds.
+ * NIF_OK means every block body and the trailer were measured;
+ * NIF_ERROR_EMPTY means no file is loaded; NIF_ERROR_INCOMPLETE means the
+ * walk stopped early, with the reason available from nif_last_error. */
+int nif_walk_blocks(void *handle);
+
+/* Writes the file offset of one block body's first field (past the per-block
+ * prefix) to `out_offset`. A NULL, misaligned or out-of-range out-parameter
+ * is a NIF_ERROR_INVALID_ARGUMENT; a valid index whose body is not
+ * addressable — the walk has not run or did not complete — is a
+ * NIF_ERROR_NO_BLOCK. `out_offset` must point to one writable size_t. */
+int nif_locate_block_body(void *handle, uint32_t block_index,
+                          size_t *out_offset);
+
+/* Fills `out_indices` with the object-array indices of every block whose
+ * type name matches, in file order, and returns the total number of
+ * matches. A NULL out_indices or zero capacity writes nothing and reports
+ * the total only; a short buffer fills capacity slots and still reports the
+ * full total. A handle that never held a file reports 0 matches; a handle
+ * whose object array failed to build, or a file whose walk has not
+ * completed, is a NIF_ERROR_NO_BLOCK with the reason from nif_last_error.
+ * `capacity` counts uint32_t slots, not bytes. */
+int nif_find_blocks_of_type(void *handle, const char *type_name,
+                            uint32_t *out_indices, size_t capacity);
+
+/* Copies one object-array block's resolved type name into `out` (snprintf
+ * style); `block_index` indexes the object array, not the header's type
+ * table. Past the end is a NIF_ERROR_INVALID_ARGUMENT. */
+int nif_get_block_type_name(void *handle, uint32_t block_index, char *out,
+                            size_t capacity);
+
 #ifdef __cplusplus
 }
 #endif
