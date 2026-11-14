@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-14T12:48:19Z",
+  "lastUpdated": "2026-11-14T13:32:14Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11026,14 +11026,43 @@
         "abi"
       ],
       "content": "2026-11-14 #45 N5b increment 3a 完了: walker surface C ABI 4本を nif-ffi に露出（commit 01b6b427・branch n5b-keyframe-reader・base 6ac17623・3ファイル +324/-0）。nif_walk_blocks（EMPTY/INCOMPLETE=停止理由/OK）・nif_locate_block_body（NULL/整列/範囲外=INVALID_ARGUMENT・walk 未完了=NO_BLOCK＝walk.rs:93 と同一ゲート）・nif_find_blocks_of_type（nif_get_geometries 同形 length-query・capacity=uint32_t slots 単位・未ロード=0 matches／object array 失敗・walk 未完了=NO_BLOCK+理由）・nif_get_block_type_name（snprintf・object array index）。nif-core 無変更（純 -ffi 露出）。verifier REJECT（本体合格・テスト3件欠落: locate 整列/NO_BLOCK・INCOMPLETE 実測/切り詰め不可の明記＋doc 表現過剰）→ trailer 落とし fixture_pos-8 の実測追加と2ファイル doc 正確化 → APPROVE（全6項目・独立再実行 green）。gate: cargo test 187/31/exit 0・gcc -Wall -Wextra -Wpedantic 警告0・C ハーネス all assertions passed・diff --check 0。環境教訓: scoop shim が PATH 先頭で gnu ターゲット E0463 → rustup toolchain bin 前置で解消（host test 無影響）／E0502 は match 借用延長を owned 束ねで回避。解析要否: inc3a は新規 RE ゼロ（実データ検証済 walk.rs の露出のみ）。RE 事項は #144/#145 で起票済、RE セッションへの直接メッセージは構造上不可（subagent=子専用）のため正式経路は ai-todo #RE。残件: resolve=increment 4（orig_src L3519 根拠＋oracle 突合可・#145 は EXE 裏取り並行）／C++ 配線は別増分／rust/README 行数はマージ時刷新。"
+    },
+    {
+      "id": "135-credits-unlock-esc-v366-2026-11-14",
+      "timestamp": "2026-11-14T13:13:00Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-135",
+        "credits-menu",
+        "esc",
+        "re",
+        "v366"
+      ],
+      "content": "2026-11-14 #135 完了（v366）: 原本 Credits 解除入力とタイトル ESC 挙動を裁定。成果物 tmp/re/v366_credits_unlock_esc_ruling.md（probe v366_1..10 全 EXIT=0＋1行 shell 読取2回。教訓=引数スタック再解釈（0x589B70 1引数 vs 5push 矛盾→後続 0x9832E6 の5引数と判明）／id 空間3種（input/command/VK）混同罠（'sCantQuickLoad' 対応で command 空間と判明）／文字列読取の決定力（'HUD-Subtitle Menu Creation Failed...'→menu 0x3F2、'sCantQuickLoad'→command 0x1B））・台帳 row342（bak192）・round_verify ALL OK（rows 31..342 / total 228 / done 223 / open 5）・STATE (cn)。① Credits 解除=[部分確定]: 閉鎖は 0x59C9F0 のみ [確定]（E8=slot11 0x59CAAB/slot14 0x59CB5E の2本・FindMenu(0x417)→SetFloat(0x1772)→フェード閉鎖 0x584740→FindMenu(0x414)+ログ）。slot11 条件=0x4031E0(mgr,0,1)!=0 OR 0x403520(mgr,0x1D,1)!=0 [確定(命令)]・3条件目 0x6DA150(9)==2 は mov eax,1;ret4 恒1スタブ＝死枝 [確定]。入力3空間 [確定(構造)]: input id（0x4031E0: id0/1=[mgr+0x1B2C/+0x1B40]0x80・id8/9=[mgr+0x1B28] カウンタ＝ホイール[推定]・mode0..4=押下/エッジ/XOR 変化検出）／command id（0x403520: id<0x1D=binding テーブル [mgr+0x1B7E+id+row*0x1D] 3row×29col→0x403490・id 0x1D/0x1E/0x1F=直結0x80フラグ [mgr+0x18F5/0x191D/0x19AB]（+0x100 二重））／VK（別系統）。解除入力=command 0x1D（credits/pump 両照会のグローバル入力）＋input 0（マウス系[推定]）・ESC 単独の credits 経路なし [確定負]。no_click_past: DTD 不在 [確定負]・stackingtype=trait 0xFA5 [確定]（push 0xfa5; push \"stackingtype\"; call 0x58A0A0）→読取5箇所が {102,103,6006,6007}（＋0.0）で分岐し SetFloat(0xFAB)/vfunc+0x34/0x58B220→0x58CA00 へ [確定(命令)]・値↔マクロ対応=残点。② タイトル ESC=[部分確定]（Exit 確認/即終了=該当経路なし [確定(否定側)]）: pump は command 0x1A→0x57ACC0([0xB387A0],0,1,1.0)／0x1B→ガード（menu count==0 OR [*0xB13974+0xAC]==0）通過時のみ 0x57ACC0([0xB387A8],…)・不成立なら無視 [確定]／0x1D→メニュー群 0x414/0x3EF/0x40F/0x40E/0x3F5 操作チェーン＋0x57B560／0x1E→GetTopMenuId()==0x414 で skip＋close 系（0x57D640(3)/0x57CFE0(3,0)）＝ 0x414 は Back 系で閉じられない [確定(命令)]。静的メッセージ [確定(登録)]: [0xB387A8]='sCantQuickLoad'（\"You can't Quickload while the game is paused.\"）／[0xB387A0]=sCantQuickSave 系[推定]／[0xB387B0]='sFileNotFound' → command 0x1A/0x1B=QuickSave/QuickLoad [推定高]＝id 空間は VK ではなく command [推定高]。0x57ACC0=menu 0x3F2（Data\\Menus\\Main\\hud_subtitle_menu.xml [確定]）確保→0x5A9980（mode2→0x5A95C0(menu,msgObj,1.0,0,0)／他→SetString(0xFDE)+SetFloat(0xFA1/0xFAF)）[確定(命令)]＝HUD subtitle/toast 表示系[推定]。→ ESC が Back 系束縛ならタイトルでは何もしない [推定高]・現ポートの Activity「Exit Oblivion?」確認は原本経路なし＝原本不一致の可能性高い [部分確定]。menu id: 0x3F2=hud_subtitle [確定]・0x414=MainMenu [推定高]・0x408/0x40C 未。残点 V-366-1..5（1=binding テーブル初期化元（INI [Controls]）と ESC デフォルト束縛【中・②最終確定に必須】／2=command 0x1D/0x1E 正式名と 0x587B20 チェーン分岐/0x57B560/0x5BDcd0【中】／3=0x57ACC0→0x5A95C0 最終効果とゲート [x+0x1C]/[x+0x68]【中】／4=stackingtype 値↔マクロ（102/103/6006/6007）と click-through 実装【中・①後半】／5=menu id 0x408/0x40C 正式名と slot14 close 分岐 id【低】）。main への報告: #132 の「back→解除」は command 0x1D 経由と整合 [推定]。v 採番 v366 消費（次=v367）。"
+    },
+    {
+      "id": "126c-race-formid-persist-2026-11-14",
+      "timestamp": "2026-11-14T13:32:14Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-126",
+        "chargen",
+        "race",
+        "android"
+      ],
+      "content": "2026-11-14 #126 完了（全3項）: ②種族保持を commit 7bf40e79（fix-chargen-race-persist・4ファイル+23）で実装。正典=RE #134/v365 裁定(b)「フォーム参照として保持 [部分確定]」（menu 側 direct store 0件・Done 帯書出0件・選択時に live 適用）→ port は FormID 参照を保持（FaceGenRecord::raceFormID と命名統一）。実装=CharacterStatus/Player に raceFormID=0・confirm で applyRaceBonuses と同一ガード（空時は明示0で前回選択の漏洩遮断）・callback 転送＋LOGI。verifier APPROVE 1回目（handoff 完全性・aggregate 初期化破壊0件を全走査・v365/findRace 主張照合・コメント型名の軽微修正のみ）。emu PASS: race formID=0x0005308E（ESM 由来非ゼロ）＋quest 1002＋crash 0＋pid 生存。①skills=b1222bd9・③name=31ed4ee6+ab448803 と合わせ全3項 complete。スコープ外=セーブ永続（player->name も未保存で既存慣行と一致）・コンシューマ #127・sex 保持は別タスク。3ブランチともマージは人間ゲート待ち。付随: STATE ラベル (cn) 衝突を検出（RE レーンの #135 ラウンドが先行挿入）→ 自分の inc3a ラウンドを (co) に改名、本エントリは (cp) から採番。"
     }
   ],
   "metadata": {
-    "totalEntries": 763,
+    "totalEntries": 765,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-14T12:48:19Z",
-    "entry_count": 763,
-    "last_updated": "2026-11-14T12:48:19Z"
+    "lastUpdated": "2026-11-14T13:32:14Z",
+    "entry_count": 765,
+    "last_updated": "2026-11-14T13:32:14Z"
   }
 }
