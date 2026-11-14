@@ -35,7 +35,8 @@
 
 - [ ] **#131** 【作製・低優先】タイトルメニュー表示前（ESM 読込中）のタップが native 側で無反応になる問題の調査: MainActivity で `Forwarded touch to native` まで出るが Renderer::onTouchEvent に到達せず選択ログが出ない（#98 の Exit 初回試行が無反応→再タップで成功）。ロードゲート中のタイトル入力の扱いを確認し、無反応を解消または明示する。証拠: #98 の logcat（03:42:55 時点）。関連: #98 `#android` `#fix` `#oblivion` `#title-screen`
 
-- [ ] **#130** 【RE レーン依頼】原本の RaceSexMenu Cancel/Back 挙動と main menu Exit の正しい遷移の特定: ①現ポートの作成パネル Cancel は `hitTestCancelButton → close()` のみでタイトルに戻らず游戏中に残留（ui_character_creation.cpp L98-101）②タイトル Exit はアプリ内 Launcher へ遷移してプロセス存続（`Title screen Quit - returning to launcher`）だが原本 Oblivion の Exit はアプリ終了のはず。原本準拠の正否を [確定] で裁定する材料を RE 成果物（tmp/re v354+）で返す。関連: #98（emu 実測）/ #101（仕様裁定）/ #128（採番競合の確認要） `#RE` `#chargen` `#inprogress` `#oblivion`
+- [x] **#130** 【RE レーン依頼】原本の RaceSexMenu Cancel/Back 挙動と main menu Exit の正しい遷移の特定: ①現ポートの作成パネル Cancel は `hitTestCancelButton → close()` のみでタイトルに戻らず游戏中に残留（ui_character_creation.cpp L98-101）②タイトル Exit はアプリ内 Launcher へ遷移してプロセス存続（`Title screen Quit - returning to launcher`）だが原本 Oblivion の Exit はアプリ終了のはず。原本準拠の正否を [確定] で裁定する材料を RE 成果物（tmp/re v354+）で返す。関連: #98（emu 実測）/ #101（仕様裁定）/ #128（採番競合の確認要） `#RE` `#chargen` `#oblivion` (2026-11-14)
+  > 【全2項目 完遂】成果物: tmp/re/v363_racesex_cancel_exit_ruling.md（probe v363_1..20 全 EXIT=0・v363_17 のループ変数バグを実行前に自己修正・整列 cover-check 全適用）。台帳 row339（bak189）・round_verify ALL OK（rows 31..339 / 225想定 / done 220）。【② Exit=確定・プロセス終了】MainMenu slot3=0x5B64C0（latch[+0x4D]＋通知 id2..7 の jump table 0x5B65CC）→ cmd7=Quit[確定(排除法+振る舞い)] → queue cb 0x5B59B0（phase==1 で closing word flag×2＋0x57F170＋mov eax,[0xB33398]; mov byte[eax],1＝quit flag）→ WinMain 0x40F275 読手 → 0x40F488 shutdown cascade → 0x40F637 'xor eax,eax; ret 0x10'（WinMain 戻り値0）→ CRT ExitProcess(0)@0x981BA9。ExitProcess xref=3件のみ（fatal/stub 0x494390＝rdata 0xA3DA08 エラーハンドラ表/CRT）＋PostQuitMessage 未インポート＝通常 quit はフラグ→ループ離脱→CRT 経由[確定]。→ ポートの Launcher 移行・プロセス存続は原本不一致[確定]。修正方向=quit flag 相当→ループ離脱→Activity 終了。【① Cancel=部分確定】RaceSex slot3=0x5CC200（id 0x5A 名前検証/0xA 名前適用/0x62→0x526F00+0x5C91E0/trait比較3チェーン）→ queue cb A(0x5C9CD0=0x5273A0 コミット系[推定 Done])・B(0x5C9C70=0x521E40+0x5C7BA0 revert[推定])・C(0x5C28F0＝閉鎖+復元[確定(命令)])。cb C: name(0xFDE)≠[0xB39440] default → '%s %s?'+a/an vowel(0x5E32f0)確認 → 0x584740 フェード閉鎖 → [0xB3B5D8]=1 → camera/player フラグ復元・リスト revert・race 変更時は MagicMenu(0x3FE) 0x5B3760＋StatsMenu(0x3EB) 0x5DCB70 再作成。決定的否定証拠: RaceSex 域(0x5C0000..0x5D2000)の menu id 0x414 即時数=0件・+1 書手への E8 到達=0[確定(命令)]＝EXE の RaceSex 閉鎖はタイトル遷移しない。タイトル復帰は別系統＝WinMain +1 flag→teardown（game 破棄＋0xB3BD00 リセット＋音楽切替＋0x5B6040 MainMenu 再構再構築→ループ継続）。+1 書手=0x662ED0/0x66328F/0x6738C4（E8=0・E9=0＝ポインタ/テーブル[推定: スクリプト系]）＋0x5BDDE0(phase2)。→ 原本が Cancel でタイトルに戻る場合のトリガは EXE 外（ESM chargen クエスト/テーブル系）[推定]・遷移の有無=[未確定]。残した未確定: V-363-1（Cancel のタイトル遷移有無・ESM/+1 書手呼出し元【中】）/V-363-2（racesexmenu.xml ボタン通知 id【中】）/V-363-3（cmd2 ボタン名）/V-363-4（0x5CCBB7 queue 未解読）/V-363-5（menu 0x3F5/0x3E9）。付随確定: menu id 0x416=QuickKeysMenu(RTTI)・0x3FE=Magic/0x3EB=Stats/0x3F7=Options/0x417=Credits/0x40E=Load(XML)・cmd3=New/4=Load/5=Options/6=Credits/7=Quit・race_sex_menu.xml=CharGen 直下・0x579060=GetTopMenuId・0x589B70=FindMenu レジストリ・0x578D70=phase 読取・0x579C10=遅延 queue・quit flag と +1 の2系統。v 採番 v363 消費（次=v364）。①の人間ゲート: ESM 抽出物のキャラ生成クエスト確認（#101/#136 と同）。docs/GT 反映は #47/#20 一括。
 
 - [ ] **#127** 【作製】UICharacterCreation の結果を確認できる表示系の配線（#99 の D）: UICharacterSheet が app/src 内から一切インスタンス化されておらず、Create 後の属性/スキル数値を実機で確認できない。①キャラシートへの入口（HUD ボタン/メニュー）を既存 UI パターンで配線 ②表示内容は Player の attributes/skills をそのまま使用（推測値なし）。視覚品質は #96 と併せて。 `#android` `#chargen` `#oblivion` `#ui`
 
@@ -90,7 +91,7 @@
 - [ ] **#46** [PORT] L2承認待ち3件: V194 AddTopic・V197 TimeScale・V198 SetActorValue ブリッジ（起票のみ） `#gate` `#oblivion` `#port`
   > ホーム台帳 #9 より統合。承認ゲート: 人間承認あるまで適用禁止。
 
-- [ ] **#45** Rust 移行の残件: N5b=animation keyframe/resolve+walker 系 C ABI 未実装（phase30 パリティ）、N6 docs パス（README/AGENTS ツリーに bsa-*/nif-*/cli 欠落）、native-lib リンク未実行 `#oblivion` `#re` `#rust`
+- [ ] **#45** Rust 移行の残件: N5b=animation keyframe/resolve+walker 系 C ABI 未実装（phase30 パリティ）、N6 docs パス（README/AGENTS ツリーに bsa-*/nif-*/cli 欠落）、native-lib リンク未実行 `#inprogress` `#oblivion` `#re` `#rust`
   > ホーム台帳 #14 より統合。2026-11-05 再調査完了（ユーザー裁定: 調査のみで停止）。Rust側は`NiControllerManager`/`NiControllerSequence`とskin/collision readerまで実装済みだが、`NiKeyframeController`/`NiKeyframeData`/`NiTransformController`のreader、`resolveControllerReferences`、animation用C ABI、walker系C ABI、phase30 parity harnessは未実装。Android側の`parseNiKeyframeController`/`parseNiKeyframeData`/`resolveControllerReferences`はinert stubで、現時点で推測実装しない。`oblivion-re-tools`で`cargo test --offline --workspace`は176 passed（31 suites）、既存nif-ffi C ABI checkはgreen。N6 docs/native-lib linkは未実行のまま。
   > レーン切替（2026-11-09・ユーザー決定:「Rustの作製に切り替え」）: 以降の新規実装は oblivion-re-tools 側（15クレート）でのRust本生産。本タスクがRustレーンの主ワークキュー。milestone 反映先: plan.md（Rust移行節に lane-switch 段落＋M20行）／docs/DEVELOPMENT_HISTORY.md（M-Rust1-4）／CHANGELOG.md [Unreleased] Changed。要注意: リポジトリは git init 済みだが**コミット0**（main・未追跡のみ）→ 差分保護なし。作業開始前にベースラインコミット承認を推奨（#104 検証済みマイルストーン運用に相当、push/merge 対象外）。supermemory ツール不在（15:2x catalog 変更以降）のため本ノートが台帳。
   > 訂正・進歩（2026-11-09・ユーザー「OK」承認）: 上記ノート時点の認識（姉妹ディレクトリ oblivion-re-tools で作製・コミット0リスク）は変更。実測で Oblivion_Android 側に Rust 作製ファイルは無く（.rs/Cargo.toml 追跡0・48h更新なし）、姉妹側も .rs ソース最終更新 2026-11-01 が最後＝どちらでも新規作製は未開始と確認。ユーザー承認により **ワークスペースを仓库内 `rust/` として受入中**（worktree ブランチ rust-in-repo: crates15・Cargo.toml/lock・vm_table.json・scripts・README/AGENTS 計76ファイル＋CMakeLists既定パス rust/ 化＋run_host_tests.sh fallback付 rust/ 優先＋.gitignore rust/target/）。cargo metadata --offline=OK・bash -n=OK・cargo test --offline --workspace 実行中（ログ %TEMP%\opencode\rust_in_repo_cargotest.log）。テスト green→ブランチ内コミット（push/merge 承認待ち）。旧姉妹ディレクトリは読み取り専用参照として残置。本タスク=#45 の Rust 作業はマージ後 rust/ 上で行う。
@@ -772,6 +773,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -795,4 +801,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-14 13:34:42
+**ai-todo** | Last Updated: 2026-11-14 16:54:44

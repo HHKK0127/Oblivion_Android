@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-14T04:34:48Z",
+  "lastUpdated": "2026-11-14T05:44:32Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -10949,14 +10949,31 @@
         "ime"
       ],
       "content": "2026-11-14 #126③ 完了: キャラ作成の NAME 欄にソフトキーボード入力を実装（10ファイル・+157/-12・worktree fix-chargen-name-input・base 132458e7）。欠陥=playerName_ が Adventurer で初期化され一度も書き換え経路が無く入力手段も無かった（既存は nameInputActive_ フラグとコメントのみ、GameConsole::onTextInput は呼び出し元ゼロ）。原本挙動は RE #123 で[確定]（内蔵 editor・リアルタイム書出＝player obj+0xA4）だが Android 実現は移植側判断のためユーザーが「ソフトキーボード＋打鍵ごとのリアルタイム交付」を選択。実装=①UICharacterCreation setPlayerName/isNameInputActive ②Renderer isCharacterNameInputActive（render gate 鏡像）と setCharacterName（ガード無し拒否）③JNI nativeIsCharacterNameInputActive/nativeOnCharacterNameChanged ④CharacterNameBridge.kt 新設（200ms ポーリング・共有1x1 alpha-0 シンク・コンソール全面譲り）⑤ConsoleInputBridge を共有シンク対応（submit/Enter/Done/ESC に consoleShown ゲート＋ownsSink 所有フラグ）⑥MainActivity 配線・dispatchKeyEvent 鍵盤所有権仲裁・activity_main.xml コメント更新。verifier 1回目 REJECT（D1=watcher 所有権ゲートなしでコンソールの setText が name に混入／D2=コンソールリスナーが NAME 所有中も有効で名前が console コマンドとして実行）→2回目 REJECT（D1 残存: hideConsoleInput の setText が stop() 経由で発火＋onPause 停止順序で入力中に Home すると名前が消える）→ ownsSink 所有フラグと onPause 順序反転で修正 →3回目 APPROVE（D1 は独立2機構で決定論的閉鎖）＋R1 指摘→同梱（close を hideConsoleInput 後に consoleShown=false）。emu PASS（11/14・Pixel_API34）=Character name input opened → input text 'Zara' → Character creation applied: name='Zara' + Quest ID=1002 + crash none + pid 生存。検証中の環境障害=エミュレータ停止・System UI ANR ダイアログがタップ全吸収（ビルド同時起動の資源競合）・IME が Create/Cancel を覆う→BACK で解除、自誤=エミュレータを殺すコマンドと使うコマンドを同時実行して競合。後者2件は新規起票 #143（IME 覆いの UX 欠陥・RE不要＝移植固有）。あわせて plan.md に「App-wide Rust migration: inventory, boundary, phasing」節を追記（自前 C++ 実測174,647行/652ファイル・third_party 204,532行は対象外・Rust 既存17,830行・Kotlin 3,656行は対象外・政策が阻むハンドル所有は約20,000行・R1-R5段階・観測ペース2500行/週から約60週規模・推奨=R1 維持→R2、R3 は ui/ 分類パス後）。push/merge は人間承認待ち（git push * は opencode.json で deny）。"
+    },
+    {
+      "id": "v363-racesex-cancel-exit-2026-11-14",
+      "timestamp": "2026-11-14T05:44:32Z",
+      "priority": "medium",
+      "category": "analysis",
+      "tags": [
+        "oblivion",
+        "re49",
+        "reverse-engineering",
+        "v363",
+        "race-sex-menu",
+        "main-menu",
+        "quit",
+        "task-complete"
+      ],
+      "content": "2026-11-14 RE レーン **#130 完遂** — 成果物 `tmp/re/v363_racesex_cancel_exit_ruling.md`（probe v363_1..20 全 EXIT=0・v363_17 のループ変数バグを実行前に自己修正・**整列 cover-check 全適用**）。台帳 row339（bak189）・round_verify ALL OK（225/220）・ai-todo note+complete・STATE (cj)・v 採番 **v363 消費（次=v364）**。**② main menu Exit=[確定] プロセス終了**: MainMenu slot3=0x5B64C0（latch[+0x4D]＋通知 id2..7 の jump table 0x5B65CC）→ **cmd7=Quit[確定(排除法+振る舞い)]**（4=Load 0x5AEA60/load_menu.xml・5=Options 0x3F7・6=Credits 0x417・3=New Game='Unable to find character generation quest'+0x4431F0・2=ロード/開始系[推定]）→ queue cb 0x5B59B0（phase==1 で closing word flag×2＋0x57F170＋**mov eax,[0xB33398]; mov byte[eax],1＝quit flag**）→ **WinMain 0x40F275 読手→0x40F488 shutdown cascade→0x40F637 'xor eax,eax; ret 0x10'（WinMain 戻り値0）→ CRT ExitProcess(0)@0x981BA9**。ExitProcess xref=3件のみ（fatal 0x405347／孤立 stub 0x494390=E8/E9=0・唯一参照 rdata 0xA3DA08 エラーハンドラ表／CRT）＋**PostQuitMessage 未インポート**＝通常 quit はフラグ→ループ離脱→CRT 経由のみ [確定]。**→ ポートの Launcher 移行・プロセス存続=原本不一致 [確定]**。**① RaceSex Cancel=[部分確定]＋否定証拠**: slot3=0x5CC200（id 0x5A 名前検証/0xA 名前適用/0x62→0x526F00+0x5C91E0/trait比較3チェーン）→ queue cb A(0x5C9CD0=0x5273A0 コミット系[推定 Done])・B(0x5C9C70=0x521E40+0x5C7BA0 revert[推定])・**C(0x5C28F0＝閉鎖+復元[確定(命令)])**: name0xFDE≠[0xB39440] default→'%s %s?'+a/an vowel(0x5E32F0) 確認→0x584740 フェード閉鎖→[0xB3B5D8]=1→camera/player リセット・リスト revert・**race 変更時 MagicMenu(0x3FE)0x5B3760+StatsMenu(0x3EB)0x5DCB70 再作成**。**決定的否定: RaceSex 域(0x5C0000..0x5D2000)の 0x414 即時数=0件・+1 書手への E8 到達=0[確定(命令)]＝EXE の RaceSex 閉鎖はタイトル遷移しない**。タイトル復帰=別系統＝WinMain **+1 flag→teardown**（game 破棄＋0xB3BD00 リセット 0x675310＋音楽切替 0x5B5AC0＋**0x5B6040 MainMenu 再構築**→ループ継続）。**+1 書手=0x662ED0/0x66328F/0x6738C4（E8=0・E9=0＝ポインタ/テーブル[推定: スクリプト系]）＋0x5BDDE0(phase2)**。→ 原本が Cancel でタイトルに戻るならトリガは EXE 外（ESM chargen クエスト/テーブル系）[推定]・**ESM/bsa 未読のため遷移の有無=[未確定]**。**付随確定**: menu id **0x416=QuickKeysMenu[確定(RTTI)]**（getter 0x5C0CE0→vtable 0xA6D1F4・3/3 突合）／0x3FE=Magic・0x3EB=Stats・0x3F7=Options・0x417=Credits・0x40E=Load（XML）／**race_sex_menu.xml=Data\\Menus\\CharGen\\ 直下**／0x579060=GetTopMenuId・0x589B70=FindMenu レジストリ([0xB13974]・count word[0xB1397A]・id-0x3E9≤0x32)・0x578D70=phase 読取([mgr+0xb0]・読後0xFF・phase1/2/3=cb 入口条件)・0x579C10=遅延 queue(cb E8=0)・0x57DE50=UI 遷移サウンド・vtable 3本(Menu 0xA696DC/RaceSex 0xA6D38C/Main 0xA6CB1C)・base 0x60CF60=ret8 no-op。残点 **V-363-1..5**（1=Cancel のタイトル遷移有無＝ESM/+1 書手呼出し元【中・人間ゲートへ】・2=racesexmenu.xml ボタン通知 id【中】・3=cmd2 ボタン名・4=0x5CCBB7 queue 未解読・5=menu 0x3F5/0x3E9）。次: RE キュー #133→#134→#135→#136（#142 キュー促進済）。未コミット row336..339・STATE (cg)-(cj)・memory v360..363・成果物 v360..363（push 保留）。"
     }
   ],
   "metadata": {
-    "totalEntries": 758,
+    "totalEntries": 759,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-14T04:34:48Z",
-    "entry_count": 758,
-    "last_updated": "2026-11-14T04:34:48Z"
+    "lastUpdated": "2026-11-14T05:44:32Z",
+    "entry_count": 759,
+    "last_updated": "2026-11-14T05:44:32Z"
   }
 }
