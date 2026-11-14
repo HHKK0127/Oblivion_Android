@@ -12,11 +12,13 @@
         android:layout_height="match_parent" />
 
     <!--
-        Debug console command line. Native GameConsole draws the panel itself, so
-        this field is only the Android-side buffer that receives IME input and
-        submits the finished line. ConsoleInputBridge toggles its visibility: it
-        must be VISIBLE (alpha 0, 1x1) while the console is open because the IME
-        will not attach to a GONE view.
+        Invisible input sink for the Android soft keyboard. Native GameConsole
+        and the character-creation NAME field draw their own text, so this field
+        is only the Android-side buffer that receives IME input: ConsoleInputBridge
+        submits a finished line, CharacterNameBridge pushes every edit as it is
+        typed. Both toggle its visibility: it must be VISIBLE (alpha 0, 1x1)
+        while either owns it because the IME will not attach to a GONE view, and
+        they take turns — the debug console wins any overlap.
     -->
     <EditText
         android:id="@+id/console_input_sink"

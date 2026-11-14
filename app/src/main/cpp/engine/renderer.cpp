@@ -8714,6 +8714,25 @@ void Renderer::startGame() {
     LOGI("startGame: Game world should now be visible");
 }
 
+bool Renderer::isCharacterNameInputActive() const {
+    // Mirror the render gate: the panel is only on screen when showCharacterCreation
+    // is set, and the keyboard belongs to it only while the NAME tab is selected.
+    return showCharacterCreation && characterCreationUI &&
+           characterCreationUI->isVisible() && characterCreationUI->isNameInputActive();
+}
+
+void Renderer::setCharacterName(const std::string& name) {
+    // The Android side already gates on ownership, but the sink is shared with
+    // the debug console, so refuse the write here too rather than letting a
+    // stray call blank the field while another panel owns the keyboard.
+    if (!isCharacterNameInputActive()) {
+        return;
+    }
+    if (characterCreationUI) {
+        characterCreationUI->setPlayerName(name);
+    }
+}
+
 bool Renderer::handleOptionsKey(int keyCode) {
     // The modal MessageMenu owns the keyboard while it is open.
     if (uiMessageBox && uiMessageBox->isVisible()) {

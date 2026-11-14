@@ -49,6 +49,15 @@ class ConsoleInputBridge(
     private var running = false
     private var consoleShown = false
 
+    /**
+     * True while the console itself has the sink shown, tracked separately from
+     * [consoleShown] because hideConsoleInput() also runs from stop(), where
+     * consoleShown has already been reset. Clearing the field on a stop that
+     * never opened the console would blank the shared sink out from under the
+     * character NAME field through its TextWatcher.
+     */
+    private var ownsSink = false
+
     /** True while the debug console is open and the input line owns the keyboard. */
     val isConsoleActive: Boolean
         get() = consoleShown
@@ -76,7 +85,12 @@ class ConsoleInputBridge(
 
     private val editorActionListener =
         android.widget.TextView.OnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_DONE ||
+            // The sink is shared with the NAME field, so the console's submit
+            // must only fire while the console actually owns it — otherwise
+            // finishing a character name would run it as a console command.
+            if (!consoleShown) {
+                false
+            } else if (actionId == EditorInfo.IME_ACTION_DONE ||
                 actionId == EditorInfo.IME_ACTION_UNSPECIFIED
             ) {
                 submit()
@@ -89,16 +103,19 @@ class ConsoleInputBridge(
     private val keyListener = View.OnKeyListener { _, keyCode, event ->
         when (keyCode) {
             KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER -> {
-                if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0 &&
+                    consoleShown
+                ) {
                     submit()
                 }
                 // Both edges must be swallowed. Leaving the key-up to the default
                 // handling runs a focus search, which moves focus off the input
-                // line and the keyboard stops reaching the console.
+                // line and the keyboard stops reaching the console — or, while the
+                // NAME field owns the sink, stops the name from being typed.
                 true
             }
             KeyEvent.KEYCODE_ESCAPE -> {
-                if (event.action == KeyEvent.ACTION_DOWN) {
+                if (event.action == KeyEvent.ACTION_DOWN && consoleShown) {
                     closeConsole()
                 }
                 true
@@ -141,16 +158,25 @@ class ConsoleInputBridge(
         if (visible == consoleShown) {
             return
         }
-        consoleShown = visible
-        Log.i(TAG, "Debug console ${if (visible) "opened" else "closed"}")
+        // On close the field is cleared while consoleShown is still true: the
+        // character NAME bridge's TextWatcher blocks on consoleActive(), so
+        // clearing after the flag drops would let a console clear through a
+        // stale NAME ownership and blank the name (verifier R1). On open the
+        // flag goes up first, as before. hideConsoleInput() does not read
+        // consoleShown, so the reorder changes nothing else.
         if (visible) {
+            consoleShown = true
+            Log.i(TAG, "Debug console opened")
             showConsoleInput()
         } else {
+            Log.i(TAG, "Debug console closed")
             hideConsoleInput()
+            consoleShown = false
         }
     }
 
     private fun showConsoleInput() {
+        ownsSink = true
         input.setText("")
         input.visibility = View.VISIBLE
         input.requestFocus()
@@ -161,7 +187,14 @@ class ConsoleInputBridge(
     private fun hideConsoleInput() {
         handler.removeCallbacks(showImeRunnable)
         inputMethodManager?.hideSoftInputFromWindow(input.windowToken, 0)
-        input.setText("")
+        // Clear only when the console actually held the sink. This runs from
+        // stop() too, which MainActivity calls before the NAME bridge stops, so
+        // an unconditional clear would wipe the character name the user typed
+        // whenever the activity paused.
+        if (ownsSink) {
+            ownsSink = false
+            input.setText("")
+        }
         input.clearFocus()
         input.visibility = View.GONE
     }
@@ -177,6 +210,12 @@ class ConsoleInputBridge(
     }
 
     private fun submit() {
+        // Defence in depth: the listeners above already check consoleShown, and
+        // this stops any future caller from running a NAME-field edit as a
+        // console command through the shared sink.
+        if (!consoleShown) {
+            return
+        }
         val command = input.text.toString().trim()
         input.setText("")
         if (command.isEmpty()) {

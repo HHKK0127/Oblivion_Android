@@ -470,6 +470,12 @@ public:
         bool handleBackKey();  // Handle Android back button, returns true if consumed
     // Returns true when the Options menu consumed the key (title screen must not see it).
     bool handleOptionsKey(int keyCode);
+
+    // NAME-tab keyboard ownership, polled by the Android input bridge so the
+    // soft keyboard attaches only while the creation panel is up on its NAME
+    // tab, and the typed text as it arrives (RE task #123: realtime write).
+    bool isCharacterNameInputActive() const;
+    void setCharacterName(const std::string& name);
     void handleOptionsCategoryRequest(OptionsUI::Category category);
     void pumpAudioOptions();
     void pumpGameplayOptions();

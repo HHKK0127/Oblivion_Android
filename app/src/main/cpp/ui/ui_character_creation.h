@@ -51,6 +51,18 @@ public:
     // Set ESM manager for race/class data
     void setESMManager(const oblivion::ESMManager* esm) { esmManager = esm; }
 
+    // Soft-keyboard name entry. The NAME tab owns this buffer; the Android side
+    // pushes every edit here so the field updates as it is typed, which is how
+    // the original writes the name (RE task #123: built-in editor, realtime
+    // write to the player). MainActivity polls isNameInputActive() to decide
+    // whether the IME belongs to this panel or to the debug console.
+    void setPlayerName(const std::string& name);
+    const std::string& getPlayerName() const { return playerName_; }
+
+    // True while the NAME tab owns the keyboard. open() starts here and tab
+    // switching follows the selected tab (see onTouchDown).
+    bool isNameInputActive() const { return nameInputActive_; }
+
 private:
     TextRenderer* textRenderer = nullptr;
     ConfirmCallback onConfirm;

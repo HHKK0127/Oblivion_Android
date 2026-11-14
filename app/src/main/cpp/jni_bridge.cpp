@@ -417,6 +417,33 @@ Java_com_example_oblivion_GameRenderer_nativeOnKeyPress(
     }
 }
 
+// NAME-tab keyboard ownership. The Android side polls this to decide whether the
+// shared 1x1 input sink belongs to the character-creation panel or to the debug
+// console, and pushes every edit back so the field updates as it is typed.
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_example_oblivion_GameRenderer_nativeIsCharacterNameInputActive(
+        [[maybe_unused]] JNIEnv* env,
+        [[maybe_unused]] jobject obj) {
+    return (g_renderer && g_renderer->isCharacterNameInputActive()) ? JNI_TRUE
+                                                                    : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_oblivion_GameRenderer_nativeOnCharacterNameChanged(
+        JNIEnv* env,
+        [[maybe_unused]] jobject obj,
+        jstring name) {
+    if (!g_renderer || !name) {
+        return;
+    }
+    const char* chars = env->GetStringUTFChars(name, nullptr);
+    if (!chars) {
+        return;
+    }
+    g_renderer->setCharacterName(std::string(chars));
+    env->ReleaseStringUTFChars(name, chars);
+}
+
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_example_oblivion_GameRenderer_nativeTitleScreenActive(
         [[maybe_unused]] JNIEnv* env,

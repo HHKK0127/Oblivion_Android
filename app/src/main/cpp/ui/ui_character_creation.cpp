@@ -69,6 +69,14 @@ void UICharacterCreation::close() {
     nameInputActive_ = false;
 }
 
+void UICharacterCreation::setPlayerName(const std::string& name) {
+    playerName_ = name;
+    // Keep the preview in step while the field is being typed into. The confirm
+    // branch of onTouchDown copies playerName_ into createdCharacter_ again, so
+    // this only stops the panel showing a stale name behind the live one.
+    createdCharacter_.name = playerName_;
+}
+
 void UICharacterCreation::update(float deltaTime) {
     UIPanel::update(deltaTime);
 }
