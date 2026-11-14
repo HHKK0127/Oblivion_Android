@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-14T05:44:32Z",
+  "lastUpdated": "2026-11-14T10:42:25Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -10966,14 +10966,44 @@
         "task-complete"
       ],
       "content": "2026-11-14 RE レーン **#130 完遂** — 成果物 `tmp/re/v363_racesex_cancel_exit_ruling.md`（probe v363_1..20 全 EXIT=0・v363_17 のループ変数バグを実行前に自己修正・**整列 cover-check 全適用**）。台帳 row339（bak189）・round_verify ALL OK（225/220）・ai-todo note+complete・STATE (cj)・v 採番 **v363 消費（次=v364）**。**② main menu Exit=[確定] プロセス終了**: MainMenu slot3=0x5B64C0（latch[+0x4D]＋通知 id2..7 の jump table 0x5B65CC）→ **cmd7=Quit[確定(排除法+振る舞い)]**（4=Load 0x5AEA60/load_menu.xml・5=Options 0x3F7・6=Credits 0x417・3=New Game='Unable to find character generation quest'+0x4431F0・2=ロード/開始系[推定]）→ queue cb 0x5B59B0（phase==1 で closing word flag×2＋0x57F170＋**mov eax,[0xB33398]; mov byte[eax],1＝quit flag**）→ **WinMain 0x40F275 読手→0x40F488 shutdown cascade→0x40F637 'xor eax,eax; ret 0x10'（WinMain 戻り値0）→ CRT ExitProcess(0)@0x981BA9**。ExitProcess xref=3件のみ（fatal 0x405347／孤立 stub 0x494390=E8/E9=0・唯一参照 rdata 0xA3DA08 エラーハンドラ表／CRT）＋**PostQuitMessage 未インポート**＝通常 quit はフラグ→ループ離脱→CRT 経由のみ [確定]。**→ ポートの Launcher 移行・プロセス存続=原本不一致 [確定]**。**① RaceSex Cancel=[部分確定]＋否定証拠**: slot3=0x5CC200（id 0x5A 名前検証/0xA 名前適用/0x62→0x526F00+0x5C91E0/trait比較3チェーン）→ queue cb A(0x5C9CD0=0x5273A0 コミット系[推定 Done])・B(0x5C9C70=0x521E40+0x5C7BA0 revert[推定])・**C(0x5C28F0＝閉鎖+復元[確定(命令)])**: name0xFDE≠[0xB39440] default→'%s %s?'+a/an vowel(0x5E32F0) 確認→0x584740 フェード閉鎖→[0xB3B5D8]=1→camera/player リセット・リスト revert・**race 変更時 MagicMenu(0x3FE)0x5B3760+StatsMenu(0x3EB)0x5DCB70 再作成**。**決定的否定: RaceSex 域(0x5C0000..0x5D2000)の 0x414 即時数=0件・+1 書手への E8 到達=0[確定(命令)]＝EXE の RaceSex 閉鎖はタイトル遷移しない**。タイトル復帰=別系統＝WinMain **+1 flag→teardown**（game 破棄＋0xB3BD00 リセット 0x675310＋音楽切替 0x5B5AC0＋**0x5B6040 MainMenu 再構築**→ループ継続）。**+1 書手=0x662ED0/0x66328F/0x6738C4（E8=0・E9=0＝ポインタ/テーブル[推定: スクリプト系]）＋0x5BDDE0(phase2)**。→ 原本が Cancel でタイトルに戻るならトリガは EXE 外（ESM chargen クエスト/テーブル系）[推定]・**ESM/bsa 未読のため遷移の有無=[未確定]**。**付随確定**: menu id **0x416=QuickKeysMenu[確定(RTTI)]**（getter 0x5C0CE0→vtable 0xA6D1F4・3/3 突合）／0x3FE=Magic・0x3EB=Stats・0x3F7=Options・0x417=Credits・0x40E=Load（XML）／**race_sex_menu.xml=Data\\Menus\\CharGen\\ 直下**／0x579060=GetTopMenuId・0x589B70=FindMenu レジストリ([0xB13974]・count word[0xB1397A]・id-0x3E9≤0x32)・0x578D70=phase 読取([mgr+0xb0]・読後0xFF・phase1/2/3=cb 入口条件)・0x579C10=遅延 queue(cb E8=0)・0x57DE50=UI 遷移サウンド・vtable 3本(Menu 0xA696DC/RaceSex 0xA6D38C/Main 0xA6CB1C)・base 0x60CF60=ret8 no-op。残点 **V-363-1..5**（1=Cancel のタイトル遷移有無＝ESM/+1 書手呼出し元【中・人間ゲートへ】・2=racesexmenu.xml ボタン通知 id【中】・3=cmd2 ボタン名・4=0x5CCBB7 queue 未解読・5=menu 0x3F5/0x3E9）。次: RE キュー #133→#134→#135→#136（#142 キュー促進済）。未コミット row336..339・STATE (cg)-(cj)・memory v360..363・成果物 v360..363（push 保留）。"
+    },
+    {
+      "id": "v364-stats-credits-supply-2026-11-14",
+      "timestamp": "2026-11-14T08:27:18Z",
+      "priority": "medium",
+      "category": "analysis",
+      "tags": [
+        "oblivion",
+        "re49",
+        "reverse-engineering",
+        "v364",
+        "stats-menu",
+        "credits",
+        "task-complete"
+      ],
+      "content": "2026-11-14 RE レーン **#133 完遂** — 成果物 `tmp/re/v364_stats_credits_supply_ruling.md`（probe v364_1..5 全 EXIT=0・v364_1 の未定義関数参照を実行前に自己修正・**文字列 VA の section-padding ズレ罠を自己発見し SECTIONS 変換で是正＝教訓: 文字列検索はセクション VA 変換経由**）。台帳 row340（bak190）・round_verify ALL OK（226/221）・ai-todo note+complete・STATE (ck)・v 採番 **v364 消費（次=v365）**。制約: bsa はユーザー提供済み抽出物の読み取りのみ。**② Credits=[確定] 本文＝外部 `Data\\Credits.txt`（正確 VA 0xA6B7F0・xref 0x59D07C）＋ `CreditsMenu.bik`（動画・ini 'CreditsMenuMovie:General'）**: 読込帯 0x59CExx..0x59D1xx → **1行パーサ 0x59CB70（CR分割・<> *タグ除外・ret4）[確定(命令)]** → アイテム生成 0x59CC00[推定高] → **CreditsMenu slot11 0x59CA70 per-frame スクロール（[esi+0x2C] scroll obj を frame delta [0xB33E9C] 乗算で 0x707370 更新・終端超過で 0x59C9F0 自動クローズ）[確定(命令)]**（条件不成立時も 0x59C9F0＝#135 の解除トリガ候補）。要素名 'Credits Scroll Root'(xref 0x59D12E)・tex 書式 'Textures\\Menus\\Credits\\%s'(xref 0x59CEE6)。枠＝XML credits_rect(id1/w0/h0/clipwindow)。**EXE 内本文文字列不在[確定(負)]**（'Bethesda' 実在＝レジストリキー 'Software\\Bethesda Softworks\\Oblivion' と Havok 'CLIENT.Ph.Bethesda_Oblivion' の2件のみ）。→ **#98 F3 回答: ポートは Data\\Credits.txt＋CreditsMenu.bik の2外部リソースを再現すべき[確定]**。**① Stats=[部分確定]** menu id=0x3EB・vtable 0xA6D9DC(override10)/Credits 0xA6B784(5)[確定(RTTI)]。**5タブ・タブ通知 id1..5＝XML stat_tabs_p1..p5 の id ⇔ slot3 0x5DCD70 の switch 完全対応[確定(XML+命令)]**。id1=0x5DBB00（0x4DA2A0=TESFullName→0xFAF＋0x5EA720=名前 getter→0xFB0）／id2,3=**0x5DA1A0（AV 値供給本体）: AV0..7=8属性を 0x65D270+vfunc+0x284 で現在値→trait 0xFAF..0FB6、base 0x5F1910→0FB7..0FBE へ SetFloat、21ループ=0x65FCA0+0x51C090 skill 判定→p3-p5 スキル表示 [確定(命令)]**／id4=0x5DC950（RTDynamicCast TESBoundObject→TESNPC＋[+0x3C] walk）[部分確定]／id5=0x5DA930（[0xB383E8] 名前テーブル）[部分確定]。**XML 供給形[確定(XML)]: 値=stat_p2 trait user1..9・色=onlyif userN lt/eq user9＋_red/green/blue_under/even/over・ラベル=strings()=menus\\strings.xml・行位置=me().user0×67+87**。per-frame=slot11 0x5DA180（0x57C140(0x3EB) ガード）。**訂正: v352「TextEditMenu は ClassMenu 専用」→ StatsMenu も TextEditMenu.xml(0x41B) 生成[確定]（slot3 内 RTTI cast）**。**副次（#130 V-363-3 クローズ）**: main_menu.xml のボタン id2=main_continue(_continue)→**cmd2=Continue[確定]**（0x465860 ロード系と整合で #130 の推定を確定昇格）・id7=main_exit(_exit)→**cmd7=Exit[確定]**（#130 裁定を XML 補強）。残点 **V-364-1..5**（1=credits 読込帯 fn 境界/head cover 不能・2=真 BSS 0xB383E8/0xB332E0 実体・3=0x5DC950 の TESNPC+0x3C リスト正体・**4=XML user1..9↔trait0FAF.. 対応表【中・#127 要】**・5=CreditsMenu slot1 [ecx+0x28] 消費者）。次: RE キュー #134→#135→#136。未コミット row339..340・STATE (cj)(ck)・memory v363..364・成果物 v363/v364（push は deny 解除済み設定・実行可）。"
+    },
+    {
+      "id": "45n6-rust-docs-stubs-six-abi-2026-11-14",
+      "timestamp": "2026-11-14T10:42:25Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-45",
+        "rust",
+        "docs",
+        "abi"
+      ],
+      "content": "2026-11-14 #45 N6 完了: rust/AGENTS.md と rust/README.md の空Stub（見出し1行のみ）を実体化し、docs↔code の「five C ABIs」不整合を six へ全面訂正（主対象7ファイル: AGENTS.md/README.md EN+JP/plan.md×2/rust 2件/tools/host_tests/README.md/app CMakeLists コメント）。真因はタスク記載（README ツリーに bsa-*/nif-*/cli 欠落）と異なり、root AGENTS.md が参照する2ファイルが空Stubで参照が死んでいた（ツリー自体は15クレート列挙済み）。six の根拠=CMakeLists.txt が6本の lib*_ffi.a をリンク（plugin L85/assets L87/bsa L89/nif L91/dds L93/esm L95）＋*-ffi クレート6個。verifier 1回目 REJECT（2 blocking）: ①five 取りこぼし3件=plan.md:1566（現在形）/host_tests README:59,61（sh 実6フラッグ L97-102・MSVC はトークン再利用 L231-32）＋自己発見で同 L49-53 の shim 一覧に esm_reader.cpp/esm_ffi 欠落を追加（esm_reader.cpp:10 が esm_ffi.h include・同 README L64 と自己矛盾）②rust/AGENTS.md:52 の「table below」という存在しないテーブルへの死んだ参照。＋報告義務2件を修正: CMakeLists.txt:39 コメントの five（コメントのみ・ビルド不変）、bsa-core が File を所有するのに「Nothing here owns a file descriptor」と書いた絶対主張を「C++ 側から fd を借りない／bsa-core は自分のハンドルの後ろでファイルを開く」へ再表現（plan.md:1545-152 と 1558-1559 の両方と整合）。CHANGELOG.md:834 は当時の記録として温存。rust/README.md(+75) は15クレート表・6 C ABI 一覧・cargo-ndk 統合・gate・oracle、rust/AGENTS.md(+86) は純粋性ディバイダ・-core/-ffi 規約・関数追加6手順・スタイル。いずれも記憶でなくコードから記述。計測: cargo test --offline --workspace = 176 passed/31 suites exit 0（verifier 独立再実行でも一致）、git diff --check=0。環境障害: pwsh 旧パス不在で shell 全停止→ユーザー再インストールで復旧（その間は read/grep/edit/write+subagent で進行）、verifier サブエージェントは Git 不能でエラー終了→復旧後に同一セッションへ再投入。push/merge は人間承認待ち（git push は user decision 2026-11-14 で allowed 化済だが本単位では未実行）。"
     }
   ],
   "metadata": {
-    "totalEntries": 759,
+    "totalEntries": 761,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-14T05:44:32Z",
-    "entry_count": 759,
-    "last_updated": "2026-11-14T05:44:32Z"
+    "lastUpdated": "2026-11-14T10:42:25Z",
+    "entry_count": 761,
+    "last_updated": "2026-11-14T10:42:25Z"
   }
 }

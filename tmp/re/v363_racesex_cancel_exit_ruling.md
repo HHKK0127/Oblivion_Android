@@ -137,6 +137,23 @@
 
 ---
 
+## §4.5 追補（V-363-2 縮小: Cancel ボタンの通知 id）— probe v363_21/22
+
+bsa 抽出済み `menus\chargen\race_sex_menu.xml`（705行）と EXE で以下を確定:
+
+1. **Cancel/Back は独立ボタンではなく `race_button_done`(id=90) の表示モード切替 [確定(XML)]**:
+   - `<image name="race_button_done"> <include src="button_long.xml"/> <id> 90 </id>` … `<user5> &false; </user5> <!-- 1 (false) for Done and 2 (true) for Back -->`
+   - ラベル: `_text_1 = strings() _done = 'Done'`、`_text_2 = strings() _return = 'Return'`（strings.xml 実測: `<_done> Done </_done>`／`<_return> Return </_return>`）→ **Back ラベルは 'Return' [確定(XML)]**
+   - 他 id の実測: 1=race_window／2=race_player_grab／10=race_name（editor・v352 と一致）／20=race_scroll_bar／90=race_button_done／100=race_pane／101=race_template_button_layout／102=toggle／103=slider／104=？
+2. **trait 対応の裏付け**: EXE は **Done ボタン `[this+0x3C]`（v352 確定）の trait `0xFB3`（＝user5）へ 1.0 を書く**（`0x5CC81F: fld1; push 0xfb3; call 0x58CEB0`・id90 処理内）[確定(命令)]。→ **user0=0xFAE・userN=0xFAE+N の対応を再確認**（user5=0xFB3・user9=0xFB7＝v364 §3.3 の対応表と整合＝**V-364-4 の根拠を補強**）。
+3. **通知経路**: Back 表示時も通知は **id=90 の1本**で slot3 `0x5CC200`（`cmp ebx,0x5A`）に入る → **Cancel は「id90 共通経路のうち user5=2 モード分岐 → cb C（0x5C28F0 閉鎖+復元）到達」という構造が最も整合 [部分確定]**。
+4. **未確定の残**: user5=**2.0（Back）を書く EXE site** と **user5==2 の判定箇所**が未特定（`push 0xFB3` 全数=199件/RaceSex band 98件を走査し、value=1.0/0.0 書出は確認・2.0 書出 site 未発見）。open 時初期設定 fn `0x5CA010`（race_sex_menu.xml 読込・21 pane 生成・16回の `0x402E30` パス構築・`0x5C4340` pane id 設定）にも `push 0xFB3` は不在 → **初期値は XML の `&false;`、表示確定は実行時 bookkeeping [部分確定]**。→ **V-363-2 は「通知 id=90 と Cancel の構造」で[確定]、mode 切替書手のみ [未確定]＝深刻度を中→低へ降格**。
+5. **ポートへの示唆**: 原本では Cancel も Done と同一要素（id90）の別ラベル表示。移植側が独立ボタン（hitTestCancelButton）を使う場合でも、**通知系を統合して扱うのが原本構造と整合** [材料]。
+
+（注: v363_21 の (b) 走査は pat のバイト列ミス（0xFB3≠0x000000B3）で0件＝無効、v363_22 で正しい `68 B3 0F 00 00` に是正して再実行＝**byte-scan の pat 検算教訓を追加**）
+
+---
+
 ## §5 検証・自己批評
 
 | # | 検査 | 結果 |
