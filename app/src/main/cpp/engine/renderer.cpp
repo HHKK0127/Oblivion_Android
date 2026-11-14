@@ -908,6 +908,9 @@ bool Renderer::initGameSystems() {
                 Player* player = playerController->getPlayer().get();
                 player->name = character.name.empty() ? "Adventurer" : character.name;
                 LOGI("Character creation applied: name='%s'", player->name.c_str());
+                player->raceFormID = character.raceFormID;
+                LOGI("Character creation applied: race formID=0x%08X",
+                     player->raceFormID);
                 player->maxHealth = character.maxHealth;
                 player->health = character.currentHealth;
                 player->maxMagicka = character.maxMana;
