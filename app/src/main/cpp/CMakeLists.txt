@@ -36,7 +36,8 @@ target_compile_definitions(Jolt PRIVATE
 # assets/mesh_builder.cpp, the BSA archive reader in assets/bsa_reader.cpp,
 # the NIF mesh parser in assets/nif_parser.cpp
 # and the DDS texture loader in assets/dds_loader.cpp
-# are shims over five C ABIs (plugin_ffi, assets_ffi, bsa_ffi, nif_ffi and dds_ffi).
+# are shims over six C ABIs (plugin_ffi, assets_ffi, bsa_ffi, nif_ffi, dds_ffi
+# and esm_ffi).
 # The implementations live in the Rust workspace vendored under rust/ at the
 # repository root, built here through cargo-ndk. Point OBLIVION_RUST_DIR at a
 # different checkout if needed, and set OBLIVION_RUST_OFFLINE to keep cargo from

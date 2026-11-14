@@ -908,7 +908,7 @@ With parallelization (rendering and Script VM split between developers), 45-60 w
 | **M17: Persistence** | 69 | Save system | Save/load fully functional |
 | **M18: Mod Support** | 70 | Load order | .esp files apply in load order |
 | **M19: Release** | 71-72 | Product ready | A1-A8 all satisfied |
-| **M20: Rust-first core** | cross-cutting (62-72) | Produce the pure-logic layers in Rust (in-repo `rust/` workspace) | Crates pass `cargo test --offline --workspace` (176/31 suites on 2026-11-05); the five C ABIs stay green against the device shims; migration backlog #45 closed (N5b animation keyframe/resolve + walker C ABI, N6 docs paths, native-lib link) |
+| **M20: Rust-first core** | cross-cutting (62-72) | Produce the pure-logic layers in Rust (in-repo `rust/` workspace) | Crates pass `cargo test --offline --workspace` (176/31 suites on 2026-11-05); the six C ABIs stay green against the device shims; migration backlog #45 closed (N5b animation keyframe/resolve + walker C ABI, N6 docs paths, native-lib link) |
 
 ### Risk Factors (Phase 62-72)
 
@@ -1563,7 +1563,7 @@ NIF, and `z` dropped from the link line with it.
 
 **What is migrated, and what each C++ file became.** The implementations live in the vendored Rust
 workspace (`rust/` at the repository root; formerly the sibling `oblivion-re-tools` checkout) and are
-reached through five small C ABIs; the C++ side keeps its original
+reached through six small C ABIs; the C++ side keeps its original
 headers, so no caller changed.
 
 | C++ file | Now | Rust crate |
@@ -1830,7 +1830,7 @@ weeks), gated by oracle verification on every function — roughly **2,500 lines
 the ~150,000 lines of R1-R4 are **on the order of 60 weeks**, i.e. this is a multi-quarter effort,
 not a milestone. Two things change that number: `tests/` (22,537 lines) is already the verification
 harness rather than code to rewrite, and `assets/` is already done. R2-R4 are also cheaper per line
-than `assets/` was, because the opaque-handle pattern and the five C ABI conventions are established.
+than `assets/` was, because the opaque-handle pattern and the six C ABI conventions are established.
 
 **Recommendation: keep R1 as the active lane and treat R2 as the next one, rather than opening
 R3-R5 now.** R3 in particular should not start until the `ui/` classification pass exists, because

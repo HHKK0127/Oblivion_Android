@@ -17,7 +17,7 @@ fi
 BIN="${TMPDIR:-/tmp}/host_tests/host_tests"
 mkdir -p "$(dirname "$BIN")"
 
-# The pure-logic asset/bsa/plugin/nif/dds layers are Rust behind a C ABI (see
+# The pure-logic asset/bsa/plugin/esm/nif/dds layers are Rust behind a C ABI (see
 # CMakeLists.txt: OBLIVION_RUST_DIR). The host runner needs their headers to
 # compile and their host-triple archives to link. Since the 2026-11-09 vendoring
 # the workspace lives in-repo under rust/; before that, or when OBLIVION_RUST_DIR

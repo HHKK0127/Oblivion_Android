@@ -26,7 +26,7 @@ When a repository's documentation and its existing code disagree, follow the con
 
 ## Rust workspace (vendored)
 
-- The pure-logic layers behind the five C ABIs live in `rust/` at the repository root (15 crates; vendored from the former sibling `oblivion-re-tools` checkout on 2026-11-09). `app/src/main/cpp/CMakeLists.txt` builds them with cargo-ndk; `OBLIVION_RUST_DIR` / `OBLIVION_RUST_OFFLINE` (and the matching `-Poblivion.rust.*` Gradle properties) override defaults.
+- The pure-logic layers behind the six C ABIs live in `rust/` at the repository root (15 crates; vendored from the former sibling `oblivion-re-tools` checkout on 2026-11-09). `app/src/main/cpp/CMakeLists.txt` builds them with cargo-ndk; `OBLIVION_RUST_DIR` / `OBLIVION_RUST_OFFLINE` (and the matching `-Poblivion.rust.*` Gradle properties) override defaults.
 - Gate before touching `rust/`: `cargo test --offline --workspace` run from `rust/` (baseline 176 passed / 31 suites) - the same command CI runs for the host archives. Per-crate details: `rust/AGENTS.md`; crate table: `rust/README.md`.
 - Never move parse behaviour without the host oracle that pins it (`tmp/esm_oracle`, `tmp/nif_oracle` pattern; harnesses are local-only).
 

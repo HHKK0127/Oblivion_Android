@@ -411,7 +411,7 @@ oblivion-android/
 │   │   ├── jni_bridge.cpp   (Java ↔ C++ Interface)
 │   │   └── CMakeLists.txt   (Build Config)
 │   └── res/                 (Resources, Strings)
-├── rust/                    (Vendored Rust workspace - 15 crates behind the five C ABIs:
+├── rust/                    (Vendored Rust workspace - 15 crates behind the six C ABIs:
 │   │                         ess-parser, esm-parser/esm-ffi, plugin-parser/plugin-ffi,
 │   │                         assets-core/assets-ffi, bsa-core/bsa-ffi, nif-core/nif-ffi,
 │   │                         dds-core/dds-ffi, vm-handlers, cli; rust/target/ is ignored)
@@ -994,7 +994,7 @@ oblivion-android/
 │   │   ├── jni_bridge.cpp   Java ↔ C++ インターフェース
 │   │   └── CMakeLists.txt   ビルド設定
 │   └── res/                 リソース、文字列
-├── rust/                    ベンダー化済みRustワークスペース（C ABI裏側の5系統を担う15クレート:
+├── rust/                    ベンダー化済みRustワークスペース（C ABI裏側の6系統を担う15クレート:
 │   │                         ess-parser、esm-parser/esm-ffi、plugin-parser/plugin-ffi、
 │   │                         assets-core/assets-ffi、bsa-core/bsa-ffi、nif-core/nif-ffi、
 │   │                         dds-core/dds-ffi、vm-handlers、cli。ビルド生成物 rust/target/ は

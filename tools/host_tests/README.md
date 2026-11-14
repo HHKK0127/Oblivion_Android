@@ -47,18 +47,22 @@ suite fails.
 ### Rust FFI shims (both runners wired; MSVC since 2026-11-01)
 
 `assets/plugin_list.cpp`, `assets/formid_index.cpp`, `assets/asset_path_resolver.cpp`,
-`assets/mesh_builder.cpp`, `assets/bsa_reader.cpp`, `assets/nif_parser.cpp` and
-`assets/dds_loader.cpp` no longer carry their parsing logic themselves: they are
-thin shims over the Rust `plugin_ffi` / `assets_ffi` / `bsa_ffi` / `nif_ffi` /
-`dds_ffi` crates (`#include "*_ffi.h"` plus the C ABI), which
+`assets/mesh_builder.cpp`, `assets/bsa_reader.cpp`, `assets/nif_parser.cpp`,
+`assets/dds_loader.cpp` and `assets/esm_reader.cpp` no longer carry their
+parsing logic themselves: they are thin shims over the Rust `plugin_ffi` /
+`assets_ffi` / `bsa_ffi` / `nif_ffi` / `dds_ffi` / `esm_ffi` crates
+(`#include "*_ffi.h"` plus the C ABI), which
 `app/src/main/cpp/CMakeLists.txt` builds for Android with `cargo ndk` out of
-`OBLIVION_RUST_DIR` (default `<repo>/../../../../../oblivion-re-tools`).
+`OBLIVION_RUST_DIR` (default: the in-repo `rust/` workspace).
 
 `run_host_tests.sh` (bash: Git Bash / Linux / CI) is wired: it defaults
-`OBLIVION_RUST_DIR` to the sibling checkout, adds `-I<crate>/crates/*-ffi/include`
-for the five crates and links the host-triple `lib*_ffi.a` archives it finds.
+`OBLIVION_RUST_DIR` to the in-repo `rust/` workspace (an external checkout such
+as the old sibling `oblivion-re-tools` is used only when the variable is set or
+the in-repo workspace is absent),
+adds `-I<crate>/crates/*-ffi/include`
+for the six crates and links the host-triple `lib*_ffi.a` archives it finds.
 `run_host_tests_msvc.ps1` is wired the same way: it resolves `OBLIVION_RUST_DIR`
-(or the sibling checkout), adds the five `-I` flags, runs `cargo build --release`
+(or the sibling checkout), adds the six `-I` flags, runs `cargo build --release`
 against the `msvc` staticlib crates when the `.lib` archives are missing, and
 links the same set as the sh runner: `assets_ffi.lib` / `bsa_ffi.lib` /
 `plugin_ffi.lib` / `esm_ffi.lib` required (the first three are the parser shims,
