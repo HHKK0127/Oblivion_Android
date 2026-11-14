@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-13T09:47:40Z",
+  "lastUpdated": "2026-11-14T04:34:48Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -10888,14 +10888,75 @@
         "re-dispatch"
       ],
       "content": "2026-11-13 #96 B 完了（commit f0496ddd・branch fix-chargen-buttons・base 0ef273d8・1ファイル +69/-19）: キャラ作成の Create/Cancel ラベルがパネル外へはみ出す欠陥を修正。実測=既定 fontSizeMultiplier_ 1.15（text_renderer.h:246・title_screen.cpp:567 が復元）で Create 108.46px/Cancel 106.55px が 105px パネルに収まらず、旧固定インセット(18/17px)では +21.46px/+18.55px のオーバーシュート。修正=①ボタン寸法と2つのx位置をファイル先頭の一箇所へ一元化し描画と hitTest が同一ヘルパーを読む（旧 hitTest は 105/32/226 をハードコード）②getTextWidth（drawOblivionText と同一の scale 式・同一 advance＝計測=描画）で中央揃え ③0.95 ずつスケール縮小・反復上限 kMaxShrinkSteps=48 で床なし（setter は clamp(0.5,2.0)＝text_renderer.cpp:1162 だが将来も壊れないように）。文字切り詰めは不採用（debug_menu.cpp:642 の先例あるが Create→Creat とラベルを壊すため）。ジオメトリ不変（confirm=contentW-226/cancel=contentW-105/高さ32）でタッチ箱==描画箱を維持。検証=mult 0.5-2.0 全域で右端最悪 101.00px<105px・縦 30.3px<32px。verifier=1回目 REJECT（既定1.15を見落とし mult1.0 前提で計測）→ 計測・コメント訂正＋縮小ループ追加 → 2回目 APPROVE。非阻害指摘（コメントが clamp を無制限と誤記）は docs↔code 不一致として実データ確認のうえ修正。emu PASS（11/13・Pixel_API34・BUILD SUCCESSFUL 25m56s）=install ✓／Cancel タップでパネル消滅(暗部比率0.86→0.04)／Create タップで Character creation applied: name='Adventurer' + Quest created ID=1002／crash none／pid 生存。スコープ外分離=A フォント下降取り消し（text_renderer.cpp:1050 の min(inkBottom,capBaseline) が g/p/y の下降を潰し ' をベースラインに落とす。.fnt に垂直メトリクスなし（f[2]/f[13] 全255件0.0・f[6]/f[7]/f[9]/f[10] 全件重複）、アトラスは tight box 全141字 inkbottom=h-2 かつベースライン非整列の2Dビンパックで導出不可）→ RE #136／E パネル外左上の彩色ブロック（純色で placeholder_assets.h と不一致）→ #137。RE 成果物受領5件=v355/v356/v357/v358/v359（#128 全5束完了・#138 完遂・#139-#141 起票・RE が 6e11ac11 でコミット）。#136 は RE キュー入り済、#142 はキュー記載が無かったため取りこぼし防止 note を追加。push/merge は人間承認待ち。"
+    },
+    {
+      "id": "v360-writer-flags-tail-2026-11-13",
+      "timestamp": "2026-11-13T09:51:08Z",
+      "priority": "medium",
+      "category": "analysis",
+      "tags": [
+        "oblivion",
+        "re49",
+        "reverse-engineering",
+        "v360",
+        "save-writer",
+        "task-complete"
+      ],
+      "content": "2026-11-13 RE レーン **#139 完遂（V-356-1/V-356-2/V-356-4）** — 成果物 `tmp/re/v360_writer_flags_tail_ruling.md`（probe v360_1..9 全 EXIT=0・v360_6/7 の無効バイト early-stop 0件誤検出を自己発見し v360_8 で disasm_range 是正＝スキャン系教訓）。台帳 row336（bak186）・round_verify ALL OK（222想定/217）・ai-todo note→complete・STATE (cg)。v 採番 **v360 消費（次=v361）**。**①V-356-1=[確定(静的)] save ライタ（fn 0x465130・this=stream・caller 2件が mov ecx,[0xB33B00] 直接＝SaveGame グローバル証明）は entry flags で書出/スキップを分岐しない**: flags は 0x4535A0(CheckFlags)/form vfunc+0x4C/0x50 へ内容生成パラメータとして渡却のみ。付帯=**bit9 dry カウントモード**（[ebp+0x18]>>9→実writeスキップ→[ebp+0x90] 加算・v316 dry 実装形を命令確認）/PlayerCharacter 特例/entry[+4] で route A/B。→ fail entry は存在すれば書出（dry ならカウント）＝静的側クローズ・動的のみ #82。**②V-356-2=[部分確定] 0x46667E=LoadGame（head 0x465860）record 後処理（読取 [確定]）**: 0x452C90 formID リマップ→alloc(word[esp+0x26])→0x45BB00 読→0x460BC0→vfunc+0x54→new(0x10) node を 0x5A6AB0 insert（Player==record は退避）。**size 源=12B レコードヘッダ（0x465C94 n=0xC・dst=frame+0x20・formID=header+0 を [esp+0x34] 実証）の +6 u16=ペイロード長**（[esp+0x26] 書込/lea=0件を全域走査で否定）。**③V-356-4=[確定(命令)] entry[+4]=tail フレーム先頭ポインタ（0==なし）**: pass2 0==分岐＋非0時 [SaveGame+0x14] 転送／再発行 src=entry[+4]+4+Δ（v328 P11 lea 整合）／writer route A の実 deref→4B ヘッダ消費→cursor+4 の三方向裏付け。route B 全流（GetForm→CheckFlags→new[]→0x460710→整合検→0x45C4A0 write→delete[]→field=0）。→ **SaveGame+0x14=現 entry の tail scratch/cursor** 同定＝**v356 §2.2 フィールド解釈を更新**（クリア=tail 失効/処理完了・生存判断は不変）。新規確定事実: [0xB33B00]=SaveGame/stream グローバル・dry bit9 実装形・12B ヘッダ layout（部分）。残点 V-360-1..2（低）＋V-356-1 動的=**#82 維持**。次: #140（NiDX9 +0x6F0 ゲート大群・中）→#141（低）。既存キュー #130/#133-#136 も未着手。push はユーザー保留中（ahead: 0ef273d8, 6e11ac11＋未コミット分）。"
+    },
+    {
+      "id": "v361-nidx9-deviceflag-2026-11-13",
+      "timestamp": "2026-11-13T10:07:23Z",
+      "priority": "medium",
+      "category": "analysis",
+      "tags": [
+        "oblivion",
+        "re49",
+        "reverse-engineering",
+        "v361",
+        "nidx9",
+        "devicelost",
+        "rtti"
+      ],
+      "content": "2026-11-13 RE レーン **#140 完遂（V-358-4）** — 成果物 `tmp/re/v361_nidx9_deviceflag_ruling.md`（probe v361_1..6 全 EXIT=0・.text 全文2,258,077 insn を disasm_range（再同期付き）で census）。台帳 row337（bak187）。v 採番 **v361 消費（次=v362）**。**NiDX9 [this+0x6F0] = 「デバイス使用不可（LOST/NOTRESET）」byte フラグ [確定]** — 書手は NiDX9 側2関数のみ: **clear=fn 0x7641A0**（state reset・唯一 caller=NiDX9 ctor 0x769BE0@0x769EE7）／**set=fn 0x76B3F0**（唯一 caller=slot76 impl 0x76BE00）。読手18=NiDX9 系17＋**PC 系 dword 読1（0x6AEF1C）**。**★訂正: 0x66A740 の dword 書手は RTTI で .?AVPlayerCharacter@@ ctor（callers=startup 0x406793/world再init 0x46453C）＝[PC+0x6F0/+0x6EC] は PlayerCharacter の own field で NiDX9 と無関係の別オブジェクト [確定]（同オフセット混同注意）**。**否定時=単純 early-out・共通 cleanup 不在 [確定]**（3型: epilogue skip／xor eax,eax,ret（slot53）／mov al,1,ret（slot77＝否定で成功返却））。**flag 設定元 fn 0x76B3F0 = TestCooperativeLevel 相当**（device(this+0x280) vfunc+0x0C）: **0x88760868=D3DERR_DEVICELOST→flag=1＋リソース callback 列[+0xABC fn/+0xACC arg/count+0xAC2] 実行（失敗で警告 0x60D0A0 文字列0xA89618）／0x88760869=D3DERR_DEVICENOTRESET→0x76A970 復元試行（成功で flag=0）／S_OK→return1**。定数名は **web 検証（2独立ソース）**・両定数比較は .text 全体で本関数1箇所のみ＝協調レベル失敗判定は唯一 [確定]。slot76 呼出し=E8/FF-disp32/abs すべて0件→**2命令 virtual 形 mov r,[vptr]; call [r+0x130] の11+ site**（型帰属多義=残点 V-361-1・中）。残点 V-361-1..4（他3件=低）。NiDX9 は #51 どおり Android 移植対象外・分類表は参照用。docs/GT 反映は #47/#20 一括。※ supermemory にも同要旨＋ハーネス教訓（disasm_range 再同期必須・RTTI pTD=+0xC と TD の .data 検出・find_head セクション頭 StopIteration・定数名 web 検証）を2件登録済（id Kb2JebvJYFSuFxunYzX6SJ / 9n754j2H8wE7WAyTQhP19L）。次: #140 ラウンド残（round_verify→note→STATE (ch?)→本エントリ確定）→ #141（低残点まとめ）。push はユーザー保留（未コミット: row336/337・STATE (cg)・memory v360/361 ほか）。"
+    },
+    {
+      "id": "v362-lowresiduals-bundle-2026-11-13",
+      "timestamp": "2026-11-13T10:31:12Z",
+      "priority": "medium",
+      "category": "analysis",
+      "tags": [
+        "oblivion",
+        "re49",
+        "reverse-engineering",
+        "v362",
+        "residuals",
+        "task-complete"
+      ],
+      "content": "2026-11-13 RE レーン **#141 完遂＝新規キュー #138-#141 全4件 complete** — 成果物 `tmp/re/v362_lowresiduals_bundle_ruling.md`（probe v362_1..8 全 EXIT=0・**初回の未整列/byte-scan 誤検出を cover-check で自己発見・是正**＝教訓）。台帳 row338（bak188）・round_verify ALL OK（224/219）・ai-todo note+complete＋**V-358-3 記述漏れを自己修正**（成果物 §2.5・row338・補足 note・再 verify）。STATE (ci)。v 採番 **v362 消費（次=v363）**。**クローズ6+1**: V-354-2=**u32→u16 Order 切り詰め [確定]**（KeyGroup0 setter 0x6E1E90 内 0x6E1ECB/0x6E1EE9 整列実測＝walk.rs 非対称の実証）／V-354-4=0xA7DEB4=**FLT_MAX センチネル**＋'m_kTranslate'/'NiQuatTransform'／V-357-5=**545 全件実在 [確定(自側)]**（dropped76 を窓0x4000 で76/76再検証・差15=v316 条件差で打ち切り）／V-357-6=**mask 群は SaveGame+0x18 非使用 [確定]**（帯属=NiRefObject 系/thiscall 別クラス word flags/構造体一括ゼロ/N5b 減算・残2件頭不能）／V-358-2=byte フラグ4本文脈（DefWindowProcA 帯/flag≠0 ガード/'bik'/'dds' 拡張子 mode/'Begin Idle loop...' one-shot）＋**副次 fn0x40D4D0 の SaveGame+0x18 bit13/bit15 操作を新発見**／V-358-6=slot0 0x76BED0=flag&1 deleting dtor／**V-361-4 クローズ='NiDX9Renderer::LostDeviceRestore>…failed'(0xA89618)**。**訂正・昇格2**: 0x659BE0 属クラス=**.?AVMobileObject@@（RTTI）＝v357 の Actor 推定を訂正**／NiDX9 正式メソッド名=静的不能[確定負]。**維持(低)**: V-354-1（SIB 読2件のみ整列確定・残 byte hits=偶然一致[確定負]）／V-354-3（**NiFloatData/NiPosData ctor RTTI 実名同定**・0xB3DBDC store 未発見=3系統・値=ローダ zero-init[推定]）／V-358-1（0x749280 未 decode）／**V-358-3（FUN_00445A10 mode シーケンス9フィールドの構造確定・用途正式名[未確定]=V-362-3）**／0x464440 クラス・0x5BA4D0 名(非 virtual[確定])・0x58CEB0 id 名。**★新規確定**: **[0xB33B00]=new(0x1C4)+ctor 0x45B300／[0xB33A98]=new(0xCE0)+ctor 0x446D80／[0xB33A1C]=0x43E950 — 全て fn 0x441970（グローバル群構築関数）で整列確定**（class 名=V-362-1）／v360・v361 の未命名文字列6件解決（SaveGame/LoadGame バッファ警告・'quicksave'・LostDeviceRestore）／IAT 4件（USER32 ループ）。残点 V-362-1..3＋旧継続 3件（すべて低）。次: 既存 RE キュー #130/#133/#134/#135/#136・#96 継続。push は保留（未コミット row336..338・STATE (cg)-(ci)・memory v360..362）。supermemory に前回2件登録済（三束要旨・ハーネス教訓）。"
+    },
+    {
+      "id": "126c-name-input-soft-keyboard-2026-11-14",
+      "timestamp": "2026-11-14T04:34:48Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-126",
+        "chargen",
+        "android",
+        "input",
+        "ime"
+      ],
+      "content": "2026-11-14 #126③ 完了: キャラ作成の NAME 欄にソフトキーボード入力を実装（10ファイル・+157/-12・worktree fix-chargen-name-input・base 132458e7）。欠陥=playerName_ が Adventurer で初期化され一度も書き換え経路が無く入力手段も無かった（既存は nameInputActive_ フラグとコメントのみ、GameConsole::onTextInput は呼び出し元ゼロ）。原本挙動は RE #123 で[確定]（内蔵 editor・リアルタイム書出＝player obj+0xA4）だが Android 実現は移植側判断のためユーザーが「ソフトキーボード＋打鍵ごとのリアルタイム交付」を選択。実装=①UICharacterCreation setPlayerName/isNameInputActive ②Renderer isCharacterNameInputActive（render gate 鏡像）と setCharacterName（ガード無し拒否）③JNI nativeIsCharacterNameInputActive/nativeOnCharacterNameChanged ④CharacterNameBridge.kt 新設（200ms ポーリング・共有1x1 alpha-0 シンク・コンソール全面譲り）⑤ConsoleInputBridge を共有シンク対応（submit/Enter/Done/ESC に consoleShown ゲート＋ownsSink 所有フラグ）⑥MainActivity 配線・dispatchKeyEvent 鍵盤所有権仲裁・activity_main.xml コメント更新。verifier 1回目 REJECT（D1=watcher 所有権ゲートなしでコンソールの setText が name に混入／D2=コンソールリスナーが NAME 所有中も有効で名前が console コマンドとして実行）→2回目 REJECT（D1 残存: hideConsoleInput の setText が stop() 経由で発火＋onPause 停止順序で入力中に Home すると名前が消える）→ ownsSink 所有フラグと onPause 順序反転で修正 →3回目 APPROVE（D1 は独立2機構で決定論的閉鎖）＋R1 指摘→同梱（close を hideConsoleInput 後に consoleShown=false）。emu PASS（11/14・Pixel_API34）=Character name input opened → input text 'Zara' → Character creation applied: name='Zara' + Quest ID=1002 + crash none + pid 生存。検証中の環境障害=エミュレータ停止・System UI ANR ダイアログがタップ全吸収（ビルド同時起動の資源競合）・IME が Create/Cancel を覆う→BACK で解除、自誤=エミュレータを殺すコマンドと使うコマンドを同時実行して競合。後者2件は新規起票 #143（IME 覆いの UX 欠陥・RE不要＝移植固有）。あわせて plan.md に「App-wide Rust migration: inventory, boundary, phasing」節を追記（自前 C++ 実測174,647行/652ファイル・third_party 204,532行は対象外・Rust 既存17,830行・Kotlin 3,656行は対象外・政策が阻むハンドル所有は約20,000行・R1-R5段階・観測ペース2500行/週から約60週規模・推奨=R1 維持→R2、R3 は ui/ 分類パス後）。push/merge は人間承認待ち（git push * は opencode.json で deny）。"
     }
   ],
   "metadata": {
-    "totalEntries": 754,
+    "totalEntries": 758,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-13T09:47:40Z",
-    "entry_count": 754,
-    "last_updated": "2026-11-13T09:47:40Z"
+    "lastUpdated": "2026-11-14T04:34:48Z",
+    "entry_count": 758,
+    "last_updated": "2026-11-14T04:34:48Z"
   }
 }

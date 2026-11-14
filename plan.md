@@ -1750,6 +1750,95 @@ behind its C ABI or deleted, and no behaviour change on any path that runs.
 
 ---
 
+## App-wide Rust migration: inventory, boundary, phasing (2026-11-14)
+
+**Status: goal set by the user on 2026-11-13 — "aim to migrate the whole application to Rust."
+This section sizes that goal against the code that exists and stages it against the policy above.
+It does not change the policy: the divider is still impurity, not size, and the 2026-11-01 override
+("write the work in Rust wherever Rust can express it") still applies.**
+
+### Measured inventory (2026-11-14, `os.walk` over the tree)
+
+| Layer | Lines | Files | Migration target? |
+| --- | ---: | ---: | --- |
+| Own C++ (`app/src/main/cpp`, excluding `third_party/` and `include/`) | **174,647** | 652 | yes, subject to the divider |
+| `third_party/` + bundled headers (JoltPhysics, stb, minimp3) | 204,532 | 1,058 | **no** — third-party code, not ours to rewrite |
+| Rust (`rust/`, 15 crates) | 17,830 | 29 | already there |
+| Kotlin / Java | 3,656 | 10 | **no** — Android framework surface |
+
+Own C++ by directory, largest first:
+
+| Directory | Lines | Files | Character |
+| --- | ---: | ---: | --- |
+| `ui/` | 45,583 | 169 | mixed: layout/measure is pure, GL draw is not |
+| `engine/` | 24,606 | 54 | `renderer.cpp` alone is 9,651 and owns GL objects |
+| `tests/` | 22,537 | 88 | the host harness — the oracle, not a target |
+| `game/` | 15,714 | 80 | rules mixed with entity ownership |
+| `assets/` | 11,766 | 25 | **largely migrated already** (Phase 3 closed it) |
+| `script/` | 8,880 | 17 | VM; `vm-handlers` crate already exists |
+| `world/` | 8,372 | 35 | spatial queries pure, handles not |
+| `audio/` | 4,951 | 17 | Android/OpenSL handles |
+| `character/` | 4,620 | 12 | **rules — pure** |
+| `dialogue/` | 3,867 | 16 | **rules — pure** |
+| `system/` | 3,085 | 14 | mixed |
+| `quest/` | 2,788 | 10 | **state machine — pure** |
+| `save_system/` | 2,426 | 7 | format logic; `ess-parser` already exists |
+| `video/` | 2,301 | 8 | MediaCodec handles |
+| `collision/` | 1,848 | 6 | index math pure |
+| `physics/` | 1,821 | 8 | Jolt bodies |
+| `input/` | 1,522 | 10 | Android input handles |
+| `debug/` | 1,498 | 38 | mixed |
+| `geometry/` | 1,163 | 8 | **pure** |
+
+### What the existing policy already permits
+
+Everything that is a pure function of its arguments. Under the 2026-11-01 override, state that was
+only kept in C++ because parsing was mixed with I/O, zlib or C++ record types moves too, carried
+behind an opaque handle exactly as `bsa_reader` and `nif_parser` do. That is Phases R1-R4 below and
+it is where roughly **150,000 of the 174,647 lines** sit by directory character — pending a
+per-file audit, because `ui/` and `game/` each contain both kinds.
+
+### What the existing policy blocks, and what it would take
+
+| Blocked | Lines | Why | What a migration would require |
+| --- | ---: | --- | --- |
+| `engine/renderer.cpp` | 9,651 | owns GL objects, draw calls, frame state | Rust GL bindings (`glow`-class) plus a renderer rewrite; no oracle can pin pixel output cheaply |
+| `physics/` + JoltPhysics | 1,821 + 108k third-party | Jolt is a C++ library with no drop-in Rust twin | binding Jolt through a C shim, or swapping to `rapier` — **a physics engine swap changes behaviour and has no oracle**, which the project rules forbid |
+| `audio/`, `video/`, `input/` | 8,774 | Android framework handles | NDK bindings (`ndk` crate) — handle ownership moves, the logic behind it can still move first |
+| JNI bridge | ~1,000 | must remain a C ABI boundary by definition | stays; the goal is to make it thinner, not to remove it |
+| Kotlin | 3,656 | Android framework surface | stays — IME, lifecycle, surface are not portable |
+
+So "the whole application" resolves to: **everything except roughly 20,000 lines of
+handle-owning code plus the third-party tree**, and even for that20,000 the *logic behind* the
+handles can move while the handles stay. The realistic goal is therefore **a thin C++/Kotlin shell
+over a Rust core**, not a Rust-only binary.
+
+### Phases
+
+| Phase | Target | Gate (unchanged from the policy) | Prerequisite |
+| --- | --- | --- | --- |
+| **R1** (in progress) | remaining `assets/`, `script/` VM, `save_system/` format | `cargo test --offline --workspace` + host oracle per function + C ABI harness | none — this is the current lane (#45) |
+| **R2** | `character/`, `quest/`, `dialogue/` and the rule half of `game/` | same, plus the existing `tests/` suites must stay green | RE #101 (chargen rules are still unruled — moving them now would freeze guesses) |
+| **R3** | `ui/`: split layout/measure (pure) from GL draw (impure) | same; the pure half needs no new oracle because `tests/` already asserts layout | the split itself — 169 files must be classified first |
+| **R4** | `world/`, `system/`, `collision/`, `geometry/`, the pure half of `debug/` | same | none |
+| **R5** | handle-owning `renderer`/`audio`/`video`/`input`/`physics` | **out of scope under the current policy** — needs an explicit human decision and a new oracle strategy | a decision on GL bindings and on whether a physics swap is ever acceptable |
+
+### Cost, from the pace this project has actually moved
+
+The pure-logic lane has produced **17,830 lines of Rust between 2026-10-26 and today** (about seven
+weeks), gated by oracle verification on every function — roughly **2,500 lines/week**. At that pace
+the ~150,000 lines of R1-R4 are **on the order of 60 weeks**, i.e. this is a multi-quarter effort,
+not a milestone. Two things change that number: `tests/` (22,537 lines) is already the verification
+harness rather than code to rewrite, and `assets/` is already done. R2-R4 are also cheaper per line
+than `assets/` was, because the opaque-handle pattern and the five C ABI conventions are established.
+
+**Recommendation: keep R1 as the active lane and treat R2 as the next one, rather than opening
+R3-R5 now.** R3 in particular should not start until the `ui/` classification pass exists, because
+porting layout code before knowing which half of each file is layout would move impure code behind
+an FFI hop — exactly what the divider is there to prevent.
+
+---
+
 ## RE-derived port residuals (2026-11-01)
 
 **Status: five [PORT] decisions and cleanups recorded from the 2026-11-01 reverse-engineering

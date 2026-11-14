@@ -924,3 +924,62 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **RE 依頼の状況**: **#136 は STATE (ce) の「次」リストに明記＝キュー入り済**。**#142**（パネル/ボタン/タブの原本寸法＋下部約900px 空白の裁定）は**キュー記載が無かったため取りこぼし防止の note を追加**した。
 - **commit `f0496ddd`**（branch fix-chargen-buttons・base 0ef273d8・worktree clean）。push/merge は人間承認待ち。
 - **次**: RE #136/#142 到着待ちと並行して、**RE不要で着手可能な #96 ③（名前入力ハンドラ＝#123 で原本挙動が[確定]済）**へ。
+
+## 2026-11-13 (cg) — #139 完遂: save ライタの flags ゲート不在 [確定]＋entry[+4]=tail frame ptr [確定]（v360）
+
+- **成果物**: `tmp/re/v360_writer_flags_tail_ruling.md`（probe **v360_1..9 全 EXIT=0**。**v360_6/7 は無効バイトで early-stop し「0件」を誤出力 → 自己発見して v360_8 で `disasm_range`（再同期付き）に是正**＝スキャン系 probe の教訓事例として記録）。台帳 **row336（bak186）**・`round_verify` **ALL OK**（rows 31..336 / total 222 / done 217 / open 5）。ai-todo #139 note→**complete**。v 採番 **v360 消費（次=v361）**。
+- **① V-356-1 = [確定(静的)] ライタは entry flags で書出/スキップを分岐しない**:
+  - **writer = fn `0x465130`**（head で `mov ebp,ecx`・strncmp(9,'0xA3AAD4') の section 名比較・SEH）。**E8 caller 6件中 `0x5D3246`/`0x5D3438` は `mov ecx,[0xB33B00]` 直接＝this＝SaveGame グローバルの証明**。
+  - entry ループ 0x465303..0x46570C（iterator 0x452600）に **entry flags テスト不在**。flags（entry[+0]→[esp+0x3d]）は **`0x4535A0`(CheckFlags) と form vfunc+0x4C/0x50 へ「内容生成パラメータ」として渡却のみ**。
+  - 付帯ゲート: entry null でループ退出／**bit9（`[ebp+0x18]>>9`）＝dry カウントモード**（実 write をスキップし `[ebp+0x90]` 加算＝**v316 の dry bit9 実装形を命令で確認**）／`cmp edi,[0xB333C4]` Player 特例／entry[+4] 有無で route A/B。
+  - → **「fail entry は flags で捨てられず、存在すれば書出（dry ならカウント）」[確定]**。V-356-1 静的側クローズ・動的のみ **#82 維持**。
+- **② V-356-2 = [部分確定] `0x46667E` ＝ LoadGame の record 後処理（読取経路 [確定]）**: head `0x465860`＝LoadGame 本体（v323 item6 caller 0x465B12 と同一）。流れ＝`0x452C90` formID リマップ → **`alloc(word[esp+0x26])`(0x453500)** → **`0x45BB00` で size 分読取** → `0x460BC0` → vfunc+0x54 → **`new(0x10)` node{ebx,[esp+0x21],edi,cl} を `0x5A6AB0` insert（record==Player は insert せず退避）**。**size 源＝12B レコードヘッダ**（`0x465C94` n=0xC read・dst=frame+0x20・`mov edi,[esp+0x34]`＝header+0＝formID で実証）の **+6 u16＝ペイロード長 [部分確定]**（関数全域で `[esp+0x26]` 書込/lea out-param＝0件を否定）。
+- **③ V-356-4 = [確定(命令)] `entry[+4]` ＝台帳 entry の tail フレーム先頭ポインタ（0==なし）**: 三方向裏付け＝pass2 の 0==tail 分岐＋非0時 `[ebx+0x14]` へ転送／**再発行 src＝entry[+4]+4+Δ＝frame+4+Δ**（v328 P11 の lea 実測と整合・長さなら不成立）／**writer route A が `[ebp+0x14]:=entry[+4]` → 実 deref（`mov edx,[ecx]`）→ 4B ヘッダ消費 → cursor+4**。
+  - **route B 全流も解明**: GetForm(0x46B250) → `0x4535A0` CheckFlags → form vfunc+0x4C/`0x452250` → `new[]` → **`0x460710` シリアライズ** → `base+size==[ebp+0x14]` 整合検（不一致ログ 0xA3B088）→ **`0x45C4A0` write** → `delete[]` → **field=0**（両 route 終端で field=0 クリア）。
+  - → **`SaveGame+0x14` ＝現 entry の tail scratch/cursor** と同定 → **v356 §2.2 の「解決済みインデックス」説を更新**（クリア＝tail 失効/処理完了。**生存判断・削除トリガでないという結論は不変**）。
+- **残点**: **V-360-1** 12B ヘッダ field 対応（+4/+5・低）／**V-360-2** 残4 caller の this 同一性（低）／**V-356-1 動的**＝fail entry の実ファイル残存（**中・#82 維持**）。
+- **main への報告**: 3件中2件完全クローズ＋1件部分（動的残）・v356 §2.2 更新・新規確定＝`[0xB33B00]`＝SaveGame グローバル／dry bit9 実装形／12B ヘッダ layout（部分）。docs/GT 反映は #47/#20 一括。
+- **次**: **#140（NiDX9 +0x6F0 ゲート大群・中）→ #141（低残点まとめ）**。未コミット＝ row336・本節・memory v360（push は保留中）。
+
+## 2026-11-13 (ch) — #140 完遂: NiDX9 `[this+0x6F0]`＝デバイス喪失 byte フラグ [確定]（v361・RTTI で PC/NiDX9 同オフセットを分離）
+
+- **成果物**: `tmp/re/v361_nidx9_deviceflag_ruling.md`（probe **v361_1..6 全 EXIT=0**・`.text` 全文 **2,258,077 insn** を `disasm_range`（v360 教訓の再同期付き）で census）。台帳 **row337（bak187）**・`round_verify` **ALL OK**（rows 31..337 / total 223 / done 218 / open 5）。ai-todo #140 note→**complete**。v 採番 **v361 消費（次=v362）**。
+- **① 書手/読手全特定 [確定]** — `[NiDX9+0x6F0]` ＝**「デバイス使用不可（LOST/NOTRESET）」byte フラグ**:
+  - **書手は NiDX9 側2関数のみ**: **clear=fn `0x7641A0`**（state reset・+0x5D4=0xFF808080 他多数初期化・**唯一 caller=NiDX9 ctor `0x769BE0` @0x769EE7**）／**set=fn `0x76B3F0`**（**唯一 caller=slot76 impl `0x76BE00`**）。`[esp+0x6F0]` stack 2件は除外。
+  - **読手18 = NiDX9 系17（ゲート群15＋0x76B3F0 内＋0x764C70 内）＋ PC 系 dword 読1（`0x6AEF1C`）**。
+  - **★訂正情報**: dword 書手 `0x66A740` は **RTTI で `.?AVPlayerCharacter@@` ctor**（vtable 0xA73A0C 系・callers=startup `0x406793`/world 再 init `0x46453C`）→ **`[PC+0x6F0/+0x6EC]` は PlayerCharacter の own field で NiDX9 と無関係の別オブジェクト [確定]**（同オフセット混同防止のため記録）。
+- **② 否定時の共通 cleanup ＝ 不在 [確定]** — 否定（flag≠0）は**単純 early-out の3型**: (i) `jne`→関数 epilogue 終端（slot80/93/88/94/0x764C70 系）(ii) `xor eax,eax; ret`（slot53）(iii) **`mov al,1; ret`（slot77＝否定で成功返却）**。正（flag==0）の時のみ device/リソース/描画本体が走る。
+- **③ DX9 リソース接続点＝fn `0x76B3F0` 自身 [確定]** — device(this+0x280) vfunc+0x0C（**TestCooperativeLevel 相当**・HRESULT 戻り）:
+  - **`0x88760868`＝`D3DERR_DEVICELOST`** → flag=1 ＋**リソース callback 列**（count=`[+0xAC2]`・fn=`[+0xABC]`・arg=`[+0xACC]`・各 bool 検証・失敗で警告 `0x60D0A0(0xA89618)`）→ 常に return0。
+  - **`0x88760869`＝`D3DERR_DEVICENOTRESET`** → `0x76A970` 復元/リセット試行（**成功で flag=0**）。
+  - S_OK 等 → return1（flag 非変更）。**HRESULT 定数名は web 検証（2独立ソース）**・**両定数の比較は .text 全体で本関数1箇所のみ＝協調レベル失敗判定は唯一 [確定]**。
+  - slot76 呼出しは E8/FF-disp32/abs すべて0件 → **2命令 virtual 形 `mov r,[vptr]; call [r+0x130]` の11+ site**（+0x130 は他クラス共有オフセットで個別帰属多義＝残点）。
+- **残点**: **V-361-1** slot76 ポーラーの型帰属（**中**）／V-361-2 `0x76A970` 本体（低）／V-361-3 callback 列要素（低）／V-361-4 警告文言（低）。
+- **main への報告**: V-358-4 **完全クローズ**（設問「device lost/初期化/描画可否」＝device lost/notreset 系で回答）・PC/NiDX9 同オフセット混同の訂正情報・NiDX9 は #51 どおり移植対象外・docs/GT 反映（デバイスフラグ・HRESULT 対応）は #47/#20 一括。
+- **メモリ登録（本件）**: **supermemory 2件**（①#138-#140 三束完遂の要旨 id=Kb2JebvJYFSuFxunYzX6SJ ②ハーネス教訓＝disasm_range 再同期必須/RTTI pTD=+0xC と TD の .data 検出/find_head セクション頭 StopIteration/定数名 web 検証 id=9n754j2H8wE7WAyTQhP19L）＋**正典台帳 756 件/0 error**（v361 登録）。
+- **次**: **#141（v354/v357/v358 低残点まとめ）＝新規キュー最後の1件**。未コミット＝ row336/337・本節・memory v360/361（push 保留中）。
+
+## 2026-11-13 (ci) — #141 完遂＝**新規キュー #138〜#141 全完遂**: 低残点まとめで u16 切り詰め [確定]・MobileObject 同定・v361 残点クローズ（v362）
+
+- **成果物**: `tmp/re/v362_lowresiduals_bundle_ruling.md`（probe **v362_1..8 全 EXIT=0**。**初回出力の未整列/byte-scan 誤検出を後続 probe の cover-check で自己発見・是正**＝手順教訓として文書化）。台帳 **row338（bak188）**・`round_verify` **ALL OK**（rows 31..338 / total 224 / done 219 / open 5）。ai-todo #141 note→complete＋**V-358-3 記述漏れを自己検出し補足 note/成果物 §2.5/row338 を修正・再 verify**。v 採番 **v362 消費（次=v363）**。
+- **クローズ6件**: **V-354-2=[確定] u32→u16 Order 切り詰めあり**（KeyGroup0 setter 0x6E1E90 内 0x6E1ECB/0x6E1EE9 を整列実測＝walk.rs u32 skip の非対称を実証）／**V-354-4=[確定]** `0xA7DEB4=FLT_MAX(0x7F7FFFFF)` センチネル・`'m_kTranslate'`/`'NiQuatTransform'`／**V-357-5=[確定(自側)]** dropped76 を窓0x4000 で76/76再検証＝**545 全件実在（誤検出否定）**・差15=v316 条件差で打ち切り［部分:差因］／**V-357-6=[確定]** mask 11+2件は **SaveGame+0x18 非使用**（head8件で [0xB33B00] 非使用実測）→帯属=NiRefObject 系 word flags／thiscall 別クラス word flags（0xF00F×4）／構造体一括ゼロ（{+0,+8,+0x18}+mask0x19741000）／N5b word 減算ほか・残2件は頭不能［未確定］／**V-358-2=[部分確定] byte フラグ4本文脈**: 0xB333F5=ウィンドウメッセージ1発 flag（**IAT DefWindowProcA**）／0xB3341C=fn0x40D800 flag≠0 ガード本体（**find_head 再度 CC不足型誤答を記録**）＋**副次=fn0x40D4D0 が SaveGame+0x18 の bit13/bit15 操作を新発見**／0xB33427=拡張子比較ハンドラ（'bik'/'dds'）mode byte／0xB33430='Begin Idle loop...' メッセージループ域 one-shot クリア／**V-358-6=[確定]** slot0 0x76BED0=flag&1 deleting dtor。**V-361-4 クローズ**（`0xA89618='NiDX9Renderer::LostDeviceRestore>…failed'`＝fn0x76B3F0 自文字列裏付け）。
+- **確定昇格・訂正2件**: **0x659BE0 属クラス=`.?AVMobileObject@@`（RTTI）＝v357 の「Actor」推定を訂正**／NiDX9 正式メソッド名=**静的不能 [確定負]**を明記。
+- **維持（低）**: V-354-1 [部分確定]（SIB 読2件のみ整列確定・残 byte hits は偶然一致 [確定負]）／V-354-3 [未確定]（NiFloatData/NiPosData ctor を **RTTI 実名同定**・0xB3DBDC は store 未発見＝3系統のみ・値=ローダ zero-init [推定]）／V-358-1 [未確定]（0x749280 未 decode）／**V-358-3 [部分確定]（構造確定: mode 駆動シーケンスの9フィールド役割・用途正式名=[未確定]=V-362-3）**／0x464440 クラス・0x5BA4D0 名（非 virtual [確定]）・0x58CEB0 id 名（setter 本体は [確定]）。
+- **★追加成果**: **`[0xB33B00]`=new(0x1C4)→ctor 0x45B300／`[0xB33A98]`=new(0xCE0)→ctor 0x446D80／`[0xB33A1C]`=0x43E950 — 全て fn 0x441970（束③ container ctor＝グローバル群構築関数）内で整列確定 [確定(命令)]**（class 名=V-362-1）。**v360/v361 未命名文字列6件を解決**（SaveGame/LoadGame バッファ警告2・'quicksave'・'Created form %08X…'・LostDeviceRestore＝v361 残点クローズ）。**IAT 4件**（DefWindowProcA/DispatchMessageA/TranslateMessage/PeekMessageA）。
+- **main への報告**: クローズ6＋v361 残点1・更新/維持4・確定昇格2（u16 切り詰め・MobileObject）・新規事実（グローバル生成経路・SaveGame+0x18 bit13/15・cover-check 教訓）。docs/GT 反映は #47/#20 一括。
+- **新規キュー完了**: **#138(v359)/#139(v360)/#140(v361)/#141(v362) 全4件 complete**。残は既存 RE キュー（#130/#133/#134/#135/#136）・#96 継続・人間ゲート（#82 等）。未コミット＝ row336..338・(cg)(ch)(ci) 節・memory v360..362（push 保留中）。
+
+
+
+## 2026-11-14 (cg) — #126③ 完了: キャラ作成の NAME 欄にソフトキーボード入力を実装（verifier REJECT×2 → APPROVE・emu 実証 `name='Zara'`）＋ plan.md にアプリ全体 Rust 移行節を追記
+
+- **欠陥の実態**: `playerName_` は `"Adventurer"` で初期化されるが**一度も書き換える経路が無く**、入力手段も無かった。既存の資産は `ui_character_creation.h` の `nameInputActive_` と `open()`/`close()`/タブ切替での維持、および cpp:106 のコメント「Text input for character name handled via virtual keyboard」（中身は LOGI のみ）までで、**`GameConsole::onTextInput` は呼び出し元ゼロ**。原本の挙動は **RE #123 で [確定]済**（内蔵 editor・リアルタイム書出＝player obj+0xA4）で、Android での実現方法は移植側の設計判断のため**ユーザーが「ソフトキーボード＋打鍵ごとのリアルタイム交付」を選択**。
+- **実装（10ファイル・+157/-12）**: ①`ui_character_creation` に `setPlayerName()`（`playerName_` とプレビュー character を同時更新）と `isNameInputActive()` ②`renderer` に `isCharacterNameInputActive()`（render gate の鏡像: `showCharacterCreation && isVisible() && isNameInputActive()`）と `setCharacterName()`（**ガード無しでは拒否**＝他パネル所有中の誤書き込み防御）③`jni_bridge` に `nativeIsCharacterNameInputActive` / `nativeOnCharacterNameChanged` ④**`CharacterNameBridge.kt` 新設**（200ms ポーリング＝ConsoleInputBridge と同一・共有の 1x1 alpha-0 シンクに IME を接続・打鍵ごとに native へ交付・**コンソールが開いていれば全面譲る**）⑤`ConsoleInputBridge` を共有シンク対応に（`submit`/Enter/Done/ESC リスナーに `consoleShown` ガード＋`ownsSink` 所有フラグ）⑥`MainActivity` 配線・`dispatchKeyEvent` の鍵盤所有権仲裁・`activity_main.xml` コメント更新。
+- **verifier 1回目 REJECT（2件の major）**: **D1**＝name watcher が所有権ゲートが無く、コンソールの `setText("")` が `playerName_` に混入（コンソールを開閉するだけで "Adventurer" が消える）／**D2**＝コンソールのキーリスナーが NAME 所有中も有効で、名前を打って Done を押すと**名前が console コマンドとして実行される**。→ watcher に `!shown || consoleActive()`、ネイティブ側にもガード、コンソール側に `consoleShown` ゲートを追加。
+- **verifier 2回目 REJECT（D1 残存）**: `hideConsoleInput()` の `setText("")` が `stop()` 経由で `consoleShown` 無視で発火し、`onPause` の停止順序（console 先）で NAME watcher を通過 → **入力中に Home で画面を離れるだけで名前が消える**。→ **`ownsSink` 所有フラグ**（show で true／clear 消費時のみ）＋**`onPause` の停止順序を反転**（NAME 側を先に停止）。
+- **verifier 3回目 APPROVE**（D1 は独立した2機構で決定論的閉鎖と確認）＋ **R1**（非ブロッキング）として close 経路の残存レースを指摘 → 同じ欠陥クラスかつ1行修正と明示されたため**同梱**: `syncConsoleVisibility` の close を `hideConsoleInput()` の後で `consoleShown = false` に変更（clear 中は `consoleActive()=true` で watcher 遮断。open 側は従来どおり flag 先立て）。
+- **emu 検証 PASS**（11/14・Pixel_API34）: `CharacterNameBridge: Character name input opened` → `adb shell input text 'Zara'` → **`Character creation applied: name='Zara'`**（＝`Adventurer` ではなく入力値）＋ `Quest created: ID=1002` ＋ **crash none** ＋ pid 生存。
+- **検証中に排除した環境障害（コード不具合ではない）**: ①エミュレータ停止→再起動 ②**「System UI isn't responding」ANR ダイアログ**がタップを全吸収（ビルドと同時起動した資源競合）→解除 ③**IME が Create/Cancel を覆う**→BACK で IME を閉じる順序を検証フローに組み込み。④自分の実行ミス＝**エミュレータを殺すコマンドと使うコマンドを同時実行**して競合→単独実行に是正。
+- **新規起票 #143**: ③は実在の UX 欠陥（GLSurfaceView が全画面を占有し Android のソフト入力時パンが効かない）→ 個別タスク化。RE 不要＝移植側固有だが、ボタンをキーボード外に出すか入力完了で自動クローズするかの判断は人間確認待ち。
+- **plan.md 追記「App-wide Rust migration: inventory, boundary, phasing」**: ユーザー決定（2026-11-13）＝アプリ全体の Rust 移行を目指す。既存政策（「分かれ目は純粋性であってサイズではない」＋2026-11-01 のポリシー更新）を維持したまま、**実測 inventory**（自前 C++ **174,647行/652ファイル**、third_party 204,532行は対象外、Rust 既存 17,830行、Kotlin 3,656行は対象外）＋**政策が阻むもの**（renderer 9,651行・Jolt・audio/video/input・JNI・Kotlin＝約20,000行のハンドル所有コード）＋**R1〜R5 の段階**＋**観測ペース 2,500行/週から約60週規模**を明記。推奨＝R1 を現行レーンとして維持し R2 を次に、R3 は `ui/` の分類パスが出来てから。
+- **RE 成果物の状況**: v360 はコミット `132458e7` に同梱、**v361/v362 は新着だが未追跡**（RE セッションのコミット待ち）。**#136（フォント縦位置）/#142（パネル寸法）は未回答**（#136 は RE の「次」リストに明記＝キュー入り済、#142 はキュー促進 note 済み）。
