@@ -1561,3 +1561,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-399-1..3**: 1=**`[+0xD8]` type-id 定数 `0xA010068..0xA01006C` の意味＋`[+0x21C]` オブジェクト identity**【中】／2=**`FUN_00715F40` 介在コピーの全体**（全フィールド列・type-tag・0x715xxx 帯クラス）【低】／3=**`0x6D0540`（`jmp 0x715820`）と `0x715820` の役割**【低】。
 - **教訓**: **「thunk と本体」を分離して裁定せよ**（head が `jmp` なら本体は先のアドレス・decompiled アノテーションも先に付く）＋**隣接 fn の文字列読手から bit フィールド名を拾う**。
 - **次**: #153⑥-6 V-386-1（`[block+0xD]` 非0xFF 供給元）→ 次 v 採番 v400。
+
+## 2026-11-15 (dv) — #153⑥-6 完遂: `[block+0xD]` 非0xFF供給元＝**帯内0件 [確定(否定側)]＋伝播経路2か所 [確定]＋setter 系（値源 `byte[+0x69]`）特定**・原点は残点＝**[部分確定]**（v400・V-386-1）
+
+- **成果物**: `tmp/re/v400_blockflag_supply_ruling.md`（probe **v400_1..6 全 EXIT=0**）。台帳 **row376（bak226）**・`round_verify` **ALL OK**（rows 31..376 / total 262 / done 257 / open 5）。ai-todo #153 に note（低10件の第6弾消化）。v 採番 **v400 消費（次=v401＝#153⑥-7 V-386-2）**。
+- **帯内 non-0xFF 書手 [確定(否定側)]**: **0件** — imm census（`C6`）＋**reg ストア census（`88 /r disp=0x0D` 全 .text）**で帯内在は `0x6C68FB`（copy）／`0x6CA0FA`（copy）／`0x6CD411`（**別構造**: v394 container count）／`0x6CCE9A`（別構造 ctor）のみ。
+- **候補3件を否定 [確定負]**: ①**`FUN_006cce40`（`+0xd ← 第4引数`）＝別クラス族 base ctor**（vtable +0 型・6派生クラスが caller 後に自 vtable 設定・layout `{+0xc=0, +0xd=arg, +0xe=0, +0xf=0xFF, +0x10/11=0x80}` は block と不一致）②**`0x7343A4`/`0x734142`（stride16 ストリーム格納）＝ピクセル/テクスチャデコーダ**（`FUN_00734170`/`FUN_00733f90`＝u16 読み→**RGB565 bit unpack**（`(u>>8)&0xf8` 等）・`local[3]=0xFF`＝alpha）③**`FUN_006c6610`＝block 抽出 fn**（`*param_2=[arr+i*0x10]`＋AddRef→`FUN_006c6300(slot)` クリア＋0xFFFF 化＝take-out）。
+- **伝播経路 [確定(命令＋decompiled)]**: **source container の entry（`edi`/`piVar13`）→ dest container の `block[+0xd]` コピー2か所** — ①`FUN_006c9f10`（L499164 `*(iVar8+0xd)=*(piVar13+0xd)`・`[vtable+0x74]` count ループ内・ptr/`+4` ref とセット）②**`0x6CA0FA` ループ**（container `[+0x14]` stride16 へ `cl=[edi+0xd]`・`[esi]→[+0x74]/[+0x80]/[+0x90]` virtual getter 照合→一致時に `[+8]` ptr／`[+4]` name／**`[+0xd]`** 転送・`FUN_006c9f10` 内と推定高）。
+- **setter/getter 系 [確定(命令＋decompiled)]**: **{Getter `FUN_00468260`＝`return byte[+0xd]`／Setter `FUN_00468270`＝`byte[+0xd]←arg`（E8=1＝`FUN_005222d0` 内のみ・non-virtual）／Clear `FUN_0046CAD0`＝`+0xc=+0xd=0`（E8=0・vtable slot×4: file 0x63B278/0x641D84/0x641FA8/0x642104）}**。**setter の値源＝`FUN_004a9700 = return byte[+0x69]`**（`FUN_005222d0` 内 L216913-216919: `[+0x104]` オブジェクトの `+0x69` を getter → setter へ）。
+- **原点 [未確定]**: **`[+0x69]` フィールドの identity と設定元**＋0x468xxx descriptor ファミリ→block 接続（`edi` source 正体）＝[推定高]。
+- **残点 V-400-1..3**: 1=**`[+0x69]` identity と設定元**【中】／2=**descriptor→block 接続証明**【中】／3=**Clear の vtable slot 位置と4 vtable のクラス同定**【低】。
+- **教訓**: **stride16 へのストリーム格納はピクセルデコーダ等の別構造と紛れやすい → bit-unpack パターン（`&0xf8`/`&0xfe`）と `local[3]=0xFF`（alpha）で識別して棄却**。
+- **次**: #153⑥-7 V-386-2（`0x6C62E0`/`0x6C6300` 所属）→ 次 v 採番 v401。
