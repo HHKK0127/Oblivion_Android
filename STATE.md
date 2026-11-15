@@ -1377,3 +1377,24 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-388-1..2**: 1=**`[+0x54]` の正名**（label 不在のため Gamebryo フィールド（m_fPhase/m_fStartTime 等）と usage（arg÷Freq・Offset 変換元）の突合）【低】／2=**`0x6CAA4A` の `Offset=[+0x54]−st1` の st1 の出所**【低】。
 - **教訓**: **label 不在は「print 列挙＋decompiled ラベル付き書手の全走査」で不在自体を証明してから挙動ベースに切り替える**。
 - **次**: #152⑧V-376-2（`0x73A5E0` identity）→ 次 v 採番 v389＝**束の最後の1件**。
+
+## 2026-11-15 (dk) — #152 束完遂（⑧V-376-2: `0x73A5E0`＝**重複排除付き set Add・manager 有効 sequence セットへの登録 [確定(命令)]**）v382..v389 の8件すべて消化
+
+- **成果物**: `tmp/re/v389_setadd_ruling.md`（probe **v389_1..2 全 EXIT=0**）。台帳 **row365（bak215）**・`round_verify` **ALL OK**（rows 31..365 / total 251 / done 246 / open 5）。ai-todo #152 note→**complete（束完遂）**。v 採番 **v389 消費（次=v390）**。
+- **⑧ `0x73A5E0` [確定(命令)]**: **重複排除付き ptr 配列セット追加（`NiTSet::Add` 相当）** — `ret 4`＝1引数。this 布局 **`[+0]`=array／`[+4]`=capacity／`[+8]`=count**。本体: 線形探索で重複検出→即 return／満杯なら **capacity×2（0 なら 1）で `0x6E8CA0` realloc** → append＋count++。decompiled L583100 `void __thiscall FUN_0073a5e0(int *param_1,int *param_2)`。
+- **state 遷移時の呼び出し [確定(命令)]**: **`this = [seq+0x40]（manager）+ 0x4C`**（3 call site 全員 `mov ecx,[esi+0x40]; add ecx,0x4c`）＝**manager の有効 sequence セットへ登録**。layout 一致: `[mgr+0x4C]`=array／`[+0x50]`=capacity／**`[+0x54]`=count ⇔ `0x6C4200`/`0x6C4480` と完全一致**。呼び出し条件＝**`sete al; test; je` ガード＝新規 activate（state 0→N）のときのみ**。
+- **セット管理の全体図 [確定(命令)]**: **Add＝`0x73A5E0`（新規 activate）／Remove＝`0x6C4200`（state0 除去）／force-Deactivate＝`0x6C4480`（state4 即時）の3者が同一 container を管理**。E8 callers＝17本（sequence band 7本＋他システム10本＝generic utility）。
+- **#152 束8件の完遂サマリ**:
+  | # | 残点 | v | 結果 |
+  |---|---|---|---|
+  | ① | V-381-2 s3/s4⇔RegisterInterpolator | v382 | 直接接続なし・毎フレーム経路 `0x6CA950`→`0x6C6DC0` |
+  | ② | V-379-2 s6 設定元 | v383 | 全定数（v379 訂正）・発火＝`0x474530` の byte |
+  | ③ | V-378-2 `0x6C4480` | v384 | Manager の state4 即時 Deactivate 一括 |
+  | ④ | V-375-1 第2/第3経路 | v385 | slot6 Clone／slot7 Load |
+  | ⑤ | V-381-1 優先規則 | v386 | 0xFF 既定→s1／非0xFF→flag 優先 |
+  | ⑥ | V-380-2 Offset/FLT_MAX | v387 | "Offset"／FLT_MAX＋**V-382-1 s3="Weight"** |
+  | ⑦ | V-377-2 フィールド名 | v388 | 4/4（+0x54/+0x58 は label 不在で挙動裁定） |
+  | ⑧ | V-376-2 `0x73A5E0` | v389 | set Add・manager 有効セット登録 |
+- **残点（新規・低）**: V-382-1..3／V-383-1..3／V-384-1..2／V-385-1..3／V-386-1..2／V-387-1..2／V-388-1..2／V-389-1（いずれも【低〜中】・台帳各行の §3 参照）。**除外（#82 依存）**: V-374-1/V-375-2＝待記のみ。
+- **教訓まとめ**: 読手 census で登録時/毎フレーム分離を可視化（v382）／引数位置は unfiltered の push 並び（v383）／call 直前の this setup を全 site 確認（v389）／format 文字列実読＋decompiled fn def で推測なし命名（v387）／label 不在は不在自体を証明してから挙動ベースへ（v388）／vtable slot 実測×find_head（v385）。
+- **次**: RE レーンの新規 open は人間ゲートのみ（#130-1/#82/#47/#20/#101）。残点の続きは v390 以降で任意順。

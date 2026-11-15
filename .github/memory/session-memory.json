@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-15T04:37:26Z",
+  "lastUpdated": "2026-11-15T04:51:08Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11415,14 +11415,29 @@
         "v388"
       ],
       "content": "2026-11-15 #152⑦（V-377-2）を v388 で裁定: [seq+0x54]/[seq+0x58] を確定（V-377-2 は4/4 クローズ）。成果物 tmp/re/v388_seq_fields_ruling.md（probe v388_1 全 EXIT=0）・台帳 row364（bak214）・round_verify ALL OK（rows 31..364 / total 250 / done 245 / open 5）・STATE (dj)。前半2件（+0x4C='Start'/+0x50='End'）は v387 で解決済み。[seq+0x54]=[確定(否定側)]（label 不在）＋[確定(命令)]（挙動）: exe label は存在しない（FUN_006ca440 の print 11件に不在・decompiled.c ラベル付き書手0件）・挙動＝−FLT_MAX＝未設定（ctor/Deactivate/state1 リセット）／wrapper 0x6C9D30 帯が [+0x54]=arg/Freq(+0x28)（頻度で割る）で設定／state1 切替時に Offset(+0x48)=[+0x54]−time へ変換後に −FLT_MAX リセット（0x6CAA4A）／fade path で未設定判定（0x6CAB84）→frequency 正規化された保留時刻 [推定高]・正名 [未確定]。[seq+0x58]=[確定(否定側)]（label 不在）＋[確定(命令)]（挙動）: crossfade 相手 sequence — Activate が s5 を 0x6C9BE0 で格納（先頭0リセット・自己参照拒否・0x6C6110/0x6C6ED0 検証）／Deactivate・各 wrapper が0リセット／相手の Freq で割る（0x6CAAD8）・相手の Last/Offset を読む（0x6CAB9F/0x6CABC6）・テキストキー同期 0x6C6B30 へ相手渡し（0x6CAAC0）＝v379/v380 の記述を命令で裏付け。残点 V-388-1..2（1=[+0x54] の正名（Gamebryo フィールドとの usage 突合）【低】/2=0x6CAA4A の st1 出所【低】）。教訓: label 不在は print 列挙＋decompiled ラベル付き書手の全走査で不在自体を証明してから挙動ベースへ切り替える。v 採番 v388 消費（次=v389=⑧・束の最後）。"
+    },
+    {
+      "id": "152-bundle-complete-v389-2026-11-15",
+      "timestamp": "2026-11-15T04:51:08Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-152",
+        "n5b",
+        "re",
+        "v389",
+        "bundle-complete"
+      ],
+      "content": "2026-11-15 #152 束完遂（⑧V-376-2 を v389 で裁定し全8件消化）。成果物 tmp/re/v389_setadd_ruling.md（probe v389_1..2 全 EXIT=0）・台帳 row365（bak215）・round_verify ALL OK（rows 31..365 / total 251 / done 246 / open 5）・STATE (dk)。⑧ 0x73A5E0=[確定(命令)]: 重複排除付き ptr 配列セット追加（NiTSet::Add 相当）— ret 4・this 布局＝[+0]=array/[+4]=capacity/[+8]=count・線形探索で重複検出→即 return／満杯なら capacity×2（0 なら 1）で 0x6E8CA0 realloc→append+count++・decompiled L583100 __thiscall FUN_0073a5e0。state 遷移時の呼び出し=[確定(命令)]: this = [seq+0x40]（manager）+0x4C（3 site 全員 mov ecx,[esi+0x40]; add ecx,0x4c）＝manager の有効 sequence セットへ登録・layout 一致（[mgr+0x4C]=array/[+0x50]=cap/[+0x54]=count ⇔ 0x6C4200/0x6C4480 と完全一致）・呼び出し条件=sete al; test; je ガード＝新規 activate（state 0→N）のときのみ。全体図: Add=0x73A5E0／Remove=0x6C4200／force-Deactivate=0x6C4480 の3者が同一 container を管理。E8 callers=17本（sequence band 7本＋他システム10本＝generic utility）。束サマリ: ①V-381-2 s3/s4=毎フレーム経路 0x6CA950→0x6C6DC0（v382）②V-379-2 s6 全定数・発火=0x474530 byte（v383）③V-378-2 0x6C4480=state4 一括 Deactivate（v384）④V-375-1 slot6 Clone/slot7 Load（v385）⑤V-381-1 0xFF 既定→s1／非0xFF→flag 優先（v386）⑥V-380-2 Offset/FLT_MAX＋V-382-1 s3=Weight（v387）⑦V-377-2 4/4（v388）⑧V-376-2 set Add（v389）。残点（新規低中）: V-382-1..3/V-383-1..3/V-384-1..2/V-385-1..3/V-386-1..2/V-387-1..2/V-388-1..2/V-389-1。除外（#82 動的依存）: V-374-1/V-375-2 待記のみ。教訓: 読手 census で登録時/毎フレーム分離・引数位置は unfiltered push 並び・call 直前 this setup 全 site 確認・format 文字列実読＋decompiled fn def で推測なし命名・label 不在は不在自体を証明してから挙動ベース・vtable slot 実測×find_head。v 採番 v389 消費（次=v390）。"
     }
   ],
   "metadata": {
-    "totalEntries": 790,
+    "totalEntries": 791,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-15T04:37:26Z",
-    "entry_count": 790,
-    "last_updated": "2026-11-15T04:37:26Z"
+    "lastUpdated": "2026-11-15T04:51:08Z",
+    "entry_count": 791,
+    "last_updated": "2026-11-15T04:51:08Z"
   }
 }
