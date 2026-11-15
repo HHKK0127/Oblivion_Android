@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-15T02:50:37Z",
+  "lastUpdated": "2026-11-15T03:27:29Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11317,14 +11317,28 @@
         "v381"
       ],
       "content": "2026-11-15 #150 残点1（V-380-1）を v381 で裁定: 0x6C9BA0 の s1 の厳密な型を確定。成果物 tmp/re/v381_s1_priority_ruling.md（probe v381_1 全 EXIT=0）・台帳 row357（bak207）・round_verify ALL OK（rows 31..357 / total 243 / done 238 / open 5）・STATE (dc)。s1（[esp+0xC]）の厳密な型=[確定(命令)]: priority（byte）— 0x6C6A50 の 0x6C6A7D: movsx edx, byte [esp+0x18]（s1 を符号拡張）→0x6C6A91: push edx→0x6CC5C0（RegisterInterpolator）の arg3（[ebp+0xC]＝m_cPriority）へ格納・[esi+0xD]（block の byte flag）が 0xFF のときのみ s1 が使われる（否则 unit 側 flag 優先 movzx edx,dl）。0x47603A の s1=0x64(100)=[確定(命令)]: priority 100（最高優先）。0x6C6A50 の identity=[確定(命令)]（v380 から補強）: 各 block の field8 interpolator へ RegisterInterpolator(block, interpolator, priority, 0.0, 1.0) を呼ぶループ fn（ret 4＝1引数＝s1・stride16・[esi+0xC]=al に結果 byte）。0x6CC5C0 の引数レイアウト=[確定(命令)]（v187 L132 補強）: ret 0x10＝4スタック引数 — arg1（[esp+0x10]）＝block ptr（unit[0] へ格納）／arg2（[esp+0x18]）＝float weight（[ebp+4]＝m_fWeight）／arg3（[esp+0x1C]）＝byte priority（[ebp+0xC]＝m_cPriority）／arg4（[esp+0x20]）＝float（[ebp+0x10]＝m_fEaseSpinner）・満杯時 virtual+0xA4（拡張）→失敗で or al,0xFF（0xFF＝失敗）。#45 N5b への回答: s1 は priority（byte）（weight でも interpolator ID でもない）・0x6C9BA0 の6引数は s1=priority／s2=ease out flag／s3=duration／s4=fade／s5=相手 sequence／s6=ブレンド flag。残点 V-381-1..2（1=[esi+0xD] と s1 の優先関係の実運用【低】/2=0x6CC5C0 の arg2/arg4 が Activate の s3/s4 とどう接続されるか【中】）。教訓: fn 全体 unfiltered decode で引数の movsx を直接確認＋vtable slot 実測で先行裁定（v187）を接続。v 採番 v381 消費（次=v382）。"
+    },
+    {
+      "id": "152-v382-s3s4-weight-path-2026-11-15",
+      "timestamp": "2026-11-15T03:27:29Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-152",
+        "n5b",
+        "re",
+        "v382"
+      ],
+      "content": "2026-11-15 #152①（V-381-2）を v382 で裁定: Activate の s3/s4 と RegisterInterpolator arg2/arg4 の接続を確定。成果物 tmp/re/v382_s3s4_weight_path_ruling.md（probe v382_1..4 全 EXIT=0）・台帳 row358（bak208）・round_verify ALL OK（rows 31..358 / total 244 / done 239 / open 5）・STATE (dd)。直接接続=[確定(否定側)]＋[確定(命令)]: arg2/arg4 は登録時初期値のみ（0x6C6A50 が全 block に weight=0.0/ease 1.0・0x6CC5C0 の arg2→[ebp+4]／arg4→[ebp+0x10]=m_fEaseSpinner で唯一の書手 0x6CC664）。s3/s4 は別経路: s3→[seq+0x1C]、s4→[seq+0x50] を fn 0x6CA950（フェード/重み更新・ret 8=(time,flag)）が毎フレーム消費し、start=now/end=now+[+0x50] で初期化→t=(time−start)/(end−start) の線形フェード係数（state 1..6 分岐）→[+0x48]（s2 ease）加算→[+0x1C]（s3）乗算→0x6C6DC0（重み伝播・E8 callers=1）へ。登録時 weight=0.0 は毎フレーム上書きされる。駆動元=[確定(命令)]: fn 0x6C4200（[this+8] bit3 ゲート・E8=0）＝有効 sequence 配列 [this+0x4C]（count [this+0x54]）走査で (time,flag=1) 呼び＋state0 の除去（NiControllerManager Update 相当[推定高]）。crossfade 相手（[esi+0x58]=s5）も flag=0 で再帰更新→0x6C6B30（v187 テキストキー同期）。付随: Deactivate の 0x6C6AC0＝field8→virtual+0x9C（priority byte）＝v187 UnregisterInterpolator [確定]＝Activate(Register)/Deactivate(Unregister) の対が確定。新規残点 V-382-1..3（1=s3 の厳密命名 duration vs weight 倍率【中】/2=0x6C5FC0 time remap helper identity【中】/3=0x6C4200 所属と初期化元【低】）。教訓: 読手 census で登録時引数と毎フレーム更新の分離を可視化。docs 不整合: v378/v380 の s3=duration ラベルは命令上未裏付け（V-382-1 へ）。v 採番 v382 消費（次=v383=②V-379-2）。"
     }
   ],
   "metadata": {
-    "totalEntries": 783,
+    "totalEntries": 784,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-15T02:50:37Z",
-    "entry_count": 783,
-    "last_updated": "2026-11-15T02:50:37Z"
+    "lastUpdated": "2026-11-15T03:27:29Z",
+    "entry_count": 784,
+    "last_updated": "2026-11-15T03:27:29Z"
   }
 }

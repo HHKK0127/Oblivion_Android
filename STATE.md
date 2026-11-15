@@ -1292,3 +1292,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-381-1..2**: 1=`[esi+0xD]`（block byte flag）と s1 の優先関係の実運用（0xFF のとき s1 が使われる条件・caller 側 census）【低】／2=`0x6CC5C0` の arg2/arg4（weight 0.0 / ease 1.0）が Activate の s3/s4 とどう接続されるか（`0x6C6A50` は常に 0.0/1.0 を渡すため s3/s4 は別経路 [推定]）【中】。
 - **教訓**: **fn 全体 unfiltered decode で引数の `movsx` を直接確認**＋vtable slot 実測で先行裁定（v187 RegisterInterpolator）を接続。
 - **次**: RE レーンの open は人間ゲートのみ。次 probe 入口＝V-381-2（次 v 採番 v382）。
+
+## 2026-11-15 (dd) — #152① 完遂: s3/s4 と RegisterInterpolator arg2/arg4 の接続＝**直接接続なし [確定(否定側)]・s3/s4 は `0x6CA950`（フェード更新）→`0x6C6DC0`（重み伝播）の毎フレーム経路**（v382・V-381-2）
+
+- **成果物**: `tmp/re/v382_s3s4_weight_path_ruling.md`（probe **v382_1..4 全 EXIT=0**）。台帳 **row358（bak208）**・`round_verify` **ALL OK**（rows 31..358 / total 244 / done 239 / open 5）。ai-todo #152 に note（束①消化・complete は束全体で）。v 採番 **v382 消費（次=v383＝#152②）**。
+- **裁定**: **arg2/arg4（weight 0.0/ease 1.0）と s3/s4 の直接接続は存在しない [確定(否定側)]** — arg2/arg4 は**登録時の初期値のみ**（`0x6C6A50` が全 block に weight=0.0/ease=1.0・`0x6CC5C0` の arg2→`[ebp+4]`／arg4→`[ebp+0x10]`＝m_fEaseSpinner で**唯一の書手 `0x6CC664`**）。
+- **s3/s4 の実際の消費経路 [確定(命令)]**: ①s3→`[seq+0x1C]`、s4→`[seq+0x50]`（fade 終点素材・v378/v380）を **fn `0x6CA950`（フェード/重み更新・`ret 8`＝(time, flag)）**が毎フレーム消費 ②`[+0x4C]`（fade start）が未設定（−const）なら **start=now／end=now+`[+0x50]`** で初期化 → `(time−start)/(end−start)` の**線形フェード係数**（state 1..6 分岐 `lea eax,[ecx-1]; cmp eax,5`）→ `[+0x48]`（s2 ease）加算 → **`[+0x1C]`（s3 由来）を乗算** → **`0x6C6DC0`（重み伝播・E8 callers=1＝本経路のみ）**へ。**登録時 weight=0.0 は毎フレームの更新で上書きされる**。
+- **駆動元 [確定(命令)]**: **fn `0x6C4200`**（`[this+8]` bit3 ゲート・**E8 callers=0**＝virtual 経由）＝**有効 sequence 配列 `[this+0x4C]`（count `[this+0x54]`）を走査して各 sequence へ `(time, flag=1)` で `0x6CA950` を呼び、`state==0` の sequence を配列から除去**（count--・前方詰め）＝ NiControllerManager の有効 sequence 配列 Update 相当 [推定高]。crossfade 相手（`[esi+0x58]`＝s5）は **flag=0 で再帰更新** → `0x6C6B30`（v187 L140 テキストキー同期）。
+- **（付随）Deactivate の解除経路 [確定]（v187 接続）**: `0x6C6AC0`（E8 callers＝`0x6C9D25` の1本）＝各 block の **field8 → `virtual+0x9C([eax+0xC]`＝priority byte)`** ＝ **v187 L135 の `UnregisterInterpolator`**。→ **Activate（`0x6C6A50`=Register）／Deactivate（`0x6C6AC0`=Unregister）の対が確定**。
+- **残点 V-382-1..3**: 1=**s3（`[seq+0x1C]`）の厳密な命名**（本裁定で「重み伝播への倍率」と消費されることを確認したが **v378/v380 は duration と記載**・caller は s3=1.0 で両義が一致してしまう・NiControllerSequence フィールド名との突合で確定可）【中】／2=**`0x6C5FC0`（time remap helper・callers `0x49F4C0`/`0x49F6A5`/`0x6C6B4E`/`0x6CAC00`）の正式 identity**【中】／3=**`0x6C4200` の所属と初期化元**（`[this+8]` bit3・`[this+0x4C]`/`[+0x54]` 構築元）【低】。
+- **教訓**: **読手 census（disp8 mod=01）で「誰が store したフィールドを読むか」を辿ると、登録時引数と毎フレーム更新の分離を可視化できる**・E8 callers=1 の経路が本命＝virtual 経路と直接経路の2系統 census が有効。
+- **docs との不整合**: **v378/v380 の s3=「duration」ラベルは命令上未裏付け**（V-382-1 として命名を再検証）。v187 L132/L135（Register/Unregister）は本裁定で activate/deactivate 経路に接続＝補強。
+- **次**: #152②V-379-2（`0x6C4049` の caller 側 flag 設定元）→ 次 v 採番 v383。
