@@ -48,6 +48,7 @@ const MAX_MOPP_DATA_SIZE: u32 = 1 << 20;
 // controller manager and sequence readers that moved here.
 const MAX_CONTROLLER_SEQUENCES: u32 = 4096;
 const MAX_CONTROLLED_BLOCKS: u32 = 4096;
+const MAX_PALETTE_BYTES: u32 = 1 << 20;
 
 /// `NiSkinInstance`: Data | Skin Partition (since 10.1.0.101) | Skeleton Root |
 /// Num Bones | Bones. The partition index is the `0xFFFFFFFF` sentinel below
@@ -1186,6 +1187,43 @@ impl<'a> BlockReader<'a> {
         })
     }
 
+    /// The `NiStringPalette` block at a known block index: the name blob its
+    /// controlled blocks index into, plus the `Length` word behind it.
+    ///
+    /// The original skips the block outright (orig_src/nif_parser.cpp:
+    /// 1654-1656) and never stores it, so reading it is a port-side addition;
+    /// the layout it reads is the file's and is checked against retail data —
+    /// `demdooranim01.nif` carries one palette of 67 bytes holding
+    /// `DEMdoorAnim01Door`, `NiTransformController` and
+    /// `DEMdoorAnim01Door NonAccum` NUL-separated, with `Length` repeating 67.
+    /// A block index of another type reads as no palette rather than as
+    /// somebody else's bytes.
+    pub(crate) fn parse_string_palette_at(&mut self, index: u32) -> Option<StringPalette> {
+        if self.nodes.get(index as usize)?.block_type_name != "NiStringPalette" {
+            return None;
+        }
+        let offset = self.locate(index)?;
+        self.r.set_pos(offset);
+
+        let palette_len = self.r.u32();
+        if self.r.has_error() || palette_len > MAX_PALETTE_BYTES {
+            return None;
+        }
+        let mut palette = vec![0u8; palette_len as usize];
+        if !self.r.read_bytes(&mut palette) {
+            return None;
+        }
+        let declared_length = self.r.u32();
+        if self.r.has_error() {
+            return None;
+        }
+
+        Some(StringPalette {
+            palette,
+            declared_length,
+        })
+    }
+
     /// The first `NiControllerSequence` of the file.
     pub(crate) fn parse_controller_sequence(&mut self) -> Option<ControllerSequence> {
         let index = self.seek_to_block_of_type("NiControllerSequence")?;
@@ -1600,6 +1638,45 @@ impl<'a> BlockReader<'a> {
 pub struct TextKey {
     pub time: f32,
     pub value: String,
+}
+
+/// A parsed `NiStringPalette` block: the name blob a controlled block's five
+/// offsets index into, and the `Length` word stored behind it.
+///
+/// The blob is what the engine's identifier accessors read: they add the u16
+/// offset to the palette base and return NULL when the offset word is
+/// `0xFFFF` (v371_nif_resolve_ruling.md §2.3-2, [確定(命令)]). The offsets the
+/// controlled block reader keeps are the same words as u32, so the sentinel
+/// compares the same way here.
+#[derive(Clone, Debug, PartialEq)]
+pub struct StringPalette {
+    /// The names exactly as stored in the file: NUL-separated, no terminator
+    /// after the last one is guaranteed.
+    pub palette: Vec<u8>,
+    /// The `Length` word that follows the palette. It is the palette's own
+    /// size in the retail files, kept as stored rather than recomputed.
+    pub declared_length: u32,
+}
+
+impl StringPalette {
+    /// The NUL-terminated name at `offset`.
+    ///
+    /// Returns `None` for the `0xFFFF` sentinel, for an offset at or past the
+    /// end of the blob, and for bytes that are not UTF-8. An offset in the
+    /// middle of a name yields the rest of that name, which is what adding the
+    /// offset to the palette base does in the engine as well.
+    pub fn name_at(&self, offset: u32) -> Option<&str> {
+        if offset == 0xFFFF {
+            return None;
+        }
+        let start = offset as usize;
+        if start >= self.palette.len() {
+            return None;
+        }
+        let rest = &self.palette[start..];
+        let end = rest.iter().position(|&b| b == 0).unwrap_or(rest.len());
+        std::str::from_utf8(&rest[..end]).ok()
+    }
 }
 
 /// One entry of a sequence's controlled block array: which controller it

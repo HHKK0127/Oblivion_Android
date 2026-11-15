@@ -32,7 +32,7 @@ pub use block::{
     AnimationClip, AnimationKeyframe, BoneData, CollisionObject, CollisionShape, ControllerManager,
     ControllerSequence, FloatKey, FloatKeyGroup, KeyframeController, KeyframeData, PackedWeight,
     Partition, QuaternionKey, RigidBodyInfo, RigidBodyRead, ShapeType, SkinData, SkinInstance,
-    SkinPartition, TextKey, Vector3Key, Vector3KeyGroup, VertexWeight,
+    SkinPartition, StringPalette, TextKey, Vector3Key, Vector3KeyGroup, VertexWeight,
 };
 
 use std::fmt;
@@ -514,6 +514,18 @@ impl NifParser {
     pub fn parse_controller_sequence(&self) -> Option<ControllerSequence> {
         block::BlockReader::new(&self.data, &self.header, &self.walk, &self.nodes)
             .parse_controller_sequence()
+    }
+
+    /// The `NiStringPalette` block at `index`: the name blob whose offsets the
+    /// controlled blocks carry. [`KeyframeController::string_palette_index`]
+    /// names the block and [`StringPalette::name_at`] turns one of the five
+    /// offsets into the identifier it holds — `0xFFFF` yields `None`, which is
+    /// how the engine's accessors report "no such name"
+    /// (v371_nif_resolve_ruling.md §2.3-2). Returns `None` when `index` is out
+    /// of range or names a block that is not a palette.
+    pub fn parse_string_palette(&self, index: u32) -> Option<StringPalette> {
+        block::BlockReader::new(&self.data, &self.header, &self.walk, &self.nodes)
+            .parse_string_palette_at(index)
     }
 
     /// The first keyframe data block of the file, whichever of the two names
@@ -2727,6 +2739,50 @@ mod tests {
             },
             ..Default::default()
         }]
+    }
+
+    /// The single `NiStringPalette` block retail `demdooranim01.nif` ships:
+    /// 67 bytes of NUL-separated names with `Length` repeating the size.
+    fn retail_palette_body() -> Vec<u8> {
+        let names = b"DEMdoorAnim01Door\0NiTransformController\0DEMdoorAnim01Door NonAccum\0";
+        let mut body = (names.len() as u32).to_le_bytes().to_vec();
+        body.extend_from_slice(names);
+        body.extend_from_slice(&(names.len() as u32).to_le_bytes());
+        body
+    }
+
+    /// Parses that palette and reads the three identifiers back by offset —
+    /// the access pattern the engine uses — plus the three ways a lookup
+    /// yields nothing: the `0xFFFF` sentinel, an offset at the end of the
+    /// blob, and a block index that is not a palette.
+    #[test]
+    fn string_palette_reads_retail_names_by_offset() {
+        let header = gamebryo_header(
+            "Gamebryo File Format, Version 20.0.0.5",
+            0x1400_0005,
+            11,
+            11,
+            &["NiStringPalette"],
+            &[0],
+        );
+        let mut built = Built::with_header(header);
+        built.block(retail_palette_body());
+        let (bytes, _) = built.trailer(&[0]);
+
+        let parser = parse(&bytes);
+        assert!(parser.are_blocks_walked(), "{}", parser.walk_error());
+
+        let palette = parser
+            .parse_string_palette(0)
+            .expect("the palette block is the file's only block");
+        assert_eq!(palette.palette.len(), 67);
+        assert_eq!(palette.declared_length, 67);
+        assert_eq!(palette.name_at(0), Some("DEMdoorAnim01Door"));
+        assert_eq!(palette.name_at(18), Some("NiTransformController"));
+        assert_eq!(palette.name_at(40), Some("DEMdoorAnim01Door NonAccum"));
+        assert_eq!(palette.name_at(0xFFFF), None);
+        assert_eq!(palette.name_at(67), None);
+        assert!(parser.parse_string_palette(0xFFFF_FFFF).is_none());
     }
 
     #[test]
