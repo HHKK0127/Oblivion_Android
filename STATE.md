@@ -1280,3 +1280,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-380-1..2**: 1=**s1 の厳密な型**（weight（百分率）vs interpolator ID・`0x6C6A50` の `virtual+0x98` 引数解釈 decode で確定可）【中】／2=**`[esi+0x48]` のフィールド名**（ease out 時間 [推定]・`0xA7DEB4` 定数値）【低】。
 - **教訓**: **fn 全体の unfiltered decode で引数の使用箇所を直接特定**＋caller fn 全体から weight 正規化経路を接続。
 - **次**: RE レーンの open は人間ゲートのみ。次 probe 入口＝V-380-1（次 v 採番 v381）。
+
+## 2026-11-15 (dc) — #150 残点1解消: Activate の s1＝**priority（byte）[確定(命令)]**（weight/ID ではない）・`0x6C6A50`＝**RegisterInterpolator 呼び出しループ**・`0x6CC5C0` の4引数を確定（v381・V-380-1）
+
+- **成果物**: `tmp/re/v381_s1_priority_ruling.md`（probe **v381_1 全 EXIT=0**）。台帳 **row357（bak207）**・`round_verify` **ALL OK**（rows 31..357 / total 243 / done 238 / open 5）。ai-todo #45 に note（#150 は complete 済み）。v 採番 **v381 消費（次=v382）**。経緯: v380 の残点 V-380-1 を消化。
+- **s1（`[esp+0xC]`）の厳密な型 [確定(命令)]**: **priority（byte）** — `0x6C6A50` の `0x6C6A7D: movsx edx, byte [esp+0x18]`（**s1 を符号拡張**）→ `0x6C6A91: push edx` → **`0x6CC5C0`（RegisterInterpolator）の arg3（`[ebp+0xC]`＝m_cPriority）** へ格納。`[esi+0xD]`（block の byte flag）が **0xFF のときのみ s1 が使われる**（否则 unit 側 flag 優先 `movzx edx,dl`）。
+- **`0x47603A` の s1=0x64(100) [確定(命令)]**: **priority 100（最高優先）**。
+- **`0x6C6A50` の identity [確定(命令)]**（v380 から補強）: **各 block の field8 interpolator へ `RegisterInterpolator(block, interpolator, priority, 0.0, 1.0)` を呼ぶループ fn**（`ret 4`＝1引数＝s1・stride16・`[esi+0xC]=al` に結果 byte）。
+- **`0x6CC5C0` の引数レイアウト [確定(命令)]**（v187 L132 補強）: **`ret 0x10`＝4スタック引数** — **arg1（`[esp+0x10]`）＝block ptr**（unit[0] へ格納）／**arg2（`[esp+0x18]`）＝float weight**（`[ebp+4]`＝m_fWeight）／**arg3（`[esp+0x1C]`）＝byte priority**（`[ebp+0xC]`＝m_cPriority）／**arg4（`[esp+0x20]`）＝float**（`[ebp+0x10]`＝m_fEaseSpinner）。満杯時 `virtual+0xA4`（拡張）→ 失敗で `or al,0xFF`（0xFF＝失敗）。
+- **#45 N5b への回答（v380 残点1）**: **s1 は priority（byte）**（weight でも interpolator ID でもない）。**`0x6C9BA0` の6引数は s1=priority／s2=ease out flag／s3=duration／s4=fade／s5=相手 sequence／s6=ブレンド flag**。
+- **残点 V-381-1..2**: 1=`[esi+0xD]`（block byte flag）と s1 の優先関係の実運用（0xFF のとき s1 が使われる条件・caller 側 census）【低】／2=`0x6CC5C0` の arg2/arg4（weight 0.0 / ease 1.0）が Activate の s3/s4 とどう接続されるか（`0x6C6A50` は常に 0.0/1.0 を渡すため s3/s4 は別経路 [推定]）【中】。
+- **教訓**: **fn 全体 unfiltered decode で引数の `movsx` を直接確認**＋vtable slot 実測で先行裁定（v187 RegisterInterpolator）を接続。
+- **次**: RE レーンの open は人間ゲートのみ。次 probe 入口＝V-381-2（次 v 採番 v382）。

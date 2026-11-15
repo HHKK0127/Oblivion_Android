@@ -168,6 +168,7 @@
   > 【RE 完遂（v379）: #150 残点3 解消】probe v379_1..2 全 EXIT=0。成果物 tmp/re/v379_activate_flag_ruling.md・台帳 row355（bak205）。flag 引数（s6＝[esp+0x20]）=[確定(命令)]: 「ブレンド遷移を要求するか」フラグ — s6=1 → state 5（ブレンド遷移・wrapper 0x6C9D30/0x6C9E00 が push 1 を s6 位置に配置）／s6=0 → state 2（単独フェード・caller 0x47491C/0x47603A/0x4DAB0B/0x4E3087 等が push 0）・s6=動的なのは 0x6C4049（push ecx）のみ [部分確定]。0x6C9BA0 のスタック引数レイアウト=[確定(命令)]: ret 0x18＝6スタック引数（this=ecx 以外）— s1＝相手/ターゲット sequence ptr／s2＝byte（0/1）／s3・s4（float）＝fade duration 系（s3=[esp+0x14]=duration、s4=[esp+0x18]=fade）／s5＝sequence ptr（0x6C9BB0: edi=[esp+0x1C]）／s6＝flag byte（0→state2 / 1→state5）。wrapper 0x6C9D30/0x6C9E00=[部分確定]: ActivateSequence 系 wrapper（ret 0x1c＝7引数）— 先頭で Deactivate(fade=0.0, flag=1)＝state 4 を呼んだ後、state==0 を確認してから Activate(..., s6=1)＝state 5 を呼ぶ・0x6C9D30 は [esi+0x44]=1（state1 即時再生）を先に置きその後 Activate(s6=1) でブレンド遷移へ。v187 の「真の ActivateSequence 候補 0x6C4890-0x6C4BD0 帯」=[確定(否定側)]: 0x6C4890＝dtor（vtable 0xA7973C→0x7C2A40→delete・E8 callers=0）／0x6C4BD0＝別物・Activate は不在→真の Activate は 0x6C9BA0（v378 確定）。state 2/5 の完全図: 0x6C9BA0＝Activate（s6 flag で分岐）— s6=0 → state 2／s6=1 → state 5（ブレンド・Manager 通知 0x6C4480 付き）・wrapper は常に s6=1。残点 V-379-1..2（1=s1/s2 の厳密な意味【中】／2=0x6C4049 の caller 側 flag 設定元【中】）。教訓: 各 caller の push 並びを unfiltered で取得し引数位置を特定→値で分岐を実証＋先行裁定の候補帯を dtor 同定で否定。v 採番 v379 消費（次=v380）。
   > 【RE 継続（v380 着手）】v379 の残点 V-379-1（0x6C9BA0 の s1/s2 引数の厳密な意味）を解析する。採番確認済: row355 が最新・v380 未使用。probe v380_1 で (a) 0x6C9BA0 内の s1（[esp+0xC]）/s2（[esp+0x10]）の使用箇所 (b) s1=100(0x64) の caller 0x47603A の fn 全体 (c) s2=1 の caller 0x47491C の fn 全体 を取得。L1 report-only 維持。
   > 【RE 完遂（v380）: #150 残点1 解消】probe v380_1 全 EXIT=0。成果物 tmp/re/v380_activate_s1s2_ruling.md・台帳 row356（bak206）。s1（[esp+0xC]）=[確定(命令)]＋[推定高]: interpolator 引数 — 0x6C9BE3: mov eax,[esp+0xC]; push eax; call 0x6C6A50（0x6C6A50＝field8 interpolator の virtual+0x98 呼び出し・v372/v376 確定）・caller 0x47603A の s1=0x64(100) は weight（百分率）[推定高]（fn 0x474530 帯の fild; fdiv qword [0xA3AA50]＝255 で割る weight 正規化を通過した値）。s2（[esp+0x10]）=[確定(命令)]: byte flag（0/1）— 0x6C9C8A: cmp byte [esp+0x10],0; je; fld [0xA7DEB4]; fchs; fstp [esi+0x48]＝非0のとき [esi+0x48]（ease out 時間[推定]）に -const をセット・s2=1 の caller 0x47491C（fn 0x474530・weight 正規化経路）／s2=0 の caller 多数。0x6C9BA0 の6引数の完全図=[確定(命令)]＋[部分確定]: s1＝interpolator 引数（weight[推定高]）／s2＝byte flag（ease out 設定用）／s3（float）＝duration（[esi+0x1C] へ）／s4（float）＝fade（0 < s4 で state 2/5、s4 ≤ 0 で state 1）／s5＝相手 sequence ptr（[edi+0x58] 記録）／s6＝flag byte（0→state2 / 1→state5・v379 確定）。#45 N5b への回答: s1 は interpolator 引数（0x6C6A50 へ）、s2 は byte flag（ease out 設定用）・state 1/2/5 の分岐は s4（fade duration）と s6（ブレンド flag）が担う。残点 V-380-1..2（1=s1 の厳密な型（weight vs interpolator ID・0x6C6A50 の virtual+0x98 引数解釈 decode で確定可）【中】／2=[esi+0x48] のフィールド名【低】）。教訓: fn 全体の unfiltered decode で引数の使用箇所を直接特定＋caller fn 全体から weight 正規化経路を接続。v 採番 v380 消費（次=v381）。
+  > 【RE 完遂（v381）: #150 残点1 解消】probe v381_1 全 EXIT=0。成果物 tmp/re/v381_s1_priority_ruling.md・台帳 row357（bak207）。s1（[esp+0xC]）の厳密な型=[確定(命令)]: priority（byte）— 0x6C6A50 の 0x6C6A7D: movsx edx, byte [esp+0x18]（s1 を符号拡張）→0x6C6A91: push edx→0x6CC5C0（RegisterInterpolator）の arg3（[ebp+0xC]＝m_cPriority）へ格納・[esi+0xD]（block の byte flag）が 0xFF のときのみ s1 が使われる（否则 unit 側 flag 優先 movzx edx,dl）。0x47603A の s1=0x64(100)=[確定(命令)]: priority 100（最高優先）。0x6C6A50 の identity=[確定(命令)]（v380 から補強）: 各 block の field8 interpolator へ RegisterInterpolator(block, interpolator, priority, 0.0, 1.0) を呼ぶループ fn（ret 4＝1引数＝s1・stride16・[esi+0xC]=al に結果 byte）。0x6CC5C0 の引数レイアウト=[確定(命令)]（v187 L132 補強）: ret 0x10＝4スタック引数 — arg1（[esp+0x10]）＝block ptr（unit[0] へ）／arg2（[esp+0x18]）＝float weight（[ebp+4]＝m_fWeight）／arg3（[esp+0x1C]）＝byte priority（[ebp+0xC]＝m_cPriority）／arg4（[esp+0x20]）＝float（[ebp+0x10]＝m_fEaseSpinner）・満杯時 virtual+0xA4（拡張）→失敗で or al,0xFF。#45 N5b への回答: s1 は priority（byte）（weight でも interpolator ID でもない）・0x6C9BA0 の6引数は s1=priority／s2=ease out flag／s3=duration／s4=fade／s5=相手 sequence／s6=ブレンド flag。残点 V-381-1..2（1=[esi+0xD] と s1 の優先関係の実運用【低】／2=0x6CC5C0 の arg2/arg4 が Activate の s3/s4 とどう接続されるか【中】）。教訓: fn 全体 unfiltered decode で引数の movsx を直接確認＋vtable slot 実測で先行裁定（v187 RegisterInterpolator）を接続。v 採番 v381 消費（次=v382）。
 
 - [ ] **#44** V219 外部待ち項目の管理: GECK / registries資料 / [PORT]承認 / docs適用 `#oblivion` `#re`
   > ホーム台帳 #26 より統合。2026-11-01 起票 (bak88)。[PORT] Controls A/B 選択は承認ゲート性質。以降の serial ラウンドで解消済みの可能性が高い。台帳 row219 確認後に閉じる。
@@ -831,6 +832,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -854,4 +860,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-15 11:38:55
+**ai-todo** | Last Updated: 2026-11-15 11:49:02
