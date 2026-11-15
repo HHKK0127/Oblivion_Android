@@ -1223,3 +1223,14 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **store 形式の全走査で「設定元が存在しない」こと自体を証明**できる（死コード判定）。
 - **再開メモ（サーバ再起動後）**: `resume_status.py` で main tree clean・HEAD `ef968175` を確認してから本周を開始。並行セッションの #146 完了（`1e203e1b`）と N5b increment 4（`f431795e`）、#149 のビルド中断（`build_namevalidate.log`＝別レーン worktree `fix-chargen-name-validate`・L1 責務外）を確認。
 - **次**: RE レーンの open は人間ゲートのみ（#130-1/#82/#47/#20/#101）。次 probe 入口＝V-376-1（次 v 採番 v377）。
+
+## 2026-11-15 (cy) — #150 残点1解消: head `0x6C9CB0` = **`Deactivate/Suspend` [確定]（v187 先行裁定＋v377 補強）**・`[this+0x44]` state enum を命令で列挙（v377・V-376-1）
+
+- **成果物**: `tmp/re/v377_deactivate_state_ruling.md`（probe **v377_1 全 EXIT=0**）。台帳 **row353（bak203）**・`round_verify` **ALL OK**（rows 31..353 / total 239 / done 234 / open 5）。ai-todo #45 に note（#150 は complete 済み）。v 採番 **v377 消費（次=v378）**。経緯: v376 の残点 V-376-1 を消化。
+- **head `0x6C9CB0` の正式 fn 名 [確定]**: **`Deactivate/Suspend`** — **先行裁定 `v187_anim_residuals.md` L142**「0x6C9CB0 = Deactivate/Suspend（**+0x44→3/4** のフェードアウト設定 or 即時停止）」（同 L140-141 で `0x6C6B30`＝テキストキー同期・**state6 のサイクルオフセット算出**と併記）。
+  - **v377 補強**: ①**既知 vtbl 10種48スロット走査＋non-.text の fn ptr テーブル走査の両方で `0x6C9CB0` 不在**＝**非仮想の直接呼び出し fn** [確定(否定側)] ②末尾 `0x6C9CD9: mov [ecx+0x44],eax`（**引数で state を渡す**）＋`fld [0xA7DEB4]; fchs; [ecx+0x4C]/[+0x50]=-const`（フェード時間 [推定]）＋`ret 8`（2引数）③**callers 15本のうち4本（`0x4B7F15`/`0x4DE5C2`/`0x4DE561`/`0x4E30B6`）が v172 のエフェクト減衰チェーン（`0x49F950→0x4E0D90→0x6C9CB0→0x4D90D0`）と一致**。
+- **`[this+0x44]` state enum [確定(命令)]（0/1/6）＋[部分確定]（2/5）＋[確定]（3/4=v187）**: **0=停止/Reset**（`0x6C9D14: [ecx+0x44]=0; [ecx+0x58]=0; [ecx+0x54]=-const; call 0x6C6AC0`）・**1=再生/Activate**（`0x6C9C68`/`0x6C9D80`/`0x6C9EAC`）・**2**（`0x6C9C2E`・意味 [部分確定]）・**3/4=フェードアウト/停止**（v187・Deactivate/Suspend の遷移先）・**5**（`0x6C9C0E`/`0x6C9E72`・caller `0x471A70` の `cmp [eax+0xAC],5`・意味 [部分確定]）・**6=サイクル**（v187「state6 のサイクルオフセット」・`0x6C9EDD`）。
+- **#45 N5b への回答（v376 残点1）**: `0x6C9CB0` は **`NiControllerSequence` の Deactivate/Suspend [確定]**（state `+0x44` を 3/4 へ遷移）。v376 の「activate/cycle 系 [推定高]」は**呼び出し元 fn（`0x6C9D70`/`0x6C9E55`）の側**で正しく、head 自体は Deactivate/Suspend（state 1/5/6 へ遷移は activate/cycle 側）。
+- **残点 V-377-1..2**: 1=**state 2 と 5 の意味**（`0x6C9C2E`/`0x6C9C0E`/`0x6C9E72`・caller `cmp [eax+0xAC],5`・b07 `NiControllerSequence` の cycle type enum と照合で切り分け可）【中】／2=`[this+0x4C]`/`[+0x50]`/`[+0x54]`/`[+0x58]` のフィールド名（fade time/phase/time/cycle offset [推定]・`0xA7DEB4` 定数値）【低】。
+- **教訓**: **先行裁定の grep で重複解析を回避**（v187 L142 を発見）＋**vtbl×fn ptr テーブルの両方の不在走査で非仮想 fn を証明**。
+- **次**: RE レーンの open は人間ゲートのみ。次 probe 入口＝V-377-1（次 v 採番 v378）。

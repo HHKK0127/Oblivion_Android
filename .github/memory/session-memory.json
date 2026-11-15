@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-15T01:56:26Z",
+  "lastUpdated": "2026-11-15T02:05:07Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11232,14 +11232,28 @@
         "v376"
       ],
       "content": "2026-11-15 #150 完了（v376・①は v373 で解決済み）: v372 の残点②③を裁定。成果物 tmp/re/v376_storetargets_residuals_ruling.md（probe v376_1 全 EXIT=0）・台帳 row352（bak202）・round_verify ALL OK（rows 31..352 / total 238 / done 233 / open 5）・STATE (cx)。② 0x6C6A50 他 callers（0x6C9D70/0x6C9E55）の fn identity=[部分確定]: 両者とも head 0x6C9CB0（xor edx,edx; cmp [ecx+0x44],edx; jne; xor al,al; ret 8＝[this+0x44] state を bool 判定・fldz; fld [esp+4]; fcom st(1)＝float 比較）・E8 callers 15本（0x470B5E/0x471083/0x4715E0/0x471A70/0x471AA0/0x4732A1/0x473B35/0x4745ED/0x4746F6/0x475C08/0x47605D/0x4B7F15/0x4DE561/0x4DE5C2/0x4E30B6＝game 側 0x47xxxx animation 帯から広く呼ばれる）→NiControllerSequence の activate/cycle 系 [推定高]・中身は state 遷移（[esi+0x44] を 1/5/6 へ）＋field8 interpolator へ 0x6C6A50（virtual+0x98）＋0x6C9BA0（ret 0x18 系）＋0x73A5E0 呼び出し。③ [esp+0x38] 設定元=[確定(否定側)]: StoreTargets 範囲（0x6C9590..0x6C9BA0）の全 store 形式（C644/C684/88xx/C744/89xx）走査で writers = 1 件のみ＝prologue の 0x6C95CE: mov byte [esp+0x38],0・1 に立てる書き手なし→0x6C9B5D: jne 0x6C9B71（Bip01 直行）は死コード・実挙動＝フラグ=0（常に）で Bip02 FindChild（0xA79CD0）→見つかれば Bip01 FindChild（0xA30968）→その子 [+0x1C] → 0x6C6910(owner, 子)。→ v372 §2.2D の「[esp+0x38] 処理済みで Bip01」記述を補正（死コードのため実行されない。v372 本文は温存・v376 §2.2 が正）。残点 V-376-1..2（1=head 0x6C9CB0 の正式 fn 名と [this+0x44] state 意味【中】/2=0x73A5E0 identity【低】）。教訓: store 形式の全走査で「設定元が存在しない」こと自体を証明できる（死コード判定）。v 採番 v376 消費（次=v377）。サーバ再起動後は resume_status.py で main tree clean・HEAD 確認後に再開（並行セッションの #146 完了 1e203e1b・N5b increment 4 f431795e・#149 ビルド中断=別レーンを確認）。"
+    },
+    {
+      "id": "150-v377-deactivate-state-2026-11-15",
+      "timestamp": "2026-11-15T02:05:07Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-150",
+        "nif",
+        "re",
+        "v377"
+      ],
+      "content": "2026-11-15 #150 残点1（V-376-1）を v377 で裁定: head 0x6C9CB0 の正式名と [this+0x44] state enum を確定。成果物 tmp/re/v377_deactivate_state_ruling.md（probe v377_1 全 EXIT=0）・台帳 row353（bak203）・round_verify ALL OK（rows 31..353 / total 239 / done 234 / open 5）・STATE (cy)。head 0x6C9CB0 の正式 fn 名=[確定]: Deactivate/Suspend — 先行裁定 v187_anim_residuals.md L142「0x6C9CB0 = Deactivate/Suspend（+0x44→3/4 のフェードアウト設定 or 即時停止）」（同 L140-141 で 0x6C6B30=テキストキー同期・state6 のサイクルオフセット算出と併記）。v377 補強: ①既知 vtbl 10種48スロット走査＋non-.text fn ptr テーブル走査の両方で 0x6C9CB0 不在＝非仮想の直接呼び出し fn[確定(否定側)] ②末尾 0x6C9CD9: mov [ecx+0x44],eax（引数で state を渡す）＋fld [0xA7DEB4]; fchs; [ecx+0x4C]/[+0x50]=-const（フェード時間[推定]）＋ret 8（2引数）③callers 15本のうち4本（0x4B7F15/0x4DE5C2/0x4DE561/0x4E30B6）が v172 のエフェクト減衰チェーン（0x49F950→0x4E0D90→0x6C9CB0→0x4D90D0）と一致。[this+0x44] state enum=[確定(命令)]（0/1/6）＋[部分確定]（2/5）＋[確定]（3/4=v187）: 0=停止/Reset（0x6C9D14: [ecx+0x44]=0; [ecx+0x58]=0; [ecx+0x54]=-const; call 0x6C6AC0）・1=再生/Activate（0x6C9C68/0x6C9D80/0x6C9EAC）・2（0x6C9C2E・意味[部分確定]）・3/4=フェードアウト/停止（v187）・5（0x6C9C0E/0x6C9E72・caller 0x471A70 の cmp [eax+0xAC],5・意味[部分確定]）・6=サイクル（v187「state6 のサイクルオフセット」・0x6C9EDD）。#45 N5b への回答: 0x6C9CB0 は NiControllerSequence の Deactivate/Suspend [確定]・v376 の「activate/cycle 系」は呼び出し元 fn（0x6C9D70/0x6C9E55）の側で正しく、head 自体は Deactivate/Suspend。残点 V-377-1..2（1=state 2 と 5 の意味【中】/2=[+0x4C]/[+0x50]/[+0x54]/[+0x58] のフィールド名と 0xA7DEB4 定数値【低】）。教訓: 先行裁定の grep で重複解析を回避（v187 L142 発見）＋vtbl×fn ptr テーブルの両方の不在走査で非仮想 fn を証明。v 採番 v377 消費（次=v378）。"
     }
   ],
   "metadata": {
-    "totalEntries": 777,
+    "totalEntries": 778,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-15T01:56:26Z",
-    "entry_count": 777,
-    "last_updated": "2026-11-15T01:56:26Z"
+    "lastUpdated": "2026-11-15T02:05:07Z",
+    "entry_count": 778,
+    "last_updated": "2026-11-15T02:05:07Z"
   }
 }
