@@ -1849,6 +1849,14 @@ void ESMFile::decodeRace(const ESMRecord& rec) {
         }
     }
 
+    // DATA subrecord (36 bytes): byte32..35 = u32 flags, bit0 = playable.
+    // The original memcpy's the whole subrecord to [TESRace+0x50], so byte32
+    // lands at +0x70 where the race list walk tests bit0 (RE v369 [確定]).
+    auto* data = rec.findSubRecord("DATA");
+    if (data && data->size() >= 36) {
+        std::memcpy(&race.flags, data->data.data() + 32, 4);
+    }
+
     // Attribute/Skill bonuses parsed but simplified for now
     // Full parsing requires understanding subrecord order in RACE
     // ATTR and SKIL subrecords are not always present in decompiled dumps

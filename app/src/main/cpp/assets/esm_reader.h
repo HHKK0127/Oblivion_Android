@@ -711,6 +711,11 @@ struct RaceData {
     std::string femaleModelPath;
     std::vector<uint32_t> spellFormIDs;  // Racial spells (SPLO references)
     uint32_t startingHealth = 0;
+    // DATA subrecord byte32..35 (u32 flags): bit0 = playable. Vanilla carries
+    // DATA on all 15 races, so this stays 0 only for a record without it
+    // (RE v369: the original copies DATA 36 bytes to [TESRace+0x50], byte32
+    // landing at +0x70 where the race list walk tests bit0).
+    uint32_t flags = 0;
 };
 
 /// Class (CLAS) record

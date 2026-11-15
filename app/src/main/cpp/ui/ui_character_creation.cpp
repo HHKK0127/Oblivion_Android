@@ -661,6 +661,13 @@ void UICharacterCreation::loadRacesFromESM() {
     // Get all races from ESM
     const auto& races = esmManager->getAllRaces();
     for (const auto& race : races) {
+        // Playable filter: the original walks the RACE list testing
+        // form+0x70 bit0 (RE v353), which is this record's DATA flags bit0
+        // (RE v369: DATA(36) byte32..35, bit0 = playable, 15/15 in data).
+        // A record without DATA keeps flags 0 and is skipped the same way.
+        if ((race.flags & 1u) == 0) {
+            continue;
+        }
         if (race.fullName.empty() && race.editorID.empty()) {
             continue;
         }
