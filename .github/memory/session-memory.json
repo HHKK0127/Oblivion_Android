@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-15T02:11:47Z",
+  "lastUpdated": "2026-11-15T02:17:26Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11261,14 +11261,28 @@
         "emu"
       ],
       "content": "2026-11-15 #149 完了: chargen 名前検証を v370 の3拒否のみで実装。commit b2d3053c（branch fix-chargen-name-validate・base ab448803・4ファイル +49/-17）・verifier APPROVE 14項目・emu 全経路 PASS・STATE (cu2)。実装: (1) gmst_defaults.h に sNoNameCharacter(0xA63AD0/thunk 0x9F7B1A)・sEnterName(0xA63B00/thunk 0x9F7B30) (2) 呼び出し元0の dead code ensureValidCharacter()（空名→Adventurer フォールバックが v370 §2.3 [確定負] と矛盾）を削除し bool hasConfirmableName() const に置換 (3) confirm が先に評価し false なら onNameRejected()→return true（onConfirm 不到達＝遷移経路なし）。条件は find_first_not_of(' ') == npos（空と全空白を1条件で・空白入りは通過）と playerName_ != getStringLive(\"sEnterName\")（prompt 一致） (4) renderer が showMessage(body,{sOk},nullptr) へ配線。maxchars 上限・文字種制限は原本に不在[確定(否定側)]のため入れない。不実装の残点: V-370-1（Are you sure...?）・V-370-5（Adventurer 既定名の正典性）。emu 証跡: 拒否側 PASS（全空白→'You must first enter a valid name.'＋chargen パネル残留＋Character creation applied 無し）／全経路 PASS（拒否→Ok→Zara→遷移・VALID_NAME_ACCEPTED=YES・quest 1002・crash none）／クリーン NEW PASS（ADVANCED_FROM_NEW=YES）。emu 罠2件: (a) メッセージボックス Ok の実座標=(959,610)（内側パーチメント y477..625/x632..1288・Ok グリフ x930..989/y591..628）。過去記録の (960,707) は枠外、(800,505) は本文上でどちらもモーダルが閉じず Create タップを吸収。モーダル座標はスクショ画素走査で求める。(b) キャラ作成成功後は files/profileInstalled のため am force-stop 後もタイトルに戻らずゲーム内再開（title_seen=False）。起動前に run-as com.example.oblivion rm -f files/profileInstalled。merge 順は人間判断（master に名前入力が無く fix-chargen-name-input(ab448803) の上にスタック）。#150 は RE 側で完遂済み（v373/v376/v377）→ #45 N5b StoreTargets 相当 increment のブロッカー解除。"
+    },
+    {
+      "id": "150-v378-state25-2026-11-15",
+      "timestamp": "2026-11-15T02:17:26Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-150",
+        "nif",
+        "re",
+        "v378"
+      ],
+      "content": "2026-11-15 #150 残点2（V-377-1）を v378 で裁定: state 2/5 の意味と 0x6C9BA0 を確定。成果物 tmp/re/v378_state25_activate_ruling.md（probe v378_1 全 EXIT=0）・台帳 row354（bak204）・round_verify ALL OK（rows 31..354 / total 240 / done 235 / open 5）・STATE (cz)。state 2=[確定(命令)]: フェード遷移中（flag=0・fade duration>0）— 0x6C9C2A: cmp [esi+0x44],0→0x6C9C2E: mov [esi+0x44],2（分岐元 0x6C9C03: cmp byte [esp+0x20],0; je＝flag==0）。state 5=[確定(命令)]: フェード遷移中（flag≠0・fade duration>0）— 0x6C9C0A→0x6C9C0E（flag≠0 の fallthrough）・他に 0x6C9E72・caller 0x471A7B: cmp [eax+0x44],5 のときだけ 0x6C4480（Manager 通知）＝state 5 = 他 sequence とのブレンド遷移中 [推定高]（state2 に通知経路なし）。state 1=[確定(命令)]: 即時再生（fade duration ≤ 0）— 0x6C9BF6: fldz; fcomp; jp 0x6C9C64→0x6C9C68: mov [esi+0x44],1・他に 0x6C9D79/0x6C9EAC。0x6C9BA0 の identity=[部分確定]: ActivateSequence 相当（state==0 のときのみ有効・ret 0x18＝6引数）— 0x6C9BA3: cmp [esi+0x44],0; je→0x6C9BA9: xor al,al; ret 0x18（state!=0 なら false）・arg1（[esp+0x1C]）＝相手 sequence（[edi+0x58] に記録・自己参照拒否／0x6C6110・0x6C6ED0 検証）／arg2（[esp+0x18]）＝fade duration（float）／arg3（[esp+0x20]）＝flag（byte・0→state2 / 1→state5）・[esi+0x1C]=duration・[esi+0x4C]=-const(0xA7DEB4)（fade time）・[esi+0x50]=arg2・[esi+0x58]=相手・[esi+0x40]+0x4C（sequence）へ 0x73A5E0 通知。state enum 完全図: 0=停止（0x6C9D14）→1=即時再生（fade≤0）／2=フェード遷移（flag=0）／5=フェード遷移（flag≠0・ブレンド中[推定高]）→3/4=フェードアウト/停止（Deactivate/Suspend 0x6C9CB0）→6=サイクル（v187）・state 値の直接比較は 0x471A7B の cmp ,5 の1件のみ [確定(否定側)]。v187 の cycle type（byte+8 bit1-2）とは別フィールド（state +0x44 は NiControllerSequence の dword）。残点 V-378-1..2（1=flag 引数の実体【中】/2=0x6C4480 identity【中】）。教訓: state 設定 site の find_head→fn 全体 unfiltered decode で分岐構造を直接確認＋caller の値比較文脈で state の特殊性を裏取る。v 採番 v378 消費（次=v379）。"
     }
   ],
   "metadata": {
-    "totalEntries": 779,
+    "totalEntries": 780,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-15T02:11:47Z",
-    "entry_count": 779,
-    "last_updated": "2026-11-15T02:11:25Z"
+    "lastUpdated": "2026-11-15T02:17:26Z",
+    "entry_count": 780,
+    "last_updated": "2026-11-15T02:17:26Z"
   }
 }

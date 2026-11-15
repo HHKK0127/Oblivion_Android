@@ -1245,3 +1245,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **merge 順は人間判断**: master に名前入力自体が無いため `fix-chargen-name-input`(ab448803) の上にスタック（`fix-chargen-name-validate` は3段目）。
 - **#150 は RE 側で完遂済み**（v373 registry=`NiMultiTargetTransformController` singleton／48B=`NiBlendTransformInterpolator`・v376 で②③裁定・v377 で head `0x6C9CB0`=`Deactivate/Suspend` [確定]）→ **#45 N5b の StoreTargets 相当 increment のブロッカーは解除**。残点は V-377-1（state 2/5 の意味）・V-377-2（fade 系フィールド名）のみ。
 - **次**: #45 StoreTargets 相当（名前ベース解決）increment を設計／記録コミット→台帳→次レーン候補（#148 `ClassData::flags` 型・#137・#127・#96 D）。
+
+## 2026-11-15 (cz) — #150 残点2解消: state **2=フェード遷移(flag=0)／5=フェード遷移(flag≠0・ブレンド中 [推定高])／1=即時再生** を確定・`0x6C9BA0`＝**ActivateSequence 相当 [部分確定]**（v378・V-377-1）
+
+- **成果物**: `tmp/re/v378_state25_activate_ruling.md`（probe **v378_1 全 EXIT=0**）。台帳 **row354（bak204）**・`round_verify` **ALL OK**（rows 31..354 / total 240 / done 235 / open 5）。ai-todo #45 に note（#150 は complete 済み）。v 採番 **v378 消費（次=v379）**。経緯: v377 の残点 V-377-1 を消化。
+- **state 2 [確定(命令)]**: **フェード遷移中（flag=0・fade duration>0）** — `0x6C9C2A: cmp [esi+0x44],0` → `0x6C9C2E: mov [esi+0x44],2`（分岐元 `0x6C9C03: cmp byte [esp+0x20],0; je 0x6C9C2A`＝**flag==0 のとき**）。`0 < arg2` のときのみ到達。
+- **state 5 [確定(命令)]**: **フェード遷移中（flag≠0・fade duration>0）** — `0x6C9C0A` → `0x6C9C0E: mov [esi+0x44],5`（flag≠0 の fallthrough）・他に `0x6C9E72`。**caller `0x471A7B: cmp [eax+0x44],5` のときだけ `0x6C4480`（Manager 通知）を呼ぶ**＝**state 5 = 他 sequence とのブレンド遷移中 [推定高]**（state 2 に通知経路なし）。
+- **state 1 [確定(命令)]**: **即時再生（fade duration ≤ 0）** — `0x6C9BF6: fldz; fcomp [esp+0x18]; jp 0x6C9C64` → `0x6C9C68: mov [esi+0x44],1`・他に `0x6C9D79`/`0x6C9EAC`。
+- **`0x6C9BA0` の identity [部分確定]**: **`ActivateSequence` 相当（state==0 のときのみ有効・`ret 0x18`＝6引数）** — `0x6C9BA3: cmp [esi+0x44],0; je` → `0x6C9BA9: xor al,al; ret 0x18`（**state!=0 なら false**）。**arg1（`[esp+0x1C]`）＝相手 sequence**（`[edi+0x58]` に記録・自己参照 `cmp eax,esi; je false`／`0x6C6110`・`0x6C6ED0` 検証）／**arg2（`[esp+0x18]`）＝fade duration（float）**／**arg3（`[esp+0x20]`）＝flag（byte・0→state2 / 1→state5）**。`[esi+0x1C]=duration`・`[esi+0x4C]=-const(0xA7DEB4)`（fade time）・`[esi+0x50]=arg2`（fade 期間）・`[esi+0x58]=相手`・`[esi+0x40]+0x4C`（sequence）へ `0x73A5E0` 通知。
+- **state enum 完全図（v377＋v378）**: **0=停止**（`0x6C9D14`）→ **1=即時再生**（fade≤0）／**2=フェード遷移（flag=0）**／**5=フェード遷移（flag≠0・ブレンド中 [推定高]）** → **3/4=フェードアウト/停止**（Deactivate/Suspend `0x6C9CB0`）→ **6=サイクル**（v187「state6 のサイクルオフセット」）。読み手は `cmp [reg+0x44],0` が8件（全件 `sete al`＝新規遷移判定）で、**state 値を直接比較するのは `0x471A7B` の `cmp ,5` の1件のみ** [確定(否定側)]。**v187 の cycle type（byte+8 bit1-2）とは別フィールド**（state `+0x44` は `NiControllerSequence` の dword）であることを確認。
+- **残点 V-378-1..2**: 1=**flag 引数（`[esp+0x20]`）の実体**（state5 と state2 を分ける条件・caller 側の値（0/1）の設定元 decode で確定可）【中】／2=**`0x6C4480`（state5 の Manager 通知）の identity**（ActivateSequence の逆操作/ブレンド登録か）【中】。
+- **教訓**: **state 設定 site の find_head → fn 全体の unfiltered decode で分岐構造（flag/fade duration）を直接確認**＋caller の値比較文脈で state の特殊性を裏取る。
+- **次**: RE レーンの open は人間ゲートのみ。次 probe 入口＝V-378-1（次 v 採番 v379）。
