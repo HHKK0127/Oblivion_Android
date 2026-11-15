@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-15T08:27:26Z",
+  "lastUpdated": "2026-11-15T09:40:02Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11547,14 +11547,28 @@
         "v394"
       ],
       "content": "2026-11-15 #153⑤（V-385-1）を v394 で裁定: 0x6CC480 の要素コピーの方向と内容を確定。成果物 tmp/re/v394_element_copy_ruling.md（probe v394_1..5 全 EXIT=0）・台帳 row370（bak220）・round_verify ALL OK（rows 31..370 / total 256 / done 251 / open 5）・STATE (dp)。0x6CC480=[確定(命令＋decompiled)]: FUN_006cd3d0 の tail-jump thunk（jmp 0x6CD3D0・5バイト）— decompiled L500749 thunk 注記／L500751 __thiscall シグネチャ・E8 callers＝0x6D01B5 の1本のみ（fn 0x6D0170＝interpolator 間コピー内）・本体 def＝L501759/L501761。方向=[確定(命令＋decompiled)]: this（ecx＝param_1＝orig）→ stack1（param_2＝new）の一方向（orig→new・双方向ではない）— machine: mov ebp,ecx → [stack1+X]←[ebp+X] 全コピー・要素ループも dst←src のみで orig 側は書き換わらない／decompiled: *(param_2+X)=*(param_1+X)・*piVar9=puVar6（L501787-810）・v385 の仮説「this=orig／stack=new／param=arg2」を確認・正。call site 0x6D01B5 配線=[確定(命令)]: 0x6D0170 prologue esi=ecx（this=orig）／ebx=[esp+8]（stack1=new）／ebp=[esp+0x10]（stack2=context）・先に 0x6D0010(ebx, orig.[+0x44]) で new 配列を orig count へ resize。内容=[確定(命令＋decompiled L501786-501830+)]: ①0x733850（jmp 0x700770）(dest,context) ②dest[+0xc]←src（flags）③dest[+0xd]←src（count byte）④dest[+0x14]←新配列: new(count*0x18+4)・ヘッダ=count・_eh_vector_constructor_iterator_(0x18,count,0x6CCDE0,0x7016A0) ⑤dest[+0x1c]←src（f32）⑥ゲート if((src[+0xc]&1)==0) のとき要素ループ: 0x18要素 {refptr obj +0, f32 +4, f32 +8, u8 +0xc, f32 +0x10, f32 +0x14} — src_elem.obj→vtable[6](context) 戻りを refcount 遷移で dst_elem.obj へ、残り5フィールド素コピー ⑦dest[+0xe]/[+0xf]← ⑧dest[+0x20]←（f32）⑨dest[+0x10]/[+0x11]←（byte）・ret 8・bit0 SET 時は⑥省略。param_3（arg2=context）=[確定(命令)]: (a) 0x700770(dest,ctx) の第2引数 (b) 各 orig 要素 obj の vtable slot6（+0x18）の引数 → 戻りが new 要素へ（0x6D0170 経由の値＝slot6 に渡された「arg」＝v385 記述と一致）・実体は残点。factory FUN_006cc400=[傍証]: entry ecx（orig）を edi 保持→fresh new(0x30)→（ecx=orig, stack1=fresh, stack2=context）で call→fresh 返却＝orig→fresh deep copy。Ghidra call 表示の癖=[確定(観察)]: hidden this（ecx）を省略 → call site 判定は機械語が正。残点 V-394-1..3（1=context の実体＋0x700770 の役割【中】/2=[+0xc] bit0 ゲートの意味＋container/0x18要素の型名【中】/3=factory の callers と vtable 0xA79E54 の型【低】）。教訓: thiscall call site は push A; push B; mov ecx, Z; call の機械語で判定＋SEH prologue（-1/seh/fs/cookie）を数えて引数スロット逆算。v 採番 v394 消費（次=v395=⑥低10件）。"
+    },
+    {
+      "id": "153-v395-manager-update-2026-11-15",
+      "timestamp": "2026-11-15T09:40:02Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-153",
+        "n5b",
+        "re",
+        "v395"
+      ],
+      "content": "2026-11-15 #153⑥-1（V-382-3）を v395 で裁定: 0x6C4200 の所属と初期化元を確定。成果物 tmp/re/v395_manager_update_ruling.md（probe v395_1..6, 8..11 全 EXIT=0・v395_7 は初回 tuple bug EXIT=1→修正後 EXIT=0）・台帳 row371（bak221）・round_verify ALL OK（rows 31..371 / total 257 / done 252 / open 5）・STATE (dq)。所属=[確定(RTTI＋命令)]: NiControllerManager — ①0x6C4200 の packed dword は全ファイル走査で1件のみ（file 0x678A58=VA 0xA79858）＝vtable VA 0xA79804 の slot21（+0x54）②vtable 直前の RTTI COL（0xA79800→0xAC5F78）の TypeDescriptor=.?AVNiControllerManager@@ ③ctor FUN_006c5520 が *param_1=&PTR_FUN_00a79804 を格納・E8/E9/即時0件→virtual dispatch（call [vptr+0x54] 機序を .text 内6件確認）・v382 の「Update 相当[推定高]」を確定に昇格。機能=[確定(命令＋decompiled)]: [this+8] bit3 ゲート下で [this+0x4c]（count [this+0x54]）を走査し各 sequence へ (time, flag=1) の 0x6CA950 呼び出し・state==0 を swap-with-last 除去。初期化元=[確定(命令＋decompiled L495062-495104)]: ctor FUN_006c5520 — base ctor FUN_00715990→vtable 0xA79804 格納→secondary [+0x3c]=0xA7977C→[+0x4c]=0/[+0x50]=0/[+0x54]=0→[+0x5c]=0x25（capacity 37）→new(0x94)=37×4 を [+0x60] に格納し memset 0→[+0x58]=0xA798A0（二次 vtable）・dtor FUN_006c5120 が [+0x4c] を free（0x6C51C8）・第2 ctor FUN_006c5610 もゼロ初期化（同一クラスかは[未確定]）。積み上げ=[部分確定(否定側)]: 0x6C band 内に m_pArray(+0x4c)/count(+0x54) の非ゼロ書込なし — store census（89/C7）＝ゼロ初期化2件のみ／increment census（83/01/FF）＝append 0件（存在は減算2系統: 0x6C4233 count-- と 0x6C4B6F remove loop・FUN_006c4a10 L494512 も count−1）／lea +0x4c 0件／decompiled L490000-500000 書込 0件 → band 外の Register/Add 経由と確定（否定側）。bit3 setter=[部分確定]: FUN_006c46ab80（0x46AB80＝cmp [esp+4],0; je→and/or [ecx+8],8 pair＝SetBit3(bool)）＋inline or [reg+8],8 サイト群（0x4DA68C は [esi+0x40] 読み＋[edi+0x44] state チェックで manager+seq 文脈確認）。残点 V-395-1..3（1=Register/Add fn 所在【中】/2=[+8] bit3 正式名【低】/3=base 4クラス CHD 同定【低】）。教訓: PE セクション表は COFF ヘッダ20バイト（opt=pe+24）厳守（+24 ずれで全結果が誤 VA）／vtable 検出の定石=.text 即時0件→全ファイル packed dword 走査→COL→TD の RTTI 鎖。v 採番 v395 消費（次=v396=⑥-2 V-383-3）。"
     }
   ],
   "metadata": {
-    "totalEntries": 799,
+    "totalEntries": 800,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-15T08:27:26Z",
-    "entry_count": 799,
-    "last_updated": "2026-11-15T08:27:26Z"
+    "lastUpdated": "2026-11-15T09:40:02Z",
+    "entry_count": 800,
+    "last_updated": "2026-11-15T09:40:02Z"
   }
 }
