@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-15T06:15:48Z",
+  "lastUpdated": "2026-11-15T07:55:37Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11503,14 +11503,28 @@
         "v392"
       ],
       "content": "2026-11-15 #153③（V-383-2）を v392 で裁定: 0x6C5C70 の identity を確定。成果物 tmp/re/v392_blend_bridge_ruling.md（probe v392_1 全 EXIT=0）・台帳 row368（bak218）・round_verify ALL OK（rows 31..368 / total 254 / done 249 / open 5）・STATE (dn)。0x6C5C70=[確定(命令)]: 「lookup → blend wrapper」接続の静的ブリッジ fn — ret 0x14＝5 stack 引数＋ecx レジスタ入力（decompiled L495514 addr 注記／L495516 void FUN_006c5c70(undefined4×5)＝thiscall なしの静的 fn）・本体2段: ①obj = 0x6C5860(a1, a5; ecx)（lookup）②0x6C9D30(obj, a1, a3(float), a2(float), a4, 1.0, 1.0, 0)（blend wrapper → Deactivate state4 → Activate state5・v379 確定）・引数配線は unfiltered の push/sub esp/fstp 並びから直接特定。0x6C5860=[部分確定]: 0x6C5C70 専用 lookup（E8=0x6C5C7B の1本）— cmp [eax+0x44],0（state）＋cmp [eax+0xC], ecx（controller count vs レジスタ入力）＋call 0x6C4A10＝state/count 条件付き sequence 検索（完全アルゴリズムは残点）。E8 callers 2本=[確定(命令)]: ①0x474A2F＝Morph fn 0x474530 内の経路（直後に 0xB102EC テーブル ×36 index 読み＝prologue の 0xB102E8 と同ファミリ＝v391 の Morph ディスパッチに接続）②0x5109E7（0x51xxxx 帯）＝別システムからの Morph/blend 要求。decompiled 呼び出し例: L93028（Morph 内）FUN_006c5c70(param_2,0,param_3,0,0)／L204516。V-383-2 への回答: lookup 結果を blend wrapper 0x6C9D30（state4/5）へ渡す静的ブリッジ [確定(命令)]・v383 の「ブレンド系[推定]」は接続先まで確定して昇格。残点 V-392-1..3（1=0x6C5860 完全 decode【低】/2=ecx 入力の設定元【低】/3=0x474A2F path の条件【低】）。教訓: push/sub esp/fstp 並びから静的 fn の引数配線を完全復元→E8=1 で専用 lookup 証明→テーブル index 同ファミリ照合で所属接続。v 採番 v392 消費（次=v393=④V-384-1）。"
+    },
+    {
+      "id": "153-v393-state34-2026-11-15",
+      "timestamp": "2026-11-15T07:55:37Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-153",
+        "n5b",
+        "re",
+        "v393"
+      ],
+      "content": "2026-11-15 #153④（V-384-1）を v393 で裁定: state 3 と 4 の意味の差を確定。成果物 tmp/re/v393_state34_ruling.md（probe v393_1..2 全 EXIT=0）・台帳 row369（bak219）・round_verify ALL OK（rows 31..369 / total 255 / done 250 / open 5）・STATE (do)。生成規則=[確定(命令＋decompiled)]: state=(flag≠0)+3（Deactivate fade>0 パス・L498938 逐語）— flag=0→state3（通常 Deactivate: crossfade wrapper 0x6C4000／0x6C4480 掃討）／flag=1→state4（blend wrapper 0x6C9D30/0x6C9E00 の2回目 Deactivate(fade>0,1)・update 内 state6 ブロック）。Deactivate 全体=[確定(decompiled L498931-498953)]: state==0→false／fade>0→state=3+flag・Start[+0x4C]=−FLT_MAX・End[+0x50]=fade（期間値・update 初回に絶対時刻化）／fade<=0→即時停止: Offset += (Last≠−FLT_MAX ? WeightLast/Freq − Last : 0)、state=0、partner=0、[+0x54]=−FLT_MAX、Unregister(0x6C6AC0)。update 差=[確定(命令)]: jump table 0x6CAC40 実測 — state3→0x6CAA69（(End−now)/(End−Start) → [esp+4]・期限切れ→Deactivate(0,0)）／state4→0x6CAB23（同公式 → [esp+8]・期限切れ→Deactivate(0,1)）・スロット系統分離: [esp+4]←state2/3（crossfade）／[esp+8]←state4/5/6（blend）・state6 ブロック（0x6CAABC）はパートナ同期＋state=4 へ遷移（0x6CAAFB）して合流。読手差=[確定(否定側)＋確定(命令)]: state3 の cmp 読手0件（0x6C0000..0x710000 全走査）／state4 は 0x6C4496 の1件のみ＝state4 のみ管理者可視・0x6C4480 掃討＝Deactivate(fade,0) → fade=0 で即停／fade>0 で state3 へ移行。wrapper 0x6C9D30=[部分確定(decompiled L498962-498994)]: Deactivate(0,1)→state==0 時に Register→state1→set-add→Activate(s6=1)→Deactivate(param_3>0,1)→★state4＋[+0x54]=LastScaled/Freq・param_4/Freq・param_3 は <=0 なら正の既定値。V-384-1 への回答: state3/4 は同じフェードアウト中だが (1)生成 flag (2)weight スロット (3)期限切れ時 flag (4)管理者可視性（state4 のみ）で異なり、state4→3 の再 Deactivate＝fade>0 で通常フェードへ移行／0 で即停。残点 V-393-1..3（1=[esp+4]/[esp+8] の消費者（tail 0x6CAB90..0x6CABE0 未デコード）【中】/2=wrapper 対象特定【低】/3=state6→state4 意味【低】）。教訓: jump table 実測で per-state ブロック特定＋decompiled 逐語で flag→state 規則確定＋cmp census で可視性差証明。v 採番 v393 消費（次=v394=⑤V-385-1）。"
     }
   ],
   "metadata": {
-    "totalEntries": 796,
+    "totalEntries": 797,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-15T06:15:48Z",
-    "entry_count": 796,
-    "last_updated": "2026-11-15T06:15:48Z"
+    "lastUpdated": "2026-11-15T07:55:37Z",
+    "entry_count": 797,
+    "last_updated": "2026-11-15T07:55:37Z"
   }
 }

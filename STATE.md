@@ -1466,3 +1466,16 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-392-1..3**: 1=**`0x6C5860` の完全 decode**（lookup の key・`0x6C4A10` の役割）【低】／2=**ecx レジスタ入力の値と設定元**（`cmp [eax+0xC],ecx` の右辺＝期待 controller count [推定]）【低】／3=**`0x474A2F` が属する path の条件**（`0xB333C4` グローバルチェックとの関係）【低】。
 - **教訓**: **push/sub esp/fstp の並びから静的 fn の引数配線を完全復元 → E8=1 で専用 lookup を証明 → テーブル index の同ファミリ照合で所属を接続**。
 - **次**: #153④V-384-1（state 3 と 4 の意味の差）→ 次 v 採番 v393。
+
+## 2026-11-15 (do) — #153④ 完遂: **state3/4＝同じフェードアウト中だが生成 flag・weight スロット（crossfade/blend 系）・管理者可視性で異なる** [確定(命令＋decompiled)]（v393・V-384-1）
+
+- **成果物**: `tmp/re/v393_state34_ruling.md`（probe **v393_1..2 全 EXIT=0**）。台帳 **row369（bak219）**・`round_verify` **ALL OK**（rows 31..369 / total 255 / done 250 / open 5）。ai-todo #153 に note（束④消化）。v 採番 **v393 消費（次=v394＝#153⑤）**。
+- **生成規則 [確定(命令＋decompiled)]**: **`state = (flag≠0) + 3`（Deactivate の fade>0 パス）** — decompiled L498938 逐語 `*(uint*)(param_1+0x44) = (param_3 != '\0') + 3`。**flag=0 → state3**（通常 Deactivate: crossfade wrapper `0x6C4000`／`0x6C4480` 掃討）／**flag=1 → state4**（blend wrapper `0x6C9D30`/`0x6C9E00` の2回目 `Deactivate(fade>0,1)`・update 内 state6 ブロック）。
+- **Deactivate 全体 [確定(decompiled L498931-498953)]**: state==0→false／**fade>0→state=3+flag・`Start[+0x4C]=−FLT_MAX`・`End[+0x50]=fade`（期間値・update 初回に絶対時刻化＝v382）**／**fade<=0→即時停止**: `Offset += (Last≠−FLT_MAX ? WeightLast/Freq − Last : 0)`、state=0、partner=0、`[+0x54]=−FLT_MAX`、**Unregister(`0x6C6AC0`)**。
+- **update での扱いの差 [確定(命令)]**: **jump table `0x6CAC40`（state-1=0..5）を実測** — **state3→`0x6CAA69`（t=(End−now)/(End−Start) → `[esp+4]` スロット・期限切れ→`Deactivate(0,0)`）／state4→`0x6CAB23`（同公式 → `[esp+8]`・期限切れ→`Deactivate(0,1)`）**。**スロットは系統で分離: `[esp+4]`←state2/3（crossfade 系）／`[esp+8]`←state4/5/6（blend 系）**（state1=即時→両方 1.0 維持）。**state6 ブロック（`0x6CAABC`）はパートナ同期＋`state=4` へ遷移（`0x6CAAFB`）して state4 ブロックへ合流**。
+- **読手の差 [確定(否定側)＋確定(命令)]**: **state3 の `cmp ,3` 読手＝0件**（0x6C0000..0x710000 全走査）／**state4 の読手は `0x6C4496` の1件のみ** → **state4 のみが「管理者から見える未完了 fade-out」**。**`0x6C4480` の掃討＝`Deactivate(fade=arg, flag=0)` → fade=0 なら即時停止（state0）／fade>0 なら state3（通常フェードアウトへ移行）**（callers 多数は `fldz`＝即時掃討・`0x47106D` は実値で state4→state3 再開）。
+- **（補足）blend wrapper `0x6C9D30` [部分確定(decompiled L498962-498994)]**: `Deactivate(0,1)`（即時停止）→ `if state==0 { partner=0; Register(param_5); state=1; set-add; if (Activate(target,…,s6=1)) { Deactivate(param_3>0,1) → ★state4; [+0x54] 両 seq へ＝LastScaled/Freq・param_4/Freq; return1 } }`・**param_3 は <=0 なら正の既定値へ**＝**state4 の正 Enter は wrapper の2回目 Deactivate**。
+- **V-384-1 への回答**: state3/4 は同じ「フェードアウト中」だが **(1) 生成 flag (2) weight スロット `[esp+4]` vs `[esp+8]`（crossfade/blend 系）(3) 期限切れ時 Deactivate flag (4) 管理者可視性（state4 のみ）** で異なり、**「state4→3 の再 Deactivate が完了させるもの」＝fade>0 なら通常フェードアウト（state3）への移行／fade=0 なら即時停止** [確定(命令)]。
+- **残点 V-393-1..3**: 1=**`[esp+4]`/`[esp+8]` の消費者と正確な意味**（tail `0x6CAB90..0x6CABE0` 未デコード）【中】／2=wrapper の param_1/param_2/param_5 の対象特定【低】／3=state6→state4 遷移の意味【低】。
+- **教訓**: **jump table（`[eax*4+table]`）を実測して per-state ブロックを特定 ＋ decompiled 逐語で flag→state 規則を確定 ＋ cmp 読手 census（0件/1件）で可視性差を証明**。
+- **次**: #153⑤V-385-1（`0x6CC480` 要素コピーの方向）→ 次 v 採番 v394。
