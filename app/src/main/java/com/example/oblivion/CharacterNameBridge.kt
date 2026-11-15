@@ -8,6 +8,7 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
 import android.view.View
+import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 
@@ -167,6 +168,32 @@ class CharacterNameBridge(
         } finally {
             seeding = false
         }
+    }
+
+    /**
+     * The shared sink's editor action while the NAME field owns it (task #143).
+     *
+     * The window does not resize for the keyboard, so the keyboard covers the
+     * creation buttons at the bottom of the panel, and the only controls the
+     * user can still reach are the IME's own keys and Back. The sink already
+     * asks for `imeOptions=actionDone` (activity_main.xml), so finishing the
+     * name has to dismiss the keyboard - otherwise Create can never be tapped
+     * without a Back key first. Returns true when the action was consumed here.
+     */
+    fun handleEditorAction(actionId: Int): Boolean {
+        if (!running || !shown || consoleActive()) {
+            return false
+        }
+        val finishes = actionId == EditorInfo.IME_ACTION_DONE ||
+            actionId == EditorInfo.IME_ACTION_GO ||
+            actionId == EditorInfo.IME_ACTION_SEARCH ||
+            actionId == EditorInfo.IME_ACTION_UNSPECIFIED
+        if (!finishes) {
+            return false
+        }
+        releaseIme()
+        Log.i(TAG, "Name input: keyboard closed by the editor action")
+        return true
     }
 
     private fun hideNameInput() {
