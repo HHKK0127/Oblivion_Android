@@ -49,7 +49,7 @@ void UICharacterCreation::initializeDefaultCharacter() {
     }
 
     // Set default skills
-    for (int i = 0; i < 20; ++i) {
+    for (int i = 0; i < static_cast<int>(SKILL_NAMES.size()); ++i) {
         createdCharacter_.skills[SKILL_NAMES[i]] = 15.0f;
     }
 
@@ -143,7 +143,7 @@ bool UICharacterCreation::onTouchDown(float x, float y, int pointerId) {
             return true;
         }
         if (hitTestToggleSkill(x, y)) {
-            if (selectedSkillIndex_ < 20) {
+            if (selectedSkillIndex_ < static_cast<int>(SKILL_NAMES.size())) {
                 std::string skillName = SKILL_NAMES[selectedSkillIndex_];
                 createdCharacter_.skills[skillName] =
                     (createdCharacter_.skills[skillName] > 15) ? 15 : 50;
@@ -297,7 +297,7 @@ void UICharacterCreation::renderSkillsTab() {
         glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT), 0.55f);
     cy += 25.0f;
 
-    for (int i = 0; i < 20; ++i) {
+    for (int i = 0; i < static_cast<int>(SKILL_NAMES.size()); ++i) {
         bool sel = (i == selectedSkillIndex_);
         glm::vec3 bg = sel
                        ? glm::vec3(PlaceholderAssets::Colors::PARCHMENT_DARK)
@@ -467,7 +467,7 @@ bool UICharacterCreation::hitTestSkillRow(float x, float y, int& outIndex) const
     float rowH = 32.0f;
     float rowGap = 1.0f;
 
-    for (int i = 0; i < 20; ++i) {
+    for (int i = 0; i < static_cast<int>(SKILL_NAMES.size()); ++i) {
         float ry = cy + i * (rowH + rowGap);
         if (x >= cp.x + 20.0f && x <= cp.x + getContentSize().x - 20.0f &&
             y >= ry && y <= ry + rowH) {
@@ -555,7 +555,7 @@ float UICharacterCreation::getConfirmButtonY() const {
 }
 
 void UICharacterCreation::addSkillPoints(int skillId, int points) {
-    if (skillId >= 0 && skillId < 20) {
+    if (skillId >= 0 && skillId < static_cast<int>(SKILL_NAMES.size())) {
         std::string skillName = SKILL_NAMES[skillId];
         createdCharacter_.skills[skillName] = std::min(100.0f, createdCharacter_.skills[skillName] + points);
     }
@@ -569,7 +569,7 @@ void UICharacterCreation::ensureValidCharacter() {
     }
 
     // Ensure skills are within valid range
-    for (int i = 0; i < 20; ++i) {
+    for (int i = 0; i < static_cast<int>(SKILL_NAMES.size()); ++i) {
         std::string skillName = SKILL_NAMES[i];
         createdCharacter_.skills[skillName] = std::clamp(createdCharacter_.skills[skillName], 5.0f, 100.0f);
     }

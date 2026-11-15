@@ -86,12 +86,16 @@ private:
 
     // For SKILLS tab
     int selectedSkillIndex_ = 0;
-    static constexpr std::array<const char*, 20> SKILL_NAMES = {{
-        "Blade", "Blunt", "Marksman", "Hand-to-Hand",
-        "Destruction", "Alteration", "Illusion", "Conjuration",
-        "Mysticism", "Restoration", "Alchemy", "Unarmored",
-        "Armor", "Block", "Heavy Armor", "Light Armor",
-        "Marksman", "Sneak", "Acrobatics", "Athletics"
+    // Canonical 21-skill set in AV index order 0x0c..0x20 (RE_EXE_REPORT §46.1,
+    // name table at 0x00B0A1A8). This matches the engine's 21-iteration chargen
+    // skill loop documented in s58_chargen.md §1.7. Display spellings keep the
+    // previous UI strings ("Hand-to-Hand", spaced armor skills).
+    static constexpr std::array<const char*, 21> SKILL_NAMES = {{
+        "Armorer", "Athletics", "Blade", "Block", "Blunt",
+        "Hand-to-Hand", "Heavy Armor", "Alchemy", "Alteration", "Conjuration",
+        "Destruction", "Illusion", "Mysticism", "Restoration",
+        "Acrobatics", "Light Armor", "Marksman", "Mercantile",
+        "Security", "Sneak", "Speechcraft"
     }};
 
     int screenWidth  = 1080;
