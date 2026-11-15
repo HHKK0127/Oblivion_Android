@@ -1,6 +1,7 @@
 #include "ui_character_creation.h"
 #include "placeholder_assets.h"
 #include "ui_draw_helper.h"
+#include "../game/gmst_defaults.h"
 #include <GLES3/gl3.h>
 #include <cstdio>
 #include <algorithm>
@@ -96,6 +97,15 @@ bool UICharacterCreation::onTouchDown(float x, float y, int pointerId) {
 
     // Confirm/Cancel buttons
     if (hitTestConfirmButton(x, y)) {
+        // The original's Done band notifies and returns without the success
+        // tail when the name is rejected (RE v370 §2.1), so Create must not
+        // transition either - the panel stays open behind the message.
+        if (!hasConfirmableName()) {
+            if (onNameRejected) {
+                onNameRejected();
+            }
+            return true;
+        }
         createdCharacter_.name = playerName_;
         if (onConfirm) {
             onConfirm(createdCharacter_);
@@ -569,23 +579,20 @@ void UICharacterCreation::addSkillPoints(int skillId, int points) {
     }
 }
 
-void UICharacterCreation::ensureValidCharacter() {
-    // Ensure attributes are within valid range
-    for (int i = 0; i < 8; ++i) {
-        std::string attrName = ATTRIBUTE_NAMES[i];
-        createdCharacter_.attributes[attrName] = std::clamp(createdCharacter_.attributes[attrName], 1.0f, 100.0f);
+bool UICharacterCreation::hasConfirmableName() const {
+    // The original's Done band (RE v370 §2.1, 0x5CCA77) starts a flag at 1,
+    // clears it on the first non-space (0x20) character and errors while it
+    // is still 1 - so an empty or all-spaces name fails through the same
+    // path, while whitespace inside a name passes. It also rejects the input
+    // when it still equals the sEnterName prompt, and there is no length or
+    // character-set limit to enforce here (RE v370 §2.4, both
+    // [確定(否定側)]). The old ensureValidCharacter() this replaces carried
+    // an empty-name fallback to "Adventurer", which the original does not
+    // have (RE v370 §2.3 [確定負]).
+    if (playerName_.find_first_not_of(' ') == std::string::npos) {
+        return false;
     }
-
-    // Ensure skills are within valid range
-    for (int i = 0; i < 20; ++i) {
-        std::string skillName = SKILL_NAMES[i];
-        createdCharacter_.skills[skillName] = std::clamp(createdCharacter_.skills[skillName], 5.0f, 100.0f);
-    }
-
-    if (playerName_.empty()) {
-        playerName_ = "Adventurer";
-    }
-    createdCharacter_.name = playerName_;
+    return playerName_ != oblivion::gmst::getStringLive("sEnterName");
 }
 
 void UICharacterCreation::loadRacesFromESM() {

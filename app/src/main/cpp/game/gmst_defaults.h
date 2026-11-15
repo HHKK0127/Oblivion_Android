@@ -205,6 +205,10 @@ inline constexpr StringEntry kStringEntries[] = {
     {"sSpecialization",
      "You will gain +10 in all specialization skills. "
      "Those skills will also increase faster."},  // EXE 0xA5E1A8
+    {"sNoNameCharacter", "You must first enter a valid name."},
+    // EXE 0xA63AD0 (v370 §2.2: registrar thunk 0x9F7B1A)
+    {"sEnterName", "Enter character name."},
+    // EXE 0xA63B00 (v370 §2.2: registrar thunk 0x9F7B30)
 };
 
 inline constexpr std::size_t kStringEntryCount =

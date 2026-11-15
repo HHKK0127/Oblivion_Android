@@ -45,6 +45,12 @@ public:
     // Callback when character creation is confirmed
     void setOnConfirm(ConfirmCallback cb) { onConfirm = cb; }
 
+    // Fired when Create is pressed with a name the original's Done band
+    // rejects (RE v370): the owner shows the sNoNameCharacter notification
+    // and the panel stays open instead of transitioning.
+    using RejectCallback = std::function<void()>;
+    void setOnNameRejected(RejectCallback cb) { onNameRejected = std::move(cb); }
+
     // Get created character
     const CharacterStatus& getCreatedCharacter() const { return createdCharacter_; }
 
@@ -66,6 +72,7 @@ public:
 private:
     TextRenderer* textRenderer = nullptr;
     ConfirmCallback onConfirm;
+    RejectCallback onNameRejected;
     const oblivion::ESMManager* esmManager = nullptr;
 
     enum Tab {
@@ -135,6 +142,6 @@ private:
     // Helper functions
     void initializeDefaultCharacter();
     void addSkillPoints(int skillId, int points);
-    void ensureValidCharacter();
+    bool hasConfirmableName() const;
     void applyRaceBonuses();
 };

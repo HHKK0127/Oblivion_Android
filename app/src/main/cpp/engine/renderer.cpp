@@ -18,6 +18,7 @@
 #include "../game/encumbrance.h"
 #include "../game/merchant_factory.h"
 #include "../game/player_character_state.h"
+#include "../game/gmst_defaults.h"
 #include "../world/distant_lod/distant_lod_manager.h"
 #include "../world/distant_lod/original_lod_provider.h"
 #include "../world/distant_lod/original_object_lod_provider.h"
@@ -929,6 +930,19 @@ bool Renderer::initGameSystems() {
             }
             // Start game
             startGame();
+        });
+        characterCreationUI->setOnNameRejected([this]() {
+            // RE v370: the original's Done band notifies sNoNameCharacter
+            // and returns without the success tail, so the panel stays open
+            // behind the message box.
+            const char* body =
+                oblivion::gmst::getStringLive("sNoNameCharacter");
+            const std::string ok = localizationManager
+                ? localizationManager->getGameSetting("sOk", "Ok")
+                : std::string("Ok");
+            showMessage(body[0] != '\0' ? body
+                                        : "You must first enter a valid name.",
+                        {ok}, nullptr);
         });
         LOGI("UICharacterCreation initialized successfully");
     }
