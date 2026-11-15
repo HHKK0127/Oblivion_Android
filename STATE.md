@@ -1269,3 +1269,14 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-379-1..2**: 1=**s1/s2 の厳密な意味**（s1＝ターゲット sequence ptr [推定高]／s2＝byte 0/1 [未確定]・`0x47603A` の s1=100 は weight 値 [推定]）【中】／2=**`0x6C4049`（s6=ecx 動的）の caller 側 flag 設定元**（ブレンド要求の発火条件）【中】。
 - **教訓**: **各 caller の push 並びを unfiltered で取得し引数位置を特定 → 値で分岐を実証**＋先行裁定の候補帯を dtor 同定で否定。
 - **次**: RE レーンの open は人間ゲートのみ。次 probe 入口＝V-379-1（次 v 採番 v380）。
+
+## 2026-11-15 (db) — #150 残点1解消: Activate の s1＝**interpolator 引数（`0x6C6A50` へ・weight [推定高]）**・s2＝**byte flag（ease out 設定用）[確定(命令)]**（v380・V-379-1）
+
+- **成果物**: `tmp/re/v380_activate_s1s2_ruling.md`（probe **v380_1 全 EXIT=0**）。台帳 **row356（bak206）**・`round_verify` **ALL OK**（rows 31..356 / total 242 / done 237 / open 5）。ai-todo #45 に note（#150 は complete 済み）。v 採番 **v380 消費（次=v381）**。経緯: v379 の残点 V-379-1 を消化。
+- **s1（`[esp+0xC]`）[確定(命令)]＋[推定高]**: **interpolator 引数** — `0x6C9BE3: mov eax,[esp+0xC]; push eax; call 0x6C6A50`（**`0x6C6A50`＝field8 interpolator の `virtual+0x98` 呼び出し**・v372/v376 確定）。caller `0x47603A` の **s1=0x64(100) は weight（百分率）** [推定高]（fn `0x474530` 帯の `movzx eax,al; fild; fdiv qword [0xA3AA50]`＝**255 で割る weight 正規化**を通過した値）。
+- **s2（`[esp+0x10]`）[確定(命令)]**: **byte flag（0/1）** — `0x6C9C8A: cmp byte [esp+0x10],0; je 0x6C9C9C; fld [0xA7DEB4]; fchs; fstp [esi+0x48]`＝**非0のとき `[esi+0x48]`（ease out 時間 [推定]）に `-const` をセット**。s2=1 の caller `0x47491C`（fn `0x474530`・weight 正規化経路）／s2=0 の caller 多数。
+- **`0x6C9BA0` の6引数の完全図 [確定(命令)]＋[部分確定]**: **s1＝interpolator 引数（weight [推定高]）／s2＝byte flag（ease out 設定用）／s3（float）＝duration（`[esi+0x1C]` へ）／s4（float）＝fade（`0 < s4` で state 2/5、`s4 ≤ 0` で state 1）／s5＝相手 sequence ptr（`[edi+0x58]` 記録）／s6＝flag byte（0→state2 / 1→state5・v379 確定）**。
+- **#45 N5b への回答（v379 残点1）**: s1 は **interpolator 引数（`0x6C6A50` へ）**、s2 は **byte flag（ease out 設定用）**。**state 1/2/5 の分岐は s4（fade duration）と s6（ブレンド flag）が担う**。
+- **残点 V-380-1..2**: 1=**s1 の厳密な型**（weight（百分率）vs interpolator ID・`0x6C6A50` の `virtual+0x98` 引数解釈 decode で確定可）【中】／2=**`[esi+0x48]` のフィールド名**（ease out 時間 [推定]・`0xA7DEB4` 定数値）【低】。
+- **教訓**: **fn 全体の unfiltered decode で引数の使用箇所を直接特定**＋caller fn 全体から weight 正規化経路を接続。
+- **次**: RE レーンの open は人間ゲートのみ。次 probe 入口＝V-380-1（次 v 採番 v381）。
