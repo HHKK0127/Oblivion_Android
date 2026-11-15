@@ -1332,3 +1332,14 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-384-1..2**: 1=**state 3 と 4 の意味の差**（Deactivate の byte flag: 0→3 / 1→4。`0x6C4480` は state4 を flag=0 で再 Deactivate（→state3）＝3 への遷移が何を完了させるか・`0x6C9CEF` 帯の分岐（`[this+0x34]`==−const で state0 即停）と合わせて切り分け）【中】／2=**`0x6C4480` の this と `0x6C4200` の同一性**（NiControllerManager [推定高]・vtable/ctor 経由の確定）【低】。
 - **教訓**: **E8 callers 全員のガード条件を ctx で全件確認**（5/5 が state==5 で一貫＝パターンの証明）。
 - **次**: #152④V-375-1（`0x6D018C`/`0x6D03AA` 帯 fn の所属）→ 次 v 採番 v385。
+
+## 2026-11-15 (dg) — #152④ 完遂: 第2/第3 構築経路＝**slot6 `0x6D0170`（Clone）／slot7 `0x6D0370`（Load）と確定**（v385・V-375-1・中優先帯①〜④全完遂）
+
+- **成果物**: `tmp/re/v385_clone_load_paths_ruling.md`（probe **v385_1..2 全 EXIT=0**）。台帳 **row361（bak211）**・`round_verify` **ALL OK**（rows 31..361 / total 247 / done 242 / open 5）。ai-todo #152 に note（束④消化）。v 採番 **v385 消費（次=v386＝#152⑤・低優先帯）**。
+- **第2経路 `0x6D018C` [確定(命令)]**: **fn `0x6D0170`＝interpolator 配列の間コピー**（`ret 8`＝2引数）— **E8 callers＝`0x6D034B` の1本**、その fn は **head `0x6D02E0` ＝ NiMultiTargetTransformController（vtable 0xA79984）の slot6(+0x18)** [確定(vtbl)]。slot6 本体: **`new(0x48)` → 基底 ctor `0x6D04E0` → `vtable 0xA79984` → 3フィールド0初期化 → `0x6D0170(this, new, arg)` で配列コピー → 新オブジェクトを返す＝Clone/Copy 相当**（正式名 [推定]＝残点）。`0x6D0170` 本体: count=`[orig+0x44]` で new 側に `0x6D0010` 構築 → stride48 ループで orig/new の対応要素を **`0x6CC480`（= `jmp 0x6CD3D0`・param=arg2）** でコピー。
+- **第3経路 `0x6D03AA` [確定(vtbl)+確定(命令)]**: **fn `0x6D0370` ＝ vtable slot7(+0x1C)＝`Load`**（本プロジェクトの slot+0x1C=Load 規約・v348/v350 と一致）。**E8 callers＝0件（virtual）**。本体: **`[arg+0x21C]`（stream の reader・v350 の `[stream+0x21C]`reader と同一）の virtual で count 読み（push 2）→ `0x6D0010` で配列構築 → 各要素を `0x712A90(arg)`（link 解決 [推定高]）で取得し `[this+0x40]`（ptr 配列）へ格納**。近接 slot10(+0x28)=`0x6D03E0` は `[edi+0x220]` 別 reader から読み＝Save 系 [部分確定]。
+- **2経路の性格 [確定(命令)]**: **第2＝Clone（他オブジェクトからの実配列コピー）／第3＝Load（NIF ファイルからの読込＋リンク解決）＝ runtime 初期化ではなく『Clone』と『Load』**。
+- **setup helpers [部分確定]**: `0x6D0530`（E8: `0x6CE2CF`/`0x6D0180`/`0x6D148F`）と `0x6D0550`（E8: `0x6CE329`/`0x6D037B`/`0x6D0D3C`）＝いずれも `call 0x715F40` → `cmp eax,0xA010068`/`cmp eax,0xA01006D`（Ni バージョン定数）＋読取構築＝**version-gated 読取 setup**。
+- **残点 V-385-1..3**: 1=**`0x6CC480`（= `jmp 0x6CD3D0`）の要素コピーの方向と内容**（this=orig 要素／stack=new 要素／param=arg2 の意味）【中】／2=**slot6 の正式名**（Clone vs Copy・Gamebryo シグネチャ突合）【低】／3=**`0x6D0530`/`0x6D0550` の正確な役割**【低】。
+- **教訓**: **vtable slot 実測（slot6/7）× call site の find_head で method 帰属を確定**・**E8=0 が virtual の証**。
+- **進捗**: **#152 の中優先帯①〜④（V-381-2/V-379-2/V-378-2/V-375-1）が全完遂**。次＝低優先帯⑤V-381-1 以降（v386+）。
