@@ -1211,3 +1211,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **両グローバルを参照する fn の交集合走査で2系統の独立を証明できる**（both=0）。
 - **main への回答（#45）**: interpolator 配列は2系統併存と裁定・残点1が第2/第3 経路の正体。
 - **次**: RE レーンの open は人間ゲートのみ。次 probe 入口＝V-375-1（次 v 採番 v376）。
+
+## 2026-11-15 (cx) — #150 完遂: ②0x6C6A50 callers＝**head `0x6C9CB0`（state 判定＋activate 系 [推定高]）**・③`[esp+0x38]`＝**prologue の1件のみ＝jne は死コード [確定(否定側)]**（v376・v372 残点の閉合）
+
+- **成果物**: `tmp/re/v376_storetargets_residuals_ruling.md`（probe **v376_1 全 EXIT=0**）。台帳 **row352（bak202）**・`round_verify` **ALL OK**（rows 31..352 / total 238 / done 233 / open 5）。ai-todo #150 note→complete。v 採番 **v376 消費（次=v377）**。
+- **経緯**: #150 は v372 の残点3件を依件を依頼。**①（registry/48B 種別）は v373 で既に解決済み**（registry＝`NiMultiTargetTransformController` singleton／48B＝`NiBlendTransformInterpolator`）→ 本 v376 は②③を裁定して全件回答。
+- **② `0x6C6A50` 他 callers（`0x6C9D70`/`0x6C9E55`）の fn identity [部分確定]**: 両者とも **head `0x6C9CB0`**（`xor edx,edx; cmp [ecx+0x44],edx; jne; xor al,al; ret 8`＝**`[this+0x44]` state を bool 判定**・`fldz; fld [esp+4]; fcom st(1)`＝float 比較）。**E8 callers 15本**（`0x470B5E/0x471083/0x4715E0/0x471A70/0x471AA0/0x4732A1/0x473B35/0x4745ED/0x4746F6/0x475C08/0x47605D/0x4B7F15/0x4DE561/0x4DE5C2/0x4E30B6`＝**game 側 0x47xxxx animation 帯から広く呼ばれる**）→ **`NiControllerSequence` の activate/cycle 系 [推定高]**。中身: state 遷移（`[esi+0x44]` を 1/5/6 へ）＋ **field8 interpolator へ `0x6C6A50`（`virtual+0x98` 呼び出し）** ＋ `0x6C9BA0`（`ret 0x18` 系）＋ `0x73A5E0` 呼び出し。
+- **③ `[esp+0x38]` 設定元 [確定(否定側)]**: StoreTargets 範囲（`0x6C9590..0x6C9BA0`）の**全 store 形式（C644/C684/88xx/C744/89xx）走査で writers = 1 件のみ**＝**prologue の `0x6C95CE: mov byte [esp+0x38],0`**。**1 に立てる書き手は存在しない** → `0x6C9B5D: jne 0x6C9B71`（Bip01 直行）は**死コード** [確定(否定側)]。**実挙動＝フラグ=0（常に）で `Bip02` FindChild → 見つかれば `Bip01` FindChild → その子 `[+0x1C]` → `0x6C6910(owner, 子)`**。
+- **→ v372 §2.2D の「[esp+0x38] 処理済みで Bip01」記述を補正**（死コードのため実行されない。v372 本文は歴史記録として温存、本 v376 §2.2 が正）。
+- **残点 V-376-1..2**: 1=head `0x6C9CB0` の正式 fn 名と `[this+0x44]` state の意味（cycle type enum か activation state か・b07 `NiControllerSequence` vtbl slot 照合で切り分け可）【中】／2=`0x73A5E0`（state 遷移時呼出）の identity【低】。
+- **教訓**: **store 形式の全走査で「設定元が存在しない」こと自体を証明**できる（死コード判定）。
+- **再開メモ（サーバ再起動後）**: `resume_status.py` で main tree clean・HEAD `ef968175` を確認してから本周を開始。並行セッションの #146 完了（`1e203e1b`）と N5b increment 4（`f431795e`）、#149 のビルド中断（`build_namevalidate.log`＝別レーン worktree `fix-chargen-name-validate`・L1 責務外）を確認。
+- **次**: RE レーンの open は人間ゲートのみ（#130-1/#82/#47/#20/#101）。次 probe 入口＝V-376-1（次 v 採番 v377）。

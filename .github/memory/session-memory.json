@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-15T01:40:14Z",
+  "lastUpdated": "2026-11-15T01:56:26Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11218,14 +11218,28 @@
         "v375"
       ],
       "content": "2026-11-15 #45 N5b 残点 V-374-2 を v375 で裁定: singleton interpolator 配列と 0xB3CBA4 系統を切り分け。成果物 tmp/re/v375_singleton_vs_global_ruling.md（probe v375_1 全 EXIT=0）・台帳 row351（bak201）・round_verify ALL OK（rows 31..351 / total 237 / done 232 / open 5）・STATE (cw)。singleton 0xB3CD7C の interpolator 配列=[部分確定]: ctor 0x6C5EE0（NiMultiTargetTransformController）が 0x6D0010 を呼ぶ→singleton の interpolator 配列は ctor 経路（CRT static ctor）で構築される [推定高]・singleton 自体は .bss の静的オブジェクト（0xB3CD7C への store 形式 0 件＝CRT 初期化で実行される static ctor）[確定負（静的）]。0xB3CBA4 系統=[確定(否定側)]＋[部分確定]: 0xB3CD7C と 0xB3CBA4 の両方を参照する fn = 0 件（refs 13/22/both 0）→2系統は無関係・0xB3CBA4 系統の構築経路＝0x6D018C／0x6D03AA 帯の fn（0x6D0010 の E8 callers 3本のうち ctor 以外の2本）。0x6D0010 の E8 callers=[確定(命令)] 3本: 0x6C5F2A（ctor 0x6C5EE0 内）／0x6D018C（mov ecx,ebx; call→cmp word [esi+0x44],di）／0x6D03AA（mov ecx,esi; call→call 0x712A90→mov edx,[esi+0x40]）＝interpolator 配列の構築は3経路。#45 N5b 残点2への回答: 2系統の interpolator 配列が併存 — ①singleton（0xB3CD7C）系統＝ctor（CRT static ctor）→0x6D0010→new(count*48+4)→[+0x3C/+0x40/+0x44]、②0xB3CBA4 系統＝0x6D018C/0x6D03AA 帯の fn が構築→various object へコピー（v373 の初期化群14件）。残点 V-375-1..2（1=0x6D018C/0x6D03AA 帯 fn の所属（第2/第3 構築経路の正体＝0xB3CBA4 系統の真の構築元）【中】/2=singleton の static ctor が CRT 初期化（.CRT$XCU）で実行されるかの直接証拠【低・動的確認 #82 系】）。教訓: 両グローバルを参照する fn の交集合走査で2系統の独立を証明できる（both=0）。v 採番 v375 消費（次=v376）。"
+    },
+    {
+      "id": "150-storetargets-residuals-v376-2026-11-15",
+      "timestamp": "2026-11-15T01:56:26Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-150",
+        "nif",
+        "re",
+        "v376"
+      ],
+      "content": "2026-11-15 #150 完了（v376・①は v373 で解決済み）: v372 の残点②③を裁定。成果物 tmp/re/v376_storetargets_residuals_ruling.md（probe v376_1 全 EXIT=0）・台帳 row352（bak202）・round_verify ALL OK（rows 31..352 / total 238 / done 233 / open 5）・STATE (cx)。② 0x6C6A50 他 callers（0x6C9D70/0x6C9E55）の fn identity=[部分確定]: 両者とも head 0x6C9CB0（xor edx,edx; cmp [ecx+0x44],edx; jne; xor al,al; ret 8＝[this+0x44] state を bool 判定・fldz; fld [esp+4]; fcom st(1)＝float 比較）・E8 callers 15本（0x470B5E/0x471083/0x4715E0/0x471A70/0x471AA0/0x4732A1/0x473B35/0x4745ED/0x4746F6/0x475C08/0x47605D/0x4B7F15/0x4DE561/0x4DE5C2/0x4E30B6＝game 側 0x47xxxx animation 帯から広く呼ばれる）→NiControllerSequence の activate/cycle 系 [推定高]・中身は state 遷移（[esi+0x44] を 1/5/6 へ）＋field8 interpolator へ 0x6C6A50（virtual+0x98）＋0x6C9BA0（ret 0x18 系）＋0x73A5E0 呼び出し。③ [esp+0x38] 設定元=[確定(否定側)]: StoreTargets 範囲（0x6C9590..0x6C9BA0）の全 store 形式（C644/C684/88xx/C744/89xx）走査で writers = 1 件のみ＝prologue の 0x6C95CE: mov byte [esp+0x38],0・1 に立てる書き手なし→0x6C9B5D: jne 0x6C9B71（Bip01 直行）は死コード・実挙動＝フラグ=0（常に）で Bip02 FindChild（0xA79CD0）→見つかれば Bip01 FindChild（0xA30968）→その子 [+0x1C] → 0x6C6910(owner, 子)。→ v372 §2.2D の「[esp+0x38] 処理済みで Bip01」記述を補正（死コードのため実行されない。v372 本文は温存・v376 §2.2 が正）。残点 V-376-1..2（1=head 0x6C9CB0 の正式 fn 名と [this+0x44] state 意味【中】/2=0x73A5E0 identity【低】）。教訓: store 形式の全走査で「設定元が存在しない」こと自体を証明できる（死コード判定）。v 採番 v376 消費（次=v377）。サーバ再起動後は resume_status.py で main tree clean・HEAD 確認後に再開（並行セッションの #146 完了 1e203e1b・N5b increment 4 f431795e・#149 ビルド中断=別レーンを確認）。"
     }
   ],
   "metadata": {
-    "totalEntries": 776,
+    "totalEntries": 777,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-15T01:40:14Z",
-    "entry_count": 776,
-    "last_updated": "2026-11-15T01:40:14Z"
+    "lastUpdated": "2026-11-15T01:56:26Z",
+    "entry_count": 777,
+    "last_updated": "2026-11-15T01:56:26Z"
   }
 }
