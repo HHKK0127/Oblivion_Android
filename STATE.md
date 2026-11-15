@@ -1426,3 +1426,14 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-390-1..3**: 1=**param_3 の使用箇所と意味**（0x6C60D0 以降）【低】／2=**`0x49F4A0`/`0x49F6A5` の this 型の直接確定＋`0x982BFA` CRT thunk の正確な関数名**【低】／3=**flag `[+0x24]` の名前**【低】。
 - **教訓**: **decompiled fn def（`// FUN_ @ addr` 注記）× caller の flag 実値 × 既知 label との offset 突合で identity を確定**。
 - **次**: #153②V-383-1（fn `0x474530` の `byte [esp+0x38]` の元）→ 次 v 採番 v391。
+
+## 2026-11-15 (cw2) — #45 N5b increment: **NiStringPalette を読めるようにする**（name 解決の前提・commit `de5110c6`）＋ RE #154 起票（残り4件をブロック）
+
+- **成果物**: branch `n5b-keyframe-reader`（base `f431795e` → `de5110c6`・worktree `opencode/worktree/a81be0/n5b-keyframe-reader`）。変更は `rust/crates/nif-core/src/{block.rs,lib.rs}` の2ファイル +134/-1。
+- **着手理由（実データ＋正典）**: StoreTargets 相当は「controlled block の5 offset → 識別子」の取得が最初の一手だが、**誰も palette を読んでいない** — `tmp/nif_oracle/orig_src/nif_parser.cpp:1654-1656` は NiStringPalette を **skip**、port の sequence reader は `let _string_palette`（block.rs:1258）で破棄、`resolveControllerReferences`（orig_src:3519-3543）は index のみで名前解決を持たない＝**本 increment は orig_src にも無い port 側の追加**。
+- **実装**: `nif-core::StringPalette { palette, declared_length }` と `name_at(offset)` — u32 offset → NUL 終端の名前。**`0xFFFF` はセントィネルとして None**（v371 §2.3-2 [確定(命令)]・エンジンのアクセサ群 `cmp ax,0xFFFF→NULL`）／端以降は None／palette でない block index は None／名前途中の offset は末尾まで返す（＝エンジンの `base+off` と同じ）。公開 API は `NifParser::parse_string_palette(index)`。block type を検証してから読むため、誤 index は別人のバイトを読まない。
+- **実データ固定**: `D:\Cargo\Other\Oblivion\BSA\bsa_Extraction\meshes\architecture\city\dementia\dementiainteriors\demdooranim01.nif` の palette **67B**（`DEMdoorAnim01Door`@0 / `NiTransformController`@18 / `DEMdoorAnim01Door NonAccum`@40・末尾 `Length`=67・NUL 分割）をそのままテスト fixture に採用。フォーマット仕様ではなく**実ファイルのバイトで固定**。
+- **検証**: **`cargo test --offline --workspace`（rust/ 起点・AGENTS ゲート）= 31 suites / 194 passed / 0 failed**（master baseline 176・nif-core 46＝既存45＋新規1 `string_palette_reads_retail_names_by_offset`）／`cargo fmt --check` 追加分は差分0（既存の 1532/1576/545 等の指摘は本変更と無関係）／`git diff --check` クリーン。境界テストで `slice.get(67..)` が空スライスを返す点を発見し、端以降は None に直した。
+- **RE #154 起票（`#RE`・#45 の残り4件が全てブロック）**: ①【高】`virtual+0x4C(root,name)` の**探索範囲**（子のみ／孫まで再帰・v371 §2.2-C は [推定高] のまま）と A 側 `0x6C95AC` と C 側 `0x6C96DB` が同一 fn か ②【高】**V-371-4 結果格納の対応先** — `0x6C9B12: mov [esi+eax+8],edi` の identity と 16B stride エントリの +8 が port の `target_node_index`/`resolved_bone_index`/`keyframe_data_index` のどれか ③【高】**V-371-1 predicate `virtual+0x8C`** の戻り値の意味 ④【中】**V-371-5** `[seq+0x40]`→`[+0x7C]` の root identity と `[+0x5C]/[+0x60]`。**到着まで name→node 解決と格納は着手しない**（推測実装の回避）。
+- **並行状況**: #148 は verifier 再レビューがサブエージェント利用上限で3回とも失敗（指摘反映・コミット `584bd28e`／記録 `bf8ce9e2` 済み・上限解除後に再試行）。RE レーンは #152 直列消化で #151/#154 は順番待ち。
+- **次**: ①`de5110c6` の verifier レビュー（上限解除後・#148 の再レビューと同時に）②#154 到着次第 name→node 解決の実装 ③#151 到着で CLAS `+0x08` と chargen クラス適用 ④n5b は未マージ群（人間ゲート）に追加。
