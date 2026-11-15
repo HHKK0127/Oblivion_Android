@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-14T14:55:16Z",
+  "lastUpdated": "2026-11-15T00:04:48Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11085,14 +11085,59 @@
         "v368"
       ],
       "content": "2026-11-14 #136 完了（v368）: .fnt フォント縦位置の原理を裁定（#96 ブロッカー解消材料・s76 R1 クローズ）。成果物 tmp/re/v368_font_vertical_ruling.md（probe v368_1..9 全 EXIT=0＋実データ解析3回。実データ⇔EXE 交叉検証= new(0x3928)=ファイル実寸・size float 5種一致・f11/f12=UV×512 一致・'!' f1=0 一致 が決め手）・台帳 row344（bak194）・round_verify ALL OK（rows 31..344 / total 230 / done 225 / open 5）・STATE (cp)。① レコード=[確定]6/8・f[0]/f[1]=[未確定]: 構造=ヘッダ（+0x000=size float 28/35/55/57/22 が5種で一意一致・+0x004/8=int1/1・+0x00C=テクスチャ名 'Kingthings_Regular_0_Lod_A'・0パディング）＋255×56B が byte0x158(344)..0x3920（精密一致）＋8B尾＝実ファイル14632B=0x3928 が EXE new(0x3928) read-all と完全一致 [確定(実データ+EXE)]。f[3..10]=UV4コーナー(u0=f3=f7,v0=f4=f6,u1=f5=f9,v1=f8=f10) [確定]・f[11]=幅px=(u1−u0)×512 [確定(計算)]・★EXE emit 0x573F10 が pos[0]+=record.f11＝advance=f[11] [確定(命令)]（port の f[1] advance 否定は正・advance=f[11] と判明）・f[12]=高px・f[2]=f[13]=0 恒 [確定]・f[1] は emit で不使用 [確定(否定側)]＝使用箇所は 0x57698E 以降のペン域未 decode [未確定]。EXE アドレシング base+code×56+0x128（3箇所同一）vs データ 0x158+(code−1)×56 の不一致＝パーサの in-place 再配置 [未確定 V-368-1]。② 縦配置=[部分確定]: レコードに垂直メトリクス不在 [確定]→ line/font レベル由来: line=fild [lineObj+0x34](int)＋整数ペン累積 [line+0x28]/[+0x2C] [確定(命令)]・font=fontObj+0x2C(emit で X 加算)/+0x30(=パーサが buf+0x150/+0x15C/+0x188/+0x1C0/+0x1F8 の5値から min/max 算出 [確定(命令)]＝高さ系 min/max=ascent/descent 候補[推定])・size float が縦計算に参加 fild(line_int)+[buf+0](28.0)−… [確定(命令)]（演算順は stack 再利用あり未確定=V-368-3）・emit 頂点=24B stride・法線(0,0,1)=グローバル0xB3A6C0..C8 one-shot・色定数(33,59,117)/255 [確定]。下降字: 原本は行基点＋size で行単位配置＝ink底固定をしない [推定高]→ port の min(inkbottom,capBaseline) が独自規約で下降消滅の原因。③ アトラス=[確定]: 各グリフ tight UV・512×512 [確定(計算)]・EXE は UV を無変換で頂点化 [確定(命令)]・均一グリッド証拠なし [確定(否定側)]・外部テクスチャ（ヘッダ名..._Lod_A・.fnt に画像バイナリなし）[推定高]。R1 クローズ: FontManager シングルトン0x576A30/5フォントinit0x576420/FontEntry ctor0x5757A0/.fnt parser0x5744E0(CreateFile0x431130→new(0x3928)→read-all0x42C8E0→min/max→image0x70E560/0x704800)/layout0x576AB0/emit0x573F10 を特定 [確定(命令)]。残点 V-368-1..5（1=EXE base+0x128 とデータ0x158 の不一致＝再配置内容【中・port UV 取り出しに直結】/2=f[0]/f[1] 意味【中】/3=縦計算の演算順/符号と [lineObj+0x34] setter【高・#96 縦修正に必須】/4=emit の −f10(v1) の意味【中】/5=75.0(double 0xA68950)の用途と外部テクスチャ命名規則【低】）。main への報告: port修正方向=①advance=f[11]採用②縦は行基点＋ヘッダ size 由来（ink底固定の廃止）③tight UV は原本どおり。v 採番 v368 消費（次=v369）。"
+    },
+    {
+      "id": "147-race-playable-flag-v369-2026-11-15",
+      "timestamp": "2026-11-14T22:40:16Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-147",
+        "race",
+        "esm",
+        "re",
+        "v369"
+      ],
+      "content": "2026-11-15 #147 完了（v369）: RACE playable フラグのレコード内位置と EXE 供給経路を裁定（#146 のブロッカー解消材料）。成果物 tmp/re/v369_race_playable_flag_ruling.md（probe v369_1..17 全 EXIT=0。自己発見と是正=初 walk がレコードヘッダ24バイト前提で破損→TES4 は20バイトと実データから特定是正／PowerShell の < 禁則はパッチ .py 化で回避／GRUP 直走査でサンプル完全性を独立検証）・台帳 row345（bak195）・round_verify ALL OK（rows 31..345 / total 231 / done 226 / open 5）・STATE (cq)。① レコード位置=[確定]: RACE の DATA サブレコード（36バイト・全15件に存在）の byte32..35（u32 flags）bit0 = playable。実データ15/15 完全分離（playable10件=0x00000001／nonplay5件 Sheogorath/GoldenSaint/DarkSeducer/VampireRace/Dremora=0x00000000・誤分離ゼロ）。他サブレコードは欠落あり（DNAM12/PNAM7/UNAM7/VNAM5/XNAM9）＝DATA のみが全数一致。サンプル完全性=GRUP RACE @0x1DAC7 size0x883D 内15件のみ（EDID 全列挙）。② 供給経路=[確定(命令)]: TESRace vtable 0xA548FC slot7=0x52D800＝RACE 専用 Load fn（gate 0x4511C0→cmp eax,9・FourCC dispatch が CNAM/DATA/NAM0/NAM1/FGGA/DESC/EDID/FULL/SPLO/FGTS/ATTR/FGGS で RACE 固有と一致）。DATA case 0x52D868→0x52D8AC: push 0x24; lea eax,[ebx+0x50]; mov ecx,ebx; call 0x46BDA0（汎用サブレコード読取ヘルパ・E8 callers30・サイズ検証付き）で DATA36バイトを [TESRace+0x50..0x73] へ全体コピー → byte32=[TESRace+0x70] に直接配置＝ビットセット命令不要・レコード⇔メモリ1対1確定。構造整合: b13 の TESRace コンポーネント終端（FullName+0x18/Desc+0x24/SpellList+0x2C/Reaction+0x40）≒+0x50。既定値 init=[未確定]（ctor 0x52C870 slot46 の 0x52CDC4: mov [ebp+0x70],eax＝0x519D20 経由が別系統・ebp/esi identity 未解読＝残点V-369-1・zero-init 明示なし・ただし vanilla は15件全て DATA 保持で常にセット [確定(実データ)]）。race 間コピー 0x52C5E6 でも +0x70 転送を実測。③ 残りビット=[未確定]: 実データ15件は u32 が0/1の2値のみ＝bit1..31 出現例ゼロ・EXE に bit1+ を test する命令なし。④ 表示条件=[確定(命令)]: 0x5CDAF9 test byte [edi+0x70],1 ＋ノード null チェックのみ（性別/XNAM/他条件の併用なし[否定側]・同型テストは別カウンタ 0x5C82A5 にも存在＝bit0 が唯一のフィルタ・0x5CDC33 以降は表示後処理）。port への示唆(#146): RaceData に DATA byte32 u32 を読み bit0 でフィルタ＝EyesData/HairData.flags（0x01=playable・esm_reader.h:557/567）と同一構造。残点 V-369-1..5（1=ctor の [+0x70] 初期化経路の正体【中・port フォールバックに必要】／2=Load gate cmp eax,9 の 9 の意味【低】／3=0x519D20 の formType0x23/[form+0x28] 正体【低】／4=DATA byte0..15/16..31 の厳密意味【低】／5=bit1..31【低】）。教訓: TES4 レコード/GRUP ヘッダは20バイト（TES5 の24ではない）。v 採番 v369 消費（次=v370）。"
+    },
+    {
+      "id": "144-name-validation-v370-2026-11-15",
+      "timestamp": "2026-11-14T23:37:23Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-144",
+        "racesexmenu",
+        "validation",
+        "re",
+        "v370"
+      ],
+      "content": "2026-11-15 #144 完了（v370）: RaceSexMenu 名前入力の検証ルールと入力制約を裁定（#126③ フォロー・v352 の2点を正式訂正）。成果物 tmp/re/v370_name_validation_ruling.md（probe v370_1..10 全 EXIT=0＋XML 実測2回。自己発見と是正=v370_5 の \\x0F\\x8 Python エスケープエラー→2バイト化＋パッチ .py 化／byte-pattern の site 内包誤検出→cover 検証化／v352 との矛盾2件を自己検出・正式訂正）・台帳 row346（bak196）・round_verify ALL OK（rows 31..346 / total 232 / done 227 / open 5）・STATE (cr)。① エラー帰結=[確定(命令)]: 0x5CCBB7＝0x579C10(sNoNameCharacter) でメッセージ表示 → 画面遷移 tail 0x5CD9C5（vfunc+0x154→0x7C5E70）を経由せず ret 8 で即リターン＝Done(90) ブロック（画面残留・遷移なし）。band 入口は Done のみ（cmp ebx,0x5A→jnp 0x5CCA77 の1エントリ）。② 空文字=[確定(命令)]: je 0x5CCADF＝ループを飛ばして strcmp/flag 検査へ通過 → flag=1 残存でエラー経由→同じくブロック。無条件通過でも既定名自動適用でもない [確定負]。③ 最大長=[部分確定]: maxchars 機構は EXE/XML 全体に不在 [確定(否定側)]・char 数の明示上限なし（内蔵エディタ 0x57FF50 の 11ケース key switch（表 0x5800F0）全 decode に上限 cmp なし）・実質制約＝スタックバッファ 0x408(1032B)[推定]と幅検証 callback 0x57DE00（E8 caller は 0x5800B9 の1本・[ebp+0xC]!=-1 のみ・0x5739C0 測定→cmp eax,[this+0xC]→超過で insert キャンセル）[推定高]＝wrapwidth 相当の幅制約。④ 文字種制限=[部分確定(否定側)]: 挿入時唯一の callback も幅検証のみで文字種フィルタ不在。名前バンドの制約は「空/全空白拒否」「プレースホルダ一致拒否」の2つのみ・記号/数字/非 ASCII 拒否は EXE に不在。（別物: fn 0x5DC950 にスペース→'_' sanitize＋0x100 上限ループあり（0x5DCA78・trait 0xFAA〜0xFB3 用）だが名前入力系ではない [部分確定]）。⑤ 文字列の正体=[確定(登録)]: [0xB39440]=GMST sEnterName=\"Enter character name.\"（＝プレースホルダ）／[0xB39438]=GMST sNoNameCharacter=\"You must first enter a valid name.\"（0x419A70 登録＝v366 の sCantQuickLoad と同一パターン）。フィールド配置の実証（v370_10）: 0x419A70 は [esi+4]=arg1(name)/[esi]=arg2(value) → strcmp 読取 mov edi,[0xB39440] は value（プレースホルダ）を指す。確認文=sConfirmChoice1[0xB38660]=\"Are you sure you want to be a\"＋format '%s %s?'（vowel 判定で [0xB38668] 選択）。port 既定名 \"Adventurer\" の正典根拠は不在 [未確定]。フラグ機構の実証: 初期化 0x5CCA7F mov [esp+0x16],1（push 0xFDE 直後＝基準esp+0x12）⇔ループ store 0x5CCAB3 mov [esp+0x12],bl（call 復元後）＝同一スロット・bl=xor ebx,ebx@0x5CC28F で0 ⇒ flag=1(初期)を非スペース発見が0に落とす→検査 !=0→エラー＝「スペース以外を1文字も含まない（空/全空白）ならエラー」・空白混入（\"John Smith\" 等）は通過 [確定(命令)]。→ v352 §5.1 の2点を訂正:「既存名照合」は実際「プレースホルダ照合」・「空白混入→エラー」は polarity 誤読（正＝空/全空白→エラー）。port への含意: 追加すべきは「空/全空白」「名前==prompt」の2拒否のみ・maxchars/文字種/空白混入の検証は原本準拠で不要。残点 V-370-1..5（1=0x579C10 の modality【中・#101 に必要】／2=幅検証 0x57DE00 の上限初期化元【中】／3=[0xB38668] vowel 版の実文字列【低】／4=fn 0x5DC950 の所属 class と trait 0xFAA 意味【低】／5=\"Adventurer\" の正典性【低】）。v 採番 v370 消費（次=v371）。"
+    },
+    {
+      "id": "145-nif-resolve-v371-2026-11-15",
+      "timestamp": "2026-11-15T00:04:48Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-145",
+        "nif",
+        "controller",
+        "re",
+        "v371"
+      ],
+      "content": "2026-11-15 #145 完了（v371）: NIF コントローラ参照解決（resolveControllerReferences 相当）の本体とアルゴリズムを裁定（#45 N5b ブロッカー解消材料）。成果物 tmp/re/v371_nif_resolve_ruling.md（probe v371_1..10 全 EXIT=0・自己修正=v371_6 初回 strings_in(cap=) TypeError→kwarg 除去）・台帳 row347（bak197）・round_verify ALL OK（rows 31..347 / total 233 / done 228 / open 5）・STATE (cs)。① 本体=[確定(文字列+命令)]: 0x6C9590 = NiControllerSequence::StoreTargets — fn 内から format 文字列3種を push（0xA79CD8=\"...failed to resolve dependencies for the interpolator with the following identifiers:\"／0xA79B70・0xA79AA8=\"...failed to find target...\"・冒頭3つとも NiControllerSequence::StoreTargets '%s'）。vtable slot でなく直接 E8（callers4本= game側 0x47334E（fn 0x473200・chargen バンド 0x5C4D62/78/8E/A4 からも呼出）＋ NiControllerManager 系 0x6C428B/0x6C4C7A/0x6C57B7）。探索手順: 全 vtable 実測（Sequence 0xA79A34/Manager 0xA79804/Palette 0xA79934）→ palette アクセサ群（+4/+6/+8/+0xA の u16+0xFFFF パターン helpers 0x6C63A0/C0/E0・各 callers=2）→ 0xFFFF センチネル連打バンドを遡って head 同定 →fn 内 format 文字列の実読で関数名確定（推測ゼロ）。② アルゴリズム=[部分確定]: A 前処理=[seq+0x40]→[+0x7C]＋[seq+0x5C](名)→virtual+0x4C(root,name)＝FindChild 系[推定高]→[seq+0x60] へ store・前提 fn 0x6C8220＝cmp [eax+2],0x54('T')/[+7],0x66('f')＝\"NiTransformController\" プロトタイプ登録確認[確定(文字列)]。B ループ=sequence 単位一括（i<[owner+0xC]・stride16・2配列同時走査: 配列A [owner+0x14]+i*16=block／配列B [seq+0x18]+i*16=palette 記録）・predicate virtual+0x8C false→5識別子 resolve（u16 offset・0xFFFF→NULL）→0x748530(0xA79CD8) ログ→次ブロック。C node 解決=resolve([ebx+4] node名)→root->virtual+0x4C(name) lookup[推定高]→NULL なら D、一致なら node の子リスト [+0x9C] 走査（inline strcmp）でpropertyType 名と照合し child 選択→0x6C9852 成功へ。D failure/special-case=[確定(命令+文字列)]: strcmp(name,'Bip01')==0→virtual+0x4C('Bip02') 再 lookup／strncmp('Bow',3)→strncmp('Arrow',5) 等の文字列 fallback→未命中は 0x748530 ログで次ブロックへ。E 成功パス=[部分確定]: u16 アクセサ群で名前整合→0x6FFE90（SEH 大 fn・内部 0x75FA90 callers=40）→5識別子 resolve→0x748530(0xA79B70)→virtual+0x58/0x80/0x7C/0x84/0x98 連打→mov [esi+eax+8],edi(0x6C9B12)＝結果格納[推定]→ループ継続。ログ emitter 0x748530＝テーブル [0xB40610+id*12]（byte flag／−1 sentinel・32エントリ）＋IAT 0x7009D6＝NiError 系[推定高]。③④ = [未確定]（残点 V-371-2/3）: 骨解決経路と clip 構築元は StoreTargets decode 窓に不在・候補は 0x6FFE90/0x75FA90。最重要の一致（#45 へ供給）: 失敗ログ識別子5つ m_pcAVObjectName/m_pcPropertyType/m_pcCtlrType/m_pcCtlrID/m_pcInterpolatorID ⇔ port KeyframeController の palette offset 5項目と完全1対1 [確定(文字列↔port実測)]＝StoreTargets は port stub resolveControllerReferences の正統な原本対応関数。整合: 0xFFFF=なし sentinel [確定(命令)]・Load で未解決保持→後段 StoreTargets で解決＝port の parse/resolve 分離と同型[推定高]。v348 の「0x5A3520 座標外」裁定は維持（本裁定が代替座標を確定）。残点 V-371-1..5（1=predicate virtual+0x8C の戻り値意味【中】/2=clip 構築元と NiKeyframeData 配列対応【高・#45 ④に必須】/3=resolved_bone_index 解決経路【高・#45 ③に必須】/4=格納 mov [esi+eax+8],edi と virtual+0x58/84/98 の先【中】/5=identity 類【低】）。v 採番 v371 消費（次=v372）。RE レーン open=#147/#144/#145 を全て完遂。"
     }
   ],
   "metadata": {
-    "totalEntries": 767,
+    "totalEntries": 770,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-14T14:55:16Z",
-    "entry_count": 767,
-    "last_updated": "2026-11-14T14:55:16Z"
+    "lastUpdated": "2026-11-15T00:04:48Z",
+    "entry_count": 770,
+    "last_updated": "2026-11-15T00:04:48Z"
   }
 }
