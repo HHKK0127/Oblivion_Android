@@ -1320,3 +1320,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **引数位置の確定は unfiltered 全 decode の push 並びで行う**（切り詰め ctx では誤読する＝v379 の誤りの原因）・E8 callers census で wrapper 系統を系統別に分離。
 - **docs との不整合**: **v379 §2.3 の「`0x6C4049` s6=ecx＝動的 [部分確定]」を訂正**（s6=固定0）。v379 本文は歴史記録として温存、v383 §2.1 が正。
 - **次**: #152③V-378-2（`0x6C4480` Manager 通知の identity）→ 次 v 採番 v384。
+
+## 2026-11-15 (df) — #152③ 完遂: `0x6C4480` = **Manager の「state4 の sequence を即時 Deactivate する」一括メソッド [確定(命令)]**・「ブレンド登録」仮説は否定（v384・V-378-2）
+
+- **成果物**: `tmp/re/v384_manager_notify_ruling.md`（probe **v384_1 全 EXIT=0**）。台帳 **row360（bak210）**・`round_verify` **ALL OK**（rows 31..360 / total 246 / done 241 / open 5）。ai-todo #152 に note（束③消化）。v 採番 **v384 消費（次=v385＝#152④）**。
+- **`0x6C4480` [確定(命令)]**: **Manager の「state4 の sequence を即時 Deactivate する」一括メソッド**（`ret 4`＝1引数=time）。this（ecx）＝**`[+0x4C]`=sequence ptr 配列／`[+0x54]`=count（`0x6C4200` と同一レイアウト＝同一クラス [推定高]）**。本体: 全 sequence を走査し **`cmp [seq+0x44],4`（state4 のみ対象）** → `Deactivate(seq, time, flag=0)`（→state3）→ 常時 `xor al,al; ret 4`（false 返し）。
+- **「ActivateSequence の逆操作/ブレンド登録」仮説 [確定(否定側)]**: 本体に**登録/追加操作は一切ない**（走査＋Deactivate のみ・`0x6C9BA0` 呼出し=0件）＝**ブレンド登録ではない。実体は中断（クリーンアップ）**。
+- **通知の発火パターン [確定(命令)]**: **E8 callers＝5本（`0x47106D`/`0x471A8D`/`0x47328F`/`0x473B22`/`0x4746E3`）全員が `cmp [seq+0x44],5; jne skip` ガード付き**＝**追跡 sequence が state5（フェード遷移中）に入った瞬間にのみ**、`mov ecx,[obj+0x98]`（Manager ptr）→ `fld time`（`fldz` 4件／現在時刻1件）→ `call 0x6C4480`。
+- **実運用の解釈 [推定高]**: 新しいブレンド（state5）が開始されたとき、**以前の blend wrapper（`0x6C9D30`/`0x6C9E00`）が `Deactivate(flag=1)` で置いた state4 の sequence 群を、現在時刻（または0）で即時 Deactivate して掃討する**＝**ブレンド遷移時の「前のフェードアウト残骸」クリーンアップ**。v378 の「Manager 通知 [推定高]」は方向として正しいが、**内容は『登録』ではなく『state4 の中断』**。
+- **state4 の出所 [確定(命令)]**: blend wrapper が先頭で呼ぶ **`Deactivate(fade=0.0, flag=1)` → state4**（v377: `setne al; add eax,3`）＝**ブレンド wrapper が前 sequence に付けた「フェードアウト中」マーク**。
+- **残点 V-384-1..2**: 1=**state 3 と 4 の意味の差**（Deactivate の byte flag: 0→3 / 1→4。`0x6C4480` は state4 を flag=0 で再 Deactivate（→state3）＝3 への遷移が何を完了させるか・`0x6C9CEF` 帯の分岐（`[this+0x34]`==−const で state0 即停）と合わせて切り分け）【中】／2=**`0x6C4480` の this と `0x6C4200` の同一性**（NiControllerManager [推定高]・vtable/ctor 経由の確定）【低】。
+- **教訓**: **E8 callers 全員のガード条件を ctx で全件確認**（5/5 が state==5 で一貫＝パターンの証明）。
+- **次**: #152④V-375-1（`0x6D018C`/`0x6D03AA` 帯 fn の所属）→ 次 v 採番 v385。
