@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-15T08:19:05Z",
+  "lastUpdated": "2026-11-15T08:27:26Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11533,14 +11533,28 @@
         "verification"
       ],
       "content": "2026-11-15 #155: 人間承認の下で未マージブランチ9件を master へ順次マージ。fix-shopmenu-visible(#129+#132を祖先で包含)/skill-names(#125)/chargen-skills/buttons(#96)/name-validate(#149+#126-3を祖先で包含)/race-persist(#126-2)/race-filter(#146=v369)/esm-class-data(#148)/n5b(#45)。fix-lod-int32-rangeはahead=0で対象外、fix-assets-colors-strideは承認範囲外で未マージ。衝突1件は ui_character_creation.cpp の hasConfirmableName(): master側の ensureValidCharacter 副作用は呼び出し元ゼロの dead code のため全破棄し RE v370 準拠述語を採用（Adventurer は v370 §2.3 [確定負]）。検証: cargo test --offline --workspace=31 suites/194 passed/0 failed・assembleDebug BUILD SUCCESSFUL 22m・emu一巡で name=Zara/race formID=0x00023FE9/skills 21/21/Quest 1002/ADVANCED_FROM_NEW=YES/crash none。その後 #143 を実装（方針承認=IME自動クローズ・commit a954d332・worktree fix-chargen-ime-close・3ファイル+48/-1）: sink の唯一の editor-action リスナーは ConsoleInputBridge が持ち console 非表示時に false を返して Done を落としていたため、nameEditorAction デリゲート経由で CharacterNameBridge.handleEditorAction() が DONE/GO/SEARCH/UNSPECIFIED で releaseIme()。Back を使わない emu_ime_close.ps1 で IME_CLOSED_BY_ACTION=YES（ログ marker: keyboard closed by the editor action・✔座標1775,826）＋ADVANCED_FROM_NEW=YES＋crash none。マージ 249c36bb。訂正: a954d332 のコミット記述 the window does not resize は誤り（実測で IME 時に DebugMenu setScreenSize 1920x573＝縮む。問題は縮み時にパネルが再レイアウトされず Create(y=975) がクリップ外に出る点）。"
+    },
+    {
+      "id": "153-v394-element-copy-2026-11-15",
+      "timestamp": "2026-11-15T08:27:26Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-153",
+        "n5b",
+        "re",
+        "v394"
+      ],
+      "content": "2026-11-15 #153⑤（V-385-1）を v394 で裁定: 0x6CC480 の要素コピーの方向と内容を確定。成果物 tmp/re/v394_element_copy_ruling.md（probe v394_1..5 全 EXIT=0）・台帳 row370（bak220）・round_verify ALL OK（rows 31..370 / total 256 / done 251 / open 5）・STATE (dp)。0x6CC480=[確定(命令＋decompiled)]: FUN_006cd3d0 の tail-jump thunk（jmp 0x6CD3D0・5バイト）— decompiled L500749 thunk 注記／L500751 __thiscall シグネチャ・E8 callers＝0x6D01B5 の1本のみ（fn 0x6D0170＝interpolator 間コピー内）・本体 def＝L501759/L501761。方向=[確定(命令＋decompiled)]: this（ecx＝param_1＝orig）→ stack1（param_2＝new）の一方向（orig→new・双方向ではない）— machine: mov ebp,ecx → [stack1+X]←[ebp+X] 全コピー・要素ループも dst←src のみで orig 側は書き換わらない／decompiled: *(param_2+X)=*(param_1+X)・*piVar9=puVar6（L501787-810）・v385 の仮説「this=orig／stack=new／param=arg2」を確認・正。call site 0x6D01B5 配線=[確定(命令)]: 0x6D0170 prologue esi=ecx（this=orig）／ebx=[esp+8]（stack1=new）／ebp=[esp+0x10]（stack2=context）・先に 0x6D0010(ebx, orig.[+0x44]) で new 配列を orig count へ resize。内容=[確定(命令＋decompiled L501786-501830+)]: ①0x733850（jmp 0x700770）(dest,context) ②dest[+0xc]←src（flags）③dest[+0xd]←src（count byte）④dest[+0x14]←新配列: new(count*0x18+4)・ヘッダ=count・_eh_vector_constructor_iterator_(0x18,count,0x6CCDE0,0x7016A0) ⑤dest[+0x1c]←src（f32）⑥ゲート if((src[+0xc]&1)==0) のとき要素ループ: 0x18要素 {refptr obj +0, f32 +4, f32 +8, u8 +0xc, f32 +0x10, f32 +0x14} — src_elem.obj→vtable[6](context) 戻りを refcount 遷移で dst_elem.obj へ、残り5フィールド素コピー ⑦dest[+0xe]/[+0xf]← ⑧dest[+0x20]←（f32）⑨dest[+0x10]/[+0x11]←（byte）・ret 8・bit0 SET 時は⑥省略。param_3（arg2=context）=[確定(命令)]: (a) 0x700770(dest,ctx) の第2引数 (b) 各 orig 要素 obj の vtable slot6（+0x18）の引数 → 戻りが new 要素へ（0x6D0170 経由の値＝slot6 に渡された「arg」＝v385 記述と一致）・実体は残点。factory FUN_006cc400=[傍証]: entry ecx（orig）を edi 保持→fresh new(0x30)→（ecx=orig, stack1=fresh, stack2=context）で call→fresh 返却＝orig→fresh deep copy。Ghidra call 表示の癖=[確定(観察)]: hidden this（ecx）を省略 → call site 判定は機械語が正。残点 V-394-1..3（1=context の実体＋0x700770 の役割【中】/2=[+0xc] bit0 ゲートの意味＋container/0x18要素の型名【中】/3=factory の callers と vtable 0xA79E54 の型【低】）。教訓: thiscall call site は push A; push B; mov ecx, Z; call の機械語で判定＋SEH prologue（-1/seh/fs/cookie）を数えて引数スロット逆算。v 採番 v394 消費（次=v395=⑥低10件）。"
     }
   ],
   "metadata": {
-    "totalEntries": 798,
+    "totalEntries": 799,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-15T08:19:05Z",
-    "entry_count": 798,
-    "last_updated": "2026-11-15T08:19:05Z"
+    "lastUpdated": "2026-11-15T08:27:26Z",
+    "entry_count": 799,
+    "last_updated": "2026-11-15T08:27:26Z"
   }
 }
