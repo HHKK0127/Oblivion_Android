@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-15T06:02:37Z",
+  "lastUpdated": "2026-11-15T06:15:48Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11489,14 +11489,28 @@
         "v391"
       ],
       "content": "2026-11-15 #153②（V-383-1）を v391 で裁定: fn 0x474530 の byte [esp+0x38] の元を確定。成果物 tmp/re/v391_morph_flag_ruling.md（probe v391_1..3 全 EXIT=0）・台帳 row367（bak217）・round_verify ALL OK（rows 31..367 / total 253 / done 248 / open 5）・STATE (dm)。fn 0x474530=[確定(命令＋文字列)]: 「Morph」検証＋ディスパッチ fn — decompiled L92858 addr 注記／L92862 シグネチャ・body が2種の Morph エラー trace: 0xA3CA28=\"Morph Error: Trying to morph from sequence to itself...\"／0xA3C9C8=\"Morph Error: Controller count not the same...\"（他の Morph ヒットは FaceGen/HairMorph＝別系統）。byte [esp+0x38]=[確定(命令)]: Morph 検証の合否フラグ — writers=3件のみ（0x4745BA=0 初期化／0x47480B=1 検証成功／0x47482A=0 self エラー時リセット）・成功条件=(a) 0x51AAD0 getter 2回呼び出し結果一致 (b) [edi+0xC]==[ebp+0xC]（controller count 一致）(c) ebp≠edi（非自己）・失敗時0維持（getter fail／結果差／count 不一致 jne 0x474926→trace→jmp／self trace→0）。分岐=[確定(命令)]: flag≠0（成功）→0x474953→0x6C4060（blend→0x6C9E00→state4/5）／flag==0→0x474977→0x6C4000（crossfade→state3/2）＝「count 一致の同期 blend（Morph）／不一致なら plain crossfade フォールバック＋エラーログ」。[seq+0xC]=[確定(文字列)]: controller count（trace の %d 引数）。残点 V-391-1..3（1=0x51AAD0 getter identity【低】/2=fn 正式名＋[seq+0xC] exe label 不在【低】/3=[esp+0x28] 別 byte flag の意味【低】）。教訓: prologue の sub esp/push 数で引数スロット確定→flag writers 全3件 census→trace 文字列実読で概念名確定。v 採番 v391 消費（次=v392=③V-383-2）。"
+    },
+    {
+      "id": "153-v392-blend-bridge-2026-11-15",
+      "timestamp": "2026-11-15T06:15:48Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-153",
+        "n5b",
+        "re",
+        "v392"
+      ],
+      "content": "2026-11-15 #153③（V-383-2）を v392 で裁定: 0x6C5C70 の identity を確定。成果物 tmp/re/v392_blend_bridge_ruling.md（probe v392_1 全 EXIT=0）・台帳 row368（bak218）・round_verify ALL OK（rows 31..368 / total 254 / done 249 / open 5）・STATE (dn)。0x6C5C70=[確定(命令)]: 「lookup → blend wrapper」接続の静的ブリッジ fn — ret 0x14＝5 stack 引数＋ecx レジスタ入力（decompiled L495514 addr 注記／L495516 void FUN_006c5c70(undefined4×5)＝thiscall なしの静的 fn）・本体2段: ①obj = 0x6C5860(a1, a5; ecx)（lookup）②0x6C9D30(obj, a1, a3(float), a2(float), a4, 1.0, 1.0, 0)（blend wrapper → Deactivate state4 → Activate state5・v379 確定）・引数配線は unfiltered の push/sub esp/fstp 並びから直接特定。0x6C5860=[部分確定]: 0x6C5C70 専用 lookup（E8=0x6C5C7B の1本）— cmp [eax+0x44],0（state）＋cmp [eax+0xC], ecx（controller count vs レジスタ入力）＋call 0x6C4A10＝state/count 条件付き sequence 検索（完全アルゴリズムは残点）。E8 callers 2本=[確定(命令)]: ①0x474A2F＝Morph fn 0x474530 内の経路（直後に 0xB102EC テーブル ×36 index 読み＝prologue の 0xB102E8 と同ファミリ＝v391 の Morph ディスパッチに接続）②0x5109E7（0x51xxxx 帯）＝別システムからの Morph/blend 要求。decompiled 呼び出し例: L93028（Morph 内）FUN_006c5c70(param_2,0,param_3,0,0)／L204516。V-383-2 への回答: lookup 結果を blend wrapper 0x6C9D30（state4/5）へ渡す静的ブリッジ [確定(命令)]・v383 の「ブレンド系[推定]」は接続先まで確定して昇格。残点 V-392-1..3（1=0x6C5860 完全 decode【低】/2=ecx 入力の設定元【低】/3=0x474A2F path の条件【低】）。教訓: push/sub esp/fstp 並びから静的 fn の引数配線を完全復元→E8=1 で専用 lookup 証明→テーブル index 同ファミリ照合で所属接続。v 採番 v392 消費（次=v393=④V-384-1）。"
     }
   ],
   "metadata": {
-    "totalEntries": 795,
+    "totalEntries": 796,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-15T06:02:37Z",
-    "entry_count": 795,
-    "last_updated": "2026-11-15T06:02:37Z"
+    "lastUpdated": "2026-11-15T06:15:48Z",
+    "entry_count": 796,
+    "last_updated": "2026-11-15T06:15:48Z"
   }
 }

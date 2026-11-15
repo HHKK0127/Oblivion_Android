@@ -1451,3 +1451,18 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-391-1..3**: 1=**`0x51AAD0` getter の identity**（何を返す byte か・check1/check2 の意味）【低】／2=**fn `0x474530` の正式名**（decompiled FUN_ 名のみ）＋`[seq+0xC]` は文字列根拠で exe label 不在【低】／3=**`[esp+0x28]`（`0x4747D9`/`0x474833` の別 byte flag）の意味**【低】。
 - **教訓**: **prologue の sub esp/push 数から引数スロットを確定 → flag writers 全3件 census → trace 文字列実読で概念名（Morph）を確定**。
 - **次**: #153③V-383-2（`0x6C5C70` identity）→ 次 v 採番 v392。
+
+## 2026-11-15 (dn) — #153③ 完遂: `0x6C5C70`＝**lookup→blend wrapper の静的ブリッジ [確定(命令)]**（`0x6C5860` 専用 lookup＋`0x6C9D30` へ接続）（v392・V-383-2）
+
+- **成果物**: `tmp/re/v392_blend_bridge_ruling.md`（probe **v392_1 全 EXIT=0**）。台帳 **row368（bak218）**・`round_verify` **ALL OK**（rows 31..368 / total 254 / done 249 / open 5）。ai-todo #153 に note（束③消化）。v 採番 **v392 消費（次=v393＝#153④）**。
+- **`0x6C5C70` [確定(命令)]**: **「lookup → blend wrapper」接続の静的ブリッジ fn** — `ret 0x14`＝**5 stack 引数＋ecx レジスタ入力**（decompiled L495514 addr 注記／L495516 `void FUN_006c5c70(undefined4 param_1..param_5)`＝**thiscall なしの静的 fn**）。本体2段:
+  1. **`obj = 0x6C5860(a1, a5; ecx)`（lookup）**
+  2. **`0x6C9D30(obj, a1, a3(float), a2(float), a4, 1.0, 1.0, 0)`（blend wrapper → Deactivate state4 → Activate state5・v379 確定）**
+  - 引数配線は unfiltered の push/sub esp/fstp 並びから直接特定。
+- **`0x6C5860` [部分確定]**: **`0x6C5C70` 専用 lookup（E8 callers＝`0x6C5C7B` の1本）** — SEH prologue・本体に **`cmp [eax+0x44],0`（state チェック）＋`cmp [eax+0xC], ecx`（controller count vs レジスタ入力）**＋`call 0x6C4A10` ＝ **state/count 条件付き sequence 検索/解決**（完全アルゴリズムは残点）。
+- **E8 callers 2本の所属 [確定(命令)]**: ①**`0x474A2F`＝Morph fn `0x474530` 内の経路**（直後に `lea ecx,[eax+eax*8]; mov eax,[ecx*4+0xB102EC]`＝**prologue の `0xB102E8` と同一テーブルファミリの ×36 index 読み**＝v391 の Morph ディスパッチに接続）②**`0x5109E7`（`0x51xxxx` 帯・`jmp 0x510A06`）**＝別システムからの Morph/blend 要求。
+- **decompiled 呼び出し例 [確定]**: L93028（**Morph fn `0x474530` 内**）`FUN_006c5c70(param_2,0,param_3,0,0)`／L204516 `FUN_006c5c70(fVar1,0,local_8[0],0,0)`。
+- **V-383-2 への回答**: lookup 結果を blend wrapper `0x6C9D30`（state4/5 ブレンド対）へ渡す**静的ブリッジ** [確定(命令)]。v383 の「NiControllerManager のブレンド系 [推定]」は**接続先まで含めて確定・昇格**。
+- **残点 V-392-1..3**: 1=**`0x6C5860` の完全 decode**（lookup の key・`0x6C4A10` の役割）【低】／2=**ecx レジスタ入力の値と設定元**（`cmp [eax+0xC],ecx` の右辺＝期待 controller count [推定]）【低】／3=**`0x474A2F` が属する path の条件**（`0xB333C4` グローバルチェックとの関係）【低】。
+- **教訓**: **push/sub esp/fstp の並びから静的 fn の引数配線を完全復元 → E8=1 で専用 lookup を証明 → テーブル index の同ファミリ照合で所属を接続**。
+- **次**: #153④V-384-1（state 3 と 4 の意味の差）→ 次 v 採番 v393。
