@@ -1585,3 +1585,16 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-401-1..3**: 1=**両 fn の所属クラス RTTI 照合**（`[+0x14]` block 配列 container＝manager/sequence [推定]）【中】／2=**残り2構築 site（`0x6C8F08`/`0x6C9120`）の owner 同定**【低】／3=**dtor 側 CRT 名と `0xAFFA78` の役割**【低】。
 - **教訓**: **E8=0 の fn は packed dword census（imm32 参照）で callback 呼び出しを特定せよ**（Ghidra 未アノテーションでも `push imm32` が唯一の手がかり）＋**CRT `eh_vector_*` iterator は (buf, size, count, ctor, dtor) の5引数定石**。
 - **次**: #153⑥-8 V-387-1（fn `0x6CA440` 正式名）→ 次 v 採番 v402。
+
+## 2026-11-15 (dx) — #153⑥-8 完遂: `0x6CA440`＝**NiControllerSequence のテキスト表示用ダンプ（vtable slot12）[確定]**・**Save は [確定負]**（%g/enum 名/スカラのみ/GUI インスペクタ経路）（v402・V-387-1）
+
+- **成果物**: `tmp/re/v402_sequence_dump_ruling.md`（probe **v402_1..7 全 EXIT=0**）。台帳 **row378（bak228）**・`round_verify` **ALL OK**（rows 31..378 / total 264 / done 259 / open 5）。ai-todo #153 に note（低10件の第8弾消化）。v 採番 **v402 消費（次=v403＝#153⑥-9 V-387-2）**。
+- **所属 [確定(RTTI＋命令)]**: **`NiControllerSequence` の vtable slot12（+0x30）** — .rdata VA `0xA79A64` 周辺（extent19 slots・file 0x678C34..0x678C80）の idx12・**COL `0xAC6170` → TypeDescriptor `.?AVNiControllerSequence@@`**。E8=1（`0x49FF2A`＝override 内 super 呼び出し）＋packed dword＝vtable のみ。
+- **正式名 [確定(命令＋decompiled＋経路)]**: **Debug dump（テキスト表示用ダンプ）** — フィールド群を **`"name = value"` 形式テキスト行**として呼び出し元の**文字列バッファ（NiStringPalette 系・`[+8]/[+0xa]/[+0xe]` capacity＋grow）へ出力**（13スカラ: State/ArraySize/Weight/CycleType/Freq/Begin/End/Last/Offset/Start/End/WeightLast/LastScaled）。
+- **Save は [確定負]（根拠5点）**: ①**`%g`（`"%s = %g"`・6桁丸め＝ラウンドトリップ不能）**（`FUN_0070fb90` L553209）②enum を**シンボル名**出力（`FUN_006c6140`＝State switch／`FUN_00715910`＝CycleType）③**スカラ13フィールドのみ**（keys/controllers/配列なし＝再構成不能）④出力先＝in-memory バッファでファイルでない ⑤**実使用経路が全て GUI インスペクタ**。
+- **実経路 [確定(命令＋decompiled)]**: **`FUN_00495af0`（L119846-119878）が `SendMessageA(HWND([param_1+0xc]), 0x1100, 0, &item)` でツリーノードを張り**、ラベル **`"Object Palette"`／`"Active Sequences"`／`"Inactive Sequences"`**（`0xA3DBE8`/`0xA3DBFC`）を切り替え、**`[param_3+0x40]` 配列（count `[+0x46]`＝NiControllerManager layout）を走査**して `FUN_00495120`/`FUN_00495270` で追加（state≠0＝Active／==0＝Inactive で振り分け）。**slot12 の hierarchy 呼び出しは `0x495120..0x4964f0` の1家族のみ**（他の `+0x30` 呼び出しは別階層＝logger "Report"/"Warning" 等）＝**Save 経路なし [確定(否定側)]**。
+- **BSAnimGroupSequence override [確定(RTTI＋命令)]**: **`0x49FF20`＝`.?AVBSAnimGroupSequence@@` の vtable idx12** — 基底 `FUN_006ca440` super 呼び出し（E8 `0x49FF2A`）→ pool `0xB35270` 追記 → **`sprintf("AccumRoot = %s", [this+0x5c])`（`0xA3F858`）**。エラー文字列 `"Could not find AccumRoot in animation '%s'."`（`0xA3C7D0`・`FUN_00472030`）＝AnimGroup 読込系と接続。
+- **vtable 体系 [確定(RTTI)]**: NiControllerSequence **idx6=`0x6C87A0`（Clone＝v398 整合）**／idx11=`0x6C7BB0`（IsEqual 系）／**idx13=`0x68F970`＝no-op stub（`FUN_0068f970`＝`{return;}`）**／idx15=`0x6CACE0`（v400 の 0xFF reset fn）。
+- **残点 V-402-1..3**: 1=**slot12 第2引数（`puVar3`/`local_98`）の正体と表示先**（`SendMessageA` 0x1100 の意味と ITEM 構造）【中】／2=**インスペクタ窓自体の同定**（HWND 所有者・`FUN_00495af0` の呼び出し元）【中】／3=**idx14=`0x6C7470`/idx15=`0x6CACE0` のスロット意味**【低】。
+- **教訓**: **Save vs dump は ①形式（%g/enum 名＝表示専用）②データ完全性（スカラのみ＝再構成不能）③呼び出し家族（GUI インスペクタのみ＝保存経路なし）の3点で裁定**＋**vtable extent＋RTTI COL で slot 所属を一撃確定**。
+- **次**: #153⑥-9 V-387-2（Offset の数式上の役割）→ 次 v 採番 v403。
