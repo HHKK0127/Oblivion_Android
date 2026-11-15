@@ -1090,7 +1090,7 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 
 
 
-## 2026-11-14 (co) — #45 N5b increment 3a 完了: walker surface C ABI 4本を nif-ffi に露出（verifier REJECT→修正→APPROVE・commit 01b6b427）
+## 2026-11-14 (co2) — #45 N5b increment 3a 完了: walker surface C ABI 4本を nif-ffi に露出（verifier REJECT→修正→APPROVE・commit 01b6b427）
 
 - **何をしたか**: nif-core に既存だった walker 公開 API（`walk_all_blocks`/`locate_block_body`/`find_blocks_of_type`/`block_type_name`/`walk_error`/`are_blocks_walked`・いずれも実データ検証済み）を **nif-ffi から4関数で露出** — `nif_walk_blocks`（EMPTY=未ロード／INCOMPLETE=停止理由付き／OK=全 block+trailer 計測済）・`nif_locate_block_body`（NULL/整列/範囲外=INVALID_ARGUMENT・walk 未完了=NO_BLOCK＝walk.rs:93 と同一ゲート）・`nif_find_blocks_of_type`（`nif_get_geometries` 同形の length-query・**capacity は uint32_t slots 単位**・未ロード=0 matches／object array 失敗・walk 未完了=NO_BLOCK+理由）・`nif_get_block_type_name`（snprintf 形・object array index／header テーブル用と区別）。**nif-core は無変更**（純 -ffi 露出＝rust/AGENTS.md の6手順の1-3を充足）。3ファイル +324/-0。C++ スタブは parity 方針どおり false 維持（配線は orig_src 根拠の別増分）。
 - **verifier**: 1回目 **REJECT**（本体コードは全合格・欠落はテスト3件＝locate の整列検査／NO_BLOCK・INCOMPLETE の実測／find 切り詰め不可の明記＋「no file→0」doc 表現の過剰）→ 約25行追加（**trailer 落とし `fixture_pos-8`** で parse OK→再 walk INCOMPLETE→両ゲーテッド accessor NO_BLOCK を実測）＋2ファイル doc を正確化 → 2回目 **APPROVE**（全6項目 PASS・verifier 独立再実行で green）。非ブロッキング注記=pre-5.0.0.1 の inline type name 読取失敗時は block_count()==0 経由で0（20.x では正しく NO_BLOCK）。
@@ -1102,7 +1102,7 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 
 
 
-## 2026-11-14 (cp) — #126 完了（全3項）: ②種族保持を **FormID 参照**で実装（v365 (b) 準拠・emu で `race formID=0x0005308E` 実証・commit 7bf40e79）
+## 2026-11-14 (cp2) — #126 完了（全3項）: ②種族保持を **FormID 参照**で実装（v365 (b) 準拠・emu で `race formID=0x0005308E` 実証・commit 7bf40e79）
 
 - **ラベル衝突の解消**: RE レーンが当ラウンドの前に `(cn)`（#135/v366）を挿入していたため、本ラウンドの inc3a エントリを **`(cn)`→`(co)` へ改名**（内容不変・書き込み時点のレースコンディション。以降の採番は `(cp)` から）。
 - **②種族保持（#99 欠落 C）**: `player.h` に race フィールド不在（実測0マッチ）→ RE #134/v365 裁定 **(b)「フォーム参照として保持 [部分確定]」**（menu 側 direct store=0件・Done 帯書出=0件・選択時に live 適用）に沿って **FormID 参照を保持**（レコードのコピーではない＝原本と同じ形・`face_gen_data.h` の `FaceGenRecord::raceFormID` と命名統一）。実装=4ファイル +23/-0: `CharacterStatus`/`Player` に `raceFormID=0`・confirm ハンドラで `applyRaceBonuses` と同一の bounds ガード付き付与（空時は明示0＝前回選択の漏洩遮断）・callback 転送＋`race formID=0x%08X` ログ。
@@ -1135,3 +1135,21 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-371-1..5**: 1=predicate `virtual+0x8C` の戻り値意味【中】／**2=clip 構築元と NiKeyframeData 配列対応（`0x6FFE90`/`0x75FA90` decode）【高・#45 ④に必須】**／**3=`resolved_bone_index` 解決経路【高・#45 ③に必須】**／4=格納 `mov [esi+eax+8],edi` と `virtual+0x58/84/98` の先（port 3フィールドのどれか）【中】／5=identity 類（`[seq+0x40]/+0x7C/+0x5C/+0x60`・fn `0x473200` 正式名・`0x748530` IAT 先）【低】。
 - **main への回答（#45）**: resolve 分の着手可 — ②の node 解決＋5識別子対応は実装根拠として足りる。③④は残点2本が次 probe。
 - **次**: RE レーン open タスク消化完了（#147/#144/#145 完遂）→ **締め（整合確認＋RE 分 push）**。次 probe 入口＝残点 V-371-2/3（次 v 採番 v372）。
+
+
+
+## 2026-11-15 (ct2) — #146 完了: Race タブを **playable 種族10件のみ**にフィルタ（v369 準拠・emu 実証・commit 1e203e1b）＋ #45 N5b increment 4 完了: resolve を nif-core に移植（commit f431795e）
+
+- **#146（非プレイアブル種族フィルタ）**: 正典＝RE #147/v369_race_playable_flag_ruling.md — RACE の DATA(36) byte32..35 u32 の **bit0 = playable [確定]**（実データ15/15 分離: playable10=0x1／Sheogorath・GoldenSaint・DarkSeducer・VampireRace・Dremora=0x0）・EXE は DATA 全体を [TESRace+0x50] へ memcpy し byte32=[+0x70] [確定(命令)]・表示条件＝bit0 のみ（性別等の併用なし）[確定(命令)]。実装＝3ファイル +20/-0: `RaceData.flags` 追加＋`decodeRace` の DATA 読み込み（findSubRecord＋size>=36＋memcpy(data+32,4)＝EyesData/HairData と同一形状）＋`loadRacesFromESM` で `(flags & 1u)==0 → continue`。DATA なし→flags0→スキップ（vanilla は常に DATA 有＝[確定(実データ)]・EXE ctor 既定値は V-369-4 [未確定] のため既定値を発明しない）。**verifier APPROVE 1回目**（全6項目: memcpy オフセット/サイズ/エンディアン・bit0 のみ・RaceData 破壊的読み手0件・index0=Argonian 化に破綻なし・スコープ3ファイル）。**emu PASS**: v3_race_tab.png＝**10種族のみ**（Argonian 先頭・既定選択ハイライト）で非プレイアブル5種が完全排除・v3_row_picked.png＝行タップで Breton へハイライト移動（新インデックスでも選択経路正常）・Create=name 行＋quest 1002＋crash none（formID ログは未マージ fix-chargen-race-persist 側機能のため当ブランチでは N/A＝妥当）。**検証の教訓**: 1回目の emu 実行は**無効棄却** — verify3 を verify2 から流用した際に **install 手順が欠落**し旧 APK を再検証していた（formID が前回の Dark Seducer 値と同一で発覚）→ 検証スクリプトには APK install＋対象ビルド確認を必須化。
+- **#45 N5b increment 4（resolve）**: orig_src の `resolveControllerReferences`（nif_parser.cpp:3519-3543）の忠実移植＝`NifParser::resolve_controller_references`（bounds チェック＋in-range で resolved_bone_index 転送／clip は `KeyframeData::to_clip()`（orig parseNiKeyframeData L3389-3483 の組立半分: rotation 追加→trans/scale を厳密 |Δt|<0.001 でマージ→time ソート→duration=最終キー）で置換・範囲外は clip 保持）。orig の `nodes[idx]` null チェックが bounds に縮約される根拠＝orig parseObjectArray L311-319 が全ブロック添字を充填。**verifier 3ラウンド**: REJECT（doc 誤主張「resolve が target_node_index を埋める」／clip の ABI 主張／テスト欠落＝非既定 clip 保持＋rotation 値搬运）→ 修正 → REJECT（修正文自体の clip 誤帰属1文＋テスト名）→ 修正＋改名 → **APPROVE**。gate＝cargo test **193 passed / 31 suites / 0 warnings**（base 187＋6）・diff check 0。**C ABI は見送りを明文化**（nif_controlled_block に target_node_index 不在・orig も不書き・clip 不通過・出所は #145 の確認対象＝今 ABI は推測）。commit **f431795e**（3ファイル +460/-8）。
+- **v371（#145 完遂）との整合**: EXE の解決本体＝`NiControllerSequence::StoreTargets`(0x6C9590) [確定(文字列+命令)]・**名前ベース lookup**（palette offset→ノード名→virtual+0x4C・Bip01→Bip02 fallback・失敗ログ3種）[部分確定]＝**port スタブの正統な原本対応関数**。inc4 は orig_src 版の移植として承認済みだが StoreTargets は名前解決を実装していない → 次増分で StoreTargets 相当を実装＋block.rs doc の「#145 open question」記述を v371 引用へ更新（#45 に note 済）。残点: V-371-2（EXE 側 clip store 未特定）・V-371-3（resolved_bone_index の骨解決経路＝[未確定]・必要なら新規 #RE）。
+- **起票**: **#148**（既存バグ: decodeClass の memcpy が uint8_t の ClassData::flags へ4バイト書込み＝構造体外3バイト破壊・esm_reader.cpp:1882・base から存在・fortify 警告付き＝#146 の verifier 発見）／**#149**（名前検証の実装: v370 の3拒否のみ・maxchars/文字種制限なし [確定(否定側)] 準拠＝#144 完遂でブロッカー解除）。
+
+- **ラベル規約（本ラウンドで確立）**: STATE のラウンドラベルは2レーン共有のため
+  衝突が再発した（①11-14 の (cn)＝RE #135 と自ラウンドが重複→自側を (co) に改名
+  ②その (co)/(cp) が RE レーンの #142/#136（024eda1a・先行採番）と再重複）。以降
+  **本（作製）レーンは数字付きラベル（(co2)/(cp2)/(ct2)…）**とし、RE レーンの純文字列
+  シーケンス（(cq)/(cr)/(cs)…）と構造的に衝突しないようにする。既存2組の重複は本
+  ラウンドで自側を改名して解消済み（RE 側の (co)/(cp) は不変更）。
+- **同席**: RE レーンの (cq)-(cs)（v369/v370/v371・#147/#144/#145 完了）は **064ae57e** で記録済み（本ラウンドは重複記録しない）。supermemory に #146 完了と検証スクリプトの install 欠落教訓を登録。
+- **次**: ①StoreTargets 相当 increment（v371 [部分確定] の範囲で名前ベース解決）②#149 名前検証 ③#148 ClassData flags 型の実データ確定と修正 ④#137/#127/#96 D ⑤未マージ7ブランチ（race-filter 1e203e1b・race-persist 7bf40e79・inc4 f431795e 等）は人間ゲート待ち。

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-15T00:04:48Z",
+  "lastUpdated": "2026-11-15T01:00:38Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11130,14 +11130,42 @@
         "v371"
       ],
       "content": "2026-11-15 #145 完了（v371）: NIF コントローラ参照解決（resolveControllerReferences 相当）の本体とアルゴリズムを裁定（#45 N5b ブロッカー解消材料）。成果物 tmp/re/v371_nif_resolve_ruling.md（probe v371_1..10 全 EXIT=0・自己修正=v371_6 初回 strings_in(cap=) TypeError→kwarg 除去）・台帳 row347（bak197）・round_verify ALL OK（rows 31..347 / total 233 / done 228 / open 5）・STATE (cs)。① 本体=[確定(文字列+命令)]: 0x6C9590 = NiControllerSequence::StoreTargets — fn 内から format 文字列3種を push（0xA79CD8=\"...failed to resolve dependencies for the interpolator with the following identifiers:\"／0xA79B70・0xA79AA8=\"...failed to find target...\"・冒頭3つとも NiControllerSequence::StoreTargets '%s'）。vtable slot でなく直接 E8（callers4本= game側 0x47334E（fn 0x473200・chargen バンド 0x5C4D62/78/8E/A4 からも呼出）＋ NiControllerManager 系 0x6C428B/0x6C4C7A/0x6C57B7）。探索手順: 全 vtable 実測（Sequence 0xA79A34/Manager 0xA79804/Palette 0xA79934）→ palette アクセサ群（+4/+6/+8/+0xA の u16+0xFFFF パターン helpers 0x6C63A0/C0/E0・各 callers=2）→ 0xFFFF センチネル連打バンドを遡って head 同定 →fn 内 format 文字列の実読で関数名確定（推測ゼロ）。② アルゴリズム=[部分確定]: A 前処理=[seq+0x40]→[+0x7C]＋[seq+0x5C](名)→virtual+0x4C(root,name)＝FindChild 系[推定高]→[seq+0x60] へ store・前提 fn 0x6C8220＝cmp [eax+2],0x54('T')/[+7],0x66('f')＝\"NiTransformController\" プロトタイプ登録確認[確定(文字列)]。B ループ=sequence 単位一括（i<[owner+0xC]・stride16・2配列同時走査: 配列A [owner+0x14]+i*16=block／配列B [seq+0x18]+i*16=palette 記録）・predicate virtual+0x8C false→5識別子 resolve（u16 offset・0xFFFF→NULL）→0x748530(0xA79CD8) ログ→次ブロック。C node 解決=resolve([ebx+4] node名)→root->virtual+0x4C(name) lookup[推定高]→NULL なら D、一致なら node の子リスト [+0x9C] 走査（inline strcmp）でpropertyType 名と照合し child 選択→0x6C9852 成功へ。D failure/special-case=[確定(命令+文字列)]: strcmp(name,'Bip01')==0→virtual+0x4C('Bip02') 再 lookup／strncmp('Bow',3)→strncmp('Arrow',5) 等の文字列 fallback→未命中は 0x748530 ログで次ブロックへ。E 成功パス=[部分確定]: u16 アクセサ群で名前整合→0x6FFE90（SEH 大 fn・内部 0x75FA90 callers=40）→5識別子 resolve→0x748530(0xA79B70)→virtual+0x58/0x80/0x7C/0x84/0x98 連打→mov [esi+eax+8],edi(0x6C9B12)＝結果格納[推定]→ループ継続。ログ emitter 0x748530＝テーブル [0xB40610+id*12]（byte flag／−1 sentinel・32エントリ）＋IAT 0x7009D6＝NiError 系[推定高]。③④ = [未確定]（残点 V-371-2/3）: 骨解決経路と clip 構築元は StoreTargets decode 窓に不在・候補は 0x6FFE90/0x75FA90。最重要の一致（#45 へ供給）: 失敗ログ識別子5つ m_pcAVObjectName/m_pcPropertyType/m_pcCtlrType/m_pcCtlrID/m_pcInterpolatorID ⇔ port KeyframeController の palette offset 5項目と完全1対1 [確定(文字列↔port実測)]＝StoreTargets は port stub resolveControllerReferences の正統な原本対応関数。整合: 0xFFFF=なし sentinel [確定(命令)]・Load で未解決保持→後段 StoreTargets で解決＝port の parse/resolve 分離と同型[推定高]。v348 の「0x5A3520 座標外」裁定は維持（本裁定が代替座標を確定）。残点 V-371-1..5（1=predicate virtual+0x8C の戻り値意味【中】/2=clip 構築元と NiKeyframeData 配列対応【高・#45 ④に必須】/3=resolved_bone_index 解決経路【高・#45 ③に必須】/4=格納 mov [esi+eax+8],edi と virtual+0x58/84/98 の先【中】/5=identity 類【低】）。v 採番 v371 消費（次=v372）。RE レーン open=#147/#144/#145 を全て完遂。"
+    },
+    {
+      "id": "45n5b-inc4-resolve-f431795e-2026-11-15",
+      "timestamp": "2026-11-15T01:00:38Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "n5b",
+        "rust",
+        "chargen",
+        "android"
+      ],
+      "content": "2026-11-15 #45 N5b increment 4 完了: resolve を nif-core に移植（commit f431795e・branch n5b-keyframe-reader・base 024eda1a・3ファイル +460/-8）。NifParser::resolve_controller_references（orig_src nif_parser.cpp:3519-3543 の逐語移植: bounds チェックで resolved_bone_index 転送・in-range の keyframe data で clip 置換・範囲外は保持）＋ KeyframeData::to_clip（orig parseNiKeyframeData L3389-3483 の組立半分: rotation 追加→trans/scale を厳密 |Δt|<0.001 で最初の一致キーへマージ（後勝ち）→time ソート→duration=最終キー・name/frequency/tangent は orig が書かないため既定維持・type4 xyz チャンネルは orig に対応行為がなく対象外と明記）。orig の nodes[idx] null チェックが bounds に縮約される根拠=parseObjectArray L311-319 が全ブロック添字を充填。verifier 3ラウンド: REJECT（doc 誤主張「resolve が target_node_index を埋める」／clip の ABI 主張／テスト欠落2本=非既定 clip の範囲外保持＋rotation 値搬运）→修正→REJECT（修正文自体の clip 誤帰属1文＋テスト名ずれ）→修正＋改名→APPROVE（全項目・独立再実行 green）。gate: cargo test 193/31/0 warnings（base 187+6）・diff check 0・秘密情報0。C ABI は見送り明文化（nif_controlled_block に target_node_index 不在・orig も不書き・clip 不通過・出所は #145 確認対象＝今 ABI は推測）。C++ スタブは parity どおり false。v371（#145 完遂）で EXE 本体=StoreTargets(0x6C9590) の名前ベース解決と判明 → 次増分で StoreTargets 相当を実装（#45 に note 済・残点 V-371-2/3）。"
+    },
+    {
+      "id": "146-playable-filter-1e203e1b-2026-11-15",
+      "timestamp": "2026-11-15T01:00:38Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "n5b",
+        "rust",
+        "chargen",
+        "android"
+      ],
+      "content": "2026-11-15 #146 完了: Race タブを playable 種族10件のみにフィルタ（commit 1e203e1b・branch fix-chargen-race-filter・base 024eda1a・3ファイル +20/-0）。正典=RE #147/v369: RACE DATA(36) byte32..35 u32 bit0=playable [確定]（実データ15/15 分離）・EXE は DATA 全体を [TESRace+0x50] へ memcpy し byte32=[+0x70] [確定(命令)]・表示条件=bit0 のみ [確定(命令)]。実装=RaceData.flags 追加＋decodeRace の findSubRecord+size>=36+memcpy(data+32,4)（EyesData/HairData と同一形状）＋loadRacesFromESM で (flags&1u)==0→continue。DATA なし→flags0→スキップ（ctor 既定値 V-369-4 [未確定] のため発明しない）。verifier APPROVE 1回目（全6項目・RaceData 破壊的読み手0件・index0 假定コードなし・スコープ3ファイル）。emu PASS: 10種族のみ（Argonian 先頭・既定選択）で非playable5種が完全排除・行タップで Breton ハイライト移動・Create 正常（name 行+quest 1002+crash none・formID ログは race-persist 側機能のため当ブランチ N/A）。教訓: 検証スクリプト流用時に install 手順が欠落し旧 APK を再検証（formID が前回値と同一で発覚）→ emu 検証スクリプトは APK install+対象ビルド確認を必須化。verifier 発見の既存バグ（decodeClass の memcpy が uint8_t flags へ4バイト・esm_reader.cpp:1882）は #148 として起票。未マージブランチは人間ゲート待ち。"
     }
   ],
   "metadata": {
-    "totalEntries": 770,
+    "totalEntries": 772,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-15T00:04:48Z",
-    "entry_count": 770,
-    "last_updated": "2026-11-15T00:04:48Z"
+    "lastUpdated": "2026-11-15T01:00:38Z",
+    "entry_count": 772,
+    "last_updated": "2026-11-15T01:00:38Z"
   }
 }
