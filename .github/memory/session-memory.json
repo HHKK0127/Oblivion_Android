@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-15T11:00:28Z",
+  "lastUpdated": "2026-11-15T11:16:54Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11631,14 +11631,28 @@
         "v400"
       ],
       "content": "2026-11-15 #153⑥-6（V-386-1）を v400 で裁定（判定=[部分確定]）: [block+0xD] の非0xFF供給元を追跡。成果物 tmp/re/v400_blockflag_supply_ruling.md（probe v400_1..6 全 EXIT=0）・台帳 row376（bak226）・round_verify ALL OK（rows 31..376 / total 262 / done 257 / open 5）・STATE (dv)。帯内 non-0xFF 書手=[確定(否定側)]: 0件 — imm census（C6）＋reg ストア census（88 /r disp=0x0D 全 .text）で帯内在は 0x6C68FB（copy）/0x6CA0FA（copy）/0x6CD411（別構造: v394 container count）/0x6CCE9A（別構造 ctor）のみ。候補3件否定=[確定負]: ①FUN_006cce40＝別クラス族 base ctor（vtable +0 型・6派生クラス・layout 不一致）②0x7343A4/0x734142＝ピクセル/テクスチャデコーダ（RGB565 bit unpack・local[3]=0xFF=alpha）③FUN_006c6610＝block 抽出 fn（take-out＋slot クリア）。伝播経路=[確定(命令＋decompiled)]: source entry（edi/piVar13）→dest block[+0xd] コピー2か所 — ①FUN_006c9f10（L499164・[vtable+0x74] count ループ内・ptr/+4 ref とセット）②0x6CA0FA ループ（container [+0x14] stride16・virtual getter 照合→ptr/name/[+0xd] 転送・FUN_006c9f10 内と推定高）。setter/getter 系=[確定(命令＋decompiled)]: {Getter FUN_00468260＝return byte[+0xd]／Setter FUN_00468270＝byte[+0xd]←arg（E8=1＝FUN_005222d0 内のみ・non-virtual）／Clear FUN_0046CAD0＝+0xc=+0xd=0（E8=0・vtable slot×4: file 0x63B278/0x641D84/0x641FA8/0x642104）}・値源＝FUN_004a9700＝return byte[+0x69]（FUN_005222d0 内 L216913-216919: [+0x104] の +0x69 getter→setter 経路）。原点=[未確定]: [+0x69] フィールドの identity と設定元＋0x468xxx descriptor→block 接続（edi source 正体）＝[推定高]。残点 V-400-1..3（1=[+0x69] identity と設定元【中】/2=descriptor→block 接続証明【中】/3=Clear vtable slot クラス同定【低】）。教訓: stride16 ストリーム格納はピクセルデコーダと紛れやすい→bit-unpack パターン（&0xf8/&0xfe）と alpha 0xFF で識別して棄却。v 採番 v400 消費（次=v401=⑥-7 V-386-2）。"
+    },
+    {
+      "id": "153-v401-block-ctor-2026-11-15",
+      "timestamp": "2026-11-15T11:16:54Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-153",
+        "n5b",
+        "re",
+        "v401"
+      ],
+      "content": "2026-11-15 #153⑥-7（V-386-2）を v401 で裁定: 0x6C62E0/0x6C6300 の所属と 0xA79EFc 定数を確定（v386 の [推定]→[確定] 昇格）。成果物 tmp/re/v401_block_ctor_ruling.md（probe v401_1..4 全 EXIT=0）・台帳 row377（bak227）・round_verify ALL OK（rows 31..377 / total 263 / done 258 / open 5）・STATE (dw)。0x6C62E0=[確定(命令＋CRT 名)]: block 構造（stride16）の要素 ctor — MSVC CRT eh_vector_constructor_iterator（0x984BCF）に ctor callback として渡される（5箇所・例 0x6C7155: push 0x6c64c0; push 0x6c62e0; push count; push 0x10; push buf; call 0x984bcf）・CRT 注記 L987478（VS2005/2008/2010 Release・(void*,uint,int,ctor(__thiscall*),dtor(__thiscall*))）＝thiscall(this=要素スロット)・E8=0 の正体＝callback 経由のみ（Ghidra も FUN_006c62e0 未アノテーション）・中身＝{+0/+4/+8 zero, +0xC←[0xA79EFc], +0xD←0xFF}。0x6C6300=[確定(命令＋decompiled)]: block slot release/reset — [+0]/[+4] 2 refcounted ptr release（Interlocked via 0xA2807C→0 で delete）→ [+0/+4/+8]=0 → [+0xC]←[0xA79EFc]・[+0xD]←0xFF（L495959-495984）・E8 caller＝0x6C6675 の1件＝FUN_006c6610（block 抽出 fn・v400）内。ペア dtor=[確定(命令)]: 0x6C64C0＝block 要素 dtor（CRT iterator param_5・this=ecx→[+4] ref release→[+0] ref release）。0xA79EFc=[確定(命令)]: 値 0x000000FF（byte 0xFF）の未設定センチネルバイト定数・用途3系統 — ①両 resetter の +0xC 既定値（mov cl,[0xA79EFc]; mov [reg+0xc],cl＝0x6C62EE/0x6C635E）②未設定比較（cmp al,[0xA79EFc]＝0x53D89E/0x74FADE/0x750335）③配列 init（0x49F831/0x6CAFB4）・+0xC と +0xD は両方0xFF 既定（v400 DAT_00a79efc=0xFF 整合）。構築 container fn=[確定(命令)]: FUN_006c70a0（copy/assign 系・L496825）と FUN_006c8580（grow 系・count=[edi+0xc]+[edi+0x10]・L497902）が [+0x14] block 配列を CRT iterator で構築（0x6C7173: [esi+0x14]=data）。残点 V-401-1..3（1=両 fn の所属クラス RTTI 照合【中】/2=残り2構築 site（0x6C8F08/0x6C9120）の owner【低】/3=dtor 側 CRT 名と 0xAFFA78 の役割【低】）。教訓: E8=0 の fn は packed dword census（imm32 参照）で callback 呼び出し特定（Ghidra 未アノテーションでも push imm32 が唯一の手がかり）＋CRT eh_vector_* iterator は (buf, size, count, ctor, dtor) の5引数定石。v 採番 v401 消費（次=v402=⑥-8 V-387-1）。"
     }
   ],
   "metadata": {
-    "totalEntries": 805,
+    "totalEntries": 806,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-15T11:00:28Z",
-    "entry_count": 805,
-    "last_updated": "2026-11-15T11:00:28Z"
+    "lastUpdated": "2026-11-15T11:16:54Z",
+    "entry_count": 806,
+    "last_updated": "2026-11-15T11:16:54Z"
   }
 }

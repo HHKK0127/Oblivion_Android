@@ -1573,3 +1573,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-400-1..3**: 1=**`[+0x69]` identity と設定元**【中】／2=**descriptor→block 接続証明**【中】／3=**Clear の vtable slot 位置と4 vtable のクラス同定**【低】。
 - **教訓**: **stride16 へのストリーム格納はピクセルデコーダ等の別構造と紛れやすい → bit-unpack パターン（`&0xf8`/`&0xfe`）と `local[3]=0xFF`（alpha）で識別して棄却**。
 - **次**: #153⑥-7 V-386-2（`0x6C62E0`/`0x6C6300` 所属）→ 次 v 採番 v401。
+
+## 2026-11-15 (dw) — #153⑥-7 完遂: `0x6C62E0`＝**block 要素 ctor（CRT `eh_vector_constructor_iterator` callback）**・`0x6C6300`＝**block slot release/reset** [確定]（v386 の [推定]→昇格）・**`0xA79EFc`＝値0xFF のセンチネル定数（3用途）を確定**（v401・V-386-2）
+
+- **成果物**: `tmp/re/v401_block_ctor_ruling.md`（probe **v401_1..4 全 EXIT=0**）。台帳 **row377（bak227）**・`round_verify` **ALL OK**（rows 31..377 / total 263 / done 258 / open 5）。ai-todo #153 に note（低10件の第7弾消化）。v 採番 **v401 消費（次=v402＝#153⑥-8 V-387-1）**。
+- **`0x6C62E0` [確定(命令＋CRT 名)]**: **block 構造（stride16）の要素 ctor** — **MSVC CRT `` `eh_vector_constructor_iterator' ``（`0x984BCF`）に ctor callback として渡される**（5箇所・例 `0x6C7155: push 0x6c64c0; push 0x6c62e0; push count; push 0x10; push buf; call 0x984bcf`）。CRT 注記 L987478（**Visual Studio 2005/2008/2010 Release**・`(void*, uint, int, ctor(__thiscall*), dtor(__thiscall*))`）＝**thiscall(this=要素スロット)**。**E8=0 の正体＝callback 経由のみ**（Ghidra も `FUN_006c62e0` を未アノテーション＝未分析）。中身＝`{+0/+4/+8 zero, +0xC←[0xA79EFc], +0xD←0xFF}`。
+- **`0x6C6300` [確定(命令＋decompiled)]**: **block slot の release/reset** — `[+0]`/`[+4]` の2 refcounted ptr release（`Interlocked` via `0xA2807C`→0 で delete）→ `[+0/+4/+8]=0` → **`[+0xC]←[0xA79EFc]`・`[+0xD]←0xFF`**（L495959-495984）。**E8 caller＝`0x6C6675` の1件＝`FUN_006c6610`（block 抽出 fn・v400）内**。
+- **ペア dtor [確定(命令)]**: **`0x6C64C0`＝block 要素 dtor**（CRT iterator の param_5・`this=ecx`→`[+4]` ref release→`[+0]` ref release）。
+- **`0xA79EFc` [確定(命令)]**: **値 `0x000000FF`（byte 0xFF）の「未設定センチネル」バイト定数・用途3系統** — ①両 resetter の **`+0xC` 既定値**（`mov cl,[0xA79EFc]; mov [reg+0xc],cl`＝`0x6C62EE`/`0x6C635E`）②**未設定比較**（`cmp al,[0xA79EFc]`＝`0x53D89E`/`0x74FADE`/`0x750335`）③**配列 init**（`0x49F831`/`0x6CAFB4`）。**`+0xC` と `+0xD` は両方 0xFF 既定**（v400 の `DAT_00a79efc`=0xFF と整合）。
+- **構築 container fn [確定(命令)]**: **`FUN_006c70a0`（copy/assign 系・L496825）**と **`FUN_006c8580`（grow 系・count=`[edi+0xc]+[edi+0x10]`・L497902）**が `[+0x14]` block 配列を CRT iterator で構築（`0x6C7173: [esi+0x14]=data`）。
+- **残点 V-401-1..3**: 1=**両 fn の所属クラス RTTI 照合**（`[+0x14]` block 配列 container＝manager/sequence [推定]）【中】／2=**残り2構築 site（`0x6C8F08`/`0x6C9120`）の owner 同定**【低】／3=**dtor 側 CRT 名と `0xAFFA78` の役割**【低】。
+- **教訓**: **E8=0 の fn は packed dword census（imm32 参照）で callback 呼び出しを特定せよ**（Ghidra 未アノテーションでも `push imm32` が唯一の手がかり）＋**CRT `eh_vector_*` iterator は (buf, size, count, ctor, dtor) の5引数定石**。
+- **次**: #153⑥-8 V-387-1（fn `0x6CA440` 正式名）→ 次 v 採番 v402。
