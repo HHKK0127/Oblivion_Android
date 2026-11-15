@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-15T01:31:42Z",
+  "lastUpdated": "2026-11-15T01:40:14Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11203,14 +11203,29 @@
         "v374"
       ],
       "content": "2026-11-15 #45 N5b 残点 V-373-1 を v374 で裁定: interpolator 実配列の構築元と 0xB3CBA4 を確定。成果物 tmp/re/v374_interpolator_array_build_ruling.md（probe v374_1 全 EXIT=0）・台帳 row350（bak200）・round_verify ALL OK（rows 31..350 / total 236 / done 231 / open 5）・STATE (cv)。interpolator 実配列の構築元=[確定(命令)]: 0x6D0010 = NiMultiTargetTransformController の interpolator 配列構築 fn（arg1=count u16）— unfiltered 全 decode: [esp+0x24]（arg1）→[ebp+0x44]=count→eax=count*0x30+4（overflow チェック付き size=count*48+4）→call 0x401F00(new)→push 0x6CBCA0(dt)/push 0x6CBCB0(dt)/push count/lea esi,[eax+4]/push 0x30/push esi/[eax]=count/call 0x984BCF（プール初期化: 各要素48B・dtor ペア・ヘッダ count）→[ebp+0x3C]=esi（base=配列先頭 +4 ヘッダ分）→各要素 dtor 登録ループ（esi+=0x30）→count*4→new→[ebp+0x40]=ptr 配列→memset(0)。dtor ペア=vtable 0xA79E54=NiBlendTransformInterpolator（v373 確定）→各48B 要素が interpolator。呼び出し元=ctor 0x6C5EE0 の call 0x6D0010＝NiMultiTargetTransformController の ctor 経由。0xB3CBA4 の writer=[確定負（静的）]＋[部分確定]: .text への store 形式（A3/C705/8905/89 modrm 全形式）全走査で 0 件・0xB3CBA4 は .bss（セクション外）＝静的初期化のみ（CRT/初期化セクション経由の実行時セット[推定]、または singleton 0xB3CD7C の interpolator 配列を指す単なるポインタ[部分確定]）・.text から書けないことは [確定(否定側)]。3フィールドの帰属=[確定(命令)]（v373 から昇格）: [+0x3C]=interpolator 配列 base（new(count*48+4) の +4・各要素 NiBlendTransformInterpolator・dtor ペア）／[+0x40]=ptr 配列（new(count*4)・memset 0）／[+0x44]=count（u16・arg1）。継承: 基底 ctor 0x6D04E0＝call 0x715990→mov [esi],0xA7A16C（vtable NiInterpController）＝NiInterpController←…←NiMultiTargetTransformController [確定]。残点 V-374-1..2（1=0xB3CBA4 の真の初期化元（CRT か singleton 配列ポインタか・.text 書手0件のため動的確認＝#82 系）【低】/2=singleton の interpolator 配列が 0x6D0010 で構築されるのか 0xB3CBA4 が別途初期化されるのかの区別【中】）。教訓: store 形式（A3/C705/8905）の全走査で .bss 証明→unfiltered decode で配列構築を直接確認の手順が有効。v 採番 v374 消費（次=v375）。"
+    },
+    {
+      "id": "45-n5b-v375-singleton-2026-11-15",
+      "timestamp": "2026-11-15T01:40:14Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-45",
+        "n5b",
+        "nif",
+        "re",
+        "v375"
+      ],
+      "content": "2026-11-15 #45 N5b 残点 V-374-2 を v375 で裁定: singleton interpolator 配列と 0xB3CBA4 系統を切り分け。成果物 tmp/re/v375_singleton_vs_global_ruling.md（probe v375_1 全 EXIT=0）・台帳 row351（bak201）・round_verify ALL OK（rows 31..351 / total 237 / done 232 / open 5）・STATE (cw)。singleton 0xB3CD7C の interpolator 配列=[部分確定]: ctor 0x6C5EE0（NiMultiTargetTransformController）が 0x6D0010 を呼ぶ→singleton の interpolator 配列は ctor 経路（CRT static ctor）で構築される [推定高]・singleton 自体は .bss の静的オブジェクト（0xB3CD7C への store 形式 0 件＝CRT 初期化で実行される static ctor）[確定負（静的）]。0xB3CBA4 系統=[確定(否定側)]＋[部分確定]: 0xB3CD7C と 0xB3CBA4 の両方を参照する fn = 0 件（refs 13/22/both 0）→2系統は無関係・0xB3CBA4 系統の構築経路＝0x6D018C／0x6D03AA 帯の fn（0x6D0010 の E8 callers 3本のうち ctor 以外の2本）。0x6D0010 の E8 callers=[確定(命令)] 3本: 0x6C5F2A（ctor 0x6C5EE0 内）／0x6D018C（mov ecx,ebx; call→cmp word [esi+0x44],di）／0x6D03AA（mov ecx,esi; call→call 0x712A90→mov edx,[esi+0x40]）＝interpolator 配列の構築は3経路。#45 N5b 残点2への回答: 2系統の interpolator 配列が併存 — ①singleton（0xB3CD7C）系統＝ctor（CRT static ctor）→0x6D0010→new(count*48+4)→[+0x3C/+0x40/+0x44]、②0xB3CBA4 系統＝0x6D018C/0x6D03AA 帯の fn が構築→various object へコピー（v373 の初期化群14件）。残点 V-375-1..2（1=0x6D018C/0x6D03AA 帯 fn の所属（第2/第3 構築経路の正体＝0xB3CBA4 系統の真の構築元）【中】/2=singleton の static ctor が CRT 初期化（.CRT$XCU）で実行されるかの直接証拠【低・動的確認 #82 系】）。教訓: 両グローバルを参照する fn の交集合走査で2系統の独立を証明できる（both=0）。v 採番 v375 消費（次=v376）。"
     }
   ],
   "metadata": {
-    "totalEntries": 775,
+    "totalEntries": 776,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-15T01:31:42Z",
-    "entry_count": 775,
-    "last_updated": "2026-11-15T01:31:42Z"
+    "lastUpdated": "2026-11-15T01:40:14Z",
+    "entry_count": 776,
+    "last_updated": "2026-11-15T01:40:14Z"
   }
 }

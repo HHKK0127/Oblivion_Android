@@ -1199,3 +1199,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **store 形式（A3/C705/8905）の全走査で .bss 証明 → unfiltered decode で配列構築を直接確認**の手順が有効。
 - **main への回答（#45）**: interpolator 配列構築元は着地可（`0x6D0010`）・残点2が2系統併存の切り分け。
 - **次**: RE レーンの open は人間ゲートのみ。次 probe 入口＝V-374-2（次 v 採番 v375）。
+
+## 2026-11-15 (cw) — #45 N5b 残点2解消: **2系統の interpolator 配列が併存**（singleton＝ctor 経路／`0xB3CBA4`＝`0x6D018C`/`0x6D03AA` 帯）[確定(否定側)＋部分確定]（v375・V-374-2）
+
+- **成果物**: `tmp/re/v375_singleton_vs_global_ruling.md`（probe **v375_1 全 EXIT=0**）。台帳 **row351（bak201）**・`round_verify` **ALL OK**（rows 31..351 / total 237 / done 232 / open 5）。ai-todo #45 に note（**残件ありで complete せず**）。v 採番 **v375 消費（次=v376）**。経緯: v374 の残点 V-374-2 を消化。
+- **singleton `0xB3CD7C` の interpolator 配列 [部分確定]**: ctor `0x6C5EE0`（`NiMultiTargetTransformController`）が `0x6D0010` を呼ぶ（v374 確定）→ singleton の interpolator 配列は **ctor 経路（CRT static ctor）** で構築される [推定高]。singleton 自体は **.bss の静的オブジェクト**（`0xB3CD7C` への store 形式 0 件＝CRT 初期化で実行される static ctor）[確定負（静的）]。
+- **`0xB3CBA4` 系統 [確定(否定側)]＋[部分確定]**: **`0xB3CD7C` と `0xB3CBA4` の両方を参照する fn = 0 件**（refs 13/22/both 0）→ **2系統は無関係** [確定(否定側)]。`0xB3CBA4` 系統の構築経路＝**`0x6D018C`／`0x6D03AA` 帯の fn**（`0x6D0010` の E8 callers 3本のうち ctor 以外の2本）[部分確定]。
+- **`0x6D0010` の E8 callers [確定(命令)] 3本**: `0x6C5F2A`（ctor `0x6C5EE0` 内）／**`0x6D018C`**（`mov ecx,ebx; call` → `cmp word [esi+0x44],di`）／**`0x6D03AA`**（`mov ecx,esi; call` → `call 0x712A90` → `mov edx,[esi+0x40]`）＝**interpolator 配列の構列の構築は3経路**。
+- **#45 N5b 残点2への回答**: **2系統の interpolator 配列が併存する** — ①**singleton（`0xB3CD7C`）系統**＝ctor（CRT static ctor）→ `0x6D0010` → `new(count*48+4)` → `[+0x3C/+0x40/+0x44]`、②**`0xB3CBA4` 系統**＝`0x6D018C`/`0x6D03AA` 帯の fn が構築 → various object へコピー（v373 の初期化群14件）。
+- **残点 V-375-1..2**: 1=`0x6D018C`／`0x6D03AA` 帯 fn の所属（第2/第3 の interpolator 配列構築経路の正体＝`0xB3CBA4` 系統の真の構築元）【中・#45 の interpolator 配列構築元の完全な図に必要】／2=singleton の static ctor が CRT 初期化（`.CRT$XCU` セクション）で実行されるかの直接証拠【低・動的確認（#82 系）】。
+- **教訓**: **両グローバルを参照する fn の交集合走査で2系統の独立を証明できる**（both=0）。
+- **main への回答（#45）**: interpolator 配列は2系統併存と裁定・残点1が第2/第3 経路の正体。
+- **次**: RE レーンの open は人間ゲートのみ。次 probe 入口＝V-375-1（次 v 採番 v376）。
