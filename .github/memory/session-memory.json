@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-15T04:08:40Z",
+  "lastUpdated": "2026-11-15T04:28:24Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11387,14 +11387,28 @@
         "v386"
       ],
       "content": "2026-11-15 #152⑤（V-381-1）を v386 で裁定: [block+0xD] と s1 の優先関係 census を確定（低優先帯開始）。成果物 tmp/re/v386_blockflag_priority_ruling.md（probe v386_1..2 全 EXIT=0）・台帳 row362（bak212）・round_verify ALL OK（rows 31..362 / total 248 / done 243 / open 5）・STATE (dh)。優先規則=[確定(命令)]: 0x6C6A50 内 [block+0xD]==0xFF → s1（movsx）／非0xFF → [block+0xD]（movzx）が優先（v381 再掲）・既定 0xFF は resetter 2本（0x6C62E0 zero-init+0xFF ret/E8=0、0x6C6300 E8 caller 0x6C6675）が保証。非0xFF 書手=[確定(否定側)]＋[部分確定]: 帯内 census＝3件のみ（resetter 2本＋0x6C68FB）・0x6C68FB は fn 0x6C6870（E8=0x6C86C3 の1本）＝block フィールドコピー（+4/+8/+0xC/+0xD 順コピー・ret 4）＝独立代入ではなく伝播→非0xFF の原本供給元は帯内不在＝残点。s1 渡し元=[確定(命令)]: E8 callers=3本 — ①0x6C9BEA（Activate 内）＝push [esp+0xC]＝Activate の s1②0x6C9D70＝push edi③0x6C9E55＝push ebx（wrapper 引数由来）。運用まとめ: block flag が既定 0xFF の間は s1 が priority になり、非0xFF 設定 block は flag 優先。残点 V-386-1..2（1=非0xFF 供給元（帯外）【低】/2=0x6C62E0/0x6C6300 所属【低】）。教訓: 書手全形式 census（C6/88）で3件のみ確定→fn 同定（reset×2＋copy×1）。v 採番 v386 消費（次=v387=⑥）。"
+    },
+    {
+      "id": "152-v387-offset-field-2026-11-15",
+      "timestamp": "2026-11-15T04:28:24Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-152",
+        "n5b",
+        "re",
+        "v387"
+      ],
+      "content": "2026-11-15 #152⑥（V-380-2）を v387 で裁定: [seq+0x48] のフィールド名と 0xA7DEB4 定数を確定（副次的に V-382-1 の s3 命名も解決）。成果物 tmp/re/v387_offset_field_ruling.md（probe v387_1..5 全 EXIT=0）・台帳 row363（bak213）・round_verify ALL OK（rows 31..363 / total 249 / done 244 / open 5）・STATE (di)。0xA7DEB4=[確定(実データ)]: u32 0x7F7FFFFF = FLT_MAX = 3.4028235e+38・fld; fchs＝−FLT_MAX＝無効/未設定マーカー（v187 L131 の blend cache と同一定数）・ctor 0x6C6550 は +0x2C=+FLT_MAX、+0x30/34/38/3C/48/4C/50/54=−FLT_MAX、+0x40/44/58/5C/60/64=0。[seq+0x48]=[確定(命令＋文字列＋decompiled)]: \"Offset\" — FUN_006ca440（=0x6CA440・decompiled L499341）のトレース FUN_0070fb90(\"Offset\", *(this+0x48))（L499403・EXE 文字列 0xA35FEC）・usage: ctor/Activate/state 遷移で −FLT_MAX（未設定）／fade 初回で −time／重み計算で fadd 加算→時間オフセット（フェード/重み計算の加算補正）[推定高]。（V-382-1 解決）s3 → [seq+0x1C] ＝ \"Weight\" [確定(命令＋文字列＋decompiled)] — decompiled L499367＋EXE 文字列 0xA79DF4・v379/v380 の s3=duration は誤り（fmul [esi+0x1c]＝fade 係数×Weight と整合）。NiControllerSequence 完全フィールドマップ [確定]: State(+0x44)/Weight(+0x1C)/Freq(+0x28)/Begin(+0x2C)/End(+0x30)/Last(+0x34)/WeightLast(+0x38)/LastScaled(+0x3C)/Offset(+0x48)/Start(+0x4C)/End(+0x50)（+0x30/+0x50 は 'End' label 再利用）・store offsets と 5/5 一致＝this=NiControllerSequence。残点 V-387-1..2（1=fn 0x6CA440 正式名【低】/2=Offset の数式上の役割【低】）。教訓: debug print の format 文字列実読＋decompiled.c fn def 照合で推測なしの命名解決。docs 不整合: v379/v380 の s3=duration を確定訂正（正=Weight）・v380 の [+0x48] ease out 記述は正名=Offset。v 採番 v387 消費（次=v388=⑦）。"
     }
   ],
   "metadata": {
-    "totalEntries": 788,
+    "totalEntries": 789,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-15T04:08:40Z",
-    "entry_count": 788,
-    "last_updated": "2026-11-15T04:08:40Z"
+    "lastUpdated": "2026-11-15T04:28:24Z",
+    "entry_count": 789,
+    "last_updated": "2026-11-15T04:28:24Z"
   }
 }

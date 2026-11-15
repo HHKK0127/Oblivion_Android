@@ -1354,3 +1354,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-386-1..2**: 1=**`[block+0xD]` の非0xFF 供給元**（帯外・init fn `0x6C6300` のソース（`0x6C6675` caller 側）の decode で追えるか）【低】／2=**`0x6C62E0`/`0x6C6300` の所属**（block ctor/reset 系 [推定]・`0xA79EFc` 定数との関係）【低】。
 - **教訓**: **書手の全形式 census（C6/88）で「3件のみ」を確定 → 各 site の fn 同定（reset×2＋copy×1）**。
 - **次**: #152⑥V-380-2（`[esi+0x48]` フィールド名＋`0xA7DEB4` 定数）→ 次 v 採番 v387。
+
+## 2026-11-15 (di) — #152⑥ 完遂: `[seq+0x48]`＝**"Offset"**・`0xA7DEB4`＝**FLT_MAX（−FLT_MAX=無効）** [確定]・**付随で V-382-1 解決: s3＝"Weight"（duration は誤り）**（v387・V-380-2）
+
+- **成果物**: `tmp/re/v387_offset_field_ruling.md`（probe **v387_1..5 全 EXIT=0**）。台帳 **row363（bak213）**・`round_verify` **ALL OK**（rows 31..363 / total 249 / done 244 / open 5）。ai-todo #152 に note（束⑥消化）。v 採番 **v387 消費（次=v388＝#152⑦）**。
+- **`0xA7DEB4` [確定(実データ)]**: **u32 `0x7F7FFFFF` = FLT_MAX = 3.4028235e+38**。`fld; fchs` ＝ **−FLT_MAX ＝ 無効/未設定マーカー**（**v187 L131 の blend cache「−FLT_MAX=無効」と同一定数**）。sequence ctor `0x6C6550`: `+0x2C=+FLT_MAX`、`+0x30/34/38/3C/48/4C/50/54=−FLT_MAX`、`+0x40/44/58/5C/60/64=0`。
+- **`[seq+0x48]` [確定(命令＋文字列＋decompiled)]**: **`"Offset"`** — `FUN_006ca440`（= `0x6CA440`・decompiled L499341 `__thiscall`）のトレース `FUN_0070fb90("Offset", *(this+0x48))`（L499403・EXE 文字列 `0xA35FEC`）。usage: ctor/Activate/state 遷移で **−FLT_MAX（未設定）**、fade 更新の初回で **−time**、重み計算で **`fadd [esi+0x48]`** 加算 → **時間オフセット（フェード/重み計算の加算補正）[推定高]**。
+- **（付随）V-382-1 解決 — s3 の正名 [確定(命令＋文字列＋decompiled)]**: **s3 → `[seq+0x1C]` ＝ `"Weight"`**（decompiled L499367＋EXE 文字列 `0xA79DF4`）。**v379/v380 の「s3=duration」は誤り**（重み計算の `fmul [esi+0x1c]` ＝ fade 係数 × Weight と整合）。
+- **（付随）NiControllerSequence 完全フィールドマップ [確定(命令＋文字列)]**: **State(+0x44)／Weight(+0x1C)／Freq(+0x28)／Begin(+0x2C)／End(+0x30)／Last(+0x34)／WeightLast(+0x38)／LastScaled(+0x3C)／Offset(+0x48)／Start(+0x4C)／End(+0x50)**（+0x30 と +0x50 は exe が同じ 'End' label を再利用）。オフセット群は Activate/fade/Deactivate の store と **5/5 一致** ＝ `param_1=this`＝**NiControllerSequence [確定]**。`'Freq'(+0x28)` ⇔ Deactivate の `fdiv [ecx+0x28]`（頻度で割る）も整合。
+- **残点 V-387-1..2**: 1=**fn `0x6CA440` の正式名**（テキスト Save か Debug dump か・FUN_ 名のみ）【低】／2=**'Offset' の厳密な数式上の役割**（`fadd` の accumulator の出所＝経過時間換算 [推定高]）【低】。**V-382-1 は本 v387 で解決**。
+- **教訓**: **debug print の format 文字列実読 ＋ decompiled.c の fn def 照合で、推測なしのフィールド命名解決ができる**。
+- **docs との不整合**: **v379/v380 の「s3=duration」を確定訂正（正＝Weight）**・v380 の `[esi+0x48]`「ease out 時間 [推定]」は正名＝**Offset**（命名訂正）。
+- **次**: #152⑦V-377-2（`[+0x4C/50/54/58]` フィールド名）→ 次 v 採番 v388。
