@@ -1867,20 +1867,42 @@ void ESMFile::decodeClass(const ESMRecord& rec) {
     clas.fullName = rec.getString("FULL");
     clas.description = rec.getString("DESC");
 
-    // DATA: class data (16 bytes)
-    // struct { uint32_t flags; uint8_t specialization; ... }
+    // DATA is 0x34 bytes (v261_clas_service_flags.md field table; the 48-byte
+    // variants in the wild only drop the trailing trainer skill byte):
+    //   +0x00 u32 primary attribute 1 (attribute enum 0..7)
+    //   +0x04 u32 primary attribute 2 (0..7, must differ from attribute 1)
+    //   +0x08 u32 unread by the original engine
+    //   +0x0C 7 x u32 class skills, stored as skill ids 0x0C..0x20
+    //   +0x28 u8  flags: bit0 autocalcs, bit1 guard
+    //   +0x2C u32 unread by the original engine
+    //   +0x30 u8  trainer skill index (skill id = value + 0x0C)
+    // CLAS carries no PRAT subrecord - its subrecords are EDID/FULL/DESC/ICON/
+    // DATA only - so the primary attributes have to come from here.
+    // The original copies min(DATA size, 0x34) bytes into the zero-initialised
+    // form+0x38 (FUN_0046BDA0), so a short DATA still fills the fields it
+    // covers; every read below is guarded the same way instead of dropping the
+    // whole payload.
     auto* data = rec.findSubRecord("DATA");
-    if (data && data->size() >= 12) {
-        std::memcpy(&clas.flags, data->data.data(), 4);
-        clas.specialization = data->data[4];  // 0=Combat, 1=Mysticism, 2=Stealth
+    const size_t dataSize = data ? data->size() : 0;
+    auto readU32 = [&](size_t offset) {
+        uint32_t value = 0;
+        std::memcpy(&value, data->data.data() + offset, 4);
+        return value;
+    };
+    if (dataSize >= 0x04) clas.primaryAttribute1 = readU32(0x00);
+    if (dataSize >= 0x08) clas.primaryAttribute2 = readU32(0x04);
+    for (int i = 0; i < 7; ++i) {
+        const size_t offset = 0x0C + static_cast<size_t>(i) * 4;
+        if (dataSize < offset + 4) break;
+        // The setter (FUN_0051C0F0) rejects anything outside the 0x0C..0x20
+        // skill window, so an out-of-range id leaves the slot at its zero
+        // default rather than turning into a different skill.
+        const uint32_t skillID = readU32(offset);
+        if (skillID >= 0x0C && skillID <= 0x20) {
+            clas.majorSkills[i] = static_cast<uint8_t>(skillID);
+        }
     }
-
-    // PRAT: primary attributes (2 uint32_t)
-    auto* prat = rec.findSubRecord("PRAT");
-    if (prat && prat->size() >= 8) {
-        std::memcpy(&clas.primaryAttribute1, prat->data.data(), 4);
-        std::memcpy(&clas.primaryAttribute2, prat->data.data() + 4, 4);
-    }
+    if (dataSize >= 0x29) clas.flags = data->data[0x28];
 
     m_classes.push_back(std::move(clas));
 }

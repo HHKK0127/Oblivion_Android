@@ -461,7 +461,9 @@ void NpcManager::initializePlayerFromESM(NPC& player, uint32_t raceFormID,
         boostAttr(cls->primaryAttribute1);
         boostAttr(cls->primaryAttribute2);
 
-        LOGI("Class applied: %s (specialization=%u)", player.class_.c_str(), cls->specialization);
+        LOGI("Class applied: %s (attr1=%u, attr2=%u, flags=0x%02X)",
+             player.class_.c_str(), cls->primaryAttribute1, cls->primaryAttribute2,
+             cls->flags);
     } else {
         LOGW("initializePlayerFromESM: Class 0x%08X not found", classFormID);
     }

@@ -525,6 +525,7 @@ add_library(native-lib SHARED
     # Tests (Phase 66 P8: WATR colour fallback)
     tests/watr_decode_tests.cpp
         tests/xtel_decode_tests.cpp
+        tests/clas_decode_tests.cpp
         tests/weather_transition_tests.cpp
         tests/interior_cell_tests.cpp
 
