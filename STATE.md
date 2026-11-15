@@ -1539,3 +1539,14 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-397-1..3**: 1=**Update（slot21）の dispatch site 特定と `[host+0x98]` 照合**（実行時同一性の残り一歩）【中】／2=**host クラスの同定**（`+0x98`/`+0xA0`/`+0xAC`/`+0x9c`/`+0xb4` 等・ctor `FUN_00473eb0`）【中】／3=**`[host+0x98]` 非ゼロ代入元の確定**（`0x475C6E` の ebp 出所）【低】。
 - **教訓**: **disp8 は符号付き（−128..127）→ `+0x80` 以上の offset は disp32（mod=10）で census せよ**（disp8 では `[ebp−0x68]` 等を誤検出しつつ本命を漏らす）＋**find_head 起点の align decode で call site 直前の this 設定を特定**。
 - **次**: #153⑥-4 V-385-2（slot6 正式名 Clone vs Copy）→ 次 v 採番 v398。
+
+## 2026-11-15 (dt) — #153⑥-4 完遂: slot6（vtable +0x18）の正式名＝**Clone [確定(命令＋文字列)]**・Copy は [確定負]（v398・V-385-2）
+
+- **成果物**: `tmp/re/v398_slot6_clone_ruling.md`（probe **v398_1..5 全 EXIT=0**）。台帳 **row374（bak224）**・`round_verify` **ALL OK**（rows 31..374 / total 260 / done 255 / open 5）。ai-todo #153 に note（低10件の第4弾消化）。v 採番 **v398 消費（次=v399＝#153⑥-5 V-385-3）**。
+- **正式名 [確定(命令＋文字列)]**: **Clone** — 三方面一致: ①**操作形状＝alloc＋ctor＋copy＋return new を2クラスで独立確認**: MTCtrl `FUN_006d02e0`＝`new(0x48)`→ctor `FUN_006d04e0`→vtable `0xA79984`→`FUN_006d0170(new, ctx)`→**`return new`**（L503905-503920）／NiControllerManager `FUN_006c5cc0`＝**`new(0x80)`→ctor `FUN_006c5520`（v395 manager ctor）→copy `FUN_006c5a10(new, ctx)`→`return`**（L495545-495554・`new(0x80)`⇔v395 ctor size `[+0x7c]` と整合）②**要素レベルも fresh object 返却**（v394: `dst_elem.obj = src_elem.obj->vtable[6](ctx)`＋refcount 遷移）③**EXE 自身の用語が "Clone"**（ログ `"BackgroundCloneThread"`＝thread ctor `FUN_00439c10` L44053・文字列 `0xA37090`／コンソール変数 **`iAnimationClonePerLoop:BackgroundLoad`**（`0xA3CB88`）＝アニメーション背景反復 Clone 仕組み）。
+- **Copy [確定負]**: Copy 形状は本バイナリに**別物として存在** — `FUN_006cd3d0`（v394）＝**this=source／stack1=既存 dest／`ret 8`／戻り void** の dest 書込型と構造相反（slot6＝Copy は API 規約上矛盾）。
+- **適用範囲 [確定(観察)]**: **NiObject 系のみ**（vtable +0x18 は階層ごとに独立・例 `FUN_00419b30` 帯は int 戻りで `==7` 比較＝別系統 L16532）。
+- **BackgroundCloneThread 接続 [推定高]**: thread ctor が vptr `0xA37088`（**2スロット `{0x43EEB0, 0x43CC20}`**＋直後に文字列）を設定。**thread→slot6 の直接 call chain は virtual dispatch のため未追跡**（thread 家族の行範囲に `+0x18))` 0件・`FUN_0043CC20` body 94行に direct new/clone 呼び出し0件）。
+- **残点 V-398-1..3**: 1=**thread run 経路と slot6 の直接接続追跡**【低】／2=**隣接 slot（slot7 等）の CloneRecursive 相当別立の有無**【低】／3=**`FUN_006c5a10` と `FUN_006d0170` の関係**（同一テンプレートのインスタンスか）【低】。
+- **教訓**: **"正式名"はバイナリにメソッド名として存在しないため、①操作形状（alloc 返却 vs dest 書込）②EXE 自身のログ/コンソール変数用語 の二点で裁定する**（RTTI はクラス名のみ・メソッド名なし）。
+- **次**: #153⑥-5 V-385-3（`0x6D0530`/`0x6D0550` 役割）→ 次 v 採番 v399。

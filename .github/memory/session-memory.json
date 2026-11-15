@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-15T10:12:02Z",
+  "lastUpdated": "2026-11-15T10:28:55Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11589,14 +11589,28 @@
         "v397"
       ],
       "content": "2026-11-15 #153⑥-3（V-384-2）を v397 で裁定: 0x6C4480 の this と 0x6C4200 の同一性を確定。成果物 tmp/re/v397_sweep_this_ruling.md（probe v397_1..6 全 EXIT=0・v397_6 は初回パターンバグ→修正後）・台帳 row373（bak223）・round_verify ALL OK（rows 31..373 / total 259 / done 254 / open 5）・STATE (ds)。同クラス性=[確定(命令＋decompiled＋RTTI)]: 両 this はともに NiControllerManager — ①FUN_006c4480（sweep）は [this+0x54]（count）/[this+0x4c]（配列）を Update と同一 semantics で読む（L494072-494079 逐語・ret 4＝thiscall fade1引数）②{+0x4c,+0x54} は v395 RTTI 確定の manager ctor 初期化フィールド③[host+0x98] 経由の読手が word[+0x46]（count）＋[+0x40]（配列）も読み（0x4726A1/0x472702）＝manager 初期化フィールド4/4 一致 ④Update は manager vtable slot21。同一オブジェクト性=[部分確定]: sweep の this は E8 全5 call site で [host+0x98]（mov ecx,[reg+0x98]; call＝0x471064/0x471A84/0x473286/0x473B19/0x4746D7）・host は inline seq 配列 [+0xA0+i*4]＋[+0xAC] seq ptr・[seq+0x44]==5 ガード＋null check（0x47101D）・Update dispatch site との直接照合は残点。sweep 機能=[確定(命令＋decompiled)]: active list を走査し state==4 の sequence のみ Deactivate(fade, flag=0)（v393: fade>0→state3 降格/0→即停）・callers fldz 大半・0x47106D のみ実値 fade（v384 一致）・呼び出し元5fn＝FUN_00470fc0/00471990/00473200/00473aa0/00474530（Morph・v391）。副次: FUN_004da2a0=[確定(decompiled L171619-171632)]: name getter — FUN_009832e6([param_1+0x1c],0,tables) の lookup 結果 [+4] を返し無ければ空文字＝v396 PlayGroup エラー %s 用（V-396-1 の一部解消）。host ctor＝FUN_00473eb0（[+0x98] ゼロ初期化）・非ゼロ代入候補 0x475C6E（mov [esi+0x98],ebp・出所未特定）。残点 V-397-1..3（1=Update dispatch site 特定と [host+0x98] 照合【中】/2=host クラス同定【中】/3=非ゼロ代入元確定【低】）。教訓: disp8 は符号付き（−128..127）→ +0x80 以上は disp32（mod=10）で census（[ebp−0x68] 誤検出回避）＋find_head 起点 align decode で call site 直前の this 設定特定。v 採番 v397 消費（次=v398=⑥-4 V-385-2）。"
+    },
+    {
+      "id": "153-v398-slot6-clone-2026-11-15",
+      "timestamp": "2026-11-15T10:28:55Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-153",
+        "n5b",
+        "re",
+        "v398"
+      ],
+      "content": "2026-11-15 #153⑥-4（V-385-2）を v398 で裁定: slot6（vtable +0x18）の正式名を確定。成果物 tmp/re/v398_slot6_clone_ruling.md（probe v398_1..5 全 EXIT=0）・台帳 row374（bak224）・round_verify ALL OK（rows 31..374 / total 260 / done 255 / open 5）・STATE (dt)。正式名=[確定(命令＋文字列)]: Clone — 三方面一致: ①操作形状＝alloc＋ctor＋copy＋return new を2クラスで独立確認: MTCtrl FUN_006d02e0＝new(0x48)→ctor FUN_006d04e0→vtable 0xA79984→FUN_006d0170(new, ctx)→return new（L503905-503920）／NiControllerManager FUN_006c5cc0＝new(0x80)→ctor FUN_006c5520（v395 manager ctor）→copy FUN_006c5a10(new, ctx)→return（L495545-495554・new(0x80)⇔v395 ctor size [+0x7c] と整合）②要素レベルも fresh object 返却（v394: dst_elem.obj=src_elem.obj->vtable[6](ctx)＋refcount 遷移）③EXE 自身の用語が \"Clone\"（ログ BackgroundCloneThread＝thread ctor FUN_00439c10 L44053・文字列 0xA37090／コンソール変数 iAnimationClonePerLoop:BackgroundLoad（0xA3CB88）＝アニメ背景反復 Clone 仕組み）。Copy=[確定負]: Copy 形状は本バイナリに別物として存在 — FUN_006cd3d0（v394）＝this=source／stack1=既存 dest／ret 8／戻り void の dest 書込型と構造相反。適用範囲=[確定(観察)]: NiObject 系のみ（vtable +0x18 は階層ごとに独立・例 FUN_00419b30 帯は int 戻りで ==7 比較＝別系統 L16532）。BackgroundCloneThread 接続=[推定高]: thread ctor が vptr 0xA37088（2スロット {0x43EEB0,0x43CC20}＋直後に文字列）・thread→slot6 の直接 chain は virtual dispatch で未追跡（thread 家族行範囲に +0x18)) 0件・FUN_0043CC20 body 94行に direct new/clone 0件）。残点 V-398-1..3（1=thread run 経路と slot6 接続追跡【低】/2=slot7 等の CloneRecursive 別立【低】/3=FUN_006c5a10 と FUN_006d0170 の関係【低】）。教訓: 正式名はバイナリにメソッド名なし→①操作形状（alloc 返却 vs dest 書込）②EXE 自身のログ/コンソール変数用語の二点で裁定（RTTI はクラス名のみ）。v 採番 v398 消費（次=v399=⑥-5 V-385-3）。"
     }
   ],
   "metadata": {
-    "totalEntries": 802,
+    "totalEntries": 803,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-15T10:12:02Z",
-    "entry_count": 802,
-    "last_updated": "2026-11-15T10:12:02Z"
+    "lastUpdated": "2026-11-15T10:28:55Z",
+    "entry_count": 803,
+    "last_updated": "2026-11-15T10:28:55Z"
   }
 }
