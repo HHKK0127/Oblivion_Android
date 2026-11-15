@@ -50,6 +50,16 @@ class ConsoleInputBridge(
     private var consoleShown = false
 
     /**
+     * Routes the shared sink's editor action while the console does not own it.
+     * The sink is one EditText, and this bridge installs the only
+     * OnEditorActionListener on it (MainActivity wires the NAME bridge in here),
+     * so a Done key press with the character NAME field showing has to reach the
+     * NAME bridge instead of being dropped - it is what dismisses the keyboard
+     * over the creation buttons (task #143).
+     */
+    var nameEditorAction: ((Int) -> Boolean)? = null
+
+    /**
      * True while the console itself has the sink shown, tracked separately from
      * [consoleShown] because hideConsoleInput() also runs from stop(), where
      * consoleShown has already been reset. Clearing the field on a stop that
@@ -88,8 +98,11 @@ class ConsoleInputBridge(
             // The sink is shared with the NAME field, so the console's submit
             // must only fire while the console actually owns it — otherwise
             // finishing a character name would run it as a console command.
+            // While the NAME field owns the sink the action is handed to that
+            // bridge, which closes the keyboard over the creation buttons
+            // instead of dropping the Done key (task #143).
             if (!consoleShown) {
-                false
+                nameEditorAction?.invoke(actionId) ?: false
             } else if (actionId == EditorInfo.IME_ACTION_DONE ||
                 actionId == EditorInfo.IME_ACTION_UNSPECIFIED
             ) {

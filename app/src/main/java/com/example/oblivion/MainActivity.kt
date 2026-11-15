@@ -394,6 +394,13 @@ class MainActivity : Activity() {
         characterNameBridge = CharacterNameBridge(this, input, { gameRenderer }) {
             consoleInputBridge?.isConsoleActive == true
         }
+        // The sink carries a single editor-action listener and the console
+        // installs it, so a Done key with the NAME field owning the sink has to
+        // be handed over here instead of being dropped - it is what dismisses
+        // the keyboard that otherwise covers Create/Cancel (task #143).
+        consoleInputBridge?.nameEditorAction = { actionId ->
+            characterNameBridge?.handleEditorAction(actionId) ?: false
+        }
         Log.i(TAG, "Character name input bridge ready")
     }
 
