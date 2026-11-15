@@ -29,8 +29,9 @@ use std::ffi::{c_char, c_int, CStr};
 use std::panic::catch_unwind;
 
 use nif_core::{
-    CollisionObject, CollisionShape, ControllerSequence, Geometry, Matrix3x3, NifError, NifParser,
-    RigidBodyInfo, SkinData, SkinInstance, SkinPartition, Transform,
+    CollisionObject, CollisionShape, ControllerSequence, FloatKey, Geometry, KeyframeData,
+    Matrix3x3, NifError, NifParser, RigidBodyInfo, SkinData, SkinInstance, SkinPartition,
+    Transform,
 };
 
 /// The call succeeded.
@@ -496,6 +497,109 @@ const _: () = assert!(
 );
 const _: () = assert!(offset_of!(NifControllerManager, sequences) == 16);
 
+/// One key of a float channel, mirroring `FloatKey`: time and value first,
+/// then the tangent pair the interpolation carries and the TBC triple, in
+/// the fields an interpolation does not use the reader leaves at zero.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct NifFloatKey {
+    pub time: f32,
+    pub value: f32,
+    pub forward_tangent: f32,
+    pub backward_tangent: f32,
+    pub tbc: [f32; 3],
+}
+
+/// One key of the Translations channel, mirroring `Vector3Key`.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct NifVector3Key {
+    pub time: f32,
+    pub value: nif_core::Vector3,
+    pub forward_tangent: nif_core::Vector3,
+    pub backward_tangent: nif_core::Vector3,
+    pub tbc: [f32; 3],
+}
+
+/// One rotation key, mirroring `QuaternionKey`: only rotation type 3 appends
+/// the TBC triple, the other types leave it zero.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct NifQuaternionKey {
+    pub time: f32,
+    pub value: nif_core::Vector4,
+    pub tbc: [f32; 3],
+}
+
+/// A float KeyGroup: the interpolation the file carries (zero for an empty
+/// group) and the keys behind it.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct NifFloatKeyGroup {
+    pub interpolation: u32,
+    pub key_count: u32,
+    pub keys: *const NifFloatKey,
+}
+
+/// The Translations KeyGroup.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct NifVector3KeyGroup {
+    pub interpolation: u32,
+    pub key_count: u32,
+    pub keys: *const NifVector3Key,
+}
+
+/// The first keyframe data block of the file — `NiKeyframeData` on .nif
+/// streams, `NiTransformData` on the .kf streams retail animations ship, one
+/// layout shared by both names. Rotation type 4 replaces `rotation_keys` with
+/// the three `xyz_rotations` Euler channels; `rotation_order` is only read
+/// below 10.1.0.1, which retail Oblivion never carries. Every pointer borrows
+/// from the handle's key arrays (see [`nif_parse_keyframe_data`]).
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct NifKeyframeData {
+    pub rotation_type: u32,
+    pub rotation_order: u32,
+    pub rotation_key_count: u32,
+    pub rotation_keys: *const NifQuaternionKey,
+    pub xyz_rotations: [NifFloatKeyGroup; 3],
+    pub translations: NifVector3KeyGroup,
+    pub scales: NifFloatKeyGroup,
+}
+
+const _: () = assert!(size_of::<NifFloatKey>() == 28);
+const _: () = assert!(size_of::<NifVector3Key>() == 52);
+const _: () = assert!(size_of::<NifQuaternionKey>() == 32);
+const _: () = assert!(
+    size_of::<NifFloatKeyGroup>()
+        == match size_of::<*const u8>() {
+            8 => 16,
+            _ => 12,
+        }
+);
+const _: () = assert!(
+    size_of::<NifKeyframeData>()
+        == match size_of::<*const u8>() {
+            8 => 104,
+            _ => 76,
+        }
+);
+const _: () = assert!(
+    offset_of!(NifKeyframeData, rotation_keys)
+        == match size_of::<*const u8>() {
+            8 => 16,
+            _ => 12,
+        }
+);
+const _: () = assert!(
+    offset_of!(NifKeyframeData, translations)
+        == match size_of::<*const u8>() {
+            8 => 72,
+            _ => 52,
+        }
+);
+
 /// What a handle points at: a magic marker in front of the parser itself, plus
 /// the last parsed skin/collision/animation blocks — their records borrow out
 /// of these fields, so they must outlive the caller's copy.
@@ -523,6 +627,16 @@ pub struct Handle {
     controller_text_keys: Vec<NifTextKey>,
     /// NUL-terminated copies of every animation string the records expose.
     controller_strings: Vec<Vec<u8>>,
+    /// POD mirrors of the last parsed keyframe data block: the key arrays its
+    /// record's pointers borrow from.
+    keyframe_rotation_keys: Vec<NifQuaternionKey>,
+    keyframe_float_keys: Vec<NifFloatKey>,
+    keyframe_vector3_keys: Vec<NifVector3Key>,
+    /// POD mirrors of the standalone `NiFloatData` / `NiPosData` bodies, kept
+    /// apart from the keyframe arena so one getter cannot invalidate the
+    /// other's pointers.
+    float_data_keys: Vec<NifFloatKey>,
+    pos_data_keys: Vec<NifVector3Key>,
 }
 
 /// Marker written into a live handle, so a stale or wrong pointer fails the
@@ -804,6 +918,11 @@ pub extern "C" fn nif_create() -> *mut Handle {
             controller_blocks: Vec::new(),
             controller_text_keys: Vec::new(),
             controller_strings: Vec::new(),
+            keyframe_rotation_keys: Vec::new(),
+            keyframe_float_keys: Vec::new(),
+            keyframe_vector3_keys: Vec::new(),
+            float_data_keys: Vec::new(),
+            pos_data_keys: Vec::new(),
         });
         Box::into_raw(handle)
     })
@@ -1348,8 +1467,9 @@ fn push_string(storage: &mut Vec<Vec<u8>>, text: &str) -> *const c_char {
 /// Everything is built in local vectors first and only then moved onto the
 /// handle — moving a vector does not move its buffer, so the pointers taken
 /// while building stay valid. `target_node_index` and `clip` deliberately do
-/// not cross: this wave never fills them, and `resolveControllerReferences()`
-/// (still on the C++ side) owns those fields.
+/// not cross: nif-core's `resolve_controller_references()` owns them, but
+/// neither field has crossed this ABI yet — both stay with the C++ wiring
+/// increment.
 fn store_controller_data(borrowed: &mut Handle, sequences: &[ControllerSequence]) {
     let mut strings: Vec<Vec<u8>> = Vec::new();
     let mut blocks: Vec<NifControlledBlock> = Vec::new();
@@ -1444,6 +1564,206 @@ fn store_controller_data(borrowed: &mut Handle, sequences: &[ControllerSequence]
     borrowed.controller_blocks = blocks;
     borrowed.controller_text_keys = text_keys;
     borrowed.controller_sequences = records;
+}
+
+/// One float key copied into its POD form.
+fn float_key(key: &FloatKey) -> NifFloatKey {
+    NifFloatKey {
+        time: key.time,
+        value: key.value,
+        forward_tangent: key.forward_tangent,
+        backward_tangent: key.backward_tangent,
+        tbc: key.tbc,
+    }
+}
+
+/// Build the POD mirror of one `KeyframeData` and move its key arrays onto
+/// the handle. The xyz channels and the scales share one float-key arena so a
+/// group is a start offset plus a count; the ranges are resolved before the
+/// vectors move, and moving a vector does not move its buffer, so every
+/// pointer taken here stays valid — the same rule [`store_controller_data`]
+/// follows for its sequences.
+fn store_keyframe_data(borrowed: &mut Handle, parsed: &KeyframeData) -> NifKeyframeData {
+    let rotation_keys: Vec<NifQuaternionKey> = parsed
+        .rotation_keys
+        .iter()
+        .map(|key| NifQuaternionKey {
+            time: key.time,
+            value: key.value,
+            tbc: key.tbc,
+        })
+        .collect();
+
+    // Arena of xyz keys first, then the scales; slot 3 is the scales range.
+    let mut float_keys: Vec<NifFloatKey> = Vec::new();
+    let mut ranges: [(usize, usize); 4] = [(0, 0); 4];
+    for (slot, group) in parsed.xyz_rotations.iter().enumerate() {
+        let start = float_keys.len();
+        float_keys.extend(group.keys.iter().map(float_key));
+        ranges[slot] = (start, float_keys.len() - start);
+    }
+    let scale_start = float_keys.len();
+    float_keys.extend(parsed.scales.keys.iter().map(float_key));
+    ranges[3] = (scale_start, float_keys.len() - scale_start);
+
+    let vector3_keys: Vec<NifVector3Key> = parsed
+        .translations
+        .keys
+        .iter()
+        .map(|key| NifVector3Key {
+            time: key.time,
+            value: key.value,
+            forward_tangent: key.forward_tangent,
+            backward_tangent: key.backward_tangent,
+            tbc: key.tbc,
+        })
+        .collect();
+
+    let float_group = |group: &nif_core::FloatKeyGroup, range: (usize, usize)| NifFloatKeyGroup {
+        interpolation: group.interpolation,
+        key_count: range.1 as u32,
+        keys: unsafe { float_keys.as_ptr().add(range.0) },
+    };
+    let xyz_rotations = [
+        float_group(&parsed.xyz_rotations[0], ranges[0]),
+        float_group(&parsed.xyz_rotations[1], ranges[1]),
+        float_group(&parsed.xyz_rotations[2], ranges[2]),
+    ];
+    let translations = NifVector3KeyGroup {
+        interpolation: parsed.translations.interpolation,
+        key_count: vector3_keys.len() as u32,
+        keys: vector3_keys.as_ptr(),
+    };
+    let scales = float_group(&parsed.scales, ranges[3]);
+
+    // Moving the vectors into the handle keeps their buffers in place, so the
+    // pointers assembled above survive.
+    borrowed.keyframe_rotation_keys = rotation_keys;
+    borrowed.keyframe_float_keys = float_keys;
+    borrowed.keyframe_vector3_keys = vector3_keys;
+
+    NifKeyframeData {
+        rotation_type: parsed.rotation_type,
+        rotation_order: parsed.rotation_order,
+        rotation_key_count: parsed.rotation_keys.len() as u32,
+        rotation_keys: borrowed.keyframe_rotation_keys.as_ptr(),
+        xyz_rotations,
+        translations,
+        scales,
+    }
+}
+
+/// Fills `out` with the first keyframe data block of the file, whichever of
+/// the two names it carries: `NiKeyframeData` on .nif streams and
+/// `NiTransformData` on the .kf streams retail animations ship. Rotation type
+/// 4 leaves `rotation_key_count` zero and puts the keys in the three
+/// `xyz_rotations` channels instead. An empty group carries a zero count,
+/// so its pointer must not be dereferenced whatever it points at — the same
+/// rule the header states for every count-prefixed array. That matches the
+/// original's read order: count first, then the keys.
+///
+/// # Safety
+/// `handle` must satisfy [`nif_create`]'s contract; `out` must be NULL or one
+/// writable, correctly aligned record.
+#[no_mangle]
+pub unsafe extern "C" fn nif_parse_keyframe_data(
+    handle: *mut Handle,
+    out: *mut NifKeyframeData,
+) -> c_int {
+    guard(NIF_ERROR_INVALID_ARGUMENT, handle, |borrowed| {
+        let out = match out_record(borrowed, out, "keyframe data") {
+            Ok(out) => out,
+            Err(code) => return code,
+        };
+        let parsed = match borrowed.parser.parse_keyframe_data() {
+            Some(parsed) => parsed,
+            None => return no_block(borrowed, "NiKeyframeData/NiTransformData"),
+        };
+        let record = store_keyframe_data(borrowed, &parsed);
+        *out = record;
+        succeed(borrowed)
+    })
+}
+
+/// Fills `out` with the first `NiFloatData` block of the file: one float
+/// KeyGroup, the interpolation word the file carries and the keys behind it.
+/// A zero count leaves `key_count` zero, so the pointer must not be
+/// dereferenced whatever it points at — the rule the header states for every
+/// count-prefixed array. That matches the original's read order: count first,
+/// then the interpolation, then the keys.
+///
+/// # Safety
+/// `handle` must satisfy [`nif_create`]'s contract; `out` must be NULL or one
+/// writable, correctly aligned record.
+#[no_mangle]
+pub unsafe extern "C" fn nif_parse_float_data(
+    handle: *mut Handle,
+    out: *mut NifFloatKeyGroup,
+) -> c_int {
+    guard(NIF_ERROR_INVALID_ARGUMENT, handle, |borrowed| {
+        let out = match out_record(borrowed, out, "float data") {
+            Ok(out) => out,
+            Err(code) => return code,
+        };
+        let parsed = match borrowed.parser.parse_float_data() {
+            Some(parsed) => parsed,
+            None => return no_block(borrowed, "NiFloatData"),
+        };
+        let keys: Vec<NifFloatKey> = parsed.keys.iter().map(float_key).collect();
+        let record = NifFloatKeyGroup {
+            interpolation: parsed.interpolation,
+            key_count: keys.len() as u32,
+            keys: keys.as_ptr(),
+        };
+        // Moving the vector into the handle keeps its buffer in place, so the
+        // pointer assembled above survives.
+        borrowed.float_data_keys = keys;
+        *out = record;
+        succeed(borrowed)
+    })
+}
+
+/// Fills `out` with the first `NiPosData` block of the file: one Translations
+/// KeyGroup, a 12-byte value per key with the same tangent and TBC rules the
+/// walker measures for the `"Vector3"` type.
+///
+/// # Safety
+/// `handle` must satisfy [`nif_create`]'s contract; `out` must be NULL or one
+/// writable, correctly aligned record.
+#[no_mangle]
+pub unsafe extern "C" fn nif_parse_pos_data(
+    handle: *mut Handle,
+    out: *mut NifVector3KeyGroup,
+) -> c_int {
+    guard(NIF_ERROR_INVALID_ARGUMENT, handle, |borrowed| {
+        let out = match out_record(borrowed, out, "pos data") {
+            Ok(out) => out,
+            Err(code) => return code,
+        };
+        let parsed = match borrowed.parser.parse_pos_data() {
+            Some(parsed) => parsed,
+            None => return no_block(borrowed, "NiPosData"),
+        };
+        let keys: Vec<NifVector3Key> = parsed
+            .keys
+            .iter()
+            .map(|key| NifVector3Key {
+                time: key.time,
+                value: key.value,
+                forward_tangent: key.forward_tangent,
+                backward_tangent: key.backward_tangent,
+                tbc: key.tbc,
+            })
+            .collect();
+        let record = NifVector3KeyGroup {
+            interpolation: parsed.interpolation,
+            key_count: keys.len() as u32,
+            keys: keys.as_ptr(),
+        };
+        borrowed.pos_data_keys = keys;
+        *out = record;
+        succeed(borrowed)
+    })
 }
 
 /// Fills `out` with the first `NiControllerManager` of the file.
@@ -1769,5 +2089,204 @@ pub unsafe extern "C" fn nif_header_block_type_name(
                 format!("block type index {type_index} is out of range"),
             ),
         }
+    })
+}
+
+// ---------------------------------------------------------------------------
+// Block-body walker surface
+// ---------------------------------------------------------------------------
+
+/// Re-runs the block-body walk over the file image the handle already holds.
+///
+/// Parsing walks once; this is the entry point for a caller that changed the
+/// cursor and needs the block ranges rebuilt. [`NIF_OK`] means every block
+/// body and the trailer were measured, [`NIF_ERROR_EMPTY`] means the handle
+/// holds no file, and [`NIF_ERROR_INCOMPLETE`] means the walk stopped early —
+/// its reason is left on the handle for [`nif_last_error`]. A stopped walk is
+/// not fatal: the ranges collected up to that point are discarded by the
+/// re-run, exactly as the parse that just failed to walk discarded them, and
+/// the readers below keep refusing to answer until a walk completes.
+///
+/// # Safety
+/// `handle` must satisfy [`nif_create`]'s contract.
+#[no_mangle]
+pub unsafe extern "C" fn nif_walk_blocks(handle: *mut Handle) -> c_int {
+    guard(NIF_ERROR_INVALID_ARGUMENT, handle, |borrowed| {
+        if borrowed.parser.file_size() == 0 {
+            return fail(borrowed, NIF_ERROR_EMPTY, "no file is loaded in the handle");
+        }
+        match borrowed.parser.walk_all_blocks() {
+            Ok(()) => succeed(borrowed),
+            Err(error) => fail(borrowed, NIF_ERROR_INCOMPLETE, error),
+        }
+    })
+}
+
+/// Writes the file offset of one block body's first field — past the
+/// per-block prefix — to `out_offset`.
+///
+/// [`NIF_ERROR_INVALID_ARGUMENT`] for a NULL, misaligned or out-of-range
+/// out-parameter, and [`NIF_ERROR_NO_BLOCK`] when the index is valid but no
+/// body is addressable: the walk has not run or did not complete, which is
+/// the same refusal [`locate_block_body`](nif_core) makes.
+///
+/// # Safety
+/// `handle` must satisfy [`nif_create`]'s contract; `out_offset` must point
+/// to one writable, correctly aligned `usize`.
+#[no_mangle]
+pub unsafe extern "C" fn nif_locate_block_body(
+    handle: *mut Handle,
+    block_index: u32,
+    out_offset: *mut usize,
+) -> c_int {
+    guard(NIF_ERROR_INVALID_ARGUMENT, handle, |borrowed| {
+        if out_offset.is_null() {
+            return fail(
+                borrowed,
+                NIF_ERROR_INVALID_ARGUMENT,
+                "the offset out-parameter is NULL",
+            );
+        }
+        if (out_offset as usize) % align_of::<usize>() != 0 {
+            return fail(
+                borrowed,
+                NIF_ERROR_INVALID_ARGUMENT,
+                "the offset out-parameter is misaligned",
+            );
+        }
+        if block_index >= borrowed.parser.block_count() {
+            return fail(
+                borrowed,
+                NIF_ERROR_INVALID_ARGUMENT,
+                format!("block index {block_index} is out of range"),
+            );
+        }
+        // Bind the answer to an owned value first: the lookup borrows the
+        // parser, and the arms below need to write the message.
+        let located = borrowed.parser.locate_block_body(block_index);
+        match located {
+            Some(offset) => {
+                *out_offset = offset;
+                succeed(borrowed)
+            }
+            None => fail(
+                borrowed,
+                NIF_ERROR_NO_BLOCK,
+                format!("block {block_index} has no located body"),
+            ),
+        }
+    })
+}
+
+/// Fills `out_indices` with the object-array indices of every block whose
+/// resolved type name matches, in file order, and returns the total number
+/// of matches.
+///
+/// The return shape is the length query `nif_get_geometries` uses: a NULL
+/// `out_indices` or a zero `capacity` writes nothing and only the total
+/// comes back, and a short buffer fills `capacity` slots while still
+/// reporting the full total, so a caller can detect truncation. A handle
+/// that never held a file reports 0 matches; a handle whose object array
+/// failed to build, or a file whose walk has not completed, reports
+/// [`NIF_ERROR_NO_BLOCK`] with the reason from [`nif_last_error`], because
+/// the walker — not the header — is what the rest of the crate gates the
+/// same query on.
+///
+/// `capacity` counts `uint32_t` slots, not bytes.
+///
+/// # Safety
+/// `handle` must satisfy [`nif_create`]'s contract, `type_name` must be a
+/// readable NUL-terminated string, and when `capacity` is non-zero
+/// `out_indices` must address that many writable, correctly aligned
+/// `uint32_t` slots.
+#[no_mangle]
+pub unsafe extern "C" fn nif_find_blocks_of_type(
+    handle: *mut Handle,
+    type_name: *const c_char,
+    out_indices: *mut u32,
+    capacity: usize,
+) -> c_int {
+    guard(NIF_ERROR_INVALID_ARGUMENT, handle, |borrowed| {
+        if type_name.is_null() {
+            return fail(
+                borrowed,
+                NIF_ERROR_INVALID_ARGUMENT,
+                "the type name pointer is NULL",
+            );
+        }
+        // SAFETY: the caller guarantees a NUL-terminated string.
+        let name = match CStr::from_ptr(type_name).to_str() {
+            Ok(name) => name,
+            Err(_) => {
+                return fail(
+                    borrowed,
+                    NIF_ERROR_INVALID_ARGUMENT,
+                    "the type name is not valid UTF-8",
+                )
+            }
+        };
+        if borrowed.parser.block_count() > 0 && !borrowed.parser.are_blocks_walked() {
+            // Bind the reason to an owned value first: the lookup borrows the
+            // parser, and the arms below need to write the message.
+            let reason = borrowed.parser.walk_error().to_string();
+            return if reason.is_empty() {
+                fail(borrowed, NIF_ERROR_NO_BLOCK, "the file has not been walked")
+            } else {
+                fail(borrowed, NIF_ERROR_NO_BLOCK, reason)
+            };
+        }
+        let matches = borrowed.parser.find_blocks_of_type(name);
+        let total = matches.len();
+        if out_indices.is_null() || capacity == 0 {
+            // Length query: nothing is written, the total comes back.
+            set_message(borrowed, "");
+            return total as c_int;
+        }
+        if (out_indices as usize) % align_of::<u32>() != 0 {
+            return fail(
+                borrowed,
+                NIF_ERROR_INVALID_ARGUMENT,
+                "the block index out-parameter is misaligned",
+            );
+        }
+        let fill = total.min(capacity);
+        for (slot, index) in matches.iter().take(fill).enumerate() {
+            // SAFETY: the caller guarantees `capacity` writable slots at
+            // `out_indices`, and `slot < fill <= capacity`.
+            *out_indices.add(slot) = *index;
+        }
+        set_message(borrowed, "");
+        total as c_int
+    })
+}
+
+/// Copies one object-array block's resolved type name into `out`, snprintf
+/// style: the return is the length the text needs with its terminator, so a
+/// caller can detect truncation, and nothing is written beyond `capacity`.
+/// `block_index` indexes the object array — use
+/// [`nif_header_block_type_name`] for the header's type table instead.
+///
+/// # Safety
+/// `handle` must satisfy [`nif_create`]'s contract; `out` must be NULL or at
+/// least `capacity` writable bytes when `capacity` is non-zero.
+#[no_mangle]
+pub unsafe extern "C" fn nif_get_block_type_name(
+    handle: *mut Handle,
+    block_index: u32,
+    out: *mut c_char,
+    capacity: usize,
+) -> c_int {
+    guard(NIF_ERROR_INVALID_ARGUMENT, handle, |borrowed| {
+        if block_index >= borrowed.parser.block_count() {
+            return fail(
+                borrowed,
+                NIF_ERROR_INVALID_ARGUMENT,
+                format!("block index {block_index} is out of range"),
+            );
+        }
+        let name = borrowed.parser.block_type_name(block_index);
+        let needed = write_c_string(name.as_bytes(), out, capacity);
+        set_message(borrowed, "");
+        needed
     })
 }

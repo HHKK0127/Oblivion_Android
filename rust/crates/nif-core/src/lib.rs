@@ -30,8 +30,9 @@ mod walk;
 
 pub use block::{
     AnimationClip, AnimationKeyframe, BoneData, CollisionObject, CollisionShape, ControllerManager,
-    ControllerSequence, KeyframeController, PackedWeight, Partition, RigidBodyInfo, RigidBodyRead,
-    ShapeType, SkinData, SkinInstance, SkinPartition, TextKey, VertexWeight,
+    ControllerSequence, FloatKey, FloatKeyGroup, KeyframeController, KeyframeData, PackedWeight,
+    Partition, QuaternionKey, RigidBodyInfo, RigidBodyRead, ShapeType, SkinData, SkinInstance,
+    SkinPartition, StringPalette, TextKey, Vector3Key, Vector3KeyGroup, VertexWeight,
 };
 
 use std::fmt;
@@ -515,6 +516,39 @@ impl NifParser {
             .parse_controller_sequence()
     }
 
+    /// The `NiStringPalette` block at `index`: the name blob whose offsets the
+    /// controlled blocks carry. [`KeyframeController::string_palette_index`]
+    /// names the block and [`StringPalette::name_at`] turns one of the five
+    /// offsets into the identifier it holds — `0xFFFF` yields `None`, which is
+    /// how the engine's accessors report "no such name"
+    /// (v371_nif_resolve_ruling.md §2.3-2). Returns `None` when `index` is out
+    /// of range or names a block that is not a palette.
+    pub fn parse_string_palette(&self, index: u32) -> Option<StringPalette> {
+        block::BlockReader::new(&self.data, &self.header, &self.walk, &self.nodes)
+            .parse_string_palette_at(index)
+    }
+
+    /// The first keyframe data block of the file, whichever of the two names
+    /// it carries: `NiKeyframeData` on the .nif streams, `NiTransformData`
+    /// on the .kf streams the retail animations ship.
+    pub fn parse_keyframe_data(&self) -> Option<KeyframeData> {
+        block::BlockReader::new(&self.data, &self.header, &self.walk, &self.nodes)
+            .parse_keyframe_data()
+    }
+
+    /// The first `NiFloatData` block of the file: one float KeyGroup as the
+    /// walker reads it, empty keys for a zero count.
+    pub fn parse_float_data(&self) -> Option<FloatKeyGroup> {
+        block::BlockReader::new(&self.data, &self.header, &self.walk, &self.nodes)
+            .parse_float_data()
+    }
+
+    /// The first `NiPosData` block of the file: one Vector3 KeyGroup.
+    pub fn parse_pos_data(&self) -> Option<Vector3KeyGroup> {
+        block::BlockReader::new(&self.data, &self.header, &self.walk, &self.nodes)
+            .parse_pos_data()
+    }
+
     /// Block count of the object array.
     pub fn block_count(&self) -> u32 {
         self.header.block_type_indices.len() as u32
@@ -632,6 +666,46 @@ impl NifParser {
     /// Tool data skipped before a repeated trailer.
     pub fn trailing_data_size(&self) -> usize {
         self.walk.trailing_data_size
+    }
+
+    // -----------------------------------------------------------------
+    // Controller reference resolution
+    // -----------------------------------------------------------------
+
+    /// Fill every controlled block's resolved node index and clip, the port
+    /// of `NIFParser::resolveControllerReferences` (orig_src/nif_parser.cpp:
+    /// 3519-3543).
+    ///
+    /// `target_node_index` is checked against this file's block array: the
+    /// original indexes its `nodes` vector, which `parseObjectArray` fills for
+    /// every block (orig_src:311-319), so the original's null check cannot
+    /// fail after a parse and collapses to this bounds check. In range,
+    /// `resolved_bone_index` receives the target index verbatim — the
+    /// original casts it to `int32_t`.
+    /// `keyframe_data_index` selects from `keyframe_data`; in range the
+    /// block's clip is replaced by [`KeyframeData::to_clip`] of that entry,
+    /// out of range the block keeps the clip it had — both exactly as the
+    /// original leaves them.
+    ///
+    /// The original's controlled-block reader never writes `target_node_index`
+    /// (orig_src:3303-3316), so it resolves from its default until something
+    /// else fills it; where the original intended the real node index to come
+    /// from is RE task #145's question, not this function's.
+    pub fn resolve_controller_references(
+        &self,
+        manager: &mut ControllerManager,
+        keyframe_data: &[KeyframeData],
+    ) {
+        for sequence in &mut manager.sequences {
+            for block in &mut sequence.controlled_blocks {
+                if (block.target_node_index as usize) < self.nodes.len() {
+                    block.resolved_bone_index = block.target_node_index as i32;
+                }
+                if let Some(data) = keyframe_data.get(block.keyframe_data_index as usize) {
+                    block.clip = data.to_clip();
+                }
+            }
+        }
     }
 }
 
@@ -1934,6 +2008,582 @@ mod tests {
         body
     }
 
+    /// NiKeyframeData body of the quaternion shape: the rotation cluster,
+    /// then the Translations and Scales channels at interpolation 1 when they
+    /// carry keys (the bare count when they do not, which leaves their
+    /// interpolation unread).
+    fn keyframe_data_body(
+        rotation_type: u32,
+        quats: &[(f32, [f32; 4])],
+        translations: &[(f32, [f32; 3])],
+        scales: &[(f32, f32)],
+    ) -> Vec<u8> {
+        let mut body = Vec::new();
+        push_u32(&mut body, quats.len() as u32);
+        if !quats.is_empty() {
+            push_u32(&mut body, rotation_type);
+        }
+        for (time, value) in quats {
+            push_f32(&mut body, *time);
+            for component in value {
+                push_f32(&mut body, *component);
+            }
+        }
+        push_u32(&mut body, translations.len() as u32);
+        if !translations.is_empty() {
+            push_u32(&mut body, 1); // interpolation
+            for (time, value) in translations {
+                push_f32(&mut body, *time);
+                for component in value {
+                    push_f32(&mut body, *component);
+                }
+            }
+        }
+        push_u32(&mut body, scales.len() as u32);
+        if !scales.is_empty() {
+            push_u32(&mut body, 1); // interpolation
+            for (time, value) in scales {
+                push_f32(&mut body, *time);
+                push_f32(&mut body, *value);
+            }
+        }
+        body
+    }
+
+    #[test]
+    fn keyframe_data_reads_quaternion_rotation_and_channels() {
+        let header = gamebryo_header(
+            "Gamebryo File Format, Version 20.0.0.4",
+            0x1400_0004,
+            11,
+            11,
+            &["NiNode", "NiKeyframeData"],
+            &[0, 1],
+        );
+        let mut built = Built::with_header(header);
+        built.block(ninode_table("Root"));
+        built.block(keyframe_data_body(
+            1,
+            &[(0.5, [0.0, 0.0, 0.0, 1.0]), (1.0, [0.0, 0.0, 0.5, 0.5])],
+            &[(0.25, [1.0, 2.0, 3.0])],
+            &[],
+        ));
+        let (bytes, ranges) = built.trailer(&[0]);
+
+        let parser = parse(&bytes);
+        assert!(parser.are_blocks_walked(), "{}", parser.walk_error());
+        // The reader must consume exactly the body the walker measured —
+        // that measurement is what places every later block in the file.
+        assert_eq!(
+            (parser.block_body_offset(1), parser.block_body_end(1)),
+            ranges[1]
+        );
+
+        let data = parser
+            .parse_keyframe_data()
+            .expect("the keyframe data block is in the file");
+        assert_eq!(data.rotation_type, 1);
+        assert_eq!(data.rotation_keys.len(), 2);
+        assert_eq!(data.rotation_keys[0].time, 0.5);
+        assert_eq!(
+            data.rotation_keys[0].value,
+            Vector4 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+                w: 1.0
+            }
+        );
+        // Rotation type 1 carries no TBC bytes: the triple stays at defaults.
+        assert_eq!(data.rotation_keys[1].tbc, [0.0; 3]);
+        assert_eq!(data.translations.interpolation, 1);
+        assert_eq!(data.translations.keys.len(), 1);
+        assert_eq!(data.translations.keys[0].time, 0.25);
+        assert_eq!(
+            data.translations.keys[0].value,
+            Vector3 {
+                x: 1.0,
+                y: 2.0,
+                z: 3.0
+            }
+        );
+        // The empty Scales group leaves its interpolation unread.
+        assert_eq!(data.scales.interpolation, 0);
+        assert!(data.scales.keys.is_empty());
+    }
+
+    #[test]
+    fn keyframe_data_rotation_type_4_switches_to_euler_channels() {
+        // The retail .kf streams carry whole-skeleton rotations as three
+        // float channels, tangent- or TBC-interpolated — the shape the
+        // goblin sample's NiTransformData blocks store. 20.0.0.4 files hold
+        // no Euler order word.
+        let header = gamebryo_header(
+            "Gamebryo File Format, Version 20.0.0.4",
+            0x1400_0004,
+            11,
+            11,
+            &["NiNode", "NiTransformData"],
+            &[0, 1],
+        );
+        let mut body = Vec::new();
+        push_u32(&mut body, 1); // Num Rotation Keys, counted but not stored
+        push_u32(&mut body, 4); // Rotation Type
+        // Channel 0: one tangent-interpolated key.
+        push_u32(&mut body, 1);
+        push_u32(&mut body, 2);
+        push_f32(&mut body, 0.25); // time
+        push_f32(&mut body, 0.5); // value
+        push_f32(&mut body, 0.125); // forward tangent
+        push_f32(&mut body, 0.75); // backward tangent
+        // Channel 1: one TBC-interpolated key.
+        push_u32(&mut body, 1);
+        push_u32(&mut body, 3);
+        push_f32(&mut body, 0.5);
+        push_f32(&mut body, 0.75);
+        for value in [1.0, 2.0, 3.0] {
+            push_f32(&mut body, value); // TBC triple
+        }
+        // Channel 2, Translations and Scales: empty groups.
+        push_u32(&mut body, 0);
+        push_u32(&mut body, 0);
+        push_u32(&mut body, 0);
+        let mut built = Built::with_header(header);
+        built.block(ninode_table("Root"));
+        built.block(body);
+        let (bytes, ranges) = built.trailer(&[0]);
+
+        let parser = parse(&bytes);
+        assert!(parser.are_blocks_walked(), "{}", parser.walk_error());
+        assert_eq!(
+            (parser.block_body_offset(1), parser.block_body_end(1)),
+            ranges[1]
+        );
+
+        let data = parser
+            .parse_keyframe_data()
+            .expect("rotation type 4 body");
+        assert!(data.rotation_keys.is_empty()); // type 4 reads no quaternions
+        assert_eq!(data.rotation_order, 0); // absent at 20.0.0.4
+        assert_eq!(data.xyz_rotations[0].interpolation, 2);
+        assert_eq!(data.xyz_rotations[0].keys[0].time, 0.25);
+        assert_eq!(data.xyz_rotations[0].keys[0].value, 0.5);
+        assert_eq!(data.xyz_rotations[0].keys[0].forward_tangent, 0.125);
+        assert_eq!(data.xyz_rotations[0].keys[0].backward_tangent, 0.75);
+        assert_eq!(data.xyz_rotations[1].interpolation, 3);
+        assert_eq!(data.xyz_rotations[1].keys[0].tbc, [1.0, 2.0, 3.0]);
+        assert!(data.xyz_rotations[2].keys.is_empty());
+        assert!(data.translations.keys.is_empty());
+        assert!(data.scales.keys.is_empty());
+    }
+
+    #[test]
+    fn keyframe_data_rotation_type_3_appends_tbc_to_quaternion_keys() {
+        let header = gamebryo_header(
+            "Gamebryo File Format, Version 20.0.0.4",
+            0x1400_0004,
+            11,
+            11,
+            &["NiNode", "NiKeyframeData"],
+            &[0, 1],
+        );
+        let mut body = Vec::new();
+        push_u32(&mut body, 1);
+        push_u32(&mut body, 3); // rotation type
+        push_f32(&mut body, 0.5); // time
+        for value in [0.0, 0.0, 0.0, 1.0] {
+            push_f32(&mut body, value); // quaternion
+        }
+        for value in [0.25, 0.5, 0.75] {
+            push_f32(&mut body, value); // TBC triple
+        }
+        push_u32(&mut body, 0); // Translations
+        push_u32(&mut body, 0); // Scales
+        let mut built = Built::with_header(header);
+        built.block(ninode_table("Root"));
+        built.block(body);
+        let (bytes, _) = built.trailer(&[0]);
+
+        let parser = parse(&bytes);
+        let data = parser
+            .parse_keyframe_data()
+            .expect("rotation type 3 body");
+        assert_eq!(data.rotation_keys[0].tbc, [0.25, 0.5, 0.75]);
+    }
+
+    #[test]
+    fn parse_keyframe_data_picks_the_earlier_of_the_two_names() {
+        // Both keyframe data names in one file: file order wins, exactly as
+        // `seek_to_block_of_type` picks the first block of a single type.
+        let header = gamebryo_header(
+            "Gamebryo File Format, Version 20.0.0.4",
+            0x1400_0004,
+            11,
+            11,
+            &["NiNode", "NiTransformData", "NiKeyframeData"],
+            &[0, 1, 2],
+        );
+        let mut built = Built::with_header(header);
+        built.block(ninode_table("Root"));
+        built.block(keyframe_data_body(1, &[(7.5, [0.0, 0.0, 0.0, 1.0])], &[], &[]));
+        built.block(keyframe_data_body(1, &[(9.5, [0.0, 0.0, 0.0, 1.0])], &[], &[]));
+        let (bytes, _) = built.trailer(&[0]);
+
+        let parser = parse(&bytes);
+        assert!(parser.are_blocks_walked(), "{}", parser.walk_error());
+        let data = parser.parse_keyframe_data().expect("a data block exists");
+        assert_eq!(data.rotation_keys[0].time, 7.5);
+    }
+
+    /// NiFloatData body: Num Keys | [Interpolation] | Keys. Zero keys leaves
+    /// the interpolation unread, matching `skip_key_group`; interpolation 2
+    /// appends the tangent pair and 3 the TBC triple, exactly as `skip_keys`
+    /// measures them.
+    fn float_data_body(interpolation: u32, keys: &[(f32, f32)]) -> Vec<u8> {
+        let mut body = Vec::new();
+        push_u32(&mut body, keys.len() as u32);
+        if !keys.is_empty() {
+            push_u32(&mut body, interpolation);
+        }
+        for (time, value) in keys {
+            push_f32(&mut body, *time);
+            push_f32(&mut body, *value);
+            if interpolation == 2 {
+                push_f32(&mut body, 0.0); // forward tangent
+                push_f32(&mut body, 0.0); // backward tangent
+            }
+            if interpolation == 3 {
+                // Distinct values, so a test can tell a TBC the reader
+                // actually consumed from one it left at its default.
+                push_f32(&mut body, 1.0);
+                push_f32(&mut body, 2.0);
+                push_f32(&mut body, 3.0);
+            }
+        }
+        body
+    }
+
+    /// NiPosData body: the same head with a 12-byte value per key — a tangent
+    /// pair there is two vectors, the TBC stays twelve bytes.
+    fn pos_data_body(interpolation: u32, keys: &[(f32, [f32; 3])]) -> Vec<u8> {
+        let mut body = Vec::new();
+        push_u32(&mut body, keys.len() as u32);
+        if !keys.is_empty() {
+            push_u32(&mut body, interpolation);
+        }
+        for (time, value) in keys {
+            push_f32(&mut body, *time);
+            for component in value {
+                push_f32(&mut body, *component);
+            }
+            if interpolation == 2 {
+                for _ in 0..6 {
+                    push_f32(&mut body, 0.0); // forward + backward tangent
+                }
+            }
+            if interpolation == 3 {
+                // Distinct values, so a test can tell a TBC the reader
+                // actually consumed from one it left at its default.
+                push_f32(&mut body, 4.0);
+                push_f32(&mut body, 5.0);
+                push_f32(&mut body, 6.0);
+            }
+        }
+        body
+    }
+
+    #[test]
+    fn float_data_reads_interleaved_keys_and_stays_in_step_with_the_walker() {
+        let header = gamebryo_header(
+            "Gamebryo File Format, Version 20.0.0.4",
+            0x1400_0004,
+            11,
+            11,
+            &["NiNode", "NiFloatData"],
+            &[0, 1],
+        );
+        let mut built = Built::with_header(header);
+        built.block(ninode_table("Root"));
+        built.block(float_data_body(1, &[(0.0, 0.5), (1.5, -2.0)]));
+        let (bytes, ranges) = built.trailer(&[0]);
+
+        let parser = parse(&bytes);
+        assert!(parser.are_blocks_walked(), "{}", parser.walk_error());
+        // The reader must consume exactly the body the walker measured.
+        assert_eq!(
+            (parser.block_body_offset(1), parser.block_body_end(1)),
+            ranges[1]
+        );
+
+        let group = parser.parse_float_data().expect("the float block exists");
+        assert_eq!(group.interpolation, 1);
+        assert_eq!(group.keys.len(), 2);
+        assert_eq!(group.keys[0].time, 0.0);
+        assert_eq!(group.keys[0].value, 0.5);
+        assert_eq!(group.keys[1].time, 1.5);
+        assert_eq!(group.keys[1].value, -2.0);
+        // Fields an interpolation does not carry stay at their defaults.
+        assert_eq!(group.keys[0].forward_tangent, 0.0);
+        assert_eq!(group.keys[0].tbc, [0.0; 3]);
+    }
+
+    #[test]
+    fn float_data_zero_keys_skips_the_interpolation_word() {
+        let header = gamebryo_header(
+            "Gamebryo File Format, Version 20.0.0.4",
+            0x1400_0004,
+            11,
+            11,
+            &["NiNode", "NiFloatData", "NiPosData"],
+            &[0, 1, 2],
+        );
+        let mut built = Built::with_header(header);
+        built.block(ninode_table("Root"));
+        // No interpolation word follows a zero count; the next block must
+        // still land where the walker put it.
+        built.block(float_data_body(1, &[]));
+        built.block(pos_data_body(1, &[]));
+        let (bytes, ranges) = built.trailer(&[0]);
+
+        let parser = parse(&bytes);
+        assert!(parser.are_blocks_walked(), "{}", parser.walk_error());
+        assert_eq!(
+            (parser.block_body_offset(1), parser.block_body_end(1)),
+            ranges[1]
+        );
+        assert_eq!(
+            (parser.block_body_offset(2), parser.block_body_end(2)),
+            ranges[2]
+        );
+
+        let group = parser.parse_float_data().expect("the float block exists");
+        assert_eq!(group.keys.len(), 0);
+        let positions = parser.parse_pos_data().expect("the pos block exists");
+        assert_eq!(positions.keys.len(), 0);
+    }
+
+    #[test]
+    fn pos_data_reads_vector_values_and_tangents() {
+        let header = gamebryo_header(
+            "Gamebryo File Format, Version 20.0.0.4",
+            0x1400_0004,
+            11,
+            11,
+            &["NiNode", "NiPosData"],
+            &[0, 1],
+        );
+        let mut built = Built::with_header(header);
+        built.block(ninode_table("Root"));
+        built.block(pos_data_body(2, &[(0.25, [1.0, 2.0, 3.0])]));
+        let (bytes, ranges) = built.trailer(&[0]);
+
+        let parser = parse(&bytes);
+        assert!(parser.are_blocks_walked(), "{}", parser.walk_error());
+        assert_eq!(
+            (parser.block_body_offset(1), parser.block_body_end(1)),
+            ranges[1]
+        );
+
+        let group = parser.parse_pos_data().expect("the pos block exists");
+        assert_eq!(group.interpolation, 2);
+        assert_eq!(group.keys.len(), 1);
+        assert_eq!(group.keys[0].time, 0.25);
+        assert_eq!(group.keys[0].value, Vector3 { x: 1.0, y: 2.0, z: 3.0 });
+        // Interpolation 2 consumes the tangent pair the fixture wrote.
+        assert_eq!(group.keys[0].forward_tangent, Vector3::default());
+        assert_eq!(group.keys[0].backward_tangent, Vector3::default());
+        assert_eq!(group.keys[0].tbc, [0.0; 3]);
+    }
+
+    #[test]
+    fn key_data_interpolation_3_reads_the_tbc_triple() {
+        // Interpolation 3 appends twelve bytes per key rather than a tangent
+        // pair. The fixtures write known values there, so the assertions tell
+        // a consumed TBC from one left at its default, and the offset checks
+        // pin the stride against the walker.
+        let header = gamebryo_header(
+            "Gamebryo File Format, Version 20.0.0.4",
+            0x1400_0004,
+            11,
+            11,
+            &["NiNode", "NiFloatData", "NiPosData"],
+            &[0, 1, 2],
+        );
+        let mut built = Built::with_header(header);
+        built.block(ninode_table("Root"));
+        built.block(float_data_body(3, &[(0.5, -1.5)]));
+        built.block(pos_data_body(3, &[(0.75, [7.0, 8.0, 9.0])]));
+        let (bytes, ranges) = built.trailer(&[0]);
+
+        let parser = parse(&bytes);
+        assert!(parser.are_blocks_walked(), "{}", parser.walk_error());
+        assert_eq!(
+            (parser.block_body_offset(1), parser.block_body_end(1)),
+            ranges[1]
+        );
+        assert_eq!(
+            (parser.block_body_offset(2), parser.block_body_end(2)),
+            ranges[2]
+        );
+
+        let floats = parser.parse_float_data().expect("the float block exists");
+        assert_eq!(floats.interpolation, 3);
+        assert_eq!(floats.keys.len(), 1);
+        assert_eq!(floats.keys[0].value, -1.5);
+        assert_eq!(floats.keys[0].tbc, [1.0, 2.0, 3.0]);
+        // No tangent pair precedes the TBC at interpolation 3.
+        assert_eq!(floats.keys[0].forward_tangent, 0.0);
+
+        let positions = parser.parse_pos_data().expect("the pos block exists");
+        assert_eq!(positions.interpolation, 3);
+        assert_eq!(positions.keys.len(), 1);
+        assert_eq!(
+            positions.keys[0].value,
+            Vector3 { x: 7.0, y: 8.0, z: 9.0 }
+        );
+        assert_eq!(positions.keys[0].tbc, [4.0, 5.0, 6.0]);
+        assert_eq!(positions.keys[0].forward_tangent, Vector3::default());
+    }
+
+    #[test]
+    fn standalone_key_data_absent_reports_none() {
+        // A file with neither key-data family: the readers report absence
+        // instead of inventing a block, exactly like parse_keyframe_data.
+        let header = gamebryo_header(
+            "Gamebryo File Format, Version 20.0.0.4",
+            0x1400_0004,
+            11,
+            11,
+            &["NiNode", "NiKeyframeData"],
+            &[0, 1],
+        );
+        let mut built = Built::with_header(header);
+        built.block(ninode_table("Root"));
+        built.block(keyframe_data_body(1, &[(0.5, [0.0, 0.0, 0.0, 1.0])], &[], &[]));
+        let (bytes, _) = built.trailer(&[0]);
+
+        let parser = parse(&bytes);
+        assert!(parser.are_blocks_walked(), "{}", parser.walk_error());
+        assert!(parser.parse_float_data().is_none());
+        assert!(parser.parse_pos_data().is_none());
+        assert!(parser.parse_keyframe_data().is_some());
+    }
+
+    /// The retail goblin walk cycles carry seven NiFloatData blocks each —
+    /// the file where the standalone float reader meets real bytes. A census
+    /// of the 1843 shipped .kf files counts NiFloatData in 499 of them,
+    /// NiPosData in 2, NiBoolData in 16 and NiRotData in none; the pos reader
+    /// has its own retail test, and NiBoolData stays out of this unit because
+    /// v350 leaves its version gate ruled as a residual point (V-350-5).
+    /// Skipped when the extraction is not on this machine: point
+    /// `OBLIVION_MESHES` at `meshes_extracted`.
+    #[test]
+    fn retail_float_data_reader_stays_in_range() {
+        let root = std::env::var("OBLIVION_MESHES").unwrap_or_else(|_| {
+            String::from(r"C:\Users\hiroki.kogarumai\Oblivion_Android\meshes_extracted")
+        });
+        let path = format!(r"{root}\meshes\creatures\goblin\idleanims\specialidle_dodge.kf");
+        let mut parser = NifParser::new();
+        if parser.parse_file(&path).is_err() {
+            eprintln!("skipping: retail .kf not available at {path}");
+            return;
+        }
+        assert!(parser.are_blocks_walked(), "{}", parser.walk_error());
+
+        let group = parser
+            .parse_float_data()
+            .expect("the goblin walk cycle carries NiFloatData");
+        assert!(!group.keys.is_empty());
+        assert!(group.interpolation <= 3);
+        for key in &group.keys {
+            assert!(key.time.is_finite());
+            assert!(key.value.is_finite());
+            assert!(key.forward_tangent.is_finite());
+            assert!(key.backward_tangent.is_finite());
+            assert!(key.tbc.iter().all(|c| c.is_finite()));
+        }
+        // The reader consumed exactly the body the walker measured.
+        let index = parser
+            .find_blocks_of_type("NiFloatData")
+            .first()
+            .copied()
+            .expect("a float block index");
+        let (start, end) = (
+            parser.block_body_offset(index),
+            parser.block_body_end(index),
+        );
+        assert!(end > start, "the float body has bytes");
+        assert!(end <= std::fs::metadata(&path).expect("stat").len() as usize);
+        eprintln!(
+            "retail NiFloatData: {} keys at interpolation {}, body {}..{}",
+            group.keys.len(),
+            group.interpolation,
+            start,
+            end
+        );
+    }
+
+    /// The retail ascension cycle carries a NiPosData body at interpolation 2,
+    /// one of the two shipped .kf files that hold the type at all — the file
+    /// where the standalone pos reader meets real bytes, with a tangent pair
+    /// per key that the walker has to measure as well.
+    /// Skipped when the extraction is not on this machine: point
+    /// `OBLIVION_MESHES` at `meshes_extracted`.
+    #[test]
+    fn retail_pos_data_reader_stays_in_range() {
+        let root = std::env::var("OBLIVION_MESHES").unwrap_or_else(|_| {
+            String::from(r"C:\Users\hiroki.kogarumai\Oblivion_Android\meshes_extracted")
+        });
+        let path = format!(r"{root}\meshes\characters\_male\idleanims\ascension.kf");
+        let mut parser = NifParser::new();
+        if parser.parse_file(&path).is_err() {
+            eprintln!("skipping: retail .kf not available at {path}");
+            return;
+        }
+        assert!(parser.are_blocks_walked(), "{}", parser.walk_error());
+
+        let group = parser
+            .parse_pos_data()
+            .expect("the ascension cycle carries NiPosData");
+        assert!(!group.keys.is_empty());
+        assert!(group.interpolation <= 3);
+        for key in &group.keys {
+            assert!(key.time.is_finite());
+            assert!(key.value.x.is_finite());
+            assert!(key.value.y.is_finite());
+            assert!(key.value.z.is_finite());
+            assert!(key.forward_tangent.x.is_finite());
+            assert!(key.backward_tangent.x.is_finite());
+            assert!(key.tbc.iter().all(|c| c.is_finite()));
+        }
+        // The reader consumed exactly the body the walker measured: 8 bytes of
+        // head plus one stride per key, 40 for interpolation 2.
+        let index = parser
+            .find_blocks_of_type("NiPosData")
+            .first()
+            .copied()
+            .expect("a pos block index");
+        let (start, end) = (
+            parser.block_body_offset(index),
+            parser.block_body_end(index),
+        );
+        let stride = 16 + usize::from(group.interpolation == 2) * 24
+            + usize::from(group.interpolation == 3) * 12;
+        assert_eq!(
+            end - start,
+            8 + stride * group.keys.len(),
+            "the pos body is exactly the head plus one stride per key"
+        );
+        assert!(end <= std::fs::metadata(&path).expect("stat").len() as usize);
+        eprintln!(
+            "retail NiPosData: {} keys at interpolation {}, body {}..{}",
+            group.keys.len(),
+            group.interpolation,
+            start,
+            end
+        );
+    }
+
     #[test]
     fn controller_manager_resolves_sequences_and_text_keys() {
         let header = gamebryo_header(
@@ -1994,7 +2644,9 @@ mod tests {
         // Seeded exactly as the original seeds them while reading.
         assert_eq!(controlled.keyframe_data_index, 7);
         assert_eq!(controlled.resolved_bone_index, -1);
-        // resolveControllerReferences() territory: untouched by this wave.
+        // Seeds only: the reader leaves them at the defaults; resolve reads
+        // target_node_index back and fills resolved_bone_index and clip —
+        // it never writes target_node_index itself.
         assert_eq!(controlled.target_node_index, 0);
         assert_eq!(controlled.clip.name, "");
         assert_eq!(controlled.clip.frequency.to_bits(), 1.0f32.to_bits());
@@ -2014,6 +2666,388 @@ mod tests {
             .parse_controller_sequence()
             .expect("the sequence block is in the file");
         assert_eq!(standalone, *sequence);
+    }
+
+    /// Four-block fixture (root, manager, sequence, text keys) shared by the
+    /// resolve tests: one parsed sequence with two controlled blocks — the
+    /// first seeded like the reader seeds it (keyframe index 7, target 0),
+    /// the second with controller 0 so both of its indices start at 0.
+    fn resolve_fixture() -> (NifParser, ControllerManager) {
+        let header = gamebryo_header(
+            "Gamebryo File Format, Version 20.0.0.5",
+            0x1400_0005,
+            11,
+            11,
+            &[
+                "NiNode",
+                "NiControllerManager",
+                "NiControllerSequence",
+                "NiTextKeyExtraData",
+            ],
+            &[0, 1, 2, 3],
+        );
+        let mut built = Built::with_header(header);
+        built.block(ninode_table("Root"));
+        built.block(controller_manager_body(&[2], 0xFFFF_FFFF));
+        built.block(controller_sequence_body_with_blocks(
+            vec![
+                controlled_block_body(3, 7, 2, 0xFFFF_FFFF, [1, 2, 3, 4, 5]),
+                controlled_block_body(4, 0, 1, 0xFFFF_FFFF, [6, 7, 8, 9, 10]),
+            ],
+            3,
+            0,
+        ));
+        built.block(text_key_body(&[(0.5, "")]));
+        let (bytes, _) = built.trailer(&[0]);
+
+        let parser = parse(&bytes);
+        assert!(parser.are_blocks_walked(), "{}", parser.walk_error());
+        // The bounds check runs against the block array: one entry per block.
+        assert_eq!(parser.nodes().len(), 4);
+        let manager = parser
+            .parse_controller_manager()
+            .expect("the manager block is in the file");
+        (parser, manager)
+    }
+
+    /// One keyframe-data entry with a rotation key at t=2 carrying a
+    /// non-default quaternion (so a dropped or zeroed rotation fails a test)
+    /// and a translation key at t=0.5, the array the resolve tests index
+    /// into.
+    fn resolve_keyframe_data() -> Vec<KeyframeData> {
+        vec![KeyframeData {
+            rotation_keys: vec![QuaternionKey {
+                time: 2.0,
+                value: Vector4 {
+                    x: 0.1,
+                    y: 0.2,
+                    z: 0.3,
+                    w: 0.9,
+                },
+                ..Default::default()
+            }],
+            translations: Vector3KeyGroup {
+                interpolation: 1,
+                keys: vec![Vector3Key {
+                    time: 0.5,
+                    value: Vector3 {
+                        x: 1.0,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                }],
+            },
+            ..Default::default()
+        }]
+    }
+
+    /// The single `NiStringPalette` block retail `demdooranim01.nif` ships:
+    /// 67 bytes of NUL-separated names with `Length` repeating the size.
+    fn retail_palette_body() -> Vec<u8> {
+        let names = b"DEMdoorAnim01Door\0NiTransformController\0DEMdoorAnim01Door NonAccum\0";
+        let mut body = (names.len() as u32).to_le_bytes().to_vec();
+        body.extend_from_slice(names);
+        body.extend_from_slice(&(names.len() as u32).to_le_bytes());
+        body
+    }
+
+    /// Parses that palette and reads the three identifiers back by offset —
+    /// the access pattern the engine uses — plus the three ways a lookup
+    /// yields nothing: the `0xFFFF` sentinel, an offset at the end of the
+    /// blob, and a block index that is not a palette.
+    #[test]
+    fn string_palette_reads_retail_names_by_offset() {
+        let header = gamebryo_header(
+            "Gamebryo File Format, Version 20.0.0.5",
+            0x1400_0005,
+            11,
+            11,
+            &["NiStringPalette"],
+            &[0],
+        );
+        let mut built = Built::with_header(header);
+        built.block(retail_palette_body());
+        let (bytes, _) = built.trailer(&[0]);
+
+        let parser = parse(&bytes);
+        assert!(parser.are_blocks_walked(), "{}", parser.walk_error());
+
+        let palette = parser
+            .parse_string_palette(0)
+            .expect("the palette block is the file's only block");
+        assert_eq!(palette.palette.len(), 67);
+        assert_eq!(palette.declared_length, 67);
+        assert_eq!(palette.name_at(0), Some("DEMdoorAnim01Door"));
+        assert_eq!(palette.name_at(18), Some("NiTransformController"));
+        assert_eq!(palette.name_at(40), Some("DEMdoorAnim01Door NonAccum"));
+        assert_eq!(palette.name_at(0xFFFF), None);
+        assert_eq!(palette.name_at(67), None);
+        assert!(parser.parse_string_palette(0xFFFF_FFFF).is_none());
+    }
+
+    #[test]
+    fn resolve_controller_references_fills_in_range_references() {
+        let (parser, mut manager) = resolve_fixture();
+        {
+            let block = &mut manager.sequences[0].controlled_blocks[0];
+            // The reader left target_node_index at its default and seeded
+            // keyframe_data_index at the controller index (7); retarget both
+            // into range for this run.
+            block.target_node_index = 1;
+            block.keyframe_data_index = 0;
+        }
+
+        parser.resolve_controller_references(&mut manager, &resolve_keyframe_data());
+
+        let first = &manager.sequences[0].controlled_blocks[0];
+        assert_eq!(first.resolved_bone_index, 1);
+        assert_eq!(first.clip.name, "");
+        assert_eq!(first.clip.frequency.to_bits(), 1.0f32.to_bits());
+        assert_eq!(first.clip.duration.to_bits(), 2.0f32.to_bits());
+        assert_eq!(first.clip.keyframes.len(), 2);
+        // Sorted by time: the translation key comes first.
+        assert_eq!(first.clip.keyframes[0].time.to_bits(), 0.5f32.to_bits());
+        assert_eq!(
+            first.clip.keyframes[0].translation,
+            Vector3 {
+                x: 1.0,
+                ..Default::default()
+            }
+        );
+        assert_eq!(
+            first.clip.keyframes[0].scale.to_bits(),
+            1.0f32.to_bits() // NIFKeyframe's default scale
+        );
+        assert_eq!(first.clip.keyframes[1].time.to_bits(), 2.0f32.to_bits());
+        // The rotation key's value travels into the clip unchanged, and the
+        // translation-created keyframe keeps the default rotation.
+        assert_eq!(
+            first.clip.keyframes[1].rotation,
+            Vector4 {
+                x: 0.1,
+                y: 0.2,
+                z: 0.3,
+                w: 0.9
+            }
+        );
+        assert_eq!(first.clip.keyframes[0].rotation, Vector4::default());
+
+        // The second block starts with both indices at 0: target 0 is in
+        // range for a four-block file and keyframe index 0 selects the one
+        // entry, so resolve fills it from its seeds alone.
+        let second = &manager.sequences[0].controlled_blocks[1];
+        assert_eq!(second.resolved_bone_index, 0);
+        assert_eq!(second.clip, first.clip);
+    }
+
+    #[test]
+    fn resolve_controller_references_keeps_out_of_range_blocks_untouched() {
+        let (parser, mut manager) = resolve_fixture();
+        // A clip the resolver must not touch: preset to something that is
+        // not the default, so an implementation that resets an out-of-range
+        // clip cannot pass this test.
+        let preset = AnimationClip {
+            name: "preset".to_string(),
+            duration: 9.5,
+            ..AnimationClip::default()
+        };
+        {
+            let block = &mut manager.sequences[0].controlled_blocks[0];
+            // nodes.len() == 4, so 4 is one past the last block; the array
+            // below holds one entry, so index 1 is one past it too.
+            block.target_node_index = 4;
+            block.keyframe_data_index = 1;
+            block.clip = preset.clone();
+        }
+
+        parser.resolve_controller_references(&mut manager, &resolve_keyframe_data());
+
+        let block = &manager.sequences[0].controlled_blocks[0];
+        assert_eq!(block.resolved_bone_index, -1);
+        assert_eq!(block.clip, preset);
+
+        // The same with every index at its maximum: both lookups stay out
+        // and the preset clip survives again.
+        {
+            let block = &mut manager.sequences[0].controlled_blocks[0];
+            block.target_node_index = u32::MAX;
+            block.keyframe_data_index = u32::MAX;
+        }
+        parser.resolve_controller_references(&mut manager, &resolve_keyframe_data());
+        let block = &manager.sequences[0].controlled_blocks[0];
+        assert_eq!(block.resolved_bone_index, -1);
+        assert_eq!(block.clip, preset);
+    }
+
+    #[test]
+    fn resolve_controller_references_on_empty_inputs_is_a_no_op() {
+        let (parser, mut manager) = resolve_fixture();
+        // No keyframe data: every clip lookup misses and stays default, while
+        // the in-range node targets still resolve.
+        parser.resolve_controller_references(&mut manager, &[]);
+        let first = &manager.sequences[0].controlled_blocks[0];
+        assert_eq!(first.resolved_bone_index, 0); // default target 0 < 4
+        assert_eq!(first.clip, AnimationClip::default());
+
+        // No sequences at all: nothing to walk, nothing to panic on.
+        let mut empty = ControllerManager::default();
+        parser.resolve_controller_references(&mut empty, &resolve_keyframe_data());
+        assert!(empty.sequences.is_empty());
+    }
+
+    #[test]
+    fn keyframe_data_to_clip_merges_by_time_and_sorts() {
+        let data = KeyframeData {
+            rotation_keys: vec![
+                QuaternionKey {
+                    time: 1.0,
+                    value: Vector4 {
+                        x: 0.5,
+                        y: 0.5,
+                        z: 0.0,
+                        w: 0.7071,
+                    },
+                    ..Default::default()
+                },
+                QuaternionKey {
+                    time: 0.5,
+                    ..Default::default()
+                },
+            ],
+            translations: Vector3KeyGroup {
+                interpolation: 1,
+                keys: vec![
+                    Vector3Key {
+                        time: 0.5,
+                        value: Vector3 {
+                            x: 2.0,
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    },
+                    // Within 0.001 of the 0.5 key: merges, overwriting the
+                    // translation the earlier merge wrote, as the original's
+                    // assignment does.
+                    Vector3Key {
+                        time: 0.5005,
+                        value: Vector3 {
+                            x: 3.0,
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    },
+                    Vector3Key {
+                        time: 0.6,
+                        value: Vector3 {
+                            x: 4.0,
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    },
+                ],
+            },
+            scales: FloatKeyGroup {
+                interpolation: 1,
+                keys: vec![FloatKey {
+                    time: 0.6,
+                    value: 2.5,
+                    ..Default::default()
+                }],
+            },
+            ..Default::default()
+        };
+
+        let clip = data.to_clip();
+        // Rotation at 0.5 and 1.0, translation at 0.5 (x2 then x3), a new
+        // keyframe at 0.6 that its scale merges into: three in the end.
+        assert_eq!(clip.keyframes.len(), 3);
+        assert_eq!(clip.duration.to_bits(), 1.0f32.to_bits());
+        assert_eq!(clip.name, "");
+        assert_eq!(clip.frequency.to_bits(), 1.0f32.to_bits());
+
+        assert_eq!(clip.keyframes[0].time.to_bits(), 0.5f32.to_bits());
+        assert_eq!(
+            clip.keyframes[0].translation,
+            Vector3 {
+                x: 3.0,
+                ..Default::default()
+            }
+        );
+        assert_eq!(clip.keyframes[0].scale.to_bits(), 1.0f32.to_bits());
+
+        assert_eq!(clip.keyframes[1].time.to_bits(), 0.6f32.to_bits());
+        assert_eq!(
+            clip.keyframes[1].translation,
+            Vector3 {
+                x: 4.0,
+                ..Default::default()
+            }
+        );
+        assert_eq!(clip.keyframes[1].scale.to_bits(), 2.5f32.to_bits());
+
+        assert_eq!(clip.keyframes[2].time.to_bits(), 1.0f32.to_bits());
+        assert_eq!(clip.keyframes[2].translation, Vector3::default());
+        assert_eq!(clip.keyframes[2].scale.to_bits(), 1.0f32.to_bits());
+        // The rotation value arrives unchanged on the sorted keyframe.
+        assert_eq!(
+            clip.keyframes[2].rotation,
+            Vector4 {
+                x: 0.5,
+                y: 0.5,
+                z: 0.0,
+                w: 0.7071
+            }
+        );
+    }
+
+    #[test]
+    fn keyframe_data_to_clip_merge_epsilon_is_strict() {
+        let data = KeyframeData {
+            translations: Vector3KeyGroup {
+                interpolation: 1,
+                keys: vec![
+                    Vector3Key {
+                        time: 0.0,
+                        value: Vector3 {
+                            x: 1.0,
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    },
+                    // An exact 0.001 gap fails the original's strict
+                    // `abs(diff) < 0.001` test and stays a separate key.
+                    Vector3Key {
+                        time: 0.001,
+                        value: Vector3 {
+                            x: 2.0,
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    },
+                ],
+            },
+            ..Default::default()
+        };
+
+        let clip = data.to_clip();
+        assert_eq!(clip.keyframes.len(), 2);
+        assert_eq!(clip.duration.to_bits(), 0.001f32.to_bits());
+        assert_eq!(
+            clip.keyframes[1].translation,
+            Vector3 {
+                x: 2.0,
+                ..Default::default()
+            }
+        );
+    }
+
+    #[test]
+    fn keyframe_data_to_clip_of_empty_data_is_an_empty_clip() {
+        let clip = KeyframeData::default().to_clip();
+        assert!(clip.keyframes.is_empty());
+        assert_eq!(clip.duration.to_bits(), 0.0f32.to_bits());
+        assert_eq!(clip.name, "");
+        assert_eq!(clip.frequency.to_bits(), 1.0f32.to_bits());
     }
 
     #[test]

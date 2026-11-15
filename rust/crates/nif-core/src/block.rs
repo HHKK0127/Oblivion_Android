@@ -48,6 +48,7 @@ const MAX_MOPP_DATA_SIZE: u32 = 1 << 20;
 // controller manager and sequence readers that moved here.
 const MAX_CONTROLLER_SEQUENCES: u32 = 4096;
 const MAX_CONTROLLED_BLOCKS: u32 = 4096;
+const MAX_PALETTE_BYTES: u32 = 1 << 20;
 
 /// `NiSkinInstance`: Data | Skin Partition (since 10.1.0.101) | Skeleton Root |
 /// Num Bones | Bones. The partition index is the `0xFFFFFFFF` sentinel below
@@ -1186,6 +1187,43 @@ impl<'a> BlockReader<'a> {
         })
     }
 
+    /// The `NiStringPalette` block at a known block index: the name blob its
+    /// controlled blocks index into, plus the `Length` word behind it.
+    ///
+    /// The original skips the block outright (orig_src/nif_parser.cpp:
+    /// 1654-1656) and never stores it, so reading it is a port-side addition;
+    /// the layout it reads is the file's and is checked against retail data —
+    /// `demdooranim01.nif` carries one palette of 67 bytes holding
+    /// `DEMdoorAnim01Door`, `NiTransformController` and
+    /// `DEMdoorAnim01Door NonAccum` NUL-separated, with `Length` repeating 67.
+    /// A block index of another type reads as no palette rather than as
+    /// somebody else's bytes.
+    pub(crate) fn parse_string_palette_at(&mut self, index: u32) -> Option<StringPalette> {
+        if self.nodes.get(index as usize)?.block_type_name != "NiStringPalette" {
+            return None;
+        }
+        let offset = self.locate(index)?;
+        self.r.set_pos(offset);
+
+        let palette_len = self.r.u32();
+        if self.r.has_error() || palette_len > MAX_PALETTE_BYTES {
+            return None;
+        }
+        let mut palette = vec![0u8; palette_len as usize];
+        if !self.r.read_bytes(&mut palette) {
+            return None;
+        }
+        let declared_length = self.r.u32();
+        if self.r.has_error() {
+            return None;
+        }
+
+        Some(StringPalette {
+            palette,
+            declared_length,
+        })
+    }
+
     /// The first `NiControllerSequence` of the file.
     pub(crate) fn parse_controller_sequence(&mut self) -> Option<ControllerSequence> {
         let index = self.seek_to_block_of_type("NiControllerSequence")?;
@@ -1318,6 +1356,275 @@ impl<'a> BlockReader<'a> {
             text_keys.push(TextKey { time, value });
         }
     }
+
+    /// The first keyframe data block of the file.
+    ///
+    /// Oblivion's .kf streams carry this body under the name
+    /// `NiTransformData` and the .nif streams under `NiKeyframeData` — the
+    /// walker dispatches both names to the same layout, so this returns
+    /// whichever of the two appears first in file order.
+    pub(crate) fn parse_keyframe_data(&mut self) -> Option<KeyframeData> {
+        let mut candidates = self.find_blocks_of_type("NiKeyframeData");
+        candidates.extend(self.find_blocks_of_type("NiTransformData"));
+        let index = *candidates.iter().min()?;
+        self.parse_keyframe_data_at(index)
+    }
+
+    /// The first `NiFloatData` block of the file.
+    ///
+    /// The walker dispatches this type to `skip_key_group("float")`, and the
+    /// v350 ruling (RE task #122) confirms the engine's `Load` (0x6E3690)
+    /// starts the same way: a u32 count that ends the read when zero, then
+    /// the interpolation word and the interleaved time+value keys.
+    pub(crate) fn parse_float_data(&mut self) -> Option<FloatKeyGroup> {
+        self.seek_to_block_of_type("NiFloatData")?;
+        self.read_float_key_group()
+    }
+
+    /// The first `NiPosData` block of the file — the walker sends it to
+    /// `skip_key_group("Vector3")`, and v350 confirms the same `Load` head
+    /// (0x6D9F90: u32 count, no extra gate).
+    pub(crate) fn parse_pos_data(&mut self) -> Option<Vector3KeyGroup> {
+        self.seek_to_block_of_type("NiPosData")?;
+        self.read_vector3_key_group()
+    }
+
+    /// The keyframe data block at `index`, field for field against the
+    /// walker's `skip_keyframe_data` — the same measurement that puts every
+    /// later block at its offset, so a reader that consumed a different
+    /// number of bytes would desynchronise from the file it just walked.
+    ///
+    /// The retail .kf streams sampled from `Oblivion - Meshes.bsa` keep each
+    /// key's value next to its time (the walker's sizes were verified against
+    /// them), which is what this reads; the values the engine patches into
+    /// its key arrays after `Load` returns are its own bookkeeping, not a
+    /// second stream.
+    pub(crate) fn parse_keyframe_data_at(&mut self, index: u32) -> Option<KeyframeData> {
+        let offset = self.locate(index)?;
+        self.r.set_pos(offset);
+
+        // NiKeyframeData layout (version 20.0.0.4): Num Rotation Keys |
+        // Rotation Type (only with keys) | QuatKeys — none for rotation
+        // type 4 — | [Order, rotation type 4 at or below 10.1.0.0 only] |
+        // 3× float Euler channels (rotation type 4) | Translations | Scales.
+        let rotation_key_count = self.r.u32();
+        if self.r.has_error() {
+            return None;
+        }
+        let mut rotation_type = 0;
+        if rotation_key_count != 0 {
+            rotation_type = self.r.u32();
+            if self.r.has_error() {
+                return None;
+            }
+        }
+
+        // Rotation type 4 stores no quaternions at all; the three Euler
+        // channels read below carry the rotation instead.
+        let rotation_keys = if rotation_type == 4 {
+            Vec::new()
+        } else {
+            self.read_quaternion_keys(rotation_key_count, rotation_type)?
+        };
+
+        let mut rotation_order = 0;
+        let mut xyz_rotations = [
+            FloatKeyGroup::default(),
+            FloatKeyGroup::default(),
+            FloatKeyGroup::default(),
+        ];
+        if rotation_type == 4 {
+            if self.header.version <= 0x0A01_0000 {
+                rotation_order = self.r.u32();
+                if self.r.has_error() {
+                    return None;
+                }
+            }
+            for channel in xyz_rotations.iter_mut() {
+                *channel = self.read_float_key_group()?;
+            }
+        }
+        let translations = self.read_vector3_key_group()?;
+        let scales = self.read_float_key_group()?;
+        if self.r.has_error() {
+            return None;
+        }
+
+        Some(KeyframeData {
+            rotation_type,
+            rotation_keys,
+            rotation_order,
+            xyz_rotations,
+            translations,
+            scales,
+        })
+    }
+
+    /// A KeyGroup opening — `skip_key_group`'s counterpart: Num Keys, then
+    /// the Interpolation only when the group has keys (a zero-length group
+    /// leaves it unread, which is the empty array that follows in the file).
+    /// The keys themselves are the caller's, with their own stride guard.
+    fn read_key_group_head(&mut self) -> Option<(u32, u32)> {
+        let num_keys = self.r.u32();
+        if self.r.has_error() {
+            return None;
+        }
+        let mut interpolation = 0;
+        if num_keys != 0 {
+            interpolation = self.r.u32();
+            if self.r.has_error() {
+                return None;
+            }
+        }
+        Some((num_keys, interpolation))
+    }
+
+    /// The `parse_text_keys` bound applied to a key array: a count whose
+    /// stride does not fit the bytes that remain fails the read rather than
+    /// resizing a vector straight from the file. On any file the walker
+    /// measured the keys fit and the guard never fires.
+    fn keys_fit(&mut self, count: u32, stride: usize) -> bool {
+        let remaining = self.r.len().saturating_sub(self.r.pos());
+        if (count as usize).saturating_mul(stride) > remaining {
+            self.r.set_error();
+            return false;
+        }
+        true
+    }
+
+    /// `skip_quat_keys`: Time | Quaternion Value, plus the 12-byte TBC triple
+    /// rotation type 3 appends. Rotation type 4 reads no quaternions at all —
+    /// the caller stops before this is reached.
+    fn read_quaternion_keys(
+        &mut self,
+        count: u32,
+        rotation_type: u32,
+    ) -> Option<Vec<QuaternionKey>> {
+        let stride = 20 + usize::from(rotation_type == 3) * 12;
+        if !self.keys_fit(count, stride) {
+            return None;
+        }
+        let mut keys = Vec::with_capacity(count as usize);
+        for _ in 0..count {
+            let time = self.r.f32();
+            let value = Vector4 {
+                x: self.r.f32(),
+                y: self.r.f32(),
+                z: self.r.f32(),
+                w: self.r.f32(),
+            };
+            let mut tbc = [0.0; 3];
+            if rotation_type == 3 {
+                for component in tbc.iter_mut() {
+                    *component = self.r.f32();
+                }
+            }
+            keys.push(QuaternionKey { time, value, tbc });
+        }
+        if self.r.has_error() {
+            return None;
+        }
+        Some(keys)
+    }
+
+    /// One float KeyGroup: interpolation 2 adds a forward/backward tangent
+    /// pair to every key, 3 the TBC triple — the same `arg` the walker hands
+    /// to `skip_keys`.
+    fn read_float_key_group(&mut self) -> Option<FloatKeyGroup> {
+        let (num_keys, interpolation) = self.read_key_group_head()?;
+        let stride = 8 + usize::from(interpolation == 2) * 8
+            + usize::from(interpolation == 3) * 12;
+        if !self.keys_fit(num_keys, stride) {
+            return None;
+        }
+        let mut keys = Vec::with_capacity(num_keys as usize);
+        for _ in 0..num_keys {
+            let time = self.r.f32();
+            let value = self.r.f32();
+            let mut forward_tangent = 0.0;
+            let mut backward_tangent = 0.0;
+            if interpolation == 2 {
+                forward_tangent = self.r.f32();
+                backward_tangent = self.r.f32();
+            }
+            let mut tbc = [0.0; 3];
+            if interpolation == 3 {
+                for component in tbc.iter_mut() {
+                    *component = self.r.f32();
+                }
+            }
+            keys.push(FloatKey {
+                time,
+                value,
+                forward_tangent,
+                backward_tangent,
+                tbc,
+            });
+        }
+        if self.r.has_error() {
+            return None;
+        }
+        Some(FloatKeyGroup {
+            interpolation,
+            keys,
+        })
+    }
+
+    /// The Translations KeyGroup — identical to [`read_float_key_group`](Self::
+    /// read_float_key_group) with a 12-byte value, as `skip_keys` measures for
+    /// the "Vector3" type (a tangent pair there is two vectors, the TBC stays
+    /// twelve bytes).
+    fn read_vector3_key_group(&mut self) -> Option<Vector3KeyGroup> {
+        let (num_keys, interpolation) = self.read_key_group_head()?;
+        let stride = 16 + usize::from(interpolation == 2) * 24
+            + usize::from(interpolation == 3) * 12;
+        if !self.keys_fit(num_keys, stride) {
+            return None;
+        }
+        let mut keys = Vec::with_capacity(num_keys as usize);
+        for _ in 0..num_keys {
+            let time = self.r.f32();
+            let value = Vector3 {
+                x: self.r.f32(),
+                y: self.r.f32(),
+                z: self.r.f32(),
+            };
+            let mut forward_tangent = Vector3::default();
+            let mut backward_tangent = Vector3::default();
+            if interpolation == 2 {
+                forward_tangent = Vector3 {
+                    x: self.r.f32(),
+                    y: self.r.f32(),
+                    z: self.r.f32(),
+                };
+                backward_tangent = Vector3 {
+                    x: self.r.f32(),
+                    y: self.r.f32(),
+                    z: self.r.f32(),
+                };
+            }
+            let mut tbc = [0.0; 3];
+            if interpolation == 3 {
+                for component in tbc.iter_mut() {
+                    *component = self.r.f32();
+                }
+            }
+            keys.push(Vector3Key {
+                time,
+                value,
+                forward_tangent,
+                backward_tangent,
+                tbc,
+            });
+        }
+        if self.r.has_error() {
+            return None;
+        }
+        Some(Vector3KeyGroup {
+            interpolation,
+            keys,
+        })
+    }
 }
 
 /// One text key of a `NiTextKeyExtraData` block: a timestamp and the value.
@@ -1333,14 +1640,57 @@ pub struct TextKey {
     pub value: String,
 }
 
+/// A parsed `NiStringPalette` block: the name blob a controlled block's five
+/// offsets index into, and the `Length` word stored behind it.
+///
+/// The blob is what the engine's identifier accessors read: they add the u16
+/// offset to the palette base and return NULL when the offset word is
+/// `0xFFFF` (v371_nif_resolve_ruling.md §2.3-2, [確定(命令)]). The offsets the
+/// controlled block reader keeps are the same words as u32, so the sentinel
+/// compares the same way here.
+#[derive(Clone, Debug, PartialEq)]
+pub struct StringPalette {
+    /// The names exactly as stored in the file: NUL-separated, no terminator
+    /// after the last one is guaranteed.
+    pub palette: Vec<u8>,
+    /// The `Length` word that follows the palette. It is the palette's own
+    /// size in the retail files, kept as stored rather than recomputed.
+    pub declared_length: u32,
+}
+
+impl StringPalette {
+    /// The NUL-terminated name at `offset`.
+    ///
+    /// Returns `None` for the `0xFFFF` sentinel, for an offset at or past the
+    /// end of the blob, and for bytes that are not UTF-8. An offset in the
+    /// middle of a name yields the rest of that name, which is what adding the
+    /// offset to the palette base does in the engine as well.
+    pub fn name_at(&self, offset: u32) -> Option<&str> {
+        if offset == 0xFFFF {
+            return None;
+        }
+        let start = offset as usize;
+        if start >= self.palette.len() {
+            return None;
+        }
+        let rest = &self.palette[start..];
+        let end = rest.iter().position(|&b| b == 0).unwrap_or(rest.len());
+        std::str::from_utf8(&rest[..end]).ok()
+    }
+}
+
 /// One entry of a sequence's controlled block array: which controller it
 /// drives, where in the sequence's `NiStringPalette` its names live, and the
 /// two fields the original seeds while reading.
 ///
 /// The struct mirrors `NIFKeyframeController` because that is what the
 /// original stores these in; `target_node_index` and `clip` are left at their
-/// defaults here exactly as the original leaves them — `resolveControllerReferences()`
-/// is what fills them, and that is not part of this wave.
+/// defaults here exactly as the original leaves them while reading.
+/// [`NifParser::resolve_controller_references`] reads `target_node_index`
+/// back to fill `resolved_bone_index`, and fills `clip` from the keyframe
+/// data entry `keyframe_data_index` selects — nothing writes
+/// `target_node_index` itself (orig_src:3303-3316), which is RE task #145's
+/// open question.
 #[derive(Clone, Debug, PartialEq)]
 pub struct KeyframeController {
     pub target_node_index: u32,
@@ -1430,9 +1780,9 @@ pub struct ControllerManager {
     pub last_time: f32,
 }
 
-/// An animation clip: name, span and the keyframes inside it. The readers in
-/// this wave never fill one — `resolveControllerReferences()` does — so it
-/// travels through the ABI as its defaults.
+/// An animation clip: name, span and the keyframes inside it. The readers
+/// never fill one — [`NifParser::resolve_controller_references`] does — and
+/// no ABI record carries a clip, so it never crosses the boundary either.
 #[derive(Clone, Debug, PartialEq)]
 pub struct AnimationClip {
     pub name: String,
@@ -1475,5 +1825,139 @@ impl Default for AnimationKeyframe {
             forward_tangent: Vector4::default(),
             backward_tangent: Vector4::default(),
         }
+    }
+}
+
+/// One key of a float channel. `skip_keys` reads Time | Value, then a
+/// forward/backward tangent pair when the group's interpolation is 2 and a
+/// 12-byte TBC triple when it is 3; the fields an interpolation does not
+/// carry stay at their defaults, which is what keeps a channel with mixed
+/// history readable without a variant per key.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct FloatKey {
+    pub time: f32,
+    pub value: f32,
+    pub forward_tangent: f32,
+    pub backward_tangent: f32,
+    pub tbc: [f32; 3],
+}
+
+/// One key of the Translations channel: the same record as a [`FloatKey`]
+/// with a 12-byte value and two 12-byte tangent vectors (the TBC stays three
+/// floats whatever the channel width, exactly as the walker measures it).
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Vector3Key {
+    pub time: f32,
+    pub value: Vector3,
+    pub forward_tangent: Vector3,
+    pub backward_tangent: Vector3,
+    pub tbc: [f32; 3],
+}
+
+/// One rotation key. Only rotation type 3 appends the TBC triple; for the
+/// other types it stays zero, as the reader never consumed those bytes.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct QuaternionKey {
+    pub time: f32,
+    pub value: Vector4,
+    pub tbc: [f32; 3],
+}
+
+/// One float KeyGroup: the interpolation the file carries (zero for an empty
+/// group, whose Interpolation the original leaves unread) and its keys.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct FloatKeyGroup {
+    pub interpolation: u32,
+    pub keys: Vec<FloatKey>,
+}
+
+/// The Translations KeyGroup.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Vector3KeyGroup {
+    pub interpolation: u32,
+    pub keys: Vec<Vector3Key>,
+}
+
+/// One parsed keyframe data block — `NiKeyframeData` on the .nif streams,
+/// `NiTransformData` on the .kf streams, one layout shared by both names.
+///
+/// Rotation type 4 replaces the quaternion array with the three Euler
+/// channels in [`xyz_rotations`](Self::xyz_rotations); below 10.1.0.1 the
+/// file also orders them with [`rotation_order`](Self::rotation_order),
+/// which retail Oblivion never carries.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct KeyframeData {
+    pub rotation_type: u32,
+    pub rotation_keys: Vec<QuaternionKey>,
+    pub rotation_order: u32,
+    pub xyz_rotations: [FloatKeyGroup; 3],
+    pub translations: Vector3KeyGroup,
+    pub scales: FloatKeyGroup,
+}
+
+impl KeyframeData {
+    /// The [`AnimationClip`] this block plays as: the port of the assembly
+    /// half of `NIFParser::parseNiKeyframeData` (orig_src/nif_parser.cpp:
+    /// 3389-3483). Rotation keys are appended as they come, translation and
+    /// scale keys merge into the first keyframe whose time is strictly within
+    /// 0.001 of theirs, the result is sorted by time and `duration` becomes
+    /// the last key's time. `name` and `frequency` stay at their defaults —
+    /// the original never writes them here — and so do the tangent fields,
+    /// which its `NIFKeyframe` never fills either.
+    ///
+    /// Rotation type 4's three xyz channels have no original counterpart in
+    /// this assembly: the original reader consumed a flat quaternion array for
+    /// every rotation type, so there is no original behaviour to mirror and
+    /// the channels stay out of the clip.
+    pub fn to_clip(&self) -> AnimationClip {
+        let mut clip = AnimationClip::default();
+
+        for key in &self.rotation_keys {
+            clip.keyframes.push(AnimationKeyframe {
+                time: key.time,
+                rotation: key.value,
+                ..AnimationKeyframe::default()
+            });
+        }
+
+        for key in &self.translations.keys {
+            match clip
+                .keyframes
+                .iter_mut()
+                .find(|kf| (kf.time - key.time).abs() < 0.001)
+            {
+                Some(existing) => existing.translation = key.value,
+                None => clip.keyframes.push(AnimationKeyframe {
+                    time: key.time,
+                    translation: key.value,
+                    ..AnimationKeyframe::default()
+                }),
+            }
+        }
+
+        for key in &self.scales.keys {
+            match clip
+                .keyframes
+                .iter_mut()
+                .find(|kf| (kf.time - key.time).abs() < 0.001)
+            {
+                Some(existing) => existing.scale = key.value,
+                None => clip.keyframes.push(AnimationKeyframe {
+                    time: key.time,
+                    scale: key.value,
+                    ..AnimationKeyframe::default()
+                }),
+            }
+        }
+
+        clip.keyframes.sort_by(|a, b| {
+            a.time
+                .partial_cmp(&b.time)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+        if let Some(last) = clip.keyframes.last() {
+            clip.duration = last.time;
+        }
+        clip
     }
 }
