@@ -4,6 +4,7 @@
 
 - [ ] **#152** 【RE レーン・#150/ #45 派生残点束】v372..v381 の解析で生じた未消化残点を上から順に消化する（各回: probe→成果物 v採番→round_verify→ai-todo note→STATE 節→memory→push）。優先順: ①V-381-2【中】0x6CC5C0（RegisterInterpolator）の arg2/arg4（weight 0.0/ease 1.0）と Activate の s3/s4（duration/fade）の接続（0x6C6A50 は常に 0.0/1.0 を渡すため s3/s4 は別経路 [推定]）②V-379-2【中】0x6C4049（s6=ecx 動的）の caller 側 flag 設定元＝ブレンド要求の発火条件 ③V-378-2【中】0x6C4480（state5 のときの Manager 通知）の identity ④V-375-1【中】0x6D018C/0x6D03AA 帯 fn の所属（第2/第3 interpolator 配列構築経路＝0xB3CBA4 系統の真の構築元）⑤V-381-1【低】[esi+0xD]（block byte flag）と s1 の優先関係 census ⑥V-380-2【低】[esi+0x48] のフィールド名＋0xA7DEB4 定数値 ⑦V-377-2【低】[+0x4C]/[+0x50]/[+0x54]/[+0x58] のフィールド名 ⑧V-376-2【低】0x73A5E0（state 遷移時呼出）の identity。除外: V-374-1/V-375-2（0xB3CBA4/singleton static ctor の初期化元＝.text 書手0件で静的不可＝#82 動的依存として待記のみ）。制約: L1 report-only・原本 EXE 読み取り専用・移植側ソース変更なし・判定5段階・推測禁止。v 採番は着手時に TODO_re49.md で確認（次=v382）。関連: #150（完了・出典）/#45（N5b） `#RE` `#inprogress` `#n5b` `#oblivion` `#re49-residual` `#serial`
   > 【①V-381-2 完遂（v382）】probe v382_1..4 全 EXIT=0。成果物 tmp/re/v382_s3s4_weight_path_ruling.md・台帳 row358（bak208）・round_verify ALL OK（rows 31..358 / total 244 / done 239 / open 5）。裁定: arg2/arg4（weight 0.0/ease 1.0）と s3/s4 の直接接続=[確定(否定側)]＋[確定(命令)]— arg2/arg4 は登録時初期値のみ（0x6C6A50 が全 block に weight=0.0/ease 1.0・0x6CC5C0 の arg2→[ebp+4]／arg4→[ebp+0x10]=m_fEaseSpinner で唯一の書手 0x6CC664）。s3/s4 は別経路: s3→[seq+0x1C]、s4→[seq+0x50] を fn 0x6CA950（フェード/重み更新・ret 8=(time,flag)）が毎フレーム消費し、線形フェード係数（start=now/end=now+[+0x50] で初期化、t=(time−start)/(end−start)、state 1..6 分岐）と [+0x1C] を乗算して 0x6C6DC0（重み伝播・E8 callers=1）へ。登録時 weight=0.0 は毎フレーム上書きされる。駆動元=fn 0x6C4200（[this+8] bit3 ゲート・E8=0）＝有効 sequence 配列 [this+0x4C]（count [this+0x54]）走査で (time,flag=1) 呼び＋state0 の除去。crossfade 相手（[esi+0x58]=s5）も flag=0 で再帰更新→0x6C6B30（v187 テキストキー同期）。付随: Deactivate の 0x6C6AC0＝field8→virtual+0x9C（priority byte）＝v187 UnregisterInterpolator [確定]＝Activate(Register)/Deactivate(Unregister) の対が確定。新規残点 V-382-1..3（1=s3 の厳密命名（duration vs weight 倍率）【中】／2=0x6C5FC0 time remap helper identity【中】／3=0x6C4200 所属と初期化元【低】）。教訓: 読手 census で登録時引数と毎フレーム更新の分離を可視化。v 採番 v382 消費（次=v383=②V-379-2）。
+  > 【②V-379-2 完遂（v383）】probe v383_1..3 全 EXIT=0。成果物 tmp/re/v383_activate_flag_trigger_ruling.md・台帳 row359（bak209）・round_verify ALL OK（rows 31..359 / total 245 / done 240 / open 5）。裁定: s6 の動的設定元=[確定(否定側)]＋v379 訂正—s6 は全15 callers で定数（0x6C4000 crossfade wrapper は 6C4034: push 0 固定）・v379 の「0x6C4049 の s6=ecx 動的 [部分確定]」は切り詰め ctx の読み違いで誤り（unfiltered では push ecx/push edx は s2/s1 位置、s6 は push 0）→動的 s6 は存在しない。ブレンド要求（state5）の発火条件=[確定(命令)]: 2系統—①fn 0x474530 内の 47494C: cmp byte [esp+0x38],0（≠0→0x47496D: call 0x6C4060 blend wrapper→0x6C9E00→s6=1／==0→0x474999: call 0x6C4000 crossfade→s6=0→state2）②0x474A2F: call 0x6C5C70（同 fn 第三経路）→0x6C5C70（ret 0x14・0x6C5860 lookup 経由）→0x6C9D30（blend wrapper→s6=1）・後者 callers=0x474A2F/0x5109E7。wrapper 全体図=[確定(命令)]: s6=0=0x6C4000（crossfade: A active/B inactive のときのみ・Deactivate(A,time,0)→Activate(B,...,s6=0)）←E8=0x474999 の1本／s6=1=0x6C4060→0x6C9E00、0x6C5C70→0x6C9D30。fn 0x474530 は3経路（0x47491C=state1 即時／crossfade／blend）の選択 fn [確定]。新規残点 V-383-1..3（1=fn 0x474530 の byte [esp+0x38] の元【中】／2=0x6C5C70 identity【中】／3=0x5109E7 所属【低】）。教訓: 引数位置の確定は unfiltered 全 decode の push 並びで（切り詰め ctx は誤読の原因）。v 採番 v383 消費（次=v384=③V-378-2）。
 
 - [ ] **#151** 【RE レーン依頼・#148 の実装中に検出（2026-11-15）】CLAS DATA +0x08 の正体＝**specialization enum の疑い（実データで21クラス全一致）**と、原版 chargen が CLAS から適用する内容の実装経路。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
@@ -848,11 +849,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -876,4 +872,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-15 12:26:32
+**ai-todo** | Last Updated: 2026-11-15 12:39:09

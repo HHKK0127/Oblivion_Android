@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-15T03:27:29Z",
+  "lastUpdated": "2026-11-15T03:40:17Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11331,14 +11331,28 @@
         "v382"
       ],
       "content": "2026-11-15 #152①（V-381-2）を v382 で裁定: Activate の s3/s4 と RegisterInterpolator arg2/arg4 の接続を確定。成果物 tmp/re/v382_s3s4_weight_path_ruling.md（probe v382_1..4 全 EXIT=0）・台帳 row358（bak208）・round_verify ALL OK（rows 31..358 / total 244 / done 239 / open 5）・STATE (dd)。直接接続=[確定(否定側)]＋[確定(命令)]: arg2/arg4 は登録時初期値のみ（0x6C6A50 が全 block に weight=0.0/ease 1.0・0x6CC5C0 の arg2→[ebp+4]／arg4→[ebp+0x10]=m_fEaseSpinner で唯一の書手 0x6CC664）。s3/s4 は別経路: s3→[seq+0x1C]、s4→[seq+0x50] を fn 0x6CA950（フェード/重み更新・ret 8=(time,flag)）が毎フレーム消費し、start=now/end=now+[+0x50] で初期化→t=(time−start)/(end−start) の線形フェード係数（state 1..6 分岐）→[+0x48]（s2 ease）加算→[+0x1C]（s3）乗算→0x6C6DC0（重み伝播・E8 callers=1）へ。登録時 weight=0.0 は毎フレーム上書きされる。駆動元=[確定(命令)]: fn 0x6C4200（[this+8] bit3 ゲート・E8=0）＝有効 sequence 配列 [this+0x4C]（count [this+0x54]）走査で (time,flag=1) 呼び＋state0 の除去（NiControllerManager Update 相当[推定高]）。crossfade 相手（[esi+0x58]=s5）も flag=0 で再帰更新→0x6C6B30（v187 テキストキー同期）。付随: Deactivate の 0x6C6AC0＝field8→virtual+0x9C（priority byte）＝v187 UnregisterInterpolator [確定]＝Activate(Register)/Deactivate(Unregister) の対が確定。新規残点 V-382-1..3（1=s3 の厳密命名 duration vs weight 倍率【中】/2=0x6C5FC0 time remap helper identity【中】/3=0x6C4200 所属と初期化元【低】）。教訓: 読手 census で登録時引数と毎フレーム更新の分離を可視化。docs 不整合: v378/v380 の s3=duration ラベルは命令上未裏付け（V-382-1 へ）。v 採番 v382 消費（次=v383=②V-379-2）。"
+    },
+    {
+      "id": "152-v383-flag-trigger-2026-11-15",
+      "timestamp": "2026-11-15T03:40:17Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-152",
+        "n5b",
+        "re",
+        "v383"
+      ],
+      "content": "2026-11-15 #152②（V-379-2）を v383 で裁定: Activate の flag（s6）設定元とブレンド発火条件を確定。成果物 tmp/re/v383_activate_flag_trigger_ruling.md（probe v383_1..3 全 EXIT=0）・台帳 row359（bak209）・round_verify ALL OK（rows 31..359 / total 245 / done 240 / open 5）・STATE (de)。s6 の動的設定元=[確定(否定側)]＋v379 訂正: s6 は全15 callers で定数（0x6C4000 crossfade wrapper は 6C4034: push 0 固定）・v379 の「0x6C4049 の s6=ecx 動的 [部分確定]」は切り詰め ctx の読み違いで誤り（unfiltered では push ecx/push edx は s2/s1 位置、s6 は push 0）→動的 s6 は存在しない。ブレンド要求（state5）の発火条件=[確定(命令)]: 2系統—①fn 0x474530 内の 47494C: cmp byte [esp+0x38],0（≠0→0x47496D: call 0x6C4060 blend wrapper→0x6C9E00→s6=1／==0→0x474999: call 0x6C4000 crossfade→s6=0→state2）②0x474A2F: call 0x6C5C70（同 fn 第三経路）→0x6C5C70（ret 0x14・0x6C5860 lookup 経由）→0x6C9D30（blend wrapper→s6=1）・後者 callers=0x474A2F/0x5109E7。wrapper 全体図=[確定(命令)]: s6=0=0x6C4000（crossfade: A active/B inactive のときのみ・Deactivate(A,time,0)→Activate(B, s1=a4, s2=a5, s3=a6, s4=time, s5=a7, s6=0)）←E8=0x474999 の1本／s6=1=0x6C4060→0x6C9E00、0x6C5C70→0x6C9D30。fn 0x474530 は3経路（0x47491C=state1 即時／crossfade／blend）の選択 fn [確定]・E8 callers=0x474BA1/0x474C34/0x474F6C/0x47629A/0x476EF3。新規残点 V-383-1..3（1=fn 0x474530 の byte [esp+0x38] の元【中】/2=0x6C5C70 identity【中】/3=0x5109E7 所属【低】）。教訓: 引数位置の確定は unfiltered 全 decode の push 並びで（切り詰め ctx は誤読の原因）。docs 不整合: v379 §2.3 の s6 動的記述を訂正（固定0）。v 採番 v383 消費（次=v384=③V-378-2）。"
     }
   ],
   "metadata": {
-    "totalEntries": 784,
+    "totalEntries": 785,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-15T03:27:29Z",
-    "entry_count": 784,
-    "last_updated": "2026-11-15T03:27:29Z"
+    "lastUpdated": "2026-11-15T03:40:17Z",
+    "entry_count": 785,
+    "last_updated": "2026-11-15T03:40:17Z"
   }
 }

@@ -1304,3 +1304,19 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **読手 census（disp8 mod=01）で「誰が store したフィールドを読むか」を辿ると、登録時引数と毎フレーム更新の分離を可視化できる**・E8 callers=1 の経路が本命＝virtual 経路と直接経路の2系統 census が有効。
 - **docs との不整合**: **v378/v380 の s3=「duration」ラベルは命令上未裏付け**（V-382-1 として命名を再検証）。v187 L132/L135（Register/Unregister）は本裁定で activate/deactivate 経路に接続＝補強。
 - **次**: #152②V-379-2（`0x6C4049` の caller 側 flag 設定元）→ 次 v 採番 v383。
+
+## 2026-11-15 (de) — #152② 完遂: s6 の動的設定元＝**存在せず全定数 [確定(否定側)]（v379 訂正）**・ブレンド発火条件＝fn `0x474530` の `byte [esp+0x38]` と `0x6C5C70` 経由の2系統 [確定(命令)]（v383・V-379-2）
+
+- **成果物**: `tmp/re/v383_activate_flag_trigger_ruling.md`（probe **v383_1..3 全 EXIT=0**）。台帳 **row359（bak209）**・`round_verify` **ALL OK**（rows 31..359 / total 245 / done 240 / open 5）。ai-todo #152 に note（束②消化）。v 採番 **v383 消費（次=v384＝#152③）**。
+- **s6 の動的設定元 [確定(否定側)]＋v379 訂正**: **s6 は全15 callers で定数**。`0x6C4000`（crossfade wrapper）は **`6C4034: push 0`（s6=0 固定）**。**v379 の「`0x6C4049` の s6=ecx＝動的 [部分確定]」は切り詰め ctx の読み違いで誤り** — unfiltered 全 decode では `push ecx`/`push edx` は **s2/s1 位置**（7引数の先頭2本）、s6 は `push 0`。**動的 s6 は存在しない**。
+- **ブレンド要求（state5）の発火条件 [確定(命令)] — 2系統**:
+  1. **fn `0x474530` 内の `47494C: cmp byte [esp+0x38],0`** — **≠0 → `0x47496D: call 0x6C4060`（blend wrapper → `0x6C9E00` → s6=1）**／**==0 → `0x474999: call 0x6C4000`（crossfade → s6=0 → state2）**。
+  2. **`0x474A2F: call 0x6C5C70`**（同 fn 第三経路）→ `0x6C5C70`（ret 0x14・`0x6C5860` lookup 経由）→ **`0x6C9D30`（blend wrapper → s6=1）**。後者 callers＝`0x474A2F`（fn 0x474530 内）と `0x5109E7`（0x51xxxx 帯）。
+- **wrapper 系統の全体図 [確定(命令)]**:
+  - **s6=0（state2 単独フェード）**: **`0x6C4000`**（crossfade: **a1=seq A が active・a2=seq B が inactive のときのみ**、`Deactivate(A,time,flag=0)` → `Activate(B, s1=a4, s2=a5, s3=a6, s4=time, s5=a7, s6=0)`）← E8 callers＝`0x474999` の1本。
+  - **s6=1（state5 ブレンド）**: `0x6C4060`（←`0x47496D`）→ **`0x6C9E00`**／`0x6C5C70`（←`0x474A2F`/`0x5109E7`）→ **`0x6C9D30`**（いずれも Deactivate flag=1→state4 の後に Activate s6=1→state5・v379 §2.2）。
+- **fn `0x474530` の第三経路 [確定(命令)]**: `0x47491C: call 0x6C9BA0`（**s1=0, s2=1, s3=1.0, s4=0.0, s5=0, s6=0 → state1 即時再生**）＝**3経路（即時/crossfade/blend）の選択 fn**。E8 callers＝`0x474BA1`/`0x474C34`/`0x474F6C`/`0x47629A`/`0x476EF3`（game 側 animation 帯）。
+- **残点 V-383-1..3**: 1=**fn `0x474530` の `byte [esp+0x38]` の元**（blend/crossfade 選択の真の入力＝引数か前段計算か）【中】／2=**`0x6C5C70` の identity**（`0x6C5860` lookup・callers `0x474A2F`/`0x5109E7`＝NiControllerManager のブレンド系 [推定]）【中】／3=**`0x5109E7`（0x51xxxx 帯）の所属**【低】。
+- **教訓**: **引数位置の確定は unfiltered 全 decode の push 並びで行う**（切り詰め ctx では誤読する＝v379 の誤りの原因）・E8 callers census で wrapper 系統を系統別に分離。
+- **docs との不整合**: **v379 §2.3 の「`0x6C4049` s6=ecx＝動的 [部分確定]」を訂正**（s6=固定0）。v379 本文は歴史記録として温存、v383 §2.1 が正。
+- **次**: #152③V-378-2（`0x6C4480` Manager 通知の identity）→ 次 v 採番 v384。
