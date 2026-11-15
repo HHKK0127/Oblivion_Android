@@ -1412,3 +1412,17 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **環境メモ**: MSVC ランナーは **stdout リダイレクト時に 4KB ブロックバッファ**のため、ログ末尾の途切れは停止とは限らない。ASan 有効時は `Phase45UnitTests` の dtor（`AsyncTaskManager::cleanup` の join）で wedge する既知制約があり、**`-NoAsan` が正攻法**。
 - **次**: #45 StoreTargets 相当（名前ベース解決）increment の設計（v376 で `[esp+0x38]` 死コード確定＝Bip02→Bip01 の順が実挙動）／RE #151 到着待ち（CLAS `+0x08` と chargen クラス適用）。
 
+
+## 2026-11-15 (dl) — #153① 完遂: `0x6C5FC0`＝**`Freq×(t−Last)+WeightLast` → `[Begin,End]` へ wrap/clamp の time remap [確定(命令)]**（v390・V-382-2）
+
+- **成果物**: `tmp/re/v390_timeremap_ruling.md`（probe **v390_1..2 全 EXIT=0**）。台帳 **row366（bak216）**・`round_verify` **ALL OK**（rows 31..366 / total 252 / done 247 / open 5）。ai-todo #153 に note（束①消化）。v 採番 **v390 消費（次=v391＝#153②）**。
+- **`0x6C5FC0` [確定(命令)]**: **sequence の time remap fn** — decompiled L495756 `void __thiscall FUN_006c5fc0(int param_1, float param_2, char param_3)`（**this / float time / char flag**・L495752 に `// FUN_006c5fc0 @ 0x6c5fc0` 注記）。
+  - **数式（フィールド名は v387 exe label）**: **`t' = Freq[+0x28] × (time − Last[+0x34]) + WeightLast[+0x38]`**（`Last == −FLT_MAX` 未設定なら `t' = Freq × time`＋offset 0）。
+  - **flag `[+0x24]==0` のとき wrap**: `span = End[+0x30] − Begin[+0x2C]`、範囲外なら **CRT 数学 thunk `0x982BFA`（`mov edx,0xB30AF0; jmp 0x9908C0`・2 float 引数＝fmod 系 [推定高]）で wrap** → **`+ Begin`** → 最終 clamp を **[Begin, End]**（下回る→Begin／超える→End）／**flag ≠0 は wrap スキップ（clamp のみ）**。戻り値=float。
+- **this の型 [推定高]**: **NiControllerSequence** — 0x6C5FC0 が読む `+0x28/+0x2C/+0x30/+0x34/+0x38` が **v387 exe label（Freq/Begin/End/Last/WeightLast）と5/5 一致**、wrapper `0x49F4A0` の `+0x44/+0x48` も State/Offset と一致（**計7/7**）。vtbl/ctor での直接照合は残点。
+- **game 側 wrapper `0x49F4A0` [確定(命令)]**: `ret 4`（1引数 float time）— **`[this+0x44] − 1 ≤ 2`（state ∈ {1,2,3}）のとき `return 0x6C5FC0(this, Offset[+0x48] + time, 1)`、否则 `return 0.0`（`fldz`）**。decompiled L126640 `FUN_006c5fc0(*(float*)(param_1+0x48) + param_2, 1)` と逐語一致。付近 `0x49F490: jmp 0x6C87A0`（v187 C2 factory への thunk・別物）。
+- **callers の flag 実値**: `0x6C6B4E`（テキストキー同期内）=**0**（L496524）／`0x6CAC00`（重みパス）=**1**（L499627）／`0x49F4C0`=**1**／`0x49F6A5`=同型 [推定]（結果は即 pop）。
+- **param_3（char）[未確定]**: decoded 範囲（0x6C5FC0..0x6C60D0）で `[esp+0x18]` 参照なし＝**未デコード尾部**＝残点。
+- **残点 V-390-1..3**: 1=**param_3 の使用箇所と意味**（0x6C60D0 以降）【低】／2=**`0x49F4A0`/`0x49F6A5` の this 型の直接確定＋`0x982BFA` CRT thunk の正確な関数名**【低】／3=**flag `[+0x24]` の名前**【低】。
+- **教訓**: **decompiled fn def（`// FUN_ @ addr` 注記）× caller の flag 実値 × 既知 label との offset 突合で identity を確定**。
+- **次**: #153②V-383-1（fn `0x474530` の `byte [esp+0x38]` の元）→ 次 v 採番 v391。

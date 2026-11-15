@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-15T05:16:29Z",
+  "lastUpdated": "2026-11-15T05:44:56Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11446,14 +11446,28 @@
         "host-tests"
       ],
       "content": "2026-11-15 #148 完了: ESMFile::decodeClass が uint8_t の ClassData::flags へ4バイト memcpy して構造体外へ3バイト破壊していた（-Wfortify-source が検出）のを、v261_clas_service_flags.md の DATA 表で正しく復号する修正（commit 584bd28e・branch fix-esm-class-data・base a0f39b41）。正典レイアウト: +0x00 u32 属性1 / +0x04 u32 属性2 / +0x08 未読 / +0x0C 7xu32 スキル id 0x0C..0x20 / +0x28 u8 flags（bit0 autocalcs） / +0x2C 未読 / +0x30 u8 trainer。実データ裏取り（Oblivion3.esm 全111 CLAS）: DATA 長 48B=31件/52B=80件・属性ペアは 0..7 かつ相異・スキル7件は重複なしで 0x0C..0x20・+0x28 は {0:84,1:21,2:6}・PRAT サブレコード0件。実装は原版 FUN_0046BDA0 の min(len,0x34) 部分コピーに合わせて各フィールドを長さガード付きで個別読み、スキル id は 0x0C..0x20 窓外を捨てる（原版 setter FUN_0051C0F0 の拒否に一致）。specialization は削除（TES4 に存在しない概念・+0x04 は属性2）、PRAT 分岐は dead code 削除。+0x08/+0x2C/+0x30 は未読のまま（+0x08 は実データで {0:53,1:30,2:28} の3値のみ・既知21クラスの specialization と 21/21 一致＝specialization enum の疑いだが EXE の消費者未特定のため RE #151 へ委譲・推測実装しない）。検証: assembleDebug BUILD SUCCESSFUL（fortify 警告消失）/ ClasDecodeTests 20/20 PASS（MSVC+ASAN・AddressSanitizer 指摘なし・実 ESM の Warrior 52B と Priest 48B＋合成3件）/ フル MSVC ランナー -NoAsan で ALL GREEN。verifier 1回目 REJECT（README 台帳に行が無い・Healer 48B の出典誤り）→ 両方修正（README 行追加・実在 48B クラス Priest に差し替え）＋軽微3件反映。再レビューはサブエージェント利用上限で未実施（次回再試行）。NpcManager::initializePlayerFromESM は呼び出し元ゼロの dead code＝クラス適用は未実装で #151②の回答待ち。"
+    },
+    {
+      "id": "153-v390-timeremap-2026-11-15",
+      "timestamp": "2026-11-15T05:44:56Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-153",
+        "n5b",
+        "re",
+        "v390"
+      ],
+      "content": "2026-11-15 #153①（V-382-2）を v390 で裁定: 0x6C5FC0 time remap helper の identity を確定。成果物 tmp/re/v390_timeremap_ruling.md（probe v390_1..2 全 EXIT=0）・台帳 row366（bak216）・round_verify ALL OK（rows 31..366 / total 252 / done 247 / open 5）・STATE (dl)。0x6C5FC0=[確定(命令)]: sequence の time remap fn — decompiled L495756 __thiscall FUN_006c5fc0(int this, float time, char flag)（L495752 に addr 注記）・数式: t' = Freq[+0x28] × (time − Last[+0x34]) + WeightLast[+0x38]（Last==−FLT_MAX なら Freq×time+offset0）→ flag [+0x24]==0 のとき wrap: span=End−Begin、範囲外なら CRT thunk 0x982BFA（mov edx,0xB30AF0; jmp 0x9908C0・fmod 系[推定高]）→ +Begin → clamp [Begin,End]／flag≠0 は wrap スキップ（clamp のみ）・戻り値=float。this の型=[推定高]: NiControllerSequence（+0x28/2C/30/34/38＝Freq/Begin/End/Last/WeightLast と5/5、wrapper の +0x44/+0x48＝State/Offset と一致・計7/7）。game 側 wrapper 0x49F4A0=[確定(命令)]: ret 4（1引数 float time）— [this+0x44]−1 ≤ 2（state ∈ {1,2,3}）のとき return 0x6C5FC0(this, Offset[+0x48]+time, 1)、否则 0.0（fldz）・decompiled L126640 と逐語一致。callers flag: 0x6C6B4E（テキストキー同期）=0（L496524）／0x6CAC00（重みパス）=1（L499627）／0x49F4C0=1／0x49F6A5=同型[推定]（結果即 pop）。param_3（char）=[未確定]＝未デコード尾部（0x6C60D0 以降・[esp+0x18] 参照なし）。残点 V-390-1..3（1=param_3 使用箇所【低】/2=wrapper this 型の直接確定＋0x982BFA CRT 名【低】/3=flag [+0x24] の名前【低】）。教訓: decompiled fn def（// FUN_ @ addr 注記）×caller の flag 実値×既知 label の offset 突合で identity 確定。v 採番 v390 消費（次=v391=②V-383-1）。"
     }
   ],
   "metadata": {
-    "totalEntries": 792,
+    "totalEntries": 793,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-15T05:16:29Z",
-    "entry_count": 792,
-    "last_updated": "2026-11-15T05:16:29Z"
+    "lastUpdated": "2026-11-15T05:44:56Z",
+    "entry_count": 793,
+    "last_updated": "2026-11-15T05:44:56Z"
   }
 }
