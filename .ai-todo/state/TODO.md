@@ -6,6 +6,7 @@
   > 【マージ後 master の emu 一巡 PASS（2026-11-15）】`emu_merged_sweep.ps1`: install=True / title_seen=True / NEW→名前'Zara'→**（IME を BACK で閉じてから）**Create → `Character creation applied: name='Zara'`・**`race formID=0x00023FE9`**（race persist (#126-2) が動作）・**`skills -> player (21/21, Blade=15 Speechcraft=15)`**（skill transfer が動作）・`Quest created: ID=1002`・**`ADVANCED_FROM_NEW=YES`**・crash=none。スクリショット mg_1/mg_2/mg_3（%TEMP%/opencode/）。APK は master の `assembleDebug`（BUILD SUCCESSFUL in 22m 2s）。
   > 【mg_1 から確認した再現事実】**#143 はマージ後も再現**: キーボードがパネル下部（Create/Cancel の y≈975）を覆っており、✔（actionDone キー・座標≈(1775,826)）と Back 以外に閉じる手段が無い。また **#137（左上の彩色ブロック）も健在**＝今回範囲外。
   > 【#143 実装状況】worktree `fix-chargen-ime-close`（base=マージ後 master 1c523cc9）で 3ファイル: ①`CharacterNameBridge.handleEditorAction(actionId)`（公開・running/shown/consoleActive ガードで DONE/ENTER/GO/UNSPECIFIED → `releaseIme()` → true・LOG 'keyboard closed by the editor action'）②`ConsoleInputBridge.nameEditorAction: ((Int)->Boolean)?` プロパティ＋リスナーの `!consoleShown` 分岐で委譲（既存のコンソール submit は `consoleShown` ガードのまま不変）③`MainActivity.setupCharacterNameBridge` で `consoleInputBridge?.nameEditorAction = { characterNameBridge?.handleEditorAction(it) }` を配線（コンソールが唯一の editor-action リスナーを保有する構造を維持）。ネイティブ側は変更不要（confirm/cancel で `nameInputActive_`=false が close() で既に処理済み）。検証は `emu_ime_close.ps1`（**Back を使わずに** ✔ タップ → キーボード閉じるログ → Create）。
+  > 【記録（2026-11-15）】STATE (cx2) と台帳 **798件 0 error** を追加。このラウンドの確定事項: ①承認9ブランチをマージ（衝突1件は hasConfirmableName の master 側 dead code 副作用を破棄して RE v370 述語を採用）→ cargo **194 passed**・APK 22m・emu 一巡 `ADVANCED_FROM_NEW=YES`（race formID=0x00023FE9・skills 21/21・Quest 1002・crash none）②#143 を実装してマージ（a954d332 → 249c36bb）・**Back を使わない**検証で `IME_CLOSED_BY_ACTION=YES` ③**訂正**: a954d332 のコミット記述「window does not resize」は誤り（実測 `DebugMenu screen size updated to: 1920x573` ＝IME 時は縮む。真因は縮み時にパネルが再レイアウトされず Create(y≈975) がクリップ外に出る点）→ 後続で記述補正が必要 ④#137 は調査継続中（除外: 4系統トグル／debugpage 1→2／DebugHUD は対象外・hudRenderer の配置は正常と確認・レトルトのポーズメニューのラベルも同様にボックス化＝主候補は retail menu pipeline `uiSystem->render()`）。**probe137-ui-system**（`probeUiSystem=false`・do not merge）でビルド中、結果次第で根因確定。検証スクリプトの教訓: **マーカーは logcat クリア前に回収する**（初回の IME_CLOSED_BY_ACTION=NO は ✔ 直後にログを消していたため）。
 
 - [ ] **#154** 【RE レーン依頼・#45 StoreTargets 相当 increment の残りをブロックする未確定（2026-11-15）】port への移植で、v371 §2.2 の A/B/C までと palette 側は実装可能な状態まで到達したが、**name→node 解決の結果をどこへ書くか／いつ通すか／root の正体**が未確定のまま残り、ここから先は推測になる（成果物: nif-core `StringPalette` 解析＋`name_at()`＝実データ demdooranim01.nif の palette 67B で固定済み）。依頼4件（判定5段階・根拠は EXE 命令のみ・推測禁止）:
   > 【優先度と到着時の着手先の再掲（2026-11-15・RE レーン用）】**優先度: 高**（#45 N5b の StoreTargets 相当は palette 読み取りまで実装済＝commit `de5110c6`（nif-core `StringPalette` + `name_at(offset)`・0xFFFF=なし sentinel・実データ demdooranim01.nif の palette 67B で固定・cargo workspace 31 suites/194 passed）で、**その先の name→node 解決が本タスク4件で停止**）。
@@ -897,6 +898,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -920,4 +926,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-15 16:15:27
+**ai-todo** | Last Updated: 2026-11-15 17:19:43
