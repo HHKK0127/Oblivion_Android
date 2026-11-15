@@ -1398,3 +1398,17 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点（新規・低）**: V-382-1..3／V-383-1..3／V-384-1..2／V-385-1..3／V-386-1..2／V-387-1..2／V-388-1..2／V-389-1（いずれも【低〜中】・台帳各行の §3 参照）。**除外（#82 依存）**: V-374-1/V-375-2＝待記のみ。
 - **教訓まとめ**: 読手 census で登録時/毎フレーム分離を可視化（v382）／引数位置は unfiltered の push 並び（v383）／call 直前の this setup を全 site 確認（v389）／format 文字列実読＋decompiled fn def で推測なし命名（v387）／label 不在は不在自体を証明してから挙動ベースへ（v388）／vtable slot 実測×find_head（v385）。
 - **次**: RE レーンの新規 open は人間ゲートのみ（#130-1/#82/#47/#20/#101）。残点の続きは v390 以降で任意順。
+## 2026-11-15 (cv2) — #148 完了: CLAS DATA を v261 の正典レイアウトで復号（flags の4バイト書込み＝構造体破壊を解消・verifier 指摘2件反映・commit 584bd28e）
+
+- **成果物**: `fix-esm-class-data`（base `a0f39b41`・commit `584bd28e`）。変更は `assets/esm_reader.cpp`（decodeClass）／`assets/esm_reader.h`（ClassData コメント）／`game/npc_manager.cpp`（ログ）／`tests/clas_decode_tests.{h,cpp}`（新規）／`tools/host_tests/{host_runner_main.cpp,run_host_tests.sh,README.md}`／`app/src/main/cpp/CMakeLists.txt`。
+- **症状**: `decodeClass` が `std::memcpy(&clas.flags, data, 4)` で **uint8_t メンバーへ4バイト書き**＝構造体の外へ3バイト破壊（`-Wfortify-source` が検出）。書かれていたレイアウト自体も推測（16バイト DATA・先頭 u32 を flags・+0x04 を specialization と誤読）。
+- **正典**: `tmp/re/v261_clas_service_flags.md` の DATA 表（form+0x38=DATA+0x00）＝ `+0x00` u32 属性1／`+0x04` u32 属性2／`+0x08` 未読／`+0x0C` 7×u32 スキル id 0x0C..0x20／`+0x28` u8 flags（bit0 autocalcs）／`+0x2C` 未読／`+0x30` u8 trainer index。
+- **実データ裏取り（Oblivion3.esm 全111 CLAS）**: DATA 長は 48B=31件／52B=80件・属性ペアは全て 0..7 かつ相異・スキルは7件重複なしで 0x0C..0x20・`+0x28` は {0:84, 1:21, 2:6}。PRAT サブレコードは **0件**（サブレコードは EDID/FULL/DESC/ICON/DATA のみ）。
+- **実装**: フィールドを正典オフセットで復号。**原版 `FUN_0046BDA0` の `min(len,0x34)` 部分コピーに合わせ、各フィールドを長さガード付きで個別に読む**（40B DATA でも属性・スキルは埋まり flags のみ既定0）。**スキル id は `0x0C..0x20` の窓外を捨てる**（原版 setter `FUN_0051C0F0` の拒否に一致・0 のまま）。`specialization` は削除（TES4 に存在しない概念・`+0x04` は属性2）、PRAT 分岐は dead code として削除。
+- **据え置き（推測実装の回避）**: `+0x08` は実データで {0:53, 1:30, 2:28} の3値のみ・既知21クラスの specialization と 21/21 一致（0=Combat/1=Magic/2=Stealth）だが **EXE の消費者が未特定**のため読まない（v261 の「未読」判定の訂正も含め **RE #151** へ委譲）。`NpcManager::initializePlayerFromESM` は**呼び出し元ゼロの dead code**（クラス適用は未実装）＝#151②の回答待ち。
+- **検証**: ①`assembleDebug`（offline Rust）**BUILD SUCCESSFUL**・**fortify 警告消失**（残る esm_reader.cpp 警告3件は既存） ②新規 `ClasDecodeTests` **20/20 PASS**（MSVC+ASAN・AddressSanitizer 指摘なし）— 実 ESM の Warrior 52B（Strength/Endurance・skills 12..18・flags 0x01）と **Priest 48B**（Willpower/Personality・skills 19,14,18,15,10,20,13・flags 0）＋合成3件（40B 部分充填／DATA 欠落／窓外スキル id 0x30 の拒否） ③フル MSVC ランナー **ALL GREEN**（`-NoAsan`＝README「Known limitation」の AV フック/ASan 停止の回避策）。
+- **verifier**: 1回目 **REJECT**（①`tools/host_tests/README.md` のスイート台帳に行が無い ②Healer 48B を「ESM からコピー」と書いたが実 ESM の Healer は 52B＝48B 版は切り詰め合成だった）→ 両方修正（README 行追加・**実在の 48B クラス Priest に差し替え**）＋軽微3件（スキル範囲検査・部分コピーへの忠実化・証跡の限定明記）を反映 → **再レビューはサブエージェントの利用上限到達で未実施**（指摘はすべて反映済み・次回に再試行）。
+- **教訓**: **「実データからコピーした」と書くなら実バイトを突合する**（48B 変種が実在するのに合成切り詰めを使っていた）。**長さガードは「全体を捨てる」より原版の部分コピーに合わせる方が忠実**。
+- **環境メモ**: MSVC ランナーは **stdout リダイレクト時に 4KB ブロックバッファ**のため、ログ末尾の途切れは停止とは限らない。ASan 有効時は `Phase45UnitTests` の dtor（`AsyncTaskManager::cleanup` の join）で wedge する既知制約があり、**`-NoAsan` が正攻法**。
+- **次**: #45 StoreTargets 相当（名前ベース解決）increment の設計（v376 で `[esp+0x38]` 死コード確定＝Bip02→Bip01 の順が実挙動）／RE #151 到着待ち（CLAS `+0x08` と chargen クラス適用）。
+
