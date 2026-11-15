@@ -1527,3 +1527,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-396-1..3**: 1=**iVar6（`FUN_00560920` 戻り）の NiControllerManager 確定裏付け**＋`FUN_00560920`/`FUN_004da2a0` の identity（0xB3CAC0 マップの内容）【中】／2=**コマンドテーブル全体構造**（先頭・件数・argspec/data/helper `0x4FDE30` の役割）【低】／3=**`[0xB102E0]` ×36-byte PlayGroup 定義テーブルの entry 構造**（v391 の `0xB102E8` と同族統合レイアウト）【低】。
 - **教訓**: **登録型 fn（E8=0）は packed dword census → 見つかった .data/.rdata 位置の前後を stride で展開し name/ID/usage を dereference すると identity が一撃で決まる**。
 - **次**: #153⑥-3 V-384-2（`0x6C4480` の this と `0x6C4200` 同一性）→ 次 v 採番 v397。
+
+## 2026-11-15 (ds) — #153⑥-3 完遂: `0x6C4480` の this＝**NiControllerManager（同クラス [確定]）**・sweep は全5 site で `[host+0x98]` 経由（同一オブジェクトは [部分確定]）（v397・V-384-2）
+
+- **成果物**: `tmp/re/v397_sweep_this_ruling.md`（probe **v397_1..6 全 EXIT=0**・v397_6 は初回パターンバグ→修正後）。台帳 **row373（bak223）**・`round_verify` **ALL OK**（rows 31..373 / total 259 / done 254 / open 5）。ai-todo #153 に note（低10件の第3弾消化）。v 採番 **v397 消費（次=v398＝#153⑥-4 V-385-2）**。
+- **同クラス性 [確定(命令＋decompiled＋RTTI)]**: **両 this はともに NiControllerManager** — ①`FUN_006c4480`（sweep）は **`[this+0x54]`（count）／`[this+0x4c]`（配列）を Update（`FUN_006c4200`）と同一 semantics で読む**（decompiled L494072-494079 逐語・`ret 4`＝thiscall fade 1引数）②**{+0x4c, +0x54} は v395 RTTI 確定の manager ctor 初期化フィールド**（`param_1[0x13]`/`[0x15]`=0）③**`[host+0x98]` 経由の読手が `word[+0x46]`（count）＋`[+0x40]`（配列）も読み（`0x4726A1`/`0x472702`）＝manager 初期化フィールド4/4 一致** ④Update は manager vtable slot21（v395 RTTI）。
+- **同一オブジェクト性 [部分確定]**: sweep の this は **E8 全5 call site で `[host + 0x98]`**（`mov ecx,[reg+0x98]; call 0x6C4480`＝`0x471064`/`0x471A84`/`0x473286`/`0x473B19`/`0x4746D7`）から読み込み。host は **inline sequence 配列 `[+0xA0+i*4]` ＋ `[+0xAC]` seq ptr** を持ち、call 前に **`[seq+0x44]==5` ガード＋`[host+0x98]` null check（`0x47101D`）** がある。**Update（slot21）の dispatch site が同じ `[host+0x98]` インスタンスかの直接照合は未実施＝残点**。
+- **sweep 機能（再掲） [確定(命令＋decompiled)]**: active list を走査し **`state==4` の sequence のみ `Deactivate(fade, flag=0)`**（v393: fade>0→state3 降格／0→即停）。callers は `fldz` 大半・`0x47106D` のみ実値 fade（v384 と一致）。**呼び出し元5fn**: `FUN_00470fc0`/`FUN_00471990`/`FUN_00473200`/`FUN_00473aa0`/**`FUN_00474530`（Morph・v391）**。
+- **（副次）`FUN_004da2a0` [確定(decompiled L171619-171632)]**: **name getter** — `FUN_009832e6([param_1+0x1c], 0, tables...)` の lookup 結果 `[+4]` を返し、無ければ空文字 `&DAT_00a2f7ec` ＝ v396 の PlayGroup エラー %s 用（**V-396-1 の一部を解消**）。
+- **host 側の手がかり**: ctor `FUN_00473eb0`（L92558 `param_1[0x26]=0`＝`[+0x98]` ゼロ初期化）・**非ゼロ代入候補 `0x475C6E: mov [esi+0x98], ebp`**（出所未特定）。
+- **残点 V-397-1..3**: 1=**Update（slot21）の dispatch site 特定と `[host+0x98]` 照合**（実行時同一性の残り一歩）【中】／2=**host クラスの同定**（`+0x98`/`+0xA0`/`+0xAC`/`+0x9c`/`+0xb4` 等・ctor `FUN_00473eb0`）【中】／3=**`[host+0x98]` 非ゼロ代入元の確定**（`0x475C6E` の ebp 出所）【低】。
+- **教訓**: **disp8 は符号付き（−128..127）→ `+0x80` 以上の offset は disp32（mod=10）で census せよ**（disp8 では `[ebp−0x68]` 等を誤検出しつつ本命を漏らす）＋**find_head 起点の align decode で call site 直前の this 設定を特定**。
+- **次**: #153⑥-4 V-385-2（slot6 正式名 Clone vs Copy）→ 次 v 採番 v398。
