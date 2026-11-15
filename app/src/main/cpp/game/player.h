@@ -20,6 +20,11 @@ struct Player {
     // Identity
     uint32_t playerId = 1;
     std::string name = "Player";
+    // Race form reference chosen at character creation (0 = unset), carried
+    // as the FormID rather than a copy of the record: the original keeps the
+    // TESRace reference and applies through it (RE v365 (b)). Look the
+    // record up through ESMManager::findRace when a name or bonus is needed.
+    uint32_t raceFormID = 0;
 
     // Position & Rotation
     glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);

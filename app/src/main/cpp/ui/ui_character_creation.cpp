@@ -128,6 +128,15 @@ bool UICharacterCreation::onTouchDown(float x, float y, int pointerId) {
             return true;
         }
         createdCharacter_.name = playerName_;
+        // Hand the selected race over as its form reference; the original
+        // keeps the TESRace reference and applies through it (RE v365 (b)),
+        // and no selection is a valid state (ESM not wired).
+        if (!availableRaces_.empty() && selectedRaceIndex_ >= 0 &&
+            selectedRaceIndex_ < static_cast<int>(availableRaces_.size())) {
+            createdCharacter_.raceFormID = availableRaces_[selectedRaceIndex_].formID;
+        } else {
+            createdCharacter_.raceFormID = 0;
+        }
         if (onConfirm) {
             onConfirm(createdCharacter_);
         }

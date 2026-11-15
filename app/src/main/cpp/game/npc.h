@@ -24,6 +24,12 @@ struct CharacterStatus {
     // confirmed name is available to the player-state handoff.
     std::string name;
 
+    // Race chosen at creation, carried as the race form's FormID — the
+    // reference-hold the original uses for the TESRace selection (RE v365
+    // (b), partially confirmed) and the field face_gen_data.h's FaceGenRecord
+    // already uses. 0 means no selection was available (ESM not wired).
+    uint32_t raceFormID = 0;
+
     // Core Vitals
     float currentHealth;
     float maxHealth;
