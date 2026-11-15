@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-15T01:22:48Z",
+  "lastUpdated": "2026-11-15T01:31:42Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11188,14 +11188,29 @@
         "v373"
       ],
       "content": "2026-11-15 #45 N5b 残点 V-372-1 を v373 で裁定: registry 0xB3CD7C の正体と 48B stride 種別を確定。成果物 tmp/re/v373_registry_identity_ruling.md（probe v373_1..4 全 EXIT=0）・台帳 row349（bak199）・round_verify ALL OK（rows 31..349 / total 235 / done 230 / open 5）・STATE (cu)。registry 0xB3CD7C=[確定(b07+命令)]: NiMultiTargetTransformController の静的シングルトン（getter 0x6C5F50 が vtable 0xA79984 slot1＝b07 row994・ctor 0x6C5EE0 が vtable 設定＋3フィールド0初期化・0x700010＝リンクリスト lookup: [obj+0xC] 先頭/next [+0x34]/virtual+4(GetName) の name ptr ポインタ比較・一致ノード返却）。48B(0x30)=[確定(b07+命令)]: NiBlendTransformInterpolator（ctor 0x6CBD02 push 0x30; new→0x6CC4E0 基底→mov [esi],0xA79E54・dtor 0x6CBCB0 同一 vtable→b07 row870・accessor 0x6CFC05/0x6CFDE5＝idx*48→ptr）。48B 格納 site census 12件＝骨解決 0x6C6A34／前提 fn 0x6C8502（mov [ebx+8],eax; or byte [eax+0xC],1）／accessor 系（0x6CFC05/0x6CFDE5/0x6CFFC6/0x6D01A6/0x6D0206=virtual+0x38）で field8=base+idx*48 が共通。3フィールド=[部分確定]: [+0x3C]=48B base／[+0x40]=ptr 配列（4B 要素）／[+0x44]=count（u16）・グローバル 0xB3CBA4/A8/AC/B0（base/ptr/count/extra）から various object へコピーする初期化群14件（0x6C3835 の vtable 0xA79584=NiBlendAccumTransformInterpolator b07 row863 等）。#45 N5b ④の最終確定: field8 に格納されるのは NiBlendTransformInterpolator のポインタ（base+index*48）＝controlled block→interpolator の対応付け・port の clip は interpolator 群に対応する port 側再構成。0x6C8220 の再解釈（v371 補強）=前提チェック兼 interpolator 格納 fn（0xB3CA58 別 registry→ptr 配列照合→'Bip01' strcmp→0x6FFE90→0x6C8502 48B 格納＋or [eax+0xC],1）。残点 V-373-1..3（1=0xB3CBA4 writer＝interpolator 実配列の構築元【中】/2=48B フィールド布局【中】/3=0xB3CA58 正体【低】）。教訓: b07 RTTI 表×命令の二重根拠で TD 不在クラスも確定可（getter vtable slot1→b07 行照合→dtor vtable 追跡）。v 採番 v373 消費（次=v374）。"
+    },
+    {
+      "id": "45-n5b-v374-interpolator-2026-11-15",
+      "timestamp": "2026-11-15T01:31:42Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-45",
+        "n5b",
+        "nif",
+        "re",
+        "v374"
+      ],
+      "content": "2026-11-15 #45 N5b 残点 V-373-1 を v374 で裁定: interpolator 実配列の構築元と 0xB3CBA4 を確定。成果物 tmp/re/v374_interpolator_array_build_ruling.md（probe v374_1 全 EXIT=0）・台帳 row350（bak200）・round_verify ALL OK（rows 31..350 / total 236 / done 231 / open 5）・STATE (cv)。interpolator 実配列の構築元=[確定(命令)]: 0x6D0010 = NiMultiTargetTransformController の interpolator 配列構築 fn（arg1=count u16）— unfiltered 全 decode: [esp+0x24]（arg1）→[ebp+0x44]=count→eax=count*0x30+4（overflow チェック付き size=count*48+4）→call 0x401F00(new)→push 0x6CBCA0(dt)/push 0x6CBCB0(dt)/push count/lea esi,[eax+4]/push 0x30/push esi/[eax]=count/call 0x984BCF（プール初期化: 各要素48B・dtor ペア・ヘッダ count）→[ebp+0x3C]=esi（base=配列先頭 +4 ヘッダ分）→各要素 dtor 登録ループ（esi+=0x30）→count*4→new→[ebp+0x40]=ptr 配列→memset(0)。dtor ペア=vtable 0xA79E54=NiBlendTransformInterpolator（v373 確定）→各48B 要素が interpolator。呼び出し元=ctor 0x6C5EE0 の call 0x6D0010＝NiMultiTargetTransformController の ctor 経由。0xB3CBA4 の writer=[確定負（静的）]＋[部分確定]: .text への store 形式（A3/C705/8905/89 modrm 全形式）全走査で 0 件・0xB3CBA4 は .bss（セクション外）＝静的初期化のみ（CRT/初期化セクション経由の実行時セット[推定]、または singleton 0xB3CD7C の interpolator 配列を指す単なるポインタ[部分確定]）・.text から書けないことは [確定(否定側)]。3フィールドの帰属=[確定(命令)]（v373 から昇格）: [+0x3C]=interpolator 配列 base（new(count*48+4) の +4・各要素 NiBlendTransformInterpolator・dtor ペア）／[+0x40]=ptr 配列（new(count*4)・memset 0）／[+0x44]=count（u16・arg1）。継承: 基底 ctor 0x6D04E0＝call 0x715990→mov [esi],0xA7A16C（vtable NiInterpController）＝NiInterpController←…←NiMultiTargetTransformController [確定]。残点 V-374-1..2（1=0xB3CBA4 の真の初期化元（CRT か singleton 配列ポインタか・.text 書手0件のため動的確認＝#82 系）【低】/2=singleton の interpolator 配列が 0x6D0010 で構築されるのか 0xB3CBA4 が別途初期化されるのかの区別【中】）。教訓: store 形式（A3/C705/8905）の全走査で .bss 証明→unfiltered decode で配列構築を直接確認の手順が有効。v 採番 v374 消費（次=v375）。"
     }
   ],
   "metadata": {
-    "totalEntries": 774,
+    "totalEntries": 775,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-15T01:22:48Z",
-    "entry_count": 774,
-    "last_updated": "2026-11-15T01:22:48Z"
+    "lastUpdated": "2026-11-15T01:31:42Z",
+    "entry_count": 775,
+    "last_updated": "2026-11-15T01:31:42Z"
   }
 }

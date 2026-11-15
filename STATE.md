@@ -1181,3 +1181,21 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **b07 RTTI 表×命令の二重根拠で TD 不在クラスも確定できる**（getter の vtable slot1 → b07 行照合 → dtor vtable 追跡）。
 - **main への回答（#45）**: N5b ④は着地可（interpolator 対応付けの正典確定）・残点1が interpolator 配列構築元の次 probe。
 - **次**: RE レーンの open は人間ゲートのみ。次 probe 入口＝V-373-1（次 v 採番 v374）。
+
+## 2026-11-15 (cv) — #45 N5b 残点1解消: interpolator 実配列の構築元＝**`0x6D0010`（`new(count*48+4)`＋dtor ペア）[確定(命令)]**・`0xB3CBA4` は .bss 静的グローバル（.text 書手 0 件）（v374・V-373-1）
+
+- **成果物**: `tmp/re/v374_interpolator_array_build_ruling.md`（probe **v374_1 全 EXIT=0**）。台帳 **row350（bak200）**・`round_verify` **ALL OK**（rows 31..350 / total 236 / done 231 / open 5）。ai-todo #45 に note（**残件ありで complete せず**）。v 採番 **v374 消費（次=v375）**。経緯: v373 の残点 V-373-1 を消化。
+- **interpolator 実配列の構築元 [確定(命令)]**: **`0x6D0010` = `NiMultiTargetTransformController` の interpolator 配列構築 fn**（arg1=count u16）。unfiltered 全 decode:
+  - `6D0036: bx=[esp+0x24]`（arg1）→ `[ebp+0x44]=bx`（count 設定）
+  - `6D004D..6D0069: eax = count*0x30 + 4`（**overflow チェック付き size = count*48+4**）→ `call 0x401F00`(new)
+  - `6D0080..6D0093: push 0x6CBCA0(dt) / push 0x6CBCB0(dt) / push count / lea esi,[eax+4] / push 0x30 / push esi / [eax]=count / call 0x984BCF`（**プール初期化: 各要素48B・dtor ペア・ヘッダ count**）
+  - **`[ebp+0x3C] = esi`（base = 配列先頭 +4 ヘッダ分）** → 各要素 dtor 登録ループ（esi+=0x30）
+  - `6D00C6..6D00E9: count*4 → new → [ebp+0x40] = ptr 配列 → memset(0)`
+  - **dtor ペア `0x6CBCA0`/`0x6CBCB0` = vtable `0xA79E54` = `NiBlendTransformInterpolator`（v373 確定）→ 各48B 要素が interpolator** [確定]。呼び出し元＝ctor `0x6C5EE0` の `call 0x6D0010`＝**NiMultiTargetTransformController の ctor 経由**。
+- **`0xB3CBA4`（base グローバル）[確定負（静的）]＋[部分確定]**: **.text への store 形式（A3/C705/8905/89 modrm 全形式）全走査で 0 件**。`0xB3CBA4` は **.bss（セクション外）＝静的初期化のみ**（CRT/初期化セクション経由の実行時セット [推定]、または singleton `0xB3CD7C` の interpolator 配列を指す単なるポインタ [部分確定]）。**.text から書けない**ことは [確定(否定側)]。v373 の初期化群14件は読み取りコピー（global 側が真値）。
+- **3フィールドの帰属 [確定(命令)]**（v373 から昇格）: `[+0x3C]`=**interpolator 配列 base**（`new(count*48+4)` の +4・各要素 `NiBlendTransformInterpolator`・dtor ペア）／`[+0x40]`=**ptr 配列**（`new(count*4)`・memset 0）／`[+0x44]`=**count（u16・arg1）** — 全て `0x6D0010` 内で直接構築。
+- **継承 [確定]**: 基底 ctor `0x6D04E0`＝`call 0x715990` → `mov [esi],0xA7A16C`（vtable `NiInterpController`＝b07 0xA7A16C）→ `NiInterpController` ← … ← `NiMultiTargetTransformController`（0xA79984）。
+- **残点 V-374-1..2**: 1=`0xB3CBA4` の真の初期化元（CRT/初期化セクションか、singleton の interpolator 配列を指す単なるポインタかの切り分け。**.text に書手0件のため動的確認＝#82 系**）【低】／2=singleton（`0xB3CD7C`）の interpolator 配列が `0x6D0010` で構築されるのか、`0xB3CBA4` が別途初期化されるのかの区別（2系統の interpolator 配列が併存する可能性）【中】。
+- **教訓**: **store 形式（A3/C705/8905）の全走査で .bss 証明 → unfiltered decode で配列構築を直接確認**の手順が有効。
+- **main への回答（#45）**: interpolator 配列構築元は着地可（`0x6D0010`）・残点2が2系統併存の切り分け。
+- **次**: RE レーンの open は人間ゲートのみ。次 probe 入口＝V-374-2（次 v 採番 v375）。
