@@ -1257,3 +1257,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-378-1..2**: 1=**flag 引数（`[esp+0x20]`）の実体**（state5 と state2 を分ける条件・caller 側の値（0/1）の設定元 decode で確定可）【中】／2=**`0x6C4480`（state5 の Manager 通知）の identity**（ActivateSequence の逆操作/ブレンド登録か）【中】。
 - **教訓**: **state 設定 site の find_head → fn 全体の unfiltered decode で分岐構造（flag/fade duration）を直接確認**＋caller の値比較文脈で state の特殊性を裏取る。
 - **次**: RE レーンの open は人間ゲートのみ。次 probe 入口＝V-378-1（次 v 採番 v379）。
+
+## 2026-11-15 (da) — #150 残点3解消: Activate の flag（s6）＝**「ブレンド遷移要求」フラグ [確定(命令)]**（s6=1→state5／s6=0→state2）・v187 の ActivateSequence 候補帯は **dtor で否定**（v379・V-378-1）
+
+- **成果物**: `tmp/re/v379_activate_flag_ruling.md`（probe **v379_1..2 全 EXIT=0**）。台帳 **row355（bak205）**・`round_verify` **ALL OK**（rows 31..355 / total 241 / done 236 / open 5）。ai-todo #45 に note（#150 は complete 済み）。v 採番 **v379 消費（次=v380）**。経緯: v378 の残点 V-378-1 を消化。
+- **flag 引数（s6＝`[esp+0x20]`）[確定(命令)]**: **「ブレンド遷移を要求するか」フラグ** — **s6=1 → state 5（他 sequence とのブレンド遷移）**（wrapper `0x6C9D30`/`0x6C9E00` が `push 1` を s6 位置に配置）／**s6=0 → state 2（単独フェード）**（caller `0x47491C`/`0x47603A`/`0x4DAB0B`/`0x4E3087` 等が s6 位置に `push 0`）。s6=動的なのは `0x6C4049`（`push ecx`＝s6）のみ [部分確定]。
+- **`0x6C9BA0` のスタック引数レイアウト [確定(命令)]**: **`ret 0x18`＝6スタック引数（this=ecx 以外）** — **s1（`[esp+0xC]`）＝相手/ターゲット sequence ptr**／**s2（`[esp+0x10]`）＝byte（0/1）**／**s3・s4（float）＝fade duration 系**（s3＝`[esp+0x14]`＝duration、s4＝`[esp+0x18]`＝fade）／**s5＝sequence ptr**（`0x6C9BB0: edi=[esp+0x1C]`）／**s6（`[esp+0x20]`）＝flag byte（0→state2 / 1→state5）**。
+- **wrapper `0x6C9D30`/`0x6C9E00` [部分確定]**: **ActivateSequence 系 wrapper（ret 0x1c＝7引数）** — 先頭で **`Deactivate(fade=0.0, flag=1)`＝state 4** を呼んだ後、state==0 を確認してから **`Activate(..., s6=1)`＝state 5** を呼ぶ。`0x6C9D30` は `[esi+0x44]=1`（state1 即時再生）を先に置き、その後 Activate(s6=1) でブレンド遷移へ [確定(命令)]。
+- **v187 の「真の ActivateSequence 候補 0x6C4890-0x6C4BD0 帯」[確定(否定側)]**: `0x6C4890`＝**dtor**（`mov [esi],0xA7973C`＝vtable → `call 0x7C2A40` → delete・**E8 callers=0**）／`0x6C4BD0`＝別物（`cmp word [ebx+0x46],di` → `call 0x6CAC60` → `[esi+0x40]=0`）。**Activate は不在** → **真の Activate は `0x6C9BA0`**（v378 確定）。v187 本文は歴史記録として温存、本 v379 §2.4 が正。
+- **state 2/5 の完全図（v378＋v379）**: **`0x6C9BA0`＝Activate（s6 flag で分岐）** — s6=0 → **state 2（単独フェード）**／s6=1 → **state 5（ブレンド遷移・Manager 通知 `0x6C4480` 付き）**。**wrapper `0x6C9D30`/`0x6C9E00` は常に s6=1（ブレンド）**。
+- **残点 V-379-1..2**: 1=**s1/s2 の厳密な意味**（s1＝ターゲット sequence ptr [推定高]／s2＝byte 0/1 [未確定]・`0x47603A` の s1=100 は weight 値 [推定]）【中】／2=**`0x6C4049`（s6=ecx 動的）の caller 側 flag 設定元**（ブレンド要求の発火条件）【中】。
+- **教訓**: **各 caller の push 並びを unfiltered で取得し引数位置を特定 → 値で分岐を実証**＋先行裁定の候補帯を dtor 同定で否定。
+- **次**: RE レーンの open は人間ゲートのみ。次 probe 入口＝V-379-1（次 v 採番 v380）。

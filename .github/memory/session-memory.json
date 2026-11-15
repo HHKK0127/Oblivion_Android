@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-15T02:17:26Z",
+  "lastUpdated": "2026-11-15T02:29:47Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11275,14 +11275,28 @@
         "v378"
       ],
       "content": "2026-11-15 #150 残点2（V-377-1）を v378 で裁定: state 2/5 の意味と 0x6C9BA0 を確定。成果物 tmp/re/v378_state25_activate_ruling.md（probe v378_1 全 EXIT=0）・台帳 row354（bak204）・round_verify ALL OK（rows 31..354 / total 240 / done 235 / open 5）・STATE (cz)。state 2=[確定(命令)]: フェード遷移中（flag=0・fade duration>0）— 0x6C9C2A: cmp [esi+0x44],0→0x6C9C2E: mov [esi+0x44],2（分岐元 0x6C9C03: cmp byte [esp+0x20],0; je＝flag==0）。state 5=[確定(命令)]: フェード遷移中（flag≠0・fade duration>0）— 0x6C9C0A→0x6C9C0E（flag≠0 の fallthrough）・他に 0x6C9E72・caller 0x471A7B: cmp [eax+0x44],5 のときだけ 0x6C4480（Manager 通知）＝state 5 = 他 sequence とのブレンド遷移中 [推定高]（state2 に通知経路なし）。state 1=[確定(命令)]: 即時再生（fade duration ≤ 0）— 0x6C9BF6: fldz; fcomp; jp 0x6C9C64→0x6C9C68: mov [esi+0x44],1・他に 0x6C9D79/0x6C9EAC。0x6C9BA0 の identity=[部分確定]: ActivateSequence 相当（state==0 のときのみ有効・ret 0x18＝6引数）— 0x6C9BA3: cmp [esi+0x44],0; je→0x6C9BA9: xor al,al; ret 0x18（state!=0 なら false）・arg1（[esp+0x1C]）＝相手 sequence（[edi+0x58] に記録・自己参照拒否／0x6C6110・0x6C6ED0 検証）／arg2（[esp+0x18]）＝fade duration（float）／arg3（[esp+0x20]）＝flag（byte・0→state2 / 1→state5）・[esi+0x1C]=duration・[esi+0x4C]=-const(0xA7DEB4)（fade time）・[esi+0x50]=arg2・[esi+0x58]=相手・[esi+0x40]+0x4C（sequence）へ 0x73A5E0 通知。state enum 完全図: 0=停止（0x6C9D14）→1=即時再生（fade≤0）／2=フェード遷移（flag=0）／5=フェード遷移（flag≠0・ブレンド中[推定高]）→3/4=フェードアウト/停止（Deactivate/Suspend 0x6C9CB0）→6=サイクル（v187）・state 値の直接比較は 0x471A7B の cmp ,5 の1件のみ [確定(否定側)]。v187 の cycle type（byte+8 bit1-2）とは別フィールド（state +0x44 は NiControllerSequence の dword）。残点 V-378-1..2（1=flag 引数の実体【中】/2=0x6C4480 identity【中】）。教訓: state 設定 site の find_head→fn 全体 unfiltered decode で分岐構造を直接確認＋caller の値比較文脈で state の特殊性を裏取る。v 採番 v378 消費（次=v379）。"
+    },
+    {
+      "id": "150-v379-activate-flag-2026-11-15",
+      "timestamp": "2026-11-15T02:29:47Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-150",
+        "nif",
+        "re",
+        "v379"
+      ],
+      "content": "2026-11-15 #150 残点3（V-378-1）を v379 で裁定: Activate の flag（s6）の実体を確定。成果物 tmp/re/v379_activate_flag_ruling.md（probe v379_1..2 全 EXIT=0）・台帳 row355（bak205）・round_verify ALL OK（rows 31..355 / total 241 / done 236 / open 5）・STATE (da)。flag 引数（s6＝[esp+0x20]）=[確定(命令)]: 「ブレンド遷移を要求するか」フラグ — s6=1 → state 5（ブレンド遷移・wrapper 0x6C9D30/0x6C9E00 が push 1 を s6 位置に配置）／s6=0 → state 2（単独フェード・caller 0x47491C/0x47603A/0x4DAB0B/0x4E3087 等が push 0）・s6=動的なのは 0x6C4049（push ecx）のみ [部分確定]。0x6C9BA0 のスタック引数レイアウト=[確定(命令)]: ret 0x18＝6スタック引数（this=ecx 以外）— s1＝相手/ターゲット sequence ptr／s2＝byte（0/1）／s3・s4（float）＝fade duration 系（s3=[esp+0x14]=duration、s4=[esp+0x18]=fade）／s5＝sequence ptr（0x6C9BB0: edi=[esp+0x1C]）／s6＝flag byte（0→state2 / 1→state5）。wrapper 0x6C9D30/0x6C9E00=[部分確定]: ActivateSequence 系 wrapper（ret 0x1c＝7引数）— 先頭で Deactivate(fade=0.0, flag=1)＝state 4 を呼んだ後、state==0 を確認してから Activate(..., s6=1)＝state 5 を呼ぶ・0x6C9D30 は [esi+0x44]=1（state1 即時再生）を先に置きその後 Activate(s6=1) でブレンド遷移へ。v187 の「真の ActivateSequence 候補 0x6C4890-0x6C4BD0 帯」=[確定(否定側)]: 0x6C4890＝dtor（vtable 0xA7973C→0x7C2A40→delete・E8 callers=0）／0x6C4BD0＝別物・Activate は不在→真の Activate は 0x6C9BA0（v378 確定）。state 2/5 の完全図: 0x6C9BA0＝Activate（s6 flag で分岐）— s6=0 → state 2／s6=1 → state 5（ブレンド・Manager 通知 0x6C4480 付き）・wrapper は常に s6=1。残点 V-379-1..2（1=s1/s2 の厳密な意味【中】/2=0x6C4049 の caller 側 flag 設定元【中】）。教訓: 各 caller の push 並びを unfiltered で取得し引数位置を特定→値で分岐を実証＋先行裁定の候補帯を dtor 同定で否定。v 採番 v379 消費（次=v380）。"
     }
   ],
   "metadata": {
-    "totalEntries": 780,
+    "totalEntries": 781,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-15T02:17:26Z",
-    "entry_count": 780,
-    "last_updated": "2026-11-15T02:17:26Z"
+    "lastUpdated": "2026-11-15T02:29:47Z",
+    "entry_count": 781,
+    "last_updated": "2026-11-15T02:29:47Z"
   }
 }
