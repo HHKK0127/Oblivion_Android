@@ -1550,3 +1550,14 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-398-1..3**: 1=**thread run 経路と slot6 の直接接続追跡**【低】／2=**隣接 slot（slot7 等）の CloneRecursive 相当別立の有無**【低】／3=**`FUN_006c5a10` と `FUN_006d0170` の関係**（同一テンプレートのインスタンスか）【低】。
 - **教訓**: **"正式名"はバイナリにメソッド名として存在しないため、①操作形状（alloc 返却 vs dest 書込）②EXE 自身のログ/コンソール変数用語 の二点で裁定する**（RTTI はクラス名のみ・メソッド名なし）。
 - **次**: #153⑥-5 V-385-3（`0x6D0530`/`0x6D0550` 役割）→ 次 v 採番 v399。
+
+## 2026-11-15 (du) — #153⑥-5 完遂: `0x6D0530`＝**基底直接コピーへの thunk（0x715D80）**・`0x6D0550`＝**vtable[1] 介在コピー＋type-id チェック＋IsManagerControlled 導出** [確定]・**ついでに `word[+8]` bit5＝`IsManagerControlled` を確定**（v399・V-385-3）
+
+- **成果物**: `tmp/re/v399_base_copy_ruling.md`（probe **v399_1..2 全 EXIT=0**）。台帳 **row375（bak225）**・`round_verify` **ALL OK**（rows 31..375 / total 261 / done 256 / open 5）。ai-todo #153 に note（低10件の第5弾消化）。v 採番 **v399 消費（次=v400＝#153⑥-6 V-386-1）**。
+- **`0x6D0530` [確定(命令＋decompiled)]**: **`jmp 0x715D80` の5バイト tail-jump thunk**（int3 パディングで独立 entry）→ 先の **`FUN_00715d80`＝基底クラス直接フィールドコピー**: `FUN_00700770(dest, ctx)` 後、**`dest.word[+8] ← src.word[+8]`（flags＝bit3/bit5 含む）**＋**`dest[+0x0c..+0x24] ← src`（dword 7フィールド）**＋**`[src+0x30]` ptr の型解決付きコピー**（`FUN_0055e000` 判定＋vtable[1] 型照合→`dest[+0x30]=resolved`）（L558033-558061）。**callers 3件**: `0x6CE2CF`／**`0x6D0180`（`FUN_006d0170`＝interpolator 間コピー先頭・v394）**／`0x6D148F`。
+- **`0x6D0550` [確定(命令＋decompiled)]**: **「vtable[1] 介在フィールドコピー＋条件付き flag 導出」の copy 系ヘルパ fn（本体・`ret 4`）**: ①`FUN_00715f40(src)`＝**`[src+0x21C]` の `vtable[1]` を介した size/type-tag 付きフィールドコピー**（`(+8, size2)`／`+0xc,+0x10,+0x14,+0x18...`（各4）を `vtable[1](field, size, &tag, 1)` で転送）②**`[src+0xD8]` type-id が `0xA010068 ≤ id ≤ 0xA01006C` の範囲内のみ続行** ③問合せ byte 結果で **`word[dest+8] |= 0x20` / `&= ~0x20`**（L504074-504096）。**callers 3件**: `0x6CE329`／`0x6D037B`／`0x6D0D3C`（`0x6D0530` の caller 群と**同一3 fn ファミリが対で使用**＝コピー経路の2系統）。
+- **（副次）`word[+8]` bit5(0x20) [確定(文字列)]**: **`IsManagerControlled`** — 隣接 fn `FUN_006d05c0` が **`byte[+8] >> 5` を bool 化して `FUN_0070f950("IsManagerControlled", value)` で出力**（L504116-504117・EXE 文字列 VA `0xA7A210`）＝**v395/v397 の bit3（Update gate）に続く2つ目の既知 bit**。
+- **（参考）** `0x6D0540`＝`jmp 0x715820` の3番目 thunk（役割は残点）。
+- **残点 V-399-1..3**: 1=**`[+0xD8]` type-id 定数 `0xA010068..0xA01006C` の意味＋`[+0x21C]` オブジェクト identity**【中】／2=**`FUN_00715F40` 介在コピーの全体**（全フィールド列・type-tag・0x715xxx 帯クラス）【低】／3=**`0x6D0540`（`jmp 0x715820`）と `0x715820` の役割**【低】。
+- **教訓**: **「thunk と本体」を分離して裁定せよ**（head が `jmp` なら本体は先のアドレス・decompiled アノテーションも先に付く）＋**隣接 fn の文字列読手から bit フィールド名を拾う**。
+- **次**: #153⑥-6 V-386-1（`[block+0xD]` 非0xFF 供給元）→ 次 v 採番 v400。
