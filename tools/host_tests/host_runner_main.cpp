@@ -8,6 +8,7 @@
 #include "tests/phase48_integration_test.h"
 #include "tests/watr_decode_tests.h"
 #include "tests/xtel_decode_tests.h"
+#include "tests/clas_decode_tests.h"
 #include "tests/weather_transition_tests.h"
 #include "tests/interior_cell_tests.h"
 #include "tests/gamestate_report_tests.h"
@@ -83,6 +84,11 @@ int main() {
         XtelDecodeTests t;
         const bool ok = t.runAllTests();
         runSuite("XtelDecodeTests", ok, t.getSummary(), failed);
+    }
+    {
+        ClasDecodeTests t;
+        const bool ok = t.runAllTests();
+        runSuite("ClasDecodeTests", ok, t.getSummary(), failed);
     }
     {
         WeatherTransitionTests t;

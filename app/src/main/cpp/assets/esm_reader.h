@@ -724,11 +724,14 @@ struct ClassData {
     std::string editorID;
     std::string fullName;              // FULL name
     std::string description;           // DESC subrecord
-    uint8_t specialization = 0;        // 0=Combat, 1=Mysticism, 2=Stealth
-    uint32_t primaryAttribute1 = 0;     // CLASS DATA subrecord +0x08 (not PRAT)
-    uint32_t primaryAttribute2 = 0;     // CLASS DATA subrecord +0x0C
-    uint8_t majorSkills[7] = {0};       // CLASS DATA subrecord +0x0C..0x28 skill ids
-    uint8_t flags = 0;                  // DATA flags: bit0 autocalcs, bit1 guard (no merchant bit, v261)
+    uint32_t primaryAttribute1 = 0;     // DATA +0x00, attribute enum 0..7
+    uint32_t primaryAttribute2 = 0;     // DATA +0x04, attribute enum 0..7
+    // DATA +0x0C..+0x27: seven class skills stored as skill ids 0x0C..0x20.
+    // Every class in the corpus stays inside that range, so the ids fit in a
+    // byte; an id outside the window is rejected the way FUN_0051C0F0 does and
+    // stays 0.
+    uint8_t majorSkills[7] = {0};
+    uint8_t flags = 0;                  // DATA +0x28: bit0 autocalcs, bit1 guard (v261)
 };
 
 /// Placed object/NPC reference in the world
