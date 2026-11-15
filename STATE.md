@@ -1437,3 +1437,17 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **RE #154 起票（`#RE`・#45 の残り4件が全てブロック）**: ①【高】`virtual+0x4C(root,name)` の**探索範囲**（子のみ／孫まで再帰・v371 §2.2-C は [推定高] のまま）と A 側 `0x6C95AC` と C 側 `0x6C96DB` が同一 fn か ②【高】**V-371-4 結果格納の対応先** — `0x6C9B12: mov [esi+eax+8],edi` の identity と 16B stride エントリの +8 が port の `target_node_index`/`resolved_bone_index`/`keyframe_data_index` のどれか ③【高】**V-371-1 predicate `virtual+0x8C`** の戻り値の意味 ④【中】**V-371-5** `[seq+0x40]`→`[+0x7C]` の root identity と `[+0x5C]/[+0x60]`。**到着まで name→node 解決と格納は着手しない**（推測実装の回避）。
 - **並行状況**: #148 は verifier 再レビューがサブエージェント利用上限で3回とも失敗（指摘反映・コミット `584bd28e`／記録 `bf8ce9e2` 済み・上限解除後に再試行）。RE レーンは #152 直列消化で #151/#154 は順番待ち。
 - **次**: ①`de5110c6` の verifier レビュー（上限解除後・#148 の再レビューと同時に）②#154 到着次第 name→node 解決の実装 ③#151 到着で CLAS `+0x08` と chargen クラス適用 ④n5b は未マージ群（人間ゲート）に追加。
+
+## 2026-11-15 (dm) — #153② 完遂: fn `0x474530`＝**「Morph」検証＋ディスパッチ fn**・`byte [esp+0x38]`＝**Morph 検証の合否（count 一致・getter 一致・非自己）[確定(命令＋文字列)]**（v391・V-383-1）
+
+- **成果物**: `tmp/re/v391_morph_flag_ruling.md`（probe **v391_1..3 全 EXIT=0**）。台帳 **row367（bak217）**・`round_verify` **ALL OK**（rows 31..367 / total 253 / done 248 / open 5）。ai-todo #153 に note（束②消化）。v 採番 **v391 消費（次=v392＝#153③）**。
+- **fn `0x474530` [確定(命令＋文字列)]**: **「Morph」検証＋ディスパッチ fn** — decompiled L92858 `// FUN_00474530 @ 0x474530`／L92862 `int __thiscall FUN_00474530(int param_1,int param_2,float param_3,int param_4)`。body が **2種の Morph エラー trace**: `0xA3CA28` = `"Morph Error: Trying to morph from sequence to itself.\r\n'%s' on '%s'."`（L92971/474812）／`0xA3C9C8` = `"Morph Error: Controller count not the same.\r\n'%s' has %d controllers and\r\n'%s' has %d on '%s'."`（L92977/47493A）。他の "Morph" ヒット（L249000〜）は **FaceGen/HairMorph＝別系統で無関係**。
+- **`byte [esp+0x38]` [確定(命令)]**: **Morph 検証の合否フラグ** — **writers＝3件のみ**: ①`0x4745BA: =0`（初期化・slot 取得失敗時はそのまま）②**`0x47480B: =1`（検証成功）** ③`0x47482A: =0`（self morph エラー時のリセット）。
+  - **成功条件（=1）**: (a) **`0x51AAD0` getter の2回呼び出し結果が一致**（`cmp bl,al`）(b) **`[edi+0xC] == [ebp+0xC]`（controller count 一致）** (c) **`ebp ≠ edi`（非自己）**。
+  - **失敗時は 0 のまま**: getter 初回 fail（`je 0x47482F`）／getter 結果差（`jne 0x47482F`）／**count 不一致（`jne 0x474926` → trace → `jmp 0x47482F`）**／self（trace → `=0`）。
+- **分岐の確定 [確定(命令)]**: **flag≠0（成功）→ `0x474953` → `0x6C4060`（blend wrapper → `0x6C9E00` → state4/state5 ブレンド対）**／**flag==0 → `0x474977` → `0x6C4000`（crossfade → state3/state2・A active/B inactive ゲート付き）**＝**「controller count が一致する同期 blend（Morph）／不一致なら plain crossfade へのフォールバック＋エラーログ」**。
+- **`[seq+0xC]` [確定(文字列)]**: **controller count**（count 不一致 trace の `%d` 引数＝`0x4747FD`/`0x474800` の cmp）。
+- **V-383-1 への回答**: flag は **Morph 検証の合否**（init 0 → 成功1 → self で0リセット）。v383 の「blend/crossfade 選択 byte」は正しく、**その入力＝controller count 一致・getter 一致・非自己の3条件**と確定。
+- **残点 V-391-1..3**: 1=**`0x51AAD0` getter の identity**（何を返す byte か・check1/check2 の意味）【低】／2=**fn `0x474530` の正式名**（decompiled FUN_ 名のみ）＋`[seq+0xC]` は文字列根拠で exe label 不在【低】／3=**`[esp+0x28]`（`0x4747D9`/`0x474833` の別 byte flag）の意味**【低】。
+- **教訓**: **prologue の sub esp/push 数から引数スロットを確定 → flag writers 全3件 census → trace 文字列実読で概念名（Morph）を確定**。
+- **次**: #153③V-383-2（`0x6C5C70` identity）→ 次 v 採番 v392。

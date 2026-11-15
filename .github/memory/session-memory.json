@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-15T05:52:56Z",
+  "lastUpdated": "2026-11-15T06:02:37Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11475,14 +11475,28 @@
         "re-blocked"
       ],
       "content": "2026-11-15 #45 N5b increment（commit de5110c6・branch n5b-keyframe-reader・base f431795e）: StoreTargets 相当の前提として NiStringPalette を読めるようにした。誰も読んでいなかった: orig_src/nif_parser.cpp:1654-1656 は skip、port の sequence reader は let _string_palette で破棄（block.rs:1258）、resolveControllerReferences は index のみ＝名前解決を持たない。追加したのは nif-core::StringPalette {palette, declared_length} と name_at(offset)（0xFFFF センチネルで None＝v371 §2.3-2 [確定(命令)]／端以降 None／palette でない block index は None／名前途中 offset は末尾まで＝エンジン base+off と同型）、公開 API は NifParser::parse_string_palette(index)。レイアウトは実データで固定: bsa_Extraction の demdooranim01.nif の palette 67B（DEMdoorAnim01Door@0 / NiTransformController@18 / DEMdoorAnim01Door NonAccum@40・Length=67・NUL 区切り）をテスト fixture にそのまま採用。検証: cargo test --offline --workspace（AGENTS ゲート）= 31 suites / 194 passed / 0 failed（master baseline 176・nif-core 46）・cargo fmt --check 追加分は差分0・git diff --check クリーン。残りは RE #154 へ委譲して着手停止（推測禁止）: FindChild virtual+0x4C の探索範囲（v371 §2.2-C は [推定高] のまま）／V-371-4 結果格納の対応先（0x6C9B12 mov [esi+eax+8],edi が port の target_node_index/resolved_bone_index/keyframe_data_index のどれか）／V-371-1 predicate virtual+0x8C の意味／V-371-5 [seq+0x40]→[+0x7C] の root identity。STATE (cw2)。"
+    },
+    {
+      "id": "153-v391-morph-flag-2026-11-15",
+      "timestamp": "2026-11-15T06:02:37Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-153",
+        "n5b",
+        "re",
+        "v391"
+      ],
+      "content": "2026-11-15 #153②（V-383-1）を v391 で裁定: fn 0x474530 の byte [esp+0x38] の元を確定。成果物 tmp/re/v391_morph_flag_ruling.md（probe v391_1..3 全 EXIT=0）・台帳 row367（bak217）・round_verify ALL OK（rows 31..367 / total 253 / done 248 / open 5）・STATE (dm)。fn 0x474530=[確定(命令＋文字列)]: 「Morph」検証＋ディスパッチ fn — decompiled L92858 addr 注記／L92862 シグネチャ・body が2種の Morph エラー trace: 0xA3CA28=\"Morph Error: Trying to morph from sequence to itself...\"／0xA3C9C8=\"Morph Error: Controller count not the same...\"（他の Morph ヒットは FaceGen/HairMorph＝別系統）。byte [esp+0x38]=[確定(命令)]: Morph 検証の合否フラグ — writers=3件のみ（0x4745BA=0 初期化／0x47480B=1 検証成功／0x47482A=0 self エラー時リセット）・成功条件=(a) 0x51AAD0 getter 2回呼び出し結果一致 (b) [edi+0xC]==[ebp+0xC]（controller count 一致）(c) ebp≠edi（非自己）・失敗時0維持（getter fail／結果差／count 不一致 jne 0x474926→trace→jmp／self trace→0）。分岐=[確定(命令)]: flag≠0（成功）→0x474953→0x6C4060（blend→0x6C9E00→state4/5）／flag==0→0x474977→0x6C4000（crossfade→state3/2）＝「count 一致の同期 blend（Morph）／不一致なら plain crossfade フォールバック＋エラーログ」。[seq+0xC]=[確定(文字列)]: controller count（trace の %d 引数）。残点 V-391-1..3（1=0x51AAD0 getter identity【低】/2=fn 正式名＋[seq+0xC] exe label 不在【低】/3=[esp+0x28] 別 byte flag の意味【低】）。教訓: prologue の sub esp/push 数で引数スロット確定→flag writers 全3件 census→trace 文字列実読で概念名確定。v 採番 v391 消費（次=v392=③V-383-2）。"
     }
   ],
   "metadata": {
-    "totalEntries": 794,
+    "totalEntries": 795,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-15T05:52:56Z",
-    "entry_count": 794,
-    "last_updated": "2026-11-15T05:52:56Z"
+    "lastUpdated": "2026-11-15T06:02:37Z",
+    "entry_count": 795,
+    "last_updated": "2026-11-15T06:02:37Z"
   }
 }
