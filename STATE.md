@@ -1153,3 +1153,18 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
   ラウンドで自側を改名して解消済み（RE 側の (co)/(cp) は不変更）。
 - **同席**: RE レーンの (cq)-(cs)（v369/v370/v371・#147/#144/#145 完了）は **064ae57e** で記録済み（本ラウンドは重複記録しない）。supermemory に #146 完了と検証スクリプトの install 欠落教訓を登録。
 - **次**: ①StoreTargets 相当 increment（v371 [部分確定] の範囲で名前ベース解決）②#149 名前検証 ③#148 ClassData flags 型の実データ確定と修正 ④#137/#127/#96 D ⑤未マージ7ブランチ（race-filter 1e203e1b・race-persist 7bf40e79・inc4 f431795e 等）は人間ゲート待ち。
+
+## 2026-11-15 (ct) — #45 N5b 残点2件完遂: 骨解決＝**Bip02/Bip01 FindChild→子[+0x1C]→registry 照合→field8=base+idx*48 [確定(命令)]**・clip は EXE に1対1不在 [確定(否定側)]（v372）
+
+- **成果物**: `tmp/re/v372_nif_resolve_residuals_ruling.md`（probe **v372_1..5 全 EXIT=0**）。台帳 **row348（bak198）**・`round_verify` **ALL OK**（rows 31..348 / total 234 / done 229 / open 5）。ai-todo #45 に note（**残件ありで complete せず**）。v 採番 **v372 消費（次=v373）**。経緯: #145（v371）の残点 V-371-2/3 を #45 N5b ③④に必須として消化。
+- **③ 骨解決経路 [確定(命令)]**: StoreTargets **ループ終了後の epilogue**（`0x6C9B54..0x6C9B9B`）で **`root->virtual+0x4C('Bip02'(0xA79CD0))` →（未処理時）`FindChild('Bip01'(0xA30968))` → その子 `[+0x1C]`** を取得 → **`0x6C6910(owner, Bip01子)`（E8 callers=1＝StoreTargets 専用）**。
+  - `0x6C6910`: ①`push 0xB3CD7C; call 0x700010`（**v348 attach パイプラインと同一 registry**）②各 block（配列A stride16・i`<[owner+0xC]`）について **配列B（`[owner+0x18]`）の u16 field+4（node 名 offset・0xFFFF→NULL）で `root->FindChild(name)`** ③ノードを **registry obj のポインタ配列 `[+0x40]`（count `[+0x44]`）と線形照合 → 一致 index cx** ④**cx≠0xFFFF なら `配列A[i].field8 = [+0x3C] + cx*48`**（48=0x30 stride・**未解決時は store が飛ぶ＝NULL のまま**）。
+  - 消費側 **`0x6C6A50`**（callers `0x6C9BEA/0x6C9D70/0x6C9E55`）＝**field8 の `virtual+0x98(block,0.0,1.0,flag)` 呼び出し → 結果 byte を `field+0xC` へ**・近接 `0x6C6AC0` は `[+0xC]` を `virtual+0x9C` へ渡す [確定(命令)]。
+  - **port 対応**: `target_node_index`（-1シード）⇔ **EXE field8（ポインタ・NULL シード）**＝名前ベース解決の正典アルゴリズムは同一。
+- **④ 配列対応 [確定(命令)]**: registry の **名前→オブジェクト対応表（`[+0x3C]`=base／`[+0x40]`=ptr 配列／`[+0x44]`=count・48B stride）＝名前ベース対応**（block 添字順ではない）。
+- **V-371-2 clip [確定(否定側)]＋[部分確定]**: StoreTargets は **clip を構築しない**（成功パス `0x6FFE90`＝SEH＋初期化/接続系・`mov [esi+0x34],0`×2＋IAT ヘルパのみ）・`'clip'` 文字列は XML 系（clipwindow/clips/ClipDist）のみで **AnimationClip 名の EXE 文字列不在**・NiTextKeyExtraData ctor `0x6D7780` の **E8 callers=0** → **port `AnimationClip` は EXE に1対1対応オブジェクトを持たない＝port 側の再構成**・EXE 側の実体は **field8＋field+0xC の2つのみ** [部分確定]。
+- **補足実測**: `0x6F94A0`=name→node FindChild ヘルパ（registry `0xB3CAC0` 経由・callers40）／`0x478070`=skinned mesh 系 Bip01 検索→骨テーブル初期化（**StoreTargets とは別経路**）／`'skeleton.'(0xA3C8DC)` の .text imm xref=**0件 [確定負]**／ループヘッダ（`[esp+0x24]`=i・`shl eax,4`→i*16）で v371 の stride16・2配列と整合。
+- **残点 V-372-1..3**: 1=registry `0xB3CD7C` の正体と 48B stride オブジェクトの種別（NiKeyframeManager の keyframe data 群 vs 骨オブジェクト群・`[+0x3C/40/44]` の初期化元 decode で切り分け）【**高・#45 ④の最終確定に必要**】／2=`0x6C9BA0` 帯 fn 群（`0x6C9D70/0x6C9E55`）の所属【中】／3=`[esp+0x38]` special-case フラグの設定元【中】。
+- **教訓**: **epilogue を unfiltered で取る**とループ後の骨解決が漏れずに見える（filter では失敗しうる）。
+- **main への回答（#45）**: N5b ③は着地可（名前ベース解決の正典確定）・④の最終確定は V-372-1 が次 probe。
+- **次**: RE レーンの open は人間ゲートのみ（#130-1/#82/#47/#20/#101）。次 probe 入口＝V-372-1（次 v 採番 v373）。

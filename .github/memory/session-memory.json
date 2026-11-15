@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-15T01:00:38Z",
+  "lastUpdated": "2026-11-15T01:08:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11158,14 +11158,29 @@
         "android"
       ],
       "content": "2026-11-15 #146 完了: Race タブを playable 種族10件のみにフィルタ（commit 1e203e1b・branch fix-chargen-race-filter・base 024eda1a・3ファイル +20/-0）。正典=RE #147/v369: RACE DATA(36) byte32..35 u32 bit0=playable [確定]（実データ15/15 分離）・EXE は DATA 全体を [TESRace+0x50] へ memcpy し byte32=[+0x70] [確定(命令)]・表示条件=bit0 のみ [確定(命令)]。実装=RaceData.flags 追加＋decodeRace の findSubRecord+size>=36+memcpy(data+32,4)（EyesData/HairData と同一形状）＋loadRacesFromESM で (flags&1u)==0→continue。DATA なし→flags0→スキップ（ctor 既定値 V-369-4 [未確定] のため発明しない）。verifier APPROVE 1回目（全6項目・RaceData 破壊的読み手0件・index0 假定コードなし・スコープ3ファイル）。emu PASS: 10種族のみ（Argonian 先頭・既定選択）で非playable5種が完全排除・行タップで Breton ハイライト移動・Create 正常（name 行+quest 1002+crash none・formID ログは race-persist 側機能のため当ブランチ N/A）。教訓: 検証スクリプト流用時に install 手順が欠落し旧 APK を再検証（formID が前回値と同一で発覚）→ emu 検証スクリプトは APK install+対象ビルド確認を必須化。verifier 発見の既存バグ（decodeClass の memcpy が uint8_t flags へ4バイト・esm_reader.cpp:1882）は #148 として起票。未マージブランチは人間ゲート待ち。"
+    },
+    {
+      "id": "45-n5b-residuals-v372-2026-11-15",
+      "timestamp": "2026-11-15T01:08:00Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-45",
+        "n5b",
+        "nif",
+        "re",
+        "v372"
+      ],
+      "content": "2026-11-15 #45 N5b 残点2件（V-371-2/3）を v372 で裁定: 骨解決と clip を確定。成果物 tmp/re/v372_nif_resolve_residuals_ruling.md（probe v372_1..5 全 EXIT=0）・台帳 row348（bak198）・round_verify ALL OK（rows 31..348 / total 234 / done 229 / open 5）・STATE (ct)。③ 骨解決=[確定(命令)]: StoreTargets ループ終了後 epilogue（0x6C9B54..0x6C9B9B）で root->FindChild('Bip02'(0xA79CD0))→（未処理時）FindChild('Bip01'(0xA30968))→その子[+0x1C]→0x6C6910(owner, Bip01子)（E8 callers=1 で StoreTargets 専用）。0x6C6910 は push 0xB3CD7C; call 0x700010（v348 attach と同一 registry）→ 各 block の配列B([owner+0x18]) u16 field+4 node 名で root->FindChild → registry obj のポインタ配列[+0x40]（count [+0x44]）と線形照合 → 一致 index cx なら 配列A[i].field8 = [+0x3C] + cx*48（48=0x30 stride・未解決時は store が飛ぶ＝NULL のまま）。消費側 0x6C6A50（callers 0x6C9BEA/0x6C9D70/0x6C9E55）＝field8 の virtual+0x98(block,0.0,1.0,flag) 呼び出し→結果 byte を field+0xC へ・近接 0x6C6AC0 は [+0xC] を virtual+0x9C へ渡す。port 対応: target_node_index（-1 シード）⇔ EXE field8（ポインタ・NULL シード）＝名前ベース解決の正典は同一。④ 配列対応=[確定(命令)]: registry の名前→オブジェクト対応表（[+0x3C] base／[+0x40] ptr 配列／[+0x44] count・48B stride）＝名前ベース対応で block 添字順ではない。V-371-2 clip=[確定(否定側)]＋[部分確定]: StoreTargets は clip を構築しない（0x6FFE90＝SEH＋初期化/接続系・'clip' 文字列は XML 系のみ・NiTextKeyExtraData ctor 0x6D7780 E8 callers=0）→ port AnimationClip は EXE に1対1対応オブジェクトなし＝port 側の再構成・EXE 実体は field8＋field+0xC の2つのみ。補足: 0x6F94A0=name→node FindChild ヘルパ（registry 0xB3CAC0 経由・callers40）／0x478070=skinned mesh 系 Bip01 検索→骨テーブル初期化（別経路）/'skeleton.' の .text imm xref=0件 [確定負]。残点 V-372-1..3（1=registry 0xB3CD7C の正体と 48B stride オブジェクトの種別【高・#45 ④の最終確定】/2=0x6C9BA0 帯 fn 群の所属【中】/3=[esp+0x38] special-case フラグ設定元【中】）。教訓: epilogue を unfiltered で取るとループ後の骨解決が漏れずに見える。v 採番 v372 消費（次=v373）。"
     }
   ],
   "metadata": {
-    "totalEntries": 772,
+    "totalEntries": 773,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-15T01:00:38Z",
-    "entry_count": 772,
-    "last_updated": "2026-11-15T01:00:38Z"
+    "lastUpdated": "2026-11-15T01:08:00Z",
+    "entry_count": 773,
+    "last_updated": "2026-11-15T01:08:00Z"
   }
 }
