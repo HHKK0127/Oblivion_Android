@@ -9252,6 +9252,35 @@ bool Renderer::handleBackKey() {
             return true;
         }
 
+        // 3a. The title screen owns BACK before any gameplay overlay. Several
+        //     panels default to visible until first opened (an empty UIShop does
+        //     too), so falling through to them first let an invisible menu eat
+        //     the key and left the Credits overlay stuck on screen. Credits is
+        //     dismissed through TitleScreen::onKeyPress(4), which Android's BACK
+        //     key never reaches: it is not in MENU_KEY_CODES, so it only flows
+        //     here through nativeOnBackKey.
+        if (showTitleScreen) {
+            if (titleScreen && titleScreen->getState() == TitleScreenState::CREDITS) {
+                titleScreen->onKeyPress(4);  // state = MENU, logs "Credits dismissed"
+                LOGI("handleBackKey: Closed Credits");
+                return true;
+            }
+            LOGI("handleBackKey: On TitleScreen - not consuming, Activity will handle");
+            return false;
+        }
+
+        // 3aa. Character creation mirrors its render gate. With the gameplay
+        //      panels below genuinely hidden (an empty UIShop no longer counts
+        //      as open), falling through during creation would reach the
+        //      pause-menu/exit branches and change mid-flow behavior. The
+        //      original RaceSexMenu back/cancel behavior is pending the RE
+        //      ruling (#130), so consume the key without changing state.
+        if (showCharacterCreation && characterCreationUI &&
+            characterCreationUI->isVisible()) {
+            LOGI("handleBackKey: Character creation - back consumed (cancel behavior pending RE #130)");
+            return true;
+        }
+
         // 3b. In-game overlays. In the original, ESC closes the topmost active
         //     menu (0x00b3a6d4 != 0); it never stacks a new menu on top of one.
         if (uiInventoryPanel && uiInventoryPanel->isVisible()) {
@@ -9305,11 +9334,8 @@ bool Renderer::handleBackKey() {
             return true;
         }
 
-        // 4. Title screen back: don't consume - let Activity show exit dialog
-        if (showTitleScreen) {
-            LOGI("handleBackKey: On TitleScreen - not consuming, Activity will handle");
-            return false;
-        }
+        // 4. Title screen back is handled in 3a above (the gameplay overlay
+        //    checks in 3b must never run while the title screen is active).
 
         // 5. Launcher screen: handle sub-screens, then main goes to exit
         if (showLauncher && launcherScreen) {
