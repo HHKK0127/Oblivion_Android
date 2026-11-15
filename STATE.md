@@ -1168,3 +1168,16 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **epilogue を unfiltered で取る**とループ後の骨解決が漏れずに見える（filter では失敗しうる）。
 - **main への回答（#45）**: N5b ③は着地可（名前ベース解決の正典確定）・④の最終確定は V-372-1 が次 probe。
 - **次**: RE レーンの open は人間ゲートのみ（#130-1/#82/#47/#20/#101）。次 probe 入口＝V-372-1（次 v 採番 v373）。
+
+## 2026-11-15 (cu) — #45 N5b ④の最終確定: registry＝**`NiMultiTargetTransformController` シングルトン [確定(b07+命令)]**・48B＝**`NiBlendTransformInterpolator` [確定(b07+命令)]**（v373・V-372-1 解消）
+
+- **成果物**: `tmp/re/v373_registry_identity_ruling.md`（probe **v373_1..4 全 EXIT=0**）。台帳 **row349（bak199）**・`round_verify` **ALL OK**（rows 31..349 / total 235 / done 230 / open 5）。ai-todo #45 に note（**残件ありで complete せず**）。v 採番 **v373 消費（次=v374）**。経緯: v372 の残点 V-372-1 を消化。
+- **registry `0xB3CD7C` [確定(b07+命令)]**: **`NiMultiTargetTransformController` の静的シングルトン** — (i) `0x6C5F50: mov eax,0xB3CD7C; ret` が **vtable `0xA79984` の slot1**（b07 row994＝getter が返す）(ii) ctor `0x6C5EE0` が `mov [esi],0xA79984`＋`[+0x3C/40/44]=0` 初期化 (iii) **`0x700010(obj,key)`＝リンクリスト lookup**（`[obj+0xC]` 先頭・各ノード `next=[+0x34]`・`virtual+4`(GetName) の **name ptr をポインタ比較** `cmp eax,edi`・一致ノード返却/不一致 NULL・`ret 4`）。xrefs 13件（`push+call` 系＝`0x4732EB`/`0x47F762`/`0x4E3EC6`/**`0x6C693D`（骨解決）**/**`0x6C8251`（StoreTargets 前提）**＋リンクリスト走査型 `cmp eax,0xB3CD7C`）。
+- **48B(0x30) stride [確定(b07+命令)]**: **`NiBlendTransformInterpolator`（48B）** — (i) `0x6CBD02: push 0x30; call 0x401F00`(new) → `0x6CC4E0`(基底) → **`mov [esi],0xA79E54`** (ii) dtor `0x6CBCB0` も同一 vtable → **b07 row870** (iii) accessor `0x6CFC05`/`0x6CFDE5`＝`lea eax,[eax+eax*2]; shl eax,4; add eax,[ecx+0x3C]; ret`（**idx*48→ptr**）。**48B 格納 site census 12件**（骨解決 `0x6C6A34`／前提 fn `0x6C8502`（`mov [ebx+8],eax; or byte [eax+0xC],1`）／accessor 系 `0x6CFC05/0x6CFDE5/0x6CFFC6/0x6D01A6/0x6D0206`）で **field8=base+idx*48 が共通**。
+- **3フィールド [部分確定]**: `[+0x3C]`=48B base／`[+0x40]`=ptr 配列（4B 要素）／`[+0x44]`=**count（u16）**。グローバル `0xB3CBA4/A8/AC/B0`（base/ptr/count/extra）から various object へコピーする初期化群 **14件**（`0x6C374D`/`0x6C3835`（vtable `0xA79584`＝`NiBlendAccumTransformInterpolator` b07 row863）/`0x6CE4E8`/`0x6CB66A`/`0x6CB84B`/`0x6C3CCF`/`0x6CBD79`/`0x6CC02B`/`0x6CEBDE`/`0x470ADE`/`0x47166E`/`0x47C796`/`0x6CF6C5`）を実測。
+- **#45 N5b ④の最終確定**: **field8 に格納されるのは `NiBlendTransformInterpolator` のポインタ（`base+index*48`）＝ controlled block → interpolator の対応付け**。port の `clip` は interpolator 群に対応する port 側再構成（v372 §2.4 の「1対1不在」を補強）。
+- **`0x6C8220` の再解釈（v371 §2.2A の補強）**: `push 0xB3CA58; call 0x700010`（別 registry）→ `[edx+edi*4]` 照合 → `0x6C5F80`（ptr 配列 set/get）→ `push 'Bip01'; call 0x98262D`(strcmp) → `0x6FFE90` → `0x6C8502`（48B 格納＋`or [eax+0xC],1`）まで行う **前提チェック兼 interpolator 格納 fn** [確定(命令)]。
+- **残点 V-373-1..3**: 1=`0xB3CBA4`（base）の writer（.bss 静的初期化か未発見 init fn・**interpolator 実配列の構築元**）【中・#45 に必要】／2=`NiBlendTransformInterpolator` の 48B フィールド布局（`[+0x0C]` byte flag 意味）【中】／3=`0xB3CA58` registry の正体【低】。
+- **教訓**: **b07 RTTI 表×命令の二重根拠で TD 不在クラスも確定できる**（getter の vtable slot1 → b07 行照合 → dtor vtable 追跡）。
+- **main への回答（#45）**: N5b ④は着地可（interpolator 対応付けの正典確定）・残点1が interpolator 配列構築元の次 probe。
+- **次**: RE レーンの open は人間ゲートのみ。次 probe 入口＝V-373-1（次 v 採番 v374）。
