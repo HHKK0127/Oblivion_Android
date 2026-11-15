@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-15T03:58:54Z",
+  "lastUpdated": "2026-11-15T04:08:40Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11373,14 +11373,28 @@
         "v385"
       ],
       "content": "2026-11-15 #152④（V-375-1）を v385 で裁定: interpolator 配列の第2/第3構築経路を確定（#152 中優先帯①〜④全完遂）。成果物 tmp/re/v385_clone_load_paths_ruling.md（probe v385_1..2 全 EXIT=0）・台帳 row361（bak211）・round_verify ALL OK（rows 31..361 / total 247 / done 242 / open 5）・STATE (dg)。第2経路 0x6D018C=[確定(命令)]: fn 0x6D0170＝interpolator 配列の間コピー（ret 8）— E8 callers=0x6D034B の1本、その fn は head 0x6D02E0＝NiMultiTargetTransformController（vtable 0xA79984）の slot6(+0x18) [確定(vtbl)]・slot6 本体＝new(0x48)→基底 ctor 0x6D04E0→vtable 設定→3フィールド0初期化→0x6D0170(this,new,arg) で配列コピー→新オブジェクト返し＝Clone/Copy 相当（正式名[推定]）。第3経路 0x6D03AA=[確定(vtbl)+確定(命令)]: fn 0x6D0370＝vtable slot7(+0x1C)＝Load（slot+0x1C=Load 規約・v348/v350 一致）・E8=0（virtual）・本体＝[arg+0x21C]（stream reader・v350 と同一）の virtual で count 読み→0x6D0010 構築→0x712A90(arg)（link 解決[推定高]）で ptr 配列を埋める。2経路＝『Clone』と『Load』＝runtime 初期化ではない。setup helpers 0x6D0530/0x6D0550＝0x715F40＋0xA010068/0xA01006D バージョン比較の version-gated 読取 setup [部分確定]。新規残点 V-385-1..3（1=0x6CC480 要素コピーの方向【中】/2=slot6 正式名 Clone vs Copy【低】/3=0x6D0530/0x6D0550 役割【低】）。教訓: vtable slot 実測×call site find_head で method 帰属確定・E8=0 が virtual の証。v 採番 v385 消費（次=v386=⑤・低優先帯）。"
+    },
+    {
+      "id": "152-v386-blockflag-priority-2026-11-15",
+      "timestamp": "2026-11-15T04:08:40Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-152",
+        "n5b",
+        "re",
+        "v386"
+      ],
+      "content": "2026-11-15 #152⑤（V-381-1）を v386 で裁定: [block+0xD] と s1 の優先関係 census を確定（低優先帯開始）。成果物 tmp/re/v386_blockflag_priority_ruling.md（probe v386_1..2 全 EXIT=0）・台帳 row362（bak212）・round_verify ALL OK（rows 31..362 / total 248 / done 243 / open 5）・STATE (dh)。優先規則=[確定(命令)]: 0x6C6A50 内 [block+0xD]==0xFF → s1（movsx）／非0xFF → [block+0xD]（movzx）が優先（v381 再掲）・既定 0xFF は resetter 2本（0x6C62E0 zero-init+0xFF ret/E8=0、0x6C6300 E8 caller 0x6C6675）が保証。非0xFF 書手=[確定(否定側)]＋[部分確定]: 帯内 census＝3件のみ（resetter 2本＋0x6C68FB）・0x6C68FB は fn 0x6C6870（E8=0x6C86C3 の1本）＝block フィールドコピー（+4/+8/+0xC/+0xD 順コピー・ret 4）＝独立代入ではなく伝播→非0xFF の原本供給元は帯内不在＝残点。s1 渡し元=[確定(命令)]: E8 callers=3本 — ①0x6C9BEA（Activate 内）＝push [esp+0xC]＝Activate の s1②0x6C9D70＝push edi③0x6C9E55＝push ebx（wrapper 引数由来）。運用まとめ: block flag が既定 0xFF の間は s1 が priority になり、非0xFF 設定 block は flag 優先。残点 V-386-1..2（1=非0xFF 供給元（帯外）【低】/2=0x6C62E0/0x6C6300 所属【低】）。教訓: 書手全形式 census（C6/88）で3件のみ確定→fn 同定（reset×2＋copy×1）。v 採番 v386 消費（次=v387=⑥）。"
     }
   ],
   "metadata": {
-    "totalEntries": 787,
+    "totalEntries": 788,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-15T03:58:54Z",
-    "entry_count": 787,
-    "last_updated": "2026-11-15T03:58:54Z"
+    "lastUpdated": "2026-11-15T04:08:40Z",
+    "entry_count": 788,
+    "last_updated": "2026-11-15T04:08:40Z"
   }
 }

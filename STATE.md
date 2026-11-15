@@ -1343,3 +1343,14 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-385-1..3**: 1=**`0x6CC480`（= `jmp 0x6CD3D0`）の要素コピーの方向と内容**（this=orig 要素／stack=new 要素／param=arg2 の意味）【中】／2=**slot6 の正式名**（Clone vs Copy・Gamebryo シグネチャ突合）【低】／3=**`0x6D0530`/`0x6D0550` の正確な役割**【低】。
 - **教訓**: **vtable slot 実測（slot6/7）× call site の find_head で method 帰属を確定**・**E8=0 が virtual の証**。
 - **進捗**: **#152 の中優先帯①〜④（V-381-2/V-379-2/V-378-2/V-375-1）が全完遂**。次＝低優先帯⑤V-381-1 以降（v386+）。
+
+## 2026-11-15 (dh) — #152⑤ 完遂: `[block+0xD]` と s1 の優先＝**0xFF 既定（resetter 2本）→ s1／非0xFF → flag 優先 [確定(命令)]**（v386・V-381-1・低優先帯開始）
+
+- **成果物**: `tmp/re/v386_blockflag_priority_ruling.md`（probe **v386_1..2 全 EXIT=0**）。台帳 **row362（bak212）**・`round_verify` **ALL OK**（rows 31..362 / total 248 / done 243 / open 5）。ai-todo #152 に note（束⑤消化）。v 採番 **v386 消費（次=v387＝#152⑥）**。
+- **優先規則 [確定(命令)]**: `0x6C6A50` 内 **`[block+0xD] == 0xFF` → s1（`movsx` して RegisterInterpolator の priority へ）／非0xFF → `[block+0xD]`（`movzx`）が優先**（v381 再掲）。**既定 0xFF は resetter 2本が保証** — `0x6C62E0`（zero-init 後 `mov [eax+0xD],0xFF; ret`・E8=0＝ctor/reset）と `0x6C6300`（E8 caller `0x6C6675`）。
+- **非0xFF 書手 [確定(否定側)]＋[部分確定]**: 帯内（0x6C6000..0x6CA000）の書手 census＝**3件のみ**（resetter 2本＋`0x6C68FB`）。**`0x6C68FB` は fn `0x6C6870`（E8 callers＝`0x6C86C3` の1本）＝block 構造のフィールドコピー**（`[edi+4]=[ebx+4]`/`[edi+8]=[ebx+8]`/`[edi+0xC]=[ebx+0xC]`/`[edi+0xD]=[ebx+0xD]` を順にコピーして返す・`ret 4`）＝**独立した priority 代入ではなくソースからの伝播** → **非0xFF の原本供給元は帯内に不在**（コピー経由のみ）＝帯外 census は残点。
+- **s1 渡し元 census [確定(命令)]**: `0x6C6A50` の **E8 callers＝3本** — ①`0x6C9BEA`（Activate `0x6C9BA0` 内）＝`push [esp+0xC]`＝**Activate 自身の s1（priority）** ②`0x6C9D70`＝`push edi` ③`0x6C9E55`＝`push ebx`（`mov ecx,esi; mov [esi+0x58],0` 直後）— ②③は wrapper 引数由来の動的値。
+- **運用まとめ**: **block 側 flag が既定 0xFF の間は s1（Activate の priority 引数）が RegisterInterpolator の priority になり、明示的に非0xFF が設定された block は flag が優先** [確定(命令)]。
+- **残点 V-386-1..2**: 1=**`[block+0xD]` の非0xFF 供給元**（帯外・init fn `0x6C6300` のソース（`0x6C6675` caller 側）の decode で追えるか）【低】／2=**`0x6C62E0`/`0x6C6300` の所属**（block ctor/reset 系 [推定]・`0xA79EFc` 定数との関係）【低】。
+- **教訓**: **書手の全形式 census（C6/88）で「3件のみ」を確定 → 各 site の fn 同定（reset×2＋copy×1）**。
+- **次**: #152⑥V-380-2（`[esi+0x48]` フィールド名＋`0xA7DEB4` 定数）→ 次 v 採番 v387。
