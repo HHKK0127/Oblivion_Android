@@ -1366,3 +1366,14 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **debug print の format 文字列実読 ＋ decompiled.c の fn def 照合で、推測なしのフィールド命名解決ができる**。
 - **docs との不整合**: **v379/v380 の「s3=duration」を確定訂正（正＝Weight）**・v380 の `[esi+0x48]`「ease out 時間 [推定]」は正名＝**Offset**（命名訂正）。
 - **次**: #152⑦V-377-2（`[+0x4C/50/54/58]` フィールド名）→ 次 v 採番 v388。
+
+## 2026-11-15 (dj) — #152⑦ 完遂: `[seq+0x54]`＝**label 不在＋frequency 正規化保留時刻 [推定高]**・`[seq+0x58]`＝**label 不在＋crossfade 相手 sequence [確定(命令)]**（v388・V-377-2 4/4 クローズ）
+
+- **成果物**: `tmp/re/v388_seq_fields_ruling.md`（probe **v388_1 全 EXIT=0**）。台帳 **row364（bak214）**・`round_verify` **ALL OK**（rows 31..364 / total 250 / done 245 / open 5）。ai-todo #152 に note（束⑦消化）。v 採番 **v388 消費（次=v389＝#152⑧・束の最後）**。
+- **経緯**: V-377-2 の前半2件（`+0x4C='Start'`/`+0x50='End'`）は **v387 で解決済み** → 本 v388 は残る **+0x54/+0x58** を裁定。
+- **`[seq+0x54]` [確定(否定側)]（label 不在）＋[確定(命令)]（挙動）**: **exe 自身の label は存在しない**（`FUN_006ca440` の print 11件に不在・decompiled.c のラベル付き書手0件・ヒットは全て vtable スロット呼び出しで別概念）。挙動: **−FLT_MAX＝未設定**（ctor/Deactivate/state1 各リセット）／**wrapper `0x6C9D30` 帯が `[+0x54] = arg / Freq(+0x28)`（頻度で割る）で設定**／state1 切替時に **`Offset(+0x48) = [+0x54] − time` へ変換**されて自身は −FLT_MAX リセット（`0x6CAA4A`）／fade path で未設定判定（`0x6CAB84`）→ **frequency 正規化された保留時刻 [推定高]・正名 [未確定]**。
+- **`[seq+0x58]` [確定(否定側)]（label 不在）＋[確定(命令)]（挙動）**: **crossfade 相手 sequence** — Activate が **s5 を `0x6C9BE0: mov [esi+0x58],edi` で格納**（先頭 `0x6C9BB6` で0リセット・**自己参照 `cmp eax,esi` で拒否**・`0x6C6110`/`0x6C6ED0` 検証）／Deactivate・各 wrapper が0リセット／**相手の `Freq(+0x28)` で割る（`0x6CAAD8`）・相手の `Last(+0x34)`/`Offset(+0x48)` を読む（`0x6CAB9F`/`0x6CABC6`）・テキストキー同期 `0x6C6B30` へ相手を渡す（`0x6CAAC0`）**＝v379/v380 の「相手 sequence」記述を命令で裏付け。
+- **V-377-2 全体＝4/4 裁定済み**: `+0x4C='Start'`／`+0x50='End'`（v387・label 確定）／`+0x54`=label 不在＋frequency 正規化保留時刻 [推定高]／`+0x58`=label 不在＋crossfade 相手 [確定(命令)]。
+- **残点 V-388-1..2**: 1=**`[+0x54]` の正名**（label 不在のため Gamebryo フィールド（m_fPhase/m_fStartTime 等）と usage（arg÷Freq・Offset 変換元）の突合）【低】／2=**`0x6CAA4A` の `Offset=[+0x54]−st1` の st1 の出所**【低】。
+- **教訓**: **label 不在は「print 列挙＋decompiled ラベル付き書手の全走査」で不在自体を証明してから挙動ベースに切り替える**。
+- **次**: #152⑧V-376-2（`0x73A5E0` identity）→ 次 v 採番 v389＝**束の最後の1件**。

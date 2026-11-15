@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-15T04:28:24Z",
+  "lastUpdated": "2026-11-15T04:37:26Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11401,14 +11401,28 @@
         "v387"
       ],
       "content": "2026-11-15 #152⑥（V-380-2）を v387 で裁定: [seq+0x48] のフィールド名と 0xA7DEB4 定数を確定（副次的に V-382-1 の s3 命名も解決）。成果物 tmp/re/v387_offset_field_ruling.md（probe v387_1..5 全 EXIT=0）・台帳 row363（bak213）・round_verify ALL OK（rows 31..363 / total 249 / done 244 / open 5）・STATE (di)。0xA7DEB4=[確定(実データ)]: u32 0x7F7FFFFF = FLT_MAX = 3.4028235e+38・fld; fchs＝−FLT_MAX＝無効/未設定マーカー（v187 L131 の blend cache と同一定数）・ctor 0x6C6550 は +0x2C=+FLT_MAX、+0x30/34/38/3C/48/4C/50/54=−FLT_MAX、+0x40/44/58/5C/60/64=0。[seq+0x48]=[確定(命令＋文字列＋decompiled)]: \"Offset\" — FUN_006ca440（=0x6CA440・decompiled L499341）のトレース FUN_0070fb90(\"Offset\", *(this+0x48))（L499403・EXE 文字列 0xA35FEC）・usage: ctor/Activate/state 遷移で −FLT_MAX（未設定）／fade 初回で −time／重み計算で fadd 加算→時間オフセット（フェード/重み計算の加算補正）[推定高]。（V-382-1 解決）s3 → [seq+0x1C] ＝ \"Weight\" [確定(命令＋文字列＋decompiled)] — decompiled L499367＋EXE 文字列 0xA79DF4・v379/v380 の s3=duration は誤り（fmul [esi+0x1c]＝fade 係数×Weight と整合）。NiControllerSequence 完全フィールドマップ [確定]: State(+0x44)/Weight(+0x1C)/Freq(+0x28)/Begin(+0x2C)/End(+0x30)/Last(+0x34)/WeightLast(+0x38)/LastScaled(+0x3C)/Offset(+0x48)/Start(+0x4C)/End(+0x50)（+0x30/+0x50 は 'End' label 再利用）・store offsets と 5/5 一致＝this=NiControllerSequence。残点 V-387-1..2（1=fn 0x6CA440 正式名【低】/2=Offset の数式上の役割【低】）。教訓: debug print の format 文字列実読＋decompiled.c fn def 照合で推測なしの命名解決。docs 不整合: v379/v380 の s3=duration を確定訂正（正=Weight）・v380 の [+0x48] ease out 記述は正名=Offset。v 採番 v387 消費（次=v388=⑦）。"
+    },
+    {
+      "id": "152-v388-seq-fields-2026-11-15",
+      "timestamp": "2026-11-15T04:37:26Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-152",
+        "n5b",
+        "re",
+        "v388"
+      ],
+      "content": "2026-11-15 #152⑦（V-377-2）を v388 で裁定: [seq+0x54]/[seq+0x58] を確定（V-377-2 は4/4 クローズ）。成果物 tmp/re/v388_seq_fields_ruling.md（probe v388_1 全 EXIT=0）・台帳 row364（bak214）・round_verify ALL OK（rows 31..364 / total 250 / done 245 / open 5）・STATE (dj)。前半2件（+0x4C='Start'/+0x50='End'）は v387 で解決済み。[seq+0x54]=[確定(否定側)]（label 不在）＋[確定(命令)]（挙動）: exe label は存在しない（FUN_006ca440 の print 11件に不在・decompiled.c ラベル付き書手0件）・挙動＝−FLT_MAX＝未設定（ctor/Deactivate/state1 リセット）／wrapper 0x6C9D30 帯が [+0x54]=arg/Freq(+0x28)（頻度で割る）で設定／state1 切替時に Offset(+0x48)=[+0x54]−time へ変換後に −FLT_MAX リセット（0x6CAA4A）／fade path で未設定判定（0x6CAB84）→frequency 正規化された保留時刻 [推定高]・正名 [未確定]。[seq+0x58]=[確定(否定側)]（label 不在）＋[確定(命令)]（挙動）: crossfade 相手 sequence — Activate が s5 を 0x6C9BE0 で格納（先頭0リセット・自己参照拒否・0x6C6110/0x6C6ED0 検証）／Deactivate・各 wrapper が0リセット／相手の Freq で割る（0x6CAAD8）・相手の Last/Offset を読む（0x6CAB9F/0x6CABC6）・テキストキー同期 0x6C6B30 へ相手渡し（0x6CAAC0）＝v379/v380 の記述を命令で裏付け。残点 V-388-1..2（1=[+0x54] の正名（Gamebryo フィールドとの usage 突合）【低】/2=0x6CAA4A の st1 出所【低】）。教訓: label 不在は print 列挙＋decompiled ラベル付き書手の全走査で不在自体を証明してから挙動ベースへ切り替える。v 採番 v388 消費（次=v389=⑧・束の最後）。"
     }
   ],
   "metadata": {
-    "totalEntries": 789,
+    "totalEntries": 790,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-15T04:28:24Z",
-    "entry_count": 789,
-    "last_updated": "2026-11-15T04:28:24Z"
+    "lastUpdated": "2026-11-15T04:37:26Z",
+    "entry_count": 790,
+    "last_updated": "2026-11-15T04:37:26Z"
   }
 }
