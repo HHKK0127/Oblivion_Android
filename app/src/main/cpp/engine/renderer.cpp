@@ -18,6 +18,7 @@
 #include "../game/encumbrance.h"
 #include "../game/merchant_factory.h"
 #include "../game/player_character_state.h"
+#include "../game/gmst_defaults.h"
 #include "../world/distant_lod/distant_lod_manager.h"
 #include "../world/distant_lod/original_lod_provider.h"
 #include "../world/distant_lod/original_object_lod_provider.h"
@@ -966,6 +967,19 @@ bool Renderer::initGameSystems() {
             }
             // Start game
             startGame();
+        });
+        characterCreationUI->setOnNameRejected([this]() {
+            // RE v370: the original's Done band notifies sNoNameCharacter
+            // and returns without the success tail, so the panel stays open
+            // behind the message box.
+            const char* body =
+                oblivion::gmst::getStringLive("sNoNameCharacter");
+            const std::string ok = localizationManager
+                ? localizationManager->getGameSetting("sOk", "Ok")
+                : std::string("Ok");
+            showMessage(body[0] != '\0' ? body
+                                        : "You must first enter a valid name.",
+                        {ok}, nullptr);
         });
         LOGI("UICharacterCreation initialized successfully");
     }
@@ -8749,6 +8763,25 @@ void Renderer::startGame() {
     }
 
     LOGI("startGame: Game world should now be visible");
+}
+
+bool Renderer::isCharacterNameInputActive() const {
+    // Mirror the render gate: the panel is only on screen when showCharacterCreation
+    // is set, and the keyboard belongs to it only while the NAME tab is selected.
+    return showCharacterCreation && characterCreationUI &&
+           characterCreationUI->isVisible() && characterCreationUI->isNameInputActive();
+}
+
+void Renderer::setCharacterName(const std::string& name) {
+    // The Android side already gates on ownership, but the sink is shared with
+    // the debug console, so refuse the write here too rather than letting a
+    // stray call blank the field while another panel owns the keyboard.
+    if (!isCharacterNameInputActive()) {
+        return;
+    }
+    if (characterCreationUI) {
+        characterCreationUI->setPlayerName(name);
+    }
 }
 
 bool Renderer::handleOptionsKey(int keyCode) {

@@ -585,6 +585,12 @@ class GameRenderer : GLSurfaceView.Renderer {
     external fun nativeOnConsoleKeyPress(key: Int): Boolean
     external fun nativeIsGameConsoleVisible(): Boolean
 
+    /** True while the character-creation NAME tab owns the soft keyboard. */
+    external fun nativeIsCharacterNameInputActive(): Boolean
+
+    /** Pushes the name field as it is typed (RE task #123: realtime write). */
+    external fun nativeOnCharacterNameChanged(name: String)
+
     // Exit request check
     external fun nativeIsExitRequested(): Boolean
 

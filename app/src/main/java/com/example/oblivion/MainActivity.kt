@@ -31,6 +31,7 @@ class MainActivity : Activity() {
     private var debugButtonPanel: LinearLayout? = null
     private var debugOverlayContainer: FrameLayout? = null
     private var consoleInputBridge: ConsoleInputBridge? = null
+    private var characterNameBridge: CharacterNameBridge? = null
     private var isDebugPanelVisible = false
     private var isDebugMenuOpen = false
 
@@ -175,9 +176,11 @@ class MainActivity : Activity() {
     }
 
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
-        // While the debug console is open the EditText owns the keyboard, so the
-        // title-screen key forwarding must not swallow Enter/D-pad.
+        // While the debug console or the character NAME field is open the
+        // EditText owns the keyboard, so the title-screen key forwarding must
+        // not swallow Enter/D-pad.
         if (consoleInputBridge?.isConsoleActive != true &&
+            characterNameBridge?.isNameInputActive != true &&
             event.action == android.view.KeyEvent.ACTION_DOWN && event.repeatCount == 0 &&
             event.keyCode in MENU_KEY_CODES) {
             gameRenderer?.nativeOnKeyPress(event.keyCode)
@@ -344,6 +347,9 @@ class MainActivity : Activity() {
             // Setup the debug console soft-keyboard bridge
             setupConsoleInputBridge()
 
+            // Setup character-creation NAME field soft-keyboard bridge
+            setupCharacterNameBridge()
+
             // Setup game data transfer buttons
             setupDataButtons()
 
@@ -367,6 +373,28 @@ class MainActivity : Activity() {
         }
         consoleInputBridge = ConsoleInputBridge(this, input) { gameRenderer }
         Log.i(TAG, "Console input bridge ready")
+    }
+
+    /**
+     * Wires the character-creation NAME field to the Android soft keyboard.
+     *
+     * It shares the console's invisible 1x1 input sink: the IME cannot attach
+     * to a GONE view, so whichever side native says owns the keyboard shows it
+     * and the other stays idle. Edits are pushed to native as they are typed,
+     * because the original writes the name in realtime rather than on submit
+     * (RE task #123).
+     */
+    private fun setupCharacterNameBridge() {
+        val input = findViewById<android.widget.EditText>(R.id.console_input_sink)
+        if (input == null) {
+            Log.w(TAG, "console_input_sink not found; character name input disabled")
+            characterNameBridge = null
+            return
+        }
+        characterNameBridge = CharacterNameBridge(this, input, { gameRenderer }) {
+            consoleInputBridge?.isConsoleActive == true
+        }
+        Log.i(TAG, "Character name input bridge ready")
     }
 
     private fun setupDebugButtons() {
@@ -415,6 +443,7 @@ class MainActivity : Activity() {
             findViewById<Button>(R.id.btn_debug_console)?.setOnClickListener {
                 gameRenderer?.nativeToggleDebugConsole()
                 consoleInputBridge?.refresh()
+                characterNameBridge?.refresh()
                 Log.d(TAG, "Toggled debug console")
             }
 
@@ -607,6 +636,10 @@ class MainActivity : Activity() {
         }
         // Do NOT call gameSurfaceView.onPause() - keep GL thread running
         // GLSurfaceView.onPause() kills the render thread, which prevents onSurfaceCreated
+        // Stop the NAME bridge first: it owns the TextWatcher on the shared
+        // sink, and the console's stop clears that sink. Tearing down in the
+        // other order blanks the character name whenever the activity pauses.
+        characterNameBridge?.stop()
         consoleInputBridge?.stop()
         mediaPlayer?.let {
             if (it.isPlaying) {
@@ -621,6 +654,7 @@ class MainActivity : Activity() {
         Log.i(TAG, "onResume")
         gameSurfaceView?.onResume()
         consoleInputBridge?.start()
+        characterNameBridge?.start()
         // Register predictive back gesture callback (Android 13+)
         if (android.os.Build.VERSION.SDK_INT >= 33) {
             backCallback?.let {
