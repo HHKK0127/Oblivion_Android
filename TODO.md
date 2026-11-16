@@ -307,6 +307,17 @@
   > ⑤[部分確定] V-437-3: flat array 先頭10件（0xB10290..0xB102B4）は (i) 全セクション ref 0 件＋(ii) FUN_0051b490 の name index が mov esi,1 起点（0x51B5DE/0x51B643）＝正のみで base 0xB102B8 の下方向（-10）へ到達不可 → dead data [推定高]（computed-address 到達は [未確定]）。[未確定] [esp+0x5c]（4th %s index）の書込み元（0x40A200..0x40A278 window に出現せず・読出のみ 0x40A29D）。同 window 判明: ループ counter＝xor esi,esi; mov [esp+0x4c],esi（0x40A239）→ call 0x470720 → movzx esi,ax → call 0x51aa00（low byte）→ lea edx,[eax+eax*8] → stride-0x24 group index。
   > 残点 V-438-1..3（1=type consumer特定（table lookup 形疑い）と 0x03 vs 0x15 語義差【低】／2=docs と machine の function 範囲不一致の横断 census 手法確立【低】／3=[esp+0x5c] 書込み元と flat array 先頭10件の computed-address 到達【低】）。
   > 教訓: type/enum 対応表は「全 record を walk して count 分だけ collection」（scatter region flat scan は1件しか当たらない＝v437_1 初版の失敗と訂正）／同名複数 code は usage 列挙で分離確定（語義差は consumer 無しなら [未確定] で正直に残す）／docs 完全性は「annotation 形式統一性＋raw address grep＋gap 分布」の3系統で検証／docs body に call が無いのに machine に call がある＝docs body 範囲不一致の決定打（対象 fn の docs 内 call 数 grep で即判別）／branch census（対象 range への全 jump/call の head 集計）で別 fn/同 fn を機械判定。v436 の「docs function 欠落」は branch census で「同 fn の reachable code」と判明したため「docs body の範囲不一致」へ表現訂正。v 採番 v437 消費（次=v438）。
+  > 【派生残点第30弾 v438 — V-438-1..3 完遂】probe v438_1..v438_9 全9本 EXIT=0。成果物 tmp/re/v438_type_consumer_ruling.md・台帳 row414（bak264）・round_verify ALL OK（rows 31..414 / total 300 / done 295 / open 5）。
+  > ①[確定] V-438-1 type consumer＝FUN_004fde30（共通 arg-parse handler・+0x1C）の jump table dispatch: ebp＝&pool[i].type を machine で確定（4FDEA5 mov edx,[esp+0x14]（arg pool）→4FDEA9 lea ecx,[eax+eax*2]（i×3）→4FDEAC mov eax,[edx+ecx*4+4]（＝pool[i]+4＝type・stride 0x12 復元）→4FDEB9 lea ebp,[edx+ecx*4+4]→4FDF83 mov eax,[ebp]（＝type））。
+  > ②[確定] per-type flag テーブル＝stride-8・38 entries（type 0x00..0x25 と完全一致）@0xB0A54C — 2 byte を読む: 4FDEB0 mov bl,byte [eax*8+0xB0A54C] と 4FDF47/4FDF86 cmp byte [eax*8+0xB0A54D],0。flag 分布（type0..37）=[0,0,0,1,1,0,1,1,0,1,0,1,1,1,1,1,1,1,0,1,1,1,0,0,1,1,1,1,0,1,1,1,1,0,1,1,1,1]。
+  > ③[確定] 2系統 dispatch: (A) flag≠0 → add eax,-3; cmp eax,0x22; ja error（type ∈ [0x03,0x25]＝35件）→ jmp [eax*4+0x4FEEAC]／(B) flag==0 → cmp eax,0x21; ja（type ∈ [0,0x21]）→ movzx eax,byte [eax+0x4FEF5C]（byte remap）→ jmp [eax*4+0x4FEF38]（9 cases）。
+  > ④[確定] 3 table 連続構造: 0x4FEEAC（35 dwords）→ 0x4FEF38（9 dwords）→ 0x4FEF5C（0x23 bytes byte-remap）がアドレス計算で一致（0x4FEEAC+35×4=0x4FEF38 ✓／0x4FEF38+9×4=0x4FEF5C ✓）— v438_2 の「0x4FEEAC に44 entries」は 35＋9 の2 table 連続を1つと数えた誤り＝本裁定で訂正。
+  > ⑤[確定] 0x03 vs 0x15: 両方 flag=1→path A、type-3 は 0x03→index0（table[0]=0x4FDFA7）／0x15=21→index18（table[18]=0x4FE5CC）→ 完全に別の handler に分岐（semantic 差は handler body 比較が要＝残点）。
+  > ⑥[部分確定] V-438-2 docs census: .text＝6,450,233 bytes／int3 runs≥4＝28,667（過大）／runs≥8＝16,622（過小）／ret(C3)+CC＝16,035（過小: ret N/tail jmp/0 padding 除外）／docs annotations＝20,465 → 20,465 が3 proxy の間（16,035..28,667）に夾在 → proxy 法では総数裁決不能 [未確定]。確実な手法＝per-function 検証（branch census＋docs call 数 grep）[確定]（v437 実証）。
+  > ⑦[確定] V-438-3 [esp+0x5c] write 一覧: direct write は3件のみ（407CBA edx／407E5B ecx／408F72 eax（直前 408F6D xor eax,eax＝0 初期化））＋ lea 間接 fill 2件（408FCF→call 0x404fd0（戻りで mov eax,[esp+0x5c] と 0xa309a4 三項）／409027→call 0x402da0）。40A29D（0xB108EC index 読出）の直前に write 無し（最後は 4092AC fild 読出）→ stack slot 再利用で path 依存 [未確定]。
+  > ⑧[推定高] flat array 先頭10件＝dead data を維持（v437 継続・追加証拠なし）。
+  > 残点 V-439-1..3（1=0x03 vs 0x15 の handler 差（table[0]=0x4FDFA7 と table[18]=0x4FE5CC の body 比較）と per-type flag A/B の semantic（{A,B} stride-8 で B=1,2,3... incrementing の意味）【低】／2=docs 完全性の最終裁決（gap>0x800 の N 件サンプリングで per-function 検証し欠落率推定）【低】／3=[esp+0x5c] の path 依存供給元（40A29D への到達 CFG）と flat array 先頭10件の computed-address 到達有無【低】）。
+  > 教訓: jump-table census は byte-pattern（FF /4＋SIB scale=2）で機械列挙、cmp bound は jmp 直前から aligned decode（jmp 以降しか見ない v438_2 初版の失敗→v438_3 で訂正）／2段 lea（lea a,[x+x*2]→[base+a*4+4]）＝stride 0x12 のフィールドアクセス即読（v437 の descriptor stride 0x0C＋4 と整合）／隣接 table は base+N×stride の一致で分離証明（「44 entries」誤読を35×4/9×4 で2つに訂正）／docs 完全性は proxy（CC run/ret+CC）では夾在で裁決不能＝per-function 検証のみ確実／stack slot 供給元は write 一覧→最後の write が path 依存と判明したら正直に [未確定]。v 採番 v438 消費（次=v439）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1213,6 +1224,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1236,4 +1252,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 05:11:40
+**ai-todo** | Last Updated: 2026-11-17 05:44:46

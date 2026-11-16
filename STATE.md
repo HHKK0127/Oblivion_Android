@@ -2114,3 +2114,26 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **v436 訂正**: 「docs function 欠落（`0x40D800..0x40F640`）」は branch census 91件で**同 fn の reachable code と判明したため「docs body の範囲不一致」へ表現を訂正**。
 - **本日 push 累計（セッション）**: v405 → … → v436 `14b2662a` →（本件 v437 を本 commit で push）＝**33裁定**。
 - **次**: 残る低優先残点群（V-438-1..3／V-414-2..3／V-413-2／V-415-2 ほか）を v438+ で消化。supermemory 未登録33件（v405..v437）は MCP 復復待ち。
+
+## 2026-11-17 (fh) — 派生残点第30弾 v438（V-438-1..3 完遂）: **type consumer＝`FUN_004fde30` の jump table dispatch を確定**（per-type flag 38 entries @`0xB0A54C`・3 table 連続構造）・**docs 完全性 census は proxy 夾在で裁決不能 [未確定]**・**`[esp+0x5c]` fill 点3件を列挙**
+
+- **成果物**: `tmp/re/v438_type_consumer_ruling.md`（probe **v438_1..v438_9 の9本全 EXIT=0**）。台帳 **row414（bak264）**・`round_verify` **ALL OK**（rows 31..414 / total 300 / done 295 / open 5）。ai-todo **#151 に note**。v 採番 **v438 消費（次=v439）**。
+- **① [確定] V-438-1 type consumer ＝ `FUN_004fde30`（共通 arg-parse handler・+0x1C）の jump table dispatch**: ebp＝`&pool[i].type` を machine で確定:
+  ```
+  4FDEA5: mov edx, [esp+0x14]              ; arg pool ptr
+  4FDEA9: lea ecx, [eax + eax*2]           ; i*3
+  4FDEAC: mov eax, [edx + ecx*4 + 4]       ; pool[i].type（i*12 → stride 0x0C, +4 = type）
+  4FDEB9: lea ebp, [edx + ecx*4 + 4]       ; ebp = &pool[i].type
+  4FDF83: mov eax, [ebp]                   ; eax = type
+  ```
+- **② [確定] per-type flag テーブル ＝ stride-8・38 entries（type 0x00..0x25 と完全一致）@`0xB0A54C`** — 2つの byte を読む: `4FDEB0: mov bl,byte [eax*8+0xB0A54C]` と `4FDF47/4FDF86: cmp byte [eax*8+0xB0A54D],0`。flag 分布（type0..37）＝`[0,0,0,1,1,0,1,1,0,1,0,1,1,1,1,1,1,1,0,1,1,1,0,0,1,1,1,1,0,1,1,1,1,0,1,1,1,1]`。
+- **③ [確定] 2系統 dispatch**: **(A) flag≠0** → `add eax,-3; cmp eax,0x22; ja 0x4fed7e`（**type ∈ [0x03,0x25]＝35件**）→ **`jmp [eax*4+0x4FEEAC]`** ／ **(B) flag==0** → `cmp eax,0x21; ja 0x4fee86`（type ∈ [0,0x21]）→ `movzx eax,byte [eax+0x4FEF5C]`（byte remap）→ **`jmp [eax*4+0x4FEF38]`（9 cases）**。
+- **④ [確定] 3 table 連続構造**: **`0x4FEEAC`（35 dwords）→ `0x4FEF38`（9 dwords）→ `0x4FEF5C`（0x23 bytes byte-remap）** がアドレス計算で一致（`0x4FEEAC+35×4=0x4FEF38` ✓／`0x4FEF38+9×4=0x4FEF5C` ✓）— **v438_2 の「`0x4FEEAC` に44 entries」は 35＋9 の2 table 連続を1つと数えた誤り＝本裁定で訂正**。
+- **⑤ [確定] `0x03` vs `0x15`**: 両方 flag=1 → path A、`type-3` は **`0x03`→index0（`table[0]=0x4FDFA7`）**／**`0x15=21`→index18（`table[18]=0x4FE5CC`）** → **完全に別の handler に分岐**（semantic 差は handler body 比較が要＝残点）。
+- **⑥ [部分確定] V-438-2 docs census**: `.text`＝**6,450,233 bytes**／**int3 runs≥4＝28,667（過大: alignment padding 計上）**／**runs≥8＝16,622（過小: 小 padding 除外）**／**`ret`(C3)+CC＝16,035（過小: `ret N`/tail jmp/0 padding 除外）**／**docs annotations＝20,465** → **20,465 が3 proxy の間（16,035..28,667）に夾在 → proxy 法では総数裁決不能 [未確定]**。**確実な手法＝per-function 検証（branch census＋docs call 数 grep）[確定]**（v437 実証）。
+- **⑦ [確定] V-438-3 `[esp+0x5c]` fill 点**: direct write は**3件のみ**（`407CBA` edx／`407E5B` ecx／**`408F72` eax（直前 `408F6D: xor eax,eax`＝0 初期化）**）＋ **`lea ecx,[esp+0x5c]` 間接 fill 2件**（**`408FCF`→`call 0x404fd0`**（戻りで `mov eax,[esp+0x5c]` と `0xa309a4` 三項）／**`409027`→`call 0x402da0`**）。**`40A29D`（`0xB108EC` index 読出）の直前に write 無く（最後は `4092AC` fild 読出）→ stack slot 再利用で path 依存 [未確定]**。
+- **⑧ [推定高] flat array 先頭10件＝dead data を維持**（v437 継続・追加証拠なし）。
+- **残点 V-439-1..3**: 1=`0x03` vs `0x15` の handler 差（`table[0]=0x4FDFA7` と `table[18]=0x4FE5CC` の body 比較）と per-type flag A/B（`0xB0A54C`/`0xB0A54D`）の semantic【低】／2=docs 完全性の最終裁決（gap>0x800 の N 件サンプリングで per-function 検証し欠落率推定）【低】／3=`[esp+0x5c]` の path 依存供給元（`40A29D` への到達 CFG）と flat array 先頭10件の computed-address 到達有無【低】。
+- **教訓**: **jump-table census は byte-pattern（`FF /4`＋SIB scale=2）で機械列挙、cmp bound は jmp 直前から aligned decode**（jmp 以降しか見ない v438_2 初版の失敗→v438_3 で訂正）／**「2段 lea（`lea a,[x+x*2]`→`[base+a*4+4]`）」＝stride 0x12 のフィールドアクセス即読**（v437 の descriptor stride 0x0C＋4 と整合）／**隣接 table は `base+N×stride` の一致で分離証明**（「44 entries」誤読を `35×4`/`9×4` で2つに訂正）／**docs 完全性は proxy（CC run/ret+CC）では夾在で裁決不能＝per-function 検証のみ確実**／**stack slot 供給元は write 一覧→最後の write が path 依存と判明したら正直に [未確定]**。
+- **本日 push 累計（セッション）**: v405 → … → v437 `279dcddc` →（本件 v438 を本 commit で push）＝**34裁定**。
+- **次**: 残る低優先残点群（V-439-1..3／V-414-2..3／V-413-2／V-415-2 ほか）を v439+ で消化。supermemory 未登録34件（v405..v438）は MCP 復復待ち。
