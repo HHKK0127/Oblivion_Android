@@ -160,6 +160,14 @@
   > ⑥[確定(否定側)] 直書き書手ゼロ: occurrence 全13件の prev バイト＝3D(cmp)/68(push)/B8(thunk)/A1(値読)/B9(initializer thunk) のみで modrm=05/SIB=25 メモリ書手0件。file 残骸値 0xC3FD4D24 は偽手がかり（BSS 判定で棄却）。
   > 残点 V-420-1..4（1=チェーン4段目 0xB3F684 name・終端と「extends 説」最終裏取り（MTTC→NiInterpController は中間クラス想定と齟齬→EXE 根拠のみで確定）【低】／2=initializer 表 0xA2BC5C 全体【低】／3=FUN_006D05C0 役割【低】／4=V-419-3 引継ぎ【低】）。
   > 教訓: .data の rel≥rawsz（BSS）判定＋.reloc 解析を file 値の初期値誤読防止にセットで行う／[disp32] 書手不在は occurrence prev バイト census で機械証明／書手ゼロなら initializer bank（mov ecx,global thunk＋.rdata fn ptr 表）を先に疑う／push imm32 の実読で対象意味が一撃決定。docs/GT 反映時は v417/v418 の「char* 変数のアドレスが key」表記を本裁定（pair ディスクリプタ）へ訂正・#47/#20 一括。v 採番 v419 消費（次=v420）。
+  > 【派生残点第12弾 v420 — V-405-1 完遂】probe v420_1..v420_5 全5本 EXIT=0。成果物 tmp/re/v420_palette_stream_ruling.md・台帳 row396（bak246）・round_verify ALL OK（rows 31..396 / total 282 / done 277 / open 5）。
+  > ①[確定(RTTI)] 0x7166B0＝NiDefaultAVObjectPalette vtable 0xA798C4 slot7(+0x1C) の LoadBinary（data ref 0xA798E0 の1件・E8=0＝virtual のみ）。
+  > ②[確定(RTTI＋構造)] manager の stream LoadBinary＝NiControllerManager vtable 0xA79804 slot7(+0x1C)=FUN_006C4E50（base 読込 FUN_00715f40→Cumulative bool→sequences→version gate 付き palette ref 読込＝oracle 順と完全一致）。
+  > ③[確定(命令)] 格納 site: cmp [ctx+0xd8], 0x0A010068; jb skip（version ≥10.1.0.104 ゲート）→ call 0x712A90（ReadRef: u32 index、-1→0、[ctx+0x1F0][idx] 解決）→ push eax; lea ecx,[edi+0x7C]; call 0x75FA90（NiPointer assign: InterlockedDecrement→0 で dtor／代入→InterlockedIncrement・L604450-67）＝[mgr+0x7C] へ refcounted 格納（machine 0x6C4E91-0x6C4EB5）。
+  > ④[確定] EXE⇔oracle 順一致: machine＝[edi+0x6C]=Cumulative bool（1byte read→setne）→call 0x712AE0（u32+grow＝Num Controller Sequences [推定高]）→palette ref ⇔ oracle parseNiControllerManager（L3184-93: Cumulative→Sequences→Object Palette:Ref←last field）＝順序完全一致。
+  > ⑤[確定(命令)] 優先関係＝ファイル記載（stream）優先・遅延生成はフォールバック: slot7 が load 時に無条件 assign／slot9 FUN_006C5AB0 は if([mgr+0x7C]==0) のときのみ =FUN_006c5360(this[+0x30])（Target 部分木走査）→ 非 null stream 値は slot9 を通過させない（null 時のみ生成・version<gate でも slot9 が生成に走る）。[確定(否定側)] slot9 は E8=0・data ref＝vtable slot9(0xA79828) の1件のみ＝virtual のみ。副次[確定]: [NiControllerManager+0x6C]=Cumulative bool。
+  > 残点 V-421-1..3（1=FUN_00712AE0 の格納先意味（[ctx+0x238] grow と sequences の manager 側最終格納先）【低】／2=slot9 の virtual 呼出し元 fn 群【低】／3=V-405-2..5 引継ぎ（stride-48 型照合【中】ほか）【低】）。
+  > 教訓: [reg+disp] store census が0件なら lea ecx,[reg+disp] でアドレス渡し（out-param/this 代替）を疑え（NiPointer 代入は fn 呼び出しで mov 形で現れない）／version gate 定数（0x0A010068）は複数 LoadBinary の共有＝読込帯の接合点／実データ parser のレイアウトコメントと machine 読込順の突合で読込フィールド identity を一括確定。v405 の「[+0x7C] writer＝manager idx9」は補正（idx9＝遅延生成のみ・stream writer＝slot7）。v 採番 v420 消費（次=v421）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1066,6 +1074,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1089,4 +1102,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-16 20:31:19
+**ai-todo** | Last Updated: 2026-11-16 20:51:00

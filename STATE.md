@@ -1827,3 +1827,25 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **.data の「rel ≥ rawsz（BSS）」判定＋`.reloc` 解析を file 値の初期値誤読防止にセットで行う**／**`[disp32]` 書手不在の否定は occurrence prev バイト census で機械的**（modrm=05/SIB=25 ゼロ＝メモリ書手ゼロの証明）／**書手ゼロなら initializer bank（`mov ecx,global` thunk＋.rdata fn ptr 表）を先に疑え**／**`push imm32` の imm 実読で対象の意味が一撃決定**。
 - **本日 push 累計**: v405 → … → v418 `ade48642` →（本件 v419 を本 commit で push）＝**15裁定**。
 - **次**: 低優先残点群（V-420-1..4／V-405-1..2／V-406-2 ほか）を v420+ で消化。supermemory 未登録15件（v405..v419）は MCP 復復待ち。
+
+## 2026-11-16 (ep) — 派生残点第12弾 v420（V-405-1 完遂）: **`0x7166B0`＝NiDefaultAVObjectPalette vtable slot7 [確定(RTTI)]**・**格納 site＝`FUN_006C4E50`（manager slot7）の version gate＋ReadRef＋NiPointer assign [確定(命令)]**・**優先関係＝stream 優先・遅延生成はフォールバック [確定(命令)]**
+
+- **成果物**: `tmp/re/v420_palette_stream_ruling.md`（probe **v420_1..v420_5 の5本全 EXIT=0**）。台帳 **row396（bak246）**・`round_verify` **ALL OK**（rows 31..396 / total 282 / done 277 / open 5）。ai-todo **#151 に note**。v 採番 **v420 消費（次=v421）**。
+- **① [確定(RTTI)] palette LoadBinary**: **`0x7166B0` ＝ `NiDefaultAVObjectPalette` vtable `0xA798C4` slot7（+0x1C）** — data ref は `.rdata 0xA798E0` の1件（RTTI backward scan）・**E8=0＝virtual dispatch のみ**。
+- **② [確定(RTTI＋構造)] manager の stream LoadBinary**: **NiControllerManager vtable `0xA79804` slot7（+0x1C）= `FUN_006C4E50`** — 本体が `FUN_00715f40`（NiTimeController base 読込）→ Cumulative bool → sequences 読込 → **version gate 付き Object Palette:Ref 読込** の oracle 順と完全一致。
+- **③ [確定(命令)] 格納 site（`FUN_006C4E50` 末尾）**:
+  ```
+  cmp dword [ctx+0xd8], 0x0A010068 ; jb skip   ← version ≥ 10.1.0.104 ゲート
+  mov ecx, esi / call 0x712A90                  ← ReadRef（u32 index、-1→0、[ctx+0x1F0][idx]）
+  push eax / lea ecx,[edi+0x7C] / call 0x75FA90 ← NiPointer assign（refcount 管理付き代入）
+  ```
+  `FUN_0075FA90`＝NiPointer assign（旧 ptr `InterlockedDecrement`→0 で dtor、新 ptr 代入→`InterlockedIncrement`・L604450-604467）→ **`[mgr+0x7C]` へ refcounted 格納**（machine 0x6C4E91-0x6C4EB5）。
+- **④ [確定] EXE⇔oracle 読込順一致**: machine＝**`[edi+0x6C] = Cumulative bool`**（1byte read→`setne`）→ `call 0x712AE0`（u32＋`[ctx+0x238/0x23c]` vector grow＝Num Controller Sequences [推定高]）→ palette ref ⇔ oracle `parseNiControllerManager`（L3184-3193: `Cumulative:bool(1) → Num Controller Sequences:uint(4)+Ref[N] → Object Palette:Ref(4) ← last field`）＝**順序完全一致**。
+- **⑤ [確定(命令)] 優先関係＝ファイル記載（stream）優先・遅延生成はフォールバック**: slot7（load 時）が **無条件 assign**（gate 内・ref=-1 なら0 assign）／slot9 `FUN_006C5AB0` は **`if ([mgr+0x7C]==0)` のときのみ** `[mgr+0x7C] = FUN_006c5360(this[+0x30])`（Target 部分木走査・v405 確定）→ **非 null の stream 値は slot9 を通過させない**（null 時のみ生成・**version < gate でも slot9 が生成に走る**）。
+- **⑥ [確定(否定側)] slot9 の呼出し形**: **E8=0・data ref は manager vtable slot9（`0xA79828`）の1件のみ** → virtual dispatch のみ・直接呼出し不在。
+- **副次 [確定]**: **`[NiControllerManager +0x6C]` ＝ Cumulative bool**。
+- **残点 V-421-1..3**: 1=`FUN_00712AE0` の格納先の正確な意味（`[ctx+0x238]` grow と sequences の manager 側最終格納先）【低】／2=slot9（`+0x24`）の virtual 呼出し元 fn 群【低】／3=V-405-2..5 引継ぎ（stride-48 型照合【中】／palette insert 本体【低】／未知 interpolator idx35【低】）。
+- **教訓**: **`[reg+disp]` store census が0件なら `lea ecx,[reg+disp]` でアドレス渡し（out-param／this 代替）を疑え**（NiPointer/コンテナ代入は fn 呼び出しで行われるため mov 形で現れない）／**version gate 定数（`0x0A010068`）は同一 EXE 内の複数 LoadBinary が共有＝読込帯の接合点**／**実データ parser（NIF oracle）のレイアウトコメントと machine 読込順の突合で読込フィールドの identity を一括確定**。
+- **v405 訂正**: 「`[+0x7C]` の writer＝manager idx9」は**本裁定で補正**（idx9＝遅延生成のみ・**stream writer＝slot7 `FUN_006C4E50`**）。docs/GT 反映時は v405 ruling の注記を併せて更新・#47/#20 一括。
+- **本日 push 累計**: v405 → … → v419 `d2457465` →（本件 v420 を本 commit で push）＝**16裁定**。
+- **次**: 残る中/低優先残点（V-421-1..3／V-405-2【中】stride-48／V-414-1..3 ほか）を v421+ で消化。supermemory 未登録16件（v405..v420）は MCP 復復待ち。

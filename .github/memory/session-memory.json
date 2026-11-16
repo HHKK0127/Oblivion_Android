@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-16T11:32:56Z",
+  "lastUpdated": "2026-11-16T11:52:37Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11918,14 +11918,30 @@
         "initializer"
       ],
       "content": "2026-11-16 派生残点第11弾 v419（probe v419_1..7 全7本 EXIT=0）＝V-419-1/V-419-2 完遂: 成果物 tmp/re/v419_b3cd7c_descriptor_ruling.md・台帳 row395（bak245）・round_verify ALL OK（rows 31..395 / total 281 / done 276 / open 5）・STATE (eo)・ai-todo #151 note。[確定] 0xB3CD7C の中身＝2フィールド pair: [0xB3CD7C]=0xA7913C＝char* \"NiMultiTargetTransformController\"（.rdata 実読）／[0xB3CD80]=0xB3CDF8（次 pair リンク）— init は FUN_0070E220(this,a,b){*[this]=a;[this+4]=b}（L552053-58）。[確定] 初期化経路: BSS（.data rel 0x3AD7C ≥ rawsz 0x30C00＝非ファイルバック・.reloc rva=0/sz=0＝stripped）→ static initializer 表 .rdata 0xA2BC5C（連続 fn ptr 配列 stride 0x10 帯）のエントリ 0xA02E80: push 0xB3CDF8; push 0xA7913C; mov ecx,0xB3CD7C; call 0x70E220; ret（E8=0＝表経由のみ）。[確定(実読)3段] リンク先も同型 pair: 段2 thunk 0xA0300A {0xA7A224=\"NiInterpController\", 0xB3FC98}／段3 thunk 0xA09D9A {0xA7EC1C=\"NiTimeController\", 0xB3F684} → name 連鎖 MTTC→NiInterpController→NiTimeController→…＝クラス階層チェーン [推定高]。同型 pair init thunk 銀行8件＝実行時 type descriptor bank [確定(命令)]。[推定高] 設計意図＝Oblivion 独自の実行時 RTTI ディスクリプタ: &pair が map key（type identity・v416/v417 経路と整合）・[pair]（name）が dump ヘッダ --- %s --- 入力（v418 FUN_0070F910 と整合）。v417/v418 の「char* 変数のアドレスが key」表記は本裁定で「pair ディスクリプタのアドレス」へ訂正。[確定(RTTI)＋命令] 0x6D0450＝vtable 0xA79984（.?AVNiMultiTargetTransformController@@）slot12(+0x30) の dump virtual（data ref 0xA799B4 のみ・E8=0）: FUN_006D05C0(this,buffer)（役割は残点）→ FUN_0070F910([0xB3CD7C]) で \"--- NiMultiTargetTransformController ---\" ヘッダ→buffer insert（grow FUN_004E4A10／insert FUN_0042BB90）→ FUN_0070FAA0(\"m_usNumInterps\",[this+0x44]) で \"%s = %hu\" 行（L553133-47）。副次[確定]: [MTTC+0x44]=m_usNumInterps(u16)。[確定(否定側)] 直書き書手ゼロ: occurrence 全13件の prev バイト＝3D(cmp)/68(push)/B8(thunk)/A1(値読)/B9(initializer thunk) のみで modrm=05/SIB=25 メモリ書手0件・file 残骸値 0xC3FD4D24 は BSS 判定で偽手がかり棄却。残点 V-420-1..4（1=チェーン4段目 0xB3F684 name・終端と「extends 説」最終裏取り【低】／2=initializer 表 0xA2BC5C 全体【低】／3=FUN_006D05C0 役割【低】／4=V-419-3 引継ぎ【低】）。教訓: .data の rel≥rawsz（BSS）判定＋.reloc 解析を file 値の初期値誤読防止にセット／[disp32] 書手不在は occurrence prev バイト census で機械証明／書手ゼロなら initializer bank を先に疑う／push imm32 の実読で意味が一撃決定。本日 push: v405→v418（ade48642）14件＋本件 v419。v 採番 v419 消費（次=v420）。"
+    },
+    {
+      "id": "151-v420-palette-stream-2026-11-16",
+      "timestamp": "2026-11-16T11:52:37Z",
+      "priority": "medium",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v420",
+        "palette",
+        "loadbinary",
+        "nif-oracle"
+      ],
+      "content": "2026-11-16 派生残点第12弾 v420（probe v420_1..5 全5本 EXIT=0）＝V-405-1 完遂: 成果物 tmp/re/v420_palette_stream_ruling.md・台帳 row396（bak246）・round_verify ALL OK（rows 31..396 / total 282 / done 277 / open 5）・STATE (ep)・ai-todo #151 note。[確定(RTTI)] 0x7166B0＝NiDefaultAVObjectPalette vtable 0xA798C4 slot7(+0x1C) の LoadBinary（data ref 0xA798E0 の1件・E8=0＝virtual のみ）。[確定(RTTI＋構造)] manager の stream LoadBinary＝NiControllerManager vtable 0xA79804 slot7(+0x1C)=FUN_006C4E50（base 読込 FUN_00715f40→Cumulative bool→sequences→version gate 付き palette ref 読込＝oracle 順と完全一致）。[確定(命令)] 格納 site: cmp [ctx+0xd8], 0x0A010068; jb skip（version ≥10.1.0.104 ゲート）→ call 0x712A90（ReadRef: u32 index、-1→0、[ctx+0x1F0][idx] 解決）→ push eax; lea ecx,[edi+0x7C]; call 0x75FA90（NiPointer assign: InterlockedDecrement→0 で dtor／代入→InterlockedIncrement・L604450-67）＝[mgr+0x7C] へ refcounted 格納（machine 0x6C4E91-0x6C4EB5）。[確定] EXE⇔oracle 順一致: machine＝[edi+0x6C]=Cumulative bool（1byte read→setne）→call 0x712AE0（u32+[ctx+0x238/0x23c] grow＝Num Controller Sequences [推定高]）→palette ref ⇔ oracle parseNiControllerManager（L3184-93: Cumulative(1)→Num Controller Sequences(4)+Ref[N]→Object Palette:Ref(4)←last field）＝順序完全一致。[確定(命令)] 優先関係＝ファイル記載（stream）優先・遅延生成はフォールバック: slot7 が load 時に無条件 assign（gate 内・ref=-1 なら0 assign）／slot9 FUN_006C5AB0 は if([mgr+0x7C]==0) のときのみ =FUN_006c5360(this[+0x30])（Target 部分木走査・v405 確定）→ 非 null stream 値は slot9 を通過させない（null 時のみ生成・version<gate でも slot9 が生成に走る）。[確定(否定側)] slot9 は E8=0・data ref＝manager vtable slot9(0xA79828) の1件のみ＝virtual のみ。副次[確定]: [NiControllerManager+0x6C]=Cumulative bool。残点 V-421-1..3（1=FUN_00712AE0 の格納先意味（[ctx+0x238] grow と sequences の manager 側最終格納先）【低】/2=slot9 の virtual 呼出し元 fn 群【低】/3=V-405-2..5 引継ぎ（stride-48 型照合【中】ほか）【低】）。教訓: [reg+disp] store census が0件なら lea ecx,[reg+disp] でアドレス渡し（out-param/this 代替）を疑え（NiPointer 代入は fn 呼び出しで mov 形で現れない）／version gate 定数（0x0A010068）は複数 LoadBinary の共有＝読込帯の接合点／実データ parser のレイアウトコメントと machine 読込順の突合で読込フィールド identity を一括確定。v405 の「[+0x7C] writer＝manager idx9」は補正（idx9＝遅延生成のみ・stream writer＝slot7）。本日 push: v405→v419（d2457465）15件＋本件 v420。v 採番 v420 消費（次=v421）。"
     }
   ],
   "metadata": {
-    "totalEntries": 824,
+    "totalEntries": 825,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-16T11:32:56Z",
-    "entry_count": 824,
-    "last_updated": "2026-11-16T11:32:56Z"
+    "lastUpdated": "2026-11-16T11:52:37Z",
+    "entry_count": 825,
+    "last_updated": "2026-11-16T11:52:37Z"
   }
 }
