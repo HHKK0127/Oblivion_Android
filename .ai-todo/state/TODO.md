@@ -299,6 +299,14 @@
   > ⑧[未確定] type 0x3 vs 0x15（両方 name='ObjectID'）の語義差＝V-437-1 へ。
   > 残点 V-437-1..3（1=type コード体系（0..0x1F 対応表）【低】／2=docs function 欠落範囲の census（0x40D800..0x40F640 帯が単発か広範か）と dump owning fn の machine 特定【低】／3=flat array 先頭10件の到達経路と [esp+0x5c] index 源の由来【低】）。
   > 教訓: flag/byte field の consumer 特定は「全 .text byte-pattern census→context decode で record-base のみ選別」（143件中 record 判別は直前の mov eax,[eax+0x14]）／consumer の第2引数まで遡ると flag 語義が確定（byte[+4]-0x31<=2＝reference 型判定）／docs 欠落の発見法＝「body tail の call site が machine range 内で唯一」で body の machine 範囲を逆算し次 annotation と突合／body 内 grep の不在（FUN_00407ae0 等）は docs 欠落の決定打／v435 の2つの [推定高]（console handler／1配列混在）がともに訂正＝[推定高] は次の probe で必ず反証を試す。v 採番 v436 消費（次=v437）。
+  > 【派生残点第29弾 v437 — V-437-1..3 完遂】probe v437_1..v437_7 全7本 EXIT=0。成果物 tmp/re/v437_type_table_ruling.md・台帳 row413（bak263）・round_verify ALL OK（rows 31..413 / total 299 / done 294 / open 5）。
+  > ①[確定] V-437-1 type コード表（402 descriptors・bad 0・38 コード）: 3表全 record（event31/console131/func369）を walk し count 分の descriptor {name,type,flag} を collection。0x00=String/Filename(27)／0x01=Integer(135)／0x02=Float(47)／0x03=ObjectID(7)／0x04=ObjectReferenceID(19)／0x05=Actor Value／0x06=Actor(34)／0x07=Spell Item／0x08=Axis／0x09=Cell／0x0A=Animation Group／0x0B=Magic Item／0x0C=Sound／0x0D=Topic／0x0E=Quest(10)／0x0F=Race／0x10=Class／0x11=Faction(22)／0x12=Sex／0x13=Global／0x14=Furniture／0x15=ObjectID/Object(7)／0x16=Variable Name／0x17=Stage／0x18=Map Marker／0x19=Actor Base／0x1A=Container／0x1B=WorldSpace／0x1C=Crime Type／0x1D=Package(7)／0x1E=Combat Style／0x1F=Magic Effect／0x20=Birthsign／0x21=Form Type／0x22=Weather ID／0x23=NPC／0x24=Owner／0x25=Effect Shader ID。
+  > ②[確定] usage 分割（唯一 ambiguity 'ObjectID'→0x03/0x15）: 0x03＝inventory item 系7件（AddItem/GetItemCount/RemoveItem/Drop/GetEquipped/EquipItem/UnequipItem・func のみ）／0x15＝identity/event 系7件（OnHitWith/OnActorEquip/OnActorUnequip＝event ＋ PlaceAtMe/GetIsID/GetIsUsedItem/SetQuestObject＝func）— usage は完全分離。語義差（同名2 code の設計理由）は [未確定]。[未確定] type consumer: .text 全体で cmp reg,0x25/0x26（byte/dword form 含む）＝5件のみで parser band 0件（無関係 fn）→ table lookup 形を疑う＝残点。
+  > ③[確定] V-437-2 docs census: '// FUN_' annotation＝20465件・全件統一形式（他形式0件）・gap>0x800 が374件（顶部＝section 境界 0xA27BF7→0xBAF000 1.6MB、large function 群）。raw grep '0x40d8'..'0x40f5'（16 pattern）＝全0 hits（形式起因でない）。
+  > ④[確定(不整合)] dump owning fn: machine 上 0x40DEFC（call 0x407ae0）は 0x40D4D0..0x40DF74 の連続コード内（int3 境界なし・唯一 CC run は 0x40D4CE）＋branch census: 0x40D800..0x40DF74 への branch/call 91件すべて head=0x40D4D0 // FUN_0040d4d0（同 fn の reachable code）。しかし docs の FUN_0040d4d0 body（L8522..L8659・141行・27 distinct FUN called）に FUN_00407ae0/FUN_005791a0/1e0/220 全て不在＋docs 内で FUN_00407ae0 は annotation（L5705）と signature（L5710）の2件のみ・一度も call されない → docs の FUN_0040d4d0 body が machine 範囲をカバーしていない＝docs vs code の不整合 [確定(不整合)]（docs body tail は machine 0x40D7BD..0x40D7FF に対応: FUN_0040fda0→0x40D7BD／FUN_00411100→0x40D7D9／FUN_00977c50(2)→0x40D7E0／ret 0x40D7FF）。
+  > ⑤[部分確定] V-437-3: flat array 先頭10件（0xB10290..0xB102B4）は (i) 全セクション ref 0 件＋(ii) FUN_0051b490 の name index が mov esi,1 起点（0x51B5DE/0x51B643）＝正のみで base 0xB102B8 の下方向（-10）へ到達不可 → dead data [推定高]（computed-address 到達は [未確定]）。[未確定] [esp+0x5c]（4th %s index）の書込み元（0x40A200..0x40A278 window に出現せず・読出のみ 0x40A29D）。同 window 判明: ループ counter＝xor esi,esi; mov [esp+0x4c],esi（0x40A239）→ call 0x470720 → movzx esi,ax → call 0x51aa00（low byte）→ lea edx,[eax+eax*8] → stride-0x24 group index。
+  > 残点 V-438-1..3（1=type consumer特定（table lookup 形疑い）と 0x03 vs 0x15 語義差【低】／2=docs と machine の function 範囲不一致の横断 census 手法確立【低】／3=[esp+0x5c] 書込み元と flat array 先頭10件の computed-address 到達【低】）。
+  > 教訓: type/enum 対応表は「全 record を walk して count 分だけ collection」（scatter region flat scan は1件しか当たらない＝v437_1 初版の失敗と訂正）／同名複数 code は usage 列挙で分離確定（語義差は consumer 無しなら [未確定] で正直に残す）／docs 完全性は「annotation 形式統一性＋raw address grep＋gap 分布」の3系統で検証／docs body に call が無いのに machine に call がある＝docs body 範囲不一致の決定打（対象 fn の docs 内 call 数 grep で即判別）／branch census（対象 range への全 jump/call の head 集計）で別 fn/同 fn を機械判定。v436 の「docs function 欠落」は branch census で「同 fn の reachable code」と判明したため「docs body の範囲不一致」へ表現訂正。v 採番 v437 消費（次=v438）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1205,11 +1213,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1233,4 +1236,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 04:44:29
+**ai-todo** | Last Updated: 2026-11-17 05:11:40
