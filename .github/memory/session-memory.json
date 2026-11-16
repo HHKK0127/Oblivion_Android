@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-16T22:19:55Z",
+  "lastUpdated": "2026-11-16T22:26:06Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -12427,14 +12427,30 @@
         "player-negative"
       ],
       "content": "2026-11-17 旧残点群移行第6弾 v452（probe v452_1..2 全2本 EXIT=0）＝V-452-1..3 完遂: 成果物 tmp/re/v452_gap_census_ruling.md・台帳 row428（bak278）・round_verify ALL OK（rows 31..428 / total 314 / done 309 / open 5）・STATE (fv)・ai-todo #151 note。[確定] V-452-2 機械化 census: 手法＝「int3 run≥8 直後の code byte」を code start、「docs annotation 無し」でフィルタ、owning annotation 距離で3分類。実測: code start 総数 16622（＝v438 runs≥8 と完全一致✓内部整合）／annotation 無し 7145（43.0%）／prologue-like 4197。距離分類: d≤0x40（同 fn padding 続き）480／0x40<d≤0x200 2505／d>0x200 4160（prologue 2202）→ TRUE docs-missing candidates（d>0x200 ∧ prologue）＝2202 [推定]、上位階込み＝4122 [推定]。samples に 0x40DF80 owning=0x40D4D0 dist=0xAB0（v436/v437 で確定した実 fn entry）が現れ手法妥当性を実証 [確定]（0x40C180 owning=0x407AE0 も v435 dump fn gap と整合）。[推定] docs 欠落総数2系統クロス: 境界法（v446）≈6038／entry 法（本裁定）2202（上位階込み4122）→ 独立2手法が同桁＝docs 欠落 fn は数千規模、真値は 2202〜6038 に分布 [推定]（entry 法は d≤0x200 欠落の取りこぼし下限側、境界法は intra-fn 偽陽性を含む上位側）。[確定] V-452-1 Player ctor band 読手＝0件（mov reg,[reg+0x1c] 0x66A740..0x66AD40）[確定(否定側)] → Player ctor は +0x1C 不使用、書手は別 fn（v451 候補 FUN_00437F00 QueuedCharacter 系／window 外大 ctor）＝残点継続。[確定] V-452-3 sub-call 5fn（FUN_0046F020/469E90/468590/46E4F0/46FC10）とも first 0x60 に vtable store 無し [確定(否定側)] → vtable RTTI 法では embedded object 名取得不可（reset fn は vtable 書かず）→ subobject 正式名は別法要 [未確定]＝残点。残点 V-453-1..3（1=docs 欠落 census 第3系統（d≤0x200 層 prologue1920 のサンプル個別検証で レンジ 2202〜6038 を狭める）【低】／2=Player[+0x1C] 書手残ルート（FUN_00437F00 実体確認＋FUN_004D9B40 caller 群からの reader 逆引き）【低】／3=subobject 名の別法（sub-call fn body の store 定数/文字列・docs 構造コメント）【低】）。教訓: docs 欠落 census は「code start（int3 run≥8 直後）×annotation 有無×owning 距離」の3次元機械化（サンプルに既知 gap が混ざれば手法実証）／距離閾値 d>0x200 が SAFE 候補の下限（d≤0x40＝同 fn padding と切り分け）／独立2手法（entry 法／境界法）の桁整合がレンジ信頼度を上げる（点推定より「2202〜6038」レンジ提示が誠実）／reset/impl fn は vtable 書かず embedded object 用→vtable RTTI 法は reset fn に効かない／否定側 census も残点の輪郭を絞る。本日 push: v405→v451（4e343bf8）47件＋本件 v452。v 採番 v452 消費（次=v453）。"
+    },
+    {
+      "id": "151-v453-reader-script-2026-11-17",
+      "timestamp": "2026-11-16T22:26:06Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v453",
+        "player-reader",
+        "script-td",
+        "mid-layer"
+      ],
+      "content": "2026-11-17 旧残点群移行第7弾 v453（probe v453_1..3 全3本 EXIT=0）＝V-453-1..3 完遂: 成果物 tmp/re/v453_reader_script_ruling.md・台帳 row429（bak279）・round_verify ALL OK（rows 31..429 / total 315 / done 310 / open 5）・STATE (fw)・ai-todo #151 note。[部分確定] V-453-1 mid-layer（0x40<d≤0x200 ∧ prologue＝1920）: prev-segment 長さで2分類: prev≥0x100＝135件（独立 fn 確率高い [推定]）／prev<0x100＝1785件。samples は small stub 集積帯と判明（0x412950..0x412980 が owning FUN_00412880 直後に d=0xD0..0x100 で4連続・prev=0x5..0x8／0x401730/401740 prev=0x7）→ owning 直後の small stub 並び（v444 registration stub 同型）＝独立 small fn 可能性 [推定高]、owning body 内 label の可能性は機械的切り分け不能 [未確定]。docs 欠落下限＝SAFE 2202＋mid 長135＝2337 レンジ下限 [推定]（上限は境界法 6038 維持）。[確定] V-453-2 Player[+0x1C] reader 逆引き: FUN_004D9B40（getter）の E8 caller は2件とも FUN_004E82E0（L182198）[確定] → 読むのはこの fn のみ。context 実読: mov ecx,edi; call 0x4D9B40 → null check → 再 getter → mov edx,[eax]（vtable）→ mov edx,[edx+0x84] → push 1; push ecx; mov ecx,eax; call edx ＝ Player[+0x1C] オブジェクトの virtual +0x84(1,param) call [確定(機械)]。FUN_004E82E0＝void __thiscall(int,int,char)・body 213 lines・ret 8・float locals [確定(構造)]、purpose keyword 検索0 hits（docs は FUN_ 名のみ）→ purpose [未確定]＝残点。[部分確定] V-453-3 subobject 名別法: 0xB03358 = .?AVScript@@ [確定] — FUN_0046F020 の FUN_0046B250(local,0,&TESForm,&Script,0) lookup が form→Script オブジェクトを引く [確定相当] → subobject +0xC4 は Script-related 構造 [推定高]。FUN_00469E90 body の 0xB0xxxx TD 直接参照＝0件 [確定(否定側)]。0xB02F9C=TESForm／0xB03054=TESObjectREFR／0xB036FC=TESObjectWEAP／0xB03778=TESObjectARMO を再確認。残る subobject 名（+0x44/+0x68/+0xE4/+0x54）は未同定＝残点。残点 V-454-1..3（1=Player[+0x1C] オブジェクト class（virtual +0x84 slot を持つ class＝書手特定と表裏一体）と FUN_004E82E0 purpose（call 先群 FUN_00405680 等突合）【低】／2=subobject 名（+0x44/+0x68/+0xE4/+0x54）の RTTI TD 突合継続【低】／3=docs 欠落 census 総まとめ（d≤0x200 層1785 の docs body-line 対 machine 比検証 or 旧残点 V-415-2 等へ移行判断）【低】）。教訓: mid-layer 真偽は「prev segment 長さ」で機械2分類（prev≥0x100＝SAFE 上乗せ・<0x100＝stub 集積別扱い・閾値1つで解像度向上）／getter caller は件数1〜2のとき context decode まで一気（reader identity と使用形 virtual +0x84 call を同時取得）／lookup 系 fn の第4引数 TD（RTTI name）が subobject 機能を語る（&TESForm,&Script→Script）／docs keyword 検索は FUN_ 名のみ環境で無力→purpose は call 先群突合へ移行。本日 push: v405→v452（e4960bff）48件＋本件 v453。v 採番 v453 消費（次=v454）。"
     }
   ],
   "metadata": {
-    "totalEntries": 857,
+    "totalEntries": 858,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-16T22:19:55Z",
-    "entry_count": 857,
-    "last_updated": "2026-11-16T22:19:55Z"
+    "lastUpdated": "2026-11-16T22:26:06Z",
+    "entry_count": 858,
+    "last_updated": "2026-11-16T22:26:06Z"
   }
 }
