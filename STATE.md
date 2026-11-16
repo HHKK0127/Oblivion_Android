@@ -1612,3 +1612,20 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-403-1..3**: 1=**`[+0x54]` の名前と供給元**（保留時刻・dump 対象外の内部時刻）【中】／2=**state2 ブロック出口で state=1 へ遷移する条件**【低】／3=**`FUN_006c6b30` 戻り値の厳密な意味と `/Freq` 正規化の根拠**【低】。
 - **教訓**: **「〜の役割」系は ①入力元 census（x87 disp 走査）②出力先（どの call へ流れるか）③ライフサイクル（init/更新/累積/リセット）の4点で式を復元**。
 - **次**: #153⑥-10 V-388-1（`[+0x54]` 正名）→ 次 v 採番 v404。
+
+## 2026-11-16 (dz) — #153⑥-10 完遂: `[seq+0x54]`＝**one-shot 内部時刻スナップショット [確定]**・正式名は**バイナリ不在 [確定(否定側)]**（判定=[部分確定]）＋**副次で v401 残点1 解消: block container＝NiControllerSequence [確定]**（v404・V-388-1）
+
+- **成果物**: `tmp/re/v404_seq54_ruling.md`（probe **v404_1・v404_3 全 EXIT=0**・v404_2 は出力生成済み（実行末尾のみサーバ再起動で interrupt・.out 4572B 完全））。台帳 **row380（bak230）**・`round_verify` **ALL OK**（rows 31..380 / total 266 / done 261 / open 5）。ai-todo #153 に note。v 採番 **v404 消費（次=v405 は #154 予約と競合するため着手時に再確認）**。
+- **正式名 [確定(否定側)]**: **バイナリに名前文字列が存在しない** — 3系統の調査で否定: ①**sequence の text dump（`FUN_006ca440`）は13スカラのみ**で +0x54 不在（State/ArraySize/Weight/CycleType/Freq/Begin/End/Last/Offset/Start/End/WeightLast/LastScaled）②**`.rdata` の `m_f*` 全31件**の在庫調査に該当候補なし（m_fLastTime 等は他クラス dump 用＝`FUN_00716140` キー系等）③**sequence band の `m_` 名 dump＝0件**＋コンソール/ログ言及なし。MSVC バイナリはフィールド名を持たないため取得不能。
+- **役割 [確定(命令＋decompiled)]**: **blend 開始時に両 sequence へ書き込まれる one-shot 内部時刻スナップショット**:
+  1. **書込**: `FUN_006c9d30`（blend wrapper・v393）成功時 **`this[+0x54] = LastScaled[+0x3c] / Freq[+0x28]`**・**`other[+0x54] = param_4 / other.Freq`**（L498988-89・machine `0x6C9DE6`/`0x6C9DF0`）
+  2. **未設定 = −FLT_MAX**（Deactivate fade<=0 L498950・state6 消費 L499588・ctor `0x6C65EA`/`0x6C8081`）
+  3. **消費A（評価時 time 上書き）**: `FUN_006ca950` default 経路で **`if (+0x54 ≠ −FLT_MAX) time := [+0x54]`**（L499610/499625）→ **time remap `FUN_006c5fc0(time, 1)`（v390・flag=1＝clamp）** → **`Weight × fade`** → `FUN_006c6dc0`（L499627-628）＝**保存した内部時刻で pose 評価を固定**
+  4. **消費B（Offset へ畳み込み）**: state2 出口で **`Offset = [+0x54] − time` して −FLT_MAX クリア**（L499586-588・machine `0x6CAA4A`）→ **v403 の Offset 数式に接続**
+  5. 通常時（−FLT_MAX）: `time + Offset` / partner 経路（v403 と整合）
+- **補足 [確定(否定側)]**: pose query `FUN_006c6b30`（body 137行）に **0x54 参照0件** ＝上書きは update 側だけで完結。
+- **副次（v401 残点1 解消）[確定]**: **block 配列の container ＝ NiControllerSequence** — ①sequence **vtable idx15＝`FUN_006cace0`** が `[this+0xc]`（count）＋`[this+0x14]`（stride16 配列）を使用（L496661-49675・+4 ref release/+8 zero＝block 構造）②dump の **`ArraySize` ＝ `[+0xc]`** ③`FUN_006c70a0`（v401 構築 fn）が **NiFixedString name コピー**を伴う（machine `0x6C70E9-0x6C710A`）＝sequence の name 保有と整合。
+- **残点 V-404-1..3**: 1=**dump ヘッダ文字列 `FUN_0070f910(DAT_00b3cb24)` の正体**【低】／2=**`FUN_006cddb0`（m_fWeightThreshold/m_fEaseSpinner dump）の対象クラス同定**【低】／3=**`FUN_006c9d30` の `param_4` 供給元**【中】。
+- **教訓**: **「正名」系は ①当該クラスの text dump フィールド列挙 ②名前文字列在庫 census ③band 内 dump 呼び出し全数 の3点で否定してから [未確定]（名前）/[確定]（役割）に分離裁定**。推測で名前を当てない。
+- **並行解析の状況**: #154/#151 の subagent は**2回ともサーバ再起動で中断（error・自動再開なし）**→環境が安定するまで直列に切替（本 #153 完了後に foreground で順次処理）。
+- **次**: #153⑥-11 V-388-2（`0x6CAA4A` st1 出所）→ 次 v 採番は v405 競合のため着手時に再確認。

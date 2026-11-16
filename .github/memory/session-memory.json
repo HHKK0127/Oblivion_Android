@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-16T04:48:14Z",
+  "lastUpdated": "2026-11-16T06:34:55Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11673,14 +11673,28 @@
         "v403"
       ],
       "content": "2026-11-16 #153⑥-9（V-387-2）を v403 で裁定: Offset（[seq+0x48]）の数式上の役割を確定（v387 の [推定高]→[確定] 昇格）。成果物 tmp/re/v403_offset_formula_ruling.md（probe v403_1 全 EXIT=0・x87 disp=0x48 census 16件＋FUN_006ca950 body 全0x48 行通読）・台帳 row379（bak229）・round_verify ALL OK（rows 31..379 / total 265 / done 260 / open 5）・STATE (dy)。本質=[確定(命令＋decompiled)]: effective_time = time + Offset に変換する加算補正 — pose クエリ FUN_006c6b30(seq, time+Offset) と time remap 0x6C5FC0（v390）へ time+Offset を入力（L499594/L499613/L499620・machine 0x6CAABC fadd→call 0x6c6b30／0x6CABC9 同／0x6CABED fadd→call 0x6c5fc0）。遅延初期化=[確定]: if (Offset==−FLT_MAX) Offset=−time（L499541-542・machine 0x6CA961）→ effective=経過時間。再基準化（一回限り）=[確定]: if ([+0x54]≠−FLT_MAX){ Offset=[+0x54]−time; [+0x54]=−FLT_MAX }（L499586-588・machine 0x6CAA4F ブロック）→ effective を保留時刻にスナップ。終了時累積=[確定]: Deactivate(fade<=0) で Offset += (Last≠−FLT_MAX ? WeightLast/Freq − Last : 0)（FUN_006c9cb0 L498944-546・machine 0x6C9D0E fadd/fstp）＝停止時に未消化時間を繰越（v393 と一致）。リセット=[確定]: Offset=−FLT_MAX（Activate L498920・0x6C9C99／blend wrapper L499049・0x6C9ED6／ctor 0x6C65C0/0x6C805A 帯）。blend 同期=[確定]: state6 で partner[+0x48] = FUN_006c6b30(this, time+Offset)/partner.Freq − time（L499594-597・machine 0x6CAAF4）＝partner の effective time を this の remap 済み時刻に一致＋partner[+0x48]+time ≠ partner[+0x34]（Last）チェック（L499616-617）。表示=dump \"Offset\" 行（v402・0xA35FEC）。scope: 帯内に別構造の +0x48 あり（FUN_006bfcd0 等 interpolator 系 own float／0x6D0305 は fldcw＝FPU control word）— NiControllerSequence の [+0x48] のみに適用。残点 V-403-1..3（1=[+0x54] の名前と供給元（保留時刻・dump 対象外の内部時刻）【中】/2=state2 ブロック出口で state=1 へ遷移する条件【低】/3=FUN_006c6b30 戻り値の厳密な意味と /Freq 正規化の根拠【低】）。教訓: 「〜の役割」系は①入力元 census（x87 disp 走査）②出力先（どの call へ流れるか）③ライフサイクル（init/更新/累積/リセット）の4点で式を復元。v 採番 v403 消費（次=v404=⑥-10 V-388-1）。"
+    },
+    {
+      "id": "153-v404-seq54-2026-11-16",
+      "timestamp": "2026-11-16T06:34:55Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-153",
+        "n5b",
+        "re",
+        "v404"
+      ],
+      "content": "2026-11-16 #153⑥-10（V-388-1）を v404 で裁定（判定=[部分確定]）: [seq+0x54] の正名と役割を確定。成果物 tmp/re/v404_seq54_ruling.md（probe v404_1・v404_3 全 EXIT=0・v404_2 は出力生成済みで実行末尾のみサーバ再起動 interrupt・.out 4572B 完全）・台帳 row380（bak230）・round_verify ALL OK（rows 31..380 / total 266 / done 261 / open 5）・STATE (dz)。正式名=[確定(否定側)]: バイナリに名前文字列なし（3系統調査: ①sequence の text dump（FUN_006ca440）13スカラに +0x54 不在②.rdata の m_f* 全31件在庫に候補なし（m_fLastTime 等は他クラス dump 用＝FUN_00716140 キー系等）③sequence band の m_ 名 dump＝0件＋コンソール/ログ言及なし・MSVC バイナリはフィールド名なし）。役割=[確定(命令＋decompiled)]: blend 開始時に両 sequence へ書き込まれる one-shot 内部時刻スナップショット — ①書込: FUN_006c9d30（blend wrapper・v393）成功時 this[+0x54]=LastScaled[+0x3c]/Freq[+0x28]・other[+0x54]=param_4/other.Freq（L498988-89・machine 0x6C9DE6/0x6C9DF0）②未設定=−FLT_MAX（Deactivate fade<=0 L498950・state6 消費 L499588・ctor 0x6C65EA/0x6C8081）③消費A（評価時 time 上書き）: FUN_006ca950 default 経路で if (+0x54≠−FLT_MAX) time := [+0x54]（L499610/499625）→ time remap FUN_006c5fc0(time,1)（v390・flag=1＝clamp）→ Weight×fade を FUN_006c6dc0 へ（L499627-628）＝保存した内部時刻で pose 評価を固定④消費B（Offset へ畳み込み）: state2 出口で Offset=[+0x54]−time して −FLT_MAX クリア（L499586-588・machine 0x6CAA4A）→ v403 の Offset 数式に接続⑤通常時（−FLT_MAX）: time+Offset / partner 経路（v403 整合）。補足=[確定(否定側)]: pose query FUN_006c6b30（body 137行）は 0x54 参照0件＝上書きは update 側で完結。副次（v401 残点1 解消）=[確定]: block 配列の container ＝ NiControllerSequence — ①sequence vtable idx15＝FUN_006cace0 が [this+0xc]（count）＋[this+0x14]（stride16 配列）を使用（L496661-49675・+4 ref release/+8 zero＝block 構造）②dump の ArraySize＝[+0xc]③FUN_006c70a0（v401 構築 fn）が NiFixedString name コピーを伴う（machine 0x6C70E9-0x6C710A）。残点 V-404-1..3（1=dump ヘッダ文字列 FUN_0070f910(DAT_00b3cb24) の正体【低】/2=FUN_006cddb0（m_fWeightThreshold/m_fEaseSpinner dump）の対象クラス同定【低】/3=FUN_006c9d30 の param_4 供給元【中】）。教訓: 「正名」系は①当該クラスの text dump フィールド列挙②名前文字列在庫 census③band 内 dump 呼び出し全数の3点で否定してから [未確定]（名前）/[確定]（役割）に分離裁定・推測で名前を当てない。並行解析: #154/#151 の subagent は2回ともサーバ再起動で中断（error・自動再開なし）→直列に切替。v 採番 v404 消費（次=v405 は #154 予約と競合するため着手時に再確認）。"
     }
   ],
   "metadata": {
-    "totalEntries": 808,
+    "totalEntries": 809,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-16T04:48:14Z",
-    "entry_count": 808,
-    "last_updated": "2026-11-16T04:48:14Z"
+    "lastUpdated": "2026-11-16T06:34:55Z",
+    "entry_count": 809,
+    "last_updated": "2026-11-16T06:34:55Z"
   }
 }
