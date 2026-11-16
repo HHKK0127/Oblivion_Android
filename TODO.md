@@ -407,6 +407,16 @@
   > ⑥[確定] FUN_00468180 identity: `void __thiscall(int* self, u8 v)`: `*(u8*)(self+4)=v; virtual [self]+0x10()()` [確定(decompiled)]＝byte AV setter（store＋notify）family（0x4681B0/E0/8210 連番同型 [推定高]）。
   > 残点 V-449-1..3（1=Player[+0x1C] identity（setter と class）と +0x32 s16 の語【低】／2=TESActorBaseData+4 bit7 set 経路実検証（byte store 書手 census）と semantic・0x523F40 の int3 境界検査【低】／3=docs 欠落 fn FUN_00511570 の identity（machine 全文 decode）と default float AV の index 範囲【低】）。
   > 教訓: virtual slot identity は「ctor vtable store→RTTI→[vt+off] 読み→1行 getter」の4手で完結／flag set 探索は形式別 census の否定側結果をそのまま推理材料に（or=0hits→byte store 推論）／backward annotation grep は直前 annotation を返すだけ→int3 境界（CC×N bytes 実読）と必ず突き合わせ（v447 sub-chunk 推定はこれで訂正）／dispatcher case→AV 語は「case 番号＝AV index」＋table 実読で即完結／setter family は連番 fn＋同型 decompiled で1本から family 判定。v 採番 v448 消費（次=v449）。
+  > 【旧残点群移行第3弾 v449 — V-449-1..3 完遂】probe v449_1..v449_3 全3本 EXIT=0。成果物 tmp/re/v449_player_writer_ruling.md・台帳 row425（bak275）・round_verify ALL OK（rows 31..425 / total 311 / done 306 / open 5）。
+  > 訂正: v449_2 (c)「3fn docs annotation 欠落」は fn.lower() バグ（// fun_ 小文字 needle 恒失敗）の誤答 → v449_3 で3件実在確認（L81193/L81608/L81935）して撤回。
+  > ①[確定] V-449-1 Player[+0x1C] 書手＝否定側: Player ctor 帯（FUN_0066A740..0x66AD40）の [reg+0x1C] 直書き0件＋docs FUN_0066a740 body（L430157..430550）内の param_1[7]（=+0x1C）代入0件（grep hits 17件は param_1[0x1c1..0x1c7]＝+0x704.. 別 field）→ 別 fn（Character/Actor 帯）が書く [確定（否定側）]、書手 fn と +0x32 s16 の語は [未確定]＝残点。
+  > ②[確定] V-449-2 TESActorBaseData+4 byte 書手群: census（0x467000..0x468400）で 5件/4fn＝46761F/467665（FUN_004675e0）／467DF9（FUN_00467ca0）／468186（FUN_00468180）／468291（FUN_00468280）。FUN_00468280（L81937）＝`*(u8*)(self+4)=v[0]; virtual+0x10(0x100)` → +5=v[1] → +6=v[2] ＝3-byte 一括 AV setter（+4,+5,+6 各 set＋notify）[確定(decompiled)]／FUN_004675E0（L81193）＝list walk 更新 [推定高]／FUN_00467CA0（L81610）＝byte param 大 local 処理 fn [未確定]。bit7 set 経路候補＝この群（byte store）[推定高]。
+  > ③[確定] 0x523F40＝int3×8 境界の独立 fn＝docs annotation 欠落 [確定]（v448 FUN_00511570 と同類型＝v437 類型2件目）。
+  > ④[確定相当] V-449-3 FUN_00511570 identity: fldz/out double→virtual [edi]+0x190→call 0x5e02e0→movzx byte[ebx+4]（FormType）→ __RTDynamicCast（push 0xB03DE4; push 0xB02F9C; … call 0x9832e6）→ **0xB03DE4 TD 実読＝`.?AVTESActorBase@@` [確定]** → virtual [esi]+0xB4 → cmp edi,[0xB333C4]（Player 判定）→ **Player のとき FUN_005F1910(8)→FUN_00519C50（AV8=Health）／FUN_005F1910(0xA)→[esi+0x24]→FUN_004672B0（AV10=Fatigue）／FUN_005F1910(9)→FUN_00467290（AV9=Magicka）一括 SET [確定(機械)]** → **FUN_00511570＝「obj を TESActorBase に RTTI cast、Player の場合は Health/Magicka/Fatigue 一括 SET する AV 適用 fn [確定相当]**」。
+  > ⑤[確定] dispatcher default 範囲: FUN_00519F50 head `cmp eax,0x27; ja 0x51a094` → switch 0..39、default は AV index ≥0x28（[40]MagickaMultiplier 以降）[確定] → default float setter（FUN_0065cb00＋notify）は AV 40..71 に適用 [確定相当]。
+  > ⑥[確定] RTTI TD 群: 0xB03778=.?AVTESObjectARMO@@／0xB036FC=.?AVTESObjectWEAP@@／0xB05DE0=.?AVTESObjectCLOT@@（FUN_0051a120 の cast 先）・FUN_005F1910（L357654）＝FUN_005EAD00(param)→FUN_009828C0()×2 wrapper [確定(decompiled)]（実体 FUN_005EAD00＝残点）。
+  > 残点 V-450-1..3（1=Player[+0x1C] 真の書手 fn（Character/Actor ctor 帯 census 拡張）と +0x32 s16 の語【低】／2=FUN_00467CA0 identity 深部と FUN_005EAD00（AV fetch 実体）【低】／3=0x523F40（docs 欠落独立 fn）の identity【低】）。
+  > 教訓: docs needle は実データケース（// FUN_ 大文字＋addr 小文字）そのまま（fn.lower() は欠落誤認を生む・「3件同時欠落」は needle 疑い）／否定側確定は machine band＋docs body の2系統／__RTDynamicCast identity は第4引数 TD の name 実読で1手／AV 適用系は既知 setter（v413 case8/9/10）の caller census が鍵／switch default 範囲は head の cmp reg,N; ja の1行で即決。v 採番 v449 消費（次=v450）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1313,11 +1323,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1341,4 +1346,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 06:57:50
+**ai-todo** | Last Updated: 2026-11-17 07:03:50
