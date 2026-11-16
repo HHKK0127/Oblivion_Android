@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-16T16:45:38Z",
+  "lastUpdated": "2026-11-16T18:08:56Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -12129,14 +12129,29 @@
         "script-functions"
       ],
       "content": "2026-11-17 派生残点第25弾 v433（probe v433_1..3 全3本 EXIT=0）＝V-433-1..3 完遂: 成果物 tmp/re/v433_table_records_ruling.md・台帳 row409（bak259）・round_verify ALL OK（rows 31..409 / total 295 / done 290 / open 5）・STATE (fc)・ai-todo #151 note。[確定] 0xB0B420（id 0x100..0x182）＝console command テーブル131件（rec0..rec130）— 構造 {name, alias, id, help 文言, +0x10 flags, +0x14 ptr, +0x18 handler fn, +0x1C fn, 0, 0}（stride0x28）。実読: rec0='Show'/'TST'/'Show global scripts and variables.'/handler 0x502210・rec1='ShowVars'/'SV'・rec2='ShowQuestVars'/'SQV'・rec130='ClearFaceGenModelData'/'CFG'（id 0x182 最終）。[確定] 0xB0C8C0（id 0x1000..0x1170）＝script function テーブル369件（rec0..rec368）: rec0='MessageBox'（0x513280/0x500130）・rec1='GetDistance'（+0x20=0x4F43C0）・rec368='ClearOwnership'（id 0x1170 最終）。[確定] 開発者 sentinel（実文字列）: console rec131（0xB0C898）＝'ADD NEW CONSOLE COMMANDS BEFORE THIS ONE!!!'（id 0x183）／function rec369（0xB10268）＝'ADD NEW FUNCTIONS BEFORE THIS ONE!!!'（id 0x1171）— range check（コード）と sentinel（データ）の2系統で id 範囲を相互検証（131件/369件完全一致）。[確定] keyword table（0xB0A2C8）全16件実読（rec16 name ptr=0 で終端）: Begin(0x10)/End(0x11)/Short(0x12)/Long(0x13)/Float(0x14)/Set(0x15)/If(0x16)/Else(0x17)/ElseIf(0x18)/EndIf(0x19)/While_DEPRECATED(0x1A)/EndWhile_DEPRECATED(0x1B)/.(0x1C)/ScriptName(0x1D)/Return(0x1E)/Reference(0x1F)（+0x10/+0x14 全件0）＝TES4 script キーワード/型トークン完全表。While_DEPRECATED＝Oblivion 廃止 while の痕跡 [確定(実文字列)]。[確定(否定側)] id 0x00..0x0F は keyword table に存在しない（rec0 が 0x10）＝別の enum 帯。[確定] FUN_004FCA70 callers＝E8 2件とも FUN_004FD7C0（script parser・L197009-: tokenizer FUN_004fcbd0＋\" 文字列リテラル判定ループ）→ keyword lookup は parser の1 pass。found 分岐（0x4FCB2B）: lea edx,[ebx+ebx*4]（i×5）→ mov byte [edi+0x204],0x58（type tag）→ mov eax,[edx*8+0xB0A2D0]（rec[i].id）→ mov [edi+0x208],eax → return1 ＝ トークン構造体へ type=0x58＋keyword id を格納（未発見は xor al,al）。[確定] FUN_004FD7C0 callers: 自己再帰 0x4FDBC7／FUN_004FDE30／FUN_004FF4C0×2／unannotated×4 — FUN_004FDE30 は console/function table の +0x1C に全件共通格納＝共通 command 実行ラッパー。[確定] 3層 id 空間: keyword(0x10..0x1F) < console(0x100..0x182) < function(0x1000..0x1170)。rec370 以降は別構造（'Left Foot'/'Sneak'/'Idle'＝idle 名 [推定高]）。残点 V-434-1..3（1=id 0x00..0x0F 帯の正体（keyword 外の enum 所有者）【低】／2=rec370 以降の idle animation 名テーブル構造と consumer【低】／3=FUN_004FD7C0 の unannotated callers 4件（parser 上位＝script 読込/コンパイラのどの pass）【低】）。教訓: テーブル境界は sentinel レコード（ADD NEW...BEFORE THIS ONE!!!）が実文字列で残る—range check（コード）と sentinel（データ）の2系統で id 範囲を相互検証／レコード実読は name/alias/help の3点セットで役割即決（alias TST/SV/SQV＝console 短縮名）／隣接 walk は name ptr が string でも次構造の name が string の場合がある→id 範囲との突合が必須。本日 push: v405→v432（232ababc）28件＋本件 v433。v 採番 v433 消費（次=v434）。"
+    },
+    {
+      "id": "151-v434-event-table-2026-11-17",
+      "timestamp": "2026-11-16T18:08:56Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v434",
+        "script-events",
+        "animation-names"
+      ],
+      "content": "2026-11-17 派生残点第26弾 v434（probe v434_1..29 全29本 EXIT=0）＝V-434-1..3 完遂: 成果物 tmp/re/v434_event_table_ruling.md・台帳 row410（bak260）・round_verify ALL OK（rows 31..410 / total 296 / done 291 / open 5）・STATE (fd)・ai-todo #151 note。[確定] id 0x00..0x0F の所有者＝script event テーブル .data 0xB0AF48（stride 0x28・31件・id 0x00..0x1E）: GameMode(0)/MenuMode(1)/OnActivate(2)/OnAdd(3)/OnEquip(4)/OnUnequip(5)/OnDrop(6)/OnYield_unused(7)/OnHit(8)/OnHitWith(9)/OnDeath(A)/OnMurder(B)/OnKnockout(C)/OnAlarm(D)/OnAlarmVictim(E)/OnPackageStart(F) → OnPackageDone(0x10, alias='OnPackageEnd')/ScriptEffectStart/Finish/Update(0x11-0x13)/OnPackageChange(0x14)/OnLoad(0x15)/OnMagicEffectHit(0x16)/OnSell(0x17)/OnTrigger(0x18)/OnStartCombat(0x19)/OnTriggerActor(0x1A)/OnTriggerMob(0x1B)/OnActorEquip(0x1C)/OnActorUnequip(0x1D)/rec30(0x1E) ＝ TES4 script event 定義 [確定(実文字列)]。layout {+0=name,+4=alias,+8=id,+0xC=help,+0x10=flags,+0x14=ptr,+0x18=handler fn,+0x1C=0x4FDE30 共通,+0x20=0,+0x24=0}。0xB0AF48+31×0x28=0xB0B420＝console table 開始と物理隣接。[確定(否定側)] keyword table（0xB0A2C8）は 0x10..0x1F のみ・直前は AV name table（stride4）＝0x00..0x0F を持つ table は直前に存在しない。dispatch switch（0x4FF7B9: id-0x10<=0xF→keyword／default で console 0x100..0x182→function 0x1000..0x1170→'Unknown function code %d.'）にとって 0x00..0x0F は無効 id → keyword/console/function の id 空間と event の id 空間は別系統（重複 0x10..0x1E あり）。[確定] event table consumer＝FUN_004ff4c0 内 0x4FF904 lea eax,[ebx+0xB0AF48]（base＋byte offset・[eax+0x10] byte 判定→push 0xA4B524→FUN_004fce30 エラー報告）。文言実読: 0xA4B338='Unknown function code %d.'／0xA4B21C='Script command \"%s\" is a console-only command.'／0xA4B1FC='Script command \"%s\" not found.'。[確定] V-434-2: sentinel（0xB10268）後ろに3構造: (a) flat string 配列 0xB10290..0xB102DC（20件・stride4）='Left Foot'/'Right Foot'/'Left Back Foot'/'Right Back Foot'/'Idle'/'Aware'/'Attack'/'Hit'/'Death'/'Weapon'/(空)/'Sneak'/'Swim'/'Fly'/(空)/'HandToHand'/'OneHand'/'TwoHand'/'Staff'/'Bow' ／ (b) stride-0x24 レコード 0xB102E0 起点: rec0='Idle'/rec1='DynamicIdle'/rec2='SpecialIdle'(0xB10328 直接 base＝stride 検証)/rec3='Forward'/rec4='Backward'/rec5='Left'… ／ (c) parallel string 0xB108EC='LowerBody'/'LeftArm'/'LeftHand'/'RightArm'/'SpecialIdle'/'Start'×8/'End'×2/'Attach'/'Detach'/'Hit'×2/'Attack'/'Attach' — (a)(b)=animation group/state 名、(c)=sequence group＋text key 名 [推定高]。[確定] consumer＝FUN_00407AE0（L5705）: lea edx,[eax+eax*8]; mov eax,[edx*4+0xB102E0]（stride-0x24 name 取得）→ call 0x51A9E0/0x51A9D0（name→idx）→ mov ecx,[eax*4+0xB102C8]/mov edx,[eax*4+0xB102B8]/mov ecx,[eax*4+0xB108EC] → format '%s -> %s/%s/%s, Count: %d'（0xA30670 実読）＝animation group dump [推定高]。base refs: 0xB102B8=6/0xB102C8=11/0xB102E0=22/0xB108EC=3。FUN_004fcce0（L196321）＝起動時 validation: DAT_00b10270!=0x1171→'The script function list doesn't have all the names filled in.'／DAT_00b0c8a0!=0x183→'The script console-command list...'＝v433 sentinel の実行時検証。[確定] V-434-3: FUN_004FD7C0 E8=8件＝0x4FDBC7(自己)／FUN_004FDE30／FUN_004fef80×4（0x4FF015/0x4FF12E/0x4FF26A/0x4FF3C7）／FUN_004ff4c0×2 — unannotated 4件は全て FUN_004fef80（L197796・__alloca_probe＋512B バッファ多数の script pass [推定高]）。FUN_004ff440（L197993）＝parser state reset/dtor（[+0x20]/[+0xc] free・[+0x10]/[+0x12] u16 ゼロ）[確定]。FUN_004fcbd0＝whitespace skipper（tab/space/comma）[確定]。副次: +0x1C=0x4FDE30 が全 rec 共通で FUN_004FDE30 が FUN_004FD7C0 を呼ぶ＝+0x1C＝共通 name/parse callback [推定高]。残点 V-435-1..3（1=event table +0x10 flags 語義（0x0/0x1/0x10000/0x10001/0x20001）と +0x14/+0x18 の関係【低】／2=(a) flat array の consumer と 0xB108EC の2段構造（5 group+16 key 混在）の理由【低】／3=FUN_00407AE0 正式 identity と 0x51A9D0/0x51A9E0/0x51AA00 helper3本【低】）。教訓: 「どの id band が未所有か」は switch の range check 連鎖を上から読むことで否定側から確定／「id に imm store が無い」＝table 由来の間接証明（mid-instruction 偽陽性6件を decode で潰す）／新テーブル探索の決定打＝stride×id run の組合せ census（1本で所有者一撃）／隣接 table 境界は base+N×stride==次 base で相互検証／stride 判定は候補横断比較＋直接 base の2系統（flat/0x24 併存で片方だけ見ると誤構造＝v434_1→v434_8 訂正）。本日 push: v405→v433（823fea38）29件＋本件 v434。v 採番 v434 消費（次=v435）。"
     }
   ],
   "metadata": {
-    "totalEntries": 838,
+    "totalEntries": 839,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-16T16:45:38Z",
-    "entry_count": 838,
-    "last_updated": "2026-11-16T16:45:38Z"
+    "lastUpdated": "2026-11-16T18:08:56Z",
+    "entry_count": 839,
+    "last_updated": "2026-11-16T18:08:56Z"
   }
 }
