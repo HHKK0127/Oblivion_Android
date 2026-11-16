@@ -494,6 +494,14 @@
   > ④[未確定] V-459-2 iVar13 class（"Bip02" lookup owning vtable）は budget 未着手＝残点／[manager+0x30] 書手 fn も残点（band machine census disp8=0 件＝v458 否定側と整合、docs band は FUN_006c5ee0 が巨大 annotation で annotation 稀疏帯＝owning 判定粗）。
   > 残点 V-460-1..3（1=X＝*(manager+0x30) の class（L498845 X.vtable+0x5C 実際 owner・v457 で2 class は stub/data 判明済み→第3 class・store を machine census で特定）【低】／2=iVar13 class（"Bip02" lookup vtable）と DAT_00b3cd7c 実行時文字列（V-419-1 引継ぎ）【低】／3=旧残点（V-405-4..5/V-406-2..6）へ（V-460 で2点片付けて V-461 から旧群）【低】）。
   > 教訓: 「FUN_x(*(...+off))」という docs の1行が field の用途を一撃（[manager+0x30]＝StoreTargets param2 供給元は1行＋callee 2引数 signature で確定）／fn ptr→vtable 逆引きは .rdata dword search が最速（slot 値 search→vtable base 後方 walk→slot index→RTTI の4手で slot＋class 同時確定・v457 forward 法と表裏）／__RTDynamicCast 第4引数 TD（2本）実読で prune/cast fn 対象 class 即決／annotation 稀疏帯（巨大 annotation が多数 fn 覆う＝docs 欠落帯）では band grep の owning 判定が粗い→machine census 併用で回避／既存残点 listing（refs 8件）と新規 census の完全一致は強い裏付け（過去台帳記録を probe 結果と突き合わせる習慣）。v 採番 v459 消費（次=v460）。
+  > 【旧残点群消化第4弾 v460 — V-460-1..3 完遂】probe v460_1 全1本 EXIT=0。成果物 tmp/re/v460_stringmap_ruling.md・台帳 row436（bak286）・round_verify ALL OK（rows 31..436 / total 322 / done 317 / open 5）。
+  > ①[推定高]（候補特定）V-460-1 X＝*(manager+0x30): L498845 の3引数 call（(&uStack_29,1,&cStack_2a)）と整合する vtable slot +0x5C を4候補で実読 → NiTStringTemplateMap<NiTPointerMap<PBD,seq*>,seq*> vt=0xA797E4 の [vt+0x5C]=FUN_006C4260（3引数 fn: mov eax,[esp+4]（第1引数）→ call 0x68F970 → mov ebx,[esi+0x30]）＝唯一の3引数 fn [確定(機械)] → X＝NiTStringTemplateMap instance [推定高]（L498845 式の Y=*(manager+0x30) と FUN_006c4c20 の StoreTargets(*(manager+0x30)) が同一 field、StoreTargets の param_2＝Y＝map instance）。
+  > ②[確定(否定側)] 他候補の +0x5C は fn でない/thunk: NiTArray vt=0xA7977C と NiTMapBase vt=0xA7975C は [+0x5C]=FUN_004F0F60（add ecx,0xc; jmp 0x44d810＝offset-adjust thunk）／NiTPointerMap vt=0xA797A4 は [+0x5C]=0xAC5F78（data）→ X はこれら以外。[未確定] manager+0x30 への書手 fn は残点（v458/v459 否定側継続）。
+  > ③[推定高]（候補）V-460-2 iVar13 class: StoreTargets 内の virtual[manager+0x7C]+0x4C(str) の候補 vtable +0x4C を実読 — NiTPointerMap vt=0xA797A4 の [+0x4C]=FUN_006C4F80（cmp byte[ecx+0x10],0; je; lea edx,[eax+1]＝string walk/hash [確定(機械)]）／NiTStringTemplateMap vt=0xA797E4 の [+0x4C]=FUN_006C42B0（call 0x715820→test al,al＝string 判定 [確定(機械)]）／NiTMapBase vt=0xA7975C の [+0x4C]=FUN_006A9060（div dword[ecx+4]; mov eax,edx; ret 4＝key hash modulo [確定(機械)]）→ manager+0x7C は string-keyed map [推定高]、iVar13（lookup 返り値）は entry/値（value＝NiControllerSequence*）で +0x1C を持つ構造 [確定（v458）] → iVar13 の正式 class は map entry layout 次第で [未確定]＝残点。
+  > ④[確定]（否定側）V-460-2 DAT_00b3cd7c image 中身: image 上の [0xB3CD7C]=0xC3FD4D24＝vtable 範囲外・fn 範囲外、first 16 dwords が乱数風（0xC3FD4D24 0x868DF2C9 0xBBFDC3F6...）→ 静的 vtable/静的データでない [確定(否定側)] → runtime 構築 object（または pack/暗号化 image 領域）[推定高]、実行時文字列の中身は image からは読めず [未確定]＝残点（V-419-1 引継ぎ維持）。
+  > ⑤[確定] V-460-3 移行方針: V-461 から旧残点（V-405-4..5/V-406-2..6）へ軸を移す [確定（作業方針）]（X 書手／iVar13 entry layout／0xB3CD7C 実行時文字列は低優先で V-462+ に併走）。
+  > 残点 V-461-1..3（1=旧残点消化開始（V-405-4..5 palette insert／unknown interpolator idx35・V-406-2..6 優先順）【低】／2=manager+0x30 書手 fn（NiTStringTemplateMap insert caller census）と iVar13 entry layout【低】／3=DAT_00b3cd7c 実行時文字列（V-419-1 引継ぎ・runtime 構築 object 中身は動的解析要）【低】）。
+  > 教訓: call site の arity（引数の数）が vtable slot の同定に効く（L498845 の3引数が4候補の +0x5C を1 probe で絞る＝fn signature を先に確定してから slot を当てる）／hash function の機械形（div [reg+N]→余り返し）は map class の即同定素材／image 中身の1 dword で静的 vtable か runtime object かが即判定（vtable 範囲外＋乱数＝runtime・static object なら image に ptr 残る）／[vt+off] が fn でない（data/thunk）ことも重要な否定側証拠（thunk=add ecx,N;jmp と data を区別して3引数 fn だけが残る）／候補列挙は既知 TD→vtable（v457 済み）が forward 法より速い。v 採番 v460 消費（次=v461）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1400,6 +1408,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1423,4 +1436,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 08:15:07
+**ai-todo** | Last Updated: 2026-11-17 08:25:12
