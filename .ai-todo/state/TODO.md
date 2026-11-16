@@ -288,6 +288,17 @@
   > ⑩[確定] helper3本: FUN_0051a9d0(ushort p)=p>>0xc（bits12-15）／FUN_0051a9e0(uint p)=p>>8&0xf（bits8-11）／FUN_0051aa00(uchar p)=p（identity＝low byte）→ packed 値の bitfield 抽出 fn 群。FUN_00407AE0 が同一 esi を3本に渡し bits0-7→stride0x24 group／bits8-11→0xB102C8／bits12-15→0xB102B8／[esp+0x5c]→0xB108EC ＝ 4 name を packed 値から復元。
   > 残点 V-436-1..3（1=console/function の flag byte consumer 特定【低】／2=flat array 先頭10件の consumer（ref0件）と 0xB108EC の index 源（[esp+0x5c] 由来）【低】／3=FUN_00407AE0 の command 名（FUN_0040d4d0 の command table 登録と FUN_00977c50(3) の意味）と type 0x3 vs 0x15 の語義差【低】）。
   > 教訓: flag dword は byte+pad+u16 に分解し consumer の cmp 幅（cmp byte vs movzx word）と突合／argcount 仮説は「ptr null⟺count0」完全相関＋count=2 の desc 2件実読の2系統で検証／共有 pool は「ある +0x14 値の record を全3表走査」で一撃発見（0xB0A768→14件）／fn identity は body 内 string push 列挙が最速／1行 decompiled の >>n・>>n&0xf は bitfield 抽出の即決パターン。v434 の「+0x1C＝共通 name/parse callback」は「arg-parse handler（common 0x4FDE30・per-record 上書き）」へ精緻化。v 採番 v435 消費（次=v436）。
+  > 【派生残点第28弾 v436 — V-436-1..3 完遂】probe v436_1..v436_14 全14本 EXIT=0。成果物 tmp/re/v436_flag_consumer_ruling.md・台帳 row412（bak262）・round_verify ALL OK（rows 31..412 / total 298 / done 293 / open 5）。
+  > ①[確定] V-436-1 flag byte consumer 2系統: (A) events＝FUN_004ff4c0 @0x4FF918（v435 確定・quest 判定→'Invalid block type for quest script.'）／(B) console/function＝FUN_004FAB20 @0x4FADB0: `cmp byte [eax+0x10],0; je` → flag≠0 かつ ecx==0 で FAIL（xor al,al;ret＝実行拒否）→ flag==0 なら `mov eax,[eax+0x18]`（record handler）を6引数で call（0x4FADD5）→ flag byte＝「object/reference receiver 必要」[確定]。
+  > ②[確定] ecx 正体: `movzx ebx,byte [edx+4]; add ebx,-0x31; cmp ebx,2; ja→ecx=0 / else ecx=edx` ＝ byte[+4] ∈ {'1','2','3'} のときのみ reference object（型判定ゲート）[確定(命令)]。
+  > ③[確定] V-436-2: 0xB108EC と 0xB10900 は隣接する2つの独立配列（v435「1配列に2段混在」は撤回・訂正）: 0xB108EC＝5 sequence group 名（LowerBody/LeftArm/LeftHand/RightArm/SpecialIdle）／0xB10900＝16 text key 名（Start×8/End×2/Attach/Detach/Hit×2/Attack/Attach）— base refs が別（0xB108EC→FUN_00407AE0、0xB10900→FUN_0051aa10・FUN_0051b490）。
+  > ④[確定(否定側)] flat array 先頭10件（0xB10290..0xB102B4）は全セクション ref 0 件、consumer 候補 FUN_0051b490 は 0xB102B8/0xB102C8/0xB102E0/0xB102EC/0xB102F0/0xB10900 の6 base のみ使用で 0xB10290 不使用 → 未使用 dead data [推定高]（signed negative index 到達は [未確定]）。
+  > ⑤[未確定] V-436-3: FUN_00407AE0 の owning fn — 唯一 call site＝0x40DEFC [確定]、machine 上 0x40D4D0..0x40DF74 の連続コード内（int3 境界なし）で annotation 範囲では FUN_0040d4d0。しかし FUN_0040d4d0 の decompiled body（L8522..L8659）に dump call が存在しない（FUN_00407ae0/FUN_005791a0/FUN_005791e0/FUN_00579220 全て不在）＋ body tail は machine 0x40D7BD..0x40D7FF に対応（FUN_0040fda0→0x40D7BD・FUN_00411100→0x40D7D9・FUN_00977c50(2)→0x40D7E0・ret 0x40D7FF）→ 0x40D800..0x40F640 帯に annotation が1件も無い＝docs/Oblivion_decompiled.c の function 欠落（docs vs code の不整合）[確定(不整合)]。
+  > ⑥[推定高] FUN_0040d4d0 の identity（v435 撤回）: v435 の「console command handler」は撤回 — body に _sprintf(acStack_108,"%s%03d",PTR_s_TestCameraPath_00b02d50,DAT_00b02d58); CreateDirectoryA(...)（L8632-33）＝TestCameraPath001/002/... の連番ディレクトリ作成 → camera-path test の debug tick [推定高]。FUN_00977c50＝return 1 の stub [確定]。
+  > ⑦[確定] dump gate 0xB3B72A: set＝FUN_005d6960（ctor of .?AVSleepWaitMenu@@・vtable 0xA6D7C4）内 0x5D69CA `mov byte [0xb3b72a],1`（条件付き）／test+clear＝0x40DF10/0x40DF23（dump call 0x40DEFC の直後）→ one-shot flag。FUN_005d6960 の E8 caller＝0x5D6D03（FUN_005d6bc0 L340155・param_1==4 gate）。
+  > ⑧[未確定] type 0x3 vs 0x15（両方 name='ObjectID'）の語義差＝V-437-1 へ。
+  > 残点 V-437-1..3（1=type コード体系（0..0x1F 対応表）【低】／2=docs function 欠落範囲の census（0x40D800..0x40F640 帯が単発か広範か）と dump owning fn の machine 特定【低】／3=flat array 先頭10件の到達経路と [esp+0x5c] index 源の由来【低】）。
+  > 教訓: flag/byte field の consumer 特定は「全 .text byte-pattern census→context decode で record-base のみ選別」（143件中 record 判別は直前の mov eax,[eax+0x14]）／consumer の第2引数まで遡ると flag 語義が確定（byte[+4]-0x31<=2＝reference 型判定）／docs 欠落の発見法＝「body tail の call site が machine range 内で唯一」で body の machine 範囲を逆算し次 annotation と突合／body 内 grep の不在（FUN_00407ae0 等）は docs 欠落の決定打／v435 の2つの [推定高]（console handler／1配列混在）がともに訂正＝[推定高] は次の probe で必ず反証を試す。v 採番 v436 消費（次=v437）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1194,6 +1205,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1217,4 +1233,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 03:50:24
+**ai-todo** | Last Updated: 2026-11-17 04:44:29
