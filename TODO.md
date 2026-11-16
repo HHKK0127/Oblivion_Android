@@ -191,6 +191,14 @@
   > ⑤[未確定] node[+0xC] と Bip01[+0x1C][+0xC] の同一性（構造一致・container が異なる）→ FUN_007074B0 の callers で [+0x1C] 中身が決まれば閉じる。[推定高] stock Gamebryo 布局（[+0xC]=flags 帯）との差はエンジン固有 layout。
   > 残点 V-424-1..3（1=FUN_007074B0 callers→[+0x1C] 中身→node[+0xC] 同一性【低】／2=virtual [+0xC] setter 群の vtable 所属と [+0x34] insert 本体【低】／3=FUN_006c6380（+4）machine body【低】）。
   > 教訓: ctor 0クリア＋direct 書手0件＝runtime attach フィールド（書手は single-line/virtual setter 経由）／E8 census 分布（0件=virtual・164件=factory bank）が fn 役割を語る／[reg+disp] census は [esp+disp] ローカル偽陽性をベースレジスタで濾す／byte-pattern context decode は file offset で region を切る（VA 切りは全漏れ）。v 採番 v423 消費（次=v424）。
+  > 【派生残点第16弾 v424 — V-424-1 部分解（v423 訂正含む）】probe v424_1..v424_3 全3本 EXIT=0。成果物 tmp/re/v424_ptr1c_setter_ruling.md・台帳 row400（bak250）・round_verify ALL OK（rows 31..400 / total 286 / done 281 / open 5）。
+  > ①[確定] FUN_007074B0＝refcounted pointer setter（this[+0x1C]=new・release 経路付き）— v423「single-line setter」は誤り・訂正: old=[esi+0x1c] → null なら素通し store（0x707517）／非 null なら old->vtable slot34(+0x88)(&local,this)（detach/query）→ InterlockedDecrement(&old->refcount) → 0 なら old->vtable[0](1)（scalar dtor）→ store new（0x7074F0/0x70750A）。data refs=0＝direct helper。
+  > ②[確定] E8=6 の分類: ①dtor clear: FUN_006A0AC0（[esi+0x40][+0x1C]=0＋[esi+0x3c]=0）／FUN_006A1590（同型）②conditional replace: 0x6A1B6A ③attach（target[+0x1C]=this）: 0x70AF00 fn（push ebx(this)→mov ecx,esi(arg1)→call＝arg1[+0x1C]=this・直後 lea ecx,[ebx+0xac]）④index-based set: FUN_0070B250×2。
+  > ③[確定] FUN_0070B250（L549983-550048）: child=*(param_1[+0xB0]+index*4)（count=u16[+0xB6]・cap=[+0xB4]・offset=u16[+0xBA]）→ retain → child[+0x1C]=0（puVar1[7]=0）→ FUN_007074B0(param_1,param_4)＝param_1[+0x1C]=param_4（refcounted）→ FUN_004b34e0(index,&param_4)（registry）→ *out=child／index 超過は grow（FUN_00523b10）。children 配列＝[+0xB0]（v405 と整合）。callers＝FUN_005640E0×3＋0x724700。
+  > ④[確定] [+0x1C] の性質＝refcounted な関連オブジェクト ptr（attach/index-set/dtor-clear の3経路で賦流・ctor0クリア）＋FUN_0070B400 が if([param_1+0x1c]!=0) で再帰走査（L550074-83）＝連結構造の入口。
+  > ⑤[未確定] node[+0xC] と Bip01[+0x1C][+0xC] の同一性は「Bip01[+0x1C]==Bip01（self-attach）か否か」に精緻化 → 次の一手＝0x70AF00 fn の identity と self-attach 実在確認。
+  > 残点 V-425-1..2（1=0x70AF00 fn identity・self-attach 実在・[+0xac] container 正体【低】／2=old->slot34(+0x88) detach 呼出しと FUN_004b34e0 registry の意味【低】）。
+  > 教訓: 「single-line setter」判定は head だけでなく body 全経路（null ブランチ含む）を読む（tail だけ見ると refcounted 全体像を見落とす＝v423 訂正事例）／call 直前 push 元の分類（0=clear・this=attach・idx=set）で callers 用途が即分かる／puVar1[7]=0（dword index）＝[+0x1C] clear は byte×4 換算で直訳。v 採番 v424 消費（次=v425）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1097,6 +1105,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1120,4 +1133,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-16 23:18:35
+**ai-todo** | Last Updated: 2026-11-16 23:34:33

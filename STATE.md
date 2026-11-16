@@ -1905,3 +1905,16 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **ctor 0クリア＋direct 書手0件＝runtime attach フィールド（書手は single-line/virtual setter 経由）**／**E8 census 分布（0件=virtual・164件=factory bank）が fn の役割を語る**／**`[reg+disp]` census は `[esp+disp]` ローカル偽陽性をベースレジスタで濾す**／**byte-pattern context decode は file offset で region を切る（VA 切りは全漏れ）**。
 - **本日 push 累計**: v405 → … → v422 `43b11ed8` →（本件 v423 を本 commit で push）＝**19裁定**。
 - **次**: 低優先残点群（V-424-1..3／V-414-1..3／V-413-2／V-415-2／V-416-2 ほか）を v424+ で消化。supermemory 未登録19件（v405..v423）は MCP 復復待ち。
+
+## 2026-11-16 (et) — 派生残点第16弾 v424（V-424-1 部分解・v423 訂正）: **`FUN_007074B0`＝refcounted `[+0x1C]` setter [確定]**（v423「single-line」表記は誤り）・**attach 経路 `arg1[+0x1C]=this`（`0x70AF00` fn）[確定(命令)]**・**`FUN_0070B250`＝child 配列＋`param_1[+0x1C]=param_4` [確定]**
+
+- **成果物**: `tmp/re/v424_ptr1c_setter_ruling.md`（probe **v424_1..v424_3 の3本全 EXIT=0**）。台帳 **row400（bak250）**・`round_verify` **ALL OK**（rows 31..400 / total 286 / done 281 / open 5）。ai-todo **#151 に note**。v 採番 **v424 消費（次=v425）**。
+- **① [確定] `FUN_007074B0`＝refcounted pointer setter（v423 訂正）**: `old=[esi+0x1c]` → null なら素通し store（`0x707517`）／非 null なら **`old->vtable slot34(+0x88)(&local, this)`（detach/query）→ `InterlockedDecrement(&old->refcount)` → 0 なら `old->vtable[0](1)`（scalar dtor）→ store new**（`0x7074F0/0x70750A`）。data refs=0＝direct helper。
+- **② [確定] E8=6 の分類**: ①**dtor clear**: `FUN_006A0AC0`（`[esi+0x40][+0x1C]=0`＋`[esi+0x3c]=0`）／`FUN_006A1590`（同型）②**conditional replace**: `0x6A1B6A` ③**attach（`target[+0x1C] = this`）: `0x70AF00` fn**（`push ebx(this) → mov ecx,esi(arg1) → call`＝**`arg1[+0x1C]=this`**・直後 `lea ecx,[ebx+0xac]`）④**index-based set**: `FUN_0070B250`×2。
+- **③ [確定] `FUN_0070B250`（L549983-550048）**: `child = *(param_1[+0xB0] + index*4)`（count=`u16[+0xB6]`・cap=`[+0xB4]`・offset=`u16[+0xBA]`）→ retain → **`child[+0x1C] = 0`（`puVar1[7]=0`）** → **`FUN_007074B0(param_1, param_4)`＝`param_1[+0x1C] = param_4`（refcounted）** → `FUN_004b34e0(index, &param_4)`（registry 更新）→ `*out = child`／index 超過は grow（`FUN_00523b10`）。**children 配列＝`[+0xB0]`（v405 と整合）[確定]**。callers＝`FUN_005640E0`×3＋`0x724700`。
+- **④ [確定] `[+0x1C]` の性質＝refcounted な関連オブジェクト ptr**（attach／index-set／dtor-clear の3経路で賦流・ctor0クリア）＋**`FUN_0070B400` が `if([param_1+0x1c]!=0)` で再帰走査（L550074-550083）＝連結構造の入口**。
+- **⑤ [未確定] 同一性問題を精緻化**: `Bip01[+0x1C]` は refcounted な「別のオブジェクト ptr（self 也可能）」→ **「`Bip01[+0x1C] == Bip01`（self-attach）か否か」に絞られた** → 次の一手＝`0x70AF00` fn の identity と self-attach 実在確認。
+- **残点 V-425-1..2**: 1=`0x70AF00` fn identity（E8 callers・decompiled）と self-attach 実在＋`[+0xAC]` container 正体【低】／2=`old->slot34(+0x88)` detach 呼出しと `FUN_004b34e0` registry の意味【低】。
+- **教訓**: **「single-line setter」判定は head だけでなく body 全経路（null ブランチ含む）を読む**（tail の `mov;ret` だけ見ると refcounted 全体像を見落とす＝v423 訂正事例）／**call 直前 push 元の分類（0=clear・this=attach・idx=set）で callers の用途が即分かる**／**`puVar1[7]=0`（dword index）＝`[+0x1C]` clear は byte×4 換算で直訳**。
+- **本日 push 累計**: v405 → … → v423 `11b56e34` →（本件 v424 を本 commit で push）＝**20裁定**。
+- **次**: V-425-1（`0x70AF00` identity・self-attach）→ 残る低優先残点群。supermemory 未登録20件（v405..v424）は MCP 復復待ち。
