@@ -55,6 +55,10 @@
   > 【⑥-9 V-387-2 完遂（v403）】probe v403_1 全 EXIT=0（x87 disp=0x48 census 16件＋FUN_006ca950 body 全0x48 行通読）。成果物 tmp/re/v403_offset_formula_ruling.md・台帳 row379（bak229）・round_verify ALL OK（rows 31..379 / total 265 / done 260 / open 5）。裁定（v387 の [推定高]→[確定] 昇格）: 本質=[確定(命令＋decompiled)]: effective_time = time + Offset に変換する加算補正 — pose クエリ FUN_006c6b30(seq, time+Offset) と time remap 0x6C5FC0（v390）へ time+Offset を入力（L499594/L499613/L499620・machine 0x6CAABC fadd→call 0x6c6b30／0x6CABED fadd→call 0x6c5fc0）。遅延初期化=[確定]: if (Offset==−FLT_MAX) Offset=−time（L499541-542）→ effective=経過時間。再基準化（一回限り）=[確定]: if ([+0x54]≠−FLT_MAX){ Offset=[+0x54]−time; [+0x54]=−FLT_MAX }（L499586-588・machine 0x6CAA4F）→ effective を保留時刻にスナップ。終了時累積=[確定]: Deactivate(fade<=0) で Offset += (Last≠−FLT_MAX ? WeightLast/Freq − Last : 0)（L498944-546・machine 0x6C9D0E fadd）＝v393 と一致。リセット=[確定]: Offset=−FLT_MAX（Activate L498920／blend wrapper L499049）。blend 同期=[確定]: state6 で partner[+0x48] = FUN_006c6b30(this, time+Offset)/partner.Freq − time（L499594-597）＋partner.Offset+time ≠ partner.Last チェック（L499616）。scope: 帯内に別構造の +0x48 あり（interpolator 系 own float／fldcw＝FPU CW）— NiControllerSequence の [+0x48] のみに適用。残点 V-403-1..3（1=[+0x54] の名前と供給元【中】／2=state2 出口で state=1 へ遷移する条件【低】／3=FUN_006c6b30 戻り値の意味【低】）。教訓: 「〜の役割」系は①入力元 census②出力先③ライフサイクルの4点で式を復元。v 採番 v403 消費（次=v404=⑥-10 V-388-1）。
   > 【進捗サマリ（2026-11-16 時点）】①〜⑥-9 まで**14裁定完遂・全件 push 済み**（v390..v403: c1977f2a/94e1e3db/d4c1d583/68384fe9/5375f3bd/1364a8ae/b37facdf/8f9cdb25/d9542349/8d3223f4/920fd859/05dcaf7b/8a50fa16/2461166e）。内訳=中5件（①time remap ②Morph flag ③blend bridge ④state3/4 ⑤要素コピー方向）＋低9件（⑥NiControllerManager Update ⑦PlayGroup handler ⑧sweep this ⑨Clone ⑩base copy/bit5 ⑪非0xFF供給元[部分確定] ⑫block ctor/0xA79EFc ⑬sequence text dump/Save確定負 ⑭Offset 数式役割）。台帳 row366..379・memory 808件・STATE (dl)..(dy)。**残り: ⑥-10 V-388-1（[+0x54] 正名・v404 着手直前）→ ⑥-11 V-388-2（0x6CAA4A st1 出所）→ ⑥-12 V-389-1（sub [global],1 直後3本）＋除外2件（V-374-1/V-375-2＝#82 待記のみ）**。
   > 【⑥-10 V-388-1 完遂（v404・判定=[部分確定]）】probe v404_1..3（1・3 は全 EXIT=0・2 は出力生成済みで実行末尾のみサーバ再起動 interrupt）。成果物 tmp/re/v404_seq54_ruling.md・台帳 row380（bak230）・round_verify ALL OK（rows 31..380 / total 266 / done 261 / open 5）。裁定: 正式名=[確定(否定側)]（バイナリに名前不在・3系統調査: ①sequence の text dump 13スカラに +0x54 不在 ②.rdata m_f* 全31件在庫に候補なし ③sequence band の m_ dump 0件＋ログ言及なし・MSVC バイナリはフィールド名なし）＋役割=[確定(命令＋decompiled)]: blend 開始時に両 sequence へ書き込まれる one-shot 内部時刻スナップショット — ①書込 FUN_006c9d30 成功時 this[+0x54]=LastScaled/Freq・other[+0x54]=param_4/Freq（L498988-89・machine 0x6C9DE6/0x6C9DF0）②未設定=−FLT_MAX（L498950/499588・ctor 0x6C65EA/0x6C8081）③消費A: 評価時 time := [+0x54]（L499610/499625）→ time remap 0x6C5FC0(time,1)（v390 clamp）→ Weight×fade → FUN_006c6dc0（L499627-628）④消費B: state2 出口で Offset=[+0x54]−time に畳み込み＋クリア（L499586-588・0x6CAA4A）→ v403 Offset 数式へ ⑤通常時=time+Offset/partner 経路。補足: FUN_006c6b30（137行）は 0x54 参照0件 [確定(否定側)]。**副次で v401 残点1 解消: block 配列の container＝NiControllerSequence [確定]**（sequence vtable idx15＝FUN_006cace0 が [+0xc] count＋[+0x14] stride16 配列を使用・dump の ArraySize＝[+0xc]・FUN_006c70a0 が NiFixedString name コピー伴う）。残点 V-404-1..3（1=dump ヘッダ DAT_00b3cb24 の正体【低】／2=FUN_006cddb0 の対象クラス【低】／3=FUN_006c9d30 param_4 供給元【中】）。教訓: 「正名」系は①dump フィールド列挙②名前在庫 census③band 内 dump 全数の3点で否定→[未確定]（名前）/[確定]（役割）に分離裁定・推測で名前を当てない。v 採番 v404 消費（次=v405 は #154 予約と競合するため着手時に再確認）。
+  > 【⑥-11 V-388-2 完遂（v407・判定=[確定(命令)]）】probe v407_1・v407_2 全 EXIT=0。成果物 tmp/re/v407_st1_origin_ruling.md・台帳 row383（bak233）・round_verify ALL OK（rows 31..383 / total 269 / done 264 / open 5）。
+  > 裁定: `0x6CAA4A` の `Offset=[+0x54]−st1` の **st1 ＝ `FUN_006ca950` の第2引数 param_2（＝state machine へ渡された現在時刻 time）** — prologue **`0x6CA970: fld dword [esp+0x10]`** で st0 へ積まれ、switch 全経路を通じて st0 として維持（途中 fucompp/fcomp/fstp の pop 後に st0=param_2 が復帰・case5 エントリ 0x6CA9FB の `fcomp st(1)` が既積み1段の証明）、**`0x6CAA4A: fld [esi+0x54]`（st0=[+0x54], st1=param_2）→ `0x6CAA4D: fsub st(1)` → `0x6CAA4F: fstp [esi+0x48]` ＝ Offset = [+0x54] − time**。decompiled L499586-4989 case5 と1:1 突合。副次: 0x6CA979 の Offset=-time 遅延初期化＝v403 整合・[+0x44]=1 state 書込＝v404 整合。
+  > 残点 V-407-1..2（1=case5 の [+0x50]≤time ゲート対応の state 遷移名と [+0x44]=state 全状態表【低・v403/v404 state 系残点と統合】／2=0x6CA994 の End(+0x50)+=time の意味【低】）。
+  > 教訓: x87 スタック出所は prologue の最初の fld から pop 操作順に手計算で追う（fucompp/fcomp/fstp の pop 回数で st(n) 生存区間が機械的確定・case 入口の fcomp st(1) が既積みの証明）。v 採番 v407 消費（次=v408=#153⑥-12・束残りは ⑥-12 のみ）。
 
 - [x] **#151** 【RE レーン依頼・#148 の実装中に検出（2026-11-15）】CLAS DATA +0x08 の正体＝**specialization enum の疑い（実データで21クラス全一致）**と、原版 chargen が CLAS から適用する内容の実装経路。 (2026-11-16)
   > 【経過（2026-11-15）】RE レーンは #152 の残点消化を直列で進行中で **v389 まで到達済み**（v389=n5b の 0x73A5E0=NiTSet::Add。束①〜⑧全完遂）。本 #151 はその後に拾われる順序。到着待ちの重要性: ①CLAS DATA +0x08 が specialization enum（0=Combat/1=Magic/2=Stealth・実データ 21/21 一致）かの確定と EXE 消費者特定＝v261 の「[未確定] 未読」判定の訂正要否 ②原版 chargen のクラス適用（属性+10・major skill・specialization +10・flags bit0）＝port の NpcManager::initializePlayerFromESM が呼び出し元ゼロの dead code で未実装。**#148 の後続実装と ClassData::specialization の再導入は本タスクの到着まで禁止**（推測実装の回避）。
@@ -979,6 +983,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1002,4 +1011,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-16 18:50:55
+**ai-todo** | Last Updated: 2026-11-16 18:56:51

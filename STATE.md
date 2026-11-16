@@ -1654,3 +1654,12 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-406-1..6**: 1=**+10 適用 fn・間接登録 0xA73DA8・opcode id【高】**／2=FUN_005222D0 正式名と属性計算・0xB362E4/EC 書手【中】／3=FUN_006ECC80 残 E8 の CLAS 型再 typed【中】／4=DATA+0x2C/+0x31 意味【低】／5=名前テーブル所有 fn【低】／6=FUN_00668B30 第4引数と +0x7A4 配列【低】。
 - **教訓**: **MSVC ICF で trivial getter は1アドレス化**→「1 fn＝1 意味」禁止・型は **caller の arg 経路（ecx=this 追跡）**で typed／**「未読」判定は call 経由 getter でも再検証**（v261 の2行が誤り）／GMST consumer 特定は**「登録表 key/default 実読→global cache→direct 読取 census」3段**／PE セクションで定数と実行時グローバルを区別／**decompiled 未収録 fn は machine 直 decode で補完**。
 - **次**: supermemory 未登録2件（v405/v404）の再試行 → **#153 ⑥-11 V-388-2（`0x6CAA4A` st1 出所・v407+）** → ⑥-12 V-389-1。
+
+## 2026-11-16 (ec) — #153⑥-11 完遂: `0x6CAA4A` の **st1 ＝ `FUN_006ca950` の time 引数（param_2）[確定(命令)]**（v407・V-388-2）
+
+- **成果物**: `tmp/re/v407_st1_origin_ruling.md`（probe **v407_1・v407_2 全 EXIT=0**）。台帳 **row383（bak233）**・`round_verify` **ALL OK**（rows 31..383 / total 269 / done 264 / open 5）。ai-todo #153 に note（**束残りは ⑥-12 のみ**）。v 採番 **v407 消費（次=v408＝着手時再確認）**。
+- **裁定 [確定(命令)]**: state2 出口の `Offset(+0x48) = [+0x54] − st1` の **st1 ＝ `FUN_006ca950` の第2引数 `param_2`（state machine へ渡された現在時刻 time）** — **prologue `0x6CA970: fld dword [esp+0x10]`** で st0 へ積まれ、**switch 全経路で st0=param_2 を維持**（途中 `fucompp`/`fcomp`/`fstp` の pop 後に復帰・case5 エントリ `0x6CA9FB: fld [esi+0x50]; fcomp st(1)` が「既に1段積まれている」ことの機械的証明）。**`0x6CAA4A: fld [esi+0x54]`（st0=[+0x54], st1=param_2）→ `0x6CAA4D: fsub st(1)` → `0x6CAA4F: fstp [esi+0x48]` ＝ `Offset = [+0x54] − time`**、直後 `[-FLT_MAX] で [+0x54] クリア`、`[+0x44]=1`（state1 遷移）。decompiled L499586-4989 case5 と1:1 突合。
+- **副次整合**: `0x6CA979` の `Offset = −time`（遅延初期化）＝v403 記述と一致／`[+0x44]=1` 書込＝v404 の state1 遷移と一致／`Begin(+0x4C)`・`End(+0x50)` の −FLT チェックと `End += time`（0x6CA994-6CA99C）も同一 prologue 内で追跡。
+- **残点 V-407-1..2**: 1=case5 の `[+0x50](End) ≤ time` ゲート対応の state 遷移名と `[+0x44]`=state の全状態表【低・v403/v404 の state 系残点と統合して再調査】／2=`0x6CA994` の `End(+0x50) += time` 遅延初期化の正確な意味【低】。
+- **教訓**: **x87 スタック出所の追跡は prologue の最初の `fld` から pop 操作順に手計算**（`fucompp`/`fcomp`/`fstp` の pop 回数を数えると st(n) の生存区間が機械的に確定・case 入口の `fcomp st(1)` が「既に1段積まれている」ことの証明になる）。
+- **次**: **#153 ⑥-12 V-389-1（`sub [global],1` 直後3本の意味・v408+）** → 束完遂 → 派生残点群（V-400..V-407-1..6 等）。
