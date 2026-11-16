@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-16T21:52:36Z",
+  "lastUpdated": "2026-11-16T21:58:30Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -12348,14 +12348,30 @@
         "dispatcher"
       ],
       "content": "2026-11-17 旧残点群移行第1弾 v447（probe v447_1..2 全2本 EXIT=0）＝V-414-1..3 完遂: 成果物 tmp/re/v447_av_level_ruling.md・台帳 row423（bak273）・round_verify ALL OK（rows 31..423 / total 309 / done 304 / open 5）・STATE (fq)・ai-todo #151 note。[確定] V-414-1 AV name table .data 0xB0A1A8 実読: [0]Strength/[1]Intelligence/[2]Willpower/[3]Agility/[4]Speed/[5]Endurance/[6]Personality/[7]Luck/[8]Health/[9]Magicka/[10]Fatigue/[11]Encumbrance/[12]Armorer/[13]Athletics/[14]Blade…/[71]ResistWaterDamage（[72]=Begin は keyword table 0xB0A2C8 開始と一致＝72件終端裏付け）→ TESActorBaseData[+8]=Magicka（既定50）／[+0xA]=Fatigue（既定50）／[+0xC]=Armorer（既定0）[確定]。v414 の「AV index9/10 [推定高: Health/Magicka 系]」は訂正（Health は index8）。[確定] V-414-2 FUN_004677F0＝level getter [確定(decompiled)]: local_4=u16[self+0xE]（base level）→ if (u32[self+4]>>7&1)（flag bit7 gate）→ iVar1=Player.vtable+0x170()() → local_4 += s16[iVar1+0x32]（機械は lea ecx,[eax+0x24]; add ax,[ecx+0xe]＝+0x32 と一致）→ clamp [+0x10]=min／[+0x12]=max（0=無制限）→ <1→1 → return。field 語義全部確定: [+0xE]=base level／[+0x10]=level min／[+0x12]=level max。[確定] DAT_00b333C4＝Player singleton: L4999 DAT_00b333c4 = FUN_0066a740()（v412 の Player ctor）／L4996 =0 破棄・docs 1647件・virtual +0x170/+0x1cc/+0x6c/+0x284/+0x380・[+0x6b0] counter/[+0x588] byte flag。+0x170 fn の identity と +0x32 s16 の語は [未確定]＝残点。[部分確定] u32[self+4]>>7&1: self＝TESActorBaseData（独立オブジェクト）→ +4 は u32 flags フィールド bit7 [確定（構造）]、semantic [未確定]。[確定] V-414-3 dispatcher FUN_00519f50 case0x0B+: case 0x0B..0x20, 0x25,0x26,0x27: break（no-op・17+3 case）[確定] → AV index 11..32 と 37..39 の SET は dispatcher 上 no-op／case 0x21: FUN_00468180／0x22: FUN_004681b0（続行）[確定]。[部分確定] 未注記2 fn: backward grep で FUN_00511570 の owning＝FUN_00510e60（L204640）／0x523F40 の owning＝FUN_00523eb0（L217884）→ 独立 annotation ではなく owning fn 内 sub-case chunk（Ghidra の fn 分割）[確定]。FUN_00511570 machine head 実読（fldz/double 初期化→virtual +0x190→call 0x5e02e0→movzx byte[ebx+4]→call 0x447df0（FormType 引数））＝AV 計算系 chunk [推定高]、0x523F40＝v411 cmp [esi+0xc],7 gate 同型＝formType7 ゲート chunk [推定高]、formal identity [未確定]。残点 V-448-1..3（1=Player+0x170 virtual fn の identity（level bonus 供給元）と +0x32 s16 の語・TESActorBaseData+4 flags bit7 semantic【低】／2=未注記2 fn の case-chunk formal identity（FUN_00510e60 の case 番号と 0x523F40 の case context）【低】／3=dispatcher case0x21+ の全列挙（FUN_00468180/81b0…と AV name 対応）【低】）。教訓: name table が既知（0xB0A1A8・72件）なら index→word は table 実読の1手（v414 推定を1 probe 解消）／getter は decompiled 全文（clamp）と machine head 対比で [+0x10]=min／[+0x12]=max を同時確定（jbe/jg の向きが clamp 方向）／グローバル ptr identity は docs 代入行（= ctor()）が最速／「未注記 fn」は backward annotation grep で「欠落 vs sub-chunk」切り分け（owning あり＝Ghidra fn 分割・本当に無い annotation は v437 docs 欠落と別物）／dispatcher case 本文は docs が100%保持→machine decode 不要。本日 push: v405→v446（d17ac390）42件＋本件 v447。v 採番 v447 消費（次=v448）。"
+    },
+    {
+      "id": "151-v448-level-bonus-2026-11-17",
+      "timestamp": "2026-11-16T21:58:30Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v448",
+        "level-bonus",
+        "av-setter",
+        "docs-gap"
+      ],
+      "content": "2026-11-17 旧残点群移行第2弾 v448（probe v448_1..3 全3本 EXIT=0）＝V-448-1..3 完遂: 成果物 tmp/re/v448_level_bonus_ruling.md・台帳 row424（bak274）・round_verify ALL OK（rows 31..424 / total 310 / done 305 / open 5）・STATE (fr)・ai-todo #151 note。[確定] V-448-1 Player +0x170 virtual fn: Player ctor FUN_0066A740 の vtable store 66A774 mov [esi],0xA73A0C → RTTI .?AVPlayerCharacter@@（sub-vtables +0x18/+0x5c/+0x68 も同 class）。[vt+0x170] = 0x4D9B40 → FUN_004D9B40（L171230）＝mov eax,[ecx+0x1C]; ret の1行 getter [確定(機械)] → level bonus 連鎖完全確定: Player->vtable+0x170()＝Player[+0x1C] を返す → その +0x32 s16 を base level へ加算。[未確定] Player[+0x1C] と +0x32 s16 の語: ctor 内 [esi+0x1C] 直接 store 0件（lea [esp+0x1c] は stack 別物）→ setter 経由 [確定（否定側）]、+0x32 の意味も未同定＝残点。[部分確定] TESActorBaseData+4 flags bit7: ctor FUN_00467320 param_1[1]=0（u32 +4 を0初期化）[確定(decompiled)]・machine 467335 mov [eax+4],ecx。bit7 set の or [reg+4],0x80 byte/dword/SIB 形は .text 全体0 hits [確定(否定側)] → byte store（*(u8*)=value）経由で立つ [推定高]（FUN_00468180 family が *(u8*)(self+4)=v）。semantic [未確定]＝残点。[確定] V-448-2 v447 訂正: FUN_00511570 は int3×8 境界の独立 fn＝docs annotation 欠落（直前 bytes 実読: 前 fn epilogue 33 CC E8 7E FC 46 00 8B E5 5D C3 の後に CC×8 → 511570 fldz 独立 entry・docs annotation 無し）→ v447 の「owning fn 内 sub-case chunk」推定を訂正（v437 の docs 欠落類型の再発見）[確定]。machine head 実読（fldz/double 初期化→virtual +0x190→call 0x5e02e0→movzx byte[ebx+4]→call 0x447df0（FormType 引数））＝AV 計算系 fn [推定高]。FUN_00510e60 region の jmp table 0件 [確定(否定側)]、0x523F40 の同検証は未実施＝残点。[確定] V-448-3 dispatcher case0x21+: case 0x21: FUN_00468180／0x22: FUN_004681b0／0x23: FUN_004681e0／0x24: FUN_00468210 → AV 語（0xB0A1A8 実読）[33]Aggression/[34]Confidence/[35]Energy/[36]Responsibility [確定]＝4つの byte AV setter family。default: FUN_0065cb00(param_1,(float)param_2); FUN_0046abf0(0x10000000)＝float 変換系 setter＋notify [確定]（index≥0x28 float AV 系 [推定高]）。case 0x25..0x27 no-op break ⇔ AV [37]Bounty/[38]Fame/[39]Infamy → script SET 不可 [確定]。AV [40]MagickaMultiplier/[41]NightEyeBonus/[42]AttackBonus/[43]DefendBonus/[44]CastingPenalty/[45]Blindness 也実読。[確定] FUN_00468180 identity: void __thiscall(int* self, u8 v): *(u8*)(self+4)=v; virtual [self]+0x10()() [確定(decompiled)]＝byte AV setter（store＋notify）family（0x4681B0/E0/8210 連番同型 [推定高]）。残点 V-449-1..3（1=Player[+0x1C] identity（setter と class）と +0x32 s16 の語【低】／2=TESActorBaseData+4 bit7 set 経路実検証（byte store 書手 census）と semantic・0x523F40 の int3 境界検査【低】／3=docs 欠落 fn FUN_00511570 の identity（machine 全文 decode）と default float AV の index 範囲【低】）。教訓: virtual slot identity は「ctor vtable store→RTTI→[vt+off] 読み→1行 getter」の4手で完結／flag set 探索は形式別 census の否定側結果をそのまま推理材料に（or=0hits→byte store 推論）／backward annotation grep は直前 annotation を返すだけ→int3 境界（CC×N bytes 実読）と必ず突き合わせ（v447 sub-chunk 推定はこれで訂正）／dispatcher case→AV 語は「case 番号＝AV index」＋table 実読で即完結／setter family は連番 fn＋同型 decompiled で1本から family 判定。本日 push: v405→v447（9e293db1）43件＋本件 v448。v 採番 v448 消費（次=v449）。"
     }
   ],
   "metadata": {
-    "totalEntries": 852,
+    "totalEntries": 853,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-16T21:52:36Z",
-    "entry_count": 852,
-    "last_updated": "2026-11-16T21:52:36Z"
+    "lastUpdated": "2026-11-16T21:58:30Z",
+    "entry_count": 853,
+    "last_updated": "2026-11-16T21:58:30Z"
   }
 }
