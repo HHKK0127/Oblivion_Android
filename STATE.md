@@ -1722,3 +1722,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **.data の未初期化 GMST キャッシュは登録部の `push key` census で GMST 名＋既定値を補完できる**（v406「実行時グローバルで定数非保持」の逆側アプローチ）／**ICF one-liner は arg 経路＋既知フィールド表（v261）で型付け**／**文言（GMST text）と実装値は別物** — "+10" 文言の実体は major+25/spec+5/attr+5 の複合計算。
 - **本日 push 累計**: v405 → v406 → v407 → v408 → v409 `7a965e9d` → v410 `a56f9c5b` →（本件 v411 を本 commit で push）＝**7裁定**。
 - **次**: **V-411-1/2【中】（iVar10 identity と後続計算段・v412）** → 残る低優先残点群。supermemory 未登録7件（v405..v411）は MCP 復復待ち。
+
+## 2026-11-16 (eh) — 派生残点第4弾 v412（V-411-1 完遂＋V-411-2 部分確定）: **`iVar10` ＝ `Player[+0x24]` 埋め込みオブジェクトの level/進捗系 ushort 値 −1 [確定(命令)]**・**`FUN_005479D0`＝4属性合計 [確定]**
+
+- **成果物**: `tmp/re/v412_iVar10_source_ruling.md`（probe **v412_1 全 EXIT=0**）。台帳 **row388（bak238）**・`round_verify` **ALL OK**（rows 31..388 / total 274 / done 269 / open 5）。ai-todo **#151 に note**。v 採番 **v412 消費（次=v413）**。
+- **V-411-1 [確定(命令)]（系統）＋[推定高]（"level" 語）**: `FUN_005222D0` **直頭 machine** `mov edi,ecx（player）→ lea ecx,[edi+0x24] → call 0x4677F0` ＝ **this は `Player[+0x24]` の埋め込みオブジェクト**。`FUN_004677F0`（L81348-71）: `v=[obj+0xe]`(ushort) → **flag `[obj+4]>>7&1` 時に `[0xB333C4] virtual+0x170 → [+0x32]`(short) を加算** → `[+0x10]`/`[+0x12]` で clamp → **`<1 → 1`** → ushort return。**`iVar10 = v − 1`（0 以上）＝ level/進捗系値 −1**（＝v411 skill 段の base）。
+- **V-411-2 [確定] 部分**: **`FUN_005479D0(a,b,c,d) = a+b+c+d`（4属性合計・L243767-71）** → `FUN_004672B0(&Player[+0x24], u16)` ＝ **`[obj+0xA] = u16` ＋ `virtual+0x50()` 通知**／`FUN_00467290` ＝ **`[obj+0x8] = u16` ＋同通知**（machine `0x5226F5 push4→call 0x5479D0→lea ecx,[edi+0x24]→call 0x4672B0` 確認）。
+- **[部分確定] `FUN_00547F80`（5引数: attr0, attr5, iVar10, local_4, spec）/ `FUN_00548020`（2引数: attr0, attr5）** ＝ **引数付き計算ヘルパ** — decompiled 表示は `void fn(void)`（**fastcall/stack 引数が Ghidra で落ちる典型兆候**）・arity は machine push 数で確定・内部 `FUN_009828C0` は floor/round 系 [推定高]・数式は残点。
+- **[確定(命令)＋推定高] `Player[+0x24]` ＝ vtable 付き埋め込みオブジェクト**（`FUN_00467290/004672B0` の this・`virtual+0x50()` dirty 通知）— フィールド `[+8]`(u16)／`[+0xA]`(u16)／`[+0xe]`(ushort 値)／`[+0x10]`/`[+0x12]`(min/max clamp)／`[+4]>>7`(PC flag) ＝ **derived stat/level 系構造**。
+- **残点 V-412-1..4**: 1=`FUN_004677F0` の "level" 語の確定（E8 census＋RTTI）【中→低】／2=`FUN_00547F80`/`FUN_00548020` の数式と `FUN_009828C0` identity【低】／3=`Player[+0x24]` の RTTI とフィールド名【低】／4=`FUN_00519C50` identity【低】。
+- **教訓**: **thiscall の this 追跡は call 直前の `lea ecx,[reg+disp]`/`mov ecx,...` を4命令文脈で見る**（decompiled の引数落ちを machine 即補完）／**Ghidra の `void fn(void){...}` 表示は stack 引数落ちの兆候 → arity は machine push 数**（v406 教訓の stack 引数版）。
+- **本日 push 累計**: v405 → v406 → v407 → v408 → v409 → v410 → v411 `9bcad498` →（本件 v412 を本 commit で push）＝**8裁定**。
+- **次**: 残る低優先残点群（V-412-1..4／V-400..V-408 系）を v413+ で消化。supermemory 未登録8件（v405..v412）は MCP 復復待ち。
