@@ -95,6 +95,15 @@
   > ⑤[部分確定] **+10 初期適用: skill 側＝本系統に不在 [推定高]**（定数加算実行系は opcode ModPCSkill のみ・+10 指定可は script/コンソール）／**属性+10＝FUN_005222D0 の attr 計算（実行時グローバル 0xB362E4/EC・書手未調査）に残存 [未確定]**。
   > 残点 V-410-1【高】= 属性+10 書手と FUN_005222D0 attr 計算解釈＋skill 不在の最終裏取り（残2 update caller 0x4B585B/FUN_0066A3D0 型付け）／V-410-2【低】chargen 帯未注記 fn と FUN_00579C10 callback／V-410-3【低】FUN_004FDE30（v409 継続）。
   > 教訓: find_head は境界飛び越し得る→caller 所属は decompiled body 突合で再確認／書手網羅は E8＋data refs＋直書き form の3系統／供給 funnel は唯一供給元の全系統否定が揃って初めて [推定高]。v 採番 v410 消費（次=v411）。
+  > 【V-410-1【高】完遂（v411・派生残点第3弾）】probe v411_1..v411_3 全 EXIT=0。成果物 tmp/re/v411_attr_bonus_ruling.md・台帳 row387（bak237）・round_verify ALL OK（rows 31..387 / total 273 / done 268 / open 5）。
+  > ①[確定] FUN_005222D0＝Player の attribute/skill/race ボーナス基礎値「再計算＋SET」fn（呼出し8箇所に chargen FUN_00596980 含む）: attr 段＝base→class 属性1なら +0xB362E4／属性2なら +0xB362EC→clamp100→FUN_00468AF0（byte setter＋変更通知）／skill 段＝base iVar10→major +25／非 major ×0.1+5→class spec 一致で +0.5×base+5→race skill bonus（[Player+0xE8]+0x50 の (id,val)×7）→clamp100→**[Player+0xEC+idx]=ROUND（byte skill 配列21本）**。
+  > ②[確定(実文字列)] 0xB362E4/EC＝float GMST キャッシュ: **'fAttributeClassPrimaryBonus'（既定5.0）／'fAttributeClassSecondaryBonus'（既定5.0）**（登録 0x9E3C20/0x9E3C50 の push key 実読・読取は FUN_005222D0 内2箇所のみ）。
+  > ③[確定(否定側)] **属性+10 仮説**: 2 GMST（既定各5）のみで +10 不在。bVar2 条件＝[Player+0xc]==7 かつ class formID==[0xB37D00]（default class）で class ボーナス/減衰スキップ。
+  > ④[確定(否定側)] **spec skill +10 仮説**: 実加算は major+25／非 major×0.1+5／spec+0.5×base+5（＋race）で単純+10 不在 → **GMST sSpecialization 文言（+10）と実装値の乖離＝確定**（文言は chargen ヘルプ表示のみ）。
+  > ⑤[確定] getter2連 FUN_00780F70=[x+0x38]（DATA+0x00=属性1）／FUN_00422DE0=[x+0x3C]（=属性2）＝ICF・v261 フィールド表整合。[確定] skill 値2系統併存: byte 系 [Player+0xEC+idx]（race/class/spec ボーナス込み基礎値）＋float 系 [Player+0x130+idx*4]（成長/使用）— 依頼②の実体は byte 系。定数実測: 0xA492B0=25・0xA2FC80=0.1・0xA309F0=100・0xA2FE7C=100.0f・0xA3F3F0=5・0xA2FAA0=0.5・0xA31E2C=5.0f。
+  > **#151 依頼②の3仮説（属性+10/major 初期+10/spec +10）は全件 [確定(否定側)] に訂正しつつ実体を確定**（＝属性=GMST既定5・skill=byte 系計算式 major+25/spec+5 系・race bonus 併算）。
+  > 残点 V-411-1【中】iVar10=FUN_004677F0()-1 の identity（level/進捗系[推定高]）／V-411-2【中】後続計算段 FUN_00547F80/00548020/005479D0／V-411-3【低】bVar18 formType==7／V-411-4【低】[Player+0xE8]=race ptr 裏取り。
+  > 教訓: .data の未初期化 GMST キャッシュは登録部（push key）census で名前と既定値を補完／ICF one-liner は arg 経路＋既知フィールド表で型付け／**文言（GMST text）と実装値は別物**。v 採番 v411 消費（次=v412）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1001,11 +1010,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1029,4 +1033,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-16 19:21:50
+**ai-todo** | Last Updated: 2026-11-16 19:29:34

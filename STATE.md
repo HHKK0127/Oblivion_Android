@@ -1705,3 +1705,20 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **`find_head` は int3/境界を飛び越し得る → caller の所属は decompiled body 突合で必ず再確認**（v406/v409 の2 ruling が誤記を引きずった実例）／**書手網羅は E8＋data refs＋decompiled 直接 form の3系統**／**供給 funnel の証明は唯一供給元の全系統否定が揃って初めて [推定高]**。
 - **本日 push 累計**: v405 `11c51439` → v406 `77de46c3` → v407 `5f8e2420` → v408 `485ced5c` → v409 `7a965e9d` →（本件 v410 を本 commit で push）。
 - **次**: **V-410-1【高】（属性+10 書手・v411）** → V-410-2/3 → その他派生残点群。supermemory 未登録5件（v405..v409＋v410）は MCP 復復待ち。
+
+## 2026-11-16 (eg) — 派生残点第3弾 v411（V-410-1【高】完遂）: **`FUN_005222D0`＝attr/skill/race ボーナスの再計算＋SET fn [確定]**・**`fAttributeClassPrimaryBonus`/`fAttributeClassSecondaryBonus`（既定各5）[確定]**・**#151 依頼②の「+10」3仮説は全件 [確定(否定側)] に訂正**
+
+- **成果物**: `tmp/re/v411_attr_bonus_ruling.md`（probe **v411_1..v411_3 の3本全 EXIT=0**）。台帳 **row387（bak237）**・`round_verify` **ALL OK**（rows 31..387 / total 273 / done 268 / open 5）。ai-todo **#151 に note**。v 採番 **v411 消費（次=v412）**。
+- **① [確定] `FUN_005222D0` ＝ Player の attribute/skill/race ボーナス基礎値「再計算＋SET」fn**（呼出し8箇所＝record load `0x4471A0`／opcode 系3／skill band／**chargen `FUN_00596980`**／menu `FUN_005C28F0`×2）:
+  - **attr 段**: `base=FUN_00468AD0(attr)` → **class 属性1 ⇒ `+0xB362E4`／属性2 ⇒ `+0xB362EC`** → clamp100 → **`FUN_00468AF0(attr, ROUND)`（byte setter＋`FUN_009832E6` 変更通知）**
+  - **skill 段**: `base=iVar10` → **major ＝ +25（`0xA492B0`）／非 major ＝ ×0.1（`0xA2FC80`）+5** → **class spec 一致 ＝ +0.5（`0xA2FAA0`）×base+5** → **race skill bonus 加算**（`[Player+0xE8]+0x50` の `(skill_id,bonus)` ×7）→ clamp100 → **`[Player+0xEC+idx] = ROUND`（byte skill 配列21本）**
+- **② [確定(実文字列)] `0xB362E4`/`0xB362EC` ＝ float 型 GMST キャッシュ**: 登録 pattern（`0x9E3C20`/`0x9E3C50`: `fld [0xA31E2C]=既定5.0f; push key; mov ecx,global; call 0x41BAE0`）の **key 実読 ＝ `fAttributeClassPrimaryBonus`（既定5.0）／`fAttributeClassSecondaryBonus`（既定5.0）**・dtor thunk `0xA1C1E0`/`0xA1C1F0`・**読取は `FUN_005222D0` 内2箇所のみ（消費＝class ボーナスのみ）**。
+- **③ [確定(否定側)] 属性+10 仮説**: class 属性ボーナスは **2 GMST（既定各5.0）のみで +10 は不在**（GMST で可変）。**bVar2 条件**＝`[Player+0xc]==7`（bVar18）かつ `class formID == [0xB37D00]`（default class）で **class ボーナス・減衰計算をスキップ**。
+- **④ [確定(否定側)] spec skill +10 仮説**: 実加算は **major=+25／非 major=×0.1+5／spec 一致=+0.5×base+5（＋race bonus）** で単純 +10 は不在 → **GMST `sSpecialization` 文言 "…+10…" と実装値の乖離＝[確定]**（文言は chargen step のヘルプ表示のみ＝v406 確定と接続）。
+- **⑤ [確定] ICF getter2連**: `FUN_00780F70 = return [x+0x38]`（class DATA+0x00＝属性1＝primary）／`FUN_00422DE0 = return [x+0x3C]`（＝DATA+0x04＝属性2＝secondary）— **v261 フィールド表と完全整合**。
+- **⑥ [確定] skill 値2系統の併存**: **byte 系 `[Player+0xEC+idx]`**（race/class/spec ボーナス込み基礎値・本 fn が SET）と **float 系 `[Player+0x130+idx*4]`**（成長/使用値・v410 の4書手）— **#151 依頼②「major skill 初期値」の実体は byte 系**（ただし +10 ではなく major+25/race/spec 計算式）。
+- **定数実測**: `0xA492B0=25(double)`／`0xA2FC80=0.1`／`0xA309F0=100`／`0xA2FE7C=100.0f`／`0xA3F3F0=5`（v406 一致）／`0xA2FAA0=0.5`／`0xA31E2C=5.0f`。
+- **残点 V-411-1..4**: 1=`iVar10 = FUN_004677F0()-1` の identity（level/進捗系 [推定高]）【中】／2=後続計算段（`FUN_00547F80`/`FUN_00548020`/`FUN_005479D0→FUN_004672B0(&actor[+0x24])`）の identity【中】／3=`bVar18`（formType==7）の意味【低】／4=`[Player+0xE8]`＝race ptr の裏取り【低】。
+- **教訓**: **.data の未初期化 GMST キャッシュは登録部の `push key` census で GMST 名＋既定値を補完できる**（v406「実行時グローバルで定数非保持」の逆側アプローチ）／**ICF one-liner は arg 経路＋既知フィールド表（v261）で型付け**／**文言（GMST text）と実装値は別物** — "+10" 文言の実体は major+25/spec+5/attr+5 の複合計算。
+- **本日 push 累計**: v405 → v406 → v407 → v408 → v409 `7a965e9d` → v410 `a56f9c5b` →（本件 v411 を本 commit で push）＝**7裁定**。
+- **次**: **V-411-1/2【中】（iVar10 identity と後続計算段・v412）** → 残る低優先残点群。supermemory 未登録7件（v405..v411）は MCP 復復待ち。
