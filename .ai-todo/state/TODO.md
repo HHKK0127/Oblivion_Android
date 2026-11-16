@@ -275,6 +275,19 @@
   > ⑥[確定] V-434-3: FUN_004FD7C0 E8=8件＝0x4FDBC7(自己)／FUN_004FDE30／FUN_004fef80×4（0x4FF015/0x4FF12E/0x4FF26A/0x4FF3C7）／FUN_004ff4c0×2 — unannotated 4件は全て FUN_004fef80（L197796・__alloca_probe＋512B バッファ多数の script pass [推定高]）。FUN_004ff440（L197993）＝parser state reset/dtor（[+0x20]/[+0xc] free・[+0x10]/[+0x12] u16 ゼロ）[確定]。FUN_004fcbd0＝whitespace skipper（tab/space/comma）[確定]。副次: +0x1C=0x4FDE30 が全 rec 共通で FUN_004FDE30 が FUN_004FD7C0 を呼ぶ＝+0x1C＝共通 name/parse callback [推定高]。
   > 残点 V-435-1..3（1=event table +0x10 flags 語義（0x0/0x1/0x10000/0x10001/0x20001）と +0x14/+0x18 の関係【低】／2=(a) flat array の consumer と 0xB108EC の2段構造（5 group+16 key 混在）の理由【低】／3=FUN_00407AE0 正式 identity と 0x51A9D0/0x51A9E0/0x51AA00 helper3本【低】）。
   > 教訓: 「どの id band が未所有か」は switch の range check 連鎖を上から読むことで否定側から確定／「id に imm store が無い」＝table 由来の間接証明（mid-instruction 偽陽性6件を decode で潰す）／新テーブル探索の決定打＝stride×id run の組合せ census（1本で所有者一撃）／隣接 table 境界は base+N×stride==次 base で相互検証／stride 判定は候補横断比較＋直接 base の2系統（flat/0x24 併存で片方だけ見ると誤構造＝v434_1→v434_8 訂正）。v 採番 v434 消費（次=v435）。
+  > 【派生残点第27弾 v435 — V-435-1..3 完遂】probe v435_1..v435_8 全8本 EXIT=0。成果物 tmp/re/v435_record_layout_ruling.md・台帳 row411（bak261）・round_verify ALL OK（rows 31..411 / total 297 / done 292 / open 5）。
+  > ①[確定] 3表（event/console/function）共通 layout: {+0=name,+4=alias,+8=id,+0xC=help,+0x10=flags u32,+0x14=arg pool ptr,+0x18=handler fn,+0x1C=arg-parse handler,+0x20=0,+0x24=0}。
+  > ②[確定] +0x10＝{u8 flag @+0x10, u8 pad @+0x11, u16 argcount @+0x12}: OnActivate 0x00010001(flag1,count1)／OnAlarm 0x00020001(flag1,count2)／GameMode 0x00000000(flag0,count0)／MenuMode 0x00010000(flag0,count1)。
+  > ③[確定] flag byte（event）＝「quest script では不正な block type」: FUN_004ff4c0 内 0x4FF918 `cmp byte [eax+0x10],0; je` → 0以外かつ [edi+0x38]!=0 で 'Invalid block type for quest script.'（0xA4B524 実文字列）— GameMode/MenuMode のみ flag0、全 object event が flag1。[推定高] console/function の flag＝object/receiver コンテキスト必要（Show=0/ShowVars=1/GetDistance=1/AddItem=1/MessageBox=0・consumer 未 trace＝残点）。
+  > ④[確定] +0x12 u16＝argcount: 0⟺+0x14==null（完全相関）・count=2→2 desc 実証（AddItem='ObjectID'(type3)+'Count'(1)／OnAlarm='Crime Type'(0x1C)+'Actor (optional)'(6)）・count=1→'Float' 等。
+  > ⑤[確定] +0x14＝3表共有 flat arg pool: descriptor＝stride 0x0C の {name ptr, type u32, flag u32}・0xB0A768（'Float'）を14 record が共有＝pool 共有＋per-record start+count。type 実読: 0=String/1=Integer/2=Float/3=ObjectID/4=ObjectReferenceID/6=Actor/0xE=Quest/0x15=ObjectID(別)/0x1A=Container/0x1C=CrimeType/0x1D=Package/0x1F=MagicEffect。[推定高] descriptor flag＝optional marker（反例 'ObjectID'@0xB0A7E0 flag1 あり）。
+  > ⑥[確定] +0x18＝per-record 実行 handler（GameMode=0x5022D0/Show=0x502210・OnEquip=OnActorEquip=0x503E10 と共有）で +0x14 とは独立。[推定高] +0x1C＝arg-parse handler（0x4FF963 `mov ebx,[eax+0x1c]`→pool と count を渡して call ebx）— common default FUN_004FDE30（512B buffer）、per-record 上書きあり（MessageBox 0x500130/AddItem 0x4F43C0）。
+  > ⑦[確定] V-435-2: flat array 0xB10290..0xB102DC（21件）全実読＝Left Foot/Right Foot/Left Back Foot/Right Back Foot/Idle/Aware/Attack/Hit/Death/Weapon/(空)/Sneak/Swim/Fly/(空)/HandToHand/OneHand/TwoHand/Staff/Bow — (空)を区切り＋index0=none として2 sub-list: base 0xB102B8=['','Sneak','Swim','Fly']（4）／base 0xB102C8=['','HandToHand','OneHand','TwoHand','Staff','Bow']（6）。consumer＝FUN_00407AE0 ほか（refs 0xB102B8=6/0xB102C8=11/0xB102E0=22/0xB108EC=3）。[確定(否定側)] 先頭10件（0xB10290..0xB102B4）は全セクション ref 0 件＝consumer 未特定＝残点。
+  > ⑧[確定] 0xB108EC＝5 sequence group 名（LowerBody/LeftArm/LeftHand/RightArm/SpecialIdle）＋16 text key 名（Start×8/End×2/Attach/Detach/Hit×2/Attack/Attach）、混在理由 [推定高]＝単一 name lookup で両方をカバー。
+  > ⑨[確定] V-435-3: FUN_00407AE0＝debug dump fn（string push 実読: 'FPS %d'/'Actor Loc/Heading/Pos'/'Overall/Final/High Pathing Status'/'Current Low/High Target Pos'/'Failure Time/State'/'Avoidance Status/Wait Time'＋'%s -> %s/%s/%s, Count: %d'）＝actor の AI/pathing/animation 状態出力。唯一 E8 caller＝0x40DEFC（FUN_0040d4d0 L8526・void(void)→FUN_00977c50(3) の no-arg command entry）→ console command handler [推定高]。
+  > ⑩[確定] helper3本: FUN_0051a9d0(ushort p)=p>>0xc（bits12-15）／FUN_0051a9e0(uint p)=p>>8&0xf（bits8-11）／FUN_0051aa00(uchar p)=p（identity＝low byte）→ packed 値の bitfield 抽出 fn 群。FUN_00407AE0 が同一 esi を3本に渡し bits0-7→stride0x24 group／bits8-11→0xB102C8／bits12-15→0xB102B8／[esp+0x5c]→0xB108EC ＝ 4 name を packed 値から復元。
+  > 残点 V-436-1..3（1=console/function の flag byte consumer 特定【低】／2=flat array 先頭10件の consumer（ref0件）と 0xB108EC の index 源（[esp+0x5c] 由来）【低】／3=FUN_00407AE0 の command 名（FUN_0040d4d0 の command table 登録と FUN_00977c50(3) の意味）と type 0x3 vs 0x15 の語義差【低】）。
+  > 教訓: flag dword は byte+pad+u16 に分解し consumer の cmp 幅（cmp byte vs movzx word）と突合／argcount 仮説は「ptr null⟺count0」完全相関＋count=2 の desc 2件実読の2系統で検証／共有 pool は「ある +0x14 値の record を全3表走査」で一撃発見（0xB0A768→14件）／fn identity は body 内 string push 列挙が最速／1行 decompiled の >>n・>>n&0xf は bitfield 抽出の即決パターン。v434 の「+0x1C＝共通 name/parse callback」は「arg-parse handler（common 0x4FDE30・per-record 上書き）」へ精緻化。v 採番 v435 消費（次=v436）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1181,11 +1194,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1209,4 +1217,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 03:06:29
+**ai-todo** | Last Updated: 2026-11-17 03:50:24
