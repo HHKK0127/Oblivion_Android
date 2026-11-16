@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-16T11:21:20Z",
+  "lastUpdated": "2026-11-16T11:32:56Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11903,14 +11903,29 @@
         "bulk-notify"
       ],
       "content": "2026-11-16 派生残点第10弾 v418（probe v418_1 全 EXIT=0）＝V-418-1 部分確定: 成果物 tmp/re/v418_b3cd7c_type_ruling.md・台帳 row394（bak244）・round_verify ALL OK（rows 31..394 / total 280 / done 275 / open 5）・STATE (en)・ai-todo #151 note。[確定] FUN_0070F910＝\"--- %s ---\" ヘッダ文字列生成 fn（strlen→malloc→FUN_006C5D40(buf,size,\"--- %s ---\",str)・L553023-553038・arg は char*）→ 0x6D0450 が FUN_0070F910([0xB3CD7C]) へ渡す値は char*（文字列）＝v401 の dump ヘッダ記述と一致。[部分確定: 推定高] 0xB3CD7C の型: (i)[0xB3CD7C]（値）＝char*[確定] (ii) map key は &0xB3CD7C（アドレス自体・pointer 等値比較）[確定] (iii) usage＝--- %s --- 出力／float set 系／flag set（word[+8]|=0x40）／FUN_006FFE90（v371 V-371-2 keyframe 生成候補）への接続（FUN_00473200 L91987-90）／FUN_006C8220（NiTransformController 登録確認）／StoreTargets epilogue → 「singleton 文字列（global char* 変数）のアドレスが NiFixedString 的 key として map lookup に使われる」[推定高]（中身は実行時=.data 不定で未読＝残点）。[確定(命令＋decompiled)] FUN_0047C930(this,p2,p3)＝NiAVObject 系 bulk 通知 fn: param_3!=0 時 [this+0x9C] リスト（next=[0]・elem=[2]・elem[3]!=0 gate）の各 elem へ elem->slot20(p2) ＋ 常時 [this+0xC] map（node[0xd] 走査）の全 node へ node->slot21(p2)（L99379-99399）→ v405 の StoreTargets resolved-node [+0x9C] リストと v406 の map layout を1 fn で保持＝NiAVObject 系 [確定]。[確定] usage owner 群: FUN_00473120／FUN_00473200（→FUN_006FFE90 keyframe）／FUN_0047C990/0047CA30/0047CC80（等値ループ）／FUN_0047F750（→cmp [0xA7A160]）／FUN_004964F0／FUN_004E3490（word[+8]|=0x40 flag set）／FUN_006C6910／FUN_006C8220。残点 V-419-1..3（1=0xB3CD7C 中身（実行時文字列）と設計意図【中】／2=0x6D0450 identity【低】／3=V-418-2/V-416-2/V-415-2 引継ぎ【低】）。教訓: 型特定の終着点は「受け手 fn の arg 型」（body 実読で char* 判定）／bulk 通知 fn は「リスト走査＋map 走査の2ループ＋virtual 呼び出し」の body で即判定／既知残点の構造名（+0x9C list／map layout）を持つと未知 fn の body で identity が当たる。本日 push: v405→v417（dfe0a1ff）13件＋本件 v418。v 採番 v418 消費（次=v419）。"
+    },
+    {
+      "id": "151-v419-b3cd7c-descriptor-2026-11-16",
+      "timestamp": "2026-11-16T11:32:56Z",
+      "priority": "medium",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v419",
+        "rtti-descriptor",
+        "initializer"
+      ],
+      "content": "2026-11-16 派生残点第11弾 v419（probe v419_1..7 全7本 EXIT=0）＝V-419-1/V-419-2 完遂: 成果物 tmp/re/v419_b3cd7c_descriptor_ruling.md・台帳 row395（bak245）・round_verify ALL OK（rows 31..395 / total 281 / done 276 / open 5）・STATE (eo)・ai-todo #151 note。[確定] 0xB3CD7C の中身＝2フィールド pair: [0xB3CD7C]=0xA7913C＝char* \"NiMultiTargetTransformController\"（.rdata 実読）／[0xB3CD80]=0xB3CDF8（次 pair リンク）— init は FUN_0070E220(this,a,b){*[this]=a;[this+4]=b}（L552053-58）。[確定] 初期化経路: BSS（.data rel 0x3AD7C ≥ rawsz 0x30C00＝非ファイルバック・.reloc rva=0/sz=0＝stripped）→ static initializer 表 .rdata 0xA2BC5C（連続 fn ptr 配列 stride 0x10 帯）のエントリ 0xA02E80: push 0xB3CDF8; push 0xA7913C; mov ecx,0xB3CD7C; call 0x70E220; ret（E8=0＝表経由のみ）。[確定(実読)3段] リンク先も同型 pair: 段2 thunk 0xA0300A {0xA7A224=\"NiInterpController\", 0xB3FC98}／段3 thunk 0xA09D9A {0xA7EC1C=\"NiTimeController\", 0xB3F684} → name 連鎖 MTTC→NiInterpController→NiTimeController→…＝クラス階層チェーン [推定高]。同型 pair init thunk 銀行8件＝実行時 type descriptor bank [確定(命令)]。[推定高] 設計意図＝Oblivion 独自の実行時 RTTI ディスクリプタ: &pair が map key（type identity・v416/v417 経路と整合）・[pair]（name）が dump ヘッダ --- %s --- 入力（v418 FUN_0070F910 と整合）。v417/v418 の「char* 変数のアドレスが key」表記は本裁定で「pair ディスクリプタのアドレス」へ訂正。[確定(RTTI)＋命令] 0x6D0450＝vtable 0xA79984（.?AVNiMultiTargetTransformController@@）slot12(+0x30) の dump virtual（data ref 0xA799B4 のみ・E8=0）: FUN_006D05C0(this,buffer)（役割は残点）→ FUN_0070F910([0xB3CD7C]) で \"--- NiMultiTargetTransformController ---\" ヘッダ→buffer insert（grow FUN_004E4A10／insert FUN_0042BB90）→ FUN_0070FAA0(\"m_usNumInterps\",[this+0x44]) で \"%s = %hu\" 行（L553133-47）。副次[確定]: [MTTC+0x44]=m_usNumInterps(u16)。[確定(否定側)] 直書き書手ゼロ: occurrence 全13件の prev バイト＝3D(cmp)/68(push)/B8(thunk)/A1(値読)/B9(initializer thunk) のみで modrm=05/SIB=25 メモリ書手0件・file 残骸値 0xC3FD4D24 は BSS 判定で偽手がかり棄却。残点 V-420-1..4（1=チェーン4段目 0xB3F684 name・終端と「extends 説」最終裏取り【低】／2=initializer 表 0xA2BC5C 全体【低】／3=FUN_006D05C0 役割【低】／4=V-419-3 引継ぎ【低】）。教訓: .data の rel≥rawsz（BSS）判定＋.reloc 解析を file 値の初期値誤読防止にセット／[disp32] 書手不在は occurrence prev バイト census で機械証明／書手ゼロなら initializer bank を先に疑う／push imm32 の実読で意味が一撃決定。本日 push: v405→v418（ade48642）14件＋本件 v419。v 採番 v419 消費（次=v420）。"
     }
   ],
   "metadata": {
-    "totalEntries": 823,
+    "totalEntries": 824,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-16T11:21:20Z",
-    "entry_count": 823,
-    "last_updated": "2026-11-16T11:21:20Z"
+    "lastUpdated": "2026-11-16T11:32:56Z",
+    "entry_count": 824,
+    "last_updated": "2026-11-16T11:32:56Z"
   }
 }

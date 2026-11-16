@@ -151,6 +151,15 @@
   > ④usage owner 群 [確定]: FUN_00473120／FUN_00473200（→FUN_006FFE90 keyframe）／FUN_0047C990/0047CA30/0047CC80（等値ループ）／FUN_0047F750（→cmp [0xA7A160]）／FUN_004964F0／FUN_004E3490（word[+8]|=0x40 flag set）／FUN_006C6910／FUN_006C8220。
   > 残点 V-419-1【中】0xB3CD7C 中身（実行時文字列）と設計意図（初期化経路・0x6D0450 identity 併）／V-419-2【低】0x6D0450 identity／V-419-3【低】V-418-2/V-416-2/V-415-2 引継ぎ（L498845 slot23 と manager[+0x30]）。
   > 教訓: 型特定の終着点は「受け手 fn の arg 型」（body 実読で char* 判定）／bulk 通知 fn は「リスト走査＋map 走査の2ループ＋virtual 呼び出し」の body で即判定／既知残点の構造名（+0x9C list／map layout）を持つと未知 fn の body で identity が当たる。v 採番 v418 消費（次=v419）。
+  > 【派生残点第11弾 v419 — V-419-1/V-419-2 完遂】probe v419_1..v419_7 全7本 EXIT=0。成果物 tmp/re/v419_b3cd7c_descriptor_ruling.md・台帳 row395（bak245）・round_verify ALL OK（rows 31..395 / total 281 / done 276 / open 5）。
+  > ①[確定] 0xB3CD7C の中身＝2フィールド pair: [0xB3CD7C]=0xA7913C＝char* "NiMultiTargetTransformController"（.rdata 実読）／[0xB3CD80]=0xB3CDF8（次 pair リンク）— init は FUN_0070E220(this,a,b){*[this]=a;[this+4]=b}（L552053-58）。
+  > ②[確定] 初期化経路: BSS（.data rel 0x3AD7C ≥ rawsz 0x30C00＝非ファイルバック・.reloc rva=0/sz=0＝stripped）→ static initializer 表 .rdata 0xA2BC5C（連続 fn ptr 配列 stride 0x10 帯）のエントリ 0xA02E80: push 0xB3CDF8; push 0xA7913C; mov ecx,0xB3CD7C; call 0x70E220; ret（E8=0＝表経由のみ）。
+  > ③[確定(実読)3段] リンク先も同型 pair: 段2 thunk 0xA0300A {0xA7A224="NiInterpController", 0xB3FC98}／段3 thunk 0xA09D9A {0xA7EC1C="NiTimeController", 0xB3F684} → name 連鎖 MTTC→NiInterpController→NiTimeController→…＝クラス階層チェーン [推定高]。同型 pair init thunk 銀行8件＝type descriptor bank [確定(命令)]。
+  > ④[推定高] 設計意図＝Oblivion 独自の実行時 RTTI ディスクリプタ: &pair が map key（type identity・v416/v417 経路と整合）・[pair]（name）が dump ヘッダ --- %s --- 入力（v418 FUN_0070F910 と整合）。
+  > ⑤[確定(RTTI)＋命令] 0x6D0450＝vtable 0xA79984（.?AVNiMultiTargetTransformController@@）slot12(+0x30) の dump virtual（data ref 0xA799B4 のみ・E8=0）: FUN_006D05C0(this,buffer)（役割は残点）→ FUN_0070F910([0xB3CD7C]) で "--- NiMultiTargetTransformController ---" ヘッダ→buffer insert（grow FUN_004E4A10／insert FUN_0042BB90）→ FUN_0070FAA0("m_usNumInterps", [this+0x44]) で "%s = %hu" 行。副次[確定]: [MTTC+0x44]=m_usNumInterps(u16)。
+  > ⑥[確定(否定側)] 直書き書手ゼロ: occurrence 全13件の prev バイト＝3D(cmp)/68(push)/B8(thunk)/A1(値読)/B9(initializer thunk) のみで modrm=05/SIB=25 メモリ書手0件。file 残骸値 0xC3FD4D24 は偽手がかり（BSS 判定で棄却）。
+  > 残点 V-420-1..4（1=チェーン4段目 0xB3F684 name・終端と「extends 説」最終裏取り（MTTC→NiInterpController は中間クラス想定と齟齬→EXE 根拠のみで確定）【低】／2=initializer 表 0xA2BC5C 全体【低】／3=FUN_006D05C0 役割【低】／4=V-419-3 引継ぎ【低】）。
+  > 教訓: .data の rel≥rawsz（BSS）判定＋.reloc 解析を file 値の初期値誤読防止にセットで行う／[disp32] 書手不在は occurrence prev バイト census で機械証明／書手ゼロなら initializer bank（mov ecx,global thunk＋.rdata fn ptr 表）を先に疑う／push imm32 の実読で対象意味が一撃決定。docs/GT 反映時は v417/v418 の「char* 変数のアドレスが key」表記を本裁定（pair ディスクリプタ）へ訂正・#47/#20 一括。v 採番 v419 消費（次=v420）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1057,11 +1066,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1085,4 +1089,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-16 20:20:49
+**ai-todo** | Last Updated: 2026-11-16 20:31:19
