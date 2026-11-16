@@ -390,6 +390,14 @@
   > ⑤[確定] V-446-3 方針: v447 から旧残点群へ移行（V-414-2 継続→V-415-2→V-413-2）。
   > 残点 V-447-1..3（1=V-414-2 継続（0xB10290 先頭10件 consumer／[esp+0x5c] dump 内 CFG 詳細と連続）【低】／2=V-415-2・V-413-2 の順次消化【低】／3=je 0x407CAE 直前1byte decode と straddle/undecodable 10件の個別確認【低】）。
   > 教訓: byte 判定と forward decode の差分が直ちに欠落パターンを明かす（差1103＝ret imm16 捕捉漏れ）→ 2系統 census の突き合わせで判定ロジックの穴が数量付きで出る／「forward decode を segment 先頭から」は CC 塀区切りの構造を活かす正解（宣言→実装1遅延で成功）／branch 探索は src/kind/文脈の3点セットを必ず print（v444_2 の src 欠落で predicate 不達→今回解消）／mid-instruction 偽陽性は straddle 検出と共存（byte-pattern branch は forward decode 整合で裏取り）／global identity は docs hits の使用パターン（interval/変化検知/cast）で読む。v 採番 v446 消費（次=v447）。
+  > 【旧残点群移行第1弾 v447 — V-414-1..3 完遂】probe v447_1..v447_2 全2本 EXIT=0。成果物 tmp/re/v447_av_level_ruling.md・台帳 row423（bak273）・round_verify ALL OK（rows 31..423 / total 309 / done 304 / open 5）。
+  > ①[確定] V-414-1 AV name table .data 0xB0A1A8 実読: [0]Strength/[1]Intelligence/[2]Willpower/[3]Agility/[4]Speed/[5]Endurance/[6]Personality/[7]Luck/[8]Health/**[9]Magicka/[10]Fatigue/[11]Encumbrance/[12]Armorer**/[13]Athletics/[14]Blade…[71]ResistWaterDamage（[72]=Begin は keyword table 0xB0A2C8 開始と一致＝72件終端裏付け）→ TESActorBaseData[+8]=Magicka（既定50）／[+0xA]=Fatigue（既定50）／[+0xC]=Armorer（既定0）[確定]。v414 の「AV index9/10 [推定高: Health/Magicka 系]」は訂正（Health は index8）。
+  > ②[確定] V-414-2 FUN_004677F0＝level getter [確定(decompiled)]: local_4=u16[self+0xE]（base level）→ if (u32[self+4]>>7&1)（flag bit7 gate）→ iVar1=Player.vtable+0x170()() → local_4 += s16[iVar1+0x32]（機械は lea ecx,[eax+0x24]; add ax,[ecx+0xe]＝+0x32 と一致）→ clamp [+0x10]=min／[+0x12]=max（0=無制限）→ <1→1 → return。field 語義全部確定: [+0xE]=base level／[+0x10]=level min／[+0x12]=level max。
+  > ③[確定] DAT_00b333C4＝Player singleton: L4999 `DAT_00b333c4 = FUN_0066a740()`（v412 の Player ctor）／L4996 =0 破棄・docs 1647件・virtual +0x170/+0x1cc/+0x6c/+0x284/+0x380・[+0x6b0] counter/[+0x588] byte flag。+0x170 fn の identity と +0x32 s16 の語は [未確定]＝残点。[部分確定] u32[self+4]>>7&1: self＝TESActorBaseData（独立オブジェクト）→ +4 は u32 flags フィールド bit7 [確定（構造）]、semantic [未確定]。
+  > ④[確定] V-414-3 dispatcher FUN_00519f50 case0x0B+: `case 0x0B..0x20, 0x25,0x26,0x27: break（no-op・17+3 case）[確定]` → AV index 11..32 と 37..39 の SET は dispatcher 上 no-op／case 0x21: FUN_00468180／0x22: FUN_004681b0（続行）[確定]。
+  > ⑤[部分確定] 未注記2 fn: backward grep で FUN_00511570 の owning＝FUN_00510e60（L204640）／0x523F40 の owning＝FUN_00523eb0（L217884）→ 独立 annotation ではなく owning fn 内 sub-case chunk（Ghidra の fn 分割）[確定]。FUN_00511570 machine head 実読（fldz/double 初期化→virtual +0x190→call 0x5e02e0→movzx byte[ebx+4]→call 0x447df0（FormType 引数））＝AV 計算系 chunk [推定高]、0x523F40＝v411 cmp [esi+0xc],7 gate 同型＝formType7 ゲート chunk [推定高]、formal identity [未確定]。
+  > 残点 V-448-1..3（1=Player+0x170 virtual fn の identity（level bonus 供給元）と +0x32 s16 の語・TESActorBaseData+4 flags bit7 semantic【低】／2=未注記2 fn の case-chunk formal identity（FUN_00510e60 の case 番号と 0x523F40 の case context）【低】／3=dispatcher case0x21+ の全列挙（FUN_00468180/81b0…と AV name 対応）【低】）。
+  > 教訓: name table が既知（0xB0A1A8・72件）なら index→word は table 実読の1手（v414 推定を1 probe 解消）／getter は decompiled 全文（clamp）と machine head 対比で [+0x10]=min／[+0x12]=max を同時確定（jbe/jg の向きが clamp 方向）／グローバル ptr identity は docs 代入行（= ctor()）が最速／「未注記 fn」は backward annotation grep で「欠落 vs sub-chunk」切り分け（owning あり＝Ghidra fn 分割・本当に無い annotation は v437 docs 欠落と別物）／dispatcher case 本文は docs が100%保持→machine decode 不要。v 採番 v447 消費（次=v448）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1296,11 +1304,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1324,4 +1327,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 06:44:35
+**ai-todo** | Last Updated: 2026-11-17 06:51:54
