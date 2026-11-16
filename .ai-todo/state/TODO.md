@@ -130,6 +130,13 @@
   > ④[確定(命令)] epilogue 挙動: prereq==0 のときのみ palette Get(Bip02)→Get(Bip01)→[+0x1C] 検証→FUN_006c6910(seq, ...)→return 1（0x6C9B54-0x6C9B9B・v372 骨解決 epilogue と整合）。L498845 slot23 呼び出し＝[未確定]→残点。
   > 残点 V-415-1【中】Bip01[+0x1C] 正体（FUN_00700010 identity）／V-415-2【低】slot23 呼び出しと manager[+0x30] 正体。
   > 教訓: fastcall の ecx 落ちは「this が消える」「stack 引数が it に見える」両方向→call 直前の mov ecx で必ず実施／prologue 直後 spill で epilogue の reg 読みを逆算／矛盾はまず Ghidra 表示の引数落ちを疑う。v 採番 v415 消費（次=v416）。
+  > 【派生残点第8弾 v416 — V-415-1 完遂】probe v416_1 全 EXIT=0。成果物 tmp/re/v416_map_lookup_ruling.md・台帳 row392（bak242）・round_verify ALL OK（rows 31..392 / total 278 / done 273 / open 5）。
+  > ①[確定(命令＋decompiled)] FUN_00700010(this,key)＝マップ lookup（hash/list 形）: node=[this+0xC] → 外側ループ node=node[0xd]（+0x34）→ 内側 `list=node->virtual+4()→[+4] next` 走査で list==key（pointer 等値）なら node return、尽きれば0（L541175-541193）。E8=15件超＝汎用 utility（FUN_006c8220＝NiTransformController 確認 fn／FUN_006c6910／FUN_00473200 等）。
+  > ②[確定(命令)] epilogue 呼び出し: FUN_00700010(this=Bip01[+0x1C], key=0xB3CD7C)（decompiled L496379 は stack arg 表示⇔machine mov ecx,[esp+0x2c]; push 0xB3CD7C）→ 取得 node を InterlockedIncrement(node+1)（NiPointer refcount）して使用。
+  > ③[確定(命令)] **Bip01[+0x1C] の正体＝key→NiPointer のマップ/登録簿（NiTMap 系: [+0xC] buckets・node value リスト [0]/[4]・[0xd]＝次 node・pointer 等値比較）** → NiAVObject[+0x1C] は「某キー→refcounted オブジェクト」の map・epilogue はそこから global 0xB3CD7C（アドレス）を key に node を NiPointer 取得。
+  > ④V-405-3 総合回答: ①「sequence layout 矛盾」＝Ghidra ecx 落ち表示誤りで不存在[確定]②epilogue＝prereq==0 時 palette Get(Bip02)→Get(Bip01)→map から global node 取得→FUN_006c6910(seq,node)[確定]③0xB3CD7C 正体と slot23 は残点。
+  > 残点 V-416-1【中】0xB3CD7C global 正体（refs12件: float ヘルパ帯 0x47C9B4 等・sequence band・0x6D0460）／V-416-2【低】V-415-2 引継ぎ（L498845 slot23 と manager[+0x30]）。
+  > 教訓: fn identity は decompiled ループ構造（外側 node 走査＋内側 value 走査＋等値比較）で即 map lookup 判定／global アドレスの pointer 等値比較＝singleton 登録簿の目印／InterlockedIncrement(node+1) 直後の取得＝NiPointer 取得の定番。v 採番 v416 消費（次=v417）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1036,6 +1043,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1059,4 +1071,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-16 19:59:21
+**ai-todo** | Last Updated: 2026-11-16 20:04:10

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-16T11:00:10Z",
+  "lastUpdated": "2026-11-16T11:04:59Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11858,14 +11858,29 @@
         "ghidra-quirk"
       ],
       "content": "2026-11-16 派生残点第7弾 v415（probe v415_1・v415_2 全2本 EXIT=0）＝V-405-3 部分解: 成果物 tmp/re/v415_epilogue_args_ruling.md・台帳 row391（bak241）・round_verify ALL OK（rows 31..391 / total 277 / done 272 / open 5）・STATE (ek)・ai-todo #151 note。[確定] decompiled の FUN_006c6910(*(Bip01+0x1c)) 表示は Ghidra の fastcall ecx 落ち誤り — 実体は __fastcall 2引数: ecx＝[esp+0xc]（＝StoreTargets FUN_006c9590 prologue の mov [esp+0xc],esi＝this(seq) spill）・stack 引数＝Bip01[+0x1C]（machine 0x6C9B8A/8E/8F）→ NiAVObject[+0x1C] に sequence が入る構造は不存在 [確定(否定側)]＝V-405-3 の矛盾解消。[確定(命令)] epilogue ecx 経路: prologue sub esp,2C;push esi;mov esi,ecx;push edi;mov [esp+0xc],esi→call 群 balanced で esp 復帰→mov ecx,[esp+0xc]＝seq→FUN_006c6910(this=seq, arg=Bip01[+0x1C])（fun 内 edi=ecx が sequence layout を読む v405/v406 観測と整合）。[部分確定] Bip01[+0x1C] の使用先: fun 内 mov ecx,[esp+0x2c]→push 0xB3CD7C→call 0x700010（decompiled L496379 も ecx 落ち表示）→ Bip01[+0x1C] は FUN_00700010 の ecx 引数・identity 未→残点。[確定(命令)] epilogue 挙動: prereq==0 のときのみ palette Get(Bip02)→Get(Bip01)→[+0x1C] 検証→FUN_006c6910(seq, ...)→return 1（0x6C9B54-0x6C9B9B・v372 骨解決 epilogue と整合）。L498845 [manager+0x30]->slot23 呼び出し＝[未確定]→残点。残点 V-415-1【中】Bip01[+0x1C] 正体（FUN_00700010 identity）／V-415-2【低】slot23 と manager[+0x30] 正体。教訓: fastcall の ecx 落ちは「this が消える」「stack 引数が it に見える」両方向→call 直前の mov ecx で実施／prologue 直後 spill で epilogue reg 読み逆算／矛盾はまず Ghidra 表示の引数落ちを疑う。本日 push: v405→v414（1e7e2d09）10件＋本件 v415。v 採番 v415 消費（次=v416）。"
+    },
+    {
+      "id": "151-v416-map-lookup-2026-11-16",
+      "timestamp": "2026-11-16T11:04:59Z",
+      "priority": "medium",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v416",
+        "map-lookup",
+        "nipointer"
+      ],
+      "content": "2026-11-16 派生残点第8弾 v416（probe v416_1 全 EXIT=0）＝V-415-1 完遂: 成果物 tmp/re/v416_map_lookup_ruling.md・台帳 row392（bak242）・round_verify ALL OK（rows 31..392 / total 278 / done 273 / open 5）・STATE (el)・ai-todo #151 note。[確定(命令＋decompiled)] FUN_00700010(this,key)＝マップ lookup（hash/list 形）: node=[this+0xC]→外側ループ node=node[0xd]（+0x34）→内側 list=node->virtual+4()→[+4] next 走査で list==key（pointer 等値）なら node return、尽きれば0（L541175-541193）。E8=15件超＝汎用 utility（FUN_006c8220/FUN_006c6910/FUN_00473200 等）。[確定(命令)] epilogue: FUN_00700010(this=Bip01[+0x1C], key=0xB3CD7C)（decompiled stack arg 表示⇔machine mov ecx,[esp+0x2c]; push 0xB3CD7C）→ 取得 node を InterlockedIncrement(node+1)（NiPointer refcount）して使用。[確定(命令)] Bip01[+0x1C] の正体＝key→NiPointer のマップ/登録簿（NiTMap 系: [+0xC] buckets・node value リスト [0]/[4]・[0xd]＝次 node・pointer 等値比較）→ NiAVObject[+0x1C] は「某キー→refcounted オブジェクト」の map・epilogue はそこから global 0xB3CD7C（アドレス）を key に node を NiPointer 取得。V-405-3 総合回答: ①sequence layout 矛盾＝Ghidra ecx 落ち表示誤りで不存在[確定]②epilogue＝prereq==0 時 palette Get(Bip02)→Get(Bip01)→map から global node 取得→FUN_006c6910(seq,node)[確定]③0xB3CD7C 正体と slot23 は残点。残点 V-416-1【中】0xB3CD7C global 正体（refs12件: float ヘルパ帯 0x47C9B4 等・sequence band・0x6D0460）／V-416-2【低】V-415-2 引継ぎ（L498845 slot23 と manager[+0x30]）。教訓: fn identity は decompiled ループ構造（外側 node 走査＋内側 value 走査＋等値比較）で即 map lookup 判定／global アドレスの pointer 等値比較＝singleton 登録簿の目印／InterlockedIncrement(node+1) 直後の取得＝NiPointer 取得の定番。本日 push: v405→v415（d8e48a7d）11件＋本件 v416。v 採番 v416 消費（次=v417）。"
     }
   ],
   "metadata": {
-    "totalEntries": 820,
+    "totalEntries": 821,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-16T11:00:10Z",
-    "entry_count": 820,
-    "last_updated": "2026-11-16T11:00:10Z"
+    "lastUpdated": "2026-11-16T11:04:59Z",
+    "entry_count": 821,
+    "last_updated": "2026-11-16T11:04:59Z"
   }
 }

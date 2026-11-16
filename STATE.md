@@ -1776,3 +1776,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **fastcall の ecx 落ちは「this が decompiled から消える」「stack 引数が this に見える」の両方向で起きる** → thiscall/fastcall 判別は **call 直前の `mov ecx,...` で必ず実施**（v414 の fn 内教訓を caller 側へ展開した実例）／**prologue 直後の `mov [esp+N], reg` spill を打っておくと epilogue の reg 読みを逆算して正体を機械確定**／**「fn がこの layout を読むのにこの値が渡る」型の矛盾はまず Ghidra 表示の引数落ちを疑え**。
 - **本日 push 累計**: v405 → … → v414 `1e7e2d09` →（本件 v415 を本 commit で push）＝**11裁定**。
 - **次**: 残る中/低優先残点（V-415-1【中】/V-405-1..2【中】/V-406-2【中】等）を v416+ で消化。supermemory 未登録11件は MCP 復復待ち。
+
+## 2026-11-16 (el) — 派生残点第8弾 v416（V-415-1 完遂）: **`FUN_00700010`＝map lookup [確定]**・**`Bip01[+0x1C]`＝key→NiPointer のマップ [確定]** — V-405-3 は v415+v416 で [確定相当] へ
+
+- **成果物**: `tmp/re/v416_map_lookup_ruling.md`（probe **v416_1 全 EXIT=0**）。台帳 **row392（bak242）**・`round_verify` **ALL OK**（rows 31..392 / total 278 / done 273 / open 5）。ai-todo **#151 に note**。v 採番 **v416 消費（次=v417）**。
+- **① [確定(命令＋decompiled)] `FUN_00700010(this, key)` ＝ マップ lookup（hash/list 形）**: `node = [this+0xC]`（bucket 先頭）→ 外側ループを **`node = node[0xd]`（+0x34）** で辿り、内側で **`list = node->virtual+4() → [+4] next` 走査**して **`list == key`（pointer 等値）ならその node を return**、尽きれば **0**（L541175-541193）。**E8=15件超（cap）＝汎用 utility**（`FUN_006c8220`＝NiTransformController 確認 fn／`FUN_006c6910`／`FUN_00473200`/`FUN_0047F750`/`FUN_00480770`/`FUN_00539A40` 等）。
+- **② [確定(命令)] epilogue 呼び出し**: **`FUN_00700010(this = Bip01[+0x1C], key = 0xB3CD7C)`**（decompiled L496379 の `puVar3 = FUN_00700010(&DAT_00b3cd7c)` は stack arg 表示 ⇔ machine `mov ecx,[esp+0x2c]; push 0xB3CD7C`）→ 取得 node を **`InterlockedIncrement(node+1)`（NiPointer refcount）** して使用（L496379-383）。
+- **③ [確定(命令)] `Bip01[+0x1C]` の正体 ＝ key→NiPointer のマップ/登録簿（NiTMap 系: `[+0xC]` buckets・node の value リスト `[0]`/`[4]`・`[0xd]`＝次 node・pointer 等値比較）** → **`NiAVObject[+0x1C]` は「某キー→refcounted オブジェクト」の map**、StoreTargets epilogue はそこから **global `0xB3CD7C`（アドレス）を key に node を NiPointer 取得**。
+- **V-405-3 総合回答（v415+v416）**: ①「sequence layout を持つ矛盾」＝**Ghidra ecx 落ち表示誤りで不存在 [確定]** ②epilogue ＝ `prereq==0` 時 `palette Get(Bip02) → Get(Bip01) → map から global node 取得 → FUN_006c6910(seq, node)` **[確定]** ③`0xB3CD7C` 正体と slot23 は残点。
+- **残点 V-416-1..2**: 1=**`0xB3CD7C` global の正体【中】**（.data 値不定・.text refs 12件＝float ヘルパ帯 `0x473181/0x4732EB/0x47C9B4/0x47CA51/0x47CC96/0x47F763`・`0x4969E1`・`0x4E3EC7`・sequence band `0x6C5F51/0x6C693E/0x6C8252`・`0x6D0460`）／2=V-415-2 引継ぎ（`L498845` slot23 と `manager[+0x30]` 正体）【低】。
+- **教訓**: **fn identity は decompiled のループ構造（外側 node 走査＋内側 value list 走査＋等値比較）で即座に map lookup と判定できる**／**global アドレスの pointer 等値比較＝singleton 登録簿の目印**（`&DAT_xxx` を key にする構造）／**`InterlockedIncrement(node+1)` が直後にある取得系呼び出し＝NiPointer 取得の定番**（v404/v405 の refcount 読み解きを再利用）。
+- **本日 push 累計**: v405 → … → v415 `d8e48a7d` →（本件 v416 を本 commit で push）＝**12裁定**。
+- **次**: 残る中/低優先残点（V-416-1【中】/V-405-1..2【中】/V-406-2【中】/V-415-2 ほか）を v417+ で消化。supermemory 未登録12件は MCP 復復待ち。
