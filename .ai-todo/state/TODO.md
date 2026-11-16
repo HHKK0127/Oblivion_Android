@@ -417,6 +417,14 @@
   > ⑥[確定] RTTI TD 群: 0xB03778=.?AVTESObjectARMO@@／0xB036FC=.?AVTESObjectWEAP@@／0xB05DE0=.?AVTESObjectCLOT@@（FUN_0051a120 の cast 先）・FUN_005F1910（L357654）＝FUN_005EAD00(param)→FUN_009828C0()×2 wrapper [確定(decompiled)]（実体 FUN_005EAD00＝残点）。
   > 残点 V-450-1..3（1=Player[+0x1C] 真の書手 fn（Character/Actor ctor 帯 census 拡張）と +0x32 s16 の語【低】／2=FUN_00467CA0 identity 深部と FUN_005EAD00（AV fetch 実体）【低】／3=0x523F40（docs 欠落独立 fn）の identity【低】）。
   > 教訓: docs needle は実データケース（// FUN_ 大文字＋addr 小文字）そのまま（fn.lower() は欠落誤認を生む・「3件同時欠落」は needle 疑い）／否定側確定は machine band＋docs body の2系統／__RTDynamicCast identity は第4引数 TD の name 実読で1手／AV 適用系は既知 setter（v413 case8/9/10）の caller census が鍵／switch default 範囲は head の cmp reg,N; ja の1行で即決。v 採番 v449 消費（次=v450）。
+  > 【旧残点群移行第4弾 v450 — V-450-1..3 完遂】probe v450_1 全1本 EXIT=0。成果物 tmp/re/v450_loadgame_av_ruling.md・台帳 row426（bak276）・round_verify ALL OK（rows 31..426 / total 312 / done 307 / open 5）。
+  > ①[確定] V-450-1 Player[+0x1C] imm 書手＝否定側: 全 .text の `mov dword [reg+0x1C], imm32` census＝0 hits（no-SIB/SIB 両 form）→ imm32 直書き書手なし [確定(否定側)]、残る候補は reg-src store／pointer 経由 [未確定]＝残点、+0x32 s16 の語も継続 [未確定]。
+  > ②[確定(実文字列)] V-450-2 FUN_00467CA0＝TESActorBaseData の LoadGame fn: FUN_004534D0(&local,4) read → `if (local != 0x4B4F4C42)`（＝'BLOK' ESM block シグネチャ）→ error "LoadGame Buffer error: Block Header is incorrect in file %s on line %i. Current version is %i" with "..\TES Shared\TESActorBaseData.cpp" line 0x678 → 実文字列で特定。後続: iVar9=[DAT_00b33b00+0x14]／FUN_004534D0(&local,2)／if (param_2 & 0x10) flag 分岐 [確定(decompiled)]。DAT_00b33b00＝LoadGame コンテキスト [推定高]。
+  > ③[確定(decompiled)] V-450-2 FUN_005EAD00（AV fetch 実体）: `float10 __thiscall(int *self, int index)`: `if ((index-8 < 4) && (self == DAT_00b333C4))` → FUN_005E2210(index,…)（Player 専用パス）→ AV index 8..11（Health/Magicka/Fatigue/Encumbrance）を Player のとき特別扱いする AV 値取得 fn [確定]。FUN_005F1910→FUN_005EAD00 の実体 [確定]、FUN_005E2210 は残点。
+  > ④[確定相当] V-450-3 0x523F40 identity: mov eax,[esi+8]; shr eax,3; test al,1（flag bit3 gate）→ sub-obj 初期化/reset 連鎖: lea ecx,[esi+0xC4]; call 0x46F020／[esi+0x44]; call 0x469E90／[esi+0x68]; call 0x468590／[esi+0xE4]; call 0x46E4F0／lea ebx,[esi+0x24]（＝TESActorBaseData）; call 0x4676B0／[esi+0x54]; call 0x46FC10 → [esi+0x104] flag 続行 [確定(機械)] → Actor/Character 系の型別 init/reset fn（TESActorBaseData(+0x24) を含む各 subobject を順次初期化）[確定相当]。
+  > ⑤[確定] docs 欠落件数更新: annotation 欠落独立 fn は計3件（FUN_00511570・0x523F40・v448/449 で確認）全て int3×8 境界 → docs 欠落は「body 内 call 欠落」（v437）と「annotation 完全欠落」の2型 [確定]。
+  > 残点 V-451-1..3（1=Player[+0x1C] reg-src/pointer 経由書手と +0x32 s16 の語【低】／2=FUN_005E2210（Player AV special path 実体）と DAT_00b33b00（LoadGame context）identity【低】／3=0x523F40 の各 sub-call（0x46F020/469E90/468590/46E4F0/4676B0/46FC10）identity 一覧と flag bit3／[+0x104] の意味【低】）。
+  > 教訓: ESM ブロックシグネチャ定数（'BLOK' 等の 4-char dword）が fn identity の強い錨（error 文言の .cpp パスとセットで即決）／AV fetch 系 fn は `index - N < K` の unsigned range テストが index 範囲をそのまま教える／init/reset chain は lea ecx,[esi+off]; call の列で subobject リストが図に出る／mov [reg+disp], imm32 全 .text census が0なら imm 書手即排他→reg-src/indirect へ段階移行／docs 欠落 fn は「annotation 無し＋int3×8 境界」の2条件で機械 census 可能。v 採番 v450 消費（次=v451）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1323,6 +1331,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1346,4 +1359,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 07:03:50
+**ai-todo** | Last Updated: 2026-11-17 07:08:16

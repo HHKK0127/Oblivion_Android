@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-16T22:04:34Z",
+  "lastUpdated": "2026-11-16T22:08:57Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -12380,14 +12380,30 @@
         "docs-gap"
       ],
       "content": "2026-11-17 旧残点群移行第3弾 v449（probe v449_1..3 全3本 EXIT=0）＝V-449-1..3 完遂: 成果物 tmp/re/v449_player_writer_ruling.md・台帳 row425（bak275）・round_verify ALL OK（rows 31..425 / total 311 / done 306 / open 5）・STATE (fs)・ai-todo #151 note。訂正: v449_2 (c)「3fn docs annotation 欠落」は fn.lower() バグ（// fun_ 小文字 needle 恒失敗）の誤答 → v449_3 で3件実在確認（L81193/L81608/L81935）して撤回。[確定] V-449-1 Player[+0x1C] 書手＝否定側: Player ctor 帯（FUN_0066A740..0x66AD40）の [reg+0x1C] 直書き0件＋docs FUN_0066a740 body（L430157..430550）内の param_1[7]（=+0x1C）代入0件（grep hits 17件は param_1[0x1c1..0x1c7]＝+0x704.. 別 field）→ 別 fn（Character/Actor 帯）が書く [確定（否定側）]、書手 fn と +0x32 s16 の語は [未確定]＝残点。[確定] V-449-2 TESActorBaseData+4 byte 書手群: census（0x467000..0x468400）で 5件/4fn＝46761F/467665（FUN_004675e0）／467DF9（FUN_00467ca0）／468186（FUN_00468180）／468291（FUN_00468280）。FUN_00468280（L81937）＝*(u8*)(self+4)=v[0]; virtual+0x10(0x100) → +5=v[1] → +6=v[2] ＝3-byte 一括 AV setter（+4,+5,+6 各 set＋notify）[確定(decompiled)]／FUN_004675E0（L81193）＝list walk（self+6＝+0x18 linked list）でマッチエントリ更新 [推定高]／FUN_00467CA0（L81610）＝byte param 大 local 処理 fn [未確定]。bit7 set 経路候補＝この群（byte store）[推定高]。[確定] 0x523F40＝int3×8 境界の独立 fn＝docs annotation 欠落 [確定]（v448 FUN_00511570 と同類型＝v437 類型2件目。前 fn は const-return stub 群）。[確定相当] V-449-3 FUN_00511570 identity: fldz/out double→virtual [edi]+0x190→call 0x5e02e0→movzx byte[ebx+4]（FormType）→ __RTDynamicCast（push 0xB03DE4; push 0xB02F9C; …; call 0x9832e6）→ 0xB03DE4 TD 実読＝.?AVTESActorBase@@ [確定] → virtual [esi]+0xB4 → cmp edi,[0xB333C4]（Player 判定）→ Player のとき FUN_005F1910(8)→FUN_00519C50（AV8=Health）／FUN_005F1910(0xA)→[esi+0x24]→FUN_004672B0（AV10=Fatigue）／FUN_005F1910(9)→FUN_00467290（AV9=Magicka）一括 SET [確定(機械)] → FUN_00511570＝「obj を TESActorBase に RTTI cast、Player の場合は Health/Magicka/Fatigue 一括 SET する AV 適用 fn [確定相当]」。[確定] dispatcher default 範囲: FUN_00519F50 head cmp eax,0x27; ja 0x51a094 → switch 0..39、default は AV index ≥0x28（[40]MagickaMultiplier 以降）[確定] → default float setter（FUN_0065cb00＋notify）は AV 40..71 に適用 [確定相当]。[確定] RTTI TD 群: 0xB03778=.?AVTESObjectARMO@@／0xB036FC=.?AVTESObjectWEAP@@／0xB05DE0=.?AVTESObjectCLOT@@（FUN_0051a120 の cast 先）・FUN_005F1910（L357654）＝FUN_005EAD00(param)→FUN_009828C0()×2 wrapper [確定(decompiled)]（実体 FUN_005EAD00＝残点）。残点 V-450-1..3（1=Player[+0x1C] 真の書手 fn（Character/Actor ctor 帯 census 拡張）と +0x32 s16 の語【低】／2=FUN_00467CA0 identity 深部と FUN_005EAD00（AV fetch 実体）【低】／3=0x523F40（docs 欠落独立 fn）の identity【低】）。教訓: docs needle は実データケース（// FUN_ 大文字＋addr 小文字）そのまま（fn.lower() は欠落誤認を生む・「3件同時欠落」は needle 疑い）／否定側確定は machine band＋docs body の2系統／__RTDynamicCast identity は第4引数 TD の name 実読で1手（cast 先で caller 役割ほぼ決定）／AV 適用系は既知 setter（v413 case8/9/10）の caller census が鍵（3本並ぶ分岐で Player 判定と一括 SET 同時確定）／switch default 範囲は head の cmp reg,N; ja の1行で即決。本日 push: v405→v448（3b4eec9f）44件＋本件 v449。v 採番 v449 消費（次=v450）。"
+    },
+    {
+      "id": "151-v450-loadgame-av-2026-11-17",
+      "timestamp": "2026-11-16T22:08:57Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v450",
+        "loadgame",
+        "av-fetch",
+        "init-chain"
+      ],
+      "content": "2026-11-17 旧残点群移行第4弾 v450（probe v450_1 全1本 EXIT=0）＝V-450-1..3 完遂: 成果物 tmp/re/v450_loadgame_av_ruling.md・台帳 row426（bak276）・round_verify ALL OK（rows 31..426 / total 312 / done 307 / open 5）・STATE (ft)・ai-todo #151 note。[確定] V-450-1 Player[+0x1C] imm 書手＝否定側: 全 .text の mov dword [reg+0x1C], imm32 census＝0 hits（no-SIB/SIB 両 form）→ imm32 直書き書手なし [確定(否定側)]、残る候補は reg-src store／pointer 経由 [未確定]＝残点、+0x32 s16 の語も継続 [未確定]。[確定(実文字列)] V-450-2 FUN_00467CA0＝TESActorBaseData の LoadGame fn: FUN_004534D0(&local,4) read → if (local != 0x4B4F4C42)（＝'BLOK' ESM block シグネチャ）→ error \"LoadGame Buffer error: Block Header is incorrect in file %s on line %i. Current version is %i\" with \"..\\TES Shared\\TESActorBaseData.cpp\" line 0x678 → 実文字列で特定。後続: iVar9=[DAT_00b33b00+0x14]／FUN_004534D0(&local,2)／if (param_2 & 0x10) flag 分岐 [確定(decompiled)]。DAT_00b33b00＝LoadGame コンテキスト [推定高]。[確定(decompiled)] V-450-2 FUN_005EAD00（AV fetch 実体）: float10 __thiscall(int *self, int index): if ((index-8 < 4) && (self == DAT_00b333C4)) → FUN_005E2210(index,…)（Player 専用パス）→ AV index 8..11（Health/Magicka/Fatigue/Encumbrance）を Player のとき特別扱いする AV 値取得 fn [確定]。FUN_005F1910→FUN_005EAD00 の実体 [確定]、FUN_005E2210 は残点。[確定相当] V-450-3 0x523F40 identity: mov eax,[esi+8]; shr eax,3; test al,1（flag bit3 gate）→ sub-obj 初期化/reset 連鎖: lea ecx,[esi+0xC4]; call 0x46F020／[esi+0x44]; call 0x469E90／[esi+0x68]; call 0x468590／[esi+0xE4]; call 0x46E4F0／lea ebx,[esi+0x24]（＝TESActorBaseData）; call 0x4676B0／[esi+0x54]; call 0x46FC10 → [esi+0x104] flag 続行 [確定(機械)] → Actor/Character 系の型別 init/reset fn（TESActorBaseData(+0x24) を含む各 subobject を順次初期化）[確定相当]。[確定] docs 欠落件数更新: annotation 欠落独立 fn は計3件（FUN_00511570・0x523F40・v448/449 で確認）全て int3×8 境界 → docs 欠落は「body 内 call 欠落」（v437）と「annotation 完全欠落」の2型 [確定]。残点 V-451-1..3（1=Player[+0x1C] reg-src/pointer 経由書手と +0x32 s16 の語【低】／2=FUN_005E2210（Player AV special path 実体）と DAT_00b33b00（LoadGame context）identity【低】／3=0x523F40 の各 sub-call（0x46F020/469E90/468590/46E4F0/4676B0/46FC10）identity 一覧と flag bit3／[+0x104] の意味【低】）。教訓: ESM ブロックシグネチャ定数（'BLOK' 等の 4-char dword）が fn identity の強い錨（error 文言の .cpp パスとセットで即決）／AV fetch 系 fn は index - N < K の unsigned range テストが index 範囲をそのまま教える／init/reset chain は lea ecx,[esi+off]; call の列で subobject リストが図に出る／mov [reg+disp], imm32 全 .text census が0なら imm 書手即排他→reg-src/indirect へ段階移行／docs 欠落 fn は「annotation 無し＋int3×8 境界」の2条件で機械 census 可能。本日 push: v405→v449（36a52aed）45件＋本件 v450。v 採番 v450 消費（次=v451）。"
     }
   ],
   "metadata": {
-    "totalEntries": 854,
+    "totalEntries": 855,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-16T22:04:34Z",
-    "entry_count": 854,
-    "last_updated": "2026-11-16T22:04:34Z"
+    "lastUpdated": "2026-11-16T22:08:57Z",
+    "entry_count": 855,
+    "last_updated": "2026-11-16T22:08:57Z"
   }
 }
