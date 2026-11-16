@@ -1788,3 +1788,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **fn identity は decompiled のループ構造（外側 node 走査＋内側 value list 走査＋等値比較）で即座に map lookup と判定できる**／**global アドレスの pointer 等値比較＝singleton 登録簿の目印**（`&DAT_xxx` を key にする構造）／**`InterlockedIncrement(node+1)` が直後にある取得系呼び出し＝NiPointer 取得の定番**（v404/v405 の refcount 読み解きを再利用）。
 - **本日 push 累計**: v405 → … → v415 `d8e48a7d` →（本件 v416 を本 commit で push）＝**12裁定**。
 - **次**: 残る中/低優先残点（V-416-1【中】/V-405-1..2【中】/V-406-2【中】/V-415-2 ほか）を v417+ で消化。supermemory 未登録12件は MCP 復復待ち。
+
+## 2026-11-16 (em) — 派生残点第9弾 v417（V-416-1 部分解）: **`0xB3CD7C` 使用形5形式の体系分類 [確定]**・**getter thunk ＝ vtable `0xA79984` slot1（`.?AVNiMultiTargetTransformController@@`）[確定(RTTI)]**
+
+- **成果物**: `tmp/re/v417_b3cd7c_ruling.md`（probe **v417_1..v417_3 の3本全 EXIT=0**）。台帳 **row393（bak243）**・`round_verify` **ALL OK**（rows 31..393 / total 279 / done 274 / open 5）。ai-todo **#151 に note**。v 採番 **v417 消費（次=v418）**。
+- **① [確定] 使用形5形式（.text refs 11件の体系分類）**: ①**map lookup 経由 `push 0xB3CD7C; call 0x700010` ＝4件**（`FUN_00473200`／`FUN_0047F750`／`0x4E3EC6`／**`FUN_006C8220`＝NiTransformController 登録確認（v371 既知）**）②**インライン等値 `cmp eax,0xB3CD7C` ＝4件**（`FUN_004730B0`／**`FUN_0047C930`×2＝float set 系**／`FUN_0047CC80`）＝`FUN_00700010` の `list==key` 比較の**インライン版** ③**getter thunk `FUN_006C5F50` ＝ `mov eax,0xB3CD7C; ret`（E8=0）** ④**value read → `FUN_0070F910`（dump/出力ヘルパ・v401 既知）＝1件**（`0x6D0450`・未注記）⑤`0x4969E1`（境界ズレ decode で context 不明）。
+- **② [確定(RTTI)] thunk の所属**: **vtable `0xA79984` の slot1（+0x4）・RTTI `.?AVNiMultiTargetTransformController@@`** — data ref は **`.rdata 0xA79988`（＝vtable 格納部）の1件のみ**・E8=0・refs to `0xA79988`＝0。
+- **③ [推定高] `[0xB3CD7C]`（値）**: 唯一消費者 `FUN_0070F910`（出力系）へ渡す → **出力対象の値（文字列/数値 singleton）**。
+- **④ [確定] usage 帯**: float 設定系（`0x47C930`/`FUN_004730B0`/`FUN_00473200`）・flag set（`0x4E3EC6`: `or word [eax+8],0x40`）・`FUN_0047F750`（取得 node→`FUN_0047C710`→`cmp [0xA7A160]`）・**`FUN_006C8220`（v371）・StoreTargets epilogue（v405）**・出力 `0x6D0450` — **使用形から「NiAVObject のコレクション（map）に singleton key として登録されたオブジェクト」[推定高]**。
+- **残点 V-418-1..2**: 1=**`0xB3CD7C` singleton の型**（`0x6D0450` の identity＋`FUN_0070F910` arg 用途＋`0x47C930` 帯 float set 先フィールド）【中】／2=V-416-2/V-415-2 引継ぎ（`L498845` slot23 と `manager[+0x30]`）【低】。
+- **教訓**: **data ref が「1件のみ」は vtable 格納の強兆候 → ref 位置そのものを RTTI backward scan して slot/class を即同定**（v409 の「テーブル head 徎方 walk」と表裏の技）／**key 使用形は「push imm→call lookup」と「cmp imm→je」の2形式で横断 census**（インライン化と関数化の併存）／**thunk getter は E8=0 でも vtable 登録で機能**（v409 slot231 の dead 判定と対照例）。
+- **本日 push 累計**: v405 → … → v416 `e2379cc2` →（本件 v417 を本 commit で push）＝**13裁定**。
+- **次**: V-418-1【中】（singleton 型）→ 残る低優先残点群（V-418-2/V-405-1..2/V-406-2/V-414-1..3 ほか）を v419+ で消化。supermemory 未登録13件は MCP 復復待ち。
