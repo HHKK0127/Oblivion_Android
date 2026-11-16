@@ -462,6 +462,14 @@
   > ⑤[確定] V-455-3 移行方針: docs 欠落 census は v454 で総まとめ（レンジ [2337,6038]）済み → V-456 以降は旧残点（V-415-2/V-416-2/V-405-4..5/V-406-2..6 等）へ軸を戻す [確定（作業方針）]。
   > 残点 V-456-1..3（1=旧残点の消化開始（V-415-2/V-416-2/V-405-4..5 優先順）【低】／2=残る subobject name（+0x44/+0x68/+0x54）【低】／3=FUN_004E82E0 purpose 一語名と Player[+0x1C] class（並行）【低】）。
   > 教訓: close-band call は「signature＋直近 field アクセス」で用途絞り（[ecx+0x24]＝既知 field で即決）／subobject 名は sub-call 内 push RTTI_TD の機械列挙が有効（TD 無し fn は別法要）／field map は ruling ごとに累積表で持続（残3に収束＝次 probe 設計が楽に）／purpose 一語名は docs 語が無ければ constellation＋close-band で [推定高] に留め cost/benefit 判断／方針転換は ruling §3 明記で次セッション入口固定。v 採番 v455 消費（次=v456）。
+  > 【旧残点群へ軸戻し第1弾 v456 — V-415-1..2 消化】probe v456_1..v456_2 全2本 EXIT=0。成果物 tmp/re/v456_store_targets_ruling.md・台帳 row432（bak282）・round_verify ALL OK（rows 31..432 / total 318 / done 313 / open 5）。
+  > ①[確定(decompiled)] V-415-1 FUN_00700010: `int *__thiscall(int *self, int key)`: piVar1=self[3]（+0xC）→ outer loop: null→0／`iVar2=virtual [piVar1]+4()()`（first item）→ inner linked walk（iVar2+4）→ `if (iVar2==key) return piVar1` → **piVar1=piVar1[0xD]（+0x34 outer next・machine [esi+0x34] と一致）[確定]** → **二重 linked list（outer +0x34／inner slot+4 chain）の key-based node lookup fn [確定]**。
+  > ②[確定]（lookup 形）＋[推定高]（正体）V-415-1 Bip01[+0x1C] 系統: docs L498848-51 `iVar13=virtual[local_24]+0x4C("Bip02")` → `iVar13+0x1c` → `FUN_006c6910(*(iVar13+0x1c))` [確定(decompiled)] — virtual +0x4C(str) は名前（"Bip02"／DAT_00a30968）で Ni node を探す getter、その +0x1C を FUN_006C6910 へ [確定（構造）] → Bip01[+0x1C] ＝ skeleton bone lookup 結果の +0x1C ptr [推定高]。
+  > ③[確定]（構造）＋[推定高]（class）V-415-2 slot23 呼び出し: docs L498845 `(**(code**)(**(int**)(*(int*)(local_28+0x40)+0x30)+0x5c))(&uStack_29,1,&cStack_2a)` ＝ **[seq+0x40]（manager）→[+0x30]（sub-manager）→vtable slot +0x5C** の3引数 virtual call [確定(構造)]、machine 対応 `6C9B3B mov eax,[edx+0x40]`→`6C9B3E mov ecx,[eax+0x30]`→`6C9B43 mov edx,[edx+0x5C]`＋6C9914/6C9929 [確定(機械)] → [seq+0x40]＝NiControllerManager 系 [推定高]／[manager+0x30]＝controller/sub-manager [推定高]／vtable+0x5C＝store/register 系 [推定高]。
+  > ④[確定] owning fn＝FUN_006C9590（L498520）: error 文言 `"NiControllerSequence::StoreTargets '%s' failed to find target ... m_pcAVObjectName/m_pcCtlrType/m_pcPropertyType"` [確定(実文字列)] → **FUN_006C9590＝NiControllerSequence::StoreTargets [確定]**、machine head（mov eax,[esi+0x40]→mov edi,[eax+0x7C]（manager+0x7C）→mov eax,[esi+0x5C]→virtual [edi]+0x4C）[確定(機械)]。
+  > ⑤[未確定] FUN_006C6910 identity（L496358 void __fastcall(int)・SEH prologue・22行 cap で local 宣言中のみ）＝残点継続。[未確定] V-456-3 subobject 残3＋purpose は本裁定未着手（v455 残点そのまま）。
+  > 残点 V-457-1..3（1=FUN_006C6910 identity（body 深部・bone +0x1C 消費側）→ Bip01[+0x1C] 一語名確定【低】／2=[seq+0x40] manager の class（RTTI 判定）と vtable+0x5C virtual 用途名【低】／3=V-456-3 併走（subobject 残3＋FUN_004E82E0 purpose）【低】）。
+  > 教訓: error 実文言の `Class::Method '...'` 形は owning fn identity を一撃（文言中の :: 付きメソッド名がそのまま fn 名）／docs call 式は機械 mov 連鎖と1対1（+0x40→+0x30→+0x5C を band grep で即一致）／decompiled doubly-linked walk は list[n] index×4＝machine offset（piVar1[0xd]⇔[esi+0x34]）／name-based lookup 式（virtual+0x4C("name")→+0x1C）は bone getter 定型／probe は owning fn head machine まで取ると seq/manager field 一覧が副次収穫。v 採番 v456 消費（次=v457）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1368,6 +1376,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1391,4 +1404,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 07:33:34
+**ai-todo** | Last Updated: 2026-11-17 07:38:50
