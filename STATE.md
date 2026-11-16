@@ -2248,3 +2248,16 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **「jump table 無し」の否定は linear decode 到達性依存 → 「`cmp reg,N` 直後の `FF` を byte-pattern 検出」の第2系統で再検証を欠くと誤答（v444_2 の事例）**／**fn 所属は find_head window ではなく docs 直近 annotation の backward grep**（`L269970` が決定打・window 誤りは **find_head 境界誤り5件目**）／**tail 分類は境界逆走査では命令境界不可 → 区切り code run は先頭 forward decode が正**／**global identity は read/write 両 ref＋docs 代入・差分の並列で「前回値キャッシュ」が浮かぶ（差分 `A−B` が鍵）**／**訂正は ruling 冒頭に `vXXX 撤回` と明記（本裁定で2件）**。
 - **本日 push 累計（セッション）**: v405 → … → v444 `d5507dd3` →（本件 v445 を本 commit で push）＝**41裁定**。
 - **次**: V-446-1..3（FF forward-decode 実装／`[esp+0x5c]` predicate）→ 旧残点群移行。supermemory 未登録41件（v405..v445）は MCP 復復待ち。
+
+## 2026-11-17 (fp) — 派生残点第38弾 v446（V-446-1..3 完遂）: **forward-decode 分離が成功**（non-ret 3171 の 94.7% が function end）・**docs 欠落推定が ~6000台に収束 [推定]**・**`DAT_00b33ea0`＝counter 系グローバル（推定）**
+
+- **成果物**: `tmp/re/v446_ffsplit_ruling.md`（probe **v446_1..v446_2 の2本全 EXIT=0**）。台帳 **row422（bak272）**・`round_verify` **ALL OK**（rows 31..422 / total 308 / done 303 / open 5）。ai-todo **#151 に note**。v 採番 **v446 消費（次=v447）**。
+- **① [確定] V-446-1 forward-decode 分離成功**: **segment 先頭からの forward decode**（v445 の正しい手法を実装）で non-ret 3171 を分類 → **`jmp-rel`（tail `E9/EB`）＝1897（59.8%）／`ret-family`（forward で `ret`/`ret imm16` 判明）＝1103（34.8%）**／other-last-ins 47／jmp reg 6／jcc-tail 2／jmp [mem] 2／straddle+undecodable 10 → **byte 判定の non-ret のうち 3000（94.7%）が実際には function end（tail-jmp epilogue or `ret imm16`）[確定]**。**byte 判定が `ret imm16`（`C2 lo hi`）を取りこぼしていた内訳が1103件と判明 [確定]**。
+- **② [推定] docs 欠落 function 数が ~6000台に収束**: gaps>0x200・minseg=0x10 の**境界総数6209**（ret-byte 3038＋non-ret 3171）のうち function end と分類可能 ≈**6038**＋偽陽性約60＋table 直後45 → **docs 欠落 ≈6000台（下限・gaps≤0x200 は未計上）**（v437〜v439 の「数千規模」から収束）。
+- **③ [部分確定] V-446-2 `0x407CB4` write の flow**: direct branch は **`0x407CAC: jmp 0x407cb4`（EB・無条件）1件のみ [確定]**、手前に **`407C9D: mov eax,[0xB33EA0]` → `407CA2: je 0x407CAE`（`[0xB33EA0]==0` 系条件と推定）→ `407CAE: mov ecx,[0xB3340C]` → write**（`je` 直前1byte＝`test` 系は decode 確認待ち）。**`0x407E47` への「branch」`407E44: 7x` は mid-instruction 偽陽性と判明（`407E42` の5byte中間）→ 同 block は fall-through [確定（訂正）]**。
+- **④ [推定高] `DAT_00b33ea0` ＝ counter 系グローバル**: `.text` refs（`4052CE`/fild・`407C9D` dump・`408D68`・`47F81C` cmp）＋**docs 84 hits**（L3639-40 interval パターン／L101834-36 変化検知／`(float)` cast／`<0` signed）→ **差分・interval・変化検知・float 変換に使われる signed int counter（frame/tick 系）**。`0xB3340C`＝dump 前回保存値（v445）と整合。
+- **⑤ [確定] V-446-3 方針**: **v447 から旧残点群へ移行**（V-414-2 継続→V-415-2→V-413-2）。
+- **残点 V-447-1..3**: 1=V-414-2 継続（`0xB10290` 先頭10件 consumer／`[esp+0x5c]` dump 内 CFG 詳細と連続）【低】／2=V-415-2・V-413-2 の順次消化【低】／3=`je 0x407CAE` 直前1byte decode と straddle/undecodable 10件の個別確認【低】。
+- **教訓**: **byte 判定と forward decode の差分が直ちに欠落パターンを明かす**（差1103＝`ret imm16` 捕捉漏れ）→ **2系統 census の突き合わせで判定ロジックの穴が数量付きで出る**／**「forward decode を segment 先頭から」は CC 塀区切りの構造を活かす正解**（宣言→実装1遅延で成功）／**branch 探索は src/kind/文脈の3点セットを必ず print**（v444_2 の src 欠落で predicate 不達→今回解消）／**mid-instruction 偽陽性は straddle 検出と共存**（byte-pattern branch は forward decode 整合で裏取り）／**global identity は docs hits の使用パターン（interval/変化検知/cast）で読む**。
+- **本日 push 累計（セッション）**: v405 → … → v445 `9f9d0961` →（本件 v446 を本 commit で push）＝**42裁定**。
+- **次**: v447 から旧残点群（V-414-2／V-415-2／V-413-2）へ移行。supermemory 未登録42件（v405..v446）は MCP 復復待ち。

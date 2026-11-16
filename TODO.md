@@ -382,6 +382,14 @@
   > ⑥[確定] V-445-3 方針仮決定: 次 v446 で V-445 残2点（FF forward-decode 実装・[esp+0x5c] predicate）を片付けた後、旧残点群（V-414-2..3/V-413-2/V-415-2）へ移行（作業方針 [推定]）。
   > 残点 V-446-1..3（1=FF 分離の forward-decode 実装（residual 3126 の真 function end 数確定）【低】／2=[esp+0x5c] branch 源（0x407CB4/0x407E47 への predicate）と DAT_00b33ea0 identity【低】／3=型番方針の最終判断【低】）。
   > 教訓: 「jump table 無し」の否定は linear decode 到達性依存→「cmp reg,N 直後の FF を byte-pattern 検出」の第2系統で再検証を欠くと誤答（v444_2 の事例）／fn 所属は find_head window ではなく docs 直近 annotation の backward grep（L269970 が決定打・window 誤りは find_head 境界誤り5件目）／tail 分類は境界逆走査では命令境界不可→区切り code run は先頭 forward decode が正／global identity は read/write 両 ref＋docs 代入・差分の並列で「前回値キャッシュ」が浮かぶ（差分 A−B が鍵）／訂正は ruling 冒頭に vXXX 撤回と明記（本裁定で2件）。v 採番 v445 消費（次=v446）。
+  > 【派生残点第38弾 v446 — V-446-1..3 完遂】probe v446_1..v446_2 全2本 EXIT=0。成果物 tmp/re/v446_ffsplit_ruling.md・台帳 row422（bak272）・round_verify ALL OK（rows 31..422 / total 308 / done 303 / open 5）。
+  > ①[確定] V-446-1 forward-decode 分離成功: segment 先頭からの forward decode（v445 の正しい手法を実装）で non-ret 3171 を分類 → jmp-rel（tail E9/EB）＝1897（59.8%）／ret-family（forward で ret・ret imm16 判明）＝1103（34.8%）／other-last-ins 47／jmp reg 6／jcc-tail 2／jmp [mem] 2／straddle+undecodable 10 → byte 判定の non-ret のうち 3000（94.7%）が実際には function end（tail-jmp epilogue or ret imm16）[確定]。byte 判定が ret imm16（C2 lo hi）を取りこぼしていた内訳が1103件と判明 [確定]。
+  > ②[推定] docs 欠落 function 数が ~6000台に収束: gaps>0x200・minseg=0x10 の境界総数6209（ret-byte 3038＋non-ret 3171）のうち function end と分類可能 ≈6038＋偽陽性約60＋table 直後45 → docs 欠落 ≈6000台（下限・gaps≤0x200 未計上）（v437〜v439 の「数千規模」から収束）。
+  > ③[部分確定] V-446-2 0x407CB4 write の flow: direct branch は EB 無条件 jmp 0x407cb4 の1件のみ [確定]、手前に `407C9D: mov eax,[0xB33EA0]` → `407CA2: je 0x407CAE`（[0xB33EA0]==0 系条件と推定）→ `407CAE: mov ecx,[0xB3340C]` → write（je 直前1byte＝test 系は decode 確認待ち）。0x407E47 への「branch」407E44: 7x は mid-instruction 偽陽性と判明（407E42 の5byte中間）→ 同 block は fall-through [確定（訂正）]。
+  > ④[推定高] DAT_00b33ea0＝counter 系グローバル: .text refs（4052CE/fild・407C9D dump・408D68・47F81C cmp）＋docs 84 hits（L3639-40 interval パターン／L101834-36 変化検知／(float) cast／<0 signed）→ 差分・interval・変化検知・float 変換に使われる signed int counter（frame/tick 系）、0xB3340C＝dump 前回保存値（v445）と整合。
+  > ⑤[確定] V-446-3 方針: v447 から旧残点群へ移行（V-414-2 継続→V-415-2→V-413-2）。
+  > 残点 V-447-1..3（1=V-414-2 継続（0xB10290 先頭10件 consumer／[esp+0x5c] dump 内 CFG 詳細と連続）【低】／2=V-415-2・V-413-2 の順次消化【低】／3=je 0x407CAE 直前1byte decode と straddle/undecodable 10件の個別確認【低】）。
+  > 教訓: byte 判定と forward decode の差分が直ちに欠落パターンを明かす（差1103＝ret imm16 捕捉漏れ）→ 2系統 census の突き合わせで判定ロジックの穴が数量付きで出る／「forward decode を segment 先頭から」は CC 塀区切りの構造を活かす正解（宣言→実装1遅延で成功）／branch 探索は src/kind/文脈の3点セットを必ず print（v444_2 の src 欠落で predicate 不達→今回解消）／mid-instruction 偽陽性は straddle 検出と共存（byte-pattern branch は forward decode 整合で裏取り）／global identity は docs hits の使用パターン（interval/変化検知/cast）で読む。v 採番 v446 消費（次=v447）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1288,6 +1296,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1311,4 +1324,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 06:39:12
+**ai-todo** | Last Updated: 2026-11-17 06:44:35
