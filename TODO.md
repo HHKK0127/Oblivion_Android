@@ -110,6 +110,12 @@
   > [確定(命令)＋推定高] Player[+0x24]＝vtable 付き埋め込みオブジェクト（virtual+0x50 dirty 通知）— フィールド [+8](u16)／[+0xA](u16)／[+0xe]／[+0x10]/[+0x12](min/max)／[+4]>>7(flag)＝derived stat/level 系。
   > 残点 V-412-1..4（1=FUN_004677F0 の "level" 語確定【中→低】／2=FUN_00547F80/00548020 数式と FUN_009828C0 identity【低】／3=Player[+0x24] RTTI とフィールド名【低】／4=FUN_00519C50 identity【低】）。
   > 教訓: thiscall の this 追跡は call 直前の lea ecx,[reg+disp] を4命令文脈で見る／Ghidra の void fn(void) 表示は stack 引数落ちの兆候→arity は machine push 数で確定。v 採番 v412 消費（次=v413）。
+  > 【派生残点第5弾 v413（中間裁定）】probe v413_1..v413_4 全 EXIT=0。成果物 tmp/re/v413_av_dispatch_ruling.md・台帳 row389（bak239）・round_verify ALL OK（rows 31..389 / total 275 / done 270 / open 5）。
+  > 主成果①[確定(命令)]: FUN_00519F50(index,value)＝actor value 一括 SET dispatcher — case0-7→FUN_00468AF0(attr byte)／case8→FUN_00519C50／case9→[Player[+0x24]+8] SET／case10→[+0xA] SET／case0x0B+続行 → Player[+0x24]＝actor value index9/10 の格納先。
+  > 主成果②[確定]: SET 元＝4 fn のみ（両 setter の E8 caller 完全一致ペア）: FUN_00511570（未注記）／FUN_00519F50（dispatcher）／FUN_005222D0／0x523F40（未注記・cmp [esi+0xc],7＝formType7 ゲート＝v411 bVar18 同型）。
+  > V-412-1 の level 語＝[未確定]（手がかり強化）: E8=15（TESClass 帯 0x51Cxxx 集中）・使用形＝flag→clamp<1→1→比較と(v-1)・[+0xE] の書手は dispatcher に不在 → 候補＝FUN_00467240/FUN_00467320（0x4672xx setter 同族）＝V-413-1。V-412-3（vptr）＝ctor に store なし→[未確定]継続。[確定] FUN_0046B250＝map Lookup helper。
+  > 残点 V-413-1【中】FUN_00467240/00467320 identity→level 語確定／V-413-2【低】未注記2 fn と dispatcher case0x0B+／V-413-3【低】Player[+0x24] vptr 設定元。
+  > 教訓: dispatcher（switch setter群）の発見で SET 元が E8 caller 完全一致ペアとして即構造化／[reg+disp8] 書手 census は kind 分け＋毎回 context decode（mov word の dword 表示＝境界ズレ）／未注記 fn は既知 pattern 突合で補完。v 採番 v413 消費（次=v414）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1016,11 +1022,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1044,4 +1045,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-16 19:34:41
+**ai-todo** | Last Updated: 2026-11-16 19:44:16

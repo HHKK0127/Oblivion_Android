@@ -1734,3 +1734,16 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **thiscall の this 追跡は call 直前の `lea ecx,[reg+disp]`/`mov ecx,...` を4命令文脈で見る**（decompiled の引数落ちを machine 即補完）／**Ghidra の `void fn(void){...}` 表示は stack 引数落ちの兆候 → arity は machine push 数**（v406 教訓の stack 引数版）。
 - **本日 push 累計**: v405 → v406 → v407 → v408 → v409 → v410 → v411 `9bcad498` →（本件 v412 を本 commit で push）＝**8裁定**。
 - **次**: 残る低優先残点群（V-412-1..4／V-400..V-408 系）を v413+ で消化。supermemory 未登録8件（v405..v412）は MCP 復復待ち。
+
+## 2026-11-16 (ei) — 派生残点第5弾 v413（中間裁定）: **`FUN_00519F50`＝actor value SET dispatcher [確定(命令)]**・**`Player[+0x24]` SET 元＝4 fn 完全一致ペア [確定]**・V-412-1/3 は手がかり強化で [未確定] 維持
+
+- **成果物**: `tmp/re/v413_av_dispatch_ruling.md`（probe **v413_1..v413_4 の4本全 EXIT=0**）。台帳 **row389（bak239）**・`round_verify` **ALL OK**（rows 31..389 / total 275 / done 270 / open 5）。ai-todo **#151 に note**。v 採番 **v413 消費（次=v414）**。
+- **① [確定(命令)] `FUN_00519F50(index, value)` ＝ actor value 一括 SET dispatcher** — `switch(index)`: `case 0..7 → FUN_00468AF0(id,value)`（attribute byte setter）／`case 8 → FUN_00519C50`／**`case 9 → FUN_00467290 ＝ [Player[+0x24]+0x8] へ SET`**／**`case 10 → FUN_004672B0 ＝ [Player[+0x24]+0xA] へ SET`**／`case 0x0B+ → 続行`（L210353-210405）→ **`Player[+0x24]` ＝ actor value index 9/10 の格納先**。
+- **② [確定] SET 元（両 setter の E8 caller）＝4 fn のみ・完全一致ペア**: `FUN_00511570`（未注記）／**`FUN_00519F50`（dispatcher）**／**`FUN_005222D0`**（v411 確定）／`0x523F40`（未注記・machine `cmp [esi+0xc],7` ＝ formType7 ゲート → push0 SET＝v411 `bVar18` 同型 pattern）。
+- **V-412-1「level」語 [未確定]（手がかり強化）**: ①`FUN_004677F0` の **E8=15**（TESClass 帯 `0x51C7B0`/`0x51CA10`/`0x51CA50`/`0x51CB80`/`0x51CC00` に集中＋`FUN_005222D0`/`FUN_0066C200`/`FUN_00488420`×3/`0x50AAA0`/`FUN_005EA350`）②使用形＝`flag [obj+4]>>7&1 → clamp [+0x10]/[+0x12] → <1→1 → 比較(sVar5<sVar4) と (v-1)` ③**`[Player[+0x24]+0xE]` の書手は SET dispatcher に不在** → **書手候補＝`FUN_00467240`/`FUN_00467320`（0x4672xx setter 同族・machine `word [reg+0xE]` store を2本発見）＝ V-413-1**。
+- **V-412-3 [未確定]（追跡継続）**: Player ctor `FUN_0066A740`（0x66A740..0x66AD40）に `[esi/edi+0x24]` vptr store なし → 型別初期化 fn で設定＝V-413-3。
+- **[確定] `FUN_0046B250(id)` ＝ map Lookup helper**（`FUN_0055E000` → `found ? value : 0`・L84743-84752）。
+- **残点 V-413-1..3**: 1=**`FUN_00467240`/`FUN_00467320`（`[+0xE]` 書手）の identity → V-412-1 の "level" 語確定【中】**／2=未注記2 fn（`FUN_00511570`/`0x523F40`）と dispatcher `case 0x0B+`【低】／3=`Player[+0x24]` vptr 設定元【低】。
+- **教訓**: **dispatcher（switch setter 群）を発見すると SET 元 fn 群が E8 caller の完全一致ペアで即構造化される**（pairs は dispatcher の存在証明）／**`[reg+disp8]` 書手 census は imm/reg kind 分け＋毎回 context decode**（`mov word` が dword 表示になる境界ズレ例あり）／**未注記 fn（Ghidra decompiled 未収録）は既知 pattern（`cmp [esi+0xc],7` ゲート）と突合して補完**。
+- **本日 push 累計**: v405 → … → v412 `1cdcb69d` →（本件 v413 を本 commit で push）＝**9裁定**。
+- **次**: **V-413-1【中】（`FUN_00467240/00467320` → "level" 語・v414）** → 残る低優先残点群。supermemory 未登録9件（v405..v413）は MCP 復復待ち。

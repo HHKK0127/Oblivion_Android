@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-16T10:35:36Z",
+  "lastUpdated": "2026-11-16T10:46:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11813,14 +11813,29 @@
         "thiscall"
       ],
       "content": "2026-11-16 派生残点第4弾 v412 で V-411-1 完遂＋V-411-2 部分確定（probe v412_1 全 EXIT=0）成果物 tmp/re/v412_iVar10_source_ruling.md・台帳 row388（bak238）・round_verify ALL OK（rows 31..388 / total 274 / done 269 / open 5）・STATE (eh)・ai-todo #151 note。V-411-1=[確定(命令)]: FUN_005222D0 直頭 machine mov edi,ecx(player)→lea ecx,[edi+0x24]→call 0x4677F0 ＝this は Player[+0x24] の埋め込みオブジェクト。FUN_004677F0 は v=[obj+0xe](ushort)→flag [obj+4]>>7&1 時に [0xB333C4] virtual+0x170→[+0x32] 加算→[+0x10]/[+0x12] clamp→<1→1→ushort return。iVar10=v−1（0以上）＝level/進捗系値−1（skill 段の base）。V-411-2=[確定]部分: FUN_005479D0(a,b,c,d)=a+b+c+d（4属性合計・L243767-71）→FUN_004672B0(&Player[+0x24],u16)＝[obj+0xA]=u16＋virtual+0x50 通知／FUN_00467290＝[obj+0x8]=u16＋同通知（machine push4→call→lea ecx,[edi+0x24] 確認）。[部分確定] FUN_00547F80（5引数: attr0,attr5,iVar10,local_4,spec）/FUN_00548020（2引数）＝引数付き計算ヘルパ（Ghidra void 表示＝stack 引数落ち・arity は machine push 数で確定・内部 FUN_009828C0＝floor/round 系 [推定高]・数式は残点）。[確定(命令)＋推定高] Player[+0x24]＝vtable 付き埋め込みオブジェクト（virtual+0x50 dirty 通知）— フィールド [+8](u16)／[+0xA](u16)／[+0xe](ushort)／[+0x10]/[+0x12](min/max)／[+4]>>7(flag)＝derived stat/level 系。残点 V-412-1..4（1=FUN_004677F0 の level 語確定【中→低】/2=FUN_00547F80/00548020 数式と FUN_009828C0【低】/3=Player[+0x24] RTTI とフィールド名【低】/4=FUN_00519C50 identity【低】）。教訓: thiscall の this 追跡は call 直前の lea ecx,[reg+disp] を4命令文脈で見る／Ghidra の void fn(void) 表示は stack 引数落ちの兆候→arity は machine push 数で確定。本日 push: v405→v411（9bcad498）まで7件＋本件 v412。v 採番 v412 消費（次=v413）。"
+    },
+    {
+      "id": "151-v413-av-dispatch-2026-11-16",
+      "timestamp": "2026-11-16T10:46:00Z",
+      "priority": "medium",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v413",
+        "dispatcher",
+        "actor-value"
+      ],
+      "content": "2026-11-16 派生残点第5弾 v413（中間裁定・probe v413_1..4 全4本 EXIT=0）成果物 tmp/re/v413_av_dispatch_ruling.md・台帳 row389（bak239）・round_verify ALL OK（rows 31..389 / total 275 / done 270 / open 5）・STATE (ei)・ai-todo #151 note。[確定(命令)] FUN_00519F50(index,value)＝actor value 一括 SET dispatcher: case0-7→FUN_00468AF0(attr byte)/case8→FUN_00519C50/case9→[Player[+0x24]+8] SET/case10→[+0xA] SET/case0x0B+続行 → Player[+0x24]＝actor value index9/10 の格納先。[確定] SET 元＝4 fn 完全一致ペア（両 setter の E8 caller）: FUN_00511570（未注記）/FUN_00519F50（dispatcher）/FUN_005222D0/0x523F40（未注記・cmp [esi+0xc],7 formType7 ゲート＝v411 bVar18 同型）。V-412-1 level 語=[未確定]（手がかり強化）: E8=15（TESClass 帯 0x51Cxxx 集中）・使用形＝flag→clamp<1→1→比較(sVar5<sVar4)と(v-1)・[Player[+0x24]+0xE] の書手は dispatcher に不在 → 候補＝FUN_00467240/FUN_00467320（0x4672xx setter 同族・word [reg+0xE] store）＝V-413-1。V-412-3=[未確定]（Player ctor 0x66A740..AD40 に [+0x24] vptr store なし→型別初期化 fn）＝V-413-3。[確定] FUN_0046B250＝map Lookup helper（FUN_0055E000→found?value:0・L84743-52）。残点 V-413-1..3（1=FUN_00467240/00467320 identity→level 語【中】/2=未注記2 fn と dispatcher case0x0B+【低】/3=Player[+0x24] vptr 設定元【低】）。教訓: dispatcher（switch setter群）の発見で SET 元が E8 caller 完全一致ペアとして即構造化／[reg+disp8] 書手 census は kind 分け＋毎回 context decode（mov word の dword 表示＝境界ズレ棄却）／未注記 fn は既知 pattern（cmp ゲート）突合で補完。本日 push: v405→v412（1cdcb69d）8件＋本件 v413。v 採番 v413 消費（次=v414）。"
     }
   ],
   "metadata": {
-    "totalEntries": 817,
+    "totalEntries": 818,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-16T10:35:36Z",
-    "entry_count": 817,
-    "last_updated": "2026-11-16T10:35:36Z"
+    "lastUpdated": "2026-11-16T10:46:00Z",
+    "entry_count": 818,
+    "last_updated": "2026-11-16T10:46:00Z"
   }
 }
