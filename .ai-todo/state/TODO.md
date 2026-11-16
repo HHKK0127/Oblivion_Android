@@ -433,6 +433,13 @@
   > ⑤[確定] V-451-3 sub-call 6件 signature: FUN_0046F020（L88345 void __thiscall(int,int*)）／FUN_00469E90（L83673 (int,undefined4)）／FUN_00468590（L82050 void(void)）／FUN_0046E4F0（L87849 (int,int*)）／FUN_004676B0（L81252 (int,int*)）／FUN_0046FC10（L88964 (int,int*)）＝sub-obj 単位 reset/load fn 群（int*＝stream/param）、各 subobject 正式名（+0xC4/+0x44/+0x68/+0xE4/+0x54）は未同定＝残点（+0x24＝TESActorBaseData のみ確定）。
   > 残点 V-452-1..3（1=Player[+0x1C] 書手別ルート（大きい ctor linear decode／SIB base+index census／読手逆引き）と +0x32 s16 語【低】／2=docs 欠落 fn census 機械化（annotation 無し＋int3×8 の2条件全 .text 適用で総数確定）【低】／3=0x523F40 subobject 正式名（+0xC4/+0x44/+0x68/+0xE4/+0x54）と flag bit3／[+0x104] 意味【低】）。
   > 教訓: [reg+disp] census は disp8/disp32/SIB の3形式を必ず揃える（disp32 のみ0 hits＝誤排他・本件 0→1602）→「0 hits」出たら encoding 形式を疑え／大量 hits の絞り込みは owning fn の vtable RTTI が最速 class フィルタ（1602→2・vtable store window 外は取りこぼす）／docs backward annotation は signature 行まで取れる→body 読まず identity 記録可／imm16 store census 1件なら imm 書手非主流と即判断／既知 virtual slot は docs mentions＋machine 呼出の2系統整合確認。v 採番 v451 消費（次=v452）。
+  > 【旧残点群移行第6弾 v452 — V-452-1..3 完遂】probe v452_1..v452_2 全2本 EXIT=0。成果物 tmp/re/v452_gap_census_ruling.md・台帳 row428（bak278）・round_verify ALL OK（rows 31..428 / total 314 / done 309 / open 5）。
+  > ①[確定] V-452-2 機械化 census: 手法＝「int3 run≥8 直後の code byte」を code start、「docs annotation 無し」でフィルタ、owning annotation 距離で3分類。実測: code start 総数 16622（＝v438 runs≥8 と完全一致✓内部整合）／annotation 無し 7145（43.0%）／prologue-like 4197。距離分類: d≤0x40（同 fn padding 続き）480／0x40<d≤0x200 2505／d>0x200 4160（prologue 2202）→ TRUE docs-missing candidates（d>0x200 ∧ prologue）＝2202 [推定]、上位階込み＝4122 [推定]。samples に 0x40DF80 owning=0x40D4D0 dist=0xAB0（v436/v437 で確定した実 fn entry）が現れ手法妥当性を実証 [確定]（0x40C180 owning=0x407AE0 も v435 dump fn gap と整合）。
+  > ②[推定] docs 欠落総数2系統クロス: 境界法（v446）≈6038／entry 法（本裁定）2202（上位階込み4122）→ 独立2手法が同桁＝docs 欠落 fn は数千規模、真値は 2202〜6038 に分布 [推定]（entry 法は d≤0x200 欠落の取りこぼし下限側、境界法は intra-fn 偽陽性を含む上位側）。
+  > ③[確定] V-452-1 Player ctor band 読手＝0件（mov reg,[reg+0x1c] 0x66A740..0x66AD40）[確定(否定側)] → Player ctor は +0x1C 不使用、書手は別 fn（v451 候補 FUN_00437F00 QueuedCharacter 系／window 外大 ctor）＝残点継続。
+  > ④[確定] V-452-3 sub-call 5fn（FUN_0046F020/469E90/468590/46E4F0/46FC10）とも first 0x60 に vtable store 無し [確定(否定側)] → vtable RTTI 法では embedded object 名取得不可（reset fn は vtable 書かず）→ subobject 正式名は別法要 [未確定]＝残点。
+  > 残点 V-453-1..3（1=docs 欠落 census 第3系統（d≤0x200 層 prologue1920 のサンプル個別検証でレンジ 2202〜6038 を狭める）【低】／2=Player[+0x1C] 書手残ルート（FUN_00437F00 実体確認＋FUN_004D9B40 caller 群からの reader 逆引き）【低】／3=subobject 名の別法（sub-call fn body の store 定数/文字列・docs 構造コメント）【低】）。
+  > 教訓: docs 欠落 census は「code start（int3 run≥8 直後）×annotation 有無×owning 距離」の3次元機械化（サンプルに既知 gap が混ざれば手法実証）／距離閾値 d>0x200 が SAFE 候補の下限／独立2手法（entry 法／境界法）の桁整合がレンジ信頼度を上げる（点推定よりレンジ提示が誠実）／reset/impl fn は vtable 書かず embedded object 用→vtable RTTI 法は reset fn に効かない／否定側 census も残点の輪郭を絞る。v 採番 v452 消費（次=v453）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1339,6 +1346,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1362,4 +1374,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 07:14:19
+**ai-todo** | Last Updated: 2026-11-17 07:19:20

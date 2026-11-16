@@ -2329,3 +2329,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **`[reg+disp]` census は disp8/disp32/SIB の3形式を必ず揃える**（disp32 のみ0 hits＝誤排他・本件 0→1602）→ **「0 hits」出たら encoding 形式を疑え**／**大量 hits の絞り込みは owning fn の vtable RTTI が最速 class フィルタ**（1602→2・ただし vtable store window 外は取りこぼす）／**docs backward annotation は signature 行まで取れる → body 読まず identity 記録可**／**imm16 store census 1件なら imm 書手非主流と即判断**（形式消去法の順序固定）／**既知 virtual slot は docs mentions＋machine 呼出の2系統整合確認**。
 - **本日 push 累計（セッション）**: v405 → … → v450 `69d2f2d6` →（本件 v451 を本 commit で push）＝**47裁定**。
 - **次**: V-452-1..3。supermemory 未登録47件（v405..v451）は MCP 復復待ち。
+
+## 2026-11-17 (fv) — 旧残点群移行第6弾 v452（V-452-1..3 完遂）: **docs 欠落 fn census を機械化（entry 法＝2202 SAFE 候補・2系統クロスで 2202〜6038 レンジ）**・**Player ctor `+0x1C` 不使用を否定側で確定**・**reset fn は vtable 無しと判明**
+
+- **成果物**: `tmp/re/v452_gap_census_ruling.md`（probe **v452_1..v452_2 の2本全 EXIT=0**）。台帳 **row428（bak278）**・`round_verify` **ALL OK**（rows 31..428 / total 314 / done 309 / open 5）。ai-todo **#151 に note**。v 採番 **v452 消費（次=v453）**。
+- **① [確定] V-452-2 機械化 census**: 手法＝**「int3 run≥8 直後の code byte」を code start、「docs annotation 無し」でフィルタ、owning annotation 距離で3分類**。**実測: code start 総数 16622（＝v438 runs≥8 と完全一致✓内部整合）／annotation 無し 7145（43.0%）／prologue-like 4197**。距離分類: **`d≤0x40`（同 fn padding 続き）480／`0x40<d≤0x200` 2505／`d>0x200` 4160（prologue 2202）→ TRUE docs-missing candidates（`d>0x200` ∧ prologue）＝2202 [推定]、上位階込み＝4122 [推定]**。**samples に `0x40DF80 owning=0x40D4D0 dist=0xAB0`（v436/v437 で確定した実 fn entry）が現れ手法妥当性を実証 [確定]**（`0x40C180 owning=0x407AE0` も v435 dump fn gap と整合）。
+- **② [推定] docs 欠落総数2系統クロス**: **境界法（v446）≈6038／entry 法（本裁定）2202（上位階込み4122）→ 独立2手法が同桁＝docs 欠落 fn は数千規模、真値は 2202〜6038 に分布 [推定]**（entry 法は `d≤0x200` 欠落の取りこぼし下限側、境界法は intra-fn 偽陽性を含む上位側）。
+- **③ [確定] V-452-1 Player ctor band 読手＝0件（`mov reg,[reg+0x1c]` `0x66A740..0x66AD40`）[確定(否定側)]** → **Player ctor は `+0x1C` 不使用**、書手は別 fn（v451 候補 `FUN_00437F00` QueuedCharacter 系／window 外大 ctor）＝残点継続。
+- **④ [確定] V-452-3 sub-call 5fn（`FUN_0046F020/469E90/468590/46E4F0/46FC10`）とも first 0x60 に vtable store 無し [確定(否定側)]** → **vtable RTTI 法では embedded object 名取得不可（reset fn は vtable 書かず）** → subobject 正式名は別法要 [未確定]＝残点。
+- **残点 V-453-1..3**: 1=docs 欠落 census 第3系統（`d≤0x200` 層 prologue1920 のサンプル個別検証でレンジ 2202〜6038 を狭める）【低】／2=`Player[+0x1C]` 書手残ルート（`FUN_00437F00` 実体確認＋`FUN_004D9B40` caller 群からの reader 逆引き）【低】／3=subobject 名の別法（sub-call fn body の store 定数/文字列・docs 構造コメント）【低】。
+- **教訓**: **docs 欠落 census は「code start（int3 run≥8 直後）×annotation 有無×owning 距離」の3次元機械化**（**サンプルに既知 gap が混ざれば手法実証**）／**距離閾値 `d>0x200` が SAFE 候補の下限**（`d≤0x40`＝同 fn padding と切り分け）／**独立2手法（entry 法／境界法）の桁整合がレンジ信頼度を上げる**（点推定より「2202〜6038」レンジ提示が誠実）／**reset/impl fn は vtable 書かず embedded object 用 → vtable RTTI 法は reset fn に効かない**／**否定側 census（0 hits）も残点の輪郭を絞る**。
+- **本日 push 累計（セッション）**: v405 → … → v451 `4e343bf8` →（本件 v452 を本 commit で push）＝**48裁定**。
+- **次**: V-453-1..3。supermemory 未登録48件（v405..v452）は MCP 復復待ち。
