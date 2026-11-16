@@ -338,6 +338,15 @@
   > ⑥[未確定] [esp+0x5c] path CFG は probe budget で未着手（v439 の fill 点6件＋branch 0件記録を維持）。
   > 残点 V-441-1..3（1=byte[obj+4]=FormType の直接証拠（本物 class ctor の aligned decode＋enum 名テーブルの EXE string census）【低】／2=flag B 新 consumer 4件の identity（FUN_0056b190 callers・FUN_0056b220/2e0 の所属 pass・FUN_004fab20 分岐先 0x4fb1a1 の意味）【低】／3=docs 欠落の最終レンジ（minseg=0x10 ret-confirmed 再計数）と [esp+0x5c] path CFG【低】）。
   > 教訓: vtable-window 相関は type byte 同定に使えるが ExtraData/variant 汚染を伴う→決定は「tiny fn 群 aligned decode→vtable RTTI 直読」、window は [推定高] 材料止まり／否定側整合（switch に NPC/CREA/STAT 不在）が肯定側より強い／small ctor 義群（ret 4・0x20 間隔・int3 padding）は type-tag 定数の供給元で vtable RTTI から byte offset の意味が即決／sig 近傍 store 探索は ESM loader で空振り／census 閾値感度は2値で測る（1737 vs 4749）／data 帯 hit（movsb/inc decode）は即棄却。v 採番 v440 消費（次=v441）。
+  > 【派生残点第33弾 v441 — V-441-1..3 完遂】probe v441_1..v441_3 全3本 EXIT=0。成果物 tmp/re/v441_formtype_ruling.md・台帳 row417（bak267）・round_verify ALL OK（rows 31..417 / total 303 / done 298 / open 5）。
+  > ①[確定] V-441-1 byte[obj+4]＝FormType に昇格: record-class ctor（vtable store 直近の mov byte [reg+4], imm）×record-class prefix×noise denylist の3条件交差で class↔FormType 対応表49件構築: 0x04=TESGlobal/0x05=TESClass/0x06=TESFaction/0x07=TESHair/0x08=TESEyes/0x0A=TESSoundFile/0x0B=TESSkill/0x0E=TESLandTexture/0x12=TESObjectACTI/0x13=TESObjectAPPA/0x14=TESObjectARMO/0x15=TESObjectBOOK/0x16=TESObjectCLOT/0x17=TESObjectCONT/0x18=TESObjectDOOR/0x1A=TESObjectLIGH/0x1B=TESObjectMISC/0x1C=TESObjectSTAT/0x1D=TESGrass/0x1E=TESIconTree/0x20=TESFurniture/0x21=TESObjectWEAP/0x22=TESAmmo/0x24=TESCreature/0x25=TESLevCreature/0x26=TESSoulGem/0x27=TESKey/0x2A=TESSigilStone/0x2B=TESLevItem/0x2D=TESWeather/0x2E=TESClimate/0x2F=TESRegion/0x30=TESObjectCELL/0x31=TESChildCell/0x39=TESTopic/0x3A=TESTopicInfo/0x3B=TESQuest/0x3C=TESIdleForm/0x3E=TESCombatStyle/0x3F=TESLoadScreen/0x40=TESLevSpell/0x41=TESObjectANIO/0x42=TESWaterForm/0x43=TESEffectShader 等。
+  > ②[確定] FUN_00469520 の switch 14 値のうち12値が対応表と直接一致し全件 inventory 品目（0x13 APPA/0x14 ARMO/0x15 BOOK/0x16 CLOT/0x1A LIGH/0x1B MISC/0x21 WEAP/0x22 AMMO/0x26 SLGM/0x27 KEYM/0x2A SGST/0x2B LVLI）、残2値 0x19/0x28 は vtable-window noise（TESIcon）で masked [部分確定]。＋ FUN_004fab20 内の FormType 使用形を machine で直接確認 [確定]: 4FB168 movzx ecx,byte[edi+4]; cmp ecx,6; je; cmp ecx,0x23; jne fail（byte[obj+4] ∈ {6,0x23} のみ許可）と 4FB183 cmp byte[eax+4],0x43（＝EffectShader FormType）。enum 名テーブルは EXE に無し（string census 0 hits）[確定(否定側)]。
+  > ③[確定] V-441-2 flag B getter chain: FUN_0056b190（1行 getter）→ E8 caller は1件 0x56ADAC＝FUN_0056ad60（L270565 void __fastcall(byte *param_1)）→ その caller も1件 0x56A464＝FUN_0056a3b0 → chain FUN_0056a3b0→FUN_0056ad60→FUN_0056b190 [確定]（root の所属 pass [未確定]）。
+  > ④[確定] FUN_004fab20 分岐先 0x4FB1A1＝cmp eax,0x21（eax＝arg type、0x21＝v437 表で Form Type）→ type-B consumer の分岐先は「arg type==FormType」判定 [確定]。signature 3本: FUN_0056b220＝uint(uint, ushort*)／FUN_0056b2e0＝void(uint*, uint*, char)／FUN_004fab20＝void(double*, int, int*, int, undefined4, int, int, char)（8引数）[確定(decompiled)]。両者の callers は [未確定]＝残点。
+  > ⑤[確定] V-441-3 docs census minseg=0x10 ret-confirmed: gaps>0x200 内部境界6197件／ret-confirmed（前 segment 末尾 C2/C3/C9/CB）＝3038件（49.0%）／unconfirmed 3159（tail-jmp E9 epilogue＋intra-function padding [推定]）→ 欠落レンジ＝ret-confirmed 下限 3038 ～ segment 法上限 4749 [確定(実測)]（minseg=0x30 版 ret-confirmed 2037 と併せ2×2 測定）。
+  > ⑥[未確定] [esp+0x5c] path CFG は継続未着手（v439 記録維持）。
+  > 残点 V-442-1..3（1=0x19/0x28 FormType の最終同定と FUN_004fab20 許可リスト {6,0x23} の意味【低】／2=flag B chain root FUN_0056a3b0 の identity と FUN_0056b220/2e0 の callers【低】／3=[esp+0x5c] path CFG と docs census unconfirmed 3159 の tail-jmp 切り分け【低】）。
+  > 教訓: window 相関の noise は「record-class prefix＋noise denylist」の2段フィルタで大幅削減（v440 の1段で12偽マッチ→v441 の2段で49件の純対応表、denylist 補完が次 probe の第一歩）／enum name テーブル不在は string census 0 hits で [確定(否定側)]／branch target が判定命令なら aligned decode でその場で意味確定（cmp eax,0x21）／single-use getter chain は E8 census を2段たどれば root 到達／census 精度は2×2 で測る（minseg=0x30×ret=2037／minseg=0x10×ret=3038／minseg=0x10×raw=4749）・単値引用は禁止。v 採番 v441 消費（次=v442）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1244,11 +1253,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1272,4 +1276,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 06:12:44
+**ai-todo** | Last Updated: 2026-11-17 06:18:25

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-16T21:13:21Z",
+  "lastUpdated": "2026-11-16T21:19:04Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -12236,14 +12236,30 @@
         "docs-census"
       ],
       "content": "2026-11-17 派生残点第32弾 v440（probe v440_1..5 全5本 EXIT=0）＝V-440-1..3 完遂: 成果物 tmp/re/v440_type_byte_ruling.md・台帳 row416（bak266）・round_verify ALL OK（rows 31..416 / total 302 / done 297 / open 5）・STATE (fj)・ai-todo #151 note。[確定] mov byte [reg+4], imm8 パターンの二重構造: (A) BSExtraData 派生 ctor 群（cluster-1 0x429DE0..0x429EBA）＝同型 tiny fn（mov eax,ecx / mov byte [eax+4],tag / mov [eax+8],0 / mov [eax],vtable / mov [eax+0xC],payload / ret 4・payload を dword/word/float/byte で分岐・tag 0x26..0x2C 連番）、vtable RTTI 直読で全同定 （0xA3580C=.?AVExtraOriginalReference@@(0x26)/0xA35818=.?AVExtraOwnership@@(0x27)/0xA3583C=.?AVExtraCount@@(0x2A)/0xA35848=.?AVExtraHealth@@(0x2B)/0xA35854=.?AVExtraUses@@(0x2C)）→ +4＝ExtraData type tag [確定]／(B) TESForm 系 FormType store は vtable-window 相関で 0x14→TESObjectARMO/0x15→TESObjectBOOK/0x16→TESObjectCLOT/0x21→TESObjectWEAP/0x2B→TESLevItem/0x1C→TESObjectSTAT/0x23→TESNPC/0x24→TESCreature/0x32→Character/0x33→Creature を相関（window 法ゆえ Extra 汚染あり＝[推定高]）、cluster-2 側 hit 0x4B5AD9 は aligned decode で data 偽陽性と判明 → FormType store の直接証拠は未達 [未確定]。sig near-store 探索は0 hits（ESM loader は別経路）。[推定高] V-440-1 byte[obj+4]＝FormType（強化）: 根拠 (i) switch set 14 値と inventory 品目の RTTI 相関が肯定一致（0x14/0x15/0x16/0x21/0x2B＝ARMO/BOOK/CLOT/WEAP/LevItem）＋否定側も一致（0x1C→STAT/0x23→NPC/0x24→Creature は switch 外＝inventory 非対象）、(ii) gate {0x31,0x32,0x33} の相関＝0x32→Character/0x33→Creature＝reference 3型で v436 と整合、(iii) 'Invalid inventory object' エラー文言 — ただし直接証拠未達・enum 名は docs に無し（'FormType' grep 0 hits）→ [推定高] に留める。FUN_00469520 全 body 完読で default→0 も確定。[確定] V-440-2 flag A consumer: byte consumer は FUN_004fde30 の mov bl のみ（他0件）[確定(否定側)]、base 参照1件＝FUN_004fca10 @0x4FCAB1 cmp esi,0xB0A54C; jl 0x4fca80（range 分岐→mov esi,0xB0C8C4→stricmp name lookup 続行）→ flag 配列 base を type-id range 判定に使用 [確定]。id フィールド（0xB0A550/0xB0A554）の .text refs は0件＝id consumer 不在 [確定(否定側)] → type0x25 の id=0x00A51B8C 末尾不一致の意味も [未確定] 維持。[確定] flag B consumer 拡張（refs 6件）: FUN_004fde30×2＋FUN_004fab20 @0x4FAED6（cmp byte[eax*8+0xb0a54d],0; je 0x4fb1a1＝実行 gate 内 type-B 判定）＋FUN_0056b190 @0x56B1C5（mov al,byte[edx*8+0xb0a54d]; ret＝1行 getter）＋FUN_0056b220 @0x56B25C／FUN_0056b2e0 @0x56B3A5（cmp→arg pool ディスクリプタ読み→push…＝compiler/VM 帯）。[確定] V-440-3 docs census minseg=0x10: gaps>0x200 の2735件→segments 7484・extra 4749（minseg=0x30 版 extra 1737 の 2.7倍）→ 欠落 candidates は 1737～4749 レンジ [確定(実測)]、intra-function padding 偽陽性を含む上位値＝実欠落は 5k 未満 [推定]（ret-confirmed 0x10 版は未実施＝残点）。[未確定] [esp+0x5c] path CFG は probe budget で未着手（v439 の fill 点6件＋branch 0件記録を維持）。残点 V-441-1..3（1=byte[obj+4]=FormType の直接証拠（本物 class ctor の aligned decode＋enum 名テーブルの EXE string census）【低】／2=flag B 新 consumer 4件の identity（FUN_0056b190 callers・FUN_0056b220/2e0 の所属 pass・FUN_004fab20 分岐先 0x4fb1a1 の意味）【低】／3=docs 欠落の最終レンジ（minseg=0x10 ret-confirmed 再計数）と [esp+0x5c] path CFG【低】）。教訓: vtable-window 相関は type byte 同定に使えるが ExtraData/variant 汚染を伴う→決定は「tiny fn 群 aligned decode→vtable RTTI 直読」、window は [推定高] 材料止まり／否定側整合（switch に NPC/CREA/STAT 不在）が肯定側より強い／small ctor 群（ret 4・0x20 間隔・int3 padding）は type-tag 定数の供給元で vtable RTTI から即決／sig 近傍 store 探索は ESM loader で空振り（factory は別経路）／census 閾値感度は2値で測る（1737 vs 4749）／data 帯 hit（movsb/inc decode）は即棄却。本日 push: v405→v439（9693a08f）35件＋本件 v440。v 採番 v440 消費（次=v441）。"
+    },
+    {
+      "id": "151-v441-formtype-2026-11-17",
+      "timestamp": "2026-11-16T21:19:04Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v441",
+        "formtype",
+        "flag-chain",
+        "docs-census"
+      ],
+      "content": "2026-11-17 派生残点第33弾 v441（probe v441_1..3 全3本 EXIT=0）＝V-441-1..3 完遂: 成果物 tmp/re/v441_formtype_ruling.md・台帳 row417（bak267）・round_verify ALL OK（rows 31..417 / total 303 / done 298 / open 5）・STATE (fk)・ai-todo #151 note。[確定] V-441-1 byte[obj+4]＝FormType に昇格: record-class ctor（vtable store 直近の mov byte [reg+4], imm）×record-class prefix×noise denylist の3条件交差で class↔FormType 対応表49件構築 （inventory 系: 0x13=TESObjectAPPA/0x14=TESObjectARMO/0x15=TESObjectBOOK/0x16=TESObjectCLOT/0x17=TESObjectCONT/0x18=TESObjectDOOR/0x1A=TESObjectLIGH/0x1B=TESObjectMISC/0x21=TESObjectWEAP/0x22=TESAmmo/0x26=TESSoulGem/0x27=TESKey/0x2A=TESSigilStone/0x2B=TESLevItem、他: 0x04=TESGlobal/0x05=TESClass/0x06=TESFaction/0x12=TESObjectACTI/0x1C=TESObjectSTAT/0x20=TESFurniture/0x24=TESCreature/0x25=TESLevCreature/0x29=TESSubSpace/0x30=TESObjectCELL/0x31=TESChildCell/0x39=TESTopic/0x3B=TESQuest/0x3C=TESIdleForm/0x3E=TESCombatStyle/0x40=TESLevSpell/0x41=TESObjectANIO/0x42=TESWaterForm/0x43=TESEffectShader 等）。FUN_00469520 の switch 14 値のうち12値が対応表と直接一致し全件 inventory 品目、残2値 0x19/0x28 は vtable-window noise（TESIcon）で masked [部分確定]。＋ FUN_004fab20 内の FormType 使用形を machine で直接確認 [確定]: 4FB168 movzx ecx,byte[edi+4]; cmp ecx,6; je; cmp ecx,0x23; jne fail（byte[obj+4] ∈ {6,0x23} のみ許可）と 4FB183 cmp byte[eax+4],0x43（＝EffectShader FormType）。enum 名テーブルは EXE に無し（string census 0 hits）[確定(否定側)]。[確定] V-441-2 flag B getter chain: FUN_0056b190（1行 getter）→ E8 caller は1件 0x56ADAC＝FUN_0056ad60（L270565 void __fastcall(byte *param_1)）→ その caller も1件 0x56A464＝FUN_0056a3b0 → chain FUN_0056a3b0→FUN_0056ad60→FUN_0056b190 [確定]（root の所属 pass [未確定]）。[確定] FUN_004fab20 分岐先 0x4FB1A1＝cmp eax,0x21（eax＝arg type、0x21＝v437 表で Form Type）→ type-B consumer の分岐先は「arg type==FormType」判定 [確定]。signature 3本: FUN_0056b220=uint(uint,ushort*)／FUN_0056b2e0=void(uint*,uint*,char)／FUN_004fab20=void(double*,int,int*,int,undefined4,int,int,char)（8引数）[確定(decompiled)]、両者の callers は [未確定]＝残点。[確定] V-441-3 docs census minseg=0x10 ret-confirmed: gaps>0x200 内部境界6197件／ret-confirmed（前 segment 末尾 C2/C3/C9/CB）＝3038件（49.0%）／unconfirmed 3159（tail-jmp E9 epilogue＋intra-function padding [推定]）→ 欠落レンジ＝ret-confirmed 下限 3038 ～ segment 法上限 4749 [確定(実測)]（minseg=0x30 版 ret-confirmed 2037 と併せ2×2 測定）。[未確定] [esp+0x5c] path CFG は継続未着手（v439 記録維持）。残点 V-442-1..3（1=0x19/0x28 FormType の最終同定と FUN_004fab20 許可リスト {6,0x23} の意味【低】／2=flag B chain root FUN_0056a3b0 の identity と FUN_0056b220/2e0 の callers【低】／3=[esp+0x5c] path CFG と docs census unconfirmed 3159 の tail-jmp 切り分け【低】）。教訓: window 相関の noise は「record-class prefix＋noise denylist」の2段フィルタで大幅削減（v440 の1段で12偽マッチ→v441 の2段で49件の純対応表、denylist 補完が次 probe の第一歩）／enum name テーブル不在は string census 0 hits で [確定(否定側)]／branch target が判定命令なら aligned decode でその場で意味確定（cmp eax,0x21）／single-use getter chain は E8 census を2段たどれば root 到達／census 精度は2×2 で測る（minseg=0x30×ret=2037／0x10×ret=3038／0x10×raw=4749）・単値引用は禁止。本日 push: v405→v440（1238a2d1）36件＋本件 v441。v 採番 v441 消費（次=v442）。"
     }
   ],
   "metadata": {
-    "totalEntries": 845,
+    "totalEntries": 846,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-16T21:13:21Z",
-    "entry_count": 845,
-    "last_updated": "2026-11-16T21:13:21Z"
+    "lastUpdated": "2026-11-16T21:19:04Z",
+    "entry_count": 846,
+    "last_updated": "2026-11-16T21:19:04Z"
   }
 }
