@@ -1918,3 +1918,17 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **「single-line setter」判定は head だけでなく body 全経路（null ブランチ含む）を読む**（tail の `mov;ret` だけ見ると refcounted 全体像を見落とす＝v423 訂正事例）／**call 直前 push 元の分類（0=clear・this=attach・idx=set）で callers の用途が即分かる**／**`puVar1[7]=0`（dword index）＝`[+0x1C]` clear は byte×4 換算で直訳**。
 - **本日 push 累計**: v405 → … → v423 `11b56e34` →（本件 v424 を本 commit で push）＝**20裁定**。
 - **次**: V-425-1（`0x70AF00` identity・self-attach）→ 残る低優先残点群。supermemory 未登録20件（v405..v424）は MCP 復復待ち。
+
+## 2026-11-16 (eu) — 派生残点第17弾 v425（V-425-1 部分解）: **`FUN_0070AF00`＝NiNode 系 slot33 attach virtual [確定(RTTI)]**・**Bip01 `[+0x1C]` 賦流経路＝slot33 [確定]**・**`[+0xAC]` container＝embedded 配列（NiNode children fields）[確定]**・V-423-1 へ[推定高]の副次回答
+
+- **成果物**: `tmp/re/v425_attach_virtual_ruling.md`（probe **v425_1..v425_4 の4本全 EXIT=0**）。台帳 **row401（bak251）**・`round_verify` **ALL OK**（rows 31..401 / total 287 / done 282 / open 5）。ai-todo **#151 に note**。v 採番 **v425 消費（次=v426）**。
+- **① [確定(RTTI)] `FUN_0070AF00` ＝ NiNode 系の slot33（+0x84）attach virtual** — data refs **全13件（uncapped）**が全て vtable slot33: **`.?AVNiNode@@`（vtable 0xA7E38C）**／SceneGraph／BSTempNodeManager／BSTempNode／BSClearZNode／BSFadeNode／BSScissorNode／NiBillboardNode／BSFaceGenNiNode／BSTreeNode／NiSortAdjustNode／NiBSPNode／ShadowSceneNode。**NiAVObject 本体の slot33 は別 fn（`0x6F43694E`）＝attach は NiNode から [確定(否定側)]**。
+- **② [確定] Bip01（NiNode）`[+0x1C]` の賦流経路＝slot33 = `FUN_0070AF00`**: attach ＝ **`node[+0x1C] = obj`（refcounted・`FUN_007074B0` 経由）**、**flag==0 のときのみ** embedded 配列オブジェクト（`[this+0xAC]`・fields `+4=array(+0xB0)/+8=cap(+0xB4)/+0xA=count(+0xB6)/+0xE=growBy(+0xBA)`＝**NiNode children と同一 fields**）へ obj を index 登録（`FUN_004b34e0`＋grow `FUN_00523b10`）／**flag=1 は ref のみ**。
+- **③ [確定] attach 対象（callers 3件）**: ①`FUN_004112E0`＝**factory `FUN_0070B780` 作成物**（data refs=0＝direct factory）・flag=1 ②`FUN_004A12E0`＝**`[ebx+0xB0]` 配列の child[i]**（null スキップループ）・flag=1 ③`0x724700` wrapper（obj=arg1・flag=arg2 透過・E8=0＝virtual）。
+- **④ [未確定] self-attach** — 3 direct callers とも `this ≠ obj` で非明示 → **`Bip01[+0x1C] == Bip01` は未確定（残点）**。
+- **⑤ [推定高] V-423-1 への副次回答**: site2（child attach）が示す通り **`[+0x1C]` には通常 child/related node が入る** → **epilogue の `Bip01[+0x1C][+0xC]`（child の chain）と fallback の `Bip01[+0xC]`（node 自身の chain）は「別オブジェクトの同一構造リスト」**（entry 型は v423 確定の `{vtable, next@+0x34}` で一致）。
+- **⑥ [確定] `[+0xAC]` container ＝ embedded 配列オブジェクト（NiTArray 系）**: `add ebx,0xac` 後 `FUN_004b34e0(&this[+0xac], idx, &val)`／grow `FUN_00523b10(u16[+0xBA]+count)` ＝ **NiNode children fields と完全一致**（v405 `children[+0xb0]` 整合）。
+- **残点 V-426-1..2**: 1=self-attach 完全否定（`0x724700` virtual の実 callers）と `FUN_0070B780` factory の作成クラス【低】／2=NiAVObject `[+0xC]` identity（virtual setter 群 `0x6C0B80` 等の vtable 所属）＝chain 先頭の最終切り分け【低】。
+- **教訓**: **attach/assign 系 fn は callers の push 元分類（factory/child/arg/self）で対象の像が固まる**／**data refs の uncapped RTTI scan が virtual owner を一撃決定（6件 cap で NiNode を取りこぼした再調査事例・cap は必ず外して全数確認）**／**flag 0/1 が array 登録の有無を分ける**。
+- **本日 push 累計**: v405 → … → v424 `8a15b4ac` →（本件 v425 を本 commit で push）＝**21裁定**。
+- **次**: 残る低優先残点群（V-426-1..2／V-414-1..3／V-413-2／V-415-2／V-416-2 ほか）を v426+ で消化。supermemory 未登録21件（v405..v425）は MCP 復復待ち。

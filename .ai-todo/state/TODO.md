@@ -199,6 +199,15 @@
   > ⑤[未確定] node[+0xC] と Bip01[+0x1C][+0xC] の同一性は「Bip01[+0x1C]==Bip01（self-attach）か否か」に精緻化 → 次の一手＝0x70AF00 fn の identity と self-attach 実在確認。
   > 残点 V-425-1..2（1=0x70AF00 fn identity・self-attach 実在・[+0xac] container 正体【低】／2=old->slot34(+0x88) detach 呼出しと FUN_004b34e0 registry の意味【低】）。
   > 教訓: 「single-line setter」判定は head だけでなく body 全経路（null ブランチ含む）を読む（tail だけ見ると refcounted 全体像を見落とす＝v423 訂正事例）／call 直前 push 元の分類（0=clear・this=attach・idx=set）で callers 用途が即分かる／puVar1[7]=0（dword index）＝[+0x1C] clear は byte×4 換算で直訳。v 採番 v424 消費（次=v425）。
+  > 【派生残点第17弾 v425 — V-425-1 部分解】probe v425_1..v425_4 全4本 EXIT=0。成果物 tmp/re/v425_attach_virtual_ruling.md・台帳 row401（bak251）・round_verify ALL OK（rows 31..401 / total 287 / done 282 / open 5）。
+  > ①[確定(RTTI)] FUN_0070AF00＝NiNode 系の slot33（+0x84）attach virtual — data refs 全13件（uncapped）が全て vtable slot33: .?AVNiNode@@（0xA7E38C）／SceneGraph／BSTempNodeManager／BSTempNode／BSClearZNode／BSFadeNode／BSScissorNode／NiBillboardNode／BSFaceGenNiNode／BSTreeNode／NiSortAdjustNode／NiBSPNode／ShadowSceneNode。NiAVObject 本体の slot33 は別 fn（0x6F43694E）＝attach は NiNode から [確定(否定側)]。
+  > ②[確定] Bip01（NiNode）[+0x1C] の賦流経路＝slot33=FUN_0070AF00: attach＝node[+0x1C]=obj（refcounted・FUN_007074B0 経由）、flag==0 のときのみ embedded 配列オブジェクト（[this+0xAC]・fields +4=array(+0xB0)/+8=cap(+0xB4)/+0xA=count(+0xB6)/+0xE=growBy(+0xBA)＝NiNode children と同一 fields）へ obj を index 登録（FUN_004b34e0＋grow FUN_00523b10）／flag=1 は ref のみ。
+  > ③[確定] attach 対象（callers3件）: ①FUN_004112E0＝factory FUN_0070B780 作成物（data refs0＝direct）・flag=1 ②FUN_004A12E0＝[ebx+0xB0] 配列の child[i]（null スキップループ）・flag=1 ③0x724700 wrapper（obj=arg1・flag=arg2 透過・E8=0＝virtual）。
+  > ④[未確定] self-attach は3 direct callers とも this≠obj で非明示 → Bip01[+0x1C]==Bip01 は未確定（残点）。
+  > ⑤[推定高] V-423-1 への副次回答: site2（child attach）が示す通り [+0x1C] には通常 child/related node が入る → epilogue の Bip01[+0x1C][+0xC]（child の chain）と fallback の Bip01[+0xC]（node 自身の chain）は別オブジェクトの同一構造リスト（entry 型は v423 確定の {vtable, next@+0x34} で一致）。
+  > ⑥[確定] [+0xac] container＝embedded 配列オブジェクト（NiTArray 系）: add ebx,0xac 後 FUN_004b34e0(&this[+0xac], idx, &val)／grow FUN_00523b10(u16[+0xBA]+count)＝NiNode children fields と完全一致。
+  > 残点 V-426-1..2（1=self-attach 完全否定（0x724700 virtual callers）と FUN_0070B780 factory の作成クラス【低】／2=NiAVObject[+0xC] identity（virtual setter 群 0x6C0B80 等の vtable 所属）＝chain 先頭の最終切り分け【低】）。
+  > 教訓: attach/assign 系 fn は callers の push 元分類（factory/child/arg/self）で対象の像が固まる／data refs の uncapped RTTI scan が virtual owner を一撃決定（6件 cap で NiNode を取りこぼした再調査事例・cap は必ず外して全数確認）／flag 0/1 が array 登録の有無を分ける。v 採番 v425 消費（次=v426）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1105,11 +1114,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1133,4 +1137,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-16 23:34:33
+**ai-todo** | Last Updated: 2026-11-16 23:55:42
