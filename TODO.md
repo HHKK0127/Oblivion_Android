@@ -216,6 +216,15 @@
   > ⑤[未確定] node[+0xC] chain head の書手は再設定（残点）。
   > 残点 V-427-1..2（1=node[+0xC] chain head の書手（誤認撤回後の再走査）【低】／2=0x724700 の実 callers（virtual・self-attach 残可能性）と FUN_004b2d30 identity【低】）。
   > 教訓: SEH prologue（push -1; push handler; fs:[0]）は独立 fn の開始の決定打（find_head 境界誤りの検証・訂正に有効＝3件目）／「virtual setter」仮説は data refs・E8・body の3系統で同時に検証（形ではなく登録系で判定）／struct copy の mov [dst+disp],src は setter census の最頻出偽陽性。docs/GT 反映時は v423 注記2件を併せて整理。v 採番 v426 消費（次=v427）。
+  > 【派生残点第19弾 v427 — V-414-1 完遂】probe v427_1..v427_4 全4本 EXIT=0。成果物 tmp/re/v427_av_table_ruling.md・台帳 row403（bak253）・round_verify ALL OK（rows 31..403 / total 289 / done 284 / open 5）。
+  > ①[確定] AV name table＝.data 0xB0A1A8（char*・AV id→name）— window 実読25件連続: [0]Strength/[1]Intelligence/[2]Willpower/[3]Agility/[4]Speed/[5]Endurance/[6]Personality/[7]Luck（8属性）→ [8]Health/[9]Magicka/[10]Fatigue/[11]Encumbrance → [12]Armorer/[13]Athletics/[14]Blade/[15]Block/[16]Blunt/[17]HandToHand/[18]HeavyArmor/[19]Alchemy/[20]Alteration/[21]Conjuration/[22]Destruction/[23]Illusion/[24]Mysticism（base refs: 0x4F4610/0x4F60BC/0x4FEA26 の3件）。
+  > ②[確定] table index＝AV id — FUN_004F45D0（head 0x4F45D0）が AV 値取得 call 0x5F1910（v410 確定）と同一 fn 内で mov ecx,[edi*4+0xB0A1A8]（table[edi]）を名前として debug ログ出力（cmp byte [0xB361AC],0 ガード→push ecx; push 0xA487C0; call 0x579B60）→ table 空間＝AV getter の id 空間＋dispatcher case0..7=属性 setter と table[0..7]=8属性の完全一致。
+  > ③[確定] AV id8=Health・9=Magicka・10=Fatigue・11=Encumbrance。
+  > ④[確定] AV#8(Health) の格納先＝actor[+0x84] — dispatcher case8→FUN_00519C50（L210155-60: *(param_1+0x84)=param_2; FUN_0046abf0() notify）・callers5件＝dispatcher／FUN_005222D0（再計算＝計算値投入）／FUN_0066C200（levelup 適用）／FUN_00511570（未注記）／0x523F40（formType7 gate）。
+  > ⑤[確定] AV#9(Magicka)→TESActorBaseData[+8]（default50）／AV#10(Fatigue)→[+0xA]（default50）— case9/case10→FUN_00467290/FUN_004672B0（v414 setter family）＋ctor reset defaults（mov edx,0x32＝50/50）と接続。[確定] slot19(+0x4C) FUN_00467360＝mov ax,[ecx+0xa]; ret（[+0xA] getter）（slot20/slot2 は stricmp name lookup 系）。
+  > ⑥[部分確定] skills 区: table は [18]HeavyArmor 直後に [19]Alchemy（外部知識の skill id 順と差異）→ skills 区の table順＝id 順は [推定高]・EXE 表を正とする（attrs/Health/Magicka/Fatigue 区の確定には影響なし）＝残点。
+  > 残点 V-428-1..2（1=skills 区（id12..）の table 順序と LightArmor/Marksman/Mercantile の所在（25件超の拡張実読）【低】／2=FUN_004F45D0/FUN_00501A00 文脈と dispatcher direct caller 0x523358 の opcode identity【低】）。
+  > 教訓: 名前テーブルは「xref が無い文字列」ではなく「xref がある隣接文字列」を足がかりに（Health/Magicka 本体は dword xref なし・Strength の .data cell が入口）／[edi*4+table] 形の index access は同 fn 内の値取得 call 接続で id 空間を証明／格納先は case handler の1行 setter で決まり callers（recalc/levelup）が値の性格を語る。v 採番 v427 消費（次=v428）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1122,11 +1131,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1150,4 +1154,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 00:12:13
+**ai-todo** | Last Updated: 2026-11-17 00:37:08
