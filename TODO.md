@@ -373,6 +373,15 @@
   > ⑥[確定] V-444-3 census 分離: non-ret 境界3171件のうち直前が switch table run（≥8 text ptrs）は45件のみ（1.4%）→ table 境界説はほぼ棄却 [確定(実測)]、residual 3126。v442 histogram（0xFF=1859/0x00=1214・jcc32=0）併せて non-ret 大半は FF../disp32 尾＝indirect jmp/call [推定高]、FF /4 jmp [mem]（tail）と function 内 dispatch の切り分けは未達 [未確定]（v442 non-ret 3159 vs v444 3171 の12件差に説明未・量級は同 [部分確定]）。
   > 残点 V-445-1..3（1=FUN_0056a3b0 の cmp chain から 0x56A464 の case index と [esp+0x5c] branch 源・global 0xB3340C identity【低】／2=non-ret residual 3126 の前 segment 末尾 FF の SIB 種別（jmp [mem] tail vs jmp [reg*4+tbl] intra-fn）で機械分離【低】／3=旧残点群（V-414-2..3/V-413-2/V-415-2）への移行判断【低】）。
   > 教訓: switch 構造は「fn 内 jmp [reg*4+disp] 全列挙＋bound（add -N）と table 距離」で各 dispatch の enum を特定（char-opcode/arg type/byte-remap の3系統共存例）／case index は既存 enum 表（v437×v441）との突合で1手確定（Owner/EffectShader）／table dwords が見えれば index 算出は完了（残りは bound）／機械分離はまず除外候補の発生率を測ってから深掘り（table 直後45件＝1.4% と判明した時点で table 説打ち切り→FF SIB 種別分離へ移行）／write 供給式は block entry 直後の mov/sub に表れる（eax−global）→ predicate より先に式を確定。v 採番 v444 消費（次=v445）。
+  > 【派生残点第37弾 v445 — V-445-1..3 完遂・v444 訂正2件】probe v445_1..v445_2 全2本 EXIT=0。成果物 tmp/re/v445_ad60_owner_ruling.md・台帳 row421（bak271）・round_verify ALL OK（rows 31..421 / total 307 / done 302 / open 5）。
+  > ①[確定] v444 訂正①: FUN_0056a3b0 の jump table は実在: `56A3B4: cmp eax,5; ja` → `56A3B9: jmp [eax*4+0x56A438]`（6 cases）— v444_2 の「FF/4 jump table 無し＝cmp/jcc linear chain」は linear decode 到達失敗による誤答と訂正。decompiled case list（L269934-64）＝float 比較演算6種（case0..5）[確定(decompiled)]。
+  > ②[確定] v444 訂正②: 0x56A464（call FUN_0056ad60）の真の所属は FUN_0056a450（docs L269970 // FUN_0056a450 @ 0x56a450 実在）: L269972 `void __fastcall FUN_0056a450(int *param_1)`: for(; param_1 && (param_1[1]!=0 || *param_1!=0); param_1=param_1[1]) FUN_0056ad60();` ＝連結リスト走査 loop 内の ad60 呼出し [確定(decompiled)] → 「ad60 の呼出 case」の問いは解消。v443 の「head=0x56A3B0 // FUN_0056a3b0」記述は ann_of window 誤り＝find_head 境界誤り5件目として訂正。
+  > ③[確定] global 0xB3340C（構造）＋[推定高]（semantic）: .text refs は2件とも FUN_00407AE0 内（0x407CAE mov ecx,[0xB3340C] read・差分 eax−[0xB3340C]／0x407CD8 mov [0xB3340C],eax write→直後 fstp/fld [0xB33404]/fadd の float 連鎖）、docs mentions 3件（DAT_00b3340c = DAT_00b33ea0 L5869/L5879・iVar20 = DAT_00b33ea0 - DAT_00b3340c L5871）→ dump 内の前回値キャッシュ（0xB33404 float 群と隣接）で差分を取る変数 [推定高]（DAT_00b33ea0 identity は残点）。
+  > ④[未確定] [esp+0x5c] branch 源（0x407CB4/0x407E47 への flow predicate）は probe budget で未着手＝残点継続。
+  > ⑤[未確定] V-445-2 FF 分離は手法不備を確認: tail 6-byte 走査分類で other (not FF-tail)＝3161/3171（99.7%）・FF 合計10件 → v442 histogram の 0xFF=1859（末尾 byte 0xFF）が ModRM ベース分類で捕捉不能＝走査が命令境界を知らない [確定（手法欠陥）]、正しい手法＝segment 先頭からの forward decode で最後の instruction を採る [確定（手法）]、実装は残点。
+  > ⑥[確定] V-445-3 方針仮決定: 次 v446 で V-445 残2点（FF forward-decode 実装・[esp+0x5c] predicate）を片付けた後、旧残点群（V-414-2..3/V-413-2/V-415-2）へ移行（作業方針 [推定]）。
+  > 残点 V-446-1..3（1=FF 分離の forward-decode 実装（residual 3126 の真 function end 数確定）【低】／2=[esp+0x5c] branch 源（0x407CB4/0x407E47 への predicate）と DAT_00b33ea0 identity【低】／3=型番方針の最終判断【低】）。
+  > 教訓: 「jump table 無し」の否定は linear decode 到達性依存→「cmp reg,N 直後の FF を byte-pattern 検出」の第2系統で再検証を欠くと誤答（v444_2 の事例）／fn 所属は find_head window ではなく docs 直近 annotation の backward grep（L269970 が決定打・window 誤りは find_head 境界誤り5件目）／tail 分類は境界逆走査では命令境界不可→区切り code run は先頭 forward decode が正／global identity は read/write 両 ref＋docs 代入・差分の並列で「前回値キャッシュ」が浮かぶ（差分 A−B が鍵）／訂正は ruling 冒頭に vXXX 撤回と明記（本裁定で2件）。v 採番 v445 消費（次=v446）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1279,11 +1288,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1307,4 +1311,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 06:34:12
+**ai-todo** | Last Updated: 2026-11-17 06:39:12

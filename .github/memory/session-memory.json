@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-16T21:34:50Z",
+  "lastUpdated": "2026-11-16T21:39:49Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -12300,14 +12300,30 @@
         "census-split"
       ],
       "content": "2026-11-17 派生残点第36弾 v444（probe v444_1..2 全2本 EXIT=0）＝V-444-1..3 完遂: 成果物 tmp/re/v444_case_index_ruling.md・台帳 row420（bak270）・round_verify ALL OK（rows 31..420 / total 306 / done 301 / open 5）・STATE (fn)・ai-todo #151 note。[確定] FUN_004fab20 の switch 構造3 table: (1) char-opcode dispatch: movsx edx,bl; add edx,-0x47; cmp edx,0x33; ja default（opcode='G'0x47..0x7A）→ remap 0x4FAE4C → jmp [edx*4+0x4FAE3C]（4 cases）／(2) arg type dispatch（35 cases）: mov ecx,[ebx]; add ecx,-3; cmp ecx,0x22; ja → jmp [ecx*4+0x4FB364]（type-3）／(3) byte-remap dispatch（7 cases）: cmp eax,0x21; ja → movzx edx,byte[eax+0x4FB40C] → jmp [edx*4+0x4FB3F0]。[確定] 許可リスト/EffectShader gate の所属 case: table(2) の index33＝0x4FB152（許可リスト直前）／index34＝0x4FB183（cmp byte[eax+4],0x43 gate）＋bound type-3 → index33→arg type 0x24＝Owner／index34→arg type 0x25＝Effect Shader ID（v437 表）→ 許可リスト {TESFaction, TESNPC}＝arg type Owner の parameter 検証（owner は Faction/NPC のみ許可）／EffectShader gate＝arg type Effect Shader ID の検証（FormType==0x43=TESEffectShader・v441 表）— 両表と完全整合 [確定相当]。[確定] FUN_0056ae00 identity: L270604 undefined4 __fastcall(ulong* p)＝6-dword ゼロ化→FUN_0056a9c0(0x104c)（4172-byte 構造初期化）[確定(decompiled)]＝emit/parse context initializer（chain 先頭）。[部分確定] V-444-2 FUN_0056ad60 呼出の case: FUN_0056a3b0 に FF/4 jump table 無し＝cmp/jcc linear chain 形式 [確定(否定側)]、0x56A464 への direct branch 0件（周辺短距離 jcc 群のみ）→ fall-through [確定]、case index は linear cmp chain の cmp 値列挙が要＝[未確定]（残点）。[確定] [esp+0x5c] 非ゼロ供給式: block 0x407CB4: mov ecx,[0xB3340C]; mov edx,eax; sub edx,ecx; test edx,edx → 0x407CBA: mov [esp+0x5c],edx ＝ [esp+0x5c] = eax − dword[0xB3340C]（グローバル差分）[確定(命令)]／block 0x407E47: mov eax,[edx+0x174]（vtable）→ 407E4D call eax（virtual call）→ fild/mov ecx,[eax] → 0x407E5B: mov [esp+0x5c],ecx（virtual call 経由値）[確定(命令近辺)]。両 block への branch 源 predicate は source 表示不足で [部分確定]（残点）、global 0xB3340C の identity [未確定]。[確定] V-444-3 census 分離: non-ret 境界3171件のうち直前が switch table run（≥8 text ptrs）は45件のみ（1.4%）→ table 境界説はほぼ棄却 [確定(実測)]、residual 3126。v442 histogram（0xFF=1859/0x00=1214・jcc32=0）併せて non-ret 大半は FF../disp32 尾＝indirect jmp/call [推定高]、FF /4 jmp [mem]（tail）と function 内 dispatch の切り分けは未達 [未確定]（v442 non-ret 3159 vs v444 3171 の12件差に説明未・量級は同 [部分確定]）。残点 V-445-1..3（1=FUN_0056a3b0 の cmp chain から 0x56A464 の case index と [esp+0x5c] branch 源・global 0xB3340C identity【低】／2=non-ret residual 3126 の前 segment 末尾 FF の SIB 種別（jmp [mem] tail vs jmp [reg*4+tbl] intra-fn）で機械分離【低】／3=旧残点群（V-414-2..3/V-413-2/V-415-2）への移行判断【低】）。教訓: switch 構造は「fn 内 jmp [reg*4+disp] 全列挙＋bound（add -N）と table 距離」で各 dispatch の enum を特定（char-opcode/arg type/byte-remap の3系統共存例）／case index は既存 enum 表（v437×v441）との突合で1手確定（Owner/EffectShader）／table dwords が見えれば index 算出は完了（残りは bound）／機械分離はまず除外候補の発生率を測ってから深掘り（table 直後45件＝1.4% と判明した時点で table 説打ち切り→FF SIB 種別分離へ移行）／write 供給式は block entry 直後の mov/sub に表れる（eax−global）→ predicate より先に式を確定。本日 push: v405→v443（0f7d66de）39件＋本件 v444。v 採番 v444 消費（次=v445）。"
+    },
+    {
+      "id": "151-v445-ad60-owner-2026-11-17",
+      "timestamp": "2026-11-16T21:39:49Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v445",
+        "ad60-owner",
+        "global-identity",
+        "ff-split"
+      ],
+      "content": "2026-11-17 派生残点第37弾 v445（probe v445_1..2 全2本 EXIT=0）＝V-445-1..3 完遂・v444 訂正2件: 成果物 tmp/re/v445_ad60_owner_ruling.md・台帳 row421（bak271）・round_verify ALL OK（rows 31..421 / total 307 / done 302 / open 5）・STATE (fo)・ai-todo #151 note。[確定] v444 訂正①: FUN_0056a3b0 の jump table は実在: 56A3B4 cmp eax,5; ja → 56A3B9 jmp [eax*4+0x56A438]（6 cases）— v444_2 の「FF/4 jump table 無し」は linear decode 到達失敗による誤答と訂正。decompiled case list（L269934-64）＝float 比較演算6種 [確定(decompiled)]。[確定] v444 訂正②: 0x56A464（call FUN_0056ad60）の真の所属は FUN_0056a450（docs L269970 // FUN_0056a450 @ 0x56a450 実在）: L269972 void __fastcall FUN_0056a450(int *p): for(; p && (p[1]!=0 || *p!=0); p=p[1]) FUN_0056ad60();` ＝連結リスト走査 loop 内の ad60 呼出し[確定(decompiled)] → 「ad60 の呼出 case」の問いは解消。v443 の「head=0x56A3B0 // FUN_0056a3b0」記述は ann_of window 誤り＝find_head 境界誤り5件目として訂正。[確定]（構造）＋[推定高]（semantic）global 0xB3340C: .text refs は2件とも FUN_00407AE0 内（0x407CAE mov ecx,[0xB3340C] read・差分 eax−[0xB3340C]／0x407CD8 mov [0xB3340C],eax write→直後 fstp/fld [0xB33404]/fadd の float 連鎖）、docs mentions 3件（DAT_00b3340c = DAT_00b33ea0 L5869/L5879・iVar20 = DAT_00b33ea0 - DAT_00b3340c L5871）→ dump 内の前回値キャッシュ（0xB33404 float 群と隣接）で差分を取る変数 [推定高]（DAT_00b33ea0 identity は残点）。[未確定] [esp+0x5c] branch 源（0x407CB4/0x407E47 への flow predicate）は probe budget で未着手＝残点継続。[未確定] V-445-2 FF 分離は手法不備を確認: tail 6-byte 走査分類で other (not FF-tail)＝3161/3171（99.7%）・FF 合計10件 → v442 histogram の 0xFF=1859（末尾 byte 0xFF）が ModRM ベース分類で捕捉不能＝走査が命令境界を知らない [確定（手法欠陥）]、正しい手法＝segment 先頭からの forward decode で 最後の instruction を採る [確定（手法）]、実装は残点。[確定] V-445-3 方針仮決定: 次 v446 で V-445 残2点（FF forward-decode 実装・[esp+0x5c] predicate）を片付けた後、旧残点群（V-414-2..3/V-413-2/V-415-2）へ移行（作業方針 [推定]）。残点 V-446-1..3（1=FF 分離の forward-decode 実装（residual 3126 の真 function end 数確定）【低】／2=[esp+0x5c] branch 源（0x407CB4/0x407E47 への predicate）と DAT_00b33ea0 identity【低】／3=型番方針の最終判断【低】）。教訓: 「jump table 無し」の否定は linear decode 到達性依存→「cmp reg,N 直後の FF を byte-pattern 検出」の第2系統で再検証を欠くと誤答（v444_2 の事例）／fn 所属は find_head window ではなく docs 直近 annotation の backward grep（L269970 が決定打・window 誤りは find_head 境界誤り5件目）／tail 分類は境界逆走査では命令境界不可→区切り code run は先頭 forward decode が正／global identity は read/write 両 ref＋docs 代入・差分の並列で「前回値キャッシュ」が浮かぶ（差分 A−B が鍵）／訂正は ruling 冒頭に vXXX 撤回と明記（本裁定で2件）。本日 push: v405→v444（d5507dd3）40件＋本件 v445。v 採番 v445 消費（次=v446）。"
     }
   ],
   "metadata": {
-    "totalEntries": 849,
+    "totalEntries": 850,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-16T21:34:50Z",
-    "entry_count": 849,
-    "last_updated": "2026-11-16T21:34:50Z"
+    "lastUpdated": "2026-11-16T21:39:49Z",
+    "entry_count": 850,
+    "last_updated": "2026-11-16T21:39:49Z"
   }
 }
