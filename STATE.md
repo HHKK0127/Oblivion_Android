@@ -1598,3 +1598,17 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-402-1..3**: 1=**slot12 第2引数（`puVar3`/`local_98`）の正体と表示先**（`SendMessageA` 0x1100 の意味と ITEM 構造）【中】／2=**インスペクタ窓自体の同定**（HWND 所有者・`FUN_00495af0` の呼び出し元）【中】／3=**idx14=`0x6C7470`/idx15=`0x6CACE0` のスロット意味**【低】。
 - **教訓**: **Save vs dump は ①形式（%g/enum 名＝表示専用）②データ完全性（スカラのみ＝再構成不能）③呼び出し家族（GUI インスペクタのみ＝保存経路なし）の3点で裁定**＋**vtable extent＋RTTI COL で slot 所属を一撃確定**。
 - **次**: #153⑥-9 V-387-2（Offset の数式上の役割）→ 次 v 採番 v403。
+
+## 2026-11-16 (dy) — #153⑥-9 完遂: `Offset`（`[seq+0x48]`）＝**`effective_time = time + Offset` の加算補正 [確定]**（v387 の [推定高]→[確定] 昇格）（v403・V-387-2）
+
+- **成果物**: `tmp/re/v403_offset_formula_ruling.md`（probe **v403_1 全 EXIT=0**・x87 disp=0x48 census 16件＋`FUN_006ca950` body 全0x48 行通読）。台帳 **row379（bak229）**・`round_verify` **ALL OK**（rows 31..379 / total 265 / done 260 / open 5）。ai-todo #153 に note（低10件の第9弾消化）。v 採番 **v403 消費（次=v404＝#153⑥-10 V-388-1）**。
+- **本質 [確定(命令＋decompiled)]**: **`effective_time = time + Offset` に変換する加算補正** — pose クエリ **`FUN_006c6b30(seq, time + Offset)`** と **time remap `0x6C5FC0`（v390）へ `time+Offset` を入力**（L499594/L499613/L499620・machine `0x6CAABC fadd→call 0x6c6b30`／`0x6CABC9` 同／**`0x6CABED fadd→call 0x6c5fc0`**）＝**Offset を足してシーケンスローカル時刻に変換**。
+- **遅延初期化 [確定]**: **`if (Offset == −FLT_MAX) Offset = −time`**（L499541-542・machine `0x6CA961`）→ **effective = 経過時間**。
+- **再基準化（一回限り） [確定]**: **`if ([+0x54] ≠ −FLT_MAX) { Offset = [+0x54] − time; [+0x54] = −FLT_MAX }`**（L499586-588・machine `0x6CAA4F` ブロック）→ **effective を保留時刻にスナップ**。
+- **終了時累積 [確定]**: **Deactivate(fade<=0) で `Offset += (Last ≠ −FLT_MAX ? WeightLast/Freq − Last : 0)`**（L498944-546・machine `0x6C9D0E fadd/fstp`）＝停止時に未消化時間を繰越（v393 と一致）。
+- **リセット [確定]**: **`Offset = −FLT_MAX`**（Activate L498920・`0x6C9C99`／blend wrapper L499049・`0x6C9ED6`／ctor `0x6C65C0`/`0x6C805A` 帯）。
+- **blend 同期 [確定]**: state6 で **`partner[+0x48] = FUN_006c6b30(this, time+Offset) / partner.Freq − time`**（L499594-597・machine `0x6CAAF4`）＝partner の effective time を this の remap 済み時刻に一致＋**`partner[+0x48] + time ≠ partner[+0x34]（Last）` チェック**（L499616-617）。
+- **scope 注意**: 帯内に**別構造の `+0x48]`** あり（`FUN_006bfcd0` 等 interpolator 系 own float・`0x6D0305` は fldcw＝FPU control word）— 本裁定は **NiControllerSequence の `[+0x48]` のみ**に適用。
+- **残点 V-403-1..3**: 1=**`[+0x54]` の名前と供給元**（保留時刻・dump 対象外の内部時刻）【中】／2=**state2 ブロック出口で state=1 へ遷移する条件**【低】／3=**`FUN_006c6b30` 戻り値の厳密な意味と `/Freq` 正規化の根拠**【低】。
+- **教訓**: **「〜の役割」系は ①入力元 census（x87 disp 走査）②出力先（どの call へ流れるか）③ライフサイクル（init/更新/累積/リセット）の4点で式を復元**。
+- **次**: #153⑥-10 V-388-1（`[+0x54]` 正名）→ 次 v 採番 v404。
