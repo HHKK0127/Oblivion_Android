@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-16T08:12:11Z",
+  "lastUpdated": "2026-11-16T09:52:11Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11703,14 +11703,30 @@
         "palette"
       ],
       "content": "2026-11-16 #154（StoreTargets 解決系4件）を v405 で完遂（probe v405_1..18 全18本 EXIT=0）成果物 tmp/re/v405_storetargets_resolve_ruling.md・台帳 row381（bak231）・round_verify ALL OK（rows 31..381 / total 267 / done 262 / open 5）・STATE (ea)・ai-todo #154 complete。①[確定]（v371 の FindChild 系 [推定高] を訂正）: root＝NiDefaultAVObjectPalette（vtable 0xA798C4 RTTI）、slot19(+0x4C) impl 0x6C5430＝NiTMapBase<...,const char*,NiAVObject*>::Lookup(name,&out)（call 0x55E000 → found?out:0）＝ハッシュマップ lookup で構造探索なし → 子/孫再帰なし・空名特別扱いなし・自己比較なし [確定(否定側)]。実効範囲＝palette 内容: KF 読込 0x7166B0＝Target＋N×(name,obj) insert／遅延生成＝FUN_007165b0 が Target 自身＋children[+0xb0] を自己再帰で孫以下まで登録 [確定(命令)]。移植は palette を叩くだけ（ツリー探索不要）。②[部分確定]: 0x6C9B12 mov [esi+eax+8],edi → esi＝i×16・eax＝[seq+0x14] 配列A base・edi＝解決済み controller/keyframe data（registry FUN_00560920(&DAT_00b3cc5c) or chosen->slot38 新規作成＋slot33 attach・L498791-498808）→ entry+8＝data の生ポインタ [確定]、port 対応＝keyframe_data_index [推定高]（(ptr−(global 0xB3CD7C+0x3C))/48 で復元可・FUN_006c6910 の 0x6C6A3F も stride-48 配列要素 ptr を同 +8 へ格納）。target_node_index/resolved_bone_index は [確定(否定側)]。entry レイアウト3系統一致 [確定]（ctor 0x6C62E0／LoadBinary FUN_006c8820＝+0 Interpolator・+4 Controller・+0xD priority＝oracle ControlledBlock 順と一致／StoreTargets）。配列B(seq+0x18)＝{+0=NiStringPalette,+4/+6/+8/+0xA/+0xC=5×u16 offset}＝5識別子。③[部分確定]: predicate receiver＝配列A[+0]＝NiInterpolator 系・impl 0x6FDFF0 mov al,1;ret 4 恒真（KF 実使用 22/22 クラス全共通・override 0件 [確定(命令＋RTTI全数)]）→ 'failed to resolve dependencies'(0xA79CD8) は実質到達不能。v371 の controller 側表記は receiver 間違え（interpolator 側）と訂正。④[確定]: [seq+0x40]＝NiControllerManager（NIF oracle Manager:Ptr・LoadBinary idx8=FUN_006c7ad0 が version≥0x0A010068 で stream object 格納・IsEqual idx11=FUN_006c7bb0）／manager[+0x7C]＝NiDefaultAVObjectPalette（NIF Object Palette:Ref・manager idx9=FUN_006c5ab0 が遅延生成）／[seq+0x5c]＝NIF AccumRootName（port の target_name はこれに対応）／[seq+0x60]＝palette->GetAVObject(AccumRootName) の結果＝解決済み accumulator root の NiAVObject*。manager[+0x30]=palette 遅延生成の引数＝node 系（Target:Ptr 対応 [推定]）。残点 V-405-1..5（1=palette stream 読込の manager 側接続【中】/2=edi と stride-48 型照合・keyframe_data_index 厳密写像【中】/3=Get(\"Bip01\")[+0x1C] identity【中】/4=palette insert と FUN_00716620【低】/5=未知 interpolator idx35【低】）。教訓: vtable slot は class family で多義（+0x4C＝float 伝播/名前 lookup/type 比較/ハッシュ剰余）→ receiver クラスを RTTI 確定→impl decode。root 正体は writer 逆算が速い。NIF oracle のフィールド順を stream 読込順/IsEqual 順と突き合わせで offset 対応確定。「何が false か」は base＋全 subclass RTTI 全数調査。並行 subagent は2回サーバ再起動で中断→foreground 直列で完遂。v 採番 v405 消費（次=v406=#151）。"
+    },
+    {
+      "id": "151-v406-clas-specialization-2026-11-16",
+      "timestamp": "2026-11-16T09:52:11Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "clas",
+        "re",
+        "v406",
+        "chargen",
+        "specialization"
+      ],
+      "content": "2026-11-16 #151（CLAS DATA+0x08 specialization enum と原版 chargen 適用経路）を v406 で完遂（probe v406_1..24 全24本 EXIT=0・v406_19 は再起動中断も .out 完全）成果物 tmp/re/v406_clas_specialization_ruling.md・台帳 row382（bak232）・round_verify ALL OK（rows 31..382 / total 268 / done 263 / open 5）・STATE (eb)・ai-todo #151 complete。①enum 方向=[確定] 0=Combat/1=Magic/2=Stealth（chargen step FUN_005D6390 の addOption(sCombatName,0)/(sMagicName,1)/(sStealthName,2)＋GMST 登録表実読 'Combat'→0xB385D8/'Magic'→0xB385E0/'Stealth'→0xB385E8・実データ21/21 と同方向）。①消費者=[確定] reader=FUN_006ECC80 return [x+0x40]＝MSVC ICF 一本化で E8=500超・Ni 系 vtable slot35 と同アドレス共用、typed4経路=FUN_005DBBD0（stats 0xFB1）/FUN_00596CF0（chargen レビュー 0xFB6・0xFC0・major7個）/FUN_005222D0（getter×2: spec一致→+double5[0xA3F3F0]・呼出し8件に chargen FUN_00596980 含む）/FUN_006684B0（levelup レポート）。①GMST=[確定] sSpecialization=chargen step ヘルプ（menu 0xFB3）・sClassSpecialization='Specialization: '=stats ラベル・sSpecNameCombat/Magic/Stealth→0xB364E8/F0/F8=PTR_DAT_00B10D90 テーブルで FUN_0052E7E0(spec)=*global[spec]、登録=push default;push key;mov ecx,global;call 0x419A70（{[0]=value,[4]=key}+map insert）＋atexit thunk。①v261 訂正要=[確定] +0x40/+0x64 の「実行時未読」2行は共に誤り（call 経由 getter 見落とし・+0x64=FUN_005222D0 L216914 machine 0x522706 typed）。②=[部分確定] PlayerCharacter（ctor FUN_0066A740・RTTI .?AVPlayerCharacter@@）: +0x130=skill値float×21・+0x5B0=保留増分・+0x5B8..5BA=spec別 advancement カウンタ・+0x158=usage・+0x184=major 達成カウンタ。適用肯定系=FUN_005222D0 tail class→actor 3連鎖（[+0x64]→FUN_00468230／[+0x68]trainer→FUN_004684C0／[+0x69]→FUN_00468270・全て actor[+0x68] へ・class 無し時0）。skill 値書手4系統（FUN_0065FA40 setter E8=2／FUN_00668030 リセット／FUN_00668070 使用更新／FUN_0066C200 保留適用）。増分唯一入口=FUN_00668C30（record[+0x38+idx*4] float テーブル×倍率・E8=0＝.rdata 0xA73DA8 間接登録）。否定=[確定(否定側)] major getter FUN_0051BF00 E8=5 は growth/review/report のみで書込経路なし。「+10 初期適用（属性/spec/major）fn は未特定 [未確定]」。faster=spec 一致で +double5・非 major 減衰 ×0.2（0xA38538）・0xB362E4/EC は .data 実行時グローバルで定数非保持。flags bit0 autocalcs=v261 継承。③: +0x30 trainer=[確定]（FUN_0051BEB0・E8=1 唯一消費者0x522726→FUN_004684C0）／+0x2C 消費=[確定]・意味=[未確定]。残点 V-406-1..6（1=+10 適用 fn・間接登録・opcode id【高】/2=FUN_005222D0 正式名【中】/3=FUN_006ECC80 残 E8 の CLAS 型再 typed【中】/4=DATA+0x2C/+0x31 意味【低】/5=名前テーブル所有 fn【低】/6=FUN_00668B30 第4引数と+0x7A4【低】）。教訓: MSVC ICF で trivial getter は1アドレス化→1fn=1意味禁止・型は caller の arg 経路で typed。「未読」判定は call 経由 getter でも再検証。GMST consumer は「登録表実読→global cache→direct 読取 census」3段。PE セクションで定数/実行時グローバル区別。decompiled 未収録 fn は machine 直 decode。v 採番 v406 消費（次=v407=#153⑥-11 以降）。"
     }
   ],
   "metadata": {
-    "totalEntries": 810,
+    "totalEntries": 811,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-16T08:12:11Z",
-    "entry_count": 810,
-    "last_updated": "2026-11-16T08:12:11Z"
+    "lastUpdated": "2026-11-16T09:52:11Z",
+    "entry_count": 811,
+    "last_updated": "2026-11-16T09:52:11Z"
   }
 }
