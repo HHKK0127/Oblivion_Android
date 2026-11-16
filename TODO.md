@@ -502,6 +502,15 @@
   > ⑤[確定] V-460-3 移行方針: V-461 から旧残点（V-405-4..5/V-406-2..6）へ軸を移す [確定（作業方針）]（X 書手／iVar13 entry layout／0xB3CD7C 実行時文字列は低優先で V-462+ に併走）。
   > 残点 V-461-1..3（1=旧残点消化開始（V-405-4..5 palette insert／unknown interpolator idx35・V-406-2..6 優先順）【低】／2=manager+0x30 書手 fn（NiTStringTemplateMap insert caller census）と iVar13 entry layout【低】／3=DAT_00b3cd7c 実行時文字列（V-419-1 引継ぎ・runtime 構築 object 中身は動的解析要）【低】）。
   > 教訓: call site の arity（引数の数）が vtable slot の同定に効く（L498845 の3引数が4候補の +0x5C を1 probe で絞る＝fn signature を先に確定してから slot を当てる）／hash function の機械形（div [reg+N]→余り返し）は map class の即同定素材／image 中身の1 dword で静的 vtable か runtime object かが即判定（vtable 範囲外＋乱数＝runtime・static object なら image に ptr 残る）／[vt+off] が fn でない（data/thunk）ことも重要な否定側証拠（thunk=add ecx,N;jmp と data を区別して3引数 fn だけが残る）／候補列挙は既知 TD→vtable（v457 済み）が forward 法より速い。v 採番 v460 消費（次=v461）。
+  > 【旧残点群消化第5弾 v461 — V-461-1..3 完遂・旧 V-405-4..5 消化】probe v461_1..v461_2 全2本 EXIT=0（v461_1 初回 TypeError→isinstance 判定で修正再実行）。成果物 tmp/re/v461_palette_unreg_ruling.md・台帳 row437（bak287）・round_verify ALL OK（rows 31..437 / total 323 / done 318 / open 5）。
+  > ①[確定相当] 旧 V-405-4 palette insert（virtual+0x50）＝2用途 fn: NiDefaultAVObjectPalette vt=0xA798C4 の [vt+0x50]=FUN_006C5460（FUN_006c5430+0x30・L495004）[確定]: machine `mov eax,[esp+8]`（第2引数 obj）→ `add ecx,8`（self+8＝inner NiTMapBase）→ `test eax,eax; jne 0x6C5478`（obj≠0→insert 側）／obj==0 → `mov eax,[esp+4]`（name）→ push; call 0x4524C0; ret 8（remove 側）[確定(機械)] → virtual+0x50(name,obj)＝obj!=NULL なら insert・obj==NULL なら name の entry を除去する2用途 fn [確定相当]（v405 の「insert」記述に remove 経路を追補）。
+  > ②[確定相当] FUN_004524C0（remove 実体）: L63085 `__thiscall(int *self, undefined4 key)`: `iVar4=virtual[self]+4(key)`（hash index）→ `puVar1=self[2][iVar4]`（bucket 先頭）→ `if (puVar1) { cVar3=virtual[self]+8(key, puVar1[1])`（キー比較）`if (cVar3) self[2][iVar4]=*puVar1; …`（unlink）[確定(構造)] → NiTMapBase の Remove/Erase（hash bucket walk＋キー比較＋unlink）fn [確定相当]。
+  > ③[確定相当] FUN_00716620（unregister walker）: L558418 `void(int *node, int *palette)`: `if (node && palette) { if (node[2]!=0) virtual[palette]+0x50(node[2], 0)`（obj=NULL→remove）` iVar1=virtual[node]+8()`（childRoot）` for (i < *(u16*)(iVar1+0xb6)) FUN_00716620(*(iVar1+0xb0+i*4), palette)`（子孫再帰） }` [確定(構造)] → 「node（と子・孫全ノード）の node[2]（name）を palette から remove する unregister walker」＝FUN_007165b0（register walker・v405 確定）の対 [確定相当] → palette の insert/release 経路は「register（FUN_007165b0＋KF stream 0x7166B0）／unregister（FUN_00716620）／remove 単体（virtual+0x50(name,0)）」の3系統で整理完了 [確定]。
+  > ④[確定]（28/28 census）旧 V-405-5 interpolator idx35 全数＋v405 訂正: ctor mov [reg],imm32×RTTI 法（v457 法）で interpolator 系28 クラスの vtable を全数特定→ [vt+0x8C]（idx35）実読: **27/28 が 0x6FDFF0（CONST-TRUE＝mov al,1; ret 4）、唯一の override＝NiLookAtInterpolator vt=0xA7B0D4 の idx35＝FUN_006DF060 [確定]** → v405 の「KF 実使用22 クラスすべて base 共通・override 0件」は22 クラス限定で、全28 クラスでは override 1 件あり＝本裁定で訂正。
+  > ⑤[未確定] predicate slot35 の正式名: FUN_006DF060 の identity と slot の機能名は [未確定]＝残点（恒真でない唯一の実装を読めば slot の意味が決まる）。
+  > ⑥[確定] V-461-3 移行方針: V-462 から旧残点 V-406-2..6（+10 適用 fn／間接登録 0xA73DA8／FUN_0050D020 opcode 特定の残り）へ軸を移す [確定（作業方針）]（FUN_006DF060 identity と predicate 正式名は低優先で V-463+ に併走）。
+  > 残点 V-462-1..3（1=旧残点消化開始（V-406-2..6 優先順）【低】／2=FUN_006DF060（NiLookAtInterpolator idx35 override）identity→predicate slot35 正式名【低】／3=[manager+0x30] 書手 fn／iVar13 entry layout／DAT_00b3cd7c 実行時文字列（v460 残点引き継ぎ）【低】）。
+  > 教訓: `test reg,reg; jne` 直後の「引数==0 の分岐」は insert/remove 2用途 fn の目印／「NULL 登録」という推測は「NULL＝remove 引数」と読む（v405 推測を確定・訂正）／全数 census は COL 法が失敗したら ctor store×RTTI 法へ即切替（v461_1→v461_2 で2本目成功）／「override 0件」という否定的結論は対象クラスの列挙範囲に依存（22 クラスで0件・28 クラスで1件＝全数出さないと否定的結論が覆る）／unregister walker は register walker の対で覚える（子孫再帰構造同一で insert/remove の差だけ）。v 採番 v461 消費（次=v462）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1408,11 +1417,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1436,4 +1440,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 08:25:12
+**ai-todo** | Last Updated: 2026-11-17 08:37:04

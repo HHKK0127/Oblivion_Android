@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-16T23:27:04Z",
+  "lastUpdated": "2026-11-16T23:38:52Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -12552,14 +12552,30 @@
         "runtime-object"
       ],
       "content": "2026-11-17 旧残点群消化第4弾 v460（probe v460_1 全1本 EXIT=0）＝V-460-1..3 完遂: 成果物 tmp/re/v460_stringmap_ruling.md・台帳 row436（bak286）・round_verify ALL OK（rows 31..436 / total 322 / done 317 / open 5）・STATE (gd)・ai-todo #151 note。[推定高]（候補特定）V-460-1 X＝*(manager+0x30): L498845 の3引数 call（(&uStack_29,1,&cStack_2a)）と整合する vtable slot +0x5C を4候補で実読 → NiTStringTemplateMap<NiTPointerMap<PBD,seq*>,seq*> vt=0xA797E4 の [vt+0x5C]=FUN_006C4260（3引数 fn: mov eax,[esp+4]（第1引数）→ call 0x68F970 → mov ebx,[esi+0x30]）＝唯一の3引数 fn [確定(機械)] → X＝NiTStringTemplateMap instance [推定高]（L498845 式の Y=*(manager+0x30) と FUN_006c4c20 の StoreTargets(*(manager+0x30)) が同一 field、StoreTargets の param_2＝Y＝map instance）。[確定(否定側)] 他候補の +0x5C は fn でない/thunk: NiTArray vt=0xA7977C と NiTMapBase vt=0xA7975C は [+0x5C]=FUN_004F0F60（add ecx,0xc; jmp 0x44d810＝offset-adjust thunk）／NiTPointerMap vt=0xA797A4 は [+0x5C]=0xAC5F78（data）→ X はこれら以外 [確定]。[未確定] manager+0x30 への書手 fn は残点（v458/v459 否定側継続）。[推定高]（候補）V-460-2 iVar13 class: StoreTargets 内の virtual[manager+0x7C]+0x4C(str) の候補 vtable +0x4C を実読 — NiTPointerMap vt=0xA797A4 の [+0x4C]=FUN_006C4F80（cmp byte[ecx+0x10],0; je; lea edx,[eax+1]＝string walk/hash [確定(機械)]）／NiTStringTemplateMap vt=0xA797E4 の [+0x4C]=FUN_006C42B0（call 0x715820→test al,al＝string 判定 [確定(機械)]）／NiTMapBase vt=0xA7975C の [+0x4C]=FUN_006A9060（div dword[ecx+4]; mov eax,edx; ret 4＝key hash modulo [確定(機械)]）→ manager+0x7C は string-keyed map [推定高]、iVar13（lookup 返り値）は entry/値（value＝NiControllerSequence*）で +0x1C を持つ構造 [確定（v458）] → iVar13 の正式 class は map entry layout 次第で [未確定]＝残点。[確定]（否定側）V-460-2 DAT_00b3cd7c image 中身: image 上の [0xB3CD7C]=0xC3FD4D24＝vtable 範囲外・fn 範囲外、first 16 dwords が乱数風（0xC3FD4D24 0x868DF2C9 0xBBFDC3F6...）→ 静的 vtable/静的データでない [確定(否定側)] → runtime 構築 object（または pack/暗号化 image 領域）[推定高]、実行時文字列の中身は image からは読めず [未確定]＝残点（V-419-1 引継ぎ維持）。[確定] V-460-3 移行方針: V-461 から旧残点（V-405-4..5/V-406-2..6）へ軸を移す [確定（作業方針）]（X 書手／iVar13 entry layout／0xB3CD7C 実行時文字列は低優先で V-462+ に併走）。残点 V-461-1..3（1=旧残点消化開始（V-405-4..5 palette insert／unknown interpolator idx35・V-406-2..6 優先順）【低】／2=manager+0x30 書手 fn（NiTStringTemplateMap insert caller census）と iVar13 entry layout【低】／3=DAT_00b3cd7c 実行時文字列（V-419-1 引継ぎ・runtime 構築 object 中身は動的解析要）【低】）。教訓: call site の arity（引数の数）が vtable slot の同定に効く（L498845 の3引数が4候補の +0x5C を1 probe で絞る＝fn signature を先に確定してから slot を当てる）／hash function の機械形（div [reg+N]→余り返し）は map class の即同定素材／image 中身の1 dword で静的 vtable か runtime object かが即判定（vtable 範囲外＋乱数＝runtime・static object なら image に ptr 残る）／[vt+off] が fn でない（data/thunk）ことも重要な否定側証拠（thunk=add ecx,N;jmp と data を区別して3引数 fn だけが残る）／候補列挙は既知 TD→vtable（v457 済み）が forward 法より速い。本日 push: v405→v459（f3751687）55件＋本件 v460。v 採番 v460 消費（次=v461）。"
+    },
+    {
+      "id": "151-v461-palette-unreg-2026-11-17",
+      "timestamp": "2026-11-16T23:38:52Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v461",
+        "palette",
+        "unregister",
+        "idx35"
+      ],
+      "content": "2026-11-17 旧残点群消化第5弾 v461（probe v461_1..2 全2本 EXIT=0・v461_1 初回 TypeError→isinstance 修正）＝V-461-1..3 完遂・旧 V-405-4..5 消化: 成果物 tmp/re/v461_palette_unreg_ruling.md・台帳 row437（bak287）・round_verify ALL OK（rows 31..437 / total 323 / done 318 / open 5）・STATE (ge)・ai-todo #151 note。[確定相当] 旧 V-405-4 palette insert（virtual+0x50）＝2用途 fn: NiDefaultAVObjectPalette vt=0xA798C4 の [vt+0x50]=FUN_006C5460（FUN_006c5430+0x30・L495004）[確定]: machine mov eax,[esp+8]（第2引数 obj）→ add ecx,8（self+8＝inner NiTMapBase）→ test eax,eax; jne 0x6C5478（obj≠0→insert 側）／obj==0 → mov eax,[esp+4]（name）→ push; call 0x4524C0; ret 8（remove 側）[確定(機械)] → virtual+0x50(name,obj)＝obj!=NULL なら insert・obj==NULL なら name の entry を除去する2用途 fn [確定相当]（v405 の「insert」記述に remove 経路を追補）。[確定相当] FUN_004524C0（remove 実体）: L63085 __thiscall(int *self, undefined4 key): iVar4=virtual[self]+4(key)（hash index）→ puVar1=self[2][iVar4]（bucket 先頭）→ if (puVar1) { cVar3=virtual[self]+8(key, puVar1[1])（キー比較）if (cVar3) self[2][iVar4]=*puVar1; …（unlink）[確定(構造)] → NiTMapBase の Remove/Erase（hash bucket walk＋キー比較＋unlink）fn [確定相当]。[確定相当] FUN_00716620（unregister walker）: L558418 void(int *node, int *palette): if (node && palette) { if (node[2]!=0) virtual[palette]+0x50(node[2], 0)（obj=NULL→remove） iVar1=virtual[node]+8()（childRoot） for (i < *(u16*)(iVar1+0xb6)) FUN_00716620(*(iVar1+0xb0+i*4), palette)（子孫再帰） } [確定(構造)] → 「node（と子・孫全ノード）の node[2]（name）を palette から remove する unregister walker」＝FUN_007165b0（register walker・v405 確定）の対 [確定相当] → palette の insert/release 経路は「register（FUN_007165b0＋KF stream 0x7166B0）／unregister（FUN_00716620）／remove 単体（virtual+0x50(name,0)）」の3系統で整理完了 [確定]。[確定]（28/28 census）旧 V-405-5 interpolator idx35 全数＋v405 訂正: ctor mov [reg],imm32×RTTI 法（v457 法）で interpolator 系28 クラスの vtable を全数特定→ [vt+0x8C]（idx35）実読: 27/28 が 0x6FDFF0（CONST-TRUE＝mov al,1; ret 4）、唯一の override＝NiLookAtInterpolator vt=0xA7B0D4 の idx35＝FUN_006DF060 [確定] → v405 の「KF 実使用22 クラスすべて base 共通・override 0件」は22 クラス限定で、全28 クラスでは override 1 件あり＝本裁定で訂正。[未確定] predicate slot35 の正式名: FUN_006DF060 の identity と slot の機能名は [未確定]＝残点（恒真でない唯一の実装を読めば slot の意味が決まる）。[確定] V-461-3 移行方針: V-462 から旧残点 V-406-2..6（+10 適用 fn／間接登録 0xA73DA8／FUN_0050D020 opcode 特定の残り）へ軸を移す [確定（作業方針）]（FUN_006DF060 identity と predicate 正式名は低優先で V-463+ に併走）。残点 V-462-1..3（1=旧残点消化開始（V-406-2..6 優先順）【低】／2=FUN_006DF060（NiLookAtInterpolator idx35 override）identity→predicate slot35 正式名【低】／3=[manager+0x30] 書手 fn／iVar13 entry layout／DAT_00b3cd7c 実行時文字列（v460 残点引き継ぎ）【低】）。教訓: test reg,reg; jne 直後の「引数==0 の分岐」は insert/remove 2用途 fn の目印（palette virtual+0x50 で remove 経路発見）／「NULL 登録」という推測は「NULL＝remove 引数」と読む（virtual+0x50(name,0) の 0 が第2引数と分かれば登録でなく除去・v405 推測を確定・訂正）／全数 census は COL 法が失敗したら ctor store×RTTI 法へ即切替（v461_1→v461_2 で2本目成功・v457 法の再利用性確認）／「override 0件」という否定的結論は対象クラスの列挙範囲に依存（22 クラスで0件・28 クラスで1件＝全数出さないと否定的結論が覆る）／unregister walker は register walker の対で覚える（FUN_007165b0⇔FUN_00716620・子孫再帰構造同一で insert/remove の差だけ）。本日 push: v405→v460（7deb40da）56件＋本件 v461。v 採番 v461 消費（次=v462）。"
     }
   ],
   "metadata": {
-    "totalEntries": 865,
+    "totalEntries": 866,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-16T23:27:04Z",
-    "entry_count": 865,
-    "last_updated": "2026-11-16T23:27:04Z"
+    "lastUpdated": "2026-11-16T23:38:52Z",
+    "entry_count": 866,
+    "last_updated": "2026-11-16T23:38:52Z"
   }
 }
