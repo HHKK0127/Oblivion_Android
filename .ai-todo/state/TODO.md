@@ -183,6 +183,14 @@
   > ③[部分確定] second walk container: 一致時＝property payload[+0xC]／不一致・property なし時＝resolved node [ebp+0xC]（[esp+0x1c] 初期値=node）→ どちらも {bucket[+0xC]・next[+0x34]・slot1 descriptor} walk（v421 確定）→ node[+0xC] が NiAVObject layout 上どこに当たるか＝残点。
   > 残点 V-423-1..2（1=resolved node[+0xC] の layout 謎と Bip01[+0x1C] との関係（旧 V-422-2）【低】／2=FUN_006c6380（+4 node_name reader）の machine body【低】）。
   > 教訓: offset-reader ファミリ（連番 addr・同型 body）は1本の body 確定で並びの [推定高] が全部 [確定] になる／skip ターゲット先（je → 0x6C9767）まで読むと「あり／なし」分岐の全体像が同時に取れる。v 採番 v422 消費（次=v423）。
+  > 【派生残点第15弾 v423 — V-423-1 部分解】probe v423_1..v423_7 全7本 EXIT=0。成果物 tmp/re/v423_node_layout_ruling.md・台帳 row399（bak249）・round_verify ALL OK（rows 31..399 / total 285 / done 280 / open 5）。
+  > ①[確定] [+0x1C]（epilogue container 指すフィールド）の書手＝FUN_007074B0（single-line setter: mov [esi+0x1c], eax; ret 4／0x70751B）— ctor は0クリア（0x7084B5）→ runtime attach pointer フィールド。
+  > ②[確定(否定側)] [+0xC]（fallback walk bucket）の direct store は ctor の0クリアのみ（Ni band の [esi+0xc] 書手7件すべて0）→ ptr は single-line setter 群経由: 0x6C0B80/0x6C0BF0/0x6C1FC0 は E8=0＝virtual 登録／FUN_006c2980（0x6C2A06）＝factory：E8=164 件全てが initializer bank thunk（call→mov [global],eax→ret）＝singleton 群（map/set 候補）の起動時構築。
+  > ③[確定] NiNode 系 sub-ctor FUN_00708450 が runtime attach 3フィールドを一括0初期化: 0x708491 mov [esi+0x9c],ebx／0x7084B5 mov [esi+0x1c],ebx／0x7084D9 mov [esi+0x24],ecx（NiNode ctor 0x70B6A0・NiAVObject ctor 0x707C80 は直接 store なし＝sub-ctor 委ね）。
+  > ④[確定] fallback walk と epilogue walk（FUN_00700010）は同一 entry 型: {[0]=vtable（slot1＝descriptor getter）・[+0x34]=next} の chain を [container+0xC] から辿る。
+  > ⑤[未確定] node[+0xC] と Bip01[+0x1C][+0xC] の同一性（構造一致・container が異なる）→ FUN_007074B0 の callers で [+0x1C] 中身が決まれば閉じる。[推定高] stock Gamebryo 布局（[+0xC]=flags 帯）との差はエンジン固有 layout。
+  > 残点 V-424-1..3（1=FUN_007074B0 callers→[+0x1C] 中身→node[+0xC] 同一性【低】／2=virtual [+0xC] setter 群の vtable 所属と [+0x34] insert 本体【低】／3=FUN_006c6380（+4）machine body【低】）。
+  > 教訓: ctor 0クリア＋direct 書手0件＝runtime attach フィールド（書手は single-line/virtual setter 経由）／E8 census 分布（0件=virtual・164件=factory bank）が fn 役割を語る／[reg+disp] census は [esp+disp] ローカル偽陽性をベースレジスタで濾す／byte-pattern context decode は file offset で region を切る（VA 切りは全漏れ）。v 採番 v423 消費（次=v424）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1089,11 +1097,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1117,4 +1120,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-16 22:49:02
+**ai-todo** | Last Updated: 2026-11-16 23:18:35

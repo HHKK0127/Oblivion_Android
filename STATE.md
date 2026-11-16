@@ -1892,3 +1892,16 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **offset-reader ファミリ（連番 addr・同型 body）は1本の body を確定させれば並びの [推定高] が全部 [確定] になる**／**skip ターゲット先（`je → 0x6C9767`）まで読むと「あり／なし」分岐の全体像が同時に取れる**。
 - **本日 push 累計**: v405 → … → v421 `9cf1c3e6` →（本件 v422 を本 commit で push）＝**18裁定**。
 - **次**: 低優先残点群（V-423-1..2／V-414-1..3／V-413-2／V-415-2／V-416-2 ほか）を v423+ で消化。supermemory 未登録18件（v405..v422）は MCP 復復待ち。
+
+## 2026-11-16 (es) — 派生残点第15弾 v423（V-423-1 部分解）: **`[+0x1C]` 書手＝`FUN_007074B0`（single-line setter）[確定]**・**`[+0xC]` は ctor0クリア＋virtual/factory setter 経由 [確定(否定側)]**・**fallback⇔epilogue walk 同一 entry 型 [確定]**・node と `Bip01[+0x1C]` の同一性は残点
+
+- **成果物**: `tmp/re/v423_node_layout_ruling.md`（probe **v423_1..v423_7 の7本全 EXIT=0**）。台帳 **row399（bak249）**・`round_verify` **ALL OK**（rows 31..399 / total 285 / done 280 / open 5）。ai-todo **#151 に note**。v 採番 **v423 消費（次=v424）**。
+- **① [確定] `[+0x1C]`（epilogue container）の書手＝`FUN_007074B0`** — single-line setter `0x70750F: mov [esi+0x1c], eax; ret 4`／`0x70751B: mov [esi+0x1c], edx`。ctor は0クリア（`0x7084B5`）→ **runtime attach pointer フィールド**。
+- **② [確定(否定側)] `[+0xC]`（fallback walk bucket）の direct store は ctor の0クリアのみ**（Ni band 0x707000..0x713000 の `[esi+0xc]` 書手7件すべて0）→ **ptr は single-line setter 群経由**: `0x6C0B80`/`0x6C0BF0`/`0x6C1FC0`（`mov [ecx+0xc],eax; ret`）は **E8=0＝virtual 登録**／**`FUN_006c2980`（`0x6C2A06`）＝factory：E8=164 件全てが initializer bank thunk（`call→mov [global],eax→ret`・globals `0xB33298`/`0xB3C234`/`0xB3C290`/…）＝ singleton 群（map/set 候補）の起動時構築 [確定]**。
+- **③ [確定] runtime attach 3フィールドの一括0初期化**: **NiNode 系 sub-ctor `FUN_00708450` が `0x708491 mov [esi+0x9c],ebx`／`0x7084B5 mov [esi+0x1c],ebx`／`0x7084D9 mov [esi+0x24],ecx`**（NiNode ctor `0x70B6A0`・NiAVObject ctor `0x707C80` は直接 store なし＝sub-ctor 委ね・RTTI resolve NiNode vtable `0xA7E38C`／NiAVObject `0xA7DF24`）。
+- **④ [確定] fallback walk と epilogue walk（`FUN_00700010`）は同一 entry 型**: **`{[0]=vtable（slot1＝descriptor getter）・[+0x34]=next}` の chain を `[container+0xC]` から辿る**（fallback: `mov esi,[ebp+0xc]`→`slot1(esi)`→`esi=[esi+0x34]`／FUN_00700010: `piVar1=[param+0xc]`→`slot1`→`piVar1=piVar1[0xd]`）。
+- **⑤ [未確定] node `[+0xC]` と `Bip01[+0x1C][+0xC]` の同一性**（構造一致・container が異なる）→ **`FUN_007074B0` の callers を辿れば `[+0x1C]` 中身が決まり閉じる**。**[推定高] stock Gamebryo 布局（`[+0xC]`=flags 帯）との差はエンジン固有 layout**。
+- **残点 V-424-1..3**: 1=`FUN_007074B0` callers→`[+0x1C]` 中身→node `[+0xC]` 同一性【低】／2=virtual `[+0xC]` setter 群の vtable 所属と `[+0x34]` insert 本体【低】／3=`FUN_006c6380`（+4）machine body【低】。
+- **教訓**: **ctor 0クリア＋direct 書手0件＝runtime attach フィールド（書手は single-line/virtual setter 経由）**／**E8 census 分布（0件=virtual・164件=factory bank）が fn の役割を語る**／**`[reg+disp]` census は `[esp+disp]` ローカル偽陽性をベースレジスタで濾す**／**byte-pattern context decode は file offset で region を切る（VA 切りは全漏れ）**。
+- **本日 push 累計**: v405 → … → v422 `43b11ed8` →（本件 v423 を本 commit で push）＝**19裁定**。
+- **次**: 低優先残点群（V-424-1..3／V-414-1..3／V-413-2／V-415-2／V-416-2 ほか）を v424+ で消化。supermemory 未登録19件（v405..v423）は MCP 復復待ち。

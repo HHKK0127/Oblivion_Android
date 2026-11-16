@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-16T13:50:24Z",
+  "lastUpdated": "2026-11-16T14:20:20Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11964,14 +11964,29 @@
         "offset-reader"
       ],
       "content": "2026-11-16 派生残点第14弾 v422（probe v422_1 全 EXIT=0）＝V-422-1 完遂: 成果物 tmp/re/v422_property_reader_ruling.md・台帳 row398（bak248）・round_verify ALL OK（rows 31..398 / total 284 / done 279 / open 5）・STATE (er)・ai-todo #151 note。[確定] FUN_006c63a0＝u16(entry+6)（property_type offset）の palette 文言 reader — decompiled L495991-495998: if (*(u16*)((int)param_1+6) != 0xffff) return *(u16*)((int)param_1+6) + *(int*)(*param_1+8); return 0;（offset==0xFFFF なら0）→ v421 の family 並び [推定高]（+6）を [確定] へ昇格。offset-reader family 確定: +6=FUN_006c63a0（property_type）／+8=FUN_006c63c0（CtlrType）／+0xA=FUN_006c63e0（CtlrID）（+4 node_name は machine 使用形で確定済・FUN_006c6380 は annotation 不在）。[確定(命令)] first walk payload＝property オブジェクト — machine 0x6C96EE-0x6C972D: movzx eax,[ebx+6]; cmp ax,0xffff; je 0x6C9767（property_type==0xFFFF なら first walk 全体 skip）→ property_type 文言 = palette[ebx]+offset → node[+0x9C] list walk（payload=[edi+8]・next=[edi+0]＝v418 FUN_0047C930 と同一構造）→ payload->slot1()（thiscall ecx=payload）→ descriptor pair → pair[0]（クラス名）を property_type 文言と strcmp → 一致で [esp+0x1c]=payload。→ payload＝クラス名が property_type 文言と一致する typed object＝property 本体（v421 [推定高] を確定）。[部分確定] second walk container: 一致時＝property payload[+0xC]／不一致・property なし時＝resolved node [ebp+0xC]（[esp+0x1c] 初期値=node）→ どちらも {bucket[+0xC]・next[+0x34]・slot1 descriptor} walk（v421 確定）→ node[+0xC] が NiAVObject layout 上どこに当たるか＝残点。残点 V-423-1..2（1=resolved node[+0xC] の layout 謎と Bip01[+0x1C] との関係（旧 V-422-2）【低】／2=FUN_006c6380（+4 node_name reader）の machine body【低】）。教訓: offset-reader ファミリ（連番 addr・同型 body）は1本の body 確定で並びの [推定高] が全部 [確定] になる／skip ターゲット先（je → 0x6C9767）まで読むと「あり／なし」分岐の全体像が同時に取れる。本日 push: v405→v421（9cf1c3e6）17件＋本件 v422。v 採番 v422 消費（次=v423）。"
+    },
+    {
+      "id": "151-v423-node-layout-2026-11-16",
+      "timestamp": "2026-11-16T14:20:20Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v423",
+        "niavobject",
+        "layout"
+      ],
+      "content": "2026-11-16 派生残点第15弾 v423（probe v423_1..7 全7本 EXIT=0）＝V-423-1 部分解: 成果物 tmp/re/v423_node_layout_ruling.md・台帳 row399（bak249）・round_verify ALL OK（rows 31..399 / total 285 / done 280 / open 5）・STATE (es)・ai-todo #151 note。[確定] [+0x1C]（epilogue container）の書手＝FUN_007074B0（single-line setter: mov [esi+0x1c], eax; ret 4／0x70751B）— ctor は0クリア（0x7084B5）→ runtime attach pointer フィールド。[確定(否定側)] [+0xC]（fallback walk bucket）の direct store は ctor の0クリアのみ（Ni band の [esi+0xc] 書手7件すべて0）→ ptr は single-line setter 群経由: 0x6C0B80/0x6C0BF0/0x6C1FC0 は E8=0＝virtual 登録／FUN_006c2980（0x6C2A06）＝factory：E8=164 件全てが initializer bank thunk（call→mov [global],eax→ret）＝singleton 群（map/set 候補）の起動時構築。[確定] NiNode 系 sub-ctor FUN_00708450 が runtime attach 3フィールドを一括0初期化: 0x708491 mov [esi+0x9c],ebx／0x7084B5 mov [esi+0x1c],ebx／0x7084D9 mov [esi+0x24],ecx（NiNode ctor 0x70B6A0・NiAVObject ctor 0x707C80 は直接 store なし＝sub-ctor 委ね・RTTI NiNode vtable 0xA7E38C／NiAVObject 0xA7DF24）。[確定] fallback walk と epilogue walk（FUN_00700010）は同一 entry 型: {[0]=vtable（slot1＝descriptor getter）・[+0x34]=next} の chain を [container+0xC] から辿る（fallback: mov esi,[ebp+0xc]→slot1(esi)→esi=[esi+0x34]／FUN_00700010: piVar1=[param+0xc]→slot1→piVar1=piVar1[0xd]）。[未確定] node[+0xC] と Bip01[+0x1C][+0xC] の同一性（構造一致・container が異なる）→ FUN_007074B0 の callers で [+0x1C] 中身が決まれば閉じる。[推定高] stock Gamebryo 布局（[+0xC]=flags 帯）との差はエンジン固有 layout。残点 V-424-1..3（1=FUN_007074B0 callers→[+0x1C] 中身→同一性【低】／2=virtual [+0xC] setter 群の vtable 所属と [+0x34] insert 本体【低】／3=FUN_006c6380（+4）machine body【低】）。教訓: ctor 0クリア＋direct 書手0件＝runtime attach フィールド（書手は single-line/virtual setter 経由）／E8 census 分布（0件=virtual・164件=factory bank）が fn 役割を語る／[reg+disp] census は [esp+disp] ローカル偽陽性をベースレジスタで濾す／byte-pattern context decode は file offset で region を切る（VA 切りは全漏れ）。本日 push: v405→v422（43b11ed8）18件＋本件 v423。v 採番 v423 消費（次=v424）。"
     }
   ],
   "metadata": {
-    "totalEntries": 827,
+    "totalEntries": 828,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-16T13:50:24Z",
-    "entry_count": 827,
-    "last_updated": "2026-11-16T13:50:24Z"
+    "lastUpdated": "2026-11-16T14:20:20Z",
+    "entry_count": 828,
+    "last_updated": "2026-11-16T14:20:20Z"
   }
 }
