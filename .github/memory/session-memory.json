@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-16T22:08:57Z",
+  "lastUpdated": "2026-11-16T22:14:58Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -12396,14 +12396,30 @@
         "init-chain"
       ],
       "content": "2026-11-17 旧残点群移行第4弾 v450（probe v450_1 全1本 EXIT=0）＝V-450-1..3 完遂: 成果物 tmp/re/v450_loadgame_av_ruling.md・台帳 row426（bak276）・round_verify ALL OK（rows 31..426 / total 312 / done 307 / open 5）・STATE (ft)・ai-todo #151 note。[確定] V-450-1 Player[+0x1C] imm 書手＝否定側: 全 .text の mov dword [reg+0x1C], imm32 census＝0 hits（no-SIB/SIB 両 form）→ imm32 直書き書手なし [確定(否定側)]、残る候補は reg-src store／pointer 経由 [未確定]＝残点、+0x32 s16 の語も継続 [未確定]。[確定(実文字列)] V-450-2 FUN_00467CA0＝TESActorBaseData の LoadGame fn: FUN_004534D0(&local,4) read → if (local != 0x4B4F4C42)（＝'BLOK' ESM block シグネチャ）→ error \"LoadGame Buffer error: Block Header is incorrect in file %s on line %i. Current version is %i\" with \"..\\TES Shared\\TESActorBaseData.cpp\" line 0x678 → 実文字列で特定。後続: iVar9=[DAT_00b33b00+0x14]／FUN_004534D0(&local,2)／if (param_2 & 0x10) flag 分岐 [確定(decompiled)]。DAT_00b33b00＝LoadGame コンテキスト [推定高]。[確定(decompiled)] V-450-2 FUN_005EAD00（AV fetch 実体）: float10 __thiscall(int *self, int index): if ((index-8 < 4) && (self == DAT_00b333C4)) → FUN_005E2210(index,…)（Player 専用パス）→ AV index 8..11（Health/Magicka/Fatigue/Encumbrance）を Player のとき特別扱いする AV 値取得 fn [確定]。FUN_005F1910→FUN_005EAD00 の実体 [確定]、FUN_005E2210 は残点。[確定相当] V-450-3 0x523F40 identity: mov eax,[esi+8]; shr eax,3; test al,1（flag bit3 gate）→ sub-obj 初期化/reset 連鎖: lea ecx,[esi+0xC4]; call 0x46F020／[esi+0x44]; call 0x469E90／[esi+0x68]; call 0x468590／[esi+0xE4]; call 0x46E4F0／lea ebx,[esi+0x24]（＝TESActorBaseData）; call 0x4676B0／[esi+0x54]; call 0x46FC10 → [esi+0x104] flag 続行 [確定(機械)] → Actor/Character 系の型別 init/reset fn（TESActorBaseData(+0x24) を含む各 subobject を順次初期化）[確定相当]。[確定] docs 欠落件数更新: annotation 欠落独立 fn は計3件（FUN_00511570・0x523F40・v448/449 で確認）全て int3×8 境界 → docs 欠落は「body 内 call 欠落」（v437）と「annotation 完全欠落」の2型 [確定]。残点 V-451-1..3（1=Player[+0x1C] reg-src/pointer 経由書手と +0x32 s16 の語【低】／2=FUN_005E2210（Player AV special path 実体）と DAT_00b33b00（LoadGame context）identity【低】／3=0x523F40 の各 sub-call（0x46F020/469E90/468590/46E4F0/4676B0/46FC10）identity 一覧と flag bit3／[+0x104] の意味【低】）。教訓: ESM ブロックシグネチャ定数（'BLOK' 等の 4-char dword）が fn identity の強い錨（error 文言の .cpp パスとセットで即決）／AV fetch 系 fn は index - N < K の unsigned range テストが index 範囲をそのまま教える／init/reset chain は lea ecx,[esi+off]; call の列で subobject リストが図に出る／mov [reg+disp], imm32 全 .text census が0なら imm 書手即排他→reg-src/indirect へ段階移行／docs 欠落 fn は「annotation 無し＋int3×8 境界」の2条件で機械 census 可能。本日 push: v405→v449（36a52aed）45件＋本件 v450。v 採番 v450 消費（次=v451）。"
+    },
+    {
+      "id": "151-v451-disp-census-2026-11-17",
+      "timestamp": "2026-11-16T22:14:58Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v451",
+        "disp-census",
+        "av-path",
+        "sub-calls"
+      ],
+      "content": "2026-11-17 旧残点群移行第5弾 v451（probe v451_1..3 全3本 EXIT=0）＝V-451-1..3 完遂: 成果物 tmp/re/v451_disp_census_ruling.md・台帳 row427（bak277）・round_verify ALL OK（rows 31..427 / total 313 / done 308 / open 5）・STATE (fu)・ai-todo #151 note。[確定] V-451-1 形式別 census: disp32（imm/reg/lea）＝0 hits（v450/v451a）／disp8 dword store＝239件（no-SIB）＋SIB 追加で合計1602件 [確定]／disp8 byte store＝32件／disp8 lea＝42件 → +0x1C は全 .text で頻出 field（多数 class が持つ ptr field）[確定]。class 選別（owning fn の vtable RTTI が record/actor class）＝2件のみ: FUN_00437F00（.?AVQueuedCharacter@@）／FUN_00437FE0（.?AVQueuedCreature@@）[確定（この手法）] → Player[+0x1C] の書手 fn は特定未達 [未確定]＝残点（vtable store window 外／SIB base+index／sub-object 経由の3候補）。[確定]（否定側）+0x32 imm 書手＝全 .text 1件のみ（FUN_006D5B20）→ reg-src が主、語義は別アプローチ要 [未確定]。[確定(decompiled)] V-451-2 FUN_005E2210: void __thiscall(int *self, int index, float *out0, float *out1): *out0=0.0; *out1=1.0 → switch(index): case 8: virtual+0x284(5)→+0x284(0,…)→FUN_00548020→*out0=(float)（Health 系 float 取得）／case 9: virtual+0x288(0x28) → AV index 8..11 を Player の virtual call 連鎖で float 値化する fn [確定]（v450 FUN_005EAD00 の Player 分岐実体）。[推定高] DAT_00b33b00＝大型 file/load コンテキスト: docs 1018件・[+0x14] ptr／[+0x18] flags（bit15/bit31 mask）／[+0x80/+0x84] ptr 群、FUN_00467CA0（LoadGame）内でも [+0x14] を読む＝同物。[確定] V-451-3 sub-call 6件 signature: FUN_0046F020（L88345 (int,int*)）／FUN_00469E90（L83673 (int,undefined4)）／FUN_00468590（L82050 void(void)）／FUN_0046E4F0（L87849 (int,int*)）／FUN_004676B0（L81252 (int,int*)）／FUN_0046FC10（L88964 (int,int*)）＝sub-obj 単位 reset/load fn 群（int*＝stream/param）、各 subobject 正式名（+0xC4/+0x44/+0x68/+0xE4/+0x54）は未同定＝残点（+0x24＝TESActorBaseData のみ確定）。残点 V-452-1..3（1=Player[+0x1C] 書手別ルート（大きい ctor linear decode／SIB base+index census／読手逆引き）と +0x32 s16 語【低】／2=docs 欠落 fn census 機械化（annotation 無し＋int3×8 の2条件全 .text 適用で総数確定）【低】／3=0x523F40 subobject 正式名（+0xC4/+0x44/+0x68/+0xE4/+0x54）と flag bit3／[+0x104] 意味【低】）。教訓: [reg+disp] census は disp8/disp32/SIB の3形式を必ず揃える（disp32 のみ0 hits＝誤排他・本件 0→1602）→「0 hits」出たら encoding 形式を疑え／大量 hits の絞り込みは owning fn の vtable RTTI が最速 class フィルタ（1602→2・vtable store window 外は取りこぼす）／docs backward annotation は signature 行まで取れる→body 読まず identity 記録可／imm16 store census 1件なら imm 書手非主流と即判断（形式消去法の順序固定）／既知 virtual slot は docs mentions＋machine 呼出の2系統整合確認。本日 push: v405→v450（69d2f2d6）46件＋本件 v451。v 採番 v451 消費（次=v452）。"
     }
   ],
   "metadata": {
-    "totalEntries": 855,
+    "totalEntries": 856,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-16T22:08:57Z",
-    "entry_count": 855,
-    "last_updated": "2026-11-16T22:08:57Z"
+    "lastUpdated": "2026-11-16T22:14:58Z",
+    "entry_count": 856,
+    "last_updated": "2026-11-16T22:14:58Z"
   }
 }
