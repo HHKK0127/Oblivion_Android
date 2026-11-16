@@ -1747,3 +1747,19 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **dispatcher（switch setter 群）を発見すると SET 元 fn 群が E8 caller の完全一致ペアで即構造化される**（pairs は dispatcher の存在証明）／**`[reg+disp8]` 書手 census は imm/reg kind 分け＋毎回 context decode**（`mov word` が dword 表示になる境界ズレ例あり）／**未注記 fn（Ghidra decompiled 未収録）は既知 pattern（`cmp [esi+0xc],7` ゲート）と突合して補完**。
 - **本日 push 累計**: v405 → … → v412 `1cdcb69d` →（本件 v413 を本 commit で push）＝**9裁定**。
 - **次**: **V-413-1【中】（`FUN_00467240/00467320` → "level" 語・v414）** → 残る低優先残点群。supermemory 未登録9件（v405..v413）は MCP 復復待ち。
+
+## 2026-11-16 (ej) — 派生残点第6弾 v414: **`[TESActorBaseData+0xE]`＝level [確定(命令)]**・**`Player[+0x24]` クラス＝`.?AVTESActorBaseData@@` [確定(RTTI)]**（V-413-1／V-412-1／V-412-3 を一挙解決）
+
+- **成果物**: `tmp/re/v414_actorbasedata_ruling.md`（probe **v414_1..v414_3 の3本全 EXIT=0**）。台帳 **row390（bak240）**・`round_verify` **ALL OK**（rows 31..390 / total 276 / done 271 / open 5）。ai-todo **#151 に note**。v 採番 **v414 消費（次=v415）**。
+- **① [確定(命令)] level 判定**: `FUN_004677F0` が返す `[TESActorBaseData+0xE]`(ushort・**既定1**・min clamp1) ＝ **"level"** — **決定打＝`FUN_0066C200`（levelup 適用）内の increment**: `ecx = base+0x24 → call 0x4677F0（v 取得）→ **`add ax,1`** → push → set（machine `0x66C45E-0x66C47B`）＝「level を +1 して保存」＝**level-up の機械的証明**。補証: script opcode `FUN_0050CD30` が引数をそのまま set（`0x50CE06-0x50CE09`）／`0x50AAA0` fn（actor 転送）が **GET→新へ SET（level コピー）→ `FUN_005222D0` 再計算**（`0x50AB5E-0x50AB73`）／reset 既定1＋`FUN_004677F0` 内 `<1→1` clamp。
+- **② [確定(RTTI)] `Player[+0x24]` のクラス ＝ `.?AVTESActorBaseData@@`** — ctor `FUN_00467320` が `[eax]=&PTR_LAB_00A3B654` を設定 → vtable `0xA3B654` の RTTI で即同定（**V-412-3 完遂**）。
+- **③ [確定] TESActorBaseData family**:
+  - **reset `FUN_00467240`**: `[+4]=0, [+8]=50, [+0xA]=50, [+0xC]=0, [+0xE]=1, [+0x10]=0, [+0x12]=0, [+0x14]=0`（`mov edx,0x32` 実測）
+  - **ctor `FUN_00467320`**: vtable 0xA3B654 ＋同一 defaults（L80988-81003）
+  - **u16 setter 4本（同型: arg→store→`virtual+0x50(0x10)` 通知）**: `[+8]`＝`FUN_00467290`（AV index9・初50）／`[+0xA]`＝`FUN_004672B0`（index10・初50）／**`[+0xC]`＝`FUN_004672D0`（初0）**／**`[+0xE]`＝`FUN_00467270`（level・初1）**
+- **④ [確定] `[+0xE]` setter の全 callers**: **E8=3・data refs 0** — `0x50AB6A`（actor 転送 fn）／`0x50CE09`（script opcode）／`0x66C47B`（levelup 適用）。
+- **（副次）[推定高]** `[+8]`/`[+0xA]`（AV index9/10・初50/50）＝**Health/Magicka 系** — EXE 根拠は「初値50＋index9/10」のみで語の裏取りは残点。
+- **残点 V-414-1..3**: 1=AV index9/10/`[+0xC]` の語の裏取り【低】／2=`FUN_004677F0` の `[+4]>>7` flag と `[0xB333C4] virtual+0x170 → [+0x32]` 加算（PC base 修正）の意味【低】／3=V-413-2 引継ぎ（未注記2 fn と dispatcher `case 0x0B+`）【低】。
+- **教訓**: **reset/ctor の「既定値実測」と「increment 操作（`add ax,1`→set）」のセットでフィールドの語を機械的確定**（既定1＋min clamp1＋+1 increment ＝ level の三証拠）／**ctor が設定する vtable の RTTI が埋め込みオブジェクトのクラスを即同定**／**u16 setter family は連番 fn 帯の線形 decode で全数化**。
+- **本日 push 累計**: v405 → … → v413 `c94cd370` →（本件 v414 を本 commit で push）＝**10裁定**。
+- **次**: 低優先残点群（V-414-1..3／V-400系／V-405系等）を v415+ で消化。supermemory 未登録10件（v405..v414）は MCP 復復待ち。

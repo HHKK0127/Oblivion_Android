@@ -116,6 +116,13 @@
   > V-412-1 の level 語＝[未確定]（手がかり強化）: E8=15（TESClass 帯 0x51Cxxx 集中）・使用形＝flag→clamp<1→1→比較と(v-1)・[+0xE] の書手は dispatcher に不在 → 候補＝FUN_00467240/FUN_00467320（0x4672xx setter 同族）＝V-413-1。V-412-3（vptr）＝ctor に store なし→[未確定]継続。[確定] FUN_0046B250＝map Lookup helper。
   > 残点 V-413-1【中】FUN_00467240/00467320 identity→level 語確定／V-413-2【低】未注記2 fn と dispatcher case0x0B+／V-413-3【低】Player[+0x24] vptr 設定元。
   > 教訓: dispatcher（switch setter群）の発見で SET 元が E8 caller 完全一致ペアとして即構造化／[reg+disp8] 書手 census は kind 分け＋毎回 context decode（mov word の dword 表示＝境界ズレ）／未注記 fn は既知 pattern 突合で補完。v 採番 v413 消費（次=v414）。
+  > 【派生残点第6弾 v414 — 3残点一挙解決】probe v414_1..v414_3 全 EXIT=0。成果物 tmp/re/v414_actorbasedata_ruling.md・台帳 row390（bak240）・round_verify ALL OK（rows 31..390 / total 276 / done 271 / open 5）。
+  > ①[確定(命令)] **[TESActorBaseData+0xE]（ushort・既定1・min clamp1）＝level** — 決定打＝FUN_0066C200（levelup 適用）内の `ecx=base+0x24 → call 0x4677F0(v取得) → add ax,1 → set`（machine 0x66C45E-0x66C47B）＝「level を +1 して保存」の機械的証明。補証: script opcode FUN_0050CD30 が引数を直接 set（0x50CE06-09）／0x50AAA0 fn が GET→SET（actor 転送コピー）→FUN_005222D0 再計算／reset 既定1＋<1→1 clamp。
+  > ②[確定(RTTI)] **Player[+0x24] のクラス＝.?AVTESActorBaseData@@** — ctor FUN_00467320 の `[eax]=&PTR_LAB_00A3B654` → RTTI 即同定（V-412-3 完遂）。
+  > ③[確定] family: reset FUN_00467240（50/50/0/1/0/0/0）／ctor FUN_00467320（vtable+同一 defaults）／u16 setter 4本同型（arg→store→virtual+0x50 通知）: [+8]=FUN_00467290（AV index9・初50）／[+0xA]=FUN_004672B0（index10・初50）／[+0xC]=FUN_004672D0（初0）／[+0xE]=FUN_00467270（level・初1）。[+0xE] setter の E8=3・data refs 0: 0x50AB6A（actor 転送）/0x50CE09（opcode）/0x66C47B（levelup）。
+  > ④（副次）[+8]/[+0xA] 既定50/50＝AV index9/10 [推定高: Health/Magicka 系]（EXE 根拠は初値50＋index9/10 のみ）。
+  > 残点 V-414-1【低】AV index9/10/0xC の語の裏取り／V-414-2【低】[+4]>>7 flag と [0xB333C4]→[+0x32] 加算の意味／V-413-2 引継ぎ【低】。
+  > 教訓: reset/ctor の既定値実測と increment 操作（add ax,1→set）のセットで語を機械的確定（既定1＋min1＋+1＝level 三証拠）／ctor の vptr 設定を RTTI 即同定／setter family は連番 fn 帯の線形 decode で全数化。v 採番 v414 消費（次=v415）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1022,6 +1029,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1045,4 +1057,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-16 19:44:16
+**ai-todo** | Last Updated: 2026-11-16 19:52:08

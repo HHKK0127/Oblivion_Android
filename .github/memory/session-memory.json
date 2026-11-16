@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-16T10:46:00Z",
+  "lastUpdated": "2026-11-16T10:53:01Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11828,14 +11828,29 @@
         "actor-value"
       ],
       "content": "2026-11-16 派生残点第5弾 v413（中間裁定・probe v413_1..4 全4本 EXIT=0）成果物 tmp/re/v413_av_dispatch_ruling.md・台帳 row389（bak239）・round_verify ALL OK（rows 31..389 / total 275 / done 270 / open 5）・STATE (ei)・ai-todo #151 note。[確定(命令)] FUN_00519F50(index,value)＝actor value 一括 SET dispatcher: case0-7→FUN_00468AF0(attr byte)/case8→FUN_00519C50/case9→[Player[+0x24]+8] SET/case10→[+0xA] SET/case0x0B+続行 → Player[+0x24]＝actor value index9/10 の格納先。[確定] SET 元＝4 fn 完全一致ペア（両 setter の E8 caller）: FUN_00511570（未注記）/FUN_00519F50（dispatcher）/FUN_005222D0/0x523F40（未注記・cmp [esi+0xc],7 formType7 ゲート＝v411 bVar18 同型）。V-412-1 level 語=[未確定]（手がかり強化）: E8=15（TESClass 帯 0x51Cxxx 集中）・使用形＝flag→clamp<1→1→比較(sVar5<sVar4)と(v-1)・[Player[+0x24]+0xE] の書手は dispatcher に不在 → 候補＝FUN_00467240/FUN_00467320（0x4672xx setter 同族・word [reg+0xE] store）＝V-413-1。V-412-3=[未確定]（Player ctor 0x66A740..AD40 に [+0x24] vptr store なし→型別初期化 fn）＝V-413-3。[確定] FUN_0046B250＝map Lookup helper（FUN_0055E000→found?value:0・L84743-52）。残点 V-413-1..3（1=FUN_00467240/00467320 identity→level 語【中】/2=未注記2 fn と dispatcher case0x0B+【低】/3=Player[+0x24] vptr 設定元【低】）。教訓: dispatcher（switch setter群）の発見で SET 元が E8 caller 完全一致ペアとして即構造化／[reg+disp8] 書手 census は kind 分け＋毎回 context decode（mov word の dword 表示＝境界ズレ棄却）／未注記 fn は既知 pattern（cmp ゲート）突合で補完。本日 push: v405→v412（1cdcb69d）8件＋本件 v413。v 採番 v413 消費（次=v414）。"
+    },
+    {
+      "id": "151-v414-actorbasedata-level-2026-11-16",
+      "timestamp": "2026-11-16T10:53:01Z",
+      "priority": "medium",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v414",
+        "level",
+        "tes-actor-base-data"
+      ],
+      "content": "2026-11-16 派生残点第6弾 v414（probe v414_1..3 全3本 EXIT=0）＝3残点一挙解決: V-413-1/V-412-1/V-412-3。成果物 tmp/re/v414_actorbasedata_ruling.md・台帳 row390（bak240）・round_verify ALL OK（rows 31..390 / total 276 / done 271 / open 5）・STATE (ej)・ai-todo #151 note。[確定(命令)] [TESActorBaseData+0xE]（ushort・既定1・min clamp1）＝level — 決定打＝FUN_0066C200（levelup 適用）内の `ecx=base+0x24→call 0x4677F0→add ax,1→set`（machine 0x66C45E-0x66C47B）＝level-up increment の機械的証明。補証: script opcode FUN_0050CD30 が引数を直接 set／0x50AAA0 fn が actor 転送時に level GET→SET→FUN_005222D0 再計算／reset 既定1＋<1→1 clamp。[確定(RTTI)] Player[+0x24] のクラス＝.?AVTESActorBaseData@@（ctor FUN_00467320 の [eax]=&PTR_LAB_00A3B654 → vtable 0xA3B654 RTTI）。[確定] family: reset FUN_00467240（50/50/0/1/0/0/0）／ctor FUN_00467320（同 defaults）／u16 setter 4本同型（arg→store→virtual+0x50 通知）: [+8]=FUN_00467290（AV index9・初50）/[+0xA]=FUN_004672B0（index10・初50）/[+0xC]=FUN_004672D0（初0）/[+0xE]=FUN_00467270（level・初1）。[+0xE] setter E8=3・data refs 0: 0x50AB6A/0x50CE09/0x66C47B。[推定高] [+8]/[+0xA] 既定50/50＝AV index9/10＝Health/Magicka 系（根拠は初値50＋index のみ）。残点 V-414-1..3（1=AV index9/10/0xC 語の裏取り【低】/2=[+4]>>7 flag と [0xB333C4]→[+0x32] 加算【低】/3=V-413-2 引継ぎ【低】）。教訓: reset/ctor の既定値実測と increment 操作（add ax,1→set）のセットで語を機械的確定（既定1＋min1＋+1＝level 三証拠）／ctor の vptr 設定を RTTI 即同定／setter family は連番 fn 帯の線形 decode 全数化。本日 push: v405→v413（c94cd370）9件＋本件 v414。v 採番 v414 消費（次=v415）。"
     }
   ],
   "metadata": {
-    "totalEntries": 818,
+    "totalEntries": 819,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-16T10:46:00Z",
-    "entry_count": 818,
-    "last_updated": "2026-11-16T10:46:00Z"
+    "lastUpdated": "2026-11-16T10:53:01Z",
+    "entry_count": 819,
+    "last_updated": "2026-11-16T10:53:01Z"
   }
 }
