@@ -257,6 +257,15 @@
   > ④[確定] FUN_004FCA30 の consumers（E8=3）: FUN_004FAB20／FUN_00516830／0x51703E（head 未注記）。find_head(0x4FCA7A)=0x4FCA10 は annotation 境界誤り（linear が 0x4FCA6F ret → 0x4FCA70 push の独立 fn 開始を明示）＝find_head 境界誤り4件目。
   > 残点 V-433-1..3（1=0xB0B420/0xB0C8C0 レコード内容実読（name ptr 群＝opcode 名と2帯の id 空間の語）【低】／2=FUN_004FCA70 の callers（parser のどの pass）と found 分岐（0x4FCB2B）以降の処理【低】／3=keyword table 終端（id 連番どこまでか・0x00..0x0F 帯＝V-431-2 引き継ぎ）【低】）。
   > 教訓: lea a×5→lea b×8 の連鎖は「×40＝stride」の即読パターン（テーブル stride と id 変換式が1組で表れる）／cursor 定数＋[cursor-4] 読み＝「レコード0起点の linear 検索」の定型（cell+73 でも [esi-4] が rec0）／annotation 境界の find_head 誤りは linear decode が訂正（4件目）。v 採番 v432 消費（次=v433）。
+  > 【派生残点第25弾 v433 — V-433-1..3 完遂】probe v433_1..v433_3 全3本 EXIT=0。成果物 tmp/re/v433_table_records_ruling.md・台帳 row409（bak259）・round_verify ALL OK（rows 31..409 / total 295 / done 290 / open 5）。
+  > ①[確定] 0xB0B420（id 0x100..0x182）＝console command テーブル131件（rec0..rec130）— 構造 {name, alias, id, help 文言, +0x10 flags, +0x14 ptr, +0x18 handler fn, +0x1C fn, 0, 0}（stride0x28）。実読: rec0='Show'/'TST'/'Show global scripts and variables.'/handler 0x502210・rec1='ShowVars'/'SV'・rec2='ShowQuestVars'/'SQV'・rec130='ClearFaceGenModelData'/'CFG'（id 0x182 最終）。
+  > ②[確定] 0xB0C8C0（id 0x1000..0x1170）＝script function テーブル369件（rec0..rec368）: rec0='MessageBox'（0x513280/0x500130）・rec1='GetDistance'（+0x20=0x4F43C0）・rec368='ClearOwnership'（id 0x1170 最終）。
+  > ③[確定] 開発者 sentinel（実文字列）: console rec131（0xB0C898）＝'ADD NEW CONSOLE COMMANDS BEFORE THIS ONE!!!'（id 0x183）／function rec369（0xB10268）＝'ADD NEW FUNCTIONS BEFORE THIS ONE!!!'（id 0x1171）— range check（コード）と sentinel（データ）の2系統で id 範囲を相互検証（131件/369件完全一致）。
+  > ④[確定] keyword table（0xB0A2C8）全16件実読（rec16 name ptr=0 で終端）: Begin(0x10)/End(0x11)/Short(0x12)/Long(0x13)/Float(0x14)/Set(0x15)/If(0x16)/Else(0x17)/ElseIf(0x18)/EndIf(0x19)/While_DEPRECATED(0x1A)/EndWhile_DEPRECATED(0x1B)/.(0x1C)/ScriptName(0x1D)/Return(0x1E)/Reference(0x1F)（+0x10/+0x14 全件0）＝TES4 script キーワード/型トークン完全表。While_DEPRECATED＝Oblivion 廃止 while の痕跡。[確定(否定側)] id 0x00..0x0F は keyword table に存在しない＝別の enum 帯。
+  > ⑤[確定] FUN_004FCA70 callers＝E8 2件とも FUN_004FD7C0（script parser・L197009- tokenizer FUN_004fcbd0＋" 文字列リテラル判定ループ）。found 分岐（0x4FCB2B）: lea edx,[ebx+ebx*4]（i×5）→ mov byte [edi+0x204],0x58（type tag）→ mov eax,[edx*8+0xB0A2D0]（rec[i].id）→ mov [edi+0x208],eax → return1 ＝ トークン構造体へ type=0x58＋keyword id を格納。未発見は xor al,al。
+  > ⑥[確定] FUN_004FD7C0 callers: 自己再帰 0x4FDBC7／FUN_004FDE30／FUN_004FF4C0×2／unannotated×4 — FUN_004FDE30 は console/function table の +0x1C に全件共通格納＝共通 command 実行ラッパー。[確定] 3層 id 空間: keyword(0x10..0x1F) < console(0x100..0x182) < function(0x1000..0x1170)。rec370 以降は別構造（'Left Foot'/'Sneak'/'Idle'＝idle 名 [推定高]）。
+  > 残点 V-434-1..3（1=id 0x00..0x0F 帯の正体（keyword 外の enum 所有者）【低】／2=rec370 以降の idle animation 名テーブル構造と consumer【低】／3=FUN_004FD7C0 の unannotated callers 4件（parser 上位＝script 読込/コンパイラのどの pass）【低】）。
+  > 教訓: テーブル境界は sentinel レコード（ADD NEW...BEFORE THIS ONE!!!）が実文字列で残る—range check（コード）と sentinel（データ）の2系統で id 範囲を相互検証／レコード実読は name/alias/help の3点セットで役割即決（alias TST/SV/SQV＝console 短縮名）／隣接 walk は name ptr が string でも次構造の name が string の場合がある→id 範囲との突合が必須（rec370 以降で walk 誤続の事例）。v 採番 v433 消費（次=v434）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1163,11 +1172,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1191,4 +1195,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 01:29:32
+**ai-todo** | Last Updated: 2026-11-17 01:43:57
