@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-16T16:16:59Z",
+  "lastUpdated": "2026-11-16T16:31:10Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -12099,14 +12099,29 @@
         "keyword"
       ],
       "content": "2026-11-17 派生残点第23弾 v431（probe v431_1・2 全2本 EXIT=0）＝V-431-1 部分解: 成果物 tmp/re/v431_keyword_consumer_ruling.md・台帳 row407（bak257）・round_verify ALL OK（rows 31..407 / total 293 / done 288 / open 5）・STATE (fa)・ai-todo #151 note。[確定]（周辺）'Begin' の .text 消費者＝FUN_006CA440（print/dump fn・V-387-1 対象）内 push 0xA51C1C; call 0x70FB90 — 同 band push リテラル群＝'State'/'ArraySize'/'Weight'/'CycleType'/'Freq'/'Begin'/'End'/'Last'/'Offset'/'Start'/'End'（各 call で format helper へ）＝ NIF ブロック/コントローラ系の float フィールド dump [確定(実文字列)] → FUN_006CA440＝NIF dump/report fn [推定高]（V-387-1 への強い手がかり）。[確定] FUN_0070FB90＝\"%s = %g\" format helper（L553196-553211: strlen→malloc→FUN_006c5d40(buf,n,\"%s = %g\",name,(double)val)）— dump family 第3弾: FUN_0070F910＝\"--- %s ---\"（v418）／FUN_0070FAA0＝\"%s = %hu\"（v419）／FUN_0070FB90＝\"%s = %g\"（本件）。[確定(否定側)] name2（'int'・0xA51C0C）への dword xref＝.data 0xB0A31C（レコード自身）のみ・.text 0件 → コードは直接参照せず base+offset アクセスのみ（v427..430 の index 形と同一）。[未確定] cell+73（0xB0A2CC）の .text 参照＝0x4FCA7A（初回 decode は window 境界で alignment 誤り→head 起点 linear で再計算・FUN_004FCA10（deleting dtor・ret4@0x4FCA2B）の後続帯＝未 decode）。隣接 0x4FCA30 は lea edx,[ecx-0x100]; cmp edx,0x82＝id 範囲 validator（0x100..0x182＝script opcode id 帯 [推定高]）。残点 V-432-1..3（1=cell+73 参照（0x4FCA7A）の fn 特定と用途＋0x4FCA30 validator identity【低】／2=V-387-1 引き継ぎ（FUN_006CA440 正式名の最終確定と dump 対象ブロック種）【低】／3=keyword registry の id→keyword lookup pass（parser）と id 0x00..0x0F 帯【低】）。教訓: 文字列リテラルの consumer は「1件 xref」から「同 band の push 列列挙」へ広げる（field 名群が fn 役割を一撃で語る）／dump/format helper は系列でそろえる／xref 位置の decimal→hex 変換と head 起点 linear decode をセットで。本日 push: v405→v430（80341084）26件＋本件 v431。v 採番 v431 消費（次=v432）。"
+    },
+    {
+      "id": "151-v432-keyword-lookup-2026-11-17",
+      "timestamp": "2026-11-16T16:31:10Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v432",
+        "keyword-registry",
+        "opcode-table"
+      ],
+      "content": "2026-11-17 派生残点第24弾 v432（probe v432_1 全 EXIT=0）＝V-432-1 完遂: 成果物 tmp/re/v432_keyword_lookup_ruling.md・台帳 row408（bak258）・round_verify ALL OK（rows 31..408 / total 294 / done 289 / open 5）・STATE (fb)・ai-todo #151 note。[確定] cell+73（0xB0A2CC）の参照 fn＝FUN_004FCA70（head 0x4FCA70・FUN_004fca10 annotation の後続独立 fn）＝ keyword registry の name lookup: mov edi,[esp+0x10]（検索文字列）→ xor ebx,ebx（i=0）→ mov esi,0xB0A2CC（cursor＝cell+73）→ loop: mov eax,[esi-4]（＝rec0.name 0xB0A2C8＝'Begin'）→ push edi; push eax; call 0x98262d（stricmp）→ 一致で je 0x4FCB2B（found）→ 0xB0A2C8 keyword テーブルを name で linear 検索する lookup（v431 の消費者質問に回答）。[確定] FUN_004FCA30＝id→record pointer lookup（stride 0x28 テーブル2帯）: id∈[0x100,0x182]→lea eax,[ecx+ecx*4-0x500]; lea eax,[eax*8+0xB0B420]＝0xB0B420+(id-0x100)×0x28（×5×8=×40=0x28 ✓）／id∈[0x1000,0x1170]→0xB0C8C0+(id-0x1000)×0x28／範囲外は xor eax,eax＝0 → stride0x28 の opcode/keyword レコード table への id 変換 fn（0x100 帯＝script opcode id [推定高]）。[確定] stride-0x28 テーブル3系統: 0xB0A2C8（keyword/type: Begin0x10/End0x11/Short0x12...・name lookup＝FUN_004FCA70）／0xB0B420（id 0x100..0x182＝131件・FUN_004FCA30）／0xB0C8C0（id 0x1000..0x1170＝369件・FUN_004FCA30）。[確定] FUN_004FCA30 の consumers（E8=3）: FUN_004FAB20／FUN_00516830／0x51703E（head 未注記）— opcode id→record の利用側（compiler/VM 帯）。find_head(0x4FCA7A)=0x4FCA10 は annotation 境界誤り（linear が 0x4FCA6F ret → 0x4FCA70 push の独立 fn 開始を明示して訂正）＝find_head 境界誤り4件目。残点 V-433-1..3（1=0xB0B420/0xB0C8C0 レコード内容実読（name ptr 群＝opcode 名と2帯の id 空間の語）【低】／2=FUN_004FCA70 の callers（parser のどの pass）と found 分岐（0x4FCB2B）以降の処理【低】／3=keyword table 終端（id 連番どこまでか・0x00..0x0F 帯＝V-431-2 引き継ぎ）【低】）。教訓: lea a×5→lea b×8 の連鎖は「×40＝stride」の即読パターン（テーブル stride と id 変換式が1組で表れる）／cursor 定数＋[cursor-4] 読み＝「レコード0起点の linear 検索」の定型（cell+73 でも [esi-4] が rec0）／annotation 境界の find_head 誤りは linear decode が訂正（4件目）。本日 push: v405→v431（0862f40f）27件＋本件 v432。v 採番 v432 消費（次=v433）。"
     }
   ],
   "metadata": {
-    "totalEntries": 836,
+    "totalEntries": 837,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-16T16:16:59Z",
-    "entry_count": 836,
-    "last_updated": "2026-11-16T16:16:59Z"
+    "lastUpdated": "2026-11-16T16:31:10Z",
+    "entry_count": 837,
+    "last_updated": "2026-11-16T16:31:10Z"
   }
 }

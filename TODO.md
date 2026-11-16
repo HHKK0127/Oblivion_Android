@@ -250,6 +250,13 @@
   > ④[未確定] cell+73（0xB0A2CC）の .text 参照＝0x4FCA7A（初回 decode は window 境界で alignment 誤り→head 起点 linear で再計算・FUN_004FCA10（deleting dtor・ret4@0x4FCA2B）の後続帯＝未 decode）。隣接 0x4FCA30 は lea edx,[ecx-0x100]; cmp edx,0x82＝id 範囲 validator（0x100..0x182＝script opcode id 帯 [推定高]）。
   > 残点 V-432-1..3（1=cell+73 参照（0x4FCA7A）の fn 特定と用途＋0x4FCA30 validator identity【低】／2=V-387-1 引き継ぎ（FUN_006CA440 正式名の最終確定と dump 対象ブロック種）【低】／3=keyword registry の id→keyword lookup pass（parser）と id 0x00..0x0F 帯【低】）。
   > 教訓: 文字列リテラルの consumer は「1件 xref」から「同 band の push 列挙」へ広げる（field 名群が fn 役割を一撃で語る）／dump/format helper は系列でそろえる（%s=%g・%s=%hu・---%s---）／xref 位置の decimal→hex 変換と head 起点 linear decode をセットで（0x4FCA1A→0x4FCA7A の計算誤りを decode で検出）。v 採番 v431 消費（次=v432）。
+  > 【派生残点第24弾 v432 — V-432-1 完遂】probe v432_1 全 EXIT=0。成果物 tmp/re/v432_keyword_lookup_ruling.md・台帳 row408（bak258）・round_verify ALL OK（rows 31..408 / total 294 / done 289 / open 5）。
+  > ①[確定] cell+73（0xB0A2CC）の参照 fn＝FUN_004FCA70（head 0x4FCA70・FUN_004fca10 annotation の後続独立 fn）＝ keyword registry の name lookup: mov edi,[esp+0x10]（検索文字列）→ xor ebx,ebx（i=0）→ mov esi,0xB0A2CC（cursor＝cell+73）→ loop: mov eax,[esi-4]（＝rec0.name 0xB0A2C8＝'Begin'）→ push edi; push eax; call 0x98262d（stricmp）→ 一致で je 0x4FCB2B（found）→ 0xB0A2C8 keyword テーブルを name で linear 検索する lookup（v431 の消費者質問に回答）。
+  > ②[確定] FUN_004FCA30＝id→record pointer lookup（stride 0x28 テーブル2帯）: id∈[0x100,0x182]→lea eax,[ecx+ecx*4-0x500]; lea eax,[eax*8+0xB0B420]＝0xB0B420+(id-0x100)×0x28（×5×8=×40=0x28 ✓）／id∈[0x1000,0x1170]→0xB0C8C0+(id-0x1000)×0x28／範囲外は xor eax,eax＝0 → stride0x28 の opcode/keyword レコード table への id 変換 fn（0x100 帯＝script opcode id [推定高]）。
+  > ③[確定] stride-0x28 テーブル3系統: 0xB0A2C8（keyword/type: Begin0x10/End0x11/Short0x12...・name lookup＝FUN_004FCA70）／0xB0B420（id 0x100..0x182＝131件・FUN_004FCA30）／0xB0C8C0（id 0x1000..0x1170＝369件・FUN_004FCA30）。
+  > ④[確定] FUN_004FCA30 の consumers（E8=3）: FUN_004FAB20／FUN_00516830／0x51703E（head 未注記）。find_head(0x4FCA7A)=0x4FCA10 は annotation 境界誤り（linear が 0x4FCA6F ret → 0x4FCA70 push の独立 fn 開始を明示）＝find_head 境界誤り4件目。
+  > 残点 V-433-1..3（1=0xB0B420/0xB0C8C0 レコード内容実読（name ptr 群＝opcode 名と2帯の id 空間の語）【低】／2=FUN_004FCA70 の callers（parser のどの pass）と found 分岐（0x4FCB2B）以降の処理【低】／3=keyword table 終端（id 連番どこまでか・0x00..0x0F 帯＝V-431-2 引き継ぎ）【低】）。
+  > 教訓: lea a×5→lea b×8 の連鎖は「×40＝stride」の即読パターン（テーブル stride と id 変換式が1組で表れる）／cursor 定数＋[cursor-4] 読み＝「レコード0起点の linear 検索」の定型（cell+73 でも [esi-4] が rec0）／annotation 境界の find_head 誤りは linear decode が訂正（4件目）。v 採番 v432 消費（次=v433）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1156,6 +1163,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1179,4 +1191,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 01:14:28
+**ai-todo** | Last Updated: 2026-11-17 01:29:32

@@ -2004,3 +2004,28 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **文字列リテラルの consumer は「1件 xref」から「同 band の push 列挙」へ広げる**（field 名群が fn 役割を一撃で語る）／**dump/format helper は系列でそろえる**（`%s=%g`・`%s=%hu`・`---%s---`）／**xref 位置の decimal→hex 変換と head 起点 linear decode をセットで**（`0x4FCA1A`→`0x4FCA7A` の計算誤りを decode で検出）。
 - **本日 push 累計（セッション）**: v405 → … → v430 `80341084` →（本件 v431 を本 commit で push）＝**27裁定**。
 - **次**: 残る低優先残点群（V-432-1..3／V-414-2..3／V-413-2／V-415-2 ほか）を v432+ で消化。supermemory 未登録27件（v405..v431）は MCP 復復待ち。
+
+## 2026-11-17 (fb) — 派生残点第24弾 v432（V-432-1 完遂）: **`FUN_004FCA70`＝keyword registry name lookup（cursor `0xB0A2CC`→`[esi-4]`＝rec0 'Begin'）[確定]**・**`FUN_004FCA30`＝id→record lookup（`0xB0B420`/`0xB0C8C0`・stride0x28）[確定]**・**stride-0x28 テーブル3系統 [確定]**
+
+- **成果物**: `tmp/re/v432_keyword_lookup_ruling.md`（probe **v432_1 全 EXIT=0**）。台帳 **row408（bak258）**・`round_verify` **ALL OK**（rows 31..408 / total 294 / done 289 / open 5）。ai-todo **#151 に note**。v 採番 **v432 消費（次=v433）**。
+- **① [確定] cell+73（`0xB0A2CC`）の参照 fn ＝ `FUN_004FCA70`（head `0x4FCA70`・`FUN_004fca10` annotation の後続独立 fn）＝ keyword registry の name lookup**:
+  ```
+  4FCA70: push ebx/esi/edi
+  4FCA73: mov edi, [esp+0x10]        ; 検索文字列
+  4FCA77: xor ebx, ebx               ; i = 0
+  4FCA79: mov esi, 0xb0a2cc          ; cursor = cell+73
+  loop:
+  4FCA80: mov eax, [esi - 4]         ; rec0.name = [0xB0A2C8] = 'Begin'
+  4FCA83: push edi / push eax
+  4FCA85: call 0x98262d              ; stricmp(rec_name, search)
+  4FCA8D: je 0x4fcb2b                ; found
+  ```
+  → **`0xB0A2C8` keyword テーブルを name で linear 検索する lookup [確定]**（＝v431 の消費者質問に回答）。
+- **② [確定] `FUN_004FCA30` ＝ id→record pointer lookup（stride `0x28` テーブル2帯）**: `id∈[0x100,0x182]` → **`lea eax,[ecx+ecx*4-0x500]; lea eax,[eax*8+0xB0B420]` ＝ `0xB0B420 + (id-0x100)×0x28`**（`×5×8=×40=0x28` ✓）／`id∈[0x1000,0x1170]` → **`0xB0C8C0 + (id-0x1000)×0x28`**／範囲外は **`xor eax,eax`＝0** → **stride0x28 の opcode/keyword レコード table への id 変換 fn [確定]（0x100 帯＝script opcode id [推定高]）**。
+- **③ [確定] stride-0x28 テーブル3系統**: `0xB0A2C8`（**keyword/type**: `Begin`0x10/`End`0x11/`Short`0x12...・name lookup＝`FUN_004FCA70`）／`0xB0B420`（id `0x100..0x182`＝131件・`FUN_004FCA30`）／`0xB0C8C0`（id `0x1000..0x1170`＝369件・`FUN_004FCA30`）。
+- **④ [確定] `FUN_004FCA30` の consumers（E8=3）**: `FUN_004FAB20`／`FUN_00516830`／`0x51703E`（head 未注記）— opcode id→record の利用側（compiler/VM 帯）。
+- **find_head 境界誤り4件目**: `find_head(0x4FCA7A)=0x4FCA10` は annotation 境界誤り（linear decode が `0x4FCA6F ret` → `0x4FCA70 push` の独立 fn 開始を明示して訂正）。
+- **残点 V-433-1..3**: 1=`0xB0B420`/`0xB0C8C0` のレコード内容実読（name ptr 群＝opcode 名と2帯の id 空間の語）【低】／2=`FUN_004FCA70` の callers（parser のどの pass）と found 分岐（`0x4FCB2B`）以降の処理【低】／3=keyword table 終端（id 連番どこまでか・`0x00..0x0F` 帯＝V-431-2 引き継ぎ）【低】。
+- **教訓**: **`lea a×5`→`lea b×8` の連鎖は「×40＝stride」の即読パターン**（テーブル stride と id 変換式が1組で表れる）／**cursor 定数＋`[cursor-4]` 読み＝「レコード0起点の linear 検索」の定型**（cell+73 でも `[esi-4]` が rec0）／**annotation 境界の find_head 誤りは linear decode が訂正する（4件目）**。
+- **本日 push 累計（セッション）**: v405 → … → v431 `0862f40f` →（本件 v432 を本 commit で push）＝**28裁定**。
+- **次**: 残る低優先残点群（V-433-1..3／V-414-2..3／V-413-2／V-415-2 ほか）を v433+ で消化。supermemory 未登録28件（v405..v432）は MCP 復復待ち。
