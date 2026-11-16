@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-16T21:24:54Z",
+  "lastUpdated": "2026-11-16T21:29:24Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -12268,14 +12268,30 @@
         "esp-5c"
       ],
       "content": "2026-11-17 派生残点第34弾 v442（probe v442_1..3 全3本 EXIT=0）＝V-442-1..3 完遂: 成果物 tmp/re/v442_allowlist_ruling.md・台帳 row418（bak268）・round_verify ALL OK（rows 31..418 / total 304 / done 299 / open 5）・STATE (fl)・ai-todo #151 note。[確定] V-442-1 0x23 FormType＝TESNPC（expanded window -0x90＋denylist 拡張で解決・switch 外と整合）。[未確定] 0x19/0x28（switch set 内2値）は masked 継続（noise TESIcon と window 共存・fn head からの ctor 直接 decode が別法として要）。[確定] FUN_004fab20 許可リスト＝{TESFaction(0x06), TESNPC(0x23)}: machine 4FB168 movzx ecx,byte[edi+4]; cmp ecx,6; je ok; cmp ecx,0x23; jne fail → byte[obj+4] ∈ {TESFaction, TESNPC} のみ許可、否则 fail [確定(命令)]、4FB183 cmp byte[eax+4],0x43（EffectShader 判定・別 gate）。[確定] FUN_004fab20 は compiled script の char-opcode decode/実行 fn [確定(decompiled)]（L194461 switch(cVar4){case 'G':case 'Z':case 'r':...}＋FUN_004fa9c0(short,…) 呼出し）→ 許可リストはその中の「Faction/NPC のみ受容する parameter 検証」[推定高]（どの opcode case か [未確定]＝残点）。[確定] V-442-2 flag-B chain root FUN_0056a3b0＝条件比較 evaluator [確定(decompiled)]: L269931 undefined2 FUN_0056a3b0(undefined4 op, float, float)／switch(op): case0 if(param_3!=param_2) return 0/case1 反転/case2 <=/case3 < …＝比較演算子実装。chain FUN_0056a3b0 --call@0x56A464--> FUN_0056ad60 --call@0x56ADAC--> FUN_0056b190（flag B getter）[確定]、比較評価時に type-B flag を読む＝条件式の type 検証 [推定高]。[未確定] FUN_0056b220/2e0 の callers は未調査＝残点。[部分確定] V-442-3 docs census unconfirmed 3159 の切り分け: 末尾 byte histogram＝0xFF=1859/0x00=1214（99%+）・jcc rel32（end-2=0x0F）は0件・他は≤10件 → non-ret 境界の大半は indirect jmp/call（FF..）か disp32 末尾0x00＝indirect-jmp tail/switch 表リレー [推定高]。ret-confirmed 3038 は下限として堅い [確定]、non-ret 3159 は tail-jmp epilogue と switch case チャンク padding の混在 [推定]（機械分離は残点）→ 欠落下限3038／上限6197 レンジ維持。[部分確定] V-442-3 [esp+0x5c]（v439 訂正1件含む）: (i) FUN_00404fd0 全 body 完読（L4119-4136）＝uint(ulong* p): u16@+4==0xffff なら strlen(*p) 戻り、否则 u16 戻り＝string length getter・読みのみ [確定] → v439 の「408FCF は leacall fill」記述を訂正（書かない）。(ii) 書くのは direct 3件（407CBA edx／407E5B ecx／408F72 eax=0）＋ dtor 1件（409027→FUN_00402da0: *p=0/+6=0/+4=0 ゼロ化）＝ fill 点5件・非ゼロは direct 3件のみ [確定]。(iii) CFG: [0x409E80,0x40A29D) への branch targets 42件、nearest 0x40A262 から 0x40A29D まで [esp+0x5c] 触れず＝block 継承 [確定]（非ゼロ経路は 407CBA/407E5B のどちらか [確定]・到達 path 決定は [未確定]＝残点）。残点 V-443-1..3（1=0x19/0x28 FormType（fn head ctor 直接 decode）と許可リストの所属 opcode case【低】／2=FUN_0056b220/2e0 の callers と FUN_0056ad60 呼出の case【低】／3=[esp+0x5c] 非ゼロ経路 CFG と docs census non-ret 3159 の機械分離【低】）。教訓: denoise フィルタは改善しても masked は残る（window 拡大で1件解消時点で別法を次 probe 第一歩に明記）／許可リスト等の即値は既存の49件 FormType 表との突合で1手即決／fn identity は docs body の char-opcode switch（case 'G'）実読が最速／census unconfirmed は末尾 byte histogram＋0x0F end-2 検査で機械分離（jcc rel32 ゼロの否定側も記録）／「A が slot に書くか」は decompiled 全 body の return の向きで判定（lea→call を fill と決めつけると訂正発生＝v439 の教訓）。本日 push: v405→v441（309c0c1c）37件＋本件 v442。v 採番 v442 消費（次=v443）。"
+    },
+    {
+      "id": "151-v443-formtype14-2026-11-17",
+      "timestamp": "2026-11-16T21:29:24Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v443",
+        "formtype",
+        "compiler-chain",
+        "esp-5c"
+      ],
+      "content": "2026-11-17 派生残点第35弾 v443（probe v443_1..2 全2本 EXIT=0）＝V-443-1..3 完遂: 成果物 tmp/re/v443_formtype14_ruling.md・台帳 row419（bak269）・round_verify ALL OK（rows 31..419 / total 305 / done 300 / open 5）・STATE (fm)・ai-todo #151 note。[確定] V-443-1 0x19/0x28 FormType を fn-head 直接法で解決: 0x19 hit @0x419993（head FUN_004198d0）→ .?AVIngredientItem@@（INGR）／0x28 hit @0x412C83（head FUN_00412bc0）→ .?AVAlchemyItem@@（ALCH）— 他 hit（0x429E26/0x42A304/0x6B3805）は class None（ExtraData ctor 系で無関係）。→ FUN_00469520 の switch 14 値すべての FormType が 14/14 確定（v441 の49件表に2件追加で51件）・全件 inventory 品目と完全整合 [確定]: {0x13 APPA,0x14 ARMO,0x15 BOOK,0x16 CLOT,0x19 INGR,0x1A LIGH,0x1B MISC,0x21 WEAP,0x22 AMMO,0x26 SLGM,0x27 KEYM,0x28 ALCH,0x2A SGST,0x2B LVLI}。[部分確定] 許可リスト {TESFaction, TESNPC} の所属 case: 許可リスト/0x43 gate は FUN_004fab20 の switch-case target [確定]（jump table 0x4FB3E0..0x4FB3FC が 0x4FB146/0x4FB14C/0x4FB152/0x4FB183/0x4FB1B8/0x4FB206/0x4FB25F/0x4FB30A を指す・0x4FB183＝EffectShader gate・0x4FB152＝許可リスト直前）＋ 0x4FAEDE jcc→0x4FB1A1（flag B==0 時に type==FormType 判定へ合流）[確定]。table base の imm32 ref は0件（SIB/基底別形式）→ case index 特定は [未確定]＝残点。[確定] V-443-2 callers chain: FUN_0056b220 ← E8 2件とも FUN_0056b2e0（0x56B52F/0x56B5C3）／FUN_0056b2e0 ← E8 1件 FUN_0056ae00（0x56AE72）→ chain FUN_0056ae00→FUN_0056b2e0（flag B consumer）→FUN_0056b220 [確定]。FUN_0056ae00 の decompiled identity は [未確定]＝残点。FUN_0056ad60 呼出の case（FUN_0056a3b0 内 0x56A464 の所属 switch-case）は未特定＝残点継続。[部分確定] V-443-3 [esp+0x5c] 非ゼロ経路: write の block entry＝0x407CBA の nearest branch target 0x407CB4／0x407E5B の nearest 0x407E47（0x407E4D call 直後）→ 非ゼロ経路はこの2ブロックのうち1つ [確定]、到達条件（predicate）は shallow decode に留まり [未確定]＝残点。[未確定] docs census non-ret 3159 の機械分離は未着手（v442 histogram 結果 0xFF=1859/0x00=1214・jcc32=0 維持）。残点 V-444-1..3（1=許可リスト case の jump table index 特定（table base ref を SIB byte-pattern 探索）と FUN_0056ae00 の identity【低】／2=FUN_0056ad60 呼出の case と [esp+0x5c] 非ゼロ経路の到達条件（0x407CB4/0x407E47 以降 predicate 完全 decode）【低】／3=docs census 機械分離の完成（switch table dwords 並び region の CC 境界を表境界として除外し non-ret 3159 から減算）【低】）。教訓: masked imm は「fn-head 直接法（hit→find_head→fn window の vtable store→RTTI）」が最強（denoise 改善より1手で確定）／switch case index は「jump table dwords が target 範囲にあるか」列挙で表を先に掴み残りは base ref byte-pattern 探索へ（imm32 直 ref 0件でも表は見える）／E8 caller 1〜2件の fn は chain 中段で上下2方向 census すれば端が見える／write の path 特定は nearest preceding branch target を先に決め predicate decode に絞る。本日 push: v405→v442（6e4388ee）38件＋本件 v443。v 採番 v443 消費（次=v444）。"
     }
   ],
   "metadata": {
-    "totalEntries": 847,
+    "totalEntries": 848,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-16T21:24:54Z",
-    "entry_count": 847,
-    "last_updated": "2026-11-16T21:24:54Z"
+    "lastUpdated": "2026-11-16T21:29:24Z",
+    "entry_count": 848,
+    "last_updated": "2026-11-16T21:29:24Z"
   }
 }

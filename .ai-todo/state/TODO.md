@@ -356,6 +356,14 @@
   > ⑥[部分確定] V-442-3 [esp+0x5c]（v439 訂正1件含む）: (i) FUN_00404fd0 全 body 完読＝`uint(ulong* p)`: u16@+4==0xffff なら strlen(*p) 戻り、否则 u16 戻り＝string length getter・読みのみ [確定] → v439 の「408FCF は leacall fill」記述を訂正（書かない）。(ii) 書くのは direct 3件（407CBA/407E5B/408F72=0）＋dtor 1件（409027→FUN_00402da0 ゼロ化）＝fill 点5件・非ゼロは direct 3件のみ [確定]。(iii) CFG: [0x409E80,0x40A29D) への branch targets 42件、nearest 0x40A262 から 0x40A29D まで touch なし＝block 継承 [確定]（非ゼロ経路は 407CBA/407E5B のどちらか・到達 path 決定は [未確定]＝残点）。
   > 残点 V-443-1..3（1=0x19/0x28 FormType（fn head ctor 直接 decode）と許可リストの所属 opcode case【低】／2=FUN_0056b220/2e0 の callers と FUN_0056ad60 呼出の case【低】／3=[esp+0x5c] 非ゼロ経路 CFG と docs census non-ret 3159 の機械分離【低】）。
   > 教訓: denoise フィルタは改善しても masked は残る（window 拡大で1件解消時点で別法を次 probe 第一歩に明記）／許可リスト等の即値は既存の49件 FormType 表との突合で1手即決／fn identity は docs body の char-opcode switch（case 'G'）実読が最速／census unconfirmed は末尾 byte histogram＋0x0F end-2 検査で機械分離（jcc rel32 ゼロの否定側も記録）／「A が slot に書くか」は decompiled 全 body の return の向きで判定（lea→call を fill と決めつけると訂正発生＝v439 の教訓）。v 採番 v442 消費（次=v443）。
+  > 【派生残点第35弾 v443 — V-443-1..3 完遂】probe v443_1..v443_2 全2本 EXIT=0。成果物 tmp/re/v443_formtype14_ruling.md・台帳 row419（bak269）・round_verify ALL OK（rows 31..419 / total 305 / done 300 / open 5）。
+  > ①[確定] V-443-1 0x19/0x28 FormType を fn-head 直接法で解決: 0x19 hit @0x419993（head FUN_004198d0）→ .?AVIngredientItem@@（INGR）／0x28 hit @0x412C83（head FUN_00412bc0）→ .?AVAlchemyItem@@（ALCH）— 他 hit（0x429E26/0x42A304/0x6B3805）は class None（ExtraData ctor 系で無関係）。→ FUN_00469520 の switch 14 値すべての FormType が 14/14 確定（v441 の49件表に2件追加で51件）・全件 inventory 品目と完全整合 [確定]。
+  > ②[部分確定] 許可リスト {TESFaction, TESNPC} の所属 case: 許可リスト/0x43 gate は FUN_004fab20 の switch-case target [確定]（jump table 0x4FB3E0..0x4FB3FC が 0x4FB146/0x4FB14C/0x4FB152/0x4FB183/0x4FB1B8/0x4FB206/0x4FB25F/0x4FB30A を指す・0x4FB183＝EffectShader gate・0x4FB152＝許可リスト直前）＋ 0x4FAEDE jcc→0x4FB1A1（flag B==0 時に type==FormType 判定へ合流）[確定]。table base の imm32 ref は0件（SIB/基底別形式）→ case index 特定は [未確定]＝残点。
+  > ③[確定] V-443-2 callers chain: FUN_0056b220 ← E8 2件とも FUN_0056b2e0（0x56B52F/0x56B5C3）／FUN_0056b2e0 ← E8 1件 FUN_0056ae00（0x56AE72）→ chain FUN_0056ae00→FUN_0056b2e0（flag B consumer）→FUN_0056b220 [確定]。FUN_0056ae00 の decompiled identity は [未確定]＝残点。FUN_0056ad60 呼出の case（FUN_0056a3b0 内 0x56A464 の所属 switch-case）は未特定＝残点継続。
+  > ④[部分確定] V-443-3 [esp+0x5c] 非ゼロ経路: write の block entry＝0x407CBA の nearest branch target 0x407CB4／0x407E5B の nearest 0x407E47（0x407E4D call 直後）→ 非ゼロ経路はこの2ブロックのうち1つ [確定]、到達条件（predicate）は shallow decode に留まり [未確定]＝残点。
+  > ⑤[未確定] docs census non-ret 3159 の機械分離は未着手（v442 histogram 結果 0xFF=1859/0x00=1214・jcc32=0 を維持）。
+  > 残点 V-444-1..3（1=許可リスト case の jump table index 特定（table base ref を SIB byte-pattern 探索）と FUN_0056ae00 の identity【低】／2=FUN_0056ad60 呼出の case と [esp+0x5c] 非ゼロ経路の到達条件（0x407CB4/0x407E47 以降 predicate 完全 decode）【低】／3=docs census 機械分離の完成（switch table dwords 並び region の CC 境界を表境界として除外し non-ret 3159 から減算）【低】）。
+  > 教訓: masked imm は「fn-head 直接法（hit→find_head→fn window の vtable store→RTTI）」が最強（denoise 改善より1手で確定）／switch case index は「jump table dwords が target 範囲にあるか」列挙で表を先に掴み残りは base ref byte-pattern 探索へ（imm32 直 ref 0件でも表は見える）／E8 caller 1〜2件の fn は chain 中段で上下2方向 census すれば端が見える／write の path 特定は nearest preceding branch target を先に決め predicate decode に絞る。v 採番 v443 消費（次=v444）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1262,11 +1270,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1290,4 +1293,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 06:24:16
+**ai-todo** | Last Updated: 2026-11-17 06:28:48
