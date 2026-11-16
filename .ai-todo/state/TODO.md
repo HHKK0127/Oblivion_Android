@@ -318,6 +318,17 @@
   > ⑧[推定高] flat array 先頭10件＝dead data を維持（v437 継続・追加証拠なし）。
   > 残点 V-439-1..3（1=0x03 vs 0x15 の handler 差（table[0]=0x4FDFA7 と table[18]=0x4FE5CC の body 比較）と per-type flag A/B の semantic（{A,B} stride-8 で B=1,2,3... incrementing の意味）【低】／2=docs 完全性の最終裁決（gap>0x800 の N 件サンプリングで per-function 検証し欠落率推定）【低】／3=[esp+0x5c] の path 依存供給元（40A29D への到達 CFG）と flat array 先頭10件の computed-address 到達有無【低】）。
   > 教訓: jump-table census は byte-pattern（FF /4＋SIB scale=2）で機械列挙、cmp bound は jmp 直前から aligned decode（jmp 以降しか見ない v438_2 初版の失敗→v438_3 で訂正）／2段 lea（lea a,[x+x*2]→[base+a*4+4]）＝stride 0x12 のフィールドアクセス即読（v437 の descriptor stride 0x0C＋4 と整合）／隣接 table は base+N×stride の一致で分離証明（「44 entries」誤読を35×4/9×4 で2つに訂正）／docs 完全性は proxy（CC run/ret+CC）では夾在で裁決不能＝per-function 検証のみ確実／stack slot 供給元は write 一覧→最後の write が path 依存と判明したら正直に [未確定]。v 採番 v438 消費（次=v439）。
+  > 【派生残点第31弾 v439 — V-439-1..3 完遂】probe v439_1..v439_8 全8本（v439_8 初回 IndexError→range guard 追加で再実行 EXIT=0、他7本初回 EXIT=0）。成果物 tmp/re/v439_handler_diff_ruling.md・台帳 row415（bak265）・round_verify ALL OK（rows 31..415 / total 301 / done 296 / open 5）。
+  > ①[確定] type 0x03 handler（table[0]=0x4FDFA7）＝FormType byte-set 判定: movzx eax,byte [eax+4] → call 0x469520（FUN_00469520＝switch: case {0x13,0x14,0x15,0x16,0x19,0x1A,0x1B,0x21,0x22,0x26,0x27,0x28,0x2A,0x2B}→return1）→ 失敗 error `Invalid inventory object '%s' for parameter %s.`（0xA4B050）。
+  > ②[確定] type 0x15 handler（table[18]=0x4FE5CC）＝RTTI dynamic_cast 判定: push 0; push 0xB03268; push 0xB02F9C; push 0; push eax; call 0x9832e6 — FUN_009832e6 signature＝int(int*, int, _s_RTTICompleteObjectLocator*, TypeDescriptor*, int)＝MSVC __RTDynamicCast [確定(decompiled)]、引数 data 実読 0xB02F9C＝`.?AVTESForm@@`／0xB03268＝`.?AVTESObject@@`（隣接に `.?AVTESObjectREFR@@`/`.?AVActor@@`/`.?AVTESNPC@@`）→ TESForm→TESObject cast 検証 [確定]、失敗 error `Invalid object '%s' for parameter %s.`（0xA4AB30）。→ 語義差＝byte switch（inventory 资格）vs RTTI class 判定 [確定]。
+  > ③[確定] flag 配列 0xB0A54C＝stride-8・38 records {u8 A, u8 B, u16 pad, u32 id}: id＝type+1（type0..0x24 全一致）、type0x25 のみ id=0x00A51B8C（rdata ptr）で不一致＝表末尾 [部分確定]、id consumer [未確定]。v438 の「B=1,2,3... incrementing」は +4 の u32（type+1）の誤読と訂正（B は byte@+1 で {0,1} 二値）。
+  > ④[確定] flag A（byte@+0）: A=1 は type ∈ {0x01 Integer, 0x02 Float, 0x17 Stage} のみ（38中3）、consumer＝4FDEB0 mov bl,[eax*8+0xB0A54C]→4FDF22 test bl,bl; jne 0x4FDF44（A≠0 は guard skip）／A==0 は edx/cl 判定→error `Parameter %s may not be a variable.`（0xA4A800）→ A=0 では引数に変数不可・A=1（Integer/Float/Stage）のみ変数許容 [確定(構造+文言)]、A＝変数許容 type マーカー [推定高]。guard operand は直書き・lea 全0件 → FUN_004fd7c0 out-param 経由と推定 [未確定]。
+  > ⑤[確定] flag B（byte@+1）: B==0→9-case generic（0x4FEF5C remap→0x4FEF38）／B≠0→35-case object（0x4FEEAC）[確定]、B=1＝27 object/form 系・B=0＝11 scalar/keyword 系 [確定]→B＝object resolve 必要 type マーカー [推定高]。
+  > ⑥[確定] V-439-2 docs は不完全: gap 0x9E62B0→0x9F1C00 で segment start 3件（0x9E6640/0x9E6720/0x9E6CC0）を machine decode して実 function 確認（registration stub: push/push/mov ecx/call/push/call/pop ecx/ret・head annotation=(none)）、docs raw grep '0x9e66'/'0x9e67'＝0 hits・docs body 22行 vs machine 47KB → この gap 内に ≥64 個の未注記 function [確定]。
+  > ⑦[部分確定] 集計: gaps>0x200 の2734件→func-like segments 4471・1/gap 超過分＝1737 candidates（minseg=0x30 で <0x30 小 stub 除外＝下限）／ret-boundary census: 内部境界4558のうち ret 確認 2037（44.7%）。boundary 条件の seg_start reset 位置差で 4471 vs 4558 の計数差＝閾値依存を明記。大 gap に CC-run 2394/1572 の stub 集積地帯。総数 [未確定]。
+  > ⑧[部分確定] V-439-3 [esp+0x5c]: fill 点6件（direct 407CBA/407E5B/408F72 eax=0＋lea 経由 408FCF→FUN_00404fd0（string inspect [推定高]）／409027→FUN_00402da0（dtor/reset: *p=0 ゼロ化 [確定]）、隣接 408FC6 lea[esp+0x64]→0x4028d0 string ctor）＋0x40A29D への branch 0 件（fall-through のみ）[確定] → 直近 write は path 依存で value at read [未確定]。[推定高] flat array 先頭10件＝dead data 維持（追加証拠なし）。
+  > 残点 V-440-1..3（1=FUN_00469520 の case 集合＝FormType enum 対応と 0x03 handler の byte[obj+4] フィールド identity【低】／2=flag A の他 consumer と +4 id(=type+1) の consumer・表末尾不一致の意味【低】／3=docs 欠落数の精密化（minseg=0x10 再 census＋ret-confirmed 2037 の docs-body-line vs machine-span 突合サンプリング）と [esp+0x5c] path CFG【低】）。
+  > 教訓: 同名 type の別 handler は「error 文言＋call 先 helper の種別（byte switch vs RTTI cast）」で一撃分離／flag 配列は full dump で struct 復元（局所観察の「incrementing B」は実際には +4 の u32）／docs 欠落の実証は「gap 内 segment start の machine 実読→docs raw grep 0 hits」が必須／census は閾値・boundary 条件で計数が変わる→引用時は定義併記／section 境界 annotation で range 破綻→gap walk に range guard 必須（v439_8 初回 IndexError）／[reg+disp] provenance は直書き0件＋lea0件なら out-param 経由を疑う（push 前後 displacement 別名 X vs X+0x10）。v 採番 v439 消費（次=v440）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1224,11 +1235,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1252,4 +1258,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 05:44:46
+**ai-todo** | Last Updated: 2026-11-17 06:01:17
