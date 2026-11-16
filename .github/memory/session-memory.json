@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-16T16:03:30Z",
+  "lastUpdated": "2026-11-16T16:16:59Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -12084,14 +12084,29 @@
         "script"
       ],
       "content": "2026-11-17 派生残点第22弾 v430（probe v430_1 全 EXIT=0）＝V-430-1 完遂: 成果物 tmp/re/v430_keyword_table_ruling.md・台帳 row406（bak256）・round_verify ALL OK（rows 31..406 / total 292 / done 287 / open 5）・STATE (ez)・ai-todo #151 note。[確定]（構造実読）[72]'Begin'（0xB0A2C8）＝AV table 終了後の stride 0x28 新テーブルの rec0.name — AV name table は [0..71]（0xB0A1A8..0xB0A2C4）で終了し 0xB0A2C8 から {name ptr, name2 ptr, id u32, zeros×6} レコードが隣接: {'Begin', 空(0xA2F7EC), id=0x10} → {'End', 空, 0x11} → {'Short', 'int', 0x12} → …（id 連番0x10,0x11,0x12...）＝ script コンパイラのキーワード/型レジストリ [推定高]（Begin/End＝スクリプトブロック境界・Short/int＝変数型＝TES4 script 型キーワードと整合）。[確定] 境界: 0xB0A1A8+72×4=0xB0A2C8＝キーワード rec0.name セルと厳密接続（v429 の72件終端確定と整合・[72] は AV でなくキーワード rec0）。[確定] refs: cell+72（0xB0A2C8）dword xref＝0件（index/offset アクセスのみ）／'Begin' 文字列（0xA51C1C）＝2件（.text 0x6CA5C2・.data 0xB0A2C8＝rec0 自身）／cell+73（空文字列 ptr）＝.text 1件（0x4FCA1A 帯）。残点 V-431-1..2（1=キーワード/型レジストリの消費者 identity（.text 0x6CA5C2 と cell+73 参照＝script parser のどの pass か）と name2（'int' 等）の意味【低】／2=id 連番 0x10 起点の意味（0x00..0x0F の enum 帯）【低】）。教訓: 隣接 table の境界は「base+N×stride」の計算一致で確定する／レコード構造は反復出現（stride）＋id 連番で組み立てる（1レコードの偶然でなく3連続反復を確認）。本日 push: v405→v429（2f869c8d）25件＋本件 v430。v 採番 v430 消費（次=v431）。"
+    },
+    {
+      "id": "151-v431-keyword-consumer-2026-11-17",
+      "timestamp": "2026-11-16T16:16:59Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v431",
+        "dump-family",
+        "keyword"
+      ],
+      "content": "2026-11-17 派生残点第23弾 v431（probe v431_1・2 全2本 EXIT=0）＝V-431-1 部分解: 成果物 tmp/re/v431_keyword_consumer_ruling.md・台帳 row407（bak257）・round_verify ALL OK（rows 31..407 / total 293 / done 288 / open 5）・STATE (fa)・ai-todo #151 note。[確定]（周辺）'Begin' の .text 消費者＝FUN_006CA440（print/dump fn・V-387-1 対象）内 push 0xA51C1C; call 0x70FB90 — 同 band push リテラル群＝'State'/'ArraySize'/'Weight'/'CycleType'/'Freq'/'Begin'/'End'/'Last'/'Offset'/'Start'/'End'（各 call で format helper へ）＝ NIF ブロック/コントローラ系の float フィールド dump [確定(実文字列)] → FUN_006CA440＝NIF dump/report fn [推定高]（V-387-1 への強い手がかり）。[確定] FUN_0070FB90＝\"%s = %g\" format helper（L553196-553211: strlen→malloc→FUN_006c5d40(buf,n,\"%s = %g\",name,(double)val)）— dump family 第3弾: FUN_0070F910＝\"--- %s ---\"（v418）／FUN_0070FAA0＝\"%s = %hu\"（v419）／FUN_0070FB90＝\"%s = %g\"（本件）。[確定(否定側)] name2（'int'・0xA51C0C）への dword xref＝.data 0xB0A31C（レコード自身）のみ・.text 0件 → コードは直接参照せず base+offset アクセスのみ（v427..430 の index 形と同一）。[未確定] cell+73（0xB0A2CC）の .text 参照＝0x4FCA7A（初回 decode は window 境界で alignment 誤り→head 起点 linear で再計算・FUN_004FCA10（deleting dtor・ret4@0x4FCA2B）の後続帯＝未 decode）。隣接 0x4FCA30 は lea edx,[ecx-0x100]; cmp edx,0x82＝id 範囲 validator（0x100..0x182＝script opcode id 帯 [推定高]）。残点 V-432-1..3（1=cell+73 参照（0x4FCA7A）の fn 特定と用途＋0x4FCA30 validator identity【低】／2=V-387-1 引き継ぎ（FUN_006CA440 正式名の最終確定と dump 対象ブロック種）【低】／3=keyword registry の id→keyword lookup pass（parser）と id 0x00..0x0F 帯【低】）。教訓: 文字列リテラルの consumer は「1件 xref」から「同 band の push 列列挙」へ広げる（field 名群が fn 役割を一撃で語る）／dump/format helper は系列でそろえる／xref 位置の decimal→hex 変換と head 起点 linear decode をセットで。本日 push: v405→v430（80341084）26件＋本件 v431。v 採番 v431 消費（次=v432）。"
     }
   ],
   "metadata": {
-    "totalEntries": 835,
+    "totalEntries": 836,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-16T16:03:30Z",
-    "entry_count": 835,
-    "last_updated": "2026-11-16T16:03:30Z"
+    "lastUpdated": "2026-11-16T16:16:59Z",
+    "entry_count": 836,
+    "last_updated": "2026-11-16T16:16:59Z"
   }
 }

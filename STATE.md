@@ -1992,3 +1992,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **隣接 table の境界は「base + N×stride」の計算一致で確定する**／**レコード構造は反復出現（stride）＋id 連番で組み立てる**（1レコードの偶然でなく3連続反復を確認）。
 - **本日 push 累計（セッション）**: v405 → … → v429 `2f869c8d` →（本件 v430 を本 commit で push）＝**26裁定**。
 - **次**: 残る低優先残点群（V-431-1..2／V-414-2..3／V-413-2／V-415-2 ほか）を v431+ で消化。supermemory 未登録26件（v405..v430）は MCP 復復待ち。
+
+## 2026-11-17 (fa) — 派生残点第23弾 v431（V-431-1 部分解）: **`'Begin'` 消費者＝`FUN_006CA440`（NIF dump fn [推定高]・V-387-1 手がかり）[確定(周辺)]**・**`FUN_0070FB90`＝`"%s = %g"`（dump family 第3弾）[確定]**・**name2 direct xref 0件 [確定(否定側)]**
+
+- **成果物**: `tmp/re/v431_keyword_consumer_ruling.md`（probe **v431_1・v431_2 の2本全 EXIT=0**）。台帳 **row407（bak257）**・`round_verify` **ALL OK**（rows 31..407 / total 293 / done 288 / open 5）。ai-todo **#151 に note**。v 採番 **v431 消費（次=v432）**。
+- **① [確定]（周辺）`'Begin'` の .text 消費者＝`FUN_006CA440`（print/dump fn・V-387-1 対象）内 `push 0xA51C1C; call 0x70FB90`** — 同 band push リテラル群＝**`'State'/'ArraySize'/'Weight'/'CycleType'/'Freq'/'Begin'/'End'/'Last'/'Offset'/'Start'/'End'`**（各 call で format helper へ）＝ **NIF ブロック/コントローラ系の float フィールド dump [確定(実文字列)] → `FUN_006CA440` ＝ NIF dump/report fn [推定高]（＝V-387-1「fn 0x6CA440 正式名」への強い手がかり）**。
+- **② [確定] `FUN_0070FB90` ＝ `"%s = %g"` format helper**（L553196-553211: strlen→malloc→`FUN_006c5d40(buf,n,"%s = %g",name,(double)val)`）— **dump family 第3弾**: `FUN_0070F910`＝`"--- %s ---"`（v418）／`FUN_0070FAA0`＝`"%s = %hu"`（v419）／**`FUN_0070FB90`＝`"%s = %g"`（本件）**。
+- **③ [確定(否定側)] `name2`（`'int'`・`0xA51C0C`）への dword xref＝.data `0xB0A31C`（レコード自身）のみ・`.text` 0件** → **コードは直接参照せず base+offset アクセスのみ**（v427..430 の index 形と同一）。
+- **④ [未確定] cell+73（`0xB0A2CC`）の .text 参照＝`0x4FCA7A`**（初回 decode は window 境界で alignment 誤り → head 起点 linear で再計算。`FUN_004FCA10`（deleting dtor・ret4 @0x4FCA2B）の後続帯＝未 decode）。隣接 **`0x4FCA30` は `lea edx,[ecx-0x100]; cmp edx,0x82` ＝ id 範囲 validator（0x100..0x182＝script opcode id 帯 [推定高]）**。
+- **残点 V-432-1..3**: 1=cell+73 参照（`0x4FCA7A`）の fn 特定と用途＋`0x4FCA30` validator identity【低】／2=V-387-1 引き継ぎ（`FUN_006CA440` 正式名の最終確定と dump 対象ブロック種）【低】／3=keyword registry の id→keyword lookup pass（parser）と id `0x00..0x0F` 帯【低】。
+- **教訓**: **文字列リテラルの consumer は「1件 xref」から「同 band の push 列挙」へ広げる**（field 名群が fn 役割を一撃で語る）／**dump/format helper は系列でそろえる**（`%s=%g`・`%s=%hu`・`---%s---`）／**xref 位置の decimal→hex 変換と head 起点 linear decode をセットで**（`0x4FCA1A`→`0x4FCA7A` の計算誤りを decode で検出）。
+- **本日 push 累計（セッション）**: v405 → … → v430 `80341084` →（本件 v431 を本 commit で push）＝**27裁定**。
+- **次**: 残る低優先残点群（V-432-1..3／V-414-2..3／V-413-2／V-415-2 ほか）を v432+ で消化。supermemory 未登録27件（v405..v431）は MCP 復復待ち。
