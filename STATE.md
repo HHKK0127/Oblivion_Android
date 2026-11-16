@@ -1873,3 +1873,22 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **同一 virtual の実装はクラスごとに全く違う（slot38＝create と pure getter の併存）→ slot 意味は chosen のクラス確定後に決まる**／**mangled RTTI 名（`.?AVFoo@@`）で TD→COL→vtable を辿る（`Foo\0` 部分一致では当たらない）**／**`push size`＋ctor の vtable store で型と sizeof が同時に決まる**／**flag の出所（Cumulative）まで遡ると設計理由が確定する**／**port コメントの「original はこうする」は EXE の書込範囲と必ず突合**。
 - **本日 push 累計**: v405 → … → v420 `4e9ea6c9` →（本件 v421 を本 commit で push）＝**17裁定**。
 - **次**: 残る低優先残点群（V-422-1..4／V-414-1..3／V-413-2 ほか）を v422+ で消化。supermemory 未登録17件（v405..v421）は MCP 復復待ち。
+
+## 2026-11-16 (er) — 派生残点第14弾 v422（V-422-1 完遂）: **`FUN_006c63a0`＝+6 property_type reader [確定]**・**first walk payload＝property オブジェクト [確定(命令)]**（クラス名⇔property_type 文言 strcmp）
+
+- **成果物**: `tmp/re/v422_property_reader_ruling.md`（probe **v422_1 全 EXIT=0**）。台帳 **row398（bak248）**・`round_verify` **ALL OK**（rows 31..398 / total 284 / done 279 / open 5）。ai-todo **#151 に note**。v 採番 **v422 消費（次=v423）**。
+- **① [確定] `FUN_006c63a0` ＝ `u16(entry+6)`（property_type offset）の palette 文言 reader** — decompiled L495991-495998: `if (*(u16*)((int)param_1+6) != 0xffff) return *(u16*)((int)param_1+6) + *(int*)(*param_1+8); return 0;`（offset==0xFFFF なら0）→ **v421 の family 並び [推定高]（+6）を [確定] へ昇格**。**offset-reader family 確定**: `+6=FUN_006c63a0`（property_type）／`+8=FUN_006c63c0`（CtlrType）／`+0xA=FUN_006c63e0`（CtlrID）（+4 node_name は machine 使用形で確定済・`FUN_006c6380` は annotation 不在）。
+- **② [確定(命令)] first walk payload ＝ property オブジェクト** — machine 0x6C96EE-0x6C972D:
+  ```
+  movzx eax,[ebx+6]; cmp ax,0xffff; je 0x6C9767   ← property_type なし → first walk 全体 skip
+  property_type 文言 = palette[ebx] + offset
+  node[+0x9C] list walk（payload=[edi+8]・next=[edi+0]＝v418 FUN_0047C930 と同一構造）
+  payload->slot1()（thiscall ecx=payload）→ descriptor pair
+  strcmp(pair[0]（クラス名）, property_type 文言) → 一致で [esp+0x1c]=payload
+  ```
+  → **payload ＝ クラス名が property_type 文言と一致する typed object ＝ property 本体**（v421 [推定高] を確定）。
+- **③ [部分確定] second walk の container**: 一致時＝**property `payload[+0xC]`**／不一致・property なし時＝**resolved node `[ebp+0xC]`**（`[esp+0x1c]` 初期値＝node）→ どちらも `{bucket [+0xC]・next [+0x34]・slot1 descriptor}` walk（v421 確定）→ **node `[+0xC]` が NiAVObject layout 上どこに当たるか＝残点**。
+- **残点 V-423-1..2**: 1=resolved node `[+0xC]` の layout 謎（Gamebryo 布局では flags 帯のはず）と `Bip01[+0x1C]`（epilogue）との関係（旧 V-422-2）【低】／2=`FUN_006c6380`（+4 node_name reader）の machine body【低】。
+- **教訓**: **offset-reader ファミリ（連番 addr・同型 body）は1本の body を確定させれば並びの [推定高] が全部 [確定] になる**／**skip ターゲット先（`je → 0x6C9767`）まで読むと「あり／なし」分岐の全体像が同時に取れる**。
+- **本日 push 累計**: v405 → … → v421 `9cf1c3e6` →（本件 v422 を本 commit で push）＝**18裁定**。
+- **次**: 低優先残点群（V-423-1..2／V-414-1..3／V-413-2／V-415-2／V-416-2 ほか）を v423+ で消化。supermemory 未登録18件（v405..v422）は MCP 復復待ち。

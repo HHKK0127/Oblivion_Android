@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-16T13:42:05Z",
+  "lastUpdated": "2026-11-16T13:50:24Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11949,14 +11949,29 @@
         "port-mapping"
       ],
       "content": "2026-11-16 派生残点第13弾 v421（probe v421_1..11 全11本 EXIT=0）＝V-405-2 完遂: 成果物 tmp/re/v421_type_identity_ruling.md・台帳 row397（bak247）・round_verify ALL OK（rows 31..397 / total 283 / done 278 / open 5）・STATE (eq)・ai-todo #151 note。[確定] 3者の型照合＝NiBlendInterpolator 系ファミリで一致（クラス内訳つき）: gate FUN_00560920(0xB3CC5C,x)＝x の descriptor chain に 0xB3CC5C（実読 \"NiBlendInterpolator\"）が含まれるか＝is-a 判定／stride-48 要素＝NiBlendTransformInterpolator（48B・MTTC 配列 ctor 0x6CBCB0→vtable 0xA79E54・size push 0x30）／slot38 作成物＝flag で2系統: flag0→NiBlendTransformInterpolator（48B・ctor 0x6CBC60→0xA79E54）・flag1→NiBlendAccumTransformInterpolator（88B・ctor 0x6C37D0→0xA79584＋globals 0xB24260/64/68 初期化）・flag＝NiControllerManager.Cumulative（[mgr+0x6C]・v420 確定）。完全同クラス＝(gate合格)=(3)=(flag0)、flag1 のみ別クラス（同ファミリ）。descriptor 階層: 0xB3CBF8={NiBlendTransform→0xB3CC5C}/0xB3CD1C={NiBlendAccumTransform→0xB3CC5C}/0xB3CC5C={NiBlendInterpolator→0xB3EB8C}。[確定] chosen＝対象ノード/プロパティの controller map から クラス名(slot1)==CtlrType(FUN_006c63c0=+8) かつ slot35 名==CtlrID(FUN_006c63e0=+0xA) で選択される controller（walk: palette slot19(node_name+4)→node[+0x9C]→property(FUN_006c63a0=+6 [推定高]) または fallback→map walk(bucket+0xC/next+0x34)）。slot 実装はクラス依存2系統: MTTC系（slot31=0x6CFB80＝[+0x40] target 配列を element[+8] NiFixedString 名で linear 検索→idx/0xFFFF（word[0xA7A160]=0xFFFF 実測）・slot32=0x6CFC00・slot38=0x6CFDE0＝[+0x3C]+idx*48 pure getter・slot33=0x60CF60＝ret 8 no-op）／NiTC系（slot31=0x6CE1A0＝xor ax,ax;ret 4 常に0・slot32=0x6CE200＝[+0x3c] 単一取得・slot33=0x6CE210＝NiPointer assign setter・slot38=0x6C3B70＝真の create）。[確定] v405 訂正: 「slot38＝新規作成／slot33＝attach」はクラス依存（MTTC では getter/no-op＝create path 実質 dead・NiTC で真の create+setter）。[確定(式)] port keyframe_data_index 写像＝(entry+8 ptr − MTTC[+0x3C]) / 48（idx は slot31/epilogue 検索の同一 u16・並行配列 [+0x40]=target/[+0x3C]=blend/[+0x44]=m_usNumInterps）。port read 時 seed=controller_index（block.rs:1283）。[確定] 制約: /48 式は MTTC 配列 backed のみ有効（NiTC create の standalone blend は index 復元不可＝V-422-3）。[不一致・要訂正] nif_ffi.h:395-398「the original seeds while reading」は EXE LoadBinary（FUN_006c8820）が +8 を書かない（書くのは +0/+4/+0xd のみ）と矛盾＝port プレースホルダ。[確定(否定側)] target_node_index 供給元: EXE は per-entry target index を永続化しない（永続は +4 controller ptr と +8 blend ptr のみ・epilogue 検索 idx は transient で keyframe_data_index と同値）。副次[確定]: consumer 0x6C6A50＝entry[+8] の slot38(entry[+0], 0.0f, priority(+0xd), 1.0f)→bool→entry[+0xc]。残点 V-422-1..4（1=FUN_006c63a0 body と property payload 説【低】/2=NiAVObject[+0xC] fallback layout 謎と Bip01[+0x1C] 関係【低】/3=port モデルの網羅外経路【中→低】/4=NiBlendAccum [+0x30..38] globals【低】）。教訓: 同一 virtual の実装はクラスごとに全く違う（slot38＝create と pure getter の併存）→ slot 意味は chosen のクラス確定後に決まる／mangled RTTI 名（.?AVFoo@@）で TD→COL→vtable を辿る（部分一致では当たらない）／push size＋ctor vtable store で型と sizeof が同時に決まる／flag の出所（Cumulative）まで遡ると設計理由が確定／port コメントの original 記述は EXE 書込範囲と必ず突合。本日 push: v405→v420（4e9ea6c9）16件＋本件 v421。v 採番 v421 消費（次=v422）。"
+    },
+    {
+      "id": "151-v422-property-reader-2026-11-16",
+      "timestamp": "2026-11-16T13:50:24Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v422",
+        "property-type",
+        "offset-reader"
+      ],
+      "content": "2026-11-16 派生残点第14弾 v422（probe v422_1 全 EXIT=0）＝V-422-1 完遂: 成果物 tmp/re/v422_property_reader_ruling.md・台帳 row398（bak248）・round_verify ALL OK（rows 31..398 / total 284 / done 279 / open 5）・STATE (er)・ai-todo #151 note。[確定] FUN_006c63a0＝u16(entry+6)（property_type offset）の palette 文言 reader — decompiled L495991-495998: if (*(u16*)((int)param_1+6) != 0xffff) return *(u16*)((int)param_1+6) + *(int*)(*param_1+8); return 0;（offset==0xFFFF なら0）→ v421 の family 並び [推定高]（+6）を [確定] へ昇格。offset-reader family 確定: +6=FUN_006c63a0（property_type）／+8=FUN_006c63c0（CtlrType）／+0xA=FUN_006c63e0（CtlrID）（+4 node_name は machine 使用形で確定済・FUN_006c6380 は annotation 不在）。[確定(命令)] first walk payload＝property オブジェクト — machine 0x6C96EE-0x6C972D: movzx eax,[ebx+6]; cmp ax,0xffff; je 0x6C9767（property_type==0xFFFF なら first walk 全体 skip）→ property_type 文言 = palette[ebx]+offset → node[+0x9C] list walk（payload=[edi+8]・next=[edi+0]＝v418 FUN_0047C930 と同一構造）→ payload->slot1()（thiscall ecx=payload）→ descriptor pair → pair[0]（クラス名）を property_type 文言と strcmp → 一致で [esp+0x1c]=payload。→ payload＝クラス名が property_type 文言と一致する typed object＝property 本体（v421 [推定高] を確定）。[部分確定] second walk container: 一致時＝property payload[+0xC]／不一致・property なし時＝resolved node [ebp+0xC]（[esp+0x1c] 初期値=node）→ どちらも {bucket[+0xC]・next[+0x34]・slot1 descriptor} walk（v421 確定）→ node[+0xC] が NiAVObject layout 上どこに当たるか＝残点。残点 V-423-1..2（1=resolved node[+0xC] の layout 謎と Bip01[+0x1C] との関係（旧 V-422-2）【低】／2=FUN_006c6380（+4 node_name reader）の machine body【低】）。教訓: offset-reader ファミリ（連番 addr・同型 body）は1本の body 確定で並びの [推定高] が全部 [確定] になる／skip ターゲット先（je → 0x6C9767）まで読むと「あり／なし」分岐の全体像が同時に取れる。本日 push: v405→v421（9cf1c3e6）17件＋本件 v422。v 採番 v422 消費（次=v423）。"
     }
   ],
   "metadata": {
-    "totalEntries": 826,
+    "totalEntries": 827,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-16T13:42:05Z",
-    "entry_count": 826,
-    "last_updated": "2026-11-16T13:42:05Z"
+    "lastUpdated": "2026-11-16T13:50:24Z",
+    "entry_count": 827,
+    "last_updated": "2026-11-16T13:50:24Z"
   }
 }
