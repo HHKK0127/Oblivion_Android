@@ -454,6 +454,14 @@
   > ⑤[未確定] V-454-2 subobject 名（+0x44/+0x68/+0xE4/+0x54）は budget 未着手＝残点継続（+0xC4＝Script に続く残4 field）。
   > 残点 V-455-1..3（1=FUN_004E82E0 purpose 語（call 先 FUN_004E4E90/FUN_004E8190 突合）と Player[+0x1C] class（書手並行）【低】／2=subobject 名（v453 Script TD 法の各 field 適用）【低】／3=旧残点（V-415-2/V-416-2/V-405-4..5 等）への移行判断（docs census 総まとめ済み→次回から旧群へ軸を戻す方針 [確定]）【低】）。
   > 教訓: fn purpose は「既知 identity の call 群（constellation）」で当てる（過去裁定の確定 fn 名を call 先に探すのが最速・本件 NiNode ctor 1件で Ni 系即決）／docs usage grep と machine call census の件数一致（2=2）は整合チェックに有効／census は4象限 layer table で1本にまとめレンジで締める（点推定に固執せず [下限, 上限]）／4象限合計＝前の裁定総数（7145⇔7145）が table 正しさを機械裏付け／作業方針の転換点を ruling 明記で次セッション継続判断が楽に。v 採番 v454 消費（次=v455）。
+  > 【旧残点群移行第9弾 v455 — V-455-1..3 完遂】probe v455_1 全1本 EXIT=0。成果物 tmp/re/v455_subobject_race_ruling.md・台帳 row431（bak281）・round_verify ALL OK（rows 31..431 / total 317 / done 312 / open 5）。
+  > ①[推定高] V-455-1 FUN_004E82E0 purpose 深化: close-band call 2本 identity [確定(signature)＋機械] — FUN_004E4E90（L179403）`int __thiscall(int,int)`: `mov edi,[ecx+0x24]`（＝TESActorBaseData・v448/450 確定 field）を扱う fn／FUN_004E8190（L182119）`void __fastcall(int)`: `mov eax,[esi+0x28]; lea ecx,[eax+0xAC]; call 0x477EF0`（self+0x28 subobject +0xAC 操作）→ FUN_004E82E0＝「TESActorBaseData・self+0x28 subobject・Ni/scene-graph call（v454 constellation）・Player+0x1C getter」併用の Character/Actor scene+data 更新 fn [推定高]、一語名は docs body 語が無く [未確定]。
+  > ②[未確定] Player[+0x1C] class: 書手 fn 未特定（v451/v452）のまま＝残点。
+  > ③[確定] V-455-2 subobject +0xE4＝Race: FUN_0046E4F0（0x523F40 の +0xE4 reset fn）内の RTTI TD push `push 0xB0532C`＝`.?AVTESRace@@`／`push 0xB02F9C`＝`.?AVTESForm@@` [確定] → Race-related subobject（Form→TESRace lookup）[確定相当]。[確定(否定側)] FUN_00469E90（+0x44）／FUN_00468590（+0x68）／FUN_0046FC10（+0x54）は first 0x1C0 に RTTI TD push 無し → 残3 field name 別法要＝残点。
+  > ④subobject map 累積: [+0x24]=TESActorBaseData [確定]／[+0xC4]=Script [推定高]／[+0xE4]=Race [確定相当]／[+0x44]/[+0x68]/[+0x54] [未確定]。
+  > ⑤[確定] V-455-3 移行方針: docs 欠落 census は v454 で総まとめ（レンジ [2337,6038]）済み → V-456 以降は旧残点（V-415-2/V-416-2/V-405-4..5/V-406-2..6 等）へ軸を戻す [確定（作業方針）]。
+  > 残点 V-456-1..3（1=旧残点の消化開始（V-415-2/V-416-2/V-405-4..5 優先順）【低】／2=残る subobject name（+0x44/+0x68/+0x54）【低】／3=FUN_004E82E0 purpose 一語名と Player[+0x1C] class（並行）【低】）。
+  > 教訓: close-band call は「signature＋直近 field アクセス」で用途絞り（[ecx+0x24]＝既知 field で即決）／subobject 名は sub-call 内 push RTTI_TD の機械列挙が有効（TD 無し fn は別法要）／field map は ruling ごとに累積表で持続（残3に収束＝次 probe 設計が楽に）／purpose 一語名は docs 語が無ければ constellation＋close-band で [推定高] に留め cost/benefit 判断／方針転換は ruling §3 明記で次セッション入口固定。v 採番 v455 消費（次=v456）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1360,11 +1368,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1388,4 +1391,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 07:29:25
+**ai-todo** | Last Updated: 2026-11-17 07:33:34

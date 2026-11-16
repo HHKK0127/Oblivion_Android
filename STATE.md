@@ -2365,3 +2365,16 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **fn purpose は「既知 identity の call 群（constellation）」で当てる**（過去裁定の確定 fn 名を call 先に探すのが最速・本件 NiNode ctor 1件で Ni 系即決）／**docs usage grep と machine call census の件数一致（2=2）は整合チェックに有効**／**census は4象限 layer table で1本にまとめレンジで締める**（点推定に固執せず `[下限, 上限]`）／**4象限合計＝前の裁定総数（7145⇔7145）が table 正しさを機械裏付け**／**作業方針の転換点を ruling 明記で次セッション継続判断が楽に**。
 - **本日 push 累計（セッション）**: v405 → … → v453 `cfef18fa` →（本件 v454 を本 commit で push）＝**50裁定**。
 - **次**: V-455-1..3（purpose 語／subobject 名）＋ **旧残点（V-415-2/V-416-2/V-405-4..5 等）への軸移行**。supermemory 未登録50件（v405..v454）は MCP 復復待ち。
+
+## 2026-11-17 (fy) — 旧残点群移行第9弾 v455（V-455-1..3 完遂）: **`FUN_004E82E0` purpose を constellation＋close-band で深化**・**subobject `+0xE4`＝Race を確定（field map 残3に収束）**・**旧群移行方針を再確認**
+
+- **成果物**: `tmp/re/v455_subobject_race_ruling.md`（probe **v455_1 の1本 EXIT=0**）。台帳 **row431（bak281）**・`round_verify` **ALL OK**（rows 31..431 / total 317 / done 312 / open 5）。ai-todo **#151 に note**。v 採番 **v455 消費（次=v456）**。
+- **① [推定高] V-455-1 `FUN_004E82E0` purpose 深化**: close-band call 2本 identity **[確定(signature)＋機械]** — **`FUN_004E4E90`（L179403）`int __thiscall(int,int)`: `mov edi,[ecx+0x24]`（＝TESActorBaseData・v448/450 確定 field）を扱う fn**／**`FUN_004E8190`（L182119）`void __fastcall(int)`: `mov eax,[esi+0x28]; lea ecx,[eax+0xAC]; call 0x477EF0`（self+0x28 subobject `+0xAC` 操作）** → **`FUN_004E82E0` ＝「TESActorBaseData・self+0x28 subobject・Ni/scene-graph call（v454 constellation）・Player+0x1C getter」併用の Character/Actor scene+data 更新 fn [推定高]**、一語名は docs body 語が無く [未確定]。
+- **② [未確定] `Player[+0x1C]` class**: 書手 fn 未特定（v451/v452）のまま＝残点。
+- **③ [確定] V-455-2 subobject `+0xE4` ＝ Race**: **`FUN_0046E4F0`（`0x523F40` の `+0xE4` reset fn）内の RTTI TD push `push 0xB0532C`＝`.?AVTESRace@@`／`push 0xB02F9C`＝`.?AVTESForm@@` [確定]** → **Race-related subobject（Form→TESRace lookup）[確定相当]**。**[確定(否定側)] `FUN_00469E90`（`+0x44`）／`FUN_00468590`（`+0x68`）／`FUN_0046FC10`（`+0x54`）は first 0x1C0 に RTTI TD push 無し** → 残3 field name 別法要＝残点。
+- **④ subobject map 累積**: **`[+0x24]`=TESActorBaseData [確定]／`[+0xC4]`=Script [推定高]／`[+0xE4]`=Race [確定相当]／`[+0x44]/[+0x68]/[+0x54]` [未確定]**。
+- **⑤ [確定] V-455-3 移行方針**: docs 欠落 census は v454 で総まとめ（レンジ `[2337,6038]`）済み → **V-456 以降は旧残点（V-415-2／V-416-2／V-405-4..5／V-406-2..6 等）へ軸を戻す [確定（作業方針）]**。
+- **残点 V-456-1..3**: 1=旧残点の消化開始（V-415-2／V-416-2／V-405-4..5 優先順）【低】／2=残る subobject name（`+0x44/+0x68/+0x54`）【低】／3=`FUN_004E82E0` purpose 一語名と `Player[+0x1C]` class（並行）【低】。
+- **教訓**: **close-band call は「signature＋直近 field アクセス」で用途絞り**（`[ecx+0x24]`＝既知 field で即決）／**subobject 名は sub-call 内 `push RTTI_TD` の機械列挙が有効**（TD 無し fn は別法要）／**field map は ruling ごとに累積表で持続**（残3に収束＝次 probe 設計が楽に）／**purpose 一語名は docs 語が無ければ constellation＋close-band で [推定高] に留め cost/benefit 判断**／**方針転換は ruling §3 明記で次セッション入口固定**。
+- **本日 push 累計（セッション）**: v405 → … → v454 `b7136d90` →（本件 v455 を本 commit で push）＝**51裁定**。
+- **次**: V-456-1..3（旧群移行へ軸戻し）。supermemory 未登録51件（v405..v455）は MCP 復復待ち。
