@@ -1932,3 +1932,16 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **attach/assign 系 fn は callers の push 元分類（factory/child/arg/self）で対象の像が固まる**／**data refs の uncapped RTTI scan が virtual owner を一撃決定（6件 cap で NiNode を取りこぼした再調査事例・cap は必ず外して全数確認）**／**flag 0/1 が array 登録の有無を分ける**。
 - **本日 push 累計**: v405 → … → v424 `8a15b4ac` →（本件 v425 を本 commit で push）＝**21裁定**。
 - **次**: 残る低優先残点群（V-426-1..2／V-414-1..3／V-413-2／V-415-2／V-416-2 ほか）を v426+ で消化。supermemory 未登録21件（v405..v425）は MCP 復復待ち。
+
+## 2026-11-17 (ev) — 派生残点第18弾 v426（V-426-1/V-426-2 完遂）: **`0x724700`＝NiLODNode/NiSwitchNode の slot33 wrapper [確定(RTTI)]**・**`FUN_0070B780`＝NiNode in-place ctor [確定]（v423_1 訂正）**・**「virtual `[+0xC]` setter 群」は誤認撤回 [確定(否定側)]**
+
+- **成果物**: `tmp/re/v426_wrapper_ctor_ruling.md`（probe **v426_1・v426_2 の2本全 EXIT=0**）。台帳 **row402（bak252）**・`round_verify` **ALL OK**（rows 31..402 / total 288 / done 283 / open 5）。ai-todo **#151 に note**。v 採番 **v426 消費（次=v427）**。
+- **① [確定(RTTI)] `0x724700` ＝ `NiLODNode`（vtable 0xA7F97C）と `NiSwitchNode`（0xA7FA3C）の slot33(+0x84)**（data refs 全2件）— **`FUN_0070AF00`（NiNode 系 slot33・v425）へ透過する subclass override wrapper**（obj=arg1・flag=arg2）。
+- **② [確定] `FUN_0070B780` ＝ NiNode in-place ctor（v423_1 の find_head 归属を訂正）**: **SEH prologue `0x70B780`（独立 fn・annotation L550247）** → `FUN_00708450`（sub-ctor＝v423 の runtime attach 3フィールド0初期化）→ **`*this = 0xA7E38C`（NiNode vtable）** → **`FUN_004b2d30(&this[+0xAC], param_2, 1)`（embedded array 初期化）** → `[+0xC8]/[+0xC0]/[+0xC4]=0`／**`[+0xBC] = 0xA7E378`（副 vtable・sub-object）** → return this。**v423_1「NiNode ctor head=0x70B6A0・vptr store 0x70B7C3」は find_head 境界誤りで訂正（実体は FUN_0070B780 内 0x70B7C1）**。
+- **③ [確定相当] attach 対象の最終像**: site1＝**新規作成 NiNode**（ctor 経由）／site2＝**既存 child** → **`[+0x1C]` には child NiNode が入る・direct callers に self-attach なし** → **epilogue（child の `[+0xC]`）と fallback（node 自身の `[+0xC]`）は別オブジェクトの同一構造リスト [推定高→強化]**（V-423-1 の回答）。
+- **④ [確定(否定側)] 「virtual `[+0xC]` setter 群（`0x6C0B80`/`0x6C0BF0`/`0x6C1FC0`）」は撤回**: **data refs 全0・E8 全0・body＝struct copy routine**（`src=[esp+8]`→`dst=[esp+4]` へ `0x00..0x14` の float/dword コピー等）→ **「`[+0xC]` への bucket-head 付与 fn」は存在しない＝v423 §1 該当記述は撤回**。
+- **⑤ [未確定] node `[+0xC]` chain head の書手は再設定**（誤認撤回後の再走査＝残点）。
+- **残点 V-427-1..2**: 1=node `[+0xC]` chain head の書手【低】／2=`0x724700` の実 callers（virtual・self-attach 残可能性）と `FUN_004b2d30` identity【低】。
+- **教訓**: **SEH prologue（`push -1; push handler; mov eax,fs:[0]`）は「独立 fn の開始」の決定打（find_head 境界誤りの検証・訂正に有効＝3件目）**／**「virtual setter」仮説は data refs・E8・body の3系統で同時に検証（形ではなく登録系で判定）**／**struct copy の `mov [dst+disp], src` は setter census の最頻出偽陽性**。
+- **本日 push 累計（セッション）**: v405 → … → v425 `ba6fb87b` →（本件 v426 を本 commit で push）＝**22裁定**。
+- **次**: 残る低優先残点群（V-427-1..2／V-414-1..3／V-413-2／V-415-2／V-416-2 ほか）を v427+ で消化。supermemory 未登録22件（v405..v426）は MCP 復復待ち。

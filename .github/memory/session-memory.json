@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-16T14:57:42Z",
+  "lastUpdated": "2026-11-16T15:13:59Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -12009,14 +12009,29 @@
         "attach"
       ],
       "content": "2026-11-16 派生残点第17弾 v425（probe v425_1..4 全4本 EXIT=0）＝V-425-1 部分解: 成果物 tmp/re/v425_attach_virtual_ruling.md・台帳 row401（bak251）・round_verify ALL OK（rows 31..401 / total 287 / done 282 / open 5）・STATE (eu)・ai-todo #151 note。[確定(RTTI)] FUN_0070AF00＝NiNode 系の slot33（+0x84）attach virtual — data refs 全13件（uncapped）が全て vtable slot33: .?AVNiNode@@（0xA7E38C）／SceneGraph／BSTempNodeManager／BSTempNode／BSClearZNode／BSFadeNode／BSScissorNode／NiBillboardNode／BSFaceGenNiNode／BSTreeNode／NiSortAdjustNode／NiBSPNode／ShadowSceneNode。NiAVObject 本体の slot33 は別 fn（0x6F43694E）＝attach は NiNode から [確定(否定側)]。[確定] Bip01（NiNode）[+0x1C] の賦流経路＝slot33=FUN_0070AF00: attach＝node[+0x1C]=obj（refcounted・FUN_007074B0 経由）、flag==0 のときのみ embedded 配列オブジェクト（[this+0xAC]・fields +4=array(+0xB0)/+8=cap(+0xB4)/+0xA=count(+0xB6)/+0xE=growBy(+0xBA)＝NiNode children と同一 fields）へ obj を index 登録（FUN_004b34e0＋grow FUN_00523b10）／flag=1 は ref のみ。[確定] attach 対象（callers3件）: ①FUN_004112E0＝factory FUN_0070B780 作成物（data refs0＝direct）・flag=1 ②FUN_004A12E0＝[ebx+0xB0] 配列の child[i]（null スキップループ）・flag=1 ③0x724700 wrapper（obj=arg1・flag=arg2 透過・E8=0＝virtual）。[未確定] self-attach は3 direct callers とも this≠obj で非明示 → Bip01[+0x1C]==Bip01 は未確定（残点）。[推定高] V-423-1 への副次回答: site2（child attach）が示す通り [+0x1C] には通常 child/related node が入る → epilogue の Bip01[+0x1C][+0xC]（child の chain）と fallback の Bip01[+0xC]（node 自身の chain）は別オブジェクトの同一構造リスト（entry 型は v423 確定の {vtable, next@+0x34} で一致）。[確定] [+0xac] container＝embedded 配列オブジェクト（NiTArray 系）: add ebx,0xac 後 FUN_004b34e0(&this[+0xac], idx, &val)／grow FUN_00523b10(u16[+0xBA]+count)＝NiNode children fields と完全一致。残点 V-426-1..2（1=self-attach 完全否定（0x724700 virtual callers）と FUN_0070B780 factory の作成クラス【低】／2=NiAVObject[+0xC] identity（virtual setter 群 0x6C0B80 等の vtable 所属）＝chain 先頭の最終切り分け【低】）。教訓: attach/assign 系 fn は callers の push 元分類（factory/child/arg/self）で対象の像が固まる／data refs の uncapped RTTI scan が virtual owner を一撃決定（6件 cap で NiNode を取りこぼした再調査事例・cap は必ず外して全数確認）／flag 0/1 が array 登録の有無を分ける。本日 push: v405→v424（8a15b4ac）20件＋本件 v425。v 採番 v425 消費（次=v426）。"
+    },
+    {
+      "id": "151-v426-wrapper-ctor-2026-11-17",
+      "timestamp": "2026-11-16T15:13:59Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v426",
+        "ninode-ctor",
+        "retraction"
+      ],
+      "content": "2026-11-17 派生残点第18弾 v426（probe v426_1・2 全2本 EXIT=0）＝V-426-1/V-426-2 完遂: 成果物 tmp/re/v426_wrapper_ctor_ruling.md・台帳 row402（bak252）・round_verify ALL OK（rows 31..402 / total 288 / done 283 / open 5）・STATE (ev)・ai-todo #151 note。[確定(RTTI)] 0x724700＝NiLODNode（0xA7F97C）と NiSwitchNode（0xA7FA3C）の slot33(+0x84)（data refs 全2件）— FUN_0070AF00（NiNode 系 slot33・v425）へ透過する subclass override wrapper（obj=arg1・flag=arg2）。[確定] FUN_0070B780＝NiNode in-place ctor（v423_1 の find_head 归属を訂正）: SEH prologue 0x70B780（独立 fn・annotation L550247）→ FUN_00708450（sub-ctor＝runtime attach 3フィールド0初期化）→ *this=0xA7E38C（NiNode vtable）→ FUN_004b2d30(&this[+0xAC], param_2, 1)（embedded array 初期化）→ [+0xC8]/[+0xC0]/[+0xC4]=0／[+0xBC]=0xA7E378（副 vtable）→ return this。v423_1「NiNode ctor head=0x70B6A0・vptr store 0x70B7C3」は find_head 境界誤りで訂正（実体は FUN_0070B780 内 0x70B7C1）。[確定相当] attach 対象の最終像: site1＝新規作成 NiNode（ctor 経由）／site2＝既存 child → [+0x1C] には child NiNode が入り direct callers に self-attach なし → epilogue（child の [+0xC]）と fallback（node 自身の [+0xC]）は別オブジェクトの同一構造リスト [推定高→強化]（V-423-1 回答）。[確定(否定側)] 「virtual [+0xC] setter 群（0x6C0B80/0x6C0BF0/0x6C1FC0）」は撤回: data refs 全0・E8 全0・body＝struct copy routine（src=[esp+8]→dst=[esp+4] へ 0x00..0x14 の float/dword コピー等）→ 「[+0xC] への bucket-head 付与 fn」は存在しない＝v423 §1 該当記述は撤回。[未確定] node[+0xC] chain head の書手は再設定（残点）。残点 V-427-1..2（1=node[+0xC] chain head の書手（誤認撤回後の再走査）【低】／2=0x724700 の実 callers（virtual・self-attach 残可能性）と FUN_004b2d30 identity【低】）。教訓: SEH prologue（push -1; push handler; fs:[0]）は独立 fn の開始の決定打（find_head 境界誤りの検証・訂正に有効＝3件目）／「virtual setter」仮説は data refs・E8・body の3系統で同時に検証（形ではなく登録系で判定）／struct copy の mov [dst+disp],src は setter census の最頻出偽陽性。本日 push: v405→v425（ba6fb87b）21件＋本件 v426。v 採番 v426 消費（次=v427）。"
     }
   ],
   "metadata": {
-    "totalEntries": 830,
+    "totalEntries": 831,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-16T14:57:42Z",
-    "entry_count": 830,
-    "last_updated": "2026-11-16T14:57:42Z"
+    "lastUpdated": "2026-11-16T15:13:59Z",
+    "entry_count": 831,
+    "last_updated": "2026-11-16T15:13:59Z"
   }
 }
