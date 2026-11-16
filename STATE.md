@@ -1959,3 +1959,14 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **名前テーブルは「xref が無い文字列」ではなく「xref がある隣接文字列」を足がかりに**（Health/Magicka 本体は dword xref なし・`Strength` の .data cell が入口）／**`[edi*4+table]` 形の index access は同 fn 内の値取得 call 接続で id 空間を証明**／**格納先は case handler の1行 setter で決まり callers（recalc/levelup）が値の性格を語る**。
 - **本日 push 累計（セッション）**: v405 → … → v426 `df3cd38d` →（本件 v427 を本 commit で push）＝**23裁定**。
 - **次**: 残る低優先残点群（V-428-1..2／V-414-2..3／V-413-2／V-415-2 ほか）を v428+ で消化。supermemory 未登録23件（v405..v427）は MCP 復復待ち。
+
+## 2026-11-17 (ex) — 派生残点第20弾 v428（V-428-1 完遂）: **AV table skills 区の id 順を表実読で確定**（LightArmor/Marksman/Mercantile＝`[27]/[28]/[29]`）・**behavior/reputation/effect AVs（[33]..[70]+）も実読**・個別 cell xref＝0（index access のみ）
+
+- **成果物**: `tmp/re/v428_av_table_ext_ruling.md`（probe **v428_1 全 EXIT=0**）。台帳 **row404（bak254）**・`round_verify` **ALL OK**（rows 31..404 / total 290 / done 285 / open 5）。ai-todo **#151 に note**。v 採番 **v428 消費（次=v429）**。
+- **① [確定] skills 区の table 順序（`0xB0A1A8` 基点・表実読）**: `[12]Armorer/[13]Athletics/[14]Blade/[15]Block/[16]Blunt/[17]HandToHand/[18]HeavyArmor` → **`[19]Alchemy/[20]Alteration/[21]Conjuration/[22]Destruction/[23]Illusion/[24]Mysticism/[25]Restoration`** → **`[26]Acrobatics/[27]LightArmor/[28]Marksman/[29]Mercantile/[30]Security/[31]Sneak/[32]Speechcraft`** — **LightArmor/Marksman/Mercantile は `[27]/[28]/[29]` に所在**。v427 の「[19]Alchemy で外部知識と差異」は**表が physical(12-18)→magic(19-25)→stealth(26-32) 順であることが拡張実読で判明し解消**（table index＝AV id は v427 の getter-fn 証明を継続適用）。
+- **② [確定] behavior/reputation/effect AVs も実読**: `[33]Aggression/[34]Confidence/[35]Energy/[36]Responsibility` → `[37]Bounty/[38]Fame/[39]Infamy` → **`[40]MagickaMultiplier` … `[69]Vampirism/[70]Darkness`**（効果系 AVs・**window 砂切りで終端未確認＝残点**）。
+- **③ [確定(否定側)] 個別 cell（+19/+24/+25/+26/+27）への dword xref＝0件** → **使用は base（`0xB0A1A8`）+offset の index access のみ**（v427 の `[edi*4+base]` 形と整合・base refs 3件 `0x4F4610`/`0x4F60BC`/`0x4FEA26`）。
+- **残点 V-429-1..2**: 1=table 終端（`[70]Darkness` 以降）と最大 AV id（dispatcher case 上限 `0x1A+` との対応）【低】／2=V-428-2 引き継ぎ（`FUN_004F45D0`/`FUN_00501A00` 文脈と dispatcher caller `0x523358` の opcode identity）【低】。
+- **教訓**: **「外部知識との差異」は自分の記憶側の疑いより先に表を延長実読する** — 差異の正体（記憶の誤りか表の subset か）を**実読が一撃で決める**（本件は前者＝表が完全で外部記憶が誤り）。
+- **本日 push 累計（セッション）**: v405 → … → v427 `3282e32a` →（本件 v428 を本 commit で push）＝**24裁定**。
+- **次**: 残る低優先残点群（V-429-1..2／V-414-2..3／V-413-2／V-415-2 ほか）を v429+ で消化。supermemory 未登録24件（v405..v428）は MCP 復復待ち。

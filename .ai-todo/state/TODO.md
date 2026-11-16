@@ -225,6 +225,12 @@
   > ⑥[部分確定] skills 区: table は [18]HeavyArmor 直後に [19]Alchemy（外部知識の skill id 順と差異）→ skills 区の table順＝id 順は [推定高]・EXE 表を正とする（attrs/Health/Magicka/Fatigue 区の確定には影響なし）＝残点。
   > 残点 V-428-1..2（1=skills 区（id12..）の table 順序と LightArmor/Marksman/Mercantile の所在（25件超の拡張実読）【低】／2=FUN_004F45D0/FUN_00501A00 文脈と dispatcher direct caller 0x523358 の opcode identity【低】）。
   > 教訓: 名前テーブルは「xref が無い文字列」ではなく「xref がある隣接文字列」を足がかりに（Health/Magicka 本体は dword xref なし・Strength の .data cell が入口）／[edi*4+table] 形の index access は同 fn 内の値取得 call 接続で id 空間を証明／格納先は case handler の1行 setter で決まり callers（recalc/levelup）が値の性格を語る。v 採番 v427 消費（次=v428）。
+  > 【派生残点第20弾 v428 — V-428-1 完遂】probe v428_1 全 EXIT=0。成果物 tmp/re/v428_av_table_ext_ruling.md・台帳 row404（bak254）・round_verify ALL OK（rows 31..404 / total 290 / done 285 / open 5）。
+  > ①[確定] skills 区の table 順序（0xB0A1A8 基点・表実読）: [12]Armorer/[13]Athletics/[14]Blade/[15]Block/[16]Blunt/[17]HandToHand/[18]HeavyArmor → [19]Alchemy/[20]Alteration/[21]Conjuration/[22]Destruction/[23]Illusion/[24]Mysticism/[25]Restoration → [26]Acrobatics/[27]LightArmor/[28]Marksman/[29]Mercantile/[30]Security/[31]Sneak/[32]Speechcraft — LightArmor/Marksman/Mercantile は [27]/[28]/[29] に所在。v427 の「[19]Alchemy で外部知識と差異」は表が physical(12-18)→magic(19-25)→stealth(26-32) 順であることが拡張実読で判明し解消（table index＝AV id 継続適用）。
+  > ②[確定] behavior/reputation/effect AVs も実読: [33]Aggression/[34]Confidence/[35]Energy/[36]Responsibility→[37]Bounty/[38]Fame/[39]Infamy→[40]MagickaMultiplier/[41]NightEyeBonus/[42]AttackBonus/[43]DefendBonus/[44]CastingPenalty/[45]Blindness/[46]Chameleon/[47]Invisibility/[48]Paralysis/[49]Silence/[50]Confusion/[51]DetectItemRange/[52]SpellAbsorbChance/[53]SpellReflectChance/[54]SwimSpeedMultiplier/[55]WaterBreathing/[56]WaterWalking/[57]StuntedMagicka/[58]DetectLifeRange/[59]ReflectDamage/[60]Telekinesis/[61]ResistFire/[62]ResistFrost/[63]ResistDisease/[64]ResistMagic/[65]ResistNormalWeapons/[66]ResistParalysis/[67]ResistPoison/[68]ResistShock/[69]Vampirism/[70]Darkness（効果系・window 砂切りで終端未確認＝残点）。
+  > ③[確定(否定側)] 個別 cell（+19/+24/+25/+26/+27）への dword xref＝0件 → 使用は base+offset の index access のみ（v427 の [edi*4+base] 形と整合・base refs 3件）。
+  > 残点 V-429-1..2（1=table 終端（[70]以降）と最大 AV id（dispatcher case 上限 0x1A+ との対応）【低】／2=V-428-2 引き継ぎ（FUN_004F45D0/FUN_00501A00 文脈と dispatcher caller 0x523358 の opcode identity）【低】）。
+  > 教訓: 「外部知識との差異」は自分の記憶側の疑いより先に表を延長実読する—差異の正体（記憶の誤りか表の subset か）を実読が一撃で決める（本件は前者＝表が完全で外部記憶が誤り）。v 採番 v428 消費（次=v429）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1131,6 +1137,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1154,4 +1165,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 00:37:08
+**ai-todo** | Last Updated: 2026-11-17 00:45:35

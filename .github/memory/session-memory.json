@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-16T15:38:58Z",
+  "lastUpdated": "2026-11-16T15:47:14Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -12039,14 +12039,29 @@
         "name-table"
       ],
       "content": "2026-11-17 派生残点第19弾 v427（probe v427_1..4 全4本 EXIT=0）＝V-414-1 完遂: 成果物 tmp/re/v427_av_table_ruling.md・台帳 row403（bak253）・round_verify ALL OK（rows 31..403 / total 289 / done 284 / open 5）・STATE (ew)・ai-todo #151 note。[確定] AV name table＝.data 0xB0A1A8（char*・AV id→name）— window 実読25件連続: [0]Strength/[1]Intelligence/[2]Willpower/[3]Agility/[4]Speed/[5]Endurance/[6]Personality/[7]Luck（8属性）→ [8]Health/[9]Magicka/[10]Fatigue/[11]Encumbrance → [12]Armorer/[13]Athletics/[14]Blade/[15]Block/[16]Blunt/[17]HandToHand/[18]HeavyArmor/[19]Alchemy/[20]Alteration/[21]Conjuration/[22]Destruction/[23]Illusion/[24]Mysticism（base refs: 0x4F4610/0x4F60BC/0x4FEA26 の3件）。[確定] table index＝AV id — FUN_004F45D0（head 0x4F45D0）が AV 値取得 call 0x5F1910（v410 確定）と同一 fn 内で mov ecx,[edi*4+0xB0A1A8]（table[edi]）を名前として debug ログ出力（cmp byte [0xB361AC],0 ガード→push ecx; push 0xA487C0; call 0x579B60）→ table 空間＝AV getter の id 空間＋dispatcher case0..7=属性 setter と table[0..7]=8属性の完全一致。[確定] AV id8=Health・9=Magicka・10=Fatigue・11=Encumbrance。[確定] AV#8(Health) の格納先＝actor[+0x84] — dispatcher case8→FUN_00519C50（L210155-60: *(param_1+0x84)=param_2; FUN_0046abf0() notify）・callers5件＝dispatcher／FUN_005222D0（再計算＝計算値投入）／FUN_0066C200（levelup 適用）／FUN_00511570（未注記）／0x523F40（formType7 gate）。[確定] AV#9(Magicka)→TESActorBaseData[+8]（default50）／AV#10(Fatigue)→[+0xA]（default50）— case9/case10→FUN_00467290/FUN_004672B0（v414 setter family）＋ctor reset defaults（mov edx,0x32＝50/50）と接続。[確定] slot19(+0x4C) FUN_00467360＝mov ax,[ecx+0xa]; ret（[+0xA] getter）（slot20/slot2 は stricmp name lookup 系）。[部分確定] skills 区: table は [18]HeavyArmor 直後に [19]Alchemy（外部知識の skill id 順と差異）→ skills 区の table順＝id 順は [推定高]・EXE 表を正とする（attrs/Health/Magicka/Fatigue 区の確定には影響なし）＝残点。残点 V-428-1..2（1=skills 区（id12..）の table 順序と LightArmor/Marksman/Mercantile の所在（25件超の拡張実読）【低】／2=FUN_004F45D0/FUN_00501A00 文脈と dispatcher direct caller 0x523358 の opcode identity【低】）。教訓: 名前テーブルは「xref が無い文字列」ではなく「xref がある隣接文字列」を足がかりに（Health/Magicka 本体は dword xref なし・Strength の .data cell が入口）／[edi*4+table] 形の index access は同 fn 内の値取得 call 接続で id 空間を証明／格納先は case handler の1行 setter で決まり callers（recalc/levelup）が値の性格を語る。本日 push: v405→v426（df3cd38d）22件＋本件 v427。v 採番 v427 消費（次=v428）。"
+    },
+    {
+      "id": "151-v428-av-table-ext-2026-11-17",
+      "timestamp": "2026-11-16T15:47:14Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v428",
+        "actor-value",
+        "table-order"
+      ],
+      "content": "2026-11-17 派生残点第20弾 v428（probe v428_1 全 EXIT=0）＝V-428-1 完遂: 成果物 tmp/re/v428_av_table_ext_ruling.md・台帳 row404（bak254）・round_verify ALL OK（rows 31..404 / total 290 / done 285 / open 5）・STATE (ex)・ai-todo #151 note。[確定] skills 区の table 順序（0xB0A1A8 基点・表実読）: [12]Armorer/[13]Athletics/[14]Blade/[15]Block/[16]Blunt/[17]HandToHand/[18]HeavyArmor → [19]Alchemy/[20]Alteration/[21]Conjuration/[22]Destruction/[23]Illusion/[24]Mysticism/[25]Restoration → [26]Acrobatics/[27]LightArmor/[28]Marksman/[29]Mercantile/[30]Security/[31]Sneak/[32]Speechcraft — LightArmor/Marksman/Mercantile は [27]/[28]/[29] に所在。v427 の「[19]Alchemy で外部知識と差異」は表が physical(12-18)→magic(19-25)→stealth(26-32) 順であることが 拡張実読で判明し解消（table index＝AV id 継続適用）。[確定] behavior/reputation/effect AVs も実読: [33]Aggression/[34]Confidence/[35]Energy/[36]Responsibility→[37]Bounty/[38]Fame/[39]Infamy→[40]MagickaMultiplier/[41]NightEyeBonus/[42]AttackBonus/[43]DefendBonus/[44]CastingPenalty/[45]Blindness/[46]Chameleon/[47]Invisibility/[48]Paralysis/[49]Silence/[50]Confusion/[51]DetectItemRange/[52]SpellAbsorbChance/[53]SpellReflectChance/[54]SwimSpeedMultiplier/[55]WaterBreathing/[56]WaterWalking/[57]StuntedMagicka/[58]DetectLifeRange/[59]ReflectDamage/[60]Telekinesis/[61]ResistFire/[62]ResistFrost/[63]ResistDisease/[64]ResistMagic/[65]ResistNormalWeapons/[66]ResistParalysis/[67]ResistPoison/[68]ResistShock/[69]Vampirism/[70]Darkness（効果系・window 砂切りで終端未確認＝残点）。[確定(否定側)] 個別 cell（+19/+24/+25/+26/+27）への dword xref＝0件 → 使用は base+offset の index access のみ（v427 の [edi*4+base] 形と整合・base refs 3件）。残点 V-429-1..2（1=table 終端（[70]以降）と最大 AV id（dispatcher case 上限 0x1A+ との対応）【低】／2=V-428-2 引き継ぎ（FUN_004F45D0/FUN_00501A00 文脈と dispatcher caller 0x523358 の opcode identity）【低】）。教訓: 「外部知識との差異」は自分の記憶側の疑いより先に表を延長実読する—差異の正体（記憶の誤りか表の subset か）を実読が一撃で決める（本件は前者＝表が完全で外部記憶が誤り）。本日 push: v405→v427（3282e32a）23件＋本件 v428。v 採番 v428 消費（次=v429）。"
     }
   ],
   "metadata": {
-    "totalEntries": 832,
+    "totalEntries": 833,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-16T15:38:58Z",
-    "entry_count": 832,
-    "last_updated": "2026-11-16T15:38:58Z"
+    "lastUpdated": "2026-11-16T15:47:14Z",
+    "entry_count": 833,
+    "last_updated": "2026-11-16T15:47:14Z"
   }
 }
