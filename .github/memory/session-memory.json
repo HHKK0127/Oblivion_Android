@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-16T10:53:01Z",
+  "lastUpdated": "2026-11-16T11:00:10Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11843,14 +11843,29 @@
         "tes-actor-base-data"
       ],
       "content": "2026-11-16 派生残点第6弾 v414（probe v414_1..3 全3本 EXIT=0）＝3残点一挙解決: V-413-1/V-412-1/V-412-3。成果物 tmp/re/v414_actorbasedata_ruling.md・台帳 row390（bak240）・round_verify ALL OK（rows 31..390 / total 276 / done 271 / open 5）・STATE (ej)・ai-todo #151 note。[確定(命令)] [TESActorBaseData+0xE]（ushort・既定1・min clamp1）＝level — 決定打＝FUN_0066C200（levelup 適用）内の `ecx=base+0x24→call 0x4677F0→add ax,1→set`（machine 0x66C45E-0x66C47B）＝level-up increment の機械的証明。補証: script opcode FUN_0050CD30 が引数を直接 set／0x50AAA0 fn が actor 転送時に level GET→SET→FUN_005222D0 再計算／reset 既定1＋<1→1 clamp。[確定(RTTI)] Player[+0x24] のクラス＝.?AVTESActorBaseData@@（ctor FUN_00467320 の [eax]=&PTR_LAB_00A3B654 → vtable 0xA3B654 RTTI）。[確定] family: reset FUN_00467240（50/50/0/1/0/0/0）／ctor FUN_00467320（同 defaults）／u16 setter 4本同型（arg→store→virtual+0x50 通知）: [+8]=FUN_00467290（AV index9・初50）/[+0xA]=FUN_004672B0（index10・初50）/[+0xC]=FUN_004672D0（初0）/[+0xE]=FUN_00467270（level・初1）。[+0xE] setter E8=3・data refs 0: 0x50AB6A/0x50CE09/0x66C47B。[推定高] [+8]/[+0xA] 既定50/50＝AV index9/10＝Health/Magicka 系（根拠は初値50＋index のみ）。残点 V-414-1..3（1=AV index9/10/0xC 語の裏取り【低】/2=[+4]>>7 flag と [0xB333C4]→[+0x32] 加算【低】/3=V-413-2 引継ぎ【低】）。教訓: reset/ctor の既定値実測と increment 操作（add ax,1→set）のセットで語を機械的確定（既定1＋min1＋+1＝level 三証拠）／ctor の vptr 設定を RTTI 即同定／setter family は連番 fn 帯の線形 decode 全数化。本日 push: v405→v413（c94cd370）9件＋本件 v414。v 採番 v414 消費（次=v415）。"
+    },
+    {
+      "id": "151-v415-epilogue-args-2026-11-16",
+      "timestamp": "2026-11-16T11:00:10Z",
+      "priority": "medium",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v415",
+        "fastcall",
+        "ghidra-quirk"
+      ],
+      "content": "2026-11-16 派生残点第7弾 v415（probe v415_1・v415_2 全2本 EXIT=0）＝V-405-3 部分解: 成果物 tmp/re/v415_epilogue_args_ruling.md・台帳 row391（bak241）・round_verify ALL OK（rows 31..391 / total 277 / done 272 / open 5）・STATE (ek)・ai-todo #151 note。[確定] decompiled の FUN_006c6910(*(Bip01+0x1c)) 表示は Ghidra の fastcall ecx 落ち誤り — 実体は __fastcall 2引数: ecx＝[esp+0xc]（＝StoreTargets FUN_006c9590 prologue の mov [esp+0xc],esi＝this(seq) spill）・stack 引数＝Bip01[+0x1C]（machine 0x6C9B8A/8E/8F）→ NiAVObject[+0x1C] に sequence が入る構造は不存在 [確定(否定側)]＝V-405-3 の矛盾解消。[確定(命令)] epilogue ecx 経路: prologue sub esp,2C;push esi;mov esi,ecx;push edi;mov [esp+0xc],esi→call 群 balanced で esp 復帰→mov ecx,[esp+0xc]＝seq→FUN_006c6910(this=seq, arg=Bip01[+0x1C])（fun 内 edi=ecx が sequence layout を読む v405/v406 観測と整合）。[部分確定] Bip01[+0x1C] の使用先: fun 内 mov ecx,[esp+0x2c]→push 0xB3CD7C→call 0x700010（decompiled L496379 も ecx 落ち表示）→ Bip01[+0x1C] は FUN_00700010 の ecx 引数・identity 未→残点。[確定(命令)] epilogue 挙動: prereq==0 のときのみ palette Get(Bip02)→Get(Bip01)→[+0x1C] 検証→FUN_006c6910(seq, ...)→return 1（0x6C9B54-0x6C9B9B・v372 骨解決 epilogue と整合）。L498845 [manager+0x30]->slot23 呼び出し＝[未確定]→残点。残点 V-415-1【中】Bip01[+0x1C] 正体（FUN_00700010 identity）／V-415-2【低】slot23 と manager[+0x30] 正体。教訓: fastcall の ecx 落ちは「this が消える」「stack 引数が it に見える」両方向→call 直前の mov ecx で実施／prologue 直後 spill で epilogue reg 読み逆算／矛盾はまず Ghidra 表示の引数落ちを疑う。本日 push: v405→v414（1e7e2d09）10件＋本件 v415。v 採番 v415 消費（次=v416）。"
     }
   ],
   "metadata": {
-    "totalEntries": 819,
+    "totalEntries": 820,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-16T10:53:01Z",
-    "entry_count": 819,
-    "last_updated": "2026-11-16T10:53:01Z"
+    "lastUpdated": "2026-11-16T11:00:10Z",
+    "entry_count": 820,
+    "last_updated": "2026-11-16T11:00:10Z"
   }
 }

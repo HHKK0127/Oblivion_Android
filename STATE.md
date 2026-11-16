@@ -1763,3 +1763,16 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **reset/ctor の「既定値実測」と「increment 操作（`add ax,1`→set）」のセットでフィールドの語を機械的確定**（既定1＋min clamp1＋+1 increment ＝ level の三証拠）／**ctor が設定する vtable の RTTI が埋め込みオブジェクトのクラスを即同定**／**u16 setter family は連番 fn 帯の線形 decode で全数化**。
 - **本日 push 累計**: v405 → … → v413 `c94cd370` →（本件 v414 を本 commit で push）＝**10裁定**。
 - **次**: 低優先残点群（V-414-1..3／V-400系／V-405系等）を v415+ で消化。supermemory 未登録10件（v405..v414）は MCP 復復待ち。
+
+## 2026-11-16 (ek) — 派生残点第7弾 v415: **StoreTargets epilogue の `FUN_006c6910` 呼び出しは `__fastcall(seq, Bip01[+0x1C])` [確定]** — **decompiled の「this＝Bip01[+0x1C]」は Ghidra ecx 落ち表示誤り＝V-405-3 の矛盾解消**
+
+- **成果物**: `tmp/re/v415_epilogue_args_ruling.md`（probe **v415_1・v415_2 の2本全 EXIT=0**）。台帳 **row391（bak241）**・`round_verify` **ALL OK**（rows 31..391 / total 277 / done 272 / open 5）。ai-todo **#151 に note**。v 採番 **v415 消費（次=v416）**。
+- **① [確定] decompiled 表示の正体**: `FUN_006c6910(*(Bip01+0x1c))` は **Ghidra の fastcall ecx 落ちによる誤り** — 実体は **`__fastcall` 2引数: ecx ＝ `[esp+0xc]`（＝StoreTargets `FUN_006c9590` prologue の `mov [esp+0xc], esi` ＝ **this(seq) の spill**）・stack 引数 ＝ `Bip01[+0x1C]`**（machine `0x6C9B8A mov ecx,[esp+0xc] → 0x6C9B8E push eax → 0x6C9B8F call 0x6c6910`）→ **`NiAVObject[+0x1C]` に sequence が入る構造は不存在 [確定(否定側)] ＝ V-405-3 の「矛盾」は解消**。
+- **② [確定(命令)] epilogue の ecx 経路**: prologue `sub esp,2C → push esi → mov esi,ecx（this＝seq）→ push edi → mov [esp+0xc],esi`（0x6C9590-0x6C95A2）→ call 引数群は push/pop balanced で epilogue 直前まで esp 復帰 → **`mov ecx,[esp+0xc]` ＝ seq** → `FUN_006c6910(this=seq, arg=Bip01[+0x1C])`（fun 内 `edi=ecx` が sequence layout を読む v405/v406 の観測と完全整合）。
+- **③ [部分確定] `Bip01[+0x1C]` の使用先**: fun 内 `mov ecx,[esp+0x2c]（＝Bip01[+0x1C]）→ push 0xB3CD7C → call 0x700010`（decompiled L496379 `puVar3 = FUN_00700010(&DAT_00b3cd7c)` も **ecx 落ち表示**）→ **`Bip01[+0x1C]` は `FUN_00700010` の ecx 引数へ**・`FUN_00700010` identity 未同定 → **正体は残点 V-415-1**。
+- **④ [確定(命令)] epilogue 全体挙動**: `prereq (cStack_2a)==0` のときのみ `palette->Get("Bip02")` → `palette->Get("Bip01")` → `Bip01[+0x1C]` 非0検証 → `FUN_006c6910(seq, Bip01[+0x1C])` → `return 1`（machine 0x6C9B54-0x6C9B9B・**v372 骨解決 epilogue（Bip02→Bip01）と完全整合**）。
+- **[未確定] L498845 `[manager+0x30]` deref の `slot23(+0x5C)` 呼び出し**（prereq==1 時の本命側）→ 残点 V-415-2。
+- **残点 V-415-1..2**: 1=**`Bip01[+0x1C]` の正体**（`FUN_00700010` identity・v405 の「keyframe global 取得/初期化」記録の裏取り）【中】／2=`L498845` slot23 呼び出しと `manager[+0x30]` 正体【低】。
+- **教訓**: **fastcall の ecx 落ちは「this が decompiled から消える」「stack 引数が this に見える」の両方向で起きる** → thiscall/fastcall 判別は **call 直前の `mov ecx,...` で必ず実施**（v414 の fn 内教訓を caller 側へ展開した実例）／**prologue 直後の `mov [esp+N], reg` spill を打っておくと epilogue の reg 読みを逆算して正体を機械確定**／**「fn がこの layout を読むのにこの値が渡る」型の矛盾はまず Ghidra 表示の引数落ちを疑え**。
+- **本日 push 累計**: v405 → … → v414 `1e7e2d09` →（本件 v415 を本 commit で push）＝**11裁定**。
+- **次**: 残る中/低優先残点（V-415-1【中】/V-405-1..2【中】/V-406-2【中】等）を v416+ で消化。supermemory 未登録11件は MCP 復復待ち。

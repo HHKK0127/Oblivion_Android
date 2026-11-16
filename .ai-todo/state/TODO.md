@@ -123,6 +123,13 @@
   > ④（副次）[+8]/[+0xA] 既定50/50＝AV index9/10 [推定高: Health/Magicka 系]（EXE 根拠は初値50＋index9/10 のみ）。
   > 残点 V-414-1【低】AV index9/10/0xC の語の裏取り／V-414-2【低】[+4]>>7 flag と [0xB333C4]→[+0x32] 加算の意味／V-413-2 引継ぎ【低】。
   > 教訓: reset/ctor の既定値実測と increment 操作（add ax,1→set）のセットで語を機械的確定（既定1＋min1＋+1＝level 三証拠）／ctor の vptr 設定を RTTI 即同定／setter family は連番 fn 帯の線形 decode で全数化。v 採番 v414 消費（次=v415）。
+  > 【派生残点第7弾 v415 — V-405-3 部分解】probe v415_1・v415_2 全 EXIT=0。成果物 tmp/re/v415_epilogue_args_ruling.md・台帳 row391（bak241）・round_verify ALL OK（rows 31..391 / total 277 / done 272 / open 5）。
+  > ①[確定] decompiled の `FUN_006c6910(*(Bip01+0x1c))` 表示は Ghidra の fastcall ecx 落ちによる誤り — 実体は __fastcall 2引数: ecx＝[esp+0xc]（＝StoreTargets prologue の `mov [esp+0xc], esi`＝this(seq) の spill）・stack 引数＝Bip01[+0x1C]（machine 0x6C9B8A/8E/8F）→ **NiAVObject[+0x1C] に sequence が入る構造は不存在 [確定(否定側)]＝V-405-3 の矛盾解消**。
+  > ②[確定(命令)] epilogue の ecx 経路: prologue `sub esp,2C; push esi; mov esi,ecx(this=seq); push edi; mov [esp+0xc],esi` → call 群 balanced で esp 復帰 → mov ecx,[esp+0xc]＝seq → FUN_006c6910(this=seq, arg=Bip01[+0x1C])（fun 内 edi=ecx が sequence layout を読む観測と整合）。
+  > ③[部分確定] Bip01[+0x1C] の使用先: fun 内 `mov ecx,[esp+0x2c]→push 0xB3CD7C→call 0x700010`（decompiled L496379 も ecx 落ち）→ Bip01[+0x1C] は FUN_00700010 の ecx 引数へ・identity 未同定→残点。
+  > ④[確定(命令)] epilogue 挙動: prereq==0 のときのみ palette Get(Bip02)→Get(Bip01)→[+0x1C] 検証→FUN_006c6910(seq, ...)→return 1（0x6C9B54-0x6C9B9B・v372 骨解決 epilogue と整合）。L498845 slot23 呼び出し＝[未確定]→残点。
+  > 残点 V-415-1【中】Bip01[+0x1C] 正体（FUN_00700010 identity）／V-415-2【低】slot23 呼び出しと manager[+0x30] 正体。
+  > 教訓: fastcall の ecx 落ちは「this が消える」「stack 引数が it に見える」両方向→call 直前の mov ecx で必ず実施／prologue 直後 spill で epilogue の reg 読みを逆算／矛盾はまず Ghidra 表示の引数落ちを疑う。v 採番 v415 消費（次=v416）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1029,11 +1036,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1057,4 +1059,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-16 19:52:08
+**ai-todo** | Last Updated: 2026-11-16 19:59:21
