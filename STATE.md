@@ -1970,3 +1970,14 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **「外部知識との差異」は自分の記憶側の疑いより先に表を延長実読する** — 差異の正体（記憶の誤りか表の subset か）を**実読が一撃で決める**（本件は前者＝表が完全で外部記憶が誤り）。
 - **本日 push 累計（セッション）**: v405 → … → v427 `3282e32a` →（本件 v428 を本 commit で push）＝**24裁定**。
 - **次**: 残る低優先残点群（V-429-1..2／V-414-2..3／V-413-2／V-415-2 ほか）を v429+ で消化。supermemory 未登録24件（v405..v428）は MCP 復復待ち。
+
+## 2026-11-17 (ey) — 派生残点第21弾 v429（V-429-1 完遂）: **AV name table 終端＝`[0..71]`（72件・`[71]ResistWaterDamage`）[確定]**・**dispatcher case＝0..39（`[39]Infamy` まで一致）[確定]**・**effect AV(40..71) は dispatcher 外 [確定(否定側)]**
+
+- **成果物**: `tmp/re/v429_av_table_end_ruling.md`（probe **v429_1 全 EXIT=0**）。台帳 **row405（bak255）**・`round_verify` **ALL OK**（rows 31..405 / total 291 / done 286 / open 5）。ai-todo **#151 に note**。v 採番 **v429 消費（次=v430）**。
+- **① [確定] table の終端（実読）**: window `+70..+73` → `[70]Darkness` → **`[71]ResistWaterDamage`** → `[72]'Begin'` → `[73]=0xA2F7EC`（空文字列 ptr・run 終了）→ **AV name table ＝ `[0..71]` の72件**。`[72]'Begin'` は AV 名として不自然＝**隣接構造の先頭 [推定高]**（`[73]`＝空文字列 default ptr と続く）。
+- **② [確定] dispatcher `FUN_00519F50` の case 範囲**: decompiled body L210351-210436 の **switch case 全40件＝`0..0x27`（0..39・連番）** — **case0..39 ⇔ table[0..39]（`[39]Infamy` まで）と完全一致**。
+- **③ [確定(組合せ)] 最大 handled AV id＝39（Infamy）／table は72件** → **effect AV 群（`[40]MagickaMultiplier`..`[71]ResistWaterDamage`）は dispatcher 外（magic/効果システム側）[確定(否定側: dispatcher case なし)]** — attrs(0-7)/vitals(8-11)/skills(12-32)/behavior(33-36)/reputation(37-39) が dispatcher 管轄。
+- **残点 V-430-1..2**: 1=`[72]'Begin'` の正体（隣接構造・`0xA2F7EC` 空文字列 ptr とセット）【低】／2=effect AV（40..71）の書き手システム（dispatcher 外の magic/効果処理での setter 経路）【低】。
+- **教訓**: **switch の case 範囲は「最後の case」でなく「regex 全抽出の集合」で見る**（`0x25..0x27` が `0x21..0x24` の前に並ぶため部分列挙だと上限を誤認する）／**table 終端は「空文字列 ptr」の出現で読む**（run break は非 ptr と空文字列の2種類）。
+- **本日 push 累計（セッション）**: v405 → … → v428 `65d396b2` →（本件 v429 を本 commit で push）＝**25裁定**。
+- **次**: 残る低優先残点群（V-430-1..2／V-414-2..3／V-413-2／V-415-2 ほか）を v430+ で消化。supermemory 未登録25件（v405..v429）は MCP 復復待ち。

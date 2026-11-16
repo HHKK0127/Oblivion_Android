@@ -231,6 +231,12 @@
   > ③[確定(否定側)] 個別 cell（+19/+24/+25/+26/+27）への dword xref＝0件 → 使用は base+offset の index access のみ（v427 の [edi*4+base] 形と整合・base refs 3件）。
   > 残点 V-429-1..2（1=table 終端（[70]以降）と最大 AV id（dispatcher case 上限 0x1A+ との対応）【低】／2=V-428-2 引き継ぎ（FUN_004F45D0/FUN_00501A00 文脈と dispatcher caller 0x523358 の opcode identity）【低】）。
   > 教訓: 「外部知識との差異」は自分の記憶側の疑いより先に表を延長実読する—差異の正体（記憶の誤りか表の subset か）を実読が一撃で決める（本件は前者＝表が完全で外部記憶が誤り）。v 採番 v428 消費（次=v429）。
+  > 【派生残点第21弾 v429 — V-429-1 完遂】probe v429_1 全 EXIT=0。成果物 tmp/re/v429_av_table_end_ruling.md・台帳 row405（bak255）・round_verify ALL OK（rows 31..405 / total 291 / done 286 / open 5）。
+  > ①[確定] table の終端（実読）: window +70..+73 → [70]Darkness → [71]ResistWaterDamage → [72]'Begin' → [73]=0xA2F7EC（空文字列 ptr・run 終了）→ AV name table＝[0..71] の72件。[72]'Begin' は AV 名として不自然＝隣接構造の先頭 [推定高]（[73]＝空文字列 default ptr と続く）。
+  > ②[確定] dispatcher FUN_00519F50 の case 範囲: decompiled body L210351-210436 の switch case 全40件＝0..0x27（0..39・連番）— case0..39⇔table[0..39]（[39]Infamy まで）と完全一致。
+  > ③[確定(組合せ)] 最大 handled AV id＝39（Infamy）／table は72件 → effect AV 群（[40]MagickaMultiplier..[71]ResistWaterDamage）は dispatcher 外（magic/効果システム側）[確定(否定側: dispatcher case なし)] — attrs(0-7)/vitals(8-11)/skills(12-32)/behavior(33-36)/reputation(37-39) が dispatcher 管轄。
+  > 残点 V-430-1..2（1=[72]'Begin' の正体（隣接構造・0xA2F7EC 空文字列 ptr とセット）【低】／2=effect AV（40..71）の書き手システム（dispatcher 外の magic/効果処理での setter 経路）【低】）。
+  > 教訓: switch の case 範囲は「最後の case」でなく「regex 全抽出の集合」で見る（0x25..0x27 が 0x21..0x24 の前に並ぶため部分列挙だと上限誤認）／table 終端は「空文字列 ptr」の出現で読む（run break は非 ptr と空文字列の2種類）。v 採番 v429 消費（次=v430）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1137,11 +1143,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1165,4 +1166,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 00:45:35
+**ai-todo** | Last Updated: 2026-11-17 00:52:52
