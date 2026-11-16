@@ -87,6 +87,14 @@
   > ①opcode 特定=[確定(実文字列)]: FUN_0050D020＝`AdvancePCSkill`(opid 0x10D4)/`AdvancePCLevel`(0x10D5)/`ModPCSkill`(0x110F・help 'Modify the Players Skill. [modpcs Blunt, 10]') の共通 impl（stride 0x28 レコード・flags 0x20000・第2 fn FUN_004FDE30・.data 0xB0E9E0/0xB0F318 実読）。②間接テーブル=[確定(RTTI)]: .rdata 0xA73DA8＝PlayerCharacter vtable（head 0xA73A0C・232 slots・ctor FUN_0066A740 の vptr 設定と一致）の index231(+0x3BC) → **FUN_00668C30＝PlayerCharacter virtual slot231**。③dead slot=[確定(否定側)] 6系統: E8=0／生 data refs=vtable のみ／decompiled +0x3bc)=0／call [reg+0x3BC] disp32=0／SIB hit は decode 棄却／FF15/FF25 vtable 間接=0（sealed）。④帰結=[部分確定]: 唯一加算者 FUN_00668B30 の E8=1 は FUN_00668C30 のみ→保留増分の直接経路は実質到達不能（FUN_00668B30/0066C200 の間接は未走査で断定は[未確定]）。
   > 残点再定義: **V-409-1【高】「+10 初期適用 fn」本体**（v406 否定群と統合・[Player+0x130+idx*4] の virtual 書手＋chargen finish 系 FUN_00597540/FUN_0059FF60 machine 未解析部を再走査）／V-409-2【中】保留増分システム全体の実行有無／V-409-3【低】FUN_004FDE30 identity と 0x20000/0xB0A900。
   > 教訓: E8=0 の間接 fn は data ref 隣接 window の dword 構造＋実読で識別／テーブル head は後方 walk→head refs（ctor vptr 設定）＋RTTI で即同定／dead 判定は多系統 census＋毎回 decode で偽陽性棄却（FF バイトは xor の modrm でも出る）。v 採番 v409 消費（次=v410・着手時再確認）。
+  > 【V-409-1【高】裁定（v410・派生残点第2弾）】probe v410_1..v410_5 全 EXIT=0。成果物 tmp/re/v410_skill_writers_ruling.md・台帳 row386（bak236）・round_verify ALL OK（rows 31..386 / total 272 / done 267 / open 5）。
+  > ①[確定] Player skill 値（[Player+0x130+idx*4]）の書手4系統と呼出し元を全数（E8＋data refs＋decompiled 直接 form の3系統）: setter FUN_0065FA40←opcode FUN_0050D020＋FUN_00668B30／リセット FUN_00668030←ctor＋FUN_0066C200／更新 FUN_00668070←E8=4／**保留適用 FUN_0066C200←E8=2＝chargen 帯 0x596B4B（head FUN_00596980）＋menu FUN_005C28F0**。4書手とも data refs 0＝vtable/virtual 書手なし・decompiled `+0x130)` 直接も virtual disp/別クラスのみ＝追加書手なし（5系統目否定）。
+  > ②[確定] **所属訂正**: call@0x668BB3 は FUN_00668B30 内（find_head が真 head 0x668B30 を飛び越し）→ **v406/v409 ruling の「setter caller＝FUN_006684B0」は誤り・訂正**。FUN_006684B0＝LevelUpData_1.txt debug ダンプ（setter 呼び出しなし）。
+  > ③[確定] FUN_00668B30＝skill 統合加算 fn: current 読み→+amount→FUN_0065FA40 即時 setter→しきい値→超過時 FUN_00668070→余りを [+0x5B0] 保留へ再加算。[推定高] 供給 funnel＝供給元は dead slot FUN_00668C30 経由のみ＋data refs 0 → 保留増分は実質0で FUN_0066C200 適用も常に0。
+  > ④[確定(命令)] chargen 側: mov ecx,[0xB333C4]→call FUN_0066C200→FUN_005F2530(player,1.0)→FUN_005F1910(player,9)→fild（virtual+0x2DC walk 直後・decompiled 未収録帯は machine 補完）。
+  > ⑤[部分確定] **+10 初期適用: skill 側＝本系統に不在 [推定高]**（定数加算実行系は opcode ModPCSkill のみ・+10 指定可は script/コンソール）／**属性+10＝FUN_005222D0 の attr 計算（実行時グローバル 0xB362E4/EC・書手未調査）に残存 [未確定]**。
+  > 残点 V-410-1【高】= 属性+10 書手と FUN_005222D0 attr 計算解釈＋skill 不在の最終裏取り（残2 update caller 0x4B585B/FUN_0066A3D0 型付け）／V-410-2【低】chargen 帯未注記 fn と FUN_00579C10 callback／V-410-3【低】FUN_004FDE30（v409 継続）。
+  > 教訓: find_head は境界飛び越し得る→caller 所属は decompiled body 突合で再確認／書手網羅は E8＋data refs＋直書き form の3系統／供給 funnel は唯一供給元の全系統否定が揃って初めて [推定高]。v 採番 v410 消費（次=v411）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -993,6 +1001,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1016,4 +1029,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-16 19:12:18
+**ai-todo** | Last Updated: 2026-11-16 19:21:50
