@@ -347,6 +347,15 @@
   > ⑥[未確定] [esp+0x5c] path CFG は継続未着手（v439 記録維持）。
   > 残点 V-442-1..3（1=0x19/0x28 FormType の最終同定と FUN_004fab20 許可リスト {6,0x23} の意味【低】／2=flag B chain root FUN_0056a3b0 の identity と FUN_0056b220/2e0 の callers【低】／3=[esp+0x5c] path CFG と docs census unconfirmed 3159 の tail-jmp 切り分け【低】）。
   > 教訓: window 相関の noise は「record-class prefix＋noise denylist」の2段フィルタで大幅削減（v440 の1段で12偽マッチ→v441 の2段で49件の純対応表、denylist 補完が次 probe の第一歩）／enum name テーブル不在は string census 0 hits で [確定(否定側)]／branch target が判定命令なら aligned decode でその場で意味確定（cmp eax,0x21）／single-use getter chain は E8 census を2段たどれば root 到達／census 精度は2×2 で測る（minseg=0x30×ret=2037／minseg=0x10×ret=3038／minseg=0x10×raw=4749）・単値引用は禁止。v 採番 v441 消費（次=v442）。
+  > 【派生残点第34弾 v442 — V-442-1..3 完遂】probe v442_1..v442_3 全3本 EXIT=0。成果物 tmp/re/v442_allowlist_ruling.md・台帳 row418（bak268）・round_verify ALL OK（rows 31..418 / total 304 / done 299 / open 5）。
+  > ①[確定] V-442-1 0x23 FormType＝TESNPC（expanded window -0x90＋denylist 拡張で解決・switch 外＝inventory 非対象と整合）。[未確定] 0x19/0x28（switch set 内2値）は masked 継続（noise TESIcon と window 共存・fn head からの ctor 直接 decode が別法として要）。
+  > ②[確定] FUN_004fab20 許可リスト＝{TESFaction(0x06), TESNPC(0x23)}: machine 4FB168 `movzx ecx,byte[edi+4]; cmp ecx,6; je ok; cmp ecx,0x23; jne fail` → byte[obj+4] ∈ {TESFaction, TESNPC} のみ許可、否则 fail [確定(命令)]、4FB183 `cmp byte[eax+4],0x43`（EffectShader 判定・別 gate）。
+  > ③[確定] FUN_004fab20 は compiled script の char-opcode decode/実行 fn [確定(decompiled)]（L194461 `switch(cVar4){case 'G':case 'Z':case 'r':...}`＋FUN_004fa9c0(short,…) 呼出し）→ 許可リストはその中の「Faction/NPC のみ受容する parameter 検証」[推定高]（どの opcode case か [未確定]＝残点）。
+  > ④[確定] V-442-2 flag-B chain root FUN_0056a3b0＝条件比較 evaluator [確定(decompiled)]: L269931 `undefined2 FUN_0056a3b0(undefined4 op, float, float)`／switch(op): case0 `if(param_3!=param_2) return 0`/case1 反転/case2 `<=`/case3 `<` …＝比較演算子実装。chain FUN_0056a3b0 --call@0x56A464--> FUN_0056ad60 --call@0x56ADAC--> FUN_0056b190（flag B getter）[確定]、比較評価時に type-B flag を読む＝条件式の type 検証 [推定高]。[未確定] FUN_0056b220/2e0 の callers は未調査＝残点。
+  > ⑤[部分確定] V-442-3 docs census unconfirmed 3159 の切り分け: 末尾 byte histogram＝0xFF=1859/0x00=1214（99%+）・jcc rel32（end-2=0x0F）は0件・他は≤10件 → non-ret 境界の大半は indirect jmp/call（FF..）か disp32 末尾0x00＝indirect-jmp tail/switch 表リレー [推定高]。ret-confirmed 3038 は下限として堅い [確定]、non-ret 3159 は tail-jmp epilogue と switch case チャンク padding の混在 [推定]（機械分離は残点）→ 欠落下限3038／上限6197 レンジ維持。
+  > ⑥[部分確定] V-442-3 [esp+0x5c]（v439 訂正1件含む）: (i) FUN_00404fd0 全 body 完読＝`uint(ulong* p)`: u16@+4==0xffff なら strlen(*p) 戻り、否则 u16 戻り＝string length getter・読みのみ [確定] → v439 の「408FCF は leacall fill」記述を訂正（書かない）。(ii) 書くのは direct 3件（407CBA/407E5B/408F72=0）＋dtor 1件（409027→FUN_00402da0 ゼロ化）＝fill 点5件・非ゼロは direct 3件のみ [確定]。(iii) CFG: [0x409E80,0x40A29D) への branch targets 42件、nearest 0x40A262 から 0x40A29D まで touch なし＝block 継承 [確定]（非ゼロ経路は 407CBA/407E5B のどちらか・到達 path 決定は [未確定]＝残点）。
+  > 残点 V-443-1..3（1=0x19/0x28 FormType（fn head ctor 直接 decode）と許可リストの所属 opcode case【低】／2=FUN_0056b220/2e0 の callers と FUN_0056ad60 呼出の case【低】／3=[esp+0x5c] 非ゼロ経路 CFG と docs census non-ret 3159 の機械分離【低】）。
+  > 教訓: denoise フィルタは改善しても masked は残る（window 拡大で1件解消時点で別法を次 probe 第一歩に明記）／許可リスト等の即値は既存の49件 FormType 表との突合で1手即決／fn identity は docs body の char-opcode switch（case 'G'）実読が最速／census unconfirmed は末尾 byte histogram＋0x0F end-2 検査で機械分離（jcc rel32 ゼロの否定側も記録）／「A が slot に書くか」は decompiled 全 body の return の向きで判定（lea→call を fill と決めつけると訂正発生＝v439 の教訓）。v 採番 v442 消費（次=v443）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1253,6 +1262,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1276,4 +1290,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 06:18:25
+**ai-todo** | Last Updated: 2026-11-17 06:24:16

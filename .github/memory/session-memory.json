@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-16T21:19:04Z",
+  "lastUpdated": "2026-11-16T21:24:54Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -12252,14 +12252,30 @@
         "docs-census"
       ],
       "content": "2026-11-17 派生残点第33弾 v441（probe v441_1..3 全3本 EXIT=0）＝V-441-1..3 完遂: 成果物 tmp/re/v441_formtype_ruling.md・台帳 row417（bak267）・round_verify ALL OK（rows 31..417 / total 303 / done 298 / open 5）・STATE (fk)・ai-todo #151 note。[確定] V-441-1 byte[obj+4]＝FormType に昇格: record-class ctor（vtable store 直近の mov byte [reg+4], imm）×record-class prefix×noise denylist の3条件交差で class↔FormType 対応表49件構築 （inventory 系: 0x13=TESObjectAPPA/0x14=TESObjectARMO/0x15=TESObjectBOOK/0x16=TESObjectCLOT/0x17=TESObjectCONT/0x18=TESObjectDOOR/0x1A=TESObjectLIGH/0x1B=TESObjectMISC/0x21=TESObjectWEAP/0x22=TESAmmo/0x26=TESSoulGem/0x27=TESKey/0x2A=TESSigilStone/0x2B=TESLevItem、他: 0x04=TESGlobal/0x05=TESClass/0x06=TESFaction/0x12=TESObjectACTI/0x1C=TESObjectSTAT/0x20=TESFurniture/0x24=TESCreature/0x25=TESLevCreature/0x29=TESSubSpace/0x30=TESObjectCELL/0x31=TESChildCell/0x39=TESTopic/0x3B=TESQuest/0x3C=TESIdleForm/0x3E=TESCombatStyle/0x40=TESLevSpell/0x41=TESObjectANIO/0x42=TESWaterForm/0x43=TESEffectShader 等）。FUN_00469520 の switch 14 値のうち12値が対応表と直接一致し全件 inventory 品目、残2値 0x19/0x28 は vtable-window noise（TESIcon）で masked [部分確定]。＋ FUN_004fab20 内の FormType 使用形を machine で直接確認 [確定]: 4FB168 movzx ecx,byte[edi+4]; cmp ecx,6; je; cmp ecx,0x23; jne fail（byte[obj+4] ∈ {6,0x23} のみ許可）と 4FB183 cmp byte[eax+4],0x43（＝EffectShader FormType）。enum 名テーブルは EXE に無し（string census 0 hits）[確定(否定側)]。[確定] V-441-2 flag B getter chain: FUN_0056b190（1行 getter）→ E8 caller は1件 0x56ADAC＝FUN_0056ad60（L270565 void __fastcall(byte *param_1)）→ その caller も1件 0x56A464＝FUN_0056a3b0 → chain FUN_0056a3b0→FUN_0056ad60→FUN_0056b190 [確定]（root の所属 pass [未確定]）。[確定] FUN_004fab20 分岐先 0x4FB1A1＝cmp eax,0x21（eax＝arg type、0x21＝v437 表で Form Type）→ type-B consumer の分岐先は「arg type==FormType」判定 [確定]。signature 3本: FUN_0056b220=uint(uint,ushort*)／FUN_0056b2e0=void(uint*,uint*,char)／FUN_004fab20=void(double*,int,int*,int,undefined4,int,int,char)（8引数）[確定(decompiled)]、両者の callers は [未確定]＝残点。[確定] V-441-3 docs census minseg=0x10 ret-confirmed: gaps>0x200 内部境界6197件／ret-confirmed（前 segment 末尾 C2/C3/C9/CB）＝3038件（49.0%）／unconfirmed 3159（tail-jmp E9 epilogue＋intra-function padding [推定]）→ 欠落レンジ＝ret-confirmed 下限 3038 ～ segment 法上限 4749 [確定(実測)]（minseg=0x30 版 ret-confirmed 2037 と併せ2×2 測定）。[未確定] [esp+0x5c] path CFG は継続未着手（v439 記録維持）。残点 V-442-1..3（1=0x19/0x28 FormType の最終同定と FUN_004fab20 許可リスト {6,0x23} の意味【低】／2=flag B chain root FUN_0056a3b0 の identity と FUN_0056b220/2e0 の callers【低】／3=[esp+0x5c] path CFG と docs census unconfirmed 3159 の tail-jmp 切り分け【低】）。教訓: window 相関の noise は「record-class prefix＋noise denylist」の2段フィルタで大幅削減（v440 の1段で12偽マッチ→v441 の2段で49件の純対応表、denylist 補完が次 probe の第一歩）／enum name テーブル不在は string census 0 hits で [確定(否定側)]／branch target が判定命令なら aligned decode でその場で意味確定（cmp eax,0x21）／single-use getter chain は E8 census を2段たどれば root 到達／census 精度は2×2 で測る（minseg=0x30×ret=2037／0x10×ret=3038／0x10×raw=4749）・単値引用は禁止。本日 push: v405→v440（1238a2d1）36件＋本件 v441。v 採番 v441 消費（次=v442）。"
+    },
+    {
+      "id": "151-v442-allowlist-2026-11-17",
+      "timestamp": "2026-11-16T21:24:54Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v442",
+        "allowlist",
+        "flag-chain",
+        "esp-5c"
+      ],
+      "content": "2026-11-17 派生残点第34弾 v442（probe v442_1..3 全3本 EXIT=0）＝V-442-1..3 完遂: 成果物 tmp/re/v442_allowlist_ruling.md・台帳 row418（bak268）・round_verify ALL OK（rows 31..418 / total 304 / done 299 / open 5）・STATE (fl)・ai-todo #151 note。[確定] V-442-1 0x23 FormType＝TESNPC（expanded window -0x90＋denylist 拡張で解決・switch 外と整合）。[未確定] 0x19/0x28（switch set 内2値）は masked 継続（noise TESIcon と window 共存・fn head からの ctor 直接 decode が別法として要）。[確定] FUN_004fab20 許可リスト＝{TESFaction(0x06), TESNPC(0x23)}: machine 4FB168 movzx ecx,byte[edi+4]; cmp ecx,6; je ok; cmp ecx,0x23; jne fail → byte[obj+4] ∈ {TESFaction, TESNPC} のみ許可、否则 fail [確定(命令)]、4FB183 cmp byte[eax+4],0x43（EffectShader 判定・別 gate）。[確定] FUN_004fab20 は compiled script の char-opcode decode/実行 fn [確定(decompiled)]（L194461 switch(cVar4){case 'G':case 'Z':case 'r':...}＋FUN_004fa9c0(short,…) 呼出し）→ 許可リストはその中の「Faction/NPC のみ受容する parameter 検証」[推定高]（どの opcode case か [未確定]＝残点）。[確定] V-442-2 flag-B chain root FUN_0056a3b0＝条件比較 evaluator [確定(decompiled)]: L269931 undefined2 FUN_0056a3b0(undefined4 op, float, float)／switch(op): case0 if(param_3!=param_2) return 0/case1 反転/case2 <=/case3 < …＝比較演算子実装。chain FUN_0056a3b0 --call@0x56A464--> FUN_0056ad60 --call@0x56ADAC--> FUN_0056b190（flag B getter）[確定]、比較評価時に type-B flag を読む＝条件式の type 検証 [推定高]。[未確定] FUN_0056b220/2e0 の callers は未調査＝残点。[部分確定] V-442-3 docs census unconfirmed 3159 の切り分け: 末尾 byte histogram＝0xFF=1859/0x00=1214（99%+）・jcc rel32（end-2=0x0F）は0件・他は≤10件 → non-ret 境界の大半は indirect jmp/call（FF..）か disp32 末尾0x00＝indirect-jmp tail/switch 表リレー [推定高]。ret-confirmed 3038 は下限として堅い [確定]、non-ret 3159 は tail-jmp epilogue と switch case チャンク padding の混在 [推定]（機械分離は残点）→ 欠落下限3038／上限6197 レンジ維持。[部分確定] V-442-3 [esp+0x5c]（v439 訂正1件含む）: (i) FUN_00404fd0 全 body 完読（L4119-4136）＝uint(ulong* p): u16@+4==0xffff なら strlen(*p) 戻り、否则 u16 戻り＝string length getter・読みのみ [確定] → v439 の「408FCF は leacall fill」記述を訂正（書かない）。(ii) 書くのは direct 3件（407CBA edx／407E5B ecx／408F72 eax=0）＋ dtor 1件（409027→FUN_00402da0: *p=0/+6=0/+4=0 ゼロ化）＝ fill 点5件・非ゼロは direct 3件のみ [確定]。(iii) CFG: [0x409E80,0x40A29D) への branch targets 42件、nearest 0x40A262 から 0x40A29D まで [esp+0x5c] 触れず＝block 継承 [確定]（非ゼロ経路は 407CBA/407E5B のどちらか [確定]・到達 path 決定は [未確定]＝残点）。残点 V-443-1..3（1=0x19/0x28 FormType（fn head ctor 直接 decode）と許可リストの所属 opcode case【低】／2=FUN_0056b220/2e0 の callers と FUN_0056ad60 呼出の case【低】／3=[esp+0x5c] 非ゼロ経路 CFG と docs census non-ret 3159 の機械分離【低】）。教訓: denoise フィルタは改善しても masked は残る（window 拡大で1件解消時点で別法を次 probe 第一歩に明記）／許可リスト等の即値は既存の49件 FormType 表との突合で1手即決／fn identity は docs body の char-opcode switch（case 'G'）実読が最速／census unconfirmed は末尾 byte histogram＋0x0F end-2 検査で機械分離（jcc rel32 ゼロの否定側も記録）／「A が slot に書くか」は decompiled 全 body の return の向きで判定（lea→call を fill と決めつけると訂正発生＝v439 の教訓）。本日 push: v405→v441（309c0c1c）37件＋本件 v442。v 採番 v442 消費（次=v443）。"
     }
   ],
   "metadata": {
-    "totalEntries": 846,
+    "totalEntries": 847,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-16T21:19:04Z",
-    "entry_count": 846,
-    "last_updated": "2026-11-16T21:19:04Z"
+    "lastUpdated": "2026-11-16T21:24:54Z",
+    "entry_count": 847,
+    "last_updated": "2026-11-16T21:24:54Z"
   }
 }
