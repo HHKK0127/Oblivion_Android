@@ -1663,3 +1663,20 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-407-1..2**: 1=case5 の `[+0x50](End) ≤ time` ゲート対応の state 遷移名と `[+0x44]`=state の全状態表【低・v403/v404 の state 系残点と統合して再調査】／2=`0x6CA994` の `End(+0x50) += time` 遅延初期化の正確な意味【低】。
 - **教訓**: **x87 スタック出所の追跡は prologue の最初の `fld` から pop 操作順に手計算**（`fucompp`/`fcomp`/`fstp` の pop 回数を数えると st(n) の生存区間が機械的に確定・case 入口の `fcomp st(1)` が「既に1段積まれている」ことの証明になる）。
 - **次**: **#153 ⑥-12 V-389-1（`sub [global],1` 直後3本の意味・v408+）** → 束完遂 → 派生残点群（V-400..V-407-1..6 等）。
+
+## 2026-11-16 (ed) — #153⑥-12 完遂＝**#153 束（①〜⑥-12）全指定件完遂**: `sub [global],1` ＝**lock 再入深度（refcount ではない）[確定]**（v408・V-389-1）
+
+- **成果物**: `tmp/re/v408_lockdepth_ruling.md`（probe **v408_1 全 EXIT=0**）。台帳 **row384（bak234）**・`round_verify` **ALL OK**（rows 31..384 / total 270 / done 265 / open 5）。ai-todo **#153 に note 付与＆ complete**（束の指定件は全消化・派生残点群は V-400..V-408 等として別途管理）。v 採番 **v408 消費（次=v409＝派生残点群・着手時再確認）**。
+- **裁定 [確定(decompiled＋machine)]**: `0x73A5E0`（NiTSet::Add）の他システム側 callers3本（**`0x56BB1F`/`0x6EBFDF`/`0x75E39F`**・各 global **0xB3A67C/0xB3ECFC/0xB41DFC**）の `sub [global],1` は **refcount ではなく `EnterCriticalSection` 対の再入深度（lock recursion depth）のデクリメント**。3本とも同一テンプレート:
+  1. `EnterCriticalSection(&set_CS)`（CS＝`0xB3A600`/`0xB3EC80`/`0xB41D80`）
+  2. `_owner = GetCurrentThreadId()`（`0xB3A678`/`0xB3ECF8`/`0xB41DF8`）
+  3. **`depth += 1`**
+  4. `FUN_0073A5E0(&local)`（**this＝ecx＝set グローバル `0xB12B9C`/`0xB24FE8`/`0xB28C5C`**・machine 実読）
+  5. **`depth -= 1`（＝本残点の sub）**
+  6. `if (depth==0) owner = 0` → `LeaveCriticalSection`
+- **owner クリアが depth==0 に付くこと自体が refcount でない証明**（refcount なら owner リセット概念が存在しない）→ **v389 の「グローバル refcount」表現は訂正**。
+- **副次 [確定(命令)]**: 各 depth カウンタは **2つの fn で共有**（census 各4 refs＝Add ラッパ `FUN_0056BAF0`/`FUN_006EBFB0`/`FUN_0075E370` ＋ **lazy-init 兄弟**（`cmp [set+8],0 → mov eax,[set+0xC]; mov ecx,set` ＝セット遅延初期化＋同じ depth 追跡））。
+- **残点 V-408-1..2**: 1=3 fn の identity（`param_1` 登録値・呼び出し元）と set 本体の用途【低】／2=lazy-init 兄弟 fn の本体と `cmp [set+8]` の意味【低】。
+- **教訓**: **「refcount の見える `add/sub [global],1` は前後の Enter/Leave・GetCurrentThreadId・depth==0 クリアの有無で refcount と lock depth を切り分ける**（owner リセットが depth==0 に付くなら lock depth）／**Ghidra は thiscall の ecx（`mov ecx, imm`）を decompiled で落とす → set this は machine で実読**。
+- **本日のボリューム（同一セッション累計）**: #154（v405・push 11c51439）→ #151（v406・push 77de46c3）→ #153⑥-11（v407・push 5f8e2420）→ ⑥-12（v408）＝**4裁定連続 push 済み**（v408 分は本 commit で push）。
+- **次**: supermemory 未登録3件（v405/v406/v407/v408＝MCP 復復待ち）→ **派生残点群（V-405-1..6・V-406-1..6・V-407-1..2・V-408-1..2 等）を v409+ で消化** → 人間ゲート群は着手禁止維持。
