@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-16T06:34:55Z",
+  "lastUpdated": "2026-11-16T08:12:11Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -11687,14 +11687,30 @@
         "v404"
       ],
       "content": "2026-11-16 #153⑥-10（V-388-1）を v404 で裁定（判定=[部分確定]）: [seq+0x54] の正名と役割を確定。成果物 tmp/re/v404_seq54_ruling.md（probe v404_1・v404_3 全 EXIT=0・v404_2 は出力生成済みで実行末尾のみサーバ再起動 interrupt・.out 4572B 完全）・台帳 row380（bak230）・round_verify ALL OK（rows 31..380 / total 266 / done 261 / open 5）・STATE (dz)。正式名=[確定(否定側)]: バイナリに名前文字列なし（3系統調査: ①sequence の text dump（FUN_006ca440）13スカラに +0x54 不在②.rdata の m_f* 全31件在庫に候補なし（m_fLastTime 等は他クラス dump 用＝FUN_00716140 キー系等）③sequence band の m_ 名 dump＝0件＋コンソール/ログ言及なし・MSVC バイナリはフィールド名なし）。役割=[確定(命令＋decompiled)]: blend 開始時に両 sequence へ書き込まれる one-shot 内部時刻スナップショット — ①書込: FUN_006c9d30（blend wrapper・v393）成功時 this[+0x54]=LastScaled[+0x3c]/Freq[+0x28]・other[+0x54]=param_4/other.Freq（L498988-89・machine 0x6C9DE6/0x6C9DF0）②未設定=−FLT_MAX（Deactivate fade<=0 L498950・state6 消費 L499588・ctor 0x6C65EA/0x6C8081）③消費A（評価時 time 上書き）: FUN_006ca950 default 経路で if (+0x54≠−FLT_MAX) time := [+0x54]（L499610/499625）→ time remap FUN_006c5fc0(time,1)（v390・flag=1＝clamp）→ Weight×fade を FUN_006c6dc0 へ（L499627-628）＝保存した内部時刻で pose 評価を固定④消費B（Offset へ畳み込み）: state2 出口で Offset=[+0x54]−time して −FLT_MAX クリア（L499586-588・machine 0x6CAA4A）→ v403 の Offset 数式に接続⑤通常時（−FLT_MAX）: time+Offset / partner 経路（v403 整合）。補足=[確定(否定側)]: pose query FUN_006c6b30（body 137行）は 0x54 参照0件＝上書きは update 側で完結。副次（v401 残点1 解消）=[確定]: block 配列の container ＝ NiControllerSequence — ①sequence vtable idx15＝FUN_006cace0 が [this+0xc]（count）＋[this+0x14]（stride16 配列）を使用（L496661-49675・+4 ref release/+8 zero＝block 構造）②dump の ArraySize＝[+0xc]③FUN_006c70a0（v401 構築 fn）が NiFixedString name コピーを伴う（machine 0x6C70E9-0x6C710A）。残点 V-404-1..3（1=dump ヘッダ文字列 FUN_0070f910(DAT_00b3cb24) の正体【低】/2=FUN_006cddb0（m_fWeightThreshold/m_fEaseSpinner dump）の対象クラス同定【低】/3=FUN_006c9d30 の param_4 供給元【中】）。教訓: 「正名」系は①当該クラスの text dump フィールド列挙②名前文字列在庫 census③band 内 dump 呼び出し全数の3点で否定してから [未確定]（名前）/[確定]（役割）に分離裁定・推測で名前を当てない。並行解析: #154/#151 の subagent は2回ともサーバ再起動で中断（error・自動再開なし）→直列に切替。v 採番 v404 消費（次=v405 は #154 予約と競合するため着手時に再確認）。"
+    },
+    {
+      "id": "154-v405-storetargets-resolve-2026-11-16",
+      "timestamp": "2026-11-16T08:12:11Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-154",
+        "n5b",
+        "re",
+        "v405",
+        "storetargets",
+        "palette"
+      ],
+      "content": "2026-11-16 #154（StoreTargets 解決系4件）を v405 で完遂（probe v405_1..18 全18本 EXIT=0）成果物 tmp/re/v405_storetargets_resolve_ruling.md・台帳 row381（bak231）・round_verify ALL OK（rows 31..381 / total 267 / done 262 / open 5）・STATE (ea)・ai-todo #154 complete。①[確定]（v371 の FindChild 系 [推定高] を訂正）: root＝NiDefaultAVObjectPalette（vtable 0xA798C4 RTTI）、slot19(+0x4C) impl 0x6C5430＝NiTMapBase<...,const char*,NiAVObject*>::Lookup(name,&out)（call 0x55E000 → found?out:0）＝ハッシュマップ lookup で構造探索なし → 子/孫再帰なし・空名特別扱いなし・自己比較なし [確定(否定側)]。実効範囲＝palette 内容: KF 読込 0x7166B0＝Target＋N×(name,obj) insert／遅延生成＝FUN_007165b0 が Target 自身＋children[+0xb0] を自己再帰で孫以下まで登録 [確定(命令)]。移植は palette を叩くだけ（ツリー探索不要）。②[部分確定]: 0x6C9B12 mov [esi+eax+8],edi → esi＝i×16・eax＝[seq+0x14] 配列A base・edi＝解決済み controller/keyframe data（registry FUN_00560920(&DAT_00b3cc5c) or chosen->slot38 新規作成＋slot33 attach・L498791-498808）→ entry+8＝data の生ポインタ [確定]、port 対応＝keyframe_data_index [推定高]（(ptr−(global 0xB3CD7C+0x3C))/48 で復元可・FUN_006c6910 の 0x6C6A3F も stride-48 配列要素 ptr を同 +8 へ格納）。target_node_index/resolved_bone_index は [確定(否定側)]。entry レイアウト3系統一致 [確定]（ctor 0x6C62E0／LoadBinary FUN_006c8820＝+0 Interpolator・+4 Controller・+0xD priority＝oracle ControlledBlock 順と一致／StoreTargets）。配列B(seq+0x18)＝{+0=NiStringPalette,+4/+6/+8/+0xA/+0xC=5×u16 offset}＝5識別子。③[部分確定]: predicate receiver＝配列A[+0]＝NiInterpolator 系・impl 0x6FDFF0 mov al,1;ret 4 恒真（KF 実使用 22/22 クラス全共通・override 0件 [確定(命令＋RTTI全数)]）→ 'failed to resolve dependencies'(0xA79CD8) は実質到達不能。v371 の controller 側表記は receiver 間違え（interpolator 側）と訂正。④[確定]: [seq+0x40]＝NiControllerManager（NIF oracle Manager:Ptr・LoadBinary idx8=FUN_006c7ad0 が version≥0x0A010068 で stream object 格納・IsEqual idx11=FUN_006c7bb0）／manager[+0x7C]＝NiDefaultAVObjectPalette（NIF Object Palette:Ref・manager idx9=FUN_006c5ab0 が遅延生成）／[seq+0x5c]＝NIF AccumRootName（port の target_name はこれに対応）／[seq+0x60]＝palette->GetAVObject(AccumRootName) の結果＝解決済み accumulator root の NiAVObject*。manager[+0x30]=palette 遅延生成の引数＝node 系（Target:Ptr 対応 [推定]）。残点 V-405-1..5（1=palette stream 読込の manager 側接続【中】/2=edi と stride-48 型照合・keyframe_data_index 厳密写像【中】/3=Get(\"Bip01\")[+0x1C] identity【中】/4=palette insert と FUN_00716620【低】/5=未知 interpolator idx35【低】）。教訓: vtable slot は class family で多義（+0x4C＝float 伝播/名前 lookup/type 比較/ハッシュ剰余）→ receiver クラスを RTTI 確定→impl decode。root 正体は writer 逆算が速い。NIF oracle のフィールド順を stream 読込順/IsEqual 順と突き合わせで offset 対応確定。「何が false か」は base＋全 subclass RTTI 全数調査。並行 subagent は2回サーバ再起動で中断→foreground 直列で完遂。v 採番 v405 消費（次=v406=#151）。"
     }
   ],
   "metadata": {
-    "totalEntries": 809,
+    "totalEntries": 810,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-16T06:34:55Z",
-    "entry_count": 809,
-    "last_updated": "2026-11-16T06:34:55Z"
+    "lastUpdated": "2026-11-16T08:12:11Z",
+    "entry_count": 810,
+    "last_updated": "2026-11-16T08:12:11Z"
   }
 }
