@@ -6,6 +6,7 @@
   > 【#137 診断の進捗を補足（2026-11-15・RE レーンの①解釈に役立てるため）】port 側の切り分け（**すべて実測＝ビルド毎の emu スクリショット比較**・診断ブランチ `probe137-ui-system`・do not merge）で**除外した描画源**: ①`uiSystem->render()`（retail menu pipeline・probe #1）②`UIHudStatusDisplay`（START_X/Y=10,10 の左上パネル・probe #2）③`debugHUD->render()`（probe #3）④`toggleAllDebugSystems` の4系統（Debug Console／NPC Debug／World Debug／Performance Graph・ON/OFF 双方で不変）⑤`DebugMenu`（デフォルト閉＝`debugmenu` コマンドが「opened」から開始）⑥`questUI`（クエスト未作成の chargen でも表示）⑦`hudRenderer`（`onScreenResize` 呼び出し確認・Level パネル(20,20)は小・ステータスバー bottom・minimap 右上＝観測と一致）。
   > **probe #4（最重要）**: `renderer.cpp` のオーバーレイ領域 **5380-5664（questUI→inventory→debugHUD→console→debug systems→debugDraw→各メニュー→uiSystem→virtualController→HUD 三種→crosshair/targetInfo/activeEffects→各種メニュー→floatingText→characterCreation→debugMenu→messageBox）を丸ごと無効化してもブロックは残存**（逆にパネル・Level・MAP・Ht/Ma/St・スロット・十字・Dパッドはすべて消えた＝ガードは正しく効いている）。→ **クラスターはこの領域の外**、つまり `renderer.cpp` の ①メニュー領域（4700-5020）か ②シーンパス（`worldManager`／`renderPlaceholderEntities` 等の3D系・`retroFilter->renderToScreen()` 5352）のどちらで描画。次 probe はメニュー領域を無効化して二分する。
   > **依頼①（原版の左上要素の有無）はこの結果で無効化されずむしろ強化された**: port 側で「どこが出しているか」を特定しても、「**原版は左上に何を置く／置かないか**」は依然未裁定であり、#137 の修正方針（除去か・正しく描画か・位置移動か）は①の [確定]/[確定(否定側)] に依存する。追加で RE が必要な**新規**の空欄は現時点で出ていません（`retroFilter` 等のレトロ表現や Debug Control Panel は port 側の発明で正典照合不要）。
+  > 【RE レーンへ委譲（2026-11-16）】本依頼①②を RE セッションへ回す。**注意（上記 port 側の「除外」メモ ②〜⑦・probe #1〜#7 はフレーム凍結で汚染された判定であり、後日 #137 の根因確定で覆っている）**: 2026-11-16 の実測で ①クラスターは**タイトル非表示のゲーム内でも同一に発生**し、行の色順（灰→黄/赤→白×3→シアン→黄→シアン→橙）が `DebugHUD::renderOverviewPage`（Page／FPS／Frame／Avg／Mem／DrawCalls／DEBUG: ON／Audio／RetroFilter）と完全一致＝**発生源は DebugHUD [確定]** ②根因は `TextRenderer::renderText` が **GL_BLEND を有効化せず呼び出し側の状態に依存**（`renderWater()` 末尾の `glDisable(GL_BLEND)` が残す状態を引き継ぐ）で、**port 側の GL 状態依存バグ＝原版のフォント/描画経路とは別軸**。→ ①は「port は原版に無い左上オーバーレイ（DebugHUD・debug ビルド既定表示 `DEBUG_HUD_DEFAULT_VISIBLE true`）を描いている」の裏付けに使える。②の裁定はポーズメニュー等の文字病理に対する「正典の描画（フォント・サイズ・色・経路）」の定義として依然必要。
 【依頼3件】（判定5段階・根拠は EXE 命令または原本アセットのみ・推測禁止）
 ①【高】**原版がゲームプレイ時に画面左上（とその周辺）に描画する要素の有無と内容・画面位置** — retail の HUD 構成（compass／health・magicka・fatigue／quickkeys／level 表示の有無／minimap の有無）を menu id 表と HUD 系メニュー XML、およびその**インスタンス化経路**で確定。左上に置く要素が無いなら **[確定(否定側)]** で構わない（＝port の左上描画は正典に無いことになり、除去/修復の根拠になる）。port 側は `hudRenderer.renderPlayerLevel` を (20,20) に置いており、**原版相当か否か**の判定が必要。出発点: `docs/RE_EXE_REPORT.md` L44（メニュー id 表・0x3f5 PauseMenu 等）と L1805-1815（OptionsMenu↔PauseMenu 背面関係）／ローカル BSA 抽出物 `D:\Cargo\Other\Oblivion\BSA\bsa_Extraction\menus\main\`（`hud_main_menu.xml` / `hud_info_menu.xml` / `hud_reticle.xml` / `hud_subtitle_menu.xml` 等）／EXE 側でこの帯を Gamebryo メニューとして立ち上げる関数。
 ②【中】**原版のメニュー文字描画の正典** — メニュー XML の文字エレメントがどのフォント・サイズ・色で、どの関数経路で描画されるか（port 側でポーズメニューのラベルが**文字ではなく色ブロック**になる病理に対する「正しい描画」の定義）。text_renderer のフォント割当・GMST/INI の UI フォント指定・`fonts/*.dds` の食い違いも含む。①と併せれば #137 と #96（視覚品質）の両方に効く。
@@ -82,6 +83,10 @@
   > ③: +0x30 trainer=[確定]（FUN_0051BEB0・E8=1 唯一消費者0x522726→FUN_004684C0 で actor へ）／+0x2C 消費=[確定]（FUN_005222D0 L216914）・意味=[未確定]（UESP48/52byte 差分・本文503で裏取り不可）。
   > 残した未確定=V-406-1..6（1=+10 適用 fn・間接登録0xA73DA8・opcode id【高】／2=FUN_005222D0 正式名と属性計算・0xB362E4/EC 書手【中】／3=FUN_006ECC80 残 E8 の CLAS 型再 typed【中】／4=DATA+0x2C/+0x31 意味【低】／5=名前テーブル所有 fn【低】／6=FUN_00668B30 第4引数と+0x7A4【低】）。
   > 教訓: MSVC ICF で trivial getter は1アドレス化→「1fn=1意味」禁止・型は caller の arg 経路で typed。『未読』判定は call 経由 getter でも再検証。GMST consumer 特定は「登録表実読→global cache→direct 読取 census」3段。PE セクションで定数/実行時グローバル区別。decompiled 未収録 fn は machine 直 decode。v 採番 v406 消費（次=v407）。
+  > 【残点 V-406-1 部分解（v409・派生残点第1弾）】probe v409_1..v409_6 全 EXIT=0。成果物 tmp/re/v409_increment_api_ruling.md・台帳 row385（bak235）・round_verify ALL OK（rows 31..385 / total 271 / done 266 / open 5）。
+  > ①opcode 特定=[確定(実文字列)]: FUN_0050D020＝`AdvancePCSkill`(opid 0x10D4)/`AdvancePCLevel`(0x10D5)/`ModPCSkill`(0x110F・help 'Modify the Players Skill. [modpcs Blunt, 10]') の共通 impl（stride 0x28 レコード・flags 0x20000・第2 fn FUN_004FDE30・.data 0xB0E9E0/0xB0F318 実読）。②間接テーブル=[確定(RTTI)]: .rdata 0xA73DA8＝PlayerCharacter vtable（head 0xA73A0C・232 slots・ctor FUN_0066A740 の vptr 設定と一致）の index231(+0x3BC) → **FUN_00668C30＝PlayerCharacter virtual slot231**。③dead slot=[確定(否定側)] 6系統: E8=0／生 data refs=vtable のみ／decompiled +0x3bc)=0／call [reg+0x3BC] disp32=0／SIB hit は decode 棄却／FF15/FF25 vtable 間接=0（sealed）。④帰結=[部分確定]: 唯一加算者 FUN_00668B30 の E8=1 は FUN_00668C30 のみ→保留増分の直接経路は実質到達不能（FUN_00668B30/0066C200 の間接は未走査で断定は[未確定]）。
+  > 残点再定義: **V-409-1【高】「+10 初期適用 fn」本体**（v406 否定群と統合・[Player+0x130+idx*4] の virtual 書手＋chargen finish 系 FUN_00597540/FUN_0059FF60 machine 未解析部を再走査）／V-409-2【中】保留増分システム全体の実行有無／V-409-3【低】FUN_004FDE30 identity と 0x20000/0xB0A900。
+  > 教訓: E8=0 の間接 fn は data ref 隣接 window の dword 構造＋実読で識別／テーブル head は後方 walk→head refs（ctor vptr 設定）＋RTTI で即同定／dead 判定は多系統 census＋毎回 decode で偽陽性棄却（FF バイトは xor の modrm でも出る）。v 採番 v409 消費（次=v410・着手時再確認）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -988,11 +993,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1016,4 +1016,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-16 19:01:16
+**ai-todo** | Last Updated: 2026-11-16 19:12:18
