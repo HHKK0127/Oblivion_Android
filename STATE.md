@@ -1849,3 +1849,27 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **v405 訂正**: 「`[+0x7C]` の writer＝manager idx9」は**本裁定で補正**（idx9＝遅延生成のみ・**stream writer＝slot7 `FUN_006C4E50`**）。docs/GT 反映時は v405 ruling の注記を併せて更新・#47/#20 一括。
 - **本日 push 累計**: v405 → … → v419 `d2457465` →（本件 v420 を本 commit で push）＝**16裁定**。
 - **次**: 残る中/低優先残点（V-421-1..3／V-405-2【中】stride-48／V-414-1..3 ほか）を v421+ で消化。supermemory 未登録16件（v405..v420）は MCP 復復待ち。
+
+## 2026-11-16 (eq) — 派生残点第13弾 v421（V-405-2 完遂）: **3者の型照合＝NiBlendInterpolator 系ファミリで一致 [確定]**（gate＝is-a 判定・stride-48＝NiBlendTransformInterpolator 48B・create＝Cumulative で48B/88B の2系統）・**chosen の slot 実装はクラス依存2系統（MTTC=pure getter 系／NiTC=create+setter 系）[確定]**・**port `keyframe_data_index = (entry+8 − MTTC[+0x3C]) / 48` [確定(式)]**
+
+- **成果物**: `tmp/re/v421_type_identity_ruling.md`（probe **v421_1..v421_11 の11本全 EXIT=0**）。台帳 **row397（bak247）**・`round_verify` **ALL OK**（rows 31..397 / total 283 / done 278 / open 5）。ai-todo **#151 に note**。v 採番 **v421 消費（次=v422）**。
+- **① [確定] 3者の同一型性（クラス内訳つき）**:
+  - **gate `FUN_00560920(0xB3CC5C, x)` ＝ x の descriptor chain に `0xB3CC5C`（実読 `"NiBlendInterpolator"`）が含まれるか＝is-a 判定**（pair `{name, link}` walk＝v419 構造と整合）。
+  - **stride-48 要素 ＝ `NiBlendTransformInterpolator`（48B）** — MTTC 配列確保は `push 0x6cbca0(dtor)/0x6cbcb0(ctor)/0x30; call 0x984bcf`、ctor `0x6CBCB0`＝`call 0x6cc4e0 → mov [esi],0xA79E54` [確定]。
+  - **slot38 作成物 ＝ flag で2系統**: flag=0 → **`NiBlendTransformInterpolator`（48B・ctor `0x6CBC60`→vtable `0xA79E54`）**／flag=1 → **`NiBlendAccumTransformInterpolator`（88B・ctor `0x6C37D0`→vtable `0xA79584`＋`[+0x30..+0x38]` に globals `0xB24260/64/68` 初期化）** [確定]。
+  - **flag ＝ `NiControllerManager.Cumulative`（`[mgr+0x6C]`・v420 確定）** — `cmp byte [ecx+0x6c],0 → [esp+0x28]=1` [確定]。
+  - descriptor 階層（thunk 実読）: `0xB3CBF8`={NiBlendTransformInterpolator→`0xB3CC5C`}／`0xB3CD1C`={NiBlendAccumTransformInterpolator→`0xB3CC5C`}／`0xB3CC5C`={NiBlendInterpolator→`0xB3EB8C`} → **両 create 系とも gate 合格 [確定]**。
+  - → **完全同クラス = (gate合格) = (3) = (create flag0) = `NiBlendTransformInterpolator`、flag1 のみ別クラス（同ファミリ）**。
+- **② [確定] chosen の identity**: **対象ノード/プロパティの controller map から `クラス名(slot1 descriptor) == CtlrType` かつ `slot35 名 == CtlrID` で選択される controller**。walk: `palette->slot19(node_name[+4])` → `node[+0x9C]` → property（`FUN_006c63a0`=+6 property_type とクラス名一致 [推定高]）または fallback → map walk（bucket `[+0xC]`・next `[+0x34]`）→ `FUN_006c63c0`=+8 CtlrType・`FUN_006c63e0`=+0xA CtlrID → 一致で chosen → `slot31(chosen, name)` → `slot32` → gate → または `slot38+slot33` → `entry+4=NiPointer(chosen)`・`entry+8=blend`。
+- **③ [確定] slot 実装はクラス依存2系統（v405 訂正を含む）**:
+  - **MTTC 系**: slot31=`0x6CFB80`（`[+0x40]` target 配列を `element[+8]`＝NiFixedString 名で linear 検索→idx／not-found=**`word[0xA7A160]`=0xFFFF 実測**）／slot32=`0x6CFC00`＝`[+0x3C]+idx*48` pure getter（ret 4）／slot38=`0x6CFDE0`＝同式 pure getter（ret 0x14）／slot33=`0x60CF60`＝**`ret 8` no-op**。
+  - **NiTransformController 系**: slot31=`0x6CE1A0`＝`xor ax,ax; ret 4`（常に0）／slot32=`0x6CE200`＝`return [+0x3c]`（単一 interpolator）／slot33=`0x6CE210`＝**NiPointer assign setter**（旧 release／新 retain）／slot38=`0x6C3B70`＝**真の create**（flag?88B:48B）。
+  - **v405 の「slot38＝新規作成／slot33＝attach」はクラス依存に訂正**（MTTC では getter/no-op＝create path 実質 dead・NiTC で真の create+setter）。
+- **④ [確定(式)] port `keyframe_data_index` 写像**: **`keyframe_data_index = (entry+8 ptr − MTTC[+0x3C]) / 48`** — idx（slot31 name→target idx／epilogue target 検索 idx）＝port の index と同一値（並行配列 `[+0x40]`=target／`[+0x3C]`=blend／`[+0x44]`=`m_usNumInterps`）。port read 時 seed＝`block.controller_index`（`block.rs:1283`）。**制約 [確定]: /48 式は MTTC 配列 backed の entry+8 のみ有効** — NiTC create の standalone blend（heap 48/88B）は index 復元不可＝port single-index モデルの網羅外（V-422-3）。
+- **⑤ [不一致・要訂正] `nif_ffi.h:395-398`**: "the two fields **the original seeds while reading**: keyframe_data_index from the controller reference…" — **EXE LoadBinary（`FUN_006c8820`）は entry+8 を書かない**（書くのは `+0`/`+4`/`+0xd` のみ＝v405 確定）→ **EXE 根拠と不一致＝port プレースホルダとして再表現すべき**（`resolved_bone_index=-1` は EXE に骨解決なしと整合）。
+- **⑥ [確定(否定側)] `target_node_index` 供給元**: **EXE は per-entry の target index を永続化しない**（永続は `+4` controller ptr と `+8` blend ptr のみ・epilogue 検索 idx は transient で keyframe_data_index と同値）。
+- **副次 [確定]**: consumer `0x6C6A50` ＝ `entry[+8]`（blend）の **slot38 を `slot38(entry[+0], 0.0f, priority([+0xd] or 既定), 1.0f)` で呼出し**→bool→`entry[+0xc]`（NIF interpolator を blend へ priority 付き登録・blend 側 slot38=`0x6CC5C0`＝内部24B 配列の空き探索）。
+- **残点 V-422-1..4**: 1=`FUN_006c63a0` body（+6 property_type [推定高]）と property payload 説の裏取り【低】／2=NiAVObject `[+0xC]` fallback walk の layout 謎と `Bip01[+0x1C]` との関係【低】／3=port モデルの網羅外経路（NiTC create standalone）【中→低】／4=NiBlendAccum の `[+0x30..+0x38]` 初期値 globals【低】。
+- **教訓**: **同一 virtual の実装はクラスごとに全く違う（slot38＝create と pure getter の併存）→ slot 意味は chosen のクラス確定後に決まる**／**mangled RTTI 名（`.?AVFoo@@`）で TD→COL→vtable を辿る（`Foo\0` 部分一致では当たらない）**／**`push size`＋ctor の vtable store で型と sizeof が同時に決まる**／**flag の出所（Cumulative）まで遡ると設計理由が確定する**／**port コメントの「original はこうする」は EXE の書込範囲と必ず突合**。
+- **本日 push 累計**: v405 → … → v420 `4e9ea6c9` →（本件 v421 を本 commit で push）＝**17裁定**。
+- **次**: 残る低優先残点群（V-422-1..4／V-414-1..3／V-413-2 ほか）を v422+ で消化。supermemory 未登録17件（v405..v421）は MCP 復復待ち。
