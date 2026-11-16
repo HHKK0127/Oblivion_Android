@@ -364,6 +364,15 @@
   > ⑤[未確定] docs census non-ret 3159 の機械分離は未着手（v442 histogram 結果 0xFF=1859/0x00=1214・jcc32=0 を維持）。
   > 残点 V-444-1..3（1=許可リスト case の jump table index 特定（table base ref を SIB byte-pattern 探索）と FUN_0056ae00 の identity【低】／2=FUN_0056ad60 呼出の case と [esp+0x5c] 非ゼロ経路の到達条件（0x407CB4/0x407E47 以降 predicate 完全 decode）【低】／3=docs census 機械分離の完成（switch table dwords 並び region の CC 境界を表境界として除外し non-ret 3159 から減算）【低】）。
   > 教訓: masked imm は「fn-head 直接法（hit→find_head→fn window の vtable store→RTTI）」が最強（denoise 改善より1手で確定）／switch case index は「jump table dwords が target 範囲にあるか」列挙で表を先に掴み残りは base ref byte-pattern 探索へ（imm32 直 ref 0件でも表は見える）／E8 caller 1〜2件の fn は chain 中段で上下2方向 census すれば端が見える／write の path 特定は nearest preceding branch target を先に決め predicate decode に絞る。v 採番 v443 消費（次=v444）。
+  > 【派生残点第36弾 v444 — V-444-1..3 完遂】probe v444_1..v444_2 全2本 EXIT=0。成果物 tmp/re/v444_case_index_ruling.md・台帳 row420（bak270）・round_verify ALL OK（rows 31..420 / total 306 / done 301 / open 5）。
+  > ①[確定] FUN_004fab20 の switch 構造3 table: (1) char-opcode dispatch: movsx edx,bl; add edx,-0x47; cmp edx,0x33; ja default（opcode='G'0x47..0x7A）→ remap 0x4FAE4C → jmp [edx*4+0x4FAE3C]（4 cases: 0x4FABC3/0x4FACE9/0x4FAD06/0x4FAD2E）／(2) arg type dispatch（35 cases）: mov ecx,[ebx]; add ecx,-3; cmp ecx,0x22; ja → jmp [ecx*4+0x4FB364]（type-3）／(3) byte-remap dispatch（7 cases）: cmp eax,0x21; ja → movzx edx,byte[eax+0x4FB40C] → jmp [edx*4+0x4FB3F0]。
+  > ②[確定] 許可リスト/EffectShader gate の所属 case: table(2) の index33＝0x4FB152（許可リスト直前）／index34＝0x4FB183（cmp byte[eax+4],0x43 gate）＋bound type-3 → index33→arg type 0x24＝Owner／index34→arg type 0x25＝Effect Shader ID（v437 表）→ 許可リスト {TESFaction, TESNPC}＝arg type `Owner` の parameter 検証（owner は Faction/NPC のみ許可）／EffectShader gate＝arg type `Effect Shader ID` の検証（FormType==0x43=TESEffectShader・v441 表）— 両表と完全整合 [確定相当]。
+  > ③[確定] FUN_0056ae00 identity: L270604 `undefined4 __fastcall(ulong* p)`＝6-dword ゼロ化→FUN_0056a9c0(0x104c)（4172-byte 構造初期化）[確定(decompiled)]＝emit/parse context initializer（chain 先頭）。
+  > ④[部分確定] V-444-2 FUN_0056ad60 呼出の case: FUN_0056a3b0 に FF/4 jump table 無し＝cmp/jcc linear chain 形式 [確定(否定側)]、0x56A464 への direct branch 0件（周辺短距離 jcc 群のみ）→ fall-through [確定]、case index は linear cmp chain の cmp 値列挙が要＝[未確定]（残点）。
+  > ⑤[確定] [esp+0x5c] 非ゼロ供給式: block 0x407CB4: `mov ecx,[0xB3340C]; mov edx,eax; sub edx,ecx; test edx,edx` → `0x407CBA: mov [esp+0x5c],edx` ＝ `[esp+0x5c] = eax − dword[0xB3340C]`（グローバル差分）[確定(命令)]／block 0x407E47: `mov eax,[edx+0x174]`（vtable）→ `407E4D call eax`（virtual call）→ `fild`/`mov ecx,[eax]` → `0x407E5B: mov [esp+0x5c],ecx`（virtual call 経由値）[確定(命令近辺)]。両 block への branch 源 predicate は source 表示不足で [部分確定]（残点）、global 0xB3340C の identity [未確定]。
+  > ⑥[確定] V-444-3 census 分離: non-ret 境界3171件のうち直前が switch table run（≥8 text ptrs）は45件のみ（1.4%）→ table 境界説はほぼ棄却 [確定(実測)]、residual 3126。v442 histogram（0xFF=1859/0x00=1214・jcc32=0）併せて non-ret 大半は FF../disp32 尾＝indirect jmp/call [推定高]、FF /4 jmp [mem]（tail）と function 内 dispatch の切り分けは未達 [未確定]（v442 non-ret 3159 vs v444 3171 の12件差に説明未・量級は同 [部分確定]）。
+  > 残点 V-445-1..3（1=FUN_0056a3b0 の cmp chain から 0x56A464 の case index と [esp+0x5c] branch 源・global 0xB3340C identity【低】／2=non-ret residual 3126 の前 segment 末尾 FF の SIB 種別（jmp [mem] tail vs jmp [reg*4+tbl] intra-fn）で機械分離【低】／3=旧残点群（V-414-2..3/V-413-2/V-415-2）への移行判断【低】）。
+  > 教訓: switch 構造は「fn 内 jmp [reg*4+disp] 全列挙＋bound（add -N）と table 距離」で各 dispatch の enum を特定（char-opcode/arg type/byte-remap の3系統共存例）／case index は既存 enum 表（v437×v441）との突合で1手確定（Owner/EffectShader）／table dwords が見えれば index 算出は完了（残りは bound）／機械分離はまず除外候補の発生率を測ってから深掘り（table 直後45件＝1.4% と判明した時点で table 説打ち切り→FF SIB 種別分離へ移行）／write 供給式は block entry 直後の mov/sub に表れる（eax−global）→ predicate より先に式を確定。v 採番 v444 消費（次=v445）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1270,6 +1279,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1293,4 +1307,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 06:28:48
+**ai-todo** | Last Updated: 2026-11-17 06:34:12
