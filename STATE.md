@@ -1981,3 +1981,14 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **switch の case 範囲は「最後の case」でなく「regex 全抽出の集合」で見る**（`0x25..0x27` が `0x21..0x24` の前に並ぶため部分列挙だと上限を誤認する）／**table 終端は「空文字列 ptr」の出現で読む**（run break は非 ptr と空文字列の2種類）。
 - **本日 push 累計（セッション）**: v405 → … → v428 `65d396b2` →（本件 v429 を本 commit で push）＝**25裁定**。
 - **次**: 残る低優先残点群（V-430-1..2／V-414-2..3／V-413-2／V-415-2 ほか）を v430+ で消化。supermemory 未登録25件（v405..v429）は MCP 復復待ち。
+
+## 2026-11-17 (ez) — 派生残点第22弾 v430（V-430-1 完遂）: **`[72]'Begin'`＝AV table 直後 stride-0x28 の script キーワード/型レジストリ rec0 [確定(構造)]**（`Begin`/`End`/`Short`+`int`・id 0x10..0x12 連番）
+
+- **成果物**: `tmp/re/v430_keyword_table_ruling.md`（probe **v430_1 全 EXIT=0**）。台帳 **row406（bak256）**・`round_verify` **ALL OK**（rows 31..406 / total 292 / done 287 / open 5）。ai-todo **#151 に note**。v 採番 **v430 消費（次=v431）**。
+- **① [確定]（構造実読）`[72]'Begin'`（`0xB0A2C8`）＝ AV table 終了後の stride `0x28` 新テーブルの rec0.name** — AV name table は **`[0..71]`（`0xB0A1A8..0xB0A2C4`）** で終了し `0xB0A2C8` から **`{name ptr, name2 ptr, id u32, zeros×6}`** レコードが隣接: **`{'Begin', 空(0xA2F7EC), id=0x10}` → `{'End', 空, 0x11}` → `{'Short', 'int', 0x12}` → …`（id 連番 0x10,0x11,0x12...）＝ script コンパイラのキーワード/型レジストリ [推定高]**（`Begin`/`End`＝スクリプトブロック境界・`Short`/`int`＝変数型＝TES4 script 型キーワードと整合）。
+- **② [確定] 境界**: **`0xB0A1A8 + 72×4 = 0xB0A2C8`** ＝ キーワード rec0.name セルと厳密接続（v429 の72件終端確定と整合・**`[72]` は AV でなくキーワード rec0**）。
+- **③ [確定] refs**: `cell+72`（`0xB0A2C8`）dword xref＝**0件**（index/offset アクセスのみ）／`'Begin'` 文字列（`0xA51C1C`）＝**2件**（`.text 0x6CA5C2`・`.data 0xB0A2C8`＝rec0 自身）／`cell+73`（空文字列 ptr）＝.text 1件（`0x4FCA1A` 帯）。
+- **残点 V-431-1..2**: 1=キーワード/型レジストリの消費者 identity（`.text 0x6CA5C2` と cell+73 参照＝script parser のどの pass か）と `name2`（`'int'` 等）の意味【低】／2=id 連番 `0x10` 起点の意味（`0x00..0x0F` の enum 帯）【低】。
+- **教訓**: **隣接 table の境界は「base + N×stride」の計算一致で確定する**／**レコード構造は反復出現（stride）＋id 連番で組み立てる**（1レコードの偶然でなく3連続反復を確認）。
+- **本日 push 累計（セッション）**: v405 → … → v429 `2f869c8d` →（本件 v430 を本 commit で push）＝**26裁定**。
+- **次**: 残る低優先残点群（V-431-1..2／V-414-2..3／V-413-2／V-415-2 ほか）を v431+ で消化。supermemory 未登録26件（v405..v430）は MCP 復復待ち。
