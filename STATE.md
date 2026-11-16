@@ -2352,3 +2352,16 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **mid-layer 真偽は「prev segment 長さ」で機械2分類**（`prev≥0x100`＝SAFE 上乗せ・`<0x100`＝stub 集積別扱い・閾値1つで解像度向上）／**getter caller は件数1〜2のとき context decode まで一気**（reader identity と使用形 virtual `+0x84` call を同時取得）／**lookup 系 fn の第4引数 TD（RTTI name）が subobject 機能を語る**（`&TESForm,&Script`→`Script`）／**docs keyword 検索は `FUN_` 名のみ環境で無力 → purpose は call 先群突合へ移行**。
 - **本日 push 累計（セッション）**: v405 → … → v452 `e4960bff` →（本件 v453 を本 commit で push）＝**49裁定**。
 - **次**: V-454-1..3。supermemory 未登録49件（v405..v453）は MCP 復復待ち。
+
+## 2026-11-17 (fx) — 旧残点群移行第8弾 v454（V-454-1..3 完遂）: **`FUN_004E82E0`＝Ni/scene-graph 系（call constellation）**・**docs 欠落 census を最終レンジ `[2337, 6038]` で総まとめ（方針転換を明記）**
+
+- **成果物**: `tmp/re/v454_constellation_ruling.md`（probe **v454_1 の1本 EXIT=0**）。台帳 **row430（bak280）**・`round_verify` **ALL OK**（rows 31..430 / total 316 / done 311 / open 5）。ai-todo **#151 に note**。v 採番 **v454 消費（次=v455）**。
+- **① [推定高] V-454-1 `FUN_004E82E0` purpose ＝ Ni/scene-graph 系**: E8 targets 14 distinct（`FUN_00401F00`×6／`FUN_00405680`／`FUN_00446CB0`／`FUN_004526E0`／**getter `FUN_004D9B40`×2**／`FUN_004E4E90`×2／`FUN_004E8190`／`FUN_00560920`／**`FUN_0067ED70`・`FUN_006FFD30`・`FUN_00700900`・`FUN_0070B780`（＝NiNode in-place ctor・v423 確定）・`FUN_007177E0`**）→ **NiNode ctor 1件が決定打 [推定高]**。docs 使用点は **L182399 `iVar15=FUN_004d9b40()`／L182401 `piVar14=(int*)FUN_004d9b40()` の2箇所 [確定(decompiled)]**（machine 2件と一致）。purpose 語は [未確定]＝残点。
+- **② [確定] `FUN_004D9B40` docs 完全同定**: **L171232 `undefined4 __fastcall(int p){return *(undefined4*)(p+0x1c);}` ＝ docs にも1行 getter ✓**（machine と一致）→ **v453 reader chain の docs 側裏付け完了**。
+- **③ [未確定] `Player[+0x1C]` オブジェクト class**: reader は virtual `+0x84` call のみ、**書手 fn 未特定（v451/v452）のため class 同定は書手依存＝残点**。
+- **④ [確定] V-454-3 docs 欠落 census 総まとめ（最終レンジ提示）**: **layer table: `same-fn` 480（prologue 346）／`mid` 2505（prologue 1920）／`long` 4160（prologue 2202）→ SAFE＝`long ∧ prologue`＝2202、SAFE+mid prologue＝4122**、＋境界法（v446）6038 → **docs 欠落 fn 最終レンジ＝`[2337, 6038]`（SAFE2202＋mid長135＝下限2337／境界法6038＝上限）[推定]**、**以降の精緻化は個別 gap 検証へ移行 [確定（方針）]**。**4象限合計 7145＝v452 総数と完全一致（内部整合）**。
+- **⑤ [未確定] V-454-2 subobject 名（`+0x44/+0x68/+0xE4/+0x54`）は budget 未着手＝残点継続**（`+0xC4`＝Script に続く残4 field）。
+- **残点 V-455-1..3**: 1=`FUN_004E82E0` purpose 語（call 先 `FUN_004E4E90/FUN_004E8190` 突合）と `Player[+0x1C]` class（書手並行）【低】／2=subobject 名（v453 Script TD 法の各 field 適用）【低】／3=旧残点（V-415-2/V-416-2/V-405-4..5 等）への移行判断（**docs census 総まとめ済み → 次回から旧群へ軸を戻す方針 [確定]**）【低】。
+- **教訓**: **fn purpose は「既知 identity の call 群（constellation）」で当てる**（過去裁定の確定 fn 名を call 先に探すのが最速・本件 NiNode ctor 1件で Ni 系即決）／**docs usage grep と machine call census の件数一致（2=2）は整合チェックに有効**／**census は4象限 layer table で1本にまとめレンジで締める**（点推定に固執せず `[下限, 上限]`）／**4象限合計＝前の裁定総数（7145⇔7145）が table 正しさを機械裏付け**／**作業方針の転換点を ruling 明記で次セッション継続判断が楽に**。
+- **本日 push 累計（セッション）**: v405 → … → v453 `cfef18fa` →（本件 v454 を本 commit で push）＝**50裁定**。
+- **次**: V-455-1..3（purpose 語／subobject 名）＋ **旧残点（V-415-2/V-416-2/V-405-4..5 等）への軸移行**。supermemory 未登録50件（v405..v454）は MCP 復復待ち。

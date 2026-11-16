@@ -446,6 +446,14 @@
   > ③[部分確定] V-453-3 subobject 名別法: 0xB03358 = .?AVScript@@ [確定] — FUN_0046F020 の FUN_0046B250(local,0,&TESForm,&Script,0) lookup が form→Script オブジェクトを引く [確定相当] → subobject +0xC4 は Script-related 構造 [推定高]。FUN_00469E90 body の 0xB0xxxx TD 直接参照＝0件 [確定(否定側)]。0xB02F9C=TESForm／0xB03054=TESObjectREFR／0xB036FC=TESObjectWEAP／0xB03778=TESObjectARMO を再確認（v441-444 整合）。残る subobject 名（+0x44/+0x68/+0xE4/+0x54）は未同定＝残点。
   > 残点 V-454-1..3（1=Player[+0x1C] オブジェクト class（virtual +0x84 slot を持つ class＝書手特定と表裏一体）と FUN_004E82E0 purpose（call 先群 FUN_00405680 等突合）【低】／2=subobject 名（+0x44/+0x68/+0xE4/+0x54）の RTTI TD 突合継続【低】／3=docs 欠落 census 総まとめ（d≤0x200 層1785 の docs body-line 対 machine 比検証 or 旧残点 V-415-2 等へ移行判断）【低】）。
   > 教訓: mid-layer 真偽は「prev segment 長さ」で機械2分類（prev≥0x100＝SAFE 上乗せ・<0x100＝stub 集積別扱い・閾値1つで解像度向上）／getter caller は件数1〜2のとき context decode まで一気（reader identity と使用形 virtual +0x84 call を同時取得）／lookup 系 fn の第4引数 TD（RTTI name）が subobject 機能を語る／docs keyword 検索は FUN_ 名のみ環境で無力→purpose は call 先群突合へ移行。v 採番 v453 消費（次=v454）。
+  > 【旧残点群移行第8弾 v454 — V-454-1..3 完遂】probe v454_1 全1本 EXIT=0。成果物 tmp/re/v454_constellation_ruling.md・台帳 row430（bak280）・round_verify ALL OK（rows 31..430 / total 316 / done 311 / open 5）。
+  > ①[推定高] V-454-1 FUN_004E82E0 purpose＝Ni/scene-graph 系: E8 targets 14 distinct（FUN_00401F00×6／FUN_00405680／FUN_00446CB0／FUN_004526E0／getter FUN_004D9B40×2／FUN_004E4E90×2／FUN_004E8190／FUN_00560920／FUN_0067ED70・FUN_006FFD30・FUN_00700900・**FUN_0070B780（＝NiNode in-place ctor・v423 確定）**・FUN_007177E0）→ NiNode ctor 1件が決定打 [推定高]。docs 使用点は L182399 `iVar15=FUN_004d9b40()`／L182401 `piVar14=(int*)FUN_004d9b40()` の2箇所 [確定(decompiled)]（machine 2件と一致）。purpose 語は [未確定]＝残点。
+  > ②[確定] FUN_004D9B40 docs 完全同定: L171232 `undefined4 __fastcall(int p){return *(undefined4*)(p+0x1c);}`＝docs にも1行 getter ✓（machine と一致）→ v453 reader chain の docs 側裏付け完了。
+  > ③[未確定] Player[+0x1C] オブジェクト class: reader は virtual +0x84 call のみ、書手 fn 未特定（v451/v452）のため class 同定は書手依存＝残点。
+  > ④[確定] V-454-3 docs 欠落 census 総まとめ（最終レンジ提示）: layer table: same-fn 480（prologue 346）／mid 2505（prologue 1920）／long 4160（prologue 2202）→ **SAFE＝long∧prologue＝2202、SAFE+mid prologue＝4122**、＋境界法（v446）6038 → **docs 欠落 fn 最終レンジ＝`[2337, 6038]`（SAFE2202＋mid長135＝下限2337／境界法6038＝上限）[推定]**、以降の精緻化は個別 gap 検証へ移行 [確定（方針）]。4象限合計 7145＝v452 総数と完全一致。
+  > ⑤[未確定] V-454-2 subobject 名（+0x44/+0x68/+0xE4/+0x54）は budget 未着手＝残点継続（+0xC4＝Script に続く残4 field）。
+  > 残点 V-455-1..3（1=FUN_004E82E0 purpose 語（call 先 FUN_004E4E90/FUN_004E8190 突合）と Player[+0x1C] class（書手並行）【低】／2=subobject 名（v453 Script TD 法の各 field 適用）【低】／3=旧残点（V-415-2/V-416-2/V-405-4..5 等）への移行判断（docs census 総まとめ済み→次回から旧群へ軸を戻す方針 [確定]）【低】）。
+  > 教訓: fn purpose は「既知 identity の call 群（constellation）」で当てる（過去裁定の確定 fn 名を call 先に探すのが最速・本件 NiNode ctor 1件で Ni 系即決）／docs usage grep と machine call census の件数一致（2=2）は整合チェックに有効／census は4象限 layer table で1本にまとめレンジで締める（点推定に固執せず [下限, 上限]）／4象限合計＝前の裁定総数（7145⇔7145）が table 正しさを機械裏付け／作業方針の転換点を ruling 明記で次セッション継続判断が楽に。v 採番 v454 消費（次=v455）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1352,6 +1360,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1375,4 +1388,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 07:25:21
+**ai-todo** | Last Updated: 2026-11-17 07:29:25
