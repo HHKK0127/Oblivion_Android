@@ -144,6 +144,13 @@
   > ④usage 帯 [確定]: float 設定系（0x47C930/FUN_004730B0/FUN_00473200）・flag set（0x4E3EC6）・FUN_0047F750（node→FUN_0047C710→cmp [0xA7A160]）・FUN_006C8220（v371 既知）・StoreTargets epilogue（v405 既知）・出力 0x6D0450。
   > 残点 V-418-1【中】0xB3CD7C singleton 型（0x6D0450 identity＋FUN_0070F910 arg 用途＋0x47C930 帯 float set 先）／V-418-2【低】V-416-2/V-415-2 引継ぎ。
   > 教訓: data ref 1件のみ＝vtable 格納の強兆候→ref 位置を RTTI backward scan で slot/class 即同定（v409 と表裏）／key 使用形は push→call と cmp→je の2形式横断 census／thunk getter は E8=0 でも vtable 登録で機能（v409 slot231 dead と対照）。v 採番 v417 消費（次=v418）。
+  > 【派生残点第10弾 v418 — V-418-1 部分確定】probe v418_1 全 EXIT=0。成果物 tmp/re/v418_b3cd7c_type_ruling.md・台帳 row394（bak244）・round_verify ALL OK（rows 31..394 / total 280 / done 275 / open 5）。
+  > ①[確定] FUN_0070F910＝"--- %s ---" ヘッダ文字列生成 fn（strlen→malloc→FUN_006C5D40(buf,size,"--- %s ---",str)・L553023-553038・arg は char*）→ 0x6D0450 が FUN_0070F910([0xB3CD7C]) へ渡す値は char*（文字列）＝v401 の dump ヘッダ記述と一致。
+  > ②[部分確定: 推定高] 0xB3CD7C の型: (i)[0xB3CD7C]（値）＝char*[確定] (ii) map key は &0xB3CD7C（アドレス自体・pointer 等値比較）[確定] (iii) usage＝--- %s --- 出力／float set 系／flag set（word[+8]|=0x40）／FUN_006FFE90（v371 keyframe 生成候補）への接続（FUN_00473200 L91987-90）／FUN_006C8220（NiTransformController 登録確認）／StoreTargets epilogue → 「singleton 文字列（global char* 変数）のアドレスが NiFixedString 的 key として map lookup に使われる」[推定高]（中身は実行時=.data 不定で未読）。
+  > ③副次大収穫[確定(命令＋decompiled)]: FUN_0047C930(this,p2,p3)＝NiAVObject 系 bulk 通知 fn — param_3!=0 時 [this+0x9C] リスト（next=[0]・elem=[2]・elem[3]!=0 gate）の各 elem へ elem->slot20(p2) ＋ 常時 [this+0xC] map（node[0xd] 走査）の全 node へ node->slot21(p2)（L99379-99399）→ v405 の StoreTargets resolved-node [+0x9C] リストと v406 の map layout を1 fn で保持＝NiAVObject 系 [確定]。
+  > ④usage owner 群 [確定]: FUN_00473120／FUN_00473200（→FUN_006FFE90 keyframe）／FUN_0047C990/0047CA30/0047CC80（等値ループ）／FUN_0047F750（→cmp [0xA7A160]）／FUN_004964F0／FUN_004E3490（word[+8]|=0x40 flag set）／FUN_006C6910／FUN_006C8220。
+  > 残点 V-419-1【中】0xB3CD7C 中身（実行時文字列）と設計意図（初期化経路・0x6D0450 identity 併）／V-419-2【低】0x6D0450 identity／V-419-3【低】V-418-2/V-416-2/V-415-2 引継ぎ（L498845 slot23 と manager[+0x30]）。
+  > 教訓: 型特定の終着点は「受け手 fn の arg 型」（body 実読で char* 判定）／bulk 通知 fn は「リスト走査＋map 走査の2ループ＋virtual 呼び出し」の body で即判定／既知残点の構造名（+0x9C list／map layout）を持つと未知 fn の body で identity が当たる。v 採番 v418 消費（次=v419）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1050,6 +1057,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1073,4 +1085,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-16 20:10:26
+**ai-todo** | Last Updated: 2026-11-16 20:20:49
