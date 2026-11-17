@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-17T01:37:51Z",
+  "lastUpdated": "2026-11-17T01:47:15Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -12728,14 +12728,30 @@
         "sentinel"
       ],
       "content": "2026-11-17 旧残点群消化第15弾 v471（probe v471_1 全1本 EXIT=0）＝V-471-1..3 完遂・旧 V-406-3/V-406-4 継続: 成果物 tmp/re/v471_singletons_setter_ruling.md・台帳 row447（bak297）・round_verify ALL OK（rows 31..447 / total 333 / done 328 / open 5）・STATE (go)・ai-todo #151 note。[確定相当] V-471-1 0xB364E8/F0/F8 identity: 3つとも同型 pattern [確定(機械)]: 0x9E4189/0x9E41A9/0x9E41C9 帯（FUN_009E4120 L1029823 内）で call 0x419A70（init 系）→ push 0xA1C4A0/B0/C0; call 0x981FB4（registration）／各 thunk FUN_00A1C4A0/B0/C0（L1044138/1044149/1044160）: mov ecx,0xb364e8/f0/f8; jmp 0x4055E0（thiscall wrapper）[確定(機械)]。docs mentions 0件（DAT_00b364e8/f0/f8 は docs に無い）→ docs 未収録 global [確定(否定側)] → 0xB364E8/F0/F8＝FUN_009E4120 が registration する3つの runtime singleton object（spec 名前テーブル [推定]）[確定相当]、各 thunk が thiscall accessor [確定相当]。[確定]（6件列挙）＋[未確定]（semantic）V-471-2 form+0x64 callers: E8 census＝6件 [確定]: FUN_005222D0×2（v462 derived AV 初期適用・class 適用）／FUN_005F5170（L359901）／FUN_005F8170（L361776）／FUN_005F94B0（L362550）／FUN_005F9EB0（L362958）: push 1; mov ecx,esi; call 0x566830（value=1 → FUN_00566830）→ form+0x64 の dword は FUN_005222D0（class 適用）と FUN_005Fxxxx 帯5件から actor self+8 へ転送される [確定]、何の値かは [未確定]＝残点（FUN_00566830 identity が次の手）。[確定]（sentinel 初期化多数）＋[部分確定]（意味）V-471-1 +0x48 field: docs mentions 837件 [確定]: param_1[0x12]=0（L319）／*(param_1+0x48)=0x7fffffff（L48386/L52072/L52112）＝INT_MAX sentinel 初期化 [確定]／param_1[0x12]=0x7fffffff（L50913）／if (*(param_1+0x48)==0x7fffffff)（L53532）→ *(param_1+0x48)=*(param_1+0x20)（L53533）→ +0x48（＝param_1[0x12]）は 0x7fffffff を初期値/上限 sentinel とする汎用 field [確定相当]（FUN_004CD960 の list head 用途（v470）と同一 field かの整合は [部分確定]）。[未確定] V-471-3 V-470-3 引継ぎは残点継続。残点 V-472-1..3（1=旧残点 V-406-3 継続（elem[10]（byte +40 float）の語＝TESObjectSTAT singleton と比較される elem の何の property か＋FUN_00566830（form+0x64 転送先）identity）【中】／2=旧残点 V-406-4 残り（form+0x64 dword と form+0x69 byte の semantic＝FUN_005Fxxxx 帯5件の文脈と FUN_00566830 identity）【低】／3=V-471-3 引継ぎ（FUN_005222D0 一語名別法と predicate slot35 英名 CanResolveDependencies [推定] 裏取り）【低】）。教訓: 複数 global を並列 census すると「3つの対」の同型 pattern が見える（init→registration＋thunk の定型が3つ同時に現れる）／`push <addr>; call <reg_fn>`（registration）と `mov ecx,<addr>; jmp <thunk>`（accessor）が runtime singleton の2定型（v466/v471 で再現）／`0x7fffffff`（INT_MAX）の初期化と `==` 比較が「sentinel field」の目印（docs grep 837件で field の性格が確定）／docs mentions 0件の global は「docs 未収録 global」として別類型で記録（annotation 欠落（v437）とは別物）／setter の callers context decode で転送先 fn（FUN_00566830）が見つかる＝semantic 調査の入口。本日 push: v405→v470（a36a2fca）66件＋本件 v471。v 採番 v471 消費（次=v472）。"
+    },
+    {
+      "id": "151-v472-bit11-flag-2026-11-17",
+      "timestamp": "2026-11-17T01:47:15Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v472",
+        "bit11-flag",
+        "form-64-link",
+        "opcode-sig"
+      ],
+      "content": "2026-11-17 旧残点群消化第16弾 v472（probe v472_1 全1本 EXIT=0）＝V-472-1..3 完遂・旧 V-406-3/V-406-4 継続第2弾: 成果物 tmp/re/v472_bit11_flag_ruling.md・台帳 row448（bak298）・round_verify ALL OK（rows 31..448 / total 334 / done 329 / open 5）・STATE (gp)・ai-todo #151 note。[確定相当] V-472-1 FUN_00566830 identity: L266287 void __thiscall FUN_00566830(int param_1, char param_2): cVar1 = FUN_00446B80(*(param_1 + 0xc)); if (cVar1 != '\\0') { if (param_2 != '\\0') *(param_1+0x1c) |= 0x800; else *(param_1+0x1c) &= 0xfffff7ff; } [確定(構造)] → FUN_00566830(self, flag)＝「FUN_00446B80(self[+0xC]) gate が通れば self+0x1C u32 の bit11（0x800）を set/clear する fn [確定相当]」（param_2＝set/clear 選択・push 1＝set）→ form+0x64 の dword 設定は FUN_00566830 の bit11 set と連動する [確定相当]（FUN_005F9EB0 が FUN_00468230 の直後に FUN_00566830(esi,1) を呼ぶ構造）。FUN_00446B80(self[+0xC]) gate の identity は [未確定]＝残点。[未確定]（残点継続）V-472-1 elem[10]（byte +40 float）の語: FUN_004CD960 docs body の +0x48/+0x10 context 提及は0件（param_1[0x14]＝+0x50 の2件のみ）→ docs body から elem class/field の context 未特定＝残点（v470 TESObjectSTAT singleton 比較との接続は維持）。[未確定]（残点継続）V-472-2 旧 V-406-4 残り（form+0x69 byte semantic）: FUN_00468270（byte setter *(u8*)(self+0xD)=v）の callers context は本 probe 未着手。[確定]（signature）＋[引継ぎ] V-472-3 V-471-3 引継ぎ（opcode 接続）: FUN_0050CD30（L202786）signature＝5引数（undefined4 param_1..param_4＋5th）[確定(decompiled)]（v409 opcode 帯）／FUN_0050D020 は annotation absent＝docs 欠落（v409 確定済み・再確認）[確定] → v409 の AdvancePCSkill/AdvSkill/ModPCSkill 共通 impl 記載と整合。残点 V-473-1..3（1=旧残点 V-406-3 継続（elem[10]（byte +40 float）の語＝docs body context 未特定→machine FUN_004CD960 list walk decode で class特定＋FUN_00446B80（FUN_00566830 gate）identity）【中】／2=旧残点 V-406-4 残り（form+0x69 byte＝FUN_00468270 callers context の semantic）【低】／3=V-472-3 引継ぎ（FUN_005222D0 一語名別法と predicate slot35 英名 CanResolveDependencies [推定] 裏取り）【低】）。教訓: flag set/clear の2分岐（|= mask / &= ~mask）は bit 単位 flag setter の定番（mask 値 0x800 から bit 位置11が即決）／gate（FUN_00446B80(self[+0xC])）付き flag setter は「条件付き flag」で gate fn identity が次の手／callers context（FUN_00468230 直後）が fn の連動関係を語る（v471 の6件列挙がここでも効く）／docs body の context 提及0件は「docs から読めない」の否定側＝machine list walk decode へ移る判断材料／annotation absent の再確認は v409 等の過去裁定と整合（docs 欠落 fn 記載の正しさを裏付ける）。本日 push: v405→v471（3bafc766）67件＋本件 v472。v 採番 v472 消費（次=v473）。"
     }
   ],
   "metadata": {
-    "totalEntries": 876,
+    "totalEntries": 877,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-17T01:37:51Z",
-    "entry_count": 876,
-    "last_updated": "2026-11-17T01:37:51Z"
+    "lastUpdated": "2026-11-17T01:47:15Z",
+    "entry_count": 877,
+    "last_updated": "2026-11-17T01:47:15Z"
   }
 }

@@ -590,6 +590,13 @@
   > ④[未確定] V-471-3 V-470-3 引継ぎは残点継続。
   > 残点 V-472-1..3（1=旧残点 V-406-3 継続（elem[10]（byte +40 float）の語＝TESObjectSTAT singleton と比較される elem の何の property か＋FUN_00566830（form+0x64 転送先）identity）【中】／2=旧残点 V-406-4 残り（form+0x64 dword と form+0x69 byte の semantic＝FUN_005Fxxxx 帯5件の文脈と FUN_00566830 identity）【低】／3=V-471-3 引継ぎ（FUN_005222D0 一語名別法と predicate slot35 英名 CanResolveDependencies [推定] 裏取り）【低】）。
   > 教訓: 複数 global を並列 census すると「3つの対」の同型 pattern が見える（init→registration＋thunk の定型が3つ同時に現れる）／`push <addr>; call <reg_fn>`（registration）と `mov ecx,<addr>; jmp <thunk>`（accessor）が runtime singleton の2定型（v466/v471 で再現）／`0x7fffffff`（INT_MAX）の初期化と `==` 比較が「sentinel field」の目印（docs grep 837件で field の性格が確定）／docs mentions 0件の global は「docs 未収録 global」として別類型で記録（annotation 欠落（v437）とは別物）／setter の callers context decode で転送先 fn（FUN_00566830）が見つかる＝semantic 調査の入口。v 採番 v471 消費（次=v472）。
+  > 【旧残点群消化第16弾 v472 — V-472-1..3 完遂・旧 V-406-3/V-406-4 継続第2弾】probe v472_1 全1本 EXIT=0。成果物 tmp/re/v472_bit11_flag_ruling.md・台帳 row448（bak298）・round_verify ALL OK（rows 31..448 / total 334 / done 329 / open 5）。
+  > ①[確定相当] V-472-1 FUN_00566830 identity: L266287 `void __thiscall FUN_00566830(int param_1, char param_2)`: `cVar1 = FUN_00446B80(*(param_1 + 0xc)); if (cVar1 != '\0') { if (param_2 != '\0') *(param_1+0x1c) |= 0x800; else *(param_1+0x1c) &= 0xfffff7ff; }` [確定(構造)] → FUN_00566830(self, flag)＝「FUN_00446B80(self[+0xC]) gate が通れば self+0x1C u32 の bit11（0x800）を set/clear する fn [確定相当]」（param_2＝set/clear 選択・push 1＝set）→ form+0x64 の dword 設定は FUN_00566830 の bit11 set と連動する [確定相当]（FUN_005F9EB0 が FUN_00468230 の直後に FUN_00566830(esi,1) を呼ぶ構造）。FUN_00446B80(self[+0xC]) gate の identity は [未確定]＝残点。
+  > ②[未確定]（残点継続）V-472-1 elem[10]（byte +40 float）の語: FUN_004CD960 docs body の `+0x48`/`+0x10` context 提及は0件（param_1[0x14]＝+0x50 の2件のみ）→ docs body から elem class/field の context 未特定＝残点（v470 TESObjectSTAT singleton 比較との接続は維持）。
+  > ③[未確定]（残点継続）V-472-2 旧 V-406-4 残り（form+0x69 byte semantic）: FUN_00468270（byte setter `*(u8*)(self+0xD)=v`）の callers context は本 probe 未着手。
+  > ④[確定]（signature）＋[引継ぎ] V-472-3 V-471-3 引継ぎ（opcode 接続）: FUN_0050CD30（L202786）signature＝5引数（undefined4 param_1..param_4＋5th）[確定(decompiled)]（v409 opcode 帯）／FUN_0050D020 は annotation absent＝docs 欠落（v409 確定済み・再確認）[確定] → v409 の AdvancePCSkill/AdvSkill/ModPCSkill 共通 impl 記載と整合。
+  > 残点 V-473-1..3（1=旧残点 V-406-3 継続（elem[10]（byte +40 float）の語＝docs body context 未特定→machine FUN_004CD960 list walk decode で class特定＋FUN_00446B80（FUN_00566830 gate）identity）【中】／2=旧残点 V-406-4 残り（form+0x69 byte＝FUN_00468270 callers context の semantic）【低】／3=V-472-3 引継ぎ（FUN_005222D0 一語名別法と predicate slot35 英名 CanResolveDependencies [推定] 裏取り）【低】）。
+  > 教訓: flag set/clear の2分岐（`|= mask / &= ~mask`）は bit 単位 flag setter の定番（mask 値 0x800 から bit 位置11が即決）／gate（FUN_00446B80(self[+0xC])）付き flag setter は「条件付き flag」で gate fn identity が次の手／callers context（FUN_00468230 直後）が fn の連動関係を語る（v471 の6件列挙がここでも効く）／docs body の context 提及0件は「docs から読めない」の否定側＝machine list walk decode へ移る判断材料／annotation absent の再確認は v409 等の過去裁定と整合（docs 欠落 fn 記載の正しさを裏付ける）。v 採番 v472 消費（次=v473）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1511,11 +1518,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1539,4 +1541,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 10:35:43
+**ai-todo** | Last Updated: 2026-11-17 10:45:14
