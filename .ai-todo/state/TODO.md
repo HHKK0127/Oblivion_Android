@@ -686,6 +686,13 @@
   > ④[未確定] V-483-3 引継ぎ（param_3 flag・一語名別法・predicate 英名）は残点継続。
   > 残点 V-484-1..3（1=旧残点 V-406-3 継続（6 float の正式語＝FUN_004D9D00 本文 context 採取が次の手＋FUN_004941a0（log core）identity）【中】／2=旧残点 V-406-4 semantic 完遂（DAT_00B37D00 正体＝atexit dtor 逆引き／init 実体本文 → +0x64 中身の語）【低】／3=V-483-3 引継ぎ【低】）。
   > 教訓: 連番 local（local_2c/28/24/20/1c）の代入束が「6 float＝2×3D vector」の証拠（local byte offset 連続＝配列/vector コピー・束セットで対を確定）／`FUN_004040e0(&DAT_)`＋`_atexit` の fn 型が singleton init fn の定型（v462 再現・隣接 fn の guard 連番が系列性を語る）／variadic wrapper（f(1, arg, &stack+8)）は log/report 系の目印／init fn の docs（guard/atexit）と machine（mov ecx,global; call init）の対応で this が確定（DAT_00B11E34＝guard、0xB37D00＝this）／正体不明 singleton は経路を固定して中身は残点の形を明示。v 採番 v483 消費（次=v484）。
+  > 【旧残点群消化第28弾 v484 — V-484-1..3 完遂・旧 V-406-3/V-406-4 継続第14弾】probe v484_1 全1本 EXIT=0。成果物 tmp/re/v484_setting_map_ruling.md・台帳 row460（bak310）・round_verify ALL OK（rows 31..460 / total 346 / done 341 / open 5）。
+  > ①[推定相当]（実文字列でほぼ確定）V-484-2 DAT_00B37D00 正体: **`FUN_00419A70`（`mov ecx,0xb37d00` init 実体・L16472）実読 [確定(decompiled)]: `param_1[1]=param_2; *param_1=param_3;` → `if (param_2!=0) { cVar1=FUN_0055e000(param_2,&param_2); if (cVar1) { FUN_004a7a60("Setting key '%s' already used in map.\nSetting keys must be unique.\n", param_1[1], uVar2); return param_1; } FUN_00412d30(param_1[1], param_1); }` [確定(実文字列＋構造)] → FUN_00419A70＝「key 登録 map insert（重複検出→警告ログ→登録）[確定相当] → DAT_00B37D00（this）＝「Setting key の登録 map（key→value）singleton」[推定相当]**（実文字列が決定打）。`*(class+0xc)==DAT_00B37D00` 比較は「対象が setting map singleton を持つか」の判定 [推定]、完全英名は [未確定]＝残点（v460 NiTStringTemplateMap 候補と型的整合 [推定]）。
+  > ②[確定相当] V-484-1 FUN_004941a0（log core）: L118678 `void FUN_004941a0(undefined4 param_1, char *param_2, va_list param_3)`（3引数）: `char local_32cc[12996]`（約13KB バッファ）→ `if ((DAT_00b34d90==0) || (iVar2=_vsprintf(local_32cc,param_2,param_3), iVar2<0)) goto …` [確定(構造)] → **_vsprintf で format 展開し sink（DAT_00b34d90）へ出力する logging core [確定相当]**、FUN_004A7A60＝level-1 wrapper（v483 推定を裏付け）→ NaN 修正ログはこの経路 [確定相当]、sink 正体は [未確定]＝残点。
+  > ③[確定相当]（読み込み fn）＋[未確定]（6 float の語）V-484-1 FUN_004D9D00: L171336 `void __thiscall FUN_004d9d00(int *param_1, undefined4 param_2)`: FUN_00451210 → **FourCC チャンクループ: `iVar2=FUN_004510b0()`（tag 読み）→ 比較ツリー（0x454d414e＝"NAME"／0x4c4f5358/59＝"LOSX"/"LOSY"／0x444f4c58/59＝"DOLX"/"DOLY"／0x44475258＝"DGRX"／0x44494445＝"DIDE"／0x45535558＝"ESUX"）→ case NAME: `FUN_00450C20(&stack,0x200); virtual[*param_1+0xd8](&stack)`（+0xD8＝v478 "NorthMarker" と同 slot＝SetName 系 [推定相当]）／case 他: FUN_004510E0（値読み）→ FUN_009832E6（__RTDynamicCast）等** → **FourCC チャンクループで読み込み、virtual+0xD8 へ反映する読み込み/反映 fn [確定相当]**、6 float はこのループで読んだ値で正式語は [未確定]＝残点。
+  > ④[未確定] V-484-3 引継ぎ（param_3 flag・一語名別法・predicate 英名・sink 正体）は残点継続。
+  > 残点 V-485-1..3（1=旧残点 V-406-3 継続（6 float の正式語＝FourCC 名インベントリ突合・chunk reader identity と値の意味＋local_2c 設定元の特定）【中】／2=DAT_00B37D00 完全英名（FUN_00412D30（register）identity で v460 候補と突合）【中】／3=V-484-3 引継ぎ【低】）。
+  > 教訓: init body（singleton 構築 fn）に潜む実文字列が identity を一撃（"Setting keys must be unique." で setting map singleton と即決＝v456 error 文言法の singleton 版）／`_vsprintf`＋巨大ローカル buffer＋sink ポインタ判定が logging core の定番（wrapper⇔core ペアで確定）／FourCC 定数を big/little 両視点で読む（整数をバイト分解して NAME/LOSX/DOLX を得る）／vtable slot（+0xD8）の usage が複数裁定で一致（v469/v478 "NorthMarker"⇔本 fn NAME ケース＝slot 機能 cross-verified）／init fn 実体を読むことで this singleton の中身が分かる（v483 の経路固定が効く）。v 採番 v484 消費（次=v485）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1607,11 +1614,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1635,4 +1637,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 11:50:31
+**ai-todo** | Last Updated: 2026-11-17 11:55:02
