@@ -642,6 +642,14 @@
   > ⑤[未確定] V-477-3 引継ぎ（FUN_005222D0 一語名別法・predicate slot35 英名）は残点継続。
   > 残点 V-478-1..3（1=旧残点 V-406-3 継続（elem class 再特定＝+0x170 slot を持つ class を「walk 命令の vtable 逆引き」ではなく donor/条件側（DAT_00B35EB8 singleton を GetForm で返す class）の調査へ転換＋elem[+0x28] float の語）【中】／2=旧残点 V-406-4 semantic 完遂（DAT_00B37D00（donor の +0xC 比較相手）identity と donor form（self+0x104）の種別 → +0x64 中身の語）【低】／3=V-477-3 引継ぎ（FUN_004CBA80 identity と FUN_004D0C20 本文用途、一語名別法・predicate 英名裏取り）【低】）。
   > 教訓: docs の offset は decimal 表記もあり得る（`+100`＝0x64）→ machine の hex disp と対応させる（本裁定の決定打）／vtable 値の範囲外チェックが新たな否定側を生む（`[vt+0x170]` が ASCII なら「vtable が短い」こと自体が class 情報・ValueError を範囲チェックに変換）／donor→transfer の系譜は「docs の代入/呼び出し1行」で完結／singleton 消費 fn は `FUN_x(DAT_..., 1)` 形の docs grep で即当たる／`self[+0xC]==7` gate と donor の `+0xC==DAT_00B37D00` 比較が同一 fn 内で連結＝+0xC の type 依存性を「同一 field 名でも donor/self で別物」と再確認。v 採番 v477 消費（次=v478）。
+  > 【旧残点群消化第22弾 v478 — V-478-1..3 完遂・旧 V-406-3/V-406-4 継続第8弾】probe v478_1 全1本 EXIT=0（初回構文エラー→修正再実行）。成果物 tmp/re/v478_northmarker_ruling.md・台帳 row454（bak304）・round_verify ALL OK（rows 31..454 / total 340 / done 335 / open 5）。
+  > ①[確定相当] V-478-1 DAT_00B35EB8 identity（条件側転換の成果）: docs 全13件のうち生成ブロック L57914-57930 実読 [確定(decompiled)]: `DAT_00b35eb8 = (int*)FUN_009832e6(..., 0, &PTR_PTR_00b02f9c, ...)`（__RTDynamicCast 経由生成）→ null のとき `L57923: DAT_00b35eb8=(int*)FUN_004b9aa0();`（v470 TESObjectSTAT ctor）→ **L57927: virtual[*DAT_00b35eb8+0xd8](NorthMarker) ／L57928: virtual[DAT_00b35eb8[9]+0x18](Marker_North.nif) ／L57929: FUN_004B2B80(DAT_00b35eb8)（v470 list 接続）／L57930: virtual[*+0x90](0) → DAT_00B35EB8 ＝「TESObjectSTAT singleton ＝ NorthMarker（北マーカー・NIF Marker_North.nif）実体 [確定相当]」（v469 machine `mov eax,[edx+0xD8]; push 0xA38154` の文言が NorthMarker と一致）→ walk 条件 `virtual[elem]+0x170() == DAT_00B35EB8` ＝「elem の GetForm 返り値が NorthMarker singleton と等しい elem のみ対象」[確定(構造)]**。
+  > ②[部分確定]（条件側固まる）＋[未確定]（elem 本体）elem[+0x28] float: 条件側（NorthMarker singleton）は確定相当だが elem 本体の class は「GetForm で NorthMarker を返す object」[推定] まで（+0x170 slot 持有 class＝v477 否定側の範囲）、`[ebx+0x28]` float の語は elem class 確定待ち＝残点継続。
+  > ③[確定相当]（singleton 定型）＋[未確定]（正体）V-478-2 DAT_00B37D00: 3系統 census [確定(機械)]: (i) init FUN_009E62B0（L1031385）内 `0x9EDEAA: mov ecx,0xb37d00; call 0x419A70`（init）→ `push 0xA20120; call 0x981FB4`（registration）／(ii) thunk FUN_00A20120（L1052376）: `mov ecx,0xb37d00; jmp 0x4055E0`／(iii) 比較 fn FUN_0051C090（L211964）: `cmp edx,[0xb37d00]; jne; ret 4` → DAT_00B37D00 ＝ init＋registration＋thunk＋比較4系統を持つ runtime singleton object [確定相当]（v466/v471 の singleton 定型と同一）、何の singleton かは [未確定]＝残点（docs mentions 5件: L211974/L216783/L329513/L425636/L426544）。
+  > ④[部分確定] donor form（self+0x104）の種別: docs `param_1[0x41] = ...` 代入72件 [確定]（L1524 初期化 0／L122594 `*(param_1+0x104)=param_2`（ptr 引数代入）／L212716/L216648 `= piVar1[0x41]`（コピー））→ `+0x104` は type 依存の汎用 ptr field（v475 の +0xC と同型）[確定相当]、FUN_005222D0 band 内に assignment 無し＝donor 入手元は docs body 未特定＝残点（machine `cmp ecx,[eax+0xc]`（0x522325）が L216783 と一致 [確定(機械)]）。
+  > ⑤[未確定] V-478-3 引継ぎ（FUN_004CBA80 identity・一語名別法・predicate 英名）は残点継続。
+  > 残点 V-479-1..3（1=旧残点 V-406-3 継続（elem class＝「GetForm で NorthMarker singleton を返す object」の本体特定＋[ebx+0x28] float の語）【中】／2=旧残点 V-406-4 semantic 完遂（DAT_00B37D00 の正体と donor form 入手元 → +0x64 中身の語）【低】／3=V-478-3 引継ぎ【低】）。
+  > 教訓: 条件側（比較対象の singleton）へ転換すると identity が実文字列で当たる（DAT_00b35eb8 は生成ブロックの NorthMarker/Marker_North.nif で identity 完結・walk の比較相手 singleton の identity は「その singleton を初期化する fn」を読む）／singleton 定型（init call 0x419A70＋registration call 0x981FB4＋thunk＋比較 fn）の4系統 census が新しい singleton を即特定（v466/v471/v478 で3度目）／docs mentions 全件列挙（13件）は「生成/使用/比較」の3種に分かれて生成ブロックが identity の宝庫／汎用 ptr field（72件 assignment）は band 内 assignment 無しでも type 依存性が確定／probe の構文エラーは即修正で再実行。v 採番 v478 消費（次=v479）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1563,11 +1571,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1591,4 +1594,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 11:23:55
+**ai-todo** | Last Updated: 2026-11-17 11:28:41
