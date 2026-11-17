@@ -2,6 +2,10 @@
 
 ## Tasks
 
+- [ ] **#159** 【作製・中優先（#143 の残 UX）】キャラ作成中は **ソフトキーボード（IME）が画面下半分を占有し、Create/Cancel ボタンが隠れる**。【実測の事実】①IME が y≈570 以下を覆い、Create/Cancel は y≈975 付近（`ui_character_creation.cpp` の `kConfirmCancelWidth=105`/`Height=32`・`confirm_button_x`/`cancel_button_x`）に描画されるため**開いている間は見えない** ②#143（a954d332 → master 249c36bb）で **✔(actionDone) 押下時に InputMethodManager で IME を自動クローズ**する実装は済みで、✔ 1回で Create が見える状態にはなる ③ただし **GLSurfaceView が全画面を占有しウィンドウが縮まない**ため、開いている間の視認性は未解決。【証跡】%TEMP%\opencode\rep_new.png／repro_r1.png／w_chargen.png。【方針候補（**UX 判断は人間確認が欲しい**）】①IME 表示中にパネル全体を上方へリレイアウト（Create/Cancel を IME 上端の y≈560 以上へ）②`windowSoftInputMode=adjustResize` ＋ WindowInsets で描画ビューポートを縮める ③IME 開閉をフックしてボタン行だけスライド。**原本の race_sex_menu は物理キーボード前提のため本件は移植側固有**（RE 依頼不要＝#143 で確定済み）。【検証】emu で名前入力 → IME 開いた状態で Create が見える、または ✔ 1回で確定できること（Back 不要）。関連: #143（自動クローズ実装・マージ済み）/#96/#126③ `#android` `#chargen` `#fix` `#oblivion` `#ui` `#ux`
+
+- [ ] **#158** 【作製・低優先（#96 の完了条件に抵触）】キャラ作成パネルの左端に **DebugHUD の文字が重なる**（debug ビルド既定表示）。【実測の事実】①`debug_hud.h:10-14` の `DEBUG_HUD_DEFAULT_VISIBLE` は **debug ビルドで true**（release は false）②`DebugHUD::render()`（ui/debug_hud.cpp:202・overview ページ 236-305）は renderer.cpp のオーバーレイ段で **chargen 中もガードされず常時描画**される ③行の位置は xPos=10/yPos=10・lineHeight=42・textScale=1.2（debug_hud.cpp:205-208）。【証跡】%TEMP%\opencode\repro_r1.png／rep_new.png／fix_chargen_5s.png ＝ `Name` タブ・`Character Name:` ラベル・ヒント文が Page/FPS/Frame/Avg/Mem/DrawCalls/DEBUG/Audio/Filters の下に隠れる。【影響】#96「主要テキスト・行・ボタンが重ならない」に直接抵触。【方針候補（**#156① の裁定と整合させてから**＝推測実装禁止）】①chargen 表示中は DebugHUD を隠す（`saveLoadOpen` 算出に `showCharacterCreation` が既に加わっている renderer.cpp:5457-5466 と同型のガード）②debug ビルドでも既定非表示に ③左上をパネル外へ移動。**原版は左上に何を置くかが #156① で未裁定**のため、①③は裁定後に決める。【検証】emu で NEW 直後のスクリーンショットでパネル左端に文字が乗っていないこと。関連: #137（同オーバーレイの描画元と GL_BLEND 根因を確定済み）/#156/#96 `#android` `#chargen` `#debug` `#fix` `#oblivion` `#ui`
+
 - [ ] **#157** 【RE レーン依頼・#127 の正典（StatsMenu 表示仕様の残点 V-364-3/4 を確定）】port のキャラクターシート配線（#127）を正典に合わせるため、**原版 StatsMenu の表示仕様**を確定してほしい。【出発点＝既裁定】`tmp/re/v364_stats_credits_supply_ruling.md`（#133 完遂分）で既に [確定]: menu id **0x3EB**／XML 構造＝**5タブ** `stat_p1`(race・birthsign・class・level・health・magicka・fatigue_layout＋stat_faction_item/stat_misc_item)・`stat_p2`(8属性・各 <id> 24=intelligence 等)・`stat_p3`(minor_label＋window)・`stat_p4`/`stat_p5`(up/down/window/pane のスクロール付きリスト)・`stat_tabs`(prev/next＋stat_tabs_p1..p5 の <id> 1..5)／**タブ通知 id 1..5＝slot3 `0x5DCD70`** [確定(XML+命令)]／値供給チェーン **AV getter→trait→XML copy** [確定(命令)]／ルート traits に `user0`=current visible tab、色定義 `_red/_green/_blue_under/_even/_over`（値 vs base の色分岐用）、menufade 0.25。【依頼3件（判定5段階・根拠は EXE 命令または bsa 抽出 XML のみ・推測禁止）】
 ①【高】**5タブの表示行・ラベル・値供給の完全対応表** — 各タブの表示項目、ラベルの `strings()` キー（menus\strings.xml）、値を供給する getter/関数、行の生成元を確定。特に **V-364-3: 通知 id4（tab p4）`0x5DC950` が `__RTDynamicCast(TESBoundObject→TESNPC)` の上で `[esi+0x3C]` リストを walk して行生成している「NPC の何のリストか」**（major/minor skills か、それ以外か）と **V-364-4: XML trait ↔ EXE trait の完全対応表**、および `stat_p2_strength_layout`(id24) の `<copy src="stat_p2" trait="user1"/>` と色条件 `onlyif user1 lt user9` が指す **user1..user9 の意味（user9＝base 比較値 [推定] の裏取り）**。
 ②【中】**値 vs base の色分岐の正典** — `_red/_green/_blue` の `_under/_even/_over` が「現在値・修正後値・base」のどの比較で使われるか（例: `onlyif user1 lt user9 → _red_under / eq → _red_even / over → _red_over`）を命令で確定。＝port の「表示値と色が正しいか」の判定基準になる。
@@ -597,6 +601,13 @@
   > ④[確定]（signature）＋[引継ぎ] V-472-3 V-471-3 引継ぎ（opcode 接続）: FUN_0050CD30（L202786）signature＝5引数（undefined4 param_1..param_4＋5th）[確定(decompiled)]（v409 opcode 帯）／FUN_0050D020 は annotation absent＝docs 欠落（v409 確定済み・再確認）[確定] → v409 の AdvancePCSkill/AdvSkill/ModPCSkill 共通 impl 記載と整合。
   > 残点 V-473-1..3（1=旧残点 V-406-3 継続（elem[10]（byte +40 float）の語＝docs body context 未特定→machine FUN_004CD960 list walk decode で class特定＋FUN_00446B80（FUN_00566830 gate）identity）【中】／2=旧残点 V-406-4 残り（form+0x69 byte＝FUN_00468270 callers context の semantic）【低】／3=V-472-3 引継ぎ（FUN_005222D0 一語名別法と predicate slot35 英名 CanResolveDependencies [推定] 裏取り）【低】）。
   > 教訓: flag set/clear の2分岐（`|= mask / &= ~mask`）は bit 単位 flag setter の定番（mask 値 0x800 から bit 位置11が即決）／gate（FUN_00446B80(self[+0xC])）付き flag setter は「条件付き flag」で gate fn identity が次の手／callers context（FUN_00468230 直後）が fn の連動関係を語る（v471 の6件列挙がここでも効く）／docs body の context 提及0件は「docs から読めない」の否定側＝machine list walk decode へ移る判断材料／annotation absent の再確認は v409 等の過去裁定と整合（docs 欠落 fn 記載の正しさを裏付ける）。v 採番 v472 消費（次=v473）。
+  > 【旧残点群消化第17弾 v473 — V-473-1..3 完遂・旧 V-406-3/V-406-4 継続第3弾】probe v473_1 全1本 EXIT=0。成果物 tmp/re/v473_gate_byte69_ruling.md・台帳 row449（bak299）・round_verify ALL OK（rows 31..449 / total 335 / done 330 / open 5）。
+  > ①[確定] V-473-1 FUN_00446B80（FUN_00566830 gate）identity: L54126 `bool FUN_00446b80(uint param_1) { return 0xfeffffff < param_1; }`（1行）[確定(decompiled)] → `param_1 > 0xFEFFFFFF` ⇔ `param_1 >= 0xFF000000` ⇔ 上位 byte==0xFF [確定] → **bit11 flag gate＝「self[+0xC] の u32 上位 byte が 0xFF（0xFF000000..0xFFFFFFFF）のとき true」[確定相当]**（self[+0xC] が「flags/状態 u32」で上位 byte 0xFF＝特定状態 [推定]）。
+  > ②[部分確定]（field アクセス）＋[未確定]（class）V-473-1 elem[10] class特定: FUN_004CD960 machine: `lea edi,[esi+0x48]`（2箇所・list head アドレス）と `mov ecx,[esi+0x50]`（count/field）[確定(機械)] — ただし elem の vtable/field は linear scan で未捕捉（walk 中身が decode 範囲外）[部分確定] → class特定は [未確定]＝残点（v470 TESObjectSTAT singleton 比較との接続は維持）。
+  > ③[確定]（1件）＋[確定相当]（連動）V-473-2 form+0x69 byte setter（FUN_00468270）の caller: E8 census＝1件: `0x522741` owning=FUN_005222D0（L216747）[確定]、context `522745: call ptr [esi+0x5f]`（indirect call）→ FUN_00468270（`*(u8*)(self+0xD)=v`）は FUN_005222D0（v462 derived AV 初期適用 fn）から indirect 経由で呼ばれる [確定] → form+0x69 byte は derived AV 初期適用（v462 の param_2==0 ブロック）内で setされる [確定相当]（`[esi+0x5F]` の slot 特定は [未確定]＝残点）。
+  > ④[未確定] V-473-3 V-472-3 引継ぎは残点継続。
+  > 残点 V-474-1..3（1=旧残点 V-406-3 継続（elem[10]（byte +40 float）の class＝FUN_004CD960 list walk の machine decode 深部＋self[+0xC] 上位 byte 0xFF の semantic＝何の状態か）【中】／2=旧残点 V-406-4 残り（form+0x69 byte の値の意味＝derived AV 初期適用内で何を set するか・[esi+0x5F] slot 特定）【低】／3=V-473-3 引継ぎ（FUN_005222D0 一語名別法と predicate slot35 英名 CanResolveDependencies [推定] 裏取り）【低】）。
+  > 教訓: gate の1行比較（`CONST < param_1`）は「上位 byte 判定」等に読み替えられる（mask 定数 0xFEFFFFFF から条件 >= 0xFF000000 が即決）／caller が1件の setter は「その1件の fn」と連動関係が即決（FUN_00468270⇔FUN_005222D0）／`call ptr [reg+disp]`（indirect）は vtable slot 候補だが disp が4で割り切れない（0x5F）なら object field 側を疑う（mid-decode の可能性も併記）／elem class特定は list walk の machine decode 深部が必要（lea edi,[esi+0x48] まででは不十分＝残点の形を正直に）／form+0x69 byte も derived AV 初期適用（v462）と連動（form+0x64（dword）と同 fn（FUN_005222D0）由来で揃った）。v 採番 v473 消費（次=v474）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1518,6 +1529,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1541,4 +1557,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 10:45:14
+**ai-todo** | Last Updated: 2026-11-17 10:54:27
