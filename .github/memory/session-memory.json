@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-17T00:00:31Z",
+  "lastUpdated": "2026-11-17T00:12:05Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -12600,14 +12600,30 @@
         "param4"
       ],
       "content": "2026-11-17 旧残点群消化第7弾 v463（probe v463_1 全1本 EXIT=0）＝V-463-1..3 完遂: 成果物 tmp/re/v463_predicate_ruling.md・台帳 row439（bak289）・round_verify ALL OK（rows 31..439 / total 325 / done 320 / open 5）・STATE (gg)・ai-todo #151 note。[確定相当] V-463-1 FUN_006DF060（NiLookAtInterpolator idx35 override）identity: L515290 undefined4 __thiscall(int self, int *palette): if (*(int*)(self+0x10)==0)（cache 未解決）{ iVar1=virtual[palette]+0x4C(*(self+0x14))（name を palette で resolve） if (iVar1==0) return 0;（resolve 失敗→false） *(self+0x10)=iVar1;（cache 格納） } return 1;（resolve 済み→true）[確定(構造)] → FUN_006DF060＝「interpolator の依存（self+0x14＝name）を palette で lazy resolve し、未解決なら0・解決済みなら1を返す predicate [確定相当]」。[確定相当] predicate slot35（+0x8C）の正式名＝「interpolator の依存解決（dependencies resolve）完了 predicate」: 根拠 (i) 恒真 impl 0x6FDFF0（27/28 クラス）＝resolve 不要 interpolator、(ii) NiLookAtInterpolator（look-at ターゲット名に依存）のみ override で name resolve を実行、(iii) v405 の \"failed to resolve dependencies\" ログ（0xA79CD8）経路と完全整合（predicate false 時に出るログ）→ slot35＝NiInterpolator::CanResolveDependencies 系 [確定相当]（英名自体は RTTI 由来で docs 無し＝[未確定]）。[確定相当] V-463-2 FUN_00668B30 第4引数 param_4（呼び出し0）の語: L429202-429218 if (param_4==0) { param_4=FUN_00446af0(uVar5); if (param_4==0) goto LAB_00668c15; }（0 なら FUN_00446AF0 で解決・失敗で早期 return） fVar6=FUN_0065fad0(param_4); FUN_00668070(param_4,0,param_5=='\\0'); if (*(char*)(self+0x6e5) && param_5=='\\0') … [確定(構造)] → param_4＝「class/form ptr（0＝未解決 → FUN_00446AF0 で lookup 解決）[確定相当]」、param_5＝char flag（FUN_00668070 第3引数へ転送＝usage 更新の種別 [推定]）。[未確定] V-463-2 FUN_005222D0 一語名: string pushes 0件（error 文言なし）・docs annotation はあるが名前は FUN_ のまま [確定(否定側)]。caller 8件は v406 と完全一致（record load FUN_00447300／script opcode 系3 FUN_0050A8A0/0050C430/0050CD30／skill band FUN_00523EB0／chargen FUN_00596980／menu FUN_005C28F0×2）→ 機能は v462 で確定相当、一語名は docs 由来で付けられない＝残点。[確定] V-463-3 移行方針: V-464 から旧残点（V-406-3 FUN_006ECC80 残り typed【中】／V-406-4 DATA+0x2C 意味／V-406-5 PTR_DAT_00B10D90 所有 fn）へ軸を移す [確定（作業方針）]。残点 V-464-1..3（1=旧残点 V-406-3（FUN_006ECC80 残り E8=500+ の CLAS 型再 typed・actor/chargen/menu 帯 0x5Exxxxx/0x5Bxxxxx/0x58xxxxx）【中】／2=旧残点 V-406-4（DATA+0x2C/form+0x64 と DATA+0x31/form+0x69 の意味・UESP 48/52byte 差分）と V-406-5（PTR_DAT_00B10D90 所有 fn と spec 名前テーブル書手）【低】／3=FUN_005222D0 一語名の別法（caller script opcode 名接続）と predicate slot35 英名（CanResolveDependencies [推定] の裏取り）【低】）。教訓: override のみを decompiled で読めば slot の正式意味が分かる（恒真 impl 27/28 は中身 mov al,1;ret で情報ゼロ・唯一の override body が何を判定するか全部語る）／「恒真多数派 vs override 少数派」の対比が slot semantic の決定打（多数派何もしない＝默认成功・少数派実処理＝条件付き成功）／過去のログ文言（v405 \"failed to resolve dependencies\"）と predicate false 経路の接続で英名系が裏付け（古い裁定の error 文言を predicate 調査で再利用）／`if (arg==0) arg=resolve_fn(...)` pattern は「引数＝ptr（0＝未解決）」の定番で param_4 の語が即決／一語名が docs に無い fn は string push 0件の否定側で「名付け不能」と確定し残点の形を変える。本日 push: v405→v462（acb1d032）58件＋本件 v463。v 採番 v463 消費（次=v464）。"
+    },
+    {
+      "id": "151-v464-clas-recv-2026-11-17",
+      "timestamp": "2026-11-17T00:12:05Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v464",
+        "clas-getter",
+        "receivers",
+        "band-signatures"
+      ],
+      "content": "2026-11-17 旧残点群消化第8弾 v464（probe v464_1..2 全2本 EXIT=0）＝V-464-1..3 完遂・旧 V-406-3 部分消化: 成果物 tmp/re/v464_clas_recv_ruling.md・台帳 row440（bak290）・round_verify ALL OK（rows 31..440 / total 326 / done 321 / open 5）・STATE (gh)・ai-todo #151 note。[部分確定] V-464-1（旧 V-406-3）FUN_006ECC80 受け手 typed: E8 caller 512件（cap 到達）の band histogram と actor/chargen/menu band（0x580000..0x5F0000）73件を全列挙 [確定]。受け手2系統を特定: (i) FUN_004CCE00（L160783 float10 __fastcall(int param_1): if ((*(u8*)(param_1+0x24)&1)!=0) { local_4=FUN_00420C40(); } → param_1+0x24 byte flag bit0 が立つとき float 計算を返す [確定相当]）と FUN_004CCE20（L160801 void __thiscall(int, undefined4*, undefined4*, char)・float locals 多用＝class form の float 計算系 [推定高]）（FUN_005A6DE0/FUN_005B7180 から mov ecx,eax; call 0x4CCE00/0x4CCE20 経由で CLAS 結果が渡る）／(ii) Player singleton 接続: FUN_005806D0（L287569 void __fastcall(int)）が call 0x6ECC80 直後に mov ecx,[0xB333C4]（Player singleton・v447 確定）[確定(機械)] → CLAS getter 結果を Player と接続する menu/処理 fn。band signature 一覧取得 [確定(decompiled)]: FUN_005806D0 void __fastcall(int)／FUN_005A6DE0 void __fastcall(int)／FUN_005B7180 void(float *param_1, float *param_2)／FUN_005B7550 int *__fastcall(int)／top-band: FUN_00603CA0 void __thiscall(int *param_1, float param_2)（0x603000）／FUN_00460710 void(undefined4, uint)（0x460000）／FUN_006384B0 void __thiscall(int *param_1, int *param_2)（0x638000）／FUN_006411E0 同型（0x641000）／FUN_004B72C0 undefined1(int, int*, char, char)（0x4B7000）→ 500+ 全数 typed は未達 [部分確定]＝残点継続（受け手2系統＋band signature 一覧が typed の基盤）。[未確定] V-464-2（旧 V-406-4/5）は本 probe 未着手＝残点（budget を V-406-3 に集中）。[未確定] V-464-3 引継ぎ（FUN_005222D0 一語名別法・predicate slot35 英名）も残点継続。残点 V-465-1..3（1=旧残点 V-406-3 継続（FUN_004CCE00 の param_1+0x24 flag bit0 意味と FUN_00420C40 float 計算 identity、top-band 残り caller typed）【中】／2=旧残点 V-406-4（DATA+0x2C/+0x31 意味・UESP 48/52byte 差分の docs 内裏取り）と V-406-5（PTR_DAT_00B10D90 所有 fn と spec 名前テーブル書手）【低】／3=V-464-3 引継ぎ（FUN_005222D0 一語名別法と predicate slot35 英名 CanResolveDependencies [推定] 裏取り）【低】）。教訓: E8 census は band histogram を先に可視化（512件を全 decode する前に帯で絞る）／`mov ecx,eax; call <fn>` の2命令ペアが「getter 結果→受け手」の接続点で受け手 fn identity が typed の鍵（FUN_004CCE00/4CCE20）／Player singleton（0xB333C4）を含む call 直後は「Player と接続する系統」として分離（v447 singleton 確定が効く）／band owning fn の signature 行を docs から一括取得すれば band 全体 typed の材料が揃う／param_1+0x24 &1 の flag byte は class form の flag（v406 flags bit0 autocalcs と整合）で過去の flags bit0 調査（v261/v406）と接続可。本日 push: v405→v463（42d00df2）59件＋本件 v464。v 採番 v464 消費（次=v465）。"
     }
   ],
   "metadata": {
-    "totalEntries": 868,
+    "totalEntries": 869,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-17T00:00:31Z",
-    "entry_count": 868,
-    "last_updated": "2026-11-17T00:00:31Z"
+    "lastUpdated": "2026-11-17T00:12:05Z",
+    "entry_count": 869,
+    "last_updated": "2026-11-17T00:12:05Z"
   }
 }
