@@ -707,6 +707,13 @@
   > ③[確定]（否定側）V-486-3 FUN_005222D0 一語名 text evidence: body（L216747..L216927）に FUN_004a7a60 呼び出し・format 文字列ともに 0件 → 一語名は error/log 文言から付与不能（v463 に続く否定側の再確認）＝残点（機能名は v462 で確定相当）。[未確定] predicate slot35 英名（CanResolveDependencies [推定]）は残点継続。
   > 残点 V-487-1..3（1=旧残点 V-406-3 継続（"DATA" 24B が何の record の値か＝FUN_004D9D00 の呼び出し元（record read fn）特定＋+0x8C(0) の意味）【中】／2=DAT_00B37D00 確定英名（0x9EDEAA 帯の owning fn＝annotation gap の機械境界（int3）特定→init vtable store／dtor 逆引き）【低】／3=V-486-3 引継ぎ【低】）。
   > 教訓: FourCC は LE メモリ文字列で読むとフォーマットが分かる（EDID/NAME/DATA が record 系と即一致＝v484/v485 の解釈を確定）／owning（bisect annotation）は fn 境界（ret/int3）で必ず裏取る（0x9EDEAA が FUN_009E62B0（ret at 0x9E6303）の range 外なのに own された＝v478 の誤りを機械境界で検出）／1 annotation が巨大帯を覆うと「fn が int3 で分断された連続 init 群」かもしれない（annotation gap は fn 境界探索へ）／virtual+0xD8（SetName）と EDID の一致で slot 意味が cross-verified／log/format string 0件の否定側も積み上げる（v463→v486 で3回確認）。v 採番 v486 消費（次=v487）。
+  > 【旧残点群消化第31弾 v487 — V-487-1..3 完遂・旧 V-406-3/V-406-4 継続第17弾】probe v487_1..v487_2 全2本 EXIT=0。成果物 tmp/re/v487_gamesetting_refr_ruling.md・台帳 row463（bak313）・round_verify ALL OK（rows 31..463 / total 349 / done 344 / open 5）。
+  > ①[確定相当] V-487-2 DAT_00B37D00 の英名（key 文字列）: **init fn（0x9EDEA0..0x9EDEBF）machine 実読 [確定(機械)]: `push 0x230e6`（143590・値/id）→ `push 0xa5b4a8`（key 文字列 ptr）→ `mov ecx,0xb37d00`（this）→ `call 0x419a70`（v484 key-insert）→ registration → ret** → **`0xA5B4A8` の実文字列＝`"iClassCharactergenClass"` [確定(実文字列)] → DAT_00B37D00＝GameSetting entry「iClassCharactergenClass」（key=i…＝int 系・chargen class 設定値）singleton [確定相当]**。隣接も同型で獲得: **`DAT_00B37CF8`＝`"iClassNightblade"`／DAT_00B37D08 帯＝`"fEssentialDeathTime"`（f…＝float 系）→ 連続 init 帯＝GameSetting entry 群の静的 singleton 列 [確定相当]**（3文字列とも docs mentions 0件＝docs 未収録 [確定(否定側)]）。**v484「setting key 登録 map singleton」推定を「特定 GameSetting entry の value object singleton」へ訂正・追補**。
+  > ②[確定]（vtable 登録）V-487-1 FUN_004D9D00 owning class: **E8 callers＝0件→vtable 逆引き（v479 法）→ raw hits 12件・全件 `slot=+0x1C` [確定(機械)]: TESObjectREFR／Actor／ArrowProjectile／Character／Creature／MobileObject…（12件＝REFR 派生系統）→ FUN_004D9D00＝TESObjectREFR 系 vtable slot +0x1C の method [確定] → param_1＝TESObjectREFR 系 form（v480 と再一致）→ slot +0x1C＝subrecord 読み込み method（Load/Read [推定相当]）**。→ **6 float（"DATA" 24B）は REFR 系 form の DATA subrecord 値＝v480 の +0x20..+0x34 の2×3float 群の出所が確定 [確定相当]**。
+  > ③[部分確定]（slot 候補）＋[未確定]（機能）+0x8C(0): `[TESObjectREFR vt+0x8C]=0x4D65D0`（owning FUN_004D6450 内）／`[TESObjectCELL vt+0x8C]=0x46A9E0` [確定(機械)] → param_1 の `virtual+0x8C(0)` は 0x4D65D0 系 impl [推定高]、mode-0 の意味は本文未読＝残点。
+  > ④[未確定] V-487-3 引継ぎ（predicate 英名・param_3・sink 正体・新 FourCC 意味）は残点継続。
+  > 残点 V-488-1..3（1=`virtual+0x8C(0)` の機能（0x4D65D0 impl 本文）＋iClassCharactergenClass/iClassNightblade の GameSettings usage（FUN_005222D0(1) trigger と v462 chargen の接続）【中】／2=V-487-3 引継ぎ【低】／3=GameSetting entry 群の全列挙（init fn 連鎖から key 一括取得＝DAT_00B3xxxx 系台帳化）【低】）。
+  > 教訓: init fn の `push <ptr>` 引数を .rdata で実読（key 文字列 ptr→実文字列）が singleton identity の決定打（v484 error 文言法→本裁定 key 文字列法）／E8＝0 は vtable 登録 fn の合図（v479 教訓再利用）→ slot index まで遡る（12件が全 +0x1C で class family と slot 同時確定）／隣接 init fn の key 文字列を一括取得すると singleton 群台帳が一気に立つ／key prefix（i/f）が value 型を語る／slot index と同 offset の field は別物（明記して混同回避）。v 採番 v487 消費（次=v488）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1628,6 +1635,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1651,4 +1663,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 12:04:18
+**ai-todo** | Last Updated: 2026-11-17 12:10:08
