@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-17T05:23:59Z",
+  "lastUpdated": "2026-11-17T05:34:15Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13256,14 +13256,30 @@
         "node-set-candidate"
       ],
       "content": "2026-11-17 旧残点群消化第48弾 v504（probe v504_1 全1本 EXIT=0）＝V-504-1..3 完遂・旧 V-406-3 継続第34弾: 成果物 tmp/re/v504_version_getextradata_ruling.md・台帳 row480（bak330）・round_verify ALL OK（rows 31..480 / total 366 / done 361 / open 5）・STATE (hv)・ai-todo #151 note。[確定相当]（version byte）V-504-1 Player +0x7C: context 実読 [確定(実文字列＋構造)]: L15443-15445: FUN_004a7a60(\"LoadGame Buffer error: Block Header is incorrect in file %s on line %i.  Current version is %i\", \"..\\\\TES Shared\\\\Magic\\\\EffectSettingCollection.cpp\", 0xa4, *(undefined1 *)(DAT_00b33b00 + 0x7c)); → +0x7C byte は「Current version is %i」の version 値 [確定相当]（0xa4＝164＝line）。L15482-15484/L15488-15490（overrun/underrun log）でも同じ 0xb8（184＝line）＋+0x7C（version）の組 [確定] → Player +0x7C byte＝SaveGame/LoadGame の version byte [確定相当] → v503 の閾値（0x23 <＝35超／0x3f <＝63超／0x24＝36）は version 比較（対応バージョン範囲 gate）[推定相当]。副次: L15440: local_4 != 0x4b4f4c42＝\"BLOB\" FourCC（LE 逆バイト）[確定]／L15467: \"Player Load: Failed to find known effect setting ID %08X\" [確定(実文字列)]／L15470: *(iStack_c+0x58) |= 0x200000（effect setting +0x58 bit21 set）[確定] → 本帯は EffectSettingCollection.cpp の LoadGame 処理 [確定相当]（DAT_00b33b00+0x80＝ptr・+0x14＝buffer size uint も同時判明）。[確定]（実文字列）→ v501 推定を訂正 V-504-2 FUN_0041E210: body L20067-20100 実読 [確定(decompiled)]: int __thiscall FUN_0041e210(int param_1, byte param_2): if ((param_2 >> 3 < 0xc) && ((*(byte *)((param_2 >> 3) + 8 + param_1) & (byte)(1 << (param_2 & 7))) != 0))（type byte の bit mask 検査（12 bucket×8bit＝96種））→ TLS cache（iVar1+0x10+param_2*4・param_2 < 0x5d＝93 種上限）→ FUN_00401020(\"BaseExtraList::GetExtraData\")（critical section 名＝実文字列）→ linked list 走査（*(iVar1+4)==type）→ return iVar2 → FUN_0041E210＝BaseExtraList::GetExtraData（type byte 指定で extra data を取得する fn）[確定] → v501「FormType/種別 byte 判定 [推定相当]」を本裁定で訂正。0x4b（75）＝extra data type byte [確定相当]（param_2 < 0x5d 値域内）。[推定相当]（候補特定）V-504-1 node-set impl: ctor-store vtable census（1486個）から NiT*/Map* 463クラスを列挙 [確定(機械)]。BSTCaseInsensitiveStringMap<PAVTESForm>（vt=0xA3BF1C）の [vt+0xC]=0x6C4F80 → FUN_006C4F30 内 [確定(機械)]、<IDLE_ANIM_ROOT>（vt=0xA53920）／<PAVSetting>（vt=0xA40454）も 同一 impl FUN_006C4F80 共有 [確定] → FUN_006C4F80＝case-insensitive string key map の node-set impl 候補 [推定相当]（FUN_00412D30（v485 setting map＝<PAVSetting> [推定]）の this vtable がこの family なら node-set 完遂）。LockFreeMap/LockFreeStringMap 系の slot +0xC は別 impl（FUN_0043E430/FUN_0055F4C0/FUN_00433F20 等）[確定] → map family で impl が分岐（BST 系 vs LockFree 系）。FUN_00452570（v494）の this がどちら family かは未確定＝残点。[未確定] gated 側 mask 源（edx）は budget 未着手＝残点／[未確定] V-504-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。残点 V-505-1..3（1=FUN_006C4F80 本文（node-set の value→field 対応完遂）と FUN_00452570/FUN_00412D30 の this vtable family 確認（BST vs LockFree）＋version 閾値（35/63/36）の対応バージョン【中】／2=gated 側 mask 源（edx 設定元）＋Player +0x80（ptr）／+0x14（buffer size）の identity【低】／3=引継ぎ残り【低】）。教訓: `\"…%i\"` log の引数が field の意味を語る（Current version is %i の引数＝+0x7C byte で version と即決＝閾値 census（v503）→log context（v504）の2段が field semantic を完成）／critical section の名前文字列（FUN_00401020(\"…\")）が fn identity を一撃（\"BaseExtraList::GetExtraData\"＝v498 に続く名前法の再現）／推定（v501 FormType）は実文字列で訂正される（[推定] はいつでも [確定] で上書きできる＝裁定の更新が正しい運用）／census filter（NiT*/Map*）＋slot +0xC 実読で impl family が判別（BST 系 vs LockFree 系で impl 分岐 [確定]＝class family の型情報が slot に載る）／\"BLOB\" FourCC（0x4b4f4c42）が LoadGame ブロック形式の目印（v484/v485 に続く LE 逆バイト法の反復）。本日 push: v405→v503（02d1463f）99件＋本件 v504。v 採番 v504 消費（次=v505）。"
+    },
+    {
+      "id": "151-v505-version-gate-2026-11-17",
+      "timestamp": "2026-11-17T05:34:15Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v505",
+        "version-gate",
+        "string-set",
+        "map-remove"
+      ],
+      "content": "2026-11-17 旧残点群消化第49弾 v505（probe v505_1 全1本 EXIT=0）＝V-505-1..3 完遂・旧 V-406-3 継続第35弾: 成果物 tmp/re/v505_version_gate_ruling.md・台帳 row481（bak331）・round_verify ALL OK（rows 31..481 / total 367 / done 362 / open 5）・STATE (hw)・ai-todo #151 note。[確定相当]（feature gate）V-505-1 version 閾値の意味: context 実読 [確定(decompiled)]: L23799（FUN_00421000）: if (0x23 < *(byte *)(DAT_00b33b00 + 0x7c)) { … sink log(\"SetSavedAnimation() is being called when there is already a saved animation.\"); } → 0x23 <（35超）は SetSavedAnimation() の version gate [確定相当]。L24063（FUN_00421340）: case 0x1f の cast → if ((0x3f < *(byte*)(Player+0x7c)) && (FUN_00446b80(*(iVar8+0xc)+0xc) != 0)) → 0x3f <（63超）は case 0x1f（FormType 31）の cast 先 object の +0xc 判定と併用 [確定相当]、L24451（FUN_00421A00）も同型 [確定] → Player +0x7C version byte の閾値（0x23 <＝35超／0x3f <＝63超／0x24＝36）は 「version が閾値超ならその処理を有効化する feature gate」[確定相当]（v503 閾値 census→v504 version byte→v505 gate semantic の3段が完成）。[推定相当]（string key set）V-505-1 FUN_006C4F80: machine head（docs annotation なし）[確定(機械)]: cmp byte [ecx+0x10], 0; je（node +0x10 byte 判定）→ mov ebx,[esp+0xc]（key＝stack 引数）→ string length 計算（strlen）→ lea esi,[eax+1]; push esi; call 0x401f00（alloc len+1）→ string key の alloc＋copy を行う node-set [推定相当]。value→owner/count field の対応は node の +0x10 byte 判定と key copy のみ＝+0xC slot が set＋key の複合 [部分確定]（docs annotation がないため本文の残りは cap 外＝残点）。[確定相当]（remove）V-505-1 FUN_004524C0: L63085 実読 [確定(decompiled)]: hash→bucket→キー比較→ hit なら *(bucket)=*puVar1（unlink）→ virtual+0x10（free 候補）→ virtual+0x18（destroy 候補）→ param_1[3]--（count decrement）→ return 1 → FUN_004524C0＝hash map の remove/delete fn [確定相当]（v500 で loop 末尾に見た FUN_004524c0(uVar9) は remove 呼び出し）→ v500「ctor 候補」を訂正（ctor でなく remove）→ map 4 fn family が「insert（v485/v494）／lookup（v496/v498）／set（v493/v502）／remove（本裁定）」の4種で完成 [確定相当]。[未確定] V-505-2 Player +0x80（ptr）／+0x14（buffer size）identity は budget 外で残点／[未確定] V-505-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。残点 V-506-1..3（1=FUN_006C4F80 の残り本文（value→owner/count field 対応の完遂）と map vtable family の最終確認（FUN_00452570/FUN_00412D30 の this が BST 系か LockFree 系か）＋version 閾値の対応バージョン表（35/63/36 がどの Oblivion version か＝0x4b4f4c42＝\"BLOB\" ブロック形式との関係）【中】／2=Player +0x80（ptr）／+0x14（buffer size）identity＋gated 側 mask 源（edx 設定元）【低】／3=引継ぎ残り【低】）。教訓: version byte の閾値が「feature gate」として機能する（閾値比較の owning fn（SetSavedAnimation() 等の実名）を読むと gate の意味が分かる＝閾値 census→log→gate の3段 field調査法が完成形）／`count--`＋unlink＋virtual+0x10/+0x18 が remove の定番（insert の count++ と対で覚える）／vtable slot family の4 fn（insert/lookup/set/remove）が揃うと container が完成（map 系の解剖が v485→v505 で10回の積み上げ）／machine head の strlen 計算が「string key」の目印（alloc size＝len+1 と併せて）／推定の訂正（v500 ctor→v505 remove）も裁定に明記（誤推定の軌跡が残る＝追跡可能性）。本日 push: v405→v504（7cf9c1e2）100件＋本件 v505。v 採番 v505 消費（次=v506）。"
     }
   ],
   "metadata": {
-    "totalEntries": 909,
+    "totalEntries": 910,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-17T05:23:59Z",
-    "entry_count": 909,
-    "last_updated": "2026-11-17T05:23:59Z"
+    "lastUpdated": "2026-11-17T05:34:15Z",
+    "entry_count": 910,
+    "last_updated": "2026-11-17T05:34:15Z"
   }
 }
