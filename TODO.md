@@ -735,6 +735,13 @@
   > ④[未確定] V-490-3 引継ぎ（predicate 英名・param_3・sink 正体・新 FourCC 意味）は残点継続。
   > 残点 V-491-1..3（1=FUN_0046ABF0（slot +0x40 notify 先）の本文 identity→bit5 semantic と slot +0x40 機能が確定【中】／2=GameSetting key 台帳の row 化＋value 初期値取得拡張【低】／3=V-490-3 引継ぎ【低】）。
   > 教訓: capture の精度は「fn 境界＋直前の push 固定」で確実（v489 window ずれを1本で訂正＝残点の形（制約明記）が次の probe を的確に誘導した）／同一 param_1[2] でも band で type 依存（u32 vs ptr・mask bit と offset を混同しない区別を明記・grep hit 0 は否定側として有効）／vtable slot 実読（[vt+0x40]）が notify 先を即特定／value 初期値（push imm）は key と同時取得可能→台帳化時に value も拾う／訂正も裁定の価値（v489 21種→22種・key ずれ→正確対応＝台帳データ品質向上が成果）。v 採番 v490 消費（次=v491）。
+  > 【旧残点群消化第35弾 v491 — V-491-1..3 完遂・旧 V-406-3 継続第21弾】probe v491_1 全1本 EXIT=0。成果物 tmp/re/v491_wrapper_ledger_ruling.md＋副次 **tmp/re/v491_gamesettings_table.md（122 rows）**・台帳 row467（bak317）・round_verify ALL OK（rows 31..467 / total 353 / done 348 / open 5）。
+  > ①[確定相当]（wrapper）＋[未確定]（本体）V-491-1 FUN_0046ABF0: L84340 実読 [確定(decompiled)]: `void __thiscall FUN_0046abf0(undefined4 param_1, undefined4 param_2) { FUN_0045b670(param_1, param_2); return; }`（1行 wrapper）[確定] → **実行体は FUN_0045B670 [確定]** → `virtual+0x8C(flag)`（bit5 set/clear・v489）→ `virtual+0x40()`＝FUN_0046ABF0 → FUN_0045B670 が bit 変更後の実処理 [確定相当]、**FUN_0045B670 の本文 identity（bit5 semantic を含む）は [未確定]＝残点**（wrapper 2段（thunk 0x4D65D0→FUN_0046A9E0→FUN_0046ABF0→FUN_0045B670）追跡を確定）。
+  > ②[確定] V-491-2 key 台帳の row 化: **`tmp/re/v491_gamesettings_table.md`（122 rows）を生成**（md 形式：header＋方式説明＋`| addr | key | value(push imm) |` テーブル＋件数注記）、方式は v490 nearest-push（fn 境界 CC/C3→mov ecx 直前）を明記、型 prefix（i/f/s [推定相当]）も注記 → **v490「資料は probe out のみ」を解消し台帳参照可能に [確定]**。
+  > ③[部分確定] V-491-3 FUN_004CBA80 callsites: **docs callsites 2件 [確定(decompiled)]: L163835 `FUN_004cba80(DAT_00b35eb8, 1)`（NorthMarker・v478 既知）／L424183 `DAT_00b3bad4 = FUN_004cba80(DAT_00b33aac, 1)`（第2の singleton DAT_00B33AAC を渡す新経路）→ 複数 singleton（0xB35EB8/0xB33AAC）を +0x48 list 系へ処理する fn [推定相当]**、param_3（char）は docs 表示で2引数形式（制約）→ 3rd arg は machine push 回数で要確認＝残点、DAT_00B33AAC identity は [未確定]＝残点。
+  > ④[未確定] 引継ぎ残り（predicate 英名・sink 正体・新 FourCC 意味）は残点継続。
+  > 残点 V-492-1..3（1=FUN_0045B670（notify 本体）本文 identity→bit5 semantic と slot +0x40 機能が確定【中】／2=FUN_004CBA80 の param_3（machine push 回数）と DAT_00B33AAC identity＋DAT_00b3bad4 の意味【低】／3=引継ぎ残り【低】）。
+  > 教訓: notify chain は「thunk→toggle→wrapper→body」の4段になることがある（段ごとに landing を記録）／台帳化＝「probe out の資料を md ファイルへ」も裁定の一部（v490 資料所在残点を v491 で解消＝残点の形が次の作業を誘導）／signature と callsite 表示の引数欠落を制約として明記（param_3 欠落＝machine push 回数で確認）／docs grep hits から「定義＋既知＋新規」を分離／第2の singleton（DAT_00B33AAC）出現で fn の汎用性が分かる。v 採番 v491 消費（次=v492）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1656,6 +1663,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1679,4 +1691,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 12:24:00
+**ai-todo** | Last Updated: 2026-11-17 12:28:05
