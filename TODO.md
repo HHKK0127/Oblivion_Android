@@ -817,6 +817,13 @@
   > ⑤[未確定] V-501-3 引継ぎ（predicate 英名・新 FourCC 意味）は残点継続（sink 正体は本裁定で相当）。
   > 残点 V-502-1..3（1=PTR_PTR_00b03054 type identity（bit24 対象の完全確定）＋FUN_004211E0 machine の 0x42126C 帯 esi 出所（writer 経路転換の継続）【中】／2=FUN_00496D50 set path（0x496DC1 以降）＝value→owner/count field 対応の machine 確定＋gated mask 源（edx 設定元）【低】／3=引継ぎ残り【低】）。
   > 教訓: map/list の型は「残存要素の warning 文字列」で決まる（LoadHavokData 文字列の1行が param_1+0x60 の identity を確定＝error/warning 文言法の map 版・4度目）／cast wrapper の引数が type ptr を語る（FUN_009832E6/FUN_0046B250 はどちらも __RTDynamicCast 系で2段 cast を docs で追える）／sink の identity は「その sink を使う log 呼び出し」で決まる（v484 残点に部分回答）／set path が cap 外なら「key 側確定・value は残点」と分けて記録／0x4B（FormType 75）や alloc 0x1C（28B）の定数が type 判定＋object size の情報源。v 採番 v501 消費（次=v502）。
+  > 【旧残点群消化第46弾 v502 — V-502-1..3 完遂・旧 V-406-3 継続第32弾】probe v502_1 全1本 EXIT=0。成果物 tmp/re/v502_rtti_writer_ruling.md・台帳 row478（bak328）・round_verify ALL OK（rows 31..478 / total 364 / done 359 / open 5）。
+  > ①[確定]（RTTI 実読）V-502-1 PTR_PTR_00b03054 type identity: **`.rdata` TD 実読 [確定(実RTTI)]: `0xB03054` の TD name＝`.?AVTESObjectREFR@@`／`0xB02F9C` の TD name＝`.?AVTESForm@@` → `FUN_0046B250(src, 0, &TESForm, &TESObjectREFR, 0)`＝TESForm→TESObjectREFR の __RTDynamicCast [確定] → bit24 対象（iVar7）＝Havok data map 要素を TESObjectREFR に cast した object [確定相当] → bit24 semantic：「Havok map 内の該当 REFR form が処理済み flag [推定相当]」へ確定（0xB03054 残点解消）**。docs mentions 204件。
+  > ②[確定]（Player write 否定側）V-502-1 FUN_004211E0 write: **machine decode [確定(機械)]: `mov eax,[0xb33b00]`（Player ptr load）→ `cmp byte [eax+0x7c], 0x24; jb`（Player +0x7C byte が 0x24 以上かの判定＝新事実）→ sink の virtual+0x18 log call → `mov ecx,[esp+0x20]` → `mov [esi+0x18], ecx`（param_2 を esi+0x18 へ）→ `ret 4` → esi＝this（param_1 object）、write は「param_1 の +0x18 ← param_2」[確定相当]。Player は +0x7C byte 判定に使われるだけで Player 自体へ +0x18 を書いていない → この候補は Player writer でない [確定] → v499「122候補」の否定側をさらに裏付け（writer 経路転換の到達点）**。
+  > ③[部分確定] V-502-2 FUN_00496D50 set path: **machine decode [確定(機械)]: `virtual+0x10(node)`（既存 node op）→ `push ecx(value2); push edx; push ebx(key); push edi(node); call eax`（virtual+0xC(node, key, …)＝node set）→ `ret 0xc`（3引数 callee clean）→ set は virtual+0xC（v485/v493 と同 slot）で実行 [確定相当]、value→owner/count field の対応は virtual+0xC impl 側＝残点 [部分確定]**（ret 0xc が3引数契約を裏付け [確定]）。
+  > ④[未確定] V-502-3 引継ぎ（predicate 英名・新 FourCC 意味）は残点継続。
+  > 残点 V-503-1..3（1=virtual+0xC impl（node set）の本文（value2/value3→node field＝owner/count 対応の完遂）＋Player +0x7C byte（>=0x24 判定）の semantic（新事実）【中】／2=gated 側 mask 源（edx 設定元）＋FUN_0041E210(0x4b) identity【低】／3=引継ぎ残り【低】）。
+  > 教訓: `PTR_PTR_xxx` 型 symbol は `.rdata` の TD（+8 name）を直接読めば type 名が取れる（RTTI TD 実読が cast 引数の identity を確定）／`cmp byte [Player+0x7C], 0x24` の「Player を gate に使うだけ」の pattern を見分ける（load→compare なら write でない＝load→write 絞り込みの補完）／`ret N`（callee clean）が引数契約を語る（ret 4＝1引数／ret 0xc＝3引数＝machine epilogue が docs signature の裏付け）／set path の virtual+0xC が node set と同 slot（map/lock 系 slot family：+0x4 hash／+0x8 compare／+0xC set／+0x10 existing／+0x14 alloc）／新事実（Player +0x7C >=0x24 gate）も裁定に明記。v 採番 v502 消費（次=v503）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1738,11 +1745,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1766,4 +1768,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 13:42:23
+**ai-todo** | Last Updated: 2026-11-17 13:53:13
