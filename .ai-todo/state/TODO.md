@@ -858,6 +858,13 @@
   > ④[未確定] V-506-3 引継ぎ（predicate 英名・新 FourCC 意味）は残点継続。
   > 残点 V-507-1..3（1=map ctor の特定（this vtable 入手元→BST vs LockFree 判別完遂）＋node +8 u32 の owner/count bit 配列（v496 piVar2[2] bit5 に続く bit 群）＋0x984B6A（string copy fn）identity【中】／2=Player +0x80（ptr）の中身＋gated 側 mask 源（edx 設定元）【低】／3=引継ぎ残り【低】）。
   > 教訓: node layout は「alloc 後の store（[edi+4]/[edi+8]）」で確定（else 分岐（直接書く形）も拾うと両 path で layout が一致し確実＝set fn の両分岐を読む）／vtable 逆引き0件（3 fn とも）は「direct call 専用 fn」の証拠→判別経路を ctor（this vtable 入手元）へ転換（vtable 法が効かない case の対処法）／field の型は mentions を type 別に数える（混在＝type 依存汎用、`*(undefined4**)` のみ＝ptr）／`ret 0xc`（3引数）が set fn の契約（epilogue 法の3度目）／value→field 完遂で lock（owner/count）と map（key/value）が同じ node layout に接続（v496 piVar2[2] bit5 が node +8 と一致＝横断整合）。v 採番 v506 消費（次=v507）。
+  > 【旧残点群消化第51弾 v507 — V-507-1..3 完遂・旧 V-406-3 継続第37弾】probe v507_1 全1本 EXIT=0。成果物 tmp/re/v507_node_bits_ruling.md・台帳 row483（bak333）・round_verify ALL OK（rows 31..483 / total 369 / done 364 / open 5）。
+  > ①[確定相当]（観測 bit 13種）V-507-1 node +8 bit 配列: **node flag-bit tests（`>> N & 1` が node field 付近）census＝331件 [確定(decompiled)]: bit5＝128 hits（最多）／bit0xb（11）＝83／bit3＝43／bit0xe（14）＝39／bit0xd（13）＝11／bit4＝9／bit6＝7／bit1＝5／bit7＝3／bit0x16（22）＝1／bit0x13（19）＝1／bit0x15（21）＝1 → node `+8` u32 の観測 bit 一覧＝0,1,3,4,5,6,7,11,13,14,19,21,22 の13種 [確定相当]**（v496 bit5・v492 bit14 と整合）→ **lock の owner/count と map の key/value が同じ node `+8` u32 を bit field として共有する構造が確定相当（node[+4]＝key・node[+8]＝value/bitfield・v506 layout に接続）**。残り bit（8,9,10,12,15..18,20,23..31）は未観測＝grep pattern の網羅性制約 [部分確定]。
+  > ②[確定]（83件列挙）＋[推定]（ctor 分岐）V-507-1 insert callers: **E8 callers＝83件 [確定(機械)]、owning signature 列挙: map 系 band が近接集中（FUN_00452C20（v493）・00452C90・00452E70・00452F10・00452FE0＝0x452C20..0x453028 帯）[確定]＋業務 fn（FUN_004492E0（v469 TESObjectSTAT ctor）・0046C300・004B2730 等）が多数 [確定] → insert の caller は「map 系（同 band wrapper）」と「業務 fn（map を持つ object の method）」に分かれる [確定相当] → map ctor は業務 fn 側が map object を構築する [推定]（FUN_004492E0（STAT ctor）が FUN_00452570 を呼ぶ＝STAT 系 object が map を持つ）→ BST vs LockFree 判別は「業務 fn が構築する map の vtable store」へ経路を固定 [推定]（v506 経路転換の到達点）**。
+  > ③[推定相当] FUN_00984B6A: **machine head（docs annotation なし）[確定(機械)]: `mov ecx,[esp+4]`→ null check→ `mov edi,[esp+0x14]`→ len>0 分岐→ `call 0x98540b`（実体 fn）→ `push 0x16`（22＝error code 候補 [推定]）→ FUN_00984B6A＝null/len check＋`call 0x98540b` する wrapper [推定相当]**（実体は FUN_0098540B＝残点）。
+  > ④[未確定] V-507-2 Player +0x80 中身は budget 外で残点／[未確定] V-507-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。
+  > 残点 V-508-1..3（1=FUN_0098540B（string copy 実体）identity＋業務 fn 側の map vtable store 特定（BST vs LockFree 判別完遂＝FUN_004492E0 内の vtable store が key）＋未観測 bit の grep 拡張【中】／2=Player +0x80（ptr）の中身＋gated 側 mask 源（edx 設定元）【低】／3=引継ぎ残り【低】）。
+  > 教訓: flag bit の一覧は「`>> N & 1` census」で機械的に揃う（331件・12 bit 分布＝bit5 が最多＝field の bit map が1本の probe で完成形に近づく）／E8 callers の signature 列挙が「caller の分類（map band vs 業務 fn）」を生む（83件の分岐が ctor 経路を固定＝callers census 法の反復）／`call <fn>`＋`push <imm>` の machine head が wrapper（check→実体→error code）の定番／業務 fn（object ctor）が map を構築する＝container は owner object の method で構築される（BST vs LockFree 判別の鍵）／未観測 bit も残点として明記（grep pattern の網羅性制約を記録＝次の probe で拡張可能）。v 採番 v507 消費（次=v508）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1779,11 +1786,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1807,4 +1809,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 14:42:55
+**ai-todo** | Last Updated: 2026-11-17 14:56:40
