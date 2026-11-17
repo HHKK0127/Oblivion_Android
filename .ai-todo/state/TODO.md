@@ -583,6 +583,13 @@
   > ⑤[確定]（配列構造）＋[未確定]（指し先）V-470-3 旧 V-406-5: docs L224762-63 `if ((param_1 < 3) && ((undefined4*)(&PTR_DAT_00b10d90)[param_1] != 0)) return *(&PTR_DAT_00b10d90)[param_1];` [確定(decompiled)] → PTR_DAT_00B10D90＝3要素（param_1 < 3 bound）の ptr 配列 lookup [確定]。配列実体: [0]=0xB364E8／[1]=0xB364F0／[2]=0xB364F8／[3]=0 [確定(実読)] → 3つの runtime object（0xB364E8/F0/F8）への ptr [確定]、指し先 identity は [未確定]＝残点（spec 名前テーブル [推定]）。
   > 残点 V-471-1..3（1=旧残点 V-406-3 継続（elem[10]（byte +40 float）の語＝TESObjectSTAT singleton と比較される elem の何の property か＋0xB364E8/F0/F8 指し先 identity）【中】／2=旧残点 V-406-4 残り（form+0x64 dword と form+0x69 byte の semantic）【低】／3=V-470-3 引継ぎ（FUN_005222D0 一語名別法と predicate slot35 英名 CanResolveDependencies [推定] 裏取り）【低】）。
   > 教訓: alloc 直後の `call <ctor>` は singleton/object class 特定の入口（alloc→ctor→vtable→RTTI の4手）／byte[+4] の FormType 値（v441 表）と class 名の一致は二重確認になる（RTTI .?AVTESObjectSTAT@@ と byte 0x1C が同じ class）／subobject vtable（param_1[9]＝+0x24）は既知 field（v468 [ecx+0x24]）と接続できる（field map 累積が効く）／ptr 配列は「docs の param_1 < N bound」と「実体 dwords 実読」の2段で確定（N=3⇔3 ptr）／1行 setter（*(self+off)=v）は decompiled で即 identity、semantic は caller 側から逆算が次の手。v 採番 v470 消費（次=v471）。
+  > 【旧残点群消化第15弾 v471 — V-471-1..3 完遂・旧 V-406-3/V-406-4 継続】probe v471_1 全1本 EXIT=0。成果物 tmp/re/v471_singletons_setter_ruling.md・台帳 row447（bak297）・round_verify ALL OK（rows 31..447 / total 333 / done 328 / open 5）。
+  > ①[確定相当] V-471-1 0xB364E8/F0/F8 identity: 3つとも同型 pattern [確定(機械)]: `0x9E4189/0x9E41A9/0x9E41C9` 帯（FUN_009E4120 L1029823 内）で `call 0x419A70`（init 系）→ `push 0xA1C4A0/B0/C0; call 0x981FB4`（registration）／各 thunk FUN_00A1C4A0/B0/C0（L1044138/1044149/1044160）: `mov ecx,0xb364e8/f0/f8; jmp 0x4055E0`（thiscall wrapper）[確定(機械)]。docs mentions 0件（DAT_00b364e8/f0/f8 は docs に無い）→ docs 未収録 global [確定(否定側)] → 0xB364E8/F0/F8＝FUN_009E4120 が registration する3つの runtime singleton object（spec 名前テーブル [推定]）[確定相当]、各 thunk が thiscall accessor [確定相当]。
+  > ②[確定]（6件列挙）＋[未確定]（semantic）V-471-2 form+0x64 callers: E8 census＝6件 [確定]: FUN_005222D0×2（v462 derived AV 初期適用・class 適用）／FUN_005F5170（L359901）／FUN_005F8170（L361776）／FUN_005F94B0（L362550）／FUN_005F9EB0（L362958）: `push 1; mov ecx,esi; call 0x566830`（value=1 → FUN_00566830）→ form+0x64 の dword は FUN_005222D0（class 適用）と FUN_005Fxxxx 帯5件から actor self+8 へ転送される [確定]、何の値かは [未確定]＝残点（FUN_00566830 identity が次の手）。
+  > ③[確定]（sentinel 初期化多数）＋[部分確定]（意味）V-471-1 +0x48 field: docs mentions 837件 [確定]: `param_1[0x12]=0`（L319）／`*(param_1+0x48)=0x7fffffff`（L48386/L52072/L52112）＝INT_MAX sentinel 初期化 [確定]／`param_1[0x12]=0x7fffffff`（L50913）／`if (*(param_1+0x48)==0x7fffffff)`（L53532）→ `*(param_1+0x48)=*(param_1+0x20)`（L53533）→ +0x48（＝param_1[0x12]）は 0x7fffffff を初期値/上限 sentinel とする汎用 field [確定相当]（FUN_004CD960 の list head 用途（v470）と同一 field かの整合は [部分確定]）。
+  > ④[未確定] V-471-3 V-470-3 引継ぎは残点継続。
+  > 残点 V-472-1..3（1=旧残点 V-406-3 継続（elem[10]（byte +40 float）の語＝TESObjectSTAT singleton と比較される elem の何の property か＋FUN_00566830（form+0x64 転送先）identity）【中】／2=旧残点 V-406-4 残り（form+0x64 dword と form+0x69 byte の semantic＝FUN_005Fxxxx 帯5件の文脈と FUN_00566830 identity）【低】／3=V-471-3 引継ぎ（FUN_005222D0 一語名別法と predicate slot35 英名 CanResolveDependencies [推定] 裏取り）【低】）。
+  > 教訓: 複数 global を並列 census すると「3つの対」の同型 pattern が見える（init→registration＋thunk の定型が3つ同時に現れる）／`push <addr>; call <reg_fn>`（registration）と `mov ecx,<addr>; jmp <thunk>`（accessor）が runtime singleton の2定型（v466/v471 で再現）／`0x7fffffff`（INT_MAX）の初期化と `==` 比較が「sentinel field」の目印（docs grep 837件で field の性格が確定）／docs mentions 0件の global は「docs 未収録 global」として別類型で記録（annotation 欠落（v437）とは別物）／setter の callers context decode で転送先 fn（FUN_00566830）が見つかる＝semantic 調査の入口。v 採番 v471 消費（次=v472）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1504,6 +1511,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1527,4 +1539,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 10:22:07
+**ai-todo** | Last Updated: 2026-11-17 10:35:43

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-17T01:24:34Z",
+  "lastUpdated": "2026-11-17T01:37:51Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -12712,14 +12712,30 @@
         "ptr-array"
       ],
       "content": "2026-11-17 旧残点群消化第14弾 v470（probe v470_1..2 全2本 EXIT=0）＝V-470-1..3 完遂・旧 V-406-3/V-406-4/V-406-5 消化: 成果物 tmp/re/v470_stat_singleton_ruling.md・台帳 row446（bak296）・round_verify ALL OK（rows 31..446 / total 332 / done 327 / open 5）・STATE (gn)・ai-todo #151 note。[確定] V-470-1 DAT_00B35EB8 singleton class: ctor FUN_004B9AA0（alloc 0x3C 直後の call 0x4B9AA0）の vtable store を RTTI 実読: 4B9AE0 mov [esi],0xA44DEC → RTTI .?AVTESObjectSTAT@@／4B9AE6 mov [edi],0xA44DC8 → .?AVTESObjectSTAT@@ [確定(機械＋RTTI)]。docs L145592-145594: *param_1 = &PTR_FUN_00a44dec; param_1[9] = &PTR_FUN_00a44dc8; *(u8*)(param_1 + 1) = 0x1c; [確定(decompiled)] → byte[+4] = 0x1C は v441 FormType 表の 0x1C = TESObjectSTAT と完全一致 → DAT_00B35EB8 ＝ TESObjectSTAT（Static object）singleton [確定]。param_1[9]（+0x24 subobject vtable 0xA44DC8）が v468 FUN_004CD960 の [ecx+0x24] virtual +0x18 call と一致 [確定]。[部分確定]（receiver 特定）＋[未確定]（語）V-470-1 id 0x4C float semantic: virtual[elem]+0x170() == DAT_00B35EB8（＝TESObjectSTAT singleton）の比較 [確定] → elem は TESObjectSTAT と比較される側の object（param_1+0x48 list の要素）[推定高]、id_0x4C_float = -elem[10]（v469 式）の elem[10]（byte +40 float）が何の値か（STAT の何の property か）は [未確定]＝残点。[確定相当] V-470-1 FUN_004B2B80: L141003 void __thiscall(int *param_1, int param_2): iVar1=param_1[2]; *(param_2+0x1c)=iVar1; if (iVar1==0) *(param_2+0x20)=0; else { *(param_2+0x20)=*(iVar1+0x20); if (*(iVar1+0x20)) *(*(iVar1+0x20)+0x1c)=param_2; … } [確定(構造)] → linked list の node 接続/切断 fn（param_2+0x1C/+0x20 を param_1[2] と双方向接続）[確定相当]。[確定]（setter identity）＋[未確定]（semantic）V-470-2 旧 V-406-4: FUN_00468230（L81885）void __thiscall(int self, undefined4 v): *(self+8)=v; ＝ dword setter [確定]／FUN_00468270（L81926）void __thiscall(int self, undefined1 v): *(u8*)(self+0xD)=v; ＝ byte setter [確定] → form+0x64 の値は FUN_00468230 が actor 側 self+8 へ転送する dword、form+0x69 の値は FUN_00468270 が self+0xD へ転送する byte [確定相当]、両者の semantic は [未確定]＝残点。[確定]（配列構造）＋[未確定]（指し先）V-470-3 旧 V-406-5: docs L224762-63 if ((param_1 < 3) && ((undefined4*)(&PTR_DAT_00b10d90)[param_1] != 0)) return *(&PTR_DAT_00b10d90)[param_1]; [確定(decompiled)] → PTR_DAT_00B10D90＝3要素（param_1 < 3 bound）の ptr 配列 lookup [確定]。配列実体: [0]=0xB364E8／[1]=0xB364F0／[2]=0xB364F8／[3]=0 [確定(実読)] → 3つの runtime object（0xB364E8/F0/F8）への ptr [確定]、指し先 identity は [未確定]＝残点（spec 名前テーブル [推定]）。残点 V-471-1..3（1=旧残点 V-406-3 継続（elem[10]（byte +40 float）の語＝TESObjectSTAT singleton と比較される elem の何の property か＋0xB364E8/F0/F8 指し先 identity）【中】／2=旧残点 V-406-4 残り（form+0x64 dword と form+0x69 byte の semantic）【低】／3=V-470-3 引継ぎ（FUN_005222D0 一語名別法と predicate slot35 英名 CanResolveDependencies [推定] 裏取り）【低】）。教訓: alloc 直後の call <ctor> は singleton/object class 特定の入口（alloc→ctor→vtable→RTTI の4手）／byte[+4] の FormType 値（v441 表）と class 名の一致は二重確認になる（RTTI .?AVTESObjectSTAT@@ と byte 0x1C が同じ class）／subobject vtable（param_1[9]＝+0x24）は既知 field（v468 [ecx+0x24]）と接続できる（field map 累積が効く）／ptr 配列は「docs の param_1 < N bound」と「実体 dwords 実読」の2段で確定（N=3⇔3 ptr）／1行 setter（*(self+off)=v）は decompiled で即 identity、semantic は caller 側から逆算が次の手。本日 push: v405→v469（c66a6e73）65件＋本件 v470。v 採番 v470 消費（次=v471）。"
+    },
+    {
+      "id": "151-v471-singletons-setter-2026-11-17",
+      "timestamp": "2026-11-17T01:37:51Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v471",
+        "singletons",
+        "setter-callers",
+        "sentinel"
+      ],
+      "content": "2026-11-17 旧残点群消化第15弾 v471（probe v471_1 全1本 EXIT=0）＝V-471-1..3 完遂・旧 V-406-3/V-406-4 継続: 成果物 tmp/re/v471_singletons_setter_ruling.md・台帳 row447（bak297）・round_verify ALL OK（rows 31..447 / total 333 / done 328 / open 5）・STATE (go)・ai-todo #151 note。[確定相当] V-471-1 0xB364E8/F0/F8 identity: 3つとも同型 pattern [確定(機械)]: 0x9E4189/0x9E41A9/0x9E41C9 帯（FUN_009E4120 L1029823 内）で call 0x419A70（init 系）→ push 0xA1C4A0/B0/C0; call 0x981FB4（registration）／各 thunk FUN_00A1C4A0/B0/C0（L1044138/1044149/1044160）: mov ecx,0xb364e8/f0/f8; jmp 0x4055E0（thiscall wrapper）[確定(機械)]。docs mentions 0件（DAT_00b364e8/f0/f8 は docs に無い）→ docs 未収録 global [確定(否定側)] → 0xB364E8/F0/F8＝FUN_009E4120 が registration する3つの runtime singleton object（spec 名前テーブル [推定]）[確定相当]、各 thunk が thiscall accessor [確定相当]。[確定]（6件列挙）＋[未確定]（semantic）V-471-2 form+0x64 callers: E8 census＝6件 [確定]: FUN_005222D0×2（v462 derived AV 初期適用・class 適用）／FUN_005F5170（L359901）／FUN_005F8170（L361776）／FUN_005F94B0（L362550）／FUN_005F9EB0（L362958）: push 1; mov ecx,esi; call 0x566830（value=1 → FUN_00566830）→ form+0x64 の dword は FUN_005222D0（class 適用）と FUN_005Fxxxx 帯5件から actor self+8 へ転送される [確定]、何の値かは [未確定]＝残点（FUN_00566830 identity が次の手）。[確定]（sentinel 初期化多数）＋[部分確定]（意味）V-471-1 +0x48 field: docs mentions 837件 [確定]: param_1[0x12]=0（L319）／*(param_1+0x48)=0x7fffffff（L48386/L52072/L52112）＝INT_MAX sentinel 初期化 [確定]／param_1[0x12]=0x7fffffff（L50913）／if (*(param_1+0x48)==0x7fffffff)（L53532）→ *(param_1+0x48)=*(param_1+0x20)（L53533）→ +0x48（＝param_1[0x12]）は 0x7fffffff を初期値/上限 sentinel とする汎用 field [確定相当]（FUN_004CD960 の list head 用途（v470）と同一 field かの整合は [部分確定]）。[未確定] V-471-3 V-470-3 引継ぎは残点継続。残点 V-472-1..3（1=旧残点 V-406-3 継続（elem[10]（byte +40 float）の語＝TESObjectSTAT singleton と比較される elem の何の property か＋FUN_00566830（form+0x64 転送先）identity）【中】／2=旧残点 V-406-4 残り（form+0x64 dword と form+0x69 byte の semantic＝FUN_005Fxxxx 帯5件の文脈と FUN_00566830 identity）【低】／3=V-471-3 引継ぎ（FUN_005222D0 一語名別法と predicate slot35 英名 CanResolveDependencies [推定] 裏取り）【低】）。教訓: 複数 global を並列 census すると「3つの対」の同型 pattern が見える（init→registration＋thunk の定型が3つ同時に現れる）／`push <addr>; call <reg_fn>`（registration）と `mov ecx,<addr>; jmp <thunk>`（accessor）が runtime singleton の2定型（v466/v471 で再現）／`0x7fffffff`（INT_MAX）の初期化と `==` 比較が「sentinel field」の目印（docs grep 837件で field の性格が確定）／docs mentions 0件の global は「docs 未収録 global」として別類型で記録（annotation 欠落（v437）とは別物）／setter の callers context decode で転送先 fn（FUN_00566830）が見つかる＝semantic 調査の入口。本日 push: v405→v470（a36a2fca）66件＋本件 v471。v 採番 v471 消費（次=v472）。"
     }
   ],
   "metadata": {
-    "totalEntries": 875,
+    "totalEntries": 876,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-17T01:24:34Z",
-    "entry_count": 875,
-    "last_updated": "2026-11-17T01:24:34Z"
+    "lastUpdated": "2026-11-17T01:37:51Z",
+    "entry_count": 876,
+    "last_updated": "2026-11-17T01:37:51Z"
   }
 }
