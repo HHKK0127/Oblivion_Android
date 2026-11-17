@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-17T01:56:21Z",
+  "lastUpdated": "2026-11-17T02:07:24Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -12760,14 +12760,30 @@
         "elem-class"
       ],
       "content": "2026-11-17 旧残点群消化第17弾 v473（probe v473_1 全1本 EXIT=0）＝V-473-1..3 完遂・旧 V-406-3/V-406-4 継続第3弾: 成果物 tmp/re/v473_gate_byte69_ruling.md・台帳 row449（bak299）・round_verify ALL OK（rows 31..449 / total 335 / done 330 / open 5）・STATE (gq)・ai-todo #151 note。[確定] V-473-1 FUN_00446B80（FUN_00566830 gate）identity: L54126 bool FUN_00446b80(uint param_1) { return 0xfeffffff < param_1; }（1行）[確定(decompiled)] → param_1 > 0xFEFFFFFF ⇔ param_1 >= 0xFF000000 ⇔ 上位 byte==0xFF [確定] → bit11 flag gate＝「self[+0xC] の u32 上位 byte が 0xFF（0xFF000000..0xFFFFFFFF）のとき true」[確定相当]（self[+0xC] が「flags/状態 u32」で上位 byte 0xFF＝特定状態 [推定]）。[部分確定]（field アクセス）＋[未確定]（class）V-473-1 elem[10] class特定: FUN_004CD960 machine: lea edi,[esi+0x48]（2箇所・list head アドレス）と mov ecx,[esi+0x50]（count/field）[確定(機械)] — ただし elem の vtable/field は linear scan で未捕捉（walk 中身が decode 範囲外）[部分確定] → class特定は [未確定]＝残点（v470 TESObjectSTAT singleton 比較との接続は維持）。[確定]（1件）＋[確定相当]（連動）V-473-2 form+0x69 byte setter（FUN_00468270）の caller: E8 census＝1件: 0x522741 owning=FUN_005222D0（L216747）[確定]、context 522745: call ptr [esi+0x5f]（indirect call）→ FUN_00468270（*(u8*)(self+0xD)=v）は FUN_005222D0（v462 derived AV 初期適用 fn）から indirect 経由で呼ばれる [確定] → form+0x69 byte は derived AV 初期適用（v462 の param_2==0 ブロック）内で setされる [確定相当]（[esi+0x5F] の slot 特定は [未確定]＝残点）。[未確定] V-473-3 V-472-3 引継ぎは残点継続。残点 V-474-1..3（1=旧残点 V-406-3 継続（elem[10]（byte +40 float）の class＝FUN_004CD960 list walk の machine decode 深部＋self[+0xC] 上位 byte 0xFF の semantic＝何の状態か）【中】／2=旧残点 V-406-4 残り（form+0x69 byte の値の意味＝derived AV 初期適用内で何を set するか・[esi+0x5F] slot 特定）【低】／3=V-473-3 引継ぎ（FUN_005222D0 一語名別法と predicate slot35 英名 CanResolveDependencies [推定] 裏取り）【低】）。教訓: gate の1行比較（CONST < param_1）は「上位 byte 判定」等に読み替えられる（mask 定数 0xFEFFFFFF から条件 >= 0xFF000000 が即決）／caller が1件の setter は「その1件の fn」と連動関係が即決（FUN_00468270⇔FUN_005222D0）／call ptr [reg+disp]（indirect）は vtable slot 候補だが disp が4で割り切れない（0x5F）なら object field 側を疑う（mid-decode の可能性も併記）／elem class特定は list walk の machine decode 深部が必要（lea edi,[esi+0x48] まででは不十分＝残点の形を正直に）／form+0x69 byte も derived AV 初期適用（v462）と連動（form+0x64（dword）と同 fn（FUN_005222D0）由来で揃った）。本日 push: v405→v472（52d6f73d）68件＋本件 v473。v 採番 v473 消費（次=v474）。"
+    },
+    {
+      "id": "151-v474-elem-machine-2026-11-17",
+      "timestamp": "2026-11-17T02:07:24Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v474",
+        "elem-machine",
+        "caller-verify",
+        "virtual-170"
+      ],
+      "content": "2026-11-17 旧残点群消化第18弾 v474（probe v474_1..2 全2本 EXIT=0）＝V-474-1..3 完遂・旧 V-406-3/V-406-4 継続第4弾: 成果物 tmp/re/v474_elem_machine_ruling.md・台帳 row450（bak300）・round_verify ALL OK（rows 31..450 / total 336 / done 331 / open 5）・STATE (gr)・ai-todo #151 note。[確定]（機械）＋[推定高]（class）V-474-1 elem[10]: FUN_004CD960 の walk を60命令 decode [確定(機械)]: mov esi,ecx→lea edi,[esi+0x48]（list head）→ mov ebx,[edi]（node）→ mov eax,[ebx+8]; shr eax,3; test al,1（node flag bit3）→ flag 未立なら mov edx,[ebx]（vtable）→ mov eax,[edx+0x6c]; call eax（virtual +0x6C）→ mov ecx,[0xB33B00]/push ebx/call 0x4637C0 → test byte [esi+0x24],1（class form flag bit0・v465）→ mov edx,[ebx]→mov eax,[edx+0x170]; mov ecx,ebx; call eax→cmp eax,[0xB35EB8]（TESObjectSTAT singleton・v470）→ fld dword [ebx+0x28]（byte +40 float＝decompiled piVar8[10] と完全一致）→ fmul qword [0xA3D360]（-1.0・v469）→ lea ecx,[esi+0x28]（receiver＝self+0x28！）→ call 0x420C60（id 0x4C set）[確定(機械)] → elem＝ebx（list node）、elem[+0x28] float を -1.0 倍して self+0x28 receiver 経由で id 0x4C に SET [確定相当]、virtual[elem]+0x170() が TESObjectSTAT singleton と等しい elem のみ対象→elem は TESObjectSTAT 系 form type を持つ object [推定高]（elem vtable 完全特定は [未確定]＝残点）。[部分確定]（整数 field）＋[未確定]（0xFF 語）V-474-1 self[+0xC]: docs band: *(param_1+0xc)==7（L216781）／param_1[3]!=7（L217625）＝整数値として 7 と比較される field [確定(decompiled)]、FUN_00566830 band では FUN_00446B80(param_1[3]) の4箇所（L266318/266325/266347/266354）→ 「==7 比較と gate（上位 byte 0xFF）が併用される整数 field [確定相当]」、0xFF 上位 byte の意味は [未確定]＝残点（docs & 0xff000000 比較13件＝v473 gate と同型 [確定(decompiled)]）。[確定]（caller 正しい）＋[確定]（v473 context 訂正）V-474-2 form+0x69: raw bytes 0x522740: push eax / 0x522741: call 0x468270（real E8・boundary decode で verified=True）[確定(機械)] → v473 の caller 記録（0x522741 owning=FUN_005222D0）は正しい。ただし v473 context 表示「522745: call ptr [esi+0x5f]」は int3 帯 linear decode のずれによる誤表示 [確定(否定側)→訂正]: 実際の後続は add esp,0x1c; ret 4（fn 末尾）→ FUN_00468270 は FUN_005222D0 の末尾（push eax＝byte 値）から呼ばれる [確定相当]、[esi+0x5F] slot は不存在（誤 decode）[確定負]→V-474-2 slot 特定は打ち切り。[未確定] V-474-3（FUN_005222D0 一語名別法・predicate slot35 英名）は budget 未着手＝残点。[推定高] 副次: virtual+0x170() semantic: docs +0x170 usage 831件 [確定]、L42487 *(char*)(iVar2+4)=='\\x1a'＝virtual+0x170() の戻り値の +4 byte が FormType と比較 [確定(decompiled)]、v470 で TESObjectSTAT singleton byte[+4]=0x1C 確定済み → virtual+0x170()＝form type singleton を返す getter（GetType() 相当）[推定高]。残点 V-475-1..3（1=旧残点 V-406-3 継続（elem の vtable 完全特定＝[ebx]+0x6C/+0x170 実装 fn→vtable→RTTI と elem[+0x28] float の語、self[+0xC] 上位 byte 0xFF semantic）【中】／2=旧残点 V-406-4 残り（form+0x69 byte 値＝push eax の eax が何を含むか）【低】／3=V-474-3 引継ぎ（FUN_005222D0 一語名別法と predicate slot35 英名 CanResolveDependencies [推定] 裏取り）【低】）。教訓: lea ecx,[reg+N] が __thiscall setter の receiver（FUN_00420C60 の receiver が self+0x28＝class form の +0x28 field と分かった・float setter の receiver field が field map に加わる）／E8 candidate 検証は「raw bytes 実読＋境界 decode＋forward walk の3点」（int3 帯 linear decode のずれを切り分けられる）／[reg+disp] を跨ぐ decompiled↔machine 突合は index×4 と byte offset で照合（piVar8[10]⇔[ebx+0x28]）／virtual+0x170() 結果の +4 byte 比較（==0x1a）が「form type singleton getter」の目印（usage 831件のうち1行で semantic が当たる）／誤 decode の訂正も裁定に明記（v473 の context 誤りを v474 で特定して row に残す＝追跡可能性）。本日 push: v405→v473（2161918a）69件＋本件 v474。v 採番 v474 消費（次=v475）。"
     }
   ],
   "metadata": {
-    "totalEntries": 878,
+    "totalEntries": 879,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-17T01:56:21Z",
-    "entry_count": 878,
-    "last_updated": "2026-11-17T01:56:21Z"
+    "lastUpdated": "2026-11-17T02:07:24Z",
+    "entry_count": 879,
+    "last_updated": "2026-11-17T02:07:24Z"
   }
 }

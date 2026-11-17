@@ -608,6 +608,14 @@
   > ④[未確定] V-473-3 V-472-3 引継ぎは残点継続。
   > 残点 V-474-1..3（1=旧残点 V-406-3 継続（elem[10]（byte +40 float）の class＝FUN_004CD960 list walk の machine decode 深部＋self[+0xC] 上位 byte 0xFF の semantic＝何の状態か）【中】／2=旧残点 V-406-4 残り（form+0x69 byte の値の意味＝derived AV 初期適用内で何を set するか・[esi+0x5F] slot 特定）【低】／3=V-473-3 引継ぎ（FUN_005222D0 一語名別法と predicate slot35 英名 CanResolveDependencies [推定] 裏取り）【低】）。
   > 教訓: gate の1行比較（`CONST < param_1`）は「上位 byte 判定」等に読み替えられる（mask 定数 0xFEFFFFFF から条件 >= 0xFF000000 が即決）／caller が1件の setter は「その1件の fn」と連動関係が即決（FUN_00468270⇔FUN_005222D0）／`call ptr [reg+disp]`（indirect）は vtable slot 候補だが disp が4で割り切れない（0x5F）なら object field 側を疑う（mid-decode の可能性も併記）／elem class特定は list walk の machine decode 深部が必要（lea edi,[esi+0x48] まででは不十分＝残点の形を正直に）／form+0x69 byte も derived AV 初期適用（v462）と連動（form+0x64（dword）と同 fn（FUN_005222D0）由来で揃った）。v 採番 v473 消費（次=v474）。
+  > 【旧残点群消化第18弾 v474 — V-474-1..3 完遂・旧 V-406-3/V-406-4 継続第4弾】probe v474_1..v474_2 全2本 EXIT=0。成果物 tmp/re/v474_elem_machine_ruling.md・台帳 row450（bak300）・round_verify ALL OK（rows 31..450 / total 336 / done 331 / open 5）。
+  > ①[確定]（機械）＋[推定高]（class）V-474-1 elem[10]: `FUN_004CD960` の walk を60命令 decode [確定(機械)]: `mov esi,ecx`→`lea edi,[esi+0x48]`（list head）→ `mov ebx,[edi]`（node）→ `mov eax,[ebx+8]; shr eax,3; test al,1`（node flag bit3）→ flag 未立なら `mov edx,[ebx]`（vtable）→ `mov eax,[edx+0x6c]; call eax`（virtual +0x6C）→ `mov ecx,[0xB33B00]`/`push ebx`/`call 0x4637C0` → `test byte [esi+0x24],1`（class form flag bit0・v465）→ `mov edx,[ebx]`→`mov eax,[edx+0x170]; mov ecx,ebx; call eax`→`cmp eax,[0xB35EB8]`（TESObjectSTAT singleton・v470）→ **`fld dword [ebx+0x28]`（byte +40 float＝decompiled `piVar8[10]` と完全一致）→ `fmul qword [0xA3D360]`（-1.0・v469）→ `lea ecx,[esi+0x28]`（receiver＝self+0x28！）→ `call 0x420C60`（id 0x4C set）** → elem＝ebx（list node）、elem[+0x28] float を -1.0 倍して self+0x28 receiver 経由で id 0x4C に SET [確定相当]、`virtual[elem]+0x170()` が TESObjectSTAT singleton と等しい elem のみ対象→elem は TESObjectSTAT 系 form type を持つ object [推定高]（elem vtable 完全特定は [未確定]＝残点）。
+  > ②[部分確定]（整数 field）＋[未確定]（0xFF 語）V-474-1 self[+0xC]: docs band `*(param_1+0xc)==7`（L216781）／`param_1[3]!=7`（L217625）＝整数値として `7` と比較される field [確定(decompiled)]、FUN_00566830 band では `FUN_00446B80(param_1[3])` の4箇所（L266318/266325/266347/266354）→ 「==7 比較と gate（上位 byte 0xFF）が併用される整数 field [確定相当]」、`0xFF` 上位 byte の意味は [未確定]＝残点（docs `& 0xff000000` 比較13件＝v473 gate と同型 [確定(decompiled)]）。
+  > ③[確定]（caller 正しい）＋[確定]（v473 context 訂正）V-474-2 form+0x69: raw bytes `0x522740: push eax / 0x522741: call 0x468270`（real E8・boundary decode で verified=True）[確定(機械)] → v473 の caller 記録（0x522741 owning=FUN_005222D0）は正しい。ただし v473 context 表示「`522745: call ptr [esi+0x5f]`」は int3 帯 linear decode のずれによる誤表示 [確定(否定側)→訂正]: 実際の後続は `add esp,0x1c; ret 4`（fn 末尾）→ FUN_00468270 は FUN_005222D0 の末尾（push eax＝byte 値）から呼ばれる [確定相当]、`[esi+0x5F]` slot は不存在（誤 decode）[確定負]→V-474-2 slot 特定は打ち切り。
+  > ④[未確定] V-474-3（FUN_005222D0 一語名別法・predicate slot35 英名）は budget 未着手＝残点。
+  > ⑤[推定高] 副次: `virtual+0x170()` semantic: docs `+0x170` usage 831件 [確定]、L42487 `*(char*)(iVar2+4)==''`＝`virtual+0x170()` の戻り値の `+4` byte が FormType と比較 [確定(decompiled)]、v470 で TESObjectSTAT singleton `byte[+4]=0x1C` 確定済み → `virtual+0x170()`＝form type singleton を返す getter（GetType() 相当）[推定高]。
+  > 残点 V-475-1..3（1=旧残点 V-406-3 継続（elem の vtable 完全特定＝[ebx]+0x6C/+0x170 実装 fn→vtable→RTTI と elem[+0x28] float の語、self[+0xC] 上位 byte 0xFF semantic）【中】／2=旧残点 V-406-4 残り（form+0x69 byte 値＝push eax の eax が何を含むか）【低】／3=V-474-3 引継ぎ（FUN_005222D0 一語名別法と predicate slot35 英名 CanResolveDependencies [推定] 裏取り）【低】）。
+  > 教訓: `lea ecx,[reg+N]` が __thiscall setter の receiver（FUN_00420C60 の receiver が self+0x28＝class form の +0x28 field と分かった・float setter の receiver field が field map に加わる）／E8 candidate 検証は「raw bytes 実読＋境界 decode＋forward walk の3点」（int3 帯 linear decode のずれを切り分けられる）／[reg+disp] を跨ぐ decompiled↔machine 突合は index×4 と byte offset で照合（piVar8[10]⇔[ebx+0x28]）／`virtual+0x170()` 結果の +4 byte 比較（==0x1a）が「form type singleton getter」の目印（usage 831件のうち1行で semantic が当たる）／誤 decode の訂正も裁定に明記（v473 の context 誤りを v474 で特定して row に残す＝追跡可能性）。v 採番 v474 消費（次=v475）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1529,11 +1537,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1557,4 +1560,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 10:54:27
+**ai-todo** | Last Updated: 2026-11-17 11:06:38
