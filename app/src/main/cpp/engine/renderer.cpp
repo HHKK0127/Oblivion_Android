@@ -8197,7 +8197,14 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
     // The title screen owns the full surface while it is active. Route it before
     // the legacy gameplay panels below; several panels are visible by default and
     // would otherwise consume a title-menu tap without rendering any visible UI.
+    // The exception is a dialog the title menu itself opened (Load/Options and the
+    // Options sub-panels): it is drawn on top of the title, so it has to see the tap
+    // first (#160 - otherwise the LOAD GAME dialog could only be closed with BACK and
+    // the title menu behind it never registered a press).
     if (showTitleScreen && titleScreen) {
+        if (dispatchTitleDialogTouch(x, y, action)) {
+            return;
+        }
         titleScreen->onTouchEvent(x, y, action);
         return;
     }
@@ -9319,6 +9326,103 @@ void Renderer::syncPauseMenuLifetime() {
     pauseMenuBehindSubmenu = false;
     openPauseMenu();
     LOGI("Pause menu: restored after sub-menu");
+}
+
+// A dialog opened from the title menu (Load/Options and the Options sub-panels) is
+// drawn on top of the title, but the title branch of onTouchEvent() hands the whole
+// surface to TitleScreen while showTitleScreen is true. Those dialogs therefore never
+// saw a tap and could only be dismissed with BACK: the LOAD GAME dialog stayed up and
+// NEW never registered (#160).
+//
+// The call patterns mirror the in-game dispatch below - VideoDisplayMenu first
+// because it sits on top of VideoOptions, then the slider sub-panels (they need
+// MOVE/UP as well as DOWN), then settings/save-load/options on DOWN. It returns
+// true when a dialog took the touch, so the caller can leave the title screen alone.
+bool Renderer::dispatchTitleDialogTouch(float x, float y, int action) {
+    const bool isDown = (action == 0 || action == 5);
+    const bool isMove = (action == 2);
+    const bool isUp = (action == 1 || action == 3 || action == 6);
+
+    if (videoDisplayUI && videoDisplayUI->isVisible()) {
+        if (isDown) {
+            videoDisplayUI->onTouchDown(x, y);
+            pumpVideoDisplay();
+        }
+        return true;
+    }
+
+    if (gameplayOptionsUI && gameplayOptionsUI->isVisible()) {
+        if (isMove) {
+            gameplayOptionsUI->onTouchMove(x);
+        } else if (isUp) {
+            gameplayOptionsUI->onTouchUp();
+        } else if (isDown) {
+            gameplayOptionsUI->onTouchDown(x, y);
+        }
+        pumpGameplayOptions();
+        return true;
+    }
+    if (videoOptionsUI && videoOptionsUI->isVisible()) {
+        if (isMove) {
+            videoOptionsUI->onTouchMove(x);
+        } else if (isUp) {
+            videoOptionsUI->onTouchUp();
+        } else if (isDown) {
+            videoOptionsUI->onTouchDown(x, y);
+        }
+        pumpVideoOptions();
+        return true;
+    }
+    if (controlsOptionsUI && controlsOptionsUI->isVisible()) {
+        if (isMove) {
+            controlsOptionsUI->onTouchMove(x);
+        } else if (isUp) {
+            controlsOptionsUI->onTouchUp();
+        } else if (isDown) {
+            controlsOptionsUI->onTouchDown(x, y);
+        }
+        pumpControlsOptions();
+        return true;
+    }
+    if (audioOptionsUI && audioOptionsUI->isVisible()) {
+        if (isMove) {
+            audioOptionsUI->onTouchMove(x);
+        } else if (isUp) {
+            audioOptionsUI->onTouchUp();
+        } else if (isDown) {
+            audioOptionsUI->onTouchDown(x, y);
+        }
+        pumpAudioOptions();
+        return true;
+    }
+
+    if (!isDown) {
+        return false;
+    }
+
+    if (settingsUI && settingsUI->isVisible()) {
+        settingsUI->onTouchEvent(x, y);
+        if (settingsUI->shouldReturnToMenu()) {
+            settingsUI->resetReturnFlag();
+            settingsUI->toggle();
+        }
+        return true;
+    }
+    if (saveLoadUI && saveLoadUI->isVisible()) {
+        saveLoadUI->onTouchEvent(x, y);
+        if (saveLoadUI->shouldReturnToMenu()) {
+            saveLoadUI->resetReturnFlag();
+            saveLoadUI->close();
+        }
+        return true;
+    }
+    if (optionsUI && optionsUI->isVisible()) {
+        optionsUI->onTouchEvent(x, y);
+        handleOptionsCategoryRequest(optionsUI->consumeCategoryRequest());
+        optionsUI->resetReturnFlag();
+        return true;
+    }
+    return false;
 }
 
 bool Renderer::anyMenuOpen() const {

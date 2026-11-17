@@ -452,6 +452,9 @@ public:
     // original's "menu is displayed" gate (0x00b3a6d4 != 0): world/camera input,
     // physics and AI updates are suppressed while it is true.
     bool anyMenuOpen() const;
+    // Routes a touch to a dialog that the title menu opened (Load/Options and the
+    // Options sub-panels) before the title screen takes the surface (#160).
+    bool dispatchTitleDialogTouch(float x, float y, int action);
 
     // MessageMenu (0x3e9): modal message panel built from the original
     // message_menu.xml. Empty text falls back to sDefaultMessage and an empty option
