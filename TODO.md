@@ -1007,6 +1007,15 @@
   > ⑤[部分確定] component view vtable 実読: TESFullName 0xA322A0(+0=0x5A6A20,+4=0x60D0A0,+8=0x46C840,+0xC=0x46C880,+0x10=0xAB40A4)／TESHealthForm 0xA3C02C(+0=0x46C9C0,+4=0x60D0A0,+8=0x46CA60,+0xC=0x46C9D0)／TESValueForm 0xA3C680(+0=0x46C9C0,+8=0x470480,+0xC=0x4704E0,+0x10=0x470400)。+4 に共通 stub 0x60D0A0 を持つ型が多く FUN_00466DA0 は多くの型で no-op 相当。
   > ⑥[確定相当] DeleteForm caller 経路: FUN_00463EC0 は iVar2=FUN_0046B250(param_1)（FUN_0055E000 registry lookup の wrapper）→ FUN_0045C7A0(iVar2)。DeleteForm の入力は id 由来。
   > 残点 V-527-1..3（1=FUN_0046B800/46B870/46C620（TESForm vtable +0x08/+0x0C/+0x10）identity＋0x60D0A0 stub 実体【中】／2=this identity＋20 caller の ECX 供給元【低】／3=引継ぎ【低】）。supermemory 未登録（v405..v526=122件・MCP catalog 未復帰）。
+  > v527（V-527-1..3 完遂・旧 V-406-3 継続第57弾／probe v527_1..3 全3本 EXIT=0）
+  > 成果物: tmp/re/v527_tesform_component_virtuals_ruling.md・台帳 row503（bak352）・round_verify ALL OK（rows 31..503 / total 389 / done 384 / open 5）。v 採番 v527 消費（次=v528）。
+  > ①[確定] 0x60D0A0 = 単一 ret（C3）＋int3 → 引数なし no-op 仮想関数（TESForm vtable +0x00/+0x04/+0x24、component view +0x04 がこの stub）。
+  > ②[確定] FUN_0046B800（TESForm vtable +0x08）= CopyComponentFrom(BaseFormComponent*) 相当: RTDynamicCast(arg,0,&TD_TESForm 0xB02F9C,&TD_BaseFormComponent 0xB031EC,0) → 成功時 bit1 変化で virtual[+0x90]、*(this+4)=*(comp+4)（type byte 複写）、flags は (this^comp)&0x4000 XOR comp（bit14 だけ this 保持）。
+  > ③[確定] FUN_0046B870（+0x0C）= IsComponentDifferent(BaseFormComponent*)（1=異なる）: null→1、type byte 不一致→1、FUN_00404E50 getter 比較、virtual[+0xD4] を FUN_0098262D で比較、((this+8)^(comp+8)) & 0xFFFFBFF4 非0→1（bit14 除外）。
+  > ④[確定] FUN_0046C620（+0x10）= scalar deleting destructor（FUN_0046C280→param_2&1 で free）。[確定相当] FUN_0046C280: vtable 復元→FUN_0046B2C0 reset→+0x14 node 連鎖 free→+0x10=0→bit14 未設定かつ DAT_00B33B00≠0 なら FUN_0045B780/FUN_00453940 で manager 解除。
+  > ⑤[確定] cast 先 0xB031EC = .?AVBaseFormComponent@@ → +0x08/+0x0C の引数は BaseFormComponent*（26 component interface の共通基底）。RTTI 元 TESForm・先 BaseFormComponent なので BaseFormComponent は TESForm 階層（downcast）。
+  > ⑥[確定] TESForm vtable 0xA3BE3C 全 30 slot を実読（+0x1C=0x6FDFF0 は mov al,1; ret 4＝常に真、+0x20=0x46B340、+0x2C..+0x34=0x46B4C0/0x46B510/0x46B500、+0x38=0x46C360、+0x40..+0x4C=0x46ABF0/0x46AC10/0x46AC30/0x46AC50、+0x50=0x46B5E0、+0x54=0x46B600、+0x68=0x6FE080、+0x74=0x46C700）。
+  > 残点 V-528-1..3（1=TESForm vtable 残り slot identity【中】／2=DAT_00B33B00 identity＋FUN_0045B780/FUN_00453940＋DeleteForm の this 追跡【低】／3=引継ぎ【低】）。supermemory 未登録（v405..v527=123件・MCP catalog 未復帰）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1929,11 +1938,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1957,4 +1961,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 18:49:00
+**ai-todo** | Last Updated: 2026-11-17 18:52:53
