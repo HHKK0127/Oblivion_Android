@@ -94,6 +94,10 @@ private:
     // For RACE tab
     int selectedRaceIndex_ = 0;
     std::vector<oblivion::RaceData> availableRaces_;
+    // Frames since the last attempt to refill availableRaces_ from the ESM. The
+    // list is read from ESMManager, which the parse worker publishes into without
+    // a lock, so it is polled at most about once a second instead of per frame.
+    int raceRetryTicks_ = 0;
     void loadRacesFromESM();
 
     // For ATTRIBUTES tab

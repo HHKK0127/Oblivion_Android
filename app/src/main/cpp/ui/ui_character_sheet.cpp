@@ -116,8 +116,21 @@ void UICharacterSheet::renderTabButtons() {
         PlaceholderAssets::drawPanel(bx, by, tabW, tabH, bg, border);
 
         if (textRenderer) {
-            textRenderer->renderText(tabLabels[i], bx + 6.0f, by + 4.0f,
-                glm::vec3(0.1f, 0.1f, 0.1f), 0.5f);
+            // Step the scale down until the label fits its tab. The strip width
+            // (3 x 110 + gaps) fits the panel, but "Attributes" at a fixed 0.5 is
+            // still wider than the 110 px tab, and the next tab's background -
+            // drawn afterwards - paints over its tail, leaving "Attribu". Same
+            // bounded shrink the confirm labels use, so the word is never cut.
+            constexpr float kTabInset = 6.0f;
+            const float maxLabelW = tabW - 2.0f * kTabInset;
+            float labelScale = 0.5f;
+            for (int step = 0; step < 48 &&
+                 textRenderer->getTextWidth(tabLabels[i], labelScale) > maxLabelW;
+                 ++step) {
+                labelScale *= 0.95f;
+            }
+            textRenderer->renderText(tabLabels[i], bx + kTabInset, by + 4.0f,
+                glm::vec3(0.1f, 0.1f, 0.1f), labelScale);
         }
     }
 }
