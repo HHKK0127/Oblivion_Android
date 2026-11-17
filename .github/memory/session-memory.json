@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-17T08:51:41Z",
+  "lastUpdated": "2026-11-17T09:00:30Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13528,14 +13528,30 @@
         "getprevextra"
       ],
       "content": "2026-11-17 旧残点群消化第65弾 v521（probe v521_1 全1本 EXIT=0）＝V-521-1..3 完遂・旧 V-406-3 継続第51弾: 成果物 tmp/re/v521_registry_map_ruling.md・台帳 row497（bak347）・round_verify ALL OK（rows 31..497 / total 383 / done 378 / open 5）・STATE (im)・ai-todo #151 note。[確定]（RTTI）→ NiTMapBase<NiTPointerAllocator<uint>, TESForm*> V-521-2 allocator hash vtable: .rdata 実読＋RTTI 実読 [確定(実RTTI)]: dword @0xB0613C＝0x00A3BC94 → rtti_name(0xA3BC94) = .?AV?$NiTMapBase@V?$NiTPointerAllocator@I@@IPAVTESForm@@@@ → NiTMapBase<NiTPointerAllocator<unsigned int>, TESForm*> [確定] → allocator（FUN_00448D40）の hash map＝TESForm* を保持する NiTMapBase＝TESForm レジストリ map [確定]。vtable slots [確定(機械)]: [+0x0]＝FUN_0046B030（ctor/dtor [推定]）／[+0x4]＝FUN_006A9060（hash fn・allocator の virtual[*v+4] 実体）／[+0x8]＝FUN_00763E80（compare fn・virtual[+8] 実体）／[+0xC]＝FUN_0067F130／[+0x10]＝FUN_0068F970／[+0x14]＝FUN_00982D85 → allocator の hash（FUN_006A9060）と compare（FUN_00763E80）を特定 [確定相当]。DAT_00b06144（bucket）は runtime init（dword=0）[確定相当]。[確定]（実文字列）→ BaseExtraList::GetPrevExtraData V-521-1 FUN_0041E2D0: L20109 実読 [確定(decompiled)＋実文字列]: int __thiscall FUN_0041e2d0(int param_1, byte param_2): if ((param_2 >> 3 < 0xc) && ((*(byte *)((param_2 >> 3) + 8 + param_1) & (1 << (param_2 & 7))) != 0))（96-type bit mask 検査＝v504/v520 と同一型）→ FUN_00401020(\"BaseExtraList::GetPrevExtraData\")（critical section 名＝実文字列）→ iVar3 = *(param_1 + 4)（list head）→ walk → FUN_0041E2D0＝BaseExtraList::GetPrevExtraData（type byte 指定で extra data を検索する fn）[確定] → BaseExtraList family が「FUN_0041E210＝GetExtraData（v504）／FUN_0041E2D0＝GetPrevExtraData（本裁定）／FUN_00422E20＝RemoveExtra（v520）」の3種で揃う [確定相当]（3 fn とも同一の bit mask＋TLS cache 構造）。[確定相当]（TESForm registry の NiTMapBase）V-521-1 allocator の map object: FUN_00448D40 E8 callers＝3件 [確定(機械)]: 0x4160E8（FUN_00416000・void __thiscall(int, undefined4)）／0x45C854（FUN_0045C7A0・void __thiscall(int, int*)）／0x46C58F（FUN_0046C460・TESForm ctor・v515/v517）→ allocator は TESForm ctor 他3fn から呼ばれ、hash map が NiTMapBase<…, TESForm*>（RTTI 確定）→ FUN_0055E000 の map object＝TESForm レジストリ [確定相当]（v520 残点「reserved map が何の map か」への回答）。[未確定] V-521-3 引継ぎ（predicate 英名・新 FourCC 意味）は残点継続。残点 V-522-1..3（1=FUN_006A9060（hash fn）／FUN_00763E80（compare fn）本文（registry の key 比較法＝form id 比較か pointer 比較か）＋FUN_0046B030（NiTMapBase ctor/dtor 候補）identity【中】／2=FUN_00416000/FUN_0045C7A0（allocator の残り2 caller）identity＋caller 分離（経路分離＝残点）【低】／3=引継ぎ残り【低】）。教訓: PTR_PTR_xxx（vtable ptr）の RTTI 逆引きが container の class を確定（NiTMapBase<…, TESForm*>＝allocator の map が TESForm レジストリと即決＝RTTI 法の3度目）／BaseExtraList family は「Get／GetPrev／Remove」の3種で揃う（3 fn とも critical section 名＋同一 bit mask 構造＝名前法＋構造の横断一致）／hash fn／compare fn が vtable slot（+4/+8）から特定できる（container の hash/compare 実体が判明＝map の key 比較法が次の手）／allocator の caller census（3件）が「誰が id counter を使うか」を語る（TESForm ctor＋2 method＝form id の生成経路が判明）／DAT_00b06144（bucket）の runtime init（dword=0）が「起動時に確保される配列」の目印。本日 push: v405→v520（586542cc）116件＋本件 v521。v 採番 v521 消費（次=v522）。"
+    },
+    {
+      "id": "151-v522-hash-compare-2026-11-17",
+      "timestamp": "2026-11-17T09:00:30Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v522",
+        "modulo-hash",
+        "equality-compare",
+        "tesform-cast"
+      ],
+      "content": "2026-11-17 旧残点群消化第66弾 v522（probe v522_1 全1本 EXIT=0）＝V-522-1..3 完遂・旧 V-406-3 継続第52弾: 成果物 tmp/re/v522_hash_compare_ruling.md・台帳 row498（bak348）・round_verify ALL OK（rows 31..498 / total 384 / done 379 / open 5）・STATE (in)・ai-todo #151 note。[確定]（modulo hash）V-522-1 FUN_006A9060: L475136 実読 [確定(decompiled)]: uint __thiscall FUN_006a9060(int param_1, uint param_2) { return param_2 % *(uint *)(param_1 + 4); } → hash＝key % bucket_count（param_1+4＝bucket 数）の modulo hash [確定] → registry（NiTMapBase<…, TESForm*>）の hash は form id（uint）を bucket 数で割る modulo [確定相当]（v519 allocator の virtual[*v+4](iVar5)＝form id の modulo hash）。[確定]（equality compare）V-522-1 FUN_00763E80: L607560 実読 [確定(decompiled)]: bool FUN_00763e80(int param_1, int param_2) { return param_1 == param_2; } → compare＝==（equality）[確定] → registry の key 比較＝form id（uint）の直接一致判定 [確定相当]（v519 allocator の virtual[+8](iVar5, puVar3[1])＝form id equality）→ form id が key であることが hash/compare 両面で確定。[部分確定]（TESForm cast＋FUN_0046ACB0）V-522-2 FUN_00416000: L14522 実読 [確定(decompiled)]: void __thiscall FUN_00416000(int param_1, undefined4 param_2): iVar1 = FUN_009832e6(param_2, 0, &PTR_PTR_00b02f9c, &PTR_PTR_00b03534, 0)（RTDynamicCast: TESForm（0xB02F9C）→ 0xB03534 type）→ if (iVar1 != 0) { FUN_0046acb0(param_2); ... } → FUN_00416000＝「param_2 を TESForm→0xB03534 type に cast し、成功したら FUN_0046ACB0(param_2) を呼ぶ fn [部分確定]」（0xB03534 type identity は RTTI 未読＝残点、FUN_0046ACB0 identity は残点）→ allocator（id counter）を使う cast 経路 [推定]。[部分確定]（DWORD locals・本文 cap 外）V-522-2 FUN_0045C7A0: L73041 実読 [確定(decompiled)]: void __thiscall FUN_0045c7a0(int param_1, int *param_2): locals＝DWORD DVar2; byte bVar3; DWORD DVar4; int iVar5; ... （DWORD locals＝thread/tick 系 [推定]）→ 本文は cap 外＝[部分確定]（param_2 が int*＝ptr object [確定相当]）。[未確定] V-522-1 FUN_0046B030（NiTMapBase ctor/dtor 候補）は budget 外で残点／[未確定] V-522-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。残点 V-523-1..3（1=PTR_PTR_00b03534 RTTI type（FUN_00416000 の cast 先）＋FUN_0046ACB0（cast 成功後の呼出し）identity＋FUN_0046B030（NiTMapBase ctor/dtor）identity【中】／2=FUN_0045C7A0 本文（DWORD locals の中身）＋caller 分離（経路分離＝残点）【低】／3=引継ぎ残り【低】）。教訓: container の hash/compare 実体は vtable slot（+4/+8）の fn docs を読めば1行で判明（%＝modulo、==＝equality が hash/compare の定番＝v521 で slot特定→v522 で本文確定の2段）／hash（uint key）＋compare（==）の両面が揃うと「key が何か」が確定（form id が registry key と確定＝v519 allocator の key 追跡が完遂）／RTDynamicCast wrapper（FUN_009832E6）が5度目（cast 先 type ptr（0xB03534）の RTTI が次の手）／allocator の caller が「cast 経路」と「DWORD locals 経路」に分かれる（id counter を使う2つの経路 [部分確定]）／% と == の1行 fn が container の key semantics を決める（小さな fn ほど identity が即分かる＝docs head の短さが利点）。本日 push: v405→v521（195a112f）117件＋本件 v522。v 採番 v522 消費（次=v523）。"
     }
   ],
   "metadata": {
-    "totalEntries": 926,
+    "totalEntries": 927,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-17T08:51:41Z",
-    "entry_count": 926,
-    "last_updated": "2026-11-17T08:51:41Z"
+    "lastUpdated": "2026-11-17T09:00:30Z",
+    "entry_count": 927,
+    "last_updated": "2026-11-17T09:00:30Z"
   }
 }
