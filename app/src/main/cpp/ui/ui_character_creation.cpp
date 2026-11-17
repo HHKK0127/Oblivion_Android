@@ -12,6 +12,24 @@
 // from one source and cannot drift apart: the hit tests used to hardcode 105/32
 // and a 226 px offset that only matched because 105 + 16 + 105 happened to
 // equal it.
+// Canonical element ids from the original menu, so the port's controls can be
+// traced back to the shipped XML instead of to this file's own history:
+//   D:\Cargo\Other\Oblivion\BSA\bsa_Extraction\menus\chargen\race_sex_menu.xml
+//     race_window        id=1    the window every offset below is relative to
+//     race_player_grab   id=2    3D preview drag area (not ported yet)
+//     race_name          id=10   name input
+//     race_button_done   id=90   confirm button (label switches with user5:
+//                                false -> strings()._done "Done",
+//                                true  -> strings()._return "Return")
+//     race_template_pane/button/toggle/slider/text  id=100..104
+// The window's own layout (no title bar, its own background rect) does not match
+// UIPanel's content box, so the canonical -30/-20 button offsets are not applied
+// here until the window layout itself is ruled on (#101 / #162).
+[[maybe_unused]] constexpr int kCanonicalWindowId = 1;
+[[maybe_unused]] constexpr int kCanonicalPreviewGrabId = 2;
+[[maybe_unused]] constexpr int kCanonicalNameInputId = 10;
+[[maybe_unused]] constexpr int kCanonicalDoneButtonId = 90;
+
 namespace {
 constexpr float kConfirmCancelWidth = 105.0f;
 constexpr float kConfirmCancelHeight = 32.0f;
@@ -443,13 +461,13 @@ void UICharacterCreation::renderConfirmCancelButtons() {
     // is drawn -- but TextRenderer::fontSizeMultiplier_ defaults to 1.15
     // (text_renderer.h:246) and TitleScreen restores that saved value before the
     // creation panel opens (title_screen.cpp:515 gate, :567 restore), so the
-    // runtime widths are 108.46 px for "Create" and 106.55 px for "Cancel" on a
-    // 105 px panel. The old fixed insets made that 21.46 px and 18.55 px of
-    // overshoot; the multiplier is a user setting, so a fixed panel or a fixed
-    // scale cannot be made to fit for every value. Step the label scale down
-    // instead, which keeps the whole word (truncating, as debug_menu.cpp:642
-    // does, would turn "Create" into "Creat") and keeps the panel and the touch
-    // box at their existing size.
+    // runtime widths are 108.46 px for "Create" (the label this measurement was
+    // taken with) and 106.55 px for "Cancel" on a 105 px panel. The old fixed
+    // insets made that 21.46 px and 18.55 px of overshoot; the multiplier is a
+    // user setting, so a fixed panel or a fixed scale cannot be made to fit for
+    // every value. Step the label scale down instead, which keeps the whole word
+    // (truncating, as debug_menu.cpp:642 does, would turn "Cancel" into "Cance")
+    // and keeps the panel and the touch box at their existing size.
     auto drawLabel = [&](const char* label, float panelX) {
         constexpr float kInset = 4.0f;
         // fontSizeMultiplier_ comes from the `fontsize` console command
@@ -473,11 +491,14 @@ void UICharacterCreation::renderConfirmCancelButtons() {
             glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT), labelScale);
     };
 
-    // Confirm button
+    // Confirm button. The original's race_button_done (id 90) is labelled from
+    // strings()._done, which ships as "Done" (menus/strings.xml:5); "Cancel" has
+    // no counterpart of its own - the same element shows strings()._return
+    // ("Return") when its user5 trait flips, which #162 has to pin down first.
     PlaceholderAssets::drawPanel(confirmX, by, buttonW, buttonH,
         PlaceholderAssets::Colors::GOLD_HIGHLIGHT,
         glm::vec3(PlaceholderAssets::Colors::GOLD_HIGHLIGHT));
-    drawLabel("Create", confirmX);
+    drawLabel("Done", confirmX);
 
     // Cancel button
     PlaceholderAssets::drawPanel(cancelX, by, buttonW, buttonH,
