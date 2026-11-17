@@ -756,6 +756,13 @@
   > ④[未確定] V-493-2 0x4D0E74 site（4push 形）は budget 未着手＝残点／[未確定] V-493-3 引継ぎも残点継続。
   > 残点 V-494-1..3（1=node（FUN_00452C20 lazy node）の用途と bit5 の最終 semantic（FUN_00452570 identity）＋FUN_0045A500 の param_1+0x18 bit18/byte の状態【中】／2=0x4D0E74 site（4push 形）の引数確認【低】／3=引継ぎ残り【低】）。
   > 教訓: gated 実行の「本体」が `|=` bit 設定なら notify chain の意味が一気に確定（bit5→notify→bit 設定＝flag 管理系）／`key → lookup → alloc → register → |=` の5段は lazy flag node の定番（v469/v481 の map insert 同型＋bit 設定追加）／実文字列（StolenGoods/NorthMarker）の取得は singleton identity の決定打（3度目の成功）／GetCurrentThreadId＋global 比較は thread-affinity 判定の目印／shift 値（>>0x12＝bit18）から bit 位置を特定。v 採番 v493 消費（次=v494）。
+  > 【旧残点群消化第38弾 v494 — V-494-1..3 完遂・旧 V-406-3/V-406-4 継続第24弾】probe v494_1 全1本 EXIT=0。成果物 tmp/re/v494_map_node_site_ruling.md・台帳 row470（bak320）・round_verify ALL OK（rows 31..470 / total 356 / done 351 / open 5）。
+  > ①[確定相当] V-494-1 FUN_00452570: L63124 実読 [確定(decompiled)]: **bucket 配列（param_1[2]）＋chain の hash map insert/update fn（hash→bucket walk→null なら alloc+set+prepend+count++、既存なら比較+update）[確定(構造)] → FUN_00412D30（v485）と同型の別 impl [確定相当]** → **FUN_00452C20（v493）の `uVar1=param_1[3]`（+0xC）は「key→node の hash map ptr」で lazy node をこの map に登録 [確定相当] → +0xC＝key/map ptr の field map が完成（v481/v485 と整合）→ bit5 semantic 経路: +0x8 bit5→notify→FUN_00452C20→map node に |= [確定相当]**（node の最終用途は `node[1]==0` gate と `*node |=` から「未設定時の mask 集積 [推定]」＝残点）。
+  > ②[確定] V-494-2 0x4D0E74 site: **machine decode（0x4D0E5B..0x4D0E7D）: `mov eax,[edi]; mov edx,[eax+0x84]; push 1; push ebp; mov ecx,edi; call edx`（virtual +0x84）→ `mov eax,[0xb35eb8]`（NorthMarker）→ `push 1` → `push eax` → `mov ecx,ebx` → `call 0x4CBA80`（this=ebx, NorthMarker, 1）→ `test eax,eax; je` → `fld dword [eax+0x28]`（戻り node の +0x28 float 読み）→ arg3＝1（v492 と一致＝2site とも arg3=1 [確定]）**、**戻り node の +0x28 float を fld＝FUN_004D0C20 が marker/registry node の float を消費 [確定相当]**（node/form 側の区別＝offset 0x28 は v482/v485 と一致・残点の方向を明記）。
+  > ③[確定]（否定側）＋[未確定]（外部 caller）FUN_0045A500 param_1+0x18: **owning band 内の +0x18 usage は body の2行（v493 同一）のみで他 usage 0件 → bit18/byte の意味は caller 側＝[未確定]＝残点**。
+  > ④[未確定] V-494-3 引継ぎ（predicate 英名・sink 正体・新 FourCC 意味）は残点継続。
+  > 残点 V-495-1..3（1=map node の `*node |= mask` の最終用途（node[1]==0 gate・FUN_00452C20 caller 側 mask 値）＋FUN_0045A500 callers（bit18/byte 実体）【中】／2=[node+0x28] float と form +0x28 の同異（offset 一致・载体区別）＋FUN_004D0C20 本文用途【低】／3=引継ぎ残り【低】）。
+  > 教訓: 同一構造（bucket＋chain insert）の fn が複数 impl ある→同型判定で登録先（map container）を即確定／site 検証は「int3 前の boundary から decode」＋直後の命令まで拾うと「戻り値の用途」も同時確定／arg3=1 が2 site 一致で呼び出し契約が確定／own band usage 0件の否定側は「bit の意味は caller 側」と経路固定／virtual slot（+0x84）が同 window に混在しても個別特定すれば混同しない。v 採番 v494 消費（次=v495）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1677,11 +1684,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1705,4 +1707,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 12:37:07
+**ai-todo** | Last Updated: 2026-11-17 12:41:34
