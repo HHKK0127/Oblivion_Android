@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-17T05:09:56Z",
+  "lastUpdated": "2026-11-17T05:23:59Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13240,14 +13240,30 @@
         "node-set-callers"
       ],
       "content": "2026-11-17 旧残点群消化第47弾 v503（probe v503_1 全1本 EXIT=0・初回構文エラー→修正再実行）＝V-503-1..3 完遂・旧 V-406-3 継続第33弾: 成果物 tmp/re/v503_player_byte7c_ruling.md・台帳 row479（bak329）・round_verify ALL OK（rows 31..479 / total 365 / done 360 / open 5）・STATE (hu)・ai-todo #151 note。[確定相当]（閾値比較 byte）V-503-1 Player +0x7C semantic: docs usage＝410件 [確定]。閾値比較実読 [確定(decompiled)]: L23799/L23851/L23921: if (0x23 < *(byte *)(DAT_00b33b00 + 0x7c))（0x23＝35 超で true）／L24063/L24451: if ((0x3f < *(byte *)(…)) && …)（0x3f＝63 超）／L15445/L15484/L15490: …(0xb8, *(undefined1 *)(DAT_00b33b00 + 0x7c))（引数として渡す（0xb8＝184 と併用））→ Player +0x7C byte は「35 超」「63 超」の閾値比較と引数渡しに使われる byte field [確定相当]（0x23/0x3f の閾値＝何かのカウンタ/種別 [推定]）。machine abs ref 0xB33B7C＝0件（ptr+offset 経由のみ）[確定(否定側)] → v502 の cmp byte [eax+0x7c], 0x24（0x24＝36 超）はこの閾値比較 family の1つ [確定]（0x23 < x ⇔ x >= 0x24 と一致）。[部分確定]（caller 群判明・impl は別途）V-503-1 virtual+0xC node-set impl: docs `*param_1 + 0xc))(` call sites＝123件 [確定]、owning fns 8件（FUN_00401260/FUN_00412D30/FUN_0042CAE0/FUN_0042CC00/FUN_00432130/FUN_00434800/FUN_00442F70/FUN_00452570）を列挙 [確定]。L63137/L63148（FUN_00452570 内・v494）と L11106（FUN_00412D30 内・v485）が map insert の set 呼び出し（set(node, key, key) 形）[確定]。RTTI vtable 逆引き（slot +0xC）は owning fn 全件で0 placement → owning は「set を呼ぶ側（caller）」で set impl fn は別 [確定（否定側）] → impl 特定は「map系 vtable の slot +0xC 実読」へ経路を固定 [部分確定]。[推定相当] V-503-2 FUN_0041E210(0x4b): L20071 実読 [確定(decompiled)]: int __thiscall FUN_0041e210(int param_1, byte param_2)（byte 引数）→ v501 の FUN_0041e210(0x4b) は 0x4B（75）を byte で渡す → FormType/種別 byte 判定 fn [推定相当]（byte param_2 が裏付け）、本文は本 probe 未読＝残点。[未確定] gated 側 mask 源（edx）は budget 未着手＝残点／[未確定] V-503-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。残点 V-504-1..3（1=node-set impl fn の特定（map 系 vtable（NiTMapBase 系 [推定]）の slot +0xC 実読→value→owner/count field 対応完遂）＋Player +0x7C byte の閾値（35/63/36）の意味（何のカウンタ/種別か＝0xb8 引数との関係含む）【中】／2=FUN_0041E210 本文＋gated 側 mask 源（edx 設定元）【低】／3=引継ぎ残り【低】）。教訓: byte field の semantic は「閾値比較の constants」で語られる（0x23/0x3f/0x24＝35/63/36 の比較が byte の性格を決める＝閾値 census が field 調査の定番）／同一比較（0x23 < ⇔ cmp 0x24; jb）が docs と machine で一致すれば family 接続が確定（v502 の新事実を v503 で消化）／virtual call の owning（呼ぶ側）と vtable slot の載せ先（impl）は別（owning を vtable 逆引きして0件なら「caller 確定・impl 別探索」に切り替える）／byte 型 param の signature が type byte 引数の目印（FUN_0041E210(int, byte)⇔0x4b＝FormType [推定]）／usage 件数（410）と閾値（35/63）の組み合わせが「頻用 byte field」の規模感を語る。本日 push: v405→v502（6667b91e）98件＋本件 v503。v 採番 v503 消費（次=v504）。"
+    },
+    {
+      "id": "151-v504-version-getextradata-2026-11-17",
+      "timestamp": "2026-11-17T05:23:59Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v504",
+        "version-byte",
+        "getextradata",
+        "node-set-candidate"
+      ],
+      "content": "2026-11-17 旧残点群消化第48弾 v504（probe v504_1 全1本 EXIT=0）＝V-504-1..3 完遂・旧 V-406-3 継続第34弾: 成果物 tmp/re/v504_version_getextradata_ruling.md・台帳 row480（bak330）・round_verify ALL OK（rows 31..480 / total 366 / done 361 / open 5）・STATE (hv)・ai-todo #151 note。[確定相当]（version byte）V-504-1 Player +0x7C: context 実読 [確定(実文字列＋構造)]: L15443-15445: FUN_004a7a60(\"LoadGame Buffer error: Block Header is incorrect in file %s on line %i.  Current version is %i\", \"..\\\\TES Shared\\\\Magic\\\\EffectSettingCollection.cpp\", 0xa4, *(undefined1 *)(DAT_00b33b00 + 0x7c)); → +0x7C byte は「Current version is %i」の version 値 [確定相当]（0xa4＝164＝line）。L15482-15484/L15488-15490（overrun/underrun log）でも同じ 0xb8（184＝line）＋+0x7C（version）の組 [確定] → Player +0x7C byte＝SaveGame/LoadGame の version byte [確定相当] → v503 の閾値（0x23 <＝35超／0x3f <＝63超／0x24＝36）は version 比較（対応バージョン範囲 gate）[推定相当]。副次: L15440: local_4 != 0x4b4f4c42＝\"BLOB\" FourCC（LE 逆バイト）[確定]／L15467: \"Player Load: Failed to find known effect setting ID %08X\" [確定(実文字列)]／L15470: *(iStack_c+0x58) |= 0x200000（effect setting +0x58 bit21 set）[確定] → 本帯は EffectSettingCollection.cpp の LoadGame 処理 [確定相当]（DAT_00b33b00+0x80＝ptr・+0x14＝buffer size uint も同時判明）。[確定]（実文字列）→ v501 推定を訂正 V-504-2 FUN_0041E210: body L20067-20100 実読 [確定(decompiled)]: int __thiscall FUN_0041e210(int param_1, byte param_2): if ((param_2 >> 3 < 0xc) && ((*(byte *)((param_2 >> 3) + 8 + param_1) & (byte)(1 << (param_2 & 7))) != 0))（type byte の bit mask 検査（12 bucket×8bit＝96種））→ TLS cache（iVar1+0x10+param_2*4・param_2 < 0x5d＝93 種上限）→ FUN_00401020(\"BaseExtraList::GetExtraData\")（critical section 名＝実文字列）→ linked list 走査（*(iVar1+4)==type）→ return iVar2 → FUN_0041E210＝BaseExtraList::GetExtraData（type byte 指定で extra data を取得する fn）[確定] → v501「FormType/種別 byte 判定 [推定相当]」を本裁定で訂正。0x4b（75）＝extra data type byte [確定相当]（param_2 < 0x5d 値域内）。[推定相当]（候補特定）V-504-1 node-set impl: ctor-store vtable census（1486個）から NiT*/Map* 463クラスを列挙 [確定(機械)]。BSTCaseInsensitiveStringMap<PAVTESForm>（vt=0xA3BF1C）の [vt+0xC]=0x6C4F80 → FUN_006C4F30 内 [確定(機械)]、<IDLE_ANIM_ROOT>（vt=0xA53920）／<PAVSetting>（vt=0xA40454）も 同一 impl FUN_006C4F80 共有 [確定] → FUN_006C4F80＝case-insensitive string key map の node-set impl 候補 [推定相当]（FUN_00412D30（v485 setting map＝<PAVSetting> [推定]）の this vtable がこの family なら node-set 完遂）。LockFreeMap/LockFreeStringMap 系の slot +0xC は別 impl（FUN_0043E430/FUN_0055F4C0/FUN_00433F20 等）[確定] → map family で impl が分岐（BST 系 vs LockFree 系）。FUN_00452570（v494）の this がどちら family かは未確定＝残点。[未確定] gated 側 mask 源（edx）は budget 未着手＝残点／[未確定] V-504-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。残点 V-505-1..3（1=FUN_006C4F80 本文（node-set の value→field 対応完遂）と FUN_00452570/FUN_00412D30 の this vtable family 確認（BST vs LockFree）＋version 閾値（35/63/36）の対応バージョン【中】／2=gated 側 mask 源（edx 設定元）＋Player +0x80（ptr）／+0x14（buffer size）の identity【低】／3=引継ぎ残り【低】）。教訓: `\"…%i\"` log の引数が field の意味を語る（Current version is %i の引数＝+0x7C byte で version と即決＝閾値 census（v503）→log context（v504）の2段が field semantic を完成）／critical section の名前文字列（FUN_00401020(\"…\")）が fn identity を一撃（\"BaseExtraList::GetExtraData\"＝v498 に続く名前法の再現）／推定（v501 FormType）は実文字列で訂正される（[推定] はいつでも [確定] で上書きできる＝裁定の更新が正しい運用）／census filter（NiT*/Map*）＋slot +0xC 実読で impl family が判別（BST 系 vs LockFree 系で impl 分岐 [確定]＝class family の型情報が slot に載る）／\"BLOB\" FourCC（0x4b4f4c42）が LoadGame ブロック形式の目印（v484/v485 に続く LE 逆バイト法の反復）。本日 push: v405→v503（02d1463f）99件＋本件 v504。v 採番 v504 消費（次=v505）。"
     }
   ],
   "metadata": {
-    "totalEntries": 908,
+    "totalEntries": 909,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-17T05:09:56Z",
-    "entry_count": 908,
-    "last_updated": "2026-11-17T05:09:56Z"
+    "lastUpdated": "2026-11-17T05:23:59Z",
+    "entry_count": 909,
+    "last_updated": "2026-11-17T05:23:59Z"
   }
 }
