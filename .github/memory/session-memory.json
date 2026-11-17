@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-17T05:34:15Z",
+  "lastUpdated": "2026-11-17T05:46:58Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13272,14 +13272,30 @@
         "map-remove"
       ],
       "content": "2026-11-17 旧残点群消化第49弾 v505（probe v505_1 全1本 EXIT=0）＝V-505-1..3 完遂・旧 V-406-3 継続第35弾: 成果物 tmp/re/v505_version_gate_ruling.md・台帳 row481（bak331）・round_verify ALL OK（rows 31..481 / total 367 / done 362 / open 5）・STATE (hw)・ai-todo #151 note。[確定相当]（feature gate）V-505-1 version 閾値の意味: context 実読 [確定(decompiled)]: L23799（FUN_00421000）: if (0x23 < *(byte *)(DAT_00b33b00 + 0x7c)) { … sink log(\"SetSavedAnimation() is being called when there is already a saved animation.\"); } → 0x23 <（35超）は SetSavedAnimation() の version gate [確定相当]。L24063（FUN_00421340）: case 0x1f の cast → if ((0x3f < *(byte*)(Player+0x7c)) && (FUN_00446b80(*(iVar8+0xc)+0xc) != 0)) → 0x3f <（63超）は case 0x1f（FormType 31）の cast 先 object の +0xc 判定と併用 [確定相当]、L24451（FUN_00421A00）も同型 [確定] → Player +0x7C version byte の閾値（0x23 <＝35超／0x3f <＝63超／0x24＝36）は 「version が閾値超ならその処理を有効化する feature gate」[確定相当]（v503 閾値 census→v504 version byte→v505 gate semantic の3段が完成）。[推定相当]（string key set）V-505-1 FUN_006C4F80: machine head（docs annotation なし）[確定(機械)]: cmp byte [ecx+0x10], 0; je（node +0x10 byte 判定）→ mov ebx,[esp+0xc]（key＝stack 引数）→ string length 計算（strlen）→ lea esi,[eax+1]; push esi; call 0x401f00（alloc len+1）→ string key の alloc＋copy を行う node-set [推定相当]。value→owner/count field の対応は node の +0x10 byte 判定と key copy のみ＝+0xC slot が set＋key の複合 [部分確定]（docs annotation がないため本文の残りは cap 外＝残点）。[確定相当]（remove）V-505-1 FUN_004524C0: L63085 実読 [確定(decompiled)]: hash→bucket→キー比較→ hit なら *(bucket)=*puVar1（unlink）→ virtual+0x10（free 候補）→ virtual+0x18（destroy 候補）→ param_1[3]--（count decrement）→ return 1 → FUN_004524C0＝hash map の remove/delete fn [確定相当]（v500 で loop 末尾に見た FUN_004524c0(uVar9) は remove 呼び出し）→ v500「ctor 候補」を訂正（ctor でなく remove）→ map 4 fn family が「insert（v485/v494）／lookup（v496/v498）／set（v493/v502）／remove（本裁定）」の4種で完成 [確定相当]。[未確定] V-505-2 Player +0x80（ptr）／+0x14（buffer size）identity は budget 外で残点／[未確定] V-505-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。残点 V-506-1..3（1=FUN_006C4F80 の残り本文（value→owner/count field 対応の完遂）と map vtable family の最終確認（FUN_00452570/FUN_00412D30 の this が BST 系か LockFree 系か）＋version 閾値の対応バージョン表（35/63/36 がどの Oblivion version か＝0x4b4f4c42＝\"BLOB\" ブロック形式との関係）【中】／2=Player +0x80（ptr）／+0x14（buffer size）identity＋gated 側 mask 源（edx 設定元）【低】／3=引継ぎ残り【低】）。教訓: version byte の閾値が「feature gate」として機能する（閾値比較の owning fn（SetSavedAnimation() 等の実名）を読むと gate の意味が分かる＝閾値 census→log→gate の3段 field調査法が完成形）／`count--`＋unlink＋virtual+0x10/+0x18 が remove の定番（insert の count++ と対で覚える）／vtable slot family の4 fn（insert/lookup/set/remove）が揃うと container が完成（map 系の解剖が v485→v505 で10回の積み上げ）／machine head の strlen 計算が「string key」の目印（alloc size＝len+1 と併せて）／推定の訂正（v500 ctor→v505 remove）も裁定に明記（誤推定の軌跡が残る＝追跡可能性）。本日 push: v405→v504（7cf9c1e2）100件＋本件 v505。v 採番 v505 消費（次=v506）。"
+    },
+    {
+      "id": "151-v506-node-layout-2026-11-17",
+      "timestamp": "2026-11-17T05:46:58Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v506",
+        "node-layout",
+        "direct-call",
+        "field-types"
+      ],
+      "content": "2026-11-17 旧残点群消化第50弾 v506（probe v506_1 全1本 EXIT=0・初回構文エラー2箇所→修正再実行）＝V-506-1..3 完遂・旧 V-406-3 継続第36弾: 成果物 tmp/re/v506_node_layout_ruling.md・台帳 row482（bak332）・round_verify ALL OK（rows 31..482 / total 368 / done 363 / open 5）・STATE (hx)・ai-todo #151 note。[確定相当] V-506-1 FUN_006C4F80 残り本文: machine 0x6C4FA6-0x6C5018 decode [確定(機械)]: mov edi,[esp+0x14]（out node ptr）→ mov [edi+4], eax; call 0x984b6a（node +4 ← key（alloc 済み string ptr）、call 0x984B6A＝string copy 系 [推定]）→ mov eax,[esp+0x28]; mov [edi+8], eax（node +8 ← value（param_3 系））→ ret 0xc（3引数）／else 分岐（0x6C4FC5）: mov [eax+4], ecx; mov [eax+8], edx; ret 0xc（node +4←param_2、+8←param_3 を直接書く）→ node field layout 確定: node[+4]＝key、node[+8]＝value（3引数 set・ret 0xc）[確定相当] → value→field 対応完遂。lock 系と接続: FUN_00496D50(key, owner, count) → node +4←key、node +8←value → v496 の piVar2[2]（node +8 u32・bit5＝0x20）と整合 → owner/count は node +8 の u32 内 bit/field [推定相当]。[確定]（否定側・経路転換）V-506-1 map vtable family: FUN_00452570（insert）／FUN_004524C0（remove）／FUN_00412D30（setting-map insert）の .rdata/.data dword search → raw hits 0件（3 fn とも）[確定(否定側)] → 3 fn は direct call（E8）のみで vtable に載らない → map family の vtable 逆引きは不可（直接呼び出し構造）→ BST vs LockFree の判別は「this vtable の入手元（map ctor）」へ経路を転換 [確定（経路転換）]（v504 BST/LockFree impl 分岐の判別は残点の方向を明記）。[確定相当]（型のみ）V-506-2 Player +0x80/+0x14: docs mentions [確定]: +0x80＝77件、*(undefined4 **)(DAT_00b33b00 + 0x80)（ptr field・L15441/L15477/L28394/L29045/L50367 等）[確定相当]／+0x14＝329件、*(int*)（L15325）／*(short**)（L15331）／*(uint*)（L15402）と type 依存の汎用 field（LoadGame band では buffer size/ptr）[確定相当] → +0x80＝ptr、+0x14＝汎用（type 依存）と型まで確定・中身の semantic は残点 [部分確定]。[未確定] V-506-3 引継ぎ（predicate 英名・新 FourCC 意味）は残点継続。残点 V-507-1..3（1=map ctor の特定（this vtable 入手元→BST vs LockFree 判別完遂）＋node +8 u32 の owner/count bit 配列（v496 piVar2[2] bit5 に続く bit 群）＋0x984B6A（string copy fn）identity【中】／2=Player +0x80（ptr）の中身＋gated 側 mask 源（edx 設定元）【低】／3=引継ぎ残り【低】）。教訓: node layout は「alloc 後の store（[edi+4]/[edi+8]）」で確定（else 分岐（直接書く形）も拾うと両 path で layout が一致し確実＝set fn の両分岐を読む）／vtable 逆引き0件（3 fn とも）は「direct call 専用 fn」の証拠→判別経路を ctor（this vtable 入手元）へ転換（vtable 法が効かない case の対処法）／field の型は mentions を type 別に数える（混在＝type 依存汎用、*(undefined4**) のみ＝ptr＝77/329件の census が型判定を支える）／ret 0xc（3引数）が set fn の契約（epilogue 法の3度目）／value→field 完遂で lock（owner/count）と map（key/value）が同じ node layout に接続（v496 piVar2[2] bit5 が node +8 と一致＝横断整合）。本日 push: v405→v505（9d84aded）101件＋本件 v506。v 採番 v506 消費（次=v507）。"
     }
   ],
   "metadata": {
-    "totalEntries": 910,
+    "totalEntries": 911,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-17T05:34:15Z",
-    "entry_count": 910,
-    "last_updated": "2026-11-17T05:34:15Z"
+    "lastUpdated": "2026-11-17T05:46:58Z",
+    "entry_count": 911,
+    "last_updated": "2026-11-17T05:46:58Z"
   }
 }
