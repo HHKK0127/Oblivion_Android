@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-17T04:04:43Z",
+  "lastUpdated": "2026-11-17T04:14:13Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13144,14 +13144,30 @@
         "lock-pair"
       ],
       "content": "2026-11-17 旧残点群消化第41弾 v497（probe v497_1 全1本 EXIT=0）＝V-497-1..3 完遂・旧 V-406-3 継続第27弾: 成果物 tmp/re/v497_player_flags_ruling.md・台帳 row473（bak323）・round_verify ALL OK（rows 31..473 / total 359 / done 354 / open 5）・STATE (ho)・ai-todo #151 note。[確定相当]（16件 writes）V-497-1 Player +0x18 flag 一覧: DAT_00b33b00 + 0x18 の mask 付き writes＝16件（全 mentions 79件）[確定(decompiled)]: set（|=）: 0x100（bit8・L52822）／0x80（bit7・L52839/52846/161481/161488）／0x10000（bit16・L73260/74125）／0x8000（bit15・L144659）／0x400（bit10・L241158）、clear（&=）: 0xffffdfff（bit13・L8563）／0xffff7fff（bit15・L8565）／0xfffffeff（bit8・L52833）／0xffffff7f（bit7・L52843/161485）／0xfffffbff（bit10）／0xfffffffd（bit1）→ Player +0x18 に set/clear 実例のある bit＝1/7/8/10/13/15/16 の7種 [確定]（distinct clear masks 6種を実読）→ FUN_0045A500 が読む bit18 と下位 byte の set 書手はこの16件に無し [確定（否定側）] → 別 fn（間接経由）＝残点。flag map の basis（現時点の7 bit 分）は確定相当。[部分確定]（構造のみ）V-497-1 bit24 semantic（FUN_0045D030）: L73457 実読 head（30行 cap）[確定(decompiled)]: void __fastcall FUN_0045d030(int param_1): uVar2=*(uint*)(*(param_1+0x60)+4)（count）→ piVar3=*(int**)(*(param_1+0x60)+8)（base ptr）→ piVar3[uVar5] インデックス走査（null check→loop）→ param_1+0x60＝count/base の付いた ptr array 構造 [確定相当]、mask 0x1000000（bit24）の使用箇所は body 深部（cap 外）[部分確定]＝残点。[部分確定]（型まで）V-497-2 lock/release pair: FUN_00496EA0（L120801 void __thiscall(int, undefined4)）: DWORD DVar3; DWORD DStack_8;（DWORD locals＝thread/tick 系 [推定]）[確定(decompiled)]／FUN_00496F50（L120846 void(void)・WARNING: Removing unreachable block）: char cVar1; undefined4 unaff_retaddr; → 本文は cap 不足で未到達＝[部分確定]（v496「prepare/release ペア」推定は維持・void(void) な点は v496 推定との差＝引数を取らず TLS/global 経由 [推定]）。[未確定] V-497-3 引継ぎ残り（predicate 英名・sink 正体・新 FourCC 意味）は残点継続。残点 V-498-1..3（1=bit24（0x1000000）の使用箇所（FUN_0045D030 body 深部 or FUN_0045CEE0）＋Player +0x18 bit18/下位 byte の set 書手特定（16件に無い＝間接 fn）【中】／2=lock/release pair 本文＋gated 側 mask 源（edx 設定元）【低】／3=引継ぎ残り【低】）。教訓: flag field の bit 一覧は「mask 付き writes の grep＋distinct mask 集計」で機械的に揃う（set/clear 対で bit 位置が対応）／read 系（79 mentions）と write 系（16件）を分けて数えると「どの bit が書かれないか（bit18）」まで否定側で判明／head cap で構造（count/base ptr array）だけ確定し mask 部分を残点化する判断で probe を1本に収める／`void(void)` が初めて見つかると呼び出し側（引数なし）と整合させて引数契約を再確認（v496 推定の修正点を記録）／DWORD locals（thread id/tick）が thread 系 fn の目印（v493 GetCurrentThreadId に続く類型）。本日 push: v405→v496（4c7b0735）92件＋本件 v497。v 採番 v497 消費（次=v498）。"
+    },
+    {
+      "id": "151-v498-bit24-lock-2026-11-17",
+      "timestamp": "2026-11-17T04:14:13Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v498",
+        "bit24-mask",
+        "recursive-lock",
+        "bit18-negative"
+      ],
+      "content": "2026-11-17 旧残点群消化第42弾 v498（probe v498_1 全1本 EXIT=0）＝V-498-1..3 完遂・旧 V-406-3 継続第28弾: 成果物 tmp/re/v498_bit24_lock_ruling.md・台帳 row474（bak324）・round_verify ALL OK（rows 31..474 / total 360 / done 355 / open 5）・STATE (hp)・ai-todo #151 note。[確定相当] V-498-1 bit24 mask 使用箇所: FUN_0045D030 body（L73455-73532）と FUN_0045CEE0 body（L73379-73454）に 0x1000000 が各1件、両方とも同型 [確定(decompiled)]: L73525: FUN_00452c20(iVar7, 0x1000000);／L73447: FUN_00452c20(iVar7, 0x1000000);（前後は FUN_004211e0/FUN_004210e0 → FUN_00452C20 → FUN_004524c0 → while(true) loop）→ bit24 は FUN_00452C20（v493 lazy node |=）へ渡す固定 mask [確定相当]（v495 caller push census と本文で双向一致）。→ iVar7（param_1+0x60 list 要素）の lazy node に bit24 を OR 設定する loop [確定相当]、bit24 の最終 semantic は node 用途次第で残点 [推定]。[確定]（否定側）＋[部分確定]（新 bit6 read）V-498-1 bit18/下位 byte writer: 残り callers 4件（FUN_00424C50/FUN_00424D00/FUN_0042A200/FUN_00434020）に +0x18 write 0件 → FUN_0045A500 callers 8件すべてで直接 write なし（v497 と合わせて 8/8 否定側）→ bit18/下位 byte の set 書手は間接経由＝本 grep で特定不能 [確定（否定側）]。副次収穫: L176200（(*(uint*)(DAT_00b33b00+0x18) >> 6 & 1) != 0) かつ param_2 & 0x40000000 で bit6 read 実例1件を発見 [確定(decompiled)] → 観測 bit が 1/6/7/8/10/13/15/16 の8種に拡大（read 側）[確定相当]。[確定相当]（リカーシブル acquire）V-498-2 FUN_00496EA0: L120801-120838 全読 [確定(decompiled)]: FUN_00401020(&DAT_00a2f830)（enter critical）→ FUN_00496df0(param_2,&DStack_8)（key で owner/count lookup）→ 未取得なら GetCurrentThreadId() + FUN_00496d50(param_2, thread, 1)（acquire count=1）、同 thread 再取得なら iVar4=iStack_4+1（count++＝再帰）→ FUN_00401040()（leave）→ FUN_00498ee0(*(param_1+0x100),1)（event/wait 候補 [推定]）} while(true) → FUN_00496EA0＝「key の owner thread と recursion count を管理するリカーシブル lock acquire fn [確定相当]」→ v496「prepare」推定を「リカーシブル lock acquire」に更新・追補。FUN_00496F50（release 側）は型（void(void)）まで・本文未読＝残点。[未確定] gated 側 mask 源（edx）は budget 未着手＝残点／[未確定] V-498-3 引継ぎ（predicate 英名・sink 正体・新 FourCC 意味）も残点継続。残点 V-499-1..3（1=Player +0x18 bit18/下位 byte の set 書手（8/8 否定側＝間接 store 経由探索へ転換）＋bit24 の最終 semantic（iVar7 lazy node の flag 群）【中】／2=FUN_00496F50（release 側）本文＋gated 側 mask 源（edx 設定元）＋FUN_00496DF0/FUN_00496D50 identity【低】／3=引継ぎ残り【低】）。教訓: mask の semantic は「その mask を渡す fn の本文」で決まる（0x1000000 が FUN_00452C20（|=）へ渡る＝caller push census（v495）と callee body（v498）の双向突合）／同じ mask 呼び出しが複数 fn に同型で現れる＝共通パターン（一方を特定すれば他方も同型）／write grep の8/8 否定側は「間接 store 経由」への転換点（次は machine 側（mov [reg+0x18]）探索へ・docs grep の限界を明記）／リカーシブル lock の定番（enter→lookup owner/count→同 thread なら count++／異 thread なら acquire→leave→wait 候補）が本文判明（GetCurrentThreadId 比較＋count 整数の同時存在が目印・v493 thread gate に続く類型）／read 実例（>>6 & 1）の副次発見で flag map が両面で拡大（grep を1つの mask に絞らず別 bit read も拾う）。本日 push: v405→v497（bbe4b86c）93件＋本件 v498。v 採番 v498 消費（次=v499）。"
     }
   ],
   "metadata": {
-    "totalEntries": 902,
+    "totalEntries": 903,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-17T04:04:43Z",
-    "entry_count": 902,
-    "last_updated": "2026-11-17T04:04:43Z"
+    "lastUpdated": "2026-11-17T04:14:13Z",
+    "entry_count": 903,
+    "last_updated": "2026-11-17T04:14:13Z"
   }
 }
