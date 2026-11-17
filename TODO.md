@@ -714,6 +714,13 @@
   > ④[未確定] V-487-3 引継ぎ（predicate 英名・param_3・sink 正体・新 FourCC 意味）は残点継続。
   > 残点 V-488-1..3（1=`virtual+0x8C(0)` の機能（0x4D65D0 impl 本文）＋iClassCharactergenClass/iClassNightblade の GameSettings usage（FUN_005222D0(1) trigger と v462 chargen の接続）【中】／2=V-487-3 引継ぎ【低】／3=GameSetting entry 群の全列挙（init fn 連鎖から key 一括取得＝DAT_00B3xxxx 系台帳化）【低】）。
   > 教訓: init fn の `push <ptr>` 引数を .rdata で実読（key 文字列 ptr→実文字列）が singleton identity の決定打（v484 error 文言法→本裁定 key 文字列法）／E8＝0 は vtable 登録 fn の合図（v479 教訓再利用）→ slot index まで遡る（12件が全 +0x1C で class family と slot 同時確定）／隣接 init fn の key 文字列を一括取得すると singleton 群台帳が一気に立つ／key prefix（i/f）が value 型を語る／slot index と同 offset の field は別物（明記して混同回避）。v 採番 v487 消費（次=v488）。
+  > 【旧残点群消化第32弾 v488 — V-488-1..3 完遂・旧 V-406-3 継続第18弾】probe v488_1 全1本 EXIT=0（初回構文エラー→修正再実行）。成果物 tmp/re/v488_thunk_census_ruling.md・台帳 row464（bak314）・round_verify ALL OK（rows 31..464 / total 350 / done 345 / open 5）。
+  > ①[確定]（thunk 同定）＋[未確定]（機能本文）V-488-1 `virtual+0x8C(0)` impl: **`FUN_004D65D0`（`[TESObjectREFR vt+0x8C]`）machine＝`jmp 0x46a9e0`（5-byte thunk）[確定(機械)] → REFR と CELL の slot +0x8C は共通 impl `FUN_0046A9E0` へ集約 [確定]**（v487「別値」は前者が thunk だったため）→ 実体＝FUN_0046A9E0（docs annotation 実在・owning 単独 fn）[確定]、mode-0 の機能本文は未読＝残点。副次: `0x4D65E0`＝`mov eax,[ecx]; mov edx,[eax+0x170]`（slot +0x170 呼び出し wrapper）[確定(機械)]。
+  > ②[確定相当]（census）＋[確定]（構造）V-488-3 GameSetting entry 全列挙: **`mov ecx,0xB37xxx` sites＝1145件、うち `call 0x419A70` 併存の insert-style＝122件 [確定(機械)]。上位40件 key を一括取得 [確定(実文字列)]: iMarksmanFatigueBurnPerSecondSkill／iAimingNumIterations（0xB370C0）／iArrowInventoryChance／iArrowMaxRefCount／sHitParticleStone..Snow（10件）／sBloodParticle*/sBloodTexture*（8件）／iAINPCRacePowerChance／sNormalWeaponsResisted／iCombatHighPriorityModifier／iPerk*／iAICombat*／sActivateNPCCalmed／sActivateCreatureCalmed／iClassCharactergenClass（0xB37D00）／iClassNightblade（0xB37CF8）／fEssentialDeathTime 等** → **`DAT_00B3xxxx`＝GameSetting static entry 配列（8-byte stride＝`{value(4B), key ptr(4B)}` 構造 [確定相当]・FUN_00419A70 書き込み2 field と一致）→ prefix i＝int／f＝float／s＝string の value 型体系 [確定相当]**。全122件 key 台帳化は残り82件＝次の手。
+  > ③[確定]（否定側）V-488-1 GameSettings consumer（docs 側）: **docs で Charactergen/Nightblade/GameSetting の3 keyword とも 0 hits → docs に無く EXE 文字列のみ [確定]**（consumer 調査は EXE 側（FUN_005222D0(1) trigger 経路）へ）。
+  > ④[未確定] V-488-2 引継ぎ（predicate 英名・param_3・sink 正体・新 FourCC 意味）は残点継続。
+  > 残点 V-489-1..3（1=FUN_0046A9E0（slot +0x8C shared impl）の本文 identity（mode-0 機能）＋iClass キーの consumer（FUN_005222D0(1) trigger 経路の EXE 側調査）【中】／2=GameSetting entry 全122件 key 台帳化（残り82件）【低】／3=V-488-2 引継ぎ【低】）。
+  > 教訓: vtable slot 値は thunk（`jmp rel32`）のことがある（先が jmp なら飛び先 impl が本体・v487「別値」を1本 thunk で解消）／`mov ecx, imm32` の imm 範囲で singleton 群 census（imm 範囲＋特定 call 併存で機能絞り）／push arg の実文字列を一括取得すると key 台帳が40件/本で立つ（census→strings の順）／連続アドレス stride（8B）⇔decompiled 書き込み field 数（2）で entry 構造確定／docs keyword 0件も確定（docs 未収録 systems は EXE 文字列側に経路を固定）。v 採番 v488 消費（次=v489）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1635,11 +1642,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1663,4 +1665,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 12:10:08
+**ai-todo** | Last Updated: 2026-11-17 12:14:51
