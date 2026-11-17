@@ -568,6 +568,13 @@
   > 残点 V-469-1..3（1=旧残点 V-406-3 継続（DAT_00B35EB8（virtual+0x170() の比較対象）と _DAT_00A3D360（乗算係数）の identity → id 0x4C float の正式な語確定へ）【中】／2=旧残点 V-406-4（DATA+0x2C/+0x31 意味・UESP 差分の docs 内裏取り）と V-406-5（PTR_DAT_00B10D90 所有 fn と spec 名前テーブル書手）【低】／3=V-468-3 引継ぎ（FUN_005222D0 一語名別法と predicate slot35 英名 CanResolveDependencies [推定] 裏取り）【低】）。
   > 教訓: `param_1 + N`（int* index）は byte offset N×4 に読み替える（param_1+9＝+0x24 が flag bit0 と接続した・pointer arithmetic の units を忘れずに）／SET 経路の引数式（elem[10]×定数）が float の由来を直接語る（get/set caller census から1件の setter body を読むだけで由来が分かる）／docs needle は「signature が2行に折り返す」ケースに注意（`undefined4 * __thiscall
   > FUN_xxx(...)` の形は1行検索で失敗・v449 fn.lower() バグに続く needle 類型2件目）／virtual+0x170() の戻り値と定数比較は「型/識別子判定」の定番（DAT_00B35EB8 が何の識別子かが float の語の鍵）／float 定数（_DAT_00A3D360）は .rdata に実体がある→値を読めば係数の意味が推定できる（次 probe の鍵）。v 採番 v468 消費（次=v469）。
+  > 【旧残点群消化第13弾 v469 — V-469-1..3 完遂・旧 V-406-3 継続第6弾】probe v469_1 全1本 EXIT=0。成果物 tmp/re/v469_coeff_singleton_ruling.md・台帳 row445（bak295）・round_verify ALL OK（rows 31..445 / total 331 / done 326 / open 5）。
+  > ①[確定] V-469-1 `_DAT_00A3D360` identity: .rdata 0xA3D360 の raw: `00 00 00 00 00 00 F0 BF` ＝ float64 `-1.0` [確定] → `FUN_00420C60((float)piVar8[10] * (float)_DAT_00a3d360)` ＝ `elem[10] × (-1.0)` ＝符号反転 [確定] → **id 0x4C float ＝ `-elem[10]`（負の値）[確定]**。
+  > ②[確定相当] V-469-1 DAT_00B35EB8 identity: **4-dword（16byte）構造体の先頭 0xB35EB8/BC/C0/C4 [確定(機械)]**: FUN_004492E0（L56295）が `mov [0xB35EB8], ebp`＋0xB35EBC/C0/C4 へ連続4 dword 書き込み／FUN_0044AC20（L57509・v466 flag writers caller）が同様に `ebx` で4 dword 書き込み／FUN_0044AC20 内 `0x44B999: mov [0xB35EB8], eax`→**`push 0x3C; call 0x401F00`（alloc 0x3C=60 bytes）**／`0x44B9E4` 帯に `mov eax,[edx+0xD8]`（virtual +0xD8 call）＋`push 0xA38154` → **DAT_00B35EB8＝alloc 0x3C で初期化される singleton object（4-dword header＋+0xD8 virtual 使用）[確定相当]**、docs mentions 13件。**virtual+0x170() の結果と DAT_00B35EB8 の比較＝singleton 等値判定 [推定高]**（何の singleton かは [未確定]＝残点）。
+  > ③[部分確定]（式）＋[未確定]（semantic）V-469-1 id 0x4C float の正式な語: **式は確定: `id_0x4C_float = -elem[10]`（byte +40 float）when `byte[class_form+0x24]&1` and `virtual[elem]+0x170() == DAT_00B35EB8` [確定(構造)]**、elem の class（virtual+0x170() の receiver）と「何の負の値か」は [未確定]＝残点（param_1+0x48 list の insert 元が docs body に無く未特定＝否定側記録）。
+  > ④[未確定] V-469-2 旧 V-406-4/5 と V-469-3 V-468-3 引継ぎは budget 未着手＝残点継続。
+  > 残点 V-470-1..3（1=旧残点 V-406-3 継続（DAT_00B35EB8 singleton の class＝virtual+0x170() receiver＝param_1+0x48 list elem の class と「何の負の値か」の semantic → id 0x4C float の正式な語確定へ）【中】／2=旧残点 V-406-4（DATA+0x2C/+0x31 意味・UESP 差分の docs 内裏取り）と V-406-5（PTR_DAT_00B10D90 所有 fn と spec 名前テーブル書手）【低】／3=V-469-3 引継ぎ（FUN_005222D0 一語名別法と predicate slot35 英名 CanResolveDependencies [推定] 裏取り）【低】）。
+  > 教訓: float 定数は .rdata raw を IEEE754（f32/f64 両方）で読む（8byte で -1.0（f64）と判別・4byte だけ読むと 0.0 と誤認する）／singleton の特定は「4-dword 連続書き込み」＋「alloc サイズ付き call 0x401F00」の2証拠（header 構造と確保サイズが揃う）／`or eax, <addr>` は mid-instruction 偽陽性の典型（byte-pattern ref は forward decode の整合で裏取る・v446 教訓再現）／docs body に field の提及が無い＝insert 元が docs に無い→否定側として記録し残点の形を変える／係数が -1.0 なら「符号反転コピー」と読める（float 定数の値が式の意味を一気に決める）。v 採番 v469 消費（次=v470）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1489,6 +1496,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1512,4 +1524,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 09:54:37
+**ai-todo** | Last Updated: 2026-11-17 10:07:45
