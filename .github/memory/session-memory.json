@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-17T04:24:08Z",
+  "lastUpdated": "2026-11-17T04:35:09Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13176,14 +13176,30 @@
         "writer-candidates"
       ],
       "content": "2026-11-17 旧残点群消化第43弾 v499（probe v499_1 全1本 EXIT=0）＝V-499-1..3 完遂・旧 V-406-3 継続第29弾: 成果物 tmp/re/v499_lock_pair_ruling.md・台帳 row475（bak325）・round_verify ALL OK（rows 31..475 / total 361 / done 356 / open 5）・STATE (hq)・ai-todo #151 note。[確定相当] V-499-2 FUN_00496F50（release 側）: L120846-120859 全読 [確定(decompiled)]: FUN_00401020(&DAT_00a2f830)（enter critical・acquire と同一）→ FUN_00496df0(unaff_retaddr,&stack)（lookup）→ if (cVar1) FUN_00496d50(unaff_retaddr, 0, 0xffffffff); → FUN_00401040()（leave）→ return → FUN_00496F50＝「key の owner/count を FUN_00496D50(key, 0, -1) でクリアするリカーシブル lock release fn [確定相当]」→ acquire（v498: (key, thread, 1)／count++）⇔release（(key, 0, 0xffffffff)）の対が確定（0xffffffff＝count 全滅＝-1 クリア [確定]）。unaff_retaddr を key に使う形は decompiler の stack 認識制約 [推定]＝key の実渡し方は machine 要確認＝残点 [部分確定]。[確定相当]（両方）V-499-2 lookup/set sub: FUN_00496DF0（L120746）: iVar3=virtual[*param_1+4](param_2)（hash）→ puVar1=*(param_1[2]+iVar3*4)（bucket）→ null なら return 0 → bucket＋chain の hash map lookup [確定相当]（FUN_00452C20/FUN_00452570 と同型）。FUN_00496D50（L120714）: 同じ hash→bucket→walk head → key の node に owner を書く map set [確定相当]（acquire で (key, thread, 1)／release で (key, 0, -1) と運用一致）→ lock pair の全体像（acquire/release/lookup/set の4 fn）が確定。[部分確定]（候補122件）V-499-1 machine writer: .text 内 0xB33B00 refs＝2281件、うち直後に [reg+0x18] write が現れるもの＝122件 [確定(機械)]（top12: 0x411F77 mov [eax+0x18], ecx（FUN_00411F60）／0x42126C mov [esi+0x18], ecx（FUN_004211E0）＝v498 bit24 loop 直前 fn と同一 [注意]／0x424FED mov [esi+0x18], 0（FUN_00424F90）／0x4277D6 mov [esi+0x18], edx（FUN_00426A90）…）。候補の多くは stack local（[esp+0x18]）や他 object の +0x18 を含む＝「Player ptr を保持する reg への write」への絞り込み（ref→write 距離＋reg 追跡）が必要 [部分確定]。absolute form [0xB33B018] は .text に0件 [確定(否定側)] → 書手は必ず mov eax,[0xB33B00] 経由（間接）＝v498 判定の裏付け。bit18 の特定は v500 で絞り込み。[未確定] V-499-3 引継ぎ（predicate 英名・sink 正体・新 FourCC 意味）は残点継続。残点 V-500-1..3（1=Player +0x18 writer の絞り込み（122候補から mov reg,[0xB33B00] 直後の mov [reg+0x18], … を特定→bit18/下位 byte set 書手）＋bit24 semantic（iVar7 lazy node＝param_1+0x60 list 要素が何か）【中】／2=unaff_retaddr key の実渡し方（machine push 確認）＋gated 側 mask 源（edx 設定元）【低】／3=引継ぎ残り【低】）。教訓: lock/資源管理系は「acquire/release/lookup/set」の4 fn に分解できる（release の値（0, 0xffffffff）が acquire（thread, 1）と対なら対の完成＝args の対応が identity を決める）／`void(void)` でも unaff_retaddr が key なら decompiler が stack 引数を拾えていない（machine push 確認へ回す残点化＝v497→v499 推定連鎖の機械裏取り）／docs grep 否定側（8/8）から machine census へ転換（refs 2281→write 近接122 の2段絞り込み＝docs で拾えない間接 store の標準手法）／absolute 形0件の否定側が「間接経由確定」の裏付け（machine 形の分類を census に含める）／hash→bucket walk の同型が lookup/set の判別（map 4 fn family の完成）。本日 push: v405→v498（7a8450ed）94件＋本件 v499。v 採番 v499 消費（次=v500）。"
+    },
+    {
+      "id": "151-v500-release-count-2026-11-17",
+      "timestamp": "2026-11-17T04:35:09Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v500",
+        "release-count",
+        "stack-arg-key",
+        "rtdynamiccast"
+      ],
+      "content": "2026-11-17 旧残点群消化第44弾 v500（probe v500_1 全1本 EXIT=0）＝V-500-1..3 完遂・旧 V-406-3 継続第30弾: 成果物 tmp/re/v500_release_count_ruling.md・台帳 row476（bak326）・round_verify ALL OK（rows 31..476 / total 362 / done 357 / open 5）・STATE (hr)・ai-todo #151 note。[確定]（machine）V-500-2 FUN_00496F50 key 実渡しと release 操作: machine 0x496F50-0x496F95 全 decode [確定(機械)]: lea ebx,[esi+0x80]（critical＝this+0x80）→ push 0xa2f830; call 0x401020（enter）→ mov edi,[esp+0x18]（key＝stack 引数）→ call 0x496df0（lookup(this,key,out)）→ mov eax,[esp+0x10]; sub eax,1; jne 0x496faa（count==1 のときだけクリアへ／count>1 なら減算へ分岐）→ push edi; call 0x496d50 → FUN_00496F50 は decompiled void(void) と宣言されるが machine では key を stack 引数（[esp+0x18]）で受ける [確定] → v499「decompiler の stack 認識制約 [推定]」を機械で裏付け（推定→確定）。count==1 クリア／count>1 減算の分岐を獲得 → release は「再帰 count のデクリメント（1なら owner クリア、2以上なら減算のみ）[確定相当]」＝v499「0xffffffff で全クリア」を精緻化。[確定]（machine）V-500-2 FUN_00496EA0 key 渡し: mov edi,[esp+0x1c]（key＝stack 引数・v498 signature param_2 と一致）→ lea ebp,[esi+0x80]（critical＝this+0x80・release と同一）→ enter → lookup 同型 → acquire/release が同一 this と同一 key（stack 引数）を使う対であることを machine で確定（v498/v499 docs 構造の機械裏付け）。[確定]（否定側）V-500-1 writer 絞り込み: 「mov reg,[0xB33B00] 直後（14命令内）に [reg+0x18] write」方式で絞り込み → 0件 [確定(否定側)] → Player +0x18 への write は「Player ptr を load した fn 内」では行われない（別の経路）。v499 の122候補は ref と write が同一 fn 内に別々に存在するもの（stack local・他 object を含む）で「Player 本体への write」とは限らない [確定] → 絞り込み法（load→write 同一 reg）は否定され、次の手は「[reg+0x18] write の reg が Player かどうかを caller/param 追跡で判定」へ [確定（経路転換）]。[確定相当]（cast 経路）V-500-1 bit24 semantic: FUN_0045D030 内 L73502: iVar7 = FUN_009832e6(uVar6); [確定(decompiled)] → iVar7＝FUN_009832E6（__RTDynamicCast・v478/v486 と同 fn）の戻り object → param_1+0x60 list の要素を RTDynamicCast して得た object の lazy node に bit24（0x1000000）を OR 設定 [確定相当]。param_1+0x60 list が何の object 群か（cast 先 type）は FUN_009832E6 の引数（uVar6）次第＝残点 [部分確定]。[未確定] V-500-3 引継ぎ（predicate 英名・sink 正体・新 FourCC 意味）は残点継続。残点 V-501-1..3（1=Player +0x18 writer の経路転換（caller/param 追跡で判定）＋param_1+0x60 list の型（RTDynamicCast 先 type・uVar6 の出所）→ bit24 semantic 完遂【中】／2=FUN_00496D50 の value 引数の意味（owner/count 対応を machine で確定）＋gated 側 mask 源（edx 設定元）【低】／3=引継ぎ残り【低】）。教訓: `void(void)` signature は machine の [esp+N] 読みで否定できる（retaddr 相当の stack 読みが「引数受取」の証拠＝v499 推定→v500 確定の連鎖）／release の操作を sub eax,1; jne で見ると「count==1 clear／count>1 decrement」の再帰解除と分かる（値だけでなく分岐まで読むと運用が確定）／「load→write 同一 reg」絞り込みが0件＝否定側→経路転換を次の手として明記（絞り込み法の失敗も裁定の価値）／`iVar7 = FUN_009832e6(uVar6)` の1行が bit24 の対象（cast 結果 object）を語る（__RTDynamicCast 同定の再利用）／docs の signature の不一致も制約の型として記録（docs 表示と machine の差を rulings に残す）。本日 push: v405→v499（004c2662）95件＋本件 v500。v 採番 v500 消費（次=v501）。"
     }
   ],
   "metadata": {
-    "totalEntries": 904,
+    "totalEntries": 905,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-17T04:24:08Z",
-    "entry_count": 904,
-    "last_updated": "2026-11-17T04:24:08Z"
+    "lastUpdated": "2026-11-17T04:35:09Z",
+    "entry_count": 905,
+    "last_updated": "2026-11-17T04:35:09Z"
   }
 }
