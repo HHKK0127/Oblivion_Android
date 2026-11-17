@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-17T02:34:26Z",
+  "lastUpdated": "2026-11-17T02:38:32Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -12856,14 +12856,30 @@
         "trigger"
       ],
       "content": "2026-11-17 旧残点群消化第23弾 v479（probe v479_1..2 全2本 EXIT=0）＝V-479-1..3 完遂・旧 V-406-3/V-406-4 継続第9弾: 成果物 tmp/re/v479_cell_list_ruling.md・台帳 row455（bak305）・round_verify ALL OK（rows 31..455 / total 341 / done 336 / open 5）・STATE (gw)・ai-todo #151 note。[確定]（vtable 逆引き）V-479-1 list owning class: FUN_004CD960（walk fn）の vtable 登録を .rdata dword search で特定 [確定(機械)]: raw hit 1件 0xA46A40 → vtable base 0xA469D4、slot +0x6C、RTTI class=.?AVTESObjectCELL@@ [確定] → FUN_004CD960 ＝ TESObjectCELL の vtable method（slot +0x6C）[確定] → walk の self（esi）＝TESObjectCELL → list（+0x48）・flag（+0x24）・donor ptr（+0x104）は全て TESObjectCELL の field [確定相当]。[確定]（構造）＋[推定高]（elem 系統）elem と +0x170 接続: [TESObjectCELL vt=0xA469D4 + 0x170] = 0x00000000（NULL data）[確定(実読)] → walk の mov eax,[edx+0x170] の edx=[ebx]＝elem 自身の vtable（self でない）[確定(構造)] → elem は +0x6C（＝FUN_004CD960 と同 slot）と +0x170（GetForm）を持つ object → elem は TESObjectCELL 系／Cell reference 系 object [推定高]（+0x170 が NorthMarker singleton を返す方（v478）＝elem の GetForm）→ [ebx+0x28] float の語は elem class 完全特定待ち＝残点継続。[確定相当]（比較構造）＋[未確定]（正体）V-479-2 DAT_00B37D00 trigger: docs 4件 context 実読 [確定(decompiled)]: L211974（FUN_0051C090）if (*(param_1+0xc)==DAT_00b37d00) return;／L329513（FUN_005C28F0）iVar3=FUN_005e3320(); if (DAT_00b37d00==*(iVar3+0xc)) { FUN_005222d0(1); }／L425636・L426544 同型 → 3件が FUN_005E3320() 返り object の +0xc（ptr）と DAT_00B37D00 を等値比較 [確定] → object[+0xc]==DAT_00B37D00 が FUN_005222D0(1)（char=1＝class 適用 trigger・v462 param_2==0 の逆分支）を起動する [確定相当] → DAT_00B37D00＝「object+0xc field が指す特定 object の singleton（識別子）」[推定相当]、donor（L216783）と同一比較＝donor form の +0xc が DAT_00B37D00 singleton を指す class であることが class 適用の条件 [推定高]、正体は [未確定]＝残点。[確定]（signature）＋[部分確定]（機能）V-479-3 FUN_004CBA80: L159742 int * __thiscall FUN_004cba80(int param_1, int param_2, char param_3)（3引数）[確定(decompiled)]: if (param_2==0) return 0; → FUN_00496ea0(param_1) → piVar1=(param_1+0x48)（byte 0x48 list head＝v479-1 list field と同 offset）[確定(構造)] → FUN_004CBA80(NorthMarker_singleton, 1)（v478 L163835）は「NorthMarker を +0x48 list 系に登録/処理する3引数 fn」[推定高]。FUN_004CD960 の E8 callers＝0件・docs direct call も0件 → vtable 登録経由のみ [確定(否定側・vtable 逆引きで裏付け)]。[未確定] V-479-3 引継ぎ（一語名別法・predicate 英名）は残点継続。残点 V-480-1..3（1=旧残点 V-406-3 継続（elem class 完全特定＝Cell reference 系の vtable 逆引き（+0x6C が FUN_004CD960 でなく別 impl かつ +0x170 が NorthMarker を返す class）＋[ebx+0x28] float の語）【中】／2=旧残点 V-406-4 semantic 完遂（DAT_00B37D00 正体と donor（TESObjectCELL+0x104）の入手元 → +0x64 中身の語）【低】／3=V-479-3 引継ぎ（param_3 flag の語・一語名別法・predicate 英名 CanResolveDependencies [推定] 裏取り）【低】）。教訓: E8 callers＝0件は「vtable 登録 fn」の合図（direct call が無ければ .rdata の fn ptr dword search（v459 法）へ即切り替え）／`[vt+slot]` が NULL（0）であることも情報（self 側に slot が無い＝その slot の call は相手側 vtable と切り分けられる）／同型比較の docs context を4件並べると trigger 構造が見える（3件が比較＋1件が起動＝条件→起動のペア）／+0x48 list offset が walk と insert で一致＝field map の横断確認／class 適用 trigger の char 引数（FUN_005222d0(1)）は v462 の param_2==0 分岐の対向分支＝同一 fn の mode 選択と分かる。本日 push: v405→v478（1a5f2cba）74件＋本件 v479。v 採番 v479 消費（次=v480）。"
+    },
+    {
+      "id": "151-v480-slot170-getter-2026-11-17",
+      "timestamp": "2026-11-17T02:38:32Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v480",
+        "slot170-getter",
+        "tesobjectrefr",
+        "fun-005e3320"
+      ],
+      "content": "2026-11-17 旧残点群消化第24弾 v480（probe v480_1 全1本 EXIT=0）＝V-480-1..3 完遂・旧 V-406-3/V-406-4 継続第10弾: 成果物 tmp/re/v480_slot170_getter_ruling.md・台帳 row456（bak306）・round_verify ALL OK（rows 31..456 / total 342 / done 337 / open 5）・STATE (gx)・ai-todo #151 note。[確定相当] V-480-1 virtual+0x170() 実装: ctor-store vtable 1486個の [vt+0x170] 先頭命令 census [確定(機械)]: shape 分布＝non-fn/data 779／other 647／mov eax,[ecx+X] 37／jmp (thunk) 22／push;mov 1。disp=0x1C の field getter impl＝FUN_004D9B40 を持つ vtable が7クラス [確定]: TESObjectREFR（vt=0xA46C44）／Actor（0xA6E074）／ArrowProjectile（0xA6F08C）／Character（0xA6FC9C）／Creature（0xA710F4）／MobileObject（0xA732FC）／PlayerCharacter（0xA73A0C）（全 impl FUN_004D9B40 共有）→ virtual+0x170() ＝ *(this+0x1C) を返す getter [確定相当]（v476「form ptr getter [推定相当]」を実装判明で精緻化）。他 disp 一覧 [確定]（0x10 MagicTarget／0x18 LockFreeMap／0x30/0x5C/0xA8/0xC4/0xF0 Ni/Shader 系）。[推定相当]（強い）V-480-1 elem class: walk 条件 virtual[elem]+0x170() == DAT_00B35EB8 ⇔ *(elem+0x1C) == NorthMarker singleton [確定(構造)] → elem は +0x1C field に NorthMarker ptr を持つ object → TESObjectCELL +0x48 list（v479）の elem は TESObjectREFR 系 [推定相当]（Cell の reference list と整合）、[ebx+0x28] float（byte 40）の語は TESObjectREFR の field 調査待ち＝残点（+0x6C slot＝unregister 系（v474）も REF と整合）。[確定相当] V-480-2 FUN_005E3320: L347984 undefined4 __fastcall FUN_005e3320(int *param_1): cVar1=FUN_004d7f80(); if (cVar1) { iVar2=virtual[*param_1+0x170](); … [確定(decompiled)] → param の virtual+0x170（＝*(param+0x1C)）を呼ぶ fn [確定相当]。FUN_005C28F0 body 実読 [確定(decompiled)]: L329511 virtual[*DAT_00B333C4+0x170]()（Player +0x170 呼び出し）→ L329512 iVar3=FUN_005e3320() → L329513 if (DAT_00b37d00==*(iVar3+0xc)) { L329514 FUN_005222d0(1); } else { virtual[*Player+0x268]() → [+0x3c] list walk → virtual[*Player+0x2e0/0x2dc](elem) → …→ L329525 FUN_005222d0(1) } → Player の +0x170/+0x268/+0x2e0/+0x2dc virtual が連打され DAT_00B37D00 比較が class 選択の分岐になる [確定(構造)]、DAT_00B37D00 正体は [未確定]＝残点。[未確定] V-480-3 引継ぎ（param_3 flag・一語名別法・predicate 英名）は残点継続。残点 V-481-1..3（1=旧残点 V-406-3 継続（[ebx+0x28] float（TESObjectREFR+0x28）の語＝REFR field 調査＋walk の +0x6C slot impl 確認で elem 系統の最終裏付け）【中】／2=旧残点 V-406-4 semantic 完遂（DAT_00B37D00 正体と donor（TESObjectCELL+0x104）の入手元 → +0x64 中身の語）【低】／3=V-480-3 引継ぎ【低】）。教訓: slot の意味は「先頭命令形 census」で決まる（同 slot vtable を先頭命令で分類→ mov eax,[ecx+X]＝field getter・disp が揃えば field getter と即決・v475 の body-global predicate 誤りからの修正版）／共有 impl（ICF）の fn は「どの class が載せるか」の列挙が class family を語る（FUN_004D9B40 の7 vtable＝TESObjectREFR 派生系統）／walk 条件は「virtual call ＝ field access」に翻訳すると単純式になる（⇔*(elem+0x1C)==singleton）／shape 分布は「その slot が実装されている class 数」の分布（v477 ASCII overflow の全体像）／Player singleton（0xB333C4）の virtual 連打が gameplay refresh ルーチンの目印。本日 push: v405→v479（dfe988f1）75件＋本件 v480。v 採番 v480 消費（次=v481）。"
     }
   ],
   "metadata": {
-    "totalEntries": 884,
+    "totalEntries": 885,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-17T02:34:26Z",
-    "entry_count": 884,
-    "last_updated": "2026-11-17T02:34:26Z"
+    "lastUpdated": "2026-11-17T02:38:32Z",
+    "entry_count": 885,
+    "last_updated": "2026-11-17T02:38:32Z"
   }
 }
