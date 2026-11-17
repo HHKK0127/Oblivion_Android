@@ -1016,6 +1016,25 @@
   > ⑤[確定] cast 先 0xB031EC = .?AVBaseFormComponent@@ → +0x08/+0x0C の引数は BaseFormComponent*（26 component interface の共通基底）。RTTI 元 TESForm・先 BaseFormComponent なので BaseFormComponent は TESForm 階層（downcast）。
   > ⑥[確定] TESForm vtable 0xA3BE3C 全 30 slot を実読（+0x1C=0x6FDFF0 は mov al,1; ret 4＝常に真、+0x20=0x46B340、+0x2C..+0x34=0x46B4C0/0x46B510/0x46B500、+0x38=0x46C360、+0x40..+0x4C=0x46ABF0/0x46AC10/0x46AC30/0x46AC50、+0x50=0x46B5E0、+0x54=0x46B600、+0x68=0x6FE080、+0x74=0x46C700）。
   > 残点 V-528-1..3（1=TESForm vtable 残り slot identity【中】／2=DAT_00B33B00 identity＋FUN_0045B780/FUN_00453940＋DeleteForm の this 追跡【低】／3=引継ぎ【低】）。supermemory 未登録（v405..v527=123件・MCP catalog 未復帰）。
+  > v528 完遂（V-528-1..3 / 旧残点 V-406-3 第58弾）: TESForm vtable 残り16 slot を identity 確定、DAT_00B33B00=form 管理 singleton で DeleteForm の this を確定、form type→FourCC 表を全69型解読。
+  > ① +0x20 FUN_0046B340 [部分確定]: flags bit14 なら false → virtual[+0x24]()（no-op）→ FUN_00450A10 == 0 を返す＝保存レコード処理系。
+  > ② +0x28 0x412960 [確定]: vtable[+0x1C] への tail-jump 転送（+0x1C=0x6FDFF0 mov al,1）。
+  > ③ +0x2C 0x46B4C0 [確定]: bit14→al=0;ret 4（除外）、bit5→FUN_00450980（this+0x268←(&DAT_00b05e08)[type*3]=FourCC, +0x270=flags&0x30EE0, +0x274=refID）+FUN_00450A80→al=1、偽→vtable[+0x20] tail-jump＝保存レコード開始。
+  > ④ +0x30 FUN_0046B510 [部分確定]: param_2[3] の演算子コードで type 閾値比較（case0=type>FUN_0046AF70(param_2[2])、1/4/5=<0x35、2/3/6=<0x30、7=<0x39）。
+  > ⑤ +0x34 FUN_0046B500 [確定]: type byte の less-than。
+  > ⑥ +0x38 FUN_0046C360 [確定相当]: FUN_00447DF0(type) で factory 生成→空名設定→+0xB4 で複写＝clone。
+  > ⑦ +0x40 FUN_0046ABF0 [確定相当]: save/load gate 通過時のみ FUN_00452C20＝変更記録登録。
+  > ⑧ +0x44 0x46AC10→FUN_004533D0 / +0x48 0x46AC30→FUN_0045B700 [確定]: 両方 mov ecx,[0xb33b00] で manager 委譲。
+  > ⑨ +0x4C FUN_0046AC50 [確定]: flag 時のみ 4 を返すレコード長。
+  > ⑩ +0x50 FUN_0046B5E0 [確定]: FUN_0045B9A0 が "Error: TESSaveLoadGame::SaveGameData() was called while loading.\n" を持ち memcpy(this+0x14) で 4B 書く＝flags 保存。
+  > ⑪ +0x54 FUN_0046B600 [確定]: FUN_004534D0 で 4B 読込、RTDynamicCast→0xB03054(TESObjectREFR) なら mask 0x112860、他 0xC20＝flags 読込。
+  > ⑫ +0x58/+0x5C=0x60CF60 空関数、+0x68=FUN_006FE080 return 0、+0x70=0x412970 GetType（movzx [ecx+4]）。
+  > ⑬ +0x74 0x46C700 [確定]: 0xA3C014="%s Form '%s' (%08X)" + FourCC + 0xA2F7EC(空名) + refID で vsprintf＝名前生成。
+  > ⑭ DAT_00B33B00 [確定相当]: 0x441B99 で FUN_00401F00(0x1C4)→FUN_0045B300 ctor→0x441BB9 store。非多態 singleton（+0x18=loading dword、+0x30=form list head、+0x74 に NiTLargeArray vtable 0xA39044）。
+  > ⑮ DeleteForm(FUN_0045C7A0) の this [確定相当]: 20 caller 中 10 が直前24B以内に mov ecx,[0xB33B00]、FUN_0045B780 3/3・FUN_00453940 1/1 も一致。
+  > ⑯ 0xB05E04=form type→FourCC 表 [確定]: stride 12B {sig ptr,0,index+1}、NONE..TOFT 全69型（0x44=TOFT、0x45 終端）。
+  > 残点 V-529-1..3: 1=+0x20 semantic＋FUN_00450190/FUN_004502C0/FUN_00452C20/FUN_00452D60 identity【中】／2=TESSaveLoadGame 正式名の確定手段＋+0x30 list node 構造【低】／3=predicate slot35 英名・DAT_00b05e20【低】。
+  > 成果物: tmp/re/v528_tesform_vtable_residual_ruling.md、probe v528_1..9（全9本 EXIT=0）、台帳 row504、STATE (it)、memory 933件。supermemory 未登録は v405..v528 の124件（catalog に add が出ず継続ブロック）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1938,6 +1957,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1961,4 +1985,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 18:52:53
+**ai-todo** | Last Updated: 2026-11-17 19:02:02
