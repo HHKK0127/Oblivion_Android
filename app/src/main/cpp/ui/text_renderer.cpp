@@ -68,6 +68,21 @@ std::vector<unsigned int> decodeUtf8(const std::string& text) {
     return codepoints;
 }
 
+// Text is alpha-blended coverage, so the glyph quads are only transparent while
+// GL_BLEND is on. Every 3D pass and most UI components leave blending in whatever
+// state they finished with (the water pass ends on glDisable(GL_BLEND)), and the
+// raw-text overlays (DebugHUD, console, NPC/world debug info) never enable it
+// themselves. Without this the strings draw as solid rectangles in the text colour,
+// which is the top-left block cluster in #137.
+//
+// Matches the existing convention (HUDRenderer::render, TitleScreen::render): set
+// the blend state here rather than saving and restoring it, so no glGet round-trip
+// runs per text line.
+void enableTextBlending() {
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
+
 }  // namespace
 
 // Vertex shader: for 2D text
@@ -397,6 +412,7 @@ bool TextRenderer::createFontTextureAtlas() {
 
 void TextRenderer::renderText(const std::string& text, float x, float y,
                               const glm::vec3& color, float scale) {
+    enableTextBlending();
     // Route to Oblivion font renderer if active font is not Roboto
     if (activeFont != FontType::Roboto) {
         drawOblivionText(text, x, y, glm::vec4(color.x, color.y, color.z, 1.0f), scale, static_cast<int>(activeFont));
@@ -407,6 +423,7 @@ void TextRenderer::renderText(const std::string& text, float x, float y,
 
 void TextRenderer::renderText(const std::string& text, float x, float y,
                               const glm::vec4& color, float scale) {
+    enableTextBlending();
     // Route to Oblivion font renderer if active font is not Roboto
     if (activeFont != FontType::Roboto) {
         drawOblivionText(text, x, y, color, scale, static_cast<int>(activeFont));
