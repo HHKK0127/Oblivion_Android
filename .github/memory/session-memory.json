@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-17T08:21:57Z",
+  "lastUpdated": "2026-11-17T08:32:55Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13480,14 +13480,30 @@
         "0x800-triple"
       ],
       "content": "2026-11-17 旧残点群消化第62弾 v518（probe v518_1 全1本 EXIT=0）＝V-518-1..3 完遂・旧 V-406-3 継続第48弾: 成果物 tmp/re/v518_current_id_ruling.md・台帳 row494（bak344）・round_verify ALL OK（rows 31..494 / total 380 / done 375 / open 5）・STATE (ij)・ai-todo #151 note。[確定相当]（current id＝FF byte＋2048 計算）V-518-1 FUN_00448D40: L55957 実読＋本文内 0x800 行 [確定(decompiled)]: undefined4 __fastcall FUN_00448d40(int param_1)（__fastcall 1引数）→ body 内 L55975: iVar5 = (uVar2 & 0xff000000) + 0x800; → current id ＝「uVar2 の 0xFF 上位 byte を残して下位24bit ＋ 0x800（2048）」の計算 [確定相当] → v517 ctor の param_1[3] = FUN_00448d40()（current id）と 0x800 insert がこの計算と整合（0x800＝2048＝id base [確定相当]）。body の残り（uVar2 出所）は cap 外＝[部分確定]。[確定相当]（create-if-missing）V-518-1 L26536 context: L26531-26549 実読 [確定(decompiled)]: local_4 = 0xffffffff; puStack_8 = &LAB_009c309b;（SEH setup）→ iVar2 = FUN_0041e210(10)（GetExtraData(type=10)）→ if (param_1 == 0) { if (iVar2 != 0) { FUN_00422e20(iVar2, 1); return; } } else if (iVar2 == 0) { iVar2 = FUN_00401f00(0x14, uVar1); ... } → type 10 extra が無ければ FUN_00401f00(0x14)（alloc 0x14＝20B）で作る create-if-missing、有れば FUN_00422e20(iVar2, 1)（set/call 候補 [推定]）→ type 10 extra data は20B サイズの object [確定相当]、+0xc field は20B 内の offset [推定]。[確定相当]（3義）V-518-1 0x800 semantic: 0x800 mentions（filtered）＝102件 [確定]: ①bit11 mask（uVar9 & 0x800・L6218/L6394/L6663 等）②grid 半セル math（-0x800U & 0xfffff000／* 0x1000 + 0x800・L10663/L10753/L53290＝位置計算の 2048 半セル）③id base（L55975 (uVar2 & 0xff000000) + 0x800＝current id 計算、L54381 param_1[0x230] = 0x800＝field 初期化）→ 0x800 は「bit11 flag mask／grid 半セル（2048）／form id base（2048）」の3義で使われる [確定相当]（v517 ctor の 0x800 insert＝3義目（id base）[確定相当]）。[未確定] V-518-2 gated mask 源／caller 分離は budget 外で残点／[未確定] V-518-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。残点 V-519-1..3（1=FUN_00448D40 body の残り（uVar2 出所＝current id の元）＋FUN_00422E20(iVar2, 1)（type10 extra set/call）identity＋FUN_00401F00(0x14) alloc object の +0xc field 語【中】／2=gated 側 mask 源（edx 設定元）＋caller 分離（経路分離＝残点）【低】／3=引継ぎ残り【低】）。教訓: 0xFF000000 mask＋+ 0x800 の1行が「FF byte＋2048 id 計算」の定番（v512 FF id set の getter 側＝FUN_00446B40（set）⇔FUN_00448D40（get）の対が揃う）／0x800 の3義（bit11 mask／grid 半セル／id base）は census 分類で判別（同定数でも文脈で意味が変わる＝0x800 単独では id と断定しない）／create-if-missing pattern（get; if null -> alloc(size)）が extra data setter の定番（FUN_00401f00(0x14)＝type10 の object size 20B＝size alloc census に追加）／getter/setter の対（FUN_00448D40/FUN_00446B40）を揃えると field の full picture が完成（current id field の get/set 両面が確定）／SEH setup（puStack_8 = &LAB_...／*unaff_FS_OFFSET）が fn head の目印（exception handling 付き fn の判別）。本日 push: v405→v517（b6dd68d9）113件＋本件 v518。v 採番 v518 消費（次=v519）。"
+    },
+    {
+      "id": "151-v519-allocator-mask-2026-11-17",
+      "timestamp": "2026-11-17T08:32:55Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v519",
+        "id-allocator",
+        "mask-source",
+        "gated-notify"
+      ],
+      "content": "2026-11-17 旧残点群消化第63弾 v519（probe v519_1 全1本 EXIT=0）＝V-519-1..3 完遂・旧 V-406-3 継続第49弾: 成果物 tmp/re/v519_allocator_mask_ruling.md・台帳 row495（bak345）・round_verify ALL OK（rows 31..495 / total 381 / done 376 / open 5）・STATE (ik)・ai-todo #151 note。[確定相当]（form id allocator＝+0x8C0 increment＋衝突チェック）V-519-1 FUN_00448D40 body 残り: L55969-55993 全読 [確定(decompiled)]: uVar1 = *(param_1 + 0x8c0)（old id 読み）→ uVar2 = *(param_1 + 0x8c0)（再読）→ if ((uVar2 & 0xffffff) == 0xffffff) { iVar5 = (uVar2 & 0xff000000) + 0x800; } else iVar5 = uVar2 + 1;（下位24bit 満杯なら FF segment を上げて 0x800（2048）へリセット／そうでなければ id+1）→ *(param_1 + 0x8c0) = iVar5;（+0x8C0 へ書く＝v512/v513 FUN_00446B40 の同 field！）→ iVar6 = virtual[*PTR_PTR_00b0613c + 4](iVar5)（hash）→ for (puVar3 = *(DAT_00b06144 + iVar6*4); puVar3; puVar3 = *puVar3) { cVar4 = virtual[+8](iVar5, puVar3[1]); if (cVar4) goto LAB; }（bucket 走査で衝突なら再 increment）→ cVar4 = FUN_00453450(*(param_1+0x8c0))（range/reserved 判定 [推定]）} while (cVar4) → cVar4 = FUN_0055e000(uVar1, &iStack_4); if (!cVar4 && !FUN_00453450(uVar1)) return uVar1;（old id が使えれば返す）} while(true) → FUN_00448D40＝「param_1+0x8C0（current form id）を increment（0xFFFFFF 時 FF segment rollover＋0x800 リセット）し、hash bucket 衝突＋range 判定を回避して old id を返す form id allocator [確定相当]」→ +0x8C0 field が「id counter」であることを確定（v512 FUN_00446B40（set/rollback）⇔本裁定（increment/allocate）の対）＝v512→v513→v519 連鎖完遂。[確定相当]（mask＝FUN_0045B670 の arg3）V-519-2 gated mask 源: FUN_0045B670 docs head 実読 [確定(decompiled)]: void __thiscall FUN_0045b670(int param_1, int param_2, undefined4 param_3)（3引数）→ iVar1 = *( *(unaff_FS_OFFSET + 0x2c) + _tls_index*4 )（TLS block）→ gate: (*(iVar1+0x185) != 0) && (*(iVar1+0x184) == 0) && (*(DAT_00b33a98+0xcd4) == 0) && ((*(param_2+8) >> 0xe & 1) == 0)（4条件 gate: TLS flags×2＋global +0xcd4 flag＋bit14）→ cVar2 = FUN_0045a500()（Player +0x18 flag reader・v497）→ if (!cVar2) FUN_00452c20(param_2, param_3); else if ((*(param_1+0x18) >> 3 & 1) && *(param_1+4)) FUN_00452c20(param_2, param_3); → FUN_00452C20（v493 lazy node |=）の第2引数（mask）に渡るのは param_3＝FUN_0045B670 の第3引数 [確定相当] → 「gated 側 mask 源（edx 設定元）」residual＝解消（mask は計算されず caller から arg3 で供給される）。副次: param_1+0x18 bit3 判定（別 object の flag）と param_2+8 bit14 gate（node holder）が 別 object（param_1≠param_2）[確定相当]。[部分確定] V-519-1 FUN_00422E20: L25117 実読 [確定(decompiled)]: void __thiscall FUN_00422e20(int param_1, undefined4 *param_2)（param_2＝ptr）→ if (param_2 != 0) { ... }（null check）＋WARNING unreachable block → L26539 の FUN_00422e20(iVar2, 1)（1 を ptr 扱いで渡す）と整合 → type10 extra に対する set/call fn 候補 [部分確定]（本文残り cap 外）。[未確定] V-519-3 引継ぎ（predicate 英名・新 FourCC 意味）は残点継続。残点 V-520-1..3（1=FUN_00453450（range/reserved 判定）と FUN_0055E000（old id 判定）identity（allocator の回避条件完遂）＋FUN_00422E20 本文残り（type10 extra set の中身）【中】／2=PTR_PTR_00b0613c（hash fn vtable）と DAT_00b06144（bucket 配列）の identity（allocator の hash map 完全解）＋caller 分離（経路分離＝残点）【低】／3=引継ぎ残り【低】）。教訓: id counter field の「allocate（increment）⇔set/rollback」の対が揃うと field が確定（FUN_00448D40⇔FUN_00446B40 が +0x8C0 で対＝v512→v513→v519 連鎖完遂）／mask 源は「mask を渡す fn の引数」で決まる（FUN_0045B670 arg3＝mask＝caller 供給＝mask 追跡の完成）／allocator の定番（increment→hash→collision retry→range check→return old）が本文判明（0xFFFFFF rollover＋0x800 リセットが FF segment 型 id の目印）／gate が4条件（TLS×2＋global＋bit14）＋別 gate（Player flag＋param_1+0x18 bit3）の複層（gated notify の条件構造判明＝v512 family semantic 完遂）／unaff_FS_OFFSET（SEH/TLS）＋_tls_index が TLS 使用の目印。本日 push: v405→v518（008f6a8d）114件＋本件 v519。v 採番 v519 消費（次=v520）。"
     }
   ],
   "metadata": {
-    "totalEntries": 923,
+    "totalEntries": 924,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-17T08:21:57Z",
-    "entry_count": 923,
-    "last_updated": "2026-11-17T08:21:57Z"
+    "lastUpdated": "2026-11-17T08:32:55Z",
+    "entry_count": 924,
+    "last_updated": "2026-11-17T08:32:55Z"
   }
 }

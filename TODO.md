@@ -945,6 +945,13 @@
   > ④[未確定] V-518-2 gated mask 源／caller 分離は budget 外で残点／[未確定] V-518-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。
   > 残点 V-519-1..3（1=`FUN_00448D40` body の残り（`uVar2` 出所＝current id の元）＋`FUN_00422E20(iVar2, 1)`（type10 extra set/call）identity＋`FUN_00401F00(0x14)` alloc object の `+0xc` field 語【中】／2=gated 側 mask 源（edx 設定元）＋caller 分離（経路分離＝残点）【低】／3=引継ぎ残り【低】）。
   > 教訓: `0xFF000000` mask＋`+ 0x800` の1行が「FF byte＋2048 id 計算」の定番（v512 FF id set の getter 側＝`FUN_00446B40`（set）⇔`FUN_00448D40`（get）の対が揃う）／`0x800` の3義（bit11 mask／grid 半セル／id base）は census 分類で判別（同定数でも文脈で意味が変わる＝`0x800` 単独では id と断定しない）／create-if-missing pattern（`get; if null -> alloc(size)`）が extra data setter の定番（`FUN_00401f00(0x14)`＝type10 の object size 20B＝size alloc census に追加）／getter/setter の対（`FUN_00448D40`/`FUN_00446B40`）を揃えると field の full picture が完成（current id field の get/set 両面が確定）／SEH setup（`puStack_8 = &LAB_...`／`*unaff_FS_OFFSET`）が fn head の目印（exception handling 付き fn の判別）。v 採番 v518 消費（次=v519）。
+  > 【旧残点群消化第63弾 v519 — V-519-1..3 完遂・旧 V-406-3 継続第49弾】probe v519_1 全1本 EXIT=0。成果物 tmp/re/v519_allocator_mask_ruling.md・台帳 row495（bak345）・round_verify ALL OK（rows 31..495 / total 381 / done 376 / open 5）。
+  > ①[確定相当]（form id allocator＝`+0x8C0` increment＋衝突チェック）V-519-1 FUN_00448D40 body 残り: **L55969-55993 全読 [確定(decompiled)]: `uVar1 = *(param_1 + 0x8c0)`（old id）→ `uVar2 = *(param_1 + 0x8c0)`（再読）→ `if ((uVar2 & 0xffffff) == 0xffffff) { iVar5 = (uVar2 & 0xff000000) + 0x800; }` else `iVar5 = uVar2 + 1;`（下位24bit 満杯なら FF segment を上げて `0x800`（2048）へリセット／そうでなければ id+1）→ `*(param_1 + 0x8c0) = iVar5;`（**`+0x8C0` へ書く＝v512/v513 `FUN_00446B40` の同 field！**）→ hash（`virtual[*PTR_PTR_00b0613c + 4]`）→ bucket 走査で衝突なら再 increment → `FUN_00453450(*(param_1+0x8c0))`（range/reserved 判定 [推定]）→ `FUN_0055e000(uVar1, &iStack_4)`＋`FUN_00453450(uVar1)` が通れば `return uVar1`（old id 返し）→ FUN_00448D40＝「`param_1+0x8C0`（current form id）を increment（`0xFFFFFF` 時 FF segment rollover＋`0x800` リセット）し、hash bucket 衝突＋range 判定を回避して old id を返す form id allocator [確定相当]」→ **`+0x8C0` field が「id counter」であることを確定（v512 `FUN_00446B40`（set/rollback）⇔本裁定（increment/allocate）の対＝v512→v513→v519 連鎖完遂）**。
+  > ②[確定相当]（mask＝`FUN_0045B670` の arg3）V-519-2 gated mask 源: **`FUN_0045B670` docs head 実読 [確定(decompiled)]: `void __thiscall FUN_0045b670(int param_1, int param_2, undefined4 param_3)`（3引数）→ `iVar1 = *( *(unaff_FS_OFFSET + 0x2c) + _tls_index*4 )`（TLS block）→ gate: `(*(iVar1+0x185) != 0) && (*(iVar1+0x184) == 0) && (*(DAT_00b33a98+0xcd4) == 0) && ((*(param_2+8) >> 0xe & 1) == 0)`（4条件 gate: TLS×2＋global `+0xcd4` flag＋bit14）→ `cVar2 = FUN_0045a500()`（Player `+0x18` flag reader・v497）→ `if (!cVar2) FUN_00452c20(param_2, param_3);` else `if ((*(param_1+0x18) >> 3 & 1) && *(param_1+4)) FUN_00452c20(param_2, param_3);` → **`FUN_00452C20`（v493 lazy node `|=`）の第2引数（mask）に渡るのは `param_3`＝`FUN_0045B670` の第3引数 [確定相当] → 「gated 側 mask 源（`edx` 設定元）」residual＝解消（mask は計算されず caller から arg3 で供給される）**。副次: `param_1+0x18` bit3 判定と `param_2+8` bit14 gate が別 object（`param_1`≠`param_2`）[確定相当]。
+  > ③[部分確定] V-519-1 FUN_00422E20: **L25117 実読 [確定(decompiled)]: `void __thiscall FUN_00422e20(int param_1, undefined4 *param_2)`（`param_2`＝ptr）→ `if (param_2 != 0) { ... }`（null check）＋WARNING unreachable block → `L26539` の `FUN_00422e20(iVar2, 1)`（`1` を ptr 扱いで渡す）と整合 → type10 extra に対する set/call fn 候補 [部分確定]**（本文残り cap 外）。
+  > ④[未確定] V-519-3 引継ぎ（predicate 英名・新 FourCC 意味）は残点継続。
+  > 残点 V-520-1..3（1=`FUN_00453450`（range/reserved 判定）と `FUN_0055E000`（old id 判定）identity（allocator の回避条件完遂）＋`FUN_00422E20` 本文残り（type10 extra set の中身）【中】／2=`PTR_PTR_00b0613c`（hash fn vtable）と `DAT_00b06144`（bucket 配列）の identity（allocator の hash map 完全解）＋caller 分離（経路分離＝残点）【低】／3=引継ぎ残り【低】）。
+  > 教訓: id counter field の「allocate（increment）⇔set/rollback」の対が揃うと field が確定（`FUN_00448D40`⇔`FUN_00446B40` が `+0x8C0` で対＝v512→v513→v519 連鎖完遂）／mask 源は「mask を渡す fn の引数」で決まる（`FUN_0045B670` arg3＝mask＝caller 供給＝mask 追跡の完成）／allocator の定番（increment→hash→collision retry→range check→return old）が本文判明（`0xFFFFFF` rollover＋`0x800` リセットが FF segment 型 id の目印）／gate が4条件（TLS×2＋global＋bit14）＋別 gate（Player flag＋`param_1+0x18` bit3）の複層（gated notify の条件構造判明＝v512 family semantic 完遂）／`unaff_FS_OFFSET`（SEH/TLS）＋`_tls_index` が TLS 使用の目印。v 採番 v519 消費（次=v520）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1867,6 +1874,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1890,4 +1902,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 17:19:48
+**ai-todo** | Last Updated: 2026-11-17 17:30:19
