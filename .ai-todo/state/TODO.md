@@ -990,6 +990,14 @@
   > ④[未確定] V-524-3 引継ぎ（predicate 英名・新 FourCC 意味）は残点継続。
   > 残点 V-525-1..3（1=`PTR_PTR_00b03038` RTTI type（`DeleteForm` の cast 先）＋`FUN_00446CB0`（delete/free 候補）identity＋`FUN_00466E60`/`FUN_00466E80`/`FUN_00466DD0` family identity【中】／2=`param_1+0x18` thread 依存 read の owner object（`DAT_00b33398+0x10`＝owner thread・`param_1` が何の object か）＋caller 分離（経路分離＝残点）【低】／3=引継ぎ残り【低】）。
   > 教訓: fn 名は `"XxxFn() was called, but…"` 形の log 文字列で一撃（`DeleteForm()`＝log context 法の再現＝業務 fn の実名が判明）／1つの業務 fn に container 系の全要素（allocator/set/reset/gate/cast/slot）が集結する（横断接続の完成点＝`DeleteForm()` が hub＝v511..v523 の連鎖が1箇所に束まる）／thread 依存 read（同 thread＝byte／異 thread＝`>>0x12`）が bit18 を可視化（v497 bit18 residual に部分回答）／`GetCurrentThreadId()` 比較＋owner thread field（`DAT_00b33398+0x10`）が thread-gate pattern（v493/v498/v499 に続く反復）／dtor の bucket 解放 fn（`FUN_007C2A40`）が `param_1[1]`（count）＋`param_1[2]`（bucket）構造を確認（v521/v522 の `NiTMapBase` 構造と横断整合）。v 採番 v524 消費（次=v525）。
+  > v525（V-525-1..3 完遂・旧 V-406-3 継続第55弾／probe v525_1..7 全7本 EXIT=0）
+  > 成果物: tmp/re/v525_cell_cast_component_table_ruling.md・台帳 row501（bak350）・round_verify ALL OK（rows 31..501 / total 387 / done 382 / open 5）。v 採番 v525 消費（次=v526）。
+  > ①[確定] PTR_PTR_00b03038 = TD 実読で .?AVTESObjectCELL@@（vftable 0x00AA3E80＋spare 0＋inline name）→ DeleteForm の cast 先は TESObjectCELL。同法で 0xB02F9C=.?AVTESForm@@／0xB03534=.?AVEffectSetting@@（v523 再確認）。TD layout 確定（+0=type_info vtable／+8=inline name）→ v525_1 の +0 誤読を訂正。
+  > ②[確定相当] FUN_00446CB0 = 単方向リスト add-node（8B node alloc→head 挿入）。v524 の『delete/free 候補 [推定]』を [確定負] 相当で訂正。caller FUN_004040e0 は重複 key 検査後に settings list へ追加。
+  > ③[確定] FUN_00466E80 = 1 TESForm から 26 種 component interface view を一括取得する表構築（0x68=26 dword、case 0=生 form、case 1..25=RTDynamicCast。TD 実読で TESAIForm/TESAnimation/TESActorBaseData/TESAttackDamageForm/TESAttributes/TESBipedModelForm/TESContainer/TESDescription/TESEnchantableForm/TESFullName/TESHealthForm/TESTexture/TESLeveledList/TESModel/TESProduceForm/TESQualityForm/TESRaceForm/TESScriptableForm/TESSpellList/TESUsesForm/TESValueForm/TESWeightForm/TESSoundFile/TESReactionForm/TESModelList を列挙）。
+  > ④[確定] FUN_00466E60=表 zero／FUN_00466E10=表等値比較（0=一致,1=不一致, vtable[+0xC]）／FUN_0046AD70=2 form の component 表比較 predicate（param_2==0→1）。[確定相当] FUN_00466DD0=2表 slot 対応で vtable[+8] を26回／FUN_0046ACB0=表2枚（local_dc[208]=0x68×2）を構築して slot 対応処理（v524 serialize/copy 候補を引き上げ）／FUN_0046B090・FUN_0046B170=form type byte（+4）switch 付き component 表処理（skip 0xd/0x31..0x34/0x36/0x3d、0x30 専用、default→FUN_00466D80/DA0）。
+  > ⑤[部分確定] TESForm field 整理: +4 type byte／+8 flags bit14／+0xC refID。DeleteForm 再読: bit14=0 かつ cell でない→id=0＋reset＋slot+0xD8＋list 未登録なら add-node、else→新 id で replace。
+  > 残点 V-526-1..3（1=FUN_00466D80/DA0 identity＋FUN_0046C2E0/C2F0 thunk 接続【中】／2=param_1 identity（TESDataHandler 候補）＋caller 20 件分離【低】／3=引継ぎ（predicate slot35 英名・新 FourCC）【低】）。supermemory は MCP catalog 未復帰のため未登録（v405..v525=121件待ち）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1912,11 +1920,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1940,4 +1943,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 18:23:16
+**ai-todo** | Last Updated: 2026-11-17 18:43:48
