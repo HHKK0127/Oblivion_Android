@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-17T04:14:13Z",
+  "lastUpdated": "2026-11-17T04:24:08Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13160,14 +13160,30 @@
         "bit18-negative"
       ],
       "content": "2026-11-17 旧残点群消化第42弾 v498（probe v498_1 全1本 EXIT=0）＝V-498-1..3 完遂・旧 V-406-3 継続第28弾: 成果物 tmp/re/v498_bit24_lock_ruling.md・台帳 row474（bak324）・round_verify ALL OK（rows 31..474 / total 360 / done 355 / open 5）・STATE (hp)・ai-todo #151 note。[確定相当] V-498-1 bit24 mask 使用箇所: FUN_0045D030 body（L73455-73532）と FUN_0045CEE0 body（L73379-73454）に 0x1000000 が各1件、両方とも同型 [確定(decompiled)]: L73525: FUN_00452c20(iVar7, 0x1000000);／L73447: FUN_00452c20(iVar7, 0x1000000);（前後は FUN_004211e0/FUN_004210e0 → FUN_00452C20 → FUN_004524c0 → while(true) loop）→ bit24 は FUN_00452C20（v493 lazy node |=）へ渡す固定 mask [確定相当]（v495 caller push census と本文で双向一致）。→ iVar7（param_1+0x60 list 要素）の lazy node に bit24 を OR 設定する loop [確定相当]、bit24 の最終 semantic は node 用途次第で残点 [推定]。[確定]（否定側）＋[部分確定]（新 bit6 read）V-498-1 bit18/下位 byte writer: 残り callers 4件（FUN_00424C50/FUN_00424D00/FUN_0042A200/FUN_00434020）に +0x18 write 0件 → FUN_0045A500 callers 8件すべてで直接 write なし（v497 と合わせて 8/8 否定側）→ bit18/下位 byte の set 書手は間接経由＝本 grep で特定不能 [確定（否定側）]。副次収穫: L176200（(*(uint*)(DAT_00b33b00+0x18) >> 6 & 1) != 0) かつ param_2 & 0x40000000 で bit6 read 実例1件を発見 [確定(decompiled)] → 観測 bit が 1/6/7/8/10/13/15/16 の8種に拡大（read 側）[確定相当]。[確定相当]（リカーシブル acquire）V-498-2 FUN_00496EA0: L120801-120838 全読 [確定(decompiled)]: FUN_00401020(&DAT_00a2f830)（enter critical）→ FUN_00496df0(param_2,&DStack_8)（key で owner/count lookup）→ 未取得なら GetCurrentThreadId() + FUN_00496d50(param_2, thread, 1)（acquire count=1）、同 thread 再取得なら iVar4=iStack_4+1（count++＝再帰）→ FUN_00401040()（leave）→ FUN_00498ee0(*(param_1+0x100),1)（event/wait 候補 [推定]）} while(true) → FUN_00496EA0＝「key の owner thread と recursion count を管理するリカーシブル lock acquire fn [確定相当]」→ v496「prepare」推定を「リカーシブル lock acquire」に更新・追補。FUN_00496F50（release 側）は型（void(void)）まで・本文未読＝残点。[未確定] gated 側 mask 源（edx）は budget 未着手＝残点／[未確定] V-498-3 引継ぎ（predicate 英名・sink 正体・新 FourCC 意味）も残点継続。残点 V-499-1..3（1=Player +0x18 bit18/下位 byte の set 書手（8/8 否定側＝間接 store 経由探索へ転換）＋bit24 の最終 semantic（iVar7 lazy node の flag 群）【中】／2=FUN_00496F50（release 側）本文＋gated 側 mask 源（edx 設定元）＋FUN_00496DF0/FUN_00496D50 identity【低】／3=引継ぎ残り【低】）。教訓: mask の semantic は「その mask を渡す fn の本文」で決まる（0x1000000 が FUN_00452C20（|=）へ渡る＝caller push census（v495）と callee body（v498）の双向突合）／同じ mask 呼び出しが複数 fn に同型で現れる＝共通パターン（一方を特定すれば他方も同型）／write grep の8/8 否定側は「間接 store 経由」への転換点（次は machine 側（mov [reg+0x18]）探索へ・docs grep の限界を明記）／リカーシブル lock の定番（enter→lookup owner/count→同 thread なら count++／異 thread なら acquire→leave→wait 候補）が本文判明（GetCurrentThreadId 比較＋count 整数の同時存在が目印・v493 thread gate に続く類型）／read 実例（>>6 & 1）の副次発見で flag map が両面で拡大（grep を1つの mask に絞らず別 bit read も拾う）。本日 push: v405→v497（bbe4b86c）93件＋本件 v498。v 採番 v498 消費（次=v499）。"
+    },
+    {
+      "id": "151-v499-lock-pair-2026-11-17",
+      "timestamp": "2026-11-17T04:24:08Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v499",
+        "lock-pair",
+        "machine-census",
+        "writer-candidates"
+      ],
+      "content": "2026-11-17 旧残点群消化第43弾 v499（probe v499_1 全1本 EXIT=0）＝V-499-1..3 完遂・旧 V-406-3 継続第29弾: 成果物 tmp/re/v499_lock_pair_ruling.md・台帳 row475（bak325）・round_verify ALL OK（rows 31..475 / total 361 / done 356 / open 5）・STATE (hq)・ai-todo #151 note。[確定相当] V-499-2 FUN_00496F50（release 側）: L120846-120859 全読 [確定(decompiled)]: FUN_00401020(&DAT_00a2f830)（enter critical・acquire と同一）→ FUN_00496df0(unaff_retaddr,&stack)（lookup）→ if (cVar1) FUN_00496d50(unaff_retaddr, 0, 0xffffffff); → FUN_00401040()（leave）→ return → FUN_00496F50＝「key の owner/count を FUN_00496D50(key, 0, -1) でクリアするリカーシブル lock release fn [確定相当]」→ acquire（v498: (key, thread, 1)／count++）⇔release（(key, 0, 0xffffffff)）の対が確定（0xffffffff＝count 全滅＝-1 クリア [確定]）。unaff_retaddr を key に使う形は decompiler の stack 認識制約 [推定]＝key の実渡し方は machine 要確認＝残点 [部分確定]。[確定相当]（両方）V-499-2 lookup/set sub: FUN_00496DF0（L120746）: iVar3=virtual[*param_1+4](param_2)（hash）→ puVar1=*(param_1[2]+iVar3*4)（bucket）→ null なら return 0 → bucket＋chain の hash map lookup [確定相当]（FUN_00452C20/FUN_00452570 と同型）。FUN_00496D50（L120714）: 同じ hash→bucket→walk head → key の node に owner を書く map set [確定相当]（acquire で (key, thread, 1)／release で (key, 0, -1) と運用一致）→ lock pair の全体像（acquire/release/lookup/set の4 fn）が確定。[部分確定]（候補122件）V-499-1 machine writer: .text 内 0xB33B00 refs＝2281件、うち直後に [reg+0x18] write が現れるもの＝122件 [確定(機械)]（top12: 0x411F77 mov [eax+0x18], ecx（FUN_00411F60）／0x42126C mov [esi+0x18], ecx（FUN_004211E0）＝v498 bit24 loop 直前 fn と同一 [注意]／0x424FED mov [esi+0x18], 0（FUN_00424F90）／0x4277D6 mov [esi+0x18], edx（FUN_00426A90）…）。候補の多くは stack local（[esp+0x18]）や他 object の +0x18 を含む＝「Player ptr を保持する reg への write」への絞り込み（ref→write 距離＋reg 追跡）が必要 [部分確定]。absolute form [0xB33B018] は .text に0件 [確定(否定側)] → 書手は必ず mov eax,[0xB33B00] 経由（間接）＝v498 判定の裏付け。bit18 の特定は v500 で絞り込み。[未確定] V-499-3 引継ぎ（predicate 英名・sink 正体・新 FourCC 意味）は残点継続。残点 V-500-1..3（1=Player +0x18 writer の絞り込み（122候補から mov reg,[0xB33B00] 直後の mov [reg+0x18], … を特定→bit18/下位 byte set 書手）＋bit24 semantic（iVar7 lazy node＝param_1+0x60 list 要素が何か）【中】／2=unaff_retaddr key の実渡し方（machine push 確認）＋gated 側 mask 源（edx 設定元）【低】／3=引継ぎ残り【低】）。教訓: lock/資源管理系は「acquire/release/lookup/set」の4 fn に分解できる（release の値（0, 0xffffffff）が acquire（thread, 1）と対なら対の完成＝args の対応が identity を決める）／`void(void)` でも unaff_retaddr が key なら decompiler が stack 引数を拾えていない（machine push 確認へ回す残点化＝v497→v499 推定連鎖の機械裏取り）／docs grep 否定側（8/8）から machine census へ転換（refs 2281→write 近接122 の2段絞り込み＝docs で拾えない間接 store の標準手法）／absolute 形0件の否定側が「間接経由確定」の裏付け（machine 形の分類を census に含める）／hash→bucket walk の同型が lookup/set の判別（map 4 fn family の完成）。本日 push: v405→v498（7a8450ed）94件＋本件 v499。v 採番 v499 消費（次=v500）。"
     }
   ],
   "metadata": {
-    "totalEntries": 903,
+    "totalEntries": 904,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-17T04:14:13Z",
-    "entry_count": 903,
-    "last_updated": "2026-11-17T04:14:13Z"
+    "lastUpdated": "2026-11-17T04:24:08Z",
+    "entry_count": 904,
+    "last_updated": "2026-11-17T04:24:08Z"
   }
 }
