@@ -2,6 +2,12 @@
 
 ## Tasks
 
+- [ ] **#157** 【RE レーン依頼・#127 の正典（StatsMenu 表示仕様の残点 V-364-3/4 を確定）】port のキャラクターシート配線（#127）を正典に合わせるため、**原版 StatsMenu の表示仕様**を確定してほしい。【出発点＝既裁定】`tmp/re/v364_stats_credits_supply_ruling.md`（#133 完遂分）で既に [確定]: menu id **0x3EB**／XML 構造＝**5タブ** `stat_p1`(race・birthsign・class・level・health・magicka・fatigue_layout＋stat_faction_item/stat_misc_item)・`stat_p2`(8属性・各 <id> 24=intelligence 等)・`stat_p3`(minor_label＋window)・`stat_p4`/`stat_p5`(up/down/window/pane のスクロール付きリスト)・`stat_tabs`(prev/next＋stat_tabs_p1..p5 の <id> 1..5)／**タブ通知 id 1..5＝slot3 `0x5DCD70`** [確定(XML+命令)]／値供給チェーン **AV getter→trait→XML copy** [確定(命令)]／ルート traits に `user0`=current visible tab、色定義 `_red/_green/_blue_under/_even/_over`（値 vs base の色分岐用）、menufade 0.25。【依頼3件（判定5段階・根拠は EXE 命令または bsa 抽出 XML のみ・推測禁止）】
+①【高】**5タブの表示行・ラベル・値供給の完全対応表** — 各タブの表示項目、ラベルの `strings()` キー（menus\strings.xml）、値を供給する getter/関数、行の生成元を確定。特に **V-364-3: 通知 id4（tab p4）`0x5DC950` が `__RTDynamicCast(TESBoundObject→TESNPC)` の上で `[esi+0x3C]` リストを walk して行生成している「NPC の何のリストか」**（major/minor skills か、それ以外か）と **V-364-4: XML trait ↔ EXE trait の完全対応表**、および `stat_p2_strength_layout`(id24) の `<copy src="stat_p2" trait="user1"/>` と色条件 `onlyif user1 lt user9` が指す **user1..user9 の意味（user9＝base 比較値 [推定] の裏取り）**。
+②【中】**値 vs base の色分岐の正典** — `_red/_green/_blue` の `_under/_even/_over` が「現在値・修正後値・base」のどの比較で使われるか（例: `onlyif user1 lt user9 → _red_under / eq → _red_even / over → _red_over`）を命令で確定。＝port の「表示値と色が正しいか」の判定基準になる。
+③【低】**tab p1 の3つの文字列の正体** — 通知 id1（`0x5DBB00`）が SetString する 0xFAF（`0x4DA2A0(player)` 由来）／0xFB0（`0x5EA720` 由来＝TESFullName 契約の名前 getter）／vfunc+0x268→[+0x18+4]（''=0xA2F7EC fallback）のうち、**どれが name / class / race のどれか**の確定。
+【成果物・制約】tmp/re の v 採番（着手時に TODO_re49.md で確認・現 v465 次）。原本 EXE／bsa 抽出物（`D:\Cargo\Other\Oblivion\BSA\bsa_Extraction\menus\`）読み取り専用・移植側ソース変更なし・L1 report-only。関連: #127（port 配線・現状 UICharacterSheet は 3タブ Attributes/Skills/Effects で**正典5タブと不一致＝本依頼の裁定後に整える**）／#133（出発裁定 v364）／#96（視覚品質）／#101 `#RE` `#oblivion` `#menu` `#stats` `#ui` `#RE` `#menu` `#oblivion` `#stats` `#ui`
+
 - [ ] **#156** 【RE レーン依頼・#137 の正典（2026-11-15・マージ後の emu 切り分けで確定した未確定）】port の画面左上に彩色ブロック群（約7〜8行・黒い輪郭付き）が**常時**描画される不具合 #137。【本ラウンドで実測済みの事実】①chargen でも gameplay でも表示（`%TEMP%/opencode/s129_chargen.png` / `s137_now.png` / `p3_after_close.png`）＝#137 の当初スコープ「キャラ作成パネル表示中」は不正確 ②左上の灰色「D」＝Android 側 Debug Control Panel で、そこから Debug Console / NPC Debug / World Debug / Performance Graph を操作 → **ON/OFF 双方でブロック不変** ③`debugpage 1→2`（DebugHUD のページ切替・ログ `Debug HUD: Page 2`）でも**不変**＝DebugHUD のページではない ④`hudRenderer` は配置正常（`onScreenResize` 呼び出し renderer.cpp:226 確認・Level パネル(20,20)=左上／ステータスバー bottom／minimap 右上が観測と一致）＝左上の色ブロック列は Level パネル以外 ⑤**決定的**: BACK で開いた**レトルトのポーズメニュー（羊皮紙）のラベルも同じ色ブロックで描画される**（`r1_debuglog.png`/`s2_closemenu.png`）＝メニューラベルの文字/画像がボックス化する病理が常時側にも共通 ⑥主候補は retail menu pipeline `uiSystem->render()`（renderer.cpp:5470）を切った診断ブランチ `probe137-ui-system` で判定中。
   > 【#137 診断の進捗を補足（2026-11-15・RE レーンの①解釈に役立てるため）】port 側の切り分け（**すべて実測＝ビルド毎の emu スクリショット比較**・診断ブランチ `probe137-ui-system`・do not merge）で**除外した描画源**: ①`uiSystem->render()`（retail menu pipeline・probe #1）②`UIHudStatusDisplay`（START_X/Y=10,10 の左上パネル・probe #2）③`debugHUD->render()`（probe #3）④`toggleAllDebugSystems` の4系統（Debug Console／NPC Debug／World Debug／Performance Graph・ON/OFF 双方で不変）⑤`DebugMenu`（デフォルト閉＝`debugmenu` コマンドが「opened」から開始）⑥`questUI`（クエスト未作成の chargen でも表示）⑦`hudRenderer`（`onScreenResize` 呼び出し確認・Level パネル(20,20)は小・ステータスバー bottom・minimap 右上＝観測と一致）。
   > **probe #4（最重要）**: `renderer.cpp` のオーバーレイ領域 **5380-5664（questUI→inventory→debugHUD→console→debug systems→debugDraw→各メニュー→uiSystem→virtualController→HUD 三種→crosshair/targetInfo/activeEffects→各種メニュー→floatingText→characterCreation→debugMenu→messageBox）を丸ごと無効化してもブロックは残存**（逆にパネル・Level・MAP・Ht/Ma/St・スロット・十字・Dパッドはすべて消えた＝ガードは正しく効いている）。→ **クラスターはこの領域の外**、つまり `renderer.cpp` の ①メニュー領域（4700-5020）か ②シーンパス（`worldManager`／`renderPlaceholderEntities` 等の3D系・`retroFilter->renderToScreen()` 5352）のどちらで描画。次 probe はメニュー領域を無効化して二分する。
@@ -548,6 +554,12 @@
   > ④[未確定] V-466-1 top-band 残り typed は budget 未着手＝残点／[未確定] V-466-2 旧 V-406-4/5 と V-466-3 引継ぎも残点継続。
   > 残点 V-467-1..3（1=旧残点 V-406-3 継続（id 0x4C の +0xC float の語＝何の値か・FUN_00420C40/60 の利用箇所文脈、top-band 残り typed）【中】／2=旧残点 V-406-4（DATA+0x2C/+0x31 意味・UESP 差分の docs 内裏取り）と V-406-5（PTR_DAT_00B10D90 所有 fn と spec 名前テーブル書手）【低】／3=V-466-3 引継ぎ（FUN_005222D0 一語名別法と predicate slot35 英名 CanResolveDependencies [推定] 裏取り）【低】）。
   > 教訓: id 定数 lookup の docs grep が consumer の全体を即時に与える（FUN_0041e210(0x4c)→2件＝get/set pair・id 定数呼び出しを grep するだけで系統が見える）／getter/setter/release の3点セットは setter の body で揃う（v==0→release／hit→set／miss→alloc の3分岐）／vtable store の imm32（0xA322A0）を RTTI で読めば init fn の class が即決（TESFullName・v441 法の応用）／E8 caller census は「caller 0件」も情報（FUN_004CDEC0←0＝virtual/vtable 経由か inline）／5重ポインタ（int*****）のような異常 signature は stack 解析失敗の兆候（docs の WARNING 行とセットで読む）。v 採番 v466 消費（次=v467）。
+  > 【旧残点群消化第11弾 v467 — V-467-1..3 完遂・旧 V-406-3 継続第4弾】probe v467_1 全1本 EXIT=0。成果物 tmp/re/v467_id4c_consumer_ruling.md・台帳 row443（bak293）・round_verify ALL OK（rows 31..443 / total 329 / done 324 / open 5）。
+  > ①[確定相当]（consumer 系統）＋[推定高]（語）V-467-1 id 0x4C float の consumer: `FUN_00420C40`（get）の callers＝3件 [確定]: **FUN_004CCE00**（class form float getter・v464 確定）／**FUN_004CCE20**（float 計算3引数・get 結果を `fmul` で乗算に使う）／**FUN_004D2720**（L164869）。**`FUN_00420C60`（set）の caller＝1件 FUN_004CD960（L161428）[確定]**: `call 0x420c60` 直後に **`test dword [esi+8], 0x400`（flag bit10 判定）→ `mov ecx,ebx; call 0x6ECC80`（CLAS getter）→ `cmp eax,esi`** [確定(機械)] → **id 0x4C float は class form（TESClass/CLAS）系の値 [推定高]**（consumer が全て class form 系 fns）。+0xC float の正式な語（何の値か）は [未確定]＝残点。
+  > ②[確定]（6帯分 signature 取得）V-467-1 top-band 残り typed: `0x649000: FUN_00649190(int *param_1, int *param_2)`／`0x635000: FUN_00635D60(int *param_1, undefined4, undefined4, undefined4, …)`（5+引数）／`0x636000: FUN_00636FD0(int *param_1, int *param_2, char param_3)`／`0x627000: FUN_00627680`（signature 行 (none)）／`0x634000: FUN_00634F60(int *param_1, int *param_2)`／`0x63A000: FUN_0063A020(int *param_1, int *param_2)` [確定(decompiled)] → FUN_006ECC80（CLAS getter）の consumer band は signature 一覧で11帯分まで確定（v464/465 の6帯＋本裁定6帯・重複除く）→ 全数 typed は未達 [部分確定]＝残点継続。
+  > ③[未確定] V-467-2 旧 V-406-4/5 と V-467-3 V-466-3 引継ぎは budget 未着手＝残点継続。
+  > 残点 V-468-1..3（1=旧残点 V-406-3 継続（id 0x4C の +0xC float の正式な語＝class form の何の値か・FUN_004CD960 の +0x8 flag 0x400 の意味と接続、FUN_00627680（signature none）の docs 確認＝annotation 欠落候補）【中】／2=旧残点 V-406-4（DATA+0x2C/+0x31 意味・UESP 差分の docs 内裏取り）と V-406-5（PTR_DAT_00B10D90 所有 fn と spec 名前テーブル書手）【低】／3=V-467-3 引継ぎ（FUN_005222D0 一語名別法と predicate slot35 英名 CanResolveDependencies [推定] 裏取り）【低】）。
+  > 教訓: getter/setter pair の E8 census が consumer の全体を限定する（get3/set1＝4件のみ・id 定数 lookup の consumers は grep＋census で完全に見える）／set caller の直後命令（flag テスト＋他 getter 呼び出し）が「何の系統の値か」を語る（test [esi+8],0x400＋call 0x6ECC80⇔class form 系）／fmul/fstp の float 演算命令が get 結果の利用形を語る（乗算＝某种の係数/倍率 [推定]）／band signature 一覧は「docs の signature 行を band ごとに1件」で蓄積（本裁定で11帯分・帯の代表で十分 band の性格が分かる）／signature 行が (none) の fn（FUN_00627680）は docs annotation 無しの可能性＝annotation 欠落の v437 類型候補。v 採番 v467 消費（次=v468）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -619,6 +631,11 @@
 - [ ] **#131** 【作製・低優先】タイトルメニュー表示前（ESM 読込中）のタップが native 側で無反応になる問題の調査: MainActivity で `Forwarded touch to native` まで出るが Renderer::onTouchEvent に到達せず選択ログが出ない（#98 の Exit 初回試行が無反応→再タップで成功）。ロードゲート中のタイトル入力の扱いを確認し、無反応を解消または明示する。証拠: #98 の logcat（03:42:55 時点）。関連: #98 `#android` `#fix` `#oblivion` `#title-screen`
 
 - [ ] **#127** 【作製】UICharacterCreation の結果を確認できる表示系の配線（#99 の D）: UICharacterSheet が app/src 内から一切インスタンス化されておらず、Create 後の属性/スキル数値を実機で確認できない。①キャラシートへの入口（HUD ボタン/メニュー）を既存 UI パターンで配線 ②表示内容は Player の attributes/skills をそのまま使用（推測値なし）。視覚品質は #96 と併せて。 `#android` `#chargen` `#oblivion` `#ui`
+  > 【実装（2026-11-17・worktree fix-chargen-sheet-wiring）】
+  > - 入口: 既存パターン2経路 ①コンソール `openmenu stats`（game_console.cpp:934 の `openmenu` はヘルプに "stats" が既に載っていたが renderer 側の実装は `inventory` のみ＝**docs/code の不整合だったのを解消**）②デバッグメニューのボタン `{"Character Sheet", "openmenu stats"}`（ui/debug_menu.cpp の "Open Inventory" の隣）。
+  > - 配線: renderer.h に `UICharacterSheet* characterSheetUI` ＋ `CharacterStatus characterSheetStatus_` と `toggleCharacterSheet()`／renderer.cpp で uiSystem に registerComponent(layer 16)（UIInventoryPanel と同経路・初期状態 hidden）・画面中央に 360x470・onScreenResize で再中央化・BACK で閉じる（handleBackKey の in-game overlays に追加、isMenuOpen 系のガードにも追加）。
+  > - 表示値: 開くたびに **Player からスナップショットを再構築**（name/raceFormID/HP・MP・Stamina の current/max/level/8属性/21スキル）。キー名は UICharacterCreation と UICharacterSheet が既に合意している正規名（RE_EXE_REPORT §46.1 の AV 0x0c..0x20 顺）＝**推測値なし**。
+  > - 【正典との不一致＝#157 で裁定待ち】現 UICharacterSheet は **3タブ Attributes/Skills/Effects** だが、原版 StatsMenu（menu id 0x3EB）は v364 [確定] で **5タブ**（p1: race/birthsign/class/level/health/magicka/fatigue＋faction/misc／p2: 8属性／p3: minor_label／p4・p5: スクロール付きリスト）。**タブ構成・表示行・値 vs base の色分岐は #157 の裁定後に正典化する**（本実装は「入口と数値表示の配線」に限定＝#127 のスコープ内）。
 
 - [ ] **#104** 【自動・中優先】検証済みマイルストーンのコミット運用: 実装・テスト・レビューが完了した単位で、差分、秘密情報、対象範囲、`git diff --check`を確認してからコミットする。失敗中の変更、未レビュー変更、`docs/RE_EXE_REPORT.md`を含む変更は自動コミットしない。完了条件: コミット単位と検証結果を `STATE.md` に記録する。push/mergeは対象外。 `#git` `#process`
 
@@ -1464,6 +1481,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1487,4 +1509,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 09:31:04
+**ai-todo** | Last Updated: 2026-11-17 09:43:24
