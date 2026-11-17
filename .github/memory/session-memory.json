@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-17T03:20:23Z",
+  "lastUpdated": "2026-11-17T03:24:39Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13016,14 +13016,30 @@
         "key-capture"
       ],
       "content": "2026-11-17 旧残点群消化第33弾 v489（probe v489_1 全1本 EXIT=0）＝V-489-1..3 完遂・旧 V-406-3 継続第19弾: 成果物 tmp/re/v489_bit5_iclass_ruling.md・台帳 row465（bak315）・round_verify ALL OK（rows 31..465 / total 351 / done 346 / open 5）・STATE (hg)・ai-todo #151 note。[確定相当] V-489-1 FUN_0046A9E0 本文: L84201 実読 [確定(decompiled)]: void __thiscall FUN_0046a9e0(int *param_1, char param_2): if (param_2==0) param_1[2] = param_1[2] & 0xffffffdf; else param_1[2] = param_1[2] | 0x20; → virtual[*param_1 + 0x40]() → virtual+0x8C(flag)＝self+0x8（param_1[2]）u32 の bit5（0x20）を flag==0 で clear／else set し、その後 virtual+0x40() を呼ぶ flag-setter+notify fn [確定相当]。→ 「DATA 読み込み前 virtual+0x8C(0)」＝bit5 clear→slot +0x40 実行 [確定相当]、bit5 semantic と slot +0x40 機能は [未確定]＝残点（jumptable 復元不能 WARNING 併記）。[確定]（新規 consumer なし）V-489-1 iClass consumer（EXE 側）: .text refs of 0xB37D00＝8件すべて v479/v481 で既知系統 [確定]: FUN_0051C090／FUN_005222D0（docs L216783 と同一）／FUN_005C28F0・FUN_00662750・FUN_00663C50／init（0x9EDEAA）／thunk（0xA20120）→ 新規 consumer 0件、FUN_005222D0(1) trigger 経路は v479 構造のまま [確定]。[部分確定] V-489-2 GameSetting entry 全 key 台帳化: insert-style 122件中121件 key capture（0xB37BC0 のみ no-key）[確定(機械)]。iClass* ファミリ21種＋iPlayerCustomClass を一覧獲得 [確定(実文字列)]: Acrobat/Agent/Assassin/Knight/Healer/Mage/Bard/Priest/Warrior/Barbarian/Crusader/Scout/Archer/Rogue/Thief/Monk/Sorcerer/Witchhunter/Spellsword/Nightblade/CharactergenClass（0xB37C48..0xB37D00）＋iPlayerCustomClass（0xB37C88）→ chargen クラス選択 set [推定相当]。他系統: iLevelUp01..09Mult／iPersuasion*（11）／iCrimeGold*（5）／iPerk*（7）／Effects\\*.NIF/.dds パス群…。window decode 方式のため address→key 対応に1件ずれの可能性 [確定（制約）] → 台帳化は「各 addr 直近 push 固定」で再取得が必要。[未確定] V-489-3 引継ぎ（predicate 英名・param_3・sink 正体・新 FourCC 意味）は残点継続。残点 V-490-1..3（1=+0x8 u32 の bit5（0x20）semantic と slot +0x40 機能＋iClassCharactergenClass consumer（FUN_0051C090 と +0xc 比較の意味）【中】／2=GameSetting entry key 台帳化の再取得（各 addr 直近 push 固定で122件の正確対応→台帳 row）【中】／3=V-489-3 引継ぎ【低】）。教訓: flag setter fn の `|= mask / &= ~mask` の2分岐＋直後の virtual notify が定番（v472 bit11 と同じ型）／mid-decode でも docs 行と対応すれば既知系統と判別（8件を v479 既知に同定）／window-based string capture は前方 entry の key を拾うずれを生む→台帳化前に「各 addr 直近 push」固定で再取得（capture 精度を ruling に明記する習慣が残点の形を守る）／iClass* ファミリ一覧が chargen クラス set の裏付け（v462 と接続）／capture 完了率（121/122）と no-key 件数を明記。本日 push: v405→v488（45835a37）84件＋本件 v489。v 採番 v489 消費（次=v490）。"
+    },
+    {
+      "id": "151-v490-key-table-2026-11-17",
+      "timestamp": "2026-11-17T03:24:39Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v490",
+        "key-table",
+        "notify-target",
+        "bit5"
+      ],
+      "content": "2026-11-17 旧残点群消化第34弾 v490（probe v490_1 全1本 EXIT=0）＝V-490-1..3 完遂・旧 V-406-3 継続第20弾: 成果物 tmp/re/v490_key_table_ruling.md・台帳 row466（bak316）・round_verify ALL OK（rows 31..466 / total 352 / done 347 / open 5）・STATE (hh)・ai-todo #151 note。[確定]（122/122・v489 訂正）V-490-2 key 台帳化: nearest-push（fn 境界内で mov ecx 直前まで）方式で全122件 key capture 成功（no-key 0）→ v489 の window ずれを訂正（例: 0xB370C8＝v489 iAimingNumIterations → 正 iArrowInventoryChance）。iClass* 完全リスト（22種）[確定(実文字列)]: Acrobat/Agent/Assassin/Pilgrim/Knight/Healer/Mage/Bard/Priest/Warrior/Barbarian/Crusader/Scout/Archer/Rogue/Thief/Monk/Sorcerer/Battlemage/Witchhunter/Spellsword/Nightblade/CharactergenClass＋iPlayerCustomClass → v489「21種」を22種に訂正（iClassPilgrim・iClassBattlemage 検出）→ 基準クラス22種＋custom＋chargen [推定相当]。value 例: iMapMarkerVisibleDistance（0xB37BC8）value=0x4E20（20000）[確定(機械)]。iLevelUp01..10Mult（iLevelUp10Mult 検出）／iCrimeGold*（6）／iPersuasion*（14）／iPerk*（10）／sHitParticle*（12）／sBlood*（6）／iRemoveExcessDead*（4）…（全122件を台帳 row 資料として保存 [確定]）。[確定] V-490-1 slot +0x40（notify 先）: [TESObjectREFR vt=0xA46C44 + 0x40] = 0x46ABF0 → FUN_0046ABF0（owning L84338）[確定(機械)] → virtual+0x8C(flag)（bit5 set/clear）→ virtual+0x40()＝FUN_0046ABF0 が bit 変更後の実行体 [確定相当]、本文 identity は [未確定]＝残点。[部分確定] bit5 semantic: REFR band（115 fn）で param_1[2]/+0x8 と 0x20 mask の直接 hit 0件 [確定（否定側）] — band hits は別 usage（param_1[2] |= 0x200000＝bit21／*(param_1[2]+0x20)＝ptr+offset）＝ param_1[2] の type 依存性を再確認 [確定] → semantic は「FUN_0046ABF0（notify 先）の扱う flag」として残点 [部分確定]。[未確定] V-490-3 引継ぎ（predicate 英名・param_3・sink 正体・新 FourCC 意味）は残点継続。残点 V-491-1..3（1=FUN_0046ABF0（slot +0x40 notify 先）の本文 identity→bit5 semantic と slot +0x40 機能が確定【中】／2=GameSetting key 台帳の row 化＋value 初期値取得拡張【低】／3=V-490-3 引継ぎ【低】）。教訓: capture の精度は「fn 境界＋直前の push 固定」で確実（v489 window ずれを1本で訂正＝残点の形（制約明記）が次の probe を的確に誘導した）／同一 param_1[2] でも band で type 依存（u32 vs ptr・mask bit と offset を混同しない区別を明記・grep hit 0 は否定側として有効）／vtable slot 実読（[vt+0x40]）が notify 先を即特定（slot 実読連鎖の総仕上げ）／value 初期値（push imm）は key と同時取得可能（iMapMarkerVisibleDistance=0x4E20）→ 台帳化時に value も拾う／訂正も裁定の価値（v489 21種→22種・key ずれ→正確対応＝台帳データ品質向上が成果）。本日 push: v405→v489（fc0795ce）85件＋本件 v490。v 採番 v490 消費（次=v491）。"
     }
   ],
   "metadata": {
-    "totalEntries": 894,
+    "totalEntries": 895,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-17T03:20:23Z",
-    "entry_count": 894,
-    "last_updated": "2026-11-17T03:20:23Z"
+    "lastUpdated": "2026-11-17T03:24:39Z",
+    "entry_count": 895,
+    "last_updated": "2026-11-17T03:24:39Z"
   }
 }

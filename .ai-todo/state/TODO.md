@@ -728,6 +728,13 @@
   > ④[未確定] V-489-3 引継ぎ（predicate 英名・param_3・sink 正体・新 FourCC 意味）は残点継続。
   > 残点 V-490-1..3（1=`+0x8` u32 の bit5（0x20）semantic と slot +0x40 機能＋iClassCharactergenClass consumer（FUN_0051C090 と +0xc 比較の意味）【中】／2=GameSetting entry key 台帳化の再取得（各 addr 直近 push 固定で122件の正確対応→台帳 row）【中】／3=V-489-3 引継ぎ【低】）。
   > 教訓: flag setter fn の `|= mask / &= ~mask` の2分岐＋直後の virtual notify が定番（v472 bit11 と同じ型）／mid-decode でも docs 行と対応すれば既知系統と判別（8件を v479 既知に同定）／window-based string capture は前方 entry の key を拾うずれを生む→台帳化前に「各 addr 直近 push」固定で再取得（capture 精度を ruling に明記する習慣が残点の形を守る）／`iClass*` ファミリ一覧が chargen クラス set の裏付け（v462 と接続）／capture 完了率（121/122）と no-key 件数を明記。v 採番 v489 消費（次=v490）。
+  > 【旧残点群消化第34弾 v490 — V-490-1..3 完遂・旧 V-406-3 継続第20弾】probe v490_1 全1本 EXIT=0。成果物 tmp/re/v490_key_table_ruling.md・台帳 row466（bak316）・round_verify ALL OK（rows 31..466 / total 352 / done 347 / open 5）。
+  > ①[確定]（122/122・v489 訂正）V-490-2 key 台帳化: **nearest-push（fn 境界内で mov ecx 直前まで）方式で全122件 key capture 成功（no-key 0）→ v489 の window ずれを訂正**（例: `0xB370C8`＝v489 `iAimingNumIterations` → 正 `iArrowInventoryChance`）。**`iClass*` 完全リスト（22種）[確定(実文字列)]: Acrobat/Agent/Assassin/Pilgrim/Knight/Healer/Mage/Bard/Priest/Warrior/Barbarian/Crusader/Scout/Archer/Rogue/Thief/Monk/Sorcerer/Battlemage/Witchhunter/Spellsword/Nightblade/CharactergenClass＋iPlayerCustomClass → v489「21種」を22種に訂正（iClassPilgrim・iClassBattlemage 検出）→ 基準クラス22種＋custom＋chargen [推定相当]**。**value 例: iMapMarkerVisibleDistance（0xB37BC8）value=0x4E20（20000）**。iLevelUp01..10Mult（**iLevelUp10Mult 検出**）／iCrimeGold*（6）／iPersuasion*（14）／iPerk*（10）／sHitParticle*（12）／sBlood*（6）／iRemoveExcessDead*（4）…（全122件を台帳 row 資料として保存 [確定]）。
+  > ②[確定] V-490-1 slot +0x40（notify 先）: **`[TESObjectREFR vt=0xA46C44 + 0x40] = 0x46ABF0 → FUN_0046ABF0`（owning L84338）[確定(機械)] → `virtual+0x8C(flag)`（bit5 set/clear）→ `virtual+0x40()`＝FUN_0046ABF0 が bit 変更後の実行体 [確定相当]**、本文 identity は [未確定]＝残点。
+  > ③[部分確定] bit5 semantic: **REFR band（115 fn）で param_1[2]/+0x8 と 0x20 mask の直接 hit 0件 [確定（否定側）]** — band hits は別 usage（`param_1[2] |= 0x200000`＝bit21／`*(param_1[2]+0x20)`＝ptr+offset）＝param_1[2] の type 依存性を再確認 [確定] → semantic は「FUN_0046ABF0（notify 先）の扱う flag」として残点 [部分確定]。
+  > ④[未確定] V-490-3 引継ぎ（predicate 英名・param_3・sink 正体・新 FourCC 意味）は残点継続。
+  > 残点 V-491-1..3（1=FUN_0046ABF0（slot +0x40 notify 先）の本文 identity→bit5 semantic と slot +0x40 機能が確定【中】／2=GameSetting key 台帳の row 化＋value 初期値取得拡張【低】／3=V-490-3 引継ぎ【低】）。
+  > 教訓: capture の精度は「fn 境界＋直前の push 固定」で確実（v489 window ずれを1本で訂正＝残点の形（制約明記）が次の probe を的確に誘導した）／同一 param_1[2] でも band で type 依存（u32 vs ptr・mask bit と offset を混同しない区別を明記・grep hit 0 は否定側として有効）／vtable slot 実読（[vt+0x40]）が notify 先を即特定／value 初期値（push imm）は key と同時取得可能→台帳化時に value も拾う／訂正も裁定の価値（v489 21種→22種・key ずれ→正確対応＝台帳データ品質向上が成果）。v 採番 v490 消費（次=v491）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1649,11 +1656,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1677,4 +1679,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 12:19:38
+**ai-todo** | Last Updated: 2026-11-17 12:24:00
