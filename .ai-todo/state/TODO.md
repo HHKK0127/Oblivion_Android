@@ -879,6 +879,13 @@
   > ④[未確定] V-509-2 map ctor 別 fn 探索／Player +0x80 中身は budget 外で残点／[未確定] V-509-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。
   > 残点 V-510-1..3（1=FUN_0098C072 identity（docs 未収録＝machine decode か FUN_0098xxxx band の同族 fn から）＋`"asin"` data 構造の完全解（12/8 の意味・FUN_0098540B との関係）【中】／2=map ctor 別 fn 探索（FUN_00452570 の this 入手元 machine 追跡）＋Player +0x80 中身【低】／3=引継ぎ残り【低】）。
   > 教訓: 「ctor と記録した fn」の訂正は docs head の「global clear/reset pattern」で確定（bucket clear＋count=0＋object field clear＝reset/cleanup の定番＝v508 machine list free と docs の突合が決め手）／`.data` の `{size, len, "name"}` 構造が「名前付き data エントリ」の目印（0xB30D28＝{12, 8, "asin"}＝math 関数テーブル [推定]・LE 読替の反復）／docs annotation 欠落（gap）も [確定（否定側）] として記録（docs 未収録＝machine/別法へ経路固定）／fallback（0xB30D28）の identity が「何の default か」を語る／訂正確定（v469→v509）も裁定に明記（誤記録の軌跡が残る＝追跡可能性・v500 ctor→v505 remove、v508 dtor 候補→v509 reset 確定の連鎖）。v 採番 v509 消費（次=v510）。
+  > 【旧残点群消化第54弾 v510 — V-510-1..3 完遂・旧 V-406-3 継続第40弾】probe v510_1 全1本 EXIT=0。成果物 tmp/re/v510_iat_math_table_ruling.md・台帳 row486（bak336）・round_verify ALL OK（rows 31..486 / total 372 / done 367 / open 5）。
+  > ①[推定相当]（IAT dynamic lookup/init・string copy 訂正）V-510-1 FUN_0098C072: **machine 0x98C072-0x98C0C2 decode [確定(機械)]: `push esi/edi` → `call dword [0xa281ec]`（IAT import slot call）→ `push [0xb310ac]; push [0xb310b0]; call dword [0xa28150]`（IAT import call（2引数））→ `call eax`（動的 fn ptr）→ `push 0x214; push 1; call 0x989e22`（alloc `0x214`＝532B・count=1）→ `push esi; push [0xb310ac]; push [0xba9e20]; call 0x98beeb; pop ecx; call eax` → FUN_0098C072＝IAT import call（`0xA281xx` slot）＋global＋alloc 0x214＋動的 `call eax` する dynamic resolution/init fn [推定相当]**（DLL import 系 [確定相当]）→ **v505/v508「string copy」解釈を本裁定で更新（string copy でなく dynamic lookup）[確定（解釈更新）]**。
+  > ②[確定相当]（math name table）V-510-1 `0xB30D28` 完全解: **`.data` dword dump [確定(機械)]: `0xB30D28: 0x0000000C`（12）／`0xB30D2C: 0x00000008`（8）／`0xB30D30: 0x6E697361`＝`"asin"`／`0xB30D44: 0x3FE00000`（float `0.5`）／`0xB30D48: 0x00776F70`＝`"pow"`／`0xB30D50: 0x00736F63`＝`"cos"` → `{12, 8, "asin", …, 0.5, "pow", …, "cos", …}` の math 関数名テーブル＋定数配列 [確定相当]**（12＝count 候補、8＝stride 候補 [推定]）→ **`FUN_0098540B`（v508 fallback）の null 返しがこのテーブル default entry を返す [推定相当]**。
+  > ③[部分確定]（候補 signature 列挙）V-510-2 map ctor 探索: **v507 業務 fn 候補の docs signature 列挙 [確定(decompiled)]: FUN_004492E0（reset fn・v509 で確定）／`FUN_0046C300`（`void __thiscall(int, int, char)`・char flag 付き＝v492 `FUN_004CBA80` 系と同型 [推定]）／`FUN_0046C460`（`undefined4 * __fastcall(undefined4 *param_1)`）／`FUN_004B2730`（`void(int *param_1, int, undefined4)`）／`FUN_004B3400`（`void __thiscall(int, undefined4)`）→ map ctor はこの候補群から＝本 probe で signature のみ・本文特定は残点 [部分確定]**（`FUN_0046C300` の `char param_3`（flag）が map 構築の mode [推定]）。
+  > ④[未確定] V-510-3 引継ぎ（predicate 英名・新 FourCC 意味）は残点継続。
+  > 残点 V-511-1..3（1=map ctor の本文特定（`FUN_0046C300` から：`char param_3` mode と vtable store 有無）＋`FUN_0098C072` の IAT slot（`0xA281EC`/`0xA28150`）の import 先（DLL/関数名）と `0xB310AC`/`0xB310B0` global identity【中】／2=Player +0x80（ptr）の中身＋gated 側 mask 源（edx 設定元）【低】／3=引継ぎ残り【低】）。
+  > 教訓: `call dword [0xA281xx]` が IAT import call の合図（`0xA281xx`＝import table slot range [推定]）→ DLL import 系と即決（string copy 推定を覆す machine 証拠）／math 関数名テーブル（{"asin","pow","cos",…}＋0.5 定数）が `.data` に並ぶ（fallback default entry が「何の table か」を語る＝v509 0xB30D28 の完全解）／`{count, stride, "name"}` の data 構造が「テーブル entry」の型／解釈の更新（string copy→dynamic lookup）も裁定に明記（machine 証拠が docs 推定を覆す例＝訂正連鎖の4度目）／map ctor 候補の `char param_3`（flag）が mode 指定の目印。v 採番 v510 消費（次=v511）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1800,6 +1807,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1823,4 +1835,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 15:27:46
+**ai-todo** | Last Updated: 2026-11-17 15:40:18
