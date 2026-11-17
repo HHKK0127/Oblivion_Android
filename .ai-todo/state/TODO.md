@@ -930,6 +930,13 @@
   > ④[未確定] V-516-2 gated mask 源／caller 分離は budget 外で残点／[未確定] V-516-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。
   > 残点 V-517-1..3（1=`FUN_0041E210(10)` の extra data type 10 の正体（`+0xc` field が何の値か）＋`FUN_0046C460` ctor の残り本文（`formEnumString` 検証後の init 完遂）＋`FUN_0060D0A0`（TESForm ctor/dtor pair 候補）identity【中】／2=gated 側 mask 源（edx 設定元）＋caller 分離（経路分離＝残点）【低】／3=引継ぎ残り【低】）。
   > 教訓: extra data getter は `FUN_0041E210(type)` の type 番号が identity（`GetExtraData(10)`⇔`+0xc`＝特定 extra data の値＝v504 に接続）／`PTR_FUN_xxx`（vtable ptr）の RTTI 逆引きが ctor の class を確定（`.?AVTESForm@@`＝v515 ctor 候補の class 完遂＝vtable store 法の完成）／once flag（`cmp byte [GLOBAL], 0; mov …,1; …; mov …,0`）＋`virtual+slot` 委譲が wrapper fn の定番（`FUN_004D6DF0`＝once-guarded delegate＝docs gap を machine で補完）／`lea edx,[eax+1]` の `+1` が「result+1」操作の目印（index/counter 増分 [推定]）／docs gap の補完は machine decode で（v514 推定→v516 machine 確定＝gap 対応の完成形）。v 採番 v516 消費（次=v517）。
+  > 【旧残点群消化第61弾 v517 — V-517-1..3 完遂・旧 V-406-3 継続第47弾】probe v517_1 全1本 EXIT=0（初回構文エラー→修正再実行）。成果物 tmp/re/v517_ctor_complete_ruling.md・台帳 row493（bak343）・round_verify ALL OK（rows 31..493 / total 379 / done 374 / open 5）。
+  > ①[確定相当]（current id 初期化）V-517-1 FUN_0046C460 ctor 残り本文: **docs body 実読（L85986-86030）[確定(decompiled)]: `"formEnumString[ %d ] and formEnumString[ %d ] have the same iFormString %s in TESForm.cpp."`（duplicate log）＋`"You must fix the problems in TESForm.cpp to run this game."`（fatal error）→ `local_8 = 0x45`（69）ループ: `uVar4 += 0xc`（entry stride 12B）、`uVar6++`、`ppuVar5 += 3`（3 dwords/entry）→ `formEnumString[]`＝69 entries × 12B（`{iFormID, iFormString, ...}`）[確定相当] → `DAT_00b33c10 = 1`（once flag）→ `*(param_1 + 1) = 0; param_1[2] = 8; param_1[3] = 0;`（init fields）→ **`uVar3 = FUN_00448d40(); param_1[3] = uVar3;`（`param_1[3]`（`+0xC`）に FUN_00448D40 の結果＝current id を代入＝v511 current ptr と同 field！）** → `if ((uVar7 < 0x800) && (uVar7 != 0x800))`（`< 2048` かつ `!= 2048`）→ `if ((param_1[2] >> 0xe & 1) == 0)`（bit14 gate・v512/v514 family）→ `if (uVar7 != 0) FUN_004524c0(uVar7)`（old remove）→ `if (param_1[3] != 0) FUN_00446b40(param_1[3])`（FF id set・v512）→ `FUN_00452570(0x800, param_1)`（`0x800`＝2048 を insert）→ `param_1[3] = 0x800` → `return param_1` → FUN_0046C460＝TESForm ctor（current id 初期化＋`0x800` range＋set/replace chain）[確定相当]。`param_1+0xC`＝current form id（`0x800`＝2048＝FormID 範囲 [推定]）、`FUN_00448D40`＝current id getter [推定相当]**。
+  > ②[確定]（empty fn）V-517-1 FUN_0060D0A0: L374987 実読 [確定(decompiled)]: **`void FUN_0060d0a0(void) { return; }`（empty fn）→ TESForm vtable の `[+0x0/+0x4]`＝empty fn（pure virtual stub / do-nothing default [推定相当]）**（ctor/dtor pair 候補は empty＝pure virtual stub/default implementation [推定相当]＝`FUN_0046C460`（real ctor）とは別 slot [確定]）。
+  > ③[部分確定]（2 usage 確認・`+0xc` 語は残点）V-517-1 extra data type 10: **`FUN_0041e210(10)` mentions＝2件 [確定]: `L22080`（`FUN_0041FA30` 内・v516）／`L26536`（別 fn）→ type 10 extra data は2箇所で使用 [確定]、`+0xc` field の semantic は残り usage（`L26536` の context）が次の手＝残点 [部分確定]**。
+  > ④[未確定] V-517-2 gated mask 源／caller 分離は budget 外で残点／[未確定] V-517-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。
+  > 残点 V-518-1..3（1=`FUN_00448D40`（current id getter）identity＋`L26536` context（type 10 extra `+0xc` の値の意味）＋`0x800`（2048）＝default form id の semantic（FormID 範囲の下限 [推定]）【中】／2=gated 側 mask 源（edx 設定元）＋caller 分離（経路分離＝残点）【低】／3=引継ぎ残り【低】）。
+  > 教訓: ctor の init は「current id 初期化（getter→`+0xC`）＋range check＋set/replace chain」の4段（`FUN_00448D40`→`+0xC`→`0x800` range→remove/set/insert＝v511 set/replace と v512 FF id set が ctor に集結）／`0x800`（2048）＝default/current form id の目印（`< 0x800 && != 0x800` range＝FormID 範囲 [推定]）／empty fn（`{ return; }`）＝pure virtual stub/default（vtable `+0x0` の empty が「未実装 default」＝ctor/dtor pair 候補の否定）／`formEnumString[]` の stride（`+= 0xc`＝12B）が entry size を語る（69 entries×12B＝828B テーブル＝v515 `0x45` と接続）／ctor 完遂で「`param_1+0xC`＝current id」が確定（v511 current ptr の初期化元が判明＝横断整合）。v 採番 v517 消費（次=v518）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1852,11 +1859,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1880,4 +1882,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 16:50:27
+**ai-todo** | Last Updated: 2026-11-17 17:03:11
