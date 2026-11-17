@@ -1055,6 +1055,22 @@
   > ⑯ [確定: 命令／推定: 名称] +0x30（旧 slot35）: 引数は 20B グループヘッダ。arg==0→0／*arg != 'GRUP'→0→switch(arg[3])（groupType）: case 0 = type > FUN_0046AF70(arg[2])、1,4,5 = type<0x35、2,3,6 = type<0x30、7 = type<0x39（arg[2]=グループラベル packed 4CC→type index）＝「この form はこの GRUP に入るか」述語。
   > 残点 V-530-1..3: 1=TESFile+0x280 が常に 0（.text に加算サイト無し）で dataSize=0 になる件と保存完了時のサイズ確定処理【中】／2=グループノード +0x14 の意味＋FUN_00446CB0 identity【低】／3=groupType 0..7 の各意味と case 0 の不等号方向【低】。
   > 成果物: tmp/re/v529_save_pipeline_ruling.md、probe v529_1..11（全11本 EXIT=0）、台帳 row505、STATE (iu)、memory 934件。supermemory 未登録は v405..v529 の125件（catalog に add が出ず継続ブロック）。
+  > v530 完遂（V-530-1..3 / 旧残点 V-406-3 第60弾）: グループの close とサイズ確定、ノード +0x14 の意味、FUN_00446CB0 の正体、そして +0x30 の不等号方向と +0xBC/+0xC0 の分離。v529 の3点を訂正。
+  > ① [確定負] TESFile+0x280 に加算サイトは存在しない: docs 全域で代入は FUN_00450980 の "=0"（L61636）のみ・読みは FUN_00450A80（L61668）のみ、.text の disp32=0x280 走査でも TESFile 系は 0x4509FB（=0）と 0x450A85（read）だけで add/inc 0件 → +0x2C の bit5 経路（ヘッダのみ）で dataSize=0 は仕様（+0x26C も 2箇所のみ）。
+  > ② [確定] サイズ確定は FUN_00450250（GRUP close）: node=writer+0x284 → seek 末尾 → pos=[file+0x30]（-1 なら [file+0x148]）→ node+4 = pos - node+0x14 → seek(node+0x14) → FUN_00450190(node,0x14)（20B 再書込）→ FUN_0044FFA0（pop）。
+  > ③ [確定] FUN_00450430 = 保存終了時の全グループ close: while (writer+0x284) { if (TLS[+0x184]==0) pop（patch せず） else FUN_00450250() }。TLS[+0x184] は FUN_0044F3D0 が保存開始時に 1 にする保存中フラグ。
+  > ④ [確定] +0x3D4 = レコード数: 保存側 4関数が ++、load 側は FUN_0044F3D0 の DAT_00b33a90 += *(*piVar10 + 0x3d4)（プラグイン読込後に合算）。
+  > ⑤ [確定] ノード 0x18B: +0x00..+0x13 = 20B GRUP ヘッダ {type,size,label,groupType,stamp}、+0x14 = そのヘッダを書いたファイル位置（FUN_004501F0 が node->0x14=pos → 20B 書込 → +0x3D4++）。close 時にこの位置へ戻して size patch。
+  > ⑥ [確定・訂正] FUN_00446CB0 = リスト push（v529 の「ctor」は誤り）: __thiscall(listHead*, item) で item==0 なら何もしない／*list!=0 なら 8B セル {oldHead,next} を確保し *list=item; list[1]=cell／空なら *list=item。FUN_0044FF50（ECX=writer）は 20B ヘッダから 0x18 ノードを作って push、FUN_0044FFA0 は pop（+0x284=head／+0x288=セル）。
+  > ⑦ [確定] TESForm vtable 0xA3BE3C 再実測: +0xBC=0x46B910／+0xC0=0x46B950／+0xD4=0x4129A0（GetName）／+0x30=0x46B510。v529 が含意した「+0x30 が +0xBC の被呼び先」は誤り（別物）→ 訂正。
+  > ⑧ [確定] +0x30（0x46B510）の実命令とジャンプテーブル: table 0x46B56C 実値 case0→0x46B534／1,4,5→0x46B558／2,3,6→0x46B552／7→0x46B55E。case 0: esi=type・eax=FUN_0046AF70(label)・cmp esi,eax; jge→false ⇒ type < index(label) のとき true（v529 の「type >」は誤り→訂正）。他は cmp type,0x30/0x35/0x39; jae→false ⇒ type < 0x30／<0x35／<0x39。
+  > ⑨ [確定] FUN_0046AF70 = 0 始まり index: 0xB05E04 を 12B stride で [ecx]（f1=packed 4CC）と比較し一致時の eax を返す（不一致 0、0xB33C1C/0xB33C20 に1件キャッシュ）。index+1 ではない。
+  > ⑩ [確定] +0xBC = 0x46B910 ret 0xC: header==0→false／header[0]!='GRUP'→false／header[3]!=0→false（groupType 0 のみ）／header[2]==(&DAT_00b05e08)[type*3] で true（第2・第3引数は未使用）。
+  > ⑪ [確定] +0xC0 = 0x46B950 ret 8: {GRUP, 0, (&DAT_00b05e08)[type*3], 0, 0} を組む（arg2!=0 なら何もしない）＝ groupType 0 = top-level（label=型 4CC）で +0xBC と自己整合。
+  > ⑫ [確定] groupType 6 = cell children: FUN_004D3460（CELL 保存）が virtual[+0x24]() → FUN_00450A10(writer,cell) → スタックに {GRUP,0,label=cell->+0xC(formID),6,0} を組んで FUN_004501F0(writer,&hdr)。ラベルが 4CC でなく formID なので top-level とは別系統。
+  > ⑬ [推定] groupType 0..7 名称: 0=top／6=cell children は確定、1=world children・2=interior block・3=interior sub-block・4=exterior block・5=exterior sub-block・7=topic children は +0x30 の閾値（0x30=CELL 直前・0x35=WRLD 直前・0x39=DIAL 直前）と整合する推定。
+  > 残点 V-531-1..3: 1=+0x30 の実 call site 特定＋case 0 の意味（順序か所属か）決着【中】／2=groupType 1..5,7 の実データ確認とヘッダ組立関数の探索【中】／3=TESForm vtable +0x78〜+0xB8 の未読 slot（0x4D7030／0x412980／0x412990／0x4CA690／0x46A9E0 等）identity【低】。
+  > 成果物: tmp/re/v530_group_close_ruling.md、probe v530_1..7（全7本 EXIT=0）、台帳 row506、STATE (iv)、memory 935件。supermemory 未登録は v405..v530 の126件（catalog に add が出ず継続ブロック）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1977,11 +1993,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2005,4 +2016,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 19:15:29
+**ai-todo** | Last Updated: 2026-11-17 19:24:14
