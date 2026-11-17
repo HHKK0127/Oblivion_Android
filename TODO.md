@@ -959,6 +959,13 @@
   > ④[未確定] V-520-2 hash vtable・bucket identity／caller 分離は budget 外で残点／[未確定] V-520-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。
   > 残点 V-521-1..3（1=`FUN_0041E2D0`（type で extra 検索）identity（RemoveExtra の検索段完遂）＋`FUN_0055E000` の map object（allocator の reserved map が何の map か）【中】／2=hash vtable（`PTR_PTR_00b0613c`）・bucket（`DAT_00b06144`）identity＋caller 分離（経路分離＝残点）【低】／3=引継ぎ残り【低】）。
   > 教訓: critical section の名前文字列（`FUN_00401020("…")`）が fn identity を一撃（`"BaseExtraList::RemoveExtra"`＝v504 `"BaseExtraList::GetExtraData"` に続く名前法の再現＝Get/Remove の対が揃う）／bit mask clear（`*p &= ~(1 << (type&7))`）＋TLS cache clear（`+0x10+type*4`）が extra data remove の定番（v504 Get（mask 検査）⇔本裁定 Remove（mask クリア）で同一 `BaseExtraList` 構造が確定）／wrapper（`local=0; f(x,&local); return local != 0;`）が boolean 化 fn の定番／allocator の回避条件は「既存 map lookup の hit」（`FUN_0055E000`＝hash map lookup・hit なら increment 継続＝v519 allocator の残り条件が完遂）／set/call 候補も実文字列で remove と分かる（v519→v520 の訂正＝解釈更新連鎖の追加）。v 採番 v520 消費（次=v521）。
+  > 【旧残点群消化第65弾 v521 — V-521-1..3 完遂・旧 V-406-3 継続第51弾】probe v521_1 全1本 EXIT=0。成果物 tmp/re/v521_registry_map_ruling.md・台帳 row497（bak347）・round_verify ALL OK（rows 31..497 / total 383 / done 378 / open 5）。
+  > ①[確定]（RTTI）→ `NiTMapBase<NiTPointerAllocator<uint>, TESForm*>` V-521-2 allocator hash vtable: **`.rdata` 実読＋RTTI 実読 [確定(実RTTI)]: dword `@0xB0613C`＝`0x00A3BC94` → `rtti_name(0xA3BC94) = .?AV?$NiTMapBase@V?$NiTPointerAllocator@I@@IPAVTESForm@@@@` → `NiTMapBase<NiTPointerAllocator<unsigned int>, TESForm*>` [確定] → allocator（`FUN_00448D40`）の hash map＝`TESForm*` を保持する `NiTMapBase`＝TESForm レジストリ map [確定]**。vtable slots [確定(機械)]: **`[+0x4]`＝`FUN_006A9060`（hash fn・allocator の `virtual[*v+4]` 実体）／`[+0x8]`＝`FUN_00763E80`（compare fn・`virtual[+8]` 実体）／`[+0x0]`＝`FUN_0046B030`（ctor/dtor [推定]）／`[+0xC]`＝`FUN_0067F130`／`[+0x10]`＝`FUN_0068F970`／`[+0x14]`＝`FUN_00982D85` → allocator の hash/compare fn を特定 [確定相当]**。`DAT_00b06144`（bucket）は runtime init（dword=0）[確定相当]。
+  > ②[確定]（実文字列）→ `BaseExtraList::GetPrevExtraData` V-521-1 FUN_0041E2D0: **L20109 実読 [確定(decompiled)＋実文字列]: `int __thiscall FUN_0041e2d0(int param_1, byte param_2)`: `if ((param_2 >> 3 < 0xc) && ((*(byte *)((param_2 >> 3) + 8 + param_1) & (1 << (param_2 & 7))) != 0))`（96-type bit mask 検査＝v504/v520 と同一型）→ `FUN_00401020("BaseExtraList::GetPrevExtraData")`（critical section 名＝実文字列）→ `iVar3 = *(param_1 + 4)`（list head）→ walk → `FUN_0041E2D0`＝`BaseExtraList::GetPrevExtraData`（type byte 指定で extra data を検索する fn）[確定] → `BaseExtraList` family が「`FUN_0041E210`＝GetExtraData（v504）／`FUN_0041E2D0`＝GetPrevExtraData（本裁定）／`FUN_00422E20`＝RemoveExtra（v520）」の3種で揃う [確定相当]**（3 fn とも同一の bit mask＋TLS cache 構造）。
+  > ③[確定相当]（TESForm registry の `NiTMapBase`）V-521-1 allocator の map object: **`FUN_00448D40` E8 callers＝3件 [確定(機械)]: `0x4160E8`（`FUN_00416000`）／`0x45C854`（`FUN_0045C7A0`）／`0x46C58F`（`FUN_0046C460`・TESForm ctor・v515/v517）→ allocator は TESForm ctor 他3fn から呼ばれ、hash map が `NiTMapBase<…, TESForm*>`（RTTI 確定）→ `FUN_0055E000` の map object＝TESForm レジストリ [確定相当]**（v520 残点「reserved map が何の map か」への回答）。
+  > ④[未確定] V-521-3 引継ぎ（predicate 英名・新 FourCC 意味）は残点継続。
+  > 残点 V-522-1..3（1=`FUN_006A9060`（hash fn）／`FUN_00763E80`（compare fn）本文（registry の key 比較法＝form id 比較か pointer 比較か）＋`FUN_0046B030`（`NiTMapBase` ctor/dtor 候補）identity【中】／2=`FUN_00416000`/`FUN_0045C7A0`（allocator の残り2 caller）identity＋caller 分離（経路分離＝残点）【低】／3=引継ぎ残り【低】）。
+  > 教訓: `PTR_PTR_xxx`（vtable ptr）の RTTI 逆引きが container の class を確定（`NiTMapBase<…, TESForm*>`＝allocator の map が TESForm レジストリと即決＝RTTI 法の3度目）／`BaseExtraList` family は「Get／GetPrev／Remove」の3種で揃う（3 fn とも critical section 名＋同一 bit mask 構造＝名前法＋構造の横断一致）／hash fn／compare fn が vtable slot（`+4`/`+8`）から特定できる（container の hash/compare 実体判明＝map の key 比較法が次の手）／allocator の caller census（3件）が「誰が id counter を使うか」を語る（TESForm ctor＋2 method＝form id 生成経路判明）／`DAT_00b06144`（bucket）の runtime init（dword=0）が「起動時に確保される配列」の目印。v 採番 v521 消費（次=v522）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1881,6 +1888,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1904,4 +1916,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 17:39:43
+**ai-todo** | Last Updated: 2026-11-17 17:49:24
