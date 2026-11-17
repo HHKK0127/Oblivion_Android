@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-17T09:00:30Z",
+  "lastUpdated": "2026-11-17T09:13:33Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13544,14 +13544,30 @@
         "tesform-cast"
       ],
       "content": "2026-11-17 旧残点群消化第66弾 v522（probe v522_1 全1本 EXIT=0）＝V-522-1..3 完遂・旧 V-406-3 継続第52弾: 成果物 tmp/re/v522_hash_compare_ruling.md・台帳 row498（bak348）・round_verify ALL OK（rows 31..498 / total 384 / done 379 / open 5）・STATE (in)・ai-todo #151 note。[確定]（modulo hash）V-522-1 FUN_006A9060: L475136 実読 [確定(decompiled)]: uint __thiscall FUN_006a9060(int param_1, uint param_2) { return param_2 % *(uint *)(param_1 + 4); } → hash＝key % bucket_count（param_1+4＝bucket 数）の modulo hash [確定] → registry（NiTMapBase<…, TESForm*>）の hash は form id（uint）を bucket 数で割る modulo [確定相当]（v519 allocator の virtual[*v+4](iVar5)＝form id の modulo hash）。[確定]（equality compare）V-522-1 FUN_00763E80: L607560 実読 [確定(decompiled)]: bool FUN_00763e80(int param_1, int param_2) { return param_1 == param_2; } → compare＝==（equality）[確定] → registry の key 比較＝form id（uint）の直接一致判定 [確定相当]（v519 allocator の virtual[+8](iVar5, puVar3[1])＝form id equality）→ form id が key であることが hash/compare 両面で確定。[部分確定]（TESForm cast＋FUN_0046ACB0）V-522-2 FUN_00416000: L14522 実読 [確定(decompiled)]: void __thiscall FUN_00416000(int param_1, undefined4 param_2): iVar1 = FUN_009832e6(param_2, 0, &PTR_PTR_00b02f9c, &PTR_PTR_00b03534, 0)（RTDynamicCast: TESForm（0xB02F9C）→ 0xB03534 type）→ if (iVar1 != 0) { FUN_0046acb0(param_2); ... } → FUN_00416000＝「param_2 を TESForm→0xB03534 type に cast し、成功したら FUN_0046ACB0(param_2) を呼ぶ fn [部分確定]」（0xB03534 type identity は RTTI 未読＝残点、FUN_0046ACB0 identity は残点）→ allocator（id counter）を使う cast 経路 [推定]。[部分確定]（DWORD locals・本文 cap 外）V-522-2 FUN_0045C7A0: L73041 実読 [確定(decompiled)]: void __thiscall FUN_0045c7a0(int param_1, int *param_2): locals＝DWORD DVar2; byte bVar3; DWORD DVar4; int iVar5; ... （DWORD locals＝thread/tick 系 [推定]）→ 本文は cap 外＝[部分確定]（param_2 が int*＝ptr object [確定相当]）。[未確定] V-522-1 FUN_0046B030（NiTMapBase ctor/dtor 候補）は budget 外で残点／[未確定] V-522-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。残点 V-523-1..3（1=PTR_PTR_00b03534 RTTI type（FUN_00416000 の cast 先）＋FUN_0046ACB0（cast 成功後の呼出し）identity＋FUN_0046B030（NiTMapBase ctor/dtor）identity【中】／2=FUN_0045C7A0 本文（DWORD locals の中身）＋caller 分離（経路分離＝残点）【低】／3=引継ぎ残り【低】）。教訓: container の hash/compare 実体は vtable slot（+4/+8）の fn docs を読めば1行で判明（%＝modulo、==＝equality が hash/compare の定番＝v521 で slot特定→v522 で本文確定の2段）／hash（uint key）＋compare（==）の両面が揃うと「key が何か」が確定（form id が registry key と確定＝v519 allocator の key 追跡が完遂）／RTDynamicCast wrapper（FUN_009832E6）が5度目（cast 先 type ptr（0xB03534）の RTTI が次の手）／allocator の caller が「cast 経路」と「DWORD locals 経路」に分かれる（id counter を使う2つの経路 [部分確定]）／% と == の1行 fn が container の key semantics を決める（小さな fn ほど identity が即分かる＝docs head の短さが利点）。本日 push: v405→v521（195a112f）117件＋本件 v522。v 採番 v522 消費（次=v523）。"
+    },
+    {
+      "id": "151-v523-effectsetting-dtor-2026-11-17",
+      "timestamp": "2026-11-17T09:13:33Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v523",
+        "effectsetting-cast",
+        "nitmap-dtor",
+        "seh-signature"
+      ],
+      "content": "2026-11-17 旧残点群消化第67弾 v523（probe v523_1 全1本 EXIT=0）＝V-523-1..3 完遂・旧 V-406-3 継続第53弾: 成果物 tmp/re/v523_effectsetting_dtor_ruling.md・台帳 row499（bak349）・round_verify ALL OK（rows 31..499 / total 385 / done 380 / open 5）・STATE (io)・ai-todo #151 note。[確定]（RTTI）→ .?AVEffectSetting@@ V-523-1 cast 先: .rdata TD 実読 [確定(実RTTI)]: dword @0xB03534＝0x00AA3E80、direct TD name＝.?AVEffectSetting@@ → cast 先 type＝EffectSetting [確定] → FUN_00416000＝「param_2 を TESForm→EffectSetting に __RTDynamicCast し、成功したら FUN_0046ACB0(param_2) を呼ぶ fn [確定相当]」（v522 部分確定を確定へ引き上げ）。EffectSetting は v504（EffectSettingCollection.cpp LoadGame）の同 family ＝接続点が判明 [確定相当]。[確定相当]（scalar deleting destructor）V-523-1 FUN_0046B030: L84623 実読 [確定(decompiled)]: undefined4 * __thiscall FUN_0046b030(undefined4 *param_1, byte param_2): *param_1 = &PTR_FUN_00a3bc94;（vtable store（v521 の NiTMapBase vtable！））→ FUN_007c2a40()（base cleanup 候補 [推定]）→ FUN_00401f20(param_1[2])（bucket 配列 free）→ if ((param_2 & 1) != 0) { FUN_00401f20(param_1); }（flag bit0 で this を free＝scalar deleting destructor の定番 signature）→ return param_1 → FUN_0046B030＝NiTMapBase の scalar deleting destructor（vtable 復元→base cleanup→bucket free→param_2 & 1 で this free）[確定相当]（v521「ctor/dtor 候補」を dtor 側と確定）。[部分確定]（signature 判明・本文 cap 外）V-523-1 FUN_0046ACB0: L84411 実読 [確定(decompiled)]: void __thiscall FUN_0046acb0(undefined4 param_1, undefined4 param_2)（2引数）→ SEH setup（local_dc[208]（208B バッファ）・puStack_8 = &LAB_009ae9f3・*unaff_FS_OFFSET・DAT_00b30aac ^ &stack（cookie XOR））→ 本文は cap 外＝[部分確定]（SEH＋stack cookie 付き large fn [確定相当]、param_2＝cast 済み EffectSetting [推定]）。[未確定] V-523-2 FUN_0045C7A0 本文／caller 分離は budget 外で残点／[未確定] V-523-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。残点 V-524-1..3（1=FUN_0046ACB0 本文（EffectSetting cast 成功後の処理＝何をするか）＋FUN_007C2A40（dtor base cleanup）identity【中】／2=FUN_0045C7A0 本文（DWORD locals の中身）＋caller 分離（経路分離＝残点）【低】／3=引継ぎ残り【低】）。教訓: cast 先 type ptr（PTR_PTR_xxx）の TD 実読が cast semantics を確定（.?AVEffectSetting@@＝v522 部分確定を確定へ引き上げ＝RTTI 法の4度目・EffectSetting＝v504 との接続点）／*param_1 = &PTR_FUN_...（vtable store）＋param_2 & 1（this free）が scalar deleting destructor の定番（dtor の identity は vtable 復元＋flag free の2点で即決＝v505 dtor pattern の反復）／FUN_00401F20（free 系）が bucket 配列の解放に使われる（param_1[2]＝bucket＝v521 構造と整合＝横断確認）／SEH setup＋stack cookie（DAT_00b30aac ^ &stack）が large fn の目印（208B バッファ＝local_dc[208] が fn サイズの手がかり）／EffectSetting（cast 先）と EffectSettingCollection.cpp（v504 LoadGame）の接続が判明（cast 経路が LoadGame/EffectSetting 系業務に使われる [推定]＝次の手の方向）。本日 push: v405→v522（d7e8a221）118件＋本件 v523。v 採番 v523 消費（次=v524）。"
     }
   ],
   "metadata": {
-    "totalEntries": 927,
+    "totalEntries": 928,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-17T09:00:30Z",
-    "entry_count": 927,
-    "last_updated": "2026-11-17T09:00:30Z"
+    "lastUpdated": "2026-11-17T09:13:33Z",
+    "entry_count": 928,
+    "last_updated": "2026-11-17T09:13:33Z"
   }
 }
