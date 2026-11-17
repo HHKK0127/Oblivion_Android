@@ -55,6 +55,13 @@ static const float kDistantLodFarPlane = 20000.0f;
 // RE 48: MenuFadeSystem node id for the pause menu (original PauseMenu 0x3f5).
 static const char* const kPauseMenuFadeKey = "pause";
 
+// Character sheet (#127): fixed panel size, centred on the game view. The tab strip
+// needs 338 px (3 x 110 + gaps) and every row header is 320 px wide, so the panel is
+// 400 px; the Skills tab is the tallest content (21 skill rows at a 22 px pitch plus
+// its header), so 580 px keeps every row on the panel at 1920x1110.
+static const float kCharacterSheetWidth = 400.0f;
+static const float kCharacterSheetHeight = 580.0f;
+
 namespace {
 
 // Spawned merchants the player could trade with, nearest first, each paired
@@ -267,6 +274,11 @@ void Renderer::resize(unsigned int width, unsigned int height) {
     }
     if (quickKeysMenuUI) {
         quickKeysMenuUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+    }
+    if (characterSheetUI) {
+        characterSheetUI->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        characterSheetUI->setPosition((screenWidth - kCharacterSheetWidth) * 0.5f,
+                                      (screenHeight - kCharacterSheetHeight) * 0.5f);
     }
 
     // Update RetroFilter resolution
@@ -2008,6 +2020,11 @@ bool Renderer::initGameSystems() {
         LOGI("Menu open requested: %s", menu.c_str());
             if (menu == "inventory") {
                 toggleInventory();
+            } else if (menu == "stats") {
+                // Character sheet (#127): the port has no retail stats-menu id
+                // wired, so this follows the same console/debug-menu route the
+                // inventory panel already uses.
+                toggleCharacterSheet();
             }
         };
     refs.closeMenu = []() {
@@ -2826,6 +2843,24 @@ bool Renderer::initGameSystems() {
         uiSystem->registerComponent(invPanel, 15);
         uiInventoryPanel = invPanel.get();
         LOGI("UIInventoryPanel created and registered in UISystem");
+    }
+
+    // Create the character sheet (#127). Same registration path as the inventory
+    // panel; it stays hidden until `openmenu stats` (console / debug menu) opens it,
+    // at which point the snapshot it renders is refreshed from the Player.
+    if (uiSystem) {
+        auto sheet = std::make_shared<UICharacterSheet>("Character");
+        if (!sheet->initialize(&characterSheetStatus_, textRenderer.get())) {
+            LOGE("UICharacterSheet failed to initialize");
+        }
+        sheet->setSize(kCharacterSheetWidth, kCharacterSheetHeight);
+        sheet->setPosition((screenWidth - kCharacterSheetWidth) * 0.5f,
+                           (screenHeight - kCharacterSheetHeight) * 0.5f);
+        sheet->setScreenSize(static_cast<int>(screenWidth), static_cast<int>(screenHeight));
+        sheet->setVisible(false);
+        uiSystem->registerComponent(sheet, 16);
+        characterSheetUI = sheet.get();
+        LOGI("UICharacterSheet created and registered in UISystem");
     }
 
     // Initialize Launcher Screen (displayed before title screen)
@@ -8665,6 +8700,78 @@ void Renderer::toggleInventory() {
     }
 }
 
+// Character sheet (#127). The panel renders a CharacterStatus snapshot, so the
+// snapshot is rebuilt from the live Player every time it opens; the key names are
+// the canonical ones UICharacterCreation and UICharacterSheet already agree on
+// (RE_EXE_REPORT 46.1 for the 21 skills).
+void Renderer::toggleCharacterSheet() {
+    if (!characterSheetUI) return;
+
+    if (!characterSheetUI->isVisible()) {
+        if (playerController && playerController->getPlayer()) {
+            Player* player = playerController->getPlayer().get();
+            CharacterStatus& s = characterSheetStatus_;
+            s.name = player->name;
+            s.raceFormID = player->raceFormID;
+            s.currentHealth = player->health;
+            s.maxHealth = player->maxHealth;
+            s.currentMana = player->magicka;
+            s.maxMana = player->maxMagicka;
+            s.stamina = player->stamina;
+            s.maxStamina = player->maxStamina;
+            s.level = player->playerLevel;
+            s.weaponDamage = 0.0f;
+            s.armorRating = 0.0f;
+
+            s.attributes = {
+                {"Strength",     static_cast<float>(player->attributes.Strength)},
+                {"Intelligence", static_cast<float>(player->attributes.Intelligence)},
+                {"Willpower",    static_cast<float>(player->attributes.Willpower)},
+                {"Agility",      static_cast<float>(player->attributes.Agility)},
+                {"Speed",        static_cast<float>(player->attributes.Speed)},
+                {"Endurance",    static_cast<float>(player->attributes.Endurance)},
+                {"Personality",  static_cast<float>(player->attributes.Personality)},
+                {"Luck",         static_cast<float>(player->attributes.Luck)},
+            };
+            s.skills = {
+                {"Armorer",       static_cast<float>(player->skills.Armorer)},
+                {"Athletics",     static_cast<float>(player->skills.Athletics)},
+                {"Blade",         static_cast<float>(player->skills.Blade)},
+                {"Block",         static_cast<float>(player->skills.Block)},
+                {"Blunt",         static_cast<float>(player->skills.Blunt)},
+                {"Hand-to-Hand",  static_cast<float>(player->skills.HandToHand)},
+                {"Heavy Armor",   static_cast<float>(player->skills.HeavyArmor)},
+                {"Alchemy",       static_cast<float>(player->skills.Alchemy)},
+                {"Alteration",    static_cast<float>(player->skills.Alteration)},
+                {"Conjuration",   static_cast<float>(player->skills.Conjuration)},
+                {"Destruction",   static_cast<float>(player->skills.Destruction)},
+                {"Illusion",      static_cast<float>(player->skills.Illusion)},
+                {"Mysticism",     static_cast<float>(player->skills.Mysticism)},
+                {"Restoration",   static_cast<float>(player->skills.Restoration)},
+                {"Acrobatics",    static_cast<float>(player->skills.Acrobatics)},
+                {"Light Armor",   static_cast<float>(player->skills.LightArmor)},
+                {"Marksman",      static_cast<float>(player->skills.Marksman)},
+                {"Mercantile",    static_cast<float>(player->skills.Mercantile)},
+                {"Security",      static_cast<float>(player->skills.Security)},
+                {"Sneak",         static_cast<float>(player->skills.Sneak)},
+                {"Speechcraft",   static_cast<float>(player->skills.Speechcraft)},
+            };
+        } else {
+            LOGW("Character sheet opened with no player; showing empty status");
+        }
+        characterSheetUI->setVisible(true);
+        LOGI("Character sheet opened (level=%u, Blade=%d, Speechcraft=%d)",
+             characterSheetStatus_.level,
+             static_cast<int>(characterSheetStatus_.skills.count("Blade")
+                 ? characterSheetStatus_.skills.at("Blade") : -1),
+             static_cast<int>(characterSheetStatus_.skills.count("Speechcraft")
+                 ? characterSheetStatus_.skills.at("Speechcraft") : -1));
+    } else {
+        characterSheetUI->setVisible(false);
+        LOGI("Character sheet closed");
+    }
+}
+
 void Renderer::toggleGameConsole() {
     if (gameConsole) {
         gameConsole->toggle();
@@ -9233,6 +9340,7 @@ bool Renderer::anyMenuOpen() const {
     if (questUI && questUI->getVisibility()) return true;
     if (inventoryUI && inventoryUI->isVisible()) return true;
     if (uiInventoryPanel && uiInventoryPanel->isVisible()) return true;
+    if (characterSheetUI && characterSheetUI->isVisible()) return true;
     if (mapUI && mapUI->isVisible()) return true;
     if (dialogueUI && dialogueUI->isVisible()) return true;
     if (bookReaderUI && bookReaderUI->isVisible()) return true;
@@ -9359,6 +9467,11 @@ bool Renderer::handleBackKey() {
         if (uiInventoryPanel && uiInventoryPanel->isVisible()) {
             uiInventoryPanel->setVisible(false);
             LOGI("handleBackKey: Closed InventoryPanel");
+            return true;
+        }
+        if (characterSheetUI && characterSheetUI->isVisible()) {
+            characterSheetUI->setVisible(false);
+            LOGI("handleBackKey: Closed CharacterSheet");
             return true;
         }
         if (mapUI && mapUI->isVisible()) {

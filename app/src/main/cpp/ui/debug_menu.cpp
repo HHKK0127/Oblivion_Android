@@ -1232,6 +1232,7 @@ void DebugMenu::createAllTabContents() {
             {"Add Armor", "additem 300 1"},
             {"Carry Weight", "carryweight"},
                         {"Open Inventory", "openmenu inventory"},
+                        {"Character Sheet", "openmenu stats"},
                     };
         for (const auto& item : items) {
             Button btn;

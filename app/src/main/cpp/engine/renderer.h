@@ -51,6 +51,7 @@
 #include "../game/enchanting_system.h"
 #include "../ui/inventory_ui.h"
 #include "../ui/ui_inventory_panel.h"
+#include "../ui/ui_character_sheet.h"
 #include "../world/world_manager.h"
 #include "../world/object_placer.h"
 #include "../world/world_entity.h"
@@ -275,6 +276,12 @@ private:
     std::unique_ptr<EquipmentEffectSystem> equipmentEffectSystem;
     ui::UIInventoryPanel* uiInventoryPanel = nullptr;
 
+    // Character sheet (#127): the Attributes/Skills/Effects panel that shows the
+    // live player state. `characterSheetStatus_` is the snapshot the sheet reads;
+    // it is refreshed from the Player every time the panel opens.
+    UICharacterSheet* characterSheetUI = nullptr;
+    CharacterStatus characterSheetStatus_;
+
     // Phase 31: World Entity System
     std::unique_ptr<WorldLoader> worldLoader;
 
@@ -430,6 +437,10 @@ public:
     EquipmentEffectSystem* getEquipmentEffectSystem() { return equipmentEffectSystem.get(); }
     void toggleInventory();
     bool isInventoryVisible() const { return uiInventoryPanel && uiInventoryPanel->isVisible(); }
+
+    // Character sheet (#127): opened with `openmenu stats` (console / debug menu).
+    void toggleCharacterSheet();
+    bool isCharacterSheetVisible() const { return characterSheetUI && characterSheetUI->isVisible(); }
 
     // Virtual Controller
     VirtualController* getVirtualController() { return virtualController.get(); }

@@ -95,7 +95,10 @@ void UICharacterSheet::renderTabButtons() {
     glm::vec2 cp = getContentPosition();
 
     const char* tabLabels[] = { "Attributes", "Skills", "Effects" };
-    const float tabW = 100.0f;
+    // 110 px per tab keeps the 3-tab strip (338 px) inside the 360 px panel, and the
+    // 0.5 label scale keeps "Attributes" (the longest label) from running into the
+    // next tab - at 0.7 the three labels overlapped into an unreadable smear.
+    const float tabW = 110.0f;
     const float tabH = 26.0f;
     const float gap  = 4.0f;
 
@@ -114,7 +117,7 @@ void UICharacterSheet::renderTabButtons() {
 
         if (textRenderer) {
             textRenderer->renderText(tabLabels[i], bx + 6.0f, by + 4.0f,
-                glm::vec3(0.1f, 0.1f, 0.1f), 0.7f);
+                glm::vec3(0.1f, 0.1f, 0.1f), 0.5f);
         }
     }
 }
@@ -127,7 +130,7 @@ void UICharacterSheet::renderAttributesTab() {
     float y  = cp.y + 34.0f;  // below tabs
 
     // Vitals section header
-    PlaceholderAssets::drawPanel(x, y, 280.0f, 18.0f,
+    PlaceholderAssets::drawPanel(x, y, 320.0f, 18.0f,
         PlaceholderAssets::Colors::BROWN_ACCENT,
         PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
     textRenderer->renderText("VITALS", x + 6.0f, y + 2.0f,
@@ -140,7 +143,7 @@ void UICharacterSheet::renderAttributesTab() {
     renderStatDisplay(x, y, "Stamina", characterStatus->stamina,        characterStatus->maxStamina); y += 36.0f;
 
     // Attributes section header
-    PlaceholderAssets::drawPanel(x, y, 280.0f, 18.0f,
+    PlaceholderAssets::drawPanel(x, y, 320.0f, 18.0f,
         PlaceholderAssets::Colors::BROWN_ACCENT,
         PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
     textRenderer->renderText("ATTRIBUTES", x + 6.0f, y + 2.0f,
@@ -156,19 +159,21 @@ void UICharacterSheet::renderAttributesTab() {
         auto it = characterStatus->attributes.find(attr);
         float val = (it != characterStatus->attributes.end()) ? it->second : 0.0f;
         renderAttributeRow(x, y, attr, val);
-        y += 20.0f;
+        // 24 px pitch for a 19 px row of text (0.6 x 32 px em): at the old 20 px
+        // the descenders of one row collided with the caps of the next.
+        y += 24.0f;
     }
 
     // Combat stats
     y += 6.0f;
-    PlaceholderAssets::drawPanel(x, y, 280.0f, 18.0f,
+    PlaceholderAssets::drawPanel(x, y, 320.0f, 18.0f,
         PlaceholderAssets::Colors::BROWN_ACCENT,
         PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
     textRenderer->renderText("COMBAT", x + 6.0f, y + 2.0f,
         glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT), 0.7f);
     y += 22.0f;
 
-    renderAttributeRow(x, y, "Weapon Damage", characterStatus->weaponDamage); y += 20.0f;
+    renderAttributeRow(x, y, "Weapon Damage", characterStatus->weaponDamage); y += 24.0f;
     renderAttributeRow(x, y, "Armor Rating",  characterStatus->armorRating);
 }
 
@@ -180,7 +185,7 @@ void UICharacterSheet::renderSkillsTab() {
     float y = cp.y + 34.0f;
 
     // Section header
-    PlaceholderAssets::drawPanel(x, y, 280.0f, 18.0f,
+    PlaceholderAssets::drawPanel(x, y, 320.0f, 18.0f,
         PlaceholderAssets::Colors::BROWN_ACCENT,
         PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
     textRenderer->renderText("SKILLS", x + 6.0f, y + 2.0f,
@@ -201,7 +206,9 @@ void UICharacterSheet::renderSkillsTab() {
         auto it = characterStatus->skills.find(skill);
         float val = (it != characterStatus->skills.end()) ? it->second : 0.0f;
         renderSkillRow(x, y, skill, val, 100.0f);
-        y += 18.0f;
+        // 22 px pitch for the 19 px skill row; the old 18 px made the 21 rows run
+        // into each other.
+        y += 22.0f;
     }
 }
 
@@ -210,7 +217,7 @@ void UICharacterSheet::renderEffectsTab() {
     float x = cp.x + 8.0f;
     float y = cp.y + 34.0f;
 
-    PlaceholderAssets::drawPanel(x, y, 280.0f, 18.0f,
+    PlaceholderAssets::drawPanel(x, y, 320.0f, 18.0f,
         PlaceholderAssets::Colors::BROWN_ACCENT,
         PlaceholderAssets::Colors::GOLD_HIGHLIGHT);
     if (textRenderer)
@@ -219,7 +226,7 @@ void UICharacterSheet::renderEffectsTab() {
     y += 28.0f;
 
     // Placeholder: no active effects system yet
-    PlaceholderAssets::drawPanel(x, y, 280.0f, 40.0f,
+    PlaceholderAssets::drawPanel(x, y, 320.0f, 40.0f,
         glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT) * 0.95f,
         PlaceholderAssets::Colors::BROWN_ACCENT);
     if (textRenderer)
@@ -230,32 +237,35 @@ void UICharacterSheet::renderEffectsTab() {
 void UICharacterSheet::renderAttributeRow(float x, float y, const std::string& attrName, float value) {
     if (!textRenderer) return;
 
-    PlaceholderAssets::drawPanel(x, y, 280.0f, 16.0f,
+    PlaceholderAssets::drawPanel(x, y, 320.0f, 16.0f,
         glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT) * 0.9f,
         PlaceholderAssets::Colors::BROWN_ACCENT * 0.7f);
 
     textRenderer->renderText(attrName, x + 4.0f, y + 2.0f,
-        glm::vec3(0.1f, 0.1f, 0.1f), 0.65f);
+        glm::vec3(0.1f, 0.1f, 0.1f), 0.6f);
 
     char buf[16];
     snprintf(buf, sizeof(buf), "%.0f", value);
-    textRenderer->renderText(buf, x + 240.0f, y + 2.0f,
-        glm::vec3(PlaceholderAssets::Colors::BROWN_ACCENT), 0.65f);
+    // Right-hand value column: at x+240 the long labels ("Weapon Damage") ran into
+    // it, so the column sits at the far end of the now 320 px row.
+    textRenderer->renderText(buf, x + 270.0f, y + 2.0f,
+        glm::vec3(PlaceholderAssets::Colors::BROWN_ACCENT), 0.6f);
 }
 
 void UICharacterSheet::renderSkillRow(float x, float y, const std::string& skillName,
                                       float value, float maxValue) {
     if (!textRenderer) return;
 
-    PlaceholderAssets::drawPanel(x, y, 280.0f, 14.0f,
+    PlaceholderAssets::drawPanel(x, y, 320.0f, 14.0f,
         glm::vec3(PlaceholderAssets::Colors::PARCHMENT_LIGHT) * 0.88f,
         PlaceholderAssets::Colors::BROWN_ACCENT * 0.5f);
 
     textRenderer->renderText(skillName, x + 4.0f, y + 1.0f,
         glm::vec3(0.1f, 0.1f, 0.1f), 0.6f);
 
-    // Skill bar (right side, 60px wide)
-    float barX = x + 210.0f;
+    // Skill bar (right side, 60px wide) - sits at the end of the 320 px row so it
+    // clears the longest skill names.
+    float barX = x + 250.0f;
     float fillRatio = (maxValue > 0.0f) ? (value / maxValue) : 0.0f;
     fillRatio = std::min(fillRatio, 1.0f);
     PlaceholderAssets::drawStatusBar(barX, y + 2.0f, 60.0f, 10.0f,
@@ -288,7 +298,9 @@ void UICharacterSheet::renderStatDisplay(float x, float y,
 
 int UICharacterSheet::hitTestTabButton(float x, float y) const {
     glm::vec2 cp = getContentPosition();
-    const float tabW = 100.0f;
+    // Must match renderTabButtons(): the touch box and the drawn box are the same
+    // constants, so a tab that looks tappable is tappable.
+    const float tabW = 110.0f;
     const float tabH = 26.0f;
     const float gap  = 4.0f;
 
