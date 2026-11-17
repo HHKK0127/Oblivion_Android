@@ -907,6 +907,14 @@
   > ④[未確定] V-513-2 gated mask 源（`edx`）は budget 外で残点／[未確定] V-513-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。
   > 残点 V-514-1..3（1=`virtual+0xD4` slot impl（LoadGame form の name/version 取得 fn）＋`FUN_0046B2C0`/`FUN_0046C460`（`FUN_00446B40` の残り2 caller）の identity（FF id set の別経路）【中】／2=gated 側 mask 源（edx 設定元）＋`FUN_0045B670` gated の `param_1+0xC` key と `FUN_0046C300` の current ptr の caller 分離（type で切り分け済み・経路分離は残点）【低】／3=引継ぎ残り【低】）。
   > 教訓: E8 census（3件）で「id set の driver」を特定（`FUN_0046C300`（set/replace）⇔`FUN_00446B40`（FF id set）の接続＝v511→v512→v513 の連鎖）／`Player+0x80` の中身は「LoadGame band の使用 context」で決まる（`+5`＝form id・`+9`＝version の offset が log 引数で判明＝ptr の中身は log context 法）／同 offset異物の切り分けは「param_1 の type（signature）」で（`uint*` vs `int`＝map key vs current ptr＝type が carrier を語る）／`FUN_0046B250`（RTDynamicCast wrapper）が LoadGame band でも使われる（cast wrapper の横断利用＝3度目）／`virtual+0xD4`（name/version getter 候補）が v474/v478 `+0xD8`（SetName）の隣接 slot（slot family の `+0xD4`/`+0xD8` が form の name/version 系 [推定]）。v 採番 v513 消費（次=v514）。
+  > 【旧残点群消化第58弾 v514 — V-514-1..3 完遂・旧 V-406-3 継続第44弾】probe v514_1 全1本 EXIT=0。成果物 tmp/re/v514_slot_d4_reset_ruling.md・台帳 row490（bak340）・round_verify ALL OK（rows 31..490 / total 376 / done 371 / open 5）。
+  > ①[推定相当]（REFR/CELL 別 impl）V-514-1 `virtual+0xD4` slot impl: **vtable 実読 [確定(機械)]: `TESObjectREFR vt=0xA46C44 [+0xD4]=0x4D6DF0`（owning `FUN_004D6DB0`・L168240）／`TESObjectCELL vt=0xA469D4 [+0xD4]=0x4CCBC0`（owning `FUN_004CCBC0`・L160651）→ `virtual+0xD4`＝REFR/CELL で別 impl（`FUN_004D6DF0`/`FUN_004CCBC0`）＝name/version getter 候補 [推定相当]**（v513 LoadGame の `uVar5 = virtual[*piVar4+0xd4](byte, u32)` 呼び出しと整合）。**`+0xD8`（SetName・v474/v478）と対で form の name/version 系 slot family [推定]**。
+  > ②[確定相当]（reset 系）V-514-1 FUN_0046B2C0 identity: **docs head 実読 [確定(decompiled)]: `void __fastcall FUN_0046b2c0(int param_1)`: `if ((*(uint *)(param_1 + 8) >> 0xe & 1) == 0)`（bit14 gate）→ `FUN_004524c0(*(undefined4 *)(param_1 + 0xc))`（old remove（v505 remove fn））→ `uVar2 = 0; if (DAT_00b06158 != 0) { do { if (*(DAT_00b06150 + uVar2*4) == param_1) ... } }`（global bucket `0xB06150` 走査で `param_1` を探す）→ FUN_0046B2C0＝「`+0x8` bit14 未立なら old remove＋global bucket から自身を探して処理する reset 系 fn [確定相当]」→ v509 `FUN_004492E0`（global clear/reset）の reset family に接続 [確定相当]**（bit14 gate（v512 family）と reset（v509）の接続点）。
+  > ③[部分確定] FUN_0046C460: docs head [確定(decompiled)]: **`undefined4 * __fastcall FUN_0046c460(undefined4 *param_1)`（return ptr・locals 多）→ large fn で本文は cap 外＝本文特定は残点 [部分確定]**（`param_1` が `undefined4*`＝ptr object [確定相当]）。
+  > ④[確定相当]（複数 handler 共通）V-514-1 Player +0x80 追補: **別 band context 実読 [確定(decompiled)]: `L28394`（`FUN_00426A90`・`"ExtraDataList.cpp"` line `0x1b6f`＝7023）／`L50367`（`FUN_00441280`・`"TES.cpp"` line `0x15f6`＝5622）→ いずれも `local != 0x4b4f4c42`（`"BLOB"` FourCC 判定）で error log、else で `FUN_0046b250(*puVar*)`（RTDynamicCast）→ `Player+0x80`＝LoadGame buffer の block header ptr が複数の LoadGame handler で共通使用 [確定相当]**（v513 に追補＝LoadGame 共通 state）。
+  > ⑤[未確定] V-514-2 gated mask 源／caller 分離は budget 外で残点／[未確定] V-514-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。
+  > 残点 V-515-1..3（1=`FUN_004D6DF0`/`FUN_004CCBC0`（slot `+0xD4` impl）本文 identity（name/version getter 完遂）＋`FUN_0046C460`（large fn）本文【中】／2=gated 側 mask 源（edx 設定元）＋`FUN_0045B670` gated の `param_1+0xC` key と `FUN_0046C300` の current ptr の caller 分離（経路分離＝残点）【低】／3=引継ぎ残り【低】）。
+  > 教訓: slot family（`+0xD4` getter ⇔ `+0xD8` setter）が form の name/version 系を語る（REFR/CELL で別 impl＝class ごとに getter が分岐）／`bit gate→old remove→global bucket walk` の3段が reset 系 fn の定番（v509 `FUN_004492E0` と `FUN_0046B2C0` の横断一致＝reset family の完成）／`Player+0x80` の「共通 state」性格は別 band context で確定（複数 LoadGame handler での同一 pattern＝ptr の中身は log context 法の追補）／large fn（locals 多）は signature までで残点化（budget 制約を明記）／RTDynamicCast wrapper（`FUN_0046B250`）が LoadGame 全 band で横断（利用回数が増えるほど「LoadGame の form cast 標準経路」が確定）。v 採番 v514 消費（次=v515）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1829,11 +1837,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1857,4 +1860,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 16:13:23
+**ai-todo** | Last Updated: 2026-11-17 16:26:10
