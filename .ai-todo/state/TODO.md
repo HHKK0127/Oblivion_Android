@@ -952,6 +952,13 @@
   > ④[未確定] V-519-3 引継ぎ（predicate 英名・新 FourCC 意味）は残点継続。
   > 残点 V-520-1..3（1=`FUN_00453450`（range/reserved 判定）と `FUN_0055E000`（old id 判定）identity（allocator の回避条件完遂）＋`FUN_00422E20` 本文残り（type10 extra set の中身）【中】／2=`PTR_PTR_00b0613c`（hash fn vtable）と `DAT_00b06144`（bucket 配列）の identity（allocator の hash map 完全解）＋caller 分離（経路分離＝残点）【低】／3=引継ぎ残り【低】）。
   > 教訓: id counter field の「allocate（increment）⇔set/rollback」の対が揃うと field が確定（`FUN_00448D40`⇔`FUN_00446B40` が `+0x8C0` で対＝v512→v513→v519 連鎖完遂）／mask 源は「mask を渡す fn の引数」で決まる（`FUN_0045B670` arg3＝mask＝caller 供給＝mask 追跡の完成）／allocator の定番（increment→hash→collision retry→range check→return old）が本文判明（`0xFFFFFF` rollover＋`0x800` リセットが FF segment 型 id の目印）／gate が4条件（TLS×2＋global＋bit14）＋別 gate（Player flag＋`param_1+0x18` bit3）の複層（gated notify の条件構造判明＝v512 family semantic 完遂）／`unaff_FS_OFFSET`（SEH/TLS）＋`_tls_index` が TLS 使用の目印。v 採番 v519 消費（次=v520）。
+  > 【旧残点群消化第64弾 v520 — V-520-1..3 完遂・旧 V-406-3 継続第50弾】probe v520_1 全1本 EXIT=0。成果物 tmp/re/v520_removeextra_ruling.md・台帳 row496（bak346）・round_verify ALL OK（rows 31..496 / total 382 / done 377 / open 5）。
+  > ①[確定]（実文字列）→ `BaseExtraList::RemoveExtra`（v519 訂正）V-520-1 FUN_00422E20 本文残り: **L25127-25153 実読 [確定(decompiled)＋実文字列]: `FUN_00401020("BaseExtraList::RemoveExtra")`（critical section 名＝実文字列）→ `bVar2 = *(param_2 + 1)`（type byte）→ `iVar3 = FUN_0041e2d0(uVar4)`（type で extra 検索）→ link 修正（unlink: head `*(param_1+4)` / mid `*(iVar3+8)`）→ `virtual[*param_2](1)`（release）→ **`if (bVar2 >> 3 < 0xc) { *pbVar1 = *pbVar1 & ~('' << (bVar2 & 7)); }`（96-type bit mask クリア＝v504 `FUN_0041E210` GetExtraData の mask 検査と同一型！）**→ TLS cache クリア（`+0x10+type*4`・`< 0x5d`＝93）＝v504 と同一 → `FUN_00401040()`（leave）→ **`FUN_00422E20`＝`BaseExtraList::RemoveExtra`（type byte 指定で extra data を remove する fn）[確定] → v519「set/call fn 候補 [部分確定]」を本裁定で訂正（set でなく remove）**。**`FUN_0041E210`（GetExtraData・v504）⇔`FUN_00422E20`（RemoveExtra）が同じ `BaseExtraList` の bit mask＋TLS cache を扱う対 [確定相当]**。
+  > ②[確定相当]（`FUN_0055E000` の boolean wrapper）V-520-1 FUN_00453450: **L64204 実読 [確定(decompiled)]: `bool FUN_00453450(undefined4 param_1)`: `local_4 = 0; FUN_0055e000(param_1, &local_4); return local_4 != 0;` → boolean 化 wrapper [確定相当]**（allocator の range/reserved 判定＝「`FUN_0055E000(id, out)` が非0なら true」）。
+  > ③[確定相当]（hash map lookup）V-520-1 FUN_0055E000: **L259922 実読 [確定(decompiled)]: `uint __thiscall FUN_0055e000(int *param_1, undefined4 *param_2)`: `uVar3 = virtual[*param_1 + 4](param_2)`（hash）→ `puVar1 = *(param_1[2] + uVar3 * 4)`（bucket）→ `while(true)`（walk）→ hash map lookup（`param_2` を探して見つかれば非0）[確定相当]**（v485/v494/v496/v498/v501 の map lookup family と同型）→ **allocator の回避条件＝「`FUN_0055E000(id)` が hit なら（既存/reserved）increment 継続」[確定相当]**。
+  > ④[未確定] V-520-2 hash vtable・bucket identity／caller 分離は budget 外で残点／[未確定] V-520-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。
+  > 残点 V-521-1..3（1=`FUN_0041E2D0`（type で extra 検索）identity（RemoveExtra の検索段完遂）＋`FUN_0055E000` の map object（allocator の reserved map が何の map か）【中】／2=hash vtable（`PTR_PTR_00b0613c`）・bucket（`DAT_00b06144`）identity＋caller 分離（経路分離＝残点）【低】／3=引継ぎ残り【低】）。
+  > 教訓: critical section の名前文字列（`FUN_00401020("…")`）が fn identity を一撃（`"BaseExtraList::RemoveExtra"`＝v504 `"BaseExtraList::GetExtraData"` に続く名前法の再現＝Get/Remove の対が揃う）／bit mask clear（`*p &= ~(1 << (type&7))`）＋TLS cache clear（`+0x10+type*4`）が extra data remove の定番（v504 Get（mask 検査）⇔本裁定 Remove（mask クリア）で同一 `BaseExtraList` 構造が確定）／wrapper（`local=0; f(x,&local); return local != 0;`）が boolean 化 fn の定番／allocator の回避条件は「既存 map lookup の hit」（`FUN_0055E000`＝hash map lookup・hit なら increment 継続＝v519 allocator の残り条件が完遂）／set/call 候補も実文字列で remove と分かる（v519→v520 の訂正＝解釈更新連鎖の追加）。v 採番 v520 消費（次=v521）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1874,11 +1881,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1902,4 +1904,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 17:30:19
+**ai-todo** | Last Updated: 2026-11-17 17:39:43

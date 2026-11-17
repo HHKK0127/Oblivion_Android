@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-17T08:32:55Z",
+  "lastUpdated": "2026-11-17T08:41:54Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13496,14 +13496,30 @@
         "gated-notify"
       ],
       "content": "2026-11-17 旧残点群消化第63弾 v519（probe v519_1 全1本 EXIT=0）＝V-519-1..3 完遂・旧 V-406-3 継続第49弾: 成果物 tmp/re/v519_allocator_mask_ruling.md・台帳 row495（bak345）・round_verify ALL OK（rows 31..495 / total 381 / done 376 / open 5）・STATE (ik)・ai-todo #151 note。[確定相当]（form id allocator＝+0x8C0 increment＋衝突チェック）V-519-1 FUN_00448D40 body 残り: L55969-55993 全読 [確定(decompiled)]: uVar1 = *(param_1 + 0x8c0)（old id 読み）→ uVar2 = *(param_1 + 0x8c0)（再読）→ if ((uVar2 & 0xffffff) == 0xffffff) { iVar5 = (uVar2 & 0xff000000) + 0x800; } else iVar5 = uVar2 + 1;（下位24bit 満杯なら FF segment を上げて 0x800（2048）へリセット／そうでなければ id+1）→ *(param_1 + 0x8c0) = iVar5;（+0x8C0 へ書く＝v512/v513 FUN_00446B40 の同 field！）→ iVar6 = virtual[*PTR_PTR_00b0613c + 4](iVar5)（hash）→ for (puVar3 = *(DAT_00b06144 + iVar6*4); puVar3; puVar3 = *puVar3) { cVar4 = virtual[+8](iVar5, puVar3[1]); if (cVar4) goto LAB; }（bucket 走査で衝突なら再 increment）→ cVar4 = FUN_00453450(*(param_1+0x8c0))（range/reserved 判定 [推定]）} while (cVar4) → cVar4 = FUN_0055e000(uVar1, &iStack_4); if (!cVar4 && !FUN_00453450(uVar1)) return uVar1;（old id が使えれば返す）} while(true) → FUN_00448D40＝「param_1+0x8C0（current form id）を increment（0xFFFFFF 時 FF segment rollover＋0x800 リセット）し、hash bucket 衝突＋range 判定を回避して old id を返す form id allocator [確定相当]」→ +0x8C0 field が「id counter」であることを確定（v512 FUN_00446B40（set/rollback）⇔本裁定（increment/allocate）の対）＝v512→v513→v519 連鎖完遂。[確定相当]（mask＝FUN_0045B670 の arg3）V-519-2 gated mask 源: FUN_0045B670 docs head 実読 [確定(decompiled)]: void __thiscall FUN_0045b670(int param_1, int param_2, undefined4 param_3)（3引数）→ iVar1 = *( *(unaff_FS_OFFSET + 0x2c) + _tls_index*4 )（TLS block）→ gate: (*(iVar1+0x185) != 0) && (*(iVar1+0x184) == 0) && (*(DAT_00b33a98+0xcd4) == 0) && ((*(param_2+8) >> 0xe & 1) == 0)（4条件 gate: TLS flags×2＋global +0xcd4 flag＋bit14）→ cVar2 = FUN_0045a500()（Player +0x18 flag reader・v497）→ if (!cVar2) FUN_00452c20(param_2, param_3); else if ((*(param_1+0x18) >> 3 & 1) && *(param_1+4)) FUN_00452c20(param_2, param_3); → FUN_00452C20（v493 lazy node |=）の第2引数（mask）に渡るのは param_3＝FUN_0045B670 の第3引数 [確定相当] → 「gated 側 mask 源（edx 設定元）」residual＝解消（mask は計算されず caller から arg3 で供給される）。副次: param_1+0x18 bit3 判定（別 object の flag）と param_2+8 bit14 gate（node holder）が 別 object（param_1≠param_2）[確定相当]。[部分確定] V-519-1 FUN_00422E20: L25117 実読 [確定(decompiled)]: void __thiscall FUN_00422e20(int param_1, undefined4 *param_2)（param_2＝ptr）→ if (param_2 != 0) { ... }（null check）＋WARNING unreachable block → L26539 の FUN_00422e20(iVar2, 1)（1 を ptr 扱いで渡す）と整合 → type10 extra に対する set/call fn 候補 [部分確定]（本文残り cap 外）。[未確定] V-519-3 引継ぎ（predicate 英名・新 FourCC 意味）は残点継続。残点 V-520-1..3（1=FUN_00453450（range/reserved 判定）と FUN_0055E000（old id 判定）identity（allocator の回避条件完遂）＋FUN_00422E20 本文残り（type10 extra set の中身）【中】／2=PTR_PTR_00b0613c（hash fn vtable）と DAT_00b06144（bucket 配列）の identity（allocator の hash map 完全解）＋caller 分離（経路分離＝残点）【低】／3=引継ぎ残り【低】）。教訓: id counter field の「allocate（increment）⇔set/rollback」の対が揃うと field が確定（FUN_00448D40⇔FUN_00446B40 が +0x8C0 で対＝v512→v513→v519 連鎖完遂）／mask 源は「mask を渡す fn の引数」で決まる（FUN_0045B670 arg3＝mask＝caller 供給＝mask 追跡の完成）／allocator の定番（increment→hash→collision retry→range check→return old）が本文判明（0xFFFFFF rollover＋0x800 リセットが FF segment 型 id の目印）／gate が4条件（TLS×2＋global＋bit14）＋別 gate（Player flag＋param_1+0x18 bit3）の複層（gated notify の条件構造判明＝v512 family semantic 完遂）／unaff_FS_OFFSET（SEH/TLS）＋_tls_index が TLS 使用の目印。本日 push: v405→v518（008f6a8d）114件＋本件 v519。v 採番 v519 消費（次=v520）。"
+    },
+    {
+      "id": "151-v520-removeextra-2026-11-17",
+      "timestamp": "2026-11-17T08:41:54Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v520",
+        "removeextra",
+        "boolean-wrapper",
+        "hash-lookup"
+      ],
+      "content": "2026-11-17 旧残点群消化第64弾 v520（probe v520_1 全1本 EXIT=0）＝V-520-1..3 完遂・旧 V-406-3 継続第50弾: 成果物 tmp/re/v520_removeextra_ruling.md・台帳 row496（bak346）・round_verify ALL OK（rows 31..496 / total 382 / done 377 / open 5）・STATE (il)・ai-todo #151 note。[確定]（実文字列）→ BaseExtraList::RemoveExtra（v519 訂正）V-520-1 FUN_00422E20 本文残り: L25127-25153 実読 [確定(decompiled)＋実文字列]: FUN_00401020(\"BaseExtraList::RemoveExtra\")（critical section 名＝実文字列）→ bVar2 = *(param_2 + 1)（type byte）→ iVar3 = FUN_0041e2d0(uVar4)（type で extra 検索）→ link 修正（unlink: head *(param_1+4) / mid *(iVar3+8)）→ virtual[*param_2](1)（release）→ if (bVar2 >> 3 < 0xc) { pbVar1 = (bVar2 >> 3) + 8 + param_1; *pbVar1 = *pbVar1 & ~('\u0001' << (bVar2 & 7)); }（96-type bit mask クリア＝v504 FUN_0041E210 GetExtraData の mask 検査と同一型！）→ TLS cache クリア（+0x10+type*4・< 0x5d＝93）＝v504 と同一 → FUN_00401040()（leave）→ FUN_00422E20＝BaseExtraList::RemoveExtra（type byte 指定で extra data を remove する fn）[確定] → v519「set/call fn 候補 [部分確定]」を本裁定で訂正（set でなく remove）。FUN_0041E210（GetExtraData・v504）⇔FUN_00422E20（RemoveExtra）が 同じ BaseExtraList の bit mask＋TLS cache を扱う対 [確定相当]。[確定相当]（FUN_0055E000 の boolean wrapper）V-520-1 FUN_00453450: L64204 実読 [確定(decompiled)]: bool FUN_00453450(undefined4 param_1): local_4 = 0; FUN_0055e000(param_1, &local_4); return local_4 != 0; → boolean 化 wrapper [確定相当]（allocator の range/reserved 判定＝「FUN_0055E000(id, out) が非0なら true」）。[確定相当]（hash map lookup）V-520-1 FUN_0055E000: L259922 実読 [確定(decompiled)]: uint __thiscall FUN_0055e000(int *param_1, undefined4 *param_2): uVar3 = virtual[*param_1 + 4](param_2)（hash）→ puVar1 = *(param_1[2] + uVar3 * 4)（bucket）→ while(true)（walk）→ hash map lookup（param_2 を探して見つかれば非0）[確定相当]（v485/v494/v496/v498/v501 の map lookup family と同型）→ allocator の回避条件＝「FUN_0055E000(id) が hit なら（既存/reserved）increment 継続」[確定相当]（v519 allocator の残り条件が完遂）。[未確定] V-520-2 hash vtable・bucket identity／caller 分離は budget 外で残点／[未確定] V-520-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。残点 V-521-1..3（1=FUN_0041E2D0（type で extra 検索）identity（RemoveExtra の検索段完遂）＋FUN_0055E000 の map object（allocator の reserved map が何の map か）【中】／2=hash vtable（PTR_PTR_00b0613c）・bucket（DAT_00b06144）identity＋caller 分離（経路分離＝残点）【低】／3=引継ぎ残り【低】）。教訓: critical section の名前文字列（FUN_00401020(\"…\")）が fn identity を一撃（\"BaseExtraList::RemoveExtra\"＝v504 \"BaseExtraList::GetExtraData\" に続く名前法の再現＝Get/Remove の対が揃う）／bit mask clear（*p &= ~(1 << (type&7))）＋TLS cache clear（+0x10+type*4）が extra data remove の定番（v504 Get（mask 検査）⇔本裁定 Remove（mask クリア）で 同一 BaseExtraList 構造が確定）／wrapper（local=0; f(x,&local); return local != 0;）が boolean 化 fn の定番（FUN_00453450＝FUN_0055E000 wrapper）／allocator の回避条件は「既存 map lookup の hit」（FUN_0055E000＝hash map lookup・hit なら increment 継続＝v519 allocator の残り条件が完遂）／set/call 候補も実文字列で remove と分かる（v519→v520 の訂正＝解釈更新連鎖の追加）。本日 push: v405→v519（a352d1aa）115件＋本件 v520。v 採番 v520 消費（次=v521）。"
     }
   ],
   "metadata": {
-    "totalEntries": 924,
+    "totalEntries": 925,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-17T08:32:55Z",
-    "entry_count": 924,
-    "last_updated": "2026-11-17T08:32:55Z"
+    "lastUpdated": "2026-11-17T08:41:54Z",
+    "entry_count": 925,
+    "last_updated": "2026-11-17T08:41:54Z"
   }
 }
