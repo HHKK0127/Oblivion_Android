@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-17T03:46:57Z",
+  "lastUpdated": "2026-11-17T03:51:10Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13112,14 +13112,30 @@
         "return-carrier"
       ],
       "content": "2026-11-17 旧残点群消化第39弾 v495（probe v495_1 全1本 EXIT=0）＝V-495-1..3 完遂・旧 V-406-3/V-406-4 継続第25弾: 成果物 tmp/re/v495_mask_callers_ruling.md・台帳 row471（bak321）・round_verify ALL OK（rows 31..471 / total 357 / done 352 / open 5）・STATE (hm)・ai-todo #151 note。[確定相当]（bit24 経路）＋[部分確定]（gated 側は動的）V-495-1 mask 値: E8 callers 7件の push 直前値 census: 0x45CF88（FUN_0045CEE0）pushes＝['eax','0x1000000','edi']／0x45D0DC（FUN_0045D030）同形 → cdecl 逆順読替で mask = 0x1000000（bit24）、param_1=edi [確定相当] → bit24 設定経路を特定（v489 bit5 以外の mask 実例）。gated 側（FUN_0045B670/FUN_0045B700 5 sites）の mask は register（edx）経由で動的 [部分確定]（edx の値源は caller 上流＝残点）。FUN_0045B6D5 の push cs は int3 帯 window decode の疑い＝boundary 再検証要の制約を記録。[確定]（8件列挙）V-495-1 FUN_0045A500 callers: E8 callers 8件: FUN_0040D4D0／FUN_0041FA40／FUN_004246F0／FUN_00424C50／FUN_00424D00／FUN_0042A200／FUN_00434020／FUN_00438060（v480 既知）→ bit18/byte の書手はこの8 fn 経由（各 caller の +0x18 usage を次 probe で特定）＝経路を固定 [確定]。[部分確定] V-495-2 FUN_004CBA80 return carrier: docs return 3箇所: L159750/L159757: return 0（param_2==0 分岐・alloc 失敗）／L159765: return piVar2 → 戻り＝piVar2（本体は body 中間が未表示）[部分確定] → [ret+0x28]（v494 fld）の载体（node/form）は piVar2 特定待ち＝残点（param_2==0 で null 返しは v485 docs と一致 [確定]）。[未確定] V-495-3 引継ぎ（predicate 英名・sink 正体・新 FourCC 意味）は残点継続。残点 V-496-1..3（1=piVar2（FUN_004CBA80 戻り carrier）の特定（body 中間 L159758..L159765）＋gated 側 mask 値源（edx 設定元）＋FUN_0045A500 callers 8件の +0x18 書手特定【中】／2=FUN_0045CEE0/FUN_0045D030（bit24 callers）の identity【低】／3=引継ぎ残り【低】）。教訓: mask 値は caller の push 直前から読む（cdecl 逆順＝最後の push が param_1・固定値と register 経由を区別）／push cs は int3 帯 window decode の疑い（boundary 再検証要の制約明記＝自己点検の反復）／bit 書手探索は「判定 fn の callers 列挙」から→次 probe で各 caller の +0x18 usage を読む経路を固定／return 3箇所 grep が carrier を即特定（piVar2）→ body 中間が残点と方向明確化／cross-verified fn（FUN_00438060）が callers に現れ系統整合を確認。本日 push: v405→v494（4968a38f）90件＋本件 v495。v 採番 v495 消費（次=v496）。"
+    },
+    {
+      "id": "151-v496-list-lookup-2026-11-17",
+      "timestamp": "2026-11-17T03:51:10Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v496",
+        "list-lookup",
+        "arg3-meaning",
+        "player-flags"
+      ],
+      "content": "2026-11-17 旧残点群消化第40弾 v496（probe v496_1 全1本 EXIT=0）＝V-496-1..3 完遂・旧 V-406-3/V-406-4 継続第26弾: 成果物 tmp/re/v496_list_lookup_ruling.md・台帳 row472（bak322）・round_verify ALL OK（rows 31..472 / total 358 / done 353 / open 5）・STATE (hn)・ai-todo #151 note。[確定相当]（両方）V-496-1 carrier と param_3: FUN_004CBA80 body L159742-159765 全読 [確定(decompiled)]: piVar1=(param_1+0x48)（+0x48 list head）→ loop: piVar2=*piVar1（node）→ iVar3=virtual[*piVar2+0x170]()（getter・v480/v488 同 slot）→ piVar1=piVar1[1] → while ((iVar3==0) || ((param_3!=0 && (piVar2[2]>>5 & 1)) || (iVar3 != param_2))) → return piVar2 → FUN_004CBA80＝「+0x48 list を走査し、各 node の virtual+0x170() 返り値が param_2（key・NorthMarker ptr 等）と一致する node を返す lookup fn [確定相当]」、param_3（v492/v494 の 1）＝「piVar2[2]>>5 & 1（node flag bit5）を追加条件に含めるかの flag [確定相当]」→ arg3=1 の意味が確定（node bit5 条件付き lookup）。carrier piVar2＝list node [確定] → [ret+0x28]（v494 fld）＝node の +0x28 float で form +0x28 とは別载体 [確定相当]（v495 残点2 が確定）。[確定相当]（Player +0x18 flags）V-496-1 callers 調査: FUN_0040D4D0（L8563/8565）: *(DAT_00b33b00+0x18) &= 0xffffdfff（bit13 clear）／&= 0xffff7fff（bit15 clear）[確定(decompiled)] → DAT_00B33B00＝Player singleton の +0x18 field が flag 群 u32 で FUN_0045A500 はその読取（bit18/下位 byte・v493）[確定相当]。FUN_0041FA40/FUN_004246F0 は body window に write なし（他は間接経由 [部分確定]）→ param_1+0x18 ＝ Player flags と特定（v489 bit5（+0x8）とは別 field と区別）。[未確定] V-496-2 bit24 caller: FUN_0045CEE0 signature void __fastcall(int)（large fn）[確定(decompiled)]、本文未到達＝残点。[未確定] V-496-3 引継ぎも残点継続。残点 V-497-1..3（1=bit24（0x1000000）の semantic（FUN_0045CEE0/FUN_0045D030 本文）＋param_1+0x18 flag 群の bit 一覧（Player +0x18 の set 書手）【中】／2=gated 側 mask 値源（edx 設定元）＋FUN_00496EA0/FUN_00496F50（lock/release）identity【低】／3=引継ぎ残り【低】）。教訓: lookup fn の body 全読が「引数3つの意味」を同時確定させる（param_2＝key・param_3＝node flag 条件・return＝node carrier）＝v492/v494/v495 の残点3つを1本で解消／`>>5 & 1` の寄り先で同 bit 番号でも別 field（どの object の bit かを明記・v489 +0x8/v496 +0x18/node [2] の区別）／`&= 0xffffdfff/7fff` の constants から bit 位置を即特定（bit13/bit15）／large fn は signature までで残点化する習慣／[ret+0x28] の载体問題が解決＝同じ offset でも carrier が別物（offset 同一・载体別の典型を記録）。本日 push: v405→v495（4a48870b）91件＋本件 v496。v 採番 v496 消費（次=v497）。"
     }
   ],
   "metadata": {
-    "totalEntries": 900,
+    "totalEntries": 901,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-17T03:46:57Z",
-    "entry_count": 900,
-    "last_updated": "2026-11-17T03:46:57Z"
+    "lastUpdated": "2026-11-17T03:51:10Z",
+    "entry_count": 901,
+    "last_updated": "2026-11-17T03:51:10Z"
   }
 }

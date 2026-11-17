@@ -770,6 +770,12 @@
   > ④[未確定] V-495-3 引継ぎ（predicate 英名・sink 正体・新 FourCC 意味）は残点継続。
   > 残点 V-496-1..3（1=piVar2（FUN_004CBA80 戻り carrier）の特定（body 中間 L159758..L159765）＋gated 側 mask 値源（edx 設定元）＋FUN_0045A500 callers 8件の +0x18 書手特定【中】／2=FUN_0045CEE0/FUN_0045D030（bit24 callers）の identity【低】／3=引継ぎ残り【低】）。
   > 教訓: mask 値は caller の push 直前から読む（cdecl 逆順＝最後の push が param_1・固定値と register 経由を区別）／`push cs` は int3 帯 window decode の疑い（boundary 再検証要の制約明記＝自己点検の反復）／bit 書手探索は「判定 fn の callers 列挙」から→次 probe で各 caller の +0x18 usage を読む経路を固定／return 3箇所 grep が carrier を即特定（piVar2）→ body 中間が残点と方向明確化／cross-verified fn（FUN_00438060）が callers に現れ系統整合を確認。v 採番 v495 消費（次=v496）。
+  > 【旧残点群消化第40弾 v496 — V-496-1..3 完遂・旧 V-406-3/V-406-4 継続第26弾】probe v496_1 全1本 EXIT=0。成果物 tmp/re/v496_list_lookup_ruling.md・台帳 row472（bak322）・round_verify ALL OK（rows 31..472 / total 358 / done 353 / open 5）。
+  > ①[確定相当]（両方）V-496-1 carrier と param_3: **FUN_004CBA80 body L159742-159765 全読 [確定(decompiled)]: `piVar1=(param_1+0x48)`（+0x48 list head）→ loop: `piVar2=*piVar1`（node）→ `iVar3=virtual[*piVar2+0x170]()`（getter・v480/v488 同 slot）→ `piVar1=piVar1[1]` → `while ((iVar3==0) || ((param_3!=0 && (piVar2[2]>>5 & 1)) || (iVar3 != param_2)))` → `return piVar2` → FUN_004CBA80＝「+0x48 list を走査し、各 node の virtual+0x170() 返り値が param_2（key・NorthMarker ptr 等）と一致する node を返す lookup fn [確定相当]」**、**`param_3`（v492/v494 の 1）＝「piVar2[2]>>5 & 1（node flag bit5）を追加条件に含めるかの flag [確定相当]」→ arg3=1 の意味が確定（node bit5 条件付き lookup）**。**carrier piVar2＝list node [確定] → `[ret+0x28]`（v494 fld）＝node の +0x28 float で form +0x28 とは別载体 [確定相当]**（v495 残点2 が確定）。
+  > ②[確定相当]（Player +0x18 flags）V-496-1 callers 調査: **`FUN_0040D4D0`（L8563/8565）: `*(DAT_00b33b00+0x18) &= 0xffffdfff`（bit13 clear）／`&= 0xffff7fff`（bit15 clear）[確定(decompiled)] → DAT_00B33B00＝Player singleton の +0x18 field が flag 群 u32 で FUN_0045A500 はその読取（bit18/下位 byte・v493）[確定相当]`**。FUN_0041FA40/FUN_004246F0 は body window に write なし（他は間接経由 [部分確定]）→ param_1+0x18 ＝ Player flags と特定（v489 bit5（+0x8）とは別 field と区別）。
+  > ③[未確定] V-496-2 bit24 caller: FUN_0045CEE0 signature `void __fastcall(int)`（large fn）[確定(decompiled)]、本文未到達＝残点。[未確定] V-496-3 引継ぎも残点継続。
+  > 残点 V-497-1..3（1=bit24（0x1000000）の semantic（FUN_0045CEE0/FUN_0045D030 本文）＋param_1+0x18 flag 群の bit 一覧（Player +0x18 の set 書手）【中】／2=gated 側 mask 値源（edx 設定元）＋FUN_00496EA0/FUN_00496F50（lock/release）identity【低】／3=引継ぎ残り【低】）。
+  > 教訓: lookup fn の body 全読が「引数3つの意味」を同時確定させる（param_2＝key・param_3＝node flag 条件・return＝node carrier）＝v492/v494 の残点3つを1本で解消／`>>5 & 1` の寄り先で同 bit 番号でも別 field（どの object の bit かを明記・v489/v496 の区別）／`&= 0xffffdfff/7fff` の constants から bit 位置を即特定／large fn は signature までで残点化／`[ret+0x28]` の载体問題が解決＝同じ offset でも carrier が別物（offset 同一・载体別の典型を記録）。v 採番 v496 消費（次=v497）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1691,11 +1697,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1719,4 +1720,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 12:46:14
+**ai-todo** | Last Updated: 2026-11-17 12:50:24
