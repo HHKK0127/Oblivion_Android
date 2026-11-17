@@ -623,6 +623,17 @@
   > ④[未確定] V-475-3 引継ぎ（FUN_005222D0 一語名別法・predicate slot35 英名）は残点継続。
   > 残点 V-476-1..3（1=旧残点 V-406-3 継続（elem class 確定＝IngredientItem 断定の裏取り：FUN_004B2A00 decompiled 実読と elem vtable 完全特定、FUN_004D0C20 identity＋elem[+0x28] float の語）【中】／2=旧残点 V-406-4 完遂判断（form+0x64 dword＝*(self+0x70) 転送・form+0x69 byte＝FUN_004A9700(*(self+0x104)) 戻りと v475 で確定→「class form の値を +0x68 subobject へ転送」まで確定、FUN_004A9700 identity が最後の1手）【低】／3=V-475-3 引継ぎ【低】）。
   > 教訓: singleton を返す impl は「即時値 return」ではなく `mov eax,[abs]`（A1）のことがある（B8 検索0件で絶望せず A1 形へ切り替え）／vtable census の判定条件を「fn が特定 global を含むか」にすると1486→1 に絞れる（vtable 数を先に数えて predicate を掛ける＝v457 ctor 法と v474 walk 結合）／tail decode は int3 までを境界に（push eax の出所が拾える）／`lea esi,[reg+N]`＋`mov ecx,esi` のペアが receiver の継続（subobject の存在を lea が語る）／docs の `param_1[3] =` 926件のような多数 hit は field 汎用性の証拠。v 採番 v475 消費（次=v476）。
+  > 【旧残点群消化第20弾 v476 — V-476-1..3 完遂・旧 V-406-3/V-406-4 継続第6弾】probe v476_1..v476_2 全2本 EXIT=0。成果物 tmp/re/v476_getter_predicate_ruling.md・台帳 row452（bak302）・round_verify ALL OK（rows 31..452 / total 338 / done 333 / open 5）。
+  > ①[確定] V-476-2 FUN_004A9700: L135059 `undefined1 __fastcall FUN_004a9700(int param_1) { return *(undefined1 *)(param_1 + 0x69); }`（1行 getter）[確定(decompiled)] → FUN_005222D0 tail の `call 0x4A9700`（receiver＝`*(self+0x104)`）は「`*(self+0x104+0x69)` byte を読む」→ FUN_00468270 で self+0x68 subobject の +0xD（`*(self+0x75)`）へ転送 [確定相当] → form+0x69 byte 系譜は「`self+0x104`（form ptr）の +0x69 → self+0x75」の byte コピー経路と確定（`self+0x104` の form の +0x69 が何の値かは v406-4 残点として残る）。
+  > ②[確定] V-476-1 FUN_004B2A00 実読: body L140907-140954 [確定(decompiled)]: `bool __fastcall(int param_1)`: `if (param_1==0) return false;` → `switch(*(u8*)(param_1+4))`（FormType switch）: `case 0x12:` "EditorMarker.NIF" と FUN_0046D3F0(param_1) 名比較→等しければ true／`case 0x18: if (DAT_00B35EBC==param_1) return true;`／`case 0x1a:`→true／**`case 0x1c: if (DAT_00B35EA4/B35EB4/B35EC0/B35EC4/B35EB8/B35EA8/B35ED4/B35EAC/B35EB0 == param_1) return true`**／`case 0x29: return true;` → 末尾 **`return *(int*)(param_1+0xc) - 100U < 0x14;`（+0xC が 100..119 値域なら true）** → FUN_004B2A00＝「FormType switch で singleton form 群（EditorMarker.NIF／STAT 群9個）を判定し、最終 gate で +0xC int の 100..119 range を問う bool predicate [確定相当]」。
+  > ③[確定]（群）DAT_00B35EB8 の位置づけ（v470 追補）: `case 0x1c`（FormType 0x1C=TESObjectSTAT）で9個の `DAT_` singleton（0xB35EA4/EB4/EC0/EC4/EB8/EA8/ED4/EAC/EB0）と param_1 を等値比較 → 0xB35EB8 は「FormType 0x1C の singleton 群9個の1つ」[確定]（v470「TESObjectSTAT singleton」は正しく群に属することを追補）。
+  > ④[確定相当] self[+0xC] 値域: `return *(int*)(param_1+0xc) - 100U < 0x14` ⇔ `100 <= +0xC <= 119` [確定] → +0xC は本 predicate では「100..119 値域を持つ int（id/種別番号系 [推定]）」[確定相当]。上位 byte 0xFF（≥0xFF000000＝gate v473）は 100..119 外・負値相当 [推定]、semantic は [未確定]＝残点。
+  > ⑤[推定相当] virtual+0x170() semantic（v474 精緻化）: L42487/42488（owning FUN_00438060）`iVar2=virtual[*param_2+0x170](); *(char*)(iVar2+4)==''` と `*(char*)(iVar2+4)!='
+  > '` の2回、結果の +4 byte が FormType と比較 → 戻り値の +4 は FormType byte（v470 構造と一致）→ 戻り値＝form 本体 ptr → **virtual+0x170()＝form ptr getter（GetForm() 相当）[推定相当]**（v474「form type singleton getter」から精緻化）。
+  > ⑥[確定負]（撤回）elem class 断定: FUN_004B2A00 は bool を返すが v474 walk は `call eax` 直後に `cmp eax,[0xB35EB8]`（ptr 等値比較）→ bool(0/1) と ptr の比較は常に不一致 → IngredientItem の [vt+0x170]=FUN_004B2A00 が elem の slot impl だと walk 条件が常に false で矛盾 → **v475 の「elem＝IngredientItem」推定は撤回 [確定負]**。elem の vtable は ptr を返す別 impl（0xB35EB8 body 必要なし）→ v475 census（1486→1）は方向違い → elem class は [未確定] に復帰。
+  > ⑦[未確定] FUN_004D0C20（A1 load owner）は signature のみで body 深部未到達＝残点／[未確定] V-476-3 引継ぎも残点継続。
+  > 残点 V-477-1..3（1=旧残点 V-406-3 継続（elem class 再特定＝ptr を返す [vt+0x170] impl を探す別法（walk の cmp 型整合 impl＝`return this`/`return [this+X]` 形の vtable 列挙）と elem[+0x28] float の語）【中】／2=旧残点 V-406-4 semantic（self+0x104 の form 種別特定＋self[+0xC] 上位 byte 0xFF の語）【低】／3=V-476-3 引継ぎ（一語名別法・predicate 英名・FUN_004D0C20 identity）【低】）。
+  > 教訓: bool を返す predicate と ptr compare の矛盾は「戻り値の型」で見つかる（census predicate が型不整合を起こした時点で推定は撤回対象・本裁定は v475 の自己訂正）／`switch(*(u8*)(param+4))` ＝ FormType switch の定番（param+4＝FormType byte が switch されるだけで class 判定 fn と分かる）／unsigned 比較（`x - 100U < 0x14`）は value range 判定（100..119）で int field の値域を predicate が語る／singleton 群の DAT_ 連番（0xB35EA4..ED4）を1行で拾える（case 0x1c で9個 singleton 群が一覧確定・v474/v469 単体記載を群記載に更新）／1行 getter は decompiled で即 identity（系譜まで machine tail decode（v475）と合わせ経路完結）／推定は「撤回」も裁定の価値（[確定負] で v475 を明示的に覆し次 probe の方向を切り替える）。v 採番 v476 消費（次=v477）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1544,11 +1555,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1572,4 +1578,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 11:12:33
+**ai-todo** | Last Updated: 2026-11-17 11:19:13
