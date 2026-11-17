@@ -693,6 +693,14 @@
   > ④[未確定] V-484-3 引継ぎ（param_3 flag・一語名別法・predicate 英名・sink 正体）は残点継続。
   > 残点 V-485-1..3（1=旧残点 V-406-3 継続（6 float の正式語＝FourCC 名インベントリ突合・chunk reader identity と値の意味＋local_2c 設定元の特定）【中】／2=DAT_00B37D00 完全英名（FUN_00412D30（register）identity で v460 候補と突合）【中】／3=V-484-3 引継ぎ【低】）。
   > 教訓: init body（singleton 構築 fn）に潜む実文字列が identity を一撃（"Setting keys must be unique." で setting map singleton と即決＝v456 error 文言法の singleton 版）／`_vsprintf`＋巨大ローカル buffer＋sink ポインタ判定が logging core の定番（wrapper⇔core ペアで確定）／FourCC 定数を big/little 両視点で読む（整数をバイト分解して NAME/LOSX/DOLX を得る）／vtable slot（+0xD8）の usage が複数裁定で一致（v469/v478 "NorthMarker"⇔本 fn NAME ケース＝slot 機能 cross-verified）／init fn 実体を読むことで this singleton の中身が分かる（v483 の経路固定が効く）。v 採番 v484 消費（次=v485）。
+  > 【旧残点群消化第29弾 v485 — V-485-1..3 完遂・旧 V-406-3/V-406-4 継続第15弾】probe v485_1 全1本 EXIT=0。成果物 tmp/re/v485_data_chunk_map_ruling.md・台帳 row461（bak311）・round_verify ALL OK（rows 31..461 / total 347 / done 342 / open 5）。
+  > ①[確定] V-485-1 6 float の出所: **L171393-171404 実読 [確定(decompiled)]: `case 0x41544144`（LE 逆バイト＝"DATA"）: `if (local_9=='\0') { virtual[*param_1+0x8c](0);`（+0x8C predicate mode-0 呼び出し [確定]）→ `FUN_00450C20(&local_2c, 0x18)`（0x18＝24 bytes＝6 float を block read [確定]）→ `param_1[0xb..0xd]` と `[8..10]` へ一括格納 [確定]** → **"DATA" チャンクの 6 float（24B）が +0x2C..+0x34 と +0x20..+0x28 の両群に入る [確定]**、FourCC 名は LE 逆バイト解釈（v484 "NAME" と同一方式）、6 float の semantic は [未確定]＝残点。
+  > ②[確定相当] FUN_004D9D00 追加性格: **実文字列 `"Missing object (%08X) for reference (%08X)"`（L171384）[確定(実文字列)] → param_1[7]=iVar2（object 参照解決）が0なら missing 警告 → FourCC チャンクを解決しながら読む読み込み/解決 fn [確定相当]**。他 FourCC（LE 逆バイト）: 0x44455358＝"XSED"／0x434f4c58/59＝"XLOC"/"YLOC"／0x424c4758＝"XGLB"／0x43524d58＝"XMRC" [確定(実定数)]（各 case 意味は [未確定]）。
+  > ③[確定相当]（hash map 構造）＋[推定]（class 名）V-485-2 DAT_00B37D00 container: **FUN_00412D30（L11094）実読 [確定(decompiled)]: `iVar2=virtual[*param_1+4](param_2)`（hash）→ `puVar3=*(param_1[2]+iVar2*4)`（bucket 配列）→ null なら virtual+0x14()（node alloc）＋virtual+0xC(node,key,key) → 先頭リンク → `param_1[3]++`（count）／virtual+0x8（キー比較）→ bucket 配列＋chained node の hash map insert [確定相当] → DAT_00B37D00（this）＝bucket hash map singleton（setting key 用）[推定相当→強化]**（v460 NiTMapBase/NiTStringTemplateMap 系と型的整合 → 正式 class 名は NiTMapBase 系 [推定]、確定英名は [未確定]＝残点（singleton の vtable が runtime 構築のため static vtable 法が効かない＝残点理由明記）。
+  > ④[確定相当]＋[確定] V-485-3 chunk readers: FUN_00450C20（L61753）＝DWORD/HLOCAL locals を持つ block read [確定相当]／FUN_004510E0（L61980）＝`FUN_00450c20(param_1, 4)`（4-byte read wrapper [確定]）。
+  > ⑤[未確定] V-485-3 引継ぎ（param_3 flag・一語名別法・predicate 英名・sink 正体）は残点継続。
+  > 残点 V-486-1..3（1=旧残点 V-406-3 継続（6 float（"DATA"）の semantic＝case 前後の local_9 flag／+0x8C(0) 呼び出しの意味＋新 FourCC インベントリ突合）【中】／2=DAT_00B37D00 確定英名（init fn 内の vtable store 探索が次の手）【低】／3=V-485-3 引継ぎ【低】）。
+  > 教訓: size 引数（0x18）が「要素数×要素幅」を語る（block read size 24B⇔6 float＝データ構造の型情報）／FourCC は LE 逆バイト（dword⇒メモリ文字列）で読む／case 冒頭の local_9 flag と virtual+0x8C(0) が「読む前の状態遷移」／map singleton の英名は container 構造で型付け、RTTI は runtime 構築のため init fn 内の vtable store へ（static vtable 法が効かない singleton の対処法）／wrapper 1行が size 定数で即分かる。v 採番 v485 消費（次=v486）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1614,6 +1622,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1637,4 +1650,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 11:55:02
+**ai-todo** | Last Updated: 2026-11-17 11:59:19
