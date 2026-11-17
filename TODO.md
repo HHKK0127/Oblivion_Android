@@ -665,6 +665,13 @@
   > ④[未確定] V-480-3 引継ぎ（param_3 flag・一語名別法・predicate 英名）は残点継続。
   > 残点 V-481-1..3（1=旧残点 V-406-3 継続（`[ebx+0x28]` float（TESObjectREFR+0x28）の語＝REFR field 調査＋walk の +0x6C slot impl 確認で elem 系統の最終裏付け）【中】／2=旧残点 V-406-4 semantic 完遂（DAT_00B37D00 正体と donor（TESObjectCELL+0x104）の入手元 → +0x64 中身の語）【低】／3=V-480-3 引継ぎ【低】）。
   > 教訓: slot の意味は「先頭命令形 census」で決まる（同 slot vtable を先頭命令で分類→ mov eax,[ecx+X]＝field getter・disp が揃えば field getter と即決・v475 の body-global predicate 誤りからの修正版）／共有 impl（ICF）の fn は「どの class が載せるか」の列挙が class family を語る（FUN_004D9B40 の7 vtable＝TESObjectREFR 派生系統）／walk 条件は「virtual call ＝ field access」に翻訳すると単純式になる／shape 分布は「その slot が実装されている class 数」の分布（v477 ASCII overflow の全体像）／Player singleton の virtual 連打が gameplay refresh ルーチンの目印。v 採番 v480 消費（次=v481）。
+  > 【旧残点群消化第25弾 v481 — V-481-1..3 完遂・旧 V-406-3/V-406-4 継続第11弾】probe v481_1 全1本 EXIT=0。成果物 tmp/re/v481_linked104_ruling.md・台帳 row457（bak307）・round_verify ALL OK（rows 31..457 / total 343 / done 338 / open 5）。
+  > ①[確定相当] V-481-2 FUN_005E3320 完全 body: L347984-347998 実読（5行完結）[確定(decompiled)]: `undefined4 __fastcall FUN_005e3320(int *param_1) { cVar1=FUN_004d7f80(); if (cVar1) { iVar2=virtual[*param_1+0x170](); if (iVar2) return *(undefined4*)(iVar2+0x104); } return 0; }` → **FUN_005E3320(param)＝`*(*(param+0x1C)+0x104)` を返す getter [確定相当]**（virtual+0x170＝*(this+0x1C)・v480 確定）→ **DAT_00B37D00 比較（L329513 等）は `*(*(linked+0x104))+0xc` の ptr 等値 [確定(構造)] → v479 の donor 構造と同一レイヤ [確定] → DAT_00B37D00 は「+0x104（class/related ptr）の +0xc field が指す識別 singleton」[推定相当→強化]**、正体は [未確定]＝残点。
+  > ②[確定] V-481-1 walk の elem 側 +0x6C impl: **`[TESObjectREFR vt=0xA46C44 + 0x6C] = 0x4DF820` → FUN_004DF820（owning L175824）[確定(機械)]**、machine head push ebp/mov ebp,esp/and esp,0xffffffc0/sub esp,0x30（16-byte aligned・large fn）→ **walk が flag bit3 未立の elem に呼ぶ `virtual[elem]+0x6C` ＝ FUN_004DF820（TESObjectREFR の method）[確定]**（CELL の +0x6C＝walk 自身（v479）と別 fn が並立で確定＝self と elem の slot 同名でも別 impl）、本文 identity は large fn で未読＝残点。
+  > ③[推定相当] V-481-1 elem[+0x28] float の語: **REF band（25 fn）の +0x28 usage 8件実読 [確定(decompiled)]: L171197 `param_1[10]=0`／L171323 `local_4=*(param_1+0x28)`／L174096 `param_3=*(float*)(param_1+0x28)+param_3`（float 加算）／L174577 `iVar2=*(int*)(param_1+0x28)`／L174626 `param_1[10]=(int)(float)fVar8`（int⇄float 変換）** → **異常値補正: L175861 `FUN_00983ffd((double)(float)param_1[10])`（==0 チェック）／L175864 `__isnan(...) != 0` → L175868 `param_1[10]=DAT_00b3f9b0`（デフォルト補正）**、L172829 scale 計算（割り算＋加算）→ **+0x28＝「NaN/0 チェック付き・DAT_00b3f9b0 補正を持つ float/int 兼用数値（scale/倍率系）[推定相当]**、使用 fn は FUN_004DA4F0 → elem[+0x28] は REFR のこの数値 field と確定相当、正式 field 名は [未確定]＝残点。
+  > ④[未確定] V-481-3 引継ぎ（param_3 flag・一語名別法・predicate 英名）は残点継続。
+  > 残点 V-482-1..3（1=旧残点 V-406-3 継続（FUN_004DF820 の本文 identity と +0x28 の正式 field 名＝scale/倍率の何たるか）【中】／2=旧残点 V-406-4 semantic 完遂（DAT_00B37D00 正体と donor（TESObjectCELL+0x104）の入手元 → +0x64 中身の語）【低】／3=V-481-3 引継ぎ【低】）。
+  > 教訓: 小さな getter（5行 body）が比較式の「源」を確定させる（`return *(obj+0x104)` の1行で DAT_00B37D00 比較のレイヤが donor と一致・offset 0x104 の横断一致が連結の決め手）／同名 slot（+0x6C）でも self（CELL＝walk）と elem（REF＝FUN_004DF820）で別 impl（vtable ごとに slot 実読・クラス横断推測をしない）／`__isnan`＋デフォルト補正が「float field（NaN-safe）」の目印／index×4 と byte offset の同一視（param_1[10]⇔+0x28）／large fn は構造確定と本文 identity を分離して残点化。v 採番 v481 消費（次=v482）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1586,6 +1593,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1609,4 +1621,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 11:37:50
+**ai-todo** | Last Updated: 2026-11-17 11:42:00
