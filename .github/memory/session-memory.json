@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-17T03:33:17Z",
+  "lastUpdated": "2026-11-17T03:37:53Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13064,14 +13064,30 @@
         "marker2"
       ],
       "content": "2026-11-17 旧残点群消化第36弾 v492（probe v492_1 全1本 EXIT=0）＝V-492-1..3 完遂・旧 V-406-3 継続第22弾: 成果物 tmp/re/v492_gated_body_ruling.md・台帳 row468（bak318）・round_verify ALL OK（rows 31..468 / total 354 / done 349 / open 5）・STATE (hj)・ai-todo #151 note。[確定相当]（gated 実行体）V-492-1 FUN_0045B670: L72253 実読 [確定(decompiled)]: TLS 取得 → if (((TLS[+0x185]!=0)&&(TLS[+0x184]==0)) && (*(u8*)(DAT_00b33a98+0xcd4)==0) && ((*(u32*)(param_2+8)>>14 & 1)==0)) { cVar2=FUN_0045a500(); if (cVar2==0) FUN_00452c20(param_2,param_3); else if (((*(u32*)(param_1+0x18)>>3 & 1)!=0)&&(*(int*)(param_1+4)!=0)) FUN_00452c20(param_2,param_3); } → FUN_0045B670＝「TLS状態2byte＋global DAT_00B33A98+0xCD4＋param_2+8 bit14 の3重 gate の下で FUN_00452C20(param_2,param_3)（処理本体 [推定]）を実行する gated 実行体 [確定相当]」、FUN_00452C20 の identity は [未確定]＝残点 → bit5 semantic は「この gated 実行の許可フラグ」系 [推定]（完全確定には FUN_00452C20 本文が次の手）。[確定相当] V-492-2 FUN_004CBA80 param_3: machine push 数確認 [確定(機械)]: 0x4D0E74（FUN_004D0C20）pushes=4／0x65FECF（FUN_0065FDA0）pushes=2＋mov ecx,eax → mov ecx,[0xb33aac]; push 1; push ecx; mov ecx,eax; call 0x4CBA80 → thiscall（ecx＝param_1）＋stack（param_2＝0xB33AAC・param_3＝1）→ docs L424183 表示と完全一致 → param_3 = 1 [確定相当]（v491「docs 欠落＝machine 要確認」を machine で確認完遂）。0x4D0E74 site は4push の別呼び出し形＝残点 [部分確定]。[確定相当]（marker 系 singleton）DAT_00B33AAC: refs 実読 [確定(機械)]: FUN_0044AC20 内で push 0x7c; call 0x401f00（alloc 0x7C）→ mov [0xb33aac], eax → call 0x46c300 → mov ecx,[0xb33aac]; mov edx,[ecx]; mov eax,[edx+0xd8]; push 0xa38094（virtual+0xD8 名前設定）→ call 0x4b2b80（v470 list 接続）→ alloc 0x7C・名前 set・list link の第2 marker 系 singleton [確定相当]（v470 NorthMarker と同一 pattern）。0xA38094 の実文字列（第2 marker 名）は [未確定]＝残点、docs mentions 8件。[未確定] V-492-3 引継ぎ（predicate 英名・sink 正体・新 FourCC 意味）は残点継続。残点 V-493-1..3（1=FUN_00452C20（gated 実行体の本体）identity→bit5 semantic と slot +0x40 機能が確定【中】／2=0xA38094（第2 marker 名）実文字列＋0x4D0E74 site（4push 形）引数確認＋FUN_0045A500 identity【低】／3=引継ぎ残り【低】）。教訓: gate 3連（TLS byte2＋global＋flag bit）＋本体呼び出しの fn は「gated 実行体」の定型（bit 変更→notify→gated 完成の流れ）／callsite の machine push 並び（mov ecx,global; push imm; push reg; mov ecx,eax）が引数対応を確定させる（docs 表示2引数と machine thiscall 3引数の突合＝v491 残点の解消法）／singleton 構築 pattern（alloc→ctor→+0xD8 set name→list link）は再現のたびに marker 系と即分かる（v470→v492）／push 数 census が別呼び出し形を分離／mode 判定 fn（FUN_0045A500）の所在分かれば mode/bitable が揃う。本日 push: v405→v491（659dbc60）87件＋本件 v492。v 採番 v492 消費（次=v493）。"
+    },
+    {
+      "id": "151-v493-lazy-bit-node-2026-11-17",
+      "timestamp": "2026-11-17T03:37:53Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v493",
+        "lazy-bit-node",
+        "stolengoods",
+        "thread-gate"
+      ],
+      "content": "2026-11-17 旧残点群消化第37弾 v493（probe v493_1 全1本 EXIT=0・初回構文エラー→修正）＝V-493-1..3 完遂・旧 V-406-3/V-406-4 継続第23弾: 成果物 tmp/re/v493_lazy_bit_node_ruling.md・台帳 row469（bak319）・round_verify ALL OK（rows 31..469 / total 355 / done 350 / open 5）・STATE (hk)・ai-todo #151 note。[確定相当] V-493-1 FUN_00452C20: L63630 実読 [確定(decompiled)]: uint * FUN_00452c20(uint *param_1, uint param_2): uVar1=param_1[3]（+0xC＝key ptr）→ FUN_0055e000(uVar1,&param_1)（key lookup・v478 と同 fn）→ if (cVar2==0) { puVar3=FUN_00401f00(8)（8B node alloc）→ FUN_00452570(uVar1,puVar3)（register）→ param_1=puVar3; } → if (param_1[1]==0) *param_1 = *param_1 | param_2;（param_2 mask を |= OR 設定）→ FUN_00452C20＝「key（param_1+0xC）で lazy get-or-create（node 8B＋register）し、param_2（bit mask）を node 先頭へ OR 設定する bit 設定 fn [確定相当]」→ gated 実行（FUN_0045B670→本 fn）の実体は「対象 bit の設定 [確定相当]」＝bit5 semantic の経路が完成（何の bit5 かは node の用途 [推定]＝残点）。+0xC＝key ptr が再確認 [確定]（v485/v481 と整合）。[確定相当]（第2 marker）DAT_00B33AAC の名前: 0xA38094 の実文字列＝\"StolenGoods\" [確定(実文字列)]（docs 1件＝L58077）／0xA38154＝\"NorthMarker\"（v469/v470 一致）→ DAT_00B33AAC＝StolenGoods marker singleton [確定相当]（v470 NorthMarker に続く第2 marker・盗品オブジェクト [推定]）、docs mentions 8件。[確定相当] FUN_0045A500（gate 内 mode 判定）: L71176 実読 [確定(decompiled)]: DVar1=*(DWORD*)(DAT_00b33398+0x10)（登録 thread id）→ GetCurrentThreadId() → if (DVar2==DVar1) return *(param_1+0x18) 下位 byte／return *(uint*)(param_1+0x18)>>0x12 & 0x1（bit18）→ thread-affinity 判定 fn [確定相当]（main/critical thread 判定 [推定]）→ gated 実行の mode gate が thread 判定であることを確定。[未確定] V-493-2 0x4D0E74 site（4push 形）は budget 未着手＝残点／[未確定] V-493-3 引継ぎも残点継続。残点 V-494-1..3（1=node（FUN_00452C20 lazy node）の用途と bit5 の最終 semantic（FUN_00452570 identity）＋FUN_0045A500 の param_1+0x18 bit18/byte の状態【中】／2=0x4D0E74 site（4push 形）の引数確認【低】／3=引継ぎ残り【低】）。教訓: gated 実行の「本体」が `|=` bit 設定なら notify chain の意味が一気に確定（bit5→notify→bit 設定＝flag 管理系）／`key → lookup → alloc → register → |=` の5段は lazy flag node の定番（v469/v481 の map insert 同型＋bit 設定追加）／実文字列（StolenGoods/NorthMarker）の取得は singleton identity の決定打（3度目の成功）／GetCurrentThreadId＋global 比較は thread-affinity 判定の目印／shift 値（>>0x12＝bit18）から bit 位置を特定（v473/v489 に続く bit 解釈の反復）。本日 push: v405→v492（94284891）88件＋本件 v493。v 採番 v493 消費（次=v494）。"
     }
   ],
   "metadata": {
-    "totalEntries": 897,
+    "totalEntries": 898,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-17T03:33:17Z",
-    "entry_count": 897,
-    "last_updated": "2026-11-17T03:33:17Z"
+    "lastUpdated": "2026-11-17T03:37:53Z",
+    "entry_count": 898,
+    "last_updated": "2026-11-17T03:37:53Z"
   }
 }

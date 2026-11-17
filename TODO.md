@@ -749,6 +749,13 @@
   > ④[未確定] V-492-3 引継ぎ（predicate 英名・sink 正体・新 FourCC 意味）は残点継続。
   > 残点 V-493-1..3（1=FUN_00452C20（gated 実行体の本体）identity→bit5 semantic と slot +0x40 機能が確定【中】／2=0xA38094（第2 marker 名）実文字列＋0x4D0E74 site（4push 形）引数確認＋FUN_0045A500 identity【低】／3=引継ぎ残り【低】）。
   > 教訓: gate 3連（TLS byte2＋global＋flag bit）＋本体呼び出しの fn は「gated 実行体」の定型（bit 変更→notify→gated 実行の流れが完成）／callsite の machine push 並び（mov ecx,global; push imm; push reg; mov ecx,eax）が引数対応を確定させる（docs 表示2引数と machine thiscall 3引数の突合＝v491 残点の解消法）／singleton 構築 pattern（alloc→ctor→+0xD8 set name→list link）は再現のたびに marker 系と即分かる（v470→v492）／push 数 census が別呼び出し形を分離／mode 判定 fn（FUN_0045A500）の所在分かれば mode/bitable が揃う。v 採番 v492 消費（次=v493）。
+  > 【旧残点群消化第37弾 v493 — V-493-1..3 完遂・旧 V-406-3/V-406-4 継続第23弾】probe v493_1 全1本 EXIT=0（初回構文エラー→修正）。成果物 tmp/re/v493_lazy_bit_node_ruling.md・台帳 row469（bak319）・round_verify ALL OK（rows 31..469 / total 355 / done 350 / open 5）。
+  > ①[確定相当] V-493-1 FUN_00452C20: L63630 実読 [確定(decompiled)]: `uint * FUN_00452c20(uint *param_1, uint param_2)`: `uVar1=param_1[3]`（+0xC＝key ptr）→ `FUN_0055e000(uVar1,&param_1)`（key lookup・v478 と同 fn）→ `if (cVar2==0) { puVar3=FUN_00401f00(8)`（8B node alloc）→ `FUN_00452570(uVar1,puVar3)`（register）→ `param_1=puVar3; }` → **`if (param_1[1]==0) *param_1 = *param_1 | param_2;`（param_2 mask を |= OR 設定）** → **FUN_00452C20＝「key（param_1+0xC）で lazy get-or-create（node 8B＋register）し、param_2（bit mask）を node 先頭へ OR 設定する bit 設定 fn [確定相当]」→ gated 実行（FUN_0045B670→本 fn）の実体は「対象 bit の設定 [確定相当]」＝bit5 semantic の経路が完成**（何の bit5 かは node の用途 [推定]＝残点）。+0xC＝key ptr が再確認 [確定]（v485/v481 と整合）。
+  > ②[確定相当]（第2 marker）DAT_00B33AAC の名前: **`0xA38094` の実文字列＝`"StolenGoods"` [確定(実文字列)]（docs 1件＝L58077）**／`0xA38154`＝`"NorthMarker"`（v469/v470 一致）→ **DAT_00B33AAC＝StolenGoods marker singleton [確定相当]**（v470 NorthMarker に続く第2 marker・盗品オブジェクト [推定]）、docs mentions 8件。
+  > ③[確定相当] FUN_0045A500（gate 内 mode 判定）: L71176 実読 [確定(decompiled)]: **`DVar1=*(DWORD*)(DAT_00b33398+0x10)`（登録 thread id）→ GetCurrentThreadId() → `if (DVar2==DVar1) return *(param_1+0x18)` 下位 byte／`return *(uint*)(param_1+0x18)>>0x12 & 0x1`（bit18）→ thread-affinity 判定 fn [確定相当]（main/critical thread 判定 [推定]）→ gated 実行の mode gate が thread 判定であることを確定**。
+  > ④[未確定] V-493-2 0x4D0E74 site（4push 形）は budget 未着手＝残点／[未確定] V-493-3 引継ぎも残点継続。
+  > 残点 V-494-1..3（1=node（FUN_00452C20 lazy node）の用途と bit5 の最終 semantic（FUN_00452570 identity）＋FUN_0045A500 の param_1+0x18 bit18/byte の状態【中】／2=0x4D0E74 site（4push 形）の引数確認【低】／3=引継ぎ残り【低】）。
+  > 教訓: gated 実行の「本体」が `|=` bit 設定なら notify chain の意味が一気に確定（bit5→notify→bit 設定＝flag 管理系）／`key → lookup → alloc → register → |=` の5段は lazy flag node の定番（v469/v481 の map insert 同型＋bit 設定追加）／実文字列（StolenGoods/NorthMarker）の取得は singleton identity の決定打（3度目の成功）／GetCurrentThreadId＋global 比較は thread-affinity 判定の目印／shift 値（>>0x12＝bit18）から bit 位置を特定。v 採番 v493 消費（次=v494）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1670,6 +1677,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1693,4 +1705,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 12:32:35
+**ai-todo** | Last Updated: 2026-11-17 12:37:07
