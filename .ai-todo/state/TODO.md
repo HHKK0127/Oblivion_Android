@@ -533,6 +533,14 @@
   > ③[未確定] V-464-2（旧 V-406-4/5）は本 probe 未着手＝残点（budget を V-406-3 に集中）。[未確定] V-464-3 引継ぎ（FUN_005222D0 一語名別法・predicate slot35 英名）も残点継続。
   > 残点 V-465-1..3（1=旧残点 V-406-3 継続（FUN_004CCE00 の param_1+0x24 flag bit0 意味と FUN_00420C40 float 計算 identity、top-band 残り caller typed）【中】／2=旧残点 V-406-4（DATA+0x2C/+0x31 意味・UESP 48/52byte 差分の docs 内裏取り）と V-406-5（PTR_DAT_00B10D90 所有 fn と spec 名前テーブル書手）【低】／3=V-464-3 引継ぎ（FUN_005222D0 一語名別法と predicate slot35 英名 CanResolveDependencies [推定] 裏取り）【低】）。
   > 教訓: E8 census は band histogram を先に可視化（512件を全 decode する前に帯で絞る）／`mov ecx,eax; call <fn>` の2命令ペアが「getter 結果→受け手」の接続点で受け手 fn identity が typed の鍵（FUN_004CCE00/4CCE20）／Player singleton（0xB333C4）を含む call 直後は「Player と接続する系統」として分離（v447 singleton 確定が効く）／band owning fn の signature 行を docs から一括取得すれば band 全体 typed の材料が揃う／param_1+0x24 &1 の flag byte は class form の flag（v406 flags bit0 autocalcs と整合）で過去の flags bit0 調査（v261/v406）と接続可。v 採番 v464 消費（次=v465）。
+  > 【旧残点群消化第9弾 v465 — V-465-1..3 完遂・旧 V-406-3 継続第2弾】probe v465_1..v465_2 全2本 EXIT=0。成果物 tmp/re/v465_idlookup_ruling.md・台帳 row441（bak291）・round_verify ALL OK（rows 31..441 / total 327 / done 322 / open 5）。
+  > ①[確定相当] V-465-1 FUN_00420C40 identity: L23449 `float10 FUN_00420c40(void)`: `iVar1=FUN_0041e210(0x4c); if (iVar1!=0) return *(float*)(iVar1+0xc); return 0;` [確定(構造)] → FUN_00420C40＝「id 0x4C（76）の object を TLS lookup で取得し、見つかればその +0xC float を返す・無ければ0 [確定相当]」。
+  > ②[確定相当] FUN_0041E210（lookup 本体）: L20071 `int __thiscall(int param_1, byte param_2)`: `if ((param_2>>3 < 0xc) && ((*(u8*)((param_2>>3)+8+param_1) & (1<<(param_2&7))) != 0))`（bitset availability＝self+8+id/8 byte の bit id%8）`{ iVar1=*(TLS slot); if ((param_1==*(iVar1+8)) && (FUN_0041DEA0(), param_2 < 0x5d)) iVar2=*(iVar1+0x10+param_2*4); } if (iVar2==0) …` [確定(構造)] → FUN_0041E210(self,id)＝「self の bitset で id availability を確認し、TLS テーブル（TLS+0x10+id*4）から per-thread cached object を返す lookup [確定相当]」（id は byte・bound <0x5D=93、docs mentions 258件・`FUN_0041e210(0x34)/(0x15)/(0x30)/(0x49)/(0x31)` 等の id 定数呼び出し多数）→ id 系統は byte 単位の per-thread registry [確定相当]、0x4C（76）の意味は [未確定]＝残点。
+  > ③[確定]（1行 setter）V-465-1 form+0x24 flag byte: FUN_004C97E0（L157634 `void __thiscall(int self, undefined1 v)`: `*(u8*)(self+0x24)=v;`）＝flag byte の1行 setter [確定]。`mov byte [reg+0x24], al` census（class band 0x440000..0x530000）＝4件: FUN_004C97E0／FUN_004CDEC0（`undefined1 __thiscall(int*, int*)`）／FUN_0052FB40／FUN_0052FE90 [確定] → form+0x24 はこの4 fn 系統から書かれる [確定]（FUN_004CCE00 が読む flag bit0＝param_2&1 の setter 候補）。
+  > ④[部分確定] V-465-1 top-band 残り typed: 追加 signature FUN_00460BC0 `void __thiscall(int param_1, undefined4 param_2, uint param_3)`（L76387・0x460000 帯新規）／既出（FUN_00603CA0/FUN_00460710/FUN_006384B0）再確認 → band signature は4件目まで取得 [部分確定]（全数 typed は未達＝残点）。
+  > ⑤[未確定] V-465-2 旧 V-406-4/5 は本 probe 未着手＝残点／[未確定] V-465-3 V-464-3 引継ぎも残点継続。
+  > 残点 V-466-1..3（1=旧残点 V-406-3 継続（id 0x4C（76）の意味＝TLS registry の何の object かと +0xC float の語、form+0x24 flag bit0 の setter 特定（4候補絞り込み）、top-band 残り typed）【中】／2=旧残点 V-406-4（DATA+0x2C/+0x31 意味・UESP 差分の docs 内裏取り）と V-406-5（PTR_DAT_00B10D90 所有 fn と spec 名前テーブル書手）【低】／3=V-465-3 引継ぎ（FUN_005222D0 一語名別法と predicate slot35 英名 CanResolveDependencies [推定] 裏取り）【低】）。
+  > 教訓: 「A fn が B fn を引数定数で直呼び」のとき B の identity は A の decompiled で即決（FUN_00420C40→FUN_0041E210(0x4C)）／id lookup の bound（param_2<0x5d）と table offset（+0x10+id*4）が id 系統の設計を語る（byte id・per-thread・93種 bound）／flag byte は「1行 setter（*(u8*)=v）」と「複合 setter（census 4件）」が並存→census で候補を出し decompiled で1行 setter を即決／mov byte [reg+disp], reg census は class band で絞ると候補が少ない（本件4件）／docs mentions 258件と id 定数呼び出し列挙が lookup 利用頻度と id 系統の裏付け。v 採番 v465 消費（次=v466）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1449,6 +1457,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1472,4 +1485,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 09:10:09
+**ai-todo** | Last Updated: 2026-11-17 09:20:34
