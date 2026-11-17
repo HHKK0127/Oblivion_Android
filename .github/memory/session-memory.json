@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-17T00:22:22Z",
+  "lastUpdated": "2026-11-17T00:32:54Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -12632,14 +12632,30 @@
         "flag-setter"
       ],
       "content": "2026-11-17 旧残点群消化第9弾 v465（probe v465_1..2 全2本 EXIT=0）＝V-465-1..3 完遂・旧 V-406-3 継続第2弾: 成果物 tmp/re/v465_idlookup_ruling.md・台帳 row441（bak291）・round_verify ALL OK（rows 31..441 / total 327 / done 322 / open 5）・STATE (gi)・ai-todo #151 note。[確定相当] V-465-1 FUN_00420C40 identity: L23449 float10 FUN_00420c40(void): iVar1=FUN_0041e210(0x4c); if (iVar1!=0) return *(float*)(iVar1+0xc); return 0; [確定(構造)] → FUN_00420C40＝「id 0x4C（76）の object を TLS lookup で取得し、見つかればその +0xC float を返す・無ければ0 [確定相当]」。[確定相当] FUN_0041E210（lookup 本体）: L20071 int __thiscall(int param_1, byte param_2): if ((param_2>>3 < 0xc) && ((*(u8*)((param_2>>3)+8+param_1) & (1<<(param_2&7))) != 0))（bitset availability＝self+8+id/8 byte の bit id%8）{ iVar1=*(TLS slot); if ((param_1==*(iVar1+8)) && (FUN_0041DEA0(), param_2 < 0x5d)) iVar2=*(iVar1+0x10+param_2*4); } if (iVar2==0) … [確定(構造)] → FUN_0041E210(self,id)＝「self の bitset で id availability を確認し、TLS テーブル（TLS+0x10+id*4）から per-thread cached object を返す lookup [確定相当]」（id は byte・bound <0x5D=93、docs mentions 258件・FUN_0041e210(0x34)/(0x15)/(0x30)/(0x49)/(0x31) 等の id 定数呼び出し多数）→ id 系統は byte 単位の per-thread registry [確定相当]、0x4C（76）の意味は [未確定]＝残点。[確定]（1行 setter）V-465-1 form+0x24 flag byte: FUN_004C97E0（L157634 void __thiscall(int self, undefined1 v): *(u8*)(self+0x24)=v;）＝flag byte の1行 setter [確定]。mov byte [reg+0x24], al census（class band 0x440000..0x530000）＝4件: FUN_004C97E0／FUN_004CDEC0（undefined1 __thiscall(int*, int*)）／FUN_0052FB40／FUN_0052FE90 [確定] → form+0x24 はこの4 fn 系統から書かれる [確定]（FUN_004CCE00 が読む flag bit0＝param_2&1 の setter 候補）。[部分確定] V-465-1 top-band 残り typed: 追加 signature FUN_00460BC0 void __thiscall(int param_1, undefined4 param_2, uint param_3)（L76387・0x460000 帯新規）／既出（FUN_00603CA0/FUN_00460710/FUN_006384B0）再確認 → band signature は4件目まで取得 [部分確定]（全数 typed は未達＝残点）。[未確定] V-465-2 旧 V-406-4/5 は本 probe 未着手＝残点／[未確定] V-465-3 V-464-3 引継ぎも残点継続。残点 V-466-1..3（1=旧残点 V-406-3 継続（id 0x4C（76）の意味＝TLS registry の何の object かと +0xC float の語、form+0x24 flag bit0 の setter 特定（4候補絞り込み）、top-band 残り typed）【中】／2=旧残点 V-406-4（DATA+0x2C/+0x31 意味・UESP 差分の docs 内裏取り）と V-406-5（PTR_DAT_00B10D90 所有 fn と spec 名前テーブル書手）【低】／3=V-465-3 引継ぎ（FUN_005222D0 一語名別法と predicate slot35 英名 CanResolveDependencies [推定] 裏取り）【低】）。教訓: 「A fn が B fn を引数定数で直呼び」のとき B の identity は A の decompiled で即決（FUN_00420C40→FUN_0041E210(0x4C)）／id lookup の bound（param_2<0x5d）と table offset（+0x10+id*4）が id 系統の設計を語る（byte id・per-thread・93種 bound）／flag byte は「1行 setter（*(u8*)=v）」と「複合 setter（census 4件）」が並存→census で候補を出し decompiled で1行 setter を即決／mov byte [reg+disp], reg census は class band で絞ると候補が少ない（本件4件）／docs mentions の件数（258件）と id 定数呼び出し列挙が lookup 利用頻度と id 系統の裏付け。本日 push: v405→v464（4473f839）60件＋本件 v465。v 採番 v465 消費（次=v466）。"
+    },
+    {
+      "id": "151-v466-id4c-float-2026-11-17",
+      "timestamp": "2026-11-17T00:32:54Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v466",
+        "id-4c-float",
+        "tesfullname",
+        "flag-writers"
+      ],
+      "content": "2026-11-17 旧残点群消化第10弾 v466（probe v466_1..2 全2本 EXIT=0）＝V-466-1..3 完遂・旧 V-406-3 継続第3弾: 成果物 tmp/re/v466_id4c_float_ruling.md・台帳 row442（bak292）・round_verify ALL OK（rows 31..442 / total 328 / done 323 / open 5）・STATE (gj)・ai-todo #151 note。[確定相当] V-466-1 id 0x4C（76）の意味: FUN_0041e210(0x4c) の docs callers は2件とも FUN_00420C40/FUN_00420C60（get/set pair）[確定] → id 0x4C＝「per-thread の float 値（+0xC）を持つ object」でその唯一の consumer が float get/set ペア [確定相当]。FUN_00420C60（L23463）＝setter [確定(構造)]: if (param_1==0.0) { FUN_0041E160(0x4c); return; }（v==0 なら FUN_0041E160(0x4C)＝release/clear） iVar2=FUN_0041e210(0x4c); if (iVar2!=0) { *(float*)(iVar2+0xc)=param_1; return; }（set） iVar2=FUN_00401F00(0x10,uVar1); …（無ければ alloc 0x10 bytes）→ FUN_00420C40（get）⇔FUN_00420C60（set）⇔FUN_0041E160（release）の3点セット [確定相当]。+0xC float の語（何の値か）は [未確定]＝残点。[確定]（signature）V-466-1 flag writers caller: E8 census: FUN_004C97E0（1行 setter）←1件 FUN_004471D0／FUN_0052FB40←1件 FUN_0044DCF0／FUN_0052FE90←1件 FUN_0044AC20／FUN_004CDEC0←E8 0件 [確定]。各 caller signature [確定(decompiled)]: FUN_004471D0（L54575）int * FUN_004471d0(int, undefined4, undefined4, int)（4引数）／FUN_0044DCF0（L59168）void FUN_0044dcf0(int *****param_1, char param_2)（5重ポインタ！）／FUN_0044AC20（L57513）void __fastcall(int) → flag byte を立てる系統はこの3 fn 由来 [確定]。[確定] V-466-1 FUN_0052FB40 class: vtable 0xA322A0 の RTTI＝.?AVTESFullName@@（COL 0xAB407C sig=0・pTD 0xB03298 実読）→ FUN_0052FB40＝TESFullName の init fn [確定]（param_1[6]=&PTR_FUN_00A322A0＝+0x18 field への TESFullName vtable store）→ form+0x24 flag byte の1系統は TESFullName init 由来 [確定相当]。[未確定] V-466-1 top-band 残り typed は budget 未着手＝残点／[未確定] V-466-2 旧 V-406-4/5 と V-466-3 引継ぎも残点継続。残点 V-467-1..3（1=旧残点 V-406-3 継続（id 0x4C の +0xC float の語＝何の値か・FUN_00420C40/60 の利用箇所文脈、top-band 残り typed）【中】／2=旧残点 V-406-4（DATA+0x2C/+0x31 意味・UESP 差分の docs 内裏取り）と V-406-5（PTR_DAT_00B10D90 所有 fn と spec 名前テーブル書手）【低】／3=V-466-3 引継ぎ（FUN_005222D0 一語名別法と predicate slot35 英名 CanResolveDependencies [推定] 裏取り）【低】）。教訓: id 定数 lookup の docs grep が consumer の全体を即時に与える（FUN_0041e210(0x4c)→2件＝get/set pair・id 定数呼び出しを grep するだけで系統が見える）／getter/setter/release の3点セットは setter の body で揃う（v==0→release／hit→set／miss→alloc の3分岐）／vtable store の imm32（0xA322A0）を RTTI で読めば init fn の class が即決（TESFullName・v441 法の応用）／E8 caller census は「caller 0件」も情報（FUN_004CDEC0←0＝virtual/vtable 経由か inline）／5重ポインタ（int*****）のような異常 signature は stack 解析失敗の兆候（docs の WARNING 行とセットで読む）。本日 push: v405→v465（029b8c23）61件＋本件 v466。v 採番 v466 消費（次=v467）。"
     }
   ],
   "metadata": {
-    "totalEntries": 870,
+    "totalEntries": 871,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-17T00:22:22Z",
-    "entry_count": 870,
-    "last_updated": "2026-11-17T00:22:22Z"
+    "lastUpdated": "2026-11-17T00:32:54Z",
+    "entry_count": 871,
+    "last_updated": "2026-11-17T00:32:54Z"
   }
 }
