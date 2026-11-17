@@ -2873,3 +2873,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **同一構造（bucket＋chain insert）の fn が複数 impl ある → 同型判定で登録先（map container）を即確定**／**site 検証は「int3 前の boundary から decode」＋直後の命令まで拾うと「戻り値の用途」も同時確定**／**arg3=1 が2 site 一致で呼び出し契約が確定**／**own band usage 0件の否定側は「bit の意味は caller 側」と経路固定**／**virtual slot（`+0x84`）が同 window に混在しても個別特定すれば混同しない**。
 - **本日 push 累計（セッション）**: v405 → … → v493 `a4171d8e` →（本件 v494 を本 commit で push）＝**90裁定**。
 - **次**: V-495-1..3 → 旧残点（`*node |=` 最終用途・`FUN_0045A500` callers／node/form float 同異／引継ぎ）。supermemory 未登録90件（v405..v494）は MCP 復復待ち。
+
+## 2026-11-17 (hm) — 旧残点群消化第39弾 v495（V-495-1..3 完遂・旧 V-406-3/V-406-4 継続第25弾）: **mask 値 census で bit24 経路（`0x1000000`）を特定**・**`FUN_0045A500` callers 8件を列挙（bit 書手経路を固定）**・**`FUN_004CBA80` return＝`piVar2` を特定（carrier は body 中間で残点化）**
+
+- **成果物**: `tmp/re/v495_mask_callers_ruling.md`（probe **v495_1 の1本 EXIT=0**）。台帳 **row471（bak321）**・`round_verify` **ALL OK**（rows 31..471 / total 357 / done 352 / open 5）。ai-todo **#151 に note**。v 採番 **v495 消費（次=v496）**。
+- **① [確定相当]（bit24 経路）＋[部分確定]（gated 側は動的）V-495-1 mask 値**: **E8 callers 7件の push 直前値 census: `0x45CF88`（`FUN_0045CEE0`）pushes＝`['eax','0x1000000','edi']`／`0x45D0DC`（`FUN_0045D030`）同形 → cdecl 逆順読替で `mask = 0x1000000`（bit24）、`param_1=edi` [確定相当] → bit24 設定経路を特定**（v489 bit5 以外の mask 実例）。**gated 側（`FUN_0045B670`/`FUN_0045B700` 5 sites）の mask は register（`edx`）経由で動的 [部分確定]**（`edx` の値源は caller 上流＝残点）。`FUN_0045B6D5` の `push cs` は int3 帯 window decode の疑い＝boundary 再検証要の制約を記録。
+- **② [確定]（8件列挙）V-495-1 `FUN_0045A500` callers**: **E8 callers 8件: `FUN_0040D4D0`／`FUN_0041FA40`／`FUN_004246F0`／`FUN_00424C50`／`FUN_00424D00`／`FUN_0042A200`／`FUN_00434020`／`FUN_00438060`（v480 既知）→ bit18/byte の書手はこの8 fn 経由（各 caller の `+0x18` usage を次 probe で特定）＝経路を固定 [確定]**。
+- **③ [部分確定] V-495-2 `FUN_004CBA80` return carrier**: **docs return 3箇所: `L159750/L159757: return 0`（`param_2==0` 分岐・alloc 失敗）／`L159765: return piVar2` → 戻り＝`piVar2`（本体は body 中間が未表示）[部分確定] → `[ret+0x28]`（v494 `fld`）の载体（node/form）は `piVar2` 特定待ち＝残点**（`param_2==0` で null 返しは v485 docs と一致 [確定]）。
+- **④ [未確定] V-495-3 引継ぎ**（predicate 英名・sink 正体・新 FourCC 意味）は残点継続。
+- **残点 V-496-1..3**: 1=`piVar2`（`FUN_004CBA80` 戻り carrier）の特定（body 中間 L159758..L159765）＋gated 側 mask 値源（`edx` 設定元）＋`FUN_0045A500` callers 8件の `+0x18` 書手特定【中】／2=`FUN_0045CEE0`/`FUN_0045D030`（bit24 callers）の identity【低】／3=引継ぎ残り【低】。
+- **教訓**: **mask 値は caller の push 直前から読む**（cdecl 逆順＝最後の push が param_1・**固定値と register 経由を区別**）／**`push cs` は int3 帯 window decode の疑い**（boundary 再検証要の制約明記＝自己点検の反復）／**bit 書手探索は「判定 fn の callers 列挙」から** → 次 probe で各 caller の `+0x18` usage を読む経路を固定／**return 3箇所 grep が carrier を即特定**（`piVar2`）→ body 中間が残点と方向明確化／**cross-verified fn（`FUN_00438060`）が callers に現れ系統整合を確認**。
+- **本日 push 累計（セッション）**: v405 → … → v494 `4968a38f` →（本件 v495 を本 commit で push）＝**91裁定**。
+- **次**: V-496-1..3 → 旧残点（`piVar2` carrier／`edx` mask 源・`+0x18` 書手／引継ぎ）。supermemory 未登録91件（v405..v495）は MCP 復復待ち。

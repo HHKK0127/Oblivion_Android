@@ -763,6 +763,13 @@
   > ④[未確定] V-494-3 引継ぎ（predicate 英名・sink 正体・新 FourCC 意味）は残点継続。
   > 残点 V-495-1..3（1=map node の `*node |= mask` の最終用途（node[1]==0 gate・FUN_00452C20 caller 側 mask 値）＋FUN_0045A500 callers（bit18/byte 実体）【中】／2=[node+0x28] float と form +0x28 の同異（offset 一致・载体区別）＋FUN_004D0C20 本文用途【低】／3=引継ぎ残り【低】）。
   > 教訓: 同一構造（bucket＋chain insert）の fn が複数 impl ある→同型判定で登録先（map container）を即確定／site 検証は「int3 前の boundary から decode」＋直後の命令まで拾うと「戻り値の用途」も同時確定／arg3=1 が2 site 一致で呼び出し契約が確定／own band usage 0件の否定側は「bit の意味は caller 側」と経路固定／virtual slot（+0x84）が同 window に混在しても個別特定すれば混同しない。v 採番 v494 消費（次=v495）。
+  > 【旧残点群消化第39弾 v495 — V-495-1..3 完遂・旧 V-406-3/V-406-4 継続第25弾】probe v495_1 全1本 EXIT=0。成果物 tmp/re/v495_mask_callers_ruling.md・台帳 row471（bak321）・round_verify ALL OK（rows 31..471 / total 357 / done 352 / open 5）。
+  > ①[確定相当]（bit24 経路）＋[部分確定]（gated 側は動的）V-495-1 mask 値: **E8 callers 7件の push 直前値 census: `0x45CF88`（FUN_0045CEE0）pushes＝['eax','0x1000000','edi']／`0x45D0DC`（FUN_0045D030）同形 → cdecl 逆順読替で `mask = 0x1000000`（bit24）、param_1=edi [確定相当] → bit24 設定経路を特定**（v489 bit5 以外の mask 実例）。gated 側（FUN_0045B670/FUN_0045B700 5 sites）の mask は register（edx）経由で動的 [部分確定]（edx の値源は caller 上流＝残点）。FUN_0045B6D5 の `push cs` は int3 帯 window decode の疑い＝boundary 再検証要の制約を記録。
+  > ②[確定]（8件列挙）V-495-1 FUN_0045A500 callers: **E8 callers 8件: FUN_0040D4D0／FUN_0041FA40／FUN_004246F0／FUN_00424C50／FUN_00424D00／FUN_0042A200／FUN_00434020／FUN_00438060（v480 既知）→ bit18/byte の書手はこの8 fn 経由（各 caller の +0x18 usage を次 probe で特定）＝経路を固定 [確定]**。
+  > ③[部分確定] V-495-2 FUN_004CBA80 return carrier: **docs return 3箇所: `L159750/L159757: return 0`（param_2==0 分岐・alloc 失敗）／`L159765: return piVar2` → 戻り＝piVar2（本体は body 中間が未表示）[部分確定] → [ret+0x28]（v494 fld）の载体（node/form）は piVar2 特定待ち＝残点**（param_2==0 で null 返しは v485 docs と一致 [確定]）。
+  > ④[未確定] V-495-3 引継ぎ（predicate 英名・sink 正体・新 FourCC 意味）は残点継続。
+  > 残点 V-496-1..3（1=piVar2（FUN_004CBA80 戻り carrier）の特定（body 中間 L159758..L159765）＋gated 側 mask 値源（edx 設定元）＋FUN_0045A500 callers 8件の +0x18 書手特定【中】／2=FUN_0045CEE0/FUN_0045D030（bit24 callers）の identity【低】／3=引継ぎ残り【低】）。
+  > 教訓: mask 値は caller の push 直前から読む（cdecl 逆順＝最後の push が param_1・固定値と register 経由を区別）／`push cs` は int3 帯 window decode の疑い（boundary 再検証要の制約明記＝自己点検の反復）／bit 書手探索は「判定 fn の callers 列挙」から→次 probe で各 caller の +0x18 usage を読む経路を固定／return 3箇所 grep が carrier を即特定（piVar2）→ body 中間が残点と方向明確化／cross-verified fn（FUN_00438060）が callers に現れ系統整合を確認。v 採番 v495 消費（次=v496）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1684,6 +1691,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1707,4 +1719,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 12:41:34
+**ai-todo** | Last Updated: 2026-11-17 12:46:14
