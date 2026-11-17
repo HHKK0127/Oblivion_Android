@@ -679,6 +679,13 @@
   > ④[未確定] V-482-3 引継ぎ（param_3 flag・一語名別法・predicate 英名）は残点継続。
   > 残点 V-483-1..3（1=旧残点 V-406-3 継続（3 float 群の正式 field 語＝何の3軸かの切り分け＋FUN_004A7A60（NaN 補正処理）identity）【中】／2=旧残点 V-406-4 semantic 完遂（DAT_00B37D00 正体＝singleton 自身 → +0x64 中身の語）【低】／3=V-482-3 引継ぎ【低】）。
   > 教訓: walk gate と callee gate の一致（flag bit3）が「walk→fn」接続の構造証拠／NaN/0 検証＋DAT_ 連番デフォルト補正が「float 3軸群」の目印（デフォルト3点セットが共通なら群が対）／`param_1[N]` index 表記を byte offset に翻訳（×4）／band census の1行コピー代入が field 経路（donor）を即確定／巨大 annotation（FUN_004C7A30）が ownership を偽る→ owning は fn 境界で再確認（v437 教訓の再現）。v 採番 v482 消費（次=v483）。
+  > 【旧残点群消化第27弾 v483 — V-483-1..3 完遂・旧 V-406-3/V-406-4 継続第13弾】probe v483_1 全1本 EXIT=0。成果物 tmp/re/v483_3float_init_ruling.md・台帳 row459（bak309）・round_verify ALL OK（rows 31..459 / total 345 / done 340 / open 5）。
+  > ①[確定相当]（対）＋[未確定]（3軸の語）V-483-1 3float 群の関係: **REFR band（115 fn）usage 実読 [確定(decompiled)]: `L171195-171200 (FUN_004D9A70)`: `param_1[8]=0; [9]=0; … [0xb]=0; [0xc]=0; [0xd]=0`（両群ゼロ初期化＝ctor/init [確定]）／`L171397-171401 (FUN_004D9D00)`: `[0xb]=local_2c; [0xc]=local_28; [0xd]=local_24; [8]=local_20; [9]=local_1c`（ローカル6 float 連続から両群へ一括セット＝6 float（2×3D vector）が対で書かれる [確定(構造)]）／`L174624-174630 (FUN_004DDDE0)`: 部分セット** → **2つの3float 群は対（6 float）で処理される [確定相当]**、3軸の正式語（位置/スケール/色 [推定] の切り分け）は [未確定]＝残点（`+0x28` が累積 float・上限 clamp（v482）まで確定）。
+  > ②[推定相当] V-483-1 FUN_004A7A60: L133758 `void FUN_004a7a60(undefined4 param_1) { FUN_004941a0(1, param_1, &stack0x00000008); return; }`（3引数・variadic 展開）[確定(decompiled)] → log/report 系 core（FUN_004941a0）の wrapper [推定相当] → NaN 修正時のログ/報告 fn [推定相当]（FUN_004941a0 identity は [未確定]＝残点）。
+  > ③[確定相当]（init fn 構造）＋[未確定]（正体）V-483-2 DAT_00B37D00: **`FUN_009E62B0`（L1031387）実読 [確定(decompiled)]: `void FUN_009e62b0(void) { … FUN_004040e0(&DAT_00b11e34); _atexit(&LAB_00a1d4b0); … }` → machine（v478）で同 fn 内 `mov ecx,0xb37d00; call 0x419A70`（init）→ `push 0xA20120; call 0x981FB4`（registration）→ FUN_009E62B0＝「DAT_00B37D00（this）を DAT_00B11E34（once-init guard・v462 FUN_004040e0 同型）付きで初期化し、LAB_00A1D4B0（atexit dtor）で破棄登録する init fn [確定相当]」→ DAT_00B11E34＝guard との対（v462 DAT_00b05dc0 と同型）[推定高]**。正体は [未確定]＝残点（次の手＝atexit dtor LAB_00A1D4B0 の逆引き／init 実体 FUN_00419A70 の本文）。隣接 fn FUN_009E6250→`&DAT_00b11e2c` が同型で guard 連番（0xB11E2C/0xB11E34）＝系列性確認。
+  > ④[未確定] V-483-3 引継ぎ（param_3 flag・一語名別法・predicate 英名）は残点継続。
+  > 残点 V-484-1..3（1=旧残点 V-406-3 継続（6 float の正式語＝FUN_004D9D00 本文 context 採取が次の手＋FUN_004941a0（log core）identity）【中】／2=旧残点 V-406-4 semantic 完遂（DAT_00B37D00 正体＝atexit dtor 逆引き／init 実体本文 → +0x64 中身の語）【低】／3=V-483-3 引継ぎ【低】）。
+  > 教訓: 連番 local（local_2c/28/24/20/1c）の代入束が「6 float＝2×3D vector」の証拠（local byte offset 連続＝配列/vector コピー・束セットで対を確定）／`FUN_004040e0(&DAT_)`＋`_atexit` の fn 型が singleton init fn の定型（v462 再現・隣接 fn の guard 連番が系列性を語る）／variadic wrapper（f(1, arg, &stack+8)）は log/report 系の目印／init fn の docs（guard/atexit）と machine（mov ecx,global; call init）の対応で this が確定（DAT_00B11E34＝guard、0xB37D00＝this）／正体不明 singleton は経路を固定して中身は残点の形を明示。v 採番 v483 消費（次=v484）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1600,6 +1607,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1623,4 +1635,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 11:46:15
+**ai-todo** | Last Updated: 2026-11-17 11:50:31

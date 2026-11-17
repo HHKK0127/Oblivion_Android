@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-17T02:46:56Z",
+  "lastUpdated": "2026-11-17T02:51:18Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -12904,14 +12904,30 @@
         "donor-7c"
       ],
       "content": "2026-11-17 旧残点群消化第26弾 v482（probe v482_1 全1本 EXIT=0）＝V-482-1..3 完遂・旧 V-406-3/V-406-4 継続第12弾: 成果物 tmp/re/v482_validate_donor_ruling.md・台帳 row458（bak308）・round_verify ALL OK（rows 31..458 / total 344 / done 339 / open 5）・STATE (gz)・ai-todo #151 note。[確定相当]（機能）＋[推定]（一語名）V-482-1 FUN_004DF820 本文: L175826 実読 [確定(decompiled)]: void __fastcall FUN_004df820(int *param_1): if (((uint)param_1[2]>>3 & 1)==0)（flag bit3 gate＝v474 walk と同一条件）→ DAT_00b06b18=1; DAT_00b34d88=0; → if ((param_1[7]!=0) && ((*(uint*)(param_1[7]+8)>>5 & 1)!=0)) virtual[*param_1+0x8c]()（param_1[7]＝+0x1C field・+0x8C virtual＝v405/v463 predicate slot 系）→ float 3つ組検証①: [0xb]（+0x2C）／[0xc]（+0x30）／[0xd]（+0x34）を FUN_00983ffd（==0）＋__isnan 検査→ 異常時 DAT_00b3f9a8/9ac/9b0 で補正／検証②: [8]（+0x20）／[9]（+0x24）／[10]（+0x28）同様→ 同じ3デフォルト補正 → FUN_004DF820＝「TESObjectREFR の +0x6C method: flag bit3 未立のとき float 3つ組×2 を NaN/0 検証し、異常ならデフォルト補正、param_1[7] flag 条件付きで +0x8C predicate を呼ぶ validate/repair fn [確定相当]」（一語名 [推定]）。[確定]（構造）＋[推定高]（語）elem[+0x28] の3float 群位置づけ: +0x28（＝param_1[10]）は [8]/[9]/[10]（byte +0x20/+0x24/+0x28）の3 float 群の3番目 [確定]、デフォルト DAT_00b3f9b0 補正 [確定]。別3つ組 +0x2C/+0x30/+0x34 が同じ3デフォルトで補正＝2つの3 float 群が対で存在 [確定]。FUN_004DD070: param_3=*(float*)(param_1+0x28)+param_3 → 0.._DAT_00A3D5B0 clamp → +0x28＝累積可能な float（上限 clamp 付き）[推定高]、正式 field 名は [未確定]＝残点。[確定相当] V-482-2 donor（TESObjectCELL+0x104）入手元: CELL band（678 fn）の `+0x104) =` census: L137167 (FUN_004AD630): *(param_2 + 0x104) = *(param_1 + 0x7c); ＝「param_1 の +0x7C を param_2 の +0x104 へコピー」[確定(構造)] → cell+0x104 の donor は +0x7C field の object [確定相当]（v448 +0x78/+0x7C smart ptr 系と整合）。他 census 件は FUN_004C7A30（巨大 annotation＝v437 類型 owning 誤り）由来で type 依存（v478 と整合）→ 否定側整理 [確定]。DAT_00B37D00 正体は残点（経路 cell+0x7C → +0x104 → +0xc は確定・残は singleton 自身）。[未確定] V-482-3 引継ぎ（param_3 flag・一語名別法・predicate 英名）は残点継続。残点 V-483-1..3（1=旧残点 V-406-3 継続（3 float 群の正式 field 語＝何の3軸かの切り分け＋FUN_004A7A60（NaN 補正処理）identity）【中】／2=旧残点 V-406-4 semantic 完遂（DAT_00B37D00 正体＝singleton 自身 → +0x64 中身の語）【低】／3=V-482-3 引継ぎ【低】）。教訓: walk gate と callee gate の一致（flag bit3）が「walk→fn」接続の構造証拠（v474 の >>3&1 が FUN_004DF820 内にも同形）／NaN/0 検証＋DAT_ 連番デフォルト補正が「float 3軸群」の目印（デフォルト3点セットが共通なら群が対）／`param_1[N]` index 表記を byte offset に翻訳（×4）して field 位置を対応／band census の1行コピー代入（`*(dst+X)=*(src+Y)`）が field 経路（donor）を即確定／巨大 annotation（FUN_004C7A30）が ownership を偽る（678 fn band で多数件が同一 annotation）→ owning は fn 境界で再確認（v437 教訓の再現）。本日 push: v405→v481（0511f796）77件＋本件 v482。v 採番 v482 消費（次=v483）。"
+    },
+    {
+      "id": "151-v483-3float-init-2026-11-17",
+      "timestamp": "2026-11-17T02:51:18Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v483",
+        "3float-pair",
+        "log-wrapper",
+        "init-fn"
+      ],
+      "content": "2026-11-17 旧残点群消化第27弾 v483（probe v483_1 全1本 EXIT=0）＝V-483-1..3 完遂・旧 V-406-3/V-406-4 継続第13弾: 成果物 tmp/re/v483_3float_init_ruling.md・台帳 row459（bak309）・round_verify ALL OK（rows 31..459 / total 345 / done 340 / open 5）・STATE (ha)・ai-todo #151 note。[確定相当]（対）＋[未確定]（3軸の語）V-483-1 3float 群の関係: REFR band（115 fn）usage 実読 [確定(decompiled)]: L171195-171200 (FUN_004D9A70): param_1[8]=0; [9]=0; … [0xb]=0; [0xc]=0; [0xd]=0（両群ゼロ初期化＝ctor/init [確定]）／L171397-171401 (FUN_004D9D00): [0xb]=local_2c; [0xc]=local_28; [0xd]=local_24; [8]=local_20; [9]=local_1c（ローカル6 float 連続から両群へ一括セット＝6 float（2×3D vector）が対で書かれる [確定(構造)]）／L174624-174630 (FUN_004DDDE0): 部分セット → 2つの3float 群は対（6 float）で処理される [確定相当]、3軸の正式語（位置/スケール/色 [推定] の切り分け）は [未確定]＝残点（+0x28 が累積 float・上限 clamp（v482）まで確定）。[推定相当] V-483-1 FUN_004A7A60: L133758 void FUN_004a7a60(undefined4 param_1) { FUN_004941a0(1, param_1, &stack0x00000008); return; }（3引数・variadic 展開）[確定(decompiled)] → log/report 系 core（FUN_004941a0）の wrapper [推定相当] → NaN 修正時のログ/報告 fn [推定相当]（FUN_004941a0 identity は [未確定]＝残点）。[確定相当]（init fn 構造）＋[未確定]（正体）V-483-2 DAT_00B37D00: FUN_009E62B0（L1031387）実読 [確定(decompiled)]: void FUN_009e62b0(void) { … FUN_004040e0(&DAT_00b11e34); _atexit(&LAB_00a1d4b0); … } → machine（v478）で同 fn 内 mov ecx,0xb37d00; call 0x419A70（init）→ push 0xA20120; call 0x981FB4（registration）→ FUN_009E62B0＝「DAT_00B37D00（this）を DAT_00B11E34（once-init guard・v462 FUN_004040e0 同型）付きで初期化し、LAB_00A1D4B0（atexit dtor）で破棄登録する init fn [確定相当]」→ DAT_00B11E34＝guard との対（v462 DAT_00b05dc0 と同型）[推定高]。正体は [未確定]＝残点（次の手＝atexit dtor LAB_00A1D4B0 逆引き／init 実体 FUN_00419A70 本文）。隣接 fn FUN_009E6250→&DAT_00b11e2c が同型で guard 連番（0xB11E2C/0xB11E34）＝系列性確認 [確定]。[未確定] V-483-3 引継ぎ（param_3 flag・一語名別法・predicate 英名）は残点継続。残点 V-484-1..3（1=旧残点 V-406-3 継続（6 float の正式語＝FUN_004D9D00 本文 context 採取が次の手＋FUN_004941a0（log core）identity）【中】／2=旧残点 V-406-4 semantic 完遂（DAT_00B37D00 正体＝atexit dtor 逆引き／init 実体本文 → +0x64 中身の語）【低】／3=V-483-3 引継ぎ【低】）。教訓: 連番 local（local_2c/28/24/20/1c）の代入束が「6 float＝2×3D vector」の証拠（local byte offset 連続＝配列/vector コピー・束セットで対を確定）／`FUN_004040e0(&DAT_)`＋`_atexit` の fn 型が singleton init fn の定型（v462 再現・隣接 fn の guard 連番が系列性を語る）／variadic wrapper（f(1, arg, &stack+8)）は log/report 系の目印／init fn の docs（guard/atexit）と machine（mov ecx,global; call init）の対応で this が確定（DAT_00B11E34＝guard、0xB37D00＝this）／正体不明 singleton は経路を固定して中身は残点の形を明示。本日 push: v405→v482（4abfdfce）78件＋本件 v483。v 採番 v483 消費（次=v484）。"
     }
   ],
   "metadata": {
-    "totalEntries": 887,
+    "totalEntries": 888,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-17T02:46:56Z",
-    "entry_count": 887,
-    "last_updated": "2026-11-17T02:46:56Z"
+    "lastUpdated": "2026-11-17T02:51:18Z",
+    "entry_count": 888,
+    "last_updated": "2026-11-17T02:51:18Z"
   }
 }
