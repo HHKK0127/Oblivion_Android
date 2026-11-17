@@ -872,6 +872,13 @@
   > ④[未確定] V-508-2 Player +0x80 中身／gated mask 源は budget 外で残点／[未確定] V-508-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。
   > 残点 V-509-1..3（1=FUN_004492E0 訂正の確定（dtor vs ctor の最終判定＝docs decompiled head と machine の突合）＋FUN_0098C072（string copy 実体）identity＋0xB30D28（global fallback）の正体【中】／2=map ctor の別 fn 探索（FUN_00452440 帯／FUN_00452570 の this 入手元の machine 追跡）＋Player +0x80 中身【低】／3=引継ぎ残り【低】）。
   > 教訓: 「ctor と記録した fn」も machine で dtor のことがある（list unlink/free の反復（mov [X+4],[X]→free→clear）が destructor の定番 pattern＝v469 の ctor 訂正候補）／未観測 bit の grep 0件が「13種が上限」の確定になる（残点の grep 拡張も否定側で閉じられる）／fallback wrapper（call→null→mov eax,global; ret）が string/global accessor の目印／call 0x401F00/0x401F20 の alloc/free 系が同族（FUN_00401Fxx band が heap 操作系と確定）／map ctor 探索は「this 入手元の machine 追跡」へ（vtable store が業務 fn に無い＝map は runtime 構築 [推定]）。v 採番 v508 消費（次=v509）。
+  > 【旧残点群消化第53弾 v509 — V-509-1..3 完遂・旧 V-406-3 継続第39弾】probe v509_1 全1本 EXIT=0。成果物 tmp/re/v509_reset_verdict_ruling.md・台帳 row485（bak335）・round_verify ALL OK（rows 31..485 / total 371 / done 366 / open 5）。
+  > ①[確定]（訂正）→ reset/cleanup [確定相当] V-509-1 FUN_004492E0: **docs decompiled head 実読 [確定(decompiled)]: `undefined4 __fastcall FUN_004492e0(int param_1)`（1引数）→ `*(param_1 + 0xcd4) = 1`（flag set）→ `FUN_00447d00()` → `if (DAT_00b06158 != 0) { do { *(DAT_00b06150 + uVar6*4) = 0; uVar6++; } while (uVar6 < DAT_00b06158); }`（global bucket `0xB06150` clear）→ `DAT_00b06158 = 0; _DAT_00b0615c = 0;`（global reset）→ `FUN_00442630(0,0)` → `*(DAT_00b333a0 + 0x74) = 0` → v508 machine の list free 4系統（`esi+0x64`/`+0x34`/`+0x3c`/`+0x8c`）と docs の global reset が一致 → FUN_004492E0＝「global bucket clear＋global reset＋object list free＋flag set を行う reset/cleanup fn [確定相当]」→ v469 ruling「FUN_004492E0＝TESObjectSTAT ctor」を [確定負] で訂正（ctor ではなく reset/cleanup）[確定]**（param_1＝this（__fastcall 1引数）[推定]）。
+  > ②[推定相当]（`"asin"` data）V-509-1 `0xB30D28` 正体: **`.data` 実読 [確定(機械)]: dword `@0xB30D28`＝`0x0000000C`（12）、ctx hex `0C 00 00 00 08 00 00 00 61 73 69 6E 00` → `0x6173696E`＝`"asin"` 文字列 → `{12, 8, "asin", …}` の data 構造 [確定(機械)]、docs mentions 0件 [確定(否定側)] → `0xB30D28`＝`"asin"`（arcsin 数学関数）に関連する data 構造（12＝size 候補、8＝len 候補、`"asin"`＝名前）[推定相当] → FUN_0098540B（v508 fallback wrapper）の null 返しが asin data を返す＝math/str 関数系の default [推定相当]**。
+  > ③[確定]（否定側・docs 未収録）V-509-1 FUN_0098C072: **docs annotation なし（`FUN_0098c072` の行が存在しない）[確定(否定側)] → docs 未収録（v437 annotation gap の type）→ identity は machine/別法へ＝残点**（FUN_0098540B が `call 0x98C072` する構造は v508 で機械確定済み [確定]）。
+  > ④[未確定] V-509-2 map ctor 別 fn 探索／Player +0x80 中身は budget 外で残点／[未確定] V-509-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。
+  > 残点 V-510-1..3（1=FUN_0098C072 identity（docs 未収録＝machine decode か FUN_0098xxxx band の同族 fn から）＋`"asin"` data 構造の完全解（12/8 の意味・FUN_0098540B との関係）【中】／2=map ctor 別 fn 探索（FUN_00452570 の this 入手元 machine 追跡）＋Player +0x80 中身【低】／3=引継ぎ残り【低】）。
+  > 教訓: 「ctor と記録した fn」の訂正は docs head の「global clear/reset pattern」で確定（bucket clear＋count=0＋object field clear＝reset/cleanup の定番＝v508 machine list free と docs の突合が決め手）／`.data` の `{size, len, "name"}` 構造が「名前付き data エントリ」の目印（0xB30D28＝{12, 8, "asin"}＝math 関数テーブル [推定]・LE 読替の反復）／docs annotation 欠落（gap）も [確定（否定側）] として記録（docs 未収録＝machine/別法へ経路固定）／fallback（0xB30D28）の identity が「何の default か」を語る／訂正確定（v469→v509）も裁定に明記（誤記録の軌跡が残る＝追跡可能性・v500 ctor→v505 remove、v508 dtor 候補→v509 reset 確定の連鎖）。v 採番 v509 消費（次=v510）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1793,11 +1800,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1821,4 +1823,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 15:09:23
+**ai-todo** | Last Updated: 2026-11-17 15:27:46
