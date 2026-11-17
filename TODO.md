@@ -742,6 +742,13 @@
   > ④[未確定] 引継ぎ残り（predicate 英名・sink 正体・新 FourCC 意味）は残点継続。
   > 残点 V-492-1..3（1=FUN_0045B670（notify 本体）本文 identity→bit5 semantic と slot +0x40 機能が確定【中】／2=FUN_004CBA80 の param_3（machine push 回数）と DAT_00B33AAC identity＋DAT_00b3bad4 の意味【低】／3=引継ぎ残り【低】）。
   > 教訓: notify chain は「thunk→toggle→wrapper→body」の4段になることがある（段ごとに landing を記録）／台帳化＝「probe out の資料を md ファイルへ」も裁定の一部（v490 資料所在残点を v491 で解消＝残点の形が次の作業を誘導）／signature と callsite 表示の引数欠落を制約として明記（param_3 欠落＝machine push 回数で確認）／docs grep hits から「定義＋既知＋新規」を分離／第2の singleton（DAT_00B33AAC）出現で fn の汎用性が分かる。v 採番 v491 消費（次=v492）。
+  > 【旧残点群消化第36弾 v492 — V-492-1..3 完遂・旧 V-406-3 継続第22弾】probe v492_1 全1本 EXIT=0。成果物 tmp/re/v492_gated_body_ruling.md・台帳 row468（bak318）・round_verify ALL OK（rows 31..468 / total 354 / done 349 / open 5）。
+  > ①[確定相当]（gated 実行体）V-492-1 FUN_0045B670: L72253 実読 [確定(decompiled)]: TLS 取得 → `if (((TLS[+0x185]!=0)&&(TLS[+0x184]==0)) && (*(u8*)(DAT_00b33a98+0xcd4)==0) && ((*(u32*)(param_2+8)>>14 & 1)==0)) { cVar2=FUN_0045a500(); if (cVar2==0) FUN_00452c20(param_2,param_3); else if (((*(u32*)(param_1+0x18)>>3 & 1)!=0)&&(*(int*)(param_1+4)!=0)) FUN_00452c20(param_2,param_3); }` → **FUN_0045B670＝「TLS状態2byte＋global DAT_00B33A98+0xCD4＋param_2+8 bit14 の3重 gate の下で FUN_00452C20(param_2,param_3)（処理本体 [推定]）を実行する gated 実行体 [確定相当]」**、FUN_00452C20 の identity は [未確定]＝残点 → **bit5 semantic は「この gated 実行の許可フラグ」系 [推定]**（完全確定には FUN_00452C20 本文が次の手）。
+  > ②[確定相当] V-492-2 FUN_004CBA80 param_3: **machine push 数確認 [確定(機械)]: `0x4D0E74`（FUN_004D0C20）pushes=4／`0x65FECF`（FUN_0065FDA0）pushes=2＋mov ecx,eax → `mov ecx,[0xb33aac]; push 1; push ecx; mov ecx,eax; call 0x4CBA80` → thiscall（ecx＝param_1）＋stack（param_2＝0xB33AAC・param_3＝1）→ docs L424183 表示と完全一致 → param_3 = 1 [確定相当]**（v491「docs 欠落＝machine 要確認」を machine で確認完遂）。0x4D0E74 site は4push の別呼び出し形＝残点 [部分確定]。
+  > ③[確定相当]（marker 系 singleton）DAT_00B33AAC: **refs 実読 [確定(機械)]: FUN_0044AC20 内で `push 0x7c; call 0x401f00`（alloc 0x7C）→ `mov [0xb33aac], eax` → call 0x46c300 → `mov ecx,[0xb33aac]; mov edx,[ecx]; mov eax,[edx+0xd8]; push 0xa38094`（virtual+0xD8 名前設定）→ call 0x4b2b80（v470 list 接続）→ alloc 0x7C・名前 set・list link の第2 marker 系 singleton [確定相当]**（v470 NorthMarker と同一 pattern）。0xA38094 の実文字列（第2 marker 名）は [未確定]＝残点、docs mentions 8件。
+  > ④[未確定] V-492-3 引継ぎ（predicate 英名・sink 正体・新 FourCC 意味）は残点継続。
+  > 残点 V-493-1..3（1=FUN_00452C20（gated 実行体の本体）identity→bit5 semantic と slot +0x40 機能が確定【中】／2=0xA38094（第2 marker 名）実文字列＋0x4D0E74 site（4push 形）引数確認＋FUN_0045A500 identity【低】／3=引継ぎ残り【低】）。
+  > 教訓: gate 3連（TLS byte2＋global＋flag bit）＋本体呼び出しの fn は「gated 実行体」の定型（bit 変更→notify→gated 実行の流れが完成）／callsite の machine push 並び（mov ecx,global; push imm; push reg; mov ecx,eax）が引数対応を確定させる（docs 表示2引数と machine thiscall 3引数の突合＝v491 残点の解消法）／singleton 構築 pattern（alloc→ctor→+0xD8 set name→list link）は再現のたびに marker 系と即分かる（v470→v492）／push 数 census が別呼び出し形を分離／mode 判定 fn（FUN_0045A500）の所在分かれば mode/bitable が揃う。v 採番 v492 消費（次=v493）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1663,11 +1670,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1691,4 +1693,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 12:28:05
+**ai-todo** | Last Updated: 2026-11-17 12:32:35
