@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-17T07:41:52Z",
+  "lastUpdated": "2026-11-17T07:53:08Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13432,14 +13432,30 @@
         "docs-gap"
       ],
       "content": "2026-11-17 旧残点群消化第59弾 v515（probe v515_1 全1本 EXIT=0）＝V-515-1..3 完遂・旧 V-406-3 継続第45弾: 成果物 tmp/re/v515_ctor_revival_ruling.md・台帳 row491（bak341）・round_verify ALL OK（rows 31..491 / total 377 / done 372 / open 5）・STATE (ig)・ai-todo #151 note。[推定相当]（TESForm ctor 候補の復活）V-515-1 FUN_0046C460 本文: docs body 実読 [確定(decompiled)]: uVar7 = 0; bVar8 = DAT_00b33c10 == 0; → *param_1 = &PTR_FUN_00a3be3c;（vtable store！）→ param_1[4] = 0; param_1[5] = 0; → if (bVar8) { DAT_00b06b18 = 1; ppuVar5 = &PTR_DAT_00b05e04; local_8 = 0x45; do { pcVar1 = *ppuVar5; ppuVar5[1] = (FourCC pack); if (*(ppuVar5 + -1) != uVar7) { log(\"formEnumString[ %d ].cFormID in TESForm.cpp is out of order.\", uVar7); } ... } → FUN_0046C460＝「PTR_FUN_00A3BE3C（vtable）を param_1 に set＋DAT_00B05E04 の formEnumString[] 配列（0x45＝69 entries）を FourCC pack して順序検証する init/validate fn [確定相当]」→ TESForm 系 object の ctor/init（vtable store＋form enum 順序検証）[推定相当]（*param_1 = &PTR_FUN_...＝vtable store が ctor の定番 [確定相当]＝v505/v510 ctor 訂正連鎖に続く ctor 候補の復活）。DAT_00B05E04＝formEnumString[]（FormType→FourCC 文字列テーブル）、0x45＝69＝FormType 数 [確定相当]。[確定相当]（default getter）V-515-1 FUN_004CCBC0: L160653 実読 [確定(decompiled)]: undefined1 * __fastcall FUN_004ccbc0(int param_1): iVar1 = FUN_0041fa30(); if (iVar1 != 0) { puVar2 = FUN_0041fa30(); return puVar2; } → puVar2 = DAT_00b35c0c;（default singleton 返し）→ FUN_004CCBC0＝FUN_0041FA30() の結果を返し、null なら DAT_00B35C0C（default value singleton）を返す getter [確定相当]（FUN_0041FA30 identity は [未確定]＝残点）。DAT_00B35C0C＝default value singleton [推定相当]（DAT_00B3xxxx singleton 系と同型）→ CELL の +0xD4 getter＝「値取得＋default fallback」[推定相当]。[確定]（docs 未収録）V-515-1 FUN_004D6DF0: docs annotation なし [確定(否定側)] → REFR 側 +0xD4 impl は docs gap＝identity は machine/別法へ＝残点（v514 推定相当の裏取りは不完全＝docs gap として記録）。[未確定] V-515-2 gated mask 源／caller 分離は budget 外で残点／[未確定] V-515-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。残点 V-516-1..3（1=FUN_0041FA30（CELL +0xD4 getter の source fn）identity＋PTR_FUN_00A3BE3C（FUN_0046C460 の vtable）RTTI class（TESForm 系 ctor の class 確定）＋FUN_004D6DF0 machine decode（REFR +0xD4 impl の docs gap 補完）【中】／2=gated 側 mask 源（edx 設定元）＋caller 分離（経路分離＝残点）【低】／3=引継ぎ残り【低】）。教訓: *param_1 = &PTR_FUN_...（vtable store）が ctor の定番（v505/v510 で訂正した ctor 候補が v515 で復活＝FUN_0046C460 が real ctor [推定相当]＝訂正の反転も裁定に記録）／formEnumString[]（FormType→FourCC テーブル）＋順序検証 log が init fn の目印（\"…out of order.\" 実文字列が enum テーブルの identity）／default fallback getter（if (x) return x; return GLOBAL;）が slot getter の定番（FUN_004CCBC0＝FUN_0041FA30()＋DAT_00B35C0C）／docs gap（annotation 欠落）も [確定（否定側）] として記録（FUN_004D6DF0＝REFR +0xD4 impl は machine で別途）／PTR_FUN_00A3BE3C（vtable ptr）の RTTI 逆引きが class を確定（ctor の class 判定へ＝v516 残点の方向を明記）。本日 push: v405→v514（a9d469f6）110件＋本件 v515。v 採番 v515 消費（次=v516）。"
+    },
+    {
+      "id": "151-v516-tesform-once-2026-11-17",
+      "timestamp": "2026-11-17T07:53:08Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v516",
+        "tesform-vtable",
+        "once-delegate",
+        "extra-getter"
+      ],
+      "content": "2026-11-17 旧残点群消化第60弾 v516（probe v516_1 全1本 EXIT=0）＝V-516-1..3 完遂・旧 V-406-3 継続第46弾: 成果物 tmp/re/v516_tesform_once_ruling.md・台帳 row492（bak342）・round_verify ALL OK（rows 31..492 / total 378 / done 373 / open 5）・STATE (ih)・ai-todo #151 note。[確定相当]（extra type 10 getter）V-516-1 FUN_0041FA30: L22075 実読 [確定(decompiled)]: undefined4 FUN_0041fa30(void): iVar1 = FUN_0041e210(10); if (iVar1 == 0) return 0; return *(undefined4 *)(iVar1 + 0xc); → FUN_0041FA30＝FUN_0041E210(10)（extra data type 10＝GetExtraData(type=10)・v504 BaseExtraList::GetExtraData）の結果の +0xc を返す getter [確定相当] → CELL +0xD4 getter＝「extra data type 10 の +0xc field を取得（null→DAT_00B35C0C default）[確定相当]」（type 10＝特定 extra data type [推定]＝extra type 番号が getter の identity）。[確定]（.?AVTESForm@@）V-516-1 PTR_FUN_00A3BE3C RTTI: RTTI 実読 [確定(実RTTI)]: rtti_name(0xA3BE3C) = .?AVTESForm@@ → FUN_0046C460（v515 ctor 候補）は TESForm vtable を store → TESForm 系 ctor [確定相当]（v515 ctor 候補の class 確定）。vtable slots: [+0x0/+0x4]＝FUN_0060D0A0（ctor/dtor pair [推定]）／[+0x8/+0xC]＝FUN_0046B800/870（FUN_0046B7A0 内）／[+0x10]＝FUN_0046C620／[+0x14]＝FUN_0046C2E0（FUN_0046C280 内・v512 bit14 family）[確定(機械)]。[確定相当]（once 委譲 wrapper）V-516-1 FUN_004D6DF0 machine: machine decode [確定(機械)]: cmp byte [0xb333f4], 0（once flag）→ push esi; mov esi,ecx → mov byte [0xb333f4], 1（flag set）→ mov eax,[esi]; mov edx,[eax+0xd4]; call edx（virtual+0xD4 の委譲 call！（self の +0xD4 slot を呼ぶ））→ test eax,eax; mov byte [0xb333f4], 0; je → lea edx,[eax+1]; jmp（result+1 の操作）→ FUN_004D6DF0＝「once flag（0xB333F4）付きで virtual+0xD4（self の slot）を委譲 call し、結果に +1 を加える getter wrapper [確定相当]」（+1＝index+1 [推定]）→ REFR +0xD4 impl＝once-guarded 委譲 wrapper [確定相当]（v514 docs gap を machine で補完）。[未確定] V-516-2 gated mask 源／caller 分離は budget 外で残点／[未確定] V-516-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。残点 V-517-1..3（1=FUN_0041E210(10) の extra data type 10 の正体（+0xc field が何の値か）＋FUN_0046C460 ctor の残り本文（formEnumString 検証後の init 完遂）＋FUN_0060D0A0（TESForm ctor/dtor pair 候補）identity【中】／2=gated 側 mask 源（edx 設定元）＋caller 分離（経路分離＝残点）【低】／3=引継ぎ残り【低】）。教訓: extra data getter は FUN_0041E210(type) の type 番号が identity（GetExtraData(10)⇔+0xc＝特定 extra data の値＝v504 に接続）／PTR_FUN_xxx（vtable ptr）の RTTI 逆引きが ctor の class を確定（.?AVTESForm@@＝v515 ctor 候補の class 完遂＝vtable store 法の完成）／once flag（cmp byte [GLOBAL], 0; mov …,1; …; mov …,0）＋virtual+slot 委譲が wrapper fn の定番（FUN_004D6DF0＝once-guarded delegate＝docs gap を machine で補完）／lea edx,[eax+1] の +1 が「result+1」操作の目印（index/counter 増分 [推定]）／docs gap の補完は machine decode で（v514 推定→v516 machine 確定＝gap 対応の完成形）。本日 push: v405→v515（66ec3144）111件＋本件 v516。v 採番 v516 消費（次=v517）。"
     }
   ],
   "metadata": {
-    "totalEntries": 920,
+    "totalEntries": 921,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-17T07:41:52Z",
-    "entry_count": 920,
-    "last_updated": "2026-11-17T07:41:52Z"
+    "lastUpdated": "2026-11-17T07:53:08Z",
+    "entry_count": 921,
+    "last_updated": "2026-11-17T07:53:08Z"
   }
 }
