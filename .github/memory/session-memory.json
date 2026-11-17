@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-17T06:53:44Z",
+  "lastUpdated": "2026-11-17T07:05:52Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13368,14 +13368,30 @@
         "minus-one"
       ],
       "content": "2026-11-17 旧残点群消化第55弾 v511（probe v511_1 全1本 EXIT=0）＝V-511-1..3 完遂・旧 V-406-3 継続第41弾: 成果物 tmp/re/v511_set_replace_iat_ruling.md・台帳 row487（bak337）・round_verify ALL OK（rows 31..487 / total 373 / done 368 / open 5）・STATE (ic)・ai-todo #151 note。[確定相当]（set/replace・ctor 訂正）V-511-1 FUN_0046C300 本文: docs head 実読 [確定(decompiled)]: void __thiscall FUN_0046c300(int param_1, int param_2, char param_3): iVar1 = *(param_1 + 0xc)（current ptr＝+0xC）→ if (param_2 != iVar1)（新旧比較）→ if ((*(param_1 + 8) >> 0xe & 1) == 0)（+0x8 bit14 gate＝v492 gated gate と同一 [確定]）→ if (iVar1 != 0) FUN_004524c0(iVar1)（old を remove（v505 remove fn））→ if ((param_3 != 0) && (*(param_1+0xc) != 0)) FUN_00446b40(...)（char flag 時に old を別処理（free 候補 [推定]））→ if (param_2 != 0) FUN_00452570(param_2, param_1)（new を insert（v494 insert fn））→ *(param_1 + 0xc) = param_2（+0xC を new に書く）→ FUN_0046C300＝「param_1+0xC（current ptr）を差し替える set/replace fn（old remove→new insert→+0xC 更新）[確定相当]」→ v510「map ctor 候補」を訂正（ctor でなく set/replace）[確定]。+0x8 bit14 gate が v492 gated gate と同一 → FUN_0046C300 は gated notify（FUN_0045B670 経由 [推定]）と接続 [確定相当]、param_3（char）＝old を free するかの flag [推定相当]。[確定]（実 import 解決）V-511-1 IAT import 先: PE import descriptor 走査 [確定(機械)]: IAT 0xA28150 → KERNEL32.dll!TlsGetValue／IAT 0xA281EC → KERNEL32.dll!GetLastError [確定] → FUN_0098C072（v510）＝GetLastError/TlsGetValue（KERNEL32）を使う dynamic lookup/init [確定相当]（TLS/last-error 系 Windows API 呼び出し＝v493 GetCurrentThreadId に続く thread 系 API と整合）。[推定相当]（-1＝INVALID 候補）V-511-1 globals: .data 実読 [確定(機械)]: 0xB310AC: 0xFFFFFFFF（-1）／0xB310B0: 0xFFFFFFFF（-1）→ FUN_0098C072 が push する2つの global＝-1 [確定] → KERNEL32 API の引数（TlsGetValue(-1)/GetLastError 系 [推定相当]）、0xFFFFFFFF＝INVALID_HANDLE_VALUE 候補 [推定]。[未確定] V-511-2 Player +0x80 中身／gated mask 源は budget 外で残点／[未確定] V-511-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。残点 V-512-1..3（1=FUN_00446B40（old free 候補）identity＋+0x8 bit14 gate の semantic（gated notify 経路の完成）＋Player +0x80（ptr）の中身【中】／2=gated 側 mask 源（edx 設定元）＋FUN_00452C20（lazy node）の param_1+0xC key と FUN_0046C300 の param_1+0xC（current ptr）の同 offset異物の切り分け【低】／3=引継ぎ残り【低】）。教訓: PE import descriptor 走査（DataDirectory[1]→thunk walk）が IAT slot の DLL/関数名を確定させる（0xA281xx＝KERNEL32 thread/last-error 系と即決＝v510 import 先の完全解決）／「set fn の old remove／new insert／+0xC 更新」の3段が差し替え fn の定番（v505 remove⇔v494 insert⇔+0xC write の横断）／同 offset 異物（+0xC＝node key（v506）と current ptr（本裁定））は「どの object の +0xC か」を明記（node +4/+8 と param_1+0xC の区別を ruling に残す）／>> 0xe & 1（bit14）gate が v492 gated と同一 → FUN_0046C300 が gated notify の受け手 [推定相当]（bit gate の横断一致が fn 接続を語る）／KERNEL32 API 名（GetLastError/TlsGetValue）が FUN_0098C072（v510 dynamic lookup）の意味を確定（IAT 解決が fn semantic を完成）。本日 push: v405→v510（6352fd96）106件＋本件 v511。v 採番 v511 消費（次=v512）。"
+    },
+    {
+      "id": "151-v512-ffid-bit14-2026-11-17",
+      "timestamp": "2026-11-17T07:05:52Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v512",
+        "ff-id-set",
+        "bit14-family",
+        "player-ptr"
+      ],
+      "content": "2026-11-17 旧残点群消化第56弾 v512（probe v512_1 全1本 EXIT=0・初回構文エラー→修正再実行）＝V-512-1..3 完遂・旧 V-406-3 継続第42弾: 成果物 tmp/re/v512_ffid_bit14_ruling.md・台帳 row488（bak338）・round_verify ALL OK（rows 31..488 / total 374 / done 369 / open 5）・STATE (id)・ai-todo #151 note。[確定相当]（0xFF id set・解釈更新）V-512-1 FUN_00446B40: docs 実読 [確定(decompiled)]: void __thiscall FUN_00446b40(int param_1, uint param_2): if ((((param_2 != 0) && ((param_2 & 0xff000000) == 0xff000000)) && (param_2 == *(int *)(param_1 + 0x8c0) - 1U)) && (0x7ff < (param_2 & 0xffffff))) { *(uint *)(param_1 + 0x8c0) = param_2; } → param_2 は「上位 byte＝0xFF（0xff000000）＋下位24bit＞0x7ff（2047）」の値で、param_1+0x8C0（u32）が param_2 == current-1 のときだけ更新 [確定相当] → FUN_00446B40＝「0xFF 上位 byte＋24bit id の値を param_1+0x8C0 へ set（decrement 条件付き）fn [確定相当]」→ form id／ref id 系の set [推定相当]。v511「old free」解釈を本裁定で更新（free でなく id set）[確定（解釈更新）]。0xFF000000 mask⇔v473 の gate と同型＝0xFF 上位 byte gate が再現 [確定]。[確定相当]（12 fn family）V-512-1 +0x8 bit14 gate: `>> 0xe & 1` on +0x8 field census＝34件・12 fn [確定(decompiled)]: FUN_004DF1A0（2 hits）／FUN_00416000／FUN_00451210／FUN_004533D0／FUN_0045B670（v492 gated）／FUN_0045B700／FUN_0045B780／FUN_0046B2C0／FUN_0046B340／FUN_0046B990／FUN_0046B9F0／FUN_0046C280 → +0x8 bit14 gate は「gated notify（FUN_0045B670/B700/B780）と FUN_0046C300（set/replace・v511）を含む12 fn family の共通 gate [確定相当]」（bit gate の横断一致が gated family を完成＝v492→v511→v512 の連鎖）。[部分確定]（ptr 再確認・中身は残点）V-512-1 Player +0x80: mentions 77件 [確定]、puVar1 = *(undefined4 **)(DAT_00b33b00 + 0x80)（ptr・LoadGame band）→ +0x80＝ptr field（v506 確定）を再確認、中身は LoadGame の buffer/object ptr [部分確定]（v510/v511 budget 外＝残点の方向を明記）。[未確定] V-512-2 gated mask 源／同 offset異物切り分けは budget 外で残点／[未確定] V-512-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。残点 V-513-1..3（1=FUN_0046C300 の +0x8C0 と FUN_00446B40 の param_1+0x8C0 の対応（id set の caller 経路）＋Player +0x80 中身の特定（LoadGame band の puVar1 が何の object か）【中】／2=gated mask 源（edx 設定元）＋FUN_00452C20（lazy node）の param_1+0xC key と FUN_0046C300 の param_1+0xC（current ptr）の同 offset異物切り分け【低】／3=引継ぎ残り【低】）。教訓: 0xFF000000 mask＋24bit 閾値（0x7ff）が「id 値」の目印（0xFF 上位 byte gate が v473 から再現＝param_2 == current-1 が decrement/set の定番）／bit gate census（>> N & 1 on field）が family を完成させる（34件/12fn で gated family が揃う＝bit census 法の反復）／「free 候補」も machine/docs で「id set」と分かる（解釈更新の連鎖：v469 ctor→v509 reset、v500 ctor→v505 remove、v510 ctor→v511 set/replace、v511 free→v512 id set）／同 offset異物（+0xC）の切り分けは caller 経路で（v512 残点の方向を明記）／Player +0x80 は ptr 再確認までで中身は残点化（budget 制約を ruling に明記＝probe1本の収穫最大化と残点の形を両立）。本日 push: v405→v511（67d364d5）107件＋本件 v512。v 採番 v512 消費（次=v513）。"
     }
   ],
   "metadata": {
-    "totalEntries": 916,
+    "totalEntries": 917,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-17T06:53:44Z",
-    "entry_count": 916,
-    "last_updated": "2026-11-17T06:53:44Z"
+    "lastUpdated": "2026-11-17T07:05:52Z",
+    "entry_count": 917,
+    "last_updated": "2026-11-17T07:05:52Z"
   }
 }

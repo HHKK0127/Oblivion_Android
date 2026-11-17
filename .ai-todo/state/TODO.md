@@ -893,6 +893,13 @@
   > ④[未確定] V-511-2 Player +0x80 中身／gated mask 源は budget 外で残点／[未確定] V-511-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。
   > 残点 V-512-1..3（1=`FUN_00446B40`（old free 候補）identity＋`+0x8` bit14 gate の semantic（gated notify 経路の完成）＋Player +0x80（ptr）の中身【中】／2=gated 側 mask 源（edx 設定元）＋`FUN_00452C20`（lazy node）の `param_1+0xC` key と `FUN_0046C300` の `param_1+0xC`（current ptr）の同 offset異物の切り分け【低】／3=引継ぎ残り【低】）。
   > 教訓: PE import descriptor 走査（`DataDirectory[1]`→thunk walk）が IAT slot の DLL/関数名を確定させる（`0xA281xx`＝KERNEL32 thread/last-error 系と即決＝v510 import 先の完全解決）／「set fn の old remove／new insert／`+0xC` 更新」の3段が差し替え fn の定番（v505 remove⇔v494 insert⇔`+0xC` write の横断）／同 offset 異物（`+0xC`＝node key（v506）と current ptr（本裁定））は「どの object の `+0xC` か」を明記／`>> 0xe & 1`（bit14）gate が v492 gated と同一 → gated notify の受け手 [推定相当]（bit gate の横断一致が fn 接続を語る）／KERNEL32 API 名（GetLastError/TlsGetValue）が FUN_0098C072（v510 dynamic lookup）の意味を確定（IAT 解決が fn semantic を完成）。v 採番 v511 消費（次=v512）。
+  > 【旧残点群消化第56弾 v512 — V-512-1..3 完遂・旧 V-406-3 継続第42弾】probe v512_1 全1本 EXIT=0（初回構文エラー→修正再実行）。成果物 tmp/re/v512_ffid_bit14_ruling.md・台帳 row488（bak338）・round_verify ALL OK（rows 31..488 / total 374 / done 369 / open 5）。
+  > ①[確定相当]（`0xFF` id set・解釈更新）V-512-1 FUN_00446B40: **docs 実読 [確定(decompiled)]: `void __thiscall FUN_00446b40(int param_1, uint param_2)`: `if ((((param_2 != 0) && ((param_2 & 0xff000000) == 0xff000000)) && (param_2 == *(int *)(param_1 + 0x8c0) - 1U)) && (0x7ff < (param_2 & 0xffffff))) { *(uint *)(param_1 + 0x8c0) = param_2; }` → `param_2` は「上位 byte＝`0xFF`（`0xff000000`）＋下位24bit＞`0x7ff`（2047）」の値で、`param_1+0x8C0`（u32）が `param_2 == current-1` のときだけ更新 [確定相当] → FUN_00446B40＝「`0xFF` 上位 byte＋24bit id の値を `param_1+0x8C0` へ set（decrement 条件付き）fn [確定相当]」→ form id／ref id 系の set [推定相当]。v511「old free」解釈を本裁定で更新（free でなく id set）[確定（解釈更新）]。`0xFF000000` mask⇔v473 の gate と同型＝`0xFF` 上位 byte gate が再現 [確定]**。
+  > ②[確定相当]（12 fn family）V-512-1 `+0x8` bit14 gate: **`>> 0xe & 1` on `+0x8` field census＝34件・12 fn [確定(decompiled)]: `FUN_004DF1A0`（2 hits）／`FUN_00416000`／`FUN_00451210`／`FUN_004533D0`／`FUN_0045B670`（v492 gated）／`FUN_0045B700`／`FUN_0045B780`／`FUN_0046B2C0`／`FUN_0046B340`／`FUN_0046B990`／`FUN_0046B9F0`／`FUN_0046C280` → `+0x8` bit14 gate は「gated notify（`FUN_0045B670`/`B700`/`B780`）と `FUN_0046C300`（set/replace・v511）を含む12 fn family の共通 gate [確定相当]」（bit gate の横断一致が gated family を完成＝v492→v511→v512 の連鎖）**。
+  > ③[部分確定]（ptr 再確認・中身は残点）V-512-1 Player +0x80: **mentions 77件 [確定]、`puVar1 = *(undefined4 **)(DAT_00b33b00 + 0x80)`（ptr・LoadGame band）→ `+0x80`＝ptr field（v506 確定）を再確認、中身は LoadGame の buffer/object ptr [部分確定]**（v510/v511 budget 外＝残点の方向を明記）。
+  > ④[未確定] V-512-2 gated mask 源／同 offset異物切り分けは budget 外で残点／[未確定] V-512-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。
+  > 残点 V-513-1..3（1=`FUN_0046C300` の `+0x8C0` と `FUN_00446B40` の `param_1+0x8C0` の対応（id set の caller 経路）＋Player `+0x80` 中身の特定（LoadGame band の `puVar1` が何の object か）【中】／2=gated mask 源（edx 設定元）＋`FUN_00452C20`（lazy node）の `param_1+0xC` key と `FUN_0046C300` の `param_1+0xC`（current ptr）の同 offset異物切り分け【低】／3=引継ぎ残り【低】）。
+  > 教訓: `0xFF000000` mask＋24bit 閾値（`0x7ff`）が「id 値」の目印（`0xFF` 上位 byte gate が v473 から再現＝`param_2 == current-1` が decrement/set の定番）／bit gate census（`>> N & 1` on field）が family を完成させる（34件/12fn で gated family が揃う＝bit census 法の反復）／「free 候補」も machine/docs で「id set」と分かる（解釈更新の連鎖：v469 ctor→v509 reset、v500 ctor→v505 remove、v510 ctor→v511 set/replace、v511 free→v512 id set）／同 offset異物（`+0xC`）の切り分けは caller 経路で（v512 残点の方向を明記）／Player `+0x80` は ptr 再確認までで中身は残点化（budget 制約を ruling に明記）。v 採番 v512 消費（次=v513）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1815,11 +1822,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1843,4 +1845,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 15:51:05
+**ai-todo** | Last Updated: 2026-11-17 16:03:15
