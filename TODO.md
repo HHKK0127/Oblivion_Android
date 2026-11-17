@@ -776,6 +776,13 @@
   > ③[未確定] V-496-2 bit24 caller: FUN_0045CEE0 signature `void __fastcall(int)`（large fn）[確定(decompiled)]、本文未到達＝残点。[未確定] V-496-3 引継ぎも残点継続。
   > 残点 V-497-1..3（1=bit24（0x1000000）の semantic（FUN_0045CEE0/FUN_0045D030 本文）＋param_1+0x18 flag 群の bit 一覧（Player +0x18 の set 書手）【中】／2=gated 側 mask 値源（edx 設定元）＋FUN_00496EA0/FUN_00496F50（lock/release）identity【低】／3=引継ぎ残り【低】）。
   > 教訓: lookup fn の body 全読が「引数3つの意味」を同時確定させる（param_2＝key・param_3＝node flag 条件・return＝node carrier）＝v492/v494 の残点3つを1本で解消／`>>5 & 1` の寄り先で同 bit 番号でも別 field（どの object の bit かを明記・v489/v496 の区別）／`&= 0xffffdfff/7fff` の constants から bit 位置を即特定／large fn は signature までで残点化／`[ret+0x28]` の载体問題が解決＝同じ offset でも carrier が別物（offset 同一・载体別の典型を記録）。v 採番 v496 消費（次=v497）。
+  > 【旧残点群消化第41弾 v497 — V-497-1..3 完遂・旧 V-406-3 継続第27弾】probe v497_1 全1本 EXIT=0。成果物 tmp/re/v497_player_flags_ruling.md・台帳 row473（bak323）・round_verify ALL OK（rows 31..473 / total 359 / done 354 / open 5）。
+  > ①[確定相当]（16件 writes）V-497-1 Player +0x18 flag 一覧: **`DAT_00b33b00 + 0x18` の mask 付き writes＝16件（全 mentions 79件）[確定(decompiled)]: set（|=）: `0x100`（bit8・L52822）／`0x80`（bit7・L52839/52846/161481/161488）／`0x10000`（bit16・L73260/74125）／`0x8000`（bit15・L144659）／`0x400`（bit10・L241158）、clear（&=）: `0xffffdfff`（bit13・L8563）／`0xffff7fff`（bit15・L8565）／`0xfffffeff`（bit8・L52833）／`0xffffff7f`（bit7・L52843/161485）／`0xfffffbff`（bit10）／`0xfffffffd`（bit1） → **Player +0x18 に set/clear 実例のある bit＝1/7/8/10/13/15/16 の7種 [確定]**（distinct clear masks 6種を実読）→ **FUN_0045A500 が読む bit18 と下位 byte の set 書手はこの16件に無し [確定（否定側）] → 別 fn（間接経由）＝残点**。flag map の basis（現時点の7 bit 分）は確定相当。
+  > ②[部分確定]（構造のみ）V-497-1 bit24 semantic（FUN_0045D030）: L73457 実読 head（30行 cap）[確定(decompiled)]: **`void __fastcall FUN_0045d030(int param_1)`: `uVar2=*(uint*)(*(param_1+0x60)+4)`（count）→ `piVar3=*(int**)(*(param_1+0x60)+8)`（base ptr）→ `piVar3[uVar5]` インデックス走査（null check→loop）** → **param_1+0x60＝count/base の付いた ptr array 構造 [確定相当]、mask `0x1000000`（bit24）の使用箇所は body 深部（cap 外）[部分確定]＝残点**。
+  > ③[部分確定]（型まで）V-497-2 lock/release pair: `FUN_00496EA0`（L120801 `void __thiscall(int, undefined4)`）: **`DWORD DVar3; DWORD DStack_8;`（DWORD locals＝thread/tick 系 [推定]）[確定(decompiled)]**／`FUN_00496F50`（L120846 `void(void)`・WARNING: Removing unreachable block）: `char cVar1; undefined4 unaff_retaddr;` → **本文は cap 不足で未到達＝[部分確定]**（v496「prepare/release ペア」推定は維持・`void(void)` な点は v496 推定との差＝引数を取らず TLS/global 経由 [推定]）。
+  > ④[未確定] V-497-3 引継ぎ残り（predicate 英名・sink 正体・新 FourCC 意味）は残点継続。
+  > 残点 V-498-1..3（1=bit24（0x1000000）の使用箇所（FUN_0045D030 body 深部 or FUN_0045CEE0）＋Player +0x18 bit18/下位 byte の set 書手特定（16件に無い＝間接 fn）【中】／2=lock/release pair 本文＋gated 側 mask 源（edx 設定元）【低】／3=引継ぎ残り【低】）。
+  > 教訓: flag field の bit 一覧は「mask 付き writes の grep＋distinct mask 集計」で機械的に揃う（set/clear 対で bit 位置が対応）／read 系（79 mentions）と write 系（16件）を分けて数えると「どの bit が書かれないか（bit18）」まで否定側で判明／head cap で構造（count/base ptr array）だけ確定し mask 部分を残点化する判断で probe を1本に収める／`void(void)` が初めて見つかると呼び出し側（引数なし）と整合させて引数契約を再確認（v496 推定の修正点を記録）／DWORD locals（thread id/tick）が thread 系 fn の目印（v493 GetCurrentThreadId に続く類型）。v 採番 v497 消費（次=v498）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1697,6 +1704,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1720,4 +1732,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 12:50:24
+**ai-todo** | Last Updated: 2026-11-17 13:02:39
