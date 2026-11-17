@@ -519,6 +519,14 @@
   > ⑤[未確定] V-462-2 FUN_006DF060（idx35 override）は budget 未着手＝残点継続／[未確定] V-462-3 v460 残点も同様。
   > 残点 V-463-1..3（1=FUN_006DF060 identity→predicate slot35 正式名（V-462-2 引継ぎ）【低】／2=FUN_005222D0 一語名（機能は確定相当・docs 名前無し）と FUN_00668B30 第4引数（0）の語【低】／3=旧残点（V-406-3 FUN_006ECC80 残り typed【中】／V-406-4 DATA+0x2C 意味／V-406-5 PTR_DAT_00B10D90 所有 fn）を V-464 から優先順に【低】）。
   > 教訓: AV index を渡す helper（FUN_00468ad0(n)）の引数を v447 AV table で読み替える（FUN_00468ad0(5)＝Endurance と分かるだけで属性ブロックの意味が即決・enum 引数 helper は「引数＝enum値」と見なして表と突合）／setter 名の一致（v413 case8/9/10）が derived AV の決定打（何を SET しているかは setter identity から逆算）／runtime singleton は「init fn＋thunk＋加算」の3系統 census で特定（call 0x41BAE0＝init・mov ecx,imm;jmp＝thunk・add eax,imm＝加算）／float 配列は `*(base+idx*4)` の docs 1行で構造確定（+0x7A4 の語は context から推定）／正式名が docs に無い fn は「機能確定相当＋一語名残点」と明記（推測禁止の徹底）。v 採番 v462 消費（次=v463）。
+  > 【旧残点群消化第7弾 v463 — V-463-1..3 完遂】probe v463_1 全1本 EXIT=0。成果物 tmp/re/v463_predicate_ruling.md・台帳 row439（bak289）・round_verify ALL OK（rows 31..439 / total 325 / done 320 / open 5）。
+  > ①[確定相当] V-463-1 FUN_006DF060（NiLookAtInterpolator idx35 override）identity: L515290 `undefined4 __thiscall(int self, int *palette)`: `if (*(int*)(self+0x10)==0)`（cache 未解決）`{ iVar1=virtual[palette]+0x4C(*(self+0x14))`（name を palette で resolve）` if (iVar1==0) return 0;`（resolve 失敗→false）` *(self+0x10)=iVar1;`（cache 格納）` } return 1;`（resolve 済み→true）[確定(構造)] → FUN_006DF060＝「interpolator の依存（self+0x14＝name）を palette で lazy resolve し、未解決なら0・解決済みなら1を返す predicate [確定相当]」。
+  > ②[確定相当] predicate slot35（+0x8C）の正式名＝「interpolator の依存解決（dependencies resolve）完了 predicate」: 根拠 (i) 恒真 impl 0x6FDFF0（27/28 クラス）＝resolve 不要 interpolator、(ii) NiLookAtInterpolator（look-at ターゲット名に依存）のみ override で name resolve を実行、(iii) v405 の "failed to resolve dependencies" ログ（0xA79CD8）経路と完全整合（predicate false 時に出るログ）→ slot35＝NiInterpolator::CanResolveDependencies 系 [確定相当]（英名自体は RTTI 由来で docs 無し＝[未確定]）。
+  > ③[確定相当] V-463-2 FUN_00668B30 第4引数 param_4（呼び出し0）の語: L429202-429218 `if (param_4==0) { param_4=FUN_00446af0(uVar5); if (param_4==0) goto LAB_00668c15; }`（0 なら FUN_00446AF0 で解決・失敗で早期 return）` fVar6=FUN_0065fad0(param_4); FUN_00668070(param_4,0,param_5=='\0'); if (*(char*)(self+0x6e5) && param_5=='\0') …` [確定(構造)] → param_4＝「class/form ptr（0＝未解決 → FUN_00446AF0 で lookup 解決）[確定相当]」、param_5＝char flag（FUN_00668070 第3引数へ転送＝usage 更新の種別 [推定]）。
+  > ④[未確定] V-463-2 FUN_005222D0 一語名: string pushes 0件（error 文言なし）・docs annotation はあるが名前は FUN_ のまま [確定(否定側)]。caller 8件は v406 と完全一致（record load FUN_00447300／script opcode 系3 FUN_0050A8A0/0050C430/0050CD30／skill band FUN_00523EB0／chargen FUN_00596980／menu FUN_005C28F0×2）→ 機能は v462 で確定相当、一語名は docs 由来で付けられない＝残点。
+  > ⑤[確定] V-463-3 移行方針: V-464 から旧残点（V-406-3 FUN_006ECC80 残り typed【中】／V-406-4 DATA+0x2C 意味／V-406-5 PTR_DAT_00B10D90 所有 fn）へ軸を移す [確定（作業方針）]。
+  > 残点 V-464-1..3（1=旧残点 V-406-3（FUN_006ECC80 残り E8=500+ の CLAS 型再 typed・actor/chargen/menu 帯）【中】／2=旧残点 V-406-4（DATA+0x2C/form+0x64 と DATA+0x31/form+0x69 の意味）と V-406-5（PTR_DAT_00B10D90 所有 fn と spec 名前テーブル書手）【低】／3=FUN_005222D0 一語名の別法と predicate slot35 英名（CanResolveDependencies [推定] の裏取り）【低】）。
+  > 教訓: override のみを decompiled で読めば slot の正式意味が分かる（恒真 impl 27/28 は中身 mov al,1;ret で情報ゼロ・唯一の override body が何を判定するか全部語る）／「恒真多数派 vs override 少数派」の対比が slot semantic の決定打（多数派何もしない＝默认成功・少数派実処理＝条件付き成功）／過去のログ文言（v405 "failed to resolve dependencies"）と predicate false 経路の接続で英名系が裏付け（古い裁定の error 文言を predicate 調査で再利用）／`if (arg==0) arg=resolve_fn(...)` pattern は「引数＝ptr（0＝未解決）」の定番で param_4 の語が即決／一語名が docs に無い fn は string push 0件の否定側で「名付け不能」と確定し残点の形を変える。v 採番 v463 消費（次=v464）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1425,11 +1433,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1453,4 +1456,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 08:47:26
+**ai-todo** | Last Updated: 2026-11-17 08:58:39
