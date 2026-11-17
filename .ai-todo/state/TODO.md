@@ -560,6 +560,14 @@
   > ③[未確定] V-467-2 旧 V-406-4/5 と V-467-3 V-466-3 引継ぎは budget 未着手＝残点継続。
   > 残点 V-468-1..3（1=旧残点 V-406-3 継続（id 0x4C の +0xC float の正式な語＝class form の何の値か・FUN_004CD960 の +0x8 flag 0x400 の意味と接続、FUN_00627680（signature none）の docs 確認＝annotation 欠落候補）【中】／2=旧残点 V-406-4（DATA+0x2C/+0x31 意味・UESP 差分の docs 内裏取り）と V-406-5（PTR_DAT_00B10D90 所有 fn と spec 名前テーブル書手）【低】／3=V-467-3 引継ぎ（FUN_005222D0 一語名別法と predicate slot35 英名 CanResolveDependencies [推定] 裏取り）【低】）。
   > 教訓: getter/setter pair の E8 census が consumer の全体を限定する（get3/set1＝4件のみ・id 定数 lookup の consumers は grep＋census で完全に見える）／set caller の直後命令（flag テスト＋他 getter 呼び出し）が「何の系統の値か」を語る（test [esi+8],0x400＋call 0x6ECC80⇔class form 系）／fmul/fstp の float 演算命令が get 結果の利用形を語る（乗算＝某种の係数/倍率 [推定]）／band signature 一覧は「docs の signature 行を band ごとに1件」で蓄積（本裁定で11帯分・帯の代表で十分 band の性格が分かる）／signature 行が (none) の fn（FUN_00627680）は docs annotation 無しの可能性＝annotation 欠落の v437 類型候補。v 採番 v467 消費（次=v468）。
+  > 【旧残点群消化第12弾 v468 — V-468-1..3 完遂・旧 V-406-3 継続第5弾】probe v468_1 全1本 EXIT=0。成果物 tmp/re/v468_id4c_set_ruling.md・台帳 row444（bak294）・round_verify ALL OK（rows 31..444 / total 330 / done 325 / open 5）。
+  > ①[確定相当] V-468-1 id 0x4C float の SET 経路（FUN_004CD960）: L161432 `void __fastcall FUN_004cd960(int *param_1)`: `piVar8 = param_1 + 0x12`（+0x48 list head）→ list walk 中で **`if (((*(u8*)(param_1 + 9) & 1) != 0) && (iVar7 = virtual[piVar8]+0x170(), iVar7 == DAT_00B35EB8)) { FUN_00420c60((float)piVar8[10] * (float)_DAT_00a3d360); }` [確定(構造)]** — **param_1 が int* なので `param_1 + 9`（index9）＝byte offset 0x24 と一致 → byte[class_form+0x24] & 1（flag bit0・v465 確定の setter 系統の読手）が立つとき、リスト要素の virtual+0x170() が DAT_00B35EB8 と等しければ elem[10]（float）× _DAT_00A3D360（.rdata 定数）を FUN_00420C60（set）で id 0x4C float に格納 [確定相当]** → **id 0x4C float ＝「class form の flag bit0 条件付きで計算される float 値（elem[10] × 係数）[推定高]**（DAT_00B35EB8＝比較対象の識別子・_DAT_00A3D360＝乗算係数の identity は [未確定]＝残点）。param_1[2] & 0x400（flag bit10）と FUN_006ECC80()（CLAS getter）の併用 [確定(構造)]（v467 set 直後命令と body 内同一条件）。
+  > ②[確定]（annotation 実在・v467 訂正）V-468-1 FUN_00627680: `// FUN_00627680 @ 0x627680`（L392992）が FOUND [確定] → v467 の「signature 行 (none)」は docs needle の問題（signature が2行折り返し `undefined4 * __thiscall` / `FUN_00627680(...)` だったため1行検索で失敗）＝annotation 欠落ではない [確定] → v449 の fn.lower() バグと同型の needle 問題の再発・訂正。signature [確定(decompiled)]: `undefined4 * __thiscall FUN_00627680(int, undefined4*, int*, int*, char)`（5引数）。
+  > ③[確定(decompiled)] V-468-1 FUN_004D2720: `void __thiscall(int *param_1, float *param_2)`（float* 引数＝id 0x4C float の3つ目の get consumer）。
+  > ④[未確定] V-468-2 旧 V-406-4/5 と V-468-3 V-467-3 引継ぎは budget 未着手＝残点継続。
+  > 残点 V-469-1..3（1=旧残点 V-406-3 継続（DAT_00B35EB8（virtual+0x170() の比較対象）と _DAT_00A3D360（乗算係数）の identity → id 0x4C float の正式な語確定へ）【中】／2=旧残点 V-406-4（DATA+0x2C/+0x31 意味・UESP 差分の docs 内裏取り）と V-406-5（PTR_DAT_00B10D90 所有 fn と spec 名前テーブル書手）【低】／3=V-468-3 引継ぎ（FUN_005222D0 一語名別法と predicate slot35 英名 CanResolveDependencies [推定] 裏取り）【低】）。
+  > 教訓: `param_1 + N`（int* index）は byte offset N×4 に読み替える（param_1+9＝+0x24 が flag bit0 と接続した・pointer arithmetic の units を忘れずに）／SET 経路の引数式（elem[10]×定数）が float の由来を直接語る（get/set caller census から1件の setter body を読むだけで由来が分かる）／docs needle は「signature が2行に折り返す」ケースに注意（`undefined4 * __thiscall
+  > FUN_xxx(...)` の形は1行検索で失敗・v449 fn.lower() バグに続く needle 類型2件目）／virtual+0x170() の戻り値と定数比較は「型/識別子判定」の定番（DAT_00B35EB8 が何の識別子かが float の語の鍵）／float 定数（_DAT_00A3D360）は .rdata に実体がある→値を読めば係数の意味が推定できる（次 probe の鍵）。v 採番 v468 消費（次=v469）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1481,11 +1489,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1509,4 +1512,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 09:43:24
+**ai-todo** | Last Updated: 2026-11-17 09:54:37
