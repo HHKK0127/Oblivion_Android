@@ -865,6 +865,13 @@
   > ④[未確定] V-507-2 Player +0x80 中身は budget 外で残点／[未確定] V-507-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。
   > 残点 V-508-1..3（1=FUN_0098540B（string copy 実体）identity＋業務 fn 側の map vtable store 特定（BST vs LockFree 判別完遂＝FUN_004492E0 内の vtable store が key）＋未観測 bit の grep 拡張【中】／2=Player +0x80（ptr）の中身＋gated 側 mask 源（edx 設定元）【低】／3=引継ぎ残り【低】）。
   > 教訓: flag bit の一覧は「`>> N & 1` census」で機械的に揃う（331件・12 bit 分布＝bit5 が最多＝field の bit map が1本の probe で完成形に近づく）／E8 callers の signature 列挙が「caller の分類（map band vs 業務 fn）」を生む（83件の分岐が ctor 経路を固定＝callers census 法の反復）／`call <fn>`＋`push <imm>` の machine head が wrapper（check→実体→error code）の定番／業務 fn（object ctor）が map を構築する＝container は owner object の method で構築される（BST vs LockFree 判別の鍵）／未観測 bit も残点として明記（grep pattern の網羅性制約を記録＝次の probe で拡張可能）。v 採番 v507 消費（次=v508）。
+  > 【旧残点群消化第52弾 v508 — V-508-1..3 完遂・旧 V-406-3 継続第38弾】probe v508_1 全1本 EXIT=0。成果物 tmp/re/v508_dtor_candidate_ruling.md・台帳 row484（bak334）・round_verify ALL OK（rows 31..484 / total 370 / done 365 / open 5）。
+  > ①[推定相当]（dtor/destructor 候補へ訂正に迫る）V-508-1 FUN_004492E0 実態: **machine 0x4492E0-0x449560 全 decode [確定(機械)]: `mov [esi+0xcd4], 1`（flag set）→ call 0x447d00／0x442630／0x52eaf0（init 系 [推定]）→ `mov [esi+0x64/+0x68]`・`[esi+0x34/+0x38]`・`[esi+0x3c/+0x40]`・`[esi+0x8c/+0x90]` の list link 操作（unlink 型）＋ call 0x401f20（free 候補）＋ virtual+0x10（node op）を4系統で反復 [確定(構造)] → FUN_004492E0 は複数 list を unlink/free する dtor/destructor 操作 fn [推定相当] → v469 ruling「FUN_004492E0＝TESObjectSTAT ctor」を本裁定で訂正候補に（machine は list free 操作＝ctor ではなく dtor 系）[確定（訂正候補）]**。**map vtable store は本帯に0件 [確定（否定側）] → BST vs LockFree 判別は未完（経路は維持）[部分確定]**。
+  > ②[確定]（否定側・13種が上限）V-508-1 未観測 bit 拡張: **未観測 bit（8,9,10,12,15..18,20,23..31）を node field 近傍 pattern で grep → 新規観測＝0件 [確定（否定側）] → node `+8` u32 の観測 bit は v507 の13種（0,1,3,4,5,6,7,11,13,14,19,21,22）が上限 [確定相当]**（grep pattern の網羅性を確認）。
+  > ③[推定相当] FUN_0098540B: **machine head（docs annotation なし）[確定(機械)]: `call 0x98c072`（実体候補）→ `test eax,eax; jne` → `mov eax, 0xb30d28; ret`（null なら global fallback ptr `0xB30D28` を返す）→ FUN_0098540B＝call 0x98C072 の結果が null なら 0xB30D28（global）を返す wrapper [推定相当]**（FUN_0098C072＝残点）。0xB30D28 の identity は [未確定]＝残点。
+  > ④[未確定] V-508-2 Player +0x80 中身／gated mask 源は budget 外で残点／[未確定] V-508-3 引継ぎ（predicate 英名・新 FourCC 意味）も残点継続。
+  > 残点 V-509-1..3（1=FUN_004492E0 訂正の確定（dtor vs ctor の最終判定＝docs decompiled head と machine の突合）＋FUN_0098C072（string copy 実体）identity＋0xB30D28（global fallback）の正体【中】／2=map ctor の別 fn 探索（FUN_00452440 帯／FUN_00452570 の this 入手元の machine 追跡）＋Player +0x80 中身【低】／3=引継ぎ残り【低】）。
+  > 教訓: 「ctor と記録した fn」も machine で dtor のことがある（list unlink/free の反復（mov [X+4],[X]→free→clear）が destructor の定番 pattern＝v469 の ctor 訂正候補）／未観測 bit の grep 0件が「13種が上限」の確定になる（残点の grep 拡張も否定側で閉じられる）／fallback wrapper（call→null→mov eax,global; ret）が string/global accessor の目印／call 0x401F00/0x401F20 の alloc/free 系が同族（FUN_00401Fxx band が heap 操作系と確定）／map ctor 探索は「this 入手元の machine 追跡」へ（vtable store が業務 fn に無い＝map は runtime 構築 [推定]）。v 採番 v508 消費（次=v509）。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -1786,6 +1793,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -1809,4 +1821,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-17 14:56:40
+**ai-todo** | Last Updated: 2026-11-17 15:09:23
