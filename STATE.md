@@ -3504,3 +3504,17 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **covering-insn 判定は「命令が 4 バイト field を完全に内含（`t.address<va && va+4<=t.address+t.size)`）」が必須**（後方 1 バイト開始だと別命令の即値に化ける。今回の or/adc 被せ読みは Ghidra も同じ誤読）／**CRT initializer 配列（`.rdata` の関数ポインタ列）を歩くと静的単一tons の初期化が機械列挙できる**／**vtable 差替え init でも核心 virtual が同一なら前裁定は不変（差の slot だけ調べればよい）**。
 - **本日 push 累計（セッション）**: v405 → … → v537 `863e58b0` →（本件 v538 を本 commit で push）＝**134裁定**。
 - **次**: V-539-1..3 → 旧残点（entry 配列生成元／416650 identity／597xxx クラスタ入口）。supermemory 未登録134件（v405..v538）は MCP 復帰待ち。
+
+## 2026-11-18 (je) — 旧残点群消化第83弾 v539（V-539-1..3 完遂・旧 V-406-3 継続第69弾）: **ステージングトピックマトリクスは EXE 静的データと決着**（`0xB110F4`/`0xB111B8` への書込みコードは disp32 窓走査で **0 件 [確定負]**・count={1,6,16,39,4,14,5} 計85件・ptrs→`.data` の 12B スロット配列）・**`FUN_0052FE90`＝静的 topic 定義の起動時実体化＋topic リスト（+0x7c）／name→topic map への 4 段登録と確定**（v537 ラッパと連結し供給元が閉じた）・**`FUN_00416650`＝比較関数付き順序リスト挿入／`FUN_00447160`＝第 2 静的 map `0xB06164` の key チェック／`FUN_004FD0A0`＝名前キーの race 名前表（部分確定）**
+
+- **成果物**: `tmp/re/v539_staged_topic_ruling.md`（probe **v539_1..3 の3本 EXIT=0**）。台帳 **row515（bak364）**・`round_verify` **ALL OK**（rows 31..515 / total 401 / done 396 / open 5）。ai-todo **#151 note**・memory **944件**。
+- **① [確定負] V-539-1**: disp32 ∈ `[0xB11000,0xB11400)` を触る `.text` head は `FUN_0052ED10`（clear）/`FUN_0052ED50`（get）/`FUN_0052FE90`（build）の 3 つのみ、**store 0 件**。静的 `.data` 実測: **count `0xB110F4..`={1,6,0x10,0x27,4,0xE,5,0}（7 グループ計85件）**／**ptrs `0xB111B8..`={0xB10DA0,0xB10DE8,0xB10E30,0xB10EF0,0xB110C4,0xB11110,0xB10DAC,0xAA3E80}**。→ マトリクスは EXE に静的コンパイルされた topic 定義（生成コードは存在しない）。
+- **② [確定] `FUN_0052FE90`＝起動時実体化ループ**: `g 0..6`×`i 0..count[g]`、slot=`ptrs[g]+i*0xc`（12B={topic ptr@0, formID@4, name ptr@8}）。slot 未実体化時: `401F00(0x3C)`→`46C460`（TESForm ctor・v535）→ vtable `0xA5555C`/補助 `0xA55548`・**byte[+0x24]=g・byte[+1]=0x39（'9' DIAL）**→`46C300(formID,1)`→`vtable[+0xD8](name)`→`4028D0(name,0)`→**`447530`（topic リスト +0x7c push＝v537 ラッパ）**→**`412D30(name,topic)`（name→topic map）**。→ **topic リストの唯一の供給元と閉じた**。
+- **③ [確定] `FUN_00416650`＝比較関数付き順序リスト挿入**（`cmp(item,*cur)<1` で head なら `446CB0` push・中間なら 8B セル新設前挿入）。`5973F0` が `65C620` 除去直後に呼ぶ再挿入（v538 referrers と連結）。
+- **④ [確定] `FUN_00447160`＝静的 map `0xB06164` の key 存在チェックラッパ**（`55E000` 再利用）。静的 map は `0xB0613C`（formID ハッシュ）＋**`0xB06164` 第 2 実例**。`447160` の 60 sites は全て head `0x4FD0A0`（巨大ジャンプテーブル本体）に収束。
+- **⑤ [部分確定] `FUN_004FD0A0`**: `this+0x44` の {name,...} チェーンを `__stricmp` で歩き一致时 `arg->+0x200=index`／`+0x210=entry+8`／`param_3!=0` なら `entry+0xC` 逆写し、不一致时 `0x10` ノード新設＝**名前キーの race 名前表**。
+- **⑥ [部分確定] V-539-3**: `5974E0`＝`589B70(0x406)`→`5898F0(0,..,0xB0A018,0xB13E78)`＋`9832E6`→**`578D70()==1` ゲート**→`5973F0`（メッセージ／ブック系 UI ハンダ）。`599EE0`＝型 byte **0x17(ACTI)/0x23(NPC_)/0x24(LVLF)** ゲート→`vtable[+0x198]`。`59AEDB/59B298`＝ジャンプテーブル内（`448F40`→`5992C0`→`jmp 59A574`＝コンソールコマンド実装群）。
+- **残点 V-540-1..3**: 1=`FUN_0055E000`（map 検索 API）と `0xB0613C/0xB06164/0xB06150` 静的 map インスタンス群の一覧化【中】／2=`589B70(0x406)/5898F0/578D70` の identity（ブック／メッセージ UI）【中】／3=FE90 の呼び元 `0x44C5A2`（再ハッシュクラスタ・CRT 系?）と init 順序【低】。
+- **教訓**: **「書込み元を搜す」問いが誤りだったと分かることがある**（マトリクスは EXE 静的データ。disp32 窓走査で store 0 件が言えたら「データは埋め込み」と断定）／**FE90 の 12B slot と 4 段登録（46C300/4028D0/447530/412D30）が v535〜v538 部品の統合点**／**type '9'(0x39) 固定 TESTopic 85 件＝v532 DIAL 分岐の供給元**（移植はデータ移植扱い。ESM の DIAL/QUST/INFO と別系統）。
+- **本日 push 累計（セッション）**: v405 → … → v538 `4c4c2cda` →（本件 v539 を本 commit で push）＝**135裁定**。
+- **次**: V-540-1..3 → 旧残点（静的 map 一覧／メッセージ UI 群／FE90 呼び元）。supermemory 未登録135件（v405..v539）は MCP 復帰待ち。
