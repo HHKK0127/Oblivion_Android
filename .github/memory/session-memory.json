@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-18T05:34:37Z",
+  "lastUpdated": "2026-11-18T05:57:29Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13881,14 +13881,31 @@
         "rtti"
       ],
       "content": "2026-11-18 旧残点群消化第86弾 v542（probe v542_1 全1本 EXIT=0・RTTI/窓走査内蔵）＝V-542-1..3 完遂・旧 V-406-3 継続第72弾: 成果物 tmp/re/v542_book_tiles_ruling.md・台帳 row518（bak367）・round_verify ALL OK（rows 31..518 / total 404 / done 399 / open 5）・STATE (jh)・ai-todo #151 note。[確定] ブック本文配列管理者 singleton 0xB13970＝NiTArray<Tile*> 派生（vtable 0xA69680→COL 0xAC140C→TD '.?AV?$NiTArray@PAVTile@@@@'）。要素追加ヘルパ FUN_0042BB90＝NiTArray::InsertAt（count=word[ecx+0xa]、idx<count で word++・holder!=0 なら word[ecx+0xc]++・[ecx+4][idx*4]=value）→ 0xB13974/7A が disp32 で増えない理由＝[ecx+4]/[ecx+0xA] 経由と説明完了。[確定] FUN_00591C50（open 側）＝TileMenu（vtable 0xA6AF14・RTTI '.?AVTileMenu@@'）生成＋窓 ID 管理: arg0==0xFA2(4002) 時のみ 9828C0(float)→587B20(1,floor)→587D20→[this+0x44]=menu（無ければ \"ERROR: Cant find menu class!\" 0xA6B178）→584880(0)→[menu+0x20]=窓ID→588BD0(4005)×2→58CEB0(4011)→42BB90(0xB13970, floor-0x3E9,…)（id-1001 0 起点）。FUN_00591B40（close 側）＝保持窓 ID が 1004/1007 でなければ 589D60（閉）へ＝ブック本文窓退避ゲート。BMSG/DOBM 直接対応なし（本文＝UI Tile 配列と確定）。582160＝DAT_00b3a6e0 インタフェース singleton getter [部分確定]。[確定] V-542-2: AC20（FUN_0044AC20）冒頭＝formID map 0xB0613C から 26 エントリ静的検索（lea eax,[esp+0x14]; push 0x1a; mov ecx,0xb0613c; call 55E000＝*keyslot 更新で配列受信）→9832E6(0, TESEyes TD 0xB0541C, TESForm TD 0xB02F9C, 0, slot) で TESEyes シングルトン解決。19 周ループ slot 窓 [esp+0x6c]（+0xc formID/+0x10 名前）は base game 固定 form 配列由来と決着。[確定・訂正] V-542-3 RTTI 実測: 0xA4385C COL 0xABADD4='.?AVTESBoundObject@@'＝4B2FF0 は TESObjectSTAT 基底（TESBoundObject）ctor（46C460→mov [esi],0xA4385C→+0x18/1c/20=0）／0xA3C24C COL 0xAB8398='.?AVTESModel@@'＝46D7E0 は TESModel サブオブジェクト ctor（v541 の『TESFullName 補助』は誤り→訂正）。チェーン TESObjectSTAT:TESBoundObject:TESForm・型表 28='STAT' と type byte 0x1C 整合。残点 V-543-1..3（1=587B20（メニュークラス検索 kind=1,id）/587D20（生成）本体＋メニュークラス登録テーブル【中】／2=DAT_00b3a6e0（582160 singleton）クラス名・生成元【低】／3=AC20 の 26 エントリ静的 formID キー一覧【低】）。教訓: disp32 に出ないグローバル増減は singleton のメンバオフセット経由が定石（thiscall 頭の mov ecx,imm32 を辿る）／vtable 即値→COL→TD の RTTI 実測は ctor チェーン解析の最終手段（TESFullName 誤りも一撃訂正）。本日 push: v405→v541（9b0432e0）137件＋本件 v542。v 採番 v542 消費（次=v543）。"
+    },
+    {
+      "id": "151-v543-menu-factory-2026-11-18",
+      "timestamp": "2026-11-18T05:57:29Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v543",
+        "menu",
+        "ui",
+        "singleton",
+        "window-ids"
+      ],
+      "content": "2026-11-18 旧残点群消化第87弾 v543（probe v543_1..2 全2本 EXIT=0）＝V-543-1..2 完遂・V-543-3 自己格下げ・旧 V-406-3 継続第73弾: 成果物 tmp/re/v543_menu_factory_ruling.md・台帳 row519（bak368）・round_verify ALL OK（rows 31..519 / total 405 / done 400 / open 5）・STATE (ji)・ai-todo #151 note。[確定] FUN_00587B20＝singleton DAT_00b3a708 の lazy getter: create かつ 0 なら alloc(1) をそのまま DAT に代入し FUN_004E4A10(0x33)（型 0x33=51 生成通知）を設定前後で各1回。591C50（v542）の \"ERROR: Cant find menu class!\"（0xA6B178）は 587B20 側 singleton 不在時と接続完了。[確定] FUN_00587D20＝窓 ID ごとの巨大 switch メニューファクトリ（別テーブルは無い [確定負]）: case 1001..1051 の 47 組（欠番 1029/1031/1033/1050）、各 case=alloc(size)→専属 ctor。1001->5BC450(0x100)/1002->5A9B00(0x58)/1003->5D9AD0(0xB4)/1004->5A6780(0x94)/1005->5A4660/1006->5A7FE0/1007->5AD0D0(0x74)/1008->597A90/1009->59E4E0/1010->5A8DF0/1011->5A3BE0/1012->5D6870/1013->5BD960/1014->5AF310/1015->5BD580/1016->5C04F0/1017->595150/1018->587BC0/1019->5DD960/1020->5A3310/1021->5874A0/1022->5B1F20/1023->5B7360/1024->5B3D30/1025->5BCE40/1026->595BE0/1027->5AC550/1028->5DD200/1030->596EF0/1032->5D5610/1034->5BDFF0/1035->5D1000/1036->5C4E40/1037->5D8900/1038->5AE450/1039->5D3290/1040->593050/1041->5D73C0/1042->5A1390/1043->59F9B0/1044->5B5F20/1045->596420/1046->5C0B50/1047->59C960/1048->5D3EB0/1049->5CE680/1051->5879C0。[確定・生成元] DAT_00b3a6e0（582160 singleton）=if(create&&==0){alloc(0x134)→5802B0(this)→581CC0(arg2)} の lazy 生成。FUN_005802B0＝0x134 サイズ UI マネージャ ctor（+0x74=fldz、+0x54..0x70/+0xc8..0xdc=0）。v540 の pending バイト +0xB0 はこのマネージャのフィールド。クラス名 [未確定]。[格下げ・注記] AC20 の lea eax,[esp+0x14]; push eax; push 0x1a; mov ecx,0xb0613c; call 55E000 は push 順が docs 2 引数仕様と不一致→v542 の『26 エントリ検索 [確定]』は『件数 26・配列受信』まで [確定]、機構は [未確定] に訂正（キー配列の事前書込み命令も窓内未発見＝0 クリアのみ・低 formID 26 個説は [推定]）。残点 V-544-1..3（1=587D20 各 ctor の vtable RTTI クラス名サンプル（1001/1004/1007/1030）で menu window 正体確定【中】／2=call 55E000 規約決着（先頭全行読/別プロトタイプ検索）＋キー配列書込み元【中】／3=FUN_004E4A10(0x33) 型 manager 取得 API 本体【低】）。教訓: メニュー登録テーブルを疑うと巨大 switch 直接ファクトリだった（case→alloc size→ctor 抽出は機械化可）／呼び出し規約と decompiler プロトタイプが不一致なら [確定] を自己格下げして注記（推測で機構を固定しない）／lazy singleton は create フラグ型（0xB3A708=1B・0xB3A6E0=0x134B）と生成通知（4E4A10(0x33)）の組合せで特定。本日 push: v405→v542（c3a93278）138件＋本件 v543。v 採番 v543 消費（次=v544）。"
     }
   ],
   "metadata": {
-    "totalEntries": 947,
+    "totalEntries": 948,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-18T05:34:37Z",
-    "entry_count": 947,
-    "last_updated": "2026-11-18T05:34:37Z"
+    "lastUpdated": "2026-11-18T05:57:29Z",
+    "entry_count": 948,
+    "last_updated": "2026-11-18T05:57:29Z"
   }
 }

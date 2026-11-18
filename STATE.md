@@ -3571,3 +3571,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **disp32 に出ないグローバル増減は singleton のメンバオフセット経由が定石**（thiscall 頭の `mov ecx,imm32` を辿る）／**vtable 即値→COL→TD の RTTI 実測は ctor チェーン解析の最終手段**（TESFullName 誤りも一撃訂正）。
 - **本日 push 累計（セッション）**: v405 → … → v541 `9b0432e0` →（本件 v542 を本 commit で push）＝**138裁定**。
 - **次**: V-543-1..3 → 旧残点（メニュークラス表／582160 singleton／AC20 キー一覧）。supermemory は復帰・集約 5 エントリ＋索引登録済（台帳 row 単位の詳細は正本 md 参照）。
+
+## 2026-11-18 (ji) — 旧残点群消化第87弾 v543（V-543-1..2 完遂・V-543-3 自己格下げ／旧 V-406-3 継続第73弾）: **メニューシステム確定＝`FUN_00587D20` が窓 ID 1001..1051 の巨大 switch 直接ファクトリ（47 組・登録テーブルは存在せず [確定負]）**・**`FUN_00587B20`＝1 バイト singleton `DAT_00b3a708` lazy getter（前後で `FUN_004E4A10(0x33)` 2 回）**・**`DAT_00b3a6e0`（582160）＝`alloc(0x134)`→`FUN_005802B0`（UI マネージャ ctor・+0xB0 pending はこの実体）lazy 生成と確定**・**AC20 の `call 55E000` 窓は push 規約が docs と不一致のため機構 [未確定] に格下げ（件数 26・受ける配列の存在のみ [確定]）**
+
+- **成果物**: `tmp/re/v543_menu_factory_ruling.md`（probe **v543_1..2 の2本 EXIT=0**）。台帳 **row519（bak368）**・`round_verify` **ALL OK**（rows 31..519 / total 405 / done 400 / open 5）。ai-todo **#151 note**・memory **948件**。
+- **① [確定] `FUN_00587B20`**: singleton `DAT_00b3a708` の lazy getter（create かつ 0 なら `alloc(1)` をそのまま DAT へ、`FUN_004E4A10(0x33)` を生成前後で各 1 回）。v542 の `"ERROR: Cant find menu class!"`（0xA6B178）は 587B20 側 singleton 不在時に 591C50 が出すと接続完了。
+- **② [確定] `FUN_00587D20`＝窓 ID switch ファクトリ**（**別テーブルは無い [確定負]**）: `switch(windowID)` case 1001..1051 の **47 組**（欠番 1029/1031/1033/1050）、各 case は `401F00(size)`→専属 ctor。代表: 1001→`5BC450`(0x100)／**1004→`5A6780`(0x94)**／**1007→`5AD0D0`(0x74)**（v542 close ゲートの窓）／1030→`596EF0`／1051→`5879C0`。全対応表を probe v543_2 (a) で機械抽出（台帳 row519 に転記）。
+- **③ [確定・生成元] `DAT_00b3a6e0`（`582160` singleton）**: `if(create && ==0){ alloc(0x134)→`FUN_005802B0`(this)→`581CC0(arg2)` }`。**`5802B0`＝0x134 サイズ UI マネージャ ctor**（+0x74=fldz、+0x54..0x70/+0xc8..0xdc=0）。**v540 の pending バイト +0xB0 はこのマネージャのフィールド**。vtable store は窓内になくクラス名 [未確定]。
+- **④ [格下げ] V-543-3**: AC20 の `lea eax,[esp+0x14]; push eax; push 0x1A; mov ecx,0xB0613C; call 55E000` は push 順が docs の 2 引数仕様と不一致 → v542 の「26 エントリ map 検索 [確定]」は「件数 26・配列 [esp+0x14..] 受信」まで [確定]、**機構は [未確定]**（キー配列の事前書込み命令も窓内未発見＝0 クリアのみ。低 formID 26 個説は [推定]）。
+- **残点 V-544-1..3**: 1=`587D20` 各 ctor の vtable RTTI クラス名サンプル（1001/1004/1007/1030）で menu window 正体（MessageBox/Book 等）を確定【中】／2=`call 55E000` 規約決着（先頭全行読・別プロトタイプ検索）＋キー配列書込み元【中】／3=`FUN_004E4A10(0x33)` 型 manager 取得 API 本体【低】。
+- **教訓**: **「メニュー登録テーブル」を疑うと巨大 switch 直接ファクトリだった**（case→alloc size→ctor 抽出は機械化可・テーブル不在は [確定負] で明記）／**呼び出し規約と decompiler プロトタイプが不一致なら [確定] を自己格下げして注記**（推測で機構を固定しない）／lazy singleton は create フラグ型（0xB3A708=1B・0xB3A6E0=0x134）と manager 取得（4E4A10）の組合せで生成元が docs 行番号付きで特定できる。
+- **本日 push 累計（セッション）**: v405 → … → v542 `c3a93278` →（本件 v543 を本 commit で push）＝**139裁定**。
+- **次**: V-544-1..3 → 旧残点（menu ctor RTTI／55E000 規約／4E4A10 本体）。supermemory は集約①〜⑤＋索引登録済（v543 は集約⑥として順次）。
