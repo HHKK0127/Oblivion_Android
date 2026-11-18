@@ -3443,3 +3443,18 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **Ghidra の「`>>n & 0xffffffXX`」は元の `shr/and al,1` の被せで、生バイトの and 幅が 1bit とは限らないと疑う**（本件 else マスクは 1bit のみと訂正）／**formID mod byte 補正はプラグイン配列（+0x3f4/+0x400）と vc（+0x24b）の合わせ技でロード時にだけ効く**（ESM index の核心）／**'XXXX' 分割 sub-record は書込（v529）と読込（F10）で対称の再帰構造**／**開いたファイルは 'TES4' 検証→'AGGR' スキップの 2 段を移植ローダも守る**。台帳 row に「||」を書くと round_verify の表パースが壊れる（「または」で表記）。
 - **本日 push 累計（セッション）**: v405 → … → v533 `8d7f81e1` →（本件 v534 を本 commit で push）＝**130裁定**。
 - **次**: V-535-1..3 → 旧残点（topic リスト登録本体／+0x10 item 型／AGGR スキップ内部）。supermemory 未登録130件（v405..v534）は MCP 復帰待ち。
+
+## 2026-11-18 (ja) — 旧残点群消化第79弾 v535（V-535-1..3 完遂・旧 V-406-3 継続第65弾）: **`FUN_0046C460`＝`TESForm::TESForm()` ctor 自己同定**（vtable `0xA3BE3C` ストア＋**`0xB05E04` 表 f1 packed 4CC の実行時充填場所と整合検証 abort**）・**form `+0x10`＝出自 TESFile チェーンと確定**（call site 2 箇所の生バイト／v533 の「DataHandler フラグ」解釈を訂正）・**`FUN_004518B0`（bit12 スキップ）/`FUN_00451920`（(型,formID) 到達ウォーカ）確定**・**topic リスト head への直接参照は読み手 2 関数のみ [確定負]**
+
+- **成果物**: `tmp/re/v535_form_ctor_ruling.md`（probe **v535_1..5 の5本 EXIT=0**）。台帳 **row511（bak360）**・`round_verify` **ALL OK**（rows 31..511 / total 397 / done 392 / open 5）。ai-todo **#151 note**・memory **940件**。
+- **① [確定] `FUN_0046C460`＝`TESForm` ctor**: `*this = &PTR_FUN_00a3be3c`（v528 伏線回収）／flags `+8`=8／formID 採番 `FUN_00448D40`→`+0xC`（**0x800 未満は未配置プレースホルダ**: 旧 `4524C0` 解除＋`446B40`）／`FUN_00452570(formID,this)` グローバル map 登録。**初回実行で表 69 件の f1 を f0 から packed 化**（v529「実行時充填」の場所特定→[確定] 昇格）＋順序・一意検証（**`"formEnumString[ %d ].cFormID in TESForm.cpp is out of order."`**／**`"... same iFormString %s in TESForm.cpp."`**／致命 **`"You must fix the problems in TESForm.cpp to run this game."`**→`0x404EC0`）。
+- **② [確定] form `+0x10`＝出自 TESFile チェーン**: `FUN_0046B6C0` call site 生バイト — `0x451289`（NextFormEx 末尾 `push esi`=**TESFile**）／`0x46C5A7`（ctor `[b33a98+0x8c4]`=**現アクティブファイル**）。→ `FUN_004DB4A0` の先頭取得＝出自ファイル、`FUN_0044FAA0`＝**file+0x3dc bit0**（v533 の DataHandler 解釈→TESFile に訂正）。
+- **③ [確定] `FUN_004518B0`**＝bit12（0x1000）スキップ次レコード（`+0x414/+0x418` 解凍バッファ free→`NextForm` 反復）。
+- **④ [確定] `FUN_00451920`**＝(型,formID) 到達ウォーカ: `subject+0x68(file)` 先行→Reset(1)→連続 'TES4' スキップ→期待4CC=`表[subject+0x70()*3+4]`（**+0x70＝GetFormType 相互確認**）→'GRUP' で `+0xBC(&hdr,1,0)` 偽なら `451580()` 閉じ、一致でヒット。**v530〜v533 の predicate/close/表f1 が全部再利用されるロード中核**。
+- **⑤ [部分確定] `FUN_0052F010`＝会話候補生成**（v534 仮説修正）: push 先は **`DAT_00b36510`（別 8B リスト）**。topic `+0x28` の {arr,count} 配列を `530830` で絞り、`+0x25` bit5 停止・bit1 で `446CB0` push、返却は `47DF80(0)%n+1`（疑似乱数 985994/9859D0）。
+- **⑥ [確定負] topic リスト（`b33a98+0x7c`）head 直接参照**: `.text` の `0xB33A98` disp32 **548 箇所**を関数単位走査 → `add/lea 0x7c` を持つ head は読み手 **`FUN_0052F690`/`FUN_0052F6D0` のみ**。登録は別経由（残点 V-536-1）。
+- **⑦ [確定] `TESTopic+0x28`＝INFO の {arr@8,count@0x10} 配列**（連結でない）: `52F520`（子一致 topic 検索）／`52F570`（一致子の topic 返却）／`52F480`（`+0x34` 名前 `__stricmp` 比較フック）。
+- **残点 V-536-1..3**: 1=topic リスト head の別経由参照探索（`446CB0`/`67B1E0` callers の ecx 計算を b33a98 ベースで洗う）【中】／2=`FUN_00448D40`/`FUN_00446B40` 本体＝formID プール機構【中】／3=`subject` vtable `+0x68/+0x70` の TESForm slot 意味確定【低】。
+- **教訓**: **list-add（`46B6C0`）の全 call site の push 元レジスタ走査で item 型が一撃確定**／**vtable ストア即値（0xA3BE3C）で ctor 自己同定**（v528 の伏線回収）／**表 f1 は ctor 初回充填＋整合検証失敗時 abort**（移植側は起動時検査として再現）／**「+0x7c 直接 disp32 が無い」は 548 箇所走査して初めて [確定負]**（「見つからない」でなく「経路が無い」が言える）／**フラグ bit 定数表がクラスタ毎に増殖中（bit5/10/12/14/15…）→移植側は一元管理**。
+- **本日 push 累計（セッション）**: v405 → … → v534 `b8d0241e` →（本件 v535 を本 commit で push）＝**131裁定**。
+- **次**: V-536-1..3 → 旧残点（topic リスト登録別経由／formID プール／+0x68/+0x70）。supermemory 未登録131件（v405..v535）は MCP 復帰待ち。

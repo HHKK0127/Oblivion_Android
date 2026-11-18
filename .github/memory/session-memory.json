@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-18T02:28:25Z",
+  "lastUpdated": "2026-11-18T03:09:58Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13743,14 +13743,32 @@
         "formid"
       ],
       "content": "2026-11-18 旧残点群消化第78弾 v534（probe v534_1..3 全3本 EXIT=0）＝V-534-1..3 部分完遂・旧 V-406-3 継続第64弾: 成果物 tmp/re/v534_load_internals_ruling.md・台帳 row510（bak359・row 内の || は『または』に置換で round_verify ALL OK 復帰）・round_verify ALL OK（rows 31..510 / total 396 / done 391 / open 5）・STATE (iz)・ai-todo #151 note。[確定] FUN_00450080＝レコードヘッダ 20B 読込＋formID mod byte 補正: stream(this+0x10) vtable[+4] で +0x23c..+0x24c を読み、失敗時 5 dword クリア。type が GRUP/TOFT 以外なら FUN_0044FD60(byte[+0x24b]+1)（=this+0x3f4 プラグイン配列 [n-1+idx*4]）の要素 +0x400 バイトを formID 最上位に焼く。配列無ければ (a) 上位!=0xFF かつ FUN_0046ABD0(0<n<0x800 base formID 妥当性) で +0x24b=0、(b) 自分の mod index this+0x400 を焼く。[確定] FUN_00450F10＝sub-record ヘッダ 6B 読込: GRUP または !(flags&0x40000) は stream から直接 +0x250/+0x254。compressed は +0x414（無ければ FUN_00450550 展開）＋+0x260 オフセットから読む。'XXXX'(0x58585858) は FUN_00450C20＋FUN_0044FEA0 で分割先頭を再帰解決（v529 書込側と対）。[確定] FUN_0044FEA0＝sub スキップ: +0x260 += +0x254+6、>= 本体長（+0x240、compressed は +0x418）でクリア 0、非 compressed は seek(+0x25c+0x14+歩み)、次 F10 読→1。[確定] FUN_00451A60＝TESFile Open/Rewind: FUN_0044FBC0→open（FUN_004515B0）または seek 0 全クリア FUN_004511C0→+0x258(=docs +600)=stream vtable[+0x1C]=fileSize（v533 EOF field の一次証拠）→+0x23c!='TES4'(DAT_00b05e14) なら return（先頭検証）→+0x3dc/0x3df ビット組替→loop: 型 index==1('AGGR') は FUN_004518B0(1) で読み飛ばし、else +0x28c=(index==2||0)→seek 0 全クリア再読→終了。[確定・訂正] FUN_004DB4A0 else 分岐は生バイト 0x4DB507 mov eax,[esi+8];shr 0xa;and al,1;ret ＝ flags bit10 のみ。v533 の flags>>10 & 0xFFFFFF01 は Ghidra 被せ（decompiler 副産物）→訂正。0x4D7030（TESForm +0x78 bit10 getter）と同一命令列で相互裏付け。[確定] FUN_0044FAA0 の ecx＝edi＝FUN_0046B680(form,-1) の返り item（0x4DB4F7）。ゲート条件は『先頭 item が +0x3dc bit0 を立てていないこと』。item 型は [未確定]。[確定] FUN_0067B1E0＝{item,next} 8B セル末尾 append（callers 107）。FUN_0046B6C0 arg!=0 経路で呼ばれる。[部分確定] topic リスト（DAT_00b33a98+0x7c）追加経路: 直接即値書きは無く append/push 経由。TESTopic 領域 caller=0x52F97C（新会話 FUN_0052F830→52F790→52F010）/0x52FD02（52FC40）/0x530D33/0x53108E,0E0,53（530FB0）/0x5313CF（531290）。TESTopic ctor=FUN_0052FB40（*this=vtable 0xA5555C、byte+0x24=0x39）。head 接続は FUN_0052F010 本体追跡待ち。52F830 は FUN_0046CB60 ループで古いノード free する再生成系。残点 V-535-1..3（1=b33a98+0x7c 登録 call site 決着（52F010 本体）【中】／2=FUN_004DB4A0 の form+0x10 リスト item 型（+0x3dc bit0 との対応）【中】／3=FUN_004518B0/00451920 本体【低】）。教訓: Ghidra の >>n & 0xffffffXX は元の shr/and al,1 の被せで生バイトの and 幅を必ず見る／formID mod byte 補正はプラグイン配列（+0x3f4/+0x400）と vc（+0x24b）の合わせ技でロード時にだけ効く／'XXXX' 分割は書込（v529）／読込（F10）で対称の再帰／開いたファイルは 'TES4' 検証→'AGGR' スキップの 2 段を移植ローダも守る／台帳 row 内の || は round_verify の表パースを壊す（『または』で表記）。本日 push: v405→v533（8d7f81e1）129件＋本件 v534。v 採番 v534 消費（次=v535）。"
+    },
+    {
+      "id": "151-v535-form-ctor-2026-11-18",
+      "timestamp": "2026-11-18T03:09:58Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v535",
+        "tesform",
+        "ctor",
+        "tesfile",
+        "formid",
+        "load"
+      ],
+      "content": "2026-11-18 旧残点群消化第79弾 v535（probe v535_1..5 全5本 EXIT=0）＝V-535-1..3 完遂・旧 V-406-3 継続第65弾: 成果物 tmp/re/v535_form_ctor_ruling.md・台帳 row511（bak360）・round_verify ALL OK（rows 31..511 / total 397 / done 392 / open 5）・STATE (ja)・ai-todo #151 note。[確定] FUN_0046C460＝TESForm::TESForm() ctor: *this=&PTR_FUN_00a3be3c（v528 伏線回収）／flags(+8)=8／formID 採番 FUN_00448D40→+0xC（0x800 未満は未配置プレースホルダ: 旧 4524C0 解除＋446B40）／FUN_00452570(formID,this) グローバル map 登録。初回実行で 0xB05E04 表 69 件の f1 を f0 から packed 4CC に充填（v529 の実行時充填の場所特定→[確定] 昇格）＋順序・一意検証（\"formEnumString[ %d ].cFormID in TESForm.cpp is out of order.\"／\"... same iFormString %s in TESForm.cpp.\"／致命 \"You must fix the problems in TESForm.cpp to run this game.\"→0x404EC0）。[確定] form+0x10＝出自 TESFile チェーン: FUN_0046B6C0 call site 生バイト 0x451289（NextFormEx 末尾 push esi=TESFile）と 0x46C5A7（ctor push [b33a98+0x8c4]=現アクティブファイル）。→FUN_004DB4A0 の 46B680(form,-1)＝出自先頭ファイル、44FAA0(file)＝file+0x3dc bit0（v533 の DataHandler 解釈を TESFile 側へ訂正。getter 自体は汎用）。[確定] FUN_004518B0＝bit12(0x1000) スキップ次レコード（+0x414/+0x418 解凍バッファ free→NextForm を type!=GRUP/TOFT && flags&0x1000 が消えるまで反復）。[確定] FUN_00451920＝(型,formID) 到達ウォーカ: +0x28c 前提・stream+0x24→subject+0x68(file) 先行→Reset(1)→連続 'TES4' を 18B0(1) で飛ばす→期待4CC=表[subject+0x70()*3+4]（f1 packed・+0x70=GetFormType 相互確認）・期待 formID=subject+0xC→ループ: 'GRUP' なら subject+0xBC(&hdr,1,0) 偽で 451580() 閉じ／一致でヒット＝v530〜v533 の predicate/close/表f1 が全部再利用されるロード中核。[部分確定] FUN_0052F010＝会話候補生成（v534 仮説修正）: flags bit5 即 0／候補 head=DAT_00b36510（8B 初回 alloc）／topic+0x28 の {arr@8,count@0x10} 配列を 530830 で絞り +0x25 bit5 停止・bit1 で 446CB0(b36510,info) push／返却は 47DF80(0)%n+1 番目（疑似乱数 985994/9859D0＋DAT_00b069c3）。push 先は b36510 で topic リスト（b33a98+0x7c）ではない。[確定負] topic リスト head 直接参照: .text の 0xB33A98 disp32 548 箇所を関数単位走査→add/lea 0x7c を持つ head は読み手 FUN_0052F690/52F6D0 のみ。登録は別経由（残点 V-536-1）。[確定] TESTopic+0x28＝INFO の {arr,count} 配列（連結でない）: 52F520（子一致 topic 検索）/52F570（一致子の topic 返却）/52F480（+0x34 名前 __stricmp 比較フック）。残点 V-536-1..3（1=topic リスト head の別経由参照探索（446CB0/67B1E0 callers の ecx 計算を b33a98 ベースで洗う）【中】／2=FUN_00448D40/446B40 本体＝formID プール機構【中】／3=subject vtable +0x68/+0x70 の slot 意味確定【低】）。教訓: list-add（46B6C0）の全 call site の push 元レジスタ走査で item 型が一撃／vtable ストア即値で ctor 自己同定／表 f1 は ctor 初回充填＋整合検証 abort／『+0x7c 直接 disp32 無し』は 548 箇所走査で初めて [確定負]（『見つからない』でなく『経路が無い』が言える）／flags bit 定数表がクラスタ毎に増殖中（bit5/10/12/14/15）→移植側は一元管理。本日 push: v405→v534（b8d0241e）130件＋本件 v535。v 採番 v535 消費（次=v536）。"
     }
   ],
   "metadata": {
-    "totalEntries": 939,
+    "totalEntries": 940,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-18T02:28:25Z",
-    "entry_count": 939,
-    "last_updated": "2026-11-18T02:28:25Z"
+    "lastUpdated": "2026-11-18T03:09:58Z",
+    "entry_count": 940,
+    "last_updated": "2026-11-18T03:09:58Z"
   }
 }

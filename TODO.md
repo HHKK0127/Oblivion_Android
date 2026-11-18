@@ -1124,6 +1124,16 @@
   > ⑧ [部分確定] V-534-3: topic リスト（DAT_00b33a98+0x7c）への直接即値書き命令は無く、append/push 経由。TESTopic 領域（0x52F000-0x531FFF）の FUN_0067B1E0 caller＝0x52F97C（新会話生成 FUN_0052F830→52F790→52F010）、0x52FD02（52FC40）、0x530D33、0x53108E/0E0/53（530FB0）、0x5313CF（531290）。TESTopic ctor=FUN_0052FB40（*this=vtable 0xA5555C、byte+0x24=0x39）確定。リスト head への接続は FUN_0052F010 本体追跡待ち。
   > 残点 V-535-1..3: 1=b33a98+0x7c 登録 call site 決着（FUN_0052F010 本体）【中】／2=FUN_004DB4A0 の form+0x10 リスト item 型（+0x3dc bit0 との対応）【中】／3=FUN_004518B0/FUN_00451920 本体【低】。
   > 成果物: tmp/re/v534_load_internals_ruling.md、probe v534_1..3（全3本 EXIT=0）、台帳 row510（bak359・row 内の || は「または」に置換して round_verify ALL OK 復帰）、STATE (iz)、memory 939件。教訓: Ghidra の >>n & 0xffffffXX は元の shr/and al,1 の被せで、生バイトの and 幅を必ず見る／formID mod byte 補正はプラグイン配列（+0x3f4/+0x400）と vc（+0x24b）の合わせ技／'XXXX' 分割は書込（v529）／読込（F10）対称の再帰。supermemory 未登録は v405..v534 の130件。
+  > v535 完遂（V-535-1..3 / 旧残点 V-406-3 第65弾）: TESForm ctor 自己同定・form+0x10＝出自 TESFile チェーン確定・ロード中核ウォーカ確定・topic リスト登録の [確定負]。
+  > ① [確定] FUN_0046C460＝TESForm::TESForm() ctor（*this=&PTR_FUN_00a3be3c で v528 伏線回収）。flags(+8)=8 初期化／formID 採番 FUN_00448D40→+0xC／0x800 未満は未配置プレースホルダ（旧 4524C0 解除＋446B40）／FUN_00452570(formID,this) グローバル map 登録。初回実行で 0xB05E04 表 69 件の f1 を f0 名前文字列から packed 4CC に充填（v529 の実行時充填の場所を特定・[確定] 昇格）＋順序/一意検証（"formEnumString[ %d ].cFormID in TESForm.cpp is out of order."／"...same iFormString..."／致命 "You must fix the problems in TESForm.cpp to run this game."→0x404EC0）。
+  > ② [確定] form+0x10＝出自 TESFile チェーン: FUN_0046B6C0 の call site 生バイト2つ — 0x451289（NextFormEx 末尾: push esi=TESFile; mov ecx,edi=form）と 0x46C5A7（ctor: mov ecx,[b33a98]; push [ecx+8c4]=現アクティブファイル）。→ FUN_004DB4A0 の 46B680(form,-1)＝出自先頭ファイル、44FAA0(file)＝file+0x3dc bit0（v533 の DataHandler 解釈を TESFile 側へ訂正。getter 自体は汎用）。
+  > ③ [確定] FUN_004518B0＝bit12(0x1000) スキップ次レコード（+0x414/+0x418 解凍バッファ free→NextForm を type!=GRUP/TOFT && flags&0x1000 が消えるまで反復）。
+  > ④ [確定] FUN_00451920＝(型,formID) 到達ウォーカ: +0x28c 前提・stream+0x24 チェック→subject+0x68(file) 先行→Reset(1)→連続 'TES4' を 18B0(1) で飛ばす→期待4CC=表[subject+0x70()*3+4]（f1 packed・+0x70=GetFormType 相互確認）・期待 formID=subject+0xC→ループ: 'GRUP' なら subject+0xBC(&hdr,1,0) 偽で 451580() 閉じ／レコード一致でヒット。v530〜v533 の predicate/close/表f1 が全部再利用されるロード中核。
+  > ⑤ [部分確定] FUN_0052F010＝会話候補生成（v534 仮説修正）: flags bit5 即 0／候補 head=DAT_00b36510（8B 初回 alloc）／topic+0x28 の {arr@8,count@0x10} 配列を 530830 で絞り +0x25 bit5 停止・bit1 で 446CB0(b36510,info) push／返却は 47DF80(0)%n+1 番目（疑似乱数 985994/9859D0＋DAT_00b069c3）。push 先は b36510 で topic リスト（b33a98+0x7c）ではない。
+  > ⑥ [確定負] topic リスト head への直接参照: .text の 0xB33A98 disp32 548 箇所を関数単位走査、add/lea 0x7c を持つ head は読み手の 52F690/52F6D0 のみ。登録は別経由（残点 V-536-1）。
+  > ⑦ [確定] TESTopic+0x28＝INFO の {arr,count} 配列（連結でなく）: 52F520＝子一致の topic 検索、52F570＝一致子の topic 返却、52F480＝+0x34 名前 __stricmp 比較（52F6D0 ソートのフック）。
+  > 残点 V-536-1..3: 1=topic リスト head の別経由参照探索（446CB0/67B1E0 callers の ecx 計算を b33a98 ベースで洗う）【中】／2=FUN_00448D40/446B40 本体＝formID プール機構【中】／3=subject vtable +0x68/+0x70 の slot 意味確定【低】。
+  > 成果物: tmp/re/v535_form_ctor_ruling.md、probe v535_1..5（全5本 EXIT=0）、台帳 row511（bak360）、STATE (ja)、memory 940件。教訓: list-add の全 call site の push 元レジスタ走査で item 型が一撃／vtable ストア即値で ctor 自己同定／表 f1 は ctor 初回充填＋整合検証 abort／『+0x7c 直接 disp32 無し』は 548 箇所走査で初めて [確定負] と言える。supermemory 未登録は v405..v535 の131件。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -2046,11 +2056,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2074,4 +2079,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-18 11:25:48
+**ai-todo** | Last Updated: 2026-11-18 12:07:39
