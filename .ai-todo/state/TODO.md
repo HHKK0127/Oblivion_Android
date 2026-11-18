@@ -1370,6 +1370,13 @@
   > ⑤ 教訓: 「隣接グローバル 2 つ」を時刻と決めつけたが、その元値（0xB1399C/0xB139A4）を設定表としてメモリ実読すると iConsoleFont/iConsoleTextXPos と判明——グローバルの「意味」は参照先の設定名文字列まで辿らないと誤る（v548 の時刻説は [確定負]）／add reg,0xFFFFFC17 は −1001 の符号拡張で、switch 表の index 域（1001–1051）と NiTArray の index が一致すれば「menu ID」と確定できる／「初回のみ登録」は cmp [global],0; jne skip のガードで機械同定できる。
   > 残点 V-550-1..3: 1=57D330/57D390 が参照する 0xB135F8/0xB13600/0xB13608/0xB13610（設定登録 9FB7C0/9FB880/9FB8E0）の設定名＋クロップ計算式の完全形【中】／2=0x58A0A0 の登録先（属性表の実体＝0xB3B0CC が指すオブジェクトのクラス）＋589EB0（&entity; 解決）の内部【中】／3=591C50 の仮想 slot（vtable 0xA6AF28）の帰属クラス＋属性 class 以外を扱う姉妹ハンドラの有無【低】。
   > 成果物: tmp/re/v549_console_offset_ruling.md、probe v549_1..4（4本 EXIT=0）、台帳 row525（bak374）、STATE (jo)、memory 954件。supermemory は集約①〜⑨＋索引登録済。
+  > v550 完遂（V-550-1..3 / 旧残点 V-406-3 第80弾）: クロップ元値は iSafeZone*:Interface（既定20）・591C50 は TileMenu の slot +0x14＝open・属性表の実体は 0xB3B0B0 起点 16B stride 配列＋NiTArray<StringListElement@Tile*>。
+  > ① [確定] クロップ設定名（V-550-1）: 0xB135E0..0xB1361C は (値, nameptr) 対（8 バイト stride・値が先）= 0xB135F8=20→iSafeZoneX:Interface／0xB13600=20→iSafeZoneY:Interface／0xB13608=20→iSafeZoneXWide:Interface／0xB13610=20→iSafeZoneYWide:Interface。getter 0xA24820/0xA24880 が push 0xB135F8/0xB13608; mov ecx,0xB07CFC; call 65C620 で照会。57D330 は [0xB06C50=480]/[0xB06C4C=640]=0.75 > [0xA68D08]=0.74 でワイド判定し iSafeZoneXWide(0xB13608) or iSafeZoneX(0xB135F8) を返す（57D390 は Y 側）＝クロップ実体はセーフゾーン設定（v549 の「アスペクト比クロップ」は [部分確定]）。
+  > ② [確定] 591C50 の仮想 slot と帰属クラス（V-550-3）: .?AVTileMenu@@（vtable 0xA6AF14 COL 0xAC1D98→TD 0xB13A74）の slot +0x14＝open 仮想。+0x00=dtor 0x5900F0／+0x08=0x591C20／+0x14=0x591C50／+0x18=0x591B40。591B40 は [this+0x44]（menu）の窓 ID（vtable[+0x34]）を 0x3EC(1004 HUDMainMenu)/0x3EF(1007 LoadingMenu) と比較し一致しなければ 589D60 へ jmp＝HUD/ローディング中スキップ。callers は全て 0＝vtable 経由のみ。
+  > ③ [確定] 属性表の実体（V-550-2）: 58A112: movsx esi,al; sub esi,0x40; cmp esi,0x20; jle; sub esi,0x20＝文字コード算術→shl ecx,4; add ecx,0xB3B0B0＝スロット 0xB3B0B0+index*16 へ 6AA320（intrusive list insert）。0x5F('_') 経路は 0xB13BC4（RTTI NiTArray<StringListElement@Tile*>・vtable 0xA6A0F0）へ 42D800（append→4E4A10 grow）。0xB3B0CC は命令からの参照が 58DA55 の 1 箇所のみ＝起動時 CRC/アンチタンパ系の値 [部分確定]。
+  > ④ 教訓: 設定グローバルは「(値, nameptr) 対の配列」で並ぶ（0xB135E0.. は 8 バイト stride・値が先）——nameptr 側の文字列を読めば設定名が一撃／RTTI の COL→TD 実読で「この仮想はどのクラスのどの slot か」が機械確定（591C50＝TileMenu +0x14）／属性名の登録先は先頭文字の文字コード算術（sub 0x40 / −0x20）＋ shl 4 で 16 バイトスロット配列と判明。
+  > 残点 V-551-1..3: 1=0xB3B0CC の実体（値 0x6F4320B3 の生成元）＋58DA55 ガードの意味【中】／2=589EB0 の生成物（StringListElement@Tile 16B）の構造＋6AA320 list の走査側【中】／3=TileMenu の他 slot（0x591C20/0x5900D0/0x5900E0）＋589D60 の役割【低】。
+  > 成果物: tmp/re/v550_safezone_tilemenu_ruling.md、probe v550_1..4（4本 EXIT=0）、台帳 row526（bak375）、STATE (jp)、memory 955件。supermemory は集約①〜⑨＋索引登録済。
 - [x] **#148** 【作製・既存バグ（2026-11-15 に #146 の verifier レビューで発見）】ESMFile::decodeClass（esm_reader.cpp:1882）が std::memcpy(&clas.flags, data->data.data(), 4) で uint8_t 型の ClassData::flags（esm_reader.h:731）へ4バイトを書込み、構造体の外へ3バイトを破イトを破壊している（隣接メンバー/スタックの踏みつけ）。証拠: ①ビルドログ %TEMP%/opencode/build_racefilter.log に -Wfortify-source: destination buffer has size 1, but size argument is 4 が変更行と無関係の既存箇所から出る ②base 024eda1a の esm_reader.cpp:1874 にも同一コード＝本リポジトリに元から存在 ③CLAS の DATA は本来16バイト構造（flags 4B + specialization 1B + ...）のはずで、ClassData 側の型（uint8_t）と読み幅（4B）が不整合＝どちらが正かは実データで要確認。【修正方針（推測禁止）】まず Oblivion.esm の CLAS DATA 実バイトと ClassData の意図を確認（flags が u32 なら ClassData::flags を uint32_t に広げ、u8 なら読み幅を1に縮める。EyesData/HairData の flags は uint32_t、ClassData のみ uint8_t という不揃いが手がかり）→ 正典/実データで型を確定してから最小修正。検証: ビルドで fortify 警告が消えること＋CLAS を読む既存経路が壊れないこと。関連: #146（発見の場）/#96/#101 `#android` `#esm` `#fix` `#oblivion` `#safety` (2026-11-18)
   > 【実装・検証の記録（2026-11-15）】
   > ①**実データで型を確定**: `oblivion_esm_pull/Oblivion3.esm`（device の Oblivion.esm と同サイズ 277,504,985B）を Python で走査 → CLAS **111件**、DATA 長は **48B(31件)/52B(80件)**＝タスク記載の「16バイト構造」は誤り。全111件で `+0x00/+0x04` が属性 enum 0..7・非同一、`+0x0C` の7スキルが 0x0C..0x20 の重複なし、`+0x28` は 0/1/2 のみ（bit0 autocalcs・bit1 guard と整合）。Warrior=Strength/Endurance＋Armorer..HeavyArmor、Mage=Intelligence/Willpower、Thief=Speed/Agility で既知仕様一致。→ 正典 `v261_clas_service_flags.md` のフィールド表（+0x00 属性1／+0x04 属性2／+0x08 未読／+0x0C 7×u32 スキル／+0x28 u8 flags／+0x2C 未読／+0x30 u8 trainer index）と完全一致。
@@ -2177,11 +2184,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2205,4 +2207,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-18 16:39:07
+**ai-todo** | Last Updated: 2026-11-18 16:46:37

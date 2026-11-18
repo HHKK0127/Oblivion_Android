@@ -3653,3 +3653,14 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-550-1..3**: 1=`57D330`/`57D390` が参照する `0xB135F8`/`0xB13600`/`0xB13608`/`0xB13610`（設定登録 `9FB7C0`/`9FB880`/`9FB8E0`）の設定名＋クロップ計算式の完全形【中】／2=`0x58A0A0` の登録先（属性表の実体＝`0xB3B0CC` が指すオブジェクトのクラス）＋`589EB0`（`&entity;` 解決）の内部【中】／3=`591C50` の仮想 slot（vtable `0xA6AF28`）の帰属クラス＋属性 class 以外を扱う姉妹ハンドラの有無【低】。
 - **本日 push 累計（セッション）**: v405 → … → v548 `af9ea0e6` →（本件 v549 を本 commit で push）＝**145裁定**。
 - **次**: V-550-1..3 → 旧残点（クロップ設定名／属性表の実体／vtable slot）。supermemory は集約①〜⑨＋索引登録済。
+
+## 2026-11-18 (jp) — 旧残点群消化第94弾 v550（V-550-1..3 完遂・旧 V-406-3 継続第80弾）: **クロップ元値＝`iSafeZoneX/Y/XWide/YWide:Interface`（既定 20）と確定**・**`591C50` は `.?AVTileMenu@@`（vtable `0xA6AF14`）の slot +0x14＝open 仮想**・**属性表の実体＝`0xB3B0B0` 起点 16 バイト stride スロット配列＋`NiTArray<StringListElement@Tile*>`（`0xB13BC4`）**
+
+- **成果物**: `tmp/re/v550_safezone_tilemenu_ruling.md`（probe **v550_1..4（4本）EXIT=0**）。台帳 **row526（bak375）**・`round_verify` **ALL OK**（rows 31..526 / total 412 / done 407 / open 5）。ai-todo **#151 note**・memory **955件**。
+- **① [確定] クロップ設定名＝`iSafeZone*:Interface`（既定 20）**: `0xB135E0..0xB1361C` は (値, nameptr) 対（8 バイト stride・値が先）: **`0xB135F8`=20→`iSafeZoneX:Interface`／`0xB13600`=20→`iSafeZoneY:Interface`／`0xB13608`=20→`iSafeZoneXWide:Interface`／`0xB13610`=20→`iSafeZoneYWide:Interface`**。getter `0xA24820`/`0xA24880`（`push 0xB135F8/0xB13608; mov ecx,0xB07CFC; call 65C620`）。`57D330` は `[0xB06C50=480]/[0xB06C4C=640]=0.75 > [0xA68D08]=0.74` でワイド判定し `iSafeZoneXWide` or `iSafeZoneX` を返す（`57D390` は Y 側）＝**クロップ実体はセーフゾーン設定（v549 の「アスペクト比クロップ」は [部分確定]）**。
+- **② [確定] `591C50`＝`.?AVTileMenu@@` の slot +0x14**: vtable `0xA6AF14`（COL `0xAC1D98`→TD `0xB13A74`）: `+0x00`=dtor `0x5900F0`／`+0x08`=`0x591C20`／`+0x14`=`0x591C50`（open）／`+0x18`=`0x591B40`。`591B40` は `[this+0x44]` の窓 ID を `0x3EC`(1004 HUDMainMenu)/`0x3EF`(1007 LoadingMenu) と比較し一致しなければ `589D60` へ jmp＝HUD/ローディング中スキップ。callers は全て 0＝vtable 経由のみ。
+- **③ [確定] 属性表の実体**: `0x58A0A0` 末尾が `movsx esi,al; sub esi,0x40; cmp esi,0x20; jle; sub esi,0x20`（文字コード算術）→ `shl ecx,4; add ecx,0xB3B0B0`＝**スロット `0xB3B0B0+index*16` へ `6AA320`（intrusive list insert）**。`0x5F`('_') 経路は `0xB13BC4`（RTTI `NiTArray<StringListElement@Tile*>`・vtable `0xA6A0F0`）へ `42D800`（append→`4E4A10` grow）。`0xB3B0CC` は参照 1 箇所のみ（`58DA55`）＝起動時 CRC/アンチタンパ系 [部分確定]。
+- **④ 教訓**: **設定グローバルは「(値, nameptr) 対の配列」で並ぶ**（`0xB135E0..` は 8 バイト stride・値が先）——nameptr 側の文字列を読めば設定名が一撃／**RTTI の COL→TD 実読で「この仮想はどのクラスのどの slot か」が機械確定**（`591C50`＝`TileMenu` +0x14）／**属性名の登録先は先頭文字の文字コード算術＋`shl 4` で 16 バイトスロット配列**と判明。
+- **残点 V-551-1..3**: 1=`0xB3B0CC` の実体（値 `0x6F4320B3` の生成元）＋`58DA55` ガードの意味【中】／2=`589EB0` の生成物（`StringListElement@Tile` 16B）の構造＋`6AA320` list の走査側【中】／3=`TileMenu` の他 slot（`0x591C20`/`0x5900D0`/`0x5900E0`）＋`589D60` の役割【低】。
+- **本日 push 累計（セッション）**: v405 → … → v549 `78f8e8da` →（本件 v550 を本 commit で push）＝**146裁定**。
+- **次**: V-551-1..3 → 旧残点（`0xB3B0CC`／`StringListElement`／`TileMenu` slot）。supermemory は集約①〜⑨＋索引登録済。
