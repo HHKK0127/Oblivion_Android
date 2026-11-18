@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-18T06:59:01Z",
+  "lastUpdated": "2026-11-18T07:12:03Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13949,14 +13949,32 @@
         "tile"
       ],
       "content": "2026-11-18 旧残点群消化第90弾 v546（probe v546_1 全1本 EXIT=0）＝V-546-1..3 完遂・旧 V-406-3 継続第76弾: 成果物 tmp/re/v546_name_caches_ruling.md・台帳 row522（bak371）・round_verify ALL OK（rows 31..522 / total 408 / done 403 / open 5）・STATE (jl)・ai-todo #151 note。[確定] 2 map 用途差（RTTI 実測）: 0xB13948 の vtable 0xA69688→TD '.?AV?$NiTMapBase@V?$NiTPointerAllocator@I@@PBDPAVXMLStorage@@@@'＝名前(const char*)→XMLStorage*。0xB1395C の vtable 0xA696A8→TD '.?AV?$NiTMapBase@...PBDPAVBuildStorage@Tile@@@@'＝名前→BuildStorage<Tile>*。→ メニュー名→UI XML ソース／名前→Tile ビルドキャッシュの 2 段キャッシュ（v545 の『両方から消す』＝この 2 種の解放と確定）。両 map とも disp32 store 0 件＝.data 静的単一tons・CRT in-place 構築（0xB0613C/0xB06164 と同型）。[確定・訂正] FUN_004E4A10＝1043 callers の汎用 NiTArray grow（v545 の『0x33 singleton 専用ヘルパ』は誤り→訂正）。代表窓 40C1F9: movzx ecx,word[edi+0xe]; add ecx,esi; push ecx; mov ecx,edi; call 4E4A10＝NiTArray::SetSize(edi,newCount)。587B20 の alloc(1)→4E4A10(0x33) は『型索引 0x33 の manager 配列を grow してスロット用意』と解釈 [部分確定]。[確定] Menu vtable 0xA696DC 実読: +0x00=0x5853F0（scalar dtor）/ +0x04,08,0C,10,14,20,24,28=0x60CF60（no-op 共有スタブ）/ +0x18,+0x1C=0x890B90（同実装2slot）/ +0x2C=0x60D0A0（no-op）/ +0x30=0x6FE080（false）/ +0x34=0x6F7070（0）＝Menu 基底は大半 no-op で仮想枠のみ（実 UI は派生 override）。教訓: 『2 つの同名 map』は RTTI テンプレート引数（key/value 型）で用途が一撃確定／『特定 singleton 専用』と見えたヘルパが 1000+ callers の汎用 NiTArray 操作だった（callers 数を必ず数える）／.data 静的単一tons（store 0 件）は CRT in-place 構築の印（0xB13948/0xB1395C/0xB0613C/0xB06164 が同型）。残点 V-547-1..3（1=0xB3A708（型索引 0x33 スロット）manager 実体と CRT init【中】／2=Menu vtable +0x18/+0x1C（0x890B90）役割＋no-op 8 slot の理由【低】／3=591C50 の type 4002/4005/4011 値域定義元（UI XML メニュー種別 enum）【中】）。本日 push: v405→v545（1e6a5205）141件＋本件 v546。v 採番 v546 消費（次=v547）。"
+    },
+    {
+      "id": "151-v547-time-noop-typeenum-2026-11-18",
+      "timestamp": "2026-11-18T07:12:03Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v547",
+        "menu",
+        "crt-init",
+        "noop-virtual",
+        "ui-enum",
+        "harness-rebuild"
+      ],
+      "content": "2026-11-18 旧残点群消化第91弾 v547（probe v547_1 全1本 EXIT=0）＝V-547-1..3 完遂・旧 V-406-3 継続第77弾: 成果物 tmp/re/v547_time_noop_typeenum_ruling.md・台帳 row523（bak372）・round_verify ALL OK（rows 31..523 / total 409 / done 404 / open 5）・STATE (jm)・ai-todo #151 note。[確定] 0xB3A700/0xB3A704＝CRT init が埋める時刻キャッシュ（float→int）: 0x9FBBF0（push 0xB139A4; mov ecx,0xB07BF0; call 4040E0; push 0xA24A10; call 981FB4＝ctor/atexit 登録）→ 0x9FBC50（call 57D330; fiadd [0xB1399C]; call 9828C0(float→int); mov [0xB3A700]）／0x9FBC70（fild [0xB139A4]; call 57D390; fsubr; call 9828C0; mov [0xB3A704]）。readers＝0x585620/0x585720/0x585820 の 3 head（メニュー時刻表示系）。0xB3A708（型索引 0x33 manager スロット・v546）は同一 .data 窓の別グローバル [部分確定]。[確定] 0x890B90（Menu vtable +0x18/+0x1C）＝ret 0xC の純 no-op・callers=2（vtable 間接のみ）＝Menu 基底は仮想枠のみで全 47 派生が override（no-op 8 slot の理由）。[部分確定] type 4002（0xFA2）の imm32 site は 3 箇所のみ（0x42703E head 0x426A90／0x58A9A7 head 0x58A1C0／0x591C54 head 0x591B70）。0xFA5(4005)=98／0xFAB(4011)=91 箇所＝メニュー type と UI コマンド ID は別 enum・定義元単一表は未発見。[確定] 591C50＝open(type:int, time:float, ?:int) の 3 引数仮想（cmp [esp+4],0xFA2 → fld [esp+0x10] → ret 0xC。[this+0x44] に menu 保持・[menu+0x20]=vtable[+0x34]() 窓 ID 実行時採番・子窓 4005/4011 を 588BD0/58CEB0 で構成）。[運用・重要] TEMP の probe ハーネス v307_common.py が一時ファイル掃除で消えていた（2026-11-18 発覚）→ 再構築済み（EXE=D:\\Cargo\\Ghidra\\temp\\Oblivion_Steam版\\Oblivion.exe 7,898,624 B・find_head は tmp/re/cache/named_funcs.txt の 21,597 heads を bisect 参照。復旧検証: callers_of(0x4E4A10)=1043（v546 一致）・callers_of(0x591C50)=0（v545 一致））。以後の probe は最初に Test-Path で存在確認する。残点 V-548-1..3（1=0xB3A700/0xB3A704 を読む 3 head の正体＋元 float 0xB1399C/0xB139A4【中】／2=591C50 の arg3（[esp+0xC]）と 588BD0/58CEB0 の子窓系意味【中】／3=type 4002/4005/4011 の UI メッセージ enum 定義元【低】）。教訓: TEMP の probe ハーネスは消える前提（再構築手順を裁定に記録・次回はまず存在確認）／CRT init 読出で「実行時のみ埋まるグローバル」の生成元が特定できる／ret 0xC 単体＝純 no-op 仮想の証拠／imm32 の出現数（3 vs 90+）で enum の別系統を判定。本日 push: v405→v546（2abbed05）142件＋本件 v547。v 採番 v547 消費（次=v548）。"
     }
   ],
   "metadata": {
-    "totalEntries": 951,
+    "totalEntries": 952,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-18T06:59:01Z",
-    "entry_count": 951,
-    "last_updated": "2026-11-18T06:59:01Z"
+    "lastUpdated": "2026-11-18T07:12:03Z",
+    "entry_count": 952,
+    "last_updated": "2026-11-18T07:12:03Z"
   }
 }

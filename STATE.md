@@ -3617,3 +3617,16 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-547-1..3**: 1=`0xB3A708`（型索引 0x33 スロット）manager 実体と CRT init【中】／2=`Menu` vtable `+0x18`/`+0x1C`（`0x890B90`）役割＋no-op 8 slot の理由【低】／3=`591C50` の type 4002/4005/4011 値域定義元（UI XML メニュー種別 enum）【中】。
 - **本日 push 累計（セッション）**: v405 → … → v545 `1e6a5205` →（本件 v546 を本 commit で push）＝**142裁定**。
 - **次**: V-547-1..3 → 旧残点（0xB3A708 manager／Menu スタブ／type 値域）。supermemory は集約①〜⑦＋索引登録済。
+
+## 2026-11-18 (jm) — 旧残点群消化第91弾 v547（V-547-1..3 完遂・旧 V-406-3 継続第77弾）: **`0xB3A700`/`0xB3A704`＝CRT init `0x9FBBF0` 系が時間 API で埋める時刻キャッシュと確定**（`0x9FBC50`＝`57D330`＋`[0xB1399C]`＋float→int／`0x9FBC70`＝`57D390`＋`[0xB139A4]`）・**`0x890B90`＝`ret 0xC` の純 no-op（`Menu` 基底は仮想枠のみ・全 47 派生が override）と確定**・**type 4002 は 3 サイトのみ・4005/4011 は 90+ サイト＝別 enum [部分確定]**・**`591C50`＝`open(type:int, time:float, ?:int)` の 3 引数仮想と確定**・**TEMP ハーネス `v307_common.py` を再構築（消える前提の運用に変更）**
+
+- **成果物**: `tmp/re/v547_time_noop_typeenum_ruling.md`（probe **v547_1（1本）EXIT=0**）。台帳 **row523（bak372）**・`round_verify` **ALL OK**（rows 31..523 / total 409 / done 404 / open 5）。ai-todo **#151 note**・memory **952件**。
+- **① [確定] `0xB3A700`/`0xB3A704`＝時刻キャッシュ**: CRT init `0x9FBBF0`（`push 0xB139A4; mov ecx,0xB07BF0; call 4040E0; push 0xA24A10; call 981FB4`＝ctor/atexit 登録）→ `0x9FBC50`（`57D330; fiadd [0xB1399C]; 9828C0; mov [0xB3A700]`）／`0x9FBC70`（`57D390; fsubr; 9828C0; mov [0xB3A704]`）。readers＝`0x585620`/`0x585720`/`0x585820` の 3 head（時刻表示系）。`0xB3A708` は同一 `.data` 窓の別グローバル（型索引 0x33 スロット）[部分確定]。
+- **② [確定] `0x890B90`（`Menu` `+0x18`/`+0x1C`）＝`ret 0xC` の純 no-op**（callers=2 で vtable/間接のみ）→ **`Menu` 基底は仮想枠のみ用意し全 47 派生が override する設計**（v546 §2.3 の no-op 8 slot と同趣旨）。
+- **③ [部分確定] type 4002（`0xFA2`）**: imm32 site は **3 箇所のみ**（`0x42703E` head `0x426A90`／`0x58A9A7` head `0x58A1C0`／`0x591C54` head `0x591B70`）。`0xFA5`(4005)=98／`0xFAB`(4011)=91 箇所＝**メニュー type と UI コマンド ID は別 enum**、定義元単一表は未発見。
+- **④ [確定] `591C50`＝`open(type:int, time:float, ?:int)` の 3 引数仮想**: `cmp [esp+4],0xFA2` → `fld [esp+0x10]` → `ret 0xC`。`[this+0x44]` に menu 保持・`[menu+0x20]=vtable[+0x34]()` 窓 ID 実行時採番・子窓 4005/4011 を `588BD0`/`58CEB0` で構成。
+- **⑤ [運用] TEMP ハーネス消失への対処**: `%TEMP%\opencode\v307_common.py` が一時ファイル掃除で消えていた（2026-11-18 発覚）。**再構築済み**（EXE=`D:\Cargo\Ghidra\temp\Oblivion_Steam版\Oblivion.exe` 7,898,624 B・`find_head` は `tmp/re/cache/named_funcs.txt` の 21,597 heads を bisect 参照＝正確化。復旧検証: `callers_of(0x4E4A10)=1043`（v546 一致）・`callers_of(0x591C50)=0`（v545 一致）。**以後の probe は最初に `Test-Path` で存在確認する**。
+- **残点 V-548-1..3**: 1=`0xB3A700`/`0xB3A704` を読む 3 head（`585620`/`585720`/`585820`）の正体＋元 float `0xB1399C`/`0xB139A4`【中】／2=`591C50` の arg3（`[esp+0xC]`）と `588BD0`/`58CEB0` の子窓系意味【中】／3=type 4002/4005/4011 の UI メッセージ enum 定義元【低】。
+- **教訓**: **TEMP の probe ハーネスは消える前提→再構築手順を裁定に記録し、次回はまず存在確認**／**CRT init の読出（`0x9FBBF0`→`0x9FBC50/70`）で「実行時のみ埋まるグローバル」の生成元が特定できる**／**`ret 0xC` 単体＝純 no-op 仮想の証拠（callers=vtable のみなら基底インタフェース）**／**imm32 の出現数（3 vs 90+）で enum の別系統を判定**。
+- **本日 push 累計（セッション）**: v405 → … → v546 `2abbed05` →（本件 v547 を本 commit で push）＝**143裁定**。
+- **次**: V-548-1..3 → 旧残点（時刻 readers／arg3／UI enum）。supermemory は集約①〜⑧＋索引登録済。
