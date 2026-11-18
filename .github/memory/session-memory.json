@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-18T03:51:29Z",
+  "lastUpdated": "2026-11-18T04:24:57Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13795,14 +13795,31 @@
         "load"
       ],
       "content": "2026-11-18 旧残点群消化第81弾 v537（probe v537_1..4 全4本 EXIT=0）＝V-537-1..3 完遂・旧 V-406-3 継続第67弾: 成果物 tmp/re/v537_topic_register_ruling.md・台帳 row513（bak362）・round_verify ALL OK（rows 31..513 / total 399 / done 394 / open 5）・STATE (jc)・ai-todo #151 note。[確定] 登録ラッパ FUN_00447530（12B）: arg==0→ret 4／else [esp+4]=arg; add ecx,0x7c; jmp FUN_00446CB0 ＝ this(DataHandler)+0x7c head への単方向 push（v530 pusher 再利用）。唯一の呼び出し元=0x52FFBA（FUN_0052FE90 内: mov ecx,[0xb33a98]; push eax=組立済み TESTopic; call 447530）。v535/536 の disp32 store 無し [確定負] と整合（経路は jmp 経由 push）。[確定] FUN_0052FE90=TESTopic 組立最終段: ステージング 0xB110F4（件数）×0xB111B8（entry 配列）を歩き vtable[+0xD8] 呼び・FUN_004028D0 文字列確保・FUN_0046C300 紐付け→447530 登録。同一グローバル head=52ED10/52ED50/52FE90 のみ。caller 0x44C5A2。[確定] 削除=0x59749B（head FUN_00597340）: mov ecx,[b33a98]; call FUN_0065C620（v529 センチネル削除）1 箇所のみ。[確定] ポリシー object=静的 0xB0613C={vtable 0xA3BC94, bucketCount@+4=0xB06140=0x2008D(131213)}。hash vt[+4]=0x6A9060=id%[ecx+4]（div/edx）／compare vt[+8]=0x763E80=a==b（sete）→v536 採番器の 2 virtual 確定。[確定負] DAT_00b06144（バケット配列 ptr・ディスク 0）への disp32 store は .text 0 件（read 13 箇所: 448DA0/449AB5/449B0E/44C4ED〜44CC7B 再ハッシュクラスタ/46AF9A）。実行時ポインタ計算でのみ初期化。[確定] TESTopic+0x28=ノード単方向リスト（0x24B ノード: entry 配列 arr@+8・cap・使用 count@+0xC・非空@+0x10・scalar dtor vtable 0xA554D4 ptr@+4・flag@+0x20）。entry=TESTopicInfo（formID@+0xC・priority byte@+0x3d）。[確定] 操作関数: FUN_00446C50(vec,idx,&v)=要素設定（idx>=count で count=idx+1、非空数増減）。FUN_00452910(&vec,n)=リサイズ（縮小時後方クリア、FUN_00401F00(n*4) 新確保コピー）。FUN_0052FC40=歩き該当無ければ 0x24 ノード新規→FUN_0067B1E0 末尾 append。FUN_0052F650=52EFA0 返り配列各要素 +0x20(short) に index 再採番。残点 V-538-1..3（1=b06144 バケット配列の確保/代入元【中】／2=FUN_00597340 の文脈（削除条件）＋52ED10/52ED50 本体【中】／3=0x448F40/449040/4491D0 等 DataHandler 公開 API 面【低】）。教訓: disp32 store 不在の [確定負] の後は add ecx,disp; jmp pusher 型薄ラッパ（12B）を疑う（検索対象は call 447530 でなく mov ecx,[b33a98] の直後 call 群）／ポリシー object 静的・バケット配列動的の分離／div/edx=mod ハッシュ boilerplate。本日 push: v405→v536（c406fbb9）132件＋本件 v537。v 採番 v537 消費（次=v538）。"
+    },
+    {
+      "id": "151-v538-hash-init-2026-11-18",
+      "timestamp": "2026-11-18T04:24:57Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v538",
+        "formid",
+        "hashtable",
+        "datahandler",
+        "crt-init"
+      ],
+      "content": "2026-11-18 旧残点群消化第82弾 v538（probe v538_1..5 全5本 EXIT=0）＝V-538-1..3 完遂・旧 V-406-3 継続第68弾: 成果物 tmp/re/v538_hash_init_ruling.md・台帳 row514（bak363）・round_verify ALL OK（rows 31..514 / total 400 / done 395 / open 5）・STATE (jd)・ai-todo #151 note。[確定] V-538-1: formID バケット配列 DAT_00b06144 の確保/代入元＝CRT 静的 init FUN_009DBF00。v538_5 線形スイープ監査（head から順方向デコード内含判定）: .text の 0xB06144 含む 16 命令のうち store は 0x9DBF2C: mov [0xb06144],eax 1 本のみ、read 15（mov reg,[..]×14＋cmp×1）。init 手順=alloc(0x2008D*4)（mul overflow ガード）→store→FUN_00981630 memset(0,count*4)→mov [0xb0613C],0xA3BDD8（policy vtable 差替え）→FUN_00981FB4（thunk 0xA18520=mov ecx,0xb0613c; jmp 46C0F0）登録。E8 call 0・.rdata 0xA28400＝CRT initializer 配列項目（隣 0x9DBF50=alloc(32*4)→mov [0xb06150] 姉妹）。0xB06140（131213）は read 4 store 0＝静的値。[確定] vtable 差替え実害: 静的 0xA3BC94→init 後 0xA3BDD8、+4 hash=0x6A9060/+8 compare=0x763E80/+C/+0x10 同一、差は +0x00 dtor（46B030→46C220=scalar deleting）と +0x14..+0x1C→v537 のハッシュ確定は不変。[確定・訂正] V-538-2: v537 の「0x59749B=topic 削除」は誤り（実バイト add ecx,0x54＝referrers 側）。topic リスト（+0x7c）の remove site は既知パターン全て不在 [部分確定]（v538_5: disp32 0xB33B14 の store/read 0 件・v538_4: mov ecx,[b33a98] 直後 16B に 81 C1 7C/83 C1 7C 0 件・v536 head walk store 0 件）→topic は FUN_00447530 ラッパで増える専用。FUN_00597340（+0x54）=referrers スコア集計（51BEC0 有効判定→5971E0(item+0x1c,item,idx,…)→param_2 真で 588BD0(0xFA8)+vtable[+0xC](float)）。親 5973F0: *(0xB333C4+0x654)=item+0x3c→解放群→65C620(item+0x40) 除去→416650→597340(1)（caller 597521）。[確定] ステージング補助: FUN_0052ED10=0xB110F4（count×8）/0xB111B8（entry ptr 配列）の全 entry（12B stride）0 クリア、呼び元 0x44963C（4492E0・isCompiling リセット）のみ＝解放パス。FUN_0052ED50(b,i)=範囲付き get（ptr[b]+i*0xc）。entry 配列生成元は残点 V-539-1。[確定] mov ecx,[b33a98]; add ecx,imm; call ラッパ表: +0x6C→446CB0 push ×43（最major＝ファイルリスト最有力）／+0xAC×3／+0x2C×2／+0xC→67B1E0×2／+0x54→416650×1+65C620×1／+0x68→468260×1／+0x7C 直接 0 件（ラッパのみ）。447160 の 60 sites は全 head 0x4FD0A0 ジャンプテーブル経由。[確定] DataHandler API 面: FUN_00449040(key,n)=+0xB4 チェーンで item+0x30==key の n 番目＝mod index ファイル検索／FUN_004491D0=this[0x337]（+0xCDc）解放＋アロケータ初期化／FUN_00448F40=+0xCDc 生成（401F00(0x10)+485D50(0)）or 48F180 リセット→41E6F0/48E9A0/420680/6ECC80/4CB2B0（コンソール系初期化ラッパ、caller 44D395/59A2EC/59AEDB/59B298）。静的 .data 実測: 0xB0613C=0xA3BC94（init 前）/0xB06140=0x2008D/0xB06144=0/0xB0614C=0xA37AAC/0xB06154=0x20。残点 V-539-1..3（1=0xB111B8 entry 配列/0xB110F4 count の書込み元【中】／2=416650/447160（4FD0A0 テーブル）identity＋+0x6C/+0x54 全適用サイト整理【低】／3=597521/59A2EC/59AEDB/59B298 クラスタ入口 identity【低】）。教訓: covering-insn 判定は head から線形スイープ（命令内含）でやる（逆オフセット単独デコードは不整合命令（or/adc 被せ）を拾う欠陥。今回の store 1 本の結論は線形スイープで再検証し不変）。CRT initializer 配列歩行で静的単一tons の初期化順が機械列挙できる。vtable 差替え init でも核心 virtual 同一なら前裁定不変。本日 push: v405→v537（863e58b0）133件＋本件 v538。v 採番 v538 消費（次=v539）。"
     }
   ],
   "metadata": {
-    "totalEntries": 942,
+    "totalEntries": 943,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-18T03:51:29Z",
-    "entry_count": 942,
-    "last_updated": "2026-11-18T03:51:29Z"
+    "lastUpdated": "2026-11-18T04:24:57Z",
+    "entry_count": 943,
+    "last_updated": "2026-11-18T04:24:57Z"
   }
 }
