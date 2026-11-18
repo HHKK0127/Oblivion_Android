@@ -121,8 +121,11 @@ void UICharacterCreation::update(float deltaTime) {
     UIPanel::update(deltaTime);
     // The ESM is parsed on a worker thread, so the race list can still be empty
     // when the panel opens (#161). Retry while it is: loadRacesFromESM() clears
-    // and refills, and it only calls applyRaceBonuses() once a race exists, so an
-    // attribute adjustment made before the data arrives is not thrown away.
+    // and refills, and it only calls applyRaceBonuses() once a race exists, so
+    // every poll while the list is empty touches nothing. The first non-empty
+    // refill does reset the attributes to 50 plus the race bonus - the same reset
+    // a race row tap already causes - while the skills, the selected skill and
+    // the open tab are left alone.
     //
     // Poll at most about once a second rather than every frame: getAllRaces()
     // hands back a reference into ESMManager::m_files, which the worker publishes

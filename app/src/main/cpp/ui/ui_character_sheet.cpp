@@ -95,9 +95,10 @@ void UICharacterSheet::renderTabButtons() {
     glm::vec2 cp = getContentPosition();
 
     const char* tabLabels[] = { "Attributes", "Skills", "Effects" };
-    // 110 px per tab keeps the 3-tab strip (338 px) inside the 360 px panel, and the
-    // 0.5 label scale keeps "Attributes" (the longest label) from running into the
-    // next tab - at 0.7 the three labels overlapped into an unreadable smear.
+    // 110 px per tab keeps the 3-tab strip (338 px) inside the 400 px panel, and
+    // the label scale is stepped down until the label fits that tab: a fixed 0.7
+    // overlapped the three labels into an unreadable smear, and a fixed 0.5 still
+    // let "Attributes" run under the next tab.
     const float tabW = 110.0f;
     const float tabH = 26.0f;
     const float gap  = 4.0f;
