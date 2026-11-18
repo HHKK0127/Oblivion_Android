@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-18T02:09:06Z",
+  "lastUpdated": "2026-11-18T02:28:25Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13726,14 +13726,31 @@
         "testopic"
       ],
       "content": "2026-11-18 旧残点群消化第77弾 v533（probe v533_1..5 全5本 EXIT=0）＝V-533-1..3 完遂・旧 V-406-3 継続第63弾: 成果物 tmp/re/v533_nextform_ruling.md・台帳 row509（bak358）・round_verify ALL OK（rows 31..509 / total 395 / done 390 / open 5）・STATE (iy)・ai-todo #151 note。[確定]（実文字列）FUN_00451310＝TESFile::NextForm: 中に 'Trying to load a bad form in TESFile::NextForm.\\r\\nFile = %s\\r\\nOffset = %d' と 'SetFilePointer() in NextForm failed with error:\\n%s'（FormatMessageA 併用）を持つ。挙動: type が 'GRUP'(DAT_00b05e20)/'TOFT'(DAT_00b06138) なら +0x25c+=0x14（中に入る）、else +0x25c+=+0x240(dataSize)+0x14（全体スキップ）。+0x25c<+0x258(=fileSize) なら seek→+0x23c..+0x24c クリア→FUN_004511C0→成功1／bad form 警告0／EOF 全クリア0。[確定] TESFile ロード状態フィールド表: +0x23c=現type packed 4CC（0=無効）／+0x240=dataSize／+0x244=flags／+0x248=formID／+0x24c=vc／+0x250/+0x254=本體カーソル/残り長／+0x258=fileSize／+0x25c=現オフセット／+0x260/+0x264=scratch。[確定] GRUP 開閉状態機械: 開=NextForm の +0x14 前進、閉=FUN_00451580（+0x23c=0・+0x240-=0x14・NextForm）→次 NextForm が else 分岐で (size-0x14)+0x14=size 進み末尾脱出。'TOFT' も中に入られる型（+0x244 bit18=0x40000 併記）。[確定] 補助群: FUN_004511C0=EnsureCurrentRecord（+0x23c==0 なら FUN_00450080 ヘッダ読→+0x250/4=0→FUN_00450F10 本體→FUN_0046AF70 型index 返却）。FUN_00451210=ヘッダ→form 転写（form+4←型index、form+8←flags（bit14 立上なら |0x4000）、FUN_0046C300、FUN_0046B6C0）。FUN_004512A0=Reset。FUN_00451460=SeekTo（+0x414/0x418 free）。[確定] FUN_0046B680=this+0x10 の {item,next} 埋込リスト非空先頭 getter（param -1=第1、n=スキップ。caller 40+・push -1; mov ecx,obj 形式）。[確定:命令]/[推定:名称] FUN_0044FAA0=*(this+0x3dc)&1（DataHandler 読込済フラグ）。FUN_0045A500=v529 thread バイト再確認。FUN_004DB4A0=合成ゲート: 先頭有&TLS+0x184==0&(45A500==0 or manager+0x18 bit4)&DataHandler+0xCD4==0&44FAA0==0→1、else flags>>10&0xFFFFFF01。[確定] FUN_0046B6C0=フォームリスト add/remove: arg!=0 は 44FB90→歩き一致 return／67B1E0 追加／読込中 4526E0／else 446CB0 push。arg==0 は末尾非空セル link 外し+free=pop。[確定] FUN_0052FBA0（TESTopic +0x34）: subject type=='9'(0x39 DIAL)→TESTopic 検索→this formID<found formID／':'(0x3A INFO)→TESTopicInfo 検索→52F690(owner)==this→1、別人は topic +0x34 委譲、owner なし 0／else 基底 46B500。型を ASCII 文字値そのもので比較。[部分確定] topic リスト DAT_00b33a98+0x7c: 読み手 52F690（所有者検索）/52F6D0（+0x1c 名前 __mbsicmp バブルソート）/52FAE0（全走査で 52F330 呼ぶ）。追加 site 未発見（残点 V-534-3）。52F5D0=topic+0x28 サブリスト formID 検索（順/逆）。残点 V-534-1..3（1=REFR form+0x10 キューの正体＋flags>>10 マスク解釈【中】／2=FUN_00450080/0F10/1A60 内部（ヘッダ読・zlib +0x414）【中】／3=topic リスト追加/削除 site【低】）。教訓: エラー文字列のクラス::メソッドで API 群が一括命名される（NextForm の一件で TESFile ロード API が全部名付けられた）／フィールド群の区切りは同時クリアの出現／'TOFT' は GRUP と対の中に入れる型／型定数を ASCII（'9'/':'）で比較する分岐は 0x39/0x3A 生バイト照合で機械発見／多数 caller の小さな thiscall はデータ構造 accessor。本日 push: v405→v532（44f71527）128件＋本件 v533。v 採番 v533 消費（次=v534）。"
+    },
+    {
+      "id": "151-v534-load-internals-2026-11-18",
+      "timestamp": "2026-11-18T02:28:25Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v534",
+        "tesfile",
+        "load",
+        "esm",
+        "formid"
+      ],
+      "content": "2026-11-18 旧残点群消化第78弾 v534（probe v534_1..3 全3本 EXIT=0）＝V-534-1..3 部分完遂・旧 V-406-3 継続第64弾: 成果物 tmp/re/v534_load_internals_ruling.md・台帳 row510（bak359・row 内の || は『または』に置換で round_verify ALL OK 復帰）・round_verify ALL OK（rows 31..510 / total 396 / done 391 / open 5）・STATE (iz)・ai-todo #151 note。[確定] FUN_00450080＝レコードヘッダ 20B 読込＋formID mod byte 補正: stream(this+0x10) vtable[+4] で +0x23c..+0x24c を読み、失敗時 5 dword クリア。type が GRUP/TOFT 以外なら FUN_0044FD60(byte[+0x24b]+1)（=this+0x3f4 プラグイン配列 [n-1+idx*4]）の要素 +0x400 バイトを formID 最上位に焼く。配列無ければ (a) 上位!=0xFF かつ FUN_0046ABD0(0<n<0x800 base formID 妥当性) で +0x24b=0、(b) 自分の mod index this+0x400 を焼く。[確定] FUN_00450F10＝sub-record ヘッダ 6B 読込: GRUP または !(flags&0x40000) は stream から直接 +0x250/+0x254。compressed は +0x414（無ければ FUN_00450550 展開）＋+0x260 オフセットから読む。'XXXX'(0x58585858) は FUN_00450C20＋FUN_0044FEA0 で分割先頭を再帰解決（v529 書込側と対）。[確定] FUN_0044FEA0＝sub スキップ: +0x260 += +0x254+6、>= 本体長（+0x240、compressed は +0x418）でクリア 0、非 compressed は seek(+0x25c+0x14+歩み)、次 F10 読→1。[確定] FUN_00451A60＝TESFile Open/Rewind: FUN_0044FBC0→open（FUN_004515B0）または seek 0 全クリア FUN_004511C0→+0x258(=docs +600)=stream vtable[+0x1C]=fileSize（v533 EOF field の一次証拠）→+0x23c!='TES4'(DAT_00b05e14) なら return（先頭検証）→+0x3dc/0x3df ビット組替→loop: 型 index==1('AGGR') は FUN_004518B0(1) で読み飛ばし、else +0x28c=(index==2||0)→seek 0 全クリア再読→終了。[確定・訂正] FUN_004DB4A0 else 分岐は生バイト 0x4DB507 mov eax,[esi+8];shr 0xa;and al,1;ret ＝ flags bit10 のみ。v533 の flags>>10 & 0xFFFFFF01 は Ghidra 被せ（decompiler 副産物）→訂正。0x4D7030（TESForm +0x78 bit10 getter）と同一命令列で相互裏付け。[確定] FUN_0044FAA0 の ecx＝edi＝FUN_0046B680(form,-1) の返り item（0x4DB4F7）。ゲート条件は『先頭 item が +0x3dc bit0 を立てていないこと』。item 型は [未確定]。[確定] FUN_0067B1E0＝{item,next} 8B セル末尾 append（callers 107）。FUN_0046B6C0 arg!=0 経路で呼ばれる。[部分確定] topic リスト（DAT_00b33a98+0x7c）追加経路: 直接即値書きは無く append/push 経由。TESTopic 領域 caller=0x52F97C（新会話 FUN_0052F830→52F790→52F010）/0x52FD02（52FC40）/0x530D33/0x53108E,0E0,53（530FB0）/0x5313CF（531290）。TESTopic ctor=FUN_0052FB40（*this=vtable 0xA5555C、byte+0x24=0x39）。head 接続は FUN_0052F010 本体追跡待ち。52F830 は FUN_0046CB60 ループで古いノード free する再生成系。残点 V-535-1..3（1=b33a98+0x7c 登録 call site 決着（52F010 本体）【中】／2=FUN_004DB4A0 の form+0x10 リスト item 型（+0x3dc bit0 との対応）【中】／3=FUN_004518B0/00451920 本体【低】）。教訓: Ghidra の >>n & 0xffffffXX は元の shr/and al,1 の被せで生バイトの and 幅を必ず見る／formID mod byte 補正はプラグイン配列（+0x3f4/+0x400）と vc（+0x24b）の合わせ技でロード時にだけ効く／'XXXX' 分割は書込（v529）／読込（F10）で対称の再帰／開いたファイルは 'TES4' 検証→'AGGR' スキップの 2 段を移植ローダも守る／台帳 row 内の || は round_verify の表パースを壊す（『または』で表記）。本日 push: v405→v533（8d7f81e1）129件＋本件 v534。v 採番 v534 消費（次=v535）。"
     }
   ],
   "metadata": {
-    "totalEntries": 938,
+    "totalEntries": 939,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-18T02:09:06Z",
-    "entry_count": 938,
-    "last_updated": "2026-11-18T02:09:06Z"
+    "lastUpdated": "2026-11-18T02:28:25Z",
+    "entry_count": 939,
+    "last_updated": "2026-11-18T02:28:25Z"
   }
 }

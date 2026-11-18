@@ -3427,3 +3427,19 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **エラー文字列の「クラス::メソッド」で API 群が一括命名される**（`NextForm` の一件で TESFile ロード API が全部名付けられた）／**フィールド群の区切りは「同時クリアの出現」**（`+0x23c..+0x24c` をまとめる 0 にする命令が状態リセットの印）／**'TOFT' は GRUP と対の「中に入れる型」**／**型定数を ASCII 文字（'9'/':'）で比較する分岐は 0x39/0x3A 生バイト照合で機械発見**／**多数 caller の小さな thiscall はデータ構造 accessor の匂い**（`FUN_0046B680` の 40+ callers）。
 - **本日 push 累計（セッション）**: v405 → … → v532 `44f71527` →（本件 v533 を本 commit で push）＝**129裁定**。
 - **次**: V-534-1..3 → 旧残点（form+0x10 キュー／本體読込内部／topic リスト登録）。supermemory 未登録129件（v405..v533）は MCP 復帰待ち。
+
+## 2026-11-18 (iz) — 旧残点群消化第78弾 v534（V-534-1..3 部分完遂・旧 V-406-3 継続第64弾）: **`FUN_00450080`＝ヘッダ読込＋formID mod byte 補正・`FUN_00450F10`＝sub-record ヘッダ 6B 読込（'XXXX' 分割再帰）・`FUN_0044FEA0`＝sub スキップ・`FUN_00451A60`＝TESFile Open/Rewind（`+0x258`=fileSize 書き込み元＋'TES4' 先頭検証＋'AGGR' スキップ）を確定**・**`FUN_004DB4A0` else 分岐は flags bit10 のみ（v533 のマスク記述は decompiler 副産物→訂正）**・**topic リスト追加経路を部分特定**
+
+- **成果物**: `tmp/re/v534_load_internals_ruling.md`（probe **v534_1..3 の3本 EXIT=0**）。台帳 **row510（bak359）**・`round_verify` **ALL OK**（rows 31..510 / total 396 / done 391 / open 5。row 内の「||」が表区切りと誤認されたため「または」に置換して復帰）。ai-todo **#151 note**・memory **939件**。
+- **① [確定] `FUN_00450080`＝レコードヘッダ 20B 読込＋formID mod byte 補正**: stream（`this+0x10`）`vtable[+4]` で `+0x23c..+0x24c` へ 0x14 バイト読み、失敗時 5 dword クリア→0。type が 'GRUP'/'TOFT' 以外なら: `FUN_0044FD60(byte[+0x24b]+1)`（＝`this+0x3f4` プラグイン配列 `[n-1+idx*4]`）の要素 **`+0x400` バイトを formID 最上位に焼く**。配列無ければ (a) 上位!=0xFF かつ `FUN_0046ABD0`（0<n<0x800＝base formID 妥当性）なら `+0x24b=0`、(b) 自分の mod index `this+0x400` を焼く。
+- **② [確定] `FUN_00450F10`＝sub-record ヘッダ 6B 読込**: 'GRUP' または非 compressed（!(flags&0x40000)）なら stream から直接 `+0x250/+0x254` へ。compressed は `+0x414`（展開本体、無ければ `FUN_00450550`）＋`+0x260`（オフセット）から読む。**'XXXX'（0x58585858）なら `FUN_00450C20`＋`FUN_0044FEA0` で分割先頭を再帰解決**（v529 書込側と対称）。
+- **③ [確定] `FUN_0044FEA0`＝sub スキップ**: `+0x260 += +0x254+6`、>= 本体長（通常 `+0x240`、compressed は `+0x418`）で本体クリア 0、非 compressed は seek、`FUN_00450F10` で次 sub 読→1。
+- **④ [確定] `FUN_00451A60`＝TESFile Open/Rewind**: open（`FUN_004515B0(+0x120,+0x1c,0,0)`）または seek 0＋全クリア＋初回読。**`+0x258`（docs の `+600`）＝`stream vtable[+0x1C]`＝fileSize**（v533 EOF 判定 field の一次証拠）。**`+0x23c != 'TES4'`（`DAT_00b05e14`）なら return**（先頭検証）。ループで型 index==1（'AGGR'）を `FUN_004518B0(1)` で読み飛ばし、他で `+0x28c` 設定→seek 0 全クリア再読→終了。
+- **⑤ [確定・訂正] `FUN_004DB4A0` else 分岐＝flags bit10 のみ**: 生バイト `0x4DB507: mov eax,[esi+8]; shr eax,0xa; and al,1; ret`。v533 の「`flags>>10 & 0xFFFFFF01`」は **Ghidra の被せ（decompiler 副産物）→ 訂正**。TESForm `+0x78`（`0x4D7030`）と同一命令列で相互裏付け。
+- **⑥ [確定] `FUN_0044FAA0` の ecx＝リスト先頭 item**（`0x4DB4F7: mov ecx,edi`、edi=`FUN_0046B680(form,-1)`）。ゲートは「先頭 item が `+0x3dc` bit0 を立てていないこと」。item の型は [未確定]（残点）。
+- **⑦ [確定] `FUN_0067B1E0`＝{item,next} 8B セル末尾 append**（callers 107）。
+- **⑧ [部分確定] topic リスト（`DAT_00b33a98+0x7c`）追加経路**: 直接即値書きは無く append/push 経由。TESTopic 領域 caller＝`0x52F97C`（新会話 `FUN_0052F830→52F790→52F010`）/`0x52FD02`（`52FC40`）/`0x530D33`/`0x53108E,0E0,53`（`530FB0`）/`0x5313CF`（`531290`）。TESTopic ctor＝`FUN_0052FB40`（vtable `0xA5555C`・`byte+0x24=0x39`）。head 接続は `FUN_0052F010` 本体追跡待ち。
+- **残点 V-535-1..3**: 1=`b33a98+0x7c` 登録 call site 決着（`FUN_0052F010` 本体）【中】／2=`FUN_004DB4A0` の form `+0x10` リスト item 型（`+0x3dc` bit0 との対応）【中】／3=`FUN_004518B0`/`FUN_00451920` 本体【低】。
+- **教訓**: **Ghidra の「`>>n & 0xffffffXX`」は元の `shr/and al,1` の被せで、生バイトの and 幅が 1bit とは限らないと疑う**（本件 else マスクは 1bit のみと訂正）／**formID mod byte 補正はプラグイン配列（+0x3f4/+0x400）と vc（+0x24b）の合わせ技でロード時にだけ効く**（ESM index の核心）／**'XXXX' 分割 sub-record は書込（v529）と読込（F10）で対称の再帰構造**／**開いたファイルは 'TES4' 検証→'AGGR' スキップの 2 段を移植ローダも守る**。台帳 row に「||」を書くと round_verify の表パースが壊れる（「または」で表記）。
+- **本日 push 累計（セッション）**: v405 → … → v533 `8d7f81e1` →（本件 v534 を本 commit で push）＝**130裁定**。
+- **次**: V-535-1..3 → 旧残点（topic リスト登録本体／+0x10 item 型／AGGR スキップ内部）。supermemory 未登録130件（v405..v534）は MCP 復帰待ち。
