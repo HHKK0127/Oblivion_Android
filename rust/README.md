@@ -14,8 +14,8 @@ decides what moves.
 
 | Crate | Lines | What it holds |
 | --- | ---: | --- |
-| `nif-core` | 6,859 | Gamebryo/NetImmerse NIF container parser (header, object array, block walker, geometry, skin, keyframe data) |
-| `nif-ffi` | 1,773 | C ABI for `nif-core`, so the C++ `NIFParser` shim can decode meshes through Rust |
+| `nif-core` | 8,377 | Gamebryo/NetImmerse NIF container parser (header, object array, block walker, geometry, skin, keyframe data) |
+| `nif-ffi` | 2,292 | C ABI for `nif-core`, so the C++ `NIFParser` shim can decode meshes through Rust |
 | `bsa-core` | 1,770 | Oblivion `.bsa` archive reader (header, folder/file records, name table, zlib extraction) |
 | `esm-ffi` | 1,598 | C ABI for `esm-parser`, so the C++ Android layer can index Oblivion ESM/ESP plugins from Rust |
 | `esm-parser` | 899 | Oblivion ESM record parser (MGEF, Race, Class, BirthSign, WTHR, CLMT, etc.) |
@@ -30,7 +30,8 @@ decides what moves.
 | `cli` | 286 | Unified CLI for Oblivion RE tools |
 | `ess-parser` | 39 | Oblivion `.ess` SaveGame parser (SaveGame `0x465130` / LoadGame `0x465860` layout) |
 
-Totals: **17,830 lines across 29 `.rs` files.**
+Totals: **19,867 lines across 29 `.rs` files.** Counted as `src/` + `tests/` +
+`benches/` under each crate, so a crate that grew tests grows with it.
 
 ## The six C ABIs
 
@@ -58,7 +59,7 @@ Before touching anything here, run from `rust/`:
 cargo test --offline --workspace
 ```
 
-Baseline **176 passed / 31 suites / 0 failed** — the same command CI runs for
+Baseline **194 passed / 31 suites / 0 failed** — the same command CI runs for
 the host archives. An empty suite is still a suite; the count is 31, not the
 number of non-zero lines.
 

@@ -12,7 +12,7 @@ Run before touching a crate, and again before committing:
 cargo test --offline --workspace      # from rust/
 ```
 
-Baseline **176 passed / 31 suites / 0 failed**. `OBLIVION_RUST_OFFLINE=1` (or
+Baseline **194 passed / 31 suites / 0 failed**. `OBLIVION_RUST_OFFLINE=1` (or
 `--offline`) is the norm: the tree must build without network. Per-crate runs
 (`cargo test --offline -p nif-core`) are for the tight loop, but the workspace
 run is what gates the change, because a shared type move breaks neighbours.
