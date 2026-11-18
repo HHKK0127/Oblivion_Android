@@ -3559,3 +3559,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **不明 ctor の実体クラスは vtable ストア即値（primary/secondary）→COL→TD で RTTI 一撃**（type byte と相互裏付け）／**map 挿入側は ecx 即値で機械全列挙**（FE90/TESRace ctor/AC20 の 3 供給源が一度に見える）／**disp32 で書かれないグローバルは singleton のメンバオフセット経由を疑う**／EditorID 検索が効かない時は 4 供給路（20 race＋85 topic＋19 STAT＋ファイル起動時）の欠落を確認。
 - **本日 push 累計（セッション）**: v405 → … → v540 `2709e794` →（本件 v541 を本 commit で push）＝**137裁定**。
 - **次**: V-542-1..3 → 旧残点（ブック割当元／STAT 名前窓／基底 ctor チェーン）。supermemory 未登録137件（v405..v541）は MCP 復帰待ち。
+
+## 2026-11-18 (jh) — 旧残点群消化第86弾 v542（V-542-1..3 完遂・旧 V-406-3 継続第72弾）: **ブック系マネージャ singleton `0xB13970` の正体＝`NiTArray<Tile*>`（RTTI 実測）と確定し、要素追加ヘルパ `FUN_0042BB90`（NiTArray::InsertAt）で disp32 直書き不在を完全説明**・**`FUN_00591C50`/`FUN_00591B40`＝`TileMenu`（RTTI 実測）の open/close 対（窓 ID 4002/1004/1007・"ERROR: Cant find menu class!"）**・**AC20 冒頭＝formID map `0xB0613C` からの 26 エントリ静的検索（＋TESEyes singleton 解決）**・**V-541 訂正: `4B2FF0`＝`TESBoundObject` ctor／`46D7E0`＝`TESModel` ctor（TESFullName 補助は誤り）**（RTTI 実測で連鎖確定）
+
+- **成果物**: `tmp/re/v542_book_tiles_ruling.md`（probe **v542_1（1本・RTTI/窓走査内蔵）EXIT=0**）。台帳 **row518（bak367）**・`round_verify` **ALL OK**（rows 31..518 / total 404 / done 399 / open 5）。ai-todo **#151 note**・memory **947件**。
+- **① [確定]**: `0xB13970` の vtable `0xA69680`→COL `0xAC140C`→TD **`.?AV?$NiTArray@PAVTile@@@@`**。`FUN_0042BB90`＝**NiTArray::InsertAt**（`count=word[ecx+0xa]`、idx<count で `word++`・holder!=0 なら `word[ecx+0xc]++`・`[ecx+4][idx*4]=value`）。→ `0xB13974/7A` が disp32 で増えない理由＝`[ecx+4]/[ecx+0xA]` 経由と説明完了。
+- **② [確定] open/close 対**: `591C50`＝arg0==**4002** のとき `587B20(1,floor)`→`587D20`（TileMenu 生成・vtable `0xA6AF14`）→`[this+0x44]=menu`（無ければ **`"ERROR: Cant find menu class!"`** 0xA6B178）→`[menu+0x20]=窓ID`→`588BD0(4005)`×2→`58CEB0(4011)`→**`42BB90(0xB13970, floor−0x3E9, …)`**（id-1001 0 起点）。`591B40`＝保持窓 ID が **1004/1007** でなければ `589D60`（閉）へ。
+- **③ [確定] V-542-2**: AC20 冒頭 `lea eax,[esp+0x14]; push 0x1A; mov ecx,0xB0613C; call 55E000`＝**formID マップからの 26 エントリ静的検索**（*keyslot 更新で配列受信）→`9832E6(TESEyes TD 0xB0541C)` で eyes singleton 解決。19 周の slot 窓 `[esp+0x6c]` は base game 固定 form 配列由来。
+- **④ [確定・訂正] V-542-3（RTTI）**: `0xA4385C`→**`.?AVTESBoundObject@@`**（`4B2FF0`＝TESObjectSTAT 基底 ctor・`46C460`→vtable→+0x18..0x20=0）／`0xA3C24C`→**`.?AVTESModel@@`**（`46D7E0`＝TESModel サブ ctor。**v541「TESFullName 補助」は誤り→訂正**）。チェーン `TESObjectSTAT:TESBoundObject:TESForm`・型表 28='STAT' と type byte 0x1C 整合。
+- **残点 V-543-1..3**: 1=`587B20`/`587D20` 本体＋メニュークラス登録テーブル【中】／2=`DAT_00b3a6e0`（582160）クラス名【低】／3=AC20 の 26 エントリキー一覧【低】。
+- **教訓**: **disp32 に出ないグローバル増減は singleton のメンバオフセット経由が定石**（thiscall 頭の `mov ecx,imm32` を辿る）／**vtable 即値→COL→TD の RTTI 実測は ctor チェーン解析の最終手段**（TESFullName 誤りも一撃訂正）。
+- **本日 push 累計（セッション）**: v405 → … → v541 `9b0432e0` →（本件 v542 を本 commit で push）＝**138裁定**。
+- **次**: V-543-1..3 → 旧残点（メニュークラス表／582160 singleton／AC20 キー一覧）。supermemory は復帰・集約 5 エントリ＋索引登録済（台帳 row 単位の詳細は正本 md 参照）。

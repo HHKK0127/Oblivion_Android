@@ -1311,6 +1311,13 @@
   > ⑤ おまけ: 0xB03800 は type_info 名ストリングエリア（'.?AVTESObjectSTAT@@' 文字列群）先頭付近＝RTTI 名前ストリング。v541_1 の 'Unable to get' 検索は "Unable to get back buffer."（0xA31F5C・DX 系）のみで AC20 ループ名は出ず（identity は RTTI で確定）。
   > 残点 V-542-1..3: 1=ブック本文配列の割当元メソッド本体追跡（BMSG/DOBM レコード対応）＋582160 クラス名【中】／2=AC20 スロット配列窓 [esp+0x6c] のロード元（静的 STAT 名前テーブル）【低】／3=FUN_004B2FF0（TESObjectSTAT 基底 ctor）チェーン＋46D7E0（TESFullName ctor）確定【低】。
   > 成果物: tmp/re/v541_stat_ctor_namemap_ruling.md、probe v541_1..6（全6本 EXIT=0）、台帳 row517（bak366）、STATE (jg)、memory 946件。教訓: 不明 ctor の実体クラスは vtable ストア即値（primary/secondary）→COL→TD で RTTI 一撃確定（type byte 0x1C=STAT と相互裏付け）／map の挿入側は ecx 即値で機械全列挙でき FE90/TESRace ctor/AC20 の 3 供給源が一度に見える／disp32 で書かれないグローバルは singleton のメンバオフセット経由を疑う。supermemory 未登録は v405..v541 の137件。
+  > v542 完遂（V-542-1..3 / 旧残点 V-406-3 第72弾）: ブック系マネージャ正体＝NiTArray<Tile*>・open/close 対確定・AC20 スロット窓供給元確定・TESObjectSTAT 基底チェーン/補助 ctor 訂正。
+  > ① [確定] ブック本文配列管理者 singleton 0xB13970 の vtable 0xA69680 の RTTI＝'.?AV?$NiTArray@PAVTile@@@@'（COL 0xAC140C→TD）。要素追加ヘルパ FUN_0042BB90＝NiTArray::InsertAt 相当（count=word[ecx+0xa]、idx<count で word++・holder!=0 なら word[ecx+0xc]++・array=[ecx+4] へ [eax*4]=value）。→ 0xB13974/7A が disp32 で増えない理由＝全て [ecx+4]/[ecx+0xA] 経由と説明完了。
+  > ② [確定] FUN_00591C50（open 側）＝TileMenu（vtable 0xA6AF14・RTTI '.?AVTileMenu@@'）生成＋窓 ID 管理: arg0==0xFA2(4002) 時のみ 9828C0(float)→587B20(1,floor)→587D20→[this+0x44]=menu（無ければ "ERROR: Cant find menu class!" 0xA6B178）→584880(0)→[menu+0x20]=menu->vt[+0x34]()（窓ID）→588BD0(4005)×2（fcomp 境界）→584980→58CEB0(4011,..)→42BB90(0xB13970, floor-0x3E9,…)（id-1001 0 起点）。FUN_00591B40（close 側）＝this[+0x44] の窓IDが 1004/1007 でなければ 589D60（メニュー閉）へ＝ブック本文窓退避ゲート。BMSG/DOBM 直接対応なし（本文＝UI Tile 配列と確定）。582160＝DAT_00b3a6e0 インタフェース singleton getter [部分確定]。
+  > ③ [確定] V-542-2: AC20（FUN_0044AC20）冒頭＝formID map 0xB0613C から 26 エントリ静的検索（lea eax,[esp+0x14]; push 0x1a; mov ecx,0xb0613c; call 55E000＝*keyslot 更新で配列受信）→9832E6(0, TESEyes TD 0xB0541C, TESForm TD, 0, slot) で TESEyes シングルトン解決。19 周ループ slot 窓 [esp+0x6c]（+0xc formID/+0x10 名前）は base game 固定 form 配列由来と決着。
+  > ④ [確定・訂正] V-542-3 RTTI 実測: 0xA4385C COL 0xABADD4='.?AVTESBoundObject@@'＝4B2FF0 は TESObjectSTAT 基底（TESBoundObject）ctor（46C460→mov [esi],0xA4385C→+0x18/1c/20=0）。0xA3C24C COL 0xAB8398='.?AVTESModel@@'＝46D7E0 は TESModel サブオブジェクト ctor（v541 の『TESFullName 補助』は誤り→訂正）。チェーン TESObjectSTAT:TESBoundObject:TESForm・型表 28='STAT' と type byte 0x1C 整合。
+  > 残点 V-543-1..3: 1=587B20（メニュークラス検索 kind=1,id）/587D20（生成）本体＋メニュークラス登録テーブル（"Cant find menu class" の裏）【中】／2=DAT_00b3a6e0（582160 singleton）クラス名・生成元【低】／3=AC20 の 26 エントリ静的 formID キー一覧【低】。
+  > 成果物: tmp/re/v542_book_tiles_ruling.md、probe v542_1（1本 EXIT=0）、台帳 row518（bak367）、STATE (jh)、memory 947件。教訓: disp32 に出ないグローバル増減は singleton のメンバオフセット経由が定石（thiscall 頭の mov ecx,imm32 を辿れ）／vtable 即値→COL→TD の RTTI 実測は ctor チェーン解析の最終手段（TESFullName 誤りも一撃訂正）。supermemory 未登録は v405..v542 の138件（集約登録は ①〜④＋索引済み・⑤以降は順次）。
 - [x] **#148** 【作製・既存バグ（2026-11-15 に #146 の verifier レビューで発見）】ESMFile::decodeClass（esm_reader.cpp:1882）が std::memcpy(&clas.flags, data->data.data(), 4) で uint8_t 型の ClassData::flags（esm_reader.h:731）へ4バイトを書込み、構造体の外へ3バイトを破イトを破壊している（隣接メンバー/スタックの踏みつけ）。証拠: ①ビルドログ %TEMP%/opencode/build_racefilter.log に -Wfortify-source: destination buffer has size 1, but size argument is 4 が変更行と無関係の既存箇所から出る ②base 024eda1a の esm_reader.cpp:1874 にも同一コード＝本リポジトリに元から存在 ③CLAS の DATA は本来16バイト構造（flags 4B + specialization 1B + ...）のはずで、ClassData 側の型（uint8_t）と読み幅（4B）が不整合＝どちらが正かは実データで要確認。【修正方針（推測禁止）】まず Oblivion.esm の CLAS DATA 実バイトと ClassData の意図を確認（flags が u32 なら ClassData::flags を uint32_t に広げ、u8 なら読み幅を1に縮める。EyesData/HairData の flags は uint32_t、ClassData のみ uint8_t という不揃いが手がかり）→ 正典/実データで型を確定してから最小修正。検証: ビルドで fortify 警告が消えること＋CLAS を読む既存経路が壊れないこと。関連: #146（発見の場）/#96/#101 `#android` `#esm` `#fix` `#oblivion` `#safety` (2026-11-18)
   > 【実装・検証の記録（2026-11-15）】
   > ①**実データで型を確定**: `oblivion_esm_pull/Oblivion3.esm`（device の Oblivion.esm と同サイズ 277,504,985B）を Python で走査 → CLAS **111件**、DATA 長は **48B(31件)/52B(80件)**＝タスク記載の「16バイト構造」は誤り。全111件で `+0x00/+0x04` が属性 enum 0..7・非同一、`+0x0C` の7スキルが 0x0C..0x20 の重複なし、`+0x28` は 0/1/2 のみ（bit0 autocalcs・bit1 guard と整合）。Warrior=Strength/Endurance＋Armorer..HeavyArmor、Mage=Intelligence/Willpower、Thief=Speed/Agility で既知仕様一致。→ 正典 `v261_clas_service_flags.md` のフィールド表（+0x00 属性1／+0x04 属性2／+0x08 未読／+0x0C 7×u32 スキル／+0x28 u8 flags／+0x2C 未読／+0x30 u8 trainer index）と完全一致。
@@ -2118,11 +2125,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2146,4 +2148,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-18 14:14:08
+**ai-todo** | Last Updated: 2026-11-18 14:31:58
