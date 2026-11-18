@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-18T05:57:29Z",
+  "lastUpdated": "2026-11-18T06:43:38Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13898,14 +13898,31 @@
         "window-ids"
       ],
       "content": "2026-11-18 旧残点群消化第87弾 v543（probe v543_1..2 全2本 EXIT=0）＝V-543-1..2 完遂・V-543-3 自己格下げ・旧 V-406-3 継続第73弾: 成果物 tmp/re/v543_menu_factory_ruling.md・台帳 row519（bak368）・round_verify ALL OK（rows 31..519 / total 405 / done 400 / open 5）・STATE (ji)・ai-todo #151 note。[確定] FUN_00587B20＝singleton DAT_00b3a708 の lazy getter: create かつ 0 なら alloc(1) をそのまま DAT に代入し FUN_004E4A10(0x33)（型 0x33=51 生成通知）を設定前後で各1回。591C50（v542）の \"ERROR: Cant find menu class!\"（0xA6B178）は 587B20 側 singleton 不在時と接続完了。[確定] FUN_00587D20＝窓 ID ごとの巨大 switch メニューファクトリ（別テーブルは無い [確定負]）: case 1001..1051 の 47 組（欠番 1029/1031/1033/1050）、各 case=alloc(size)→専属 ctor。1001->5BC450(0x100)/1002->5A9B00(0x58)/1003->5D9AD0(0xB4)/1004->5A6780(0x94)/1005->5A4660/1006->5A7FE0/1007->5AD0D0(0x74)/1008->597A90/1009->59E4E0/1010->5A8DF0/1011->5A3BE0/1012->5D6870/1013->5BD960/1014->5AF310/1015->5BD580/1016->5C04F0/1017->595150/1018->587BC0/1019->5DD960/1020->5A3310/1021->5874A0/1022->5B1F20/1023->5B7360/1024->5B3D30/1025->5BCE40/1026->595BE0/1027->5AC550/1028->5DD200/1030->596EF0/1032->5D5610/1034->5BDFF0/1035->5D1000/1036->5C4E40/1037->5D8900/1038->5AE450/1039->5D3290/1040->593050/1041->5D73C0/1042->5A1390/1043->59F9B0/1044->5B5F20/1045->596420/1046->5C0B50/1047->59C960/1048->5D3EB0/1049->5CE680/1051->5879C0。[確定・生成元] DAT_00b3a6e0（582160 singleton）=if(create&&==0){alloc(0x134)→5802B0(this)→581CC0(arg2)} の lazy 生成。FUN_005802B0＝0x134 サイズ UI マネージャ ctor（+0x74=fldz、+0x54..0x70/+0xc8..0xdc=0）。v540 の pending バイト +0xB0 はこのマネージャのフィールド。クラス名 [未確定]。[格下げ・注記] AC20 の lea eax,[esp+0x14]; push eax; push 0x1a; mov ecx,0xb0613c; call 55E000 は push 順が docs 2 引数仕様と不一致→v542 の『26 エントリ検索 [確定]』は『件数 26・配列受信』まで [確定]、機構は [未確定] に訂正（キー配列の事前書込み命令も窓内未発見＝0 クリアのみ・低 formID 26 個説は [推定]）。残点 V-544-1..3（1=587D20 各 ctor の vtable RTTI クラス名サンプル（1001/1004/1007/1030）で menu window 正体確定【中】／2=call 55E000 規約決着（先頭全行読/別プロトタイプ検索）＋キー配列書込み元【中】／3=FUN_004E4A10(0x33) 型 manager 取得 API 本体【低】）。教訓: メニュー登録テーブルを疑うと巨大 switch 直接ファクトリだった（case→alloc size→ctor 抽出は機械化可）／呼び出し規約と decompiler プロトタイプが不一致なら [確定] を自己格下げして注記（推測で機構を固定しない）／lazy singleton は create フラグ型（0xB3A708=1B・0xB3A6E0=0x134B）と生成通知（4E4A10(0x33)）の組合せで特定。本日 push: v405→v542（c3a93278）138件＋本件 v543。v 採番 v543 消費（次=v544）。"
+    },
+    {
+      "id": "151-v544-menu-classes-2026-11-18",
+      "timestamp": "2026-11-18T06:43:38Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v544",
+        "menu",
+        "rtti",
+        "ui",
+        "calling-convention"
+      ],
+      "content": "2026-11-18 旧残点群消化第88弾 v544（probe v544_1..4 全4本 EXIT=0）＝V-544-1..3 完遂・旧 V-406-3 継続第74弾: 成果物 tmp/re/v544_menu_classes_ruling.md・台帳 row520（bak369）・round_verify ALL OK（rows 31..520 / total 406 / done 401 / open 5）・STATE (jj)・ai-todo #151 note。[確定] メニューファクトリ窓 ID↔クラス 47件（ctor 全てが基底 584640 呼び後 mov [esi],imm vtable ストア→COL→TD 実読）: 1001 MessageMenu(A6CE5C)/1002 InventoryMenu/1003 StatsMenu/1004 HUDMainMenu(A6BEE4)/1005 HUDInfoMenu/1006 HUDReticle/1007 LoadingMenu(A6C40C)/1008 ContainerMenu/1009 DialogMenu/1010 HUDSubtitleMenu/1011 GenericMenu/1012 SleepWaitMenu/1013 PauseMenu/1014 LockPickMenu/1015 OptionsMenu/1016 QuantityMenu/1017 AudioMenu/1018 VideoMenu/1019 VideoDisplayMenu/1020 GameplayMenu/1021 ControlsMenu/1022 MagicMenu/1023 MapMenu/1024 MagicPopupMenu/1025 NegotiateMenu/1026 BookMenu(595BE0)/1027 LevelUpMenu/1028 TrainingMenu/1030 ClassMenu/1032 SkillsMenu/1034 PersuasionMenu/1035 RepairMenu/1036 RaceSexMenu/1037 SpellPurchaseMenu/1038 LoadgameMenu/1039 SaveMenu/1040 AlchemyMenu/1041 SpellMakingMenu/1042 EnchantmentMenu/1043 EffectSettingMenu/1044 MainMenu/1045 BreathMenu/1046 QuickKeysMenu/1047 CreditsMenu/1048 SigilStoneMenu/1049 RechargeMenu/1051 TextEditMenu。→ v542 close ゲート 1004/1007＝HUD とローディングの保護。591C50 arg0==4002 は窓 ID でなく type/ID 第1引数 [部分確定]。[確定] FUN_0055E000 規約（esp 追跡）=thiscall(map, key, out): callee push ebx 後 ebx=[esp+8]=arg1=最後の push=キー値そのものを hash へ、[esp+0x14]=arg2=out へ node[8](value) を hit 時書く。miss は xor al,al; ret 8=0（docs の hash&0xffffff00 は誤訳→訂正）。AC20 冒頭 lea eax,[esp+0x14]; push eax; push 0x1a; mov ecx,0xb0613c; call 55e000=55E000(map=0xB0613C, key=0x1A, out=&arr)＝固定 ID 0x1A の form を引き arr[0] へ書く単発検索。**v542 の『26 エントリ bulk 受信』は [確定負] に最終訂正**（0x1A は個数でなくキー。直後 neg al/sbb/and でヒット時のみ arr 値が TESEyes cast(9832E6 TD 0xB0541C) へ）。[部分確定] FUN_004E4A10=thiscall(0x33 singleton) grow/reset ヘルパ（+8 word 現在値/+0xa word 要素数/+0xc cap 系/+4 配列 ptr。arg==[+8] 早退・arg<[+a] で後方 0 クリア＋cap 減算・[+8]=arg）。0x33 実体は [未確定]。教訓: capstone の op_str には mnemonic が含まれない（mnemonic+' '+op_str を照合しないと vtable 探索が全空振り＝v544_2 の失敗）／docs の返り値式は生バイトの ret/flag と必ず突合（miss=0 が正）／引数規約は ret N＋push 順＋esp 追跡で機械決着（0x1A の読み捨て/キー確定）。残点 V-545-1..3（1=FUN_00584640 menu 基底 ctor の基底 vtable RTTI クラスタ【低】／2=0x33 singleton（DAT_00b3a708 先の +4 配列）生成元・4E4A10 this 解決経路【中】／3=591C50 type 4002 の採番先窓 ID と BookMenu(1026) 等の対応【中】）。本日 push: v405→v543（a5b14444）139件＋本件 v544。v 採番 v544 消費（次=v545）。"
     }
   ],
   "metadata": {
-    "totalEntries": 948,
+    "totalEntries": 949,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-18T05:57:29Z",
-    "entry_count": 948,
-    "last_updated": "2026-11-18T05:57:29Z"
+    "lastUpdated": "2026-11-18T06:43:38Z",
+    "entry_count": 949,
+    "last_updated": "2026-11-18T06:43:38Z"
   }
 }
