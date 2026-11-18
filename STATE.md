@@ -3664,3 +3664,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-551-1..3**: 1=`0xB3B0CC` の実体（値 `0x6F4320B3` の生成元）＋`58DA55` ガードの意味【中】／2=`589EB0` の生成物（`StringListElement@Tile` 16B）の構造＋`6AA320` list の走査側【中】／3=`TileMenu` の他 slot（`0x591C20`/`0x5900D0`/`0x5900E0`）＋`589D60` の役割【低】。
 - **本日 push 累計（セッション）**: v405 → … → v549 `78f8e8da` →（本件 v550 を本 commit で push）＝**146裁定**。
 - **次**: V-551-1..3 → 旧残点（`0xB3B0CC`／`StringListElement`／`TileMenu` slot）。supermemory は集約①〜⑨＋索引登録済。
+
+## 2026-11-18 (jq) — 旧残点群消化第95弾 v551（V-551-1..3 完遂・旧 V-406-3 継続第81弾）: **属性表の実体＝28 個の `NiTList<StringListElement@Tile*>` バケット配列（`0xB3B0B0` 起点・各 16 バイト）と確定**・**`0xB3B0CC`＝`0xB3B0B0+0x1C`（bucket[1] の count）＝BSS（読み 1・書き 0）で `58DA55` は一度きり初期化ガード**・**`TileMenu` の他 slot（`+0x0C`/`+0x10`）は窓 ID 905 と `0xA6AF30` の定数仮想**・**★ハーネス `find_off` の BSS バグを発見・修正**
+
+- **成果物**: `tmp/re/v551_attr_buckets_ruling.md`（probe **v551_1..4（4本）EXIT=0**）。台帳 **row527（bak376）**・`round_verify` **ALL OK**（rows 31..527 / total 413 / done 408 / open 5）。ai-todo **#151 note**・memory **956件**。
+- **① [確定] 属性表＝28 `NiTList` バケット**: `984BCF`（配列 ctor・要素 ctor `589860`）が `push 0x1c(28); push 0x10(16); push 0xB3B0B0` で構築。要素 ctor `589860` は `[eax]=0xA6A1BC`＝**`NiTList<StringListElement@Tile*>`**（vtable `0xA6A1BC`→TD `.?AV?$NiTList@PAVStringListElement@Tile@@@@`・`+4/+8/+0xC`＝head/tail/count）。`58A189`: `shl ecx,4; add ecx,0xB3B0B0`、`6AA320` が先頭挿入。走査は `589890`。`589EB0`＝`StringListElement@Tile`（16B）生成。バケット index: 1..26=`a`..`z`（大文字小文字同一）、27=`&` エンティティ、0=無効。
+- **② [確定] `0xB3B0CC`＝`0xB3B0B0+0x1C`＝bucket[1]（'a'）の count**: 読みは `58DA55` の 1 件のみ・**書き 0 件**（`6AA320` の `add [esi+0xC],1` で間接更新）。`58A1C0` が `abs`/`add`/`alpha`… を bucket[1] へ登録すると非 0 になり 2 回目以降スキップ＝**一度きり初期化ガード**。
+- **③ [重要・ハーネス修正] v551_1/3 の「難読化」は誤り**: `find_off` の `sva<=rva<sva+max(vs,rsz)` が **raw 外（BSS）を次セクション `.bind`（raw `0x733200..`）から誤読**していた。`.data` は raw `0x700C00..0x731800` が VA `0xB02000..0xB32C00` のみを覆い、`0xB3B0B0`/`0xB3B0CC` は **BSS＝ファイル上ゼロ**。修正＝仮想範囲は vs・実データは raw のみ・raw 外は None。→ **v551 を [確定] に訂正（難読化説は [確定負]）**。なお BSS 値を決定的証拠にしたのは v551 のみで、**v549/v550 の設定表読出（`0xB13988..`/`0xB135F8..`）は raw 範囲内で有効**。
+- **④ [確定] `TileMenu` の他 slot**: `+0x0C`=`5900D0`（`mov eax,0x389; ret`＝窓 ID 905="menu" 定数）／`+0x10`=`5900E0`（`mov eax,0xA6AF30; ret`）／`+0x08`=`591C20`（`591DC0`→`707530`: `+0x50`=0.0f, `+0x54`++＝フェード初期化）／`+0x00`=dtor `5900F0`→`591B70`。`589D60` は `vtable[+0x0C]()==0x386`(902) のとき `707530`（画像要素更新）。
+- **⑤ 教訓（ハーネス）**: **`find_off` は「仮想範囲＝vs」「実データ＝raw 範囲のみ」で判定**しないと raw 外（BSS）を次セクションから誤読し、存在しない高エントロピー値を実在のように報告する／**グローバルが配列内フィールド**（`0xB3B0CC`＝`0xB3B0B0+0x1C`）であることは「書き 0 件・読み 1 件」＋起点との差分で機械同定できる／**一度きり初期化ガードは配列要素（カウント等）をフラグ代わりに使う**ことがある。
+- **残点 V-552-1..3**: 1=バケット index 0..27 と先頭文字の写像実測【中】／2=衝突時の name 照合＋`6AA320` の allocator【中】／3=`589D60` の `0x386` 判定と `707530` の引数意味【低】。
+- **本日 push 累計（セッション）**: v405 → … → v550 `0db5205d` →（本件 v551 を本 commit で push）＝**147裁定**。
+- **次**: V-552-1..3 → 旧残点（バケット写像／衝突照合／`589D60`）。supermemory は集約①〜⑨＋索引登録済。

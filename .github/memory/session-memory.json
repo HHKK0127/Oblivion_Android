@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-18T07:47:59Z",
+  "lastUpdated": "2026-11-18T08:01:19Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -14021,14 +14021,33 @@
         "rtti"
       ],
       "content": "2026-11-18 旧残点群消化第94弾 v550（probe v550_1..4 全4本 EXIT=0）＝V-550-1..3 完遂・旧 V-406-3 継続第80弾: 成果物 tmp/re/v550_safezone_tilemenu_ruling.md・台帳 row526（bak375）・round_verify ALL OK（rows 31..526 / total 412 / done 407 / open 5）・STATE (jp)・ai-todo #151 note。[確定] クロップ設定名: 0xB135E0..0xB1361C は (値, nameptr) 対（8 バイト stride・値が先）= 0xB135F8=20→iSafeZoneX:Interface／0xB13600=20→iSafeZoneY:Interface／0xB13608=20→iSafeZoneXWide:Interface／0xB13610=20→iSafeZoneYWide:Interface。getter 0xA24820/0xA24880 が push 0xB135F8/0xB13608; mov ecx,0xB07CFC; call 65C620 で照会。57D330 は [0xB06C50=480]/[0xB06C4C=640]=0.75 > [0xA68D08]=0.74 でワイド判定し iSafeZoneXWide(0xB13608) or iSafeZoneX(0xB135F8) を返す（57D390 は Y 側）＝クロップ実体はセーフゾーン設定（v549 の『アスペクト比クロップ』は [部分確定]）。[確定] 591C50 の仮想 slot と帰属クラス: .?AVTileMenu@@（vtable 0xA6AF14 COL 0xAC1D98→TD 0xB13A74）の slot +0x14＝open 仮想。+0x00=dtor 0x5900F0／+0x08=0x591C20／+0x14=0x591C50／+0x18=0x591B40。591B40 は [this+0x44]（menu）の窓 ID（vtable[+0x34]）を 0x3EC(1004 HUDMainMenu)/0x3EF(1007 LoadingMenu) と比較し一致しなければ 589D60 へ jmp＝HUD/ローディング中スキップ。callers は全て 0＝vtable 経由のみ。[確定] 属性表の実体: 58A112: movsx esi,al; sub esi,0x40; cmp esi,0x20; jle; sub esi,0x20＝文字コード算術→shl ecx,4; add ecx,0xB3B0B0＝スロット 0xB3B0B0+index*16 へ 6AA320（intrusive list insert）。0x5F('_') 経路は 0xB13BC4（RTTI NiTArray<StringListElement@Tile*>・vtable 0xA6A0F0）へ 42D800（append→4E4A10 grow）。0xB3B0CC は命令からの参照が 58DA55 の 1 箇所のみ＝起動時 CRC/アンチタンパ系の値 [部分確定]。教訓: 設定グローバルは『(値, nameptr) 対の配列』で並ぶ（0xB135E0.. は 8 バイト stride・値が先）——nameptr 側の文字列を読めば設定名が一撃／RTTI の COL→TD 実読で『この仮想はどのクラスのどの slot か』が機械確定（591C50＝TileMenu +0x14）／属性名の登録先は先頭文字の文字コード算術（sub 0x40 / −0x20）＋ shl 4 で 16 バイトスロット配列と判明。残点 V-551-1..3（1=0xB3B0CC の実体（値 0x6F4320B3 の生成元）＋58DA55 ガードの意味【中】／2=589EB0 の生成物（StringListElement@Tile 16B）の構造＋6AA320 list の走査側【中】／3=TileMenu の他 slot（0x591C20/0x5900D0/0x5900E0）＋589D60 の役割【低】）。本日 push: v405→v549（78f8e8da）145件＋本件 v550。v 採番 v550 消費（次=v551）。"
+    },
+    {
+      "id": "151-v551-attr-buckets-2026-11-18",
+      "timestamp": "2026-11-18T08:01:19Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v551",
+        "menu",
+        "tilemenu",
+        "nitlist",
+        "attribute-table",
+        "harness-fix",
+        "bss"
+      ],
+      "content": "2026-11-18 旧残点群消化第95弾 v551（probe v551_1..4 全4本 EXIT=0）＝V-551-1..3 完遂・旧 V-406-3 継続第81弾: 成果物 tmp/re/v551_attr_buckets_ruling.md・台帳 row527（bak376）・round_verify ALL OK（rows 31..527 / total 413 / done 408 / open 5）・STATE (jq)・ai-todo #151 note。[確定] 属性表の実体: 0xB3B0B0 は 984BCF（配列 ctor・要素 ctor 589860）で構築される 28 要素×16 バイトの配列（push 0x1c(28); push 0x10(16); push 0xB3B0B0）。要素 ctor 589860 は [eax]=0xA6A1BC＝NiTList<StringListElement@Tile*>（vtable 0xA6A1BC→TD '.?AV?$NiTList@PAVStringListElement@Tile@@@@'・+4/+8/+0xC=0＝head/tail/count）。58A189: shl ecx,4; add ecx,0xB3B0B0 でバケット選択、6AA320 が先頭挿入（[esi]->vtable[+4] alloc→node[8]=*arg→[esi+0xC]++）。走査は 589890（[this+0x24]→[+0x10] 配列→NiTList 走査・0xB3FD44 探索）。589EB0 は StringListElement@Tile（16B: [0]=nameptr, [4]=?, [8]/[0xC]=0, [0xE]=word）を生成。バケット index: 1..26=a..z（大文字小文字同一）, 27='&' エンティティ, 0=無効。[確定] 0xB3B0CC = 0xB3B0B0+0x1C = bucket[1]（先頭文字 'a'）の count フィールド（'a'=0x61→0x61-0x40=0x21>0x20→−0x20=1）。読みは 58DA55 の cmp dword [0xB3B0CC],ebx 1 件のみ・書き 0 件＝6AA320 の add [esi+0xC],1 で間接更新。58A1C0 が 'abs'/'add'/'alpha'… を bucket[1] へ登録すると非 0 になり 2 回目以降スキップ＝一度きり初期化ガード。[重要・ハーネス修正] v551_1/3 で『0xB3B0B0 領域が高エントロピー＝難読化』と読んだのは find_off のバグ: 'sva<=rva<sva+max(vs,rsz)' だと raw 外（BSS）を次セクション .bind（raw 0x733200..）から誤読していた。.data は raw 0x700C00..0x731800 が VA 0xB02000..0xB32C00 のみを覆い、0xB3B0B0/0xB3B0CC は BSS＝ファイル上ゼロ。修正＝仮想範囲は vs・実データは raw のみ・raw 外は None。→ v551 を [確定] に訂正（難読化説は [確定負]）。なお BSS 値を決定的証拠にしたのは v551 のみで、v549/v550 の設定表読出（0xB13988../0xB135F8..）は raw 範囲内で有効。[確定] TileMenu の他 slot: +0x0C=5900D0（mov eax,0x389; ret＝窓 ID 905='menu' 定数）／+0x10=5900E0（mov eax,0xA6AF30; ret）／+0x08=591C20（591DC0→707530: +0x50=0.0f, +0x54++＝フェード初期化）／+0x00=dtor 5900F0→591B70。589D60 は [this+0x24]→要素先頭を取り vtable[+0x0C]()==0x386(902) のとき 707530（画像要素更新）。教訓（ハーネス）: find_off は『仮想範囲＝vs』『実データ＝raw 範囲のみ』で判定しないと raw 外（BSS）を次セクションから誤読し、存在しない高エントロピー値を実在のように報告する／グローバルが配列内フィールド（0xB3B0CC = 0xB3B0B0+0x1C）であることは『書き 0 件・読み 1 件』＋起点との差分で機械同定できる／一度きり初期化ガードは『配列要素（カウント等）をフラグ代わりに使う』ことがある。残点 V-552-1..3（1=バケット index 0..27 と先頭文字の写像実測【中】／2=衝突時の name 照合＋6AA320 の allocator【中】／3=589D60 の 0x386 判定と 707530 の引数意味【低】）。本日 push: v405→v550（0db5205d）146件＋本件 v551。v 採番 v551 消費（次=v552）。"
     }
   ],
   "metadata": {
-    "totalEntries": 955,
+    "totalEntries": 956,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-18T07:47:59Z",
-    "entry_count": 955,
-    "last_updated": "2026-11-18T07:47:59Z"
+    "lastUpdated": "2026-11-18T08:01:19Z",
+    "entry_count": 956,
+    "last_updated": "2026-11-18T08:01:19Z"
   }
 }
