@@ -3688,3 +3688,14 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-553-1..3**: 1=同名属性の解決順（先頭挿入 LIFO か検索側 `588BD0`/`588C10` の実装で決まるか）【中】／2=`707530` の `[ecx+0x9C]` リストの所有クラス＋`vtable[+0x4C]`（型 ID getter）の実体【中】／3=`589D60` の `4057B0` と `[this+0x2C]` のフラグ `0x20` 意味【低】。
 - **本日 push 累計（セッション）**: v405 → … → v551 `2c98edb5` →（本件 v552 を本 commit で push）＝**148裁定**。
 - **次**: V-553-1..3 → 旧残点（同名解決順／`707530` 所有／`4057B0`）。supermemory は集約①〜⑩＋索引登録済。
+
+## 2026-11-18 (js) — 旧残点群消化第97弾 v553（V-553-1..3 完遂・旧 V-406-3 継続第83弾）: **`588BD0`/`588C10` は属性バケットとは別の BST（`[ecx+0x18]`・word key）の getter と確定**・**`0x386`="image" は `5818D0`（`mov eax,0x386; ret`＝型 ID 定数仮想）が供給**・**`4057B0`＝`NiTexturingProperty::Map` の確保（`704100` ctor＋`42BB90` SetAt）＋フラグ `0x20`＝テクスチャ更新**
+
+- **成果物**: `tmp/re/v553_bst_typeid_ruling.md`（probe **v553_1..3（3本）EXIT=0**）。台帳 **row529（bak378）**・`round_verify` **ALL OK**（rows 31..529 / total 415 / done 410 / open 5）。ai-todo **#151 note**・memory **958件**。
+- **① [確定] `588BD0`/`588C10`＝BST getter**: `[ecx+0x18]`（BST ルート）から `node=[eax+8]`、`movzx ecx,word[node+0x18]` と key を比較し `jg` で左・`je` で `fld [node+4]`（float）・miss は `fldz`=0.0（`588C10` は同型 pointer getter・miss `0xA2F7EC`=空文字列）。**key は 16 ビットで `58A0A0` の `0xB3B0B0` バケットとは別系統**（callers 1073/57）。`5877D0` 等が `push 0xFA1/0xFAB/0xFA5`（属性 ID）で呼ぶ。
+- **② [確定] `0x386`="image" の供給元＝`5818D0`**: `mov eax,0x386; ret`（型 ID 定数仮想）。`589D60` が `this->vtable[+0xC]() == 0x386` で判定。`707530(this,typeId)` は `[ecx+0x9C]` リストを走査し `vtable[+0x4C]() == typeId` を返す＝型 ID による子要素検索（callers 220）。
+- **③ [確定] `4057B0`＝`NiTexturingProperty::Map` 確保**: `[esi+0x20]` リスト先頭を調べ空なら `push 0x10; call 401F00`（16B）→ `704100`（vtable `0xA7DBB4`＝`.?AVMap@NiTexturingProperty@@` 系 ctor）→ `42BB90`（`NiTArray::SetAt`）。`589D60` は "image" 要素でこれを呼び `[this+0x2C] に 0x20 を OR`＝**テクスチャ更新フラグ**。続けて `[this+0x34]` のリストを辿り各要素の `vtable[+0x18]()`（子要素更新）を呼ぶ。
+- **④ 教訓**: **「同じ key→値 getter」でも所有構造が違えば別系統**——`588BD0` は `[ecx+0x18]` の BST（word key）で `0xB3B0B0` バケットとは別物（取り違えない）／**型 ID 定数は `mov eax,imm; ret` の 3 バイト関数として機械同定**できる（`5818D0`）／**`mov eax,[esi+0x20]; mov edi,[eax]` の空チェック→alloc→ctor→SetAt の型で「リスト先頭の遅延生成」を同定**できる。
+- **残点 V-554-1..3**: 1=`588BD0` の BST を所有するクラス（`[ecx+0x18]` 持ち）と `0xB3B0B0` バケットとの役割分担（属性値 vs 名前→ID）【中】／2=`707530` の `[ecx+0x9C]` リストを持つクラス（`TileMenu`/`Tile`）＋`vtable[+0x4C]`（型 ID getter）の実装【中】／3=`589D60` の `[this+0x34]` リスト（子要素）の要素型と `vtable[+0x18]`（更新仮想）【低】。
+- **本日 push 累計（セッション）**: v405 → … → v552 `e943e4d0` →（本件 v553 を本 commit で push）＝**149裁定**。
+- **次**: V-554-1..3 → 旧残点（BST 所有／`[ecx+0x9C]` 所有／子要素リスト）。
