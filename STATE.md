@@ -3359,3 +3359,17 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **サイズ patch は「開いた位置をノードに記録→閉じる時に現在位置との差」の一点で読める**（`node+4 = pos − node+0x14` が決定的）／**「常に 0 のフィールド」は docs の代入サイト全列挙で [確定負] にできる**（推測で「バグ」と言わない）／**ジャンプテーブルは `.rdata` の 8 dword を実読すれば case→実装の対応が一撃**（decompiler の case 順を信じない）／**同じ vtable 内の `+0x30` と `+0xBC` を混同しない**／**`cmp` の直後が `jae`/`jge` かで不等号方向が反転するので必ず生バイトで確認する**／**リスト操作ヘルパ（push/pop）は「確保サイズ 8B＋head 差し替え」の形で機械同定できる**。
 - **本日 push 累計（セッション）**: v405 → … → v529 `cb710575` →（本件 v530 を本 commit で push）＝**126裁定**。
 - **次**: V-531-1..3 → 旧残点（`+0x30` call site／groupType 実データ／vtable 未読 slot）。supermemory 未登録126件（v405..v530）は MCP 復帰待ち。
+
+## 2026-11-17 (hz2) — キャラ作成まわり4修正を1コミットに（`800439f6`）＋ #159 の前提訂正
+
+- **ブランチ `fix-chargen-tabfit-esm-guard`（base `586542cc`）＝ commit `800439f6`（4ファイル・+55/−4・`git diff --check` 通過・作業ツリークリーン）**。コミット頻度を下げるため4点を1回にまとめた。内容:
+  1. **シートのタブラベルを shrink-to-fit**（`ui_character_sheet.cpp::renderTabButtons`）: 固定 0.5 では「Attributes」が 110px タブに収まらず、**後に描く隣タブの背景が尾を塗り潰して `Attribu` に見えた**。確認ラベル既存の bounded shrink（0.95 段階・上限48回）を流用し単語は切らない。
+  2. **race リストが空なら Done を拒否**（`ui_character_creation.cpp` 確定分支・`LOGW` ＋ `return true`）＝ **`raceFormID=0` を黙って書くのを塞いだ**（ESM 未読込時に種族なしのキャラが作られていた）。
+  3. **`update()` でリスト空のとき `loadRacesFromESM()` を60フレームに1回再試行**（新メンバ `raceRetryTicks_`）。根拠: `getAllRaces()` は `ESMManager::m_files` への**参照**を返し、パースワーカーは**ロックなし**で `push_back`（`esm_reader.cpp:3270/3284`）するため、毎フレーム読むのは競合窓を広げるだけ＝**間引きが必須**。
+  4. **#158: キャラ作成パネル表示中は DebugHUD を非表示**（`renderer.cpp` ~5427）＝パネルの `Name` タブとラベルに文字が乗っていた。
+- **検証（Pixel_API34・本ブランチのAPK・実測）**:
+  - **ESM を退避** → `[--] Oblivion.esm not found (will test without ESM data)` → **`Character creation blocked: no races available (ESM not loaded yet)`** で **`Character creation applied` が出ない**、Race タブは `No races available (ESM data not loaded)`、**パネル上に DebugHUD の文字が無い**（`%TEMP%/opencode/gA_race_tab_empty.png`）
+  - **ESM 復元** → `[OK] Loaded Oblivion.esm (async)` → **`race formID=0x00023FE9`** → `startGame()` → `Game world should now be visible`
+  - **撤回後のスモーク** → `sm_chargen.png`/`sm_ingame.png`: `skills -> player (21/21, Blade=15 Speechcraft=15)`・race `0x00023FE9`・クラッシュなし
+- **#159 の前提訂正（検証②で判明・実測・自分の誤り）**: 「IME を開くとサーフェースが 1920x573 に縮む」は**この構成では起きない**。`ime_open_state.png` でキーボードが実際に y≥570 を占有している状態でも、リサイズログは**全て `1920x1110`** で `573` は一度も出ない＝**IME はオーバーレイでウィンドウ/サーフェースを縮めない**。→実装した「リサイズ時に `setScreenSize` ＋ `getConfirmButtonY()` を可視域にクランプ」は **`screenHeight` が 1110 のままのため発動せずノーオペ**、かつコメントが効いていると誤解を招くので**撤回**（差分に残していない）。台帳の古い「IME 時は 1920x573」は **DebugMenu が縮む別経路**（コンソール EditText フォーカス時等）の観測だった。**正しい設計＝Kotlin 側の `WindowInsets(ime)` を native へ通知**（または `adjustResize` の再実験）→ ai-todo **#159** に記録済み。検証②の Done タップ（1467,549）が失敗したのもこのため（ボタンは y≈990 にありキーボード下）。
+- **残**: verifier（`800439f6`）結果 → push／RE **#156 #157 #162**・**#101** 裁定待ち。
