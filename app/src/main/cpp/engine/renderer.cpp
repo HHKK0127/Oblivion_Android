@@ -5422,8 +5422,13 @@ if (uiMessageBox && uiMessageBox->isVisible()) {
         inventoryUI->render();
     }
 
-    // Render Debug HUD
-    if (debugHUD) {
+    // Render Debug HUD. The character creation panel is a modal that owns the
+    // screen, and the overlay's text was landing on top of the Name tab and the
+    // field labels (#158), so it is dropped while that panel is up. The rest of
+    // the time it behaves exactly as before; what belongs on the top left during
+    // normal play is #156's call, not this one.
+    if (debugHUD && !(showCharacterCreation && characterCreationUI &&
+                      characterCreationUI->isVisible())) {
         debugHUD->render();
     }
 

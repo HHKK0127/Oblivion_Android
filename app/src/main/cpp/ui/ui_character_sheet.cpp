@@ -95,9 +95,10 @@ void UICharacterSheet::renderTabButtons() {
     glm::vec2 cp = getContentPosition();
 
     const char* tabLabels[] = { "Attributes", "Skills", "Effects" };
-    // 110 px per tab keeps the 3-tab strip (338 px) inside the 360 px panel, and the
-    // 0.5 label scale keeps "Attributes" (the longest label) from running into the
-    // next tab - at 0.7 the three labels overlapped into an unreadable smear.
+    // 110 px per tab keeps the 3-tab strip (338 px) inside the 400 px panel, and
+    // the label scale is stepped down until the label fits that tab: a fixed 0.7
+    // overlapped the three labels into an unreadable smear, and a fixed 0.5 still
+    // let "Attributes" run under the next tab.
     const float tabW = 110.0f;
     const float tabH = 26.0f;
     const float gap  = 4.0f;
@@ -116,8 +117,21 @@ void UICharacterSheet::renderTabButtons() {
         PlaceholderAssets::drawPanel(bx, by, tabW, tabH, bg, border);
 
         if (textRenderer) {
-            textRenderer->renderText(tabLabels[i], bx + 6.0f, by + 4.0f,
-                glm::vec3(0.1f, 0.1f, 0.1f), 0.5f);
+            // Step the scale down until the label fits its tab. The strip width
+            // (3 x 110 + gaps) fits the panel, but "Attributes" at a fixed 0.5 is
+            // still wider than the 110 px tab, and the next tab's background -
+            // drawn afterwards - paints over its tail, leaving "Attribu". Same
+            // bounded shrink the confirm labels use, so the word is never cut.
+            constexpr float kTabInset = 6.0f;
+            const float maxLabelW = tabW - 2.0f * kTabInset;
+            float labelScale = 0.5f;
+            for (int step = 0; step < 48 &&
+                 textRenderer->getTextWidth(tabLabels[i], labelScale) > maxLabelW;
+                 ++step) {
+                labelScale *= 0.95f;
+            }
+            textRenderer->renderText(tabLabels[i], bx + kTabInset, by + 4.0f,
+                glm::vec3(0.1f, 0.1f, 0.1f), labelScale);
         }
     }
 }

@@ -119,6 +119,28 @@ void UICharacterCreation::setPlayerName(const std::string& name) {
 
 void UICharacterCreation::update(float deltaTime) {
     UIPanel::update(deltaTime);
+    // The ESM is parsed on a worker thread, so the race list can still be empty
+    // when the panel opens (#161). Retry while it is: loadRacesFromESM() clears
+    // and refills, and it only calls applyRaceBonuses() once a race exists, so
+    // every poll while the list is empty touches nothing. The first non-empty
+    // refill does reset the attributes to 50 plus the race bonus - the same reset
+    // a race row tap already causes - while the skills, the selected skill and
+    // the open tab are left alone.
+    //
+    // Poll at most about once a second rather than every frame: getAllRaces()
+    // hands back a reference into ESMManager::m_files, which the worker publishes
+    // into without a lock (esm_reader.cpp:3270/3284), so reading it at frame rate
+    // would widen an existing race window for no benefit - the list only changes
+    // once, when the parse finishes.
+    if (!isVisible() || !availableRaces_.empty() || !esmManager) {
+        raceRetryTicks_ = 0;
+        return;
+    }
+    if (++raceRetryTicks_ < 60) {
+        return;
+    }
+    raceRetryTicks_ = 0;
+    loadRacesFromESM();
 }
 
 bool UICharacterCreation::onTouchDown(float x, float y, int pointerId) {
@@ -143,6 +165,16 @@ bool UICharacterCreation::onTouchDown(float x, float y, int pointerId) {
             if (onNameRejected) {
                 onNameRejected();
             }
+            return true;
+        }
+        // No race list means there is no TESRace to apply, and the original cannot
+        // reach the success tail without one. This used to fall through and write
+        // raceFormID=0, handing the engine a character with no race (#161); refuse
+        // the tap instead and leave the panel up, where the Race tab already says
+        // "No races available (ESM data not loaded)". update() keeps retrying the
+        // list, so the tap works as soon as the ESM finishes parsing.
+        if (availableRaces_.empty()) {
+            LOGW("Character creation blocked: no races available (ESM not loaded yet)");
             return true;
         }
         createdCharacter_.name = playerName_;
