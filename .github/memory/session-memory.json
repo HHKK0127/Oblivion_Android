@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-18T06:43:38Z",
+  "lastUpdated": "2026-11-18T06:53:05Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13915,14 +13915,31 @@
         "calling-convention"
       ],
       "content": "2026-11-18 旧残点群消化第88弾 v544（probe v544_1..4 全4本 EXIT=0）＝V-544-1..3 完遂・旧 V-406-3 継続第74弾: 成果物 tmp/re/v544_menu_classes_ruling.md・台帳 row520（bak369）・round_verify ALL OK（rows 31..520 / total 406 / done 401 / open 5）・STATE (jj)・ai-todo #151 note。[確定] メニューファクトリ窓 ID↔クラス 47件（ctor 全てが基底 584640 呼び後 mov [esi],imm vtable ストア→COL→TD 実読）: 1001 MessageMenu(A6CE5C)/1002 InventoryMenu/1003 StatsMenu/1004 HUDMainMenu(A6BEE4)/1005 HUDInfoMenu/1006 HUDReticle/1007 LoadingMenu(A6C40C)/1008 ContainerMenu/1009 DialogMenu/1010 HUDSubtitleMenu/1011 GenericMenu/1012 SleepWaitMenu/1013 PauseMenu/1014 LockPickMenu/1015 OptionsMenu/1016 QuantityMenu/1017 AudioMenu/1018 VideoMenu/1019 VideoDisplayMenu/1020 GameplayMenu/1021 ControlsMenu/1022 MagicMenu/1023 MapMenu/1024 MagicPopupMenu/1025 NegotiateMenu/1026 BookMenu(595BE0)/1027 LevelUpMenu/1028 TrainingMenu/1030 ClassMenu/1032 SkillsMenu/1034 PersuasionMenu/1035 RepairMenu/1036 RaceSexMenu/1037 SpellPurchaseMenu/1038 LoadgameMenu/1039 SaveMenu/1040 AlchemyMenu/1041 SpellMakingMenu/1042 EnchantmentMenu/1043 EffectSettingMenu/1044 MainMenu/1045 BreathMenu/1046 QuickKeysMenu/1047 CreditsMenu/1048 SigilStoneMenu/1049 RechargeMenu/1051 TextEditMenu。→ v542 close ゲート 1004/1007＝HUD とローディングの保護。591C50 arg0==4002 は窓 ID でなく type/ID 第1引数 [部分確定]。[確定] FUN_0055E000 規約（esp 追跡）=thiscall(map, key, out): callee push ebx 後 ebx=[esp+8]=arg1=最後の push=キー値そのものを hash へ、[esp+0x14]=arg2=out へ node[8](value) を hit 時書く。miss は xor al,al; ret 8=0（docs の hash&0xffffff00 は誤訳→訂正）。AC20 冒頭 lea eax,[esp+0x14]; push eax; push 0x1a; mov ecx,0xb0613c; call 55e000=55E000(map=0xB0613C, key=0x1A, out=&arr)＝固定 ID 0x1A の form を引き arr[0] へ書く単発検索。**v542 の『26 エントリ bulk 受信』は [確定負] に最終訂正**（0x1A は個数でなくキー。直後 neg al/sbb/and でヒット時のみ arr 値が TESEyes cast(9832E6 TD 0xB0541C) へ）。[部分確定] FUN_004E4A10=thiscall(0x33 singleton) grow/reset ヘルパ（+8 word 現在値/+0xa word 要素数/+0xc cap 系/+4 配列 ptr。arg==[+8] 早退・arg<[+a] で後方 0 クリア＋cap 減算・[+8]=arg）。0x33 実体は [未確定]。教訓: capstone の op_str には mnemonic が含まれない（mnemonic+' '+op_str を照合しないと vtable 探索が全空振り＝v544_2 の失敗）／docs の返り値式は生バイトの ret/flag と必ず突合（miss=0 が正）／引数規約は ret N＋push 順＋esp 追跡で機械決着（0x1A の読み捨て/キー確定）。残点 V-545-1..3（1=FUN_00584640 menu 基底 ctor の基底 vtable RTTI クラスタ【低】／2=0x33 singleton（DAT_00b3a708 先の +4 配列）生成元・4E4A10 this 解決経路【中】／3=591C50 type 4002 の採番先窓 ID と BookMenu(1026) 等の対応【中】）。本日 push: v405→v543（a5b14444）139件＋本件 v544。v 採番 v544 消費（次=v545）。"
+    },
+    {
+      "id": "151-v545-menu-base-2026-11-18",
+      "timestamp": "2026-11-18T06:53:05Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v545",
+        "menu",
+        "rtti",
+        "ui",
+        "singleton"
+      ],
+      "content": "2026-11-18 旧残点群消化第89弾 v545（probe v545_1 全1本 EXIT=0）＝V-545-1..3 完遂・旧 V-406-3 継続第75弾: 成果物 tmp/re/v545_menu_base_ruling.md・台帳 row521（bak370）・round_verify ALL OK（rows 31..521 / total 407 / done 402 / open 5）・STATE (jk)・ai-todo #151 note。[確定] FUN_00584640＝Menu ctor（vtable 0xA696DC・COL→TD='.?AVMenu@@' RTTI 実測）: mov [eax],0xA696DC＋+4/+8/+0xC/+0x10/+0x14/+0x18=0・+0x24=4（既定タイプ）・byte[+0x1C]=1（可視既定）。全 47 窓 ctor（v544）がこれを最初に call＝Menu が共通基底で派生側が vtable 差替え（UI 階層 Menu→各 XXXMenu）。[部分確定] DAT_00b3a708（v543 の 0x33 singleton）: disp32 監査で write=587B8E（587B20 の alloc(1) 代入）/587CFA+587D0E（FUN_00587CD0＝解放で 0 リセット 2 経路）、read=587B46/587B97/587CF1。→ 生成=587B20・破棄=587CD0 の 1:1。型 0x33 は 4E4A10 の型引数であって 1B object の中身ではない。4E4A10 の this 供給元は残点 V-546-1。[確定] 591C50 は静的 caller 0 件＝Menu 仮想（vtable）経由（591C44..C4F は int3 埋め＝関数境界）。arg0==4002 は呼び出し側の type/ID 第1引数で、窓 ID は vtable[+0x34]() 実行時採番（v544 [部分確定] の裏取り）。[部分確定] FUN_00584640 後半（584670〜＝別関数）: FUN_009840E0(0xA3207C セパレータ, name) で name を分割し 0xB13948/0xB1395C の 2 map を 55E000 find→4524C0 remove＝メニュー名の登録解除（2 map 両方から消す）。教訓: 派生 ctor 群が最初に call する共通関数を RTTI で読めば基底クラスが一撃で確定（47 クラスの親＝Menu）／グローバルは disp32 write 全列挙で生成/破棄の 1:1 対が機械確定できる／静的 caller 0 件の関数は vtable 越し呼び出しを疑う。残点 V-546-1..3（1=FUN_004E4A10 の this 供給元（0x33 manager 実体＝型 ID テーブル持ち主）と 587B20 の 1B alloc の結びつき【中】／2=0xB13948/0xB1395C の 2 メニュー名 map の用途差（ID→名前か名前→IDか）【中】／3=Menu vtable 0xA696DC の全 virtual slot 一覧【低】）。本日 push: v405→v544（466898b8）140件＋本件 v545。v 採番 v545 消費（次=v546）。"
     }
   ],
   "metadata": {
-    "totalEntries": 949,
+    "totalEntries": 950,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-18T06:43:38Z",
-    "entry_count": 949,
-    "last_updated": "2026-11-18T06:43:38Z"
+    "lastUpdated": "2026-11-18T06:53:05Z",
+    "entry_count": 950,
+    "last_updated": "2026-11-18T06:53:05Z"
   }
 }
