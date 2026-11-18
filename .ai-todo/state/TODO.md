@@ -1134,6 +1134,16 @@
   > ⑦ [確定] TESTopic+0x28＝INFO の {arr,count} 配列（連結でなく）: 52F520＝子一致の topic 検索、52F570＝一致子の topic 返却、52F480＝+0x34 名前 __stricmp 比較（52F6D0 ソートのフック）。
   > 残点 V-536-1..3: 1=topic リスト head の別経由参照探索（446CB0/67B1E0 callers の ecx 計算を b33a98 ベースで洗う）【中】／2=FUN_00448D40/446B40 本体＝formID プール機構【中】／3=subject vtable +0x68/+0x70 の slot 意味確定【低】。
   > 成果物: tmp/re/v535_form_ctor_ruling.md、probe v535_1..5（全5本 EXIT=0）、台帳 row511（bak360）、STATE (ja)、memory 940件。教訓: list-add の全 call site の push 元レジスタ走査で item 型が一撃／vtable ストア即値で ctor 自己同定／表 f1 は ctor 初回充填＋整合検証 abort／『+0x7c 直接 disp32 無し』は 548 箇所走査で初めて [確定負] と言える。supermemory 未登録は v405..v535 の131件。
+  > v536 完遂（V-536-1..3 / 旧残点 V-406-3 第66弾）: formID プール機構確定・TESForm +0x68/+0x70 確定・topic リスト登録の [確定負] 強化と v535 訂正。
+  > ① [確定] FUN_00448D40＝新 formID 採番器（this=DataHandler）: +0x8c0 カウンタから次候補＝下24bit==0xFFFFFF なら mod byte 保持して +0x800、else +1。更新後、PTR_PTR_00b0613c ハッシュポリシー vtable[+4](id) のバケット（DAT_00b06144+idx*4）を歩き vtable[+8] 衝突でやり直し。FUN_00453450(id)（=55E000 検索 bool 化・docs L64202）在住でもやり直し。二重検査通過で採用。→ formID プール＝ファイル内カウンタ×ハッシュ衝突×グローバル map 三層。0x000..0x7FF は予約（0x800 未配置プレースホルダ）。
+  > ② [確定] FUN_00446B40＝カウンタ巻き戻し: id が 0xFF mod かつ ==+0x8c0-1 かつ下24bit>0x7FF のときだけ +0x8c0=id（最後に採った ID のみ返却可。単純 free はカウンタ不変）。
+  > ③ [確定] map CRUD: FUN_004524C0 削除（vt4 hash/vt8 compare で一致ノード link 外し→vt10→vt18 free→count--）、FUN_00452570 挿入（無ければ vt14 make→vtC set(key,key)→先頭連結→count++、一致在りは既存へ vtC 上書き）。
+  > ④ [確定] TESForm vtable +0x68=0x6FE080（xor al,al; ret 4＝false 固定 override フック枠）: FUN_00451920 の先行フィルタは基底では常に偽→検索本体へ必ず進む設計。+0x70=0x412970（movzx eax,[ecx+4]＝GetFormType）確定・v528 [確定相当]→[確定] 昇格。
+  > ⑤ [確定負・強化] topic リスト（DAT_00b33a98+0x7c）: disp32 0xB33A98 を含む .text head 237 個を全命令 walk（add/lea 0x7c・[reg+0x7c] 両形式）。+0x7c を DataHandler ベースで使うのは読み手 3 関数のみ（52F690 走査/52F6D0 名前ソート/52FAE0 走査）。disp32 ベースの store は 0 件。誤検出 store（416000/459AF0/596BC0 の [esi+0x7c]）は window 確認で esi≠DataHandler。→ 登録は head ポインタ引数経由に限定（call site 特定は残点 V-537-1）。
+  > ⑥ [確定・訂正] v535 の append 先 3 候補はいずれも topic リストで無い: 52FC40（0x52FD02）＝mov ecx,ebp（ローカル）、530C40 経由（0x530D33）＝mov ecx,eax（返り object）、531290（0x5313CF）＝mov ecx,0xb36570（global DAT_00b36570＝b36510 とは別の scratch）。
+  > ⑦ [確定・訂正] FUN_0052F330＝topic+0x28 配列の要素 byte+0x3d（priority）昇順バブルソート（v535「破棄/リセット系」は誤り）。52FAE0 はソート後に各 topic で呼ばれる（head 歩行のみ・書込み無しは 0x52FAE0 window で追加確認）。
+  > 残点 V-537-1..3: 1=head アドレスを引数で渡す登録 call site 探索（446CB0 callers 347・67B1E0 callers 107 の ecx 計算全列挙、lea 分離型含む）【中】／2=PTR_00b0613c ポリシー object 実体と b06144 バケット配列生成者【低】／3=topic+0x28 {arr,count} への要素追加/削除命令（6B80D0 系）【中】。
+  > 成果物: tmp/re/v536_formid_pool_ruling.md、probe v536_1..2（全2本 EXIT=0）、台帳 row512（bak361）、STATE (jb)、memory 941件。教訓: formID プール三層（衝突はやり直しのみ・穴埋めしない）／カウンタ巻き戻しは条件付き／[確定負] の強化は head 単位全命令 walk が必要（site 単位 window では不十分）／global list head が 3 系統（b33a98+0x7c/b36510/b36570）あるため append の mov ecx 即値で混同回避。supermemory 未登録は v405..v536 の132件。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -2056,6 +2066,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2079,4 +2094,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-18 12:07:39
+**ai-todo** | Last Updated: 2026-11-18 12:27:37

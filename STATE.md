@@ -3458,3 +3458,18 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **list-add（`46B6C0`）の全 call site の push 元レジスタ走査で item 型が一撃確定**／**vtable ストア即値（0xA3BE3C）で ctor 自己同定**（v528 の伏線回収）／**表 f1 は ctor 初回充填＋整合検証失敗時 abort**（移植側は起動時検査として再現）／**「+0x7c 直接 disp32 が無い」は 548 箇所走査して初めて [確定負]**（「見つからない」でなく「経路が無い」が言える）／**フラグ bit 定数表がクラスタ毎に増殖中（bit5/10/12/14/15…）→移植側は一元管理**。
 - **本日 push 累計（セッション）**: v405 → … → v534 `b8d0241e` →（本件 v535 を本 commit で push）＝**131裁定**。
 - **次**: V-536-1..3 → 旧残点（topic リスト登録別経由／formID プール／+0x68/+0x70）。supermemory 未登録131件（v405..v535）は MCP 復帰待ち。
+
+## 2026-11-18 (jb) — 旧残点群消化第80弾 v536（V-536-1..3 完遂・旧 V-406-3 継続第66弾）: **formID プール機構を三層で確定**（`FUN_00448D40`＝DataHandler `+0x8c0` カウンタ×ハッシュ衝突×グローバル map 二重検査／`FUN_00446B40`＝条件付きカウンタ巻き戻し／`4524C0`/`452570`＝バケット map CRUD）・**TESForm `+0x68`＝false 固定フック／`+0x70`＝GetFormType 昇格**・**topic リスト head への disp32 ベース書込みは 237 関数全命令走査で 0 件 [確定負強化]**・**v535 の append 先 3 候補を別 head に訂正**（`DAT_00b36570` 発見）・**`FUN_0052F330`＝priority（info `+0x3d`）バブルソートと訂正**
+
+- **成果物**: `tmp/re/v536_formid_pool_ruling.md`（probe **v536_1..2 の2本 EXIT=0**）。台帳 **row512（bak361）**・`round_verify` **ALL OK**（rows 31..512 / total 398 / done 393 / open 5）。ai-todo **#151 note**・memory **941件**。
+- **① [確定] `FUN_00448D40`＝新 formID 採番器**: `+0x8c0` カウンタから次候補＝**下24bit==0xFFFFFF なら mod byte 保持+0x800／else +1**。`PTR_PTR_00b0613c` ポリシー `vtable[+4](id)` バケット（`DAT_00b06144+idx*4`）で `vtable[+8]` 衝突検査→`FUN_00453450`（`55E000` bool 化）在住検査→二重通過で採用。**0x000..0x7FF 予約**（0x800 未配置プレースホルダ）。
+- **② [確定] `FUN_00446B40`**: `id` が 0xFF mod・`== +0x8c0−1`・下24bit>0x7FF のときだけカウンタ戻し（単純 free はカウンタ不変）。
+- **③ [確定] map CRUD**: `4524C0` 削除（hash vt4/compare vt8→link 外し→vt10/vt18→count--）、`452570` 挿入（vt14 make→vtC set→連結→count++、一致在りへは vtC 上書き）。
+- **④ [確定] TESForm `+0x68`=`0x6FE080`（`xor al,al; ret 4`＝false 固定 override フック枠）**／**`+0x70`=`0x412970`（`movzx eax,[ecx+4]`＝GetFormType**・v528 [確定相当]→[確定]）。
+- **⑤ [確定負・強化] topic リスト（`b33a98+0x7c`）**: disp32 0xB33A98 を含む **.text head 237 個を全命令 walk**（add/lea・[reg+0x7c] 両形式）→ +0x7c 使用は読み手 3（`52F690`/`52F6D0`/`52FAE0`）のみ、**disp32 ベース store 0 件**。誤検出 store（416000/459AF0/596BC0）は window 確認で DataHandler 由来でなし。登録は head ポインタ引数経由に限定（特定は残点）。
+- **⑥ [確定・訂正] v535 append 3 候補はいずれも topic リストでない**: `52FC40`（ecx=ebp ローカル）／`0x530D33`（ecx=530C40 返り object）／`531290`（**`mov ecx,0xb36570`**＝global scratch）。→ **global list head 3 系統判明（`b33a98+0x7c`／`b36510`／`b36570`）**。
+- **⑦ [確定・訂正] `FUN_0052F330`**＝topic `+0x28` 配列の `byte+0x3d`（priority）昇順バブルソート（v535「破棄系」誤り）。`52FAE0` は head 歩行のみ・書込み無し（window 追加確認）。
+- **残点 V-537-1..3**: 1=head アドレス引数渡しの登録 call site 探索（`446CB0` callers 347／`67B1E0` callers 107 の ecx 計算全列挙）【中】／2=`PTR_00b0613c` ポリシー object 実体・`b06144` バケット配列生成者【低】／3=topic `+0x28` {arr,count} の要素追加/削除命令（6B80D0 系）【中】。
+- **教訓**: **formID プール三層（衝突はやり直しのみ・穴埋めしない）**／**カウンタ巻き戻しは条件付き**／**[確定負] の強化は head 単位全命令 walk が必須**（site 単位 window では不十分）／**global list head 複数系統は append の `mov ecx, imm32` 即値読みで混同回避**／priority は info+0x3d バイト。
+- **本日 push 累計（セッション）**: v405 → … → v535 `a13bc44a` →（本件 v536 を本 commit で push）＝**132裁定**。
+- **次**: V-537-1..3 → 旧残点（登録 call site／ポリシー object／{arr,count} 操作）。supermemory 未登録132件（v405..v536）は MCP 復帰待ち。

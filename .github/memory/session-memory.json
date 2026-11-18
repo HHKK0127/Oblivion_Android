@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-18T03:09:58Z",
+  "lastUpdated": "2026-11-18T03:29:16Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13761,14 +13761,31 @@
         "load"
       ],
       "content": "2026-11-18 旧残点群消化第79弾 v535（probe v535_1..5 全5本 EXIT=0）＝V-535-1..3 完遂・旧 V-406-3 継続第65弾: 成果物 tmp/re/v535_form_ctor_ruling.md・台帳 row511（bak360）・round_verify ALL OK（rows 31..511 / total 397 / done 392 / open 5）・STATE (ja)・ai-todo #151 note。[確定] FUN_0046C460＝TESForm::TESForm() ctor: *this=&PTR_FUN_00a3be3c（v528 伏線回収）／flags(+8)=8／formID 採番 FUN_00448D40→+0xC（0x800 未満は未配置プレースホルダ: 旧 4524C0 解除＋446B40）／FUN_00452570(formID,this) グローバル map 登録。初回実行で 0xB05E04 表 69 件の f1 を f0 から packed 4CC に充填（v529 の実行時充填の場所特定→[確定] 昇格）＋順序・一意検証（\"formEnumString[ %d ].cFormID in TESForm.cpp is out of order.\"／\"... same iFormString %s in TESForm.cpp.\"／致命 \"You must fix the problems in TESForm.cpp to run this game.\"→0x404EC0）。[確定] form+0x10＝出自 TESFile チェーン: FUN_0046B6C0 call site 生バイト 0x451289（NextFormEx 末尾 push esi=TESFile）と 0x46C5A7（ctor push [b33a98+0x8c4]=現アクティブファイル）。→FUN_004DB4A0 の 46B680(form,-1)＝出自先頭ファイル、44FAA0(file)＝file+0x3dc bit0（v533 の DataHandler 解釈を TESFile 側へ訂正。getter 自体は汎用）。[確定] FUN_004518B0＝bit12(0x1000) スキップ次レコード（+0x414/+0x418 解凍バッファ free→NextForm を type!=GRUP/TOFT && flags&0x1000 が消えるまで反復）。[確定] FUN_00451920＝(型,formID) 到達ウォーカ: +0x28c 前提・stream+0x24→subject+0x68(file) 先行→Reset(1)→連続 'TES4' を 18B0(1) で飛ばす→期待4CC=表[subject+0x70()*3+4]（f1 packed・+0x70=GetFormType 相互確認）・期待 formID=subject+0xC→ループ: 'GRUP' なら subject+0xBC(&hdr,1,0) 偽で 451580() 閉じ／一致でヒット＝v530〜v533 の predicate/close/表f1 が全部再利用されるロード中核。[部分確定] FUN_0052F010＝会話候補生成（v534 仮説修正）: flags bit5 即 0／候補 head=DAT_00b36510（8B 初回 alloc）／topic+0x28 の {arr@8,count@0x10} 配列を 530830 で絞り +0x25 bit5 停止・bit1 で 446CB0(b36510,info) push／返却は 47DF80(0)%n+1 番目（疑似乱数 985994/9859D0＋DAT_00b069c3）。push 先は b36510 で topic リスト（b33a98+0x7c）ではない。[確定負] topic リスト head 直接参照: .text の 0xB33A98 disp32 548 箇所を関数単位走査→add/lea 0x7c を持つ head は読み手 FUN_0052F690/52F6D0 のみ。登録は別経由（残点 V-536-1）。[確定] TESTopic+0x28＝INFO の {arr,count} 配列（連結でない）: 52F520（子一致 topic 検索）/52F570（一致子の topic 返却）/52F480（+0x34 名前 __stricmp 比較フック）。残点 V-536-1..3（1=topic リスト head の別経由参照探索（446CB0/67B1E0 callers の ecx 計算を b33a98 ベースで洗う）【中】／2=FUN_00448D40/446B40 本体＝formID プール機構【中】／3=subject vtable +0x68/+0x70 の slot 意味確定【低】）。教訓: list-add（46B6C0）の全 call site の push 元レジスタ走査で item 型が一撃／vtable ストア即値で ctor 自己同定／表 f1 は ctor 初回充填＋整合検証 abort／『+0x7c 直接 disp32 無し』は 548 箇所走査で初めて [確定負]（『見つからない』でなく『経路が無い』が言える）／flags bit 定数表がクラスタ毎に増殖中（bit5/10/12/14/15）→移植側は一元管理。本日 push: v405→v534（b8d0241e）130件＋本件 v535。v 採番 v535 消費（次=v536）。"
+    },
+    {
+      "id": "151-v536-formid-pool-2026-11-18",
+      "timestamp": "2026-11-18T03:29:16Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v536",
+        "formid",
+        "datahandler",
+        "hashtable",
+        "tessaveloadgame"
+      ],
+      "content": "2026-11-18 旧残点群消化第80弾 v536（probe v536_1..2 全2本 EXIT=0）＝V-536-1..3 完遂・旧 V-406-3 継続第66弾: 成果物 tmp/re/v536_formid_pool_ruling.md・台帳 row512（bak361）・round_verify ALL OK（rows 31..512 / total 398 / done 393 / open 5）・STATE (jb)・ai-todo #151 note。[確定] FUN_00448D40＝新 formID 採番器（this=DataHandler）: +0x8c0 カウンタから次候補＝下24bit==0xFFFFFF なら mod byte 保持+0x800／else +1。PTR_PTR_00b0613c ポリシー vtable[+4](id) バケット（DAT_00b06144+idx*4）で vtable[+8] 衝突検査→FUN_00453450（55E000 bool 化）在住検査→二重通過で採用。0x000..0x7FF 予約（0x800 未配置プレースホルダ）。[確定] FUN_00446B40＝カウンタ巻き戻し: id が 0xFF mod・==+0x8c0-1・下24bit>0x7FF のときだけ +0x8c0=id（単純 free はカウンタ不変）。[確定] map CRUD: 4524C0 削除（vt4 hash/vt8 compare→link 外し→vt10/vt18→count--）、452570 挿入（vt14 make→vtC set(key,key)→連結→count++、一致在りは既存へ vtC 上書き）。[確定] TESForm vtable +0x68=0x6FE080（xor al,al; ret 4＝false 固定 override フック枠・451920 の先行フィルタは基底では常に偽）／+0x70=0x412970（movzx eax,[ecx+4]＝GetFormType 確定・v528 [確定相当]→[確定]）。[確定負・強化] topic リスト（DAT_00b33a98+0x7c）: disp32 0xB33A98 を含む .text head 237 個を全命令 walk（add/lea 0x7c・[reg+0x7c] 両形式）。+0x7c 使用は読み手 3 関数のみ（52F690 走査/52F6D0 名前ソート/52FAE0 走査）。disp32 ベース store 0 件。誤検出 store（416000@4164F7=alloc 初期化・459AF0=byte bl・596BC0=0x68..0x7c クリア群）は esi≠DataHandler を window 確認。→ 登録は head ポインタ引数経由に限定（call site 特定は残点 V-537-1）。[確定・訂正] v535 の append 先 3 候補は topic リストでない: 52FC40（0x52FD02）=mov ecx,ebp（ローカル）/530D33=call 530C40; mov ecx,eax（返り object）/5313CF=mov ecx,0xb36570（global DAT_00b36570 scratch）。→ global list head 3 系統（b33a98+0x7c／b36510／b36570）。[確定・訂正] FUN_0052F330＝topic+0x28 配列の byte+0x3d（priority）昇順バブルソート（v535『破棄/リセット系』は誤り）。52FAE0 は head 歩行のみ・書込み無し。残点 V-537-1..3（1=head アドレス引数渡しの登録 call site 探索（446CB0 callers 347・67B1E0 callers 107 の ecx 計算全列挙）【中】／2=PTR_00b0613c ポリシー object 実体と b06144 バケット配列生成者【低】／3=topic+0x28 {arr,count} の要素追加/削除命令（6B80D0 系）【中】）。教訓: formID プール三層（衝突はやり直しのみ・穴埋めしない）／カウンタ巻き戻しは条件付き／[確定負] 強化は head 単位全命令 walk が必須（site 単位 window では不十分）／global list head 複数系統は append の mov ecx 即値読みで混同回避／priority は info+0x3d バイト。本日 push: v405→v535（a13bc44a）131件＋本件 v536。v 採番 v536 消費（次=v537）。"
     }
   ],
   "metadata": {
-    "totalEntries": 940,
+    "totalEntries": 941,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-18T03:09:58Z",
-    "entry_count": 940,
-    "last_updated": "2026-11-18T03:09:58Z"
+    "lastUpdated": "2026-11-18T03:29:16Z",
+    "entry_count": 941,
+    "last_updated": "2026-11-18T03:29:16Z"
   }
 }
