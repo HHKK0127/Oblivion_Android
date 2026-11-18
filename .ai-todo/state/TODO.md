@@ -1303,6 +1303,14 @@
   > ⑤ [確定] おまけ: DAT_00b06084=表 index 53 f1=packed 'WRLD' 再実測（読み site に新出 FUN_004478B0（0x447956/0x4479A1＝DataHandler 側 WRLD 検索）追加）。
   > 残点 V-541-1..3: 1=AC20 の 19 周ループ（alloc 0x3C・4B9AA0・vtable[+0xD8](name)・+0x90(0)）の実体クラス特定＋スロット配列窓（[esp+0x14]+0x6c）の初期化元【中】／2=DAT_00b13974（ブック本文配列）の設定元＋582160(0,1) identity【中】／3=0xB06164 map の挿入側 call site【低】。
   > 成果物: tmp/re/v540_static_maps_ruling.md、probe v540_1..4（全4本 EXIT=0）、台帳 row516（bak365）、STATE (jf)、memory 945件。教訓: 静的 singleton の buckets ptr は必ず CRT init 内の唯一 disp32 store として現れる（v538_5 線形スイープ監査の一般化）／vtable 差替え init（0xA3BCB4→0xA3BF1C 型）が 2 系統目に現れ CRT ctor の MSVC 慣習を再確認。supermemory 未登録は v405..v540 の136件。
+  > v541 完遂（V-541-1..3 / 旧残点 V-406-3 第71弾）: AC20 の 19 周ループ＝TESObjectSTAT 実体化と確定・第2静的 map（name→form 名寄せ）の挿入 API/全 call site 確定・ブック本文配列はマネージャ singleton のメンバと確定。
+  > ① [確定] V-541-1: AC20 の 19 周ループの実体クラス＝TESObjectSTAT（静的 activator）。FUN_004B9AA0 ctor: call 4B2FF0（基底 ctor）→ mov [esi],0xA44DEC（primary vtable）→ lea edi,[esi+0x24] → call 46D7E0（TESFullName 補助）→ mov [edi],0xA44DC8（+0x24 補助 vtable）→ mov byte[esi+4],0x1C（type=28='STAT'）。RTTI: 0xA44DEC-4 COL 0xABB9CC→TD 0xB054D4='.?AVTESObjectSTAT@@'、0xA44DC8 COL 0xABBA2C→同一 TD。サイズ 0x3C。callers=0x448101（head 447DF0）＋AC20 窓内 0x44AF6E/44B510/44B6A3/44B76B/44B833/44B8FB/44B9C3/44BB53/44BC1B/44C2FC/44C544＝AC20 の 19 周は同一 ctor の繰り返しと判明。スロット配列窓 [esp+0x6c]（19 エントリ・+0xc formID?/+0x10 名前?）のロード元＝DataHandler メンバ窓 [推定]（V-542-2）。
+  > ② [確定] V-541-3: 第2静的 map 0xB06164（4001 バケット・name→form 名寄せレジストリ）の挿入 API＝FUN_00412D30（thiscall add・vt[+4] bucket→walk→miss 時 alloc+link）。全 call site 約34: mov ecx,0xb06164; call 412D30 ×32 ＝ 0x44B61E/0x44C677,755,82E,90E,9EA,AC3（AC20 内）/0x44F2D4（44F0C0）/0x52FFCD（FE90 の topic 登録 9 段目＝v539 の 412D30(name,topic) と同一）/0x5180DC..0x519300（head 0x517FE0 TESRace ctor 20 箇所＝種族 20 体ぶん）。find 側 →55E000 ×3（44717A/4474AA/46B29A）。atexit thunk 0xA1853A→65C620（map 自体の list 除去）。
+  > ③ [確定（構造）] V-541-2: ブック本文配列 DAT_00b13974＋count 0xB1397A＝マネージャ singleton 0xB13970（+4/+0xA）のメンバ。静的: 0xB13970=0xA69680（vtable・CRT 静的 object）/0xB13974,7A=0（初期空・実行時割付）→ disp32 直書きが無い理由＝[ecx+4] 経由。disp32 0xB13970 site: mov ecx,0xb13970 thiscall 4 頭（5852A0/587B00（×2）＝docs でスカラー削除デストラクタ（584C00/587940 破棄＋delete フラグ 401F20）と確定 / 591B40/591C50）＋FUN_00A24910＝atexit dtor: free([0xb13974])→mov [0xb13970],0xA69680（vtable 復元）。readers: 57ED20（count<7+slot@0x18）/5AC7B0（<0x1A+@0xAC）/589B70（本文 id*4・v540）/5821F0（<0x2C+@0xAC）。本文配列の割当元メソッド本体は未追跡（V-542-1）。
+  > ④ [部分確定] FUN_00582160＝DAT_00b3a6e0 インタフェース singleton getter（SEH＋flag 分岐）。クラス名未確定（V-542-1 併記）。
+  > ⑤ おまけ: 0xB03800 は type_info 名ストリングエリア（'.?AVTESObjectSTAT@@' 文字列群）先頭付近＝RTTI 名前ストリング。v541_1 の 'Unable to get' 検索は "Unable to get back buffer."（0xA31F5C・DX 系）のみで AC20 ループ名は出ず（identity は RTTI で確定）。
+  > 残点 V-542-1..3: 1=ブック本文配列の割当元メソッド本体追跡（BMSG/DOBM レコード対応）＋582160 クラス名【中】／2=AC20 スロット配列窓 [esp+0x6c] のロード元（静的 STAT 名前テーブル）【低】／3=FUN_004B2FF0（TESObjectSTAT 基底 ctor）チェーン＋46D7E0（TESFullName ctor）確定【低】。
+  > 成果物: tmp/re/v541_stat_ctor_namemap_ruling.md、probe v541_1..6（全6本 EXIT=0）、台帳 row517（bak366）、STATE (jg)、memory 946件。教訓: 不明 ctor の実体クラスは vtable ストア即値（primary/secondary）→COL→TD で RTTI 一撃確定（type byte 0x1C=STAT と相互裏付け）／map の挿入側は ecx 即値で機械全列挙でき FE90/TESRace ctor/AC20 の 3 供給源が一度に見える／disp32 で書かれないグローバルは singleton のメンバオフセット経由を疑う。supermemory 未登録は v405..v541 の137件。
 - [x] **#148** 【作製・既存バグ（2026-11-15 に #146 の verifier レビューで発見）】ESMFile::decodeClass（esm_reader.cpp:1882）が std::memcpy(&clas.flags, data->data.data(), 4) で uint8_t 型の ClassData::flags（esm_reader.h:731）へ4バイトを書込み、構造体の外へ3バイトを破イトを破壊している（隣接メンバー/スタックの踏みつけ）。証拠: ①ビルドログ %TEMP%/opencode/build_racefilter.log に -Wfortify-source: destination buffer has size 1, but size argument is 4 が変更行と無関係の既存箇所から出る ②base 024eda1a の esm_reader.cpp:1874 にも同一コード＝本リポジトリに元から存在 ③CLAS の DATA は本来16バイト構造（flags 4B + specialization 1B + ...）のはずで、ClassData 側の型（uint8_t）と読み幅（4B）が不整合＝どちらが正かは実データで要確認。【修正方針（推測禁止）】まず Oblivion.esm の CLAS DATA 実バイトと ClassData の意図を確認（flags が u32 なら ClassData::flags を uint32_t に広げ、u8 なら読み幅を1に縮める。EyesData/HairData の flags は uint32_t、ClassData のみ uint8_t という不揃いが手がかり）→ 正典/実データで型を確定してから最小修正。検証: ビルドで fortify 警告が消えること＋CLAS を読む既存経路が壊れないこと。関連: #146（発見の場）/#96/#101 `#android` `#esm` `#fix` `#oblivion` `#safety` (2026-11-18)
   > 【実装・検証の記録（2026-11-15）】
   > ①**実データで型を確定**: `oblivion_esm_pull/Oblivion3.esm`（device の Oblivion.esm と同サイズ 277,504,985B）を Python で走査 → CLAS **111件**、DATA 長は **48B(31件)/52B(80件)**＝タスク記載の「16バイト構造」は誤り。全111件で `+0x00/+0x04` が属性 enum 0..7・非同一、`+0x0C` の7スキルが 0x0C..0x20 の重複なし、`+0x28` は 0/1/2 のみ（bit0 autocalcs・bit1 guard と整合）。Warrior=Strength/Endurance＋Armorer..HeavyArmor、Mage=Intelligence/Willpower、Thief=Speed/Agility で既知仕様一致。→ 正典 `v261_clas_service_flags.md` のフィールド表（+0x00 属性1／+0x04 属性2／+0x08 未読／+0x0C 7×u32 スキル／+0x28 u8 flags／+0x2C 未読／+0x30 u8 trainer index）と完全一致。
@@ -2110,6 +2118,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2133,4 +2146,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-18 14:02:11
+**ai-todo** | Last Updated: 2026-11-18 14:14:08

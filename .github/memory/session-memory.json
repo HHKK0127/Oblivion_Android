@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-18T05:05:13Z",
+  "lastUpdated": "2026-11-18T05:16:01Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13846,14 +13846,31 @@
         "crt-init"
       ],
       "content": "2026-11-18 旧残点群消化第84弾 v540（probe v540_1..4 全4本 EXIT=0）＝V-540-1..3 完遂・旧 V-406-3 継続第70弾: 成果物 tmp/re/v540_static_maps_ruling.md・台帳 row516（bak365）・round_verify ALL OK（rows 31..516 / total 402 / done 397 / open 5）・STATE (jf)・ai-todo #151 note。[確定] FUN_0055E000（map find 本体）: bucket=vt[+4](key)、node=this[2][bucket]（buckets=map+8）を *node チェーンで歩き vt[+8](key,node[1]) 一致で *keyslot=node[2]（value）書いて 1、枯れたら hash&0xffffff00 を返す。node={next@0,key@4,val@8}＝v536 CRUD（452570 が key,val 同値で埋める）と整合。移植側は『戻り 1 かつ *keyslot 更新』を正とする。[確定] 静的 map 一覧: 0xB0613C formID map（count 0xB06140=0x2008D=131213・buckets 0xB06144＝CRT init 0x9DBF00 専用 store・vtable 静的 0xA3BC94→init 後 0xA3BDD8）＝v537/538 済み。第2 map 0xB06164（count 0xB06168=0xFA1=4001・buckets 0xB0616C＝store 唯一＝CRT init FUN_0x9DBF80: alloc(0xFA1*4)→mov[0xb0616c]→memset→mov byte[0xb06174],0→mov[0xb06164],0xA3BF1C（vtable 差替え・静的 0xA3BCB4→）→atexit 系 thunk 0xA18530）。読み手=FUN_00447160（mov ecx,0xb06164; call 55E000＝key 存在チェック・0x4FD0A0 大ジャンプテーブル経由 60 sites＝コンソール系キー検査）。補助 0xB06150=32 dword 配列（CRT init 0x9DBF50: alloc(32*4)→mov[0xb06150]→thunk 0xA18500。read: 449301（DataHandler リセット）/46B2E7（46B2C0=DeleteForm）/46C669,46C6A9（TESForm ctor）/A18500）＝form→index ルックアップ。0xB06148（=0xA37AAC）/0xB06170 disp32 参照 0 件。[確定] V-540-2 ブック/メッセージ UI: FUN_00589B70(id)=ブック本文 ptr 配列アクセサ（(id-0x3E9)<0x33 かつ <DAT_00b1397a なら [DAT_00b13974-0xfa4+id*4] を返す＝ID 1001..1051・51スロット message book テーブル）。呼び元 5974E0 は 0x406=1030→9832E6 型照合→578D70()==1 ゲート→5973F0 referrers 再集計＝ブック UI 更新パス。FUN_005898F0=param[4] 二重歩きで末端ノード→vt[+0xC]()==0x389 なら param[0x11] 返却。FUN_00578D70=582160(0,1)+0xB0 バイト read→0xFF 書戻→旧値返却（消費式 pending フラグ）。[確定] V-540-3: FE90 の呼び元=FUN_0044AC20（docs L58249・E8 走査唯一 site 0x44C5A2 が属す）、AC20 の呼び元は 0x44F6CB（head FUN_0044F3D0=v530 プラグイン起動ドライバ）のみ。AC20 内順序: ①[esp+0x14] を 4 ずつ 0x50 まで＝19 周の alloc(0x3C)+4B9AA0 ctor+46C300(id,1)+vtable[+0xD8](name)+4B2B80+vtable[+0x90](0) 実体化ループ→②call FUN_0052FE90（静的 topic 85 件実体化・v539）→③0xB0613C hash で 0x35(=53=WRLD) バケット walk（0x44C4ED..0x44CC7B の [0xb06144] read 群＝v536 衝突 API と同一）。→ 44F3D0→AC20（スロット実体化→topic 実体化→WRLD 再ハッシュ走査）の init 順序と閉じた。[確定] おまけ: DAT_00b06084=表 index 53 f1=packed 'WRLD' 再実測（読み site に新出 FUN_004478B0（0x447956/0x4479A1＝DataHandler 側 WRLD 検索）追加）。残点 V-541-1..3（1=AC20 の 19 周ループ（alloc 0x3C・4B9AA0・vtable[+0xD8](name)・+0x90(0)）の実体クラス特定＋スロット配列（[esp+0x14] 窓 0x6c 起点）の初期化元【中】／2=DAT_00b13974（ブック本文配列）の設定元（BMSG/DOBM?）＋582160(0,1) の identity【中】／3=0xB06164 map の挿入側 call site（ecx=0xB06164 の 55E000/55E060? thiscall）【低】）。教訓: 静的 singleton の buckets ptr は必ず CRT init 内の唯一 disp32 store として現れる（store 単独性監査は v538_5 の線形スイープ方式で一般化）／vtable 差替え init（0xA3BCB4→0xA3BF1C 型）が 2 系統目に現れ CRT ctor が C++ 静的オブジェクトの vtable を実行時差し替えする MSVC 慣習を再確認／55E000 の『見つかれば 1／miss は hash 派生の非 0』は bucket=0 で 0 が返る境界があるため移植側は『戻り==1 かつ *keyslot 更新』で正しく実装する。本日 push: v405→v539（a0637373）135件＋STATE (kz) 退避（ca5ab8ed）＋本件 v540。v 採番 v540 消費（次=v541）。"
+    },
+    {
+      "id": "151-v541-stat-ctor-namemap-2026-11-18",
+      "timestamp": "2026-11-18T05:16:01Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v541",
+        "tesobjectstat",
+        "namemap",
+        "tesrace",
+        "rtti"
+      ],
+      "content": "2026-11-18 旧残点群消化第85弾 v541（probe v541_1..6 全6本 EXIT=0）＝V-541-1..3 完遂・旧 V-406-3 継続第71弾: 成果物 tmp/re/v541_stat_ctor_namemap_ruling.md・台帳 row517（bak366）・round_verify ALL OK（rows 31..517 / total 403 / done 398 / open 5）・STATE (jg)・ai-todo #151 note。[確定] V-541-1: AC20 の 19 周ループの実体クラス＝TESObjectSTAT（静的 activator）。FUN_004B9AA0 ctor: call 4B2FF0（基底）→mov [esi],0xA44DEC（primary vtable）→lea edi,[esi+0x24]→call 46D7E0（TESFullName 補助）→mov [edi],0xA44DC8（+0x24 補助）→mov byte[esi+4],0x1C（type=28='STAT'）。RTTI: COL 0xABB9CC/0xABBA2C→TD 0xB054D4='.?AVTESObjectSTAT@@'（両 vtable 同一）。サイズ 0x3C。callers=0x448101（head 447DF0）＋AC20 窓内 0x44AF6E..0x44C544 の 11 箇所＝AC20 の 19 周は同一 ctor。スロット窓 [esp+0x6c]（19 エントリ・+0xc formID?/+0x10 名前?）のロード元＝DataHandler メンバ窓 [推定]（V-542-2）。[確定] V-541-3: 第2静的 map 0xB06164（4001 バケット・name→form 名寄せレジストリ）の挿入 API＝FUN_00412D30（thiscall add・vt[+4] bucket→walk→miss 時 alloc+link）。call site 約34: mov ecx,0xb06164; call 412D30 ×32＝AC20 内 7（44B61E/44C677,755,82E,90E,9EA,AC3）/44F0C0（44F2D4）/FE90（52FFCD＝v539 の topic 登録 9 段目と同一）/TESRace ctor 20（head 0x517FE0）。find 側→55E000 ×3（44717A/4474AA/46B29A）。atexit thunk 0xA1853A→65C620（map 自体除去）。[確定・構造] V-541-2: ブック本文配列 DAT_00b13974＋count 0xB1397A＝マネージャ singleton 0xB13970（+4/+0xA）のメンバ（静的 vtable=0xA69680・配列=0 初期空→実行時割付＝disp32 直書き不在の説明）。disp32 site: mov ecx,0xb13970 thiscall 4 頭＝5852A0/587B00（×2・docs L290854/L292794 でスカラー削除デストラクタ確定）/591B40/591C50＋FUN_00A24910＝atexit dtor（free([0xb13974])→mov [0xb13970],0xA69680 vtable 復元）。readers: 57ED20（count<7+@0x18）/5AC7B0（<0x1A+@0xAC）/589B70（本文 id*4）/5821F0（<0x2C+@0xAC）。割当元メソッド本体は未追跡（V-542-1）。[部分確定] FUN_00582160＝DAT_00b3a6e0 インタフェース singleton getter（SEH・flag 分岐、クラス名未確定）。おまけ: 0xB03800＝type_info 名ストリングエリア（'.?AVTESObjectSTAT@@' 群）先頭付近＝RTTI 名前ストリング。'Unable to get' 検索は \"Unable to get back buffer.\"（0xA31F5C・DX 系）のみ。残点 V-542-1..3（1=ブック本文割当元メソッド本体（BMSG/DOBM 対応）＋582160 クラス名【中】／2=AC20 スロット窓ロード元（静的 STAT 名前テーブル）【低】／3=4B2FF0 基底 ctor チェーン＋46D7E0（TESFullName ctor）確定【低】）。教訓: 不明 ctor の実体クラスは vtable ストア即値（primary/secondary）→COL→TD で RTTI 一撃（type byte と相互裏付け）／map 挿入側は ecx 即値で機械全列挙（FE90/TESRace ctor/AC20 の 3 供給源が一度に見える）／disp32 で書かれないグローバルは singleton のメンバオフセット経由を疑う／EditorID 検索の供給路＝20 race＋85 topic＋19 STAT＋ファイル起動時の 4 系統。本日 push: v405→v540（2709e794）136件＋本件 v541。v 採番 v541 消費（次=v542）。"
     }
   ],
   "metadata": {
-    "totalEntries": 945,
+    "totalEntries": 946,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-18T05:05:13Z",
-    "entry_count": 945,
-    "last_updated": "2026-11-18T05:05:13Z"
+    "lastUpdated": "2026-11-18T05:16:01Z",
+    "entry_count": 946,
+    "last_updated": "2026-11-18T05:16:01Z"
   }
 }
