@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-18T03:29:16Z",
+  "lastUpdated": "2026-11-18T03:51:29Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13778,14 +13778,31 @@
         "tessaveloadgame"
       ],
       "content": "2026-11-18 旧残点群消化第80弾 v536（probe v536_1..2 全2本 EXIT=0）＝V-536-1..3 完遂・旧 V-406-3 継続第66弾: 成果物 tmp/re/v536_formid_pool_ruling.md・台帳 row512（bak361）・round_verify ALL OK（rows 31..512 / total 398 / done 393 / open 5）・STATE (jb)・ai-todo #151 note。[確定] FUN_00448D40＝新 formID 採番器（this=DataHandler）: +0x8c0 カウンタから次候補＝下24bit==0xFFFFFF なら mod byte 保持+0x800／else +1。PTR_PTR_00b0613c ポリシー vtable[+4](id) バケット（DAT_00b06144+idx*4）で vtable[+8] 衝突検査→FUN_00453450（55E000 bool 化）在住検査→二重通過で採用。0x000..0x7FF 予約（0x800 未配置プレースホルダ）。[確定] FUN_00446B40＝カウンタ巻き戻し: id が 0xFF mod・==+0x8c0-1・下24bit>0x7FF のときだけ +0x8c0=id（単純 free はカウンタ不変）。[確定] map CRUD: 4524C0 削除（vt4 hash/vt8 compare→link 外し→vt10/vt18→count--）、452570 挿入（vt14 make→vtC set(key,key)→連結→count++、一致在りは既存へ vtC 上書き）。[確定] TESForm vtable +0x68=0x6FE080（xor al,al; ret 4＝false 固定 override フック枠・451920 の先行フィルタは基底では常に偽）／+0x70=0x412970（movzx eax,[ecx+4]＝GetFormType 確定・v528 [確定相当]→[確定]）。[確定負・強化] topic リスト（DAT_00b33a98+0x7c）: disp32 0xB33A98 を含む .text head 237 個を全命令 walk（add/lea 0x7c・[reg+0x7c] 両形式）。+0x7c 使用は読み手 3 関数のみ（52F690 走査/52F6D0 名前ソート/52FAE0 走査）。disp32 ベース store 0 件。誤検出 store（416000@4164F7=alloc 初期化・459AF0=byte bl・596BC0=0x68..0x7c クリア群）は esi≠DataHandler を window 確認。→ 登録は head ポインタ引数経由に限定（call site 特定は残点 V-537-1）。[確定・訂正] v535 の append 先 3 候補は topic リストでない: 52FC40（0x52FD02）=mov ecx,ebp（ローカル）/530D33=call 530C40; mov ecx,eax（返り object）/5313CF=mov ecx,0xb36570（global DAT_00b36570 scratch）。→ global list head 3 系統（b33a98+0x7c／b36510／b36570）。[確定・訂正] FUN_0052F330＝topic+0x28 配列の byte+0x3d（priority）昇順バブルソート（v535『破棄/リセット系』は誤り）。52FAE0 は head 歩行のみ・書込み無し。残点 V-537-1..3（1=head アドレス引数渡しの登録 call site 探索（446CB0 callers 347・67B1E0 callers 107 の ecx 計算全列挙）【中】／2=PTR_00b0613c ポリシー object 実体と b06144 バケット配列生成者【低】／3=topic+0x28 {arr,count} の要素追加/削除命令（6B80D0 系）【中】）。教訓: formID プール三層（衝突はやり直しのみ・穴埋めしない）／カウンタ巻き戻しは条件付き／[確定負] 強化は head 単位全命令 walk が必須（site 単位 window では不十分）／global list head 複数系統は append の mov ecx 即値読みで混同回避／priority は info+0x3d バイト。本日 push: v405→v535（a13bc44a）131件＋本件 v536。v 採番 v536 消費（次=v537）。"
+    },
+    {
+      "id": "151-v537-topic-register-2026-11-18",
+      "timestamp": "2026-11-18T03:51:29Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v537",
+        "testopic",
+        "datahandler",
+        "hashtable",
+        "load"
+      ],
+      "content": "2026-11-18 旧残点群消化第81弾 v537（probe v537_1..4 全4本 EXIT=0）＝V-537-1..3 完遂・旧 V-406-3 継続第67弾: 成果物 tmp/re/v537_topic_register_ruling.md・台帳 row513（bak362）・round_verify ALL OK（rows 31..513 / total 399 / done 394 / open 5）・STATE (jc)・ai-todo #151 note。[確定] 登録ラッパ FUN_00447530（12B）: arg==0→ret 4／else [esp+4]=arg; add ecx,0x7c; jmp FUN_00446CB0 ＝ this(DataHandler)+0x7c head への単方向 push（v530 pusher 再利用）。唯一の呼び出し元=0x52FFBA（FUN_0052FE90 内: mov ecx,[0xb33a98]; push eax=組立済み TESTopic; call 447530）。v535/536 の disp32 store 無し [確定負] と整合（経路は jmp 経由 push）。[確定] FUN_0052FE90=TESTopic 組立最終段: ステージング 0xB110F4（件数）×0xB111B8（entry 配列）を歩き vtable[+0xD8] 呼び・FUN_004028D0 文字列確保・FUN_0046C300 紐付け→447530 登録。同一グローバル head=52ED10/52ED50/52FE90 のみ。caller 0x44C5A2。[確定] 削除=0x59749B（head FUN_00597340）: mov ecx,[b33a98]; call FUN_0065C620（v529 センチネル削除）1 箇所のみ。[確定] ポリシー object=静的 0xB0613C={vtable 0xA3BC94, bucketCount@+4=0xB06140=0x2008D(131213)}。hash vt[+4]=0x6A9060=id%[ecx+4]（div/edx）／compare vt[+8]=0x763E80=a==b（sete）→v536 採番器の 2 virtual 確定。[確定負] DAT_00b06144（バケット配列 ptr・ディスク 0）への disp32 store は .text 0 件（read 13 箇所: 448DA0/449AB5/449B0E/44C4ED〜44CC7B 再ハッシュクラスタ/46AF9A）。実行時ポインタ計算でのみ初期化。[確定] TESTopic+0x28=ノード単方向リスト（0x24B ノード: entry 配列 arr@+8・cap・使用 count@+0xC・非空@+0x10・scalar dtor vtable 0xA554D4 ptr@+4・flag@+0x20）。entry=TESTopicInfo（formID@+0xC・priority byte@+0x3d）。[確定] 操作関数: FUN_00446C50(vec,idx,&v)=要素設定（idx>=count で count=idx+1、非空数増減）。FUN_00452910(&vec,n)=リサイズ（縮小時後方クリア、FUN_00401F00(n*4) 新確保コピー）。FUN_0052FC40=歩き該当無ければ 0x24 ノード新規→FUN_0067B1E0 末尾 append。FUN_0052F650=52EFA0 返り配列各要素 +0x20(short) に index 再採番。残点 V-538-1..3（1=b06144 バケット配列の確保/代入元【中】／2=FUN_00597340 の文脈（削除条件）＋52ED10/52ED50 本体【中】／3=0x448F40/449040/4491D0 等 DataHandler 公開 API 面【低】）。教訓: disp32 store 不在の [確定負] の後は add ecx,disp; jmp pusher 型薄ラッパ（12B）を疑う（検索対象は call 447530 でなく mov ecx,[b33a98] の直後 call 群）／ポリシー object 静的・バケット配列動的の分離／div/edx=mod ハッシュ boilerplate。本日 push: v405→v536（c406fbb9）132件＋本件 v537。v 採番 v537 消費（次=v538）。"
     }
   ],
   "metadata": {
-    "totalEntries": 941,
+    "totalEntries": 942,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-18T03:29:16Z",
-    "entry_count": 941,
-    "last_updated": "2026-11-18T03:29:16Z"
+    "lastUpdated": "2026-11-18T03:51:29Z",
+    "entry_count": 942,
+    "last_updated": "2026-11-18T03:51:29Z"
   }
 }

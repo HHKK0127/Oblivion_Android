@@ -3473,3 +3473,18 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **教訓**: **formID プール三層（衝突はやり直しのみ・穴埋めしない）**／**カウンタ巻き戻しは条件付き**／**[確定負] の強化は head 単位全命令 walk が必須**（site 単位 window では不十分）／**global list head 複数系統は append の `mov ecx, imm32` 即値読みで混同回避**／priority は info+0x3d バイト。
 - **本日 push 累計（セッション）**: v405 → … → v535 `a13bc44a` →（本件 v536 を本 commit で push）＝**132裁定**。
 - **次**: V-537-1..3 → 旧残点（登録 call site／ポリシー object／{arr,count} 操作）。supermemory 未登録132件（v405..v536）は MCP 復帰待ち。
+
+## 2026-11-18 (jc) — 旧残点群消化第81弾 v537（V-537-1..3 完遂・旧 V-406-3 継続第67弾）: **topic リスト（`DAT_00b33a98+0x7c`）の登録/削除 call site を決着**（**`FUN_00447530`＝`add ecx,0x7c; jmp FUN_00446CB0` の薄ラッパが唯一の登録経路で、呼び元は `FUN_0052FE90` の 1 箇所のみ**／削除は `FUN_00597340` の 1 箇所）・**formID ハッシュのポリシー object 確定**（静的 `0xB0613C`、hash=`id % 0x2008D`、compare=`==`）・**TESTopic `+0x28` ノードの {arr,cap,count,非空} 操作関数（`FUN_00446C50`/`FUN_00452910`）確定**
+
+- **成果物**: `tmp/re/v537_topic_register_ruling.md`（probe **v537_1..4 の4本 EXIT=0**）。台帳 **row513（bak362）**・`round_verify` **ALL OK**（rows 31..513 / total 399 / done 394 / open 5）。ai-todo **#151 note**・memory **942件**。
+- **① [確定] 登録ラッパ `FUN_00447530`（12B）**: `arg==0 → ret 4`／else `[esp+4]=arg; add ecx,0x7c; jmp FUN_00446CB0`＝**this(DataHandler)+0x7c head への単方向 push（v530 pusher 再利用）**。**唯一の呼び出し元＝`0x52FFBA`（`FUN_0052FE90` 内: `mov ecx,[0xb33a98]; push eax=組立済み TESTopic; call 447530`）**→ v535/536 の「disp32 store 無し [確定負]」と整合（**経路は jmp 経由 push**）。
+- **② [確定] `FUN_0052FE90`＝TESTopic 組立最終段**: ステージング **`0xB110F4`（件数）×`0xB111B8`（entry 配列）**を歩き、`vtable[+0xD8]` 呼び・`FUN_004028D0` 文字列確保・`FUN_0046C300` 紐付け→447530 登録。同一グローバルの head＝`52ED10/52ED50/52FE90` のみ。caller `0x44C5A2`。
+- **③ [確定] 削除**: `0x59749B`（head `FUN_00597340`）: `mov ecx,[b33a98]; call FUN_0065C620`（v529 センチネル削除）**1 箇所のみ**。
+- **④ [確定] ポリシー object＝静的 `0xB0613C`**＝`{vtable 0xA3BC94, bucketCount@+4 = 0xB06140 = 0x2008D(131213)}`。**hash `vt[+4]=0x6A9060`: `id % [ecx+4]`（div/edx）**／**compare `vt[+8]=0x763E80`: `a == b`（sete）**→ v536 採番器の 2 virtual の意味確定。
+- **⑤ [確定負] `DAT_00b06144`（バケット配列 ptr・ディスク 0）**: disp32 store **0 件**（read 13 箇所＝`448DA0`/`449AB5`/`449B0E`/`44C4ED〜44CC7B` 再ハッシュクラスタ/`46AF9A`）。実行時ポインタ計算でのみ初期化（確保元は残点 V-538-1）。
+- **⑥ [確定] TESTopic `+0x28`＝ノード単方向リスト**（0x24B ノード: **entry 配列 `arr@+8`・cap `+8`・使用 count `+0xC`・非空 `+0x10`・scalar dtor vtable `0xA554D4` ptr `@+4`・flag `@+0x20`**）。entry=TESTopicInfo（formID `+0xC`・**priority byte `+0x3d`**）。
+- **⑦ [確定] 操作関数**: `FUN_00446C50(vec,idx,&v)`＝要素設定（idx>=count で count=idx+1、非空数増減）。`FUN_00452910(&vec,n)`＝リサイズ（縮小時後方クリア、`FUN_00401F00(n*4)` 新確保コピー）。`FUN_0052FC40`＝歩き該当無ければ 0x24 ノード新規→`FUN_0067B1E0` 末尾 append。`FUN_0052F650`＝`52EFA0` 返り配列の各要素 `+0x20(short)` に index 再採番。
+- **残点 V-538-1..3**: 1=`b06144` バケット配列の確保/代入元【中】／2=`FUN_00597340` の文脈（削除条件）＋`52ED10/52ED50` 本体【中】／3=`0x448F40/449040/4491D0` 等 DataHandler 公開 API 面【低】。
+- **教訓**: **disp32 store 不在の [確定負] の後は「`add ecx,disp; jmp pusher`」型薄ラッパ（12B）を疑う**（検索対象は `call 447530` でなく `mov ecx,[b33a98]` の直後 call 群）／**ポリシー object 静的・バケット配列動的の分離**／**div/edx＝mod ハッシュ boilerplate**。
+- **本日 push 累計（セッション）**: v405 → … → v536 `c406fbb9` →（本件 v537 を本 commit で push）＝**133裁定**。
+- **次**: V-538-1..3 → 旧残点（バケット配列確保元／597340 文脈／DataHandler API 面）。supermemory 未登録133件（v405..v537）は MCP 復帰待ち。

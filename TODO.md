@@ -1144,6 +1144,16 @@
   > ⑦ [確定・訂正] FUN_0052F330＝topic+0x28 配列の要素 byte+0x3d（priority）昇順バブルソート（v535「破棄/リセット系」は誤り）。52FAE0 はソート後に各 topic で呼ばれる（head 歩行のみ・書込み無しは 0x52FAE0 window で追加確認）。
   > 残点 V-537-1..3: 1=head アドレスを引数で渡す登録 call site 探索（446CB0 callers 347・67B1E0 callers 107 の ecx 計算全列挙、lea 分離型含む）【中】／2=PTR_00b0613c ポリシー object 実体と b06144 バケット配列生成者【低】／3=topic+0x28 {arr,count} への要素追加/削除命令（6B80D0 系）【中】。
   > 成果物: tmp/re/v536_formid_pool_ruling.md、probe v536_1..2（全2本 EXIT=0）、台帳 row512（bak361）、STATE (jb)、memory 941件。教訓: formID プール三層（衝突はやり直しのみ・穴埋めしない）／カウンタ巻き戻しは条件付き／[確定負] の強化は head 単位全命令 walk が必要（site 単位 window では不十分）／global list head が 3 系統（b33a98+0x7c/b36510/b36570）あるため append の mov ecx 即値で混同回避。supermemory 未登録は v405..v536 の132件。
+  > v537 完遂（V-537-1..3 / 旧残点 V-406-3 第67弾）: topic リスト登録/削除 call site 決着・formID ハッシュのポリシー object 確定・TESTopic+0x28 の操作関数確定。
+  > ① [確定] 登録ラッパ FUN_00447530（12B）: arg==0→ret 4／else [esp+4]=arg; add ecx,0x7c; jmp FUN_00446CB0 ＝ this(DataHandler)+0x7c head への単方向 push（v530 の pusher 再利用）。唯一の呼び出し元=0x52FFBA（FUN_0052FE90 内: mov ecx,[0xb33a98]; push eax=組立済み TESTopic; call 447530）。→ v535/536 の「disp32 store 無し [確定負]」と整合（jmp 経由 push が経路）。
+  > ② [確定] FUN_0052FE90=TESTopic 組立最終段: ステージング 0xB110F4（件数）×0xB111B8（entry 配列）を歩き、vtable[+0xD8] 呼び・FUN_004028D0 文字列確保・FUN_0046C300 紐付け→447530 登録。同一グローバルを使う head は 52ED10/52ED50/52FE90 のみ。caller 0x44C5A2。
+  > ③ [確定] 削除=0x59749B（head FUN_00597340）: mov ecx,[b33a98]; call FUN_0065C620（v529 センチネル削除）1 箇所のみ。
+  > ④ [確定] ポリシー object=静的 0xB0613C={vtable 0xA3BC94, bucketCount@+4=0xB06140=0x2008D(131213)}。hash vt[+4]=0x6A9060=id % [ecx+4]（div/edx）、compare vt[+8]=0x763E80=a==b（sete）。v536 採番器の 2 virtual の意味が確定。
+  > ⑤ [確定負] DAT_00b06144（バケット配列 ptr・ディスク 0）への disp32 store は .text 0 件（read 13 箇所: 448DA0/449AB5/449B0E/44C4ED〜44CC7B 再ハッシュクラスタ/46AF9A）。実行時ポインタ計算でのみ初期化（確保元は残点 V-538-1）。
+  > ⑥ [確定] TESTopic+0x28=ノード単方向リスト（0x24B ノード: entry 配列 arr@+8・cap@+8/cap・count@+0xC・非空@+0x10・scalar dtor vtable 0xA554D4 ptr@+4・flag@+0x20）。entry=TESTopicInfo（formID@+0xC・priority byte@+0x3d）。
+  > ⑦ [確定] 操作関数: FUN_00446C50(vec,idx,&v)=要素設定（idx>=count で count=idx+1、非空数増減、arr[idx]=v）。FUN_00452910(&vec,n)=リサイズ（縮小時後方クリア、FUN_00401F00(n*4) 新確保コピー）。FUN_0052FC40=topic+0x28 を歩き該当無ければ 0x24 ノード新規→FUN_0067B1E0 末尾 append。FUN_0052F650=52EFA0 の返り配列各要素 +0x20(short) に index 再採番。
+  > 残点 V-538-1..3: 1=b06144 バケット配列の確保/代入元【中】／2=FUN_00597340 の文脈（削除条件）＋52ED10/52ED50 本体【中】／3=0x448F40/449040/4491D0 等 DataHandler 公開 API 面【低】。
+  > 成果物: tmp/re/v537_topic_register_ruling.md、probe v537_1..4（全4本 EXIT=0）、台帳 row513（bak362）、STATE (jc)、memory 942件。教訓: disp32 store 不在の [確定負] の後、「add ecx,disp; jmp pusher」型薄ラッパ（12B）を疑うと登録経路が一撃（検索対象は call 447530 でなく mov ecx,[b33a98] の直後 call 群）／ポリシー object 静的・バケット配列動的の分離に注意／div/edx=mod ハッシュ boilerplate。supermemory 未登録は v405..v537 の133件。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -2066,11 +2076,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2094,4 +2099,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-18 12:27:37
+**ai-todo** | Last Updated: 2026-11-18 12:49:18
