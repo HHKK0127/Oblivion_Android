@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-18T07:28:41Z",
+  "lastUpdated": "2026-11-18T07:40:34Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -13985,14 +13985,32 @@
         "time-cache"
       ],
       "content": "2026-11-18 旧残点群消化第92弾 v548（probe v548_1..8 全8本 EXIT=0）＝V-548-1..3 完遂・旧 V-406-3 継続第78弾: 成果物 tmp/re/v548_ui_attr_table_ruling.md・台帳 row524（bak373）・round_verify ALL OK（rows 31..524 / total 410 / done 405 / open 5）・STATE (jn)・ai-todo #151 note。[確定] UI 属性名↔ID 表（223 対）: FUN_0058A1C0 が FUN_0058A0A0(this,name,id) を 223 回呼ぶ属性登録関数（push id; push nameptr; mov ecx,esi; call 58A0A0）。実読で 0xFA2(4002)='class'／0xFA5(4005)='stackingtype'／0xFAB(4011)='depth'。ID 域 7 群: 4001–4097=XML 属性（visible/clipwindow/alpha/stackingtype/depth/x/y/width/height/user0..25/xbuttona..start）／2001–2027=演算子（add/div/eq/gt/onlyif…）／1001–1051=メニュー名（&MessageMenu;…）／901–999=要素型（image/menu/text/window/template）／3001–3004=値型（name/value/src/trait）／5001–5007=参照（me/parent/child/sibling/screen/strings）／101–109・6006–6008=フラグ（click_past/prev/next/does_not_stack）。caller は 0x58DA00 の1箇所。→ v547 の『4002 と 4005/4011 は別 enum』は [確定負]。[確定・訂正] 0xB3A700/0xB3A704＝int の時刻キャッシュ: 0x9FBC50（call 57D330; fiadd [0xB1399C]; call 9828C0(cvttsd2si=切捨て); mov [0xB3A700]）／0x9FBC70（fild [0xB139A4]; call 57D390; fsubr; call 9828C0; mov [0xB3A704]）。0xB1399C=0x1E=30・0xB139A4=0x37A=890 はいずれも int（v547 の『元 float』を訂正）。57D330/57D390 は [0xB06C4C=640]/[0xB06C50=480]（画面解像度）依存で callers 各3。readers 3 head（585620/585720/585820）は fild で float 化し 571F90（描画）へ渡す＝メニュー/コンソール時刻表示 [部分確定]。0xB13970=NiTArray<Tile*>（vtable 0xA69680）。[確定] 591C50 の arg3 は未読（[esp+0xC] の読み 0 件＝実効 open(type,arg2)）。末尾 42BB90＝NiTArray::SetAt（push_back ではない）: 591D0F: lea eax,[esp+0x10]; push eax; add ebx,0xFFFFFC17(=−1001); push ebx; mov ecx,0xB13970; mov [esp+0x18],esi(this); call 42BB90＝SetAt(NiTArray<Tile*>, index=int(arg2)−1001, value=this)。42BB90 は mov [ecx+4][index*4]=value の slot 代入・callers 992。588BD0(this,key)=子要素 float getter（BST 下降・miss は fldz=0.0・callers 1073）／588C10(this,key)=pointer getter（miss は 0xA2F7EC=空文字列・callers 57）／58CEB0(key,float)=setter（58B220=node find→58CA00=float 書込・callers 1767）。arg1==0xFA2(4002='class') のときのみ動作し 588BD0(0xFA5='stackingtype') を 2 回呼び境界 [0xA69778]=102.0/[0xA69768]=103.0 と比較、58CEB0(0xFAB='depth', 584980()) で Z 設定。教訓: 『同一 ID 域の連番』は同一テーブル（0x58A1C0 の 223 対で 4002=class/4005=stackingtype/4011=depth が並ぶ＝v547 の別 enum 判定は文字列実読で覆った）／fiadd/fild は整数演算なので『元 float』と思ったグローバルが int 定数（0x1E=30/0x37A=890）だった／ret 0xC でも引数を読まない引数は未使用（591C50 の arg3）／SetAt（index 指定 slot 代入）と push_back（末尾追加）は本体 1 命令で区別できる。残点 V-549-1..3（1=0xB3A700/0xB3A704 の物理意味＋0xB1399C=30/0xB139A4=890 の設定名対応【中】／2=0x58A0A0 の name 解釈規則＋0x58DA00 の起動経路【中】／3=591C50 の arg2（float→int）意味＋SetAt index（arg2−1001）の妥当性【中】）。本日 push: v405→v547（1caf9537）143件＋本件 v548。v 採番 v548 消費（次=v549）。"
+    },
+    {
+      "id": "151-v549-console-offset-2026-11-18",
+      "timestamp": "2026-11-18T07:40:34Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v549",
+        "menu",
+        "console",
+        "settings",
+        "crop-offset",
+        "ui-xml"
+      ],
+      "content": "2026-11-18 旧残点群消化第93弾 v549（probe v549_1..4 全4本 EXIT=0）＝V-549-1..3 完遂・旧 V-406-3 継続第79弾: 成果物 tmp/re/v549_console_offset_ruling.md・台帳 row525（bak374）・round_verify ALL OK（rows 31..525 / total 411 / done 406 / open 5）・STATE (jo)・ai-todo #151 note。[確定・訂正] 0xB3A700/0xB3A704 は時刻ではなく『アスペクト比クロップオフセット＋コンソール設定』の合成値（v548 の『時刻キャッシュ』は [確定負]）: 57D330/57D390 は [0xB06C4C=640]/[0xB06C50=480] から 480/640=0.75 を [0xA68D08]=0.74 と比較して画面アスペクトのクロップオフセットを返す（57D840 が同値を menu 属性 0xFDA='cropoffsetx'/0xFD9='cropoffsety' に set＝同一関数）。CRT init 0x9FBC50: 0xB3A700=int(57D330()+[0xB1399C])／0x9FBC70: 0xB3A704=int([0xB139A4]−57D390())。readers 3 head（585620/585720/585820）は fild で float 化し 571F90（コンソール singleton getter・ctor 571E80）へ渡す＝コンソール文字描画の位置計算。[確定] 0xB1399C/0xB139A4 の設定名: 0xB13988..0xB139AC は 8 バイト stride の (nameptr,value) 対（メモリ実読）= iConsoleHistorySize:Menu=15／iConsoleVisibleLines:Menu=3／iConsoleFont:Menu=30（0xB1399C）／iConsoleTextXPos:Menu=890（0xB139A4）／iConsoleTextYPos:Menu=0。登録は 0x9FBB90/0x9FBBF0（push 0xB1399C/0xB139A4; mov ecx,0xB07BF0; call 4040E0; push 0xA249E0/0xA24A10; call 981FB4）。[確定] 591C50 の arg2＝メニュー ID（1001–1051）: 属性 0xFA2(4002='class') 専用ハンドラ（cmp [esp+4],0xFA2; jne → xor eax,eax; ret 0xC＝不一致は即 0）。587D20 は mov eax,[esp+0x14]; add eax,0xFFFFFC17(=−1001); cmp eax,0x32; ja; jmp [eax*4+0x5887B8]＝メニュー ID 1001–1051 の switch。末尾 SetAt(NiTArray<Tile*>, index=arg2−1001, value=this) も index 域一致。[確定] 0x58DA00＝UI 要素 ctor: [esi+4]/[esi+5]=0・[esi+0x2C]=2・[esi+0x24]/[esi+0x28]=0・[esi+8] に文字列（4028D0、既定 0xA2F7EC=''）。初回生成時のみ（cmp [0xB3B0CC],0; jne skip）58A1C0 を呼んでグローバル属性表を一度だけ登録（callers 4）。58A0A0 の name 解釈は先頭 0x26('&')＝名前付きエンティティ（589EB0 へ）、0x5F('_')、それ以外 al−0x40 の文字コード算術。教訓: 『隣接グローバル 2 つ』を時刻と決めつけたが、元値（0xB1399C/0xB139A4）を設定表としてメモリ実読すると iConsoleFont/iConsoleTextXPos と判明——グローバルの意味は参照先の設定名文字列まで辿らないと誤る（v548 の時刻説は [確定負]）／add reg,0xFFFFFC17 は −1001 の符号拡張で、switch 表の index 域（1001–1051）と NiTArray の index が一致すれば『menu ID』と確定できる／『初回のみ登録』は cmp [global],0; jne skip のガードで機械同定できる。残点 V-550-1..3（1=57D330/57D390 が参照する 0xB135F8/0xB13600/0xB13608/0xB13610（設定登録 9FB7C0/9FB880/9FB8E0）の設定名＋クロップ計算式の完全形【中】／2=0x58A0A0 の登録先（属性表の実体＝0xB3B0CC が指すオブジェクトのクラス）＋589EB0（&entity; 解決）の内部【中】／3=591C50 の仮想 slot（vtable 0xA6AF28）の帰属クラス＋属性 class 以外を扱う姉妹ハンドラの有無【低】）。本日 push: v405→v548（af9ea0e6）144件＋本件 v549。v 採番 v549 消費（次=v550）。"
     }
   ],
   "metadata": {
-    "totalEntries": 953,
+    "totalEntries": 954,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-18T07:28:41Z",
-    "entry_count": 953,
-    "last_updated": "2026-11-18T07:28:41Z"
+    "lastUpdated": "2026-11-18T07:40:34Z",
+    "entry_count": 954,
+    "last_updated": "2026-11-18T07:40:34Z"
   }
 }

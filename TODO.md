@@ -1362,6 +1362,14 @@
   > ④ 教訓: 「同一 ID 域の連番」は同一テーブル（0x58A1C0 の 223 対で 4002=class/4005=stackingtype/4011=depth が並ぶ）——v547 の「別 enum」判定は文字列実読で覆った／fiadd/fild は整数演算なので「元 float」と思ったグローバルが int 定数（0x1E=30/0x37A=890）だった／ret 0xC でも引数を読まない引数は未使用（591C50 の arg3）／SetAt（index 指定 slot 代入）と push_back（末尾追加）は本体 1 命令で区別できる。
   > 残点 V-549-1..3: 1=0xB3A700/0xB3A704 の物理意味＋0xB1399C=30/0xB139A4=890 の設定名対応【中】／2=0x58A0A0 の name 解釈規則＋0x58DA00 の起動経路【中】／3=591C50 の arg2（float→int）意味＋SetAt index（arg2−1001）の妥当性【中】。
   > 成果物: tmp/re/v548_ui_attr_table_ruling.md、probe v548_1..8（8本 EXIT=0）、台帳 row524（bak373）、STATE (jn)、memory 953件。supermemory は集約①〜⑧＋索引登録済。
+  > v549 完遂（V-549-1..3 / 旧残点 V-406-3 第79弾）: 0xB3A700/0xB3A704 は時刻でなくアスペクト比クロップオフセット＋コンソール設定（v548 を [確定負] に訂正）・0xB1399C/0xB139A4 の設定名確定・591C50 は "class" 属性専用で arg2=メニューID。
+  > ① [確定・訂正] 0xB3A700/0xB3A704（V-549-1）: 時刻ではなく「アスペクト比クロップオフセット＋コンソール設定」の合成値（v548 の「時刻キャッシュ」は [確定負]）。57D330/57D390 は [0xB06C4C=640]/[0xB06C50=480] から 480/640=0.75 を [0xA68D08]=0.74 と比較して画面アスペクトのクロップオフセットを返す（57D840 が同値を menu 属性 0xFDA="cropoffsetx"/0xFD9="cropoffsety" に set＝同一関数）。CRT init 0x9FBC50: 0xB3A700=int(57D330()+[0xB1399C])／0x9FBC70: 0xB3A704=int([0xB139A4]−57D390())。readers 3 head（585620/585720/585820）は fild で float 化し 571F90（コンソール singleton getter・ctor 571E80）へ渡す＝コンソール文字描画の位置計算。
+  > ② [確定] 0xB1399C/0xB139A4 の設定名（V-549-1b）: 0xB13988..0xB139AC は 8 バイト stride の (nameptr,value) 対（メモリ実読）= iConsoleHistorySize:Menu=15／iConsoleVisibleLines:Menu=3／iConsoleFont:Menu=30（0xB1399C）／iConsoleTextXPos:Menu=890（0xB139A4）／iConsoleTextYPos:Menu=0。登録は 0x9FBB90/0x9FBBF0（push 0xB1399C/0xB139A4; mov ecx,0xB07BF0; call 4040E0; push 0xA249E0/0xA24A10; call 981FB4）。
+  > ③ [確定] 591C50 の arg2（V-549-3）: 属性 0xFA2(4002="class") 専用ハンドラで arg2＝メニュー ID（1001–1051）。cmp [esp+4],0xFA2; jne → xor eax,eax; ret 0xC＝不一致は即 0。587D20 は mov eax,[esp+0x14]; add eax,0xFFFFFC17(=−1001); cmp eax,0x32; ja; jmp [eax*4+0x5887B8]＝メニュー ID 1001–1051 の switch。末尾 SetAt(NiTArray<Tile*>, index=arg2−1001, value=this) も index 域一致。
+  > ④ [確定] 0x58DA00＝UI 要素 ctor（V-549-2）: [esi+4]/[esi+5]=0・[esi+0x2C]=2・[esi+0x24]/[esi+0x28]=0・[esi+8] に文字列（4028D0、既定 0xA2F7EC=""）。初回生成時のみ（cmp [0xB3B0CC],0; jne skip）58A1C0 を呼んでグローバル属性表を一度だけ登録（callers 4）。58A0A0 の name 解釈は先頭 0x26('&')＝名前付きエンティティ（589EB0 へ）、0x5F('_')、それ以外 al−0x40 の文字コード算術。
+  > ⑤ 教訓: 「隣接グローバル 2 つ」を時刻と決めつけたが、その元値（0xB1399C/0xB139A4）を設定表としてメモリ実読すると iConsoleFont/iConsoleTextXPos と判明——グローバルの「意味」は参照先の設定名文字列まで辿らないと誤る（v548 の時刻説は [確定負]）／add reg,0xFFFFFC17 は −1001 の符号拡張で、switch 表の index 域（1001–1051）と NiTArray の index が一致すれば「menu ID」と確定できる／「初回のみ登録」は cmp [global],0; jne skip のガードで機械同定できる。
+  > 残点 V-550-1..3: 1=57D330/57D390 が参照する 0xB135F8/0xB13600/0xB13608/0xB13610（設定登録 9FB7C0/9FB880/9FB8E0）の設定名＋クロップ計算式の完全形【中】／2=0x58A0A0 の登録先（属性表の実体＝0xB3B0CC が指すオブジェクトのクラス）＋589EB0（&entity; 解決）の内部【中】／3=591C50 の仮想 slot（vtable 0xA6AF28）の帰属クラス＋属性 class 以外を扱う姉妹ハンドラの有無【低】。
+  > 成果物: tmp/re/v549_console_offset_ruling.md、probe v549_1..4（4本 EXIT=0）、台帳 row525（bak374）、STATE (jo)、memory 954件。supermemory は集約①〜⑨＋索引登録済。
 - [x] **#148** 【作製・既存バグ（2026-11-15 に #146 の verifier レビューで発見）】ESMFile::decodeClass（esm_reader.cpp:1882）が std::memcpy(&clas.flags, data->data.data(), 4) で uint8_t 型の ClassData::flags（esm_reader.h:731）へ4バイトを書込み、構造体の外へ3バイトを破イトを破壊している（隣接メンバー/スタックの踏みつけ）。証拠: ①ビルドログ %TEMP%/opencode/build_racefilter.log に -Wfortify-source: destination buffer has size 1, but size argument is 4 が変更行と無関係の既存箇所から出る ②base 024eda1a の esm_reader.cpp:1874 にも同一コード＝本リポジトリに元から存在 ③CLAS の DATA は本来16バイト構造（flags 4B + specialization 1B + ...）のはずで、ClassData 側の型（uint8_t）と読み幅（4B）が不整合＝どちらが正かは実データで要確認。【修正方針（推測禁止）】まず Oblivion.esm の CLAS DATA 実バイトと ClassData の意図を確認（flags が u32 なら ClassData::flags を uint32_t に広げ、u8 なら読み幅を1に縮める。EyesData/HairData の flags は uint32_t、ClassData のみ uint8_t という不揃いが手がかり）→ 正典/実データで型を確定してから最小修正。検証: ビルドで fortify 警告が消えること＋CLAS を読む既存経路が壊れないこと。関連: #146（発見の場）/#96/#101 `#android` `#esm` `#fix` `#oblivion` `#safety` (2026-11-18)
   > 【実装・検証の記録（2026-11-15）】
   > ①**実データで型を確定**: `oblivion_esm_pull/Oblivion3.esm`（device の Oblivion.esm と同サイズ 277,504,985B）を Python で走査 → CLAS **111件**、DATA 長は **48B(31件)/52B(80件)**＝タスク記載の「16バイト構造」は誤り。全111件で `+0x00/+0x04` が属性 enum 0..7・非同一、`+0x0C` の7スキルが 0x0C..0x20 の重複なし、`+0x28` は 0/1/2 のみ（bit0 autocalcs・bit1 guard と整合）。Warrior=Strength/Endurance＋Armorer..HeavyArmor、Mage=Intelligence/Willpower、Thief=Speed/Agility で既知仕様一致。→ 正典 `v261_clas_service_flags.md` のフィールド表（+0x00 属性1／+0x04 属性2／+0x08 未読／+0x0C 7×u32 スキル／+0x28 u8 flags／+0x2C 未読／+0x30 u8 trainer index）と完全一致。
@@ -2169,6 +2177,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2192,4 +2205,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-18 16:26:30
+**ai-todo** | Last Updated: 2026-11-18 16:39:07
