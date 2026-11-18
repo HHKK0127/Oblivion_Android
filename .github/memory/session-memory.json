@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-18T08:35:47Z",
+  "lastUpdated": "2026-11-18T08:49:01Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -14076,14 +14076,32 @@
         "nitexturingproperty"
       ],
       "content": "2026-11-18 旧残点群消化第97弾 v553（probe v553_1..3 全3本 EXIT=0）＝V-553-1..3 完遂・旧 V-406-3 継続第83弾: 成果物 tmp/re/v553_bst_typeid_ruling.md・台帳 row529（bak378）・round_verify ALL OK（rows 31..529 / total 415 / done 410 / open 5）・STATE (js)・ai-todo #151 note。[確定] 588BD0/588C10 は属性バケットとは別の BST（[ecx+0x18]・word key）の getter: 588BD0(this,key): [ecx+0x18]（BST ルート）から node=[eax+8]、movzx ecx,word[node+0x18] と key を比較し jg で左・je で fld [node+4]（float）・miss は fldz=0.0（588C10 は同型 pointer getter・hit [node+8]・miss 0xA2F7EC=空文字列）。key は 16 ビットで 58A0A0 の 0xB3B0B0 バケット（name→StringListElement）とは別系統（callers 1073/57。5877D0 等が push 0xFA1/0xFAB/0xFA5＝属性 ID で呼ぶ）。[確定] 0x386='image' の供給元は 5818D0 の mov eax,0x386; ret（型 ID 定数仮想）: 589D60 が this->vtable[+0xC]() == 0x386 で判定。0x386 は属性表 58A369 の push 0x386 でも 'image' として登録。707530(this,typeId) は [ecx+0x9C] リストを走査し vtable[+0x4C]() == typeId を返す＝型 ID による子要素検索（callers 220）。[確定] 4057B0 = NiTexturingProperty::Map の確保: [esi+0x20] リスト先頭を調べ空なら push 0x10; call 401F00（16B）→ 704100（vtable 0xA7DBB4＝.?AVMap@NiTexturingProperty@@ 系 ctor）→ 42BB90（NiTArray::SetAt）。589D60 は 'image' 要素でこれを呼び [this+0x2C] に 0x20 を OR＝テクスチャ更新フラグ。続けて [this+0x34] のリストを辿り各要素の vtable[+0x18]()（子要素更新）を呼ぶ。教訓: 『同じ key→値 getter』でも所有構造が違えば別系統——588BD0 は [ecx+0x18] の BST（word key）で 0xB3B0B0 バケットとは別物（取り違えない）／型 ID 定数は mov eax,imm; ret の 3 バイト関数として機械同定できる（5818D0）／mov eax,[esi+0x20]; mov edi,[eax] の空チェック→alloc→ctor→SetAt の型で『リスト先頭の遅延生成』を同定できる。残点 V-554-1..3（1=588BD0 の BST を所有するクラス（[ecx+0x18] 持ち）と 0xB3B0B0 バケットとの役割分担（属性値 vs 名前→ID）【中】／2=707530 の [ecx+0x9C] リストを持つクラス（TileMenu/Tile）＋vtable[+0x4C]（型 ID getter）の実装【中】／3=589D60 の [this+0x34] リスト（子要素）の要素型と vtable[+0x18]（更新仮想）【低】）。本日 push: v405→v552（e943e4d0）148件＋本件 v553。v 採番 v553 消費（次=v554）。"
+    },
+    {
+      "id": "151-v554-tile-value-list-2026-11-18",
+      "timestamp": "2026-11-18T08:49:01Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v554",
+        "menu",
+        "tile",
+        "tileimage",
+        "nitlist",
+        "bst-refuted"
+      ],
+      "content": "2026-11-18 旧残点群消化第98弾 v554（probe v554_1..2 全2本 EXIT=0）＝V-554-1..3 完遂・旧 V-406-3 継続第84弾: 成果物 tmp/re/v554_tile_value_list_ruling.md・台帳 row530（bak379）・round_verify ALL OK（rows 31..530 / total 416 / done 411 / open 5）・STATE (jt)・ai-todo #151 note。[確定・訂正] 588BD0 は BST ではなくソート済み NiTList<Value@Tile*> の線形走査（v553 の『BST』は [確定負]）: mov eax,[ecx+0x18]（リスト head）→ mov edx,[eax+8]（payload）→ movzx ecx,word[edx+0x18]（key）→ cmp ecx,esi → mov eax,[eax]（next のみ前進）・jg で miss＝単方向線形走査（6AA320 の node[0]=head と一致）。payload は Value@Tile（+4=float／+8=pointer／+0x18=word key）。役割分担: 0xB3B0B0 バケット＝属性名→StringListElement@Tile（グローバル名前表）、Tile の +0x14 NiTList<Value@Tile*>＝インスタンス属性値（属性 ID→値）。[確定] 707530 の [ecx+0x9C]＝所有メニュー（TileMenu）の子要素リスト NiTList<Tile*>: 589D60 は [this+0x24]（所有メニュー）を取り [menu+0xB6]（配列要素数）>0 なら [menu+0xB0][0]（先頭要素）を edi に。707530(edi,6) は [edi+0x9C] を NiTList<Tile*> として走査し payload->vtable[+0x4C]() == 6 を返す。[確定] [this+0x34] 子要素リスト＝NiTList<Tile*>（vtable 0xA690AC）: TileImage ctor 581810: [esi+0x14]=0xA6909C（NiTList<Value@Tile*>・head=+0x18）／[esi+0x30]=0xA690AC（NiTList<Tile*>・head=+0x34）。589D60 は [this+0x34] を辿り 5A8260/5A8270/5A8280（singleton 3 種・0xB3B350/0xB3B354/0xB3B358）と比較しつつ各要素の vtable[+0x18]()（更新）を呼ぶ。RTTI: 0xA69110=.?AVTileImage@@／0xA6909C=NiTList<PAVValue@Tile>／0xA690AC=NiTList<PAVTile>。教訓: 『key 比較して jg で miss』でも mov eax,[eax]（next のみ前進）なら BST ではなくソート済み片方向リスト——左右 2 分岐（[eax]/[eax+4]）の有無で区別する（v553 の BST 説は [確定負]）／クラスの全フィールドは ctor の mov [reg+off],imm 列挙で機械確定できる（581810 で +0x14/+0x30 の 2 リスト vtable が判明）／singleton 定数（5A8260=[0xB3B350]）は比較相手の型を後から埋められる。残点 V-555-1..3（1=Value@Tile の完全レイアウト（+4=float／+8=pointer／+0x18=word key 以外）＋0x14 NiTList<Value@Tile*> への挿入箇所（属性値の設定側）【中】／2=TileMenu の +0xB0 配列（[+0xB6]=要素数）の要素型と [+0x9C] 子要素リストとの使い分け【中】／3=5A8260/5A8270/5A8280（singleton 3 種）の型と『子要素更新から除外する要素』の意味【低】）。本日 push: v405→v553（9bad54c6）149件＋本件 v554。v 採番 v554 消費（次=v555）。"
     }
   ],
   "metadata": {
-    "totalEntries": 958,
+    "totalEntries": 959,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-18T08:35:47Z",
-    "entry_count": 958,
-    "last_updated": "2026-11-18T08:35:47Z"
+    "lastUpdated": "2026-11-18T08:49:01Z",
+    "entry_count": 959,
+    "last_updated": "2026-11-18T08:49:01Z"
   }
 }

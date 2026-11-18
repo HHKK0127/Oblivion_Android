@@ -3699,3 +3699,14 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-554-1..3**: 1=`588BD0` の BST を所有するクラス（`[ecx+0x18]` 持ち）と `0xB3B0B0` バケットとの役割分担（属性値 vs 名前→ID）【中】／2=`707530` の `[ecx+0x9C]` リストを持つクラス（`TileMenu`/`Tile`）＋`vtable[+0x4C]`（型 ID getter）の実装【中】／3=`589D60` の `[this+0x34]` リスト（子要素）の要素型と `vtable[+0x18]`（更新仮想）【低】。
 - **本日 push 累計（セッション）**: v405 → … → v552 `e943e4d0` →（本件 v553 を本 commit で push）＝**149裁定**。
 - **次**: V-554-1..3 → 旧残点（BST 所有／`[ecx+0x9C]` 所有／子要素リスト）。
+
+## 2026-11-18 (jt) — 旧残点群消化第98弾 v554（V-554-1..3 完遂・旧 V-406-3 継続第84弾）: **`588BD0` は BST ではなくソート済み `NiTList<Value@Tile*>` の線形走査（v553 の「BST」を [確定負] に訂正）**・**`707530` の `[ecx+0x9C]`＝所有メニューの子要素リスト `NiTList<Tile*>`**・**`TileImage`（vtable `0xA69110`）の `+0x14`＝`NiTList<Value@Tile*>`／`+0x30`＝`NiTList<Tile*>`（`+0x34` head）**
+
+- **成果物**: `tmp/re/v554_tile_value_list_ruling.md`（probe **v554_1..2（2本）EXIT=0**）。台帳 **row530（bak379）**・`round_verify` **ALL OK**（rows 31..530 / total 416 / done 411 / open 5）。ai-todo **#151 note**・memory **959件**。
+- **① [確定・訂正] `588BD0`＝ソート済み `NiTList<Value@Tile*>` の線形走査**: `mov eax,[ecx+0x18]`（リスト head）→ `mov edx,[eax+8]`（payload）→ `movzx ecx,word[edx+0x18]`（key）→ `cmp` → **`mov eax,[eax]`（next のみ前進）**・`jg` で miss＝**単方向線形走査**（`6AA320` の `node[0]=head` と一致）。**v553 の「BST」は [確定負]**（左右 2 分岐が無い）。payload は `Value@Tile`（`+4`=float／`+8`=pointer／`+0x18`=word key）。**役割分担**: `0xB3B0B0` バケット＝属性名→`StringListElement@Tile`（グローバル名前表）、`Tile` の `+0x14 NiTList<Value@Tile*>`＝インスタンス属性値。
+- **② [確定] `707530` の `[ecx+0x9C]`＝所有メニューの子要素リスト**: `589D60` は `[this+0x24]`（所有メニュー）を取り `[menu+0xB6]`>0 なら `[menu+0xB0][0]` を `edi` に。`707530(edi, 6)` は `[edi+0x9C]` を `NiTList<Tile*>` として走査し `payload->vtable[+0x4C]() == 6` を返す。
+- **③ [確定] `[this+0x34]`＝`NiTList<Tile*>`（vtable `0xA690AC`）**: `TileImage` ctor `581810`: `[esi+0x14]=0xA6909C`（`NiTList<Value@Tile*>`・head=`+0x18`）／`[esi+0x30]=0xA690AC`（`NiTList<Tile*>`・head=`+0x34`）。`589D60` は `[this+0x34]` を辿り `5A8260`/`5A8270`/`5A8280`（singleton 3 種・`0xB3B350`/`0xB3B354`/`0xB3B358`）と比較しつつ各要素の `vtable[+0x18]()`（更新）を呼ぶ。RTTI: `0xA69110`=`.?AVTileImage@@`／`0xA6909C`=`NiTList<PAVValue@Tile>`／`0xA690AC`=`NiTList<PAVTile>`。
+- **④ 教訓**: **「key 比較して `jg` で miss」でも `mov eax,[eax]`（next のみ前進）なら BST ではなくソート済み片方向リスト**——左右 2 分岐（`[eax]`/`[eax+4]`）の有無で区別する（v553 の BST 説は [確定負]）／**クラスの全フィールドは ctor の `mov [reg+off],imm` 列挙で機械確定**できる（`581810` で `+0x14`/`+0x30` の 2 リスト vtable が判明）／**singleton 定数**（`5A8260`=`[0xB3B350]`）は比較相手の型を後から埋められる。
+- **残点 V-555-1..3**: 1=`Value@Tile` の完全レイアウト（`+4`=float／`+8`=pointer／`+0x18`=word key 以外）＋`0x14 NiTList<Value@Tile*>` への挿入箇所（属性値の設定側）【中】／2=`TileMenu` の `+0xB0` 配列（`[+0xB6]`=要素数）の要素型と `[+0x9C]` 子要素リストとの使い分け【中】／3=`5A8260`/`5A8270`/`5A8280`（singleton 3 種）の型と「子要素更新から除外する要素」の意味【低】。
+- **本日 push 累計（セッション）**: v405 → … → v553 `9bad54c6` →（本件 v554 を本 commit で push）＝**150裁定**。
+- **次**: V-555-1..3 → 旧残点（`Value@Tile` レイアウト／`TileMenu +0xB0`／singleton）。

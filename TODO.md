@@ -1410,6 +1410,13 @@
   > ④ 教訓: 「同じ key→値 getter」でも所有構造が違えば別系統——588BD0 は [ecx+0x18] の BST（word key）で 0xB3B0B0 バケットとは別物（取り違えない）／型 ID 定数は mov eax,imm; ret の 3 バイト関数として機械同定できる（5818D0）／mov eax,[esi+0x20]; mov edi,[eax] の空チェック→alloc→ctor→SetAt の型で「リスト先頭の遅延生成」を同定できる。
   > 残点 V-554-1..3: 1=588BD0 の BST を所有するクラス（[ecx+0x18] 持ち）と 0xB3B0B0 バケットとの役割分担（属性値 vs 名前→ID）【中】／2=707530 の [ecx+0x9C] リストを持つクラス（TileMenu/Tile）＋vtable[+0x4C]（型 ID getter）の実装【中】／3=589D60 の [this+0x34] リスト（子要素）の要素型と vtable[+0x18]（更新仮想）【低】。
   > 成果物: tmp/re/v553_bst_typeid_ruling.md、probe v553_1..3（3本 EXIT=0）、台帳 row529（bak378）、STATE (js)、memory 958件。
+  > v554 完遂（V-554-1..3 / 旧残点 V-406-3 第84弾）: 588BD0 は BST でなくソート済み NiTList<Value@Tile*> の線形走査（v553 の BST 説を [確定負] に訂正）・707530 の [ecx+0x9C]＝メニュー子要素リスト・[this+0x34]＝NiTList<Tile*>。
+  > ① [確定・訂正] 588BD0 の所有構造（V-554-1）: BST ではなくソート済み NiTList<Value@Tile*> の線形走査（v553 の「BST」は [確定負]）。588BD0: mov eax,[ecx+0x18]（リスト head）→ mov edx,[eax+8]（payload）→ movzx ecx,word[edx+0x18]（key）→ cmp ecx,esi → mov eax,[eax]（next へ前進）・jg で miss＝単方向線形走査（6AA320 の node[0]=head と一致）。payload は Value@Tile（+4=float／+8=pointer／+0x18=word key）。役割分担: 0xB3B0B0 バケット＝属性名→StringListElement@Tile（グローバル名前表）、Tile の +0x14 NiTList<Value@Tile*>＝インスタンス属性値（属性 ID→値）。
+  > ② [確定] 707530 の [ecx+0x9C]（V-554-2）: 所有メニュー（TileMenu）の子要素リスト NiTList<Tile*>。589D60 は [this+0x24]（所有メニュー）を取り [menu+0xB6]（配列要素数）>0 なら [menu+0xB0][0]（先頭要素）を edi に。707530(edi,6) は [edi+0x9C] を NiTList<Tile*> として走査し payload->vtable[+0x4C]() == 6 を返す。
+  > ③ [確定] [this+0x34] 子要素リスト（V-554-3）: NiTList<Tile*>（vtable 0xA690AC）。TileImage ctor 581810: [esi+0x14]=0xA6909C（NiTList<Value@Tile*>・head=+0x18）／[esi+0x30]=0xA690AC（NiTList<Tile*>・head=+0x34）。589D60 は [this+0x34] を辿り 5A8260/5A8270/5A8280（singleton 3 種・0xB3B350/0xB3B354/0xB3B358）と比較しつつ各要素の vtable[+0x18]()（更新）を呼ぶ。RTTI: 0xA69110=.?AVTileImage@@／0xA6909C=NiTList<PAVValue@Tile>／0xA690AC=NiTList<PAVTile>。
+  > ④ 教訓: 「key 比較して jg で miss」でも mov eax,[eax]（next のみ前進）なら BST ではなくソート済み片方向リスト——左右 2 分岐（[eax]/[eax+4]）の有無で区別する（v553 の BST 説は [確定負]）／クラスの全フィールドは ctor の mov [reg+off],imm 列挙で機械確定できる（581810 で +0x14/+0x30 の 2 リスト vtable が判明）／singleton 定数（5A8260=[0xB3B350]）は比較相手の型を後から埋められる。
+  > 残点 V-555-1..3: 1=Value@Tile の完全レイアウト（+4=float／+8=pointer／+0x18=word key 以外）＋0x14 NiTList<Value@Tile*> への挿入箇所（属性値の設定側）【中】／2=TileMenu の +0xB0 配列（[+0xB6]=要素数）の要素型と [+0x9C] 子要素リストとの使い分け【中】／3=5A8260/5A8270/5A8280（singleton 3 種）の型と「子要素更新から除外する要素」の意味【低】。
+  > 成果物: tmp/re/v554_tile_value_list_ruling.md、probe v554_1..2（2本 EXIT=0）、台帳 row530（bak379）、STATE (jt)、memory 959件。
 - [x] **#148** 【作製・既存バグ（2026-11-15 に #146 の verifier レビューで発見）】ESMFile::decodeClass（esm_reader.cpp:1882）が std::memcpy(&clas.flags, data->data.data(), 4) で uint8_t 型の ClassData::flags（esm_reader.h:731）へ4バイトを書込み、構造体の外へ3バイトを破イトを破壊している（隣接メンバー/スタックの踏みつけ）。証拠: ①ビルドログ %TEMP%/opencode/build_racefilter.log に -Wfortify-source: destination buffer has size 1, but size argument is 4 が変更行と無関係の既存箇所から出る ②base 024eda1a の esm_reader.cpp:1874 にも同一コード＝本リポジトリに元から存在 ③CLAS の DATA は本来16バイト構造（flags 4B + specialization 1B + ...）のはずで、ClassData 側の型（uint8_t）と読み幅（4B）が不整合＝どちらが正かは実データで要確認。【修正方針（推測禁止）】まず Oblivion.esm の CLAS DATA 実バイトと ClassData の意図を確認（flags が u32 なら ClassData::flags を uint32_t に広げ、u8 なら読み幅を1に縮める。EyesData/HairData の flags は uint32_t、ClassData のみ uint8_t という不揃いが手がかり）→ 正典/実データで型を確定してから最小修正。検証: ビルドで fortify 警告が消えること＋CLAS を読む既存経路が壊れないこと。関連: #146（発見の場）/#96/#101 `#android` `#esm` `#fix` `#oblivion` `#safety` (2026-11-18)
   > 【実装・検証の記録（2026-11-15）】
   > ①**実データで型を確定**: `oblivion_esm_pull/Oblivion3.esm`（device の Oblivion.esm と同サイズ 277,504,985B）を Python で走査 → CLAS **111件**、DATA 長は **48B(31件)/52B(80件)**＝タスク記載の「16バイト構造」は誤り。全111件で `+0x00/+0x04` が属性 enum 0..7・非同一、`+0x0C` の7スキルが 0x0C..0x20 の重複なし、`+0x28` は 0/1/2 のみ（bit0 autocalcs・bit1 guard と整合）。Warrior=Strength/Endurance＋Armorer..HeavyArmor、Mage=Intelligence/Willpower、Thief=Speed/Agility で既知仕様一致。→ 正典 `v261_clas_service_flags.md` のフィールド表（+0x00 属性1／+0x04 属性2／+0x08 未読／+0x0C 7×u32 スキル／+0x28 u8 flags／+0x2C 未読／+0x30 u8 trainer index）と完全一致。
@@ -2217,6 +2224,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2240,4 +2252,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-18 17:36:33
+**ai-todo** | Last Updated: 2026-11-18 17:46:36
