@@ -1099,6 +1099,20 @@
   > ⑩ V-532-3 [確定]（命令）FUN_004CE0A0（CELL +0xBC）: case0 arg2==0→伪、interior→基底、exterior→worldspace +0xBC 委譲／case1 interior→伪・AF50 必須・arg2==0 なら flags bit10 返却／case2,4 CA5F0==label・case3,5 CA640==label・flags bit10/arg2==0 で伪。保存ループとの厳密実行順は [部分確定] のまま。
   > 残点 V-533-1..3: 1=FUN_00451310 本体＋ロード側 GRUP スタック（file+0x23c/+0x240/+0x244）の開閉状態機械【中】／2=FUN_004DB4A0 ゲート trio（FUN_0046B680/FUN_0044FAA0/FUN_0045A500）の identity【中】／3=TESTopic +0x34=FUN_0052FBA0 本体と topic リスト登録/解除 site【低】。
   > 成果物: tmp/re/v532_refr_builder_ruling.md、probe v532_1..5（全5本 EXIT=0）、台帳 row508（bak357）、STATE (ix)、memory 937件。教訓: builder の case 分岐は jump table を実読して入口条件ごとに対で読む（v531 の interior bit 誤りは kind1 の bit10 分岐と混同）／RTTI TD→COL→vtable 機械逆引きで override 表を一括取得（ref==TD@col+12、ref==COL@vt-4）／and 0x8000;neg;sbb;neg;add 9 は flag?10:9 の boilerplate。supermemory 未登録は v405..v532 の128件。
+  > v533 完遂（V-533-1..3 / 旧残点 V-406-3 第63弾）: ロード側レコード状態機械の全確定・FUN_004DB4A0 ゲート trio identity・TESTopic +0x34 の型文字分岐。
+  > ① [確定]（実文字列）FUN_00451310＝TESFile::NextForm: 中に "Trying to load a bad form in TESFile::NextForm.
+  > File = %s
+  > Offset = %d" と "SetFilePointer() in NextForm failed with error:
+  > %s"（FormatMessageA 併用）。挙動: type が 'GRUP'(DAT_00b05e20)/'TOFT'(DAT_00b06138) なら +0x25c+=0x14（中に入る）、else +0x25c+=+0x240(dataSize)+0x14（レコード全体スキップ）。+0x25c<+0x258(=fileSize) なら seek→+0x23c..+0x24c クリア→FUN_004511C0→成功1／bad form 警告0／EOF 全クリア0。
+  > ② [確定] TESFile ロード状態フィールド表: +0x23c=現 type packed 4CC（0=無効）／+0x240=dataSize／+0x244=flags／+0x248=formID／+0x24c=vc／+0x250/+0x254=本體カーソル/残り長／+0x258=fileSize／+0x25c=現オフセット／+0x260/+0x264=scratch。
+  > ③ [確定] GRUP 開閉状態機械: 開=NextForm の +0x14 前進。閉=FUN_00451580（type=='GRUP' で +0x23c=0・+0x240-=0x14・NextForm 呼ぶ）→ 次の NextForm が else 分岐で (size-0x14)+0x14=size 進みグループ末尾脱出。'TOFT' も「中に入られる型」。
+  > ④ [確定] 補助群: FUN_004511C0=EnsureCurrentRecord（+0x23c==0 なら FUN_00450080 ヘッダ読→+0x250/4=0→FUN_00450F10 本體→FUN_0046AF70(+0x23c) 型 index 返却）。FUN_00451210=NextFormEx（ヘッダ→form 転写: form+4←型 index、form+8←flags（bit14 立上なら |0x4000）・FUN_0046C300・FUN_0046B6C0）。FUN_004512A0=Reset（seek 0＋全クリア）。FUN_00451460=SeekTo（+0x414/+0x418 一時バッファ解放→+0x25c=param seek→クリア）。
+  > ⑤ [確定] V-533-2 ゲート trio: FUN_0046B680=this+0x10 の {item,next} 埋込リストの非空先頭 getter（param -1=第1要素、n=スキップ数。caller 40+・「push -1; mov ecx,obj」）。FUN_0044FAA0=*(this+0x3dc)&1（DataHandler 読込済フラグ [命令確定/名称推定]）。FUN_0045A500=v529 thread バイト再確認。FUN_004DB4A0 はこれら合成の「配置保存 vs 変更追記」ゲート: 先頭有&TLS+0x184==0&(45A500==0 or manager+0x18 bit4)&DataHandler+0xCD4==0&44FAA0==0→1、else flags>>10&0xFFFFFF01。
+  > ⑥ [確定] FUN_0046B6C0=フォームリスト add/remove: arg!=0 は 44FB90→this+0x10 歩き一致 return／FUN_0067B1E0 追加／読込中 FUN_004526E0／else FUN_00446CB0 push（v530 の単方向リスト push 再利用）。arg==0 は末尾非空セル link 外し+free＝pop。
+  > ⑦ [確定] V-533-3 FUN_0052FBA0（TESTopic +0x34）: subject type=='9'(0x39 DIAL)→TESTopic 検索→this formID<found formID→1／':'(0x3A INFO)→TESTopicInfo 検索→FUN_0052F690==this→1、別人は topic の +0x34 委譲、owner なし 0／else 基底 FUN_0046B500。型を ASCII 文字値そのもので比較している点に注意。
+  > ⑧ [部分確定] topic リスト（DAT_00b33a98+0x7c）: 読み手 FUN_0052F690（所有者検索）/FUN_0052F6D0（+0x1c 名前 __mbsicmp バブルソート）/FUN_0052FAE0（全走査で FUN_0052F330 呼ぶ）確定。追加 site 未発見（残点 V-534-3）。FUN_0052F5D0=topic+0x28 サブリスト formID 検索（順/逆）。
+  > 残点 V-534-1..3: 1=REFR form+0x10 リストの正体＋flags>>10&0xFFFFFF01 マスクの解釈【中】／2=FUN_00450080/FUN_00450F10/FUN_00451A60 内部（ヘッダ読・zlib +0x414）【中】／3=topic リスト追加/削除 site【低】。
+  > 成果物: tmp/re/v533_nextform_ruling.md、probe v533_1..5（全5本 EXIT=0）、台帳 row509（bak358）、STATE (iy)、memory 938件。教訓: エラー文字列の「クラス::メソッド」で API 群が一括命名される（NextForm）／同時クリアの出現がフィールド群の区切り／多数 caller の小さな thiscall はデータ構造 accessor の匂い。supermemory 未登録は v405..v533 の129件。
 ①【高】CLAS DATA +0x08（form+0x40）の意味の確定。`tmp/re/v261_clas_service_flags.md` のフィールド表は +0x40 を「[未確定] 実行時コードから未読（クラス関数群 0x51BE70..0x51C680 にアクセサ無し・GetClass 呼び出し元 38 箇所の直後読も 0 hits）」としているが、**実データ（Oblivion.esm 全111 CLAS）では値が {0:53件, 1:30件, 2:28件} の3値のみ**で、既知21クラスの specialization と **21/21 一致**: Warrior/Rogue/Archer/Scout/Crusader/Barbarian/Knight=0=Combat、Mage/Nightblade/Spellsword/Witchhunter/Battlemage/Sorcerer/Healer=1=Magic、Thief/Assassin/Agent/Acrobat/Monk/Bard/Pilgrim=2=Stealth。→ (a) enum の向き（0=Combat / 1=Magic / 2=Stealth）の確定 (b) **EXE の消費者**の特定（クラス関数窓 0x51BE70..0x51C680 の外にある読み手＝chargen のクラス選択 UI・属性/スキル計算・GetClass 経路の form+0x40 直接読、または form+0x38+0x08 の別名アクセス）(c) GMST `sSpecialization`（既定 VA 0xA5E1A8 = " You will gain +10 in all specialization skills."、port 側 `gmst_defaults.h:205`）との関係。v261 の「未読」判定の訂正要否も明示すること。
 ②【高】原版 chargen が **CLAS から何を適用するか**の実装経路と定数: 属性+10 の2属性（DATA+0x00/+0x04）・major skill 7個（DATA+0x0C..+0x27・skill id 0x0C..0x20）の初期値/+10・specialization スキル +10（GMST sSpecialization の文言に対応する処理）・flags bit0 autocalcs の効果。port 側は `NpcManager::initializePlayerFromESM`（app/src/main/cpp/game/npc_manager.cpp:392）に該当処理の骨組みがあるが **呼び出し元ゼロの dead code**＝未実装。正典なしでは推測になるため、#148 の後続として実装したい。
 ③【中】CLAS DATA +0x30（trainer skill index、skill id = 値+0x0C）の消費者（v261 は 0x522726 の1件のみ）と +0x2C（未読 dword）の意味。①②が済めば優先度は低。
@@ -2021,11 +2035,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2049,4 +2058,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-18 10:47:46
+**ai-todo** | Last Updated: 2026-11-18 11:06:51
