@@ -3606,3 +3606,14 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-546-1..3**: 1=`FUN_004E4A10` の this 供給元（0x33 manager 実体＝型 ID テーブル持ち主）と `587B20` の 1B alloc の結びつき【中】／2=`0xB13948`/`0xB1395C` の 2 メニュー名 map の用途差（ID→名前か名前→IDか）【中】／3=`Menu` vtable `0xA696DC` の全 virtual slot 一覧【低】。
 - **本日 push 累計（セッション）**: v405 → … → v544 `466898b8` →（本件 v545 を本 commit で push）＝**141裁定**。
 - **次**: V-546-1..3 → 旧残点（4E4A10 this／2 map 用途差／Menu vtable slot）。supermemory は集約①〜⑦＋索引登録済。
+
+## 2026-11-18 (jl) — 旧残点群消化第90弾 v546（V-546-1..3 完遂・旧 V-406-3 継続第76弾）: **メニュー名の 2 map を RTTI で確定**（`0xB13948`＝名前→`XMLStorage*`／`0xB1395C`＝名前→`BuildStorage<Tile>*` の 2 段キャッシュ）・**`FUN_004E4A10`＝1043 callers の汎用 `NiTArray` grow（v545 の「0x33 専用」を訂正）**・**`Menu` vtable `0xA696DC` 実読（基底は大半 no-op スタブ）**
+
+- **成果物**: `tmp/re/v546_name_caches_ruling.md`（probe **v546_1（1本）EXIT=0**）。台帳 **row522（bak371）**・`round_verify` **ALL OK**（rows 31..522 / total 408 / done 403 / open 5）。ai-todo **#151 note**・memory **951件**。
+- **① [確定] 2 map の用途差（RTTI）**: `0xB13948`（vtable `0xA69688`）＝**`.?AV?$NiTMapBase@V?$NiTPointerAllocator@I@@PBDPAVXMLStorage@@@@`** ＝名前（`const char*`）→**`XMLStorage*`**／`0xB1395C`（vtable `0xA696A8`）＝名前→**`BuildStorage<Tile>*`**。→ **名前 → UI XML ソース／名前 → Tile ビルドの 2 段キャッシュ**（v545 の「両方から消す」の意味が確定）。両 map とも disp32 store 0 件＝`.data` 静的単一tons・CRT in-place 構築（`0xB0613C`/`0xB06164` と同型）。
+- **② [確定・訂正] `FUN_004E4A10`＝汎用 `NiTArray` grow**: **caller 1043 箇所**（多クラス）。代表 `40C1F9`: `movzx ecx,word[edi+0xe]; add ecx,esi; push ecx; mov ecx,edi; call 4E4A10` ＝ **`NiTArray::SetSize(arr, newCount)`**。→ **v545 の「0x33 singleton 専用ヘルパ」は誤り→訂正**。`587B20` の `alloc(1)`→`4E4A10(0x33)` は「型索引 0x33 の manager 配列を grow してスロット用意」と解釈 [部分確定]。
+- **③ [確定] `Menu` vtable `0xA696DC` 実読**: `+0x00=0x5853F0`（scalar dtor）／`+0x04,08,0C,10,14,20,24,28=0x60CF60`（no-op 共有スタブ 8 slot）／`+0x18,+0x1C=0x890B90`（同実装 2 slot）／`+0x2C=0x60D0A0`（no-op）／`+0x30=0x6FE080`（false）／`+0x34=0x6F7070`（0）。→ **`Menu` 基底は大半 no-op で仮想枠のみ**（実 UI は派生で override）。
+- **④ 教訓**: **「2 つの同名 map」は RTTI のテンプレート引数（key/value 型）で用途が一撃確定**／**「特定 singleton 専用」に見えたヘルパが 1000+ callers の汎用 `NiTArray` 操作だった（callers 数を必ず数える）**／**`.data` 静的単一tons（store 0 件）は CRT in-place 構築の印**（`0xB13948`/`0xB1395C`/`0xB0613C`/`0xB06164` が同型）。
+- **残点 V-547-1..3**: 1=`0xB3A708`（型索引 0x33 スロット）manager 実体と CRT init【中】／2=`Menu` vtable `+0x18`/`+0x1C`（`0x890B90`）役割＋no-op 8 slot の理由【低】／3=`591C50` の type 4002/4005/4011 値域定義元（UI XML メニュー種別 enum）【中】。
+- **本日 push 累計（セッション）**: v405 → … → v545 `1e6a5205` →（本件 v546 を本 commit で push）＝**142裁定**。
+- **次**: V-547-1..3 → 旧残点（0xB3A708 manager／Menu スタブ／type 値域）。supermemory は集約①〜⑦＋索引登録済。

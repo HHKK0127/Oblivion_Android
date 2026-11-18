@@ -1347,6 +1347,13 @@
   > ⑤ 教訓: 派生 ctor 群が最初に call する共通関数を RTTI で読めば基底クラスが一撃で確定（47 クラスの親＝Menu）／グローバルは disp32 write 全列挙で生成/破棄の 1:1 対が機械確定できる／静的 caller 0 件の関数は vtable 越し呼び出しを疑う。
   > 残点 V-546-1..3: 1=FUN_004E4A10 の this 供給元（0x33 manager 実体）と 587B20 の 1B alloc の結びつき【中】／2=0xB13948/0xB1395C の 2 メニュー名 map の用途差【中】／3=Menu vtable 0xA696DC の全 virtual slot 一覧【低】。
   > 成果物: tmp/re/v545_menu_base_ruling.md、probe v545_1（1本 EXIT=0）、台帳 row521（bak370）、STATE (jk)、memory 950件。supermemory は集約①〜⑦＋索引登録済。
+  > v546 完遂（V-546-1..3 / 旧残点 V-406-3 第76弾）: 2 メニュー名 map の用途 RTTI 確定・4E4A10 は汎用 NiTArray grow（v545 訂正）・Menu vtable 実読。
+  > ① [確定] 2 map 用途差（RTTI 実測）: 0xB13948 の vtable 0xA69688→TD '.?AV?$NiTMapBase@V?$NiTPointerAllocator@I@@PBDPAVXMLStorage@@@@'＝名前(const char*)→XMLStorage*。0xB1395C の vtable 0xA696A8→TD '.?AV?$NiTMapBase@...PBDPAVBuildStorage@Tile@@@@'＝名前→BuildStorage<Tile>*。→ メニュー名→UI XML ソース／名前→Tile ビルドキャッシュの 2 段キャッシュ（v545 の「両方から消す」＝この 2 種の解放と確定）。両 map とも disp32 store 0 件＝.data 静的単一tons・CRT in-place 構築（0xB0613C/0xB06164 と同型）。
+  > ② [確定・訂正] FUN_004E4A10＝1043 callers の汎用 NiTArray grow（v545 の「0x33 singleton 専用ヘルパ」は誤り→訂正）。代表窓 40C1F9: movzx ecx,word[edi+0xe]; add ecx,esi; push ecx; mov ecx,edi; call 4E4A10＝NiTArray::SetSize(edi,newCount)。587B20 の alloc(1)→4E4A10(0x33) は「型索引 0x33 の manager 配列を grow してスロット用意」と解釈 [部分確定]。
+  > ③ [確定] Menu vtable 0xA696DC 実読: +0x00=0x5853F0（scalar dtor）/ +0x04,08,0C,10,14,20,24,28=0x60CF60（no-op 共有スタブ）/ +0x18,+0x1C=0x890B90（同実装2slot）/ +0x2C=0x60D0A0（no-op）/ +0x30=0x6FE080（false）/ +0x34=0x6F7070（0）＝Menu 基底は大半 no-op で仮想枠のみ（実 UI は派生 override）。
+  > ④ 教訓: 「2 つの同名 map」は RTTI テンプレート引数（key/value 型）で用途が一撃確定／「特定 singleton 専用」と見えたヘルパが 1000+ callers の汎用 NiTArray 操作だった（callers 数を必ず数える）／.data 静的単一tons（store 0 件）は CRT in-place 構築の印。
+  > 残点 V-547-1..3: 1=0xB3A708（型索引 0x33 スロット）manager 実体と CRT init【中】／2=Menu vtable +0x18/+0x1C（0x890B90）役割＋no-op 8 slot の理由【低】／3=591C50 の type 4002/4005/4011 値域定義元（UI XML メニュー種別 enum）【中】。
+  > 成果物: tmp/re/v546_name_caches_ruling.md、probe v546_1（1本 EXIT=0）、台帳 row522（bak371）、STATE (jl)、memory 951件。supermemory は集約①〜⑦＋索引登録済。
 - [x] **#148** 【作製・既存バグ（2026-11-15 に #146 の verifier レビューで発見）】ESMFile::decodeClass（esm_reader.cpp:1882）が std::memcpy(&clas.flags, data->data.data(), 4) で uint8_t 型の ClassData::flags（esm_reader.h:731）へ4バイトを書込み、構造体の外へ3バイトを破イトを破壊している（隣接メンバー/スタックの踏みつけ）。証拠: ①ビルドログ %TEMP%/opencode/build_racefilter.log に -Wfortify-source: destination buffer has size 1, but size argument is 4 が変更行と無関係の既存箇所から出る ②base 024eda1a の esm_reader.cpp:1874 にも同一コード＝本リポジトリに元から存在 ③CLAS の DATA は本来16バイト構造（flags 4B + specialization 1B + ...）のはずで、ClassData 側の型（uint8_t）と読み幅（4B）が不整合＝どちらが正かは実データで要確認。【修正方針（推測禁止）】まず Oblivion.esm の CLAS DATA 実バイトと ClassData の意図を確認（flags が u32 なら ClassData::flags を uint32_t に広げ、u8 なら読み幅を1に縮める。EyesData/HairData の flags は uint32_t、ClassData のみ uint8_t という不揃いが手がかり）→ 正典/実データで型を確定してから最小修正。検証: ビルドで fortify 警告が消えること＋CLAS を読む既存経路が壊れないこと。関連: #146（発見の場）/#96/#101 `#android` `#esm` `#fix` `#oblivion` `#safety` (2026-11-18)
   > 【実装・検証の記録（2026-11-15）】
   > ①**実データで型を確定**: `oblivion_esm_pull/Oblivion3.esm`（device の Oblivion.esm と同サイズ 277,504,985B）を Python で走査 → CLAS **111件**、DATA 長は **48B(31件)/52B(80件)**＝タスク記載の「16バイト構造」は誤り。全111件で `+0x00/+0x04` が属性 enum 0..7・非同一、`+0x0C` の7スキルが 0x0C..0x20 の重複なし、`+0x28` は 0/1/2 のみ（bit0 autocalcs・bit1 guard と整合）。Warrior=Strength/Endurance＋Armorer..HeavyArmor、Mage=Intelligence/Willpower、Thief=Speed/Agility で既知仕様一致。→ 正典 `v261_clas_service_flags.md` のフィールド表（+0x00 属性1／+0x04 属性2／+0x08 未読／+0x0C 7×u32 スキル／+0x28 u8 flags／+0x2C 未読／+0x30 u8 trainer index）と完全一致。
@@ -2154,11 +2161,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2182,4 +2184,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-18 15:51:29
+**ai-todo** | Last Updated: 2026-11-18 15:57:38
