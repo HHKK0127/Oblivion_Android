@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-19T10:25:00Z",
+  "lastUpdated": "2026-11-19T11:10:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -14336,14 +14336,46 @@
         "todo-161"
       ],
       "content": "2026-11-19 v561 裁定＝U5 race_button_done(id=90) の未入力・未選択時挙動（ai-todo #161 完了）。成果物 tmp/re/v561_u5_done_button_ruling.md・台帳 row537。①ボタン無効化は無い [確定負]: race_sex_menu.xml 全体で <disabled> は 0 個（<onlyif> 4 個は id=90 と無関係）＝id=90 は常に押せる。②エラー文字列キーも無い [確定負]: 未入力用の専用文字列は無く、ボタン表記 _done/_return のみ。③「そのまま確定」でも「拒否」でもなく確認ダイアログ [確定(命令)]: id=90 は RaceSexMenu vtable +0x0C の 0x5CC200 で cmp ebx,0x5A により分岐。(a) Main ページ → 0x5CCA77 で GetTrait([esi+0x30] /*race_name*/, 0xFDE /*string*/) を検査し、長さ0→0x5CCADF、空白以外ありでフラグ解除、strcmp(name,[0xB39440] /*既定名*/)==0 または空白のみでないなら 0x5CCBB7 の FUN_00579C10(0xB38CF0,0xB39438,…,1)＝確認メッセージ。空名・空白のみでも 0x5CCBB7 に到達し、手前 0x5CCB0E で 0x5E32F0(player) 名の頭文字が母音かで a/an を選ぶ＝空チェックは拒否ではなく冠詞選択。(b) Shape/Tone/General(Face) → 0x5CCA09 で SetTrait([esi+4],0xFAE, GetTrait(GetPage(\"Face\"),0xFAE))＝Face ページへ戻す。(c) それ以外 → 0x5CC8BA の後処理。④「種族未選択」状態が存在しない [確定(命令)]: 種族は 0x5CC200 の初期化で必ず 1 件選択済みで、Done 経路に種族の有無を見る分岐が無い。移植への示唆: 移植の「races が空なら Done を拒否」は原版に無い防御（原版は空でも確認ダイアログを出して進む）。原版の Done はページ送りボタンでもある（Main→確認 / Shape・Tone・General(Face)→Face へ戻る）。教訓: 「無効化されているか」は XML の <disabled> 件数を数えるのが最短／「エラー文字列で弾く」かは文字列キー表ではなく実際の分岐の到達先（拒否ループか確認ダイアログか）を読む／未選択状態の有無は「その状態を作る初期化が存在するか」で決まる。"
+    },
+    {
+      "id": "opencode-v562-u6-assets-20261119",
+      "timestamp": "2026-11-19T11:10:00Z",
+      "priority": "medium",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v562",
+        "u6",
+        "assets",
+        "bsa",
+        "todo-166"
+      ],
+      "content": "2026-11-19 v562(U6) 裁定＝起動時素材の配置（ai-todo #166 完了）。成果物 tmp/re/v562_u6_u4_assets_topleft_ruling.md・台帳 row538。原版に「アセット展開」という工程は存在しない [確定]。①メニュー XML（menus\\**）は Oblivion - Misc.bsa 内（menus\\ 配下 89 個の XML）。②動画 .bik は BSA に入っていない [確定]＝主要 5 BSA（Misc 115 / Meshes 20182 / Sounds 1533 / Voices1 33198 / Voices2 44582 = 計 89,610 エントリ）に .bik も video\\ も 0 件で、loose の Data\\Video\\*.bik のみ。③参照は FUN_00410160 が \"Data\\Video\\\" + 名前 を合成して _BinkOpen（v557 §2.2・GMST s* の値）。移植への示唆: 原版は BSA をランタイムマウントするので「展開順序」の正典は無く、移植 AssetExtractor の順序設計は独自実装。守るべきは配置（メニュー XML = アーカイブ内 / 動画 = 外部）。移植の第3段（APK assets/videos/* → cacheDir）は原版でいう「Data\\Video\\ にファイルが在る」状態を作る自己修復で対応物は無い。教訓: 「展開順序」を問われたらまず「原版に展開工程があるか」を疑う（BSA はランタイムマウント）。拡張子で機械カウントすれば 1 手で決着する。"
+    },
+    {
+      "id": "opencode-v562-u4-topleft-20261119",
+      "timestamp": "2026-11-19T11:10:00Z",
+      "priority": "medium",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v562",
+        "u4",
+        "title-screen",
+        "chargen",
+        "todo-156"
+      ],
+      "content": "2026-11-19 v562(U4) 裁定＝タイトル／キャラ作成中の左上要素（ai-todo #156 完了）。成果物 tmp/re/v562_u6_u4_assets_topleft_ruling.md・台帳 row539。原版に左上要素は無い [確定(XML)]。①タイトル main_menu.xml の要素は backdrop（中央・visible=false）、oblivion_logo（中央+3 / 画面高/4+22.5）、内側 oblivion_logo（-5,-5）、press_start（中央・y=725）、button_layout（中央・y=725・ボタン6個）、version（x=10, y=935）のみ。左上（x≈0,y≈0）の要素は存在せず、唯一の隅要素は version の左下。②キャラ作成 race_sex_menu.xml のトップレベルは race_background（generic_background.xml を include・全画面）とその中の race_window（x=30,y=85,500x558）、race_button_done（右下）のみ。③HUD は別メニュー（HUDMainMenu=0x3EC 等）でタイトル／chargen の XML には含まれない。移植への示唆: 移植の恒久 HUD 位置（左上）は独自 UI。chargen 中に抑制するかは設計判断で、原版準拠なら出さない。教訓: 「◯◯へ出すか」は XML の全要素の x,y を抽出すれば足りる（存在しない要素は座標も無いので、隅の唯一の要素を見つけて「左上には無い」を肯定的に示せる）。"
     }
   ],
   "metadata": {
-    "totalEntries": 973,
+    "totalEntries": 975,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-19T10:25:00Z",
-    "entry_count": 973,
-    "last_updated": "2026-11-19T10:25:00Z"
+    "lastUpdated": "2026-11-19T11:10:00Z",
+    "entry_count": 975,
+    "last_updated": "2026-11-19T11:10:00Z"
   }
 }

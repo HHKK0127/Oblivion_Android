@@ -3806,3 +3806,13 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **本日 push 累計（セッション）**: v405 → … → v560 `a0cbb8d3` →（本件 v561 を本 commit で push）＝**158裁定**。
 - **次**: U6（起動時素材展開順序・メニュー背景ムービーの置き場所 → #166）／U4（左上表示要素 → #156）。
 
+## 2026-11-19 (kb) — U6 / U4 完了 v562（ai-todo #166 / #156）: **原版にアセット展開工程は無い（`.bik` は BSA 外の loose）**／**タイトル・chargen に左上要素は無い**
+
+- **成果物**: `tmp/re/v562_u6_u4_assets_topleft_ruling.md`（probe **v562_1**）。台帳 **row538（U6）・row539（U4）（bak44）**・`round_verify` **ALL OK**（rows 31..539 / total 425 / done 420 / open 5）。U 節 **U6・U4 を `[x]`**＝**U 節 7 項目すべて完了**。ai-todo **#166 / #156 note**・memory 2 件追記。
+- **U6 [確定]**: メニュー XML（`menus\**`）は `Oblivion - Misc.bsa` 内（`menus\` 配下 89 XML）。**`.bik` は主要 5 BSA（Misc 115／Meshes 20182／Sounds 1533／Voices1 33198／Voices2 44582＝計 89,610 エントリ）に 0 件**で loose `Data\Video\*.bik` のみ。参照は `FUN_00410160` の `"Data\Video\" + 名前` → `_BinkOpen`。→ **原版は BSA をランタイムマウント（展開しない）ので「展開順序」の正典は無く、移植 `AssetExtractor` の順序は独自実装**。守るべきは**配置**（メニュー=アーカイブ内／動画=外部）。
+- **U4 [確定(XML)]**: タイトルの隅要素は **`version` の左下 (x=10, y=935) のみ**で左上要素は無い（他は中央のロゴ 2 枚・`press_start`/`button_layout` の y=725）。chargen は `race_background`（全画面 include）＋`race_window`(x=30,y=85)＋Done(右下) のみ。HUD は別メニュー（0x3EC）で、**移植の恒久左上 HUD は独自 UI**（原版準拠なら chargen 中は出さない）。
+- **教訓**: **「展開順序」を問われたら、まず「原版に展開という工程があるか」を疑う**——BSA はランタイムマウントで、拡張子で機械カウントすれば 1 手で決着する（5 BSA 89,610 エントリで `.bik` 0 件）／**「◯◯へ出すか」は XML の全要素の x,y を抽出すれば足りる**（存在しない要素は座標も無いので、隅の唯一の要素を見つけて「左上には無い」を肯定的に示せる）。
+- **残点 V-562-1..3**: 1=`Oblivion - Textures.bsa` の正式名とテクスチャ配置【低】／2=タイトル `version` の文字列キー【低】／3=chargen 中に HUD(0x3EC) が開かない命令的裏付け【中】。
+- **本日 push 累計（セッション）**: v405 → … → v561 `d9a31b0b` →（本件 v562 を本 commit で push）＝**159裁定**。
+- **次**: **U 節は全 7 項目クローズ**。残るのは V-558-1（RaceSexMenu のページ送り呼出元）・V-559-2（p3/p5 行生成）・V-561-1（90 以外の通知）・V-562-3（chargen 中 HUD）などの新規残点群と、旧残点 V-557-1..3（`BinkOpen` フラグ名／ループ継ぎ目／credits 再生箇所）。
+
