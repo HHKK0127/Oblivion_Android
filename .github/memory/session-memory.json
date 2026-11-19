@@ -14450,14 +14450,47 @@
         "page-switch"
       ],
       "content": "2026-11-19 v563 裁定＝V-558-1 クローズ（U2 フォロー・ai-todo #162 追加）。成果物 tmp/re/v563_u2_page_switch_ruling.md・台帳 row540。①RaceSexMenu のページ切替は Done ボタン（tile id=90）のクリックのみ [確定(命令)]。通知ハンドラ 0x5CC200（vtable +0x0C）が現在ページごとに SetTrait(root=[this+4], 0xFAE /*user0*/, GetTrait(GetPage(\"<target>\"), 0xFAE)) を実行。書き込みは 5 箇所: 0x5CC857(target=[0xB38F70]=Main) / 0x5CC9AD([0xB38FE8]=Tone) / 0x5CC9F2([0xB38FE0]=Shape) / 0x5CCA42([0xB38F80]=Face) / 0x5CC8BA([0xB38FF0]=Random)。②タブ・左右キー・スクロールでのページ切替は存在しない [確定負]。0x5C0000..0x5D0000 の push 0xFAE 80 箇所を全分類し、メニュー根 [this+4] への SetFloat は 4 箇所のみで全て Done 経路、キー入力からページを書く経路は無い。③入口: 0x5CC277 cmp ebx,0x5A で現在ページ判定。Main → 0x5CCA77（名前チェック→確認→Main へ戻す）／Shape・Tone・General(Face) → 0x5CCA09（Face へ戻す）／その他 → 0x5CC8BA 等。0x5CC200 の通知 id は 90／10（race_name クリック→0x5C2730）／98（0x5CCBF4）でページを書くのは 90 のみ。移植への示唆: 原版のページ送りは Done を押して次ページへ進むウィザード方式。タブ化は仕様変更。ページ index を書くのは SetTrait(menuRoot, user0, index) の 1 点なので移植も現在ページを 1 つの状態値に持つのが原版準拠。教訓（手法）: mov ecx, edi が push 0xfae の直後にあるため素朴な逆走査では書き込みを取り逃す。push imm; mov ecx, reg; call SetFloat の形を前方走査で拾う必要がある（逆走査だけでは書き込み 0 件と誤結論しかけた）。"
+    },
+    {
+      "id": "opencode-bsafileextractor-bug-20261119",
+      "timestamp": "2026-11-19T08:20:00Z",
+      "priority": "high",
+      "category": "error-solution",
+      "tags": [
+        "oblivion",
+        "tooling",
+        "bsa",
+        "extractor",
+        "bug",
+        "gitignore",
+        "menus",
+        "re"
+      ],
+      "content": "2026-11-19 【tools/BSAFileExtractor/BSAFileExtractor.py の実バグを特定・修正（ローカル）】症状: フィルタ抽出（`python BSAFileExtractor.py <bsa> -i <Data> -o <out> <names...>`）で、マッチした**全ファイルが同一内容**になる（実測: menus 配下の main_menu.xml/pause_menu.xml/hud_main_menu.xml が全て 2620B・MD5 72DF0B5EA31BEB6CF126EF048B97A570・中身は `<!-- TextEditMenu.xml -->`）。根因: `:97-102` の探索ループは `files_found` に `archive_file.filepath`（**パス文字列のみ**）を集めるが、`:105-110` の書込みループが `stream.write(archive_file.data)` と**直前ループの最後の ArchiveFile の data** を全ファイルへ書いていた（`archive_file` は Python のループ変数で最後の値が残る）。【修正】`files_found` に **ArchiveFile オブジェクトそのもの**を append し、書込みを `file_to_extract.filepath` / `file_to_extract.data` に変更。マッチ時の `break` も追加（同一ファイルへの複数マッチ防止）。【検証 PASS】修正後 `Oblivion - Misc.bsa`（D:\\Cargo\\Other\\Oblivion\\Oblivion_Steam版\\Data）から `race_sex_menu.xml`/`stats_menu.xml`/`main_menu.xml` を抽出 → **5ファイルが個別の正しいサイズ**（menus/chargen/race_sex_menu.xml **22156B**・menus/main/stats_menu.xml **102783B**・menus/options/main_menu.xml **6554B**・menus/main/hud_main_menu.xml 24838B・menus/options/copy of main_menu.xml 8137B）で、RE が `bethesda_structs` で別途抽出した正解値（22156/102783/6554）と完全一致。【制約】`tools/BSAFileExtractor/` は `.gitignore:28` で**追跡対象外**のためコミット不可（ローカル修正のみ）。RE は同種の抽出を `bethesda_structs`（`archive.iter_files()` が filepath/data を持つ ArchiveFile を yield する）で行っており、そちらは正常。"
+    },
+    {
+      "id": "opencode-96-assets-menus-import-20261119",
+      "timestamp": "2026-11-19T08:20:00Z",
+      "priority": "medium",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "todo-96",
+        "chargen",
+        "assets",
+        "menus",
+        "xml",
+        "bsa"
+      ],
+      "content": "2026-11-19 【#96 の素材を取り込み】修正した BSAFileExtractor で `Oblivion - Misc.bsa` から抽出した実物 XML を worktree `fix-chargen-ui-quality` の `app/src/main/assets/menus/` へ配置（**追跡可能＝gitignore 対象外**。`.gitignore` は videos/ と一部 textures/ui/*.png のみ除外し、menus/ は除外していない）。取り込み 5 ファイル: menus/chargen/race_sex_menu.xml 22156B / menus/main/hud_main_menu.xml 24838B / menus/main/stats_menu.xml 102783B / menus/options/main_menu.xml 6554B / menus/options/copy of main_menu.xml 8137B。**注意**: `copy of main_menu.xml` は BSA 内の重複アーティファクトで不要（削除候補）。原版のメニュー XML は `Oblivion - Misc.bsa` 内に 89 個あり、v562 で『原版に展開工程は無くランタイムで BSA をマウントする』と確定済み。移植の `menu_xml_interpreter`(M2/M3)＋`menu_ui_builder`(M4) は実装・テスト済み（`app/src/main/cpp/tests/menu_xml_tests.cpp`・MenuXmlTests 142 ケース）なので、これらの XML を解決して正典どおりの画面を作れる。**未確定**: 原版メニュー座標（`screen()` は実解像度・スケール基準は 640×480、v557 §2.7）から移植の 1920×1110 への写像規則は正典に無い（#96 を完全再現するには要裁定）。"
     }
   ],
   "metadata": {
-    "totalEntries": 980,
+    "totalEntries": 982,
     "compressedCount": 123,
     "sessionCount": 43,
     "lastUpdated": "2026-11-19T12:00:00Z",
-    "entry_count": 980,
+    "entry_count": 982,
     "last_updated": "2026-11-19T12:00:00Z"
   }
 }
