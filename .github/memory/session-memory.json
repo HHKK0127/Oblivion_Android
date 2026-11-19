@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-19T08:05:00Z",
+  "lastUpdated": "2026-11-19T08:55:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -14288,14 +14288,31 @@
         "todo-162"
       ],
       "content": "2026-11-19 v558 裁定＝U2 RaceSexMenu(0x40C) のページ構成（ai-todo #162 完了）。成果物 tmp/re/v558_racesexmenu_pages_ruling.md・台帳 row534。①RaceSexMenu.user0 = 現在表示中のページ index（XML race_sex_menu.xml:12 の宣言コメント、:250-253 の visible = me().user0 == RaceSexMenu.user0 で完全一致のページだけ可視）[確定(XML+命令)]。②原版は 5 タブではなく 21 ページ。AddPane 0x5C4340 が head 0x5CA010 から 21 回呼ばれ this+0x40/+0x44/…/+0x90 に順次格納、ページ配列は this+0x94（0x5C4444 の mov [ebx+edx*4+0x94],esi、0x5C3BE0(vtable+0x20) が同配列からスクロール更新）。③AddPane は 0x585410(parent,\"race_template_pane\") で生成し SetTrait(id=0xFA8,index)・SetTrait(listindex=0xFAA,childcount-1)・SetTrait(user0=0xFAE,index)。index=-1 は [0xB3B5D4]++ で自動採番（ctor で 200 初期化）。④21 ページ名（既定英語＋GMST・初期化 0x9F67FA..0x9F76FA）: Main(sMain) / Race(sRace) / Hair(sHair) / Face(sFace) / Shape(sShape) / Tone(sTone) / General(Face)(sGeneralFace) / Brow(sBrow) / Cheeks(sCheeks) / Chin(sChin) / Forehead(sForehead) / Jaw(sJaw) / Mouth(sMouth) / Nose(sNose) / General(Skin)(sGeneralSkin) / Beard(sBeard) / Eye shades(sEyesTex) / Eyebrows(sEyebrows) / Mouth(Lips)(sMouthLips) / Nose shades(sNoseTex) / Hair Color(sColor)。名前→フィールド対応は 0x5C3110(this,name) の連鎖比較。表示名は GMST なので ESM で差し替え可能。⑤<tab>/<page> 要素は存在しない [確定負]。race_name(id10)+stat_title_left/right.dds は単なるページタイトル描画、race_window(id1,500x558,clipwindow) がページ親、race_button_done(id90) は user5 で Done/Back 切替。⑥ページ切替は SetTrait([menu+0x2c],0xFAE,index) を書く方式で、EXE 全域の実装型は 5 箇所: (cur-1)&mask 循環 = 0x5AA842(head 0x5AA3A0)/0x5B1C0D(head 0x5B1A40)、cur-1 = 0x5AB26A(head 0x5AADC0)/0x5B3653(head 0x5B2B70)、arg+1 = 0x5C1C23(head 0x5C1B80)。RaceSexMenu 自身の呼出元は未特定 [部分確定 V-558-1]。⑦移植の Name/Race/Attributes/Skills/Appearance 5 分割は原版に対応物なし [確定負]。Attributes/Skills は StatsMenu(0x3EB)、名前は Main ページ内。原版は「Main → Race → Hair/Face/Shape/Tone → 顔パーツ8種 → 肌 → 髭/眉/唇 → 瞳色/鼻色/髪色」の 1 本のページ列。⑧XML 実物: :147 PAGES LAYOUT / :200-205「template PANES added here by code」＝ページはコードが動的生成 / :169-196 scroll bar の user2 = RaceSexMenu.user1 - 6・user8 = 6（＝user1 は現在ページの項目数）/ 要素テンプレート button(101)/toggle(102)/slider(103)/text(104)。⑨教訓: 「タブ」に見える UI でも XML に tab/page 要素が無ければ実体はコード駆動のページ index／ページ一覧は「ページ名 String を初期化する mov ecx,<String> の直後に並ぶ 2 リテラル（表示既定値と s* GMST 名）」を機械走査すれば一度に取れる／ページ配列は AddPane の mov [reg+index*4+disp] と、その配列を読む vfunc の 2 箇所で同定できる。"
+    },
+    {
+      "id": "opencode-v559-statsmenu-tabs-20261119",
+      "timestamp": "2026-11-19T08:55:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v559",
+        "u3",
+        "statsmenu",
+        "todo-157",
+        "v364-3",
+        "v364-4"
+      ],
+      "content": "2026-11-19 v559 裁定＝U3 StatsMenu(0x3EB) の 5 タブ表示仕様（ai-todo #157 完了・V-364-3/V-364-4 クローズ）。成果物 tmp/re/v559_statsmenu_tabs_ruling.md・台帳 row535。①5 タブ = p1 General / p2 Attributes / p3 Skills / p4 Factions / p5 Misc。XML stat_tabs_p1..p5 の <id>=1..5 が通知ハンドラ 0x5DCD70 の lea eax,[ebx-1]; cmp eax,4; ja と一致。XML root <user0>1</user0> <!-- current visible tab page -->。タブ見出しはアイコン（Menus\\Shared\\all_tabs_icons.dds）で文字列キーは無い。②V-364-4 クローズ: 属性8行は stat_p2.user1..user8（現在）/user9..user16（base）、EXE は 0x5DA1A0 が AV index 0..7 で現在値→0xFAF+idx・base→0xFB7+idx を SetFloat。規則 userN=AV(N-1) 現在・user(N+8)=AV(N-1) base（AV順 STR/INT/WIL/AGI/SPD/END/PER/LUK）。ラベル strings() の _strength.._luck。値は 0x65D270(player,idx,0)（現在）/0x5F1910(idx)（base）。③色分岐: under=現在値<base / even=等しい / over=現在値>base。定数 under=(208,0,0) 赤 / even=(51,79,142) 青灰 / over=(0,128,0) 緑（stats_menu.xml:13-23）。行は y=me().user0*67+87。④p1 の供給（前提を訂正）: 0x5DBB00 が 4DA2A0→SetString(0xFAF)=名前 / 5EA720→SetString(0xFB0)=種族(race) / vfunc+0x268 の [+0x18+4]→SetString(0xFB1)=星座(birthsign)（無ければ '-'）/ 5EA6B0→SetString(0xFB2)=クラス(class) / 5E1FD0→SetFloat(0xFB3)=レベル。XML も race=user2 / birthsign=user3 / class=user4 / level=user5 / name=parent().user1。⑤V-364-3 クローズ: p4 0x5DC950 の [TESNPC+0x3C] は所属ファクションの連結リスト（+0=TESFaction* / +4=rank byte）。名前 [[faction]+0x18]+4、ランク名 0x51F350(faction,rank)。フラグ byte [[esi]+0x34] の bit0/bit3 とランク名 DUMMY(0xA534F0) を除外。行は 0x585410(elem,\"stat_faction_template\")、listindex=行番号、user1=ファクション名（空白→'_'）、user2=ランク名。⑥p3/p5: stat_skill_template(0xA6DB58) を生成するのは 0x5DC630（p3 Skills）/ stat_misc_template(0xA6DA18) を生成するのは 0x5DA930（p5 Misc）。⑦p1 の health/magicka/fatigue は stat_p1.user6/7・user8/9・user10/11。v364 の AV9→0xFB6+0xFB7/0xFBB、AV10→0xFB8+0xFB9/0xFBC が magicka/fatigue の current/max と一致（AV8=health は同 switch 列挙外・[部分確定]）。⑧教訓: 「◯種の SetString」という前提は実読で数え直す（p1 は 3 種ではなく文字列 4 本＋数値 1 本）／テンプレート名リテラルの参照元で「どの関数がどのタブの行を作るか」が 1 手で確定（stat_skill→0x5DC630・stat_faction→0x5DC950・stat_misc→0x5DA930）／リンクリストの要素型は [item] を実体ポインタ・[item+4] を byte rank として読む形で判別できる。"
     }
   ],
   "metadata": {
-    "totalEntries": 970,
+    "totalEntries": 971,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-19T08:05:00Z",
-    "entry_count": 970,
-    "last_updated": "2026-11-19T08:05:00Z"
+    "lastUpdated": "2026-11-19T08:55:00Z",
+    "entry_count": 971,
+    "last_updated": "2026-11-19T08:55:00Z"
   }
 }

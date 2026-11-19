@@ -76,6 +76,16 @@
 
 - [ ] **#157** 【RE レーン依頼・#127 の正典（StatsMenu 表示仕様の残点 V-364-3/4 を確定）】port のキャラクターシート配線（#127）を正典に合わせるため、**原版 StatsMenu の表示仕様**を確定してほしい。【出発点＝既裁定】`tmp/re/v364_stats_credits_supply_ruling.md`（#133 完遂分）で既に [確定]: menu id **0x3EB**／XML 構造＝**5タブ** `stat_p1`(race・birthsign・class・level・health・magicka・fatigue_layout＋stat_faction_item/stat_misc_item)・`stat_p2`(8属性・各 <id> 24=intelligence 等)・`stat_p3`(minor_label＋window)・`stat_p4`/`stat_p5`(up/down/window/pane のスクロール付きリスト)・`stat_tabs`(prev/next＋stat_tabs_p1..p5 の <id> 1..5)／**タブ通知 id 1..5＝slot3 `0x5DCD70`** [確定(XML+命令)]／値供給チェーン **AV getter→trait→XML copy** [確定(命令)]／ルート traits に `user0`=current visible tab、色定義 `_red/_green/_blue_under/_even/_over`（値 vs base の色分岐用）、menufade 0.25。【依頼3件（判定5段階・根拠は EXE 命令または bsa 抽出 XML のみ・推測禁止）】
   > 【RE 依頼を出した（2026-11-18）】依頼書: `tmp/re/handoff_20261118_chargen_op_video_and_tabs_bundle.md`（OpenCode 作製レーン → ReverseEngineering・対象 EXE v1.2.0416・采番は v539 以降任意・判定5段階/根拠は命令または bsa 抽出 XML のみ）。 依頼3 [high]（再掲）: ①5タブの表示行・ラベル・値供給の完全対応表（特に通知 id4 `0x5DC950` が `[esi+0x3C]` walk で作る行が NPC の何のリストか＝V-364-3）②値 vs base の色分岐 `_under/_even/_over` の正典③tab p1 の SetString 3種（0xFAF/0xFB0/vfunc+0x268）が name/class/race のどれか。出発点 `tmp/re/v364_stats_credits_supply_ruling.md`。
+  > U3（StatsMenu 0x3EB の5タブ表示仕様）RE 裁定完了 2026-11-19 v559。成果物 tmp/re/v559_statsmenu_tabs_ruling.md（probe v559_1..7 EXIT=0・BSA 実物 stats_menu.xml 102783B/3478行）。V-364-3 と V-364-4 をクローズ。
+  > 【5タブの正体】p1=General / p2=Attributes / p3=Skills / p4=Factions / p5=Misc。XML の stat_tabs_p1..p5 の <id>=1..5 が、通知ハンドラ 0x5DCD70 の lea eax,[ebx-1]; cmp eax,4; ja と一致。XML root <user0>1</user0> <!-- current visible tab page --> が現在タブ。タブ見出しは文字列ではなくアイコン（Menus\Shared\all_tabs_icons.dds アトラス）＝文字列キーは存在しない。
+  > 【V-364-4 クローズ】属性8行は XML stat_p2.user1..user8（現在）/user9..user16（base）、EXE は 0x5DA1A0 が AV index 0..7 について現在値→0xFAF+idx・base→0xFB7+idx を SetFloat。規則: userN=AV(N-1) 現在、user(N+8)=AV(N-1) base（AV順 STR/INT/WIL/AGI/SPD/END/PER/LUK）。ラベルは strings() の _strength/_intelligence/_willpower/_agility/_speed/_endurance/_personality/_luck。値は 0x65D270(player,idx,0)（現在）と 0x5F1910(idx)（base）。
+  > 【色分岐】under=現在値<base / even=等しい / over=現在値>base。root 定数は under=(208,0,0) 赤 / even=(51,79,142) 青灰 / over=(0,128,0) 緑（stats_menu.xml:13-23）。行は y = me().user0*67+87。
+  > 【p1 の供給（依頼の前提を訂正）】「SetString 3種」ではない。0x5DBB00 が 4DA2A0(player)→SetString(0xFAF)=名前 / 5EA720(player)→SetString(0xFB0)=種族(race) / vfunc+0x268 の [+0x18+4]→SetString(0xFB1)=星座(birthsign)（無ければ "-"）/ 5EA6B0(player)→SetString(0xFB2)=クラス(class) / 5E1FD0(player)→SetFloat(0xFB3)=レベル。XML 側も race=user2 / birthsign=user3 / class=user4 / level=user5 / name=parent().user1 で一致。
+  > 【V-364-3 クローズ】p4 0x5DC950 の [TESNPC+0x3C] は所属ファクションの連結リスト（要素 +0=TESFaction* / +4=rank byte）。名前は [[faction]+0x18]+4（TESFullName）、ランク名は 0x51F350(faction, rank)。フラグ byte [[esi]+0x34] の bit0 または bit3 が立つものは除外、ランク名 "DUMMY"(0xA534F0) も除外。行は 0x585410(elem,"stat_faction_template") で生成し listindex(0xFAA)=行番号 / user1(0xFAF)=ファクション名（空白→'_'）/ user2(0xFB0)=ランク名。
+  > 【p3/p5 の担当】stat_skill_template(0xA6DB58) を生成するのは 0x5DC630＝p3 Skills／stat_misc_template(0xA6DA18) を生成するのは 0x5DA930＝p5 Misc。
+  > 【p1 の副次】health/magicka/fatigue は XML stat_p1.user6/user7（health current/max）・user8/user9（magicka）・user10/user11（fatigue）。v364 の AV9→0xFB6+0xFB7/0xFBB、AV10→0xFB8+0xFB9/0xFBC が magicka/fatigue の current/max と一致（AV8=health は同 switch 列挙外・[部分確定]）。
+  > 【移植への示唆】タブは General/Attributes/Skills/Factions/Misc の5つ。属性の色は base との比較なので現在値と base の2系統が必須。p4 は「所属ファクション＋ランク名」で、非表示フラグ(bit0/bit3)と DUMMY ランクの除外を再現する必要あり。タブ見出しはアイコンのみ（文字ラベルは原版に無い独自要素）。
+  > 【残点 V-559-1..4】1=health(AV8) の p1 供給箇所【低】／2=p3・p5 の行生成全分岐【中】／3=タブアイコンの UV crop【低】／4=[item]+0x34 bit0/bit3 のフラグ名【低】。
 ①【高】**5タブの表示行・ラベル・値供給の完全対応表** — 各タブの表示項目、ラベルの `strings()` キー（menus\strings.xml）、値を供給する getter/関数、行の生成元を確定。特に **V-364-3: 通知 id4（tab p4）`0x5DC950` が `__RTDynamicCast(TESBoundObject→TESNPC)` の上で `[esi+0x3C]` リストを walk して行生成している「NPC の何のリストか」**（major/minor skills か、それ以外か）と **V-364-4: XML trait ↔ EXE trait の完全対応表**、および `stat_p2_strength_layout`(id24) の `<copy src="stat_p2" trait="user1"/>` と色条件 `onlyif user1 lt user9` が指す **user1..user9 の意味（user9＝base 比較値 [推定] の裏取り）**。
 ②【中】**値 vs base の色分岐の正典** — `_red/_green/_blue` の `_under/_even/_over` が「現在値・修正後値・base」のどの比較で使われるか（例: `onlyif user1 lt user9 → _red_under / eq → _red_even / over → _red_over`）を命令で確定。＝port の「表示値と色が正しいか」の判定基準になる。
 ③【低】**tab p1 の3つの文字列の正体** — 通知 id1（`0x5DBB00`）が SetString する 0xFAF（`0x4DA2A0(player)` 由来）／0xFB0（`0x5EA720` 由来＝TESFullName 契約の名前 getter）／vfunc+0x268→[+0x18+4]（''=0xA2F7EC fallback）のうち、**どれが name / class / race のどれか**の確定。
@@ -2265,6 +2275,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2288,4 +2303,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-19 15:30:14
+**ai-todo** | Last Updated: 2026-11-19 15:35:05

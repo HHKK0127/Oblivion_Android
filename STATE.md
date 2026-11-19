@@ -3768,3 +3768,18 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **本日 push 累計（セッション）**: v405 → … → v557 `3591f544` →（本件 v558 を本 commit で push）＝**155裁定**。
 - **次**: U3（StatsMenu 0x3EB の 5 タブ表示仕様 → #157）。実物 `stats_menu.xml`(102783B) は抽出済み。
 
+## 2026-11-19 (jy) — U3 完了 v559（ai-todo #157・StatsMenu の 5 タブ表示仕様）: **5 タブ = General / Attributes / Skills / Factions / Misc**・**V-364-3/V-364-4 クローズ**・**p1 の供給は「3 種」ではなく文字列 4 本＋数値 1 本**
+
+- **成果物**: `tmp/re/v559_statsmenu_tabs_ruling.md`（probe **v559_1..7（7本）EXIT=0**・BSA 実物 `menus\main\stats_menu.xml` 102783B/3478行 を直接抽出）。台帳 **row535（bak41）**・`round_verify` **ALL OK**（rows 31..535 / total 421 / done 416 / open 5）。U 節 **U3 を `[x]`**・ai-todo **#157 note**・memory 追記。
+- **① [確定(XML+命令)] 5 タブ**: p1=General／p2=Attributes／p3=Skills／p4=Factions／p5=Misc。`stat_tabs_p1..p5` の `<id>`=1..5 ⇔ 通知ハンドラ `0x5DCD70` の `lea eax,[ebx-1]; cmp eax,4; ja`。XML root `<user0>1</user0> <!-- current visible tab page -->`。**タブ見出しはアイコン**（`Menus\Shared\all_tabs_icons.dds`）で文字列キーは無い。
+- **② [確定] V-364-4 クローズ**: 属性 8 行は `stat_p2.user1..user8`（現在）/`user9..user16`（base）、EXE は `0x5DA1A0` が AV 0..7 → `0xFAF+idx` / `0xFB7+idx`。**userN=AV(N-1) 現在、user(N+8)=AV(N-1) base**（AV 順 STR/INT/WIL/AGI/SPD/END/PER/LUK）。値は `0x65D270(player,idx,0)` / `0x5F1910(idx)`。
+- **③ [確定(XML)] 色分岐**: under=現在値<base／even=等しい／over=現在値>base。定数 **under=(208,0,0) 赤／even=(51,79,142) 青灰／over=(0,128,0) 緑**（`:13-23`）。行は `y = me().user0*67+87`。
+- **④ [確定(命令)] p1 の供給（前提を訂正）**: `0x5DBB00` が `0x4DA2A0`→SetString(0xFAF)=**名前**／`0x5EA720`→SetString(0xFB0)=**種族**／vfunc+0x268 の `[+0x18+4]`→SetString(0xFB1)=**星座**（無ければ "-"）／`0x5EA6B0`→SetString(0xFB2)=**クラス**／`0x5E1FD0`→SetFloat(0xFB3)=**レベル**。XML 側 race=user2／birthsign=user3／class=user4／level=user5／name=parent().user1 と一致。
+- **⑤ [確定(命令)] V-364-3 クローズ**: p4 `0x5DC950` の `[TESNPC+0x3C]` は**所属ファクションの連結リスト**（`+0`=TESFaction*／`+4`=rank byte）。名前 `[[faction]+0x18]+4`、ランク名 `0x51F350(faction,rank)`。**フラグ byte `[[esi]+0x34]` の bit0/bit3 とランク名 "DUMMY" を除外**。行は `0x585410(elem,"stat_faction_template")`、`listindex`=行番号、`user1`=ファクション名（空白→'_'）、`user2`=ランク名。
+- **⑥ [確定] p3/p5 の担当**: `stat_skill_template`(0xA6DB58) を生成＝`0x5DC630`（p3 Skills）／`stat_misc_template`(0xA6DA18) を生成＝`0x5DA930`（p5 Misc）。
+- **⑦ [部分確定] p1 の health/magicka/fatigue**: XML `stat_p1.user6/user7`・`user8/user9`・`user10/user11`。v364 の AV 9→0xFB6+0xFB7/0xFBB・AV 10→0xFB8+0xFB9/0xFBC が magicka/fatigue の current/max と一致（AV 8=health は同 switch 列挙外）。
+- **⑧ 教訓**: **「◯種の SetString」という前提は実読で必ず数え直す**（p1 は 3 種ではなく文字列 4 本＋数値 1 本）／**テンプレート名リテラルの参照元を引けば「どの関数がどのタブの行を作るか」が 1 手で確定**する（stat_skill→0x5DC630・stat_faction→0x5DC950・stat_misc→0x5DA930）／リンクリストの要素型は「`[item]` を vtable ではなく実体ポインタとして読み、`[item+4]` を byte rank として読む」形で判別できる。
+- **残点 V-559-1..4**: 1=health(AV8) の p1 供給箇所【低】／2=p3・p5 の行生成全分岐【中】／3=タブアイコンの UV crop【低】／4=`[item]+0x34` bit0/bit3 のフラグ名【低】。
+- **本日 push 累計（セッション）**: v405 → … → v558 `7966b80c` →（本件 v559 を本 commit で push）＝**156裁定**。
+- **次**: U1 残点 3 点（⒜ 第6引数／⒝ 入力の塞がり／⒞ 動画と RaceSexMenu の順序 → #164）。⒜⒝⒞ の材料は v557 で既に揃っている（§2.7・§2.6・⒞ は docs L433238-433249）。
+
