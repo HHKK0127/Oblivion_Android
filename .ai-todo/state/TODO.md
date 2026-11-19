@@ -204,6 +204,15 @@
   > 【手法メモ（再発型・重要）】①**push 保留（esp-shift）を無視するとスロット実体がずれる**: テンプレ文字列は normal [esp+0x1c..0x23]（2 push 直後）、**slot カーソルは normal [esp+0x24]（+4 は 1 push 保留中の 0x5DC8E5 [esp+0x28]+4 が実体 0x24）**、**form/AV 索引は normal [esp+0x28]（1 push 保留の 0x5DC75D）**、builder this は normal [esp+0x2c]。②**線形行表示は 1 byte の push ecx(0x5DC8D4) を落とす→ size 付き逐語ダンプで byte 境界確認が必須**。③レジスタ長は [a-z]+ 固定（{2} だと edi を逃す）。④静的登録バンドは push imm32(68) のバイト走査が最強（デコードずれ回避）。⑤**行数×空白=スロット数のアリタナイ検証**で表の取りこぼしを機械検出。
   > 【移植への示唆】Skills タブは分類グルーピング（原版順再現には P=0x51C090 の解明が必須）／進行度バーは user1=1.0＋user2=0..1 正規化（既定 100/50 のまま使うと全バー 50% 固定）／+2 加算＝行間隔が 15 箇所（詰めると原版と違う）／SE 有無で Misc 全行 ±1 シフト。
   > 【残点 V-569-1..5】1=**P の意味（グルーピングの正体）と builder+0x30.user3=C の表示先【中】**／2=p5 空白 15 箇所が y=70 空行で正しいか（stat_misc_template の y 公式未確認）【低】／3=0x52A8A0 2 クエリ（1,0,0 と 1,1,0）の区別【低】／4=0x565BE0 引数 2・0x565CC0・0x65FCA0 の正確なシグネチャ（x87 戻り含む）【低】／5=0x5DC8F3-5DC8FC の 3 命令の目的（単体では dead に見える）【低】。
+  > V-569-1（Skills タブのグルーピング判定 P）クローズ 2026-11-19 v572。成果物 tmp/re/v572_skill_grouping_predicate_ruling.md・台帳 row548。probe v572_1〜v572_3（3本・EXIT=0）。
+  > 【[確定(命令)] 0x51C090(this, arg) の実体】『arg が this+0x44 の 7 要素 dword 配列に含まれるか』の線形探索（edx=0..6 を ecx+=4 で走査、一致で al=1 → return al）。ただし [this+0xC] == [0xB37D00] なら即 false（al=0 のままループ抜ける）。ret 4＝1 stack arg。＝**クラスの管輪スキル7個判定**。
+  > 【[確定(命令)] [0xB37D00] の同定】静的登録ブロック 0x9EDEA0 の逐語: push 0x230e6; push 'iClassCharactergenClass'; mov ecx,0xB37D00; call 0x419A70 → **int GMST iClassCharactergenClass の値 0x230E6(143,078)＝charactergen 用クラス formID**。隣の iClassNightblade=int 0x23C08 は**別グローバル 0xB37CF8**（v572_2 の自動逆引きは隣接混入で誤り → 逐語ダンプで是正＝教訓）。
+  > 【引数と this】arg＝v569 の AV 索引 12..32（0x565BE0(2,skillIdx) の戻り）。this＝0x5E3320([0xB333C4]) の戻り。0x5E3320 のゲート 0x4D7F80 = vfunc+0x190 が真 ∧ vfunc+0x170 戻りの [form+4]==0x23（formType バイト）→ [vfunc+0x170(this)+0x104] を返す＝型の厳密特定は V-572-3 [部分確定]。
+  > 【v569 の p3 グルーピングの正体 [確定(命令)】】管輪スキル（P=真）が先頭 listindex 0..C-1、**番号 C が空白**、非管輪が C+1..。C=管輪スキル数（通常7 → 空白番号7・計22スロット＝v569 §2.1 の算術と一致）。**charactergen 既定クラス時（P 常に false）は C=0 → グルーピング無し（0..20 連番・空白なし）＝キャラ生成中は並び替えしない**。builder+0x30.user3 = C = 管輪スキル数（v569 §2.1 前パス・0x5DA1A0 の -1 経路も同一 P）。
+  > 【caller 8 本 [確定(命令)】】0x5DC6AA/0x5DC7EC（p3 前パス C 計数／行毎 2 群振り分け）・0x5DA1EC/0x5DA85C（AV フィラー 0x5DA1A0）・0x50D1AC（0x50D020・0x6648D0 経由）・0x663CE1/0x666C83/0x6681DC（0x66xxxx スキル関連3システム・用途 [部分確定]）。管輪スキル判定は EXE 共通 helper。
+  > 【移植への示唆】『クラス選択前＝素のスキル順／クラス確定後＝管輪7個が先頭（間に1空白）』が原版の実挙動＝v569 §6 の分類グルーピングの正体。管輪7個は TESClass+0x44 の配列（クラス定義）。
+  > 【手法の教訓（再発型）】**GMST の自動逆引き（push 窓）は隣接登録の混入で value/name を取り違えうる**。特に int GMST は value が文字列範囲外（0xA00000-0xC00000）で必ず欠ける → **静的登録ブロックの逐語ダンプが決定打**。前回の v567 教訓（op_str regex）と合わせ、正規表現はオペランドのみ・hex は {3,6}。
+  > 【残点 V-572-1..3】1=0x663C50/0x666BB0/0x668070 の用途／2=+0x44 配列の並び（AV 順か定義順）と +0xC メンバ／3=0x5E3320/0x4D7F80 の型・formType 0x23 名・[vfunc+0x170(this)+0x104] の先。全て【低】。
 ①【高】**5タブの表示行・ラベル・値供給の完全対応表** — 各タブの表示項目、ラベルの `strings()` キー（menus\strings.xml）、値を供給する getter/関数、行の生成元を確定。特に **V-364-3: 通知 id4（tab p4）`0x5DC950` が `__RTDynamicCast(TESBoundObject→TESNPC)` の上で `[esi+0x3C]` リストを walk して行生成している「NPC の何のリストか」**（major/minor skills か、それ以外か）と **V-364-4: XML trait ↔ EXE trait の完全対応表**、および `stat_p2_strength_layout`(id24) の `<copy src="stat_p2" trait="user1"/>` と色条件 `onlyif user1 lt user9` が指す **user1..user9 の意味（user9＝base 比較値 [推定] の裏取り）**。
 ②【中】**値 vs base の色分岐の正典** — `_red/_green/_blue` の `_under/_even/_over` が「現在値・修正後値・base」のどの比較で使われるか（例: `onlyif user1 lt user9 → _red_under / eq → _red_even / over → _red_over`）を命令で確定。＝port の「表示値と色が正しいか」の判定基準になる。
 ③【低】**tab p1 の3つの文字列の正体** — 通知 id1（`0x5DBB00`）が SetString する 0xFAF（`0x4DA2A0(player)` 由来）／0xFB0（`0x5EA720` 由来＝TESFullName 契約の名前 getter）／vfunc+0x268→[+0x18+4]（''=0xA2F7EC fallback）のうち、**どれが name / class / race のどれか**の確定。
@@ -2413,6 +2422,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2436,4 +2450,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-19 21:07:34
+**ai-todo** | Last Updated: 2026-11-19 21:13:52
