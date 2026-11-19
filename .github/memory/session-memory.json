@@ -14368,14 +14368,80 @@
         "todo-156"
       ],
       "content": "2026-11-19 v562(U4) 裁定＝タイトル／キャラ作成中の左上要素（ai-todo #156 完了）。成果物 tmp/re/v562_u6_u4_assets_topleft_ruling.md・台帳 row539。原版に左上要素は無い [確定(XML)]。①タイトル main_menu.xml の要素は backdrop（中央・visible=false）、oblivion_logo（中央+3 / 画面高/4+22.5）、内側 oblivion_logo（-5,-5）、press_start（中央・y=725）、button_layout（中央・y=725・ボタン6個）、version（x=10, y=935）のみ。左上（x≈0,y≈0）の要素は存在せず、唯一の隅要素は version の左下。②キャラ作成 race_sex_menu.xml のトップレベルは race_background（generic_background.xml を include・全画面）とその中の race_window（x=30,y=85,500x558）、race_button_done（右下）のみ。③HUD は別メニュー（HUDMainMenu=0x3EC 等）でタイトル／chargen の XML には含まれない。移植への示唆: 移植の恒久 HUD 位置（左上）は独自 UI。chargen 中に抑制するかは設計判断で、原版準拠なら出さない。教訓: 「◯◯へ出すか」は XML の全要素の x,y を抽出すれば足りる（存在しない要素は座標も無いので、隅の唯一の要素を見つけて「左上には無い」を肯定的に示せる）。"
+    },
+    {
+      "id": "opencode-u2-racesexmenu-21pages-20261119",
+      "timestamp": "2026-11-19T07:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "todo-162",
+        "todo-96",
+        "chargen",
+        "racesexmenu",
+        "pages",
+        "canonical"
+      ],
+      "content": "2026-11-19 U2 回答（tmp/re/v558_racesexmenu_pages_ruling.md・ai-todo #162）。【結論】RaceSexMenu は **21 ページ**であって 5 タブではない。`user0`(trait 0xFAE)=『現在表示中の pane の index』で、ページ側は `<visible> me().user0 == RaceSexMenu.user0 </visible>` の完全一致のみ可視。**`<tab>` 要素も『タブ』概念も存在しない [確定負]**（見た目のタブバーは `race_name`(id10) テキスト＋`stat_title_left/right.dds` 装飾＋`race_name_separator` だけで実体はタイトル文字）。切替はコードが `SetTrait(menu+0x2c, user0, index)` を書く方式（EXE 全域に5つの実装型・`(cur±1)&mask` 循環3箇所＋`arg+1` 2箇所）。**移植の 5 分割（Name/Race/Attributes/Skills/Appearance）は原版に対応物なし [確定負]**（`Attributes`/`Skills`/`Name` ページは無い。能力値は StatsMenu・名前は Main ページ内）。【21 ページの実名と順序（0x5C4340 AddPane が21回・this+0x40..+0x90 に順格納・[確定(命令)]）】0=Main(sMain)/1=Race(sRace)/2=Hair(sHair)/3=Face(sFace)/4=Shape(sShape)/5=Tone(sTone)/6=General(Face)(sGeneralFace)/7=Brow(sBrow)/8=Cheeks(sCheeks)/9=Chin(sChin)/10=Forehead(sForehead)/11=Jaw(sJaw)/12=Mouth(sMouth)/13=Nose(sNose)/14=General(Skin)(sGeneralSkin)/15=Beard(sBeard)/16=Eye shades(sEyesTex)/17=Eyebrows(sEyebrows)/18=Mouth(Lips)(sMouthLips)/19=Nose shades(sNoseTex)/20=Hair Color(sColor)。表示名は GMST なので ESM で差し替え可能。【実装への含意】#96 を正典どおりにするには 5タブ→21ページの作り直しが必要（`UICharacterCreation` の構造置換）。`menu_xml_interpreter`(M2/M3)＋`menu_ui_builder`(M4) は実装・テスト済みなので原理的には可能。"
+    },
+    {
+      "id": "opencode-u5-done-button-canonical-20261119",
+      "timestamp": "2026-11-19T07:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "todo-161",
+        "chargen",
+        "done-button",
+        "canonical",
+        "docs-inconsistency"
+      ],
+      "content": "2026-11-19 U5 回答（tmp/re/v561_u5_done_button_ruling.md・ai-todo #161）。`race_button_done`(id=90) の原版挙動: ①**無効化しない [確定負]**（race_sex_menu.xml に `<disabled>` 0個・`<onlyif>` は4個あるが id=90 には付かない＝常に押せる）②**エラー文字列なし [確定負]**（未入力用の専用キーは無く `_done`/`_return` のボタン表記のみ）③**『そのまま確定』でも『拒否』でもなく確認ダイアログを出す [確定(命令)]**（名前が空・空白のみ・既定名のいずれでも `FUN_00579C10` へ進む）④**種族の『未選択』状態が存在しない [確定(命令)]**（常に1つ選択済みで初期化＝Done 側に種族ガードなし）。空名は**拒否されない**（空名分岐は確認メッセージの文面組み立て＝母音で a/an を切り替える処理に使われる）。id=90 の挙動は**現在ページ依存**（0x5CC200 スロット3 が分岐: Main=名前を見て確認ダイアログ / Shape・Tone・General(Face)=Face ページへ戻る / その他=特定ページへ移動）。**【docs と code の不一致】移植は #161 で『races 空なら Done 拒否』『名前が空なら onNameRejected』のガードを入れており、これは原版の『確認ダイアログを出す』挙動と異なる**（移植側の安全弁として意図的に入れたもの。原版準拠にするなら確認ダイアログの実装が必要）。"
+    },
+    {
+      "id": "opencode-u6-u4-canonical-20261119",
+      "timestamp": "2026-11-19T07:00:00Z",
+      "priority": "medium",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "todo-166",
+        "todo-156",
+        "assets",
+        "topleft",
+        "hud",
+        "canonical"
+      ],
+      "content": "2026-11-19 U6/U4 回答（tmp/re/v562_u6_u4_assets_topleft_ruling.md）。【U6・ai-todo #166】原版に『展開』工程は**存在しない [確定]**。メニュー XML（`menus\\**` 89個）は `Oblivion - Misc.bsa` 内、動画（`.bik`）は **loose ファイル `Data\\Video\\*.bik`**（5主要BSA 計89,610エントリに `.bik`/`video\\` は0件）。動画参照は `\"Data\\Video\\\" + 名前` を `_BinkOpen`（FUN_00410160）。原版は BSA をランタイムでマウントし（展開しない）、動画だけ BSA 外。→ **移植の AssetExtractor の順序設計は独自実装**で、守るべきは順序ではなく『メニュー XML はアーカイブ内・動画は loose 相当』という**配置**。移植の第3段（APK assets/videos/* → cacheDir）は原版でいう『Data\\Video\\ にファイルが存在する』状態を作る自己修復。【U4・ai-todo #156】原版のタイトル／キャラ作成に**左上要素は存在しない [確定(XML)]**。タイトル（main_menu.xml）の隅要素は `version` の**左下 x=10/y=935 のみ**（backdrop は画面中央・visible=false、oblivion_logo は中央+3/画面高÷4+22.5、press_start/button_layout は y=725）。→ **移植の左上 HUD は原版に無い**。"
+    },
+    {
+      "id": "opencode-u1-u3-residuals-20261119",
+      "timestamp": "2026-11-19T07:00:00Z",
+      "priority": "medium",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "todo-164",
+        "todo-157",
+        "statsmenu",
+        "intro-movie",
+        "canonical"
+      ],
+      "content": "2026-11-19 U1/U3 回答。【U1 残点（tmp/re/v560_u1_residuals_ruling.md・#164）】⒜ `FUN_00410BA0` の第6引数は**フィット基準**（`0`→高さ基準 480=`0xB06C50`／非0→幅基準 640=`0xB06C4C`）。Intro=`1`（幅基準）・iv ロゴ=`0`（高さ基準）・プレイリスト=`[0xB33427]`。⒝ 入力は『塞がれる』のではなく**ムービー自身がメッセージポンプを回して特定キーを skip として消費**（`FUN_00410390`: PeekMessage/TranslateMessage/DispatchMessageA → 入力デバイス更新 → `[0xB33426]`(skip) 判定 → 入力オブジェクトへ `FUN_00403520(1,5)`/`(1,0x1D)` を問合せ）。キーコード 5/0x1D の実キー同一性は未確定 [部分確定]。⒞ 動画開始と RaceSexMenu 生成は**同一ブロック**（v557 §2.2: 0x40EADB BinkSetSoundSystem → 0x40EAE0 CreateThread でプレイリスト非同期 → 0x40F0AF iv ロゴ同期 → 0x40F0C3 メインメニュー）。【U3（tmp/re/v559_statsmenu_tabs_ruling.md・#157）】StatsMenu の 5 タブ仕様の完全対応表が確定（表示行・ラベル文字列キー・値供給 getter・色分岐 `_red/_green/_blue_under/_even/_over`・tab p1 の SetString 3種 0xFAF/0xFB0/vfunc+0x268 の name/class/race 対応）。詳細は成果物参照。"
     }
   ],
   "metadata": {
-    "totalEntries": 975,
+    "totalEntries": 979,
     "compressedCount": 123,
     "sessionCount": 43,
     "lastUpdated": "2026-11-19T11:10:00Z",
-    "entry_count": 975,
+    "entry_count": 979,
     "last_updated": "2026-11-19T11:10:00Z"
   }
 }
