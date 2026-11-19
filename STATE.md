@@ -3722,3 +3722,33 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点 V-556-1..3**: 1=`589640`/`5B1E20`/`488810`→`4028D0` の実装差（prev 連結・grow 条件）【中】／2=MapMenu 要素の実型と `vtable[+0x88]` の実装＋`+0xB4`(max) の grow 契機【中】／3=`4057B0(tex,0)` の完全な意味と `[this+0x2C]` フラグの消費側【低】。
 - **本日 push 累計（セッション）**: v405 → … → v554 `4c775616` →（本件 v555 を本 commit で push）＝**151裁定**。
 - **次**: V-556-1..3 → 旧残点（挿入ヘルパ差／MapMenu 要素型／`4057B0` とフラグ）。
+
+## 2026-11-19 (jv) — 旧残点群消化第100弾 v556（V-556-1..3 完遂・v555 の 2 主張を [確定負] に訂正）: **`4028D0`＝自作文字列クラス（`+0`=buffer／`+4`=word 長／`+6`=word 容量・容量超過時のみ grow・上限 0xFFFF）**・**`MapMenu+0xB0` は文字列オブジェクトで配列ではない**・**真の配列は `NiNode+0xAC` の埋め込み `NiTArray<NiPointer<NiAVObject>>`（vtable `0xA43850`・base `+0xB0`／max `+0xB4`／size `+0xB6`／growBy `+0xBA`）**
+
+- **成果物**: `tmp/re/v556_stringclass_niarray_ruling.md`（probe **v556_1..12（12本）EXIT=0**）。台帳 **row532（bak39）**・`round_verify` **ALL OK**（rows 31..533 / total 419 / done 414 / open 5）。ai-todo note は v557 とまとめて **#166**。memory 2 件追記。
+- **① [確定・訂正] `4028D0`＝文字列 Set**: `488810(this,src)` は `4028D0(this,src,0)` のラッパ。v555 の「`488810`→`4028D0`＝配列追加」は **[確定負]**。
+- **② [確定・訂正] `MapMenu+0xB0` は文字列オブジェクト**: `5BB880`（vtable `+0x0C`）が `588C10(tile,0xFB2)`（=**user4**）を取り `488810`→`4028D0` で書き込む。v555 の「`MapMenu+0xB0` も同型 `NiTArray`」は **[確定負]**。
+- **③ [確定] `NiNode+0xAC` の埋め込み `NiTArray<NiPointer<NiAVObject>>`**: ctor `4B2D30`・GetAt `6D7F60`/`405790`。挿入は `589640`=InsertBefore（初めて key を超えたノードの直前）／`5B1E20`=Append／`6AA320`=Prepend（属性名バケット）の **3 系統**。
+- **④ [確定] `5B7550`（MapMenu 更新）** は size(`+0xB6`) 回ループし各要素へ `70B120` を適用して **AppCulled を解除**。`4057B0`＝`Map@NiTexturingProperty`（vtable `0xA7DBB4`・ctor `704100`）の遅延生成＋テクスチャ差し替え。`589D60` が `[Tile+0x2C]` に `0x20` を OR。
+- **⑤ 教訓**: **「`+0xB0` に配列がある」は型の証明にならない**——同じオフセットに別クラス（文字列クラス）が載るため、書き手の呼出先（`4028D0`）まで確認する／**自作文字列は `+4`/`+6` が word なので長さ上限は 0xFFFF で決まる**／**挿入関数は InsertBefore・Append・Prepend の 3 系統**があり用途で使い分けられている（v555 の取り違えの実体）。
+- **残点 V-557-1..3**: 1=`4028D0` の再確保戦略と `flag` 引数の意味【中】／2=`[Tile+0x2C]` の `0x20` の消費側【中】／3=`MapMenu` が `user4` 文字列を必要とする理由【低】。
+- **本日 push 累計（セッション）**: v405 → … → v555 `d22f7a45` →（本件 v556 を本 commit で push）＝**153裁定**。
+- **次**: V-557-1..3（`4028D0` 再確保／フラグ消費）と U 節（v557 で U7 完了 → 次は U2）。
+
+## 2026-11-19 (jw) — U7 完了 v557（ai-todo #166・タイトル画面の映像演出）: **原版のタイトルは「ロゴ動画→静止→背景ループ」ではなく「背景=`Map loop.bik` ループ動画＋ロゴ=静止画 2 枚の alpha クロスフェード」**・**`.data 0xB03084` は GMST デフォルト値テーブル（8 バイト stride の {値, GMST 名}）で「ポインタスロット」ではない**・**credits の 1% 抽選は [確定負]**
+
+- **成果物**: `tmp/re/v557_title_video_ruling.md`（probe **v557_1..17（17本）EXIT=0**・BSA 実物から `menus\options\main_menu.xml` 6554B／`credits_menu.xml` 942B を直接抽出）。台帳 **row533**・U 節 U7 を `[x]`。ai-todo **#166 note**。memory 追記。
+- **① [確定(XML+命令)] ロゴは静止画 2 枚**: `oblivion_logo`=`Menus\Loading\tes_oblivion_logo_final.dds` 748x159（visible=user0=0xFAE）＋内側 `tes_oblivion_logo_bink.dds` 760x169（alpha=user3=0xFB1）。`backdrop`=`loading_background.dds` 1280x960 **visible=false id=8＝未使用**（背景静止画フォールバックの根拠にならない）。
+- **② [確定(XML+命令)] フェードは XML `user4`=3 秒**: `0x5B5C90` が `SetTrait(user3,255.0)`→`GetTrait(user4)`→`FUN_00589980(menu,user3,255.0,0.0,秒)` で **255→0 を user4 秒で補間**。**`IV_LOGO_HOLD_MS=1200` に対応する定数・GMST は無い [確定負]**。
+- **③ [部分確定] 背景ループ**: 明示的な巻き戻し命令・逆再生フラグは無い **[確定負]**。描画ループ `0x57F170` が毎フレーム `FUN_00410810(0,1)` を呼び、`FUN_004106C0` は `BinkNextFrame` 後に「`[movie+0xC]` vs `[Bink+8]`」を比較して到達後は**第 1 スタック引数が非 0 なら継続**（0x4107D4..0x4107EA）。継ぎ目が先頭復帰かは binkw32 内部。
+- **④ [確定] 背景に音声なし**: `Map loop.bik` の `audioTracks=0`。binkw32 import は 9 個のみで **`BinkSetVolume` は存在しない**（`FUN_00410310` が起動時に `BinkSetSoundSystem` を 1 回呼ぶだけ）。背景開始時に BGM を止めない（`FUN_00410C40`→`FUN_004105F0` は `FUN_006A9B40` を呼ばない）。
+- **⑤ [確定負] 1% 抽選なし**: `0.01f`(0x3C23D70A) は `.text` に 10 箇所すべて `0x89A230`〜`0x94A630` 帯（映画コード帯 0x40xxxx/0x57xxxx/0x5Bxxxx には 0 箇所）。
+- **⑥ [確定] GMST テーブル**: `sIntroSequence`=`bethesda softworks HD720p.bik,2k games.bik,game studios.bik,Oblivion Legal.bik`（カンマ区切りプレイリスト）／`sMainMenuMovieIntro`=`Oblivion iv logo.bik`／`sMainMenuMovie`=`Map loop.bik`／`sCreditsMenuMovie`=`CreditsMenu.bik`／`sOblivionIntro`=`OblivionIntro.bik`／`fStaticScreenWaitTime`=3.0f／`bPreloadIntroSequence`=1／`iPreloadSizeLimit`=26214400。`OblivionOutro.bik` は EXE 内に名前なし **[確定負]**。
+- **⑦ 起動順 [確定]**: `0x40D4D0` → Bink サウンド初期化 → `FUN_00410E40`（CreateThread "MoviePlayer"・非同期）で `sIntroSequence` を `0x410D10` が `strtok(",")` 分割して順次再生（`bik`=`FUN_00410BA0`／`dds`=`FUN_00410840` で `fStaticScreenWaitTime` 秒の静止画・キー中断可）→ `FUN_00410BA0(iv logo,1,1,0,0,0,0)` 同期 13.95s（418f）→ `0x5B5C90` メインメニュー。
+- **⑧ [確定] `FUN_00410BA0` の引数転送**: `FUN_004104C0(movie,a2,a3,a5,a6)` と `FUN_004106C0(movie,a2,a4)`（0x410C05..0x410C29 実読）。**第 6 引数 a6＝フィット基準**（0=高さ 480=`0xB06C50`／非 0=幅 640=`0xB06C4C`）で Intro は 1=幅基準。a7=0 新規確保／非 0 は `[0xB33440]` 再利用。
+- **⑨ 入力（U1 ⒝ 兼用）**: `FUN_00410390` は PeekMessage/Translate/Dispatch でメッセージを空にし、入力デバイス vtable `+0x0C` を更新、`[0xB33426]`(skip)・`MessageMenu`(0x3E9) 存在で中断、引数非 0 ならキー `5`/`0x1D` を検査して `[0xB33426]=1`。**塞ぐのではなくムービー自身がポンプを回す**。
+- **⑩ 教訓**: **グローバルに見える 4 バイトの並びが「{値, 名前ポインタ} の 8 バイト stride テーブル」であることは、名前文字列（`〜:General`）の実読で機械確定できる**——単独で「ポインタスロット」と命名しない／**ファイル名リテラルが「A.bik,B.bik,C.bik」の 1 本の文字列ならカンマ区切りプレイリスト**であり、要素名の個別参照 0 件は異常ではない／**「1% 抽選」の検証は定数 `0.01f` の全出現アドレスを帯で分類するのが最短**（映画コード帯 0 件で [確定負]）／`trait 名→ID` は `push id; push name` の対を機械走査すれば 194 組一括で取れる（visible=0xFA1／user0..=0xFAE..／depth=0xFAB 等）。
+- **残点 V-557-1..5**: 1=ループ継ぎ目が先頭復帰か【中】／2=`BinkOpen` フラグ `0x2000`・`0x08000000` の SDK 名【中】／3=`sCreditsMenuMovie` の実再生呼出箇所（GMST 配列の添字アクセスで imm32 参照なし）【中】／4=`FUN_00403520(1,5)`/`(1,0x1D)` の実キー【低】／5=`visible`(0xFA1) を 1.0/2.0 で書き分ける理由【低】。
+- **本日 push 累計（セッション）**: v405 → … → v556 →（本件 v557 を本 commit で push）＝**154裁定**。
+- **次**: U2（RaceSexMenu の user0 ページ対応表・枚数・並び順）→ #162。BSA 実物 `race_sex_menu.xml`(22156B) と `stats_menu.xml`(102783B) は抽出済み。
+

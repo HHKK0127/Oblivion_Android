@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-19T06:10:00Z",
+  "lastUpdated": "2026-11-19T07:20:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -14239,14 +14239,47 @@
         "u7"
       ],
       "content": "2026-11-19 【原版 .bik 実名一覧（U7⑥ の材料・docs/RE_EXE_REPORT.md:945 に既載）】全 29.97fps / 1280x720: OblivionIntro.bik 3,461F 115.5s 129.9MiB（New Game 導入）/ OblivionOutro.bik 1,739F 58.0s 67.3MiB / CreditsMenu.bik 1,712F 57.1s 21.8MiB / **Map loop.bik 750F 25.0s 14.3MiB** / **Oblivion iv logo.bik 418F 13.9s 16.0MiB** / bethesda softworks HD720p.bik 300F 10.0s 0.7MiB / game studios.bik 299F 10.0s 5.7MiB / 2k games.bik 180F 6.0s 0.7MiB / Oblivion Legal.bik 122F 4.1s 0.8MiB。→ 移植の命名 map_loop.mp4 / oblivion_iv_logo.mp4 は原版『Map loop.bik』『Oblivion iv logo.bik』に対応し、実名の出典が存在する。U7 の未確定は残る5点（①2段構成か静止画か ②ロゴ表示/フェード時間の規定値・移植 IV_LOGO_HOLD_MS=1200 は出典なし ③背景のループ有無と継ぎ目 ④背景の音声有無・移植は setVolume(0f,0f) ⑤credits_menu.mp4 を 1% で出す演出の実在＝移植 GameRenderer.kt:247 の Random.nextInt(100)==0）。"
+    },
+    {
+      "id": "opencode-v556-stringclass-niarray-20261119",
+      "timestamp": "2026-11-19T07:20:00Z",
+      "priority": "medium",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v556",
+        "tile",
+        "string-class",
+        "nimarray",
+        "todo-151"
+      ],
+      "content": "2026-11-19 v556 裁定（V-556-1..3 完遂・v555 の 2 主張を [確定負] に訂正）。成果物 tmp/re/v556_stringclass_niarray_ruling.md・台帳 row532。①FUN_004028D0 は自作文字列クラスの Set で レイアウト +0=char* buffer / +4=word 長(NUL含まず) / +6=word 容量、容量超過時のみ再確保・上限 0xFFFF。FUN_00488810(this,src) は 4028D0(this,src,0) のラッパ。v555 の「488810→4028D0＝配列追加」は [確定負]。②MapMenu+0xB0 は文字列オブジェクト（vtable +0x0C = 0x5BB880 が 588C10(tile,0xFB2)=user4 を 488810→4028D0 で書き込む）。v555 の「MapMenu+0xB0 も同型 NiTArray」は [確定負]。③真の配列は NiNode+0xAC に埋め込まれた NiTArray<NiPointer<NiAVObject>>（vtable 0xA43850・base +0xB0/max +0xB4(word)/size +0xB6(word)/growBy +0xBA(word)・ctor 4B2D30・GetAt 6D7F60/405790）。④挿入は 3 系統: 589640=InsertBefore（初めて key を超えたノードの直前）/ 5B1E20=Append（末尾）/ 6AA320=Prepend（先頭・属性名バケット）。⑤5B7550（MapMenu 更新）は size(+0xB6) 回ループし 70B120 で AppCulled を解除。4057B0=Map@NiTexturingProperty（vtable 0xA7DBB4・ctor 704100）の遅延生成＋テクスチャ差し替え。589D60 が [Tile+0x2C] に 0x20 を OR。教訓: 「+0xB0 に配列がある」は型の証明にならない（同じオフセットに別クラスが載る）＝書き手の呼出先で型を確認する。"
+    },
+    {
+      "id": "opencode-v557-title-video-ruling-20261119",
+      "timestamp": "2026-11-19T07:20:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v557",
+        "u7",
+        "title-screen",
+        "gmst",
+        "bik",
+        "todo-166"
+      ],
+      "content": "2026-11-19 v557 裁定＝U7 タイトル画面の映像演出（ai-todo #166 完了）。成果物 tmp/re/v557_title_video_ruling.md・台帳 row533。①【最重要】.data 0xB03084 は「ポインタスロット」ではなく GMST デフォルト値テーブル（8 バイト stride の {値, GMST 名}）: sIntroSequence(0xB03084)=「bethesda softworks HD720p.bik,2k games.bik,game studios.bik,Oblivion Legal.bik」＝カンマ区切りプレイリスト / sMainMenuMovieIntro(0xB0308C)=Oblivion iv logo.bik / sMainMenuMovie(0xB03094)=Map loop.bik / sCreditsMenuMovie(0xB0309C)=CreditsMenu.bik / sOblivionIntro(0xB030A4)=OblivionIntro.bik / fStaticScreenWaitTime(0xB030AC)=3.0f / bPreloadIntroSequence(0xB030B4)=1 / iPreloadSizeLimit(0xB030BC)=26214400。値は ESM の GameSetting で上書き可能。OblivionOutro.bik は EXE 内に名前なし [確定負]。②タイトルは「ロゴ動画→1200ms 静止→背景ループ」ではなく、背景=Map loop.bik のループ動画＋ロゴ=静止画 2 枚の alpha クロスフェード（oblivion_logo=Menus\\Loading\\tes_oblivion_logo_final.dds 748x159 visible=user0(0xFAE)／内側 tes_oblivion_logo_bink.dds 760x169 alpha=user3(0xFB1)）。loading_background.dds は visible=false の未使用素材。③フェード時間は main_menu.xml の user4=3 秒が唯一の規定値（0x5B5C90 が SetTrait(user3,255)→GetTrait(user4)→FUN_00589980(menu,user3,255.0,0.0,秒) で 255→0 を補間）。IV_LOGO_HOLD_MS=1200 の根拠は無い [確定負]。④背景はループするが巻き戻し命令・逆再生フラグは無い [確定負]（描画ループ 0x57F170 が毎フレーム FUN_00410810(0,1) を呼び、FUN_004106C0 は BinkNextFrame 後に [movie+0xC] vs [Bink+8] を比較し到達後は第1スタック引数が非0なら継続・0なら停止＝0x4107D4..0x4107EA）。継ぎ目が先頭復帰かは binkw32 内部 [部分確定]。⑤背景に音声は無い [確定]（Map loop.bik の audioTracks=0／binkw32 import 9 個に BinkSetVolume は無い／FUN_00410310 が起動時に BinkSetSoundSystem を 1 回／FUN_00410C40→FUN_004105F0 は FUN_006A9B40 を呼ばない）。⑥credits の 1% 抽選は存在しない [確定負]（0.01f は .text に 10 箇所すべて 0x89A230..0x94A630 帯・映画コード帯に 0 箇所）。⑦起動順: 0x40D4D0 → Bink サウンド初期化 → FUN_00410E40（CreateThread MoviePlayer・非同期）で sIntroSequence を 0x410D10 が strtok(\",\") 分割して順次再生（bik=FUN_00410BA0／dds=FUN_00410840 で fStaticScreenWaitTime 秒の静止画・キー中断可）→ FUN_00410BA0(iv logo,1,1,0,0,0,0) 同期13.95s(418f) → 0x5B5C90 メインメニュー。⑧FUN_00410BA0 の引数転送は FUN_004104C0(movie,a2,a3,a5,a6) と FUN_004106C0(movie,a2,a4)。第6引数 a6＝フィット基準（0=高さ 480=0xB06C50／非0=幅 640=0xB06C4C）で Intro は 1=幅基準。a7=0 新規確保／非0 は [0xB33440] 再利用。⑨FUN_00410390 は入力ポンプ（PeekMessage/Translate/Dispatch＋デバイス vtable+0x0C＋[0xB33426] skip＋MessageMenu(0x3E9) 存在で中断＋キー 5/0x1D で skip セット）。塞ぐのではなくムービー自身がポンプを回す。⑩trait 名→ID（0x58A1C0 の push id; push name を機械走査・194 組）: visible=0xFA1 / alpha=0xFA7 / user0..25=0xFAE..0xFC7 / depth=0xFAB / filename=0xFE6 / zoom=0xFD2 / xdefault=0xFF0。メニュー型: MainMenu=0x414 / CreditsMenu=0x417 / RaceSexMenu=0x40C / StatsMenu=0x3EB / MessageMenu=0x3E9。⑪BSA 実物は bethesda_structs で直接抽出（tools/BSAFileExtractor/extracted/menus/** の 4 ファイルは全て 2620B で壊れている＝BSAFileExtractor.py:105-110 が探索ループ変数 archive_file を使い回すバグ）。"
     }
   ],
   "metadata": {
-    "totalEntries": 967,
+    "totalEntries": 969,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-19T06:10:00Z",
-    "entry_count": 967,
-    "last_updated": "2026-11-19T06:10:00Z"
+    "lastUpdated": "2026-11-19T07:20:00Z",
+    "entry_count": 969,
+    "last_updated": "2026-11-19T07:20:00Z"
   }
 }
