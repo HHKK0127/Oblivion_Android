@@ -159,6 +159,16 @@
   > 【シグネチャ（ret N 実測）】0x5C3440=0x10(4引数)／0x5C3110(GetPage)=8／0x588bd0(GetFloat)=4／0x419B10(str Set 1引数版)=4／0x4028D0=8(v556)／0x578D70=0／0x589B70=8。
   > 【残点 V-570-1..6】1=act ID(1..9,10,12..48)と 0x5C9650 の引数契約・意味【中】／2=0x5C7070・0x5C2F20・0x5C5C30 本体詳細【中】／3=**id98 の発生源（XML 外）**【中】／4=0xFD3/0xFD4 の XML 名とテキスト状態モデル【低】／5=比較の gt 経路で act が誤爆しない理由（id 一意性・コード生成 pane の id 実値）【低】／6=[0xB3B4C9] のクリア経路・[esp+0x13] 初期化【低】。
   > 【手法の教訓（再発型）】①**機械表は anchor 基準で掴む**: ブロックの strA/strB を backward window の『最初2個』で取ると**前ブロックの act 文字列（Yes/No 等）に紛れる**→ブロック先頭の `push 0xfa8` を境に strA=直前・strB=直後。②**分岐先の next/ACT 判定は先頭4命令 peek**（1命令だと mov edx,… 始まりのブロックを誤判定）。③**XML の `<id>` を全列挙すれば通知 id の発生源が機械確定**（id98 の『XML 外』が即座に出る）。④jp/jnp は fall-through とペアで読む（block4-6 は命令反転だが意味は同じ ge→act）。
+  > V-570-3（RaceSexMenu の要素 id 採番系）クローズ 2026-11-19 v571。成果物 tmp/re/v571_race_id_allocation_ruling.md・台帳 row547。probe v571_1〜v571_8（8本・EXIT=0）。
+  > 【[確定(命令)] id＝単一カウンタ [0xB3B5D4]・初期 200】RaceSexMenu ctor 0x5C4E40 が 0x5C4F3C で mov dword [0xB3B5D4],0xC8（200 リセット）＋ id→pane 配列 [menu+0x94..] を ecx=0x1F4 分 zero。AddPane 0x5C4340（ret 0x14=5引数）は prologue byte 級の解析で **a4（[esp+0x40]＝P+0xc）が id 引数**と確定。a4==-1 のときのみ ++counter 採番（明示 id は非消費）、SetFloat(pane,0xFA8=id) と SetFloat(pane,0xFAE=user0=id) の両方へ書込み、listindex=GetFloat(list,0xFD0)−1.0（定数 [0xa2f928]=1.0）、[this+id*4+0x94] に格納、テンプレ race_template_pane。a2（[esp+0x38]）=ページ名文字列（'%s' sprintf src）、a1（[esp+0x34]）=instantiate のリスト引数。
+  > 【[確定(命令)] 消費型4関数】0x5C4480=race_template_button(+1)／0x5C4630=race_template_toggle(+1)／0x5C4800=race_template_text(+1)／**0x5C93F0=race_template_slider(+2)（eax=c+1 を [esp+0x14] 保存→c+2 を確定使用）**。テンプレ名は race_sex_menu.xml の <template name> と完全一致 [確定(XML)]。
+  > 【[確定(命令)] init の139 呼出を線形復元（v571 §3.1）】Main のみ明示 id=0、以降 counter=201..428（最終 c=428）。ページ id: Main0(明示)／Race209／Hair213／Face224／Shape229／Tone239／General(Face)246／Brow257／Cheeks264／Chin275／Eyes290／Forehead299／Jaw306／Mouth315／Nose336／General(Skin)365／Beard376／Eye shades389／Eyebrows402／Mouth(Lips)417／Nose shades424。子要素も同オフセット（例: Eyes のスライダ4個=(291,292),(293,294),(295,296),(297,298)）。**生成順は v558 §1.1 と21件完全一致**（呼出直前のページ名 glob 21件で照合）。呼出は常に [Page→子要素群] ブロック。
+  > 【[確定(XML+命令)] 帰結＝v570 28 ブロックとの整合】XML <id>(1,2,10,20,90,100-104) と 200系は非重複 → **id90 は先頭ページ判定のみ／id10 はゲート act（名前同期）のみで dispatch 入っても全ブロック less→epilogue／id98 は block1(Random) の less 経由 0x5CCBF4 に到達する唯一の特別 act（98<201 なので全ブロック less が構造上保証）**。**28 ブロックの act は id 201-428 の要素通知（ボタン/スライダ等）でのみ発火**。
+  > 【[部分確定] 28 ブロック対応表】block9-28 は機械突合一致（block13 Race∈Main=201、block10 Shape∈Face=225 等・+200 適用）。**block1-8（Random/Reset/Age/Red/Green/Blue/Length/Gender）は名前突合不一致**＝0x5C3440 の GetPage(str1)→0x589930(page,str2) の a1/a3 割当が [部分確定]（prologue 算術では a1=構築2つ目の str と読めば整合するが 0x589930 のシグネチャ未実測）＝V-571-2。
+  > 【[未確定] id98 の発生源】200系でも XML でもない第三系統（push 0x62 の呼び出し元）＝V-571-1。act 内容（vfunc+0x170→0x526F00→0x5C91E0＝顔フォーム再構築系）は v570 で [確定(命令)] 済み。
+  > 【移植への示唆】id は静的採番でなく動的カウンタ（初期200）／Main id=0 のみ特別（user0 キーも 0）／**スライダは2 id 消費**（数えると1つずれる）／id10/90/98 と 200系は役割分離＝移植の通知設計も2系統に分けるのが原版準拠。
+  > 【手法の教訓（再発型）】id 復元は「ctor のカウンタ初期化→消費型関数 head（add eax,1／存／使用）→E8 全列挙→線形シミュレーション」の4段で機械復元できる／**prologue の byte 数（push 数＋sub＋cookie）を size 付き逐語ダンプで数えると引数スロット写像が一発で決まる**（[esp+0x40]=a4 の確定）／cdecl の push 順と str 構築の入れ子（中間 pop）を混同しない（push flag が a5 ではなく a4 になり得る）。
+  > 【残点 V-571-1..4】1=**id98 発生源（第三系統）【中】**／2=0x589930 シグネチャで block1-8 を [確定] 化【中】／3=カウンタ他書手（他メニューの 200 リセット有無・ctor の残り refs）【低】／4=AddPane の a3/a5 意味【低】。
 
 - [ ] **#159** 【作製・中優先（#143 の残 UX）】キャラ作成中は **ソフトキーボード（IME）が画面下半分を占有し、Create/Cancel ボタンが隠れる**。【実測の事実】①IME が y≈570 以下を覆い、Create/Cancel は y≈975 付近（`ui_character_creation.cpp` の `kConfirmCancelWidth=105`/`Height=32`・`confirm_button_x`/`cancel_button_x`）に描画されるため**開いている間は見えない** ②#143（a954d332 → master 249c36bb）で **✔(actionDone) 押下時に InputMethodManager で IME を自動クローズ**する実装は済みで、✔ 1回で Create が見える状態にはなる ③ただし **GLSurfaceView が全画面を占有しウィンドウが縮まない**ため、開いている間の視認性は未解決。【証跡】%TEMP%\opencode\rep_new.png／repro_r1.png／w_chargen.png。【方針候補（**UX 判断は人間確認が欲しい**）】①IME 表示中にパネル全体を上方へリレイアウト（Create/Cancel を IME 上端の y≈560 以上へ）②`windowSoftInputMode=adjustResize` ＋ WindowInsets で描画ビューポートを縮める ③IME 開閉をフックしてボタン行だけスライド。**原本の race_sex_menu は物理キーボード前提のため本件は移植側固有**（RE 依頼不要＝#143 で確定済み）。【検証】emu で名前入力 → IME 開いた状態で Create が見える、または ✔ 1回で確定できること（Back 不要）。関連: #143（自動クローズ実装・マージ済み）/#96/#126③ `#android` `#chargen` `#fix` `#oblivion` `#ui` `#ux`
   > 【前提の訂正（2026-11-17・emu 実測で判明）】**「IME を開くとサーフェースが 1920x573 に縮む」はこの構成では起きない**。証跡: キーボードが実際に開いた状態（%TEMP%/opencode/ime_open_state.png・y≥570 をキーボードが占有）で、リサイズハンドラのログが **すべて `1920x1110`**（`LauncherScreen/TitleScreen/SettingsUI/SaveLoadUI screen size updated to: 1920x1110`）で、`1920x573` は一度も出ない。＝**IME はオーバーレイとして乗るだけでウィンドウ/サーフェースを縮めない**（GLSurfaceView が全画面・adjustPan 相当）。【試して失敗した修正（撤回済み・差分に残していない）】リサイズハンドラに `characterCreationUI->setScreenSize()` を追加し、`getConfirmButtonY()` を `screenHeight - 32 - 8` にクランプする案 → **`screenHeight` が 1110 のままなので発動せずノーオペ**（ボタンは依然キーボード下＝見えない）。【古い台帳の「IME 時は 1920x573」の出所】#143 の記録にある `DebugMenu screen size updated to: 1920x573` は **DebugMenu が縮む別の経路**（コンソールの EditText フォーカス時等）の観測であり、**キャラ作成の名前欄フォーカス時には起きない**。【正しい設計の候補】①**Kotlin 側で WindowInsets(ime) を取得し `nativeOnImeVisibility/insets` で native に通知** → native がボタン行を IME 上端（1110 − imeHeight − margin）へ移動（描画と当たり判定は同じ `getConfirmButtonY()` 経由なので1箇所で足りる）②`AndroidManifest` の `windowSoftInputMode=adjustResize` を試し、**実際にサーフェースが縮むことを実測してから**クランプ案を再開（ただし #143 の調査では GLSurfaceView 全画面で効かなかった旨の記録あり＝要再実験）③現状の回避として #143 の ✔ 自動クローズを前面に出す（実装済み・Back 不要）。**①が最も確実**、②は1実験で確認できる。【補足】検証②で Done タップ（1467,549）が失敗したのはこのため（ボタンは y≈990 にありキーボード下）。
@@ -2403,11 +2413,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2431,4 +2436,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-19 20:49:05
+**ai-todo** | Last Updated: 2026-11-19 21:07:34

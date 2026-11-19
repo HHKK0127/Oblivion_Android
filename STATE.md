@@ -3902,3 +3902,18 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **本日 push 累計（セッション）**: v405 → … → v569 `08932899`(+掃除 `d77cfa51`) →（本件 v570 を本 commit で push）＝**161裁定**。
 - **次**: V-562-3（chargen 中 HUD の命令的裏付け）／V-565/566/567/568 系残り（V-566-1 は L2 ゲート待ち）／V-569-1（p3 グルーピングの P）。
 
+## 2026-11-19 (li) — V-570-3 クローズ v571（U5 フォロー）: **RaceSexMenu の要素 id 採番系の完全確定**（200系単一カウンタ・139 呼出の機械復元・v558 順序一致・XML 非重複の帰結）
+
+- **成果物**: `tmp/re/v571_race_id_allocation_ruling.md`（probe **v571_1〜v571_8・8本 EXIT=0**）。台帳 **row547**・ai-todo **#161 追加 note**。
+- **① [確定(命令)] id＝単一カウンタ `[0xB3B5D4]`（ctor が 200 にリセット）**: RaceSexMenu ctor `0x5C4E40` の `0x5C4F3C: mov dword [0xB3B5D4],0xC8`＋id→pane 配列 `[menu+0x94..]` zero。**`AddPane 0x5C4340`（ret 0x14・prologue byte 級解析で a4=id と確定）は -1 のときのみ採番**（明示 id は非消費）、**`SetFloat(0xFA8=id)` と `SetFloat(0xFAE=user0=id)` へ書込み**、listindex=親の 0xFD0−1.0（定数 1.0）、`[this+id*4+0x94]` 格納。
+- **② [確定(命令)] 消費型4関数**: Button `0x5C4480`(+1)／Toggle `0x5C4630`(+1)／Text `0x5C4800`(+1)／**Slider `0x5C93F0`(+2)**。テンプレ名は XML と一致 [確定(XML)]。
+- **③ [確定(命令)] init の139 呼出を線形復元**: **Main のみ id=0 明示**、以降 **201..428（最終 c=428）**。ページ id: Race209／Hair213／Face224／Shape229／Tone239／General(Face)246／Brow257／Cheeks264／Chin275／**Eyes290**／Forehead299／Jaw306／Mouth315／Nose336／General(Skin)365／Beard376／Eye shades389／Eyebrows402／Mouth(Lips)417／Nose shades424。**生成順は v558 §1.1 と21件完全一致**。呼出は常に [Page→子要素群] ブロック。
+- **④ [確定(XML+命令)] 帰結**: XML `<id>`(1,2,10,20,90,100-104) と 200系は非重複 → **id90=先頭ページ判定のみ／id10=ゲート act のみ（dispatch で act なし）／id98=block1 less 経由 `0x5CCBF4` の唯一の特別 act（98<201 で構造上保証）**。**28 ブロック act は id201-428 の要素通知のみ**。
+- **⑤ [部分確定]** block9-28 は id 突合一致（block13 Race∈Main=201 等・+200 適用）、**block1-8 は `0x5C3440` の str1/str2 割当（`0x589930` シグネチャ未実測）**＝V-571-2。
+- **⑥ [未確定] id98 の発生源＝第三系統**（200系外・XML外・`push 0x62` の呼び出し元）＝V-571-1（act 内容は v570 済）。
+- **⑦ 教訓（再発型）**: id 復元は「ctor のカウンタ初期化→消費型 head→E8 全列挙→線形シミュレーション」の4段／**prologue byte 数（push+sub+cookie）を size 付きで数えると引数写像が一発**（`[esp+0x40]`=a4）／cdecl push 順と str 構築の中間 pop を混同しない。
+- **移植への示唆**: id は静的でなく**動的カウンタ（初期200）**／Main id=0 のみ特別／**スライダは2 id 消費**／id10/90/98 と 200系は役割分離（移植も2系統に分ける）。
+- **残点 V-571-1..4**: 1=98 発生源【中】／2=`0x589930` シグネチャで block1-8 確定化【中】／3-4【低】。
+- **本日 push 累計（セッション）**: v405 → … → v570 `33c27eff` →（本件 v571 を本 commit で push）＝**162裁定**。
+- **次**: V-562-3（chargen 中 HUD）／V-569-1（p3 グルーピング P）／V-571-1（98 発生源）／V-565/566/567/568 系残り（V-566-1 は L2 ゲート待ち）。
+

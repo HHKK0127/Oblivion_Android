@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-19T18:00:00Z",
+  "lastUpdated": "2026-11-19T20:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -14614,14 +14614,30 @@
         "v561"
       ],
       "content": "2026-11-19 v570 裁定＝V-561-1 クローズ（RaceSexMenu 通知ハンドラ 0x5CC200 の全分岐・ai-todo #161 追加 note）。成果物 tmp/re/v570_racenotify_dispatch_ruling.md・台帳 row546。probe v570_1〜v570_8（8本 EXIT=0）。①通知 id は 90/10/98 の3種のみ（handler 全1713 insn の cmp ebx は3箇所）[確定(XML+命令)]。race_sex_menu.xml の <id> 全列挙=10個（window=1, grab=2, race_name text=10, scroll=20, Done=90, テンプレ100-104）→ id10=名前入力テキスト、id98 は XML 外（98 文字列0件）＝残点 V-570-3。②0x5CC8BA 以降=28 ブロックの線形 dispatch [確定(命令)]: (strA=要素名, strB=親ページ名, prep flag) で 0x5C3440(4引数・GetPage(strB)→0x589930 [部分確定])→tile→通知 id(float)と tile の <id>(0xFA8) を浮動小数比較、id<tile→次・id>=tile→act。block4-6 のみ jnp 反転で意味同一。strA/strB 対応は v567 遷移表と表裏（詳細→Shape/Tone、Face→Main…）。prep flag=1..9→2刻み(11..47)、act 時 prep+1。block28 less→epilogue（act なし）。③GetPage(Random)/(Reset)=確認ダイアログ2系統: sRandomizeFace/sResetFace＋flg [0xB3B4C8]/[0xB3B4C9]＋cb 0x5C9FC0/0x5C9F70=0x578D70() 応答==2(Yes) で実行本体 0x5C9CD0/0x5C9C70 へ jmp、否なら flg=0。実行本体は顔データ→[esi+0x880] age 計算→user3 SetFloat→再 Yes 確認ループ。④id10 経路: ゲート al=0x57D2F0([esi+0x8EC])==0 のとき受理→0x5C2730(0xFD3/0xFD4 同期)→0x5C30C0(入力文字列→race_name 0xFDE SetString＝共通前処理の実体)。⑤id98 act: vfunc+0x170→0x526F00(配列末尾操作)→0x5C91E0→tail＝顔フォーム再構築系。⑥ACT 5 種: Random 確認/Reset 確認/block3=0x5C7070+0x5C2F20/block4-6=0x5C5C30(1)＝Style ページ切替/block7-28=0x5CCFB7→0x5C9650(strB)＝親ページへ移動。⑦テール: 0x5CD9C5=[0xB3B4C9] 無条件クリア+ダイアログ時(1)は [0xB3B4C8] 維持、==0 でクリア/0x5CD9D3(Reset)=[0xB3B4C8] クリア→共通後半(vfunc+0x154→0x7B4280→0x7C5E70/0x7C7EB0 [部分確定])。⑧教訓: 機械表は anchor 基準（push 0xfa8 を境に strA=直前・strB=直後。backward window 最初2個だと前 act の Yes/No に紛れる）／分岐先の next/ACT は先頭4命令 peek／XML <id> 全列挙で通知 id 発生源が機械確定（98 の XML 外が即検出）／jp/jnp は fall-through とペアで読む。残点 V-570-1..6（1=act ID と 0x5C9650 引数契約【中】／2=0x5C7070・0x5C5C30 本体【中】／3=id98 発生源【中】／4-6【低】）。"
+    },
+    {
+      "id": "opencode-v571-race-id-allocation-20261119",
+      "timestamp": "2026-11-19T20:00:00Z",
+      "priority": "medium",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v571",
+        "u5",
+        "racesexmenu",
+        "todo-161",
+        "v570"
+      ],
+      "content": "2026-11-19 v571 裁定＝V-570-3 クローズ（RaceSexMenu 要素 id 採番系の完全確定・ai-todo #161 追加 note）。成果物 tmp/re/v571_race_id_allocation_ruling.md・台帳 row547。probe v571_1〜v571_8（8本 EXIT=0）。①[確定(命令)] id=単一カウンタ [0xB3B5D4]、ctor 0x5C4E40 が 0xC8(200) にリセット（0x5C4F3C）＋id→pane 配列 [menu+0x94..] zero。AddPane 0x5C4340(ret 0x14) は prologue byte 級解析で a4=[esp+0x40] が id と確定、-1 のときのみ採番（明示は非消費）、SetFloat(0xFA8=id) と SetFloat(0xFAE=user0=id) へ書込み、listindex=親 0xFD0−1.0、[this+id*4+0x94] 格納、テンプレ race_template_pane。②[確定(命令)] 消費型4関数: 0x5C4480=button(+1)/0x5C4630=toggle(+1)/0x5C4800=text(+1)/0x5C93F0=slider(+2・c+1保存→c+2確定)。テンプレ名は XML と一致。③[確定(命令)] init の139 呼出を線形復元: Main のみ id=0 明示、以降 201..428（最終428）。ページ id: Race209/Hair213/Face224/Shape229/Tone239/General(Face)246/Brow257/Cheeks264/Chin275/Eyes290/Forehead299/Jaw306/Mouth315/Nose336/General(Skin)365/Beard376/Eye shades389/Eyebrows402/Mouth(Lips)417/Nose shades424。生成順は v558 §1.1 と21件完全一致。④[確定(XML+命令)] XML <id>(1,2,10,20,90,100-104) と 200系非重複 → id90=先頭ページ判定のみ/id10=ゲート act のみ（dispatch で act なし）/id98=block1 less 経由 0x5CCBF4 の唯一の特別 act（98<201 で構造上保証）。28 ブロック act は id201-428 の要素通知のみ。⑤[部分確定] block9-28 は id 突合一致（block13 Race∈Main=201 等）、block1-8 は 0x5C3440 の str1/str2 割当（0x589930 シグネチャ未実測）で未確定＝V-571-2。⑥[未確定] id98 発生源＝第三系統（200系外・XML外・push 0x62 の呼び出し元）＝V-571-1。教訓: id 復元は ctor カウンタ初期化→消費型 head→E8 全列挙→線形シミュレーションの4段／prologue byte 数（push+sub+cookie）を size 付きで数えると引数写像が一発（[esp+0x40]=a4）／cdecl push 順と str 構築の中間 pop を混同しない。移植: id は動的カウンタ（初期200）／Main id=0 のみ特別／スライダは2 id 消費／id10/90/98 と 200系は役割分離。残点 V-571-1..4（1=98 発生源【中】／2=0x589930【中】／3-4【低】）。"
     }
   ],
   "metadata": {
-    "totalEntries": 990,
+    "totalEntries": 991,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-19T18:00:00Z",
-    "entry_count": 990,
-    "last_updated": "2026-11-19T18:00:00Z"
+    "lastUpdated": "2026-11-19T20:00:00Z",
+    "entry_count": 991,
+    "last_updated": "2026-11-19T20:00:00Z"
   }
 }
