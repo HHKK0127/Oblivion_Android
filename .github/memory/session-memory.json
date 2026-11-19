@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-19T08:55:00Z",
+  "lastUpdated": "2026-11-19T09:40:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -14305,14 +14305,30 @@
         "v364-4"
       ],
       "content": "2026-11-19 v559 裁定＝U3 StatsMenu(0x3EB) の 5 タブ表示仕様（ai-todo #157 完了・V-364-3/V-364-4 クローズ）。成果物 tmp/re/v559_statsmenu_tabs_ruling.md・台帳 row535。①5 タブ = p1 General / p2 Attributes / p3 Skills / p4 Factions / p5 Misc。XML stat_tabs_p1..p5 の <id>=1..5 が通知ハンドラ 0x5DCD70 の lea eax,[ebx-1]; cmp eax,4; ja と一致。XML root <user0>1</user0> <!-- current visible tab page -->。タブ見出しはアイコン（Menus\\Shared\\all_tabs_icons.dds）で文字列キーは無い。②V-364-4 クローズ: 属性8行は stat_p2.user1..user8（現在）/user9..user16（base）、EXE は 0x5DA1A0 が AV index 0..7 で現在値→0xFAF+idx・base→0xFB7+idx を SetFloat。規則 userN=AV(N-1) 現在・user(N+8)=AV(N-1) base（AV順 STR/INT/WIL/AGI/SPD/END/PER/LUK）。ラベル strings() の _strength.._luck。値は 0x65D270(player,idx,0)（現在）/0x5F1910(idx)（base）。③色分岐: under=現在値<base / even=等しい / over=現在値>base。定数 under=(208,0,0) 赤 / even=(51,79,142) 青灰 / over=(0,128,0) 緑（stats_menu.xml:13-23）。行は y=me().user0*67+87。④p1 の供給（前提を訂正）: 0x5DBB00 が 4DA2A0→SetString(0xFAF)=名前 / 5EA720→SetString(0xFB0)=種族(race) / vfunc+0x268 の [+0x18+4]→SetString(0xFB1)=星座(birthsign)（無ければ '-'）/ 5EA6B0→SetString(0xFB2)=クラス(class) / 5E1FD0→SetFloat(0xFB3)=レベル。XML も race=user2 / birthsign=user3 / class=user4 / level=user5 / name=parent().user1。⑤V-364-3 クローズ: p4 0x5DC950 の [TESNPC+0x3C] は所属ファクションの連結リスト（+0=TESFaction* / +4=rank byte）。名前 [[faction]+0x18]+4、ランク名 0x51F350(faction,rank)。フラグ byte [[esi]+0x34] の bit0/bit3 とランク名 DUMMY(0xA534F0) を除外。行は 0x585410(elem,\"stat_faction_template\")、listindex=行番号、user1=ファクション名（空白→'_'）、user2=ランク名。⑥p3/p5: stat_skill_template(0xA6DB58) を生成するのは 0x5DC630（p3 Skills）/ stat_misc_template(0xA6DA18) を生成するのは 0x5DA930（p5 Misc）。⑦p1 の health/magicka/fatigue は stat_p1.user6/7・user8/9・user10/11。v364 の AV9→0xFB6+0xFB7/0xFBB、AV10→0xFB8+0xFB9/0xFBC が magicka/fatigue の current/max と一致（AV8=health は同 switch 列挙外・[部分確定]）。⑧教訓: 「◯種の SetString」という前提は実読で数え直す（p1 は 3 種ではなく文字列 4 本＋数値 1 本）／テンプレート名リテラルの参照元で「どの関数がどのタブの行を作るか」が 1 手で確定（stat_skill→0x5DC630・stat_faction→0x5DC950・stat_misc→0x5DA930）／リンクリストの要素型は [item] を実体ポインタ・[item+4] を byte rank として読む形で判別できる。"
+    },
+    {
+      "id": "opencode-v560-u1-residuals-20261119",
+      "timestamp": "2026-11-19T09:40:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v560",
+        "u1",
+        "todo-164",
+        "intro-movie",
+        "input"
+      ],
+      "content": "2026-11-19 v560 裁定＝U1 残点 3 点（ai-todo #164 完了）。成果物 tmp/re/v560_u1_residuals_ruling.md・台帳 row536。骨格は docs/RE_EXE_REPORT.md §21.3〜§21.7 の既存 [確定(命令)] を再確認のみ。⒜ FUN_00410ba0 の第6引数 = 映像のフィット基準 [確定(命令)]。FUN_00410A70 が第6引数を FUN_004104C0 の第5引数へ転送し、0 なら高さ基準（DAT_00b06c50=480）、非0 なら幅基準（DAT_00b06c4c=640）で scale = 基準/幅or高さ を算出（decompiled L9316-9325）。Intro 0x66F2D1 は 1 なので幅基準（1280x720→640x360・y=60 のレターボックス）。スキップ可否フラグではない。⒝ 再生中の入力は塞がない [確定(命令)]。FUN_00410390（0x410390）が毎フレーム PeekMessageA→TranslateMessage→DispatchMessageA を回し、[[0xB3F928]+0x280]->vtable[+0x0C] で入力デバイスを更新。中断は (1)[0xB33426](skip) (2)前景ムービー（movie+0x20 != 2）に限り MessageMenu(0x3E9) 出現 (3)デバイス更新が負。引数非0ならキー 5/0x1D を FUN_00403520 で検査し、押下中かつ GetExitCodeThread([0xB33434])==0x103 で [0xB33426]=1。⒞ RaceSexMenu 生成が先・OblivionIntro 再生が後 [確定(命令)]: 0x66F295 call 0x57B7E0（キャラ生成開始）→ 0x66F29C [ebp+0x7F8]=0（新規ゲームフラグ解除）→ 0x66F2B9 call 0x6A9B40（音楽停止）→ 0x66F2BE ecx=[0xB030A4]（GMST sOblivionIntro）→ 0x66F2D1 call 0x410BA0(path,1,1,0,0,1,0)。a7=0 の前景モードは同期ブロックするので RaceSexMenu は生成済みだが表示されず動画終了後に前面化。移植への示唆: 導入ムービーは RaceSexMenu 生成後に再生（生成→再生→表示）。ムービー中の入力を塞ぐ実装は原版より強く閉じている。フィットは幅基準（640 論理幅）。教訓: 「第N引数」の意味は push 順を実読して callee のパラメータ位置まで追わないと決まらない／「入力が塞がれる」の確認は毎フレーム関数の中身（ポンプ＋キー検査＋skip フラグ）を読むのが最短。"
     }
   ],
   "metadata": {
-    "totalEntries": 971,
+    "totalEntries": 972,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-19T08:55:00Z",
-    "entry_count": 971,
-    "last_updated": "2026-11-19T08:55:00Z"
+    "lastUpdated": "2026-11-19T09:40:00Z",
+    "entry_count": 972,
+    "last_updated": "2026-11-19T09:40:00Z"
   }
 }

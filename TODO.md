@@ -42,6 +42,12 @@
   > RE の reasoning（実測）: 「The user (via the 作製レーン) requests RE analysis on U1..U7 in tmp/re/TODO_re49.md, priority U7 > U2 > U3 > U1(remaining 3) > U5 > U6 > U4. Need to read the handoff doc and TODO_re49.md U section.」→「Big task. I need to plan: 7 sub-requests. Let me set up todos and start with U7 (title screen video), then U2, U3, U1, U5, U6, U4. First, check existing docs: docs/RE_TITLE_SCREEN_REPORT.md, docs/RE_EXE_REPORT.md §21.3, tmp/re/v351, tmp/re/v364. And the .bik list at RE_EXE_REPORT:953.」＝**優先順と U1 縮小改稿（remaining 3）を正しく認識**。
   > 【過去依頼の受理状況（同セッション履歴 800 件を API で検索）】個別 RE 依頼は #123/#124/#128/#130/#133/#134/#135/#136/#138/#139/#140/#142/#144/#145/#147 がすべて [x] 完了（成果物 v364〜v367 実在）＝チャネルは機能していた。一方 U1〜U7 バンドルは本文に handoff_20261118 / U1【 / U7【 / #164 / #166 / #162 / #156 が **0 件**で未受理だった（RE は v549→v555 の旧残点群を自走中）。
   > 【注意】RE は v556 の作業が進行中で、U 節を優先しつつ先に片付ける動き。成果物は tmp/re/v5xx として出る見込みなので、tmp/re/ の新着と U 節のチェック状態を追えば進捗が分かる。
+  > U1 残点3点 RE 裁定完了 2026-11-19 v560。成果物 tmp/re/v560_u1_residuals_ruling.md。骨格（NEW→導入→RaceSexMenu）は docs/RE_EXE_REPORT.md §21.3〜§21.7 の既存 [確定(命令)] を再確認のみで、再解析はしていない。
+  > ⒜ FUN_00410ba0 の第6引数 = 映像のフィット基準 [確定(命令)]。FUN_00410A70 が第6引数を FUN_004104C0 の第5引数へそのまま渡し、0 なら高さ基準（DAT_00b06c50=480）、非0 なら幅基準（DAT_00b06c4c=640）でスケールを算出する（decompiled L9316-9325）。Intro の呼出 0x66F2D1 は第6引数=1 なので幅基準（1280x720 → 640x360、y=60 のレターボックス）。「スキップ可否フラグ」ではない。
+  > ⒝ 再生中の入力は塞がない [確定(命令)]。FUN_00410390（0x410390）が毎フレーム PeekMessageA → TranslateMessage → DispatchMessageA のポンプを回し、[[0xB3F928]+0x280]->vtable[+0x0C] で入力デバイスを更新する。中断条件は (1) [0xB33426]（skip フラグ）(2) 前景ムービー（movie+0x20 != 2）に限り MessageMenu(0x3E9) の出現 (3) 入力デバイス更新が負。引数非0ならキー 5 と 0x1D を FUN_00403520 で検査し、押下中かつ GetExitCodeThread([0xB33434])==0x103（STILL_ACTIVE）なら [0xB33426]=1 を立てる。つまり動画自身がポンプを回し、skip キーだけ消費する。
+  > ⒞ RaceSexMenu 生成が先、OblivionIntro 再生が後 [確定(命令)]。0x66EAF0 末尾: 0x66F27D FUN_005732d0(2)=クエスト開始 → 0x66F290 call 0x440AF0 → 0x66F295 call 0x57B7E0（キャラ生成開始＝FUN_00589b70(0x40C, RaceSexMenu) を含む）→ 0x66F29C [ebp+0x7F8]=0（新規ゲームフラグ解除）→ 0x66F2AB call 0x572EC0(2) → 0x66F2B9 call 0x6A9B40（音楽停止）→ 0x66F2BE ecx=[0xB030A4]（GMST sOblivionIntro の現在値）→ 0x66F2D1 call 0x410BA0(path,1,1,0,0,1,0)（同期・前景）。a7=0 の前景モードは同期ブロックするので RaceSexMenu は生成済みだが表示されず、動画終了後に前面化する。
+  > 【移植への示唆】導入ムービーは RaceSexMenu を生成した後に再生（移植の「NEW 確定→直接 chargen 表示」に挟むなら 生成→再生→表示 の順）。ムービー中の入力を「塞ぐ」実装は原版より強く閉じている（原版は skip キーのみ拾う）。フィットは幅基準（640 論理幅）で 720p 素材なら 640x360＋上下60。
+  > 【残点 V-560-1..2】1=キーコード 5/0x1D の物理キー同一性【低】／2=FUN_00582160(0,1) の戻り値の意味【低】。
 
 - [ ] **#162** 【RE レーン依頼・#101 の残件（A）】**RaceSexMenu(0x40C) の `user0` ページ構成・並び順・各ページの要素一覧**を確定してほしい。port のキャラクター作成を「原版と同じ画面構成」に揃えるための最後のブロッカー。【出発点＝既裁定】`tmp/re/v351_chargen_structure_survey.md`（#97 成果物・#101 に返却済み）で以下が [確定]: ①原本 UI＝**RaceSexMenu(0x40C)**、初期化 `FUN_005CA010` が `Data\Menus\CharGen\race_sex_menu.xml` を読込 ②実物 XML（BSA 抽出物）**`D:\Cargo\Other\Oblivion\BSA\bsa_Extraction\menus\chargen\race_sex_menu.xml`（705行）** ③構成要素: 名前入力 `race_name` **id=10**／`race_button_done` **id=90**（user5: 1=Done, 2=Back）／3D プレビューのドラッグ領域 `race_player_grab`／**`user0`＝現在表示中の pane/page**（`race_template_pane` が `<eq src="RaceSexMenu" trait="user0"/>` でページ切替）／テンプレート pane(100)・button(101)・toggle(102)・slider(103)・text(104) ④スライダー trait: user0=現在値/user1=開始値/user2=ラベル/user6=マーカID/**user7=スライド対象の editor id**/user8=geometry・texture フラグ/user10=変更フラグ/user13=有効・無効、bar: user1=最小0/user2=最大1、step=0.04(Xbox)/0.01、jump=0.1 ⑤種族表示名＝ESM RACE FULL→`RaceData.fullName`（実装済）＋原本 `FUN_005CDA30` が TESRace リスト `DAT_00B33A98+0x44` を走査 [確定] ⑥属性/スキルの選択モデル＝s58 §1.2/1.6/1.7＋`class_menu.xml`＋正典 AV テーブル21スキル [確定]。【依頼3件（判定5段階・根拠は EXE 命令または bsa 抽出 XML のみ・推測禁止）】
   > 【RE 依頼を出した（2026-11-18）】依頼書: `tmp/re/handoff_20261118_chargen_op_video_and_tabs_bundle.md`（OpenCode 作製レーン → ReverseEngineering・対象 EXE v1.2.0416・采番は v539 以降任意・判定5段階/根拠は命令または bsa 抽出 XML のみ）。 依頼2 [high]（再掲）: `user0` に設定される**ページ index ↔ 意味の対応表**、枚数と**並び順**、タブ切替の入力経路（矢印/Tab/クリックのどれが正典）。移植側の現行順 `Name / Race / Attributes / Skills / Appearance` が原版と同じかの確定が目的。出発点 `tmp/re/v351_chargen_structure_survey.md`。
@@ -2275,11 +2281,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2303,4 +2304,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-19 15:35:05
+**ai-todo** | Last Updated: 2026-11-19 15:36:44
