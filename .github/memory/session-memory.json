@@ -14515,14 +14515,49 @@
         "todo-156"
       ],
       "content": "2026-11-19 v566 裁定＝U9（画面左上ブロック群の描画源特定・ai-todo #156）。成果物 tmp/re/v566_u9_left_top_blocks_ruling.md・台帳 row542（probe なし・移植コード静的解析のみ）。描画源＝**characterCreationUI->render()**（renderer.cpp:5055 タイトル/キャラ作成パス／6043 ゲーム内パス）→ UICharacterCreation::render()（ui_character_creation.cpp:263）→ PlaceholderAssets::drawPanel()（ui/placeholder_assets.cpp:84）→ UIDrawHelper::drawColoredQuad（塗り）＋ UIDrawHelper::drawBorder（輪郭）。ユーザーの仮説『メニュー領域(4700-5020) 側』は当たり。根因＝**characterCreationUI に setPosition()/setSize() が一度も呼ばれない**（全21箇所を列挙：initialize/setScreenSize/setESMManager/setOnConfirm/setOnNameRejected/open/update/render/isVisible/onTouchDown/isNameInputActive/setPlayerName のみ）。UIComponent::position/size は初期化子なし＝(0,0)、UIPanel ctor は titleBarHeight=40/contentMargin=10 のみ、setScreenSize→UIComponent::onScreenResize は screenWidth/Height のみ。→ getContentPosition()=(10,50)／**getContentSize()=(-20,-60) と負** → 全 drawPanel が左端にクリップされた細い帯（0..30px）として縦に積まれる。パネル背景・タイトルバー・閉じるボタンは size=(0,0) で退化＝『枠なしのブロック群』。5380-5664 無効化で消えない理由＝実行点がタイトル/キャラ作成パスの 5455（末尾で return するブロック）で、無効化したゲーム内パスとは別コードパス。除外: retroFilter->renderToScreen（フルスクリーンクワッド1枚＋コンポジットはパススルー）／renderPlaceholderEntities（3D イコサ球・シェーダにアウトライン無し）／UISystem 系（UICharacterSheet は setPosition/setSize 済みで中央配置・初期非表示）→いずれも [確定負]。aabbVisualization/npcOverlay/touchTrail は toggle のみで参照ゼロのデッドフラグ。行数はタブ依存: NAME＝タブ帯＋名前2パネル＋情報テキスト／ATTRIBUTES＝ヘッダ1＋属性8行（for (i<8)）／SKILLS＝21行。確定/中止ボタンは y=50-60-44=-54 で画面外。次の一手: renderer.cpp:5455 と 6043 の characterCreationUI->render() をコメントアウト（2行）→ 消えれば確定。決定版は ui_draw_helper.cpp:343 drawColoredQuad 先頭に caller アドレスの LOGI を1行追加して x≈0..30/y≈50..200/幅が負 の行を addr2line で特定。修正の方向性（未実施）: UICharacterCreation に onScreenResize() オーバーライドを追加して setSize()/setPosition() を呼ぶ。教訓: 『無効化しても残る』はどのパスが実行されているかが鍵（同じ render でもタイトルパスとゲームパスに二重に置かれている）／『サイズ未設定』は getContentSize() が負になり、矩形が原点付近にクリップされて『左上のブロック群』に見える／矩形描画は1関数に集約されているので caller アドレスを1行ログすれば1回で確定できる。"
+    },
+    {
+      "id": "opencode-u8-v370-correct-v561-wrong-20261119",
+      "timestamp": "2026-11-19T09:50:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "todo-161",
+        "v370",
+        "v561",
+        "v565",
+        "chargen",
+        "done-button",
+        "contradiction"
+      ],
+      "content": "2026-11-19 U8 裁定（tmp/re/v565_u8_name_validation_adjudication.md・ai-todo #161）＝ **v370 正 / v561 誤**。race_button_done(id=90) の空名時挙動で正反対の裁定が出ていた矛盾を解消。原因は **v561 がフラグの極性を逆読み**したこと: `cmp [esp+0x12], bl; jne 0x5CCBB7` を『実名が入っていれば確認へ』と読んだが、flag は **初期1・非スペース文字で0**（0x5CCA7F で 1、0x5CCAB3 で bl=0）なので **flag=1 は『スペース以外を1文字も含まない＝空/全空白』**、`jne` は空白のみ→エラー。裁定: (a) 空/全空白名で Done → **0x5CCBB7 に到達（エラー）**。'%s %s?' 確認文経路には進まない (b) 分岐は2条件のみ: ①`strcmp(name,[0xB39440]=\"Enter character name.\")==0`（プレースホルダ一致）②flag==1（空/全空白）(c) `sNoNameCharacter` の呼出は **0x5CCBB7 の1箇所のみ** (d) **移植の hasConfirmableName() は原版準拠で正しい**。生バイト実測: `bytes_at(0x5CCBA8,16)`=`ff ff e8 71 53 e3 ff 83 c4 2c e9 0e 0e 00 00 a1`（成功 tail は `e9 0e 0e 00 00`=jmp 0x5CD9C5）。v561 で維持される点: `<disabled>` は無い・種族未選択ガードは無い・確認表示は FUN_00579C10。**【移植実装の確認】** v565 §4 は『移植が足すべき第3条件＝名前==プレースホルダも拒否』としたが、**それは ui_character_creation.cpp:707 に既にある**（`return playerName_ != gmst::getStringLive(\"sEnterName\")`）。→ #161 のコード修正は不要。"
+    },
+    {
+      "id": "opencode-u9-v566-refuted-20261119",
+      "timestamp": "2026-11-19T09:50:00Z",
+      "priority": "high",
+      "category": "correction",
+      "tags": [
+        "oblivion",
+        "re",
+        "todo-156",
+        "v566",
+        "hud",
+        "top-left",
+        "refuted",
+        "stale-source"
+      ],
+      "content": "2026-11-19 U9 裁定（tmp/re/v566_u9_left_top_blocks_ruling.md・ai-todo #156）の mechanism を**実測で反証**。v566 の主張: 『`UICharacterCreation` は setPosition()/setSize() を一度も呼ばれないので size=(0,0)・position=(0,0) → getContentSize()=(-20,-60)（負）→ タブ幅 tabW=-4 → 左上 x=0..30 に彩色帯が7〜8本積まれる』。**反証1（コード）**: 実コードは `ui_character_creation.h:34-43` の **setScreenSize(int,int) オーバーライドが setSize(panelWidth,panelHeight) と setPosition(...) を呼ぶ**（基底 setScreenSize は onScreenResize() への転送だが派生が**隠蔽（non-virtual shadow）**するため unique_ptr<UICharacterCreation> 経由では派生版が走る）。`renderer.cpp:911`（Renderer::init 内・screenWidth=1920 設定後）で実行され size=(1382,886)・position=(269,97) になる。**反証2（実測）**: worktree fix-chargen-ui-quality の APK（226.8MB・master e3d36f9e 相当）を emulator-5554 で起動しタイトル→NEW→キャラ作成を撮影（%TEMP%/opencode/s156_0_title.png・_1_name.png・_2_attr.png・_3_skills.png）。**左上の彩色ブロック群は再現しない**。パネルは正しい位置・幅で描画（タブ5枚 full-width）。タイトルも左上は Android 側 Debug Control Panel の『D』のみ。**v566 の行番号も現行と不一致**（v566 は characterCreationUI->render() を『5455・6043』と引用、現行 master は **5055・5643**＝約400行ずれ＝probe137 ブランチか古いスナップショット参照）。**結論**: #156 の chargen 側症状は現行 master で再現せず、2026-11-15 の起票以降のマージ（#127 character sheet・#149 name rejections・800439f6 text-collision・#160/#132 title overlay 等）で解消した可能性が高い。推測修正せず、gameplay 側の撮影と git bisect で判断する。"
     }
   ],
   "metadata": {
-    "totalEntries": 984,
+    "totalEntries": 986,
     "compressedCount": 123,
     "sessionCount": 43,
     "lastUpdated": "2026-11-19T13:00:00Z",
-    "entry_count": 984,
+    "entry_count": 986,
     "last_updated": "2026-11-19T13:00:00Z"
   }
 }
