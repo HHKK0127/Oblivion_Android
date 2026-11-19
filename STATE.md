@@ -3943,3 +3943,16 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **本日 push 累計（セッション）**: v405 → … → v572 `816ec66f` →（本件 v573 を本 commit で push）＝**164裁定**。
 - **次**: V-562-3（chargen 中 HUD）／V-573-1（id98・message 配線）／V-565/566/567/568/572 系（V-566-1 は L2 ゲート待ち）。
 
+## 2026-11-19 (lm) — V-562-3 の絞込み① v574（U6/U4 フォロー）: **chargen 中に HUD(0x3EC) が開かないことの命令的裏付け＝open 経路の構造と XML 非参照を [部分確定]**（chargen ゲート本体は V-574-1 へ）
+
+- **成果物**: `tmp/re/v574_hud_open_path_ruling.md`（probe **v574_1〜v574_5・5本 EXIT=0**）。台帳 **row550**・ai-todo **#166 追加 note**。
+- **① [確定(命令)] メニュー open の総入口**: `TileMenu::open 0x591C50`（vtable +0x14・E8=0）→ **`0x591C76: call 0x587D20`（唯一）** → id 1001..1051 switch（`eax=id-0x3E9≤0x32 → jmp [eax*4+0x5887b8]`）→ **HUDMainMenu ctor `0x5A6780`（唯一 caller `0x587E95`・malloc(0x64)）**。別系統＝窓 id→生成ヘルパ switch（`0x3EC`→`0x5A6B00`／`0x3ED`→`0x5A4840`／`0x3F2`→`0x5A8E30`／`0x3EF`→`0x5ADCF0`／`0x414`→`0x5B6040`）。
+- **② [確定(命令)] `push 0x3EC` 25件は open 直呼び0件**: 24件＝`0x589B70`（既存インスタンス取得）＋1件＝**XML エンティティ登録 `0x58A489: push 0x3ec; push '&HUDMainMenu;'; call 0x58A0A0`**。**`call [reg+0x14]` 281件（短7＋遠7）の直前40B に id push/0x3EC/menu 文字列＝全0件** → open 引数は id 直指定でない（インスタンス固有）。
+- **③ [確定] XML 接続**: **`&HUDMainMenu;`＝窓 id 0x3EC の XML エンティティ**（`0xA6A8CC`）を確定 → **XML が参照しなければ生成されない**（v562 の title/chargen XML 非存在と接続）。
+- **④ [部分確定] メニュースタック実測の到達点**: 窓 id＝`vtable[+0x34]` 実行時取得 → `eax-0x3E9` → **`0x42BB90([0xB13970], …)`＝生成済み配列登録**（真のスタック構造は V-574-3）。v542/v550 close ゲート（`591B40` の 0x3EC/0x3EF 特別扱い）・v544 close ゲート1004/1007 と整合。**chargen 中に open が呼ばれない分岐は未特定 → V-574-1 に再定義・継承【中】**。
+- **⑤ [確定(命令)] 破棄系**: `0x5900F0`＝dtor 全体（`call 0x591B70`→bit0 なら free→ret 4）／`0x591B70`＝TileMenu vtable `0xA6AF14` 恢復＋窓 id 取得＋`0x42BB90` 登録＋メンバ除去。E8 callers＝0（vtable 経由のみ）。
+- **⑥ 教訓（新規罠）**: **`find_head` は int3 帯で前関数に誤帰属**（hit `0x591C76` の head が `0x591B70` と誤出・ret 位置と不整合）→ **call/E8 hit は size 付き逐語で ret 整合を必ず検証・hit アドレスを必ず出力**／「open を探す」は `push id; call` では不可（vtable 経由・id 直 push なし）→ 引数体系を先に確定してから絞る。
+- **残点**: **V-574-1【中】**（chargen ゲート＝open 呼び出し元281件の絞り込み）／V-574-2・3【低】。
+- **本日 push 累計（セッション）**: v405 → … → v573 `521d38c6` →（本件 v574 を本 commit で push）＝**165裁定**。
+- **次**: V-574-1（HUD open 呼び出し元の絞り込み）／V-573-1（id98 message 配線）／V-565/566/567/568/571/572 系（V-566-1 は L2 ゲート待ち）。
+

@@ -37,6 +37,14 @@
   > 【V-557-2 BinkOpen フラグ＝名称は [未確定]／条件は [確定(命令)]】名称は bink.h が必要（EXE に手掛かりなし）。条件: 0x2000＝ファイルサイズが [0xB030BC]=26,214,400 B（GMST iPreloadSizeLimit=25 MiB）超過時（＋0x983754 の返り値との AND）／0x08000000＝スレッド不一致時（0x983754 判定）に追加し SuspendThread/ResumeThread（IAT 0xA280F0）でガード／失敗時 "Could not open %s for playback."。BinkOpen import は _BinkOpen@8 のみ。
   > 【移植への示唆】クレジット動画は原版に無い（同梱されるが再生されない）＝credits_menu.mp4 は独自演出で削除候補（U7⑤ の 1% 抽選と同根）。ループは『原版は binkw32 に任せている』と書くのが正確（『原版はこうしている』ではない）。フラグを移植する際は値と成立条件のみを根拠にする（SDK 名は使わない）。
   > 【残点 V-568-1..3】1=BinkOpen フラグの SDK 名【低・bink.h があれば即決】／2=0x983754 の返り値の意味【低】／3=credits_rect 以外の描画元【低】。
+  > V-562-3（chargen 中に HUD が開かないことの命令的裏付け）の絞込み① 2026-11-19 v574。成果物 tmp/re/v574_hud_open_path_ruling.md・台帳 row550。probe v574_1〜v574_5（5本・EXIT=0）。判定は [部分確定]（open 経路の構造と XML 非参照まで確定、chargen ゲート本体は残点 V-574-1 へ）。
+  > 【[確定(命令)] メニュー open の総入口】TileMenu::open 0x591C50（vtable +0x14・E8=0＝vtable 経由のみ）→ **0x591C76: call 0x587D20（唯一の呼び出し・E8 hit アドレス精査で確定）** → 0x587D20(menuId) = **id 1001..1051 の switch**（eax=id-0x3E9 ≤0x32 → jmp [eax*4+0x5887b8]）→ case 1004 → **HUDMainMenu ctor 0x5A6780（唯一 caller 0x587E95）**（冒頭 malloc(0x64)）。別系統に「窓 id→生成ヘルパ」switch（head 0x587550 内 cmp 0x58767F）: 0x3EC→0x5A6B00／0x3ED→0x5A4840／0x3F2→0x5A8E30／0x3EF→0x5ADCF0／0x414→0x5B6040＋後続 id 判定列挙。
+  > 【[確定(命令)] push 0x3EC 25件は open 直呼び0件】24件＝0x589B70（id→オブジェクト取得・HUDMainMenu のメソッド群0x5A5xxx-0x5A6Bxx が内部で自身を取得する型）＋1件＝**XML エンティティ登録 0x58A489: push 0x3ec; push '&HUDMainMenu;'; call 0x58A0A0**。**call [reg+0x14]（vtable open）281件（短7+遠7形式）の直前40B に menu id push／0x3EC／menu 系文字列＝すべて0件** → open の引数は id 直指定ではなくインスタンス固有。
+  > 【[確定] XML レベルの接続】v562 の『title/chargen の XML に HUD 要素なし』に加え、**&HUDMainMenu;＝窓 id 0x3EC を割り当てる XML エンティティ**（文字列 0xA6A8CC・0x58A489 登録。0x58A1C0 は &generic;/&false;/&true;/&left;/&center; 等の同型定義群）であることを確定 → **XML が &HUDMainMenu; を参照しなければ HUD は生成されない**。
+  > 【[部分確定] メニュースタック実測の到達点】窓 id は vtable[+0x34] 実行時取得 → eax-0x3E9 → **0x42BB90([0xB13970], …)＝id→生成済み配列への登録**（「生成済みメニュー集合」の所在候補＝真のメニュースタックは V-574-3）。v542/v550 の close ゲート（591B40 が 0x3EC/0x3EF 特別扱い）・v544 の close ゲート1004/1007 と整合。**ただし『chargen 中に HUD open が呼ばれない』分岐そのものは未特定** → **残点 V-574-1 に再定義・継承【中】**（入口＝open 呼び出し元281件の絞り込み、0xA6AF14/0xA6BEE4 vtable 系オブジェクト経路）。
+  > 【[確定(命令)] 破棄系（E8 誤帰属検証で確定）】0x5900F0＝**dtor 全体**（push esi; mov esi,ecx; call 0x591B70; test [esp+8],1; je; free(esi); ret 4）。0x591B70＝[esi]=TileMenu vtable 0xA6AF14 恢復 → [esi+0x44] menu の vtable[+0x34]（窓 id 取得）→ 0x42BB90 登録 → 0x584880(menu,0) → vtable[0](arg=1) → 0x58DA70 → 0x5819A0（メンバ menu 除去）。E8 callers of 0x5900F0＝0（vtable 経由のみ）。
+  > 【新規のハーネス罠（教訓）】**find_head は int3 帯（cc 連続）で前関数に誤帰属する**: call 0x587D20 の hit 0x591C76 の head が『0x591B70』と出たが、0x591B70 の ret（0x591C18）より後＝**別関数（open 0x591C50 の内部）**。→ **E8/call の hit は「ret 位置と hit 位置の整合」を size 付き逐語で必ず検証**／**E8 走査は hit アドレスを必ず出力**（head だけだと誤帰属を見逃す）／「open を探す」は push id; call では不可（**vtable 経由・id 直 push なし**）→ 引数体系を先に確定してから走査を絞る。
+  > 【残点】V-574-1【中】＝chargen ゲートの最終裏付け（open 呼び出し元281件の絞り込み）＝V-562-3 を再定義して継承／V-574-2【低】＝0x587550 の id switch 全列挙と役割分担／V-574-3【低】＝[0xB13970]/0x42BB90 のデータ構造（真のメニュースタック）。
 
 - [ ] **#165** 【プロセス・低優先（再現した自分の失敗2件）】**worktree 立ち上げ時の asset 欠落と、検証スクリプトの $apk 誤指定を構造的に防ぐ**。【実害①】2026-11-18、`git worktree add` した `fix-chargen-ime-inset` には `.gitignore` 済みの `app/src/main/assets/videos/`（8本 82.9MB）と `assets/textures/ui/*.png`（7枚）が**作られておらず**、そこからビルドした APK（141.1MB／master 238MB）はタイトル背景動画 `map_loop.mp4` が無音で欠落 → **ユーザーが実機で「タイトル画面の動画が再生されない、前は出ていた」と指摘**して発覚（コード退行ではない）。【実害②】同じ日、`chk_ime.ps1` の `$apk` が別 worktree のビルド（#159 コード未収録）を指したまま2回の emu 検証を行い、「`IME cover changed` が0件＝経路が死んでいる」と**誤診**した（実際は未インストール）。【方針候補（推測でなく手順化）】①worktree 作成直後に main ツリーの `app/src/main/assets` を突合し欠落ファイルを Copy-Item で補完する（`local.properties` の複製と同じ定例手順に足す）②検証スクリプト冒頭に `$apk` の `LastWriteTime` と**APK サイズ出力**を入れ、master ビルド（238MB 級）と比較して 100MB 単位で小さければ asset 欠落として止める③AGENTS.md / oblivion-android-dev skill の worktree 手順に上記2つを書き込む（現在の記載: worktree を「あらゆるコード変更の試み」に使うとあるが asset の扱いは無記載＝docs と実務のギャップ）。【検証】手順化した内容で新規 worktree を作り、`app-debug.apk` が master 相当サイズになりタイトル動画が再生されること。関連: #159（誤診の当事者）/AGENTS.md の Safety 節 `#android` `#oblivion` `#process` `#verify`
   > 【実装＋コミット済み（2026-11-18・マージ承認待ち）】branch `chore-worktree-asset-guard` commit **`87211848`**（base=master 4c4c2cda・2ファイル +171）= `AGENTS.md` 9行（Safety 節に worktree asset ルール＋APK を実機に入れる前のサイズ/エントリ照合）＋ `tools/check_worktree_assets.py` 162行。【スクリプトの仕様】`<tree>` を canonical repo の `app/src/main/assets` と再帰突合し MISSING を列挙（exit 1）、`--fix` で欠落を copy、`--apk <built> --reference <full master apk>` で APK エントリ名の差分も検査（欠落があれば exit 1）。**改行は正規化して比較**（本リポジトリは `core.autocrlf=true` のため checkout だけで全テキストが CRLF 化して大きくなる。実測: `fonts/FONT_LICENSES.txt` 1465→1494B・CR 0→29／`localization/jpwiki_localization.tsv` 5,735,231→5,763,919B・CR 18,419→47,107＝**Δバイト＝追加 CR 数**で内容は同一。初版はここを「size differs」と誤検知していたのでContent 比較に修正）。【実測テスト5ケース】①新規 worktree を main 基準で検査 → **MISSING 15件/85.9MB・exit 1**（videos 8本＋textures/ui 7枚）②`--fix` → `copied 15 file(s)`・exit 0③補完後再検査 → nothing missing・exit 0（CRLF だけの差は表示されなくなった）④補完済み `fix-chargen-ime-inset` を main 基準 → exit 0⑤`map_loop.mp4` を意図的に退避 → **MISSING videos\map_loop.mp4 (9.5 MB)・exit 1**（検出力の回帰確認）→ 復元済み。【APK 突合の実測】worktree 228.1MB vs master：`apk entries: built=2629 reference=2629` 差分0・`assets/ 1709 = 1709`（238→228MB の見かけ差は圧縮結果の違いで、内容欠落は無い）。【副次】検証用スクリプト側にも同趣旨のガードImplemented: `chk_ime2.ps1` は APK の LastWriteTime＋サイズを印字し **200MB 未満だと exit 6 で検証を開始しない**。【残】マージ承認 → master 統合（他 worktree の作成手順に反映するため、次回の worktree 作製時に本スクリプトを実際に使って検証する）。
@@ -2429,6 +2437,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2452,4 +2465,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-19 21:21:56
+**ai-todo** | Last Updated: 2026-11-19 21:32:20
