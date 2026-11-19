@@ -3980,3 +3980,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **本日 push 累計（セッション）**: v405 → … → v575 `82e5e621` →（本件 v576 を本 commit で push）＝**167裁定**。
 - **次**: V-576-1（矛盾解消）／V-573-1（id98 message 配線）／低優先群（V-565/566/567/568/571/572/574-2/3/575-2/3/576-2/3）。
 
+## 2026-11-20 (lp) — V-576-1 の (a)(b) 解消 v577（U6/U4 フォロー）: **`0xFA2` 3件目＝`jmp` オペランド・`ff /2` 全エンコードで UI=0件・probe ハーネス2回目の消失と復元**
+
+- **成果物**: `tmp/re/v577_fa2_jmp_and_ff2_complete_ruling.md`（probe **v577_1〜v577_3・3本 EXIT=0**＋`v307_verify.py`）。台帳 **row553**・ai-todo **#166 追加 note**。
+- **① [確定(命令)] (a) 解消**: 3件目の `0xFA2` バイト列＝**`0x42703D: e9 a2 0f 00 00`＝`jmp 0x427FE4`（rel32 オペランド内部）** — head `0x426A90` から**線形368 insn で到達を実測**（prev=`0x427038 call 0x423720`）。back=0 の偽 decode（`mov al,[imm32]`）はオペランド起点誤り＝**v577_2 線形が正**。→ **実質 `0xFA2` 即値は2件のみ**（entity 登録 `0x58A9A6`／open 内 cmp `0x591C54`）。
+- **② [確定(命令)] (b) 解消**: **`ff /2` 全 modrm（reg==010）×SIB（256通り）×disp8/disp32 完全列挙＋capstone 検証＝raw 6,945→282 件**（従来281＋新規1件 `0x714240`＝NIF/ストリーム系）。**UI-range(0x40-0x6E) は0件** → メニュー系は indirect call 形式で slot5 open を呼ばない。欠落していた **SIB 形式（`ff 54 .. 14`／`ff 94 ..`）を補完**。
+- **③ [未確定]（継続）矛盾**: ①open 成功＝a1==0xFA2 固定 ②即値2件 ③`E8/E9` 直接0 ④**`ff /2` UI=0** ⑤`0x587D20`＝open 内1件 → **「open を呼んで 0xFA2 を渡す場所」が全系統に不存在** → 残る手＝**(c) 引数規約の最終実測＋resolver `0x58B040` の2消費者後続（entity id push 経路）＝V-577-1【中】**（V-576-1 再定義継承）。
+- **④ [運用・重要] ハーネス2回目の消失と復元**: `v307_common.py` 再消失（11/18 に続き2回目・**他235個残存＝単ファイルのみ掃除型**）。memory の「probe は Test-Path から」教訓が発動。**復元**: EXE `D:\Cargo\Ghidra	emp\Oblivion_Steam版\Oblivion.exe`（**7,898,624 B 実測一致**）／`find_head`＝`tmp/re/cache/named_funcs.txt`（**21,597 heads**）の **bisect（va 以下最大 head・CC フィルタ済みで int3 帯は前 head 吸着＝v574 誤帰属と挙動一致）**／capstone x86-32／PE32 sections 5要素／`find_off`/`bytes_at`/`callers_of`。**復旧検証3件 OK**: `callers_of(0x4E4A10)=1043`（v546）／`callers_of(0x591C50)=0`（v545）／`find_head(0x42703E)=0x426A90`（v547/v576）＋誤帰属再現＋disasm smoke。
+- **⑤ 教訓（再発型）**: **オペランド起点 back-decode は偽命令を生む→head 線形 decode で到達性検証必須**（`a2`＝`mov al,moffs` 誤読の是正）／**`ff /2` は SIB・disp32 まで列挙**（281→282）／**TEMP ハーネスは毎回消える前提・probe 冒頭 Test-Path**。
+- **残点**: **V-577-1【中】**（矛盾解消 (c)＋entity id push 経路）＝V-576-1 を再定義継承／V-577-2【低】（`0x714240` 同定）。
+- **本日 push 累計（セッション）**: v405 → … → v576 `abe61284` →（本件 v577 を本 commit で push）＝**168裁定**。
+- **次**: V-577-1（矛盾解消 (c)）／V-573-1（id98 message 配線）／低優先群（V-565/566/567/568/571/572/574-2/3/575-2/3/576-2/3/577-2）。
+
